@@ -185,8 +185,14 @@ cfg_lookup_template(GlobalConfig *cfg, gchar *name)
 gboolean
 cfg_init(GlobalConfig *cfg, PersistentConfig *persist)
 {
-  cfg->file_template = cfg_lookup_template(cfg, cfg->file_template_name);
-  cfg->proto_template = cfg_lookup_template(cfg, cfg->proto_template_name);
+  if (cfg->file_template_name && !(cfg->file_template = cfg_lookup_template(cfg, cfg->file_template_name)))
+    msg_notice("Error resolving file template",
+               evt_tag_str("name", cfg->file_template_name),
+               NULL);
+  if (cfg->proto_template_name && !(cfg->proto_template = cfg_lookup_template(cfg, cfg->proto_template_name)))
+    msg_notice("Error resolving protocol template",
+               evt_tag_str("name", cfg->proto_template_name),
+               NULL);
   return cfg->center->super.init(&cfg->center->super, cfg, persist);
 }
 

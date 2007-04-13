@@ -2,6 +2,36 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-06-04 18:23:57 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-33
+
+    Summary:
+      added static linking option to configure, small fixes
+    Revision:
+      syslog-ng--mainline--2.0--patch-33
+
+    2005-06-04  Balazs Scheidler <bazsi@balabit.hu>
+    
+    	* configure.in: added --enable-static-linking option 
+    
+    	* src/cfg-lex.l: fixed problem that caused keyword recognition
+    	problems, words that began with a reserved word were erroneously
+    	recognized as the reserved word (user vs usertty)
+    
+    	* src/cfg.c: added error checking for file_template and
+    	proto_template options
+    
+    	* src/logmsg.c (log_msg_init): always set frac_present to TRUE,
+    	(log_msg_parse): frac_present is set to FALSE if there was a
+    	timestamp which did not contain fractions
+
+    removed files:
+     .arch-ids/aclocal.m4.id aclocal.m4
+
+    modified files:
+     .arch-inventory ChangeLog configure.in src/cfg-grammar.y
+     src/cfg-lex.l src/cfg.c src/logmsg.c src/syslog-ng.h
+
+
 2005-05-19 06:44:44 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-32
 
     Summary:

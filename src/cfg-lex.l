@@ -239,7 +239,7 @@ check_reserved_words(char *token)
           else if (token[j] != keywords[i].kw_name[j])
             break;
         }
-      if (token[j] == 0)
+      if (token[j] == 0 && keywords[i].kw_name[j] == 0)
         return keywords[i].kw_token;
     }
   yylval.cptr = strdup(token);

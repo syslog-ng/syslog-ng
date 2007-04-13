@@ -194,6 +194,8 @@ log_msg_parse(LogMessage *self, gchar *data, gint length, guint flags)
       guchar *p;
       gint hours, mins;
       
+      self->stamp.frac_present = FALSE;
+      
       p = memchr(src, ' ', left);
       
       stamp_length = (p - src);
@@ -243,6 +245,8 @@ log_msg_parse(LogMessage *self, gchar *data, gint length, guint flags)
     {
       /* RFC 3164 timestamp, expected format: MMM DD HH:MM:SS ... */
       struct tm tm, *nowtm;
+
+      self->stamp.frac_present = FALSE;
 
       /* Just read the buffer data into a textual
          datestamp. */
@@ -466,7 +470,8 @@ log_msg_init(LogMessage *self, GSockAddr *saddr)
 {
   self->ref_cnt = 1;
   gettimeofday(&self->recvd.time, NULL);
-  gettimeofday(&self->stamp.time, NULL);
+  self->recvd.frac_present = TRUE;
+  self->stamp = self->recvd;
   self->recvd.zone_offset = timezone;
   self->date = g_string_sized_new(16);
   self->host = g_string_sized_new(32);

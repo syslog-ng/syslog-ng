@@ -30,6 +30,10 @@
 #define USE_DMALLOC
 #endif
 
+#if ENABLE_DEBUG
+#define YYDEBUG 1
+#endif
+
 #include <glib.h>
 
 #if ENABLE_DEBUG
