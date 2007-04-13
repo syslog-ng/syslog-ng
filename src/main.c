@@ -139,16 +139,16 @@ int
 main_loop_run(GlobalConfig *cfg)
 {
   GMainLoop *main_loop;
-  gint iters = 0;
+  gint iters;
   
   msg_notice("syslog-ng starting up", 
              evt_tag_str("version", VERSION),
              NULL);
-  main_loop = g_main_new(TRUE);
+  main_loop = g_main_loop_new(NULL, TRUE);
   g_timeout_add(cfg->stats_freq * 1000, stats_timer, NULL);
-  while (g_main_is_running(main_loop))
+  while (g_main_loop_is_running(main_loop))
     {
-      g_main_iteration(TRUE);
+      g_main_context_iteration(g_main_loop_get_context(main_loop), TRUE);
       if (sig_hup_received)
         {
           msg_notice("SIGHUP received, reloading configuration", NULL);
@@ -178,7 +178,8 @@ main_loop_run(GlobalConfig *cfg)
   msg_notice("syslog-ng shutting down", 
              evt_tag_str("version", VERSION),
              NULL);
-  while (g_main_iteration(FALSE) && iters < 3)
+  iters = 0;
+  while (g_main_context_iteration(NULL, FALSE) && iters < 3)
     {
       iters++;
     }

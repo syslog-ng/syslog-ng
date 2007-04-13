@@ -26,6 +26,7 @@
 
 #include "driver.h"
 
+void afinter_postpone_mark(gint mark_freq);
 LogDriver *afinter_sd_new(void);
 
 #endif

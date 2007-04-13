@@ -5,6 +5,8 @@
 	* Fixed a possible segmentation fault on SIGHUP.
 	* Fixed a timezone normalization problem.
 	* Fixed Solaris support.
+	* Fixed MARK support to emit a single mark message only (it was
+          previously implemented for all sources)
 	* Added Debian packaging files.
 
 1.9.6

@@ -1992,14 +1992,20 @@
 		<entry>The number of lines buffered before written to file</entry>
 	      </row>
 	      <row>
-		<entry>mark()</entry>
+		<entry>mark_freq()</entry>
 		<entry>number</entry>
-		<entry>The number of seconds between two MARK lines. NOTE: not implemented yet.</entry>
+		<entry>
+		  The number of seconds between two MARK lines. MARK
+                  lines are generated every once in a while if there was no
+                  message traffic, basically to inform the receiver that the
+                  connection is still alive.
+                </entry>
 	      </row>
 	      <row>
-		<entry>stats()</entry>
+		<entry>stats_freq()</entry>
 		<entry>number</entry>
-		<entry>The number of seconds between two STATS.</entry>
+		<entry>The number of seconds between two STATS messages
+                  which contain the number of messages dropped by syslog-ng.</entry>
 	      </row>
 	      <row>
 		<entry>log_fifo_size()</entry>

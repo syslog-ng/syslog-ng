@@ -48,7 +48,6 @@ typedef struct _LogReaderOptions
   gchar *prefix;
   gint msg_size;
   gint follow_freq;
-  gint mark_freq;
   gint fetch_limit;
   
   /* source time zone if one is not specified */
@@ -63,7 +62,6 @@ typedef struct _LogReader
   GSource *source;
   gint ofs;
   guint32 flags;
-  gint mark_target;
   LogPipe *control;
   GSockAddr *prev_addr;
   LogReaderOptions *options;

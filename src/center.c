@@ -26,6 +26,7 @@
 #include "dgroup.h"
 #include "filter.h"
 #include "messages.h"
+#include "afinter.h"
 
 #include <assert.h>
 
@@ -301,6 +302,8 @@ log_center_queue(LogPipe *s, LogMessage *msg, gint path_flags)
   LogCenter *self = (LogCenter *) s;
   gboolean match, fallbacks, have_fallbacks = 1;
   gint ci, fi, di;
+  
+  afinter_postpone_mark(self->cfg->mark_freq);
 
   log_msg_ref(msg);
   log_msg_ack_block_start(msg, log_center_ack, NULL);

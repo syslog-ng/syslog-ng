@@ -2,6 +2,33 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-12-03 16:34:15 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-77
+
+    Summary:
+      fixed MARK support
+    Revision:
+      syslog-ng--mainline--2.0--patch-77
+
+    2005-12-03  Balazs Scheidler <bazsi@balabit.hu>
+    
+    	* doc/reference/syslog-ng.xml: added some more words on mark_freq()
+    	and stats_freq(), actually fixed the documentation as these options
+    	were renamed for consistency
+    
+    	* src/afinter.c: move MARK implementation to here instead of
+    	logreader, there's no point in creating MARK messages in the name of
+    	all of our sources, we need to generate a single MARK message in our
+    	name if there's no traffic
+    
+    	* src/main.c: removed the use of obsolete GLib functions
+    
+
+    modified files:
+     ChangeLog NEWS doc/reference/syslog-ng.xml src/afinter.c
+     src/afinter.h src/center.c src/logreader.c src/logreader.h
+     src/main.c
+
+
 2005-12-03 15:49:30 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-76
 
     Summary:

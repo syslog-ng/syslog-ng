@@ -49,7 +49,6 @@ log_reader_fd_prepare(GSource *source,
                       gint *timeout)
 {
   LogReaderWatch *self = (LogReaderWatch *) source;
-  GTimeVal tv;
 
   /* FIXME: this debug message references a variable outside of its scope, 
    * but it is a debug message only */
@@ -58,21 +57,6 @@ log_reader_fd_prepare(GSource *source,
             evt_tag_int("window_size", self->reader->options->source_opts.window_size), 
             NULL);
 
-  if (self->reader->options->mark_freq > 0 && self->reader->mark_target == -1)
-    {
-      g_source_get_current_time(source, &tv);
-      self->reader->mark_target = tv.tv_sec + self->reader->options->mark_freq;
-    }
-    
-  if (self->reader->mark_target != -1)
-    {
-      g_source_get_current_time(source, &tv);
-      *timeout = MAX((self->reader->mark_target - tv.tv_sec) * 1000, 0);
-    }
-  else
-    {
-      *timeout = -1;
-    }
   self->pollfd.revents = 0;
   self->pollfd.events = 0;
   
@@ -103,12 +87,6 @@ static gboolean
 log_reader_fd_check(GSource *source)
 {
   LogReaderWatch *self = (LogReaderWatch *) source;
-  GTimeVal tv;
-
-  g_source_get_current_time(source, &tv);
-  
-  if (self->reader->mark_target != -1 && self->reader->mark_target <= tv.tv_sec)
-    return TRUE;
 
   if (self->reader->flags & LR_COMPLETE_LINE)
     return TRUE;
@@ -139,20 +117,6 @@ log_reader_fd_dispatch(GSource *source,
                        gpointer user_data)
 {
   LogReaderWatch *self = (LogReaderWatch *) source;
-  GTimeVal tv;
-  
-  g_source_get_current_time(source, &tv);
-  
-  if (self->reader->mark_target != -1 && self->reader->mark_target <= tv.tv_sec)
-    {
-      log_pipe_queue(&self->reader->super.super, log_msg_new_mark(), PF_FLOW_CTL_OFF);
-    }
-
-  if (self->reader->options->mark_freq > 0)
-    {
-      g_source_get_current_time(source, &tv);
-      self->reader->mark_target = tv.tv_sec + self->reader->options->mark_freq;
-    }
 
   if (!log_reader_fetch_log(self->reader, self->fd))
     {
@@ -453,7 +417,6 @@ log_reader_new(FDRead *fd, guint32 flags, LogPipe *control, LogReaderOptions *op
   log_pipe_ref(control);
   self->control = control;
   self->buffer = g_malloc(options->msg_size);
-  self->mark_target = -1;
   if (options->follow_freq > 0)
     self->flags |= LR_FOLLOW;
   return &self->super.super;
@@ -468,7 +431,6 @@ log_reader_options_defaults(LogReaderOptions *options)
   options->fetch_limit = -1;
   options->msg_size = -1;
   options->follow_freq = -1; 
-  options->mark_freq = -1;
   options->zone_offset = -1;
 }
 
@@ -480,8 +442,6 @@ log_reader_options_init(LogReaderOptions *options, GlobalConfig *cfg)
     options->fetch_limit = cfg->log_fetch_limit;
   if (options->msg_size == -1)
     options->msg_size = cfg->log_msg_size;
-  if (options->mark_freq == -1)
-    options->mark_freq = cfg->mark_freq;
   if (options->follow_freq == -1)
     options->follow_freq = cfg->follow_freq;
   if (options->zone_offset == -1)

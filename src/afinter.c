@@ -26,18 +26,63 @@
 
 #include "messages.h"
 
+
 extern GQueue *internal_msg_queue;
+static gint next_mark_target = -1;
+
+void 
+afinter_postpone_mark(gint mark_freq)
+{
+  if (mark_freq > 0)
+    {
+      GTimeVal tv;
+      
+      g_get_current_time(&tv);
+      next_mark_target = tv.tv_sec + mark_freq;
+    }
+}
+
+typedef struct _AFInterWatch
+{
+  GSource super;
+  gint mark_freq;
+} AFInterWatch;
 
 static gboolean
-afinter_source_prepare(GSource *source G_GNUC_UNUSED, gint *timeout)
+afinter_source_prepare(GSource *source, gint *timeout)
 {
+  AFInterWatch *self = (AFInterWatch *) source;
+  GTimeVal tv;
+  
   *timeout = -1;
+
+  if (self->mark_freq > 0 && next_mark_target == -1)
+    {
+      g_source_get_current_time(source, &tv);
+      next_mark_target = tv.tv_sec + self->mark_freq;
+    }
+    
+  if (next_mark_target != -1)
+    {
+      g_source_get_current_time(source, &tv);
+      *timeout = MAX((next_mark_target - tv.tv_sec) * 1000, 0);
+    }
+  else
+    {
+      *timeout = -1;
+    }
   return !g_queue_is_empty(internal_msg_queue);
 }
 
 static gboolean
-afinter_source_check(GSource *source G_GNUC_UNUSED)
+afinter_source_check(GSource *source)
 {
+  GTimeVal tv;
+
+  g_source_get_current_time(source, &tv);
+  
+  if (next_mark_target != -1 && next_mark_target <= tv.tv_sec)
+    return TRUE;
   return !g_queue_is_empty(internal_msg_queue);
 }
 
@@ -46,9 +91,25 @@ afinter_source_dispatch(GSource *source,
                         GSourceFunc callback,
                         gpointer user_data)
 {
-  LogMessage *msg = g_queue_pop_head(internal_msg_queue);
+  LogMessage *msg;
+  gint path_flags = 0;
+  GTimeVal tv;
+  
+  g_source_get_current_time(source, &tv);
+  
+  if (next_mark_target != -1 && next_mark_target <= tv.tv_sec)
+    {
+      msg = log_msg_new_mark();
+      path_flags = PF_FLOW_CTL_OFF;
+    }
+  else
+    {
+      msg = g_queue_pop_head(internal_msg_queue);
+    }
+
+
   if (msg)
-    ((void (*)(LogPipe *, LogMessage *))callback) ((LogPipe *) user_data, msg);
+    ((void (*)(LogPipe *, LogMessage *, gint))callback) ((LogPipe *) user_data, msg, path_flags);
   return TRUE;
 }
 
@@ -66,17 +127,19 @@ GSourceFuncs afinter_source_watch_funcs =
 };
 
 static void
-afinter_source_dispatch_msg(LogPipe *pipe, LogMessage *msg)
+afinter_source_dispatch_msg(LogPipe *pipe, LogMessage *msg, gint path_flags)
 {
-  log_pipe_queue(pipe, msg, 0);
+  log_pipe_queue(pipe, msg, path_flags);
 }
 
 static inline GSource *
-afinter_source_watch_new(LogPipe *pipe)
+afinter_source_watch_new(LogPipe *pipe, gint mark_freq)
 {
-  GSource *self = g_source_new(&afinter_source_watch_funcs, sizeof(GSource));
-  g_source_set_callback(self, (GSourceFunc) afinter_source_dispatch_msg, log_pipe_ref(pipe), (GDestroyNotify) log_pipe_unref);
-  return self;
+  AFInterWatch *self = (AFInterWatch *) g_source_new(&afinter_source_watch_funcs, sizeof(AFInterWatch));
+  
+  self->mark_freq = mark_freq;
+  g_source_set_callback(&self->super, (GSourceFunc) afinter_source_dispatch_msg, log_pipe_ref(pipe), (GDestroyNotify) log_pipe_unref);
+  return &self->super;
 }
 
 typedef struct _AFInterSource
@@ -92,7 +155,7 @@ afinter_source_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
   
   /* the source added below references this logreader, it will be unref'd
      when the source is destroyed */ 
-  self->watch = afinter_source_watch_new(&self->super.super);
+  self->watch = afinter_source_watch_new(&self->super.super, cfg->mark_freq);
   g_source_attach(self->watch, NULL);
   return TRUE;
 }
@@ -137,7 +200,7 @@ afinter_sd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
   log_source_options_init(&self->source_options, cfg);
   self->source = afinter_source_new(&self->source_options);
   log_pipe_append(&self->source->super, s);
-  log_pipe_init(&self->source->super, NULL, NULL);
+  log_pipe_init(&self->source->super, cfg, NULL);
   return TRUE;
 }
 
@@ -148,7 +211,7 @@ afinter_sd_deinit(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
   
   if (self->source)
     {
-      log_pipe_deinit(&self->source->super, NULL, NULL);
+      log_pipe_deinit(&self->source->super, cfg, NULL);
       /* break circular reference created during _init */
       log_pipe_unref(&self->source->super);
       self->source = NULL;
