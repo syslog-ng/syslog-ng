@@ -2,6 +2,20 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-07-28 13:39:43 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-46
+
+    Summary:
+      added cfg-lex.c and cfg-grammar.c to the distribution
+    Revision:
+      syslog-ng--mainline--2.0--patch-46
+
+    
+    
+
+    modified files:
+     ChangeLog src/Makefile.am
+
+
 2005-07-28 13:37:23 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-45
 
     Summary:
