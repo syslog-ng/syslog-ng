@@ -556,14 +556,14 @@
 	    <tbody>
 	      <row>
 		<entry>flags()</entry>
-		<entry>set of [no-parse]</entry>
+		<entry>set of [no-parse,kernel]</entry>
 		<entry>empty set</entry>
-		<entry>Specifies log parsing flags, currently limited to
-                  "no-parse" which disables syslog message parsing
+		<entry>Specifies log parsing flags.
+                  "no-parse" disables syslog message parsing
                   completely and processes the complete line as the message part of a syslog
                   message and adds other information (timestamp, host etc) automatically.
                   Useful for parsing files not complying with the syslog
-                  format.
+                  format. "kernel" makes the source default to LOG_KERN | LOG_CRIT priority of not specified otherwise.
                 </entry>
 	      </row>
 	      <row>
@@ -910,7 +910,7 @@
 	<example>
 	  <title>Using the file() driver</title>
 	  <synopsis>
-	    source s_file { file("/proc/kmsg" log_prefix("kernel: "); };
+	    source s_file { file("/proc/kmsg" flags(kernel); log_prefix("kernel: "); };
 	    source s_follow { file("/var/log/apache/access.log" flags(no-parse) log_prefix("apache: " follow-freq(1))); };
 	  </synopsis>
 	</example>

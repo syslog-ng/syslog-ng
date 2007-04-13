@@ -205,6 +205,8 @@ log_reader_iterate_buf(LogReader *self, GSockAddr *saddr, gboolean flush)
     parse_flags |= LP_NOPARSE;
   if (self->options->options & LRO_CHECK_HOSTNAME)
     parse_flags |= LP_CHECK_HOSTNAME;
+  if (self->options->options & LRO_KERNEL)
+    parse_flags = LP_KERNEL;
   if (self->flags & LR_STRICT)
     parse_flags |= LP_STRICT;
   if (self->flags & LR_INTERNAL)

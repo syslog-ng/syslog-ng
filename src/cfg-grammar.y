@@ -61,7 +61,7 @@ LogTemplate *last_template;
 %token KW_DNS_CACHE_EXPIRE KW_DNS_CACHE_EXPIRE_FAILED
 %token KW_TZ_CONVERT KW_TS_FORMAT
 
-%token KW_LOG_FIFO_SIZE KW_LOG_FETCH_LIMIT KW_LOG_IW_SIZE KW_LOG_PREFIX
+%token KW_LOG_FIFO_SIZE KW_LOG_FETCH_LIMIT KW_LOG_IW_SIZE KW_LOG_PREFIX KW_KERNEL
 
 /* log statement options */
 %token KW_FLAGS KW_CATCHALL KW_FALLBACK KW_FINAL KW_FLOW_CONTROL
@@ -429,6 +429,7 @@ source_reader_option_flags
 
 source_reader_option_flag
 	: KW_NO_PARSE				{ $$ = LRO_NOPARSE; }
+	| KW_KERNEL				{ $$ = LRO_KERNEL; }
 	;
 
 dest_items

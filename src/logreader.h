@@ -39,6 +39,7 @@
 /* options */
 #define LRO_NOPARSE   0x0001
 #define LRO_CHECK_HOSTNAME 0x0002
+#define LRO_KERNEL    0x0002
 
 typedef struct _LogReaderOptions
 {

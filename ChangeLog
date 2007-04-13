@@ -2,6 +2,28 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-02-11 13:07:54 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-7
+
+    Summary:
+      added "kernel" flag to log reader flags
+    Revision:
+      syslog-ng--mainline--2.0--patch-7
+
+    2006-02-11  Balazs Scheidler <bazsi@balabit.hu>
+    
+    	* src/cfg-lex.l, src/cfg-grammar.y: added "kernel" keyword
+    
+    	* src/logmsg.c (log_msg_parse): default to kern.crit for kernel
+    	messages
+    
+    	* src/macros.c: fixed PRI macro as it included the hostname as well
+
+    modified files:
+     ChangeLog NEWS doc/reference/syslog-ng.xml src/cfg-grammar.y
+     src/cfg-lex.l src/logmsg.c src/logmsg.h src/logreader.c
+     src/logreader.h src/macros.c
+
+
 2006-02-11 12:44:37 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-6
 
     Summary:

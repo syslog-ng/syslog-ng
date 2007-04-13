@@ -37,6 +37,7 @@
 #define LP_LOCAL           0x0004
 #define LP_CHECK_HOSTNAME  0x0008
 #define LP_STRICT	   0x0010
+#define LP_KERNEL          0x0020
 
 #define LF_UNPARSED 0x0001
 #define LF_INTERNAL 0x0002

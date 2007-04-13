@@ -190,6 +190,7 @@ log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, glong 
     case M_PRI:
       {
         g_string_sprintfa(result, "%d", msg->pri);
+        break;
       }
     case M_FULLHOST:
       {
