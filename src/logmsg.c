@@ -137,6 +137,11 @@ log_msg_parse(LogMessage *self, gchar *data, gint length, guint flags)
       return;
     }
 
+  if (flags & LP_INTERNAL)
+    self->flags |= LF_INTERNAL;
+  if (flags & LP_LOCAL)
+    self->flags |= LF_LOCAL;
+
   src = data;
   left = length;
 

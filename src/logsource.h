@@ -21,36 +21,35 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#ifndef MESSAGES_H_INCLUDED
-#define MESSAGES_H_INCLUDED
+#ifndef LOGSOURCE_H_INCLUDED
+#define LOGSOURCE_H_INCLUDED
 
-#include <syslog-ng.h>
-#include <evtlog.h>
+#include "logpipe.h"
 
-extern int debug_flag;
-extern int verbose_flag;
+typedef struct _LogSourceOptions
+{
+  gint init_window_size;
+  gint window_size;
+} LogSourceOptions;
 
-#define msg_fatal(desc, tag1, tags...) msg_event(EVT_PRI_CRIT, desc, tag1, ##tags )
-#define msg_error(desc, tag1, tags...) msg_event(EVT_PRI_ERR, desc, tag1, ##tags )
-#define msg_notice(desc, tag1, tags...) msg_event(EVT_PRI_NOTICE, desc, tag1, ##tags )
+typedef struct _LogSource
+{
+  LogPipe super;
+  LogSourceOptions *options;
+} LogSource;
 
-#define msg_verbose(desc, tag1, tags...) \
-	do { \
-	  if (verbose_flag) \
-	    msg_notice(desc, tag1, ##tags ); \
-	} while (0)
-	
-#define msg_debug(desc, tag1, tags...) \
-	do { \
-	  if (debug_flag) \
-	    msg_event(EVT_PRI_DEBUG, desc, tag1, ##tags ); \
-	} while (0)
+gboolean log_source_handle_line(LogSource *self, gchar *line, gint length, GSockAddr *saddr, guint parse_flags);
 
-void msg_event(gint prio, const char *desc, EVTTAG *tag1, ...);
+static inline gboolean
+log_source_free_to_send(LogSource *self)
+{
+  return !!self->options->window_size;
+}
 
-void msg_syslog_started(void);
+void log_source_init_instance(LogSource *self, LogSourceOptions *options);
+void log_source_options_defaults(LogSourceOptions *options);
+void log_source_options_init(LogSourceOptions *options, GlobalConfig *cfg);
 
-gboolean msg_init(int use_stderr);
-void msg_deinit();
+
 
 #endif

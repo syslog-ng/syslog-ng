@@ -22,6 +22,7 @@
  */
 
 #include "messages.h"
+#include "logmsg.h"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -36,8 +37,8 @@
 gboolean debug_flag = 0;
 gboolean verbose_flag = 0;
 static gboolean log_stderr = FALSE, syslog_started = FALSE;
-gint msg_pipe[2] = { -1, -1 };
-EVTCONTEXT *evt_context;
+static EVTCONTEXT *evt_context;
+GQueue *internal_msg_queue = NULL;
 
 static void
 msg_send_internal_message(int prio, const char *msg)
@@ -50,11 +51,11 @@ msg_send_internal_message(int prio, const char *msg)
     }
   else
     {
+      LogMessage *m;
+      
       g_snprintf(buf, sizeof(buf), "<%d> syslog-ng[%d]: %s\n", prio, getpid(), msg);
-      if (msg_pipe[1] == -1 || write(msg_pipe[1], buf, strlen(buf)) == -1)
-        {
-          fprintf(stderr, "%s\n", msg);
-        }
+      m = log_msg_new(buf, strlen(buf), NULL, LP_INTERNAL | LP_LOCAL);
+      g_queue_push_tail(internal_msg_queue, m);
     }
 }
 
@@ -74,12 +75,17 @@ msg_event(gint prio, const char *desc, EVTTAG *tag1, ...)
       va_end(va);
     }
   
-  msg = evt_format(e);
-  
-  msg_send_internal_message(evt_rec_get_syslog_pri(e), msg);
-  
+  /* this prevents infinite loops, debug messages causing 
+   * internal messages causing debug messages again */
+  if (prio != EVT_PRI_DEBUG || log_stderr)
+    {
+      msg = evt_format(e);
+      
+      msg_send_internal_message(evt_rec_get_syslog_pri(e), msg); 
+      free(msg);
+    }
+    
   evt_rec_free(e);
-  free(msg);
 }
 
 void
@@ -107,18 +113,11 @@ msg_syslog_started(void)
 gboolean
 msg_init(int use_stderr)
 {
+  internal_msg_queue = g_queue_new();
+
+  log_stderr = use_stderr;
   evt_context = evt_ctx_init("syslog-ng", EVT_FAC_SYSLOG);
-  if (!use_stderr)
-    {
-      if (pipe(msg_pipe) < 0)
-        {
-          msg_error("Error creating internal message pipe", 
-                    evt_tag_errno(EVT_TAG_OSERROR, errno),
-                    NULL);
-          return FALSE;
-        }
-      log_stderr = FALSE;
-    }
+
   g_log_set_handler(G_LOG_DOMAIN, 0xff, msg_log_func, NULL);
   g_log_set_handler("GLib", 0xff, msg_log_func, NULL);
   return TRUE;
@@ -128,9 +127,5 @@ msg_init(int use_stderr)
 void
 msg_deinit()
 {
-  if (msg_pipe[0] != -1)
-    close(msg_pipe[0]);
-  if (msg_pipe[1] != -1)
-    close(msg_pipe[1]);
   evt_ctx_free(evt_context);
 }

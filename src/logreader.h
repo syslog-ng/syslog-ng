@@ -24,7 +24,7 @@
 #ifndef LOGREADER_H_INCLUDED
 #define LOGREADER_H_INCLUDED
 
-#include "logpipe.h"
+#include "logsource.h"
 #include "fdread.h"
 
 /* flags */
@@ -42,15 +42,14 @@
 
 typedef struct _LogReaderOptions
 {
+  LogSourceOptions source_opts;
   guint32 options;
   gint padding;
-  gint init_window_size;
-  gint window_size;
-  gint fetch_limit;
   gchar *prefix;
   gint msg_size;
   gint follow_freq;
   gint mark_freq;
+  gint fetch_limit;
   
   /* source time zone if one is not specified */
   gboolean zone_offset_set;
@@ -59,7 +58,7 @@ typedef struct _LogReaderOptions
 
 typedef struct _LogReader
 {
-  LogPipe super;
+  LogSource super;
   gchar *buffer;
   FDRead *fd;
   GSource *source;

@@ -408,7 +408,7 @@ source_reader_options
 source_reader_option
 	: KW_FLAGS '(' source_reader_option_flags ')' { last_reader_options->options = $3; }
 	| KW_LOG_MSG_SIZE '(' NUMBER ')'	{ last_reader_options->msg_size = $3; }
-	| KW_LOG_IW_SIZE '(' NUMBER ')'		{ last_reader_options->init_window_size = $3; }
+	| KW_LOG_IW_SIZE '(' NUMBER ')'		{ last_reader_options->source_opts.init_window_size = $3; }
 	| KW_LOG_FETCH_LIMIT '(' NUMBER ')'	{ last_reader_options->fetch_limit = $3; }
 	| KW_LOG_PREFIX '(' string ')'		{ last_reader_options->prefix = $3; }
 	| KW_PADDING '(' NUMBER ')'		{ last_reader_options->padding = $3; }

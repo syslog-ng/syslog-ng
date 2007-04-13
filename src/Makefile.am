@@ -6,7 +6,7 @@ syslog_ng_SOURCES = \
 	main.c misc.c utils.c messages.c gsockaddr.c syslog-names.c macros.c \
 	logmsg.c \
 	cfg.c logpipe.c driver.c sgroup.c dgroup.c center.c filter.c \
-	logreader.c logwriter.c \
+	logsource.c logreader.c logwriter.c \
 	affile.c afunix.c afinet.c afsocket.c afstreams.c afuser.c afprog.c afinter.c \
 	cfg-lex.l cfg-grammar.y fdwrite.c fdread.c memtrace.c templates.c children.c
 

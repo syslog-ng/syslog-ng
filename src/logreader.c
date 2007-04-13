@@ -49,8 +49,11 @@ log_reader_fd_prepare(GSource *source,
 {
   LogReaderWatch *self = (LogReaderWatch *) source;
 
+  /* FIXME: this debug message references a variable outside of its scope, 
+   * but it is a debug message only */
+  
   msg_debug("log_reader_fd_prepare()", 
-            evt_tag_int("window_size", self->reader->options->window_size), 
+            evt_tag_int("window_size", self->reader->options->source_opts.window_size), 
             NULL);
 
   if (self->reader->mark_target != -1)
@@ -69,10 +72,8 @@ log_reader_fd_prepare(GSource *source,
   
   /* never indicate readability if flow control prevents us from sending messages */
   
-  if (!self->reader->options->window_size)
-    {
-      return FALSE;
-    }
+  if (!log_source_free_to_send(&self->reader->super))
+    return FALSE;
   
   /* always readable if we have a complete line in our buffer.  as the
    * reader is at a lower priority than writers, buffers are flushed prior
@@ -138,7 +139,7 @@ log_reader_fd_dispatch(GSource *source,
   
   if (self->reader->mark_target != -1 && self->reader->mark_target <= tv.tv_sec)
     {
-      log_pipe_queue(&self->reader->super, log_msg_new_mark(), PF_FLOW_CTL_OFF);
+      log_pipe_queue(&self->reader->super.super, log_msg_new_mark(), PF_FLOW_CTL_OFF);
     }
 
   if (self->reader->options->mark_freq > 0)
@@ -161,7 +162,7 @@ log_reader_fd_finalize(GSource *source)
   LogReaderWatch *self = (LogReaderWatch *) source;
 
   fd_read_free(self->fd);
-  log_pipe_unref(&self->reader->super);
+  log_pipe_unref(&self->reader->super.super);
 }
 
 GSourceFuncs log_reader_source_funcs =
@@ -177,7 +178,7 @@ log_reader_watch_new(LogReader *reader, FDRead *fd)
 {
   LogReaderWatch *self = (LogReaderWatch *) g_source_new(&log_reader_source_funcs, sizeof(LogReaderWatch));
   
-  log_pipe_ref(&reader->super);
+  log_pipe_ref(&reader->super.super);
   self->reader = reader;
   self->fd = fd;
   self->pollfd.fd = fd->fd;
@@ -195,57 +196,25 @@ log_reader_watch_new(LogReader *reader, FDRead *fd)
   return &self->super;
 }
 
-static void
-log_reader_msg_ack(LogMessage *lm, gpointer user_data)
-{
-  LogReader *self = (LogReader *) user_data;
-  
-  log_msg_ack_block_end(lm);
-  self->options->window_size++;
-  log_msg_unref(lm);
-  
-  log_pipe_unref(&self->super);
-  
-  /* as we are the source we don't ack the message */
-}
-
 static gboolean
-log_reader_handle_line(LogReader *self, gchar *line, gint length, GSockAddr *saddr)
+log_reader_handle_line(LogReader *self, gchar *line, gint length, GSockAddr *saddr, guint parse_flags)
 {
   LogMessage *m;
-  guint parse_flags = 0;
   
   msg_debug("Incoming log entry", 
             evt_tag_printf("line", "%.*s", length, line),
             NULL);
-  
-  if (self->options->options & LRO_NOPARSE)
-    parse_flags |= LP_NOPARSE;
-  if (self->options->options & LRO_CHECK_HOSTNAME)
-    parse_flags |= LP_CHECK_HOSTNAME;
-  if (self->flags & LR_STRICT)
-    parse_flags |= LP_STRICT;
-    
+      
   m = log_msg_new(line, length, saddr, parse_flags);
   
   if (self->options->prefix)
     g_string_prepend(m->msg, self->options->prefix);
-  
-  if (self->flags & LR_INTERNAL)
-    m->flags |= LF_INTERNAL;
-    
-  log_msg_ack_block_start(m, log_reader_msg_ack, log_pipe_ref(&self->super));
-  self->options->window_size--;
-
-  if (self->flags & LR_LOCAL)
-    {
-      m->flags |= LF_LOCAL;
-    }    
+      
   if (self->options->zone_offset_set)
     m->stamp.zone_offset = self->options->zone_offset;
-  log_pipe_queue(self->super.pipe_next, m, 0);
+  log_pipe_queue(&self->super.super, m, 0);
   
-  return !!self->options->window_size;
+  return log_source_free_to_send(&self->super);
 }
 
 static gboolean
@@ -254,11 +223,24 @@ log_reader_iterate_buf(LogReader *self, GSockAddr *saddr, gboolean flush)
   gchar *eol, *start;
   gint length, msg_count;
   gboolean may_read = TRUE;
+  guint parse_flags;
 
   self->flags &= ~LR_COMPLETE_LINE;
   eol = memchr(self->buffer, '\0', self->ofs);
   if (eol == NULL)
     eol = memchr(self->buffer, '\n', self->ofs);
+    
+  parse_flags = 0;
+  if (self->options->options & LRO_NOPARSE)
+    parse_flags |= LP_NOPARSE;
+  if (self->options->options & LRO_CHECK_HOSTNAME)
+    parse_flags |= LP_CHECK_HOSTNAME;
+  if (self->flags & LR_STRICT)
+    parse_flags |= LP_STRICT;
+  if (self->flags & LR_INTERNAL)
+    parse_flags |= LP_INTERNAL;
+  if (self->flags & LR_LOCAL)
+    parse_flags |= LF_LOCAL;
 
   if (!eol &&
       ((self->ofs == self->options->msg_size) || 
@@ -274,7 +256,7 @@ log_reader_iterate_buf(LogReader *self, GSockAddr *saddr, gboolean flush)
                   ? (eol ? eol - self->buffer : self->ofs)
                   : self->ofs);
       if (length)
-        log_reader_handle_line(self, self->buffer, length, saddr);
+        log_reader_handle_line(self, self->buffer, length, saddr, parse_flags);
       self->ofs = 0;
     }
   else
@@ -301,7 +283,7 @@ log_reader_iterate_buf(LogReader *self, GSockAddr *saddr, gboolean flush)
 	  length = end - start;
 	  
 	  if (length)
-	    may_read = log_reader_handle_line(self, start, length, saddr);
+	    may_read = log_reader_handle_line(self, start, length, saddr, parse_flags);
 	  
 	  start = eol + 1;
 
@@ -325,6 +307,7 @@ log_reader_iterate_buf(LogReader *self, GSockAddr *saddr, gboolean flush)
 
   return TRUE;
 }
+
 
 static gboolean
 log_reader_fetch_log(LogReader *self, FDRead *fd)
@@ -353,7 +336,7 @@ log_reader_fetch_log(LogReader *self, FDRead *fd)
 	            evt_tag_int("padding", self->options->padding),
                     evt_tag_int("avail", avail),
                     NULL);
-          log_pipe_notify(self->control, &self->super, NC_CLOSE, self);
+          log_pipe_notify(self->control, &self->super.super, NC_CLOSE, self);
 	  return FALSE;
 	}
       avail = self->options->padding;
@@ -368,7 +351,7 @@ log_reader_fetch_log(LogReader *self, FDRead *fd)
                 evt_tag_errno(EVT_TAG_OSERROR, errno),
                 NULL);
       log_reader_iterate_buf(self, NULL, TRUE);
-      log_pipe_notify(self->control, &self->super, NC_READ_ERROR, self);
+      log_pipe_notify(self->control, &self->super.super, NC_READ_ERROR, self);
       g_sockaddr_unref(sa);
       return FALSE;
     }
@@ -379,7 +362,7 @@ log_reader_fetch_log(LogReader *self, FDRead *fd)
                   evt_tag_int(EVT_TAG_FD, fd->fd),
                   NULL);
       log_reader_iterate_buf(self, NULL, TRUE);
-      log_pipe_notify(self->control, &self->super, NC_CLOSE, self);
+      log_pipe_notify(self->control, &self->super.super, NC_CLOSE, self);
       g_sockaddr_unref(sa);
       return FALSE;
     }
@@ -392,7 +375,7 @@ log_reader_fetch_log(LogReader *self, FDRead *fd)
 	            evt_tag_int("padding", self->options->padding),
 	            evt_tag_int("read", avail),
 	            NULL);
-          log_pipe_notify(self->control, &self->super, NC_READ_ERROR, self);
+          log_pipe_notify(self->control, &self->super.super, NC_READ_ERROR, self);
           g_sockaddr_unref(sa);
 	  return FALSE;
 	}
@@ -446,13 +429,12 @@ log_reader_new(FDRead *fd, guint32 flags, LogPipe *control, LogReaderOptions *op
 {
   LogReader *self = g_new0(LogReader, 1);
 
-  log_pipe_init_instance(&self->super);
-  self->super.init = log_reader_init;
-  self->super.deinit = log_reader_deinit;
-  self->super.free_fn = log_reader_free;
+  log_source_init_instance(&self->super, &options->source_opts);
+  self->super.super.init = log_reader_init;
+  self->super.super.deinit = log_reader_deinit;
+  self->super.super.free_fn = log_reader_free;
   self->options = options;
   self->flags = flags;
-  g_assert(options->window_size != -1); 
   self->fd = fd;
   log_pipe_ref(control);
   self->control = control;
@@ -460,15 +442,14 @@ log_reader_new(FDRead *fd, guint32 flags, LogPipe *control, LogReaderOptions *op
   self->mark_target = -1;
   if (options->follow_freq > 0)
     self->flags |= LR_FOLLOW;
-  return &self->super;
+  return &self->super.super;
 }
 
 void
 log_reader_options_defaults(LogReaderOptions *options)
 {
+  log_source_options_defaults(&options->source_opts);
   options->padding = 0;
-  options->init_window_size = -1;
-  options->window_size = -1;
   options->options = 0;
   options->fetch_limit = -1;
   options->msg_size = -1;
@@ -480,16 +461,14 @@ log_reader_options_defaults(LogReaderOptions *options)
 void
 log_reader_options_init(LogReaderOptions *options, GlobalConfig *cfg)
 {
+  log_source_options_init(&options->source_opts, cfg);
   if (options->fetch_limit == -1)
     options->fetch_limit = cfg->log_fetch_limit;
-  if (options->init_window_size == -1)
-    options->init_window_size = cfg->log_iw_size;
   if (options->msg_size == -1)
     options->msg_size = cfg->log_msg_size;
   if (options->mark_freq == -1)
     options->mark_freq = cfg->mark_freq;
   if (options->follow_freq == -1)
     options->follow_freq = cfg->follow_freq;
-  options->window_size = options->init_window_size;
 }
 
