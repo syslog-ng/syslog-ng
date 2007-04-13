@@ -24,6 +24,6 @@ cfg-grammar.h: cfg-grammar.y
 
 cfg-grammar.c: cfg-grammar.y
 
-EXTRA_DIST = cfg-grammar.h cfg-lex.c cfg-grammar.c
+EXTRA_DIST = cfg-grammar.h cfg-lex.c cfg-grammar.c syslog-ng.h
 
 MAINTAINER_CLEAN_FILES = cfg-lex.c cfg-grammar.c cfg-grammar.h

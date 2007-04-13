@@ -2,6 +2,20 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-10-24 08:40:59 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-68
+
+    Summary:
+      readded syslog-ng.h as it was missed from the distribution
+    Revision:
+      syslog-ng--mainline--2.0--patch-68
+
+    
+    
+
+    modified files:
+     ChangeLog src/Makefile.am
+
+
 2005-10-22 21:29:23 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-67
 
     Summary:
