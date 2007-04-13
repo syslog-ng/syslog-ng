@@ -34,7 +34,7 @@
 #include <errno.h>
 #include <time.h>
 
-static int 
+static gboolean
 affile_open_file(gchar *name, int flags,
 	     int uid, int gid, int mode,
 	     int dir_uid, int dir_gid, int dir_mode,
@@ -45,7 +45,7 @@ affile_open_file(gchar *name, int flags,
       msg_error("Spurious path, logfile not created",
                 evt_tag_str("path", name),
                 NULL);
-      return 0;
+      return FALSE;
     }
 
   *fd = open(name, flags, mode);
@@ -62,7 +62,7 @@ affile_open_file(gchar *name, int flags,
 	  if (stat(name, &st) == 0) 
 	    {
 	      if (!S_ISDIR(st.st_mode))
-		return 0;
+		return FALSE;
 	    }
 	  else if (errno == ENOENT) 
 	    {
@@ -193,7 +193,10 @@ affile_dw_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
   else
     flags = O_WRONLY | O_CREAT | O_APPEND | O_NOCTTY | O_NONBLOCK;
 
-  if (affile_open_file(self->filename->str, flags, -1, -1, -1, 0, 0, 0, 0, &fd))
+  if (affile_open_file(self->filename->str, flags, 
+                       self->owner->file_uid, self->owner->file_gid, self->owner->file_perm, 
+                       self->owner->dir_uid, self->owner->dir_gid, self->owner->dir_perm, 
+                       !!(self->owner->flags & AFFILE_CREATE_DIRS), &fd))
     {
       self->writer = log_writer_new(LW_FORMAT_FILE, s, &self->owner->writer_options);
         
@@ -562,6 +565,10 @@ affile_dd_new(gchar *filename, guint32 flags)
   self->filename_template = log_template_new(NULL, filename);
   self->template = g_string_sized_new(0);
   self->flags = flags;
+  self->file_uid = self->file_gid = -1;
+  self->file_perm = -1;
+  self->dir_uid = self->dir_uid = -1;
+  self->dir_perm = -1;
   log_writer_options_defaults(&self->writer_options);
   if (strchr(filename, '$') == NULL)
     {

@@ -2,6 +2,22 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-06-27 09:27:36 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-38
+
+    Summary:
+      fix file/directory permission handling
+    Revision:
+      syslog-ng--mainline--2.0--patch-38
+
+    2005-06-27  Balazs Scheidler <bazsi@balabit.hu>
+    
+    	* src/affile.c (affile_dw_init): use the file/dir permissions set by the user
+    
+
+    modified files:
+     ChangeLog src/affile.c
+
+
 2005-06-27 09:13:38 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-37
 
     Summary:
