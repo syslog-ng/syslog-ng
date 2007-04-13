@@ -2,6 +2,30 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-06-23 08:50:45 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-35
+
+    Summary:
+      added WEEK macro to macro expansion
+    Revision:
+      syslog-ng--mainline--2.0--patch-35
+
+    2005-06-23  Balazs Scheidler <bazsi@balabit.hu>
+    
+    	* src/macros.c, src/macros.h: added support for WEEK, R_WEEK and
+    	S_WEEK macros
+    
+    	* doc/reference/syslog-ng.xml: added documentation on the WEEK macro
+    
+    NEWS
+    	* 
+    NEWS.hu
+    	* 
+
+    modified files:
+     ChangeLog doc/reference/syslog-ng.xml src/macros.c
+     src/macros.h
+
+
 2005-06-05 00:00:28 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-34
 
     Summary:

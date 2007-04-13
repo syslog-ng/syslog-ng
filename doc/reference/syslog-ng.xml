@@ -1127,6 +1127,13 @@
                  The 3-letter name of the day of week the message was sent, e.g. 'Thu'.
                 </entry>
               </row>
+              <row>
+                <entry>WEEK</entry>
+                <entry>
+                 The week number of the year. (the first monday in the year
+                 marks the first week)
+                </entry>
+              </row>
 	      <row>
 		<entry>HOUR</entry>
 		<entry>

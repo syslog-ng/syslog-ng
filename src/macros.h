@@ -50,9 +50,10 @@
 #define M_MIN      18
 #define M_SEC      19
 #define M_WEEKDAY  20
-#define M_TZOFFSET 21
-#define M_TZ       22
-#define M_UNIXTIME 23
+#define M_WEEK     21
+#define M_TZOFFSET 22
+#define M_TZ       23
+#define M_UNIXTIME 24
 
 #define M_DATE_RECVD     30
 #define M_FULLDATE_RECVD 31
@@ -65,9 +66,10 @@
 #define M_MIN_RECVD      38
 #define M_SEC_RECVD      39
 #define M_WEEKDAY_RECVD  40
-#define M_TZOFFSET_RECVD 41
-#define M_TZ_RECVD       42
-#define M_UNIXTIME_RECVD 43
+#define M_WEEK_RECVD     41
+#define M_TZOFFSET_RECVD 42
+#define M_TZ_RECVD       43
+#define M_UNIXTIME_RECVD 44
 
 #define M_DATE_STAMP     50
 #define M_FULLDATE_STAMP 51
@@ -80,9 +82,10 @@
 #define M_MIN_STAMP      58
 #define M_SEC_STAMP      59
 #define M_WEEKDAY_STAMP  60
-#define M_TZOFFSET_STAMP 61
-#define M_TZ_STAMP       62
-#define M_UNIXTIME_STAMP 63
+#define M_WEEK_STAMP     61
+#define M_TZOFFSET_STAMP 62
+#define M_TZ_STAMP       63
+#define M_UNIXTIME_STAMP 64
 
 #define M_FULLHOST       70
 #define M_HOST           71

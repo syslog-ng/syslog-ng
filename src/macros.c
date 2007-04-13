@@ -55,6 +55,7 @@ macros[] =
         { "MIN", M_MIN },
         { "SEC", M_SEC },
         { "WEEKDAY", M_WEEKDAY },
+        { "WEEK", M_WEEK },
         { "UNIXTIME", M_UNIXTIME },
         { "TZOFFSET", M_TZOFFSET },
         { "TZ", M_TZ },
@@ -70,6 +71,7 @@ macros[] =
         { "R_MIN", M_MIN_RECVD },
         { "R_SEC", M_SEC_RECVD },
         { "R_WEEKDAY", M_WEEKDAY_RECVD },
+        { "R_WEEK", M_WEEK_RECVD },
         { "R_UNIXTIME", M_UNIXTIME_RECVD },
         { "R_TZOFFSET", M_TZOFFSET_RECVD },
         { "R_TZ", M_TZ_RECVD },
@@ -85,6 +87,7 @@ macros[] =
         { "S_MIN", M_MIN_STAMP },
         { "S_SEC", M_SEC_STAMP },
         { "S_WEEKDAY", M_WEEKDAY_STAMP },
+        { "S_WEEK", M_WEEK_STAMP },
         { "S_UNIXTIME", M_UNIXTIME_STAMP },
         { "S_TZOFFSET", M_TZOFFSET_STAMP },
         { "S_TZ", M_TZ_STAMP },
@@ -223,6 +226,7 @@ log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, glong 
     case M_ISODATE:
     case M_STAMP:
     case M_WEEKDAY:
+    case M_WEEK:
     case M_DATE:
     case M_YEAR:
     case M_MONTH:
@@ -238,6 +242,7 @@ log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, glong 
     case M_ISODATE_RECVD:
     case M_STAMP_RECVD:
     case M_WEEKDAY_RECVD:
+    case M_WEEK_RECVD:
     case M_DATE_RECVD:
     case M_YEAR_RECVD:
     case M_MONTH_RECVD:
@@ -253,6 +258,7 @@ log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, glong 
     case M_ISODATE_STAMP:
     case M_STAMP_STAMP:
     case M_WEEKDAY_STAMP:
+    case M_WEEK_STAMP:
     case M_DATE_STAMP:
     case M_YEAR_STAMP:
     case M_MONTH_STAMP:
@@ -301,6 +307,10 @@ log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, glong 
           {
           case M_WEEKDAY:
             length = strftime(buf, sizeof(buf), "%a", tm);
+            g_string_append_len(result, buf, length);
+            break;
+          case M_WEEK:
+            length = strftime(buf, sizeof(buf), "%W", tm);
             g_string_append_len(result, buf, length);
             break;
           case M_YEAR:
