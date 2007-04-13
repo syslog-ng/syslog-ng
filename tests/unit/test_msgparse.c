@@ -11,7 +11,7 @@
     { 				\
         if (!(x))		\
           {			\
-            printf("Testcase failed; msg='%s', cond='%s', value=" format ", expected=" format "\n", msg, __STRING(x), value, expected); \
+            fprintf(stderr, "Testcase failed; msg='%s', cond='%s', value=" format ", expected=" format "\n", msg, __STRING(x), value, expected); \
             exit(1);		\
           }			\
     }				\

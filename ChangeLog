@@ -2,6 +2,36 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-10-15 16:04:45 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-60
+
+    Summary:
+      fixed problems in syslog priority filter, added unit test for most built-in filters 
+    Revision:
+      syslog-ng--mainline--2.0--patch-60
+
+    2005-10-15  Balazs Scheidler <bazsi@balabit.hu>
+    
+    	* src/filter.c (filter_facility_eval): added facility value ->
+    	bitmap position cache for improved performance,
+    	(filter_level_eval): fixed filter evaluation (the function
+    	erroneously used the same values for the internal valid bitmap and
+    	the syslog header priority value), a similar search through
+    	sl_levels is required as was already present for facility filtering, also
+    	the same cache mechanism was added for improved performance
+    
+    	* tests/unit/test_filter.c: new unit test file, tests most easily
+    	testable filters, AND/OR operations and negation
+    
+
+    new files:
+     tests/unit/.arch-ids/test_filters.c.id
+     tests/unit/test_filters.c
+
+    modified files:
+     ChangeLog configure.in src/filter.c tests/unit/Makefile.am
+     tests/unit/test_msgparse.c
+
+
 2005-10-15 14:25:22 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-59
 
     Summary:

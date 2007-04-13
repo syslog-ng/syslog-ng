@@ -135,22 +135,43 @@ static gboolean
 filter_facility_eval(FilterExprNode *s, LogMessage *msg)
 {
   FilterPri *self = (FilterPri *) s;
-  guint32 fac = msg->pri & LOG_FACMASK;
+  guint32 fac = msg->pri & LOG_FACMASK, fac_num = LOG_FAC(msg->pri);
   guint32 bits = self->valid;
   int i;
   
-  if (bits & 0x80000000)
+  if (G_UNLIKELY(bits & 0x80000000))
     {
       /* exact number specified */
       return ((bits & ~0x80000000) == fac) ^ s->comp;
     }
   else
     {
-      for (i = 0; bits && sl_facilities[i].name; i++, bits >>= 1) 
+      static gchar bitpos[32] = 
+      { 
+        -1, -1, -1, -1, -1, -1, -1, -1, 
+        -1, -1, -1, -1, -1, -1, -1, -1, 
+        -1, -1, -1, -1, -1, -1, -1, -1, 
+        -1, -1, -1, -1, -1, -1, -1, -1
+      };
+      
+      if (G_LIKELY(fac_num < 32 && bitpos[fac_num] != -1))
         {
-          if ((bits & 1) && sl_facilities[i].value == fac) 
+          if (self->valid & (1 << bitpos[fac_num]))
+            return !self->super.comp;
+        }
+      else
+        {
+          for (i = 0; bits && sl_facilities[i].name; i++, bits >>= 1) 
             {
-              return !self->super.comp;
+              if (sl_facilities[i].value == fac) 
+                {
+                  if (fac_num < 32)
+                    bitpos[fac_num] = i;
+                  if (bits & 1)
+                    {
+                      return !self->super.comp;
+                    }
+                }
             }
         }
     }
@@ -172,8 +193,30 @@ filter_level_eval(FilterExprNode *s, LogMessage *msg)
 {
   FilterPri *self = (FilterPri *) s;
   guint32 pri = msg->pri & LOG_PRIMASK;
+  gint i;
+  static gchar bitpos[8] = 
+  {
+    -1, -1, -1, -1, -1, -1, -1, -1
+  };
   
-  return (!!(self->valid & (1 << pri))) ^ s->comp;
+  if (G_LIKELY(bitpos[pri] != -1))
+    {
+      return (!!(self->valid & (1 << bitpos[pri]))) ^ s->comp;
+    }
+  else
+    {
+      guint32 bits = self->valid;
+          
+      for (i = 0; bits && sl_levels[i].name; i++, bits >>= 1) 
+        {
+          if ((bits & 1) && sl_levels[i].value == pri) 
+            {
+              bitpos[pri] = i;
+              return !self->super.comp;
+            }
+        }
+    }
+  return self->super.comp;
 }
 
 FilterExprNode *

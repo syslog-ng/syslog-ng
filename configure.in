@@ -148,6 +148,10 @@ if test "x$enable_dynamic_linking" != "xyes" -a "x$blb_cv_static_glib" = "xno"; 
 fi
 
 CFLAGS="${CFLAGS} -Wall -g"
+if test "x$enable_debug" = "xyes"; then
+	CFLAGS="-Wall -g"
+fi
+
 DEPS_CPPFLAGS="$CPPFLAGS $GLIB_CFLAGS $EVTLOG_CFLAGS"
 CPPFLAGS="$DEPS_CPPFLAGS -D_GNU_SOURCE"
 
