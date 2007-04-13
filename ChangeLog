@@ -2,6 +2,20 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-10-15 16:15:57 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-61
+
+    Summary:
+      preparation for the 1.9.6 release
+    Revision:
+      syslog-ng--mainline--2.0--patch-61
+
+    
+    
+
+    modified files:
+     ChangeLog NEWS configure.in
+
+
 2005-10-15 16:04:45 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-60
 
     Summary:

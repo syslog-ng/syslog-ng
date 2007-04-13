@@ -1,3 +1,18 @@
+1.9.6
+	Sat, 15 Oct 2005 18:07:07 +0200
+
+	* Added new options to control buffer flushing (flush_lines and
+          flush_timeout, see the documentation for more details)
+	* Fixes in local timezone detection, it should properly detect DSTs
+          on Linux, Solaris and probably BSDs.
+	* Fixed facility/priority filtering.
+	* Fixed owner/group/permission setting on target files/directories.
+	* Copied the contrib directory as found in 1.6.x to this tree.
+	* TZ macro is now an alias of TZOFFSET, as I could not find a
+          portable way to determine the string representation of any given
+          timezone offset.
+	* Added some more unit tests.
+
 1.9.5
 	Thu, 07 Jul 2005 11:35:25 +0200
 
