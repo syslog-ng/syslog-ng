@@ -28,7 +28,7 @@
 #include "fdwrite.h"
 #include "templates.h"
 
-/* flags */
+/* writer constructor flags */
 #define LW_DETECT_EOF    0x0001
 #define LW_FORMAT_FILE   0x0002
 #define LW_FORMAT_PROTO  0x0004
@@ -36,7 +36,7 @@
 /* writer options (set by the user) */
 #define LWO_TMPL_ESCAPE     0x0001
 
-/* writer flags */
+/* writer option flags */
 #define LWOF_FIXED_STAMP     0x0001
 /* we don't want to have a dropped counter for this writer */
 #define LWOF_NO_STATS        0x0002

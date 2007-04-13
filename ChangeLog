@@ -2,6 +2,22 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2006-02-11 07:31:40 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-86
+
+    Summary:
+      fixed possible 64 bit compatibility problem
+    Revision:
+      syslog-ng--mainline--2.0--patch-86
+
+    
+    	* src/logwriter.c (log_writer_queue, log_writer_flush_log): use
+    	GPOINTER_TO_UINT/GUINT_TO_POINTER macros instead of casting the
+    	values by hand
+
+    modified files:
+     ChangeLog src/logwriter.c src/logwriter.h
+
+
 2006-01-25 17:13:29 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-85
 
     Summary:

@@ -199,7 +199,7 @@ log_writer_queue(LogPipe *s, LogMessage *lm, gint path_flags)
       return;
     }
   g_queue_push_tail(self->queue, lm);
-  g_queue_push_tail(self->queue, (gpointer) (0x80000000 | path_flags));
+  g_queue_push_tail(self->queue, GUINT_TO_POINTER(0x80000000 | path_flags));
 }
 
 static void
@@ -314,7 +314,7 @@ log_writer_flush_log(LogWriter *self, FDWrite *fd)
       gint path_flags;
       
       lm = g_queue_pop_head(self->queue);
-      path_flags = (gint) (g_queue_pop_head(self->queue)) & 0x7FFFFFFF;
+      path_flags = GPOINTER_TO_UINT (g_queue_pop_head(self->queue)) & 0x7FFFFFFF;
       
       log_writer_format_log(self, lm, line);
       
