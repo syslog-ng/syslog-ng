@@ -163,6 +163,7 @@ filter_facility_new(guint32 facilities)
   FilterPri *self = g_new0(FilterPri, 1);
 
   self->super.eval = filter_facility_eval;
+  self->valid = facilities;
   return &self->super;
 }
 
@@ -181,6 +182,7 @@ filter_level_new(guint32 levels)
   FilterPri *self = g_new0(FilterPri, 1);
 
   self->super.eval = filter_level_eval;
+  self->valid = levels;
   return &self->super;
 }
 

@@ -2,6 +2,20 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-10-01 21:39:51 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-56
+
+    Summary:
+      fixed facility/priority filters
+    Revision:
+      syslog-ng--mainline--2.0--patch-56
+
+    
+    
+
+    modified files:
+     ChangeLog src/filter.c
+
+
 2005-09-26 09:16:38 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-55
 
     Summary:
