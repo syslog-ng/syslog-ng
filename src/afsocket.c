@@ -340,6 +340,8 @@ afsocket_sd_accept(gpointer s)
                 NULL);
       return TRUE;
     }
+  g_fd_set_nonblock(new_fd, TRUE);
+    
   msg_verbose("Syslog connection accepted",
               evt_tag_str("from", g_sockaddr_format(peer_addr, buf1, sizeof(buf1))),
               evt_tag_str("to", g_sockaddr_format(self->bind_addr, buf2, sizeof(buf2))),
