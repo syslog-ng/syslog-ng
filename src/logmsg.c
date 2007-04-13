@@ -53,7 +53,7 @@ log_stamp_format(LogStamp *stamp, GString *target, gint ts_format, glong zone_of
 {
   glong target_zone_offset = 0, ofs;
   struct tm *tm;
-  char ts[128];
+  char ts[128], buf[6];
   time_t t;
   
   if (zone_offset != -1)
@@ -93,10 +93,8 @@ log_stamp_format(LogStamp *stamp, GString *target, gint ts_format, glong zone_of
                 }
             }
           ofs = target_zone_offset < 0 ? -target_zone_offset : target_zone_offset;
-          g_string_sprintfa(target, "%c%02ld:%02ld", 
-                            ofs < 0 ? '-' : '+',
-                            ofs / 3600,
-                            (ofs % 3600) / 60);
+          format_zone_info(buf, sizeof(buf), ofs);
+          g_string_append(target, buf);
           break;
         }
     }

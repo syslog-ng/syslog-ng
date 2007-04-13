@@ -76,15 +76,6 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 {
   putenv("TZ=UTC");
   tzset();
-  testcase("<7>Sep  7 10:43:21 bzorp openvpn[2499]: PTHREAD support initialized", 0, 
-           7, 			// pri
-           1094553801, 0, 0,	// timestamp (sec/usec/zone)
-           "Sep  7 10:43:21",   // originally formatted timestamp
-           "bzorp",		// host
-           "openvpn",		// openvpn
-           "openvpn[2499]: PTHREAD support initialized" // msg
-           );
-
   testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, 
            15, 			// pri
            0, 0, 0,		// timestamp (sec/usec/zone)

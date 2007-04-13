@@ -2,6 +2,42 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-10-15 14:25:22 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-59
+
+    Summary:
+      timezone DST fixes
+    Revision:
+      syslog-ng--mainline--2.0--patch-59
+
+    2005-10-15  Balazs Scheidler <bazsi@balabit.hu>
+    
+    	* configure.in: removed check for the global timezone variable
+    
+    	* src/misc.c (get_local_timezone_ofs): use tm->tm_gmtoff if
+    	available and the difference between the results of gmtime and
+    	localtime if not, this should be a portable way to determine the
+    	correct timezone offset,
+    	(format_zone_info): new function to format a timezone offset in a
+    	way similar to strftime %z
+    
+    	* src/logmsg.c (log_stamp_format): use the new format_zone_info
+    	function
+    
+    	* src/macros.c (log_macro_expand): always use the new
+    	format_zone_info function instead of strftime
+    
+    	* doc/reference/syslog-ng.xml: TZ is now equivalent to TZOFFSET
+    
+
+    new files:
+     tests/unit/.arch-ids/test_zone.c.id tests/unit/test_zone.c
+
+    modified files:
+     ChangeLog configure.in doc/reference/syslog-ng.xml
+     src/logmsg.c src/macros.c src/misc.c src/misc.h
+     tests/unit/Makefile.am tests/unit/test_msgparse.c
+
+
 2005-10-07 16:16:35 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-58
 
     Summary:

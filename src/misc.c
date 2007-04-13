@@ -35,6 +35,7 @@
 #include <grp.h>
 #include <stdlib.h>
 #include <time.h>
+#include <stdio.h>
 
 GString *
 g_string_assign_len(GString *s, gchar *val, gint len)
@@ -74,18 +75,48 @@ getlonghostname(char *buf, size_t bufsize)
   return buf;
 }
 
+int
+format_zone_info(gchar *buf, size_t buflen, glong gmtoff)
+{
+  return snprintf(buf, buflen, "%c%02ld%02ld",
+                          gmtoff > 0 ? '-' : '+',
+                          (gmtoff < 0 ? -gmtoff : gmtoff) / 3600,
+                          (gmtoff % 3600) / 60);
+}
+
+/**
+ * get_local_timezone_ofs:
+ * @when: time in UTC
+ * 
+ * Return the zone offset (measured in seconds) of @when expressed in local
+ * time. The function also takes care about daylight saving.
+ **/
 long
 get_local_timezone_ofs(time_t when)
 {
-  struct tm *tm;
-
 #if HAVE_STRUCT_TM_TM_GMTOFF
-  tm = localtime(&when);
-  return tm->tm_gmtoff;
-#elif HAVE_GLOBAL_TIMEZONE
-  return timezone - (tm.tm_isdst > 0 ? 3600 : 0);
+  struct tm *ltm;
+  
+  ltm = localtime(&when);
+  return ltm->tm_gmtoff;
 #else
-  #error "Don't know how to determine current timezone"
+  struct tm ltm, *gtm;
+  long tzoff;
+  
+  ltm = *localtime(&when);
+  gtm = gmtime(&when);
+
+  tzoff = (ltm.tm_hour - gtm->tm_hour) * 3600;
+  tzoff += (ltm.tm_min - gtm->tm_min) * 60;
+  tzoff += ltm.tm_sec - gtm->tm_sec;
+  
+  /* normalize within +/- 12 hours */
+  if (tzoff < -12*3600)
+    tzoff += 24*3600;
+  else if (tzoff > 12*3600)
+    tzoff -= 24*3600;
+  
+  return tzoff;
 #endif
 }
 

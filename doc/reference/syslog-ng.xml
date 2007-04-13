@@ -1883,7 +1883,8 @@
             <row>
               <entry>TZ, R_TZ, S_TZ</entry>
               <entry>
-                The time zone or name or abbreviation. e.g. 'PDT'
+                Equivalent to TZOFFSET, used to mean the time zone name
+                abbreviation in syslog-ng 1.6.x.
               </entry>
             </row>
             <row>

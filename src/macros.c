@@ -277,6 +277,7 @@ log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, glong 
         gint length;
         time_t t;
         LogStamp *stamp;
+        glong zone_ofs;
 
         if (id >= M_FULLDATE_RECVD && id <= M_UNIXTIME_RECVD)
           {
@@ -301,7 +302,8 @@ log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, glong 
          *   message specific timezone, if one is specified
          *   local timezone
          */
-        t = stamp->time.tv_sec - (zone_offset != -1 ? zone_offset : (stamp->zone_offset != -1 ? stamp->zone_offset : get_local_timezone_ofs(stamp->time.tv_sec)));
+        zone_ofs = (zone_offset != -1 ? zone_offset : (stamp->zone_offset != -1 ? stamp->zone_offset : get_local_timezone_ofs(stamp->time.tv_sec)));
+        t = stamp->time.tv_sec - zone_ofs;
         tm = gmtime(&t);
 
         switch (id)
@@ -333,7 +335,9 @@ log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, glong 
             g_string_sprintfa(result, "%02d", tm->tm_sec);
             break;
           case M_ISODATE:
-            length = strftime(buf, sizeof(buf), "%Y-%m-%dT%H:%M:%S%z", tm);
+            length = strftime(buf, sizeof(buf), "%Y-%m-%dT%H:%M:%S", tm);
+            g_string_append_len(result, buf, length);
+            length = format_zone_info(buf, sizeof(buf), zone_ofs);
             g_string_append_len(result, buf, length);
             break;
           case M_FULLDATE:
@@ -352,12 +356,9 @@ log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, glong 
           case M_DATE:
             g_string_append_len(result, msg->date->str, msg->date->len);
             break;
-          case M_TZOFFSET:
-            length = strftime(buf, sizeof(buf), "%z", tm);
-            g_string_append_len(result, buf, length);
-            break;
           case M_TZ:
-            length = strftime(buf, sizeof(buf), "%Z", tm);
+          case M_TZOFFSET:
+            length = format_zone_info(buf, sizeof(buf), zone_ofs);
             g_string_append_len(result, buf, length);
             break;
           case M_UNIXTIME:
