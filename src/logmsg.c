@@ -1,4 +1,4 @@
-/*
+;/*
  * Copyright (c) 2002, 2003, 2004 BalaBit IT Ltd, Budapest, Hungary
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -225,11 +225,11 @@ log_msg_parse(LogMessage *self, gchar *data, gint length, guint flags)
           if (hours <= 12 && mins <= 60)
             self->stamp.zone_offset = sign * (hours * 3600 + mins * 60);
           else
-            self->stamp.zone_offset = -1; /* assume local timezone */
+            self->stamp.zone_offset = get_local_timezone_ofs(now); /* assume local timezone */
         }
       /* convert to UTC */
       tm.tm_isdst = daylight;
-      self->stamp.time.tv_sec = mktime(&tm) - get_local_timezone_ofs() + self->stamp.zone_offset;
+      self->stamp.time.tv_sec = mktime(&tm) - get_local_timezone_ofs(now) + self->stamp.zone_offset;
       
       src += stamp_length;
       left -= stamp_length;
@@ -259,7 +259,7 @@ log_msg_parse(LogMessage *self, gchar *data, gint length, guint flags)
         tm.tm_year--;
       self->stamp.time.tv_sec = mktime(&tm);
       self->stamp.time.tv_usec = 0;
-      self->stamp.zone_offset = -1; /* assume local timezone */
+      self->stamp.zone_offset = get_local_timezone_ofs(now); /* assume local timezone */
     }
     
   if (self->date->len)
@@ -464,7 +464,7 @@ log_msg_init(LogMessage *self, GSockAddr *saddr)
   self->ref_cnt = 1;
   gettimeofday(&self->recvd.time, NULL);
   self->recvd.frac_present = TRUE;
-  self->recvd.zone_offset = get_local_timezone_ofs();
+  self->recvd.zone_offset = get_local_timezone_ofs(time(NULL));
   self->stamp = self->recvd;
   self->date = g_string_sized_new(16);
   self->host = g_string_sized_new(32);

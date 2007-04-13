@@ -25,6 +25,7 @@
 #include "logmsg.h"
 #include "syslog-names.h"
 #include "messages.h"
+#include "misc.h"
 
 #include "filter.h"
 
@@ -300,7 +301,7 @@ log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, glong 
          *   message specific timezone, if one is specified
          *   local timezone
          */
-        t = stamp->time.tv_sec - (zone_offset != -1 ? zone_offset : (stamp->zone_offset != -1 ? stamp->zone_offset : get_local_timezone_ofs()));
+        t = stamp->time.tv_sec - (zone_offset != -1 ? zone_offset : (stamp->zone_offset != -1 ? stamp->zone_offset : get_local_timezone_ofs(stamp->time.tv_sec)));
         tm = gmtime(&t);
 
         switch (id)

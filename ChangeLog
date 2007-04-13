@@ -2,6 +2,36 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-07-26 09:21:15 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-43
+
+    Summary:
+      timezone portability fixes for BSDs
+    Revision:
+      syslog-ng--mainline--2.0--patch-43
+
+    2005-07-26  Balazs Scheidler <bazsi@balabit.hu>
+    
+    	* src/misc.c (get_local_timezone_ofs): added a time_t when argument,
+    	the timezone will be returned for that given time in UTC, the
+    	algorithm to return a timezone does not rely on the timezone and
+    	daytime global variables as those are Linux specific
+    
+    	* src/macros.c (log_macro_expand): pass the appropriate time for get_local_timezone_ofs()
+    
+    	* src/logmsg.c (log_msg_parse, log_msg_init): -"-
+    
+    	* src/affile.c (affile_dd_queue): -"-
+    
+    NEWS
+    	* 
+    NEWS.hu
+    	* 
+
+    modified files:
+     ChangeLog src/affile.c src/logmsg.c src/macros.c src/misc.c
+     src/misc.h
+
+
 2005-07-07 09:43:49 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-42
 
     Summary:

@@ -75,9 +75,15 @@ getlonghostname(char *buf, size_t bufsize)
 }
 
 long
-get_local_timezone_ofs(void)
+get_local_timezone_ofs(time_t when)
 {
-  return timezone - (daylight > 0 ? 3600 : 0);
+  struct tm *tm;
+  
+  tm = localtime(&when);
+  return tm->tm_gmtoff;
+#if 0
+  timezone - (tm.tm_isdst > 0 ? 3600 : 0);
+#endif
 }
 
 GString *
