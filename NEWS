@@ -12,6 +12,7 @@
           center.
 	* Added normalize_hostnames() option which converts all hostnames to
           lower case.
+	* Added PID macro.
 
 1.9.8
 	Tue, 20 Dec 2005 21:51:45 +0100

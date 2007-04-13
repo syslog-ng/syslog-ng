@@ -1925,6 +1925,12 @@
               </entry>
             </row>
             <row>
+              <entry>PID</entry>
+              <entry>
+                The pid of the program the message was sent by.
+              </entry>
+            </row>
+            <row>
               <entry>MSG or MESSAGE</entry>
               <entry>
                 Message contents including the programname and pid.

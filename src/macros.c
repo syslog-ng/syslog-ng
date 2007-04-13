@@ -99,6 +99,7 @@ macros[] =
         { "FULLHOST", M_FULLHOST },
 
         { "PROGRAM", M_PROGRAM },
+        { "PID", M_PID },
         { "MSG", M_MESSAGE },
         { "MSGONLY", M_MSGONLY },
         { "MESSAGE", M_MESSAGE },
@@ -220,6 +221,26 @@ log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, glong 
         if (msg->program->len)
           {
             result_append(result, msg->program->str, msg->program->len, !!(flags & MF_ESCAPE_RESULT));
+          }
+        break;
+      }
+    case M_PID:
+      {
+        /* PID */
+        if (msg->msg->len)
+          {
+            gchar *start, *end;
+            
+            start = strchr(msg->msg->str, '[');
+            if (start)
+              {
+                start++;
+                end = strchr(msg->msg->str, ']');
+                if (end)
+                  {
+                    result_append(result, start, end-start, !!(flags & MF_ESCAPE_RESULT));
+                  }
+              }
           }
         break;
       }

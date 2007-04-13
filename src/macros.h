@@ -92,10 +92,11 @@
 #define M_FULLHOST_FROM  72
 #define M_HOST_FROM      73
 #define M_PROGRAM        74
+#define M_PID            75
 
-#define M_MESSAGE        75
-#define M_MSGONLY	 76
-#define M_SOURCE_IP      77
+#define M_MESSAGE        76
+#define M_MSGONLY	 77
+#define M_SOURCE_IP      78
 
 #define M_MATCH_REF_OFS 256
 

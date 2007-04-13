@@ -2,6 +2,23 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-02-11 12:44:37 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-6
+
+    Summary:
+      added PID macro and its documentation
+    Revision:
+      syslog-ng--mainline--2.0--patch-6
+
+    	* src/macros.c (log_expand_macro): added support for PID
+    
+    
+    
+
+    modified files:
+     ChangeLog NEWS doc/reference/syslog-ng.xml src/macros.c
+     src/macros.h
+
+
 2006-02-11 12:00:14 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-5
 
     Summary:
