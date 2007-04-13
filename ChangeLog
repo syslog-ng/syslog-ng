@@ -2,6 +2,22 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2006-01-13 13:17:29 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-83
+
+    Summary:
+      added compatibility option for stats
+    Revision:
+      syslog-ng--mainline--2.0--patch-83
+
+    2006-01-13  Balazs Scheidler <bazsi@balabit.hu>
+    
+    	* src/cfg-lex.l: added a "stats" keyword to be compatible with 1.6.x
+    
+
+    modified files:
+     ChangeLog src/cfg-lex.l
+
+
 2005-12-31 14:09:13 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-82
 
     Summary:

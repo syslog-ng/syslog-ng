@@ -70,11 +70,12 @@ static struct keyword keywords[] = {
 	{ "pad_size",		KW_PAD_SIZE },
 	{ "mark_freq",		KW_MARK_FREQ },
 	{ "stats_freq",		KW_STATS_FREQ },
+	{ "stats",		KW_STATS_FREQ },   /* obsolete */
 	{ "flush_lines", 	KW_FLUSH_LINES },
 	{ "flush_timeout", 	KW_FLUSH_TIMEOUT },
 	/* obsolete */
 	{ "sync_freq", 		KW_FLUSH_LINES },
-	{ "sync", 		KW_FLUSH_LINES },
+	{ "sync", 		KW_FLUSH_LINES },  /* obsolete */
 	{ "fsync",		KW_FSYNC },
 	{ "long_hostnames",	KW_CHAIN_HOSTNAMES },
         { "chain_hostnames",    KW_CHAIN_HOSTNAMES },
