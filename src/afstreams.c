@@ -23,8 +23,20 @@
 
 #include "afstreams.h"
 #include "messages.h"
+#include "logreader.h"
 
-#if HAVE_SUN_STREAMS
+
+typedef struct _AFStreamsSourceDriver
+{
+  LogDriver super;
+  GString *dev_filename;
+  GString *door_filename;
+  LogReader *reader;
+  LogReaderOptions reader_options;
+} AFStreamsSourceDriver;
+
+
+#if ENABLE_SUN_STREAMS
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -73,15 +85,6 @@ streams_read_new(gint fd, guint flags)
   self->flags = flags;
   return self;
 }
-
-typedef struct _AFStreamsSourceDriver
-{
-  LogDriver super;
-  GString *dev_filename;
-  GString *door_filename;
-  LogReader *reader;
-  LogReaderOptions reader_options;
-} AFStreamsSourceDriver;
 
 void 
 afstreams_sd_set_sundoor(LogDriver *self, gchar *filename)
@@ -224,8 +227,10 @@ afstreams_sd_set_sundoor(LogDriver *self, gchar *filename)
 LogDriver *
 afstreams_sd_new(gchar *filename)
 {
+  AFStreamsSourceDriver *self = g_new0(AFStreamsSourceDriver, 1);
+
   msg_error("STREAMS support not compiled in", NULL);
-  return NULL;
+  return &self->super;
 }
 
 #endif

@@ -78,7 +78,7 @@ dnl Checks for libraries.
 dnl Checks for header files.
 AC_HEADER_STDC
 AC_CHECK_HEADER(dmalloc.h)
-AC_CHECK_HEADERS(strings.h openssl/ssl.h getopt.h)
+AC_CHECK_HEADERS(strings.h openssl/ssl.h getopt.h stropts.h sys/strlog.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_STRUCT_TM
@@ -90,6 +90,15 @@ AC_CHECK_MEMBER(struct tm.tm_gmtoff,AC_DEFINE(HAVE_STRUCT_TM_TM_GMTOFF,1,[Whethe
 #include <time.h>
 #endif])
 
+AC_CACHE_CHECK(for I_CONSLOG, blb_cv_c_i_conslog,
+  [AC_EGREP_CPP(I_CONSLOG,
+[
+#include <sys/strlog.h>
+I_CONSLOG
+],
+  blb_cv_c_i_conslog=no, blb_cv_c_i_conslog=yes)])
+
+
 dnl Checks for library functions.
 AC_CHECK_LIB(door, door_create)
 AC_CHECK_LIB(socket, socket)
@@ -98,11 +107,42 @@ AC_CHECK_LIB(regex, regexec)
 
 AC_CHECK_FUNCS(strdup strtol inet_aton inet_ntoa getopt_long)
 
+dnl ***************************************************************************
+dnl Some more checks based on the detected settings above
+
+if test "x$ac_cv_lib_door_door_create" = "xyes"; then
+        AC_CHECK_HEADERS(pthread.h)
+        AC_CHECK_LIB(pthread, pthread_create)
+fi
+
 if test "x$enable_memtrace" = "xyes" ; then
 	AC_CHECK_LIB(dl, dlsym)
 fi
 
+
+dnl ***************************************************************************
 dnl export values as C defines
+
+AC_MSG_CHECKING(whether to enable Sun STREAMS support)
+if test "x$ac_cv_header_stropts_h" = "xyes" -a \
+        "x$ac_cv_header_sys_strlog_h" = "xyes" -a \
+        "x$enable_sun_streams" != "xno" -a \
+        "x$blb_cv_c_i_conslog" != "xno" -o \
+        "x$enable_sun_streams" = "xyes"; then
+        enable_sun_streams=yes
+        AC_MSG_RESULT(yes)
+else
+        AC_MSG_RESULT(no)
+fi
+
+AC_MSG_CHECKING(whether to enable Sun door support)
+if test "x$enable_sun_streams" = "xyes" -a "x$ac_cv_header_door_h" = "xyes" -a "x$ac_cv_header_pthread_h" = "xyes" -a "x$enable_sun_door" != "xno" -o "x$enable_sun_door" = "xyes"; then
+        enable_sun_door=yes
+        AC_MSG_RESULT(yes)
+else
+        enable_sun_door=no
+        AC_MSG_RESULT(no)
+fi
 
 enable_value()
 {
@@ -113,6 +153,8 @@ enable_value()
         fi
 }
 
+AC_DEFINE_UNQUOTED(ENABLE_SUN_STREAMS, `enable_value $enable_sun_streams`, [have STREAMS support])
+AC_DEFINE_UNQUOTED(ENABLE_SUN_DOOR, `enable_value $enable_sun_door`, [have Solaris door support])
 AC_DEFINE_UNQUOTED(ENABLE_DEBUG, `enable_value $enable_debug`, [Enable debugging])
 AC_DEFINE_UNQUOTED(ENABLE_MEM_TRACE, `enable_value $enable_memtrace`, [Enable memtrace])
 AC_DEFINE_UNQUOTED(ENABLE_SSL, `enable_value $enable_ssl`, [Enable SSL support])
