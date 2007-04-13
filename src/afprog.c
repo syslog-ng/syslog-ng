@@ -32,6 +32,17 @@
 #include <unistd.h>
 #include <signal.h>
 
+static const gchar *
+afprogram_dd_format_stats_name(AFProgramDestDriver *self)
+{
+  static gchar stats_name[256];
+  
+  g_snprintf(stats_name, sizeof(stats_name),
+             "program(%s)", self->cmdline->str);
+  
+  return stats_name;
+}
+
 static void
 afprogram_dd_exit(pid_t pid, int status, gpointer s)
 {
@@ -59,7 +70,7 @@ afprogram_dd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
   int msg_pipe[2];
 
   if (cfg)
-    log_writer_options_init(&self->writer_options, cfg, FALSE);
+    log_writer_options_init(&self->writer_options, cfg, FALSE, afprogram_dd_format_stats_name(self));
   
   msg_verbose("Starting destination program",
               evt_tag_str("cmdline", self->cmdline->str),

@@ -580,6 +580,30 @@ afsocket_sd_init_instance(AFSocketSourceDriver *self, guint32 flags)
 
 gboolean afsocket_dd_reconnect(AFSocketDestDriver *self);
 
+static const gchar *
+afsocket_dd_format_stats_name(AFSocketDestDriver *self)
+{
+  static gchar stats_name[64];
+  gchar *driver_name;
+  gchar buf[64];
+  
+  switch (self->dest_addr->sa.sa_family)
+    {
+    case AF_UNIX:
+      driver_name = !!(self->flags & AFSOCKET_STREAM) ? "unix-stream" : "unix-dgram";
+      break;
+    case AF_INET:
+      driver_name = !!(self->flags & AFSOCKET_STREAM) ? "tcp" : "udp";
+      break;
+    }
+  
+  g_snprintf(stats_name, sizeof(stats_name), "%s(%s)", 
+             driver_name,
+             g_sockaddr_format(self->dest_addr, buf, sizeof(buf)));
+  
+  return stats_name;
+}
+
 static gboolean
 afsocket_dd_reconnect_timer(gpointer s)
 {
@@ -630,8 +654,6 @@ afsocket_dd_connected(AFSocketDestDriver *self)
     }
     
   log_writer_reopen(self->writer, fd_write_new(self->fd));
-  if (!log_pipe_init(self->writer, NULL, NULL))
-    return FALSE;
   return TRUE;
 }
 
@@ -692,12 +714,17 @@ afsocket_dd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
       self->time_reopen = cfg->time_reopen;
     }
 
-  log_writer_options_init(&self->writer_options, cfg, !!(self->flags & AFSOCKET_PROTO_RFC3164));
-  /* NOTE: we open our writer with no fd, so we can send messages down there
-   * even while the connection is not established */
-         
-  self->writer = log_writer_new(LW_FORMAT_PROTO | LW_DETECT_EOF, &self->super.super, &self->writer_options);
-  log_pipe_append(&self->super.super, self->writer);
+  if (!self->writer)
+    {
+      log_writer_options_init(&self->writer_options, cfg, !!(self->flags & AFSOCKET_PROTO_RFC3164), afsocket_dd_format_stats_name(self));
+      /* NOTE: we open our writer with no fd, so we can send messages down there
+       * even while the connection is not established */
+  
+      self->writer = log_writer_new(LW_FORMAT_PROTO | LW_DETECT_EOF, &self->super.super, &self->writer_options);
+      log_pipe_init(self->writer, NULL, NULL);
+      log_pipe_append(&self->super.super, self->writer);
+    }
+    
   if (!afsocket_dd_reconnect(self))
     {
       return FALSE;
@@ -719,6 +746,8 @@ afsocket_dd_deinit(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
                   NULL);
       close(self->fd);
     }
+  if (self->writer)
+    log_pipe_deinit(self->writer, NULL, NULL);
   return TRUE;
 }
 
@@ -748,6 +777,7 @@ afsocket_dd_free(LogPipe *s)
   g_sockaddr_unref(self->bind_addr);
   g_sockaddr_unref(self->dest_addr);
   log_drv_free_instance(&self->super);
+  log_pipe_unref(self->writer);
   g_free(s);
 }
 

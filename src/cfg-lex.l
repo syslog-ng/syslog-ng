@@ -69,6 +69,7 @@ static struct keyword keywords[] = {
 	{ "no_parse",		KW_NO_PARSE },
 	{ "pad_size",		KW_PAD_SIZE },
 	{ "mark_freq",		KW_MARK_FREQ },
+	{ "stats_freq",		KW_STATS_FREQ },
 	{ "flush_lines", 	KW_FLUSH_LINES },
 	{ "flush_timeout", 	KW_FLUSH_TIMEOUT },
 	/* obsolete */

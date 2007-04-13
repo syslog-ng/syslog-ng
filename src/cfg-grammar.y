@@ -48,12 +48,12 @@ LogTemplate *last_template;
 %token	KW_SOURCE KW_DESTINATION KW_LOG KW_OPTIONS KW_FILTER
 
 /* source & destination items */
-%token	KW_INTERNAL KW_FILE KW_PIPE KW_UNIX_STREAM KW_UNIX_DGRAM KW_UDP 
+%token	KW_INTERNAL KW_FILE KW_PIPE KW_UNIX_STREAM KW_UNIX_DGRAM KW_UDP
 %token  KW_TCP KW_USER
 %token  KW_DOOR KW_SUN_STREAMS KW_PROGRAM
 
 /* option items */
-%token KW_FSYNC KW_MARK_FREQ KW_FLUSH_LINES KW_FLUSH_TIMEOUT KW_LOG_MSG_SIZE KW_FILE_TEMPLATE KW_PROTO_TEMPLATE
+%token KW_FSYNC KW_MARK_FREQ KW_STATS_FREQ KW_FLUSH_LINES KW_FLUSH_TIMEOUT KW_LOG_MSG_SIZE KW_FILE_TEMPLATE KW_PROTO_TEMPLATE
 
 %token KW_CHAIN_HOSTNAMES KW_KEEP_HOSTNAME KW_KEEP_TIMESTAMP
 %token KW_USE_DNS KW_USE_FQDN 
@@ -677,6 +677,7 @@ options_items
 
 options_item
 	: KW_MARK_FREQ '(' NUMBER ')'		{ configuration->mark_freq = $3; }
+	| KW_STATS_FREQ '(' NUMBER ')'          { configuration->stats_freq = $3; }
 	| KW_FLUSH_LINES '(' NUMBER ')'		{ configuration->flush_lines = $3; }
 	| KW_FLUSH_TIMEOUT '(' NUMBER ')'	{ configuration->flush_timeout = $3; }
 	| KW_CHAIN_HOSTNAMES '(' yesno ')'	{ configuration->chain_hostnames = $3; }

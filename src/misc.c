@@ -78,8 +78,8 @@ getlonghostname(char *buf, size_t bufsize)
 int
 format_zone_info(gchar *buf, size_t buflen, glong gmtoff)
 {
-  return snprintf(buf, buflen, "%c%02ld%02ld",
-                          gmtoff > 0 ? '-' : '+',
+  return snprintf(buf, buflen, "%c%02ld:%02ld",
+                          gmtoff < 0 ? '-' : '+',
                           (gmtoff < 0 ? -gmtoff : gmtoff) / 3600,
                           (gmtoff % 3600) / 60);
 }

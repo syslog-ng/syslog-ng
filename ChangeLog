@@ -2,6 +2,79 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-10-22 21:28:46 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-66
+
+    Summary:
+      added per-destination dropped counters and some bugfixes
+    Revision:
+      syslog-ng--mainline--2.0--patch-66
+
+    2005-10-22  Balazs Scheidler <bazsi@balabit.hu>
+    
+    	* src/stats.{c,h}: new files, a simple framework for named
+    	statistical counters, currently only used for per-destination
+    	dropped counters
+    
+    	* src/message.c, src/messages.h (msg_event): the function was split
+    	to msg_event_create and msg_event_send functions and macros were
+    	changed accordingly, the reason is that the STATS message uses
+    	dynamic message tags
+    
+    	* src/main.c (stats_timer): new function to issue statistics message
+    	using the stats framework
+    
+    	* src/logwriter.h (LogWriterOptions): added stats_name member
+    	which is used when registering the dropped counters,
+    	(LogWriter): added dropped_messages member to point to our private
+    	dropped counter
+    
+    	* src/logwriter.c (log_writer_init): register dropped counter,
+    	(log_writer_free): deregister dropped counter,
+    	(log_writer_options_init): store the name of the dropped counter,
+    	added a warning message for the flush_lines > fifo_size case as this
+    	will not work,
+    	(log_writer_flush_log): call log_writer_broken when an error occurs,
+    	(log_writer_broken): changed argument list to be usable from
+    	log_writer_flush_log, log message moved out of the function as it
+    	might be called from different places,
+    	(log_writer_queue): increment dropped counter,
+    	(log_writer_fd_prepare, log_writer_fd_check): fixed flush_timeout
+    	handling
+    
+    	* src/Makefile.am: moved headers to SOURCES from EXTRA_DIST 
+    	(I like it better this way (tm))
+    
+    	* src/logpipe.h, src/logmsg.h: don't include glib.h directly, use
+    	syslog-ng.h instead
+    
+    	* src/misc.c (format_zone_info): readded ':' to zone offset
+    	formatting, which was missed in the previous patch, fixed the sign
+    	for zone offsets
+    
+    	* src/logmsg.c (log_stamp_format): the buffer for the zone offset
+    	was not large enough to hold the readded ':'
+    
+    	* src/cfg-grammar.y, src/cfg-lex.l: added global stats_freq option
+    
+    	* src/afprog.c, src/affile.c, src/afprog.c: added
+    	dropped stats support
+    
+    	* src/afsocket.c: added dropped stats support,
+    	(afsocket_dd_connected): do not reinit the writer,
+    	(afsocket_dd_init): do not create a new LogWriter instance every
+    	time, but reuse the previous one instead,
+    	(afsocket_dd_free): fix memory leak by freeing self->writer
+
+    removed files:
+     src/.arch-ids/sdriver.c.id src/sdriver.c
+
+    modified files:
+     ChangeLog src/Makefile.am src/affile.c src/afprog.c
+     src/afsocket.c src/cfg-grammar.y src/cfg-lex.l src/logmsg.c
+     src/logmsg.h src/logpipe.h src/logwriter.c src/logwriter.h
+     src/main.c src/messages.c src/messages.h src/misc.c
+
+
 2005-10-22 17:20:32 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-65
 
     Summary:

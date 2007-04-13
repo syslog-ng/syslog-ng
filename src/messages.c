@@ -59,12 +59,11 @@ msg_send_internal_message(int prio, const char *msg)
     }
 }
 
-void
-msg_event(gint prio, const char *desc, EVTTAG *tag1, ...)
+EVTREC *
+msg_event_create(gint prio, const gchar *desc, EVTTAG *tag1, ...)
 {
   EVTREC *e;
   va_list va;
-  gchar *msg;
   
   e = evt_rec_init(evt_context, prio, desc);
   if (tag1)
@@ -74,17 +73,22 @@ msg_event(gint prio, const char *desc, EVTTAG *tag1, ...)
       evt_rec_add_tagsv(e, va);
       va_end(va);
     }
-  
+  return e;
+}
+
+void
+msg_event_send(EVTREC *e)
+{
+  gchar *msg;
   /* this prevents infinite loops, debug messages causing 
    * internal messages causing debug messages again */
-  if (prio != EVT_PRI_DEBUG || log_stderr)
+  if (evt_rec_get_syslog_pri(e) != EVT_PRI_DEBUG || log_stderr)
     {
       msg = evt_format(e);
       
-      msg_send_internal_message(evt_rec_get_syslog_pri(e), msg); 
+      msg_send_internal_message(evt_rec_get_syslog_pri(e) | EVT_FAC_SYSLOG, msg); 
       free(msg);
     }
-    
   evt_rec_free(e);
 }
 

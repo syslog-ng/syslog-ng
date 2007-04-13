@@ -25,6 +25,7 @@
 #include "messages.h"
 #include "macros.h"
 #include "fdwrite.h"
+#include "stats.h"
 
 #include <unistd.h>
 #include <assert.h>
@@ -35,10 +36,12 @@ typedef struct _LogWriterWatch
   GPollFD pollfd;
   LogWriter *writer;
   FDWrite *fd;
+  GTimeVal flush_target;
+  gboolean flush_waiting_for_timeout;
 } LogWriterWatch;
 
 static gboolean log_writer_flush_log(LogWriter *self, FDWrite *fd);
-static void log_writer_broken(LogWriter *self, FDWrite *fd);
+static void log_writer_broken(LogWriter *self, gint notify_code);
 
 static gboolean
 log_writer_fd_prepare(GSource *source,
@@ -55,12 +58,46 @@ log_writer_fd_prepare(GSource *source,
     {
       /* our buffer does not contain enough elements to flush, but we do not
        * want to wait more than this time */
-      *timeout = self->writer->options->flush_timeout * 1000;
+      
+      if (!self->flush_waiting_for_timeout)
+        {
+          /* start waiting */
+
+          *timeout = self->writer->options->flush_timeout * 1000;
+          g_source_get_current_time(source, &self->flush_target);
+          g_time_val_add(&self->flush_target, *timeout * 1000);
+          self->flush_waiting_for_timeout = TRUE;
+        }
+      else
+        {
+          GTimeVal now, diff;
+
+          g_source_get_current_time(source, &now);
+          
+          diff.tv_sec = self->flush_target.tv_sec - now.tv_sec;
+          diff.tv_usec = self->flush_target.tv_usec - now.tv_usec;
+          if (diff.tv_usec < 0)
+            {
+              diff.tv_sec--;
+              diff.tv_usec += 1000000;
+            }
+          else if (diff.tv_usec > 1000000)
+            {
+              diff.tv_sec++;
+              diff.tv_usec -= 1000000;
+            }
+          /* we already started to wait for flush, recalculate next timeout */
+          *timeout = diff.tv_sec * 1000 + diff.tv_usec / 1000;
+          if (*timeout < 0)
+            return TRUE;
+        }
+      return FALSE;
     }
   else if (self->writer->flags & LW_DETECT_EOF)
     self->pollfd.events = G_IO_HUP;
   else
     self->pollfd.events = 0;
+  self->flush_waiting_for_timeout = FALSE;
   self->pollfd.revents = 0;
   return FALSE;
 }
@@ -73,7 +110,13 @@ log_writer_fd_check(GSource *source)
   if (self->writer->queue->length || self->writer->partial)
     {
       /* we have data to flush */
-      return TRUE;
+      if (self->flush_waiting_for_timeout)
+        {
+          GTimeVal tv;
+          /* check if timeout elapsed */
+          g_source_get_current_time(source, &tv);
+          return self->flush_target.tv_sec <= tv.tv_sec || (self->flush_target.tv_sec == tv.tv_sec && self->flush_target.tv_usec <= tv.tv_usec);
+        }
     }
   return !!(self->pollfd.revents & (G_IO_OUT | G_IO_ERR | G_IO_HUP | G_IO_IN));
 }
@@ -86,7 +129,10 @@ log_writer_fd_dispatch(GSource *source,
   LogWriterWatch *self = (LogWriterWatch *) source;
   if (self->pollfd.revents & (G_IO_HUP + G_IO_ERR))
     {
-      log_writer_broken(self->writer, self->fd);
+      msg_error("EOF occurred while idle",
+                evt_tag_int("fd", self->fd->fd),
+                NULL);
+      log_writer_broken(self->writer, NC_CLOSE);
       return FALSE;
     }
   else if (self->writer->queue->length || self->writer->partial)
@@ -143,7 +189,8 @@ log_writer_queue(LogPipe *s, LogMessage *lm, gint path_flags)
       
       /* we don't send a message here since the system is draining anyway */
       
-      /* self->options->fifo_full_drop++; */
+      if (self->dropped_messages)
+        (*self->dropped_messages)++;
       msg_debug("Destination queue full, dropping message",
                 evt_tag_int("queue_len", self->queue->length/2),
                 evt_tag_int("fifo_size", self->options->fifo_size),
@@ -159,7 +206,6 @@ static void
 log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
 {
   LogTemplate *template = NULL;
-
   
   if (self->options->template)
     {
@@ -222,14 +268,11 @@ log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
 }
 
 static void
-log_writer_broken(LogWriter *self, FDWrite *fd)
+log_writer_broken(LogWriter *self, gint notify_code)
 {
   /* the connection seems to be broken */
-  msg_error("EOF occurred while idle",
-            evt_tag_int("fd", fd->fd),
-            NULL);
   log_pipe_deinit(&self->super, NULL, NULL);
-  log_pipe_notify(self->control, &self->super, NC_CLOSE, self);
+  log_pipe_notify(self->control, &self->super, notify_code, self);
 }
 
 static gboolean 
@@ -319,7 +362,7 @@ write_error:
                   evt_tag_int("fd", fd->fd),
                   evt_tag_errno(EVT_TAG_OSERROR, errno),
                   NULL);
-        log_pipe_deinit(&self->super, NULL, NULL);
+        log_writer_broken(self, NC_WRITE_ERROR);
         if (line)
           g_string_free(line, TRUE);
         return FALSE;
@@ -332,6 +375,10 @@ write_error:
 static gboolean
 log_writer_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
 {
+  LogWriter *self = (LogWriter *) s;
+  
+  if (!self->dropped_messages)
+    stats_register_counter(SC_TYPE_DROPPED, self->options->stats_name, &self->dropped_messages);
   return TRUE;
 }
 
@@ -346,6 +393,7 @@ log_writer_deinit(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
       g_source_unref(self->source);
       self->source = NULL;
     }
+    
   return TRUE;
 }
 
@@ -354,6 +402,9 @@ log_writer_free(LogPipe *s)
 {
   LogWriter *self = (LogWriter *) s;
   
+  if (self->dropped_messages)
+    stats_unregister_counter(self->options->stats_name, &self->dropped_messages);
+
   g_queue_free(self->queue);
   log_pipe_unref(self->control);
   g_free(self);
@@ -426,7 +477,7 @@ log_writer_options_set_template_escape(LogWriterOptions *options, gboolean enabl
 }
 
 void
-log_writer_options_init(LogWriterOptions *options, GlobalConfig *cfg, gboolean fixed_stamp)
+log_writer_options_init(LogWriterOptions *options, GlobalConfig *cfg, gboolean fixed_stamp, const gchar *stats_name)
 {
   if (options->fifo_size == -1)
     options->fifo_size = cfg->log_fifo_size;
@@ -437,6 +488,15 @@ log_writer_options_init(LogWriterOptions *options, GlobalConfig *cfg, gboolean f
     options->flush_lines = cfg->flush_lines;
   if (options->flush_timeout == -1)
     options->flush_timeout = cfg->flush_timeout;
+    
+  if (options->fifo_size < options->flush_lines)
+    {
+      msg_error("The value of flush_lines must be less than fifo_size",
+                evt_tag_int("fifo_size", options->fifo_size),
+                evt_tag_int("flush_lines", options->flush_lines),
+                NULL);
+      options->flush_lines = options->fifo_size - 1;
+    }
 
   if (!fixed_stamp)
     {
@@ -455,6 +515,7 @@ log_writer_options_init(LogWriterOptions *options, GlobalConfig *cfg, gboolean f
     }
   options->file_template = log_template_ref(cfg->file_template);
   options->proto_template = log_template_ref(cfg->proto_template);
+  options->stats_name = stats_name ? g_strdup(stats_name) : NULL;
 }
 
 void
@@ -463,4 +524,6 @@ log_writer_options_destroy(LogWriterOptions *options)
   log_template_unref(options->template);
   log_template_unref(options->file_template);
   log_template_unref(options->proto_template);
+  if (options->stats_name)
+    g_free(options->stats_name);
 }

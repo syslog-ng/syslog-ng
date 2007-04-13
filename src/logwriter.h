@@ -38,6 +38,7 @@
 
 typedef struct _LogWriterOptions
 {
+  gchar *stats_name;
   /* bitmask of LWO_* */
   guint32 options;
   
@@ -65,6 +66,7 @@ typedef struct _LogWriter
   GSource *source;
   GQueue *queue;
   guint32 flags;
+  guint32 *dropped_messages;
   GString *partial;
   gint partial_pos;
   LogPipe *control;
@@ -73,7 +75,9 @@ typedef struct _LogWriter
 
 LogPipe *log_writer_new(guint32 flags, LogPipe *control, LogWriterOptions *options);
 gboolean log_writer_reopen(LogPipe *s, FDWrite *fd);
+
+void log_writer_options_set_template_escape(LogWriterOptions *options, gboolean enable);
 void log_writer_options_defaults(LogWriterOptions *options);
-void log_writer_options_init(LogWriterOptions *options, GlobalConfig *cfg, gboolean fixed_stamps);
+void log_writer_options_init(LogWriterOptions *options, GlobalConfig *cfg, gboolean fixed_stamps, const gchar *stats_name);
 
 #endif

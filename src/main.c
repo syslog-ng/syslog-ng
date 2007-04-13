@@ -27,6 +27,7 @@
 #include "children.h"
 #include "memtrace.h"
 #include "misc.h"
+#include "stats.h"
 
 #include <sys/types.h>
 #include <stdio.h>
@@ -127,6 +128,13 @@ setup_signals(void)
   sigaction(SIGSEGV, &sa, NULL);
 }
 
+gboolean
+stats_timer(gpointer st)
+{
+  stats_generate_log();
+  return TRUE;
+}
+
 int 
 main_loop_run(GlobalConfig *cfg)
 {
@@ -137,6 +145,7 @@ main_loop_run(GlobalConfig *cfg)
              evt_tag_str("version", VERSION),
              NULL);
   main_loop = g_main_new(TRUE);
+  g_timeout_add(cfg->stats_freq * 1000, stats_timer, NULL);
   while (g_main_is_running(main_loop))
     {
       g_main_iteration(TRUE);

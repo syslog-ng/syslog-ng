@@ -53,7 +53,7 @@ log_stamp_format(LogStamp *stamp, GString *target, gint ts_format, glong zone_of
 {
   glong target_zone_offset = 0, ofs;
   struct tm *tm;
-  char ts[128], buf[6];
+  char ts[128], buf[8];
   time_t t;
   
   if (zone_offset != -1)

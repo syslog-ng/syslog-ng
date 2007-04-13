@@ -24,8 +24,7 @@
 #ifndef LOG_H_INCLUDED
 #define LOG_H_INCLUDED
 
-#include <glib.h>
-
+#include "syslog-ng.h"
 #include "gsockaddr.h"
 
 #include <sys/types.h>

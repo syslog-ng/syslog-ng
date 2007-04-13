@@ -24,10 +24,9 @@
 #ifndef LOGPIPE_H_INCLUDED
 #define LOGPIPE_H_INCLUDED
 
+#include "syslog-ng.h"
 #include "logmsg.h"
 #include "cfg.h"
-
-#include <glib.h>
 
 /* notify code values */
 #define NC_CLOSE       1
