@@ -327,7 +327,11 @@ log_writer_deinit(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
   LogWriter *self = (LogWriter *) s;
 
   if (self->source)
-    g_source_destroy(self->source);
+    {
+      g_source_destroy(self->source);
+      g_source_unref(self->source);
+      self->source = NULL;
+    }
   return TRUE;
 }
 

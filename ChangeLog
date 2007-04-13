@@ -2,6 +2,23 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-07-07 09:15:47 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-40
+
+    Summary:
+      fixed possible memory/fd leak when a filename contains macros
+    Revision:
+      syslog-ng--mainline--2.0--patch-40
+
+    2005-07-07  Balazs Scheidler <bazsi@balabit.hu>
+    
+    	* src/logwriter.c (log_writer_deinit): fixed memory/fd leak, unref
+    	self->source as well as destroy it
+    
+
+    modified files:
+     ChangeLog src/logwriter.c
+
+
 2005-06-30 08:58:24 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-39
 
     Summary:
