@@ -40,7 +40,10 @@
 #include <time.h>
 
 #include <grp.h>
+
+#if HAVE_GETOPT_H
 #include <getopt.h>
+#endif
 
 static char cfgfilename[128] = PATH_SYSLOG_NG_CONF;
 static char pidfilename[128] = PATH_PIDFILE;
@@ -120,7 +123,7 @@ setup_signals(void)
   sa.sa_handler = sig_child_handler;
   sigaction(SIGCHLD, &sa, NULL);
   sa.sa_handler = sig_segv_handler;
-  sa.sa_flags = SA_ONESHOT;
+  sa.sa_flags = SA_RESETHAND;
   sigaction(SIGSEGV, &sa, NULL);
 }
 
@@ -194,7 +197,7 @@ daemonize(void)
 	{
 	  gchar buf[32];
 
-	  g_snprintf(buf, sizeof(buf), "%d", getpid());
+	  g_snprintf(buf, sizeof(buf), "%d", (int) getpid());
 	  write(fd, buf, strlen(buf));
 	  close(fd);
 	}
@@ -264,6 +267,8 @@ int
 main(int argc, char *argv[])
 {
   GlobalConfig *cfg;
+
+#if HAVE_GETOPT_LONG
   struct option syslog_ng_options[] = 
     {
       { "cfgfile", required_argument, NULL, 'f' },
@@ -283,11 +288,16 @@ main(int argc, char *argv[])
 #endif
       { NULL, 0, NULL, 0 }
     };
+#endif
   int syntax_only = 0;
   int log_to_stderr = 0;
   int opt, rc;
 
+#if HAVE_GETOPT_LONG
   while ((opt = getopt_long(argc, argv, "sFf:p:dvhyVC:u:g:e", syslog_ng_options, NULL)) != -1)
+#else
+  while ((opt = getopt(argc, argv, "sFf:p:dvhyVC:u:g:e")) != -1)
+#endif
     {
       switch (opt) 
 	{

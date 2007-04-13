@@ -33,6 +33,7 @@
 
 #include <stdio.h>
 #include <ctype.h>
+#include <string.h>
 
 GlobalConfig *configuration;
 
@@ -40,7 +41,7 @@ gboolean
 cfg_timezone_value(gchar *tz, glong *timezone)
 {
   if ((*tz == '+' || *tz == '-') && strlen(tz) == 6 && 
-      isdigit(*(tz+1)) && isdigit(*(tz+2)) && (*(tz+3) == ':') && isdigit(*(tz+4)) && isdigit(*(tz+5)))
+      isdigit((int) *(tz+1)) && isdigit((int) *(tz+2)) && (*(tz+3) == ':') && isdigit((int) *(tz+4)) && isdigit((int) *(tz+5)))
     {
       /* timezone offset */
       gint sign = *tz == '-' ? 1 : -1;

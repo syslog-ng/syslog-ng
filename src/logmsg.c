@@ -30,6 +30,7 @@
 #include <syslog.h>
 #include <ctype.h>
 #include <unistd.h>
+#include <string.h>
 
 #include <assert.h>
 

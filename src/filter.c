@@ -27,6 +27,7 @@
 #include "cfg.h"
 
 #include <regex.h>
+#include <string.h>
 
 
 gchar *re_matches[RE_MAX_MATCHES];

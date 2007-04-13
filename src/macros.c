@@ -29,6 +29,7 @@
 #include "filter.h"
 
 #include <time.h>
+#include <string.h>
 
 struct macro_def
 {

@@ -37,12 +37,17 @@ dnl Checks for libraries.
 dnl Checks for header files.
 AC_HEADER_STDC
 AC_CHECK_HEADER(dmalloc.h)
-AC_CHECK_HEADERS(strings.h openssl/ssl.h)
+AC_CHECK_HEADERS(strings.h openssl/ssl.h getopt.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 
 dnl Checks for library functions.
-AC_CHECK_FUNCS(strdup strtol inet_aton inet_ntoa)
+AC_CHECK_LIB(door, door_create)
+AC_CHECK_LIB(socket, socket)
+AC_CHECK_LIB(nsl, gethostbyname)
+
+AC_CHECK_FUNCS(strdup strtol inet_aton inet_ntoa getopt_long)
+
 
 if test "x$enable_memtrace" = "xyes" ; then
 	AC_CHECK_LIB(dl, dlsym)
