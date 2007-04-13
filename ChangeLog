@@ -2,6 +2,24 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-03-04 15:53:33 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-21
+
+    Summary:
+      added template unit tests
+    Revision:
+      syslog-ng--mainline--2.0--patch-21
+
+    
+    
+
+    new files:
+     tests/unit/.arch-ids/test_template.c.id
+     tests/unit/test_template.c
+
+    modified files:
+     ChangeLog
+
+
 2005-03-04 15:53:16 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-20
 
     Summary:
