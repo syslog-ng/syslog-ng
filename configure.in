@@ -2,7 +2,7 @@ dnl Process this file with autoconf to produce a configure script.
 AC_INIT(src/main.c)
 
 VERSION="1.9.3"
-GLIB_VERSION="2.0.1"
+GLIB_VERSION="2.2"
 EVTLOG_VERSION="0.2"
 
 AM_INIT_AUTOMAKE(syslog-ng, $VERSION)
@@ -20,8 +20,11 @@ AC_ARG_ENABLE(debug,
 AC_ARG_ENABLE(memtrace, 
               [  --enable-memtrace   Enable alternative leak debugging code.])
               
-AC_ARG_ENABLE(ssl,
-              [  --enable-ssl        Enable SSL support.])
+dnl AC_ARG_ENABLE(ssl,
+dnl              [  --enable-ssl        Enable SSL support.])
+
+AC_ARG_ENABLE(dynamic-linking,
+              [  --enable-dynamic-linking        Link glib and eventlog dynamically instead of statically.])
 
 AM_CONFIG_HEADER(config.h)
 
@@ -63,6 +66,8 @@ int foo(void)
 blb_cv_c_global_timezone=yes,
 blb_cv_c_global_timezone=no)])
 
+
+
 if test "x$blb_cv_c_global_timezone" = "xyes"; then
         AC_DEFINE(HAVE_GLOBAL_TIMEZONE, 1, [have a global timezone variable])
 fi
@@ -86,13 +91,41 @@ AC_DEFINE_UNQUOTED(ENABLE_DEBUG, `enable_value $enable_debug`, [Enable debugging
 AC_DEFINE_UNQUOTED(ENABLE_MEM_TRACE, `enable_value $enable_memtrace`, [Enable memtrace])
 AC_DEFINE_UNQUOTED(ENABLE_SSL, `enable_value $enable_ssl`, [Enable SSL support])
 
-PKG_CHECK_MODULES(GLIB, glib-2.0)
-PKG_CHECK_MODULES(EVTLOG, eventlog)
+PKG_CHECK_MODULES(GLIB, glib-2.0,,)
+PKG_CHECK_MODULES(EVTLOG, eventlog,,)
+
+old_LIBS=$LIBS
+LIBS="-Wl,-static $GLIB_LIBS -Wl,-call_shared"
+AC_CACHE_CHECK(for static GLib libraries,
+               blb_cv_static_glib,
+[AC_TRY_LINK([], [
+extern void g_hash_table_new(void);
+
+int main()
+{
+  void (*fn)(void) = g_hash_table_new;
+
+  return (int) fn;
+}
+
+],
+blb_cv_static_glib=yes,
+blb_cv_static_glib=no)])
+LIBS=$old_LIBS
+
+if test "x$blb_cv_static_glib" = "xno"; then
+	AC_MSG_ERROR([static GLib libraries not found, either link GLib dynamically using the --enable-dynamic-linking or install a static GLib])
+fi
 
 CFLAGS="${CFLAGS} -Wall -g"
 DEPS_CPPFLAGS="$CPPFLAGS $GLIB_CFLAGS $EVTLOG_CFLAGS"
 CPPFLAGS="$DEPS_CPPFLAGS -D_GNU_SOURCE"
-DEPS_LIBS="$LIBS -Wl,-static $LEXLIB $GLIB_LIBS $EVTLOG_LIBS -Wl,-call_shared"
+
+if test "x$enable_dynamic_linking" = "xyes"; then
+	DEPS_LIBS="$LIBS $LEXLIB $GLIB_LIBS $EVTLOG_LIBS"
+else
+	DEPS_LIBS="$LIBS -Wl,-static $LEXLIB $GLIB_LIBS $EVTLOG_LIBS -Wl,-call_shared"
+fi
 LIBS="$DEPS_LIBS"
 YFLAGS="-d"
 

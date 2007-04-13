@@ -2,6 +2,22 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-04-03 11:21:55 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-22
+
+    Summary:
+      improved configure tests
+    Revision:
+      syslog-ng--mainline--2.0--patch-22
+
+    
+    2005-04-03  Balazs Scheidler <bazsi@balabit.hu>
+    
+    	* configure.in: improved configure tests
+
+    modified files:
+     ChangeLog configure.in
+
+
 2005-03-04 15:53:33 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-21
 
     Summary:
