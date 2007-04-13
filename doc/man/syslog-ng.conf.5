@@ -1,0 +1,104 @@
+.TH syslog-ng.conf 5
+.SH NAME
+/etc/syslog-ng/syslog-ng.conf - syslog-ng configuration file
+.SH DESCRIPTION
+.PP
+
+NOTE: This file is not yet updated to syslog-ng 2.0, use the HTML documentation.
+
+The configuration file for \fBsyslog-ng\fP
+
+A message route in syslog-ng is made up from three parts: a source, 
+a destination and filtering rules. 
+
+.SH SOURCES
+
+You can declare source statements using the "source" keyword:
+
+source <sourcename> { sourcedriver params; sourcedriver params; ... };
+
+Sourcename is an identifier you'll use to refer to this group of messages. 
+Sourcedriver is a method of getting a given message. The following drivers 
+are available:
+
+* file <filename> - reads messages from the given file
+
+* unix-dgram <filename> - reads messages from the given AF_UNIX, SOCK_DGRAM socket (BSDi style)
+
+* unix-stream <filename> - reads messages from the given AF_UNIX, SOCK_STREAM socket (Linux style)
+
+* udp <ip>,<port> - network source using the UDP protocol. If you do not want to bind to a specific interface use 0.0.0.0.
+
+* tcp <ip>,<port> - network source using the TCP protocol.
+
+.SH DESTINATIONS
+
+Destinations can be created using the destination keyword:
+
+destination <destname> { destdriver params; destdriver params; ... ; };
+
+* file <filename> - writes messages to the given file
+
+* unix-dgram <filename> - writes messages to the given AF_UNIX, SOCK_DGRAM socket (BSDi style)
+
+* unix-stream <filename> - writes messages to the given AF_UNIX, SOCK_STREAM socket (Linux style)
+
+* udp <ip>,<port> - network destination using the UDP protocol
+
+* tcp <ip>,<port> - network destination using the TCP protocol
+
+* usertty <username> - sends log to the given user's terminal
+
+.SH FILTERS
+
+You can create filters using the filter keyword:
+
+filter <filtername> { expression; };
+
+Where expression is a simple boolean expression. You can use "and", "or" 
+and "not" to connect builtin functions. Functions can be one of:
+
+* facility(list of comma seperated facility names)
+
+* level(list of comma seperated priority nammes OR a range separated by "..")
+
+* program(regexp to match program name)
+
+* host(regexp to match program name)
+
+* match(regexp to match program name)
+
+Other functions are being planned. 
+
+.SH LOG STATEMENTS
+
+You can connect sources and destinations using the log statement:
+
+log { source S1; source S2; ... filter F1; filter F2; ... destination D1; destination D2; ... };
+
+Where Sx refers to one of the declared log sources, Fx one of the filters and 
+Dx one of the destinations.
+
+Filters are ANDed together.
+
+.SH OPTIONS
+
+You can specify several global options to syslog-ng in the options statement:
+
+options { opt1; opt2; ... };
+
+Where optn can be any of the following:
+
+* mark(n)		set mark frequency to n seconds
+
+* sync(n)		set sync frequence to n lines (can be overridden locally)
+
+* long_hostnames(yes|no)	set long hostname generation on or off
+
+.SH FILES
+/etc/syslog-ng/syslog-ng.conf
+.SH COPYRIGHT
+syslog-ng and this file is Copyright (c) 1999 BalaBit Computing
+.SH SEE ALSO
+syslog-ng(8), syslogd(8)
+

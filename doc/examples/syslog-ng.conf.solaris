@@ -1,0 +1,15 @@
+#
+# Syslog-ng example configuration file for Solaris
+#
+# Copyright (c) 1999 Balazs Scheidler
+# $Id: syslog-ng.conf.solaris,v 1.2 1999/11/15 12:30:41 bazsi Exp $
+#
+# Solaris 2.5.1 and below uses the STREAMS driver, above extends it
+# with doors. For 2.5.1 remove the door() option from the source declaration.
+#
+
+source local { sun-streams("/dev/log" door("/etc/.syslog_door")); internal(); };
+
+destination all { file("/var/log/messages"); };
+
+log { source(local); destination(all); };

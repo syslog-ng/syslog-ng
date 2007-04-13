@@ -2,6 +2,38 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-01-22 00:48:47 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-15
+
+    Summary:
+      added some missing files to tla
+    Revision:
+      syslog-ng--mainline--2.0--patch-15
+
+    
+    
+
+    new files:
+     doc/.arch-ids/Makefile.am.id doc/Makefile.am
+     doc/examples/.arch-ids/=id
+     doc/examples/.arch-ids/syslog-ng.conf.sample.id
+     doc/examples/.arch-ids/syslog-ng.conf.solaris.id
+     doc/examples/syslog-ng.conf.sample
+     doc/examples/syslog-ng.conf.solaris doc/man/.arch-ids/=id
+     doc/man/.arch-ids/syslog-ng.8.id
+     doc/man/.arch-ids/syslog-ng.conf.5.id doc/man/syslog-ng.8
+     doc/man/syslog-ng.conf.5 doc/reference/.arch-ids/=id
+     doc/reference/.arch-ids/syslog-ng.xml.id
+     doc/reference/.arch-ids/syslog-ng.xsl.id
+     doc/reference/syslog-ng.xml doc/reference/syslog-ng.xsl
+
+    modified files:
+     ChangeLog
+
+    new directories:
+     doc/examples doc/examples/.arch-ids doc/man doc/man/.arch-ids
+     doc/reference doc/reference/.arch-ids
+
+
 2005-01-22 00:47:35 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-14
 
     Summary:
