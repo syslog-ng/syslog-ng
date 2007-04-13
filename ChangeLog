@@ -2,6 +2,22 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-04-15 08:10:10 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-25
+
+    Summary:
+      Configure fix to --enable-dynamic-linking
+    Revision:
+      syslog-ng--mainline--2.0--patch-25
+
+    2005-04-15  Balazs Scheidler <bazsi@balabit.hu>
+    
+    	* configure.in: do not enforce static glib if --enable-dynamic-linking was specified
+    
+
+    modified files:
+     ChangeLog configure.in
+
+
 2005-04-03 11:24:28 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-24
 
     Summary:

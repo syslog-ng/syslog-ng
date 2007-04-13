@@ -113,7 +113,7 @@ blb_cv_static_glib=yes,
 blb_cv_static_glib=no)])
 LIBS=$old_LIBS
 
-if test "x$blb_cv_static_glib" = "xno"; then
+if test "x$enable_dynamic_linking" = "xno" -a "x$blb_cv_static_glib" = "xno"; then
 	AC_MSG_ERROR([static GLib libraries not found, either link GLib dynamically using the --enable-dynamic-linking or install a static GLib])
 fi
 
