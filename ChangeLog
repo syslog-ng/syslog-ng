@@ -2,6 +2,20 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-10-21 16:07:47 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-64
+
+    Summary:
+      test commit for syslog-ng-commit message
+    Revision:
+      syslog-ng--mainline--2.0--patch-64
+
+    
+    
+
+    modified files:
+     ChangeLog src/logmsg.c
+
+
 2005-10-18 15:40:14 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-63
 
     Summary:

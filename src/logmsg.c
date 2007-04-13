@@ -307,6 +307,7 @@ log_msg_parse(LogMessage *self, gchar *data, gint length, guint flags)
       /* It's a regular ol' message. */
       else
 	{
+
 	  /* If we haven't already found the original hostname,
 	     look for it now. */
 
