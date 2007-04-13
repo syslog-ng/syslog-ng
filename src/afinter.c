@@ -32,14 +32,13 @@ static gboolean
 afinter_source_prepare(GSource *source G_GNUC_UNUSED, gint *timeout)
 {
   *timeout = -1;
-  return !!g_queue_get_length(internal_msg_queue);
+  return !g_queue_is_empty(internal_msg_queue);
 }
 
 static gboolean
 afinter_source_check(GSource *source G_GNUC_UNUSED)
 {
-  return !!g_queue_get_length(internal_msg_queue);
-  
+  return !g_queue_is_empty(internal_msg_queue);
 }
 
 static gboolean

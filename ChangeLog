@@ -2,6 +2,23 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-02-28 08:57:20 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-18
+
+    Summary:
+      Changed g_queue_get_length to g_queue_is_empty as it makes syslog-ng compatible with glib 2.2
+    Revision:
+      syslog-ng--mainline--2.0--patch-18
+
+    2005-02-28  Balazs Scheidler <bazsi@balabit.hu>
+    
+    	* src/afinter.c: instead of using "!!g_queue_get_length()" use
+    	"!g_queue_is_empty()"
+    
+
+    modified files:
+     ChangeLog src/afinter.c
+
+
 2005-02-12 23:05:09 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-17
 
     Summary:
