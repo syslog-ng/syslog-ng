@@ -2,6 +2,27 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-02-11 08:16:00 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-2
+
+    Summary:
+      implemented filter debugging (fixes: #3988)
+    Revision:
+      syslog-ng--mainline--2.0--patch-2
+
+    
+    	* src/filter.c (log_filter_rule_eval): new function, previously
+    	rule->root was manipulated directly which was not nice, filter rule
+    	debugging messages are put here (fixes: #3988),
+    	(filter_expr_eval): uninlined, added debugging messages (fixes: #3988),
+    	(filter_expr_free): uninlined
+    	(*_new): set self->type to be used in log messages properly (fixes: #3988)
+    
+    
+
+    modified files:
+     ChangeLog src/center.c src/filter.c src/filter.h
+
+
 2006-02-11 07:53:02 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-1
 
     Summary:

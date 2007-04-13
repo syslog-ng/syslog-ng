@@ -34,6 +34,34 @@ gchar *re_matches[RE_MAX_MATCHES];
 
 static void log_filter_rule_free(LogFilterRule *self);
 
+
+gboolean 
+log_filter_rule_eval(LogFilterRule *self, LogMessage *msg)
+{
+  gboolean res;
+  
+  msg_debug("Filter rule evaluation begins",
+            evt_tag_str("filter_rule", self->name->str),
+            NULL);
+  res = filter_expr_eval(self->root, msg);
+  msg_debug("Filter rule evaluation result",
+            evt_tag_str("filter_result", res ? "match" : "not-match"),
+            evt_tag_str("filter_rule", self->name->str),
+            NULL);
+  return res;
+}
+
+LogFilterRule *
+log_filter_rule_new(gchar *name, FilterExprNode *expr)
+{
+  LogFilterRule *self = g_new0(LogFilterRule, 1);
+  
+  self->ref_cnt = 1;
+  self->root = expr;
+  self->name = g_string_new(name);
+  return self;
+}
+
 LogFilterRule *
 log_filter_ref(LogFilterRule *self)
 {
@@ -50,17 +78,6 @@ log_filter_unref(LogFilterRule *self)
     }
 }
 
-LogFilterRule *
-log_filter_rule_new(gchar *name, FilterExprNode *expr)
-{
-  LogFilterRule *self = g_new0(LogFilterRule, 1);
-  
-  self->ref_cnt = 1;
-  self->root = expr;
-  self->name = g_string_new(name);
-  return self;
-}
-
 static void
 log_filter_rule_free(LogFilterRule *self)
 {
@@ -68,6 +85,33 @@ log_filter_rule_free(LogFilterRule *self)
   filter_expr_free(self->root);
   g_free(self);
 }
+
+/****************************************************************
+ * Filter expression nodes
+ ****************************************************************/
+
+gboolean
+filter_expr_eval(FilterExprNode *self, LogMessage *msg)
+{
+  gboolean res;
+  
+  res = self->eval(self, msg);
+  msg_debug("Filter node evaluation result",
+            evt_tag_str("filter_result", res ? "match" : "not-match"),
+            evt_tag_str("filter_type", self->type),
+            NULL);
+  return res;
+}
+
+void
+filter_expr_free(FilterExprNode *self)
+{
+  if (self->free_fn)
+    self->free_fn(self);
+  else
+    g_free(self);
+}
+
 
 typedef struct _FilterOp
 {
@@ -102,6 +146,7 @@ fop_or_new(FilterExprNode *e1, FilterExprNode *e2)
   self->super.free_fn = fop_free;
   self->left = e1;
   self->right = e2;
+  self->super.type = "OR";
   return &self->super;
 }
 
@@ -122,6 +167,7 @@ fop_and_new(FilterExprNode *e1, FilterExprNode *e2)
   self->super.free_fn = fop_free;
   self->left = e1;
   self->right = e2;
+  self->super.type = "AND";
   return &self->super;
 }
 
@@ -185,6 +231,7 @@ filter_facility_new(guint32 facilities)
 
   self->super.eval = filter_facility_eval;
   self->valid = facilities;
+  self->super.type = "facility";
   return &self->super;
 }
 
@@ -226,6 +273,7 @@ filter_level_new(guint32 levels)
 
   self->super.eval = filter_level_eval;
   self->valid = levels;
+  self->super.type = "level";
   return &self->super;
 }
 
@@ -308,6 +356,7 @@ filter_prog_new(gchar *prog)
     }
   self->super.eval = filter_prog_eval;
   self->super.free_fn = filter_re_free;
+  self->super.type = "program";
   return &self->super;
 }
 
@@ -329,6 +378,7 @@ filter_host_new(gchar *host)
     }
   self->super.eval = filter_host_eval;
   self->super.free_fn = filter_re_free;
+  self->super.type = "host";
   return &self->super;
 }
 
@@ -350,6 +400,7 @@ filter_match_new(gchar *re)
     }
   self->super.eval = filter_match_eval;
   self->super.free_fn = filter_re_free;
+  self->super.type = "match";
   return &self->super;
 }
 
@@ -387,6 +438,7 @@ filter_call_free(FilterExprNode *s)
   FilterCall *self = (FilterCall *) s;
   
   g_string_free(self->rule, TRUE);
+  g_free((gchar *) self->super.type);
   g_free(self);
 }
 
@@ -399,6 +451,7 @@ filter_call_new(gchar *rule, GlobalConfig *cfg)
   self->super.free_fn = filter_call_free;
   self->rule = g_string_new(rule);
   self->cfg = cfg;
+  self->super.type = g_strdup_printf("filter(%s)", rule);
   return &self->super;
 }
 

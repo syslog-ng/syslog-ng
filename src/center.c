@@ -346,7 +346,7 @@ log_center_queue(LogPipe *s, LogMessage *msg, gint path_flags)
               LogFilterRule *f;
                   
               f = (LogFilterRule *) ep->ref;
-              if (!filter_expr_eval(f->root, msg))
+              if (!log_filter_rule_eval(f, msg))
                 {
                   goto next_connection;
                 }
