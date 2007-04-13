@@ -145,8 +145,6 @@ static struct keyword keywords[] = {
 	{ "off", 		KW_NO }
 };
 
-#define YY_NO_UNPUT   1
-
 #define MAX_REGEXP_LEN	1024
 
 int linenum = 1;
@@ -159,6 +157,8 @@ static void append_string(int length, char *str);
 static void append_char(char c);
 
 %}
+
+%option nounput
 
 white	[ \t]
 digit	[0-9]

@@ -2,6 +2,26 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-07-28 13:37:23 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-45
+
+    Summary:
+      small Makefile fixes and a flex compatibility fix
+    Revision:
+      syslog-ng--mainline--2.0--patch-45
+
+    2005-07-28  Balazs Scheidler <bazsi@balabit.hu>
+    
+    	* src/Makefile.am: added cfg-lex.c and cfg-grammar.c to
+    	 MAINTAINER_CLEAN_FILES
+    
+    	* src/cfg-lex.l: removed YY_NO_UNPUT as it was not standard
+    	(reported by Roberto Nibali)
+    
+
+    modified files:
+     ChangeLog src/Makefile.am src/cfg-lex.l
+
+
 2005-07-26 09:23:24 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-44
 
     Summary:

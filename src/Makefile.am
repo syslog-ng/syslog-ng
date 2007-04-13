@@ -23,3 +23,4 @@ EXTRA_DIST = affile.h afinet.h afinter.h afprog.h afsocket.h afstreams.h \
 	misc.h sgroup.h syslog-names.h \
 	syslog-ng.h utils.h memtrace.h templates.h children.h fdread.h fdwrite.h
 
+MAINTAINER_CLEAN_FILES = cfg-lex.c cfg-grammar.c
