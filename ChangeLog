@@ -2,6 +2,33 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-06-30 08:58:24 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-39
+
+    Summary:
+      fixed use_time_recvd() option handling, documentation updates
+    Revision:
+      syslog-ng--mainline--2.0--patch-39
+
+    2005-06-30  Balazs Scheidler <bazsi@balabit.hu>
+    
+    	* doc/reference/syslog-ng.xml: updated documentation, removed
+    	non-existing template timezone option, separate Macros section,
+    	added a table on common destination options, added prefixed time
+    	related macros without documentation, added DEPRECATED notice to
+    	use_time_recvd(), added documentation on ts_format
+    
+    	* src/affile.c: use the value for the global use_time_recvd() option
+    	when expanding a filename
+    
+    	* src/logwriter.c: use the value for the global use_time_recvd()
+    	option when expanding the log message
+    
+
+    modified files:
+     ChangeLog doc/reference/syslog-ng.xml src/affile.c
+     src/affile.h src/logwriter.c src/logwriter.h
+
+
 2005-06-27 09:27:36 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-38
 
     Summary:

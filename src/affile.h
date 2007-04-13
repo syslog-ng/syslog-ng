@@ -32,7 +32,6 @@
 #define AFFILE_NO_EXPAND   0x00000002
 #define AFFILE_TMPL_ESCAPE 0x00000004
 #define AFFILE_CREATE_DIRS 0x00000008
-#define AFFILE_STAMP_RECVD 0x00000010
 
 typedef struct _AFFileSourceDriver
 {
@@ -63,6 +62,7 @@ typedef struct _AFFileDestDriver
   GHashTable *writer_hash;
   GlobalConfig *cfg;
   
+  gboolean use_time_recvd;
   gint time_reap;
   guint reap_timer;
 } AFFileDestDriver;

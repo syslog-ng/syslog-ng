@@ -440,6 +440,8 @@ affile_dd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
     self->dir_perm = cfg->dir_perm;
   if (self->time_reap == -1)
     self->time_reap = cfg->time_reap;
+  
+  self->use_time_recvd = cfg->use_time_recvd;
   log_writer_options_init(&self->writer_options, cfg, FALSE);
   self->cfg = cfg;
   
@@ -512,7 +514,7 @@ affile_dd_queue(LogPipe *s, LogMessage *msg, gint path_flags)
       filename = g_string_sized_new(32);
       log_template_format(self->filename_template, msg, 
 		    ((self->flags & AFFILE_TMPL_ESCAPE) ? MF_ESCAPE_RESULT : 0) |
-		    ((self->flags & AFFILE_STAMP_RECVD) ? MF_STAMP_RECVD : 0),
+		    (self->use_time_recvd ? MF_STAMP_RECVD : 0),
 		    TS_FMT_BSD,
 		    get_local_timezone_ofs(),
 		    filename);

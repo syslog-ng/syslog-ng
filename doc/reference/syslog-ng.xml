@@ -412,10 +412,13 @@
         object that needs a template to operate. For example:
         
         <synopsis>
-          template t_filetmpl { template("$ISODATE $HOST $MSG\n"); template_escape(no); time_zone(+0300); };
+          template t_filetmpl { template("$ISODATE $HOST $MSG\n"); template_escape(no)); };
           
           destination d_file { file("/var/log/messages" template(t_filetmpl); };
         </synopsis>
+        
+        Templates can reference one or more macros as described in <xref
+        linkend="macros">this section.</xref>
       </para>
     </sect1>
     <sect1 id="logpath">
@@ -1011,216 +1014,11 @@
 	Destination drivers output log messages to somewhere outside
 	syslog-ng: a file or a network socket.
       </para>
-      <sect2>
-	<title>file()</title>
-	<para>
-	  The file driver is one of the most important destination
-	  drivers in syslog-ng. It allows you to output messages to
-	  the named file, or as you'll see to a set of files.
-	</para>
-	<para>
-	  The destination filename may include macros which gets expanded
-	  when the message is written, thus a simple file() driver may
-	  result in several files to be created. Macros can be included by
-	  prefixing the macro name with a '$' sign (without the quotes),
-	  just like in Bourne compatible shells. A new syntax of using
-	  braces around macro names is also added to syslog-ng 2.0 ("$MSG"
-	  and "${MSG}" is equivalent).
-	</para>
-	<para>
-	  If the expanded filename refers to a directory which doesn't
-	  exist, it will be created depending on the create_dirs()
-	  setting (both global and a per destination option)
-	</para>
-	<para>
-	  Warning: since the state of each created file must be
-	  tracked by syslog-ng, it consumes some memory for each
-	  file. If no new messages are written to a file within 60
-	  seconds (controlled by the time_reap global option), it's
-	  closed, and its state is freed.
-	</para>
-	<para>
-	  Exploiting this, a DoS attack can be mounted against your
-	  system. If the number of possible destination files and its
-	  needed memory is more than the amount your logserver has.
-	</para>
-	<para>
-	  The most suspicious macro is $PROGRAM, where the possible
-	  variations is quite high, so in untrusted environments
-	  $PROGRAM usage should be avoided.
-	</para>
-	<table>
-	  <title>Available macros in filename expansion</title>
-	  <tgroup cols="2">
-	    <thead>
-	      <row>
-		<entry>Name</entry>
-		<entry>Description</entry>
-	      </row>
-	    </thead>
-	    <tbody>
-	      <row>
-		<entry>FACILITY</entry>
-		<entry>
-		  The name of the facility, the message is tagged as
-		  coming from.
-		</entry>
-	      </row>
-	      <row>
-		<entry>PRIORITY or LEVEL</entry>
-		<entry>
-		  The priority of the message.
-		</entry>
-	      </row>
-	      <row>
-		<entry>TAG</entry>
-		<entry>
-		  The priority and facility encoded as a 2 digit hexadecimal
-		  number.
-		</entry>
-	      </row>
-	      <row>
-		<entry>PRI</entry>
-		<entry>
-		  The priority and facility encoded as a 2 or 3 digit
-		  decimal number as it is present in syslog messages. 
-		</entry>
-	      </row>
-              <row>
-                <entry>DATE</entry>
-                <entry></entry>
-              </row>
-              <row>
-                <entry>FULLDATE</entry>
-                <entry></entry>
-              </row>
-              <row>
-                <entry>ISODATE</entry>
-                <entry></entry>
-              </row>
-	      <row>
-		<entry>YEAR</entry>
-		<entry>
-		  The year the message was sent. Time expansion macros
-		  can either use the time specified in the log
-		  message, e.g. the time the log message is sent, or
-		  the time the message was received by the log
-		  server. This is controlled by the use_time_recvd()
-		  option.
-		</entry>
-	      </row>
-	      <row>
-		<entry>MONTH</entry>
-		<entry>
-		  The month the message was sent.
-		</entry>
-	      </row>
-	      <row>
-		<entry>DAY</entry>
-		<entry>
-		  The day of month the message was sent.
-		</entry>
-	      </row>
-              <row>
-                <entry>WEEKDAY</entry>
-                <entry>
-                 The 3-letter name of the day of week the message was sent, e.g. 'Thu'.
-                </entry>
-              </row>
-              <row>
-                <entry>WEEK</entry>
-                <entry>
-                 The week number of the year. (the first monday in the year
-                 marks the first week)
-                </entry>
-              </row>
-	      <row>
-		<entry>HOUR</entry>
-		<entry>
-		  The hour of day the message was sent.
-		</entry>
-	      </row>
-	      <row>
-		<entry>MIN</entry>
-		<entry>
-		  The minute the message was sent.
-		</entry>
-	      </row>
-	      <row>
-		<entry>SEC</entry>
-		<entry>
-		  The second the message was sent.
-		</entry>
-	      </row>
-	      <row>
-		<entry>UNIXTIME</entry>
-		<entry>
-		</entry>
-	      </row>
-	      <row>
-		<entry>TZOFFSET</entry>
-		<entry>
-		  The time-zone as hour offset from GMT. e.g. '-0700'
-		</entry>
-	      </row>
-	      <row>
-		<entry>TZ</entry>
-		<entry>
-		  The time zone or name or abbreviation. e.g. 'PDT'
-		</entry>
-	      </row>
-	      <row>
-		<entry>HOST</entry> 
-		<entry>
-		  The name of the source host where the message is
-		  originated from. If the message traverses several
-		  hosts, and chain_hostnames() is on, the first one is
-		  used.
-		</entry>
-	      </row>
-	      <row>
-		<entry>FULLHOST</entry> 
-		<entry>
-		</entry>
-	      </row>
-	      <row>
-		<entry>HOST_FROM</entry> 
-		<entry>
-		</entry>
-	      </row>
-	      <row>
-		<entry>FULLHOST_FROM</entry> 
-		<entry>
-		</entry>
-	      </row>
-	      <row>
-		<entry>SOURCEIP</entry> 
-		<entry>
-		</entry>
-	      </row>
-	      <row>
-		<entry>PROGRAM</entry>
-		<entry>
-		  The name of the program the message was sent by.
-		</entry>
-	      </row>
-	      <row>
-		<entry>MSG or MESSAGE</entry>
-		<entry>
-		  Message contents including the programname and pid.
-		</entry>
-	      </row>
-	      <row>
-	        <entry>MSGONLY</entry>
-	        <entry>
-	          Message contents without the program name.
-	        </entry>
-	      </row>
-	    </tbody>
-	  </tgroup>	
-	</table>
-	<table>
-	  <title>Available options for file()</title>
+      <para>
+        Some of the parameters are common for all destinations which affect the
+        way messages are formatted, sent. 
+	<table id="destcommonopts">
+	  <title>Common options for destination drivers</title>
 	  <tgroup cols="4">
 	    <thead>
 	      <row>
@@ -1231,6 +1029,13 @@
 	      </row>
 	    </thead>
 	    <tbody>
+	      <row>
+		<entry>flags()</entry>
+		<entry></entry>
+		<entry>
+                </entry>
+		<entry>empty set</entry>
+	      </row>
 	      <row>
 		<entry>log_fifo_size()</entry> 
 		<entry>number</entry>
@@ -1263,6 +1068,115 @@
 		</entry>
 	      </row>
 
+	      <row>
+		<entry>template()</entry> 
+		<entry>string</entry>
+		<entry>
+		  Specifies a template which defines the logformat to
+		  be used in this file. Macros are described in <xref
+                  linkend="macros">this section</xref>
+		</entry>
+		<entry>
+		  a format conforming to the default logfile format.
+		</entry>
+	      </row>
+	      <row>
+		<entry>template_escape()</entry> 
+		<entry>yes or no</entry>
+		<entry>
+		  Turns on escaping ' and " in templated output files. This is useful
+		  for generating SQL statements and quoting string contents
+		  so that parts of your log message don't get interpreted
+		  as commands to the SQL server.
+		</entry>
+		<entry>
+		  yes
+		</entry>
+	      </row>
+	      <row>
+		<entry>fsync()</entry>
+		<entry></entry>
+		<entry>
+                </entry>
+		<entry></entry>
+	      </row>
+	      <row>
+		<entry>keep_timestamp()</entry>
+		<entry></entry>
+		<entry>
+                </entry>
+		<entry></entry>
+	      </row>
+	      <row>
+		<entry>timezone()</entry>
+		<entry></entry>
+		<entry>
+                </entry>
+		<entry></entry>
+	      </row>
+	      <row>
+		<entry>ts_format()</entry>
+		<entry></entry>
+		<entry>
+                </entry>
+		<entry></entry>
+	      </row>
+	    </tbody>
+	  </tgroup>
+	</table>
+      </para>
+      <sect2>
+	<title>file()</title>
+	<para>
+	  The file driver is one of the most important destination
+	  drivers in syslog-ng. It allows you to output messages to
+	  the named file, or as you'll see to a set of files.
+	</para>
+	<para>
+          The destination filename may include macros which gets expanded
+          when the message is written, thus a simple file() driver may
+          result in several files to be created. For more information on
+          available macros see <xref linkend="macros">the section on
+          macros</xref>.
+        </para>
+        <para>
+          If the expanded filename refers to a directory which doesn't
+          exist, it will be created depending on the create_dirs()
+          setting (both global and a per destination option)
+        </para>
+        <para>
+          <warning>
+            <para> 
+              Since the state of each created file must be
+              tracked by syslog-ng, it consumes some memory for each
+              file. If no new messages are written to a file within 60
+              seconds (controlled by the time_reap global option), it's
+              closed, and its state is freed.
+            </para>
+          </warning>
+        </para>
+        <para>
+          Exploiting this, a DoS attack can be mounted against your
+          system. If the number of possible destination files and its
+          needed memory is more than the amount your logserver has.
+        </para>
+        <para>
+          The most suspicious macro is $PROGRAM, where the possible
+          variations is quite high, so in untrusted environments
+          $PROGRAM usage should be avoided.
+        </para>
+	<table>
+	  <title>Available options for file()</title>
+	  <tgroup cols="4">
+	    <thead>
+	      <row>
+		<entry>Name</entry>
+		<entry>Type</entry>
+		<entry>Description</entry>
+		<entry>Default</entry>
+	      </row>
+	    </thead>
+	    <tbody>
 	      <row>
 		<entry>encrypt()</entry> 
 		<entry>yes or no</entry>
@@ -1364,31 +1278,6 @@
 		</entry>
 		<entry>
 		  root
-		</entry>
-	      </row>
-	      <row>
-		<entry>template()</entry> 
-		<entry>string</entry>
-		<entry>
-		  Specifies a template which defines the logformat to
-		  be used in this file. Possible macros are the same
-		  as with destination file().
-		</entry>
-		<entry>
-		  a format conforming to the default logfile format.
-		</entry>
-	      </row>
-	      <row>
-		<entry>template_escape()</entry> 
-		<entry>yes or no</entry>
-		<entry>
-		  Turns on escaping ' and " in templated output files. This is useful
-		  for generating SQL statements and quoting string contents
-		  so that parts of your log message don't get interpreted
-		  as commands to the SQL server.
-		</entry>
-		<entry>
-		  yes
 		</entry>
 	      </row>
               <row>
@@ -1497,32 +1386,6 @@
 		</entry>
 	      </row>
 
-	      <row>
-		<entry>template()</entry> 
-		<entry>string</entry>
-		<entry>
-		  Specifies a template which defines the logformat to
-		  be used. Possible macros are the same
-		  as with destination file().
-		</entry>
-		<entry>
-		  a format conforming to the default logfile format.
-		</entry>
-	      </row>
-	      <row>
-		<entry>template_escape()</entry> 
-		<entry>yes or no</entry>
-		<entry>
-		  Turns on escaping ' and " in templated output files. This is useful
-		  for generating SQL statements and quoting string contents
-		  so that parts of your log message don't get interpreted
-		  as commands to the SQL server.
-		</entry>
-		<entry>
-		  yes
-		</entry>
-	      </row>
-
 	    </tbody>
 	  </tgroup>
 	</table>
@@ -1550,47 +1413,8 @@
 	    unix-stream(filename [options]);
 	    unix-dgram(filename [options]); 
 	</synopsis>
-
-	<table>
-	  <title>Available options for unix-stream() &amp; unix-dgram()</title>
-	  <tgroup cols="4">
-	    <thead>
-	      <row>
-		<entry>Name</entry>
-		<entry>Type</entry>
-		<entry>Description</entry>
-		<entry>Default</entry>
-	      </row>
-	    </thead>
-	    <tbody>
-	      <row>
-		<entry>template()</entry> 
-		<entry>string</entry>
-		<entry>
-		  Specifies a template which defines the logformat to
-		  be used. Possible macros are the same
-		  as with destination file().
-		</entry>
-		<entry>
-		  a format conforming to the default logfile format.
-		</entry>
-	      </row>
-	      <row>
-		<entry>template_escape()</entry> 
-		<entry>yes or no</entry>
-		<entry>
-		  Turns on escaping ' and " in templated output files. This is useful
-		  for generating SQL statements and quoting string contents
-		  so that parts of your log message don't get interpreted
-		  as commands to the SQL server.
-		</entry>
-		<entry>
-		  yes
-		</entry>
-	      </row>
-	    </tbody>
-	  </tgroup>
-	</table>
+        These drivers support all common options but do not have any other
+        options.
 
 	<example>
 	  <title>Using the unix-stream() driver</title>
@@ -1649,31 +1473,6 @@
 		<entry>number</entry>
 		<entry>The port number to connect to.</entry>
 		<entry>514</entry>
-	      </row>
-	      <row>
-		<entry>template()</entry> 
-		<entry>string</entry>
-		<entry>
-		  Specifies a template which defines the logformat to
-		  be used. Possible macros are the same
-		  as with destination file().
-		</entry>
-		<entry>
-		  a format conforming to the default logfile format.
-		</entry>
-	      </row>
-	      <row>
-		<entry>template_escape()</entry> 
-		<entry>yes or no</entry>
-		<entry>
-		  Turns on escaping ' and " in templated output. This is useful
-		  for generating SQL statements and quoting string contents
-		  so that parts of your log message don't get interpreted
-		  as commands to the SQL server.
-		</entry>
-		<entry>
-		  yes
-		</entry>
 	      </row>
 	      <row>
 		<entry>tcp-keep-alive()</entry>
@@ -1827,52 +1626,24 @@
 	</synopsis>
 	<note>
 	  <para>
-	    NOTE: the program is executed once at startup, and kept
-	    running until SIGHUP or exit. The reason is to prevent
-	    starting up a large number of programs for messages, which
-	    would imply an easy DoS.
+	    Syslog-ng 1.6 executed the program once at startup, and kept
+	    running until SIGHUP or exit. The reason is to prevent starting
+	    up a large number of programs for messages, which would imply an
+	    easy DoS.
 	  </para>
+	  <para>
+	    Syslog-ng 2.0 on the other hand restarts the program if it
+            exits, mainly for reliability reasons, however it is not
+            recommended to launch programs for single messages as that might
+            easily be the cause of a DoS for the system.
+	  </para>
+	  
 	</note>
-	<table>
-	  <title>Available options for program()</title>
-	  <tgroup cols="4">
-	    <thead>
-	      <row>
-		<entry>Name</entry>
-		<entry>Type</entry>
-		<entry>Description</entry>
-		<entry>Default</entry>
-	      </row>
-	    </thead>
-	    <tbody>
-	      <row>
-		<entry>template()</entry> 
-		<entry>string</entry>
-		<entry>
-		  Specifies a template which defines the logformat to
-		  be used. Possible macros are the same
-		  as with destination file().
-		</entry>
-		<entry>
-		  a format conforming to the default logfile format.
-		</entry>
-	      </row>
-	      <row>
-		<entry>template_escape()</entry> 
-		<entry>yes or no</entry>
-		<entry>
-		  Turns on escaping ' and " in templated output. This is useful
-		  for generating SQL statements and quoting string contents
-		  so that parts of your log message don't get interpreted
-		  as commands to the SQL server.
-		</entry>
-		<entry>
-		  yes
-		</entry>
-	      </row>
-	    </tbody>
-	  </tgroup>
-	</table>
+	
+	<para>
+	  The program destination supports all common destination options
+          and has no specific options.
+	</para>
 
 	<example>
 	  <title>Using the program() destination driver</title>
@@ -1946,6 +1717,199 @@
 	  </tgroup>
 	</table>
       </para>
+    </sect1>
+    <sect1 id="macros">
+      <title>Macros</title>
+      <para>
+        There are some parts in syslog-ng (destination filenames and message
+        content templates) that might refer to one or more macros, which get
+        expanded as a message is processed. The table below summarizes the
+        available macros in syslog-ng.
+      </para>
+      <para>
+        Macros can be included by prefixing the macro name with a '$' sign
+        (without the quotes), just like in Bourne compatible shells. A new
+        syntax of using braces around macro names is also added to syslog-ng
+        2.0 ("$MSG" and "${MSG}" is equivalent).
+      </para>
+      <table>
+        <title>Available macros in filename expansion</title>
+        <tgroup cols="2">
+          <thead>
+            <row>
+              <entry>Name</entry>
+              <entry>Description</entry>
+            </row>
+          </thead>
+          <tbody>
+            <row>
+              <entry>FACILITY</entry>
+              <entry>
+                The name of the facility, the message is tagged as
+                coming from.
+              </entry>
+            </row>
+            <row>
+              <entry>PRIORITY or LEVEL</entry>
+              <entry>
+                The priority of the message.
+              </entry>
+            </row>
+            <row>
+              <entry>TAG</entry>
+              <entry>
+                The priority and facility encoded as a 2 digit hexadecimal
+                number.
+              </entry>
+            </row>
+            <row>
+              <entry>PRI</entry>
+              <entry>
+                The priority and facility encoded as a 2 or 3 digit
+                decimal number as it is present in syslog messages. 
+              </entry>
+            </row>
+            <row>
+              <entry>DATE, R_DATE, S_DATE</entry>
+              <entry></entry>
+            </row>
+            <row>
+              <entry>FULLDATE, R_FULLDATE, S_FULLDATE</entry>
+              <entry></entry>
+            </row>
+            <row>
+              <entry>ISODATE, R_ISODATE, S_ISODATE</entry>
+              <entry></entry>
+            </row>
+            <row>
+              <entry>STAMP, R_STAMP, S_STAMP</entry>
+              <entry>
+                A timestamp formatted as specified by the ts_format() global
+                or per-destination option.
+              </entry>
+            </row>
+            <row>
+              <entry>YEAR, R_YEAR, S_YEAR</entry>
+              <entry>
+                The year the message was sent. Time expansion macros
+                can either use the time specified in the log
+                message, e.g. the time the log message is sent, or
+                the time the message was received by the log
+                server. This is controlled by the use_time_recvd()
+                option.
+              </entry>
+            </row>
+            <row>
+              <entry>MONTH, R_MONTH, S_MONTH</entry>
+              <entry>
+                The month the message was sent.
+              </entry>
+            </row>
+            <row>
+              <entry>DAY, R_DAY, S_DAY</entry>
+              <entry>
+                The day of month the message was sent.
+              </entry>
+            </row>
+            <row>
+              <entry>WEEKDAY, R_WEEKDAY, S_WEEKDAY</entry>
+              <entry>
+               The 3-letter name of the day of week the message was sent, e.g. 'Thu'.
+              </entry>
+            </row>
+            <row>
+              <entry>WEEK, R_WEEK, S_WEEK</entry>
+              <entry>
+               The week number of the year. (the first monday in the year
+               marks the first week)
+              </entry>
+            </row>
+            <row>
+              <entry>HOUR, R_HOUR, S_HOUR</entry>
+              <entry>
+                The hour of day the message was sent.
+              </entry>
+            </row>
+            <row>
+              <entry>MIN, R_MIN, S_MIN</entry>
+              <entry>
+                The minute the message was sent.
+              </entry>
+            </row>
+            <row>
+              <entry>SEC, R_SEC, S_SEC</entry>
+              <entry>
+                The second the message was sent.
+              </entry>
+            </row>
+            <row>
+              <entry>UNIXTIME, R_UNIXTIME, S_UNIXTIME</entry>
+              <entry>
+              </entry>
+            </row>
+            <row>
+              <entry>TZOFFSET, R_TZOFFSET, S_TZOFFSET</entry>
+              <entry>
+                The time-zone as hour offset from GMT. e.g. '-0700'
+              </entry>
+            </row>
+            <row>
+              <entry>TZ, R_TZ, S_TZ</entry>
+              <entry>
+                The time zone or name or abbreviation. e.g. 'PDT'
+              </entry>
+            </row>
+            <row>
+              <entry>HOST</entry> 
+              <entry>
+                The name of the source host where the message is
+                originated from. If the message traverses several
+                hosts, and chain_hostnames() is on, the first one is
+                used.
+              </entry>
+            </row>
+            <row>
+              <entry>FULLHOST</entry> 
+              <entry>
+              </entry>
+            </row>
+            <row>
+              <entry>HOST_FROM</entry> 
+              <entry>
+              </entry>
+            </row>
+            <row>
+              <entry>FULLHOST_FROM</entry> 
+              <entry>
+              </entry>
+            </row>
+            <row>
+              <entry>SOURCEIP</entry> 
+              <entry>
+              </entry>
+            </row>
+            <row>
+              <entry>PROGRAM</entry>
+              <entry>
+                The name of the program the message was sent by.
+              </entry>
+            </row>
+            <row>
+              <entry>MSG or MESSAGE</entry>
+              <entry>
+                Message contents including the programname and pid.
+              </entry>
+            </row>
+            <row>
+              <entry>MSGONLY</entry>
+              <entry>
+                Message contents without the program name.
+              </entry>
+            </row>
+          </tbody>
+        </tgroup>	
+      </table>
+
     </sect1>
     <sect1>
       <title>Options</title>
@@ -2057,11 +2021,45 @@
 		<entry>.</entry>
 	      </row>
 	      <row>
-		<entry>use_time_recvd()</entry>
+		<entry>use_time_recvd() (DEPRECATED)</entry>
 		<entry>yes or no</entry>
-		<entry>Use the time a message is received instead of
-		the one specified in the message.</entry>
-	      </row>		
+		<entry>
+		  <para>
+		  This option controls how the time related macros are
+                  expanded in filename and content templates. If set to yes,
+                  then the non-prefixed versions of the time related macros
+                  (e.g. HOUR instead of R_HOUR and S_HOUR) refer to the time
+                  when the message was received, otherwise it refers to the
+                  timestamp which is in the message. 
+                  </para>
+                  <note>
+                    <para>
+                      The timestamp in the messages are generated by the
+                      originating host and might not be accurate. 
+                    </para>
+                  </note>
+                  <note>
+                    <para>
+                      This option is deprecated as many users assummed that
+                      it controls the timestamp as it is written to
+                      logfiles/destinations which is not the case. If you
+                      want to change how messages are formatted, you have to
+                      specify a content-template referring to the
+                      appropriate prefixed (S_ or R_) time macro.
+                    </para>
+                  </note>
+                </entry>
+	      </row>
+              <row>
+		<entry>ts_format()</entry>
+		<entry>rfc3164, bsd, rfc3339, iso</entry>
+		<entry>
+		  Specifies the timestamp format used when syslog-ng itself
+                  formats a timestamp and nothing else specifies a format
+                  (STAMP macros, internal messages, messages without
+                  original timestamps).
+                </entry>
+              </row>		
 	      <row>
 		<entry>use_dns()</entry>
 		<entry>yes or no</entry>

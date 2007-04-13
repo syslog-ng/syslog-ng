@@ -35,7 +35,6 @@
 
 /* writer options */
 #define LWO_TMPL_ESCAPE     0x0001
-#define LWO_TMPL_TIME_RECVD 0x0002
 
 typedef struct _LogWriterOptions
 {
@@ -45,8 +44,8 @@ typedef struct _LogWriterOptions
   LogTemplate *file_template;
   LogTemplate *proto_template;
   
-  gint keep_timestamp;
-  gint use_time_recvd;
+  gboolean keep_timestamp;
+  gboolean use_time_recvd; /* deprecated */
   gint ts_format;
   glong zone_offset;
 } LogWriterOptions;

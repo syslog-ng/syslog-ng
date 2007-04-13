@@ -164,7 +164,7 @@ log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
     {
       log_template_format(template, lm, 
                           ((self->options->options & LWO_TMPL_ESCAPE) ? MF_ESCAPE_RESULT : 0) |
-		          ((self->options->options & LWO_TMPL_TIME_RECVD) ? MF_STAMP_RECVD : 0), 
+		          (self->options->use_time_recvd ? MF_STAMP_RECVD : 0), 
 		          self->options->ts_format,
 		          self->options->zone_offset,
 		          result);
