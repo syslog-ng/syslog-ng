@@ -16,5 +16,6 @@ reference/syslog-ng.html.tar.gz: reference/syslog-ng.xml
 	xsltproc -o reference/syslog-ng.html/index.html 	\
 		$(top_srcdir)/doc/reference/syslog-ng.xsl 	\
 		$(top_srcdir)/doc/reference/syslog-ng.xml;	\
-	tar cfz reference/syslog-ng.html.tar.gz reference/syslog-ng.html)
+	cd reference; 						\
+	tar cfz syslog-ng.html.tar.gz syslog-ng.html)
 	

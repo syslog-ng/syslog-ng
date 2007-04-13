@@ -2,6 +2,20 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-04-16 10:11:49 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-26
+
+    Summary:
+      removed "reference/" the root path for the reference syslog-ng.html.tar.gz
+    Revision:
+      syslog-ng--mainline--2.0--patch-26
+
+    
+    
+
+    modified files:
+     ChangeLog doc/Makefile.am
+
+
 2005-04-15 08:10:10 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-25
 
     Summary:
