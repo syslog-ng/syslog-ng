@@ -2,6 +2,36 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-02-11 10:57:43 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-4
+
+    Summary:
+      Added processed counters for source/destination groups and the log center (fixes: #5368)
+    Revision:
+      syslog-ng--mainline--2.0--patch-4
+
+    
+    	* src/affile.c (affile_dd_format_stats_name): readded this function
+    	to generate a unique stats ID for the specific destination driver
+    	instance,
+    	(affile_dd_init): use NO_STATS for files only,
+    	
+    	* src/center.c (log_center_init): added received/queued counters,
+    	(log_center_queue): increment counters
+    
+    	* src/sgroup.c, src/dgroup.c: added processed counters
+    
+    	* src/stats.c, src/stats.h: added SC_TYPE_PROCESSED, make sure that
+    	counters are interpreted in their proper namespace,
+    	(stats_unregister_counter): added missing "type" argument
+    
+    
+
+    modified files:
+     ChangeLog NEWS src/affile.c src/center.c src/center.h
+     src/dgroup.c src/dgroup.h src/driver.c src/logwriter.c
+     src/sgroup.c src/sgroup.h src/stats.c src/stats.h
+
+
 2006-02-11 08:43:32 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-3
 
     Summary:

@@ -39,6 +39,8 @@ typedef struct _LogSourceGroup
   gboolean use_dns;
   gboolean use_fqdn;
   
+  guint32 *processed_messages;
+  
 } LogSourceGroup;
 
 static inline LogSourceGroup *

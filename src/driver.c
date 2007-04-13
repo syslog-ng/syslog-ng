@@ -31,11 +31,6 @@ log_drv_append(LogDriver *self, LogDriver *next)
   self->drv_next = log_drv_ref(next);
 }
 
-void 
-log_drv_set_fifo_size(LogDriver *self, gint fifo_size)
-{
-}
-
 void
 log_drv_init_instance(LogDriver *s)
 {

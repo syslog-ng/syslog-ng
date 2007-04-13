@@ -403,7 +403,7 @@ log_writer_free(LogPipe *s)
   LogWriter *self = (LogWriter *) s;
   
   if (self->dropped_messages)
-    stats_unregister_counter(self->options->stats_name, &self->dropped_messages);
+    stats_unregister_counter(SC_TYPE_DROPPED, self->options->stats_name, &self->dropped_messages);
 
   g_queue_free(self->queue);
   log_pipe_unref(self->control);

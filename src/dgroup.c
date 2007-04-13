@@ -23,8 +23,21 @@
 
 #include "dgroup.h"
 #include "misc.h"
+#include "stats.h"
 
 #include <sys/time.h>
+
+static const gchar *
+log_dest_group_format_stats_name(LogDestGroup *self)
+{
+  static gchar stats_name[64];
+
+  g_snprintf(stats_name, sizeof(stats_name), "destination(%s)", self->name->str);
+  
+  return stats_name;
+
+}
+
 
 static gboolean
 log_dest_group_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
@@ -37,6 +50,7 @@ log_dest_group_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
       if (!p->super.init(&p->super, cfg, persist))
 	return FALSE;
     }
+  stats_register_counter(SC_TYPE_PROCESSED, log_dest_group_format_stats_name(self), &self->processed_messages, FALSE);
   return TRUE;
 }
 
@@ -46,6 +60,7 @@ log_dest_group_deinit(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
   LogDestGroup *self = (LogDestGroup *) s;
   LogDriver *p;
 
+  stats_unregister_counter(SC_TYPE_PROCESSED, log_dest_group_format_stats_name(self), &self->processed_messages);
   for (p = self->drivers; p; p = p->drv_next)
     {
       if (!p->super.deinit(&p->super, cfg, persist))
@@ -79,6 +94,7 @@ log_dest_group_queue(LogPipe *s, LogMessage *msg, gint path_flags)
         log_msg_ack_block_inc(msg);
       log_pipe_queue(&p->super, log_msg_ref(msg), path_flags);
     }
+  (*self->processed_messages)++;
   if ((path_flags & PF_FLOW_CTL_OFF) == 0)
     log_msg_ack(msg);
   log_msg_unref(msg);

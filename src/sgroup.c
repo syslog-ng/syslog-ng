@@ -24,8 +24,20 @@
 #include "sgroup.h"
 #include "misc.h"
 #include "messages.h"
+#include "stats.h"
 
 #include <time.h>
+
+static const gchar *
+log_source_group_format_stats_name(LogSourceGroup *self)
+{
+  static gchar stats_name[64];
+
+  g_snprintf(stats_name, sizeof(stats_name), "source(%s)", self->name->str);
+  
+  return stats_name;
+
+}
 
 static gboolean
 log_source_group_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
@@ -50,6 +62,7 @@ log_source_group_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
 	}
       log_pipe_append(&p->super, s);
     }
+  stats_register_counter(SC_TYPE_PROCESSED, log_source_group_format_stats_name(self), &self->processed_messages, FALSE);
   return TRUE;
 }
 
@@ -59,6 +72,7 @@ log_source_group_deinit(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist
   LogSourceGroup *self = (LogSourceGroup *) s;
   LogDriver *p;
 
+  stats_unregister_counter(SC_TYPE_PROCESSED, log_source_group_format_stats_name(self), &self->processed_messages);
   for (p = self->drivers; p; p = p->drv_next)
     {
       if (!p->super.deinit(&p->super, cfg, persist))
@@ -120,8 +134,8 @@ log_source_group_queue(LogPipe *s, LogMessage *msg, gint path_flags)
       getshorthostname(buf, sizeof(buf));
       g_string_assign(msg->host, buf);
     }
-
   log_pipe_queue(self->super.pipe_next, msg, path_flags);
+  (*self->processed_messages)++;
 }
 
 static void

@@ -34,6 +34,7 @@ typedef struct _LogDestGroup
   LogPipe super;
   GString *name;
   LogDriver *drivers;
+  guint32 *processed_messages;
 } LogDestGroup;
 
 #define log_dgrp_ref(s)     ((LogDestGroup *) log_pipe_ref((LogPipe *) s))

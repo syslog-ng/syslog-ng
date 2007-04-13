@@ -73,6 +73,8 @@ typedef struct _LogCenter
   PersistentConfig *persist;
   gint state;
   gboolean success;
+  guint32 *received_messages;
+  guint32 *queued_messages;
 } LogCenter;
 
 LogCenter *log_center_new(void);

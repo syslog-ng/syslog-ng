@@ -27,8 +27,7 @@
 #include "filter.h"
 #include "messages.h"
 #include "afinter.h"
-
-#include <assert.h>
+#include "stats.h"
 
 /**
  * log_endpoint_append:
@@ -88,7 +87,7 @@ log_endpoint_free(LogEndpoint *self)
           log_dgrp_unref((LogDestGroup *) self->ref);
           break;
         default:
-          assert(0);
+          g_assert_not_reached();
           break;
         }
     }
@@ -130,7 +129,7 @@ log_connection_new(LogEndpoint *endpoints, guint32 flags)
           g_ptr_array_add(self->destinations, ep);
           break;
         default:
-          g_assert(0);
+          g_assert_not_reached();
           break;
         }
     }
@@ -263,6 +262,9 @@ log_center_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
   g_hash_table_foreach(cfg->destinations, (GHFunc) log_center_init_component, self);
   if (!self->success)
     return FALSE;
+    
+  stats_register_counter(SC_TYPE_PROCESSED, "center(received)", &self->received_messages, FALSE);
+  stats_register_counter(SC_TYPE_PROCESSED, "center(queued)", &self->queued_messages, FALSE);
   
   self->state = LC_STATE_WORKING;
   return TRUE;
@@ -284,7 +286,9 @@ log_center_deinit(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
   g_hash_table_foreach(cfg->destinations, (GHFunc) log_center_deinit_component, self);
   if (!self->success)
     return FALSE;
-    
+  
+  stats_unregister_counter(SC_TYPE_PROCESSED, "center(received)", &self->received_messages);
+  stats_unregister_counter(SC_TYPE_PROCESSED, "center(queued)", &self->queued_messages);
   return TRUE;
 }
 
@@ -302,6 +306,8 @@ log_center_queue(LogPipe *s, LogMessage *msg, gint path_flags)
   LogCenter *self = (LogCenter *) s;
   gboolean match, fallbacks, have_fallbacks = 1;
   gint ci, fi, di;
+  
+  (*self->received_messages)++;
   
   afinter_postpone_mark(self->cfg->mark_freq);
 
@@ -363,6 +369,7 @@ log_center_queue(LogPipe *s, LogMessage *msg, gint path_flags)
               
               dest = (LogDestGroup *) ep->ref;
               log_pipe_queue(&dest->super, log_msg_ref(msg), path_flags | ((conn->flags & LC_FLOW_CONTROL) ? 0 : PF_FLOW_CTL_OFF));
+              (*self->queued_messages)++;
             }
           
           if (conn->flags & LC_FINAL)
@@ -375,6 +382,7 @@ log_center_queue(LogPipe *s, LogMessage *msg, gint path_flags)
     }
   /* our own ack */
   log_msg_ack(msg);
+  
 }
 
 static void

@@ -34,7 +34,7 @@ typedef struct _StatsCounter
   guint32 counter;
 } StatsCounter;
 
-GList *counters;
+GList *counters[SC_TYPE_MAX];
 
 static gboolean
 stats_cmp_name(StatsCounter *sc, const gchar *name)
@@ -43,9 +43,9 @@ stats_cmp_name(StatsCounter *sc, const gchar *name)
 }
 
 static GList *
-stats_find_counter(const gchar *counter_name)
+stats_find_counter(StatsCounterType type, const gchar *counter_name)
 {
-  return g_list_find_custom(counters, counter_name, (GCompareFunc) stats_cmp_name);
+  return g_list_find_custom(counters[(guint) type], counter_name, (GCompareFunc) stats_cmp_name);
 }
 
 /**
@@ -68,14 +68,12 @@ stats_register_counter(StatsCounterType type, const gchar *counter_name, guint32
   StatsCounter *sc;
   GList *l;
   
-  /* FIXME: we should use a separate name-space for all different types,
-   * however we only have a single type so far */
   g_assert(type < SC_TYPE_MAX);
 
   *counter = NULL;
   if (!counter_name)
     return;
-  if ((l = stats_find_counter(counter_name)))
+  if ((l = stats_find_counter(type, counter_name)))
     {
       if (!shared)
         {
@@ -100,11 +98,11 @@ stats_register_counter(StatsCounterType type, const gchar *counter_name, guint32
   sc->counter = 0;
   sc->ref_cnt = 1;
   *counter = &sc->counter;
-  counters = g_list_prepend(counters, sc);
+  counters[(guint) type] = g_list_prepend(counters[(guint) type], sc);
 }
 
 void
-stats_unregister_counter(const gchar *counter_name, guint32 **counter)
+stats_unregister_counter(StatsCounterType type, const gchar *counter_name, guint32 **counter)
 {
   StatsCounter *sc;
   GList *l;
@@ -112,7 +110,7 @@ stats_unregister_counter(const gchar *counter_name, guint32 **counter)
   if (!counter_name)
     return;
     
-  l = stats_find_counter(counter_name);
+  l = stats_find_counter(type, counter_name);
   if (!l)
     {
       msg_error("Internal error unregistering stats counter, counter not found",
@@ -130,7 +128,7 @@ stats_unregister_counter(const gchar *counter_name, guint32 **counter)
   sc->ref_cnt--;
   if (sc->ref_cnt == 0)
     {
-      counters = g_list_delete_link(counters, l);
+      counters[(guint) type] = g_list_delete_link(counters[(guint) type], l);
       g_free(sc->name);
       g_free(sc);
     }
@@ -142,17 +140,22 @@ stats_generate_log(void)
 {
   EVTREC *e;
   GList *l;
+  StatsCounterType type;
   gchar *tag_names[SC_TYPE_MAX] =
   {
     [SC_TYPE_DROPPED] = "dropped",
+    [SC_TYPE_PROCESSED] = "processed",
   };
   
   e = msg_event_create(EVT_PRI_NOTICE, "Log statistics", NULL);
-  for (l = counters; l; l = l->next)
+  for (type = 0; type < SC_TYPE_MAX; type++)
     {
-      StatsCounter *sc = (StatsCounter *) l->data;
-      
-      evt_rec_add_tag(e, evt_tag_printf(tag_names[sc->type], "%s=%u", sc->name, sc->counter));
+      for (l = counters[type]; l; l = l->next)
+        {
+          StatsCounter *sc = (StatsCounter *) l->data;
+          
+          evt_rec_add_tag(e, evt_tag_printf(tag_names[sc->type], "%s=%u", sc->name, sc->counter));
+        }
     }
   msg_event_send(e);
 }
