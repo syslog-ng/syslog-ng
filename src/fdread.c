@@ -24,6 +24,8 @@
 #include "fdread.h"
 #include "messages.h"
 
+#include <errno.h>
+
 static size_t
 fd_do_read(FDRead *self, void *buf, size_t buflen, GSockAddr **sa)
 {
@@ -38,9 +40,13 @@ fd_do_read(FDRead *self, void *buf, size_t buflen, GSockAddr **sa)
       socklen_t salen = sizeof(sa);
       gint rc;
 
-      rc = recvfrom(self->fd, buf, buflen, 0, 
-		    (struct sockaddr *) &sas, &salen);
-      if (rc != -1)
+      do
+        {
+          rc = recvfrom(self->fd, buf, buflen, 0, 
+                        (struct sockaddr *) &sas, &salen);
+        }
+      while (rc == -1 && errno == EINTR);
+      if (rc != -1 && salen)
         (*sa) = g_sockaddr_new((struct sockaddr *) &sas, salen);
       return rc;
     }

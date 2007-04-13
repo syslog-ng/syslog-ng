@@ -32,6 +32,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <time.h>
+#include <errno.h>
 
 static gboolean log_reader_fetch_log(LogReader *self, FDRead *fd);
 
@@ -345,15 +346,23 @@ log_reader_fetch_log(LogReader *self, FDRead *fd)
 
   if (rc == -1)
     {
-      /* an error occurred while reading */
-      msg_error("I/O error occurred while reading",
-                evt_tag_int(EVT_TAG_FD, fd->fd),
-                evt_tag_errno(EVT_TAG_OSERROR, errno),
-                NULL);
-      log_reader_iterate_buf(self, NULL, TRUE);
-      log_pipe_notify(self->control, &self->super.super, NC_READ_ERROR, self);
-      g_sockaddr_unref(sa);
-      return FALSE;
+      if (errno != EAGAIN)
+        {
+          /* an error occurred while reading */
+          msg_error("I/O error occurred while reading",
+                    evt_tag_int(EVT_TAG_FD, fd->fd),
+                    evt_tag_errno(EVT_TAG_OSERROR, errno),
+                    NULL);
+          log_reader_iterate_buf(self, NULL, TRUE);
+          log_pipe_notify(self->control, &self->super.super, NC_READ_ERROR, self);
+          g_sockaddr_unref(sa);
+          return FALSE;
+        }
+      else
+        {
+          /* no more bytes left */
+          ;
+        }
     }
   else if (rc == 0 && (self->flags & LR_FOLLOW) == 0)
     {

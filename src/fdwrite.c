@@ -24,10 +24,19 @@
 #include "fdwrite.h"
 #include "messages.h"
 
+#include <errno.h>
+
 static size_t
 fd_do_write(FDWrite *self, const void *buf, size_t buflen)
 {
-  return write(self->fd, buf, buflen);
+  gint rc;
+  
+  do
+    {
+      rc = write(self->fd, buf, buflen);
+    }
+  while (rc == -1 && errno == EINTR);
+  return rc;
 }
 
 FDWrite *

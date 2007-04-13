@@ -1,19 +1,6 @@
 
-This source distribution is going to be syslog-ng 2.0 once it is ready.
-Instead of using a custom, generic I/O library, this release is based on
-glib created by the Gnome project.
+Copyright
+---------
 
-It currently supports the following features:
----------------------------------------------
-- parses syslog-ng.conf, and creates the internal representation of the
-  config file
-- pipe/file sources
-- pipe/file destinations (without macro support)
-- UDP/TCP sources
-- STREAM/DGRAM unix domain socket sources
-- user destinations
-- program destinations
-- filters work
-
-It currently leaks memory a lot, doesn't support HUP, and doesn't process
-its command line arguments.
+syslog-ng is copyright (c) 2003, 2004 BalaBit IT Ltd and distributed under
+the terms of the GPL version 2. For details see the file COPYING.

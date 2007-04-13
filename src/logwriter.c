@@ -229,7 +229,10 @@ log_writer_flush_log(LogWriter *self, FDWrite *fd)
       rc = fd_write(fd, &self->partial->str[self->partial_pos], len);
       if (rc == -1)
         {
-          goto write_error;
+          if (errno != EAGAIN)
+            goto write_error;
+          else
+            return TRUE;
         }
       else if (rc != len)
         {
@@ -271,7 +274,8 @@ log_writer_flush_log(LogWriter *self, FDWrite *fd)
               self->partial = line;
               self->partial_pos = 0;
               line = NULL;
-              goto write_error;
+              if (errno != EAGAIN)
+                goto write_error;
             }
           else 
             {
