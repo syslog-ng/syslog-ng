@@ -2,6 +2,23 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-10-07 16:16:35 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-58
+
+    Summary:
+      added a missing "return"
+    Revision:
+      syslog-ng--mainline--2.0--patch-58
+
+    2005-10-07  Balazs Scheidler <bazsi@balabit.hu>
+    
+    	* src/misc.c (get_local_timezone_ofs): added a missing return
+    
+    
+
+    modified files:
+     ChangeLog src/misc.c
+
+
 2005-10-05 13:48:34 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-57
 
     Summary:
