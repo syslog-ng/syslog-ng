@@ -81,6 +81,14 @@ AC_CHECK_HEADER(dmalloc.h)
 AC_CHECK_HEADERS(strings.h openssl/ssl.h getopt.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
+AC_STRUCT_TM
+
+AC_CHECK_MEMBER(struct tm.tm_gmtoff,AC_DEFINE(HAVE_STRUCT_TM_TM_GMTOFF,1,[Whether you have tm_gmtoff field in struct tm]),,[
+#if TM_IN_SYS_TIME
+#include <sys/time.h>
+#else
+#include <time.h>
+#endif])
 
 dnl Checks for library functions.
 AC_CHECK_LIB(door, door_create)

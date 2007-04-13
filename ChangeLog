@@ -2,6 +2,26 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-10-05 13:48:34 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-57
+
+    Summary:
+      check for gmt_off in struct tm and detect timezone accordingly
+    Revision:
+      syslog-ng--mainline--2.0--patch-57
+
+    2005-10-05  Balazs Scheidler <bazsi@balabit.hu>
+    
+    	* configure.in: added a test for tm_gmtoff in struct tm as it is not
+    	present on Solaris
+    
+    	* src/misc.c: use the old global timezone based timezone detection code
+    	if tm_gmtoff is not present in "struct tm"
+    
+
+    modified files:
+     ChangeLog configure.in src/misc.c
+
+
 2005-10-01 21:39:51 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-56
 
     Summary:

@@ -78,11 +78,14 @@ long
 get_local_timezone_ofs(time_t when)
 {
   struct tm *tm;
-  
+
+#if HAVE_STRUCT_TM_TM_GMTOFF
   tm = localtime(&when);
   return tm->tm_gmtoff;
-#if 0
+#elif HAVE_GLOBAL_TIMEZONE
   timezone - (tm.tm_isdst > 0 ? 3600 : 0);
+#else
+  #error "Don't know how to determine current timezone"
 #endif
 }
 
