@@ -50,7 +50,7 @@ log_reader_fd_prepare(GSource *source,
   LogReaderWatch *self = (LogReaderWatch *) source;
 
   msg_debug("log_reader_fd_prepare()", 
-            evt_tag_int("window_size", self->reader->window_size), 
+            evt_tag_int("window_size", self->reader->options->window_size), 
             NULL);
 
   if (self->reader->mark_target != -1)
@@ -69,7 +69,7 @@ log_reader_fd_prepare(GSource *source,
   
   /* never indicate readability if flow control prevents us from sending messages */
   
-  if (!self->reader->window_size)
+  if (!self->reader->options->window_size)
     {
       return FALSE;
     }
@@ -201,8 +201,10 @@ log_reader_msg_ack(LogMessage *lm, gpointer user_data)
   LogReader *self = (LogReader *) user_data;
   
   log_msg_ack_block_end(lm);
-  self->window_size++;
+  self->options->window_size++;
   log_msg_unref(lm);
+  
+  log_pipe_unref(&self->super);
   
   /* as we are the source we don't ack the message */
 }
@@ -231,9 +233,9 @@ log_reader_handle_line(LogReader *self, gchar *line, gint length, GSockAddr *sad
   
   if (self->flags & LR_INTERNAL)
     m->flags |= LF_INTERNAL;
-  
-  log_msg_ack_block_start(m, log_reader_msg_ack, self);
-  self->window_size--;
+    
+  log_msg_ack_block_start(m, log_reader_msg_ack, log_pipe_ref(&self->super));
+  self->options->window_size--;
 
   if (self->flags & LR_LOCAL)
     {
@@ -243,7 +245,7 @@ log_reader_handle_line(LogReader *self, gchar *line, gint length, GSockAddr *sad
     m->stamp.zone_offset = self->options->zone_offset;
   log_pipe_queue(self->super.pipe_next, m, 0);
   
-  return !!self->window_size;
+  return !!self->options->window_size;
 }
 
 static gboolean
@@ -450,7 +452,7 @@ log_reader_new(FDRead *fd, guint32 flags, LogPipe *control, LogReaderOptions *op
   self->super.free_fn = log_reader_free;
   self->options = options;
   self->flags = flags;
-  self->window_size = options->init_window_size;
+  g_assert(options->window_size != -1); 
   self->fd = fd;
   log_pipe_ref(control);
   self->control = control;
@@ -466,6 +468,7 @@ log_reader_options_defaults(LogReaderOptions *options)
 {
   options->padding = 0;
   options->init_window_size = -1;
+  options->window_size = -1;
   options->options = 0;
   options->fetch_limit = -1;
   options->msg_size = -1;
@@ -487,5 +490,6 @@ log_reader_options_init(LogReaderOptions *options, GlobalConfig *cfg)
     options->mark_freq = cfg->mark_freq;
   if (options->follow_freq == -1)
     options->follow_freq = cfg->follow_freq;
+  options->window_size = options->init_window_size;
 }
 

@@ -70,7 +70,7 @@ log_writer_fd_dispatch(GSource *source,
 		       gpointer user_data)
 {
   LogWriterWatch *self = (LogWriterWatch *) source;
-  if (self->pollfd.revents & G_IO_HUP)
+  if (self->pollfd.revents & (G_IO_HUP + G_IO_ERR))
     {
       log_writer_broken(self->writer, self->fd);
       return FALSE;

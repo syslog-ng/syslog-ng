@@ -45,6 +45,7 @@ typedef struct _LogReaderOptions
   guint32 options;
   gint padding;
   gint init_window_size;
+  gint window_size;
   gint fetch_limit;
   gchar *prefix;
   gint msg_size;
@@ -63,7 +64,6 @@ typedef struct _LogReader
   FDRead *fd;
   GSource *source;
   gint ofs;
-  gint window_size;
   guint32 flags;
   gint mark_target;
   LogPipe *control;

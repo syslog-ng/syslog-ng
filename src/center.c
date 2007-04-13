@@ -303,7 +303,7 @@ log_center_queue(LogPipe *s, LogMessage *msg, gint path_flags)
   gint ci, fi, di;
 
   log_msg_ref(msg);
-  log_msg_ack_block_start(msg, log_center_ack, self);
+  log_msg_ack_block_start(msg, log_center_ack, NULL);
   
   for (match = 0, fallbacks = 0; !match && have_fallbacks && (fallbacks <= 1); fallbacks++)
     {

@@ -71,7 +71,7 @@ log_dest_group_queue(LogPipe *s, LogMessage *msg, gint path_flags)
   if ((path_flags & PF_FLOW_CTL_OFF) == 0)
     {
       log_msg_ref(msg);
-      log_msg_ack_block_start(msg, log_dest_group_ack, self);
+      log_msg_ack_block_start(msg, log_dest_group_ack, NULL);
     }
   for (p = self->drivers; p; p = p->drv_next)
     {

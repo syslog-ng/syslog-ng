@@ -1,3 +1,22 @@
+2004-12-29  Balazs Scheidler <bazsi@balabit.hu>
+
+	* src/afprog.c (afprogram_dd_init): call setsid before launching child,
+	(afprogram_dd_deinit): deinit & unref self->writer here instead of
+	in afprogram_dd_free,
+	
+	* src/center.c (log_center_queue): do not supply self as user_data pointer to 
+	the ack_block callback as that would require adding a reference to self
+
+	* src/dgroup.c (log_dest_group_queue): do not supply self as user_data pointer to 
+	the ack_block callback as that would require adding a reference to self
+	
+	* src/logreader.c: instead of using self->window_size use self->options->window_size
+	so that the window is shared between all LogReaders using the same
+	options,
+	(log_reader_handle_line): add reference to self before supplying it as an argument to 
+ 	the ack_block callback function,
+	(log_reader_msg_ack): unref the supplied logreader argument
+
 2004-12-27  Balazs Scheidler <bazsi@balabit.hu>
 
 	* src/afsocket.c (afsocket_sd_deinit): break circular reference

@@ -70,6 +70,7 @@ static struct keyword keywords[] = {
 	{ "fallback",		KW_FALLBACK },
 	{ "final",		KW_FINAL },
 	{ "flow_control",	KW_FLOW_CONTROL },
+	{ "flow-control",	KW_FLOW_CONTROL },
 	{ "no_parse",		KW_NO_PARSE },
 	{ "padding",		KW_PADDING },
 	{ "mark_freq",		KW_MARK_FREQ },
