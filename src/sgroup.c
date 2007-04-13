@@ -46,6 +46,7 @@ log_source_group_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
   LogDriver *p;
 
   self->chain_hostnames = cfg->chain_hostnames;
+  self->normalize_hostnames = cfg->normalize_hostnames;
   self->use_dns = cfg->use_dns;
   self->use_fqdn = cfg->use_fqdn;
   /* self->cache = cfg->cache; */
@@ -133,6 +134,10 @@ log_source_group_queue(LogPipe *s, LogMessage *msg, gint path_flags)
 
       getshorthostname(buf, sizeof(buf));
       g_string_assign(msg->host, buf);
+    }
+  if (self->normalize_hostnames)
+    {
+      g_strdown(msg->host->str);
     }
   log_pipe_queue(self->super.pipe_next, msg, path_flags);
   (*self->processed_messages)++;

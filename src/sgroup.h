@@ -35,6 +35,7 @@ typedef struct _LogSourceGroup
   LogDriver *drivers;
   
   gboolean chain_hostnames;
+  gboolean normalize_hostnames;
   gboolean keep_hostname;
   gboolean use_dns;
   gboolean use_fqdn;

@@ -2,6 +2,31 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-02-11 12:00:14 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-5
+
+    Summary:
+      added normalize_hostnames() option (fixes: #6294)
+    Revision:
+      syslog-ng--mainline--2.0--patch-5
+
+    2006-02-11  Balazs Scheidler <bazsi@balabit.hu>
+    
+    	* src/cfg-lex.l, src/cfg-grammar.y: added normalize_hostnames
+    	option
+    
+    	* src/sgroup.c: implement normalize_hostnames
+    
+    	* src/logmsg.c (log_msg_parse): removed STRICT check from RFC3339
+    	timestamp parsing
+    
+    	* doc/reference/syslog-ng.xml: updated
+
+    modified files:
+     ChangeLog NEWS doc/reference/syslog-ng.xml src/cfg-grammar.y
+     src/cfg-lex.l src/cfg.h src/logmsg.c src/misc.c src/misc.h
+     src/sgroup.c src/sgroup.h
+
+
 2006-02-11 10:57:43 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-4
 
     Summary:

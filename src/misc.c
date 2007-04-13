@@ -120,8 +120,7 @@ get_local_timezone_ofs(time_t when)
 }
 
 GString *
-resolve_hostname(GSockAddr *saddr,
-		 int usedns, int usefqdn)
+resolve_hostname(GSockAddr *saddr, gboolean usedns, gboolean usefqdn)
 {
   static gchar local_hostname[128] = "";
   char *hname, *p;

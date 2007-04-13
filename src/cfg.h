@@ -49,6 +49,7 @@ typedef struct _GlobalConfig
   gint flush_lines;
   gint flush_timeout;
   gboolean chain_hostnames;
+  gboolean normalize_hostnames;
   gboolean keep_hostname;
   gboolean use_time_recvd;
   gboolean use_fqdn;

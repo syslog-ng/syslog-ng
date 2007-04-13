@@ -177,7 +177,7 @@ log_msg_parse(LogMessage *self, gchar *data, gint length, guint flags)
     }
 
   /* If the next chars look like a date, then read them as a date. */
-  if ((flags & LP_STRICT) == 0 && left >= 19 && src[4] == '-' && src[7] == '-' && src[10] == 'T' && src[13] == ':' && src[16] == ':')
+  if (left >= 19 && src[4] == '-' && src[7] == '-' && src[10] == 'T' && src[13] == ':' && src[16] == ':')
     {
       /* RFC3339 timestamp, expected format: YYYY-MM-DDTHH:MM:SS[.frac]<+/->ZZ:ZZ */
       struct tm tm;

@@ -549,14 +549,15 @@
 	      <row>
 		<entry>Name</entry>
 		<entry>Type</entry>
-		<entry>Description</entry>
 		<entry>Default</entry>
+		<entry>Description</entry>
 	      </row>
 	    </thead>
 	    <tbody>
 	      <row>
 		<entry>flags()</entry>
 		<entry>set of [no-parse]</entry>
+		<entry>empty set</entry>
 		<entry>Specifies log parsing flags, currently limited to
                   "no-parse" which disables syslog message parsing
                   completely and processes the complete line as the message part of a syslog
@@ -564,61 +565,61 @@
                   Useful for parsing files not complying with the syslog
                   format.
                 </entry>
-		<entry>empty set</entry>
 	      </row>
 	      <row>
 		<entry>log_msg_size()</entry>
 		<entry>number</entry>
+		<entry>the value specified by the global log_msg_size() option
+                  which defaults to 8192</entry>
 		<entry>Specifies the maximum length for incoming log 
 		  messages. Uses the value of the global option if not specified.
                 </entry>
-		<entry>the value specified by the global log_msg_size() option
-                  which defaults to 8192</entry>
 	      </row>
 	      <row>
 		<entry>log_iw_size()</entry>
 		<entry>number</entry>
+		<entry>100</entry>
 		<entry>
 		  The size of the initial window, this value is used during
                   flow control.
                 </entry>
-		<entry>100</entry>
 	      </row>
 	      <row>
 		<entry>log_fetch_limit()</entry>
 		<entry>number</entry>
+		<entry>the value specified by the global log_fetch_limit() option
+                  which defaults to 10</entry>
 		<entry>
 		  The maximum number of messages fetched from a source
                   during a single poll loop. If this value is too large
                   destination queues might fill up before flow-control could
                   stop reading. 
                 </entry>
-		<entry>the value specified by the global log_fetch_limit() option
-                  which defaults to 10</entry>
 	      </row>
 	      <row>
 		<entry>log_prefix()</entry>
 		<entry>string</entry>
+		<entry></entry>
 		<entry>A string prepended to every log message. This is used
                   to prepend an arbitrary string to any log source, though
                   it is most commonly used for kernel messages on Linux,
                   where the string 'kernel: ' is added by syslog-ng.
                 </entry>
-		<entry></entry>
 	      </row>
 	      <row>
 		<entry>pad_size()</entry>
 		<entry>number</entry>
+                <entry>0</entry>
 		<entry>
 		  Syslog-ng will pad reads from the associated device to
                   this number of bytes, it is used on HP-UX where /dev/log
                   is a named pipe and every write is padded to 2048 bytes.
                 </entry>
-                <entry>0</entry>
 	      </row>
 	      <row>
 		<entry>follow_freq()</entry>
 		<entry>number</entry>
+                <entry>-1</entry>
 		<entry>
 		  This parameter specifies that the source should be checked
                   from time-to-time instead of being polled. This is useful
@@ -628,20 +629,20 @@
                   checks whether the file changed every time this interval
                   elapsed.
                 </entry>
-                <entry>-1</entry>
 	      </row>
 	      <row>
 		<entry>time_zone()</entry>
 		<entry>timezone in the form +/-HHMM</entry>
+		<entry></entry>
 		<entry>
 		  The default timezone for messages read from this source if
 		  they don't specify one. 
                 </entry>
-		<entry></entry>
 	      </row>
 	      <row>
 		<entry>optional()</entry>
 		<entry>yes or no</entry>
+		<entry></entry>
 		<entry>
 		  This option currently applies to pipe(), unix-dgram and
                   unix-stream drivers, it specifies that given a specific
@@ -649,7 +650,6 @@
                   No other attempt to initialize the source will be made
                   until the configuration is reloaded.
                 </entry>
-		<entry></entry>
 	      </row>
             </tbody>
           </tgroup>
@@ -714,44 +714,44 @@
 	      <row>
 		<entry>Name</entry>
 		<entry>Type</entry>
-		<entry>Description</entry>
 		<entry>Default</entry>
+		<entry>Description</entry>
 	      </row>
 	    </thead>
 	    <tbody>
 	      <row>
 		<entry>owner()</entry>
 		<entry>string</entry>
-		<entry>Set the uid of the socket.</entry>
 		<entry>root</entry>
+		<entry>Set the uid of the socket.</entry>
 	      </row>
 	      <row>
 		<entry>group()</entry>
 		<entry>string</entry>
-		<entry>Set the gid of the socket. Default: root.</entry>
 		<entry>root</entry>
+		<entry>Set the gid of the socket. Default: root.</entry>
 	      </row>
 	      <row>
 		<entry>perm()</entry>
 		<entry>number</entry>
+		<entry>0666</entry>
 		<entry>Set the permission mask. For octal numbers prefix
 		  the number with '0', e.g. use 0755 for rwxr-xr-x.</entry>
-		<entry>0666</entry>
 	      </row>
 	      <row>
 		<entry>keep-alive()</entry>
 		<entry>yes or no</entry>
+		<entry>yes</entry>
 		<entry>Selects whether to keep connections opened when
 		  syslog-ng is restarted, can be used only with 
 		  unix-stream(). Default: yes.</entry>
-		<entry>yes</entry>
 	      </row>
 	      <row>
 		<entry>max-connections()</entry>
 		<entry>number</entry>
+		<entry>10</entry>
 		<entry>Limits the number of simultaneously opened connections.
 		  Can be used only with unix-stream().</entry>
-		<entry>10</entry>
 	      </row>
 	    </tbody>
 	  </tgroup>  
@@ -819,55 +819,55 @@
 	      <row>
 		<entry>Name</entry>
 		<entry>Type</entry>
-		<entry>Description</entry>
 		<entry>Default</entry>
+		<entry>Description</entry>
 	      </row>
 	    </thead>
 	    <tbody>
 	      <row>
 		<entry>ip() or localip()</entry>
 		<entry>string</entry>
+		<entry>0.0.0.0</entry>
 		<entry>
 		  The IP address to bind to. Note that this is not the
 		  address where messages are accepted from.
 		</entry>
-		<entry>0.0.0.0</entry>
 	      </row>
 	      <row>
 		<entry>port() or localport()</entry>
 		<entry>number</entry>
-		<entry>The port number to bind to.</entry>
 		<entry>514</entry>
+		<entry>The port number to bind to.</entry>
 	      </row>
 	      <row>
 		<entry>keep-alive()</entry>
 		<entry>yes or no</entry>
 
+		<entry>yes</entry>
 		<entry>
 		  Available for tcp() only, and specifies whether to
 		  close connections upon the receival of a SIGHUP
 		  signal.
 		</entry>
 
-		<entry>yes</entry>
 	      </row>
 	      <row>
 		<entry>tcp-keep-alive()</entry>
 		<entry>yes or no</entry>
 
+		<entry>no</entry>
 		<entry>
 		  Available for tcp() only, and specifies whether to
 		  enable TCP keep alive messages using the SO_KEEPALIVE socket
 		  option.
 		</entry>
 
-		<entry>no</entry>
 	      </row>
 	      <row>
 		<entry>max-connections()</entry>
 		<entry>number</entry>
-		<entry>Specifies the maximum number of simultaneous connections.</entry>
 		<entry>10</entry>
+		<entry>Specifies the maximum number of simultaneous connections.</entry>
 	      </row>
 	    </tbody>
 	  </tgroup>
@@ -945,20 +945,20 @@
 	      <row>
 		<entry>Name</entry>
 		<entry>Type</entry>
-		<entry>Description</entry>
 		<entry>Default</entry>
+		<entry>Description</entry>
 	      </row>
 	    </thead>
 	    <tbody>
 	      <row>
 		<entry>pad_size()</entry>
 		<entry>number</entry>
+		<entry>0</entry>
 		<entry>
 		  Specifies input padding. Some operating systems (such as
 		  HP-UX) pad all messages to block boundary. This option can
 		  be used to specify the block size. (HP-UX uses 2048 bytes)
                 </entry>
-		<entry>0</entry>
 	      </row>
 	    </tbody>
 	  </tgroup>
@@ -1008,18 +1008,18 @@
 	      <row>
 		<entry>Name</entry>
 		<entry>Type</entry>
-		<entry>Description</entry>
 		<entry>Default</entry>
+		<entry>Description</entry>
 	      </row>
 	    </thead>
 	    <tbody>
 	      <row>
 		<entry>door()</entry>
 		<entry>string</entry>
+		<entry>none</entry>
 		<entry>
 		  Specifies the filename of a door to open, needed on Solaris above 2.5.1.
 		</entry>
-		<entry>none</entry>
 	      </row>
 	    </tbody>
 	  </tgroup>
@@ -1042,32 +1042,33 @@
 	      <row>
 		<entry>Name</entry>
 		<entry>Type</entry>
-		<entry>Description</entry>
 		<entry>Default</entry>
+		<entry>Description</entry>
 	      </row>
 	    </thead>
 	    <tbody>
 	      <row>
 		<entry>flags()</entry>
 		<entry></entry>
+		<entry>empty set</entry>
 		<entry>
                 </entry>
-		<entry>empty set</entry>
 	      </row>
 	      <row>
 		<entry>log_fifo_size()</entry> 
 		<entry>number</entry>
 		<entry>
-		  The number of entries in the output fifo.
+		  Use global setting.
 		</entry>
 		<entry>
-		  Use global setting.
+		  The number of entries in the output fifo.
 		</entry>
 	      </row>
 
               <row>
                 <entry>fsync()</entry>
                 <entry>yes or no</entry>
+                <entry>no</entry>
                 <entry>
 		  Forces an fsync() call on the destination fd after
 		  each write. Note: this may degrade performance
@@ -1078,17 +1079,20 @@
 		<entry>sync_freq()</entry> 
 		<entry>number</entry>
 		<entry>
-		  This setting is an obsolete alias of the flush_lines()
-                  option.
+		  Use global setting.
 		</entry>
 		<entry>
-		  Use global setting.
+		  This setting is an obsolete alias of the flush_lines()
+                  option.
 		</entry>
 	      </row>
 
 	      <row>
 		<entry>flush_lines()</entry> 
 		<entry>number</entry>
+		<entry>
+		  Use global setting.
+		</entry>
 		<entry>
 		  This number controls how many lines are flushed to a
                   destination at a time. Syslog-ng waits for this number of
@@ -1098,21 +1102,18 @@
                   time it increases message latency. The latency can be
                   limited by the use of the flush_timeout option.
 		</entry>
-		<entry>
-		  Use global setting.
-		</entry>
 	      </row>
 
 	      <row>
 		<entry>flush_timeout()</entry> 
 		<entry>number</entry>
 		<entry>
+		  Use global setting.
+		</entry>
+		<entry>
 		  This option controls how much time syslog-ng waits for lines to
                   accumulate in its output buffer. See the flush_lines
                   option for more information.
-		</entry>
-		<entry>
-		  Use global setting.
 		</entry>
 	      </row>
 
@@ -1120,25 +1121,25 @@
 		<entry>template()</entry> 
 		<entry>string</entry>
 		<entry>
+		  a format conforming to the default logfile format.
+		</entry>
+		<entry>
 		  Specifies a template which defines the logformat to
 		  be used in this file. Macros are described in <xref
                   linkend="macros">this section</xref>
-		</entry>
-		<entry>
-		  a format conforming to the default logfile format.
 		</entry>
 	      </row>
 	      <row>
 		<entry>template_escape()</entry> 
 		<entry>yes or no</entry>
 		<entry>
+		  yes
+		</entry>
+		<entry>
 		  Turns on escaping ' and " in templated output files. This is useful
 		  for generating SQL statements and quoting string contents
 		  so that parts of your log message don't get interpreted
 		  as commands to the SQL server.
-		</entry>
-		<entry>
-		  yes
 		</entry>
 	      </row>
 	      <row>
@@ -1220,8 +1221,8 @@
 	      <row>
 		<entry>Name</entry>
 		<entry>Type</entry>
-		<entry>Description</entry>
 		<entry>Default</entry>
+		<entry>Description</entry>
 	      </row>
 	    </thead>
 	    <tbody>
@@ -1229,11 +1230,11 @@
 		<entry>encrypt()</entry> 
 		<entry>yes or no</entry>
 		<entry>
-		  Encrypt the resulting file. NOTE: this is not
-		  implemented as of 1.3.14.
+		  Use global setting.
 		</entry>
 		<entry>
-		  Use global setting.
+		  Encrypt the resulting file. NOTE: this is not
+		  implemented as of 1.3.14.
 		</entry>
 	      </row>
 
@@ -1241,11 +1242,11 @@
 		<entry>compress()</entry> 
 		<entry>yes or no</entry>
 		<entry>
-		  Compress the resulting logfile using zlib. NOTE:
-		  this is not implemented as of 1.3.14.
+		  Use global setting.
 		</entry>
 		<entry>
-		  Use global setting.
+		  Compress the resulting logfile using zlib. NOTE:
+		  this is not implemented as of 1.3.14.
 		</entry>
 	      </row>
 
@@ -1253,11 +1254,11 @@
 		<entry>owner()</entry> 
 		<entry>string</entry>
 		<entry>
-		  Set the owner of the created filename to the one
-		  specified.
+		  root
 		</entry>
 		<entry>
-		  root
+		  Set the owner of the created filename to the one
+		  specified.
 		</entry>
 	      </row>
 
@@ -1265,11 +1266,11 @@
 		<entry>group()</entry> 
 		<entry>string</entry>
 		<entry>
-		  Set the group of the created filename to the one
-		  specified.
+		  root
 		</entry>
 		<entry>
-		  root
+		  Set the group of the created filename to the one
+		  specified.
 		</entry>
 	      </row>
 
@@ -1277,11 +1278,11 @@
 		<entry>perm()</entry> 
 		<entry>number</entry>
 		<entry>
-		  The permission mask of the file if it is created by
-		  syslog-ng.
+		  0600
 		</entry>
 		<entry>
-		  0600
+		  The permission mask of the file if it is created by
+		  syslog-ng.
 		</entry>
 	      </row>
 
@@ -1289,48 +1290,51 @@
 		<entry>create_dirs()</entry> 
 		<entry>yes or no</entry>
 		<entry>
-		  Enable creating non-existing directories.
+		  no
 		</entry>
 		<entry>
-		  no
+		  Enable creating non-existing directories.
 		</entry>
 	      </row>
 	      <row>
 		<entry>dir_perm()</entry> 
 		<entry>number</entry>
 		<entry>
+		  0600
+		</entry>
+		<entry>
 		  The permission mask of directories created by
 		  syslog-ng.  Log directories are only created if a
 		  file after macro expansion refers to a non-existing
 		  directory, and dir creation is enabled using create_dirs().
-		</entry>
-		<entry>
-		  0600
 		</entry>
 	      </row>
 	      <row>
 		<entry>dir_owner()</entry> 
 		<entry>string</entry>
 		<entry>
-		  The owner of directories created by syslog-ng.
+		  root
 		</entry>
 		<entry>
-		  root
+		  The owner of directories created by syslog-ng.
 		</entry>
 	      </row>
 	      <row>
 		<entry>dir_group()</entry> 
 		<entry>string</entry>
 		<entry>
-		  The group of directories created by syslog-ng.
+		  root
 		</entry>
 		<entry>
-		  root
+		  The group of directories created by syslog-ng.
 		</entry>
 	      </row>
               <row>
                 <entry>remove_if_older()</entry>
                 <entry>number</entry>
+                <entry>
+                  Do never remove existing files, but append ( = 0).
+                </entry>
                 <entry>
                   If set to a value higher than 0, before writing to a file,
                   syslog-ng checks whether this file is older than the
@@ -1340,9 +1344,6 @@
                   combination with e.g. the
                   $WEEKDAY macro, this is can be used for simple log
                   rotation, in case not all history need to be kept.
-                </entry>
-                <entry>
-                  Do never remove existing files, but append ( = 0).
                 </entry>
               </row>
 
@@ -1394,8 +1395,8 @@
 	      <row>
 		<entry>Name</entry>
 		<entry>Type</entry>
-		<entry>Description</entry>
 		<entry>Default</entry>
+		<entry>Description</entry>
 	      </row>
 	    </thead>
 	    <tbody>
@@ -1403,11 +1404,11 @@
 		<entry>owner()</entry> 
 		<entry>string</entry>
 		<entry>
-		  Set the owner of the pipe to the one
-		  specified.
+		  root
 		</entry>
 		<entry>
-		  root
+		  Set the owner of the pipe to the one
+		  specified.
 		</entry>
 	      </row>
 
@@ -1415,11 +1416,11 @@
 		<entry>group()</entry> 
 		<entry>string</entry>
 		<entry>
-		  Set the group of the pipe to the one
-		  specified.
+		  root
 		</entry>
 		<entry>
-		  root
+		  Set the group of the pipe to the one
+		  specified.
 		</entry>
 	      </row>
 
@@ -1427,10 +1428,10 @@
 		<entry>perm()</entry> 
 		<entry>number</entry>
 		<entry>
-		  The permission mask of the pipe.
+		  0600
 		</entry>
 		<entry>
-		  0600
+		  The permission mask of the pipe.
 		</entry>
 	      </row>
 
@@ -1497,34 +1498,35 @@
 	      <row>
 		<entry>Name</entry>
 		<entry>Type</entry>
-		<entry>Description</entry>
 		<entry>Default</entry>
+		<entry>Description</entry>
 	      </row>
 	    </thead>
 	    <tbody>
 	      <row>
 		<entry>localip()</entry>
 		<entry>string</entry>
+		<entry>0.0.0.0</entry>
 		<entry>
 		  The IP address to bind to before connecting to target.
 		</entry>
-		<entry>0.0.0.0</entry>
 	      </row>
 	      <row>
 		<entry>localport()</entry>
 		<entry>number</entry>
-		<entry>The port number to bind to.</entry>
 		<entry>0</entry>
+		<entry>The port number to bind to.</entry>
 	      </row>
 	      <row>
 		<entry>port() or destport()</entry>
 		<entry>number</entry>
-		<entry>The port number to connect to.</entry>
 		<entry>514</entry>
+		<entry>The port number to connect to.</entry>
 	      </row>
 	      <row>
 		<entry>tcp-keep-alive()</entry>
 		<entry>yes or no</entry>
+		<entry>no</entry>
 
 		<entry>
 		  Available for tcp() only, and specifies whether to
@@ -1532,11 +1534,11 @@
 		  option.
 		</entry>
 
-		<entry>no</entry>
 	      </row>
              <row>
                <entry>spoof_source</entry>
                <entry>yes or no</entry>
+               <entry>no</entry>
                <entry>
                  Enables source address spoofing. This means that the host
                  running syslog-ng generates UDP packets with the source IP
@@ -1549,37 +1551,7 @@
                  This option is only available if syslog-ng was compiled using
                  the --enable-spoof-source configure option.
                </entry>
-               <entry>
-                 no
-               </entry>
              </row>	  
-	    </tbody>
-	  </tgroup>
-	</table>
-
-	<table>
-	  <title>Additional options for tcp()</title>
-	  <tgroup cols="4">
-	    <thead>
-	      <row>
-		<entry>Name</entry>
-		<entry>Type</entry>
-		<entry>Description</entry>
-		<entry>Default</entry>
-	      </row>
-	    </thead>
-	    <tbody>
-	      <row>
-		<entry>sync()</entry> 
-		<entry>number</entry>
-		<entry>
-		  The messages are sent to the remote host when this
-		  number of messages have been collected.
-		</entry>
-		<entry>
-		  0
-		</entry>
-	      </row>
 	    </tbody>
 	  </tgroup>
 	</table>
@@ -1614,8 +1586,8 @@
 	      <row>
 		<entry>Name</entry>
 		<entry>Type</entry>
-		<entry>Description</entry>
 		<entry>Default</entry>
+		<entry>Description</entry>
 	      </row>
 	    </thead>
 	    <tbody>
@@ -1623,25 +1595,23 @@
 		<entry>template()</entry> 
 		<entry>string</entry>
 		<entry>
+		  a format conforming to the default logfile format.
+		</entry>
+		<entry>
 		  Specifies a template which defines the logformat to
 		  be used. Possible macros are the same
 		  as with destination file().
-		</entry>
-		<entry>
-		  a format conforming to the default logfile format.
 		</entry>
 	      </row>
 	      <row>
 		<entry>template_escape()</entry> 
 		<entry>yes or no</entry>
+		<entry>yes</entry>
 		<entry>
 		  Turns on escaping ' and " in templated output. This is useful
 		  for generating SQL statements and quoting string contents
 		  so that parts of your log message don't get interpreted
 		  as commands to the SQL server.
-		</entry>
-		<entry>
-		  yes
 		</entry>
 	      </row>
 	    </tbody>
@@ -1984,6 +1954,7 @@
 	      <row>
 		<entry>Name</entry>
 		<entry>Accepted values</entry>
+		<entry>Default</entry>
 		<entry>Description</entry>
 	      </row>
 	    </thead>
@@ -1991,21 +1962,25 @@
 	      <row>
 		<entry>time_reopen()</entry>
 		<entry>number</entry>
+		<entry>60</entry>
 		<entry>The time to wait before a died connection is reestablished</entry>
 	      </row>
 	      <row>
 		<entry>time_reap()</entry>
 		<entry>number</entry>
+		<entry>60</entry>
 		<entry>The time to wait before an idle destination file is closed.</entry>
 	      </row>
 	      <row>
-		<entry>sync()</entry>
+		<entry>sync() or sync_freq() (DEPRECATED)</entry>
 		<entry>number</entry>
-		<entry>The number of lines buffered before written to file</entry>
+		<entry>0</entry>
+		<entry>Obsolete aliases for flush_lines</entry>
 	      </row>
 	      <row>
 		<entry>mark_freq()</entry>
 		<entry>number</entry>
+		<entry>1200</entry>
 		<entry>
 		  The number of seconds between two MARK lines. MARK
                   lines are generated every once in a while if there was no
@@ -2016,79 +1991,100 @@
 	      <row>
 		<entry>stats_freq()</entry>
 		<entry>number</entry>
+		<entry>600</entry>
 		<entry>The number of seconds between two STATS messages
                   which contain the number of messages dropped by syslog-ng.</entry>
 	      </row>
 	      <row>
 		<entry>log_fifo_size()</entry>
 		<entry>number</entry>
+		<entry>100</entry>
 		<entry>The number of lines fitting to the output queue</entry>
 	      </row>
 	      <row>
 		<entry>chain_hostnames()</entry>
 		<entry>yes or no</entry>
+		<entry>yes</entry>
 		<entry>Enable or disable the chained hostname format.</entry>
+	      </row>
+	      <row>
+		<entry>normalize_hostnames()</entry>
+		<entry>yes or no</entry>
+		<entry>no</entry>
+		<entry>Normalize hostnames, which currently translates to
+                  converting them to lower case. (requires 1.9.9)</entry>
 	      </row>
 	      <row>
 		<entry>keep_hostname()</entry>
 		<entry>yes or no</entry>
+		<entry>no</entry>
 		<entry>Enable or disable hostname rewriting.</entry>
 	      </row>
               <row>
                 <entry>check_hostname()</entry>
 		<entry>yes or no</entry>
+		<entry>no</entry>
 		<entry>
-		  Enable or disable whether the hostname contains valid
-                  characters.
+		  Enable or disable checking whether the hostname contains valid
+                  characters. (not implemented yet as of 1.9.9)
                 </entry>
               </row>
               <row>
                 <entry>bad_hostname()</entry>
 		<entry>regular expression</entry>
+		<entry>no</entry>
 		<entry>
 		  A regexp which matches hostnames which should not be taken
-                  as such.
+                  as such. (not implemented yet as of 1.9.9)
                 </entry>
               </row>
               
 	      <row>
 		<entry>create_dirs()</entry>
 		<entry>yes or no</entry>
+		<entry>no</entry>
 		<entry>Enable or disable directory creation for destination files.</entry>
 	      </row>
 	      <row>
 		<entry>owner()</entry>
 		<entry>userid</entry>
-		<entry>.</entry>
+		<entry>0</entry>
+		<entry>The default owner for output files.</entry>
 	      </row>
 	      <row>
 		<entry>group()</entry>
 		<entry>groupid</entry>
-		<entry>.</entry>
+		<entry>0</entry>
+		<entry>The default group for output files.</entry>
 	      </row>
 	      <row>
 		<entry>perm()</entry>
 		<entry>permission value</entry>
-		<entry>.</entry>
+		<entry>0600</entry>
+		<entry>The default permission for output files.</entry>
 	      </row>
 	      <row>
 		<entry>dir_owner()</entry>
 		<entry>userid</entry>
-		<entry>.</entry>
+		<entry>0</entry>
+		<entry>The default owner for newly created directories.</entry>
 	      </row>
 	      <row>
 		<entry>dir_group()</entry>
 		<entry>groupid</entry>
-		<entry>.</entry>
+		<entry>0</entry>
+		<entry>The default group for newly created directories.</entry>
 	      </row>
 	      <row>
 		<entry>dir_perm()</entry>
 		<entry>permission value</entry>
-		<entry>.</entry>
+		<entry>0700</entry>
+		<entry>The default permission for newly created directories.</entry>
 	      </row>
 	      <row>
 		<entry>use_time_recvd() (DEPRECATED)</entry>
 		<entry>yes or no</entry>
+		<entry>no</entry>
 		<entry>
 		  <para>
 		  This option controls how the time related macros are
@@ -2119,6 +2115,7 @@
               <row>
 		<entry>ts_format()</entry>
 		<entry>rfc3164, bsd, rfc3339, iso</entry>
+		<entry>rfc3164</entry>
 		<entry>
 		  Specifies the timestamp format used when syslog-ng itself
                   formats a timestamp and nothing else specifies a format
@@ -2129,6 +2126,7 @@
 	      <row>
 		<entry>use_dns()</entry>
 		<entry>yes or no</entry>
+		<entry>yes</entry>
 		<entry>Enable or disable DNS usage. syslog-ng blocks on DNS
 		  queries, so enabling DNS may lead to a Denial of Service attack.
 		  To prevent DoS, protect your syslog-ng network endpoint with
@@ -2138,50 +2136,54 @@
 	      <row>
 		<entry>dns_cache()</entry>
 		<entry>yes or no</entry>
+		<entry>yes</entry>
 		<entry>Enable or disable DNS cache usage.</entry>
 	      </row>
 	      <row>
 		<entry>dns_cache_size()</entry>
 		<entry>number</entry>
+		<entry>1007</entry>
 		<entry>Number of hostnames in the DNS cache.</entry>
 	      </row>
 	      <row>
 		<entry>dns_cache_expire()</entry>
 		<entry>number</entry>
+		<entry>3600</entry>
 		<entry>Number of seconds while a successful lookup is cached.</entry>
 	      </row>
 	      <row>
 		<entry>dns_cache_expire_failed()</entry>
 		<entry>number</entry>
+		<entry>60</entry>
 		<entry>Number of seconds while a failed lookup is cached.</entry>
 	      </row>
 	      <row>
 		<entry>log_msg_size()</entry>
 		<entry>number</entry>
+		<entry>8192</entry>
 		<entry>Maximum length of message in bytes.</entry>
 	      </row>
 	      <row>
 		<entry>use_fqdn()</entry>
 		<entry>yes or no</entry>
+		<entry>no</entry>
 		<entry>Add Fully Qualified Domain Name instead of short hostname.</entry>
 	      </row>
 	      <row>
-		<entry>gc_idle_threshold()</entry>
+		<entry>gc_idle_threshold() (DEPRECATED)</entry>
 		<entry>number</entry>
+		<entry>n/a</entry>
 		<entry>
-		  Sets the threshold value for the garbage collector,
-		  when syslog-ng is idle. GC phase starts when the
-		  number of allocated objects reach this number. Default: 100.
+		  Has no meaning in syslog-ng 1.9.x and later.
 		</entry>
 	      </row>
 
 	      <row>
-		<entry>gc_busy_threshold()</entry>
+		<entry>gc_busy_threshold() (DEPRECATED)</entry>
 		<entry>number</entry>
+		<entry>n/a</entry>
 		<entry>
-		  Sets the threshold value for the garbage collector,
-		  when syslog-ng is busy. GC phase starts when the
-		  number of allocated objects reach this number. Default: 3000.
+		  Has no meaning in syslog-ng 1.9.x and later.
 		</entry>
 	      </row>
 	      
@@ -2195,8 +2197,9 @@
   </chapter>
   <chapter id="tuning">
     <title>Performance tuning in syslog-ng</title>
-
     <para>
+      <note>This information is out of date for syslog-ng 2.0, some of it
+      might still apply but syslog-ng has changed considerably.</note>
       There are several settings available you can finetune the
       behaviour of syslog-ng. The defaults should be adequate for a
       single server or workstation installation, but for a central
