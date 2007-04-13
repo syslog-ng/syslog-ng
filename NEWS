@@ -1,3 +1,31 @@
+News for the 1.9.3 release
+	Sat, 22 Jan 2005 01:38:07 +0100
+
+	Things are going faster these days, a mere three weeks between
+	releases. I've been running syslog-ng 1.9.2 on my notebook, and was
+	lucky enough to find one or two major bugs this way, but after
+	fixing those things are looking good. I've seen _no_ crashes, though
+	sometimes syslog-ng blocked on reading an external fd, thus causing
+	a system deadlock. Apart from bugfixes the most important changes
+	are that documentation is readded and somewhat even updated with the
+	new features. It was funny rereading the sentences I wrote a couple
+	of years earlier, fixed some embarassing grammatical mistakes. Now,
+	back to the topic, the most important changes in this release are:
+
+	* Solaris portability fixes, one of the snapshots already compiled
+	cleanly under Solaris, even though I did not test the release itself.
+	* Link against the libraries sitting in /usr statically.
+	* Fixed possible deadlock on internal messages, it was a bad idea to
+	use a pipe internally, it is now replaced with a conventional queue,
+	and a special GSource.
+	* Fixed another possible deadlock caused by some fds not being set
+	to non-blocking mode.
+	* EAGAIN and EINTR was not correctly handled in all cases, fixed
+	those.
+	* Readded documentation, added new macros, template statements, new
+	flags.
+
+
 News for the 1.9.2 release
 	Mon, 03 Jan 2005 22:03:02 +0100
 

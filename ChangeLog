@@ -2,6 +2,24 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-01-22 00:47:35 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-14
+
+    Summary:
+      Updated NEWS file, released syslog-ng 1.9.3
+    Revision:
+      syslog-ng--mainline--2.0--patch-14
+
+    2005-01-22  Balazs Scheidler <bazsi@balabit.hu>
+    
+    	* NEWS: updated with 1.9.3 release information
+    
+    	* configure.in: bumped version to 1.9.3
+    
+
+    modified files:
+     ChangeLog NEWS configure.in
+
+
 2005-01-22 00:32:06 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-13
 
     Summary:
