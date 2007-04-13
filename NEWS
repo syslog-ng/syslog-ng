@@ -1,3 +1,23 @@
+News for the 1.9.2 release
+	Mon, 03 Jan 2005 22:03:02 +0100
+
+	Well, it's been a long time since the last syslog-ng development
+	release simply because I was involved in too many things in
+	parallel. Good news that the release is actually quite usable,
+	I've been running it on my laptop for a week now and I think it 
+	is now time to gather some real life experience. 
+
+	* Fixed a couple of memory leaks.
+	* Fixed SIGHUP support.
+	* Fixed program startup to make sure all important error information
+        is logged.
+	* Fixed program destinations by adding setsid() call after forking.
+	* Fixed flow controlled log path support.
+	* Added the possibility to use braces around macro references (like
+        in '${MSG}\n')
+	* Added macros missing from this branch added to 1.6.x since the
+	last release (PRI and MSGONLY).
+
 News for the 1.9.1 release
 	Wed, 22 Jan 2003 12:13:44 +0100
 
