@@ -234,7 +234,7 @@
 
 
 /* Copy the first part of user declarations.  */
-#line 1 "cfg-grammar.y"
+#line 1 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
 
 
 #include "syslog-ng.h"
@@ -287,7 +287,7 @@ LogTemplate *last_template;
 #endif
 
 #if ! defined (YYSTYPE) && ! defined (YYSTYPE_IS_DECLARED)
-#line 39 "cfg-grammar.y"
+#line 39 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
 typedef union YYSTYPE {
 	guint num;
 	char *cptr;
@@ -295,7 +295,7 @@ typedef union YYSTYPE {
 	FilterExprNode *node;
 } YYSTYPE;
 /* Line 191 of yacc.c.  */
-#line 299 "cfg-grammar.c"
+#line 299 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.c"
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1
 # define YYSTYPE_IS_TRIVIAL 1
@@ -307,7 +307,7 @@ typedef union YYSTYPE {
 
 
 /* Line 214 of yacc.c.  */
-#line 311 "cfg-grammar.c"
+#line 311 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.c"
 
 #if ! defined (yyoverflow) || YYERROR_VERBOSE
 
@@ -1737,57 +1737,57 @@ yyreduce:
   switch (yyn)
     {
         case 5:
-#line 187 "cfg-grammar.y"
+#line 187 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { cfg_add_source(configuration, yyvsp[0].ptr); }
     break;
 
   case 6:
-#line 188 "cfg-grammar.y"
+#line 188 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { cfg_add_dest(configuration, yyvsp[0].ptr); }
     break;
 
   case 7:
-#line 189 "cfg-grammar.y"
+#line 189 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { cfg_add_connection(configuration, yyvsp[0].ptr); }
     break;
 
   case 8:
-#line 190 "cfg-grammar.y"
+#line 190 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { cfg_add_filter(configuration, yyvsp[0].ptr); }
     break;
 
   case 9:
-#line 191 "cfg-grammar.y"
+#line 191 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { cfg_add_template(configuration, yyvsp[0].ptr); }
     break;
 
   case 10:
-#line 192 "cfg-grammar.y"
+#line 192 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     {  }
     break;
 
   case 11:
-#line 196 "cfg-grammar.y"
+#line 196 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.ptr = log_source_group_new(yyvsp[-3].cptr, yyvsp[-1].ptr); free(yyvsp[-3].cptr); }
     break;
 
   case 12:
-#line 200 "cfg-grammar.y"
+#line 200 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.ptr = log_dest_group_new(yyvsp[-3].cptr, yyvsp[-1].ptr); free(yyvsp[-3].cptr); }
     break;
 
   case 13:
-#line 204 "cfg-grammar.y"
+#line 204 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.ptr = log_connection_new(yyvsp[-2].ptr, yyvsp[-1].num); }
     break;
 
   case 14:
-#line 208 "cfg-grammar.y"
+#line 208 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.ptr = NULL; }
     break;
 
   case 15:
-#line 213 "cfg-grammar.y"
+#line 213 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     {
 	    last_template = log_template_new(yyvsp[0].cptr, NULL);
 	    free(yyvsp[0].cptr);
@@ -1795,22 +1795,22 @@ yyreduce:
     break;
 
   case 16:
-#line 217 "cfg-grammar.y"
+#line 217 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.ptr = last_template;  }
     break;
 
   case 19:
-#line 226 "cfg-grammar.y"
+#line 226 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { last_template->template = g_string_new(yyvsp[-1].cptr); free(yyvsp[-1].cptr); }
     break;
 
   case 20:
-#line 227 "cfg-grammar.y"
+#line 227 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { log_template_set_escape(last_template, yyvsp[-1].num); }
     break;
 
   case 21:
-#line 228 "cfg-grammar.y"
+#line 228 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { if (cfg_timezone_value(yyvsp[-1].cptr, &last_template->zone_offset)) 
 	                                            last_template->flags |= LT_TZ_SET; 
 	                                          free(yyvsp[-1].cptr);
@@ -1818,52 +1818,52 @@ yyreduce:
     break;
 
   case 22:
-#line 235 "cfg-grammar.y"
-    { log_drv_append(yyvsp[-2].ptr, yyvsp[0].ptr); yyval.ptr = yyvsp[-2].ptr; }
+#line 235 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
+    { log_drv_append(yyvsp[-2].ptr, yyvsp[0].ptr); log_drv_unref(yyvsp[0].ptr); yyval.ptr = yyvsp[-2].ptr; }
     break;
 
   case 23:
-#line 236 "cfg-grammar.y"
+#line 236 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.ptr = NULL; }
     break;
 
   case 24:
-#line 240 "cfg-grammar.y"
+#line 240 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.ptr = yyvsp[0].ptr; }
     break;
 
   case 25:
-#line 241 "cfg-grammar.y"
+#line 241 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.ptr = yyvsp[0].ptr; }
     break;
 
   case 26:
-#line 242 "cfg-grammar.y"
+#line 242 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.ptr = yyvsp[0].ptr; }
     break;
 
   case 27:
-#line 243 "cfg-grammar.y"
+#line 243 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.ptr = yyvsp[0].ptr; }
     break;
 
   case 28:
-#line 247 "cfg-grammar.y"
+#line 247 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.ptr = afinter_sd_new(); }
     break;
 
   case 29:
-#line 251 "cfg-grammar.y"
+#line 251 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.ptr = yyvsp[-1].ptr; }
     break;
 
   case 30:
-#line 252 "cfg-grammar.y"
+#line 252 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.ptr = yyvsp[-1].ptr; }
     break;
 
   case 31:
-#line 257 "cfg-grammar.y"
+#line 257 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     {
 	    last_driver = affile_sd_new(yyvsp[0].cptr, 0); 
 	    free(yyvsp[0].cptr); 
@@ -1872,12 +1872,12 @@ yyreduce:
     break;
 
   case 32:
-#line 262 "cfg-grammar.y"
+#line 262 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.ptr = last_driver; }
     break;
 
   case 33:
-#line 267 "cfg-grammar.y"
+#line 267 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     {
 	    last_driver = affile_sd_new(yyvsp[0].cptr, AFFILE_PIPE); 
 	    free(yyvsp[0].cptr); 
@@ -1886,32 +1886,32 @@ yyreduce:
     break;
 
   case 34:
-#line 272 "cfg-grammar.y"
+#line 272 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.ptr = last_driver; }
     break;
 
   case 35:
-#line 276 "cfg-grammar.y"
+#line 276 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.ptr = yyvsp[-1].ptr; }
     break;
 
   case 36:
-#line 277 "cfg-grammar.y"
+#line 277 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.ptr = yyvsp[-1].ptr; }
     break;
 
   case 37:
-#line 278 "cfg-grammar.y"
+#line 278 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.ptr = yyvsp[-1].ptr; }
     break;
 
   case 38:
-#line 279 "cfg-grammar.y"
+#line 279 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.ptr = yyvsp[-1].ptr; }
     break;
 
   case 39:
-#line 284 "cfg-grammar.y"
+#line 284 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { 
 	    last_driver = afunix_sd_new(
 		yyvsp[0].cptr,
@@ -1922,12 +1922,12 @@ yyreduce:
     break;
 
   case 40:
-#line 291 "cfg-grammar.y"
+#line 291 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.ptr = last_driver; }
     break;
 
   case 41:
-#line 296 "cfg-grammar.y"
+#line 296 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { 
 	    last_driver = afunix_sd_new(
 		yyvsp[0].cptr,
@@ -1938,37 +1938,37 @@ yyreduce:
     break;
 
   case 42:
-#line 303 "cfg-grammar.y"
+#line 303 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.ptr = last_driver; }
     break;
 
   case 45:
-#line 313 "cfg-grammar.y"
+#line 313 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { afunix_sd_set_uid(last_driver, yyvsp[-1].cptr); free(yyvsp[-1].cptr); }
     break;
 
   case 46:
-#line 314 "cfg-grammar.y"
+#line 314 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { afunix_sd_set_gid(last_driver, yyvsp[-1].cptr); free(yyvsp[-1].cptr); }
     break;
 
   case 47:
-#line 315 "cfg-grammar.y"
+#line 315 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { afunix_sd_set_perm(last_driver, yyvsp[-1].num); }
     break;
 
   case 48:
-#line 316 "cfg-grammar.y"
+#line 316 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     {}
     break;
 
   case 49:
-#line 317 "cfg-grammar.y"
+#line 317 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     {}
     break;
 
   case 50:
-#line 322 "cfg-grammar.y"
+#line 322 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { 
 	    last_driver = afinet_sd_new(
 			"0.0.0.0", 514,
@@ -1978,47 +1978,47 @@ yyreduce:
     break;
 
   case 51:
-#line 328 "cfg-grammar.y"
+#line 328 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.ptr = last_driver; }
     break;
 
   case 55:
-#line 338 "cfg-grammar.y"
+#line 338 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { afinet_sd_set_localport(last_driver, 0, yyvsp[-1].cptr, "udp"); free(yyvsp[-1].cptr); }
     break;
 
   case 56:
-#line 339 "cfg-grammar.y"
+#line 339 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { afinet_sd_set_localport(last_driver, 0, yyvsp[-1].cptr, "udp"); free(yyvsp[-1].cptr); }
     break;
 
   case 57:
-#line 343 "cfg-grammar.y"
+#line 343 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { afinet_sd_set_localip(last_driver, yyvsp[-1].cptr); free(yyvsp[-1].cptr); }
     break;
 
   case 58:
-#line 344 "cfg-grammar.y"
+#line 344 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { afinet_sd_set_localport(last_driver, yyvsp[-1].num, NULL, NULL); }
     break;
 
   case 59:
-#line 345 "cfg-grammar.y"
+#line 345 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { afinet_sd_set_localport(last_driver, yyvsp[-1].num, NULL, NULL); }
     break;
 
   case 60:
-#line 346 "cfg-grammar.y"
+#line 346 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { afinet_sd_set_localip(last_driver, yyvsp[-1].cptr); free(yyvsp[-1].cptr); }
     break;
 
   case 61:
-#line 347 "cfg-grammar.y"
+#line 347 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     {}
     break;
 
   case 62:
-#line 352 "cfg-grammar.y"
+#line 352 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { 
 	    last_driver = afinet_sd_new(
 			"0.0.0.0", 514,
@@ -2028,57 +2028,57 @@ yyreduce:
     break;
 
   case 63:
-#line 358 "cfg-grammar.y"
+#line 358 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.ptr = last_driver; }
     break;
 
   case 67:
-#line 368 "cfg-grammar.y"
+#line 368 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { afinet_sd_set_localport(last_driver, 0, yyvsp[-1].cptr, "tcp"); free(yyvsp[-1].cptr); }
     break;
 
   case 68:
-#line 369 "cfg-grammar.y"
+#line 369 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { afinet_sd_set_localport(last_driver, 0, yyvsp[-1].cptr, "tcp"); free(yyvsp[-1].cptr); }
     break;
 
   case 69:
-#line 370 "cfg-grammar.y"
+#line 370 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { afinet_sd_set_auth(last_driver, yyvsp[-1].num); }
     break;
 
   case 70:
-#line 371 "cfg-grammar.y"
+#line 371 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { afinet_sd_set_mac(last_driver, yyvsp[-1].num); }
     break;
 
   case 71:
-#line 372 "cfg-grammar.y"
+#line 372 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { afinet_sd_set_encrypt(last_driver, yyvsp[-1].num); }
     break;
 
   case 72:
-#line 373 "cfg-grammar.y"
+#line 373 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     {}
     break;
 
   case 73:
-#line 377 "cfg-grammar.y"
+#line 377 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { afsocket_sd_set_keep_alive(last_driver, yyvsp[-1].num); }
     break;
 
   case 74:
-#line 378 "cfg-grammar.y"
+#line 378 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { afsocket_sd_set_max_connections(last_driver, yyvsp[-1].num); }
     break;
 
   case 75:
-#line 382 "cfg-grammar.y"
+#line 382 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.ptr = yyvsp[-1].ptr; }
     break;
 
   case 76:
-#line 387 "cfg-grammar.y"
+#line 387 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { 
 	    last_driver = afstreams_sd_new(yyvsp[0].cptr); 
 	    free(yyvsp[0].cptr); 
@@ -2086,107 +2086,107 @@ yyreduce:
     break;
 
   case 77:
-#line 391 "cfg-grammar.y"
+#line 391 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.ptr = last_driver; }
     break;
 
   case 80:
-#line 400 "cfg-grammar.y"
+#line 400 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { afstreams_sd_set_sundoor(last_driver, yyvsp[-1].cptr); free(yyvsp[-1].cptr); }
     break;
 
   case 83:
-#line 409 "cfg-grammar.y"
+#line 409 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { last_reader_options->options = yyvsp[-1].num; }
     break;
 
   case 84:
-#line 410 "cfg-grammar.y"
+#line 410 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { last_reader_options->msg_size = yyvsp[-1].num; }
     break;
 
   case 85:
-#line 411 "cfg-grammar.y"
+#line 411 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { last_reader_options->init_window_size = yyvsp[-1].num; }
     break;
 
   case 86:
-#line 412 "cfg-grammar.y"
+#line 412 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { last_reader_options->fetch_limit = yyvsp[-1].num; }
     break;
 
   case 87:
-#line 413 "cfg-grammar.y"
+#line 413 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { last_reader_options->padding = yyvsp[-1].num; }
     break;
 
   case 88:
-#line 414 "cfg-grammar.y"
+#line 414 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { last_reader_options->follow_freq = yyvsp[-1].num; }
     break;
 
   case 89:
-#line 415 "cfg-grammar.y"
+#line 415 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { last_reader_options->zone_offset_set = cfg_timezone_value(yyvsp[-1].cptr, &last_reader_options->zone_offset); free(yyvsp[-1].cptr); }
     break;
 
   case 90:
-#line 419 "cfg-grammar.y"
+#line 419 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.num = yyvsp[-1].num | yyvsp[0].num; }
     break;
 
   case 91:
-#line 420 "cfg-grammar.y"
+#line 420 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.num = 0; }
     break;
 
   case 92:
-#line 424 "cfg-grammar.y"
+#line 424 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.num = LRO_NOPARSE; }
     break;
 
   case 93:
-#line 428 "cfg-grammar.y"
-    { log_drv_append(yyvsp[-2].ptr, yyvsp[0].ptr); yyval.ptr = yyvsp[-2].ptr; }
+#line 428 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
+    { log_drv_append(yyvsp[-2].ptr, yyvsp[0].ptr); log_drv_unref(yyvsp[0].ptr); yyval.ptr = yyvsp[-2].ptr; }
     break;
 
   case 94:
-#line 429 "cfg-grammar.y"
+#line 429 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.ptr = NULL; }
     break;
 
   case 95:
-#line 433 "cfg-grammar.y"
+#line 433 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.ptr = yyvsp[0].ptr; }
     break;
 
   case 96:
-#line 434 "cfg-grammar.y"
+#line 434 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.ptr = yyvsp[0].ptr; }
     break;
 
   case 97:
-#line 435 "cfg-grammar.y"
+#line 435 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.ptr = yyvsp[0].ptr; }
     break;
 
   case 98:
-#line 436 "cfg-grammar.y"
+#line 436 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.ptr = yyvsp[0].ptr; }
     break;
 
   case 99:
-#line 437 "cfg-grammar.y"
+#line 437 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.ptr = yyvsp[0].ptr; }
     break;
 
   case 100:
-#line 441 "cfg-grammar.y"
+#line 441 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.ptr = yyvsp[-1].ptr; }
     break;
 
   case 101:
-#line 446 "cfg-grammar.y"
+#line 446 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { 
 	    last_driver = affile_dd_new(yyvsp[0].cptr, 0); 
 	    free(yyvsp[0].cptr); 
@@ -2195,52 +2195,52 @@ yyreduce:
     break;
 
   case 102:
-#line 452 "cfg-grammar.y"
+#line 452 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.ptr = last_driver; }
     break;
 
   case 106:
-#line 466 "cfg-grammar.y"
+#line 466 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { affile_dd_set_file_uid(last_driver, yyvsp[-1].cptr); free(yyvsp[-1].cptr); }
     break;
 
   case 107:
-#line 467 "cfg-grammar.y"
+#line 467 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { affile_dd_set_file_gid(last_driver, yyvsp[-1].cptr); free(yyvsp[-1].cptr); }
     break;
 
   case 108:
-#line 468 "cfg-grammar.y"
+#line 468 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { affile_dd_set_file_perm(last_driver, yyvsp[-1].num); }
     break;
 
   case 109:
-#line 469 "cfg-grammar.y"
+#line 469 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { affile_dd_set_dir_uid(last_driver, yyvsp[-1].cptr); free(yyvsp[-1].cptr); }
     break;
 
   case 110:
-#line 470 "cfg-grammar.y"
+#line 470 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { affile_dd_set_dir_gid(last_driver, yyvsp[-1].cptr); free(yyvsp[-1].cptr); }
     break;
 
   case 111:
-#line 471 "cfg-grammar.y"
+#line 471 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { affile_dd_set_dir_perm(last_driver, yyvsp[-1].num); }
     break;
 
   case 112:
-#line 472 "cfg-grammar.y"
+#line 472 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { affile_dd_set_create_dirs(last_driver, yyvsp[-1].num); }
     break;
 
   case 113:
-#line 476 "cfg-grammar.y"
+#line 476 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.ptr = yyvsp[-1].ptr; }
     break;
 
   case 114:
-#line 481 "cfg-grammar.y"
+#line 481 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { 
 	    last_driver = affile_dd_new(yyvsp[0].cptr, AFFILE_NO_EXPAND | AFFILE_PIPE);
 	    affile_dd_set_sync_freq(last_driver, 0);
@@ -2250,47 +2250,47 @@ yyreduce:
     break;
 
   case 115:
-#line 487 "cfg-grammar.y"
+#line 487 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.ptr = last_driver; }
     break;
 
   case 119:
-#line 497 "cfg-grammar.y"
+#line 497 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { affile_dd_set_file_uid(last_driver, yyvsp[-1].cptr); free(yyvsp[-1].cptr); }
     break;
 
   case 120:
-#line 498 "cfg-grammar.y"
+#line 498 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { affile_dd_set_file_gid(last_driver, yyvsp[-1].cptr); free(yyvsp[-1].cptr); }
     break;
 
   case 121:
-#line 499 "cfg-grammar.y"
+#line 499 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { affile_dd_set_file_perm(last_driver, yyvsp[-1].num); }
     break;
 
   case 122:
-#line 504 "cfg-grammar.y"
+#line 504 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.ptr = yyvsp[-1].ptr; }
     break;
 
   case 123:
-#line 505 "cfg-grammar.y"
+#line 505 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.ptr = yyvsp[-1].ptr; }
     break;
 
   case 124:
-#line 506 "cfg-grammar.y"
+#line 506 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.ptr = yyvsp[-1].ptr; }
     break;
 
   case 125:
-#line 507 "cfg-grammar.y"
+#line 507 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.ptr = yyvsp[-1].ptr; }
     break;
 
   case 126:
-#line 512 "cfg-grammar.y"
+#line 512 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { 
 	    last_driver = afunix_dd_new(yyvsp[0].cptr, AFSOCKET_DGRAM);
 	    free(yyvsp[0].cptr);
@@ -2299,12 +2299,12 @@ yyreduce:
     break;
 
   case 127:
-#line 517 "cfg-grammar.y"
+#line 517 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.ptr = last_driver; }
     break;
 
   case 128:
-#line 522 "cfg-grammar.y"
+#line 522 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { 
 	    last_driver = afunix_dd_new(yyvsp[0].cptr, AFSOCKET_STREAM);
 	    free(yyvsp[0].cptr);
@@ -2313,12 +2313,12 @@ yyreduce:
     break;
 
   case 129:
-#line 527 "cfg-grammar.y"
+#line 527 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.ptr = last_driver; }
     break;
 
   case 130:
-#line 533 "cfg-grammar.y"
+#line 533 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { 
 	    last_driver = afinet_dd_new(
 			yyvsp[0].cptr, 514,
@@ -2329,37 +2329,37 @@ yyreduce:
     break;
 
   case 131:
-#line 540 "cfg-grammar.y"
+#line 540 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.ptr = last_driver; }
     break;
 
   case 134:
-#line 549 "cfg-grammar.y"
+#line 549 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { afinet_dd_set_localip(last_driver, yyvsp[-1].cptr); free(yyvsp[-1].cptr); }
     break;
 
   case 135:
-#line 550 "cfg-grammar.y"
+#line 550 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { afinet_dd_set_destport(last_driver, yyvsp[-1].num, NULL, NULL); }
     break;
 
   case 138:
-#line 556 "cfg-grammar.y"
+#line 556 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { afinet_dd_set_localport(last_driver, 0, yyvsp[-1].cptr, "udp"); free(yyvsp[-1].cptr); }
     break;
 
   case 139:
-#line 557 "cfg-grammar.y"
+#line 557 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { afinet_dd_set_destport(last_driver, 0, yyvsp[-1].cptr, "udp"); free(yyvsp[-1].cptr); }
     break;
 
   case 140:
-#line 558 "cfg-grammar.y"
+#line 558 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { afinet_dd_set_destport(last_driver, 0, yyvsp[-1].cptr, "udp"); free(yyvsp[-1].cptr); }
     break;
 
   case 141:
-#line 563 "cfg-grammar.y"
+#line 563 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { 
 	    last_driver = afinet_dd_new(
 			yyvsp[0].cptr, 514,
@@ -2370,37 +2370,37 @@ yyreduce:
     break;
 
   case 142:
-#line 570 "cfg-grammar.y"
+#line 570 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.ptr = last_driver; }
     break;
 
   case 146:
-#line 580 "cfg-grammar.y"
+#line 580 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { afinet_dd_set_localport(last_driver, 0, yyvsp[-1].cptr, "tcp"); free(yyvsp[-1].cptr); }
     break;
 
   case 147:
-#line 581 "cfg-grammar.y"
+#line 581 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { afinet_dd_set_destport(last_driver, 0, yyvsp[-1].cptr, "tcp"); free(yyvsp[-1].cptr); }
     break;
 
   case 148:
-#line 582 "cfg-grammar.y"
+#line 582 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { afinet_dd_set_destport(last_driver, 0, yyvsp[-1].cptr, "tcp"); free(yyvsp[-1].cptr); }
     break;
 
   case 149:
-#line 593 "cfg-grammar.y"
+#line 593 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.ptr = afuser_dd_new(yyvsp[-1].cptr); free(yyvsp[-1].cptr); }
     break;
 
   case 150:
-#line 597 "cfg-grammar.y"
+#line 597 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.ptr = yyvsp[-1].ptr; }
     break;
 
   case 151:
-#line 602 "cfg-grammar.y"
+#line 602 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { 
 	    last_driver = afprogram_dd_new(yyvsp[0].cptr); 
 	    free(yyvsp[0].cptr); 
@@ -2409,27 +2409,27 @@ yyreduce:
     break;
 
   case 152:
-#line 607 "cfg-grammar.y"
+#line 607 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.ptr = last_driver; }
     break;
 
   case 155:
-#line 616 "cfg-grammar.y"
+#line 616 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { last_writer_options->options = yyvsp[-1].num; }
     break;
 
   case 156:
-#line 617 "cfg-grammar.y"
+#line 617 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { last_writer_options->fifo_size = yyvsp[-1].num; }
     break;
 
   case 157:
-#line 618 "cfg-grammar.y"
+#line 618 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { affile_dd_set_sync_freq(last_driver, yyvsp[-1].num); }
     break;
 
   case 158:
-#line 619 "cfg-grammar.y"
+#line 619 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { last_writer_options->template = cfg_lookup_template(configuration, yyvsp[-1].cptr);
 	                                          if (last_writer_options->template == NULL)
 	                                            {
@@ -2443,352 +2443,352 @@ yyreduce:
     break;
 
   case 159:
-#line 629 "cfg-grammar.y"
+#line 629 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { affile_dd_set_template_escape(last_driver, yyvsp[-1].num); }
     break;
 
   case 160:
-#line 630 "cfg-grammar.y"
+#line 630 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { affile_dd_set_fsync(last_driver, yyvsp[-1].num); }
     break;
 
   case 161:
-#line 631 "cfg-grammar.y"
+#line 631 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { last_writer_options->keep_timestamp = yyvsp[-1].num; }
     break;
 
   case 162:
-#line 632 "cfg-grammar.y"
+#line 632 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { last_writer_options->tz_convert = cfg_tz_convert_value(yyvsp[-1].cptr); free(yyvsp[-1].cptr); }
     break;
 
   case 163:
-#line 633 "cfg-grammar.y"
+#line 633 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { last_writer_options->ts_format = cfg_ts_format_value(yyvsp[-1].cptr); free(yyvsp[-1].cptr); }
     break;
 
   case 164:
-#line 637 "cfg-grammar.y"
+#line 637 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.num = yyvsp[-1].num | yyvsp[0].num; }
     break;
 
   case 165:
-#line 638 "cfg-grammar.y"
+#line 638 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.num = 0; }
     break;
 
   case 166:
-#line 642 "cfg-grammar.y"
+#line 642 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.num = LWO_TMPL_ESCAPE; }
     break;
 
   case 167:
-#line 647 "cfg-grammar.y"
+#line 647 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { log_endpoint_append(yyvsp[-2].ptr, yyvsp[0].ptr); yyval.ptr = yyvsp[-2].ptr; }
     break;
 
   case 168:
-#line 648 "cfg-grammar.y"
+#line 648 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.ptr = NULL; }
     break;
 
   case 169:
-#line 652 "cfg-grammar.y"
+#line 652 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.ptr = log_endpoint_new(EP_SOURCE, yyvsp[-1].cptr); free(yyvsp[-1].cptr); }
     break;
 
   case 170:
-#line 653 "cfg-grammar.y"
+#line 653 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.ptr = log_endpoint_new(EP_FILTER, yyvsp[-1].cptr); free(yyvsp[-1].cptr); }
     break;
 
   case 171:
-#line 654 "cfg-grammar.y"
+#line 654 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.ptr = log_endpoint_new(EP_DESTINATION, yyvsp[-1].cptr); free(yyvsp[-1].cptr); }
     break;
 
   case 172:
-#line 658 "cfg-grammar.y"
+#line 658 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.num = yyvsp[-2].num; }
     break;
 
   case 173:
-#line 659 "cfg-grammar.y"
+#line 659 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.num = 0; }
     break;
 
   case 174:
-#line 664 "cfg-grammar.y"
+#line 664 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.num |= yyvsp[0].num; }
     break;
 
   case 175:
-#line 665 "cfg-grammar.y"
+#line 665 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.num = 0; }
     break;
 
   case 176:
-#line 669 "cfg-grammar.y"
+#line 669 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.num = LC_CATCHALL; }
     break;
 
   case 177:
-#line 670 "cfg-grammar.y"
+#line 670 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.num = LC_FALLBACK; }
     break;
 
   case 178:
-#line 671 "cfg-grammar.y"
+#line 671 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.num = LC_FINAL; }
     break;
 
   case 179:
-#line 672 "cfg-grammar.y"
+#line 672 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.num = LC_FLOW_CONTROL; }
     break;
 
   case 180:
-#line 676 "cfg-grammar.y"
+#line 676 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.ptr = yyvsp[-2].ptr; }
     break;
 
   case 181:
-#line 677 "cfg-grammar.y"
+#line 677 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.ptr = NULL; }
     break;
 
   case 182:
-#line 681 "cfg-grammar.y"
+#line 681 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { configuration->mark_freq = yyvsp[-1].num; }
     break;
 
   case 183:
-#line 682 "cfg-grammar.y"
+#line 682 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { configuration->sync_freq = yyvsp[-1].num; }
     break;
 
   case 184:
-#line 683 "cfg-grammar.y"
+#line 683 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { configuration->chain_hostnames = yyvsp[-1].num; }
     break;
 
   case 185:
-#line 684 "cfg-grammar.y"
+#line 684 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { configuration->keep_hostname = yyvsp[-1].num; }
     break;
 
   case 186:
-#line 685 "cfg-grammar.y"
+#line 685 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { configuration->use_time_recvd = yyvsp[-1].num; }
     break;
 
   case 187:
-#line 686 "cfg-grammar.y"
+#line 686 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { configuration->use_fqdn = yyvsp[-1].num; }
     break;
 
   case 188:
-#line 687 "cfg-grammar.y"
+#line 687 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { configuration->use_dns = yyvsp[-1].num; }
     break;
 
   case 189:
-#line 688 "cfg-grammar.y"
+#line 688 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { configuration->time_reopen = yyvsp[-1].num; }
     break;
 
   case 190:
-#line 689 "cfg-grammar.y"
+#line 689 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { configuration->time_reap = yyvsp[-1].num; }
     break;
 
   case 191:
-#line 690 "cfg-grammar.y"
+#line 690 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { configuration->log_fifo_size = yyvsp[-1].num; }
     break;
 
   case 192:
-#line 691 "cfg-grammar.y"
+#line 691 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { configuration->log_iw_size = yyvsp[-1].num; }
     break;
 
   case 193:
-#line 692 "cfg-grammar.y"
+#line 692 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { configuration->log_fetch_limit = yyvsp[-1].num; }
     break;
 
   case 194:
-#line 693 "cfg-grammar.y"
+#line 693 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { configuration->log_msg_size = yyvsp[-1].num; }
     break;
 
   case 195:
-#line 694 "cfg-grammar.y"
+#line 694 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { configuration->keep_timestamp = yyvsp[-1].num; }
     break;
 
   case 196:
-#line 695 "cfg-grammar.y"
+#line 695 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { configuration->tz_convert = cfg_tz_convert_value(yyvsp[-1].cptr); free(yyvsp[-1].cptr); }
     break;
 
   case 197:
-#line 696 "cfg-grammar.y"
+#line 696 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { configuration->ts_format = cfg_ts_format_value(yyvsp[-1].cptr); free(yyvsp[-1].cptr); }
     break;
 
   case 198:
-#line 697 "cfg-grammar.y"
+#line 697 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { /* ignored */; }
     break;
 
   case 199:
-#line 698 "cfg-grammar.y"
+#line 698 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { /* ignored */; }
     break;
 
   case 200:
-#line 699 "cfg-grammar.y"
+#line 699 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { configuration->create_dirs = yyvsp[-1].num; }
     break;
 
   case 201:
-#line 700 "cfg-grammar.y"
+#line 700 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { cfg_file_owner_set(configuration, yyvsp[-1].cptr); free(yyvsp[-1].cptr); }
     break;
 
   case 202:
-#line 701 "cfg-grammar.y"
+#line 701 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { cfg_file_group_set(configuration, yyvsp[-1].cptr); free(yyvsp[-1].cptr); }
     break;
 
   case 203:
-#line 702 "cfg-grammar.y"
+#line 702 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { cfg_file_perm_set(configuration, yyvsp[-1].num); }
     break;
 
   case 204:
-#line 703 "cfg-grammar.y"
+#line 703 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { cfg_dir_owner_set(configuration, yyvsp[-1].cptr); free(yyvsp[-1].cptr); }
     break;
 
   case 205:
-#line 704 "cfg-grammar.y"
+#line 704 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { cfg_dir_group_set(configuration, yyvsp[-1].cptr); free(yyvsp[-1].cptr); }
     break;
 
   case 206:
-#line 705 "cfg-grammar.y"
+#line 705 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { cfg_dir_perm_set(configuration, yyvsp[-1].num); }
     break;
 
   case 207:
-#line 706 "cfg-grammar.y"
+#line 706 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { configuration->use_dns_cache = yyvsp[-1].num; }
     break;
 
   case 208:
-#line 707 "cfg-grammar.y"
+#line 707 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { configuration->dns_cache_size = yyvsp[-1].num; }
     break;
 
   case 209:
-#line 708 "cfg-grammar.y"
+#line 708 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { configuration->dns_cache_expire = yyvsp[-1].num; }
     break;
 
   case 210:
-#line 710 "cfg-grammar.y"
+#line 710 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { configuration->dns_cache_expire_failed = yyvsp[-1].num; }
     break;
 
   case 211:
-#line 711 "cfg-grammar.y"
+#line 711 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { configuration->file_template_name = yyvsp[-1].cptr; }
     break;
 
   case 212:
-#line 712 "cfg-grammar.y"
+#line 712 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { configuration->proto_template_name = yyvsp[-1].cptr; }
     break;
 
   case 213:
-#line 716 "cfg-grammar.y"
+#line 716 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.ptr = log_filter_rule_new(yyvsp[-4].cptr, yyvsp[-2].node); free(yyvsp[-4].cptr); }
     break;
 
   case 214:
-#line 720 "cfg-grammar.y"
+#line 720 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.node = yyvsp[0].node; if (!yyvsp[0].node) return 1; }
     break;
 
   case 215:
-#line 721 "cfg-grammar.y"
+#line 721 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyvsp[0].node->comp = !(yyvsp[0].node->comp); yyval.node = yyvsp[0].node; }
     break;
 
   case 216:
-#line 722 "cfg-grammar.y"
+#line 722 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.node = fop_or_new(yyvsp[-2].node, yyvsp[0].node); }
     break;
 
   case 217:
-#line 723 "cfg-grammar.y"
+#line 723 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.node = fop_and_new(yyvsp[-2].node, yyvsp[0].node); }
     break;
 
   case 218:
-#line 724 "cfg-grammar.y"
+#line 724 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.node = yyvsp[-1].node; }
     break;
 
   case 219:
-#line 728 "cfg-grammar.y"
+#line 728 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.node = filter_facility_new(yyvsp[-1].num);  }
     break;
 
   case 220:
-#line 729 "cfg-grammar.y"
+#line 729 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.node = filter_facility_new(0x80000000 | yyvsp[-1].num); }
     break;
 
   case 221:
-#line 730 "cfg-grammar.y"
+#line 730 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.node = filter_level_new(yyvsp[-1].num); }
     break;
 
   case 222:
-#line 731 "cfg-grammar.y"
+#line 731 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.node = filter_prog_new(yyvsp[-1].cptr); free(yyvsp[-1].cptr); }
     break;
 
   case 223:
-#line 732 "cfg-grammar.y"
+#line 732 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.node = filter_host_new(yyvsp[-1].cptr); free(yyvsp[-1].cptr); }
     break;
 
   case 224:
-#line 733 "cfg-grammar.y"
+#line 733 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.node = filter_match_new(yyvsp[-1].cptr); free(yyvsp[-1].cptr); }
     break;
 
   case 225:
-#line 734 "cfg-grammar.y"
+#line 734 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.node = filter_call_new(yyvsp[-1].cptr, configuration); free(yyvsp[-1].cptr); }
     break;
 
   case 226:
-#line 738 "cfg-grammar.y"
+#line 738 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.num = yyvsp[-1].num + yyvsp[0].num; }
     break;
 
   case 227:
-#line 739 "cfg-grammar.y"
+#line 739 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.num = yyvsp[0].num; }
     break;
 
   case 228:
-#line 744 "cfg-grammar.y"
+#line 744 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { 
 	    int n = syslog_lookup_facility(yyvsp[0].cptr);
 	    if (n == -1)
@@ -2805,17 +2805,17 @@ yyreduce:
     break;
 
   case 229:
-#line 760 "cfg-grammar.y"
+#line 760 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.num = yyvsp[-1].num + yyvsp[0].num; }
     break;
 
   case 230:
-#line 761 "cfg-grammar.y"
+#line 761 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.num = yyvsp[0].num; }
     break;
 
   case 231:
-#line 766 "cfg-grammar.y"
+#line 766 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { 
 	    int r1, r2;
 	    r1 = syslog_lookup_level(yyvsp[-2].cptr);
@@ -2842,7 +2842,7 @@ yyreduce:
     break;
 
   case 232:
-#line 790 "cfg-grammar.y"
+#line 790 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { 
 	    int n = syslog_lookup_level(yyvsp[0].cptr); 
 	    if (n == -1)
@@ -2859,32 +2859,32 @@ yyreduce:
     break;
 
   case 233:
-#line 806 "cfg-grammar.y"
+#line 806 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.num = 1; }
     break;
 
   case 234:
-#line 807 "cfg-grammar.y"
+#line 807 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.num = 0; }
     break;
 
   case 235:
-#line 808 "cfg-grammar.y"
+#line 808 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.num = yyvsp[0].num; }
     break;
 
   case 236:
-#line 812 "cfg-grammar.y"
+#line 812 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.num = 2; }
     break;
 
   case 237:
-#line 813 "cfg-grammar.y"
+#line 813 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.num = 1; }
     break;
 
   case 238:
-#line 814 "cfg-grammar.y"
+#line 814 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
     { yyval.num = 0; }
     break;
 
@@ -2892,7 +2892,7 @@ yyreduce:
     }
 
 /* Line 999 of yacc.c.  */
-#line 2896 "cfg-grammar.c"
+#line 2896 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.c"
 
   yyvsp -= yylen;
   yyssp -= yylen;
@@ -3086,7 +3086,7 @@ yyreturn:
 }
 
 
-#line 822 "cfg-grammar.y"
+#line 822 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
 
 
 extern int linenum;

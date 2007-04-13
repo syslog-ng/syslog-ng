@@ -10,10 +10,10 @@
 #include <evtlog.h>
 
 
-int debug_flag = 0;
-int verbose_flag = 0;
-static int log_stderr = 0;
-int msg_pipe[2] = { -1, -1 };
+gboolean debug_flag = 0;
+gboolean verbose_flag = 0;
+static gboolean log_stderr = FALSE, syslog_started = FALSE;
+gint msg_pipe[2] = { -1, -1 };
 EVTCONTEXT *evt_context;
 
 static void
@@ -21,16 +21,16 @@ msg_send_internal_message(int prio, const char *msg)
 {
   gchar buf[1025];
   
-  if (log_stderr)
+  if (log_stderr || !syslog_started)
     {
       fprintf(stderr, "%s\n", msg);
     }
   else
     {
       g_snprintf(buf, sizeof(buf), "<%d> syslog-ng[%d]: %s\n", prio, getpid(), msg);
-      if (write(msg_pipe[1], buf, strlen(buf)) == -1)
+      if (msg_pipe[1] == -1 || write(msg_pipe[1], buf, strlen(buf)) == -1)
         {
-          fprintf(stderr, "%s", msg);
+          fprintf(stderr, "%s\n", msg);
         }
     }
 }
@@ -75,6 +75,12 @@ msg_log_func(const gchar *log_domain, GLogLevelFlags log_flags, const gchar *msg
   msg_send_internal_message(pri, msg);
 }
 
+void
+msg_syslog_started(void)
+{
+  syslog_started = TRUE;
+}
+
 gboolean
 msg_init(int use_stderr)
 {
@@ -95,9 +101,13 @@ msg_init(int use_stderr)
   return TRUE;
 }
 
+
 void
 msg_deinit()
 {
-  close(msg_pipe[0]);
-  close(msg_pipe[1]);
+  if (msg_pipe[0] != -1)
+    close(msg_pipe[0]);
+  if (msg_pipe[1] != -1)
+    close(msg_pipe[1]);
+  evt_ctx_free(evt_context);
 }

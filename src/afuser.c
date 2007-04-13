@@ -60,6 +60,7 @@ afuser_dd_queue(LogPipe *s, LogMessage *msg, gint path_flags)
         }
     }
   log_msg_ack(msg);
+  log_msg_unref(msg);
 }
 
 LogDriver *
@@ -67,6 +68,7 @@ afuser_dd_new(gchar *user)
 {
   AFUserDestDriver *self = g_new0(AFUserDestDriver, 1);
   
+  log_drv_init_instance(&self->super);
   self->super.super.init = afuser_dd_init;
   self->super.super.deinit = afuser_dd_deinit;
   self->super.super.queue = afuser_dd_queue;

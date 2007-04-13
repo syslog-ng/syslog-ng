@@ -54,10 +54,11 @@ log_dest_group_queue(LogPipe *s, LogMessage *msg, gint path_flags)
     {
       if ((path_flags & PF_FLOW_CTL_OFF) == 0)
         log_msg_ack_block_inc(msg);
-      log_pipe_queue(&p->super, msg, path_flags);
+      log_pipe_queue(&p->super, log_msg_ref(msg), path_flags);
     }
   if ((path_flags & PF_FLOW_CTL_OFF) == 0)
     log_msg_ack(msg);
+  log_msg_unref(msg);
 }
 
 static void
@@ -74,7 +75,8 @@ LogDestGroup *
 log_dest_group_new(gchar *name, LogDriver *drivers)
 {
   LogDestGroup *self = g_new0(LogDestGroup, 1);
-  
+
+  log_pipe_init_instance(&self->super);
   self->name = g_string_new(name);
   self->drivers = drivers;
   self->super.init = log_dest_group_init;

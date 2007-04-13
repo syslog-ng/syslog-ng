@@ -109,7 +109,11 @@ affile_sd_deinit(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
   AFFileSourceDriver *self = (AFFileSourceDriver *) s;
 
   if (self->reader)
-    log_pipe_deinit(self->reader, NULL, NULL);
+    {
+      log_pipe_deinit(self->reader, NULL, NULL);
+      log_pipe_unref(self->reader);
+      self->reader = NULL;
+    }
   return TRUE;
 }
 
@@ -118,9 +122,10 @@ affile_sd_free(LogPipe *s)
 {
   AFFileSourceDriver *self = (AFFileSourceDriver *) s;
 
-  log_drv_free_instance(&self->super);
   g_string_free(self->filename, TRUE);
-  log_pipe_unref(self->reader);
+  g_assert(!self->reader);
+
+  log_drv_free_instance(&self->super);
   g_free(s);
 }
 
@@ -217,6 +222,7 @@ affile_dw_free(LogPipe *s)
   
   g_string_free(self->filename, TRUE);
   log_pipe_unref(&self->owner->super.super);
+  
   g_free(s);
 }
 
@@ -499,7 +505,8 @@ affile_dd_queue(LogPipe *s, LogMessage *msg, gint path_flags)
   if (next)
     log_pipe_queue(next, msg, path_flags);
   else
-    {
+    { 
+      /* FIXME: maybe use log_msg_drop instead */
       log_msg_unref(msg);
     }
 }

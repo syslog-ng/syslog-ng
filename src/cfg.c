@@ -339,6 +339,7 @@ cfg_reload_config(gchar *fname, GlobalConfig *cfg)
     {
       msg_error("Error initializing new configuration, reverting to old config", NULL);
       cfg_init(cfg, persist);
+      persist_config_free(persist);
       return cfg;
     }
 }
@@ -356,7 +357,7 @@ typedef struct _PersistentConfigEntry
   GDestroyNotify destroy;
 } PersistentConfigEntry;
 
-void
+static void
 persist_config_entry_free(PersistentConfigEntry *self)
 {
   if (self->destroy)
@@ -411,6 +412,7 @@ persist_config_new(void)
 void 
 persist_config_free(PersistentConfig *self)
 {
+  g_hash_table_destroy(self->keys);
   g_free(self);
 }
 

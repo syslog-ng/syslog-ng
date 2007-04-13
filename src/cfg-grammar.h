@@ -210,7 +210,7 @@
 
 
 #if ! defined (YYSTYPE) && ! defined (YYSTYPE_IS_DECLARED)
-#line 39 "cfg-grammar.y"
+#line 39 "/home/bazsi/zwa/work/syslog-ng-2.0/syslog-ng/src/cfg-grammar.y"
 typedef union YYSTYPE {
 	guint num;
 	char *cptr;

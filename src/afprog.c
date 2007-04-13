@@ -116,6 +116,7 @@ afprogram_dd_free(LogPipe *s)
   log_pipe_deinit(self->writer, NULL, NULL);
   log_pipe_unref(self->writer);  
   g_string_free(self->cmdline, TRUE);
+  log_drv_free_instance(&self->super);
   g_free(self);
 }
 

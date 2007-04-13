@@ -232,7 +232,7 @@ template_item
 	;
 
 source_items
-        : source_item ';' source_items		{ log_drv_append($1, $3); $$ = $1; }
+        : source_item ';' source_items		{ log_drv_append($1, $3); log_drv_unref($3); $$ = $1; }
 	|					{ $$ = NULL; }
 	;
 
@@ -425,7 +425,7 @@ source_reader_option_flag
 	;
 
 dest_items
-	: dest_item ';' dest_items		{ log_drv_append($1, $3); $$ = $1; }
+	: dest_item ';' dest_items		{ log_drv_append($1, $3); log_drv_unref($3); $$ = $1; }
 	|					{ $$ = NULL; }
 	;
 

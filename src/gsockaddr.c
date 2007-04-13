@@ -87,9 +87,6 @@ g_bind(int fd, GSockAddr *addr)
     {
       if (addr && bind(fd, &addr->sa, addr->salen) < 0)
         {
-          gchar buf[256];
-          
-          g_warning("bind() failed; fd='%d', error='%m', addr='%s'", fd, g_sockaddr_format(addr, buf, sizeof(buf)));
           return G_IO_STATUS_ERROR;
         }
       rc = G_IO_STATUS_NORMAL;
@@ -128,11 +125,6 @@ g_accept(int fd, int *newfd, GSockAddr **addr)
     }
   else
     {
-      /*LOG
-        This message indicates that accepting a connection was failed
-        because of the given reason.
-       */
-      g_warning("accept() failed; fd=%d, error='%m'", fd);
       return G_IO_STATUS_ERROR;
     }
   return G_IO_STATUS_NORMAL;
@@ -162,16 +154,6 @@ g_connect(int fd, GSockAddr *remote)
   while (rc == -1 && errno == EINTR);
   if (rc == -1)
     {
-      if (errno != EINPROGRESS)
-        {
-          gchar buf[256];
-      
-          /*LOG
-            This message indicates that establishing connection failed for
-            the given reason.
-           */
-          g_warning("connect() failed; fd='%d', error='%m', addr='%s'", fd, g_sockaddr_format(remote, buf, sizeof(buf)));
-        }
       return G_IO_STATUS_ERROR;
     }
   else
@@ -443,11 +425,6 @@ g_sockaddr_inet_range_bind(int sock, GSockAddr *a)
       addr->sin.sin_port = htons(port);
       if (bind(sock, (struct sockaddr *) &addr->sin, addr->salen) == 0)
         {
-          /*LOG
-            This debug message is used by SockAddrInetRange to inform you
-            about the allocated dynamic port.
-           */
-          g_message("SockAddrInetRange, successfully bound; min_port='%d', max_port='%d', port='%d'", addr->min_port, addr->max_port, port);
           addr->last_port = port + 1;
           return G_IO_STATUS_NORMAL;
         }
@@ -458,8 +435,6 @@ g_sockaddr_inet_range_bind(int sock, GSockAddr *a)
       addr->sin.sin_port = htons(port);
       if (bind(sock, (struct sockaddr *) &addr->sin, addr->salen) == 0)
         {
-          /*NOLOG*/ /* the previous message is the same */
-          g_message("SockAddrInetRange, successfully bound; min_port='%d', max_port='%d', port='%d'", addr->min_port, addr->max_port, port);
           addr->last_port = port + 1;
           return G_IO_STATUS_NORMAL;
         }

@@ -222,7 +222,8 @@ afsocket_sc_free(LogPipe *s)
 
   self->owner->connections = g_list_remove(self->owner->connections, self);
   log_pipe_unref(&self->owner->super.super);
-  log_pipe_unref(self->reader);
+  
+  g_assert(!self->reader);
   g_sockaddr_unref(self->peer_addr);
   g_free(self);
 }
@@ -450,6 +451,8 @@ afsocket_sd_deinit(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
   else if (self->flags & AFSOCKET_DGRAM)
     {
       log_pipe_deinit(self->reader, NULL, NULL);
+      log_pipe_unref(self->reader);
+      self->reader = NULL;
     }
   
   if (self->flags & AFSOCKET_LISTENER_KEEP_ALIVE)
@@ -490,11 +493,12 @@ afsocket_sd_free(LogPipe *s)
 
   g_sockaddr_unref(self->bind_addr);
   self->bind_addr = NULL;
-  log_pipe_unref(self->reader);
   
+  g_assert(!self->reader);
+  
+  log_drv_free_instance(&self->super);
   g_free(self);
 }
-
 
 void
 afsocket_sd_init_instance(AFSocketSourceDriver *self, guint32 flags)
@@ -683,6 +687,7 @@ afsocket_dd_free(LogPipe *s)
 
   g_sockaddr_unref(self->bind_addr);
   g_sockaddr_unref(self->dest_addr);
+  log_drv_free_instance(&self->super);
   g_free(s);
 }
 

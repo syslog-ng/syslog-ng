@@ -21,6 +21,7 @@ log_pipe_free_instance(LogPipe *self)
 LogPipe *
 log_pipe_ref(LogPipe *self)
 {
+  g_assert(!self || self->ref_cnt > 0);
   if (self)
     self->ref_cnt++;
   return self;
@@ -29,6 +30,7 @@ log_pipe_ref(LogPipe *self)
 void 
 log_pipe_unref(LogPipe *self)
 {
+  g_assert(!self || self->ref_cnt > 0);
   if (self && (--self->ref_cnt == 0))
     {
       log_pipe_free_instance(self);

@@ -169,13 +169,13 @@ afstreams_sd_free(LogPipe *s)
 {
   AFStreamsSourceDriver *self = (AFStreamsSourceDriver *) s;
 
-  log_drv_free_instance(&self->super);
   if (self->dev_filename)
     g_string_free(self->dev_filename, TRUE);
   if (self->door_filename)
     g_string_free(self->door_filename, TRUE);
   log_pipe_unref(self->reader);
 
+  log_drv_free_instance(&self->super);
   g_free(s);
 }
 

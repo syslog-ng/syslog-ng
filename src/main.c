@@ -172,6 +172,7 @@ main_loop_run(GlobalConfig *cfg)
     }
   cfg_deinit(cfg, NULL);
   cfg_free(cfg);
+  g_main_loop_unref(main_loop);
   return 0;
 }
 
@@ -283,7 +284,7 @@ main(int argc, char *argv[])
       { NULL, 0, NULL, 0 }
     };
   int syntax_only = 0;
-  int stderr = 0;
+  int log_to_stderr = 0;
   int opt, rc;
 
   while ((opt = getopt_long(argc, argv, "sFf:p:dvhyVC:u:g:e", syslog_ng_options, NULL)) != -1)
@@ -306,7 +307,7 @@ main(int argc, char *argv[])
 	  verbose_flag++;
 	  break;
 	case 'e':
-	  stderr = 1;
+	  log_to_stderr = 1;
 	  break;
 	case 'F':
 	  do_fork = 0;
@@ -341,12 +342,14 @@ main(int argc, char *argv[])
 
   z_mem_trace_init("syslog-ng.trace");
   setup_signals();
-  msg_init(stderr);
+  msg_init(log_to_stderr);
   child_manager_init();
 
   cfg = cfg_new(cfgfilename);
   if (!cfg)
-    return 1;
+    {
+      return 1;
+    }
 
   if (syntax_only)
     {
@@ -360,8 +363,12 @@ main(int argc, char *argv[])
     }
 
   if (!daemonize())
-    return 2;
-    
+    {
+      return 2;
+    }
+  /* from now on internal messages are written to the system log as well */
+  msg_syslog_started();
+  
   setup_creds();
   setup_std_fds();
 

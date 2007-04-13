@@ -32,7 +32,12 @@ afinter_sd_deinit(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
   AFInterSourceDriver *self = (AFInterSourceDriver *) s;
   
   if (self->reader)
-    log_pipe_deinit(self->reader, NULL, NULL);
+    {
+      log_pipe_deinit(self->reader, NULL, NULL);
+      /* break circular reference created during _init */
+      log_pipe_unref(self->reader);
+      self->reader = NULL;
+    }
   return TRUE;
 }
 
@@ -40,8 +45,10 @@ static void
 afinter_sd_free(LogPipe *s)
 {
   AFInterSourceDriver *self = (AFInterSourceDriver *) s;
+  
+  g_assert(!self->reader);
   log_drv_free_instance(&self->super);
-  log_pipe_unref(self->reader);
+  g_free(self);
 }
 
 LogDriver *
