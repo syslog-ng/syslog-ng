@@ -46,8 +46,17 @@ log_writer_fd_prepare(GSource *source,
 {
   LogWriterWatch *self = (LogWriterWatch *) source;
 
-  if (self->writer->queue->length || self->writer->partial)
-    self->pollfd.events = self->fd->cond;
+  if (self->writer->queue->length / 2 > self->writer->options->flush_lines || self->writer->partial)
+    {
+      /* we need to flush our buffers */
+      self->pollfd.events = self->fd->cond;
+    }
+  else if (self->writer->queue->length)
+    {
+      /* our buffer does not contain enough elements to flush, but we do not
+       * want to wait more than this time */
+      *timeout = self->writer->options->flush_timeout * 1000;
+    }
   else if (self->writer->flags & LW_DETECT_EOF)
     self->pollfd.events = G_IO_HUP;
   else
@@ -61,6 +70,11 @@ log_writer_fd_check(GSource *source)
 {
   LogWriterWatch *self = (LogWriterWatch *) source;
   
+  if (self->writer->queue->length || self->writer->partial)
+    {
+      /* we have data to flush */
+      return TRUE;
+    }
   return !!(self->pollfd.revents & (G_IO_OUT | G_IO_ERR | G_IO_HUP | G_IO_IN));
 }
 
@@ -75,7 +89,7 @@ log_writer_fd_dispatch(GSource *source,
       log_writer_broken(self->writer, self->fd);
       return FALSE;
     }
-  else if (self->pollfd.revents & self->fd->cond)
+  else if (self->writer->queue->length || self->writer->partial)
     {
       if (!log_writer_flush_log(self->writer, self->fd))
         return FALSE;
@@ -392,6 +406,8 @@ log_writer_options_defaults(LogWriterOptions *options)
   options->template = NULL;
   options->keep_timestamp = -1;
   options->use_time_recvd = -1;
+  options->flush_lines = -1;
+  options->flush_timeout = -1;
   options->ts_format = -1;
   options->zone_offset = -1;
 }
@@ -403,6 +419,11 @@ log_writer_options_init(LogWriterOptions *options, GlobalConfig *cfg, gboolean f
     options->fifo_size = cfg->log_fifo_size;
   if (options->use_time_recvd == -1)
     options->use_time_recvd = cfg->use_time_recvd;
+    
+  if (options->flush_lines == -1)
+    options->flush_lines = cfg->flush_lines;
+  if (options->flush_timeout == -1)
+    options->flush_timeout = cfg->flush_timeout;
 
   if (!fixed_stamp)
     {

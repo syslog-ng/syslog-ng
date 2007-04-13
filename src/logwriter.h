@@ -38,8 +38,17 @@
 
 typedef struct _LogWriterOptions
 {
+  /* bitmask of LWO_* */
   guint32 options;
+  
+  /* maximum number of entries */
   gint fifo_size;
+  
+  /* minimum number of entries to trigger a flush */
+  gint flush_lines;
+  
+  /* flush anyway if this time was elapsed */
+  gint flush_timeout;
   LogTemplate *template;
   LogTemplate *file_template;
   LogTemplate *proto_template;

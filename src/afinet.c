@@ -123,11 +123,6 @@ afinet_dd_set_localip(LogDriver *s, gchar *ip)
   afinet_set_ip(self->super.bind_addr, ip);
 }
 
-void 
-afinet_dd_set_sync_freq(LogDriver *self, gint sync_freq)
-{
-}
-
 LogDriver *
 afinet_dd_new(gchar *ip, gint port, guint flags)
 {

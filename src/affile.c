@@ -273,14 +273,6 @@ affile_dw_new(AFFileDestDriver *owner, GString *filename)
 }
 
 void 
-affile_dd_set_sync_freq(LogPipe *s, gint sync_freq)
-{
-  AFFileDestDriver *self = (AFFileDestDriver *) s;
-  
-  self->sync_freq = sync_freq;
-}
-
-void 
 affile_dd_set_compress(LogPipe *s, gboolean compress G_GNUC_UNUSED)
 {
   msg_error("On-the-fly file compression is not supported", NULL);
@@ -421,9 +413,6 @@ affile_dd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
 {
   AFFileDestDriver *self = (AFFileDestDriver *) s;
   
-  if (self->sync_freq == -1)
-    self->sync_freq = cfg->sync_freq;
-
   if (cfg->create_dirs)
     self->flags |= AFFILE_CREATE_DIRS;
   if (self->file_uid == -1)

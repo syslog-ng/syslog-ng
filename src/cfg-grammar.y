@@ -53,7 +53,7 @@ LogTemplate *last_template;
 %token  KW_DOOR KW_SUN_STREAMS KW_PROGRAM
 
 /* option items */
-%token KW_FSYNC KW_MARK_FREQ KW_SYNC_FREQ KW_LOG_MSG_SIZE KW_FILE_TEMPLATE KW_PROTO_TEMPLATE
+%token KW_FSYNC KW_MARK_FREQ KW_FLUSH_LINES KW_FLUSH_TIMEOUT KW_LOG_MSG_SIZE KW_FILE_TEMPLATE KW_PROTO_TEMPLATE
 
 %token KW_CHAIN_HOSTNAMES KW_KEEP_HOSTNAME KW_KEEP_TIMESTAMP
 %token KW_USE_DNS KW_USE_FQDN 
@@ -478,9 +478,9 @@ dest_afpipe_params
 	: string 
 	  { 
 	    last_driver = affile_dd_new($1, AFFILE_NO_EXPAND | AFFILE_PIPE);
-	    affile_dd_set_sync_freq(last_driver, 0);
 	    free($1); 
 	    last_writer_options = &((AFFileDestDriver *) last_driver)->writer_options;
+	    last_writer_options->flush_lines = 0;
 	  } 
 	  dest_afpipe_options                   { $$ = last_driver; }
 	;
@@ -582,7 +582,6 @@ dest_afinet_tcp_option
 	| KW_MAC '(' yesno ')'
 	| KW_AUTH '(' yesno ')'
 	| KW_ENCRYPT '(' yesno ')'
-	| KW_SYNC_FREQ '(' NUMBER ')'		{ afinet_dd_set_sync_freq(last_driver, $3); }
 */
 	;
 
@@ -613,7 +612,8 @@ dest_writer_options
 dest_writer_option
 	: KW_FLAGS '(' dest_writer_options_flags ')' { last_writer_options->options = $3; }
 	| KW_LOG_FIFO_SIZE '(' NUMBER ')'	{ last_writer_options->fifo_size = $3; }
-	| KW_SYNC_FREQ '(' NUMBER ')'		{ affile_dd_set_sync_freq(last_driver, $3); }
+	| KW_FLUSH_LINES '(' NUMBER ')'		{ last_writer_options->flush_lines = $3; }
+	| KW_FLUSH_TIMEOUT '(' NUMBER ')'	{ last_writer_options->flush_timeout = $3; }
 	| KW_TEMPLATE '(' string ')'       	{ last_writer_options->template = cfg_lookup_template(configuration, $3);
 	                                          if (last_writer_options->template == NULL)
 	                                            {
@@ -677,7 +677,8 @@ options_items
 
 options_item
 	: KW_MARK_FREQ '(' NUMBER ')'		{ configuration->mark_freq = $3; }
-	| KW_SYNC_FREQ '(' NUMBER ')'		{ configuration->sync_freq = $3; }
+	| KW_FLUSH_LINES '(' NUMBER ')'		{ configuration->flush_lines = $3; }
+	| KW_FLUSH_TIMEOUT '(' NUMBER ')'	{ configuration->flush_timeout = $3; }
 	| KW_CHAIN_HOSTNAMES '(' yesno ')'	{ configuration->chain_hostnames = $3; }
 	| KW_KEEP_HOSTNAME '(' yesno ')'	{ configuration->keep_hostname = $3; }
 	| KW_USE_TIME_RECVD '(' yesno ')'	{ configuration->use_time_recvd = $3; }

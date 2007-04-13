@@ -46,7 +46,8 @@ typedef struct _GlobalConfig
   
   gint stats_freq;
   gint mark_freq;
-  gint sync_freq;
+  gint flush_lines;
+  gint flush_timeout;
   gboolean chain_hostnames;
   gboolean keep_hostname;
   gboolean use_time_recvd;

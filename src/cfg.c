@@ -207,7 +207,8 @@ cfg_new(gchar *fname)
   self->templates = g_hash_table_new(g_str_hash, g_str_equal);
   self->connections = g_ptr_array_new();
 
-  self->sync_freq = 0;
+  self->flush_lines = 0;
+  self->flush_timeout = 10;
   self->mark_freq = 1200;	/* 20 minutes */
   self->stats_freq = 600;
   self->chain_hostnames = 1;

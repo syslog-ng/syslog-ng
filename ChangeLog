@@ -2,6 +2,45 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-08-04 11:11:39 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-49
+
+    Summary:
+      deprecated sync_freq, introduced flush_lines instead, fixed a faction of seconds formatting problem
+    Revision:
+      syslog-ng--mainline--2.0--patch-49
+
+    2005-08-04  Balazs Scheidler <bazsi@balabit.hu>
+    
+    	* doc/reference/syslog-ng.xml: added documentation on the new
+    	flush_lines and flush_timeout options
+    
+    	* src/affile.c (affile_dd_set_sync_freq): removed sync_freq support,
+    	did not work anyway, introduced flush_lines & flush_timeout instead
+    
+    	* src/afinet.c (afinet_dd_set_sync_freq): removed
+    
+    	* src/cfg-grammar.y: added flush options
+    
+    	* src/cfg.c: -"-
+    
+    	* src/logwriter.c: added flush_lines and flush_timeout support
+    
+    	* src/logmsg.c: fixed time fraction formatting
+    
+    	
+    
+    NEWS
+    	* 
+    NEWS.hu
+    	* 
+
+    modified files:
+     ChangeLog doc/reference/syslog-ng.xml src/affile.c
+     src/affile.h src/afinet.c src/cfg-grammar.y src/cfg-lex.l
+     src/cfg.c src/cfg.h src/logmsg.c src/logwriter.c
+     src/logwriter.h
+
+
 2005-07-30 20:48:37 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-48
 
     Summary:

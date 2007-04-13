@@ -86,7 +86,7 @@ log_stamp_format(LogStamp *stamp, GString *target, gint ts_format, glong zone_of
               gulong x, s;
               
               g_string_append_c(target, '.');
-              for (s = stamp->time.tv_usec % 1000000, x = 100000; s && x; x = x / 10)
+              for (s = stamp->time.tv_usec % 1000000, x = 100000; x; x = x / 10)
                 {
                   g_string_append_c(target, (s / x) + '0'); 
                   s = s % x;

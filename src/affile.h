@@ -51,7 +51,6 @@ typedef struct _AFFileDestDriver
   LogPipe *writer;
   guint32 flags;
   GString *template;
-  gint sync_freq;
   uid_t file_uid;
   gid_t file_gid;
   mode_t file_perm;
@@ -69,7 +68,6 @@ typedef struct _AFFileDestDriver
 
 LogDriver *affile_dd_new(gchar *filename, guint32 flags);
 
-void affile_dd_set_sync_freq();
 void affile_dd_set_compress();
 void affile_dd_set_encrypt();
 void affile_dd_set_file_uid();

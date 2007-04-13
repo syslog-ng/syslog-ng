@@ -1060,8 +1060,35 @@
 		<entry>sync_freq()</entry> 
 		<entry>number</entry>
 		<entry>
-		  The logfile is synced when this number of messages
-		  has been written to it.
+		  This setting is an obsolete alias of the flush_lines()
+                  option.
+		</entry>
+		<entry>
+		  Use global setting.
+		</entry>
+	      </row>
+
+	      <row>
+		<entry>flush_lines()</entry> 
+		<entry>number</entry>
+		<entry>
+		  This number controls how many lines if flushed to a
+                  destination at a time. Setting this number high, increases
+                  the time a given log message gets to a destination as it
+                  has to wait other lines to be written. The latency can be
+                  limited by the use of the flush_timeout option.
+		</entry>
+		<entry>
+		  Use global setting.
+		</entry>
+	      </row>
+
+	      <row>
+		<entry>flush_timeout()</entry> 
+		<entry>number</entry>
+		<entry>
+		  This option controls how much syslog-ng waits for lines to
+                  be flushed.
 		</entry>
 		<entry>
 		  Use global setting.
