@@ -2,6 +2,25 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-10-22 17:20:32 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-65
+
+    Summary:
+      do not use the LOG_FAC macro as it is not portable
+    Revision:
+      syslog-ng--mainline--2.0--patch-65
+
+    2005-10-22  Balazs Scheidler <bazsi@balabit.hu>
+    
+    	* src/filter.c: do not use the LOG_FAC macro, it is not available on
+    	Solaris
+    
+    	* doc/reference/syslog-ng.xml: added documentation on the alternate
+    	syntax of the facility() filter
+
+    modified files:
+     ChangeLog doc/reference/syslog-ng.xml src/filter.c
+
+
 2005-10-21 16:07:47 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-64
 
     Summary:

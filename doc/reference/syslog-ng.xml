@@ -1707,7 +1707,18 @@
 	      <row>
 		<entry>facility</entry>
 		<entry>facility(faciliy[,facility])</entry>
-		<entry>Match messages having one of the listed facility code.</entry>
+		<entry>Match messages having one of the listed facility code.
+                  An alternate syntax permits the use an arbitrary
+                  facility code</entry>
+	      </row>
+	      <row>
+		<entry>facility</entry>
+		<entry>facility(&lt;numeric facility code&gt;)</entry>
+		<entry>An alternate syntax for facility which permits the use
+                  of an arbitrary facility code. Facility codes 0-23 are
+                  predefined and can be referenced by their usual name.
+                  Facility codes above 24 are not defined but can be used by
+                  this alternate syntax. </entry>
 	      </row>
 	      <row>
 		<entry>level() or priority()</entry>

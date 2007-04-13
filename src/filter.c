@@ -135,14 +135,14 @@ static gboolean
 filter_facility_eval(FilterExprNode *s, LogMessage *msg)
 {
   FilterPri *self = (FilterPri *) s;
-  guint32 fac = msg->pri & LOG_FACMASK, fac_num = LOG_FAC(msg->pri);
+  guint32 fac = msg->pri & LOG_FACMASK, fac_num = (msg->pri & LOG_FACMASK) >> 3;
   guint32 bits = self->valid;
   int i;
   
   if (G_UNLIKELY(bits & 0x80000000))
     {
       /* exact number specified */
-      return ((bits & ~0x80000000) == fac) ^ s->comp;
+      return ((bits & ~0x80000000) == fac_num) ^ s->comp;
     }
   else
     {
