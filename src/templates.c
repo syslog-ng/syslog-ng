@@ -60,6 +60,7 @@ log_template_compile(LogTemplate *self)
           if (*p >= '0' && *p <= '9')
             {
               last_macro = M_MATCH_REF_OFS + (*p - '0');
+              p++;
             }
           else if (*p == '{')
             {

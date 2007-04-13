@@ -2,6 +2,22 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-07-07 09:33:10 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-41
+
+    Summary:
+      fix match references
+    Revision:
+      syslog-ng--mainline--2.0--patch-41
+
+    2005-07-07  Balazs Scheidler <bazsi@balabit.hu>
+    
+    	* src/templates.c (log_template_compile): fix match references not
+    	to include the reference number itself
+
+    modified files:
+     ChangeLog src/templates.c
+
+
 2005-07-07 09:15:47 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-40
 
     Summary:
