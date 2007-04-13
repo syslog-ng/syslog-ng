@@ -1,0 +1,76 @@
+
+syslog-ng 2.0
+-------------
++ template deklaraciok
++ default template
++ keep alive 
++ konfig ujraolvassas
++ parameter feldolgozas main-ben
+- beallitasi lehetosegek
+  + template minden celhoz
+  + flow control
+  + keep alive listenerekhez
+  + log_fifo_size-t vegye figyelembe
+  + follow_freq
++ MARK
++ respawn lehetoseg a programhoz
++ afprogram SIGCHLD kezelese (ne kuldjunk felesleges SIGTERM-et, es inditsuk ujra ha leall)
++ logwriter options
++ cfg pointer minden initnek! (log_reader, log_writer) (ez nem kell, mert a configtol fuggo opciokat
+  attettem egy masik strukturaba, amit a hivo fel inicializal)
++ follow files (tail -f)
++ log uzenetek hossza runtime valtoztathato
++ regexp match behelyettesites
++ affile destination reap
++ afunix forras
++ afunix celok
++ afinet celok
++ afinter forras
++ afstreams forras (forditani & tesztelni kell)
++ LR_NOCLOSE, helyett FR_DONTCLOSE, de ez meg mar keszen volt
++ a persistconfig-ba ne fd-t, hanem pointert tegyunk el (afsocket.c), megoldottam ugy, hogy
+  az fd-t 1-el novelem, igy biztosan nem lehet null
++ EOF elotti sordarabot nem dolgozzuk fel uzenetkent
++ idopecset beallitasok
+  + outputonkent (log_writer):
+    + uzenet idopecset: hasznaljuk az eredetit, rendeljuk hozza az erkezesi idot
+    + uzenet idopecset formatuma: maradjon eredeti tartalom, formazzuk ujra 
+    + formazott idopecset idozonaja: maradjon eredeti, konvertaljuk localtime-ba, konvertaljuk UTC-be, konvertaljuk megadott zonaba
+  + forrasonkent a megadhato idozona (log_reader)
++ macro elofeldolgozas (konstans makro konstans makro ... szekvencia)
++ RFC3339 pontos formatum
+- check_hostname
+- bad_hostnames
+
+
+syslog-ng 2.1
+-------------
+- fdread/logreader feluleteket altalanositani (ferjen bele az afstreams),
+  esetleg protokoll feldolgozo
+- inline filter
+- control csatorna
+- count dropped messages
+- check_hostname (a helye megvan, az 1.5-osbol atveendo a konkret ellenorzes)
+- log reader/writer options feldolgozas kulon fuggvenyekbe, ahol kell
+- olyan perzisztens konfig, ami megorzodik ujrainditasuk utan (follow file-hoz)
+- pull/push mod
+
+- process kulcsszo
+  - log statementhez hasonlo, de nem logol, csak modositasokat vegez
+  - a loguzenethez rendelhet informaciokat (valtozok)
+  - a valtozokra lehet hivatkozni pl. celtemplate-bol
+  - az uzenetet at lehet irni (sed)
+  - az idopecseteket lehet manipulalni
+  - pelda:
+      process { filter(f_otherzone); set_timezone("+0300"); };
+      process { filter(f_program); add_variable("TAG", "APROGRAM"); };
+
+- ratelimit filter
+  - taghez rendelt ratelimit,
+  
+- valtozo ertek filter
+
+- include file a syslog-ng.conf-ban
+- aszinkron DNS
+- escape karakter szurese
+

@@ -1,0 +1,83 @@
+dnl Process this file with autoconf to produce a configure script.
+AC_INIT(src/main.c)
+
+VERSION="1.9.1"
+GLIB_VERSION="2.0.1"
+EVTLOG_VERSION="0.2"
+
+AM_INIT_AUTOMAKE(syslog-ng, $VERSION)
+if test -n "$SNAPSHOT_VERSION"; then
+	VERSION=$VERSION+$SNAPSHOT_VERSION
+fi
+
+if test "x$prefix" = "xNONE"; then
+        prefix=$ac_default_prefix
+fi
+	
+AC_ARG_ENABLE(debug, 
+              [  --enable-debug      Enable debugging code.])
+
+AC_ARG_ENABLE(memtrace, 
+              [  --enable-memtrace   Enable alternative leak debugging code.])
+              
+AC_ARG_ENABLE(ssl,
+              [  --enable-ssl        Enable SSL support.])
+
+AM_CONFIG_HEADER(config.h)
+
+dnl Checks for programs.
+AC_PROG_CC
+AM_PROG_CC_STDC
+AC_PROG_YACC
+AM_PROG_LEX
+AC_PROG_MAKE_SET
+
+dnl Checks for libraries.
+
+dnl Checks for header files.
+AC_HEADER_STDC
+AC_CHECK_HEADER(dmalloc.h)
+AC_CHECK_HEADERS(strings.h openssl/ssl.h)
+
+dnl Checks for typedefs, structures, and compiler characteristics.
+
+dnl Checks for library functions.
+AC_CHECK_FUNCS(strdup strtol inet_aton inet_ntoa)
+
+if test "x$enable_memtrace" = "xyes" ; then
+	AC_CHECK_LIB(dl, dlsym)
+fi
+
+dnl export values as C defines
+
+enable_value()
+{
+        if test "x$1" = "xyes" ; then
+                echo 1
+        else
+                echo 0
+        fi
+}
+
+AC_DEFINE_UNQUOTED(ENABLE_DEBUG, `enable_value $enable_debug`, [Enable debugging])
+AC_DEFINE_UNQUOTED(ENABLE_MEM_TRACE, `enable_value $enable_memtrace`, [Enable memtrace])
+AC_DEFINE_UNQUOTED(ENABLE_SSL, `enable_value $enable_ssl`, [Enable SSL support])
+
+PKG_CHECK_MODULES(GLIB, glib-2.0)
+PKG_CHECK_MODULES(EVTLOG, eventlog)
+
+CFLAGS="-Wall -g"
+DEPS_CPPFLAGS="$CPPFLAGS $GLIB_CFLAGS $EVTLOG_CFLAGS"
+CPPFLAGS="$DEPS_CPPFLAGS -D_GNU_SOURCE"
+DEPS_LIBS="$LIBS $GLIB_LIBS $EVTLOG_LIBS"
+LIBS="$LEXLIB $DEPS_LIBS"
+YFLAGS="-d"
+
+AC_DEFINE_UNQUOTED(PATH_SYSCONFDIR, "`eval echo $sysconfdir`", [sysconfdir])
+
+AC_SUBST(DEPS_CPPFLAGS)
+AC_SUBST(DEPS_LIBS)
+AC_SUBST(YFLAGS)
+
+
+AC_OUTPUT(Makefile src/Makefile tests/Makefile)

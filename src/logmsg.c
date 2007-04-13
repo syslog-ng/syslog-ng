@@ -1,0 +1,480 @@
+#include "logmsg.h"
+#include "misc.h"
+#include "messages.h"
+#include "logpipe.h"
+
+#include <sys/types.h>
+#include <time.h>
+#include <syslog.h>
+#include <ctype.h>
+#include <unistd.h>
+
+#include <assert.h>
+
+static char aix_fwd_string[] = "Message forwarded from ";
+static char repeat_msg_string[] = "last message repeated";
+
+void
+log_stamp_format(LogStamp *stamp, GString *target, gint ts_format, gint tz_convert)
+{
+  glong target_zone_offset = 0, ofs;
+  struct tm *tm;
+  char ts[128];
+  time_t t;
+  
+  switch (tz_convert)
+    {
+    case TZ_CNV_ORIG:
+      target_zone_offset = stamp->zone_offset;
+      break;
+    case TZ_CNV_GMT:
+      target_zone_offset = 0;
+      break;
+    case TZ_CNV_LOCAL:
+    default:
+      target_zone_offset = timezone;
+      break;
+    }
+
+  t = stamp->time.tv_sec - target_zone_offset;
+  if (!(tm = gmtime(&t))) 
+    {
+      /* this should never happen */
+      g_string_sprintf(target, "%d", (int) stamp->time.tv_sec);
+      msg_error("Error formatting time stamp, gmtime() failed",
+                evt_tag_int("stamp", (int) t),
+                NULL);
+    } 
+  else 
+    {
+      switch (ts_format)
+        {
+        case TS_FMT_BSD:
+          strftime(ts, sizeof(ts), "%h %e %H:%M:%S", tm);
+          g_string_assign_len(target, ts, 15);
+          break;
+        case TS_FMT_ISO:
+          strftime(ts, sizeof(ts), "%Y-%m-%dT%H:%M:%S", tm);
+          g_string_assign_len(target, ts, 19);
+          if (stamp->frac_present)
+            {
+              gulong x, s;
+              
+              g_string_append_c(target, '.');
+              for (s = stamp->time.tv_usec % 1000000, x = 100000; s && x; x = x / 10)
+                {
+                  g_string_append_c(target, (s / x) + '0'); 
+                  s = s % x;
+                }
+            }
+          ofs = stamp->zone_offset < 0 ? -stamp->zone_offset : stamp->zone_offset;
+          g_string_sprintfa(target, "%c%02ld:%02ld", 
+                            ofs < 0 ? '-' : '+',
+                            ofs / 3600,
+                            (ofs % 3600) / 60);
+          break;
+        }
+    }
+
+}
+
+static void
+log_msg_parse(LogMessage *self, gchar *data, gint length, guint flags)
+{
+  unsigned char *src;
+  int left;
+  int pri;
+  time_t now = time(NULL);
+  char *oldsrc;
+  int oldleft, stamp_length;
+  
+  if (flags & LP_NOPARSE)
+    {
+      g_string_assign_len(self->msg, data, length);
+      return;
+    }
+
+  src = data;
+  left = length;
+
+  if (left && src[0] == '<')
+    {
+      src++;
+      left--;
+      pri = 0;
+      while (left && *src != '>')
+	{
+	  if (isdigit(*src))
+	    {
+	      pri = pri * 10 + ((*src) - '0');
+	    }
+	  else
+	    {
+	      g_string_sprintf(self->msg, "unparseable log message: \"%.*s\"", length,
+			       data);
+	      self->pri = LOG_SYSLOG | LOG_ERR;
+	      return;
+	    }
+	  src++;
+	  left--;
+	}
+      self->pri = pri;
+      if (left)
+	{
+	  src++;
+	  left--;
+	}
+    }
+  /* No priority info in the buffer? Just assign a default. */
+  else
+    {
+      self->pri = LOG_USER | LOG_NOTICE;
+    }
+
+
+  while (left && *src == ' ')
+    {				/* Move past whitespace */
+      src++;
+      left--;
+    }
+
+  /* If the next chars look like a date, then read them as a date. */
+  if ((flags & LP_STRICT) == 0 && left >= 19 && src[4] == '-' && src[7] == '-' && src[10] == 'T' && src[13] == ':' && src[16] == ':')
+    {
+      /* RFC3339 timestamp, expected format: YYYY-MM-DDTHH:MM:SS[.frac]<+/->ZZ:ZZ */
+      struct tm tm;
+      guchar *p;
+      gint hours, mins;
+      
+      p = memchr(src, ' ', left);
+      
+      stamp_length = (p - src);
+      
+      g_string_assign_len(self->date, src, stamp_length);
+      memset(&tm, 0, sizeof(tm));
+      p = strptime(self->date->str, "%Y-%m-%dT%H:%M:%S", &tm);
+      
+      self->stamp.time.tv_usec = 0;
+      if (p && *p == '.')
+        {
+          gulong frac = 0;
+          gint div = 1;
+          /* process second fractions */
+          
+          self->stamp.frac_present = TRUE;
+          p++;
+          while (isdigit(*p))
+            {
+              frac = 10 * frac + (*p) - '0';
+              div = div * 10;
+              p++;
+            }
+          self->stamp.time.tv_usec = frac * 1000000 / div;
+        }
+      if (p && (*p == '+' || *p == '-') && strlen(p) == 6 && 
+          isdigit(*(p+1)) && isdigit(*(p+2)) && *(p+3) == ':' && isdigit(*(p+4)) && isdigit(*(p+5)))
+        {
+          /* timezone offset */
+          gint sign = *p == '-' ? 1 : -1;
+          p++;
+          
+          hours = (*p - '0') * 10 + *(p+1) - '0';
+          mins = (*(p+3) - '0') * 10 + *(p+4) - '0';
+          if (hours <= 12 && mins <= 60)
+            self->stamp.zone_offset = sign * (hours * 3600 + mins * 60);
+          else
+            self->stamp.zone_offset = timezone; /* assume local timezone */
+        }
+      /* convert to UTC */
+      self->stamp.time.tv_sec = mktime(&tm) - timezone + self->stamp.zone_offset;
+      
+      src += stamp_length;
+      left -= stamp_length;
+    }
+  else if (left >= 15 && src[3] == ' ' && src[6] == ' ' && src[9] == ':' && src[12] == ':')
+    {
+      /* RFC 3164 timestamp, expected format: MMM DD HH:MM:SS ... */
+      struct tm tm, *nowtm;
+
+      /* Just read the buffer data into a textual
+         datestamp. */
+
+      g_string_assign_len(self->date, src, 15);
+      src += 15;
+      left -= 15;
+
+      /* And also make struct time timestamp for the msg */
+
+      nowtm = localtime(&now);
+      memset(&tm, 0, sizeof(tm));
+      strptime(self->date->str, "%b %e %H:%M:%S", &tm);
+      tm.tm_isdst = -1;
+      tm.tm_year = nowtm->tm_year;
+      if (tm.tm_mon > nowtm->tm_mon)
+        tm.tm_year--;
+      self->stamp.time.tv_sec = mktime(&tm);
+      self->stamp.time.tv_usec = 0;
+      self->stamp.zone_offset = timezone; /* assume local timezone */
+    }
+    
+  if (self->date->len)
+    {
+      /* Expected format: hostname program[pid]: */
+      /* Possibly: Message forwarded from hostname: ... */
+      char *hostname_start = NULL;
+      int hostname_len = 0;
+
+      while (left && *src == ' ')
+	{
+	  src++;		/* skip whitespace */
+	  left--;
+	}
+
+      /* Detect funny AIX syslogd forwarded message. */
+      if (left >= (sizeof(aix_fwd_string) - 1) &&
+	  !memcmp(src, aix_fwd_string, sizeof(aix_fwd_string) - 1))
+	{
+
+	  oldsrc = src;
+	  oldleft = left;
+	  src += sizeof(aix_fwd_string) - 1;
+	  left -= sizeof(aix_fwd_string) - 1;
+	  hostname_start = src;
+	  hostname_len = 0;
+	  while (left && *src != ':')
+	    {
+	      src++;
+	      left--;
+	      hostname_len++;
+	    }
+	  while (left && (*src == ' ' || *src == ':'))
+	    {
+	      src++;		/* skip whitespace */
+	      left--;
+	    }
+	}
+
+      /* Now, try to tell if it's a "last message repeated" line */
+      if (left >= sizeof(repeat_msg_string) &&
+	  !memcmp(src, repeat_msg_string, sizeof(repeat_msg_string) - 1))
+	{
+	  ;			/* It is. Do nothing since there's no hostname or
+				   program name coming. */
+	}
+      /* It's a regular ol' message. */
+      else
+	{
+	  /* If we haven't already found the original hostname,
+	     look for it now. */
+
+	  oldsrc = src;
+	  oldleft = left;
+
+	  while (left && *src != ' ' && *src != ':' && *src != '[')
+	    {
+	      src++;
+	      left--;
+	    }
+
+	  if (left && *src == ' ')
+	    {
+	      /* This was a hostname. It came from a
+	         syslog-ng, since syslogd doesn't send
+	         hostnames. It's even better then the one
+	         we got from the AIX fwd message, if we
+	         did. */
+	      hostname_start = oldsrc;
+	      hostname_len = oldleft - left;
+	    }
+	  else
+	    {
+	      src = oldsrc;
+	      left = oldleft;
+	    }
+
+	  /* Skip whitespace. */
+	  while (left && *src == ' ')
+	    {
+	      src++;
+	      left--;
+	    }
+	  /* Try to extract a program name */
+	  oldsrc = src;
+	  oldleft = left;
+	  while (left && *src != ':' && *src != '[')
+	    {
+	      src++;
+	      left--;
+	    }
+	  if (left)
+	    {
+	      g_string_assign_len(self->program, oldsrc, oldleft - left);
+	    }
+
+	  src = oldsrc;
+	  left = oldleft;
+	}
+
+      /* If we did manage to find a hostname, store it. */
+      if (hostname_start)
+	g_string_assign_len(self->host, hostname_start, hostname_len);
+    }
+  else
+    {
+      /* Different format */
+
+      oldsrc = src;
+      oldleft = left;
+      /* A kernel message? Use 'kernel' as the program name. */
+      if ((self->pri & LOG_FACMASK) == LOG_KERN)
+	{
+	  g_string_assign(self->program, "kernel");
+	}
+      /* No, not a kernel message. */
+      else
+	{
+	  /* Capture the program name */
+	  while (left && *src != ' ' && *src != '['
+		 && *src != ':' && *src != '/' && *src != ',' && *src != '<')
+	    {
+	      src++;
+	      left--;
+	    }
+	  if (left)
+	    {
+	      g_string_assign_len(self->program, oldsrc, oldleft - left);
+	    }
+	  left = oldleft;
+	  src = oldsrc;
+	}
+      self->stamp.time.tv_sec = now;
+    }
+
+  for (oldsrc = src, oldleft = left; oldleft >= 0; oldleft--, oldsrc++)
+    {
+      if (*oldsrc == '\n' || *oldsrc == '\r')
+	*oldsrc = ' ';
+    }
+  g_string_assign_len(self->msg, src, left);
+}
+
+
+static void
+log_msg_free(LogMessage * self)
+{
+  g_sockaddr_unref(self->saddr);
+  g_string_free(self->date, TRUE);
+  g_string_free(self->host, TRUE);
+  g_string_free(self->program, TRUE);
+  g_string_free(self->msg, TRUE);
+  g_free(self);
+}
+
+LogMessage *
+log_msg_ref(LogMessage * self)
+{
+  assert(self->ref_cnt);
+  self->ref_cnt++;
+  return self;
+}
+
+void
+log_msg_unref(LogMessage * self)
+{
+  assert(self->ref_cnt);
+  if (--self->ref_cnt == 0)
+    {
+      log_msg_free(self);
+    }
+}
+
+void
+log_msg_init(LogMessage *self, GSockAddr *saddr)
+{
+  self->ref_cnt = 1;
+  gettimeofday(&self->recvd.time, NULL);
+  gettimeofday(&self->stamp.time, NULL);
+  self->recvd.zone_offset = timezone;
+  self->date = g_string_sized_new(16);
+  self->host = g_string_sized_new(32);
+  self->program = g_string_sized_new(32);
+  self->msg = g_string_sized_new(32);
+  self->saddr = g_sockaddr_ref(saddr);
+}
+
+LogMessage *
+log_msg_new(gchar *msg, gint length, GSockAddr *saddr, guint flags)
+{
+  LogMessage *self = g_new0(LogMessage, 1);
+  
+  log_msg_init(self, saddr);
+  log_msg_parse(self, msg, length, flags);
+  return self;
+}
+
+LogMessage *
+log_msg_new_mark(void)
+{
+  LogMessage *self = log_msg_new("-- MARK --", 10, NULL, LP_NOPARSE);
+  self->flags = LF_LOCAL | LF_MARK;
+  self->pri = LOG_SYSLOG | LOG_INFO;
+  return self;
+}
+
+void
+log_msg_ack_block_inc(LogMessage *m)
+{
+  LogAckBlock *b = m->ack_blocks ? m->ack_blocks->data : NULL;
+  
+  if (b)
+    {
+      b->req_ack_cnt++;
+    }
+}
+
+void
+log_msg_ack_block_start(LogMessage *m, LMAckFunc func, gpointer user_data)
+{
+  LogAckBlock *b = g_new0(LogAckBlock, 1);
+  
+  b->req_ack_cnt = 1;
+  b->ack = func;
+  b->ack_user_data = user_data;
+  
+  m->ack_blocks = g_slist_prepend(m->ack_blocks, b);
+}
+
+void
+log_msg_ack_block_end(LogMessage *m)
+{
+  LogAckBlock *b;
+  
+  g_return_if_fail(m->ack_blocks);
+  b = m->ack_blocks->data;
+  m->ack_blocks = g_slist_delete_link(m->ack_blocks, m->ack_blocks);
+  g_free(b);
+}
+
+void 
+log_msg_ack(LogMessage *m)
+{
+  LogAckBlock *b = m->ack_blocks ? m->ack_blocks->data : NULL;
+  
+  if (b)
+    {
+      b->ack_cnt++;
+      if (b->ack_cnt == b->req_ack_cnt)
+        {
+          b->ack(m, b->ack_user_data);
+        }
+    }
+}
+
+void
+log_msg_drop(LogMessage *m, guint path_flags)
+{
+  /* FIXME: count dropped messages */
+  if ((path_flags & PF_FLOW_CTL_OFF) == 0)
+    log_msg_ack(m);
+  log_msg_unref(m);
+}

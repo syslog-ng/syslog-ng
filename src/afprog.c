@@ -1,0 +1,148 @@
+#include "afprog.h"
+#include "driver.h"
+#include "messages.h"
+#include "logwriter.h"
+#include "children.h"
+
+#include <sys/types.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <signal.h>
+
+static void
+afprogram_dd_exit(pid_t pid, int status, gpointer s)
+{
+  AFProgramDestDriver *self = (AFProgramDestDriver *) s;
+
+  /* Note: self->pid being -1 means that deinit was called, thus we don't
+   * need to restart the command */
+  if (self->pid != -1)
+    {
+      msg_verbose("Child program exited, restarting",
+                  evt_tag_str("cmdline", self->cmdline->str),
+                  NULL);
+      self->pid = -1;
+      log_pipe_deinit(&self->super.super, NULL, NULL);
+      log_pipe_init(&self->super.super, NULL, NULL);
+    }
+  /* drop reference, init rereferences us as it registers the callback */
+  log_pipe_unref(&self->super.super);
+}
+
+static gboolean
+afprogram_dd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
+{
+  AFProgramDestDriver *self = (AFProgramDestDriver *) s;
+  int msg_pipe[2];
+
+  if (cfg)
+    log_writer_options_init(&self->writer_options, cfg, FALSE);
+  
+  msg_verbose("Starting destination program",
+              evt_tag_str("cmdline", self->cmdline->str),
+              NULL);  
+  if (pipe(msg_pipe) == -1)
+    {
+      msg_error("Error creating program pipe",
+                evt_tag_str("cmdline", self->cmdline->str),
+                evt_tag_errno(EVT_TAG_OSERROR, errno),
+                NULL);
+      return FALSE;
+    }
+  if ((self->pid = fork()) < 0)
+    {
+      msg_error("Error in fork()",
+                evt_tag_errno(EVT_TAG_OSERROR, errno),
+                NULL);
+      close(msg_pipe[0]);
+      close(msg_pipe[1]);
+      return FALSE;
+    }
+  if (self->pid == 0)
+    {
+      /* child */
+      int devnull = open("/dev/null", O_WRONLY);
+      
+      if (devnull == -1)
+        {
+          _exit(127);
+        }
+      dup2(msg_pipe[0], 0);
+      dup2(devnull, 1);
+      dup2(devnull, 2);
+      close(devnull);
+      close(msg_pipe[1]);
+      execl("/bin/sh", "/bin/sh", "-c", self->cmdline->str, NULL);
+      _exit(127);
+    }
+  else
+    {
+      /* parent */
+      
+      child_manager_register(self->pid, afprogram_dd_exit, self);
+      log_pipe_ref(s); /* child manager holds a reference */
+      
+      close(msg_pipe[0]);
+      if (!self->writer)
+        self->writer = log_writer_new(LW_FORMAT_FILE, s, &self->writer_options);
+      log_writer_reopen(self->writer, fd_write_new(msg_pipe[1]));
+      log_pipe_init(self->writer, NULL, NULL);
+      log_pipe_append(&self->super.super, self->writer);
+    }
+  return TRUE;
+}
+
+static gboolean
+afprogram_dd_deinit(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
+{
+  AFProgramDestDriver *self = (AFProgramDestDriver *) s;
+
+  if (self->pid != -1)
+    {
+      msg_verbose("Sending child a TERM signal",
+                  evt_tag_int("child_pid", self->pid),
+                  NULL);
+      kill(self->pid, SIGTERM);
+      self->pid = -1;
+    }
+  return TRUE;
+}
+
+static void
+afprogram_dd_free(LogPipe *s)
+{
+  AFProgramDestDriver *self = (AFProgramDestDriver *) s;
+
+  log_pipe_deinit(self->writer, NULL, NULL);
+  log_pipe_unref(self->writer);  
+  g_string_free(self->cmdline, TRUE);
+  g_free(self);
+}
+
+static void
+afprogram_dd_notify(LogPipe *s, LogPipe *sender, gint notify_code, gpointer user_data)
+{
+  switch (notify_code)
+    {
+    case NC_CLOSE:
+    case NC_WRITE_ERROR:
+      afprogram_dd_deinit(s, NULL, NULL);
+      afprogram_dd_init(s, NULL, NULL);
+      break;
+    }
+}
+
+LogDriver *
+afprogram_dd_new(gchar *cmdline)
+{
+  AFProgramDestDriver *self = g_new0(AFProgramDestDriver, 1);
+  log_drv_init_instance(&self->super);
+  
+  self->super.super.init = afprogram_dd_init;
+  self->super.super.deinit = afprogram_dd_deinit;
+  self->super.super.free_fn = afprogram_dd_free;
+  self->super.super.notify = afprogram_dd_notify;
+  self->cmdline = g_string_new(cmdline);
+  log_writer_options_defaults(&self->writer_options);
+  return &self->super;
+}

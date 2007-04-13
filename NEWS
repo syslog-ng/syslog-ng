@@ -1,0 +1,55 @@
+News for the 1.9.1 release
+	Wed, 22 Jan 2003 12:13:44 +0100
+
+	This release is still not intended for production use. It has a good
+	number of new features and a couple of them may not be stable
+	enough.
+
+	New features:
+	* template declarations, the possibility to define a template once
+	  and refer to it
+	* flow controlled log paths work, and they are also configurable
+	* supports RFC3339 timestamps with second fractions and time zones,
+	  time zone conversion & source time zone specification
+	* MARK messages are generated
+	* keep alive for connections as well as listeners
+	* the ability to follow log files as they are written to
+	* the possibility to mark parts of a message using standard '(' and
+	  ')' regexp operators and refer to matches within templates (either
+	  filenames or content)
+
+	This program is still ALPHA.
+
+
+News for the 1.9.0 release
+	Thu,  9 May 2002 20:01:11 +0200
+
+	This release is the first release of the new reimplementation of
+	syslog-ng. I moved to using glib instead of libol, as glib is more
+	mature and provides several nice & easy to use features.
+	
+	Here's a bunch of nice things about 1.9.0:
+	* supports flow controlled log paths (still not possible to
+	  configure it, but the code exists in the core)
+	* better support for macros (macro support is moved out of affile,
+	  thus any other drivers may use it)
+	* more robust detection of closed destination sockets (a closed
+	  channel is immediately detected, not at the first write) This
+	  avoids losing a log message when the connection is broken.
+	* supports respawning destination programs (should be used with care
+	  to avoid DoS situations). This makes it easier to integrate third party
+	  extensions to syslog-ng. (SQL backends, on-line log analysis etc)
+	* performance improvements, instead of using linear lookup in linked
+	  lists, I use hashtables everywhere.
+	* the ability to define unparsed sources, makes it easier to
+	  integrate things like Apache logs
+	* many internal reorganizations to make it easier to implement things like 
+	  hashed log files, SSL protected TCP sessions and so on.
+	  
+	Things still missing:
+	* there are some new features with no configuration interface
+	* internal messages always go to /dev/stderr
+	* Sun's STREAMS is not yet supported
+	
+	1.9.0 is currently in an ALPHA state, it's been tested only on my
+	development computer, and not real-life traffic.
