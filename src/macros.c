@@ -41,6 +41,7 @@ macros[] =
         { "PRIORITY", M_LEVEL },
         { "LEVEL", M_LEVEL },
         { "TAG", M_TAG },
+        { "PRI", M_PRI },
 
         { "DATE", M_DATE },
         { "FULLDATE", M_FULLDATE },
@@ -91,6 +92,7 @@ macros[] =
 
         { "PROGRAM", M_PROGRAM },
         { "MSG", M_MESSAGE },
+        { "MSGONLY", M_MSGONLY },
         { "MESSAGE", M_MESSAGE },
         { "SOURCEIP", M_SOURCE_IP }
 };
@@ -175,6 +177,10 @@ log_macro_expand(GString *result, gint id, guint32 flags, glong zone_offset, Log
       {
         g_string_sprintfa(result, "%02x", msg->pri);
         break;
+      }
+    case M_PRI:
+      {
+        g_string_sprintfa(result, "%d", msg->pri);
       }
     case M_FULLHOST:
       {
@@ -330,6 +336,26 @@ log_macro_expand(GString *result, gint id, guint32 flags, glong zone_offset, Log
       /* message */
       result_append(result, msg->msg->str, msg->msg->len, !!(flags & MF_ESCAPE_RESULT));
       break;
+    case M_MSGONLY:
+      {
+        gchar *colon;
+        gint ofs;
+        
+        colon = memchr(msg->msg->str, ':', msg->msg->len);
+        if (!colon)
+          {
+            ofs = 0;
+          }
+        else
+          {
+            colon++;
+            while (*colon && *colon == ' ')
+              colon++;
+            
+          }
+        result_append(result, msg->msg->str + ofs, msg->msg->len - ofs, !!(flags & MF_ESCAPE_RESULT));
+        break;
+      }
     default:
       msg_fatal("Internal error, unknown macro referenced;", NULL);
       return FALSE;

@@ -1,3 +1,10 @@
+2004-12-31  Balazs Scheidler <bazsi@balabit.hu>
+
+	* src/macros.c: added PRI and MSGONLY macros
+
+	* src/templates.c: added support for braces around macros for
+	$example: "{MSG}"
+
 2004-12-29  Balazs Scheidler <bazsi@balabit.hu>
 
 	* src/afprog.c (afprogram_dd_init): call setsid before launching child,

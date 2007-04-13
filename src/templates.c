@@ -70,6 +70,17 @@ log_template_compile(LogTemplate *self)
             {
               last_macro = M_MATCH_REF_OFS + (*p - '0');
             }
+          else if (*p == '{')
+            {
+              p++;
+              start = p;
+              while (*p && *p != '}')
+                {
+                  p++;
+                }
+              p++;
+              last_macro = log_macro_lookup(start, p - start - 1);
+            }
           else
             {
               start = p;
