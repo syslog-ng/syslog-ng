@@ -376,37 +376,38 @@ affile_dd_set_fsync()
 {
 }
 
+static time_t reap_now = 0;
+
+static gboolean
+affile_dd_reap_writers(gpointer key, gpointer value, gpointer user_data)
+{
+  AFFileDestDriver *self = (AFFileDestDriver *) user_data;
+  AFFileDestWriter *dw = (AFFileDestWriter *) value;
+  
+  if ((reap_now - dw->last_msg_stamp) >= self->time_reap)
+    {
+      msg_verbose("Destination timed out, reaping", 
+                  evt_tag_str("template", self->filename_template->template->str),
+                  evt_tag_str("filename", dw->filename->str),
+                  NULL);
+      log_pipe_deinit(&dw->super, NULL, NULL);
+      log_pipe_unref(&dw->super);
+      
+      /* remove from hash table */
+      return TRUE;
+    }
+  return FALSE;
+}
 
 static gboolean
 affile_dd_reap(gpointer s)
 {
   AFFileDestDriver *self = (AFFileDestDriver *) s;
-  time_t now = time(NULL);
-
-  static gboolean
-  affile_dd_reap_writers(gpointer key, gpointer value, gpointer user_data)
-  {
-    AFFileDestDriver *dd = (AFFileDestDriver *) user_data;
-    AFFileDestWriter *dw = (AFFileDestWriter *) value;
-    
-    if ((now - dw->last_msg_stamp) >= self->time_reap)
-      {
-        msg_verbose("Destination timed out, reaping", 
-                    evt_tag_str("template", dd->filename_template->template->str),
-                    evt_tag_str("filename", dw->filename->str),
-                    NULL);
-        log_pipe_deinit(&dw->super, NULL, NULL);
-        log_pipe_unref(&dw->super);
-        
-        /* remove from hash table */
-        return TRUE;
-      }
-    return FALSE;
-  }
   
   msg_verbose("Reaping unused destination files",
               evt_tag_str("template", self->filename_template->template->str),
               NULL);  
+  reap_now = time(NULL);
   if (self->writer_hash)
     g_hash_table_foreach_remove(self->writer_hash, affile_dd_reap_writers, self);
   return TRUE;

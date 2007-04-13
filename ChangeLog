@@ -2,6 +2,23 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-06-27 09:13:38 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-37
+
+    Summary:
+      removed a nested function from affile.c
+    Revision:
+      syslog-ng--mainline--2.0--patch-37
+
+    2005-06-27  Balazs Scheidler <bazsi@balabit.hu>
+    
+    	* src/affile.c (affile_dd_reap_writers): gcc4 does not like nested
+    	functions, do not use that
+    
+
+    modified files:
+     ChangeLog src/affile.c
+
+
 2005-06-24 07:57:18 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-36
 
     Summary:
