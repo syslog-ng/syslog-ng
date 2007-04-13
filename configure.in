@@ -54,6 +54,22 @@ AM_PROG_LEX
 AC_PROG_MAKE_SET
 AC_PROG_RANLIB
 
+AC_MSG_CHECKING(how to enable static linking for certain libraries)
+ldversion=`ld -V | head -1`
+if echo $ldversion | egrep "GNU|Solaris" > /dev/null; then
+        LD_START_STATIC="-Wl,-Bstatic"
+        LD_END_STATIC="-Wl,-Bdynamic"
+        AC_MSG_RESULT(GNU or Solaris)
+elif echo $ldversion | egrep "HP" > /dev/null; then
+        LD_START_STATIC="-a archive"
+        LD_END_STATIC="-a shared_archive"
+        AC_MSG_RESULT(HP-UX)
+else
+        LD_START_STATIC=""
+        LD_END_STATIC=""
+        AC_MSG_RESULT([no clues, linking everything dynamically, please send appropriate ld arguments to syslog-ng@lists.balabit.hu])
+fi
+
 dnl Checks for libraries.
 
 dnl Checks for header files.
@@ -113,7 +129,7 @@ PKG_CHECK_MODULES(GLIB, glib-2.0,,)
 PKG_CHECK_MODULES(EVTLOG, eventlog,,)
 
 old_LIBS=$LIBS
-LIBS="-Wl,-static $GLIB_LIBS -Wl,-call_shared"
+LIBS="-static $GLIB_LIBS"
 AC_CACHE_CHECK(for static GLib libraries,
                blb_cv_static_glib,
 [AC_TRY_LINK([], [
@@ -131,8 +147,8 @@ blb_cv_static_glib=yes,
 blb_cv_static_glib=no)])
 LIBS=$old_LIBS
 
-if test "x$enable_dynamic_linking" = "xno" -a "x$blb_cv_static_glib" = "xno"; then
-	AC_MSG_ERROR([static GLib libraries not found, either link GLib dynamically using the --enable-dynamic-linking or install a static GLib])
+if test "x$enable_dynamic_linking" != "xyes" -a "x$blb_cv_static_glib" = "xno"; then
+	AC_MSG_ERROR([static GLib libraries not found (a file named libglib-2.0.a), either link GLib dynamically using the --enable-dynamic-linking or install a static GLib])
 fi
 
 CFLAGS="${CFLAGS} -Wall -g"
@@ -142,7 +158,7 @@ CPPFLAGS="$DEPS_CPPFLAGS -D_GNU_SOURCE"
 if test "x$enable_dynamic_linking" = "xyes"; then
 	DEPS_LIBS="$LIBS $LEXLIB $GLIB_LIBS $EVTLOG_LIBS"
 else
-	DEPS_LIBS="$LIBS -Wl,-static $LEXLIB $GLIB_LIBS $EVTLOG_LIBS -Wl,-call_shared"
+	DEPS_LIBS="$LIBS $LD_START_STATIC $LEXLIB $GLIB_LIBS $EVTLOG_LIBS $LD_END_STATIC"
 fi
 LIBS="$DEPS_LIBS"
 YFLAGS="-d"

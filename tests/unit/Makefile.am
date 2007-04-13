@@ -1,5 +1,5 @@
 
-noinst_PROGRAMS = test_msgparse test_template
+check_PROGRAMS = test_msgparse test_template
 
 AM_CFLAGS = -I$(top_srcdir)/src
 test_msgparse_SOURCES = test_msgparse.c

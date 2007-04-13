@@ -2,6 +2,28 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-04-27 08:06:42 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-29
+
+    Summary:
+      Solaris portability fixes
+    Revision:
+      syslog-ng--mainline--2.0--patch-29
+
+    2005-04-27  Balazs Scheidler <bazsi@balabit.hu>
+    
+    	* configure.in: added ld detection code to discover static linking arguments
+    	
+    	* tests/unit/test_msgparse.c: added <string.h>
+    
+    	* tests/unit/Makefile.am: instead of noinst, use check prefix to avoid
+    	building the testprograms during regular builds
+    
+
+    modified files:
+     ChangeLog configure.in tests/unit/Makefile.am
+     tests/unit/test_msgparse.c
+
+
 2005-04-21 08:51:33 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-28
 
     Summary:
