@@ -49,6 +49,7 @@ log_reader_fd_prepare(GSource *source,
                       gint *timeout)
 {
   LogReaderWatch *self = (LogReaderWatch *) source;
+  GTimeVal tv;
 
   /* FIXME: this debug message references a variable outside of its scope, 
    * but it is a debug message only */
@@ -57,10 +58,14 @@ log_reader_fd_prepare(GSource *source,
             evt_tag_int("window_size", self->reader->options->source_opts.window_size), 
             NULL);
 
+  if (self->reader->options->mark_freq > 0 && self->reader->mark_target == -1)
+    {
+      g_source_get_current_time(source, &tv);
+      self->reader->mark_target = tv.tv_sec + self->reader->options->mark_freq;
+    }
+    
   if (self->reader->mark_target != -1)
     {
-      GTimeVal tv;
-      
       g_source_get_current_time(source, &tv);
       *timeout = MAX((self->reader->mark_target - tv.tv_sec) * 1000, 0);
     }
