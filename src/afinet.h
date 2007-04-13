@@ -31,7 +31,7 @@ typedef struct _AFInetSourceDriver
   AFSocketSourceDriver super;
 } AFInetSourceDriver;
 
-LogDriver *afinet_sd_new(gchar *ip, gint port, guint flags);
+LogDriver *afinet_sd_new(gchar *host, gint port, guint flags);
 void afinet_sd_set_localport(LogDriver *self, gint port, gchar *service, gchar *proto);
 void afinet_sd_set_localip(LogDriver *self, gchar *ip);
 
@@ -44,7 +44,7 @@ typedef struct _AFInetDestDriver
   AFSocketDestDriver super;
 } AFInetDestDriver;
 
-LogDriver *afinet_dd_new(gchar *ip, gint port, guint flags);
+LogDriver *afinet_dd_new(gchar *host, gint port, guint flags);
 void afinet_dd_set_localport(LogDriver *self, gint port, gchar *service, gchar *proto);
 void afinet_dd_set_destport(LogDriver *self, gint port, gchar *service, gchar *proto);
 void afinet_dd_set_localip(LogDriver *self, gchar *ip);

@@ -2,6 +2,28 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2006-01-25 17:13:29 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-85
+
+    Summary:
+      added support for hostname resolution (fixes: #8036)
+    Revision:
+      syslog-ng--mainline--2.0--patch-85
+
+    2006-01-25  Balazs Scheidler <bazsi@balabit.hu>
+    
+    	* src/afinet.c: support an optional self->dest_addr
+    
+    	* src/afsocket.c (afsocket_dd_init): fail if self->dest_addr is NULL,
+    	(afsocket_sd_init): fail if self->bind_addr is NULL
+    
+    	* src/gsockaddr.c (g_sockaddr_inet_new_resolve): new function,
+    	resolves a hostname and stores the result in a GSockAddr,
+
+    modified files:
+     ChangeLog src/afinet.c src/afinet.h src/afsocket.c
+     src/gsockaddr.c src/gsockaddr.h
+
+
 2006-01-20 10:01:44 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-84
 
     Summary:

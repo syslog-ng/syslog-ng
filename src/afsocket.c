@@ -391,6 +391,10 @@ afsocket_sd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
   gint sock;
   gboolean res = FALSE;
   
+  if (!self->bind_addr)
+    {
+      msg_error("No bind address set;", NULL);
+    }
   log_reader_options_init(&self->reader_options, cfg);
   
   /* fetch persistent connections first */  
@@ -718,6 +722,11 @@ afsocket_dd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
   if (cfg)
     {
       self->time_reopen = cfg->time_reopen;
+    }
+  if (!self->dest_addr)
+    {
+      msg_error("No destination address set", NULL);
+      return FALSE;
     }
 
   if (!self->writer)

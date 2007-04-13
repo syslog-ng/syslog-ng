@@ -34,6 +34,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <netdb.h>
 
 /**
  * g_inet_ntoa:
@@ -158,19 +159,17 @@ g_connect(int fd, GSockAddr *remote)
 /* general GSockAddr functions */
 
 
-/*+
-
-  General function to allocate and initialize a GSockAddr structure,
-  and convert a libc style sockaddr * pointer to our representation.
-
-  Parameters:
-    sa         libc sockaddr * pointer to convert
-    salen      size of sa
-
-  Returns:
-    a GSockAddr instance
-
-  +*/
+/**
+ * g_sockaddr_new:
+ *  @sa: libc sockaddr * pointer to convert
+ *  @salen: size of sa
+ *
+ * General function to allocate and initialize a GSockAddr structure,
+ * and convert a libc style sockaddr * pointer to our representation.
+ *
+ * Returns: a GSockAddr instance or NULL if failure
+ *
+ **/
 GSockAddr *
 g_sockaddr_new(struct sockaddr *sa, int salen)
 {
@@ -202,21 +201,19 @@ g_sockaddr_new(struct sockaddr *sa, int salen)
   return addr;
 }
 
-/*+
-
-  Format a GSockAddr into human readable form, calls the format
-  virtual method of GSockAddr.
-
-  Parameters:
-    a        instance pointer of a GSockAddr
-    text     destination buffer
-    n        the size of text
-
-  Returns:
-    text is filled with a human readable representation of a, and a
-    pointer to text is returned.
-
-  +*/
+/**
+ * g_sockaddr_format:
+ * @a        instance pointer of a GSockAddr
+ * @text     destination buffer
+ * @n        the size of text
+ *
+ * Format a GSockAddr into human readable form, calls the format
+ * virtual method of GSockAddr.
+ *
+ * Returns: text is filled with a human readable representation of a, and a
+ * pointer to text is returned.
+ *
+ **/
 char *
 g_sockaddr_format(GSockAddr *a, gchar *text, gulong n)
 {
@@ -339,19 +336,57 @@ static GSockAddrFuncs inet_sockaddr_funcs =
 GSockAddr *
 g_sockaddr_inet_new(gchar *ip, guint16 port)
 {
-  GSockAddrInet *addr = g_new0(GSockAddrInet, 1);
+  GSockAddrInet *addr = NULL;
+  struct in_addr ina;
+
+  if (inet_aton(ip, &ina))
+    {
+      addr = g_new0(GSockAddrInet, 1);
   
-  addr->refcnt = 1;
-  addr->flags = 0;
-  addr->salen = sizeof(struct sockaddr_in);
-  addr->sin.sin_family = AF_INET;
-  inet_aton(ip, &addr->sin.sin_addr);
-  addr->sin.sin_port = htons(port);
-  addr->sa_funcs = &inet_sockaddr_funcs;
-  
+      addr->refcnt = 1;
+      addr->flags = 0;
+      addr->salen = sizeof(struct sockaddr_in);
+      addr->sin.sin_family = AF_INET;
+      addr->sin.sin_port = htons(port);
+      addr->sin.sin_addr = ina;
+      addr->sa_funcs = &inet_sockaddr_funcs;
+    }
   return (GSockAddr *) addr;
 }
 
+/*+
+
+  Allocate and initialize an IPv4 socket address.
+
+  Parameters:
+    ip          text representation of an IP address
+    port        port number in host byte order
+
+  Returns:
+    the new instance
+
+  +*/
+GSockAddr *
+g_sockaddr_inet_new_resolve(const gchar *name, guint16 port)
+{
+  GSockAddrInet *addr = NULL;
+  struct hostent *he;
+      
+  he = gethostbyname(name);
+  if (he)
+    {
+      if (he->h_addrtype == AF_INET)
+        {
+          addr = (GSockAddrInet *) g_sockaddr_inet_new("0.0.0.0", port);
+          if (addr)
+            {
+              addr->sin.sin_addr = *(struct in_addr *) he->h_addr;
+            }
+        }
+    }
+  return (GSockAddr *) addr;
+  
+}
 
 /*+
 

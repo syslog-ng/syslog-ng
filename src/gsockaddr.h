@@ -63,6 +63,7 @@ void g_sockaddr_unref(GSockAddr *a);
 
 GSockAddr *g_sockaddr_inet_new(gchar *ip, guint16 port);
 GSockAddr *g_sockaddr_inet_new2(struct sockaddr_in *sin);
+GSockAddr *g_sockaddr_inet_new_resolve(const gchar *name, guint16 port);
 GSockAddr *g_sockaddr_inet_range_new(gchar *ip, guint16 min_port, guint16 max_port);
 
 #if ENABLE_IPV6

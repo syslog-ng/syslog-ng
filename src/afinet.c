@@ -31,32 +31,34 @@
 static void
 afinet_set_port(GSockAddr *addr, gint port, gchar *service, gchar *proto)
 {
-  if (proto)
+  if (addr)
     {
-      struct servent *se;
-      
-      se = getservbyname(service, proto);
-      if (se)
+      if (proto)
         {
-          port = ntohs(se->s_port);
+          struct servent *se;
+          
+          se = getservbyname(service, proto);
+          if (se)
+            {
+              port = ntohs(se->s_port);
+            }
+          else
+            {
+              msg_error("Error finding port number, falling back to default",
+                        evt_tag_printf("service", "%s/%s", proto, service),
+                        NULL);
+              return;
+            }
         }
-      else
-        {
-          msg_error("Error finding port number, falling back to default",
-                    evt_tag_printf("service", "%s/%s", proto, service),
-                    NULL);
-          return;
-        }
-    }
-    
-  ((struct sockaddr_in *) &addr->sa)->sin_port = htons(port);
-  
+        
+      ((struct sockaddr_in *) &addr->sa)->sin_port = htons(port);
+    }  
 }
 
 static void
 afinet_set_ip(GSockAddr *addr, gchar *ip)
 {
-  if (!inet_aton(ip, &((struct sockaddr_in *) &addr->sa)->sin_addr))
+  if (addr && !inet_aton(ip, &((struct sockaddr_in *) &addr->sa)->sin_addr))
     { 
       struct hostent *he;
       
@@ -64,6 +66,10 @@ afinet_set_ip(GSockAddr *addr, gchar *ip)
       if (he)
         {
           ((struct sockaddr_in *) &addr->sa)->sin_addr = *(struct in_addr *) he->h_addr;
+        }
+      else
+        {
+          msg_error("Error resolving bind hostname, using 0.0.0.0", NULL);
         }
     }
 }
@@ -85,13 +91,13 @@ afinet_sd_set_localip(LogDriver *s, gchar *ip)
 }
 
 LogDriver *
-afinet_sd_new(gchar *ip, gint port, guint flags)
+afinet_sd_new(gchar *host, gint port, guint flags)
 {
   AFInetSourceDriver *self = g_new0(AFInetSourceDriver, 1);
   
   afsocket_sd_init_instance(&self->super, flags);
   self->super.flags |= AFSOCKET_KEEP_ALIVE | AFSOCKET_LISTENER_KEEP_ALIVE;
-  self->super.bind_addr = g_sockaddr_inet_new(ip, port);
+  self->super.bind_addr = g_sockaddr_inet_new_resolve(host, port);
   if (flags & AFSOCKET_DGRAM)
     self->super.flags |= AFSOCKET_PROTO_RFC3164;
   return &self->super.super;
@@ -124,13 +130,13 @@ afinet_dd_set_localip(LogDriver *s, gchar *ip)
 }
 
 LogDriver *
-afinet_dd_new(gchar *ip, gint port, guint flags)
+afinet_dd_new(gchar *host, gint port, guint flags)
 {
   AFInetDestDriver *self = g_new0(AFInetDestDriver, 1);
   
   afsocket_dd_init_instance(&self->super, flags);
   self->super.bind_addr = g_sockaddr_inet_new("0.0.0.0", 0);
-  self->super.dest_addr = g_sockaddr_inet_new(ip, port);
+  self->super.dest_addr = g_sockaddr_inet_new_resolve(host, port);
   if (flags & AFSOCKET_DGRAM)
     self->super.flags |= AFSOCKET_PROTO_RFC3164;
   return &self->super.super;
