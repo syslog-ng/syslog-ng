@@ -722,7 +722,7 @@ afsocket_dd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
 
   if (!self->writer)
     {
-      log_writer_options_init(&self->writer_options, cfg, !!(self->flags & AFSOCKET_PROTO_RFC3164), afsocket_dd_format_stats_name(self));
+      log_writer_options_init(&self->writer_options, cfg, (self->flags & AFSOCKET_PROTO_RFC3164) ? LWOF_FIXED_STAMP : 0, afsocket_dd_format_stats_name(self));
       /* NOTE: we open our writer with no fd, so we can send messages down there
        * even while the connection is not established */
   

@@ -28,6 +28,7 @@
 
 typedef struct _StatsCounter
 {
+  guint ref_cnt;
   StatsCounterType type;
   gchar *name;
   guint32 counter;
@@ -47,10 +48,25 @@ stats_find_counter(const gchar *counter_name)
   return g_list_find_custom(counters, counter_name, (GCompareFunc) stats_cmp_name);
 }
 
+/**
+ * stats_register_counter:
+ * @type: counter type 
+ * @counter_name: name to identify this stats counter
+ * @counter: returned pointer to the counter
+ * @shared: whether multiple sources will use the same counter
+ *
+ * This fuction registers a general purpose counter. Whenever multiple
+ * objects touch the same counter all of these should register the counter
+ * with the same name, specifying TRUE for the value of permit_dup,
+ * internally the stats subsystem counts the number of users of the same
+ * counter in this case, thus the counter will only be freed when all of
+ * these uses are unregistered.
+ **/
 void
-stats_register_counter(StatsCounterType type, const gchar *counter_name, guint32 **counter)
+stats_register_counter(StatsCounterType type, const gchar *counter_name, guint32 **counter, gboolean shared)
 {
   StatsCounter *sc;
+  GList *l;
   
   /* FIXME: we should use a separate name-space for all different types,
    * however we only have a single type so far */
@@ -59,12 +75,21 @@ stats_register_counter(StatsCounterType type, const gchar *counter_name, guint32
   *counter = NULL;
   if (!counter_name)
     return;
-  if (stats_find_counter(counter_name))
+  if ((l = stats_find_counter(counter_name)))
     {
-      msg_notice("Duplicate stats counter",  
-                 evt_tag_str("counter", counter_name), 
-                 NULL);
-      *counter = NULL;
+      if (!shared)
+        {
+          msg_notice("Duplicate stats counter",  
+                     evt_tag_str("counter", counter_name), 
+                     NULL);
+          *counter = NULL;
+        }
+      else
+        {
+          sc = (StatsCounter *) l->data;
+          sc->ref_cnt++;
+          *counter = &sc->counter;
+        }
       return;
     }
   
@@ -73,6 +98,7 @@ stats_register_counter(StatsCounterType type, const gchar *counter_name, guint32
   sc->type = type;
   sc->name = g_strdup(counter_name);
   sc->counter = 0;
+  sc->ref_cnt = 1;
   *counter = &sc->counter;
   counters = g_list_prepend(counters, sc);
 }
@@ -101,10 +127,13 @@ stats_unregister_counter(const gchar *counter_name, guint32 **counter)
                 evt_tag_str("counter", counter_name),
                 NULL);
     }
-    
-  counters = g_list_delete_link(counters, l);
-  g_free(sc->name);
-  g_free(sc);
+  sc->ref_cnt--;
+  if (sc->ref_cnt == 0)
+    {
+      counters = g_list_delete_link(counters, l);
+      g_free(sc->name);
+      g_free(sc);
+    }
   *counter = NULL;
 }
 

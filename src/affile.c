@@ -367,18 +367,6 @@ affile_dd_set_create_dirs(LogDriver *s, gboolean create_dirs)
     self->flags &= ~AFFILE_CREATE_DIRS;
 }
 
-static const gchar *
-affile_dd_format_stats_name(AFFileDestDriver *self)
-{
-  static gchar stats_name[256];
-  
-  g_snprintf(stats_name, sizeof(stats_name),
-             "file(%s)", self->filename_template->template->str);
-  
-  return stats_name;
-}
-
-
 static time_t reap_now = 0;
 
 static gboolean
@@ -439,7 +427,7 @@ affile_dd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
     self->time_reap = cfg->time_reap;
   
   self->use_time_recvd = cfg->use_time_recvd;
-  log_writer_options_init(&self->writer_options, cfg, FALSE, affile_dd_format_stats_name(self));
+  log_writer_options_init(&self->writer_options, cfg, LWOF_NO_STATS, NULL);
   self->cfg = cfg;
   
   if ((self->flags & AFFILE_NO_EXPAND) == 0)

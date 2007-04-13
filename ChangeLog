@@ -2,6 +2,34 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2006-01-20 10:01:44 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-84
+
+    Summary:
+      added stats counter sharing and a way to disable stats counter
+    Revision:
+      syslog-ng--mainline--2.0--patch-84
+
+    2006-01-20  Balazs Scheidler <bazsi@balabit.hu>
+    
+    	* src/stats.c (stats_register_counter): added shared parameter to
+    	specify that the given counter can be shared
+    
+    	* src/logwriter.h (LogWriterOptions): added flags member and two
+    	flags LWOF_NO_STATS, LWOF_SHARED_STATS
+    
+    	* src/logwriter.c (log_writer_options_init): converted fixed_stamp
+    	parameter to a flag word, the actual value is LWOF_FIXED_STAMP,
+    	(log_writer_init): don't register a stats counter if LWOF_NO_STAMP
+    	is specified
+    
+    	* src/af*.c: changed the call of log_writer_options_init()
+    
+
+    modified files:
+     ChangeLog src/affile.c src/afprog.c src/afsocket.c
+     src/logwriter.c src/logwriter.h src/stats.c src/stats.h
+
+
 2006-01-13 13:17:29 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-83
 
     Summary:

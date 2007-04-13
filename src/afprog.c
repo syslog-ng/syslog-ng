@@ -70,7 +70,7 @@ afprogram_dd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
   int msg_pipe[2];
 
   if (cfg)
-    log_writer_options_init(&self->writer_options, cfg, FALSE, afprogram_dd_format_stats_name(self));
+    log_writer_options_init(&self->writer_options, cfg, 0, afprogram_dd_format_stats_name(self));
   
   msg_verbose("Starting destination program",
               evt_tag_str("cmdline", self->cmdline->str),

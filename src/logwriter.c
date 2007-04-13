@@ -377,8 +377,8 @@ log_writer_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
 {
   LogWriter *self = (LogWriter *) s;
   
-  if (!self->dropped_messages)
-    stats_register_counter(SC_TYPE_DROPPED, self->options->stats_name, &self->dropped_messages);
+  if ((self->options->flags & LWOF_NO_STATS) == 0 && !self->dropped_messages)
+    stats_register_counter(SC_TYPE_DROPPED, self->options->stats_name, &self->dropped_messages, !!(self->options->flags & LWOF_SHARE_STATS));
   return TRUE;
 }
 
@@ -477,8 +477,9 @@ log_writer_options_set_template_escape(LogWriterOptions *options, gboolean enabl
 }
 
 void
-log_writer_options_init(LogWriterOptions *options, GlobalConfig *cfg, gboolean fixed_stamp, const gchar *stats_name)
+log_writer_options_init(LogWriterOptions *options, GlobalConfig *cfg, guint32 flags, const gchar *stats_name)
 {
+  options->flags = flags;
   if (options->fifo_size == -1)
     options->fifo_size = cfg->log_fifo_size;
   if (options->use_time_recvd == -1)
@@ -498,7 +499,7 @@ log_writer_options_init(LogWriterOptions *options, GlobalConfig *cfg, gboolean f
       options->flush_lines = options->fifo_size - 1;
     }
 
-  if (!fixed_stamp)
+  if ((flags & LWOF_FIXED_STAMP) == 0)
     {
       if (options->keep_timestamp == -1)
         options->keep_timestamp = cfg->keep_timestamp;

@@ -33,14 +33,23 @@
 #define LW_FORMAT_FILE   0x0002
 #define LW_FORMAT_PROTO  0x0004
 
-/* writer options */
+/* writer options (set by the user) */
 #define LWO_TMPL_ESCAPE     0x0001
+
+/* writer flags */
+#define LWOF_FIXED_STAMP     0x0001
+/* we don't want to have a dropped counter for this writer */
+#define LWOF_NO_STATS        0x0002
+/* several writers use the same counter */
+#define LWOF_SHARE_STATS     0x0004
 
 typedef struct _LogWriterOptions
 {
   gchar *stats_name;
-  /* bitmask of LWO_* */
+  /* bitmask of LWO_* (set by the user) */
   guint32 options;
+  /* bitmask of LWOF_* (set by the driver) */
+  guint32 flags;
   
   /* maximum number of entries */
   gint fifo_size;
@@ -78,6 +87,6 @@ gboolean log_writer_reopen(LogPipe *s, FDWrite *fd);
 
 void log_writer_options_set_template_escape(LogWriterOptions *options, gboolean enable);
 void log_writer_options_defaults(LogWriterOptions *options);
-void log_writer_options_init(LogWriterOptions *options, GlobalConfig *cfg, gboolean fixed_stamps, const gchar *stats_name);
+void log_writer_options_init(LogWriterOptions *options, GlobalConfig *cfg, guint32 flags, const gchar *stats_name);
 
 #endif

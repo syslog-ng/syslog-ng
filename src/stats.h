@@ -33,7 +33,7 @@ typedef enum
 } StatsCounterType;
 
 void stats_generate_log(void);
-void stats_register_counter(StatsCounterType type, const gchar *counter_name, guint32 **counter);
+void stats_register_counter(StatsCounterType type, const gchar *counter_name, guint32 **counter, gboolean shared);
 void stats_unregister_counter(const gchar *name, guint32 **counter);
 
 #endif
