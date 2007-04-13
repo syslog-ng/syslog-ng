@@ -2,6 +2,32 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-02-11 08:43:32 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-3
+
+    Summary:
+      added optional() parameter to pipe/unix drivers (fixes: #4999)
+    Revision:
+      syslog-ng--mainline--2.0--patch-3
+
+    	* src/driver.h: added optional member (fixes: #4999)
+    
+    	* src/cfg-lex.l: added optional keyword (fixes: #4999)
+    
+    	* src/cfg-grammar.y: added optional keyword to pipe and unix domain
+    	socket based source drivers (fixes: #4999)
+    
+    	* src/afsocket.c (afsocket_sd_init): do not fail if binding failed
+    	and optional is TRUE (fixes: #4999)
+    
+    	* src/affile.c (affile_sd_init): do not fail if opening failed and
+    	optional is TRUE (fixes: #4999)
+    
+
+    modified files:
+     ChangeLog doc/reference/syslog-ng.xml src/affile.c
+     src/afsocket.c src/cfg-grammar.y src/cfg-lex.l src/driver.h
+
+
 2006-02-11 08:16:00 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-2
 
     Summary:

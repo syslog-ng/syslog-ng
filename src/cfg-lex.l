@@ -104,6 +104,7 @@ static struct keyword keywords[] = {
 	{ "log_prefix",		KW_LOG_PREFIX },
 	
         { "create_dirs",        KW_CREATE_DIRS },
+        { "optional",           KW_OPTIONAL },
  	{ "localip",		KW_LOCALIP },
 	{ "ip",			KW_IP },
 	{ "localport",		KW_LOCALPORT },

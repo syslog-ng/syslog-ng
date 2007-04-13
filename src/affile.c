@@ -121,7 +121,7 @@ affile_sd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
                 evt_tag_str("filename", self->filename->str),
                 evt_tag_errno(EVT_TAG_OSERROR, errno),
                 NULL);
-      return FALSE;
+      return self->super.optional;
     }
   return TRUE;
 }

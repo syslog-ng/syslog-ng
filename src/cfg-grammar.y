@@ -74,6 +74,9 @@ LogTemplate *last_template;
 %token KW_TIME_REOPEN KW_TIME_REAP 
 %token KW_TMPL_ESCAPE
 
+/* driver specific options */
+%token KW_OPTIONAL
+
 /* file related options */
 %token KW_CREATE_DIRS 
 %token KW_OWNER KW_GROUP KW_PERM 
@@ -266,7 +269,12 @@ source_afpipe_params
 	    free($1); 
 	    last_reader_options = &((AFFileSourceDriver *) last_driver)->reader_options;
 	  }
-	  source_reader_options			{ $$ = last_driver; }
+	  source_afpipe_options				{ $$ = last_driver; }
+	;
+
+source_afpipe_options
+	: KW_OPTIONAL '(' yesno ')'			{ last_driver->optional = $3; }
+	| source_reader_options				{}
 	;
 
 source_afsocket
@@ -310,6 +318,7 @@ source_afunix_option
 	: KW_OWNER '(' string ')'		{ afunix_sd_set_uid(last_driver, $3); free($3); }
 	| KW_GROUP '(' string ')'		{ afunix_sd_set_gid(last_driver, $3); free($3); }
 	| KW_PERM '(' NUMBER ')'		{ afunix_sd_set_perm(last_driver, $3); }
+	| KW_OPTIONAL '(' yesno ')'		{ last_driver->optional = $3; }
 	| source_afsocket_stream_params		{}
 	| source_reader_option			{}
 	; 

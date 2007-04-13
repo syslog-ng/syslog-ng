@@ -31,6 +31,7 @@
 typedef struct _LogDriver
 {
   LogPipe super;
+  gboolean optional;
   struct _LogDriver *drv_next;
 } LogDriver;
 

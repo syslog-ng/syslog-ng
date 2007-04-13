@@ -639,6 +639,18 @@
                 </entry>
 		<entry></entry>
 	      </row>
+	      <row>
+		<entry>optional()</entry>
+		<entry>yes or no</entry>
+		<entry>
+		  This option currently applies to pipe(), unix-dgram and
+                  unix-stream drivers, it specifies that given a specific
+                  source cannot be initialized, the error will be ignored.
+                  No other attempt to initialize the source will be made
+                  until the configuration is reloaded.
+                </entry>
+		<entry></entry>
+	      </row>
             </tbody>
           </tgroup>
         </table>

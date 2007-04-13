@@ -422,11 +422,11 @@ afsocket_sd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
           sock = GPOINTER_TO_UINT(persist_config_fetch(persist, afsocket_sd_format_persist_name(self, TRUE))) - 1;
         }
 
-      if (sock == -1 && !afsocket_open_socket(self->bind_addr, !!(self->flags & AFSOCKET_STREAM), &sock))
+      if (sock == -1)
         {
-          return FALSE;
+          if (!afsocket_open_socket(self->bind_addr, !!(self->flags & AFSOCKET_STREAM), &sock))
+            return self->super.optional;
         }
-
       
       /* set up listening source */
       if (listen(sock, self->listen_backlog) < 0)
@@ -450,10 +450,10 @@ afsocket_sd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
     }
   else
     {
-      if (!self->connections && !afsocket_open_socket(self->bind_addr, !!(self->flags & AFSOCKET_STREAM), &sock))
+      if (!self->connections)
         {
-          /* we could not recover persistent listener and could not open one either */
-          return FALSE;
+          if (!afsocket_open_socket(self->bind_addr, !!(self->flags & AFSOCKET_STREAM), &sock))
+            return self->super.optional;
         }
       self->fd = -1;
       
