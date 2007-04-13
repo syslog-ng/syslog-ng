@@ -5,7 +5,7 @@ dnl ***************************************************************************
 dnl definitions
 
 PACKAGE="syslog-ng"
-VERSION="1.9.6"
+VERSION="`cat $srcdir/VERSION`"
 
 dnl ***************************************************************************
 dnl dependencies
@@ -21,6 +21,13 @@ if test -r $srcdir/dist.conf; then
         # values for parameters that are already set
         source $srcdir/dist.conf
 fi
+
+if test "`uname -s`" = "Linux";then
+        CURRDATE=`date -R`
+else
+        CURRDATE=`date +"%a, %d %b %Y %H:%M:%S %Z"`
+fi
+
 
 
 AM_INIT_AUTOMAKE($PACKAGE, $VERSION)
@@ -213,6 +220,8 @@ AC_SUBST(DEPS_CPPFLAGS)
 AC_SUBST(DEPS_LIBS)
 AC_SUBST(YFLAGS)
 
+AC_SUBST(CURRDATE)
+AC_SUBST(RELEASE_TAG)
 AC_SUBST(SNAPSHOT_VERSION)
 AC_SUBST(SOURCE_REVISION)
 

@@ -1,0 +1,14 @@
+#!/bin/sh
+
+set -e
+
+# install from config-files state
+if [ "$1" = "install" -a -n "$2" ] ; then
+  # reactivate disabled logrotate-configs from prior install.
+  # main file
+  [ -f /etc/logrotate.d/syslog-ng.disabled ] && mv -f /etc/logrotate.d/syslog-ng.disabled /etc/logrotate.d/syslog-ng
+fi
+
+#DEBHELPER#
+
+exit 0

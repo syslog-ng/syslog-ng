@@ -2,6 +2,54 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-12-03 11:23:46 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-73
+
+    Summary:
+      added debianization files, misc build fixes
+    Revision:
+      syslog-ng--mainline--2.0--patch-73
+
+    2005-12-03  Balazs Scheidler <bazsi@balabit.hu>
+    
+    	* debian/*: added debianization files
+    
+    	* configure.in: added VERSION file instead of having the actual
+    	VERSION inline, added CURRDATE to make it possible to generate
+    	debian/changelog automatically
+    
+
+    new files:
+     debian/.arch-ids/=id debian/.arch-ids/README.Debian.id
+     debian/.arch-ids/changelog.in.id debian/.arch-ids/control.id
+     debian/.arch-ids/copyright.id debian/.arch-ids/rules.id
+     debian/.arch-ids/syslog-ng.conf.example.id
+     debian/.arch-ids/syslog-ng.conf.id
+     debian/.arch-ids/syslog-ng.default.id
+     debian/.arch-ids/syslog-ng.docs.id
+     debian/.arch-ids/syslog-ng.files.id
+     debian/.arch-ids/syslog-ng.init.id
+     debian/.arch-ids/syslog-ng.logcheck.ignore.id
+     debian/.arch-ids/syslog-ng.logrotate.example.id
+     debian/.arch-ids/syslog-ng.logrotate.id
+     debian/.arch-ids/syslog-ng.postinst.id
+     debian/.arch-ids/syslog-ng.postrm.id
+     debian/.arch-ids/syslog-ng.preinst.id debian/README.Debian
+     debian/changelog.in debian/control debian/copyright
+     debian/rules debian/syslog-ng.conf
+     debian/syslog-ng.conf.example debian/syslog-ng.default
+     debian/syslog-ng.docs debian/syslog-ng.files
+     debian/syslog-ng.init debian/syslog-ng.logcheck.ignore
+     debian/syslog-ng.logrotate debian/syslog-ng.logrotate.example
+     debian/syslog-ng.postinst debian/syslog-ng.postrm
+     debian/syslog-ng.preinst
+
+    modified files:
+     ChangeLog Makefile.am configure.in
+
+    new directories:
+     debian debian/.arch-ids
+
+
 2005-11-25 15:25:19 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-72
 
     Summary:

@@ -1,0 +1,9 @@
+@PACKAGE@ (@VERSION@) @RELEASE_TAG@; urgency=low
+
+  * New upstream version.
+
+ -- BalaBit Development Team <devel@balabit.hu>  @CURRDATE@
+
+Local variables:
+mode: debian-changelog
+End:

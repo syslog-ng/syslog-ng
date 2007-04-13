@@ -1,0 +1,149 @@
+#
+# Syslog-ng configuration file, compatible with default Debian syslogd
+# installation. Originally written by anonymous (I can't find his name)
+# Revised, and rewrited by me (SZALAY Attila <sasa@debian.org>)
+
+# First, set some global options.
+options { long_hostnames(off); sync(0); use_dns(no);
+	  owner("root"); group("adm"); perm(0640);
+};
+
+########################
+# Sources
+########################
+# This is the default behavior of sysklogd package
+# Logs may come from unix stream, but not from another machine.
+#
+source src { unix-dgram("/dev/log"); internal();
+       	     file("/proc/kmsg" log_prefix("kernel: "));
+};
+
+# If you wish to get logs from remote machine you should uncomment
+# this and comment the above source line.
+#
+#source net { tcp(ip(127.0.0.1) port(1000) authentication(required) encrypt(allow)); };
+
+########################
+# Destinations
+########################
+# First some standard logfile
+#
+destination auth { file("/var/log/auth.log"); };
+destination cron { file("/var/log/cron.log"); };
+destination daemon { file("/var/log/daemon.log"); };
+destination kern { file("/var/log/kern.log"); };
+destination lpr { file("/var/log/lpr.log"); };
+destination mail { file("/var/log/mail.log"); };
+destination syslog { file("/var/log/syslog.log"); };
+destination user { file("/var/log/user.log"); };
+destination uucp { file("/var/log/uucp.log"); };
+
+# This files are the log come from the mail subsystem.
+#
+destination mailinfo { file("/var/log/mail/mail.info"); };
+destination mailwarn { file("/var/log/mail/mail.warn"); };
+destination mailerr { file("/var/log/mail/mail.err"); };
+
+# Logging for INN news system
+#
+destination newscrit { file("/var/log/news/news.crit"); };
+destination newserr { file("/var/log/news/news.err"); };
+destination newsnotice { file("/var/log/news/news.notice"); };
+
+# Some `catch-all' logfiles.
+#
+destination debug { file("/var/log/debug"); };
+destination error { file("/var/log/error"); };
+
+# The root's console.
+#
+destination console { usertty("root"); };
+
+# Virtual console.
+#
+destination console_all { file("/dev/vc/10"); };
+
+# The named pipe /dev/xconsole is for the nsole' utility.  To use it,
+# you must invoke nsole' with the -file' option:
+#
+#    $ xconsole -file /dev/xconsole [...]
+#
+destination xconsole { pipe("/dev/xconsole"); };
+
+# Send the messages to an other host
+#
+#destination net { tcp("127.0.0.1" port(1000) authentication(on) encrypt(on) log_fifo_size(1000)); };
+
+# Debian only
+destination ppp { file("/var/log/ppp.log"); };
+
+########################
+# Filters
+########################
+# Here's come the filter options. With this rules, we can set which 
+# message go where.
+
+filter dbg { level(debug); };
+filter info { level(info); };
+filter notice { level(notice); };
+filter warn { level(warn); };
+filter err { level(err); };
+filter crit { level(crit .. emerg); };
+
+filter debug { level(debug) and not facility(auth, authpriv, news, mail); };
+filter error { level(err .. emerg) ; };
+
+filter auth { facility(auth, authpriv) and not filter(debug); };
+filter cron { facility(cron) and not filter(debug); };
+filter daemon { facility(daemon) and not filter(debug); };
+filter kern { facility(kern) and not filter(debug); };
+filter lpr { facility(lpr) and not filter(debug); };
+filter local { facility(local0, local1, local3, local4, local5,
+                        local6, local7) and not filter(debug); };
+filter mail { facility(mail) and not filter(debug); };
+filter news { facility(news) and not filter(debug); };
+filter syslog { facility(syslog) and not filter(debug); };
+filter user { facility(user) and not filter(debug); };
+filter uucp { facility(uucp) and not filter(debug); };
+
+filter cnews { level(notice, err, crit) and facility(news); };
+filter cother { level(debug, info, notice, warn) or facility(daemon, mail); };
+
+filter ppp { facility(local2) and not filter(debug); };
+filter console { level(warn .. emerg); };
+
+########################
+# Log paths
+########################
+log { source(src); filter(auth); destination(auth); };
+log { source(src); filter(cron); destination(cron); };
+log { source(src); filter(daemon); destination(daemon); };
+log { source(src); filter(kern); destination(kern); };
+log { source(src); filter(lpr); destination(lpr); };
+log { source(src); filter(syslog); destination(syslog); };
+log { source(src); filter(user); destination(user); };
+log { source(src); filter(uucp); destination(uucp); };
+
+log { source(src); filter(mail); destination(mail); };
+#log { source(src); filter(mail); filter(info); destination(mailinfo); };
+#log { source(src); filter(mail); filter(warn); destination(mailwarn); };
+#log { source(src); filter(mail); filter(err); destination(mailerr); };
+
+log { source(src); filter(news); filter(crit); destination(newscrit); };
+log { source(src); filter(news); filter(err); destination(newserr); };
+log { source(src); filter(news); filter(notice); destination(newsnotice); };
+#log { source(src); filter(cnews); destination(console_all); };
+#log { source(src); filter(cother); destination(console_all); };
+
+#log { source(src); filter(ppp); destination(ppp); };
+
+log { source(src); filter(debug); destination(debug); };
+log { source(src); filter(error); destination(error); };
+
+log { source(src); filter(console); destination(console_all);
+				    destination(xconsole); };
+log { source(src); filter(crit); destination(console); };
+
+# All messages send to a remote site
+#
+#log { source(src); destination(net); };
