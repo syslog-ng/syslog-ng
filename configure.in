@@ -78,7 +78,7 @@ dnl Checks for libraries.
 dnl Checks for header files.
 AC_HEADER_STDC
 AC_CHECK_HEADER(dmalloc.h)
-AC_CHECK_HEADERS(strings.h openssl/ssl.h getopt.h stropts.h sys/strlog.h)
+AC_CHECK_HEADERS(strings.h openssl/ssl.h getopt.h stropts.h sys/strlog.h door.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_STRUCT_TM

@@ -584,7 +584,7 @@ static const gchar *
 afsocket_dd_format_stats_name(AFSocketDestDriver *self)
 {
   static gchar stats_name[64];
-  gchar *driver_name;
+  gchar *driver_name = NULL;
   gchar buf[64];
   
   switch (self->dest_addr->sa.sa_family)

@@ -31,7 +31,8 @@ typedef struct _AFStreamsSourceDriver
   LogDriver super;
   GString *dev_filename;
   GString *door_filename;
-  LogReader *reader;
+  gint door_fd;
+  LogPipe *reader;
   LogReaderOptions reader_options;
 } AFStreamsSourceDriver;
 
@@ -42,6 +43,13 @@ typedef struct _AFStreamsSourceDriver
 #include <sys/stat.h>
 #include <stropts.h>
 #include <sys/strlog.h>
+#include <fcntl.h>
+#include <string.h>
+
+#if ENABLE_SUN_DOOR && HAVE_DOOR_H
+#include <door.h>
+#endif
+
 
 static size_t
 streams_read_read_method(FDRead *self, void *buf, size_t buflen, GSockAddr **sa)
@@ -60,34 +68,34 @@ streams_read_read_method(FDRead *self, void *buf, size_t buflen, GSockAddr **sa)
   data.buf = tmpbuf;
   flags = 0;
 
-  res = getmsg(fd, &ctl, &data, &flags);
+  res = getmsg(self->fd, &ctl, &data, &flags);
   if ((res & (MORECTL+MOREDATA)) == 0)
     {
-      len = g_snprintf(buf, buflen, "<%d>%.*s", lc.pri, data.len, data);
+      len = g_snprintf(buf, buflen, "<%d>%.*s", lc.pri, data.len, data.buf);
       return MIN(len, buflen);
     }
   else
     {
-      msg_warning("Insufficient buffer space for retrieving STREAMS log message",
-                  evt_tag_printf("res", "%x", res),
-                  NULL);
+      msg_error("Insufficient buffer space for retrieving STREAMS log message",
+                evt_tag_printf("res", "%x", res),
+                NULL);
     }
+  return 0;
 }
 
 FDRead *
-streams_read_new(gint fd, guint flags)
+streams_read_new(gint fd)
 {
   FDRead *self = g_new0(FDRead, 1);
   
   self->fd = fd;
   self->cond = G_IO_IN;
   self->read = streams_read_read_method;
-  self->flags = flags;
   return self;
 }
 
 void 
-afstreams_sd_set_sundoor(LogDriver *self, gchar *filename)
+afstreams_sd_set_sundoor(LogDriver *s, gchar *filename)
 {
   AFStreamsSourceDriver *self = (AFStreamsSourceDriver *) s;
   
@@ -95,7 +103,7 @@ afstreams_sd_set_sundoor(LogDriver *self, gchar *filename)
 }
 
 static void 
-afstreams_door_server_proc(void *cookie, char *argp, size_t arg_size, door_desc_t *dp, size_t n_desc)
+afstreams_sd_door_server_proc(void *cookie, char *argp, size_t arg_size, door_desc_t *dp, size_t n_desc)
 {
   door_return(NULL, 0, NULL, 0);
   return;
@@ -119,13 +127,14 @@ afstreams_sd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
       if (ioctl(fd, I_STR, &ioc) < 0) 
         {
           msg_error("Error in ioctl(I_STR, I_CONSLOG)",
-                    evt_tag_str(EVT_TAG_FILENAME, self->dev_filename),
+                    evt_tag_str(EVT_TAG_FILENAME, self->dev_filename->str),
                     evt_tag_errno(EVT_TAG_OSERROR, errno),
                     NULL);
           close(fd);
           return FALSE;
         }
       self->reader = log_reader_new(streams_read_new(fd), LR_LOCAL, s, &self->reader_options);
+      log_pipe_append(self->reader, s);
       
       if (self->door_filename)
         {
@@ -151,7 +160,7 @@ afstreams_sd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
             {
               msg_error("Error creating syslog door",
                         evt_tag_str(EVT_TAG_FILENAME, self->door_filename->str),
-                        evt_tag_errno(EVT_TAG_OSRROR, errno),
+                        evt_tag_errno(EVT_TAG_OSERROR, errno),
                         NULL);
               close(self->door_fd);
               return FALSE;
@@ -160,18 +169,29 @@ afstreams_sd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
             {
               msg_error("Error attaching syslog door",
                         evt_tag_str(EVT_TAG_FILENAME, self->door_filename->str),
-                        evt_tag_errno(EVT_TAG_OSRROR, errno),
+                        evt_tag_errno(EVT_TAG_OSERROR, errno),
                         NULL);
               close(self->door_fd);
               return FALSE;
             }
         }
+      if (!log_pipe_init(self->reader, NULL, NULL))
+        {
+          msg_error("Error initializing log_reader, closing fd",
+                    evt_tag_int("fd", fd),
+                    NULL);
+          log_pipe_unref(self->reader);
+          self->reader = NULL;
+          close(fd);
+          return FALSE;
+        }
+
     }
   else
     {
       msg_error("Error opening syslog device",
                 evt_tag_str(EVT_TAG_FILENAME, self->dev_filename->str),
-                evt_tag_errno(EVT_TAG_OSRROR, errno),
+                evt_tag_errno(EVT_TAG_OSERROR, errno),
                 NULL);
       return FALSE;
     }
@@ -208,7 +228,10 @@ afstreams_sd_free(LogPipe *s)
 LogDriver *
 afstreams_sd_new(gchar *filename)
 {
-  AFStreamsDriver *self = g_new0(AFStreamsSourceDriver, 1);
+  AFStreamsSourceDriver *self = g_new0(AFStreamsSourceDriver, 1);
+
+  log_drv_init_instance(&self->super);
+
   self->dev_filename = g_string_new(filename);
   self->super.super.init = afstreams_sd_init;
   self->super.super.deinit = afstreams_sd_deinit;

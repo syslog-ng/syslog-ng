@@ -2,6 +2,27 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-11-25 15:25:19 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-72
+
+    Summary:
+      fixed Solaris STREAMS based log device support
+    Revision:
+      syslog-ng--mainline--2.0--patch-72
+
+    2005-11-25  Balazs Scheidler <bazsi@balabit.hu>
+    
+    	* src/afsocket.c (afsocket_dd_format_stats_name): fix compiler
+    	warning about uninitialized driver_name, the switch statement 
+    	covers every possible case
+    
+    	* src/afstreams.c: fix compilation issues, it now actually compiles
+    	and works on Solaris (tested on Solaris 9)
+    
+
+    modified files:
+     ChangeLog configure.in src/afsocket.c src/afstreams.c
+
+
 2005-11-23 16:31:48 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-71
 
     Summary:
