@@ -2,6 +2,24 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-10-15 16:36:43 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-62
+
+    Summary:
+      fixed non-null terminated utmp username handling
+    Revision:
+      syslog-ng--mainline--2.0--patch-62
+
+    2005-10-15  Balazs Scheidler <bazsi@balabit.hu>
+    
+    	* src/afuser.c: instead of assuming that names in utmp are NUL
+    	terminated (which turned out not to be true), limit the length of
+    	comparison to sizeof(ut->ut_name)
+    
+
+    modified files:
+     ChangeLog src/afuser.c
+
+
 2005-10-15 16:15:57 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-61
 
     Summary:

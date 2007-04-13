@@ -60,12 +60,12 @@ afuser_dd_queue(LogPipe *s, LogMessage *msg, gint path_flags)
       if (ut->ut_type == USER_PROCESS &&
           ((self->username->len == 1 &&
             self->username->str[0] == '*') ||
-           (self->username->len == strlen(ut->ut_user) &&
+           (self->username->len <= sizeof(ut->ut_user) &&
             memcmp(self->username->str, ut->ut_user, self->username->len) == 0))) 
 #else
       if ((self->username->len == 1 &&
            self->username->str[0] == '*') ||
-          (self->username->len == strlen(ut->ut_name) &&
+          (self->username->len <= sizeof(ut->ut_name) &&
            memcmp(self->username->str, ut->ut_name, self->username->len) == 0)) 
 #endif
         {
