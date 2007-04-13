@@ -413,9 +413,12 @@ persist_config_fetch(PersistentConfig *self, gchar *name)
   gpointer res = NULL;
   gchar *orig_key;
   PersistentConfigEntry *p;
+  gpointer tmp1, tmp2;
   
-  if (self && g_hash_table_lookup_extended(self->keys, name, (gpointer *) &orig_key, (gpointer *) &p))
+  if (self && g_hash_table_lookup_extended(self->keys, name, &tmp1, &tmp2))
     {
+      orig_key = (gchar *) tmp1;
+      p = (PersistentConfigEntry *) tmp2;
       res = p->value;
       g_hash_table_steal(self->keys, name);
       g_free(orig_key);

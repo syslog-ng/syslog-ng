@@ -23,7 +23,7 @@ if test -r $srcdir/dist.conf; then
 fi
 
 
-AM_INIT_AUTOMAKE($PACKAGE, $VERSION, no-define)
+AM_INIT_AUTOMAKE($PACKAGE, $VERSION)
 if test -n "$SNAPSHOT_VERSION"; then
 	VERSION=$VERSION+$SNAPSHOT_VERSION
 fi
@@ -55,7 +55,7 @@ AC_PROG_MAKE_SET
 AC_PROG_RANLIB
 
 AC_MSG_CHECKING(how to enable static linking for certain libraries)
-ldversion=`ld -V | head -1`
+ldversion=`ld -V 2>&1 | head -1`
 if echo $ldversion | egrep "GNU|Solaris" > /dev/null; then
         LD_START_STATIC="-Wl,-Bstatic"
         LD_END_STATIC="-Wl,-Bdynamic"

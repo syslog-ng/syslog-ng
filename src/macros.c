@@ -352,7 +352,7 @@ log_macro_expand(GString *result, gint id, guint32 flags, glong zone_offset, Log
             colon++;
             while (*colon && *colon == ' ')
               colon++;
-            
+            ofs = colon - msg->msg->str;
           }
         result_append(result, msg->msg->str + ofs, msg->msg->len - ofs, !!(flags & MF_ESCAPE_RESULT));
         break;

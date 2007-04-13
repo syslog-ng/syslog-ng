@@ -2,6 +2,27 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-05-19 06:44:44 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-32
+
+    Summary:
+      configure.in and some warning fixes 
+    Revision:
+      syslog-ng--mainline--2.0--patch-32
+
+    2005-05-19  Balazs Scheidler <bazsi@balabit.hu>
+    
+    	* configure.in: removed no-define from AM_INIT_AUTOMAKE as this made
+    	PACKAGE and VERSION preprocessor symbols undefined
+    
+    	* src/macros.c: fixed uninitialized variable for MSGONLY processing
+    
+    	* src/cfg.c: fixed two type-punned pointer references
+    
+
+    modified files:
+     ChangeLog configure.in src/cfg.c src/macros.c
+
+
 2005-05-19 06:41:45 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-31
 
     Summary:
