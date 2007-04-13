@@ -32,6 +32,7 @@
 
 GString *g_string_assign_len(GString *s, gchar *val, gint len);
 
+char *getlonghostname(char *buf, size_t buflen);
 char *getshorthostname(char *buf, size_t buflen);
 GString *resolve_hostname(GSockAddr *saddr, int usedns, int usefqdn);
 gboolean g_fd_set_nonblock(int fd, gboolean enable);

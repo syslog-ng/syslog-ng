@@ -57,6 +57,22 @@ getshorthostname(char *buf, size_t bufsize)
   return buf;
 }
 
+char *
+getlonghostname(char *buf, size_t bufsize)
+{
+  gethostname(buf, bufsize - 1);
+  if (strchr(buf, '.') == NULL)
+    {
+      struct hostent *result = gethostbyname(buf);
+      if (result)
+        {
+          strncpy(buf, result->h_name, bufsize - 1);
+          buf[bufsize - 1] = 0;
+        }
+    }
+  return buf;
+}
+
 GString *
 resolve_hostname(GSockAddr *saddr,
 		 int usedns, int usefqdn)
@@ -98,7 +114,10 @@ resolve_hostname(GSockAddr *saddr,
     {
       if (!local_hostname[0]) 
 	{
-	  getshorthostname(local_hostname, sizeof(local_hostname));
+          if (usefqdn)
+            getlonghostname(local_hostname, sizeof(local_hostname));
+          else
+	    getshorthostname(local_hostname, sizeof(local_hostname));
 	}
 
       hname = local_hostname;

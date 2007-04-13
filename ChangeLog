@@ -2,6 +2,29 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-05-19 06:41:45 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-31
+
+    Summary:
+      treat use_fqdn correctly when getting local hostname
+    Revision:
+      syslog-ng--mainline--2.0--patch-31
+
+    2005-05-19  Balazs Scheidler <bazsi@balabit.hu>
+    
+    	* src/misc.c (getlonghostname): new function, returns the fully
+    	qualified domain name for localhost,
+    	(resolve_hostname): use the new getlonghostname, if use_fqdn was
+    	TRUE
+    
+    NEWS
+    	* 
+    NEWS.hu
+    	* 
+
+    modified files:
+     ChangeLog src/misc.c src/misc.h
+
+
 2005-04-27 08:09:44 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-30
 
     Summary:
