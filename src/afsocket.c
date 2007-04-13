@@ -192,9 +192,9 @@ afsocket_sc_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
   AFSocketSourceConnection *self = (AFSocketSourceConnection *) s;
 
   self->reader = log_reader_new(fd_read_new(self->sock, (self->owner->flags & AFSOCKET_DGRAM) ? FR_RECV : 0), 
-                                (self->owner->flags & AFSOCKET_LOCAL) ? LR_LOCAL : 0 | 
-                                (self->owner->flags & AFSOCKET_DGRAM) ? LR_PKTTERM : 0 |
-                                (self->owner->flags & AFSOCKET_PROTO_RFC3164) ? LR_STRICT : 0, 
+                                ((self->owner->flags & AFSOCKET_LOCAL) ? LR_LOCAL : 0) | 
+                                ((self->owner->flags & AFSOCKET_DGRAM) ? LR_PKTTERM : 0) |
+                                ((self->owner->flags & AFSOCKET_PROTO_RFC3164) ? LR_STRICT : 0), 
                                 s, &self->owner->reader_options);
   log_pipe_append(self->reader, s);
   log_pipe_init(self->reader, NULL, NULL);
@@ -481,8 +481,11 @@ afsocket_sd_deinit(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
         {
           next = p->next;
           afsocket_sd_kill_connection((AFSocketSourceConnection *) p->data);
-          g_list_free_1(p);
         }
+        
+      /* NOTE: we don't need to free the connection list, when a connection
+       * is freed it is removed from the list automatically */
+      
     }
   else
     {
@@ -492,7 +495,6 @@ afsocket_sd_deinit(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
       persist_config_add(persist, afsocket_sd_format_persist_name(self, FALSE), self->connections, (GDestroyNotify) afsocket_sd_kill_connection);
     }
   self->connections = NULL;
-
 
   if (self->flags & AFSOCKET_STREAM)
     {

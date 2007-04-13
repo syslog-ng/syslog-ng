@@ -2,6 +2,29 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-12-03 15:29:36 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-75
+
+    Summary:
+      fixed a possible segmentation fault during HUPs
+    Revision:
+      syslog-ng--mainline--2.0--patch-75
+
+    2005-12-03  Balazs Scheidler <bazsi@balabit.hu>
+    
+    	* src/afsocket.c (afsocket_sc_init): fixed DGRAM socket
+    	initialization to actually process incoming data in packets (the
+    	LR_PKTTERM flag was missed),
+    	(afsocket_sd_deinit): don't free the connection list items when
+    	iterating the list as connections are removed from the list when
+    	they are freed, the loop there only needs to break the circular
+    	references
+    
+    
+
+    modified files:
+     ChangeLog src/afsocket.c
+
+
 2005-12-03 11:23:55 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-74
 
     Summary:
