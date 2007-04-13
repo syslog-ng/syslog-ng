@@ -2,6 +2,19 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-02-12 23:05:09 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-17
+
+    Summary:
+      Updated documentation (manpages)
+    Revision:
+      syslog-ng--mainline--2.0--patch-17
+
+
+    modified files:
+     ChangeLog configure.in doc/man/syslog-ng.8
+     doc/man/syslog-ng.conf.5 src/main.c
+
+
 2005-01-22 00:50:50 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-16
 
     Summary:

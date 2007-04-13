@@ -48,6 +48,23 @@ AC_CHECK_LIB(nsl, gethostbyname)
 
 AC_CHECK_FUNCS(strdup strtol inet_aton inet_ntoa getopt_long)
 
+AC_CACHE_CHECK(for global timezone variable,
+               blb_cv_c_global_timezone,
+[AC_TRY_COMPILE([
+#include <time.h>
+],
+[
+int foo(void)
+{
+        timezone = 0;
+}
+],
+blb_cv_c_global_timezone=yes,
+blb_cv_c_global_timezone=no)])
+
+if test "x$blb_cv_c_global_timezone" = "xyes"; then
+        AC_DEFINE(HAVE_GLOBAL_TIMEZONE, 1, [have a global timezone variable])
+fi
 
 if test "x$enable_memtrace" = "xyes" ; then
 	AC_CHECK_LIB(dl, dlsym)

@@ -4,8 +4,6 @@
 .SH DESCRIPTION
 .PP
 
-NOTE: This file is not yet updated to syslog-ng 2.0, use the HTML documentation.
-
 The configuration file for \fBsyslog-ng\fP
 
 A message route in syslog-ng is made up from three parts: a source, 
@@ -30,6 +28,8 @@ are available:
 * udp <ip>,<port> - network source using the UDP protocol. If you do not want to bind to a specific interface use 0.0.0.0.
 
 * tcp <ip>,<port> - network source using the TCP protocol.
+
+* sun-streams <filename> - local source used on Solaris systems
 
 .SH DESTINATIONS
 
@@ -68,8 +68,6 @@ and "not" to connect builtin functions. Functions can be one of:
 
 * match(regexp to match program name)
 
-Other functions are being planned. 
-
 .SH LOG STATEMENTS
 
 You can connect sources and destinations using the log statement:
@@ -87,18 +85,144 @@ You can specify several global options to syslog-ng in the options statement:
 
 options { opt1; opt2; ... };
 
-Where optn can be any of the following:
+Where an option can be any of the following:
 
-* mark(n)		set mark frequency to n seconds
 
-* sync(n)		set sync frequence to n lines (can be overridden locally)
+.TP
+.B chain_hostnames(yes|no)
+Enable or disable the chained hostname format.
 
-* long_hostnames(yes|no)	set long hostname generation on or off
+.TP
+.B long_hostnames(yes|no)
+This is a deprecated alias for chain_hostnames().
+
+.TP
+.B keep_hostname(yes|no)
+Specifies whether to trust hostname as it is included in the log message. If
+keep_hostname is yes and there is a hostname in the message it is not
+touched, otherwise it is always rewritten based on the information where the
+message was received from.
+
+.TP
+.B use_dns(yes|no)
+Enable or disable DNS usage.  syslog-ng blocks on DNS queries, so
+enabling DNS may lead to a Denial of Service attack.  To prevent DoS,
+protect your syslog-ng network endpoint with firewall rules, and make
+sure that all hosts, which may get to syslog-ng is resolvable.
+
+.TP
+.B use_fqdn(yes|no)
+Add Fully Qualified Domain Name instead of short hostname.
+
+.TP
+.B check_hostname(yes|no)
+Enable or disable whether the hostname contains valid characters.
+
+.TP
+.B bad_hostname(regex)
+A regexp which matches hostnames which should not be taken as such.
+
+.TP
+.B dns_cache(yes|no)
+Enable or disable DNS cache usage.
+
+.TP
+.B dns_cache_expire(n)
+Number of seconds while a successful lookup is cached.
+
+.TP
+.B dns_cache_expire_failed(n)
+Number of seconds while a failed lookup is cached.
+
+.TP
+.B dns_cache_size(n)
+Number of hostnames in the DNS cache.
+
+.TP
+.B create_dirs(yes|no)
+Enable or disable directory creation for destination files.
+
+.TP
+.B dir_owner(uid)
+User id.
+
+.TP
+.B dir_group(gid)
+Group id.
+
+.TP
+.B dir_perm(perm)
+Permission value (octal mask).
+
+.TP
+.B owner(uid)
+User id for created files.
+
+.TP
+.B group(gid)
+Group id for created files.
+
+.TP
+.B perm(perm)
+Permission value for created files.
+
+.TP
+.B gc_busy_threshold(n)
+Sets the threshold value for the garbage collector, when syslog-ng is
+busy.  GC phase starts when the number of allocated objects reach this
+number.  Default: 3000.
+
+.TP
+.B gc_idle_threshold(n)
+Sets the threshold value for the garbage collector, when syslog-ng is
+idle.  GC phase starts when the number of allocated objects reach this
+number.  Default: 100.
+
+.TP
+.B log_fifo_size(n)
+The number of lines fitting to the output queue. An output queue is present
+for all destinations.
+
+.TP
+.B log_msg_size(n)
+Maximum length of message in bytes (NOTE: some syslogd implementations have
+a fixed limit of 1024 characters).
+
+.TP
+.B mark(n)
+The number of seconds between two MARK lines.
+NOTE: not implemented yet.
+
+.TP
+.B stats(n)
+The number of seconds between two STATS messages.
+
+.TP
+.B sync(n)
+The number of lines buffered before written to file
+(can be overridden locally).
+
+.TP
+.B time_reap(n)
+The time to wait before an idle destination file is closed.
+
+.TP
+.B time_reopen(n)
+The time to wait before a died connection is reestablished.
+
+.TP
+.B use_time_recvd(yes|no)
+This variable is used only for macro expansion where the meaning of the time
+specific macros depend on this setting, however as there are separate macros
+for referring to the received timestamp (R_ macros) and the log message timestamp (S_),
+so using this value is not recommended.
 
 .SH FILES
 /etc/syslog-ng/syslog-ng.conf
 .SH COPYRIGHT
-syslog-ng and this file is Copyright (c) 1999 BalaBit Computing
+syslog-ng and this file is Copyright (c) 1999-2004 BalaBit IT Ltd, portions
+were contributed by Jose Pedro Oliveira.
+
 .SH SEE ALSO
 syslog-ng(8), syslogd(8)
 

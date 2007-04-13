@@ -36,7 +36,7 @@
 #include <signal.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <wait.h>
+#include <sys/wait.h>
 #include <time.h>
 
 #include <grp.h>

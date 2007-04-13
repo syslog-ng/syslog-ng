@@ -3,9 +3,11 @@
 syslog-ng \- logs system messages
 .SH SYNOPSIS
 
+NOTE: This file is not up to date. Please refer to the html documentation.
+
 .B syslog-ng
 [
-.B \-dvV
+.B \-dFsvV
 ] [
 .B \-f
 <\fIconfig-filename\fP>
@@ -15,11 +17,14 @@ syslog-ng \- logs system messages
 ] [
 .B \-C 
 <\fIchroot-dir\fP>
+] [
+.B \-u 
+<\fIuser\fP>
+] [
+.B \-g 
+<\fIgroup\fP>
 ]
 .SH DESCRIPTION
-
-NOTE: This file is not yet updated to syslog-ng 2.0, use the HTML documentation.
-
 .PP
 \fBsyslog-ng\fP reads and logs messages to the system console, log files,
 other machines and/or users as specified by its configuration file.
@@ -42,61 +47,69 @@ values can be found in the include file \fI<sys/syslog.h>\fP.
 and when doing so, it sends the message on with the priority as a prefix.
 .PP
 It is not necessary to terminate a message with a line feed or carriage return.
-.SH HASHING
-.PP
-NOTE: as of syslog-ng 1.1.11, hashing is not supported yet.
 
-\fBsyslog-ng\fP supports keeping of hash values along side the actual log
-file.  To initialize hashing for the first time, you will need to use the
-program \fBgenh0\fP, which generates the initial hash for a log file based
-on random salt and the passphrase you enter. The password (or pass phrase)
-must be at least 20 characters and at most 128 characters. For security
-reasons it is NOT saved in any file and IT SHOULD NOT be put in any file. 
-Wiriting it down on paper, if you have to, is much more acceptable so long
-as the paper is "secure".  The salt used is saved to
-\fB/etc/syslog-ng/hashlog-filename.salt\fP and the result is saved to
-\fBhashlog-filename.H0\fP.  As each line is received by
-\fBsyslog-ng\fP, an matching entry is written to
-\fBhashlog-filename.sha1\fP. You can use \fBcheckhash\fP program to check if
-all the log entries are intact.
-.PP
-When \fBsyslog-ng\fP receives a HUP signal or is about to exit, it saves all
-the hashing seeds out to the relevaant .H0 file.  From time to time,
-\fBsyslog-ng\fP will also save all the current values as a "checkpoint".
 .SH OPTIONS
 .TP
-.B \-d
+.B \-C \0<directory>, \-\-chroot=<directory>
+Chroot to directory.
+.TP
+.B \-d, \-\-debug
 Set "debug mode".  Prints out various messages to aid in debugging and stops
 it from becoming a daemon.  To activate debugging in the yacc parser, either
 use this option twice or combine with \fB-v\fP.
 .TP
-.B \-f \0<filename>
+.B \-F, \-\-foreground
+Don't fork into background.
+.TP
+.B \-f \0<filename>, \-\-cfgfile=<filename>
 Instead of reading the normal \fB/etc/syslog-ng/syslog-ng.conf\fP file for
 configuration information, use the filename given instead.
 .TP
-.B \-p \0<filename>
-Write the current PID information to the specified file.
+.B \-g \0<group>, \-\-group=<group>
+Switch to group.
 .TP
-.B \-v
+.B \-p \0<filename>, \-\-pidfile=<filename>
+Write the current PID information to the specified file.
+Defaults to \fB/var/run/syslog-ng.pid\fP.
+.TP
+.B \-s, \-\-syntax\-only
+Only read and parse the configuration file.  See also the option \fB-f\fP.
+.TP
+.B \-u \0<user>, \-\-group=<user>
+Switch to user.
+.TP
+.B \-v, \-\-verbose
 Enable verbose mode.  Process will not become a daemon.  Prints out
 fewer messages, compared to \fB-d\fP.
 .TP
-.B \-V
+.B \-V, \-\-version
 Print the version number.
 .SH DIAGNOSTICS
 It is expected that \fBsyslog-ng\fP will run as root, however, if not running
 on a priviledged port of it it owned its own log directories, etc, it might
 run as a non-root user.
 .SH SEE ALSO
-logger(1), syslog(3), services(5), syslog.conf(5), syslog-ng.conf(5)
+.BR syslog-ng.conf (5),
+.BR logger (1),
+.BR syslog (2),
+.BR syslog (3),
+.BR services (5),
+.BR syslog.conf (5),
+.BR klogd (8),
+.BR syslogd (8),
+.BR sysklogd (8)
 .SH FILES
-/etc/syslog-ng/syslog-ng.conf
-/etc/syslog-ng/filename.sha1
-/etc/syslog-ng/filename.H0
-/etc/syslog-ng/filename.salt
-.br
-/var/run/syslog.pid
-.br
+.TP
+.I /etc/syslog-ng/syslog-ng.conf
+Configuration file for
+.BR syslog\-ng .
+See
+.BR syslog\-ng.conf (5)
+for more information.
+.TP
+.I /var/run/syslog-ng.pid
+The file containing the process id of
+.BR syslog-ng .
 .SH BUGS
 .PP
-If you find any, please send email to me at bazsi@balabit.hu
+If you find any, please send email to the syslog-ng mailing list at syslog-ng@lists.balabit.hu
