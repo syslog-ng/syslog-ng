@@ -2,6 +2,24 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-10-22 21:29:23 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-67
+
+    Summary:
+      stats.c & stats.h were not commited in the previous patch
+    Revision:
+      syslog-ng--mainline--2.0--patch-67
+
+    
+    
+
+    new files:
+     src/.arch-ids/stats.c.id src/.arch-ids/stats.h.id src/stats.c
+     src/stats.h
+
+    modified files:
+     ChangeLog
+
+
 2005-10-22 21:28:46 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-66
 
     Summary:
