@@ -303,7 +303,7 @@ log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, glong 
          *   local timezone
          */
         zone_ofs = (zone_offset != -1 ? zone_offset : (stamp->zone_offset != -1 ? stamp->zone_offset : get_local_timezone_ofs(stamp->time.tv_sec)));
-        t = stamp->time.tv_sec - zone_ofs;
+        t = stamp->time.tv_sec + zone_ofs;
         tm = gmtime(&t);
 
         switch (id)

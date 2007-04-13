@@ -2,6 +2,27 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-12-05 20:24:45 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-79
+
+    Summary:
+      fix time conversion to the specified timezone
+    Revision:
+      syslog-ng--mainline--2.0--patch-79
+
+    2005-12-05  Balazs Scheidler <bazsi@balabit.hu>
+    
+    	* src/logmsg.c (log_stamp_format): instead of substracting the
+    	timezone offset substract it (credit for reporting goes to Andy),
+    
+    	* src/macros.c (log_macro_expand): -"-
+    
+    	* src/logmsg.c (log_msg_parse): time zone specifies can be more than
+    	12 hours, fixed.
+
+    modified files:
+     ChangeLog src/logmsg.c src/macros.c
+
+
 2005-12-03 16:42:19 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-78
 
     Summary:

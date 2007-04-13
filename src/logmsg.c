@@ -61,7 +61,7 @@ log_stamp_format(LogStamp *stamp, GString *target, gint ts_format, glong zone_of
   else
     target_zone_offset = stamp->zone_offset;
 
-  t = stamp->time.tv_sec - target_zone_offset;
+  t = stamp->time.tv_sec + target_zone_offset;
   if (!(tm = gmtime(&t))) 
     {
       /* this should never happen */
@@ -220,7 +220,7 @@ log_msg_parse(LogMessage *self, gchar *data, gint length, guint flags)
           
           hours = (*p - '0') * 10 + *(p+1) - '0';
           mins = (*(p+3) - '0') * 10 + *(p+4) - '0';
-          if (hours <= 12 && mins <= 60)
+          if (hours <= 24 && mins <= 60)
             self->stamp.zone_offset = sign * (hours * 3600 + mins * 60);
           else
             self->stamp.zone_offset = get_local_timezone_ofs(now); /* assume local timezone */
