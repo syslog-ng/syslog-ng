@@ -2,6 +2,36 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-08-30 07:35:56 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-54
+
+    Summary:
+      fixed template-escape processing for inline templates
+    Revision:
+      syslog-ng--mainline--2.0--patch-54
+
+    2005-08-30  Balazs Scheidler <bazsi@balabit.hu>
+    
+    	* src/affile.c (affile_dd_set_file_template,
+    	affile_dd_set_template_escape, affile_dd_set_fsync): removed as
+    	templates are logwriter specific options,
+    	(affile_dd_new): do not allocate 'templates' variable,
+    	(affile_dd_free): do not free 'templates'
+    
+    	* src/affile.h (AFFileDestDriver): removed template variable as it
+    	was not used
+    
+    	* src/cfg-grammar.y (dest_writer_option): template_escape and fsync
+    	were erroneously calling affile specific functions, fixed that
+    
+    	* src/logwriter.c (log_writer_options_set_template_escape): new function,
+    	basically transformed from affile_dd_set_template_escape
+    
+
+    modified files:
+     ChangeLog src/affile.c src/affile.h src/cfg-grammar.y
+     src/logwriter.c
+
+
 2005-08-29 07:56:11 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-53
 
     Summary:

@@ -412,6 +412,19 @@ log_writer_options_defaults(LogWriterOptions *options)
   options->zone_offset = -1;
 }
 
+void 
+log_writer_options_set_template_escape(LogWriterOptions *options, gboolean enable)
+{
+  if (options->template && options->template->def_inline)
+    {
+      log_template_set_escape(options->template, enable);
+    }
+  else
+    {
+      msg_notice("Macro escaping can only be specified for inline templates", NULL);
+    }
+}
+
 void
 log_writer_options_init(LogWriterOptions *options, GlobalConfig *cfg, gboolean fixed_stamp)
 {

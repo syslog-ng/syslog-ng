@@ -367,35 +367,6 @@ affile_dd_set_create_dirs(LogDriver *s, gboolean create_dirs)
     self->flags &= ~AFFILE_CREATE_DIRS;
 }
 
-void 
-affile_dd_set_file_template(LogDriver *s, gchar *template)
-{
-  AFFileDestDriver *self = (AFFileDestDriver *) s;
-  
-  g_string_assign(self->template, template);
-}
-
-void 
-affile_dd_set_template_escape(LogDriver *s, gboolean enable)
-{
-  AFFileDestDriver *self = (AFFileDestDriver *) s;
-
-  if (self->writer_options.template && self->writer_options.template->def_inline)
-    {
-      log_template_set_escape(self->writer_options.template, enable);
-    }
-  else
-    {
-      msg_notice("Macro escaping can only be specified for inline templates", NULL);
-    }
-}
-
-void 
-affile_dd_set_fsync(LogDriver *s G_GNUC_UNUSED, gboolean enable G_GNUC_UNUSED)
-{
-  msg_error("fsync() does not work yet", NULL);
-}
-
 static time_t reap_now = 0;
 
 static gboolean
@@ -559,7 +530,6 @@ affile_dd_free(LogPipe *s)
   AFFileDestDriver *self = (AFFileDestDriver *) s;
   
   log_template_unref(self->filename_template);
-  g_string_free(self->template, TRUE);
   log_pipe_unref(self->writer);
   if (self->writer_hash)
     g_hash_table_destroy(self->writer_hash);
@@ -579,7 +549,6 @@ affile_dd_new(gchar *filename, guint32 flags)
   self->super.super.queue = affile_dd_queue;
   self->super.super.free_fn = affile_dd_free;
   self->filename_template = log_template_new(NULL, filename);
-  self->template = g_string_sized_new(0);
   self->flags = flags;
   self->file_uid = self->file_gid = -1;
   self->file_perm = -1;

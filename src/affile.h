@@ -50,7 +50,6 @@ typedef struct _AFFileDestDriver
   LogTemplate *filename_template;
   LogPipe *writer;
   guint32 flags;
-  GString *template;
   uid_t file_uid;
   gid_t file_gid;
   mode_t file_perm;
@@ -77,8 +76,6 @@ void affile_dd_set_dir_uid(LogDriver *s, const gchar *dir_uid);
 void affile_dd_set_dir_gid(LogDriver *s, const gchar *dir_gid);
 void affile_dd_set_dir_perm(LogDriver *s, mode_t dir_perm);
 void affile_dd_set_create_dirs(LogDriver *s, gboolean create_dirs);
-void affile_dd_set_file_template(LogDriver *s, gchar *template);
-void affile_dd_set_template_escape(LogDriver *s, gboolean enable);
 void affile_dd_set_fsync(LogDriver *s, gboolean enable);
 
 #endif

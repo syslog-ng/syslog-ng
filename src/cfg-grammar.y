@@ -624,8 +624,8 @@ dest_writer_option
 	                                            log_template_ref(last_writer_options->template);
 	                                          free($3);
 	                                        }
-	| KW_TEMPLATE_ESCAPE '(' yesno ')'	{ affile_dd_set_template_escape(last_driver, $3); }
-	| KW_FSYNC '(' yesno ')'		{ affile_dd_set_fsync(last_driver, $3); }
+	| KW_TEMPLATE_ESCAPE '(' yesno ')'	{ log_writer_options_set_template_escape(last_writer_options, $3); }
+	| KW_FSYNC '(' yesno ')'		{  msg_error("fsync() does not work yet", NULL); }
 	| KW_KEEP_TIMESTAMP '(' yesno ')'	{ last_writer_options->keep_timestamp = $3; }
 	| KW_TIME_ZONE '(' string ')'           { cfg_timezone_value($3, &last_writer_options->zone_offset); free($3); }
 	| KW_TS_FORMAT '(' string ')'		{ last_writer_options->ts_format = cfg_ts_format_value($3); free($3); }
