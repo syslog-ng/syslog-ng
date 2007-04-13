@@ -2,6 +2,24 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-02-28 16:45:16 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-19
+
+    Summary:
+      Fixed (filename, logoutput) template compilation
+    Revision:
+      syslog-ng--mainline--2.0--patch-19
+
+    2005-02-28  Balazs Scheidler <bazsi@balabit.hu>
+    
+    	* src/templates.c (log_template_compile, log_template_format): fixed
+    	a problem in template comilation as it messed up the formatted string
+    
+
+    modified files:
+     ChangeLog configure.in src/Makefile.am src/syslog-ng.conf
+     src/templates.c tests/unit/Makefile.am
+
+
 2005-02-28 08:57:20 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-18
 
     Summary:

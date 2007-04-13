@@ -1,9 +1,12 @@
 YFLAGS=@YFLAGS@
 
 sbin_PROGRAMS = syslog-ng
+noinst_LIBRARIES = libsyslog-ng.a
 
-syslog_ng_SOURCES = \
-	main.c misc.c utils.c messages.c gsockaddr.c syslog-names.c macros.c \
+syslog_ng_SOURCES = main.c
+syslog_ng_LDADD = libsyslog-ng.a
+libsyslog_ng_a_SOURCES = \
+	misc.c utils.c messages.c gsockaddr.c syslog-names.c macros.c \
 	logmsg.c \
 	cfg.c logpipe.c driver.c sgroup.c dgroup.c center.c filter.c \
 	logsource.c logreader.c logwriter.c \

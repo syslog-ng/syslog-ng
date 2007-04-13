@@ -55,15 +55,6 @@ log_template_compile(LogTemplate *self)
     {
       if (*p == '$')
         {
-          if (last_macro != M_NONE)
-            {
-              e = g_new0(LogTemplateElem, 1);
-              e->macro = last_macro;
-              e->text = last_text;
-              self->compiled_template = g_list_prepend(self->compiled_template, e);
-              last_macro = M_NONE;
-              last_text = NULL;
-            }
           p++;
           /* macro reference */
           if (*p >= '0' && *p <= '9')
@@ -90,7 +81,16 @@ log_template_compile(LogTemplate *self)
                 }
               last_macro = log_macro_lookup(start, p - start);
             }
-
+          if (last_macro != M_NONE)
+            {
+              e = g_new0(LogTemplateElem, 1);
+              e->macro = last_macro;
+              e->text = last_text;
+              self->compiled_template = g_list_prepend(self->compiled_template, e);
+              last_macro = M_NONE;
+              last_text = NULL;
+            }
+          
         }
       else
         {
@@ -122,6 +122,10 @@ log_template_format(LogTemplate *self, LogMessage *lm, guint macro_flags, GStrin
   for (p = self->compiled_template; p; p = g_list_next(p))
     {
       e = (LogTemplateElem *) p->data;
+      if (e->text)
+        {
+          g_string_append(result, e->text->str);
+        }
       if (e->macro != M_NONE)
         {
           log_macro_expand(result, e->macro, 
@@ -129,10 +133,6 @@ log_template_format(LogTemplate *self, LogMessage *lm, guint macro_flags, GStrin
                            ((self->flags & LT_ESCAPE) ? MF_ESCAPE_RESULT : 0),
                            (self->flags & LT_TZ_SET) ? self->zone_offset : timezone,
                            lm);
-        }
-      if (e->text)
-        {
-          g_string_append(result, e->text->str);
         }
     }
 }
