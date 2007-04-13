@@ -14,9 +14,10 @@ class MessageSender:
                 self.sendMessage('%s %d %s' % (msg, counter, 'x' * 500))
 
 
-class UnixSender(MessageSender):
-    def __init__(self, sock_name, dgram=0, send_by_bytes=0, terminate_seq='\n', repeat=1000):
+class SocketSender(MessageSender):
+    def __init__(self, family, sock_name, dgram=0, send_by_bytes=0, terminate_seq='\n', repeat=1000):
         MessageSender.__init__(self, repeat)
+        self.family = family
         self.sock_name = sock_name
         self.sock = None
         self.dgram = dgram
@@ -25,9 +26,9 @@ class UnixSender(MessageSender):
         
     def initSender(self):
         if self.dgram:
-            self.sock = socket(AF_UNIX, SOCK_DGRAM)
+            self.sock = socket(self.family, SOCK_DGRAM)
         else:
-            self.sock = socket(AF_UNIX, SOCK_STREAM)
+            self.sock = socket(self.family, SOCK_STREAM)
         
         self.sock.connect(self.sock_name)
     
@@ -51,26 +52,36 @@ messages = (
 )
 
 senders = (
-    UnixSender('log-dgram', dgram=1),
-    UnixSender('log-dgram', dgram=1, terminate_seq='\0'),
-    UnixSender('log-dgram', dgram=1, terminate_seq='\0\n'),
-    UnixSender('log-stream', dgram=0),
-    UnixSender('log-stream', dgram=0, send_by_bytes=1),
+    SocketSender(AF_UNIX, 'log-dgram', dgram=1),
+    SocketSender(AF_UNIX, 'log-dgram', dgram=1, terminate_seq='\0'),
+    SocketSender(AF_UNIX, 'log-dgram', dgram=1, terminate_seq='\0\n'),
+    SocketSender(AF_UNIX, 'log-stream', dgram=0),
+    SocketSender(AF_UNIX, 'log-stream', dgram=0, send_by_bytes=1),
+    SocketSender(AF_INET, ('localhost', 2000), dgram=1),
+    SocketSender(AF_INET, ('localhost', 2000), dgram=1, terminate_seq='\0'),
+    SocketSender(AF_INET, ('localhost', 2000), dgram=1, terminate_seq='\0\n'),
+    SocketSender(AF_INET, ('localhost', 2000), dgram=0),
+    SocketSender(AF_INET, ('localhost', 2000), dgram=0, send_by_bytes=1),
 )
 
 conf = """
-source src { unix-stream("log-stream"); unix-dgram("log-dgram"); internal(); };
+source s_int { internal(); };
+source s_unix { unix-stream("log-stream"); unix-dgram("log-dgram");  };
+source s_inet { tcp(port(2000)); udp(port(2000)); };
 
 destination dst { file("test-output.log"); };
 
-log { source(src); destination(dst); };
+log { source(s_int); source(s_unix); source(s_inet); destination(dst); };
 """
 
 f = open('test.conf', 'w')
 f.write(conf)
 f.close()
 
-os.unlink('test-output.log')
+try:
+  os.unlink('test-output.log')
+except OSError:
+  pass
 rc = os.system('../../src/syslog-ng -f test.conf -p syslog-ng.pid')
 if rc != 0:
     print "Error in syslog-ng startup"

@@ -221,8 +221,6 @@ afsocket_sc_queue(LogPipe *s, LogMessage *msg, gint path_flags)
     {
       if (self->peer_addr)
         msg->saddr = g_sockaddr_ref(self->peer_addr);
-      else
-        msg_notice("Internal error, message without source address;", NULL);
     }
     
   log_pipe_queue(s->pipe_next, msg, path_flags);
@@ -427,9 +425,16 @@ afsocket_sd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
 
       
       /* set up listening source */
+      if (listen(sock, self->listen_backlog) < 0)
+        {
+          msg_error("Error during listen()",
+                    evt_tag_errno(EVT_TAG_OSERROR, errno),
+                    NULL);
+          close(sock);
+          return FALSE;
+        }
+
       self->fd = sock;
-      listen(sock, self->listen_backlog);
-      
       source = g_listen_source_new(self->fd);
       
       /* the listen_source references us, which is freed when the source is deleted */
@@ -437,6 +442,7 @@ afsocket_sd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
       g_source_set_callback(source, afsocket_sd_accept, self, (GDestroyNotify) log_pipe_unref);
       self->source_id = g_source_attach(source, NULL);
       g_source_unref(source);
+      res = TRUE;
     }
   else
     {

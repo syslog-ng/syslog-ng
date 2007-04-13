@@ -46,7 +46,9 @@ afinter_source_dispatch(GSource *source,
                         GSourceFunc callback,
                         gpointer user_data)
 {
-  ((void (*)(LogPipe *, LogMessage *))callback) ((LogPipe *) user_data, g_queue_pop_head(internal_msg_queue));
+  LogMessage *msg = g_queue_pop_head(internal_msg_queue);
+  if (msg)
+    ((void (*)(LogPipe *, LogMessage *))callback) ((LogPipe *) user_data, msg);
   return TRUE;
 }
 

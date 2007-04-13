@@ -2,6 +2,33 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-07-30 20:48:37 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-48
+
+    Summary:
+      further fixes to the previous patch to unify tcp/udp codepaths in afsocket, test program fixes
+    Revision:
+      syslog-ng--mainline--2.0--patch-48
+
+    2005-07-30  Balazs Scheidler <bazsi@balabit.hu>
+    
+    	* src/afinter.c (afinter_source_dispatch): do not dispatch message
+    	if it is NULL (might happen if several internal sources are defined)
+    
+    	* src/afsocket.c (afsocket_sc_queue): removed bogus internal error message,
+    	(afsocket_sd_init): added error handling around listen()
+    
+    	* tests/functional/func_test.py: added AF_INET testing (udp & tcp)
+    
+    NEWS
+    	* 
+    NEWS.hu
+    	* 
+
+    modified files:
+     ChangeLog src/afinter.c src/afsocket.c
+     tests/functional/func_test.py
+
+
 2005-07-30 20:20:50 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-47
 
     Summary:
