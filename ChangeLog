@@ -2,6 +2,22 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-04-27 08:09:44 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-30
+
+    Summary:
+      cleaned up tla inventory files
+    Revision:
+      syslog-ng--mainline--2.0--patch-30
+
+
+    new files:
+     .arch-ids/.arch-inventory.id .arch-inventory
+     src/.arch-ids/.arch-inventory.id src/.arch-inventory
+
+    modified files:
+     ChangeLog {arch}/=tagging-method
+
+
 2005-04-27 08:06:42 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-29
 
     Summary:
