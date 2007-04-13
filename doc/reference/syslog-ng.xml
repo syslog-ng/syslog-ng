@@ -175,6 +175,9 @@
 	and of course may not clash with any of the reserved words
 	(in case you had a nameclash, simply enclose the identifier
 	in quotation marks)
+	
+	<note>The list of drivers might be empty, in this case the source
+        will not actually receive messages.</note>
       </para>
       
       <para>
@@ -351,6 +354,9 @@
 	  destination &lt;identifier&gt; { destination-driver(params); destination-driver(params); ... };	
 	</synopsis>
 	
+	<note>The list of drivers might be empty, in this case all messages
+        sent to the destination will be discarded. Effectively this is equivalent
+        to not putting a destination to your log statement.</note>
       </para>
       <para>
 	<table>

@@ -2,6 +2,20 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-10-18 15:40:14 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-63
+
+    Summary:
+      added a note on empty source/destination statements
+    Revision:
+      syslog-ng--mainline--2.0--patch-63
+
+    
+    
+
+    modified files:
+     ChangeLog doc/reference/syslog-ng.xml
+
+
 2005-10-15 16:36:43 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-62
 
     Summary:
