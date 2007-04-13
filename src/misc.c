@@ -110,11 +110,10 @@ get_local_timezone_ofs(time_t when)
   tzoff += (ltm.tm_min - gtm->tm_min) * 60;
   tzoff += ltm.tm_sec - gtm->tm_sec;
   
-  /* normalize within +/- 12 hours */
-  if (tzoff < -12*3600)
-    tzoff += 24*3600;
-  else if (tzoff > 12*3600)
-    tzoff -= 24*3600;
+  if (tzoff > 0 && (ltm.tm_year < gtm->tm_year || ltm.tm_mon < gtm->tm_mon || ltm.tm_mday < gtm->tm_mday))
+    tzoff -= 86400;
+  else if (tzoff < 0 && (ltm.tm_year > gtm->tm_year || ltm.tm_mon > gtm->tm_mon || ltm.tm_mday > gtm->tm_mday))
+    tzoff += 86400;
   
   return tzoff;
 #endif

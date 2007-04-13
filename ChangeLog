@@ -2,6 +2,28 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-11-23 16:31:48 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-71
+
+    Summary:
+      fixed timezone calculation
+    Revision:
+      syslog-ng--mainline--2.0--patch-71
+
+    2005-11-23  Balazs Scheidler <bazsi@balabit.hu>
+    
+    	* src/misc (get_local_timezone_ofs): fixed timezone calculation again,
+    
+    	* tests/unit/test_zone.c: added some missing testcases for timezones
+    	over 12 hours (New Zealand)
+    
+    	* tests/unit/test_filters.c: fixed facility testing as the code was changed
+    
+
+    modified files:
+     ChangeLog src/misc.c tests/unit/test_filters.c
+     tests/unit/test_zone.c
+
+
 2005-11-15 15:35:15 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-70
 
     Summary:

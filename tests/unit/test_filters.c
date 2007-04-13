@@ -73,8 +73,8 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, filter_facility_new(facility_bits("daemon")), 0);
   testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, filter_facility_new(facility_bits("daemon") | facility_bits("user")), 1);
   testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, filter_facility_new(facility_bits("uucp") | facility_bits("local4")), 0);
-  testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, filter_facility_new(0x80000000 | LOG_USER), 1);
-  testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, filter_facility_new(0x80000000 | LOG_DAEMON), 0);
+  testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, filter_facility_new(0x80000000 | (LOG_USER >> 3)), 1);
+  testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, filter_facility_new(0x80000000 | (LOG_DAEMON >> 3)), 0);
 
   testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, filter_level_new(level_bits("debug") | level_bits("emerg")), 1);
   testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, filter_level_new(level_bits("emerg")), 0);
