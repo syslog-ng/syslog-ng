@@ -2,6 +2,20 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-12-20 20:52:38 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-81
+
+    Summary:
+      perparations for an 1.9.8 release
+    Revision:
+      syslog-ng--mainline--2.0--patch-81
+
+    
+    
+
+    modified files:
+     ChangeLog NEWS VERSION
+
+
 2005-12-20 20:34:51 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-80
 
     Summary:

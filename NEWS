@@ -1,3 +1,9 @@
+1.9.8
+	Tue, 20 Dec 2005 21:51:45 +0100
+
+	* Fixed a show-stopper problem in UDP destinations.
+	* Fixed a local-time calculation problem.
+
 1.9.7
 	Sat, 03 Dec 2005 16:41:58 +0100
 
