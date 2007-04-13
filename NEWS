@@ -1,3 +1,14 @@
+News for the 1.9.4 release
+	Sun, 03 Apr 2005 12:51:55 +0200
+
+	Fixed a macro expansion problem back in february, but did not 
+	have time to release it until now. Most important changes in
+	this release:
+
+	* Added a fix for the macro expansion problem.
+	* Added better error reporting to the configure script.
+
+
 News for the 1.9.3 release
 	Sat, 22 Jan 2005 01:38:07 +0100
 
