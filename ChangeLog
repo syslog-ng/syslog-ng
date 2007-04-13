@@ -2,6 +2,26 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-07-26 09:23:24 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-44
+
+    Summary:
+      use the same code path for SOCK_STREAM and SOCK_DGRAM sockets 
+    Revision:
+      syslog-ng--mainline--2.0--patch-44
+
+    2005-07-26  Balazs Scheidler <bazsi@balabit.hu>
+    
+    	* src/afsocket.c (afsocket_sd_init, afsocket_sd_deinit): unified
+    	SOCK_STREAM and SOCK_DGRAM code-paths, do not use a separate reader
+    	for SOCK_DGRAM, use AFSocketSourceConnection instead for both types,
+    	(afsocket_sd_format_persist_name): new function, to format a
+    	persistent config name, instead of doing it inline every time
+    
+
+    modified files:
+     ChangeLog src/afsocket.c src/afsocket.h
+
+
 2005-07-26 09:21:15 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-43
 
     Summary:

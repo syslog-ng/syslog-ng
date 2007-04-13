@@ -191,7 +191,7 @@ afsocket_sc_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
 {
   AFSocketSourceConnection *self = (AFSocketSourceConnection *) s;
 
-  self->reader = log_reader_new(fd_read_new(self->sock, 0), 
+  self->reader = log_reader_new(fd_read_new(self->sock, (self->owner->flags & AFSOCKET_DGRAM) ? FR_RECV : 0), 
                                 (self->owner->flags & AFSOCKET_LOCAL) ? LR_LOCAL : 0 | 
                                 (self->owner->flags & AFSOCKET_DGRAM) ? LR_PKTTERM : 0 |
                                 (self->owner->flags & AFSOCKET_PROTO_RFC3164) ? LR_STRICT : 0, 
@@ -218,7 +218,13 @@ afsocket_sc_queue(LogPipe *s, LogMessage *msg, gint path_flags)
   AFSocketSourceConnection *self = (AFSocketSourceConnection *) s;
   
   if (!msg->saddr)
-    msg->saddr = g_sockaddr_ref(self->peer_addr);
+    {
+      if (self->peer_addr)
+        msg->saddr = g_sockaddr_ref(self->peer_addr);
+      else
+        msg_notice("Internal error, message without source address;", NULL);
+    }
+    
   log_pipe_queue(s->pipe_next, msg, path_flags);
 }
 
@@ -302,6 +308,19 @@ afsocket_sd_set_max_connections(LogDriver *s, gint max_connections)
   self->max_connections = max_connections;
 }
 
+static inline gchar *
+afsocket_sd_format_persist_name(AFSocketSourceDriver *self, gboolean listener_name)
+{
+  static gchar persist_name[128];
+  gchar buf[64];
+  
+  g_snprintf(persist_name, sizeof(persist_name),
+             listener_name ? "afsocket_sd_listen_fd(%s,%s)" : "afsocket_sd_connections(%s,%s)",
+             !!(self->flags & AFSOCKET_STREAM) ? "stream" : "dgram",
+             g_sockaddr_format(self->bind_addr, buf, sizeof(buf)));
+  return persist_name;
+}
+
 gboolean 
 afsocket_sd_process_connection(AFSocketSourceDriver *self, GSockAddr *peer_addr, gint fd)
 {
@@ -371,32 +390,43 @@ gboolean
 afsocket_sd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
 {
   AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
-  gchar persist_name[256], buf[128];
   gint sock;
+  gboolean res = FALSE;
   
   log_reader_options_init(&self->reader_options, cfg);
   
-  g_snprintf(persist_name, sizeof(persist_name),
-             "afsocket_sd_listen_fd(%s,%s)",
-             !!(self->flags & AFSOCKET_STREAM) ? "stream" : "dgram",
-             g_sockaddr_format(self->bind_addr, buf, sizeof(buf)));
-
-  /* NOTE: this assumes that fd 0 will never be used for listening fds,
-   * main.c opens fd 0 so this assumption can hold */
-  
-  sock = GPOINTER_TO_UINT(persist_config_fetch(persist, persist_name)) - 1;
-  
-  if (sock == -1 && !afsocket_open_socket(self->bind_addr, !!(self->flags & AFSOCKET_STREAM), &sock))
+  /* fetch persistent connections first */  
+  if ((self->flags & AFSOCKET_KEEP_ALIVE))
     {
-      return FALSE;
+      GList *p;
+
+      self->connections = persist_config_fetch(persist, afsocket_sd_format_persist_name(self, FALSE));
+      for (p = self->connections; p; p = p->next)
+        {
+          log_pipe_append((LogPipe *) p->data, s);
+        }
     }
+
+  /* ok, we have connection list, check if we need to open a listener */
+  sock = -1;
   if (self->flags & AFSOCKET_STREAM)
     {
       GSource *source;
       
-      GList *p;
+      if (self->flags & AFSOCKET_KEEP_ALIVE)
+        {
+          /* NOTE: this assumes that fd 0 will never be used for listening fds,
+           * main.c opens fd 0 so this assumption can hold */
+          sock = GPOINTER_TO_UINT(persist_config_fetch(persist, afsocket_sd_format_persist_name(self, TRUE))) - 1;
+        }
+
+      if (sock == -1 && !afsocket_open_socket(self->bind_addr, !!(self->flags & AFSOCKET_STREAM), &sock))
+        {
+          return FALSE;
+        }
+
       
-      /* create listening source */
+      /* set up listening source */
       self->fd = sock;
       listen(sock, self->listen_backlog);
       
@@ -407,26 +437,21 @@ afsocket_sd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
       g_source_set_callback(source, afsocket_sd_accept, self, (GDestroyNotify) log_pipe_unref);
       self->source_id = g_source_attach(source, NULL);
       g_source_unref(source);
-      
-      /* fetch kept alive connections */
-      
-      g_snprintf(persist_name, sizeof(persist_name),
-                 "afsocket_sd_connections(%s)",
-                 g_sockaddr_format(self->bind_addr, buf, sizeof(buf)));
-      self->connections = persist_config_fetch(persist, persist_name);
-      for (p = self->connections; p; p = p->next)
-        {
-          log_pipe_append((LogPipe *) p->data, s);
-        }
     }
   else
     {
-      self->fd = sock;
-      self->reader = log_reader_new(fd_read_new(sock, FR_RECV | FR_DONTCLOSE), (self->flags & AFSOCKET_LOCAL) ? LR_LOCAL : 0, &self->super.super, &self->reader_options);
-      log_pipe_append(self->reader, &self->super.super);
-      log_pipe_init(self->reader, NULL, NULL);
+      if (!(self->flags & AFSOCKET_KEEP_ALIVE) || !self->connections || !afsocket_open_socket(self->bind_addr, !!(self->flags & AFSOCKET_STREAM), &sock))
+        {
+          /* we could not recover persistent listener and could not open one either */
+          return FALSE;
+        }
+      self->fd = -1;
+      
+      /* we either have self->connections != NULL, or sock contains a new fd */
+      if (self->connections || afsocket_sd_process_connection(self, NULL, sock))
+        res = TRUE;
     }
-  return TRUE;
+  return res;
 }
 
 static void
@@ -440,30 +465,32 @@ gboolean
 afsocket_sd_deinit(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
 {
   AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
-  gchar persist_name[256], buf[128];
   
-  if (self->flags & AFSOCKET_STREAM)
+  if ((self->flags & AFSOCKET_KEEP_ALIVE) == 0 || !persist)
     {
       GList *p, *next;
+
+      /* we don't store anything across HUPs */
+      for (p = self->connections; p; p = next)
+        {
+          next = p->next;
+          afsocket_sd_kill_connection((AFSocketSourceConnection *) p->data);
+          g_list_free_1(p);
+        }
+    }
+  else
+    {
+      /* for AFSOCKET_STREAM source drivers this is a list, for
+       * AFSOCKET_DGRAM this is a single connection */
       
-      if ((self->flags & AFSOCKET_KEEP_ALIVE) == 0 || !persist)
-        {
-          for (p = self->connections; p; p = next)
-            {
-              next = p->next;
-              afsocket_sd_kill_connection((AFSocketSourceConnection *) p->data);
-              g_list_free_1(p);
-            }
-        }
-      else
-        {
-          
-          g_snprintf(persist_name, sizeof(persist_name), 
-                     "afsocket_sd_connections(%s)",
-                     g_sockaddr_format(self->bind_addr, buf, sizeof(buf)));
-          persist_config_add(persist, persist_name, self->connections, (GDestroyNotify) afsocket_sd_kill_connection);
-        }
-      self->connections = NULL;
+      persist_config_add(persist, afsocket_sd_format_persist_name(self, FALSE), self->connections, (GDestroyNotify) afsocket_sd_kill_connection);
+    }
+  self->connections = NULL;
+
+
+  if (self->flags & AFSOCKET_STREAM)
+    {
+      
       g_source_remove(self->source_id);
       self->source_id = 0;
       if ((self->flags & AFSOCKET_LISTENER_KEEP_ALIVE) == 0)
@@ -473,26 +500,22 @@ afsocket_sd_deinit(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
                       NULL);
           close(self->fd);
         }
+      else
+        {
+          /* NOTE: the fd is incremented by one when added to persistent config
+           * as persist config cannot store NULL */
+
+          persist_config_add(persist, afsocket_sd_format_persist_name(self, TRUE), GUINT_TO_POINTER(self->fd + 1), afsocket_sd_close_fd);
+        }
     }
   else if (self->flags & AFSOCKET_DGRAM)
     {
-      log_pipe_deinit(self->reader, NULL, NULL);
-      log_pipe_unref(self->reader);
-      self->reader = NULL;
+      /* we don't need to close the listening fd here as we have a
+       * single connection which will close it */
+      
+      ;
     }
   
-  if (self->flags & AFSOCKET_LISTENER_KEEP_ALIVE)
-    {
-      g_snprintf(persist_name, sizeof(persist_name),
-                 "afsocket_sd_listen_fd(%s,%s)",
-                 !!(self->flags & AFSOCKET_STREAM) ? "stream" : "dgram",
-                 g_sockaddr_format(self->bind_addr, buf, sizeof(buf)));
-                 
-      /* NOTE: the fd is incremented by one when added to persistent config
-       * as persist config cannot store NULL */
-
-      persist_config_add(persist, persist_name, GUINT_TO_POINTER(self->fd + 1), afsocket_sd_close_fd);
-    }
   
   return TRUE;
 }
@@ -518,8 +541,6 @@ afsocket_sd_free_instance(AFSocketSourceDriver *self)
 {
   g_sockaddr_unref(self->bind_addr);
   self->bind_addr = NULL;
-  
-  g_assert(!self->reader);
   
   log_drv_free_instance(&self->super);
 }

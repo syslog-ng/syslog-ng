@@ -45,7 +45,6 @@ struct _AFSocketSourceDriver
   guint32 flags;
   gint fd;
   guint source_id;
-  LogPipe *reader;
   LogReaderOptions reader_options;
 
   GSockAddr *bind_addr;
