@@ -2,6 +2,25 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-12-20 20:34:51 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-80
+
+    Summary:
+      fixed UDP destination driver initialization
+    Revision:
+      syslog-ng--mainline--2.0--patch-80
+
+    2005-12-20  Balazs Scheidler <bazsi@balabit.hu>
+    
+    	* src/afsocket.c (afsocket_dd_connected): only check socket error
+    	state for stream sockets as UDP connections succeed immediately,
+    	(afsocket_dd_reconnect): if g_connect returns immediate success (UDP
+    	connections) set self->fd to sock
+    
+
+    modified files:
+     ChangeLog src/afsocket.c
+
+
 2005-12-05 20:24:45 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-79
 
     Summary:

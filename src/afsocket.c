@@ -622,27 +622,30 @@ afsocket_dd_connected(AFSocketDestDriver *self)
   int error = 0;
   socklen_t errorlen = sizeof(error);
   
-  if (getsockopt(self->fd, SOL_SOCKET, SO_ERROR, &error, &errorlen) == -1)
+  if (self->flags & AFSOCKET_STREAM)
     {
-      msg_error("getsockopt(SOL_SOCKET, SO_ERROR) failed for connecting socket",
-                evt_tag_errno(EVT_TAG_OSERROR, errno),
-                evt_tag_int("reconnect", self->time_reopen),
-                NULL);
-      close(self->fd);
+      if (getsockopt(self->fd, SOL_SOCKET, SO_ERROR, &error, &errorlen) == -1)
+        {
+          msg_error("getsockopt(SOL_SOCKET, SO_ERROR) failed for connecting socket",
+                    evt_tag_errno(EVT_TAG_OSERROR, errno),
+                    evt_tag_int("reconnect", self->time_reopen),
+                    NULL);
+          close(self->fd);
 
-      self->reconnect_timer = g_timeout_add(self->time_reopen * 1000, afsocket_dd_reconnect_timer, self);
-      return FALSE;
-    }
-  if (error)
-    {
-      msg_error("Connection failed",
-                evt_tag_errno(EVT_TAG_OSERROR, error),
-                evt_tag_int("reconnect", self->time_reopen),
-                NULL);
-      close(self->fd);
+          self->reconnect_timer = g_timeout_add(self->time_reopen * 1000, afsocket_dd_reconnect_timer, self);
+          return FALSE;
+        }
+      if (error)
+        {
+          msg_error("Connection failed",
+                    evt_tag_errno(EVT_TAG_OSERROR, error),
+                    evt_tag_int("reconnect", self->time_reopen),
+                    NULL);
+          close(self->fd);
 
-      self->reconnect_timer = g_timeout_add(self->time_reopen * 1000, afsocket_dd_reconnect_timer, self);
-      return FALSE;
+          self->reconnect_timer = g_timeout_add(self->time_reopen * 1000, afsocket_dd_reconnect_timer, self);
+          return FALSE;
+        }
     }
   msg_verbose("Syslog connection established",
               evt_tag_str("from", g_sockaddr_format(self->bind_addr, buf1, sizeof(buf1))),
@@ -672,6 +675,7 @@ afsocket_dd_reconnect(AFSocketDestDriver *self)
   rc = g_connect(sock, self->dest_addr);
   if (rc == G_IO_STATUS_NORMAL)
     {
+      self->fd = sock;
       afsocket_dd_connected(self);
     }
   else if (rc == G_IO_STATUS_ERROR && errno == EINPROGRESS)
