@@ -2,6 +2,20 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-12-03 15:49:30 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-76
+
+    Summary:
+      minor documentation updates, updated NEWS, bumped VERSION to 1.9.7
+    Revision:
+      syslog-ng--mainline--2.0--patch-76
+
+    
+    
+
+    modified files:
+     ChangeLog NEWS VERSION doc/reference/syslog-ng.xml
+
+
 2005-12-03 15:29:36 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-75
 
     Summary:

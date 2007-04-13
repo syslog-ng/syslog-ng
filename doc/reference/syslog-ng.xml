@@ -1078,10 +1078,12 @@
 		<entry>flush_lines()</entry> 
 		<entry>number</entry>
 		<entry>
-		  This number controls how many lines if flushed to a
-                  destination at a time. Setting this number high, increases
-                  the time a given log message gets to a destination as it
-                  has to wait other lines to be written. The latency can be
+		  This number controls how many lines are flushed to a
+                  destination at a time. Syslog-ng waits for this number of
+                  lines to accumulate and sends them off in a single batch
+                  Setting this number high increases throughput as fully
+                  filled frames are sent to the network, but at the same
+                  time it increases message latency. The latency can be
                   limited by the use of the flush_timeout option.
 		</entry>
 		<entry>
@@ -1093,8 +1095,9 @@
 		<entry>flush_timeout()</entry> 
 		<entry>number</entry>
 		<entry>
-		  This option controls how much syslog-ng waits for lines to
-                  be flushed.
+		  This option controls how much time syslog-ng waits for lines to
+                  accumulate in its output buffer. See the flush_lines
+                  option for more information.
 		</entry>
 		<entry>
 		  Use global setting.
