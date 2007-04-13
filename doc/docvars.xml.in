@@ -1,0 +1,2 @@
+<!ENTITY syslogng_version "@VERSION@">
+<!ENTITY syslogng_revision "@SOURCE_REVISION@">

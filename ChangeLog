@@ -2,6 +2,25 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-04-16 11:12:27 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-27
+
+    Summary:
+      added dist.conf and added automatic substitution of some dynamic variables in the documentation
+    Revision:
+      syslog-ng--mainline--2.0--patch-27
+
+    
+    
+
+    new files:
+     .arch-ids/dist.conf.in.id dist.conf.in
+     doc/.arch-ids/docvars.xml.in.id doc/docvars.xml.in
+
+    modified files:
+     ChangeLog configure.in doc/Makefile.am
+     doc/reference/syslog-ng.xml
+
+
 2005-04-16 10:11:49 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-26
 
     Summary:

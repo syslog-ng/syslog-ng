@@ -10,10 +10,10 @@ EXTRA_DIST =  man/syslog-ng.8 man/syslog-ng.conf.5 \
 
 man_MANS = man/syslog-ng.8 man/syslog-ng.conf.5
 
-reference/syslog-ng.html.tar.gz: reference/syslog-ng.xml
+reference/syslog-ng.html.tar.gz: reference/syslog-ng.xml docvars.xml
 	(set -e; 						\
 	mkdir reference || /bin/true;				\
-	xsltproc -o reference/syslog-ng.html/index.html 	\
+	xsltproc --nonet --path $(top_builddir)/doc -o reference/syslog-ng.html/index.html 	\
 		$(top_srcdir)/doc/reference/syslog-ng.xsl 	\
 		$(top_srcdir)/doc/reference/syslog-ng.xml;	\
 	cd reference; 						\

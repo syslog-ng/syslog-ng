@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="iso-8859-2"?>
-<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN" "/usr/share/sgml/docbook/xml/4.3/docbookx.dtd">
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN" "/usr/share/sgml/docbook/xml/4.3/docbookx.dtd" [
+  <!ENTITY % docvars SYSTEM "../docvars.xml">
+  %docvars;
+]>
 
 <book>
   <bookinfo>
@@ -9,7 +12,7 @@
 	<firstname>Bal&aacute;zs</firstname> <surname>Scheidler</surname>
       </author>
     </authorgroup>
-    <releaseinfo>Version 1.9.2</releaseinfo>
+    <releaseinfo>&syslogng_version; (&syslogng_revision;)</releaseinfo>
     <copyright><year>1999-2005</year><holder>Bal&aacute;zs Scheidler</holder></copyright>
     <legalnotice>
       <para>

@@ -1,11 +1,29 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(src/main.c)
 
+dnl ***************************************************************************
+dnl definitions
+
+PACKAGE="syslog-ng"
 VERSION="1.9.4"
+
+dnl ***************************************************************************
+dnl dependencies
+
 GLIB_VERSION="2.2"
 EVTLOG_VERSION="0.2"
 
-AM_INIT_AUTOMAKE(syslog-ng, $VERSION)
+dnl ***************************************************************************
+dnl Initial setup
+
+if test -r $srcdir/dist.conf; then
+        # read defaults, dist.conf does not change
+        # values for parameters that are already set
+        source $srcdir/dist.conf
+fi
+
+
+AM_INIT_AUTOMAKE($PACKAGE, $VERSION, no-define)
 if test -n "$SNAPSHOT_VERSION"; then
 	VERSION=$VERSION+$SNAPSHOT_VERSION
 fi
@@ -135,9 +153,14 @@ AC_SUBST(DEPS_CPPFLAGS)
 AC_SUBST(DEPS_LIBS)
 AC_SUBST(YFLAGS)
 
-AC_OUTPUT(Makefile 
+AC_SUBST(SNAPSHOT_VERSION)
+AC_SUBST(SOURCE_REVISION)
+
+AC_OUTPUT(dist.conf
+          Makefile 
 	  src/Makefile 
 	  doc/Makefile
+          doc/docvars.xml
 	  tests/Makefile 
           tests/unit/Makefile
           tests/functional/Makefile)
