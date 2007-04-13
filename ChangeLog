@@ -2,6 +2,20 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-12-03 16:42:19 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-78
+
+    Summary:
+      include VERSION in the dist
+    Revision:
+      syslog-ng--mainline--2.0--patch-78
+
+    
+    
+
+    modified files:
+     ChangeLog Makefile.am
+
+
 2005-12-03 16:34:15 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-77
 
     Summary:
