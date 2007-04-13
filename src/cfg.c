@@ -1,3 +1,26 @@
+/*
+ * Copyright (c) 2002, 2003, 2004 BalaBit IT Ltd, Budapest, Hungary
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation.
+ *
+ * Note that this permission is granted for only version 2 of the GPL.
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ */
+
 #include "cfg.h"
 #include "sgroup.h"
 #include "dgroup.h"
@@ -221,7 +244,7 @@ cfg_new(gchar *fname)
   self->dns_cache_expire = 3600;
   self->dns_cache_expire_failed = 60;
   
-  self->ts_format = TS_FMT_ISO;
+  self->ts_format = TS_FMT_BSD;
   self->tz_convert = TZ_CNV_LOCAL;
   self->keep_timestamp = FALSE;
 
@@ -319,9 +342,9 @@ cfg_reload_config(gchar *fname, GlobalConfig *cfg)
   new_cfg = cfg_new(fname);
   if (!new_cfg)
     {
-      msg_verbose("Error parsing configuration",
-                  evt_tag_str(EVT_TAG_FILENAME, fname),
-                  NULL);
+      msg_error("Error parsing configuration",
+                evt_tag_str(EVT_TAG_FILENAME, fname),
+                NULL);
       return cfg;
     }
 

@@ -1,3 +1,26 @@
+/*
+ * Copyright (c) 2002, 2003, 2004 BalaBit IT Ltd, Budapest, Hungary
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation.
+ *
+ * Note that this permission is granted for only version 2 of the GPL.
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ */
+
 #ifndef AFSOCKET_H_INCLUDED
 #define AFSOCKET_H_INCLUDED
 
@@ -36,7 +59,11 @@ struct _AFSocketSourceDriver
 void afsocket_sd_set_keep_alive(LogDriver *self, gint enable);
 void afsocket_sd_set_max_connections(LogDriver *self, gint max_connections);
 
+gboolean afsocket_sd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist);
+gboolean afsocket_sd_deinit(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist);
+
 void afsocket_sd_init_instance(AFSocketSourceDriver *self, guint32 flags);
+void afsocket_sd_free_instance(AFSocketSourceDriver *self);
 
 typedef struct _AFSocketDestDriver
 {

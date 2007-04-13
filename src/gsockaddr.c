@@ -1,17 +1,25 @@
-/***************************************************************************
+/*
+ * Copyright (c) 2002, 2003, 2004 BalaBit IT Ltd, Budapest, Hungary
  *
- * Copyright (c) 2000, 2001 BalaBit IT Ltd, Budapest, Hungary
- * All rights reserved.
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation.
  *
- * $Id: gsockaddr.c,v 1.3 2002/11/15 08:10:36 bazsi Exp $
+ * Note that this permission is granted for only version 2 of the GPL.
  *
- * Author  : Bazsi
- * Auditor : kisza
- * Last audited version: 1.11
- * Notes:
- *   - process identifier in warnings
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
  *
- ***************************************************************************/
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ */
 
 #include <gsockaddr.h>
 
@@ -26,20 +34,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-/*+
-
-  Thread friendly version of inet_ntoa(), converts an IP address to
-  human readable form.
-
-  Parameters:
-    buf        store result in this buffer
-    bufsize    the available space in buf
-    a          address to convert.
-
-  Returns:
-    the address of buf
-
-  +*/
+/**
+ * g_inet_ntoa:
+ * @buf:        store result in this buffer
+ * @bufsize:    the available space in buf
+ * @a:          address to convert.
+ * 
+ * Thread friendly version of inet_ntoa(), converts an IP address to
+ * human readable form. Returns: the address of buf
+ **/
 gchar *
 g_inet_ntoa(char *buf, size_t bufsize, struct in_addr a)
 {
@@ -59,20 +62,15 @@ g_inet_aton(char *buf, struct in_addr *a)
   return inet_aton(buf, a);
 }
 
-/*+
-
-  A thin interface around bind() using a GSockAddr structure for
-  socket address. It enables the NET_BIND_SERVICE capability (should be
-  in the permitted set.
-
-  Parameters:
-    fd         fd to bind
-    addr       address to bind to
-
-  Returns:
-    glib style I/O error
-
-  +*/
+/**
+ * g_bind:
+ * @fd:         fd to bind
+ * @addr:       address to bind to
+ * 
+ * A thin interface around bind() using a GSockAddr structure for
+ * socket address. It enables the NET_BIND_SERVICE capability (should be
+ * in the permitted set.
+ **/
 GIOStatus 
 g_bind(int fd, GSockAddr *addr)
 {
@@ -94,20 +92,17 @@ g_bind(int fd, GSockAddr *addr)
   return rc;
 }
 
-/*+
-
-  Accept a connection on the given fd, returning the newfd and the
-  address of the client in a Zorp SockAddr structure.
-
-  Parameters:
-    fd         accept connection on this socket
-    newfd      fd of the accepted connection
-    addr       store the address of the client here
-
-  Returns:
-    glib style I/O error
-
-  +*/
+/**
+ * g_accept:
+ * @fd:         accept connection on this socket
+ * @newfd:      fd of the accepted connection
+ * @addr:       store the address of the client here
+ * 
+ * Accept a connection on the given fd, returning the newfd and the
+ * address of the client in a Zorp SockAddr structure.
+ *
+ *  Returns: glib style I/O error
+ **/
 GIOStatus 
 g_accept(int fd, int *newfd, GSockAddr **addr)
 {
@@ -130,18 +125,15 @@ g_accept(int fd, int *newfd, GSockAddr **addr)
   return G_IO_STATUS_NORMAL;
 }
 
-/*+
-
-  Connect a socket using Zorp style GSockAddr structure.
-
-  Parameters:
-    fd         socket to connect to
-    remote     remote address
-
-  Returns:
-    glib style I/O error
-
-  +*/
+/**
+ * g_connect:
+ * @fd: socket to connect 
+ * @remote:  remote address
+ * 
+ * Connect a socket using Zorp style GSockAddr structure.
+ *
+ * Returns: glib style I/O error
+ **/
 GIOStatus 
 g_connect(int fd, GSockAddr *remote)
 {

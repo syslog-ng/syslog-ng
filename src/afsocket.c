@@ -1,3 +1,26 @@
+/*
+ * Copyright (c) 2002, 2003, 2004 BalaBit IT Ltd, Budapest, Hungary
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation.
+ *
+ * Note that this permission is granted for only version 2 of the GPL.
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ */
+
 #include "afsocket.h"
 #include "messages.h"
 #include "driver.h"
@@ -184,6 +207,8 @@ afsocket_sc_deinit(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
   AFSocketSourceConnection *self = (AFSocketSourceConnection *) s;
   
   log_pipe_deinit(self->reader, NULL, NULL);
+  log_pipe_unref(self->reader);
+  self->reader = NULL;
   return TRUE;
 }
 
@@ -207,8 +232,6 @@ afsocket_sc_notify(LogPipe *s, LogPipe *sender, gint notify_code, gpointer user_
     case NC_CLOSE:
     case NC_READ_ERROR:
       {
-        log_pipe_deinit(sender, NULL, NULL);
-        log_pipe_unref(sender);
         afsocket_sd_close_connection(self->owner, self);
         break;
       }
@@ -331,6 +354,7 @@ afsocket_sd_accept(gpointer s)
 static void
 afsocket_sd_close_connection(AFSocketSourceDriver *self, AFSocketSourceConnection *sc)
 {
+  log_pipe_deinit(&sc->super, NULL, NULL);
   log_pipe_unref(&sc->super);
 }
 
@@ -341,7 +365,7 @@ afsocket_sd_kill_connection(AFSocketSourceConnection *sc)
   log_pipe_unref(&sc->super);
 }
 
-static gboolean
+gboolean
 afsocket_sd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
 {
   AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
@@ -410,7 +434,7 @@ afsocket_sd_close_fd(gpointer value)
   close(fd);
 }
 
-static gboolean
+gboolean
 afsocket_sd_deinit(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
 {
   AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
@@ -479,6 +503,7 @@ afsocket_sd_notify(LogPipe *s, LogPipe *sender, gint notify_code, gpointer user_
     case NC_CLOSE:
     case NC_READ_ERROR:
       {
+        g_assert(0);
         log_pipe_deinit(sender, NULL, NULL);
         log_pipe_unref(sender);
         break;
@@ -486,17 +511,23 @@ afsocket_sd_notify(LogPipe *s, LogPipe *sender, gint notify_code, gpointer user_
     }
 }
 
-static void
-afsocket_sd_free(LogPipe *s)
+void
+afsocket_sd_free_instance(AFSocketSourceDriver *self)
 {
-  AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
-
   g_sockaddr_unref(self->bind_addr);
   self->bind_addr = NULL;
   
   g_assert(!self->reader);
   
   log_drv_free_instance(&self->super);
+}
+
+static void
+afsocket_sd_free(LogPipe *s)
+{
+  AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
+  
+  afsocket_sd_free_instance(self);
   g_free(self);
 }
 
@@ -507,8 +538,8 @@ afsocket_sd_init_instance(AFSocketSourceDriver *self, guint32 flags)
   
   self->super.super.init = afsocket_sd_init;
   self->super.super.deinit = afsocket_sd_deinit;
-  self->super.super.queue = log_pipe_forward_msg;
   self->super.super.free_fn = afsocket_sd_free;
+  self->super.super.queue = log_pipe_forward_msg;
   self->super.super.notify = afsocket_sd_notify;
   self->max_connections = 10;
   self->listen_backlog = 255;

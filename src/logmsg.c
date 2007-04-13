@@ -1,3 +1,25 @@
+/*
+ * Copyright (c) 2002, 2003, 2004 BalaBit IT Ltd, Budapest, Hungary
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation.
+ *
+ * Note that this permission is granted for only version 2 of the GPL.
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ */
 #include "logmsg.h"
 #include "misc.h"
 #include "messages.h"
@@ -14,6 +36,16 @@
 static char aix_fwd_string[] = "Message forwarded from ";
 static char repeat_msg_string[] = "last message repeated";
 
+/** 
+ * log_stamp_format:
+ * @stamp: Timestamp to format
+ * @target: Target storage for formatted timestamp
+ * @ts_format: Specifies basic timestamp format (TS_FMT_BSD, TS_FMT_ISO)
+ * @tz_convert: Specifies timezone conversion
+ *
+ * Emits the formatted version of @stamp into @target as specified by
+ * @ts_format and @tz_convert. 
+ **/
 void
 log_stamp_format(LogStamp *stamp, GString *target, gint ts_format, gint tz_convert)
 {
@@ -78,6 +110,16 @@ log_stamp_format(LogStamp *stamp, GString *target, gint ts_format, gint tz_conve
 
 }
 
+/**
+ * log_msg_parse:
+ * @self: LogMessage instance to store parsed information into
+ * @data: message
+ * @length: length of the message pointed to by @data
+ * @flags: value affecting how the message is parsed (bits from LP_*)
+ *
+ * Parse an RFC3164 formatted log message and store the parsed information
+ * in @self. Parsing is affected by the bits set @flags argument.
+ **/
 static void
 log_msg_parse(LogMessage *self, gchar *data, gint length, guint flags)
 {
@@ -358,9 +400,14 @@ log_msg_parse(LogMessage *self, gchar *data, gint length, guint flags)
   g_string_assign_len(self->msg, src, left);
 }
 
-
+/**
+ * log_msg_free:
+ * @self: LogMessage instance
+ *
+ * Frees a LogMessage instance.
+ **/
 static void
-log_msg_free(LogMessage * self)
+log_msg_free(LogMessage *self)
 {
   g_sockaddr_unref(self->saddr);
   g_string_free(self->date, TRUE);
@@ -370,25 +417,45 @@ log_msg_free(LogMessage * self)
   g_free(self);
 }
 
+/**
+ * log_msg_ref:
+ * @self: LogMessage instance
+ *
+ * Increment reference count of @self and return the new reference.
+ **/
 LogMessage *
-log_msg_ref(LogMessage * self)
+log_msg_ref(LogMessage *self)
 {
-  assert(self->ref_cnt);
+  g_assert(self->ref_cnt > 0);
   self->ref_cnt++;
   return self;
 }
 
+/**
+ * log_msg_unref:
+ * @self: LogMessage instance
+ *
+ * Decrement reference count and free self if the reference count becomes 0.
+ **/
 void
-log_msg_unref(LogMessage * self)
+log_msg_unref(LogMessage *self)
 {
-  assert(self->ref_cnt);
+  g_assert(self->ref_cnt > 0);
   if (--self->ref_cnt == 0)
     {
       log_msg_free(self);
     }
 }
 
-void
+/**
+ * log_msg_init:
+ * @self: LogMessage instance
+ * @saddr: sender address 
+ *
+ * This function initializes a LogMessage instance without allocating it
+ * first. It is used internally by the log_msg_new function.
+ **/
+static void
 log_msg_init(LogMessage *self, GSockAddr *saddr)
 {
   self->ref_cnt = 1;
@@ -402,6 +469,15 @@ log_msg_init(LogMessage *self, GSockAddr *saddr)
   self->saddr = g_sockaddr_ref(saddr);
 }
 
+/**
+ * log_msg_new:
+ * @msg: message to parse
+ * @length: length of @msg
+ * @saddr: sender address
+ * @flags: parse flags (LP_*)
+ *
+ * This function allocates, parses and returns a new LogMessage instance.
+ **/
 LogMessage *
 log_msg_new(gchar *msg, gint length, GSockAddr *saddr, guint flags)
 {
@@ -412,6 +488,12 @@ log_msg_new(gchar *msg, gint length, GSockAddr *saddr, guint flags)
   return self;
 }
 
+/**
+ * log_msg_new_mark:
+ * 
+ * This function returns a new MARK message. MARK messages have the LF_MARK
+ * flag set.
+ **/
 LogMessage *
 log_msg_new_mark(void)
 {
@@ -421,6 +503,13 @@ log_msg_new_mark(void)
   return self;
 }
 
+/**
+ * log_msg_ack_block_inc:
+ * @m: LogMessage instance
+ *
+ * This function increments the number of required acknowledges in the
+ * current acknowledge block.
+ **/
 void
 log_msg_ack_block_inc(LogMessage *m)
 {
@@ -432,6 +521,19 @@ log_msg_ack_block_inc(LogMessage *m)
     }
 }
 
+/**
+ * log_msg_ack_block_start:
+ * @m: LogMessage instance
+ * @func: acknowledge function
+ * @user_data: pointer passed to @func
+ *
+ * This function starts a new acknowledge block in the acknowledge stack. It
+ * sets the number of required acks to 1. This function should be called
+ * when an intermediate step requires notification when the message is
+ * finally processed. Each acknowledgement block should be explicitly ended
+ * using log_msg_ack_block_end(), which is typically done in ack callbacks
+ * when all pending acks arrived.
+ **/
 void
 log_msg_ack_block_start(LogMessage *m, LMAckFunc func, gpointer user_data)
 {
@@ -444,6 +546,14 @@ log_msg_ack_block_start(LogMessage *m, LMAckFunc func, gpointer user_data)
   m->ack_blocks = g_slist_prepend(m->ack_blocks, b);
 }
 
+/**
+ * log_msg_ack_block_end:
+ * @m: LogMessage instance
+ *
+ * This function closes an acknowledgement block and is typically called from
+ * ack-callbacks when all pending acknowledgement requests arrived. It simply
+ * removes the ack_block from the ack_blocks list.
+ **/
 void
 log_msg_ack_block_end(LogMessage *m)
 {
@@ -455,6 +565,13 @@ log_msg_ack_block_end(LogMessage *m)
   g_free(b);
 }
 
+/**
+ * log_msg_ack:
+ * @m: LogMessage instance
+ *
+ * Indicate that the message was processed successfully the sender can queue
+ * further messages.
+ **/
 void 
 log_msg_ack(LogMessage *m)
 {
@@ -470,6 +587,14 @@ log_msg_ack(LogMessage *m)
     }
 }
 
+/**
+ * log_msg_drop:
+ * @m: LogMessage instance
+ *
+ * This function is called whenever a destination driver feels that it is
+ * unable to process this message. It acks and unrefs the message and will
+ * update some global drop statistics. 
+ **/
 void
 log_msg_drop(LogMessage *m, guint path_flags)
 {

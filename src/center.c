@@ -1,3 +1,26 @@
+/*
+ * Copyright (c) 2002, 2003, 2004 BalaBit IT Ltd, Budapest, Hungary
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation.
+ *
+ * Note that this permission is granted for only version 2 of the GPL.
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ */
+
 #include "center.h"
 #include "sgroup.h"
 #include "dgroup.h"
@@ -6,12 +29,28 @@
 
 #include <assert.h>
 
+/**
+ * log_endpoint_append:
+ * @a: first LogEndpoint
+ * @b: second LogEndpoint
+ *
+ * This function appends @b to @a in a linked list using the ep_next field
+ * in LogEndpoint.
+ **/
 void
 log_endpoint_append(LogEndpoint *a, LogEndpoint *b)
 {
   a->ep_next = b;
 }
 
+/**
+ * log_endpoint_new:
+ * @type: specifies endpoint type one of EP_* 
+ * @name: name of the endpoint which is used in the configuration as an identifier
+ * 
+ * This function constructs a LogEndpoint object encapsulating a
+ * source/filter/destination node in a log statement.
+ **/
 LogEndpoint *
 log_endpoint_new(gint type, gchar *name)
 {
@@ -22,6 +61,14 @@ log_endpoint_new(gint type, gchar *name)
   return self;
 }
 
+/**
+ * log_endpoint_free:
+ * @self: LogEndpoint instance
+ * 
+ * This function frees a LogEndpoint instance, first by freeing the
+ * referenced object stored in the @ref attribute then freeing @self.
+ * NOTE: @ref is set when the given configuration is initialized.
+ **/
 void
 log_endpoint_free(LogEndpoint *self)
 {
@@ -47,6 +94,15 @@ log_endpoint_free(LogEndpoint *self)
   g_free(self);
 }
 
+/**
+ * log_connection_new:
+ * @endpoints: list of endpoints in this log statement
+ * @flags: a combination of LC_* flags as specified by the administrator
+ *
+ * This function constructs a LogConnection object which encapsulates a log
+ * statement in the configuration, e.g. it has one or more sources, filters
+ * and destinations each represented by a LogEndpoint object.
+ **/
 LogConnection *
 log_connection_new(LogEndpoint *endpoints, guint32 flags)
 {
@@ -73,7 +129,7 @@ log_connection_new(LogEndpoint *endpoints, guint32 flags)
           g_ptr_array_add(self->destinations, ep);
           break;
         default:
-          assert(0);
+          g_assert(0);
           break;
         }
     }
@@ -81,6 +137,13 @@ log_connection_new(LogEndpoint *endpoints, guint32 flags)
   return self;
 }
 
+/**
+ * log_connection_free:
+ * @self: LogConnection instance
+ *
+ * This function frees the LogConnection object encapsulating a log
+ * statement pointed to by @self.
+ **/
 void
 log_connection_free(LogConnection *self)
 {

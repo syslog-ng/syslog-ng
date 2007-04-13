@@ -154,7 +154,7 @@ main_loop_run(GlobalConfig *cfg)
 	  pid_t pid = 0;
 	  int status;
 
-	  while (pid != -1)
+	  while (pid > 0)
 	    {
 	      pid = waitpid(-1, &status, WNOHANG);
 	      child_manager_sigchild(pid, status);
@@ -339,7 +339,9 @@ main(int argc, char *argv[])
 	}
       
     }
-
+  
+  tzset();
+  
   z_mem_trace_init("syslog-ng.trace");
   setup_signals();
   msg_init(log_to_stderr);

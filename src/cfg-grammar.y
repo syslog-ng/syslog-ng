@@ -60,7 +60,7 @@ LogTemplate *last_template;
 %token KW_DNS_CACHE_EXPIRE KW_DNS_CACHE_EXPIRE_FAILED
 %token KW_TZ_CONVERT KW_TS_FORMAT
 
-%token KW_LOG_FIFO_SIZE KW_LOG_FETCH_LIMIT KW_LOG_IW_SIZE
+%token KW_LOG_FIFO_SIZE KW_LOG_FETCH_LIMIT KW_LOG_IW_SIZE KW_LOG_PREFIX
 
 /* log statement options */
 %token KW_FLAGS KW_CATCHALL KW_FALLBACK KW_FINAL KW_FLOW_CONTROL
@@ -410,6 +410,7 @@ source_reader_option
 	| KW_LOG_MSG_SIZE '(' NUMBER ')'	{ last_reader_options->msg_size = $3; }
 	| KW_LOG_IW_SIZE '(' NUMBER ')'		{ last_reader_options->init_window_size = $3; }
 	| KW_LOG_FETCH_LIMIT '(' NUMBER ')'	{ last_reader_options->fetch_limit = $3; }
+	| KW_LOG_PREFIX '(' string ')'		{ last_reader_options->prefix = $3; }
 	| KW_PADDING '(' NUMBER ')'		{ last_reader_options->padding = $3; }
 	| KW_FOLLOW_FREQ '(' NUMBER ')'		{ last_reader_options->follow_freq = $3; }
 	| KW_TIME_ZONE '(' string ')'		{ last_reader_options->zone_offset_set = cfg_timezone_value($3, &last_reader_options->zone_offset); free($3); }

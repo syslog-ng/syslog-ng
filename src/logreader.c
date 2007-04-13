@@ -1,3 +1,26 @@
+/*
+ * Copyright (c) 2002, 2003, 2004 BalaBit IT Ltd, Budapest, Hungary
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation.
+ *
+ * Note that this permission is granted for only version 2 of the GPL.
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ */
+
 #include "logreader.h"
 #include "messages.h"
 #include "fdread.h"
@@ -203,6 +226,9 @@ log_reader_handle_line(LogReader *self, gchar *line, gint length, GSockAddr *sad
     
   m = log_msg_new(line, length, saddr, parse_flags);
   
+  if (self->options->prefix)
+    g_string_prepend(m->msg, self->options->prefix);
+  
   if (self->flags & LR_INTERNAL)
     m->flags |= LF_INTERNAL;
   
@@ -242,11 +268,11 @@ log_reader_iterate_buf(LogReader *self, GSockAddr *saddr, gboolean flush)
        * we are set to packet terminating mode and there's no terminating new line, or
        * we are in padded mode HP-UX
        */
-      log_reader_handle_line(self, self->buffer, 
-			     (self->options->padding 
-			      ? (eol ? eol - self->buffer : self->ofs)
-			      : self->ofs), 
-			     saddr);
+      length = (self->options->padding 
+                  ? (eol ? eol - self->buffer : self->ofs)
+                  : self->ofs);
+      if (length)
+        log_reader_handle_line(self, self->buffer, length, saddr);
       self->ofs = 0;
     }
   else

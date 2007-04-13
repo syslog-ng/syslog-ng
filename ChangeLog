@@ -1,3 +1,80 @@
+2004-12-27  Balazs Scheidler <bazsi@balabit.hu>
+
+	* src/afsocket.c (afsocket_sd_deinit): break circular reference
+	between self->reader and self,
+	(afsocket_sd_notify): do not destroy/unref sender in NC_CLOSE, as
+	afsocket_sd_close_connection already does that,
+	(afsocket_sd_init, afsocket_sd_deinit): removed static,
+	(afsocket_sd_free_instance): renamed from afsocket_sd_free, removed
+	static, created a new afsocket_sd_free function at the same time
+	which is set as the free_fn of AFSocketSourceDriver
+
+	* src/afunix.c: implemented user/group/perm settings
+
+	* src/cfg-grammar.y: added support for log-prefix
+
+	* src/cfg.c: changed default timestamp format to BSD for compatibility
+
+	* src/filter.c: fixed AND and OR operator evaluation, the operands
+	were not correctly saved at initialization time, thus NULL was
+	referenced at evaluation time
+
+	* src/logreader.c: added log_prefix support for all log readers
+
+	* src/logwriter.c: use log_msg_drop instead of a simple log_msg_unref
+
+	* src/main.c: fixed SIGCHLD handling, loop while waitpid returns > 0,
+	added tzset() call
+
+2004-12-27  Balazs Scheidler <bazsi@balabit.hu>
+
+        * src/affile.c (affile_sd_deinit): make sure to break circular
+        reference between self->reader and self, fixes possible memory leak,
+        (affile_sd_free): call log_drv_free_instance
+
+        * src/afinter.c (afinter_sd_deinit): break circular reference
+        between self->reader and self
+
+        * src/afprog.c (afprog_sd_free): added log_drv_free_instance
+
+        * src/afsocket.c (afsocket_sd_deinit): break circular reference
+        between self->reader and self,
+        (afsocket_sd_free): added log_drv_free_instance,
+        (afsocket_dd_free): -"-
+
+        * src/afuser.c (afuser_dd_queue): free queued message,
+        (afuser_dd_free): added log_drv_free_instance
+
+        * src/cfg-grammar.y: unref log driver after appending to avoid
+        memory leaks
+
+        * src/cfg.c (cfg_reload_config): fixed possible memory leak when
+        cfg_init fails (free persist),
+        (persist_config_free): added missing free for hashtable
+
+        * src/dgroup.c (log_dest_group_queue): make sure each driver gets
+        its own reference to msg as each will free it on its own, also
+        added an explicit unref at the end of the function
+        (log_dest_group_new): added missing call to log_pipe_init_instance
+
+        * src/gsockaddr.c: removed all low-level g_message invocation,
+        errors should be reported by the caller
+
+        * src/logpipe.c: added assertions to _ref and _unref
+
+        * src/main.c (main_loop_run): added a missing g_main_loop_unref to
+        avoid memory leaks,
+        (main): call msg_syslog_started at the end of initialization to force
+        messages into the system log
+
+        * src/messages.c (msg_syslog_started): new function to indicate
+        that initialization is finished, messages will be written to
+        stderr instead of the internal() source if syslog is not yet
+        started to let the administrator see important
+        failure messages,
+        (msg_deinit): free the event log context, only close the error pipe
+        if it was really opened
+
 2004-08-20  Balazs Scheidler  <bazsi@szekszard.balabit.hu>
 
 	* src/messages.c: adapted to the latest changes in the eventlog,
