@@ -1,0 +1,88 @@
+#!/bin/sh
+#
+# syslog-ng    This starts and stops syslog-ng
+#
+# chkconfig:   2345 12 88
+# description: reads and logs messages to the system console, log \
+#              files, other machines and/or users as specified by \
+#              its configuration file.
+# processname: /sbin/syslog-ng
+# config:      /etc/syslog-ng/syslog-ng.conf
+# config:      /etc/sysconfig/syslog-ng
+# pidfile:     /var/run/syslog-ng.pid
+#
+### BEGIN INIT INFO
+# Provides: $syslog
+### END INIT INFO
+
+# Source function library.
+. /etc/rc.d/init.d/functions
+
+exec="/sbin/syslog-ng"
+prog=$(basename $exec)
+
+[ -f $exec ] || exit 0
+
+# Source config
+[ -e /etc/sysconfig/$prog ] && . /etc/sysconfig/$prog
+
+lockfile=/var/lock/subsys/$prog
+
+umask 077
+
+start() {
+    echo -n $"Starting $prog: "
+    daemon $exec $SYSLOGNG_OPTIONS
+    retval=$?
+    echo
+    [ $retval -eq 0 ] && touch $lockfile
+    return $retval
+}
+
+stop() {
+    echo -n $"Stopping $prog: "
+    killproc $prog
+    retval=$?
+    echo
+    [ $retval -eq 0 ] && rm -f $lockfile
+    return $retval
+}
+
+restart() {
+    stop
+    start
+}
+
+reload() {
+    echo -n $"Reloading syslog-ng.conf file: "
+    killproc $prog -HUP
+    retval=$?
+    echo
+    return $retval
+}
+
+force_reload() {
+    restart
+}
+
+fdr_status() {
+    status $prog
+}
+
+case "$1" in
+    start|stop|restart|reload)
+        $1
+        ;;
+    force-reload)
+        force_reload
+        ;;
+    status)
+        fdr_status
+        ;;
+    condrestart|try-restart)
+        [ ! -f $lockfile ] || restart
+        ;;
+    *)
+        echo $"Usage: $0 {start|stop|status|restart|try-restart|reload|force-reload}"
+        exit 2
+esac

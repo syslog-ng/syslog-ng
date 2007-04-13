@@ -2,6 +2,63 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-09-26 09:16:38 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-55
+
+    Summary:
+      contrib subdirectory and its contents copied from syslog-ng 1.6.x
+    Revision:
+      syslog-ng--mainline--2.0--patch-55
+
+    
+    
+
+    new files:
+     contrib/.arch-ids/=id contrib/.arch-ids/Makefile.am.id
+     contrib/.arch-ids/README.id contrib/.arch-ids/init.d.HP-UX.id
+     contrib/.arch-ids/init.d.RedHat-7.3.id
+     contrib/.arch-ids/init.d.RedHat.id
+     contrib/.arch-ids/init.d.SuSE.id
+     contrib/.arch-ids/init.d.SunOS.id
+     contrib/.arch-ids/init.d.solaris.id
+     contrib/.arch-ids/relogger.pl.id
+     contrib/.arch-ids/syslog-ng.conf.HP-UX.id
+     contrib/.arch-ids/syslog-ng.conf.RedHat.id
+     contrib/.arch-ids/syslog-ng.conf.SunOS.id
+     contrib/.arch-ids/syslog-ng.conf.doc.id
+     contrib/.arch-ids/syslog-ng.vim.id
+     contrib/.arch-ids/syslog2ng.id contrib/Makefile.am
+     contrib/README contrib/fedora-packaging/.arch-ids/=id
+     contrib/fedora-packaging/.arch-ids/syslog-ng.conf.id
+     contrib/fedora-packaging/.arch-ids/syslog-ng.init.id
+     contrib/fedora-packaging/.arch-ids/syslog-ng.logrotate.id
+     contrib/fedora-packaging/.arch-ids/syslog-ng.sysconfig.id
+     contrib/fedora-packaging/syslog-ng.conf
+     contrib/fedora-packaging/syslog-ng.init
+     contrib/fedora-packaging/syslog-ng.logrotate
+     contrib/fedora-packaging/syslog-ng.sysconfig
+     contrib/init.d.HP-UX contrib/init.d.RedHat
+     contrib/init.d.RedHat-7.3 contrib/init.d.SuSE
+     contrib/init.d.SunOS contrib/init.d.solaris
+     contrib/relogger.pl contrib/rhel-packaging/.arch-ids/=id
+     contrib/rhel-packaging/.arch-ids/syslog-ng.conf.id
+     contrib/rhel-packaging/.arch-ids/syslog-ng.init.id
+     contrib/rhel-packaging/.arch-ids/syslog-ng.logrotate.id
+     contrib/rhel-packaging/syslog-ng.conf
+     contrib/rhel-packaging/syslog-ng.init
+     contrib/rhel-packaging/syslog-ng.logrotate
+     contrib/syslog-ng.conf.HP-UX contrib/syslog-ng.conf.RedHat
+     contrib/syslog-ng.conf.SunOS contrib/syslog-ng.conf.doc
+     contrib/syslog-ng.vim contrib/syslog2ng
+
+    modified files:
+     ChangeLog Makefile.am configure.in
+
+    new directories:
+     contrib contrib/.arch-ids contrib/fedora-packaging
+     contrib/fedora-packaging/.arch-ids contrib/rhel-packaging
+     contrib/rhel-packaging/.arch-ids
+
+
 2005-08-30 07:35:56 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-54
 
     Summary:

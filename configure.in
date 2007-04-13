@@ -187,6 +187,7 @@ AC_OUTPUT(dist.conf
 	  src/Makefile 
 	  doc/Makefile
           doc/docvars.xml
+	  contrib/Makefile
 	  tests/Makefile 
           tests/unit/Makefile
           tests/functional/Makefile)

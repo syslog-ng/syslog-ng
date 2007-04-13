@@ -1,0 +1,38 @@
+# syslog-ng configuration file.
+#
+# This should behave pretty much like the original syslog on HP-UX. But
+# it could be configured a lot smarter.
+#
+# See syslog-ng(8) and syslog-ng.conf(8) for more information.
+#
+# 20000925 gb@sysfive.com
+
+options { sync (0);
+          time_reopen (10);
+          log_fifo_size (1000);
+          long_hostnames (off);
+          use_dns (no);
+          use_fqdn (no);
+          create_dirs (no);
+          keep_hostname (yes);
+        };
+
+source s_sys { pipe("/dev/log"); internal(); };
+
+destination d_cons { file("/dev/console"); };
+destination d_mesg { file("/var/adm/syslog/syslog.log"); };
+destination d_mail { file("/var/adm/syslog/mail.log"); };
+destination d_mlrt { usertty("root"); };
+destination d_mlal { usertty("*"); };
+
+filter f_filter1   { facility(mail) and level(debug); };
+filter f_filter2   { (facility(mail) and level(debug)) or
+		     level(info); };
+filter f_filter3   { level(alert); };
+filter f_filter4   { level(emerg); };
+
+log { source(s_sys); filter(f_filter1); destination(d_mail); };
+log { source(s_sys); filter(f_filter2); destination(d_mesg); };
+log { source(s_sys); filter(f_filter3); destination(d_cons);
+					destination(d_mlrt); };
+log { source(s_sys); filter(f_filter4); destination(d_mlal); };

@@ -1,0 +1,1243 @@
+#----------------------------------------------------------------------
+#  Program:  syslog-ng.conf
+#  Notes:    Embedded most of the manual notes within the configuration
+#            file.  The original manual can be found at:
+#
+#            http://www.balabit.com/products/syslog_ng/reference/book1.html
+#            http://www.campin.net/syslog-ng/faq.html
+#
+#            Many people may find placing all of this information in a
+#            configuration file a bit redundant, but I have found that
+#            with a little bit of extra comments and reference, 
+#            maintaining these beasties is much easier.
+#
+#            This particular log file was taken from the examples that
+#            are given at the different web sites, and made to emulate
+#            the logs of a Mandrake Linux system as much as possible.
+#            Of course, Unix is Unix, is Linux.  It should be generic
+#            enough for any Unix system.
+#----------------------------------------------------------------------
+#  16-Mar-03 - REP - Added some extra definitions to the file.
+#  15-Mar-03 - REP - Added back the comments on filtering.
+#  27-Feb-03 - REP - Further modified for local environment.
+#  27-Feb-03 - REP - Updated for new configuration and version 1.6.0
+#  12-Dec-02 - REP - Continued updates for writing to databases.
+#  30-Nov-02 - REP - Initial creation for testing.
+
+#----------------------------------------------------------------------
+#  Options
+#----------------------------------------------------------------------
+#
+#  Name                       Values   Description
+#  -------------------------  -------  ------------------------------------
+#  bad_hostname               reg exp  A regexp which matches hostnames 
+#                                      which should not be taken as such.
+#  chain_hostnames            y/n      Enable or disable the chained 
+#                                      hostname format.
+#  create_dirs                y/n      Enable or disable directory creation 
+#                                      for destination files.
+#  dir_group                  groupid
+#  dir_owner                  userid
+#  dir_perm                   perm
+#  dns_cache                  y/n      Enable or disable DNS cache usage.
+#  dns_cache_expire           num      Number of seconds while a successful 
+#                                      lookup is cached.
+#  dns_cache_expire_failed    num      Number of seconds while a failed 
+#                                      lookup is cached.
+#  dns_cache_size             num      Number of hostnames in the DNS cache.
+#  gc_busy_threshold          num      Sets the threshold value for the 
+#                                      garbage collector, when syslog-ng is 
+#                                      busy. GC phase starts when the number 
+#                                      of allocated objects reach this 
+#                                      number. Default: 3000.
+#  gc_idle_threshold          num      Sets the threshold value for the 
+#                                      garbage collector, when syslog-ng is 
+#                                      idle. GC phase starts when the number 
+#                                      of allocated objects reach this 
+#                                      number. Default: 100.
+#  group                      groupid
+#  keep_hostname              y/n      Enable or disable hostname rewriting.
+#                                      This means that if the log entry had
+#                                      been passed through at least one other
+#                                      logging system, the ORIGINAL hostname
+#                                      will be kept attached to the log.  
+#                                      Otherwise the last logger will be
+#                                      considered the log entry owner and
+#                                      the log entry will appear to have 
+#                                      come from that host.
+#  log_fifo_size              num      The number of lines fitting to the 
+#                                      output queue
+#  log_msg_size               num      Maximum length of message in bytes.
+#  long_hostnames             on/off   This options appears to only really
+#                                      have an affect on the local system.
+#                                      which removes the source of the log.
+#                                      As an example, normally the local
+#                                      logs will state src@hostname, but
+#                                      with this feature off, the source
+#                                      is not reported.
+#  mark                       num      The number of seconds between two 
+#                                      MARK lines. NOTE: not implemented 
+#                                      yet.
+#  owner                      userid
+#  perm                       perm
+#  stats                      num      The number of seconds between two 
+#                                      STATS.
+#  sync                       num      The number of lines buffered before 
+#                                      written to file
+#  time_reap                  num      The time to wait before an idle 
+#                                      destination file is closed.
+#  time_reopen                num      The time to wait before a died 
+#                                      connection is reestablished
+#  use_dns                    y/n      Enable or disable DNS usage. 
+#                                      syslog-ng blocks on DNS queries, 
+#                                      so enabling DNS may lead to a 
+#                                      Denial of Service attack. To 
+#                                      prevent DoS, protect your 
+#                                      syslog-ng network endpoint with 
+#                                      firewall rules, and make sure that 
+#                                      all hosts, which may get to 
+#                                      syslog-ng is resolvable.
+#  use_fqdn                   y/n      Add Fully Qualified Domain Name 
+#                                      instead of short hostname.
+#  use_time_recvd             y/n      Use the time a message is 
+#                                      received instead of the one 
+#                                      specified in the message.
+#----------------------------------------------------------------------
+#  15-Mar-03 - REP - Since some of the clocks are not quite right, we
+#                    are going to go ahead and just use the local time
+#                    as the master time.
+#  12-Mar-03 - REP - We have taken a few configuration options from the
+#                    newer Solaris configuration because some of the 
+#                    reasons are valid for us as well.  We have increased
+#                    the log_msg_size and log_fifo_size to increase the
+#                    amount of buffering that we do.  While for most
+#                    systems this may not have a noticeable affect, it
+#                    will for systems that are at the end of a lot of
+#                    logging systems.
+#  20-Dec-02 - REP - Changed the stat() time from the default of 10
+#                    minutes to once an hour.
+#----------------------------------------------------------------------
+options 
+  {
+    chain_hostnames(no);
+    create_dirs (no);
+    dir_perm(0755); 
+    dns_cache(yes);
+    keep_hostname(yes);
+    log_fifo_size(2048);
+    log_msg_size(8192);
+    long_hostnames(on);
+    perm(0644); 
+    stats(3600);
+    sync(0);
+    time_reopen (10);
+    use_dns(yes);
+    use_fqdn(yes);
+  };
+
+#----------------------------------------------------------------------
+#  Sources
+#----------------------------------------------------------------------
+#
+#  fifo/pipe     - The pipe driver opens a named pipe with the 
+#                  specified name, and listens for messages. It's 
+#                  used as the native message getting protocol on 
+#                  HP-UX. 
+#  file          - Usually the kernel presents its messages in a 
+#                  special file (/dev/kmsg on BSDs, /proc/kmsg on 
+#                  Linux), so to read such special files, you'll need 
+#                  the file() driver. Please note that you can't use 
+#                  this driver to follow a file like tail -f does.
+#  internal      - All internally generated messages "come" from this 
+#                  special source. If you want warnings, errors and 
+#                  notices from syslog-ng itself, you have to include 
+#                  this source in one of your source statements. 
+#  sun-streams   - Solaris uses its STREAMS API to send messages to 
+#                  the syslogd process. You'll have to compile 
+#                  syslog-ng with this driver compiled in (see 
+#                  ./configure --help).
+#
+#                  Newer versions of Solaris (2.5.1 and above), uses a 
+#                  new IPC in addition to STREAMS, called door to 
+#                  confirm delivery of a message. Syslog-ng supports 
+#                  this new IPC mechanism with the door() option.
+#
+#                  The sun-streams() driver has a single required 
+#                  argument, specifying the STREAMS device to open and 
+#                  a single option. 
+#  tcp/udp       - These drivers let you receive messages from the 
+#                  network, and as the name of the drivers show, you 
+#                  can use both UDP and TCP as transport. 
+#
+#                  UDP is a simple datagram oriented protocol, which 
+#                  provides "best effort service" to transfer 
+#                  messages between hosts. It may lose messages, and 
+#                  no attempt is made to retransmit such lost 
+#                  messages at the protocol level. 
+#
+#                  TCP provides connection-oriented service, which 
+#                  basically means a flow-controlled message pipeline. 
+#                  In this pipeline, each message is acknowledged, and 
+#                  retransmission is done for lost packets. Generally 
+#                  it's safer to use TCP, because lost connections can 
+#                  be detected, and no messages get lost, but 
+#                  traditionally the syslog protocol uses UDP. 
+#
+#                  None of tcp() and udp() drivers require positional 
+#                  parameters. By default they bind to 0.0.0.0:514, 
+#                  which means that syslog-ng will listen on all 
+#                  available interfaces, port 514. To limit accepted 
+#                  connections to one interface only, use the 
+#                  localip() parameter as described below. 
+#
+#    Options:
+#
+#    Name            Type    Description                       Default
+#    --------------  ------  --------------------------------  --------
+#    ip or local ip  string  The IP address to bind to. Note   0.0.0.0
+#                            that this is not the address 
+#                            where messages are accepted 
+#                            from.
+#    keep-alive     y/n      Available for tcp() only, and     yes
+#                            specifies whether to close 
+#                            connections upon the receival 
+#                            of a SIGHUP signal.
+#    max-connections number  Specifies the maximum number of   10
+#                            simultaneous connections.
+#    port or local   port    number The port number to bind     514
+#                            to.
+#    --------------  ------  --------------------------------  --------
+#
+#  unix-stream   -  unix-dgram - These two drivers behave similarly: 
+#                   they open the given AF_UNIX socket, and start 
+#                   listening on them for messages. unix-stream() is 
+#                   primarily used on Linux, and uses SOCK_STREAM 
+#                   semantics (connection oriented, no messages are 
+#                   lost), unix-dgram() is used on BSDs, and uses 
+#                   SOCK_DGRAM semantics, this may result in lost 
+#                   local messages, if the system is overloaded.
+#
+#                   To avoid denial of service attacks when using 
+#                   connection-oriented protocols, the number of 
+#                   simultaneously accepted connections should be 
+#                   limited. This can be achieved using the 
+#                   max-connections() parameter. The default value of 
+#                   this parameter is quite strict, you might have to 
+#                   increase it on a busy system.
+#
+#                   Both unix-stream and unix-dgram has a single 
+#                   required positional argument, specifying the 
+#                   filename of the socket to create, and several 
+#                   optional parameters. 
+#
+#    Options:
+#
+#    Name            Type    Description                       Default
+#    --------------  ------  --------------------------------  --------
+#    group           string  Set the gid of the socket.        root
+#    keep-alive      y/n     Selects whether to keep           yes
+#                            connections opened when 
+#                            syslog-ng is restarted, can be 
+#                            used only with unix-stream().
+#    max-connections numb    Limits the number of              10
+#                            simultaneously opened 
+#                            connections. Can be used only 
+#                            with unix-stream().
+#    owner           string  Set the uid of the socket.        root
+#    perm            num     Set the permission mask. For      0666
+#                            octal numbers prefix the number 
+#                            with '0', e.g. use 0755 for 
+#                            rwxr-xr-x.
+#----------------------------------------------------------------------
+#  Notes:    For Linux systems (and especially RedHat derivatives), 
+#            they have a second logging process for kernel messages.  
+#            This source is /proc/kmsg.  If you are running this on a 
+#            system that is not Linux, then the source entry for this 
+#            should be removed.
+#
+#            It seems that there is some performance questions related
+#            to what type of source stream should be used for Linux 
+#            boxes.  The documentation states the /dev/log should use
+#            unix-stream, but from the mailing list it has been
+#            strongly suggested that unix-dgram be used.
+#
+#  WARNING:  TCP wrappers has been enabled for this system, and unless
+#            you also place entries in /etc/hosts.allow for each of the
+#            devices that will be delivering logs via TCP, you will
+#            NOT receive the logs.
+#
+#            Also note that if there is any form of a local firewall,
+#            this will also need to be altered such that the incoming
+#            and possibly outgoing packets are allowed by the firewall
+#            rules.
+#----------------------------------------------------------------------
+#  There has been a lot of debate on whether everything should be put
+#  to a single source, or breakdown all the sources into individual
+#  streams.  The greatest flexibility would be in many, but the most
+#  simple is the single.  Since we wrote this file, we have chosen the
+#  route of maximum flexibility.
+#
+#  For those of you that like simplicity, this could have also been
+#  done as the follows:
+#
+#  source src 
+#    {
+#      internal();
+#      file("/proc/kmsg" log_prefix("kernel: "));
+#      tcp(ip(127.0.0.1) port(4800) keep-alive(yes));
+#      udp();
+#      unix-stream("/dev/log");
+#    };
+#
+#  You would also have to change all the log statements to only 
+#  reference the now single source stream.
+#----------------------------------------------------------------------
+#  16-Mar-03 - REP - The default number of allowed TCP connects is set
+#                    very low for a logserver.  This value should only
+#                    be set greater than the default for servers that
+#                    will actually be serving that many systems.
+#----------------------------------------------------------------------
+source s_dgram
+  { unix-dgram("/dev/log"); };
+
+source s_internal
+  { internal(); };
+
+source s_kernel
+  { file("/proc/kmsg" log_prefix("kernel: ")); };
+
+source s_tcp
+  { tcp(port(4800) keep-alive(yes) max_connections(100)); };
+
+#----------------------------------------------------------------------
+#  Destinations
+#----------------------------------------------------------------------
+#
+#  fifo/pipe    - This driver sends messages to a named pipe like 
+#                 /dev/xconsole
+#
+#                 The pipe driver has a single required parameter, 
+#                 specifying the filename of the pipe to open, and 
+#                 no options. 
+#  file         - The file driver is one of the most important 
+#                 destination drivers in syslog-ng. It allows you to 
+#                 output messages to the named file, or as you'll see 
+#                 to a set of files.
+#
+#                 The destination filename may include macros which 
+#                 gets expanded when the message is written, thus a 
+#                 simple file() driver may result in several files 
+#                 to be created. Macros can be included by prefixing 
+#                 the macro name with a '$' sign (without the quotes), 
+#                 just like in Perl/PHP.
+#
+#                 If the expanded filename refers to a directory 
+#                 which doesn't exist, it will be created depending 
+#                 on the create_dirs() setting (both global and a per 
+#                 destination option)
+#
+#                 WARNING: since the state of each created file must 
+#                 be tracked by syslog-ng, it consumes some memory 
+#                 for each file. If no new messages are written to a 
+#                 file within 60 seconds (controlled by the time_reap 
+#                 global option), it's closed, and its state is freed.
+#
+#                 Exploiting this, a DoS attack can be mounted against 
+#                 your system. If the number of possible destination 
+#                 files and its needed memory is more than the amount 
+#                 your logserver has.
+#
+#                 The most suspicious macro is $PROGRAM, where the 
+#                 possible variations is quite high, so in untrusted 
+#                 environments $PROGRAM usage should be avoided. 
+#
+#    Macros:
+#
+#    Name               Description
+#    -----------------  -----------------------------------------------
+#    DATE               Date of the transaction.
+#    DAY                The day of month the message was sent.
+#    FACILITY           The name of the facility, the message is tagged 
+#                       as coming from.
+#    FULLDATE           Long form of the date of the transaction.
+#    FULLHOST           Full hostname of the system that sent the log.
+#    HOST               The name of the source host where the message 
+#                       is originated from. If the message traverses 
+#                       several hosts, and chain_hostnames() is on, 
+#                       the first one is used.
+#    HOUR               The hour of day the message was sent.
+#    ISODATE            Date in ISO format.
+#    MIN                The minute the message was sent.
+#    MONTH              The month the message was sent.
+#    MSG or MESSAGE     Message contents. 
+#    PRIORITY or LEVEL  The priority of the message. 
+#    PROGRAM            The name of the program the message was sent by.
+#    SEC                The second the message was sent.
+#    TAG                The priority and facility encoded as a 2 digit 
+#                       hexadecimal number.
+#    TZ                  The time zone or name or abbreviation. e.g. 'PDT'
+#    TZOFFSET           The time-zone as hour offset from GMT. e.g. 
+#                       '-0700'
+#    WEEKDAY            The 3-letter name of the day of week the 
+#                       message was sent, e.g. 'Thu'.
+#    YEAR               The year the message was sent. Time expansion 
+#                       macros can either use the time specified in 
+#                       the log message, e.g. the time the log message 
+#                       is sent, or the time the message was received 
+#                       by the log server. This is controlled by the 
+#                       use_time_recvd() option.
+#    -----------------  -----------------------------------------------
+#
+#    Options:
+#
+#    Name            Type    Description                       Default
+#    --------------  ------  --------------------------------  --------
+#    compress        y/n     Compress the resulting logfile    global
+#                            using zlib. NOTE: this is not     setting
+#                            implemented as of 1.3.14.
+#    reate_dirs      y/n     Enable creating non-existing      no
+#                            directories.
+#    dir_perm        num     The permission mask of            0600
+#                            directories created by 
+#                            syslog-ng. Log directories are 
+#                            only created if a file after 
+#                            macro expansion refers to a 
+#                            non-existing directory, and dir 
+#                            creation is enabled using 
+#                            create_dirs().
+#    encrypt         y/n     Encrypt the resulting file.       global
+#                            NOTE: this is not implemented as  setting
+#                            of 1.3.14.
+#    fsync           y/n     Forces an fsync() call on the 
+#                            destination fd after each write. 
+#                            Note: this may degrade 
+#                            performance seriously
+#    group           string  Set the group of the created      root
+#                            filename to the one specified.
+#    log_fifo_size   num     The number of entries in the      global
+#                            output fifo.                      setting
+#    owner           string  Set the owner of the created      root
+#                            filename to the one specified.
+#    perm            num     The permission mask of the file   0600
+#                            if it is created by syslog-ng.
+#    remove_if_older num     If set to a value higher than 0,  0
+#                            before writing to a file, 
+#                            syslog-ng checks whether this 
+#                            file is older than the specified 
+#                            amount of time (specified in 
+#                            seconds). If so, it removes the 
+#                            existing file and the line to 
+#                            be written is the first line in 
+#                            a new file with the same name. 
+#                            In combination with e.g. the 
+#                            $WEEKDAY macro, this is can be 
+#                            used for simple log rotation, 
+#                            in case not all history need to 
+#                            be kept. 
+#    sync_freq       num     The logfile is synced when this   global
+#                            number of messages has been       setting
+#                            written to it.
+#    template        string  Specifies a template which 
+#                            specifies the logformat to be 
+#                            used in this file. The possible 
+#                            macros are the same as in 
+#                            destination filenames.
+#    template_escape y/n     Turns on escaping ' and " in      yes
+#                            templated output files. It is 
+#                            useful for generating SQL 
+#                            statements and quoting string 
+#                            contents so that parts of your 
+#                            log message don't get 
+#                            interpreted as commands to the 
+#                            SQL server.
+#    --------------  ------  --------------------------------  --------
+#
+#  program      - This driver fork()'s executes the given program with 
+#                 the given arguments and sends messages down to the 
+#                 stdin of the child.
+#
+#                 The program driver has a single required parameter, 
+#                 specifying a program name to start and no options. 
+#                 The program is executed with the help of the current 
+#                 shell, so the command may include both file patterns 
+#                 and I/O redirection, they will be processed. 
+#
+#                 NOTE: the program is executed once at startup, and 
+#                 kept running until SIGHUP or exit. The reason is to 
+#                 prevent starting up a large number of programs for 
+#                 messages, which would imply an easy DoS. 
+#  tcp/udp      - This driver sends messages to another host on the 
+#                 local intranet or internet using either UDP or TCP 
+#                 protocol.
+#
+#                 Both drivers have a single required argument 
+#                 specifying the destination host address, where 
+#                 messages should be sent, and several optional 
+#                 parameters. Note that this differs from source 
+#                 drivers, where local bind address is implied, and 
+#                 none of the parameters are required. 
+#
+#    Options:
+#
+#    Name            Type    Description                       Default
+#    --------------  ------  --------------------------------  --------
+#    localip         string  The IP address to bind to before  0.0.0.0
+#                            connecting to target.
+#    localport       num     The port number to bind to.       0
+#    port/destport   num     The port number to connect to.   514
+#    --------------  ------  --------------------------------  --------
+#  usertty      - This driver writes messages to the terminal of a 
+#                 logged-in user.
+#
+#                 The usertty driver has a single required argument, 
+#                 specifying a username who should receive a copy of 
+#                 matching messages, and no optional arguments. 
+#  unix-dgram   - unix-stream -  This driver sends messages to a unix 
+#                 socket in either SOCK_STREAM or SOCK_DGRAM mode.
+#
+#                 Both drivers have a single required argument 
+#                 specifying the name of the socket to connect to, and 
+#                 no optional arguments. 
+#----------------------------------------------------------------------
+
+#----------------------------------------------------------------------
+#  Standard Log file locations
+#----------------------------------------------------------------------
+destination authlog        { file("/var/log/auth.log"); };
+destination bootlog        { file("/var/log/boot.log"); };
+destination debug          { file("/var/log/debug"); };
+destination explan         { file("/var/log/explanations"); };
+destination messages       { file("/var/log/messages"); };
+destination routers        { file("/var/log/routers.log"); };
+destination secure         { file("/var/log/secure"); };
+destination spooler        { file("/var/log/spooler"); };
+destination syslog         { file("/var/log/syslog"); };
+destination user           { file("/var/log/user.log"); };
+
+#----------------------------------------------------------------------
+#  Special catch all destination sorting by host
+#----------------------------------------------------------------------
+destination hosts          { file("/var/log/HOSTS/$HOST/$YEAR/$MONTH/$DAY/$FACILITY_$HOST_$YEAR_$MONTH_$DAY" 
+			     owner(root) group(root) perm(0600) dir_perm(0700) create_dirs(yes)); };
+
+#----------------------------------------------------------------------
+#  Forward to a loghost server
+#----------------------------------------------------------------------
+#destination loghost       { udp("10.1.1.254" port(514)); };
+
+#----------------------------------------------------------------------
+#  Mail subsystem logs
+#----------------------------------------------------------------------
+destination mail           { file("/var/log/mail.log"); };
+destination mailerr        { file("/var/log/mail/errors"); };
+destination mailinfo       { file("/var/log/mail/info"); };
+destination mailwarn       { file("/var/log/mail/warnings"); };
+
+#----------------------------------------------------------------------
+#  INN news subsystem
+#----------------------------------------------------------------------
+destination newscrit       { file("/var/log/news/critical"); };
+destination newserr        { file("/var/log/news/errors"); };
+destination newsnotice     { file("/var/log/news/notice"); };
+destination newswarn       { file("/var/log/news/warnings"); };
+
+#----------------------------------------------------------------------
+#  Cron subsystem
+#----------------------------------------------------------------------
+destination cron           { file("/var/log/cron.log"); };
+destination crondebug      { file("/var/log/cron/debug"); }; 
+destination cronerr        { file("/var/log/cron/errors"); }; 
+destination croninfo       { file("/var/log/cron/info"); }; 
+destination cronwarn       { file("/var/log/cron/warnings"); }; 
+
+#----------------------------------------------------------------------
+#  LPR subsystem
+#----------------------------------------------------------------------
+destination lpr            { file("/var/log/lpr.log"); };
+destination lprerr         { file("/var/log/lpr/errors"); }; 
+destination lprinfo        { file("/var/log/lpr/info"); }; 
+destination lprwarn        { file("/var/log/lpr/warnings"); }; 
+
+#----------------------------------------------------------------------
+#  Kernel messages
+#----------------------------------------------------------------------
+destination kern           { file("/var/log/kern.log"); };
+destination kernerr        { file("/var/log/kernel/errors"); }; 
+destination kerninfo       { file("/var/log/kernel/info"); }; 
+destination kernwarn       { file("/var/log/kernel/warnings"); }; 
+
+#----------------------------------------------------------------------
+#  Daemon messages
+#----------------------------------------------------------------------
+destination daemon         { file("/var/log/daemon.log"); };
+destination daemonerr      { file("/var/log/daemons/errors"); };
+destination daemoninfo     { file("/var/log/daemons/info"); };
+destination daemonwarn     { file("/var/log/daemons/warnings"); };
+
+#----------------------------------------------------------------------
+#  Console warnings
+#----------------------------------------------------------------------
+destination console        { file("/dev/tty12"); };
+
+#----------------------------------------------------------------------
+#  All users
+#----------------------------------------------------------------------
+destination users          { usertty("*"); };
+
+#----------------------------------------------------------------------
+#  Examples of programs that accept syslog messages and do something
+#  programatically with them.
+#----------------------------------------------------------------------
+#destination mail-alert     { program("/usr/local/bin/syslog-mail"); };
+#destination mail-perl      { program("/usr/local/bin/syslog-mail-perl"); };
+
+#----------------------------------------------------------------------
+#  Piping to Swatch
+#----------------------------------------------------------------------
+#destination swatch         { program("/usr/bin/swatch --read-pipe=\"cat /dev/fd/0\""); };
+
+#----------------------------------------------------------------------
+#  Database notes:
+#
+#  Overall there seems to be three primary methods of putting data from
+#  syslog-ng into a database.  Each of these has certain pros and cons.
+#
+#  FIFO file:    Simply piping the template data into a First In, First
+#                Out file.  This will create a stream of data that will
+#                not require any sort of marker or identifier of how
+#                much data has been read.  This is the most elegant of
+#                the solutions and probably the most unstable.
+#
+#                Pros:  Very fast data writes and reads.  Data being
+#                       inserted into a database will be near real
+#                       time.
+#
+#                Cons:  Least stable of all the possible solutions,
+#                       and could require a lot of custom work to
+#                       make function on any particular Unix system.
+#
+#                       Loss of the pipe file will cause complete
+#                       data loss, and all following data that would
+#                       have been written to the FIFO file.
+#
+#  Buffer file:  While very similar to a FIFO file this is would be a
+#                text file which would buffer all the template 
+#                output information.  Another program from cron or
+#                similar service would then run and source the buffer
+#                files and process the data into the database.
+#
+#                Pros:  Little chance of losing data since everything
+#                       will be written to a physical file much like
+#                       the regular logging process.  
+#
+#                       This method gives a tremendous amount of 
+#                       flexibility since there would be yet another
+#                       opportunity to filter logs prior to inserting
+#                       any data into the database.
+#
+#                Cons:  Because there must be some interval between
+#                       the processing of the buffer files, there will
+#                       be a lag before the data is inserted in to the
+#                       database.  
+#
+#                       There is also a slight chance of data corruption 
+#                       (ie bad insert command) if the system crashes 
+#                       during a write, although this scenero is very 
+#                       unlikely.  
+#
+#                       Another possible issue is that because multiple 
+#                       buffer files be written, the previously run 
+#                       sourcing file could get behind the data 
+#                       insertion if there is a very large quantity of 
+#                       logs being written.  This will totally depend 
+#                       on the system that this is running on.
+#
+#  Program:      The least elegant of the solutions.  This method is to
+#                send the stream of data through some further interrupter
+#                program such as something in Perl or C.  That program
+#                will then take some action based off the data which
+#                could include writing to a database similarly to the
+#                program "sqlsyslogd".
+#
+#                Pros:  Allows complete control of the data, and as much
+#                       post processing as required.
+#
+#                Cons:  Slowest of all the forms.  Since the data will
+#                       have to go through some post processing it will
+#                       cause data being written to the database to 
+#                       remain behind actual log records.  This could
+#                       cause a race condition in that logging is lost
+#                       either due to system crash, or high load on
+#                       the logging system.
+#
+#----------------------------------------------------------------------
+
+#----------------------------------------------------------------------
+#  Writing to a MySQL database:
+#
+#  Assumes a table/database structure of:
+#
+#            CREATE DATABASE syslog;
+#            USE syslog;
+#
+#            CREATE TABLE logs ( host varchar(32) default NULL, 
+#                                facility varchar(10) default NULL, 
+#                                priority varchar(10) default NULL, 
+#                                level varchar(10) default NULL, 
+#                                tag varchar(10) default NULL, 
+#                                date date default NULL, 
+#                                time time default NULL, 
+#                                program varchar(15) default NULL, 
+#                                msg text, seq int(10) unsigned NOT NULL auto_increment, 
+#                                PRIMARY KEY (seq), 
+#                                KEY host (host), 
+#                                KEY seq (seq), 
+#                                KEY program (program), 
+#                                KEY time (time), 
+#                                KEY date (date), 
+#                                KEY priority (priority), 
+#                                KEY facility (facility)) 
+#                                TYPE=MyISAM;
+#
+#----------------------------------------------------------------------
+#  Piping method
+#----------------------------------------------------------------------
+#destination database       { pipe("/tmp/mysql.pipe"
+#                             template("INSERT INTO logs (host, facility, 
+#                             priority, level, tag, date, time, program, 
+#                             msg) VALUES ( '$HOST', '$FACILITY', '$PRIORITY', 
+#                             '$LEVEL', '$TAG', '$YEAR-$MONTH-$DAY', 
+#                             '$HOUR:$MIN:$SEC', '$PROGRAM', '$MSG' );\n") 
+#                             template-escape(yes)); };
+
+#----------------------------------------------------------------------
+#  Buffer file method
+#----------------------------------------------------------------------
+destination database       { file("/var/log/dblog/fulllog.$YEAR.$MONTH.$DAY.$HOUR.$MIN.$SEC"
+                             template("INSERT INTO logs (host, facility, 
+                             priority, level, tag, date, time, program, 
+                             msg) VALUES ( '$HOST', '$FACILITY', '$PRIORITY', 
+                             '$LEVEL', '$TAG', '$YEAR-$MONTH-$DAY', 
+                             '$HOUR:$MIN:$SEC', '$PROGRAM', '$MSG' );\n") 
+			     owner(root) group(root) perm(0600) 
+			     dir_perm(0700) create_dirs(yes)
+                             template-escape(yes)); };
+
+#----------------------------------------------------------------------
+#  Program method (alternate using sqlsyslogd):
+#
+#  Notes:  This is not a bad process, but lacks very much flexibility
+#          unless more changes are made to the source of sqlsyslogd.
+#          This is because sqlsyslogd assumes the data in a larger
+#          object style instead of breaking it down into smaller
+#          columnar pieces.
+#----------------------------------------------------------------------
+#destination database       { program("/usr/local/sbin/sqlsyslogd -u
+#                             sqlsyslogd -t logs sqlsyslogs2 -p"); };
+
+#----------------------------------------------------------------------
+#  Since we probably will not be putting ALL of our logs in the database
+#  we better plan on capturing that data that we will be discarding for
+#  later review to insure we did not throw anything away we really
+#  should have captured.
+#----------------------------------------------------------------------
+destination db_discard     { file("/var/log/discard.log"); };
+
+#----------------------------------------------------------------------
+#  Filters
+#----------------------------------------------------------------------
+#
+#  Functions:
+#
+#  Name               Synopsis                        Description
+#  --------------  ------------------------------  --------------------
+#  facility        facility(facility[,facility])    Match messages 
+#                                                  having one of the 
+#                                                  listed facility code.
+#  filter          Call another filter rule and 
+#                  evaluate its value
+#  host            host(regexp)                    Match messages by 
+#                                                  using a regular 
+#                                                  expression against 
+#                                                  the hostname field 
+#                                                  of log messages.
+#  level/priority  level(pri[,pri1..pri2[,pri3]])  Match messages based 
+#                                                  on priority.
+#  match           Tries to match a regular 
+#                  expression to the message 
+#                  itself.
+#  program         program(regexp)                 Match messages by 
+#                                                  using a regular 
+#                                                  expression against 
+#                                                  the program name 
+#                                                  field of log messages
+#----------------------------------------------------------------------
+#  NOTES: 
+#
+#  Getting filtering to work right can be difficult because while the
+#  syntax is fairly simple, it is not well documented.  To illustrate
+#  a brief lesson on filtering and to explain the majority of the
+#  mechanics, we shall use the filter from the PostgreSQL database
+#  how-to page found at:  http://www.umialumni.com/~ben/SYSLOG-DOC.html
+#                            
+#  This is a perfect and somewhat complex example to use.  In its
+#  original form it resembles:
+#                            
+#  filter f_postgres { not(
+#                            (host("syslogdb") and facility(cron) and level(info))
+#                         or (facility(user) and level(notice)
+#                                 and ( match(" gethostbyaddr: ")
+#                                       or match("last message repeated ")
+#                                      )
+#                             )
+#                         or ( facility(local3) and level(notice)
+#                               and match(" SYSMON NORMAL "))
+#                         or ( facility(mail) and level(warning)
+#                               and match(" writable directory")
+#                            )
+#                         or (  ( host("dbserv1.somecompany.com")
+#                                 or host("dbserv2.somecompany.com")
+#                               )
+#                               and facility(auth) and level(info)
+#                               and match("su oracle") and match(" succeeded for root on /dev/")
+#                            )
+#                         ); };
+#
+#  While in this form, it does not induce a tremendous amount of 
+#  insight on what the specific filter is attempting to accomplish.  In
+#  reformatting the filter to resemble something a bit more human
+#  readable, it would look like:
+#
+#  filter f_postgres { not
+#                        (
+#                          (
+#                            host("syslogdb") and 
+#                            facility(cron) and 
+#                            level(info)
+#                          ) or 
+#                          (
+#                            facility(user) and 
+#                            level(notice) and 
+#                            ( 
+#                              match(" gethostbyaddr: ") or 
+#                              match("last message repeated ")
+#                            )
+#                        ) or 
+#                        ( 
+#                          facility(local3) and 
+#                          level(notice) and 
+#                          match(" SYSMON NORMAL ")
+#                        ) or 
+#                        ( 
+#                          facility(mail) and 
+#                          level(warning) and 
+#                          match(" writable directory")
+#                        ) or 
+#                        (  
+#                          ( 
+#                            host("dbserv1.somecompany.com") or 
+#                            host("dbserv2.somecompany.com")
+#                          ) and 
+#                          facility(auth) and 
+#                          level(info) and 
+#                          match("su oracle") and 
+#                          match(" succeeded for root on /dev/")
+#                        )
+#                      ); 
+#                   };
+#
+#  Now in this form we can now begin to see what this filter has been
+#  attempting to accomplish.  We can now further breakdown each logical
+#  section and explain the different methods:
+#
+#  [1]  As in all statements in syslog-ng, each of the beginnings and
+#       endings must be with a curly bracket "{" "}" to clearly denote
+#       the start and finish.
+#
+#       In this filter, the entire filter is preferred by a "not" to 
+#       indicate that these are the messages that we are NOT interested
+#       in and should be the ones filtered out.  All lines of logs that
+#       do not match these lines will be sent to the destination.
+#
+#  { not
+#
+#  [2]  The first major part of the filter is actually a compound
+#       filter that has two parts.  Because the two parts are separated
+#       by an "or", only one of the two parts must be matched for that
+#       line of log to be filtered.
+#
+#  [2a]  In the first part of this filter there are three requirements
+#        to be met for the filter to take affect.  These are the host 
+#        string "syslogdb". the facility "cron", and the syslog level
+#        of info.
+#
+#  (
+#    (
+#      host("syslogdb") and 
+#      facility(cron) and 
+#      level(info)
+#    ) or 
+#
+#  [2b]  In the second part of the filter, which in itself is a 
+#        compound filter, there are three requirements as well.  These
+#        are that the facility of "user", and the log level of "notice"
+#        are met in addition to one of the two string matches that are
+#        shown in the example.
+#
+#  (
+#    facility(user) and 
+#    level(notice) and 
+#    ( 
+#      match(" gethostbyaddr: ") or 
+#      match("last message repeated ")
+#    )
+#  ) or
+#
+#  [3]  In the section of the filter there are once again three
+#       requirements to fire off a match which are a facility of "level3"
+#       a log level of "notice" and a sting match of " SYSMON NORMAL ".
+#
+#  ( 
+#    facility(local3) and 
+#    level(notice) and 
+#    match(" SYSMON NORMAL ")
+#  ) or 
+#
+#  [4]  This part of the filter is very similar to the previous
+#       filter, but with different search patterns.
+#
+#  ( 
+#    facility(mail) and 
+#    level(warning) and 
+#    match(" writable directory")
+#  ) or 
+#
+#  [5]  The last section of the filter is also a compound filter
+#       that to take affect will require that one of two hosts
+#       are matched, the facility of "auth", and log level of 
+#       "info" occur in addition to the two string matches.
+#
+#  (  
+#    ( 
+#      host("dbserv1.somecompany.com") or 
+#      host("dbserv2.somecompany.com")
+#    ) and 
+#    facility(auth) and 
+#    level(info) and 
+#    match("su oracle") and 
+#    match(" succeeded for root on /dev/")
+#  )
+#
+#  [6]  As in all command sets in syslog-ng, each of the statements 
+#       must be properly closed with the correct ending punctuation
+#       AND a semi-colon.  Do not forget both, or you will be faced with
+#       an error.
+#
+#  ); };
+#
+#  While this may not be the most complete example, it does cover the
+#  majority of the options and features that are available within the
+#  current version of syslog-ng.
+#----------------------------------------------------------------------
+
+#----------------------------------------------------------------------
+#  Standard filters for the standard destinations.
+#----------------------------------------------------------------------
+filter      f_auth         { facility(auth, authpriv); };
+filter      f_authpriv     { facility(authpriv); }; 
+filter      f_cron         { facility(cron); };
+filter      f_daemon       { facility(daemon); };
+filter      f_kern         { facility(kern); };
+filter      f_local1       { facility(local1); };
+filter      f_local2       { facility(local2); };
+filter      f_local3       { facility(local3); };
+filter      f_local4       { facility(local4); };
+filter      f_local5       { facility(local5); };
+filter      f_local6       { facility(local6); };
+filter      f_local7       { facility(local7); };
+filter      f_lpr          { facility(lpr); };
+filter      f_mail         { facility(mail); };
+filter      f_messages     { facility(daemon, kern, user); };
+filter      f_news         { facility(news); };
+filter      f_spooler      { facility(uucp,news) and level(crit); };
+filter      f_syslog       { not facility(auth, authpriv) and not facility(mail); };
+filter      f_user         { facility(user); };
+
+#----------------------------------------------------------------------
+#  Other catch-all filters
+#----------------------------------------------------------------------
+filter      f_crit         { level(crit); };
+#filter     f_debug        { not facility(auth, authpriv, news, mail); };
+filter      f_debug        { level(debug); };
+filter      f_emergency    { level(emerg); };
+filter      f_err          { level(err); };
+filter      f_info         { level(info); };
+filter      f_notice       { level(notice); };
+filter      f_warn         { level(warn); };
+
+#----------------------------------------------------------------------
+#  Filer for the MySQL database pipe.  These are things that we really
+#  do not care to see otherwise they may fill up our database with
+#  garbage.
+#----------------------------------------------------------------------
+#filter      f_db           { not facility(kern) and level(info, warning) or
+#                             not facility(user) and level(notice) or
+#                             not facility(local2) and level(debug); };
+#
+#filter      f_db           { not match("last message repeated ") or
+#                             not match("emulate rawmode for keycode"); };
+#
+#filter      f_discard      { facility(kern) and level(info, warning) or
+#                             facility(user) and level(notice) or
+#			     facility(local2) and level(debug); };
+#
+#filter      f_discard      { match("last message repeated ") or
+#                             match("emulate rawmode for keycode"); };
+
+#----------------------------------------------------------------------
+#  Logging
+#----------------------------------------------------------------------
+#
+#  Notes:  When applying filters, remember that each subsequent filter
+#          acts as a filter on the previous data flow.  This means that
+#          if the first filter limits the flow to only data from the
+#          auth system, a subsequent filter for authpriv will cause
+#          no data to be written.  An example of this would be:
+#
+# log { source(s_dgram);
+#       source(s_internal);
+#       source(s_kernel);
+#       source(s_tcp);
+#       source(s_udp);      filter(f_auth); 
+#                           filter(f_authpriv);  destination(authlog); };
+#
+#          So, one can cancel out the other.
+#
+#  There are also certain flags that can be attached to each of the log
+#  statements:
+#
+#  Flag      Description
+#  --------  ----------------------------------------------------------
+#  catchall  This flag means that the source of the message is ignored, 
+#            only the filters are taken into account when matching 
+#            messages.
+#  fallback  This flag makes a log statement 'fallback'. Being a 
+#            fallback statement means that only messages not matching 
+#            any 'non-fallback' log statements will be dispatched.
+#  final     This flag means that the processing of log statements ends 
+#            here. Note that this doesn't necessarily mean that 
+#            matching messages will be stored once, as they can be 
+#            matching log statements processed prior the current one.
+#----------------------------------------------------------------------
+
+#----------------------------------------------------------------------
+#  Standard logging
+#----------------------------------------------------------------------
+log { source(s_dgram);
+      source(s_internal);
+      source(s_tcp);      filter(f_auth);      destination(authlog); };
+log { source(s_dgram);
+      source(s_internal);
+      source(s_tcp);      filter(f_local7);    destination(bootlog); };
+#log{ source(s_dgram);
+#      source(s_internal);
+#      source(s_kernel);
+#      source(s_tcp);
+#      source(s_udp);      filter(f_debug);     destination(debug); };
+log { source(s_dgram);
+      source(s_internal);
+      source(s_tcp);      filter(f_local1);    destination(explan); };
+log { source(s_dgram);
+      source(s_internal);
+      source(s_tcp);      filter(f_local5);    destination(routers); };
+log { source(s_dgram);
+      source(s_internal);
+      source(s_tcp);      filter(f_messages);  destination(messages); };
+log { source(s_dgram);
+      source(s_internal);
+      source(s_tcp);      filter(f_authpriv);  destination(secure); }; 
+log { source(s_dgram);
+      source(s_internal);
+      source(s_tcp);      filter(f_spooler);   destination(spooler); };
+log { source(s_dgram);
+      source(s_internal);
+      source(s_kernel);
+      source(s_tcp);      filter(f_syslog);    destination(syslog); };
+#log { source(s_dgram);
+#      source(s_internal);
+#      source(s_kernel);
+#      source(s_tcp);
+#      source(s_udp);                       destination(syslog); };
+log { source(s_dgram);
+      source(s_internal);
+      source(s_tcp);      filter(f_user);      destination(user); };
+
+#----------------------------------------------------------------------
+#  Special catch all destination sorting by host
+#----------------------------------------------------------------------
+log { source(s_dgram);
+      source(s_internal);
+      source(s_kernel);
+      source(s_tcp);                           destination(hosts); };
+
+#----------------------------------------------------------------------
+#  Send to a loghost
+#----------------------------------------------------------------------
+#log { source(s_dgram);
+#      source(s_internal);
+#      source(s_kernel);
+#      source(s_tcp);                           destination(loghost); };
+
+#----------------------------------------------------------------------
+#  Mail subsystem logging
+#----------------------------------------------------------------------
+#log { source(s_dgram);
+#      source(s_internal);
+#      source(s_kernel);
+#      source(s_tcp);
+#      source(s_udp);     filter(f_mail);      destination(mail); };
+log { source(s_dgram);
+      source(s_internal);
+      source(s_tcp);      filter(f_mail); 
+                          filter(f_err);       destination(mailerr); };
+log { source(s_dgram);
+      source(s_internal);
+      source(s_tcp);      filter(f_mail); 
+                          filter(f_info);      destination(mailinfo); };
+log { source(s_dgram);
+      source(s_internal);
+      source(s_tcp);      filter(f_mail); 
+                          filter(f_notice);    destination(mailinfo); };
+log { source(s_dgram);
+      source(s_internal);
+      source(s_tcp);      filter(f_mail); 
+                          filter(f_warn);      destination(mailwarn); };
+
+#----------------------------------------------------------------------
+#  INN subsystem logging
+#----------------------------------------------------------------------
+log { source(s_dgram);
+      source(s_internal);
+      source(s_tcp);      filter(f_news); 
+                          filter(f_crit);      destination(newscrit); };
+log { source(s_dgram);
+      source(s_internal);
+      source(s_tcp);      filter(f_news); 
+                          filter(f_err);       destination(newserr); };
+log { source(s_dgram);
+      source(s_internal);
+      source(s_tcp);      filter(f_news); 
+                          filter(f_notice);    destination(newsnotice); };
+log { source(s_dgram);
+      source(s_internal);
+      source(s_tcp);      filter(f_news); 
+                          filter(f_warn);      destination(newswarn); };
+
+#----------------------------------------------------------------------
+#  Cron subsystem logging
+#----------------------------------------------------------------------
+#log { source(s_dgram);
+#      source(s_internal);
+#      source(s_tcp);
+#      source(s_udp);     filter(f_cron);      destination(crondebug); };
+log { source(s_dgram);
+      source(s_internal);
+      source(s_tcp);      filter(f_cron); 
+                          filter(f_err);       destination(cronerr); };
+log { source(s_dgram);
+      source(s_internal);
+      source(s_tcp);      filter(f_cron); 
+                          filter(f_info);      destination(croninfo); };
+log { source(s_dgram);
+      source(s_internal);
+      source(s_tcp);      filter(f_cron); 
+                          filter(f_warn);      destination(cronwarn); };
+
+#----------------------------------------------------------------------
+#  LPR subsystem logging
+#----------------------------------------------------------------------
+#log { source(s_dgram);
+#      source(s_internal);
+#      source(s_tcp);
+#      source(s_udp);     filter(f_lpr);       destination(lpr); };
+log { source(s_dgram);
+      source(s_internal);
+      source(s_tcp);      filter(f_lpr); 
+                          filter(f_err);       destination(lprerr); };
+log { source(s_dgram);
+      source(s_internal);
+      source(s_tcp);      filter(f_lpr); 
+                          filter(f_info);      destination(lprinfo); };
+log { source(s_dgram);
+      source(s_internal);
+      source(s_tcp);      filter(f_lpr);   
+                          filter(f_warn);      destination(lprwarn); }; 
+
+#----------------------------------------------------------------------
+#  Kernel subsystem logging
+#----------------------------------------------------------------------
+#log { source(s_dgram);
+#      source(s_internal);
+#      source(s_kernel);
+#      source(s_tcp);
+#      source(s_udp);     filter(f_kern);      destination(kern); };
+log { source(s_dgram);
+      source(s_internal);
+      source(s_kernel);
+      source(s_tcp);      filter(f_kern); 
+                          filter(f_err);       destination(kernerr); }; 
+log { source(s_dgram);
+      source(s_internal);
+      source(s_kernel);
+      source(s_tcp);      filter(f_kern); 
+                          filter(f_info);      destination(kerninfo); }; 
+log { source(s_dgram);
+      source(s_internal);
+      source(s_kernel);
+      source(s_tcp);      filter(f_kern);
+                          filter(f_warn);      destination(kernwarn); }; 
+
+#----------------------------------------------------------------------
+#  Daemon subsystem logging
+#----------------------------------------------------------------------
+#log { source(s_dgram);
+#      source(s_internal);
+#      source(s_tcp);
+#      source(s_udp);     filter(f_daemon);    destination(daemon); };
+log { source(s_dgram);
+      source(s_internal);
+      source(s_tcp);      filter(f_daemon);    
+                          filter(f_err);       destination(daemonerr); };
+log { source(s_dgram);
+      source(s_internal);
+      source(s_tcp);      filter(f_daemon); 
+                          filter(f_info);      destination(daemoninfo); };
+log { source(s_dgram);
+      source(s_internal);
+      source(s_tcp);      filter(f_daemon);    
+                          filter(f_warn);      destination(daemonwarn); };
+
+#----------------------------------------------------------------------
+#  Console logging
+#----------------------------------------------------------------------
+#  16-Mar-03 - REP - Removed logging to the console for performance
+#                    reasons.  Since we are not really going to be 
+#                    looking at the console all the time, why log there
+#                    anyway.
+#----------------------------------------------------------------------
+#log { source(s_dgram);
+#      source(s_internal);
+#      source(s_kernel);
+#      source(s_tcp);      filter(f_syslog);    destination(console); };
+
+#----------------------------------------------------------------------
+#  Logging to a database
+#----------------------------------------------------------------------
+#log { source(s_dgram);
+#      source(s_internal);
+#      source(s_kernel);
+#      source(s_tcp);      filter(f_db);        destination(database); };
+#log { source(s_dgram);
+#      source(s_internal);
+#      source(s_kernel);
+#      source(s_tcp);      filter(f_discard);   destination(db_discard); };

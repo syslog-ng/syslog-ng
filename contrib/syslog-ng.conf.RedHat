@@ -1,0 +1,69 @@
+# syslog-ng configuration file.
+#
+# This should behave pretty much like the original syslog on RedHat. But
+# it could be configured a lot smarter.
+#
+# See syslog-ng(8) and syslog-ng.conf(5) for more information.
+#
+# 20000925 gb@sysfive.com
+#
+# Updated by Frank Crawford (<Frank.Crawford@ac3.com.au>) - 10 Aug 2002
+# 	- for Red Hat 7.3
+#	- totally do away with klogd
+#	- add message "kernel:" as is done with klogd.
+#
+# Updated by Frank Crawford (<Frank.Crawford@ac3.com.au>) - 22 Aug 2002
+#	- use the log_prefix option as per Balazs Scheidler's email
+#
+
+options { sync (0);
+          time_reopen (10);
+          log_fifo_size (1000);
+          long_hostnames (off);
+          use_dns (no);
+          use_fqdn (no);
+          create_dirs (no);
+          keep_hostname (yes);
+        };
+
+#
+# At around 1999 some distributions have changed from using SOCK_STREAM
+# to SOCK_DGRAM sockets, see these posts about the issue:
+#
+# http://www.security-express.com/archives/bugtraq/1999-q4/0071.html
+# http://marc.theaimsgroup.com/?l=sysklogd&m=96989685607952&w=2
+#
+# libc and syslog clients generally automatically detect the socket type,
+# so you are free to decide which of unix-stream or unix-dgram you want to use.
+#
+source s_sys { file ("/proc/kmsg" log_prefix("kernel: ")); unix-stream ("/dev/log"); internal(); };
+
+destination d_cons { file("/dev/console"); };
+destination d_mesg { file("/var/log/messages"); };
+destination d_auth { file("/var/log/secure"); };
+destination d_mail { file("/var/log/maillog"); };
+destination d_spol { file("/var/log/spooler"); };
+destination d_boot { file("/var/log/boot.log"); };
+destination d_cron { file("/var/log/cron"); };
+destination d_mlal { usertty("*"); };
+
+filter f_filter1     { facility(kern); };
+filter f_filter2     { level(info) and
+                     not (facility(mail)
+			or facility(authpriv) or facility(cron)); };
+filter f_filter3     { facility(authpriv); };
+filter f_filter4     { facility(mail); };
+filter f_filter5     { level(emerg); };
+filter f_filter6     { facility(uucp) or
+                     (facility(news) and level(crit)); };
+filter f_filter7     { facility(local7); };
+filter f_filter8     { facility(cron); };
+
+#log { source(s_sys); filter(f_filter1); destination(d_cons); };
+log { source(s_sys); filter(f_filter2); destination(d_mesg); };
+log { source(s_sys); filter(f_filter3); destination(d_auth); };
+log { source(s_sys); filter(f_filter4); destination(d_mail); };
+log { source(s_sys); filter(f_filter5); destination(d_mlal); };
+log { source(s_sys); filter(f_filter6); destination(d_spol); };
+log { source(s_sys); filter(f_filter7); destination(d_boot); };
+log { source(s_sys); filter(f_filter8); destination(d_cron); };

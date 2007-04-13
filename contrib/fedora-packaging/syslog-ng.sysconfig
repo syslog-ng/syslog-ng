@@ -1,0 +1,5 @@
+#---
+# Syslog-ng command line options
+# See syslog-ng(8) for more details
+#---
+SYSLOGNG_OPTIONS=""
