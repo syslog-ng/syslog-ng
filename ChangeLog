@@ -2,6 +2,23 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-06-24 07:57:18 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-36
+
+    Summary:
+      added sync() alias for sync_freq() to maintain 1.6.x compatibility
+    Revision:
+      syslog-ng--mainline--2.0--patch-36
+
+    2005-06-24  Balazs Scheidler <bazsi@balabit.hu>
+    
+    	* src/cfg-lex.l: added sync() alias for sync_freq() to maintain
+    	compatibility with 1.6.x
+    
+
+    modified files:
+     ChangeLog src/cfg-lex.l
+
+
 2005-06-23 08:50:45 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-35
 
     Summary:

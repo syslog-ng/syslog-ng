@@ -70,6 +70,7 @@ static struct keyword keywords[] = {
 	{ "pad_size",		KW_PAD_SIZE },
 	{ "mark_freq",		KW_MARK_FREQ },
 	{ "sync_freq", 		KW_SYNC_FREQ },
+	{ "sync", 		KW_SYNC_FREQ },
 	{ "fsync",		KW_FSYNC },
 	{ "long_hostnames",	KW_CHAIN_HOSTNAMES },
         { "chain_hostnames",    KW_CHAIN_HOSTNAMES },
