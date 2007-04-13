@@ -68,7 +68,7 @@ LogTemplate *last_template;
 
 
 /* reader options */
-%token KW_NO_PARSE KW_PAD_SIZE KW_TIME_ZONE
+%token KW_NO_PARSE KW_PAD_SIZE KW_TIME_ZONE KW_RECV_TIME_ZONE KW_SEND_TIME_ZONE
 
 /* destination options */
 %token KW_TIME_REOPEN KW_TIME_REAP 
@@ -226,10 +226,6 @@ template_items
 template_item
 	: KW_TEMPLATE '(' string ')'		{ last_template->template = g_string_new($3); free($3); }
 	| KW_TEMPLATE_ESCAPE '(' yesno ')'	{ log_template_set_escape(last_template, $3); }
-	| KW_TIME_ZONE '(' string ')'		{ if (cfg_timezone_value($3, &last_template->zone_offset)) 
-	                                            last_template->flags |= LT_TZ_SET; 
-	                                          free($3);
-	                                        }
 	;
 
 source_items
@@ -414,7 +410,7 @@ source_reader_option
 	| KW_LOG_PREFIX '(' string ')'		{ last_reader_options->prefix = $3; }
 	| KW_PAD_SIZE '(' NUMBER ')'		{ last_reader_options->padding = $3; }
 	| KW_FOLLOW_FREQ '(' NUMBER ')'		{ last_reader_options->follow_freq = $3; }
-	| KW_TIME_ZONE '(' string ')'		{ last_reader_options->zone_offset_set = cfg_timezone_value($3, &last_reader_options->zone_offset); free($3); }
+	| KW_TIME_ZONE '(' string ')'		{ cfg_timezone_value($3, &last_reader_options->zone_offset); free($3); }
 	;
 
 source_reader_option_flags
@@ -631,7 +627,7 @@ dest_writer_option
 	| KW_TEMPLATE_ESCAPE '(' yesno ')'	{ affile_dd_set_template_escape(last_driver, $3); }
 	| KW_FSYNC '(' yesno ')'		{ affile_dd_set_fsync(last_driver, $3); }
 	| KW_KEEP_TIMESTAMP '(' yesno ')'	{ last_writer_options->keep_timestamp = $3; }
-	| KW_TZ_CONVERT '(' string ')'          { last_writer_options->tz_convert = cfg_tz_convert_value($3); free($3); }
+	| KW_TIME_ZONE '(' string ')'           { cfg_timezone_value($3, &last_writer_options->zone_offset); free($3); }
 	| KW_TS_FORMAT '(' string ')'		{ last_writer_options->ts_format = cfg_ts_format_value($3); free($3); }
 	;
 
@@ -694,7 +690,6 @@ options_item
 	| KW_LOG_FETCH_LIMIT '(' NUMBER ')'	{ configuration->log_fetch_limit = $3; }
 	| KW_LOG_MSG_SIZE '(' NUMBER ')'	{ configuration->log_msg_size = $3; }
 	| KW_KEEP_TIMESTAMP '(' yesno ')'	{ configuration->keep_timestamp = $3; }
-	| KW_TZ_CONVERT '(' string ')'          { configuration->tz_convert = cfg_tz_convert_value($3); free($3); }
 	| KW_TS_FORMAT '(' string ')'		{ configuration->ts_format = cfg_ts_format_value($3); free($3); }
 	| KW_GC_BUSY_THRESHOLD '(' NUMBER ')' 	{ /* ignored */; }
 	| KW_GC_IDLE_THRESHOLD '(' NUMBER ')'	{ /* ignored */; }
@@ -712,6 +707,8 @@ options_item
 	  			{ configuration->dns_cache_expire_failed = $3; }
 	| KW_FILE_TEMPLATE '(' string ')'	{ configuration->file_template_name = $3; }
 	| KW_PROTO_TEMPLATE '(' string ')'	{ configuration->proto_template_name = $3; }
+	| KW_RECV_TIME_ZONE '(' string ')'      { cfg_timezone_value($3, &configuration->recv_zone_offset); free($3); }
+	| KW_SEND_TIME_ZONE '(' string ')'      { cfg_timezone_value($3, &configuration->send_zone_offset); free($3); }
 	;
 
 filter_stmt

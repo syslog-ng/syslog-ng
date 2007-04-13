@@ -18,7 +18,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   
   msg = log_msg_new(msg_str, strlen(msg_str), NULL, 0);
   templ = log_template_new("dummy", "$PROGRAM/var/log/messages/$HOST/$MONTH$DAY$QQQQQvalami");
-  log_template_format(templ, msg, 0, res);
+  log_template_format(templ, msg, 0, TS_FMT_BSD, -1, res);
   if (strcmp(res->str, expected_format) != 0)
     {
       printf("template test failed: %s <=> %s\n", res->str, expected_format);

@@ -40,6 +40,7 @@ GlobalConfig *configuration;
 gboolean
 cfg_timezone_value(gchar *tz, glong *timezone)
 {
+  *timezone = -1;
   if ((*tz == '+' || *tz == '-') && strlen(tz) == 6 && 
       isdigit((int) *(tz+1)) && isdigit((int) *(tz+2)) && (*(tz+3) == ':') && isdigit((int) *(tz+4)) && isdigit((int) *(tz+5)))
     {
@@ -56,28 +57,10 @@ cfg_timezone_value(gchar *tz, glong *timezone)
           return TRUE;
         }
     }
-  msg_error("Bogus timezone spec, must be in the format [+-]HHMM",
+  msg_error("Bogus timezone spec, must be in the format [+-]HH:MM",
             evt_tag_str("value", tz),
             NULL);
   return FALSE;
-}
-
-gint
-cfg_tz_convert_value(gchar *convert)
-{
-  if (strcmp(convert, "gmt") == 0)
-    return TZ_CNV_GMT;
-  else if (strcmp(convert, "local") == 0)
-    return TZ_CNV_LOCAL;
-  else if (strcmp(convert, "orig") == 0 || strcmp(convert, "original") == 0 || strcmp(convert, "keep"))
-    return TZ_CNV_ORIG;
-  else
-    {
-      msg_error("Invalid tz_convert() value",
-                evt_tag_str("value", convert),
-                NULL);
-      return TZ_CNV_ORIG;
-    }
 }
 
 gint
@@ -252,7 +235,8 @@ cfg_new(gchar *fname)
   self->dns_cache_expire_failed = 60;
   
   self->ts_format = TS_FMT_BSD;
-  self->tz_convert = TZ_CNV_LOCAL;
+  self->recv_zone_offset = -1;
+  self->send_zone_offset = -1;
   self->keep_timestamp = FALSE;
 
   configuration = self;

@@ -47,6 +47,7 @@ macros[] =
         { "DATE", M_DATE },
         { "FULLDATE", M_FULLDATE },
         { "ISODATE", M_ISODATE },
+        { "STAMP", M_STAMP },
         { "YEAR", M_YEAR },
         { "MONTH", M_MONTH },
         { "DAY", M_DAY },
@@ -61,6 +62,7 @@ macros[] =
         { "R_DATE", M_DATE_RECVD },
         { "R_FULLDATE", M_FULLDATE_RECVD },
         { "R_ISODATE", M_ISODATE_RECVD },
+        { "R_STAMP", M_STAMP_RECVD },
         { "R_YEAR", M_YEAR_RECVD },
         { "R_MONTH", M_MONTH_RECVD },
         { "R_DAY", M_DAY_RECVD },
@@ -75,6 +77,7 @@ macros[] =
         { "S_DATE", M_DATE_STAMP },
         { "S_FULLDATE", M_FULLDATE_STAMP },
         { "S_ISODATE", M_ISODATE_STAMP },
+        { "S_STAMP", M_STAMP_STAMP },
         { "S_YEAR", M_YEAR_STAMP },
         { "S_MONTH", M_MONTH_STAMP },
         { "S_DAY", M_DAY_STAMP },
@@ -128,7 +131,7 @@ result_append(GString *result, gchar *str, gint len, gboolean escape)
 }
 
 gboolean
-log_macro_expand(GString *result, gint id, guint32 flags, glong zone_offset, LogMessage *msg)
+log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, glong zone_offset, LogMessage *msg)
 {
   if (id >= M_MATCH_REF_OFS)
     {
@@ -218,6 +221,7 @@ log_macro_expand(GString *result, gint id, guint32 flags, glong zone_offset, Log
       }
     case M_FULLDATE:
     case M_ISODATE:
+    case M_STAMP:
     case M_WEEKDAY:
     case M_DATE:
     case M_YEAR:
@@ -232,6 +236,7 @@ log_macro_expand(GString *result, gint id, guint32 flags, glong zone_offset, Log
 
     case M_FULLDATE_RECVD:
     case M_ISODATE_RECVD:
+    case M_STAMP_RECVD:
     case M_WEEKDAY_RECVD:
     case M_DATE_RECVD:
     case M_YEAR_RECVD:
@@ -246,6 +251,7 @@ log_macro_expand(GString *result, gint id, guint32 flags, glong zone_offset, Log
 
     case M_FULLDATE_STAMP:
     case M_ISODATE_STAMP:
+    case M_STAMP_STAMP:
     case M_WEEKDAY_STAMP:
     case M_DATE_STAMP:
     case M_YEAR_STAMP:
@@ -263,25 +269,32 @@ log_macro_expand(GString *result, gint id, guint32 flags, glong zone_offset, Log
         gchar buf[64];
         gint length;
         time_t t;
+        LogStamp *stamp;
 
         if (id >= M_FULLDATE_RECVD && id <= M_UNIXTIME_RECVD)
           {
-            t = msg->recvd.time.tv_sec - zone_offset;
+            stamp = &msg->recvd;
             id = id - (M_FULLDATE_RECVD - M_FULLDATE);
           }
         else if (id >= M_FULLDATE_STAMP && id <= M_UNIXTIME_STAMP)
           {
-            t = msg->stamp.time.tv_sec - zone_offset;
+            stamp = &msg->stamp;
             id = id - (M_FULLDATE_STAMP - M_FULLDATE);
           }
         else
           {
             if (flags & MF_STAMP_RECVD)
-              t = msg->recvd.time.tv_sec - zone_offset;
+              stamp = &msg->recvd;
             else
-              t = msg->stamp.time.tv_sec - zone_offset;
+              stamp = &msg->stamp;
           }
-          
+
+        /* try to use the following zone values in order:
+         *   destination specific timezone, if one is specified
+         *   message specific timezone, if one is specified
+         *   local timezone
+         */
+        t = stamp->time.tv_sec - (zone_offset != -1 ? zone_offset : (stamp->zone_offset != -1 ? stamp->zone_offset : get_local_timezone_ofs()));
         tm = gmtime(&t);
 
         switch (id)
@@ -316,6 +329,15 @@ log_macro_expand(GString *result, gint id, guint32 flags, glong zone_offset, Log
             length = strftime(buf, sizeof(buf), "%Y %h %e %H:%M:%S", tm);
             g_string_append_len(result, buf, length);
             break;
+          case M_STAMP:
+            {
+              GString *s = g_string_sized_new(0);
+              
+              log_stamp_format(stamp, s, ts_format, zone_offset);
+              g_string_append_len(result, s->str, s->len);
+              g_string_free(s, TRUE);
+              break;
+            }
           case M_DATE:
             g_string_append_len(result, msg->date->str, msg->date->len);
             break;

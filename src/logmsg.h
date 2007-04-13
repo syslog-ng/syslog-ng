@@ -44,11 +44,6 @@
 #define LF_LOCAL    0x0004
 #define LF_MARK     0x0008
 
-/* timezone conversion */
-#define TZ_CNV_ORIG  0
-#define TZ_CNV_LOCAL 1
-#define TZ_CNV_GMT   2
-
 /* timestamp formats */
 #define TS_FMT_BSD   0
 #define TS_FMT_ISO   1
@@ -75,7 +70,8 @@ typedef struct _LogStamp
   glong zone_offset;
 } LogStamp;
 
-void log_stamp_format(LogStamp *stamp, GString *target, gint ts_format, gint tz_convert);
+glong log_stamp_get_zone_offset(LogStamp *stamp, gint tz_convert, glong custom_zone_offset);
+void log_stamp_format(LogStamp *stamp, GString *target, gint ts_format, glong zone_offset);
 
 typedef struct _LogMessage
 {

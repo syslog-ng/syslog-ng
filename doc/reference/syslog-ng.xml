@@ -85,6 +85,58 @@
       traverses several computers. And last principle was a clean and
       powerful configuration file format.
     </para>
+    
+    <sect1>
+      <title>Timezone handling</title>
+      <para> 
+        One of the new features of syslog-ng 2.0 is the support for messages
+        originating from various timezones. Although this problem is 
+        not simple as the original syslog protocol does not include
+        timezone information, syslog-ng tries to solve the problem
+        first by extending the syslog protocol to include this information
+        and second by giving finegrained control to the administrator
+        to supply timezone information for legacy devices which do not
+        support the protocol extension.
+      </para>
+      <para>
+        Timezone information is associated with messages entering syslog-ng 
+        using the following algorithm:
+        
+        <procedure>
+          <step>
+            <para>
+              the sender might support specifying timezone with messages, if
+              the incoming message includes a timezone it is associated with
+              the message, if there is no such information local timezone is
+              assumed.
+            </para>
+          </step>
+          <step>
+            <para>
+              if the administrator specifies the timezone() parameter for
+              the source driver that reads the message then the original
+              timezone for the message is changed to the one specified. Each
+              source defaults to the value of the recv_time_zone() global
+              option.
+            </para>
+          </step>
+          <step>
+            <para>
+              The message is delivered to one or more destination drivers,
+              and each destination driver in turn might have an associated
+              timezone value in which to convert message timestamps as they
+              are sent to the final destination (file or network socket).
+              Each destination defaults to the value of the send_time_zone()
+              global option.
+            </para>
+          </step>
+        </procedure>
+        
+        There is another case when message timestamps are formatted: when
+        using macro expansion in destination filenames, in this case the
+        local timezone is used.
+      </para>
+    </sect1>
   </chapter>
 
   <chapter id="msgroute">

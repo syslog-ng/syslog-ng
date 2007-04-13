@@ -24,6 +24,7 @@
 #include "driver.h"
 #include "messages.h"
 #include "macros.h"
+#include "misc.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -508,6 +509,8 @@ affile_dd_queue(LogPipe *s, LogMessage *msg, gint path_flags)
       log_template_format(self->filename_template, msg, 
 		    ((self->flags & AFFILE_TMPL_ESCAPE) ? MF_ESCAPE_RESULT : 0) |
 		    ((self->flags & AFFILE_STAMP_RECVD) ? MF_STAMP_RECVD : 0),
+		    TS_FMT_BSD,
+		    get_local_timezone_ofs(),
 		    filename);
       next = g_hash_table_lookup(self->writer_hash, filename->str);
       if (!next)

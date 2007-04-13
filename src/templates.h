@@ -28,7 +28,6 @@
 #include "logmsg.h"
 
 #define LT_ESCAPE 0x0001
-#define LT_TZ_SET 0x0002
 
 typedef struct _LogTemplate
 {
@@ -38,11 +37,10 @@ typedef struct _LogTemplate
   GList *compiled_template;
   guint flags;
   gboolean def_inline;
-  glong zone_offset;
 } LogTemplate;
 
 void log_template_set_escape(LogTemplate *self, gboolean enable);
-void log_template_format(LogTemplate *self, LogMessage *lm, guint macro_flags, GString *result);
+void log_template_format(LogTemplate *self, LogMessage *lm, guint macro_flags, gint ts_format, glong zone_offset, GString *result);
 
 LogTemplate *log_template_new(gchar *name, gchar *template);
 LogTemplate *log_template_ref(LogTemplate *s);

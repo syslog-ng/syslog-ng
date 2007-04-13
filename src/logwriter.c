@@ -165,6 +165,8 @@ log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
       log_template_format(template, lm, 
                           ((self->options->options & LWO_TMPL_ESCAPE) ? MF_ESCAPE_RESULT : 0) |
 		          ((self->options->options & LWO_TMPL_TIME_RECVD) ? MF_STAMP_RECVD : 0), 
+		          self->options->ts_format,
+		          self->options->zone_offset,
 		          result);
 
     }
@@ -184,7 +186,7 @@ log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
             stamp = &lm->stamp;
           ts_free = TRUE;
           ts = g_string_sized_new(64);
-          log_stamp_format(stamp, ts, self->options->ts_format, self->options->tz_convert);
+          log_stamp_format(stamp, ts, self->options->ts_format, self->options->zone_offset);
         }
       else
         {
@@ -386,8 +388,8 @@ log_writer_options_defaults(LogWriterOptions *options)
   options->template = NULL;
   options->keep_timestamp = -1;
   options->use_time_recvd = -1;
-  options->tz_convert = -1;
   options->ts_format = -1;
+  options->zone_offset = -1;
 }
 
 void
@@ -402,16 +404,16 @@ log_writer_options_init(LogWriterOptions *options, GlobalConfig *cfg, gboolean f
     {
       if (options->keep_timestamp == -1)
         options->keep_timestamp = cfg->keep_timestamp;
-      if (options->tz_convert == -1)
-        options->tz_convert = cfg->tz_convert;
       if (options->ts_format == -1)
         options->ts_format = cfg->ts_format;
+      if (options->zone_offset == -1)
+        options->zone_offset = cfg->send_zone_offset;
     }
   else
     {
       options->keep_timestamp = FALSE;
-      options->tz_convert = TZ_CNV_LOCAL;
       options->ts_format = TS_FMT_BSD;
+      options->zone_offset = -1;
     }
   options->file_template = log_template_ref(cfg->file_template);
   options->proto_template = log_template_ref(cfg->proto_template);

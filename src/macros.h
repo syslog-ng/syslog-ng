@@ -42,44 +42,47 @@
 #define M_DATE     10
 #define M_FULLDATE 11
 #define M_ISODATE  12
-#define M_YEAR     13
-#define M_MONTH    14
-#define M_DAY      15
-#define M_HOUR     16
-#define M_MIN      17
-#define M_SEC      18
-#define M_WEEKDAY  19
-#define M_TZOFFSET 20
-#define M_TZ       21
-#define M_UNIXTIME 22
+#define M_STAMP    13
+#define M_YEAR     14
+#define M_MONTH    15
+#define M_DAY      16
+#define M_HOUR     17
+#define M_MIN      18
+#define M_SEC      19
+#define M_WEEKDAY  20
+#define M_TZOFFSET 21
+#define M_TZ       22
+#define M_UNIXTIME 23
 
 #define M_DATE_RECVD     30
 #define M_FULLDATE_RECVD 31
 #define M_ISODATE_RECVD  32
-#define M_YEAR_RECVD     33
-#define M_MONTH_RECVD    34
-#define M_DAY_RECVD      35
-#define M_HOUR_RECVD     36
-#define M_MIN_RECVD      37
-#define M_SEC_RECVD      38
-#define M_WEEKDAY_RECVD  39
-#define M_TZOFFSET_RECVD 40
-#define M_TZ_RECVD       41
-#define M_UNIXTIME_RECVD 42
+#define M_STAMP_RECVD    33
+#define M_YEAR_RECVD     34
+#define M_MONTH_RECVD    35
+#define M_DAY_RECVD      36
+#define M_HOUR_RECVD     37
+#define M_MIN_RECVD      38
+#define M_SEC_RECVD      39
+#define M_WEEKDAY_RECVD  40
+#define M_TZOFFSET_RECVD 41
+#define M_TZ_RECVD       42
+#define M_UNIXTIME_RECVD 43
 
 #define M_DATE_STAMP     50
 #define M_FULLDATE_STAMP 51
 #define M_ISODATE_STAMP  52
-#define M_YEAR_STAMP     53
-#define M_MONTH_STAMP    54
-#define M_DAY_STAMP      55
-#define M_HOUR_STAMP     56
-#define M_MIN_STAMP      57
-#define M_SEC_STAMP      58
-#define M_WEEKDAY_STAMP  59
-#define M_TZOFFSET_STAMP 60
-#define M_TZ_STAMP       61
-#define M_UNIXTIME_STAMP 62
+#define M_STAMP_STAMP    53
+#define M_YEAR_STAMP     54
+#define M_MONTH_STAMP    55
+#define M_DAY_STAMP      56
+#define M_HOUR_STAMP     57
+#define M_MIN_STAMP      58
+#define M_SEC_STAMP      59
+#define M_WEEKDAY_STAMP  60
+#define M_TZOFFSET_STAMP 61
+#define M_TZ_STAMP       62
+#define M_UNIXTIME_STAMP 63
 
 #define M_FULLHOST       70
 #define M_HOST           71
@@ -97,6 +100,6 @@ guint
 log_macro_lookup(gchar *macro, gint len);
 
 gboolean
-log_macro_expand(GString *result, gint id, guint32 flags, glong zone_offset, LogMessage *msg);
+log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, glong zone_offset, LogMessage *msg);
 
 #endif

@@ -34,6 +34,7 @@
 #include <pwd.h>
 #include <grp.h>
 #include <stdlib.h>
+#include <time.h>
 
 GString *
 g_string_assign_len(GString *s, gchar *val, gint len)
@@ -71,6 +72,12 @@ getlonghostname(char *buf, size_t bufsize)
         }
     }
   return buf;
+}
+
+long
+get_local_timezone_ofs(void)
+{
+  return timezone - (daylight > 0 ? 3600 : 0);
 }
 
 GString *

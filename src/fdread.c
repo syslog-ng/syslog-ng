@@ -37,7 +37,7 @@ fd_do_read(FDRead *self, void *buf, size_t buflen, GSockAddr **sa)
   else 
     {
       struct sockaddr_storage sas;
-      socklen_t salen = sizeof(sa);
+      socklen_t salen = sizeof(sas);
       gint rc;
 
       do

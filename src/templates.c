@@ -111,7 +111,7 @@ log_template_compile(LogTemplate *self)
 }
 
 void
-log_template_format(LogTemplate *self, LogMessage *lm, guint macro_flags, GString *result)
+log_template_format(LogTemplate *self, LogMessage *lm, guint macro_flags, gint ts_format, glong zone_offset, GString *result)
 {
   GList *p;
   LogTemplateElem *e;
@@ -131,7 +131,8 @@ log_template_format(LogTemplate *self, LogMessage *lm, guint macro_flags, GStrin
           log_macro_expand(result, e->macro, 
                            macro_flags |
                            ((self->flags & LT_ESCAPE) ? MF_ESCAPE_RESULT : 0),
-                           (self->flags & LT_TZ_SET) ? self->zone_offset : timezone,
+                           ts_format,
+                           zone_offset,
                            lm);
         }
     }

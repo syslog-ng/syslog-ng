@@ -37,37 +37,29 @@
 static char aix_fwd_string[] = "Message forwarded from ";
 static char repeat_msg_string[] = "last message repeated";
 
+
 /** 
  * log_stamp_format:
  * @stamp: Timestamp to format
  * @target: Target storage for formatted timestamp
  * @ts_format: Specifies basic timestamp format (TS_FMT_BSD, TS_FMT_ISO)
- * @tz_convert: Specifies timezone conversion
+ * @zone_offset: Specifies custom zone offset if @tz_convert == TZ_CNV_CUSTOM
  *
  * Emits the formatted version of @stamp into @target as specified by
  * @ts_format and @tz_convert. 
  **/
 void
-log_stamp_format(LogStamp *stamp, GString *target, gint ts_format, gint tz_convert)
+log_stamp_format(LogStamp *stamp, GString *target, gint ts_format, glong zone_offset)
 {
   glong target_zone_offset = 0, ofs;
   struct tm *tm;
   char ts[128];
   time_t t;
   
-  switch (tz_convert)
-    {
-    case TZ_CNV_ORIG:
-      target_zone_offset = stamp->zone_offset;
-      break;
-    case TZ_CNV_GMT:
-      target_zone_offset = 0;
-      break;
-    case TZ_CNV_LOCAL:
-    default:
-      target_zone_offset = timezone;
-      break;
-    }
+  if (zone_offset != -1)
+    target_zone_offset = zone_offset;
+  else
+    target_zone_offset = stamp->zone_offset;
 
   t = stamp->time.tv_sec - target_zone_offset;
   if (!(tm = gmtime(&t))) 
@@ -100,7 +92,7 @@ log_stamp_format(LogStamp *stamp, GString *target, gint ts_format, gint tz_conve
                   s = s % x;
                 }
             }
-          ofs = stamp->zone_offset < 0 ? -stamp->zone_offset : stamp->zone_offset;
+          ofs = target_zone_offset < 0 ? -target_zone_offset : target_zone_offset;
           g_string_sprintfa(target, "%c%02ld:%02ld", 
                             ofs < 0 ? '-' : '+',
                             ofs / 3600,
@@ -233,10 +225,11 @@ log_msg_parse(LogMessage *self, gchar *data, gint length, guint flags)
           if (hours <= 12 && mins <= 60)
             self->stamp.zone_offset = sign * (hours * 3600 + mins * 60);
           else
-            self->stamp.zone_offset = timezone; /* assume local timezone */
+            self->stamp.zone_offset = -1; /* assume local timezone */
         }
       /* convert to UTC */
-      self->stamp.time.tv_sec = mktime(&tm) - timezone + self->stamp.zone_offset;
+      tm.tm_isdst = daylight;
+      self->stamp.time.tv_sec = mktime(&tm) - get_local_timezone_ofs() + self->stamp.zone_offset;
       
       src += stamp_length;
       left -= stamp_length;
@@ -266,7 +259,7 @@ log_msg_parse(LogMessage *self, gchar *data, gint length, guint flags)
         tm.tm_year--;
       self->stamp.time.tv_sec = mktime(&tm);
       self->stamp.time.tv_usec = 0;
-      self->stamp.zone_offset = timezone; /* assume local timezone */
+      self->stamp.zone_offset = -1; /* assume local timezone */
     }
     
   if (self->date->len)
@@ -471,8 +464,8 @@ log_msg_init(LogMessage *self, GSockAddr *saddr)
   self->ref_cnt = 1;
   gettimeofday(&self->recvd.time, NULL);
   self->recvd.frac_present = TRUE;
+  self->recvd.zone_offset = get_local_timezone_ofs();
   self->stamp = self->recvd;
-  self->recvd.zone_offset = timezone;
   self->date = g_string_sized_new(16);
   self->host = g_string_sized_new(32);
   self->program = g_string_sized_new(32);

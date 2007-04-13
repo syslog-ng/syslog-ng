@@ -52,7 +52,6 @@ typedef struct _LogReaderOptions
   gint fetch_limit;
   
   /* source time zone if one is not specified */
-  gboolean zone_offset_set;
   glong zone_offset;
 } LogReaderOptions;
 

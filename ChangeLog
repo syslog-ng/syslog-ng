@@ -2,6 +2,76 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-06-05 00:00:28 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-34
+
+    Summary:
+      timezone cleanup and fixes, fixed name resolving for socket sources
+    Revision:
+      syslog-ng--mainline--2.0--patch-34
+
+    2005-06-05  Balazs Scheidler <bazsi@balabit.hu>
+    
+    	* doc/reference/syslog-ng.xml: added a section on timezones
+    
+    	* src/cfg-grammar.y, src/cfg-lex.l: removed timezone options from
+    	templates, removed zone_offset_set variables, a timezone value of -1
+    	indicates unset state instead,
+    	(tz_convert) use explicit timezone specification instead,
+    	(recv-time-zone, send-time-zone): new keywords to specify default
+    	incoming/outgoing timezones
+    
+    	* src/affile.c: adapted to the latest log_template_format() changes
+    
+    	* src/cfg.c (cfg_tz_convert_value): removed,
+    	(cfg_new): initialize sent/recv timezones
+    
+    	* src/fdread.c: fixed a bug in recvfrom, the length for the sockaddr
+    	structure was incorrectly specified
+    
+    	* src/logmsg.c (log_stamp_format): instead of tz_convert use
+    	zone_offset, fixed a problem in zone formatting, 
+    	(log_msg_parse): a value of -1 indicates "unspecified" zone for
+    	incoming messages, use get_local_time_zone_ofs() function instead of
+    	referencing the timezone variable directly,
+    	(log_msg_init): use get_local_time_zone_ofs()
+    
+    	* src/logreader.c (log_reader_handle_line): use only set the
+    	timezone associated with the incoming message if it has no timezone setting,
+    	(log_reader_options_defaults, log_reader_options_init): inherit
+    	default value for zone_offset from recv_zone_offset in the global configuration
+    
+    	* src/logwriter.c: adapted to log_template_format changes,
+    	inherit zone_offset from send_zone_offset 
+    
+    	* src/macros.c: added STAMP, R_STAMP and S_STAMP macros to represent
+    	the message timestamp formatted as specified by the ts_format()
+    	global option, 
+    	(log_macro_expand): added ts_format argument, and the implementation
+    	of the STAMP macro
+    
+    	* src/misc.c (get_local_timezone_ofs): new function, calculates and
+    	returns the current timezone offset in seconds
+    
+    	* src/templates.c (log_template_format): added ts_format and
+    	zone_offset arguments
+    
+    
+    
+    NEWS
+    	* 
+    NEWS.hu
+    	* 
+
+    modified files:
+     ChangeLog doc/reference/syslog-ng.xml src/affile.c
+     src/cfg-grammar.y src/cfg-lex.l src/cfg.c src/cfg.h
+     src/fdread.c src/logmsg.c src/logmsg.h src/logreader.c
+     src/logreader.h src/logwriter.c src/logwriter.h src/macros.c
+     src/macros.h src/misc.c src/misc.h src/templates.c
+     src/templates.h tests/unit/test_msgparse.c
+     tests/unit/test_template.c
+
+
 2005-06-04 18:23:57 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-33
 
     Summary:

@@ -47,8 +47,8 @@ typedef struct _LogWriterOptions
   
   gint keep_timestamp;
   gint use_time_recvd;
-  gint tz_convert;
   gint ts_format;
+  glong zone_offset;
 } LogWriterOptions;
 
 typedef struct _LogWriter
