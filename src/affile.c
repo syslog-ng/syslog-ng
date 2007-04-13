@@ -273,35 +273,47 @@ affile_dw_new(AFFileDestDriver *owner, GString *filename)
 }
 
 void 
-affile_dd_set_compress(LogPipe *s, gboolean compress G_GNUC_UNUSED)
+affile_dd_set_compress(LogDriver *s, gboolean compress G_GNUC_UNUSED)
 {
   msg_error("On-the-fly file compression is not supported", NULL);
 }
 
 void 
-affile_dd_set_encrypt()
+affile_dd_set_encrypt(LogDriver *s, gboolean compress G_GNUC_UNUSED)
 {
   msg_error("On-the-fly file encryption is not supported", NULL);
 }
 
 void 
-affile_dd_set_file_uid(LogPipe *s, uid_t file_uid)
+affile_dd_set_file_uid(LogDriver *s, const gchar *file_uid)
 {
   AFFileDestDriver *self = (AFFileDestDriver *) s;
   
-  self->file_uid = file_uid;
+  self->file_uid = 0;
+  if (!resolve_user(file_uid, &self->file_uid))
+    {
+      msg_notice("Error resolving user",
+                 evt_tag_str("user", file_uid),
+                 NULL);
+    }
 }
 
 void 
-affile_dd_set_file_gid(LogPipe *s, gid_t file_gid)
+affile_dd_set_file_gid(LogDriver *s, const gchar *file_gid)
 {
   AFFileDestDriver *self = (AFFileDestDriver *) s;
   
-  self->file_gid = file_gid;
+  self->file_gid = 0;
+  if (!resolve_group(file_gid, &self->file_gid))
+    {
+      msg_notice("Error resolving group",
+                 evt_tag_str("group", file_gid),
+                 NULL);
+    }
 }
 
 void 
-affile_dd_set_file_perm(LogPipe *s, mode_t file_perm)
+affile_dd_set_file_perm(LogDriver *s, mode_t file_perm)
 {
   AFFileDestDriver *self = (AFFileDestDriver *) s;
   
@@ -309,23 +321,35 @@ affile_dd_set_file_perm(LogPipe *s, mode_t file_perm)
 }
 
 void 
-affile_dd_set_dir_uid(LogPipe *s, uid_t dir_uid)
+affile_dd_set_dir_uid(LogDriver *s, const gchar *dir_uid)
 {
   AFFileDestDriver *self = (AFFileDestDriver *) s;
   
-  self->dir_uid = dir_uid;
+  self->dir_uid = 0;
+  if (!resolve_user(dir_uid, &self->dir_uid))
+    {
+      msg_notice("Error resolving user",
+                 evt_tag_str("user", dir_uid),
+                 NULL);
+    }
 }
 
 void 
-affile_dd_set_dir_gid(LogPipe *s, gid_t dir_gid)
+affile_dd_set_dir_gid(LogDriver *s, const gchar *dir_gid)
 {
   AFFileDestDriver *self = (AFFileDestDriver *) s;
   
-  self->dir_gid = dir_gid;
+  self->dir_gid = 0;
+  if (!resolve_group(dir_gid, &self->dir_gid))
+    {
+      msg_notice("Error resolving group",
+                 evt_tag_str("group", dir_gid),
+                 NULL);
+    }
 }
 
 void 
-affile_dd_set_dir_perm(LogPipe *s, mode_t dir_perm)
+affile_dd_set_dir_perm(LogDriver *s, mode_t dir_perm)
 {
   AFFileDestDriver *self = (AFFileDestDriver *) s;
   
@@ -333,7 +357,7 @@ affile_dd_set_dir_perm(LogPipe *s, mode_t dir_perm)
 }
 
 void 
-affile_dd_set_create_dirs(LogPipe *s, gboolean create_dirs)
+affile_dd_set_create_dirs(LogDriver *s, gboolean create_dirs)
 {
   AFFileDestDriver *self = (AFFileDestDriver *) s;
   
@@ -367,8 +391,9 @@ affile_dd_set_template_escape(LogDriver *s, gboolean enable)
 }
 
 void 
-affile_dd_set_fsync()
+affile_dd_set_fsync(LogDriver *s G_GNUC_UNUSED, gboolean enable G_GNUC_UNUSED)
 {
+  msg_error("fsync() does not work yet", NULL);
 }
 
 static time_t reap_now = 0;

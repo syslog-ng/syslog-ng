@@ -51,6 +51,6 @@ void msg_event(gint prio, const char *desc, EVTTAG *tag1, ...);
 void msg_syslog_started(void);
 
 gboolean msg_init(int use_stderr);
-void msg_deinit();
+void msg_deinit(void);
 
 #endif

@@ -121,7 +121,7 @@ gboolean cfg_init(GlobalConfig *cfg, PersistentConfig *persist);
 gboolean cfg_deinit(GlobalConfig *cfg, PersistentConfig *persist);
 GlobalConfig *cfg_reload_config(gchar *fname, GlobalConfig *cfg);
 
-PersistentConfig *persist_config_new();
+PersistentConfig *persist_config_new(void);
 void persist_config_add(PersistentConfig *self, gchar *name, gpointer store, GDestroyNotify destroy);
 gpointer persist_config_fetch(PersistentConfig *self, gchar *name);
 void persist_config_free(PersistentConfig *persist);

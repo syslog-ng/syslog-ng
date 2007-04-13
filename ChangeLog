@@ -2,6 +2,26 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-08-07 17:31:23 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-51
+
+    Summary:
+      fixed file uid/gid setting and some gcc4 problems
+    Revision:
+      syslog-ng--mainline--2.0--patch-51
+
+    2005-08-07  Balazs Scheidler <bazsi@balabit.hu>
+    
+    	* src/affile.c: fixed affile_dd_set_{file,dir}_{uid,gid}
+    
+    	* src/*.h: added complete prototypes for all functions
+    
+    
+
+    modified files:
+     ChangeLog src/affile.c src/affile.h src/afinter.h src/cfg.h
+     src/memtrace.h src/messages.h src/misc.c src/misc.h
+
+
 2005-08-04 12:28:36 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-50
 
     Summary:

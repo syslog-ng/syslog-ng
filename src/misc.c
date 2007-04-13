@@ -158,7 +158,7 @@ g_fd_set_nonblock(int fd, gboolean enable)
 }
 
 gboolean 
-resolve_user(char *user, uid_t *uid)
+resolve_user(const char *user, uid_t *uid)
 {
   struct passwd *pw;
 
@@ -178,7 +178,7 @@ resolve_user(char *user, uid_t *uid)
 }
 
 gboolean 
-resolve_group(char *group, gid_t *gid)
+resolve_group(const char *group, gid_t *gid)
 {
   struct group *gr;
 

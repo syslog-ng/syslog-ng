@@ -26,6 +26,6 @@
 
 #include "driver.h"
 
-LogDriver *afinter_sd_new();
+LogDriver *afinter_sd_new(void);
 
 #endif
