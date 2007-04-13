@@ -13,10 +13,8 @@ man_MANS = man/syslog-ng.8 man/syslog-ng.conf.5
 reference/syslog-ng.html.tar.gz: reference/syslog-ng.xml
 	(set -e; 						\
 	mkdir reference || /bin/true;				\
-	cd reference; 						\
-	pwd;							\
-	xsltproc -o syslog-ng.html/index.html 			\
+	xsltproc -o reference/syslog-ng.html/index.html 	\
 		$(top_srcdir)/doc/reference/syslog-ng.xsl 	\
 		$(top_srcdir)/doc/reference/syslog-ng.xml;	\
-	tar cfz syslog-ng.html.tar.gz syslog-ng.html)
+	tar cfz reference/syslog-ng.html.tar.gz reference/syslog-ng.html)
 	
