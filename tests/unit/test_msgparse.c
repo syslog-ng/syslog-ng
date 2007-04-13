@@ -78,7 +78,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   timezone = 0;
   testcase("<7>Sep  7 10:43:21 bzorp openvpn[2499]: PTHREAD support initialized", 0, 
            7, 			// pri
-           1094553801, 0, -1,	// timestamp (sec/usec/zone)
+           1094553801, 0, 0,	// timestamp (sec/usec/zone)
            "Sep  7 10:43:21",   // originally formatted timestamp
            "bzorp",		// host
            "openvpn",		// openvpn
@@ -87,7 +87,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 
   testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, 
            15, 			// pri
-           0, 0, -1,		// timestamp (sec/usec/zone)
+           0, 0, 0,		// timestamp (sec/usec/zone)
            NULL,                // originally formatted timestamp
            "",		// host
            "openvpn",		// openvpn

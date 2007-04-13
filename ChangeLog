@@ -2,6 +2,30 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-07-30 20:20:50 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-47
+
+    Summary:
+      fixed stupid UDP initialization problem and updated a unit test program
+    Revision:
+      syslog-ng--mainline--2.0--patch-47
+
+    2005-07-30  Balazs Scheidler <bazsi@balabit.hu>
+    
+    	* src/afsocket.c (afsocket_sd_init): fixed stupid mistake in UDP
+    	initialization code
+    
+    	* tests/unit/test_msgparse.c: adapted to the new timezone parsing
+    	code (msg has the local timezone by default instead of -1)
+    
+    NEWS
+    	* 
+    NEWS.hu
+    	* 
+
+    modified files:
+     ChangeLog src/afsocket.c tests/unit/test_msgparse.c
+
+
 2005-07-28 13:39:43 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-46
 
     Summary:

@@ -440,7 +440,7 @@ afsocket_sd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
     }
   else
     {
-      if (!(self->flags & AFSOCKET_KEEP_ALIVE) || !self->connections || !afsocket_open_socket(self->bind_addr, !!(self->flags & AFSOCKET_STREAM), &sock))
+      if (!self->connections && !afsocket_open_socket(self->bind_addr, !!(self->flags & AFSOCKET_STREAM), &sock))
         {
           /* we could not recover persistent listener and could not open one either */
           return FALSE;
