@@ -2,6 +2,19 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-02-11 17:22:06 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-9
+
+    Summary:
+      memtrace improvements
+    Revision:
+      syslog-ng--mainline--2.0--patch-9
+
+    	* src/memtrace.c: added backtrace to add/delblock messages
+
+    modified files:
+     ChangeLog src/memtrace.c
+
+
 2006-02-11 13:41:36 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-8
 
     Summary:

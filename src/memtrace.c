@@ -27,6 +27,7 @@
 #include <time.h>
 #include <sys/time.h>
 #include <string.h>
+#include <stdlib.h>
 
 #define MEMTRACE_BACKTRACE_LEN 64
 #define MEMTRACE_BACKTRACE_BUF_LEN (MEMTRACE_BACKTRACE_LEN * 11 + 1)
@@ -304,6 +305,7 @@ z_mem_trace_add(gpointer ptr, gint size, gpointer backtrace[])
   guint32 hash, new_ndx;
   ZMemTraceEntry *new;
   ZMemTraceHead *head;
+  gchar backtrace_buf[8192];
   
   hash = z_mem_trace_hash((guint32) ptr);
   g_static_mutex_lock(&mem_trace_lock);
@@ -337,7 +339,7 @@ z_mem_trace_add(gpointer ptr, gint size, gpointer backtrace[])
   
   g_static_mutex_unlock(&head->lock);
 #if REALLY_TRACE_MALLOC
-  z_mem_trace_printf("memtrace addblock; ptr='%p', size='%d'\n", ptr, size);
+  z_mem_trace_printf("memtrace addblock; ptr=%p, size=%d, backtrace=%s\n", ptr, size, z_mem_trace_format_bt(backtrace, backtrace_buf, sizeof(backtrace_buf)));
 #endif
   return TRUE;
 }
@@ -348,6 +350,7 @@ z_mem_trace_del(gpointer ptr)
   guint32 hash, *prev, cur;
   ZMemTraceHead *head;
   ZMemTraceEntry *entry;
+  gchar backtrace_buf[8192];
   
   hash = z_mem_trace_hash((guint32) ptr);
   head = &mem_trace_hash[hash];
@@ -376,7 +379,7 @@ z_mem_trace_del(gpointer ptr)
   
   entry = &mem_trace_heap[cur];
 #if REALLY_TRACE_MALLOC
-  z_mem_trace_printf("memtrace delblock; ptr='%p', size='%d'\n", (void *) entry->ptr, entry->size);
+  z_mem_trace_printf("memtrace delblock; ptr=%p, size=%d, backtrace=%s\n", (void *) entry->ptr, entry->size, z_mem_trace_format_bt(entry->backtrace, backtrace_buf, sizeof(backtrace_buf)));
 #endif
 
   mem_trace_heap[cur].next = mem_trace_free_list;
