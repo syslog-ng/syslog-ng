@@ -726,7 +726,7 @@ afsocket_dd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
       /* NOTE: we open our writer with no fd, so we can send messages down there
        * even while the connection is not established */
   
-      self->writer = log_writer_new(LW_FORMAT_PROTO | LW_DETECT_EOF, &self->super.super, &self->writer_options);
+      self->writer = log_writer_new(LW_FORMAT_PROTO | (self->flags & AFSOCKET_STREAM ? LW_DETECT_EOF : 0), &self->super.super, &self->writer_options);
       log_pipe_init(self->writer, NULL, NULL);
       log_pipe_append(&self->super.super, self->writer);
     }

@@ -2,6 +2,27 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-12-31 14:09:13 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-82
+
+    Summary:
+      fixed EOF detected messages for UDP destinations where the target is unreachable
+    Revision:
+      syslog-ng--mainline--2.0--patch-82
+
+    2005-12-31  Balazs Scheidler <bazsi@balabit.hu>
+    
+    	* src/afsocket.c (afsocket_dd_init): don't set LW_DETECT_EOF for UDP
+    	destinations
+    
+    	* src/logwriter.c (log_writer_fd_dispatch): EOF is detected only if
+    	G_IO_IN is detected and not for G_IO_ERR as it might be set for UDP
+    	destinations when they are unreachable
+    
+
+    modified files:
+     ChangeLog src/afsocket.c src/logwriter.c
+
+
 2005-12-20 20:52:38 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-81
 
     Summary:

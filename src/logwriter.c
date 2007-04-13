@@ -127,7 +127,7 @@ log_writer_fd_dispatch(GSource *source,
 		       gpointer user_data)
 {
   LogWriterWatch *self = (LogWriterWatch *) source;
-  if (self->pollfd.revents & (G_IO_HUP + G_IO_ERR))
+  if (self->pollfd.revents & (G_IO_HUP))
     {
       msg_error("EOF occurred while idle",
                 evt_tag_int("fd", self->fd->fd),
