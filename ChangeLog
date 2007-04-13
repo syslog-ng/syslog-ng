@@ -2,6 +2,23 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-11-03 17:03:26 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-69
+
+    Summary:
+      fixed log message concatenation in certain cases
+    Revision:
+      syslog-ng--mainline--2.0--patch-69
+
+    2005-11-03  Balazs Scheidler <bazsi@balabit.hu>
+    
+    	* src/templates.c (log_template_format): truncate the string before
+    	formatting a log message
+    
+
+    modified files:
+     ChangeLog src/templates.c
+
+
 2005-10-24 08:40:59 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-68
 
     Summary:

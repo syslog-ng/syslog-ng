@@ -119,7 +119,8 @@ log_template_format(LogTemplate *self, LogMessage *lm, guint macro_flags, gint t
   
   if (self->compiled_template == NULL)
     log_template_compile(self);
-  
+
+  g_string_truncate(result, 0);
   for (p = self->compiled_template; p; p = g_list_next(p))
     {
       e = (LogTemplateElem *) p->data;
