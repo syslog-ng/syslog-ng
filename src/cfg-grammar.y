@@ -67,7 +67,7 @@ LogTemplate *last_template;
 
 
 /* reader options */
-%token KW_NO_PARSE KW_PADDING KW_TIME_ZONE
+%token KW_NO_PARSE KW_PAD_SIZE KW_TIME_ZONE
 
 /* destination options */
 %token KW_TIME_REOPEN KW_TIME_REAP 
@@ -411,7 +411,7 @@ source_reader_option
 	| KW_LOG_IW_SIZE '(' NUMBER ')'		{ last_reader_options->source_opts.init_window_size = $3; }
 	| KW_LOG_FETCH_LIMIT '(' NUMBER ')'	{ last_reader_options->fetch_limit = $3; }
 	| KW_LOG_PREFIX '(' string ')'		{ last_reader_options->prefix = $3; }
-	| KW_PADDING '(' NUMBER ')'		{ last_reader_options->padding = $3; }
+	| KW_PAD_SIZE '(' NUMBER ')'		{ last_reader_options->padding = $3; }
 	| KW_FOLLOW_FREQ '(' NUMBER ')'		{ last_reader_options->follow_freq = $3; }
 	| KW_TIME_ZONE '(' string ')'		{ last_reader_options->zone_offset_set = cfg_timezone_value($3, &last_reader_options->zone_offset); free($3); }
 	;

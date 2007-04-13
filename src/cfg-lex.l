@@ -50,16 +50,12 @@ static struct keyword keywords[] = {
         { "fifo",               KW_PIPE },
 	{ "pipe",		KW_PIPE },
         { "internal",           KW_INTERNAL },
-	{ "unix-dgram",		KW_UNIX_DGRAM },
 	{ "unix_dgram",		KW_UNIX_DGRAM },
-	{ "unix-stream",	KW_UNIX_STREAM },
 	{ "unix_stream",	KW_UNIX_STREAM },
         { "udp",                KW_UDP },
         { "tcp",                KW_TCP },
         { "usertty", 		KW_USER },
         { "door",               KW_DOOR },
-        { "sun-stream",		KW_SUN_STREAMS },
-        { "sun-streams",	KW_SUN_STREAMS },
         { "sun_stream",		KW_SUN_STREAMS },
         { "sun_streams",	KW_SUN_STREAMS },
         { "program",		KW_PROGRAM },
@@ -70,9 +66,8 @@ static struct keyword keywords[] = {
 	{ "fallback",		KW_FALLBACK },
 	{ "final",		KW_FINAL },
 	{ "flow_control",	KW_FLOW_CONTROL },
-	{ "flow-control",	KW_FLOW_CONTROL },
 	{ "no_parse",		KW_NO_PARSE },
-	{ "padding",		KW_PADDING },
+	{ "pad_size",		KW_PAD_SIZE },
 	{ "mark_freq",		KW_MARK_FREQ },
 	{ "sync_freq", 		KW_SYNC_FREQ },
 	{ "fsync",		KW_FSYNC },
@@ -114,11 +109,8 @@ static struct keyword keywords[] = {
 	{ "dir_group",		KW_DIR_GROUP },
         { "dir_perm",           KW_DIR_PERM },
         { "template",           KW_TEMPLATE },
-        { "template-escape",	KW_TEMPLATE_ESCAPE },
         { "template_escape",	KW_TEMPLATE_ESCAPE },
- 	{ "keep-alive",         KW_KEEP_ALIVE },
  	{ "keep_alive",         KW_KEEP_ALIVE },
-	{ "max-connections",	KW_MAX_CONNECTIONS },
 	{ "max_connections",	KW_MAX_CONNECTIONS },
 	{ "mac",		KW_MAC },
 	{ "authentication",	KW_AUTH },
@@ -222,39 +214,52 @@ word	[^ \#'"\(\)\{\}\\;\n\t,|\.]
 			   }
 
 %%
-
-int lex_init(FILE *file)
+int 
+lex_init(FILE *file)
 {
-	yyrestart(file);
-	linenum = 1;
-	return 0;
+  yyrestart(file);
+  linenum = 1;
+  return 0;
 }
 
-int check_reserved_words(char *token)
+int 
+check_reserved_words(char *token)
 {
-	int i;
+  int i, j;
 	
-	for (i = 0; i < (sizeof(keywords) / sizeof(struct keyword)); i++) {
-		if (strcmp(keywords[i].kw_name, token) == 0) {
-			return keywords[i].kw_token;
-		}
-	}
-	yylval.cptr = strdup(token);
-	return IDENTIFIER;
+  for (i = 0; i < (sizeof(keywords) / sizeof(struct keyword)); i++) 
+    {
+      for (j = 0; token[j] && keywords[i].kw_name[j]; j++)
+        {
+          if (token[j] == '-' || token[j] == '_')
+            {
+              if (keywords[i].kw_name[j] != '_')
+                break;
+            }
+          else if (token[j] != keywords[i].kw_name[j])
+            break;
+        }
+      if (token[j] == 0)
+        return keywords[i].kw_token;
+    }
+  yylval.cptr = strdup(token);
+  return IDENTIFIER;
 }
 
-static void append_string(int length, char *s)
+static void 
+append_string(int length, char *s)
 {
-	int to_copy = MIN(MAX_REGEXP_LEN - (str - buf) - 1, length);
+  int to_copy = MIN(MAX_REGEXP_LEN - (str - buf) - 1, length);
 
-	memcpy(str, s, to_copy);
-	str += to_copy;
-	*str = 0;
+  memcpy(str, s, to_copy);
+  str += to_copy;
+  *str = 0;
 }
 
-static void append_char(char c)
+static void 
+append_char(char c)
 {
-      	*str = c;
-	str++;
-	*str = 0;
+  *str = c;
+  str++;
+  *str = 0;
 }

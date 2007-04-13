@@ -1,0 +1,69 @@
+
+BalaBit security advisory
+Advisory ID: BB-2000/01
+
+Package: 		syslog-ng
+Versions affected: 	versions prior to and including 1.4.8
+Problem type: 		remote DoS attack
+Date:			2000-11-22
+
+1) Background
+
+syslog-ng is a portable syslog implementation. Its highlights include regexp
+based log selection, TCP transport and more. For more information: 
+http://www.balabit.hu/products/syslog-ng/
+
+2) Problem description
+
+When syslog-ng parses log messages a variable named "left" is used to store
+the remaining length of the log message. The priority part in the message
+should look like this:
+
+<6>
+
+When the line ends without the closing '>' this "left" variable becomes -1
+due a to a bug.
+
+The remaining part of the message parsing routine checks if there's any
+characters left using the condition: left != 0, since -1 is not 0, this
+condition evaluates to true.
+
+Syslog-ng versions after 1.4.7 filters out \r and \n characters from log
+messages and replaces them with spaces to avoid cluttering logfiles. Due to
+a problem in the parsing of log messages, this character change may access
+unaccessible memory region. This causes a segmentation fault. So sending a
+"<6", terminated with a newline to one of the input channels causes a
+SIGSEGV.
+
+Prior to 1.4.7, this character change was not implemented, so mounting a DoS
+attack is not so trivial, but is still possible. (it's left to the reader as
+an exercise)
+
+It is believed that no other exploitation is possible.
+
+3) Impact
+
+Sending a carefully crafted syslog packet may cause syslog-ng to exit with a
+Segmentation Fault.
+
+4) Solution
+
+Upgrade syslog-ng to 1.4.9, which is a security upgrade, and changes nothing
+compared to 1.4.8 or apply this patch:
+
+diff -urN syslog-ng-1.4.8/src/log.c syslog-ng-1.4.9/src/log.c
+--- syslog-ng-1.4.8/src/log.c   Tue Oct 10 15:05:52 2000
++++ syslog-ng-1.4.9/src/log.c   Wed Nov 22 16:45:11 2000
+@@ -67,8 +67,10 @@
+                        left--;
+                }
+                lm->pri = pri;
+-               src++;
+-               left--;
++               if (left) {
++                       src++;
++                       left--;
++               }
+        }
+        else {
+                lm->pri = LOG_USER | LOG_NOTICE;

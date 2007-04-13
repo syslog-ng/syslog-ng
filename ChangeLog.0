@@ -1,3 +1,34 @@
+2005-01-16  Balazs Scheidler <bazsi@balabit.hu>
+
+        * configure.in: take CFLAGS environment variable into consideration
+        when running configure, link eventlog and glib statically
+
+        * src/fdread.c, src/fdwrite.c: handle EINTR by repeating the read
+        system call
+
+        * src/logreader, src/logwriter.c: handle EAGAIN correctly
+
+2005-01-15  Balazs Scheidler <bazsi@balabit.hu>
+
+        * src/afsocket.c (afsocket_sd_accept): added g_fd_set_nonblock for
+        new sockets
+
+2005-01-09  Balazs Scheidler <bazsi@balabit.hu>
+
+        * src/logsource.c: new file, separated flow control related
+        functions from logreader
+
+        * src/logreader.c: LogReader is derived from LogSource
+
+        * src/afinter.c: substituted the pipe used for internal messages
+        with a GQueue
+
+2005-01-05  Balazs Scheidler <bazsi@balabit.hu>
+
+        * configure.in: added checks for -ldoor, -lsocket, -lnsl and getopt.h
+
+        * other files: fixed a couple of Solaris specific warnings
+
 2004-12-31  Balazs Scheidler <bazsi@balabit.hu>
 
 	* src/macros.c: added PRI and MSGONLY macros

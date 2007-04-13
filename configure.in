@@ -83,10 +83,10 @@ AC_DEFINE_UNQUOTED(PATH_SYSCONFDIR, "`eval echo $sysconfdir`", [sysconfdir])
 AC_SUBST(DEPS_CPPFLAGS)
 AC_SUBST(DEPS_LIBS)
 AC_SUBST(YFLAGS)
-AC_OUTPUT_COMMANDS(chmod +x tests/functional/func_test.py)
 
 AC_OUTPUT(Makefile 
 	  src/Makefile 
+	  doc/Makefile
 	  tests/Makefile 
           tests/unit/Makefile
           tests/functional/Makefile)
