@@ -86,6 +86,7 @@ dnl Checks for library functions.
 AC_CHECK_LIB(door, door_create)
 AC_CHECK_LIB(socket, socket)
 AC_CHECK_LIB(nsl, gethostbyname)
+AC_CHECK_LIB(regex, regexec)
 
 AC_CHECK_FUNCS(strdup strtol inet_aton inet_ntoa getopt_long)
 

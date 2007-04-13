@@ -2,6 +2,20 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-08-29 07:56:11 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-53
+
+    Summary:
+      added configure test for regexec() function
+    Revision:
+      syslog-ng--mainline--2.0--patch-53
+
+    
+    
+
+    modified files:
+     ChangeLog configure.in
+
+
 2005-08-08 07:37:15 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-52
 
     Summary:
