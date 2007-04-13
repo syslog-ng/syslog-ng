@@ -1,3 +1,28 @@
+1.9.5
+	Thu, 07 Jul 2005 11:35:25 +0200
+
+	* Documentation updates on new options.
+	* Fixed some timezone related problems cleaned up template specific
+        timezones.
+	* Fixed destination file permission setting problems.
+	* Fixed use_time_recvd() handling, added a note to the documentation
+	that this option is deprecated.
+	* Fixed a destination file fd/memory leak for macro expanded files.
+	* Fixed regexp match references in macro expansion. (e.g.
+	"/var/log/$1")
+	* Added two new macros: STAMP which formats a timestamp according to
+	the ts_format() option, and WEEK which refers to the current week
+	number.
+	* Linking fixes to support more platforms.
+	* Changed local hostname detection to use the value of use_fqdn()
+        and actually use a fully expanded hostname if that is true.
+	* Fixed some configuration file parsing problems which caused user
+        identifiers to be recognized as keywords if they had a common
+        prefix.
+	* Always add fractions of a second if it was received from the
+	application.
+	* Fixed a gcc4 compatibility problem.
+
 1.9.4
 	Sun, 03 Apr 2005 12:51:55 +0200
 

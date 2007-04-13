@@ -2,6 +2,20 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-07-07 09:43:49 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-42
+
+    Summary:
+      updated NEWS file and version number in configure.in
+    Revision:
+      syslog-ng--mainline--2.0--patch-42
+
+    
+    
+
+    modified files:
+     ChangeLog NEWS configure.in
+
+
 2005-07-07 09:33:10 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-41
 
     Summary:
