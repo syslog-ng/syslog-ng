@@ -2,6 +2,20 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-02-11 13:41:36 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-8
+
+    Summary:
+      added some more unit testcases for filter testing
+    Revision:
+      syslog-ng--mainline--2.0--patch-8
+
+    
+    
+
+    modified files:
+     ChangeLog tests/unit/test_filters.c
+
+
 2006-02-11 13:07:54 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-7
 
     Summary:

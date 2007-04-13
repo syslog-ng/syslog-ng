@@ -75,11 +75,20 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, filter_facility_new(facility_bits("uucp") | facility_bits("local4")), 0);
   testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, filter_facility_new(0x80000000 | (LOG_USER >> 3)), 1);
   testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, filter_facility_new(0x80000000 | (LOG_DAEMON >> 3)), 0);
+  
+  testcase("<2> openvpn[2499]: PTHREAD support initialized", 0, filter_facility_new(facility_bits("kern")), 1);
+  testcase("<2> openvpn[2499]: PTHREAD support initialized", 0, filter_facility_new(0x80000000 | (LOG_KERN >> 3)), 1);
+  
+  testcase("<128> openvpn[2499]: PTHREAD support initialized", 0, filter_facility_new(facility_bits("local0")), 1);
+  testcase("<128> openvpn[2499]: PTHREAD support initialized", 0, filter_facility_new(0x80000000 | (LOG_LOCAL0 >> 3)), 1);
+  testcase("<32> openvpn[2499]: PTHREAD support initialized", 0, filter_facility_new(facility_bits("auth")), 1);
+  testcase("<32> openvpn[2499]: PTHREAD support initialized", 0, filter_facility_new(0x80000000 | (LOG_AUTH >> 3)), 1);
+  testcase("<80> openvpn[2499]: PTHREAD support initialized", 0, filter_facility_new(facility_bits("authpriv")), 1);
+  testcase("<80> openvpn[2499]: PTHREAD support initialized", 0, filter_facility_new(0x80000000 | (LOG_AUTHPRIV >> 3)), 1);
 
   testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, filter_level_new(level_bits("debug") | level_bits("emerg")), 1);
   testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, filter_level_new(level_bits("emerg")), 0);
-  
-  /* 8 tests so far */
+
   for (i = 0; i < 10; i++)
     {
       testcase("<0> openvpn[2499]: PTHREAD support initialized", 0, filter_level_new(level_bits("emerg")), 1);
@@ -92,31 +101,26 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
       testcase("<7> openvpn[2499]: PTHREAD support initialized", 0, filter_level_new(level_bits("debug")), 1);
     }
     
-  /* 88 tests so far */
   testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, filter_prog_new("^openvpn$"), 1);
   testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, filter_prog_new("^open$"), 0);
   fprintf(stderr, "One \"invalid regular expression\" message is to be expected\n");
   TEST_ASSERT(filter_prog_new("((") == NULL);
 
-  /* 90 tests so far */
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, filter_host_new("^host$"), 1);
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, filter_host_new("^hos$"), 0);
   fprintf(stderr, "One \"invalid regular expressions\" message is to be expected\n");
   TEST_ASSERT(filter_host_new("((") == NULL);
 
-  /* 92 tests so far */
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, filter_match_new(" PTHREAD "), 1);
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, filter_match_new("^PTHREAD$"), 0);
   fprintf(stderr, "One \"invalid regular expression\" message is to be expected\n");
   TEST_ASSERT(filter_match_new("((") == NULL);
 
-  /* 94 tests so far */
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, fop_or_new(filter_match_new(" PTHREAD "), filter_match_new("PTHREAD")), 1);
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, fop_or_new(filter_match_new(" PTHREAD "), filter_match_new("^PTHREAD$")), 1);
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, fop_or_new(filter_match_new("^PTHREAD$"), filter_match_new(" PTHREAD ")), 1);
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, fop_or_new(filter_match_new(" PAD "), filter_match_new("^PTHREAD$")), 0);
 
-  /* 98 tests so far */
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, fop_and_new(filter_match_new(" PTHREAD "), filter_match_new("PTHREAD")), 1);
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, fop_and_new(filter_match_new(" PTHREAD "), filter_match_new("^PTHREAD$")), 0);
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, fop_and_new(filter_match_new("^PTHREAD$"), filter_match_new(" PTHREAD ")), 0);
