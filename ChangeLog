@@ -2,6 +2,20 @@
 # arch-tag: automatic-ChangeLog--bazsi@balabit.hu--bazsi-1/syslog-ng--mainline--2.0
 #
 
+2005-04-21 08:51:33 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-28
+
+    Summary:
+      fixed a docbug in doc/reference/syslog-ng.xml
+    Revision:
+      syslog-ng--mainline--2.0--patch-28
+
+    
+    
+
+    modified files:
+     ChangeLog doc/reference/syslog-ng.xml
+
+
 2005-04-16 11:12:27 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-27
 
     Summary:

@@ -2105,7 +2105,7 @@
 	or
 
 	<synopsis>
-	  destination d_messages { file("/var/log/messages" log_fifo_size(1000); };
+	  destination d_messages { file("/var/log/messages" log_fifo_size(1000)); };
 	</synopsis>
 
 	You should set your fifo size to the estimated number of
