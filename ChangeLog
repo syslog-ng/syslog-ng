@@ -2,6 +2,32 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-10-21 20:41:41 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-84
+
+    Summary:
+      fixed possible NULL deref on destination connection broken, fixed EOF detection
+    Revision:
+      syslog-ng--mainline--2.0--patch-84
+
+    2006-10-21  Balazs Scheidler <bazsi@balabit.hu>
+    
+    	* src/logwriter.c (log_writer_fd_prepare): when EOF detection is
+    	enabled specify G_IO_IN and G_IO_HUP in addition to normal flags,
+    	(log_writer_fd_dispatch): input on the destination fd is taken as EOF,
+    
+    	(log_writer_broken): _deinit is moved after the call to notify,
+    	should not matter at all however the reference counting depends on
+    	the fact that log_pipe_notify() will not be called after _deinit
+    	finishes, in this specific case it would not really matter,
+    	(log_writer_deinit): remove unref of self->control,
+    	(log_writer_new): self->control is a borrowed reference, don't
+    	increase refcount
+    
+
+    modified files:
+     ChangeLog src/logwriter.c
+
+
 2006-10-06 11:49:45 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-83
 
     Summary:

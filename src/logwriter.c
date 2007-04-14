@@ -96,10 +96,11 @@ log_writer_fd_prepare(GSource *source,
         }
       return FALSE;
     }
-  else if (self->writer->flags & LW_DETECT_EOF)
-    self->pollfd.events = G_IO_HUP;
   else
     self->pollfd.events = 0;
+  
+  if (self->writer->flags & LW_DETECT_EOF)
+    self->pollfd.events |= G_IO_HUP | G_IO_IN;
   self->flush_waiting_for_timeout = FALSE;
   self->pollfd.revents = 0;
   return FALSE;
@@ -130,7 +131,7 @@ log_writer_fd_dispatch(GSource *source,
 		       gpointer user_data)
 {
   LogWriterWatch *self = (LogWriterWatch *) source;
-  if (self->pollfd.revents & (G_IO_HUP))
+  if (self->pollfd.revents & (G_IO_HUP | G_IO_IN))
     {
       msg_error("EOF occurred while idle",
                 evt_tag_int("fd", self->fd->fd),
@@ -266,8 +267,8 @@ static void
 log_writer_broken(LogWriter *self, gint notify_code)
 {
   /* the connection seems to be broken */
-  log_pipe_deinit(&self->super, NULL, NULL);
   log_pipe_notify(self->control, &self->super, notify_code, self);
+  log_pipe_deinit(&self->super, NULL, NULL);
 }
 
 static gboolean 
@@ -389,8 +390,6 @@ log_writer_deinit(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
       g_source_unref(self->source);
       self->source = NULL;
     }
-  log_pipe_unref(self->control);
-  self->control = NULL;
 
   if (self->dropped_messages)
     stats_orphan_counter(SC_TYPE_DROPPED, self->options->stats_name, &self->dropped_messages);
@@ -452,7 +451,6 @@ log_writer_new(guint32 flags, LogPipe *control, LogWriterOptions *options)
   self->queue = g_queue_new();
   self->flags = flags;
   self->control = control;
-  log_pipe_ref(control);
   return &self->super;
 }
 
