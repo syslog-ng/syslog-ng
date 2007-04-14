@@ -304,7 +304,7 @@ if test "x$enable_debug" = "xyes"; then
 fi
 
 DEPS_CPPFLAGS="$CPPFLAGS $GLIB_CFLAGS $EVTLOG_CFLAGS $LIBNET_CFLAGS"
-CPPFLAGS="$DEPS_CPPFLAGS -D_GNU_SOURCE"
+CPPFLAGS="$DEPS_CPPFLAGS -D_GNU_SOURCE -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64"
 
 if test "x$enable_dynamic_linking" = "xyes"; then
 	DEPS_LIBS="$LIBS $LEXLIB $GLIB_LIBS $EVTLOG_LIBS $LIBNET_LIBS $LIBWRAP_LIBS"
@@ -316,7 +316,21 @@ fi
 LIBS="$DEPS_LIBS"
 YFLAGS="-d"
 
-AC_DEFINE_UNQUOTED(PATH_SYSCONFDIR, "`eval echo $sysconfdir`", [sysconfdir])
+patheval()
+{
+        OLD=$1
+        NEW=`eval echo $1`
+        while /usr/bin/test "x$OLD" != "x$NEW"
+        do
+                OLD=$NEW
+                NEW=`eval echo $OLD`
+        done
+        echo $OLD
+}
+
+
+AC_DEFINE_UNQUOTED(PATH_SYSCONFDIR, "`patheval $sysconfdir`", [sysconfdir])
+AC_DEFINE_UNQUOTED(PATH_LOCALSTATEDIR, "`patheval $localstatedir`", [local state directory])
 AC_DEFINE_UNQUOTED(ENABLE_SUN_STREAMS, `enable_value $enable_sun_streams`, [have STREAMS support])
 AC_DEFINE_UNQUOTED(ENABLE_SUN_DOOR, `enable_value $enable_sun_door`, [have Solaris door support])
 AC_DEFINE_UNQUOTED(ENABLE_DEBUG, `enable_value $enable_debug`, [Enable debugging])

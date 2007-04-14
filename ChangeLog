@@ -2,6 +2,47 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2007-03-04 11:03:22 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-138
+
+    Summary:
+      added support for remembering input file positions
+    Revision:
+      syslog-ng--mainline--2.0--patch-138
+
+    	* configure.in: added LARGEFILE_SOURCE & FILE_OFFSET_BITS to
+    	CPPFLAGS, export localstatedir to syslog-ng,
+    
+    	* src/affile.c (affile_sd_format_persist_name): new function,
+    	formats the persistent name associated with the file source,
+    	(affile_sd_init): check if the current file position is available
+    	and set it if it is,
+    	(affile_sd_deinit): save the current file position,
+    
+    	* src/afsocket.c (afsocket_sd_kill_connection_list): new function,
+    	frees a connection list, 
+     	(afsocket_sd_deinit): fixed a possible SIGSEGV, a GList was freed as
+    	an AFSocketSourceDriver, I wonder how this got unnoticed so far,
+    	
+    	* src/cfg.c (persist_config_add_entry): new function,
+    	(persist_config_add): use the new add_entry function,
+    	(persist_config_add_survivor): new function, adds a surviving entry,
+    	(PersistentConfig): added saving/loading persistent config entries,
+    
+    	* src/logreader.c (log_reader_watch_new): don't seek the file to the
+    	end-of-file now as proper file position is recovered,
+    	(log_reader_set_pos, log_reader_get_pos): new functions
+    
+    	* src/main.c (main): added --ignore-persistent option, use a
+    	persistent configuration object around stop/start to save/restore
+    	file position information
+    
+
+    modified files:
+     ChangeLog configure.in src/affile.c src/afsocket.c src/cfg.c
+     src/cfg.h src/logreader.c src/logreader.h src/main.c
+     src/syslog-ng.h
+
+
 2007-03-03 14:01:24 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-137
 
     Summary:

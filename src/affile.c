@@ -33,6 +33,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <time.h>
+#include <stdlib.h>
 
 #if !HAVE_O_LARGEFILE
 #define O_LARGEFILE 0
@@ -95,6 +96,16 @@ affile_open_file(gchar *name, int flags,
   return *fd != -1;
 }
 
+static inline gchar *
+affile_sd_format_persist_name(AFFileSourceDriver *self)
+{
+  static gchar persist_name[1024];
+  
+  g_snprintf(persist_name, sizeof(persist_name), "affile_sd_curpos(%s)", self->filename->str);
+  return persist_name;
+}
+
+
 static gboolean
 affile_sd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
 {
@@ -111,6 +122,21 @@ affile_sd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
   if (affile_open_file(self->filename->str, flags, -1, -1, -1, 0, 0, 0, 0, &fd))
     {
       self->reader = log_reader_new(fd_read_new(fd, 0), LR_LOCAL | LR_NOMREAD, s, &self->reader_options);
+
+      if (persist)
+        {
+          gchar *str;
+          off_t cur_pos;
+          
+          str = persist_config_fetch(persist, affile_sd_format_persist_name(self));
+          if (str)
+            {
+              cur_pos = strtoll(str, NULL, 10);
+              log_reader_set_pos((LogReader *) self->reader, cur_pos);
+              g_free(str);
+            }
+          
+        }
       log_pipe_append(self->reader, s);
       if (!log_pipe_init(self->reader, NULL, NULL))
         {
@@ -139,6 +165,16 @@ affile_sd_deinit(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
 {
   AFFileSourceDriver *self = (AFFileSourceDriver *) s;
 
+  if (persist)
+    {
+      gchar str[32];
+      off_t cur_pos;
+      
+      cur_pos = log_reader_get_pos((LogReader *) self->reader);
+      g_snprintf(str, sizeof(str), "%" G_GINT64_FORMAT, (gint64) cur_pos);
+          
+      persist_config_add_survivor(persist, affile_sd_format_persist_name(self), str);
+    }
   if (self->reader)
     {
       log_pipe_deinit(self->reader, NULL, NULL);

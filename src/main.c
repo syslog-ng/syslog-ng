@@ -50,7 +50,7 @@
 static char cfgfilename[128] = PATH_SYSLOG_NG_CONF;
 static char pidfilename[128] = PATH_PIDFILE;
 
-static gboolean do_fork = 1;
+static gboolean do_fork = TRUE;
 static gboolean sig_hup_received = FALSE;
 static gboolean sig_term_received = FALSE;
 static gboolean sig_child_received = FALSE;
@@ -76,6 +76,7 @@ void usage(void)
 	 "  -C <dir>, --chroot=<dir>         Chroot to directory\n"
 	 "  -u <user>, --user=<user>         Switch to user\n"
 	 "  -g <group>, --group=<group>      Switch to group\n"
+	 "  --ignore-persistent              Ignore persistent configuration file\n"
 #ifdef YYDEBUG
 	 "  -y, --yydebug                    Turn on yacc debug messages\n"
 #endif
@@ -203,8 +204,6 @@ main_loop_run(GlobalConfig *cfg)
     {
       iters++;
     }
-  cfg_deinit(cfg, NULL);
-  cfg_free(cfg);
   g_main_loop_unref(main_loop);
   return 0;
 }
@@ -302,6 +301,7 @@ main(int argc, char *argv[])
 {
   GlobalConfig *cfg;
 
+  /* FIXME: use Glib's option parser to avoid having to rely on getopt_long */
 #if HAVE_GETOPT_LONG
   struct option syslog_ng_options[] = 
     {
@@ -323,9 +323,11 @@ main(int argc, char *argv[])
       { NULL, 0, NULL, 0 }
     };
 #endif
-  int syntax_only = 0;
-  int log_to_stderr = 0;
+  gboolean syntax_only = FALSE;
+  gboolean log_to_stderr = FALSE;
+  PersistentConfig *persist = NULL;
   int opt, rc;
+  
 
 #if HAVE_GETOPT_LONG
   while ((opt = getopt_long(argc, argv, "sFf:p:dvhyVC:u:g:e", syslog_ng_options, NULL)) != -1)
@@ -342,7 +344,7 @@ main(int argc, char *argv[])
 	  strncpy(pidfilename, optarg, sizeof(pidfilename));
 	  break;
 	case 's':
-	  syntax_only = 1;
+	  syntax_only = TRUE;
 	  break;
 	case 'd':
 	  debug_flag++;
@@ -351,10 +353,10 @@ main(int argc, char *argv[])
 	  verbose_flag++;
 	  break;
 	case 'e':
-	  log_to_stderr = 1;
+	  log_to_stderr = TRUE;
 	  break;
 	case 'F':
-	  do_fork = 0;
+	  do_fork = FALSE;
 	  break;
 	case 'V':
 	  printf(PACKAGE " " VERSION "\n");
@@ -373,7 +375,7 @@ main(int argc, char *argv[])
 	  break;
 #ifdef YYDEBUG
 	case 'y':
-	  yydebug = 1;
+	  yydebug = TRUE;
 	  break;
 #endif
 	case 'h':
@@ -403,8 +405,10 @@ main(int argc, char *argv[])
       return 0;
     }
 
+  persist = persist_config_new();
+  persist_config_load(persist);
 
-  if (!cfg_init(cfg, NULL))
+  if (!cfg_init(cfg, persist))
     {
       return 2;
     }
@@ -420,7 +424,19 @@ main(int argc, char *argv[])
   setup_std_fds(log_to_stderr);
 
   rc = main_loop_run(cfg);
+
+  cfg_deinit(cfg, persist);
+  
+  if (persist)
+    {
+      persist_config_save(persist);
+      persist_config_free(persist);
+    }
+
+  cfg_free(cfg);
+  
   child_manager_deinit();
+
   msg_deinit();
   dns_cache_destroy();
   z_mem_trace_dump();

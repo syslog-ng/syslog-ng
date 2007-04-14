@@ -133,7 +133,10 @@ GlobalConfig *cfg_reload_config(gchar *fname, GlobalConfig *cfg);
 
 PersistentConfig *persist_config_new(void);
 void persist_config_add(PersistentConfig *self, gchar *name, gpointer store, GDestroyNotify destroy);
+void persist_config_add_survivor(PersistentConfig *self, gchar *name, gchar *value);
 gpointer persist_config_fetch(PersistentConfig *self, gchar *name);
+void persist_config_save(PersistentConfig *self);
+void persist_config_load(PersistentConfig *self);
 void persist_config_free(PersistentConfig *persist);
 
 #endif

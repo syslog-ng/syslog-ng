@@ -152,15 +152,6 @@ log_reader_watch_new(LogReader *reader, FDRead *fd)
   self->reader = reader;
   self->fd = fd;
   self->pollfd.fd = fd->fd;
-  if (self->reader->flags & LR_FOLLOW)
-    {
-    
-      /* seek to eof, would be better to record persistently where we
-       * stopped last time and seek there, in a way similar to what logcheck
-       * does */
-      
-      lseek(fd->fd, 0, SEEK_END);
-    }
   g_source_set_priority(&self->super, LOG_PRIORITY_READER);
   g_source_add_poll(&self->super, &self->pollfd);
   return &self->super;
@@ -439,6 +430,42 @@ log_reader_set_options(LogPipe *s, LogReaderOptions *options)
 
   if (options->follow_freq > 0)
     self->flags |= LR_FOLLOW;
+}
+
+/**
+ * log_reader_set_pos:
+ *
+ * This function sets the current read position of the associated fd. It
+ * should be used as a first operation before any message is read and is
+ * useful to restart at a specific file position. It is not intended to be
+ * used on anything non-seekable (e.g. sockets).
+ **/
+void
+log_reader_set_pos(LogReader *self, off_t ofs)
+{
+  if (lseek(self->fd->fd, ofs, SEEK_SET) >= 0)
+    self->ofs = 0;
+}
+
+/**
+ * log_reader_get_pos:
+ *
+ * This function returns the current read position of the associated fd. It
+ * should be used to query the current read position right before exiting. 
+ * The returned value is adjusted with the bytes already read from the
+ * stream but still in the input buffer. It is not intended to be used on
+ * anything non-seekable (e.g. sockets)
+ **/
+off_t
+log_reader_get_pos(LogReader *self)
+{
+  off_t res;
+  
+  res = lseek(self->fd->fd, 0, SEEK_CUR);
+  
+  if (res >= 0)
+    return res - self->ofs;
+  return res;
 }
 
 LogPipe *

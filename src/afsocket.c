@@ -446,6 +446,14 @@ afsocket_sd_kill_connection(AFSocketSourceConnection *sc)
   log_pipe_unref(&sc->super);
 }
 
+static void
+afsocket_sd_kill_connection_list(GList *list)
+{
+  GList *l;
+  for (l = list; l; l = g_list_next(l))
+    afsocket_sd_kill_connection((AFSocketSourceConnection *) l->data);
+}
+
 gboolean
 afsocket_sd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
 {
@@ -570,7 +578,7 @@ afsocket_sd_deinit(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
       /* for AFSOCKET_STREAM source drivers this is a list, for
        * AFSOCKET_DGRAM this is a single connection */
       
-      persist_config_add(persist, afsocket_sd_format_persist_name(self, FALSE), self->connections, (GDestroyNotify) afsocket_sd_kill_connection);
+      persist_config_add(persist, afsocket_sd_format_persist_name(self, FALSE), self->connections, (GDestroyNotify) afsocket_sd_kill_connection_list);
     }
   self->connections = NULL;
 

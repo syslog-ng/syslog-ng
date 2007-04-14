@@ -409,6 +409,8 @@ typedef struct _PersistentConfigEntry
 {
   gpointer value;
   GDestroyNotify destroy;
+  /* this value is a string and should be saved */
+  gboolean survive_across_restarts:1;
 } PersistentConfigEntry;
 
 static void
@@ -419,8 +421,8 @@ persist_config_entry_free(PersistentConfigEntry *self)
   g_free(self);
 }
 
-void 
-persist_config_add(PersistentConfig *self, gchar *name, gpointer value, GDestroyNotify destroy)
+static PersistentConfigEntry *
+persist_config_add_entry(PersistentConfig *self, gchar *name, gpointer value, GDestroyNotify destroy)
 {
   PersistentConfigEntry *p;
   
@@ -428,11 +430,11 @@ persist_config_add(PersistentConfig *self, gchar *name, gpointer value, GDestroy
     {
       if (g_hash_table_lookup(self->keys, name))
         {
-          msg_error("Duplicate configuration elements refer to the same persistent config, this is probably not what you want", 
+          msg_error("Internal error, duplicate configuration elements refer to the same persistent config", 
                     evt_tag_str("name", name),
                     NULL);
           destroy(value);
-          return;
+          return NULL;
         }
   
       p = g_new0(PersistentConfigEntry, 1);
@@ -441,6 +443,31 @@ persist_config_add(PersistentConfig *self, gchar *name, gpointer value, GDestroy
       p->destroy = destroy;
   
       g_hash_table_insert(self->keys, g_strdup(name), p);
+      return p;
+    }
+  return NULL;
+}
+
+void
+persist_config_add(PersistentConfig *self, gchar *name, gpointer value, GDestroyNotify destroy)
+{
+  persist_config_add_entry(self, name, value, destroy);
+}
+
+/**
+ * persist_config_add_survivor:
+ *
+ * Add a "surviving" value, a value that is remembered accross restarts.
+ **/
+void
+persist_config_add_survivor(PersistentConfig *self, gchar *name, gchar *value)
+{
+  PersistentConfigEntry *p;
+  
+  p = persist_config_add_entry(self, name, g_strdup(value), g_free);
+  if (p)
+    {
+      p->survive_across_restarts = TRUE;
     }
 }
 
@@ -462,6 +489,121 @@ persist_config_fetch(PersistentConfig *self, gchar *name)
       g_free(p);
     }
   return res;
+}
+
+static gboolean
+persist_config_write_string(FILE *persist_file, gchar *str)
+{
+  guint32 length;
+  
+  length = htonl(strlen(str));
+  if (fwrite(&length, 1, sizeof(length), persist_file) == sizeof(length) &&
+      fwrite(str, 1, ntohl(length), persist_file) == ntohl(length))
+    {
+      return TRUE;
+    }
+  return FALSE;
+}
+
+static gboolean
+persist_config_read_string(FILE *persist_file, gchar **str)
+{
+  guint32 length;
+  
+  if (fread(&length, 1, sizeof(length), persist_file) != sizeof(length))
+    return FALSE;
+  length = ntohl(length);
+  if (length > 4096)
+    return FALSE;
+  *str = g_malloc(length + 1);
+  (*str)[length] = 0;
+  if (fread(*str, 1, length, persist_file) != length)
+    {
+      g_free(*str);
+      return FALSE;
+    }
+  return TRUE;
+}
+
+static void
+persist_config_save_value(gchar *key, PersistentConfigEntry *entry, FILE *persist_file)
+{
+  if (entry->survive_across_restarts)
+    {
+      /* NOTE: we ignore errors here, as we cannot bail out from the
+       * g_hash_table_foreach() loop anyway. */
+      
+      persist_config_write_string(persist_file, key);
+      persist_config_write_string(persist_file, (gchar *) entry->value);
+    }
+}
+
+void
+persist_config_save(PersistentConfig *self)
+{
+  FILE *persist_file;
+  
+  persist_file = fopen(PATH_PERSIST_CONFIG, "w");
+  if (persist_file)
+    {
+      if (fwrite("SLP1", 1, 4, persist_file) < 0)
+        {
+          fclose(persist_file);
+          goto error;
+        }
+      g_hash_table_foreach(self->keys, (GHFunc) persist_config_save_value, persist_file);
+      fclose(persist_file);
+      return;
+    }
+ error:
+  msg_error("Error saving persistent configuration file",
+            evt_tag_str("name", PATH_PERSIST_CONFIG),
+            NULL);
+  
+}
+
+void
+persist_config_load(PersistentConfig *self)
+{
+  FILE *persist_file;
+  
+  persist_file = fopen(PATH_PERSIST_CONFIG, "r");
+  if (persist_file)
+    {
+      gchar magic[4];
+      gchar *key, *value;
+      
+      if (fread(magic, 1, sizeof(magic), persist_file) != 4)
+        {
+          msg_error("Error loading persistent configuration file",
+                    evt_tag_str("name", PATH_PERSIST_CONFIG),
+                    NULL);
+          goto close_and_exit;
+        }
+      if (memcmp(magic, "SLP1", 4) != 0)
+        {
+          msg_error("Persistent configuration file is in invalid format", NULL);
+          goto close_and_exit;
+        }
+      while (persist_config_read_string(persist_file, &key))
+        {
+          if (persist_config_read_string(persist_file, &value))
+            {
+              /* add a non-surviving entry, thus each value is only
+               * written/read once unless the code readds it, this is needed
+               * to limit the size of the persistent configuration file */
+              
+              persist_config_add(self, key, value, g_free);
+            }
+          else
+            {
+              g_free(key);
+              break;
+            }
+        }
+ close_and_exit:
+      fclose(persist_file);
+    }
 }
 
 PersistentConfig *
