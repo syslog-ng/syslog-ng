@@ -1,0 +1,70 @@
+#!/usr/local/bin/make -f
+
+STAMPDIR=solbuild/stamps
+PREFIX=/opt/syslog-ng
+DOCDIR=$(PREFIX)/doc
+INSTPREFIX=/solbuild/syslog-ng
+
+all: binary
+
+binary: setup configure build install pkgpackage
+
+setup: $(STAMPDIR)/stamp-setup
+$(STAMPDIR)/stamp-setup:
+	mkdir solbuild/stamps || true
+
+	touch $@
+
+configure: $(STAMPDIR)/stamp-configure
+$(STAMPDIR)/stamp-configure: setup
+	CFLAGS="-mcpu=v9 -mtune=v9" ./configure --prefix=/opt/syslog-ng 
+	touch $@
+
+build: $(STAMPDIR)/stamp-build
+$(STAMPDIR)/stamp-build: configure
+	make
+	touch $@
+
+install:  $(STAMPDIR)/stamp-install
+$(STAMPDIR)/stamp-install: build
+	dir=`pwd`;  \
+	rm -rf $$dir/$(INSTPREFIX)/; \
+	make install DESTDIR=$$dir/$(INSTPREFIX); \
+	install -d -m 755 $$dir/$(INSTPREFIX)/$(PREFIX)/etc; \
+	install -d -m 755 $$dir/$(INSTPREFIX)/$(PREFIX)/etc/syslog-ng; \
+	install -d -m 755 $$dir/$(INSTPREFIX)/$(DOCDIR); \
+	install -d -m 755 $$dir/$(INSTPREFIX)/$(DOCDIR)/examples; \
+	install -m 644 -c $$dir/$(INSTPREFIX)/$(DOCDIR) README; \
+	install -m 644 -c $$dir/$(INSTPREFIX)/$(DOCDIR) COPYING; \
+	install -m 644 -c $$dir/$(INSTPREFIX)/$(DOCDIR) AUTHORS; \
+	install -m 644 -c $$dir/$(INSTPREFIX)/$(DOCDIR) ChangeLog; \
+	install -m 644 -c $$dir/$(INSTPREFIX)/$(DOCDIR) NEWS; \
+	( cd doc/examples; \
+	  install -m 644 -c $$dir/$(INSTPREFIX)/$(DOCDIR)/examples syslog-ng.conf.sample; \
+	  install -m 644 -c $$dir/$(INSTPREFIX)/$(DOCDIR)/examples syslog-ng.conf.solaris; \
+	  install -m 644 -c $$dir/$(INSTPREFIX)/$(PREFIX)/etc/syslog-ng syslog-ng.conf.solaris; \
+	  mv $$dir/$(INSTPREFIX)/$(PREFIX)/etc/syslog-ng/syslog-ng.conf.solaris $$dir/$(INSTPREFIX)/$(PREFIX)/etc/syslog-ng/syslog-ng.conf.sample; \
+	);\
+	( cd doc/reference; \
+	  install -m 644 -c $$dir/$(INSTPREFIX)/$(DOCDIR) syslog-ng.txt; \
+	); \
+	( cd  $$dir/$(INSTPREFIX)/$(DOCDIR); \
+	  gunzip -c $$dir/doc/reference/syslog-ng.html.tar.gz | tar xvf - ); \
+	( cd $$dir/contrib ; \
+	  install -d -m 755 $$dir/$(INSTPREFIX)/$(DOCDIR)/examples/contrib; \
+	  for file in README init.d.HP-UX init.d.RedHat init.d.RedHat-7.3 init.d.SuSE init.d.SunOS init.d.solaris relogger.pl syslog-ng.conf.HP-UX syslog-ng.conf.RedHat syslog-ng.conf.SunOS syslog-ng.conf.doc syslog-ng.vim syslog2ng; do \
+	  	install -m 644 -c $$dir/$(INSTPREFIX)/$(DOCDIR)/examples/contrib $$file; \
+	  done; \
+	); \
+	( cd $$dir/solbuild; \
+	  install -m 755 -c $$dir/$(INSTPREFIX)/$(DOCDIR) syslog-ng.init.d;\
+	)
+	touch $@ 
+
+pkgpackage:
+	(cd solbuild/syslog-ng ; sh ../prototype-maker.sh ; sh ../pkgmaker.sh )
+
+clean:
+	rm -rf solbuild/stamps || true
+	rm -rf solbuild/syslog-ng || true
+	make clean

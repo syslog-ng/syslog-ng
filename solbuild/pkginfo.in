@@ -1,0 +1,10 @@
+PKG=ZOSsyslng
+NAME="Syslog-NG"
+VERSION=@VERSION@
+ARCH=sparc
+CATEGORY=application
+CLASSES="application manpages none"
+BASEDIR=/
+VENDOR="Balabit IT Ltd."
+EMAIL="zorpos@balabit.com"
+DESC="Advanced logging daemon"

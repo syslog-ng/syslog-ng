@@ -2,6 +2,49 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-10-27 15:15:30 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-89
+
+    Summary:
+      integrated solaris build scripts from dev-folti (fixes: #10358)
+    Revision:
+      syslog-ng--mainline--2.0--patch-89
+
+    
+    
+    Patches applied:
+    
+     * devel@balabit.hu--other-1/syslog-ng--dev-folti--2.0--base-0
+       tag of devel@balabit.hu--other-1/syslog-ng--mainline--2.0--patch-87
+    
+     * devel@balabit.hu--other-1/syslog-ng--dev-folti--2.0--patch-1
+       Added support for solaris 8/9 and rhel 3/4 packaging. (fixes: #10358)
+    
+
+    new files:
+     .arch-ids/syslog-ng.spec.bb.in.id solbuild/.arch-ids/=id
+     solbuild/.arch-ids/Makefile.am.id solbuild/.arch-ids/admin.id
+     solbuild/.arch-ids/depend.id solbuild/.arch-ids/pkginfo.in.id
+     solbuild/.arch-ids/pkgmaker.sh.id
+     solbuild/.arch-ids/prototype-maker.sh.id
+     solbuild/.arch-ids/rules.conf.id solbuild/.arch-ids/rules.id
+     solbuild/.arch-ids/space.id
+     solbuild/.arch-ids/syslog-ng.init.d.id solbuild/Makefile.am
+     solbuild/admin solbuild/depend solbuild/pkginfo.in
+     solbuild/pkgmaker.sh solbuild/prototype-maker.sh
+     solbuild/rules solbuild/rules.conf solbuild/space
+     solbuild/syslog-ng.init.d syslog-ng.spec.bb.in
+
+    modified files:
+     ChangeLog Makefile.am configure.in
+
+    new directories:
+     solbuild solbuild/.arch-ids
+
+    new patches:
+     devel@balabit.hu--other-1/syslog-ng--dev-folti--2.0--base-0
+     devel@balabit.hu--other-1/syslog-ng--dev-folti--2.0--patch-1
+
+
 2006-10-27 15:10:36 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-88
 
     Summary:
