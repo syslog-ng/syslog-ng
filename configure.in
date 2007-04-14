@@ -19,7 +19,7 @@ dnl Initial setup
 if test -r $srcdir/dist.conf; then
         # read defaults, dist.conf does not change
         # values for parameters that are already set
-        source $srcdir/dist.conf
+        . $srcdir/dist.conf
 fi
 
 if test "`uname -s`" = "Linux";then

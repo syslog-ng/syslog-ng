@@ -2,6 +2,20 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2007-02-03 17:24:40 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-130
+
+    Summary:
+      added dist.conf to dist
+    Revision:
+      syslog-ng--mainline--2.0--patch-130
+
+    
+    
+
+    modified files:
+     ChangeLog Makefile.am configure.in
+
+
 2007-02-03 17:21:21 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-129
 
     Summary:
