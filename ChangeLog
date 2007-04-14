@@ -2,6 +2,20 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2007-01-29 08:48:19 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-123
+
+    Summary:
+      fixed possible crash in usertty() driver
+    Revision:
+      syslog-ng--mainline--2.0--patch-123
+
+    	* src/afuser.c (afuser_dd_queue): don't ack the message if flow
+    	control was off (fixes possible crash reported by Bryan Henderson)
+
+    modified files:
+     ChangeLog src/afuser.c
+
+
 2007-01-26 09:23:49 GMT	Pal Tamas <folti@balabit.hu>	patch-122
 
     Summary:
