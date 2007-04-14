@@ -15,6 +15,7 @@
 	  behaviour.
 	* Fixed a reproducible segmentation fault in UNIX domain socket
           destinations.
+	* Fixed dir_group() handling.
 
 	Other changes:
 	* Documentation updates.
