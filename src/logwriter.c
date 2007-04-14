@@ -479,7 +479,7 @@ log_writer_options_set_template_escape(LogWriterOptions *options, gboolean enabl
     }
   else
     {
-      msg_notice("Macro escaping can only be specified for inline templates", NULL);
+      msg_error("Macro escaping can only be specified for inline templates", NULL);
     }
 }
 

@@ -302,7 +302,7 @@ afinet_dd_set_spoof_source(LogDriver *s, gboolean enable)
   
   self->spoof_source = enable;
 #else
-  msg_notice("Error enabling spoof-source, you need to compile syslog-ng with --enable-spoof-source", NULL);
+  msg_error("Error enabling spoof-source, you need to compile syslog-ng with --enable-spoof-source", NULL);
 #endif
 }
 

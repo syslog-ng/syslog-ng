@@ -347,18 +347,6 @@ affile_dw_new(AFFileDestDriver *owner, GString *filename)
 }
 
 void 
-affile_dd_set_compress(LogDriver *s, gboolean compress G_GNUC_UNUSED)
-{
-  msg_error("On-the-fly file compression is not supported", NULL);
-}
-
-void 
-affile_dd_set_encrypt(LogDriver *s, gboolean compress G_GNUC_UNUSED)
-{
-  msg_error("On-the-fly file encryption is not supported", NULL);
-}
-
-void 
 affile_dd_set_file_uid(LogDriver *s, const gchar *file_uid)
 {
   AFFileDestDriver *self = (AFFileDestDriver *) s;
@@ -366,7 +354,7 @@ affile_dd_set_file_uid(LogDriver *s, const gchar *file_uid)
   self->file_uid = 0;
   if (!resolve_user(file_uid, &self->file_uid))
     {
-      msg_notice("Error resolving user",
+      msg_error("Error resolving user",
                  evt_tag_str("user", file_uid),
                  NULL);
     }
@@ -380,7 +368,7 @@ affile_dd_set_file_gid(LogDriver *s, const gchar *file_gid)
   self->file_gid = 0;
   if (!resolve_group(file_gid, &self->file_gid))
     {
-      msg_notice("Error resolving group",
+      msg_error("Error resolving group",
                  evt_tag_str("group", file_gid),
                  NULL);
     }
@@ -402,7 +390,7 @@ affile_dd_set_dir_uid(LogDriver *s, const gchar *dir_uid)
   self->dir_uid = 0;
   if (!resolve_user(dir_uid, &self->dir_uid))
     {
-      msg_notice("Error resolving user",
+      msg_error("Error resolving user",
                  evt_tag_str("user", dir_uid),
                  NULL);
     }
@@ -416,7 +404,7 @@ affile_dd_set_dir_gid(LogDriver *s, const gchar *dir_gid)
   self->dir_gid = 0;
   if (!resolve_group(dir_gid, &self->dir_gid))
     {
-      msg_notice("Error resolving group",
+      msg_error("Error resolving group",
                  evt_tag_str("group", dir_gid),
                  NULL);
     }

@@ -88,7 +88,7 @@ void
 cfg_file_owner_set(GlobalConfig *self, gchar *owner)
 {
   if (!resolve_user(owner, &self->file_uid))
-    msg_notice("Error resolving user",
+    msg_error("Error resolving user",
                evt_tag_str("user", owner),
                NULL);
 }
@@ -97,7 +97,7 @@ void
 cfg_file_group_set(GlobalConfig *self, gchar *group)
 {
   if (!resolve_group(group, &self->file_gid))
-    msg_notice("Error resolving group",
+    msg_error("Error resolving group",
                evt_tag_str("group", group),
                NULL);
 }
@@ -112,7 +112,7 @@ void
 cfg_dir_owner_set(GlobalConfig *self, gchar *owner)
 {
   if (!resolve_user(owner, &self->dir_uid))
-    msg_notice("Error resolving user",
+    msg_error("Error resolving user",
                evt_tag_str("user", owner),
                NULL);
 }
@@ -121,7 +121,7 @@ void
 cfg_dir_group_set(GlobalConfig *self, gchar *group)
 {
   if (!resolve_group(group, &self->dir_gid))
-    msg_notice("Error resolving group",
+    msg_error("Error resolving group",
                evt_tag_str("group", group),
                NULL);
 }
@@ -184,11 +184,11 @@ cfg_init(GlobalConfig *cfg, PersistentConfig *persist)
   gint regerr;
   
   if (cfg->file_template_name && !(cfg->file_template = cfg_lookup_template(cfg, cfg->file_template_name)))
-    msg_notice("Error resolving file template",
+    msg_error("Error resolving file template",
                evt_tag_str("name", cfg->file_template_name),
                NULL);
   if (cfg->proto_template_name && !(cfg->proto_template = cfg_lookup_template(cfg, cfg->proto_template_name)))
-    msg_notice("Error resolving protocol template",
+    msg_error("Error resolving protocol template",
                evt_tag_str("name", cfg->proto_template_name),
                NULL);
 

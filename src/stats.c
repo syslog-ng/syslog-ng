@@ -92,7 +92,7 @@ stats_register_counter(StatsCounterType type, const gchar *counter_name, guint32
         }
       else if (!shared || !sc->shared)
         {
-          msg_notice("Duplicate stats counter",  
+          msg_error("Duplicate stats counter",  
                      evt_tag_str("counter", counter_name), 
                      NULL);
           *counter = NULL;
@@ -219,7 +219,7 @@ stats_generate_log(void)
     /* [SC_TYPE_PROCESSED] = */ "processed",
   };
   
-  e = msg_event_create(EVT_PRI_NOTICE, "Log statistics", NULL);
+  e = msg_event_create(EVT_PRI_INFO, "Log statistics", NULL);
   for (type = 0; type < SC_TYPE_MAX; type++)
     {
       for (l = counters[type]; l; l = l->next)
