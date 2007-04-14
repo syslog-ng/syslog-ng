@@ -90,9 +90,9 @@ else:
     success = 1
 
 if success:
-    try:
-        pid = readpidfile('syslog-ng.pid')
+    pid = readpidfile('syslog-ng.pid')
 
+    try:
         for s in senders:
             s.sendMessages(messages)
         time.sleep(1)

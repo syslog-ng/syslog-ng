@@ -2,6 +2,20 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-03-13 17:16:08 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-23
+
+    Summary:
+      fail the testprogram if the pidfile could not be found
+    Revision:
+      syslog-ng--mainline--2.0--patch-23
+
+    
+    
+
+    modified files:
+     ChangeLog tests/functional/func_test.py
+
+
 2006-03-13 16:37:17 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-22
 
     Summary:
