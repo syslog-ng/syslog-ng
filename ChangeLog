@@ -2,6 +2,27 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-11-16 14:15:50 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-99
+
+    Summary:
+      timezone offset calculation fix
+    Revision:
+      syslog-ng--mainline--2.0--patch-99
+
+    	* src/logmsg.c (log_stamp_format): don't use the absolute value of
+    	timezone offset,
+    	(log_msg_parse): initialize tm.tm_gmtoff using a call to localtime()
+    	instead of using memset(), fixed tv_sec calculation as it was not
+    	really UTC which it should've been.
+    
+    	* tests/unit/test_msgparse.c: fixed time parsing testcases
+    
+    
+
+    modified files:
+     ChangeLog src/logmsg.c tests/unit/test_msgparse.c
+
+
 2006-11-16 13:11:04 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-98
 
     Summary:

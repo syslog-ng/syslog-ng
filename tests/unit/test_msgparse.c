@@ -90,19 +90,19 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            "openvpn[2499]: PTHREAD support initialized" // msg
            );
 
-  testcase("<7>2004-09-07T10:43:21.156+02:00 bzorp openvpn[2499]: PTHREAD support initialized", 0, NULL,
+  testcase("<7>2006-11-10T10:43:21.156+02:00 bzorp openvpn[2499]: PTHREAD support initialized", 0, NULL,
            7, 			// pri
-           1094546601, 156000, 7200,	// timestamp (sec/usec/zone)
-           "2004-09-07T10:43:21.156+02:00",   // originally formatted timestamp
+           1163148201, 156000, 7200,	// timestamp (sec/usec/zone)
+           "2006-11-10T10:43:21.156+02:00",   // originally formatted timestamp
            "bzorp",		// host
            "openvpn",		// openvpn
            "openvpn[2499]: PTHREAD support initialized" // msg
            );
 
-  testcase("<7>2004-09-07T10:43:21.156+01:00 bzorp openvpn[2499]: PTHREAD support initialized", 0, NULL,
+  testcase("<7>2006-11-10T10:43:21.156+01:00 bzorp openvpn[2499]: PTHREAD support initialized", 0, NULL,
            7, 			// pri
-           1094543001, 156000, 3600,	// timestamp (sec/usec/zone)
-           "2004-09-07T10:43:21.156+01:00",   // originally formatted timestamp
+           1163151801, 156000, 3600,	// timestamp (sec/usec/zone)
+           "2006-11-10T10:43:21.156+01:00",   // originally formatted timestamp
            "bzorp",		// host
            "openvpn",		// openvpn
            "openvpn[2499]: PTHREAD support initialized" // msg
@@ -161,7 +161,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   /* the same in a foreign timezone */
   testcase("<7>2006-10-29T01:00:00.156+01:00 bzorp openvpn[2499]: PTHREAD support initialized", 0, NULL,
            7, 			// pri
-           1162072800, 156000, 3600,	// timestamp (sec/usec/zone)
+           1162080000, 156000, 3600,	// timestamp (sec/usec/zone)
            NULL,                // originally formatted timestamp
            "bzorp",		// host
            "openvpn",		// openvpn
@@ -169,7 +169,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            );
   testcase("<7>2006-10-29T01:59:59.156+01:00 bzorp openvpn[2499]: PTHREAD support initialized", 0, NULL,
            7, 			// pri
-           1162076399, 156000, 3600,	// timestamp (sec/usec/zone)
+           1162083599, 156000, 3600,	// timestamp (sec/usec/zone)
            NULL,                // originally formatted timestamp
            "bzorp",		// host
            "openvpn",		// openvpn
@@ -177,7 +177,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            );
   testcase("<7>2006-10-29T02:00:00.156+01:00 bzorp openvpn[2499]: PTHREAD support initialized", 0, NULL,
            7, 			// pri
-           1162076400, 156000, 3600,	// timestamp (sec/usec/zone)
+           1162083600, 156000, 3600,	// timestamp (sec/usec/zone)
            NULL,                // originally formatted timestamp
            "bzorp",		// host
            "openvpn",		// openvpn
@@ -188,7 +188,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 
   testcase("<7>2006-10-29T02:00:00.156+01:00 %bzorp openvpn[2499]: PTHREAD support initialized", LP_CHECK_HOSTNAME, NULL,
            7, 			// pri
-           1162076400, 156000, 3600,	// timestamp (sec/usec/zone)
+           1162083600, 156000, 3600,	// timestamp (sec/usec/zone)
            NULL,                // originally formatted timestamp
            "",		// host
            "%bzorp openvpn",		// openvpn
@@ -197,7 +197,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 
   testcase("<7>2006-10-29T02:00:00.156+01:00 ctld snmpd[2499]: PTHREAD support initialized", 0, "^ctld",
            7, 			// pri
-           1162076400, 156000, 3600,	// timestamp (sec/usec/zone)
+           1162083600, 156000, 3600,	// timestamp (sec/usec/zone)
            NULL,                // originally formatted timestamp
            "",		// host
            "ctld snmpd",		// openvpn

@@ -51,7 +51,7 @@ static char repeat_msg_string[] = "last message repeated";
 void
 log_stamp_format(LogStamp *stamp, GString *target, gint ts_format, glong zone_offset, gint frac_digits)
 {
-  glong target_zone_offset = 0, ofs;
+  glong target_zone_offset = 0;
   struct tm *tm;
   char ts[128], buf[8];
   time_t t;
@@ -96,8 +96,7 @@ log_stamp_format(LogStamp *stamp, GString *target, gint ts_format, glong zone_of
                   frac_digits--;
                 }
             }
-          ofs = target_zone_offset < 0 ? -target_zone_offset : target_zone_offset;
-          format_zone_info(buf, sizeof(buf), ofs);
+          format_zone_info(buf, sizeof(buf), target_zone_offset);
           g_string_append(target, buf);
           break;
         case TS_FMT_FULL:
@@ -210,7 +209,13 @@ log_msg_parse(LogMessage *self, gchar *data, gint length, guint flags, regex_t *
       stamp_length = (p - src);
       
       g_string_assign_len(self->date, src, stamp_length);
-      memset(&tm, 0, sizeof(tm));
+      
+      /* NOTE: we initialize various unportable fields in tm using a
+       * localtime call, as the value of tm_gmtoff does matter but it does
+       * not exist on all platforms and 0 initializing it causes trouble on
+       * time-zone barriers */
+      
+      tm = *localtime(&now);
       p = strptime(self->date->str, "%Y-%m-%dT%H:%M:%S", &tm);
       
       self->stamp.time.tv_usec = 0;
@@ -249,13 +254,13 @@ log_msg_parse(LogMessage *self, gchar *data, gint length, guint flags, regex_t *
       /* NOTE: mktime() returns the time assuming that the timestamp we
        * received was in local time. This is not true, as there's a
        * zone_offset in the timestamp as well. We need to adjust this offset
-       * by substracting the local timezone offset at the specific time,
+       * by adding the local timezone offset at the specific time to get UTC,
        * which means that tv_sec becomes as if tm was in the 00:00 timezone. 
        * Also we have to take into account that at the zone barriers an hour
        * might be skipped or played twice this is what the 
        * (tm.tm_hour - * unnormalized_hour) part fixes up. */
       
-      self->stamp.time.tv_sec = self->stamp.time.tv_sec - get_local_timezone_ofs(self->stamp.time.tv_sec) + (tm.tm_hour - unnormalized_hour) * 3600 + self->stamp.zone_offset;
+      self->stamp.time.tv_sec = self->stamp.time.tv_sec + get_local_timezone_ofs(self->stamp.time.tv_sec) - (tm.tm_hour - unnormalized_hour) * 3600 - self->stamp.zone_offset;
       
       src += stamp_length;
       left -= stamp_length;
@@ -275,7 +280,7 @@ log_msg_parse(LogMessage *self, gchar *data, gint length, guint flags, regex_t *
       /* And also make struct time timestamp for the msg */
 
       nowtm = localtime(&now);
-      memset(&tm, 0, sizeof(tm));
+      tm = nowtm;
       strptime(self->date->str, "%b %e %H:%M:%S", &tm);
       tm.tm_isdst = -1;
       tm.tm_year = nowtm->tm_year;
