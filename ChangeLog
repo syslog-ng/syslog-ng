@@ -2,6 +2,21 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-06-23 14:10:53 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-66
+
+    Summary:
+      fixed dir_group processing 
+    Revision:
+      syslog-ng--mainline--2.0--patch-66
+
+    	* src/affile.c (affile_dd_new): dir_gid was not initialized because
+    	of a typo, thus dir_group() did not take effect, fixed
+    
+
+    modified files:
+     ChangeLog src/affile.c
+
+
 2006-06-20 12:50:32 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-65
 
     Summary:
