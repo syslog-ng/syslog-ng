@@ -1,3 +1,17 @@
+2.0rc2
+	Mon, 11 Sep 2006 12:06:30 +0200
+
+	Bugfixes:
+	* Fixed a filter evaluation bug on platforms that have unsigned
+          characters by default.
+	* Fixed a denial of service problem when a zero sized UDP packet is
+          received (was taken as an EOF and the input channel was closed).
+	* Fixed NL handling for datagram transports.
+	* Fixed IPv6 name resolution.
+	* Fixed "Duplicate stats counter" message upon reload for program()
+          destinations.
+	* Fixed various memory leaks.
+
 2.0rc1
 	Sat, 08 Jul 2006 13:52:50 +0200
 
