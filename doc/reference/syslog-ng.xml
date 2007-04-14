@@ -364,7 +364,7 @@
 				<synopsis>
           template t_filetmpl { template("$ISODATE $HOST $MSG\n"); template_escape(no)); };
           
-          destination d_file { file("/var/log/messages" template(t_filetmpl); };
+          destination d_file { file("/var/log/messages" template(t_filetmpl)); };
         </synopsis>
 				Templates can reference one or more macros as described in <xref linkend="macros"/>. </para>
 			<note>

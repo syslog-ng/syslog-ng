@@ -26,6 +26,7 @@
 
 #include <sys/types.h>
 #include <netinet/in.h>
+#include <sys/socket.h>
 #include <arpa/inet.h>
 #include <sys/stat.h>
 #include <stdio.h>
