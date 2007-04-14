@@ -127,37 +127,56 @@ gboolean
 resolve_hostname(GString *result, GSockAddr *saddr, gboolean usedns, gboolean usefqdn)
 {
   static gchar local_hostname[256] = "";
-  char *hname, *p;
+  char *hname, *p, buf[256];
  
-  if (saddr && saddr->sa.sa_family == AF_INET)
+  if (saddr)
     {
-      struct sockaddr_in *inet_addr = (struct sockaddr_in *) &saddr->sa;
+      if (saddr->sa.sa_family == AF_INET || saddr->sa.sa_family == AF_INET6)
+        {
+          void *addr;
+          socklen_t addr_len;
+          
+          if (saddr->sa.sa_family == AF_INET)
+            {
+              addr = &((struct sockaddr_in *) &saddr->sa)->sin_addr;
+              addr_len = sizeof(struct in_addr);
+            }
+          else
+            {
+              addr = &((struct sockaddr_in6 *) &saddr->sa)->sin6_addr;
+              addr_len = sizeof(struct in6_addr);
+            }
 
-      /* FIXME: add nscache support here */
+          /* FIXME: add nscache support here */
 
-      if (usedns) 
-	{
-	  struct hostent *hp;
-	  
-	  hp = gethostbyaddr((char *) &(inet_addr->sin_addr),
-			     sizeof(struct in_addr), AF_INET);
-	  hname = (hp && hp->h_name) ? hp->h_name : NULL;
-	} 
+          if (usedns) 
+            {
+              struct hostent *hp;
+              
+              hp = gethostbyaddr(addr, addr_len, saddr->sa.sa_family);
+              hname = (hp && hp->h_name) ? hp->h_name : NULL;
+            } 
+          else
+            hname = NULL;
+          
+          if (!hname) 
+            {
+              inet_ntop(saddr->sa.sa_family, addr, buf, sizeof(buf));
+              hname = buf;
+            }
+          else 
+            {
+              if (!usefqdn) 
+                {
+                  p = strchr(hname, '.');
+                  if (p) *p = 0;
+                }
+            }
+        }
       else
-	hname = NULL;
-      
-      if (!hname) 
-	{
-	  hname = inet_ntoa(inet_addr->sin_addr);
-	}
-      else 
-	{
-	  if (!usefqdn) 
-	    {
-	      p = strchr(hname, '.');
-	      if (p) *p = 0;
-	    }
-	}
+        {
+          g_assert_not_reached();
+        }
     }
   else 
     {

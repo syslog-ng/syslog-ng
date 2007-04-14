@@ -2,6 +2,22 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-09-11 09:41:42 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-76
+
+    Summary:
+      fixed IPv6 name resolution
+    Revision:
+      syslog-ng--mainline--2.0--patch-76
+
+    2006-09-11  Balazs Scheidler <bazsi@balabit.hu>
+    
+    	* src/misc.c (resolve_hostname): added IPv6 specific name resolution
+    
+
+    modified files:
+     ChangeLog src/misc.c
+
+
 2006-09-11 09:40:58 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-75
 
     Summary:
