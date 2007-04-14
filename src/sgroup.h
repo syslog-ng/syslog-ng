@@ -46,13 +46,13 @@ typedef struct _LogSourceGroup
 } LogSourceGroup;
 
 static inline LogSourceGroup *
-log_sgrp_ref(LogSourceGroup *s)
+log_source_group_ref(LogSourceGroup *s)
 {
   return (LogSourceGroup *) log_pipe_ref((LogPipe *) s);
 }
 
 static inline void
-log_sgrp_unref(LogSourceGroup *s)
+log_source_group_unref(LogSourceGroup *s)
 {
   log_pipe_unref((LogPipe *) s);
 }

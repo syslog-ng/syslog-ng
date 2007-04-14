@@ -75,7 +75,6 @@ static struct keyword keywords[] = {
 	{ "stats",		KW_STATS_FREQ },   /* obsolete */
 	{ "flush_lines", 	KW_FLUSH_LINES },
 	{ "flush_timeout", 	KW_FLUSH_TIMEOUT },
-	/* obsolete */
 	{ "sync_freq", 		KW_FLUSH_LINES },  /* obsolete */
 	{ "sync", 		KW_FLUSH_LINES },  /* obsolete */
 	{ "fsync",		KW_FSYNC },
@@ -126,6 +125,7 @@ static struct keyword keywords[] = {
         { "so_sndbuf",          KW_SO_SNDBUF },
         { "so_keepalive",       KW_SO_KEEPALIVE },
         { "tcp_keep_alive",     KW_SO_KEEPALIVE }, /* obsolete */
+        { "spoof_source",       KW_SPOOF_SOURCE },
 
 	{ "owner",		KW_OWNER },
 	{ "group",		KW_GROUP },

@@ -95,7 +95,7 @@ gint last_addr_family = AF_INET;
 /* socket related options */
 %token KW_KEEP_ALIVE KW_MAX_CONNECTIONS
 %token KW_LOCALIP KW_IP KW_LOCALPORT KW_PORT KW_DESTPORT 
-%token KW_IP_TTL KW_SO_BROADCAST KW_IP_TOS KW_SO_SNDBUF KW_SO_RCVBUF KW_SO_KEEPALIVE
+%token KW_IP_TTL KW_SO_BROADCAST KW_IP_TOS KW_SO_SNDBUF KW_SO_RCVBUF KW_SO_KEEPALIVE KW_SPOOF_SOURCE
 
 /* misc options */
 %token KW_USE_TIME_RECVD
@@ -606,6 +606,7 @@ dest_afinet_udp_option
 	| KW_LOCALPORT '(' string ')'		{ afinet_dd_set_localport(last_driver, 0, $3, "udp"); free($3); }
 	| KW_PORT '(' string ')'		{ afinet_dd_set_destport(last_driver, 0, $3, "udp"); free($3); }
 	| KW_DESTPORT '(' string ')'		{ afinet_dd_set_destport(last_driver, 0, $3, "udp"); free($3); }
+	| KW_SPOOF_SOURCE '(' yesno ')'		{ afinet_dd_set_spoof_source(last_driver, $3); }
 	;
 
 dest_afinet_tcp_params

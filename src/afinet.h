@@ -26,6 +26,11 @@
 
 #include "afsocket.h"
 
+#if ENABLE_SPOOF_SOURCE
+#include <libnet.h>
+#endif
+
+
 typedef struct _InetSocketOptions
 {
   SocketOptions super;
@@ -51,6 +56,10 @@ typedef struct _AFInetDestDriver
 {
   AFSocketDestDriver super;
   InetSocketOptions sock_options;
+#if ENABLE_SPOOF_SOURCE
+  gboolean spoof_source;
+  libnet_t *lnet_ctx;
+#endif
 } AFInetDestDriver;
 
 LogDriver *afinet_dd_new(gint af, gchar *host, gint port, guint flags);
@@ -58,5 +67,6 @@ void afinet_dd_set_localport(LogDriver *self, gint port, gchar *service, gchar *
 void afinet_dd_set_destport(LogDriver *self, gint port, gchar *service, gchar *proto);
 void afinet_dd_set_localip(LogDriver *self, gchar *ip);
 void afinet_dd_set_sync_freq(LogDriver *self, gint sync_freq);
+void afinet_dd_set_spoof_source(LogDriver *self, gboolean enable);
 
 #endif

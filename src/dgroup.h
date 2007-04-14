@@ -37,8 +37,17 @@ typedef struct _LogDestGroup
   guint32 *processed_messages;
 } LogDestGroup;
 
-#define log_dgrp_ref(s)     ((LogDestGroup *) log_pipe_ref((LogPipe *) s))
-#define log_dgrp_unref(s)   log_pipe_unref((LogPipe *) s)
+static inline LogDestGroup *
+log_dest_group_ref(LogDestGroup *self)
+{
+  return (LogDestGroup *) log_pipe_ref(&self->super);
+}
+
+static inline void
+log_dest_group_unref(LogDestGroup *self)
+{
+  log_pipe_unref(&self->super);
+}
 
 LogDestGroup *log_dest_group_new(gchar *name, LogDriver *drivers);
 

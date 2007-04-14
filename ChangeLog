@@ -2,6 +2,39 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2007-02-03 16:39:08 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-127
+
+    Summary:
+      implemented spoof-source support for both ipv4/ipv6
+    Revision:
+      syslog-ng--mainline--2.0--patch-127
+
+    	* configure.in: added --with-libnet and --enable-spoof-source
+    	options
+    
+    	* src/afinet.c (afinet_dd_set_spoof_source): new function, called
+    	from the parser to enable spoof-source,
+    	(afinet_dd_init): new function,
+    	(afinet_dd_construct_ipv4_packet): -"-,
+    	(afinet_dd_construct_ipv6_packet): -"-,
+    	(afinet_dd_queue): -"-,
+    	(affile_dd_new): register new init/queue methods,
+    
+    	* src/sgroup.h, src/dgroup.h: renamed ref/unref functions for
+    	consistency
+    
+    	* src/cfg-lex.l, src/cfg-grammar.y: added spoof-source option
+    
+    	* src/logwriter.c (log_writer_format_log): removed static as it is
+    	directly used by spoof-source to format messages
+    
+
+    modified files:
+     ChangeLog README configure.in src/afinet.c src/afinet.h
+     src/afsocket.h src/center.c src/cfg-grammar.y src/cfg-lex.l
+     src/dgroup.h src/logwriter.c src/logwriter.h src/sgroup.h
+
+
 2007-01-30 13:08:22 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-126
 
     Summary:

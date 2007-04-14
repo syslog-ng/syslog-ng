@@ -97,6 +97,6 @@ struct _AFSocketDestDriver
 };
 
 void afsocket_dd_init_instance(AFSocketDestDriver *self, SocketOptions *sock_options, guint32 flags);
-
+gboolean afsocket_dd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist);
 
 #endif

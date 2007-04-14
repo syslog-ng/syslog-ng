@@ -78,13 +78,13 @@ log_endpoint_free(LogEndpoint *self)
       switch (self->type)
         {
         case EP_SOURCE:
-          log_sgrp_unref((LogSourceGroup *) self->ref);
+          log_source_group_unref((LogSourceGroup *) self->ref);
           break;
         case EP_FILTER:
           log_filter_unref((LogFilterRule *) self->ref);
           break;
         case EP_DESTINATION:
-          log_dgrp_unref((LogDestGroup *) self->ref);
+          log_dest_group_unref((LogDestGroup *) self->ref);
           break;
         default:
           g_assert_not_reached();
@@ -217,7 +217,7 @@ log_center_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
                         NULL);
               return FALSE;
             }
-          log_sgrp_ref(ep->ref);
+          log_source_group_ref(ep->ref);
         }
       
       for (j = 0; j < conn->filters->len; j++)
@@ -247,7 +247,7 @@ log_center_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
                         NULL);
               return FALSE;
             }
-          log_dgrp_ref(ep->ref);
+          log_dest_group_ref(ep->ref);
         }
     }
 

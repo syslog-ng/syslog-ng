@@ -206,7 +206,7 @@ log_writer_queue(LogPipe *s, LogMessage *lm, gint path_flags)
   g_queue_push_tail(self->queue, GUINT_TO_POINTER(0x80000000 | path_flags));
 }
 
-static void
+void
 log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
 {
   LogTemplate *template = NULL;
