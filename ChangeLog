@@ -2,6 +2,20 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2007-01-29 08:56:55 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-125
+
+    Summary:
+      added check for getutent in configure
+    Revision:
+      syslog-ng--mainline--2.0--patch-125
+
+    	* configure.in: added getutent() check
+    
+
+    modified files:
+     ChangeLog configure.in src/afuser.c
+
+
 2007-01-29 08:49:55 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-124
 
     Summary:

@@ -54,6 +54,8 @@ afuser_dd_queue(LogPipe *s, LogMessage *msg, gint path_flags)
   struct utmp *ut;
   
   g_snprintf(buf, sizeof(buf), "%s %s %s\n", msg->date->str, msg->host->str, msg->msg->str);
+  
+  /* NOTE: there's a private implementations of getutent in utils.c on Systems which do not provide one. */
   while ((ut = getutent())) 
     {
 #if HAVE_MODERN_UTMP
