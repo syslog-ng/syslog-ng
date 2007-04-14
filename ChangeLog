@@ -2,6 +2,30 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-06-12 09:21:24 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-63
+
+    Summary:
+      support optional() for file destinations, optional destinations are only reopened after time_reopen() time has elapsed
+    Revision:
+      syslog-ng--mainline--2.0--patch-63
+
+    	* src/affile.c (AFFileDestWriter): added time_reopen and
+    	last_open_stamp members,
+    	(affile_dw_init): store the time_reopen value from cfg, save the
+    	current time in last_open_stamp, don't fail the initialization if
+    	optional is enabled,
+    	(affile_dw_queue): reopen the destination if time_reopen() time has
+    	elapsed, drop the message if we are without a destination,
+    	
+    
+    	* src/cfg-grammar.y (dest_affile_options): added KW_OPTIONAL parsing
+    
+    
+
+    modified files:
+     ChangeLog src/affile.c src/cfg-grammar.y
+
+
 2006-06-12 08:47:41 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-62
 
     Summary:

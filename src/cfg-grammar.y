@@ -485,6 +485,7 @@ dest_affile_params
 
 dest_affile_options
 	: dest_affile_option dest_affile_options		
+	| KW_OPTIONAL '(' yesno ')'			{ last_driver->optional = $3; }
         |
 	;	
 

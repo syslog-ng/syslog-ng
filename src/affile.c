@@ -183,6 +183,8 @@ typedef struct _AFFileDestWriter
   GString *filename;
   LogPipe *writer;
   time_t last_msg_stamp;
+  time_t last_open_stamp;
+  time_t time_reopen;
 } AFFileDestWriter;
 
 static gboolean
@@ -190,6 +192,9 @@ affile_dw_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
 {
   AFFileDestWriter *self = (AFFileDestWriter *) s;
   int fd, flags;
+
+  if (cfg)
+    self->time_reopen = cfg->time_reopen;
 
   msg_verbose("Initializing destination file writer",
               evt_tag_str("template", self->owner->filename_template->template->str),
@@ -201,6 +206,7 @@ affile_dw_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
   else
     flags = O_WRONLY | O_CREAT | O_APPEND | O_NOCTTY | O_NONBLOCK | O_LARGEFILE;
 
+  self->last_open_stamp = time(NULL);
   if (affile_open_file(self->filename->str, flags, 
                        self->owner->file_uid, self->owner->file_gid, self->owner->file_perm, 
                        self->owner->dir_uid, self->owner->dir_gid, self->owner->dir_perm, 
@@ -225,7 +231,7 @@ affile_dw_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
                 evt_tag_str("filename", self->filename->str),
                 evt_tag_errno(EVT_TAG_OSERROR, errno),
                 NULL);
-      return FALSE;
+      return self->owner->super.optional;
     }
   return TRUE;
 }
@@ -246,7 +252,15 @@ affile_dw_queue(LogPipe *s, LogMessage *lm, gint path_flags)
   AFFileDestWriter *self = (AFFileDestWriter *) s;
 
   self->last_msg_stamp = time(NULL);
-  log_pipe_forward_msg(s, lm, path_flags);
+  if (!s->pipe_next && self->last_open_stamp < self->last_msg_stamp - self->time_reopen)
+    {
+      log_pipe_init(&self->super, NULL, NULL);
+    }
+    
+  if (s->pipe_next)
+    log_pipe_forward_msg(s, lm, path_flags);
+  else
+    log_msg_drop(lm, path_flags);
 }
 
 static void
@@ -273,6 +287,7 @@ affile_dw_new(AFFileDestDriver *owner, GString *filename)
   self->super.queue = affile_dw_queue;
   log_pipe_ref(&owner->super.super);
   self->owner = owner;
+  self->time_reopen = 60;
   
   /* we have to take care about freeing filename later. 
      This avoids a move of the filename. */
