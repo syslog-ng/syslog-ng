@@ -134,7 +134,7 @@ afstreams_sd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
           close(fd);
           return FALSE;
         }
-      self->reader = log_reader_new(streams_read_new(fd), LR_LOCAL, s, &self->reader_options);
+      self->reader = log_reader_new(streams_read_new(fd), LR_LOCAL | LR_NOMREAD, s, &self->reader_options);
       log_pipe_append(self->reader, s);
       
       if (self->door_filename)

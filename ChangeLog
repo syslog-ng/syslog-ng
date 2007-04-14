@@ -2,6 +2,23 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-05-01 12:38:10 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-46
+
+    Summary:
+      fixed Solaris portability problems, avoid multiread on STREAMS sources
+    Revision:
+      syslog-ng--mainline--2.0--patch-46
+
+    	* configure.in: check for -lrt for nanosleep
+    
+    	* src/afstreams.c (afstreams_sd_init): pass LR_NOMREAD flag to
+    	log_reader_new()
+    
+
+    modified files:
+     ChangeLog configure.in src/afstreams.c
+
+
 2006-04-30 20:20:44 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-45
 
     Summary:

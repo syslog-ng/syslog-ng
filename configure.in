@@ -126,6 +126,7 @@ fi
 dnl Checks for library functions.
 AC_CHECK_LIB(door, door_create)
 AC_CHECK_LIB(socket, socket)
+AC_CHECK_LIB(rt, nanosleep)
 AC_CHECK_LIB(nsl, gethostbyname)
 AC_CHECK_LIB(regex, regexec)
 
