@@ -2,6 +2,21 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2007-02-12 09:01:43 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-131
+
+    Summary:
+      added testcases for 2007 DST changes
+    Revision:
+      syslog-ng--mainline--2.0--patch-131
+
+    	* tests/unit/test_zone.c (main): added testcases for 2007 DST
+    	changes in the USA
+    
+
+    modified files:
+     ChangeLog tests/unit/test_zone.c
+
+
 2007-02-03 17:24:40 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-130
 
     Summary:

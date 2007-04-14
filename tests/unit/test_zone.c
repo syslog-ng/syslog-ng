@@ -47,6 +47,18 @@ int main()
   /* 2005-10-30 01:00:00 EST, DST disabled */
   testcase("US/Eastern", 1130652000, -5*3600);
 
+  /* USA DST change in 2007, 2nd sunday of March instead of 1st Sunday of April */
+  /* 2007-03-11 01:00:00 EST, DST disabled */
+  testcase("US/Eastern", 1173592800, -5*3600);
+  /* 2007-03-11 01:59:59 EST, DST disabled */
+  testcase("US/Eastern", 1173596399, -5*3600);
+  /* 2007-03-11 03:00:00 EST, DST enabled */
+  testcase("US/Eastern", 1173596400, -4*3600);
+  /* 2007-11-04 01:59:59 EST, DST enabled */
+  testcase("US/Eastern", 1194155999, -4*3600);
+  /* 2007-11-04 01:00:00 EST, DST disabled */
+  testcase("US/Eastern", 1194156000, -5*3600);
+
   /* Oct 31 01:59:59 2004 (EST) +1000 */
   testcase("Australia/Victoria", 1099151999, 10*3600);
   /* Oct 31 03:00:00 2004 (EST) +1100 */
