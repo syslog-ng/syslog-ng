@@ -1,3 +1,11 @@
+2.0rc4
+	Tue, 24 Oct 2006 13:33:55 +0200
+
+	Bugfixes:
+	* Another leak fix in 2.0rc2 caused syslog-ng to crash when a 
+          destination TCP/unix-stream connection was broken.
+	* Fixed EOF detection for destination connections.
+
 2.0rc3
 	Thu, 14 Sep 2006 14:34:59 +0200
 
