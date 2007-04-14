@@ -51,7 +51,7 @@ gboolean log_source_handle_line(LogSource *self, gchar *line, gint length, GSock
 static inline gboolean
 log_source_free_to_send(LogSource *self)
 {
-  return !!self->options->window_size;
+  return self->options->window_size > 0;
 }
 
 void log_source_init_instance(LogSource *self, LogSourceOptions *options);

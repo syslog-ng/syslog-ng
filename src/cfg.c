@@ -252,7 +252,7 @@ cfg_new(gchar *fname)
   self->time_reopen = 60;
   self->time_reap = 60;
 
-  self->log_fifo_size = 100;
+  self->log_fifo_size = 1000;
   self->log_fetch_limit = 10;
   self->log_iw_size = 100;
   self->log_msg_size = 8192;

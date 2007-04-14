@@ -2,6 +2,20 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2007-03-26 12:28:31 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-143
+
+    Summary:
+      increased the minimum value for log_fifo_size to 1000
+    Revision:
+      syslog-ng--mainline--2.0--patch-143
+
+    
+    
+
+    modified files:
+     ChangeLog src/cfg.c src/logsource.h src/logwriter.c
+
+
 2007-03-21 16:36:01 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-142
 
     Summary:
