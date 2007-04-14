@@ -2,6 +2,22 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-03-22 15:39:58 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-26
+
+    Summary:
+      fixed a possible segmentation fault on write errors
+    Revision:
+      syslog-ng--mainline--2.0--patch-26
+
+    	* src/logwriter.c (log_writer_flush_log): return from the function
+    	on error instead of looping with line == NULL, this fixes a possible
+    	SIGSEGV, when some messages sit in the queue while the destination
+    	goes away
+
+    modified files:
+     ChangeLog src/logwriter.c
+
+
 2006-03-18 22:08:50 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-25
 
     Summary:

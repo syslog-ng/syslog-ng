@@ -327,6 +327,7 @@ log_writer_flush_log(LogWriter *self, FDWrite *fd)
               line = NULL;
               if (errno != EAGAIN)
                 goto write_error;
+              return TRUE;
             }
           else 
             {
