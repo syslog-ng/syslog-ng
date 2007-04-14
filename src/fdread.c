@@ -29,16 +29,21 @@
 static size_t
 fd_do_read(FDRead *self, void *buf, size_t buflen, GSockAddr **sa)
 {
+  gint rc;
+  
   if ((self->flags & FR_RECV) == 0)
     {
       *sa = NULL;
-      return read(self->fd, buf, buflen);
+      do
+        {
+          rc = read(self->fd, buf, buflen);
+        }
+      while (rc == -1 && errno == EINTR);
     }
   else 
     {
       struct sockaddr_storage sas;
       socklen_t salen = sizeof(sas);
-      gint rc;
 
       do
         {
@@ -48,8 +53,8 @@ fd_do_read(FDRead *self, void *buf, size_t buflen, GSockAddr **sa)
       while (rc == -1 && errno == EINTR);
       if (rc != -1 && salen)
         (*sa) = g_sockaddr_new((struct sockaddr *) &sas, salen);
-      return rc;
     }
+  return rc;
 }
 
 FDRead *

@@ -4,6 +4,7 @@ EXTRA_DIST =  man/syslog-ng.8 man/syslog-ng.conf.5 \
 	security/dos-2000-11-22.txt \
 	reference/syslog-ng.html.tar.gz \
 	reference/syslog-ng.xml \
+	reference/syslog-ng.txt \
 	reference/syslog-ng.xsl \
 	examples/syslog-ng.conf.sample \
 	examples/syslog-ng.conf.solaris

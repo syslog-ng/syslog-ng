@@ -2,6 +2,20 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-02-24 16:19:33 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-14
+
+    Summary:
+      added reference/syslog-ng.txt to EXTRA_DIST
+    Revision:
+      syslog-ng--mainline--2.0--patch-14
+
+    
+    
+
+    modified files:
+     ChangeLog doc/Makefile.am src/fdread.c src/logreader.c
+
+
 2006-02-24 16:13:38 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-13
 
     Summary:

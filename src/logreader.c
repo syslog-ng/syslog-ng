@@ -190,10 +190,10 @@ log_reader_handle_line(LogReader *self, gchar *line, gint length, GSockAddr *sad
 }
 
 static gboolean
-log_reader_iterate_buf(LogReader *self, GSockAddr *saddr, gboolean flush)
+log_reader_iterate_buf(LogReader *self, GSockAddr *saddr, gboolean flush, gint *msg_count)
 {
   gchar *eol, *start;
-  gint length, msg_count;
+  gint length;
   gboolean may_read = TRUE;
   guint parse_flags;
 
@@ -232,6 +232,7 @@ log_reader_iterate_buf(LogReader *self, GSockAddr *saddr, gboolean flush)
       if (length)
         log_reader_handle_line(self, self->buffer, length, saddr, parse_flags);
       self->ofs = 0;
+      (*msg_count)++;
     }
   else
     {
@@ -240,16 +241,15 @@ log_reader_iterate_buf(LogReader *self, GSockAddr *saddr, gboolean flush)
           saddr = self->prev_addr;
           self->prev_addr = NULL;
         }
-      msg_count = 0;
       start = self->buffer;
-      while ((self->options->fetch_limit == 0 || msg_count < self->options->fetch_limit) && eol && may_read)
+      while ((self->options->fetch_limit == 0 || (*msg_count) < self->options->fetch_limit) && eol && may_read)
 	{
 	  gchar *end = eol;
 	  /* eol points at the newline character. end points at the
 	   * character terminating the line, which may be a carriage
 	   * return preceeding the newline. */
 	   
-	  msg_count++;
+	  (*msg_count)++;
 	  
 	  while ((end > start) && (end[-1] == '\r' || end[-1] == '\n' || end[-1] == 0))
 	    end--;
@@ -289,11 +289,12 @@ log_reader_fetch_log(LogReader *self, FDRead *fd)
   guint avail = self->options->msg_size - self->ofs;
   gint rc;
   GSockAddr *sa = NULL;
+  gint msg_count = 0;
 
   /* iterare on previously buffered data */
   if (self->flags & LR_COMPLETE_LINE)
     {
-      log_reader_iterate_buf(self, NULL, FALSE);
+      log_reader_iterate_buf(self, NULL, FALSE, &msg_count);
       
       /* we still have something */
       if (self->ofs != 0)
@@ -315,56 +316,63 @@ log_reader_fetch_log(LogReader *self, FDRead *fd)
 	}
       avail = self->options->padding;
     }
-  rc = fd_read(fd, self->buffer + self->ofs, avail, &sa);
-
-  if (rc == -1)
+  
+  /* NOTE: this loop is here to decrease the load on the main loop, we try
+   * to fetch a couple of messages in a single run (but only up to
+   * fetch_limit).
+   */
+  while (msg_count < self->options->fetch_limit)
     {
-      if (errno != EAGAIN)
+      rc = fd_read(fd, self->buffer + self->ofs, avail, &sa);
+
+      if (rc == -1)
         {
-          /* an error occurred while reading */
-          msg_error("I/O error occurred while reading",
-                    evt_tag_int(EVT_TAG_FD, fd->fd),
-                    evt_tag_errno(EVT_TAG_OSERROR, errno),
-                    NULL);
-          log_reader_iterate_buf(self, NULL, TRUE);
-          log_pipe_notify(self->control, &self->super.super, NC_READ_ERROR, self);
+          if (errno == EAGAIN)
+            {
+              /* ok we don't have any more data to read, return to main poll loop */
+              break;
+            }
+          else
+            {
+              /* an error occurred while reading */
+              msg_error("I/O error occurred while reading",
+                        evt_tag_int(EVT_TAG_FD, fd->fd),
+                        evt_tag_errno(EVT_TAG_OSERROR, errno),
+                        NULL);
+              log_reader_iterate_buf(self, NULL, TRUE, &msg_count);
+              log_pipe_notify(self->control, &self->super.super, NC_READ_ERROR, self);
+              g_sockaddr_unref(sa);
+              return FALSE;
+            }
+        }
+      else if (rc == 0 && (self->flags & LR_FOLLOW) == 0)
+        {
+          /* EOF read */
+          msg_verbose("EOF occurred while reading", 
+                      evt_tag_int(EVT_TAG_FD, fd->fd),
+                      NULL);
+          log_reader_iterate_buf(self, NULL, TRUE, &msg_count);
+          log_pipe_notify(self->control, &self->super.super, NC_CLOSE, self);
           g_sockaddr_unref(sa);
           return FALSE;
         }
-      else
+      else 
         {
-          /* no more bytes left */
-          ;
+          if (self->options->padding && rc != self->options->padding)
+            {
+              msg_error("Padding was set, and couldn't read enough bytes",
+                        evt_tag_int(EVT_TAG_FD, fd->fd),
+                        evt_tag_int("padding", self->options->padding),
+                        evt_tag_int("read", avail),
+                        NULL);
+              log_pipe_notify(self->control, &self->super.super, NC_READ_ERROR, self);
+              g_sockaddr_unref(sa);
+              return FALSE;
+            }
+          self->ofs += rc;
+          log_reader_iterate_buf(self, sa, FALSE, &msg_count);
         }
     }
-  else if (rc == 0 && (self->flags & LR_FOLLOW) == 0)
-    {
-      /* EOF read */
-      msg_verbose("EOF occurred while reading", 
-                  evt_tag_int(EVT_TAG_FD, fd->fd),
-                  NULL);
-      log_reader_iterate_buf(self, NULL, TRUE);
-      log_pipe_notify(self->control, &self->super.super, NC_CLOSE, self);
-      g_sockaddr_unref(sa);
-      return FALSE;
-    }
-  else 
-    {
-      if (self->options->padding && rc != self->options->padding)
-	{
-	  msg_error("Padding was set, and couldn't read enough bytes",
-	            evt_tag_int(EVT_TAG_FD, fd->fd),
-	            evt_tag_int("padding", self->options->padding),
-	            evt_tag_int("read", avail),
-	            NULL);
-          log_pipe_notify(self->control, &self->super.super, NC_READ_ERROR, self);
-          g_sockaddr_unref(sa);
-	  return FALSE;
-	}
-      self->ofs += rc;
-      log_reader_iterate_buf(self, sa, FALSE);
-    }
-
   return TRUE;
 }
 
