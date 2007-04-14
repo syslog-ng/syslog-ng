@@ -460,10 +460,10 @@ log_macro_lookup(gchar *macro, gint len)
       for (i = 0; i < sizeof(macros) / sizeof(macros[0]); i++)
         {
           g_hash_table_insert(macro_hash, macros[i].name,
-                              (gpointer) macros[i].id);
+                              GINT_TO_POINTER(macros[i].id));
         }
     }
-  return (gint) g_hash_table_lookup(macro_hash, buf);
+  return GPOINTER_TO_INT(g_hash_table_lookup(macro_hash, buf));
 
 }
 

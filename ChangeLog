@@ -2,6 +2,22 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-06-07 09:14:55 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-60
+
+    Summary:
+      fixed pointer conversion macros on 64 bit platforms
+    Revision:
+      syslog-ng--mainline--2.0--patch-60
+
+    	* src/macros.c (log_macro_lookup): use GINT_TO_POINTER and
+    	GPOINTER_TO_INT macros instead of casting values directly to avoid
+    	warnings on 64 bit systems
+    
+
+    modified files:
+     ChangeLog src/macros.c
+
+
 2006-06-07 09:09:14 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-59
 
     Summary:
