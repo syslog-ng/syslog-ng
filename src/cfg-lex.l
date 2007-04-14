@@ -95,6 +95,7 @@ static struct keyword keywords[] = {
   	{ "gc_idle_threshold",	KW_GC_IDLE_THRESHOLD },
  	{ "time_reopen",	KW_TIME_REOPEN },
  	{ "time_reap",          KW_TIME_REAP },
+ 	{ "time_sleep",         KW_TIME_SLEEP },
  	{ "follow_freq",	KW_FOLLOW_FREQ },
  	{ "file_template",	KW_FILE_TEMPLATE },
  	{ "proto_template",	KW_PROTO_TEMPLATE },

@@ -70,8 +70,10 @@ LogTemplate *last_template;
 /* reader options */
 %token KW_NO_PARSE KW_PAD_SIZE KW_TIME_ZONE KW_RECV_TIME_ZONE KW_SEND_TIME_ZONE
 
+/* timers */
+%token KW_TIME_REOPEN KW_TIME_REAP KW_TIME_SLEEP 
+
 /* destination options */
-%token KW_TIME_REOPEN KW_TIME_REAP 
 %token KW_TMPL_ESCAPE
 
 /* driver specific options */
@@ -699,6 +701,7 @@ options_item
 	| KW_USE_DNS '(' yesno ')'		{ configuration->use_dns = $3; }
 	| KW_TIME_REOPEN '(' NUMBER ')'		{ configuration->time_reopen = $3; }
 	| KW_TIME_REAP '(' NUMBER ')'		{ configuration->time_reap = $3; }
+	| KW_TIME_SLEEP '(' NUMBER ')'		{ configuration->time_sleep = $3; }
 	| KW_LOG_FIFO_SIZE '(' NUMBER ')'	{ configuration->log_fifo_size = $3; }
 	| KW_LOG_IW_SIZE '(' NUMBER ')'		{ configuration->log_iw_size = $3; }
 	| KW_LOG_FETCH_LIMIT '(' NUMBER ')'	{ configuration->log_fetch_limit = $3; }

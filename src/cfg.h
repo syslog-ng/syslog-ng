@@ -58,6 +58,7 @@ typedef struct _GlobalConfig
   gint dns_cache_size, dns_cache_expire, dns_cache_expire_failed;
   gint time_reopen;
   gint time_reap;
+  gint time_sleep;
 
   gint log_fifo_size;
   gint log_fetch_limit;

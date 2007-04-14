@@ -1971,13 +1971,19 @@
 		<entry>time_reopen()</entry>
 		<entry>number</entry>
 		<entry>60</entry>
-		<entry>The time to wait before a died connection is reestablished</entry>
+		<entry>The time to wait in seconds before a died connection is reestablished</entry>
 	      </row>
 	      <row>
 		<entry>time_reap()</entry>
 		<entry>number</entry>
 		<entry>60</entry>
-		<entry>The time to wait before an idle destination file is closed.</entry>
+		<entry>The time to wait in seconds before an idle destination file is closed.</entry>
+	      </row>
+	      <row>
+		<entry>time_sleep()</entry>
+		<entry>number</entry>
+		<entry>0</entry>
+		<entry>The time to wait in milliseconds between each invocation of the poll iteration.</entry>
 	      </row>
 	      <row>
 		<entry>sync() or sync_freq() (DEPRECATED)</entry>
@@ -2224,13 +2230,38 @@
       </para>
     </sect1>
     <sect1>
+      <title>Setting time_sleep()</title>
+      <para>
+        When there are a lot of parallel connections to syslog-ng the amount
+        of time required to prepare for a single poll loop iteration is
+        significant. Since the arrival of every single log message triggers a
+        new iteration, the CPU usage of syslog-ng might increase
+        significantly even if the number of messages received is otherwise
+        low. The solution is to add a fixed latency to message processing to
+        wait some messages to arrive and to process them in blocks. This can
+        be accomplished by changing the value of time_sleep()  to a
+        non-zero value which specifies this latency in milliseconds. It is
+        not recommended to make it larger than 100ms, as that might skew
+        timestamps and might slow syslog-ng too much and cause messages to
+        be dropped. An alternative solution is to avoid tcp() and
+        unix-stream() sources and use the DGRAM versions, udp() and
+        unix-dgram() respectively.
+      </para>
+      <para>
+        The value of fetch_limit() and log_fifo_size() must also be sized
+        accordingly when changing this value.
+      </para>
+    </sect1>
+    <sect1>
       <title>Setting output queue size</title>
       <para>
-	Syslog-ng always reads its incoming log channels to prevent
-	your running daemons from blocking. This may result in lost
-	messages if the output queue is full. It's therefore important
-	to set the output queue size (termed in number of messages),
-	which you can do globally, or on a per destination basis.
+	Syslog-ng always reads its incoming log channels to prevent your
+	running daemons from blocking. This may result in lost messages if
+	the output queue is full. <note><para>This does not apply to
+	syslog-ng 2.0 if the flow-control flag is enabled.</para></note>
+	It's therefore important to set the output queue size (termed in
+	number of messages), which you can do globally, or on a per
+	destination basis.
 
 	<synopsis>
 	  options { log_fifo_size(1000); };

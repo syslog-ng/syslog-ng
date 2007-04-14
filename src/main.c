@@ -148,6 +148,15 @@ main_loop_run(GlobalConfig *cfg)
   g_timeout_add(cfg->stats_freq * 1000, stats_timer, NULL);
   while (g_main_loop_is_running(main_loop))
     {
+      if (cfg->time_sleep > 0)
+        {
+          struct timespec ts;
+          
+          ts.tv_sec = 0;
+          ts.tv_nsec = cfg->time_sleep * 1000;
+          
+          nanosleep(&ts, NULL);
+        }
       g_main_context_iteration(g_main_loop_get_context(main_loop), TRUE);
       if (sig_hup_received)
         {

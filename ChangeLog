@@ -2,6 +2,29 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-02-26 08:47:15 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-16
+
+    Summary:
+      added time_sleep() option to add a fixed latency to the poll loop
+    Revision:
+      syslog-ng--mainline--2.0--patch-16
+
+    	* src/cfg-grammar.y: added KW_TIME_SLEEP processing
+    
+    	* src/cfg-lex.l: added keyword for KW_TIME_SLEEP
+    
+    	* src/main.c: wait using nanosleep if time_sleep() is set
+    
+    	* doc/reference/syslog-ng.xml: added documentation on time_sleep and
+    	a section in the tuning part to explain it a little further
+    
+    
+
+    modified files:
+     ChangeLog doc/reference/syslog-ng.xml src/cfg-grammar.y
+     src/cfg-lex.l src/cfg.h src/main.c
+
+
 2006-02-24 16:24:14 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-15
 
     Summary:
