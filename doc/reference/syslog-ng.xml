@@ -1185,7 +1185,7 @@
 								<entry> root </entry>
 							</row>
 							<row>
-								<entry>remove_if_older()</entry>
+                                                                <entry>overwrite_if_older()</entry>
 								<entry>number</entry>
 								<entry>If set to a value higher than 0, before reopening a file,
 									syslog-ng checks whether the destination file is older than the specified
@@ -1196,6 +1196,12 @@
 									simple log rotation, in case not all history has to be kept. </entry>
 								<entry>Never remove existing files; use append instead ( = 0).
 								</entry>
+							</row>
+							<row>
+                                                                <entry>remove_if_older()</entry>
+								<entry>number</entry>
+								<entry>Obsolete alias for overwrite_if_older()<entry>
+								<entry>Same as overwrite_if_older()</entry>
 							</row>
 						</tbody>
 					</tgroup>

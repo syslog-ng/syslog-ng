@@ -2,6 +2,27 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-12-21 08:31:08 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-108
+
+    Summary:
+      obsoleted remove_if_older option in favour of overwrite_if_older
+    Revision:
+      syslog-ng--mainline--2.0--patch-108
+
+    	* src/affile.{c,h}: renamed remove_if_older references to
+    	overwrite_if_older
+    
+    	* src/cfg-lex.l, src/cfg-grammar.y: -"-
+    
+    	* doc/reference/syslog-ng.xml: added overwrite_if_older
+    	documentation, added note about obsoleted remove_if_older()
+    
+
+    modified files:
+     ChangeLog doc/reference/syslog-ng.xml src/affile.c
+     src/affile.h src/cfg-grammar.y src/cfg-lex.l
+
+
 2006-12-21 08:21:49 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-107
 
     Summary:

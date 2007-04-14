@@ -202,9 +202,9 @@ affile_dw_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
               evt_tag_str("filename", self->filename->str),
               NULL);
               
-  if (self->owner->remove_if_older > 0 && 
+  if (self->owner->overwrite_if_older > 0 && 
       stat(self->filename->str, &st) == 0 && 
-      st.st_mtime < time(NULL) - self->owner->remove_if_older)
+      st.st_mtime < time(NULL) - self->owner->overwrite_if_older)
     {
       msg_notice("Destination file is too old, removing",
                  evt_tag_str("filename", self->filename->str),
@@ -406,11 +406,11 @@ affile_dd_set_create_dirs(LogDriver *s, gboolean create_dirs)
 }
 
 void 
-affile_dd_set_remove_if_older(LogDriver *s, gint remove_if_older)
+affile_dd_set_overwrite_if_older(LogDriver *s, gint overwrite_if_older)
 {
   AFFileDestDriver *self = (AFFileDestDriver *) s;
   
-  self->remove_if_older = remove_if_older;
+  self->overwrite_if_older = overwrite_if_older;
 }
 
 static const gchar *

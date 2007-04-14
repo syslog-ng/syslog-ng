@@ -60,7 +60,7 @@ typedef struct _AFFileDestDriver
   GHashTable *writer_hash;
   GlobalConfig *cfg;
   
-  gint remove_if_older;
+  gint overwrite_if_older;
   gboolean use_time_recvd;
   gint time_reap;
   guint reap_timer;
@@ -78,6 +78,6 @@ void affile_dd_set_dir_gid(LogDriver *s, const gchar *dir_gid);
 void affile_dd_set_dir_perm(LogDriver *s, mode_t dir_perm);
 void affile_dd_set_create_dirs(LogDriver *s, gboolean create_dirs);
 void affile_dd_set_fsync(LogDriver *s, gboolean enable);
-void affile_dd_set_remove_if_older(LogDriver *s, gint remove_if_older);
+void affile_dd_set_overwrite_if_older(LogDriver *s, gint overwrite_if_older);
 
 #endif
