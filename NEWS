@@ -1,3 +1,11 @@
+2.0rc3
+	Thu, 14 Sep 2006 14:34:59 +0200
+
+	Bugfixes:
+	* One of the leak fixes in 2.0rc2 caused syslog-ng to immediately
+	  segfault when a template is specified for an output. This was
+          fixed.
+
 2.0rc2
 	Mon, 11 Sep 2006 12:06:30 +0200
 
