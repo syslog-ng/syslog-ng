@@ -1,3 +1,26 @@
+1.9.11
+	Tue, 23 May 2006 19:45:21 +0200
+
+	Some minor new features:
+	* Added IPv6 support.
+	* Added multicast support.
+
+	Bugfixes:
+        * Avoid changing owner/group/permission information for files that
+          do not exist, to avoid clobbering the error value.
+	* Added close-on-exec flag to avoid inheriting file descriptors for
+	  programs started by syslog-ng.
+	* Fixed an off-by-one in flush_lines() calculation.
+	* Fixed a possible memory leak.
+	* Fixed a CPU spinning possibility when a non-existing filter is
+          referenced on the log path the processes internal() messages.
+	* Fixed hanging on reading /proc/kmsg on Linux.
+	* Fixed sun-streams() fetching problem on Solaris.
+
+	Other changes:
+	* Documentation updates.
+
+
 1.9.10
 	Mon, 10 Apr 2006 23:33:16 +0200
 
