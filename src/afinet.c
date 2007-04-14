@@ -28,6 +28,16 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 
+#include <string.h>
+
+#ifndef SOL_IP
+#define SOL_IP IPPROTO_IP
+#endif
+
+#ifndef SOL_IPV6
+#define SOL_IPV6 IPPROTO_IPV6
+#endif
+
 
 static void
 afinet_set_port(GSockAddr *addr, gint port, gchar *service, gchar *proto)
@@ -243,9 +253,13 @@ afinet_sd_new(gint af, gchar *host, gint port, guint flags)
     }
   else
     {
+#if ENABLE_IPV6
       self->super.bind_addr = g_sockaddr_inet6_new("::", port);
       if (!host)
         host = "::";
+#else
+      g_assert_not_reached();
+#endif
     }
   afinet_resolve_name(self->super.bind_addr, host);
   self->super.setup_socket = afinet_sd_setup_socket;
@@ -300,8 +314,12 @@ afinet_dd_new(gint af, gchar *host, gint port, guint flags)
     }
   else
     {
+#if ENABLE_IPV6
       self->super.bind_addr = g_sockaddr_inet6_new("::", 0);
       self->super.dest_addr = g_sockaddr_inet6_new("::", port);
+#else
+      g_assert_not_reached();
+#endif
     }
   afinet_resolve_name(self->super.dest_addr, host);
   self->super.setup_socket = afinet_dd_setup_socket;

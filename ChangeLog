@@ -2,6 +2,24 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-05-26 19:30:30 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-55
+
+    Summary:
+      compatibility fixes for Solaris/AIX
+    Revision:
+      syslog-ng--mainline--2.0--patch-55
+
+    2006-05-26  Balazs Scheidler <bazsi@balabit.hu>
+    
+    	* src/afinet.c: define SOL_IP and SOL_IPV6 on platforms which use
+    	IPPROTO_* for this purpose, added the inclusion of <string.h> for
+    	the definition of memset()
+    
+
+    modified files:
+     ChangeLog src/afinet.c
+
+
 2006-05-26 19:25:24 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-54
 
     Summary:
