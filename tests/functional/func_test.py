@@ -11,7 +11,7 @@ class MessageSender:
         self.initSender()
         for msg in messages:
             for counter in range(1, self.repeat):
-                self.sendMessage('%s %d %s' % (msg, counter, 'x' * 500))
+                self.sendMessage('%s %d %s' % (msg, counter, 'x' * 1500))
 
 
 class SocketSender(MessageSender):

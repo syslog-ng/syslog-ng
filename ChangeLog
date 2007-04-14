@@ -2,6 +2,20 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-02-26 09:39:39 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-19
+
+    Summary:
+      really release 1.9.9
+    Revision:
+      syslog-ng--mainline--2.0--patch-19
+
+    
+    
+
+    modified files:
+     ChangeLog tests/functional/func_test.py
+
+
 2006-02-26 09:38:42 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-18
 
     Summary:
