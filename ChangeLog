@@ -2,6 +2,20 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-12-21 08:21:49 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-107
+
+    Summary:
+      documentation updates on remove_if_older()
+    Revision:
+      syslog-ng--mainline--2.0--patch-107
+
+    
+    
+
+    modified files:
+     ChangeLog doc/reference/syslog-ng.xml
+
+
 2006-12-18 09:01:46 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-106
 
     Summary:

@@ -1187,8 +1187,8 @@
 							<row>
 								<entry>remove_if_older()</entry>
 								<entry>number</entry>
-								<entry>If set to a value higher than 0, before writing to a file,
-									syslog-ng checks whether this file is older than the specified
+								<entry>If set to a value higher than 0, before reopening a file,
+									syslog-ng checks whether the destination file is older than the specified
 									amount of time (specified in seconds). If so, it removes the
 									existing file and the line to be written is the first line of a
 									new file having the same name. In combination with e.g.: the
