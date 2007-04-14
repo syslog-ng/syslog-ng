@@ -1,3 +1,28 @@
+2.0.1
+	Thu, 21 Dec 2006 09:23:44 +0100
+
+	Bugfixes:
+	* Fixed a possible syslog-ng hang when a program destination stalled.
+	* Fixed source priorities to avoid starving log listeners. If a
+          continous stream of messages were processed, this could cause new
+          connections not to be accepted, causing a system deadlock.
+	* Don't fail startup if a network connection fails.
+	* Portability fixes.
+	* Fixed another timezone calculation problem.
+
+	Features:
+	* Readded missing remove_if_older() functionality which was present 
+          in 1.6.x but missing from 2.0.x so far. The name of the option was
+          changed to overwrite_if_older(), but the old name remains for
+          compatibility.
+	* Readded DNS cache functionality, which was missing from the 2.0.x
+          branch so far.
+	* Added support for static IP->name mapping without reliance on DNS.
+
+	Other changes:
+	* Documentation updates.
+
+
 2.0.0
 	Sat, 28 Oct 2006 17:32:50 +0200
 
