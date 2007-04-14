@@ -2,6 +2,21 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2007-02-03 17:21:21 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-129
+
+    Summary:
+      further portability fixes
+    Revision:
+      syslog-ng--mainline--2.0--patch-129
+
+    	* configure.in: added check for -lresolv
+    
+    
+
+    modified files:
+     ChangeLog configure.in
+
+
 2007-02-03 17:16:17 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-128
 
     Summary:
