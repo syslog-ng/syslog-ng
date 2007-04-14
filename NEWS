@@ -1,3 +1,18 @@
+2.0.0
+	Sat, 28 Oct 2006 17:32:50 +0200
+
+	Bugfixes:
+	* Fixed some compilation warnings when using gcc4
+	* Fixed a problem in restarting program destinations, that could
+          cause several instance of the program to run.
+	* Fixed a UNIX domain socket format issue that sometimes caused a
+          memory dump to be displayed in place of the socket name.
+	* Fixed a bug in handling broken destination connections.
+	
+	Other changes:
+	* Documentation updates.
+
+
 2.0rc4
 	Tue, 24 Oct 2006 13:33:55 +0200
 
