@@ -2,6 +2,29 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-02-24 16:24:14 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-15
+
+    Summary:
+      added missing ChangeLog from previous patchset
+    Revision:
+      syslog-ng--mainline--2.0--patch-15
+
+    	* src/fdread.c (fd_do_read): added retrying on EINTR
+    
+    	* src/logreader.c (log_reader_iterate_buf): added msg_count argument
+    	instead of the local variable as log_reader_iterate_buf might be
+    	called multiple times and we do not want to fetch more than
+    	fetch_limit() messages in total,
+    	(log_reader_fetch_log): added loop to iterate over up to fetch_limit
+    	messages without going back to the mainloop
+    
+    	
+    
+
+    modified files:
+     ChangeLog
+
+
 2006-02-24 16:19:33 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-14
 
     Summary:
