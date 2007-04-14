@@ -2,6 +2,24 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2007-04-05 11:27:02 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-147
+
+    Summary:
+      fixed expansion of utf-8 characters in templates
+    Revision:
+      syslog-ng--mainline--2.0--patch-147
+
+    
+    	* src/macros.c (result_append): use guchar as the type of the
+    	argument instead of gchar
+    
+    	* tests/unit/test_templates.c: use utf8 sequences in the message
+    	string to ensure that syslog-ng handles them properly
+
+    modified files:
+     ChangeLog src/macros.c tests/unit/test_template.c
+
+
 2007-04-04 14:44:29 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-146
 
     Summary:

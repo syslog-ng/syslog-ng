@@ -2,6 +2,7 @@
 #include "logmsg.h"
 #include "templates.h"
 #include "misc.h"
+#include "macros.h"
 
 #include <time.h>
 #include <stdlib.h>
@@ -16,7 +17,7 @@ testcase(LogMessage *msg, gchar *template, gchar *expected)
   GString *res = g_string_sized_new(128);
   
   templ = log_template_new("dummy", template);
-  log_template_format(templ, msg, 0, TS_FMT_BSD, -1, 3, res);
+  log_template_format(templ, msg, MF_ESCAPE_RESULT, TS_FMT_BSD, -1, 3, res);
   
   if (strcmp(res->str, expected) != 0)
     {
@@ -35,7 +36,7 @@ int
 main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 {
   LogMessage *msg;
-  char *msg_str = "<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: test message";
+  char *msg_str = "<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép";
   
   putenv("TZ=CET");
   tzset();
@@ -108,9 +109,9 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase(msg, "$FULLHOST", "bzorp");
   testcase(msg, "$PROGRAM", "syslog-ng");
   testcase(msg, "$PID", "23323");
-  testcase(msg, "$MSG", "syslog-ng[23323]: test message");
-  testcase(msg, "$MSGONLY", "test message");
-  testcase(msg, "$MESSAGE", "syslog-ng[23323]: test message");
+  testcase(msg, "$MSG", "syslog-ng[23323]: árvíztűrőtükörfúrógép");
+  testcase(msg, "$MSGONLY", "árvíztűrőtükörfúrógép");
+  testcase(msg, "$MESSAGE", "syslog-ng[23323]: árvíztűrőtükörfúrógép");
   testcase(msg, "$SOURCEIP", "10.10.10.10");
   testcase(msg, "$PROGRAM/var/log/messages/$HOST/$HOST_FROM/$MONTH$DAY$QQQQQvalami", "syslog-ng/var/log/messages/bzorp/kismacska/0211valami");
   if (success)

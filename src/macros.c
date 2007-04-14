@@ -111,7 +111,7 @@ macros[] =
 GHashTable *macro_hash;
 
 static void
-result_append(GString *result, gchar *str, gint len, gboolean escape)
+result_append(GString *result, guchar *str, gsize len, gboolean escape)
 {
   gint i;
   
@@ -126,7 +126,7 @@ result_append(GString *result, gchar *str, gint len, gboolean escape)
             }
           else if (str[i] < ' ')
             {
-              g_string_sprintfa(result, "\\%03o", (unsigned int) str[i]);
+              g_string_sprintfa(result, "\\%03o", str[i]);
             }
           else
             g_string_append_c(result, str[i]);
