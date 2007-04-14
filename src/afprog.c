@@ -118,6 +118,7 @@ afprogram_dd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
       child_manager_register(self->pid, afprogram_dd_exit, log_pipe_ref(&self->super.super), (GDestroyNotify) log_pipe_unref);
       
       close(msg_pipe[0]);
+      g_fd_set_nonblock(msg_pipe[1], TRUE);
       if (!self->writer)
         self->writer = log_writer_new(LW_FORMAT_FILE, s, &self->writer_options);
       log_writer_reopen(self->writer, fd_write_new(msg_pipe[1]));

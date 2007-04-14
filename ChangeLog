@@ -2,6 +2,22 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-11-08 09:53:59 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-93
+
+    Summary:
+      set the pipe for program destinations to nonlbocking mode
+    Revision:
+      syslog-ng--mainline--2.0--patch-93
+
+    	* src/afprog.c (afprogram_dd_init): set the pipe fd to nonblocking
+    	mode to avoid a possible hang
+    
+    
+
+    modified files:
+     ChangeLog src/afprog.c
+
+
 2006-10-28 16:07:36 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-92
 
     Summary:
