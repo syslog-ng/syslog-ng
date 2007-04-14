@@ -108,7 +108,6 @@ afprogram_dd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
       dup2(devnull, 2);
       close(devnull);
       close(msg_pipe[1]);
-      setsid();
       execl("/bin/sh", "/bin/sh", "-c", self->cmdline->str, NULL);
       _exit(127);
     }

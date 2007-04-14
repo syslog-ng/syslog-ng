@@ -2,6 +2,25 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-05-23 18:45:37 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-51
+
+    Summary:
+      fixed dropping input/output/error fds when going to background
+    Revision:
+      syslog-ng--mainline--2.0--patch-51
+
+    2006-05-23  Balazs Scheidler <bazsi@balabit.hu>
+    
+    	* src/main.c (setup_std_fds): fix inverted check for errors after
+    	opening /dev/null, also close stderr when log_to_stderr is not
+    	specified
+    
+    	* src/afprog.c (afprogram_dd_init): removed setsid call
+
+    modified files:
+     ChangeLog src/afprog.c src/main.c
+
+
 2006-05-23 18:33:25 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-50
 
     Summary:

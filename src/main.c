@@ -242,23 +242,27 @@ daemonize(void)
 }
 
 void
-setup_std_fds(void)
+setup_std_fds(gboolean log_to_stderr)
 {
   int fd;
 
   if (do_fork)
     {
       fd = open("/dev/null", O_RDONLY);
-      if (fd == -1)
+      if (fd != -1)
 	{
-	  dup2(fd, 0);
-	  close(fd);
+	  dup2(fd, STDIN_FILENO);
+	  if (fd != STDIN_FILENO)
+	    close(fd);
 	}
       fd = open("/dev/null", O_WRONLY);
-      if (fd == -1)
+      if (fd != -1)
 	{
-	  dup2(fd, 1);
-	  close(fd);
+	  dup2(fd, STDOUT_FILENO);
+	  if (!log_to_stderr)
+	    dup2(fd, STDERR_FILENO);
+	  if (fd != STDOUT_FILENO && fd != STDERR_FILENO)
+	    close(fd);
 	}
       setsid();
     }
@@ -410,7 +414,7 @@ main(int argc, char *argv[])
   msg_syslog_started();
   
   setup_creds();
-  setup_std_fds();
+  setup_std_fds(log_to_stderr);
 
   rc = main_loop_run(cfg);
   child_manager_deinit();
