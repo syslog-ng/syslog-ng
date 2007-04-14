@@ -1,3 +1,23 @@
+2.0rc1
+	Tue, 20 Jun 2006 12:31:20 +0200
+
+	Some minor new features:
+	* Added LEVEL_NUM and FACILITY_NUM macros.
+	* Added optional() support for destination files to avoid flooding
+	  the log if a given destination cannot be opened.
+
+	Bugfixes:
+	* Fixed priority range filter evaluation.
+	* Portability fixes for various OSs (Solaris, AIX and HP-UX) and
+	  architectures (64bit CPUs)
+	* In the case of a broken connection don't reconnect immediately,
+	  but wait some time specified by time_reopen() to match 1.6.x
+	  behaviour.
+
+	Other changes:
+	* Documentation updates.
+
+
 1.9.11
 	Tue, 23 May 2006 19:45:21 +0200
 

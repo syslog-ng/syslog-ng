@@ -66,7 +66,7 @@ log_writer_fd_prepare(GSource *source,
         {
           /* start waiting */
 
-          *timeout = self->writer->options->flush_timeout * 1000;
+          *timeout = self->writer->options->flush_timeout;
           g_source_get_current_time(source, &self->flush_target);
           g_time_val_add(&self->flush_target, *timeout * 1000);
           self->flush_waiting_for_timeout = TRUE;

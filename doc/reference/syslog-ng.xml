@@ -13,7 +13,7 @@
       </author>
     </authorgroup>
     <releaseinfo>&syslogng_version; (&syslogng_revision;)</releaseinfo>
-    <copyright><year>1999-2005</year><holder>Bal&aacute;zs Scheidler</holder></copyright>
+    <copyright><year>1999-2006</year><holder>Bal&aacute;zs Scheidler</holder></copyright>
     <legalnotice>
       <para>
 	This manual is free software; you may redistribute it and/or 
@@ -837,10 +837,15 @@
 	<para>
 	  TCP provides connection-oriented service, which basically
 	  means a flow-controlled message pipeline. In this pipeline,
-	  each message is acknowledged, and retransmission is done for
+	  each frame is acknowledged, and retransmission is done for
 	  lost packets. Generally it's safer to use TCP, because
-	  lost connections can be detected, and no messages get lost,
-	  but traditionally the syslog protocol uses UDP.
+	  lost connections can be detected, and no syslog messages get lost
+          assuming that the TCP connection does not break. When a TCP
+          connection is broken the 'in-transit' messages that were sent by
+          syslog-ng but not yet received on the other side are lost.
+          (basically these messages are still sitting in the socket buffer of the
+          sending host and syslog-ng has no information about the fate of these
+          messages).
 	</para>
 	<para>
 	  None of tcp() and udp() drivers require positional
@@ -848,6 +853,11 @@
 	  that syslog-ng will listen on all available interfaces, port
 	  514. To limit accepted connections to one interface only,
 	  use the localip() parameter as described below.
+	</para>
+	<para>
+	  If you specify a multicast bind address to udp() and udp6(),
+          syslog-ng will automatically join the necessary multicast group.
+          TCP does not support multicast.
 	</para>
 	<note>
 	  <para>
@@ -1209,7 +1219,7 @@
 
 	      <row>
 		<entry>flush_timeout()</entry> 
-		<entry>number</entry>
+		<entry>time in milliseconds</entry>
 		<entry>
 		  Use global setting.
 		</entry>
@@ -1252,25 +1262,22 @@
 		</entry>
 	      </row>
 	      <row>
-		<entry>fsync()</entry>
-		<entry></entry>
-		<entry>
-                </entry>
-		<entry></entry>
-	      </row>
-	      <row>
 		<entry>timezone()</entry>
-		<entry></entry>
-		<entry>
+		<entry>timezone offset in seconds</entry>
+		<entry>unspecified
                 </entry>
-		<entry></entry>
+		<entry>Convert timestamps to a different timezone as
+                  specified by this option. If this option is not specified
+                  then the original timezone information in the message is used.
+                </entry>
 	      </row>
 	      <row>
 		<entry>ts_format()</entry>
-		<entry></entry>
-		<entry>
+		<entry>rfc3164, bsd, rfc3339, iso</entry>
+		<entry>rfc3164</entry>
+		<entry>Override the global ts_format() setting for the
+                  specific destination.
                 </entry>
-		<entry></entry>
 	      </row>
 	    </tbody>
 	  </tgroup>
@@ -1627,10 +1634,17 @@
 	  source drivers, where local bind address is implied, and
 	  none of the parameters are required.
 	</para>
+	<para>
+	  If you specify a multicast destination address to udp() and udp6(),
+          syslog-ng will automatically send multicast packets to the
+          network.
+	</para>
 	<synopsis>
 	  Declaration:
 	    tcp(host [options]);
 	    udp(host [options]);
+	    tcp6(host [options]);
+	    udp6(host [options]);
 	</synopsis>
 	<table>
 	  <title>Available options for udp(), udp6(), tcp() and tcp6()</title>
@@ -1719,6 +1733,25 @@
 	          This option controls the size of the socket send buffer.
 	        </entry>
 	      </row>
+	      <row>
+	        <entry>ip_ttl</entry>
+	        <entry>number</entry>
+	        <entry>0</entry>
+	        <entry>
+	          This option controls the value of the Time-To-Live value
+	          of outgoing packets, in the case of multicast destination,
+                  it controls the multicast hop number.
+	        </entry>
+	      </row>
+	      <row>
+	        <entry>ip_tos</entry>
+	        <entry>number</entry>
+	        <entry>0</entry>
+	        <entry>
+	          This option controls the value of the Type-of-Service value
+	          of outgoing packets.
+	        </entry>
+	      </row>
 	    </tbody>
 	  </tgroup>
 	</table>
@@ -1746,6 +1779,10 @@
 	  Declaration: 
 	    usertty(username);
 	</synopsis>
+	<!--
+	  
+	  NOTE: we don't yet support template for usertty outputs
+	  
 	<table>
 	  <title>Available options for usertty()</title>
 	  <tgroup cols="4">
@@ -1784,6 +1821,7 @@
 	    </tbody>
 	  </tgroup>
 	</table>
+	-->
 	<example>
 	  <title>Using the usertty() driver</title>
 	  <synopsis>
@@ -1928,6 +1966,36 @@
         syntax of using braces around macro names is also added to syslog-ng
         2.0 ("$MSG" and "${MSG}" is equivalent).
       </para>
+      <para>
+        Time and date related macros have three forms: one without prefix,
+        one with an 'S_' prefix and one with an 'R_' prefix. For example the 
+        year is represented by the YEAR macro and it has an S_YEAR and
+        R_YEAR counterpart. The prefix determines which time value the
+        macro should expand to:
+        <itemizedlist>
+          <listitem>
+            <para>
+              A macro without prefix uses the time stamp selected by the
+              use_time_recvd() global option. If use_time_recvd() is set to
+              yes, then these macros use the time included in the message
+              itself, otherwise they use the reception time. See the
+              desctription of use_time_recvd() for more information.
+            </para>
+          </listitem>
+          <listitem>
+            <para>
+              A macro with an 'S_' prefix unconditionally selects the time
+              in the message.
+            </para>
+          </listitem>
+          <listitem>
+            <para>
+              A macro with an 'R_' prefix unconditionally selects the time
+              when the message was received.
+            </para>
+          </listitem>
+        </itemizedlist>
+      </para>
       <table>
         <title>Available macros in filename expansion</title>
         <tgroup cols="2">
@@ -1967,15 +2035,26 @@
             </row>
             <row>
               <entry>DATE, R_DATE, S_DATE</entry>
-              <entry></entry>
+              <entry>
+                The date in BSD syslog format, the original syslog time
+                stamp without year information, e.g. 'Jun 13 15:58:00'
+              </entry>
             </row>
             <row>
               <entry>FULLDATE, R_FULLDATE, S_FULLDATE</entry>
-              <entry></entry>
+              <entry>
+                A nonstandard date representation, similar to DATE but with
+                year information added, for example: '2006 Jun 13 15:58:00'
+              </entry>
             </row>
             <row>
               <entry>ISODATE, R_ISODATE, S_ISODATE</entry>
-              <entry></entry>
+              <entry>
+                A date representation compatible with ISO 8601, for example:
+                '2006-06-13T15:58:00.123+01:00'. Note that syslog-ng can
+                produce fractions of a second in timestamp by using the
+                frac_digits() global or per-destination option.
+              </entry>
             </row>
             <row>
               <entry>STAMP, R_STAMP, S_STAMP</entry>
@@ -1987,12 +2066,7 @@
             <row>
               <entry>YEAR, R_YEAR, S_YEAR</entry>
               <entry>
-                The year the message was sent. Time expansion macros
-                can either use the time specified in the log
-                message, e.g. the time the log message is sent, or
-                the time the message was received by the log
-                server. This is controlled by the use_time_recvd()
-                option.
+                The year the message was sent.
               </entry>
             </row>
             <row>
@@ -2041,12 +2115,16 @@
             <row>
               <entry>UNIXTIME, R_UNIXTIME, S_UNIXTIME</entry>
               <entry>
+                Standard unix timestamp, represented as the number of
+                seconds since 1970-01-01T00:00:00.
               </entry>
             </row>
             <row>
               <entry>TZOFFSET, R_TZOFFSET, S_TZOFFSET</entry>
               <entry>
-                The time-zone as hour offset from GMT. e.g. '-0700'
+                The time-zone as hour offset from GMT. e.g. '-07:00'. In
+                syslog-ng 1.6.x it used to be '-0700' but as ISODATE needs
+                the colon it was added to TZOFFSET as well.
               </entry>
             </row>
             <row>
@@ -2068,21 +2146,30 @@
             <row>
               <entry>FULLHOST</entry> 
               <entry>
+                The complete hostname in the log message without trimming
+                chained hosts.
               </entry>
             </row>
             <row>
               <entry>HOST_FROM</entry> 
               <entry>
+                The immediate sender of the log message as resolved by
+                syslog-ng using DNS.
               </entry>
             </row>
             <row>
               <entry>FULLHOST_FROM</entry> 
               <entry>
+                The complete hostname in the log message as resolved by 
+                syslog-ng using DNS.
               </entry>
             </row>
             <row>
               <entry>SOURCEIP</entry> 
               <entry>
+                The immediate sender of the sending host. Please note that
+                when a message traverses several relays, this contains the
+                last relay.
               </entry>
             </row>
             <row>
@@ -2363,6 +2450,32 @@
 		<entry>n/a</entry>
 		<entry>
 		  Has no meaning in syslog-ng 1.9.x and later.
+		</entry>
+	      </row>
+
+	      <row>
+		<entry>flush_lines()</entry> 
+		<entry>number</entry>
+		<entry>0</entry>
+		<entry>
+		  This number controls how many lines are flushed to a
+                  destination at a time. Syslog-ng waits for this number of
+                  lines to accumulate and sends them off in a single batch
+                  Setting this number high increases throughput as fully
+                  filled frames are sent to the network, but at the same
+                  time it increases message latency. The latency can be
+                  limited by the use of the flush_timeout option.
+		</entry>
+	      </row>
+
+	      <row>
+		<entry>flush_timeout()</entry> 
+		<entry>time in milliseconds</entry>
+		<entry>10000</entry>
+		<entry>
+		  This option controls how much time syslog-ng waits for lines to
+                  accumulate in its output buffer. See the flush_lines
+                  option for more information.
 		</entry>
 	      </row>
 	      

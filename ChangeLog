@@ -2,6 +2,26 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-06-20 11:44:31 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-64
+
+    Summary:
+      documentation updates, flush_timeout changed to use msecs
+    Revision:
+      syslog-ng--mainline--2.0--patch-64
+
+    	* doc/reference/syslog-ng.xml: documentation updates
+    
+    	* src/logwriter.c (log_writer_fd_prepare): assume that the
+    	flush_timeout parameter is in msecs
+    
+    	* src/cfg.c (cfg_init): use 10000 as default for flush_timeout()
+    
+
+    modified files:
+     ChangeLog NEWS doc/reference/syslog-ng.xml src/cfg.c
+     src/logwriter.c
+
+
 2006-06-12 09:21:24 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-63
 
     Summary:

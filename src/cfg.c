@@ -241,7 +241,7 @@ cfg_new(gchar *fname)
   self->connections = g_ptr_array_new();
 
   self->flush_lines = 0;
-  self->flush_timeout = 10;
+  self->flush_timeout = 10000;  /* 10 seconds */
   self->mark_freq = 1200;	/* 20 minutes */
   self->stats_freq = 600;
   self->chain_hostnames = 1;
