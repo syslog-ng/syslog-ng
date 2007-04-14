@@ -2,6 +2,32 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-10-25 08:36:58 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-87
+
+    Summary:
+      documentation updates merged from the tech-writer team
+    Revision:
+      syslog-ng--mainline--2.0--patch-87
+
+    
+    
+    Patches applied:
+    
+     * devel@balabit.hu--other-1/syslog-ng--documentation--2.0--patch-1
+       Updated reference guide, still needs work, see FIXMEs
+    
+     * devel@balabit.hu--other-1/syslog-ng--documentation--2.0--patch-2
+       Updates and fixes from Bazsi
+    
+
+    modified files:
+     ChangeLog doc/reference/syslog-ng.xml
+
+    new patches:
+     devel@balabit.hu--other-1/syslog-ng--documentation--2.0--patch-1
+     devel@balabit.hu--other-1/syslog-ng--documentation--2.0--patch-2
+
+
 2006-10-24 11:37:43 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-86
 
     Summary:
