@@ -141,10 +141,7 @@ afprogram_dd_deinit(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
       self->pid = -1;
     }
   if (self->writer)
-    {
-      log_pipe_deinit(self->writer, NULL, NULL);
-      log_pipe_unref(self->writer);  
-    }
+    log_pipe_deinit(self->writer, NULL, NULL);
   return TRUE;
 }
 
@@ -153,7 +150,7 @@ afprogram_dd_free(LogPipe *s)
 {
   AFProgramDestDriver *self = (AFProgramDestDriver *) s;
 
-  g_assert(!self->writer);
+  log_pipe_unref(self->writer);  
   g_string_free(self->cmdline, TRUE);
   log_drv_free_instance(&self->super);
   g_free(self);

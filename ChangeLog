@@ -2,6 +2,25 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-02-28 18:47:01 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-20
+
+    Summary:
+      fixed possible abort in program destination
+    Revision:
+      syslog-ng--mainline--2.0--patch-20
+
+    	* src/afprog.c (afprogram_dd_deinit): don't drop the reference to
+    	self->writer, only deinit it,
+    	(afprogram_dd_free): drop the reference to self->writer,
+    
+    	* src/main.c (main_loop_run): change the loop so that it actually
+    	processes exited children
+    
+
+    modified files:
+     ChangeLog src/afprog.c src/main.c
+
+
 2006-02-26 09:39:39 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-19
 
     Summary:

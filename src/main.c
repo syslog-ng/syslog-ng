@@ -172,14 +172,15 @@ main_loop_run(GlobalConfig *cfg)
         }
       if (sig_child_received)
 	{
-	  pid_t pid = 0;
+	  pid_t pid;
 	  int status;
 
-	  while (pid > 0)
+          do
 	    {
 	      pid = waitpid(-1, &status, WNOHANG);
 	      child_manager_sigchild(pid, status);
 	    }
+          while (pid > 0);
 	  sig_child_received = FALSE;
 	}
     }
