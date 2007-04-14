@@ -2,6 +2,24 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-02-26 09:38:42 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-18
+
+    Summary:
+      fixed a possible heap overflow introduced by the patches from 2006-02-24
+    Revision:
+      syslog-ng--mainline--2.0--patch-18
+
+    	* src/logreader.c (log_reader_fetch_log): recalculate the available
+    	buffer size before calling read() again, this is a possible heap
+    	overflow which was introduced by
+    	devel@balabit.hu--other-1/syslog-ng--mainline--2.0--patch-14
+    	ChangeLog is in patch-15, this was never released however
+    
+
+    modified files:
+     ChangeLog src/logreader.c
+
+
 2006-02-26 08:50:05 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-17
 
     Summary:

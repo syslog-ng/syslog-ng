@@ -323,6 +323,7 @@ log_reader_fetch_log(LogReader *self, FDRead *fd)
    */
   while (msg_count < self->options->fetch_limit)
     {
+      avail = self->options->msg_size - self->ofs;
       rc = fd_read(fd, self->buffer + self->ofs, avail, &sa);
 
       if (rc == -1)
