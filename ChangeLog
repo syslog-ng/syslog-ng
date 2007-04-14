@@ -2,6 +2,20 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-12-18 09:01:46 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-106
+
+    Summary:
+      added include misc.h to afstreams.c
+    Revision:
+      syslog-ng--mainline--2.0--patch-106
+
+    	* src/afstreams.c: added #include "misc.h"
+    
+
+    modified files:
+     ChangeLog src/afstreams.c
+
+
 2006-12-11 09:42:40 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-105
 
     Summary:

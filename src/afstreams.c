@@ -24,7 +24,7 @@
 #include "afstreams.h"
 #include "messages.h"
 #include "logreader.h"
-
+#include "misc.h"
 
 typedef struct _AFStreamsSourceDriver
 {
