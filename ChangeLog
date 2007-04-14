@@ -2,6 +2,21 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-10-06 11:49:45 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-83
+
+    Summary:
+      added syslog-multicast client to contrib
+    Revision:
+      syslog-ng--mainline--2.0--patch-83
+
+
+    new files:
+     contrib/.arch-ids/syslog-mc.id contrib/syslog-mc
+
+    modified files:
+     ChangeLog contrib/README
+
+
 2006-09-14 12:35:49 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-82
 
     Summary:
