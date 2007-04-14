@@ -27,7 +27,8 @@
 #include "syslog-ng.h"
 #include "filter.h"
 #include "cfg-grammar.h"
-
+#include "logreader.h"
+#include "messages.h"
 
 #include <string.h>
 #include <strings.h>
@@ -66,7 +67,6 @@ static struct keyword keywords[] = {
 	{ "fallback",		KW_FALLBACK },
 	{ "final",		KW_FINAL },
 	{ "flow_control",	KW_FLOW_CONTROL },
-	{ "no_parse",		KW_NO_PARSE },
 	{ "pad_size",		KW_PAD_SIZE },
 	{ "mark_freq",		KW_MARK_FREQ },
 	{ "stats_freq",		KW_STATS_FREQ },
@@ -107,7 +107,6 @@ static struct keyword keywords[] = {
 	{ "log_iw_size",	KW_LOG_IW_SIZE },
 	{ "log_msg_size",	KW_LOG_MSG_SIZE },
 	{ "log_prefix",		KW_LOG_PREFIX },
-	{ "kernel",		KW_KERNEL },
 	
         { "create_dirs",        KW_CREATE_DIRS },
         { "optional",           KW_OPTIONAL },
@@ -260,6 +259,17 @@ check_reserved_words(char *token)
     }
   yylval.cptr = strdup(token);
   return IDENTIFIER;
+}
+
+int
+lookup_parse_flag(char *flag)
+{
+  if (strcmp(flag, "no_parse") == 0 || strcmp(flag, "no-parse") == 0)
+    return LRO_NOPARSE;
+  if (strcmp(flag, "kernel") == 0)
+    return LRO_KERNEL;
+  msg_notice("Unknown parse flag", evt_tag_str("flag", flag), NULL);
+  return 0;
 }
 
 static void 

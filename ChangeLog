@@ -2,6 +2,29 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-04-10 20:59:32 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-34
+
+    Summary:
+      don't treat parse flags as keywords
+    Revision:
+      syslog-ng--mainline--2.0--patch-34
+
+    	* src/cfg-grammar.y: removed KW_NO_PARSE and KW_KERNEL tokens,
+    	(source_reader_option_flags): use IDENTIFIER instead of using
+    	separate keywords and call lookup_parse_flag to convert the textual
+    	representation of parse flags to flag values,
+    
+    	* src/cfg-lex.l (keywords): removed no_parse and kernel keywords,
+    	(lookup_parse_flag): new function, returns the flag value associated
+    	with the text representation
+    
+    	* src/cfg.c (cfg_init): fixed possible segfault when bad_hostname
+    	regexp was not specified
+
+    modified files:
+     ChangeLog src/cfg-grammar.y src/cfg-lex.l src/cfg.c
+
+
 2006-04-10 20:47:03 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-33
 
     Summary:

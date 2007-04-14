@@ -191,20 +191,22 @@ cfg_init(GlobalConfig *cfg, PersistentConfig *persist)
                evt_tag_str("name", cfg->proto_template_name),
                NULL);
 
-  if ((regerr = regcomp(&cfg->bad_hostname, cfg->bad_hostname_re, REG_NOSUB | REG_EXTENDED)) != 0)
+  if (cfg->bad_hostname_re)
     {
-      gchar buf[256];
-      
-      regerror(regerr, &cfg->bad_hostname, buf, sizeof(buf));
-      msg_error("Error compiling bad_hostname regexp",
-                evt_tag_str("error", buf),
-                NULL);
+      if ((regerr = regcomp(&cfg->bad_hostname, cfg->bad_hostname_re, REG_NOSUB | REG_EXTENDED)) != 0)
+        {
+          gchar buf[256];
+          
+          regerror(regerr, &cfg->bad_hostname, buf, sizeof(buf));
+          msg_error("Error compiling bad_hostname regexp",
+                    evt_tag_str("error", buf),
+                    NULL);
+        }
+      else
+        { 
+          cfg->bad_hostname_compiled = TRUE;
+        }
     }
-  else
-    { 
-      cfg->bad_hostname_compiled = TRUE;
-    }
-    
   return cfg->center->super.init(&cfg->center->super, cfg, persist);
 }
 

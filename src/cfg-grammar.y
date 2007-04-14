@@ -62,14 +62,14 @@ LogTemplate *last_template;
 %token KW_DNS_CACHE_EXPIRE KW_DNS_CACHE_EXPIRE_FAILED
 %token KW_TZ_CONVERT KW_TS_FORMAT KW_FRAC_DIGITS
 
-%token KW_LOG_FIFO_SIZE KW_LOG_FETCH_LIMIT KW_LOG_IW_SIZE KW_LOG_PREFIX KW_KERNEL
+%token KW_LOG_FIFO_SIZE KW_LOG_FETCH_LIMIT KW_LOG_IW_SIZE KW_LOG_PREFIX
 
 /* log statement options */
 %token KW_FLAGS KW_CATCHALL KW_FALLBACK KW_FINAL KW_FLOW_CONTROL
 
 
 /* reader options */
-%token KW_NO_PARSE KW_PAD_SIZE KW_TIME_ZONE KW_RECV_TIME_ZONE KW_SEND_TIME_ZONE
+%token KW_PAD_SIZE KW_TIME_ZONE KW_RECV_TIME_ZONE KW_SEND_TIME_ZONE
 
 /* timers */
 %token KW_TIME_REOPEN KW_TIME_REAP KW_TIME_SLEEP 
@@ -137,7 +137,6 @@ LogTemplate *last_template;
 %type	<ptr> source_afstreams
 %type	<ptr> source_afstreams_params
 %type	<num> source_reader_option_flags
-%type	<num> source_reader_option_flag
 
 %type	<ptr> dest_items
 %type	<ptr> dest_item
@@ -427,14 +426,10 @@ source_reader_option
 	;
 
 source_reader_option_flags
-	: source_reader_option_flag source_reader_option_flags { $$ = $1 | $2; }
+	: IDENTIFIER source_reader_option_flags { $$ = lookup_parse_flag($1) | $2; free($1); }
 	|					{ $$ = 0; }
 	;
 
-source_reader_option_flag
-	: KW_NO_PARSE				{ $$ = LRO_NOPARSE; }
-	| KW_KERNEL				{ $$ = LRO_KERNEL; }
-	;
 
 dest_items
 	: dest_item ';' dest_items		{ log_drv_append($1, $3); log_drv_unref($3); $$ = $1; }
