@@ -1,3 +1,27 @@
+2.0.3
+	Mon, 26 Mar 2007 14:10:00 +0200
+
+	Bugfixes:
+	* Fixed a possible segmentation fault in the usertty() destination
+          driver when it was referenced on a log path with disabled
+	  flow-control.
+	* Fixed various usertty() functionality problems.
+	* Removed the 1024 byte limitation of internally generated messages.
+	* Clarified the text of various internal messages, consistency
+	  updates for message severities.
+	* Increased the minimum value for log_fifo_size to 1000 elements.
+	* HP-UX portability fixes.
+	* Some minor documentation fixes.
+
+	Features:
+	* Added spoof-source support for IPv4 & IPv6 to match 1.6.x
+	  functionality.
+	* Added support for remembering the last posistion of file sources
+          across restarts.
+	* Added tcp-wrapper support.
+	* Added support for more than 9 regexp matches.
+	
+
 2.0.2
 	Fri, 26 Jan 2007 08:45:59 +0100
 

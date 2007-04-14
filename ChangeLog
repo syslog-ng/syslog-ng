@@ -2,6 +2,20 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2007-03-26 12:28:53 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-144
+
+    Summary:
+      preparations for 2.0.3 release
+    Revision:
+      syslog-ng--mainline--2.0--patch-144
+
+    
+    
+
+    modified files:
+     ChangeLog NEWS VERSION
+
+
 2007-03-26 12:28:31 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-143
 
     Summary:
