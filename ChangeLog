@@ -2,6 +2,20 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2007-03-21 16:36:01 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-142
+
+    Summary:
+      fixed dns_cache_hosts() typo in documentation
+    Revision:
+      syslog-ng--mainline--2.0--patch-142
+
+    
+    
+
+    modified files:
+     ChangeLog doc/reference/syslog-ng.xml
+
+
 2007-03-19 17:41:46 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-141
 
     Summary:

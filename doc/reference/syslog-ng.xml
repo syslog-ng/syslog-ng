@@ -1984,7 +1984,7 @@
 							<entry>Control DNS usage. "yes" enables DNS queries (with using
 								a cache, see the option dns_cache), "no" disables name
 								resolution completely, "persist-only" uses entries in
-								the DNS cache host file (see option dns_cache_host).
+								the DNS cache host file (see option dns_cache_hosts).
 								syslog-ng blocks on DNS queries, so enabling DNS may
 								lead to a Denial of Service attack.  To prevent DoS,
 								protect your syslog-ng network endpoint with firewall
@@ -2017,7 +2017,7 @@
 							<entry>Number of seconds while a failed lookup is cached.</entry>
 						</row>
 						<row>
-							<entry>dns_cache_host()</entry>
+							<entry>dns_cache_hosts()</entry>
 							<entry>filename</entry>
 							<entry>Name of a file in /etc/hosts format that contains static IP-&gt;name mappings. 
 							       By using this option it is possible to resolve names without reliance on DNS.
