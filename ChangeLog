@@ -2,6 +2,31 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-05-23 18:31:55 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-49
+
+    Summary:
+      added direction to socket setup code, fixed multicast setup
+    Revision:
+      syslog-ng--mainline--2.0--patch-49
+
+    2006-05-23  Balazs Scheidler <bazsi@balabit.hu>
+    
+    	* src/afsocket.h (AFSocketDirection): new type, specifies the future
+    	communication direction on a socket, used to determine which socket
+    	options to set on a socket,
+    
+    	* src/afsocket.c (afsocket_setup_socket): added direction parameter,
+    	(afsocket_sd_setup_socket, afsocket_dd_setup_socket): pass value for
+    	'direction' parameter
+    
+    	* src/afinet.c (afinet_setup_socket): added direction parameter,
+    	fixed multicast check for IPv4 addresses
+    
+
+    modified files:
+     ChangeLog src/afinet.c src/afsocket.c src/afsocket.h
+
+
 2006-05-23 18:28:52 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-48
 
     Summary:

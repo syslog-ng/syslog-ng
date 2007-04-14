@@ -155,15 +155,20 @@ typedef struct _AFSocketSourceConnection
 static void afsocket_sd_close_connection(AFSocketSourceDriver *self, AFSocketSourceConnection *sc);
 
 gboolean
-afsocket_setup_socket(gint fd, SocketOptions *sock_options)
+afsocket_setup_socket(gint fd, SocketOptions *sock_options, AFSocketDirection dir)
 {
-  if (sock_options->sndbuf)
-    setsockopt(fd, SOL_SOCKET, SO_SNDBUF, &sock_options->sndbuf, sizeof(sock_options->sndbuf));
-  if (sock_options->rcvbuf)
-    setsockopt(fd, SOL_SOCKET, SO_RCVBUF, &sock_options->rcvbuf, sizeof(sock_options->rcvbuf));
-  if (sock_options->broadcast)
-    setsockopt(fd, SOL_SOCKET, SO_BROADCAST, &sock_options->broadcast, sizeof(sock_options->broadcast));
-    
+  if (dir & AFSOCKET_DIR_RECV)
+    {
+      if (sock_options->rcvbuf)
+        setsockopt(fd, SOL_SOCKET, SO_RCVBUF, &sock_options->rcvbuf, sizeof(sock_options->rcvbuf));
+    }
+  if (dir & AFSOCKET_DIR_SEND)
+    {
+      if (sock_options->sndbuf)
+        setsockopt(fd, SOL_SOCKET, SO_SNDBUF, &sock_options->sndbuf, sizeof(sock_options->sndbuf));
+      if (sock_options->broadcast)
+        setsockopt(fd, SOL_SOCKET, SO_BROADCAST, &sock_options->broadcast, sizeof(sock_options->broadcast));
+    }
   return TRUE;
 }
 
@@ -585,7 +590,7 @@ afsocket_sd_notify(LogPipe *s, LogPipe *sender, gint notify_code, gpointer user_
 static gboolean
 afsocket_sd_setup_socket(AFSocketSourceDriver *self, gint fd)
 {
-  return afsocket_setup_socket(fd, self->sock_options_ptr);
+  return afsocket_setup_socket(fd, self->sock_options_ptr, AFSOCKET_DIR_RECV);
 }
 
 void
@@ -835,7 +840,7 @@ afsocket_dd_notify(LogPipe *s, LogPipe *sender, gint notify_code, gpointer user_
 static gboolean
 afsocket_dd_setup_socket(AFSocketDestDriver *self, gint fd)
 {
-  return afsocket_setup_socket(fd, self->sock_options_ptr);
+  return afsocket_setup_socket(fd, self->sock_options_ptr, AFSOCKET_DIR_SEND);
 }
 
 void

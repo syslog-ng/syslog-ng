@@ -132,11 +132,11 @@ afinet_resolve_name(GSockAddr *addr, gchar *name)
 }
 
 static gboolean
-afinet_setup_socket(gint fd, GSockAddr *addr, InetSocketOptions *sock_options)
+afinet_setup_socket(gint fd, GSockAddr *addr, InetSocketOptions *sock_options, AFSocketDirection dir)
 {
   gint off = 0;
   
-  if (!afsocket_setup_socket(fd, &sock_options->super))
+  if (!afsocket_setup_socket(fd, &sock_options->super, dir))
     return FALSE;
 
   switch (addr->sa.sa_family)
@@ -145,24 +145,30 @@ afinet_setup_socket(gint fd, GSockAddr *addr, InetSocketOptions *sock_options)
       {
         struct ip_mreq mreq;
 
-        if (IN_MULTICAST(g_sockaddr_inet_get_address(addr).s_addr))
+        
+        if (IN_MULTICAST(ntohl(g_sockaddr_inet_get_address(addr).s_addr)))
           {
-            if (sock_options->ttl)
-              setsockopt(fd, SOL_IP, IP_MULTICAST_TTL, &sock_options->ttl, sizeof(sock_options->ttl));
-              
-            memset(&mreq, 0, sizeof(mreq));
-            mreq.imr_multiaddr = g_sockaddr_inet_get_address(addr);
-            mreq.imr_interface.s_addr = INADDR_ANY;
-            setsockopt(fd, SOL_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq));
-            setsockopt(fd, SOL_IP, IP_MULTICAST_LOOP, &off, sizeof(off));
+            if (dir & AFSOCKET_DIR_RECV)
+              {
+                memset(&mreq, 0, sizeof(mreq));
+                mreq.imr_multiaddr = g_sockaddr_inet_get_address(addr);
+                mreq.imr_interface.s_addr = INADDR_ANY;
+                setsockopt(fd, SOL_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq));
+                setsockopt(fd, SOL_IP, IP_MULTICAST_LOOP, &off, sizeof(off));
+              }
+            if (dir & AFSOCKET_DIR_SEND)
+              {
+                if (sock_options->ttl)
+                  setsockopt(fd, SOL_IP, IP_MULTICAST_TTL, &sock_options->ttl, sizeof(sock_options->ttl));
+              }
             
           }
         else
           {
-            if (sock_options->ttl)
+            if (sock_options->ttl && (dir & AFSOCKET_DIR_SEND))
               setsockopt(fd, SOL_IP, IP_TTL, &sock_options->ttl, sizeof(sock_options->ttl));
           }        
-        if (sock_options->tos)
+        if (sock_options->tos && (dir & AFSOCKET_DIR_SEND))
           setsockopt(fd, SOL_IP, IP_TOS, &sock_options->tos, sizeof(sock_options->tos));
           
         break;
@@ -174,18 +180,23 @@ afinet_setup_socket(gint fd, GSockAddr *addr, InetSocketOptions *sock_options)
         
         if (IN6_IS_ADDR_MULTICAST(g_sockaddr_inet6_get_address(addr)->s6_addr))
           {
-            if (sock_options->ttl)
-              setsockopt(fd, SOL_IPV6, IPV6_MULTICAST_HOPS, &sock_options->ttl, sizeof(sock_options->ttl));
-
-             memset(&mreq6, 0, sizeof(mreq6));
-             mreq6.ipv6mr_multiaddr = *g_sockaddr_inet6_get_address(addr);
-             mreq6.ipv6mr_interface = 0;
-             setsockopt(fd, SOL_IPV6, IPV6_ADD_MEMBERSHIP, &mreq6, sizeof(mreq6));
-             setsockopt(fd, SOL_IPV6, IPV6_MULTICAST_LOOP, &off, sizeof(off));
+            if (dir & AFSOCKET_DIR_RECV)
+              {
+                memset(&mreq6, 0, sizeof(mreq6));
+                mreq6.ipv6mr_multiaddr = *g_sockaddr_inet6_get_address(addr);
+                mreq6.ipv6mr_interface = 0;
+                setsockopt(fd, SOL_IPV6, IPV6_ADD_MEMBERSHIP, &mreq6, sizeof(mreq6));
+                setsockopt(fd, SOL_IPV6, IPV6_MULTICAST_LOOP, &off, sizeof(off));
+              }
+            if (dir & AFSOCKET_DIR_SEND)
+              {
+                if (sock_options->ttl)
+                  setsockopt(fd, SOL_IPV6, IPV6_MULTICAST_HOPS, &sock_options->ttl, sizeof(sock_options->ttl));
+              }
           }
         else
           {
-            if (sock_options->ttl)
+            if (sock_options->ttl && (dir & AFSOCKET_DIR_SEND))
               setsockopt(fd, SOL_IPV6, IPV6_UNICAST_HOPS, &sock_options->ttl, sizeof(sock_options->ttl));
           }
         break;
@@ -214,7 +225,7 @@ afinet_sd_set_localip(LogDriver *s, gchar *ip)
 static gboolean
 afinet_sd_setup_socket(AFSocketSourceDriver *s, gint fd)
 {
-  return afinet_setup_socket(fd, s->bind_addr, (InetSocketOptions *) s->sock_options_ptr);
+  return afinet_setup_socket(fd, s->bind_addr, (InetSocketOptions *) s->sock_options_ptr, AFSOCKET_DIR_RECV);
 }
 
 LogDriver *
@@ -273,7 +284,7 @@ afinet_dd_setup_socket(AFSocketDestDriver *s, gint fd)
 {
   AFInetDestDriver *self = (AFInetDestDriver *) s;
   
-  return afinet_setup_socket(fd, self->super.dest_addr, (InetSocketOptions *) s->sock_options_ptr);
+  return afinet_setup_socket(fd, self->super.dest_addr, (InetSocketOptions *) s->sock_options_ptr, AFSOCKET_DIR_SEND);
 }
 
 LogDriver *

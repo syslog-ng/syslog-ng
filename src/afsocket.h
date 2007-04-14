@@ -34,6 +34,12 @@
 
 #define AFSOCKET_KEEP_ALIVE          0x0100
 
+typedef enum
+{
+  AFSOCKET_DIR_RECV = 0x01,
+  AFSOCKET_DIR_SEND = 0x02,
+} AFSocketDirection;
+
 typedef struct _AFSocketSourceDriver AFSocketSourceDriver;
 typedef struct _AFSocketDestDriver AFSocketDestDriver;
 
@@ -44,7 +50,7 @@ typedef struct _SocketOptions
   gint broadcast;
 } SocketOptions;
 
-gboolean afsocket_setup_socket(gint fd, SocketOptions *sock_options);
+gboolean afsocket_setup_socket(gint fd, SocketOptions *sock_options, AFSocketDirection dir);
 
 struct _AFSocketSourceDriver
 {
