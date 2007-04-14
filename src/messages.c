@@ -43,7 +43,7 @@ GQueue *internal_msg_queue = NULL;
 static void
 msg_send_internal_message(int prio, const char *msg)
 {
-  gchar buf[1025];
+  gchar *buf;
   
   if (log_stderr || !syslog_started)
     {
@@ -55,9 +55,10 @@ msg_send_internal_message(int prio, const char *msg)
       
       if (G_LIKELY(internal_msg_queue))
         {
-          g_snprintf(buf, sizeof(buf), "<%d> syslog-ng[%d]: %s\n", prio, getpid(), msg);
+          buf = g_strdup_printf("<%d> syslog-ng[%d]: %s\n", prio, getpid(), msg);
           m = log_msg_new(buf, strlen(buf), NULL, LP_INTERNAL | LP_LOCAL, NULL);
           g_queue_push_tail(internal_msg_queue, m);
+          g_free(buf);
         }
     }
 }

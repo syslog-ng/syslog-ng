@@ -2,6 +2,21 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2007-02-12 09:02:37 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-132
+
+    Summary:
+      removed 1024 byte limitation on internal messages
+    Revision:
+      syslog-ng--mainline--2.0--patch-132
+
+    	* src/messages.c (msg_send_internal_message): use a dynamically
+    	allocated buffer instead of a buffer with a fixed size on the stack
+    
+
+    modified files:
+     ChangeLog src/messages.c
+
+
 2007-02-12 09:01:43 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-131
 
     Summary:
