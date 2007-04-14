@@ -34,6 +34,8 @@
 #include <time.h>
 #include <errno.h>
 
+#include <stdio.h>
+
 static gboolean log_reader_fetch_log(LogReader *self, FDRead *fd);
 
 typedef struct _LogReaderWatch
@@ -96,26 +98,16 @@ log_reader_fd_check(GSource *source)
   if (self->reader->flags & LR_FOLLOW)
     {
       struct stat st, followed_st;
-      off_t pos, size;
+      off_t pos;
       
-      /* check size, I cannot use stat, as glibc has a bug with file offset
-       * bits 64 and struct stat, see
-       * http://sourceware.org/bugzilla/show_bug.cgi?id=4328 */
-      
-      pos = lseek(self->fd->fd, 0, SEEK_CUR);
-      size = lseek(self->fd->fd, 0, SEEK_END);
-      lseek(self->fd->fd, pos, SEEK_SET);
-      
-      if (pos == (off_t) -1 || size == (off_t) -1)
+      pos = lseek(self->fd->fd, 0, SEEK_CUR);      
+      if (pos == (off_t) -1)
         {
           msg_error("Error invoking seek on followed file",
                     evt_tag_errno("error", errno),
                     NULL);
           return FALSE;
         }
-      
-      if (pos < size)
-	return TRUE;
 
       if (fstat(self->fd->fd, &st) < 0)
         {
@@ -125,6 +117,9 @@ log_reader_fd_check(GSource *source)
           return FALSE;
         }
       
+      if (pos < st.st_size)
+	return TRUE;
+
       if (self->reader->options->follow_filename && stat(self->reader->options->follow_filename, &followed_st) != -1)
         {
           if (st.st_ino != followed_st.st_ino)
