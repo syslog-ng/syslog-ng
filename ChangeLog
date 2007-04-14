@@ -2,6 +2,20 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-04-10 21:36:12 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-37
+
+    Summary:
+      fixed a compilation warning
+    Revision:
+      syslog-ng--mainline--2.0--patch-37
+
+    
+    
+
+    modified files:
+     ChangeLog src/cfg-grammar.y
+
+
 2006-04-10 21:33:37 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-36
 
     Summary:

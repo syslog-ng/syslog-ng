@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+int lookup_parse_flag(char *flag);
 
 void yyerror(char *msg);
 int yylex();
