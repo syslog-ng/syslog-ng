@@ -2,6 +2,20 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-04-19 18:47:12 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-39
+
+    Summary:
+      change file owner/group independently
+    Revision:
+      syslog-ng--mainline--2.0--patch-39
+
+    	* src/affile.c (affile_open_file): change owner/group independently
+    
+
+    modified files:
+     ChangeLog src/affile.c
+
+
 2006-04-19 18:44:34 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-38
 
     Summary:

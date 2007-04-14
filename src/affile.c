@@ -84,8 +84,10 @@ affile_open_file(gchar *name, int flags,
     }
   if (*fd != -1)
     {
-      if (uid != -1 || gid != -1)
-        fchown(*fd, uid, gid);
+      if (uid != -1)
+        fchown(*fd, uid, -1);
+      if (gid != -1)
+        fchown(*fd, -1, gid);
       if (mode != -1)
         fchmod(*fd, mode);
     }
