@@ -254,7 +254,8 @@ afsocket_sc_notify(LogPipe *s, LogPipe *sender, gint notify_code, gpointer user_
     case NC_CLOSE:
     case NC_READ_ERROR:
       {
-        afsocket_sd_close_connection(self->owner, self);
+        if (self->owner->flags & AFSOCKET_STREAM)
+          afsocket_sd_close_connection(self->owner, self);
         break;
       }
     }

@@ -359,7 +359,7 @@ log_reader_fetch_log(LogReader *self, FDRead *fd)
               return FALSE;
             }
         }
-      else if (rc == 0 && (self->flags & LR_FOLLOW) == 0)
+      else if (rc == 0 && (self->flags & (LR_FOLLOW + LR_PKTTERM)) == 0)
         {
           /* EOF read */
           msg_verbose("EOF occurred while reading", 

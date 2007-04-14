@@ -2,6 +2,24 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-08-02 07:22:17 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-72
+
+    Summary:
+      Fixed possible DoS when a 0 sized packet is received via UDP
+    Revision:
+      syslog-ng--mainline--2.0--patch-72
+
+    	* src/logreader.c (log_reader_fetch_log): don't take 0 sized packets
+    	as EOF for packet based transports like UDP
+    
+    	* src/afsocket.c (afsocket_sc_notify): don't close the input
+    	connection on read errors for non-stream based transports
+    
+
+    modified files:
+     ChangeLog src/afsocket.c src/logreader.c
+
+
 2006-07-28 12:54:35 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-71
 
     Summary:
