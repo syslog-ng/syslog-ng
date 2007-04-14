@@ -2,6 +2,21 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-06-28 12:09:44 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-67
+
+    Summary:
+      fixed unix domain destination handling
+    Revision:
+      syslog-ng--mainline--2.0--patch-67
+
+    	* src/afunix.c (afunix_dd_new): initialize bind_addr as the afsocket
+    	code assumes that it is not NULL, fixes a possible SIGSEGV
+    
+
+    modified files:
+     ChangeLog NEWS src/afunix.c
+
+
 2006-06-23 14:10:53 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-66
 
     Summary:

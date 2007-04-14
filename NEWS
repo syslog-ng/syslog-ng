@@ -13,6 +13,8 @@
 	* In the case of a broken connection don't reconnect immediately,
 	  but wait some time specified by time_reopen() to match 1.6.x
 	  behaviour.
+	* Fixed a reproducible segmentation fault in UNIX domain socket
+          destinations.
 
 	Other changes:
 	* Documentation updates.
