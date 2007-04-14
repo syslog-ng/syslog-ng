@@ -2,6 +2,22 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-04-07 14:27:52 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-31
+
+    Summary:
+      accept negative numbers as NUMBER in the lexer
+    Revision:
+      syslog-ng--mainline--2.0--patch-31
+
+    2006-04-07  Balazs Scheidler <bazsi@balabit.hu>
+    
+    	* src/cfg-lex.l: accept negative numbers in the lexer
+    
+
+    modified files:
+     ChangeLog src/cfg-lex.l
+
+
 2006-04-06 10:20:41 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-30
 
     Summary:

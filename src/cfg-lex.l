@@ -188,7 +188,7 @@ word	[^ \#'"\(\)\{\}\\;\n\t,|\.]
 \.\.                       { return DOTDOT; }
 0x{digit}+ 		   { yylval.num = strtol(yytext, NULL, 16); return NUMBER; }
 0{digit}+		   { yylval.num = strtol(yytext, NULL, 8); return NUMBER; }
-{digit}+		   { yylval.num = atoi(yytext); return NUMBER; }
+(-|\+)?{digit}+            { yylval.num = strtol(yytext, NULL, 10); return NUMBER; }
 ({word}+(\.)?)*{word}+ 	   { return check_reserved_words(yytext); }
 \(	      		   { return '('; }
 \)			   { return ')'; }
