@@ -2,6 +2,20 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2007-04-02 06:53:54 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-145
+
+    Summary:
+      grammar fixes for localport/port/destport parsing options
+    Revision:
+      syslog-ng--mainline--2.0--patch-145
+
+    	* src/cfg-grammar.y: fixed grammar to parse port related options correctly
+    
+
+    modified files:
+     ChangeLog src/cfg-grammar.y
+
+
 2007-03-26 12:28:53 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-144
 
     Summary:

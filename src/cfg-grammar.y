@@ -375,14 +375,12 @@ source_afinet_udp_options
 
 source_afinet_udp_option
 	: source_afinet_option
-	| KW_LOCALPORT '(' string ')'		{ afinet_sd_set_localport(last_driver, 0, $3, "udp"); free($3); }
-	| KW_PORT '(' string ')'		{ afinet_sd_set_localport(last_driver, 0, $3, "udp"); free($3); }
+	| KW_LOCALPORT '(' string_or_number ')'	{ afinet_sd_set_localport(last_driver, 0, $3, "udp"); free($3); }
+	| KW_PORT '(' string_or_number ')'	{ afinet_sd_set_localport(last_driver, 0, $3, "udp"); free($3); }
 	;
 
 source_afinet_option
 	: KW_LOCALIP '(' string ')'		{ afinet_sd_set_localip(last_driver, $3); free($3); }
-	| KW_LOCALPORT '(' NUMBER ')'		{ afinet_sd_set_localport(last_driver, $3, NULL, NULL); }
-	| KW_PORT '(' NUMBER ')'		{ afinet_sd_set_localport(last_driver, $3, NULL, NULL); }
 	| KW_IP '(' string ')'			{ afinet_sd_set_localip(last_driver, $3); free($3); }
 	| source_reader_option
 	| inet_socket_option
@@ -407,8 +405,8 @@ source_afinet_tcp_options
 
 source_afinet_tcp_option
         : source_afinet_option
-	| KW_LOCALPORT '(' string ')'		{ afinet_sd_set_localport(last_driver, 0, $3, "tcp"); free($3); }
-	| KW_PORT '(' string ')'		{ afinet_sd_set_localport(last_driver, 0, $3, "tcp"); free($3); }
+	| KW_LOCALPORT '(' string_or_number ')'	{ afinet_sd_set_localport(last_driver, 0, $3, "tcp"); free($3); }
+	| KW_PORT '(' string_or_number ')'	{ afinet_sd_set_localport(last_driver, 0, $3, "tcp"); free($3); }
 	| source_afsocket_stream_params		{}
 	;
 
@@ -602,16 +600,15 @@ dest_afinet_udp_options
 
 dest_afinet_option
 	: KW_LOCALIP '(' string ')'		{ afinet_dd_set_localip(last_driver, $3); free($3); }
-	| KW_PORT '(' NUMBER ')'		{ afinet_dd_set_destport(last_driver, $3, NULL, NULL); }
 	| inet_socket_option
 	| dest_writer_option
 	;
 
 dest_afinet_udp_option
 	: dest_afinet_option
-	| KW_LOCALPORT '(' string ')'		{ afinet_dd_set_localport(last_driver, 0, $3, "udp"); free($3); }
-	| KW_PORT '(' string ')'		{ afinet_dd_set_destport(last_driver, 0, $3, "udp"); free($3); }
-	| KW_DESTPORT '(' string ')'		{ afinet_dd_set_destport(last_driver, 0, $3, "udp"); free($3); }
+	| KW_LOCALPORT '(' string_or_number ')'	{ afinet_dd_set_localport(last_driver, 0, $3, "udp"); free($3); }
+	| KW_PORT '(' string_or_number ')'	{ afinet_dd_set_destport(last_driver, 0, $3, "udp"); free($3); }
+	| KW_DESTPORT '(' string_or_number ')'	{ afinet_dd_set_destport(last_driver, 0, $3, "udp"); free($3); }
 	| KW_SPOOF_SOURCE '(' yesno ')'		{ afinet_dd_set_spoof_source(last_driver, $3); }
 	;
 
@@ -635,9 +632,9 @@ dest_afinet_tcp_options
 
 dest_afinet_tcp_option
 	: dest_afinet_option
-	| KW_LOCALPORT '(' string ')'		{ afinet_dd_set_localport(last_driver, 0, $3, "tcp"); free($3); }
-	| KW_PORT '(' string ')'		{ afinet_dd_set_destport(last_driver, 0, $3, "tcp"); free($3); }
-	| KW_DESTPORT '(' string ')'		{ afinet_dd_set_destport(last_driver, 0, $3, "tcp"); free($3); }
+	| KW_LOCALPORT '(' string_or_number ')'	{ afinet_dd_set_localport(last_driver, 0, $3, "tcp"); free($3); }
+	| KW_PORT '(' string_or_number ')'	{ afinet_dd_set_destport(last_driver, 0, $3, "tcp"); free($3); }
+	| KW_DESTPORT '(' string_or_number ')'	{ afinet_dd_set_destport(last_driver, 0, $3, "tcp"); free($3); }
 /*
 	| KW_MAC '(' yesno ')'
 	| KW_AUTH '(' yesno ')'
