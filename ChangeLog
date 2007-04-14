@@ -2,6 +2,34 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-03-18 22:08:50 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-25
+
+    Summary:
+      reimplemented netmask() filter which was missing from 1.9.9
+    Revision:
+      syslog-ng--mainline--2.0--patch-25
+
+    	* src/cfg-grammar.y, src/cfg-lex.l: added KW_NETMASK
+    
+    	* src/filter.c (filter_netmask_new): new function to construct a
+    	netmask filter, cidr "address/prefix" and "address/address" formats
+    	are accepted
+    
+    	* src/logmsg.h: fixed a warning by declaring log_msg_clear_matches function
+    
+    	* doc/reference/syslog-ng.xml: added a notice on redefining
+    	template() for network destinations
+    
+    	* tests/unit/test_filter.c: added unit tests for netmask filter
+    
+    
+
+    modified files:
+     ChangeLog doc/reference/syslog-ng.xml src/cfg-grammar.y
+     src/cfg-lex.l src/filter.c src/filter.h src/logmsg.h
+     tests/unit/test_filters.c
+
+
 2006-03-13 23:12:08 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-24
 
     Summary:

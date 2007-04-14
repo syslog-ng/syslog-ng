@@ -94,7 +94,7 @@ LogTemplate *last_template;
 %token KW_USE_TIME_RECVD
 
 /* filter items*/
-%token KW_FACILITY KW_LEVEL KW_HOST KW_MATCH
+%token KW_FACILITY KW_LEVEL KW_HOST KW_MATCH KW_NETMASK
 
 /* yes/no switches */
 %token KW_YES KW_NO
@@ -749,6 +749,7 @@ filter_simple_expr
 	| KW_HOST '(' string ')'		{ $$ = filter_host_new($3); free($3); }	
 	| KW_MATCH '(' string ')'		{ $$ = filter_match_new($3); free($3); }
 	| KW_FILTER '(' string ')'		{ $$ = filter_call_new($3, configuration); free($3); }
+	| KW_NETMASK '(' string ')'		{ $$ = filter_netmask_new($3); free($3); }
 	;
 
 filter_fac_list

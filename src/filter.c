@@ -28,7 +28,7 @@
 
 #include <regex.h>
 #include <string.h>
-
+#include <stdlib.h>
 
 static void log_filter_rule_free(LogFilterRule *self);
 
@@ -448,3 +448,60 @@ filter_call_new(gchar *rule, GlobalConfig *cfg)
   return &self->super;
 }
 
+
+typedef struct _FilterNetmask
+{
+  FilterExprNode super;
+  struct in_addr address;
+  struct in_addr netmask;
+} FilterNetmask;
+
+static gboolean
+filter_netmask_eval(FilterExprNode *s, LogMessage *msg)
+{
+  FilterNetmask *self = (FilterNetmask *) s;
+  
+  if (msg->saddr && g_sockaddr_inet_check(msg->saddr))
+    {
+      struct in_addr *addr = &((struct sockaddr_in *) &msg->saddr->sa)->sin_addr;
+      
+      return ((addr->s_addr & self->netmask.s_addr) == (self->address.s_addr)) ^ s->comp;
+    }
+  return s->comp;
+}
+
+FilterExprNode *
+filter_netmask_new(gchar *cidr)
+{
+  FilterNetmask *self = g_new0(FilterNetmask, 1);
+  gchar buf[32];
+  gchar *slash;
+  
+  slash = strchr(cidr, '/');
+  if (strlen(cidr) >= sizeof(buf) || !slash)
+    {
+      g_inet_aton(cidr, &self->address);
+      self->netmask.s_addr = htonl(0xFFFFFFFF);
+    }
+  else
+    {
+      strncpy(buf, cidr, slash - cidr + 1);
+      buf[slash - cidr] = 0;
+      g_inet_aton(buf, &self->address);
+      if (strchr(slash + 1, '.'))
+        {
+          g_inet_aton(slash + 1, &self->netmask);
+        }
+      else
+        {
+          gint prefix = strtol(slash + 1, NULL, 10);
+          if (prefix == 32)
+            self->netmask.s_addr = htonl(0xFFFFFFFF);
+          else
+            self->netmask.s_addr = htonl(((1 << prefix) - 1) << (32 - prefix));
+        }
+    }
+  self->address.s_addr &= self->netmask.s_addr;
+  self->super.eval = filter_netmask_eval;
+  return &self->super;
+}

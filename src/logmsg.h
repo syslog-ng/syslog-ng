@@ -103,5 +103,6 @@ void log_msg_ack_block_start(LogMessage *m, LMAckFunc func, gpointer user_data);
 void log_msg_ack_block_end(LogMessage *m);
 void log_msg_ack(LogMessage *msg);
 void log_msg_drop(LogMessage *msg, guint path_flags);
+void log_msg_clear_matches(LogMessage *self);
 
 #endif

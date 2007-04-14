@@ -53,8 +53,7 @@ FilterExprNode *filter_prog_new(gchar *prog);
 FilterExprNode *filter_host_new(gchar *host);
 FilterExprNode *filter_match_new(gchar *re);
 FilterExprNode *filter_call_new(gchar *rule, struct _GlobalConfig *cfg);
-
-
+FilterExprNode *filter_netmask_new(gchar *cidr);
 
 typedef struct _LogFilterRule
 {
