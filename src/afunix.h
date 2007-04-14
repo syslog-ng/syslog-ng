@@ -34,6 +34,7 @@ typedef struct _AFUnixSourceDriver
   uid_t owner;
   gid_t group;
   mode_t perm;
+  SocketOptions sock_options;
 } AFUnixSourceDriver;
 
 void afunix_sd_set_uid(LogDriver *self, gchar *owner);
@@ -45,6 +46,7 @@ LogDriver *afunix_sd_new(gchar *filename, guint32 flags);
 typedef struct _AFUnixDestDriver
 {
   AFSocketDestDriver super;
+  SocketOptions sock_options;
 } AFUnixDestDriver;
 
 LogDriver *afunix_dd_new(gchar *filename, guint flags);

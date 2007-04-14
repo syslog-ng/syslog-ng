@@ -26,9 +26,17 @@
 
 #include "afsocket.h"
 
+typedef struct _InetSocketOptions
+{
+  SocketOptions super;
+  gint ttl;
+  gint tos;
+} InetSocketOptions;
+
 typedef struct _AFInetSourceDriver
 {
   AFSocketSourceDriver super;
+  InetSocketOptions sock_options;
 } AFInetSourceDriver;
 
 LogDriver *afinet_sd_new(gint af, gchar *host, gint port, guint flags);
@@ -42,6 +50,7 @@ void afinet_sd_set_localip(LogDriver *self, gchar *ip);
 typedef struct _AFInetDestDriver
 {
   AFSocketDestDriver super;
+  InetSocketOptions sock_options;
 } AFInetDestDriver;
 
 LogDriver *afinet_dd_new(gint af, gchar *host, gint port, guint flags);

@@ -290,6 +290,14 @@
 		<entry>Listens on the specified TCP port for messages.</entry>
 	      </row>
 	      <row>
+		<entry>udp6()</entry>
+		<entry>Listens on the specified UDP port for messages over IPv6.</entry>
+	      </row>
+	      <row>
+		<entry>tcp6()</entry>
+		<entry>Listens on the specified TCP port for messages over IPv6.</entry>
+	      </row>
+	      <row>
 		<entry>sun-stream(), sun-streams()</entry>
 		<entry>Opens the specified STREAMS device on Solaris systems, and reads messages.</entry>
 	      </row>
@@ -392,6 +400,14 @@
 	      <row>
 		<entry>tcp()</entry>
 		<entry>Sends messages to specified host and TCP port</entry>
+	      </row>
+	      <row>
+		<entry>udp6()</entry>
+		<entry>Sends messages to specified host and UDP port over IPv6</entry>
+	      </row>
+	      <row>
+		<entry>tcp6()</entry>
+		<entry>Sends messages to specified host and TCP port over IPv6</entry>
 	      </row>
 	      <row>
 		<entry>usertty()</entry>
@@ -762,6 +778,32 @@
 		<entry>Limits the number of simultaneously opened connections.
 		  Can be used only with unix-stream().</entry>
 	      </row>
+	      <row>
+	        <entry>so_broadcast</entry>
+	        <entry>yes or no</entry>
+	        <entry>no</entry>
+	        <entry>
+	          This option controls the SO_BROADCAST socket option which
+	          is needed to have syslog-ng send to a broadcast address.
+	          See socket(7) manpage for details.
+	        </entry>
+	      </row>
+	      <row>
+	        <entry>so_rcvbuf</entry>
+	        <entry>number</entry>
+	        <entry>0</entry>
+	        <entry>
+	          This option controls the size of the socket receive buffer.
+	        </entry>
+	      </row>
+	      <row>
+	        <entry>so_sndbuf</entry>
+	        <entry>number</entry>
+	        <entry>0</entry>
+	        <entry>
+	          This option controls the size of the socket send buffer.
+	        </entry>
+	      </row>
 	    </tbody>
 	  </tgroup>  
 	</table>
@@ -779,11 +821,12 @@
 	</example>
       </sect2>
       <sect2>
-	<title>tcp() and udp()</title>
+	<title>tcp(), tcp6(), udp() and udp6()</title>
 	<para>
-	  These drivers let you receive messages from the network, and
-	  as the name of the drivers show, you can use both UDP and
-	  TCP as transport.
+	  These drivers let you receive messages from the network, and as
+	  the name of the drivers show, you can use both UDP and TCP as
+	  transport. The ones with the '6' suffix use IPv6 as network
+	  protocol.
 	</para>
 	<para>
 	  UDP is a simple datagram oriented protocol, which provides
@@ -877,6 +920,50 @@
 		<entry>number</entry>
 		<entry>10</entry>
 		<entry>Specifies the maximum number of simultaneous connections.</entry>
+	      </row>
+	      <row>
+	        <entry>so_broadcast</entry>
+	        <entry>yes or no</entry>
+	        <entry>no</entry>
+	        <entry>
+	          This option controls the SO_BROADCAST socket option which
+	          is needed to have syslog-ng send to a broadcast address.
+	          See socket(7) manpage for details.
+	        </entry>
+	      </row>
+	      <row>
+	        <entry>so_rcvbuf</entry>
+	        <entry>number</entry>
+	        <entry>0</entry>
+	        <entry>
+	          This option controls the size of the socket receive buffer.
+	        </entry>
+	      </row>
+	      <row>
+	        <entry>so_sndbuf</entry>
+	        <entry>number</entry>
+	        <entry>0</entry>
+	        <entry>
+	          This option controls the size of the socket send buffer.
+	        </entry>
+	      </row>
+	      <row>
+	        <entry>ip_ttl</entry>
+	        <entry>number</entry>
+	        <entry>0</entry>
+	        <entry>
+	          This option controls the value of the Time-To-Live value
+	          of outgoing packets.
+	        </entry>
+	      </row>
+	      <row>
+	        <entry>ip_tos</entry>
+	        <entry>number</entry>
+	        <entry>0</entry>
+	        <entry>
+	          This option controls the value of the Type-of-Service value
+	          of outgoing packets.
+	        </entry>
 	      </row>
 	    </tbody>
 	  </tgroup>
@@ -1477,9 +1564,47 @@
 	    unix-stream(filename [options]);
 	    unix-dgram(filename [options]); 
 	</synopsis>
-        These drivers support all common options but do not have any other
-        options.
-
+	<table>
+	  <title>Available options for unix-stream() and unix-dgram()</title>
+	  <tgroup cols="4">
+	    <thead>
+	      <row>
+		<entry>Name</entry>
+		<entry>Type</entry>
+		<entry>Default</entry>
+		<entry>Description</entry>
+	      </row>
+	    </thead>
+	    <tbody>
+	      <row>
+	        <entry>so_broadcast</entry>
+	        <entry>yes or no</entry>
+	        <entry>no</entry>
+	        <entry>
+	          This option controls the SO_BROADCAST socket option which
+	          is needed to have syslog-ng send to a broadcast address.
+	          See socket(7) manpage for details.
+	        </entry>
+	      </row>
+	      <row>
+	        <entry>so_rcvbuf</entry>
+	        <entry>number</entry>
+	        <entry>0</entry>
+	        <entry>
+	          This option controls the size of the socket receive buffer.
+	        </entry>
+	      </row>
+	      <row>
+	        <entry>so_sndbuf</entry>
+	        <entry>number</entry>
+	        <entry>0</entry>
+	        <entry>
+	          This option controls the size of the socket send buffer.
+	        </entry>
+	      </row>
+	    </tbody>
+	  </tgroup>
+        </table>
 	<example>
 	  <title>Using the unix-stream() driver</title>
 	  <synopsis>
@@ -1489,10 +1614,11 @@
       </sect2>
 
       <sect2>
-	<title>udp() &amp; tcp()</title>
+	<title>udp(), udp6(), tcp() and tcp6()</title>
 	<para>
-	  This driver sends messages to another host on the local
-	  intranet or internet using either UDP or TCP protocol.
+	  This driver sends messages to another host on the local intranet
+	  or internet using either UDP or TCP protocol. The ones with the
+	  '6' suffix use IPv6 as the network protocol.
 	</para>
 	<para>
 	  Both drivers have a single required argument specifying the
@@ -1507,7 +1633,7 @@
 	    udp(host [options]);
 	</synopsis>
 	<table>
-	  <title>Available options for udp() &amp; tcp()</title>
+	  <title>Available options for udp(), udp6(), tcp() and tcp6()</title>
 	  <tgroup cols="4">
 	    <thead>
 	      <row>
@@ -1567,6 +1693,32 @@
                  the --enable-spoof-source configure option.
                </entry>
              </row>	  
+	      <row>
+	        <entry>so_broadcast</entry>
+	        <entry>yes or no</entry>
+	        <entry>no</entry>
+	        <entry>
+	          This option controls the SO_BROADCAST socket option which
+	          is needed to have syslog-ng send to a broadcast address.
+	          See socket(7) manpage for details.
+	        </entry>
+	      </row>
+	      <row>
+	        <entry>so_rcvbuf</entry>
+	        <entry>number</entry>
+	        <entry>0</entry>
+	        <entry>
+	          This option controls the size of the socket receive buffer.
+	        </entry>
+	      </row>
+	      <row>
+	        <entry>so_sndbuf</entry>
+	        <entry>number</entry>
+	        <entry>0</entry>
+	        <entry>
+	          This option controls the size of the socket send buffer.
+	        </entry>
+	      </row>
 	    </tbody>
 	  </tgroup>
 	</table>

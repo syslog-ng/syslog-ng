@@ -117,6 +117,12 @@ static struct keyword keywords[] = {
 	{ "localport",		KW_LOCALPORT },
 	{ "port",		KW_PORT },
 	{ "destport",		KW_DESTPORT },
+        { "ip_ttl",             KW_IP_TTL },
+        { "ip_tos",             KW_IP_TOS },
+        { "so_broadcast",       KW_SO_BROADCAST },
+        { "so_rcvbuf",          KW_SO_RCVBUF },
+        { "so_sndbuf",          KW_SO_SNDBUF },
+
 	{ "owner",		KW_OWNER },
 	{ "group",		KW_GROUP },
 	{ "perm",		KW_PERM },

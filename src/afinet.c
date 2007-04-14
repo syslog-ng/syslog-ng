@@ -28,6 +28,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 
+
 static void
 afinet_set_port(GSockAddr *addr, gint port, gchar *service, gchar *proto)
 {
@@ -92,7 +93,7 @@ afinet_resolve_name(GSockAddr *addr, gchar *name)
               break;
 #if ENABLE_IPV6
             case AF_INET6:
-              g_sockaddr_inet6_set_address(addr, ((struct sockaddr_in6 *) res->ai_addr)->sin6_addr);
+              g_sockaddr_inet6_set_address(addr, &((struct sockaddr_in6 *) res->ai_addr)->sin6_addr);
               break;
 #endif
             default: 
@@ -130,6 +131,70 @@ afinet_resolve_name(GSockAddr *addr, gchar *name)
     }
 }
 
+static gboolean
+afinet_setup_socket(gint fd, GSockAddr *addr, InetSocketOptions *sock_options)
+{
+  gint off = 0;
+  
+  if (!afsocket_setup_socket(fd, &sock_options->super))
+    return FALSE;
+
+  switch (addr->sa.sa_family)
+    {
+    case AF_INET:
+      {
+        struct ip_mreq mreq;
+
+        if (IN_MULTICAST(g_sockaddr_inet_get_address(addr).s_addr))
+          {
+            if (sock_options->ttl)
+              setsockopt(fd, SOL_IP, IP_MULTICAST_TTL, &sock_options->ttl, sizeof(sock_options->ttl));
+              
+            memset(&mreq, 0, sizeof(mreq));
+            mreq.imr_multiaddr = g_sockaddr_inet_get_address(addr);
+            mreq.imr_interface.s_addr = INADDR_ANY;
+            setsockopt(fd, SOL_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq));
+            setsockopt(fd, SOL_IP, IP_MULTICAST_LOOP, &off, sizeof(off));
+            
+          }
+        else
+          {
+            if (sock_options->ttl)
+              setsockopt(fd, SOL_IP, IP_TTL, &sock_options->ttl, sizeof(sock_options->ttl));
+          }        
+        if (sock_options->tos)
+          setsockopt(fd, SOL_IP, IP_TOS, &sock_options->tos, sizeof(sock_options->tos));
+          
+        break;
+      }
+#if ENABLE_IPV6
+    case AF_INET6:
+      {
+        struct ipv6_mreq mreq6;
+        
+        if (IN6_IS_ADDR_MULTICAST(g_sockaddr_inet6_get_address(addr)->s6_addr))
+          {
+            if (sock_options->ttl)
+              setsockopt(fd, SOL_IPV6, IPV6_MULTICAST_HOPS, &sock_options->ttl, sizeof(sock_options->ttl));
+
+             memset(&mreq6, 0, sizeof(mreq6));
+             mreq6.ipv6mr_multiaddr = *g_sockaddr_inet6_get_address(addr);
+             mreq6.ipv6mr_interface = 0;
+             setsockopt(fd, SOL_IPV6, IPV6_ADD_MEMBERSHIP, &mreq6, sizeof(mreq6));
+             setsockopt(fd, SOL_IPV6, IPV6_MULTICAST_LOOP, &off, sizeof(off));
+          }
+        else
+          {
+            if (sock_options->ttl)
+              setsockopt(fd, SOL_IPV6, IPV6_UNICAST_HOPS, &sock_options->ttl, sizeof(sock_options->ttl));
+          }
+        break;
+      }
+#endif
+    }
+  return TRUE;
+}
+
 void 
 afinet_sd_set_localport(LogDriver *s, gint port, gchar *service, gchar *proto)
 {
@@ -146,12 +211,18 @@ afinet_sd_set_localip(LogDriver *s, gchar *ip)
   afinet_resolve_name(self->bind_addr, ip);
 }
 
+static gboolean
+afinet_sd_setup_socket(AFSocketSourceDriver *s, gint fd)
+{
+  return afinet_setup_socket(fd, s->bind_addr, (InetSocketOptions *) s->sock_options_ptr);
+}
+
 LogDriver *
 afinet_sd_new(gint af, gchar *host, gint port, guint flags)
 {
   AFInetSourceDriver *self = g_new0(AFInetSourceDriver, 1);
   
-  afsocket_sd_init_instance(&self->super, flags);
+  afsocket_sd_init_instance(&self->super, &self->sock_options.super, flags);
   self->super.flags |= AFSOCKET_KEEP_ALIVE;
   if (af == AF_INET)
     {
@@ -166,6 +237,7 @@ afinet_sd_new(gint af, gchar *host, gint port, guint flags)
         host = "::";
     }
   afinet_resolve_name(self->super.bind_addr, host);
+  self->super.setup_socket = afinet_sd_setup_socket;
     
   return &self->super.super;
 }
@@ -196,12 +268,20 @@ afinet_dd_set_localip(LogDriver *s, gchar *ip)
   afinet_resolve_name(self->super.bind_addr, ip);
 }
 
+static gboolean
+afinet_dd_setup_socket(AFSocketDestDriver *s, gint fd)
+{
+  AFInetDestDriver *self = (AFInetDestDriver *) s;
+  
+  return afinet_setup_socket(fd, self->super.dest_addr, (InetSocketOptions *) s->sock_options_ptr);
+}
+
 LogDriver *
 afinet_dd_new(gint af, gchar *host, gint port, guint flags)
 {
   AFInetDestDriver *self = g_new0(AFInetDestDriver, 1);
   
-  afsocket_dd_init_instance(&self->super, flags);
+  afsocket_dd_init_instance(&self->super, &self->sock_options.super, flags);
   if (af == AF_INET)
     {
       self->super.bind_addr = g_sockaddr_inet_new("0.0.0.0", 0);
@@ -213,5 +293,6 @@ afinet_dd_new(gint af, gchar *host, gint port, guint flags)
       self->super.dest_addr = g_sockaddr_inet6_new("::", port);
     }
   afinet_resolve_name(self->super.dest_addr, host);
+  self->super.setup_socket = afinet_dd_setup_socket;
   return &self->super.super;
 }

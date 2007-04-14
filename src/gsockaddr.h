@@ -64,7 +64,6 @@ void g_sockaddr_unref(GSockAddr *a);
 gboolean g_sockaddr_inet_check(GSockAddr *a);
 GSockAddr *g_sockaddr_inet_new(gchar *ip, guint16 port);
 GSockAddr *g_sockaddr_inet_new2(struct sockaddr_in *sin);
-GSockAddr *g_sockaddr_inet_new_resolve(const gchar *name, guint16 port);
 GSockAddr *g_sockaddr_inet_range_new(gchar *ip, guint16 min_port, guint16 max_port);
 
 static inline struct sockaddr *
@@ -160,10 +159,10 @@ g_sockaddr_inet6_get_sa(GSockAddr *s)
  * This GSockAddrInet specific function returns the address part of the
  * address.
  **/
-static inline struct in6_addr
+static inline struct in6_addr *
 g_sockaddr_inet6_get_address(GSockAddr *s)
 {
-  return g_sockaddr_inet6_get_sa(s)->sin6_addr;
+  return &g_sockaddr_inet6_get_sa(s)->sin6_addr;
 }
 
 /**
@@ -175,9 +174,9 @@ g_sockaddr_inet6_get_address(GSockAddr *s)
  * address.
  **/
 static inline void
-g_sockaddr_inet6_set_address(GSockAddr *s, struct in6_addr addr)
+g_sockaddr_inet6_set_address(GSockAddr *s, struct in6_addr *addr)
 {
-  g_sockaddr_inet6_get_sa(s)->sin6_addr = addr;
+  g_sockaddr_inet6_get_sa(s)->sin6_addr = *addr;
 }
 
 /**

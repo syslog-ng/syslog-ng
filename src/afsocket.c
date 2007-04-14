@@ -154,6 +154,19 @@ typedef struct _AFSocketSourceConnection
 
 static void afsocket_sd_close_connection(AFSocketSourceDriver *self, AFSocketSourceConnection *sc);
 
+gboolean
+afsocket_setup_socket(gint fd, SocketOptions *sock_options)
+{
+  if (sock_options->sndbuf)
+    setsockopt(fd, SOL_SOCKET, SO_SNDBUF, &sock_options->sndbuf, sizeof(sock_options->sndbuf));
+  if (sock_options->rcvbuf)
+    setsockopt(fd, SOL_SOCKET, SO_RCVBUF, &sock_options->rcvbuf, sizeof(sock_options->rcvbuf));
+  if (sock_options->broadcast)
+    setsockopt(fd, SOL_SOCKET, SO_BROADCAST, &sock_options->broadcast, sizeof(sock_options->broadcast));
+    
+  return TRUE;
+}
+
 static gboolean
 afsocket_open_socket(GSockAddr *bind_addr, int stream_or_dgram, int *fd)
 {
@@ -359,6 +372,12 @@ afsocket_sd_accept(gpointer s)
                 NULL);
       return TRUE;
     }
+  if (self->setup_socket && !self->setup_socket(self, new_fd))
+    {
+      close(new_fd);
+      return TRUE;
+    }
+    
   g_fd_set_nonblock(new_fd, TRUE);
   g_fd_set_cloexec(new_fd, TRUE);
     
@@ -440,6 +459,12 @@ afsocket_sd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
           close(sock);
           return FALSE;
         }
+        
+      if (self->setup_socket && !self->setup_socket(self, sock))
+        {
+          close(sock);
+          return FALSE;
+        }
 
       self->fd = sock;
       source = g_listen_source_new(self->fd);
@@ -459,6 +484,12 @@ afsocket_sd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
             return self->super.optional;
         }
       self->fd = -1;
+
+      if (!self->setup_socket(self, sock))
+        {
+          close(sock);
+          return FALSE;
+        }
       
       /* we either have self->connections != NULL, or sock contains a new fd */
       if (self->connections || afsocket_sd_process_connection(self, NULL, sock))
@@ -551,6 +582,12 @@ afsocket_sd_notify(LogPipe *s, LogPipe *sender, gint notify_code, gpointer user_
     }
 }
 
+static gboolean
+afsocket_sd_setup_socket(AFSocketSourceDriver *self, gint fd)
+{
+  return afsocket_setup_socket(fd, self->sock_options_ptr);
+}
+
 void
 afsocket_sd_free_instance(AFSocketSourceDriver *self)
 {
@@ -570,7 +607,7 @@ afsocket_sd_free(LogPipe *s)
 }
 
 void
-afsocket_sd_init_instance(AFSocketSourceDriver *self, guint32 flags)
+afsocket_sd_init_instance(AFSocketSourceDriver *self, SocketOptions *sock_options, guint32 flags)
 {
   log_drv_init_instance(&self->super);
   
@@ -579,6 +616,8 @@ afsocket_sd_init_instance(AFSocketSourceDriver *self, guint32 flags)
   self->super.super.free_fn = afsocket_sd_free;
   self->super.super.queue = log_pipe_forward_msg;
   self->super.super.notify = afsocket_sd_notify;
+  self->sock_options_ptr = sock_options;
+  self->setup_socket = afsocket_sd_setup_socket;
   self->max_connections = 10;
   self->listen_backlog = 255;
   self->flags = flags;
@@ -676,6 +715,12 @@ afsocket_dd_reconnect(AFSocketDestDriver *self)
   
   if (!afsocket_open_socket(self->bind_addr, !!(self->flags & AFSOCKET_STREAM), &sock))
     {
+      return FALSE;
+    }
+    
+  if (self->setup_socket && !self->setup_socket(self, sock))
+    {
+      close(sock);
       return FALSE;
     }
   
@@ -787,6 +832,12 @@ afsocket_dd_notify(LogPipe *s, LogPipe *sender, gint notify_code, gpointer user_
     }
 }
 
+static gboolean
+afsocket_dd_setup_socket(AFSocketDestDriver *self, gint fd)
+{
+  return afsocket_setup_socket(fd, self->sock_options_ptr);
+}
+
 void
 afsocket_dd_free(LogPipe *s)
 {
@@ -800,7 +851,7 @@ afsocket_dd_free(LogPipe *s)
 }
 
 void 
-afsocket_dd_init_instance(AFSocketDestDriver *self, guint32 flags)
+afsocket_dd_init_instance(AFSocketDestDriver *self, SocketOptions *sock_options, guint32 flags)
 {
   log_drv_init_instance(&self->super);
   
@@ -810,5 +861,7 @@ afsocket_dd_init_instance(AFSocketDestDriver *self, guint32 flags)
   self->super.super.queue = log_pipe_forward_msg;
   self->super.super.free_fn = afsocket_dd_free;
   self->super.super.notify = afsocket_dd_notify;
+  self->setup_socket = afsocket_dd_setup_socket;
+  self->sock_options_ptr = sock_options;
   self->flags = flags;
 }

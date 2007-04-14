@@ -35,6 +35,7 @@ LogDriver *last_driver;
 LogReaderOptions *last_reader_options;
 LogWriterOptions *last_writer_options;
 LogTemplate *last_template;
+SocketOptions *last_sock_options;
 gint last_addr_family = AF_INET;
 
 %}
@@ -92,6 +93,7 @@ gint last_addr_family = AF_INET;
 /* socket related options */
 %token KW_KEEP_ALIVE KW_MAX_CONNECTIONS
 %token KW_LOCALIP KW_IP KW_LOCALPORT KW_PORT KW_DESTPORT 
+%token KW_IP_TTL KW_SO_BROADCAST KW_IP_TOS KW_SO_SNDBUF KW_SO_RCVBUF
 
 /* misc options */
 %token KW_USE_TIME_RECVD
@@ -235,6 +237,18 @@ template_item
 	| KW_TEMPLATE_ESCAPE '(' yesno ')'	{ log_template_set_escape(last_template, $3); }
 	;
 
+socket_option
+	: KW_SO_SNDBUF '(' NUMBER ')'           { last_sock_options->sndbuf = $3; }
+	| KW_SO_RCVBUF '(' NUMBER ')'           { last_sock_options->rcvbuf = $3; }
+	| KW_SO_BROADCAST '(' yesno ')'         { last_sock_options->broadcast = $3; }
+	;
+
+inet_socket_option
+	: socket_option
+	| KW_IP_TTL '(' NUMBER ')'              { ((InetSocketOptions *) last_sock_options)->ttl = $3; }
+	| KW_IP_TOS '(' NUMBER ')'              { ((InetSocketOptions *) last_sock_options)->tos = $3; }
+	;
+
 source_items
         : source_item ';' source_items		{ log_drv_append($1, $3); log_drv_unref($3); $$ = $1; }
 	|					{ $$ = NULL; }
@@ -298,6 +312,7 @@ source_afunix_dgram_params
 		AFSOCKET_DGRAM | AFSOCKET_LOCAL); 
 	    free($1); 
 	    last_reader_options = &((AFSocketSourceDriver *) last_driver)->reader_options;
+	    last_sock_options = &((AFUnixSourceDriver *) last_driver)->sock_options;
 	  }
 	  source_afunix_options			{ $$ = last_driver; }
 	;
@@ -310,6 +325,7 @@ source_afunix_stream_params
 		AFSOCKET_STREAM | AFSOCKET_KEEP_ALIVE | AFSOCKET_LOCAL);
 	    free($1);
 	    last_reader_options = &((AFSocketSourceDriver *) last_driver)->reader_options;
+	    last_sock_options = &((AFUnixSourceDriver *) last_driver)->sock_options;
 	  }
 	  source_afunix_options			{ $$ = last_driver; }
 	;
@@ -327,6 +343,7 @@ source_afunix_option
 	| KW_OPTIONAL '(' yesno ')'		{ last_driver->optional = $3; }
 	| source_afsocket_stream_params		{}
 	| source_reader_option			{}
+	| socket_option				{}
 	; 
 
 source_afinet_udp_params
@@ -336,6 +353,7 @@ source_afinet_udp_params
 			NULL, 514,
 			AFSOCKET_DGRAM);
 	    last_reader_options = &((AFSocketSourceDriver *) last_driver)->reader_options;
+	    last_sock_options = &((AFInetSourceDriver *) last_driver)->sock_options.super;
 	  }
 	  source_afinet_udp_options		{ $$ = last_driver; }
 	;
@@ -356,7 +374,8 @@ source_afinet_option
 	| KW_LOCALPORT '(' NUMBER ')'		{ afinet_sd_set_localport(last_driver, $3, NULL, NULL); }
 	| KW_PORT '(' NUMBER ')'		{ afinet_sd_set_localport(last_driver, $3, NULL, NULL); }
 	| KW_IP '(' string ')'			{ afinet_sd_set_localip(last_driver, $3); free($3); }
-	| source_reader_option			{}
+	| source_reader_option
+	| inet_socket_option
 	;
 
 source_afinet_tcp_params
@@ -366,6 +385,7 @@ source_afinet_tcp_params
 			NULL, 514,
 			AFSOCKET_STREAM);
 	    last_reader_options = &((AFSocketSourceDriver *) last_driver)->reader_options;
+	    last_sock_options = &((AFInetSourceDriver *) last_driver)->sock_options.super;
 	  }
 	  source_afinet_tcp_options	{ $$ = last_driver; }
 	;
@@ -526,8 +546,9 @@ dest_afunix_dgram_params
 	    last_driver = afunix_dd_new($1, AFSOCKET_DGRAM);
 	    free($1);
 	    last_writer_options = &((AFSocketDestDriver *) last_driver)->writer_options;
+	    last_sock_options = &((AFUnixDestDriver *) last_driver)->sock_options;
 	  }
-	  dest_writer_options			{ $$ = last_driver; }
+	  dest_afunix_options			{ $$ = last_driver; }
 	;
 
 dest_afunix_stream_params
@@ -536,10 +557,20 @@ dest_afunix_stream_params
 	    last_driver = afunix_dd_new($1, AFSOCKET_STREAM);
 	    free($1);
 	    last_writer_options = &((AFSocketDestDriver *) last_driver)->writer_options;
+	    last_sock_options = &((AFUnixDestDriver *) last_driver)->sock_options;
 	  }
-	  dest_writer_options			{ $$ = last_driver; }
+	  dest_afunix_options			{ $$ = last_driver; }
 	;
 
+dest_afunix_options
+	: dest_afunix_options dest_afunix_option
+	|
+	;
+
+dest_afunix_option
+	: dest_writer_option
+	| socket_option
+	;
 
 dest_afinet_udp_params
 	: string 	
@@ -549,6 +580,7 @@ dest_afinet_udp_params
 			AFSOCKET_DGRAM);
 	    free($1);
 	    last_writer_options = &((AFSocketDestDriver *) last_driver)->writer_options;
+	    last_sock_options = &((AFInetDestDriver *) last_driver)->sock_options.super;
 	  }
 	  dest_afinet_udp_options		{ $$ = last_driver; }
 	;
@@ -558,9 +590,11 @@ dest_afinet_udp_options
 	|
 	;
 
+
 dest_afinet_option
 	: KW_LOCALIP '(' string ')'		{ afinet_dd_set_localip(last_driver, $3); free($3); }
 	| KW_PORT '(' NUMBER ')'		{ afinet_dd_set_destport(last_driver, $3, NULL, NULL); }
+	| inet_socket_option
 	| dest_writer_option
 	;
 
@@ -579,6 +613,7 @@ dest_afinet_tcp_params
 			AFSOCKET_STREAM); 
 	    free($1);
 	    last_writer_options = &((AFSocketDestDriver *) last_driver)->writer_options;
+	    last_sock_options = &((AFInetDestDriver *) last_driver)->sock_options.super;
 	  }
 	  dest_afinet_tcp_options		{ $$ = last_driver; }
 	;

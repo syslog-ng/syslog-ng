@@ -35,6 +35,16 @@
 #define AFSOCKET_KEEP_ALIVE          0x0100
 
 typedef struct _AFSocketSourceDriver AFSocketSourceDriver;
+typedef struct _AFSocketDestDriver AFSocketDestDriver;
+
+typedef struct _SocketOptions
+{
+  gint sndbuf;
+  gint rcvbuf;
+  gint broadcast;
+} SocketOptions;
+
+gboolean afsocket_setup_socket(gint fd, SocketOptions *sock_options);
 
 struct _AFSocketSourceDriver
 {
@@ -49,7 +59,8 @@ struct _AFSocketSourceDriver
   gint num_connections;
   gint listen_backlog;
   GList *connections;
-  void (*open_connection)(struct _AFSocketSourceDriver *s, gint fd, struct sockaddr *sa, socklen_t salen);
+  SocketOptions *sock_options_ptr;
+  gboolean (*setup_socket)(AFSocketSourceDriver *s, gint fd);
 };
 
 void afsocket_sd_set_keep_alive(LogDriver *self, gint enable);
@@ -58,10 +69,10 @@ void afsocket_sd_set_max_connections(LogDriver *self, gint max_connections);
 gboolean afsocket_sd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist);
 gboolean afsocket_sd_deinit(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist);
 
-void afsocket_sd_init_instance(AFSocketSourceDriver *self, guint32 flags);
+void afsocket_sd_init_instance(AFSocketSourceDriver *self, SocketOptions *sock_options, guint32 flags);
 void afsocket_sd_free_instance(AFSocketSourceDriver *self);
 
-typedef struct _AFSocketDestDriver
+struct _AFSocketDestDriver
 {
   LogDriver super;
   guint32 flags;
@@ -74,9 +85,11 @@ typedef struct _AFSocketDestDriver
   GSockAddr *dest_addr;
   gint time_reopen;
   guint reconnect_timer;
-} AFSocketDestDriver;
+  SocketOptions *sock_options_ptr;
+  gboolean (*setup_socket)(AFSocketDestDriver *s, gint fd);
+};
 
-void afsocket_dd_init_instance(AFSocketDestDriver *self, guint32 flags);
+void afsocket_dd_init_instance(AFSocketDestDriver *self, SocketOptions *sock_options, guint32 flags);
 
 
 #endif

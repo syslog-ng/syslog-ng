@@ -2,6 +2,50 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-05-01 14:06:35 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-47
+
+    Summary:
+      added options to control various socket parameters and added multicast support
+    Revision:
+      syslog-ng--mainline--2.0--patch-47
+
+    	* src/gsockaddr.h (g_sockaddr_inet6_get_address,
+    	g_sockaddr_inet6_set_address): use pointers to struct in6_addr
+    	instead of passing the structure by value
+    
+    	* src/afsocket.c (afsocket_setup_socket): new function, set generic
+    	socket options,
+    	(afsocket_sd_accept): call setup_socket for new fds,
+    	(afsocket_sd_init): -"-,
+    	(afsocket_dd_reconnect): -"-,
+    	(afsocket_sd_setup_socket): new function, default setup_socket callback,
+    	(afsocket_sd_init_instance): added sock_options argument, set
+    	default setup_socket callback,
+    	(afsocket_dd_init_instance): added sock_options argument, set
+    	default setup_socket callback,
+    	
+    	* src/afsocket.h (AFSocketSourceDriver): added setup_socket callback,
+    	(AFSocketDestDriver): added setup_socket callback,
+    
+    	* src/afinet.c (afinet_resolve_name): follow g_sockaddr_inet6_set_address change,
+    	(afinet_setup_socket): new function to set AF_INET & AF_INET6
+    	specific socket options,
+    	(afinet_sd_setup_socket): new function, used as the setup_socket callback,
+    	(afinet_dd_setup_socket): new function, used as the setup_socket callback,
+    
+    	* src/afunix.c (afunix_sd_new, afunix_dd_new): adapted to afsocket changes,
+    
+    	* src/cfg-grammar.y (socket_option, inet_socket_option): added
+    	socket option parsing
+    
+    	* src/cfg-lex.l: added new keywords for socket options
+
+    modified files:
+     ChangeLog doc/reference/syslog-ng.xml src/afinet.c
+     src/afinet.h src/afsocket.c src/afsocket.h src/afunix.c
+     src/afunix.h src/cfg-grammar.y src/cfg-lex.l src/gsockaddr.h
+
+
 2006-05-01 12:38:10 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-46
 
     Summary:
