@@ -2,6 +2,21 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-11-16 13:11:04 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-98
+
+    Summary:
+      fixed GLib static link configure test to work with non-gcc compilers
+    Revision:
+      syslog-ng--mainline--2.0--patch-98
+
+    	* configure.in: fixed GLib static link configure test to work with
+    	non-gcc compilers
+    
+
+    modified files:
+     ChangeLog configure.in
+
+
 2006-11-08 14:18:14 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-97
 
     Summary:

@@ -201,12 +201,9 @@ AC_CACHE_CHECK(for static GLib libraries,
 [AC_TRY_LINK([], [
 extern void g_hash_table_new(void);
 
-int main()
-{
-  void (*fn)(void) = g_hash_table_new;
+void (*fn)(void) = g_hash_table_new;
 
-  return (int) fn;
-}
+return (int) fn;
 
 ],
 blb_cv_static_glib=yes,
