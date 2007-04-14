@@ -2,6 +2,19 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-04-02 10:11:57 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-29
+
+    Summary:
+      updated NEWS file, preparations for 1.9.10
+    Revision:
+      syslog-ng--mainline--2.0--patch-29
+
+    	* VERSION: bumped version to 1.9.10
+
+    modified files:
+     ChangeLog NEWS VERSION
+
+
 2006-04-01 08:03:10 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-28
 
     Summary:
