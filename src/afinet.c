@@ -195,7 +195,7 @@ afinet_setup_socket(gint fd, GSockAddr *addr, InetSocketOptions *sock_options, A
                 memset(&mreq6, 0, sizeof(mreq6));
                 mreq6.ipv6mr_multiaddr = *g_sockaddr_inet6_get_address(addr);
                 mreq6.ipv6mr_interface = 0;
-                setsockopt(fd, SOL_IPV6, IPV6_ADD_MEMBERSHIP, &mreq6, sizeof(mreq6));
+                setsockopt(fd, SOL_IPV6, IPV6_JOIN_GROUP, &mreq6, sizeof(mreq6));
                 setsockopt(fd, SOL_IPV6, IPV6_MULTICAST_LOOP, &off, sizeof(off));
               }
             if (dir & AFSOCKET_DIR_SEND)

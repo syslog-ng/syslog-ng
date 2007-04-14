@@ -2,6 +2,22 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-06-07 09:07:40 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-58
+
+    Summary:
+      fixed IPv6 portability problem
+    Revision:
+      syslog-ng--mainline--2.0--patch-58
+
+    	* src/afinet.c (afinet_setup_socket): use the "official"
+    	IPV6_JOIN_GROUP name instead of IPV6_ADD_MEMBERSHIP as the latter is
+    	not defined on all platforms
+    
+
+    modified files:
+     ChangeLog src/afinet.c
+
+
 2006-06-01 09:10:00 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-57
 
     Summary:
