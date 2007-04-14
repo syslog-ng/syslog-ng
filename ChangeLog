@@ -2,6 +2,21 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-06-01 09:10:00 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-57
+
+    Summary:
+      fixed HP-UX portability problem
+    Revision:
+      syslog-ng--mainline--2.0--patch-57
+
+    	* src/afinet.c (afinet_setup_socket): fixed IN6_IS_ADDR_MULTICAST
+    	call as struct in6_addr definition differs on HP-UX (thanks go to
+    	Albert Chin)
+
+    modified files:
+     ChangeLog src/afinet.c
+
+
 2006-05-26 19:33:31 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-56
 
     Summary:

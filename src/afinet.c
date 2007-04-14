@@ -188,7 +188,7 @@ afinet_setup_socket(gint fd, GSockAddr *addr, InetSocketOptions *sock_options, A
       {
         struct ipv6_mreq mreq6;
         
-        if (IN6_IS_ADDR_MULTICAST(g_sockaddr_inet6_get_address(addr)->s6_addr))
+        if (IN6_IS_ADDR_MULTICAST(&g_sockaddr_inet6_get_sa(addr)->sin6_addr))
           {
             if (dir & AFSOCKET_DIR_RECV)
               {
