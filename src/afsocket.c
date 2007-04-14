@@ -622,9 +622,7 @@ afsocket_sd_notify(LogPipe *s, LogPipe *sender, gint notify_code, gpointer user_
     case NC_CLOSE:
     case NC_READ_ERROR:
       {
-        g_assert(0);
-        log_pipe_deinit(sender, NULL, NULL);
-        log_pipe_unref(sender);
+        g_assert_not_reached();
         break;
       }
     }

@@ -96,6 +96,23 @@ affile_open_file(gchar *name, int flags,
   return *fd != -1;
 }
 
+static gboolean
+affile_sd_open_file(AFFileSourceDriver *self, gint *fd)
+{
+  gint flags;
+  
+  if (self->flags & AFFILE_PIPE)
+    flags = O_RDWR | O_NOCTTY | O_NONBLOCK | O_LARGEFILE;
+  else
+    flags = O_RDONLY | O_NOCTTY | O_NONBLOCK | O_LARGEFILE;
+
+  if (affile_open_file(self->filename->str, flags, -1, -1, -1, 0, 0, 0, 0, fd))
+    return TRUE;
+    
+  return FALSE;
+
+}
+
 static inline gchar *
 affile_sd_format_persist_name(AFFileSourceDriver *self)
 {
@@ -105,21 +122,58 @@ affile_sd_format_persist_name(AFFileSourceDriver *self)
   return persist_name;
 }
 
+static void
+affile_sd_notify(LogPipe *s, LogPipe *sender, gint notify_code, gpointer user_data)
+{
+  AFFileSourceDriver *self = (AFFileSourceDriver *) s;
+
+  switch (notify_code)
+    {
+    case NC_FILE_MOVED:
+      { 
+        gint fd;
+        
+        msg_verbose("Follow-mode file source moved, tracking of the new file is started",
+                    evt_tag_str("file", self->filename->str),
+                    NULL);
+        
+        log_pipe_deinit(self->reader, NULL, NULL);
+        log_pipe_unref(self->reader);
+        
+        if (affile_sd_open_file(self, &fd))
+          {
+            self->reader = log_reader_new(fd_read_new(fd, 0), LR_LOCAL | LR_NOMREAD, s, &self->reader_options);
+            log_pipe_append(self->reader, s);
+            if (!log_pipe_init(self->reader, NULL, NULL))
+              {
+                msg_error("Error initializing log_reader, closing fd",
+                          evt_tag_int("fd", fd),
+                          NULL);
+                log_pipe_unref(self->reader);
+                self->reader = NULL;
+                close(fd);
+              }
+          }
+        else
+          {
+            self->reader = NULL;
+          }
+        break;
+      }
+    }
+}
+
+
 
 static gboolean
 affile_sd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
 {
   AFFileSourceDriver *self = (AFFileSourceDriver *) s;
-  int fd, flags;
-
-  if (self->flags & AFFILE_PIPE)
-    flags = O_RDWR | O_NOCTTY | O_NONBLOCK | O_LARGEFILE;
-  else
-    flags = O_RDONLY | O_NOCTTY | O_NONBLOCK | O_LARGEFILE;
+  gint fd;
 
   log_reader_options_init(&self->reader_options, cfg);
 
-  if (affile_open_file(self->filename->str, flags, -1, -1, -1, 0, 0, 0, 0, &fd))
+  if (affile_sd_open_file(self, &fd))
     {
       self->reader = log_reader_new(fd_read_new(fd, 0), LR_LOCAL | LR_NOMREAD, s, &self->reader_options);
 
@@ -206,8 +260,10 @@ affile_sd_new(gchar *filename, guint32 flags)
   self->flags = flags;
   self->super.super.init = affile_sd_init;
   self->super.super.deinit = affile_sd_deinit;
+  self->super.super.notify = affile_sd_notify;
   self->super.super.free_fn = affile_sd_free;
   log_reader_options_defaults(&self->reader_options);
+  self->reader_options.follow_filename = self->filename->str;
   return &self->super;
 }
 

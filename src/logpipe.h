@@ -32,6 +32,7 @@
 #define NC_CLOSE       1
 #define NC_READ_ERROR  2
 #define NC_WRITE_ERROR 3
+#define NC_FILE_MOVED  4
 
 #define PF_FLOW_CTL_OFF 0x0001
 

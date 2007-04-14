@@ -51,6 +51,7 @@ typedef struct _LogReaderOptions
   gint padding;
   gchar *prefix;
   gint msg_size;
+  gchar *follow_filename;
   gint follow_freq;
   gint fetch_limit;
   

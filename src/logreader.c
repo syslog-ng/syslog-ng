@@ -50,12 +50,14 @@ log_reader_fd_prepare(GSource *source,
 {
   LogReaderWatch *self = (LogReaderWatch *) source;
 
+  
+#if 0
   /* FIXME: this debug message references a variable outside of its scope, 
    * but it is a debug message only */
-  
   msg_debug("log_reader_fd_prepare()", 
             evt_tag_int("window_size", self->reader->options->source_opts.window_size), 
             NULL);
+#endif
 
   self->pollfd.revents = 0;
   self->pollfd.events = 0;
@@ -93,18 +95,47 @@ log_reader_fd_check(GSource *source)
   
   if (self->reader->flags & LR_FOLLOW)
     {
-      struct stat st;
-      off_t pos;
+      struct stat st, followed_st;
+      off_t pos, size;
+      
+      /* check size, I cannot use stat, as glibc has a bug with file offset
+       * bits 64 and struct stat, see
+       * http://sourceware.org/bugzilla/show_bug.cgi?id=4328 */
       
       pos = lseek(self->fd->fd, 0, SEEK_CUR);
-      if (pos == -1)
-        return FALSE;
+      size = lseek(self->fd->fd, 0, SEEK_END);
+      lseek(self->fd->fd, pos, SEEK_SET);
       
-      if (fstat(self->fd->fd, &st) == -1)
-	return FALSE;
-
-      if (pos != st.st_size)
+      if (pos == (off_t) -1 || size == (off_t) -1)
+        {
+          msg_error("Error invoking seek on followed file",
+                    evt_tag_errno("error", errno),
+                    NULL);
+          return FALSE;
+        }
+      
+      if (pos < size)
 	return TRUE;
+
+      if (fstat(self->fd->fd, &st) < 0)
+        {
+          msg_error("Error invoking fstat() on followed file",
+                    evt_tag_errno("error", errno),
+                    NULL);
+          return FALSE;
+        }
+      
+      if (self->reader->options->follow_filename && stat(self->reader->options->follow_filename, &followed_st) != -1)
+        {
+          if (st.st_ino != followed_st.st_ino)
+            {
+              /* file was moved and we are at EOF, follow the new file */
+              log_pipe_notify(self->reader->control, &self->reader->super.super, NC_FILE_MOVED, self);
+              return TRUE;
+            }
+          return FALSE;
+        }
+      
       return FALSE;
     }
     
@@ -443,6 +474,11 @@ log_reader_set_options(LogPipe *s, LogReaderOptions *options)
 void
 log_reader_set_pos(LogReader *self, off_t ofs)
 {
+  off_t size;
+  
+  size = lseek(self->fd->fd, 0, SEEK_END);
+  if (ofs > size)
+    ofs = size;
   if (lseek(self->fd->fd, ofs, SEEK_SET) >= 0)
     self->ofs = 0;
 }

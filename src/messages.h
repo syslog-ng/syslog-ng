@@ -38,7 +38,7 @@ extern int verbose_flag;
 #define msg_verbose(desc, tag1, tags...) \
 	do { \
 	  if (verbose_flag) \
-	    msg_notice(desc, tag1, ##tags ); \
+	    msg_info(desc, tag1, ##tags ); \
 	} while (0)
 	
 #define msg_debug(desc, tag1, tags...) \

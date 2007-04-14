@@ -2,6 +2,30 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2007-04-06 09:08:49 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-148
+
+    Summary:
+      added support for logrotation in file sources
+    Revision:
+      syslog-ng--mainline--2.0--patch-148
+
+    2007-04-06  Balazs Scheidler <bazsi@balabit.hu>
+    
+    	* src/affile.c (affile_sd_open_file): new function, contains the
+    	file open code for the source driver,
+    	(affile_sd_notify): new function, registered as the notification
+    	handler for an affile source, for NC_FILE_MOVED notifications
+    	construct a new the log reader and drop the old one,
+    	(affile_sd_init): use affile_sd_open_file,
+    	(affile_sd_new): register notification handler, tell our LogReader
+    	the filename that we are following
+    
+
+    modified files:
+     ChangeLog src/affile.c src/afsocket.c src/logpipe.h
+     src/logreader.c src/logreader.h src/messages.h
+
+
 2007-04-05 11:27:02 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-147
 
     Summary:
