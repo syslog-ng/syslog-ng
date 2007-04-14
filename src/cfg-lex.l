@@ -55,8 +55,10 @@ static struct keyword keywords[] = {
 	{ "unix_stream",	KW_UNIX_STREAM },
         { "udp",                KW_UDP },
         { "tcp",                KW_TCP },
+#if ENABLE_IPV6
         { "udp6",               KW_UDP6 },
         { "tcp6",               KW_TCP6 },
+#endif
         { "usertty", 		KW_USER },
         { "door",               KW_DOOR },
         { "sun_stream",		KW_SUN_STREAMS },

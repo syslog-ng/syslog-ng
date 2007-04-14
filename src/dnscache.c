@@ -42,7 +42,9 @@ struct _DNSCacheKey
   union
   {
     struct in_addr ip;
+#if ENABLE_IPV6
     struct in6_addr ip6;
+#endif
   } addr;
 };
 
@@ -66,9 +68,16 @@ static time_t dns_cache_hosts_mtime = -1;
 static gboolean 
 dns_cache_key_equal(DNSCacheKey *e1, DNSCacheKey *e2)
 {
-  return e1->family == e2->family && 
-         ((e1->family == AF_INET && memcmp(&e1->addr.ip, &e2->addr.ip, sizeof(e1->addr.ip)) == 0) ||
-          (e1->family == AF_INET6 && memcmp(&e1->addr.ip6, &e2->addr.ip6, sizeof(e1->addr.ip6)) == 0));
+  if (e1->family == e2->family)
+    {
+      if ((e1->family == AF_INET && memcmp(&e1->addr.ip, &e2->addr.ip, sizeof(e1->addr.ip)) == 0))
+        return TRUE;
+#if ENABLE_IPV6
+      if ((e1->family == AF_INET6 && memcmp(&e1->addr.ip6, &e2->addr.ip6, sizeof(e1->addr.ip6)) == 0))
+        return TRUE;
+#endif
+    }
+  return FALSE;
 }
 
 static guint
@@ -78,10 +87,16 @@ dns_cache_key_hash(DNSCacheKey *e)
     {
       return ntohl(e->addr.ip.s_addr);
     }
-  else
+#if ENABLE_IPV6
+  else if (e->family == AF_INET6)
     {
       guint32 *a32 = (guint32 *) &e->addr.ip6.s6_addr;
       return (0x80000000 | (a32[0] ^ a32[1] ^ a32[2] ^ a32[3]));
+    }
+#endif
+  else
+    {
+      g_assert_not_reached();
     }
 }
 
@@ -113,9 +128,11 @@ dns_cache_fill_key(DNSCacheKey *key, gint family, void *addr)
     case AF_INET:
       key->addr.ip = *(struct in_addr *) addr;
       break;
+#if ENABLE_IPV6
     case AF_INET6:
       key->addr.ip6 = *(struct in6_addr *) addr;
       break;
+#endif
     default:
       g_assert_not_reached();
       break;
@@ -160,7 +177,9 @@ dns_cache_check_hosts(void)
               union 
               {
                 struct in_addr ip4;
+#if ENABLE_IPV6
                 struct in6_addr ip6;
+#endif
               } ia;
               
               if (buf[0] == 0 || buf[0] == '\n' || buf[0] == '#')
@@ -172,10 +191,13 @@ dns_cache_check_hosts(void)
                 
               p = strtok(buf, " \t");
               ip = p;
+
+#if ENABLE_IPV6
               if (strchr(ip, ':') != NULL)
                 family = AF_INET6;
               else
-                family = AF_INET;
+#endif
+              family = AF_INET;
                 
               p = strtok(NULL, " \t");
               inet_pton(family, ip, &ia);

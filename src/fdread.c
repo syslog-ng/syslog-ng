@@ -42,7 +42,14 @@ fd_do_read(FDRead *self, void *buf, size_t buflen, GSockAddr **sa)
     }
   else 
     {
-      struct sockaddr_storage sas;
+      union
+      {
+#if HAVE_STRUCT_SOCKADDR_STORAGE
+        struct sockaddr_storage __sas;
+#endif
+        struct sockaddr __sa;
+      } sas;
+      
       socklen_t salen = sizeof(sas);
 
       do

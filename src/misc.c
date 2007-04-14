@@ -133,7 +133,11 @@ resolve_hostname(GString *result, GSockAddr *saddr, gboolean usedns, gboolean us
  
   if (saddr && saddr->sa.sa_family != AF_UNIX)
     {
-      if (saddr->sa.sa_family == AF_INET || saddr->sa.sa_family == AF_INET6)
+      if (saddr->sa.sa_family == AF_INET
+#if ENABLE_IPV6
+          || saddr->sa.sa_family == AF_INET6
+#endif
+         )
         {
           void *addr;
           socklen_t addr_len;
@@ -143,11 +147,13 @@ resolve_hostname(GString *result, GSockAddr *saddr, gboolean usedns, gboolean us
               addr = &((struct sockaddr_in *) &saddr->sa)->sin_addr;
               addr_len = sizeof(struct in_addr);
             }
+#if ENABLE_IPV6
           else
             {
               addr = &((struct sockaddr_in6 *) &saddr->sa)->sin6_addr;
               addr_len = sizeof(struct in6_addr);
             }
+#endif
 
           hname = NULL;
           if (usedns)

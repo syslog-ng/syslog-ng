@@ -38,6 +38,12 @@ LogTemplate *last_template;
 SocketOptions *last_sock_options;
 gint last_addr_family = AF_INET;
 
+#if ! ENABLE_IPV6
+#undef AF_INET6
+#define AF_INET6 0; g_assert_not_reached()
+
+#endif
+
 %}
 
 %union {

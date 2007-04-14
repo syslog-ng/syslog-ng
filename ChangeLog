@@ -2,6 +2,35 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2007-02-03 17:16:17 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-128
+
+    Summary:
+      portability fixes for platforms without IPv6 support
+    Revision:
+      syslog-ng--mainline--2.0--patch-128
+
+    	* configure.in: added checks for struct sockaddr_storage
+    
+    	* src/cfg-grammar.y: make sure it compiles even if AF_INET6 is not
+    	defined
+    
+    	* src/cfg-lex.l: don't define udp6/tcp6 keywords if ENABLE_IPV6 is
+    	not defined
+    
+    	* src/dnscache.c: added conditional blocks for IPv6 related code
+    
+    	* src/misc.c (resolve_hostname): -"-
+    
+    	* src/fdread.c (fd_do_read): use plain "struct sockaddr" if struct
+    	sockaddr_storage is not defined
+    
+    
+
+    modified files:
+     ChangeLog configure.in src/cfg-grammar.y src/cfg-lex.l
+     src/dnscache.c src/fdread.c src/misc.c
+
+
 2007-02-03 16:39:08 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-127
 
     Summary:
