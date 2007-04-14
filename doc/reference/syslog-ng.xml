@@ -947,6 +947,13 @@
 	  filename of the pipe to open. It has only the common source
 	  specific options as specified in <xref linkend="sourcecommonopts"/>.
 	</para>
+	<para>
+	  Pipe is very similar to the file() driver, but there are a few
+          differences, for example pipe() opens its argument in read-write
+          mode, therefore it is not recommended to be used on special files
+          like <filename>/proc/kmsg</filename>. For the matter it is not
+          recommended to be used on anything else than real pipes.
+	</para>
 	<table>
 	  <title>Available options for pipe</title>
 	  <tgroup cols="4">

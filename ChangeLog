@@ -2,6 +2,20 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-04-06 10:20:41 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-30
+
+    Summary:
+      added a paragraph to the documentation clarifying pipe and /proc/kmsg
+    Revision:
+      syslog-ng--mainline--2.0--patch-30
+
+    
+    
+
+    modified files:
+     ChangeLog doc/reference/syslog-ng.xml
+
+
 2006-04-02 10:11:57 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-29
 
     Summary:
