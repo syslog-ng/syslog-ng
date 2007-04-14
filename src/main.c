@@ -176,7 +176,7 @@ main_loop_run(GlobalConfig *cfg)
         }
       if (sig_term_received)
         {
-          msg_notice("SIGTERM received, terminating", NULL);
+          msg_notice("Termination requested via signal, terminating", NULL);
           sig_term_received = FALSE;
           break;
         }

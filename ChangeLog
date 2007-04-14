@@ -2,6 +2,21 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2007-02-28 09:21:01 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-136
+
+    Summary:
+      clarified SIGTERM message
+    Revision:
+      syslog-ng--mainline--2.0--patch-136
+
+    	* src/main.c (main_loop_run): clarified message about the reception
+    	of a SIGTERM or SIGINT signal
+    
+
+    modified files:
+     ChangeLog src/main.c
+
+
 2007-02-28 09:19:28 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-135
 
     Summary:
