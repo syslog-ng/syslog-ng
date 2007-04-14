@@ -189,7 +189,7 @@ filter_facility_eval(FilterExprNode *s, LogMessage *msg)
     }
   else
     {
-      static gchar bitpos[32] = 
+      static gint8 bitpos[32] = 
       { 
         -1, -1, -1, -1, -1, -1, -1, -1, 
         -1, -1, -1, -1, -1, -1, -1, -1, 

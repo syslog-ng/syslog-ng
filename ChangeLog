@@ -2,6 +2,21 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-07-28 12:54:35 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-71
+
+    Summary:
+      fixed facility filter evaluation problem on platforms with unsigned chars (powerpc)
+    Revision:
+      syslog-ng--mainline--2.0--patch-71
+
+    	* src/filter.c (filter_facility_eval): Fixed filter evaluation on
+    	platforms which have unsigned character type by default (powerpc)
+    
+
+    modified files:
+     ChangeLog src/filter.c
+
+
 2006-07-16 19:29:31 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-70
 
     Summary:
