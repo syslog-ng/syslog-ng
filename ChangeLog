@@ -2,6 +2,20 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-03-26 17:38:09 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-27
+
+    Summary:
+      fixed priority level filtering
+    Revision:
+      syslog-ng--mainline--2.0--patch-27
+
+    	* src/cfg-grammar.y (filter_level): fixed priority level based
+    	filtering, spotted and reported by Jakub Bogusz
+
+    modified files:
+     ChangeLog src/cfg-grammar.y
+
+
 2006-03-22 15:39:58 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-26
 
     Summary:

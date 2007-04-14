@@ -788,15 +788,11 @@ filter_level
 	      msg_error("Warning: Unknown priority level",
                         evt_tag_str("priority", $1),
                         NULL);
-	    else
-	      r1 = sl_levels[r1].value;
 	    r2 = syslog_lookup_level($3);
 	    if (r2 == -1)
 	      msg_error("Warning: Unknown priority level",
                         evt_tag_str("priority", $1),
                         NULL);
-	    else
-	      r2 = sl_levels[r2].value;
 	    if (r1 != -1 && r2 != -1)
 	      $$ = syslog_make_range(r1, r2); 
 	    else
@@ -815,7 +811,7 @@ filter_level
 	        $$ = 0;
 	      }
 	    else
-	      $$ = 1 << sl_levels[n].value; 
+	      $$ = 1 << n;
 	    free($1); 
 	  }
 	;
