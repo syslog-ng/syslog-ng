@@ -2,6 +2,21 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-04-19 18:44:34 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-38
+
+    Summary:
+      don't try to chmod/chown files that do not exist
+    Revision:
+      syslog-ng--mainline--2.0--patch-38
+
+    	* src/affile.c (affile_open_file): don't call chmod/chown when
+    	opening the file failed
+    
+
+    modified files:
+     ChangeLog src/affile.c
+
+
 2006-04-10 21:36:12 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-37
 
     Summary:

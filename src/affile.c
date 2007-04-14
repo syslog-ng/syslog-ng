@@ -82,10 +82,13 @@ affile_open_file(gchar *name, int flags,
 	}
       *fd = open(name, flags, mode);
     }
-  if (uid != -1 || gid != -1)
-    chown(name, uid, gid);
-  if (mode != -1)
-    chmod(name, mode);
+  if (*fd != -1)
+    {
+      if (uid != -1 || gid != -1)
+        fchown(*fd, uid, gid);
+      if (mode != -1)
+        fchmod(*fd, mode);
+    }
   return *fd != -1;
 }
 
