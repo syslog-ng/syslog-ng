@@ -421,9 +421,16 @@ persist_config_add(PersistentConfig *self, gchar *name, gpointer value, GDestroy
 {
   PersistentConfigEntry *p;
   
-  if (self)
+  if (self && value)
     {
-      g_assert(!g_hash_table_lookup(self->keys, name));
+      if (g_hash_table_lookup(self->keys, name))
+        {
+          msg_error("Duplicate configuration elements refer to the same persistent config, this is probably not what you want", 
+                    evt_tag_str("name", name),
+                    NULL);
+          destroy(value);
+          return;
+        }
   
       p = g_new0(PersistentConfigEntry, 1);
   

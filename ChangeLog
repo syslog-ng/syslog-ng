@@ -2,6 +2,21 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-04-10 21:32:30 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-35
+
+    Summary:
+      display an error message instead of a failed assertion when the user specifies conflicting sources
+    Revision:
+      syslog-ng--mainline--2.0--patch-35
+
+    	* src/cfg.c (persist_config_add): don't store the value if it is
+    	NULL, display an error message instead of a failed assertion if
+    	the persistent name conflicts
+
+    modified files:
+     ChangeLog src/cfg.c
+
+
 2006-04-10 20:59:32 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-34
 
     Summary:
