@@ -91,6 +91,8 @@ else:
 
 if success:
     pid = readpidfile('syslog-ng.pid')
+    
+    #os.system("strace -o aaa -s 256 -f -p %d &" % (pid,))
 
     try:
         for s in senders:

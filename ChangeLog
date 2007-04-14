@@ -2,6 +2,24 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-09-11 10:05:05 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-78
+
+    Summary:
+      fixed name resolution for unix domain socket peers
+    Revision:
+      syslog-ng--mainline--2.0--patch-78
+
+    2006-09-11  Balazs Scheidler <bazsi@balabit.hu>
+    
+    	* src/misc.c (resolve_hostname): for UNIX domain socket peers don't
+    	try to resolve the sender address, fixes a possible abort,
+    	introduced by patch-76
+    
+
+    modified files:
+     ChangeLog src/misc.c tests/functional/func_test.py
+
+
 2006-09-11 09:47:54 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-77
 
     Summary:

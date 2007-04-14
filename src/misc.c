@@ -129,7 +129,7 @@ resolve_hostname(GString *result, GSockAddr *saddr, gboolean usedns, gboolean us
   static gchar local_hostname[256] = "";
   char *hname, *p, buf[256];
  
-  if (saddr)
+  if (saddr && saddr->sa.sa_family != AF_UNIX)
     {
       if (saddr->sa.sa_family == AF_INET || saddr->sa.sa_family == AF_INET6)
         {
