@@ -2,6 +2,20 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-11-27 10:55:47 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-101
+
+    Summary:
+      fixed the previously messed up commit
+    Revision:
+      syslog-ng--mainline--2.0--patch-101
+
+    
+    
+
+    modified files:
+     ChangeLog src/logmsg.c
+
+
 2006-11-27 10:52:40 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-100
 
     Summary:

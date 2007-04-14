@@ -280,7 +280,7 @@ log_msg_parse(LogMessage *self, gchar *data, gint length, guint flags, regex_t *
       /* And also make struct time timestamp for the msg */
 
       nowtm = localtime(&now);
-      tm = nowtm;
+      tm = *nowtm;
       strptime(self->date->str, "%b %e %H:%M:%S", &tm);
       tm.tm_isdst = -1;
       tm.tm_year = nowtm->tm_year;
