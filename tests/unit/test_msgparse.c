@@ -67,11 +67,11 @@ testcase(gchar *msg,
     }
   if (expected_date)
     {
-      TEST_ASSERT(strcmp(logmsg->date->str, expected_date) == 0, "%s", logmsg->date->str, expected_date);
+      TEST_ASSERT(strcmp(logmsg->date.str, expected_date) == 0, "%s", logmsg->date.str, expected_date);
     }
-  TEST_ASSERT(strcmp(logmsg->host->str, expected_host) == 0, "%s", logmsg->host->str, expected_host);
-  TEST_ASSERT(strcmp(logmsg->program->str, expected_program) == 0, "%s", logmsg->program->str, expected_program);
-  TEST_ASSERT(strcmp(logmsg->msg->str, expected_msg) == 0, "%s", logmsg->msg->str, expected_msg);
+  TEST_ASSERT(strcmp(logmsg->host.str, expected_host) == 0, "%s", logmsg->host.str, expected_host);
+  TEST_ASSERT(strcmp(logmsg->program.str, expected_program) == 0, "%s", logmsg->program.str, expected_program);
+  TEST_ASSERT(strcmp(logmsg->msg.str, expected_msg) == 0, "%s", logmsg->msg.str, expected_msg);
   log_msg_unref(logmsg);
   return 0;
 }

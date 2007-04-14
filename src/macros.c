@@ -144,7 +144,7 @@ log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, glong 
     {
       gint ndx = id - M_MATCH_REF_OFS;
       /* match reference */
-      if (msg->re_matches[ndx])
+      if (ndx < msg->num_re_matches)
         result_append(result, msg->re_matches[ndx], strlen(msg->re_matches[ndx]), !!(flags & MF_ESCAPE_RESULT));
       
       return TRUE;
@@ -207,7 +207,7 @@ log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, glong 
     case M_FULLHOST_FROM:
     case M_FULLHOST:
       {
-        GString *host = (id == M_FULLHOST ? msg->host : msg->host_from);
+        GString *host = (id == M_FULLHOST ? &msg->host : &msg->host_from);
         /* full hostname */
         result_append(result, host->str, host->len, !!(flags & MF_ESCAPE_RESULT));
         break;
@@ -215,7 +215,7 @@ log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, glong 
     case M_HOST_FROM:
     case M_HOST:
       {
-        GString *host = (id == M_HOST ? msg->host : msg->host_from);
+        GString *host = (id == M_HOST ? &msg->host : &msg->host_from);
         /* host */
         gchar *p1 = memchr(host->str, '@', host->len);
         gchar *p2;
@@ -235,24 +235,24 @@ log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, glong 
     case M_PROGRAM:
       {
         /* program */
-        if (msg->program->len)
+        if (msg->program.len)
           {
-            result_append(result, msg->program->str, msg->program->len, !!(flags & MF_ESCAPE_RESULT));
+            result_append(result, msg->program.str, msg->program.len, !!(flags & MF_ESCAPE_RESULT));
           }
         break;
       }
     case M_PID:
       {
         /* PID */
-        if (msg->msg->len)
+        if (msg->msg.len)
           {
             gchar *start, *end;
             
-            start = strchr(msg->msg->str, '[');
+            start = strchr(msg->msg.str, '[');
             if (start)
               {
                 start++;
-                end = strchr(msg->msg->str, ']');
+                end = strchr(msg->msg.str, ']');
                 if (end)
                   {
                     result_append(result, start, end-start, !!(flags & MF_ESCAPE_RESULT));
@@ -400,14 +400,14 @@ log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, glong 
       }
     case M_MESSAGE:
       /* message */
-      result_append(result, msg->msg->str, msg->msg->len, !!(flags & MF_ESCAPE_RESULT));
+      result_append(result, msg->msg.str, msg->msg.len, !!(flags & MF_ESCAPE_RESULT));
       break;
     case M_MSGONLY:
       {
         gchar *colon;
         gint ofs;
         
-        colon = memchr(msg->msg->str, ':', msg->msg->len);
+        colon = memchr(msg->msg.str, ':', msg->msg.len);
         if (!colon)
           {
             ofs = 0;
@@ -417,9 +417,9 @@ log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, glong 
             colon++;
             while (*colon && *colon == ' ')
               colon++;
-            ofs = colon - msg->msg->str;
+            ofs = colon - msg->msg.str;
           }
-        result_append(result, msg->msg->str + ofs, msg->msg->len - ofs, !!(flags & MF_ESCAPE_RESULT));
+        result_append(result, msg->msg.str + ofs, msg->msg.len - ofs, !!(flags & MF_ESCAPE_RESULT));
         break;
       }
     case M_SOURCE_IP:

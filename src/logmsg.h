@@ -73,24 +73,26 @@ typedef struct _LogStamp
 
 void log_stamp_format(LogStamp *stamp, GString *target, gint ts_format, glong zone_offset, gint frac_digits);
 
-#define RE_MAX_MATCHES 10
+#define RE_MAX_MATCHES 256
 
 typedef struct _LogMessage
 {
-  guint ref_cnt;
+  guint8 ref_cnt;
+  guint8 flags;
+  guint8 pri;
+  guint8 num_re_matches;
   /* meta information */
   struct _LogSourceGroup *source_group;
   GSockAddr *saddr;
-  guint32 flags;
   
   GSList *ack_blocks;
 
   /* message parts */
-  guint pri;
   LogStamp stamp;
   LogStamp recvd;
-  GString *date, *host, *host_from, *program, *msg;
-  gchar *re_matches[RE_MAX_MATCHES];
+  GString date, host, host_from, program, msg;
+
+  gchar **re_matches;
 } LogMessage;
 
 LogMessage *log_msg_ref(LogMessage *m);

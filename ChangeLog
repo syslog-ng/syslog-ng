@@ -2,6 +2,36 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2007-03-03 14:01:24 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-137
+
+    Summary:
+      tightened LogMessage struct, added support for more than 9 match groups
+    Revision:
+      syslog-ng--mainline--2.0--patch-137
+
+    	* src/logmsg.h (LogMessage): structure tightened a bit, avoid
+    	double-referencing various message-parts by inlining GString
+    	declarations, instead of allocating them at runtime to be more cache
+    	friendly, use 8 bit values for ref_cnt, flags, pri; re_matches is
+    	allocated at runtime to allow more matches
+    
+    	* src/filter.c (filter_re_eval): dynamically allocate the
+    	msg->re_matches array, follow LogMessage changes
+    
+    	* src/templates.c (log_template_compile): support ${} syntax for
+    	regex match replacements to allow more than 9 matches
+    
+    	* src/afuser.c, src/logreader.c, src/logwriter.c, src/sgroup.c,
+    	src/test_msgparse.c, src/test_template.c: follow LogMessage
+    	changes
+
+    modified files:
+     ChangeLog src/afuser.c src/filter.c src/logmsg.c src/logmsg.h
+     src/logreader.c src/logwriter.c src/macros.c src/sgroup.c
+     src/templates.c tests/unit/test_msgparse.c
+     tests/unit/test_template.c
+
+
 2007-02-28 09:21:01 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-136
 
     Summary:

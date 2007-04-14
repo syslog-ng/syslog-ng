@@ -43,7 +43,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   msg = log_msg_new(msg_str, strlen(msg_str), g_sockaddr_inet_new("10.10.10.10", 1010), 0, NULL);
   
   /* fix some externally or automatically defined values */
-  g_string_assign(msg->host_from, "kismacska");
+  g_string_assign(&msg->host_from, "kismacska");
   msg->recvd.time.tv_sec = 1139684315;
   msg->recvd.time.tv_usec = 639000;
   msg->recvd.zone_offset = get_local_timezone_ofs(1139684315);

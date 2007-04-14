@@ -139,7 +139,7 @@ log_msg_parse(LogMessage *self, gchar *data, gint length, guint flags, regex_t *
   
   if (flags & LP_NOPARSE)
     {
-      g_string_assign_len(self->msg, data, length);
+      g_string_assign_len(&self->msg, data, length);
       return;
     }
 
@@ -164,7 +164,7 @@ log_msg_parse(LogMessage *self, gchar *data, gint length, guint flags, regex_t *
 	    }
 	  else
 	    {
-	      g_string_sprintf(self->msg, "unparseable log message: \"%.*s\"", length,
+	      g_string_sprintf(&self->msg, "unparseable log message: \"%.*s\"", length,
 			       data);
 	      self->pri = LOG_SYSLOG | LOG_ERR;
 	      return;
@@ -211,7 +211,7 @@ log_msg_parse(LogMessage *self, gchar *data, gint length, guint flags, regex_t *
       
       stamp_length = (p - src);
       
-      g_string_assign_len(self->date, src, stamp_length);
+      g_string_assign_len(&self->date, src, stamp_length);
       
       /* NOTE: we initialize various unportable fields in tm using a
        * localtime call, as the value of tm_gmtoff does matter but it does
@@ -219,7 +219,7 @@ log_msg_parse(LogMessage *self, gchar *data, gint length, guint flags, regex_t *
        * time-zone barriers */
       
       tm = *localtime(&now);
-      p = strptime(self->date->str, "%Y-%m-%dT%H:%M:%S", &tm);
+      p = strptime(self->date.str, "%Y-%m-%dT%H:%M:%S", &tm);
       
       self->stamp.time.tv_usec = 0;
       if (p && *p == '.')
@@ -276,7 +276,7 @@ log_msg_parse(LogMessage *self, gchar *data, gint length, guint flags, regex_t *
       /* Just read the buffer data into a textual
          datestamp. */
 
-      g_string_assign_len(self->date, src, 15);
+      g_string_assign_len(&self->date, src, 15);
       src += 15;
       left -= 15;
 
@@ -284,7 +284,7 @@ log_msg_parse(LogMessage *self, gchar *data, gint length, guint flags, regex_t *
 
       nowtm = localtime(&now);
       tm = *nowtm;
-      strptime(self->date->str, "%b %e %H:%M:%S", &tm);
+      strptime(self->date.str, "%b %e %H:%M:%S", &tm);
       tm.tm_isdst = -1;
       tm.tm_year = nowtm->tm_year;
       if (tm.tm_mon > nowtm->tm_mon)
@@ -296,7 +296,7 @@ log_msg_parse(LogMessage *self, gchar *data, gint length, guint flags, regex_t *
       self->stamp.zone_offset = get_local_timezone_ofs(self->stamp.time.tv_sec); /* assume local timezone */
     }
     
-  if (self->date->len)
+  if (self->date.len)
     {
       /* Expected format: hostname program[pid]: */
       /* Possibly: Message forwarded from hostname: ... */
@@ -403,7 +403,7 @@ log_msg_parse(LogMessage *self, gchar *data, gint length, guint flags, regex_t *
 	    }
 	  if (left)
 	    {
-	      g_string_assign_len(self->program, oldsrc, oldleft - left);
+	      g_string_assign_len(&self->program, oldsrc, oldleft - left);
 	    }
 
 	  src = oldsrc;
@@ -412,7 +412,7 @@ log_msg_parse(LogMessage *self, gchar *data, gint length, guint flags, regex_t *
 
       /* If we did manage to find a hostname, store it. */
       if (hostname_start)
-	g_string_assign_len(self->host, hostname_start, hostname_len);
+	g_string_assign_len(&self->host, hostname_start, hostname_len);
     }
   else
     {
@@ -423,7 +423,7 @@ log_msg_parse(LogMessage *self, gchar *data, gint length, guint flags, regex_t *
       /* A kernel message? Use 'kernel' as the program name. */
       if ((self->pri & LOG_FACMASK) == LOG_KERN)
 	{
-	  g_string_assign(self->program, "kernel");
+	  g_string_assign_len(&self->program, "kernel", 6);
 	}
       /* No, not a kernel message. */
       else
@@ -437,7 +437,7 @@ log_msg_parse(LogMessage *self, gchar *data, gint length, guint flags, regex_t *
 	    }
 	  if (left)
 	    {
-	      g_string_assign_len(self->program, oldsrc, oldleft - left);
+	      g_string_assign_len(&self->program, oldsrc, oldleft - left);
 	    }
 	  left = oldleft;
 	  src = oldsrc;
@@ -450,7 +450,7 @@ log_msg_parse(LogMessage *self, gchar *data, gint length, guint flags, regex_t *
       if (*oldsrc == '\n' || *oldsrc == '\r')
 	*oldsrc = ' ';
     }
-  g_string_assign_len(self->msg, src, left);
+  g_string_assign_len(&self->msg, src, left);
 }
 
 void
@@ -458,12 +458,13 @@ log_msg_clear_matches(LogMessage *self)
 {
   gint i;
   
-  for (i = 0; i < RE_MAX_MATCHES; i++)
+  for (i = 0; i < self->num_re_matches; i++)
     {
-      if (self->re_matches[i])
-        g_free(self->re_matches[i]);
-      self->re_matches[i] = NULL;
+      g_free(self->re_matches[i]);
     } 
+  g_free(self->re_matches);
+  self->re_matches = NULL;
+  self->num_re_matches = 0;
 }
 
 /**
@@ -476,11 +477,11 @@ static void
 log_msg_free(LogMessage *self)
 {
   g_sockaddr_unref(self->saddr);
-  g_string_free(self->date, TRUE);
-  g_string_free(self->host, TRUE);
-  g_string_free(self->host_from, TRUE);
-  g_string_free(self->program, TRUE);
-  g_string_free(self->msg, TRUE);
+  g_free(self->date.str);
+  g_free(self->host.str);
+  g_free(self->host_from.str);
+  g_free(self->program.str);
+  g_free(self->msg.str);
   log_msg_clear_matches(self);
   g_free(self);
 }
@@ -516,6 +517,22 @@ log_msg_unref(LogMessage *self)
 }
 
 /**
+ * log_msg_init_string:
+ * @str: GString to initialize
+ * @len: initial allocation
+ *
+ * Helper function to zero initialize an already allocated GString. Assumes
+ * that GString is zero-initialized.
+ **/
+static void
+log_msg_init_string(GString *str, gint len)
+{
+  str->str = g_malloc(len + 1);
+  str->str[0] = 0;
+  str->allocated_len = len + 1;
+}
+
+/**
  * log_msg_init:
  * @self: LogMessage instance
  * @saddr: sender address 
@@ -530,11 +547,11 @@ log_msg_init(LogMessage *self, GSockAddr *saddr)
   gettimeofday(&self->recvd.time, NULL);
   self->recvd.zone_offset = get_local_timezone_ofs(self->recvd.time.tv_sec);
   self->stamp = self->recvd;
-  self->date = g_string_sized_new(16);
-  self->host = g_string_sized_new(32);
-  self->host_from = g_string_sized_new(32);
-  self->program = g_string_sized_new(32);
-  self->msg = g_string_sized_new(32);
+  log_msg_init_string(&self->date, 16);
+  log_msg_init_string(&self->host, 32);
+  log_msg_init_string(&self->host_from, 32);
+  log_msg_init_string(&self->program, 32);
+  log_msg_init_string(&self->msg, 32);
   self->saddr = g_sockaddr_ref(saddr);
 }
 

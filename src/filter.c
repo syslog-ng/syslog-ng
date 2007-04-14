@@ -282,6 +282,7 @@ static gboolean
 filter_re_eval(FilterRE *self, LogMessage *msg, gchar *str)
 {
   regmatch_t matches[RE_MAX_MATCHES];
+  gchar *match_strings[RE_MAX_MATCHES];
   gboolean rc;
   gint i;
 
@@ -292,9 +293,15 @@ filter_re_eval(FilterRE *self, LogMessage *msg, gchar *str)
       for (i = 0; i < RE_MAX_MATCHES && matches[i].rm_so != -1; i++)
         {
           gint length = matches[i].rm_eo - matches[i].rm_so;
-          msg->re_matches[i] = g_malloc(length + 1);
-          memcpy(msg->re_matches[i], &str[matches[i].rm_so], length);
-          msg->re_matches[i][length] = 0;
+          match_strings[i] = g_malloc(length + 1);
+          memcpy(match_strings[i], &str[matches[i].rm_so], length);
+          match_strings[i][length] = 0;
+        }
+      msg->num_re_matches = (guint8) i;
+      if (i > 0)
+        {
+          msg->re_matches = g_malloc(sizeof(gchar *) * msg->num_re_matches);
+          memcpy(msg->re_matches, match_strings, sizeof(gchar *) * i);
         }
     }
   return rc ^ self->super.comp;
@@ -312,7 +319,7 @@ filter_re_free(FilterExprNode *s)
 static gboolean
 filter_prog_eval(FilterExprNode *s, LogMessage *msg)
 {
-  return filter_re_eval((FilterRE *) s, msg, msg->program->str);
+  return filter_re_eval((FilterRE *) s, msg, msg->program.str);
 }
 
 FilterExprNode *
@@ -334,7 +341,7 @@ filter_prog_new(gchar *prog)
 static gboolean
 filter_host_eval(FilterExprNode *s, LogMessage *msg)
 {
-  return filter_re_eval((FilterRE *) s, msg, msg->host->str);
+  return filter_re_eval((FilterRE *) s, msg, msg->host.str);
 }
 
 FilterExprNode *
@@ -356,7 +363,7 @@ filter_host_new(gchar *host)
 static gboolean
 filter_match_eval(FilterExprNode *s, LogMessage *msg)
 {
-  return filter_re_eval((FilterRE *) s, msg, msg->msg->str);
+  return filter_re_eval((FilterRE *) s, msg, msg->msg.str);
 }
 
 FilterExprNode *

@@ -178,7 +178,7 @@ log_reader_handle_line(LogReader *self, gchar *line, gint length, GSockAddr *sad
   m = log_msg_new(line, length, saddr, parse_flags, self->options->bad_hostname);
   
   if (self->options->prefix)
-    g_string_prepend(m->msg, self->options->prefix);
+    g_string_prepend(&m->msg, self->options->prefix);
       
   if (m->stamp.zone_offset == -1)
     m->stamp.zone_offset = self->options->zone_offset;

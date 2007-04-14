@@ -64,14 +64,25 @@ log_template_compile(LogTemplate *self)
             }
           else if (*p == '{')
             {
+              gint ref_number = 0;
               p++;
               start = p;
               while (*p && *p != '}')
                 {
+                  if (ref_number >= 0)
+                    {
+                      if ((*p >= '0' && *p <= '9'))
+                        ref_number = ref_number * 10 + (*p - '0');
+                      else
+                        ref_number = -1;
+                    }
                   p++;
                 }
               p++;
-              last_macro = log_macro_lookup(start, p - start - 1);
+              if (ref_number >= 0 && (p - start) > 1)
+                last_macro = M_MATCH_REF_OFS + ref_number;
+              else
+                last_macro = log_macro_lookup(start, p - start - 1);
             }
           else
             {

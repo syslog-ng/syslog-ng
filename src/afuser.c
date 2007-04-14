@@ -53,7 +53,7 @@ afuser_dd_queue(LogPipe *s, LogMessage *msg, gint path_flags)
   gchar buf[8192];
   struct utmp *ut;
   
-  g_snprintf(buf, sizeof(buf), "%s %s %s\n", msg->date->str, msg->host->str, msg->msg->str);
+  g_snprintf(buf, sizeof(buf), "%s %s %s\n", msg->date.str, msg->host.str, msg->msg.str);
   
   /* NOTE: there's a private implementations of getutent in utils.c on Systems which do not provide one. */
   while ((ut = getutent())) 

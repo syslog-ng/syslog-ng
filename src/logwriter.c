@@ -251,13 +251,13 @@ log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
       if (self->flags & LW_FORMAT_FILE)
         {
           log_stamp_format(stamp, ts, self->options->ts_format, self->options->zone_offset, self->options->frac_digits);
-          g_string_sprintf(result, "%s %s %s\n", ts->str, lm->host->str, lm->msg->str);
+          g_string_sprintf(result, "%s %s %s\n", ts->str, lm->host.str, lm->msg.str);
         }
       else if (self->flags & LW_FORMAT_PROTO)
         {
           /* always use BSD timestamp by default, the use can override this using a custom template */
           log_stamp_format(stamp, ts, TS_FMT_BSD, self->options->zone_offset, self->options->frac_digits);
-          g_string_sprintf(result, "<%d>%s %s %s\n", lm->pri, ts->str, lm->host->str, lm->msg->str);
+          g_string_sprintf(result, "<%d>%s %s %s\n", lm->pri, ts->str, lm->host.str, lm->msg.str);
         }
       g_string_free(ts, TRUE);
     }
