@@ -1865,7 +1865,9 @@
 	
 	<para>
 	  The program destination supports all common destination options
-          and has no specific options.
+          and has no specific options. The default format matches the BSD
+          syslog protocol, e.g. it includes the priority value in addition
+          to the format used in logfiles.
 	</para>
 
 	<example>

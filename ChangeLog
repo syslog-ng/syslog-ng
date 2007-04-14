@@ -2,6 +2,20 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-07-16 19:29:31 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-70
+
+    Summary:
+      added clarification of the output format of program()
+    Revision:
+      syslog-ng--mainline--2.0--patch-70
+
+    
+    
+
+    modified files:
+     ChangeLog doc/reference/syslog-ng.xml
+
+
 2006-07-08 11:56:10 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-69
 
     Summary:
