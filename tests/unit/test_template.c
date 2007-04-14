@@ -51,8 +51,10 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   /* pri 3, fac 19 == local3 */
 
   testcase(msg, "$FACILITY", "local3");
+  testcase(msg, "$FACILITY_NUM", "19");
   testcase(msg, "$PRIORITY", "err");
   testcase(msg, "$LEVEL", "err");
+  testcase(msg, "$LEVEL_NUM", "3");
   testcase(msg, "$TAG", "9b");
   testcase(msg, "$PRI", "155");
   testcase(msg, "$DATE", "Feb 11 10:34:56");

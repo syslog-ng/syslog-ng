@@ -37,7 +37,9 @@ enum
   M_NONE,
 
   M_FACILITY,
+  M_FACILITY_NUM,
   M_LEVEL,
+  M_LEVEL_NUM,
   M_TAG,
   M_PRI,
 

@@ -2,6 +2,24 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-05-26 19:25:24 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-54
+
+    Summary:
+      added LEVEL_NUM and FACILITY_NUM macros to follow 1.6.x changes
+    Revision:
+      syslog-ng--mainline--2.0--patch-54
+
+    	* src/macros.c (log_macro_expand): added code for LEVEL_NUM and
+    	FACILITY_NUM macros
+    
+    	* tests/test_template.c: added testcase for LEVEL_NUM and
+    	FACILITY_NUM macros
+    
+
+    modified files:
+     ChangeLog src/macros.c src/macros.h tests/unit/test_template.c
+
+
 2006-05-24 08:59:44 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-53
 
     Summary:

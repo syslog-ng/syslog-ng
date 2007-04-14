@@ -40,8 +40,10 @@ struct macro_def
 macros[] =
 {
         { "FACILITY", M_FACILITY },
+        { "FACILITY_NUM", M_FACILITY_NUM },
         { "PRIORITY", M_LEVEL },
         { "LEVEL", M_LEVEL },
+        { "LEVEL_NUM", M_LEVEL_NUM },
         { "TAG", M_TAG },
         { "PRI", M_PRI },
 
@@ -165,6 +167,11 @@ log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, glong 
           }
         break;
       }
+    case M_FACILITY_NUM:
+      {
+        g_string_sprintfa(result, "%d", (msg->pri & LOG_FACMASK) >> 3);
+        break;
+      }
     case M_LEVEL:
       {
         /* level */
@@ -180,6 +187,11 @@ log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, glong 
             g_string_sprintfa(result, "%d", msg->pri & LOG_PRIMASK);
           }
 
+        break;
+      }
+    case M_LEVEL_NUM:
+      {
+        g_string_sprintfa(result, "%d", (msg->pri & LOG_PRIMASK));
         break;
       }
     case M_TAG:
