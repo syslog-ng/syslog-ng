@@ -10,8 +10,8 @@ VERSION="`cat $srcdir/VERSION`"
 dnl ***************************************************************************
 dnl dependencies
 
-GLIB_VERSION="2.2"
-EVTLOG_VERSION="0.2"
+GLIB_MIN_VERSION="2.2"
+EVTLOG_MIN_VERSION="0.2"
 
 dnl ***************************************************************************
 dnl Initial setup
@@ -190,16 +190,19 @@ AC_DEFINE_UNQUOTED(ENABLE_MEM_TRACE, `enable_value $enable_memtrace`, [Enable me
 AC_DEFINE_UNQUOTED(ENABLE_SSL, `enable_value $enable_ssl`, [Enable SSL support])
 AC_DEFINE_UNQUOTED(ENABLE_IPV6, `enable_value $enable_ipv6`, [Enable IPv6 support])
 
-PKG_CHECK_MODULES(GLIB, glib-2.0,,)
-PKG_CHECK_MODULES(EVTLOG, eventlog,,)
+PKG_CHECK_MODULES(GLIB, glib-2.0 >= $GLIB_MIN_VERSION,,
+		AC_MSG_ERROR(Cannot find GLib library version >= $GLIB_MIN_VERSION: is pkg-config in path?))
+PKG_CHECK_MODULES(EVTLOG, eventlog >= $EVTLOG_MIN_VERSION,,
+                AC_MSG_ERROR(Cannot find eventlog version >= $EVTLOG_MIN_VERSION: is pkg-config in path?))
 
 old_LIBS=$LIBS
 LIBS="$LD_START_STATIC $GLIB_LIBS $LD_END_STATIC"
 
 AC_CACHE_CHECK(for static GLib libraries,
                blb_cv_static_glib,
-[AC_TRY_LINK([], [
+[AC_TRY_LINK([
 extern void g_hash_table_new(void);
+], [
 
 void (*fn)(void) = g_hash_table_new;
 
