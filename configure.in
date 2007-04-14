@@ -105,6 +105,20 @@ I_CONSLOG
 ],
   blb_cv_c_i_conslog=no, blb_cv_c_i_conslog=yes)])
 
+old_CPPFLAGS=$CPPFLAGS
+CPPFLAGS=-D_GNU_SOURCE
+AC_CACHE_CHECK(for O_LARGEFILE, blb_cv_c_o_largefile,
+  [AC_EGREP_CPP(O_LARGEFILE,
+[
+#include <fcntl.h>
+O_LARGEFILE
+],
+  blb_cv_c_o_largefile=no, blb_cv_c_o_largefile=yes)])
+CPPFLAGS=$old_CPPFLAGS
+
+if test "x$blb_cv_c_o_largefile" = "xyes"; then
+        AC_DEFINE(HAVE_O_LARGEFILE, 1, [O_LARGEFILE is present])
+fi
 
 dnl Checks for library functions.
 AC_CHECK_LIB(door, door_create)

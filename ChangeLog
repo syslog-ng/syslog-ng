@@ -2,6 +2,23 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-04-01 08:03:10 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-28
+
+    Summary:
+      fixed large file support
+    Revision:
+      syslog-ng--mainline--2.0--patch-28
+
+    	* configure.in: check for O_LARGEFILE
+    
+    	* src/affile.c: use O_LARGEFILE when available
+    
+    
+
+    modified files:
+     ChangeLog configure.in src/affile.c
+
+
 2006-03-26 17:38:09 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-27
 
     Summary:

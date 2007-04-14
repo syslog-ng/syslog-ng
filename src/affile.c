@@ -34,6 +34,10 @@
 #include <errno.h>
 #include <time.h>
 
+#if !HAVE_O_LARGEFILE
+#define O_LARGEFILE 0
+#endif
+
 static gboolean
 affile_open_file(gchar *name, int flags,
 	     int uid, int gid, int mode,
@@ -92,11 +96,9 @@ affile_sd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
   int fd, flags;
 
   if (self->flags & AFFILE_PIPE)
-    flags = O_RDWR | O_NOCTTY | O_NONBLOCK;
+    flags = O_RDWR | O_NOCTTY | O_NONBLOCK | O_LARGEFILE;
   else
-    {
-      flags = O_RDONLY | O_NOCTTY | O_NONBLOCK;
-    }
+    flags = O_RDONLY | O_NOCTTY | O_NONBLOCK | O_LARGEFILE;
 
   log_reader_options_init(&self->reader_options, cfg);
 
@@ -189,9 +191,9 @@ affile_dw_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
               NULL);
 
   if (self->owner->flags & AFFILE_PIPE)
-    flags = O_RDWR | O_NOCTTY | O_NONBLOCK;
+    flags = O_RDWR | O_NOCTTY | O_NONBLOCK | O_LARGEFILE;
   else
-    flags = O_WRONLY | O_CREAT | O_APPEND | O_NOCTTY | O_NONBLOCK;
+    flags = O_WRONLY | O_CREAT | O_APPEND | O_NOCTTY | O_NONBLOCK | O_LARGEFILE;
 
   if (affile_open_file(self->filename->str, flags, 
                        self->owner->file_uid, self->owner->file_gid, self->owner->file_perm, 
