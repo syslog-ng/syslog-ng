@@ -9,6 +9,7 @@ EXTRA_DIST = README init.d.solaris init.d.HP-UX init.d.RedHat init.d.SuSE 	\
 	fedora-packaging/syslog-ng.logrotate    \
 	rhel-packaging/syslog-ng.conf  \
 	rhel-packaging/syslog-ng.init  \
-	rhel-packaging/syslog-ng.logrotate
+	rhel-packaging/syslog-ng.logrotate \
+	aix-packaging/syslog-ng.conf
 
 	

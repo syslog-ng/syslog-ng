@@ -2,6 +2,60 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2007-01-29 08:49:55 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-124
+
+    Summary:
+      integrated AIX packaging fixes from dev-folti
+    Revision:
+      syslog-ng--mainline--2.0--patch-124
+
+    
+    
+    Patches applied:
+    
+     * devel@balabit.hu--other-1/syslog-ng--dev-folti--2.0--patch-2
+       Fixed: AIX5.2 packaging support. (fixes: #10375)
+    
+     * devel@balabit.hu--other-1/syslog-ng--dev-folti--2.0--patch-3
+       Fixes: added libevtlog-dev build dependency. (fixes: #10375)
+    
+     * devel@balabit.hu--other-1/syslog-ng--dev-folti--2.0--patch-5
+       Fixed: RPM packaging for 2.0. (fixes: #nobug)
+    
+     * devel@balabit.hu--other-1/syslog-ng--dev-folti--2.0--patch-7
+       Refresh: Fixed: AIX5.2 packaging support. (fixes: #10375)
+    
+     * devel@balabit.hu--other-1/syslog-ng--dev-folti--2.0--patch-8
+       Refresh: Fixes: added libevtlog-dev build dependency. (fixes: #10375)
+    
+     * devel@balabit.hu--other-1/syslog-ng--dev-folti--2.0--patch-9
+       Refresh: Fixed: RPM packaging for 2.0. (fixes: #nobug)
+    
+     * devel@balabit.hu--other-1/syslog-ng--dev-folti--2.0--patch-10
+       Fixed: removed duplicated install commanands from spec file. (fixes #nobug)
+    
+
+    new files:
+     contrib/aix-packaging/.arch-ids/=id
+     contrib/aix-packaging/.arch-ids/syslog-ng.conf.id
+     contrib/aix-packaging/syslog-ng.conf
+
+    modified files:
+     ChangeLog contrib/Makefile.am syslog-ng.spec.bb.in
+
+    new directories:
+     contrib/aix-packaging contrib/aix-packaging/.arch-ids
+
+    new patches:
+     devel@balabit.hu--other-1/syslog-ng--dev-folti--2.0--patch-2
+     devel@balabit.hu--other-1/syslog-ng--dev-folti--2.0--patch-3
+     devel@balabit.hu--other-1/syslog-ng--dev-folti--2.0--patch-5
+     devel@balabit.hu--other-1/syslog-ng--dev-folti--2.0--patch-7
+     devel@balabit.hu--other-1/syslog-ng--dev-folti--2.0--patch-8
+     devel@balabit.hu--other-1/syslog-ng--dev-folti--2.0--patch-9
+     devel@balabit.hu--other-1/syslog-ng--dev-folti--2.0--patch-10
+
+
 2007-01-29 08:48:19 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-123
 
     Summary:
