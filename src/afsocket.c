@@ -690,7 +690,7 @@ afsocket_dd_connected(AFSocketDestDriver *self)
         {
           msg_error("Connection failed",
                     evt_tag_errno(EVT_TAG_OSERROR, error),
-                    evt_tag_int("reconnect", self->time_reopen),
+                    evt_tag_int("time_reopen", self->time_reopen),
                     NULL);
           close(self->fd);
 
@@ -827,12 +827,15 @@ afsocket_dd_notify(LogPipe *s, LogPipe *sender, gint notify_code, gpointer user_
     {
     case NC_CLOSE:
     case NC_WRITE_ERROR:
+      msg_error("Connection broken",
+                evt_tag_int("time_reopen", self->time_reopen),
+                NULL);
       if (self->reconnect_timer)
         {
           g_source_remove(self->reconnect_timer);
           self->reconnect_timer = 0;
         }
-      afsocket_dd_reconnect(self);
+      self->reconnect_timer = g_timeout_add(self->time_reopen * 1000, afsocket_dd_reconnect_timer, self);
       break;
     }
 }

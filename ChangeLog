@@ -2,6 +2,23 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-06-07 09:09:14 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-59
+
+    Summary:
+      do not reconnect to target immediately but wait for time_reopen first
+    Revision:
+      syslog-ng--mainline--2.0--patch-59
+
+    	* src/afsocket.c (afsocket_dd_notify): instead of immediately
+    	scheduling a reconnect, start the reconnect timer to avoid excessive
+    	number of reconnection requests in case of a going up-and-down
+    	connection
+    
+
+    modified files:
+     ChangeLog src/afsocket.c
+
+
 2006-06-07 09:07:40 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-58
 
     Summary:
