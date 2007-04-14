@@ -2,6 +2,22 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-08-09 08:01:16 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-74
+
+    Summary:
+      fixed another memory leak that might happen during exit
+    Revision:
+      syslog-ng--mainline--2.0--patch-74
+
+    	* src/messages.c (msg_send_internal_message): don't allocate a
+    	LogMessage if internal_msg_queue is NULL as that can't be sent
+    	anyway
+    
+
+    modified files:
+     ChangeLog src/messages.c
+
+
 2006-08-08 19:58:08 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-73
 
     Summary:
