@@ -884,7 +884,7 @@ string
 	;
 
 string_or_number
-        : STRING                                { $$ = $1; }
+        : string                                { $$ = $1; }
         | NUMBER                                { char buf[16]; snprintf(buf, sizeof(buf), "%d", $1); $$ = strdup(buf); }
 
 %%

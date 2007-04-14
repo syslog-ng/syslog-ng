@@ -2,6 +2,21 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2007-01-07 16:51:40 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-117
+
+    Summary:
+      fixed parsing group information when not enclosed in quotes
+    Revision:
+      syslog-ng--mainline--2.0--patch-117
+
+    	* src/cfg-grammar.y (string_or_number): use non-terminal string
+    	instead of STRING to support non-quoted group specification
+    
+
+    modified files:
+     ChangeLog src/cfg-grammar.y
+
+
 2007-01-07 16:46:34 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-116
 
     Summary:
