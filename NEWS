@@ -1,5 +1,5 @@
 2.0rc1
-	Tue, 20 Jun 2006 12:31:20 +0200
+	Sat, 08 Jul 2006 13:52:50 +0200
 
 	Some minor new features:
 	* Added LEVEL_NUM and FACILITY_NUM macros.
