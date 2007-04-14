@@ -50,8 +50,9 @@ afprogram_dd_exit(pid_t pid, int status, gpointer s)
   AFProgramDestDriver *self = (AFProgramDestDriver *) s;
 
   /* Note: self->pid being -1 means that deinit was called, thus we don't
-   * need to restart the command */
-  if (self->pid != -1)
+   * need to restart the command. self->pid might change due to EPIPE
+   * handling restarting the command before this handler is run. */
+  if (self->pid != -1 && self->pid == pid)
     {
       msg_verbose("Child program exited, restarting",
                   evt_tag_str("cmdline", self->cmdline->str),
@@ -105,6 +106,7 @@ afprogram_dd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
       dup2(devnull, 1);
       dup2(devnull, 2);
       close(devnull);
+      close(msg_pipe[0]);
       close(msg_pipe[1]);
       execl("/bin/sh", "/bin/sh", "-c", self->cmdline->str, NULL);
       _exit(127);
@@ -115,7 +117,6 @@ afprogram_dd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
       
       child_manager_register(self->pid, afprogram_dd_exit, log_pipe_ref(&self->super.super), (GDestroyNotify) log_pipe_unref);
       
-      g_fd_set_cloexec(msg_pipe[1], TRUE);
       close(msg_pipe[0]);
       if (!self->writer)
         self->writer = log_writer_new(LW_FORMAT_FILE, s, &self->writer_options);

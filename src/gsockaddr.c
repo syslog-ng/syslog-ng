@@ -698,7 +698,7 @@ g_sockaddr_unix_format(GSockAddr *addr, gchar *text, gulong n)
   GSockAddrUnix *unix_addr = (GSockAddrUnix *) addr;
   
   g_snprintf(text, n, "AF_UNIX(%s)", 
-             unix_addr->saun.sun_path[0] ? unix_addr->saun.sun_path
+             unix_addr->salen > sizeof(unix_addr->saun.sun_family) && unix_addr->saun.sun_path[0] ? unix_addr->saun.sun_path
                                           : "anonymous");
   return text;
 }

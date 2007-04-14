@@ -266,9 +266,12 @@ log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
 static void
 log_writer_broken(LogWriter *self, gint notify_code)
 {
-  /* the connection seems to be broken */
-  log_pipe_notify(self->control, &self->super, notify_code, self);
+  /* the order of these calls is important, as log_pipe_notify() will handle
+   * reinitialization, and if deinit is called last, the writer might be
+   * left in an unpolled state */
+  
   log_pipe_deinit(&self->super, NULL, NULL);
+  log_pipe_notify(self->control, &self->super, notify_code, self);
 }
 
 static gboolean 

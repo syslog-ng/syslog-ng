@@ -2,6 +2,34 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-10-28 07:24:49 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-90
+
+    Summary:
+      fixed process restarting and some other minor fixes
+    Revision:
+      syslog-ng--mainline--2.0--patch-90
+
+    	* src/afprog.c (afprogram_dd_exit): check that the current pid is
+    	equal to the process that was exited, as the EPIPE handling code
+    	might have already done our job,
+    	(afprogram_dd_init): don't leave the read side of the pipe twice
+    	with the process, removed a call to g_fd_set_cloexec() as it's not
+    	needed and was too late anyway, should've been before fork,
+    	
+    	* src/gsockaddr.c (g_sockaddr_unix_format): the kernel sometimes
+    	returns only an address family for unix socket names, and we printed
+    	a lot of garbage instead of "anonymous" in this case
+    
+    	* src/logwriter.c (log_writer_broken): move log_pipe_deinit() before
+    	log_pipe_notify(), this was changed in rc3 with a changelog that it
+    	should not matter, however it does matter :P as it might have left
+    	the writer in an unpolled state
+    
+
+    modified files:
+     ChangeLog src/afprog.c src/gsockaddr.c src/logwriter.c
+
+
 2006-10-27 15:15:30 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-89
 
     Summary:
