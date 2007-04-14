@@ -55,6 +55,7 @@ afprogram_dd_exit(pid_t pid, int status, gpointer s)
     {
       msg_verbose("Child program exited, restarting",
                   evt_tag_str("cmdline", self->cmdline->str),
+                  evt_tag_int("status", status),
                   NULL);
       self->pid = -1;
       log_pipe_deinit(&self->super.super, NULL, NULL);

@@ -2,6 +2,23 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-05-23 18:33:25 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-50
+
+    Summary:
+      add program exit status information to 'child program exited' log message
+    Revision:
+      syslog-ng--mainline--2.0--patch-50
+
+    2006-05-23  Balazs Scheidler <bazsi@balabit.hu>
+    
+    	* src/afprog.c (afprogram_dd_exit): added program exit status
+    	information to 'child program exited' log message
+    
+
+    modified files:
+     ChangeLog src/afprog.c
+
+
 2006-05-23 18:31:55 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-49
 
     Summary:
