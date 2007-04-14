@@ -2,6 +2,27 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-12-22 10:01:22 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-113
+
+    Summary:
+      added so_keepalive support
+    Revision:
+      syslog-ng--mainline--2.0--patch-113
+
+    	* src/cfg-grammar.y: added KW_SO_KEEPALIVE keyword,
+    	(socket_option): added KW_SO_KEEPALIVE rule
+    
+    	* src/afsocket.h (SocketOptions): added keepalive member,
+    
+    	* src/afsocket.c (afsocket_setup_socket): set SO_KEEPALIVE socket
+    	option based on the keepalive parameter
+    
+
+    modified files:
+     ChangeLog src/afsocket.c src/afsocket.h src/cfg-grammar.y
+     src/cfg-lex.l
+
+
 2006-12-21 08:48:42 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-112
 
     Summary:

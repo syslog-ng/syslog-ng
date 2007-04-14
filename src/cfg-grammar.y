@@ -95,7 +95,7 @@ gint last_addr_family = AF_INET;
 /* socket related options */
 %token KW_KEEP_ALIVE KW_MAX_CONNECTIONS
 %token KW_LOCALIP KW_IP KW_LOCALPORT KW_PORT KW_DESTPORT 
-%token KW_IP_TTL KW_SO_BROADCAST KW_IP_TOS KW_SO_SNDBUF KW_SO_RCVBUF
+%token KW_IP_TTL KW_SO_BROADCAST KW_IP_TOS KW_SO_SNDBUF KW_SO_RCVBUF KW_SO_KEEPALIVE
 
 /* misc options */
 %token KW_USE_TIME_RECVD
@@ -244,6 +244,7 @@ socket_option
 	: KW_SO_SNDBUF '(' NUMBER ')'           { last_sock_options->sndbuf = $3; }
 	| KW_SO_RCVBUF '(' NUMBER ')'           { last_sock_options->rcvbuf = $3; }
 	| KW_SO_BROADCAST '(' yesno ')'         { last_sock_options->broadcast = $3; }
+	| KW_SO_KEEPALIVE '(' yesno ')'         { last_sock_options->keepalive = $3; }
 	;
 
 inet_socket_option

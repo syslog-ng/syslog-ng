@@ -48,6 +48,7 @@ typedef struct _SocketOptions
   gint sndbuf;
   gint rcvbuf;
   gint broadcast;
+  gint keepalive;
 } SocketOptions;
 
 gboolean afsocket_setup_socket(gint fd, SocketOptions *sock_options, AFSocketDirection dir);

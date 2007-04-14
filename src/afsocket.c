@@ -169,6 +169,7 @@ afsocket_setup_socket(gint fd, SocketOptions *sock_options, AFSocketDirection di
       if (sock_options->broadcast)
         setsockopt(fd, SOL_SOCKET, SO_BROADCAST, &sock_options->broadcast, sizeof(sock_options->broadcast));
     }
+  setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &sock_options->keepalive, sizeof(sock_options->keepalive));
   return TRUE;
 }
 
