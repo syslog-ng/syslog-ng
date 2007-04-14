@@ -76,6 +76,7 @@ typedef struct _GlobalConfig
 
   gboolean keep_timestamp;  
   gint ts_format;
+  gint frac_digits;
   glong recv_zone_offset;
   glong send_zone_offset;
   

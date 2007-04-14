@@ -518,6 +518,7 @@ affile_dd_queue(LogPipe *s, LogMessage *msg, gint path_flags)
 		    (self->use_time_recvd ? MF_STAMP_RECVD : 0),
 		    TS_FMT_BSD,
 		    get_local_timezone_ofs(time(NULL)),
+		    0,
 		    filename);
       next = g_hash_table_lookup(self->writer_hash, filename->str);
       if (!next)

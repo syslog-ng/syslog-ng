@@ -70,6 +70,10 @@ cfg_ts_format_value(gchar *format)
     return TS_FMT_BSD;
   else if (strcmp(format, "rfc3339") == 0 || strcmp(format, "iso") == 0)
     return TS_FMT_ISO;
+  else if (strcmp(format, "full") == 0)
+    return TS_FMT_FULL;
+  else if (strcmp(format, "unix") == 0 || strcmp(format, "utc") == 0)
+    return TS_FMT_UNIX;
   else
     {
       msg_error("Invalid ts_format() value",
@@ -238,9 +242,10 @@ cfg_new(gchar *fname)
   self->dns_cache_expire_failed = 60;
   
   self->ts_format = TS_FMT_BSD;
+  self->frac_digits = 0;
   self->recv_zone_offset = -1;
   self->send_zone_offset = -1;
-  self->keep_timestamp = FALSE;
+  self->keep_timestamp = TRUE;
 
   configuration = self;
 

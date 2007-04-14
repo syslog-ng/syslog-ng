@@ -51,8 +51,9 @@ typedef struct _LogReaderOptions
   gint follow_freq;
   gint fetch_limit;
   
-  /* source time zone if one is not specified */
+  /* source time zone if one is not specified in the message */
   glong zone_offset;
+  gboolean keep_timestamp;
 } LogReaderOptions;
 
 typedef struct _LogReader

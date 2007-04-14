@@ -136,7 +136,7 @@ result_append(GString *result, gchar *str, gint len, gboolean escape)
 }
 
 gboolean
-log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, glong zone_offset, LogMessage *msg)
+log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, glong zone_offset, gint frac_digits, LogMessage *msg)
 {
   if (id >= M_MATCH_REF_OFS)
     {
@@ -360,22 +360,20 @@ log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, glong 
           case M_SEC:
             g_string_sprintfa(result, "%02d", tm->tm_sec);
             break;
-          case M_ISODATE:
-            length = strftime(buf, sizeof(buf), "%Y-%m-%dT%H:%M:%S", tm);
-            g_string_append_len(result, buf, length);
-            length = format_zone_info(buf, sizeof(buf), zone_ofs);
-            g_string_append_len(result, buf, length);
-            break;
-          case M_FULLDATE:
-            length = strftime(buf, sizeof(buf), "%Y %h %e %H:%M:%S", tm);
-            g_string_append_len(result, buf, length);
-            break;
           case M_DATE:
           case M_STAMP:
+          case M_ISODATE:
+          case M_FULLDATE:
+          case M_UNIXTIME:
             {
               GString *s = g_string_sized_new(0);
+              gint format = id == M_DATE ? TS_FMT_BSD : 
+                            id == M_ISODATE ? TS_FMT_ISO :
+                            id == M_FULLDATE ? TS_FMT_FULL :
+                            id == M_UNIXTIME ? TS_FMT_UNIX :
+                            ts_format;
               
-              log_stamp_format(stamp, s, ts_format, zone_offset);
+              log_stamp_format(stamp, s, format, zone_offset, frac_digits);
               g_string_append_len(result, s->str, s->len);
               g_string_free(s, TRUE);
               break;
@@ -384,9 +382,6 @@ log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, glong 
           case M_TZOFFSET:
             length = format_zone_info(buf, sizeof(buf), zone_ofs);
             g_string_append_len(result, buf, length);
-            break;
-          case M_UNIXTIME:
-            g_string_sprintfa(result, "%d", (int) stamp->time.tv_sec);
             break;
           }
         break;

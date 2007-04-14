@@ -83,6 +83,7 @@ static struct keyword keywords[] = {
         { "keep_hostname",      KW_KEEP_HOSTNAME },
         { "keep_timestamp",	KW_KEEP_TIMESTAMP },
         { "ts_format",		KW_TS_FORMAT },
+        { "frac_digits",        KW_FRAC_DIGITS },
         { "time_zone",		KW_TIME_ZONE },
         { "recv_time_zone",	KW_RECV_TIME_ZONE },
         { "send_time_zone",	KW_SEND_TIME_ZONE },

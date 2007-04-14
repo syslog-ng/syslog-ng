@@ -112,7 +112,7 @@ log_template_compile(LogTemplate *self)
 }
 
 void
-log_template_format(LogTemplate *self, LogMessage *lm, guint macro_flags, gint ts_format, glong zone_offset, GString *result)
+log_template_format(LogTemplate *self, LogMessage *lm, guint macro_flags, gint ts_format, glong zone_offset, gint frac_digits, GString *result)
 {
   GList *p;
   LogTemplateElem *e;
@@ -135,6 +135,7 @@ log_template_format(LogTemplate *self, LogMessage *lm, guint macro_flags, gint t
                            ((self->flags & LT_ESCAPE) ? MF_ESCAPE_RESULT : 0),
                            ts_format,
                            zone_offset,
+                           frac_digits,
                            lm);
         }
     }

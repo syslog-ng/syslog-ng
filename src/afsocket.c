@@ -193,8 +193,7 @@ afsocket_sc_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
 
   self->reader = log_reader_new(fd_read_new(self->sock, (self->owner->flags & AFSOCKET_DGRAM) ? FR_RECV : 0), 
                                 ((self->owner->flags & AFSOCKET_LOCAL) ? LR_LOCAL : 0) | 
-                                ((self->owner->flags & AFSOCKET_DGRAM) ? LR_PKTTERM : 0) |
-                                ((self->owner->flags & AFSOCKET_PROTO_RFC3164) ? LR_STRICT : 0), 
+                                ((self->owner->flags & AFSOCKET_DGRAM) ? LR_PKTTERM : 0),
                                 s, &self->owner->reader_options);
   log_pipe_append(self->reader, s);
   log_pipe_init(self->reader, NULL, NULL);
@@ -733,7 +732,7 @@ afsocket_dd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
 
   if (!self->writer)
     {
-      log_writer_options_init(&self->writer_options, cfg, (self->flags & AFSOCKET_PROTO_RFC3164) ? LWOF_FIXED_STAMP : 0, afsocket_dd_format_stats_name(self));
+      log_writer_options_init(&self->writer_options, cfg, 0, afsocket_dd_format_stats_name(self));
       /* NOTE: we open our writer with no fd, so we can send messages down there
        * even while the connection is not established */
   

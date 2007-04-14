@@ -34,8 +34,6 @@
 
 #define AFSOCKET_KEEP_ALIVE          0x0100
 
-#define AFSOCKET_PROTO_RFC3164	     0x0400
-
 typedef struct _AFSocketSourceDriver AFSocketSourceDriver;
 
 struct _AFSocketSourceDriver

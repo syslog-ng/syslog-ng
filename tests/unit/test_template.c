@@ -15,7 +15,7 @@ testcase(LogMessage *msg, gchar *template, gchar *expected)
   GString *res = g_string_sized_new(128);
   
   templ = log_template_new("dummy", template);
-  log_template_format(templ, msg, 0, TS_FMT_BSD, -1, res);
+  log_template_format(templ, msg, 0, TS_FMT_BSD, -1, 3, res);
   
   if (strcmp(res->str, expected) != 0)
     {
@@ -44,6 +44,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   /* fix some externally or automatically defined values */
   g_string_assign(msg->host_from, "kismacska");
   msg->recvd.time.tv_sec = 1139684315;
+  msg->recvd.time.tv_usec = 639000;
 
   /* pri 3, fac 19 == local3 */
 
@@ -54,7 +55,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase(msg, "$PRI", "155");
   testcase(msg, "$DATE", "Feb 11 10:34:56");
   testcase(msg, "$FULLDATE", "2006 Feb 11 10:34:56");
-  testcase(msg, "$ISODATE", "2006-02-11T10:34:56+01:00");
+  testcase(msg, "$ISODATE", "2006-02-11T10:34:56.000+01:00");
   testcase(msg, "$STAMP", "Feb 11 10:34:56");
   testcase(msg, "$YEAR", "2006");
   testcase(msg, "$MONTH", "02");
@@ -69,7 +70,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase(msg, "$TZ", "+01:00");
   testcase(msg, "$R_DATE", "Feb 11 19:58:35");
   testcase(msg, "$R_FULLDATE", "2006 Feb 11 19:58:35");
-  testcase(msg, "$R_ISODATE", "2006-02-11T19:58:35+01:00");
+  testcase(msg, "$R_ISODATE", "2006-02-11T19:58:35.639+01:00");
   testcase(msg, "$R_STAMP", "Feb 11 19:58:35");
   testcase(msg, "$R_YEAR", "2006");
   testcase(msg, "$R_MONTH", "02");
@@ -84,7 +85,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase(msg, "$R_TZ", "+01:00");
   testcase(msg, "$S_DATE", "Feb 11 10:34:56");
   testcase(msg, "$S_FULLDATE", "2006 Feb 11 10:34:56");
-  testcase(msg, "$S_ISODATE", "2006-02-11T10:34:56+01:00");
+  testcase(msg, "$S_ISODATE", "2006-02-11T10:34:56.000+01:00");
   testcase(msg, "$S_STAMP", "Feb 11 10:34:56");
   testcase(msg, "$S_YEAR", "2006");
   testcase(msg, "$S_MONTH", "02");

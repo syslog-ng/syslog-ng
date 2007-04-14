@@ -36,12 +36,10 @@
 /* writer options (set by the user) */
 #define LWO_TMPL_ESCAPE     0x0001
 
-/* writer option flags */
-#define LWOF_FIXED_STAMP     0x0001
 /* we don't want to have a dropped counter for this writer */
-#define LWOF_NO_STATS        0x0002
+#define LWOF_NO_STATS        0x0001
 /* several writers use the same counter */
-#define LWOF_SHARE_STATS     0x0004
+#define LWOF_SHARE_STATS     0x0002
 
 typedef struct _LogWriterOptions
 {
@@ -63,10 +61,10 @@ typedef struct _LogWriterOptions
   LogTemplate *file_template;
   LogTemplate *proto_template;
   
-  gboolean keep_timestamp;
   gboolean use_time_recvd; /* deprecated */
-  gint ts_format;
+  gshort ts_format;
   glong zone_offset;
+  gshort frac_digits;
 } LogWriterOptions;
 
 typedef struct _LogWriter

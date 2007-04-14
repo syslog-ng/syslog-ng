@@ -2,6 +2,62 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-02-12 13:37:21 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-12
+
+    Summary:
+      fixed second fraction processing so that it actually shows up in output
+    Revision:
+      syslog-ng--mainline--2.0--patch-12
+
+    	* src/afsocket.h: removed AFSOCKET_PROTO_RFC3164, it might be
+    	readded later when multiple protocols will be added, but for now it
+    	only clutters the code
+    
+    	* src/cfg-grammar.y (KW_TIMESTAMP): moved keep_timestamp processing
+    	to the readers, logwriters always reformat the timestamp based on
+    	the parsed value, keep_timestamp(no) overwrites the timestamp in the
+    	message with the received time,
+    	(KW_FRAC_DIGITS): added a way to specify second fraction precision,
+    	it now defaults to zero, e.g. no fraction information is added,
+    
+    	* src/logmsg.c (log_stamp_format): added support for unix and full
+    	timestamps, added frac_digits argument
+    	(LogStamp): removed frac_present member, if the user requests second
+    	fragments one is always generated, if this information is not
+    	available 0 is assumed
+    
+    	* src/cfg.c (cfg_ts_format_value): added support for unix and full
+    	timestamps,
+    	(cfg_new): frac_digits is initialized to 0, keep_timestamp to TRUE
+    
+    	* src/logreader.c (log_reader_handle_line): overwrite the message
+    	timestamp if keep_timestamp if FALSE,
+    	(log_reader_options_init): use the global keep_timestamp setting is
+    	one is not specified
+    
+    	* src/logwriter.c (log_writer_format_log): always regenerate the
+    	timestamp if no template was specified, as there's no point in using
+    	the original date in the message as it clutters logs and might
+    	confuse receivers,
+    	(LWOF_FIXED_STAMP): removed, this is the default behaviour which can
+    	be overridden by using templates
+    
+    	* src/macros.c (log_macro_expand): use log_stamp_format for all
+    	date/time formatting instead of open-coding them,
+    	DATE uses the BSD timestamp, regardless of the value of ts_format
+    
+    	* src/test_template.c: fixed testprogram
+    
+
+    modified files:
+     ChangeLog NEWS doc/reference/syslog-ng.xml src/affile.c
+     src/afinet.c src/afsocket.c src/afsocket.h src/cfg-grammar.y
+     src/cfg-lex.l src/cfg.c src/cfg.h src/logmsg.c src/logmsg.h
+     src/logreader.c src/logreader.h src/logwriter.c
+     src/logwriter.h src/macros.c src/macros.h src/templates.c
+     src/templates.h tests/unit/test_template.c
+
+
 2006-02-11 19:29:56 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-11
 
     Summary:

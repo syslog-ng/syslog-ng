@@ -227,43 +227,35 @@ log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
 		          (self->options->use_time_recvd ? MF_STAMP_RECVD : 0), 
 		          self->options->ts_format,
 		          self->options->zone_offset,
+		          self->options->frac_digits,
 		          result);
 
     }
   else 
     {
       GString *ts;
-      gboolean ts_free;
-      
-      if (!self->options->keep_timestamp || !lm->date->len) 
-        {
-          /* reformat time stamp */
-          LogStamp *stamp;
-          
-          if (self->options->use_time_recvd)
-            stamp = &lm->recvd;
-          else
-            stamp = &lm->stamp;
-          ts_free = TRUE;
-          ts = g_string_sized_new(64);
-          log_stamp_format(stamp, ts, self->options->ts_format, self->options->zone_offset);
-        }
+      LogStamp *stamp;
+
+      /* no template was specified, use default */
+
+      if (self->options->use_time_recvd)
+        stamp = &lm->recvd;
       else
-        {
-          ts_free = FALSE;
-          ts = lm->date;
-        }
+        stamp = &lm->stamp;
+
+      ts = g_string_sized_new(64);
       if (self->flags & LW_FORMAT_FILE)
         {
+          log_stamp_format(stamp, ts, self->options->ts_format, self->options->zone_offset, self->options->frac_digits);
           g_string_sprintf(result, "%s %s %s\n", ts->str, lm->host->str, lm->msg->str);
-      
         }
       else if (self->flags & LW_FORMAT_PROTO)
         {
+          /* always use BSD timestamp by default, the use can override this using a custom template */
+          log_stamp_format(stamp, ts, TS_FMT_BSD, self->options->zone_offset, self->options->frac_digits);
           g_string_sprintf(result, "<%d>%s %s %s\n", lm->pri, ts->str, lm->host->str, lm->msg->str);
         }
-      if (ts_free)
-        g_string_free(ts, TRUE);
+      g_string_free(ts, TRUE);
     }
 }
 
@@ -455,12 +447,12 @@ log_writer_options_defaults(LogWriterOptions *options)
 {
   options->fifo_size = -1;
   options->template = NULL;
-  options->keep_timestamp = -1;
   options->use_time_recvd = -1;
   options->flush_lines = -1;
   options->flush_timeout = -1;
   options->ts_format = -1;
   options->zone_offset = -1;
+  options->frac_digits = -1;
 }
 
 void 
@@ -489,6 +481,8 @@ log_writer_options_init(LogWriterOptions *options, GlobalConfig *cfg, guint32 fl
     options->flush_lines = cfg->flush_lines;
   if (options->flush_timeout == -1)
     options->flush_timeout = cfg->flush_timeout;
+  if (options->frac_digits == -1)
+    options->frac_digits = cfg->frac_digits;
     
   if (options->fifo_size < options->flush_lines)
     {
@@ -499,21 +493,10 @@ log_writer_options_init(LogWriterOptions *options, GlobalConfig *cfg, guint32 fl
       options->flush_lines = options->fifo_size - 1;
     }
 
-  if ((flags & LWOF_FIXED_STAMP) == 0)
-    {
-      if (options->keep_timestamp == -1)
-        options->keep_timestamp = cfg->keep_timestamp;
-      if (options->ts_format == -1)
-        options->ts_format = cfg->ts_format;
-      if (options->zone_offset == -1)
-        options->zone_offset = cfg->send_zone_offset;
-    }
-  else
-    {
-      options->keep_timestamp = FALSE;
-      options->ts_format = TS_FMT_BSD;
-      options->zone_offset = -1;
-    }
+  if (options->ts_format == -1)
+    options->ts_format = cfg->ts_format;
+  if (options->zone_offset == -1)
+    options->zone_offset = cfg->send_zone_offset;
   options->file_template = log_template_ref(cfg->file_template);
   options->proto_template = log_template_ref(cfg->proto_template);
   options->stats_name = stats_name ? g_strdup(stats_name) : NULL;

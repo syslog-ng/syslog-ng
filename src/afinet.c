@@ -98,8 +98,6 @@ afinet_sd_new(gchar *host, gint port, guint flags)
   afsocket_sd_init_instance(&self->super, flags);
   self->super.flags |= AFSOCKET_KEEP_ALIVE;
   self->super.bind_addr = g_sockaddr_inet_new_resolve(host, port);
-  if (flags & AFSOCKET_DGRAM)
-    self->super.flags |= AFSOCKET_PROTO_RFC3164;
   return &self->super.super;
 }
 
@@ -137,7 +135,5 @@ afinet_dd_new(gchar *host, gint port, guint flags)
   afsocket_dd_init_instance(&self->super, flags);
   self->super.bind_addr = g_sockaddr_inet_new("0.0.0.0", 0);
   self->super.dest_addr = g_sockaddr_inet_new_resolve(host, port);
-  if (flags & AFSOCKET_DGRAM)
-    self->super.flags |= AFSOCKET_PROTO_RFC3164;
   return &self->super.super;
 }

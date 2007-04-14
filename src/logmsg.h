@@ -47,7 +47,8 @@
 /* timestamp formats */
 #define TS_FMT_BSD   0
 #define TS_FMT_ISO   1
-
+#define TS_FMT_FULL  2
+#define TS_FMT_UNIX  3
 
 struct _LogSourceGroup;
 struct _LogMessage;
@@ -64,14 +65,12 @@ typedef struct _LogAckBlock
 
 typedef struct _LogStamp
 {
-  gboolean frac_present;
   struct timeval time;
   /* zone offset in seconds, add this to UTC to get the time in local */
   glong zone_offset;
 } LogStamp;
 
-glong log_stamp_get_zone_offset(LogStamp *stamp, gint tz_convert, glong custom_zone_offset);
-void log_stamp_format(LogStamp *stamp, GString *target, gint ts_format, glong zone_offset);
+void log_stamp_format(LogStamp *stamp, GString *target, gint ts_format, glong zone_offset, gint frac_digits);
 
 typedef struct _LogMessage
 {

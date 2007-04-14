@@ -632,7 +632,7 @@
 	      </row>
 	      <row>
 		<entry>time_zone()</entry>
-		<entry>timezone in the form +/-HHMM</entry>
+		<entry>timezone in the form +/-HH:MM</entry>
 		<entry></entry>
 		<entry>
 		  The default timezone for messages read from this source if
@@ -649,6 +649,15 @@
                   source cannot be initialized, the error will be ignored.
                   No other attempt to initialize the source will be made
                   until the configuration is reloaded.
+                </entry>
+	      </row>
+	      <row>
+		<entry>keep_timestamp()</entry>
+		<entry>yes or no</entry>
+		<entry>yes</entry>
+		<entry>Specifies whether syslog-ng should accept the
+                  timestamp received from the peer. If keep_timestamp is set
+                  to no the time of reception will be used instead.
                 </entry>
 	      </row>
             </tbody>
@@ -1144,13 +1153,6 @@
 	      </row>
 	      <row>
 		<entry>fsync()</entry>
-		<entry></entry>
-		<entry>
-                </entry>
-		<entry></entry>
-	      </row>
-	      <row>
-		<entry>keep_timestamp()</entry>
 		<entry></entry>
 		<entry>
                 </entry>

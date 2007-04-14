@@ -110,6 +110,6 @@ guint
 log_macro_lookup(gchar *macro, gint len);
 
 gboolean
-log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, glong zone_offset, LogMessage *msg);
+log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, glong zone_offset, gint frac_digits, LogMessage *msg);
 
 #endif

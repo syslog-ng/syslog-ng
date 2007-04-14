@@ -182,6 +182,8 @@ log_reader_handle_line(LogReader *self, gchar *line, gint length, GSockAddr *sad
       
   if (m->stamp.zone_offset == -1)
     m->stamp.zone_offset = self->options->zone_offset;
+  if (!self->options->keep_timestamp)
+    m->stamp = m->recvd;
   log_pipe_queue(&self->super.super, m, 0);
   
   return log_source_free_to_send(&self->super);
@@ -445,6 +447,7 @@ log_reader_options_defaults(LogReaderOptions *options)
   options->msg_size = -1;
   options->follow_freq = -1; 
   options->zone_offset = -1;
+  options->keep_timestamp = -1;
 }
 
 void
@@ -459,5 +462,7 @@ log_reader_options_init(LogReaderOptions *options, GlobalConfig *cfg)
     options->follow_freq = cfg->follow_freq;
   if (options->zone_offset == -1)
     options->zone_offset = cfg->recv_zone_offset;
+  if (options->keep_timestamp == -1)
+    options->keep_timestamp = cfg->keep_timestamp;
 }
 

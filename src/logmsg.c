@@ -49,12 +49,13 @@ static char repeat_msg_string[] = "last message repeated";
  * @ts_format and @tz_convert. 
  **/
 void
-log_stamp_format(LogStamp *stamp, GString *target, gint ts_format, glong zone_offset)
+log_stamp_format(LogStamp *stamp, GString *target, gint ts_format, glong zone_offset, gint frac_digits)
 {
   glong target_zone_offset = 0, ofs;
   struct tm *tm;
   char ts[128], buf[8];
   time_t t;
+  glong usecs;
   
   if (zone_offset != -1)
     target_zone_offset = zone_offset;
@@ -81,20 +82,33 @@ log_stamp_format(LogStamp *stamp, GString *target, gint ts_format, glong zone_of
         case TS_FMT_ISO:
           strftime(ts, sizeof(ts), "%Y-%m-%dT%H:%M:%S", tm);
           g_string_assign_len(target, ts, 19);
-          if (stamp->frac_present)
+          usecs = stamp->time.tv_usec % 1000000;
+          
+          if (frac_digits > 0)
             {
-              gulong x, s;
+              gulong x;
               
               g_string_append_c(target, '.');
-              for (s = stamp->time.tv_usec % 1000000, x = 100000; x; x = x / 10)
+              for (x = 100000; frac_digits && x; x = x / 10)
                 {
-                  g_string_append_c(target, (s / x) + '0'); 
-                  s = s % x;
+                  g_string_append_c(target, (usecs / x) + '0'); 
+                  usecs = usecs % x;
+                  frac_digits--;
                 }
             }
           ofs = target_zone_offset < 0 ? -target_zone_offset : target_zone_offset;
           format_zone_info(buf, sizeof(buf), ofs);
           g_string_append(target, buf);
+          break;
+        case TS_FMT_FULL:
+          strftime(ts, sizeof(ts), "%Y %h %e %H:%M:%S", tm);
+          g_string_assign(target, ts);
+          break;
+        case TS_FMT_UNIX:
+          g_string_sprintf(target, "%d", (int) stamp->time.tv_sec);
+          break;
+        default:
+          g_assert_not_reached();
           break;
         }
     }
@@ -188,7 +202,7 @@ log_msg_parse(LogMessage *self, gchar *data, gint length, guint flags)
       guchar *p;
       gint hours, mins;
       
-      self->stamp.frac_present = FALSE;
+      self->stamp.time.tv_usec = 0;
       
       p = memchr(src, ' ', left);
       
@@ -205,7 +219,6 @@ log_msg_parse(LogMessage *self, gchar *data, gint length, guint flags)
           gint div = 1;
           /* process second fractions */
           
-          self->stamp.frac_present = TRUE;
           p++;
           while (isdigit(*p))
             {
@@ -240,8 +253,6 @@ log_msg_parse(LogMessage *self, gchar *data, gint length, guint flags)
     {
       /* RFC 3164 timestamp, expected format: MMM DD HH:MM:SS ... */
       struct tm tm, *nowtm;
-
-      self->stamp.frac_present = FALSE;
 
       /* Just read the buffer data into a textual
          datestamp. */
@@ -467,7 +478,6 @@ log_msg_init(LogMessage *self, GSockAddr *saddr)
 {
   self->ref_cnt = 1;
   gettimeofday(&self->recvd.time, NULL);
-  self->recvd.frac_present = TRUE;
   self->recvd.zone_offset = get_local_timezone_ofs(time(NULL));
   self->stamp = self->recvd;
   self->date = g_string_sized_new(16);

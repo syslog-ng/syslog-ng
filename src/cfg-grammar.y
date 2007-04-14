@@ -59,7 +59,7 @@ LogTemplate *last_template;
 %token KW_USE_DNS KW_USE_FQDN 
 %token KW_DNS_CACHE KW_DNS_CACHE_SIZE
 %token KW_DNS_CACHE_EXPIRE KW_DNS_CACHE_EXPIRE_FAILED
-%token KW_TZ_CONVERT KW_TS_FORMAT
+%token KW_TZ_CONVERT KW_TS_FORMAT KW_FRAC_DIGITS
 
 %token KW_LOG_FIFO_SIZE KW_LOG_FETCH_LIMIT KW_LOG_IW_SIZE KW_LOG_PREFIX KW_KERNEL
 
@@ -420,6 +420,7 @@ source_reader_option
 	| KW_PAD_SIZE '(' NUMBER ')'		{ last_reader_options->padding = $3; }
 	| KW_FOLLOW_FREQ '(' NUMBER ')'		{ last_reader_options->follow_freq = $3; }
 	| KW_TIME_ZONE '(' string ')'		{ cfg_timezone_value($3, &last_reader_options->zone_offset); free($3); }
+	| KW_KEEP_TIMESTAMP '(' yesno ')'	{ last_reader_options->keep_timestamp = $3; }
 	;
 
 source_reader_option_flags
@@ -635,10 +636,10 @@ dest_writer_option
 	                                          free($3);
 	                                        }
 	| KW_TEMPLATE_ESCAPE '(' yesno ')'	{ log_writer_options_set_template_escape(last_writer_options, $3); }
-	| KW_FSYNC '(' yesno ')'		{  msg_error("fsync() does not work yet", NULL); }
-	| KW_KEEP_TIMESTAMP '(' yesno ')'	{ last_writer_options->keep_timestamp = $3; }
+	| KW_FSYNC '(' yesno ')'		{ msg_error("fsync() does not work yet", NULL); }
 	| KW_TIME_ZONE '(' string ')'           { cfg_timezone_value($3, &last_writer_options->zone_offset); free($3); }
 	| KW_TS_FORMAT '(' string ')'		{ last_writer_options->ts_format = cfg_ts_format_value($3); free($3); }
+	| KW_FRAC_DIGITS '(' NUMBER ')'		{ last_writer_options->frac_digits = $3; }
 	;
 
 dest_writer_options_flags
@@ -704,6 +705,7 @@ options_item
 	| KW_LOG_MSG_SIZE '(' NUMBER ')'	{ configuration->log_msg_size = $3; }
 	| KW_KEEP_TIMESTAMP '(' yesno ')'	{ configuration->keep_timestamp = $3; }
 	| KW_TS_FORMAT '(' string ')'		{ configuration->ts_format = cfg_ts_format_value($3); free($3); }
+	| KW_FRAC_DIGITS '(' NUMBER ')'		{ configuration->frac_digits = $3; }
 	| KW_GC_BUSY_THRESHOLD '(' NUMBER ')' 	{ /* ignored */; }
 	| KW_GC_IDLE_THRESHOLD '(' NUMBER ')'	{ /* ignored */; }
 	| KW_CREATE_DIRS '(' yesno ')'		{ configuration->create_dirs = $3; }
