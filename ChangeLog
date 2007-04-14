@@ -2,6 +2,21 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-04-23 10:35:57 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-44
+
+    Summary:
+      fixed endless-loop and CPU spinning if a non-existing filter is referenced in the internal() path
+    Revision:
+      syslog-ng--mainline--2.0--patch-44
+
+    	* src/filter.c (filter_call_eval): only log the "not-found filter"
+    	error message once
+    
+
+    modified files:
+     ChangeLog src/filter.c
+
+
 2006-04-23 10:22:21 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-43
 
     Summary:

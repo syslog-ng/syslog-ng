@@ -402,6 +402,7 @@ typedef struct _FilterCall
   FilterExprNode super;
   GString *rule;
   GlobalConfig *cfg;
+  gboolean error_logged;
 } FilterCall;
 
 static gboolean
@@ -418,10 +419,14 @@ filter_call_eval(FilterExprNode *s, LogMessage *msg)
     }
   else
     {
-      msg_error("Referenced filter rule not found",
-                evt_tag_str("rule", self->rule->str),
-                NULL);
-      return 0;
+      if (!self->error_logged)
+        {
+          msg_error("Referenced filter rule not found",
+                    evt_tag_str("rule", self->rule->str),
+                    NULL);
+          self->error_logged = TRUE;
+        }
+      return 1 ^ s->comp;
     }
 }
 
