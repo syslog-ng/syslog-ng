@@ -2,6 +2,20 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2007-03-19 17:41:46 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-141
+
+    Summary:
+      some more message clarification
+    Revision:
+      syslog-ng--mainline--2.0--patch-141
+
+    
+    
+
+    modified files:
+     ChangeLog src/main.c
+
+
 2007-03-19 17:35:37 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-140
 
     Summary:

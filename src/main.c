@@ -164,7 +164,7 @@ main_loop_run(GlobalConfig *cfg)
       g_main_context_iteration(g_main_loop_get_context(main_loop), TRUE);
       if (sig_hup_received)
         {
-          msg_notice("SIGHUP received, reloading configuration", NULL);
+          msg_notice("Configuration reload request received, reloading configuration", NULL);
           cfg = cfg_reload_config(cfgfilename, cfg);
           sig_hup_received = FALSE;
           if (cfg->stats_freq > 0)
@@ -177,7 +177,7 @@ main_loop_run(GlobalConfig *cfg)
         }
       if (sig_term_received)
         {
-          msg_notice("Termination requested via signal, terminating", NULL);
+          msg_info("Termination requested via signal, terminating", NULL);
           sig_term_received = FALSE;
           break;
         }
