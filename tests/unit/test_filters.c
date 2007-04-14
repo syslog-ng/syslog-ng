@@ -13,13 +13,23 @@ int debug = 1;
 static gint
 facility_bits(gchar *fac)
 {
-  return 1 << syslog_lookup_facility(fac);
+  return 1 << syslog_name_lookup_facility_by_name(fac);
 }
 
 static gint
 level_bits(gchar *lev)
 {
-  return 1 << syslog_lookup_level(lev);
+  return 1 << syslog_name_lookup_level_by_name(lev);
+}
+
+static gint
+level_range(gchar *from, gchar *to)
+{
+  int r1, r2;
+  
+  r1 = syslog_name_lookup_level_by_name(from); 
+  r2 = syslog_name_lookup_level_by_name(to);
+  return syslog_make_range(r1, r2);
 }
 
 void
@@ -69,7 +79,6 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   
   msg_init(1);
   
-  
   testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, filter_facility_new(facility_bits("user")), 1);
   testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, filter_facility_new(facility_bits("daemon")), 0);
   testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, filter_facility_new(facility_bits("daemon") | facility_bits("user")), 1);
@@ -89,6 +98,24 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 
   testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, filter_level_new(level_bits("debug") | level_bits("emerg")), 1);
   testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, filter_level_new(level_bits("emerg")), 0);
+
+  testcase("<8> openvpn[2499]: PTHREAD support initialized", 0, filter_level_new(level_range("crit", "emerg")), 1);
+  testcase("<9> openvpn[2499]: PTHREAD support initialized", 0, filter_level_new(level_range("crit", "emerg")), 1);
+  testcase("<10> openvpn[2499]: PTHREAD support initialized", 0, filter_level_new(level_range("crit", "emerg")), 1);
+  testcase("<11> openvpn[2499]: PTHREAD support initialized", 0, filter_level_new(level_range("crit", "emerg")), 0);
+  testcase("<12> openvpn[2499]: PTHREAD support initialized", 0, filter_level_new(level_range("crit", "emerg")), 0);
+  testcase("<13> openvpn[2499]: PTHREAD support initialized", 0, filter_level_new(level_range("crit", "emerg")), 0);
+  testcase("<14> openvpn[2499]: PTHREAD support initialized", 0, filter_level_new(level_range("crit", "emerg")), 0);
+  testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, filter_level_new(level_range("crit", "emerg")), 0);
+
+  testcase("<8> openvpn[2499]: PTHREAD support initialized", 0, filter_level_new(level_range("debug", "notice")), 0);
+  testcase("<9> openvpn[2499]: PTHREAD support initialized", 0, filter_level_new(level_range("debug", "notice")), 0);
+  testcase("<10> openvpn[2499]: PTHREAD support initialized", 0, filter_level_new(level_range("debug", "notice")), 0);
+  testcase("<11> openvpn[2499]: PTHREAD support initialized", 0, filter_level_new(level_range("debug", "notice")), 0);
+  testcase("<12> openvpn[2499]: PTHREAD support initialized", 0, filter_level_new(level_range("debug", "notice")), 0);
+  testcase("<13> openvpn[2499]: PTHREAD support initialized", 0, filter_level_new(level_range("debug", "notice")), 1);
+  testcase("<14> openvpn[2499]: PTHREAD support initialized", 0, filter_level_new(level_range("debug", "notice")), 1);
+  testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, filter_level_new(level_range("debug", "notice")), 1);
 
   for (i = 0; i < 10; i++)
     {

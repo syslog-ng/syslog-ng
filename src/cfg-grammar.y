@@ -807,7 +807,7 @@ filter_fac_list
 filter_fac
 	: IDENTIFIER				
 	  { 
-	    int n = syslog_lookup_facility($1);
+	    int n = syslog_name_lookup_facility_by_name($1);
 	    if (n == -1)
 	      {
 	        msg_error("Warning: Unknown facility", 
@@ -830,12 +830,12 @@ filter_level
 	: IDENTIFIER DOTDOT IDENTIFIER		
 	  { 
 	    int r1, r2;
-	    r1 = syslog_lookup_level($1);
+	    r1 = syslog_name_lookup_level_by_name($1);
 	    if (r1 == -1)
 	      msg_error("Warning: Unknown priority level",
                         evt_tag_str("priority", $1),
                         NULL);
-	    r2 = syslog_lookup_level($3);
+	    r2 = syslog_name_lookup_level_by_name($3);
 	    if (r2 == -1)
 	      msg_error("Warning: Unknown priority level",
                         evt_tag_str("priority", $1),
@@ -849,7 +849,7 @@ filter_level
 	  }
 	| IDENTIFIER				
 	  { 
-	    int n = syslog_lookup_level($1); 
+	    int n = syslog_name_lookup_level_by_name($1); 
 	    if (n == -1)
 	      {
 	        msg_error("Warning: Unknown priority level",

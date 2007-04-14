@@ -237,30 +237,8 @@ filter_level_eval(FilterExprNode *s, LogMessage *msg)
 {
   FilterPri *self = (FilterPri *) s;
   guint32 pri = msg->pri & LOG_PRIMASK;
-  gint i;
-  static gchar bitpos[8] = 
-  {
-    -1, -1, -1, -1, -1, -1, -1, -1
-  };
   
-  if (G_LIKELY(bitpos[pri] != -1))
-    {
-      return (!!(self->valid & (1 << bitpos[pri]))) ^ s->comp;
-    }
-  else
-    {
-      guint32 bits = self->valid;
-          
-      for (i = 0; bits && sl_levels[i].name; i++, bits >>= 1) 
-        {
-          if ((bits & 1) && sl_levels[i].value == pri) 
-            {
-              bitpos[pri] = i;
-              return !self->super.comp;
-            }
-        }
-    }
-  return self->super.comp;
+  return !!((1 << pri) & self->valid) ^ self->super.comp;
 }
 
 FilterExprNode *

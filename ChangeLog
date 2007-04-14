@@ -2,6 +2,42 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-06-12 08:47:41 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-62
+
+    Summary:
+      fixed evaluation of priority range filters
+    Revision:
+      syslog-ng--mainline--2.0--patch-62
+
+    
+    	* src/syslog-names.c (syslog_name_find_name): new inline function
+    	used by various lookup functions,
+    	(syslog_name_lookup_id_by_name): renamed from syslog_lookup_name,
+    	(syslog_name_lookup_name_by_value): renamed from syslog_lookup_value,
+    	(syslog_name_lookup_value_by_name): new function,
+    	(syslog_make_range): renamed parameters to make the code more readable
+    
+    	* src/syslog-names.h (syslog_name_lookup_level_by_name): changed to
+    	return the _VALUE_ for syslog message levels,
+    	(syslog_name_lookup_facility_by_name): follow name changes
+    
+    	* src/cfg-grammar.y: use the new, more readable function names in
+    	syslog-names.c
+    
+    	* src/filter.c (filter_level_eval): we store a bitmask of the value
+    	of priorities instead of our internal ids, thus the function body
+    	was simplified a lot (and it works now :)
+    
+    	* src/macros.c (log_macro_expand): follow function renames
+    
+    	* tests/unit/test_filters.c: added level range tests
+
+    modified files:
+     ChangeLog src/cfg-grammar.y src/filter.c src/macros.c
+     src/syslog-names.c src/syslog-names.h
+     tests/unit/test_filters.c
+
+
 2006-06-12 07:53:10 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-61
 
     Summary:

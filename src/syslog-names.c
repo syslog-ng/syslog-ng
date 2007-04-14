@@ -26,17 +26,17 @@
 #include <string.h>
 
 struct sl_name sl_levels[] = {
+  {"emerg", LOG_EMERG},
+  {"panic", LOG_EMERG},		/* DEPRECATED */
   {"alert", LOG_ALERT},
   {"crit", LOG_CRIT},
-  {"debug", LOG_DEBUG},
-  {"emerg", LOG_EMERG},
   {"err", LOG_ERR},
   {"error", LOG_ERR},		/* DEPRECATED */
-  {"info", LOG_INFO},
-  {"notice", LOG_NOTICE},
-  {"panic", LOG_EMERG},		/* DEPRECATED */
   {"warning", LOG_WARNING},
   {"warn", LOG_WARNING},	/* DEPRECATED */
+  {"notice", LOG_NOTICE},
+  {"info", LOG_INFO},
+  {"debug", LOG_DEBUG},
   {NULL, -1}
 };
 
@@ -71,11 +71,11 @@ struct sl_name sl_facilities[] = {
   {NULL, -1}
 };
 
-int
-syslog_lookup_name(const char *name, struct sl_name names[])
+static inline int
+syslog_name_find_name(const char *name, struct sl_name names[])
 {
   int i;
-
+  
   for (i = 0; names[i].name; i++)
     {
       if (strcasecmp(name, names[i].name) == 0)
@@ -86,8 +86,27 @@ syslog_lookup_name(const char *name, struct sl_name names[])
   return -1;
 }
 
-char *
-syslog_lookup_value(int value, struct sl_name names[])
+int
+syslog_name_lookup_id_by_name(const char *name, struct sl_name names[])
+{
+  return syslog_name_find_name(name, names);
+}
+
+int
+syslog_name_lookup_value_by_name(const char *name, struct sl_name names[])
+{
+  int i;
+  
+  i = syslog_name_find_name(name, names);
+  if (i != -1)
+    {
+      return names[i].value;
+    }
+  return -1;
+}
+
+const char *
+syslog_name_lookup_name_by_value(int value, struct sl_name names[])
 {
   int i;
 
@@ -102,15 +121,15 @@ syslog_lookup_value(int value, struct sl_name names[])
 }
 
 guint32
-syslog_make_range(guint32 r1, guint32 r2)
+syslog_make_range(guint32 value1, guint32 value2)
 {
   guint32 x;
 
-  if (r1 > r2)
+  if (value1 > value2)
     {
-      x = r2;
-      r2 = r1;
-      r1 = x;
+      x = value2;
+      value2 = value1;
+      value1 = x;
     }
-  return ((1 << (r2 + 1)) - 1) & ~((1 << r1) - 1);
+  return ((1 << (value2 + 1)) - 1) & ~((1 << value1) - 1);
 }

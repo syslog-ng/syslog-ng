@@ -154,9 +154,9 @@ log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, glong 
     case M_FACILITY:
       {
         /* facility */
-        char *n;
+        const char *n;
         
-        n = syslog_lookup_value(msg->pri & LOG_FACMASK, sl_facilities);
+        n = syslog_name_lookup_name_by_value(msg->pri & LOG_FACMASK, sl_facilities);
         if (n)
           {
             g_string_append(result, n);
@@ -175,9 +175,9 @@ log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, glong 
     case M_LEVEL:
       {
         /* level */
-        char *n;
+        const char *n;
         
-        n = syslog_lookup_value(msg->pri & LOG_PRIMASK, sl_levels);
+        n = syslog_name_lookup_name_by_value(msg->pri & LOG_PRIMASK, sl_levels);
         if (n)
           {
             g_string_append(result, n);
