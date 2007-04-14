@@ -48,13 +48,16 @@ log_writer_fd_prepare(GSource *source,
                       gint *timeout)
 {
   LogWriterWatch *self = (LogWriterWatch *) source;
+  gint num_elements = self->writer->queue->length / 2;
 
-  if (self->writer->queue->length / 2 > self->writer->options->flush_lines || self->writer->partial)
+  if (self->writer->partial ||
+      (self->writer->options->flush_lines == 0 && num_elements != 0) ||
+      (self->writer->options->flush_lines > 0  && num_elements >= self->writer->options->flush_lines))
     {
       /* we need to flush our buffers */
       self->pollfd.events = self->fd->cond;
     }
-  else if (self->writer->queue->length)
+  else if (num_elements)
     {
       /* our buffer does not contain enough elements to flush, but we do not
        * want to wait more than this time */

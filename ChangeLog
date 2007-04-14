@@ -2,6 +2,25 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-04-20 12:07:17 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-41
+
+    Summary:
+      fixed off-by-one in flush_lines() calculation
+    Revision:
+      syslog-ng--mainline--2.0--patch-41
+
+    	* src/logwriter.c (log_writer_fd_prepare): flush_lines(1) required
+    	two lines to be flushed, modified the condition so that:
+    	flush_lines(0) that output buffering is off, flush_lines(1) is
+    	basically equivalent, every single individual line is flushed,
+    	flush_lines(2) flushes the output buffer if two lines are already
+    	available
+    
+
+    modified files:
+     ChangeLog src/logwriter.c
+
+
 2006-04-20 11:57:20 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-40
 
     Summary:
