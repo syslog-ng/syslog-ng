@@ -2,6 +2,41 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-04-10 20:47:03 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-33
+
+    Summary:
+      implemented bad_hostname and check_hostname options
+    Revision:
+      syslog-ng--mainline--2.0--patch-33
+
+    	* src/cfg-grammar.y: added KW_BAD_HOSTNAME and KW_CHECK_HOSTNAME tokens
+    
+    	* src/cfg-lex.l: added keywords for KW_BAD_HOSTNAME and KW_CHECK_HOSTNAME
+    
+    	* src/cfg.c (cfg_bad_hostname_set): new function, set global bad_hostname regexp,
+    	(cfg_init): compile bad_hostname_re
+    
+    	* src/log.c (log_msg_parse): added bad_hostname regexp param, and an
+    	implementation of check_hostname() and bad_hostname(),
+    	(log_msg_init): avoid a time(NULL) call,
+    	(log_msg_new): added bad_hostname parameter,
+    	(log_reader_options_init): set options->options and
+    	options->bad_hostname based on the values stored in GlobalConfig
+    
+    	* tests/unit/test_msgparse.c: added testcases for check_hostname()
+    	and bad_hostname()
+    
+    	* src/*.c, src/*.h: followed changes
+    
+    
+
+    modified files:
+     ChangeLog NEWS src/cfg-grammar.y src/cfg-lex.l src/cfg.c
+     src/cfg.h src/logmsg.c src/logmsg.h src/logreader.c
+     src/logreader.h src/messages.c tests/unit/test_filters.c
+     tests/unit/test_msgparse.c tests/unit/test_template.c
+
+
 2006-04-09 08:02:44 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-32
 
     Summary:

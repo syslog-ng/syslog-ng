@@ -175,7 +175,7 @@ log_reader_handle_line(LogReader *self, gchar *line, gint length, GSockAddr *sad
             evt_tag_printf("line", "%.*s", length, line),
             NULL);
       
-  m = log_msg_new(line, length, saddr, parse_flags);
+  m = log_msg_new(line, length, saddr, parse_flags, self->options->bad_hostname);
   
   if (self->options->prefix)
     g_string_prepend(m->msg, self->options->prefix);
@@ -215,7 +215,7 @@ log_reader_iterate_buf(LogReader *self, GSockAddr *saddr, gboolean flush, gint *
     parse_flags |= LP_INTERNAL;
   if (self->flags & LR_LOCAL)
     parse_flags |= LF_LOCAL;
-
+    
   if (!eol &&
       ((self->ofs == self->options->msg_size) || 
        ((self->flags & LR_PKTTERM) && self->ofs) || 
@@ -457,6 +457,7 @@ log_reader_options_defaults(LogReaderOptions *options)
   options->follow_freq = -1; 
   options->zone_offset = -1;
   options->keep_timestamp = -1;
+  options->bad_hostname = NULL;
 }
 
 void
@@ -473,5 +474,8 @@ log_reader_options_init(LogReaderOptions *options, GlobalConfig *cfg)
     options->zone_offset = cfg->recv_zone_offset;
   if (options->keep_timestamp == -1)
     options->keep_timestamp = cfg->keep_timestamp;
+  options->options |= LRO_CHECK_HOSTNAME * (!!cfg->check_hostname);
+  if (cfg->bad_hostname_compiled)
+    options->bad_hostname = &cfg->bad_hostname;
 }
 

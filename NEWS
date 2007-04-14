@@ -1,8 +1,8 @@
 1.9.10
-	Sun, 02 Apr 2006 12:04:06 +0200
 
 	Some minor new features:
 	* Added netmask() filter which was missing from previous releases.
+	* Readded an implementation of bad_hostname() and check_hostname().
 
 	Bugfixes:
 	* Fixed a possible abort in program() destinations and fix to

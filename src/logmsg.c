@@ -126,7 +126,7 @@ log_stamp_format(LogStamp *stamp, GString *target, gint ts_format, glong zone_of
  * in @self. Parsing is affected by the bits set @flags argument.
  **/
 static void
-log_msg_parse(LogMessage *self, gchar *data, gint length, guint flags)
+log_msg_parse(LogMessage *self, gchar *data, gint length, guint flags, regex_t *bad_hostname)
 {
   unsigned char *src;
   int left;
@@ -332,9 +332,11 @@ log_msg_parse(LogMessage *self, gchar *data, gint length, guint flags)
 	  ;			/* It is. Do nothing since there's no hostname or
 				   program name coming. */
 	}
-      /* It's a regular ol' message. */
       else
 	{
+          /* It's a regular ol' message. */
+	  gchar hostname_buf[256];
+	  gint dst = 0;
 
 	  /* If we haven't already found the original hostname,
 	     look for it now. */
@@ -342,13 +344,26 @@ log_msg_parse(LogMessage *self, gchar *data, gint length, guint flags)
 	  oldsrc = src;
 	  oldleft = left;
 
-	  while (left && *src != ' ' && *src != ':' && *src != '[')
+	  while (left && *src != ' ' && *src != ':' && *src != '[' && dst < sizeof(hostname_buf) - 1)
 	    {
-	      src++;
-	      left--;
+              if (flags & LP_CHECK_HOSTNAME &&
+                  !((*src >= 'A' && *src <= 'Z') ||
+                    (*src >= 'a' && *src <= 'z') ||
+                    (*src >= '0' && *src <= '9') ||
+                    *src == '-' || *src == '_' ||
+                    *src == '.' || *src == ':' ||
+                    *src == '@' || *src == '/')) 
+                {
+                  break;
+                }
+              hostname_buf[dst++] = *src;
+              src++;
+              left--;
 	    }
-
-	  if (left && *src == ' ')
+          hostname_buf[dst] = 0;
+                                  
+	  if (left && *src == ' ' &&
+	      (!bad_hostname || regexec(bad_hostname, hostname_buf, 0, NULL, 0)))
 	    {
 	      /* This was a hostname. It came from a
 	         syslog-ng, since syslogd doesn't send
@@ -505,7 +520,7 @@ log_msg_init(LogMessage *self, GSockAddr *saddr)
 {
   self->ref_cnt = 1;
   gettimeofday(&self->recvd.time, NULL);
-  self->recvd.zone_offset = get_local_timezone_ofs(time(NULL));
+  self->recvd.zone_offset = get_local_timezone_ofs(self->recvd.time.tv_sec);
   self->stamp = self->recvd;
   self->date = g_string_sized_new(16);
   self->host = g_string_sized_new(32);
@@ -525,12 +540,12 @@ log_msg_init(LogMessage *self, GSockAddr *saddr)
  * This function allocates, parses and returns a new LogMessage instance.
  **/
 LogMessage *
-log_msg_new(gchar *msg, gint length, GSockAddr *saddr, guint flags)
+log_msg_new(gchar *msg, gint length, GSockAddr *saddr, guint flags, regex_t *bad_hostname)
 {
   LogMessage *self = g_new0(LogMessage, 1);
   
   log_msg_init(self, saddr);
-  log_msg_parse(self, msg, length, flags);
+  log_msg_parse(self, msg, length, flags, bad_hostname);
   return self;
 }
 
@@ -543,7 +558,7 @@ log_msg_new(gchar *msg, gint length, GSockAddr *saddr, guint flags)
 LogMessage *
 log_msg_new_mark(void)
 {
-  LogMessage *self = log_msg_new("-- MARK --", 10, NULL, LP_NOPARSE);
+  LogMessage *self = log_msg_new("-- MARK --", 10, NULL, LP_NOPARSE, NULL);
   self->flags = LF_LOCAL | LF_MARK;
   self->pri = LOG_SYSLOG | LOG_INFO;
   return self;

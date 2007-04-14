@@ -27,6 +27,7 @@
 #include "syslog-ng.h"
 
 #include <sys/types.h>
+#include <regex.h>
 
 struct _LogSourceGroup;
 struct _LogDestGroup;
@@ -51,6 +52,10 @@ typedef struct _GlobalConfig
   gboolean chain_hostnames;
   gboolean normalize_hostnames;
   gboolean keep_hostname;
+  gboolean check_hostname;
+  gboolean bad_hostname_compiled;
+  regex_t bad_hostname;
+  gchar *bad_hostname_re;
   gboolean use_time_recvd;
   gboolean use_fqdn;
   gboolean use_dns;
@@ -110,6 +115,7 @@ struct _LogTemplate *cfg_lookup_template(GlobalConfig *cfg, gchar *name);
 void cfg_file_owner_set(GlobalConfig *self, gchar *owner);
 void cfg_file_group_set(GlobalConfig *self, gchar *group);
 void cfg_file_perm_set(GlobalConfig *self, gint perm);
+void cfg_bad_hostname_set(GlobalConfig *self, gchar *bad_hostname_re);
 
 void cfg_dir_owner_set(GlobalConfig *self, gchar *owner);
 void cfg_dir_group_set(GlobalConfig *self, gchar *group);

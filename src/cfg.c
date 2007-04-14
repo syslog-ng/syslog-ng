@@ -132,6 +132,14 @@ cfg_dir_perm_set(GlobalConfig *self, gint perm)
 }
 
 void
+cfg_bad_hostname_set(GlobalConfig *self, gchar *bad_hostname_re)
+{
+  if (self->bad_hostname_re)
+    g_free(self->bad_hostname_re);
+  self->bad_hostname_re = g_strdup(bad_hostname_re);  
+}
+
+void
 cfg_add_source(GlobalConfig *cfg, LogSourceGroup *group)
 {
   g_hash_table_insert(cfg->sources, group->name->str, group);
@@ -172,6 +180,8 @@ cfg_lookup_template(GlobalConfig *cfg, gchar *name)
 gboolean
 cfg_init(GlobalConfig *cfg, PersistentConfig *persist)
 {
+  gint regerr;
+  
   if (cfg->file_template_name && !(cfg->file_template = cfg_lookup_template(cfg, cfg->file_template_name)))
     msg_notice("Error resolving file template",
                evt_tag_str("name", cfg->file_template_name),
@@ -180,6 +190,21 @@ cfg_init(GlobalConfig *cfg, PersistentConfig *persist)
     msg_notice("Error resolving protocol template",
                evt_tag_str("name", cfg->proto_template_name),
                NULL);
+
+  if ((regerr = regcomp(&cfg->bad_hostname, cfg->bad_hostname_re, REG_NOSUB | REG_EXTENDED)) != 0)
+    {
+      gchar buf[256];
+      
+      regerror(regerr, &cfg->bad_hostname, buf, sizeof(buf));
+      msg_error("Error compiling bad_hostname regexp",
+                evt_tag_str("error", buf),
+                NULL);
+    }
+  else
+    { 
+      cfg->bad_hostname_compiled = TRUE;
+    }
+    
   return cfg->center->super.init(&cfg->center->super, cfg, persist);
 }
 
@@ -327,7 +352,9 @@ cfg_free(GlobalConfig *self)
   g_hash_table_destroy(self->filters);
   g_hash_table_destroy(self->templates);
   g_ptr_array_free(self->connections, TRUE);
-  
+  if (self->bad_hostname_compiled)
+    regfree(&self->bad_hostname);
+  g_free(self->bad_hostname_re);
   g_free(self);
 }
 

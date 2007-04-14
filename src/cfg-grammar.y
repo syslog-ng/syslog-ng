@@ -55,7 +55,8 @@ LogTemplate *last_template;
 /* option items */
 %token KW_FSYNC KW_MARK_FREQ KW_STATS_FREQ KW_FLUSH_LINES KW_FLUSH_TIMEOUT KW_LOG_MSG_SIZE KW_FILE_TEMPLATE KW_PROTO_TEMPLATE
 
-%token KW_CHAIN_HOSTNAMES KW_NORMALIZE_HOSTNAMES KW_KEEP_HOSTNAME KW_KEEP_TIMESTAMP
+%token KW_CHAIN_HOSTNAMES KW_NORMALIZE_HOSTNAMES KW_KEEP_HOSTNAME KW_CHECK_HOSTNAME KW_BAD_HOSTNAME
+%token KW_KEEP_TIMESTAMP
 %token KW_USE_DNS KW_USE_FQDN 
 %token KW_DNS_CACHE KW_DNS_CACHE_SIZE
 %token KW_DNS_CACHE_EXPIRE KW_DNS_CACHE_EXPIRE_FAILED
@@ -696,6 +697,8 @@ options_item
 	| KW_CHAIN_HOSTNAMES '(' yesno ')'	{ configuration->chain_hostnames = $3; }
 	| KW_NORMALIZE_HOSTNAMES '(' yesno ')'	{ configuration->normalize_hostnames = $3; }
 	| KW_KEEP_HOSTNAME '(' yesno ')'	{ configuration->keep_hostname = $3; }
+	| KW_CHECK_HOSTNAME '(' yesno ')'	{ configuration->check_hostname = $3; }
+	| KW_BAD_HOSTNAME '(' STRING ')'	{ cfg_bad_hostname_set(configuration, $3); free($3); }
 	| KW_USE_TIME_RECVD '(' yesno ')'	{ configuration->use_time_recvd = $3; }
 	| KW_USE_FQDN '(' yesno ')'		{ configuration->use_fqdn = $3; }
 	| KW_USE_DNS '(' yesno ')'		{ configuration->use_dns = $3; }

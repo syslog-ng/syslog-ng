@@ -33,7 +33,7 @@ testcase(gchar *msg,
   static gint testno = 0;
   
   testno++;
-  logmsg = log_msg_new(msg, strlen(msg), NULL, parse_flags);
+  logmsg = log_msg_new(msg, strlen(msg), NULL, parse_flags, NULL);
   logmsg->saddr = g_sockaddr_inet_new("10.10.0.1", 5000);
   
   res = filter_expr_eval(f, logmsg);

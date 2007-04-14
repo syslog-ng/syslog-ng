@@ -81,6 +81,8 @@ static struct keyword keywords[] = {
         { "chain_hostnames",    KW_CHAIN_HOSTNAMES },
         { "normalize_hostnames",KW_NORMALIZE_HOSTNAMES },
         { "keep_hostname",      KW_KEEP_HOSTNAME },
+        { "check_hostname",     KW_CHECK_HOSTNAME },
+        { "bad_hostname",       KW_BAD_HOSTNAME },
         { "keep_timestamp",	KW_KEEP_TIMESTAMP },
         { "ts_format",		KW_TS_FORMAT },
         { "frac_digits",        KW_FRAC_DIGITS },

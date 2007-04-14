@@ -31,6 +31,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <sys/time.h>
+#include <regex.h>
 
 #define LP_NOPARSE         0x0001
 #define LP_INTERNAL        0x0002
@@ -95,7 +96,7 @@ typedef struct _LogMessage
 LogMessage *log_msg_ref(LogMessage *m);
 void log_msg_unref(LogMessage *m);
 
-LogMessage *log_msg_new(gchar *msg, gint length, GSockAddr *saddr, guint flags);
+LogMessage *log_msg_new(gchar *msg, gint length, GSockAddr *saddr, guint flags, regex_t *bad_hostname);
 LogMessage *log_msg_new_mark(void);
 
 void log_msg_ack_block_inc(LogMessage *m);

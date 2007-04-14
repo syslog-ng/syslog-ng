@@ -37,9 +37,9 @@
 #define LR_COMPLETE_LINE 0x0100
 
 /* options */
-#define LRO_NOPARSE   0x0001
+#define LRO_NOPARSE        0x0001
 #define LRO_CHECK_HOSTNAME 0x0002
-#define LRO_KERNEL    0x0002
+#define LRO_KERNEL         0x0004
 
 typedef struct _LogReaderOptions
 {
@@ -54,6 +54,7 @@ typedef struct _LogReaderOptions
   /* source time zone if one is not specified in the message */
   glong zone_offset;
   gboolean keep_timestamp;
+  regex_t *bad_hostname;
 } LogReaderOptions;
 
 typedef struct _LogReader

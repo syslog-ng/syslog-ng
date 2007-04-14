@@ -1,6 +1,7 @@
 #include "syslog-ng.h"
 #include "logmsg.h"
 #include "templates.h"
+#include "misc.h"
 
 #include <time.h>
 #include <stdlib.h>
@@ -39,7 +40,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   putenv("TZ=CET");
   tzset();
 
-  msg = log_msg_new(msg_str, strlen(msg_str), g_sockaddr_inet_new("10.10.10.10", 1010), 0);
+  msg = log_msg_new(msg_str, strlen(msg_str), g_sockaddr_inet_new("10.10.10.10", 1010), 0, NULL);
   
   /* fix some externally or automatically defined values */
   g_string_assign(msg->host_from, "kismacska");
