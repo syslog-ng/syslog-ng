@@ -1200,7 +1200,7 @@
 							<row>
                                                                 <entry>remove_if_older()</entry>
 								<entry>number</entry>
-								<entry>Obsolete alias for overwrite_if_older()<entry>
+								<entry>Obsolete alias for overwrite_if_older()</entry>
 								<entry>Same as overwrite_if_older()</entry>
 							</row>
 						</tbody>

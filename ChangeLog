@@ -2,6 +2,20 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-12-21 08:48:42 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-112
+
+    Summary:
+      fixed XML syntax error in refguide
+    Revision:
+      syslog-ng--mainline--2.0--patch-112
+
+    
+    
+
+    modified files:
+     ChangeLog doc/reference/syslog-ng.xml
+
+
 2006-12-21 08:46:42 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-111
 
     Summary:
