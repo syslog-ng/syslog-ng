@@ -143,8 +143,8 @@ stats_generate_log(void)
   StatsCounterType type;
   gchar *tag_names[SC_TYPE_MAX] =
   {
-    [SC_TYPE_DROPPED] = "dropped",
-    [SC_TYPE_PROCESSED] = "processed",
+    /* [SC_TYPE_DROPPED]   = */ "dropped",
+    /* [SC_TYPE_PROCESSED] = */ "processed",
   };
   
   e = msg_event_create(EVT_PRI_NOTICE, "Log statistics", NULL);

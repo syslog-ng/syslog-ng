@@ -2,6 +2,22 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-05-26 19:33:31 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-56
+
+    Summary:
+      removed C99ism from stats.c
+    Revision:
+      syslog-ng--mainline--2.0--patch-56
+
+    	* src/stats.c (stats_generate_log): remove C99 initializers from the
+    	initialization of tag_names to make syslog-ng compatible with vendor
+    	compilers of various commercial UNIX platforms
+    
+
+    modified files:
+     ChangeLog src/stats.c
+
+
 2006-05-26 19:30:30 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-55
 
     Summary:
