@@ -68,6 +68,8 @@ typedef struct _LogReader
   LogReaderOptions *options;
 } LogReader;
 
+void log_reader_set_options(LogPipe *self, LogReaderOptions *options);
+
 LogPipe *log_reader_new(FDRead *fd, guint32 flags, LogPipe *control, LogReaderOptions *options);
 void log_reader_options_defaults(LogReaderOptions *options);
 void log_reader_options_init(LogReaderOptions *options, GlobalConfig *cfg);

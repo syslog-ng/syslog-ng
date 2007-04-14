@@ -96,7 +96,7 @@ afinet_sd_new(gchar *host, gint port, guint flags)
   AFInetSourceDriver *self = g_new0(AFInetSourceDriver, 1);
   
   afsocket_sd_init_instance(&self->super, flags);
-  self->super.flags |= AFSOCKET_KEEP_ALIVE | AFSOCKET_LISTENER_KEEP_ALIVE;
+  self->super.flags |= AFSOCKET_KEEP_ALIVE;
   self->super.bind_addr = g_sockaddr_inet_new_resolve(host, port);
   if (flags & AFSOCKET_DGRAM)
     self->super.flags |= AFSOCKET_PROTO_RFC3164;

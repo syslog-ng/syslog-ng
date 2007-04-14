@@ -32,15 +32,6 @@ log_pipe_init_instance(LogPipe *self)
 /*  self->notify = log_pipe_forward_notify; */
 }
 
-static void
-log_pipe_free_instance(LogPipe *self)
-{
-  if (self->free_fn)
-    self->free_fn(self);
-  else
-    g_free(self);
-}
-
 LogPipe *
 log_pipe_ref(LogPipe *self)
 {
@@ -56,7 +47,10 @@ log_pipe_unref(LogPipe *self)
   g_assert(!self || self->ref_cnt > 0);
   if (self && (--self->ref_cnt == 0))
     {
-      log_pipe_free_instance(self);
+      if (self->free_fn)
+        self->free_fn(self);
+      else
+        g_free(self);
     }
 }
 

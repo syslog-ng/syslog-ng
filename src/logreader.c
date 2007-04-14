@@ -404,6 +404,17 @@ log_reader_free(LogPipe *s)
   g_free(s);
 }
 
+void
+log_reader_set_options(LogPipe *s, LogReaderOptions *options)
+{
+  LogReader *self = (LogReader *) s;
+  self->super.options = &options->source_opts;
+  self->options = options;
+
+  if (options->follow_freq > 0)
+    self->flags |= LR_FOLLOW;
+}
+
 LogPipe *
 log_reader_new(FDRead *fd, guint32 flags, LogPipe *control, LogReaderOptions *options)
 {

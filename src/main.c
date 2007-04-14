@@ -360,9 +360,9 @@ main(int argc, char *argv[])
       
     }
   
-  tzset();
   
   z_mem_trace_init("syslog-ng.trace");
+  tzset();
   setup_signals();
   msg_init(log_to_stderr);
   child_manager_init();

@@ -192,6 +192,8 @@ extern void lex_init(FILE *);
 extern int yydebug;
 extern int linenum;
 
+extern void yyparser_reset(void);
+
 GlobalConfig *
 cfg_new(gchar *fname)
 {

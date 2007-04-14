@@ -49,7 +49,6 @@ log_source_queue(LogPipe *s, LogMessage *msg, gint path_flags)
   log_pipe_queue(s->pipe_next, msg, 0);
 }
 
-
 void
 log_source_init_instance(LogSource *self, LogSourceOptions *options)
 {

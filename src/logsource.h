@@ -32,6 +32,14 @@ typedef struct _LogSourceOptions
   gint window_size;
 } LogSourceOptions;
 
+/**
+ * LogSource:
+ *
+ * This structure encapsulates an object which generates messages without
+ * defining how those messages are accepted by peers. The most prominent
+ * derived class is LogReader which is an extended RFC3164 capable syslog
+ * message processor used everywhere.
+ **/
 typedef struct _LogSource
 {
   LogPipe super;

@@ -242,6 +242,19 @@ afsocket_sc_notify(LogPipe *s, LogPipe *sender, gint notify_code, gpointer user_
     }
 }
 
+static void
+afsocket_sc_set_owner(AFSocketSourceConnection *self, AFSocketSourceDriver *owner)
+{
+  if (self->reader)
+    log_reader_set_options(self->reader, &owner->reader_options);
+  log_drv_unref(&self->owner->super);
+  log_drv_ref(&owner->super);
+  self->owner = owner;
+  
+  log_pipe_append(&self->super, &owner->super.super);
+
+}
+
 static void 
 afsocket_sc_free(LogPipe *s)
 {
@@ -256,7 +269,7 @@ afsocket_sc_free(LogPipe *s)
 }
 
 AFSocketSourceConnection *
-afsocket_sc_new(struct _AFSocketSourceDriver *owner, GSockAddr *peer_addr, int fd)
+afsocket_sc_new(AFSocketSourceDriver *owner, GSockAddr *peer_addr, int fd)
 {
   AFSocketSourceConnection *self = g_new0(AFSocketSourceConnection, 1);
 
@@ -285,17 +298,6 @@ afsocket_sd_set_keep_alive(LogDriver *s, gint enable)
     self->flags |= AFSOCKET_KEEP_ALIVE;
   else
     self->flags &= ~AFSOCKET_KEEP_ALIVE;
-}
-
-void 
-afsocket_sd_set_listener_keep_alive(LogDriver *s, gint enable)
-{
-  AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
-  
-  if (enable)
-    self->flags |= AFSOCKET_LISTENER_KEEP_ALIVE;
-  else
-    self->flags &= ~AFSOCKET_LISTENER_KEEP_ALIVE;
 }
 
 void 
@@ -405,7 +407,7 @@ afsocket_sd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
       self->connections = persist_config_fetch(persist, afsocket_sd_format_persist_name(self, FALSE));
       for (p = self->connections; p; p = p->next)
         {
-          log_pipe_append((LogPipe *) p->data, s);
+          afsocket_sc_set_owner((AFSocketSourceConnection *) p->data, self);
         }
     }
 
@@ -505,7 +507,7 @@ afsocket_sd_deinit(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
       
       g_source_remove(self->source_id);
       self->source_id = 0;
-      if ((self->flags & AFSOCKET_LISTENER_KEEP_ALIVE) == 0)
+      if ((self->flags & AFSOCKET_KEEP_ALIVE) == 0)
         {
           msg_verbose("Closing listener fd",
                       evt_tag_int("fd", self->fd),

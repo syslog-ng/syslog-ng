@@ -33,7 +33,6 @@
 #define AFSOCKET_LOCAL               0x0004
 
 #define AFSOCKET_KEEP_ALIVE          0x0100
-#define AFSOCKET_LISTENER_KEEP_ALIVE 0x0200
 
 #define AFSOCKET_PROTO_RFC3164	     0x0400
 

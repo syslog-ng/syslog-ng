@@ -2,6 +2,41 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-02-11 17:31:08 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-10
+
+    Summary:
+      fixed possible segmentation fault on SIGHUP
+    Revision:
+      syslog-ng--mainline--2.0--patch-10
+
+    	* src/afsocket.c (afsocket_sc_set_owner): new function, changes all
+    	references to a new AFSocketSourceDriver (this happens accross
+    	SIGHUPs),
+    	(afsocket_sd_set_listener_keep_alive): removed, there's no separate
+    	LISTENER_KEEP_ALIVE setting,
+    	(afsocket_sd_init): instead of simply changing the next-hop log-pipe
+    	of connections call afsocket_sc_set_owner which changes less
+    	explicit references
+    
+    	* src/cfg-grammar.y (yyparser_reset): new function, resets all
+            'last_' variables as they are not referenced and might contain
+            pointers to stale data
+    
+    	* src/logpipe.c (log_pipe_free_instance): function body moved to
+    	log_pipe_unref to clear some clutter in backtraces and both
+    	functions are only a couple of lines anyway
+    
+    	* src/logreader.c (log_reader_set_options): new function, allows the
+    	caller to change the pointer to the options structure
+    
+
+    modified files:
+     ChangeLog NEWS src/afinet.c src/afsocket.c src/afsocket.h
+     src/afunix.c src/cfg-grammar.y src/cfg.c src/logpipe.c
+     src/logreader.c src/logreader.h src/logsource.c
+     src/logsource.h src/main.c
+
+
 2006-02-11 17:22:06 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-9
 
     Summary:

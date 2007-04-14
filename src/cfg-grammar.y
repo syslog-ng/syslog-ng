@@ -835,7 +835,17 @@ string
 
 extern int linenum;
 
-void yyerror(char *msg)
+void 
+yyerror(char *msg)
 {
-	fprintf(stderr, "%s at %d\n", msg, linenum);
+  fprintf(stderr, "%s at %d\n", msg, linenum);
+}
+
+void
+yyparser_reset(void)
+{
+  last_driver = NULL;
+  last_reader_options = NULL;
+  last_writer_options = NULL;
+  last_template = NULL;
 }

@@ -1,13 +1,11 @@
 1.9.9
 
+	Some minor new features:
+
 	* Added optional() option to pipe and unix drivers to make syslog-ng
           start even if the required directories/files do not exist.
 	* Added DNS name resolution to udp and tcp targets.
-	* Fixed port unreachable handling for UDP destinations.
-	* Removed stats entries for files as they never lose messages and it
-          would only clutter the log statistics output.
 	* Added a stats() keyword for 1.6.x compatibility.
-	* Readded dropped counter for pipe destinations.
 	* Added processed counters for source/destination groups and the log 
           center.
 	* Added normalize_hostnames() option which converts all hostnames to
@@ -15,9 +13,21 @@
 	* Added PID macro.
 	* Added kernel flag to sources to indicate that messages coming from
 	  the source should default to 'kern.crit' instead of 'user.notice'
+	* Documentation updates.
+
+	Changes:
+
+	* Removed stats entries for files as they never lose messages and it
+          would only clutter the log statistics output.
+
+	Bugfixes:
+
+	* Fixed port unreachable handling for UDP destinations.
 	* Fixed PRI macro processing as it included the local hostname in
 	  addition to the priority value because of a missing break
 	  statement.
+	* UNIX domain sockets are kept alive across SIGHUPs by default.
+	* Fixed a possible segmentation fault on SIGHUP.
 
 1.9.8
 	Tue, 20 Dec 2005 21:51:45 +0100
