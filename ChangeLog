@@ -2,6 +2,20 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-11-08 14:18:14 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-97
+
+    Summary:
+      fixed up dnscache unit test program
+    Revision:
+      syslog-ng--mainline--2.0--patch-97
+
+    
+    
+
+    modified files:
+     ChangeLog tests/unit/test_dnscache.c
+
+
 2006-11-08 14:16:23 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-96
 
     Summary:

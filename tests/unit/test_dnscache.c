@@ -11,13 +11,14 @@ main()
 {
   int i;
   
-  dns_cache_init(50000, 10, 1);
+  dns_cache_init();
+  dns_cache_set_params(50000, 10, 1, NULL);
   
   for (i = 0; i < 10000; i++)
     {
       guint32 ni = htonl(i);
       
-      dns_cache_store(AF_INET, (void *) &ni, "hostname");
+      dns_cache_store(FALSE, AF_INET, (void *) &ni, "hostname");
     }
   
   for (i = 0; i < 10000; i++)
