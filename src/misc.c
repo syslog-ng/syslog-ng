@@ -119,8 +119,8 @@ get_local_timezone_ofs(time_t when)
 #endif
 }
 
-GString *
-resolve_hostname(GSockAddr *saddr, gboolean usedns, gboolean usefqdn)
+gboolean
+resolve_hostname(GString *result, GSockAddr *saddr, gboolean usedns, gboolean usefqdn)
 {
   static gchar local_hostname[128] = "";
   char *hname, *p;
@@ -167,7 +167,8 @@ resolve_hostname(GSockAddr *saddr, gboolean usedns, gboolean usefqdn)
 
       hname = local_hostname;
     }
-  return g_string_new(hname);
+  g_string_assign(result, hname);
+  return TRUE;
 }
 
 gboolean

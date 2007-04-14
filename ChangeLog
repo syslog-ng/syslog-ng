@@ -2,6 +2,41 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-02-11 19:29:56 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-11
+
+    Summary:
+      readded HOST_FROM, FULLHOST_FROM, SOURCEIP macros, extended unit test program
+    Revision:
+      syslog-ng--mainline--2.0--patch-11
+
+    	* src/gsockaddr.c (g_sockaddr_inet_check): new function, returns
+    	TRUE if the specified address is GSockAddrInet
+    
+    	* src/logmsg.c (log_msg_parse): fixed timezone parsing in ISODATE
+    	timestamps,
+    	(log_msg_init): added host_from member,
+    	(log_msg_free): free host_from
+    
+    	* src/macros.c (log_macro_expand): added FULLHOST_FROM, HOST_FROM,
+    	SOURCEIP implementation, fixed DATE macros
+    
+    	* src/misc.c (resolve_hostname): instead of returning a newly
+    	allocated GString, store the result in the one passed as parameter
+    
+    	* src/sgroup.c (log_source_group_queue): set host_from member in log message
+    
+    	* tests/unit/test_msgparse.c: fixed offset/timestamp value
+    
+    	* tests/unit/test_template.c: greatly extended to cover all possible
+    	macros, resulting fixes are above :)
+
+    modified files:
+     ChangeLog NEWS src/gsockaddr.c src/gsockaddr.h src/logmsg.c
+     src/logmsg.h src/macros.c src/macros.h src/misc.c src/misc.h
+     src/sgroup.c tests/unit/test_msgparse.c
+     tests/unit/test_template.c
+
+
 2006-02-11 17:31:08 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-10
 
     Summary:

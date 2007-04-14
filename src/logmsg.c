@@ -219,7 +219,7 @@ log_msg_parse(LogMessage *self, gchar *data, gint length, guint flags)
           isdigit(*(p+1)) && isdigit(*(p+2)) && *(p+3) == ':' && isdigit(*(p+4)) && isdigit(*(p+5)))
         {
           /* timezone offset */
-          gint sign = *p == '-' ? 1 : -1;
+          gint sign = *p == '-' ? -1 : 1;
           p++;
           
           hours = (*p - '0') * 10 + *(p+1) - '0';
@@ -230,7 +230,7 @@ log_msg_parse(LogMessage *self, gchar *data, gint length, guint flags)
             self->stamp.zone_offset = get_local_timezone_ofs(now); /* assume local timezone */
         }
       /* convert to UTC */
-      tm.tm_isdst = daylight;
+      tm.tm_isdst = -1;
       self->stamp.time.tv_sec = mktime(&tm) - get_local_timezone_ofs(now) + self->stamp.zone_offset;
       
       src += stamp_length;
@@ -418,6 +418,7 @@ log_msg_free(LogMessage *self)
   g_sockaddr_unref(self->saddr);
   g_string_free(self->date, TRUE);
   g_string_free(self->host, TRUE);
+  g_string_free(self->host_from, TRUE);
   g_string_free(self->program, TRUE);
   g_string_free(self->msg, TRUE);
   g_free(self);
@@ -471,6 +472,7 @@ log_msg_init(LogMessage *self, GSockAddr *saddr)
   self->stamp = self->recvd;
   self->date = g_string_sized_new(16);
   self->host = g_string_sized_new(32);
+  self->host_from = g_string_sized_new(32);
   self->program = g_string_sized_new(32);
   self->msg = g_string_sized_new(32);
   self->saddr = g_sockaddr_ref(saddr);

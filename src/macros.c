@@ -192,27 +192,31 @@ log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, glong 
         g_string_sprintfa(result, "%d", msg->pri);
         break;
       }
+    case M_FULLHOST_FROM:
     case M_FULLHOST:
       {
+        GString *host = (id == M_FULLHOST ? msg->host : msg->host_from);
         /* full hostname */
-        result_append(result, msg->host->str, msg->host->len, !!(flags & MF_ESCAPE_RESULT));
+        result_append(result, host->str, host->len, !!(flags & MF_ESCAPE_RESULT));
         break;
       }
+    case M_HOST_FROM:
     case M_HOST:
       {
+        GString *host = (id == M_HOST ? msg->host : msg->host_from);
         /* host */
-        gchar *p1 = memchr(msg->host->str, '@', msg->host->len);
+        gchar *p1 = memchr(host->str, '@', host->len);
         gchar *p2;
         int remaining, length;
 
         if (p1)
           p1++;
         else
-          p1 = msg->host->str;
-        remaining = msg->host->len - (p1 - msg->host->str);
+          p1 = host->str;
+        remaining = host->len - (p1 - host->str);
         p2 = memchr(p1, '/', remaining);
         length = p2 ? p2 - p1 
-                    : msg->host->len - (p1 - msg->host->str);
+                    : host->len - (p1 - host->str);
         result_append(result, p1, length, !!(flags & MF_ESCAPE_RESULT));
         break;
       }
@@ -245,12 +249,12 @@ log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, glong 
           }
         break;
       }
+    case M_DATE:
     case M_FULLDATE:
     case M_ISODATE:
     case M_STAMP:
     case M_WEEKDAY:
     case M_WEEK:
-    case M_DATE:
     case M_YEAR:
     case M_MONTH:
     case M_DAY:
@@ -261,12 +265,12 @@ log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, glong 
     case M_TZ:
     case M_UNIXTIME:
 
+    case M_DATE_RECVD:
     case M_FULLDATE_RECVD:
     case M_ISODATE_RECVD:
     case M_STAMP_RECVD:
     case M_WEEKDAY_RECVD:
     case M_WEEK_RECVD:
-    case M_DATE_RECVD:
     case M_YEAR_RECVD:
     case M_MONTH_RECVD:
     case M_DAY_RECVD:
@@ -277,12 +281,12 @@ log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, glong 
     case M_TZ_RECVD:
     case M_UNIXTIME_RECVD:
 
+    case M_DATE_STAMP:
     case M_FULLDATE_STAMP:
     case M_ISODATE_STAMP:
     case M_STAMP_STAMP:
     case M_WEEKDAY_STAMP:
     case M_WEEK_STAMP:
-    case M_DATE_STAMP:
     case M_YEAR_STAMP:
     case M_MONTH_STAMP:
     case M_DAY_STAMP:
@@ -301,15 +305,15 @@ log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, glong 
         LogStamp *stamp;
         glong zone_ofs;
 
-        if (id >= M_FULLDATE_RECVD && id <= M_UNIXTIME_RECVD)
+        if (id >= M_DATE_RECVD && id <= M_UNIXTIME_RECVD)
           {
             stamp = &msg->recvd;
-            id = id - (M_FULLDATE_RECVD - M_FULLDATE);
+            id = id - (M_DATE_RECVD - M_DATE);
           }
-        else if (id >= M_FULLDATE_STAMP && id <= M_UNIXTIME_STAMP)
+        else if (id >= M_DATE_STAMP && id <= M_UNIXTIME_STAMP)
           {
             stamp = &msg->stamp;
-            id = id - (M_FULLDATE_STAMP - M_FULLDATE);
+            id = id - (M_DATE_STAMP - M_DATE);
           }
         else
           {
@@ -366,6 +370,7 @@ log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, glong 
             length = strftime(buf, sizeof(buf), "%Y %h %e %H:%M:%S", tm);
             g_string_append_len(result, buf, length);
             break;
+          case M_DATE:
           case M_STAMP:
             {
               GString *s = g_string_sized_new(0);
@@ -375,16 +380,13 @@ log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, glong 
               g_string_free(s, TRUE);
               break;
             }
-          case M_DATE:
-            g_string_append_len(result, msg->date->str, msg->date->len);
-            break;
           case M_TZ:
           case M_TZOFFSET:
             length = format_zone_info(buf, sizeof(buf), zone_ofs);
             g_string_append_len(result, buf, length);
             break;
           case M_UNIXTIME:
-            g_string_sprintfa(result, "%d", (int) t);
+            g_string_sprintfa(result, "%d", (int) stamp->time.tv_sec);
             break;
           }
         break;
@@ -411,6 +413,24 @@ log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, glong 
             ofs = colon - msg->msg->str;
           }
         result_append(result, msg->msg->str + ofs, msg->msg->len - ofs, !!(flags & MF_ESCAPE_RESULT));
+        break;
+      }
+    case M_SOURCE_IP:
+      {
+        gchar *ip;
+        
+        if (msg->saddr && g_sockaddr_inet_check(msg->saddr)) 
+          {
+            gchar buf[16];
+            
+            g_inet_ntoa(buf, sizeof(buf), ((struct sockaddr_in *) &msg->saddr->sa)->sin_addr);
+            ip = buf;
+          }
+        else 
+          {
+            ip = "127.0.0.1";
+          }
+        result_append(result, ip, strlen(ip), !!(flags & MF_ESCAPE_RESULT));
         break;
       }
     default:

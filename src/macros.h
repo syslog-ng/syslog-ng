@@ -32,73 +32,79 @@
 #define MF_STAMP_RECVD    0x0002
 
 /* macro IDs */
-#define M_NONE     0
+enum
+{
+  M_NONE,
 
-#define M_FACILITY 1
-#define M_LEVEL    2
-#define M_TAG      3
-#define M_PRI      4
+  M_FACILITY,
+  M_LEVEL,
+  M_TAG,
+  M_PRI,
 
-#define M_DATE     10
-#define M_FULLDATE 11
-#define M_ISODATE  12
-#define M_STAMP    13
-#define M_YEAR     14
-#define M_MONTH    15
-#define M_DAY      16
-#define M_HOUR     17
-#define M_MIN      18
-#define M_SEC      19
-#define M_WEEKDAY  20
-#define M_WEEK     21
-#define M_TZOFFSET 22
-#define M_TZ       23
-#define M_UNIXTIME 24
+  M_DATE,
+  M_FULLDATE,
+  M_ISODATE,
+  M_STAMP,
+  M_YEAR,
+  M_MONTH,
+  M_DAY,
+  M_HOUR,
+  M_MIN,
+  M_SEC,
+  M_WEEKDAY,
+  M_WEEK,
+  M_TZOFFSET,
+  M_TZ,
+  M_UNIXTIME,
 
-#define M_DATE_RECVD     30
-#define M_FULLDATE_RECVD 31
-#define M_ISODATE_RECVD  32
-#define M_STAMP_RECVD    33
-#define M_YEAR_RECVD     34
-#define M_MONTH_RECVD    35
-#define M_DAY_RECVD      36
-#define M_HOUR_RECVD     37
-#define M_MIN_RECVD      38
-#define M_SEC_RECVD      39
-#define M_WEEKDAY_RECVD  40
-#define M_WEEK_RECVD     41
-#define M_TZOFFSET_RECVD 42
-#define M_TZ_RECVD       43
-#define M_UNIXTIME_RECVD 44
+  M_DATE_RECVD,
+  M_FULLDATE_RECVD,
+  M_ISODATE_RECVD,
+  M_STAMP_RECVD,
+  M_YEAR_RECVD,
+  M_MONTH_RECVD,
+  M_DAY_RECVD,
+  M_HOUR_RECVD,
+  M_MIN_RECVD,
+  M_SEC_RECVD,
+  M_WEEKDAY_RECVD,
+  M_WEEK_RECVD,
+  M_TZOFFSET_RECVD,
+  M_TZ_RECVD,
+  M_UNIXTIME_RECVD,
 
-#define M_DATE_STAMP     50
-#define M_FULLDATE_STAMP 51
-#define M_ISODATE_STAMP  52
-#define M_STAMP_STAMP    53
-#define M_YEAR_STAMP     54
-#define M_MONTH_STAMP    55
-#define M_DAY_STAMP      56
-#define M_HOUR_STAMP     57
-#define M_MIN_STAMP      58
-#define M_SEC_STAMP      59
-#define M_WEEKDAY_STAMP  60
-#define M_WEEK_STAMP     61
-#define M_TZOFFSET_STAMP 62
-#define M_TZ_STAMP       63
-#define M_UNIXTIME_STAMP 64
+  M_DATE_STAMP,
+  M_FULLDATE_STAMP,
+  M_ISODATE_STAMP,
+  M_STAMP_STAMP,
+  M_YEAR_STAMP,
+  M_MONTH_STAMP,
+  M_DAY_STAMP,
+  M_HOUR_STAMP,
+  M_MIN_STAMP,
+  M_SEC_STAMP,
+  M_WEEKDAY_STAMP,
+  M_WEEK_STAMP,
+  M_TZOFFSET_STAMP,
+  M_TZ_STAMP,
+  M_UNIXTIME_STAMP,
 
-#define M_FULLHOST       70
-#define M_HOST           71
-#define M_FULLHOST_FROM  72
-#define M_HOST_FROM      73
-#define M_PROGRAM        74
-#define M_PID            75
+  M_FULLHOST,
+  M_HOST,
+  M_FULLHOST_FROM,
+  M_HOST_FROM,
+  M_PROGRAM,
+  M_PID,
 
-#define M_MESSAGE        76
-#define M_MSGONLY	 77
-#define M_SOURCE_IP      78
+  M_MESSAGE,
+  M_MSGONLY,
+  M_SOURCE_IP,
+  M_MAX,
 
-#define M_MATCH_REF_OFS 256
+  M_MATCH_REF_OFS=256
+};
+
+#define M_TIME_MACROS 15
 
 guint
 log_macro_lookup(gchar *macro, gint len);

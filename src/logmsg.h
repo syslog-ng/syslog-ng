@@ -87,7 +87,7 @@ typedef struct _LogMessage
   guint pri;
   LogStamp stamp;
   LogStamp recvd;
-  GString *date, *host, *program, *msg;
+  GString *date, *host, *host_from, *program, *msg;
 } LogMessage;
 
 LogMessage *log_msg_ref(LogMessage *m);

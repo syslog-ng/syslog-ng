@@ -28,6 +28,11 @@
 	  statement.
 	* UNIX domain sockets are kept alive across SIGHUPs by default.
 	* Fixed a possible segmentation fault on SIGHUP.
+	* Fixed timezone extraction from incoming messages with ISO
+	  timestamp (only this syslog-ng can send these currently)
+	* Fixed HOST_FROM, FULLHOST_FROM, SOURCEIP, DATE, R_DATE, S_DATE
+          macros (some were still not implemented others worked incorrectly
+	  in some circumstances)
 
 1.9.8
 	Tue, 20 Dec 2005 21:51:45 +0100

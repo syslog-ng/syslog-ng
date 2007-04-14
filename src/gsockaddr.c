@@ -321,6 +321,12 @@ static GSockAddrFuncs inet_sockaddr_funcs =
   g_sockaddr_inet_free
 };
 
+gboolean
+g_sockaddr_inet_check(GSockAddr *a)
+{
+  return a->sa_funcs == &inet_sockaddr_funcs;
+}
+
 /*+
 
   Allocate and initialize an IPv4 socket address.

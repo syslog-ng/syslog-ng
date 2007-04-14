@@ -91,41 +91,39 @@ static void
 log_source_group_queue(LogPipe *s, LogMessage *msg, gint path_flags)
 {
   LogSourceGroup *self = (LogSourceGroup *) s;
+
+  resolve_hostname(msg->host_from, msg->saddr, self->use_dns, self->use_fqdn);
   
   msg->source_group = self;
   
   if (!self->keep_hostname || !msg->host->len) 
     {
-      GString *name;
-
-      name = resolve_hostname(msg->saddr, self->use_dns, self->use_fqdn);
       if (self->chain_hostnames) 
 	{
 	  if (msg->flags & LF_LOCAL) 
 	    {
 	      /* local */
-	      g_string_sprintf(msg->host, "%s@%s", self->name->str, name->str);
+	      g_string_sprintf(msg->host, "%s@%s", self->name->str, msg->host_from->str);
 	    }
 	  else if (!msg->host->len) 
 	    {
 	      /* remote && no hostname */
-	      g_string_sprintf(msg->host, "%s/%s", name->str, name->str);
+	      g_string_sprintf(msg->host, "%s/%s", msg->host_from->str, msg->host_from->str);
 	    } 
 	  else 
 	    {
 	      /* everything else, append source hostname */
 	      if (msg->host->len)
-		g_string_sprintfa(msg->host, "/%s", name->str);
+		g_string_sprintfa(msg->host, "/%s", msg->host_from->str);
 	      else
-		g_string_assign(msg->host, name->str);
+		g_string_assign(msg->host, msg->host_from->str);
 	    }
 	}
       else 
 	{
-	  g_string_assign(msg->host, name->str);
+	  g_string_assign(msg->host, msg->host_from->str);
 	}
 
-      g_string_free(name, TRUE);
     }
 
   if (!msg->host->len)

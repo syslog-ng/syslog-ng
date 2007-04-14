@@ -41,6 +41,6 @@ gboolean g_fd_set_nonblock(int fd, gboolean enable);
 gboolean resolve_user(const char *user, uid_t *uid);
 gboolean resolve_group(const char *group, gid_t *gid);
 gboolean resolve_user_group(char *arg, uid_t *uid, gid_t *gid);
-GString *resolve_hostname(GSockAddr *saddr, gboolean usedns, gboolean usefqdn);
+gboolean resolve_hostname(GString *result, GSockAddr *saddr, gboolean usedns, gboolean usefqdn);
 
 #endif

@@ -87,7 +87,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 
   testcase("<7>2004-09-07T10:43:21.156+01:00 bzorp openvpn[2499]: PTHREAD support initialized", 0, 
            7, 			// pri
-           1094550201, 156000, -3600,	// timestamp (sec/usec/zone)
+           1094557401, 156000, 3600,	// timestamp (sec/usec/zone)
            "2004-09-07T10:43:21.156+01:00",   // originally formatted timestamp
            "bzorp",		// host
            "openvpn",		// openvpn
