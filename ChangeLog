@@ -2,6 +2,21 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-05-24 08:59:44 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-53
+
+    Summary:
+      guard LOG_CRON with ifdef as it might not exist on some platforms
+    Revision:
+      syslog-ng--mainline--2.0--patch-53
+
+    
+    	* src/syslog-names.c (sl_facilities): some platforms do not define
+    	LOG_CRON
+
+    modified files:
+     ChangeLog src/syslog-names.c
+
+
 2006-05-23 18:45:59 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-52
 
     Summary:

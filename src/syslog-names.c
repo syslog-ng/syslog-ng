@@ -45,7 +45,9 @@ struct sl_name sl_facilities[] = {
 #ifdef LOG_AUTHPRIV
   {"authpriv", LOG_AUTHPRIV},
 #endif
+#ifdef LOG_CRON
   {"cron", LOG_CRON},
+#endif
   {"daemon", LOG_DAEMON},
 #ifdef LOG_FTP
   {"ftp", LOG_FTP},
