@@ -193,7 +193,7 @@ log_reader_handle_line(LogReader *self, gchar *line, gint length, GSockAddr *sad
  * log_reader_iterate_buf:
  * @self: LogReader instance
  * @saddr: socket address to be assigned to new messages (consumed!)
- * @flush: 
+ * @flush: whether to flush the input buffer
  * @msg_counter: the number of messages processed in the current poll iteration
  * 
  **/
@@ -224,14 +224,13 @@ log_reader_iterate_buf(LogReader *self, GSockAddr *saddr, gboolean flush, gint *
   if (self->flags & LR_LOCAL)
     parse_flags |= LF_LOCAL;
     
-  if (!eol &&
-      ((self->ofs == self->options->msg_size) || 
-       ((self->flags & LR_PKTTERM) && self->ofs) || 
-       self->options->padding ||
-       flush)) 
+  if ((self->flags & LR_PKTTERM) || 
+      (!eol && (self->ofs == self->options->msg_size)) || 
+      self->options->padding ||
+      flush) 
     {
       /* our buffer is full, or
-       * we are set to packet terminating mode and there's no terminating new line, or
+       * we are set to packet terminating mode, or
        * we are in padded mode HP-UX
        */
       length = (self->options->padding 
