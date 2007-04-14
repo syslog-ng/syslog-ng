@@ -44,7 +44,7 @@
 #define PATH_PIDFILE            "/var/run/syslog-ng.pid"
 #endif
 
-#define LOG_PRIORITY_LISTEN 100
+#define LOG_PRIORITY_LISTEN 0
 #define LOG_PRIORITY_READER 0
 #define LOG_PRIORITY_WRITER -100
 #define LOG_PRIORITY_CONNECT -150

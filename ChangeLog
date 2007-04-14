@@ -2,6 +2,22 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-11-08 10:10:37 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-94
+
+    Summary:
+      increased listener source priorities 
+    Revision:
+      syslog-ng--mainline--2.0--patch-94
+
+    	* src/syslog-ng.h (LOG_PRIORITY_LISTEN): increased priority to match
+    	LOG_PRIORITY_READER as otherwise a continous input flow can starve
+    	accept()
+    
+
+    modified files:
+     ChangeLog src/syslog-ng.h
+
+
 2006-11-08 09:53:59 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-93
 
     Summary:
