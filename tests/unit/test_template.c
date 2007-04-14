@@ -45,6 +45,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   g_string_assign(msg->host_from, "kismacska");
   msg->recvd.time.tv_sec = 1139684315;
   msg->recvd.time.tv_usec = 639000;
+  msg->recvd.zone_offset = get_local_timezone_ofs(1139684315);
 
   /* pri 3, fac 19 == local3 */
 

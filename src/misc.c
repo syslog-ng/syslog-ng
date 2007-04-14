@@ -94,14 +94,15 @@ format_zone_info(gchar *buf, size_t buflen, glong gmtoff)
 long
 get_local_timezone_ofs(time_t when)
 {
-#if HAVE_STRUCT_TM_TM_GMTOFF
-  struct tm *ltm;
-  
-  ltm = localtime(&when);
-  return ltm->tm_gmtoff;
-#else
-  struct tm ltm, *gtm;
+  struct tm ltm;
   long tzoff;
+  
+#if HAVE_STRUCT_TM_TM_GMTOFF
+  
+  ltm = *localtime(&when);
+  tzoff = ltm.tm_gmtoff;
+#else
+  struct tm *gtm;
   
   ltm = *localtime(&when);
   gtm = gmtime(&when);
@@ -115,8 +116,10 @@ get_local_timezone_ofs(time_t when)
   else if (tzoff < 0 && (ltm.tm_year > gtm->tm_year || ltm.tm_mon > gtm->tm_mon || ltm.tm_mday > gtm->tm_mday))
     tzoff += 86400;
   
-  return tzoff;
+    
 #endif
+
+  return tzoff;
 }
 
 gboolean

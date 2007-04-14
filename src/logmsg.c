@@ -199,6 +199,7 @@ log_msg_parse(LogMessage *self, gchar *data, gint length, guint flags)
     {
       /* RFC3339 timestamp, expected format: YYYY-MM-DDTHH:MM:SS[.frac]<+/->ZZ:ZZ */
       struct tm tm;
+      gint unnormalized_hour;
       guchar *p;
       gint hours, mins;
       
@@ -237,14 +238,24 @@ log_msg_parse(LogMessage *self, gchar *data, gint length, guint flags)
           
           hours = (*p - '0') * 10 + *(p+1) - '0';
           mins = (*(p+3) - '0') * 10 + *(p+4) - '0';
-          if (hours <= 24 && mins <= 60)
-            self->stamp.zone_offset = sign * (hours * 3600 + mins * 60);
-          else
-            self->stamp.zone_offset = get_local_timezone_ofs(now); /* assume local timezone */
+          self->stamp.zone_offset = sign * (hours * 3600 + mins * 60);
         }
-      /* convert to UTC */
+      /* we convert it to UTC */
+      
       tm.tm_isdst = -1;
-      self->stamp.time.tv_sec = mktime(&tm) - get_local_timezone_ofs(now) + self->stamp.zone_offset;
+      unnormalized_hour = tm.tm_hour;
+      self->stamp.time.tv_sec = mktime(&tm);
+      
+      /* NOTE: mktime() returns the time assuming that the timestamp we
+       * received was in local time. This is not true, as there's a
+       * zone_offset in the timestamp as well. We need to adjust this offset
+       * by substracting the local timezone offset at the specific time,
+       * which means that tv_sec becomes as if tm was in the 00:00 timezone. 
+       * Also we have to take into account that at the zone barriers an hour
+       * might be skipped or played twice this is what the 
+       * (tm.tm_hour - * unnormalized_hour) part fixes up. */
+      
+      self->stamp.time.tv_sec = self->stamp.time.tv_sec - get_local_timezone_ofs(self->stamp.time.tv_sec) + (tm.tm_hour - unnormalized_hour) * 3600 + self->stamp.zone_offset;
       
       src += stamp_length;
       left -= stamp_length;
@@ -270,9 +281,11 @@ log_msg_parse(LogMessage *self, gchar *data, gint length, guint flags)
       tm.tm_year = nowtm->tm_year;
       if (tm.tm_mon > nowtm->tm_mon)
         tm.tm_year--;
+        
+      /* NOTE: no timezone information in the message, assume it is local time */
       self->stamp.time.tv_sec = mktime(&tm);
       self->stamp.time.tv_usec = 0;
-      self->stamp.zone_offset = get_local_timezone_ofs(now); /* assume local timezone */
+      self->stamp.zone_offset = get_local_timezone_ofs(self->stamp.time.tv_sec); /* assume local timezone */
     }
     
   if (self->date->len)

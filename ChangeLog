@@ -2,6 +2,28 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-04-09 08:02:44 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-32
+
+    Summary:
+      fixed timestamp calculation on timezone barriers
+    Revision:
+      syslog-ng--mainline--2.0--patch-32
+
+    	* src/logmsg.c (log_msg_parse): fixed timestamp calculation where a
+    	timezone information was specified, see the comment for details,
+    
+    	* tests/unit/test_msgparse.c: added some more testcases with
+    	timestamps around the DST switch
+    
+    	* tests/unit/test_template.c: fixed the timezone offset of the
+    	arbitrary timestamp chosen in the testcases
+    
+
+    modified files:
+     ChangeLog src/logmsg.c src/misc.c tests/unit/test_msgparse.c
+     tests/unit/test_template.c
+
+
 2006-04-07 14:27:52 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-31
 
     Summary:

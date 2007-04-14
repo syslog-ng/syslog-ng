@@ -74,7 +74,7 @@ testcase(gchar *msg,
 int 
 main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 {
-  putenv("TZ=UTC");
+  putenv("TZ=CET");
   tzset();
   testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, 
            15, 			// pri
@@ -85,15 +85,99 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            "openvpn[2499]: PTHREAD support initialized" // msg
            );
 
+  testcase("<7>2004-09-07T10:43:21.156+02:00 bzorp openvpn[2499]: PTHREAD support initialized", 0, 
+           7, 			// pri
+           1094546601, 156000, 7200,	// timestamp (sec/usec/zone)
+           "2004-09-07T10:43:21.156+02:00",   // originally formatted timestamp
+           "bzorp",		// host
+           "openvpn",		// openvpn
+           "openvpn[2499]: PTHREAD support initialized" // msg
+           );
+
   testcase("<7>2004-09-07T10:43:21.156+01:00 bzorp openvpn[2499]: PTHREAD support initialized", 0, 
            7, 			// pri
-           1094557401, 156000, 3600,	// timestamp (sec/usec/zone)
+           1094543001, 156000, 3600,	// timestamp (sec/usec/zone)
            "2004-09-07T10:43:21.156+01:00",   // originally formatted timestamp
            "bzorp",		// host
            "openvpn",		// openvpn
            "openvpn[2499]: PTHREAD support initialized" // msg
            );
-//  testcase("<30>Oct 14 17:25:34 isdnlog: \nOct 14 17:25:34 tei 69 calling ? () with T-Easy 520  HANGUP\r", 0);
+
+  testcase("<7>2006-03-26T01:59:59.156+01:00 bzorp openvpn[2499]: PTHREAD support initialized", 0, 
+           7, 			// pri
+           1143334799, 156000, 3600,	// timestamp (sec/usec/zone)
+           NULL,                // originally formatted timestamp
+           "bzorp",		// host
+           "openvpn",		// openvpn
+           "openvpn[2499]: PTHREAD support initialized" // msg
+           );
+
+  testcase("<7>2006-03-26T02:00:00.156+01:00 bzorp openvpn[2499]: PTHREAD support initialized", 0, 
+           7, 			// pri
+           1143334800, 156000, 3600,	// timestamp (sec/usec/zone)
+           NULL,                // originally formatted timestamp
+           "bzorp",		// host
+           "openvpn",		// openvpn
+           "openvpn[2499]: PTHREAD support initialized" // msg
+           );
+  testcase("<7>2006-03-26T03:00:00.156+02:00 bzorp openvpn[2499]: PTHREAD support initialized", 0, 
+           7, 			// pri
+           1143334800, 156000, 7200,	// timestamp (sec/usec/zone)
+           NULL,                // originally formatted timestamp
+           "bzorp",		// host
+           "openvpn",		// openvpn
+           "openvpn[2499]: PTHREAD support initialized" // msg
+           );
+  testcase("<7>2006-10-29T01:00:00.156+02:00 bzorp openvpn[2499]: PTHREAD support initialized", 0, 
+           7, 			// pri
+           1162076400, 156000, 7200,	// timestamp (sec/usec/zone)
+           NULL,                // originally formatted timestamp
+           "bzorp",		// host
+           "openvpn",		// openvpn
+           "openvpn[2499]: PTHREAD support initialized" // msg
+           );
+  testcase("<7>2006-10-29T01:59:59.156+02:00 bzorp openvpn[2499]: PTHREAD support initialized", 0, 
+           7, 			// pri
+           1162079999, 156000, 7200,	// timestamp (sec/usec/zone)
+           NULL,                // originally formatted timestamp
+           "bzorp",		// host
+           "openvpn",		// openvpn
+           "openvpn[2499]: PTHREAD support initialized" // msg
+           );
+  testcase("<7>2006-10-29T02:00:00.156+02:00 bzorp openvpn[2499]: PTHREAD support initialized", 0, 
+           7, 			// pri
+           1162080000, 156000, 7200,	// timestamp (sec/usec/zone)
+           NULL,                // originally formatted timestamp
+           "bzorp",		// host
+           "openvpn",		// openvpn
+           "openvpn[2499]: PTHREAD support initialized" // msg
+           );
+  
+  /* the same in a foreign timezone */
+  testcase("<7>2006-10-29T01:00:00.156+01:00 bzorp openvpn[2499]: PTHREAD support initialized", 0, 
+           7, 			// pri
+           1162072800, 156000, 3600,	// timestamp (sec/usec/zone)
+           NULL,                // originally formatted timestamp
+           "bzorp",		// host
+           "openvpn",		// openvpn
+           "openvpn[2499]: PTHREAD support initialized" // msg
+           );
+  testcase("<7>2006-10-29T01:59:59.156+01:00 bzorp openvpn[2499]: PTHREAD support initialized", 0, 
+           7, 			// pri
+           1162076399, 156000, 3600,	// timestamp (sec/usec/zone)
+           NULL,                // originally formatted timestamp
+           "bzorp",		// host
+           "openvpn",		// openvpn
+           "openvpn[2499]: PTHREAD support initialized" // msg
+           );
+  testcase("<7>2006-10-29T02:00:00.156+01:00 bzorp openvpn[2499]: PTHREAD support initialized", 0, 
+           7, 			// pri
+           1162076400, 156000, 3600,	// timestamp (sec/usec/zone)
+           NULL,                // originally formatted timestamp
+           "bzorp",		// host
+           "openvpn",		// openvpn
+           "openvpn[2499]: PTHREAD support initialized" // msg
+           );
   return 0;
 }
 
