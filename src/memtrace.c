@@ -1,6 +1,6 @@
 /***************************************************************************
  *
- * COPYRIGHTHERE
+ * Copyright (c) 2002-2007 BalaBit IT Ltd, Budapest, Hungary                    
  *
  * $Id: memtrace.c,v 1.2 2002/11/15 08:10:36 bazsi Exp $
  *

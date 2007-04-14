@@ -2,6 +2,36 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2007-02-28 09:19:28 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-135
+
+    Summary:
+      updated copyright strings
+    Revision:
+      syslog-ng--mainline--2.0--patch-135
+
+    
+    
+
+    modified files:
+     ChangeLog src/affile.c src/affile.h src/afinet.c src/afinet.h
+     src/afinter.c src/afinter.h src/afprog.c src/afprog.h
+     src/afsocket.c src/afsocket.h src/afstreams.c src/afstreams.h
+     src/afunix.c src/afunix.h src/afuser.c src/afuser.h
+     src/center.c src/center.h src/cfg-lex.l src/cfg.c src/cfg.h
+     src/children.c src/children.h src/dgroup.c src/dgroup.h
+     src/dnscache.c src/dnscache.h src/driver.c src/driver.h
+     src/fdread.c src/fdread.h src/fdwrite.c src/fdwrite.h
+     src/filter.c src/filter.h src/gsockaddr.c src/gsockaddr.h
+     src/logmsg.c src/logmsg.h src/logpipe.c src/logpipe.h
+     src/logreader.c src/logreader.h src/logsource.c
+     src/logsource.h src/logwriter.c src/logwriter.h src/macros.c
+     src/macros.h src/main.c src/memtrace.c src/memtrace.h
+     src/messages.c src/messages.h src/misc.c src/misc.h
+     src/sgroup.c src/sgroup.h src/stats.c src/stats.h
+     src/syslog-names.c src/syslog-names.h src/syslog-ng.h
+     src/templates.c src/templates.h src/utils.c src/utils.h
+
+
 2007-02-28 09:19:00 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-134
 
     Summary:
