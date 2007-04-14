@@ -2,6 +2,25 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2007-04-04 14:44:29 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-146
+
+    Summary:
+      fixed numeric localport/destport specification
+    Revision:
+      syslog-ng--mainline--2.0--patch-146
+
+    
+    	* src/afinet.c (afinet_set_port, afinet_sd_set_localport,
+    	afinet_dd_set_localport, afinet_dd_set_destport): removed port
+    	argument, always use 'service' and check if it's numeric
+    
+    	* src/cfg-grammar.y: follow afinet changes
+    
+
+    modified files:
+     ChangeLog src/afinet.c src/afinet.h src/cfg-grammar.y
+
+
 2007-04-02 06:53:54 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-145
 
     Summary:

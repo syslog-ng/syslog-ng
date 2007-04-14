@@ -41,14 +41,20 @@
 
 
 static void
-afinet_set_port(GSockAddr *addr, gint port, gchar *service, gchar *proto)
+afinet_set_port(GSockAddr *addr, gchar *service, gchar *proto)
 {
   if (addr)
     {
-      if (proto)
+      gchar *end;
+      gint port;
+      
+      /* check if service is numeric */
+      port = strtol(service, &end, 10);
+      if ((*end != 0))
         {
           struct servent *se;
           
+          /* service is not numeric, check if it's a service in /etc/services */
           se = getservbyname(service, proto);
           if (se)
             {
@@ -218,11 +224,11 @@ afinet_setup_socket(gint fd, GSockAddr *addr, InetSocketOptions *sock_options, A
 }
 
 void 
-afinet_sd_set_localport(LogDriver *s, gint port, gchar *service, gchar *proto)
+afinet_sd_set_localport(LogDriver *s, gchar *service, gchar *proto)
 {
   AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
   
-  afinet_set_port(self->bind_addr, port, service, proto);
+  afinet_set_port(self->bind_addr, service, proto);
 }
 
 void 
@@ -271,19 +277,19 @@ afinet_sd_new(gint af, gchar *host, gint port, guint flags)
 /* afinet destination */
 
 void 
-afinet_dd_set_localport(LogDriver *s, gint port, gchar *service, gchar *proto)
+afinet_dd_set_localport(LogDriver *s, gchar *service, gchar *proto)
 {
   AFInetDestDriver *self = (AFInetDestDriver *) s;
   
-  afinet_set_port(self->super.bind_addr, port, service, proto);
+  afinet_set_port(self->super.bind_addr, service, proto);
 }
 
 void 
-afinet_dd_set_destport(LogDriver *s, gint port, gchar *service, gchar *proto)
+afinet_dd_set_destport(LogDriver *s, gchar *service, gchar *proto)
 {
   AFInetDestDriver *self = (AFInetDestDriver *) s;
   
-  afinet_set_port(self->super.dest_addr, port, service, proto);
+  afinet_set_port(self->super.dest_addr, service, proto);
 }
 
 void 

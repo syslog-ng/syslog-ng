@@ -45,7 +45,7 @@ typedef struct _AFInetSourceDriver
 } AFInetSourceDriver;
 
 LogDriver *afinet_sd_new(gint af, gchar *host, gint port, guint flags);
-void afinet_sd_set_localport(LogDriver *self, gint port, gchar *service, gchar *proto);
+void afinet_sd_set_localport(LogDriver *self, gchar *service, gchar *proto);
 void afinet_sd_set_localip(LogDriver *self, gchar *ip);
 
 #define afinet_sd_set_auth(a,b)
@@ -63,8 +63,8 @@ typedef struct _AFInetDestDriver
 } AFInetDestDriver;
 
 LogDriver *afinet_dd_new(gint af, gchar *host, gint port, guint flags);
-void afinet_dd_set_localport(LogDriver *self, gint port, gchar *service, gchar *proto);
-void afinet_dd_set_destport(LogDriver *self, gint port, gchar *service, gchar *proto);
+void afinet_dd_set_localport(LogDriver *self, gchar *service, gchar *proto);
+void afinet_dd_set_destport(LogDriver *self, gchar *service, gchar *proto);
 void afinet_dd_set_localip(LogDriver *self, gchar *ip);
 void afinet_dd_set_sync_freq(LogDriver *self, gint sync_freq);
 void afinet_dd_set_spoof_source(LogDriver *self, gboolean enable);
