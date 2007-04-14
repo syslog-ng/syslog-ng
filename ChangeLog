@@ -2,6 +2,20 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-02-26 08:50:05 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-17
+
+    Summary:
+      preparations for an 1.9.9 release
+    Revision:
+      syslog-ng--mainline--2.0--patch-17
+
+    
+    
+
+    modified files:
+     ChangeLog NEWS VERSION src/logmsg.c
+
+
 2006-02-26 08:47:15 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-16
 
     Summary:

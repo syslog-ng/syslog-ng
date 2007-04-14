@@ -1,4 +1,5 @@
 1.9.9
+	Sun, 26 Feb 2006 09:49:47 +0100
 
 	Some minor new features:
 
@@ -12,9 +13,11 @@
           lower case.
 	* Added PID macro.
 	* Added kernel flag to sources to indicate that messages coming from
-	  the source should default to 'kern.crit' instead of 'user.notice'
+	  the source should default to 'kern.notice' instead of 'user.notice'
 	* Added frac_digits() option which controls how many digits are
           printed in second fractions.
+	* Added time_sleep() option to add a fixed latency to the poll loop
+          required in some tuning situations.
 	* Documentation updates.
 
 	Changes:

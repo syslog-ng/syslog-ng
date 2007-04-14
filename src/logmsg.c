@@ -180,7 +180,7 @@ log_msg_parse(LogMessage *self, gchar *data, gint length, guint flags)
   /* No priority info in the buffer? Just assign a default. */
   else if (flags & LP_KERNEL)
     {
-      self->pri = LOG_KERN | LOG_CRIT;
+      self->pri = LOG_KERN | LOG_NOTICE;
     }
   else
     {
