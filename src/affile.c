@@ -242,8 +242,9 @@ affile_dw_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
       stat(self->filename->str, &st) == 0 && 
       st.st_mtime < time(NULL) - self->owner->overwrite_if_older)
     {
-      msg_notice("Destination file is too old, removing",
+      msg_info("Destination file is older than overwrite_if_older(), overwriting",
                  evt_tag_str("filename", self->filename->str),
+                 evt_tag_int("overwrite_if_older", self->owner->overwrite_if_older),
                  NULL);
       unlink(self->filename->str);
     }

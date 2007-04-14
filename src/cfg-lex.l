@@ -284,7 +284,7 @@ lookup_parse_flag(char *flag)
     return LRO_NOPARSE;
   if (strcmp(flag, "kernel") == 0)
     return LRO_KERNEL;
-  msg_notice("Unknown parse flag", evt_tag_str("flag", flag), NULL);
+  msg_error("Unknown parse flag", evt_tag_str("flag", flag), NULL);
   return 0;
 }
 

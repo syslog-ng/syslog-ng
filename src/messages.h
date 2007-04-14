@@ -33,6 +33,7 @@ extern int verbose_flag;
 #define msg_fatal(desc, tag1, tags...) msg_event_send(msg_event_create(EVT_PRI_CRIT, desc, tag1, ##tags ))
 #define msg_error(desc, tag1, tags...) msg_event_send(msg_event_create(EVT_PRI_ERR, desc, tag1, ##tags ))
 #define msg_notice(desc, tag1, tags...) msg_event_send(msg_event_create(EVT_PRI_NOTICE, desc, tag1, ##tags ))
+#define msg_info(desc, tag1, tags...) msg_event_send(msg_event_create(EVT_PRI_INFO, desc, tag1, ##tags ))
 
 #define msg_verbose(desc, tag1, tags...) \
 	do { \

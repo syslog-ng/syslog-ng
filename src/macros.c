@@ -441,8 +441,8 @@ log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, glong 
         break;
       }
     default:
-      msg_fatal("Internal error, unknown macro referenced;", NULL);
-      return FALSE;
+      g_assert_not_reached();
+      break;
     }
   return TRUE;
 }
