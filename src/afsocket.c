@@ -36,6 +36,13 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#if ENABLE_TCP_WRAPPER
+#include <tcpd.h>
+int allow_severity = 0;
+int deny_severity = 0;
+#endif
+
+
 typedef struct _GListenSource
 {
   GSource super;
@@ -349,6 +356,27 @@ afsocket_sd_format_persist_name(AFSocketSourceDriver *self, gboolean listener_na
 gboolean 
 afsocket_sd_process_connection(AFSocketSourceDriver *self, GSockAddr *peer_addr, gint fd)
 {
+#if ENABLE_TCP_WRAPPER
+  if (peer_addr && (peer_addr->sa.sa_family == AF_INET || peer_addr->sa.sa_family == AF_INET6))
+    {
+      struct request_info req;
+   
+      request_init(&req, RQ_DAEMON, "syslog-ng", RQ_FILE, fd, 0);
+      fromhost(&req);
+      if (hosts_access(&req) == 0)
+        {
+          gchar buf[256];
+          
+          msg_verbose("Syslog connection rejected by tcpd",
+                      evt_tag_str("from", g_sockaddr_format(peer_addr, buf, sizeof(buf))),
+                      NULL);
+          close(fd);
+          return TRUE;
+        }
+    }
+  
+#endif
+
   if (self->num_connections >= self->max_connections)
     {
       msg_error("Number of allowed concurrent connections exceeded",
