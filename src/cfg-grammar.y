@@ -89,6 +89,7 @@ gint last_addr_family = AF_INET;
 %token KW_DIR_OWNER KW_DIR_GROUP KW_DIR_PERM 
 %token KW_TEMPLATE KW_TEMPLATE_ESCAPE
 %token KW_FOLLOW_FREQ
+%token KW_REMOVE_IF_OLDER
 
 /* socket related options */
 %token KW_KEEP_ALIVE KW_MAX_CONNECTIONS
@@ -485,12 +486,12 @@ dest_affile_params
 
 dest_affile_options
 	: dest_affile_option dest_affile_options		
-	| KW_OPTIONAL '(' yesno ')'			{ last_driver->optional = $3; }
         |
 	;	
 
 dest_affile_option
 	: dest_writer_option
+	| KW_OPTIONAL '(' yesno ')'			{ last_driver->optional = $3; }
 /*
 	| KW_COMPRESS '(' yesno ')'		{ affile_dd_set_compress(last_driver, $3); }
 	| KW_ENCRYPT '(' yesno ')'		{ affile_dd_set_encrypt(last_driver, $3); }
@@ -502,6 +503,7 @@ dest_affile_option
 	| KW_DIR_GROUP '(' string ')'		{ affile_dd_set_dir_gid(last_driver, $3); free($3); }
 	| KW_DIR_PERM '(' NUMBER ')'		{ affile_dd_set_dir_perm(last_driver, $3); }
 	| KW_CREATE_DIRS '(' yesno ')'		{ affile_dd_set_create_dirs(last_driver, $3); }
+	| KW_REMOVE_IF_OLDER '(' NUMBER ')'	{ affile_dd_set_remove_if_older(last_driver, $3); }
 	;
 
 dest_afpipe

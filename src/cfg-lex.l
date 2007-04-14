@@ -101,6 +101,7 @@ static struct keyword keywords[] = {
  	{ "time_reap",          KW_TIME_REAP },
  	{ "time_sleep",         KW_TIME_SLEEP },
  	{ "follow_freq",	KW_FOLLOW_FREQ },
+ 	{ "remove_if_older",	KW_REMOVE_IF_OLDER },
  	{ "file_template",	KW_FILE_TEMPLATE },
  	{ "proto_template",	KW_PROTO_TEMPLATE },
  	

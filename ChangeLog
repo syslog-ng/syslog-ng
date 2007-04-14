@@ -2,6 +2,28 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-10-28 16:07:36 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-92
+
+    Summary:
+      implemented the missing remove_if_older option
+    Revision:
+      syslog-ng--mainline--2.0--patch-92
+
+    	* src/affile.c (affile_dw_init): check if the file exists and is
+    	older than the value for remove_if_older, if it is unlink it,
+    	(affile_dd_set_remove_if_older): new function to set remove_if_older
+    	value,
+    
+    	* src/cfg-grammar.y (dest_affile_option): added KW_REMOVE_IF_OLDER rule
+    
+    	* src/cfg-lex.l: added keyword for KW_REMOVE_IF_OLDER
+    
+
+    modified files:
+     ChangeLog src/affile.c src/affile.h src/cfg-grammar.y
+     src/cfg-lex.l
+
+
 2006-10-28 15:37:15 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-91
 
     Summary:

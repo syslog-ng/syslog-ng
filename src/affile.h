@@ -60,6 +60,7 @@ typedef struct _AFFileDestDriver
   GHashTable *writer_hash;
   GlobalConfig *cfg;
   
+  gint remove_if_older;
   gboolean use_time_recvd;
   gint time_reap;
   guint reap_timer;
