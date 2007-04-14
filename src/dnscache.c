@@ -75,9 +75,14 @@ static guint
 dns_cache_key_hash(DNSCacheKey *e)
 {
   if (e->family == AF_INET)
-    return ntohl(e->addr.ip.s_addr);
+    {
+      return ntohl(e->addr.ip.s_addr);
+    }
   else
-    return (0x80000000 | (e->addr.ip6.s6_addr32[0] ^ e->addr.ip6.s6_addr32[2] ^ e->addr.ip6.s6_addr32[3] ^ e->addr.ip6.s6_addr32[4]));
+    {
+      guint32 *a32 = (guint32 *) &e->addr.ip6.s6_addr;
+      return (0x80000000 | (a32[0] ^ a32[1] ^ a32[2] ^ a32[3]));
+    }
 }
 
 static inline void

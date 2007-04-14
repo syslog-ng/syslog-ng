@@ -2,6 +2,21 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2007-01-07 16:46:34 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-116
+
+    Summary:
+      fixed IPv6 related portability problem in DNS cache
+    Revision:
+      syslog-ng--mainline--2.0--patch-116
+
+    	* src/dnscache.c (dns_cache_key_hash): don't use the unportable
+    	s6_addr32 member in struct in6_addr, use an explicit cast instead
+    
+
+    modified files:
+     ChangeLog src/dnscache.c
+
+
 2006-12-22 10:07:57 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-115
 
     Summary:
