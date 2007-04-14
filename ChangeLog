@@ -2,6 +2,20 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-11-27 10:52:40 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-100
+
+    Summary:
+      fixed a compilation problem in logmsg.c 
+    Revision:
+      syslog-ng--mainline--2.0--patch-100
+
+    	* src/logmsg.c (log_msg_parse): fixed a bad assignment
+    
+
+    modified files:
+     ChangeLog src/cfg-grammar.y
+
+
 2006-11-16 14:15:50 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-99
 
     Summary:

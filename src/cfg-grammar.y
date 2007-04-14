@@ -183,6 +183,7 @@ gint last_addr_family = AF_INET;
 %type   <num> dnsmode
 
 %type	<cptr> string
+%type	<cptr> string_or_number
 
 %%
 
@@ -339,8 +340,8 @@ source_afunix_options
 	;
 
 source_afunix_option
-	: KW_OWNER '(' string ')'		{ afunix_sd_set_uid(last_driver, $3); free($3); }
-	| KW_GROUP '(' string ')'		{ afunix_sd_set_gid(last_driver, $3); free($3); }
+	: KW_OWNER '(' string_or_number ')'	{ afunix_sd_set_uid(last_driver, $3); free($3); }
+	| KW_GROUP '(' string_or_number ')'	{ afunix_sd_set_gid(last_driver, $3); free($3); }
 	| KW_PERM '(' NUMBER ')'		{ afunix_sd_set_perm(last_driver, $3); }
 	| KW_OPTIONAL '(' yesno ')'		{ last_driver->optional = $3; }
 	| source_afsocket_stream_params		{}
@@ -494,11 +495,11 @@ dest_affile_option
 	| KW_COMPRESS '(' yesno ')'		{ affile_dd_set_compress(last_driver, $3); }
 	| KW_ENCRYPT '(' yesno ')'		{ affile_dd_set_encrypt(last_driver, $3); }
 */
-	| KW_OWNER '(' string ')'		{ affile_dd_set_file_uid(last_driver, $3); free($3); }
-	| KW_GROUP '(' string ')'		{ affile_dd_set_file_gid(last_driver, $3); free($3); }
+	| KW_OWNER '(' string_or_number ')'	{ affile_dd_set_file_uid(last_driver, $3); free($3); }
+	| KW_GROUP '(' string_or_number ')'	{ affile_dd_set_file_gid(last_driver, $3); free($3); }
 	| KW_PERM '(' NUMBER ')'		{ affile_dd_set_file_perm(last_driver, $3); }
-	| KW_DIR_OWNER '(' string ')'		{ affile_dd_set_dir_uid(last_driver, $3); free($3); }
-	| KW_DIR_GROUP '(' string ')'		{ affile_dd_set_dir_gid(last_driver, $3); free($3); }
+	| KW_DIR_OWNER '(' string_or_number ')'	{ affile_dd_set_dir_uid(last_driver, $3); free($3); }
+	| KW_DIR_GROUP '(' string_or_number ')'	{ affile_dd_set_dir_gid(last_driver, $3); free($3); }
 	| KW_DIR_PERM '(' NUMBER ')'		{ affile_dd_set_dir_perm(last_driver, $3); }
 	| KW_CREATE_DIRS '(' yesno ')'		{ affile_dd_set_create_dirs(last_driver, $3); }
 	| KW_REMOVE_IF_OLDER '(' NUMBER ')'	{ affile_dd_set_remove_if_older(last_driver, $3); }
@@ -526,8 +527,8 @@ dest_afpipe_options
 
 dest_afpipe_option
 	: dest_writer_option
-	| KW_OWNER '(' string ')'		{ affile_dd_set_file_uid(last_driver, $3); free($3); }
-	| KW_GROUP '(' string ')'		{ affile_dd_set_file_gid(last_driver, $3); free($3); }
+	| KW_OWNER '(' string_or_number ')'	{ affile_dd_set_file_uid(last_driver, $3); free($3); }
+	| KW_GROUP '(' string_or_number ')'	{ affile_dd_set_file_gid(last_driver, $3); free($3); }
 	| KW_PERM '(' NUMBER ')'		{ affile_dd_set_file_perm(last_driver, $3); }
 	;
 
@@ -760,11 +761,11 @@ options_item
 	| KW_GC_BUSY_THRESHOLD '(' NUMBER ')' 	{ /* ignored */; }
 	| KW_GC_IDLE_THRESHOLD '(' NUMBER ')'	{ /* ignored */; }
 	| KW_CREATE_DIRS '(' yesno ')'		{ configuration->create_dirs = $3; }
-	| KW_OWNER '(' string ')'		{ cfg_file_owner_set(configuration, $3); free($3); }
-	| KW_GROUP '(' string ')'		{ cfg_file_group_set(configuration, $3); free($3); }
+	| KW_OWNER '(' string_or_number ')'	{ cfg_file_owner_set(configuration, $3); free($3); }
+	| KW_GROUP '(' string_or_number ')'	{ cfg_file_group_set(configuration, $3); free($3); }
 	| KW_PERM '(' NUMBER ')'		{ cfg_file_perm_set(configuration, $3); }
-	| KW_DIR_OWNER '(' string ')'		{ cfg_dir_owner_set(configuration, $3); free($3); }
-	| KW_DIR_GROUP '(' string ')'		{ cfg_dir_group_set(configuration, $3); free($3); }
+	| KW_DIR_OWNER '(' string_or_number ')'	{ cfg_dir_owner_set(configuration, $3); free($3); }
+	| KW_DIR_GROUP '(' string_or_number ')'	{ cfg_dir_group_set(configuration, $3); free($3); }
 	| KW_DIR_PERM '(' NUMBER ')'		{ cfg_dir_perm_set(configuration, $3); }
 	| KW_DNS_CACHE '(' yesno ')' 		{ configuration->use_dns_cache = $3; }
 	| KW_DNS_CACHE_SIZE '(' NUMBER ')'	{ configuration->dns_cache_size = $3; }
@@ -880,6 +881,10 @@ string
 	: IDENTIFIER
 	| STRING
 	;
+
+string_or_number
+        : STRING                                { $$ = $1; }
+        | NUMBER                                { char buf[16]; snprintf(buf, sizeof(buf), "%d", $1); $$ = strdup(buf); }
 
 %%
 
