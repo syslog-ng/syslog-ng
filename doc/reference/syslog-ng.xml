@@ -796,10 +796,8 @@
 							<row>
 								<entry>tcp-keep-alive()</entry>
 								<entry>yes or no</entry>
-								<entry>Available for <parameter>tcp()</parameter> only; specifies
-									whether TCP keep alive messages using the SO_KEEPALIVE socket
-									option should be enabled. </entry>
-								<entry>no</entry>
+                                                                <entry>Obsolete alias for so_keep_alive()</entry>
+								<entry>same as the default of so_keep_alive()</entry>
 							</row>
 							<row>
 								<entry>max-connections()</entry>

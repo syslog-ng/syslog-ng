@@ -125,6 +125,7 @@ static struct keyword keywords[] = {
         { "so_rcvbuf",          KW_SO_RCVBUF },
         { "so_sndbuf",          KW_SO_SNDBUF },
         { "so_keepalive",       KW_SO_KEEPALIVE },
+        { "tcp_keep_alive",     KW_SO_KEEPALIVE }, /* obsolete */
 
 	{ "owner",		KW_OWNER },
 	{ "group",		KW_GROUP },
