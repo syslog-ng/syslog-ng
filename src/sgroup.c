@@ -49,7 +49,7 @@ log_source_group_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
   self->normalize_hostnames = cfg->normalize_hostnames;
   self->use_dns = cfg->use_dns;
   self->use_fqdn = cfg->use_fqdn;
-  /* self->cache = cfg->cache; */
+  self->use_dns_cache = cfg->use_dns_cache;
   self->keep_hostname = cfg->keep_hostname;
 
   for (p = self->drivers; p; p = p->drv_next)
@@ -92,7 +92,7 @@ log_source_group_queue(LogPipe *s, LogMessage *msg, gint path_flags)
 {
   LogSourceGroup *self = (LogSourceGroup *) s;
 
-  resolve_hostname(msg->host_from, msg->saddr, self->use_dns, self->use_fqdn);
+  resolve_hostname(msg->host_from, msg->saddr, self->use_dns, self->use_fqdn, self->use_dns_cache);
   
   msg->source_group = self;
   

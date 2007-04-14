@@ -141,6 +141,8 @@ static struct keyword keywords[] = {
 	{ "allow",		KW_ALLOW },
 	{ "deny",		KW_DENY },
 	{ "compress",		KW_COMPRESS },
+	{ "persist_only",       KW_PERSIST_ONLY },
+	{ "dns_cache_hosts",    KW_DNS_CACHE_HOSTS },
 	{ "dns_cache",		KW_DNS_CACHE },
 	{ "dns_cache_size",	KW_DNS_CACHE_SIZE },
 	{ "dns_cache_expire",	KW_DNS_CACHE_EXPIRE },

@@ -21,27 +21,17 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#ifndef MISC_H_INCLUDED
-#define MISC_H_INCLUDED
+
+#ifndef DNSCACHE_H_INCLUDED
+#define DNSCACHE_H_INCLUDED
 
 #include "syslog-ng.h"
-#include "gsockaddr.h"
 
-#include <sys/types.h>
-#include <sys/socket.h>
+gboolean dns_cache_lookup(gint family, void *addr, const gchar **hostname);
+void dns_cache_store(gboolean persistent, gint family, void *addr, const gchar *hostname);
 
-GString *g_string_assign_len(GString *s, gchar *val, gint len);
-
-char *getlonghostname(char *buf, size_t buflen);
-char *getshorthostname(char *buf, size_t buflen);
-int format_zone_info(gchar *buf, size_t buflen, long gmtoff);
-long get_local_timezone_ofs(time_t when);
-gboolean g_fd_set_nonblock(int fd, gboolean enable);
-gboolean g_fd_set_cloexec(int fd, gboolean enable);
-
-gboolean resolve_user(const char *user, uid_t *uid);
-gboolean resolve_group(const char *group, gid_t *gid);
-gboolean resolve_user_group(char *arg, uid_t *uid, gid_t *gid);
-gboolean resolve_hostname(GString *result, GSockAddr *saddr, gboolean usedns, gboolean usefqdn, gboolean use_dns_cache);
+void dns_cache_set_params(gint cache_size, gint expire, gint expire_failed, const gchar *hosts);
+void dns_cache_init(void);
+void dns_cache_destroy(void);
 
 #endif

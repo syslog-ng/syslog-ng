@@ -61,6 +61,7 @@ typedef struct _GlobalConfig
   gboolean use_dns;
   gboolean use_dns_cache;
   gint dns_cache_size, dns_cache_expire, dns_cache_expire_failed;
+  gchar *dns_cache_hosts;
   gint time_reopen;
   gint time_reap;
   gint time_sleep;

@@ -22,6 +22,7 @@
  */
 
 #include "misc.h"
+#include "dnscache.h"
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -124,10 +125,11 @@ get_local_timezone_ofs(time_t when)
 }
 
 gboolean
-resolve_hostname(GString *result, GSockAddr *saddr, gboolean usedns, gboolean usefqdn)
+resolve_hostname(GString *result, GSockAddr *saddr, gboolean usedns, gboolean usefqdn, gboolean use_dns_cache)
 {
   static gchar local_hostname[256] = "";
-  char *hname, *p, buf[256];
+  const gchar *hname;
+  gchar *p, buf[256];
  
   if (saddr && saddr->sa.sa_family != AF_UNIX)
     {
@@ -147,18 +149,21 @@ resolve_hostname(GString *result, GSockAddr *saddr, gboolean usedns, gboolean us
               addr_len = sizeof(struct in6_addr);
             }
 
-          /* FIXME: add nscache support here */
-
-          if (usedns) 
+          hname = NULL;
+          if (usedns)
             {
-              struct hostent *hp;
-              
-              hp = gethostbyaddr(addr, addr_len, saddr->sa.sa_family);
-              hname = (hp && hp->h_name) ? hp->h_name : NULL;
-            } 
-          else
-            hname = NULL;
-          
+              if ((!use_dns_cache || !dns_cache_lookup(saddr->sa.sa_family, addr, &hname)) && usedns != 2) 
+                {
+                  struct hostent *hp;
+                      
+                  hp = gethostbyaddr(addr, addr_len, saddr->sa.sa_family);
+                  hname = (hp && hp->h_name) ? hp->h_name : NULL;
+                  
+                  if (use_dns_cache)
+                    dns_cache_store(FALSE, saddr->sa.sa_family, addr, hname);
+                } 
+            }
+            
           if (!hname) 
             {
               inet_ntop(saddr->sa.sa_family, addr, buf, sizeof(buf));
@@ -166,9 +171,11 @@ resolve_hostname(GString *result, GSockAddr *saddr, gboolean usedns, gboolean us
             }
           else 
             {
+              g_strlcpy(buf, hname, sizeof(buf));
+              hname = buf;
               if (!usefqdn) 
                 {
-                  p = strchr(hname, '.');
+                  p = strchr(buf, '.');
                   if (p) *p = 0;
                 }
             }

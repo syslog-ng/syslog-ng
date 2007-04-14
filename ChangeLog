@@ -2,6 +2,44 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-11-08 14:16:23 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-96
+
+    Summary:
+      implemented DNS cache and custom hosts file support
+    Revision:
+      syslog-ng--mainline--2.0--patch-96
+
+    	* src/cfg-grammar.y: added KW_PERSIST_ONLY, KW_DNS_CACHE_HOSTS keywords, dnsmode rule,
+    	removed tripleoption and related options, added
+    
+    	* src/cfg-lex.l: added dnscache specific new keywords,
+    
+    	* src/cfg.c (cfg_init): added a call to dns_cache_set_params, 
+    	(cfg_free): free dns_cache_hosts,
+    
+    	* src/main.c (main): call dns_cache_init() and dns_cache_destroy()
+    
+    	* src/misc.c (resolve_hostname): added DNS cache and persistent-only
+    	resolution support
+    
+    	* src/sgroup.c (log_source_group_init): save dns cache params,
+    	(log_source_group_queue): pass use_dns_cache param to resolve_hostname
+    
+    	* src/dnscache.{c,h}: new files
+    
+
+    new files:
+     src/.arch-ids/dnscache.c.id src/.arch-ids/dnscache.h.id
+     src/dnscache.c src/dnscache.h
+     tests/unit/.arch-ids/test_dnscache.c.id
+     tests/unit/test_dnscache.c
+
+    modified files:
+     ChangeLog src/Makefile.am src/affile.h src/cfg-grammar.y
+     src/cfg-lex.l src/cfg.c src/cfg.h src/main.c src/misc.c
+     src/misc.h src/sgroup.c src/sgroup.h tests/unit/Makefile.am
+
+
 2006-11-08 14:11:00 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-95
 
     Summary:

@@ -28,6 +28,7 @@
 #include "memtrace.h"
 #include "misc.h"
 #include "stats.h"
+#include "dnscache.h"
 
 #include <sys/types.h>
 #include <stdio.h>
@@ -389,6 +390,7 @@ main(int argc, char *argv[])
   setup_signals();
   msg_init(log_to_stderr);
   child_manager_init();
+  dns_cache_init();
 
   cfg = cfg_new(cfgfilename);
   if (!cfg)
@@ -420,6 +422,7 @@ main(int argc, char *argv[])
   rc = main_loop_run(cfg);
   child_manager_deinit();
   msg_deinit();
+  dns_cache_destroy();
   z_mem_trace_dump();
   return rc;
 }

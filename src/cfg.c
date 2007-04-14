@@ -30,6 +30,7 @@
 #include "templates.h"
 #include "misc.h"
 #include "logmsg.h"
+#include "dnscache.h"
 
 #include <stdio.h>
 #include <ctype.h>
@@ -207,6 +208,7 @@ cfg_init(GlobalConfig *cfg, PersistentConfig *persist)
           cfg->bad_hostname_compiled = TRUE;
         }
     }
+  dns_cache_set_params(cfg->dns_cache_size, cfg->dns_cache_expire, cfg->dns_cache_expire_failed, cfg->dns_cache_hosts);
   return cfg->center->super.init(&cfg->center->super, cfg, persist);
 }
 
@@ -357,6 +359,7 @@ cfg_free(GlobalConfig *self)
   if (self->bad_hostname_compiled)
     regfree(&self->bad_hostname);
   g_free(self->bad_hostname_re);
+  g_free(self->dns_cache_hosts);
   g_free(self);
 }
 

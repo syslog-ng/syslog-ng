@@ -39,6 +39,7 @@ typedef struct _LogSourceGroup
   gboolean keep_hostname;
   gboolean use_dns;
   gboolean use_fqdn;
+  gboolean use_dns_cache;
   
   guint32 *processed_messages;
   

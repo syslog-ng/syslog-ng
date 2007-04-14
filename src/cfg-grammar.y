@@ -62,7 +62,8 @@ gint last_addr_family = AF_INET;
 %token KW_KEEP_TIMESTAMP
 %token KW_USE_DNS KW_USE_FQDN 
 %token KW_DNS_CACHE KW_DNS_CACHE_SIZE
-%token KW_DNS_CACHE_EXPIRE KW_DNS_CACHE_EXPIRE_FAILED
+%token KW_DNS_CACHE_EXPIRE KW_DNS_CACHE_EXPIRE_FAILED KW_DNS_CACHE_HOSTS
+%token KW_PERSIST_ONLY
 %token KW_TZ_CONVERT KW_TS_FORMAT KW_FRAC_DIGITS
 
 %token KW_LOG_FIFO_SIZE KW_LOG_FETCH_LIMIT KW_LOG_IW_SIZE KW_LOG_PREFIX
@@ -179,7 +180,7 @@ gint last_addr_family = AF_INET;
 %type   <num> filter_level
 
 %type	<num> yesno
-%type	<num> tripleoption
+%type   <num> dnsmode
 
 %type	<cptr> string
 
@@ -400,9 +401,6 @@ source_afinet_tcp_option
         : source_afinet_option
 	| KW_LOCALPORT '(' string ')'		{ afinet_sd_set_localport(last_driver, 0, $3, "tcp"); free($3); }
 	| KW_PORT '(' string ')'		{ afinet_sd_set_localport(last_driver, 0, $3, "tcp"); free($3); }
-	| KW_AUTH '(' tripleoption ')'		{ afinet_sd_set_auth(last_driver, $3); }
-	| KW_MAC '(' tripleoption ')'		{ afinet_sd_set_mac(last_driver, $3); }
-	| KW_ENCRYPT '(' tripleoption ')'	{ afinet_sd_set_encrypt(last_driver, $3); }
 	| source_afsocket_stream_params		{}
 	;
 
@@ -740,7 +738,7 @@ options_item
 	| KW_BAD_HOSTNAME '(' STRING ')'	{ cfg_bad_hostname_set(configuration, $3); free($3); }
 	| KW_USE_TIME_RECVD '(' yesno ')'	{ configuration->use_time_recvd = $3; }
 	| KW_USE_FQDN '(' yesno ')'		{ configuration->use_fqdn = $3; }
-	| KW_USE_DNS '(' yesno ')'		{ configuration->use_dns = $3; }
+	| KW_USE_DNS '(' dnsmode ')'		{ configuration->use_dns = $3; }
 	| KW_TIME_REOPEN '(' NUMBER ')'		{ configuration->time_reopen = $3; }
 	| KW_TIME_REAP '(' NUMBER ')'		{ configuration->time_reap = $3; }
 	| KW_TIME_SLEEP '(' NUMBER ')'		
@@ -773,6 +771,7 @@ options_item
 	| KW_DNS_CACHE_EXPIRE '(' NUMBER ')'	{ configuration->dns_cache_expire = $3; }
 	| KW_DNS_CACHE_EXPIRE_FAILED '(' NUMBER ')'
 	  			{ configuration->dns_cache_expire_failed = $3; }
+	| KW_DNS_CACHE_HOSTS '(' string ')'     { configuration->dns_cache_hosts = $3; }
 	| KW_FILE_TEMPLATE '(' string ')'	{ configuration->file_template_name = $3; }
 	| KW_PROTO_TEMPLATE '(' string ')'	{ configuration->proto_template_name = $3; }
 	| KW_RECV_TIME_ZONE '(' string ')'      { cfg_timezone_value($3, &configuration->recv_zone_offset); free($3); }
@@ -872,10 +871,9 @@ yesno
 	| NUMBER				{ $$ = $1; }
 	;
 
-tripleoption
-	: KW_REQUIRED				{ $$ = 2; }
-	| KW_ALLOW				{ $$ = 1; }
-	| KW_DENY				{ $$ = 0; }
+dnsmode
+	: yesno					{ $$ = $1; }
+	| KW_PERSIST_ONLY                       { $$ = 2; }
 	;
 
 string
