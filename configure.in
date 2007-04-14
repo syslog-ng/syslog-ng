@@ -69,14 +69,19 @@ AC_PROG_RANLIB
 
 AC_MSG_CHECKING(how to enable static linking for certain libraries)
 ldversion=`ld -V 2>&1 | head -1`
+ostype=`uname -s`
 if echo $ldversion | egrep "GNU|Solaris" > /dev/null; then
         LD_START_STATIC="-Wl,-Bstatic"
         LD_END_STATIC="-Wl,-Bdynamic"
         AC_MSG_RESULT(GNU or Solaris)
-elif echo $ldversion | egrep "HP" > /dev/null; then
+elif test $ostype == "HP-UX" > /dev/null; then
         LD_START_STATIC="-a archive"
         LD_END_STATIC="-a shared_archive"
         AC_MSG_RESULT(HP-UX)
+elif test "$ostype" == "AIX"; then
+        LD_START_STATIC="-Wl,-bstatic"
+        LD_END_STATIC="-Wl,-bdynamic"
+        AC_MSG_RESULT(AIX)
 else
         LD_START_STATIC=""
         LD_END_STATIC=""

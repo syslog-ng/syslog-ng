@@ -63,6 +63,7 @@ char *
 getlonghostname(char *buf, size_t bufsize)
 {
   gethostname(buf, bufsize - 1);
+  buf[bufsize - 1] = '\0';
   if (strchr(buf, '.') == NULL)
     {
       struct hostent *result = gethostbyname(buf);
@@ -125,7 +126,7 @@ get_local_timezone_ofs(time_t when)
 gboolean
 resolve_hostname(GString *result, GSockAddr *saddr, gboolean usedns, gboolean usefqdn)
 {
-  static gchar local_hostname[128] = "";
+  static gchar local_hostname[256] = "";
   char *hname, *p;
  
   if (saddr && saddr->sa.sa_family == AF_INET)

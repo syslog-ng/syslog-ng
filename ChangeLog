@@ -2,6 +2,28 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-06-12 07:53:10 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-61
+
+    Summary:
+      portability fixes
+    Revision:
+      syslog-ng--mainline--2.0--patch-61
+
+    	* configure.in: detect AIX and HP-UX using uname -s, instead of
+    	trying to extract platform information from the linker's version
+    	number (proved not to be reliable on HP-UX)
+    
+    	* src/misc.c (getlonghostname, getshorthostname): use 256 characters
+    	array to store hostnames
+    
+    	* src/sgroup.c (log_source_group_queue): -"-
+    
+    
+
+    modified files:
+     ChangeLog configure.in src/misc.c src/sgroup.c
+
+
 2006-06-07 09:14:55 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-60
 
     Summary:

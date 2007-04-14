@@ -128,7 +128,7 @@ log_source_group_queue(LogPipe *s, LogMessage *msg, gint path_flags)
 
   if (!msg->host->len)
     {
-      gchar buf[128];
+      gchar buf[256];
 
       getshorthostname(buf, sizeof(buf));
       g_string_assign(msg->host, buf);
