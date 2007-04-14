@@ -2,6 +2,22 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-04-23 10:22:21 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-43
+
+    Summary:
+      fixed possible memory leak 
+    Revision:
+      syslog-ng--mainline--2.0--patch-43
+
+    	* src/logreader.c (log_reader_iterate_buf): drop self->prev_addr
+    	reference if it exists, previously it might have been overwritten
+    	with a new reference without dropping the old, fixes a potential
+    	GSockAddr reference leak
+
+    modified files:
+     ChangeLog src/logreader.c
+
+
 2006-04-23 09:23:19 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-42
 
     Summary:

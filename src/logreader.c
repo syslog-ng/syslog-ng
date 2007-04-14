@@ -189,6 +189,14 @@ log_reader_handle_line(LogReader *self, gchar *line, gint length, GSockAddr *sad
   return log_source_free_to_send(&self->super);
 }
 
+/**
+ * log_reader_iterate_buf:
+ * @self: LogReader instance
+ * @saddr: socket address to be assigned to new messages (consumed!)
+ * @flush: 
+ * @msg_counter: the number of messages processed in the current poll iteration
+ * 
+ **/
 static gboolean
 log_reader_iterate_buf(LogReader *self, GSockAddr *saddr, gboolean flush, gint *msg_count)
 {
@@ -239,6 +247,11 @@ log_reader_iterate_buf(LogReader *self, GSockAddr *saddr, gboolean flush, gint *
       if (saddr == NULL)
         {
           saddr = self->prev_addr;
+          self->prev_addr = NULL;
+        }
+      if (self->prev_addr)
+        {
+          g_sockaddr_unref(self->prev_addr);
           self->prev_addr = NULL;
         }
       start = self->buffer;
