@@ -2,6 +2,20 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-10-24 11:37:43 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-86
+
+    Summary:
+      updated VERSION number
+    Revision:
+      syslog-ng--mainline--2.0--patch-86
+
+    
+    
+
+    modified files:
+     ChangeLog VERSION
+
+
 2006-10-24 11:37:16 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-85
 
     Summary:
