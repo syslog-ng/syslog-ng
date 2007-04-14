@@ -1,4 +1,5 @@
 1.9.10
+	Mon, 10 Apr 2006 23:33:16 +0200
 
 	Some minor new features:
 	* Added netmask() filter which was missing from previous releases.
@@ -8,6 +9,8 @@
 	* Fixed a possible abort in program() destinations and fix to
 	  actually restart spawned processes.
 	* Fixed a portability problem in the lexer.
+	* Fixed a possible abort when the user specifies two conflicting
+          UNIX sources.
 	* Disable stats messages instead of busy looping when stats_freq()
 	  is set to 0 to match 1.6.x behaviour.
 	* Fixed match space expansion ($N references in templates).
@@ -17,7 +20,6 @@
 
 	Other changes:
 	* Documentation updates.
-
 
 1.9.9
 	Sun, 26 Feb 2006 09:49:47 +0100
