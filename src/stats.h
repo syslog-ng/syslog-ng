@@ -28,7 +28,8 @@
 
 typedef enum
 {
-  SC_TYPE_DROPPED,
+  SC_TYPE_MIN,
+  SC_TYPE_DROPPED=0,
   SC_TYPE_PROCESSED,
   SC_TYPE_MAX
 } StatsCounterType;
@@ -36,6 +37,8 @@ typedef enum
 void stats_generate_log(void);
 void stats_register_counter(StatsCounterType type, const gchar *counter_name, guint32 **counter, gboolean shared);
 void stats_unregister_counter(StatsCounterType type, const gchar *name, guint32 **counter);
+void stats_orphan_counter(StatsCounterType type, const gchar *counter_name, guint32 **counter);
+void stats_cleanup_orphans(void);
 
 #endif
 

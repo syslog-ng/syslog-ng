@@ -171,6 +171,7 @@ main_loop_run(GlobalConfig *cfg)
                 g_source_remove(stats_timer_id);
               stats_timer_id = g_timeout_add(cfg->stats_freq * 1000, stats_timer, NULL);
             }
+          stats_cleanup_orphans();
         }
       if (sig_term_received)
         {

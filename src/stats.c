@@ -32,6 +32,7 @@ typedef struct _StatsCounter
   StatsCounterType type;
   gchar *name;
   guint32 counter;
+  gboolean orphaned:1, shared:1;
 } StatsCounter;
 
 GList *counters[SC_TYPE_MAX];
@@ -46,6 +47,13 @@ static GList *
 stats_find_counter(StatsCounterType type, const gchar *counter_name)
 {
   return g_list_find_custom(counters[(guint) type], counter_name, (GCompareFunc) stats_cmp_name);
+}
+
+static void
+stats_counter_free(StatsCounter *sc)
+{
+  g_free(sc->name);
+  g_free(sc);
 }
 
 /**
@@ -75,30 +83,70 @@ stats_register_counter(StatsCounterType type, const gchar *counter_name, guint32
     return;
   if ((l = stats_find_counter(type, counter_name)))
     {
-      if (!shared)
+      sc = (StatsCounter *) l->data;
+      
+      if (sc->orphaned)
+        {
+          sc->ref_cnt--;
+          sc->orphaned = FALSE;
+        }
+      else if (!shared || !sc->shared)
         {
           msg_notice("Duplicate stats counter",  
                      evt_tag_str("counter", counter_name), 
                      NULL);
           *counter = NULL;
+          return;
         }
-      else
-        {
-          sc = (StatsCounter *) l->data;
-          sc->ref_cnt++;
-          *counter = &sc->counter;
-        }
+        
+      sc->ref_cnt++;
+      *counter = &sc->counter;
       return;
     }
   
-  sc = g_new(StatsCounter, 1);
+  sc = g_new0(StatsCounter, 1);
   
   sc->type = type;
   sc->name = g_strdup(counter_name);
   sc->counter = 0;
   sc->ref_cnt = 1;
+  sc->shared = shared;
   *counter = &sc->counter;
   counters[(guint) type] = g_list_prepend(counters[(guint) type], sc);
+}
+
+void
+stats_orphan_counter(StatsCounterType type, const gchar *counter_name, guint32 **counter)
+{
+  StatsCounter *sc;
+  GList *l;
+  
+  if (!counter_name)
+    return;
+    
+  l = stats_find_counter(type, counter_name);
+  if (!l)
+    {
+      msg_error("Internal error orphaning stats counter, counter not found",
+                evt_tag_str("counter", counter_name),
+                NULL);
+      return;
+    }
+  sc = (StatsCounter *) l->data;
+  if (&sc->counter != *counter)
+    {
+      msg_error("Internal error orphaning stats counter, counter mismatch",
+                evt_tag_str("counter", counter_name),
+                NULL);
+      return;
+    }
+  if (!sc->orphaned)
+    {
+      sc->ref_cnt++;
+      sc->orphaned = TRUE;
+    }
+  stats_unregister_counter(type, counter_name, counter);
+  *counter = NULL;
 }
 
 void
@@ -124,15 +172,39 @@ stats_unregister_counter(StatsCounterType type, const gchar *counter_name, guint
       msg_error("Internal error unregistering stats counter, counter mismatch",
                 evt_tag_str("counter", counter_name),
                 NULL);
+      return;
     }
   sc->ref_cnt--;
   if (sc->ref_cnt == 0)
     {
       counters[(guint) type] = g_list_delete_link(counters[(guint) type], l);
-      g_free(sc->name);
-      g_free(sc);
+      stats_counter_free(sc);
     }
   *counter = NULL;
+}
+
+void
+stats_cleanup_orphans(void)
+{
+  StatsCounterType type;
+  StatsCounter *sc;
+  GList *l, *l_next;
+ 
+  for (type = SC_TYPE_MIN; type < SC_TYPE_MAX; type++)
+    {
+      for (l = counters[(guint) type]; l; l = l_next)
+        {
+          sc = (StatsCounter *) l->data;
+          
+          l_next = g_list_next(l);
+          if (sc->orphaned)
+            {
+              g_assert(sc->ref_cnt == 1);
+              counters[(guint) type] = g_list_delete_link(counters[(guint) type], l);
+              stats_counter_free(sc);
+            }
+        }
+    }
 }
 
 void

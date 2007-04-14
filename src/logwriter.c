@@ -391,6 +391,9 @@ log_writer_deinit(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
     }
   log_pipe_unref(self->control);
   self->control = NULL;
+
+  if (self->dropped_messages)
+    stats_orphan_counter(SC_TYPE_DROPPED, self->options->stats_name, &self->dropped_messages);
   
   return TRUE;
 }
@@ -399,10 +402,16 @@ static void
 log_writer_free(LogPipe *s)
 {
   LogWriter *self = (LogWriter *) s;
-  
-  if (self->dropped_messages)
-    stats_unregister_counter(SC_TYPE_DROPPED, self->options->stats_name, &self->dropped_messages);
 
+  while (!g_queue_is_empty(self->queue))
+    {
+      LogMessage *lm;
+      gint path_flags;
+      
+      lm = g_queue_pop_head(self->queue);
+      path_flags = GPOINTER_TO_UINT (g_queue_pop_head(self->queue)) & 0x7FFFFFFF;
+      log_msg_unref(lm);
+    }
   g_queue_free(self->queue);
   g_free(self);
 }
@@ -476,6 +485,11 @@ log_writer_options_set_template_escape(LogWriterOptions *options, gboolean enabl
 void
 log_writer_options_init(LogWriterOptions *options, GlobalConfig *cfg, guint32 flags, const gchar *stats_name)
 {
+  /* NOTE: free everything that might have remained from a previous init
+   * call, this way init can be called any number of times, without calling
+   * destroy first */
+
+  log_writer_options_destroy(options);
   options->flags = flags;
   if (options->fifo_size == -1)
     options->fifo_size = cfg->log_fifo_size;

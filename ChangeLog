@@ -2,6 +2,39 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-09-11 09:47:54 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-77
+
+    Summary:
+      added stats counter orphaning to fix "duplicate stats counter message" for program destinations
+    Revision:
+      syslog-ng--mainline--2.0--patch-77
+
+    2006-09-11  Balazs Scheidler <bazsi@balabit.hu>
+    
+    	* src/logwriter.c (log_writer_deinit): call stats_orphan_counter,
+    	(log_writer_free): removed stats_unregister_counter, fixed a memory
+    	leak by freeing all elements in the logwriter queue,
+    	(log_writer_options_init): fixed a possible memory leak by freeing
+    	the option structure contents before overwriting it with new values,
+    
+    	* src/main.c (main_loop_run): added stats_cleanup_orphans() call
+    
+    	* src/stats.c (stats_counter_free): new function,
+    	(stats_register_counter): added special case for orphaned counters,
+    	save "shared" value in the StatsCounter structure,
+    	(stats_orphan_counter): new function, orphanes a counter that can
+    	thus be reused by a new configuration upon the receiption of a HUP signal,
+    	(stats_unregister_counter): use stats_counter_free instead of
+    	open-coding it,
+    	(stats_cleanup_orphans): free all orphaned counters, to be called
+    	after a reload
+    
+
+    modified files:
+     ChangeLog src/logmsg.c src/logwriter.c src/main.c src/stats.c
+     src/stats.h
+
+
 2006-09-11 09:41:42 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-76
 
     Summary:

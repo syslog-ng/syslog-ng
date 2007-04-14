@@ -659,7 +659,6 @@ log_msg_ack(LogMessage *m)
 void
 log_msg_drop(LogMessage *m, guint path_flags)
 {
-  /* FIXME: count dropped messages */
   if ((path_flags & PF_FLOW_CTL_OFF) == 0)
     log_msg_ack(m);
   log_msg_unref(m);
