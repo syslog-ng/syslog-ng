@@ -2,6 +2,29 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-11-08 14:11:00 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-95
+
+    Summary:
+      don't fail at startup if network connection is down
+    Revision:
+      syslog-ng--mainline--2.0--patch-95
+
+    	* src/afsocket.c (afsocket_open_socket): added an error message if
+    	socket creation failed,
+    	(afsocket_dd_start_reconnect_timer): new function, deregisters and
+    	starts a new reconnect timer,
+    	(afsocket_dd_connected): use afsocket_dd_start_reconnect_timer,
+    	(afsocket_dd_start_connect): renamed from afsocket_dd_reconnect,
+    	removed explicit timer registration,
+    	(afsocket_dd_reconnect): new function, calls _start_connect and
+    	registers the reconnect timer if that fails,
+    	(afsocket_dd_init): afsocket_dd_reconnect does not return a value now
+    
+
+    modified files:
+     ChangeLog src/afsocket.c
+
+
 2006-11-08 10:10:37 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-94
 
     Summary:

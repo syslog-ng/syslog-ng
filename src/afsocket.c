@@ -202,7 +202,12 @@ afsocket_open_socket(GSockAddr *bind_addr, int stream_or_dgram, int *fd)
       return TRUE;
     }
   else
-    return FALSE;
+    {
+      msg_error("Error creating socket",
+                evt_tag_errno(EVT_TAG_OSERROR, errno),
+                NULL);
+      return FALSE;
+    }
 }
 
 static gboolean
@@ -632,7 +637,7 @@ afsocket_sd_init_instance(AFSocketSourceDriver *self, SocketOptions *sock_option
 
 /* socket destinations */
 
-gboolean afsocket_dd_reconnect(AFSocketDestDriver *self);
+void afsocket_dd_reconnect(AFSocketDestDriver *self);
 
 static const gchar *
 afsocket_dd_format_stats_name(AFSocketDestDriver *self)
@@ -667,6 +672,14 @@ afsocket_dd_reconnect_timer(gpointer s)
   return FALSE;
 }
 
+static void
+afsocket_dd_start_reconnect_timer(AFSocketDestDriver *self)
+{
+  if (self->reconnect_timer)
+    g_source_remove(self->reconnect_timer);
+  self->reconnect_timer = g_timeout_add(self->time_reopen * 1000, afsocket_dd_reconnect_timer, self);
+}
+
 gboolean
 afsocket_dd_connected(AFSocketDestDriver *self)
 {
@@ -684,7 +697,7 @@ afsocket_dd_connected(AFSocketDestDriver *self)
                     NULL);
           close(self->fd);
 
-          self->reconnect_timer = g_timeout_add(self->time_reopen * 1000, afsocket_dd_reconnect_timer, self);
+          afsocket_dd_start_reconnect_timer(self);
           return FALSE;
         }
       if (error)
@@ -695,7 +708,7 @@ afsocket_dd_connected(AFSocketDestDriver *self)
                     NULL);
           close(self->fd);
 
-          self->reconnect_timer = g_timeout_add(self->time_reopen * 1000, afsocket_dd_reconnect_timer, self);
+          afsocket_dd_start_reconnect_timer(self);
           return FALSE;
         }
     }
@@ -715,7 +728,7 @@ afsocket_dd_connected(AFSocketDestDriver *self)
 }
 
 gboolean
-afsocket_dd_reconnect(AFSocketDestDriver *self)
+afsocket_dd_start_connect(AFSocketDestDriver *self)
 {
   int sock, rc;
   
@@ -757,15 +770,24 @@ afsocket_dd_reconnect(AFSocketDestDriver *self)
       /* error establishing connection */
       msg_error("Connection failed",
                 evt_tag_errno(EVT_TAG_OSERROR, errno),
-                evt_tag_int("reconnect", self->time_reopen),
                 NULL);
       close(sock);
-      
-      self->reconnect_timer = g_timeout_add(self->time_reopen * 1000, afsocket_dd_reconnect_timer, self);
       return FALSE;
     }
 
   return TRUE;
+}
+
+void
+afsocket_dd_reconnect(AFSocketDestDriver *self)
+{
+  if (!afsocket_dd_start_connect(self))
+    {
+      msg_error("Initiating connection failed, reconnecting",
+                evt_tag_int("time_reopen", self->time_reopen),
+                NULL);
+      afsocket_dd_start_reconnect_timer(self);
+    }
 }
 
 gboolean
@@ -794,10 +816,7 @@ afsocket_dd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
       log_pipe_append(&self->super.super, self->writer);
     }
     
-  if (!afsocket_dd_reconnect(self))
-    {
-      return FALSE;
-    }
+  afsocket_dd_reconnect(self);
   return TRUE;
 }
 
