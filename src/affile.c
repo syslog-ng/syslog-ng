@@ -84,6 +84,7 @@ affile_open_file(gchar *name, int flags,
     }
   if (*fd != -1)
     {
+      g_fd_set_cloexec(*fd, TRUE);
       if (uid != -1)
         fchown(*fd, uid, -1);
       if (gid != -1)

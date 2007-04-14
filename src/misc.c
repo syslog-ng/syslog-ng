@@ -193,6 +193,25 @@ g_fd_set_nonblock(int fd, gboolean enable)
   return TRUE;
 }
 
+gboolean
+g_fd_set_cloexec(int fd, gboolean enable)
+{
+  int flags;
+
+  if ((flags = fcntl(fd, F_GETFD)) == -1)
+    return FALSE;
+  if (enable)
+    flags |= FD_CLOEXEC;
+  else
+    flags &= ~FD_CLOEXEC;
+
+  if (fcntl(fd, F_SETFD, flags) < 0)
+    {
+      return FALSE;
+    }
+  return TRUE;
+}
+
 gboolean 
 resolve_user(const char *user, uid_t *uid)
 {

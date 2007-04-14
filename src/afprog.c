@@ -26,6 +26,7 @@
 #include "messages.h"
 #include "logwriter.h"
 #include "children.h"
+#include "misc.h"
 
 #include <sys/types.h>
 #include <fcntl.h>
@@ -117,6 +118,7 @@ afprogram_dd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
       child_manager_register(self->pid, afprogram_dd_exit, self);
       log_pipe_ref(s); /* child manager holds a reference */
       
+      g_fd_set_cloexec(msg_pipe[1], TRUE);
       close(msg_pipe[0]);
       if (!self->writer)
         self->writer = log_writer_new(LW_FORMAT_FILE, s, &self->writer_options);

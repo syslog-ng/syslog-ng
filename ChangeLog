@@ -2,6 +2,23 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-04-20 11:57:20 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-40
+
+    Summary:
+      added close-on-exec flag to all opened fds to avoid their inheritance to child processes
+    Revision:
+      syslog-ng--mainline--2.0--patch-40
+
+    	* src/af*.c: call g_fd_set_cloexec for all new fds
+    
+    	* src/misc.c (g_fd_set_cloexec): new function, sets FD_CLOEXEC flag
+    	for an fd
+
+    modified files:
+     ChangeLog src/affile.c src/afprog.c src/afsocket.c
+     src/afstreams.c src/misc.c src/misc.h
+
+
 2006-04-19 18:47:12 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-39
 
     Summary:

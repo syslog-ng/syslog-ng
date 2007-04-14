@@ -165,6 +165,7 @@ afsocket_open_socket(GSockAddr *bind_addr, int stream_or_dgram, int *fd)
     sock = socket(bind_addr->sa.sa_family, SOCK_DGRAM, 0);
     
   g_fd_set_nonblock(sock, TRUE);
+  g_fd_set_cloexec(sock, TRUE);
   if (sock != -1)
     {
       if (g_bind(sock, bind_addr) != G_IO_STATUS_NORMAL)
@@ -359,6 +360,7 @@ afsocket_sd_accept(gpointer s)
       return TRUE;
     }
   g_fd_set_nonblock(new_fd, TRUE);
+  g_fd_set_cloexec(new_fd, TRUE);
     
   msg_verbose("Syslog connection accepted",
               evt_tag_str("from", g_sockaddr_format(peer_addr, buf1, sizeof(buf1))),

@@ -37,6 +37,7 @@ char *getshorthostname(char *buf, size_t buflen);
 int format_zone_info(gchar *buf, size_t buflen, long gmtoff);
 long get_local_timezone_ofs(time_t when);
 gboolean g_fd_set_nonblock(int fd, gboolean enable);
+gboolean g_fd_set_cloexec(int fd, gboolean enable);
 
 gboolean resolve_user(const char *user, uid_t *uid);
 gboolean resolve_group(const char *group, gid_t *gid);

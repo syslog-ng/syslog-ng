@@ -122,6 +122,7 @@ afstreams_sd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
     {
       struct strioctl ioc;
       
+      g_fd_set_cloexec(fd, TRUE);
       memset(&ioc, 0, sizeof(ioc));
       ioc.ic_cmd = I_CONSLOG;
       if (ioctl(fd, I_STR, &ioc) < 0) 
@@ -165,6 +166,7 @@ afstreams_sd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
               close(self->door_fd);
               return FALSE;
             }
+          g_fd_set_cloexec(self->door_fd, TRUE);
           if (fattach(self->door_fd, self->door_filename->str) == -1)
             {
               msg_error("Error attaching syslog door",
