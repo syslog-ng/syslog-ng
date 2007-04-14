@@ -2,6 +2,25 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-12-08 08:40:35 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-104
+
+    Summary:
+      removed 12 hour limitation from timezone offsets
+    Revision:
+      syslog-ng--mainline--2.0--patch-104
+
+    	* src/cfg.c (cfg_timezone_value): removed 12 hours limitation as
+    	offsets may well exceed that value (maximum is 24 hours)
+    
+    	* doc/reference/syslog-ng.xml: removed non-existing timezone()
+    	option
+    
+    
+
+    modified files:
+     ChangeLog doc/reference/syslog-ng.xml src/cfg.c
+
+
 2006-12-02 22:20:39 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-103
 
     Summary:

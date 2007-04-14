@@ -52,13 +52,12 @@ cfg_timezone_value(gchar *tz, glong *timezone)
       
       hours = (*tz - '0') * 10 + *(tz+1) - '0';
       mins = (*(tz+3) - '0') * 10 + *(tz+4) - '0';
-      if (hours <= 12 && mins <= 60)
+      if ((hours < 24 && mins <= 60) || (hours == 24 && mins == 0))
         {
           *timezone = sign * (hours * 3600 + mins * 60);
-          return TRUE;
         }
     }
-  msg_error("Bogus timezone spec, must be in the format [+-]HH:MM",
+  msg_error("Bogus timezone spec, must be in the format [+-]HH:MM, offset must be less than 24:00",
             evt_tag_str("value", tz),
             NULL);
   return FALSE;

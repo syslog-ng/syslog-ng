@@ -84,7 +84,7 @@
 				<step>
 					<para>The destination driver specifies the timezone via the <link
 							linkend="destcommonopts">
-							<parameter>timezone()</parameter>
+							<parameter>time_zone()</parameter>
 						</link> parameter. Each destination driver might have an associated timezone
 						value to which message timestamps are converted before they are sent to the
 						final destination (file or network socket). Each destination defaults to the
@@ -1052,14 +1052,6 @@
 								for generating SQL statements and quoting string contents so that
 								parts of the log message are not interpreted as commands to the SQL
 								server.</entry>
-						</row>
-						<row>
-							<entry>timezone()</entry>
-							<entry>timezone offset in seconds</entry>
-							<entry>unspecified </entry>
-							<entry>Convert timestamps to the timezone specified by this option. If
-								this option is not set then the original timezone information in the
-								message is used. </entry>
 						</row>
 						<row>
 							<entry>ts_format()</entry>
