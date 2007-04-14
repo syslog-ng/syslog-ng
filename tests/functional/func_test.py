@@ -69,7 +69,7 @@ source s_int { internal(); };
 source s_unix { unix-stream("log-stream"); unix-dgram("log-dgram");  };
 source s_inet { tcp(port(2000)); udp(port(2000)); };
 
-destination dst { file("test-output.log"); };
+destination dst { file("test-output.log" template("$DATE $HOST $MSG\n")); };
 
 log { source(s_int); source(s_unix); source(s_inet); destination(dst); };
 """

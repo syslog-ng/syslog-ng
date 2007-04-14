@@ -2,6 +2,24 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-09-14 12:34:44 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-81
+
+    Summary:
+      fixed a possible SEGFAULT caused by one of the leak fixes, when output templates() are used 
+    Revision:
+      syslog-ng--mainline--2.0--patch-81
+
+    2006-09-14  Balazs Scheidler <bazsi@balabit.hu>
+    
+    	* src/logwriter.c (log_writer_options_init): save options->template
+    	before calling log_writer_options_destroy and restore it afterwards
+    	as that is never initialized based on the configuration
+    
+
+    modified files:
+     ChangeLog src/logwriter.c tests/functional/func_test.py
+
+
 2006-09-11 10:10:09 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-80
 
     Summary:

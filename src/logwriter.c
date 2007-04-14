@@ -485,11 +485,17 @@ log_writer_options_set_template_escape(LogWriterOptions *options, gboolean enabl
 void
 log_writer_options_init(LogWriterOptions *options, GlobalConfig *cfg, guint32 flags, const gchar *stats_name)
 {
-  /* NOTE: free everything that might have remained from a previous init
-   * call, this way init can be called any number of times, without calling
-   * destroy first */
+  LogTemplate *template;
 
+ /* NOTE: free everything that might have remained from a previous init
+  * call, this way init can be called any number of times, without calling
+  * destroy first. We only need to keep options->template around as that's
+  * never initialized based on the configuration
+  */
+  
+  template = log_template_ref(options->template);
   log_writer_options_destroy(options);
+  options->template = template;
   options->flags = flags;
   if (options->fifo_size == -1)
     options->fifo_size = cfg->log_fifo_size;
