@@ -2,6 +2,21 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2007-01-30 13:08:22 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-126
+
+    Summary:
+      added netinet/in.h to afinet.c
+    Revision:
+      syslog-ng--mainline--2.0--patch-126
+
+    	* src/afinet.c: added inclusion of <netinet/in.h> as it caused
+    	problems on HP-UX
+    
+
+    modified files:
+     ChangeLog src/afinet.c
+
+
 2007-01-29 08:56:55 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-125
 
     Summary:
