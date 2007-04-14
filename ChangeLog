@@ -2,6 +2,54 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-04-23 09:23:19 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-42
+
+    Summary:
+      added IPv6 support
+    Revision:
+      syslog-ng--mainline--2.0--patch-42
+
+    	* configure.in: added --enable-ipv6 option, defaults to "yes",
+    	added checks for getaddrinfo()
+    
+    	* src/afinet.c (afinet_set_port): added ipv6 support,
+    	(afinet_resolve_name): renamed from afinet_set_ip, use getaddrinfo()
+    	to resolve names where available,
+    	(afinet_sd_new): added af argument, use afinet_resolve_name instead
+    	of the removed g_sockaddr_inet_new_resolve() function, use a default
+    	"bind address" value if the host argument is NULL,
+    	(afinet_dd_new): added af argument, use afinet_resolve_name instead
+    	of the removed g_sockaddr_inet_new_resolve() function
+    
+    	* src/cfg-grammar.y: added KW_UDP6 and KW_TCP6 keywords,
+    	(source_afsocket, dest_afsocket): added rules for KW_UDP6 & KW_TCP6,
+    	(dest_afinet_udp_params, dest_afinet_tcp_params): added ipv6
+    	support, adapted to the latest changes in afinet
+    	(source_afinet_udp_params, source_afinet_tcp_params): -"-
+    
+    	* src/cfg-lex.l: added "udp6" and "tcp6" keywords
+    
+    	* src/gsockaddr.c (g_sockaddr_inet_new_resolve): removed this
+    	function as it is an address family independent operation now
+    	implemented in afinet.c,
+    	(g_sockaddr_inet6_check): new function to check whether a GSockAddr
+    	contains an ipv6 socket name,
+    
+    	* src/gsockaddr.h (g_sockaddr_get_sa, g_sockaddr_inet_get_sa,
+    	g_sockaddr_inet_get_address, g_sockaddr_inet_set_address,
+    	g_sockaddr_inet_get_port, g_sockaddr_inet_set_port): new inline
+    	functions, ported from the Zorp sockaddr code,
+    	(g_sockaddr_inet6_get_sa, g_sockaddr_inet6_get_address,
+    	g_sockaddr_inet6_set_address, g_sockaddr_inet6_get_port,
+    	g_sockaddr_inet6_set_port): new functions, similar to IPv6 counterparts
+    
+
+    modified files:
+     ChangeLog configure.in src/afinet.c src/afinet.h
+     src/cfg-grammar.y src/cfg-lex.l src/gsockaddr.c
+     src/gsockaddr.h
+
+
 2006-04-20 12:07:17 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-41
 
     Summary:

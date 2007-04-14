@@ -35,6 +35,7 @@ LogDriver *last_driver;
 LogReaderOptions *last_reader_options;
 LogWriterOptions *last_writer_options;
 LogTemplate *last_template;
+gint last_addr_family = AF_INET;
 
 %}
 
@@ -49,9 +50,9 @@ LogTemplate *last_template;
 %token	KW_SOURCE KW_DESTINATION KW_LOG KW_OPTIONS KW_FILTER
 
 /* source & destination items */
-%token	KW_INTERNAL KW_FILE KW_PIPE KW_UNIX_STREAM KW_UNIX_DGRAM KW_UDP
-%token  KW_TCP KW_USER
-%token  KW_DOOR KW_SUN_STREAMS KW_PROGRAM
+%token	KW_INTERNAL KW_FILE KW_PIPE KW_UNIX_STREAM KW_UNIX_DGRAM
+%token  KW_TCP KW_UDP KW_TCP6 KW_UDP6
+%token  KW_USER KW_DOOR KW_SUN_STREAMS KW_PROGRAM
 
 /* option items */
 %token KW_FSYNC KW_MARK_FREQ KW_STATS_FREQ KW_FLUSH_LINES KW_FLUSH_TIMEOUT KW_LOG_MSG_SIZE KW_FILE_TEMPLATE KW_PROTO_TEMPLATE
@@ -283,8 +284,10 @@ source_afpipe_options
 source_afsocket
 	: KW_UNIX_DGRAM '(' source_afunix_dgram_params ')'	{ $$ = $3; }
 	| KW_UNIX_STREAM '(' source_afunix_stream_params ')' 	{ $$ = $3; }
-	| KW_UDP '(' source_afinet_udp_params ')'		{ $$ = $3; } 
-	| KW_TCP '(' source_afinet_tcp_params ')'		{ $$ = $3; } 
+	| KW_UDP { last_addr_family = AF_INET; } '(' source_afinet_udp_params ')'		{ $$ = $4; } 
+	| KW_TCP { last_addr_family = AF_INET; } '(' source_afinet_tcp_params ')'		{ $$ = $4; } 
+	| KW_UDP6 { last_addr_family = AF_INET6; } '(' source_afinet_udp_params ')'		{ $$ = $4; } 
+	| KW_TCP6 { last_addr_family = AF_INET6; } '(' source_afinet_tcp_params ')'		{ $$ = $4; } 
 	;
  	
 source_afunix_dgram_params
@@ -329,8 +332,8 @@ source_afunix_option
 source_afinet_udp_params
         : 
           { 
-	    last_driver = afinet_sd_new(
-			"0.0.0.0", 514,
+	    last_driver = afinet_sd_new(last_addr_family,
+			NULL, 514,
 			AFSOCKET_DGRAM);
 	    last_reader_options = &((AFSocketSourceDriver *) last_driver)->reader_options;
 	  }
@@ -359,8 +362,8 @@ source_afinet_option
 source_afinet_tcp_params
 	: 
 	  { 
-	    last_driver = afinet_sd_new(
-			"0.0.0.0", 514,
+	    last_driver = afinet_sd_new(last_addr_family,
+			NULL, 514,
 			AFSOCKET_STREAM);
 	    last_reader_options = &((AFSocketSourceDriver *) last_driver)->reader_options;
 	  }
@@ -511,8 +514,10 @@ dest_afpipe_option
 dest_afsocket
 	: KW_UNIX_DGRAM '(' dest_afunix_dgram_params ')'	{ $$ = $3; }
 	| KW_UNIX_STREAM '(' dest_afunix_stream_params ')'	{ $$ = $3; }
-	| KW_UDP '(' dest_afinet_udp_params ')'			{ $$ = $3; }
-	| KW_TCP '(' dest_afinet_tcp_params ')'			{ $$ = $3; } 
+	| KW_UDP { last_addr_family = AF_INET; } '(' dest_afinet_udp_params ')'			{ $$ = $4; }
+	| KW_TCP { last_addr_family = AF_INET; } '(' dest_afinet_tcp_params ')'			{ $$ = $4; } 
+	| KW_UDP6 { last_addr_family = AF_INET6; } '(' dest_afinet_udp_params ')'			{ $$ = $4; }
+	| KW_TCP6 { last_addr_family = AF_INET6; } '(' dest_afinet_tcp_params ')'			{ $$ = $4; } 
 	;
 
 dest_afunix_dgram_params
@@ -539,7 +544,7 @@ dest_afunix_stream_params
 dest_afinet_udp_params
 	: string 	
 	  { 
-	    last_driver = afinet_dd_new(
+	    last_driver = afinet_dd_new(last_addr_family,
 			$1, 514,
 			AFSOCKET_DGRAM);
 	    free($1);
@@ -569,7 +574,7 @@ dest_afinet_udp_option
 dest_afinet_tcp_params
 	: string 	
 	  { 
-	    last_driver = afinet_dd_new(
+	    last_driver = afinet_dd_new(last_addr_family,
 			$1, 514,
 			AFSOCKET_STREAM); 
 	    free($1);

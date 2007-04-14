@@ -51,26 +51,82 @@ afinet_set_port(GSockAddr *addr, gint port, gchar *service, gchar *proto)
             }
         }
         
-      ((struct sockaddr_in *) &addr->sa)->sin_port = htons(port);
+      switch (addr->sa.sa_family)
+        {
+        case AF_INET:
+          g_sockaddr_inet_set_port(addr, port);
+          break;
+#if ENABLE_IPV6
+        case AF_INET6:
+          g_sockaddr_inet6_set_port(addr, port);
+          break;
+#endif
+        default:
+          g_assert_not_reached();
+          break;
+        }
     }  
 }
 
 static void
-afinet_set_ip(GSockAddr *addr, gchar *ip)
+afinet_resolve_name(GSockAddr *addr, gchar *name)
 {
-  if (addr && !inet_aton(ip, &((struct sockaddr_in *) &addr->sa)->sin_addr))
+  if (addr)
     { 
-      struct hostent *he;
+#if HAVE_GETADDRINFO
+      struct addrinfo hints;
+      struct addrinfo *res;
+
+      memset(&hints, 0, sizeof(hints));
+      hints.ai_family = addr->sa.sa_family;
+      hints.ai_socktype = 0;
+      hints.ai_protocol = 0;
       
-      he = gethostbyname(ip);
-      if (he)
+      if (getaddrinfo(name, NULL, &hints, &res) == 0)
         {
-          ((struct sockaddr_in *) &addr->sa)->sin_addr = *(struct in_addr *) he->h_addr;
+          /* we only use the first entry in the returned list */
+          switch (addr->sa.sa_family)
+            {
+            case AF_INET:
+              g_sockaddr_inet_set_address(addr, ((struct sockaddr_in *) res->ai_addr)->sin_addr);
+              break;
+#if ENABLE_IPV6
+            case AF_INET6:
+              g_sockaddr_inet6_set_address(addr, ((struct sockaddr_in6 *) res->ai_addr)->sin6_addr);
+              break;
+#endif
+            default: 
+              g_assert_not_reached();
+              break;
+            }
+          freeaddrinfo(res);
         }
       else
         {
-          msg_error("Error resolving bind hostname, using 0.0.0.0", NULL);
+          msg_error("Error resolving hostname, using wildcard address", evt_tag_str("host", name), NULL);
         }
+#else
+      struct hostent *he;
+      
+      he = gethostbyname(name);
+      if (he)
+        {
+          switch (addr->sa.sa_family)
+            {
+            case AF_INET:
+              g_sockaddr_inet_set_address(addr, *(struct in_addr *) he->h_addr);
+              break;
+            default: 
+              g_assert_not_reached();
+              break;
+            }
+          
+        }
+      else
+        {
+          msg_error("Error resolving hostname, using wildcard address", evt_tag_str("host", name), NULL);
+        }
+#endif
     }
 }
 
@@ -87,17 +143,30 @@ afinet_sd_set_localip(LogDriver *s, gchar *ip)
 {
   AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
   
-  afinet_set_ip(self->bind_addr, ip);
+  afinet_resolve_name(self->bind_addr, ip);
 }
 
 LogDriver *
-afinet_sd_new(gchar *host, gint port, guint flags)
+afinet_sd_new(gint af, gchar *host, gint port, guint flags)
 {
   AFInetSourceDriver *self = g_new0(AFInetSourceDriver, 1);
   
   afsocket_sd_init_instance(&self->super, flags);
   self->super.flags |= AFSOCKET_KEEP_ALIVE;
-  self->super.bind_addr = g_sockaddr_inet_new_resolve(host, port);
+  if (af == AF_INET)
+    {
+      self->super.bind_addr = g_sockaddr_inet_new("0.0.0.0", port);
+      if (!host)
+        host = "0.0.0.0";
+    }
+  else
+    {
+      self->super.bind_addr = g_sockaddr_inet6_new("::", port);
+      if (!host)
+        host = "::";
+    }
+  afinet_resolve_name(self->super.bind_addr, host);
+    
   return &self->super.super;
 }
 
@@ -124,16 +193,25 @@ afinet_dd_set_localip(LogDriver *s, gchar *ip)
 {
   AFInetDestDriver *self = (AFInetDestDriver *) s;
   
-  afinet_set_ip(self->super.bind_addr, ip);
+  afinet_resolve_name(self->super.bind_addr, ip);
 }
 
 LogDriver *
-afinet_dd_new(gchar *host, gint port, guint flags)
+afinet_dd_new(gint af, gchar *host, gint port, guint flags)
 {
   AFInetDestDriver *self = g_new0(AFInetDestDriver, 1);
   
   afsocket_dd_init_instance(&self->super, flags);
-  self->super.bind_addr = g_sockaddr_inet_new("0.0.0.0", 0);
-  self->super.dest_addr = g_sockaddr_inet_new_resolve(host, port);
+  if (af == AF_INET)
+    {
+      self->super.bind_addr = g_sockaddr_inet_new("0.0.0.0", 0);
+      self->super.dest_addr = g_sockaddr_inet_new("0.0.0.0", port);
+    }
+  else
+    {
+      self->super.bind_addr = g_sockaddr_inet6_new("::", 0);
+      self->super.dest_addr = g_sockaddr_inet6_new("::", port);
+    }
+  afinet_resolve_name(self->super.dest_addr, host);
   return &self->super.super;
 }

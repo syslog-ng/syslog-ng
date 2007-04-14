@@ -362,40 +362,6 @@ g_sockaddr_inet_new(gchar *ip, guint16 port)
 
 /*+
 
-  Allocate and initialize an IPv4 socket address.
-
-  Parameters:
-    ip          text representation of an IP address
-    port        port number in host byte order
-
-  Returns:
-    the new instance
-
-  +*/
-GSockAddr *
-g_sockaddr_inet_new_resolve(const gchar *name, guint16 port)
-{
-  GSockAddrInet *addr = NULL;
-  struct hostent *he;
-      
-  he = gethostbyname(name);
-  if (he)
-    {
-      if (he->h_addrtype == AF_INET)
-        {
-          addr = (GSockAddrInet *) g_sockaddr_inet_new("0.0.0.0", port);
-          if (addr)
-            {
-              addr->sin.sin_addr = *(struct in_addr *) he->h_addr;
-            }
-        }
-    }
-  return (GSockAddr *) addr;
-  
-}
-
-/*+
-
   Allocate and initialize an IPv4 socket address using libc sockaddr *
   structure.
 
@@ -552,6 +518,13 @@ static GSockAddrFuncs inet6_sockaddr_funcs =
   g_sockaddr_inet6_format,
   g_sockaddr_inet6_free
 };
+
+gboolean
+g_sockaddr_inet6_check(GSockAddr *a)
+{
+  return a->sa_funcs == &inet6_sockaddr_funcs;
+}
+
 
 /*+
 
