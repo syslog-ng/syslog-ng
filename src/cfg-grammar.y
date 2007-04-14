@@ -740,7 +740,15 @@ options_item
 	| KW_USE_DNS '(' yesno ')'		{ configuration->use_dns = $3; }
 	| KW_TIME_REOPEN '(' NUMBER ')'		{ configuration->time_reopen = $3; }
 	| KW_TIME_REAP '(' NUMBER ')'		{ configuration->time_reap = $3; }
-	| KW_TIME_SLEEP '(' NUMBER ')'		{ configuration->time_sleep = $3; }
+	| KW_TIME_SLEEP '(' NUMBER ')'		
+		{ 
+		  configuration->time_sleep = $3; 
+		  if ($3 > 500) 
+		    { 
+		      msg_notice("The value specified for time_sleep is too large", evt_tag_int("time_sleep", $3), NULL);
+		      configuration->time_sleep = 500;
+		    }
+		}
 	| KW_LOG_FIFO_SIZE '(' NUMBER ')'	{ configuration->log_fifo_size = $3; }
 	| KW_LOG_IW_SIZE '(' NUMBER ')'		{ configuration->log_iw_size = $3; }
 	| KW_LOG_FETCH_LIMIT '(' NUMBER ')'	{ configuration->log_fetch_limit = $3; }

@@ -2,6 +2,26 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-05-23 18:28:52 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-48
+
+    Summary:
+      check that the value for time_sleep is less than 500msec
+    Revision:
+      syslog-ng--mainline--2.0--patch-48
+
+    2006-05-23  Balazs Scheidler <bazsi@balabit.hu>
+    
+    	* src/cfg-grammar.y (options_item, KW_TIME_SLEEP): check if the
+    	value is more than 500, and maximize its value in this case
+    
+    	* src/main.c (main_loop_run): calculate timespec properly if
+    	time_sleep is more than 1 sec
+    
+
+    modified files:
+     ChangeLog src/cfg-grammar.y src/main.c
+
+
 2006-05-01 14:06:35 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-47
 
     Summary:
