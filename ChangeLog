@@ -2,6 +2,22 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-03-13 16:37:17 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-22
+
+    Summary:
+      stats_freq is only taken into account if the value is larger than 0
+    Revision:
+      syslog-ng--mainline--2.0--patch-22
+
+    	* src/main.c (main_loop_run): take changed stats_freq into account
+    	after a SIGHUP, stats_freq == 0 means to disable stats messages
+    	altogether
+    
+
+    modified files:
+     ChangeLog src/main.c
+
+
 2006-03-13 10:40:55 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-21
 
     Summary:

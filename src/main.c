@@ -140,12 +140,14 @@ main_loop_run(GlobalConfig *cfg)
 {
   GMainLoop *main_loop;
   gint iters;
+  guint stats_timer_id = 0;
   
   msg_notice("syslog-ng starting up", 
              evt_tag_str("version", VERSION),
              NULL);
   main_loop = g_main_loop_new(NULL, TRUE);
-  g_timeout_add(cfg->stats_freq * 1000, stats_timer, NULL);
+  if (cfg->stats_freq > 0)
+    stats_timer_id = g_timeout_add(cfg->stats_freq * 1000, stats_timer, NULL);
   while (g_main_loop_is_running(main_loop))
     {
       if (cfg->time_sleep > 0)
@@ -163,6 +165,12 @@ main_loop_run(GlobalConfig *cfg)
           msg_notice("SIGHUP received, reloading configuration", NULL);
           cfg = cfg_reload_config(cfgfilename, cfg);
           sig_hup_received = FALSE;
+          if (cfg->stats_freq > 0)
+            {
+              if (stats_timer_id != 0)
+                g_source_remove(stats_timer_id);
+              stats_timer_id = g_timeout_add(cfg->stats_freq * 1000, stats_timer, NULL);
+            }
         }
       if (sig_term_received)
         {
