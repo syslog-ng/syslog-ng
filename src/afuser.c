@@ -72,7 +72,10 @@ afuser_dd_queue(LogPipe *s, LogMessage *msg, gint path_flags)
           char line[128];
           int fd;
 
-          strcpy(line, "/dev/");
+          if (ut->ut_line[0] != '/')
+            strcpy(line, "/dev/");
+          else
+            line[0] = 0;
           strncat(line, ut->ut_line, sizeof(line));
           fd = open(line, O_NOCTTY | O_APPEND | O_WRONLY);
           if (fd != -1) 

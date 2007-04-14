@@ -2,6 +2,22 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2007-01-23 13:44:15 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-119
+
+    Summary:
+      fixed handling utmp entries where a full path is included as tty name
+    Revision:
+      syslog-ng--mainline--2.0--patch-119
+
+    	* src/afuser.c (afuser_dd_queue): check if ut->ut_line starts with a
+    	'/' and use it directly if it does, otherwise prepend '/dev/' as before.
+    
+    
+
+    modified files:
+     ChangeLog src/afuser.c
+
+
 2007-01-19 21:00:06 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-118
 
     Summary:
