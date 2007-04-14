@@ -1973,13 +1973,19 @@
 						</row>
 						<row>
 							<entry>use_dns()</entry>
-							<entry>yes or no</entry>
+							<entry>yes, no, persist-only</entry>
 							<entry>yes</entry>
-							<entry>Enable or disable DNS usage. syslog-ng blocks on DNS queries, so
-								enabling DNS may lead to a Denial of Service attack. To prevent DoS,
-								protect your syslog-ng network endpoint with firewall rules, and
-								make sure that all hosts which may get to syslog-ng are
-							resolvable.</entry>
+							
+							<entry>Control DNS usage. "yes" enables DNS queries (with using
+								a cache, see the option dns_cache), "no" disables name
+								resolution completely, "persist-only" uses entries in
+								the DNS cache host file (see option dns_cache_host).
+								syslog-ng blocks on DNS queries, so enabling DNS may
+								lead to a Denial of Service attack.  To prevent DoS,
+								protect your syslog-ng network endpoint with firewall
+								rules, and make sure that all hosts which may get to
+								syslog-ng are resolvable/or you are using a static
+								IP-name mapping.</entry>
 						</row>
 						<row>
 							<entry>dns_cache()</entry>
@@ -2004,6 +2010,14 @@
 							<entry>number</entry>
 							<entry>60</entry>
 							<entry>Number of seconds while a failed lookup is cached.</entry>
+						</row>
+						<row>
+							<entry>dns_cache_host()</entry>
+							<entry>filename</entry>
+							<entry>Name of a file in /etc/hosts format that contains static IP-&gt;name mappings. 
+							       By using this option it is possible to resolve names without reliance on DNS.
+							</entry>
+							<entry>unset</entry>
 						</row>
 						<row>
 							<entry>log_msg_size()</entry>
