@@ -2,6 +2,26 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-03-13 23:12:08 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-24
+
+    Summary:
+      fixed regexp match space macro expansion
+    Revision:
+      syslog-ng--mainline--2.0--patch-24
+
+    	* src/filter.c (filter_re_eval): added msg parameter, instead of
+    	using the re_matches array, use a per-message store
+    
+    	* src/logmsg.h (LogMessage): added re_matches
+    
+    	* src/macros.c (log_macro_expand): use per-message re_matches array
+    
+
+    modified files:
+     ChangeLog src/filter.c src/filter.h src/logmsg.c src/logmsg.h
+     src/macros.c src/main.c
+
+
 2006-03-13 17:16:08 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-23
 
     Summary:

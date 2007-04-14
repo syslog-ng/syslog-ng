@@ -31,10 +31,6 @@
 struct _LogFilterRule;
 struct _GlobalConfig;
 
-/* regex substitutions from the last match */
-#define RE_MAX_MATCHES 10
-extern gchar *re_matches[RE_MAX_MATCHES];
-
 typedef struct _FilterExprNode
 {
   gboolean comp;

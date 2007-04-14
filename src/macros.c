@@ -142,8 +142,8 @@ log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, glong 
     {
       gint ndx = id - M_MATCH_REF_OFS;
       /* match reference */
-      if (re_matches[ndx])
-        result_append(result, re_matches[ndx], strlen(re_matches[ndx]), !!(flags & MF_ESCAPE_RESULT));
+      if (msg->re_matches[ndx])
+        result_append(result, msg->re_matches[ndx], strlen(msg->re_matches[ndx]), !!(flags & MF_ESCAPE_RESULT));
       
       return TRUE;
     }

@@ -417,6 +417,19 @@ log_msg_parse(LogMessage *self, gchar *data, gint length, guint flags)
   g_string_assign_len(self->msg, src, left);
 }
 
+void
+log_msg_clear_matches(LogMessage *self)
+{
+  gint i;
+  
+  for (i = 0; i < RE_MAX_MATCHES; i++)
+    {
+      if (self->re_matches[i])
+        g_free(self->re_matches[i]);
+      self->re_matches[i] = NULL;
+    } 
+}
+
 /**
  * log_msg_free:
  * @self: LogMessage instance
@@ -432,6 +445,7 @@ log_msg_free(LogMessage *self)
   g_string_free(self->host_from, TRUE);
   g_string_free(self->program, TRUE);
   g_string_free(self->msg, TRUE);
+  log_msg_clear_matches(self);
   g_free(self);
 }
 

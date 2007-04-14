@@ -30,10 +30,7 @@
 #include <string.h>
 
 
-gchar *re_matches[RE_MAX_MATCHES];
-
 static void log_filter_rule_free(LogFilterRule *self);
-
 
 gboolean 
 log_filter_rule_eval(LogFilterRule *self, LogMessage *msg)
@@ -304,26 +301,22 @@ filter_re_compile(const char *re, regex_t *regex)
 }
 
 static gboolean
-filter_re_eval(FilterRE *self, gchar *str)
+filter_re_eval(FilterRE *self, LogMessage *msg, gchar *str)
 {
   regmatch_t matches[RE_MAX_MATCHES];
   gboolean rc;
   gint i;
-  
-  for (i = 0; i < RE_MAX_MATCHES; i++)
-    {
-      g_free(re_matches[i]);
-      re_matches[i] = NULL;
-    }
+
+  log_msg_clear_matches(msg);  
   rc = !regexec(&self->regex, str, RE_MAX_MATCHES, matches, 0);
   if (rc)
     {
       for (i = 0; i < RE_MAX_MATCHES && matches[i].rm_so != -1; i++)
         {
           gint length = matches[i].rm_eo - matches[i].rm_so;
-          re_matches[i] = g_malloc(length + 1);
-          memcpy(re_matches[i], &str[matches[i].rm_so], length);
-          re_matches[i][length] = 0;
+          msg->re_matches[i] = g_malloc(length + 1);
+          memcpy(msg->re_matches[i], &str[matches[i].rm_so], length);
+          msg->re_matches[i][length] = 0;
         }
     }
   return rc ^ self->super.comp;
@@ -341,7 +334,7 @@ filter_re_free(FilterExprNode *s)
 static gboolean
 filter_prog_eval(FilterExprNode *s, LogMessage *msg)
 {
-  return filter_re_eval((FilterRE *) s, msg->program->str);
+  return filter_re_eval((FilterRE *) s, msg, msg->program->str);
 }
 
 FilterExprNode *
@@ -363,7 +356,7 @@ filter_prog_new(gchar *prog)
 static gboolean
 filter_host_eval(FilterExprNode *s, LogMessage *msg)
 {
-  return filter_re_eval((FilterRE *) s, msg->host->str);
+  return filter_re_eval((FilterRE *) s, msg, msg->host->str);
 }
 
 FilterExprNode *
@@ -385,7 +378,7 @@ filter_host_new(gchar *host)
 static gboolean
 filter_match_eval(FilterExprNode *s, LogMessage *msg)
 {
-  return filter_re_eval((FilterRE *) s, msg->msg->str);
+  return filter_re_eval((FilterRE *) s, msg, msg->msg->str);
 }
 
 FilterExprNode *

@@ -155,7 +155,7 @@ main_loop_run(GlobalConfig *cfg)
           struct timespec ts;
           
           ts.tv_sec = 0;
-          ts.tv_nsec = cfg->time_sleep * 1000;
+          ts.tv_nsec = cfg->time_sleep * 1E6;
           
           nanosleep(&ts, NULL);
         }
