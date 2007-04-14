@@ -287,9 +287,7 @@ log_reader_iterate_buf(LogReader *self, GSockAddr *saddr, gboolean flush, gint *
       self->ofs = &self->buffer[self->ofs] - start;
       memmove(self->buffer, start, self->ofs);
       if (self->ofs != 0)
-        self->prev_addr = saddr;
-      else
-        g_sockaddr_unref(saddr);
+        self->prev_addr = g_sockaddr_ref(saddr);
     }
 
   return TRUE;
@@ -337,10 +335,12 @@ log_reader_fetch_log(LogReader *self, FDRead *fd)
   while (msg_count < self->options->fetch_limit)
     {
       avail = self->options->msg_size - self->ofs;
+      sa = NULL;
       rc = fd_read(fd, self->buffer + self->ofs, avail, &sa);
 
       if (rc == -1)
         {
+          g_sockaddr_unref(sa);
           if (errno == EAGAIN)
             {
               /* ok we don't have any more data to read, return to main poll loop */
@@ -355,7 +355,6 @@ log_reader_fetch_log(LogReader *self, FDRead *fd)
                         NULL);
               log_reader_iterate_buf(self, NULL, TRUE, &msg_count);
               log_pipe_notify(self->control, &self->super.super, NC_READ_ERROR, self);
-              g_sockaddr_unref(sa);
               return FALSE;
             }
         }
@@ -386,7 +385,8 @@ log_reader_fetch_log(LogReader *self, FDRead *fd)
           self->ofs += rc;
           log_reader_iterate_buf(self, sa, FALSE, &msg_count);
         }
-        
+      
+      g_sockaddr_unref(sa);
       if (self->flags & LR_NOMREAD)
         break;
     }

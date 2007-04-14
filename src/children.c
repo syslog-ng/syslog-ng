@@ -27,19 +27,28 @@ typedef struct _ChildEntry
 {
   pid_t pid;
   gpointer callback_data;
+  GDestroyNotify callback_data_destroy;
   void (*exit_callback)(pid_t pid, int status, gpointer user_data);
 } ChildEntry;
 
 GHashTable *child_hash;
 
+static void
+child_manager_child_entry_free(ChildEntry *ce)
+{
+  ce->callback_data_destroy(ce->callback_data);
+  g_free(ce);
+}
+
 void
-child_manager_register(pid_t pid, void (*callback)(pid_t, int, gpointer), gpointer user_data)
+child_manager_register(pid_t pid, void (*callback)(pid_t, int, gpointer), gpointer user_data, GDestroyNotify callback_data_destroy)
 {
   ChildEntry *ce = g_new0(ChildEntry, 1);
 
   ce->pid = pid;
   ce->exit_callback = callback;
   ce->callback_data = user_data;
+  ce->callback_data_destroy = callback_data_destroy;
 
   g_hash_table_insert(child_hash, &ce->pid, ce);
 }
@@ -54,14 +63,13 @@ child_manager_sigchild(pid_t pid, int status)
     {
       ce->exit_callback(pid, status, ce->callback_data);
       g_hash_table_remove(child_hash, &pid);
-      g_free(ce);
     }
 }
 
 void
 child_manager_init(void)
 {
-  child_hash = g_hash_table_new(g_int_hash, g_int_equal);
+  child_hash = g_hash_table_new_full(g_int_hash, g_int_equal, NULL, (GDestroyNotify) child_manager_child_entry_free);
 }
 
 void

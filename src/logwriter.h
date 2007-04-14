@@ -86,5 +86,6 @@ gboolean log_writer_reopen(LogPipe *s, FDWrite *fd);
 void log_writer_options_set_template_escape(LogWriterOptions *options, gboolean enable);
 void log_writer_options_defaults(LogWriterOptions *options);
 void log_writer_options_init(LogWriterOptions *options, GlobalConfig *cfg, guint32 flags, const gchar *stats_name);
+void log_writer_options_destroy(LogWriterOptions *options);
 
 #endif

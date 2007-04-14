@@ -61,8 +61,6 @@ afprogram_dd_exit(pid_t pid, int status, gpointer s)
       log_pipe_deinit(&self->super.super, NULL, NULL);
       log_pipe_init(&self->super.super, NULL, NULL);
     }
-  /* drop reference, init rereferences us as it registers the callback */
-  log_pipe_unref(&self->super.super);
 }
 
 static gboolean
@@ -115,8 +113,7 @@ afprogram_dd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
     {
       /* parent */
       
-      child_manager_register(self->pid, afprogram_dd_exit, self);
-      log_pipe_ref(s); /* child manager holds a reference */
+      child_manager_register(self->pid, afprogram_dd_exit, log_pipe_ref(&self->super.super), (GDestroyNotify) log_pipe_unref);
       
       g_fd_set_cloexec(msg_pipe[1], TRUE);
       close(msg_pipe[0]);
@@ -154,6 +151,7 @@ afprogram_dd_free(LogPipe *s)
 
   log_pipe_unref(self->writer);  
   g_string_free(self->cmdline, TRUE);
+  log_writer_options_destroy(&self->writer_options);
   log_drv_free_instance(&self->super);
   g_free(self);
 }

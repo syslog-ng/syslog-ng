@@ -240,8 +240,12 @@ static gboolean
 affile_dw_deinit(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
 {
   AFFileDestWriter *self = (AFFileDestWriter *) s;
-  log_pipe_deinit(self->writer, NULL, NULL);
-  log_pipe_unref(self->writer);
+
+  if (self->writer)
+    {
+      log_pipe_deinit(self->writer, NULL, NULL);
+      log_pipe_unref(self->writer);
+    }
   self->writer = NULL;
   return TRUE;
 }
@@ -573,7 +577,7 @@ affile_dd_free(LogPipe *s)
   log_pipe_unref(self->writer);
   if (self->writer_hash)
     g_hash_table_destroy(self->writer_hash);
-
+  log_writer_options_destroy(&self->writer_options);
   log_drv_free_instance(&self->super);
   g_free(self);
 }

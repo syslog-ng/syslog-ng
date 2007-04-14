@@ -389,7 +389,9 @@ log_writer_deinit(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
       g_source_unref(self->source);
       self->source = NULL;
     }
-    
+  log_pipe_unref(self->control);
+  self->control = NULL;
+  
   return TRUE;
 }
 
@@ -402,7 +404,6 @@ log_writer_free(LogPipe *s)
     stats_unregister_counter(SC_TYPE_DROPPED, self->options->stats_name, &self->dropped_messages);
 
   g_queue_free(self->queue);
-  log_pipe_unref(self->control);
   g_free(self);
 }
 

@@ -2,6 +2,52 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-08-08 19:58:08 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-73
+
+    Summary:
+      various memory leak fixes
+    Revision:
+      syslog-ng--mainline--2.0--patch-73
+
+    	* src/affile.c (affile_dw_deinit): check if self->writer is NULL,
+    	(affile_dd_free): call log_writer_options_destroy as
+    	LogWriterOptions might contain dynamically allocated memory,
+    	
+    	* src/afprog.c (afprogram_dd_exit): removed log_pipe_unref, it is
+    	performed by the children handling framework,
+    	(afprogram_dd_init): use the new GDestroyNotify argument of children
+    	manager,
+    	(afprogram_dd_free): added log_writer_options_destroy call
+    
+    	* src/afsocket.c (afsocket_dd_free): added
+    	log_writer_options_destroy call
+    
+    	* src/children.c (ChildEntry): added callback_data_destroy member,
+    	(child_manager_child_entry_free): new function, frees a ChildEntry,
+    	(child_manager_sigchild): removed g_free, it is done by the
+    	GHashTable automatically,
+    	(child_manager_init): use g_hash_table_new_full and specify destroy
+    	notify callback for the data stored in the hashtable
+    
+    	* src/logreader.c (log_reader_iterate_buf): assume that saddr is a
+    	borrowed reference and handle it as such,
+    	(log_reader_fetch_log): iterate_buf borrows the reference so it is
+    	our duty to free sockaddr, do so in all branches,
+    
+    	* src/logwriter.c (log_writer_deinit): drop reference to
+    	self->control to break a circular reference,
+    	(log_writer_free): removed log_pipe_unref self->control,
+    
+    	* src/messages.c (msg_send_internal_message): check if
+    	internal_msg_queue is null,
+    	(msg_deinit): free internal_msg_queue
+
+    modified files:
+     ChangeLog src/affile.c src/afprog.c src/afsocket.c
+     src/children.c src/children.h src/logreader.c src/logwriter.c
+     src/logwriter.h src/messages.c
+
+
 2006-08-02 07:22:17 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-72
 
     Summary:

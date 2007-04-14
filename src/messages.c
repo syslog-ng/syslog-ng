@@ -55,7 +55,8 @@ msg_send_internal_message(int prio, const char *msg)
       
       g_snprintf(buf, sizeof(buf), "<%d> syslog-ng[%d]: %s\n", prio, getpid(), msg);
       m = log_msg_new(buf, strlen(buf), NULL, LP_INTERNAL | LP_LOCAL, NULL);
-      g_queue_push_tail(internal_msg_queue, m);
+      if (G_LIKELY(internal_msg_queue))
+        g_queue_push_tail(internal_msg_queue, m);
     }
 }
 
@@ -132,4 +133,6 @@ void
 msg_deinit()
 {
   evt_ctx_free(evt_context);
+  g_queue_free(internal_msg_queue);
+  internal_msg_queue = NULL;
 }

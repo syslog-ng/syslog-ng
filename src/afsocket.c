@@ -856,6 +856,7 @@ afsocket_dd_free(LogPipe *s)
   g_sockaddr_unref(self->dest_addr);
   log_drv_free_instance(&self->super);
   log_pipe_unref(self->writer);
+  log_writer_options_destroy(&self->writer_options);
   g_free(s);
 }
 
