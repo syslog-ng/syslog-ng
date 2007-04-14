@@ -109,7 +109,7 @@ GIOStatus
 g_accept(int fd, int *newfd, GSockAddr **addr)
 {
   char sabuf[1024];
-  int salen = sizeof(sabuf);
+  socklen_t salen = sizeof(sabuf);
   
   do
     {

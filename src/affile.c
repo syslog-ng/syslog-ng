@@ -453,13 +453,13 @@ affile_dd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
     self->file_uid = cfg->file_uid;
   if (self->file_gid == -1)
     self->file_gid = cfg->file_gid;
-  if (self->file_perm == -1)
+  if (self->file_perm == (mode_t) -1)
     self->file_perm = cfg->file_perm;
   if (self->dir_uid == -1)
     self->dir_uid = cfg->dir_uid;
   if (self->dir_gid == -1)
     self->dir_gid = cfg->dir_gid;
-  if (self->dir_perm == -1)
+  if (self->dir_perm == (mode_t) -1)
     self->dir_perm = cfg->dir_perm;
   if (self->time_reap == -1)
     self->time_reap = cfg->time_reap;
@@ -595,9 +595,9 @@ affile_dd_new(gchar *filename, guint32 flags)
   self->filename_template = log_template_new(NULL, filename);
   self->flags = flags;
   self->file_uid = self->file_gid = -1;
-  self->file_perm = -1;
+  self->file_perm = (mode_t) -1;
   self->dir_uid = self->dir_gid = -1;
-  self->dir_perm = -1;
+  self->dir_perm = (mode_t) -1;
   log_writer_options_defaults(&self->writer_options);
   if (strchr(filename, '$') == NULL)
     {

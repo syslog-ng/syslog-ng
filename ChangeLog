@@ -2,6 +2,24 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-10-27 15:10:36 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-88
+
+    Summary:
+      fixed some compilation warnings under gcc4
+    Revision:
+      syslog-ng--mainline--2.0--patch-88
+
+    	* src/affile.c (affile_dd_init): added some casts to suppress some
+    	warnings
+    
+    	* src/gsockaddr.c (g_accept): use socklen_t instead of int as a
+    	second argument to accept
+    
+
+    modified files:
+     ChangeLog src/affile.c src/gsockaddr.c
+
+
 2006-10-25 08:36:58 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-87
 
     Summary:
