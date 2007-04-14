@@ -134,6 +134,9 @@ log_msg_parse(LogMessage *self, gchar *data, gint length, guint flags, regex_t *
   char *oldsrc;
   int oldleft, stamp_length;
   
+  while (length > 0 && (data[length - 1] == '\n' || data[length - 1] == '\0'))
+    length--;
+  
   if (flags & LP_NOPARSE)
     {
       g_string_assign_len(self->msg, data, length);

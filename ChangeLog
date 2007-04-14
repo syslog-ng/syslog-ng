@@ -2,6 +2,22 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2007-01-19 21:00:06 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-118
+
+    Summary:
+      fixed trailing \0 and \n characters in messages received on dgram transport
+    Revision:
+      syslog-ng--mainline--2.0--patch-118
+
+    	* src/logmsg.c (log_msg_parse): remove trailing \n and \0 characters
+    	which are often added to the end of incoming datagrams
+    
+    
+
+    modified files:
+     ChangeLog src/logmsg.c
+
+
 2007-01-07 16:51:40 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-117
 
     Summary:
