@@ -2,6 +2,18 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2007-01-26 09:23:49 GMT	Pal Tamas <folti@balabit.hu>	patch-122
+
+    Summary:
+      Synced to test
+    Revision:
+      syslog-ng--mainline--2.0--patch-122
+
+
+    modified files:
+     ChangeLog
+
+
 2007-01-26 07:59:36 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-121
 
     Summary:
