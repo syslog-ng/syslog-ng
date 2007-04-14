@@ -18,4 +18,6 @@ reference/syslog-ng.html.tar.gz: reference/syslog-ng.xml docvars.xml
 		$(top_srcdir)/doc/reference/syslog-ng.xml;	\
 	cd reference; 						\
 	tar cfz syslog-ng.html.tar.gz syslog-ng.html)
-	
+
+reference/syslog-ng.txt: reference/syslog-ng.html.tar.gz
+	w3m -dump reference/syslog-ng.html/index.html > $@

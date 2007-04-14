@@ -2,6 +2,20 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-02-24 16:13:38 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-13
+
+    Summary:
+      added syslog-ng.txt generation to Makefile
+    Revision:
+      syslog-ng--mainline--2.0--patch-13
+
+    
+    
+
+    modified files:
+     ChangeLog doc/Makefile.am
+
+
 2006-02-12 13:37:21 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-12
 
     Summary:
