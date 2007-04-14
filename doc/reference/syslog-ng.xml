@@ -697,6 +697,13 @@
 								<entry>Specifies the size of the socket send buffer in bytes.
 								</entry>
 							</row>
+							<row>
+							        <entry>so_keepalive</entry>
+								<entry>yes or no</entry>
+								<entry>0</entry>
+								<entry>Specifies whether to enable SO_KEEPALIVE socket option, which enabled TCP keep alive messages for instance.
+								</entry>
+							</row>
 						</tbody>
 					</tgroup>
 				</table>

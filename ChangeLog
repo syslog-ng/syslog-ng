@@ -2,6 +2,18 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-12-22 10:06:01 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-114
+
+    Summary:
+      updated documentation with so_keepalive option
+    Revision:
+      syslog-ng--mainline--2.0--patch-114
+
+
+    modified files:
+     ChangeLog doc/reference/syslog-ng.xml
+
+
 2006-12-22 10:01:22 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-113
 
     Summary:
