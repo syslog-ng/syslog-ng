@@ -169,6 +169,7 @@ static void append_char(char c);
 %}
 
 %option nounput
+%option noyywrap
 
 white	[ \t]
 digit	[0-9]

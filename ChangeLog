@@ -2,6 +2,20 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-03-13 10:40:55 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-21
+
+    Summary:
+      added %option noyywrap to cfg-lex.l
+    Revision:
+      syslog-ng--mainline--2.0--patch-21
+
+    	* src/cfg-lex.l: added %option noyywrap to cfg-lex.l
+    
+
+    modified files:
+     ChangeLog src/cfg-lex.l
+
+
 2006-02-28 18:47:01 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-20
 
     Summary:
