@@ -2,6 +2,21 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2007-02-12 09:09:08 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-133
+
+    Summary:
+      added endutent() to usertty destination 
+    Revision:
+      syslog-ng--mainline--2.0--patch-133
+
+    	* src/afuser.c (afuser_dd_queue): added missing endutent call()
+    
+    
+
+    modified files:
+     ChangeLog src/afuser.c
+
+
 2007-02-12 09:02:37 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-132
 
     Summary:
