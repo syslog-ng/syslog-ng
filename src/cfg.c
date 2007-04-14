@@ -55,6 +55,7 @@ cfg_timezone_value(gchar *tz, glong *timezone)
       if ((hours < 24 && mins <= 60) || (hours == 24 && mins == 0))
         {
           *timezone = sign * (hours * 3600 + mins * 60);
+          return TRUE;
         }
     }
   msg_error("Bogus timezone spec, must be in the format [+-]HH:MM, offset must be less than 24:00",
