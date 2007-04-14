@@ -2,6 +2,26 @@
 # arch-tag: automatic-ChangeLog--devel@balabit.hu--other-1/syslog-ng--mainline--2.0
 #
 
+2006-04-30 20:20:44 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-45
+
+    Summary:
+      fixed fetching kernel messages which was broken by the multi-read patches
+    Revision:
+      syslog-ng--mainline--2.0--patch-45
+
+    	* src/logreader.h (LR_NOMREAD): new flag, indicates that the log
+    	reader should not use multiple read() calls in a single poll loop
+    
+    	* src/logreader.c (log_reader_fetch_log): break out of the loop if
+    	LR_NOMREAD is specified
+    
+    	* src/affile.c (affile_sd_init): specify LR_NOMREAD
+    
+
+    modified files:
+     ChangeLog src/affile.c src/logreader.c src/logreader.h
+
+
 2006-04-23 10:35:57 GMT	Balazs Scheidler <bazsi@balabit.hu>	patch-44
 
     Summary:

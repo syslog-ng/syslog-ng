@@ -30,9 +30,12 @@
 /* flags */
 #define LR_LOCAL     0x0001
 #define LR_INTERNAL  0x0002
-#define LR_PKTTERM   0x0004 /* end-of-packet terminates log message (UDP sources) */
-#define LR_FOLLOW    0x0008
-#define LR_STRICT    0x0010
+/* end-of-packet terminates log message (UDP sources) */
+#define LR_PKTTERM   0x0004
+/* issue a single read in a poll loop as /proc/kmsg does not support non-blocking mode */
+#define LR_NOMREAD   0x0008
+#define LR_FOLLOW    0x0010
+#define LR_STRICT    0x0020
 
 #define LR_COMPLETE_LINE 0x0100
 

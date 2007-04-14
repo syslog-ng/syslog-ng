@@ -110,7 +110,7 @@ affile_sd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
 
   if (affile_open_file(self->filename->str, flags, -1, -1, -1, 0, 0, 0, 0, &fd))
     {
-      self->reader = log_reader_new(fd_read_new(fd, 0), LR_LOCAL, s, &self->reader_options);
+      self->reader = log_reader_new(fd_read_new(fd, 0), LR_LOCAL | LR_NOMREAD, s, &self->reader_options);
       log_pipe_append(self->reader, s);
       if (!log_pipe_init(self->reader, NULL, NULL))
         {

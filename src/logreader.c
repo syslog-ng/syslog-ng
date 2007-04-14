@@ -386,6 +386,9 @@ log_reader_fetch_log(LogReader *self, FDRead *fd)
           self->ofs += rc;
           log_reader_iterate_buf(self, sa, FALSE, &msg_count);
         }
+        
+      if (self->flags & LR_NOMREAD)
+        break;
     }
   return TRUE;
 }
