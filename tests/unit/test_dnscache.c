@@ -12,7 +12,7 @@ main()
   int i;
   
   dns_cache_init();
-  dns_cache_set_params(50000, 10, 1, NULL);
+  dns_cache_set_params(50000, 2, 1, NULL);
   
   for (i = 0; i < 10000; i++)
     {
@@ -29,12 +29,12 @@ main()
       if (!dns_cache_lookup(AF_INET, (void *) &ni, &hn) || strcmp(hn, "hostname") != 0)
         {
           fprintf(stderr, "hmmm cache forgot the hostname, i=%d, hn=%s\n", i, hn);
-          exit(1);
+          return 1;
         }
       
     }
     
-  sleep(11);
+  sleep(3);
 
   for (i = 0; i < 10000; i++)
     {
@@ -44,6 +44,7 @@ main()
       if (dns_cache_lookup(AF_INET, (void *) &ni, &hn))
         {
           fprintf(stderr, "hmmm cache did not forget the hostname, i=%d\n", i);
+          return 1;
         }
     }
   

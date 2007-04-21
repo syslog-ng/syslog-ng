@@ -91,6 +91,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   
   testcase("<128> openvpn[2499]: PTHREAD support initialized", 0, filter_facility_new(facility_bits("local0")), 1);
   testcase("<128> openvpn[2499]: PTHREAD support initialized", 0, filter_facility_new(0x80000000 | (LOG_LOCAL0 >> 3)), 1);
+  testcase("<32> openvpn[2499]: PTHREAD support initialized", 0, filter_facility_new(facility_bits("local1")), 0);
   testcase("<32> openvpn[2499]: PTHREAD support initialized", 0, filter_facility_new(facility_bits("auth")), 1);
   testcase("<32> openvpn[2499]: PTHREAD support initialized", 0, filter_facility_new(0x80000000 | (LOG_AUTH >> 3)), 1);
   testcase("<80> openvpn[2499]: PTHREAD support initialized", 0, filter_facility_new(facility_bits("authpriv")), 1);
