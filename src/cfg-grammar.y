@@ -808,7 +808,7 @@ filter_simple_expr
 	;
 
 filter_fac_list
-	: filter_fac filter_fac_list		{ $$ = $1 + $2; }
+	: filter_fac filter_fac_list		{ $$ = $1 | $2; }
 	| filter_fac				{ $$ = $1; }
 	;
 
@@ -830,7 +830,7 @@ filter_fac
 	;
 
 filter_level_list
-	: filter_level filter_level_list	{ $$ = $1 + $2; }
+	: filter_level filter_level_list	{ $$ = $1 | $2; }
 	| filter_level				{ $$ = $1; }
 	;
 

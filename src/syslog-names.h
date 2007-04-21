@@ -43,7 +43,21 @@ const char *syslog_name_lookup_name_by_value(int value, struct sl_name names[]);
 
 guint32 syslog_make_range(guint32 r1, guint32 r2);
 
-#define syslog_name_lookup_level_by_name(name) syslog_name_lookup_value_by_name(name, sl_levels)
-#define syslog_name_lookup_facility_by_name(name) syslog_name_lookup_id_by_name(name, sl_facilities)
+static inline guint32
+syslog_name_lookup_level_by_name(const gchar *name) 
+{
+  return syslog_name_lookup_value_by_name(name, sl_levels);
+}
+
+static inline guint32
+syslog_name_lookup_facility_by_name(const gchar *name) 
+{
+  guint32 res;
+  
+  res = syslog_name_lookup_value_by_name(name, sl_facilities);
+  if (res != -1)
+    return res >> 3;
+  return res;
+}
 
 #endif

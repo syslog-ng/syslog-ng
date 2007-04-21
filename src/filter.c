@@ -178,45 +178,16 @@ static gboolean
 filter_facility_eval(FilterExprNode *s, LogMessage *msg)
 {
   FilterPri *self = (FilterPri *) s;
-  guint32 fac = msg->pri & LOG_FACMASK, fac_num = (msg->pri & LOG_FACMASK) >> 3;
-  guint32 bits = self->valid;
-  int i;
+  guint32 fac_num = (msg->pri & LOG_FACMASK) >> 3;
   
-  if (G_UNLIKELY(bits & 0x80000000))
+  if (G_UNLIKELY(self->valid & 0x80000000))
     {
       /* exact number specified */
-      return ((bits & ~0x80000000) == fac_num) ^ s->comp;
+      return ((self->valid & ~0x80000000) == fac_num) ^ s->comp;
     }
   else
     {
-      static gint8 bitpos[32] = 
-      { 
-        -1, -1, -1, -1, -1, -1, -1, -1, 
-        -1, -1, -1, -1, -1, -1, -1, -1, 
-        -1, -1, -1, -1, -1, -1, -1, -1, 
-        -1, -1, -1, -1, -1, -1, -1, -1
-      };
-      
-      if (G_LIKELY(fac_num < 32 && bitpos[fac_num] != -1))
-        {
-          if (self->valid & (1 << bitpos[fac_num]))
-            return !self->super.comp;
-        }
-      else
-        {
-          for (i = 0; bits && sl_facilities[i].name; i++, bits >>= 1) 
-            {
-              if (sl_facilities[i].value == fac) 
-                {
-                  if (fac_num < 32)
-                    bitpos[fac_num] = i;
-                  if (bits & 1)
-                    {
-                      return !self->super.comp;
-                    }
-                }
-            }
-        }
+      return !!(self->valid & (1 << fac_num)) ^ self->super.comp;
     }
   return self->super.comp;
 }
