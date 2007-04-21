@@ -1,3 +1,14 @@
 {arch}
 .arch-ids
 .arch-inventory
+.gitcommit.txt
+autom4te.cache
+*~
+Makefile.in
+aclocal.m4
+config.h.in
+configure
+depcomp
+install-sh
+missing
+mkinstalldirs
