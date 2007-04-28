@@ -391,6 +391,7 @@ afsocket_sd_process_connection(AFSocketSourceDriver *self, GSockAddr *peer_addr,
     {
       AFSocketSourceConnection *conn;
       
+      self->num_connections++;
       conn = afsocket_sc_new(self, peer_addr, fd);
       log_pipe_init(&conn->super, NULL, NULL);
       log_pipe_append(&conn->super, &self->super.super);
@@ -439,6 +440,7 @@ afsocket_sd_close_connection(AFSocketSourceDriver *self, AFSocketSourceConnectio
 {
   log_pipe_deinit(&sc->super, NULL, NULL);
   log_pipe_unref(&sc->super);
+  self->num_connections--;
 }
 
 static void
