@@ -236,6 +236,10 @@ static gboolean
 afsocket_sc_deinit(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
 {
   AFSocketSourceConnection *self = (AFSocketSourceConnection *) s;
+
+  self->owner->connections = g_list_remove(self->owner->connections, self);
+  log_pipe_unref(&self->owner->super.super);
+  self->owner = NULL;
   
   log_pipe_deinit(self->reader, NULL, NULL);
   log_pipe_unref(self->reader);
@@ -292,8 +296,6 @@ afsocket_sc_free(LogPipe *s)
 {
   AFSocketSourceConnection *self = (AFSocketSourceConnection *) s;
 
-  self->owner->connections = g_list_remove(self->owner->connections, self);
-  log_pipe_unref(&self->owner->super.super);
   
   g_assert(!self->reader);
   g_sockaddr_unref(self->peer_addr);
