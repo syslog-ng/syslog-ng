@@ -230,11 +230,39 @@ typedef struct _FilterRE
 } FilterRE;
 
 static gboolean
-filter_re_compile(const char *re, regex_t *regex)
+filter_re_compile(const gchar *re, regex_t *regex)
 {
-  int rc;
+  gint rc;
+  const gchar *re_comp = re;
+  gint flags = REG_EXTENDED;
   
-  rc = regcomp(regex, re, REG_EXTENDED);
+  if (re[0] == '(' && re[1] == '?')
+    {
+      gint i;
+      
+      for (i = 2; re[i] && re[i] != ')'; i++)
+        {
+          switch (re[i])
+            {
+            case 'i':
+              flags |= REG_ICASE;
+              break;
+            }
+        }
+      if (re[i])
+        {
+          re_comp = &re[i + 1];
+        }
+      else
+        {
+          msg_error("Invalid regexp flags",
+                    evt_tag_str("re", re),
+                    NULL);
+          return FALSE;
+        }
+    }
+  
+  rc = regcomp(regex, re_comp, flags);
   if (rc)
     {
       gchar buf[256];

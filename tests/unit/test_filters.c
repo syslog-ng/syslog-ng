@@ -137,11 +137,16 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, filter_host_new("^host$"), 1);
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, filter_host_new("^hos$"), 0);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, filter_host_new("pthread"), 0);
   fprintf(stderr, "One \"invalid regular expressions\" message is to be expected\n");
   TEST_ASSERT(filter_host_new("((") == NULL);
 
+  fprintf(stderr, "One \"invalid regular expressions\" message is to be expected\n");
+  TEST_ASSERT(filter_host_new("(?iana") == NULL);
+
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, filter_match_new(" PTHREAD "), 1);
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, filter_match_new("^PTHREAD$"), 0);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, filter_match_new("(?i)pthread"), 1);
   fprintf(stderr, "One \"invalid regular expression\" message is to be expected\n");
   TEST_ASSERT(filter_match_new("((") == NULL);
 
