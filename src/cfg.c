@@ -46,7 +46,7 @@ cfg_timezone_value(gchar *tz, glong *timezone)
       isdigit((int) *(tz+1)) && isdigit((int) *(tz+2)) && (*(tz+3) == ':') && isdigit((int) *(tz+4)) && isdigit((int) *(tz+5)))
     {
       /* timezone offset */
-      gint sign = *tz == '-' ? 1 : -1;
+      gint sign = *tz == '-' ? -1 : 1;
       gint hours, mins;
       tz++;
       
