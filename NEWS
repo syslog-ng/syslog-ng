@@ -2,29 +2,28 @@
         Mon, 14 May 2007 11:47:48 +0200
         
         IMPORTANT NOTES:
-        * This version of syslog-ng fixes a bug in enforcing max-connections()
-          limit for various stream-like sources (unix-stream and tcp). This
-          means that previously this limit was not enforced, thus production
-          environments may contain an inadequate value. Validate your
-          max-connection() settings before upgrading and check your logs for
-          rejected connections.
+        * This version of syslog-ng fixes a bug in enforcing the 
+          max-connections() limit for various stream-like sources 
+          (unix-stream and tcp). Previously this limit was not enforced, 
+          thus production environments may use an inadequate value. 
+          Validate your max-connection() settings before upgrading 
+          and check your logs for rejected connections.
 
         Bugfixes:
-        * Fixed configuration parsing localport() and port() parameters.
+        * Fixed configuration parsing of the localport() and port() parameters.
         * Fixed template_escape() for non-ASCII characters.
         * Fixed facility() filter evaluation problems.
         * Fixed a possible segmentation fault during shutdown, when pending
-          messages are still present in the destination queue of a
+          messages were still present in the destination queue of a
           flow-controlled destination.
-        * Fixed sign of timezone when parsed from the configuraiton file.
+        * Fixed sign of timezone when parsed from the configuration file.
         * Fixed counting the number of established connections, the value
           used when comparing against the max-connections() parameter.
 
-	Features:
-	* Added support for rotated source files.
-	* Added support for perl-like regexp flags to make it possible to
-	  specify case-insensitive regular expressions.
-
+        Features:
+        * Added support for rotated source files.
+        * Added support for perl-like regexp flags to make it possible to
+          specify case-insensitive regular expressions.
 
 2.0.3
 	Mon, 26 Mar 2007 14:10:00 +0200
