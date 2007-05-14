@@ -1,0 +1,44 @@
+#!/bin/sh
+
+set -e
+
+if [ -x /etc/init.d/sysklogd ]
+then
+   /etc/init.d/sysklogd stop
+fi
+
+if [ "$1" = "configure" -a "$2" != "" ] && dpkg --compare-versions "$2" lt "1.4.6"
+then
+	dpkg-divert --package syslog-ng --remove --rename --divert /etc/init.d/sysklogd.syslog-ng /etc/init.d/sysklogd
+	dpkg-divert --package syslog-ng --remove --rename --divert /etc/cron.daily/sysklogd.syslog-ng /etc/cron.daily/sysklogd
+	dpkg-divert --package syslog-ng --remove --rename --divert /etc/cron.weekly/sysklogd.syslog-ng /etc/cron.weekly/sysklogd
+fi
+
+if [ "$1" = "configure" -a "$2" != "" ] && \
+	dpkg --compare-versions "$2" lt "1.5.19" && \
+	dpkg --compare-versions "$2" gt "1.5.8-2"
+then
+	echo "Please restart all programs that may be logging, as"
+	echo "the /dev/log socket type has changed"
+fi
+
+#DEBHELPER#
+
+if [ "$1" = "configure" ]
+then
+	if [ -z "$2" ]
+	then
+		COMMAND="start"
+	else
+		COMMAND="restart"
+	fi
+	if [ -x "/etc/init.d/syslog-ng" ]; then
+		if [ -x "`which invoke-rc.d 2>/dev/null`" ]; then
+			invoke-rc.d syslog-ng $COMMAND || exit 0
+		else
+			/etc/init.d/syslog-ng $COMMAND || exit 0
+		fi
+	fi
+fi
+                                                                
+exit 0
