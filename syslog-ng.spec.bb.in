@@ -31,8 +31,8 @@ Provides: syslog
 %prep
 %setup -q -n syslog-ng-%{version}
 
-%build
 
+%build
 # build syslog-ng using the bundled libol
 
 ./configure --prefix=%{prefix} --mandir=%{_mandir} --infodir=%{prefix}/share/info \
@@ -45,7 +45,6 @@ make
 make install DESTDIR="$RPM_BUILD_ROOT"
 # strip the binaries/ libraries
 strip ${RPM_BUILD_ROOT}/%{prefix}/sbin/syslog-ng
-
 ./install-sh -d ${RPM_BUILD_ROOT}/etc/syslog-ng
 ./install-sh -d ${RPM_BUILD_ROOT}/etc/rc.d/init.d
 
@@ -56,10 +55,10 @@ elif [ "%{_host_vendor}" = "suse" ]; then
  ./install-sh -o root -g root -m 0755 contrib/init.d.SuSE \
    ${RPM_BUILD_ROOT}/etc/rc.d/init.d/syslog-ng
 fi
- 
+
 if [ "%{_host_vendor}" = "ibm" ];then
- ./install-sh -o root -g bin -m 0644 contrib/aix-packaging/syslog-ng.conf \
-    ${RPM_BUILD_ROOT}/%{prefix}/etc/syslog-ng/syslog-ng.conf
+  ./install-sh -o root -g bin -m 0644 contrib/aix-packaging/syslog-ng.conf \
+    ${RPM_BUILD_ROOT}/etc/syslog-ng/syslog-ng.conf
 elif [ "%{_host_vendor}" = "redhat" ] || [ "%{_host_vendor}" = "suse" ]; then
   install -o root -g root -m 0644 contrib/rhel-packaging/syslog-ng.conf \
     ${RPM_BUILD_ROOT}/etc/syslog-ng/syslog-ng.conf
@@ -206,8 +205,8 @@ fi
 
 %postun
 %ifnos aix5.2
-chkconfig --force --del syslog-ng
-chkconfig --add syslog
+#chkconfig --force --del syslog-ng
+#chkconfig --add syslog
 
 %check
 %endif
