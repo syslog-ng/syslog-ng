@@ -1,0 +1,20 @@
+module syslog_ng 1.0;
+
+require {
+	class sock_file { getattr unlink };
+	class tcp_socket { create bind setopt name_bind node_bind listen };
+	class dir { write add_name };
+	class file { create write getattr read };
+	type device_t;
+	type syslogd_t;
+	type rsh_port_t;
+	type inaddr_any_node_t;
+	type var_t;
+};
+
+allow syslogd_t device_t:sock_file { getattr unlink };
+allow syslogd_t rsh_port_t:tcp_socket name_bind;
+allow syslogd_t inaddr_any_node_t:tcp_socket node_bind;
+allow syslogd_t self:tcp_socket { create listen  bind setopt };
+allow syslogd_t var_t:dir { write add_name };
+allow syslogd_t var_t:file { create write getattr read };
