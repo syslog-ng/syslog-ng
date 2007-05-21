@@ -28,7 +28,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <netinet/in.h>
-
+#include <stdlib.h>
 #include <string.h>
 
 #ifndef SOL_IP
