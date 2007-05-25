@@ -1,0 +1,2 @@
+# syslog-ng labeling rule:
+/var/lib/syslog-ng(/.*)?          gen_context(system_u:object_r:syslogd_var_lib_t, s0)
