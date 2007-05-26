@@ -38,6 +38,11 @@ fi
 if test "x$prefix" = "xNONE"; then
         prefix=$ac_default_prefix
 fi
+AM_CONFIG_HEADER(config.h)
+
+dnl ***************************************************************************
+dnl Arguments
+
 
 AC_ARG_WITH(libnet,
    [  --with-libnet=path      use path to libnet-config script],
@@ -57,18 +62,18 @@ AC_ARG_ENABLE(static-linking,
               [  --enable-static-linking         Link everything statically.])
 
 AC_ARG_ENABLE(ipv6,
-              [  --enable-ipv6           Enable support for IPv6.],,enable_ipv6="yes")
+              [  --enable-ipv6           Enable support for IPv6.],,enable_ipv6="auto")
 
 AC_ARG_ENABLE(tcp-wrapper,
-              [  --enable-tcp-wrapper    Enable support for TCP wrappers.],,enable_tcp_wrapper="yes")
+              [  --enable-tcp-wrapper    Enable support for TCP wrappers.],,enable_tcp_wrapper="auto")
 
 AC_ARG_ENABLE(spoof-source,
               [  --enable-spoof-source   Enable support for spoofed source addresses.]
-              ,,enable_spoof_source="yes")
+              ,,enable_spoof_source="auto")
 
-AM_CONFIG_HEADER(config.h)
-
+dnl ***************************************************************************
 dnl Checks for programs.
+
 AC_PROG_CC
 AM_PROG_CC_STDC
 AC_PROG_YACC
@@ -97,16 +102,15 @@ else
         AC_MSG_RESULT([no clues, linking everything dynamically, please send appropriate ld arguments to syslog-ng@lists.balabit.hu])
 fi
 
-dnl Checks for libraries.
 
-
-
+dnl ***************************************************************************
 dnl Checks for header files.
 AC_HEADER_STDC
 AC_CHECK_HEADER(dmalloc.h)
 AC_CHECK_HEADERS(strings.h openssl/ssl.h getopt.h stropts.h sys/strlog.h door.h)
 AC_CHECK_HEADERS(tcpd.h)
 
+dnl ***************************************************************************
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_STRUCT_TM
 
@@ -143,11 +147,15 @@ fi
 AC_CACHE_CHECK(for struct sockaddr_storage, blb_cv_c_struct_sockaddr_storage,
   [AC_EGREP_HEADER([sockaddr_storage], sys/socket.h, blb_cv_c_struct_sockaddr_storage=yes,blb_cv_c_struct_sockaddr_storage=no)])
 
+AC_CACHE_CHECK(for struct sockaddr_in6, blb_cv_c_struct_sockaddr_in6,
+  [AC_EGREP_HEADER([sockaddr_in6], netinet/in.h, blb_cv_c_struct_sockaddr_in6=yes,blb_cv_c_struct_sockaddr_in6=no)])
+
 if test "$blb_cv_c_struct_sockaddr_storage" = "yes"; then
 	AC_DEFINE(HAVE_STRUCT_SOCKADDR_STORAGE,[1],[struct sockaddr_storage is present on your system])
 fi
 
-dnl Checks for library functions.
+dnl ***************************************************************************
+dnl Checks for libraries
 AC_CHECK_LIB(door, door_create)
 AC_CHECK_LIB(socket, socket)
 AC_CHECK_LIB(rt, nanosleep)
@@ -198,9 +206,21 @@ if test "x$enable_memtrace" = "xyes" ; then
 	AC_CHECK_LIB(dl, dlsym)
 fi
 
+AC_MSG_CHECKING(for LIBNET)
+if test "x$with_libnet" = "x"; then
+        LIBNET_CONFIG="`which libnet-config`"
+else
+        LIBNET_CONFIG="$with_libnet/libnet-config"
+fi
+if test -n "$LIBNET_CONFIG" -a -x "$LIBNET_CONFIG"; then
+        LIBNET_CFLAGS="`$LIBNET_CONFIG --defines`"
+        LIBNET_LIBS="`$LIBNET_CONFIG --libs`"
+        AC_MSG_RESULT(yes)
+else
+        LIBNET_LIBS=
+        AC_MSG_RESULT(no)
+fi
 
-dnl ***************************************************************************
-dnl export values as C defines
 
 AC_MSG_CHECKING(whether to enable Sun STREAMS support)
 if test "x$ac_cv_header_stropts_h" = "xyes" -a \
@@ -223,10 +243,9 @@ else
         AC_MSG_RESULT(no)
 fi
 
-AC_MSG_CHECKING(whether to enable TCP wrapper support)
-if test "x$enable_tcp_wrapper" = "xyes"; then
+if test "x$enable_tcp_wrapper" = "xauto"; then
+	AC_MSG_CHECKING(whether to enable TCP wrapper support)
         if test "x$ac_cv_header_tcpd_h" = "xyes" -a "x$blb_cv_c_lwrap" != "x"; then
-                AC_DEFINE(ENABLE_TCP_WRAPPER, 1, [have TCP wrapper lib])
                 enable_tcp_wrapper=yes
                 AC_MSG_RESULT(yes)
         else
@@ -234,43 +253,43 @@ if test "x$enable_tcp_wrapper" = "xyes"; then
                 AC_MSG_RESULT(no)
                 enable_tcp_wrapper=no
         fi
-else
+elif test "x$enable_tcp_wrapper" != "xyes"; then
         LIBWRAP_LIBS=""
-        AC_MSG_RESULT(no)
 fi
 
 
-enable_value()
-{
-        if test "x$1" = "xyes" ; then
-                echo 1
+
+if test "x$enable_spoof_source" = "xauto"; then
+	AC_MSG_CHECKING(whether to enable spoof source support)
+        if test "x$LIBNET_LIBS" != "x"; then
+                enable_spoof_source=yes
+                AC_MSG_RESULT(yes)
         else
-                echo 0
+                LIBNET_LIBS=""
+		LIBNET_CFLAGS=""
+                enable_spoof_source=no
+                AC_MSG_RESULT(no)
         fi
-}
+elif test "x$enable_spoof_source" != "xyes"; then
+	LIBNET_CFLAGS=""
+        LIBNET_LIBS=""
+fi
+
+if test "x$enable_ipv6" = "xauto"; then
+	AC_MSG_CHECKING(whether to enable IPv6 support)
+        if test "x$blb_cv_c_struct_sockaddr_in6" = "xyes"; then
+                enable_ipv6=yes
+                AC_MSG_RESULT(yes)
+        else
+                enable_ipv6=no
+                AC_MSG_RESULT(no)
+        fi
+fi
 
 PKG_CHECK_MODULES(GLIB, glib-2.0 >= $GLIB_MIN_VERSION,,
 		AC_MSG_ERROR(Cannot find GLib library version >= $GLIB_MIN_VERSION: is pkg-config in path?))
 PKG_CHECK_MODULES(EVTLOG, eventlog >= $EVTLOG_MIN_VERSION,,
                 AC_MSG_ERROR(Cannot find eventlog version >= $EVTLOG_MIN_VERSION: is pkg-config in path?))
-
-if test "x$enable_spoof_source" = "xyes"; then
-	AC_MSG_CHECKING(for LIBNET)
-        if test "x$with_libnet" = "x"; then
-                LIBNET_CONFIG=`which libnet-config`
-        else
-                LIBNET_CONFIG=$with_libnet/libnet-config
-        fi
-        if test -x $LIBNET_CONFIG; then
-                LIBNET_CFLAGS="`$LIBNET_CONFIG --defines`"
-                LIBNET_LIBS="`$LIBNET_CONFIG --libs`"
-                AC_MSG_RESULT(yes)
-        else
-                LIBNET_LIBS=
-                AC_ERROR(libnet-config not found)
-        fi
-fi
-
 
 old_LIBS=$LIBS
 LIBS="$LD_START_STATIC $GLIB_LIBS $LD_END_STATIC"
@@ -297,6 +316,10 @@ fi
 if test "x$enable_dynamic_linking" != "xyes" -a "x$blb_cv_static_glib" = "xno"; then
 	AC_MSG_ERROR([static GLib libraries not found (a file named libglib-2.0.a), either link GLib dynamically using the --enable-dynamic-linking or install a static GLib])
 fi
+
+dnl ***************************************************************************
+dnl export values
+
 
 CFLAGS="${CFLAGS} -Wall -g"
 if test "x$enable_debug" = "xyes"; then
@@ -326,6 +349,15 @@ patheval()
                 NEW=`eval echo $OLD`
         done
         echo $OLD
+}
+
+enable_value()
+{
+        if test "x$1" = "xyes" ; then
+                echo 1
+        else
+                echo 0
+        fi
 }
 
 
