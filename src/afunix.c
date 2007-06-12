@@ -93,6 +93,7 @@ afunix_sd_new(gchar *filename, guint32 flags)
   AFUnixSourceDriver *self = g_new0(AFUnixSourceDriver, 1);
 
   afsocket_sd_init_instance(&self->super, &self->sock_options, flags);
+  self->super.max_connections = 256;
   self->super.flags |= AFSOCKET_KEEP_ALIVE;
   self->super.bind_addr = g_sockaddr_unix_new(filename);
   self->super.super.super.init = afunix_sd_init;
