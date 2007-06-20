@@ -499,7 +499,7 @@ log_writer_options_init(LogWriterOptions *options, GlobalConfig *cfg, guint32 fl
   options->template = template;
   options->flags = flags;
   if (options->fifo_size == -1)
-    options->fifo_size = MIN(1000, cfg->log_fifo_size);
+    options->fifo_size = MAX(1000, cfg->log_fifo_size);
   if (options->use_time_recvd == -1)
     options->use_time_recvd = cfg->use_time_recvd;
     
