@@ -369,9 +369,9 @@ afsocket_sd_process_connection(AFSocketSourceDriver *self, GSockAddr *peer_addr,
         {
           gchar buf[256];
           
-          msg_verbose("Syslog connection rejected by tcpd",
-                      evt_tag_str("from", g_sockaddr_format(peer_addr, buf, sizeof(buf))),
-                      NULL);
+          msg_error("Syslog connection rejected by tcpd",
+                    evt_tag_str("from", g_sockaddr_format(peer_addr, buf, sizeof(buf))),
+                    NULL);
           close(fd);
           return TRUE;
         }
