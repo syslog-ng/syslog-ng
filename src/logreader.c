@@ -323,8 +323,10 @@ log_reader_fetch_log(LogReader *self, FDRead *fd)
     {
       log_reader_iterate_buf(self, NULL, FALSE, &msg_count);
       
-      /* we still have something */
-      if (self->ofs != 0)
+      /* we still have something that could not be emptied, or multiread is
+       * disabled and we did not check readability when we came here.
+       */
+      if (self->ofs != 0 || (self->flags & LR_NOMREAD))
         return TRUE;
     }
   
