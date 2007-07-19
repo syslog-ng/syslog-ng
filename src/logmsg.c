@@ -229,13 +229,13 @@ log_msg_parse(LogMessage *self, gchar *data, gint length, guint flags, regex_t *
           /* process second fractions */
           
           p++;
-          while (isdigit(*p))
+          while (div < 10e6 && isdigit(*p))
             {
               frac = 10 * frac + (*p) - '0';
               div = div * 10;
               p++;
             }
-          self->stamp.time.tv_usec = frac * 1000000 / div;
+          self->stamp.time.tv_usec = frac * (1000000 / div);
         }
       if (p && (*p == '+' || *p == '-') && strlen(p) == 6 && 
           isdigit(*(p+1)) && isdigit(*(p+2)) && *(p+3) == ':' && isdigit(*(p+4)) && isdigit(*(p+5)))
@@ -298,13 +298,34 @@ log_msg_parse(LogMessage *self, gchar *data, gint length, guint flags, regex_t *
     {
       /* RFC 3164 timestamp, expected format: MMM DD HH:MM:SS ... */
       struct tm tm, *nowtm;
+      glong usec = 0;
 
       /* Just read the buffer data into a textual
          datestamp. */
+         
 
       g_string_assign_len(&self->date, src, 15);
       src += 15;
       left -= 15;
+
+      if (left > 0 && src[0] == '.')
+        {
+          gulong frac = 0;
+          gint div = 1;
+          gint i = 1;
+          
+          /* gee, funny Cisco extension, BSD timestamp with fraction of second support */
+
+          while (i < left && div < 10e6 && isdigit(src[i]))
+            {
+              frac = 10 * frac + (src[i]) - '0';
+              div = div * 10;
+              i++;
+            }
+          usec = frac * (1000000 / div);
+          left -= i;
+          src += i;
+        }
 
       /* And also make struct time timestamp for the msg */
 
@@ -318,7 +339,7 @@ log_msg_parse(LogMessage *self, gchar *data, gint length, guint flags, regex_t *
         
       /* NOTE: no timezone information in the message, assume it is local time */
       self->stamp.time.tv_sec = mktime(&tm);
-      self->stamp.time.tv_usec = 0;
+      self->stamp.time.tv_usec = usec;
       self->stamp.zone_offset = get_local_timezone_ofs(self->stamp.time.tv_sec); /* assume local timezone */
     }
     
