@@ -56,7 +56,10 @@ testcase(gchar *msg,
   TEST_ASSERT(logmsg->pri == expected_pri, "%d", logmsg->pri, expected_pri);
   if (expected_stamp_sec)
     {
-      TEST_ASSERT(logmsg->stamp.time.tv_sec == expected_stamp_sec, "%d", (int) logmsg->stamp.time.tv_sec, (int) expected_stamp_sec);
+      if (expected_stamp_sec != 1)
+        {
+          TEST_ASSERT(logmsg->stamp.time.tv_sec == expected_stamp_sec, "%d", (int) logmsg->stamp.time.tv_sec, (int) expected_stamp_sec);
+        }
       TEST_ASSERT(logmsg->stamp.time.tv_usec == expected_stamp_usec, "%d", (int) logmsg->stamp.time.tv_usec, (int) expected_stamp_usec);
       TEST_ASSERT(logmsg->stamp.zone_offset == expected_stamp_ofs, "%d", (int) logmsg->stamp.zone_offset, (int) expected_stamp_ofs);
     }
@@ -198,6 +201,39 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase("<7>2006-10-29T02:00:00.156+01:00 ctld snmpd[2499]: PTHREAD support initialized", 0, "^ctld",
            7, 			// pri
            1162083600, 156000, 3600,	// timestamp (sec/usec/zone)
+           NULL,                // originally formatted timestamp
+           "",		// host
+           "ctld snmpd",		// openvpn
+           "ctld snmpd[2499]: PTHREAD support initialized" // msg
+           );
+
+  testcase("<7> Aug 29 02:00:00.156 ctld snmpd[2499]: PTHREAD support initialized", 0, "^ctld",
+           7, 			// pri
+           1, 156000, 7200,	// timestamp (sec/usec/zone)
+           NULL,                // originally formatted timestamp
+           "",		// host
+           "ctld snmpd",		// openvpn
+           "ctld snmpd[2499]: PTHREAD support initialized" // msg
+           );
+  testcase("<7> Aug 29 02:00:00.156789 ctld snmpd[2499]: PTHREAD support initialized", 0, "^ctld",
+           7, 			// pri
+           1, 156789, 7200,	// timestamp (sec/usec/zone)
+           NULL,                // originally formatted timestamp
+           "",		// host
+           "ctld snmpd",		// openvpn
+           "ctld snmpd[2499]: PTHREAD support initialized" // msg
+           );
+  testcase("<7> Aug 29 02:00:00. ctld snmpd[2499]: PTHREAD support initialized", 0, "^ctld",
+           7, 			// pri
+           1, 0, 7200,	// timestamp (sec/usec/zone)
+           NULL,                // originally formatted timestamp
+           "",		// host
+           "ctld snmpd",		// openvpn
+           "ctld snmpd[2499]: PTHREAD support initialized" // msg
+           );
+  testcase("<7> Aug 29 02:00:00 ctld snmpd[2499]: PTHREAD support initialized", 0, "^ctld",
+           7, 			// pri
+           1, 0, 7200,	// timestamp (sec/usec/zone)
            NULL,                // originally formatted timestamp
            "",		// host
            "ctld snmpd",		// openvpn
