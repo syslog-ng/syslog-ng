@@ -138,7 +138,7 @@ stats_timer(gpointer st)
 }
 
 int 
-main_loop_run(GlobalConfig *cfg)
+main_loop_run(GlobalConfig **cfg)
 {
   GMainLoop *main_loop;
   gint iters;
@@ -148,16 +148,16 @@ main_loop_run(GlobalConfig *cfg)
              evt_tag_str("version", VERSION),
              NULL);
   main_loop = g_main_loop_new(NULL, TRUE);
-  if (cfg->stats_freq > 0)
-    stats_timer_id = g_timeout_add(cfg->stats_freq * 1000, stats_timer, NULL);
+  if ((*cfg)->stats_freq > 0)
+    stats_timer_id = g_timeout_add((*cfg)->stats_freq * 1000, stats_timer, NULL);
   while (g_main_loop_is_running(main_loop))
     {
-      if (cfg->time_sleep > 0)
+      if ((*cfg)->time_sleep > 0)
         {
           struct timespec ts;
           
-          ts.tv_sec = cfg->time_sleep / 1000;
-          ts.tv_nsec = (cfg->time_sleep % 1000) * 1E6;
+          ts.tv_sec = (*cfg)->time_sleep / 1000;
+          ts.tv_nsec = ((*cfg)->time_sleep % 1000) * 1E6;
           
           nanosleep(&ts, NULL);
         }
@@ -165,13 +165,13 @@ main_loop_run(GlobalConfig *cfg)
       if (sig_hup_received)
         {
           msg_notice("Configuration reload request received, reloading configuration", NULL);
-          cfg = cfg_reload_config(cfgfilename, cfg);
+          (*cfg) = cfg_reload_config(cfgfilename, (*cfg));
           sig_hup_received = FALSE;
-          if (cfg->stats_freq > 0)
+          if ((*cfg)->stats_freq > 0)
             {
               if (stats_timer_id != 0)
                 g_source_remove(stats_timer_id);
-              stats_timer_id = g_timeout_add(cfg->stats_freq * 1000, stats_timer, NULL);
+              stats_timer_id = g_timeout_add((*cfg)->stats_freq * 1000, stats_timer, NULL);
             }
           stats_cleanup_orphans();
         }
@@ -422,8 +422,8 @@ main(int argc, char *argv[])
   
   setup_creds();
   setup_std_fds(log_to_stderr);
-
-  rc = main_loop_run(cfg);
+  
+  rc = main_loop_run(&cfg);
 
   cfg_deinit(cfg, persist);
   
