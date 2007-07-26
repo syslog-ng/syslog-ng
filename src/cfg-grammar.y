@@ -671,14 +671,13 @@ dest_writer_option
 	| KW_LOG_FIFO_SIZE '(' NUMBER ')'	{ last_writer_options->fifo_size = $3; }
 	| KW_FLUSH_LINES '(' NUMBER ')'		{ last_writer_options->flush_lines = $3; }
 	| KW_FLUSH_TIMEOUT '(' NUMBER ')'	{ last_writer_options->flush_timeout = $3; }
-	| KW_TEMPLATE '(' string ')'       	{ last_writer_options->template = cfg_lookup_template(configuration, $3);
+	| KW_TEMPLATE '(' string ')'       	{ 
+	                                          last_writer_options->template = cfg_lookup_template(configuration, $3);
 	                                          if (last_writer_options->template == NULL)
 	                                            {
 	                                              last_writer_options->template = log_template_new(NULL, $3); 
 	                                              last_writer_options->template->def_inline = TRUE;
 	                                            }
-	                                          else
-	                                            log_template_ref(last_writer_options->template);
 	                                          free($3);
 	                                        }
 	| KW_TEMPLATE_ESCAPE '(' yesno ')'	{ log_writer_options_set_template_escape(last_writer_options, $3); }
