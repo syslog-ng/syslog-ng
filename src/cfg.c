@@ -600,6 +600,7 @@ persist_config_load(PersistentConfig *self)
               g_free(key);
               break;
             }
+          g_free(key);
         }
  close_and_exit:
       fclose(persist_file);
