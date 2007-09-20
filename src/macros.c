@@ -252,7 +252,7 @@ log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, glong 
             if (start)
               {
                 start++;
-                end = strchr(msg->msg.str, ']');
+                end = strchr(start, ']');
                 if (end)
                   {
                     result_append(result, start, end-start, !!(flags & MF_ESCAPE_RESULT));
