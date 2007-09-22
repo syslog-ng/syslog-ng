@@ -1,4 +1,4 @@
-SUBDIRS = src tests doc contrib solbuild
+SUBDIRS = src tests doc contrib solbuild tgzbuild
 
 EXTRA_DIST = debian/README.Debian debian/copyright debian/syslog-ng.conf.example debian/syslog-ng.files debian/syslog-ng.logrotate debian/syslog-ng.postrm \
 	debian/changelog debian/changelog.in debian/rules debian/syslog-ng.default debian/syslog-ng.init debian/syslog-ng.logrotate.example debian/syslog-ng.preinst \

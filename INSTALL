@@ -1,0 +1,178 @@
+
+Installation instructions for SYSLOG-NG
+=======================================
+
+Welcome. This is syslog-ng, which stands for syslog-new-generation, a new,
+enhanced system logging daemon.
+
+Unpacking the distribution
+==========================
+
+The distribution arrives in .tar.gz format though OS/distribution packaging
+is possible. The file is named:
+
+	syslog-ng-x.xx.tar.gz
+
+where x.xx stands for the version number. You must have tar and gzip to
+unpack the distribution (sorry, compress is not supported). If you have GNU
+tar simply execute the following command:
+
+	tar xvfz syslog-ng-x.xx.tar.gz
+
+If your version of tar doesn't support z (most non-GNU tars), you should
+execute this one:
+
+	gunzip -c syslog-ng-x.xx.tar.gz | tar xvf -
+
+After this, you'll get a directory named syslog-ng-x.xx, where the source for
+syslog-ng will be unpacked.
+
+Compiling the program:
+======================
+
+syslog-ng requires gcc as a C compiler (at least version 2.7.2), GNU flex as
+a lex, and bison as a parser generator. Some GNU C and GNU flex extensions
+are used, porting to other compilers/lex/yacc combination is welcome.
+
+Syslog-ng relies on a number of third party libraries in order to be
+compiled, these are:
+  * libnet if spoof-source support is enabled in configure 
+    (--enable-spoof-source)
+  * libwrap (aka TCP wrappers) if their use is enabled in configure 
+    (--enable-tcp-wrapper)
+  * Glib a generic I/O library used by a wide variety of applications
+  * EventLog a generic event logging library developed by BalaBit
+
+Once these libraries are installed, you can start compiling syslog-ng:
+
+cd to the syslog-ng-x.xx directory, and execute the following commands:
+
+	./configure
+	make
+
+After the make cycle finishes, you'll get an executable in the src
+directory:
+
+   syslog-ng		- the main binary
+
+Now do a "make install" and you are done. 
+
+Compile time options
+====================
+A couple of features must be enabled in compile time using one of the
+--enable-<feature> option to the configure script.
+
+Currently the following compile time features exist:
+
+  --enable-debug            include debug info
+  --enable-sun-streams      enable Sun STREAMS support even if not detected (autodetected by default)
+  --enable-sun-door         enable Sun door support even if not detected (autodetected by default)
+  --enable-tcp-wrapper      enable using /etc/hosts.deny & /etc/hosts.allow for TCP access (disabled by default)
+  --enable-spoof-source     enable spoof_source feature (also requires libnet) (disabled by default)
+  --enable-ipv6             enable support for IPv6
+  --enable-static-linking   compile syslog-ng as a static binary
+  --enable-dynamic-linking  compile syslog-ng as a completely dynamic binary,
+                            if not specified syslog-ng links dynamically to
+                            system libraries and statically to everything else.
+
+Platform specific compilation issues
+====================================
+
+  HP-UX with gcc 4.x
+  ------------------
+
+    The gcc available for HP-UX gives an error message in sys/socket.h, as a
+    function is defined as static and extern at the same time. Earlier gcc
+    versions and the HP compiler only gives a warning, gcc4 issues an error.
+
+    The solution is to copy sys/socket.h to your gcc-private include
+    directory and fix the offending declaration.
+
+Configuration file:
+===================
+
+Syslog-ng uses a different configuration scheme than the original syslogd,
+which sits at /etc/syslog-ng/syslog-ng.conf (or at a different location
+depending the value passed to the --sysconfdir configure parameter).
+
+The manpage for syslog-ng.conf(5) or the documentation under doc contains a
+/reference about keywords and syntax which can be used in the
+config file. For now I only explain system dependencies.
+
+Every unix version has a slightly different way of sending log messages, and
+since syslog-ng gives you the power of choosing your log-sources, you have to
+be aware some of the internals.
+
+  Linux:
+  ------
+  Linux has a dedicated unix socket called /dev/log, where log messages are
+  written to, and read from. It is of type SOCK_STREAM. So the correct source
+  statement for standard linux log messages is:
+
+      source stdlog { unix-stream("/dev/log"); };
+
+  Some newer Linux distributions (Debian GNU/Linux woody, and RedHat Linux
+  post 7.0) switched over to using SOCK_DGRAM in their sysklogd installation
+  by default. The libc autodetects which socket type is in use, but some
+  programs (like klogd) log directly to the log device bypassing libc. So if
+  you have logging problems you might want to switch log unix-dgram like
+  this:
+
+      source stdlog { unix-dgram("/dev/log"); };
+
+  BSDi:
+  -----
+  BSD is similar to Linux (or vice-versa Linux is similar to BSD, but this is
+  another issue), so BSD has also a unix socket for log communication, but
+  it's of type SOCK_DGRAM, and it is located at /var/run/log. So the source
+  statement you are looking for is:
+
+      source stdlog { unix-dgram("/var/run/log"); };
+
+  Solaris (2.5.1 or below):
+  -------------------------
+
+  SunOS/Solaris has a universal means of communications called STREAMS. It is
+  used as both an in-kernel and kernel-user interface. You'll need to feed the
+  following statement to syslog-ng to accept all messages:
+
+      source stdlog { sun-stream("/dev/log"); };
+
+  Solaris (2.6 - Solaris8)
+  -------------------
+
+  In addition to the STREAMS device used in earlier versions, a door is used to
+  make sure after each message that the system logging daemon is still running.
+  To create that door, you'll need the door() option of the sun-stream driver:
+  Sun has added a new method to the pool of possible IPC mechanisms, and it
+  is called door. syslog-ng supports this method with the sun-door keyword. A
+  door is a special file in the filesystem, and is called /etc/.syslog_door.
+  So your correct source statement would be:
+
+      source stdlog { sun-streams("/dev/log" door("/etc/.syslog_door")); };
+      
+  Solaris 9
+  ---------
+  
+  The name of the door file has been changed from /etc/.syslog_door to
+  /var/run/syslog_door, the correct configuration needs to be:
+
+      source stdlog { sun-streams("/dev/log" door("/var/run/syslog_door")); };
+
+  AIX (unknown revision)
+  ----------------------
+  
+  AIX does support STREAMS, but its log transport doesn't use it. As it
+  seems /dev/log is a simple SOCK_DGRAM type unix socket, so it works using:
+
+      source stdlog { unix-dgram("/dev/log"); };
+
+  HP-UX (HP-UX 11.0)
+  ------------------
+  
+  HP-UX uses a named pipe called /dev/log for log transport, and you 
+  can use this with the pipe() driver with an additional option. HP-UX pads
+  all incoming messages to 2048 bytes by default, so you need to specify
+  this:
+
+       source stdlog { pipe("/dev/log" pad_size(2048)); };

@@ -36,19 +36,23 @@
 
 #include <glib.h>
 
-#if ENABLE_DEBUG
-#define PATH_SYSLOG_NG_CONF     "syslog-ng.conf"
-#define PATH_PIDFILE            "syslog-ng.pid"
-#define PATH_PERSIST_CONFIG     "syslog-ng.persist"
-#else
 #define PATH_SYSLOG_NG_CONF     PATH_SYSCONFDIR "/syslog-ng.conf"
 #define PATH_PIDFILE            "/var/run/syslog-ng.pid"
 #define PATH_PERSIST_CONFIG     PATH_LOCALSTATEDIR "/syslog-ng.persist"
-#endif
 
 #define LOG_PRIORITY_LISTEN 0
 #define LOG_PRIORITY_READER 0
 #define LOG_PRIORITY_WRITER -100
 #define LOG_PRIORITY_CONNECT -150
+
+#if !HAVE_STRTOLL
+# if HAVE_STRTOIMAX || defined(strtoimax)
+   /* HP-UX has an strtoimax macro, not a function */
+   #define strtoll(nptr, endptr, base) strtoimax(nptr, endptr, base)
+# else
+   /* this requires Glib 2.12 */
+   #define strtoll(nptr, endptr, base) g_ascii_strtoll(nptr, endptr, base)
+# endif
+#endif
 
 #endif

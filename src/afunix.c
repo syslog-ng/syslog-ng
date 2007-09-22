@@ -68,9 +68,9 @@ afunix_sd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
   
   if (afsocket_sd_init(s, cfg, persist))
     {
-      if (self->owner != -1 || self->group != -1)
+      if (self->owner != (uid_t) -1 || self->group != (gid_t) -1)
         chown(self->filename, self->owner, self->group);
-      if (self->perm != -1)
+      if (self->perm != (mode_t) -1)
         chmod(self->filename, self->perm);
       return TRUE;
     }

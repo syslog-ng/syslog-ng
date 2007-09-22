@@ -313,7 +313,6 @@ log_reader_iterate_buf(LogReader *self, GSockAddr *saddr, gboolean flush, gint *
 static gboolean
 log_reader_fetch_log(LogReader *self, FDRead *fd)
 {
-  guint avail = self->options->msg_size - self->ofs;
   gint rc;
   GSockAddr *sa = NULL;
   gint msg_count = 0;
@@ -330,21 +329,6 @@ log_reader_fetch_log(LogReader *self, FDRead *fd)
         return TRUE;
     }
   
-  /* check for new data */
-  if (self->options->padding)
-    {
-      if (avail < self->options->padding)
-	{
-	  msg_error("Buffer is too small to hold padding number of bytes",
-	            evt_tag_int(EVT_TAG_FD, fd->fd),
-	            evt_tag_int("padding", self->options->padding),
-                    evt_tag_int("avail", avail),
-                    NULL);
-          log_pipe_notify(self->control, &self->super.super, NC_CLOSE, self);
-	  return FALSE;
-	}
-      avail = self->options->padding;
-    }
   
   /* NOTE: this loop is here to decrease the load on the main loop, we try
    * to fetch a couple of messages in a single run (but only up to
@@ -352,7 +336,13 @@ log_reader_fetch_log(LogReader *self, FDRead *fd)
    */
   while (msg_count < self->options->fetch_limit)
     {
-      avail = self->options->msg_size - self->ofs;
+      gint avail;
+      
+      if (!self->options->padding)
+        avail = self->options->msg_size - self->ofs;
+      else
+        avail = self->options->padding;
+        
       sa = NULL;
       rc = fd_read(fd, self->buffer + self->ofs, avail, &sa);
 
@@ -416,6 +406,19 @@ log_reader_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
 {
   LogReader *self = (LogReader *) s;
   
+  /* check for new data */
+  if (self->options->padding)
+    {
+      if (self->options->msg_size < self->options->padding)
+	{
+	  msg_error("Buffer is too small to hold padding number of bytes",
+	            evt_tag_int("padding", self->options->padding),
+                    evt_tag_int("msg_size", self->options->msg_size),
+                    NULL);
+	  return FALSE;
+	}
+    }
+
   /* the source added below references this logreader, it will be unref'd
      when the source is destroyed */ 
   self->source = log_reader_watch_new(self, self->fd);
