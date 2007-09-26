@@ -1,10 +1,41 @@
 #!/bin/sh
-mkdir $1/opt/syslog-ng/doc
-cp NEWS $1/opt/syslog-ng/doc
+#
+ostype=`uname -s`
 
-mkdir $1/opt/syslog-ng/etc
-cp contrib/hpux-packaging/syslog-ng.conf $1/opt/syslog-ng/etc
+case "$ostype" in
+  HP-UX)
+    mkdir -p $1/opt/
+    mkdir $1/opt/syslog-ng/var
+    mkdir $1/opt/syslog-ng/doc
+    cp NEWS $1/opt/syslog-ng/doc
+    mkdir $1/opt/syslog-ng/etc
+    cp contrib/hpux-packaging/syslog-ng.conf $1/opt/syslog-ng/etc
 
-mkdir $1/sbin
-mkdir $1/sbin/init.d
-cp contrib/hpux-packaging/syslog-ng.init $1/sbin/init.d/syslog-ng
+    mkdir $1/sbin
+    mkdir $1/sbin/init.d
+    cp contrib/hpux-packaging/syslog-ng.init $1/sbin/init.d/syslog-ng
+    mv $1/syslog-ng $1/opt
+  ;;
+  Linux)
+    strip $1/syslog-ng/sbin/syslog-ng
+    mkdir -p $1/syslog-ng/var
+    mkdir -p $1/syslog-ng/etc
+    mkdir -p $1/syslog-ng/doc
+    cp NEWS $1/syslog-ng/doc
+    mkdir -p $1/syslog-ng/doc/contrib
+    cp -a contrib/fedora-packaging $1/syslog-ng/doc/contrib/fedora
+    cp -a contrib/rhel-packaging $1/syslog-ng/doc/contrib/redhat-el
+    cp -a \
+       contrib/syslog-ng.init.lfs \
+       contrib/syslog-ng.conf.RedHat \
+       $1/syslog-ng/doc/contrib
+    gzip -c -9 doc/reference/syslog-ng.txt > $1/syslog-ng/doc/syslog-ng.txt.gz
+    tar xfz doc/reference/syslog-ng.html.tar.gz -C $1/syslog-ng/doc
+    chown -R root.root $1/syslog-ng/doc
+  ;;
+  *)
+	
+  ;;
+esac
+
+# vim: ts=2 et
