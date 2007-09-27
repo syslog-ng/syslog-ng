@@ -1,0 +1,10 @@
+Installation instructions for Syslog-NG on an Linux From Scratch system.
+========================================================================
+
+Installing/uninstalling Syslog-NG's init script use the Makefile.lfs makefile.
+
+Further instruction could be found in the said makefile.
+
+Before starting Syslog-NG, create or modify a syslog-ng.conf file in
+/opt/syslog-ng/etc. The syslog-ng.conf files in /opt/syslog-ng/contrib/fedora and  /opt/syslog-ng/contrib/redhat-el could be used as a starting pint.
+

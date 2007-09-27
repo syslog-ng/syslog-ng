@@ -1,0 +1,87 @@
+# makefile to handle Syslog-NG install/uninstall on a LFS Linux system.
+#
+# INSTALL/UNINSTALL:
+# Use make -f Makefile.lfs install|uninstall to install and register or
+# uninstall Syslog-NG's init scripts.
+# 
+# START/STOP Sysklogd or Syslog-NG
+# Starting Syslog-NG: make -f Makefile.lfs slng-start
+# Stopping Syslog-NG: make -f Makefile.lfs slng-stop
+# 
+# Starting sysklogd: make -f Makefile.lfs sysklogd-start
+# Stopping sysklogd: make -f Makefile.lfs sysklogd-stop
+#
+ETCDIR=/etc
+EXTDIR=${DESTDIR}${ETCDIR}
+MODE=754
+DIRMODE=755
+CONFMODE=644
+
+all: install
+
+create-dirs:
+	install -d -m ${DIRMODE} ${EXTDIR}/rc.d/rc0.d
+	install -d -m ${DIRMODE} ${EXTDIR}/rc.d/rc1.d
+	install -d -m ${DIRMODE} ${EXTDIR}/rc.d/rc2.d
+	install -d -m ${DIRMODE} ${EXTDIR}/rc.d/rc3.d
+	install -d -m ${DIRMODE} ${EXTDIR}/rc.d/rc4.d
+	install -d -m ${DIRMODE} ${EXTDIR}/rc.d/rc5.d
+	install -d -m ${DIRMODE} ${EXTDIR}/rc.d/rc6.d
+	install -d -m ${DIRMODE} ${EXTDIR}/rc.d/rcsysinit.d
+	install -d -m ${DIRMODE} ${EXTDIR}/rc.d/init.d
+	install -d -m ${DIRMODE} ${EXTDIR}/sysconfig
+
+install: create-dirs 
+	install -m ${MODE} syslog-ng.init.lfs	    ${EXTDIR}/rc.d/init.d/syslog-ng
+	ln -sf ../init.d/syslog-ng   ${EXTDIR}/rc.d/rc0.d/K90syslog-ng
+	ln -sf ../init.d/syslog-ng   ${EXTDIR}/rc.d/rc1.d/K90syslog-ng
+	ln -sf ../init.d/syslog-ng   ${EXTDIR}/rc.d/rc2.d/K90syslog-ng
+	ln -sf ../init.d/syslog-ng   ${EXTDIR}/rc.d/rc3.d/S10syslog-ng
+	ln -sf ../init.d/syslog-ng   ${EXTDIR}/rc.d/rc4.d/S10syslog-ng
+	ln -sf ../init.d/syslog-ng   ${EXTDIR}/rc.d/rc5.d/S10syslog-ng
+	ln -sf ../init.d/syslog-ng   ${EXTDIR}/rc.d/rc6.d/K90syslog-ng
+	
+	rm -rf ${EXTDIR}/rc.d/rc0.d/K90sysklogd
+	rm -rf ${EXTDIR}/rc.d/rc1.d/K90sysklogd
+	rm -rf ${EXTDIR}/rc.d/rc2.d/K90sysklogd
+	rm -rf ${EXTDIR}/rc.d/rc3.d/S10sysklogd
+	rm -rf ${EXTDIR}/rc.d/rc4.d/S10sysklogd
+	rm -rf ${EXTDIR}/rc.d/rc5.d/S10sysklogd
+	rm -rf ${EXTDIR}/rc.d/rc6.d/K90sysklogd
+	
+	
+uninstall: slng-stop
+	ln -sf ../init.d/sysklogd   ${EXTDIR}/rc.d/rc0.d/K90sysklogd
+	ln -sf ../init.d/sysklogd   ${EXTDIR}/rc.d/rc1.d/K90sysklogd
+	ln -sf ../init.d/sysklogd   ${EXTDIR}/rc.d/rc2.d/K90sysklogd
+	ln -sf ../init.d/sysklogd   ${EXTDIR}/rc.d/rc3.d/S10sysklogd
+	ln -sf ../init.d/sysklogd   ${EXTDIR}/rc.d/rc4.d/S10sysklogd
+	ln -sf ../init.d/sysklogd   ${EXTDIR}/rc.d/rc5.d/S10sysklogd
+	ln -sf ../init.d/sysklogd   ${EXTDIR}/rc.d/rc6.d/K90sysklogd
+	
+	rm -rf ${EXTDIR}/rc.d/rc0.d/K90syslog-ng
+	rm -rf ${EXTDIR}/rc.d/rc1.d/K90syslog-ng
+	rm -rf ${EXTDIR}/rc.d/rc2.d/K90syslog-ng
+	rm -rf ${EXTDIR}/rc.d/rc3.d/S10syslog-ng
+	rm -rf ${EXTDIR}/rc.d/rc4.d/S10syslog-ng
+	rm -rf ${EXTDIR}/rc.d/rc5.d/S10syslog-ng
+	rm -rf ${EXTDIR}/rc.d/rc6.d/K90syslog-ng
+	
+	rm -rf ${EXTDIR}/rc.d/init.d/syslog-ng
+
+sysklogd-stop:
+	${EXTDIR}/rc.d/init.d/sysklogd stop || true
+	
+sysklogd-start:
+	${EXTDIR}/rc.d/init.d/sysklogd start || true
+	
+slng-stop:
+	${EXTDIR}/rc.d/init.d/syslog-ng stop || true
+	
+slng-start:
+	${EXTDIR}/rc.d/init.d/syslog-ng start || true
+	
+.PHONY: all create-dirs install \
+	slng-stop slng-start \
+	sysklogd-stop sysklogd-start 
+

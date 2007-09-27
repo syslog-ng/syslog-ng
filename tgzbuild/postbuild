@@ -25,8 +25,8 @@ case "$ostype" in
     mkdir -p $1/syslog-ng/doc/contrib
     cp -a contrib/fedora-packaging $1/syslog-ng/doc/contrib/fedora
     cp -a contrib/rhel-packaging $1/syslog-ng/doc/contrib/redhat-el
+    cp -a  contrib/lfs-packaging $1/syslog-ng/doc/contrib/lfs
     cp -a \
-       contrib/syslog-ng.init.lfs \
        contrib/syslog-ng.conf.RedHat \
        $1/syslog-ng/doc/contrib
     gzip -c -9 doc/reference/syslog-ng.txt > $1/syslog-ng/doc/syslog-ng.txt.gz
