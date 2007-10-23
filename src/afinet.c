@@ -87,7 +87,7 @@ afinet_set_port(GSockAddr *addr, gchar *service, gchar *proto)
 }
 
 static void
-afinet_resolve_name(GSockAddr *addr, gchar *name)
+afinet_resolve_name(GSockAddr **addr, gchar *name)
 {
   if (addr)
     { 
@@ -96,21 +96,21 @@ afinet_resolve_name(GSockAddr *addr, gchar *name)
       struct addrinfo *res;
 
       memset(&hints, 0, sizeof(hints));
-      hints.ai_family = addr->sa.sa_family;
+      hints.ai_family = (*addr)->sa.sa_family;
       hints.ai_socktype = 0;
       hints.ai_protocol = 0;
       
       if (getaddrinfo(name, NULL, &hints, &res) == 0)
         {
           /* we only use the first entry in the returned list */
-          switch (addr->sa.sa_family)
+          switch ((*addr)->sa.sa_family)
             {
             case AF_INET:
-              g_sockaddr_inet_set_address(addr, ((struct sockaddr_in *) res->ai_addr)->sin_addr);
+              g_sockaddr_inet_set_address((*addr), ((struct sockaddr_in *) res->ai_addr)->sin_addr);
               break;
 #if ENABLE_IPV6
             case AF_INET6:
-              g_sockaddr_inet6_set_address(addr, &((struct sockaddr_in6 *) res->ai_addr)->sin6_addr);
+              g_sockaddr_inet6_set_address((*addr), &((struct sockaddr_in6 *) res->ai_addr)->sin6_addr);
               break;
 #endif
             default: 
@@ -121,7 +121,10 @@ afinet_resolve_name(GSockAddr *addr, gchar *name)
         }
       else
         {
-          msg_error("Error resolving hostname, using wildcard address", evt_tag_str("host", name), NULL);
+          msg_error("Error resolving hostname", evt_tag_str("host", name), NULL);
+          g_sockaddr_unref(*addr);
+          *addr = NULL;
+          return;
         }
 #else
       struct hostent *he;
@@ -129,10 +132,10 @@ afinet_resolve_name(GSockAddr *addr, gchar *name)
       he = gethostbyname(name);
       if (he)
         {
-          switch (addr->sa.sa_family)
+          switch ((*addr)->sa.sa_family)
             {
             case AF_INET:
-              g_sockaddr_inet_set_address(addr, *(struct in_addr *) he->h_addr);
+              g_sockaddr_inet_set_address((*addr), *(struct in_addr *) he->h_addr);
               break;
             default: 
               g_assert_not_reached();
@@ -142,7 +145,9 @@ afinet_resolve_name(GSockAddr *addr, gchar *name)
         }
       else
         {
-          msg_error("Error resolving hostname, using wildcard address", evt_tag_str("host", name), NULL);
+          msg_error("Error resolving hostname", evt_tag_str("host", name), NULL);
+          g_sockaddr_unref(*addr);
+          *addr = NULL;
         }
 #endif
     }
@@ -236,7 +241,7 @@ afinet_sd_set_localip(LogDriver *s, gchar *ip)
 {
   AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
   
-  afinet_resolve_name(self->bind_addr, ip);
+  afinet_resolve_name(&self->bind_addr, ip);
 }
 
 static gboolean
@@ -268,7 +273,7 @@ afinet_sd_new(gint af, gchar *host, gint port, guint flags)
       g_assert_not_reached();
 #endif
     }
-  afinet_resolve_name(self->super.bind_addr, host);
+  afinet_resolve_name(&self->super.bind_addr, host);
   self->super.setup_socket = afinet_sd_setup_socket;
     
   return &self->super.super;
@@ -297,7 +302,7 @@ afinet_dd_set_localip(LogDriver *s, gchar *ip)
 {
   AFInetDestDriver *self = (AFInetDestDriver *) s;
   
-  afinet_resolve_name(self->super.bind_addr, ip);
+  afinet_resolve_name(&self->super.bind_addr, ip);
 }
 
 void 
@@ -345,6 +350,7 @@ afinet_dd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
         }
     }
 #endif
+  
   return success;
 }
 
@@ -535,7 +541,7 @@ afinet_dd_new(gint af, gchar *host, gint port, guint flags)
       g_assert_not_reached();
 #endif
     }
-  afinet_resolve_name(self->super.dest_addr, host);
+  afinet_resolve_name(&self->super.dest_addr, host);
   self->super.setup_socket = afinet_dd_setup_socket;
   return &self->super.super;
 }
