@@ -173,7 +173,8 @@ log_template_free(LogTemplate *self)
 
       e = self->compiled_template->data;
       self->compiled_template = g_list_delete_link(self->compiled_template, self->compiled_template);
-      g_string_free(e->text, TRUE);
+      if (e->text)
+        g_string_free(e->text, TRUE);
       g_free(e);
     }
 
