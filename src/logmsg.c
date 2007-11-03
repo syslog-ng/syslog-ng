@@ -291,7 +291,6 @@ log_msg_parse(LogMessage *self, gchar *data, gint length, guint flags, regex_t *
       /* NOTE: no timezone information in the message, assume it is local time */
       self->stamp.time.tv_sec = mktime(&tm);
       self->stamp.time.tv_usec = 0;
-      self->stamp.zone_offset = get_local_timezone_ofs(self->stamp.time.tv_sec); /* assume local timezone */
       
     }
   else if (left >= 15 && src[3] == ' ' && src[6] == ' ' && src[9] == ':' && src[12] == ':')
@@ -340,8 +339,10 @@ log_msg_parse(LogMessage *self, gchar *data, gint length, guint flags, regex_t *
       /* NOTE: no timezone information in the message, assume it is local time */
       self->stamp.time.tv_sec = mktime(&tm);
       self->stamp.time.tv_usec = usec;
-      self->stamp.zone_offset = get_local_timezone_ofs(self->stamp.time.tv_sec); /* assume local timezone */
     }
+    
+  if (self->stamp.zone_offset == -1)
+    self->stamp.zone_offset = get_local_timezone_ofs(self->stamp.time.tv_sec); /* assume local timezone */
     
   if (self->date.len)
     {
@@ -595,7 +596,8 @@ log_msg_init(LogMessage *self, GSockAddr *saddr)
   self->ref_cnt = 1;
   gettimeofday(&self->recvd.time, NULL);
   self->recvd.zone_offset = get_local_timezone_ofs(self->recvd.time.tv_sec);
-  self->stamp = self->recvd;
+  self->stamp.time = self->recvd.time;
+  self->stamp.zone_offset = -1;
   log_msg_init_string(&self->date, 16);
   log_msg_init_string(&self->host, 32);
   log_msg_init_string(&self->host_from, 32);
