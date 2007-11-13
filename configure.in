@@ -320,6 +320,30 @@ blb_cv_static_glib=yes,
 blb_cv_static_glib=no)])
 LIBS=$old_LIBS
 
+old_CPPFLAGS=$CPPFLAGS
+CPPFLAGS="$GLIB_CFLAGS"
+
+AC_CACHE_CHECK(sanity checking Glib headers,
+               blb_cv_glib_sane,
+[AC_TRY_RUN([
+#include <glib.h>
+
+int main()
+{
+  if (sizeof(long) != GLIB_SIZEOF_LONG)
+    return 1;
+  return 0;
+}
+],
+blb_cv_glib_sane=yes,
+blb_cv_glib_sane=no,
+blb_cv_glib_sane=yes)])
+CPPFLAGS=$old_CPPFLAGS
+
+if test "x$blb_cv_glib_sane" = "xno"; then
+	AC_MSG_ERROR([Glib headers inconsistent with current compiler setting. You might be using 32 bit Glib with a 64 bit compiler, check PKG_CONFIG_PATH])
+fi
+
 if test "x$enable_dynamic_linking" = "xyes" -a "x$enable_static_linking" = "xyes"; then
 	AC_MSG_ERROR([You cannot specify dynamic and static linking at the same time.])
 fi
