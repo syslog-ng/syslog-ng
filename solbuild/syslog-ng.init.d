@@ -13,7 +13,8 @@ DAEMON=/opt/syslog-ng/sbin/syslog-ng
 CONFFILE=/opt/syslog-ng/etc/syslog-ng.conf
 OPTIONS="-f $CONFFILE"
 PIDFILE="/var/run/syslog-ng.pid"
-LD_LIBRARY_PATH=
+# This LD_LIBRARY_PATH setting is required to access libdbi8
+LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 
 case "$1" in
 	start)
