@@ -356,10 +356,13 @@ dnl ***************************************************************************
 dnl export values
 
 
-CFLAGS="${CFLAGS} -Wall -g"
-if test "x$enable_debug" = "xyes"; then
-	CFLAGS="-Wall -g"
+if test "x$ac_compiler_gnu" = "xyes"; then
+        CFLAGS="${CFLAGS} -Wall"
+        if test "x$enable_debug" = "xyes"; then
+                CFLAGS="-Wall -g"
+        fi
 fi
+
 
 DEPS_CPPFLAGS="$CPPFLAGS $GLIB_CFLAGS $EVTLOG_CFLAGS $LIBNET_CFLAGS"
 CPPFLAGS="$DEPS_CPPFLAGS -D_GNU_SOURCE -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64"
