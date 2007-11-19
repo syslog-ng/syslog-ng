@@ -693,6 +693,9 @@ afsocket_dd_format_stats_name(AFSocketDestDriver *self)
     case AF_INET:
       driver_name = !!(self->flags & AFSOCKET_STREAM) ? "tcp" : "udp";
       break;
+    case AF_INET6:
+      driver_name = !!(self->flags & AFSOCKET_STREAM) ? "tcp6" : "udp6";
+      break;    
     }
   
   g_snprintf(stats_name, sizeof(stats_name), "%s(%s)", 
