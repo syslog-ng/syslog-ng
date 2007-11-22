@@ -208,8 +208,10 @@ log_msg_parse(LogMessage *self, gchar *data, gint length, guint flags, regex_t *
       self->stamp.time.tv_usec = 0;
       
       p = memchr(src, ' ', left);
-      
-      stamp_length = (p - src);
+      if (p)
+        stamp_length = (p - src);
+      else
+        stamp_length = left;
       
       g_string_assign_len(&self->date, src, stamp_length);
       

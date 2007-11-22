@@ -198,6 +198,24 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            "%bzorp openvpn[2499]: PTHREAD support initialized" // msg
            );
 
+  testcase("<7>2006-10-29T02:00:00.156+01:00 ", 0, NULL,
+           7, 			// pri
+           1162083600, 156000, 3600,	// timestamp (sec/usec/zone)
+           NULL,                // originally formatted timestamp
+           "",	        	// host
+           "",		// openvpn
+           "" // msg
+           );
+
+  testcase("<7>2006-10-29T02:00:00.156+01:00", 0, NULL,
+           7, 			// pri
+           1162083600, 156000, 3600,	// timestamp (sec/usec/zone)
+           NULL,                // originally formatted timestamp
+           "",	        	// host
+           "",		// openvpn
+           "" // msg
+           );
+
   testcase("<7>2006-10-29T02:00:00.156+01:00 ctld snmpd[2499]: PTHREAD support initialized", 0, "^ctld",
            7, 			// pri
            1162083600, 156000, 3600,	// timestamp (sec/usec/zone)
