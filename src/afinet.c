@@ -110,7 +110,7 @@ afinet_resolve_name(GSockAddr **addr, gchar *name)
               break;
 #if ENABLE_IPV6
             case AF_INET6:
-              g_sockaddr_inet6_set_address((*addr), &((struct sockaddr_in6 *) res->ai_addr)->sin6_addr);
+              *g_sockaddr_inet6_get_sa((*addr)) = *((struct sockaddr_in6 *) res->ai_addr);
               break;
 #endif
             default: 

@@ -167,10 +167,10 @@ g_sockaddr_inet6_get_address(GSockAddr *s)
 
 /**
  * g_sockaddr_inet6_set_address:
- * @s: GSockAddrInet instance
+ * @s: GSockAddrInet6 instance
  * @addr: new address
  *
- * This GSockAddrInet specific function returns the address part of the
+ * This GSockAddrInet specific function sets the address part of the
  * address.
  **/
 static inline void
