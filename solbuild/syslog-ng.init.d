@@ -10,7 +10,7 @@
 #
 
 DAEMON=/opt/syslog-ng/sbin/syslog-ng
-CONFFILE=/opt/syslog-ng/etc/syslog-ng/syslog-ng.conf
+CONFFILE=/opt/syslog-ng/etc/syslog-ng.conf
 OPTIONS="-f $CONFFILE"
 PIDFILE="/var/run/syslog-ng.pid"
 LD_LIBRARY_PATH=
