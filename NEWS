@@ -1,30 +1,31 @@
 2.0.6
-	Tue, 27 Nov 2007 10:35:27 +0100
+         Tue, 27 Nov 2007 10:35:27 +0100
 
-	IMPORTANT NOTES:
-	* There are two possible Denial of Service fixes in this version of
-	  syslog-ng, therefore it is strongly recommended to upgrade to this
-	  release.
+         IMPORTANT NOTES:
+         * There are two possible Denial of Service fixes in this version of
+           syslog-ng, therefore it is strongly recommended to upgrade to this
+           version.
 
-	Bugfixes:
-	* HP-UX related build and runtime fixes, backported from the Premium
-	  Edition.
-	* Fail initialization of the TCP/UDP destination drivers if the name
-	  of the target host cannot be resolved.
-	* Corrected program name parsing in incoming messages.
-	* Fixed a problem in handling messages which lack explicit timezone
-	  information, but the administrator specifies it.
-	* Fixed some minor memory leaks in configuration reloads.
-	* Fixed a segmentation fault which occurs when the timestamp of
- 	  incoming messages do not end in a space character (NULL pointer
-	  dereference). This is an easy Denial of Service possibility.
-	* Fixed a segmentation fault which occurs when the PID macro is used
-	  and the message has a closing bracket (']') before an opening
-	  bracket ('[').
-	* Fixed a possible segmentation fault for UDP6/TCP6 destinations.
-	* Fixed IPv6 scope id resolution for link-local addresses.
-	* Solaris related fixes.
-
+         Bugfixes:
+         * HP-UX related build and runtime fixes, backported from the Premium
+           Edition.
+         * If unable to resolve the name of the target host, syslog-ng failed
+           to initialize the TCP/UDP destination drivers.
+           This behavior has been corrected.
+         * Corrected program name parsing in incoming messages.
+         * Fixed a problem in handling messages which lacked explicit timezone
+           information, but the administrator specified a timezone for the
+           messages.
+         * Fixed some minor memory leaks in configuration reloads.
+         * Fixed a segmentation fault which occurred when the timestamp of the
+           incoming messages did not end with a space character (NULL pointer
+           dereference). This is an easy Denial of Service possibility.
+         * Fixed a segmentation fault which occurred when the PID macro was used
+           and the message had a closing bracket (']') before an opening
+           bracket ('[').
+         * Fixed a possible segmentation fault for UDP6/TCP6 destinations.
+         * Fixed IPv6 scope id resolution for link-local addresses.
+         * Solaris related fixes.
 
 2.0.5
 	Sun, 22 Jul 2007 15:15:18 +0200
