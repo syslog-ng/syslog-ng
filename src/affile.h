@@ -45,11 +45,13 @@ typedef struct _AFFileSourceDriver
 
 LogDriver *affile_sd_new(gchar *filename, guint32 flags);
 
+typedef struct _AFFileDestWriter AFFileDestWriter;
+
 typedef struct _AFFileDestDriver
 {
   LogDriver super;
   LogTemplate *filename_template;
-  LogPipe *writer;
+  AFFileDestWriter *writer;
   guint32 flags;
   uid_t file_uid;
   gid_t file_gid;

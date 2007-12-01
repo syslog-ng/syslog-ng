@@ -439,6 +439,13 @@ log_writer_reopen(LogPipe *s, FDWrite *newfd)
   return TRUE;
 }
 
+void
+log_writer_set_options(LogWriter *self, LogWriterOptions *options)
+{
+  self->options = options;
+}
+
+
 LogPipe *
 log_writer_new(guint32 flags, LogPipe *control, LogWriterOptions *options)
 {

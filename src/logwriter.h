@@ -81,6 +81,7 @@ typedef struct _LogWriter
   LogWriterOptions *options;
 } LogWriter;
 
+void log_writer_set_options(LogWriter *self, LogWriterOptions *options);
 void log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result);
 gboolean log_writer_reopen(LogPipe *s, FDWrite *fd);
 LogPipe *log_writer_new(guint32 flags, LogPipe *control, LogWriterOptions *options);

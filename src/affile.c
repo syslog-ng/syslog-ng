@@ -163,8 +163,6 @@ affile_sd_notify(LogPipe *s, LogPipe *sender, gint notify_code, gpointer user_da
     }
 }
 
-
-
 static gboolean
 affile_sd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
 {
@@ -283,7 +281,7 @@ affile_sd_new(gchar *filename, guint32 flags)
 }
 
 
-typedef struct _AFFileDestWriter
+struct _AFFileDestWriter
 {
   LogPipe super;
   AFFileDestDriver *owner;
@@ -292,7 +290,13 @@ typedef struct _AFFileDestWriter
   time_t last_msg_stamp;
   time_t last_open_stamp;
   time_t time_reopen;
-} AFFileDestWriter;
+};
+
+static gboolean
+affile_dw_reapable(AFFileDestWriter *self)
+{
+  return ((LogWriter *) self->writer)->queue->length == 0;
+}
 
 static gboolean
 affile_dw_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
@@ -392,6 +396,18 @@ affile_dw_queue(LogPipe *s, LogMessage *lm, gint path_flags)
 }
 
 static void
+affile_dw_set_owner(AFFileDestWriter *self, AFFileDestDriver *owner)
+{
+  if (self->owner)
+    log_pipe_unref(&self->owner->super.super);
+  log_pipe_ref(&owner->super.super);
+  self->owner = owner;
+  if (self->writer)
+    log_writer_set_options((LogWriter *) self->writer, &owner->writer_options);
+  
+}
+
+static void
 affile_dw_free(LogPipe *s)
 {
   AFFileDestWriter *self = (AFFileDestWriter *) s;
@@ -402,7 +418,7 @@ affile_dw_free(LogPipe *s)
   g_free(s);
 }
 
-static LogPipe *
+static AFFileDestWriter *
 affile_dw_new(AFFileDestDriver *owner, GString *filename)
 {
   AFFileDestWriter *self = g_new0(AFFileDestWriter, 1);
@@ -420,7 +436,7 @@ affile_dw_new(AFFileDestDriver *owner, GString *filename)
   /* we have to take care about freeing filename later. 
      This avoids a move of the filename. */
   self->filename = filename;
-  return &self->super;
+  return self;
 }
 
 void 
@@ -518,11 +534,19 @@ void
 affile_dd_set_fsync(LogDriver *s, gboolean fsync)
 {
   AFFileDestDriver *self = (AFFileDestDriver *) s;
-  
   if (fsync)
     self->flags |= AFFILE_FSYNC;
   else
     self->flags &= ~AFFILE_FSYNC;
+}
+
+static inline gchar *
+affile_dd_format_persist_name(AFFileDestDriver *self)
+{
+  static gchar persist_name[1024];
+
+  g_snprintf(persist_name, sizeof(persist_name), "affile_dd_writers(%s)", self->filename_template->template->str);
+  return persist_name;
 }
 
 static const gchar *
@@ -544,7 +568,7 @@ affile_dd_reap_writers(gpointer key, gpointer value, gpointer user_data)
   AFFileDestDriver *self = (AFFileDestDriver *) user_data;
   AFFileDestWriter *dw = (AFFileDestWriter *) value;
   
-  if ((reap_now - dw->last_msg_stamp) >= self->time_reap)
+  if ((reap_now - dw->last_msg_stamp) >= self->time_reap && affile_dw_reapable(dw))
     {
       msg_verbose("Destination timed out, reaping", 
                   evt_tag_str("template", self->filename_template->template->str),
@@ -572,6 +596,25 @@ affile_dd_reap(gpointer s)
     g_hash_table_foreach_remove(self->writer_hash, affile_dd_reap_writers, self);
   return TRUE;
 }
+
+/**
+ * affile_dd_reuse_writer:
+ *
+ * This function is called as a g_hash_table_foreach() callback to set the
+ * owner of each writer, previously connected to an AFileDestDriver instance
+ * in an earlier configuration. This way AFFileDestWriter instances are
+ * remembered accross reloads.
+ * 
+ **/
+static void
+affile_dd_reuse_writer(gpointer key, gpointer value, gpointer user_data)
+{
+  AFFileDestDriver *self = (AFFileDestDriver *) user_data;
+  AFFileDestWriter *writer = (AFFileDestWriter *) value;
+  
+  affile_dw_set_owner(writer, self);
+}
+
 
 static gboolean
 affile_dd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
@@ -607,19 +650,57 @@ affile_dd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
   if ((self->flags & AFFILE_NO_EXPAND) == 0)
     {
       self->reap_timer = g_timeout_add_full(G_PRIORITY_LOW, self->time_reap * 1000 / 2, affile_dd_reap, self, NULL);
+      self->writer_hash = persist_config_fetch(persist, affile_dd_format_persist_name(self));
+      if (self->writer_hash)
+        g_hash_table_foreach(self->writer_hash, affile_dd_reuse_writer, self);
     }
+  else
+    {
+      self->writer = persist_config_fetch(persist, affile_dd_format_persist_name(self));
+      affile_dw_set_owner(self->writer, self);
+    }
+  
+  
   return TRUE;
 }
 
-static gboolean
-affile_dd_remove_writers(gpointer key, gpointer value, gpointer user_data)
+
+/**
+ * This is registered as a destroy-notify callback for an AFFileDestWriter
+ * instance. It destructs and frees the writer instance.
+ **/
+static void
+affile_dd_destroy_writer(gpointer value)
 {
-  AFFileDestDriver *self = (AFFileDestDriver *) user_data;
-  LogPipe *writer = (LogPipe *) value;
-  
-  log_pipe_deinit(writer, self->cfg, NULL);
-  log_pipe_unref(writer);
+  AFFileDestWriter *writer = (AFFileDestWriter *) value;
+  log_pipe_deinit(&writer->super, NULL, NULL);
+  log_pipe_unref(&writer->super);
+}
+
+/*
+ * This function is called as a g_hash_table_foreach_remove() callback to
+ * free the specific AFFileDestWriter instance in the hashtable.
+ */
+static gboolean
+affile_dd_destroy_writer_hr(gpointer key, gpointer value, gpointer user_data)
+{
+  affile_dd_destroy_writer(value);
   return TRUE;
+}
+
+/**
+ * affile_dd_destroy_writer_hash:
+ * @value: GHashTable instance passed as a generic pointer
+ *
+ * Destroy notify callback for the GHashTable storing AFFileDestWriter instances.
+ **/
+static void
+affile_dd_destroy_writer_hash(gpointer value)
+{
+  GHashTable *writer_hash = (GHashTable *) value;
+  
+  g_hash_table_foreach_remove(writer_hash, affile_dd_destroy_writer_hr, NULL);
+  g_hash_table_destroy(writer_hash);
 }
 
 static gboolean
@@ -627,10 +708,21 @@ affile_dd_deinit(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
 {
   AFFileDestDriver *self = (AFFileDestDriver *) s;
 
+  /* writer & writer_hash cannot be non-NULL at the same time */
   if (self->writer)
-    log_pipe_deinit(self->writer, cfg, NULL);
-  if (self->writer_hash)
-    g_hash_table_foreach_remove(self->writer_hash, affile_dd_remove_writers, self);
+    {
+      g_assert(self->writer_hash == NULL);
+
+      persist_config_add(persist, affile_dd_format_persist_name(self), self->writer, affile_dd_destroy_writer);
+      self->writer = NULL;
+    }
+  else if (self->writer_hash)
+    {
+      g_assert(self->writer == NULL);
+      
+      persist_config_add(persist, affile_dd_format_persist_name(self), self->writer_hash, affile_dd_destroy_writer_hash);
+      self->writer_hash = NULL;
+    }
   if (self->reap_timer)
     g_source_remove(self->reap_timer);
   self->cfg = NULL;
@@ -641,20 +733,20 @@ static void
 affile_dd_queue(LogPipe *s, LogMessage *msg, gint path_flags)
 {
   AFFileDestDriver *self = (AFFileDestDriver *) s;
-  LogPipe *next;
+  AFFileDestWriter *next;
 
   if (self->flags & AFFILE_NO_EXPAND)
     {
       if (!self->writer)
 	{
 	  next = affile_dw_new(self, g_string_new(self->filename_template->template->str));
-	  if (next && log_pipe_init(next, self->cfg, NULL))
+	  if (next && log_pipe_init(&next->super, self->cfg, NULL))
 	    {
 	      self->writer = next;
 	    }
 	  else
 	    {
-	      log_pipe_unref(next);
+	      log_pipe_unref(&next->super);
 	      next = NULL;
 	    }
 	}
@@ -682,9 +774,9 @@ affile_dd_queue(LogPipe *s, LogMessage *msg, gint path_flags)
       if (!next)
 	{
 	  next = affile_dw_new(self, filename);
-	  if (!log_pipe_init(next, self->cfg, NULL))
+	  if (!log_pipe_init(&next->super, self->cfg, NULL))
 	    {
-	      log_pipe_unref(next);
+	      log_pipe_unref(&next->super);
 	      next = NULL;
 	    }
 	  else
@@ -694,7 +786,7 @@ affile_dd_queue(LogPipe *s, LogMessage *msg, gint path_flags)
         g_string_free(filename, TRUE);
     }
   if (next)
-    log_pipe_queue(next, msg, path_flags);
+    log_pipe_queue(&next->super, msg, path_flags);
   else
     log_msg_drop(msg, path_flags);
 }
@@ -704,10 +796,10 @@ affile_dd_free(LogPipe *s)
 {
   AFFileDestDriver *self = (AFFileDestDriver *) s;
   
+  /* NOTE: this must be NULL as deinit has freed it, otherwise we'd have circular references */
+  g_assert(self->writer == NULL && self->writer_hash == NULL);
+  
   log_template_unref(self->filename_template);
-  log_pipe_unref(self->writer);
-  if (self->writer_hash)
-    g_hash_table_destroy(self->writer_hash);
   log_writer_options_destroy(&self->writer_options);
   log_drv_free_instance(&self->super);
   g_free(self);
