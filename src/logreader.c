@@ -92,6 +92,9 @@ log_reader_fd_check(GSource *source)
 {
   LogReaderWatch *self = (LogReaderWatch *) source;
 
+  if (!log_source_free_to_send(&self->reader->super))
+    return FALSE;
+
   if (self->reader->flags & LR_COMPLETE_LINE)
     return TRUE;
   
