@@ -601,12 +601,13 @@ typedef struct _GSockAddrUnix
 } GSockAddrUnix;
 
 static GIOStatus g_sockaddr_unix_bind_prepare(int sock, GSockAddr *addr);
+static GIOStatus g_sockaddr_unix_bind(int sock, GSockAddr *addr);
 static gchar *g_sockaddr_unix_format(GSockAddr *addr, gchar *text, gulong n);
 
 static GSockAddrFuncs unix_sockaddr_funcs = 
 {
   g_sockaddr_unix_bind_prepare,
-  NULL,
+  g_sockaddr_unix_bind,
   g_sockaddr_unix_format
 };
 
@@ -688,6 +689,26 @@ g_sockaddr_unix_bind_prepare(int sock, GSockAddr *addr)
     return G_IO_STATUS_NORMAL;
   
   unlink(unix_addr->saun.sun_path);  
+  return G_IO_STATUS_NORMAL;
+}
+
+/**
+ * Virtual bind callback for UNIX domain sockets. Avoids binding if the
+ * length of the UNIX domain socket filename is zero.
+ **/
+static GIOStatus 
+g_sockaddr_unix_bind(int sock, GSockAddr *addr)
+{
+  GSockAddrUnix *unix_addr = (GSockAddrUnix *) addr;
+
+  if (unix_addr->saun.sun_path[0] == 0)
+    return G_IO_STATUS_NORMAL;
+    
+  if (bind(sock, &addr->sa, addr->salen) < 0)
+    {
+      return G_IO_STATUS_ERROR;
+    }
+  
   return G_IO_STATUS_NORMAL;
 }
 
