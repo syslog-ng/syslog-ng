@@ -62,6 +62,7 @@ typedef struct _LogWriterOptions
   LogTemplate *proto_template;
   
   gboolean use_time_recvd; /* deprecated */
+  gboolean fsync;
   gshort ts_format;
   glong zone_offset;
   gshort frac_digits;

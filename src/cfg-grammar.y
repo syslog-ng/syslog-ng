@@ -508,6 +508,7 @@ dest_affile_option
 	| KW_DIR_PERM '(' NUMBER ')'		{ affile_dd_set_dir_perm(last_driver, $3); }
 	| KW_CREATE_DIRS '(' yesno ')'		{ affile_dd_set_create_dirs(last_driver, $3); }
 	| KW_OVERWRITE_IF_OLDER '(' NUMBER ')'	{ affile_dd_set_overwrite_if_older(last_driver, $3); }
+	| KW_FSYNC '(' yesno ')'		{ affile_dd_set_fsync(last_driver, $3); }
 	;
 
 dest_afpipe
@@ -681,7 +682,6 @@ dest_writer_option
 	                                          free($3);
 	                                        }
 	| KW_TEMPLATE_ESCAPE '(' yesno ')'	{ log_writer_options_set_template_escape(last_writer_options, $3); }
-	| KW_FSYNC '(' yesno ')'		{ msg_error("fsync() does not work yet", NULL); }
 	| KW_TIME_ZONE '(' string ')'           { cfg_timezone_value($3, &last_writer_options->zone_offset); free($3); }
 	| KW_TS_FORMAT '(' string ')'		{ last_writer_options->ts_format = cfg_ts_format_value($3); free($3); }
 	| KW_FRAC_DIGITS '(' NUMBER ')'		{ last_writer_options->frac_digits = $3; }

@@ -31,6 +31,7 @@ typedef struct _FDWrite
 {
   gint fd;
   GIOCondition cond;
+  gboolean fsync;
   size_t (*write)(struct _FDWrite *, const void *buf, size_t count);
 } FDWrite;
 

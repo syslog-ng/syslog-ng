@@ -316,6 +316,8 @@ affile_dw_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
                        self->owner->dir_uid, self->owner->dir_gid, self->owner->dir_perm, 
                        !!(self->owner->flags & AFFILE_CREATE_DIRS), &fd))
     {
+      FDWrite *fdw;
+      
       self->writer = log_writer_new(LW_FORMAT_FILE, s, &self->owner->writer_options);
         
       if (!log_pipe_init(self->writer, NULL, NULL))
@@ -326,7 +328,10 @@ affile_dw_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
           close(fd);
           return FALSE;
         }
-      log_writer_reopen(self->writer, fd_write_new(fd));
+      fdw = fd_write_new(fd);
+      if (self->owner->flags & AFFILE_FSYNC)
+        fdw->fsync = TRUE;
+      log_writer_reopen(self->writer, fdw);
       log_pipe_append(&self->super, self->writer);
     }
   else
@@ -492,6 +497,17 @@ affile_dd_set_overwrite_if_older(LogDriver *s, gint overwrite_if_older)
   AFFileDestDriver *self = (AFFileDestDriver *) s;
   
   self->overwrite_if_older = overwrite_if_older;
+}
+
+void 
+affile_dd_set_fsync(LogDriver *s, gboolean fsync)
+{
+  AFFileDestDriver *self = (AFFileDestDriver *) s;
+  
+  if (fsync)
+    self->flags |= AFFILE_FSYNC;
+  else
+    self->flags &= ~AFFILE_FSYNC;
 }
 
 static const gchar *

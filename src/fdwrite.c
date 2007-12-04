@@ -34,6 +34,8 @@ fd_do_write(FDWrite *self, const void *buf, size_t buflen)
   do
     {
       rc = write(self->fd, buf, buflen);
+      if (self->fsync)
+        fsync(self->fd);
     }
   while (rc == -1 && errno == EINTR);
   return rc;
