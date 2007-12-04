@@ -73,6 +73,7 @@ static struct keyword keywords[] = {
 	{ "flow_control",	KW_FLOW_CONTROL },
 	{ "pad_size",		KW_PAD_SIZE },
 	{ "mark_freq",		KW_MARK_FREQ },
+	{ "mark",		KW_MARK_FREQ },    /* obsolete */
 	{ "stats_freq",		KW_STATS_FREQ },
 	{ "stats",		KW_STATS_FREQ },   /* obsolete */
 	{ "flush_lines", 	KW_FLUSH_LINES },
