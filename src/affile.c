@@ -657,7 +657,8 @@ affile_dd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
   else
     {
       self->writer = persist_config_fetch(persist, affile_dd_format_persist_name(self));
-      affile_dw_set_owner(self->writer, self);
+      if (self->writer)
+        affile_dw_set_owner(self->writer, self);
     }
   
   
