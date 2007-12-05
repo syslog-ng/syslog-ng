@@ -134,7 +134,7 @@ affile_sd_notify(LogPipe *s, LogPipe *sender, gint notify_code, gpointer user_da
         gint fd;
         
         msg_verbose("Follow-mode file source moved, tracking of the new file is started",
-                    evt_tag_str("file", self->filename->str),
+                    evt_tag_str("filename", self->filename->str),
                     NULL);
         
         log_pipe_deinit(self->reader, NULL, NULL);
@@ -170,17 +170,32 @@ affile_sd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
 {
   AFFileSourceDriver *self = (AFFileSourceDriver *) s;
   gint fd;
+  gboolean file_opened, open_deferred = FALSE;
 
   log_reader_options_init(&self->reader_options, cfg);
 
-  if (affile_sd_open_file(self, &fd))
+  file_opened = affile_sd_open_file(self, &fd);
+  if (!file_opened && self->reader_options.follow_freq > 0)
+    {
+      msg_info("Follow-mode file source not found, deferring open",
+	       evt_tag_str("filename", self->filename->str),
+	       NULL);
+      open_deferred = TRUE;
+      fd = -1;
+    }
+
+  if (file_opened || open_deferred)
     {
       self->reader = log_reader_new(fd_read_new(fd, 0), LR_LOCAL | LR_NOMREAD, s, &self->reader_options);
 
-      if (persist)
+      if (persist && file_opened)
         {
           gchar *str;
           off_t cur_pos;
+          
+          /* if the file could not be opened, we ignore the last remembered
+           * file position, if the file is created in the future we're going
+           * to read from the start. */
           
           str = persist_config_fetch(persist, affile_sd_format_persist_name(self));
           if (str)

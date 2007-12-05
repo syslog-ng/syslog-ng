@@ -103,29 +103,32 @@ log_reader_fd_check(GSource *source)
       struct stat st, followed_st;
       off_t pos;
       
-      pos = lseek(self->fd->fd, 0, SEEK_CUR);      
-      if (pos == (off_t) -1)
-        {
-          msg_error("Error invoking seek on followed file",
-                    evt_tag_errno("error", errno),
-                    NULL);
-          return FALSE;
-        }
+      if (self->fd->fd >= 0)
+	{
+	  pos = lseek(self->fd->fd, 0, SEEK_CUR);      
+	  if (pos == (off_t) -1)
+	    {
+	      msg_error("Error invoking seek on followed file",
+			evt_tag_errno("error", errno),
+			NULL);
+	      return FALSE;
+	    }
 
-      if (fstat(self->fd->fd, &st) < 0)
-        {
-          msg_error("Error invoking fstat() on followed file",
-                    evt_tag_errno("error", errno),
-                    NULL);
-          return FALSE;
-        }
+	  if (fstat(self->fd->fd, &st) < 0)
+	    {
+	      msg_error("Error invoking fstat() on followed file",
+			evt_tag_errno("error", errno),
+			NULL);
+	      return FALSE;
+	    }
       
-      if (pos < st.st_size)
-	return TRUE;
+	  if (pos < st.st_size)
+	    return TRUE;
+	} 
 
       if (self->reader->options->follow_filename && stat(self->reader->options->follow_filename, &followed_st) != -1)
         {
-          if (st.st_ino != followed_st.st_ino)
+          if (self->fd->fd < 0 || st.st_ino != followed_st.st_ino)
             {
               /* file was moved and we are at EOF, follow the new file */
               log_pipe_notify(self->reader->control, &self->reader->super.super, NC_FILE_MOVED, self);
