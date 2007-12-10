@@ -186,20 +186,23 @@ affile_sd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
     {
       self->reader = log_reader_new(fd_read_new(fd, 0), LR_LOCAL | LR_NOMREAD, s, &self->reader_options);
 
-      if (persist && file_opened)
+      if (persist)
         {
           gchar *str;
           off_t cur_pos;
           
-          /* if the file could not be opened, we ignore the last remembered
-           * file position, if the file is created in the future we're going
-           * to read from the start. */
-          
           str = persist_config_fetch(persist, affile_sd_format_persist_name(self));
           if (str)
             {
-              cur_pos = strtoll(str, NULL, 10);
-              log_reader_set_pos((LogReader *) self->reader, cur_pos);
+              /* if the file could not be opened, we ignore the last remembered
+               * file position, if the file is created in the future we're going
+               * to read from the start. */
+              
+              if (file_opened)
+                {
+                  cur_pos = strtoll(str, NULL, 10);
+                  log_reader_set_pos((LogReader *) self->reader, cur_pos);
+                }
               g_free(str);
             }
           
