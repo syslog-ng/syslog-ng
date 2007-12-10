@@ -317,6 +317,7 @@ main(int argc, char *argv[])
       { "user", required_argument, NULL, 'u' },
       { "group", required_argument, NULL, 'g' },
       { "stderr", no_argument, NULL, 'e' },
+      { "persist-file", required_argument, NULL, 'R' },
 #ifdef YYDEBUG
       { "yydebug", no_argument, NULL, 'y' },
 #endif
@@ -326,13 +327,14 @@ main(int argc, char *argv[])
   gboolean syntax_only = FALSE;
   gboolean log_to_stderr = FALSE;
   PersistentConfig *persist = NULL;
+  const gchar *persist_file = PATH_PERSIST_CONFIG;
   int opt, rc;
   
 
 #if HAVE_GETOPT_LONG
-  while ((opt = getopt_long(argc, argv, "sFf:p:dvhyVC:u:g:e", syslog_ng_options, NULL)) != -1)
+  while ((opt = getopt_long(argc, argv, "sFf:p:dvhyVC:u:g:eR:", syslog_ng_options, NULL)) != -1)
 #else
-  while ((opt = getopt(argc, argv, "sFf:p:dvhyVC:u:g:e")) != -1)
+  while ((opt = getopt(argc, argv, "sFf:p:dvhyVC:u:g:eR:")) != -1)
 #endif
     {
       switch (opt) 
@@ -378,6 +380,9 @@ main(int argc, char *argv[])
 	  yydebug = TRUE;
 	  break;
 #endif
+        case 'R':
+          persist_file = optarg;
+          break;
 	case 'h':
 	default:
 	  usage();
@@ -406,7 +411,7 @@ main(int argc, char *argv[])
     }
 
   persist = persist_config_new();
-  persist_config_load(persist);
+  persist_config_load(persist, persist_file);
 
   if (!cfg_init(cfg, persist))
     {
@@ -429,7 +434,7 @@ main(int argc, char *argv[])
   
   if (persist)
     {
-      persist_config_save(persist);
+      persist_config_save(persist, persist_file);
       persist_config_free(persist);
     }
 

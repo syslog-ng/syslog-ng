@@ -539,11 +539,11 @@ persist_config_save_value(gchar *key, PersistentConfigEntry *entry, FILE *persis
 }
 
 void
-persist_config_save(PersistentConfig *self)
+persist_config_save(PersistentConfig *self, const gchar *filename)
 {
   FILE *persist_file;
   
-  persist_file = fopen(PATH_PERSIST_CONFIG, "w");
+  persist_file = fopen(filename, "w");
   if (persist_file)
     {
       if (fwrite("SLP1", 1, 4, persist_file) < 0)
@@ -563,11 +563,11 @@ persist_config_save(PersistentConfig *self)
 }
 
 void
-persist_config_load(PersistentConfig *self)
+persist_config_load(PersistentConfig *self, const gchar *filename)
 {
   FILE *persist_file;
   
-  persist_file = fopen(PATH_PERSIST_CONFIG, "r");
+  persist_file = fopen(filename, "r");
   if (persist_file)
     {
       gchar magic[4];
