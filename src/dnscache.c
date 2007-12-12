@@ -190,6 +190,8 @@ dns_cache_check_hosts(void)
                 buf[len-1] = 0;
                 
               p = strtok(buf, " \t");
+              if (!p)
+                continue;
               ip = p;
 
 #if ENABLE_IPV6
@@ -200,6 +202,8 @@ dns_cache_check_hosts(void)
               family = AF_INET;
                 
               p = strtok(NULL, " \t");
+              if (!p)
+                continue;
               inet_pton(family, ip, &ia);
               dns_cache_store(TRUE, family, &ia, p);
             }
