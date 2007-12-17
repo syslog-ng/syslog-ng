@@ -264,6 +264,13 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            "",
            "%PIX-6-302014",
            "%PIX-6-302014: Teardown TCP connection 1688438 for bloomberg-net:1.2.3.4/8294 to inside:5.6.7.8/3639 duration 0:07:01 bytes 16975 TCP FINs");
+  testcase("<190>Apr 15 21:28:13 2007 linksys app: msg", 0, NULL,
+           190,
+           1176665293, 0, 7200,
+           "Apr 15 21:28:13 2007",
+           "linksys",
+           "app",
+           "app: msg");
   return 0;
 }
 

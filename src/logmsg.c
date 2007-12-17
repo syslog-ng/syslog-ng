@@ -295,6 +295,32 @@ log_msg_parse(LogMessage *self, gchar *data, gint length, guint flags, regex_t *
       self->stamp.time.tv_usec = 0;
       
     }
+  else if (left >= 20 && src[3] == ' ' && src[6] == ' ' && src[9] == ':' && src[12] == ':' && src[15] == ' ' && 
+           isdigit(src[16]) && isdigit(src[17]) && isdigit(src[18]) && isdigit(src[19]))
+    {
+      /* LinkSys timestamp, expected format: MMM DD HH:MM:SS YYYY */
+
+      struct tm tm, *nowtm;
+
+      /* Just read the buffer data into a textual
+         datestamp. */
+
+      g_string_assign_len(&self->date, src, 20);
+      src += 20;
+      left -= 20;
+
+      /* And also make struct time timestamp for the msg */
+
+      nowtm = localtime(&now);
+      tm = *nowtm;
+      strptime(self->date.str, "%b %e %H:%M:%S %Y", &tm);
+      tm.tm_isdst = -1;
+        
+      /* NOTE: no timezone information in the message, assume it is local time */
+      self->stamp.time.tv_sec = mktime(&tm);
+      self->stamp.time.tv_usec = 0;
+      
+    }
   else if (left >= 15 && src[3] == ' ' && src[6] == ' ' && src[9] == ':' && src[12] == ':')
     {
       /* RFC 3164 timestamp, expected format: MMM DD HH:MM:SS ... */
