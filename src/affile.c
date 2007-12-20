@@ -651,7 +651,7 @@ affile_dd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
   
   if ((self->flags & AFFILE_NO_EXPAND) == 0)
     {
-      self->reap_timer = g_timeout_add_full(G_PRIORITY_LOW, self->time_reap * 1000 / 2, affile_dd_reap, self, NULL);
+      self->reap_timer = g_timeout_add_full(G_PRIORITY_DEFAULT, self->time_reap * 1000 / 2, affile_dd_reap, self, NULL);
       self->writer_hash = persist_config_fetch(persist, affile_dd_format_persist_name(self));
       if (self->writer_hash)
         g_hash_table_foreach(self->writer_hash, affile_dd_reuse_writer, self);
