@@ -73,11 +73,12 @@ fd_read_new(gint fd, guint flags)
   self->cond = G_IO_IN;
   self->read = fd_do_read;
   self->flags = flags;
+  self->free_fn = fd_read_free_method;
   return self;
 }
 
 void
-fd_read_free(FDRead *self)
+fd_read_free_method(FDRead *self)
 {
   if ((self->flags & FR_DONTCLOSE) == 0)
     {
@@ -86,5 +87,11 @@ fd_read_free(FDRead *self)
                   NULL);
       close(self->fd);
     }
+}
+
+void
+fd_read_free(FDRead *self)
+{
+  self->free_fn(self);
   g_free(self);
 }

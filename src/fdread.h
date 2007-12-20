@@ -32,13 +32,16 @@
 #define FR_DONTCLOSE 0x0001
 #define FR_RECV      0x0002
 
-typedef struct _FDRead
+typedef struct _FDRead FDRead;
+
+struct _FDRead
 {
   gint fd;
   GIOCondition cond;
   guint flags;
-  size_t (*read)(struct _FDRead *, void *buf, size_t count, GSockAddr **sa);
-} FDRead;
+  size_t (*read)(FDRead *self, void *buf, size_t count, GSockAddr **sa);
+  void (*free_fn)(FDRead *self);
+};
 
 static inline ssize_t 
 fd_read(FDRead *s, void *buf, size_t count, GSockAddr **sa)
@@ -48,5 +51,7 @@ fd_read(FDRead *s, void *buf, size_t count, GSockAddr **sa)
 
 FDRead *fd_read_new(gint fd, guint flags);
 void fd_read_free(FDRead *self);
+
+void fd_read_free_method(FDRead *self);
 
 #endif

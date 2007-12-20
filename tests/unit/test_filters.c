@@ -2,6 +2,7 @@
 #include "syslog-names.h"
 #include "filter.h"
 #include "logmsg.h"
+#include "apphook.h"
 
 #include <time.h>
 #include <string.h>
@@ -77,7 +78,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 {
   gint i;
   
-  msg_init(1);
+  app_startup();
   
   testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, filter_facility_new(facility_bits("user")), 1);
   testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, filter_facility_new(facility_bits("daemon")), 0);
@@ -165,6 +166,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, fop_and_new(filter_match_new("^PTHREAD$"), filter_match_new(" PTHREAD ")), 0);
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, fop_and_new(filter_match_new(" PAD "), filter_match_new("^PTHREAD$")), 0);
 
+  app_shutdown();
   return 0;
 }
 

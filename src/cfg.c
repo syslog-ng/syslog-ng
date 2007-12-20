@@ -31,6 +31,7 @@
 #include "misc.h"
 #include "logmsg.h"
 #include "dnscache.h"
+#include "serialize.h"
 
 #include <stdio.h>
 #include <ctype.h>
@@ -491,50 +492,16 @@ persist_config_fetch(PersistentConfig *self, gchar *name)
   return res;
 }
 
-static gboolean
-persist_config_write_string(FILE *persist_file, gchar *str)
-{
-  guint32 length;
-  
-  length = htonl(strlen(str));
-  if (fwrite(&length, 1, sizeof(length), persist_file) == sizeof(length) &&
-      fwrite(str, 1, ntohl(length), persist_file) == ntohl(length))
-    {
-      return TRUE;
-    }
-  return FALSE;
-}
-
-static gboolean
-persist_config_read_string(FILE *persist_file, gchar **str)
-{
-  guint32 length;
-  
-  if (fread(&length, 1, sizeof(length), persist_file) != sizeof(length))
-    return FALSE;
-  length = ntohl(length);
-  if (length > 4096)
-    return FALSE;
-  *str = g_malloc(length + 1);
-  (*str)[length] = 0;
-  if (fread(*str, 1, length, persist_file) != length)
-    {
-      g_free(*str);
-      return FALSE;
-    }
-  return TRUE;
-}
-
 static void
-persist_config_save_value(gchar *key, PersistentConfigEntry *entry, FILE *persist_file)
+persist_config_save_value(gchar *key, PersistentConfigEntry *entry, SerializeArchive *sa)
 {
   if (entry->survive_across_restarts)
     {
       /* NOTE: we ignore errors here, as we cannot bail out from the
        * g_hash_table_foreach() loop anyway. */
       
-      persist_config_write_string(persist_file, key);
-      persist_config_write_string(persist_file, (gchar *) entry->value);
+      serialize_write_cstring(sa, key, -1);
+      serialize_write_cstring(sa, (gchar *) entry->value, -1);
     }
 }
 
@@ -546,12 +513,17 @@ persist_config_save(PersistentConfig *self, const gchar *filename)
   persist_file = fopen(filename, "w");
   if (persist_file)
     {
-      if (fwrite("SLP1", 1, 4, persist_file) < 0)
-        {
-          fclose(persist_file);
-          goto error;
-        }
-      g_hash_table_foreach(self->keys, (GHFunc) persist_config_save_value, persist_file);
+      SerializeArchive *sa;
+      
+      sa = serialize_file_archive_new(persist_file);
+      
+      serialize_write_blob(sa, "SLP2", 4);
+      g_hash_table_foreach(self->keys, (GHFunc) persist_config_save_value, sa);
+      serialize_write_cstring(sa, "", 0); /* EOF */
+      if (sa->error)
+        goto error;
+        
+      serialize_archive_free(sa);
       fclose(persist_file);
       return;
     }
@@ -572,22 +544,18 @@ persist_config_load(PersistentConfig *self, const gchar *filename)
     {
       gchar magic[4];
       gchar *key, *value;
+      SerializeArchive *sa;
       
-      if (fread(magic, 1, sizeof(magic), persist_file) != 4)
+      sa = serialize_file_archive_new(persist_file);
+      serialize_read_blob(sa, magic, 4);
+      if (memcmp(magic, "SLP2", 4) != 0)
         {
-          msg_error("Error loading persistent configuration file",
-                    evt_tag_str("name", PATH_PERSIST_CONFIG),
-                    NULL);
+          msg_error("Persistent configuration file is in invalid format, ignoring", NULL);
           goto close_and_exit;
         }
-      if (memcmp(magic, "SLP1", 4) != 0)
+      while (serialize_read_cstring(sa, &key, NULL))
         {
-          msg_error("Persistent configuration file is in invalid format", NULL);
-          goto close_and_exit;
-        }
-      while (persist_config_read_string(persist_file, &key))
-        {
-          if (persist_config_read_string(persist_file, &value))
+          if (key[0] && serialize_read_cstring(sa, &value, NULL))
             {
               /* add a non-surviving entry, thus each value is only
                * written/read once unless the code readds it, this is needed
@@ -603,6 +571,7 @@ persist_config_load(PersistentConfig *self, const gchar *filename)
           g_free(key);
         }
  close_and_exit:
+      serialize_archive_free(sa);
       fclose(persist_file);
     }
 }

@@ -18,15 +18,15 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  
  */
-
+  
 #include "logpipe.h"
 
 void
 log_pipe_init_instance(LogPipe *self)
 {
-  self->ref_cnt = 1;
+  g_atomic_counter_set(&self->ref_cnt, 1);
   self->pipe_next = NULL;
   self->queue = log_pipe_forward_msg;
 /*  self->notify = log_pipe_forward_notify; */
@@ -35,17 +35,20 @@ log_pipe_init_instance(LogPipe *self)
 LogPipe *
 log_pipe_ref(LogPipe *self)
 {
-  g_assert(!self || self->ref_cnt > 0);
+  g_assert(!self || g_atomic_counter_get(&self->ref_cnt) > 0);
+  
   if (self)
-    self->ref_cnt++;
+    {
+      g_atomic_counter_inc(&self->ref_cnt);
+    }
   return self;
 }
 
 void 
 log_pipe_unref(LogPipe *self)
 {
-  g_assert(!self || self->ref_cnt > 0);
-  if (self && (--self->ref_cnt == 0))
+  g_assert(!self || g_atomic_counter_get(&self->ref_cnt));
+  if (self && (g_atomic_counter_dec_and_test(&self->ref_cnt)))
     {
       if (self->free_fn)
         self->free_fn(self);

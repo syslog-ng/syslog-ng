@@ -18,8 +18,9 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  
  */
+
 #include "logmsg.h"
 #include "misc.h"
 #include "messages.h"
@@ -36,7 +37,6 @@
 
 static char aix_fwd_string[] = "Message forwarded from ";
 static char repeat_msg_string[] = "last message repeated";
-
 
 /** 
  * log_stamp_format:
@@ -560,6 +560,8 @@ log_msg_free(LogMessage *self)
   g_free(self->host_from.str);
   g_free(self->program.str);
   g_free(self->msg.str);
+  if (self->source_group)
+    g_free(self->source_group);
   log_msg_clear_matches(self);
   g_free(self);
 }
@@ -573,8 +575,8 @@ log_msg_free(LogMessage *self)
 LogMessage *
 log_msg_ref(LogMessage *self)
 {
-  g_assert(self->ref_cnt > 0);
-  self->ref_cnt++;
+  g_assert(g_atomic_counter_get(&self->ref_cnt) > 0);
+  g_atomic_counter_inc(&self->ref_cnt);
   return self;
 }
 
@@ -587,8 +589,8 @@ log_msg_ref(LogMessage *self)
 void
 log_msg_unref(LogMessage *self)
 {
-  g_assert(self->ref_cnt > 0);
-  if (--self->ref_cnt == 0)
+  g_assert(g_atomic_counter_get(&self->ref_cnt) > 0);
+  if (g_atomic_counter_dec_and_test(&self->ref_cnt))
     {
       log_msg_free(self);
     }
@@ -621,7 +623,7 @@ log_msg_init_string(GString *str, gint len)
 static void
 log_msg_init(LogMessage *self, GSockAddr *saddr)
 {
-  self->ref_cnt = 1;
+  g_atomic_counter_set(&self->ref_cnt, 1);
   gettimeofday(&self->recvd.time, NULL);
   self->recvd.zone_offset = get_local_timezone_ofs(self->recvd.time.tv_sec);
   self->stamp.time = self->recvd.time;
@@ -653,6 +655,15 @@ log_msg_new(gchar *msg, gint length, GSockAddr *saddr, guint flags, regex_t *bad
   return self;
 }
 
+LogMessage *
+log_msg_new_empty(void)
+{
+  LogMessage *self = g_new0(LogMessage, 1);
+  
+  log_msg_init(self, NULL);
+  return self;
+}
+
 /**
  * log_msg_new_mark:
  * 
@@ -669,101 +680,49 @@ log_msg_new_mark(void)
 }
 
 /**
- * log_msg_ack_block_inc:
+ * log_msg_add_ack:
  * @m: LogMessage instance
  *
- * This function increments the number of required acknowledges in the
- * current acknowledge block.
+ * This function increments the number of required acknowledges.
  **/
 void
-log_msg_ack_block_inc(LogMessage *m)
+log_msg_add_ack(LogMessage *msg, guint path_flags)
 {
-  LogAckBlock *b = m->ack_blocks ? m->ack_blocks->data : NULL;
-  
-  if (b)
-    {
-      b->req_ack_cnt++;
-    }
-}
-
-/**
- * log_msg_ack_block_start:
- * @m: LogMessage instance
- * @func: acknowledge function
- * @user_data: pointer passed to @func
- *
- * This function starts a new acknowledge block in the acknowledge stack. It
- * sets the number of required acks to 1. This function should be called
- * when an intermediate step requires notification when the message is
- * finally processed. Each acknowledgement block should be explicitly ended
- * using log_msg_ack_block_end(), which is typically done in ack callbacks
- * when all pending acks arrived.
- **/
-void
-log_msg_ack_block_start(LogMessage *m, LMAckFunc func, gpointer user_data)
-{
-  LogAckBlock *b = g_new0(LogAckBlock, 1);
-  
-  b->req_ack_cnt = 1;
-  b->ack = func;
-  b->ack_user_data = user_data;
-  
-  m->ack_blocks = g_slist_prepend(m->ack_blocks, b);
-}
-
-/**
- * log_msg_ack_block_end:
- * @m: LogMessage instance
- *
- * This function closes an acknowledgement block and is typically called from
- * ack-callbacks when all pending acknowledgement requests arrived. It simply
- * removes the ack_block from the ack_blocks list.
- **/
-void
-log_msg_ack_block_end(LogMessage *m)
-{
-  LogAckBlock *b;
-  
-  g_return_if_fail(m->ack_blocks);
-  b = m->ack_blocks->data;
-  m->ack_blocks = g_slist_delete_link(m->ack_blocks, m->ack_blocks);
-  g_free(b);
+  if ((path_flags & PF_FLOW_CTL_OFF) == 0)
+    g_atomic_counter_inc(&msg->ack_cnt);
 }
 
 /**
  * log_msg_ack:
- * @m: LogMessage instance
+ * @msg: LogMessage instance
+ * @path_flags: path specific flags to indicate whether flow-control is used or not
  *
- * Indicate that the message was processed successfully the sender can queue
- * further messages.
+ * Indicate that the message was processed successfully and the sender can
+ * queue further messages.
  **/
 void 
-log_msg_ack(LogMessage *m)
+log_msg_ack(LogMessage *msg, guint path_flags)
 {
-  LogAckBlock *b = m->ack_blocks ? m->ack_blocks->data : NULL;
-  
-  if (b)
+  if ((path_flags & PF_FLOW_CTL_OFF) == 0)
     {
-      b->ack_cnt++;
-      if (b->ack_cnt == b->req_ack_cnt)
+      if (g_atomic_counter_dec_and_test(&msg->ack_cnt))
         {
-          b->ack(m, b->ack_user_data);
+          msg->ack_func(msg, msg->ack_userdata);
         }
     }
 }
 
 /**
  * log_msg_drop:
- * @m: LogMessage instance
+ * @msg: LogMessage instance
+ * @path_flags: path specific flags to indicate whether flow-control is used or not
  *
  * This function is called whenever a destination driver feels that it is
- * unable to process this message. It acks and unrefs the message and will
- * update some global drop statistics. 
+ * unable to process this message. It acks and unrefs the message.
  **/
 void
-log_msg_drop(LogMessage *m, guint path_flags)
+log_msg_drop(LogMessage *msg, guint path_flags)
 {
-  if ((path_flags & PF_FLOW_CTL_OFF) == 0)
-    log_msg_ack(m);
-  log_msg_unref(m);
+  log_msg_ack(msg, path_flags);
+  log_msg_unref(msg);
 }

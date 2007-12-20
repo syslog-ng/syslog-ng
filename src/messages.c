@@ -36,9 +36,10 @@
 
 gboolean debug_flag = 0;
 gboolean verbose_flag = 0;
-static gboolean log_stderr = FALSE, syslog_started = FALSE;
+gboolean log_stderr = FALSE;
+static gboolean syslog_started = FALSE;
 static EVTCONTEXT *evt_context;
-GQueue *internal_msg_queue = NULL;
+MsgQueue *internal_msg_queue = NULL;
 
 static void
 msg_send_internal_message(int prio, const char *msg)
@@ -57,7 +58,7 @@ msg_send_internal_message(int prio, const char *msg)
         {
           buf = g_strdup_printf("<%d> syslog-ng[%d]: %s\n", prio, getpid(), msg);
           m = log_msg_new(buf, strlen(buf), NULL, LP_INTERNAL | LP_LOCAL, NULL);
-          g_queue_push_tail(internal_msg_queue, m);
+          msg_queue_push(internal_msg_queue, m);
           g_free(buf);
         }
     }
@@ -118,17 +119,15 @@ msg_syslog_started(void)
   syslog_started = TRUE;
 }
 
-gboolean
-msg_init(int use_stderr)
+void
+msg_init()
 {
-  internal_msg_queue = g_queue_new();
+  internal_msg_queue = msg_queue_new();
 
-  log_stderr = use_stderr;
   evt_context = evt_ctx_init("syslog-ng", EVT_FAC_SYSLOG);
 
   g_log_set_handler(G_LOG_DOMAIN, 0xff, msg_log_func, NULL);
   g_log_set_handler("GLib", 0xff, msg_log_func, NULL);
-  return TRUE;
 }
 
 
@@ -136,6 +135,6 @@ void
 msg_deinit()
 {
   evt_ctx_free(evt_context);
-  g_queue_free(internal_msg_queue);
+  msg_queue_free(internal_msg_queue);
   internal_msg_queue = NULL;
 }

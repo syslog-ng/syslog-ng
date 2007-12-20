@@ -1,4 +1,5 @@
 #include "misc.h"
+#include "apphook.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -24,6 +25,7 @@ testcase(const gchar *zone, time_t utc, long expected_ofs)
 
 int main()
 {
+  app_startup();
   /* 2005-10-14 21:47:37 CEST, dst enabled */
   testcase("CET", 1129319257, 7200);
   /* 2005-11-14 10:10:00 CET, dst disabled */
@@ -77,6 +79,6 @@ int main()
   /* Mar 20 02:00:00 2005 (NZT) +1200 */
   testcase("NZ", 1111240800, 12*3600);
 
-  
+  app_shutdown();
   return 0;
 }

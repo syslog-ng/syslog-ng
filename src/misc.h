@@ -44,4 +44,7 @@ gboolean resolve_group(const char *group, gid_t *gid);
 gboolean resolve_user_group(char *arg, uid_t *uid, gid_t *gid);
 gboolean resolve_hostname(GString *result, GSockAddr *saddr, gboolean usedns, gboolean usefqdn, gboolean use_dns_cache);
 
+glong g_time_val_diff(GTimeVal *t1, GTimeVal *t2);
+
+
 #endif

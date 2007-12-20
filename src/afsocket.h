@@ -88,6 +88,7 @@ struct _AFSocketDestDriver
   LogPipe *writer;
   LogWriterOptions writer_options;
 
+  gchar *hostname;
   GSockAddr *bind_addr;
   GSockAddr *dest_addr;
   gint time_reopen;
@@ -96,7 +97,9 @@ struct _AFSocketDestDriver
   gboolean (*setup_socket)(AFSocketDestDriver *s, gint fd);
 };
 
-void afsocket_dd_init_instance(AFSocketDestDriver *self, SocketOptions *sock_options, guint32 flags);
+
+
+void afsocket_dd_init_instance(AFSocketDestDriver *self, const gchar *hostname, SocketOptions *sock_options, guint32 flags);
 gboolean afsocket_dd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist);
 
 #endif

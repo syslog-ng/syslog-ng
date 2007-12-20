@@ -38,7 +38,15 @@
 
 #define PATH_SYSLOG_NG_CONF     PATH_SYSCONFDIR "/syslog-ng.conf"
 #define PATH_PIDFILE            "/var/run/syslog-ng.pid"
+
+#if ENABLE_SQL
+#define ENABLE_THREADS 1
+#else
+#define ENABLE_THREADS 0
+#endif
+
 #define PATH_PERSIST_CONFIG     PATH_LOCALSTATEDIR "/syslog-ng.persist"
+#define PATH_QDISK              PATH_LOCALSTATEDIR
 
 #define LOG_PRIORITY_LISTEN 0
 #define LOG_PRIORITY_READER 0
@@ -54,5 +62,6 @@
    #define strtoll(nptr, endptr, base) g_ascii_strtoll(nptr, endptr, base)
 # endif
 #endif
+
 
 #endif

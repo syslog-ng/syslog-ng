@@ -18,14 +18,16 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  
  */
-
+  
 #ifndef LOG_H_INCLUDED
 #define LOG_H_INCLUDED
 
 #include "syslog-ng.h"
 #include "gsockaddr.h"
+#include "atomic.h"
+#include "serialize.h"
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -51,18 +53,9 @@
 #define TS_FMT_FULL  2
 #define TS_FMT_UNIX  3
 
-struct _LogSourceGroup;
-struct _LogMessage;
+typedef struct _LogMessage LogMessage;
 
-typedef void (*LMAckFunc)(struct _LogMessage *lm, gpointer user_data);
-
-typedef struct _LogAckBlock
-{
-  LMAckFunc ack;
-  gint req_ack_cnt;
-  gint ack_cnt;
-  gpointer ack_user_data;
-} LogAckBlock;
+typedef void (*LMAckFunc)(LogMessage *lm, gpointer user_data);
 
 typedef struct _LogStamp
 {
@@ -75,36 +68,40 @@ void log_stamp_format(LogStamp *stamp, GString *target, gint ts_format, glong zo
 
 #define RE_MAX_MATCHES 256
 
-typedef struct _LogMessage
+struct _LogMessage
 {
-  guint8 ref_cnt;
+  GAtomicCounter ref_cnt;
+  GAtomicCounter ack_cnt;
   guint8 flags;
   guint8 pri;
-  guint8 num_re_matches;
   /* meta information */
-  struct _LogSourceGroup *source_group;
+  guint8 num_re_matches;
+  guint8 __pad1;
+  gchar *source_group;
   GSockAddr *saddr;
+  LMAckFunc ack_func;
+  gpointer ack_userdata;
   
-  GSList *ack_blocks;
-
   /* message parts */
   LogStamp stamp;
   LogStamp recvd;
   GString date, host, host_from, program, msg;
 
   gchar **re_matches;
-} LogMessage;
+};
 
 LogMessage *log_msg_ref(LogMessage *m);
 void log_msg_unref(LogMessage *m);
 
+gboolean log_msg_write(LogMessage *self, SerializeArchive *sa);
+gboolean log_msg_read(LogMessage *self, SerializeArchive *sa);
+
 LogMessage *log_msg_new(gchar *msg, gint length, GSockAddr *saddr, guint flags, regex_t *bad_hostname);
 LogMessage *log_msg_new_mark(void);
+LogMessage *log_msg_new_empty(void);
 
-void log_msg_ack_block_inc(LogMessage *m);
-void log_msg_ack_block_start(LogMessage *m, LMAckFunc func, gpointer user_data);
-void log_msg_ack_block_end(LogMessage *m);
-void log_msg_ack(LogMessage *msg);
+void log_msg_add_ack(LogMessage *msg, guint path_flags);
+void log_msg_ack(LogMessage *msg, guint path_flags);
 void log_msg_drop(LogMessage *msg, guint path_flags);
 void log_msg_clear_matches(LogMessage *self);
 

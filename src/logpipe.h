@@ -18,15 +18,16 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  
  */
-
+  
 #ifndef LOGPIPE_H_INCLUDED
 #define LOGPIPE_H_INCLUDED
 
 #include "syslog-ng.h"
 #include "logmsg.h"
 #include "cfg.h"
+#include "atomic.h"
 
 /* notify code values */
 #define NC_CLOSE       1
@@ -38,7 +39,7 @@
 
 typedef struct _LogPipe
 {
-  guint ref_cnt;
+  GAtomicCounter ref_cnt;
   struct _LogPipe *pipe_next;
   gboolean (*init)(struct _LogPipe *self, GlobalConfig *cfg, PersistentConfig *persist);
   gboolean (*deinit)(struct _LogPipe *self, GlobalConfig *cfg, PersistentConfig *persist);

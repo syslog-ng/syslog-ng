@@ -153,7 +153,7 @@ log_template_format(LogTemplate *self, LogMessage *lm, guint macro_flags, gint t
 }
 
 LogTemplate *
-log_template_new(gchar *name, gchar *template)
+log_template_new(gchar *name, const gchar *template)
 {
   LogTemplate *self = g_new0(LogTemplate, 1);
   

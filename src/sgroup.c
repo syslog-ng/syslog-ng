@@ -94,7 +94,7 @@ log_source_group_queue(LogPipe *s, LogMessage *msg, gint path_flags)
 
   resolve_hostname(&msg->host_from, msg->saddr, self->use_dns, self->use_fqdn, self->use_dns_cache);
   
-  msg->source_group = self;
+  msg->source_group = g_strdup(self->name->str);
   
   if (!self->keep_hostname || !msg->host.len) 
     {

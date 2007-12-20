@@ -1,5 +1,8 @@
 #include "syslog-ng.h"
 #include "logmsg.h"
+#include "serialize.h"
+#include "apphook.h"
+#include "gsockaddr.h"
 
 #include <time.h>
 #include <string.h>
@@ -48,11 +51,13 @@ testcase(gchar *msg,
   LogMessage *logmsg;
   time_t now;
   regex_t bad_hostname;
+  GSockAddr *addr = g_sockaddr_inet_new("10.10.10.10", 1010);
+  gchar logmsg_addr[256], cloned_addr[256];
   
   if (bad_hostname_re)
     TEST_ASSERT(regcomp(&bad_hostname, bad_hostname_re, REG_NOSUB | REG_EXTENDED) == 0, "%d", 0, 0);
 
-  logmsg = log_msg_new(msg, strlen(msg), NULL, parse_flags, bad_hostname_re ? &bad_hostname : NULL);
+  logmsg = log_msg_new(msg, strlen(msg), addr, parse_flags, bad_hostname_re ? &bad_hostname : NULL);
   TEST_ASSERT(logmsg->pri == expected_pri, "%d", logmsg->pri, expected_pri);
   if (expected_stamp_sec)
     {
@@ -75,6 +80,9 @@ testcase(gchar *msg,
   TEST_ASSERT(strcmp(logmsg->host.str, expected_host) == 0, "%s", logmsg->host.str, expected_host);
   TEST_ASSERT(strcmp(logmsg->program.str, expected_program) == 0, "%s", logmsg->program.str, expected_program);
   TEST_ASSERT(strcmp(logmsg->msg.str, expected_msg) == 0, "%s", logmsg->msg.str, expected_msg);
+  
+  g_sockaddr_format(logmsg->saddr, logmsg_addr, sizeof(logmsg_addr));
+  
   log_msg_unref(logmsg);
   return 0;
 }
@@ -82,6 +90,8 @@ testcase(gchar *msg,
 int 
 main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 {
+  app_startup();
+  
   putenv("TZ=CET");
   tzset();
   testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, NULL,
@@ -271,6 +281,8 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            "linksys",
            "app",
            "app: msg");
+
+  app_shutdown();
   return 0;
 }
 

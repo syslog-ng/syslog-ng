@@ -18,9 +18,9 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  
  */
-
+  
 #ifndef LOGSOURCE_H_INCLUDED
 #define LOGSOURCE_H_INCLUDED
 
@@ -29,7 +29,7 @@
 typedef struct _LogSourceOptions
 {
   gint init_window_size;
-  gint window_size;
+  GAtomicCounter window_size;
 } LogSourceOptions;
 
 /**
@@ -51,7 +51,7 @@ gboolean log_source_handle_line(LogSource *self, gchar *line, gint length, GSock
 static inline gboolean
 log_source_free_to_send(LogSource *self)
 {
-  return self->options->window_size > 0;
+  return g_atomic_counter_get(&self->options->window_size) > 0;
 }
 
 void log_source_init_instance(LogSource *self, LogSourceOptions *options);

@@ -298,7 +298,7 @@ struct _AFFileDestWriter
 static gboolean
 affile_dw_reapable(AFFileDestWriter *self)
 {
-  return ((LogWriter *) self->writer)->queue->length == 0;
+  return log_queue_get_length(((LogWriter *) self->writer)->queue) == 0;
 }
 
 static gboolean
@@ -385,7 +385,6 @@ static void
 affile_dw_queue(LogPipe *s, LogMessage *lm, gint path_flags)
 {
   AFFileDestWriter *self = (AFFileDestWriter *) s;
-
   self->last_msg_stamp = time(NULL);
   if (!s->pipe_next && self->last_open_stamp < self->last_msg_stamp - self->time_reopen)
     {
@@ -659,9 +658,9 @@ affile_dd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
     }
   else
     {
-      self->writer = persist_config_fetch(persist, affile_dd_format_persist_name(self));
-      if (self->writer)
-        affile_dw_set_owner(self->writer, self);
+      self->single_writer = persist_config_fetch(persist, affile_dd_format_persist_name(self));
+      if (self->single_writer)
+        affile_dw_set_owner(self->single_writer, self);
     }
   
   
@@ -712,17 +711,18 @@ affile_dd_deinit(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
 {
   AFFileDestDriver *self = (AFFileDestDriver *) s;
 
-  /* writer & writer_hash cannot be non-NULL at the same time */
-  if (self->writer)
+  /* NOTE: we free all AFFileDestWriter instances here as otherwise we'd
+   * have circular references between AFFileDestDriver and file writers */
+  if (self->single_writer)
     {
       g_assert(self->writer_hash == NULL);
 
-      persist_config_add(persist, affile_dd_format_persist_name(self), self->writer, affile_dd_destroy_writer);
-      self->writer = NULL;
+      persist_config_add(persist, affile_dd_format_persist_name(self), self->single_writer, affile_dd_destroy_writer);
+      self->single_writer = NULL;
     }
   else if (self->writer_hash)
     {
-      g_assert(self->writer == NULL);
+      g_assert(self->single_writer == NULL);
       
       persist_config_add(persist, affile_dd_format_persist_name(self), self->writer_hash, affile_dd_destroy_writer_hash);
       self->writer_hash = NULL;
@@ -741,12 +741,12 @@ affile_dd_queue(LogPipe *s, LogMessage *msg, gint path_flags)
 
   if (self->flags & AFFILE_NO_EXPAND)
     {
-      if (!self->writer)
+      if (!self->single_writer)
 	{
 	  next = affile_dw_new(self, g_string_new(self->filename_template->template->str));
 	  if (next && log_pipe_init(&next->super, self->cfg, NULL))
 	    {
-	      self->writer = next;
+	      self->single_writer = next;
 	    }
 	  else
 	    {
@@ -756,7 +756,7 @@ affile_dd_queue(LogPipe *s, LogMessage *msg, gint path_flags)
 	}
       else
         {
-          next = self->writer;
+          next = self->single_writer;
         }
     }
   else
@@ -801,8 +801,8 @@ affile_dd_free(LogPipe *s)
   AFFileDestDriver *self = (AFFileDestDriver *) s;
   
   /* NOTE: this must be NULL as deinit has freed it, otherwise we'd have circular references */
-  g_assert(self->writer == NULL && self->writer_hash == NULL);
-  
+  g_assert(self->single_writer == NULL && self->writer_hash == NULL);
+
   log_template_unref(self->filename_template);
   log_writer_options_destroy(&self->writer_options);
   log_drv_free_instance(&self->super);

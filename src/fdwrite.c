@@ -18,16 +18,18 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  
  */
-
+  
 #include "fdwrite.h"
 #include "messages.h"
 
 #include <errno.h>
 
+/* FIXME: should create a separate abstract class */
+
 static size_t
-fd_do_write(FDWrite *self, const void *buf, size_t buflen)
+fd_write_write_method(FDWrite *self, const void *buf, size_t buflen)
 {
   gint rc;
   
@@ -47,17 +49,25 @@ fd_write_new(gint fd)
   FDWrite *self = g_new0(FDWrite, 1);
   
   self->fd = fd;
-  self->write = fd_do_write;
+  self->write = fd_write_write_method;
+  self->free_fn = fd_write_free_method;
   self->cond = G_IO_OUT;
   return self;
 }
 
 void
-fd_write_free(FDWrite *self)
+fd_write_free_method(FDWrite *self)
 {
   msg_verbose("Closing log writer fd",
               evt_tag_int("fd", self->fd),
               NULL);
   close(self->fd);
+
+}
+
+void
+fd_write_free(FDWrite *self)
+{
+  self->free_fn(self);
   g_free(self);
 }

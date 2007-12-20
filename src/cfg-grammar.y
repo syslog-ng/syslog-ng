@@ -9,6 +9,7 @@
 #include "templates.h"
 #include "logreader.h"
 
+
 #include "affile.h"
 #include "afinter.h"
 #include "afsocket.h"
@@ -17,6 +18,9 @@
 #include "afstreams.h"
 #include "afuser.h"
 #include "afprog.h"
+#if ENABLE_SQL
+#include "afsql.h"
+#endif
 
 #include "messages.h"
 
@@ -38,6 +42,8 @@ LogTemplate *last_template;
 SocketOptions *last_sock_options;
 gint last_addr_family = AF_INET;
 
+
+
 #if ! ENABLE_IPV6
 #undef AF_INET6
 #define AF_INET6 0; g_assert_not_reached()
@@ -47,7 +53,7 @@ gint last_addr_family = AF_INET;
 %}
 
 %union {
-	guint num;
+	gint64 num;
 	char *cptr;
 	void *ptr;
 	FilterExprNode *node;
@@ -59,7 +65,8 @@ gint last_addr_family = AF_INET;
 /* source & destination items */
 %token	KW_INTERNAL KW_FILE KW_PIPE KW_UNIX_STREAM KW_UNIX_DGRAM
 %token  KW_TCP KW_UDP KW_TCP6 KW_UDP6
-%token  KW_USER KW_DOOR KW_SUN_STREAMS KW_PROGRAM
+%token  KW_USERTTY KW_DOOR KW_SUN_STREAMS KW_PROGRAM
+%token  KW_SQL KW_TYPE KW_COLUMNS KW_INDEXES KW_VALUES KW_PASSWORD KW_DATABASE KW_USERNAME KW_TABLE KW_ENCODING
 
 /* option items */
 %token KW_FSYNC KW_MARK_FREQ KW_STATS_FREQ KW_FLUSH_LINES KW_FLUSH_TIMEOUT KW_LOG_MSG_SIZE KW_FILE_TEMPLATE KW_PROTO_TEMPLATE
@@ -73,6 +80,10 @@ gint last_addr_family = AF_INET;
 %token KW_TZ_CONVERT KW_TS_FORMAT KW_FRAC_DIGITS
 
 %token KW_LOG_FIFO_SIZE KW_LOG_FETCH_LIMIT KW_LOG_IW_SIZE KW_LOG_PREFIX
+%token KW_THROTTLE
+
+/* SSL support */
+%token KW_TLS KW_PEER_VERIFY KW_KEY_FILE KW_CERT_FILE KW_CA_DIR KW_CRL_DIR
 
 /* log statement options */
 %token KW_FLAGS KW_CATCHALL KW_FALLBACK KW_FINAL KW_FLOW_CONTROL
@@ -112,12 +123,12 @@ gint last_addr_family = AF_INET;
 /* yes/no switches */
 %token KW_YES KW_NO
 
-/* tripleoption */
-%token KW_REQUIRED KW_ALLOW KW_DENY
-
 /* obsolete, compatibility and not-yet supported options */
 %token KW_GC_IDLE_THRESHOLD KW_GC_BUSY_THRESHOLD  
 %token KW_COMPRESS KW_MAC KW_AUTH KW_ENCRYPT
+
+%token KW_IFDEF
+%token KW_ENDIF
 
 %token  DOTDOT
 %token	<cptr> IDENTIFIER
@@ -455,7 +466,7 @@ source_reader_option
 	;
 
 source_reader_option_flags
-	: IDENTIFIER source_reader_option_flags { $$ = lookup_parse_flag($1) | $2; free($1); }
+	: string source_reader_option_flags { $$ = lookup_parse_flag($1) | $2; free($1); }
 	|					{ $$ = 0; }
 	;
 
@@ -495,11 +506,7 @@ dest_affile_options
 
 dest_affile_option
 	: dest_writer_option
-	| KW_OPTIONAL '(' yesno ')'			{ last_driver->optional = $3; }
-/*
-	| KW_COMPRESS '(' yesno ')'		{ affile_dd_set_compress(last_driver, $3); }
-	| KW_ENCRYPT '(' yesno ')'		{ affile_dd_set_encrypt(last_driver, $3); }
-*/
+	| KW_OPTIONAL '(' yesno ')'		{ last_driver->optional = $3; }
 	| KW_OWNER '(' string_or_number ')'	{ affile_dd_set_file_uid(last_driver, $3); free($3); }
 	| KW_GROUP '(' string_or_number ')'	{ affile_dd_set_file_gid(last_driver, $3); free($3); }
 	| KW_PERM '(' NUMBER ')'		{ affile_dd_set_file_perm(last_driver, $3); }
@@ -636,16 +643,11 @@ dest_afinet_tcp_option
 	| KW_LOCALPORT '(' string_or_number ')'	{ afinet_dd_set_localport(last_driver, $3, "tcp"); free($3); }
 	| KW_PORT '(' string_or_number ')'	{ afinet_dd_set_destport(last_driver, $3, "tcp"); free($3); }
 	| KW_DESTPORT '(' string_or_number ')'	{ afinet_dd_set_destport(last_driver, $3, "tcp"); free($3); }
-/*
-	| KW_MAC '(' yesno ')'
-	| KW_AUTH '(' yesno ')'
-	| KW_ENCRYPT '(' yesno ')'
-*/
 	;
 
 
 dest_afuser
-	: KW_USER '(' string ')'		{ $$ = afuser_dd_new($3); free($3); }
+	: KW_USERTTY '(' string ')'		{ $$ = afuser_dd_new($3); free($3); }
 	;
 
 dest_afprogram
@@ -662,6 +664,7 @@ dest_afprogram_params
 	  dest_writer_options			{ $$ = last_driver; }
 	;
 	
+
 dest_writer_options
 	: dest_writer_option dest_writer_options 
 	|
@@ -669,7 +672,7 @@ dest_writer_options
 	
 dest_writer_option
 	: KW_FLAGS '(' dest_writer_options_flags ')' { last_writer_options->options = $3; }
-	| KW_LOG_FIFO_SIZE '(' NUMBER ')'	{ last_writer_options->fifo_size = $3; }
+	| KW_LOG_FIFO_SIZE '(' NUMBER ')'	{ last_writer_options->mem_fifo_size = $3; }
 	| KW_FLUSH_LINES '(' NUMBER ')'		{ last_writer_options->flush_lines = $3; }
 	| KW_FLUSH_TIMEOUT '(' NUMBER ')'	{ last_writer_options->flush_timeout = $3; }
 	| KW_TEMPLATE '(' string ')'       	{ 
@@ -685,6 +688,7 @@ dest_writer_option
 	| KW_TIME_ZONE '(' string ')'           { cfg_timezone_value($3, &last_writer_options->zone_offset); free($3); }
 	| KW_TS_FORMAT '(' string ')'		{ last_writer_options->ts_format = cfg_ts_format_value($3); free($3); }
 	| KW_FRAC_DIGITS '(' NUMBER ')'		{ last_writer_options->frac_digits = $3; }
+	| KW_THROTTLE '(' NUMBER ')'            { last_writer_options->throttle = $3; }
 	;
 
 dest_writer_options_flags
@@ -783,6 +787,7 @@ options_item
 	| KW_SEND_TIME_ZONE '(' string ')'      { cfg_timezone_value($3, &configuration->send_zone_offset); free($3); }
 	;
 
+
 filter_stmt
 	: string '{' filter_expr ';' '}'	{ $$ = log_filter_rule_new($1, $3); free($1); }
 	;
@@ -812,7 +817,7 @@ filter_fac_list
 	;
 
 filter_fac
-	: IDENTIFIER				
+	: string				
 	  { 
 	    int n = syslog_name_lookup_facility_by_name($1);
 	    if (n == -1)
@@ -834,7 +839,7 @@ filter_level_list
 	;
 
 filter_level
-	: IDENTIFIER DOTDOT IDENTIFIER		
+	: string DOTDOT string
 	  { 
 	    int r1, r2;
 	    r1 = syslog_name_lookup_level_by_name($1);
@@ -854,7 +859,7 @@ filter_level
 	    free($1); 
 	    free($3); 
 	  }
-	| IDENTIFIER				
+	| string				
 	  { 
 	    int n = syslog_name_lookup_level_by_name($1); 
 	    if (n == -1)
@@ -888,7 +893,8 @@ string
 
 string_or_number
         : string                                { $$ = $1; }
-        | NUMBER                                { char buf[16]; snprintf(buf, sizeof(buf), "%d", $1); $$ = strdup(buf); }
+        | NUMBER                                { char buf[32]; snprintf(buf, sizeof(buf), "%" G_GINT64_FORMAT, $1); $$ = strdup(buf); }
+
 
 %%
 

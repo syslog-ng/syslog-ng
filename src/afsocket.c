@@ -18,9 +18,9 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  
  */
-
+  
 #include "afsocket.h"
 #include "messages.h"
 #include "driver.h"
@@ -222,8 +222,12 @@ static gboolean
 afsocket_sc_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
 {
   AFSocketSourceConnection *self = (AFSocketSourceConnection *) s;
+  gint read_flags = (self->owner->flags & AFSOCKET_DGRAM) ? FR_RECV : 0;
+  FDRead *reader;
+  
+  reader = fd_read_new(self->sock, read_flags);
 
-  self->reader = log_reader_new(fd_read_new(self->sock, (self->owner->flags & AFSOCKET_DGRAM) ? FR_RECV : 0), 
+  self->reader = log_reader_new(reader,
                                 ((self->owner->flags & AFSOCKET_LOCAL) ? LR_LOCAL : 0) | 
                                 ((self->owner->flags & AFSOCKET_DGRAM) ? LR_PKTTERM : 0),
                                 s, &self->owner->reader_options);
@@ -341,6 +345,7 @@ afsocket_sd_set_max_connections(LogDriver *s, gint max_connections)
   
   self->max_connections = max_connections;
 }
+
 
 static inline gchar *
 afsocket_sd_format_persist_name(AFSocketSourceDriver *self, gboolean listener_name)
@@ -714,6 +719,7 @@ afsocket_dd_reconnect_timer(gpointer s)
   return FALSE;
 }
 
+
 static void
 afsocket_dd_start_reconnect_timer(AFSocketDestDriver *self)
 {
@@ -728,6 +734,7 @@ afsocket_dd_connected(AFSocketDestDriver *self)
   gchar buf1[256], buf2[256];
   int error = 0;
   socklen_t errorlen = sizeof(error);
+  FDWrite *write;
   
   if (self->flags & AFSOCKET_STREAM)
     {
@@ -738,20 +745,17 @@ afsocket_dd_connected(AFSocketDestDriver *self)
                     evt_tag_int("reconnect", self->time_reopen),
                     NULL);
           close(self->fd);
-
-          afsocket_dd_start_reconnect_timer(self);
-          return FALSE;
+          goto error_reconnect;
         }
       if (error)
         {
           msg_error("Connection failed",
+                    evt_tag_str("server", g_sockaddr_format(self->dest_addr, buf2, sizeof(buf2))),
                     evt_tag_errno(EVT_TAG_OSERROR, error),
                     evt_tag_int("time_reopen", self->time_reopen),
                     NULL);
           close(self->fd);
-
-          afsocket_dd_start_reconnect_timer(self);
-          return FALSE;
+          goto error_reconnect;
         }
     }
   msg_verbose("Syslog connection established",
@@ -765,8 +769,13 @@ afsocket_dd_connected(AFSocketDestDriver *self)
       self->source_id = 0;
     }
     
-  log_writer_reopen(self->writer, fd_write_new(self->fd));
+  write = fd_write_new(self->fd);
+  
+  log_writer_reopen(self->writer, write);
   return TRUE;
+ error_reconnect:
+  afsocket_dd_start_reconnect_timer(self);
+  return FALSE;
 }
 
 gboolean
@@ -814,6 +823,7 @@ afsocket_dd_start_connect(AFSocketDestDriver *self)
                 evt_tag_errno(EVT_TAG_OSERROR, errno),
                 NULL);
       close(sock);
+      afsocket_dd_start_reconnect_timer(self);
       return FALSE;
     }
 
@@ -915,14 +925,15 @@ afsocket_dd_free(LogPipe *s)
 
   g_sockaddr_unref(self->bind_addr);
   g_sockaddr_unref(self->dest_addr);
-  log_drv_free_instance(&self->super);
   log_pipe_unref(self->writer);
+  g_free(self->hostname);
   log_writer_options_destroy(&self->writer_options);
+  log_drv_free_instance(&self->super);
   g_free(s);
 }
 
 void 
-afsocket_dd_init_instance(AFSocketDestDriver *self, SocketOptions *sock_options, guint32 flags)
+afsocket_dd_init_instance(AFSocketDestDriver *self, const gchar *hostname, SocketOptions *sock_options, guint32 flags)
 {
   log_drv_init_instance(&self->super);
   
@@ -934,5 +945,6 @@ afsocket_dd_init_instance(AFSocketDestDriver *self, SocketOptions *sock_options,
   self->super.super.notify = afsocket_dd_notify;
   self->setup_socket = afsocket_dd_setup_socket;
   self->sock_options_ptr = sock_options;
+  self->hostname = g_strdup(hostname);
   self->flags = flags;
 }

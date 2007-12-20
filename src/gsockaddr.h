@@ -18,13 +18,15 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  
  */
-
+  
 #ifndef G_SOCKADDR_H_INCLUDED
 #define G_SOCKADDR_H_INCLUDED
 
 #include "syslog-ng.h"
+#include "atomic.h"
+
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -39,7 +41,7 @@ typedef struct _GSockAddrFuncs GSockAddrFuncs;
 
 typedef struct _GSockAddr
 {
-  gint refcnt;
+  GAtomicCounter refcnt;
   guint32 flags;
   GSockAddrFuncs *sa_funcs;
   int salen;

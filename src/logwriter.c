@@ -18,14 +18,16 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  
  */
-
+  
 #include "logwriter.h"
+#include "logqueue.h"
 #include "messages.h"
 #include "macros.h"
 #include "fdwrite.h"
 #include "stats.h"
+#include "misc.h"
 
 #include <unistd.h>
 #include <assert.h>
@@ -37,30 +39,91 @@ typedef struct _LogWriterWatch
   LogWriter *writer;
   FDWrite *fd;
   GTimeVal flush_target;
-  gboolean flush_waiting_for_timeout;
+  GTimeVal last_throttle_check;
+  gboolean flush_waiting_for_timeout:1,
+           input_means_connection_broken:1;
 } LogWriterWatch;
+
+/**
+ * LogWriter behaviour
+ * ~~~~~~~~~~~~~~~~~~~
+ *
+ * LogWriter is a core element of syslog-ng sending messages out to some
+ * kind of destination represented by a UNIX fd. Outgoing messages are sent
+ * to the target asynchronously, first by placing them to a queue and then
+ * sending messages when poll() indicates that the fd is writable.
+ *
+ * 
+ * Flow control
+ * ------------
+ * For a simple log writer without a disk buffer messages are placed on a
+ * GQueue and they are acknowledged when the send() system call returned
+ * success. This is more complex when disk buffering is used, in which case
+ * messages are put to the "disk buffer" first and acknowledged immediately. 
+ * (this way the reader never stops when the disk buffer area is not yet
+ * full). When disk buffer reaches its limit, messages are added to the the
+ * usual GQueue and messages get acknowledged when they are moved to the
+ * disk buffer.
+ *
+ **/
 
 static gboolean log_writer_flush_log(LogWriter *self, FDWrite *fd);
 static void log_writer_broken(LogWriter *self, gint notify_code);
+static gboolean log_writer_throttling(LogWriter *self);
+
 
 static gboolean
 log_writer_fd_prepare(GSource *source,
                       gint *timeout)
 {
   LogWriterWatch *self = (LogWriterWatch *) source;
-  gint num_elements = self->writer->queue->length / 2;
+  gint64 num_elements = log_queue_get_length(self->writer->queue);
+  
+  /* recalculate buckets */
+  
+  if (self->writer->options->throttle > 0)
+    {
+      GTimeVal now;
+      gint64 diff;
+      gint new_buckets;
+      
+      /* throttling is enabled, calculate new buckets */
+      
+      g_source_get_current_time(source, &now);
+      if (self->last_throttle_check.tv_sec != 0)
+        {
+          diff = g_time_val_diff(&now, &self->last_throttle_check);
+        }
+      else
+        {
+          diff = 0;
+          self->last_throttle_check = now;
+        }
+      new_buckets = (self->writer->options->throttle * diff) / G_USEC_PER_SEC;
+      if (new_buckets)
+        {
+          
+          /* if new_buckets is zero, we don't save the current time as
+           * last_throttle_check. The reason is that new_buckets could be
+           * rounded to zero when only a minimal interval passes between
+           * poll iterations.
+           */
+          self->writer->throttle_buckets = MIN(self->writer->options->throttle, self->writer->throttle_buckets + new_buckets);
+          self->last_throttle_check = now;
+        }
+    }
 
   if (self->writer->partial ||
-      (self->writer->options->flush_lines == 0 && num_elements != 0) ||
-      (self->writer->options->flush_lines > 0  && num_elements >= self->writer->options->flush_lines))
+      (self->writer->options->flush_lines == 0 && (!log_writer_throttling(self->writer) && num_elements != 0)) ||
+      (self->writer->options->flush_lines > 0  && (!log_writer_throttling(self->writer) && num_elements >= self->writer->options->flush_lines)))
     {
       /* we need to flush our buffers */
       self->pollfd.events = self->fd->cond;
     }
-  else if (num_elements)
+  else if (num_elements && !log_writer_throttling(self->writer))
     {
       /* our buffer does not contain enough elements to flush, but we do not
-       * want to wait more than this time */
+       * want to wait more than flush_timeout time */
       
       if (!self->flush_waiting_for_timeout)
         {
@@ -97,10 +160,28 @@ log_writer_fd_prepare(GSource *source,
       return FALSE;
     }
   else
-    self->pollfd.events = 0;
+    {
+      self->pollfd.events = 0;
+      if (num_elements && log_writer_throttling(self->writer))
+        {
+          /* we are unable to send because of throttling, make sure that we
+           * wake up when the rate limits lets us send at least 1 message */
+          *timeout = (1000 / self->writer->options->throttle) + 1;
+          msg_debug("Throttling output", 
+                    evt_tag_int("wait", *timeout), 
+                    NULL);
+        }
+    }
   
-  if (self->writer->flags & LW_DETECT_EOF)
-    self->pollfd.events |= G_IO_HUP | G_IO_IN;
+  if (self->writer->flags & LW_DETECT_EOF && (self->pollfd.events & G_IO_IN) == 0)
+    {
+      self->pollfd.events |= G_IO_HUP | G_IO_IN;
+      self->input_means_connection_broken = TRUE;
+    }
+  else
+    {
+      self->input_means_connection_broken = FALSE;
+    }
   self->flush_waiting_for_timeout = FALSE;
   self->pollfd.revents = 0;
   return FALSE;
@@ -110,8 +191,9 @@ static gboolean
 log_writer_fd_check(GSource *source)
 {
   LogWriterWatch *self = (LogWriterWatch *) source;
+  gint64 num_elements = log_queue_get_length(self->writer->queue);
   
-  if (self->writer->queue->length || self->writer->partial)
+  if ((num_elements && !log_writer_throttling(self->writer)) || self->writer->partial)
     {
       /* we have data to flush */
       if (self->flush_waiting_for_timeout)
@@ -131,7 +213,9 @@ log_writer_fd_dispatch(GSource *source,
 		       gpointer user_data)
 {
   LogWriterWatch *self = (LogWriterWatch *) source;
-  if (self->pollfd.revents & (G_IO_HUP | G_IO_IN))
+  gint64 num_elements = log_queue_get_length(self->writer->queue);
+
+  if (self->pollfd.revents & (G_IO_HUP | G_IO_IN) && self->input_means_connection_broken)
     {
       msg_error("EOF occurred while idle",
                 evt_tag_int("fd", self->fd->fd),
@@ -139,7 +223,7 @@ log_writer_fd_dispatch(GSource *source,
       log_writer_broken(self->writer, NC_CLOSE);
       return FALSE;
     }
-  else if (self->writer->queue->length || self->writer->partial)
+  else if (num_elements || self->writer->partial)
     {
       if (!log_writer_flush_log(self->writer, self->fd))
         return FALSE;
@@ -178,12 +262,19 @@ log_writer_watch_new(LogWriter *writer, FDWrite *fd)
   return &self->super;
 }
 
+static gboolean
+log_writer_throttling(LogWriter *self)
+{
+  return self->options->throttle > 0 && self->throttle_buckets == 0;
+}
+
+
 static void
 log_writer_queue(LogPipe *s, LogMessage *lm, gint path_flags)
 {
   LogWriter *self = (LogWriter *) s;
   
-  if ((self->queue->length / 2) == self->options->fifo_size)
+  if (!log_queue_push_tail(self->queue, lm, path_flags))
     {
       /* drop incoming message, we must ack here, otherwise the sender might
        * block forever, however this should not happen unless the sum of
@@ -196,14 +287,13 @@ log_writer_queue(LogPipe *s, LogMessage *lm, gint path_flags)
       if (self->dropped_messages)
         (*self->dropped_messages)++;
       msg_debug("Destination queue full, dropping message",
-                evt_tag_int("queue_len", self->queue->length/2),
-                evt_tag_int("fifo_size", self->options->fifo_size),
+                evt_tag_int("queue_len", log_queue_get_length(self->queue)),
+                evt_tag_int("mem_fifo_size", self->options->mem_fifo_size),
+                evt_tag_int("disk_fifo_size", self->options->disk_fifo_size),
                 NULL);
       log_msg_drop(lm, path_flags);
       return;
     }
-  g_queue_push_tail(self->queue, lm);
-  g_queue_push_tail(self->queue, GUINT_TO_POINTER(0x80000000 | path_flags));
 }
 
 void
@@ -279,6 +369,7 @@ log_writer_flush_log(LogWriter *self, FDWrite *fd)
 {
   GString *line = NULL;
   gint rc;
+  gint64 num_elements;
   
   if (self->partial)
     {
@@ -307,21 +398,22 @@ log_writer_flush_log(LogWriter *self, FDWrite *fd)
     {  
       line = g_string_sized_new(128);
     }
-  while (!g_queue_is_empty(self->queue))
+  num_elements = log_queue_get_length(self->queue);
+  while (num_elements > 0 && !log_writer_throttling(self))
     {
       LogMessage *lm;
       gint path_flags;
       
-      lm = g_queue_pop_head(self->queue);
-      path_flags = GPOINTER_TO_UINT (g_queue_pop_head(self->queue)) & 0x7FFFFFFF;
-      
+      if (!log_queue_pop_head(self->queue, &lm, &path_flags))
+        g_assert_not_reached();
+
       log_writer_format_log(self, lm, line);
       
-      if ((path_flags & PF_FLOW_CTL_OFF) == 0)
-        {
-          log_msg_ack(lm);
-        }
+      log_msg_ack(lm, path_flags);
       log_msg_unref(lm);
+      
+      /* account this message against the throttle rate */
+      self->throttle_buckets--;
       
       if (line->len)
         {
@@ -348,6 +440,7 @@ log_writer_flush_log(LogWriter *self, FDWrite *fd)
                 }
             }
         }
+      num_elements--;
     }
   g_string_free(line, TRUE);
   return TRUE;
@@ -404,17 +497,9 @@ static void
 log_writer_free(LogPipe *s)
 {
   LogWriter *self = (LogWriter *) s;
+  
+  log_queue_free(self->queue);
 
-  while (!g_queue_is_empty(self->queue))
-    {
-      LogMessage *lm;
-      gint path_flags;
-      
-      lm = g_queue_pop_head(self->queue);
-      path_flags = GPOINTER_TO_UINT (g_queue_pop_head(self->queue)) & 0x7FFFFFFF;
-      log_msg_unref(lm);
-    }
-  g_queue_free(self->queue);
   g_free(self);
 }
 
@@ -445,7 +530,6 @@ log_writer_set_options(LogWriter *self, LogWriterOptions *options)
   self->options = options;
 }
 
-
 LogPipe *
 log_writer_new(guint32 flags, LogPipe *control, LogWriterOptions *options)
 {
@@ -458,16 +542,18 @@ log_writer_new(guint32 flags, LogPipe *control, LogWriterOptions *options)
   self->super.free_fn = log_writer_free;
 
   self->options = options;  
-  self->queue = g_queue_new();
+  self->queue = log_queue_new(options->mem_fifo_size);
   self->flags = flags;
   self->control = control;
+  self->throttle_buckets = self->options->throttle;
   return &self->super;
 }
 
 void 
 log_writer_options_defaults(LogWriterOptions *options)
 {
-  options->fifo_size = -1;
+  options->mem_fifo_size = -1;
+  options->disk_fifo_size = -1;
   options->template = NULL;
   options->use_time_recvd = -1;
   options->flush_lines = -1;
@@ -505,8 +591,8 @@ log_writer_options_init(LogWriterOptions *options, GlobalConfig *cfg, guint32 fl
   log_writer_options_destroy(options);
   options->template = template;
   options->flags = flags;
-  if (options->fifo_size == -1)
-    options->fifo_size = MAX(1000, cfg->log_fifo_size);
+  if (options->mem_fifo_size == -1)
+    options->mem_fifo_size = MAX(1000, cfg->log_fifo_size);
   if (options->use_time_recvd == -1)
     options->use_time_recvd = cfg->use_time_recvd;
     
@@ -517,13 +603,13 @@ log_writer_options_init(LogWriterOptions *options, GlobalConfig *cfg, guint32 fl
   if (options->frac_digits == -1)
     options->frac_digits = cfg->frac_digits;
     
-  if (options->fifo_size < options->flush_lines)
+  if (options->mem_fifo_size < options->flush_lines)
     {
-      msg_error("The value of flush_lines must be less than fifo_size",
-                evt_tag_int("fifo_size", options->fifo_size),
+      msg_error("The value of flush_lines must be less than log_fifo_size",
+                evt_tag_int("log_fifo_size", options->mem_fifo_size),
                 evt_tag_int("flush_lines", options->flush_lines),
                 NULL);
-      options->flush_lines = options->fifo_size - 1;
+      options->flush_lines = options->mem_fifo_size - 1;
     }
 
   if (options->ts_format == -1)

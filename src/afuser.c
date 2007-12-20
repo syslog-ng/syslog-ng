@@ -88,8 +88,7 @@ afuser_dd_queue(LogPipe *s, LogMessage *msg, gint path_flags)
         }
     }
   endutent();
-  if ((path_flags & PF_FLOW_CTL_OFF) == 0)
-    log_msg_ack(msg);
+  log_msg_ack(msg, path_flags);
   log_msg_unref(msg);
 }
 

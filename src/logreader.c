@@ -18,9 +18,9 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  
  */
-
+  
 #include "logreader.h"
 #include "messages.h"
 #include "fdread.h"
@@ -51,15 +51,6 @@ log_reader_fd_prepare(GSource *source,
                       gint *timeout)
 {
   LogReaderWatch *self = (LogReaderWatch *) source;
-
-  
-#if 0
-  /* FIXME: this debug message references a variable outside of its scope, 
-   * but it is a debug message only */
-  msg_debug("log_reader_fd_prepare()", 
-            evt_tag_int("window_size", self->reader->options->source_opts.window_size), 
-            NULL);
-#endif
 
   self->pollfd.revents = 0;
   self->pollfd.events = 0;

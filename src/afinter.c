@@ -27,7 +27,6 @@
 #include "messages.h"
 
 
-extern GQueue *internal_msg_queue;
 static gint next_mark_target = -1;
 
 void 
@@ -71,7 +70,7 @@ afinter_source_prepare(GSource *source, gint *timeout)
     {
       *timeout = -1;
     }
-  return !g_queue_is_empty(internal_msg_queue);
+  return msg_queue_length(internal_msg_queue) > 0;
 }
 
 static gboolean
@@ -83,7 +82,7 @@ afinter_source_check(GSource *source)
   
   if (next_mark_target != -1 && next_mark_target <= tv.tv_sec)
     return TRUE;
-  return !g_queue_is_empty(internal_msg_queue);
+  return msg_queue_length(internal_msg_queue) > 0;
 }
 
 static gboolean
@@ -104,7 +103,7 @@ afinter_source_dispatch(GSource *source,
     }
   else
     {
-      msg = g_queue_pop_head(internal_msg_queue);
+      msg = msg_queue_pop(internal_msg_queue);
     }
 
 

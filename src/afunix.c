@@ -110,7 +110,7 @@ afunix_dd_new(gchar *filename, guint flags)
 {
   AFUnixDestDriver *self = g_new0(AFUnixDestDriver, 1);
   
-  afsocket_dd_init_instance(&self->super, &self->sock_options, flags);
+  afsocket_dd_init_instance(&self->super, NULL, &self->sock_options, flags);
   self->super.bind_addr = g_sockaddr_unix_new(NULL);
   self->super.dest_addr = g_sockaddr_unix_new(filename);
   return &self->super.super;

@@ -51,7 +51,7 @@ typedef struct _AFFileDestDriver
 {
   LogDriver super;
   LogTemplate *filename_template;
-  AFFileDestWriter *writer;
+  AFFileDestWriter *single_writer;
   guint32 flags;
   uid_t file_uid;
   gid_t file_gid;

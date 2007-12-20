@@ -91,6 +91,7 @@ streams_read_new(gint fd)
   self->fd = fd;
   self->cond = G_IO_IN;
   self->read = streams_read_read_method;
+  self->free_fn = fd_read_free_method;
   return self;
 }
 

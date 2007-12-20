@@ -110,7 +110,7 @@ afinet_resolve_name(GSockAddr **addr, gchar *name)
               break;
 #if ENABLE_IPV6
             case AF_INET6:
-              *g_sockaddr_inet6_get_sa((*addr)) = *((struct sockaddr_in6 *) res->ai_addr);
+              *g_sockaddr_inet6_get_sa(*addr) = *((struct sockaddr_in6 *) res->ai_addr);
               break;
 #endif
             default: 
@@ -499,8 +499,7 @@ afinet_dd_queue(LogPipe *s, LogMessage *msg, gint path_flags)
           if (libnet_write(self->lnet_ctx) >= 0) 
             {
               /* we have finished processing msg */
-              if ((path_flags & PF_FLOW_CTL_OFF) == 0)
-                log_msg_ack(msg);
+              log_msg_ack(msg, path_flags);
               log_msg_unref(msg);
               g_string_free(msg_line, TRUE);
               
@@ -519,12 +518,13 @@ afinet_dd_queue(LogPipe *s, LogMessage *msg, gint path_flags)
   log_pipe_forward_msg(s, msg, path_flags);
 }
 
+
 LogDriver *
 afinet_dd_new(gint af, gchar *host, gint port, guint flags)
 {
   AFInetDestDriver *self = g_new0(AFInetDestDriver, 1);
   
-  afsocket_dd_init_instance(&self->super, &self->sock_options.super, flags);
+  afsocket_dd_init_instance(&self->super, host, &self->sock_options.super, flags);
   self->super.super.super.init = afinet_dd_init;
   self->super.super.super.queue = afinet_dd_queue;
   if (af == AF_INET)

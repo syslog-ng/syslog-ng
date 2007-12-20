@@ -59,7 +59,7 @@ static struct keyword keywords[] = {
         { "udp6",               KW_UDP6 },
         { "tcp6",               KW_TCP6 },
 #endif
-        { "usertty", 		KW_USER },
+        { "usertty", 		KW_USERTTY },
         { "door",               KW_DOOR },
         { "sun_stream",		KW_SUN_STREAMS },
         { "sun_streams",	KW_SUN_STREAMS },
@@ -113,6 +113,7 @@ static struct keyword keywords[] = {
 	{ "log_iw_size",	KW_LOG_IW_SIZE },
 	{ "log_msg_size",	KW_LOG_MSG_SIZE },
 	{ "log_prefix",		KW_LOG_PREFIX },
+	{ "throttle",           KW_THROTTLE },
 	
         { "create_dirs",        KW_CREATE_DIRS },
         { "optional",           KW_OPTIONAL },
@@ -143,9 +144,6 @@ static struct keyword keywords[] = {
 	{ "mac",		KW_MAC },
 	{ "authentication",	KW_AUTH },
 	{ "encrypt",		KW_ENCRYPT },
-	{ "required",		KW_REQUIRED },
-	{ "allow",		KW_ALLOW },
-	{ "deny",		KW_DENY },
 	{ "compress",		KW_COMPRESS },
 	{ "persist_only",       KW_PERSIST_ONLY },
 	{ "dns_cache_hosts",    KW_DNS_CACHE_HOSTS },
@@ -204,9 +202,9 @@ word	[^ \#'"\(\)\{\}\\;\n\t,|\.]
 \n			   { linenum++; }
 {white}+		   ;
 \.\.                       { return DOTDOT; }
-0x{digit}+ 		   { yylval.num = strtol(yytext, NULL, 16); return NUMBER; }
-0{digit}+		   { yylval.num = strtol(yytext, NULL, 8); return NUMBER; }
-(-|\+)?{digit}+            { yylval.num = strtol(yytext, NULL, 10); return NUMBER; }
+0x{digit}+ 		   { yylval.num = strtoll(yytext, NULL, 16); return NUMBER; }
+0{digit}+		   { yylval.num = strtoll(yytext, NULL, 8); return NUMBER; }
+(-|\+)?{digit}+            { yylval.num = strtoll(yytext, NULL, 10); return NUMBER; }
 ({word}+(\.)?)*{word}+ 	   { return check_reserved_words(yytext); }
 \(	      		   { return '('; }
 \)			   { return ')'; }

@@ -29,6 +29,7 @@
 #include "misc.h"
 #include "stats.h"
 #include "dnscache.h"
+#include "apphook.h"
 
 #include <sys/types.h>
 #include <stdio.h>
@@ -47,6 +48,8 @@
 #include <getopt.h>
 #endif
 
+
+
 static char cfgfilename[128] = PATH_SYSLOG_NG_CONF;
 static char pidfilename[128] = PATH_PIDFILE;
 
@@ -58,6 +61,8 @@ static gchar *chroot_dir = NULL;
 static gchar *run_as_user = NULL;
 static uid_t uid = 0;
 static gid_t gid = 0;
+static gboolean seed_rng = FALSE;
+
 
 
 void usage(void)
@@ -77,6 +82,7 @@ void usage(void)
 	 "  -u <user>, --user=<user>         Switch to user\n"
 	 "  -g <group>, --group=<group>      Switch to group\n"
 	 "  --ignore-persistent              Ignore persistent configuration file\n"
+	 "  -S, --seed                       Seed the RNG using ~/.rnd or $RANDFILE\n"
 #ifdef YYDEBUG
 	 "  -y, --yydebug                    Turn on yacc debug messages\n"
 #endif
@@ -95,12 +101,6 @@ static void
 sig_term_handler(int signo)
 {
   sig_term_received = TRUE;
-}
-
-static void
-sig_segv_handler(int signo)
-{
-  kill(getpid(), SIGSEGV);
 }
 
 static void
@@ -125,9 +125,6 @@ setup_signals(void)
   sigaction(SIGINT, &sa, NULL);
   sa.sa_handler = sig_child_handler;
   sigaction(SIGCHLD, &sa, NULL);
-  sa.sa_handler = sig_segv_handler;
-  sa.sa_flags = SA_RESETHAND;
-  sigaction(SIGSEGV, &sa, NULL);
 }
 
 gboolean
@@ -292,6 +289,7 @@ setup_creds(void)
   return 1;
 }
 
+
 #ifdef YYDEBUG
 extern int yydebug;
 #endif
@@ -317,6 +315,7 @@ main(int argc, char *argv[])
       { "user", required_argument, NULL, 'u' },
       { "group", required_argument, NULL, 'g' },
       { "stderr", no_argument, NULL, 'e' },
+      { "seed", no_argument, NULL, 'S' },
       { "persist-file", required_argument, NULL, 'R' },
 #ifdef YYDEBUG
       { "yydebug", no_argument, NULL, 'y' },
@@ -325,16 +324,15 @@ main(int argc, char *argv[])
     };
 #endif
   gboolean syntax_only = FALSE;
-  gboolean log_to_stderr = FALSE;
   PersistentConfig *persist = NULL;
   const gchar *persist_file = PATH_PERSIST_CONFIG;
   int opt, rc;
   
 
 #if HAVE_GETOPT_LONG
-  while ((opt = getopt_long(argc, argv, "sFf:p:dvhyVC:u:g:eR:", syslog_ng_options, NULL)) != -1)
+  while ((opt = getopt_long(argc, argv, "sFf:p:dvhyVC:u:g:eSR:", syslog_ng_options, NULL)) != -1)
 #else
-  while ((opt = getopt(argc, argv, "sFf:p:dvhyVC:u:g:eR:")) != -1)
+  while ((opt = getopt(argc, argv, "sFf:p:dvhyVC:u:g:eSR:")) != -1)
 #endif
     {
       switch (opt) 
@@ -355,7 +353,7 @@ main(int argc, char *argv[])
 	  verbose_flag++;
 	  break;
 	case 'e':
-	  log_to_stderr = TRUE;
+	  log_stderr = TRUE;
 	  break;
 	case 'F':
 	  do_fork = FALSE;
@@ -375,6 +373,9 @@ main(int argc, char *argv[])
 	  if (!resolve_group(optarg, &gid))
 	    usage();
 	  break;
+        case 'S':
+          seed_rng = TRUE;
+          break;
 #ifdef YYDEBUG
 	case 'y':
 	  yydebug = TRUE;
@@ -390,14 +391,10 @@ main(int argc, char *argv[])
 	}
       
     }
-  
-  
+  app_startup();
   z_mem_trace_init("syslog-ng.trace");
-  tzset();
   setup_signals();
-  msg_init(log_to_stderr);
-  child_manager_init();
-  dns_cache_init();
+
 
   cfg = cfg_new(cfgfilename);
   if (!cfg)
@@ -410,6 +407,7 @@ main(int argc, char *argv[])
       return 0;
     }
 
+
   persist = persist_config_new();
   persist_config_load(persist, persist_file);
 
@@ -417,16 +415,18 @@ main(int argc, char *argv[])
     {
       return 2;
     }
-
+  
   if (!daemonize())
     {
       return 2;
     }
+  
+  app_post_daemonized();
   /* from now on internal messages are written to the system log as well */
   msg_syslog_started();
   
   setup_creds();
-  setup_std_fds(log_to_stderr);
+  setup_std_fds(log_stderr);
   
   rc = main_loop_run(&cfg);
 
@@ -440,10 +440,7 @@ main(int argc, char *argv[])
 
   cfg_free(cfg);
   
-  child_manager_deinit();
-
-  msg_deinit();
-  dns_cache_destroy();
+  app_shutdown();
   z_mem_trace_dump();
   return rc;
 }

@@ -29,9 +29,13 @@
 
 extern int debug_flag;
 extern int verbose_flag;
+extern int log_stderr;
 
+/* fatal->warning goes out to the console during startup, notice and below
+ * comes goes to the log even during startup */
 #define msg_fatal(desc, tag1, tags...) msg_event_send(msg_event_create(EVT_PRI_CRIT, desc, tag1, ##tags ))
 #define msg_error(desc, tag1, tags...) msg_event_send(msg_event_create(EVT_PRI_ERR, desc, tag1, ##tags ))
+#define msg_warning(desc, tag1, tags...) msg_event_send(msg_event_create(EVT_PRI_WARNING, desc, tag1, ##tags ))
 #define msg_notice(desc, tag1, tags...) msg_event_send(msg_event_create(EVT_PRI_NOTICE, desc, tag1, ##tags ))
 #define msg_info(desc, tag1, tags...) msg_event_send(msg_event_create(EVT_PRI_INFO, desc, tag1, ##tags ))
 
@@ -52,7 +56,22 @@ void msg_event_send(EVTREC *e);
 
 void msg_syslog_started(void);
 
-gboolean msg_init(int use_stderr);
+void msg_init(void);
 void msg_deinit(void);
+
+
+#if !ENABLE_SQL
+
+#define MsgQueue         GQueue
+#define msg_queue_push   g_queue_push_tail
+#define msg_queue_pop    g_queue_pop_head
+#define msg_queue_new    g_queue_new
+#define msg_queue_free   g_queue_free
+#define msg_queue_length(q) q->length
+#endif
+
+
+extern MsgQueue *internal_msg_queue;
+
 
 #endif

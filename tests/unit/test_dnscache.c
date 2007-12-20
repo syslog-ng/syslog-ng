@@ -1,4 +1,5 @@
 #include "dnscache.h"
+#include "apphook.h"
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -11,6 +12,7 @@ main()
 {
   int i;
   
+  app_startup();
   dns_cache_init();
   dns_cache_set_params(50000, 2, 1, NULL);
   
@@ -48,6 +50,6 @@ main()
         }
     }
   
-  dns_cache_destroy();
+  app_shutdown();
   return 0;
 }

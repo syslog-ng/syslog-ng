@@ -42,7 +42,7 @@ typedef struct _LogTemplate
 void log_template_set_escape(LogTemplate *self, gboolean enable);
 void log_template_format(LogTemplate *self, LogMessage *lm, guint macro_flags, gint ts_format, glong zone_offset, gint frac_digits, GString *result);
 
-LogTemplate *log_template_new(gchar *name, gchar *template);
+LogTemplate *log_template_new(gchar *name, const gchar *template);
 LogTemplate *log_template_ref(LogTemplate *s);
 void log_template_unref(LogTemplate *s);
 

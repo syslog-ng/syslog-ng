@@ -3,6 +3,7 @@
 #include "templates.h"
 #include "misc.h"
 #include "macros.h"
+#include "apphook.h"
 
 #include <time.h>
 #include <stdlib.h>
@@ -37,6 +38,8 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 {
   LogMessage *msg;
   char *msg_str = "<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép";
+  
+  app_startup();
   
   putenv("TZ=CET");
   tzset();
@@ -114,6 +117,8 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase(msg, "$MESSAGE", "syslog-ng[23323]: árvíztűrőtükörfúrógép");
   testcase(msg, "$SOURCEIP", "10.10.10.10");
   testcase(msg, "$PROGRAM/var/log/messages/$HOST/$HOST_FROM/$MONTH$DAY$QQQQQvalami", "syslog-ng/var/log/messages/bzorp/kismacska/0211valami");
+  app_shutdown();
+  
   if (success)
     return 0;
   return 1;

@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2002-2007 BalaBit IT Ltd, Budapest, Hungary                    
+ * Copyright (C) 2002-2007 BalaBit IT Ltd.
+ * Copyright (C) 2002-2007 Balazs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -12,8 +13,8 @@
  * COPYING for details.
  *
  * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of 
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the 
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
@@ -21,32 +22,24 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  
  */
   
-#ifndef FDWRITE_H_INCLUDED
-#define FDWRITE_H_INCLUDED
+#ifndef APPHOOK_H_INCLUDED
+#define APPHOOK_H_INCLUDED
 
 #include "syslog-ng.h"
-#include <unistd.h>
 
-typedef struct _FDWrite FDWrite;
-
-struct _FDWrite
+/* this enum must be in the order the given events actually happen in time */
+enum
 {
-  gint fd;
-  GIOCondition cond;
-  gboolean fsync;
-  size_t (*write)(FDWrite *self, const void *buf, size_t count);
-  void (*free_fn)(FDWrite *self);
+  AH_STARTUP,
+  AH_POST_DAEMONIZED,
+  AH_SHUTDOWN
 };
 
-static inline ssize_t 
-fd_write(FDWrite *s, const void *buf, size_t count)
-{
-  return s->write(s, buf, count);
-}
+typedef void (*ApplicationHookFunc)(gint type, gpointer user_data);
 
-FDWrite *fd_write_new(gint fd);
-void fd_write_free(FDWrite *self);
-
-void fd_write_free_method(FDWrite *self);
+void register_application_hook(gint type, ApplicationHookFunc func, gpointer user_data);
+void app_startup();
+void app_post_daemonized();
+void app_shutdown();
 
 #endif

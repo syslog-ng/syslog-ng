@@ -293,14 +293,6 @@ log_center_deinit(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
 }
 
 static void
-log_center_ack(LogMessage *msg, gpointer user_data)
-{
-  log_msg_ack_block_end(msg);
-  log_msg_ack(msg);
-  log_msg_unref(msg);
-}
-
-static void
 log_center_queue(LogPipe *s, LogMessage *msg, gint path_flags)
 {
   LogCenter *self = (LogCenter *) s;
@@ -310,10 +302,6 @@ log_center_queue(LogPipe *s, LogMessage *msg, gint path_flags)
   (*self->received_messages)++;
   
   afinter_postpone_mark(self->cfg->mark_freq);
-
-  log_msg_ref(msg);
-  log_msg_ack_block_start(msg, log_center_ack, NULL);
-  
   for (match = 0, fallbacks = 0; !match && have_fallbacks && (fallbacks <= 1); fallbacks++)
     {
       have_fallbacks = 0;
@@ -335,7 +323,7 @@ log_center_queue(LogPipe *s, LogMessage *msg, gint path_flags)
           if (!(conn->flags & LC_CATCHALL))
             {
               /* check source */
-              if (!g_hash_table_lookup(conn->source_cache, msg->source_group->name->str))
+              if (!g_hash_table_lookup(conn->source_cache, msg->source_group))
                 {
                   goto next_connection;
                 }
@@ -363,12 +351,12 @@ log_center_queue(LogPipe *s, LogMessage *msg, gint path_flags)
             {
               LogEndpoint *ep = (LogEndpoint *) g_ptr_array_index(conn->destinations, di);
               LogDestGroup *dest;
+              guint next_path_flags = path_flags | ((conn->flags & LC_FLOW_CONTROL) ? 0 : PF_FLOW_CTL_OFF);
               
-              if (conn->flags & LC_FLOW_CONTROL)
-                log_msg_ack_block_inc(msg);
+              log_msg_add_ack(msg, next_path_flags);
               
               dest = (LogDestGroup *) ep->ref;
-              log_pipe_queue(&dest->super, log_msg_ref(msg), path_flags | ((conn->flags & LC_FLOW_CONTROL) ? 0 : PF_FLOW_CTL_OFF));
+              log_pipe_queue(&dest->super, log_msg_ref(msg), next_path_flags);
               (*self->queued_messages)++;
             }
           
@@ -380,9 +368,8 @@ log_center_queue(LogPipe *s, LogMessage *msg, gint path_flags)
           ;
         }
     }
-  /* our own ack */
-  log_msg_ack(msg);
-  
+  log_msg_ack(msg, path_flags);
+  log_msg_unref(msg);
 }
 
 static void

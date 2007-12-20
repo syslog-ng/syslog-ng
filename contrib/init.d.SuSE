@@ -7,6 +7,8 @@
 # hacked for syslog-ng from above dudes' syslog script
 #         Darth Elmo <mick@visi.com>, 13 Sept 2001
 #
+# updated for OpenSuse 10 by
+#         Tamas Pal <folti@balabit.hu>, 3, Nov 2006
 # NOTES: 
 #
 # Add the new variable SYSLOGNG_PARAMS to /etc/rc.config. Set it equal to 
@@ -31,17 +33,17 @@
 # /sbin/init.d/syslog-ng
 #
 ### BEGIN INIT INFO
-# Provides: syslog
+# Provides: syslog-ng
 # Required-Start: $network
 # Required-Stop:  $network
 # Default-Start:  2 3 5
-# Default-Stop:
+# Default-Stop: 0 1 6
 # Description:    Start the system logging daemons
 ### END INIT INFO
 
-. /etc/rc.config
+. /etc/rc.status || exit 1
 
-NGBINDIR=/usr/local/sbin
+NGBINDIR=/sbin
 BINDIR=/sbin
 
 test -x ${NGBINDIR}/syslog-ng || exit 0
