@@ -231,7 +231,7 @@ log_msg_parse(LogMessage *self, gchar *data, gint length, guint flags, regex_t *
           /* process second fractions */
           
           p++;
-          while (div < 10e6 && isdigit(*p))
+          while (div < 10e5 && isdigit(*p))
             {
               frac = 10 * frac + (*p) - '0';
               div = div * 10;
@@ -264,8 +264,9 @@ log_msg_parse(LogMessage *self, gchar *data, gint length, guint flags, regex_t *
        * Also we have to take into account that at the zone barriers an hour
        * might be skipped or played twice this is what the 
        * (tm.tm_hour - * unnormalized_hour) part fixes up. */
-      
-      self->stamp.time.tv_sec = self->stamp.time.tv_sec + get_local_timezone_ofs(self->stamp.time.tv_sec) - (tm.tm_hour - unnormalized_hour) * 3600 - self->stamp.zone_offset;
+       
+      if (self->stamp.zone_offset != -1)
+        self->stamp.time.tv_sec = self->stamp.time.tv_sec + get_local_timezone_ofs(self->stamp.time.tv_sec) - (tm.tm_hour - unnormalized_hour) * 3600 - self->stamp.zone_offset;
       
       src += stamp_length;
       left -= stamp_length;
@@ -343,7 +344,7 @@ log_msg_parse(LogMessage *self, gchar *data, gint length, guint flags, regex_t *
           
           /* gee, funny Cisco extension, BSD timestamp with fraction of second support */
 
-          while (i < left && div < 10e6 && isdigit(src[i]))
+          while (i < left && div < 10e5 && isdigit(src[i]))
             {
               frac = 10 * frac + (src[i]) - '0';
               div = div * 10;
