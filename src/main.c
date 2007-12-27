@@ -30,6 +30,7 @@
 #include "stats.h"
 #include "dnscache.h"
 #include "apphook.h"
+#include "alarms.h"
 
 #include <sys/types.h>
 #include <stdio.h>
@@ -394,7 +395,6 @@ main(int argc, char *argv[])
   app_startup();
   z_mem_trace_init("syslog-ng.trace");
   setup_signals();
-
 
   cfg = cfg_new(cfgfilename);
   if (!cfg)

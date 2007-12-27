@@ -18,7 +18,7 @@ libsyslog_ng_a_SOURCES = \
 	children.c children.h stats.c stats.h \
 	gsockaddr.c gsockaddr.h fdwrite.c fdwrite.h fdread.c fdread.h memtrace.c memtrace.h \
 	dnscache.c dnscache.h apphook.c apphook.h serialize.c serialize.h logqueue.c logqueue.h \
-	atomic.h afsql.c afsql.h
+	atomic.h afsql.c afsql.h alarms.c alarms.h
 
 cfg-lex.c: cfg-grammar.c
 

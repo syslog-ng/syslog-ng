@@ -2,6 +2,7 @@
 #include "messages.h"
 #include "children.h"
 #include "dnscache.h"
+#include "alarms.h"
 
 typedef struct _ApplicationHookEntry
 {
@@ -67,6 +68,7 @@ app_startup(void)
   msg_init();
   child_manager_init();
   dns_cache_init();
+  alarm_init();
   tzset();
 }
 

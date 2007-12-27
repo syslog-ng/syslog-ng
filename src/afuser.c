@@ -22,6 +22,8 @@
  */
 
 #include "afuser.h"
+#include "alarms.h"
+#include "messages.h"
 
 #include <utmp.h>
 #include <string.h>
@@ -32,6 +34,7 @@ typedef struct _AFUserDestDriver
 {
   LogDriver super;
   GString *username;
+  time_t disable_until;
 } AFUserDestDriver;
 
 static gboolean
@@ -52,6 +55,11 @@ afuser_dd_queue(LogPipe *s, LogMessage *msg, gint path_flags)
   AFUserDestDriver *self = (AFUserDestDriver *) s;
   gchar buf[8192];
   struct utmp *ut;
+  time_t now;
+  
+  now = msg->recvd.time.tv_sec;
+  if (self->disable_until && self->disable_until > now)
+    goto finish;
   
   g_snprintf(buf, sizeof(buf), "%s %s %s\n", msg->date.str, msg->host.str, msg->msg.str);
   
@@ -82,12 +90,21 @@ afuser_dd_queue(LogPipe *s, LogMessage *msg, gint path_flags)
           fd = open(line, O_NOCTTY | O_APPEND | O_WRONLY);
           if (fd != -1) 
             {
-              write(fd, buf, strlen(buf));
+              alarm_set(10);
+              if (write(fd, buf, strlen(buf)) < 0 && errno == EINTR && alarm_has_fired())
+                {
+                  msg_notice("Writing to the user terminal has blocked for 10 seconds, disabling for 10 minutes",
+                            evt_tag_str("user", self->username->str),
+                            NULL);
+                  self->disable_until = now + 600;
+                }
+              alarm_cancel();
               close(fd);
             }
         }
     }
   endutent();
+finish:
   log_msg_ack(msg, path_flags);
   log_msg_unref(msg);
 }

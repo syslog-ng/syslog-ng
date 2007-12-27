@@ -21,38 +21,17 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#ifndef FDREAD_H_INCLUDED
-#define FDREAD_H_INCLUDED
+#ifndef ALARMS_H_INCLUDED
+#define ALARMS_H_INCLUDED
 
 #include "syslog-ng.h"
-#include "gsockaddr.h"
 
-#include <unistd.h>
+void alarm_set(int timeout);
+void alarm_cancel();
+gboolean alarm_has_fired();
 
-#define FR_DONTCLOSE 0x0001
-#define FR_RECV      0x0002
+void alarm_init();
 
-typedef struct _FDRead FDRead;
-
-struct _FDRead
-{
-  gint fd;
-  GIOCondition cond;
-  guint flags;
-  gint timeout;
-  size_t (*read)(FDRead *self, void *buf, size_t count, GSockAddr **sa);
-  void (*free_fn)(FDRead *self);
-};
-
-static inline ssize_t 
-fd_read(FDRead *s, void *buf, size_t count, GSockAddr **sa)
-{
-  return s->read(s, buf, count, sa);
-}
-
-FDRead *fd_read_new(gint fd, guint flags);
-void fd_read_free(FDRead *self);
-
-void fd_read_free_method(FDRead *self);
 
 #endif
+

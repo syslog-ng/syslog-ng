@@ -23,6 +23,7 @@
   
 #include "fdwrite.h"
 #include "messages.h"
+#include "alarms.h"
 
 #include <errno.h>
 
@@ -35,7 +36,20 @@ fd_write_write_method(FDWrite *self, const void *buf, size_t buflen)
   
   do
     {
+      if (self->timeout)
+        alarm_set(self->timeout);
       rc = write(self->fd, buf, buflen);
+      if (self->timeout > 0 && rc == -1 && errno == EINTR && alarm_has_fired())
+        {
+          msg_notice("Nonblocking write has blocked, returning with an error",
+                     evt_tag_int("fd", self->fd),
+                     evt_tag_int("timeout", self->timeout),
+                     NULL);
+          alarm_cancel();
+          break;
+        }
+      if (self->timeout)
+        alarm_cancel();
       if (self->fsync)
         fsync(self->fd);
     }

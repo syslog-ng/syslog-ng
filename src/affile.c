@@ -184,7 +184,11 @@ affile_sd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
 
   if (file_opened || open_deferred)
     {
-      self->reader = log_reader_new(fd_read_new(fd, 0), LR_LOCAL | LR_NOMREAD, s, &self->reader_options);
+      FDRead *fdr;
+      
+      fdr = fd_read_new(fd, 0);
+      fdr->timeout = 10;
+      self->reader = log_reader_new(fdr, LR_LOCAL | LR_NOMREAD, s, &self->reader_options);
 
       if (persist)
         {

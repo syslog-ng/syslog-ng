@@ -23,6 +23,7 @@
 
 #include "fdread.h"
 #include "messages.h"
+#include "alarms.h"
 
 #include <errno.h>
 
@@ -36,7 +37,21 @@ fd_do_read(FDRead *self, void *buf, size_t buflen, GSockAddr **sa)
       *sa = NULL;
       do
         {
+          if (self->timeout)
+            alarm_set(self->timeout);
           rc = read(self->fd, buf, buflen);
+          
+          if (self->timeout > 0 && rc == -1 && errno == EINTR && alarm_has_fired())
+            {
+              msg_notice("Nonblocking read has blocked, returning with an error",
+                         evt_tag_int("fd", self->fd),
+                         evt_tag_int("timeout", self->timeout),
+                         NULL);
+              alarm_cancel();
+              break;
+            }
+          if (self->timeout)
+            alarm_cancel();
         }
       while (rc == -1 && errno == EINTR);
     }

@@ -34,6 +34,7 @@ struct _FDWrite
   gint fd;
   GIOCondition cond;
   gboolean fsync;
+  gint timeout;
   size_t (*write)(FDWrite *self, const void *buf, size_t count);
   void (*free_fn)(FDWrite *self);
 };
