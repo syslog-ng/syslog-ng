@@ -1,2 +1,2 @@
 
-SUBDIRS = unit functional
+SUBDIRS = unit functional loggen

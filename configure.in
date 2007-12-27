@@ -461,6 +461,7 @@ AC_OUTPUT(dist.conf
 	  tgzbuild/Makefile
           tests/unit/Makefile
           tests/functional/Makefile
+	  tests/loggen/Makefile
           )
 
 echo 
