@@ -9,6 +9,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#ifndef __STRING
+#define __STRING(x) #x
+#endif
+
 #define TEST_ASSERT(x, format, value, expected)		\
   do 				\
     { 				\
