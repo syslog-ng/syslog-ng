@@ -279,6 +279,14 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            "ctld",		// openvpn
            "ctld snmpd[2499]: PTHREAD support initialized" // msg
            );
+  testcase("<7>Aug 29 02:00:00 bzorp ctld/snmpd[2499]: PTHREAD support initialized", 0, NULL,
+           7, 			// pri
+           1, 0, 7200,	        // timestamp (sec/usec/zone)
+           NULL,                // originally formatted timestamp
+           "bzorp",	        // host
+           "ctld/snmpd",	// openvpn
+           "ctld/snmpd[2499]: PTHREAD support initialized" // msg
+           );
   testcase("<190>Apr 15 2007 21:28:13: %PIX-6-302014: Teardown TCP connection 1688438 for bloomberg-net:1.2.3.4/8294 to inside:5.6.7.8/3639 duration 0:07:01 bytes 16975 TCP FINs", 0, "^%",
            190,
            1176665293, 0, 7200,
