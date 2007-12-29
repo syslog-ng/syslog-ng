@@ -473,8 +473,7 @@ log_msg_parse(LogMessage *self, gchar *data, gint length, guint flags, regex_t *
 	  /* Try to extract a program name */
 	  oldsrc = src;
 	  oldleft = left;
-	  while (left && *src != ' ' && *src != '['
-		 && *src != ':' && *src != '/' && *src != ',' && *src != '<')
+	  while (left && *src != ' ' && *src != '[' && *src != ':')
 	    {
 	      src++;
 	      left--;
@@ -508,8 +507,7 @@ log_msg_parse(LogMessage *self, gchar *data, gint length, guint flags, regex_t *
       else
 	{
 	  /* Capture the program name */
-	  while (left && *src != ' ' && *src != '['
-		 && *src != ':' && *src != '/' && *src != ',' && *src != '<')
+	  while (left && *src != ' ' && *src != '[' && *src != ':')
 	    {
 	      src++;
 	      left--;
