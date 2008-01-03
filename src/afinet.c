@@ -474,7 +474,7 @@ afinet_dd_queue(LogPipe *s, LogMessage *msg, gint path_flags)
 
   if (self->spoof_source && self->lnet_ctx && msg->saddr && (msg->saddr->sa.sa_family == AF_INET || msg->saddr->sa.sa_family == AF_INET6))
     {
-      gboolean success;
+      gboolean success = FALSE;
       GString *msg_line = g_string_sized_new(256);
       
       g_assert((self->super.flags & AFSOCKET_DGRAM) != 0);

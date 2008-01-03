@@ -84,6 +84,7 @@ fi
 %files
 %defattr(-,root,root)
 %{prefix}/sbin/syslog-ng
+%{prefix}/bin/loggen
 %{_mandir}/*
 %docdir %{_prefix}/share/doc/syslog-ng-@VERSION@
 %{_prefix}/share/doc/syslog-ng-@VERSION@/*

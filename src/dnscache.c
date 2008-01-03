@@ -97,6 +97,7 @@ dns_cache_key_hash(DNSCacheKey *e)
   else
     {
       g_assert_not_reached();
+      return 0;
     }
 }
 

@@ -3,7 +3,6 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <getopt.h>
 #include <sys/un.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -11,6 +10,11 @@
 #include <time.h>
 #include <unistd.h>
 #include <netdb.h>
+#include <string.h>
+
+#if HAVE_GETOPT_H
+#include <getopt.h>
+#endif
 
 #define POS_TIMESTAMP1   4
 #define POS_SEQ          49
