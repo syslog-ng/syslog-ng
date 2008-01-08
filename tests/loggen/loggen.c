@@ -146,7 +146,7 @@ usage()
          "  --unix, or -x           Use UNIX domain socket transport\n"
          "  --stream, or -S         Use stream socket (TCP and unix-stream)\n"
          "  --dgram, or -D          Use datagram socket (UDP and unix-dgram)\n"
-         "  --size, or -s           Specify the size of the syslog message\n"
+         "  --size, or -s <size>    Specify the size of the syslog message\n"
          "  --interval, or -I <sec> Number of seconds to run the test for\n");
   exit(0);
 }
@@ -211,39 +211,71 @@ main(int argc, char *argv[])
     }
   if (!unix_socket)
     {
-      struct addrinfo hints;
-      struct addrinfo *res, *rp;
 
       if (argc - optind < 2)
         {
           fprintf(stderr, "No target server specified\n");
           usage();
         }
-      
-      memset(&hints, 0, sizeof(hints));
-      hints.ai_family = AF_UNSPEC;
-      hints.ai_socktype = sock_type;
-      hints.ai_flags = AI_ADDRCONFIG;
-      hints.ai_protocol = 0;
-      if (getaddrinfo(argv[optind], argv[optind + 1], &hints, &res) != 0)
-        {
-          fprintf(stderr, "Name lookup error");
-          return 2;
+
+      if (1)
+        {      
+#if HAVE_GETADDRINFO
+          struct addrinfo hints;
+          struct addrinfo *res, *rp;
+
+          memset(&hints, 0, sizeof(hints));
+          hints.ai_family = AF_UNSPEC;
+          hints.ai_socktype = sock_type;
+          hints.ai_flags = AI_ADDRCONFIG;
+          hints.ai_protocol = 0;
+          if (getaddrinfo(argv[optind], argv[optind + 1], &hints, &res) != 0)
+            {
+              fprintf(stderr, "Name lookup error\n");
+              return 2;
+            }
+
+          for (rp = res; rp != NULL; rp = rp->ai_next) 
+            {
+              sock = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
+              if (sock == -1)
+                continue;
+
+              if (connect(sock, rp->ai_addr, rp->ai_addrlen) != -1)
+                break;
+
+              close(sock);
+              sock = -1;
+            }
+          freeaddrinfo(res);
+#else
+          struct hostent *he;
+          struct sockaddr_in s_in;
+          
+          he = gethostbyname(argv[optind]);
+          if (!he)
+            {
+              fprintf(stderr, "Name lookup error\n");
+              return 2;
+            }
+          s_in.sin_family = AF_INET;
+          s_in.sin_port = htons(atoi(argv[optind + 1]));
+          s_in.sin_addr = *(struct in_addr *) he->h_addr;
+          
+          sock = socket(AF_INET, sock_type, 0);
+          if (sock < 0)
+            {
+              fprintf(stderr, "Error creating socket: %s\n", strerror(errno));
+              return 2;
+            }
+            
+          if (connect(sock, (struct sockaddr *) &s_in, sizeof(s_in)) < 0)
+            {
+              close(sock);
+              sock = -1;
+            }
+#endif
         }
-
-      for (rp = res; rp != NULL; rp = rp->ai_next) 
-        {
-          sock = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
-          if (sock == -1)
-            continue;
-
-          if (connect(sock, rp->ai_addr, rp->ai_addrlen) != -1)
-            break;
-
-          close(sock);
-          sock = -1;
-        }
-      freeaddrinfo(res);
       
       if (sock == -1)
         {
