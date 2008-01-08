@@ -147,7 +147,7 @@ usage()
          "  --stream, or -S         Use stream socket (TCP and unix-stream)\n"
          "  --dgram, or -D          Use datagram socket (UDP and unix-dgram)\n"
          "  --size, or -s           Specify the size of the syslog message\n"
-         "  --interval, or -i <sec> Number of seconds to run the test for\n");
+         "  --interval, or -I <sec> Number of seconds to run the test for\n");
   exit(0);
 }
 
@@ -176,9 +176,9 @@ main(int argc, char *argv[])
   int opt;
 
 #if HAVE_GETOPT_LONG
-  while ((opt = getopt_long(argc, argv, "r:I:ixsSDh", syslog_ng_options, NULL)) != -1)
+  while ((opt = getopt_long(argc, argv, "r:I:ixs:SDh", syslog_ng_options, NULL)) != -1)
 #else
-  while ((opt = getopt(argc, argv, "r:I:ixsSDh")) != -1)
+  while ((opt = getopt(argc, argv, "r:I:ixs:SDh")) != -1)
 #endif
     {
       switch (opt) 

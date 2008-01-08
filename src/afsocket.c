@@ -364,7 +364,11 @@ gboolean
 afsocket_sd_process_connection(AFSocketSourceDriver *self, GSockAddr *peer_addr, gint fd)
 {
 #if ENABLE_TCP_WRAPPER
-  if (peer_addr && (peer_addr->sa.sa_family == AF_INET || peer_addr->sa.sa_family == AF_INET6))
+  if (peer_addr && (peer_addr->sa.sa_family == AF_INET
+#if ENABLE_IPV6
+                   || peer_addr->sa.sa_family == AF_INET6
+#endif
+     ))
     {
       struct request_info req;
    
@@ -698,9 +702,11 @@ afsocket_dd_format_stats_name(AFSocketDestDriver *self)
     case AF_INET:
       driver_name = !!(self->flags & AFSOCKET_STREAM) ? "tcp" : "udp";
       break;
+#if ENABLE_IPV6
     case AF_INET6:
       driver_name = !!(self->flags & AFSOCKET_STREAM) ? "tcp6" : "udp6";
       break;    
+#endif
     }
   
   g_snprintf(stats_name, sizeof(stats_name), "%s(%s)", 
