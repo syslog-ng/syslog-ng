@@ -60,7 +60,7 @@ void msg_init(void);
 void msg_deinit(void);
 
 
-#if !ENABLE_SQL
+#if !ENABLE_THREADS
 
 #define MsgQueue         GQueue
 #define msg_queue_push   g_queue_push_tail
@@ -68,6 +68,16 @@ void msg_deinit(void);
 #define msg_queue_new    g_queue_new
 #define msg_queue_free   g_queue_free
 #define msg_queue_length(q) q->length
+
+#else
+
+#define MsgQueue         GAsyncQueue
+#define msg_queue_push   g_async_queue_push
+#define msg_queue_pop    g_async_queue_pop
+#define msg_queue_new    g_async_queue_new
+#define msg_queue_free   g_async_queue_unref
+#define msg_queue_length g_async_queue_length
+
 #endif
 
 

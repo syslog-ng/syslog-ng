@@ -175,6 +175,8 @@ gint last_addr_family = AF_INET;
 %type   <ptr> dest_afuser
 %type   <ptr> dest_afprogram
 %type   <ptr> dest_afprogram_params
+%type   <ptr> dest_afsql
+%type   <ptr> dest_afsql_params
 %type	<num> dest_writer_options_flags
 %type	<num> dest_writer_options_flag
 
@@ -201,6 +203,8 @@ gint last_addr_family = AF_INET;
 
 %type	<cptr> string
 %type	<cptr> string_or_number
+%type   <ptr> string_list
+%type   <ptr> string_list_build
 
 %%
 
@@ -482,6 +486,7 @@ dest_item
 	| dest_afsocket				{ $$ = $1; }
 	| dest_afuser				{ $$ = $1; }
 	| dest_afprogram			{ $$ = $1; }
+	| dest_afsql                            { $$ = $1; }
 	;
 
 dest_affile
@@ -664,6 +669,46 @@ dest_afprogram_params
 	  dest_writer_options			{ $$ = last_driver; }
 	;
 	
+	
+dest_afsql
+        : KW_SQL '(' dest_afsql_params ')'      { $$ = $3; }
+        ;
+
+dest_afsql_params
+        : 
+          {
+            #if ENABLE_SQL      
+            last_driver = afsql_dd_new();
+            #endif /* ENABLE_SQL */
+          }
+          dest_afsql_options                    { $$ = last_driver; }
+        ;
+
+dest_afsql_options
+        : dest_afsql_option dest_afsql_options
+        |
+        ;
+        
+dest_afsql_option
+        : KW_IFDEF { 
+#if ENABLE_SQL 
+} 
+        | KW_TYPE '(' string ')'                { afsql_dd_set_type(last_driver, $3); free($3); }
+        | KW_HOST '(' string ')'                { afsql_dd_set_host(last_driver, $3); free($3); }
+        | KW_PORT '(' string ')'                { afsql_dd_set_port(last_driver, $3); free($3); }
+        | KW_USERNAME '(' string ')'            { afsql_dd_set_user(last_driver, $3); free($3); }
+        | KW_PASSWORD '(' string ')'            { afsql_dd_set_password(last_driver, $3); free($3); }
+        | KW_DATABASE '(' string ')'            { afsql_dd_set_database(last_driver, $3); free($3); }
+        | KW_TABLE '(' string ')'               { afsql_dd_set_table(last_driver, $3); free($3); }
+        | KW_COLUMNS '(' string_list ')'        { afsql_dd_set_columns(last_driver, $3); }
+        | KW_INDEXES '(' string_list ')'        { afsql_dd_set_indexes(last_driver, $3); }
+        | KW_VALUES '(' string_list ')'         { afsql_dd_set_values(last_driver, $3); }
+        | KW_LOG_FIFO_SIZE '(' NUMBER ')'       { afsql_dd_set_mem_fifo_size(last_driver, $3); }
+        | KW_ENDIF { 
+#endif /* ENABLE_SQL */ 
+}
+        ;
+
 
 dest_writer_options
 	: dest_writer_option dest_writer_options 
@@ -894,6 +939,17 @@ string
 string_or_number
         : string                                { $$ = $1; }
         | NUMBER                                { char buf[32]; snprintf(buf, sizeof(buf), "%" G_GINT64_FORMAT, $1); $$ = strdup(buf); }
+
+
+string_list
+        : string_list_build                     { $$ = g_list_reverse($1); }
+        ;
+
+string_list_build
+        : string string_list_build              { $$ = g_list_append($2, $1); }
+        |                                       { $$ = NULL; }
+        ;
+
 
 
 %%

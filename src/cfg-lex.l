@@ -64,6 +64,19 @@ static struct keyword keywords[] = {
         { "sun_stream",		KW_SUN_STREAMS },
         { "sun_streams",	KW_SUN_STREAMS },
         { "program",		KW_PROGRAM },
+#if ENABLE_SQL
+        { "sql",                KW_SQL },
+        { "type",               KW_TYPE },
+        { "username",           KW_USERNAME },
+        { "password",           KW_PASSWORD },
+        { "database",           KW_DATABASE },
+        { "encoding",           KW_ENCODING },
+        { "table",              KW_TABLE },
+        
+        { "columns",            KW_COLUMNS },
+        { "indexes",            KW_INDEXES },
+        { "values",             KW_VALUES },
+#endif
 
 	/* option items */
 	{ "flags",		KW_FLAGS },

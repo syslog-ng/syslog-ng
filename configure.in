@@ -10,8 +10,9 @@ VERSION="`cat $srcdir/VERSION`"
 dnl ***************************************************************************
 dnl dependencies
 
-GLIB_MIN_VERSION="2.2"
+GLIB_MIN_VERSION="2.4.0"
 EVTLOG_MIN_VERSION="0.2"
+LIBDBI_MIN_VERSION="0.8.0"
 
 dnl ***************************************************************************
 dnl Initial setup
@@ -73,6 +74,11 @@ AC_ARG_ENABLE(spoof-source,
               [  --enable-spoof-source   Enable support for spoofed source addresses.]
               ,,enable_spoof_source="auto")
 
+AC_ARG_ENABLE(sql,
+	      [  --enable-sql            Enable support for SQL destinations. (default: auto)]
+	      ,,enable_sql="auto")
+
+# FIXME: skip tests on unsupported platforms/architectures...
 case "$ostype" in
 	HP-UX)
 		if $CC -v 2>&1 | grep gcc > /dev/null; then
@@ -165,6 +171,15 @@ if test "$blb_cv_c_struct_sockaddr_storage" = "yes"; then
 	AC_DEFINE(HAVE_STRUCT_SOCKADDR_STORAGE,[1],[struct sockaddr_storage is present on your system])
 fi
 
+
+dnl ***************************************************************************
+dnl libdbi headers/libraries
+dnl ***************************************************************************
+
+AC_CHECK_LIB(dl, dlsym, DL_LIBS="-ldl")
+PKG_CHECK_MODULES(LIBDBI, dbi-0.8 >= $LIBDBI_MIN_VERSION)
+
+
 dnl ***************************************************************************
 dnl Checks for libraries
 AC_CHECK_LIB(door, door_create)
@@ -203,6 +218,9 @@ done
 ])
 LIBS=$old_LIBS
 LIBWRAP_LIBS=$blb_cv_c_lwrap
+
+PKG_CHECK_MODULES(EVTLOG, eventlog >= $EVTLOG_MIN_VERSION,,
+                AC_MSG_ERROR(Cannot find eventlog version >= $EVTLOG_MIN_VERSION: is pkg-config in path?))
 
 
 dnl ***************************************************************************
@@ -268,8 +286,6 @@ elif test "x$enable_tcp_wrapper" != "xyes"; then
         LIBWRAP_LIBS=""
 fi
 
-
-
 if test "x$enable_spoof_source" = "xauto"; then
 	AC_MSG_CHECKING(whether to enable spoof source support)
         if test "x$LIBNET_LIBS" != "x"; then
@@ -297,10 +313,22 @@ if test "x$enable_ipv6" = "xauto"; then
         fi
 fi
 
-PKG_CHECK_MODULES(GLIB, glib-2.0 >= $GLIB_MIN_VERSION,,
-		AC_MSG_ERROR(Cannot find GLib library version >= $GLIB_MIN_VERSION: is pkg-config in path?))
-PKG_CHECK_MODULES(EVTLOG, eventlog >= $EVTLOG_MIN_VERSION,,
-                AC_MSG_ERROR(Cannot find eventlog version >= $EVTLOG_MIN_VERSION: is pkg-config in path?))
+GLIB_ADDONS=""
+if test "x$enable_sql" = "xauto"; then
+	AC_MSG_CHECKING(whether to enable SQL support)
+	if test "x$LIBDBI_LIBS" != "x"; then
+		enable_sql="yes"
+		AC_MSG_RESULT(yes)
+		GLIB_ADDONS="gthread"
+	else
+		enable_sql="no"
+		AC_MSG_RESULT(no)
+	fi
+fi
+
+AM_PATH_GLIB_2_0($GLIB_MIN_VERSION,,
+		AC_MSG_ERROR(Cannot find GLib library version >= $GLIB_MIN_VERSION: is pkg-config in path?), $GLIB_ADDONS)
+
 
 old_LIBS=$LIBS
 LIBS="$LD_START_STATIC $GLIB_LIBS $LD_END_STATIC"
@@ -344,6 +372,7 @@ if test "x$blb_cv_glib_sane" = "xno"; then
 	AC_MSG_ERROR([Glib headers inconsistent with current compiler setting. You might be using 32 bit Glib with a 64 bit compiler, check PKG_CONFIG_PATH])
 fi
 
+
 if test "x$enable_dynamic_linking" = "xyes" -a "x$enable_static_linking" = "xyes"; then
 	AC_MSG_ERROR([You cannot specify dynamic and static linking at the same time.])
 fi
@@ -368,11 +397,11 @@ DEPS_CPPFLAGS="$CPPFLAGS $GLIB_CFLAGS $EVTLOG_CFLAGS $LIBNET_CFLAGS"
 CPPFLAGS="$DEPS_CPPFLAGS -D_GNU_SOURCE -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64"
 
 if test "x$enable_dynamic_linking" = "xyes"; then
-	DEPS_LIBS="$LIBS $LEXLIB $GLIB_LIBS $EVTLOG_LIBS $LIBNET_LIBS $LIBWRAP_LIBS"
+	DEPS_LIBS="$LIBS $LEXLIB $GLIB_LIBS $EVTLOG_LIBS $LIBNET_LIBS $LIBWRAP_LIBS $LIBDBI_LIBS"
 elif test "x$enable_static_linking" = "xyes"; then
-	DEPS_LIBS="-static $LIBS $LEXLIB $GLIB_LIBS $EVTLOG_LIBS $LIBNET_LIBS $LIBWRAP_LIBS"	
+	DEPS_LIBS="-static $LIBS $LEXLIB $GLIB_LIBS $EVTLOG_LIBS $LIBNET_LIBS $LIBWRAP_LIBS $LIBDBI_LIBS"	
 else
-	DEPS_LIBS="$LIBS $LD_START_STATIC $LEXLIB $GLIB_LIBS $EVTLOG_LIBS $LIBNET_LIBS $LIBWRAP_LIBS $LD_END_STATIC"
+	DEPS_LIBS="$LIBS $LD_START_STATIC $LEXLIB $GLIB_LIBS $EVTLOG_LIBS $LIBNET_LIBS $LIBWRAP_LIBS $LD_END_STATIC $LIBDBI_LIBS $DL_LIBS"
 fi
 LIBS="$DEPS_LIBS"
 YFLAGS="-d"
@@ -408,6 +437,7 @@ AC_DEFINE_UNQUOTED(ENABLE_MEM_TRACE, `enable_value $enable_memtrace`, [Enable me
 AC_DEFINE_UNQUOTED(ENABLE_SPOOF_SOURCE, `enable_value $enable_spoof_source`, [Enable spoof source support])
 AC_DEFINE_UNQUOTED(ENABLE_IPV6, `enable_value $enable_ipv6`, [Enable IPv6 support])
 AC_DEFINE_UNQUOTED(ENABLE_TCP_WRAPPER, `enable_value $enable_tcp_wrapper`, [Enable TCP wrapper support])
+AC_DEFINE_UNQUOTED(ENABLE_SQL, `enable_value $enable_sql`, [Enable SQL support])
 
 
 AC_SUBST(DEPS_CPPFLAGS)
@@ -432,3 +462,20 @@ AC_OUTPUT(dist.conf
           tests/unit/Makefile
           tests/functional/Makefile
           )
+
+echo 
+echo "syslog-ng Open Source Edition $VERSION configured"
+echo " Compiler options:"
+echo "  compiler                    : $CC"
+echo "  compiler options            : $CFLAGS $CPPFLAGS"
+echo "  linker flags                : $LDFLAGS $LIBS"
+echo "  prefix                      : $prefix"
+echo " Features:"
+echo "  Sun STREAMS support         : ${enable_sun_streams:=no}"
+echo "  Sun Door support            : ${enable_sun_door:=no}"
+echo "  Debug symbols               : ${enable_debug:=no}"
+echo "  Memtrace                    : ${enable_memtrace:=no}"
+echo "  IPV6 support                : ${enable_ipv6:=no}"
+echo "  spoof-source support        : ${enable_spoof_source:=no}"
+echo "  tcp-wrapper support         : ${enable_tcp_wrapper:=no}"
+echo "  SQL support                 : ${enable_sql:=no}"

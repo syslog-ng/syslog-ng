@@ -61,6 +61,9 @@ run_application_hook(gint type)
 void 
 app_startup(void)
 {
+#if ENABLE_THREADS
+  g_thread_init(NULL);
+#endif
   msg_init();
   child_manager_init();
   dns_cache_init();
