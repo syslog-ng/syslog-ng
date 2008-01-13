@@ -100,7 +100,6 @@ gen_messages(int sock, int rate, int message_length, int interval)
             }
         }
 
-
       if (buckets == 0)
         {
           struct timespec tspec, trem;
@@ -250,6 +249,7 @@ main(int argc, char *argv[])
           freeaddrinfo(res);
 #else
           struct hostent *he;
+          struct servent *se;
           struct sockaddr_in s_in;
           
           he = gethostbyname(argv[optind]);
@@ -259,8 +259,14 @@ main(int argc, char *argv[])
               return 2;
             }
           s_in.sin_family = AF_INET;
-          s_in.sin_port = htons(atoi(argv[optind + 1]));
           s_in.sin_addr = *(struct in_addr *) he->h_addr;
+          
+          se = getservbyname(argv[optind + 1], sock_type == SOCK_STREAM ? "tcp" : "udp");
+          if (se)
+            s_in.sin_port = se->s_port;
+          else
+            s_in.sin_port = htons(atoi(argv[optind + 1]));
+
           
           sock = socket(AF_INET, sock_type, 0);
           if (sock < 0)
