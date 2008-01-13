@@ -7,8 +7,6 @@
 
 #include "driver.h"
 
-#if ENABLE_SQL /* BEGIN MARK: sql */
-
 void afsql_dd_set_type(LogDriver *s, const gchar *type);
 void afsql_dd_set_host(LogDriver *s, const gchar *host);
 void afsql_dd_set_port(LogDriver *s, const gchar *host);
@@ -23,24 +21,6 @@ void afsql_dd_set_mem_fifo_size(LogDriver *s, gint mem_fifo_size);
 void afsql_dd_set_disk_fifo_size(LogDriver *s, gint64 disk_fifo_size);
 
 LogDriver *afsql_dd_new();
-
-#else /* ELSE MARK */
-
-#define afsql_dd_set_type(s, t)
-#define afsql_dd_set_host(s, h)
-#define afsql_dd_set_port(s, p)
-#define afsql_dd_set_user(s, u)
-#define afsql_dd_set_password(s, p)
-#define afsql_dd_set_database(s, d)
-#define afsql_dd_set_table(s, t)
-#define afsql_dd_set_columns(s, c)
-#define afsql_dd_set_values(s, v)
-#define afsql_dd_set_mem_fifo_size(s, f)
-#define afsql_dd_set_disk_fifo_size(s, f)
-
-#define afsql_dd_new() 0
-
-#endif /* END MARK */
 
 #endif
 
