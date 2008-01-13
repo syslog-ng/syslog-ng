@@ -289,7 +289,6 @@ log_writer_queue(LogPipe *s, LogMessage *lm, gint path_flags)
       msg_debug("Destination queue full, dropping message",
                 evt_tag_int("queue_len", log_queue_get_length(self->queue)),
                 evt_tag_int("mem_fifo_size", self->options->mem_fifo_size),
-                evt_tag_int("disk_fifo_size", self->options->disk_fifo_size),
                 NULL);
       log_msg_drop(lm, path_flags);
       return;
@@ -553,7 +552,6 @@ void
 log_writer_options_defaults(LogWriterOptions *options)
 {
   options->mem_fifo_size = -1;
-  options->disk_fifo_size = -1;
   options->template = NULL;
   options->use_time_recvd = -1;
   options->flush_lines = -1;

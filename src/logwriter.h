@@ -52,8 +52,6 @@ typedef struct _LogWriterOptions
   
   /* maximum number of entries in the memory based FIFO */
   gint mem_fifo_size;
-  /* maximum number of entries in the disk based FIFO */
-  gint disk_fifo_size;
   
   /* minimum number of entries to trigger a flush */
   gint flush_lines;
@@ -89,8 +87,6 @@ typedef struct _LogWriter
 void log_writer_set_options(LogWriter *self, LogWriterOptions *options);
 void log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result);
 gboolean log_writer_reopen(LogPipe *s, FDWrite *fd);
-gboolean log_writer_save_queue(LogPipe *s, gchar **filename);
-gboolean log_writer_restore_queue(LogPipe *s, const gchar *filename);
 LogPipe *log_writer_new(guint32 flags, LogPipe *control, LogWriterOptions *options);
 
 void log_writer_options_set_template_escape(LogWriterOptions *options, gboolean enable);
