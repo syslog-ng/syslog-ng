@@ -89,10 +89,8 @@ if rc != 0:
 else:
     success = 1
 
+time.sleep(1)
 if success:
-    pid = readpidfile('syslog-ng.pid')
-    
-    #os.system("strace -o aaa -s 256 -f -p %d &" % (pid,))
 
     try:
         for s in senders:
@@ -100,9 +98,10 @@ if success:
         time.sleep(1)
     finally:
         try:
+            pid = readpidfile('syslog-ng.pid')
             os.kill(pid, signal.SIGTERM)
-        except OSError:
-            print "Syslog-ng exited before SIGTERM..."
+        except OSError, e:
+            print "Syslog-ng exited before SIGTERM... %s" % str(e)
             success = 0
 
 sys.exit(not success)
