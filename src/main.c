@@ -62,9 +62,6 @@ static gchar *chroot_dir = NULL;
 static gchar *run_as_user = NULL;
 static uid_t uid = 0;
 static gid_t gid = 0;
-static gboolean seed_rng = FALSE;
-
-
 
 void usage(void)
 {
@@ -331,9 +328,9 @@ main(int argc, char *argv[])
   
 
 #if HAVE_GETOPT_LONG
-  while ((opt = getopt_long(argc, argv, "sFf:p:dvhyVC:u:g:eSR:", syslog_ng_options, NULL)) != -1)
+  while ((opt = getopt_long(argc, argv, "sFf:p:dvhyVC:u:g:eR:", syslog_ng_options, NULL)) != -1)
 #else
-  while ((opt = getopt(argc, argv, "sFf:p:dvhyVC:u:g:eSR:")) != -1)
+  while ((opt = getopt(argc, argv, "sFf:p:dvhyVC:u:g:eR:")) != -1)
 #endif
     {
       switch (opt) 
@@ -374,9 +371,6 @@ main(int argc, char *argv[])
 	  if (!resolve_group(optarg, &gid))
 	    usage();
 	  break;
-        case 'S':
-          seed_rng = TRUE;
-          break;
 #ifdef YYDEBUG
 	case 'y':
 	  yydebug = TRUE;
