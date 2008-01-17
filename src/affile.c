@@ -344,8 +344,12 @@ affile_dw_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
     {
       FDWrite *fdw;
       
-      self->writer = log_writer_new(LW_FORMAT_FILE, s, &self->owner->writer_options);
+      if (!self->writer)
+        {
+          self->writer = log_writer_new(LW_FORMAT_FILE, s, &self->owner->writer_options);
         
+          log_pipe_append(&self->super, self->writer);
+        }
       if (!log_pipe_init(self->writer, NULL, NULL))
         {
           msg_error("Error initializing log writer", NULL);
@@ -358,7 +362,6 @@ affile_dw_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
       if (self->owner->flags & AFFILE_FSYNC)
         fdw->fsync = TRUE;
       log_writer_reopen(self->writer, fdw);
-      log_pipe_append(&self->super, self->writer);
     }
   else
     {
@@ -379,9 +382,7 @@ affile_dw_deinit(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
   if (self->writer)
     {
       log_pipe_deinit(self->writer, NULL, NULL);
-      log_pipe_unref(self->writer);
     }
-  self->writer = NULL;
   return TRUE;
 }
 
@@ -409,7 +410,7 @@ affile_dw_set_owner(AFFileDestWriter *self, AFFileDestDriver *owner)
   log_pipe_ref(&owner->super.super);
   self->owner = owner;
   if (self->writer)
-    log_writer_set_options((LogWriter *) self->writer, &owner->writer_options);
+    log_writer_set_options((LogWriter *) self->writer, &self->super, &owner->writer_options);
   
 }
 
@@ -418,6 +419,8 @@ affile_dw_free(LogPipe *s)
 {
   AFFileDestWriter *self = (AFFileDestWriter *) s;
   
+  log_pipe_unref(self->writer);
+  self->writer = NULL;
   g_string_free(self->filename, TRUE);
   log_pipe_unref(&self->owner->super.super);
   
@@ -619,6 +622,7 @@ affile_dd_reuse_writer(gpointer key, gpointer value, gpointer user_data)
   AFFileDestWriter *writer = (AFFileDestWriter *) value;
   
   affile_dw_set_owner(writer, self);
+  log_pipe_init(&writer->super, NULL, NULL);
 }
 
 
@@ -664,7 +668,10 @@ affile_dd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
     {
       self->single_writer = persist_config_fetch(persist, affile_dd_format_persist_name(self));
       if (self->single_writer)
-        affile_dw_set_owner(self->single_writer, self);
+        {
+          affile_dw_set_owner(self->single_writer, self);
+          log_pipe_init(&self->single_writer->super, NULL, NULL);
+        }
     }
   
   
@@ -710,6 +717,12 @@ affile_dd_destroy_writer_hash(gpointer value)
   g_hash_table_destroy(writer_hash);
 }
 
+static void
+affile_dd_deinit_writer(gpointer key, gpointer value, gpointer user_data)
+{
+  log_pipe_deinit((LogPipe *) value, NULL, NULL);
+}
+
 static gboolean
 affile_dd_deinit(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
 {
@@ -721,6 +734,7 @@ affile_dd_deinit(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
     {
       g_assert(self->writer_hash == NULL);
 
+      log_pipe_deinit(&self->single_writer->super, NULL, NULL);
       persist_config_add(persist, affile_dd_format_persist_name(self), self->single_writer, affile_dd_destroy_writer);
       self->single_writer = NULL;
     }
@@ -728,6 +742,7 @@ affile_dd_deinit(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
     {
       g_assert(self->single_writer == NULL);
       
+      g_hash_table_foreach(self->writer_hash, affile_dd_deinit_writer, NULL);
       persist_config_add(persist, affile_dd_format_persist_name(self), self->writer_hash, affile_dd_destroy_writer_hash);
       self->writer_hash = NULL;
     }

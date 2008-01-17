@@ -507,6 +507,7 @@ log_writer_reopen(LogPipe *s, FDWrite *newfd)
 {
   LogWriter *self = (LogWriter *) s;
   
+  /* old fd is freed by the source */
   if (self->source)
     {
       g_source_destroy(self->source);
@@ -524,8 +525,9 @@ log_writer_reopen(LogPipe *s, FDWrite *newfd)
 }
 
 void
-log_writer_set_options(LogWriter *self, LogWriterOptions *options)
+log_writer_set_options(LogWriter *self, LogPipe *control, LogWriterOptions *options)
 {
+  self->control = control;
   self->options = options;
 }
 
