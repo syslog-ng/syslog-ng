@@ -313,17 +313,20 @@ if test "x$enable_ipv6" = "xauto"; then
         fi
 fi
 
-GLIB_ADDONS=""
 if test "x$enable_sql" = "xauto"; then
 	AC_MSG_CHECKING(whether to enable SQL support)
 	if test "x$LIBDBI_LIBS" != "x"; then
 		enable_sql="yes"
 		AC_MSG_RESULT(yes)
-		GLIB_ADDONS="gthread"
 	else
 		enable_sql="no"
 		AC_MSG_RESULT(no)
 	fi
+fi
+
+GLIB_ADDONS=""
+if test "x$enable_sql" = "xyes"; then
+	GLIB_ADDONS="gthread"
 fi
 
 AM_PATH_GLIB_2_0($GLIB_MIN_VERSION,,
