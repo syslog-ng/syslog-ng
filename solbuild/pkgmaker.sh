@@ -1,7 +1,7 @@
 #!/bin/sh
 . ../pkginfo
 . ../rules.conf
-FILENAME=${RUNPKGNAME}_${VERSION}_${ARCH}.pkg
+FILENAME=${RUNPKGNAME}_${VERSION}_${SOLBUILD_ARCH}.pkg
 pkgmk -o -r `pwd` -f ../prototype -d spool
 pkgtrans -nos spool $FILENAME $PKG
 mv -f /var/spool/pkg/$FILENAME ../../../

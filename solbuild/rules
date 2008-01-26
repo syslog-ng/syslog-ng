@@ -18,7 +18,7 @@ $(STAMPDIR)/stamp-setup:
 
 configure: $(STAMPDIR)/stamp-configure
 $(STAMPDIR)/stamp-configure: setup
-	CFLAGS="-mcpu=v9 -mtune=v9" ./configure --prefix=/opt/syslog-ng 
+	./configure --prefix=/opt/syslog-ng --enable-ssl --enable-sql --enable-dynamic-linking
 	touch $@
 
 build: $(STAMPDIR)/stamp-build
