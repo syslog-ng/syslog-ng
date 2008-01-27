@@ -1,0 +1,57 @@
+#!/bin/sh
+DESTDIR=""
+if [ -n "$1" ]
+then
+  DESTDIR=$1
+fi
+if [ ! -d "contrib/cygwin-packaging" ]
+then
+  echo "Please run 'contrib/cygwin-packaging/cygwin-postinstall' from the top-level source directory."
+  exit 1
+fi
+if [ ! -f "${DESTDIR}/usr/sbin/syslog-ng.exe" ]
+then
+  echo "Please run 'make install-strip' first."
+  exit 2
+fi
+if [ ! -f "config.log" ]
+then
+  echo "Please run './configure' first."
+  echo "Have a look into 'contrib/cygwin-packaging/cygwin-postinstall' how to do it."
+  exit 3
+fi
+mkdir -p "${DESTDIR}/usr/bin"
+mkdir -p "${DESTDIR}/usr/share/doc/syslog-ng"
+mkdir -p "${DESTDIR}/usr/share/doc/Cygwin"
+cp contrib/cygwin-packaging/syslog-ng-config "${DESTDIR}/usr/bin"
+cp -rp doc/examples/syslog-ng.conf.s* doc/reference/syslog-ng.[tx]* "${DESTDIR}/usr/share/doc/syslog-ng"
+tar xzfC doc/reference/syslog-ng.html.tar.gz "${DESTDIR}/usr/share/doc/syslog-ng"
+cat > "${DESTDIR}/usr/share/doc/Cygwin/syslog-ng.README" <<'EOF'
+If you want to use syslog-ng, just run the /usr/bin/syslog-ng-config
+script.  This script will create a default configuration file
+/etc/syslog-ng.conf and it will install syslog-ng as a service on NT
+systems on request.
+
+Please note that you cannot use syslogd from the inetutils package
+and syslog-ng together.  Only one syslog daemon should run at a time.
+The syslog-ng-config script, as well as the latest version of the
+syslogd-config script are taking care of this when requested to install
+as service.
+
+The syslog-ng package has been built using the following command
+sequence from the top level source dir:
+
+./configure \
+       --disable-ipv6 \
+       --disable-tcp-wrapper \
+        --prefix=/usr \
+        --sysconfdir=/etc \
+        --libexecdir='$(prefix)/sbin' \
+        --localstatedir=/var \
+        --datadir='$(prefix)/share' \
+        --mandir='$(prefix)/share/man' \
+        --infodir='$(prefix)/share/info'
+make
+make install-strip
+contrib/cygwin-packaging/cygwin-postinstall
+EOF
