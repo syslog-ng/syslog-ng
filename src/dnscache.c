@@ -62,6 +62,7 @@ static DNSCacheEntry cache_first, cache_last, persist_first, persist_last;
 static gint dns_cache_size = 1007;
 static gint dns_cache_expire = 3600;
 static gint dns_cache_expire_failed = 60;
+static gint dns_cache_persistent_count = 0;
 static gchar *dns_cache_hosts = NULL;
 static time_t dns_cache_hosts_mtime = -1;
 
@@ -146,6 +147,7 @@ dns_cache_cleanup_persistent_hosts(void)
   while (persist_first.next != &persist_last)
     {
       g_hash_table_remove(cache, &persist_first.next->key);
+      dns_cache_persistent_count--;
     }
 }
 
@@ -266,12 +268,14 @@ dns_cache_store(gboolean persistent, gint family, void *addr, const gchar *hostn
     }
   else
     {
+      dns_cache_persistent_count++;
       entry->resolved = 0;
       dns_cache_entry_insert_before(&persist_last, entry);
     }
   g_hash_table_replace(cache, &entry->key, entry);
   
-  if (g_hash_table_size(cache) > dns_cache_size)
+  /* persistent elements are not counted */
+  if (g_hash_table_size(cache) - dns_cache_persistent_count > dns_cache_size)
     {
       /* remove oldest element */
       g_hash_table_remove(cache, &cache_first.next->key);
