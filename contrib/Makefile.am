@@ -15,4 +15,6 @@ EXTRA_DIST = README init.d.solaris init.d.HP-UX init.d.RedHat init.d.SuSE 	\
 	hpux-packaging/syslog-ng.init \
 	lfs-packaging/Makefile.lfs \
 	lfs-packaging/README.lfs \
-	lfs-packaging/syslog-ng.init.lfs
+	lfs-packaging/syslog-ng.init.lfs \
+	cygwin-packaging/cygwin-postinstall \
+	cygwin-packaging/syslog-ng-config
