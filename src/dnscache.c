@@ -166,6 +166,7 @@ dns_cache_check_hosts(void)
     {
       FILE *hosts;
       
+      dns_cache_hosts_mtime = st.st_mtime;
       dns_cache_cleanup_persistent_hosts();
       hosts = fopen(dns_cache_hosts, "r");
       if (hosts)
