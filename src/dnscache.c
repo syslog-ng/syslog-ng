@@ -257,6 +257,7 @@ void
 dns_cache_store(gboolean persistent, gint family, void *addr, const gchar *hostname)
 {
   DNSCacheEntry *entry;
+  guint hash_size;
   
   entry = g_new(DNSCacheEntry, 1);
 
@@ -269,14 +270,17 @@ dns_cache_store(gboolean persistent, gint family, void *addr, const gchar *hostn
     }
   else
     {
-      dns_cache_persistent_count++;
       entry->resolved = 0;
       dns_cache_entry_insert_before(&persist_last, entry);
     }
+  hash_size = g_hash_table_size(cache);
   g_hash_table_replace(cache, &entry->key, entry);
+
+  if (persistent && hash_size != g_hash_table_size(cache))
+    dns_cache_persistent_count++;
   
   /* persistent elements are not counted */
-  if (g_hash_table_size(cache) - dns_cache_persistent_count > dns_cache_size)
+  if ((gint) (g_hash_table_size(cache) - dns_cache_persistent_count) > dns_cache_size)
     {
       /* remove oldest element */
       g_hash_table_remove(cache, &cache_first.next->key);
