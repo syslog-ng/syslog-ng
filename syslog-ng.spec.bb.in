@@ -34,7 +34,7 @@ Provides: syslog
 
 %build
 ./configure --prefix=%{prefix} --mandir=%{_mandir} --infodir=%{prefix}/share/info \
-  --sysconfdir=/etc/syslog-ng --localstatedir=/var/lib/syslog-ng
+  --sysconfdir=/etc/syslog-ng --localstatedir=/var/lib/syslog-ng --enable-spoof-source --enable-sql
 make
 
 %install
