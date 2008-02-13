@@ -281,7 +281,8 @@ setup_creds(void)
   if (uid || gid || run_as_user) 
     {
       setgid(gid);
-      initgroups(run_as_user, gid);
+      if (run_as_user)
+        initgroups(run_as_user, gid);
       setuid(uid);
     }
   return 1;
