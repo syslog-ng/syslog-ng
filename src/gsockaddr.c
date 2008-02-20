@@ -120,6 +120,10 @@ g_accept(int fd, int *newfd, GSockAddr **addr)
     {
       *addr = g_sockaddr_new((struct sockaddr *) sabuf, salen);
     }
+  else if (errno == EAGAIN)
+    {
+      return G_IO_STATUS_AGAIN;
+    }
   else
     {
       return G_IO_STATUS_ERROR;
@@ -148,7 +152,10 @@ g_connect(int fd, GSockAddr *remote)
   while (rc == -1 && errno == EINTR);
   if (rc == -1)
     {
-      return G_IO_STATUS_ERROR;
+      if (errno == EAGAIN)
+        return G_IO_STATUS_AGAIN;
+      else
+        return G_IO_STATUS_ERROR;
     }
   else
     {

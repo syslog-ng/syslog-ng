@@ -408,6 +408,8 @@ afsocket_sd_process_connection(AFSocketSourceDriver *self, GSockAddr *peer_addr,
   return TRUE;
 }
 
+#define MAX_ACCEPTS_AT_A_TIME 30
+
 static gboolean
 afsocket_sd_accept(gpointer s)
 {
@@ -416,32 +418,46 @@ afsocket_sd_accept(gpointer s)
   gchar buf1[256], buf2[256];
   gint new_fd;
   gboolean res;
+  int accepts = 0;
   
-  if (g_accept(self->fd, &new_fd, &peer_addr) != G_IO_STATUS_NORMAL)
+  while (accepts < MAX_ACCEPTS_AT_A_TIME)
     {
-      msg_error("Error accepting new connection",
-                evt_tag_errno(EVT_TAG_OSERROR, errno),
-                NULL);
-      return TRUE;
-    }
-  if (self->setup_socket && !self->setup_socket(self, new_fd))
-    {
-      close(new_fd);
-      return TRUE;
-    }
-    
-  g_fd_set_nonblock(new_fd, TRUE);
-  g_fd_set_cloexec(new_fd, TRUE);
-    
-  msg_verbose("Syslog connection accepted",
-              evt_tag_str("from", g_sockaddr_format(peer_addr, buf1, sizeof(buf1))),
-              evt_tag_str("to", g_sockaddr_format(self->bind_addr, buf2, sizeof(buf2))),
-              NULL);
+      GIOStatus status;
+      
+      status = g_accept(self->fd, &new_fd, &peer_addr);
+      if (status == G_IO_STATUS_AGAIN)
+        {
+          /* no more connections to accept */
+          break;
+        }
+      else if (status != G_IO_STATUS_NORMAL)
+        {
+          msg_error("Error accepting new connection",
+                    evt_tag_errno(EVT_TAG_OSERROR, errno),
+                    NULL);
+          return TRUE;
+        }
+      if (self->setup_socket && !self->setup_socket(self, new_fd))
+        {
+          close(new_fd);
+          return TRUE;
+        }
+        
+      g_fd_set_nonblock(new_fd, TRUE);
+      g_fd_set_cloexec(new_fd, TRUE);
+        
+      msg_verbose("Syslog connection accepted",
+                  evt_tag_str("from", g_sockaddr_format(peer_addr, buf1, sizeof(buf1))),
+                  evt_tag_str("to", g_sockaddr_format(self->bind_addr, buf2, sizeof(buf2))),
+                  NULL);
 
-  res = afsocket_sd_process_connection(self, peer_addr, new_fd);
-  g_sockaddr_unref(peer_addr);
-  return res;
-
+      res = afsocket_sd_process_connection(self, peer_addr, new_fd);
+      g_sockaddr_unref(peer_addr);
+      if (!res)
+        return FALSE;
+      accepts++;
+    }
+  return TRUE;
 }
 
 static void
