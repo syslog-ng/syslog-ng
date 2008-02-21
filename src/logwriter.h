@@ -30,9 +30,10 @@
 #include "logqueue.h"
 
 /* writer constructor flags */
-#define LW_DETECT_EOF    0x0001
-#define LW_FORMAT_FILE   0x0002
-#define LW_FORMAT_PROTO  0x0004
+#define LW_DETECT_EOF      0x0001
+#define LW_FORMAT_FILE     0x0002
+#define LW_FORMAT_PROTO    0x0004
+#define LW_ALWAYS_WRITABLE 0x0008
 
 /* writer options (set by the user) */
 #define LWO_TMPL_ESCAPE     0x0001

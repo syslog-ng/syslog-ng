@@ -182,8 +182,15 @@ log_writer_fd_prepare(GSource *source,
     {
       self->input_means_connection_broken = FALSE;
     }
+    
   self->flush_waiting_for_timeout = FALSE;
   self->pollfd.revents = 0;
+  
+  if ((self->pollfd.events & G_IO_OUT) && (self->writer->flags & LW_ALWAYS_WRITABLE))
+    {
+      self->pollfd.revents = G_IO_OUT;
+      return TRUE;
+    }
   return FALSE;
 }
 
@@ -258,7 +265,9 @@ log_writer_watch_new(LogWriter *writer, FDWrite *fd)
   log_pipe_ref(&self->writer->super);
   self->pollfd.fd = fd->fd;
   g_source_set_priority(&self->super, LOG_PRIORITY_WRITER);
-  g_source_add_poll(&self->super, &self->pollfd);
+  
+  if ((writer->flags & LW_ALWAYS_WRITABLE) == 0)
+    g_source_add_poll(&self->super, &self->pollfd);
   return &self->super;
 }
 
