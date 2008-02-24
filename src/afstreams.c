@@ -25,6 +25,7 @@
 #include "messages.h"
 #include "logreader.h"
 #include "misc.h"
+#include "apphook.h"
 
 typedef struct _AFStreamsSourceDriver
 {
@@ -69,7 +70,9 @@ streams_read_read_method(FDRead *self, void *buf, size_t buflen, GSockAddr **sa)
   flags = 0;
 
   res = getmsg(self->fd, &ctl, &data, &flags);
-  if ((res & (MORECTL+MOREDATA)) == 0)
+  if (res == -1)
+    return -1;
+  else if ((res & (MORECTL+MOREDATA)) == 0)
     {
       len = g_snprintf(buf, buflen, "<%d>%.*s", lc.pri, data.len, data.buf);
       return MIN(len, buflen);
@@ -110,6 +113,50 @@ afstreams_sd_door_server_proc(void *cookie, char *argp, size_t arg_size, door_de
   return;
 }
 
+static void
+afstreams_init_door(int hook_type G_GNUC_UNUSED, gpointer user_data)
+{
+  AFStreamsSourceDriver *self = (AFStreamsSourceDriver *) user_data;
+  struct stat st;
+  gint fd;
+  
+  if (stat(self->door_filename->str, &st) == -1)
+    {
+      /* file does not exist, create it */
+      fd = creat(self->door_filename->str, 0666);
+      if (fd == -1)
+        {
+          msg_error("Error creating syslog door file",
+                    evt_tag_str(EVT_TAG_FILENAME, self->door_filename->str),
+                    evt_tag_errno(EVT_TAG_OSERROR, errno),
+                    NULL);
+          close(fd);
+          return;
+        }
+    }
+  fdetach(self->door_filename->str);
+  self->door_fd = door_create(afstreams_sd_door_server_proc, NULL, 0);
+  if (self->door_fd == -1)
+    {
+      msg_error("Error creating syslog door",
+                evt_tag_str(EVT_TAG_FILENAME, self->door_filename->str),
+                evt_tag_errno(EVT_TAG_OSERROR, errno),
+                NULL);
+      close(self->door_fd);
+      return;
+    }
+  g_fd_set_cloexec(self->door_fd, TRUE);
+  if (fattach(self->door_fd, self->door_filename->str) == -1)
+    {
+      msg_error("Error attaching syslog door",
+                evt_tag_str(EVT_TAG_FILENAME, self->door_filename->str),
+                evt_tag_errno(EVT_TAG_OSERROR, errno),
+                NULL);
+      close(self->door_fd);
+      return;
+    }
+}
+
 static gboolean
 afstreams_sd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
 {
@@ -135,48 +182,18 @@ afstreams_sd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
           close(fd);
           return FALSE;
         }
-      self->reader = log_reader_new(streams_read_new(fd), LR_LOCAL | LR_NOMREAD | LR_PKTTERM, s, &self->reader_options);
+      g_fd_set_nonblock(fd, TRUE);
+      self->reader = log_reader_new(streams_read_new(fd), LR_LOCAL | LR_PKTTERM, s, &self->reader_options);
       log_pipe_append(self->reader, s);
       
       if (self->door_filename)
         {
-          struct stat st;
           
-          if (stat(self->door_filename->str, &st) == -1)
-            {
-              /* file does not exist, create it */
-              fd = creat(self->door_filename->str, 0666);
-              if (fd == -1)
-                {
-                  msg_error("Error creating syslog door file",
-                            evt_tag_str(EVT_TAG_FILENAME, self->door_filename->str),
-                            evt_tag_errno(EVT_TAG_OSERROR, errno),
-                            NULL);
-                  close(fd);
-                  return FALSE;
-                }
-            }
-          fdetach(self->door_filename->str);
-          self->door_fd = door_create(afstreams_sd_door_server_proc, NULL, 0);
-          if (self->door_fd == -1)
-            {
-              msg_error("Error creating syslog door",
-                        evt_tag_str(EVT_TAG_FILENAME, self->door_filename->str),
-                        evt_tag_errno(EVT_TAG_OSERROR, errno),
-                        NULL);
-              close(self->door_fd);
-              return FALSE;
-            }
-          g_fd_set_cloexec(self->door_fd, TRUE);
-          if (fattach(self->door_fd, self->door_filename->str) == -1)
-            {
-              msg_error("Error attaching syslog door",
-                        evt_tag_str(EVT_TAG_FILENAME, self->door_filename->str),
-                        evt_tag_errno(EVT_TAG_OSERROR, errno),
-                        NULL);
-              close(self->door_fd);
-              return FALSE;
-            }
+          /* door creation is deferred, because it creates threads which is
+           * not inherited through forks, and syslog-ng forks during
+           * startup, but _after_ the configuration was initialized */
+          
+          register_application_hook(AH_POST_DAEMONIZED, afstreams_init_door, self);
         }
       if (!log_pipe_init(self->reader, NULL, NULL))
         {
