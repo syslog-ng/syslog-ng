@@ -239,18 +239,18 @@ affile_sd_deinit(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
 {
   AFFileSourceDriver *self = (AFFileSourceDriver *) s;
 
-  if (persist)
-    {
-      gchar str[32];
-      off_t cur_pos;
-      
-      cur_pos = log_reader_get_pos((LogReader *) self->reader);
-      g_snprintf(str, sizeof(str), "%" G_GINT64_FORMAT, (gint64) cur_pos);
-          
-      persist_config_add_survivor(persist, affile_sd_format_persist_name(self), str);
-    }
   if (self->reader)
     {
+      if (persist)
+        {
+          gchar str[32];
+          off_t cur_pos;
+          
+          cur_pos = log_reader_get_pos((LogReader *) self->reader);
+          g_snprintf(str, sizeof(str), "%" G_GINT64_FORMAT, (gint64) cur_pos);
+              
+          persist_config_add_survivor(persist, affile_sd_format_persist_name(self), str);
+        }
       log_pipe_deinit(self->reader, NULL, NULL);
       log_pipe_unref(self->reader);
       self->reader = NULL;
