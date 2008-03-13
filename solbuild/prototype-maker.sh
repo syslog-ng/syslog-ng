@@ -9,7 +9,8 @@ echo "i space" >> $RUNPROTOTYPE
 #echo "i depend" >> $RUNPROTOTYPE
 echo "d none opt/syslog-ng 0755 root bin" >> $RUNPROTOTYPE
 pkgproto -c application opt/syslog-ng/sbin >> $RUNPROTOTYPE
+pkgproto -c application opt/syslog-ng/bin >> $RUNPROTOTYPE
 pkgproto -c application opt/syslog-ng/etc >> $RUNPROTOTYPE
-pkgproto -c manpages opt/syslog-ng/man >> $RUNPROTOTYPE
+pkgproto -c manpages opt/syslog-ng/share/man >> $RUNPROTOTYPE
 pkgproto -c none opt/syslog-ng/doc >> $RUNPROTOTYPE
 
