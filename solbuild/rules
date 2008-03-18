@@ -59,9 +59,14 @@ $(STAMPDIR)/stamp-install: build
 	); \
 	( cd $$dir/solbuild; \
 	  $(INSTALL) -m 755 -c $$dir/$(INSTPREFIX)/$(DOCDIR) syslog-ng.init.d;\
+	); \
+	( cd $$dir/contrib/solaris-packaging; \
+	 $(INSTALL) -m 644 -c $$dir/$(INSTPREFIX)/$(DOCDIR) syslog-ng.example.xml; \
+	 $(INSTALL) -m 644 -c $$dir/$(INSTPREFIX)/$(DOCDIR) syslog-ng.method; \
+	 $(INSTALL) -m 644 -c $$dir/$(INSTPREFIX)/$(DOCDIR) solaris10_install.txt; \
 	)
 	touch $@ 
-
+	
 pkgpackage:
 	(cd solbuild/syslog-ng ; sh ../prototype-maker.sh ; sh ../pkgmaker.sh )
 

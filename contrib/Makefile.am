@@ -17,4 +17,7 @@ EXTRA_DIST = README init.d.solaris init.d.HP-UX init.d.RedHat init.d.SuSE 	\
 	lfs-packaging/README.lfs \
 	lfs-packaging/syslog-ng.init.lfs \
 	cygwin-packaging/cygwin-postinstall \
-	cygwin-packaging/syslog-ng-config
+	cygwin-packaging/syslog-ng-config \
+	solaris-packaging/solaris10_install.txt \
+	solaris-packaging/syslog-ng.example.xml \
+	solaris-packaging/syslog-ng.method
