@@ -204,6 +204,75 @@ log_reader_handle_line(LogReader *self, gchar *line, gint length, GSockAddr *sad
 }
 
 /**
+ * Find the character terminating the buffer.
+ *
+ * NOTE: when looking for the end-of-message here, it either needs to be
+ * terminated via NUL or via NL, when terminating via NL we have to make
+ * sure that there's no NUL left in the message. This function iterates over
+ * the input data and returns a pointer to the first occurence of NL or NUL.
+ *
+ * It uses an algorithm similar to what there's in libc memchr/strchr.
+ **/
+gchar *
+log_reader_find_eom(gchar *s, gsize n)
+{
+  gchar *char_ptr;
+  gulong *longword_ptr;
+  gulong longword, magic_bits, charmask;
+  gchar c;
+
+  c = '\n';
+
+  /* align input to long boundary */
+  for (char_ptr = s; n > 0 && ((gulong) char_ptr & (sizeof(longword) - 1)) != 0; ++char_ptr, n--)
+    {
+      if (*char_ptr == c || *char_ptr == '\0')
+        return char_ptr;
+    }
+    
+  longword_ptr = (gulong *) char_ptr;
+
+#if GLIB_SIZEOF_LONG == 8
+  magic_bits = 0x7efefefefefefeffL;
+#elif GLIB_SIZEOF_LONG == 4
+  magic_bits = 0x7efefeffL; 
+#else
+  #error "unknown architecture"
+#endif
+  memset(&charmask, c, sizeof(charmask));
+  while (n > sizeof(longword))
+    {
+      longword = *longword_ptr++;
+      if ((((longword + magic_bits) ^ ~longword) & ~magic_bits) != 0 ||
+          ((((longword ^ charmask) + magic_bits) ^ ~(longword ^ charmask)) & ~magic_bits) != 0)
+        {
+          char_ptr = (gchar *) (longword_ptr - 1);
+          gint i;
+          
+          for (i = 0; i < sizeof(longword); i++)
+            {
+              if (*char_ptr == c || *char_ptr == '\0')
+                return char_ptr;
+              char_ptr++;
+            }
+        }
+      n -= sizeof(longword);
+    }
+
+  char_ptr = (gchar *) longword_ptr;
+
+  while (n-- > 0)
+    {
+      if (*char_ptr == c || *char_ptr == '\0')
+        return char_ptr;
+      ++char_ptr;
+    }
+
+  return NULL;
+}
+
+
+/**
  * log_reader_iterate_buf:
  * @self: LogReader instance
  * @saddr: socket address to be assigned to new messages (consumed!)
@@ -220,9 +289,7 @@ log_reader_iterate_buf(LogReader *self, GSockAddr *saddr, gboolean flush, gint *
   guint parse_flags;
 
   self->flags &= ~LR_COMPLETE_LINE;
-  eol = memchr(self->buffer, '\0', self->ofs);
-  if (eol == NULL)
-    eol = memchr(self->buffer, '\n', self->ofs);
+  eol = log_reader_find_eom(self->buffer, self->ofs);
     
   parse_flags = 0;
   if (self->options->options & LRO_NOPARSE)
@@ -287,9 +354,7 @@ log_reader_iterate_buf(LogReader *self, GSockAddr *saddr, gboolean flush, gint *
 	  
 	  start = eol + 1;
 
-	  eol = memchr(start, '\0', &self->buffer[self->ofs] - start);
-	  if (eol == NULL)
-	    eol = memchr(start, '\n', &self->buffer[self->ofs] - start);
+	  eol = log_reader_find_eom(start, &self->buffer[self->ofs] - start);
 	}
       
       /* move remaining data to the beginning of the buffer */

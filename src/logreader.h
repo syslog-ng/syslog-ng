@@ -83,5 +83,7 @@ LogPipe *log_reader_new(FDRead *fd, guint32 flags, LogPipe *control, LogReaderOp
 void log_reader_options_defaults(LogReaderOptions *options);
 void log_reader_options_init(LogReaderOptions *options, GlobalConfig *cfg);
 
+gchar *log_reader_find_eom(gchar *s, gsize n);
+
 
 #endif
