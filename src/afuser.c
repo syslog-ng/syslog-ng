@@ -30,6 +30,10 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+#ifndef HAVE_GETUTENT
+#include "utils.h"
+#endif
+
 typedef struct _AFUserDestDriver
 {
   LogDriver super;

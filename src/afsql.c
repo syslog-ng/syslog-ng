@@ -15,6 +15,7 @@
 #include "apphook.h"
 
 #include <dbi/dbi.h>
+#include <string.h>
 
 typedef struct _AFSqlField
 {

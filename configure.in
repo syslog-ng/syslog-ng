@@ -98,6 +98,11 @@ AM_PROG_LEX
 AC_PROG_MAKE_SET
 AC_PROG_RANLIB
 
+AC_SYS_LARGEFILE
+dnl ***************************************************************************
+dnl How to do static linking?
+dnl ***************************************************************************
+
 AC_MSG_CHECKING(how to enable static linking for certain libraries)
 ldversion=`ld -V 2>&1 | head -1`
 ostype=`uname -s`
@@ -333,6 +338,12 @@ AM_PATH_GLIB_2_0($GLIB_MIN_VERSION,,
 		AC_MSG_ERROR(Cannot find GLib library version >= $GLIB_MIN_VERSION: is pkg-config in path?), $GLIB_ADDONS)
 
 
+case "$ostype" in
+	FreeBSD)
+		GLIB_LIBS="$GLIB_LIBS -lintl"
+		;;
+esac
+
 old_LIBS=$LIBS
 LIBS="$LD_START_STATIC $GLIB_LIBS $LD_END_STATIC"
 
@@ -413,7 +424,7 @@ patheval()
 {
         OLD=$1
         NEW=`eval echo $1`
-        while /usr/bin/test "x$OLD" != "x$NEW"
+        while test "x$OLD" != "x$NEW"
         do
                 OLD=$NEW
                 NEW=`eval echo $OLD`

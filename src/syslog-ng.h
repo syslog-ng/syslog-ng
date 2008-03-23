@@ -63,5 +63,8 @@
 # endif
 #endif
 
+#if !HAVE_O_LARGEFILE
+#define O_LARGEFILE 0
+#endif
 
 #endif

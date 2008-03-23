@@ -17,7 +17,7 @@ case "$ostype" in
     mv $1/syslog-ng $1/opt
   ;;
   Linux)
-    strip $1/syslog-ng/sbin/syslog-ng
+    strip $1/syslog-ng/sbin/syslog-ng $1/syslog-ng/bin/loggen
     mkdir -p $1/syslog-ng/var
     mkdir -p $1/syslog-ng/etc
     mkdir -p $1/syslog-ng/doc
@@ -33,9 +33,22 @@ case "$ostype" in
     tar xfz doc/reference/syslog-ng.html.tar.gz -C $1/syslog-ng/doc
     chown -R root.root $1/syslog-ng/doc
   ;;
+  FreeBSD)
+    strip $1/syslog-ng/sbin/syslog-ng $1/syslog-ng/bin/loggen
+    mkdir -p $1/syslog-ng/var $1/syslog-ng/etc $1/syslog-ng/doc
+    cp NEWS $1/syslog-ng/doc
+    mkdir -p $1/syslog-ng/doc/contrib
+    cp contrib/freebsd-packaging/syslog-ng.rc.d $1/syslog-ng/doc
+    cp contrib/freebsd-packaging/syslog-ng.conf.example $1/syslog-ng/etc
+
+    gzip -c -9 doc/reference/syslog-ng.txt > $1/syslog-ng/doc/syslog-ng.txt.gz
+    tar xfz doc/reference/syslog-ng.html.tar.gz -C $1/syslog-ng/doc
+    chown -R root:wheel $1/syslog-ng/doc
+  ;;
   *)
 	
   ;;
 esac
 
+exit 0
 # vim: ts=2 et

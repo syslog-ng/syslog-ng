@@ -35,10 +35,6 @@
 #include <time.h>
 #include <stdlib.h>
 
-#if !HAVE_O_LARGEFILE
-#define O_LARGEFILE 0
-#endif
-
 static gboolean
 affile_open_file(gchar *name, int flags,
 	     int uid, int gid, int mode,

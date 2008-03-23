@@ -1,1 +1,1 @@
---sysconfdir /opt/syslog-ng/etc --localstatedir=/opt/syslog-ng/var --mandir /opt/syslog-ng/man --sbindir=/opt/syslog-ng/sbin/ --enable-ssl
+--sysconfdir /opt/syslog-ng/etc --localstatedir=/opt/syslog-ng/var --mandir /opt/syslog-ng/man --bindir=/opt/syslog-ng/bin/ --sbindir=/opt/syslog-ng/sbin/ --enable-ssl
