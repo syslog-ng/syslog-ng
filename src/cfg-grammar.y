@@ -959,7 +959,7 @@ extern int linenum;
 void 
 yyerror(char *msg)
 {
-  fprintf(stderr, "%s at %d\n", msg, linenum);
+  fprintf(stderr, "%s in %s at line %d.\n", msg, configuration->filename, linenum);
 }
 
 void
