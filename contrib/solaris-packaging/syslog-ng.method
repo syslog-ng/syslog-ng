@@ -15,6 +15,7 @@ OPTIONS="-f $CONFFILE"
 PIDFILE="/var/run/syslog-ng.pid"
 # becuase libdbi stuff goes there
 LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH
 
 case "$1" in
         start)
