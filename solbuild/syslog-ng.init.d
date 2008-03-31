@@ -15,6 +15,7 @@ OPTIONS="-f $CONFFILE"
 PIDFILE="/var/run/syslog-ng.pid"
 # This LD_LIBRARY_PATH setting is required to access libdbi8
 LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH
 
 case "$1" in
 	start)

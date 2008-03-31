@@ -69,7 +69,7 @@ $(STAMPDIR)/stamp-install: build
 	); \
 	( cd $$dir/contrib/solaris-packaging; \
 	 $(INSTALL) -m 644 -c $$dir/$(INSTPREFIX)/$(DOCDIR) syslog-ng.example.xml; \
-	 $(INSTALL) -m 644 -c $$dir/$(INSTPREFIX)/$(DOCDIR) syslog-ng.method; \
+	 $(INSTALL) -m 755 -c $$dir/$(INSTPREFIX)/$(DOCDIR) syslog-ng.method; \
 	 $(INSTALL) -m 644 -c $$dir/$(INSTPREFIX)/$(DOCDIR) solaris10_install.txt; \
 	)
 	touch $@ 
