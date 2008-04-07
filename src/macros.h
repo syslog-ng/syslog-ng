@@ -41,6 +41,7 @@ enum
   M_LEVEL,
   M_LEVEL_NUM,
   M_TAG,
+  M_BSDTAG,
   M_PRI,
 
   M_DATE,

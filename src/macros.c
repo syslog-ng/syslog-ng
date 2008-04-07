@@ -45,6 +45,7 @@ macros[] =
         { "LEVEL", M_LEVEL },
         { "LEVEL_NUM", M_LEVEL_NUM },
         { "TAG", M_TAG },
+        { "BSDTAG", M_BSDTAG },
         { "PRI", M_PRI },
 
         { "DATE", M_DATE },
@@ -197,6 +198,11 @@ log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, glong 
     case M_TAG:
       {
         g_string_sprintfa(result, "%02x", msg->pri);
+        break;
+      }
+    case M_BSDTAG:
+      {
+        g_string_sprintfa(result, "%1d%c", (msg->pri & LOG_PRIMASK), (((msg->pri & LOG_FACMASK) >> 3) + 'A'));
         break;
       }
     case M_PRI:
