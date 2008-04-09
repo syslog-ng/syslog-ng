@@ -296,8 +296,8 @@ log_msg_parse(LogMessage *self, gchar *data, gint length, guint flags, regex_t *
       self->stamp.time.tv_usec = 0;
       
     }
-  else if (left >= 20 && src[3] == ' ' && src[6] == ' ' && src[9] == ':' && src[12] == ':' && src[15] == ' ' && 
-           isdigit(src[16]) && isdigit(src[17]) && isdigit(src[18]) && isdigit(src[19]))
+  else if (left >= 21 && src[3] == ' ' && src[6] == ' ' && src[9] == ':' && src[12] == ':' && src[15] == ' ' && 
+           isdigit(src[16]) && isdigit(src[17]) && isdigit(src[18]) && isdigit(src[19]) && isspace(src[20]))
     {
       /* LinkSys timestamp, expected format: MMM DD HH:MM:SS YYYY */
 
