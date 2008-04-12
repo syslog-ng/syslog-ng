@@ -86,7 +86,7 @@ afinet_set_port(GSockAddr *addr, gchar *service, gchar *proto)
     }  
 }
 
-static void
+static gboolean
 afinet_resolve_name(GSockAddr **addr, gchar *name)
 {
   if (addr)
@@ -122,9 +122,7 @@ afinet_resolve_name(GSockAddr **addr, gchar *name)
       else
         {
           msg_error("Error resolving hostname", evt_tag_str("host", name), NULL);
-          g_sockaddr_unref(*addr);
-          *addr = NULL;
-          return;
+          return FALSE;
         }
 #else
       struct hostent *he;
@@ -146,11 +144,11 @@ afinet_resolve_name(GSockAddr **addr, gchar *name)
       else
         {
           msg_error("Error resolving hostname", evt_tag_str("host", name), NULL);
-          g_sockaddr_unref(*addr);
-          *addr = NULL;
+          return FALSE;
         }
 #endif
     }
+  return TRUE;
 }
 
 static gboolean
@@ -166,7 +164,6 @@ afinet_setup_socket(gint fd, GSockAddr *addr, InetSocketOptions *sock_options, A
     case AF_INET:
       {
         struct ip_mreq mreq;
-
         
         if (IN_MULTICAST(ntohl(g_sockaddr_inet_get_address(addr).s_addr)))
           {
@@ -323,6 +320,9 @@ afinet_dd_setup_socket(AFSocketDestDriver *s, gint fd)
 {
   AFInetDestDriver *self = (AFInetDestDriver *) s;
   
+  if (!afinet_resolve_name(&self->super.dest_addr, self->host))
+    return FALSE;
+
   return afinet_setup_socket(fd, self->super.dest_addr, (InetSocketOptions *) s->sock_options_ptr, AFSOCKET_DIR_SEND);
 }
 
@@ -518,15 +518,26 @@ afinet_dd_queue(LogPipe *s, LogMessage *msg, gint path_flags)
   log_pipe_forward_msg(s, msg, path_flags);
 }
 
+void
+afinet_dd_free(LogPipe *s)
+{
+  AFInetDestDriver *self = (AFInetDestDriver *) s;
+  
+  g_free(self->host);
+  
+  afsocket_dd_free(s);
+}
+
 
 LogDriver *
 afinet_dd_new(gint af, gchar *host, gint port, guint flags)
 {
   AFInetDestDriver *self = g_new0(AFInetDestDriver, 1);
   
-  afsocket_dd_init_instance(&self->super, host, &self->sock_options.super, flags);
+  afsocket_dd_init_instance(&self->super, &self->sock_options.super, flags);
   self->super.super.super.init = afinet_dd_init;
   self->super.super.super.queue = afinet_dd_queue;
+  self->super.super.super.free_fn = afinet_dd_free;
   if (af == AF_INET)
     {
       self->super.bind_addr = g_sockaddr_inet_new("0.0.0.0", 0);
@@ -541,7 +552,7 @@ afinet_dd_new(gint af, gchar *host, gint port, guint flags)
       g_assert_not_reached();
 #endif
     }
-  afinet_resolve_name(&self->super.dest_addr, host);
+  self->host = g_strdup(host);
   self->super.setup_socket = afinet_dd_setup_socket;
   return &self->super.super;
 }

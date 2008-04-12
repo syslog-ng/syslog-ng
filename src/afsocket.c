@@ -845,7 +845,6 @@ afsocket_dd_start_connect(AFSocketDestDriver *self)
                 evt_tag_errno(EVT_TAG_OSERROR, errno),
                 NULL);
       close(sock);
-      afsocket_dd_start_reconnect_timer(self);
       return FALSE;
     }
 
@@ -873,12 +872,6 @@ afsocket_dd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
     {
       self->time_reopen = cfg->time_reopen;
     }
-  if (!self->dest_addr)
-    {
-      msg_error("No destination address set", NULL);
-      return FALSE;
-    }
-
   if (!self->writer)
     {
       log_writer_options_init(&self->writer_options, cfg, 0, afsocket_dd_format_stats_name(self));
@@ -955,7 +948,7 @@ afsocket_dd_free(LogPipe *s)
 }
 
 void 
-afsocket_dd_init_instance(AFSocketDestDriver *self, const gchar *hostname, SocketOptions *sock_options, guint32 flags)
+afsocket_dd_init_instance(AFSocketDestDriver *self, SocketOptions *sock_options, guint32 flags)
 {
   log_drv_init_instance(&self->super);
   
@@ -967,6 +960,5 @@ afsocket_dd_init_instance(AFSocketDestDriver *self, const gchar *hostname, Socke
   self->super.super.notify = afsocket_dd_notify;
   self->setup_socket = afsocket_dd_setup_socket;
   self->sock_options_ptr = sock_options;
-  self->hostname = g_strdup(hostname);
   self->flags = flags;
 }
