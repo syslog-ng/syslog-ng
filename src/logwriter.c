@@ -39,9 +39,11 @@ typedef struct _LogWriterWatch
   LogWriter *writer;
   FDWrite *fd;
   GTimeVal flush_target;
+  GTimeVal error_suspend_target;
   GTimeVal last_throttle_check;
   gboolean flush_waiting_for_timeout:1,
-           input_means_connection_broken:1;
+           input_means_connection_broken:1,
+           error_suspend:1;
 } LogWriterWatch;
 
 /**
@@ -78,18 +80,18 @@ log_writer_fd_prepare(GSource *source,
 {
   LogWriterWatch *self = (LogWriterWatch *) source;
   gint64 num_elements = log_queue_get_length(self->writer->queue);
+  GTimeVal now;
+
+  g_source_get_current_time(source, &now);
   
   /* recalculate buckets */
   
   if (self->writer->options->throttle > 0)
     {
-      GTimeVal now;
       gint64 diff;
       gint new_buckets;
       
       /* throttling is enabled, calculate new buckets */
-      
-      g_source_get_current_time(source, &now);
       if (self->last_throttle_check.tv_sec != 0)
         {
           diff = g_time_val_diff(&now, &self->last_throttle_check);
@@ -113,6 +115,24 @@ log_writer_fd_prepare(GSource *source,
         }
     }
 
+  self->pollfd.events = 0;
+  if (self->error_suspend)
+    {
+      *timeout = g_time_val_diff(&self->error_suspend_target, &now) / 1000;
+      if (*timeout <= 0)
+        {
+          msg_notice("Error suspend timeout has elapsed, attempting to write again",
+                     evt_tag_int("fd", self->fd->fd),
+                     NULL);
+          self->error_suspend = FALSE;
+          *timeout = -1;
+        }
+      else
+        {
+          return FALSE;
+        }
+    }
+    
   if (self->writer->partial ||
       (self->writer->options->flush_lines == 0 && (!log_writer_throttling(self->writer) && num_elements != 0)) ||
       (self->writer->options->flush_lines > 0  && (!log_writer_throttling(self->writer) && num_elements >= self->writer->options->flush_lines)))
@@ -136,24 +156,7 @@ log_writer_fd_prepare(GSource *source,
         }
       else
         {
-          GTimeVal now, diff;
-
-          g_source_get_current_time(source, &now);
-          
-          diff.tv_sec = self->flush_target.tv_sec - now.tv_sec;
-          diff.tv_usec = self->flush_target.tv_usec - now.tv_usec;
-          if (diff.tv_usec < 0)
-            {
-              diff.tv_sec--;
-              diff.tv_usec += 1000000;
-            }
-          else if (diff.tv_usec > 1000000)
-            {
-              diff.tv_sec++;
-              diff.tv_usec -= 1000000;
-            }
-          /* we already started to wait for flush, recalculate next timeout */
-          *timeout = diff.tv_sec * 1000 + diff.tv_usec / 1000;
+          *timeout = g_time_val_diff(&self->flush_target, &now) / 1000;
           if (*timeout < 0)
             return TRUE;
         }
@@ -161,7 +164,6 @@ log_writer_fd_prepare(GSource *source,
     }
   else
     {
-      self->pollfd.events = 0;
       if (num_elements && log_writer_throttling(self->writer))
         {
           /* we are unable to send because of throttling, make sure that we
@@ -200,6 +202,9 @@ log_writer_fd_check(GSource *source)
   LogWriterWatch *self = (LogWriterWatch *) source;
   gint64 num_elements = log_queue_get_length(self->writer->queue);
   
+  if (self->error_suspend)
+    return FALSE;
+  
   if ((num_elements && !log_writer_throttling(self->writer)) || self->writer->partial)
     {
       /* we have data to flush */
@@ -233,7 +238,22 @@ log_writer_fd_dispatch(GSource *source,
   else if (num_elements || self->writer->partial)
     {
       if (!log_writer_flush_log(self->writer, self->fd))
-        return FALSE;
+        {
+          self->error_suspend = TRUE;
+          g_source_get_current_time(source, &self->error_suspend_target);
+          g_time_val_add(&self->error_suspend_target, self->writer->options->time_reopen * 1e6);
+
+          log_writer_broken(self->writer, NC_WRITE_ERROR);
+          
+          if (self->error_suspend)
+            {
+              msg_notice("Suspending write operation because of an I/O error",
+                         evt_tag_int("fd", self->pollfd.fd),
+                         evt_tag_int("time_reopen", self->writer->options->time_reopen),
+                         NULL);
+            }
+          return TRUE;
+        }
     }
   return TRUE;
 }
@@ -364,11 +384,6 @@ log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
 static void
 log_writer_broken(LogWriter *self, gint notify_code)
 {
-  /* the order of these calls is important, as log_pipe_notify() will handle
-   * reinitialization, and if deinit is called last, the writer might be
-   * left in an unpolled state */
-  
-  log_pipe_deinit(&self->super, NULL, NULL);
   log_pipe_notify(self->control, &self->super, notify_code, self);
 }
 
@@ -427,6 +442,17 @@ log_writer_flush_log(LogWriter *self, FDWrite *fd)
         {
           rc = fd_write(fd, line->str, line->len);
           
+          {
+            static gint counter = 0;
+            
+            counter++;
+            if ((counter % 10) == 0)
+              {
+                rc = -1;
+                errno = ETIMEDOUT;
+              }
+          }
+          
           if (rc == -1)
             {
               self->partial = line;
@@ -463,9 +489,10 @@ write_error:
                   evt_tag_int("fd", fd->fd),
                   evt_tag_errno(EVT_TAG_OSERROR, errno),
                   NULL);
-        log_writer_broken(self, NC_WRITE_ERROR);
+
         if (line)
           g_string_free(line, TRUE);
+
         return FALSE;
       }
     else
@@ -570,6 +597,7 @@ log_writer_options_defaults(LogWriterOptions *options)
   options->ts_format = -1;
   options->zone_offset = -1;
   options->frac_digits = -1;
+  options->time_reopen = -1;
 }
 
 void 
@@ -625,6 +653,8 @@ log_writer_options_init(LogWriterOptions *options, GlobalConfig *cfg, guint32 fl
     options->ts_format = cfg->ts_format;
   if (options->zone_offset == -1)
     options->zone_offset = cfg->send_zone_offset;
+  if (options->time_reopen == -1)
+    options->time_reopen = cfg->time_reopen;
   options->file_template = log_template_ref(cfg->file_template);
   options->proto_template = log_template_ref(cfg->proto_template);
   options->stats_name = stats_name ? g_strdup(stats_name) : NULL;

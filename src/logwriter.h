@@ -69,6 +69,7 @@ typedef struct _LogWriterOptions
   glong zone_offset;
   gshort frac_digits;
   gint throttle; /* messages per sec, 0 means unlimited */
+  gint time_reopen;
 } LogWriterOptions;
 
 typedef struct _LogWriter
