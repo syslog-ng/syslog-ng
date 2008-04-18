@@ -1,3 +1,45 @@
+2.1beta1
+	Fri, 18 Apr 2008 18:00:59 +0200
+
+	Bugfixes:
+        * Fixed a possible SIGABRT crash if the hosts file passed to
+          dns-cache-hosts() had multiple entries with the same IP address.
+        * Fixed a bug that caused the persistent DNS cache (e.g. /etc/hosts)
+          to be reloaded for all name resolution requests.
+        * Fixed a possible crash during startup if "-g" was specified without
+          using "-u".
+        * Fixed handling more than 256 destinations by changing the
+          reference counter type of LogMessages to a 16 bit value.
+	* Fixed door initialization on Solaris, the door portion of
+          sun-streams() sources did not work in previous releases.
+	* Fixed a possible segmentation fault in handling file
+          sources that are marked optional and the source file does not
+	  exist.
+	* Fixed the LinkSys style timestamp parser to avoid recognizing
+          hostnames starting with numbers as the year value of the
+	  timestamp.
+	* Fixed the year recognition heuristics as the older used the
+	  previous year in some cases when the client's clock was too fast.
+
+	Other changes:
+	* Backported end-of-message search algorithm from PE, which results
+          in increased performance and the removal of vague interpretation
+	  of messages that contain both NUL and NL characters.
+	* Removed destination files from the set of polled fds, they are
+	  always writable anyway and cause performance degradation when a
+	  lot of destination files are managed.
+	* Fixed some FreeBSD and AIX portability issues.
+	* Added the BSDTAG macro, implementation by Jung Christian.
+	* Changed the reconnection logic in the TCP destination driver to
+	  reattempt connections for any kind of network problems. Therefore
+	  an unknown DNS name will not prevent syslog-ng to start up with an
+	  initialization error.
+	* Changed the file write error handling logic to suspend writing to
+	  a file destination on write errors, but retry it some time later.
+	  This time interval is controlled by time_reopen() just like with
+	  other drivers.
+
+
 2.1alpha1
 	Sun, 13 Jan 2008 10:07:57 +0100
 
