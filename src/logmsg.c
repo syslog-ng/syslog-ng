@@ -362,7 +362,7 @@ log_msg_parse(LogMessage *self, gchar *data, gint length, guint flags, regex_t *
       strptime(self->date.str, "%b %e %H:%M:%S", &tm);
       tm.tm_isdst = -1;
       tm.tm_year = nowtm->tm_year;
-      if (tm.tm_mon > nowtm->tm_mon)
+      if (tm.tm_mon > nowtm->tm_mon + 1)
         tm.tm_year--;
         
       /* NOTE: no timezone information in the message, assume it is local time */
