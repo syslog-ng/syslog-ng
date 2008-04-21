@@ -96,6 +96,7 @@ fi
 
 %post
 %ifos aix5.2
+mkdir -p /var/lib/syslog-ng || /bin/true
 echo "Checking whether the syslog-ng service is already registered... "
 if ! /usr/bin/lssrc -s syslogng >/dev/null 2>&1; then
         echo "NO"
@@ -140,6 +141,8 @@ echo "Starting syslog-ng"
 /usr/bin/startsrc -s syslogng
 #post end
 %else
+mkdir -p /var/lib/syslog-ng || /bin/true
+
 if [ "%{_host_vendor}" = "redhat" ]; then
   sh /etc/rc.d/init.d/syslog stop || true
 elif [ "%{_host_vendor}" = "suse" ]; then
