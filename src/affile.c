@@ -342,7 +342,7 @@ affile_dw_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
       
       if (!self->writer)
         {
-          self->writer = log_writer_new(LW_FORMAT_FILE | LW_ALWAYS_WRITABLE, s, &self->owner->writer_options);
+          self->writer = log_writer_new(LW_FORMAT_FILE | (self->owner->flags & AFFILE_PIPE ? 0 : LW_ALWAYS_WRITABLE), s, &self->owner->writer_options);
         
           log_pipe_append(&self->super, self->writer);
         }
