@@ -218,7 +218,7 @@ word	[^ \#'"\(\)\{\}\\;\n\t,|\.]
 %%
 
 \#.*$                      ;
-\n			   { linenum++; }
+\r?\n			   { linenum++; }
 {white}+		   ;
 \.\.                       { return DOTDOT; }
 0x{digit}+ 		   { yylval.num = strtoll(yytext, NULL, 16); return NUMBER; }
