@@ -442,17 +442,6 @@ log_writer_flush_log(LogWriter *self, FDWrite *fd)
         {
           rc = fd_write(fd, line->str, line->len);
           
-          {
-            static gint counter = 0;
-            
-            counter++;
-            if ((counter % 10) == 0)
-              {
-                rc = -1;
-                errno = ETIMEDOUT;
-              }
-          }
-          
           if (rc == -1)
             {
               self->partial = line;
