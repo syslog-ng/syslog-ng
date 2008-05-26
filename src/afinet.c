@@ -332,6 +332,13 @@ afinet_dd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
   AFInetDestDriver *self G_GNUC_UNUSED = (AFInetDestDriver *) s;
   gboolean success;
   
+  if (!afinet_resolve_name(&self->super.dest_addr, self->host))
+    {
+      msg_error("Target host cannot be resolved, persistent disk buffer file will be lost",
+                evt_tag_str("host", self->host),
+                NULL);
+    }
+  
   success = afsocket_dd_init(s, cfg, persist);
 #if ENABLE_SPOOF_SOURCE
   if (success)
