@@ -708,7 +708,6 @@ afsocket_dd_format_stats_name(AFSocketDestDriver *self)
 {
   static gchar stats_name[64];
   gchar *driver_name = NULL;
-  gchar buf[64];
   
   switch (self->dest_addr->sa.sa_family)
     {
@@ -727,7 +726,7 @@ afsocket_dd_format_stats_name(AFSocketDestDriver *self)
   
   g_snprintf(stats_name, sizeof(stats_name), "%s(%s)", 
              driver_name,
-             g_sockaddr_format(self->dest_addr, buf, sizeof(buf)));
+             self->dest_name);
   
   return stats_name;
 }
@@ -805,6 +804,7 @@ afsocket_dd_start_connect(AFSocketDestDriver *self)
 {
   int sock, rc;
   
+
   if (!afsocket_open_socket(self->bind_addr, !!(self->flags & AFSOCKET_STREAM), &sock))
     {
       return FALSE;
@@ -944,11 +944,12 @@ afsocket_dd_free(LogPipe *s)
   g_free(self->hostname);
   log_writer_options_destroy(&self->writer_options);
   log_drv_free_instance(&self->super);
+  g_free(self->dest_name);
   g_free(s);
 }
 
 void 
-afsocket_dd_init_instance(AFSocketDestDriver *self, SocketOptions *sock_options, guint32 flags)
+afsocket_dd_init_instance(AFSocketDestDriver *self, SocketOptions *sock_options, guint32 flags, gchar *dest_name)
 {
   log_drv_init_instance(&self->super);
   
@@ -961,4 +962,5 @@ afsocket_dd_init_instance(AFSocketDestDriver *self, SocketOptions *sock_options,
   self->setup_socket = afsocket_dd_setup_socket;
   self->sock_options_ptr = sock_options;
   self->flags = flags;
+  self->dest_name = dest_name;
 }

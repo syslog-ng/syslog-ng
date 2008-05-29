@@ -37,6 +37,8 @@
 
 /* sockaddr public interface */
 
+#define MAX_SOCKADDR_STRING 64
+
 typedef struct _GSockAddrFuncs GSockAddrFuncs;
 
 typedef struct _GSockAddr

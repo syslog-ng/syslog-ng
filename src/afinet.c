@@ -534,7 +534,7 @@ afinet_dd_new(gint af, gchar *host, gint port, guint flags)
 {
   AFInetDestDriver *self = g_new0(AFInetDestDriver, 1);
   
-  afsocket_dd_init_instance(&self->super, &self->sock_options.super, flags);
+  afsocket_dd_init_instance(&self->super, &self->sock_options.super, flags, g_strdup_printf("%s:%d", host, port));
   self->super.super.super.init = afinet_dd_init;
   self->super.super.super.queue = afinet_dd_queue;
   self->super.super.super.free_fn = afinet_dd_free;
