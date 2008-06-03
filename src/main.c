@@ -225,6 +225,8 @@ daemonize(void)
 	  write(fd, buf, strlen(buf));
 	  close(fd);
 	}
+      setsid();
+      chdir("/");
       return TRUE;
     }
   else if (pid == -1) 
