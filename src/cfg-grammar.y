@@ -69,7 +69,7 @@ gint last_addr_family = AF_INET;
 %token  KW_SQL KW_TYPE KW_COLUMNS KW_INDEXES KW_VALUES KW_PASSWORD KW_DATABASE KW_USERNAME KW_TABLE KW_ENCODING
 
 /* option items */
-%token KW_FSYNC KW_MARK_FREQ KW_STATS_FREQ KW_FLUSH_LINES KW_FLUSH_TIMEOUT KW_LOG_MSG_SIZE KW_FILE_TEMPLATE KW_PROTO_TEMPLATE
+%token KW_FSYNC KW_MARK_FREQ KW_STATS_FREQ KW_FLUSH_LINES KW_SUPPRESS KW_FLUSH_TIMEOUT KW_LOG_MSG_SIZE KW_FILE_TEMPLATE KW_PROTO_TEMPLATE
 
 %token KW_CHAIN_HOSTNAMES KW_NORMALIZE_HOSTNAMES KW_KEEP_HOSTNAME KW_CHECK_HOSTNAME KW_BAD_HOSTNAME
 %token KW_KEEP_TIMESTAMP
@@ -720,6 +720,7 @@ dest_writer_option
 	| KW_LOG_FIFO_SIZE '(' NUMBER ')'	{ last_writer_options->mem_fifo_size = $3; }
 	| KW_FLUSH_LINES '(' NUMBER ')'		{ last_writer_options->flush_lines = $3; }
 	| KW_FLUSH_TIMEOUT '(' NUMBER ')'	{ last_writer_options->flush_timeout = $3; }
+        | KW_SUPPRESS '(' NUMBER ')'            { last_writer_options->suppress = $3; }
 	| KW_TEMPLATE '(' string ')'       	{ 
 	                                          last_writer_options->template = cfg_lookup_template(configuration, $3);
 	                                          if (last_writer_options->template == NULL)

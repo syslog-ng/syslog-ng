@@ -98,6 +98,7 @@ gboolean log_msg_read(LogMessage *self, SerializeArchive *sa);
 
 LogMessage *log_msg_new(gchar *msg, gint length, GSockAddr *saddr, guint flags, regex_t *bad_hostname);
 LogMessage *log_msg_new_mark(void);
+LogMessage *log_msg_new_internal(gint prio, const gchar *msg, guint flags);
 LogMessage *log_msg_new_empty(void);
 
 void log_msg_add_ack(LogMessage *msg, guint path_flags);

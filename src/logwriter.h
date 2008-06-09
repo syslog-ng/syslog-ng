@@ -70,6 +70,7 @@ typedef struct _LogWriterOptions
   gshort frac_digits;
   gint throttle; /* messages per sec, 0 means unlimited */
   gint time_reopen;
+  gint suppress;
 } LogWriterOptions;
 
 typedef struct _LogWriter
@@ -79,11 +80,16 @@ typedef struct _LogWriter
   LogQueue *queue;
   guint32 flags;
   guint32 *dropped_messages;
+  guint32 *suppressed_messages;
   GString *partial;
   gint partial_pos;
   gint throttle_buckets;
   LogPipe *control;
   LogWriterOptions *options;
+  LogMessage *last_msg;
+  guint32 last_msg_count;
+  guint last_msg_timerid;
+
 } LogWriter;
 
 void log_writer_set_options(LogWriter *self, LogPipe *control, LogWriterOptions *options);

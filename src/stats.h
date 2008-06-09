@@ -31,6 +31,7 @@ typedef enum
   SC_TYPE_MIN,
   SC_TYPE_DROPPED=0,
   SC_TYPE_PROCESSED,
+  SC_TYPE_SUPPRESSED,
   SC_TYPE_MAX
 } StatsCounterType;
 

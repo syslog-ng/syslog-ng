@@ -97,6 +97,7 @@ static struct keyword keywords[] = {
 	{ "stats",		KW_STATS_FREQ },   /* obsolete */
 	{ "flush_lines", 	KW_FLUSH_LINES },
 	{ "flush_timeout", 	KW_FLUSH_TIMEOUT },
+        { "suppress",           KW_SUPPRESS },
 	{ "sync_freq", 		KW_FLUSH_LINES },  /* obsolete */
 	{ "sync", 		KW_FLUSH_LINES },  /* obsolete */
 	{ "fsync",		KW_FSYNC },

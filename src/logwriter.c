@@ -297,11 +297,119 @@ log_writer_throttling(LogWriter *self)
   return self->options->throttle > 0 && self->throttle_buckets == 0;
 }
 
+static void
+log_writer_last_msg_release(LogWriter *self)
+{
+  if (self->last_msg_timerid)
+    g_source_remove(self->last_msg_timerid);
+
+  if (self->last_msg)
+    log_msg_unref(self->last_msg);
+
+  self->last_msg = NULL;
+  self->last_msg_count = 0;
+  self->last_msg_timerid = 0;
+}
+
+static void
+log_writer_last_msg_flush(LogWriter *self)
+{
+  gchar *msg;
+  LogMessage *m;
+
+  msg_debug("Suppress timer elapsed, emitting suppression summary", 
+            NULL);
+  msg = g_strdup_printf("Last message '%.20s' repeated %d times\n",
+                        self->last_msg->msg.str,
+                        self->last_msg_count);
+
+  m = log_msg_new_internal(self->last_msg->pri, msg, 0);
+
+  g_string_assign(&m->host, self->last_msg->host.str);
+  g_string_assign(&m->host_from, self->last_msg->host_from.str);
+  log_queue_push_tail(self->queue, m, PF_FLOW_CTL_OFF);
+  g_free(msg);
+
+  log_writer_last_msg_release(self);
+}
+
+static gboolean
+last_msg_timer(gpointer pt)
+{
+  LogWriter *self = (LogWriter *)pt;
+
+  if (self->last_msg_count)
+    log_writer_last_msg_flush(self);
+  else
+    log_writer_last_msg_release(self);
+
+  return FALSE;
+}
+
+/**
+ * Remember the last message for dup detection.
+ **/
+static void
+log_writer_last_msg_record(LogWriter *self, LogMessage *lm)
+{
+  if (self->last_msg)
+    log_msg_unref(self->last_msg);
+
+  log_msg_ref(lm);
+  self->last_msg = lm;
+  self->last_msg_count = 0;
+}
+
+/**
+ * log_writer_last_msg_check:
+ *
+ * This function is called to suppress duplicate messages from a given host.
+ *
+ * Returns TRUE to indicate that the message was consumed.
+ **/
+static gboolean
+log_writer_last_msg_check(LogWriter *self, LogMessage *lm, gint path_flags)
+{
+  if (self->last_msg)
+    {
+      if(strcmp(self->last_msg->msg.str, lm->msg.str) == 0 &&
+         strcmp(self->last_msg->host.str, lm->host.str) == 0)
+        {
+          if (self->suppressed_messages)
+            (*self->suppressed_messages)++;
+          msg_debug("Suppressing duplicate message",
+                    evt_tag_str("host", lm->msg.str),
+                    evt_tag_str("msg", lm->msg.str),
+                    NULL);
+          self->last_msg_count++;
+          
+          if (self->last_msg_count == 1)
+            {
+              /* we only create the timer if there's at least one suppressed message */
+              self->last_msg_timerid = g_timeout_add(self->options->suppress * 1000, last_msg_timer, self);
+            }
+          log_msg_drop(lm, path_flags);
+          return TRUE;
+        }
+
+      if (self->last_msg_count)
+        log_writer_last_msg_flush(self);
+      else
+        log_writer_last_msg_release(self);
+    }
+
+  log_writer_last_msg_record(self, lm);
+
+  return FALSE;
+}
 
 static void
 log_writer_queue(LogPipe *s, LogMessage *lm, gint path_flags)
 {
   LogWriter *self = (LogWriter *) s;
+
+  if (self->options->suppress > 0 && log_writer_last_msg_check(self, lm, path_flags))
+    return;
   
   if (!log_queue_push_tail(self->queue, lm, path_flags))
     {
@@ -495,7 +603,10 @@ log_writer_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
   LogWriter *self = (LogWriter *) s;
   
   if ((self->options->flags & LWOF_NO_STATS) == 0 && !self->dropped_messages)
-    stats_register_counter(SC_TYPE_DROPPED, self->options->stats_name, &self->dropped_messages, !!(self->options->flags & LWOF_SHARE_STATS));
+    {
+      stats_register_counter(SC_TYPE_DROPPED, self->options->stats_name, &self->dropped_messages, !!(self->options->flags & LWOF_SHARE_STATS));
+      stats_register_counter(SC_TYPE_SUPPRESSED, self->options->stats_name, &self->suppressed_messages, !!(self->options->flags & LWOF_SHARE_STATS));
+    }
   return TRUE;
 }
 
@@ -512,7 +623,10 @@ log_writer_deinit(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
     }
 
   if (self->dropped_messages)
-    stats_orphan_counter(SC_TYPE_DROPPED, self->options->stats_name, &self->dropped_messages);
+    {
+      stats_orphan_counter(SC_TYPE_DROPPED, self->options->stats_name, &self->dropped_messages);
+      stats_orphan_counter(SC_TYPE_SUPPRESSED, self->options->stats_name, &self->suppressed_messages);
+    }
   
   return TRUE;
 }
@@ -523,6 +637,7 @@ log_writer_free(LogPipe *s)
   LogWriter *self = (LogWriter *) s;
   
   log_queue_free(self->queue);
+  log_writer_last_msg_release(self);
 
   g_free(self);
 }
@@ -572,6 +687,9 @@ log_writer_new(guint32 flags, LogPipe *control, LogWriterOptions *options)
   self->flags = flags;
   self->control = control;
   self->throttle_buckets = self->options->throttle;
+  self->last_msg = NULL;
+  self->last_msg_count = 0;
+  self->last_msg_timerid = 0;
   return &self->super;
 }
 
@@ -587,6 +705,7 @@ log_writer_options_defaults(LogWriterOptions *options)
   options->zone_offset = -1;
   options->frac_digits = -1;
   options->time_reopen = -1;
+  options->suppress = 0;
 }
 
 void 

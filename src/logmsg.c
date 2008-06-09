@@ -664,6 +664,28 @@ log_msg_new_empty(void)
 }
 
 /**
+ * log_msg_new_internal:
+ * @prio: message priority (LOG_*)
+ * @msg: message text
+ * @flags: parse flags (LP_*)
+ *
+ * This function creates a new log message for messages originating 
+ * internally to syslog-ng
+ **/
+LogMessage *
+log_msg_new_internal(gint prio, const gchar *msg, guint flags)
+{
+  gchar *buf;
+  LogMessage *self;
+  
+  buf = g_strdup_printf("<%d> syslog-ng[%d]: %s\n", prio, getpid(), msg);
+  self = log_msg_new(buf, strlen(buf), NULL, flags, NULL);
+  g_free(buf);
+
+  return self;
+}
+
+/**
  * log_msg_new_mark:
  * 
  * This function returns a new MARK message. MARK messages have the LF_MARK

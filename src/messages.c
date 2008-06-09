@@ -44,8 +44,6 @@ MsgQueue *internal_msg_queue = NULL;
 static void
 msg_send_internal_message(int prio, const char *msg)
 {
-  gchar *buf;
-  
   if (log_stderr || (!syslog_started && (prio & 0x7) <= EVT_PRI_WARNING))
     {
       fprintf(stderr, "%s\n", msg);
@@ -56,10 +54,8 @@ msg_send_internal_message(int prio, const char *msg)
       
       if (G_LIKELY(internal_msg_queue))
         {
-          buf = g_strdup_printf("<%d> syslog-ng[%d]: %s\n", prio, getpid(), msg);
-          m = log_msg_new(buf, strlen(buf), NULL, LP_INTERNAL | LP_LOCAL, NULL);
+          m = log_msg_new_internal(prio, msg, LP_INTERNAL | LP_LOCAL);
           msg_queue_push(internal_msg_queue, m);
-          g_free(buf);
         }
     }
 }
