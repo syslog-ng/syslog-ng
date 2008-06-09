@@ -38,6 +38,8 @@ fd_write_write_method(FDWrite *self, const void *buf, size_t buflen)
     {
       if (self->timeout)
         alarm_set(self->timeout);
+      if (self->append)
+        lseek(self->fd, 0, SEEK_END);
       rc = write(self->fd, buf, buflen);
       if (self->timeout > 0 && rc == -1 && errno == EINTR && alarm_has_fired())
         {

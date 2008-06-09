@@ -330,7 +330,7 @@ affile_dw_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
   if (self->owner->flags & AFFILE_PIPE)
     flags = O_RDWR | O_NOCTTY | O_NONBLOCK | O_LARGEFILE;
   else
-    flags = O_WRONLY | O_CREAT | O_APPEND | O_NOCTTY | O_NONBLOCK | O_LARGEFILE;
+    flags = O_WRONLY | O_CREAT | O_NOCTTY | O_NONBLOCK | O_LARGEFILE;
 
   self->last_open_stamp = time(NULL);
   if (affile_open_file(self->filename->str, flags, 
@@ -357,6 +357,7 @@ affile_dw_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
       fdw = fd_write_new(fd);
       if (self->owner->flags & AFFILE_FSYNC)
         fdw->fsync = TRUE;
+      fdw->append = TRUE;
       log_writer_reopen(self->writer, fdw);
     }
   else
