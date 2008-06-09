@@ -336,12 +336,9 @@ log_writer_last_msg_flush(LogWriter *self)
 static gboolean
 last_msg_timer(gpointer pt)
 {
-  LogWriter *self = (LogWriter *)pt;
+  LogWriter *self = (LogWriter *) pt;
 
-  if (self->last_msg_count)
-    log_writer_last_msg_flush(self);
-  else
-    log_writer_last_msg_release(self);
+  log_writer_last_msg_flush(self);
 
   return FALSE;
 }
@@ -372,8 +369,9 @@ log_writer_last_msg_check(LogWriter *self, LogMessage *lm, gint path_flags)
 {
   if (self->last_msg)
     {
-      if(strcmp(self->last_msg->msg.str, lm->msg.str) == 0 &&
-         strcmp(self->last_msg->host.str, lm->host.str) == 0)
+      if (self->last_msg->recvd.time.tv_sec >= lm->recvd.time.tv_sec - self->options->suppress &&
+          strcmp(self->last_msg->msg.str, lm->msg.str) == 0 &&
+          strcmp(self->last_msg->host.str, lm->host.str) == 0)
         {
           if (self->suppressed_messages)
             (*self->suppressed_messages)++;
