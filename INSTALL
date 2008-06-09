@@ -71,9 +71,13 @@ Currently the following compile time features exist:
   --enable-spoof-source     enable spoof_source feature (also requires libnet) (disabled by default)
   --enable-ipv6             enable support for IPv6
   --enable-static-linking   compile syslog-ng as a static binary
-  --enable-dynamic-linking  compile syslog-ng as a completely dynamic binary,
-                            if not specified syslog-ng links dynamically to
-                            system libraries and statically to everything else.
+  --disable-dynamic-linking compile syslog-ng against system libraries
+                            dynamically, and statically against everything else
+
+NOTE: if you intend to use an NFS mounted /usr you might need to configure
+syslog-ng with either --enable-static-linking or with
+--disable-dynamic-linking as syslog-ng needs to start _before_ your
+networking is up.
 
 Platform specific compilation issues
 ====================================

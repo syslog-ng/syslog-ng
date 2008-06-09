@@ -59,7 +59,7 @@ AC_ARG_ENABLE(memtrace,
               [  --enable-memtrace   Enable alternative leak debugging code.])
               
 AC_ARG_ENABLE(dynamic-linking,
-              [  --enable-dynamic-linking        Link glib and eventlog dynamically instead of statically.])
+              [  --enable-dynamic-linking        Link glib and eventlog dynamically instead of statically.],,enable_dynamic_linking="yes")
 
 AC_ARG_ENABLE(static-linking,
               [  --enable-static-linking         Link everything statically.])
