@@ -117,6 +117,10 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase(msg, "$MESSAGE", "syslog-ng[23323]: árvíztűrőtükörfúrógép");
   testcase(msg, "$SOURCEIP", "10.10.10.10");
   testcase(msg, "$PROGRAM/var/log/messages/$HOST/$HOST_FROM/$MONTH$DAY$QQQQQvalami", "syslog-ng/var/log/messages/bzorp/kismacska/0211valami");
+  
+  g_string_assign(&msg->msg, "syslog-ng: árvíztűrőtükörfúrógép [pid test]");
+  testcase(msg, "$PID", "");
+  
   app_shutdown();
   
   if (success)

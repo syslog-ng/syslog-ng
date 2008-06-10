@@ -252,13 +252,17 @@ log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, glong 
         /* PID */
         if (msg->msg.len)
           {
-            gchar *start, *end;
+            gchar *start, *end, *colon;
             
-            start = strchr(msg->msg.str, '[');
+            colon = strchr(msg->msg.str, ':');
+            if (!colon)
+              break;
+            
+            start = memchr(msg->msg.str, '[', colon - msg->msg.str);
             if (start)
               {
                 start++;
-                end = strchr(start, ']');
+                end = memchr(start, ']', colon - start);
                 if (end)
                   {
                     result_append(result, start, end-start, !!(flags & MF_ESCAPE_RESULT));
