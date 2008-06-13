@@ -1,3 +1,29 @@
+2.1beta2
+	Fri, 13 Jun 2008 14:37:08 +0200
+
+	Bugfixes:
+	* Create /var/lib/syslog-ng directory from RPM packages.
+	* Fixed a 100% CPU usage problem triggered by the pipe()
+          destination. This is a regression in 2.1beta1 and does not affect
+          earlier versions.
+	* Removed test code that injected "Connection timed out" errors into
+	  local file writes.
+	* Set the current directory to the root once syslog-ng daemonized
+          itself.
+	* Fixed the $PID macro to only extract information from the syslog
+          message header and not from the message contents.
+
+	Other changes:
+	* Instead of using O_APPEND for file writes, add an lseek before
+          writing which performs much better with the NFS client in BSD
+	  kernels.
+	* Added support for suppressing duplicate messages. This feature was
+	  contributed by Chris Packham.
+	* The default linking mode is changed to dynamic linking, as static
+          linking is more difficult for users to cope with. Those who
+	  use NFS mounted /usr on machines where syslog-ng runs on will
+          probably need to explicitly ask for the previous behaviour.
+
 2.1beta1
 	Fri, 18 Apr 2008 18:00:59 +0200
 
