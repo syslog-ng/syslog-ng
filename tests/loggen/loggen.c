@@ -226,7 +226,9 @@ main(int argc, char *argv[])
           memset(&hints, 0, sizeof(hints));
           hints.ai_family = AF_UNSPEC;
           hints.ai_socktype = sock_type;
+#ifdef AI_ADDRCONFIG
           hints.ai_flags = AI_ADDRCONFIG;
+#endif
           hints.ai_protocol = 0;
           if (getaddrinfo(argv[optind], argv[optind + 1], &hints, &res) != 0)
             {
