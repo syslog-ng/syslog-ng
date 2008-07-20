@@ -217,6 +217,7 @@ stats_generate_log(void)
   {
     /* [SC_TYPE_DROPPED]   = */ "dropped",
     /* [SC_TYPE_PROCESSED] = */ "processed",
+    /* [SC_TYPE_SUPPRESSED] = */ "suppressed"
   };
   
   e = msg_event_create(EVT_PRI_INFO, "Log statistics", NULL);
