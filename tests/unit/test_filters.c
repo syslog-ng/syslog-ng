@@ -10,6 +10,7 @@
 #include <stdio.h>
 
 int debug = 1;
+GSockAddr *sender_saddr;
 
 static gint
 facility_bits(gchar *fac)
@@ -45,7 +46,7 @@ testcase(gchar *msg,
   
   testno++;
   logmsg = log_msg_new(msg, strlen(msg), NULL, parse_flags, NULL);
-  logmsg->saddr = g_sockaddr_inet_new("10.10.0.1", 5000);
+  logmsg->saddr = g_sockaddr_ref(sender_saddr);
   
   res = filter_expr_eval(f, logmsg);
   if (res != expected_result)
@@ -153,10 +154,15 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   fprintf(stderr, "One \"invalid regular expression\" message is to be expected\n");
   TEST_ASSERT(filter_match_new("((") == NULL);
 
+  sender_saddr = g_sockaddr_inet_new("10.10.0.1", 5000);
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, filter_netmask_new("10.10.0.0/16"), 1);
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, filter_netmask_new("10.10.0.0/24"), 1);
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, filter_netmask_new("10.10.10.0/24"), 0);
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, filter_netmask_new("0.0.10.10/24"), 0);
+  g_sockaddr_unref(sender_saddr);
+  sender_saddr = NULL;
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, filter_netmask_new("127.0.0.1/32"), 1);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, filter_netmask_new("127.0.0.2/32"), 0);
 
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, fop_or_new(filter_match_new(" PTHREAD "), filter_match_new("PTHREAD")), 1);
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, fop_or_new(filter_match_new(" PTHREAD "), filter_match_new("^PTHREAD$")), 1);

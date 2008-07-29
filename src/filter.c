@@ -449,14 +449,18 @@ static gboolean
 filter_netmask_eval(FilterExprNode *s, LogMessage *msg)
 {
   FilterNetmask *self = (FilterNetmask *) s;
+  struct in_addr addr;
   
   if (msg->saddr && g_sockaddr_inet_check(msg->saddr))
     {
-      struct in_addr *addr = &((struct sockaddr_in *) &msg->saddr->sa)->sin_addr;
-      
-      return ((addr->s_addr & self->netmask.s_addr) == (self->address.s_addr)) ^ s->comp;
+      addr = ((struct sockaddr_in *) &msg->saddr->sa)->sin_addr;
     }
-  return s->comp;
+  else if (!msg->saddr || msg->saddr->sa.sa_family == AF_UNIX)
+    {
+      addr.s_addr = htonl(INADDR_LOOPBACK);
+    }
+  return ((addr.s_addr & self->netmask.s_addr) == (self->address.s_addr)) ^ s->comp;
+
 }
 
 FilterExprNode *
