@@ -1,3 +1,14 @@
+2.1.1
+	Thu, 28 Aug 2008 09:26:30 +0200
+
+	Bugfixes:
+	* Fixed a possible crash in stats message generation.
+	* Fixed compilation problem in loggen on FreeBSD.
+
+	Other changes:
+	* The netmask filter was changed to assume that local messages are
+          received from 127.0.0.1.
+
 2.1beta2
 	Fri, 13 Jun 2008 14:37:08 +0200
 
