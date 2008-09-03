@@ -63,7 +63,7 @@ g_atomic_counter_set(GAtomicCounter *c, gint value)
 }
 
 #else
-typedef guint16 GAtomicCounter;
+typedef gint GAtomicCounter;
 
 static inline void
 g_atomic_counter_inc(GAtomicCounter *c)
