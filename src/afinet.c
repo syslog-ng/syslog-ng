@@ -292,6 +292,9 @@ afinet_dd_set_destport(LogDriver *s, gchar *service, gchar *proto)
   AFInetDestDriver *self = (AFInetDestDriver *) s;
   
   afinet_set_port(self->super.dest_addr, service, proto);
+  
+  g_free(self->super.dest_name);
+  self->super.dest_name = g_strdup_printf("%s:%d", self->host, g_sockaddr_inet_get_port(self->super.dest_addr));
 }
 
 void 
