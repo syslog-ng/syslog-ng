@@ -381,7 +381,10 @@ main(int argc, char *argv[])
     }
   else
     {
-      g_process_startup_ok();
+      if (syntax_only)
+        g_process_startup_failed(0, TRUE);
+      else
+        g_process_startup_ok();
     }
 #else
 
@@ -392,16 +395,17 @@ main(int argc, char *argv[])
    */
    
   rc = initial_init(&cfg);
-  if (rc)
+  if (rc || syntax_only)
     {
       return rc;
     }
+  if (syntax_only)
+    return 0;
+  
   g_process_start();
   g_process_startup_ok();
 #endif
 
-  if (syntax_only)
-    return 0;
 
   /* we are running as a non-root user from this point */
   
@@ -424,6 +428,7 @@ main(int argc, char *argv[])
   app_shutdown();
   tls_deinit();
   z_mem_trace_dump();
+  g_process_finish();
   return rc;
 }
 
