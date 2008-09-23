@@ -274,6 +274,9 @@ resolve_user(const char *user, uid_t *uid)
   struct passwd *pw;
 
   *uid = 0;
+  if (*user)
+    return FALSE;
+    
   pw = getpwnam(user);
   if (pw) 
     {
@@ -281,8 +284,10 @@ resolve_user(const char *user, uid_t *uid)
     }
   else 
     {
-      *uid = atoi(user);
-      if (*uid == 0)
+      gchar *endptr;
+      
+      *uid = strtol(user, &endptr, 0);
+      if (*endptr)
         return FALSE;
     }
   return TRUE;
@@ -294,6 +299,9 @@ resolve_group(const char *group, gid_t *gid)
   struct group *gr;
 
   *gid = 0;
+  if (!*group)
+    return FALSE;
+    
   gr = getgrnam(group);
   if (gr) 
     {
@@ -301,8 +309,10 @@ resolve_group(const char *group, gid_t *gid)
     }
   else 
     {
-      *gid = atoi(group);
-      if (*gid == 0)
+      gchar *endptr;
+      
+      *gid = strtol(group, &endptr, 0);
+      if (*endptr)
         return FALSE;
     }
   return TRUE;
