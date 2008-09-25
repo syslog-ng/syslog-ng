@@ -29,6 +29,7 @@
 #include <unistd.h>
 #include <assert.h>
 #include <string.h>
+#include <stdlib.h>
 
 typedef struct _LogWriterWatch
 {
@@ -463,6 +464,22 @@ log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
 {
   LogTemplate *template = NULL;
   LogStamp *stamp;
+  guint32 seq_num;
+  
+  if (lm->flags & LF_LOCAL)
+    {
+      seq_num = self->seq_num;
+    }
+  else
+    {
+      const gchar *sequence_id;
+      
+      sequence_id = log_msg_lookup_sdata(lm, "meta.sequenceId", 15);
+      if (sequence_id)
+        seq_num = strtol(sequence_id, NULL, 10);
+      else
+        seq_num = 0;
+    }
 
   
   /* no template was specified, use default */
@@ -490,10 +507,10 @@ log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
       
       if (lm->flags & LF_LOCAL)
         {
-          gchar seq_num[16];
+          gchar sequence_id[16];
           
-          g_snprintf(seq_num, sizeof(seq_num), "%d", self->seq_num);
-          log_msg_update_sdata(lm, "meta", "sequenceId", seq_num);
+          g_snprintf(sequence_id, sizeof(sequence_id), "%d", seq_num);
+          log_msg_update_sdata(lm, "meta", "sequenceId", sequence_id);
         }
       len = result->len;
       log_msg_append_format_sdata(lm, result);
@@ -513,7 +530,7 @@ log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
                                      self->options->ts_format,
                                      self->options->time_zone_info,
                                      self->options->frac_digits,
-                                     self->seq_num,
+                                     seq_num,
                                      result);
         }
       else if (lm->message_len != 0)
@@ -548,7 +565,7 @@ log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
                               self->options->ts_format,
                               self->options->time_zone_info,
                               self->options->frac_digits,
-                              self->seq_num,
+                              seq_num,
                               result);
 
         }
@@ -653,7 +670,8 @@ log_writer_flush_log(LogWriter *self, LogProto *proto)
         {
           log_msg_ack(lm, &path_options);
           log_msg_unref(lm);
-          step_sequence_number(&self->seq_num);
+          if (lm->flags & LF_LOCAL)
+            step_sequence_number(&self->seq_num);
         }
       else
         {
