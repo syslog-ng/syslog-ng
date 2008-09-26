@@ -47,7 +47,19 @@ $(STAMPDIR)/stamp-install: $(STAMPDIR)/stamp-build
 	rm -rf $(ZBS_STAGE_DIR)
 	$(MAKE) install DESTDIR=$(ZBS_STAGE_DIR)
 	$(INSTALL) -d -m 755 $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/etc
+	
+	# Store syslog-ng version
+	VER=`$(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/sbin/syslog-ng -V | \
+		head -1 | cut -d ' ' -f 2` ; echo "VERSION=$$VER" > \
+		$(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/etc/install.dat
+	
+	    
 	$(INSTALL) -d -m 755 $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/share/doc
+
+	#Store syslog-ng build options
+	$(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/sbin/syslog-ng -V \
+	| grep 'Enable' > $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/share/doc/buildopts
+
 	$(INSTALL) -d -m 755 $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/share/doc/contrib
 	$(INSTALL) -d -m 755 $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/lib
 	$(INSTALL) -m 644 -c README $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/share/doc 
