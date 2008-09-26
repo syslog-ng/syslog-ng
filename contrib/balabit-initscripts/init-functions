@@ -4,15 +4,23 @@ RED=
 YELLOW=
 NORMAL=
 FANCYTTY=
+PSOPTS=
+
+case `uname -s` in
+  # default ps -e cuts the process' name at 8 characters, so we have to list it
+  # in a long form
+  SunOS) PSOPTS=" -o pid -o tty -o time -o comm" ;;
+esac
 
 _checkpid() {
   _pid=$1
   _proc=$2
   
-  _ret=`ps -e | grep "$_proc" | sed -e 's/^  *//' -e 's/ .*//'`
-  if [ -n "$_ret" ]; then
-    return 0
-  fi
+  for _ret in `ps -e $PSOPTS | grep "$_proc" | sed -e 's/^  *//' -e 's/ .*//'`; do
+    if [ -n "$_ret" ] && [ "$_ret" = "$_pid" ]; then
+      return 0
+    fi
+  done
   return 1
 }
 
