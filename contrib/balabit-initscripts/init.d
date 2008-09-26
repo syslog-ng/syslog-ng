@@ -56,8 +56,31 @@ echo_n() {
 test -x ${SYSLOGNG} || exit_noop
 test -r ${CONFFILE} || exit_noop
 
+if [ -f /etc/lsb-release ]; then
+	. /etc/lsb-release
+fi
+
 if [ -f /lib/lsb/init-functions ];then
-	. /lib/lsb/init-functions
+	# long list of exclusions... 
+	if [ -f /etc/redhat-release ];then
+		rh_rel=`sed -e 's/[^0-9]* \([0-9\.]*\) (.*/\1/' /etc/redhat-release | cut -f1 -d'.'`
+		# RedHat Enterprise Linux's init functions before version 5 lacked
+		# pidfile support.
+		if [ $rh_rel -lt 5 ];then
+			INIT_FUNCTIONS=$SLNG_INIT_FUNCTIONS
+		fi
+	elif [ -n "$DISTRIB_ID" ];then
+		case "$DISTRIB_ID" in
+			Ubuntu)
+				# hardy's init-functions contains a broken killproc implementation
+				if [ "$DISTRIB_RELEASE" = "8.04" ] && \
+					[ "$DISTRIB_CODENAME" = "hardy" ]; then
+					INIT_FUNCTIONS=$SLNG_INIT_FUNCTIONS
+				fi
+				;;
+			*) ;;
+		esac
+	fi
 else
 	. $SYSLOGNG_PREFIX/lib/init-functions
 fi
