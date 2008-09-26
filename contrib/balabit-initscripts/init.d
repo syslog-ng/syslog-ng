@@ -139,7 +139,7 @@ syslogng_restart() {
 syslogng_reload() {
 	echo_n "Reloading syslog-ng's config file: "
 	check_syntax 
-	killproc $SYSLOGNG -HUP
+	killproc -p ${PIDFILE} $SYSLOGNG -HUP
 	retval=$?
 	returnmessage $retval
 	return $retval
