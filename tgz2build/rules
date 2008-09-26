@@ -60,7 +60,6 @@ $(STAMPDIR)/stamp-install: $(STAMPDIR)/stamp-build
 	$(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/sbin/syslog-ng -V \
 	| grep 'Enable' > $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/share/doc/buildopts
 
-	$(INSTALL) -d -m 755 $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/share/doc/contrib
 	$(INSTALL) -d -m 755 $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/lib
 	$(INSTALL) -m 644 -c README $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/share/doc 
 	$(INSTALL) -m 644 -c COPYING $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/share/doc
@@ -68,8 +67,9 @@ $(STAMPDIR)/stamp-install: $(STAMPDIR)/stamp-build
 	$(INSTALL) -m 644 -c NEWS $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/share/doc
 	$(INSTALL) -m 644 $(ZBS_SOURCE_DIR)/contrib/balabit-initscripts/init-functions $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/lib
 
+	cd $(ZBS_SOURCE_DIR)/contrib && \
+	tar cvf - balabit-initscripts selinux apparmor | (cd $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/share/doc/ && tar xf -)
 	cd $(ZBS_SOURCE_DIR)
-	tar cf - contrib | (cd $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/share/doc/ && tar xf -)
 	rm -rf $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/share/doc/contrib/Makefile*
 	
  
