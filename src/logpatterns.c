@@ -273,7 +273,7 @@ log_pattern_database_lookup(LogPatternDatabase *self, LogMessage *msg)
                   if (match->flags & LMM_REF_MATCH)
                     match->builtin_value = LM_F_MESSAGE;
                     
-                  if (match_name)
+                  if (match_name && match_name[0])
                     {
                       if ((match->flags & LMM_REF_MATCH) != 0)
                         value = g_strndup(msg->message + match->ofs, match->len);
