@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2007 BalaBit IT Ltd, Budapest, Hungary                    
+ * Copyright (c) 2002-2008 BalaBit IT Ltd, Budapest, Hungary
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -20,7 +20,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-
+  
 #ifndef CENTER_H_INCLUDED
 #define CENTER_H_INCLUDED
 
@@ -28,21 +28,20 @@
 
 #include "logpipe.h"
 
-#define EP_SOURCE 1
-#define EP_FILTER 2
-#define EP_DESTINATION 3
+#define EP_SOURCE      1
+#define EP_FILTER      2
+#define EP_PARSER      3
+#define EP_DESTINATION 4
+#define EP_PIPE        5
+#define EP_REWRITE      6
 
-typedef struct _LogEndpoint
-{
-  struct _LogEndpoint *ep_next;
-  GString *name;
-  gint type;
-  gpointer ref;
-} LogEndpoint;
+typedef struct _LogPipeItem LogPipeItem;
 
-LogEndpoint *log_endpoint_new(gint type, gchar *name);
-void log_endpoint_append(LogEndpoint *a, LogEndpoint *b);
-void log_endpoint_free(LogEndpoint *self);
+LogPipeItem *log_pipe_item_new(gint type, gchar *name);
+LogPipeItem *log_pipe_item_new_ref(gint type, gpointer ref);
+void log_pipe_item_append(LogPipeItem *a, LogPipeItem *b);
+LogPipeItem *log_pipe_item_append_tail(LogPipeItem *a, LogPipeItem *b);
+void log_pipe_item_free(LogPipeItem *self);
 
 
 #define LC_CATCHALL 1
@@ -50,45 +49,44 @@ void log_endpoint_free(LogEndpoint *self);
 #define LC_FINAL    4
 #define LC_FLOW_CONTROL 8
 
+/**
+ * This structure is used to hold the log statements as specified by the
+ * user. Endpoints contain references to source/filter/parser/destination,
+ * during initialization this is turned into a message processing pipeline.
+ **/
 typedef struct _LogConnection
 {
-  GHashTable *source_cache;
-  GPtrArray *sources;
-  GPtrArray *filters;
-  GPtrArray *destinations;
+  LogPipeItem *endpoints;
   guint32 flags;
 } LogConnection;
 
-LogConnection *log_connection_new(LogEndpoint *endpoints, guint32 flags);
+LogConnection *log_connection_new(LogPipeItem *endpoints, guint32 flags);
 void log_connection_free(LogConnection *self);
+gint log_connection_lookup_flag(const gchar *flag);
 
 #define LC_STATE_INIT_SOURCES 1
 #define LC_STATE_INIT_DESTS 2
 #define LC_STATE_WORKING 3
 
+/**
+ * LogCenter used to be the central processing element of syslog-ng, now it
+ * is degraded to construct the message processing pipelines the user
+ * specifies in its configuration file using log statements. There's no
+ * coherent reason for its existence, apart from the fact that it'd bloat
+ * the cfg.c file.
+ **/
 typedef struct _LogCenter 
 {
-  LogPipe super;
-  GlobalConfig *cfg;
-  PersistentConfig *persist;
+  GPtrArray *initialized_pipes;
   gint state;
-  gboolean success;
   guint32 *received_messages;
   guint32 *queued_messages;
 } LogCenter;
 
+gboolean log_center_init(LogCenter *self, GlobalConfig *cfg);
+gboolean log_center_deinit(LogCenter *self);
+
 LogCenter *log_center_new(void);
-
-static inline LogCenter *
-log_center_ref(LogCenter *s)
-{
-  return (LogCenter *) log_pipe_ref((LogPipe *) s);
-}
-
-static inline void
-log_center_unref(LogCenter *s)
-{
-  log_pipe_unref((LogPipe *) s);
-}
+void log_center_free(LogCenter *s);
 
 #endif

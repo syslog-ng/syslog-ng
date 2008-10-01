@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2007 BalaBit IT Ltd, Budapest, Hungary                    
+ * Copyright (c) 2002-2008 BalaBit IT Ltd, Budapest, Hungary
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -20,7 +20,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-
+  
 #ifndef DGROUP_H_INCLUDED
 #define DGROUP_H_INCLUDED
 
@@ -32,7 +32,7 @@
 typedef struct _LogDestGroup
 {
   LogPipe super;
-  GString *name;
+  gchar *name;
   LogDriver *drivers;
   guint32 *processed_messages;
 } LogDestGroup;

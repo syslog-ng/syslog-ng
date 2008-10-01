@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2002-2007 BalaBit IT Ltd.
- * Copyright (C) 2002-2007 Balazs Scheidler
+ * Copyright (c) 2002-2008 BalaBit IT Ltd, Budapest, Hungary
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -13,13 +12,13 @@
  * COPYING for details.
  *
  * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of 
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
   
 #ifndef ATOMIC_H_INCLUDED
@@ -63,7 +62,7 @@ g_atomic_counter_set(GAtomicCounter *c, gint value)
 }
 
 #else
-typedef gint GAtomicCounter;
+typedef guint32 GAtomicCounter;
 
 static inline void
 g_atomic_counter_inc(GAtomicCounter *c)

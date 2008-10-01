@@ -22,4 +22,11 @@ EXTRA_DIST = README init.d.solaris init.d.HP-UX init.d.RedHat init.d.SuSE 	\
 	solaris-packaging/syslog-ng.example.xml \
 	solaris-packaging/syslog-ng.method \
 	freebsd-packaging/syslog-ng.rc.d \
-	freebsd-packaging/syslog-ng.conf.example
+	freebsd-packaging/syslog-ng.conf.example \
+	selinux/syslog_ng.fc \
+	selinux/syslog_ng.te \
+	selinux/README.selinux \
+	apparmor/opt.syslog-ng.sbin.syslog-ng \
+	balabit-initscripts/init.d \
+	balabit-initscripts/init.d.freebsd \
+	balabit-initscripts/init-functions

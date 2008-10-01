@@ -6,7 +6,7 @@
   do { \
    if (!(x)) \
      { \
-       fprintf(stderr, "test assertion failed: " __STRING(x) " line: %d\n", __LINE__); \
+       fprintf(stderr, "test assertion failed: " #x " line: %d\n", __LINE__); \
        return 1; \
      } \
   } while (0)

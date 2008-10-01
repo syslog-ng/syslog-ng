@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2007 BalaBit IT Ltd, Budapest, Hungary                    
+ * Copyright (c) 2002-2008 BalaBit IT Ltd, Budapest, Hungary
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -20,7 +20,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-
+  
 #ifndef SYSLOG_NG_H_INCLUDED
 #define SYSLOG_NG_H_INCLUDED
 
@@ -35,36 +35,34 @@
 #endif
 
 #include <glib.h>
+#include "compat.h"
 
-#define PATH_SYSLOG_NG_CONF     PATH_SYSCONFDIR "/syslog-ng.conf"
-#define PATH_PIDFILE            "/var/run/syslog-ng.pid"
-
-#if ENABLE_SQL
+#if ENABLE_SQL || ENABLE_TIMESTAMPING
 #define ENABLE_THREADS 1
 #else
 #define ENABLE_THREADS 0
 #endif
 
+#define PATH_SYSLOG_NG_CONF     PATH_SYSCONFDIR "/syslog-ng.conf"
+#define PATH_PIDFILE            PATH_PIDFILEDIR "/syslog-ng.pid"
+#define PATH_CONTROL_SOCKET     PATH_PIDFILEDIR "/syslog-ng.ctl"
+
 #define PATH_PERSIST_CONFIG     PATH_LOCALSTATEDIR "/syslog-ng.persist"
 #define PATH_QDISK              PATH_LOCALSTATEDIR
+#define PATH_PATTERNDB_FILE     PATH_LOCALSTATEDIR "/patterndb.xml"
 
 #define LOG_PRIORITY_LISTEN 0
 #define LOG_PRIORITY_READER 0
 #define LOG_PRIORITY_WRITER -100
 #define LOG_PRIORITY_CONNECT -150
 
-#if !HAVE_STRTOLL
-# if HAVE_STRTOIMAX || defined(strtoimax)
-   /* HP-UX has an strtoimax macro, not a function */
-   #define strtoll(nptr, endptr, base) strtoimax(nptr, endptr, base)
-# else
-   /* this requires Glib 2.12 */
-   #define strtoll(nptr, endptr, base) g_ascii_strtoll(nptr, endptr, base)
-# endif
-#endif
+#define SAFE_STRING(x) ((x) ? (x) : "NULL")
 
-#if !HAVE_O_LARGEFILE
-#define O_LARGEFILE 0
-#endif
+typedef struct _LogMessage LogMessage;
+typedef struct _GlobalConfig GlobalConfig;
+
+extern GlobalConfig *configuration;
+
+void main_loop_wakeup(void);
 
 #endif

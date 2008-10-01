@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2007 BalaBit IT Ltd, Budapest, Hungary                    
+ * Copyright (c) 2002-2008 BalaBit IT Ltd, Budapest, Hungary
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -20,7 +20,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-
+  
 #ifndef MISC_H_INCLUDED
 #define MISC_H_INCLUDED
 
@@ -30,21 +30,58 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
-GString *g_string_assign_len(GString *s, gchar *val, gint len);
+GString *g_string_assign_len(GString *s, const gchar *val, gint len);
 
 char *getlonghostname(char *buf, size_t buflen);
 char *getshorthostname(char *buf, size_t buflen);
-int format_zone_info(gchar *buf, size_t buflen, long gmtoff);
-long get_local_timezone_ofs(time_t when);
 gboolean g_fd_set_nonblock(int fd, gboolean enable);
 gboolean g_fd_set_cloexec(int fd, gboolean enable);
 
 gboolean resolve_user(const char *user, uid_t *uid);
 gboolean resolve_group(const char *group, gid_t *gid);
 gboolean resolve_user_group(char *arg, uid_t *uid, gid_t *gid);
-gboolean resolve_hostname(GString *result, GSockAddr *saddr, gboolean usedns, gboolean usefqdn, gboolean use_dns_cache);
+gboolean resolve_sockaddr(gchar **result, GSockAddr *saddr, gboolean usedns, gboolean usefqdn, gboolean use_dns_cache, gboolean normalize_hostnames);
+gboolean resolve_hostname(GSockAddr **addr, gchar *name);
 
-glong g_time_val_diff(GTimeVal *t1, GTimeVal *t2);
+gchar *format_hex_string(gpointer str, gsize str_len, gchar *result, gsize result_len);
+gchar *find_cr_or_lf(gchar *s, gsize n);
+
+gboolean create_containing_directory(gchar *name, uid_t dir_uid, gid_t dir_gid, mode_t dir_mode);
+
+static inline void
+init_sequence_number(gint32 *seqnum)
+{
+  *seqnum = 1;
+}
+
+static inline void 
+step_sequence_number(gint32 *seqnum)
+{
+  (*seqnum)++;
+  if (*seqnum < 0)
+    *seqnum = 1;
+}
+
+GList *string_array_to_list(const gchar *strlist[]);
+void string_list_free(GList *l);
+
+#define APPEND_ZERO(value, value_len) \
+  ({ \
+    gchar *__buf; \
+    if (G_UNLIKELY(value[value_len] != 0)) \
+      { \
+        /* value is NOT zero terminated */ \
+        \
+        __buf = g_alloca(value_len + 1); \
+        memcpy(__buf, value, value_len); \
+        __buf[value_len] = 0; \
+      } \
+    else \
+      { \
+        /* value is zero terminated */ \
+        __buf = (gchar *) value; \
+      } \
+  __buf; })
 
 
 #endif

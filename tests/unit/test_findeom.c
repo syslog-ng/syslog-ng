@@ -2,12 +2,14 @@
 #include "logmsg.h"
 #include <stdlib.h>
 
+const gchar *find_eom(const gchar *s, gsize n);
+
 static void
-testcase(gchar *msg, gsize msg_len, gsize eom_ofs)
+testcase(gchar *msg, gsize msg_len, gint eom_ofs)
 {
   const gchar *eom;
   
-  eom = log_reader_find_eom(msg, msg_len);
+  eom = find_eom(msg, msg_len);
   
   if (eom_ofs == -1 && eom != NULL)
     {

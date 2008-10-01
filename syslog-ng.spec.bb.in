@@ -2,17 +2,32 @@
 #  Specfile used by BalaBit internally.
 #
 Summary: Next generation system logging daemon
-Name: syslog-ng
+Name: @PACKAGE@
 Version: @VERSION@
 Release: 1
-License: GPL
+License: BalaBit Proprietary License
 Group: System Environment/Daemons
-Source: syslog-ng_%{version}.tar.gz
+Source: @PACKAGE@_%{version}.tar.gz
 URL: http://www.balabit.com
 Packager: Tamas Pal <folti@balabit.com>
 Vendor: Balabit IT Ltd.
 BuildRoot: %{_tmppath}/%{name}-root
-BuildRequires: bison, flex, gcc-c++, pkgconfig, glib2-devel, libevtlog-devel
+# this sucks, but no other way to do it...
+%if "@PACKAGE_EDITION@" == "premium edition"
+Conflicts: syslog-ng
+%ifnos aix5.2
+%if "%(echo $ZBS_DIST)" != "rhel-3"
+BuildRequires: bison, flex, gcc-c++,glib2-devel, pkgconfig, libevtlog-devel, openssl-devel, libzlicense-devel, libnet-devel, libdbi8-devel
+Requires: libdbi8
+%else
+BuildRequires: bison, flex, gcc-c++,glib2-devel, pkgconfig, libevtlog-devel, openssl-devel, libzlicense-devel, libnet-devel
+%endif
+%else
+BuildRequires: bison, flex, gcc-c++,glib2-devel, pkgconfig, libevtlog-devel, openssl-devel, libzlicense-devel, libnet-devel
+%endif
+%else
+BuildRequires: bison, flex, gcc-c++,glib2-devel, pkgconfig, libevtlog-devel, openssl-devel, libzlicense-devel, libnet-devel
+%endif
 Provides: syslog
 #BuildConflicts:
 #Exclusivearch: i386
@@ -25,16 +40,21 @@ Provides: syslog
 
 %description
  Syslog-ng is a next generation system logger daemon which provides more
- capabilities and is has a more flexible configuration then the traditional
+ capabilities and it has a more flexible configuration then the traditional
  syslog daemon.
 
 %prep
-%setup -q -n syslog-ng-%{version}
+%setup -q -n @PACKAGE@-%{version}
 
 
 %build
-./configure --prefix=%{prefix} --mandir=%{_mandir} --infodir=%{prefix}/share/info \
-  --sysconfdir=/etc/syslog-ng --localstatedir=/var/lib/syslog-ng --enable-spoof-source --enable-sql
+
+opt=
+
+# FIXME: set PKG_CONFIG_PATH properly
+  ./configure --prefix=%{prefix} --mandir=%{_mandir} --infodir=%{prefix}/share/info \
+  --sysconfdir=/etc/syslog-ng --localstatedir=/var/lib/syslog-ng --enable-spoof-source \
+	$opt
 make
 
 %install
@@ -55,13 +75,13 @@ elif [ "%{_host_vendor}" = "suse" ]; then
 fi
 
 if [ "%{_host_vendor}" = "ibm" ];then
-  ./install-sh -o root -g bin -m 0644 contrib/aix-packaging/syslog-ng.conf \
-    ${RPM_BUILD_ROOT}/etc/syslog-ng/syslog-ng.conf
+	./install-sh -o root -g bin -m 0644 contrib/aix-packaging/syslog-ng.conf \
+	  ${RPM_BUILD_ROOT}/etc/syslog-ng/syslog-ng.conf
 elif [ "%{_host_vendor}" = "redhat" ] || [ "%{_host_vendor}" = "suse" ]; then
-  install -o root -g root -m 0644 contrib/rhel-packaging/syslog-ng.conf \
-    ${RPM_BUILD_ROOT}/etc/syslog-ng/syslog-ng.conf
-  install -D -o root -g root -m 0644 contrib/rhel-packaging/syslog-ng.logrotate \
-    ${RPM_BUILD_ROOT}/etc/logrotate.d/syslog-ng
+	install -o root -g root -m 0644 contrib/rhel-packaging/syslog-ng.conf \
+	  ${RPM_BUILD_ROOT}/etc/syslog-ng/syslog-ng.conf
+	install -D -o root -g root -m 0644 contrib/rhel-packaging/syslog-ng.logrotate \
+	  ${RPM_BUILD_ROOT}/etc/logrotate.d/syslog-ng
 fi
 
 # install documentation
@@ -85,6 +105,7 @@ fi
 %defattr(-,root,root)
 %{prefix}/sbin/syslog-ng
 %{prefix}/bin/loggen
+%{prefix}/bin/logcat
 %{_mandir}/*
 %docdir %{_prefix}/share/doc/syslog-ng-@VERSION@
 %{_prefix}/share/doc/syslog-ng-@VERSION@/*
@@ -205,11 +226,7 @@ elif [ "%{_host_vendor}" = "suse" ]; then
 fi
 %endif
 
-%postun
 %ifnos aix5.2
-#chkconfig --force --del syslog-ng
-#chkconfig --add syslog
-
 %check
 %endif
 
@@ -217,15 +234,20 @@ fi
 [ $RPM_BUILD_ROOT = / ] || rm -rf $RPM_BUILD_ROOT
 
 %changelog
+* Wed Apr 04 2007 Tamas Pal <folti@balabit.com> @VERSION@-1 
+- Added libnet-devel and libzlicense-devel to BuildRequires.
+- Changed Packager to Tamas Pal.
+- Changed license to BalaBit Proprietary one.
 * Wed Nov 22 2006 Tamas Pal <folti@balabit.com>
 - Added dependencies glib2-devel and pkgconfig.
 - Configfiles /etc/syslog-ng/syslog-ng.conf and /etc/logrotate.d/syslog-ng no
   longer replaced blindly during upgrade.
-* Fri Nov 3 2006 Tamas Pal <folti@balabit.com>
+* Fri Nov 3 2006  Tamas Pal <folti@balabit.com>
 - Added SuSE packaging.
 - Added AIX 5.2 packaging.
-- Now provides syslog.
-- Added dependency libevtlog-devel.
+- Added --enable-ssl and --enable-spoof-source configure options
+- Now provides syslog
+- Added dependencies openssl-devel, libevtlog-devel
 * Fri Jun 30 2006 Tamas Pal <folti@balabit.com>
 - fixed typo in RHEL config file.
 * Mon Mar 27 2006 Balazs Scheidler <bazsi@balabit.com>

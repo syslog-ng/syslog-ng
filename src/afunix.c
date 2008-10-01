@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2007 BalaBit IT Ltd, Budapest, Hungary                    
+ * Copyright (c) 2002-2008 BalaBit IT Ltd, Budapest, Hungary
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -20,7 +20,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-
+  
 #include "afunix.h"
 #include "misc.h"
 #include "messages.h"
@@ -62,11 +62,11 @@ afunix_sd_set_perm(LogDriver *s, mode_t perm)
 }
 
 static gboolean
-afunix_sd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
+afunix_sd_init(LogPipe *s)
 {
   AFUnixSourceDriver *self = (AFUnixSourceDriver *) s;
   
-  if (afsocket_sd_init(s, cfg, persist))
+  if (afsocket_sd_init(s))
     {
       if (self->owner != (uid_t) -1 || self->group != (gid_t) -1)
         chown(self->filename, self->owner, self->group);
@@ -83,8 +83,7 @@ afunix_sd_free(LogPipe *s)
   AFUnixSourceDriver *self = (AFUnixSourceDriver *) s;
   
   g_free(self->filename);
-  afsocket_sd_free_instance(&self->super);
-  g_free(s);
+  afsocket_sd_free(s);
 }
 
 LogDriver *
@@ -94,7 +93,6 @@ afunix_sd_new(gchar *filename, guint32 flags)
 
   afsocket_sd_init_instance(&self->super, &self->sock_options, flags);
   self->super.max_connections = 256;
-  self->super.flags |= AFSOCKET_KEEP_ALIVE;
   self->super.bind_addr = g_sockaddr_unix_new(filename);
   self->super.super.super.init = afunix_sd_init;
   self->super.super.super.free_fn = afunix_sd_free;

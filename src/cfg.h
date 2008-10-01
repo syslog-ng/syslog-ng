@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2007 BalaBit IT Ltd, Budapest, Hungary                    
+ * Copyright (c) 2002-2008 BalaBit IT Ltd, Budapest, Hungary
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -20,7 +20,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-
+  
 #ifndef CFG_H_INCLUDED
 #define CFG_H_INCLUDED
 
@@ -31,7 +31,7 @@
 
 struct _LogSourceGroup;
 struct _LogDestGroup;
-struct _LogFilterRule;
+struct _LogProcessRule;
 struct _LogConnection;
 struct _LogCenter;
 struct _LogTemplate;
@@ -41,11 +41,14 @@ struct _LogTemplate;
 typedef struct _PersistentConfig PersistentConfig;
 
 /* configuration data as loaded from the config file */
-typedef struct _GlobalConfig
+struct _GlobalConfig
 {
+  /* version number of the configuration file, hex-encoded syslog-ng major/minor, e.g. 0x0201 is syslog-ng 2.1 format */
+  gint version;
   gchar *filename;
-  
+
   gint stats_freq;
+  gint stats_level;
   gint mark_freq;
   gint flush_lines;
   gint flush_timeout;
@@ -84,8 +87,9 @@ typedef struct _GlobalConfig
   gboolean keep_timestamp;  
   gint ts_format;
   gint frac_digits;
-  glong recv_zone_offset;
-  glong send_zone_offset;
+
+  gchar *recv_time_zone_string;
+  gchar *send_time_zone_string;
   
   gchar *file_template_name;
   gchar *proto_template_name;
@@ -97,21 +101,24 @@ typedef struct _GlobalConfig
   GHashTable *sources;
   GHashTable *destinations;
   GHashTable *filters;
+  GHashTable *parsers;
+  GHashTable *rewriters;
   GHashTable *templates;
   GPtrArray *connections;
-  
+  PersistentConfig *persist;
+
   struct _LogCenter *center;
   
-} GlobalConfig;
-
-extern GlobalConfig *configuration;
+};
 
 void cfg_add_source(GlobalConfig *configuration, struct _LogSourceGroup *group);
 void cfg_add_dest(GlobalConfig *configuration, struct _LogDestGroup *group);
-void cfg_add_filter(GlobalConfig *configuration, struct _LogFilterRule *rule);
+void cfg_add_filter(GlobalConfig *configuration, struct _LogProcessRule *rule);
+void cfg_add_parser(GlobalConfig *cfg, struct _LogProcessRule *rule);
+void cfg_add_rewrite(GlobalConfig *cfg, struct _LogProcessRule *rule);
 void cfg_add_connection(GlobalConfig *configuration, struct _LogConnection *conn);
 void cfg_add_template(GlobalConfig *cfg, struct _LogTemplate *template);
-struct _LogTemplate *cfg_lookup_template(GlobalConfig *cfg, gchar *name);
+struct _LogTemplate *cfg_lookup_template(GlobalConfig *cfg, const gchar *name);
 
 void cfg_file_owner_set(GlobalConfig *self, gchar *owner);
 void cfg_file_group_set(GlobalConfig *self, gchar *group);
@@ -123,20 +130,32 @@ void cfg_dir_group_set(GlobalConfig *self, gchar *group);
 void cfg_dir_perm_set(GlobalConfig *self, gint perm);
 gint cfg_tz_convert_value(gchar *convert);
 gint cfg_ts_format_value(gchar *format);
-gboolean cfg_timezone_value(gchar *tz, glong *timezone);
 
 GlobalConfig *cfg_new(gchar *fname);
 void cfg_free(GlobalConfig *self);
-gboolean cfg_init(GlobalConfig *cfg, PersistentConfig *persist);
-gboolean cfg_deinit(GlobalConfig *cfg, PersistentConfig *persist);
+gboolean cfg_init(GlobalConfig *cfg);
+gboolean cfg_deinit(GlobalConfig *cfg);
 GlobalConfig *cfg_reload_config(gchar *fname, GlobalConfig *cfg);
 
 PersistentConfig *persist_config_new(void);
-void persist_config_add(PersistentConfig *self, gchar *name, gpointer store, GDestroyNotify destroy);
-void persist_config_add_survivor(PersistentConfig *self, gchar *name, gchar *value);
-gpointer persist_config_fetch(PersistentConfig *self, gchar *name);
-void persist_config_save(PersistentConfig *self, const gchar *filename);
-void persist_config_load(PersistentConfig *self, const gchar *filename);
+void cfg_persist_config_add(GlobalConfig *cfg, gchar *name, gpointer value, gssize value_len, GDestroyNotify destroy, gboolean force);
+void cfg_persist_config_add_survivor(GlobalConfig *cfg, gchar *name, gchar *value, gssize value_len, gboolean force);
+gpointer cfg_persist_config_fetch(GlobalConfig *cfg, gchar *name, gsize *result_len, gint *version);
+void cfg_persist_config_save(GlobalConfig *cfg, const gchar *filename);
+void cfg_persist_config_load(GlobalConfig *cfg, const gchar *filename);
+gint cfg_persist_get_version(GlobalConfig *cfg);
+void cfg_persist_set_version(GlobalConfig *cfg, const gint version);
+
 void persist_config_free(PersistentConfig *persist);
+
+static inline gboolean 
+cfg_check_current_config_version(gint req)
+{
+  if (!configuration)
+    return TRUE;
+  else if (configuration->version >= req)
+    return TRUE;
+  return FALSE;
+}
 
 #endif

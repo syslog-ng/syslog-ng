@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2007 BalaBit IT Ltd, Budapest, Hungary                    
+ * Copyright (c) 2002-2008 BalaBit IT Ltd, Budapest, Hungary
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -20,7 +20,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-
+  
 #ifndef SGROUP_H_INCLUDED
 #define SGROUP_H_INCLUDED
 
@@ -31,18 +31,10 @@
 typedef struct _LogSourceGroup
 {
   LogPipe super;
-  GString *name;
+  gchar *name;
+  gint name_len;
   LogDriver *drivers;
-  
-  gboolean chain_hostnames;
-  gboolean normalize_hostnames;
-  gboolean keep_hostname;
-  gboolean use_dns;
-  gboolean use_fqdn;
-  gboolean use_dns_cache;
-  
   guint32 *processed_messages;
-  
 } LogSourceGroup;
 
 static inline LogSourceGroup *

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2007 BalaBit IT Ltd, Budapest, Hungary                    
+ * Copyright (c) 2002-2008 BalaBit IT Ltd, Budapest, Hungary
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -20,12 +20,13 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-
+  
 #include "afstreams.h"
 #include "messages.h"
 #include "logreader.h"
 #include "misc.h"
 #include "apphook.h"
+#include "stats.h"
 
 typedef struct _AFStreamsSourceDriver
 {
@@ -52,8 +53,8 @@ typedef struct _AFStreamsSourceDriver
 #endif
 
 
-static size_t
-streams_read_read_method(FDRead *self, void *buf, size_t buflen, GSockAddr **sa)
+static gssize
+log_transport_streams_read(LogTransport *self, void *buf, gsize buflen, GSockAddr **sa)
 {
   struct strbuf ctl, data;
   struct log_ctl lc;
@@ -86,15 +87,15 @@ streams_read_read_method(FDRead *self, void *buf, size_t buflen, GSockAddr **sa)
   return 0;
 }
 
-FDRead *
-streams_read_new(gint fd)
+LogTransport *
+log_transport_streams_new(gint fd)
 {
-  FDRead *self = g_new0(FDRead, 1);
+  LogTransport *self = g_new0(LogTransport, 1);
   
   self->fd = fd;
   self->cond = G_IO_IN;
-  self->read = streams_read_read_method;
-  self->free_fn = fd_read_free_method;
+  self->read = log_transport_streams_read;
+  self->free_fn = log_transport_free_method;
   return self;
 }
 
@@ -107,7 +108,7 @@ afstreams_sd_set_sundoor(LogDriver *s, gchar *filename)
 }
 
 static void 
-afstreams_sd_door_server_proc(void *cookie, char *argp, size_t arg_size, door_desc_t *dp, size_t n_desc)
+afstreams_sd_door_server_proc(void *cookie, char *argp, size_t arg_size, door_desc_t *dp, uint_t n_desc)
 {
   door_return(NULL, 0, NULL, 0);
   return;
@@ -158,12 +159,13 @@ afstreams_init_door(int hook_type G_GNUC_UNUSED, gpointer user_data)
 }
 
 static gboolean
-afstreams_sd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
+afstreams_sd_init(LogPipe *s)
 {
   AFStreamsSourceDriver *self = (AFStreamsSourceDriver *) s;
+  GlobalConfig *cfg = log_pipe_get_config(s);
   gint fd;
   
-  log_reader_options_init(&self->reader_options, cfg);
+  log_reader_options_init(&self->reader_options, cfg, self->super.group);
   
   fd = open(self->dev_filename->str, O_RDONLY | O_NOCTTY | O_NONBLOCK);
   if (fd != -1)
@@ -183,7 +185,8 @@ afstreams_sd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
           return FALSE;
         }
       g_fd_set_nonblock(fd, TRUE);
-      self->reader = log_reader_new(streams_read_new(fd), LR_LOCAL | LR_PKTTERM, s, &self->reader_options);
+      self->reader = log_reader_new(log_proto_plain_new_server(log_transport_streams_new(fd), 0, self->reader_options.msg_size, LPPF_PKTTERM), LR_LOCAL);
+      log_reader_set_options(self->reader, s, &self->reader_options, 1, SCS_SUN_STREAMS, self->super.id, self->dev_filename->str);
       log_pipe_append(self->reader, s);
       
       if (self->door_filename)
@@ -195,7 +198,7 @@ afstreams_sd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
           
           register_application_hook(AH_POST_DAEMONIZED, afstreams_init_door, self);
         }
-      if (!log_pipe_init(self->reader, NULL, NULL))
+      if (!log_pipe_init(self->reader, NULL))
         {
           msg_error("Error initializing log_reader, closing fd",
                     evt_tag_int("fd", fd),
@@ -219,12 +222,12 @@ afstreams_sd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
 }
 
 static gboolean
-afstreams_sd_deinit(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
+afstreams_sd_deinit(LogPipe *s)
 {
   AFStreamsSourceDriver *self = (AFStreamsSourceDriver *) s;
 
   if (self->reader)
-    log_pipe_deinit(self->reader, NULL, NULL);
+    log_pipe_deinit(self->reader);
   door_revoke(self->door_fd);
   close(self->door_fd);
   return TRUE;
@@ -235,14 +238,14 @@ afstreams_sd_free(LogPipe *s)
 {
   AFStreamsSourceDriver *self = (AFStreamsSourceDriver *) s;
 
+  log_reader_options_destroy(&self->reader_options);
   if (self->dev_filename)
     g_string_free(self->dev_filename, TRUE);
   if (self->door_filename)
     g_string_free(self->door_filename, TRUE);
   log_pipe_unref(self->reader);
 
-  log_drv_free_instance(&self->super);
-  g_free(s);
+  log_drv_free(s);
 }
 
 LogDriver *
@@ -257,22 +260,6 @@ afstreams_sd_new(gchar *filename)
   self->super.super.deinit = afstreams_sd_deinit;
   self->super.super.free_fn = afstreams_sd_free;
   log_reader_options_defaults(&self->reader_options);
-  return &self->super;
-}
-
-#else
-
-void 
-afstreams_sd_set_sundoor(LogDriver *self, gchar *filename)
-{
-}
-
-LogDriver *
-afstreams_sd_new(gchar *filename)
-{
-  AFStreamsSourceDriver *self = g_new0(AFStreamsSourceDriver, 1);
-
-  msg_error("STREAMS support not compiled in", NULL);
   return &self->super;
 }
 

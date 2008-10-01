@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2007 BalaBit IT Ltd, Budapest, Hungary                    
-  *
+ * Copyright (c) 2002-2008 BalaBit IT Ltd, Budapest, Hungary
+ *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
  * by the Free Software Foundation.
@@ -20,69 +20,60 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-
+  
 #include "dgroup.h"
 #include "misc.h"
 #include "stats.h"
 
 #include <sys/time.h>
 
-static const gchar *
-log_dest_group_format_stats_name(LogDestGroup *self)
-{
-  static gchar stats_name[64];
-
-  g_snprintf(stats_name, sizeof(stats_name), "destination(%s)", self->name->str);
-  
-  return stats_name;
-
-}
-
-
 static gboolean
-log_dest_group_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
+log_dest_group_init(LogPipe *s)
 {
   LogDestGroup *self = (LogDestGroup *) s;
   LogDriver *p;
+  gint id = 0;
 
   for (p = self->drivers; p; p = p->drv_next)
     {
-      if (!p->super.init(&p->super, cfg, persist))
-	return FALSE;
+      p->group = g_strdup(self->name);
+      if (!p->id)
+        p->id = g_strdup_printf("%s#%d", self->name, id++);
+      if (!log_pipe_init(&p->super, log_pipe_get_config(s)))
+      	return FALSE;
     }
-  stats_register_counter(SC_TYPE_PROCESSED, log_dest_group_format_stats_name(self), &self->processed_messages, FALSE);
+  stats_register_counter(0, SCS_DESTINATION | SCS_GROUP, self->name, NULL, SC_TYPE_PROCESSED, &self->processed_messages);
   return TRUE;
 }
 
 static gboolean
-log_dest_group_deinit(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
+log_dest_group_deinit(LogPipe *s)
 {
   LogDestGroup *self = (LogDestGroup *) s;
   LogDriver *p;
 
-  stats_unregister_counter(SC_TYPE_PROCESSED, log_dest_group_format_stats_name(self), &self->processed_messages);
+  stats_unregister_counter(SCS_DESTINATION | SCS_GROUP, self->name, NULL, SC_TYPE_PROCESSED, &self->processed_messages);
   for (p = self->drivers; p; p = p->drv_next)
     {
-      if (!p->super.deinit(&p->super, cfg, persist))
-	return FALSE;
+      if (!log_pipe_deinit(&p->super))
+       	return FALSE;
     }
   return TRUE;
 }
 
 static void
-log_dest_group_queue(LogPipe *s, LogMessage *msg, gint path_flags)
+log_dest_group_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 {
   LogDestGroup *self = (LogDestGroup *) s;
   LogDriver *p;
   
   for (p = self->drivers; p; p = p->drv_next)
     {
-      log_msg_add_ack(msg, path_flags);
-      log_pipe_queue(&p->super, log_msg_ref(msg), path_flags);
+      log_msg_add_ack(msg, path_options);
+      log_pipe_queue(&p->super, log_msg_ref(msg), path_options);
     }
-  (*self->processed_messages)++;
-  log_msg_ack(msg, path_flags);
-  log_msg_unref(msg);
+  stats_counter_inc(self->processed_messages);
+  log_pipe_forward_msg(s, msg, path_options);
 }
 
 static void
@@ -91,8 +82,8 @@ log_dest_group_free(LogPipe *s)
   LogDestGroup *self = (LogDestGroup *) s;
   
   log_drv_unref(self->drivers);
-  g_string_free(self->name, TRUE);
-  g_free(s);
+  g_free(self->name);
+  log_pipe_free(s);
 }
 
 LogDestGroup *
@@ -101,7 +92,7 @@ log_dest_group_new(gchar *name, LogDriver *drivers)
   LogDestGroup *self = g_new0(LogDestGroup, 1);
 
   log_pipe_init_instance(&self->super);
-  self->name = g_string_new(name);
+  self->name = g_strdup(name);
   self->drivers = drivers;
   self->super.init = log_dest_group_init;
   self->super.deinit = log_dest_group_deinit;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2007 BalaBit IT Ltd, Budapest, Hungary                    
+ * Copyright (c) 2002-2008 BalaBit IT Ltd, Budapest, Hungary
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -23,9 +23,15 @@
 
 #include "afinter.h"
 #include "logreader.h"
-
+#include "stats.h"
 #include "messages.h"
 
+typedef struct _AFInterSourceDriver
+{
+  LogDriver super;
+  LogSource *source;
+  LogSourceOptions source_options;
+} AFInterSourceDriver;
 
 static gint next_mark_target = -1;
 
@@ -91,7 +97,7 @@ afinter_source_dispatch(GSource *source,
                         gpointer user_data)
 {
   LogMessage *msg;
-  gint path_flags = 0;
+  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
   GTimeVal tv;
   
   g_source_get_current_time(source, &tv);
@@ -99,7 +105,7 @@ afinter_source_dispatch(GSource *source,
   if (next_mark_target != -1 && next_mark_target <= tv.tv_sec)
     {
       msg = log_msg_new_mark();
-      path_flags = PF_FLOW_CTL_OFF;
+      path_options.flow_control = FALSE;
     }
   else
     {
@@ -108,7 +114,7 @@ afinter_source_dispatch(GSource *source,
 
 
   if (msg)
-    ((void (*)(LogPipe *, LogMessage *, gint))callback) ((LogPipe *) user_data, msg, path_flags);
+    ((void (*)(LogPipe *, LogMessage *, const LogPathOptions *))callback) ((LogPipe *) user_data, msg, &path_options);
   return TRUE;
 }
 
@@ -126,9 +132,9 @@ GSourceFuncs afinter_source_watch_funcs =
 };
 
 static void
-afinter_source_dispatch_msg(LogPipe *pipe, LogMessage *msg, gint path_flags)
+afinter_source_dispatch_msg(LogPipe *pipe, LogMessage *msg, const LogPathOptions *path_options)
 {
-  log_pipe_queue(pipe, msg, path_flags);
+  log_pipe_queue(pipe, msg, path_options);
 }
 
 static inline GSource *
@@ -148,9 +154,13 @@ typedef struct _AFInterSource
 } AFInterSource;
 
 static gboolean
-afinter_source_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
+afinter_source_init(LogPipe *s)
 {
   AFInterSource *self = (AFInterSource *) s;
+  GlobalConfig *cfg = log_pipe_get_config(s);
+  
+  if (!log_source_init(s))
+    return FALSE;
   
   /* the source added below references this logreader, it will be unref'd
      when the source is destroyed */ 
@@ -160,7 +170,7 @@ afinter_source_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
 }
 
 static gboolean
-afinter_source_deinit(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
+afinter_source_deinit(LogPipe *s)
 {
   AFInterSource *self = (AFInterSource *) s;
   
@@ -170,47 +180,43 @@ afinter_source_deinit(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
       g_source_unref(self->watch);
       self->watch = NULL;
     }
-  return TRUE;
+  return log_source_deinit(s);
 }
 
 static LogSource *
-afinter_source_new(LogSourceOptions *options)
+afinter_source_new(AFInterSourceDriver *owner, LogSourceOptions *options)
 {
   AFInterSource *self = g_new0(AFInterSource, 1);
   
-  log_source_init_instance(&self->super, options);
+  log_source_init_instance(&self->super);
+  log_source_set_options(&self->super, options, 0, SCS_INTERNAL, owner->super.id, NULL);
   self->super.super.init = afinter_source_init;
   self->super.super.deinit = afinter_source_deinit;
   return &self->super;
 }
 
-typedef struct _AFInterSourceDriver
-{
-  LogDriver super;
-  LogSource *source;
-  LogSourceOptions source_options;
-} AFInterSourceDriver;
 
 static gboolean
-afinter_sd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
+afinter_sd_init(LogPipe *s)
 {
   AFInterSourceDriver *self = (AFInterSourceDriver *) s;
+  GlobalConfig *cfg = log_pipe_get_config(s);
 
-  log_source_options_init(&self->source_options, cfg);
-  self->source = afinter_source_new(&self->source_options);
+  log_source_options_init(&self->source_options, cfg, self->super.group);
+  self->source = afinter_source_new(self, &self->source_options);
   log_pipe_append(&self->source->super, s);
-  log_pipe_init(&self->source->super, cfg, NULL);
+  log_pipe_init(&self->source->super, cfg);
   return TRUE;
 }
 
 static gboolean
-afinter_sd_deinit(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
+afinter_sd_deinit(LogPipe *s)
 {
   AFInterSourceDriver *self = (AFInterSourceDriver *) s;
-  
+
   if (self->source)
     {
-      log_pipe_deinit(&self->source->super, cfg, NULL);
+      log_pipe_deinit(&self->source->super);
       /* break circular reference created during _init */
       log_pipe_unref(&self->source->super);
       self->source = NULL;
@@ -224,8 +230,7 @@ afinter_sd_free(LogPipe *s)
   AFInterSourceDriver *self = (AFInterSourceDriver *) s;
   
   g_assert(!self->source);
-  log_drv_free_instance(&self->super);
-  g_free(self);
+  log_drv_free(s);
 }
 
 LogDriver *

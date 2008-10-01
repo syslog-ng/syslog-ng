@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2007 BalaBit IT Ltd, Budapest, Hungary                    
+ * Copyright (c) 2002-2008 BalaBit IT Ltd, Budapest, Hungary
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -20,8 +20,9 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-
-#include <gsockaddr.h>
+   
+#include "gsockaddr.h"
+#include "gsocket.h"
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -36,132 +37,6 @@
 #include <string.h>
 #include <netdb.h>
 
-/**
- * g_inet_ntoa:
- * @buf:        store result in this buffer
- * @bufsize:    the available space in buf
- * @a:          address to convert.
- * 
- * Thread friendly version of inet_ntoa(), converts an IP address to
- * human readable form. Returns: the address of buf
- **/
-gchar *
-g_inet_ntoa(char *buf, size_t bufsize, struct in_addr a)
-{
-  unsigned int ip = ntohl(a.s_addr);
-
-  g_snprintf(buf, bufsize, "%d.%d.%d.%d", 
-             (ip & 0xff000000) >> 24,
-	     (ip & 0x00ff0000) >> 16,
-	     (ip & 0x0000ff00) >> 8,
-	     (ip & 0x000000ff));
-  return buf;
-}
-
-gint
-g_inet_aton(char *buf, struct in_addr *a)
-{
-  return inet_aton(buf, a);
-}
-
-/**
- * g_bind:
- * @fd:         fd to bind
- * @addr:       address to bind to
- * 
- * A thin interface around bind() using a GSockAddr structure for
- * socket address. It enables the NET_BIND_SERVICE capability (should be
- * in the permitted set.
- **/
-GIOStatus 
-g_bind(int fd, GSockAddr *addr)
-{
-  GIOStatus rc;
-  
-  if (addr->sa_funcs && addr->sa_funcs->sa_bind_prepare)
-    addr->sa_funcs->sa_bind_prepare(fd, addr);
-
-  if (addr->sa_funcs && addr->sa_funcs->sa_bind)
-    rc = addr->sa_funcs->sa_bind(fd, addr);
-  else
-    {
-      if (addr && bind(fd, &addr->sa, addr->salen) < 0)
-        {
-          return G_IO_STATUS_ERROR;
-        }
-      rc = G_IO_STATUS_NORMAL;
-    }
-  return rc;
-}
-
-/**
- * g_accept:
- * @fd:         accept connection on this socket
- * @newfd:      fd of the accepted connection
- * @addr:       store the address of the client here
- * 
- * Accept a connection on the given fd, returning the newfd and the
- * address of the client in a Zorp SockAddr structure.
- *
- *  Returns: glib style I/O error
- **/
-GIOStatus 
-g_accept(int fd, int *newfd, GSockAddr **addr)
-{
-  char sabuf[1024];
-  socklen_t salen = sizeof(sabuf);
-  
-  do
-    {
-      *newfd = accept(fd, (struct sockaddr *) sabuf, &salen);
-    }
-  while (*newfd == -1 && errno == EINTR);
-  if (*newfd != -1)
-    {
-      *addr = g_sockaddr_new((struct sockaddr *) sabuf, salen);
-    }
-  else if (errno == EAGAIN)
-    {
-      return G_IO_STATUS_AGAIN;
-    }
-  else
-    {
-      return G_IO_STATUS_ERROR;
-    }
-  return G_IO_STATUS_NORMAL;
-}
-
-/**
- * g_connect:
- * @fd: socket to connect 
- * @remote:  remote address
- * 
- * Connect a socket using Zorp style GSockAddr structure.
- *
- * Returns: glib style I/O error
- **/
-GIOStatus 
-g_connect(int fd, GSockAddr *remote)
-{
-  int rc;
-
-  do
-    {
-      rc = connect(fd, &remote->sa, remote->salen);
-    }
-  while (rc == -1 && errno == EINTR);
-  if (rc == -1)
-    {
-      if (errno == EAGAIN)
-        return G_IO_STATUS_AGAIN;
-      else
-        return G_IO_STATUS_ERROR;
-    }
-  else
-    {
-      return G_IO_STATUS_NORMAL;
-    }
-}
 
 /* general GSockAddr functions */
 
@@ -222,9 +97,9 @@ g_sockaddr_new(struct sockaddr *sa, int salen)
  *
  **/
 char *
-g_sockaddr_format(GSockAddr *a, gchar *text, gulong n)
+g_sockaddr_format(GSockAddr *a, gchar *text, gulong n, gint format)
 {
-  return a->sa_funcs->sa_format(a, text, n);
+  return a->sa_funcs->sa_format(a, text, n, format);
 }
 
 /*+
@@ -303,14 +178,19 @@ g_sockaddr_inet_bind_prepare(int sock, GSockAddr *addr)
 
 /*+ format an IPv4 address into human readable form */
 gchar *
-g_sockaddr_inet_format(GSockAddr *addr, gchar *text, gulong n)
+g_sockaddr_inet_format(GSockAddr *addr, gchar *text, gulong n, gint format)
 {
   GSockAddrInet *inet_addr = (GSockAddrInet *) addr;
   char buf[32];
   
-  g_snprintf(text, n, "AF_INET(%s:%d)", 
-	     g_inet_ntoa(buf, sizeof(buf), inet_addr->sin.sin_addr), 
-             htons(inet_addr->sin.sin_port));
+  if (format == GSA_FULL)
+    g_snprintf(text, n, "AF_INET(%s:%d)", 
+	       g_inet_ntoa(buf, sizeof(buf), inet_addr->sin.sin_addr), 
+               htons(inet_addr->sin.sin_port));
+  else if (format == GSA_ADDRESS_ONLY)
+    g_inet_ntoa(text, n, inet_addr->sin.sin_addr);
+  else
+    g_assert_not_reached();
   return text;
 }
 
@@ -500,15 +380,24 @@ typedef struct _GSockAddrInet6
 
 /*+ format an IPv6 address into human readable form */
 static gchar *
-g_sockaddr_inet6_format(GSockAddr *addr, gchar *text, gulong n)
+g_sockaddr_inet6_format(GSockAddr *addr, gchar *text, gulong n, gint format)
 {
   GSockAddrInet6 *self = (GSockAddrInet6 *) addr;
   char buf[64];
   
-  inet_ntop(AF_INET6, &self->sin6.sin6_addr, buf, sizeof(buf));
-  g_snprintf(text, n, "AF_INET6(%s:%d)", 
-	     buf, 
-             htons(self->sin6.sin6_port));
+  if (format == GSA_FULL)
+    {
+      inet_ntop(AF_INET6, &self->sin6.sin6_addr, buf, sizeof(buf));
+      g_snprintf(text, n, "AF_INET6(%s:%d)", 
+	         buf, 
+                 htons(self->sin6.sin6_port));
+    }
+  else if (format == GSA_ADDRESS_ONLY)
+    {
+      inet_ntop(AF_INET6, &self->sin6.sin6_addr, text, n);
+    }
+  else
+    g_assert_not_reached();
   return text;
 }
 
@@ -609,7 +498,7 @@ typedef struct _GSockAddrUnix
 
 static GIOStatus g_sockaddr_unix_bind_prepare(int sock, GSockAddr *addr);
 static GIOStatus g_sockaddr_unix_bind(int sock, GSockAddr *addr);
-static gchar *g_sockaddr_unix_format(GSockAddr *addr, gchar *text, gulong n);
+static gchar *g_sockaddr_unix_format(GSockAddr *addr, gchar *text, gulong n, gint format);
 
 static GSockAddrFuncs unix_sockaddr_funcs = 
 {
@@ -632,7 +521,7 @@ static GSockAddrFuncs unix_sockaddr_funcs =
 
   +*/
 GSockAddr *
-g_sockaddr_unix_new(gchar *name)
+g_sockaddr_unix_new(const gchar *name)
 {
   GSockAddrUnix *addr = g_new0(GSockAddrUnix, 1);
   
@@ -721,13 +610,20 @@ g_sockaddr_unix_bind(int sock, GSockAddr *addr)
 
 /*+ Convert a GSockAddrUnix into human readable form. +*/
 gchar *
-g_sockaddr_unix_format(GSockAddr *addr, gchar *text, gulong n)
+g_sockaddr_unix_format(GSockAddr *addr, gchar *text, gulong n, gint format)
 {
   GSockAddrUnix *unix_addr = (GSockAddrUnix *) addr;
-  
-  g_snprintf(text, n, "AF_UNIX(%s)", 
-             unix_addr->salen > sizeof(unix_addr->saun.sun_family) && unix_addr->saun.sun_path[0] ? unix_addr->saun.sun_path
-                                          : "anonymous");
+
+  if (format == GSA_FULL)
+    {  
+      g_snprintf(text, n, "AF_UNIX(%s)", 
+                 unix_addr->salen > sizeof(unix_addr->saun.sun_family) && unix_addr->saun.sun_path[0] ? unix_addr->saun.sun_path
+                                              : "anonymous");
+    }
+  else if (format == GSA_ADDRESS_ONLY)
+    {
+      g_snprintf(text, n, "%s", unix_addr->salen > sizeof(unix_addr->saun.sun_family) && unix_addr->saun.sun_path[0] ? unix_addr->saun.sun_path : "anonymous");
+    }
   return text;
 }
 

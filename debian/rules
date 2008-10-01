@@ -11,7 +11,7 @@ export DH_COMPAT=3
 DDEBUG=`if (echo $(DEB_BUILD_OPTIONS) | grep -q debug) then \
 			echo "--enable-debug"; \
 		else \
-			echo ""; \
+			echo "--disable-debug"; \
 		fi`
 
 build: build-stamp
@@ -21,7 +21,8 @@ build-stamp:
 	./configure --prefix=/ \
                $(DDEBUG) \
                --mandir=/usr/share/man \
-               --sysconfdir=/etc/syslog-ng
+               --sysconfdir=/etc/syslog-ng \
+	       --localstatedir=/var/lib/syslog-ng
 	# Add here commands to compile the package.
 
 	$(MAKE) 
@@ -36,9 +37,6 @@ clean:
 
 	# Add here commands to clean up after the build process.
 	-$(MAKE) distclean
-#	rm -f doc/sgml/syslog-ng.dvi doc/sgml/syslog-ng.html.tar.gz doc/sgml/syslog-ng.ps 
-#	rm -rf doc/sgml/syslog-ng.html doc/sgml/syslog-ng.txt
-#	rm -rf src/cfg-grammar.c
 
 	dh_clean
 
@@ -53,10 +51,10 @@ install: build
 
 	dh_movefiles
 
-#	install -d -m 755 debian/syslog-ng/etc/default
-#	install -m 644 debian/syslog-ng.default debian/syslog-ng/etc/default/syslog-ng
-#	install -d -m 700 debian/syslog-ng/etc/syslog-ng
-#	install -m 644 debian/syslog-ng.conf debian/syslog-ng/etc/syslog-ng
+	install -d -m 755 debian/syslog-ng/etc/default
+	install -m 644 debian/syslog-ng.default debian/syslog-ng/etc/default/syslog-ng
+	install -d -m 700 debian/syslog-ng/etc/syslog-ng
+	install -m 644 debian/syslog-ng.conf debian/syslog-ng/etc/syslog-ng
 
 #	install -d -m 700 debian/syslog-ng/etc/logcheck/ignore.d.paranoid
 #	install -m 644 debian/syslog-ng.logcheck.ignore debian/syslog-ng/etc/logcheck/ignore.d.paranoid/syslog-ng
@@ -75,21 +73,12 @@ binary-arch: build install
 	dh_testdir
 	dh_testroot
 	dh_installdocs
-#	rm debian/syslog-ng/usr/share/doc/syslog-ng/sgml/Makefile*
-#	(cd debian/syslog-ng/usr/share/doc/syslog-ng/sgml; mv syslog-ng.html ../html; ls)
-#	rm debian/syslog-ng/usr/share/doc/syslog-ng/sgml/syslog-ng.html.tar.gz
-#	(cd debian/syslog-ng/usr/share/doc/syslog-ng/sgml; mv syslog-ng.* ..)
-#	rm -rf  debian/syslog-ng/usr/share/doc/syslog-ng/sgml
-#	rm -f debian/syslog-ng/usr/share/doc/syslog-ng/INSTALL
-#	rm -f debian/syslog-ng/usr/share/doc/syslog-ng/syslog-ng.conf.demo
-#	rm -f debian/syslog-ng/usr/share/doc/syslog-ng/syslog-ng.conf.sample
-#	rm -f debian/syslog-ng/usr/share/doc/syslog-ng/syslog-ng.conf.solaris
 	dh_installexamples
 #	dh_installmenu
 #	dh_installemacsen
-	dh_installinit -r --no-start -- defaults 10 90
-	dh_installcron
-	dh_installlogrotate
+	dh_installinit -r --no-start --name syslog-ng -- defaults 10 90
+#	dh_installcron
+	dh_installlogrotate --name syslog-ng
 #	dh_installmanpages
 #	dh_undocumented
 	dh_installchangelogs ChangeLog

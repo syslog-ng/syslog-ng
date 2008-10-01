@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2007 BalaBit IT Ltd, Budapest, Hungary                    
+ * Copyright (c) 2002-2008 BalaBit IT Ltd, Budapest, Hungary
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -18,7 +18,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
   
 #include "afsocket.h"
@@ -26,6 +26,12 @@
 #include "driver.h"
 #include "misc.h"
 #include "logwriter.h"
+#if ENABLE_SSL
+#include "tlstransport.h"
+#endif
+#include "gprocess.h"
+#include "gsocket.h"
+#include "stats.h"
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -43,112 +49,6 @@ int deny_severity = 0;
 #endif
 
 
-typedef struct _GListenSource
-{
-  GSource super;
-  GPollFD pollfd;
-} GListenSource;
-
-static gboolean
-g_listen_prepare(GSource *source,
-		 gint *timeout)
-{
-  GListenSource *self = (GListenSource *) source;
-
-  self->pollfd.events = G_IO_IN;
-  self->pollfd.revents = 0;
-  *timeout = -1;
-  return FALSE;
-}
-
-static gboolean
-g_listen_check(GSource *source)
-{
-  GListenSource *self = (GListenSource *) source;
-
-  return !!(self->pollfd.revents & (G_IO_IN | G_IO_ERR | G_IO_HUP));
-}
-
-static gboolean
-g_listen_dispatch(GSource *source,
-                  GSourceFunc callback,
-                  gpointer user_data)
-{
-  return callback(user_data);
-}
-
-GSourceFuncs g_listen_source_funcs =
-{
-  g_listen_prepare,
-  g_listen_check,
-  g_listen_dispatch,
-  NULL
-};
-
-static GSource *
-g_listen_source_new(gint fd)
-{
-  GListenSource *self = (GListenSource *) g_source_new(&g_listen_source_funcs, sizeof(GListenSource));
-
-  self->pollfd.fd = fd;  
-  g_source_set_priority(&self->super, LOG_PRIORITY_LISTEN);
-  g_source_add_poll(&self->super, &self->pollfd);
-  return &self->super;
-}
-
-typedef struct _GConnectSource
-{
-  GSource super;
-  GPollFD pollfd;
-} GConnectSource;
-
-static gboolean
-g_connect_prepare(GSource *source,
-		  gint *timeout)
-{
-  GConnectSource *self = (GConnectSource *) source;
-
-  self->pollfd.events = G_IO_OUT;
-  self->pollfd.revents = 0;
-  *timeout = -1;
-  return FALSE;
-}
-
-static gboolean
-g_connect_check(GSource *source)
-{
-  GConnectSource *self = (GConnectSource *) source;
-
-  return !!(self->pollfd.revents & (G_IO_OUT | G_IO_ERR | G_IO_HUP));
-}
-
-static gboolean
-g_connect_dispatch(GSource *source,
-                   GSourceFunc callback,
-                   gpointer user_data)
-{
-  callback(user_data);
-  return FALSE;
-}
-
-GSourceFuncs g_connect_source_funcs =
-{
-  g_connect_prepare,
-  g_connect_check,
-  g_connect_dispatch,
-  NULL
-};
-
-static GSource *
-g_connect_source_new(gint fd)
-{
-  GConnectSource *self = (GConnectSource *) g_source_new(&g_connect_source_funcs, sizeof(GConnectSource));
-
-  self->pollfd.fd = fd;  
-  g_source_set_priority(&self->super, LOG_PRIORITY_CONNECT);
-  g_source_add_poll(&self->super, &self->pollfd);
-  return &self->super;
-}
 
 typedef struct _AFSocketSourceConnection
 {
@@ -194,17 +94,24 @@ afsocket_open_socket(GSockAddr *bind_addr, int stream_or_dgram, int *fd)
   g_fd_set_cloexec(sock, TRUE);
   if (sock != -1)
     {
+      cap_t saved_caps;
+
+      saved_caps = g_process_cap_save();
+      g_process_cap_modify(CAP_NET_BIND_SERVICE, TRUE);
+      g_process_cap_modify(CAP_DAC_OVERRIDE, TRUE);
       if (g_bind(sock, bind_addr) != G_IO_STATUS_NORMAL)
         {
           gchar buf[256];
           
+          g_process_cap_restore(saved_caps);
           msg_error("Error binding socket",
-                    evt_tag_str("addr", g_sockaddr_format(bind_addr, buf, sizeof(buf))),
+                    evt_tag_str("addr", g_sockaddr_format(bind_addr, buf, sizeof(buf), GSA_FULL)),
                     evt_tag_errno(EVT_TAG_OSERROR, errno),
                     NULL);
           close(sock);
           return FALSE;
         }
+      g_process_cap_restore(saved_caps);
       
       *fd = sock;
       return TRUE;
@@ -218,26 +125,109 @@ afsocket_open_socket(GSockAddr *bind_addr, int stream_or_dgram, int *fd)
     }
 }
 
+static gint
+afsocket_sc_stats_source(AFSocketSourceConnection *self)
+{
+  gint source;
+
+  if ((self->owner->flags & AFSOCKET_SYSLOG_PROTOCOL) == 0)
+    {
+      switch (self->owner->bind_addr->sa.sa_family)
+        {
+        case AF_UNIX:
+          source = !!(self->owner->flags & AFSOCKET_STREAM) ? SCS_UNIX_STREAM : SCS_UNIX_DGRAM;
+          break;
+        case AF_INET:
+          source = !!(self->owner->flags & AFSOCKET_STREAM) ? SCS_TCP : SCS_UDP;
+          break;
+#if ENABLE_IPV6
+        case AF_INET6:
+          source = !!(self->owner->flags & AFSOCKET_STREAM) ? SCS_TCP6 : SCS_UDP6;
+          break;    
+#endif
+        default:
+          g_assert_not_reached();
+          break;
+        }
+    }
+  else
+    {
+      source = SCS_SYSLOG;
+    }
+  return source;
+}
+
+static gchar *
+afsocket_sc_stats_instance(AFSocketSourceConnection *self)
+{
+  static gchar buf[256];
+  
+  if (!self->peer_addr)
+    {
+      return NULL;
+    }
+  if ((self->owner->flags & AFSOCKET_SYSLOG_PROTOCOL) == 0)
+    {
+      g_sockaddr_format(self->peer_addr, buf, sizeof(buf), GSA_ADDRESS_ONLY);
+    }
+  else
+    {
+      gchar peer_addr[MAX_SOCKADDR_STRING];
+  
+      g_sockaddr_format(self->peer_addr, peer_addr, sizeof(peer_addr), GSA_ADDRESS_ONLY);
+      g_snprintf(buf, sizeof(buf), "%s,%s", self->owner->transport, peer_addr);
+    }
+  return buf;
+}
+
+
 static gboolean
-afsocket_sc_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
+afsocket_sc_init(LogPipe *s)
 {
   AFSocketSourceConnection *self = (AFSocketSourceConnection *) s;
-  gint read_flags = (self->owner->flags & AFSOCKET_DGRAM) ? FR_RECV : 0;
-  FDRead *reader;
-  
-  reader = fd_read_new(self->sock, read_flags);
+  gint read_flags;
+  LogTransport *transport;
+  LogProto *proto;
 
-  self->reader = log_reader_new(reader,
-                                ((self->owner->flags & AFSOCKET_LOCAL) ? LR_LOCAL : 0) | 
-                                ((self->owner->flags & AFSOCKET_DGRAM) ? LR_PKTTERM : 0),
-                                s, &self->owner->reader_options);
+  read_flags = ((self->owner->flags & AFSOCKET_DGRAM) ? LTF_RECV : 0);
+
+#if ENABLE_SSL
+  if (self->owner->tls_context)
+    {
+      TLSSession *tls_session = tls_context_setup_session(self->owner->tls_context);
+      
+      if (!tls_session)
+        return FALSE;
+      transport = log_transport_tls_new(tls_session, self->sock, read_flags);
+    }
+  else
+#endif
+
+  transport = log_transport_plain_new(self->sock, read_flags);
+
+  if ((self->owner->flags & AFSOCKET_SYSLOG_PROTOCOL) == 0)
+    {
+      /* plain protocol */
+      proto = log_proto_plain_new_server(transport, self->owner->reader_options.padding, self->owner->reader_options.msg_size, (self->owner->flags & AFSOCKET_DGRAM) ? LPPF_PKTTERM : 0);
+    }
+  else
+    {
+      /* framed protocol */
+      proto = log_proto_framed_new_server(transport, self->owner->reader_options.msg_size);
+    }
+
+  self->reader = log_reader_new(proto,
+                                ((self->owner->flags & AFSOCKET_LOCAL) ? LR_LOCAL : 0) |
+                                ((self->owner->flags & AFSOCKET_SYSLOG_PROTOCOL) ? LR_SYSLOG_PROTOCOL : 0));
+  log_reader_set_options(self->reader, s, &self->owner->reader_options, 1, afsocket_sc_stats_source(self), self->owner->super.id, afsocket_sc_stats_instance(self));
+  log_reader_set_peer_addr(self->reader, self->peer_addr);
   log_pipe_append(self->reader, s);
-  log_pipe_init(self->reader, NULL, NULL);
+  log_pipe_init(self->reader, NULL);
   return TRUE;
 }
 
 static gboolean
-afsocket_sc_deinit(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
+afsocket_sc_deinit(LogPipe *s)
 {
   AFSocketSourceConnection *self = (AFSocketSourceConnection *) s;
 
@@ -245,24 +235,10 @@ afsocket_sc_deinit(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
   log_pipe_unref(&self->owner->super.super);
   self->owner = NULL;
   
-  log_pipe_deinit(self->reader, NULL, NULL);
+  log_pipe_deinit(self->reader);
   log_pipe_unref(self->reader);
   self->reader = NULL;
   return TRUE;
-}
-
-static void
-afsocket_sc_queue(LogPipe *s, LogMessage *msg, gint path_flags)
-{
-  AFSocketSourceConnection *self = (AFSocketSourceConnection *) s;
-  
-  if (!msg->saddr)
-    {
-      if (self->peer_addr)
-        msg->saddr = g_sockaddr_ref(self->peer_addr);
-    }
-    
-  log_pipe_queue(s->pipe_next, msg, path_flags);
 }
 
 static void
@@ -286,7 +262,7 @@ static void
 afsocket_sc_set_owner(AFSocketSourceConnection *self, AFSocketSourceDriver *owner)
 {
   if (self->reader)
-    log_reader_set_options(self->reader, &owner->reader_options);
+    log_reader_set_options(self->reader, &self->super, &owner->reader_options, 1, afsocket_sc_stats_source(self), owner->super.id, afsocket_sc_stats_instance(self));
   log_drv_unref(&self->owner->super);
   log_drv_ref(&owner->super);
   self->owner = owner;
@@ -299,11 +275,10 @@ static void
 afsocket_sc_free(LogPipe *s)
 {
   AFSocketSourceConnection *self = (AFSocketSourceConnection *) s;
-
   
   g_assert(!self->reader);
   g_sockaddr_unref(self->peer_addr);
-  g_free(self);
+  log_pipe_free(s);
 }
 
 AFSocketSourceConnection *
@@ -314,7 +289,6 @@ afsocket_sc_new(AFSocketSourceDriver *owner, GSockAddr *peer_addr, int fd)
   log_pipe_init_instance(&self->super);  
   self->super.init = afsocket_sc_init;
   self->super.deinit = afsocket_sc_deinit;
-  self->super.queue = afsocket_sc_queue;
   self->super.notify = afsocket_sc_notify;
   self->super.free_fn = afsocket_sc_free;
   log_drv_ref(&owner->super);
@@ -346,6 +320,15 @@ afsocket_sd_set_max_connections(LogDriver *s, gint max_connections)
   self->max_connections = max_connections;
 }
 
+#if ENABLE_SSL
+void
+afsocket_sd_set_tls_context(LogDriver *s, TLSContext *tls_context)
+{
+  AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
+  
+  self->tls_context = tls_context;
+}
+#endif
 
 static inline gchar *
 afsocket_sd_format_persist_name(AFSocketSourceDriver *self, gboolean listener_name)
@@ -356,7 +339,7 @@ afsocket_sd_format_persist_name(AFSocketSourceDriver *self, gboolean listener_na
   g_snprintf(persist_name, sizeof(persist_name),
              listener_name ? "afsocket_sd_listen_fd(%s,%s)" : "afsocket_sd_connections(%s,%s)",
              !!(self->flags & AFSOCKET_STREAM) ? "stream" : "dgram",
-             g_sockaddr_format(self->bind_addr, buf, sizeof(buf)));
+             g_sockaddr_format(self->bind_addr, buf, sizeof(buf), GSA_FULL));
   return persist_name;
 }
 
@@ -379,7 +362,7 @@ afsocket_sd_process_connection(AFSocketSourceDriver *self, GSockAddr *peer_addr,
           gchar buf[256];
           
           msg_error("Syslog connection rejected by tcpd",
-                    evt_tag_str("from", g_sockaddr_format(peer_addr, buf, sizeof(buf))),
+                    evt_tag_str("from", g_sockaddr_format(peer_addr, buf, sizeof(buf), GSA_FULL)),
                     NULL);
           close(fd);
           return TRUE;
@@ -402,7 +385,7 @@ afsocket_sd_process_connection(AFSocketSourceDriver *self, GSockAddr *peer_addr,
       
       self->num_connections++;
       conn = afsocket_sc_new(self, peer_addr, fd);
-      log_pipe_init(&conn->super, NULL, NULL);
+      log_pipe_init(&conn->super, NULL);
       log_pipe_append(&conn->super, &self->super.super);
     }
   return TRUE;
@@ -447,8 +430,8 @@ afsocket_sd_accept(gpointer s)
       g_fd_set_cloexec(new_fd, TRUE);
         
       msg_verbose("Syslog connection accepted",
-                  evt_tag_str("from", g_sockaddr_format(peer_addr, buf1, sizeof(buf1))),
-                  evt_tag_str("to", g_sockaddr_format(self->bind_addr, buf2, sizeof(buf2))),
+                  evt_tag_str("from", g_sockaddr_format(peer_addr, buf1, sizeof(buf1), GSA_FULL)),
+                  evt_tag_str("to", g_sockaddr_format(self->bind_addr, buf2, sizeof(buf2), GSA_FULL)),
                   NULL);
 
       res = afsocket_sd_process_connection(self, peer_addr, new_fd);
@@ -463,7 +446,7 @@ afsocket_sd_accept(gpointer s)
 static void
 afsocket_sd_close_connection(AFSocketSourceDriver *self, AFSocketSourceConnection *sc)
 {
-  log_pipe_deinit(&sc->super, NULL, NULL);
+  log_pipe_deinit(&sc->super);
   log_pipe_unref(&sc->super);
   self->num_connections--;
 }
@@ -471,7 +454,7 @@ afsocket_sd_close_connection(AFSocketSourceDriver *self, AFSocketSourceConnectio
 static void
 afsocket_sd_kill_connection(AFSocketSourceConnection *sc)
 {
-  log_pipe_deinit(&sc->super, NULL, NULL);
+  log_pipe_deinit(&sc->super);
   log_pipe_unref(&sc->super);
 }
 
@@ -484,24 +467,33 @@ afsocket_sd_kill_connection_list(GList *list)
 }
 
 gboolean
-afsocket_sd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
+afsocket_sd_init(LogPipe *s)
 {
   AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
   gint sock;
   gboolean res = FALSE;
-  
+  GlobalConfig *cfg = log_pipe_get_config(s);
+
+#if ENABLE_SSL
+  if (self->flags & AFSOCKET_REQUIRE_TLS && !self->tls_context)
+    {
+      msg_error("Transport TLS was specified, but TLS related parameters missing", NULL);
+      return FALSE;
+    }
+#endif
+
   if (!self->bind_addr)
     {
       msg_error("No bind address set;", NULL);
     }
-  log_reader_options_init(&self->reader_options, cfg);
+  log_reader_options_init(&self->reader_options, cfg, self->super.group);
   
   /* fetch persistent connections first */  
   if ((self->flags & AFSOCKET_KEEP_ALIVE))
     {
       GList *p;
 
-      self->connections = persist_config_fetch(persist, afsocket_sd_format_persist_name(self, FALSE));
+      self->connections = cfg_persist_config_fetch(cfg, afsocket_sd_format_persist_name(self, FALSE), NULL, NULL);
       for (p = self->connections; p; p = p->next)
         {
           afsocket_sc_set_owner((AFSocketSourceConnection *) p->data, self);
@@ -518,7 +510,7 @@ afsocket_sd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
         {
           /* NOTE: this assumes that fd 0 will never be used for listening fds,
            * main.c opens fd 0 so this assumption can hold */
-          sock = GPOINTER_TO_UINT(persist_config_fetch(persist, afsocket_sd_format_persist_name(self, TRUE))) - 1;
+          sock = GPOINTER_TO_UINT(cfg_persist_config_fetch(cfg, afsocket_sd_format_persist_name(self, TRUE), NULL, NULL)) - 1;
         }
 
       if (sock == -1)
@@ -583,11 +575,12 @@ afsocket_sd_close_fd(gpointer value)
 }
 
 gboolean
-afsocket_sd_deinit(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
+afsocket_sd_deinit(LogPipe *s)
 {
   AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
-  
-  if ((self->flags & AFSOCKET_KEEP_ALIVE) == 0 || !persist)
+  GlobalConfig *cfg = log_pipe_get_config(s);
+
+  if ((self->flags & AFSOCKET_KEEP_ALIVE) == 0 || !cfg->persist)
     {
       GList *p, *next;
 
@@ -607,7 +600,7 @@ afsocket_sd_deinit(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
       /* for AFSOCKET_STREAM source drivers this is a list, for
        * AFSOCKET_DGRAM this is a single connection */
       
-      persist_config_add(persist, afsocket_sd_format_persist_name(self, FALSE), self->connections, (GDestroyNotify) afsocket_sd_kill_connection_list);
+      cfg_persist_config_add(cfg, afsocket_sd_format_persist_name(self, FALSE), self->connections, -1, (GDestroyNotify) afsocket_sd_kill_connection_list, FALSE);
     }
   self->connections = NULL;
 
@@ -628,7 +621,7 @@ afsocket_sd_deinit(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
           /* NOTE: the fd is incremented by one when added to persistent config
            * as persist config cannot store NULL */
 
-          persist_config_add(persist, afsocket_sd_format_persist_name(self, TRUE), GUINT_TO_POINTER(self->fd + 1), afsocket_sd_close_fd);
+          cfg_persist_config_add(cfg, afsocket_sd_format_persist_name(self, TRUE), GUINT_TO_POINTER(self->fd + 1), -1, afsocket_sd_close_fd, FALSE);
         }
     }
   else if (self->flags & AFSOCKET_DGRAM)
@@ -664,21 +657,16 @@ afsocket_sd_setup_socket(AFSocketSourceDriver *self, gint fd)
 }
 
 void
-afsocket_sd_free_instance(AFSocketSourceDriver *self)
-{
-  g_sockaddr_unref(self->bind_addr);
-  self->bind_addr = NULL;
-  
-  log_drv_free_instance(&self->super);
-}
-
-static void
 afsocket_sd_free(LogPipe *s)
 {
   AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
   
-  afsocket_sd_free_instance(self);
-  g_free(self);
+  log_reader_options_destroy(&self->reader_options);
+  g_sockaddr_unref(self->bind_addr);
+  self->bind_addr = NULL;
+  g_free(self->transport);
+   
+  log_drv_free(s);
 }
 
 void
@@ -695,7 +683,7 @@ afsocket_sd_init_instance(AFSocketSourceDriver *self, SocketOptions *sock_option
   self->setup_socket = afsocket_sd_setup_socket;
   self->max_connections = 10;
   self->listen_backlog = 255;
-  self->flags = flags;
+  self->flags = flags | AFSOCKET_KEEP_ALIVE;
   log_reader_options_defaults(&self->reader_options);
 }
 
@@ -703,32 +691,84 @@ afsocket_sd_init_instance(AFSocketSourceDriver *self, SocketOptions *sock_option
 
 void afsocket_dd_reconnect(AFSocketDestDriver *self);
 
-static const gchar *
-afsocket_dd_format_stats_name(AFSocketDestDriver *self)
+#if ENABLE_SSL
+void
+afsocket_dd_set_tls_context(LogDriver *s, TLSContext *tls_context)
 {
-  static gchar stats_name[64];
-  gchar *driver_name = NULL;
+  AFSocketDestDriver *self = (AFSocketDestDriver *) s;
   
-  switch (self->dest_addr->sa.sa_family)
-    {
-    case AF_UNIX:
-      driver_name = !!(self->flags & AFSOCKET_STREAM) ? "unix-stream" : "unix-dgram";
-      break;
-    case AF_INET:
-      driver_name = !!(self->flags & AFSOCKET_STREAM) ? "tcp" : "udp";
-      break;
-#if ENABLE_IPV6
-    case AF_INET6:
-      driver_name = !!(self->flags & AFSOCKET_STREAM) ? "tcp6" : "udp6";
-      break;    
+  self->tls_context = tls_context;
+}
 #endif
+
+void 
+afsocket_dd_set_keep_alive(LogDriver *s, gint enable)
+{
+  AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
+  
+  if (enable)
+    self->flags |= AFSOCKET_KEEP_ALIVE;
+  else
+    self->flags &= ~AFSOCKET_KEEP_ALIVE;
+}
+
+
+static inline gchar *
+afsocket_dd_format_persist_name(AFSocketDestDriver *self, const gchar *dest_name, gboolean qfile)
+{
+  static gchar persist_name[128];
+  
+  g_snprintf(persist_name, sizeof(persist_name),
+             qfile ? "afsocket_dd_qfile(%s,%s)" : "afsocket_dd_connection(%s,%s)",
+             !!(self->flags & AFSOCKET_STREAM) ? "stream" : "dgram",
+             dest_name);
+  return persist_name;
+}
+
+
+static gint
+afsocket_dd_stats_source(AFSocketDestDriver *self)
+{
+  gint source;
+
+  if ((self->flags & AFSOCKET_SYSLOG_PROTOCOL) == 0)
+    {
+      switch (self->dest_addr->sa.sa_family)
+        {
+        case AF_UNIX:
+          source = !!(self->flags & AFSOCKET_STREAM) ? SCS_UNIX_STREAM : SCS_UNIX_DGRAM;
+          break;
+        case AF_INET:
+          source = !!(self->flags & AFSOCKET_STREAM) ? SCS_TCP : SCS_UDP;
+          break;
+#if ENABLE_IPV6
+        case AF_INET6:
+          source = !!(self->flags & AFSOCKET_STREAM) ? SCS_TCP6 : SCS_UDP6;
+          break;    
+#endif
+        }
     }
-  
-  g_snprintf(stats_name, sizeof(stats_name), "%s(%s)", 
-             driver_name,
-             self->dest_name);
-  
-  return stats_name;
+  else
+    {
+      source = SCS_SYSLOG;
+    }
+  return source;
+}
+
+static gchar *
+afsocket_dd_stats_instance(AFSocketDestDriver *self)
+{
+  if ((self->flags & AFSOCKET_SYSLOG_PROTOCOL) == 0)
+    {
+      return self->dest_name;
+    }
+  else
+    {
+      static gchar buf[256];
+
+      g_snprintf(buf, sizeof(buf), "%s,%s", self->transport, self->dest_name);
+      return buf;
+    }
 }
 
 static gboolean
@@ -740,6 +780,20 @@ afsocket_dd_reconnect_timer(gpointer s)
   return FALSE;
 }
 
+#if ENABLE_SSL
+static gint
+afsocket_dd_tls_verify_callback(gint ok, X509_STORE_CTX *ctx, gpointer user_data)
+{
+  AFSocketDestDriver *self = (AFSocketDestDriver *) user_data;
+  
+  if (ok && ctx->current_cert == ctx->cert && self->hostname && (self->tls_context->verify_mode & TVM_TRUSTED))
+    {
+      ok = tls_verify_certificate_name(ctx->cert, self->hostname);
+    }
+
+  return ok;
+}
+#endif
 
 static void
 afsocket_dd_start_reconnect_timer(AFSocketDestDriver *self)
@@ -755,8 +809,9 @@ afsocket_dd_connected(AFSocketDestDriver *self)
   gchar buf1[256], buf2[256];
   int error = 0;
   socklen_t errorlen = sizeof(error);
-  FDWrite *write;
-  
+  LogTransport *transport;
+  LogProto *proto;
+
   if (self->flags & AFSOCKET_STREAM)
     {
       if (getsockopt(self->fd, SOL_SOCKET, SO_ERROR, &error, &errorlen) == -1)
@@ -771,7 +826,7 @@ afsocket_dd_connected(AFSocketDestDriver *self)
       if (error)
         {
           msg_error("Connection failed",
-                    evt_tag_str("server", g_sockaddr_format(self->dest_addr, buf2, sizeof(buf2))),
+                    evt_tag_str("server", g_sockaddr_format(self->dest_addr, buf2, sizeof(buf2), GSA_FULL)),
                     evt_tag_errno(EVT_TAG_OSERROR, error),
                     evt_tag_int("time_reopen", self->time_reopen),
                     NULL);
@@ -780,8 +835,8 @@ afsocket_dd_connected(AFSocketDestDriver *self)
         }
     }
   msg_verbose("Syslog connection established",
-              evt_tag_str("from", g_sockaddr_format(self->bind_addr, buf1, sizeof(buf1))),
-              evt_tag_str("to", g_sockaddr_format(self->dest_addr, buf2, sizeof(buf2))),
+              evt_tag_str("from", g_sockaddr_format(self->bind_addr, buf1, sizeof(buf1), GSA_FULL)),
+              evt_tag_str("to", g_sockaddr_format(self->dest_addr, buf2, sizeof(buf2), GSA_FULL)),
               NULL);
 
   if (self->source_id)
@@ -790,9 +845,31 @@ afsocket_dd_connected(AFSocketDestDriver *self)
       self->source_id = 0;
     }
     
-  write = fd_write_new(self->fd);
-  
-  log_writer_reopen(self->writer, write);
+#if ENABLE_SSL
+  if (self->tls_context)
+    {
+      TLSSession *tls_session;
+      
+      tls_session = tls_context_setup_session(self->tls_context);
+      if (!tls_session)
+        {
+          close(self->fd);
+          goto error_reconnect;
+        }
+        
+      tls_session_set_verify(tls_session, afsocket_dd_tls_verify_callback, self, NULL);
+      transport = log_transport_tls_new(tls_session, self->fd, 0);
+    }
+  else
+#endif
+    transport = log_transport_plain_new(self->fd, 0);
+
+  if (self->flags & AFSOCKET_SYSLOG_PROTOCOL)
+    proto = log_proto_framed_new_client(transport);
+  else
+    proto = log_proto_plain_new_client(transport);
+
+  log_writer_reopen(self->writer, proto);
   return TRUE;
  error_reconnect:
   afsocket_dd_start_reconnect_timer(self);
@@ -864,33 +941,55 @@ afsocket_dd_reconnect(AFSocketDestDriver *self)
 }
 
 gboolean
-afsocket_dd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
+afsocket_dd_init(LogPipe *s)
 {
   AFSocketDestDriver *self = (AFSocketDestDriver *) s;
+  GlobalConfig *cfg = log_pipe_get_config(s);
+
+#if ENABLE_SSL
+  if (self->flags & AFSOCKET_REQUIRE_TLS && !self->tls_context)
+    {
+      msg_error("Transport TLS was specified, but TLS related parameters missing", NULL);
+      return FALSE;
+    }
+#endif
   
   if (cfg)
     {
       self->time_reopen = cfg->time_reopen;
     }
+    
   if (!self->writer)
     {
-      log_writer_options_init(&self->writer_options, cfg, 0, afsocket_dd_format_stats_name(self));
+      log_writer_options_init(&self->writer_options, cfg, 0);
       /* NOTE: we open our writer with no fd, so we can send messages down there
        * even while the connection is not established */
-  
-      self->writer = log_writer_new(LW_FORMAT_PROTO | (self->flags & AFSOCKET_STREAM ? LW_DETECT_EOF : 0), &self->super.super, &self->writer_options);
-      log_pipe_init(self->writer, NULL, NULL);
+
+      if ((self->flags & AFSOCKET_KEEP_ALIVE))
+        self->writer = cfg_persist_config_fetch(cfg, afsocket_dd_format_persist_name(self, self->dest_name, FALSE), NULL, NULL);
+
+      if (!self->writer)
+        self->writer = log_writer_new(LW_FORMAT_PROTO | 
+#if ENABLE_SSL
+                                      (((self->flags & AFSOCKET_STREAM) && !self->tls_context) ? LW_DETECT_EOF : 0) | 
+#else
+                                      ((self->flags & AFSOCKET_STREAM) ? LW_DETECT_EOF : 0) | 
+#endif
+                                      (self->flags & AFSOCKET_SYSLOG_PROTOCOL ? LW_SYSLOG_PROTOCOL : 0));
+      log_writer_set_options((LogWriter *) self->writer, &self->super.super, &self->writer_options, 0, afsocket_dd_stats_source(self), self->super.id, afsocket_dd_stats_instance(self));
+      log_pipe_init(self->writer, NULL);
       log_pipe_append(&self->super.super, self->writer);
     }
-    
+
   afsocket_dd_reconnect(self);
   return TRUE;
 }
 
 gboolean
-afsocket_dd_deinit(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
+afsocket_dd_deinit(LogPipe *s)
 {
   AFSocketDestDriver *self = (AFSocketDestDriver *) s;
+  GlobalConfig *cfg = log_pipe_get_config(s);
 
   if (self->reconnect_timer)
     g_source_remove(self->reconnect_timer);
@@ -902,7 +1001,16 @@ afsocket_dd_deinit(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
       close(self->fd);
     }
   if (self->writer)
-    log_pipe_deinit(self->writer, NULL, NULL);
+    {
+      log_pipe_deinit(self->writer);
+    }
+    
+  if (self->flags & AFSOCKET_KEEP_ALIVE)
+    {
+      cfg_persist_config_add(cfg, afsocket_dd_format_persist_name(self, self->dest_name, FALSE), self->writer, -1, (GDestroyNotify) log_pipe_unref, FALSE);
+      self->writer = NULL;
+    }
+
   return TRUE;
 }
 
@@ -914,6 +1022,8 @@ afsocket_dd_notify(LogPipe *s, LogPipe *sender, gint notify_code, gpointer user_
     {
     case NC_CLOSE:
     case NC_WRITE_ERROR:
+      log_writer_reopen(self->writer, NULL);
+
       msg_error("Connection broken",
                 evt_tag_int("time_reopen", self->time_reopen),
                 NULL);
@@ -943,9 +1053,9 @@ afsocket_dd_free(LogPipe *s)
   log_pipe_unref(self->writer);
   g_free(self->hostname);
   log_writer_options_destroy(&self->writer_options);
-  log_drv_free_instance(&self->super);
   g_free(self->dest_name);
-  g_free(s);
+  g_free(self->transport);
+  log_drv_free(s);
 }
 
 void 
@@ -961,6 +1071,6 @@ afsocket_dd_init_instance(AFSocketDestDriver *self, SocketOptions *sock_options,
   self->super.super.notify = afsocket_dd_notify;
   self->setup_socket = afsocket_dd_setup_socket;
   self->sock_options_ptr = sock_options;
-  self->flags = flags;
+  self->flags = flags  | AFSOCKET_KEEP_ALIVE;
   self->dest_name = dest_name;
 }

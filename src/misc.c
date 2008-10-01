@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2007 BalaBit IT Ltd, Budapest, Hungary                    
+ * Copyright (c) 2002-2008 BalaBit IT Ltd, Budapest, Hungary
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -20,9 +20,10 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-
+  
 #include "misc.h"
 #include "dnscache.h"
+#include "messages.h"
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -40,7 +41,7 @@
 #include <stdio.h>
 
 GString *
-g_string_assign_len(GString *s, gchar *val, gint len)
+g_string_assign_len(GString *s, const gchar *val, gint len)
 {
   g_string_truncate(s, 0);
   if (val && len)
@@ -78,58 +79,76 @@ getlonghostname(char *buf, size_t bufsize)
   return buf;
 }
 
-int
-format_zone_info(gchar *buf, size_t buflen, glong gmtoff)
+gboolean
+resolve_hostname(GSockAddr **addr, gchar *name)
 {
-  return snprintf(buf, buflen, "%c%02ld:%02ld",
-                          gmtoff < 0 ? '-' : '+',
-                          (gmtoff < 0 ? -gmtoff : gmtoff) / 3600,
-                          (gmtoff % 3600) / 60);
-}
+  if (addr)
+    { 
+#if HAVE_GETADDRINFO
+      struct addrinfo hints;
+      struct addrinfo *res;
 
-/**
- * get_local_timezone_ofs:
- * @when: time in UTC
- * 
- * Return the zone offset (measured in seconds) of @when expressed in local
- * time. The function also takes care about daylight saving.
- **/
-long
-get_local_timezone_ofs(time_t when)
-{
-  struct tm ltm;
-  long tzoff;
-  
-#if HAVE_STRUCT_TM_TM_GMTOFF
-  
-  ltm = *localtime(&when);
-  tzoff = ltm.tm_gmtoff;
-#else
-  struct tm *gtm;
-  
-  ltm = *localtime(&when);
-  gtm = gmtime(&when);
-
-  tzoff = (ltm.tm_hour - gtm->tm_hour) * 3600;
-  tzoff += (ltm.tm_min - gtm->tm_min) * 60;
-  tzoff += ltm.tm_sec - gtm->tm_sec;
-  
-  if (tzoff > 0 && (ltm.tm_year < gtm->tm_year || ltm.tm_mon < gtm->tm_mon || ltm.tm_mday < gtm->tm_mday))
-    tzoff -= 86400;
-  else if (tzoff < 0 && (ltm.tm_year > gtm->tm_year || ltm.tm_mon > gtm->tm_mon || ltm.tm_mday > gtm->tm_mday))
-    tzoff += 86400;
-  
-    
+      memset(&hints, 0, sizeof(hints));
+      hints.ai_family = (*addr)->sa.sa_family;
+      hints.ai_socktype = 0;
+      hints.ai_protocol = 0;
+      
+      if (getaddrinfo(name, NULL, &hints, &res) == 0)
+        {
+          /* we only use the first entry in the returned list */
+          switch ((*addr)->sa.sa_family)
+            {
+            case AF_INET:
+              g_sockaddr_inet_set_address((*addr), ((struct sockaddr_in *) res->ai_addr)->sin_addr);
+              break;
+#if ENABLE_IPV6
+            case AF_INET6:
+              *g_sockaddr_inet6_get_sa(*addr) = *((struct sockaddr_in6 *) res->ai_addr);
+              break;
 #endif
-
-  return tzoff;
+            default: 
+              g_assert_not_reached();
+              break;
+            }
+          freeaddrinfo(res);
+        }
+      else
+        {
+          msg_error("Error resolving hostname", evt_tag_str("host", name), NULL);
+          return FALSE;
+        }
+#else
+      struct hostent *he;
+      
+      he = gethostbyname(name);
+      if (he)
+        {
+          switch ((*addr)->sa.sa_family)
+            {
+            case AF_INET:
+              g_sockaddr_inet_set_address((*addr), *(struct in_addr *) he->h_addr);
+              break;
+            default: 
+              g_assert_not_reached();
+              break;
+            }
+          
+        }
+      else
+        {
+          msg_error("Error resolving hostname", evt_tag_str("host", name), NULL);
+          return FALSE;
+        }
+#endif
+    }
+  return TRUE;
 }
 
 gboolean
-resolve_hostname(GString *result, GSockAddr *saddr, gboolean usedns, gboolean usefqdn, gboolean use_dns_cache)
+resolve_sockaddr(gchar **result, GSockAddr *saddr, gboolean usedns, gboolean usefqdn, gboolean use_dns_cache, gboolean normalize_hostnames)
 {
   static gchar local_hostname[256] = "";
-  const gchar *hname;
+  gchar *hname;
   gchar *p, buf[256];
  
   if (saddr && saddr->sa.sa_family != AF_UNIX)
@@ -159,7 +178,7 @@ resolve_hostname(GString *result, GSockAddr *saddr, gboolean usedns, gboolean us
           hname = NULL;
           if (usedns)
             {
-              if ((!use_dns_cache || !dns_cache_lookup(saddr->sa.sa_family, addr, &hname)) && usedns != 2) 
+              if ((!use_dns_cache || !dns_cache_lookup(saddr->sa.sa_family, addr, (const gchar **) &hname)) && usedns != 2) 
                 {
                   struct hostent *hp;
                       
@@ -194,17 +213,19 @@ resolve_hostname(GString *result, GSockAddr *saddr, gboolean usedns, gboolean us
     }
   else 
     {
+      hname = local_hostname;
+      
       if (!local_hostname[0]) 
 	{
           if (usefqdn)
             getlonghostname(local_hostname, sizeof(local_hostname));
           else
 	    getshorthostname(local_hostname, sizeof(local_hostname));
+
 	}
 
-      hname = local_hostname;
     }
-  g_string_assign(result, hname);
+  *result = normalize_hostnames ? g_ascii_strdown(hname, -1) : g_strdup(hname);
   return TRUE;
 }
 
@@ -303,20 +324,168 @@ resolve_user_group(char *arg, uid_t *uid, gid_t *gid)
 }
 
 /**
- * g_time_val_diff:
- * @t1: time value t1
- * @t2: time value t2
  *
- * Calculates the time difference between t1 and t2 in microseconds.
- * The result is positive if t1 is later than t2.
- *
- * Returns:
- * Time difference in microseconds
- */
-glong
-g_time_val_diff(GTimeVal *t1, GTimeVal *t2)
+ * This function receives a complete path (directory + filename) and creates
+ * the directory portion if it does not exist. The point is that the caller
+ * wants to ensure that the given filename can be opened after this function
+ * returns. (at least it won't fail because of missing directories).
+ **/
+gboolean
+create_containing_directory(gchar *name, uid_t dir_uid, gid_t dir_gid, mode_t dir_mode)
 {
-  g_assert(t1);
-  g_assert(t2);
-  return (t1->tv_sec - t2->tv_sec) * G_USEC_PER_SEC + (t1->tv_usec - t2->tv_usec);
+  gchar *dirname;
+  struct stat st;
+  gint rc;
+  
+  /* check that the directory exists */
+  dirname = g_path_get_dirname(name);
+  rc = stat(dirname, &st);
+  g_free(dirname);
+  
+  if (rc == 0)
+    {
+      /* directory already exists */
+      return TRUE;
+    }
+  else if (rc < 0 && errno != ENOENT)
+    {
+      /* some real error occurred */
+      return FALSE;
+    }
+    
+  /* directory does not exist */
+  char *p = name + 1;
+  
+  p = strchr(p, '/');
+  while (p) 
+    {
+      *p = 0;
+      if (stat(name, &st) == 0) 
+        {
+          if (!S_ISDIR(st.st_mode))
+            return FALSE;
+        }
+      else if (errno == ENOENT) 
+        {
+          if (mkdir(name, dir_mode) == -1)
+            return FALSE;
+          if (dir_uid != -1 || dir_gid != -1)
+            chown(name, dir_uid, dir_gid);
+          if (dir_mode != -1)
+            chmod(name, dir_mode);
+        }
+      *p = '/';
+      p = strchr(p + 1, '/');
+    }
+  return TRUE;
+}
+
+gchar *
+format_hex_string(gpointer data, gsize data_len, gchar *result, gsize result_len)
+{
+  gint i;
+  gint pos = 0;
+  guchar *str = (guchar *) data;
+
+  for (i = 0; i < data_len && result_len - pos > 2; i++)
+    {
+      g_snprintf(result + pos, 3, "%02x", str[i]);
+      pos += 2;
+    }   
+  return result;
+}
+
+/**
+ * Find CR or LF characters in the log message.
+ *
+ * It uses an algorithm similar to what there's in libc memchr/strchr.
+ **/
+gchar *
+find_cr_or_lf(gchar *s, gsize n)
+{
+  gchar *char_ptr;
+  gulong *longword_ptr;
+  gulong longword, magic_bits, cr_charmask, lf_charmask;
+  const char CR = '\r';
+  const char LF = '\n';
+
+  /* align input to long boundary */
+  for (char_ptr = s; n > 0 && ((gulong) char_ptr & (sizeof(longword) - 1)) != 0; ++char_ptr, n--)
+    {
+      if (*char_ptr == CR || *char_ptr == LF)
+        return char_ptr;
+      else if (*char_ptr == 0)
+        return NULL;
+    }
+    
+  longword_ptr = (gulong *) char_ptr;
+
+#if GLIB_SIZEOF_LONG == 8
+  magic_bits = 0x7efefefefefefeffL;
+#elif GLIB_SIZEOF_LONG == 4
+  magic_bits = 0x7efefeffL; 
+#else
+  #error "unknown architecture"
+#endif
+  memset(&cr_charmask, CR, sizeof(cr_charmask));
+  memset(&lf_charmask, LF, sizeof(lf_charmask));
+    
+  while (n > sizeof(longword))
+    {
+      longword = *longword_ptr++;
+      if ((((longword + magic_bits) ^ ~longword) & ~magic_bits) != 0 ||
+          ((((longword ^ cr_charmask) + magic_bits) ^ ~(longword ^ cr_charmask)) & ~magic_bits) != 0 || 
+          ((((longword ^ lf_charmask) + magic_bits) ^ ~(longword ^ lf_charmask)) & ~magic_bits) != 0)
+        {
+          char_ptr = (gchar *) (longword_ptr - 1);
+          gint i;
+          
+          for (i = 0; i < sizeof(longword); i++)
+            {
+              if (*char_ptr == CR || *char_ptr == LF)
+                return char_ptr;
+              else if (*char_ptr == 0)
+                return NULL;
+              char_ptr++;
+            }
+        }
+      n -= sizeof(longword);
+    }
+
+  char_ptr = (gchar *) longword_ptr;
+
+  while (n-- > 0)
+    {
+      if (*char_ptr == CR || *char_ptr == LF)
+        return char_ptr;
+      else if (*char_ptr == 0)
+        return NULL;
+      ++char_ptr;
+    }
+
+  return NULL;
+}
+
+GList *
+string_array_to_list(const gchar *strlist[])
+{
+  gint i;
+  GList *l = NULL;
+  
+  for (i = 0; strlist[i]; i++)
+    {
+      l = g_list_prepend(l, g_strdup(strlist[i]));
+    }
+  
+  return g_list_reverse(l);
+}
+
+void
+string_list_free(GList *l)
+{
+  while (l)
+    {
+      g_free(l->data);
+      l = g_list_delete_link(l, l);
+    }
 }

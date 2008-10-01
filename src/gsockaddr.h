@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2007 BalaBit IT Ltd, Budapest, Hungary                    
+ * Copyright (c) 2002-2008 BalaBit IT Ltd, Budapest, Hungary
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -18,7 +18,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
   
 #ifndef G_SOCKADDR_H_INCLUDED
@@ -39,6 +39,9 @@
 
 #define MAX_SOCKADDR_STRING 64
 
+#define GSA_FULL    0
+#define GSA_ADDRESS_ONLY 1
+
 typedef struct _GSockAddrFuncs GSockAddrFuncs;
 
 typedef struct _GSockAddr
@@ -56,12 +59,13 @@ struct _GSockAddrFuncs
   GIOStatus (*sa_bind)		(int sock, GSockAddr *addr);
   gchar   *(*sa_format)         (GSockAddr *addr,   /* format to text form */
   				 gchar *text,
-  				 gulong n);
+  				 gulong n,
+  				 gint format);
   void     (*freefn)            (GSockAddr *addr);
 };
 
 GSockAddr *g_sockaddr_new(struct sockaddr *sa, int salen);
-gchar *g_sockaddr_format(GSockAddr *a, gchar *text, gulong n);
+gchar *g_sockaddr_format(GSockAddr *a, gchar *text, gulong n, gint format);
 GSockAddr *g_sockaddr_ref(GSockAddr *a);
 void g_sockaddr_unref(GSockAddr *a);
 
@@ -213,13 +217,8 @@ g_sockaddr_inet6_set_port(GSockAddr *s, guint16 port)
 }
 #endif
 
-GSockAddr *g_sockaddr_unix_new(gchar *name);
+GSockAddr *g_sockaddr_unix_new(const gchar *name);
 GSockAddr *g_sockaddr_unix_new2(struct sockaddr_un *s_un, int sunlen);
 
-GIOStatus g_bind(int fd, GSockAddr *addr);
-GIOStatus g_accept(int fd, int *newfd, GSockAddr **addr);
-GIOStatus g_connect(int fd, GSockAddr *remote);
-gchar *g_inet_ntoa(char *buf, size_t bufsize, struct in_addr a);
-gint g_inet_aton(char *buf, struct in_addr *a);
 
 #endif

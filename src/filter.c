@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2007 BalaBit IT Ltd, Budapest, Hungary                    
+ * Copyright (c) 2002-2008 BalaBit IT Ltd, Budapest, Hungary
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -20,68 +20,24 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-
+  
 #include "filter.h"
 #include "syslog-names.h"
 #include "messages.h"
 #include "cfg.h"
+#include "logprocess.h"
+#include "gsocket.h"
+#include "misc.h"
 
 #include <regex.h>
 #include <string.h>
 #include <stdlib.h>
 
-static void log_filter_rule_free(LogFilterRule *self);
-
-gboolean 
-log_filter_rule_eval(LogFilterRule *self, LogMessage *msg)
+typedef struct _LogFilterRule
 {
-  gboolean res;
-  
-  msg_debug("Filter rule evaluation begins",
-            evt_tag_str("filter_rule", self->name->str),
-            NULL);
-  res = filter_expr_eval(self->root, msg);
-  msg_debug("Filter rule evaluation result",
-            evt_tag_str("filter_result", res ? "match" : "not-match"),
-            evt_tag_str("filter_rule", self->name->str),
-            NULL);
-  return res;
-}
-
-LogFilterRule *
-log_filter_rule_new(gchar *name, FilterExprNode *expr)
-{
-  LogFilterRule *self = g_new0(LogFilterRule, 1);
-  
-  self->ref_cnt = 1;
-  self->root = expr;
-  self->name = g_string_new(name);
-  return self;
-}
-
-LogFilterRule *
-log_filter_ref(LogFilterRule *self)
-{
-  self->ref_cnt++;
-  return self;
-}
-
-void 
-log_filter_unref(LogFilterRule *self)
-{
-  if (--self->ref_cnt == 0)
-    {
-      log_filter_rule_free(self);
-    }
-}
-
-static void
-log_filter_rule_free(LogFilterRule *self)
-{
-  g_string_free(self->name, TRUE);
-  filter_expr_free(self->root);
-  g_free(self);
-}
+  LogProcessRule super;
+  FilterExprNode *expr;
+} LogFilterRule;
 
 /****************************************************************
  * Filter expression nodes
@@ -141,6 +97,7 @@ fop_or_new(FilterExprNode *e1, FilterExprNode *e2)
   
   self->super.eval = fop_or_eval;
   self->super.free_fn = fop_free;
+  self->super.modify = e1->modify || e2->modify;
   self->left = e1;
   self->right = e2;
   self->super.type = "OR";
@@ -162,6 +119,7 @@ fop_and_new(FilterExprNode *e1, FilterExprNode *e2)
   
   self->super.eval = fop_and_eval;
   self->super.free_fn = fop_free;
+  self->super.modify = e1->modify || e2->modify;
   self->left = e1;
   self->right = e2;
   self->super.type = "AND";
@@ -223,161 +181,119 @@ filter_level_new(guint32 levels)
   return &self->super;
 }
 
-typedef struct _FilterRE
-{
-  FilterExprNode super;
-  regex_t regex;
-} FilterRE;
-
 static gboolean
-filter_re_compile(const gchar *re, regex_t *regex)
+filter_re_eval_string(FilterExprNode *s, LogMessage *msg, const gchar *str, gssize str_len)
 {
-  gint rc;
-  const gchar *re_comp = re;
-  gint flags = REG_EXTENDED;
-  
-  if (re[0] == '(' && re[1] == '?')
-    {
-      gint i;
-      
-      for (i = 2; re[i] && re[i] != ')'; i++)
-        {
-          switch (re[i])
-            {
-            case 'i':
-              flags |= REG_ICASE;
-              break;
-            }
-        }
-      if (re[i])
-        {
-          re_comp = &re[i + 1];
-        }
-      else
-        {
-          msg_error("Invalid regexp flags",
-                    evt_tag_str("re", re),
-                    NULL);
-          return FALSE;
-        }
-    }
-  
-  rc = regcomp(regex, re_comp, flags);
-  if (rc)
-    {
-      gchar buf[256];
-                      
-      regerror(rc, regex, buf, sizeof(buf));
-      msg_error("Error compiling regular expression",
-                evt_tag_str("re", re),
-                evt_tag_str("error", buf),
-                NULL);
-      return FALSE;
-    }
-  return TRUE;
+  FilterRE *self = (FilterRE *) s;
+
+  if (str_len < 0)
+    str_len = strlen(str);
+
+  return log_matcher_match(self->matcher, msg, self->value_name, str, str_len) ^ self->super.comp;
 }
 
 static gboolean
-filter_re_eval(FilterRE *self, LogMessage *msg, gchar *str)
+filter_re_eval(FilterExprNode *s, LogMessage *msg)
 {
-  regmatch_t matches[RE_MAX_MATCHES];
-  gchar *match_strings[RE_MAX_MATCHES];
-  gboolean rc;
-  gint i;
-
-  log_msg_clear_matches(msg);  
-  rc = !regexec(&self->regex, str, RE_MAX_MATCHES, matches, 0);
-  if (rc)
-    {
-      for (i = 0; i < RE_MAX_MATCHES && matches[i].rm_so != -1; i++)
-        {
-          gint length = matches[i].rm_eo - matches[i].rm_so;
-          match_strings[i] = g_malloc(length + 1);
-          memcpy(match_strings[i], &str[matches[i].rm_so], length);
-          match_strings[i][length] = 0;
-        }
-      msg->num_re_matches = (guint8) i;
-      if (i > 0)
-        {
-          msg->re_matches = g_malloc(sizeof(gchar *) * msg->num_re_matches);
-          memcpy(msg->re_matches, match_strings, sizeof(gchar *) * i);
-        }
-    }
-  return rc ^ self->super.comp;
+  FilterRE *self = (FilterRE *) s;
+  gchar *value;
+  gssize len;
+  
+  value = log_msg_get_value(msg, self->value_name, &len);
+  
+  value = APPEND_ZERO(value, len);
+  return filter_re_eval_string(s, msg, value, len);
 }
+
 
 static void
 filter_re_free(FilterExprNode *s)
 {
   FilterRE *self = (FilterRE *) s;
   
-  regfree(&self->regex);
+  log_matcher_free(self->matcher);
+  log_msg_free_value_name(self->value_name);
   g_free(s);
 }
 
-static gboolean
-filter_prog_eval(FilterExprNode *s, LogMessage *msg)
+void
+filter_re_set_matcher(FilterRE *self, LogMatcher *matcher)
 {
-  return filter_re_eval((FilterRE *) s, msg, msg->program.str);
+  gint flags = 0;
+  if(self->matcher)
+    {
+      /* save the flags to use them in the new matcher */
+      flags = self->matcher->flags;
+      log_matcher_free(self->matcher);
+    }
+   self->matcher = matcher;
+
+   filter_re_set_flags(self, flags);
+}
+
+void
+filter_re_set_flags(FilterRE *self, gint flags)
+{
+  /* if there is only a flags() param, we must crete the default matcher*/
+  if(!self->matcher)
+    self->matcher = log_matcher_posix_re_new();
+  if (flags & LMF_STORE_MATCHES)
+    self->super.modify = TRUE;
+  log_matcher_set_flags(self->matcher, flags | LMF_MATCH_ONLY);
+}
+
+gboolean
+filter_re_set_regexp(FilterRE *self, gchar *re)
+{
+  if(!self->matcher)
+    self->matcher = log_matcher_posix_re_new();
+
+  return log_matcher_compile(self->matcher, re);
 }
 
 FilterExprNode *
-filter_prog_new(gchar *prog)
+filter_re_new(const gchar *value_name)
 {
   FilterRE *self = g_new0(FilterRE, 1);
-  
-  if (!filter_re_compile(prog, &self->regex))
-    {
-      g_free(self);
-      return NULL;
-    }
-  self->super.eval = filter_prog_eval;
-  self->super.free_fn = filter_re_free;
-  self->super.type = "program";
-  return &self->super;
-}
 
-static gboolean
-filter_host_eval(FilterExprNode *s, LogMessage *msg)
-{
-  return filter_re_eval((FilterRE *) s, msg, msg->host.str);
-}
-
-FilterExprNode *
-filter_host_new(gchar *host)
-{
-  FilterRE *self = g_new0(FilterRE, 1);
-  
-  if (!filter_re_compile(host, &self->regex))
-    {
-      g_free(self);
-      return NULL;
-    }
-  self->super.eval = filter_host_eval;
+  self->value_name = value_name;
+  self->super.eval = filter_re_eval;
   self->super.free_fn = filter_re_free;
-  self->super.type = "host";
   return &self->super;
 }
 
 static gboolean
 filter_match_eval(FilterExprNode *s, LogMessage *msg)
 {
-  return filter_re_eval((FilterRE *) s, msg, msg->msg.str);
+  FilterRE *self = (FilterRE *) s;
+  gchar *str;
+  gboolean res;
+
+  if (G_UNLIKELY(self->value_name == 0))
+    {
+      /* compatibility mode */
+      str = g_strdup_printf("%s%s%s%s: %s", 
+                            msg->program, 
+                            msg->pid_len > 0 ? "[" : "", 
+                            msg->pid,
+                            msg->pid_len > 0 ? "]" : "",
+                            msg->message);
+      res = filter_re_eval_string(s, msg, str, -1);
+      g_free(str);
+    }
+  else
+    {
+      res = filter_re_eval(s, msg);
+    }
+  return res;
 }
 
 FilterExprNode *
-filter_match_new(gchar *re)
+filter_match_new()
 {
   FilterRE *self = g_new0(FilterRE, 1);
-  
-  if (!filter_re_compile(re, &self->regex))
-    {
-      g_free(self);
-      return NULL;
-    }
-  self->super.eval = filter_match_eval;
   self->super.free_fn = filter_re_free;
-  self->super.type = "match";
+  self->super.eval = filter_match_eval;
   return &self->super;
 }
 
@@ -399,7 +315,7 @@ filter_call_eval(FilterExprNode *s, LogMessage *msg)
   
   if (rule)
     {
-      return filter_expr_eval(rule->root, msg) ^ s->comp;
+      return filter_expr_eval(rule->expr, msg) ^ s->comp;
     }
   else
     {
@@ -496,5 +412,43 @@ filter_netmask_new(gchar *cidr)
     }
   self->address.s_addr &= self->netmask.s_addr;
   self->super.eval = filter_netmask_eval;
+  return &self->super;
+}
+
+static void
+log_filter_rule_free(LogProcessRule *s)
+{
+  LogFilterRule *self = (LogFilterRule *) s;
+  
+  filter_expr_free(self->expr);
+}
+
+gboolean 
+log_filter_rule_process(LogProcessRule *s, LogMessage *msg)
+{
+  LogFilterRule *self = (LogFilterRule *) s;
+  gboolean res;
+  
+  msg_debug("Filter rule evaluation begins",
+            evt_tag_str("filter_rule", self->super.name),
+            NULL);
+  res = filter_expr_eval(self->expr, msg);
+  msg_debug("Filter rule evaluation result",
+            evt_tag_str("filter_result", res ? "match" : "not-match"),
+            evt_tag_str("filter_rule", self->super.name),
+            NULL);
+  return res;
+}
+
+LogProcessRule *
+log_filter_rule_new(const gchar *name, FilterExprNode *expr)
+{
+  LogFilterRule *self = g_new0(LogFilterRule, 1);
+
+  log_process_rule_init(&self->super, name);  
+  self->super.process = log_filter_rule_process;
+  self->super.free_fn = log_filter_rule_free;
+  self->super.modify = expr->modify;
+  self->expr = expr;
   return &self->super;
 }

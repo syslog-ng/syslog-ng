@@ -3,6 +3,8 @@
 #include "children.h"
 #include "dnscache.h"
 #include "alarms.h"
+#include "stats.h"
+#include <time.h>
 
 typedef struct _ApplicationHookEntry
 {
@@ -40,20 +42,27 @@ register_application_hook(gint type, ApplicationHookFunc func, gpointer user_dat
 static void
 run_application_hook(gint type)
 {
-  GList *l;
+  GList *l, *l_next;
   
-  g_assert(current_state < type);
+  g_assert(current_state <= type);
   
   msg_debug("Running application hooks", evt_tag_int("hook", type), NULL);
   current_state = type;
-  for (l = application_hooks; l; l = l->next)
+  for (l = application_hooks; l; l = l_next)
     {
       ApplicationHookEntry *e = l->data;
       
       if (e->type == type)
         {
+          application_hooks = g_list_remove_link(application_hooks, l);
           e->func(type, e->user_data);
           g_free(e);
+          l_next = l->next;
+          g_list_free_1(l);
+        }
+      else
+        {
+          l_next = l->next;
         }
     }
 
@@ -65,10 +74,11 @@ app_startup(void)
 #if ENABLE_THREADS
   g_thread_init(NULL);
 #endif
-  msg_init();
+  msg_init(FALSE);
   child_manager_init();
   dns_cache_init();
   alarm_init();
+  stats_init();
   tzset();
 }
 
@@ -78,10 +88,23 @@ app_post_daemonized(void)
   run_application_hook(AH_POST_DAEMONIZED);
 }
 
+void
+app_pre_config_loaded(void)
+{
+  current_state = AH_PRE_CONFIG_LOADED;
+}
+
+void
+app_post_config_loaded(void)
+{
+  run_application_hook(AH_POST_CONFIG_LOADED);
+}
+
 void 
 app_shutdown(void)
 {
   run_application_hook(AH_SHUTDOWN);
+  stats_destroy();
   dns_cache_destroy();
   child_manager_deinit();
   msg_deinit();

@@ -16,23 +16,62 @@
 #include <getopt.h>
 #endif
 
-#define POS_TIMESTAMP1   4
-#define POS_SEQ          49
-#define POS_TIMESTAMP2   87
-
 #define MAX_MESSAGE_LENGTH 8192
 
 #define USEC_PER_SEC     10e6
 #define MIN(a, b)    ((a) < (b) ? (a) : (b))
 
+int rate = 1000;
+int unix_socket = 0;
+int sock_type = SOCK_STREAM;
+int sock = -1;
+int message_length = 256;
+int interval = 10;
+int csv = 0;
+int syslog_proto = 0;
+int framing = 1;
+
 static inline unsigned long
-time_val_diff(struct timeval *t1, struct timeval *t2)
+time_val_diff_in_usec(struct timeval *t1, struct timeval *t2)
 {
   return (t1->tv_sec - t2->tv_sec) * USEC_PER_SEC + (t1->tv_usec - t2->tv_usec);
 }
 
+static inline void
+time_val_diff_in_timeval(struct timeval *res, const struct timeval *t1, const struct timeval *t2)
+{
+  res->tv_sec = (t1->tv_sec - t2->tv_sec);
+  res->tv_usec = (t1->tv_usec - t2->tv_usec);
+  if (res->tv_usec < 0)
+    {
+      res->tv_sec--;
+      res->tv_usec += USEC_PER_SEC;
+    }
+}
+
+static ssize_t 
+write_chunk(int sock, void *buf, size_t buf_len)
+{
+  ssize_t rc;
+  size_t pos = 0;
+  
+  while (pos < buf_len)
+    {
+      rc = write(sock, buf + pos, buf_len - pos);
+      if (rc < 0)
+        return -1;
+      else if (rc == 0)
+        {
+          errno = ECONNABORTED;
+          return -1;
+        }
+      pos += rc;
+    }
+  return pos;
+}
+
 void
-gen_messages(int sock, int rate, int message_length, int interval)
+gen_messages(int sock)
 {
   struct timeval now, start, last_ts_format, last_throttle_check;
   char linebuf[MAX_MESSAGE_LENGTH + 1];
@@ -43,7 +82,10 @@ gen_messages(int sock, int rate, int message_length, int interval)
   unsigned long count = 0, last_count = 0;
   char padding[] = "PADD";
   long buckets = rate - (rate / 10);
-  double diff;
+  double diff_usec;
+  struct timeval diff_tv;
+  int pos_timestamp1, pos_timestamp2, pos_seq;
+  int rc, hdr_len = 0;
   
   gettimeofday(&start, NULL);
   now = start;
@@ -54,17 +96,38 @@ gen_messages(int sock, int rate, int message_length, int interval)
   last_ts_format = now;
   last_ts_format.tv_sec--;
   
-  linelen = snprintf(linebuf, sizeof(linebuf), "<38>2007-12-24T12:28:51 localhost localprg: seq: %010d, runid: %-10d, stamp: %-19s ", 0, run_id, "");
+  if (syslog_proto)
+    {
+      if (sock_type == SOCK_STREAM && framing)
+        hdr_len = snprintf(linebuf, sizeof(linebuf), "%d ", message_length);
+        
+      linelen = snprintf(linebuf + hdr_len, sizeof(linebuf) - hdr_len, "<38>1 2007-12-24T12:28:51+02:00 localhost localprg 1234 - - \xEF\xBB\xBFseq: %010d, runid: %-10d, stamp: %-19s ", 0, run_id, "");
+      pos_timestamp1 = 6 + hdr_len;
+      pos_seq = 68 + hdr_len;
+      pos_timestamp2 = 106 + hdr_len;
+    }
+  else
+    {
+      linelen = snprintf(linebuf, sizeof(linebuf), "<38>2007-12-24T12:28:51 localhost localprg[1234]: seq: %010d, runid: %-10d, stamp: %-19s ", 0, run_id, "");
+      pos_timestamp1 = 4;
+      pos_seq = 55;
+      pos_timestamp2 = 93;
+    }
+  if (linelen > message_length)
+    {
+      fprintf(stderr, "Warning: message length is too small, the minimum is %d bytes\n", linelen);
+      return;
+    }
   
   for (i = linelen; i < message_length - 1; i++)
     {
-      linebuf[i] = padding[(i - linelen) % (sizeof(padding) - 1)];
+      linebuf[i + hdr_len] = padding[(i - linelen) % (sizeof(padding) - 1)];
     }
-  linebuf[message_length - 1] = '\n';
-  linebuf[message_length] = 0;
+  linebuf[hdr_len + message_length - 1] = '\n';
+  linebuf[hdr_len + message_length] = 0;
   linelen = strlen(linebuf);
   
-  while (now.tv_sec - start.tv_sec < interval)
+  while (time_val_diff_in_usec(&now, &start) < interval * USEC_PER_SEC)
     {
       gettimeofday(&now, NULL);
       
@@ -75,24 +138,32 @@ gen_messages(int sock, int rate, int message_length, int interval)
           
           tm = localtime(&now.tv_sec);
           len = strftime(stamp, sizeof(stamp), "%Y-%m-%dT%H:%M:%S", tm);
-          memcpy(&linebuf[POS_TIMESTAMP1], stamp, len);
-          memcpy(&linebuf[POS_TIMESTAMP2], stamp, len);
+          memcpy(&linebuf[pos_timestamp1], stamp, len);
+          //memcpy(&linebuf[pos_timestamp2], stamp, len);
 
-          diff = time_val_diff(&now, &last_ts_format);
           
-          fprintf(stderr, "rate = %.2lf msg/sec              \r", ((double) (count - last_count) * USEC_PER_SEC) / diff);
+          if (csv)
+            {
+              time_val_diff_in_timeval(&diff_tv, &now, &start);
+              printf("%lu.%lu;%lu\n", diff_tv.tv_sec, diff_tv.tv_usec, count);
+            }
+          else
+            {
+              diff_usec = time_val_diff_in_usec(&now, &last_ts_format);
+              fprintf(stderr, "rate = %.2lf msg/sec              \r", ((double) (count - last_count) * USEC_PER_SEC) / diff_usec);
+            }
           last_ts_format = now;
           last_count = count;
 
         }
 
-      diff = time_val_diff(&now, &last_throttle_check);
-      if (buckets == 0 || diff > 10e5)
+      diff_usec = time_val_diff_in_usec(&now, &last_throttle_check);
+      if (buckets == 0 || diff_usec > 10e5)
         {
           /* check rate every 0.1sec */
           long new_buckets;
           
-          new_buckets = (rate * diff) / USEC_PER_SEC;
+          new_buckets = (rate * diff_usec) / USEC_PER_SEC;
           if (new_buckets)
             {
               buckets = MIN(rate, buckets + new_buckets);
@@ -117,9 +188,10 @@ gen_messages(int sock, int rate, int message_length, int interval)
 
       /* add sequence number */
       snprintf(intbuf, sizeof(intbuf), "%010ld", count);
-      memcpy(&linebuf[POS_SEQ], intbuf, 10);
-          
-      if (write(sock, linebuf, linelen) < 0)
+      //memcpy(&linebuf[pos_seq], intbuf, 10);
+      
+      rc = write_chunk(sock, linebuf, linelen);
+      if (rc < 0)
         {
           fprintf(stderr, "Send error %s\n", strerror(errno));
           break;
@@ -130,8 +202,9 @@ gen_messages(int sock, int rate, int message_length, int interval)
   close(sock);
   
   gettimeofday(&now, NULL);
-  diff = (((double) now.tv_sec) + ((double) now.tv_usec / 10e6)) - ((double) start.tv_sec + ((double) now.tv_usec / 10e6));
-  fprintf(stderr, "average rate = %.2lf msg/sec, count=%ld\n", (double) count / diff, count);
+  diff_usec = time_val_diff_in_usec(&now, &start);
+  time_val_diff_in_timeval(&diff_tv, &now, &start);
+  fprintf(stderr, "average rate = %.2lf msg/sec, count=%ld, time=%ld.%03ld\n", (double) count * USEC_PER_SEC / diff_usec, count, diff_tv.tv_sec, diff_tv.tv_usec / 1000);
 }
 
 void
@@ -146,7 +219,10 @@ usage()
          "  --stream, or -S         Use stream socket (TCP and unix-stream)\n"
          "  --dgram, or -D          Use datagram socket (UDP and unix-dgram)\n"
          "  --size, or -s <size>    Specify the size of the syslog message\n"
-         "  --interval, or -I <sec> Number of seconds to run the test for\n");
+         "  --interval, or -I <sec> Number of seconds to run the test for\n"
+         "  --syslog-proto, or -P   Use the new syslog-protocol message format (see also framing)\n"
+         "  --no-framing, or -F     Don't use syslog-protocol style framing, even if syslog-proto is set\n"
+         "  --csv, or -C            Produce CSV output\n");
   exit(0);
 }
 
@@ -163,21 +239,18 @@ main(int argc, char *argv[])
       { "dgram", no_argument, NULL, 'D' },
       { "size", required_argument, NULL, 's' },
       { "interval", required_argument, NULL, 'I' },
+      { "syslog-proto", no_argument, NULL, 'P' },
+      { "no-framing", no_argument, NULL, 'F' },
+      { "csv", no_argument, NULL, 'C' },
       { NULL, 0, NULL, 0 }
     };
 #endif
-  int rate = 1000;
-  int unix_socket = 0;
-  int sock_type = SOCK_STREAM;
-  int sock = -1;
-  int message_length = 256;
-  int interval = 10;
   int opt;
 
 #if HAVE_GETOPT_LONG
-  while ((opt = getopt_long(argc, argv, "r:I:ixs:SDh", syslog_ng_options, NULL)) != -1)
+  while ((opt = getopt_long(argc, argv, "r:I:ixs:SDhPCF", syslog_ng_options, NULL)) != -1)
 #else
-  while ((opt = getopt(argc, argv, "r:I:ixs:SDh")) != -1)
+  while ((opt = getopt(argc, argv, "r:I:ixs:SDhPCF")) != -1)
 #endif
     {
       switch (opt) 
@@ -202,6 +275,16 @@ main(int argc, char *argv[])
           break;
         case 's':
           message_length = atoi(optarg);
+          break;
+        case 'P':
+          syslog_proto = 1;
+          framing = 1;
+          break;
+        case 'C':
+          csv = 1;
+          break;
+        case 'F':
+          framing = 0;
           break;
         case 'h':
           usage();
@@ -305,6 +388,6 @@ main(int argc, char *argv[])
         }
     }
   
-  gen_messages(sock, rate, message_length, interval);
+  gen_messages(sock);
   return 0;
 }

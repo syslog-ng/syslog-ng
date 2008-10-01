@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2007 BalaBit IT Ltd, Budapest, Hungary                    
+ * Copyright (c) 2002-2008 BalaBit IT Ltd, Budapest, Hungary
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -20,7 +20,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-
+  
 #ifndef ZORP_MEMTRACE_H_INCLUDED
 #define ZORP_MEMTRACE_H_INCLUDED
 
@@ -28,7 +28,7 @@ void z_mem_trace_init(gchar *memtrace_file);
 void z_mem_trace_stats(void);
 void z_mem_trace_dump(void);
 
-#if ENABLE_MEM_TRACE
+#if ENABLE_MEMTRACE
 
 #include <stdlib.h>
 

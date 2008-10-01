@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2007 BalaBit IT Ltd, Budapest, Hungary                    
+ * Copyright (c) 2002-2008 BalaBit IT Ltd, Budapest, Hungary
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -18,72 +18,83 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
   
 #ifndef LOGREADER_H_INCLUDED
 #define LOGREADER_H_INCLUDED
 
 #include "logsource.h"
-#include "fdread.h"
+#include "logproto.h"
+#include "timeutils.h"
 
 /* flags */
-#define LR_LOCAL     0x0001
-#define LR_INTERNAL  0x0002
-/* end-of-packet terminates log message (UDP sources) */
-#define LR_PKTTERM   0x0004
-/* issue a single read in a poll loop as /proc/kmsg does not support non-blocking mode */
-#define LR_NOMREAD   0x0008
-#define LR_FOLLOW    0x0010
-#define LR_STRICT    0x0020
-
-#define LR_COMPLETE_LINE 0x0100
+#define LR_LOCAL          0x0001
+#define LR_INTERNAL       0x0002
+#define LR_FOLLOW         0x0010
+#define LR_STRICT         0x0020
+#define LR_IGNORE_TIMEOUT 0x0040
+#define LR_SYSLOG_PROTOCOL 0x0080
+#define LR_PREEMPT         0x0100
 
 /* options */
-#define LRO_NOPARSE        0x0001
-#define LRO_CHECK_HOSTNAME 0x0002
-#define LRO_KERNEL         0x0004
+#define LRO_NOPARSE          0x0001
+#define LRO_KERNEL           0x0002
+#define LRO_SYSLOG_PROTOCOL  0x0004
+#define LRO_VALIDATE_UTF8    0x0008
+#define LRO_NO_MULTI_LINE    0x0010
+
+typedef struct _LogReaderWatch LogReaderWatch;
 
 typedef struct _LogReaderOptions
 {
-  LogSourceOptions source_opts;
+  LogSourceOptions super;
   guint32 options;
   gint padding;
-  gchar *prefix;
   gint msg_size;
-  gchar *follow_filename;
   gint follow_freq;
   gint fetch_limit;
-  
+  gchar *text_encoding;
+  const gchar *group_name;
+
   /* source time zone if one is not specified in the message */
-  glong zone_offset;
-  gboolean keep_timestamp;
+  gboolean check_hostname;
+  gchar *time_zone_string;
+  TimeZoneInfo *time_zone_info;
   regex_t *bad_hostname;
 } LogReaderOptions;
 
 typedef struct _LogReader
 {
   LogSource super;
-  gchar *buffer;
-  FDRead *fd;
-  GSource *source;
-  gint ofs;
+  LogProto *proto;
+  LogReaderWatch *source;
   guint32 flags;
+  gboolean immediate_check;
+  gboolean waiting_for_preemption;
   LogPipe *control;
-  GSockAddr *prev_addr;
   LogReaderOptions *options;
+  GSockAddr *peer_addr;
+  gchar *follow_filename;
+  ino_t inode;
+  off_t size;
+  
 } LogReader;
 
-void log_reader_set_options(LogPipe *self, LogReaderOptions *options);
-void log_reader_set_pos(LogReader *self, off_t ofs);
-off_t log_reader_get_pos(LogReader *self);
+void log_reader_set_options(LogPipe *s, LogPipe *control, LogReaderOptions *options, gint stats_level, gint stats_source, const gchar *stats_id, const gchar *stats_instance);
+void log_reader_set_follow_filename(LogPipe *self, const gchar *follow_filename);
+void log_reader_set_peer_addr(LogPipe *s, GSockAddr *peer_addr);
+void log_reader_set_immediate_check(LogPipe *s);
 
+void log_reader_update_pos(LogReader *self, off_t ofs);
+void log_reader_save_state(LogReader *self, SerializeArchive *archive);
+void log_reader_restore_state(LogReader *self, SerializeArchive *archive);
 
-LogPipe *log_reader_new(FDRead *fd, guint32 flags, LogPipe *control, LogReaderOptions *options);
+LogPipe *log_reader_new(LogProto *proto, guint32 flags);
 void log_reader_options_defaults(LogReaderOptions *options);
-void log_reader_options_init(LogReaderOptions *options, GlobalConfig *cfg);
-
-gchar *log_reader_find_eom(gchar *s, gsize n);
+void log_reader_options_init(LogReaderOptions *options, GlobalConfig *cfg, const gchar *group_name);
+void log_reader_options_destroy(LogReaderOptions *options);
+gint log_reader_options_lookup_flag(const gchar *flag);
 
 
 #endif

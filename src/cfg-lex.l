@@ -33,24 +33,31 @@
 #include "syslog-ng.h"
 #include "filter.h"
 #include "cfg-grammar.h"
-#include "logreader.h"
 #include "messages.h"
 
 #include <string.h>
 #include <strings.h>
 
-struct keyword {
-	char	*kw_name;
-	int	kw_token;
+struct keyword 
+{
+  char	*kw_name;
+  int	kw_token;
+  int   kw_status;
+  char  *kw_explain;
 };
+
+#define KWS_NORMAL        0
+#define KWS_OBSOLETE      1
 
 static struct keyword keywords[] = {
 	/* statements */
 	{ "source", 		KW_SOURCE },
+	{ "filter",             KW_FILTER },
+	{ "parser",             KW_PARSER },
+	{ "rewrite",            KW_REWRITE },
 	{ "destination",	KW_DESTINATION },
 	{ "log",		KW_LOG },
 	{ "options",		KW_OPTIONS },
-	{ "filter",             KW_FILTER },
 
 	/* source or destination items */
 	{ "file",		KW_FILE },
@@ -65,14 +72,17 @@ static struct keyword keywords[] = {
         { "udp6",               KW_UDP6 },
         { "tcp6",               KW_TCP6 },
 #endif
+        { "syslog",             KW_SYSLOG },
         { "usertty", 		KW_USERTTY },
         { "door",               KW_DOOR },
+#if ENABLE_SUN_STREAMS
         { "sun_stream",		KW_SUN_STREAMS },
         { "sun_streams",	KW_SUN_STREAMS },
+#endif
         { "program",		KW_PROGRAM },
+/* BEGIN MARK: sql */
 #if ENABLE_SQL
         { "sql",                KW_SQL },
-        { "type",               KW_TYPE },
         { "username",           KW_USERNAME },
         { "password",           KW_PASSWORD },
         { "database",           KW_DATABASE },
@@ -83,23 +93,28 @@ static struct keyword keywords[] = {
         { "indexes",            KW_INDEXES },
         { "values",             KW_VALUES },
 #endif
+/* END MARK */
+        { "columns",            KW_COLUMNS },
+        { "delimiters",         KW_DELIMITERS },
+        { "quotes",             KW_QUOTES },
+        { "quote_pairs",        KW_QUOTE_PAIRS },
+        { "null",               KW_NULL },
+        { "csv_parser",         KW_CSV_PARSER },
+        { "db_parser",          KW_DB_PARSER },
 
 	/* option items */
 	{ "flags",		KW_FLAGS },
-	{ "catchall",		KW_CATCHALL },
-	{ "fallback",		KW_FALLBACK },
-	{ "final",		KW_FINAL },
-	{ "flow_control",	KW_FLOW_CONTROL },
 	{ "pad_size",		KW_PAD_SIZE },
 	{ "mark_freq",		KW_MARK_FREQ },
-	{ "mark",		KW_MARK_FREQ },    /* obsolete */
+	{ "mark",		KW_MARK_FREQ, KWS_OBSOLETE, "mark_freq" },
 	{ "stats_freq",		KW_STATS_FREQ },
-	{ "stats",		KW_STATS_FREQ },   /* obsolete */
+	{ "stats_level",	KW_STATS_LEVEL },
+	{ "stats",		KW_STATS_FREQ, KWS_OBSOLETE, "stats_freq" },
 	{ "flush_lines", 	KW_FLUSH_LINES },
 	{ "flush_timeout", 	KW_FLUSH_TIMEOUT },
         { "suppress",           KW_SUPPRESS },
-	{ "sync_freq", 		KW_FLUSH_LINES },  /* obsolete */
-	{ "sync", 		KW_FLUSH_LINES },  /* obsolete */
+	{ "sync_freq", 		KW_FLUSH_LINES, KWS_OBSOLETE, "flush_lines" },
+	{ "sync", 		KW_FLUSH_LINES, KWS_OBSOLETE, "flush_lines" },
 	{ "fsync",		KW_FSYNC },
 	{ "long_hostnames",	KW_CHAIN_HOSTNAMES },
         { "chain_hostnames",    KW_CHAIN_HOSTNAMES },
@@ -108,12 +123,13 @@ static struct keyword keywords[] = {
         { "check_hostname",     KW_CHECK_HOSTNAME },
         { "bad_hostname",       KW_BAD_HOSTNAME },
         { "keep_timestamp",	KW_KEEP_TIMESTAMP },
+        { "encoding", 		KW_ENCODING },
         { "ts_format",		KW_TS_FORMAT },
         { "frac_digits",        KW_FRAC_DIGITS },
         { "time_zone",		KW_TIME_ZONE },
         { "recv_time_zone",	KW_RECV_TIME_ZONE },
         { "send_time_zone",	KW_SEND_TIME_ZONE },
-        { "use_time_recvd",	KW_USE_TIME_RECVD },
+        { "use_time_recvd",	KW_USE_TIME_RECVD, KWS_OBSOLETE, "Use R_ or S_ prefixed macros in templates" },
         { "use_fqdn",           KW_USE_FQDN },
 	{ "use_dns",		KW_USE_DNS },
   	{ "gc_threshold",	KW_GC_BUSY_THRESHOLD },
@@ -122,17 +138,27 @@ static struct keyword keywords[] = {
  	{ "time_reopen",	KW_TIME_REOPEN },
  	{ "time_reap",          KW_TIME_REAP },
  	{ "time_sleep",         KW_TIME_SLEEP },
- 	{ "follow_freq",	KW_FOLLOW_FREQ },
- 	{ "remove_if_older",	KW_OVERWRITE_IF_OLDER }, /* obsolete */
+ 	{ "follow_freq",	KW_FOLLOW_FREQ,  },
+ 	{ "remove_if_older",	KW_OVERWRITE_IF_OLDER, KWS_OBSOLETE, "overwrite_if_older" },
  	{ "overwrite_if_older",	KW_OVERWRITE_IF_OLDER },
  	{ "file_template",	KW_FILE_TEMPLATE },
  	{ "proto_template",	KW_PROTO_TEMPLATE },
+#if ENABLE_TIMESTAMPING
+ 	{ "timestamp_url",      KW_TIMESTAMP_URL },
+	{ "timestamp_freq",     KW_TIMESTAMP_FREQ },
+#endif
+        { "set",                KW_SET },
+        { "subst",              KW_SUBST },
+        { "value",              KW_VALUE },
  	
 	{ "log_fifo_size",	KW_LOG_FIFO_SIZE },
+	{ "log_disk_fifo_size",	KW_LOG_DISK_FIFO_SIZE },
 	{ "log_fetch_limit",	KW_LOG_FETCH_LIMIT },
 	{ "log_iw_size",	KW_LOG_IW_SIZE },
 	{ "log_msg_size",	KW_LOG_MSG_SIZE },
-	{ "log_prefix",		KW_LOG_PREFIX },
+	{ "log_prefix",		KW_LOG_PREFIX, KWS_OBSOLETE, "program_override" },
+	{ "program_override",   KW_PROGRAM_OVERRIDE },
+	{ "host_override",      KW_HOST_OVERRIDE },
 	{ "throttle",           KW_THROTTLE },
 	
         { "create_dirs",        KW_CREATE_DIRS },
@@ -142,14 +168,16 @@ static struct keyword keywords[] = {
 	{ "localport",		KW_LOCALPORT },
 	{ "port",		KW_PORT },
 	{ "destport",		KW_DESTPORT },
+        { "framed",             KW_FRAMED },
         { "ip_ttl",             KW_IP_TTL },
         { "ip_tos",             KW_IP_TOS },
         { "so_broadcast",       KW_SO_BROADCAST },
         { "so_rcvbuf",          KW_SO_RCVBUF },
         { "so_sndbuf",          KW_SO_SNDBUF },
         { "so_keepalive",       KW_SO_KEEPALIVE },
-        { "tcp_keep_alive",     KW_SO_KEEPALIVE }, /* obsolete */
+        { "tcp_keep_alive",     KW_SO_KEEPALIVE, KWS_OBSOLETE, "so_keepalive" },
         { "spoof_source",       KW_SPOOF_SOURCE },
+        { "transport",          KW_TRANSPORT },
 
 	{ "owner",		KW_OWNER },
 	{ "group",		KW_GROUP },
@@ -172,6 +200,17 @@ static struct keyword keywords[] = {
 	{ "dns_cache_expire",	KW_DNS_CACHE_EXPIRE },
 	{ "dns_cache_expire_failed", KW_DNS_CACHE_EXPIRE_FAILED },
 
+#if ENABLE_SSL /* BEGIN MARK: tls */
+	/* ssl */
+	{ "tls",		KW_TLS },
+	{ "peer_verify",        KW_PEER_VERIFY },
+	{ "key_file",		KW_KEY_FILE },
+	{ "cert_file",		KW_CERT_FILE },
+	{ "ca_dir",		KW_CA_DIR },
+	{ "crl_dir",		KW_CRL_DIR },
+        { "trusted_keys",       KW_TRUSTED_KEYS },
+        { "trusted_dn",         KW_TRUSTED_DN },
+#endif /* END MARK */
 
 	/* filter items */
         { "or",                 KW_OR },
@@ -182,8 +221,10 @@ static struct keyword keywords[] = {
 	{ "facility",           KW_FACILITY },
 	{ "program",		KW_PROGRAM },
         { "host",               KW_HOST },
+        { "message",            KW_MESSAGE },
         { "match",		KW_MATCH },
         { "netmask",		KW_NETMASK },
+        { "type",               KW_TYPE },
 
 	/* on/off switches */
 	{ "yes",		KW_YES },
@@ -265,10 +306,10 @@ word	[^ \#'"\(\)\{\}\\;\n\t,|\.]
 
 %%
 int 
-lex_init(FILE *file)
+lex_init(FILE *file, gint init_line_num)
 {
   yyrestart(file);
-  linenum = 1;
+  linenum = init_line_num;
   return 0;
 }
 
@@ -290,22 +331,27 @@ check_reserved_words(char *token)
             break;
         }
       if (token[j] == 0 && keywords[i].kw_name[j] == 0)
-        return keywords[i].kw_token;
+        {
+        
+          switch (keywords[i].kw_status)
+            {
+            case KWS_OBSOLETE:
+              msg_warning("Your configuration file uses an obsoleted keyword, please update your configuration",
+                          evt_tag_str("keyword", keywords[i].kw_name),
+                          evt_tag_str("change", keywords[i].kw_explain),
+                          NULL);
+              break;
+            default:
+              break;
+            }
+          keywords[i].kw_status = KWS_NORMAL;
+          return keywords[i].kw_token;
+        }
     }
   yylval.cptr = strdup(token);
   return IDENTIFIER;
 }
 
-int
-lookup_parse_flag(char *flag)
-{
-  if (strcmp(flag, "no_parse") == 0 || strcmp(flag, "no-parse") == 0)
-    return LRO_NOPARSE;
-  if (strcmp(flag, "kernel") == 0)
-    return LRO_KERNEL;
-  msg_error("Unknown parse flag", evt_tag_str("flag", flag), NULL);
-  return 0;
-}
 
 static void 
 append_string(int length, char *s)

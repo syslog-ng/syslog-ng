@@ -12,3 +12,10 @@ depcomp
 install-sh
 missing
 mkinstalldirs
+cscope.out
+._*
+config.*
+stamp-h.in
+stamp-h
+ylwrap
+.*.swp

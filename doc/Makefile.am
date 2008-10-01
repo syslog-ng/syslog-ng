@@ -7,7 +7,8 @@ EXTRA_DIST =  man/syslog-ng.8 man/syslog-ng.conf.5 \
 	reference/syslog-ng.txt \
 	reference/syslog-ng.xsl \
 	examples/syslog-ng.conf.sample \
-	examples/syslog-ng.conf.solaris
+	examples/syslog-ng.conf.solaris \
+	xsd/patterndb.xsd
 
 man_MANS = man/syslog-ng.8 man/syslog-ng.conf.5
 

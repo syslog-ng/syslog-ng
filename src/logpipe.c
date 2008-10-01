@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2007 BalaBit IT Ltd, Budapest, Hungary                    
+ * Copyright (c) 2002-2008 BalaBit IT Ltd, Budapest, Hungary
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -18,7 +18,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
   
 #include "logpipe.h"
@@ -29,7 +29,14 @@ log_pipe_init_instance(LogPipe *self)
   g_atomic_counter_set(&self->ref_cnt, 1);
   self->pipe_next = NULL;
   self->queue = log_pipe_forward_msg;
+  self->free_fn = log_pipe_free;
 /*  self->notify = log_pipe_forward_notify; */
+}
+
+void
+log_pipe_free(LogPipe *self)
+{
+  ;
 }
 
 LogPipe *
@@ -48,19 +55,26 @@ void
 log_pipe_unref(LogPipe *self)
 {
   g_assert(!self || g_atomic_counter_get(&self->ref_cnt));
+    
   if (self && (g_atomic_counter_dec_and_test(&self->ref_cnt)))
     {
       if (self->free_fn)
         self->free_fn(self);
-      else
-        g_free(self);
+      g_free(self);
     }
 }
 
 void
-log_pipe_forward_msg(LogPipe *self, LogMessage *msg, gint path_flags)
+log_pipe_forward_msg(LogPipe *self, LogMessage *msg, const LogPathOptions *path_options)
 {
-  log_pipe_queue(self->pipe_next, msg, path_flags);
+  if (self->pipe_next)
+    {
+      log_pipe_queue(self->pipe_next, msg, path_options);
+    }
+  else
+    {
+      log_msg_drop(msg, path_options);
+    }
 }
 
 void

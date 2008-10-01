@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2007 BalaBit IT Ltd, Budapest, Hungary                    
+ * Copyright (c) 2002-2008 BalaBit IT Ltd, Budapest, Hungary
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -20,7 +20,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-
+  
 #include "afuser.h"
 #include "alarms.h"
 #include "messages.h"
@@ -42,30 +42,34 @@ typedef struct _AFUserDestDriver
 } AFUserDestDriver;
 
 static gboolean
-afuser_dd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
+afuser_dd_init(LogPipe *s)
 {
   return TRUE;
 }
 
 static gboolean
-afuser_dd_deinit(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
+afuser_dd_deinit(LogPipe *s)
 {
   return TRUE;
 }
 
 static void
-afuser_dd_queue(LogPipe *s, LogMessage *msg, gint path_flags)
+afuser_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 {
   AFUserDestDriver *self = (AFUserDestDriver *) s;
   gchar buf[8192];
   struct utmp *ut;
+  GString *timestamp;
   time_t now;
   
-  now = msg->recvd.time.tv_sec;
+  now = msg->timestamps[LM_TS_RECVD].time.tv_sec;
   if (self->disable_until && self->disable_until > now)
     goto finish;
   
-  g_snprintf(buf, sizeof(buf), "%s %s %s\n", msg->date.str, msg->host.str, msg->msg.str);
+  timestamp = g_string_sized_new(0);
+  log_stamp_format(&msg->timestamps[LM_TS_STAMP], timestamp, TS_FMT_FULL, -1, 0);
+  g_snprintf(buf, sizeof(buf), "%s %s %s\n", timestamp->str, msg->host, msg->message);
+  g_string_free(timestamp, TRUE);
   
   /* NOTE: there's a private implementations of getutent in utils.c on Systems which do not provide one. */
   while ((ut = getutent())) 
@@ -109,7 +113,7 @@ afuser_dd_queue(LogPipe *s, LogMessage *msg, gint path_flags)
     }
   endutent();
 finish:
-  log_msg_ack(msg, path_flags);
+  log_msg_ack(msg, path_options);
   log_msg_unref(msg);
 }
 

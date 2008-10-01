@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2007 BalaBit IT Ltd, Budapest, Hungary                    
+ * Copyright (c) 2002-2008 BalaBit IT Ltd, Budapest, Hungary
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -20,7 +20,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-
+  
 #ifndef DRIVER_H_INCLUDED
 #define DRIVER_H_INCLUDED
 
@@ -32,6 +32,8 @@ typedef struct _LogDriver
 {
   LogPipe super;
   gboolean optional;
+  gchar *group;
+  gchar *id;
   struct _LogDriver *drv_next;
 } LogDriver;
 
@@ -41,7 +43,7 @@ void log_drv_set_next_hop(LogDriver *self, LogPipe *next_hop);
 void log_drv_set_fifo_size(LogDriver *self, gint fifo_size);
 
 void log_drv_init_instance(LogDriver *self);
-void log_drv_free_instance(LogDriver *self);
+void log_drv_free(LogPipe *self);
 
 static inline LogDriver *
 log_drv_ref(LogDriver *s)

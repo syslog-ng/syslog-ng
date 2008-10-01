@@ -12,6 +12,8 @@
 # This file was customized by SZALAY Attila <sasa@debian.org>
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
+SYSLOGNG_OPTS=""
+
 test -f /sbin/syslog-ng || exit 0
 #we source /etc/default/syslog-ng if exists
 [ -r /etc/default/syslog-ng ] && . /etc/default/syslog-ng
@@ -27,13 +29,8 @@ case "x$CONSOLE_LOG_LEVEL" in
     ;;
 esac
 
-if [ -n "$KERNEL_RIGNBUF_SIZE" ]
-then
-  echo "KERNEL_RINGBUF_SIZE option is useless and therefore removed."
-fi
-
 # stop syslog-ng before changing its PID file!
-PIDFILE="/var/run/syslog-ng.pid"
+PIDFILE="/var/run/syslog-ng/syslog-ng.pid"
 
 SYSLOGNG="/sbin/syslog-ng"
 NAME="syslog-ng"
@@ -44,10 +41,17 @@ create_xconsole() {
     mknod -m 640 /dev/xconsole p
   fi
 }
+
+create_pidfiledir() {
+  if [ ! -d /var/run/syslog-ng ]
+  then
+    mkdir -p /var/run/syslog-ng
+  fi
+}
                                 
 syslogng_start() {
     echo -n "Starting system logging: $NAME"
-    start-stop-daemon --start --quiet --exec "$SYSLOGNG" --pidfile "$PIDFILE" -- -p "$PIDFILE" \
+    start-stop-daemon --start --quiet --exec "$SYSLOGNG" --pidfile "$PIDFILE" -- $SYSLOGNG_OPTS \
       || { echo " start failed."; return 1; }
     echo "."
     return 0
@@ -76,6 +80,7 @@ syslogng_reload() {
 case "$1" in
   start)
     create_xconsole
+    create_pidfiledir
     syslogng_start || exit 1
     ;;
   stop)
@@ -86,6 +91,7 @@ case "$1" in
     ;;
   restart)
     syslogng_stop
+    sleep 1
     syslogng_start || exit 1
     ;;
   *)

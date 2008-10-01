@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2002-2007 BalaBit IT Ltd.
- * Copyright (C) 2002-2007 Balazs Scheidler
+ * Copyright (c) 2002-2008 BalaBit IT Ltd, Budapest, Hungary
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -13,13 +12,13 @@
  * COPYING for details.
  *
  * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of 
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
 #ifndef SERIALIZE_H_INCLUDED
@@ -38,12 +37,14 @@ struct _SerializeArchive
   gboolean (*write_bytes)(SerializeArchive *archive, const gchar *buf, gsize count, GError **error);
 };
 
-gboolean serialize_write_blob(SerializeArchive *archive, const gchar *blob, gsize len);
-gboolean serialize_read_blob(SerializeArchive *archive, gchar *blob, gsize len);
+gboolean serialize_write_blob(SerializeArchive *archive, const void *blob, gsize len);
+gboolean serialize_read_blob(SerializeArchive *archive, void *blob, gsize len);
 gboolean serialize_write_string(SerializeArchive *archive, GString *str);
 gboolean serialize_read_string(SerializeArchive *archive, GString *str);
 gboolean serialize_write_cstring(SerializeArchive *archive, const gchar *str, gssize len);
 gboolean serialize_read_cstring(SerializeArchive *archive, gchar **str, gsize *strlen);
+gboolean serialize_write_uint64(SerializeArchive *archive, guint64 value);
+gboolean serialize_read_uint64(SerializeArchive *archive, guint64 *value);
 gboolean serialize_write_uint32(SerializeArchive *archive, guint32 value);
 gboolean serialize_read_uint32(SerializeArchive *archive, guint32 *value);
 gboolean serialize_write_uint16(SerializeArchive *archive, guint16 value);

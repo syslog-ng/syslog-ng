@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2007 BalaBit IT Ltd, Budapest, Hungary                    
+ * Copyright (c) 2002-2008 BalaBit IT Ltd, Budapest, Hungary
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -20,66 +20,54 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-
+  
 #include "sgroup.h"
 #include "misc.h"
 #include "messages.h"
 #include "stats.h"
+#include "afinter.h"
 
 #include <time.h>
 
-static const gchar *
-log_source_group_format_stats_name(LogSourceGroup *self)
-{
-  static gchar stats_name[64];
-
-  g_snprintf(stats_name, sizeof(stats_name), "source(%s)", self->name->str);
-  
-  return stats_name;
-
-}
-
 static gboolean
-log_source_group_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
+log_source_group_init(LogPipe *s)
 {
   LogSourceGroup *self = (LogSourceGroup *) s;
   LogDriver *p;
-
-  self->chain_hostnames = cfg->chain_hostnames;
-  self->normalize_hostnames = cfg->normalize_hostnames;
-  self->use_dns = cfg->use_dns;
-  self->use_fqdn = cfg->use_fqdn;
-  self->use_dns_cache = cfg->use_dns_cache;
-  self->keep_hostname = cfg->keep_hostname;
+  GlobalConfig *cfg = log_pipe_get_config(s);
+  gint id = 0;
 
   for (p = self->drivers; p; p = p->drv_next)
     {
-      if (!p->super.init(&p->super, cfg, persist))
+      p->group = g_strdup(self->name);
+      if (!p->id)
+        p->id = g_strdup_printf("%s#%d", self->name, id++);
+      if (!log_pipe_init(&p->super, cfg))
         {
           msg_error("Error initializing source driver",
-                    evt_tag_str("source", self->name->str),
+                    evt_tag_str("source", self->name),
                     NULL);
 	  return FALSE;
 	}
       log_pipe_append(&p->super, s);
     }
-  stats_register_counter(SC_TYPE_PROCESSED, log_source_group_format_stats_name(self), &self->processed_messages, FALSE);
+  stats_register_counter(0, SCS_SOURCE | SCS_GROUP, self->name, NULL, SC_TYPE_PROCESSED, &self->processed_messages);
   return TRUE;
 }
 
 static gboolean
-log_source_group_deinit(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
+log_source_group_deinit(LogPipe *s)
 {
   LogSourceGroup *self = (LogSourceGroup *) s;
   LogDriver *p;
 
-  stats_unregister_counter(SC_TYPE_PROCESSED, log_source_group_format_stats_name(self), &self->processed_messages);
+  stats_unregister_counter(SCS_SOURCE | SCS_GROUP, self->name, NULL, SC_TYPE_PROCESSED, &self->processed_messages);
   for (p = self->drivers; p; p = p->drv_next)
     {
-      if (!p->super.deinit(&p->super, cfg, persist))
+      if (!log_pipe_deinit(&p->super))
         {
           msg_error("Error deinitializing source driver",
-                    evt_tag_str("source", self->name->str),
+                    evt_tag_str("source", self->name),
                     NULL);
 	  return FALSE;
 	}
@@ -88,56 +76,16 @@ log_source_group_deinit(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist
 }
 
 static void
-log_source_group_queue(LogPipe *s, LogMessage *msg, gint path_flags)
+log_source_group_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 {
   LogSourceGroup *self = (LogSourceGroup *) s;
-
-  resolve_hostname(&msg->host_from, msg->saddr, self->use_dns, self->use_fqdn, self->use_dns_cache);
+  GlobalConfig *cfg = log_pipe_get_config(s);
   
-  msg->source_group = g_strdup(self->name->str);
-  
-  if (!self->keep_hostname || !msg->host.len) 
-    {
-      if (self->chain_hostnames) 
-	{
-	  if (msg->flags & LF_LOCAL) 
-	    {
-	      /* local */
-	      g_string_sprintf(&msg->host, "%s@%s", self->name->str, msg->host_from.str);
-	    }
-	  else if (!msg->host.len) 
-	    {
-	      /* remote && no hostname */
-	      g_string_sprintf(&msg->host, "%s/%s", msg->host_from.str, msg->host_from.str);
-	    } 
-	  else 
-	    {
-	      /* everything else, append source hostname */
-	      if (msg->host.len)
-		g_string_sprintfa(&msg->host, "/%s", msg->host_from.str);
-	      else
-		g_string_assign(&msg->host, msg->host_from.str);
-	    }
-	}
-      else 
-	{
-	  g_string_assign(&msg->host, msg->host_from.str);
-	}
+  log_msg_set_source(msg, g_strndup(self->name, self->name_len), self->name_len);
 
-    }
-
-  if (!msg->host.len)
-    {
-      gchar buf[256];
-
-      getshorthostname(buf, sizeof(buf));
-      g_string_assign(&msg->host, buf);
-    }
-  if (self->normalize_hostnames)
-    {
-      g_strdown(msg->host.str);
-    }
-  log_pipe_queue(self->super.pipe_next, msg, path_flags);
+  if (msg->flags & LF_LOCAL)
+    afinter_postpone_mark(cfg->mark_freq);
+  log_pipe_queue(self->super.pipe_next, msg, path_options);
   (*self->processed_messages)++;
 }
 
@@ -147,8 +95,8 @@ log_source_group_free(LogPipe *s)
   LogSourceGroup *self = (LogSourceGroup *) s;
   
   log_drv_unref(self->drivers);
-  g_string_free(self->name, TRUE);
-  g_free(s);
+  g_free(self->name);
+  log_pipe_free(s);
 }
 
 LogSourceGroup *
@@ -157,7 +105,8 @@ log_source_group_new(gchar *name, LogDriver *drivers)
   LogSourceGroup *self = g_new0(LogSourceGroup, 1);
 
   log_pipe_init_instance(&self->super);  
-  self->name = g_string_new(name);
+  self->name = g_strdup(name);
+  self->name_len = strlen(self->name);
   self->drivers = drivers;
   self->super.init = log_source_group_init;
   self->super.deinit = log_source_group_deinit;

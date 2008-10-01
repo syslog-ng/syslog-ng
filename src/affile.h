@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2007 BalaBit IT Ltd, Budapest, Hungary                    
+ * Copyright (c) 2002-2008 BalaBit IT Ltd, Budapest, Hungary
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -20,7 +20,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-
+  
 #ifndef SDFILE_H_INCLUDED
 #define SDFILE_H_INCLUDED
 
@@ -33,17 +33,26 @@
 #define AFFILE_TMPL_ESCAPE 0x00000004
 #define AFFILE_CREATE_DIRS 0x00000008
 #define AFFILE_FSYNC       0x00000010
+#define AFFILE_PRIVILEGED  0x00000020
 
 typedef struct _AFFileSourceDriver
 {
   LogDriver super;
   GString *filename;
+  /* FIXME: the code assumes that reader is a LogReader at a lot of places, so this should be changed to LogReader */
   LogPipe *reader;
   LogReaderOptions reader_options;
   guint32 flags;
+  gint16 pri_level;
+  gint16 pri_facility;
+
+  /* state information to follow a set of files using a wildcard expression */
 } AFFileSourceDriver;
 
 LogDriver *affile_sd_new(gchar *filename, guint32 flags);
+void affile_sd_set_recursion(LogDriver *s, const gint recursion);
+void affile_sd_set_pri_level(LogDriver *s, const gint16 severity);
+void affile_sd_set_pri_facility(LogDriver *s, const gint16 facility);
 
 typedef struct _AFFileDestWriter AFFileDestWriter;
 
@@ -61,8 +70,7 @@ typedef struct _AFFileDestDriver
   mode_t dir_perm;
   LogWriterOptions writer_options;
   GHashTable *writer_hash;
-  GlobalConfig *cfg;
-  
+    
   gint overwrite_if_older;
   gboolean use_time_recvd;
   gint time_reap;

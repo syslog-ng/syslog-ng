@@ -34,6 +34,60 @@ level_range(gchar *from, gchar *to)
   return syslog_make_range(r1, r2);
 }
 
+FilterExprNode *
+create_posix_regexp_filter(gint field, gchar* regexp, gint flags)
+{
+  FilterRE *f;
+  f = (FilterRE*)filter_re_new((gchar *) GINT_TO_POINTER(field));
+  filter_re_set_matcher(f, log_matcher_posix_re_new());
+  filter_re_set_flags(f, flags);
+  if (filter_re_set_regexp(f, regexp))
+    return &f->super;
+  else 
+    return NULL;
+}
+
+FilterExprNode *
+create_posix_regexp_match(gchar* regexp, gint flags)
+{
+  FilterRE *f;
+  f = (FilterRE*)filter_match_new();
+  filter_re_set_matcher(f, log_matcher_posix_re_new());
+  filter_re_set_flags(f, flags);
+  if (filter_re_set_regexp(f, regexp))
+    return &f->super;
+  else 
+    return NULL;
+}
+
+#if ENABLE_PCRE
+FilterExprNode *
+create_pcre_regexp_filter(gint field, gchar* regexp, gint flags)
+{
+  FilterRE *f;
+  f = (FilterRE*)filter_re_new((gchar *) GINT_TO_POINTER(field));
+  filter_re_set_matcher(f, log_matcher_pcre_re_new());
+  filter_re_set_flags(f, flags);
+  if (filter_re_set_regexp(f, regexp))
+    return &f->super;
+  else 
+    return NULL;
+}
+
+FilterExprNode *
+create_pcre_regexp_match(gchar* regexp, gint flags)
+{
+  FilterRE *f;
+  f = (FilterRE*)filter_match_new();
+  filter_re_set_matcher(f, log_matcher_pcre_re_new());
+  filter_re_set_flags(f, flags);
+  if (filter_re_set_regexp(f, regexp))
+    return &f->super;
+  else 
+    return NULL;
+}
+#endif
+
 void
 testcase(gchar *msg, 
          gint parse_flags,
@@ -45,7 +99,7 @@ testcase(gchar *msg,
   static gint testno = 0;
   
   testno++;
-  logmsg = log_msg_new(msg, strlen(msg), NULL, parse_flags, NULL);
+  logmsg = log_msg_new(msg, strlen(msg), NULL, parse_flags, NULL, -1);
   logmsg->saddr = g_sockaddr_ref(sender_saddr);
   
   res = filter_expr_eval(f, logmsg);
@@ -66,6 +120,66 @@ testcase(gchar *msg,
   log_msg_unref(logmsg);
   filter_expr_free(f);
 }
+
+void
+testcase_with_backref_chk(gchar *msg, 
+         gint parse_flags,
+         FilterExprNode *f,
+         gboolean expected_result, 
+         const gchar *name,
+         const gchar *value
+         )
+{
+  LogMessage *logmsg;
+  gchar *value_msg;
+  gboolean res;
+  static gint testno = 0;
+  gssize length;
+  
+  testno++;
+  logmsg = log_msg_new(msg, strlen(msg), NULL, parse_flags, NULL, -1);
+  logmsg->saddr = g_sockaddr_inet_new("10.10.0.1", 5000);
+  
+  /* NOTE: we test how our filters cope with non-zero terminated values. We don't change message_len, only the value */
+  LOG_MESSAGE_WRITABLE_FIELD(logmsg->message) = g_realloc(logmsg->message, logmsg->message_len + 10);
+  memset(logmsg->message + logmsg->message_len, 'A', 10);
+  
+  res = filter_expr_eval(f, logmsg);
+  if (res != expected_result)
+    {
+      fprintf(stderr, "Filter test failed; num='%d', msg='%s'\n", testno, msg);
+      exit(1);
+    }
+    
+  f->comp = 1;
+  res = filter_expr_eval(f, logmsg);
+  if (res != !expected_result)
+    {
+      fprintf(stderr, "Filter test failed (negated); num='%d', msg='%s'\n", testno, msg);
+      exit(1);
+    }
+  value_msg = log_msg_get_value(logmsg, name, &length);
+
+  if(value == NULL || value[0] == 0) 
+     {  
+       if (value_msg != NULL && value_msg[0] != 0)
+         {
+           fprintf(stderr, "Filter test failed (NULL value chk); num='%d', msg='%s', expected_value='%s', value_in_msg='%s'", testno, msg, value, value_msg);
+           exit(1);
+         }
+      }
+  else 
+    { 
+      if (strncmp(value_msg, value, length) != 0)
+        {
+          fprintf(stderr, "Filter test failed (value chk); num='%d', msg='%s', expected_value='%s', value_in_msg='%s'", testno, msg, value, value_msg);
+          exit(1);
+        }
+    }
+  log_msg_unref(logmsg);
+  filter_expr_free(f);
+}
+
 
 #define TEST_ASSERT(cond)                                       \
   if (!(cond))                                                  \
@@ -96,8 +210,8 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase("<32> openvpn[2499]: PTHREAD support initialized", 0, filter_facility_new(facility_bits("local1")), 0);
   testcase("<32> openvpn[2499]: PTHREAD support initialized", 0, filter_facility_new(facility_bits("auth")), 1);
   testcase("<32> openvpn[2499]: PTHREAD support initialized", 0, filter_facility_new(0x80000000 | (LOG_AUTH >> 3)), 1);
-  testcase("<80> openvpn[2499]: PTHREAD support initialized", 0, filter_facility_new(facility_bits("authpriv")), 1);
 #ifdef LOG_AUTHPRIV
+  testcase("<80> openvpn[2499]: PTHREAD support initialized", 0, filter_facility_new(facility_bits("authpriv")), 1);
   testcase("<80> openvpn[2499]: PTHREAD support initialized", 0, filter_facility_new(0x80000000 | (LOG_AUTHPRIV >> 3)), 1);
 #endif
 
@@ -134,25 +248,34 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
       testcase("<7> openvpn[2499]: PTHREAD support initialized", 0, filter_level_new(level_bits("debug")), 1);
     }
     
-  testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, filter_prog_new("^openvpn$"), 1);
-  testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, filter_prog_new("^open$"), 0);
+  testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, create_posix_regexp_filter(LM_F_PROGRAM, "^openvpn$", 0), 1);
+  testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, create_posix_regexp_filter(LM_F_PROGRAM, "^open$", 0), 0);
   fprintf(stderr, "One \"invalid regular expression\" message is to be expected\n");
-  TEST_ASSERT(filter_prog_new("((") == NULL);
-
-  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, filter_host_new("^host$"), 1);
-  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, filter_host_new("^hos$"), 0);
-  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, filter_host_new("pthread"), 0);
+  TEST_ASSERT(create_posix_regexp_filter(LM_F_PROGRAM, "((", 0) == NULL);
+  
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, create_posix_regexp_filter(LM_F_HOST, "^host$", 0), 1);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, create_posix_regexp_filter(LM_F_HOST, "^hos$", 0), 0);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, create_posix_regexp_filter(LM_F_HOST, "pthread", 0), 0);
   fprintf(stderr, "One \"invalid regular expressions\" message is to be expected\n");
-  TEST_ASSERT(filter_host_new("((") == NULL);
+  TEST_ASSERT(create_posix_regexp_filter(LM_F_HOST, "((", 0) == NULL);
+  
 
-  fprintf(stderr, "One \"invalid regular expressions\" message is to be expected\n");
-  TEST_ASSERT(filter_host_new("(?iana") == NULL);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, create_posix_regexp_filter(LM_F_MESSAGE, "^PTHREAD ", 0), 1);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, create_posix_regexp_filter(LM_F_MESSAGE, "PTHREAD s", 0), 1);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, create_posix_regexp_filter(LM_F_MESSAGE, "^PTHREAD$", 0), 0);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, create_posix_regexp_filter(LM_F_MESSAGE, "(?i)pthread", 0), 1);
+  
 
-  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, filter_match_new(" PTHREAD "), 1);
-  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, filter_match_new("^PTHREAD$"), 0);
-  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, filter_match_new("(?i)pthread"), 1);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, create_posix_regexp_match(" PTHREAD ", 0), 1);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, create_posix_regexp_match("^openvpn\\[2499\\]: PTHREAD", 0), 1);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, create_posix_regexp_match("^PTHREAD$", 0), 0);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, create_posix_regexp_match("(?i)pthread", 0), 1);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, create_posix_regexp_match("pthread", LMF_ICASE), 1);
+  
+
   fprintf(stderr, "One \"invalid regular expression\" message is to be expected\n");
-  TEST_ASSERT(filter_match_new("((") == NULL);
+  TEST_ASSERT(create_posix_regexp_match("((", 0) == NULL);
+  
 
   sender_saddr = g_sockaddr_inet_new("10.10.0.1", 5000);
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, filter_netmask_new("10.10.0.0/16"), 1);
@@ -164,18 +287,77 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, filter_netmask_new("127.0.0.1/32"), 1);
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, filter_netmask_new("127.0.0.2/32"), 0);
 
-  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, fop_or_new(filter_match_new(" PTHREAD "), filter_match_new("PTHREAD")), 1);
-  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, fop_or_new(filter_match_new(" PTHREAD "), filter_match_new("^PTHREAD$")), 1);
-  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, fop_or_new(filter_match_new("^PTHREAD$"), filter_match_new(" PTHREAD ")), 1);
-  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, fop_or_new(filter_match_new(" PAD "), filter_match_new("^PTHREAD$")), 0);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, fop_or_new(create_posix_regexp_match(" PTHREAD ", 0), create_posix_regexp_match("PTHREAD", 0)), 1);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, fop_or_new(create_posix_regexp_match(" PTHREAD ", 0), create_posix_regexp_match("^PTHREAD$", 0)), 1);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, fop_or_new(create_posix_regexp_match("^PTHREAD$", 0), create_posix_regexp_match(" PTHREAD ", 0)), 1);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, fop_or_new(create_posix_regexp_match(" PAD ", 0), create_posix_regexp_match("^PTHREAD$", 0)), 0);
+  
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, fop_and_new(create_posix_regexp_match(" PTHREAD ", 0), create_posix_regexp_match("PTHREAD", 0)), 1);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, fop_and_new(create_posix_regexp_match(" PTHREAD ", 0), create_posix_regexp_match("^PTHREAD$", 0)), 0);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, fop_and_new(create_posix_regexp_match("^PTHREAD$", 0), create_posix_regexp_match(" PTHREAD ", 0)), 0);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, fop_and_new(create_posix_regexp_match(" PAD ", 0), create_posix_regexp_match("^PTHREAD$", 0)), 0);
+  
 
-  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, fop_and_new(filter_match_new(" PTHREAD "), filter_match_new("PTHREAD")), 1);
-  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, fop_and_new(filter_match_new(" PTHREAD "), filter_match_new("^PTHREAD$")), 0);
-  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, fop_and_new(filter_match_new("^PTHREAD$"), filter_match_new(" PTHREAD ")), 0);
-  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, fop_and_new(filter_match_new(" PAD "), filter_match_new("^PTHREAD$")), 0);
+
+  testcase_with_backref_chk("<15>Oct 15 16:17:01 host openvpn[2499]: al fa", 0, create_posix_regexp_filter(LM_F_MESSAGE, "(a)(l) (fa)", LMF_STORE_MATCHES), 1, "1","a");
+  
+  testcase_with_backref_chk("<15>Oct 15 16:17:01 host openvpn[2499]: al fa", 0, create_posix_regexp_filter(LM_F_MESSAGE, "(a)(l) (fa)", LMF_STORE_MATCHES), 1, "0","al fa");
+  
+  testcase_with_backref_chk("<15>Oct 15 16:17:01 host openvpn[2499]: al fa", 0, create_posix_regexp_filter(LM_F_MESSAGE, "(a)(l) (fa)", LMF_STORE_MATCHES), 1, "232", NULL);
+  
+
+#if ENABLE_PCRE
+  testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, create_pcre_regexp_filter(LM_F_PROGRAM, "^openvpn$", 0), 1);
+  testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, create_pcre_regexp_filter(LM_F_PROGRAM, "^open$", 0), 0);
+  fprintf(stderr, "One \"invalid regular expression\" message is to be expected\n");
+  TEST_ASSERT(create_pcre_regexp_filter(LM_F_PROGRAM, "((", 0) == NULL);
+
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, create_pcre_regexp_filter(LM_F_HOST, "^host$", 0), 1);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, create_pcre_regexp_filter(LM_F_HOST, "^hos$", 0), 0);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, create_pcre_regexp_filter(LM_F_HOST, "pthread", 0), 0);
+  fprintf(stderr, "One \"invalid regular expressions\" message is to be expected\n");
+  TEST_ASSERT(create_pcre_regexp_filter(LM_F_HOST, "((", 0) == NULL);
+
+  fprintf(stderr, "One \"invalid regular expressions\" message is to be expected\n");
+  TEST_ASSERT(create_posix_regexp_filter(LM_F_HOST, "(?iana", 0) == NULL);
+  
+  fprintf(stderr, "One \"invalid regular expressions\" message is to be expected\n");
+  TEST_ASSERT(create_pcre_regexp_filter(LM_F_HOST, "(?iana", 0) == NULL);
+
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, create_pcre_regexp_filter(LM_F_MESSAGE, "^PTHREAD ", 0), 1);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, create_pcre_regexp_filter(LM_F_MESSAGE, "PTHREAD s", 0), 1);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, create_pcre_regexp_filter(LM_F_MESSAGE, "^PTHREAD$", 0), 0);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, create_pcre_regexp_filter(LM_F_MESSAGE, "(?i)pthread", 0), 1);
+
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, fop_and_new(create_pcre_regexp_match(" PTHREAD ", 0), create_posix_regexp_match("PTHREAD", 0)), 1);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, fop_and_new(create_pcre_regexp_match(" PTHREAD ", 0), create_posix_regexp_match("^PTHREAD$", 0)), 0);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, fop_and_new(create_pcre_regexp_match("^PTHREAD$", 0), create_posix_regexp_match(" PTHREAD ", 0)), 0);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, fop_and_new(create_pcre_regexp_match(" PAD ", 0), create_posix_regexp_match("^PTHREAD$", 0)), 0);
+
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, fop_or_new(create_pcre_regexp_match(" PTHREAD ", 0), create_pcre_regexp_match("PTHREAD", 0)), 1);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, fop_or_new(create_pcre_regexp_match(" PTHREAD ", 0), create_pcre_regexp_match("^PTHREAD$", 0)), 1);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, fop_or_new(create_pcre_regexp_match("^PTHREAD$", 0), create_pcre_regexp_match(" PTHREAD ", 0)), 1);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, fop_or_new(create_pcre_regexp_match(" PAD ", 0), create_pcre_regexp_match("^PTHREAD$", 0)), 0);
+
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, create_pcre_regexp_match(" PTHREAD ", 0), 1);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, create_pcre_regexp_match("^openvpn\\[2499\\]: PTHREAD", 0), 1);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, create_pcre_regexp_match("^PTHREAD$", 0), 0);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, create_pcre_regexp_match("(?i)pthread", 0), 1);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", 0, create_pcre_regexp_match("pthread", LMF_ICASE), 1);
+
+  fprintf(stderr, "One \"invalid regular expression\" message is to be expected\n");
+  TEST_ASSERT(create_pcre_regexp_match("((", 0) == NULL);
+
+  testcase_with_backref_chk("<15>Oct 15 16:17:01 host openvpn[2499]: alma fa", 0, create_pcre_regexp_filter(LM_F_MESSAGE, "(?P<a>a)(?P<l>l)(?P<MM>m)(?P<aa>a) (?P<fa>fa)", LMF_STORE_MATCHES), 1, "MM","m");
+  testcase_with_backref_chk("<15>Oct 15 16:17:01 host openvpn[2499]: alma fa", 0, create_pcre_regexp_filter(LM_F_MESSAGE, "(?P<a>a)(?P<l>l)(?P<MM>m)(?P<aa>a) (?P<fa>fa)", LMF_STORE_MATCHES), 1, "aaaa", NULL);
+  testcase_with_backref_chk("<15>Oct 15 16:17:01 host openvpn[2499]: alma fa", 0, create_pcre_regexp_filter(LM_F_MESSAGE, "(?P<a>a)(?P<l>l)(?P<MM>m)(?P<aa>a) (?P<fa_name>fa)", LMF_STORE_MATCHES), 1, "fa_name","fa");
+
+  testcase_with_backref_chk("<15>Oct 15 16:17:01 host openvpn[2499]: al fa", 0, create_pcre_regexp_filter(LM_F_MESSAGE, "(a)(l) (fa)", LMF_STORE_MATCHES), 1, "2","l");
+  testcase_with_backref_chk("<15>Oct 15 16:17:01 host openvpn[2499]: al fa", 0, create_pcre_regexp_filter(LM_F_MESSAGE, "(a)(l) (fa)", LMF_STORE_MATCHES), 1, "0","al fa");
+  testcase_with_backref_chk("<15>Oct 15 16:17:01 host openvpn[2499]: al fa", 0, create_pcre_regexp_filter(LM_F_MESSAGE, "(a)(l) (fa)", LMF_STORE_MATCHES), 1, "233",NULL);
+#endif
 
   app_shutdown();
   return 0;
 }
-
 

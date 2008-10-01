@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2007 BalaBit IT Ltd, Budapest, Hungary                    
+ * Copyright (c) 2002-2008 BalaBit IT Ltd, Budapest, Hungary
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -20,7 +20,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-
+  
 #include "cfg.h"
 #include "sgroup.h"
 #include "dgroup.h"
@@ -31,39 +31,11 @@
 #include "misc.h"
 #include "logmsg.h"
 #include "dnscache.h"
+#include "logparser.h"
 #include "serialize.h"
 
 #include <stdio.h>
-#include <ctype.h>
 #include <string.h>
-
-GlobalConfig *configuration;
-
-gboolean
-cfg_timezone_value(gchar *tz, glong *timezone)
-{
-  *timezone = -1;
-  if ((*tz == '+' || *tz == '-') && strlen(tz) == 6 && 
-      isdigit((int) *(tz+1)) && isdigit((int) *(tz+2)) && (*(tz+3) == ':') && isdigit((int) *(tz+4)) && isdigit((int) *(tz+5)))
-    {
-      /* timezone offset */
-      gint sign = *tz == '-' ? -1 : 1;
-      gint hours, mins;
-      tz++;
-      
-      hours = (*tz - '0') * 10 + *(tz+1) - '0';
-      mins = (*(tz+3) - '0') * 10 + *(tz+4) - '0';
-      if ((hours < 24 && mins <= 60) || (hours == 24 && mins == 0))
-        {
-          *timezone = sign * (hours * 3600 + mins * 60);
-          return TRUE;
-        }
-    }
-  msg_error("Bogus timezone spec, must be in the format [+-]HH:MM, offset must be less than 24:00",
-            evt_tag_str("value", tz),
-            NULL);
-  return FALSE;
-}
 
 gint
 cfg_ts_format_value(gchar *format)
@@ -144,19 +116,31 @@ cfg_bad_hostname_set(GlobalConfig *self, gchar *bad_hostname_re)
 void
 cfg_add_source(GlobalConfig *cfg, LogSourceGroup *group)
 {
-  g_hash_table_insert(cfg->sources, group->name->str, group);
+  g_hash_table_insert(cfg->sources, group->name, group);
 }
 
 void
 cfg_add_dest(GlobalConfig *cfg, LogDestGroup *group)
 {
-  g_hash_table_insert(cfg->destinations, group->name->str, group);
+  g_hash_table_insert(cfg->destinations, group->name, group);
 }
 
 void
-cfg_add_filter(GlobalConfig *cfg, LogFilterRule *rule)
+cfg_add_filter(GlobalConfig *cfg, LogProcessRule *rule)
 {
-  g_hash_table_insert(cfg->filters, rule->name->str, rule);
+  g_hash_table_insert(cfg->filters, rule->name, rule);
+}
+
+void
+cfg_add_parser(GlobalConfig *cfg, LogProcessRule *rule)
+{
+  g_hash_table_insert(cfg->parsers, rule->name, rule);
+}
+
+void
+cfg_add_rewrite(GlobalConfig *cfg, LogProcessRule *rule)
+{
+  g_hash_table_insert(cfg->rewriters, rule->name, rule);
 }
 
 void
@@ -168,11 +152,11 @@ cfg_add_connection(GlobalConfig *cfg, LogConnection *conn)
 void
 cfg_add_template(GlobalConfig *cfg, LogTemplate *template)
 {
-  g_hash_table_insert(cfg->templates, template->name->str, template);
+  g_hash_table_insert(cfg->templates, template->name, template);
 }
 
 LogTemplate *
-cfg_lookup_template(GlobalConfig *cfg, gchar *name)
+cfg_lookup_template(GlobalConfig *cfg, const gchar *name)
 {
   if (name)
     return log_template_ref(g_hash_table_lookup(cfg->templates, name));
@@ -180,7 +164,7 @@ cfg_lookup_template(GlobalConfig *cfg, gchar *name)
 }
 
 gboolean
-cfg_init(GlobalConfig *cfg, PersistentConfig *persist)
+cfg_init(GlobalConfig *cfg)
 {
   gint regerr;
   
@@ -210,23 +194,82 @@ cfg_init(GlobalConfig *cfg, PersistentConfig *persist)
         }
     }
   dns_cache_set_params(cfg->dns_cache_size, cfg->dns_cache_expire, cfg->dns_cache_expire_failed, cfg->dns_cache_hosts);
-  return cfg->center->super.init(&cfg->center->super, cfg, persist);
+  return log_center_init(cfg->center, cfg);
 }
 
 gboolean
-cfg_deinit(GlobalConfig *cfg, PersistentConfig *persist)
+cfg_deinit(GlobalConfig *cfg)
 {
-  return cfg->center->super.deinit(&cfg->center->super, cfg, persist);
+  return log_center_deinit(cfg->center);
 }
 
 /* extern declarations in the generated parser & lexer */
 extern FILE *yyin;
 extern int yyparse();
-extern void lex_init(FILE *);
+extern void lex_init(FILE *, gint lineno);
 extern int yydebug;
 extern int linenum;
 
 extern void yyparser_reset(void);
+
+gboolean
+cfg_read_pragmas(GlobalConfig *self, FILE *cfg, gint *lineno)
+{
+  gint start_ofs = 0;
+
+  self->version = 0;
+  while (!feof(cfg))
+    {
+      gchar *pragma, *value, *colon, *eol;
+      gchar line[1024];
+
+      if (fgets(line, sizeof(line), cfg) == NULL || line[0] != '@')
+        {
+          fseek(cfg, start_ofs, SEEK_SET);
+          return TRUE;
+        }
+      (*lineno)++;
+      
+      start_ofs += strlen(line);
+      colon = strchr(line, ':');
+      eol = strchr(line, '\n');
+
+      if (!colon)
+        {
+          msg_error("Improperly formatted configuration pragma, colon expected",
+                      evt_tag_str("line", line),
+                      NULL);
+          return FALSE;
+        }
+
+      pragma = line + 1;
+      *colon = 0;
+      
+      value = colon + 1;
+      while (*value == ' ')
+        value++;
+
+      while (eol && eol > value && (*eol == '\n' || *eol == '\r' || *eol == ' '))
+        *eol = 0;
+        
+      if (strcmp(pragma, "version") == 0)
+        {
+          /* version number of the configuration file */
+          if (strcmp(value, "3.0") == 0)
+            self->version = 0x0300;
+          else if (strncmp(value, "2.", 2) == 0)
+            self->version = 0x0201;
+        }
+      else
+        {
+          msg_warning("Unknown configuration file pragma",
+                      evt_tag_str("pragma", pragma),
+                      NULL);
+        }
+    }
+  /* file with only pragmas? */
+  return TRUE;
+}
 
 GlobalConfig *
 cfg_new(gchar *fname)
@@ -236,10 +279,12 @@ cfg_new(gchar *fname)
   gint res;
 
   self->filename = fname;
-
+  
   self->sources = g_hash_table_new(g_str_hash, g_str_equal);
   self->destinations = g_hash_table_new(g_str_hash, g_str_equal);
   self->filters = g_hash_table_new(g_str_hash, g_str_equal);
+  self->parsers = g_hash_table_new(g_str_hash, g_str_equal);
+  self->rewriters = g_hash_table_new(g_str_hash, g_str_equal);
   self->templates = g_hash_table_new(g_str_hash, g_str_equal);
   self->connections = g_ptr_array_new();
 
@@ -247,7 +292,7 @@ cfg_new(gchar *fname)
   self->flush_timeout = 10000;  /* 10 seconds */
   self->mark_freq = 1200;	/* 20 minutes */
   self->stats_freq = 600;
-  self->chain_hostnames = 1;
+  self->chain_hostnames = 0;
   self->use_fqdn = 0;
   self->use_dns = 1;
   self->time_reopen = 60;
@@ -273,15 +318,47 @@ cfg_new(gchar *fname)
   
   self->ts_format = TS_FMT_BSD;
   self->frac_digits = 0;
-  self->recv_zone_offset = -1;
-  self->send_zone_offset = -1;
+  self->recv_time_zone_string = NULL;
+  self->send_time_zone_string = NULL;
   self->keep_timestamp = TRUE;
-
+  
+  self->persist = persist_config_new();
+ 
   configuration = self;
-
+ 
   if ((cfg = fopen(fname, "r")) != NULL)
     {
-      lex_init(cfg);
+      gint lineno = 1;
+      
+      if (!cfg_read_pragmas(self, cfg, &lineno))
+        {
+          cfg_free(self);
+          configuration = NULL;
+          return NULL;
+        }
+
+      /* the current default is 2.1 format as syslog-ng 2.1 didn't have
+       * version number in its configuration file */
+      if (self->version == 0)
+        {
+          self->version = 0x0201;
+          msg_warning("Configuration file has no version number, assuming syslog-ng 2.1 format. Please add @version: maj.min to the beginning of the file",
+                      NULL);
+        }
+      else if (self->version < 0x0300)
+        {
+          msg_warning("Configuration file format is not current, please update it to use the 3.0 format as some constructs might operate inefficiently",
+                      NULL);
+        }
+        
+      if (self->version < 0x0300)
+        {
+          msg_warning("WARNING: global: the default value of chain_hostnames is changing to 'no' in version 3.0, please update your configuration accordingly",
+                      NULL);
+          self->chain_hostnames = TRUE;
+        }
+
+      lex_init(cfg, lineno);
       res = yyparse();
       fclose(cfg);
       if (!res)
@@ -298,7 +375,7 @@ cfg_new(gchar *fname)
                 evt_tag_errno(EVT_TAG_OSERROR, errno),
                 NULL);
     }
-
+  
   cfg_free(self);
   configuration = NULL;
   return NULL;
@@ -314,11 +391,11 @@ cfg_remove_pipe(gpointer key, gpointer value, gpointer user_data)
 }
 
 static gboolean
-cfg_remove_filter(gpointer key, gpointer value, gpointer user_data)
+cfg_remove_process(gpointer key, gpointer value, gpointer user_data)
 {
-  LogFilterRule *s = (LogFilterRule *) value;
+  LogProcessRule *s = (LogProcessRule *) value;
   
-  log_filter_unref(s);
+  log_process_rule_unref(s);
   return TRUE;
 }
 
@@ -333,28 +410,33 @@ void
 cfg_free(GlobalConfig *self)
 {
   int i;
-  
+  if (self->persist != NULL)
+    persist_config_free(self->persist);
+
   g_free(self->file_template_name);
   g_free(self->proto_template_name);  
   log_template_unref(self->file_template);
   log_template_unref(self->proto_template);
   
-  log_center_unref(self->center);
+  if (self->center)
+    log_center_free(self->center);
   
   g_hash_table_foreach_remove(self->sources, cfg_remove_pipe, NULL);
   g_hash_table_foreach_remove(self->destinations, cfg_remove_pipe, NULL);
-  g_hash_table_foreach_remove(self->filters, cfg_remove_filter, NULL);
+  g_hash_table_foreach_remove(self->filters, cfg_remove_process, NULL);
+  g_hash_table_foreach_remove(self->parsers, cfg_remove_process, NULL);
+  g_hash_table_foreach_remove(self->rewriters, cfg_remove_process, NULL);
   g_hash_table_foreach_remove(self->templates, cfg_remove_template, NULL);
   
   for (i = 0; i < self->connections->len; i++)
     {
       log_connection_free(g_ptr_array_index(self->connections, i));
-      g_ptr_array_remove_fast(self->connections, 0);
     }
-    
   g_hash_table_destroy(self->sources);
   g_hash_table_destroy(self->destinations);
   g_hash_table_destroy(self->filters);
+  g_hash_table_destroy(self->parsers);
+  g_hash_table_destroy(self->rewriters);
   g_hash_table_destroy(self->templates);
   g_ptr_array_free(self->connections, TRUE);
   if (self->bad_hostname_compiled)
@@ -364,13 +446,19 @@ cfg_free(GlobalConfig *self)
   g_free(self);
 }
 
+static void 
+cfg_persist_config_move(GlobalConfig *src, GlobalConfig *dest)
+{
+  if (dest->persist != NULL)
+    persist_config_free(dest->persist);
+  dest->persist = src->persist;
+  src->persist = NULL;
+}
+
 GlobalConfig *
 cfg_reload_config(gchar *fname, GlobalConfig *cfg)
 {
-  PersistentConfig *persist;
   GlobalConfig *new_cfg;
-  
-
   new_cfg = cfg_new(fname);
   if (!new_cfg)
     {
@@ -379,22 +467,21 @@ cfg_reload_config(gchar *fname, GlobalConfig *cfg)
                 NULL);
       return cfg;
     }
+  
+  cfg_deinit(cfg);
+  cfg_persist_config_move(cfg, new_cfg);
 
-  persist = persist_config_new();
-  cfg_deinit(cfg, persist);
-
-  if (cfg_init(new_cfg, persist))
+  if (cfg_init(new_cfg))
     {
       msg_verbose("New configuration initialized", NULL);
       cfg_free(cfg);
-      persist_config_free(persist);
       return new_cfg;
     }
   else
     {
       msg_error("Error initializing new configuration, reverting to old config", NULL);
-      cfg_init(cfg, persist);
-      persist_config_free(persist);
+      cfg_persist_config_move(new_cfg, cfg);
+      cfg_init(cfg);
       return cfg;
     }
 }
@@ -403,69 +490,83 @@ cfg_reload_config(gchar *fname, GlobalConfig *cfg)
 
 struct _PersistentConfig
 {
+  gint version;
   GHashTable *keys;
 };
 
 typedef struct _PersistentConfigEntry
 {
   gpointer value;
+  gssize value_len;
   GDestroyNotify destroy;
+  gint version;
   /* this value is a string and should be saved */
   gboolean survive_across_restarts:1;
 } PersistentConfigEntry;
 
 static void
-persist_config_entry_free(PersistentConfigEntry *self)
+cfg_persist_config_entry_free(PersistentConfigEntry *self)
 {
   if (self->destroy)
+  {
     self->destroy(self->value);
+    self->value_len = 0;
+  }
   g_free(self);
 }
 
 static PersistentConfigEntry *
-persist_config_add_entry(PersistentConfig *self, gchar *name, gpointer value, GDestroyNotify destroy)
-{
+cfg_persist_config_add_entry(GlobalConfig *cfg, gchar *name, gpointer value, gssize value_len, GDestroyNotify destroy, gint version, gboolean force)
+{ 
   PersistentConfigEntry *p;
   
-  if (self && value)
+  if (cfg->persist && value)
     {
-      if (g_hash_table_lookup(self->keys, name))
+      if (g_hash_table_lookup(cfg->persist->keys, name))
         {
-          msg_error("Internal error, duplicate configuration elements refer to the same persistent config", 
-                    evt_tag_str("name", name),
-                    NULL);
-          destroy(value);
-          return NULL;
+          if (!force)
+            {
+              msg_error("Internal error, duplicate configuration elements refer to the same persistent config", 
+                        evt_tag_str("name", name),
+                        NULL);
+              destroy(value);
+              return NULL;
+            }
         }
   
       p = g_new0(PersistentConfigEntry, 1);
   
       p->value = value;
       p->destroy = destroy;
-  
-      g_hash_table_insert(self->keys, g_strdup(name), p);
+      p->value_len = value_len;
+      p->version = version < 0 ? cfg->persist->version : version;
+      g_hash_table_insert(cfg->persist->keys, g_strdup(name), p);
       return p;
     }
   return NULL;
 }
 
 void
-persist_config_add(PersistentConfig *self, gchar *name, gpointer value, GDestroyNotify destroy)
-{
-  persist_config_add_entry(self, name, value, destroy);
+cfg_persist_config_add(GlobalConfig *cfg, gchar *name, gpointer value, gssize value_len, GDestroyNotify destroy, gboolean force)
+{ 
+  cfg_persist_config_add_entry(cfg, name, value, value_len, destroy, -1, force);
 }
 
 /**
- * persist_config_add_survivor:
+ * cfg_persist_config_add_survivor:
  *
  * Add a "surviving" value, a value that is remembered accross restarts.
  **/
 void
-persist_config_add_survivor(PersistentConfig *self, gchar *name, gchar *value)
+cfg_persist_config_add_survivor(GlobalConfig *cfg, gchar *name, gchar *value, gssize value_len, gboolean force)
 {
   PersistentConfigEntry *p;
   
-  p = persist_config_add_entry(self, name, g_strdup(value), g_free);
+  if (value_len < 0)
+    p = cfg_persist_config_add_entry(cfg, name, g_strdup(value), -1, g_free, -1, force);
+  else
+    p = cfg_persist_config_add_entry(cfg, name, g_memdup(value, value_len), value_len, g_free, -1, force);
+
   if (p)
     {
       p->survive_across_restarts = TRUE;
@@ -473,19 +574,26 @@ persist_config_add_survivor(PersistentConfig *self, gchar *name, gchar *value)
 }
 
 gpointer
-persist_config_fetch(PersistentConfig *self, gchar *name)
+cfg_persist_config_fetch(GlobalConfig *cfg, gchar *name, gsize *result_len, gint *version)
 {
   gpointer res = NULL;
   gchar *orig_key;
   PersistentConfigEntry *p;
   gpointer tmp1, tmp2;
-  
-  if (self && g_hash_table_lookup_extended(self->keys, name, &tmp1, &tmp2))
+
+  if (cfg->persist && g_hash_table_lookup_extended(cfg->persist->keys, name, &tmp1, &tmp2))
     {
       orig_key = (gchar *) tmp1;
       p = (PersistentConfigEntry *) tmp2;
+
       res = p->value;
-      g_hash_table_steal(self->keys, name);
+
+      if (result_len)
+        *result_len = p->value_len;
+      if (version)
+        *version = p->version;
+
+      g_hash_table_steal(cfg->persist->keys, name);
       g_free(orig_key);
       g_free(p);
     }
@@ -493,7 +601,7 @@ persist_config_fetch(PersistentConfig *self, gchar *name)
 }
 
 static void
-persist_config_save_value(gchar *key, PersistentConfigEntry *entry, SerializeArchive *sa)
+cfg_persist_config_save_value(gchar *key, PersistentConfigEntry *entry, SerializeArchive *sa)
 {
   if (entry->survive_across_restarts)
     {
@@ -501,12 +609,12 @@ persist_config_save_value(gchar *key, PersistentConfigEntry *entry, SerializeArc
        * g_hash_table_foreach() loop anyway. */
       
       serialize_write_cstring(sa, key, -1);
-      serialize_write_cstring(sa, (gchar *) entry->value, -1);
+      serialize_write_cstring(sa, (gchar *) entry->value, entry->value_len);
     }
 }
 
 void
-persist_config_save(PersistentConfig *self, const gchar *filename)
+cfg_persist_config_save(GlobalConfig *cfg, const gchar *filename)
 {
   FILE *persist_file;
   
@@ -517,9 +625,9 @@ persist_config_save(PersistentConfig *self, const gchar *filename)
       
       sa = serialize_file_archive_new(persist_file);
       
-      serialize_write_blob(sa, "SLP2", 4);
-      g_hash_table_foreach(self->keys, (GHFunc) persist_config_save_value, sa);
-      serialize_write_cstring(sa, "", 0); /* EOF */
+      serialize_write_blob(sa, "SLP3", 4);
+      g_hash_table_foreach(cfg->persist->keys, (GHFunc) cfg_persist_config_save_value, sa);
+      serialize_write_cstring(sa, "", 0);
       if (sa->error)
         goto error;
         
@@ -535,7 +643,7 @@ persist_config_save(PersistentConfig *self, const gchar *filename)
 }
 
 void
-persist_config_load(PersistentConfig *self, const gchar *filename)
+cfg_persist_config_load(GlobalConfig *cfg, const gchar *filename)
 {
   FILE *persist_file;
   
@@ -545,23 +653,27 @@ persist_config_load(PersistentConfig *self, const gchar *filename)
       gchar magic[4];
       gchar *key, *value;
       SerializeArchive *sa;
+      gint version;
       
       sa = serialize_file_archive_new(persist_file);
       serialize_read_blob(sa, magic, 4);
-      if (memcmp(magic, "SLP2", 4) != 0)
+      if (memcmp(magic, "SLP2", 4) != 0 && memcmp(magic, "SLP3", 4) != 0)
         {
           msg_error("Persistent configuration file is in invalid format, ignoring", NULL);
           goto close_and_exit;
         }
+      version = magic[3] - '0';
+
       while (serialize_read_cstring(sa, &key, NULL))
         {
-          if (key[0] && serialize_read_cstring(sa, &value, NULL))
+          gsize len;
+          if (key[0] && serialize_read_cstring(sa, &value, &len))
             {
               /* add a non-surviving entry, thus each value is only
                * written/read once unless the code readds it, this is needed
                * to limit the size of the persistent configuration file */
               
-              persist_config_add(self, key, value, g_free);
+              cfg_persist_config_add_entry(cfg, key, value, len, g_free, version, FALSE);
             }
           else
             {
@@ -580,8 +692,8 @@ PersistentConfig *
 persist_config_new(void)
 {
   PersistentConfig *self = g_new0(PersistentConfig, 1);
-  
-  self->keys = g_hash_table_new_full(g_str_hash, g_str_equal, (GDestroyNotify) g_free, (GDestroyNotify) persist_config_entry_free);
+  self->version = 3;
+  self->keys = g_hash_table_new_full(g_str_hash, g_str_equal, (GDestroyNotify) g_free, (GDestroyNotify) cfg_persist_config_entry_free);
   return self;
 }
 

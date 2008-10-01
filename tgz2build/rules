@@ -1,0 +1,72 @@
+#!/usr/bin/make -f
+STAMPDIR=tgz2build/stamps
+DOCDIR=$(PREFIX)/doc
+
+
+CONFIGURE_OPTS := --prefix $(ZBS_PREFIX) --enable-dynamic-linking --enable-sql --enable-spoof-source --disable-tcp-wrapper --disable-pcre
+INSTALL:=./install-sh
+RPATH=-Wl,-R/opt/syslog-ng/lib
+
+ifneq (,$(findstring debug,$(TGZ_BUILD_OPTS)))
+  CONFIGURE_OPTS += --enable-debug
+endif
+
+
+ifneq (,$(findstring aix,$(ZBS_DIST)))
+  RPATH=-Wl,-blibpath:/opt/syslog-ng/lib:/usr/lib:/lib
+endif
+
+ifneq (,$(findstring hpux,$(ZBS_DIST)))
+  RPATH=-Wl,+b/opt/syslog-ng/lib
+endif
+
+all: binary
+
+binary: $(STAMPDIR)/stamp-setup $(STAMPDIR)/stamp-configure $(STAMPDIR)/stamp-build $(STAMPDIR)/stamp-install
+
+setup: $(STAMPDIR)/stamp-setup
+$(STAMPDIR)/stamp-setup:
+	mkdir tgz2build/stamps || true
+	touch $@
+
+configure: $(STAMPDIR)/stamp-configure
+$(STAMPDIR)/stamp-configure: $(STAMPDIR)/stamp-setup
+	CFLAGS="-g $(CFLAGS)" LDFLAGS="$(RPATH) $(LDFLAGS)" ./configure $(CONFIGURE_OPTS)
+	touch $@
+
+
+build: $(STAMPDIR)/stamp-build
+$(STAMPDIR)/stamp-build: $(STAMPDIR)/stamp-configure
+	$(MAKE)
+	$(MAKE) check
+	touch $@
+
+
+install:  $(STAMPDIR)/stamp-install
+$(STAMPDIR)/stamp-install: $(STAMPDIR)/stamp-build
+	rm -rf $(ZBS_STAGE_DIR)
+	$(MAKE) install DESTDIR=$(ZBS_STAGE_DIR)
+	$(INSTALL) -d -m 755 $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/etc
+	$(INSTALL) -d -m 755 $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/share/doc
+	$(INSTALL) -d -m 755 $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/share/doc/contrib
+	$(INSTALL) -d -m 755 $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/lib
+	$(INSTALL) -m 644 -c README $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/share/doc 
+	$(INSTALL) -m 644 -c COPYING $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/share/doc
+	$(INSTALL) -m 644 -c AUTHORS $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/share/doc
+	$(INSTALL) -m 644 -c NEWS $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/share/doc
+	$(INSTALL) -m 644 $(ZBS_SOURCE_DIR)/contrib/balabit-initscripts/init-functions $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/lib
+
+	cd $(ZBS_SOURCE_DIR)
+	tar cf - contrib | (cd $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/share/doc/ && tar xf -)
+	rm -rf $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/share/doc/contrib/Makefile*
+	
+ 
+	touch $@ 
+
+clean:
+	rm -rf tgz2build/stamps || true
+	rm -rf tgz2build/syslog-ng || true
+	rm -rf tgz2build/staging || true
+	make clean
+
+

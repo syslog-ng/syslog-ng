@@ -1,6 +1,16 @@
 dnl Process this file with autoconf to produce a configure script.
+dnl
+dnl There are a couple of environment defined variables which this script
+dnl makes use of in addition to the standard CFLAGS/LDFLAGS/etc. These are:
+dnl
+dnl RELEASE_TAG        - Debian release tag which is put to debian/changelog
+dnl SNAPSHOT_VERSION   - snapshot version to add to version number
+dnl BINARY_BRANCH      - the value is added to all source/binary packages
+dnl SOURCE_REVISION    - Revision of the source-tree, will added to the version string
+dnl
 AC_INIT(src/main.c)
 
+PKG_PROG_PKG_CONFIG
 dnl ***************************************************************************
 dnl definitions
 
@@ -10,8 +20,9 @@ VERSION="`cat $srcdir/VERSION`"
 dnl ***************************************************************************
 dnl dependencies
 
-GLIB_MIN_VERSION="2.4.0"
+GLIB_MIN_VERSION="2.10.1"
 EVTLOG_MIN_VERSION="0.2"
+OPENSSL_MIN_VERSION="0.9.8"
 LIBDBI_MIN_VERSION="0.8.0"
 
 dnl ***************************************************************************
@@ -31,35 +42,50 @@ else
         CURRDATE=`date +"%a, %d %b %Y %H:%M:%S %Z"`
 fi
 
-
-
-AM_INIT_AUTOMAKE($PACKAGE, $VERSION)
+AM_INIT_AUTOMAKE($PACKAGE, $VERSION, no-define)
 if test -n "$SNAPSHOT_VERSION"; then
 	VERSION=$VERSION+$SNAPSHOT_VERSION
 fi
 
 if test "x$prefix" = "xNONE"; then
         prefix=$ac_default_prefix
+        pidfiledir="/var/run"
+else
+        pidfiledir="${prefix}/var/run"
 fi
+
 AM_CONFIG_HEADER(config.h)
 
 dnl ***************************************************************************
 dnl Arguments
 
-
 AC_ARG_WITH(libnet,
    [  --with-libnet=path      use path to libnet-config script],
    ,
    [with_libnet=""])
+
+AC_ARG_WITH(pidfile-dir,
+   [  --with-pidfile-dir=path   Use path as the directory for storing pidfiles],
+   pidfiledir=$with_pidfile_dir)
 	
+AC_ARG_WITH(timezone-dir,
+   [  --with-timezone-dir=path   Use path as the directory to get the timezone files],
+   timezone_dir=$with_timezone_dir)
+
 AC_ARG_ENABLE(debug, 
-              [  --enable-debug      Enable debugging code.])
+              [  --enable-debug      Enable debugging code.],, enable_debug="no")
+
+AC_ARG_ENABLE(gprof, 
+              [  --enable-gprof      Enable gcc profiling.],, enable_gprof="no")
 
 AC_ARG_ENABLE(memtrace, 
               [  --enable-memtrace   Enable alternative leak debugging code.])
               
+AC_ARG_ENABLE(ssl,
+              [  --enable-ssl        Enable SSL support.],,enable_ssl="auto")
+
 AC_ARG_ENABLE(dynamic-linking,
-              [  --enable-dynamic-linking        Link glib and eventlog dynamically instead of statically.],,enable_dynamic_linking="yes")
+              [  --enable-dynamic-linking        Link glib and eventlog dynamically instead of statically.])
 
 AC_ARG_ENABLE(static-linking,
               [  --enable-static-linking         Link everything statically.])
@@ -78,25 +104,48 @@ AC_ARG_ENABLE(sql,
 	      [  --enable-sql            Enable support for SQL destinations. (default: auto)]
 	      ,,enable_sql="auto")
 
-# FIXME: skip tests on unsupported platforms/architectures...
-case "$ostype" in
-	HP-UX)
-		if $CC -v 2>&1 | grep gcc > /dev/null; then
-			CFLAGS="$CFLAGS -U_XOPEN_SOURCE -U_XOPEN_SOURCE_EXTENDED -D_HPUX_SOURCE"
-			AC_MSG_WARN([NOTE: on HP-UX with gcc 4.x, you might need to edit sys/socket.h manually or you'll get compilation errors])
-		fi
-		;;
-esac 
+AC_ARG_ENABLE(linux-caps,
+              [  --enable-linux-caps     Enable support for managing Linux capabilities (default: auto)]
+              ,,enable_linux_caps="auto")
+
+AC_ARG_ENABLE(pcre,
+              [  --enable-pcre           Enable support for Perl Compatible Regular Expressions (default: auto)]
+              ,,enable_pcre="auto")
+
 
 dnl ***************************************************************************
 dnl Checks for programs.
-
 AC_PROG_CC
 AM_PROG_CC_STDC
 AC_PROG_YACC
 AM_PROG_LEX
 AC_PROG_MAKE_SET
 AC_PROG_RANLIB
+
+dnl ***************************************************************************
+dnl Set up CFLAGS
+
+if test "x$ac_compiler_gnu" = "xyes"; then
+        CFLAGS="${CFLAGS} -Wall"
+        if test "x$enable_debug" = "xyes"; then
+                CFLAGS="${ac_cv_env_CFLAGS_value} -Wall -g"
+        fi
+
+        if test "x$enable_gprof" = "xyes"; then
+                CFLAGS="${CFLAGS} -pg"
+        fi
+fi
+
+# FIXME: skip tests on unsupported platforms/architectures...
+case "$ostype" in
+	HP-UX)
+		if $CC -v 2>&1 | grep gcc > /dev/null; then
+			CFLAGS="${CFLAGS} -U_XOPEN_SOURCE -U_XOPEN_SOURCE_EXTENDED -D_HPUX_SOURCE"
+			AC_MSG_WARN([NOTE: on HP-UX with gcc, you might need to edit sys/socket.h manually or you'll get compilation errors])
+		fi
+		;;
+esac 
+
 
 AC_SYS_LARGEFILE
 dnl ***************************************************************************
@@ -105,7 +154,6 @@ dnl ***************************************************************************
 
 AC_MSG_CHECKING(how to enable static linking for certain libraries)
 ldversion=`ld -V 2>&1 | head -1`
-ostype=`uname -s`
 if echo $ldversion | egrep "GNU|Solaris" > /dev/null; then
         LD_START_STATIC="-Wl,-Bstatic"
         LD_END_STATIC="-Wl,-Bdynamic"
@@ -124,15 +172,20 @@ else
         AC_MSG_RESULT([no clues, linking everything dynamically, please send appropriate ld arguments to syslog-ng@lists.balabit.hu])
 fi
 
-
 dnl ***************************************************************************
-dnl Checks for header files.
+dnl Miscellanneous headers
+dnl ***************************************************************************
+
 AC_HEADER_STDC
 AC_CHECK_HEADER(dmalloc.h)
-AC_CHECK_HEADERS(strings.h openssl/ssl.h getopt.h stropts.h sys/strlog.h door.h)
+AC_CHECK_HEADERS(strings.h getopt.h stropts.h sys/strlog.h door.h sys/capability.h sys/prctl.h)
 AC_CHECK_HEADERS(tcpd.h)
 
+
 dnl ***************************************************************************
+dnl Header checks
+dnl ***************************************************************************
+
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_STRUCT_TM
 
@@ -169,20 +222,26 @@ fi
 AC_CACHE_CHECK(for struct sockaddr_storage, blb_cv_c_struct_sockaddr_storage,
   [AC_EGREP_HEADER([sockaddr_storage], sys/socket.h, blb_cv_c_struct_sockaddr_storage=yes,blb_cv_c_struct_sockaddr_storage=no)])
 
-AC_CACHE_CHECK(for struct sockaddr_in6, blb_cv_c_struct_sockaddr_in6,
-  [AC_EGREP_HEADER([sockaddr_in6], netinet/in.h, blb_cv_c_struct_sockaddr_in6=yes,blb_cv_c_struct_sockaddr_in6=no)])
-
 if test "$blb_cv_c_struct_sockaddr_storage" = "yes"; then
 	AC_DEFINE(HAVE_STRUCT_SOCKADDR_STORAGE,[1],[struct sockaddr_storage is present on your system])
 fi
 
+AC_CACHE_CHECK(for struct sockaddr_in6, blb_cv_c_struct_sockaddr_in6,
+  [AC_EGREP_HEADER([sockaddr_in6], netinet/in.h, blb_cv_c_struct_sockaddr_in6=yes,blb_cv_c_struct_sockaddr_in6=no)])
 
-dnl ***************************************************************************
-dnl libdbi headers/libraries
-dnl ***************************************************************************
+AC_CACHE_CHECK(for PR_SET_KEEPCAPS, blb_cv_keepcaps,
+  [AC_EGREP_CPP(PR_SET_KEEPCAPS, 
+[
+#include <sys/prctl.h>
 
-AC_CHECK_LIB(dl, dlsym, DL_LIBS="-ldl")
-PKG_CHECK_MODULES(LIBDBI, dbi-0.8 >= $LIBDBI_MIN_VERSION,, LIBDBI_LIBS="")
+PR_SET_KEEPCAPS
+],
+  blb_cv_keepcaps=no,
+  blb_cv_keepcaps=yes)])
+
+if test "x$blb_cv_keepcaps" = "xyes"; then
+	AC_DEFINE(HAVE_PR_SET_KEEPCAPS, 1, [have PR_SET_KEEPCAPS])
+fi
 
 
 dnl ***************************************************************************
@@ -193,8 +252,14 @@ AC_CHECK_LIB(rt, nanosleep)
 AC_CHECK_LIB(nsl, gethostbyname)
 AC_CHECK_LIB(regex, regexec)
 AC_CHECK_LIB(resolv, res_init)
+if test "x$enable_linux_caps" = "xyes" -o "x$enable_linux_caps" = "xauto"; then
+	AC_CHECK_LIB(cap, cap_set_proc)
+fi
+if test "x$enable_pcre" = "xyes" -o "x$enable_pcre" = "xauto"; then
+	AC_CHECK_LIB(pcre, pcre_compile)
+fi
 
-AC_CHECK_FUNCS(strdup strtol strtoll strtoimax inet_aton inet_ntoa getopt_long getaddrinfo getutent)
+AC_CHECK_FUNCS(strdup strtol strtoll strtoimax inet_aton inet_ntoa getopt_long getaddrinfo getutent strcasestr)
 
 old_LIBS=$LIBS
 AC_CACHE_CHECK(for TCP wrapper library,
@@ -224,9 +289,53 @@ done
 LIBS=$old_LIBS
 LIBWRAP_LIBS=$blb_cv_c_lwrap
 
-PKG_CHECK_MODULES(EVTLOG, eventlog >= $EVTLOG_MIN_VERSION,,
-                AC_MSG_ERROR(Cannot find eventlog version >= $EVTLOG_MIN_VERSION: is pkg-config in path?))
 
+dnl ***************************************************************************
+dnl OpenSSL headers/libraries
+dnl ***************************************************************************
+
+OPENSSL_LIBS=""
+OPENSSL_CPPFLAGS=""
+
+# openssl is needed for:
+#  * TLS support
+
+dnl check OpenSSL static linking 
+PKG_CHECK_MODULES(OPENSSL, openssl >= $OPENSSL_MIN_VERSION)
+
+if test -n "$OPENSSL_LIBS"; then
+        dnl required for openssl, but only when linking statically
+        save_LIBS="$LIBS"
+        AC_CHECK_LIB(dl, dlsym, DL_LIBS="-ldl")
+        LIBS=$save_LIBS
+
+        dnl required for openssl, but only when linking statically
+        save_LIBS="$LIBS"
+        AC_CHECK_LIB(z, inflate, ZLIB_LIBS="-lz")
+        LIBS=$save_LIBS
+
+        save_CPPFLAGS="$CPPFLAGS"
+        CPPFLAGS="$CPPFLAGS $OPENSSL_CFLAGS"
+        CPPFLAGS="$save_CPPFLAGS"
+else
+        OPENSSL_LIBS=""
+        OPENSSL_CFLAGS=""
+fi
+
+if test "x$OPENSSL_LIBS" != "x"; then
+        if test "x$enable_ssl" = "xauto"; then
+	        enable_ssl="yes"
+        fi
+else
+        enable_ssl="no"
+fi
+
+dnl ***************************************************************************
+dnl libdbi headers/libraries
+dnl ***************************************************************************
+
+AC_CHECK_LIB(dl, dlsym, DL_LIBS="-ldl")
+PKG_CHECK_MODULES(LIBDBI, dbi >= $LIBDBI_MIN_VERSION,, LIBDBI_LIBS="")
 
 dnl ***************************************************************************
 dnl Some more checks based on the detected settings above
@@ -237,7 +346,7 @@ if test "x$ac_cv_lib_door_door_create" = "xyes"; then
 fi
 
 if test "x$enable_memtrace" = "xyes" ; then
-	AC_CHECK_LIB(dl, dlsym)
+    AC_CHECK_LIB(dl, dlsym)
 fi
 
 AC_MSG_CHECKING(for LIBNET)
@@ -254,7 +363,6 @@ else
         LIBNET_LIBS=
         AC_MSG_RESULT(no)
 fi
-
 
 AC_MSG_CHECKING(whether to enable Sun STREAMS support)
 if test "x$ac_cv_header_stropts_h" = "xyes" -a \
@@ -291,20 +399,22 @@ elif test "x$enable_tcp_wrapper" != "xyes"; then
         LIBWRAP_LIBS=""
 fi
 
+
 if test "x$enable_spoof_source" = "xauto"; then
 	AC_MSG_CHECKING(whether to enable spoof source support)
         if test "x$LIBNET_LIBS" != "x"; then
                 enable_spoof_source=yes
                 AC_MSG_RESULT(yes)
-        else
-                LIBNET_LIBS=""
-		LIBNET_CFLAGS=""
-                enable_spoof_source=no
-                AC_MSG_RESULT(no)
+	else
+		enable_spoof_source=no
+                LIBNET_LIBS=
+		LIBNET_CFLAGS=
+		AC_MSG_RESULT(no)
         fi
 elif test "x$enable_spoof_source" != "xyes"; then
 	LIBNET_CFLAGS=""
-        LIBNET_LIBS=""
+	LIBNET_LIBS=""
+	enable_spoof_source=no
 fi
 
 if test "x$enable_ipv6" = "xauto"; then
@@ -329,14 +439,67 @@ if test "x$enable_sql" = "xauto"; then
 	fi
 fi
 
+if test "x$enable_linux_caps" = "xauto"; then
+        AC_MSG_CHECKING(whether to enable Linux capability support)
+        if test "x$ac_cv_header_sys_capability_h" = "xyes"; then
+                enable_linux_caps="yes" 
+        else
+                enable_linux_caps="no"
+        fi
+        AC_MSG_RESULT([$enable_linux_caps])
+fi
+
+if test "x$enable_pcre" = "xauto"; then
+        AC_MSG_CHECKING(whether to enable PCRE support)
+        if test "x$ac_cv_lib_pcre_pcre_compile" = "xyes"; then
+                enable_pcre="yes" 
+        else
+                enable_pcre="no"
+        fi
+        AC_MSG_RESULT([$enable_pcre])
+fi
+
 GLIB_ADDONS=""
 if test "x$enable_sql" = "xyes"; then
 	GLIB_ADDONS="gthread"
 fi
 
 AM_PATH_GLIB_2_0($GLIB_MIN_VERSION,,
-		AC_MSG_ERROR(Cannot find GLib library version >= $GLIB_MIN_VERSION: is pkg-config in path?), $GLIB_ADDONS)
+    AC_MSG_ERROR(Cannot find GLIB version >= $GLIB_MIN_VERSION: is pkg-config in path?), $GLIB_ADDONS)
 
+
+PKG_CHECK_MODULES(EVTLOG, eventlog >= $EVTLOG_MIN_VERSION,,
+                AC_MSG_ERROR(Cannot find eventlog version >= $EVTLOG_MIN_VERSION: is pkg-config in path?))
+
+if test "x$enable_spoof_source" = "xyes"; then
+	AC_MSG_CHECKING(for LIBNET)
+        if test "x$with_libnet" = "x"; then
+                LIBNET_CONFIG=`which libnet-config`
+        else
+                LIBNET_CONFIG=$with_libnet/libnet-config
+        fi
+        if test -x "$LIBNET_CONFIG"; then
+                LIBNET_CFLAGS="`$LIBNET_CONFIG --defines`"
+                LIBNET_LIBS="`$LIBNET_CONFIG --libs`"
+                AC_MSG_RESULT(yes)
+        else
+                LIBNET_LIBS=
+                AC_ERROR(libnet-config not found)
+        fi
+fi
+
+# HACK: threading libs and the dynamic linker lib (rt) mustn't be linked statically on solaris,,,
+dynamic_threads () {
+	case "$ostype" in
+		SunOS)
+			# sed on solaris 8/9 is soooo '80s we have to do it with perl...
+			RTLIBS=`echo $LIBS |  tr ' ' '\n' | perl -ne '/^-l(?:pthread|thread|rt)$/i && print $_;' | tr '\n' ' '`
+			LIBS="`echo $LIBS | perl -ne '$_ =~ s/(\B-l(pthread|thread|rt))\b//g; print $_;'` $RTLIBS"
+			;;
+		*)
+		;;
+	esac
+}
 
 case "$ostype" in
 	FreeBSD)
@@ -346,6 +509,8 @@ esac
 
 old_LIBS=$LIBS
 LIBS="$LD_START_STATIC $GLIB_LIBS $LD_END_STATIC"
+
+dynamic_threads
 
 AC_CACHE_CHECK(for static GLib libraries,
                blb_cv_static_glib,
@@ -387,6 +552,39 @@ if test "x$blb_cv_glib_sane" = "xno"; then
 fi
 
 
+if test "x$enable_ssl" = "xyes" -a "x$enable_dynamic_linking" != "xyes"; then
+	dnl check if we can successfully link to openssl statically
+	old_LIBS=$LIBS
+	old_CFLAGS=$CFLAGS
+	CFLAGS="$OPENSSL_CFLAGS"
+	dnl FIXME: Read regexp book
+	XOPENSSL_LIBS=`echo $OPENSSL_LIBS | tr ' ' '\n' | egrep -v "^-ldld?$" | tr '\n' ' '`
+	LIBS="$LD_START_STATIC $XOPENSSL_LIBS $ZLIB_LIBS $LD_END_STATIC $DL_LIBS"
+
+	AC_CACHE_CHECK(for static OpenSSL libraries,
+	           blb_cv_static_openssl,
+                   [AC_TRY_LINK([
+#include <stdio.h>
+#include <openssl/ssl.h>
+], [
+int main()
+{
+  SSL_library_init();
+  SSL_load_error_strings();
+  SSLeay_add_all_algorithms();
+
+  exit(0);
+}
+                   ],
+                   blb_cv_static_openssl=yes,
+                   blb_cv_static_openssl=no)])
+	LIBS=$old_LIBS
+	CFLAGS=$old_CFLAGS
+	if test "x$blb_cv_static_openssl" = "xyes" ; then
+	    	OPENSSL_LIBS=$XOPENSSL_LIBS
+	fi
+fi
+
 if test "x$enable_dynamic_linking" = "xyes" -a "x$enable_static_linking" = "xyes"; then
 	AC_MSG_ERROR([You cannot specify dynamic and static linking at the same time.])
 fi
@@ -395,30 +593,43 @@ if test "x$enable_dynamic_linking" != "xyes" -a "x$blb_cv_static_glib" = "xno"; 
 	AC_MSG_ERROR([static GLib libraries not found (a file named libglib-2.0.a), either link GLib dynamically using the --enable-dynamic-linking or install a static GLib])
 fi
 
-dnl ***************************************************************************
-dnl export values
-
-
-if test "x$ac_compiler_gnu" = "xyes"; then
-        CFLAGS="${CFLAGS} -Wall"
-        if test "x$enable_debug" = "xyes"; then
-                CFLAGS="-Wall -g"
-        fi
+if test "x$enable_dynamic_linking" != "xyes" -a "x$blb_cv_static_openssl" = "xno"; then
+	AC_MSG_ERROR([static OpenSSL libraries not found (libssl.a and libcrypto.a), either link OpenSSL statically using the --enable-dynamic-linking, or install a static OpenSSL])
 fi
 
 
-DEPS_CPPFLAGS="$CPPFLAGS $GLIB_CFLAGS $EVTLOG_CFLAGS $LIBNET_CFLAGS $LIBDBI_CFLAGS"
+DEPS_CPPFLAGS="$CPPFLAGS $GLIB_CFLAGS $EVTLOG_CFLAGS $OPENSSL_CFLAGS $LIBNET_CFLAGS $LIBDBI_CFLAGS"
 CPPFLAGS="$DEPS_CPPFLAGS -D_GNU_SOURCE -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64"
 
 if test "x$enable_dynamic_linking" = "xyes"; then
-	DEPS_LIBS="$LIBS $LEXLIB $GLIB_LIBS $EVTLOG_LIBS $LIBNET_LIBS $LIBWRAP_LIBS $LIBDBI_LIBS"
+	DEPS_LIBS="$LIBS $LEXLIB $GLIB_LIBS $EVTLOG_LIBS $OPENSSL_LIBS $ZLIB_LIBS $LIBNET_LIBS $LIBWRAP_LIBS $LIBDBI_LIBS $RESOLV_LIBS"
 elif test "x$enable_static_linking" = "xyes"; then
-	DEPS_LIBS="-static $LIBS $LEXLIB $GLIB_LIBS $EVTLOG_LIBS $LIBNET_LIBS $LIBWRAP_LIBS $LIBDBI_LIBS"	
+	DEPS_LIBS="-static $LIBS $LEXLIB $GLIB_LIBS $EVTLOG_LIBS $OPENSSL_LIBS $ZLIB_LIBS $DL_LIBS $LIBNET_LIBS $LIBWRAP_LIBS $LIBDBI_LIBS $RESOLV_LIBS "
 else
-	DEPS_LIBS="$LIBS $LD_START_STATIC $LEXLIB $GLIB_LIBS $EVTLOG_LIBS $LIBNET_LIBS $LIBWRAP_LIBS $LD_END_STATIC $LIBDBI_LIBS $DL_LIBS"
+	dnl on our AIX box, it's necessary to add the OpenSSL linking options first 
+	dnl to the parameter list, otherwise it tries to link to the wrong version
+	dnl of OpenSSL. But Bazsi says it doesn't work on Ubuntu Dapper though. So 
+	dnl at least now it remains an ugly exception...
+	if test "$ostype" = "AIX"; then
+		DEPS_LIBS="$LIBS $RESOLV_LIBS $LD_START_STATIC $OPENSSL_LIBS $LEXLIB $GLIB_LIBS $EVTLOG_LIBS $ZLIB_LIBS $LIBNET_LIBS $LIBWRAP_LIBS $LD_END_STATIC $LIBDBI_LIBS $DL_LIBS "
+	else
+		DEPS_LIBS="$LIBS $RESOLV_LIBS $LD_START_STATIC $LEXLIB $GLIB_LIBS $EVTLOG_LIBS $OPENSSL_LIBS $ZLIB_LIBS $LIBNET_LIBS $LIBWRAP_LIBS $LD_END_STATIC $LIBDBI_LIBS $DL_LIBS "
+	fi
 fi
 LIBS="$DEPS_LIBS"
+
+dynamic_threads
+
 YFLAGS="-d"
+
+enable_value()
+{
+        if test "x$1" = "xyes" ; then
+                echo 1
+        else
+                echo 0
+        fi
+}
 
 patheval()
 {
@@ -432,26 +643,31 @@ patheval()
         echo $OLD
 }
 
-enable_value()
-{
-        if test "x$1" = "xyes" ; then
-                echo 1
-        else
-                echo 0
-        fi
-}
+AC_DEFINE_UNQUOTED(PACKAGE, "$PACKAGE", [package name])
+AC_DEFINE_UNQUOTED(VERSION, "$VERSION", [version number])
+AC_DEFINE_UNQUOTED(SOURCE_REVISION, "$SOURCE_REVISION", [source revision])
+AC_DEFINE_UNQUOTED(LICENSE_VERSION, "$LICENSE_VERSION", [Required license version])
 
-
+AC_DEFINE_UNQUOTED(PATH_PREFIX, "`patheval $prefix`", [prefix directory])
 AC_DEFINE_UNQUOTED(PATH_SYSCONFDIR, "`patheval $sysconfdir`", [sysconfdir])
 AC_DEFINE_UNQUOTED(PATH_LOCALSTATEDIR, "`patheval $localstatedir`", [local state directory])
+AC_DEFINE_UNQUOTED(PATH_PIDFILEDIR, "`patheval $pidfiledir`", [local state directory])
+if test -n "$timezone_dir"; then
+        AC_DEFINE_UNQUOTED(PATH_TIMEZONEDIR, "`patheval $timezone_dir`", [timezone base directory])
+fi
+
 AC_DEFINE_UNQUOTED(ENABLE_SUN_STREAMS, `enable_value $enable_sun_streams`, [have STREAMS support])
 AC_DEFINE_UNQUOTED(ENABLE_SUN_DOOR, `enable_value $enable_sun_door`, [have Solaris door support])
 AC_DEFINE_UNQUOTED(ENABLE_DEBUG, `enable_value $enable_debug`, [Enable debugging])
-AC_DEFINE_UNQUOTED(ENABLE_MEM_TRACE, `enable_value $enable_memtrace`, [Enable memtrace])
+AC_DEFINE_UNQUOTED(ENABLE_GPROF, `enable_value $enable_gprof`, [Enable gcc profiling])
+AC_DEFINE_UNQUOTED(ENABLE_MEMTRACE, `enable_value $enable_memtrace`, [Enable memtrace])
 AC_DEFINE_UNQUOTED(ENABLE_SPOOF_SOURCE, `enable_value $enable_spoof_source`, [Enable spoof source support])
 AC_DEFINE_UNQUOTED(ENABLE_IPV6, `enable_value $enable_ipv6`, [Enable IPv6 support])
 AC_DEFINE_UNQUOTED(ENABLE_TCP_WRAPPER, `enable_value $enable_tcp_wrapper`, [Enable TCP wrapper support])
+AC_DEFINE_UNQUOTED(ENABLE_SSL, `enable_value $enable_ssl`, [Enable SSL support])
 AC_DEFINE_UNQUOTED(ENABLE_SQL, `enable_value $enable_sql`, [Enable SQL support])
+AC_DEFINE_UNQUOTED(ENABLE_LINUX_CAPS, `enable_value $enable_linux_caps`, [Enable Linux capability management support])
+AC_DEFINE_UNQUOTED(ENABLE_PCRE, `enable_value $enable_pcre`, [Enable PCRE support])
 
 
 AC_SUBST(DEPS_CPPFLAGS)
@@ -462,6 +678,8 @@ AC_SUBST(CURRDATE)
 AC_SUBST(RELEASE_TAG)
 AC_SUBST(SNAPSHOT_VERSION)
 AC_SUBST(SOURCE_REVISION)
+AC_SUBST(PACKAGE_FILES_SUFFIX)
+AC_SUBST(PACKAGE_SUFFIX)
 
 AC_OUTPUT(dist.conf
           Makefile 
@@ -471,8 +689,8 @@ AC_OUTPUT(dist.conf
           doc/docvars.xml
 	  contrib/Makefile
 	  tests/Makefile 
-	  solbuild/Makefile 
-	  tgzbuild/Makefile
+	  debian/Makefile
+	  tgz2build/Makefile
           tests/unit/Makefile
           tests/functional/Makefile
 	  tests/loggen/Makefile
@@ -489,8 +707,14 @@ echo " Features:"
 echo "  Sun STREAMS support         : ${enable_sun_streams:=no}"
 echo "  Sun Door support            : ${enable_sun_door:=no}"
 echo "  Debug symbols               : ${enable_debug:=no}"
+echo "  GCC profiling               : ${enable_gprof:=no}"
 echo "  Memtrace                    : ${enable_memtrace:=no}"
 echo "  IPV6 support                : ${enable_ipv6:=no}"
 echo "  spoof-source support        : ${enable_spoof_source:=no}"
 echo "  tcp-wrapper support         : ${enable_tcp_wrapper:=no}"
+echo "  SSL support                 : ${enable_ssl:=no}"
 echo "  SQL support                 : ${enable_sql:=no}"
+echo "  Linux capability support    : ${enable_linux_caps:=no}"
+echo "  PCRE support                : ${enable_pcre:=no}"
+
+

@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2002-2007 BalaBit IT Ltd.
- * Copyright (C) 2002-2007 Balazs Scheidler
+ * Copyright (c) 2002-2008 BalaBit IT Ltd, Budapest, Hungary
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -13,13 +12,13 @@
  * COPYING for details.
  *
  * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of 
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
   
 #ifndef APPHOOK_H_INCLUDED
@@ -32,7 +31,9 @@ enum
 {
   AH_STARTUP,
   AH_POST_DAEMONIZED,
-  AH_SHUTDOWN
+  AH_PRE_CONFIG_LOADED,
+  AH_POST_CONFIG_LOADED,
+  AH_SHUTDOWN,
 };
 
 typedef void (*ApplicationHookFunc)(gint type, gpointer user_data);
@@ -40,6 +41,8 @@ typedef void (*ApplicationHookFunc)(gint type, gpointer user_data);
 void register_application_hook(gint type, ApplicationHookFunc func, gpointer user_data);
 void app_startup();
 void app_post_daemonized();
+void app_pre_config_loaded();
+void app_post_config_loaded();
 void app_shutdown();
 
 #endif

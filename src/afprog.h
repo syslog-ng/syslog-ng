@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2007 BalaBit IT Ltd, Budapest, Hungary                    
+ * Copyright (c) 2002-2008 BalaBit IT Ltd, Budapest, Hungary
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -20,12 +20,22 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-
+  
 #ifndef AFPROG_H_INCLUDED
 #define AFPROG_H_INCLUDED
 
 #include "driver.h"
 #include "logwriter.h"
+#include "logreader.h"
+
+typedef struct _AFProgramSourceDriver
+{
+  LogDriver super;
+  GString *cmdline;
+  LogPipe *reader;
+  pid_t pid;
+  LogReaderOptions reader_options;
+} AFProgramSourceDriver;
 
 typedef struct _AFProgramDestDriver
 {
@@ -36,7 +46,7 @@ typedef struct _AFProgramDestDriver
   LogWriterOptions writer_options;
 } AFProgramDestDriver;
 
-
+LogDriver *afprogram_sd_new(gchar *cmdline);
 LogDriver *afprogram_dd_new(gchar *cmdline);
 
 #endif

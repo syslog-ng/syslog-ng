@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2007 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2008 BalaBit IT Ltd, Budapest, Hungary
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -20,8 +20,11 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
+
 #include "afinet.h"
 #include "messages.h"
+#include "misc.h"
+#include "gprocess.h"
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -41,7 +44,7 @@
 
 
 static void
-afinet_set_port(GSockAddr *addr, gchar *service, gchar *proto)
+afinet_set_port(GSockAddr *addr, gchar *service, const gchar *proto)
 {
   if (addr)
     {
@@ -86,70 +89,6 @@ afinet_set_port(GSockAddr *addr, gchar *service, gchar *proto)
     }  
 }
 
-static gboolean
-afinet_resolve_name(GSockAddr **addr, gchar *name)
-{
-  if (addr)
-    { 
-#if HAVE_GETADDRINFO
-      struct addrinfo hints;
-      struct addrinfo *res;
-
-      memset(&hints, 0, sizeof(hints));
-      hints.ai_family = (*addr)->sa.sa_family;
-      hints.ai_socktype = 0;
-      hints.ai_protocol = 0;
-      
-      if (getaddrinfo(name, NULL, &hints, &res) == 0)
-        {
-          /* we only use the first entry in the returned list */
-          switch ((*addr)->sa.sa_family)
-            {
-            case AF_INET:
-              g_sockaddr_inet_set_address((*addr), ((struct sockaddr_in *) res->ai_addr)->sin_addr);
-              break;
-#if ENABLE_IPV6
-            case AF_INET6:
-              *g_sockaddr_inet6_get_sa(*addr) = *((struct sockaddr_in6 *) res->ai_addr);
-              break;
-#endif
-            default: 
-              g_assert_not_reached();
-              break;
-            }
-          freeaddrinfo(res);
-        }
-      else
-        {
-          msg_error("Error resolving hostname", evt_tag_str("host", name), NULL);
-          return FALSE;
-        }
-#else
-      struct hostent *he;
-      
-      he = gethostbyname(name);
-      if (he)
-        {
-          switch ((*addr)->sa.sa_family)
-            {
-            case AF_INET:
-              g_sockaddr_inet_set_address((*addr), *(struct in_addr *) he->h_addr);
-              break;
-            default: 
-              g_assert_not_reached();
-              break;
-            }
-          
-        }
-      else
-        {
-          msg_error("Error resolving hostname", evt_tag_str("host", name), NULL);
-          return FALSE;
-        }
-#endif
-    }
-  return TRUE;
-}
 
 static gboolean
 afinet_setup_socket(gint fd, GSockAddr *addr, InetSocketOptions *sock_options, AFSocketDirection dir)
@@ -226,7 +165,7 @@ afinet_setup_socket(gint fd, GSockAddr *addr, InetSocketOptions *sock_options, A
 }
 
 void 
-afinet_sd_set_localport(LogDriver *s, gchar *service, gchar *proto)
+afinet_sd_set_localport(LogDriver *s, gchar *service, const gchar *proto)
 {
   AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
   
@@ -238,7 +177,7 @@ afinet_sd_set_localip(LogDriver *s, gchar *ip)
 {
   AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
   
-  afinet_resolve_name(&self->bind_addr, ip);
+  resolve_hostname(&self->bind_addr, ip);
 }
 
 static gboolean
@@ -247,13 +186,38 @@ afinet_sd_setup_socket(AFSocketSourceDriver *s, gint fd)
   return afinet_setup_socket(fd, s->bind_addr, (InetSocketOptions *) s->sock_options_ptr, AFSOCKET_DIR_RECV);
 }
 
+void
+afinet_sd_set_transport(LogDriver *s, const gchar *transport)
+{
+  AFInetSourceDriver *self = (AFInetSourceDriver *) s;
+  
+  self->super.transport = g_strdup(transport);
+  if (strcasecmp(transport, "udp") == 0)
+    {
+      self->super.flags = (self->super.flags & ~0x0003) | AFSOCKET_DGRAM;
+    }
+  else if (strcasecmp(transport, "tcp") == 0)
+    {
+      self->super.flags = (self->super.flags & ~0x0003) | AFSOCKET_STREAM;
+    }
+  else if (strcasecmp(transport, "tls") == 0)
+    {
+      self->super.flags = (self->super.flags & ~0x0003) | AFSOCKET_STREAM | AFSOCKET_REQUIRE_TLS;
+    }
+  else
+    {
+      msg_error("Unknown syslog transport specified, please use one of udp, tcp, or tls", 
+                evt_tag_str("transport", transport),
+                NULL);
+    }
+}
+
 LogDriver *
 afinet_sd_new(gint af, gchar *host, gint port, guint flags)
 {
   AFInetSourceDriver *self = g_new0(AFInetSourceDriver, 1);
   
   afsocket_sd_init_instance(&self->super, &self->sock_options.super, flags);
-  self->super.flags |= AFSOCKET_KEEP_ALIVE;
   if (af == AF_INET)
     {
       self->super.bind_addr = g_sockaddr_inet_new("0.0.0.0", port);
@@ -270,7 +234,7 @@ afinet_sd_new(gint af, gchar *host, gint port, guint flags)
       g_assert_not_reached();
 #endif
     }
-  afinet_resolve_name(&self->super.bind_addr, host);
+  resolve_hostname(&self->super.bind_addr, host);
   self->super.setup_socket = afinet_sd_setup_socket;
     
   return &self->super.super;
@@ -279,7 +243,7 @@ afinet_sd_new(gint af, gchar *host, gint port, guint flags)
 /* afinet destination */
 
 void 
-afinet_dd_set_localport(LogDriver *s, gchar *service, gchar *proto)
+afinet_dd_set_localport(LogDriver *s, gchar *service, const gchar *proto)
 {
   AFInetDestDriver *self = (AFInetDestDriver *) s;
   
@@ -287,7 +251,7 @@ afinet_dd_set_localport(LogDriver *s, gchar *service, gchar *proto)
 }
 
 void 
-afinet_dd_set_destport(LogDriver *s, gchar *service, gchar *proto)
+afinet_dd_set_destport(LogDriver *s, gchar *service, const gchar *proto)
 {
   AFInetDestDriver *self = (AFInetDestDriver *) s;
   
@@ -302,7 +266,7 @@ afinet_dd_set_localip(LogDriver *s, gchar *ip)
 {
   AFInetDestDriver *self = (AFInetDestDriver *) s;
   
-  afinet_resolve_name(&self->super.bind_addr, ip);
+  resolve_hostname(&self->super.bind_addr, ip);
 }
 
 void 
@@ -311,46 +275,75 @@ afinet_dd_set_spoof_source(LogDriver *s, gboolean enable)
 #if ENABLE_SPOOF_SOURCE
   AFInetDestDriver *self = (AFInetDestDriver *) s;
   
-  self->spoof_source = enable;
+  self->spoof_source = (self->super.flags & AFSOCKET_DGRAM) && enable;
 #else
   msg_error("Error enabling spoof-source, you need to compile syslog-ng with --enable-spoof-source", NULL);
 #endif
 }
 
+void
+afinet_dd_set_transport(LogDriver *s, const gchar *transport)
+{
+  AFInetDestDriver *self = (AFInetDestDriver *) s;
+  
+  self->super.transport = g_strdup(transport);
+  if (strcasecmp(transport, "udp") == 0)
+    {
+      self->super.flags = (self->super.flags & ~0x0003) | AFSOCKET_DGRAM;
+    }
+  else if (strcasecmp(transport, "tcp") == 0)
+    {
+      self->super.flags = (self->super.flags & ~0x0003) | AFSOCKET_STREAM;
+    }
+  else if (strcasecmp(transport, "tls") == 0)
+    {
+      self->super.flags = (self->super.flags & ~0x0003) | AFSOCKET_STREAM | AFSOCKET_REQUIRE_TLS;
+    }
+  else
+    {
+      msg_error("Unknown syslog transport specified, please use one of udp, tcp, or tls", 
+                evt_tag_str("transport", transport),
+                NULL);
+    }
+}
 
 static gboolean
 afinet_dd_setup_socket(AFSocketDestDriver *s, gint fd)
 {
   AFInetDestDriver *self = (AFInetDestDriver *) s;
   
-  if (!afinet_resolve_name(&self->super.dest_addr, self->host))
+  if (!resolve_hostname(&self->super.dest_addr, self->host))
     return FALSE;
 
   return afinet_setup_socket(fd, self->super.dest_addr, (InetSocketOptions *) s->sock_options_ptr, AFSOCKET_DIR_SEND);
 }
 
 static gboolean
-afinet_dd_init(LogPipe *s, GlobalConfig *cfg, PersistentConfig *persist)
+afinet_dd_init(LogPipe *s)
 {
   AFInetDestDriver *self G_GNUC_UNUSED = (AFInetDestDriver *) s;
   gboolean success;
   
-  if (!afinet_resolve_name(&self->super.dest_addr, self->host))
+  if (!resolve_hostname(&self->super.dest_addr, self->host))
     {
       msg_error("Target host cannot be resolved, persistent disk buffer file will be lost",
                 evt_tag_str("host", self->host),
                 NULL);
     }
   
-  success = afsocket_dd_init(s, cfg, persist);
+  success = afsocket_dd_init(s);
 #if ENABLE_SPOOF_SOURCE
   if (success)
     {
       if (self->spoof_source && !self->lnet_ctx) 
         {
           gchar error[LIBNET_ERRBUF_SIZE];
+          cap_t saved_caps;
           
+          saved_caps = g_process_cap_save();
+          g_process_cap_modify(CAP_NET_RAW, TRUE);
           self->lnet_ctx = libnet_init(self->super.dest_addr->sa.sa_family == AF_INET ? LIBNET_RAW4 : LIBNET_RAW6, NULL, error);
+          g_process_cap_restore(saved_caps);
           if (!self->lnet_ctx) 
             {
               msg_error("Error initializing raw socket, spoof-source support disabled", 
@@ -477,7 +470,7 @@ afinet_dd_construct_ipv6_packet(AFInetDestDriver *self, LogMessage *msg, GString
 #endif
 
 static void
-afinet_dd_queue(LogPipe *s, LogMessage *msg, gint path_flags)
+afinet_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 {
 #if ENABLE_SPOOF_SOURCE
   AFInetDestDriver *self = (AFInetDestDriver *) s;
@@ -509,7 +502,7 @@ afinet_dd_queue(LogPipe *s, LogMessage *msg, gint path_flags)
           if (libnet_write(self->lnet_ctx) >= 0) 
             {
               /* we have finished processing msg */
-              log_msg_ack(msg, path_flags);
+              log_msg_ack(msg, path_options);
               log_msg_unref(msg);
               g_string_free(msg_line, TRUE);
               
@@ -525,7 +518,7 @@ afinet_dd_queue(LogPipe *s, LogMessage *msg, gint path_flags)
       g_string_free(msg_line, TRUE);
     }
 #endif
-  log_pipe_forward_msg(s, msg, path_flags);
+  log_pipe_forward_msg(s, msg, path_options);
 }
 
 void

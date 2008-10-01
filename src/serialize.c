@@ -144,13 +144,13 @@ serialize_string_archive_new(GString *str)
 }
 
 gboolean
-serialize_write_blob(SerializeArchive *archive, const gchar *blob, gsize len)
+serialize_write_blob(SerializeArchive *archive, const void *blob, gsize len)
 {
   return serialize_archive_write_bytes(archive, blob, len);
 }
 
 gboolean
-serialize_read_blob(SerializeArchive *archive, gchar *blob, gsize len)
+serialize_read_blob(SerializeArchive *archive, void *blob, gsize len)
 {
   return serialize_archive_read_bytes(archive, blob, len);
 }
@@ -169,7 +169,20 @@ serialize_read_string(SerializeArchive *archive, GString *str)
   
   if (serialize_read_uint32(archive, &len))
     {
-      g_string_set_size(str, len);
+      if (len > str->allocated_len)
+        {
+          gchar *p;
+          
+          p = g_try_realloc(str->str, len + 1);
+          if (!p)
+            return FALSE;
+          str->str = p;
+          str->str[len] = 0;
+          str->len = len;
+        }
+      else
+        g_string_set_size(str, len);
+      
       return serialize_archive_read_bytes(archive, str->str, len);
     }
   return FALSE;
@@ -182,7 +195,7 @@ serialize_write_cstring(SerializeArchive *archive, const gchar *str, gssize len)
     len = strlen(str);
     
   return serialize_write_uint32(archive, len) && 
-         serialize_archive_write_bytes(archive, str, len);
+         (len == 0 || serialize_archive_write_bytes(archive, str, len));
 }
 
 gboolean
@@ -192,7 +205,10 @@ serialize_read_cstring(SerializeArchive *archive, gchar **str, gsize *strlen)
   
   if (serialize_read_uint32(archive, &len))
     {
-      *str = g_malloc(len + 1);
+      *str = g_try_malloc(len + 1);
+      
+      if (!(*str))
+        return FALSE;
       (*str)[len] = 0;
       if (strlen)
         *strlen = len;
@@ -206,7 +222,7 @@ serialize_write_uint32(SerializeArchive *archive, guint32 value)
 {
   guint32 n;
   
-  n = htonl(value);
+  n = GUINT32_TO_BE(value);
   return serialize_archive_write_bytes(archive, (gchar *) &n, sizeof(n));
 }
 
@@ -217,7 +233,29 @@ serialize_read_uint32(SerializeArchive *archive, guint32 *value)
   
   if (serialize_archive_read_bytes(archive, (gchar *) &n, sizeof(n)))
     {
-      *value = ntohl(n);
+      *value = GUINT32_FROM_BE(n);
+      return TRUE;
+    }
+  return FALSE;
+}
+
+gboolean
+serialize_write_uint64(SerializeArchive *archive, guint64 value)
+{
+  guint64 n;
+  
+  n = GUINT64_TO_BE(value);
+  return serialize_archive_write_bytes(archive, (gchar *) &n, sizeof(n));
+}
+
+gboolean
+serialize_read_uint64(SerializeArchive *archive, guint64 *value)
+{
+  guint64 n;
+  
+  if (serialize_archive_read_bytes(archive, (gchar *) &n, sizeof(n)))
+    {
+      *value = GUINT64_FROM_BE(n);
       return TRUE;
     }
   return FALSE;
@@ -229,7 +267,7 @@ serialize_write_uint16(SerializeArchive *archive, guint16 value)
 {
   guint16 n;
   
-  n = htons(value);
+  n = GUINT16_TO_BE(value);
   return serialize_archive_write_bytes(archive, (gchar *) &n, sizeof(n));
 }
 
@@ -240,7 +278,7 @@ serialize_read_uint16(SerializeArchive *archive, guint16 *value)
   
   if (serialize_archive_read_bytes(archive, (gchar *) &n, sizeof(n)))
     {
-      *value = ntohs(n);
+      *value = GUINT16_FROM_BE(n);
       return TRUE;
     }
   return FALSE;

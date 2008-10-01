@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2007 BalaBit IT Ltd, Budapest, Hungary                    
+ * Copyright (c) 2002-2008 BalaBit IT Ltd, Budapest, Hungary
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -20,7 +20,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-
+  
 #include "messages.h"
 #include "logmsg.h"
 
@@ -33,13 +33,79 @@
 
 #include <evtlog.h>
 
+typedef struct _MsgContext
+{
+  guint16 recurse_count;
+  gboolean recurse_warning:1;
+} MsgContext;
 
 gboolean debug_flag = 0;
 gboolean verbose_flag = 0;
 gboolean log_stderr = FALSE;
+gboolean trace_flag = 0;
 static gboolean syslog_started = FALSE;
 static EVTCONTEXT *evt_context;
 MsgQueue *internal_msg_queue = NULL;
+static GStaticPrivate msg_context_private = G_STATIC_PRIVATE_INIT;
+static GStaticMutex evtlog_lock = G_STATIC_MUTEX_INIT;
+
+
+static MsgContext *
+msg_get_context(void)
+{
+  MsgContext *context;
+
+  context = g_static_private_get(&msg_context_private);
+  if (!context)
+    {
+      context = g_new0(MsgContext, 1);
+      g_static_private_set(&msg_context_private, context, g_free);
+    }
+  return context;
+}
+
+void
+msg_set_context(LogMessage *msg)
+{
+  MsgContext *context = msg_get_context();
+  
+  if (msg && (msg->flags & LF_INTERNAL))
+    {
+      context->recurse_count = msg->recurse_count + 1;
+    }
+  else
+    {
+      context->recurse_count = 0;
+    }
+}
+
+#define MAX_RECURSIONS 1
+
+gboolean
+msg_limit_internal_message(void)
+{
+  MsgContext *context;
+  
+  if (!evt_context)
+    return FALSE;
+
+  context = msg_get_context();
+  
+  if (context->recurse_count > MAX_RECURSIONS)
+    {
+      if (!context->recurse_warning)
+        {
+          msg_event_send(
+            msg_event_create(EVT_PRI_WARNING, "syslog-ng internal() messages are looping back, preventing loop by suppressing further messages", 
+                             evt_tag_int("recurse_count", context->recurse_count),
+                             NULL));
+          context->recurse_warning = TRUE;
+        }
+      return FALSE;
+    }
+  return TRUE;
+}
+
 
 static void
 msg_send_internal_message(int prio, const char *msg)
@@ -54,7 +120,12 @@ msg_send_internal_message(int prio, const char *msg)
       
       if (G_LIKELY(internal_msg_queue))
         {
+          MsgContext *context = msg_get_context();
+
+          if (context->recurse_count == 0)
+            context->recurse_warning = FALSE;
           m = log_msg_new_internal(prio, msg, LP_INTERNAL | LP_LOCAL);
+          m->recurse_count = context->recurse_count;
           msg_queue_push(internal_msg_queue, m);
         }
     }
@@ -66,6 +137,7 @@ msg_event_create(gint prio, const gchar *desc, EVTTAG *tag1, ...)
   EVTREC *e;
   va_list va;
   
+  g_static_mutex_lock(&evtlog_lock);
   e = evt_rec_init(evt_context, prio, desc);
   if (tag1)
     {
@@ -74,6 +146,7 @@ msg_event_create(gint prio, const gchar *desc, EVTTAG *tag1, ...)
       evt_rec_add_tagsv(e, va);
       va_end(va);
     }
+  g_static_mutex_unlock(&evtlog_lock);
   return e;
 }
 
@@ -81,6 +154,7 @@ void
 msg_event_send(EVTREC *e)
 {
   gchar *msg;
+  
   /* this prevents infinite loops, debug messages causing 
    * internal messages causing debug messages again */
   if (evt_rec_get_syslog_pri(e) != EVT_PRI_DEBUG || log_stderr)
@@ -90,7 +164,9 @@ msg_event_send(EVTREC *e)
       msg_send_internal_message(evt_rec_get_syslog_pri(e) | EVT_FAC_SYSLOG, msg); 
       free(msg);
     }
+  g_static_mutex_lock(&evtlog_lock);
   evt_rec_free(e);
+  g_static_mutex_unlock(&evtlog_lock);
 }
 
 void
@@ -116,14 +192,19 @@ msg_syslog_started(void)
 }
 
 void
-msg_init()
+msg_init(gboolean interactive)
 {
-  internal_msg_queue = msg_queue_new();
-
+  if (!interactive)
+    {
+      internal_msg_queue = msg_queue_new();
+      g_log_set_handler(G_LOG_DOMAIN, 0xff, msg_log_func, NULL);
+      g_log_set_handler("GLib", 0xff, msg_log_func, NULL);
+    }
+  else
+    {
+      log_stderr = TRUE;
+    }
   evt_context = evt_ctx_init("syslog-ng", EVT_FAC_SYSLOG);
-
-  g_log_set_handler(G_LOG_DOMAIN, 0xff, msg_log_func, NULL);
-  g_log_set_handler("GLib", 0xff, msg_log_func, NULL);
 }
 
 
@@ -131,6 +212,9 @@ void
 msg_deinit()
 {
   evt_ctx_free(evt_context);
-  msg_queue_free(internal_msg_queue);
-  internal_msg_queue = NULL;
+  if (internal_msg_queue)
+    {
+      msg_queue_free(internal_msg_queue);
+      internal_msg_queue = NULL;
+    }
 }
