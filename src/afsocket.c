@@ -222,8 +222,17 @@ afsocket_sc_init(LogPipe *s)
   log_reader_set_options(self->reader, s, &self->owner->reader_options, 1, afsocket_sc_stats_source(self), self->owner->super.id, afsocket_sc_stats_instance(self));
   log_reader_set_peer_addr(self->reader, self->peer_addr);
   log_pipe_append(self->reader, s);
-  log_pipe_init(self->reader, NULL);
-  return TRUE;
+  if (log_pipe_init(self->reader, NULL))
+    {
+      self->owner->connections = g_list_prepend(self->owner->connections, self);
+      return TRUE;
+    }
+  else
+    {
+      log_pipe_unref(self->reader);
+      self->reader = NULL;
+    }
+  return FALSE;
 }
 
 static gboolean
@@ -294,7 +303,6 @@ afsocket_sc_new(AFSocketSourceDriver *owner, GSockAddr *peer_addr, int fd)
   log_drv_ref(&owner->super);
   self->owner = owner;
 
-  owner->connections = g_list_prepend(owner->connections, self);
 
   self->peer_addr = g_sockaddr_ref(peer_addr);  
   self->sock = fd;
