@@ -668,10 +668,10 @@ log_writer_flush_log(LogWriter *self, LogProto *proto)
         }
       if (consumed)
         {
-          log_msg_ack(lm, &path_options);
-          log_msg_unref(lm);
           if (lm->flags & LF_LOCAL)
             step_sequence_number(&self->seq_num);
+          log_msg_ack(lm, &path_options);
+          log_msg_unref(lm);
         }
       else
         {
