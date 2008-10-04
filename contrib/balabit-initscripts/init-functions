@@ -30,6 +30,11 @@ _pid_from_pidfile() {
 
   if [ -f "$pidfile" ];then
     pid=`head -1 $pidfile`
+    if [ $? -ne 0 ]; then
+      # on slow machines (or ones under high load) the pidfile could be
+      # erased between -f and `head` ...
+      return 3
+    fi
     if _checkpid $pid $procname; then
       return 0
     fi
@@ -53,7 +58,6 @@ pidofproc() {
    echo "Usage: pidofproc [-p pidfile] {program}"
    return 1
   fi
-  proc=$1
   proc=$1
   shift
 
@@ -162,7 +166,7 @@ killproc() {
   if [ -n "$pid" ]; then
     kill $signal $pid || _status="$?"
     if [ $_status -eq  0 ];then
-      pidofproc -p "${pidfile}" "$1" >/dev/null || rm -f "${pidfile}"
+      pidofproc -p "${pidfile}" "$proc" >/dev/null || rm -f "${pidfile}"
     fi
   fi
   return $_retval
