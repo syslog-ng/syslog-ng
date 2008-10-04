@@ -172,7 +172,7 @@ log_rewrite_rule_call_item(gpointer item, gpointer user_data)
       value = log_msg_get_value(msg, r->value_name, &length);
       msg_debug("Rewrite expression evaluation result",
                 evt_tag_str("value", log_msg_get_value_name(r->value_name)),
-                evt_tag_printf("new_value", "%.*s", length, value),
+                evt_tag_printf("new_value", "%.*s", (gint) length, value),
                 NULL);
     }
 }

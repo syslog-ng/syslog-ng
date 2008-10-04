@@ -443,7 +443,7 @@ log_matcher_glob_match(LogMatcher *s, LogMessage *msg, const gchar *value_name, 
       if (G_UNLIKELY(!warned && (msg->flags & LF_UTF8) == 0))
         {
           msg_warning("Input is valid utf8, but the log message is not tagged as such, this performs worse than enabling validate-utf8 flag on input", 
-                      evt_tag_printf("value", "%.*s", value_len, value),
+                      evt_tag_printf("value", "%.*s", (gint) value_len, value),
                       NULL);
           warned = TRUE;
         }
@@ -453,7 +453,7 @@ log_matcher_glob_match(LogMatcher *s, LogMessage *msg, const gchar *value_name, 
   else
     {
       msg_warning("Input is not valid utf8, glob match requires utf8 input, thus it never matches in this case", 
-                  evt_tag_printf("value", "%.*s", value_len, value),
+                  evt_tag_printf("value", "%.*s", (gint) value_len, value),
                   NULL);
     }
   return FALSE;

@@ -833,7 +833,7 @@ log_proto_framed_server_extract_frame_length(LogProtoFramedServer *self, gboolea
       else
         {
           msg_error("Invalid frame header", 
-                    evt_tag_printf("header", "%.*s", i - self->buffer_pos, self->buffer[self->buffer_pos]),
+                    evt_tag_printf("header", "%.*s", (gint) (i - self->buffer_pos), &self->buffer[self->buffer_pos]),
                     NULL);
           return FALSE;
         }

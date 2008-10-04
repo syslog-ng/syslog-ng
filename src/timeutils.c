@@ -471,8 +471,8 @@ zone_info_parser(unsigned char **input, gboolean is64bitData, gint *version)
         {
           msg_warning("Error in the time zone file", 
                       evt_tag_str("message", "Illegal type number"), 
-                      evt_tag_int("val", t), 
-                      evt_tag_printf("expected", "[0, %d]", typecnt-1), 
+                      evt_tag_printf("val", "%ld", (long) t), 
+                      evt_tag_printf("expected", "[0, %" G_GINT64_FORMAT "]", typecnt-1), 
                       NULL);
           goto error;
         }
