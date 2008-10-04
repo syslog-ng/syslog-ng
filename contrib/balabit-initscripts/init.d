@@ -26,8 +26,12 @@ SYSLOGNG="$SYSLOGNG_PREFIX/sbin/syslog-ng"
 CONFFILE=$SYSLOGNG_PREFIX/etc/syslog-ng.conf
 PIDFILE=$SYSLOGNG_PREFIX/var/run/syslog-ng.pid
 
+INIT_FUNCTIONS=/lib/lsb/init-functions
+SLNG_INIT_FUNCTIONS=$SYSLOGNG_PREFIX/lib/init-functions
+MAXWAIT=30
+
 # for RedHat...
-subsysdir=/var/lock/subsys
+SUBSYSDIR=/var/lock/subsys
 
 retval=0
 
@@ -101,7 +105,6 @@ esac
 [ -r $SYSLOGNG_PREFIX/etc/default/syslog-ng ] && \
 	. $SYSLOGNG_PREFIX/etc/default/syslog-ng
 
-
 create_xconsole() {
 	if grep -v '^#' $CONFFILE | grep /dev/xconsole >/dev/null 2>&1; then
 		if [ ! -e /dev/xconsole ]; then
@@ -116,6 +119,24 @@ check_syntax() {
 	[ $_rval -eq 0 ] || exit $_rval
 }
 
+slng_waitforpid() {
+	_pid=$1
+  _process=$2
+	_cnt=$MAXWAIT
+
+	_procname=`basename $_process`
+
+	while [ $_cnt -gt 0 ]; do
+		_numproc=`ps -p $_pid $PSOPTS | grep $_procname | wc -l`
+		if [ $_numproc -eq 0 ]; then
+			return 0
+		fi
+		_cnt=`expr $_cnt - 1`
+		sleep 1
+	done
+	return 1
+}
+
 returnmessage() {
 	_rval=$1
 	if [ $_rval -ne 0 ];then
@@ -127,12 +148,12 @@ returnmessage() {
 
 syslogng_start() {
 	echo_n "Starting syslog-ng: "
-	start_daemon ${SYSLOGNG} ${SYSLOGNG_OPTIONS}
+	start_daemon -p ${PIDFILE} ${SYSLOGNG} ${SYSLOGNG_OPTIONS}
 	retval=$?
 	returnmessage $retval
 	if [ $retval -eq 0 ];then
-		if [ "$OS" = "Linux" ] && [ -d $subsysdir ];then
-			touch $subsysdir/syslog-ng
+		if [ "$OS" = "Linux" ] && [ -d $SUBSYSDIR ];then
+			touch $SUBSYSDIR/syslog-ng
 		fi
 	fi
 	return $retval
@@ -141,11 +162,21 @@ syslogng_start() {
 # Can't name the function stop, because HP-UX has a default alias named stop...
 syslogng_stop() {
 	echo_n "Stopping syslog-ng: "
+	PID=`pidofproc -p ${PIDFILE} ${SYSLOGNG} | head -1`
 	killproc -p ${PIDFILE} ${SYSLOGNG}
 	retval=$?
-	returnmessage $retval
 	if [ $retval -eq 0 ];then
-		rm -f $subsysdir/syslog-ng
+		slng_waitforpid "$PID" ${PIDFILE}
+		if [ $? -ne 0 ]; then
+			retval=$?
+			log_failure_msg " Timeout"
+			killproc -p ${PIDFILE} ${SYSLOGNG} -KILL
+		else
+			returnmessage $retval
+		fi
+	fi
+	if [ $retval -eq 0 ];then
+		rm -f $SUBSYSDIR/syslog-ng ${PIDFILE}
 	fi
 	return $retval
 }
@@ -154,7 +185,6 @@ syslogng_restart() {
 	check_syntax
 	echo_n "Restarting syslog-ng: "
 	syslogng_stop
-	sleep 2
 	syslogng_start
 	return $retval
 }
