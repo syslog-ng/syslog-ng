@@ -178,9 +178,9 @@ syslogng_status() {
 			1) msg="dead but pidfile exists." ;;
 			*) msg="stopped" ;;
 		esac
-		log_error_msg "$msg"
+		log_failure_msg "$msg"
 	else
-		log_succes_msg "$pid running"
+		log_success_msg "$pid running"
 	fi
 	return $retval
 }	
