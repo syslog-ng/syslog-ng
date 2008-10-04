@@ -146,7 +146,8 @@ killproc() {
 
   if [ -n "$1" ];then
     signal=$1
-    if ! echo ${signal} | grep ^- >/dev/null 2>&1; then
+    echo "${signal}" | grep '^-' >/dev/null 2>&1
+    if [ $? -ne 0 ]; then
       signal="-${signal}"
     fi
   fi
