@@ -2,7 +2,6 @@
 
 AM_CFLAGS = -I$(top_srcdir)/src
 LDADD = $(top_builddir)/src/libsyslog-ng.a
-EXTRA_DIST = rnd.in
 
 check_PROGRAMS = test_msgsdata test_radix  test_logqueue test_matcher test_clone_logmsg test_csvparser test_serialize test_msgparse test_template test_zone test_filters test_dnscache test_findeom test_findcrlf 
 
@@ -23,5 +22,3 @@ test_msgsdata_SOURCES = test_msgsdata.c
 
 TESTS = $(check_PROGRAMS)
 
-rnd: rnd.in
-	cp $< $@
