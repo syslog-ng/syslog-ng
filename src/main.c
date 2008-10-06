@@ -335,23 +335,6 @@ main(int argc, char *argv[])
 
   z_mem_trace_init("syslog-ng.trace");
 
-#ifdef ENV_LD_LIBRARY_PATH
-  {
-    gchar *cur_ldlibpath;
-    gchar ldlibpath[512];
-
-#if _AIX
-    cur_ldlibpath = getenv("LIBPATH");
-    g_snprintf(ldlibpath, sizeof(ldlibpath), "LIBPATH=%s:%s", ENV_LD_LIBRARY_PATH, cur_ldlibpath ? cur_ldlibpath : "/usr/lib:/lib");
-  
-#else
-    cur_ldlibpath = getenv("LD_LIBRARY_PATH");
-    g_snprintf(ldlibpath, sizeof(ldlibpath), "LD_LIBRARY_PATH=%s%s%s", ENV_LD_LIBRARY_PATH, cur_ldlibpath ? ":" : "", cur_ldlibpath ? cur_ldlibpath : "");
-#endif
-    putenv(ldlibpath);
-  }
-#endif
-
   g_process_set_argv_space(argc, (gchar **) argv);
   
   /* NOTE: polling /proc/kmsg requires cap_sys_admin, otherwise it'll always

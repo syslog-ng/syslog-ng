@@ -79,6 +79,9 @@ AC_ARG_WITH(ld-library-path,
 AC_ARG_ENABLE(debug, 
               [  --enable-debug      Enable debugging code.],, enable_debug="no")
 
+AC_ARG_ENABLE(env-wrapper,
+              [  --enable-env-wrapper    Enable wrapper program to set up various environment variables],, enable_env_wrapper=auto)
+
 AC_ARG_ENABLE(gprof, 
               [  --enable-gprof      Enable gcc profiling.],, enable_gprof="no")
 
@@ -252,17 +255,24 @@ fi
 
 dnl ***************************************************************************
 dnl Checks for libraries
-AC_CHECK_LIB(door, door_create)
-AC_CHECK_LIB(socket, socket)
-AC_CHECK_LIB(rt, nanosleep)
-AC_CHECK_LIB(nsl, gethostbyname)
-AC_CHECK_LIB(regex, regexec)
-AC_CHECK_LIB(resolv, res_init)
+AC_CHECK_LIB(door, door_create, BASE_LIBS="$BASE_LIBS -ldoor")
+AC_CHECK_LIB(socket, socket, BASE_LIBS="$BASE_LIBS -lsocket")
+AC_CHECK_LIB(rt, nanosleep, BASE_LIBS="$BASE_LIBS -lrt")
+AC_CHECK_LIB(nsl, gethostbyname, BASE_LIBS="$BASE_LIBS -lnsl")
+AC_CHECK_LIB(regex, regexec, REGEX_LIBS="-lregex")
+AC_CHECK_LIB(resolv, res_init, RESOLV_LIBS="-lresolv")
+
 if test "x$enable_linux_caps" = "xyes" -o "x$enable_linux_caps" = "xauto"; then
-	AC_CHECK_LIB(cap, cap_set_proc)
+	AC_CHECK_LIB(cap, cap_set_proc, LIBCAP_LIBS="-lcap")
 fi
 if test "x$enable_pcre" = "xyes" -o "x$enable_pcre" = "xauto"; then
-	AC_CHECK_LIB(pcre, pcre_compile)
+	AC_CHECK_LIB(pcre, pcre_compile, PCRE_LIBS="-lpcre")
+fi
+
+if test "x$enable_env_wrapper" = "xauto"; then
+	if test "x$env_ld_library_path" != "x"; then
+		enable_env_wrapper="yes"
+	fi
 fi
 
 AC_CHECK_FUNCS(strdup strtol strtoll strtoimax inet_aton inet_ntoa getopt_long getaddrinfo getutent strcasestr)
@@ -349,10 +359,6 @@ dnl Some more checks based on the detected settings above
 if test "x$ac_cv_lib_door_door_create" = "xyes"; then
         AC_CHECK_HEADERS(pthread.h)
         AC_CHECK_LIB(pthread, pthread_create)
-fi
-
-if test "x$enable_memtrace" = "xyes" ; then
-    AC_CHECK_LIB(dl, dlsym)
 fi
 
 AC_MSG_CHECKING(for LIBNET)
@@ -608,21 +614,20 @@ DEPS_CPPFLAGS="$CPPFLAGS $GLIB_CFLAGS $EVTLOG_CFLAGS $OPENSSL_CFLAGS $LIBNET_CFL
 CPPFLAGS="$DEPS_CPPFLAGS -D_GNU_SOURCE -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64"
 
 if test "x$enable_dynamic_linking" = "xyes"; then
-	DEPS_LIBS="$LIBS $LEXLIB $GLIB_LIBS $EVTLOG_LIBS $OPENSSL_LIBS $ZLIB_LIBS $LIBNET_LIBS $LIBWRAP_LIBS $LIBDBI_LIBS $RESOLV_LIBS"
+	DEPS_LIBS="$LIBS $BASE_LIBS $LEXLIB $GLIB_LIBS $EVTLOG_LIBS $OPENSSL_LIBS $ZLIB_LIBS $LIBNET_LIBS $LIBWRAP_LIBS $LIBDBI_LIBS $RESOLV_LIBS $LIBCAP_LIBS $PCRE_LIBS $REGEX_LIBS"
 elif test "x$enable_static_linking" = "xyes"; then
-	DEPS_LIBS="-static $LIBS $LEXLIB $GLIB_LIBS $EVTLOG_LIBS $OPENSSL_LIBS $ZLIB_LIBS $DL_LIBS $LIBNET_LIBS $LIBWRAP_LIBS $LIBDBI_LIBS $RESOLV_LIBS "
+	DEPS_LIBS="-static $LIBS $BASE_LIBS $LEXLIB $GLIB_LIBS $EVTLOG_LIBS $OPENSSL_LIBS $ZLIB_LIBS $DL_LIBS $LIBNET_LIBS $LIBWRAP_LIBS $LIBDBI_LIBS $RESOLV_LIBS $LIBCAP_LIBS $PCRE_LIBS $REGEX_LIBS"
 else
 	dnl on our AIX box, it's necessary to add the OpenSSL linking options first 
 	dnl to the parameter list, otherwise it tries to link to the wrong version
 	dnl of OpenSSL. But Bazsi says it doesn't work on Ubuntu Dapper though. So 
 	dnl at least now it remains an ugly exception...
 	if test "$ostype" = "AIX"; then
-		DEPS_LIBS="$LIBS $RESOLV_LIBS $LD_START_STATIC $OPENSSL_LIBS $LEXLIB $GLIB_LIBS $EVTLOG_LIBS $ZLIB_LIBS $LIBNET_LIBS $LIBWRAP_LIBS $LD_END_STATIC $LIBDBI_LIBS $DL_LIBS "
+		DEPS_LIBS="$LIBS $BASE_LIBS $RESOLV_LIBS $LD_START_STATIC $OPENSSL_LIBS $LEXLIB $GLIB_LIBS $EVTLOG_LIBS $ZLIB_LIBS $LIBNET_LIBS $LIBWRAP_LIBS $LIBCAP_LIBS $PCRE_LIBS $REGEX_LIBS $LD_END_STATIC $LIBDBI_LIBS $DL_LIBS "
 	else
-		DEPS_LIBS="$LIBS $RESOLV_LIBS $LD_START_STATIC $LEXLIB $GLIB_LIBS $EVTLOG_LIBS $OPENSSL_LIBS $ZLIB_LIBS $LIBNET_LIBS $LIBWRAP_LIBS $LD_END_STATIC $LIBDBI_LIBS $DL_LIBS "
+		DEPS_LIBS="$LIBS $BASE_LIBS $RESOLV_LIBS $LD_START_STATIC $LEXLIB $GLIB_LIBS $EVTLOG_LIBS $OPENSSL_LIBS $ZLIB_LIBS $LIBNET_LIBS $LIBWRAP_LIBS $LIBCAP_LIBS $PCRE_LIBS $REGEX_LIBS $LD_END_STATIC $LIBDBI_LIBS $DL_LIBS "
 	fi
 fi
-LIBS="$DEPS_LIBS"
 
 dynamic_threads
 
@@ -677,7 +682,9 @@ AC_DEFINE_UNQUOTED(ENABLE_SSL, `enable_value $enable_ssl`, [Enable SSL support])
 AC_DEFINE_UNQUOTED(ENABLE_SQL, `enable_value $enable_sql`, [Enable SQL support])
 AC_DEFINE_UNQUOTED(ENABLE_LINUX_CAPS, `enable_value $enable_linux_caps`, [Enable Linux capability management support])
 AC_DEFINE_UNQUOTED(ENABLE_PCRE, `enable_value $enable_pcre`, [Enable PCRE support])
+AC_DEFINE_UNQUOTED(ENABLE_ENV_WRAPPER, `enable_value $enable_env_wrapper`, [Enable environment wrapper support])
 
+AM_CONDITIONAL(ENABLE_ENV_WRAPPER, [test "$enable_env_wrapper" = "yes"])
 
 AC_SUBST(DEPS_CPPFLAGS)
 AC_SUBST(DEPS_LIBS)
@@ -725,5 +732,6 @@ echo "  SSL support                 : ${enable_ssl:=no}"
 echo "  SQL support                 : ${enable_sql:=no}"
 echo "  Linux capability support    : ${enable_linux_caps:=no}"
 echo "  PCRE support                : ${enable_pcre:=no}"
+echo "  Env wrapper support         : ${enable_env_wrapper:=no}"
 
 

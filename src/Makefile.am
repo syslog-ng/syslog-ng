@@ -1,10 +1,17 @@
 YFLAGS=@YFLAGS@
 
+if ENABLE_ENV_WRAPPER
+libexec_PROGRAMS = syslog-ng
+sbin_PROGRAMS = syslog-ng-wrapper
+else
 sbin_PROGRAMS = syslog-ng
+endif
+
 noinst_LIBRARIES = libsyslog-ng.a
 
 syslog_ng_SOURCES = main.c
-syslog_ng_LDADD = libsyslog-ng.a
+syslog_ng_LDADD = libsyslog-ng.a @DEPS_LIBS@
+syslog_ng_wrapper_SOURCES = wrapper.c
 
 libsyslog_ng_a_SOURCES = \
 	misc.c misc.h utils.c utils.h messages.c messages.h syslog-names.c syslog-names.h \
@@ -47,3 +54,13 @@ cfg-grammar.c: cfg-grammar.y
 EXTRA_DIST = cfg-grammar.h cfg-lex.c cfg-grammar.c syslog-ng.h
 
 MAINTAINER_CLEAN_FILES = cfg-lex.c cfg-grammar.c cfg-grammar.h
+
+if ENABLE_ENV_WRAPPER
+
+install-exec-hook:
+	mv $(DESTDIR)/$(sbindir)/syslog-ng-wrapper $(DESTDIR)/$(sbindir)/syslog-ng
+else
+
+install-exec-hook:
+	echo Nothing to do!
+endif

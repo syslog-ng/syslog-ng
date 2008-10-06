@@ -46,6 +46,9 @@
 #define PATH_SYSLOG_NG_CONF     PATH_SYSCONFDIR "/syslog-ng.conf"
 #define PATH_PIDFILE            PATH_PIDFILEDIR "/syslog-ng.pid"
 #define PATH_CONTROL_SOCKET     PATH_PIDFILEDIR "/syslog-ng.ctl"
+#if ENABLE_ENV_WRAPPER
+#define PATH_SYSLOGNG           PATH_PREFIX "/libexec/syslog-ng"
+#endif
 
 #define PATH_PERSIST_CONFIG     PATH_LOCALSTATEDIR "/syslog-ng.persist"
 #define PATH_QDISK              PATH_LOCALSTATEDIR
