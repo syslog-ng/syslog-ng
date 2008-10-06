@@ -87,7 +87,7 @@ fop_or_eval(FilterExprNode *s, LogMessage *msg)
 {
   FilterOp *self = (FilterOp *) s;
   
-  return (filter_expr_eval(self->right, msg) || filter_expr_eval(self->left, msg)) ^ s->comp;
+  return (filter_expr_eval(self->left, msg) || filter_expr_eval(self->right, msg)) ^ s->comp;
 }
 
 FilterExprNode *
@@ -109,7 +109,7 @@ fop_and_eval(FilterExprNode *s, LogMessage *msg)
 {
   FilterOp *self = (FilterOp *) s;
   
-  return (filter_expr_eval(self->right, msg) && filter_expr_eval(self->left, msg)) ^ s->comp;
+  return (filter_expr_eval(self->left, msg) && filter_expr_eval(self->right, msg)) ^ s->comp;
 }
 
 FilterExprNode *
