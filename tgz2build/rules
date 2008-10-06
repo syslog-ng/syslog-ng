@@ -3,7 +3,7 @@ STAMPDIR=tgz2build/stamps
 DOCDIR=$(PREFIX)/doc
 
 
-CONFIGURE_OPTS := --prefix $(ZBS_PREFIX) --enable-dynamic-linking --enable-sql --enable-spoof-source --disable-tcp-wrapper --disable-pcre
+CONFIGURE_OPTS := --prefix $(ZBS_PREFIX) --enable-ssl --enable-dynamic-linking --enable-sql --enable-spoof-source --disable-tcp-wrapper --disable-pcre --with-ld-library-path=$(ZBS_PREFIX)/lib
 INSTALL:=./install-sh
 RPATH=-Wl,-R/opt/syslog-ng/lib
 

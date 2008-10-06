@@ -72,6 +72,10 @@ AC_ARG_WITH(timezone-dir,
    [  --with-timezone-dir=path   Use path as the directory to get the timezone files],
    timezone_dir=$with_timezone_dir)
 
+AC_ARG_WITH(ld-library-path,
+   [  --with-ld-library-path=path  Set LD_LIBRARY_PATH during runtime to the value given],
+   env_ld_library_path=$with_ld_library_path)
+
 AC_ARG_ENABLE(debug, 
               [  --enable-debug      Enable debugging code.],, enable_debug="no")
 
@@ -654,6 +658,9 @@ AC_DEFINE_UNQUOTED(PATH_LOCALSTATEDIR, "`patheval $localstatedir`", [local state
 AC_DEFINE_UNQUOTED(PATH_PIDFILEDIR, "`patheval $pidfiledir`", [local state directory])
 if test -n "$timezone_dir"; then
         AC_DEFINE_UNQUOTED(PATH_TIMEZONEDIR, "`patheval $timezone_dir`", [timezone base directory])
+fi
+if test -n "$env_ld_library_path"; then
+        AC_DEFINE_UNQUOTED(ENV_LD_LIBRARY_PATH, "$env_ld_library_path", [set LD_LIBRARY_PATH to this value])
 fi
 
 AC_DEFINE_UNQUOTED(ENABLE_SUN_STREAMS, `enable_value $enable_sun_streams`, [have STREAMS support])
