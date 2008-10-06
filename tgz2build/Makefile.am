@@ -1,2 +1,2 @@
 
-EXTRA_DIST = syslog-ng-premium-edition.files rules 
+EXTRA_DIST = syslog-ng.files rules 
