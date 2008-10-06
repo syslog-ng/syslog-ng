@@ -339,9 +339,15 @@ main(int argc, char *argv[])
   {
     gchar *cur_ldlibpath;
     gchar ldlibpath[512];
-    
+
+#if _AIX
+    cur_ldlibpath = getenv("LIBPATH");
+    g_snprintf(ldlibpath, sizeof(ldlibpath), "LIBPATH=%s:%s", ENV_LD_LIBRARY_PATH, cur_ldlibpath ? cur_ldlibpath : "/usr/lib:/lib");
+  
+#else
     cur_ldlibpath = getenv("LD_LIBRARY_PATH");
     g_snprintf(ldlibpath, sizeof(ldlibpath), "LD_LIBRARY_PATH=%s%s%s", ENV_LD_LIBRARY_PATH, cur_ldlibpath ? ":" : "", cur_ldlibpath ? cur_ldlibpath : "");
+#endif
     putenv(ldlibpath);
   }
 #endif
