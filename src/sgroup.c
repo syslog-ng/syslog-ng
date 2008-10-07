@@ -25,7 +25,6 @@
 #include "misc.h"
 #include "messages.h"
 #include "stats.h"
-#include "afinter.h"
 
 #include <time.h>
 
@@ -46,13 +45,19 @@ log_source_group_init(LogPipe *s)
         {
           msg_error("Error initializing source driver",
                     evt_tag_str("source", self->name),
+                    evt_tag_str("id", p->id),
                     NULL);
-	  return FALSE;
+          goto deinit_all;
 	}
       log_pipe_append(&p->super, s);
     }
   stats_register_counter(0, SCS_SOURCE | SCS_GROUP, self->name, NULL, SC_TYPE_PROCESSED, &self->processed_messages);
   return TRUE;
+  
+ deinit_all:
+  for (p = self->drivers; p; p = p->drv_next)
+    log_pipe_deinit(&p->super);
+  return FALSE;
 }
 
 static gboolean
@@ -60,6 +65,7 @@ log_source_group_deinit(LogPipe *s)
 {
   LogSourceGroup *self = (LogSourceGroup *) s;
   LogDriver *p;
+  gboolean success = TRUE;
 
   stats_unregister_counter(SCS_SOURCE | SCS_GROUP, self->name, NULL, SC_TYPE_PROCESSED, &self->processed_messages);
   for (p = self->drivers; p; p = p->drv_next)
@@ -68,11 +74,12 @@ log_source_group_deinit(LogPipe *s)
         {
           msg_error("Error deinitializing source driver",
                     evt_tag_str("source", self->name),
+                    evt_tag_str("id", p->id),
                     NULL);
-	  return FALSE;
+          success = FALSE;
 	}
     }
-  return TRUE;
+  return success;
 }
 
 static void

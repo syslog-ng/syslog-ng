@@ -24,6 +24,7 @@
 #include "dgroup.h"
 #include "misc.h"
 #include "stats.h"
+#include "messages.h"
 
 #include <sys/time.h>
 
@@ -40,10 +41,21 @@ log_dest_group_init(LogPipe *s)
       if (!p->id)
         p->id = g_strdup_printf("%s#%d", self->name, id++);
       if (!log_pipe_init(&p->super, log_pipe_get_config(s)))
-      	return FALSE;
+        {
+          msg_error("Error initializing dest driver",
+                    evt_tag_str("dest", self->name),
+                    evt_tag_str("id", p->id),
+                    NULL);
+          goto deinit_all;
+        }
     }
   stats_register_counter(0, SCS_DESTINATION | SCS_GROUP, self->name, NULL, SC_TYPE_PROCESSED, &self->processed_messages);
   return TRUE;
+
+ deinit_all:
+  for (p = self->drivers; p; p = p->drv_next)
+    log_pipe_deinit(&p->super);
+  return FALSE;
 }
 
 static gboolean
@@ -51,14 +63,21 @@ log_dest_group_deinit(LogPipe *s)
 {
   LogDestGroup *self = (LogDestGroup *) s;
   LogDriver *p;
+  gboolean success = TRUE;
 
   stats_unregister_counter(SCS_DESTINATION | SCS_GROUP, self->name, NULL, SC_TYPE_PROCESSED, &self->processed_messages);
   for (p = self->drivers; p; p = p->drv_next)
     {
       if (!log_pipe_deinit(&p->super))
-       	return FALSE;
+        {
+          msg_error("Error deinitializing source driver",
+                    evt_tag_str("source", self->name),
+                    evt_tag_str("id", p->id),
+                    NULL);
+          success = FALSE;
+        }
     }
-  return TRUE;
+  return success;
 }
 
 static void
