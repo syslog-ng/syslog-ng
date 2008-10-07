@@ -384,6 +384,15 @@ afsql_dd_validate_table(AFSqlDestDriver *self, gchar *table)
   return success;
 }
 
+static GMutex *sql_drivers_lock;
+static GList *sql_active_drivers;
+static GList *sql_deactivate_drivers;
+static gboolean db_thread_iter_finished;
+static GCond *db_thread_iter_finished_cond, *db_thread_wakeup_cond;
+static gboolean db_thread_terminate = FALSE;
+static GThread *db_thread;
+static gint db_thread_max_sleep_time = -1;
+
 #define INSERTS_AT_A_TIME 30
 
 /**
@@ -453,7 +462,7 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
         }
     }
 
-  while (count < INSERTS_AT_A_TIME)
+  while (!db_thread_terminate && count < INSERTS_AT_A_TIME)
     {
       LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
       
@@ -557,14 +566,6 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
   return TRUE;
 }
 
-static GMutex *sql_drivers_lock;
-static GList *sql_active_drivers;
-static GList *sql_deactivate_drivers;
-static gboolean db_thread_iter_finished;
-static GCond *db_thread_iter_finished_cond, *db_thread_wakeup_cond;
-static gboolean db_thread_terminate = FALSE;
-static GThread *db_thread;
-static gint db_thread_max_sleep_time = -1;
 
 
 static gpointer
@@ -582,7 +583,7 @@ afsql_db_thread(gpointer arg)
       g_mutex_unlock(sql_drivers_lock);
       
       remaining_data = FALSE;
-      for (l = drivers; l; l = l->next)
+      for (l = drivers; !db_thread_terminate && l; l = l->next)
         {
           AFSqlDestDriver *dd = (AFSqlDestDriver *) l->data;
           
