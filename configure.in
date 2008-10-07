@@ -145,6 +145,8 @@ case "$ostype" in
 	HP-UX)
 		if $CC -v 2>&1 | grep gcc > /dev/null; then
 			CFLAGS="${CFLAGS} -U_XOPEN_SOURCE -U_XOPEN_SOURCE_EXTENDED -D_HPUX_SOURCE"
+			LDFLAGS="${LDFLAGS} -lcl"
+			AC_DEFINE(HAVE_BROKEN_PREAD, 1, [define if your platform has a broken pread/pwrite (e.g. HP-UX)])
 			AC_MSG_WARN([NOTE: on HP-UX with gcc, you might need to edit sys/socket.h manually or you'll get compilation errors])
 		fi
 		;;
