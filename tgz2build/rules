@@ -57,8 +57,8 @@ $(STAMPDIR)/stamp-install: $(STAMPDIR)/stamp-build
 	$(INSTALL) -d -m 755 $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/share/doc
 
 	#Store syslog-ng build options
-	$(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/sbin/syslog-ng -V \
-	| grep 'Enable' > $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/share/doc/buildopts
+	src/syslog-ng -V \
+		| grep 'Enable' > $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/share/doc/buildopts
 
 	$(INSTALL) -d -m 755 $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/lib
 	$(INSTALL) -m 644 -c README $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/share/doc 
