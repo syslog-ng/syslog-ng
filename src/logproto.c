@@ -929,6 +929,13 @@ log_proto_framed_server_fetch(LogProto *s, const guchar **msg, gsize *msg_len, G
   return LPS_SUCCESS;
 }
 
+static void
+log_proto_framed_server_free(LogProto *s)
+{
+  LogProtoFramedServer *self = (LogProtoFramedServer *) s;
+  g_free(self->buffer);
+}
+
 LogProto *
 log_proto_framed_new_server(LogTransport *transport, gint max_msg_size)
 {
@@ -936,6 +943,7 @@ log_proto_framed_new_server(LogTransport *transport, gint max_msg_size)
 
   self->super.prepare = log_proto_framed_server_prepare;
   self->super.fetch = log_proto_framed_server_fetch;
+  self->super.free_fn = log_proto_framed_server_free;
   self->super.transport = transport;
   self->super.convert = (GIConv) -1;
   /* max message + frame header */
