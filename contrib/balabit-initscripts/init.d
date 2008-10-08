@@ -200,7 +200,7 @@ syslogng_reload() {
 
 syslogng_status() {
 	echo_n "Checking for syslog-ng service: "
-	pid=`pidofproc $SYSLOGNG`
+	pid=`pidofproc -p ${PIDFILE} $SYSLOGNG`
 	retval=$?
 	if [ $retval -ne 0 ];then
 		msg=
