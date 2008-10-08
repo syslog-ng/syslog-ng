@@ -23,11 +23,11 @@ const gint64 LOWEST_TIME32    = (gint64)((gint32)0x80000000);
 static const gchar *time_zone_path_list[] = 
 { 
 #ifdef PATH_TIMEZONEDIR
-  PATH_TIMEZONEDIR,
+  PATH_TIMEZONEDIR,               /* search the user specified dir */
 #endif
-  "/usr/share/zoneinfo/",  /* linux */
-  "/usr/share/lib/zoneinfo/", /* solaris, AIX */
-  PATH_PREFIX "/share/zoneinfo/", /* any other case */
+  PATH_PREFIX "/share/zoneinfo/", /* then local installation first */
+  "/usr/share/zoneinfo/",         /* linux */
+  "/usr/share/lib/zoneinfo/",     /* solaris, AIX */
   NULL,
 };
 
