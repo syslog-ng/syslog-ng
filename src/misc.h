@@ -47,6 +47,8 @@ gchar *format_hex_string(gpointer str, gsize str_len, gchar *result, gsize resul
 gchar *find_cr_or_lf(gchar *s, gsize n);
 
 gboolean create_containing_directory(gchar *name, uid_t dir_uid, gid_t dir_gid, mode_t dir_mode);
+GThread *create_worker_thread(GThreadFunc func, gpointer data, gboolean joinable, GError **error);
+
 
 static inline void
 init_sequence_number(gint32 *seqnum)

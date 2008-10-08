@@ -673,7 +673,7 @@ afsql_init_db_thread(gint hook_type G_GNUC_UNUSED, gpointer user_data)
       sql_drivers_lock = g_mutex_new();
       db_thread_iter_finished_cond = g_cond_new();
       db_thread_wakeup_cond = g_cond_new();
-      db_thread = g_thread_create(afsql_db_thread, NULL, TRUE, NULL);
+      db_thread = create_worker_thread(afsql_db_thread, NULL, TRUE, NULL);
       register_application_hook(AH_SHUTDOWN, afsql_kill_db_thread, NULL);
     }
   

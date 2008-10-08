@@ -39,6 +39,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <stdio.h>
+#include <signal.h>
 
 GString *
 g_string_assign_len(GString *s, const gchar *val, gint len)
@@ -488,4 +489,48 @@ string_list_free(GList *l)
       g_free(l->data);
       l = g_list_delete_link(l, l);
     }
+}
+
+typedef struct _WorkerThreadParams
+{
+  GThreadFunc func;
+  gpointer data;
+} WorkerThreadParams;
+
+static gpointer
+worker_thread_func(gpointer st)
+{
+  WorkerThreadParams *p = st;
+  gpointer res;
+  sigset_t mask;
+  
+  sigemptyset(&mask);
+  sigaddset(&mask, SIGHUP);
+  sigaddset(&mask, SIGCHLD);
+  sigaddset(&mask, SIGTERM);
+  sigaddset(&mask, SIGINT);
+  sigprocmask(SIG_BLOCK, &mask, NULL);
+  
+  res = p->func(p->data);
+  g_free(st);
+  return res;
+}
+
+GThread *
+create_worker_thread(GThreadFunc func, gpointer data, gboolean joinable, GError **error)
+{
+  GThread *h;
+  WorkerThreadParams *p;
+  
+  p = g_new0(WorkerThreadParams, 1);
+  p->func = func;
+  p->data = data;
+  
+  h = g_thread_create(worker_thread_func, p, joinable, error);
+  if (!h)
+    {
+      g_free(p);
+      return NULL;
+    }
+  return h;
 }
