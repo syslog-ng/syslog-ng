@@ -73,6 +73,9 @@ if [ -f /lib/lsb/init-functions ];then
 		if [ $rh_rel -lt 5 ];then
 			INIT_FUNCTIONS=$SLNG_INIT_FUNCTIONS
 		fi
+	elif [ -f "/etc/SuSE-release" ];then
+			# SuSE's LSB implementation is broken...
+			INIT_FUNCTIONS=$SLNG_INIT_FUNCTIONS
 	elif [ -n "$DISTRIB_ID" ];then
 		case "$DISTRIB_ID" in
 			Ubuntu)
@@ -199,7 +202,7 @@ syslogng_restart() {
 syslogng_reload() {
 	echo_n "Reloading syslog-ng's config file: "
 	check_syntax 
-	killproc -p ${PIDFILE} $SYSLOGNG -HUP
+	killproc -p ${PIDFILE} ${SYSLOGNG} -HUP
 	retval=$?
 	returnmessage $retval
 	return $retval
@@ -207,7 +210,7 @@ syslogng_reload() {
 
 syslogng_status() {
 	echo_n "Checking for syslog-ng service: "
-	pid=`pidofproc -p ${PIDFILE} $SYSLOGNG`
+	pid=`pidofproc -p ${PIDFILE} ${SYSLOGNG}`
 	retval=$?
 	if [ $retval -ne 0 ];then
 		msg=
