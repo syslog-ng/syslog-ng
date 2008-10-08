@@ -27,6 +27,7 @@ _checkpid() {
 _pid_from_pidfile() {
   pidfile=$1
   procname=$2
+  pid=
 
   if [ -f "$pidfile" ];then
     pid=`head -1 $pidfile`
