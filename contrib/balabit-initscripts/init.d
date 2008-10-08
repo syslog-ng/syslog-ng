@@ -124,6 +124,9 @@ slng_waitforpid() {
   _process=$2
 	_cnt=$MAXWAIT
 
+	# no pid, return...
+	[ -z "$_pid" ] && return 0
+
 	_procname=`basename $_process`
 
 	while [ $_cnt -gt 0 ]; do
@@ -163,6 +166,10 @@ syslogng_start() {
 syslogng_stop() {
 	echo_n "Stopping syslog-ng: "
 	PID=`pidofproc -p ${PIDFILE} ${SYSLOGNG} | head -1`
+	retval=$?
+	if [ $retval -ne 0 ] || [ -z "$PID" ];then
+		return $retval
+	fi
 	killproc -p ${PIDFILE} ${SYSLOGNG}
 	retval=$?
 	if [ $retval -eq 0 ];then
