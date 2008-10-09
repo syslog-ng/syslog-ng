@@ -55,7 +55,8 @@ slng_stop() {
         kill -TERM $syspid
 
         _process=`basename $SYSLOGNG`
-        $_ret=slng_waitforpid "`basename $SYSLOGNG`" $syspid
+        slng_waitforpid "$_process" $syspid
+	_ret=$?
         if [ $_ret -eq 0 ]; then
                 kill -KILL $syspid
                 $_ret=$?
