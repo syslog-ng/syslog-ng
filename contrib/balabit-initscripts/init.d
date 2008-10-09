@@ -66,16 +66,9 @@ fi
 
 if [ -f /lib/lsb/init-functions ];then
 	# long list of exclusions... 
-	if [ -f /etc/redhat-release ];then
-		rh_rel=`sed -e 's/[^0-9]* \([0-9\.]*\) (.*/\1/' /etc/redhat-release | cut -f1 -d'.'`
-		# RedHat Enterprise Linux's init functions before version 5 lacked
-		# pidfile support.
-		if [ $rh_rel -lt 5 ];then
-			INIT_FUNCTIONS=$SLNG_INIT_FUNCTIONS
-		fi
-	elif [ -f "/etc/SuSE-release" ];then
-			# SuSE's LSB implementation is broken...
-			INIT_FUNCTIONS=$SLNG_INIT_FUNCTIONS
+	if [ -f "/etc/redhat-release" ] || [ -f "/etc/SuSE-release" ];then
+		# RHEL's and SuSE's LSB implementations are broken in different ways ...
+		INIT_FUNCTIONS=$SLNG_INIT_FUNCTIONS
 	elif [ -n "$DISTRIB_ID" ];then
 		case "$DISTRIB_ID" in
 			Ubuntu)
