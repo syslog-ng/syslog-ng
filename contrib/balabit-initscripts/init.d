@@ -176,7 +176,7 @@ syslogng_stop() {
 	killproc -p ${PIDFILE} ${SYSLOGNG}
 	retval=$?
 	if [ $retval -eq 0 ];then
-		slng_waitforpid "$PID" ${PIDFILE}
+		slng_waitforpid "$PID" ${SYSLOGNG}
 		if [ $? -ne 0 ]; then
 			retval=$?
 			log_failure_msg " Timeout"
