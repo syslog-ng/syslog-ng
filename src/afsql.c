@@ -680,18 +680,6 @@ afsql_init_db_thread(gint hook_type G_GNUC_UNUSED, gpointer user_data)
   afsql_activate(activate);
 }
 
-
-static gchar *
-afsql_dd_format_persist_name(AFSqlDestDriver *self)
-{
-  static gchar persist_name[128];
-  
-  g_snprintf(persist_name, sizeof(persist_name),
-             "afsql_dd_qfile(%s,%s,%s,%s)",
-             self->type, self->host, self->port, self->database);
-  return persist_name;
-}
-
 static gchar *
 afsql_dd_format_stats_instance(AFSqlDestDriver *self)
 {
@@ -710,13 +698,6 @@ afsql_dd_init(LogPipe *s)
   GlobalConfig *cfg = log_pipe_get_config(s);
   gint len_cols, len_values;
   
-  if (!server_mode)
-    {
-      msg_error("syslog-ng running in client/relay mode, SQL destination is unavailable", NULL);
-      return FALSE;
-    }
-  
-  
   /* the maximum time to sleep on a condvar in the db_thread is the smallest
    * time_reopen value divided by 2. This ensures that we are not stuck with
    * a complete queue and a failed DB connection. (in which case the
@@ -732,30 +713,7 @@ afsql_dd_init(LogPipe *s)
 
   if (!self->queue)
     {
-      gchar *qfile_name;
-      gboolean success;
-      
-      self->queue = log_queue_new(self->mem_fifo_size, self->disk_fifo_size, 64);
-      
-      qfile_name = cfg_persist_config_fetch(cfg, afsql_dd_format_persist_name(self), NULL, NULL);
-      success = log_queue_restore_queue(self->queue, qfile_name, self->stored_messages);
-      if (!success)
-        {
-          if (log_queue_restore_queue(self->queue, NULL, self->stored_messages))
-            {
-              msg_error("Error opening disk-queue file, starting a new one", 
-                        evt_tag_str("old_filename", qfile_name),
-                        evt_tag_str("new_filename", log_queue_get_filename(self->queue)),
-                        NULL);
-              g_free(qfile_name);
-            }
-          else
-            {
-              g_free(qfile_name);
-              msg_error("Error initializing log queue", NULL);
-              goto error;
-            }
-        }
+      self->queue = log_queue_new(self->mem_fifo_size);
     }
   
   if (!self->fields)
@@ -839,19 +797,8 @@ static gboolean
 afsql_dd_deinit(LogPipe *s)
 {
   AFSqlDestDriver *self = (AFSqlDestDriver *) s;
-  GlobalConfig *cfg = log_pipe_get_config(s);
   
   afsql_deactivate(self);
-  if (self->queue)
-    {
-      gchar *qfile_name;
-      
-      if (log_queue_save_queue(self->queue, &qfile_name) && qfile_name)
-        {
-          cfg_persist_config_add_survivor(cfg, afsql_dd_format_persist_name(self), qfile_name, -1, FALSE);
-          g_free(qfile_name);
-        }
-    }
   /* self->dbi_ctx is freed in the DB thread, through the sql_dbi_context_free_queue queue */
 
   stats_unregister_counter(SCS_SQL | SCS_DESTINATION, self->super.id, afsql_dd_format_stats_instance(self), SC_TYPE_STORED, &self->stored_messages);
