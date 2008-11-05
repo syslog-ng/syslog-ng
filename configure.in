@@ -272,6 +272,8 @@ fi
 if test "x$enable_env_wrapper" = "xauto"; then
 	if test "x$env_ld_library_path" != "x"; then
 		enable_env_wrapper="yes"
+	else
+		enable_env_wrapper="no"
 	fi
 fi
 
