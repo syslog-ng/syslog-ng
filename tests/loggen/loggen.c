@@ -19,7 +19,10 @@
 #define MAX_MESSAGE_LENGTH 8192
 
 #define USEC_PER_SEC     10e6
+
+#ifndef MIN
 #define MIN(a, b)    ((a) < (b) ? (a) : (b))
+#endif
 
 int rate = 1000;
 int unix_socket = 0;
