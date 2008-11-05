@@ -437,10 +437,18 @@ afsocket_sd_accept(gpointer s)
       g_fd_set_nonblock(new_fd, TRUE);
       g_fd_set_cloexec(new_fd, TRUE);
         
-      msg_verbose("Syslog connection accepted",
-                  evt_tag_str("from", g_sockaddr_format(peer_addr, buf1, sizeof(buf1), GSA_FULL)),
-                  evt_tag_str("to", g_sockaddr_format(self->bind_addr, buf2, sizeof(buf2), GSA_FULL)),
-                  NULL);
+      if (peer_addr->sa.sa_family != AF_UNIX)
+        msg_notice("Syslog connection accepted",
+                    evt_tag_int("fd", new_fd),
+                    evt_tag_str("client", g_sockaddr_format(peer_addr, buf1, sizeof(buf1), GSA_FULL)),
+                    evt_tag_str("local", g_sockaddr_format(self->bind_addr, buf2, sizeof(buf2), GSA_FULL)),
+                    NULL);
+      else
+        msg_verbose("Syslog connection accepted",
+                    evt_tag_int("fd", new_fd),
+                    evt_tag_str("client", g_sockaddr_format(peer_addr, buf1, sizeof(buf1), GSA_FULL)),
+                    evt_tag_str("local", g_sockaddr_format(self->bind_addr, buf2, sizeof(buf2), GSA_FULL)),
+                    NULL);
 
       res = afsocket_sd_process_connection(self, peer_addr, new_fd);
       g_sockaddr_unref(peer_addr);
@@ -454,6 +462,20 @@ afsocket_sd_accept(gpointer s)
 static void
 afsocket_sd_close_connection(AFSocketSourceDriver *self, AFSocketSourceConnection *sc)
 {
+  gchar buf1[MAX_SOCKADDR_STRING], buf2[MAX_SOCKADDR_STRING];
+  
+  if (sc->peer_addr->sa.sa_family != AF_UNIX)
+    msg_notice("Syslog connection closed",
+               evt_tag_int("fd", sc->sock),
+               evt_tag_str("client", g_sockaddr_format(sc->peer_addr, buf1, sizeof(buf1), GSA_FULL)),
+               evt_tag_str("local", g_sockaddr_format(self->bind_addr, buf2, sizeof(buf2), GSA_FULL)),
+               NULL);
+  else
+    msg_verbose("Syslog connection closed",
+               evt_tag_int("fd", sc->sock),
+               evt_tag_str("client", g_sockaddr_format(sc->peer_addr, buf1, sizeof(buf1), GSA_FULL)),
+               evt_tag_str("local", g_sockaddr_format(self->bind_addr, buf2, sizeof(buf2), GSA_FULL)),
+               NULL);
   log_pipe_deinit(&sc->super);
   log_pipe_unref(&sc->super);
   self->num_connections--;
