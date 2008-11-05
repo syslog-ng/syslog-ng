@@ -34,6 +34,7 @@
 #include <netinet/in.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 /* FIXME: the lexer allocates strings with strdup instead of g_strdup,
  * therefore there are unnecessary g_strdup/free pairs in the grammar. These
