@@ -236,6 +236,13 @@ log_writer_fd_dispatch(GSource *source,
       log_writer_broken(self->writer, NC_CLOSE);
       return FALSE;
     }
+  else if (self->pollfd.revents & (G_IO_ERR))
+    {
+      msg_error("POLLERR occurred while idle",
+                evt_tag_int("fd", self->fd->fd),
+                NULL);
+      log_writer_broken(self->writer, NC_WRITE_ERROR);
+    }
   else if (num_elements)
     {
       if (!log_writer_flush_log(self->writer, self->proto))
