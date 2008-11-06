@@ -143,6 +143,9 @@ if test "x$ac_compiler_gnu" = "xyes"; then
         fi
 fi
 
+
+AC_SYS_LARGEFILE
+
 # FIXME: skip tests on unsupported platforms/architectures...
 case "$ostype" in
 	HP-UX)
@@ -153,10 +156,14 @@ case "$ostype" in
 			AC_MSG_WARN([NOTE: on HP-UX with gcc, you might need to edit sys/socket.h manually or you'll get compilation errors])
 		fi
 		;;
+	AIX)
+		if test "$ac_cv_sys_large_files" -ne 0; then
+			CFLAGS="${CFLAGS} -D_LARGE_FILES=1"
+		fi
+		;;
 esac 
 
 
-AC_SYS_LARGEFILE
 dnl ***************************************************************************
 dnl How to do static linking?
 dnl ***************************************************************************
