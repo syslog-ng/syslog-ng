@@ -645,6 +645,11 @@ g_process_change_root(void)
           g_process_message("Error in chroot(); chroot='%s', error='%s'\n", process_opts.chroot_dir, g_strerror(errno));
           return FALSE;
         }
+      if (chdir("/") < 0)
+        {
+          g_process_message("Error in chdir() after chroot; chroot='%s', error='%s'\n", process_opts.chroot_dir, g_strerror(errno));
+          return FALSE;
+        }
     }
   return TRUE;
 }
