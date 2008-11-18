@@ -326,7 +326,7 @@ OPENSSL_CPPFLAGS=""
 #  * TLS support
 
 dnl check OpenSSL static linking 
-PKG_CHECK_MODULES(OPENSSL, openssl >= $OPENSSL_MIN_VERSION)
+PKG_CHECK_MODULES(OPENSSL, openssl >= $OPENSSL_MIN_VERSION,, OPENSSL_LIBS="")
 
 if test -n "$OPENSSL_LIBS"; then
         dnl required for openssl, but only when linking statically
