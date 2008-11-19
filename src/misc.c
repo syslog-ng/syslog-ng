@@ -274,7 +274,7 @@ resolve_user(const char *user, uid_t *uid)
   struct passwd *pw;
 
   *uid = 0;
-  if (*user)
+  if (!(*user))
     return FALSE;
     
   pw = getpwnam(user);
@@ -299,7 +299,7 @@ resolve_group(const char *group, gid_t *gid)
   struct group *gr;
 
   *gid = 0;
-  if (!*group)
+  if (!(*group))
     return FALSE;
     
   gr = getgrnam(group);
