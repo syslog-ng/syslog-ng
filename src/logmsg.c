@@ -270,9 +270,26 @@ log_msg_set_value(LogMessage *self, const gchar *value_name, gchar *new_value, g
   gint value_id = GPOINTER_TO_UINT(value_name);
   static const char sd_prefix[] = ".SDATA.";
   const gint sd_prefix_len = sizeof(sd_prefix) - 1;
-
+  
   if (value_id < 128)
     {
+      gint i;
+      /* if the referenced matches use the field being changed, convert ref. matches to duplicated ones */
+      for (i = 0; i < self->num_matches; i++)
+        {
+          LogMessageMatch *lmm = &self->matches[i];
+          
+          if ((lmm->flags & LMM_REF_MATCH) && lmm->builtin_value == value_id)
+            {
+              gssize builtin_length;
+              gchar *referenced_value;
+              
+              referenced_value = log_msg_get_value(self, (gchar *) GINT_TO_POINTER((gint) lmm->builtin_value), &builtin_length);
+              lmm->match = g_strndup(&referenced_value[lmm->ofs], lmm->len);
+            }
+        }
+    
+    
       switch (value_id)
         {
         case LM_F_HOST:
