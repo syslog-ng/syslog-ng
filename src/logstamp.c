@@ -41,7 +41,7 @@ log_stamp_append_format(LogStamp *stamp, GString *target, gint ts_format, glong 
       switch (ts_format)
         {
         case TS_FMT_BSD:
-          g_string_append_printf(target, "%s %2d %02d:%02d:%02d", month_names[tm->tm_mon], tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
+          g_string_append_printf(target, "%s %2d %02d:%02d:%02d", month_names_abbrev[tm->tm_mon], tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
           break;
         case TS_FMT_ISO:
           g_string_append_printf(target, "%d-%02d-%02dT%02d:%02d:%02d", tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
@@ -63,7 +63,7 @@ log_stamp_append_format(LogStamp *stamp, GString *target, gint ts_format, glong 
           g_string_append(target, buf);
           break;
         case TS_FMT_FULL:
-          g_string_append_printf(target, "%d %s %2d %02d:%02d:%02d", tm->tm_year + 1900, month_names[tm->tm_mon], tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
+          g_string_append_printf(target, "%d %s %2d %02d:%02d:%02d", tm->tm_year + 1900, month_names_abbrev[tm->tm_mon], tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
           break;
         case TS_FMT_UNIX:
           g_string_append_printf(target, "%d", (int) stamp->time.tv_sec);

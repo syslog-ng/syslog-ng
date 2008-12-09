@@ -46,54 +46,6 @@ enum
   M_BSDTAG,
   M_PRI,
 
-  M_DATE,
-  M_FULLDATE,
-  M_ISODATE,
-  M_STAMP,
-  M_YEAR,
-  M_MONTH,
-  M_DAY,
-  M_HOUR,
-  M_MIN,
-  M_SEC,
-  M_WEEKDAY,
-  M_WEEK,
-  M_TZOFFSET,
-  M_TZ,
-  M_UNIXTIME,
-
-  M_DATE_RECVD,
-  M_FULLDATE_RECVD,
-  M_ISODATE_RECVD,
-  M_STAMP_RECVD,
-  M_YEAR_RECVD,
-  M_MONTH_RECVD,
-  M_DAY_RECVD,
-  M_HOUR_RECVD,
-  M_MIN_RECVD,
-  M_SEC_RECVD,
-  M_WEEKDAY_RECVD,
-  M_WEEK_RECVD,
-  M_TZOFFSET_RECVD,
-  M_TZ_RECVD,
-  M_UNIXTIME_RECVD,
-
-  M_DATE_STAMP,
-  M_FULLDATE_STAMP,
-  M_ISODATE_STAMP,
-  M_STAMP_STAMP,
-  M_YEAR_STAMP,
-  M_MONTH_STAMP,
-  M_DAY_STAMP,
-  M_HOUR_STAMP,
-  M_MIN_STAMP,
-  M_SEC_STAMP,
-  M_WEEKDAY_STAMP,
-  M_WEEK_STAMP,
-  M_TZOFFSET_STAMP,
-  M_TZ_STAMP,
-  M_UNIXTIME_STAMP,
-
   M_FULLHOST,
   M_HOST,
   M_SDATA,
@@ -104,9 +56,34 @@ enum
   M_MESSAGE,
   M_SOURCE_IP,
   M_SEQNUM,
-  M_MAX,
 
-  M_MATCH_REF_OFS=256
+  M_DATE,
+  M_FULLDATE,
+  M_ISODATE,
+  M_STAMP,
+  M_YEAR,
+  M_YEAR_DAY,
+  M_MONTH,
+  M_MONTH_WEEK,
+  M_MONTH_ABBREV,
+  M_MONTH_NAME,
+  M_DAY,
+  M_HOUR,
+  M_MIN,
+  M_SEC,
+  M_WEEK_DAY,
+  M_WEEK_DAY_ABBREV,
+  M_WEEK_DAY_NAME,
+  M_WEEK,
+  M_TZOFFSET,
+  M_TZ,
+  M_UNIXTIME,
+  M_TIME_FIRST = M_DATE,
+  M_TIME_LAST = M_UNIXTIME,
+  M_TIME_MACROS_MAX = M_UNIXTIME - M_DATE + 1,
+  
+  M_RECVD_OFS = M_TIME_MACROS_MAX,
+  M_STAMP_OFS = 2 * M_TIME_MACROS_MAX,
 };
 
 #define M_TIME_MACROS 15
@@ -127,53 +104,74 @@ macros[] =
         { "BSDTAG", M_BSDTAG },
         { "PRI", M_PRI },
 
-        { "DATE", M_DATE },
-        { "FULLDATE", M_FULLDATE },
-        { "ISODATE", M_ISODATE },
-        { "STAMP", M_STAMP },
-        { "YEAR", M_YEAR },
-        { "MONTH", M_MONTH },
-        { "DAY", M_DAY },
-        { "HOUR", M_HOUR },
-        { "MIN", M_MIN },
-        { "SEC", M_SEC },
-        { "WEEKDAY", M_WEEKDAY },
-        { "WEEK", M_WEEK },
-        { "UNIXTIME", M_UNIXTIME },
-        { "TZOFFSET", M_TZOFFSET },
-        { "TZ", M_TZ },
+        { "DATE",           M_DATE },
+        { "FULLDATE",       M_FULLDATE },
+        { "ISODATE",        M_ISODATE },
+        { "STAMP",          M_STAMP },
+        { "YEAR",           M_YEAR },
+        { "YEAR_DAY",       M_YEAR_DAY },
+        { "MONTH",          M_MONTH },
+        { "MONTH_WEEK",     M_MONTH_WEEK },
+        { "MONTH_ABBREV",   M_MONTH_ABBREV },
+        { "MONTH_NAME",     M_MONTH_NAME },
+        { "DAY",            M_DAY },
+        { "HOUR",           M_HOUR },
+        { "MIN",            M_MIN },
+        { "SEC",            M_SEC },
+        { "WEEKDAY",        M_WEEK_DAY_ABBREV }, /* deprecated */
+        { "WEEK_DAY",       M_WEEK_DAY },
+        { "WEEK_DAY_ABBREV",M_WEEK_DAY_ABBREV },
+        { "WEEK_DAY_NAME",  M_WEEK_DAY_NAME },
+        { "WEEK",           M_WEEK },
+        { "TZOFFSET",       M_TZOFFSET },
+        { "TZ",             M_TZ },
+        { "UNIXTIME",       M_UNIXTIME },
 
-        { "R_DATE", M_DATE_RECVD },
-        { "R_FULLDATE", M_FULLDATE_RECVD },
-        { "R_ISODATE", M_ISODATE_RECVD },
-        { "R_STAMP", M_STAMP_RECVD },
-        { "R_YEAR", M_YEAR_RECVD },
-        { "R_MONTH", M_MONTH_RECVD },
-        { "R_DAY", M_DAY_RECVD },
-        { "R_HOUR", M_HOUR_RECVD },
-        { "R_MIN", M_MIN_RECVD },
-        { "R_SEC", M_SEC_RECVD },
-        { "R_WEEKDAY", M_WEEKDAY_RECVD },
-        { "R_WEEK", M_WEEK_RECVD },
-        { "R_UNIXTIME", M_UNIXTIME_RECVD },
-        { "R_TZOFFSET", M_TZOFFSET_RECVD },
-        { "R_TZ", M_TZ_RECVD },
+        { "R_DATE",           M_RECVD_OFS + M_DATE },
+        { "R_FULLDATE",       M_RECVD_OFS + M_FULLDATE },
+        { "R_ISODATE",        M_RECVD_OFS + M_ISODATE },
+        { "R_STAMP",          M_RECVD_OFS + M_STAMP },
+        { "R_YEAR",           M_RECVD_OFS + M_YEAR },
+        { "R_YEAR_DAY",       M_RECVD_OFS + M_YEAR_DAY },
+        { "R_MONTH",          M_RECVD_OFS + M_MONTH },
+        { "R_MONTH_WEEK",     M_RECVD_OFS + M_MONTH_WEEK },
+        { "R_MONTH_ABBREV",   M_RECVD_OFS + M_MONTH_ABBREV },
+        { "R_MONTH_NAME",     M_RECVD_OFS + M_MONTH_NAME },
+        { "R_DAY",            M_RECVD_OFS + M_DAY },
+        { "R_HOUR",           M_RECVD_OFS + M_HOUR },
+        { "R_MIN",            M_RECVD_OFS + M_MIN },
+        { "R_SEC",            M_RECVD_OFS + M_SEC },
+        { "R_WEEKDAY",        M_RECVD_OFS + M_WEEK_DAY_ABBREV }, /* deprecated */
+        { "R_WEEK_DAY",       M_RECVD_OFS + M_WEEK_DAY },
+        { "R_WEEK_DAY_ABBREV",M_RECVD_OFS + M_WEEK_DAY_ABBREV },
+        { "R_WEEK_DAY_NAME",  M_RECVD_OFS + M_WEEK_DAY_NAME },
+        { "R_WEEK",           M_RECVD_OFS + M_WEEK },
+        { "R_TZOFFSET",       M_RECVD_OFS + M_TZOFFSET },
+        { "R_TZ",             M_RECVD_OFS + M_TZ },
+        { "R_UNIXTIME",       M_RECVD_OFS + M_UNIXTIME },
 
-        { "S_DATE", M_DATE_STAMP },
-        { "S_FULLDATE", M_FULLDATE_STAMP },
-        { "S_ISODATE", M_ISODATE_STAMP },
-        { "S_STAMP", M_STAMP_STAMP },
-        { "S_YEAR", M_YEAR_STAMP },
-        { "S_MONTH", M_MONTH_STAMP },
-        { "S_DAY", M_DAY_STAMP },
-        { "S_HOUR", M_HOUR_STAMP },
-        { "S_MIN", M_MIN_STAMP },
-        { "S_SEC", M_SEC_STAMP },
-        { "S_WEEKDAY", M_WEEKDAY_STAMP },
-        { "S_WEEK", M_WEEK_STAMP },
-        { "S_UNIXTIME", M_UNIXTIME_STAMP },
-        { "S_TZOFFSET", M_TZOFFSET_STAMP },
-        { "S_TZ", M_TZ_STAMP },
+        { "S_DATE",           M_STAMP_OFS + M_DATE },
+        { "S_FULLDATE",       M_STAMP_OFS + M_FULLDATE },
+        { "S_ISODATE",        M_STAMP_OFS + M_ISODATE },
+        { "S_STAMP",          M_STAMP_OFS + M_STAMP },
+        { "S_YEAR",           M_STAMP_OFS + M_YEAR },
+        { "S_YEAR_DAY",       M_STAMP_OFS + M_YEAR_DAY },
+        { "S_MONTH",          M_STAMP_OFS + M_MONTH },
+        { "S_MONTH_WEEK",     M_STAMP_OFS + M_MONTH_WEEK },
+        { "S_MONTH_ABBREV",   M_STAMP_OFS + M_MONTH_ABBREV },
+        { "S_MONTH_NAME",     M_STAMP_OFS + M_MONTH_NAME },
+        { "S_DAY",            M_STAMP_OFS + M_DAY },
+        { "S_HOUR",           M_STAMP_OFS + M_HOUR },
+        { "S_MIN",            M_STAMP_OFS + M_MIN },
+        { "S_SEC",            M_STAMP_OFS + M_SEC },
+        { "S_WEEKDAY",        M_STAMP_OFS + M_WEEK_DAY_ABBREV }, /* deprecated */
+        { "S_WEEK_DAY",       M_STAMP_OFS + M_WEEK_DAY },
+        { "S_WEEK_DAY_ABBREV",M_STAMP_OFS + M_WEEK_DAY_ABBREV },
+        { "S_WEEK_DAY_NAME",  M_STAMP_OFS + M_WEEK_DAY_NAME },
+        { "S_WEEK",           M_STAMP_OFS + M_WEEK },
+        { "S_TZOFFSET",       M_STAMP_OFS + M_TZOFFSET },
+        { "S_TZ",             M_STAMP_OFS + M_TZ },
+        { "S_UNIXTIME",       M_STAMP_OFS + M_UNIXTIME },
 
         { "FULLHOST_FROM", M_FULLHOST_FROM },
         { "FULLHOST", M_FULLHOST },
@@ -326,141 +324,6 @@ log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, TimeZo
           }
         break;
       }
-    case M_DATE:
-    case M_FULLDATE:
-    case M_ISODATE:
-    case M_STAMP:
-    case M_WEEKDAY:
-    case M_WEEK:
-    case M_YEAR:
-    case M_MONTH:
-    case M_DAY:
-    case M_HOUR:
-    case M_MIN:
-    case M_SEC:
-    case M_TZOFFSET:
-    case M_TZ:
-    case M_UNIXTIME:
-
-    case M_DATE_RECVD:
-    case M_FULLDATE_RECVD:
-    case M_ISODATE_RECVD:
-    case M_STAMP_RECVD:
-    case M_WEEKDAY_RECVD:
-    case M_WEEK_RECVD:
-    case M_YEAR_RECVD:
-    case M_MONTH_RECVD:
-    case M_DAY_RECVD:
-    case M_HOUR_RECVD:
-    case M_MIN_RECVD:
-    case M_SEC_RECVD:
-    case M_TZOFFSET_RECVD:
-    case M_TZ_RECVD:
-    case M_UNIXTIME_RECVD:
-
-    case M_DATE_STAMP:
-    case M_FULLDATE_STAMP:
-    case M_ISODATE_STAMP:
-    case M_STAMP_STAMP:
-    case M_WEEKDAY_STAMP:
-    case M_WEEK_STAMP:
-    case M_YEAR_STAMP:
-    case M_MONTH_STAMP:
-    case M_DAY_STAMP:
-    case M_HOUR_STAMP:
-    case M_MIN_STAMP:
-    case M_SEC_STAMP:
-    case M_TZOFFSET_STAMP:
-    case M_TZ_STAMP:
-    case M_UNIXTIME_STAMP:
-      {
-        /* year, month, day */
-        struct tm *tm, tm_storage;
-        gchar buf[64];
-        gint length;
-        time_t t;
-        LogStamp *stamp;
-        glong zone_ofs;
-
-        if (id >= M_DATE_RECVD && id <= M_UNIXTIME_RECVD)
-          {
-            stamp = &msg->timestamps[LM_TS_RECVD];
-            id = id - (M_DATE_RECVD - M_DATE);
-          }
-        else if (id >= M_DATE_STAMP && id <= M_UNIXTIME_STAMP)
-          {
-            stamp = &msg->timestamps[LM_TS_STAMP];
-            id = id - (M_DATE_STAMP - M_DATE);
-          }
-        else
-          {
-            if (flags & LT_STAMP_RECVD)
-              stamp = &msg->timestamps[LM_TS_RECVD];
-            else
-              stamp = &msg->timestamps[LM_TS_STAMP];
-          }
-
-        /* try to use the following zone values in order:
-         *   destination specific timezone, if one is specified
-         *   message specific timezone, if one is specified
-         *   local timezone
-         */
-        zone_ofs = (zone_info != NULL ? time_zone_info_get_offset(zone_info, stamp->time.tv_sec) : stamp->zone_offset);
-        t = stamp->time.tv_sec + zone_ofs;
-        tm = gmtime_r(&t, &tm_storage);
-
-        switch (id)
-          {
-          case M_WEEKDAY:
-            g_string_append_len(result, weekday_names[tm->tm_wday], 3);
-            break;
-          case M_WEEK:
-            g_string_sprintfa(result, "%02d", (tm->tm_yday - (tm->tm_wday - 1 + 7) % 7 + 7) / 7);
-            break;
-          case M_YEAR:
-            g_string_sprintfa(result, "%04d", tm->tm_year + 1900);
-            break;
-          case M_MONTH:
-            g_string_sprintfa(result, "%02d", tm->tm_mon + 1);
-            break;
-          case M_DAY:
-            g_string_sprintfa(result, "%02d", tm->tm_mday);
-            break;
-          case M_HOUR:
-            g_string_sprintfa(result, "%02d", tm->tm_hour);
-            break;
-          case M_MIN:
-            g_string_sprintfa(result, "%02d", tm->tm_min);
-            break;
-          case M_SEC:
-            g_string_sprintfa(result, "%02d", tm->tm_sec);
-            break;
-          case M_DATE:
-          case M_STAMP:
-          case M_ISODATE:
-          case M_FULLDATE:
-          case M_UNIXTIME:
-            {
-              GString *s = g_string_sized_new(0);
-              gint format = id == M_DATE ? TS_FMT_BSD : 
-                            id == M_ISODATE ? TS_FMT_ISO :
-                            id == M_FULLDATE ? TS_FMT_FULL :
-                            id == M_UNIXTIME ? TS_FMT_UNIX :
-                            ts_format;
-              
-              log_stamp_format(stamp, s, format, zone_ofs, frac_digits);
-              g_string_append_len(result, s->str, s->len);
-              g_string_free(s, TRUE);
-              break;
-            }
-          case M_TZ:
-          case M_TZOFFSET:
-            length = format_zone_info(buf, sizeof(buf), zone_ofs);
-            g_string_append_len(result, buf, length);
-            break;
-          }
-        break;
-      }
     case M_SDATA:
       if (flags & LT_ESCAPE)
         {
@@ -532,6 +395,120 @@ log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, TimeZo
         break;
       }
     default:
+      {
+        /* year, month, day */
+        struct tm *tm, tm_storage;
+        gchar buf[64];
+        gint length;
+        time_t t;
+        LogStamp *stamp;
+        glong zone_ofs;
+
+        if (id >= M_TIME_FIRST && id <= M_TIME_LAST)
+          {
+            if (flags & LT_STAMP_RECVD)
+              stamp = &msg->timestamps[LM_TS_RECVD];
+            else
+              stamp = &msg->timestamps[LM_TS_STAMP];
+          }
+        else if (id >= M_TIME_FIRST + M_RECVD_OFS && id <= M_TIME_LAST + M_RECVD_OFS)
+          {
+            id -= M_RECVD_OFS;
+            stamp = &msg->timestamps[LM_TS_RECVD];
+          }
+        else if (id >= M_TIME_FIRST + M_STAMP_OFS && id <= M_TIME_LAST + M_STAMP_OFS)
+          {
+            id -= M_STAMP_OFS;
+            stamp = &msg->timestamps[LM_TS_STAMP];
+          }
+        else
+          {
+            g_assert_not_reached();
+            break;
+          }
+
+        /* try to use the following zone values in order:
+         *   destination specific timezone, if one is specified
+         *   message specific timezone, if one is specified
+         *   local timezone
+         */
+        zone_ofs = (zone_info != NULL ? time_zone_info_get_offset(zone_info, stamp->time.tv_sec) : stamp->zone_offset);
+        t = stamp->time.tv_sec + zone_ofs;
+        tm = gmtime_r(&t, &tm_storage);
+
+        switch (id)
+          {
+          case M_WEEK_DAY_ABBREV:
+            g_string_append_len(result, weekday_names_abbrev[tm->tm_wday], 3);
+            break;
+          case M_WEEK_DAY_NAME:
+            g_string_append(result, weekday_names[tm->tm_wday]);
+            break;
+          case M_WEEK_DAY:
+            g_string_sprintfa(result, "%d", tm->tm_wday + 1);
+            break;
+          case M_WEEK:
+            g_string_sprintfa(result, "%02d", (tm->tm_yday - (tm->tm_wday - 1 + 7) % 7 + 7) / 7);
+            break;
+          case M_YEAR:
+            g_string_sprintfa(result, "%04d", tm->tm_year + 1900);
+            break;
+          case M_YEAR_DAY:
+            g_string_sprintfa(result, "%03d", tm->tm_yday + 1);
+            break;
+          case M_MONTH:
+            g_string_sprintfa(result, "%02d", tm->tm_mon + 1);
+            break;
+          case M_MONTH_WEEK:
+            g_string_sprintfa(result, "%d", (tm->tm_mday / 7) + 1);
+            break;
+          case M_MONTH_ABBREV:
+            g_string_append_len(result, month_names_abbrev[tm->tm_mon], 3);
+            break;
+          case M_MONTH_NAME:
+            g_string_append(result, month_names[tm->tm_mon]);
+            break;
+          case M_DAY:
+            g_string_sprintfa(result, "%02d", tm->tm_mday);
+            break;
+          case M_HOUR:
+            g_string_sprintfa(result, "%02d", tm->tm_hour);
+            break;
+          case M_MIN:
+            g_string_sprintfa(result, "%02d", tm->tm_min);
+            break;
+          case M_SEC:
+            g_string_sprintfa(result, "%02d", tm->tm_sec);
+            break;
+          case M_DATE:
+          case M_STAMP:
+          case M_ISODATE:
+          case M_FULLDATE:
+          case M_UNIXTIME:
+            {
+              GString *s = g_string_sized_new(0);
+              gint format = id == M_DATE ? TS_FMT_BSD : 
+                            id == M_ISODATE ? TS_FMT_ISO :
+                            id == M_FULLDATE ? TS_FMT_FULL :
+                            id == M_UNIXTIME ? TS_FMT_UNIX :
+                            ts_format;
+              
+              log_stamp_format(stamp, s, format, zone_ofs, frac_digits);
+              g_string_append_len(result, s->str, s->len);
+              g_string_free(s, TRUE);
+              break;
+            }
+          case M_TZ:
+          case M_TZOFFSET:
+            length = format_zone_info(buf, sizeof(buf), zone_ofs);
+            g_string_append_len(result, buf, length);
+            break;
+          }
+        break;
+      }
+
+
+
       g_assert_not_reached();
       break;
     }

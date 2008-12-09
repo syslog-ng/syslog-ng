@@ -27,9 +27,6 @@
 #include "syslog-ng.h"
 #include <time.h>
 
-extern const char *month_names[];
-extern const char *weekday_names[];
-
 time_t cached_mktime(struct tm *tm);
 void cached_localtime(time_t *when, struct tm *tm);
 long get_local_timezone_ofs(time_t when);
@@ -45,5 +42,11 @@ typedef struct _TimeZoneInfo TimeZoneInfo;
 gint32 time_zone_info_get_offset(const TimeZoneInfo *self, time_t stamp);
 TimeZoneInfo* time_zone_info_new(const gchar *tz);
 void time_zone_info_free(TimeZoneInfo *self);
+
+extern const char *month_names_abbrev[];
+extern const char *month_names[];
+extern const char *weekday_names_abbrev[];
+extern const char *weekday_names[];
+
 
 #endif

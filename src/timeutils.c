@@ -5,15 +5,26 @@
 #include <ctype.h>
 #include <string.h>
 
-const char *month_names[] =
+const char *month_names_abbrev[] =
 {
   "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
 };
 
-const char *weekday_names[] =
+const char *month_names[] =
+{
+  "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"
+};
+
+const char *weekday_names_abbrev[] =
 {
   "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"
 };
+
+const char *weekday_names[] =
+{
+  "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"
+};
+
 
 #define TZCACHE_SIZE 4
 #define TZCACHE_SIZE_MASK (TZCACHE_SIZE - 1)

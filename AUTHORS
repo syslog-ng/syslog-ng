@@ -13,6 +13,7 @@ Roger J. Meier - initgroups bugfix
 Corinna Vinschen - cygwin packaging files and portability fixes
 Charles G. Waldman - file source driver fixes
 Philip Bellino - IPv6 bugfixes
+Vijay Ramasubramanian - extending time related macros
 
 Suggestions, good bugreports, helping newbies on the mailing list:
 ------------------------------------------------------------------
