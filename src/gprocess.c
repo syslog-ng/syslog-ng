@@ -72,7 +72,7 @@ typedef enum
 } GProcessKind;
 
 #define G_PROCESS_FD_LIMIT_RESERVE 64
-#define G_PROCESS_FAILURE_NOTIFICATION PATH_PREFIX "sbin/syslog-ng-failure"
+#define G_PROCESS_FAILURE_NOTIFICATION PATH_PREFIX "/sbin/syslog-ng-failure"
 
 /* pipe used to deliver the initialization result to the calling process */
 static gint startup_result_pipe[2] = { -1, -1 };
