@@ -31,6 +31,7 @@
 
 #include <string.h>
 #include <strings.h>
+#include <sys/stat.h>
 
 struct keyword 
 {
@@ -52,6 +53,7 @@ static struct keyword keywords[] = {
 	{ "destination",	KW_DESTINATION },
 	{ "log",		KW_LOG },
 	{ "options",		KW_OPTIONS },
+	{ "include",            KW_INCLUDE },
 
 	/* source or destination items */
 	{ "file",		KW_FILE },
@@ -229,7 +231,20 @@ static struct keyword keywords[] = {
 
 #define MAX_REGEXP_LEN	1024
 
-int linenum = 1;
+typedef struct _CfgIncludeLevel
+{
+  GSList *files;
+  gchar *current_file;
+  gint linenum;
+  struct yy_buffer_state *yybuf;
+} CfgIncludeLevel;
+
+#define MAX_INCLUDE_DEPTH 16
+
+static CfgIncludeLevel include_stack[MAX_INCLUDE_DEPTH];
+static gint include_depth = 0;
+
+
 int lex_filter_params = 0;
 char buf[MAX_REGEXP_LEN];
 char *str;
@@ -237,6 +252,7 @@ char *str;
 static int check_reserved_words(char *token);
 static void append_string(int length, char *str);
 static void append_char(char c);
+static gboolean cfg_start_next_include(gboolean first_on_this_level);
 
 %}
 
@@ -254,7 +270,7 @@ word	[^ \#'"\(\)\{\}\\;\n\t,|\.]
 %%
 
 \#.*$                      ;
-\r?\n			   { linenum++; }
+\r?\n			   { include_stack[include_depth].linenum++; }
 {white}+		   ;
 \.\.                       { return DOTDOT; }
 0x{digit}+ 		   { yylval.num = strtoll(yytext, NULL, 16); return NUMBER; }
@@ -298,16 +314,13 @@ word	[^ \#'"\(\)\{\}\\;\n\t,|\.]
 				return STRING;
 			   }
 
-%%
-int 
-lex_init(FILE *file, gint init_line_num)
-{
-  yyrestart(file);
-  linenum = init_line_num;
-  return 0;
-}
 
-int 
+<INITIAL><<EOF>>           { if (!cfg_start_next_include(FALSE)) yyterminate(); }
+
+%%
+
+
+static int 
 check_reserved_words(char *token)
 {
   int i, j;
@@ -363,4 +376,225 @@ append_char(char c)
   *str = c;
   str++;
   *str = 0;
+}
+
+const gchar *
+cfg_lex_get_current_file(void)
+{
+  CfgIncludeLevel *level = &include_stack[include_depth];
+
+  return level->current_file;
+}
+
+gint
+cfg_lex_get_current_lineno(void)
+{
+  CfgIncludeLevel *level = &include_stack[include_depth];
+
+  return level->linenum;
+}
+
+static gboolean
+cfg_start_next_include(gboolean first_on_this_level)
+{
+  FILE *include_file;
+  CfgIncludeLevel *level = &include_stack[include_depth];
+  gchar *filename;
+  struct yy_buffer_state *yybuf;
+  
+  g_assert(level->yybuf == NULL);
+  
+  if (include_depth == 0)
+    {
+      return FALSE;
+    }
+
+  if (!first_on_this_level)
+    {
+      msg_debug("Finishing include file",
+                evt_tag_str("filename", level->current_file),
+                evt_tag_int("depth", include_depth),
+                NULL);
+    }
+  
+  if (!level->files)
+    {
+      yybuf = YY_CURRENT_BUFFER;
+      g_free(level->current_file);
+      level->current_file = NULL;
+      include_depth--;
+      yy_switch_to_buffer(include_stack[include_depth].yybuf);
+      include_stack[include_depth].yybuf = NULL;
+      if (!first_on_this_level)
+        yy_delete_buffer(yybuf);
+        
+      return TRUE;
+    }
+    
+  filename = (gchar *) level->files->data;
+  level->files = g_slist_delete_link(level->files, level->files);
+  
+  include_file = fopen(filename, "r");
+  if (!include_file)
+    {
+      msg_error("Error opening include file",
+                evt_tag_str("filename", filename),
+                evt_tag_int("depth", include_depth),
+                NULL);
+      g_free(filename);
+      return FALSE;
+    }
+  msg_debug("Starting to read include file",
+            evt_tag_str("filename", filename),
+            evt_tag_int("depth", include_depth),
+            NULL);
+  if (level->current_file)
+    g_free(level->current_file);
+  level->current_file = filename;
+  level->linenum = 1;
+  
+  yybuf = YY_CURRENT_BUFFER;
+  yy_switch_to_buffer(yy_create_buffer(include_file, YY_BUF_SIZE));
+  if (!first_on_this_level)
+    yy_delete_buffer(yybuf);
+  return TRUE;
+}
+
+gboolean
+cfg_lex_process_include(const gchar *filename)
+{
+  struct stat st;
+  gchar buf[1024];
+  CfgIncludeLevel *level;
+  
+  if (include_depth >= MAX_INCLUDE_DEPTH - 1)
+    {
+      msg_error("Include file depth is too deep, increase MAX_INCLUDE_DEPTH and recompile",
+                evt_tag_str("filename", filename),
+                evt_tag_int("depth", include_depth),
+                NULL);
+      return FALSE;
+    }
+  
+  if (filename[0] != '/')
+    {
+      g_snprintf(buf, sizeof(buf), "%s/%s", PATH_SYSCONFDIR, filename);
+      filename = buf;
+    }
+  
+  if (stat(filename, &st) < 0)
+    {
+      msg_error("Include file/directory not found", 
+                evt_tag_str("filename", filename),
+                evt_tag_errno("error", errno),
+                NULL);
+      return FALSE;
+    }
+  include_stack[include_depth].yybuf = YY_CURRENT_BUFFER;
+  include_depth++;
+  level = &include_stack[include_depth];
+  if (S_ISDIR(st.st_mode))
+    {
+      GDir *dir;
+      GError *error = NULL;
+      const gchar *entry;
+      
+      dir = g_dir_open(filename, 0, &error);
+      if (!dir)
+        {
+          msg_error("Error opening directory for reading",
+                evt_tag_str("filename", filename),
+                evt_tag_str("error", error->message),
+                NULL);
+          goto drop_level;
+        }
+      while ((entry = g_dir_read_name(dir)))
+        {
+          const gchar *p;
+          
+          for (p = entry; *p; p++)
+            {
+              if (!((*p >= 'a' && *p <= 'z') ||
+                   (*p >= 'A' && *p <= 'Z') ||
+                   (*p >= '0' && *p <= '9') ||
+                   (*p == '_') || (*p == '-') || (*p == '.')))
+                {
+                  msg_debug("Skipping include file, does not match pattern [\\-_a-zA-Z0-9]+",
+                            evt_tag_str("filename", entry),
+                            NULL);
+                  p = NULL;
+                  break;
+                }
+            }
+          if (p)
+            {
+              gchar *full_filename = g_build_filename(filename, entry, NULL);
+              if (stat(full_filename, &st) < 0 || S_ISDIR(st.st_mode))
+                {
+                  msg_debug("Skipping include file as it is a directory",
+                            evt_tag_str("filename", entry),
+                            NULL);
+                  g_free(full_filename);
+                  continue;
+                }
+              level->files = g_slist_insert_sorted(level->files, full_filename, (GCompareFunc) strcmp);
+              msg_debug("Adding include file",
+                        evt_tag_str("filename", entry),
+                        NULL);
+            }
+        }
+      g_dir_close(dir);
+      if (!level->files)
+        {
+          /* no include files in the specified directory */
+          msg_debug("No files in this include directory",
+                    evt_tag_str("dir", filename),
+                    NULL);
+          include_depth--;
+          return TRUE;
+        }
+    }
+  else
+    {
+      g_assert(level->files == NULL);
+      level->files = g_slist_prepend(level->files, g_strdup(filename));
+    }
+  return cfg_start_next_include(TRUE);
+ drop_level:
+  g_slist_foreach(level->files, (GFunc) g_free, NULL);
+  g_slist_free(level->files);
+  level->files = NULL;
+  return FALSE;
+}
+
+int 
+cfg_lex_init(FILE *file, gint init_line_num)
+{
+  CfgIncludeLevel *level;
+  
+  yyrestart(file);
+  level = &include_stack[0];
+  level->current_file = g_strdup(configuration->filename);
+  level->linenum = init_line_num;
+  return 0;
+}
+
+void
+cfg_lex_deinit(void)
+{
+  gint i;
+  
+  for (i = 0; i < include_depth; i++)
+    {
+      CfgIncludeLevel *level = &include_stack[i];
+
+      if (level->current_file)
+        g_free(level->current_file);
+      
+      g_slist_foreach(level->files, (GFunc) g_free, NULL);
+      g_slist_free(level->files);
+      level->files = NULL;
+      if (level->yybuf)
+        yy_delete_buffer(level->yybuf);
+    }
 }

@@ -52,6 +52,7 @@ LogParser *last_parser;
 FilterRE *last_re_filter;
 LogRewrite *last_rewrite;
 gint last_addr_family = AF_INET;
+gchar *last_include_file;
 
 #if ENABLE_SSL
 TLSContext *last_tls_context;
@@ -92,6 +93,7 @@ cfg_check_template(LogTemplate *template)
   return TRUE;
 }
 
+
 %}
 
 %union {
@@ -102,7 +104,7 @@ cfg_check_template(LogTemplate *template)
 }
 
 /* statements */
-%token	KW_SOURCE KW_FILTER KW_PARSER KW_DESTINATION KW_LOG KW_OPTIONS 
+%token	KW_SOURCE KW_FILTER KW_PARSER KW_DESTINATION KW_LOG KW_OPTIONS KW_INCLUDE
 
 /* source & destination items */
 %token	KW_INTERNAL KW_FILE KW_PIPE KW_UNIX_STREAM KW_UNIX_DGRAM
@@ -283,7 +285,21 @@ start
 	;
 
 stmts   
-        : stmt ';' stmts
+        : stmt ';' 
+          { 
+            if (last_include_file && !cfg_lex_process_include(last_include_file)) 
+              { 
+                free(last_include_file);
+                last_include_file = NULL;
+                YYERROR; 
+              } 
+            if (last_include_file)
+              {
+                free(last_include_file);
+                last_include_file = NULL;
+              }
+          }
+          stmts
 	|	
 	;
 
@@ -296,6 +312,7 @@ stmt
         | KW_REWRITE rewrite_stmt               { cfg_add_rewrite(configuration, $2); }
 	| KW_TEMPLATE template_stmt		{ cfg_add_template(configuration, $2); }
 	| KW_OPTIONS options_stmt		{  }
+	| KW_INCLUDE include_stmt		{  }
 	;
 
 source_stmt
@@ -319,6 +336,9 @@ dest_stmt
 log_stmt
         : '{' log_items log_forks log_flags '}'		{ LogPipeItem *pi = log_pipe_item_append_tail($2, $3); $$ = log_connection_new(pi, $4); }
 	;
+	
+include_stmt
+        : string                                { last_include_file = $1; }
 
 log_items
 	: log_item ';' log_items		{ log_pipe_item_append($1, $3); $$ = $1; }
@@ -1483,14 +1503,6 @@ extern int linenum;
 void 
 yyerror(char *msg)
 {
-  fprintf(stderr, "%s in %s at line %d.\n", msg, configuration->filename, linenum);
+  fprintf(stderr, "%s in %s at line %d.\n", msg, cfg_lex_get_current_file(), cfg_lex_get_current_lineno());
 }
 
-void
-yyparser_reset(void)
-{
-  last_driver = NULL;
-  last_reader_options = NULL;
-  last_writer_options = NULL;
-  last_template = NULL;
-}

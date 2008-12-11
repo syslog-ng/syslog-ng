@@ -203,15 +203,6 @@ cfg_deinit(GlobalConfig *cfg)
   return log_center_deinit(cfg->center);
 }
 
-/* extern declarations in the generated parser & lexer */
-extern FILE *yyin;
-extern int yyparse();
-extern void lex_init(FILE *, gint lineno);
-extern int yydebug;
-extern int linenum;
-
-extern void yyparser_reset(void);
-
 gboolean
 cfg_read_pragmas(GlobalConfig *self, FILE *cfg, gint *lineno)
 {
@@ -358,8 +349,9 @@ cfg_new(gchar *fname)
           self->chain_hostnames = TRUE;
         }
 
-      lex_init(cfg, lineno);
+      cfg_lex_init(cfg, lineno);
       res = yyparse();
+      cfg_lex_deinit();
       fclose(cfg);
       if (!res)
 	{

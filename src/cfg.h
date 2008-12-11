@@ -28,6 +28,7 @@
 
 #include <sys/types.h>
 #include <regex.h>
+#include <stdio.h>
 
 struct _LogSourceGroup;
 struct _LogDestGroup;
@@ -147,6 +148,18 @@ gint cfg_persist_get_version(GlobalConfig *cfg);
 void cfg_persist_set_version(GlobalConfig *cfg, const gint version);
 
 void persist_config_free(PersistentConfig *persist);
+
+/* defined in the lexer */
+void yyerror(char *msg);
+int yylex();
+int cfg_lex_init(FILE *file, gint init_line_num);
+void cfg_lex_deinit(void);
+gboolean cfg_lex_process_include(const gchar *filename);
+const gchar *cfg_lex_get_current_file(void);
+gint cfg_lex_get_current_lineno(void);
+
+/* defined in the parser */
+int yyparse(void);
 
 static inline gboolean 
 cfg_check_current_config_version(gint req)
