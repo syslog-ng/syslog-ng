@@ -460,7 +460,7 @@ log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, TimeZo
             g_string_sprintfa(result, "%02d", tm->tm_mon + 1);
             break;
           case M_MONTH_WEEK:
-            g_string_sprintfa(result, "%d", (tm->tm_mday / 7) + 1);
+            g_string_sprintfa(result, "%d", ((tm->tm_mday / 7) + ((tm->tm_wday > 0) && ((tm->tm_mday % 7) >= tm->tm_wday))));
             break;
           case M_MONTH_ABBREV:
             g_string_append_len(result, month_names_abbrev[tm->tm_mon], 3);

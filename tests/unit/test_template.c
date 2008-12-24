@@ -82,7 +82,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase(msg, "$YEAR", "2006");
   testcase(msg, "$YEAR_DAY", "042");
   testcase(msg, "$MONTH", "02");
-  testcase(msg, "$MONTH_WEEK", "2");
+  testcase(msg, "$MONTH_WEEK", "1");
   testcase(msg, "$MONTH_ABBREV", "Feb");
   testcase(msg, "$MONTH_NAME", "February");
   testcase(msg, "$DAY", "11");
@@ -104,7 +104,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase(msg, "$R_YEAR", "2006");
   testcase(msg, "$R_YEAR_DAY", "042");
   testcase(msg, "$R_MONTH", "02");
-  testcase(msg, "$R_MONTH_WEEK", "2");
+  testcase(msg, "$R_MONTH_WEEK", "1");
   testcase(msg, "$R_MONTH_ABBREV", "Feb");
   testcase(msg, "$R_MONTH_NAME", "February");
   testcase(msg, "$R_DAY", "11");
@@ -126,7 +126,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase(msg, "$S_YEAR", "2006");
   testcase(msg, "$S_YEAR_DAY", "042");
   testcase(msg, "$S_MONTH", "02");
-  testcase(msg, "$S_MONTH_WEEK", "2");
+  testcase(msg, "$S_MONTH_WEEK", "1");
   testcase(msg, "$S_MONTH_ABBREV", "Feb");
   testcase(msg, "$S_MONTH_NAME", "February");
   testcase(msg, "$S_DAY", "11");
