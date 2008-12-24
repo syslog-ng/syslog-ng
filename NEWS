@@ -1,90 +1,50 @@
-2.1.1
-	Thu, 28 Aug 2008 09:26:30 +0200
+3.0.1
+        Wed, 24 Dec 2008 12:16:08 +0100
 
-	Bugfixes:
-	* Fixed a possible crash in stats message generation.
-	* Fixed compilation problem in loggen on FreeBSD.
+We are happy to announce that version 3.0 of the syslog-ng Open Source Edition
+application has been released. The news and highlights of this version are
+summarized below:
 
-	Other changes:
-	* The netmask filter was changed to assume that local messages are
-          received from 127.0.0.1.
+NEWS:
 
-2.1beta2
-	Fri, 13 Jun 2008 14:37:08 +0200
+        Communication:
+        * Version 3.0 of syslog-ng supports the new syslog protocol standards
+          developed by the Internet Engineering Task Force (IETF). The details
+          of these protocols can be found at
+          http://www.ietf.org/internet-drafts/draft-ietf-syslog-protocol-23.txt
+          and
+          http://www.ietf.org/internet-drafts/draft-ietf-syslog-transport-tls-11.txt.
+        * The capability to encrypt log connections using TLS has been added.
 
-	Bugfixes:
-	* Create /var/lib/syslog-ng directory from RPM packages.
-	* Fixed a 100% CPU usage problem triggered by the pipe()
-          destination. This is a regression in 2.1beta1 and does not affect
-          earlier versions.
-	* Removed test code that injected "Connection timed out" errors into
-	  local file writes.
-	* Set the current directory to the root once syslog-ng daemonized
-          itself.
-	* Fixed the $PID macro to only extract information from the syslog
-          message header and not from the message contents.
+        Configuration:
+        * Log statements can be embedded into each other, making it possible to
+          design complex log paths. That way for example the results of a filter
+          can be sent to multiple destinations, or it can be sent to a
+          destination unchanged, and partly rewritten for the other destination.
 
-	Other changes:
-	* Instead of using O_APPEND for file writes, add an lseek before
-          writing which performs much better with the NFS client in BSD
-	  kernels.
-	* Added support for suppressing duplicate messages. This feature was
-	  contributed by Chris Packham.
-	* The default linking mode is changed to dynamic linking, as static
-          linking is more difficult for users to cope with. Those who
-	  use NFS mounted /usr on machines where syslog-ng runs on will
-          probably need to explicitly ask for the previous behaviour.
+        Log files:
+        * The encoding of source files can be set for proper character
+          conversion (internally syslog-ng represents every message in UTF-8).
 
-2.1beta1
-	Fri, 18 Apr 2008 18:00:59 +0200
+        Log messages:
+        * The syslog-ng application assigns a unique message identification
+          number to every log message, making it easy to detect if any messages
+          are lost.
+        * The syslog-ng application can read, process, and rewrite structured
+          messages (e.g., Apache webserver logs) using templates and
+          regular expressions. Both messages with fixed field sizes and fields
+          separated with delimiters (e.g., comma-separated values) are
+          supported.
 
-	Bugfixes:
-        * Fixed a possible SIGABRT crash if the hosts file passed to
-          dns-cache-hosts() had multiple entries with the same IP address.
-        * Fixed a bug that caused the persistent DNS cache (e.g. /etc/hosts)
-          to be reloaded for all name resolution requests.
-        * Fixed a possible crash during startup if "-g" was specified without
-          using "-u".
-        * Fixed handling more than 256 destinations by changing the
-          reference counter type of LogMessages to a 16 bit value.
-	* Fixed door initialization on Solaris, the door portion of
-          sun-streams() sources did not work in previous releases.
-	* Fixed a possible segmentation fault in handling file
-          sources that are marked optional and the source file does not
-	  exist.
-	* Fixed the LinkSys style timestamp parser to avoid recognizing
-          hostnames starting with numbers as the year value of the
-	  timestamp.
-	* Fixed the year recognition heuristics as the older used the
-	  previous year in some cases when the client's clock was too fast.
+DOWNLOAD:
 
-	Other changes:
-	* Backported end-of-message search algorithm from PE, which results
-          in increased performance and the removal of vague interpretation
-	  of messages that contain both NUL and NL characters.
-	* Removed destination files from the set of polled fds, they are
-	  always writable anyway and cause performance degradation when a
-	  lot of destination files are managed.
-	* Fixed some FreeBSD and AIX portability issues.
-	* Added the BSDTAG macro, implementation by Jung Christian.
-	* Changed the reconnection logic in the TCP destination driver to
-	  reattempt connections for any kind of network problems. Therefore
-	  an unknown DNS name will not prevent syslog-ng to start up with an
-	  initialization error.
-	* Changed the file write error handling logic to suspend writing to
-	  a file destination on write errors, but retry it some time later.
-	  This time interval is controlled by time_reopen() just like with
-	  other drivers.
+This is a source code only release, no binary packages are available at this
+time. Those will be provided at a later date.
 
+The documentation of syslog-ng OSE 3.0, including the installation and user
+guides is be available at:
+http://www.balabit.com/support/documentation/?product=syslog-ng
 
-2.1alpha1
-	Sun, 13 Jan 2008 10:07:57 +0100
+Best Regards,
 
-	This is the first release of syslog-ng Open Source Edition 2.1.x
-	It contains the following changes over syslog-ng OSE 2.0:
-
-	New features:
-	* SQL destination driver
-	* The outgoing message rate is controllable via the "throttle"
-	  option.
-
+BalaBit IT Security
