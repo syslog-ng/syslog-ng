@@ -43,6 +43,7 @@
 #define LRO_SYSLOG_PROTOCOL  0x0004
 #define LRO_VALIDATE_UTF8    0x0008
 #define LRO_NO_MULTI_LINE    0x0010
+#define LRO_STORE_LEGACY_MSGHDR 0x0020
 
 typedef struct _LogReaderWatch LogReaderWatch;
 

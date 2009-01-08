@@ -595,9 +595,20 @@ log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
           g_string_append_len(result, lm->host, lm->host_len);
           g_string_append_c(result, ' ');
 
-          g_string_append_len(result, lm->program, lm->program_len);
-          if (lm->program_len > 0)
+          if ((lm->flags & LF_LEGACY_MSGHDR))
             {
+              gssize length;
+              const gchar *msghdr;
+
+              msghdr = log_msg_get_value(lm, "LEGACY_MSGHDR", &length);
+              if (msghdr)
+                {
+                  g_string_append_len(result, msghdr, length);
+                }
+            }
+          else if (lm->program_len > 0)
+            {
+              g_string_append_len(result, lm->program, lm->program_len);
               if (lm->pid_len > 0)
                 {
                   g_string_append_c(result, '[');

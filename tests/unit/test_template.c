@@ -39,7 +39,7 @@ int
 main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 {
   LogMessage *msg;
-  char *msg_str = "<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép";
+  char *msg_str = "<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép";
   GlobalConfig dummy;
   
   if (argc > 1)
@@ -170,6 +170,14 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   msg = log_msg_new(msg_str, strlen(msg_str), g_sockaddr_inet_new("10.10.10.10", 1010), 0, NULL, -1);
 
   testcase(msg, "$PID", "");
+  log_msg_unref(msg);
+
+  msg_str = "<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép";
+
+  msg = log_msg_new(msg_str, strlen(msg_str), g_sockaddr_inet_new("10.10.10.10", 1010), LP_STORE_LEGACY_MSGHDR, NULL, -1);
+
+  testcase(msg, "$LEGACY_MSGHDR", "syslog-ng[23323]:");
+  testcase(msg, "$MSGHDR", "syslog-ng[23323]:");
   log_msg_unref(msg);
 
   msg_str = "<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog 3535 ID47 [exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] BOMAn application event log entry..."; 

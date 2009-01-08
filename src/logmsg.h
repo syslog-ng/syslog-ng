@@ -47,6 +47,7 @@
 #define LP_ASSUME_UTF8     0x0080
 #define LP_VALIDATE_UTF8   0x0100
 #define LP_NO_MULTI_LINE   0x0200
+#define LP_STORE_LEGACY_MSGHDR 0x0400
 
 
 typedef struct _LogPathOptions LogPathOptions;
@@ -97,6 +98,13 @@ enum
   LF_OWN_MATCHES      = 0x4000,
   LF_OWN_ALL          = 0x7FF0,
   LF_CHAINED_HOSTNAME = 0x8000,
+
+  /* originally parsed from RFC 3164 format and the legacy message header
+   * was saved in $LEGACY_MSGHDR. This flag is a hack to avoid a hash lookup
+   * in the fast path and indicates that the parser has saved the legacy
+   * message header intact in a value named LEGACY_MSGHDR.
+   */
+  LF_LEGACY_MSGHDR    = 0x00010000,
 };
 
 typedef struct _LogMessageSDParam  LogMessageSDParam;

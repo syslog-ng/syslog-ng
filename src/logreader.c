@@ -278,6 +278,8 @@ log_reader_fetch_log(LogReader *self, LogProto *proto)
     parse_flags |= LP_VALIDATE_UTF8;
   if (self->options->options & LRO_NO_MULTI_LINE)
     parse_flags |= LP_NO_MULTI_LINE;
+  if (self->options->options & LRO_STORE_LEGACY_MSGHDR)
+    parse_flags |= LP_STORE_LEGACY_MSGHDR;
     
   if (self->waiting_for_preemption)
     may_read = FALSE;
@@ -772,6 +774,8 @@ log_reader_options_lookup_flag(const gchar *flag)
     return LRO_VALIDATE_UTF8;
   if (strcmp(flag, "no-multi-line") == 0 || strcmp(flag, "no_multi_line") == 0)
     return LRO_NO_MULTI_LINE;
+  if (strcmp(flag, "store-legacy-msghdr") == 0 || strcmp(flag, "store_legacy_msghdr") == 0)
+    return LRO_STORE_LEGACY_MSGHDR;
   msg_error("Unknown parse flag", evt_tag_str("flag", flag), NULL);
   return 0;
 }

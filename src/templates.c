@@ -339,17 +339,33 @@ log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, TimeZo
         }
       break;
     case M_MSGHDR:
-      /* message, complete with program name and pid */
-      result_append(result, msg->program, msg->program_len, !!(flags & LT_ESCAPE));
-      if (msg->program_len > 0)
+      if ((msg->flags & LF_LEGACY_MSGHDR))
         {
-          if (msg->pid_len > 0)
+          gssize length;
+          const gchar *msghdr;
+
+          /* fast path for now, as most messages come from legacy devices */
+
+          msghdr = log_msg_get_value(msg, "LEGACY_MSGHDR", &length);
+          if (msghdr)
             {
-              result_append(result, "[", 1, !!(flags & LT_ESCAPE));
-              result_append(result, msg->pid, msg->pid_len, !!(flags & LT_ESCAPE));
-              result_append(result, "]", 1, !!(flags & LT_ESCAPE));
+              result_append(result, msghdr, length, !!(flags & LT_ESCAPE));
             }
-          result_append(result, ": ", 2, !!(flags & LT_ESCAPE));
+        }
+      else
+        {
+          /* message, complete with program name and pid */
+          result_append(result, msg->program, msg->program_len, !!(flags & LT_ESCAPE));
+          if (msg->program_len > 0)
+            {
+              if (msg->pid_len > 0)
+                {
+                  result_append(result, "[", 1, !!(flags & LT_ESCAPE));
+                  result_append(result, msg->pid, msg->pid_len, !!(flags & LT_ESCAPE));
+                  result_append(result, "]", 1, !!(flags & LT_ESCAPE));
+                }
+              result_append(result, ": ", 2, !!(flags & LT_ESCAPE));
+            }
         }
       break;
     case M_MESSAGE:
@@ -506,9 +522,6 @@ log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, TimeZo
           }
         break;
       }
-
-
-
       g_assert_not_reached();
       break;
     }

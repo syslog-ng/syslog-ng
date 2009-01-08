@@ -264,6 +264,10 @@ log_msg_get_value(LogMessage *self, const gchar *value_name, gssize *length)
   return value;
 }
 
+/**
+ * NOTE: the new_value is taken as a reference, e.g. it'll be assigned to
+ * the LogMessage and freed later on.
+ **/
 void
 log_msg_set_value(LogMessage *self, const gchar *value_name, gchar *new_value, gssize length)
 {
@@ -1065,7 +1069,7 @@ log_msg_parse_version(LogMessage *self, const guchar **data, gint *length)
 }
 
 static void
-log_msg_parse_legacy_program_name(LogMessage *self, const guchar **data, gint *length)
+log_msg_parse_legacy_program_name(LogMessage *self, const guchar **data, gint *length, guint flags)
 { 
   /* the data pointer will not change */ 
   const guchar *src, *prog_start;
@@ -1109,6 +1113,11 @@ log_msg_parse_legacy_program_name(LogMessage *self, const guchar **data, gint *l
     {
       src++;
       left--;
+    }
+  if (flags & LP_STORE_LEGACY_MSGHDR)
+    {
+      log_msg_set_value(self, "LEGACY_MSGHDR", g_strndup((gchar *) *data, *length - left), *length - left);
+      self->flags |= LF_LEGACY_MSGHDR;
     }
   *data = src;
   *length = left;
@@ -1573,7 +1582,7 @@ log_msg_parse_legacy(LogMessage *self, const guchar *data, gint length, guint fl
           log_msg_parse_skip_chars(self, &src, &left, " ", -1);
 
           /* Try to extract a program name */
-          log_msg_parse_legacy_program_name(self, &src, &left);
+          log_msg_parse_legacy_program_name(self, &src, &left, flags);
         }
 
       /* If we did manage to find a hostname, store it. */
@@ -1598,7 +1607,7 @@ log_msg_parse_legacy(LogMessage *self, const guchar *data, gint length, guint fl
       else
         {
           /* Capture the program name */
-          log_msg_parse_legacy_program_name(self, &src, &left);
+          log_msg_parse_legacy_program_name(self, &src, &left, flags);
         }
       self->timestamps[LM_TS_STAMP] = self->timestamps[LM_TS_RECVD];
     }
@@ -1607,7 +1616,7 @@ log_msg_parse_legacy(LogMessage *self, const guchar *data, gint length, guint fl
   self->message_len = left;
   if ((flags & LP_VALIDATE_UTF8) && g_utf8_validate((gchar *) src, left, NULL))
     self->flags |= LF_UTF8;
-    
+
   return TRUE;
 }
 
