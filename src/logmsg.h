@@ -156,9 +156,10 @@ struct _LogMessage
    */
   struct
   {
-    guint16 flags;
-    guint16 pri;
+    guint32 flags;
     guint32 message_len;
+    guint16 pri;
+    /* 6 bytes hole */
     
     LogStamp timestamps[LM_TS_MAX];
     gchar * const host;
