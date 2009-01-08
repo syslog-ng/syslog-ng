@@ -77,7 +77,7 @@ typedef struct _LogReader
   GSockAddr *peer_addr;
   gchar *follow_filename;
   ino_t inode;
-  off_t size;
+  gint64 size;
   
 } LogReader;
 
@@ -86,7 +86,7 @@ void log_reader_set_follow_filename(LogPipe *self, const gchar *follow_filename)
 void log_reader_set_peer_addr(LogPipe *s, GSockAddr *peer_addr);
 void log_reader_set_immediate_check(LogPipe *s);
 
-void log_reader_update_pos(LogReader *self, off_t ofs);
+void log_reader_update_pos(LogReader *self, gint64 ofs);
 void log_reader_save_state(LogReader *self, SerializeArchive *archive);
 void log_reader_restore_state(LogReader *self, SerializeArchive *archive);
 
