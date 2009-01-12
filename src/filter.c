@@ -375,6 +375,11 @@ filter_netmask_eval(FilterExprNode *s, LogMessage *msg)
     {
       addr.s_addr = htonl(INADDR_LOOPBACK);
     }
+  else
+    {
+      /* no address information, return FALSE */
+      return s->comp;
+    }
   return ((addr.s_addr & self->netmask.s_addr) == (self->address.s_addr)) ^ s->comp;
 
 }
