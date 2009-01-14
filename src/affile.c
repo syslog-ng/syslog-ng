@@ -196,9 +196,15 @@ affile_sd_notify(LogPipe *s, LogPipe *sender, gint notify_code, gpointer user_da
             transport = log_transport_plain_new(fd, 0);
             transport->timeout = 10;
 
-            self->reader = log_reader_new(log_proto_plain_new_server(transport, self->reader_options.padding, self->reader_options.msg_size, LPPF_NOMREAD | ((self->reader_options.follow_freq > 0) ? LPPF_IGNORE_EOF : 0)), 
-                                          LR_LOCAL);
-                                          
+            self->reader = log_reader_new(
+                                  log_proto_plain_new_server(transport, self->reader_options.padding,
+                                                             self->reader_options.msg_size,
+                                                             ((self->reader_options.follow_freq > 0)
+                                                                    ? LPPF_IGNORE_EOF
+                                                                    : LPPF_NOMREAD)
+                                                            ),
+                                  LR_LOCAL);
+
             log_reader_set_options(self->reader, s, &self->reader_options, 1, SCS_FILE, self->super.id, self->filename->str);
 
             log_reader_set_follow_filename(self->reader, self->filename->str);
@@ -290,10 +296,16 @@ affile_sd_init(LogPipe *s)
       transport->timeout = 10;
 
       /* FIXME: we shouldn't use reader_options to store log protocol parameters */
-      self->reader = log_reader_new(log_proto_plain_new_server(transport, self->reader_options.padding, self->reader_options.msg_size, LPPF_NOMREAD | ((self->reader_options.follow_freq > 0) ? LPPF_IGNORE_EOF : 0)), 
-                                    LR_LOCAL);
+      self->reader = log_reader_new(
+                            log_proto_plain_new_server(transport, self->reader_options.padding,
+                                                       self->reader_options.msg_size,
+                                                       ((self->reader_options.follow_freq > 0)
+                                                            ? LPPF_IGNORE_EOF
+                                                            : LPPF_NOMREAD)
+                                                      ),
+                            LR_LOCAL);
       log_reader_set_options(self->reader, s, &self->reader_options, 1, SCS_FILE, self->super.id, self->filename->str);
-      
+
       log_reader_set_follow_filename(self->reader, self->filename->str);
 
       /* NOTE: if the file could not be opened, we ignore the last
