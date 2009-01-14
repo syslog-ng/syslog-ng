@@ -940,6 +940,7 @@ afsql_dd_new()
   self->frac_digits = -1;
 
   self->validated_tables = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
+  g_static_mutex_init(&self->queue_lock);
   
   init_sequence_number(&self->seq_num);
   return &self->super;  
