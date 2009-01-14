@@ -103,7 +103,7 @@ log_reader_fd_prepare(GSource *source,
 
   if (self->reader->flags & LR_FOLLOW)
     {
-      *timeout = self->reader->options->follow_freq * 1000;
+      *timeout = self->reader->options->follow_freq;
       return FALSE;
     }
   

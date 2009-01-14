@@ -98,6 +98,7 @@ cfg_check_template(LogTemplate *template)
 
 %union {
 	gint64 num;
+	long double fnum;
 	char *cptr;
 	void *ptr;
 	FilterExprNode *node;
@@ -184,6 +185,7 @@ cfg_check_template(LogTemplate *template)
 %token  DOTDOT
 %token	<cptr> IDENTIFIER
 %token	<num>  NUMBER
+%token	<fnum> FLOAT
 %token	<cptr> STRING
 
 %left	KW_OR
@@ -728,7 +730,8 @@ source_reader_option
 	| KW_LOG_MSG_SIZE '(' NUMBER ')'	{ last_reader_options->msg_size = $3; }
 	| KW_LOG_FETCH_LIMIT '(' NUMBER ')'	{ last_reader_options->fetch_limit = $3; }
 	| KW_PAD_SIZE '(' NUMBER ')'		{ last_reader_options->padding = $3; }
-	| KW_FOLLOW_FREQ '(' NUMBER ')'		{ last_reader_options->follow_freq = $3; }
+	| KW_FOLLOW_FREQ '(' FLOAT ')'		{ last_reader_options->follow_freq = (long) ($3 * 1000); }
+	| KW_FOLLOW_FREQ '(' NUMBER ')'		{ last_reader_options->follow_freq = ($3 * 1000); }
 	| KW_KEEP_TIMESTAMP '(' yesno ')'	{ last_reader_options->super.keep_timestamp = $3; }
         | KW_ENCODING '(' string ')'		{ last_reader_options->text_encoding = g_strdup($3); free($3); }
 	;
