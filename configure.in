@@ -49,10 +49,8 @@ fi
 
 if test "x$prefix" = "xNONE"; then
         prefix=$ac_default_prefix
-        pidfiledir="/var/run"
-else
-        pidfiledir="${prefix}/var/run"
 fi
+pidfiledir="${localstatedir}"
 
 AM_CONFIG_HEADER(config.h)
 
@@ -70,7 +68,7 @@ AC_ARG_WITH(pidfile-dir,
 	
 AC_ARG_WITH(timezone-dir,
    [  --with-timezone-dir=path   Use path as the directory to get the timezone files],
-   timezone_dir=$with_timezone_dir)
+   timezonedir=$with_timezone_dir)
 
 AC_ARG_WITH(ld-library-path,
    [  --with-ld-library-path=path  Set LD_LIBRARY_PATH during runtime to the value given],
@@ -672,8 +670,8 @@ AC_DEFINE_UNQUOTED(PATH_PREFIX, "`patheval $prefix`", [prefix directory])
 AC_DEFINE_UNQUOTED(PATH_SYSCONFDIR, "`patheval $sysconfdir`", [sysconfdir])
 AC_DEFINE_UNQUOTED(PATH_LOCALSTATEDIR, "`patheval $localstatedir`", [local state directory])
 AC_DEFINE_UNQUOTED(PATH_PIDFILEDIR, "`patheval $pidfiledir`", [local state directory])
-if test -n "$timezone_dir"; then
-        AC_DEFINE_UNQUOTED(PATH_TIMEZONEDIR, "`patheval $timezone_dir`", [timezone base directory])
+if test -n "$timezonedir"; then
+        AC_DEFINE_UNQUOTED(PATH_TIMEZONEDIR, "`patheval $timezonedir`", [timezone base directory])
 fi
 if test -n "$env_ld_library_path"; then
         AC_DEFINE_UNQUOTED(ENV_LD_LIBRARY_PATH, "$env_ld_library_path", [set LD_LIBRARY_PATH to this value])
@@ -695,6 +693,8 @@ AC_DEFINE_UNQUOTED(ENABLE_ENV_WRAPPER, `enable_value $enable_env_wrapper`, [Enab
 
 AM_CONDITIONAL(ENABLE_ENV_WRAPPER, [test "$enable_env_wrapper" = "yes"])
 
+AC_SUBST(timezonedir)
+AC_SUBST(pidfiledir)
 AC_SUBST(DEPS_CPPFLAGS)
 AC_SUBST(DEPS_LIBS)
 AC_SUBST(BASE_LIBS)
