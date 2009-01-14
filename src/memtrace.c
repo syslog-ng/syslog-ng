@@ -121,7 +121,7 @@ z_mem_trace_init(gchar *tracefile)
       for (i = 0; i < MEMTRACE_HASH_SIZE; i++) 
         {
           mem_trace_hash[i].list = -1;
-          memset(&mem_trace_hash[i].lock, 0, sizeof(GStaticMutex));
+          g_static_mutex_init(&mem_trace_hash[i].lock);
         }
       old_malloc = dlsym(RTLD_NEXT, "malloc");
       old_free = dlsym(RTLD_NEXT, "free");
