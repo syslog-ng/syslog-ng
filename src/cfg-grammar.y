@@ -277,6 +277,7 @@ cfg_check_template(LogTemplate *template)
 
 %type	<cptr> string
 %type	<cptr> string_or_number
+%type	<cptr> facility_string
 %type   <ptr> string_list
 %type   <ptr> string_list_build
 
@@ -464,7 +465,7 @@ source_affile_option
               affile_sd_set_pri_level(last_driver, level); 
             free($3);
           }
-        | KW_FACILITY '(' string ')'    
+        | KW_FACILITY '(' facility_string ')'
 
           {
             int facility = -1;
@@ -1305,7 +1306,7 @@ filter_fac_list
 	;
 
 filter_fac
-	: string				
+	: facility_string
 	  { 
 	    int n = syslog_name_lookup_facility_by_name($1);
 	    if (n == -1)
@@ -1497,6 +1498,11 @@ string_list
 string_list_build
         : string string_list_build		{ $$ = g_list_append($2, g_strdup($1)); free($1); }
         |					{ $$ = NULL; }
+        ;
+
+facility_string
+        : string                                { $$ = $1; };
+        | KW_SYSLOG                             { $$ = strdup("syslog"); }
         ;
 
 %%
