@@ -7,7 +7,7 @@
 
 #include "syslog-ng.h"
 
-#ifdef ENABLE_SSL
+#if ENABLE_SSL
 
 #include <openssl/ssl.h>
 
