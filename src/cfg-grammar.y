@@ -1512,6 +1512,8 @@ extern int linenum;
 void 
 yyerror(char *msg)
 {
-  fprintf(stderr, "%s in %s at line %d.\n", msg, cfg_lex_get_current_file(), cfg_lex_get_current_lineno());
+  fprintf(stderr, "%s in %s at line %d.\n\n"
+                  "syslog-ng documentation: http://www.balabit.com/support/documentation/?product=syslog-ng\n"
+                  "mailing list: https://lists.balabit.hu/mailman/listinfo/syslog-ng\n", msg, cfg_lex_get_current_file(), cfg_lex_get_current_lineno());
 }
 
