@@ -21,11 +21,11 @@ then
   exit 3
 fi
 mkdir -p "${DESTDIR}/usr/bin"
-mkdir -p "${DESTDIR}/usr/share/doc/syslog-ng"
+#mkdir -p "${DESTDIR}/usr/share/doc/syslog-ng"
 mkdir -p "${DESTDIR}/usr/share/doc/Cygwin"
 cp contrib/cygwin-packaging/syslog-ng-config "${DESTDIR}/usr/bin"
-cp -rp doc/examples/syslog-ng.conf.s* doc/reference/syslog-ng.[tx]* "${DESTDIR}/usr/share/doc/syslog-ng"
-tar xzfC doc/reference/syslog-ng.html.tar.gz "${DESTDIR}/usr/share/doc/syslog-ng"
+#cp -rp doc/examples/syslog-ng.conf.s* doc/reference/syslog-ng.[tx]* "${DESTDIR}/usr/share/doc/syslog-ng"
+#tar xzfC doc/reference/syslog-ng.html.tar.gz "${DESTDIR}/usr/share/doc/syslog-ng"
 cat > "${DESTDIR}/usr/share/doc/Cygwin/syslog-ng.README" <<'EOF'
 If you want to use syslog-ng, just run the /usr/bin/syslog-ng-config
 script.  This script will create a default configuration file
@@ -42,15 +42,15 @@ The syslog-ng package has been built using the following command
 sequence from the top level source dir:
 
 ./configure \
-       --disable-ipv6 \
-       --disable-tcp-wrapper \
         --prefix=/usr \
         --sysconfdir=/etc \
         --libexecdir='$(prefix)/sbin' \
         --localstatedir=/var \
         --datadir='$(prefix)/share' \
         --mandir='$(prefix)/share/man' \
-        --infodir='$(prefix)/share/info'
+        --infodir='$(prefix)/share/info' \
+	--enable-dynamic-linking \
+	--with-pidfile-dir=/var
 make
 make install-strip
 contrib/cygwin-packaging/cygwin-postinstall

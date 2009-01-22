@@ -205,13 +205,13 @@ if [ ! -f "${SYSCONFDIR}/syslog-ng.conf" ]
 then
   echo "Creating default ${SYSCONFDIR}/syslog-ng.conf file"
   cat > ${SYSCONFDIR}/syslog-ng.conf << EOF
+@version 3.0
 options {
   keep_hostname(yes);
-  chain_hostnames(no);
   owner("system");
   group("root");
   perm(0664);
-  sync(0);
+  flush_lines(0);
 };
 
 source applications {
@@ -220,7 +220,7 @@ source applications {
 };
 
 source kernel {
-  file("/dev/kmsg", log_prefix("kernel: "));
+  file("/dev/kmsg", program_override("kernel: "));
 };
 
 destination messages {
@@ -240,42 +240,35 @@ EOF
 fi
 setfacl -m u:system:rw- "${SYSCONFDIR}/syslog-ng.conf"
 
-# Check if running on NT
-_sys="`uname`"
-_nt=`expr "${_sys}" : "CYGWIN_NT"`
-# On NT ask if syslog-ng should be installed as service
-if [ ${_nt} -gt 0 ]
+# Check if syslogd is installed and remove on user request.
+if cygrunsrv -Q syslogd > /dev/null 2>&1
 then
-  # Check if syslogd is installed and remove on user request.
-  if cygrunsrv -Q syslogd > /dev/null 2>&1
+  echo "Warning: The syslogd service is already installed.  You can not"
+  echo "run both, syslogd and syslog-ng in parallel."
+  echo
+  if request "Do you want to deinstall the syslogd service in favor of syslog-ng?"
   then
-    echo "Warning: The syslogd service is already installed.  You can not"
-    echo "run both, syslogd and syslog-ng in parallel."
-    echo
-    if request "Do you want to deinstall the syslogd service in favor of syslog-ng?"
-    then
-      cygrunsrv -E syslogd
-      cygrunsrv -R syslogd
-    fi
+    cygrunsrv -E syslogd
+    cygrunsrv -R syslogd
   fi
-  # Install syslog-ng service if it is not already installed
-  if ! cygrunsrv -Q syslog-ng > /dev/null 2>&1
+fi
+# Install syslog-ng service if it is not already installed
+if ! cygrunsrv -Q syslog-ng > /dev/null 2>&1
+then
+  echo
+  echo
+  echo "Warning: The following function requires administrator privileges!"
+  echo
+  echo "Do you want to install syslog-ng as service?"
+  if request "(Say \"no\" if it's already installed as service)"
   then
-    echo
-    echo
-    echo "Warning: The following function requires administrator privileges!"
-    echo
-    echo "Do you want to install syslog-ng as service?"
-    if request "(Say \"no\" if it's already installed as service)"
+    if cygrunsrv -I syslog-ng -d "CYGWIN syslog-ng" -p /usr/sbin/syslog-ng -a "-F --fd-limit 256"
     then
-      if cygrunsrv -I syslog-ng -d "CYGWIN syslog-ng" -p /usr/sbin/syslog-ng -a -F
-      then
-       echo
-       echo "The service has been installed under LocalSystem account."
-       echo "To start the service, call \`net start syslog-ng' or \`cygrunsrv -S syslog-ng'."
-       echo
-       echo "Check ${SYSCONFDIR}/syslog-ng.conf first, if it suits your needs."
-      fi
+     echo
+     echo "The service has been installed under LocalSystem account."
+     echo "To start the service, call \`net start syslog-ng' or \`cygrunsrv -S syslog-ng'."
+     echo
+     echo "Check ${SYSCONFDIR}/syslog-ng.conf first, if it suits your needs."
     fi
   fi
 fi
