@@ -98,7 +98,7 @@ cfg_check_template(LogTemplate *template)
 
 %union {
 	gint64 num;
-	long double fnum;
+	double fnum;
 	char *cptr;
 	void *ptr;
 	FilterExprNode *node;

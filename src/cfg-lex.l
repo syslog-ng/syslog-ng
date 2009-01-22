@@ -273,7 +273,7 @@ word	[^ \#'"\(\)\{\}\\;\n\t,|\.]
 \r?\n			   { include_stack[include_depth].linenum++; }
 {white}+		   ;
 \.\.                       { return DOTDOT; }
-(-|\+)?{digit}+\.{digit}+  { yylval.fnum = strtold(yytext, NULL); return FLOAT; }
+(-|\+)?{digit}+\.{digit}+  { yylval.fnum = strtod(yytext, NULL); return FLOAT; }
 0x{digit}+ 		   { yylval.num = strtoll(yytext, NULL, 16); return NUMBER; }
 0{digit}+		   { yylval.num = strtoll(yytext, NULL, 8); return NUMBER; }
 (-|\+)?{digit}+            { yylval.num = strtoll(yytext, NULL, 10); return NUMBER; }
