@@ -111,7 +111,11 @@ static struct
   .argv = NULL,
   .argv_start = NULL,
   .argv_env_len = 0,
+#ifdef __CYGWIN__
+  .fd_limit_min = 256,
+#else
   .fd_limit_min = 4096,
+#endif
   .check_period = -1,
   .check_fn = NULL,
   .uid = -1,
