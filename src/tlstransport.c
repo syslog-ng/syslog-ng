@@ -1,5 +1,7 @@
 #include "tlstransport.h"
 
+#if ENABLE_SSL
+
 #include "messages.h"
 
 #include <openssl/ssl.h>
@@ -149,4 +151,4 @@ log_transport_tls_free_method(LogTransport *s)
   log_transport_free_method(s);
 }
 
-
+#endif
