@@ -147,6 +147,12 @@ returnmessage() {
 
 syslogng_start() {
 	echo_n "Starting syslog-ng: "
+	PID=`pidofproc -p ${PIDFILE} ${SYSLOGNG} | head -1`
+	retval=$?
+	if [ $retval -eq 0 ];then
+		log_success_msg "already running: $PID"
+		return $retval
+	fi
 	start_daemon -p ${PIDFILE} ${SYSLOGNG} ${SYSLOGNG_OPTIONS}
 	retval=$?
 	returnmessage $retval
