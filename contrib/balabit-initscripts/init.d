@@ -118,7 +118,7 @@ check_syntax() {
 
 slng_waitforpid() {
 	_pid=$1
-  _process=$2
+	process=$2
 	_cnt=$MAXWAIT
 
 	# no pid, return...
@@ -286,7 +286,7 @@ case "$1" in
 	force-reload)
 		syslogng_restart
 		;;
-  reload-or-restart)
+	reload-or-restart)
 		PID=`pidofproc -p ${PIDFILE} ${SYSLOGNG} | head -1`
 		if [ -n "$PID" ] && [ $PID -gt 0 ] ;then
 			syslogng_reload
@@ -308,4 +308,4 @@ esac
 
 exit $retval
 
-# vim: ts=2 ft=sh
+# vim: ts=2 ft=sh noexpandtab

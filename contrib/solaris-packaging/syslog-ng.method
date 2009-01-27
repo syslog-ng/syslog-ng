@@ -13,6 +13,7 @@ SYSLOGNG_PREFIX=/opt/syslog-ng
 SYSLOGNG="$SYSLOGNG_PREFIX/sbin/syslog-ng"
 CONFFILE=$SYSLOGNG_PREFIX/etc/syslog-ng.conf
 PIDFILE=$SYSLOGNG_PREFIX/var/run/syslog-ng.pid
+SYSLOGPIDFILE=/var/run/syslog.pid
 
 OPTIONS=
 MAXWAIT=30
@@ -56,7 +57,7 @@ slng_stop() {
 
         _process=`basename $SYSLOGNG`
         slng_waitforpid "$_process" $syspid
-	_ret=$?
+        _ret=$?
         if [ $_ret -eq 0 ]; then
                 kill -KILL $syspid
                 $_ret=$?
@@ -68,6 +69,9 @@ slng_stop() {
                         [ $? -ne 0 ] && exit $SMF_EXIT_ERR_FATAL
                 fi
                 rm -f $PIDFILE
+                if [ -h $SYSLOGPIDFILE ];then
+                        rm -f $SYSLOGPIDFILE
+                fi
                 return $SMF_EXIT_OK
         fi
         return $SMF_EXIT_ERR_FATAL
@@ -93,6 +97,13 @@ slng_start () {
                 fi
                 check_syntax
                 $SYSLOGNG $OPTIONS
+                # remove symlinks
+                if [ -h $SYSLOGPIDFILE ];then
+                        rm -f $SYSLOGPIDFILE
+                fi
+                if [ ! -f $SYSLOGPIDFILE ];then
+                        ln -s $PIDFILE $SYSLOGPIDFILE
+                fi
                 return $SMF_EXIT_OK
         fi
         return $SMF_EXIT_ERR_FATAL
