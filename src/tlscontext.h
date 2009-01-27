@@ -69,6 +69,9 @@ gboolean tls_verify_certificate_name(X509 *cert, const gchar *hostname);
 
 #else
 
+typedef struct _TLSContext TLSContext;
+typedef struct _TLSSession TLSSession;
+
 #define tls_context_new(m)
 
 #endif
