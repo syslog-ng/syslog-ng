@@ -33,9 +33,13 @@ command="$SYSLOGNG_PREFIX/sbin/syslog-ng"
 required_files="$SYSLOGNG_PREFIX/etc/syslog-ng.conf"
 
 start_precmd="syslog_ng_start_precmd"
+start_postcmd="syslog_ng_start_postcmd"
+stop_postcmd="syslog_ng_stop_postcmd"
 reload_precmd="syslog_ng_reload_precmd"
 extra_commands="reload"
 
+# get original syslog pidfile from initscript.
+_syslogd_pidfile=`sed -n -e 's/^pidfile="\([^"]*\)"/\1/p' /etc/rc.d/syslogd 2> /dev/null`
 syslog_ng_start_precmd() {
 	if [ ! -L /dev/log ]; then
 		ln -s /var/run/log /dev/log
@@ -47,6 +51,26 @@ syslog_ng_reload_precmd() {
 	_rval=$?
 	if [ $_rval -ne 0 ];then
 		exit $_rval
+	fi
+}
+
+syslog_ng_start_postcmd() {
+	if [ -n "$_syslogd_pidfile" ]; then
+		# remove symlinks
+		if [ -h $_syslogd_pidfile ]; then
+			rm -f $_syslogd_pidfile
+		fi
+		if [ ! -f $_syslogd_pidfile ]; then
+			ln -s "$pidfile" "$_syslogd_pidfile"
+		fi
+	fi
+}
+
+syslog_ng_stop_postcmd() {
+	if [ -n "$_syslogd_pidfile" ]; then
+		if [ -h $_syslogd_pidfile ]; then
+			rm -f "$_syslogd_pidfile"
+		fi
 	fi
 }
 

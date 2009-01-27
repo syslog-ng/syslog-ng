@@ -25,6 +25,7 @@ SYSLOGNG_PREFIX=/opt/syslog-ng
 SYSLOGNG="$SYSLOGNG_PREFIX/sbin/syslog-ng"
 CONFFILE=$SYSLOGNG_PREFIX/etc/syslog-ng.conf
 PIDFILE=$SYSLOGNG_PREFIX/var/run/syslog-ng.pid
+SYSLOGPIDFILE="/var/run/syslog.pid"
 
 INIT_FUNCTIONS=/lib/lsb/init-functions
 SLNG_INIT_FUNCTIONS=$SYSLOGNG_PREFIX/lib/init-functions
@@ -159,6 +160,13 @@ syslogng_start() {
 		if [ "$OS" = "Linux" ] && [ -d $SUBSYSDIR ];then
 			touch $SUBSYSDIR/syslog-ng
 		fi
+		# remove symlinks
+		if [ -h $SYSLOGPIDFILE ];then
+			rm -f $SYSLOGPIDFILE
+		fi
+		if [ ! -f $SYSLOGPIDFILE ];then
+			ln -s $PIDFILE $SYSLOGPIDFILE
+		fi
 	fi
 	return $retval
 }
@@ -185,6 +193,9 @@ syslogng_stop() {
 	fi
 	if [ $retval -eq 0 ];then
 		rm -f $SUBSYSDIR/syslog-ng ${PIDFILE}
+		if [ -h $SYSLOGPIDFILE ];then
+			rm -f $SYSLOGPIDFILE
+		fi
 	fi
 	return $retval
 }
@@ -274,6 +285,14 @@ case "$1" in
 		;;
 	force-reload)
 		syslogng_restart
+		;;
+  reload-or-restart)
+		PID=`pidofproc -p ${PIDFILE} ${SYSLOGNG} | head -1`
+		if [ -n "$PID" ] && [ $PID -gt 0 ] ;then
+			syslogng_reload
+		else
+			syslogng_start
+		fi
 		;;
 	status)
 		syslogng_status 
