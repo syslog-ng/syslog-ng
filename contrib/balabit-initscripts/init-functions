@@ -6,11 +6,29 @@ NORMAL=
 FANCYTTY=
 PSOPTS=
 
-case `uname -s` in
+ECHO_OPTS=
+
+OS=`uname -s`
+
+disable_xpg_echo() {
+  # \X chars only passed to echo under bash, if xpg_echo enabled or echo -e
+  # used on Linux.
+  if [ -n "$BASH_VERSION" ];then
+    shopt -s xpg_echo
+  fi
+}
+
+case $OS in
   # default ps -e cuts the process' name at 8 characters, so we have to list it
   # in a long form
-  SunOS) PSOPTS=" -o pid -o tty -o time -o comm" ;;
+  SunOS)
+        PSOPTS=" -o pid -o tty -o time -o comm"
+        disable_xpg_echo
+        ;;
+  Linux) ECHO_OPTS=-e ;;
+  *)    disable_xpg_echo ;;
 esac
+
 
 _checkpid() {
   _pid=$1
@@ -195,17 +213,17 @@ log_use_fancy_output() {
 
 
 log_success_msg() {
-  echo "$@"
+  echo $ECHO_OPTS "$@"
 }
 
 log_failure_msg() {
   log_use_fancy_output
-  echo "${RED}$@${NORMAL}"   
+  echo $ECHO_OPTS "${RED}$@${NORMAL}"
 }
 
 log_warning_msg() {
   log_use_fancy_output
-  echo "${YELLOW}$@${NORMAL}"   
+  echo $ECHO_OPTS "${YELLOW}$@${NORMAL}"
 }
 
 # NON-LSB Functions
@@ -215,7 +233,7 @@ log_begin_msg() {
     return 1
   fi
 
-  echo "$@\c " 
+  echo $ECHO_OPTS "$@\c "
 }
 
 log_daemon_msg() {
@@ -224,11 +242,11 @@ log_daemon_msg() {
   fi
 
   if [ -z "$2" ]; then
-    echo "$1:\c "
+    echo $ECHO_OPTS "$1:\c "
     return
   fi
 
-  echo "$1: $2\c "
+  echo $ECHO_OPTS "$1: $2\c "
 }
 
 log_progress_msg() {
@@ -252,7 +270,7 @@ log_end_msg() {
   if [ $1 -eq 0 ];then
     echo "."
   else
-    echo "${RED}failed!${NORMAL}"
+    echo $ECHO_OPTS "${RED}failed!${NORMAL}"
   fi
   return $1
 }
@@ -262,11 +280,11 @@ log_action_msg() {
 }
 
 log_action_begin_msg() {
-  echo "$@...\c "
+  echo $ECHO_OPTS "$@...\c "
 }
 
 log_action_cont_msg() {
-  echo "$@...\c "
+  echo $ECHO_OPTS "$@...\c "
 }
 
 log_action_end_msg() {
@@ -278,15 +296,11 @@ log_action_end_msg() {
 
   log_fancy_output
   if [ $1 -eq 0 ]; then
-    echo "done${end}"
+    echo $ECHO_OPTS "done${end}"
   else
-    echo "${RED}failed${end}${NORMAL}"
+    echo $ECHO_OPTS "${RED}failed${end}${NORMAL}"
   fi
 }
 
-# \X chars only passed to echo under bash, if xpg_echo enabled....
-if [ -n "$BASH_VERSION" ];then
-  shopt -s xpg_echo
-fi
 
 # vim: ft=sh ts=2 expandtab
