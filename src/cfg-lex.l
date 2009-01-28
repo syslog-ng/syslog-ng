@@ -552,6 +552,7 @@ cfg_lex_process_include(const gchar *filename)
                     evt_tag_str("dir", filename),
                     NULL);
           include_depth--;
+          include_stack[include_depth].yybuf = NULL;
           return TRUE;
         }
     }
