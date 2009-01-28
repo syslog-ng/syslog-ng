@@ -264,11 +264,6 @@ g_process_set_user(const gchar *user)
   if (!process_opts.user)
     process_opts.user = user;
 
-  if (process_opts.user && !resolve_user(process_opts.user, &process_opts.uid))
-    {
-      g_process_message("Error resolving user; user='%s'", process_opts.user);
-      process_opts.uid = (uid_t) -1;
-    }
 
 }
 
@@ -284,11 +279,6 @@ g_process_set_group(const gchar *group)
   if (!process_opts.group)
     process_opts.group = group;
 
-  if (process_opts.group && !resolve_group(process_opts.group, &process_opts.gid))
-    {
-      g_process_message("Error resolving group; group='%s'", process_opts.group);
-      process_opts.gid = (gid_t) -1;
-    }
 }
 
 /**
@@ -769,6 +759,21 @@ g_process_change_caps(void)
 
 #endif
 
+static void
+g_process_resolve_names(void)
+{
+  if (process_opts.user && !resolve_user(process_opts.user, &process_opts.uid))
+    {
+      g_process_message("Error resolving user; user='%s'", process_opts.user);
+      process_opts.uid = (uid_t) -1;
+    }
+  if (process_opts.group && !resolve_group(process_opts.group, &process_opts.gid))
+    {
+      g_process_message("Error resolving group; group='%s'", process_opts.group);
+      process_opts.gid = (gid_t) -1;
+    }
+}
+
 /**
  * g_process_change_dir:
  *
@@ -1122,6 +1127,7 @@ g_process_start(void)
   
   g_process_detach_tty();
   g_process_change_limits();
+  g_process_resolve_names();
   
   if (process_opts.mode == G_PM_BACKGROUND)
     {
