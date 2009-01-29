@@ -65,6 +65,11 @@ if [ -f /etc/lsb-release ]; then
 	. /etc/lsb-release
 fi
 
+if [ -f "/etc/redhat-release" ];then
+	# redhat uses a different syslogd pidfile...
+	SYSLOGPIDFILE="/var/run/syslogd.pid"
+fi
+
 if [ -f /lib/lsb/init-functions ];then
 	# long list of exclusions... 
 	if [ -f "/etc/redhat-release" ] || [ -f "/etc/SuSE-release" ];then
@@ -118,7 +123,7 @@ check_syntax() {
 
 slng_waitforpid() {
 	_pid=$1
-	process=$2
+	_process=$2
 	_cnt=$MAXWAIT
 
 	# no pid, return...
