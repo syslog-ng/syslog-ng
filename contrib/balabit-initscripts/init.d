@@ -154,7 +154,7 @@ returnmessage() {
 syslogng_start() {
 	echo_n "Starting syslog-ng: "
 	PID=`pidofproc -p ${PIDFILE} ${SYSLOGNG} | head -1`
-	if [ $PID -gt 0 ] ;then
+	if [ -n "$PID" ] && [ $PID -gt 0 ] ;then
 		log_success_msg "already running: $PID"
 		return $retval
 	fi
