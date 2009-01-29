@@ -137,12 +137,25 @@ typedef struct _LogMessageMatch
       guint16 ofs;
       guint16 len;
 #else
+
+#if GLIB_SIZEOF_VOID_P == 4
+      guint16 ofs;
+      guint8 __pad;
+      guint8 flags;
+      guint16 len;
+      guint8 builtin_value;
+      guint8 type;
+#elif GLIB_SIZEOF_VOID_P == 8
       guint16 ofs;
       guint16 len;
       guint8 builtin_value;
       guint8 type;
       guint8 __pad;
       guint8 flags;
+#else
+#error "Unknown pointer size"
+#endif
+
 #endif
     };
   };
