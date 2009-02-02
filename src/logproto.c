@@ -172,6 +172,8 @@ struct _LogProtoPlainServer
   gsize buffer_size, buffer_end, buffer_pos;
   gsize padding_size, max_msg_size;
   GSockAddr *prev_saddr;
+  gchar raw_buffer_leftover[8];
+  gint raw_buffer_leftover_size;
   LogProtoStatus status;
 };
 
@@ -500,7 +502,8 @@ log_proto_plain_server_fetch(LogProto *s, const guchar **msg, gsize *msg_len, GS
           /* if conversion is needed, we first read into an on-stack
            * buffer, and then convert it into our internal buffer */
 
-          raw_buffer = g_alloca(self->max_msg_size);
+          raw_buffer = g_alloca(self->max_msg_size + self->raw_buffer_leftover_size);
+          memcpy(raw_buffer, self->raw_buffer_leftover, self->raw_buffer_leftover_size);
           if (!self->padding_size)
             {
               avail = self->max_msg_size;
@@ -512,7 +515,7 @@ log_proto_plain_server_fetch(LogProto *s, const guchar **msg, gsize *msg_len, GS
             }
         }
 
-      rc = log_transport_read(self->super.transport, raw_buffer, avail, sa);
+      rc = log_transport_read(self->super.transport, raw_buffer + self->raw_buffer_leftover_size, avail, sa);
       if (sa && *sa)
         self->prev_saddr = *sa;
       if (rc < 0)
@@ -547,6 +550,13 @@ log_proto_plain_server_fetch(LogProto *s, const guchar **msg, gsize *msg_len, GS
               msg_verbose("EOF occurred while reading", 
                           evt_tag_int(EVT_TAG_FD, self->super.transport->fd),
                           NULL);
+              if (self->raw_buffer_leftover_size > 0)
+                {
+                  msg_error("EOF read on a channel with leftovers from previous character conversion, dropping input",
+                            NULL);
+                  self->status = LPS_EOF;
+                  return self->status;
+                }
               self->status = LPS_EOF;
               if (log_proto_plain_server_fetch_from_buf(self, msg, msg_len, TRUE))
                 {
@@ -575,6 +585,9 @@ log_proto_plain_server_fetch(LogProto *s, const guchar **msg, gsize *msg_len, GS
         }
       else
         {
+          rc += self->raw_buffer_leftover_size;
+          self->raw_buffer_leftover_size = 0;
+
           /* some data was read */
           if (self->super.convert != (GIConv) -1)
             {
@@ -594,7 +607,29 @@ log_proto_plain_server_fetch(LogProto *s, const guchar **msg, gsize *msg_len, GS
                       switch (errno)
                         {
                         case EINVAL:
-                          /* Incomplete text, do not report an error */
+                          /* Incomplete text, do not report an error, rather try to read again */
+                          self->buffer_end = self->buffer_size - avail_out;
+
+                          if (avail_in > 0)
+                            {
+                              if (avail_in > sizeof(self->raw_buffer_leftover))
+                                {
+                                  msg_error("Invalid byte sequence, the remaining raw buffer is larger than the supported leftover size",
+                                            evt_tag_str("encoding", self->super.encoding),
+                                            evt_tag_int("avail_in", avail_in),
+                                            evt_tag_int("leftover_size", sizeof(self->raw_buffer_leftover)),
+                                            NULL);
+                                  self->status = LPS_ERROR;
+                                  return self->status;
+                                }
+                              memcpy(self->raw_buffer_leftover, raw_buffer, avail_in);
+                              self->raw_buffer_leftover_size = avail_in;
+                              msg_debug("Leftover characters remained after conversion, delaying message until another chunk arrives",
+                                        evt_tag_str("encoding", self->super.encoding),
+                                        evt_tag_int("avail_in", avail_in),
+                                        NULL);
+                              return LPS_SUCCESS;
+                            }
                           break;
                         case E2BIG:
                           
