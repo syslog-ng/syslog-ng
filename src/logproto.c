@@ -635,11 +635,24 @@ log_proto_plain_server_fetch(LogProto *s, const guchar **msg, gsize *msg_len, GS
                           
                           self->buffer_end = self->buffer_size - avail_out;
                           /* extend the buffer */
-                          self->buffer_size *= 2; 
-                          self->buffer = g_realloc(self->buffer, self->buffer_size);
                           
-                          /* recalculate the out pointer, and add what we have now */
-                          ret = -1;
+                          if (self->buffer_size < self->max_msg_size * 6)
+                            {
+                              self->buffer_size *= 2;
+                              self->buffer = g_realloc(self->buffer, self->buffer_size);
+
+                              /* recalculate the out pointer, and add what we have now */
+                              ret = -1;
+                            }
+                          else
+                            {
+                              msg_error("Incoming byte stream requires a too large conversion buffer, probably invalid character sequence",
+                                        evt_tag_str("encoding", self->super.encoding),
+                                        evt_tag_printf("buffer", "%.*s", self->buffer_end, self->buffer),
+                                        NULL);
+                              self->status = LPS_ERROR;
+                              return self->status;
+                            }
                           break;
                         case EILSEQ:
                         default:
