@@ -70,6 +70,12 @@ if [ -f "/etc/redhat-release" ];then
 	SYSLOGPIDFILE="/var/run/syslogd.pid"
 fi
 
+if [ "$OS" = "SunOS" ] || [ "$OS" = "Solaris" ];then
+	if [ "`uname -r`" = "5.8" ];then
+		SYSLOGPIDFILE="/etc/syslog.pid"
+	fi
+fi
+
 if [ -f /lib/lsb/init-functions ];then
 	# long list of exclusions... 
 	if [ -f "/etc/redhat-release" ] || [ -f "/etc/SuSE-release" ];then
