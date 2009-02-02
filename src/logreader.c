@@ -167,7 +167,7 @@ log_reader_fd_check(GSource *source)
         
       if (self->reader->follow_filename && stat(self->reader->follow_filename, &followed_st) != -1)
         {
-          if (fd < 0 || (st.st_ino != followed_st.st_ino && st.st_size > 0))
+          if (fd < 0 || (st.st_ino != followed_st.st_ino && followed_st.st_size > 0))
             {
               msg_trace("log_reader_fd_check file moved eof",
                         evt_tag_int("pos", pos),
