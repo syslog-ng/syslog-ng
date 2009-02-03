@@ -102,28 +102,27 @@ tls_session_verify_dn(X509_STORE_CTX *ctx)
 }
 
 int
-tls_session_verify(int ok, X509_STORE_CTX *ctx)
+tls_session_verify(TLSSession *self, int ok, X509_STORE_CTX *ctx)
 {
+  /* untrusted means that we have to accept the certificate even if it is untrusted */
+  if (self->ctx->verify_mode & TVM_UNTRUSTED)
+    return 1;
+
+  /* accept certificate if its fingerprint matches, again regardless whether x509 certificate validation was successful */
   if (tls_session_verify_fingerprint(ctx))
-    return 1; /* success */
+    return 1;
  
+  /* reject certificate if it is valid, but its DN is not trusted */
   if (ok && ctx->error_depth == 0 && !tls_session_verify_dn(ctx))
     {
       ctx->error = X509_V_ERR_CERT_UNTRUSTED;
-      return 0; /* fail */
+      return 0;
     }
-  
-  return ok; 
-}
-
-int
-tls_session_ignore_errors(int ok, X509_STORE_CTX *ctx)
-{
   /* if the crl_dir is set in the configuration file but the directory is empty ignore this error */
-  if (ok == 0 && ctx->error == X509_V_ERR_UNABLE_TO_GET_CRL)
+  if (!ok && ctx->error == X509_V_ERR_UNABLE_TO_GET_CRL)
     return 1;
-  else
-    return ok;
+
+  return ok;
 }
 
 int
@@ -132,10 +131,8 @@ tls_session_verify_callback(int ok, X509_STORE_CTX *ctx)
   SSL *ssl = X509_STORE_CTX_get_app_data(ctx);
   TLSSession *self = SSL_get_app_data(ssl);
 
-  ok = tls_session_verify(ok, ctx);
+  ok = tls_session_verify(self, ok, ctx);
     
-  ok = tls_session_ignore_errors(ok, ctx);
-
   tls_log_certificate_validation_progress(ok, ctx);
   
   if (self->verify_func)
@@ -165,9 +162,6 @@ tls_session_set_verify(TLSSession *self, TLSSessionVerifyFunc verify_func, gpoin
   self->verify_func = verify_func;
   self->verify_data = verify_data;
   self->verify_data_destroy = verify_destroy;
-
-  SSL_set_app_data(self->ssl, self);
-  SSL_set_verify(self->ssl, SSL_get_verify_mode(self->ssl), tls_session_verify_callback);
 }
 
 static TLSSession *
@@ -212,6 +206,7 @@ TLSSession *
 tls_context_setup_session(TLSContext *self)
 {
   SSL *ssl;
+  TLSSession *session;
   gint ssl_error;
 
   if (!self->ssl_ctx)
@@ -257,7 +252,7 @@ tls_context_setup_session(TLSContext *self)
           verify_mode = SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE;
           break;
         case TVM_REQUIRED | TVM_UNTRUSTED:
-          verify_mode = SSL_VERIFY_NONE | SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
+          verify_mode = SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE | SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
           break;
         case TVM_REQUIRED | TVM_TRUSTED:
           verify_mode = SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE | SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
@@ -266,7 +261,7 @@ tls_context_setup_session(TLSContext *self)
           g_assert_not_reached();
         }  
       
-      SSL_CTX_set_verify(self->ssl_ctx, verify_mode, NULL);
+      SSL_CTX_set_verify(self->ssl_ctx, verify_mode, tls_session_verify_callback);
       SSL_CTX_set_options(self->ssl_ctx, SSL_OP_NO_SSLv2);
     }
 
@@ -276,7 +271,10 @@ tls_context_setup_session(TLSContext *self)
     SSL_set_connect_state(ssl);
   else
     SSL_set_accept_state(ssl);
-  return tls_session_new(ssl, self);
+
+  session = tls_session_new(ssl, self);
+  SSL_set_app_data(ssl, session);
+  return session;
 
  error:
   ssl_error = ERR_get_error();
