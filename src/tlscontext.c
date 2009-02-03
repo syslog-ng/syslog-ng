@@ -110,17 +110,31 @@ tls_session_verify(TLSSession *self, int ok, X509_STORE_CTX *ctx)
 
   /* accept certificate if its fingerprint matches, again regardless whether x509 certificate validation was successful */
   if (tls_session_verify_fingerprint(ctx))
-    return 1;
+    {
+      msg_debug("Certificate accepted because its fingerprint is listed", NULL);
+      return 1;
+    }
+
+  if (ok && ctx->error_depth != 0 && (ctx->current_cert->ex_flags & EXFLAG_CA) == 0)
+    {
+      msg_debug("Invalid certificate found in chain, basicConstraints.ca is unset in non-leaf certificate", NULL);
+      ctx->error = X509_V_ERR_INVALID_CA;
+      return 0;
+    }
  
   /* reject certificate if it is valid, but its DN is not trusted */
   if (ok && ctx->error_depth == 0 && !tls_session_verify_dn(ctx))
     {
+      msg_debug("Certificate valid, but DN constraints were not met, rejecting", NULL);
       ctx->error = X509_V_ERR_CERT_UNTRUSTED;
       return 0;
     }
   /* if the crl_dir is set in the configuration file but the directory is empty ignore this error */
   if (!ok && ctx->error == X509_V_ERR_UNABLE_TO_GET_CRL)
-    return 1;
+    {
+      msg_notice("CRL directory is set but no CRLs found", NULL);
+      return 1;
+    }
 
   return ok;
 }
