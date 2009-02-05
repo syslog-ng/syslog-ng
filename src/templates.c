@@ -647,6 +647,9 @@ log_template_compile(LogTemplate *self, GError **error)
   
   g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
   
+  if (self->compiled_template)
+    return TRUE;
+
   p = self->template;
   
   while (*p)
@@ -767,7 +770,7 @@ log_template_append_format(LogTemplate *self, LogMessage *lm, guint flags, gint 
   
   flags |= self->flags;
   
-  if (self->compiled_template == NULL && !log_template_compile(self, NULL))
+  if (!log_template_compile(self, NULL))
     return;
 
   for (p = self->compiled_template; p; p = g_list_next(p))
