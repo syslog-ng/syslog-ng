@@ -40,9 +40,9 @@
 
 static gboolean
 affile_open_file(gchar *name, gint flags,
-	     uid_t uid, gid_t gid, mode_t mode,
-	     uid_t dir_uid, gid_t dir_gid, mode_t dir_mode,
-	     gboolean create_dirs, gboolean privileged, gint *fd)
+                 uid_t uid, gid_t gid, mode_t mode,
+                 uid_t dir_uid, gid_t dir_gid, mode_t dir_mode,
+                 gboolean create_dirs, gboolean privileged, gboolean is_pipe, gint *fd)
 {
   cap_t saved_caps;
 
@@ -64,6 +64,11 @@ affile_open_file(gchar *name, gint flags,
       g_process_cap_modify(CAP_SYS_ADMIN, TRUE);
     }
   *fd = open(name, flags, mode);
+  if (is_pipe && *fd < 0 && errno == ENOENT)
+    {
+      if (mkfifo(name, 0666) >= 0)
+        *fd = open(name, flags, 0666);
+    }
 
   if (*fd != -1)
     {
@@ -99,7 +104,7 @@ affile_sd_open_file(AFFileSourceDriver *self, gchar *name, gint *fd)
   else
     flags = O_RDONLY | O_NOCTTY | O_NONBLOCK | O_LARGEFILE;
 
-  if (affile_open_file(name, flags, -1, -1, -1, 0, 0, 0, 0, !!(self->flags & AFFILE_PRIVILEGED), fd))
+  if (affile_open_file(name, flags, -1, -1, -1, 0, 0, 0, 0, !!(self->flags & AFFILE_PRIVILEGED), !!(self->flags & AFFILE_PIPE), fd))
     return TRUE;
   return FALSE;
 }
@@ -470,7 +475,7 @@ affile_dw_init(LogPipe *s)
   if (affile_open_file(self->filename->str, flags, 
                        self->owner->file_uid, self->owner->file_gid, self->owner->file_perm, 
                        self->owner->dir_uid, self->owner->dir_gid, self->owner->dir_perm, 
-                       !!(self->owner->flags & AFFILE_CREATE_DIRS), FALSE, &fd))
+                       !!(self->owner->flags & AFFILE_CREATE_DIRS), FALSE, !!(self->owner->flags & AFFILE_PIPE), &fd))
     {
       guint write_flags;
       
