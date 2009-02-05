@@ -45,6 +45,7 @@ affile_open_file(gchar *name, gint flags,
                  gboolean create_dirs, gboolean privileged, gboolean is_pipe, gint *fd)
 {
   cap_t saved_caps;
+  struct stat st;
 
   if (strstr(name, "../") || strstr(name, "/..")) 
     {
@@ -62,6 +63,23 @@ affile_open_file(gchar *name, gint flags,
       saved_caps = g_process_cap_save();
       g_process_cap_modify(CAP_DAC_READ_SEARCH, TRUE);
       g_process_cap_modify(CAP_SYS_ADMIN, TRUE);
+    }
+  if (stat(name, &st) >= 0)
+    {
+      if (is_pipe && !S_ISFIFO(st.st_mode))
+        {
+          msg_error("Error opening pipe, underlying file is not a FIFO, it should be used by file()",
+                    evt_tag_str("filename", name),
+                    NULL);
+          goto exit;
+        }
+      else if (!is_pipe && S_ISFIFO(st.st_mode))
+        {
+          msg_error("Error opening file, underlying file is a FIFO, it should be used by pipe()",
+                    evt_tag_str("filename", name),
+                    NULL);
+          goto exit;
+        }
     }
   *fd = open(name, flags, mode);
   if (is_pipe && *fd < 0 && errno == ENOENT)
@@ -82,6 +100,7 @@ affile_open_file(gchar *name, gint flags,
       if (mode != -1)
         fchmod(*fd, mode);
     }
+ exit:
   if (privileged)
     {
       g_process_cap_restore(saved_caps);
