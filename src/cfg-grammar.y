@@ -801,7 +801,7 @@ dest_afpipe
 dest_afpipe_params
 	: string 
 	  { 
-	    last_driver = affile_dd_new($1, AFFILE_NO_EXPAND | AFFILE_PIPE);
+	    last_driver = affile_dd_new($1, AFFILE_PIPE);
 	    free($1); 
 	    last_writer_options = &((AFFileDestDriver *) last_driver)->writer_options;
 	    last_writer_options->flush_lines = 0;
