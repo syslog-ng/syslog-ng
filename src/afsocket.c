@@ -90,12 +90,12 @@ afsocket_open_socket(GSockAddr *bind_addr, int stream_or_dgram, int *fd)
   else
     sock = socket(bind_addr->sa.sa_family, SOCK_DGRAM, 0);
     
-  g_fd_set_nonblock(sock, TRUE);
-  g_fd_set_cloexec(sock, TRUE);
   if (sock != -1)
     {
       cap_t saved_caps;
 
+      g_fd_set_nonblock(sock, TRUE);
+      g_fd_set_cloexec(sock, TRUE);
       saved_caps = g_process_cap_save();
       g_process_cap_modify(CAP_NET_BIND_SERVICE, TRUE);
       g_process_cap_modify(CAP_DAC_OVERRIDE, TRUE);
