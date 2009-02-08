@@ -473,7 +473,15 @@ cfg_reload_config(gchar *fname, GlobalConfig *cfg)
     {
       msg_error("Error initializing new configuration, reverting to old config", NULL);
       cfg_persist_config_move(new_cfg, cfg);
-      cfg_init(cfg);
+      if (!cfg_init(cfg))
+        {
+          /* hmm. hmmm, error reinitializing old configuration, we're hosed.
+           * Best is to kill ourselves in the hope that the supervisor
+           * restarts us.
+           */
+          kill(getpid(), SIGQUIT);
+          g_assert_not_reached();
+        }
       return cfg;
     }
 }
