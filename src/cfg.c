@@ -34,6 +34,8 @@
 #include "logparser.h"
 #include "serialize.h"
 
+#include <sys/types.h>
+#include <signal.h>
 #include <stdio.h>
 #include <string.h>
 
