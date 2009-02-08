@@ -366,8 +366,6 @@ main(int argc, char *argv[])
 
   g_process_set_name("syslog-ng");
   
-#if ENABLE_LINUX_CAPS
-  
   /* in this case we switch users early while retaining a limited set of
    * credentials in order to initialize/reinitialize the configuration.
    */
@@ -386,26 +384,6 @@ main(int argc, char *argv[])
       else
         g_process_startup_ok();
     }
-#else
-
-  /* if Linux capabilities are not compiled in, the initial setup is
-   * performed as the root user, and then the switch to a limited user
-   * account is made. This is compatible how syslog-ng behaved before
-   * capability support.
-   */
-   
-  rc = initial_init(&cfg);
-  if (rc || syntax_only)
-    {
-      return rc;
-    }
-  if (syntax_only)
-    return 0;
-  
-  g_process_start();
-  g_process_startup_ok();
-#endif
-
 
   /* we are running as a non-root user from this point */
   
