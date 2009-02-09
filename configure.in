@@ -358,7 +358,17 @@ dnl libdbi headers/libraries
 dnl ***************************************************************************
 
 AC_CHECK_LIB(dl, dlsym, DL_LIBS="-ldl")
-PKG_CHECK_MODULES(LIBDBI, dbi >= $LIBDBI_MIN_VERSION,, LIBDBI_LIBS="")
+PKG_CHECK_MODULES(LIBDBI, dbi >= $LIBDBI_MIN_VERSION,, libdbi_pkgconfig_not_found="1")
+
+if test "$libdbi_pkgconfig_not_found" -eq 1; then
+	dnl if libdbi has no .pc file, try it without one
+	LIBDBI_LIBS="-ldbi"
+	export LIBDBI_LIBS
+	LIBDBI_CFLAGS="-I/usr/include"
+	export LIBDBI_CFLAGS
+	PKG_CHECK_MODULES(LIBDBI, dbi >= $LIBDBI_MIN_VERSION,, LIBDBI_LIBS="")
+fi
+
 
 dnl ***************************************************************************
 dnl Some more checks based on the detected settings above
