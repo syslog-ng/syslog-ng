@@ -18,9 +18,13 @@ testcase(LogMessage *msg, gchar *template, gchar *expected)
 {
   LogTemplate *templ;
   GString *res = g_string_sized_new(128);
+  static TimeZoneInfo *tzinfo = NULL;
+
+  if (!tzinfo)
+    tzinfo = time_zone_info_new(NULL);
   
   templ = log_template_new("dummy", template);
-  log_template_format(templ, msg, LT_ESCAPE, TS_FMT_BSD, NULL, 3, 0, res);
+  log_template_format(templ, msg, LT_ESCAPE, TS_FMT_BSD, tzinfo, 3, 0, res);
   
   if (strcmp(res->str, expected) != 0)
     {

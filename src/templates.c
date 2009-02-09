@@ -449,6 +449,9 @@ log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, TimeZo
          *   local timezone
          */
         zone_ofs = (zone_info != NULL ? time_zone_info_get_offset(zone_info, stamp->time.tv_sec) : stamp->zone_offset);
+        if (zone_ofs == -1)
+          zone_ofs = stamp->zone_offset;
+
         t = stamp->time.tv_sec + zone_ofs;
         tm = gmtime_r(&t, &tm_storage);
 
