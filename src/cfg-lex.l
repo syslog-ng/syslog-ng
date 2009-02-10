@@ -164,7 +164,6 @@ static struct keyword keywords[] = {
 	{ "localport",		KW_LOCALPORT },
 	{ "port",		KW_PORT },
 	{ "destport",		KW_DESTPORT },
-        { "framed",             KW_FRAMED },
         { "ip_ttl",             KW_IP_TTL },
         { "ip_tos",             KW_IP_TOS },
         { "so_broadcast",       KW_SO_BROADCAST },
