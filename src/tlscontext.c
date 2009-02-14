@@ -217,6 +217,7 @@ tls_context_setup_session(TLSContext *self)
   if (!self->ssl_ctx)
     {  
       gint verify_mode = 0;
+      gint verify_flags = X509_V_FLAG_POLICY_CHECK;
       
       if (self->mode == TM_CLIENT)
         self->ssl_ctx = SSL_CTX_new(SSLv23_client_method());
@@ -240,7 +241,9 @@ tls_context_setup_session(TLSContext *self)
         goto error;
       
       if (self->crl_dir)
-        X509_VERIFY_PARAM_set_flags(self->ssl_ctx->param, X509_V_FLAG_CRL_CHECK | X509_V_FLAG_CRL_CHECK_ALL);
+        verify_flags |= X509_V_FLAG_CRL_CHECK | X509_V_FLAG_CRL_CHECK_ALL;
+
+      X509_VERIFY_PARAM_set_flags(self->ssl_ctx->param, verify_flags);
         
       switch (self->verify_mode)
         {
