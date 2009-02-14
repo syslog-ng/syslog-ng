@@ -2,6 +2,7 @@
 
 import os, sys, signal, traceback, time, errno
 from socket import *
+import struct
 
 padding = 'x' * 250
 session_counter = 0
@@ -39,12 +40,24 @@ class SocketSender(MessageSender):
             self.sock = socket(self.family, SOCK_STREAM)
         
         self.sock.connect(self.sock_name)
+        self.sock.setsockopt(SOL_SOCKET, SO_SNDTIMEO, struct.pack('ll', 3, 0))
+        if self.dgram:
+                self.sock.send('')
     
     def sendMessage(self, msg):
         line = '%s%s' % (msg, self.terminate_seq)
         if self.send_by_bytes:
             for c in line:
-                self.sock.send(c)
+                try:
+                    self.sock.send(c)
+                except error, e:
+                    if e[0] == errno.ENOBUFS:
+                        print 'got ENOBUFS, sleeping...'
+                        time.sleep(0.5)
+                        repeat = True
+                    else:
+                        print "hmm... got an error to the 'send' call, maybe syslog-ng is not accepting messages?"
+                        raise
         else:
             repeat = True
             while repeat:
@@ -59,6 +72,9 @@ class SocketSender(MessageSender):
                         print 'got ENOBUFS, sleeping...'
                         time.sleep(0.5)
                         repeat = True
+                    else:
+                        print "hmm... got an error to the 'send' call, maybe syslog-ng is not accepting messages?"
+                        raise
 
     def __str__(self):
         if self.family == AF_UNIX:

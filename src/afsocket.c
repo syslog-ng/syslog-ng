@@ -208,7 +208,9 @@ afsocket_sc_init(LogPipe *s)
   if ((self->owner->flags & AFSOCKET_SYSLOG_PROTOCOL) == 0)
     {
       /* plain protocol */
-      proto = log_proto_plain_new_server(transport, self->owner->reader_options.padding, self->owner->reader_options.msg_size, (self->owner->flags & AFSOCKET_DGRAM) ? LPPF_PKTTERM : 0);
+      proto = log_proto_plain_new_server(transport, self->owner->reader_options.padding,
+                   self->owner->reader_options.msg_size,
+                   (self->owner->flags & AFSOCKET_DGRAM) ? (LPPF_PKTTERM + LPPF_IGNORE_EOF) : 0);
     }
   else
     {
