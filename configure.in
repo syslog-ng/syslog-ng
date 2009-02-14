@@ -90,10 +90,13 @@ AC_ARG_ENABLE(ssl,
               [  --enable-ssl        Enable SSL support.],,enable_ssl="auto")
 
 AC_ARG_ENABLE(dynamic-linking,
-              [  --enable-dynamic-linking        Link glib and eventlog dynamically instead of statically.])
+              [  --enable-dynamic-linking        Link glib and eventlog dynamically instead of statically.],,enable_dynamic_linking="auto")
 
 AC_ARG_ENABLE(static-linking,
-              [  --enable-static-linking         Link everything statically.])
+              [  --enable-static-linking         Link everything statically.],,enable_static_linking="auto")
+
+AC_ARG_ENABLE(mixed-linking,
+              [  --enable-mixed-linking          Link 3rd party libraries statically, system libraries dynamically],,enable_mixed_linking="auto")
 
 AC_ARG_ENABLE(ipv6,
               [  --enable-ipv6           Enable support for IPv6.],,enable_ipv6="auto")
@@ -611,8 +614,42 @@ int main()
 	fi
 fi
 
-if test "x$enable_dynamic_linking" = "xyes" -a "x$enable_static_linking" = "xyes"; then
-	AC_MSG_ERROR([You cannot specify dynamic and static linking at the same time.])
+if test "$enable_dynamic_linking" = "auto" -a "$enable_static_linking" = "auto" -a "$enable_mixed_linking" = "auto"; then
+	enable_dynamic_linking="yes"
+	enable_static_linking="no"
+	enable_mixed_linking="no"
+fi
+
+linkopts=0
+if test "x$enable_dynamic_linking" = "xyes"; then
+       linkopts=`expr $linkopts + 1`
+fi
+if test "x$enable_static_linking" = "xyes"; then
+       linkopts=`expr $linkopts + 1`
+fi
+if test "x$enable_mixed_linking" = "xyes"; then
+       linkopts=`expr $linkopts + 1`
+fi
+
+if test "$linkopts" -gt 1; then
+       AC_MSG_ERROR([You cannot specify multiple linking options at the same time (--enable-dynamic-linking, --enable-static-linking, --enable-mixed-linking).])
+fi
+
+if test "x$enable_dynamic_linking" = "xyes"; then
+	enable_dynamic_linking="yes"
+	enable_static_linking="no"
+	enable_mixed_linking="no"
+	linking_mode="dynamic"
+elif test "x$enable_static_linking" = "xyes"; then
+	enable_dynamic_linking="no"
+	enable_static_linking="yes"
+	enable_mixed_linking="no"
+	linking_mode="static"
+elif test "x$enable_mixed_linking" = "xyes"; then
+	enable_dynamic_linking="no"
+	enable_static_linking="no"
+	enable_mixed_linking="yes"
+	linking_mode="mixed"
 fi
 
 if test "x$enable_dynamic_linking" != "xyes" -a "x$blb_cv_static_glib" = "xno"; then
@@ -736,6 +773,7 @@ echo "  compiler                    : $CC"
 echo "  compiler options            : $CFLAGS $CPPFLAGS"
 echo "  linker flags                : $LDFLAGS $LIBS"
 echo "  prefix                      : $prefix"
+echo "  linking mode                : $linking_mode"
 echo " Features:"
 echo "  Sun STREAMS support         : ${enable_sun_streams:=no}"
 echo "  Sun Door support            : ${enable_sun_door:=no}"
