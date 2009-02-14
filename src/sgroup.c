@@ -25,8 +25,10 @@
 #include "misc.h"
 #include "messages.h"
 #include "stats.h"
+#include "afinter.h"
 
 #include <time.h>
+#include <string.h>
 
 static gboolean
 log_source_group_init(LogPipe *s)

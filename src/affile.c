@@ -93,11 +93,11 @@ affile_open_file(gchar *name, gint flags,
       g_fd_set_cloexec(*fd, TRUE);
       
       g_process_cap_modify(CAP_DAC_OVERRIDE, TRUE);
-      if (uid != -1)
+      if (uid != (uid_t) -1)
         fchown(*fd, uid, -1);
-      if (gid != -1)
+      if (gid != (gid_t) -1)
         fchown(*fd, -1, gid);
-      if (mode != -1)
+      if (mode != (mode_t) -1)
         fchmod(*fd, mode);
     }
  exit:
