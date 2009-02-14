@@ -362,11 +362,7 @@ PKG_CHECK_MODULES(LIBDBI, dbi >= $LIBDBI_MIN_VERSION,, libdbi_pkgconfig_not_foun
 
 if test "$libdbi_pkgconfig_not_found" -eq 1; then
 	dnl if libdbi has no .pc file, try it without one
-	LIBDBI_LIBS="-ldbi"
-	export LIBDBI_LIBS
-	LIBDBI_CFLAGS="-I/usr/include"
-	export LIBDBI_CFLAGS
-	PKG_CHECK_MODULES(LIBDBI, dbi >= $LIBDBI_MIN_VERSION,, LIBDBI_LIBS="")
+	AC_CHECK_LIB(dbi, dbi_initialize, LIBDBI_LIBS="-ldbi"; LIBDBI_CFLAGS="-I/usr/include")
 fi
 
 
