@@ -353,6 +353,7 @@ check_reserved_words(char *token)
               break;
             }
           keywords[i].kw_status = KWS_NORMAL;
+          yylval.token = keywords[i].kw_token;
           return keywords[i].kw_token;
         }
     }
@@ -394,6 +395,27 @@ cfg_lex_get_current_lineno(void)
 
   return level->linenum;
 }
+
+char *
+cfg_lex_get_keyword_string(int kw)
+{
+  int i;
+  for (i = 0; i < (sizeof(keywords) / sizeof(struct keyword)); i++)
+    {
+      if (keywords[i].kw_token == kw)
+        {
+          msg_warning("WARNING: Your configuration uses a newly introduced reserved word as identifier, please use a different name",
+                      evt_tag_str("keyword", keywords[i].kw_name),
+                      evt_tag_str("filename", cfg_lex_get_current_file()),
+                      evt_tag_int("line", cfg_lex_get_current_lineno()),
+                      NULL);
+          return strdup(keywords[i].kw_name);
+        }
+    }
+  g_assert_not_reached();
+}
+
+
 
 static gboolean
 cfg_start_next_include(gboolean first_on_this_level)

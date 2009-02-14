@@ -157,6 +157,7 @@ void cfg_lex_deinit(void);
 gboolean cfg_lex_process_include(const gchar *filename);
 const gchar *cfg_lex_get_current_file(void);
 gint cfg_lex_get_current_lineno(void);
+char *cfg_lex_get_keyword_string(int kw);
 
 /* defined in the parser */
 int yyparse(void);

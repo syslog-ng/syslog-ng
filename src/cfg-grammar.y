@@ -97,6 +97,7 @@ cfg_check_template(LogTemplate *template)
 %}
 
 %union {
+        gint token;
 	gint64 num;
 	double fnum;
 	char *cptr;
@@ -277,9 +278,34 @@ cfg_check_template(LogTemplate *template)
 
 %type	<cptr> string
 %type	<cptr> string_or_number
-%type	<cptr> facility_string
 %type   <ptr> string_list
 %type   <ptr> string_list_build
+
+%type   <token> reserved_words_as_strings
+
+%type <token> KW_PARSER
+%type <token> KW_REWRITE
+%type <token> KW_INCLUDE
+%type <token> KW_SYSLOG
+%type <token> KW_COLUMNS
+%type <token> KW_DELIMITERS
+%type <token> KW_QUOTES
+%type <token> KW_QUOTE_PAIRS
+%type <token> KW_NULL
+%type <token> KW_CSV_PARSER
+%type <token> KW_DB_PARSER
+%type <token> KW_ENCODING
+%type <token> KW_SET
+%type <token> KW_SUBST
+%type <token> KW_VALUE
+%type <token> KW_PROGRAM_OVERRIDE
+%type <token> KW_HOST_OVERRIDE
+%type <token> KW_TRANSPORT
+%type <token> KW_TRUSTED_KEYS
+%type <token> KW_TRUSTED_DN
+%type <token> KW_MESSAGE
+%type <token> KW_TYPE
+%type <token> KW_SQL
 
 %%
 
@@ -465,7 +491,7 @@ source_affile_option
               affile_sd_set_pri_level(last_driver, level); 
             free($3);
           }
-        | KW_FACILITY '(' facility_string ')'
+        | KW_FACILITY '(' string ')'
 
           {
             int facility = -1;
@@ -1306,7 +1332,7 @@ filter_fac_list
 	;
 
 filter_fac
-	: facility_string
+	: string
 	  { 
 	    int n = syslog_name_lookup_facility_by_name($1);
 	    if (n == -1)
@@ -1485,6 +1511,34 @@ dnsmode
 string
 	: IDENTIFIER
 	| STRING
+	| reserved_words_as_strings             { $$ = cfg_lex_get_keyword_string($1); }
+	;
+
+reserved_words_as_strings
+        /* these keywords were introduced in syslog-ng 3.0 */
+        : KW_PARSER
+        | KW_REWRITE
+        | KW_INCLUDE
+        | KW_SYSLOG
+        | KW_COLUMNS
+        | KW_DELIMITERS
+        | KW_QUOTES
+        | KW_QUOTE_PAIRS
+        | KW_NULL
+        | KW_CSV_PARSER
+        | KW_DB_PARSER
+        | KW_ENCODING
+        | KW_SET
+        | KW_SUBST
+        | KW_VALUE
+        | KW_PROGRAM_OVERRIDE
+        | KW_HOST_OVERRIDE
+        | KW_TRANSPORT
+        | KW_TRUSTED_KEYS
+        | KW_TRUSTED_DN
+        | KW_MESSAGE
+        | KW_TYPE
+        | KW_SQL
 	;
 
 string_or_number
@@ -1498,11 +1552,6 @@ string_list
 string_list_build
         : string string_list_build		{ $$ = g_list_append($2, g_strdup($1)); free($1); }
         |					{ $$ = NULL; }
-        ;
-
-facility_string
-        : string                                { $$ = $1; };
-        | KW_SYSLOG                             { $$ = strdup("syslog"); }
         ;
 
 %%
