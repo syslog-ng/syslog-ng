@@ -317,9 +317,6 @@ dnl ***************************************************************************
 dnl OpenSSL headers/libraries
 dnl ***************************************************************************
 
-OPENSSL_LIBS=""
-OPENSSL_CPPFLAGS=""
-
 # openssl is needed for:
 #  * TLS support
 
