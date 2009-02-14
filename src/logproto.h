@@ -18,6 +18,7 @@ struct _LogProto
 {
   LogTransport *transport;
   GIConv convert;
+  gchar *encoding;
   guint flags;
   gboolean (*read_state)(LogProto *s, SerializeArchive *archive);
   gboolean (*write_state)(LogProto *s, SerializeArchive *archive);

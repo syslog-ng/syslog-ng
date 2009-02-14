@@ -8,11 +8,22 @@
 gboolean
 log_proto_set_encoding(LogProto *self, const gchar *encoding)
 {
-  self->convert = g_iconv_open("utf-8", encoding);
   if (self->convert != (GIConv) -1)
     {
-      return FALSE;
+      g_iconv_close(self->convert);
+      self->convert = (GIConv) -1;
     }
+  if (self->encoding)
+    {
+      g_free(self->encoding);
+      self->encoding = NULL;
+    }
+
+  self->convert = g_iconv_open("utf-8", encoding);
+  if (self->convert == (GIConv) -1)
+    return FALSE;
+
+  self->encoding = g_strdup(encoding);
   return TRUE;
 }
 
@@ -23,6 +34,8 @@ log_proto_free(LogProto *s)
     s->free_fn(s);
   if (s->convert != (GIConv) -1)
     g_iconv_close(s->convert);
+  if (s->encoding)
+    g_free(s->encoding);
   log_transport_free(s->transport);
   g_free(s);
 }
@@ -595,8 +608,13 @@ log_proto_plain_server_fetch(LogProto *s, const guchar **msg, gsize *msg_len, GS
                           break;
                         case EILSEQ:
                         default:
-                          msg_error("Invalid byte sequence or other error while converting input", 
-                                    NULL);
+                          msg_notice("Invalid byte sequence or other error while converting input, skipping character",
+                                     evt_tag_str("encoding", self->super.encoding),
+                                     evt_tag_printf("char", "0x%02x", *(guchar *) raw_buffer),
+                                     NULL);
+                          self->buffer_end = self->buffer_size - avail_out;
+                          raw_buffer++;
+                          avail_in--;
                           break;
                         }
                     }
