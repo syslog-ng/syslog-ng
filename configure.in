@@ -653,7 +653,7 @@ if test "x$enable_dynamic_linking" != "xyes" -a "x$blb_cv_static_glib" = "xno"; 
 fi
 
 if test "x$enable_dynamic_linking" != "xyes" -a "x$blb_cv_static_openssl" = "xno"; then
-	AC_MSG_ERROR([static OpenSSL libraries not found (libssl.a and libcrypto.a), either link OpenSSL statically using the --enable-dynamic-linking, or install a static OpenSSL])
+	AC_MSG_ERROR([static OpenSSL libraries not found (libssl.a, libcrypto.a and their external dependencies like libz.a), either link OpenSSL statically using the --enable-dynamic-linking, or install a static OpenSSL])
 fi
 
 
