@@ -323,7 +323,7 @@ log_reader_fetch_log(LogReader *self, LogProto *proto)
           /* no more messages for now */
           break;
         }
-      if (msg_len > 0)
+      if (msg_len > 0 || (self->options->options & LRO_EMPTY_LINES))
         {
           msg_count++;
 
@@ -776,6 +776,8 @@ log_reader_options_lookup_flag(const gchar *flag)
     return LRO_NO_MULTI_LINE;
   if (strcmp(flag, "store-legacy-msghdr") == 0 || strcmp(flag, "store_legacy_msghdr") == 0)
     return LRO_STORE_LEGACY_MSGHDR;
+  if (strcmp(flag, "empty-lines") == 0 || strcmp(flag, "empty_lines") == 0)
+    return LRO_EMPTY_LINES;
   msg_error("Unknown parse flag", evt_tag_str("flag", flag), NULL);
   return 0;
 }
