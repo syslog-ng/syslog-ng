@@ -66,6 +66,7 @@ static gint dns_cache_expire_failed = 60;
 static gint dns_cache_persistent_count = 0;
 static gchar *dns_cache_hosts = NULL;
 static time_t dns_cache_hosts_mtime = -1;
+static time_t dns_cache_hosts_checktime = 0;
 
 static gboolean 
 dns_cache_key_equal(DNSCacheKey *e1, DNSCacheKey *e2)
@@ -156,6 +157,12 @@ static void
 dns_cache_check_hosts(void)
 {
   struct stat st;
+  time_t t = time(NULL);
+
+  if (G_LIKELY(dns_cache_hosts_checktime == t))
+    return;
+
+  dns_cache_hosts_checktime = t;
   
   if (!dns_cache_hosts || stat(dns_cache_hosts, &st) < 0)
     {
@@ -299,6 +306,7 @@ dns_cache_set_params(gint cache_size, gint expire, gint expire_failed, const gch
   dns_cache_expire_failed = expire_failed;
   dns_cache_hosts = g_strdup(hosts);
   dns_cache_hosts_mtime = -1;
+  dns_cache_hosts_checktime = 0;
 }
 
 void
