@@ -443,6 +443,7 @@ cfg_start_next_include(gboolean first_on_this_level)
     {
       yybuf = YY_CURRENT_BUFFER;
       g_free(level->current_file);
+      fclose(yybuf->yy_input_file);
       level->current_file = NULL;
       include_depth--;
       yy_switch_to_buffer(include_stack[include_depth].yybuf);
@@ -470,12 +471,16 @@ cfg_start_next_include(gboolean first_on_this_level)
             evt_tag_str("filename", filename),
             evt_tag_int("depth", include_depth),
             NULL);
+  yybuf = YY_CURRENT_BUFFER;
   if (level->current_file)
-    g_free(level->current_file);
+    {
+      g_free(level->current_file);
+      if (yybuf)
+        fclose(yybuf->yy_input_file);
+    }
   level->current_file = filename;
   level->linenum = 1;
   
-  yybuf = YY_CURRENT_BUFFER;
   yy_switch_to_buffer(yy_create_buffer(include_file, YY_BUF_SIZE));
   if (!first_on_this_level)
     yy_delete_buffer(yybuf);
