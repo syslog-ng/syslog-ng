@@ -54,10 +54,10 @@ run_application_hook(gint type)
       
       if (e->type == type)
         {
+          l_next = l->next;
           application_hooks = g_list_remove_link(application_hooks, l);
           e->func(type, e->user_data);
           g_free(e);
-          l_next = l->next;
           g_list_free_1(l);
         }
       else
