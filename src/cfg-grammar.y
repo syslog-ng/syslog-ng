@@ -945,7 +945,7 @@ dest_afinet_tcp_option
 	: dest_afinet_option
 	| KW_TLS 
 	  {
-#if ENABLE_TLS
+#if ENABLE_SSL
 	    last_tls_context = tls_context_new(TM_CLIENT);
 #endif
 	  }
