@@ -16,8 +16,13 @@ class MessageSender:
         self.initSender()
         expected = []
         for counter in range(1, self.repeat):
-            line = '<7>%s %d/%d %s' % (msg, session_counter, counter, padding)
+            if msg[0] != '<':
+                line = '<7>%s %d/%d %s' % (msg, session_counter, counter, padding)
+            else:
+                line = '%s %d/%d %s' % (msg, session_counter, counter, padding)
             self.sendMessage(line)
+        if msg[0] == '<':
+            msg = msg[msg.index('>')+1:]
         expected.append((msg, session_counter, self.repeat))
         session_counter = session_counter + 1
         return expected
@@ -198,7 +203,7 @@ def check_expected(fname, messages):
     return True
 
 
-conf = """@version: 3.0
+drvtest_conf = """@version: 3.0
 
 options { ts_format(iso); chain_hostnames(no); keep_hostname(yes); };
 
@@ -273,7 +278,7 @@ destination d_catchall { file("test-catchall.log"); };
 log { filter(f_catchall); destination(d_catchall); flags(catch-all); };
 """
 
-def test_input_drivers(conf):
+def test_input_drivers():
     message = '2004-09-07T10:43:21+01:00 bzorp prog: input drivers';
 
     senders = (
@@ -305,7 +310,7 @@ def test_input_drivers(conf):
     return check_expected("test-input1.log", expected);
 
 
-def test_indep(conf):
+def test_indep():
     message = '2004-09-07T10:43:21+01:00 bzorp prog: indep pipes';
     
     s = SocketSender(AF_UNIX, 'log-stream', dgram=0, repeat=10)
@@ -313,7 +318,7 @@ def test_indep(conf):
     time.sleep(1)
     return check_expected("test-indep1.log", expected) and check_expected("test-indep2.log", expected)
 
-def test_final(conf):
+def test_final():
     messages = (
       '2004-09-07T10:43:21+01:00 bzorp prog: final1',
       '2004-09-07T10:43:21+01:00 bzorp prog: final2',
@@ -334,7 +339,7 @@ def test_final(conf):
             return False
     return True
 
-def test_fallback(conf):
+def test_fallback():
     messages = (
       '2004-09-07T10:43:21+01:00 bzorp prog: fallback1',
       '2004-09-07T10:43:21+01:00 bzorp prog: fallback2',
@@ -357,7 +362,7 @@ def test_fallback(conf):
             return False
     return True
 
-def test_catchall(conf):
+def test_catchall():
 
     message = '2004-09-07T10:43:21+01:00 bzorp prog: catchall';
 
@@ -390,21 +395,149 @@ def test_catchall(conf):
 
     return check_expected("test-catchall.log", expected);
 
+filter_conf = """@version: 3.0
 
-tests = (test_catchall, test_input_drivers, test_fallback, test_final, test_indep)
+options { ts_format(iso); chain_hostnames(no); keep_hostname(yes); };
+
+source s_int { internal(); };
+source s_unix { unix-stream("log-stream"); };
+
+filter f_facility { message("facility"); };
+filter f_facility1 { facility(syslog); };
+filter f_facility2 { facility(kern); };
+filter f_facility3 { facility(mail); };
+filter f_facility4 { facility(daemon,auth,lpr); };
+
+destination d_facility1 { file("test-facility1.log"); };
+destination d_facility2 { file("test-facility2.log"); };
+destination d_facility3 { file("test-facility3.log"); };
+destination d_facility4 { file("test-facility4.log"); };
+
+log { source(s_unix); 
+    filter(f_facility);
+    log { filter(f_facility1); destination(d_facility1); };
+    log { filter(f_facility2); destination(d_facility2); };
+    log { filter(f_facility3); destination(d_facility3); };
+    log { filter(f_facility4); destination(d_facility4); };
+};
+
+filter f_level { message("level"); };
+filter f_level1 { level(debug); };
+filter f_level2 { level(info); };
+filter f_level3 { level(notice); };
+filter f_level4 { level(warning..crit); };
+
+destination d_level1 { file("test-level1.log"); };
+destination d_level2 { file("test-level2.log"); };
+destination d_level3 { file("test-level3.log"); };
+destination d_level4 { file("test-level4.log"); };
+
+log { source(s_unix); 
+    filter(f_level);
+    log { filter(f_level1); destination(d_level1); };
+    log { filter(f_level2); destination(d_level2); };
+    log { filter(f_level3); destination(d_level3); };
+    log { filter(f_level4); destination(d_level4); };
+};
+
+"""
+
+def test_facility_single():
+    messages = (
+      '<41>2004-09-07T10:43:21+01:00 bzorp prog: facility1',
+      '<1>2004-09-07T10:43:21+01:00 bzorp prog: facility2',
+      '<17>2004-09-07T10:43:21+01:00 bzorp prog: facility3',
+    )
+    expected = [None,] * len(messages)
+    
+    s = SocketSender(AF_UNIX, 'log-stream', dgram=0, repeat=10)
+    for ndx in range(0, len(messages)):
+        if not expected[ndx]:
+            expected[ndx] = []
+        expected[ndx].extend(s.sendMessages(messages[ndx]))
+    time.sleep(1)
+    
+    for ndx in range(0, len(messages)):
+        if not check_expected('test-facility%d.log' % (ndx + 1,), expected[ndx]):
+            return False
+    return True
+
+def test_facility_multi():
+    messages = (
+      '<25>2004-09-07T10:43:21+01:00 bzorp prog: facility4',
+      '<33>2004-09-07T10:43:21+01:00 bzorp prog: facility4',
+      '<49>2004-09-07T10:43:21+01:00 bzorp prog: facility4',
+    )
+    expected = []
+    
+    s = SocketSender(AF_UNIX, 'log-stream', dgram=0, repeat=10)
+    for ndx in range(0, len(messages)):
+        expected.extend(s.sendMessages(messages[ndx]))
+    time.sleep(1)
+    
+    if not check_expected('test-facility4.log', expected):
+        return False
+    return True
+
+
+def test_level_single():
+    messages = (
+      '<7>2004-09-07T10:43:21+01:00 bzorp prog: level1',
+      '<6>2004-09-07T10:43:21+01:00 bzorp prog: level2',
+      '<5>2004-09-07T10:43:21+01:00 bzorp prog: level3',
+    )
+    expected = [None,] * len(messages)
+    
+    s = SocketSender(AF_UNIX, 'log-stream', dgram=0, repeat=10)
+    for ndx in range(0, len(messages)):
+        if not expected[ndx]:
+            expected[ndx] = []
+        expected[ndx].extend(s.sendMessages(messages[ndx]))
+    time.sleep(1)
+    
+    for ndx in range(0, len(messages)):
+        if not check_expected('test-level%d.log' % (ndx + 1,), expected[ndx]):
+            return False
+    return True
+
+def test_level_multi():
+    messages = (
+      '<4>2004-09-07T10:43:21+01:00 bzorp prog: level4',
+      '<3>2004-09-07T10:43:21+01:00 bzorp prog: level4',
+      '<2>2004-09-07T10:43:21+01:00 bzorp prog: level4',
+    )
+    expected = []
+    
+    s = SocketSender(AF_UNIX, 'log-stream', dgram=0, repeat=10)
+    for ndx in range(0, len(messages)):
+        expected.extend(s.sendMessages(messages[ndx]))
+    time.sleep(1)
+    
+    if not check_expected('test-level4.log', expected):
+        return False
+    return True
+
+
+tests = (
+  (drvtest_conf, (test_catchall, test_input_drivers, test_fallback, test_final, test_indep)),
+  (filter_conf, (test_facility_single, test_facility_multi, test_level_single, test_level_multi)),
+)
 
 create_pipes()
 
+syslogng_pid = 0
+
 try:
-    for test in tests:
-        if not start_syslogng(conf):
-            sys.exit(1)
-        
-        if not test(conf):
-            print("FAIL: test %s failed" % test.__name__)
-            sys.exit(1)
-        if not stop_syslogng():
-            sys.exit(1)
+    for (conf, test_cases) in tests:
+        for test in test_cases:
+            if not start_syslogng(conf):
+                sys.exit(1)
+            
+            if not test():
+                print("FAIL: test %s failed" % test.__name__)
+                sys.exit(1)
+            if not stop_syslogng():
+                sys.exit(1)
 finally:
     stop_syslogng()
 
