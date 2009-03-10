@@ -52,12 +52,7 @@ syslog_name_lookup_level_by_name(const gchar *name)
 static inline guint32
 syslog_name_lookup_facility_by_name(const gchar *name) 
 {
-  guint32 res;
-  
-  res = syslog_name_lookup_value_by_name(name, sl_facilities);
-  if (res != -1)
-    return res >> 3;
-  return res;
+  return syslog_name_lookup_value_by_name(name, sl_facilities);
 }
 
 #endif

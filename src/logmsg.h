@@ -41,7 +41,6 @@
 #define LP_LOCAL           0x0004
 #define LP_CHECK_HOSTNAME  0x0008
 #define LP_STRICT	   0x0010
-#define LP_KERNEL          0x0020
 #define LP_SYSLOG_PROTOCOL    0x0040
 /* the caller knows the message is valid UTF-8 */
 #define LP_ASSUME_UTF8     0x0080
@@ -255,7 +254,12 @@ gint log_msg_get_field_id(const gchar *field_name);
 gchar *log_msg_get_field(LogMessage *msg, gint field, gsize *length);
 void log_msg_set_field(LogMessage *msg, gint field, gchar *new_value, gsize length);
 
-LogMessage *log_msg_new(const gchar *msg, gint length, GSockAddr *saddr, guint flags, regex_t *bad_hostname, glong assume_timezone);
+LogMessage *log_msg_new(const gchar *msg, gint length,
+                        GSockAddr *saddr,
+                        guint flags,
+                        regex_t *bad_hostname,
+                        glong assume_timezone,
+                        guint16 default_pri);
 LogMessage *log_msg_new_mark(void);
 LogMessage *log_msg_new_internal(gint prio, const gchar *msg, guint flags);
 LogMessage *log_msg_new_empty(void);

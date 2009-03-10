@@ -260,9 +260,8 @@ cfg_check_template(LogTemplate *template)
 %type	<node> filter_simple_expr
 
 %type   <num> filter_fac_list
-%type   <num> filter_fac
 %type	<num> filter_level_list
-%type   <num> filter_level
+%type	<num> filter_level
 
 %type	<ptr> parser_expr
 %type   <num> parser_csv_flags
@@ -280,6 +279,8 @@ cfg_check_template(LogTemplate *template)
 %type	<cptr> string_or_number
 %type   <ptr> string_list
 %type   <ptr> string_list_build
+%type   <num> facility_string
+%type   <num> level_string
 
 %type   <token> reserved_words_as_strings
 
@@ -469,42 +470,8 @@ source_affile_params
 	    free($1); 
 	    last_reader_options = &((AFFileSourceDriver *) last_driver)->reader_options;
 	  }
-          source_affile_options                 { $$ = last_driver; }
+          source_reader_options                 { $$ = last_driver; }
        ;
-
-source_affile_options
-        : source_affile_option source_affile_options
-        |
-        ;
-
-source_affile_option
-        : source_reader_option                 {}
-        | KW_LEVEL '(' string ')'    
-          { 
-            int level = -1;
-            level = syslog_name_lookup_level_by_name($3);
-	    if (level == -1)
-	      msg_error("Warning: Unknown priority level",
-                        evt_tag_str("priority", $3),
-                        NULL);
-            else
-              affile_sd_set_pri_level(last_driver, level); 
-            free($3);
-          }
-        | KW_FACILITY '(' string ')'
-
-          {
-            int facility = -1;
-            facility = syslog_name_lookup_facility_by_name($3);
- 	    if (facility == -1)
-	      msg_error("Warning: Unknown facility level",
-                        evt_tag_str("facility", $3),
-                        NULL);
-            else
-	      affile_sd_set_pri_facility(last_driver, facility); 
-            free($3);
-          }
-        ;
 
 source_afpipe_params
 	: string
@@ -761,6 +728,18 @@ source_reader_option
 	| KW_FOLLOW_FREQ '(' NUMBER ')'		{ last_reader_options->follow_freq = ($3 * 1000); }
 	| KW_KEEP_TIMESTAMP '(' yesno ')'	{ last_reader_options->super.keep_timestamp = $3; }
         | KW_ENCODING '(' string ')'		{ last_reader_options->text_encoding = g_strdup($3); free($3); }
+	| KW_LEVEL '(' level_string ')'
+	  {
+	    if (last_reader_options->default_pri == 0xFFFF)
+	      last_reader_options->default_pri = LOG_USER;
+	    last_reader_options->default_pri = (last_reader_options->default_pri & ~7) | $3;
+          }
+	| KW_FACILITY '(' facility_string ')'
+	  {
+	    if (last_reader_options->default_pri == 0xFFFF)
+	      last_reader_options->default_pri = LOG_NOTICE;
+	    last_reader_options->default_pri = (last_reader_options->default_pri & 7) | $3;
+          }
 	;
 
 source_reader_option_flags
@@ -1327,25 +1306,8 @@ regexp_option_flags
 
 
 filter_fac_list
-	: filter_fac filter_fac_list		{ $$ = $1 | $2; }
-	| filter_fac				{ $$ = $1; }
-	;
-
-filter_fac
-	: string
-	  { 
-	    int n = syslog_name_lookup_facility_by_name($1);
-	    if (n == -1)
-	      {
-	        msg_error("Warning: Unknown facility", 
-	                  evt_tag_str("facility", $1),
-	                  NULL);
-	        $$ = 0;
-	      }
-	    else
-	      $$ = (1 << n); 
-	    free($1); 
-	  }
+	: facility_string filter_fac_list	{ $$ = (1 << ($1 >> 3)) | $2; }
+	| facility_string			{ $$ = (1 << ($1 >> 3)); }
 	;
 
 filter_level_list
@@ -1354,41 +1316,16 @@ filter_level_list
 	;
 
 filter_level
-	: string DOTDOT string
+	: level_string DOTDOT level_string
 	  { 
-	    int r1, r2;
-	    r1 = syslog_name_lookup_level_by_name($1);
-	    if (r1 == -1)
-	      msg_error("Warning: Unknown priority level",
-                        evt_tag_str("priority", $1),
-                        NULL);
-	    r2 = syslog_name_lookup_level_by_name($3);
-	    if (r2 == -1)
-	      msg_error("Warning: Unknown priority level",
-                        evt_tag_str("priority", $1),
-                        NULL);
-	    if (r1 != -1 && r2 != -1)
-	      $$ = syslog_make_range(r1, r2); 
-	    else
-	      $$ = 0;
-	    free($1); 
-	    free($3); 
+	    $$ = syslog_make_range($1, $3);
 	  }
-	| string				
+	| level_string
 	  { 
-	    int n = syslog_name_lookup_level_by_name($1); 
-	    if (n == -1)
-	      {
-	        msg_error("Warning: Unknown priority level",
-                          evt_tag_str("priority", $1),
-                          NULL);
-	        $$ = 0;
-	      }
-	    else
-	      $$ = 1 << n;
-	    free($1); 
+	    $$ = 1 << $1;
 	  }
 	;
+
 	
 parser_expr
         : KW_CSV_PARSER '(' 
@@ -1519,7 +1456,6 @@ reserved_words_as_strings
         : KW_PARSER
         | KW_REWRITE
         | KW_INCLUDE
-        | KW_SYSLOG
         | KW_COLUMNS
         | KW_DELIMITERS
         | KW_QUOTES
@@ -1544,6 +1480,7 @@ reserved_words_as_strings
 string_or_number
         : string                                { $$ = $1; }
         | NUMBER                                { char buf[32]; snprintf(buf, sizeof(buf), "%" G_GINT64_FORMAT, $1); $$ = strdup(buf); }
+        ;
 
 string_list
         : string_list_build                     { $$ = g_list_reverse($1); }
@@ -1553,6 +1490,42 @@ string_list_build
         : string string_list_build		{ $$ = g_list_append($2, g_strdup($1)); free($1); }
         |					{ $$ = NULL; }
         ;
+
+level_string
+        : string
+	  {
+	    /* return the numeric value of the "level" */
+	    int n = syslog_name_lookup_level_by_name($1);
+	    if (n == -1)
+	      {
+	        msg_error("Unknown priority level",
+                          evt_tag_str("priority", $1),
+                          NULL);
+	        YYERROR;
+	      }
+	    free($1);
+            $$ = n;
+	  }
+        ;
+
+facility_string
+        : string
+          {
+            /* return the numeric value of facility */
+	    int n = syslog_name_lookup_facility_by_name($1);
+	    if (n == -1)
+	      {
+	        msg_error("Unknown facility",
+	                  evt_tag_str("facility", $1),
+	                  NULL);
+                YYERROR;
+	      }
+	    free($1);
+	    $$ = n;
+	  }
+        | KW_SYSLOG 				{ $$ = LOG_SYSLOG; }
+        ;
+
 
 %%
 

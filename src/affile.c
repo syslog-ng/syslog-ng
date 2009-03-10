@@ -257,22 +257,6 @@ affile_sd_notify(LogPipe *s, LogPipe *sender, gint notify_code, gpointer user_da
     }
 }
 
-void
-affile_sd_set_pri_level(LogDriver *s, gint16 pri_level)
-{
-  AFFileSourceDriver *self = (AFFileSourceDriver *) s;
-  
-  self->pri_level = pri_level;
-}
-
-void
-affile_sd_set_pri_facility(LogDriver *s, gint16 pri_facility)
-{
-  AFFileSourceDriver *self = (AFFileSourceDriver *) s;
-  
-  self->pri_facility = pri_facility;
-}
-
 static void
 affile_sd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 {
@@ -280,15 +264,6 @@ affile_sd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
   
   log_msg_add_dyn_value(msg, "FILE_NAME", self->filename->str);
 
-  if (self->pri_facility != -1)
-    msg->pri = self->pri_facility * 8 + (msg->pri & 7);
-
-  /* last 3 bit*/   
-  if (self->pri_level != -1)
-    {
-      msg->pri ^= msg->pri & 7; 
-      msg->pri += self->pri_level;
-    }
   log_pipe_forward_msg(s, msg, path_options);
 }
 
@@ -400,8 +375,6 @@ affile_sd_new(gchar *filename, guint32 flags)
   log_drv_init_instance(&self->super);
   self->filename = g_string_new(filename);
   self->flags = flags;
-  self->pri_level = -1;
-  self->pri_facility = -1;
   self->super.super.init = affile_sd_init;
   self->super.super.queue = affile_sd_queue;
   self->super.super.deinit = affile_sd_deinit;

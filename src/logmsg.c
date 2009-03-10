@@ -662,7 +662,7 @@ copy_string_fixed_buf(guchar *dest, const guchar *src, gsize dest_len)
 }
 
 static gboolean
-log_msg_parse_pri(LogMessage *self, const guchar **data, gint *length, guint flags)
+log_msg_parse_pri(LogMessage *self, const guchar **data, gint *length, guint flags, guint16 default_pri)
 {
   int pri;
   gboolean success = TRUE;
@@ -695,13 +695,9 @@ log_msg_parse_pri(LogMessage *self, const guchar **data, gint *length, guint fla
         }
     }
   /* No priority info in the buffer? Just assign a default. */
-  else if (flags & LP_KERNEL)
-    {
-      self->pri = LOG_KERN | LOG_NOTICE;
-    }
   else
     {
-      self->pri = LOG_USER | LOG_NOTICE;
+      self->pri = default_pri;
     }
 
   *data = src;
@@ -1424,7 +1420,7 @@ log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, guint flag
  * Parse a message according to the latest syslog-protocol drafts.
  **/
 static gboolean
-log_msg_parse_syslog_proto(LogMessage *self, const guchar *data, gint length, guint flags, glong assume_timezone)
+log_msg_parse_syslog_proto(LogMessage *self, const guchar *data, gint length, guint flags, glong assume_timezone, guint16 default_pri)
 {
   /**
    *	SYSLOG-MSG      = HEADER SP STRUCTURED-DATA [SP MSG]
@@ -1447,7 +1443,7 @@ log_msg_parse_syslog_proto(LogMessage *self, const guchar *data, gint length, gu
   left = length;
 
 
-  if (!log_msg_parse_pri(self, &src, &left, flags) ||
+  if (!log_msg_parse_pri(self, &src, &left, flags, default_pri) ||
       !log_msg_parse_version(self, &src, &left))
     {
       return FALSE;
@@ -1530,7 +1526,12 @@ log_msg_parse_syslog_proto(LogMessage *self, const guchar *data, gint length, gu
  * in @self. Parsing is affected by the bits set @flags argument.
  **/
 static gboolean
-log_msg_parse_legacy(LogMessage *self, const guchar *data, gint length, guint flags, regex_t *bad_hostname, glong assume_timezone)
+log_msg_parse_legacy(LogMessage *self,
+                     const guchar *data, gint length,
+                     guint flags,
+                     regex_t *bad_hostname,
+                     glong assume_timezone,
+                     guint16 default_pri)
 {
   const guchar *src;
   gint left;
@@ -1539,7 +1540,7 @@ log_msg_parse_legacy(LogMessage *self, const guchar *data, gint length, guint fl
   src = (const guchar *) data;
   left = length;
 
-  if (!log_msg_parse_pri(self, &src, &left, flags))
+  if (!log_msg_parse_pri(self, &src, &left, flags, default_pri))
     {
       return FALSE;
     }
@@ -1621,7 +1622,12 @@ log_msg_parse_legacy(LogMessage *self, const guchar *data, gint length, guint fl
 }
 
 static void
-log_msg_parse(LogMessage *self, const guchar *data, gint length, guint flags, regex_t *bad_hostname, glong assume_timezone)
+log_msg_parse(LogMessage *self,
+              const guchar *data, gint length,
+              guint flags,
+              regex_t *bad_hostname,
+              glong assume_timezone,
+              guint16 default_pri)
 {
   gboolean success;
   gchar *p;
@@ -1632,6 +1638,7 @@ log_msg_parse(LogMessage *self, const guchar *data, gint length, guint flags, re
   if (flags & LP_NOPARSE)
     {
       LOG_MESSAGE_WRITABLE_FIELD(self->message) = g_strndup((gchar *) data, length);
+      self->pri = default_pri;
       self->message_len = length;
       goto exit;
     }
@@ -1644,9 +1651,9 @@ log_msg_parse(LogMessage *self, const guchar *data, gint length, guint flags, re
     self->flags |= LF_UTF8;
 
   if (flags & LP_SYSLOG_PROTOCOL)
-    success = log_msg_parse_syslog_proto(self, data, length, flags, assume_timezone);
+    success = log_msg_parse_syslog_proto(self, data, length, flags, assume_timezone, default_pri);
   else
-    success = log_msg_parse_legacy(self, data, length, flags, bad_hostname, assume_timezone);
+    success = log_msg_parse_legacy(self, data, length, flags, bad_hostname, assume_timezone, default_pri);
   if (G_UNLIKELY(!success))
     {
       self->timestamps[LM_TS_STAMP] = self->timestamps[LM_TS_RECVD];
@@ -1857,12 +1864,17 @@ log_msg_init(LogMessage *self, GSockAddr *saddr)
  * This function allocates, parses and returns a new LogMessage instance.
  **/
 LogMessage *
-log_msg_new(const gchar *msg, gint length, GSockAddr *saddr, guint flags, regex_t *bad_hostname, glong assume_timezone)
+log_msg_new(const gchar *msg, gint length,
+            GSockAddr *saddr,
+            guint flags,
+            regex_t *bad_hostname,
+            glong assume_timezone,
+            guint16 default_pri)
 {
   LogMessage *self = g_new0(LogMessage, 1);
   
   log_msg_init(self, saddr);
-  log_msg_parse(self, (guchar *) msg, length, flags, bad_hostname, assume_timezone);
+  log_msg_parse(self, (guchar *) msg, length, flags, bad_hostname, assume_timezone, default_pri);
   return self;
 }
 
@@ -1957,7 +1969,7 @@ log_msg_new_internal(gint prio, const gchar *msg, guint flags)
   LogMessage *self;
   
   buf = g_strdup_printf("<%d> syslog-ng[%d]: %s\n", prio, (int) getpid(), msg);
-  self = log_msg_new(buf, strlen(buf), NULL, flags | LP_INTERNAL, NULL, -1);
+  self = log_msg_new(buf, strlen(buf), NULL, flags | LP_INTERNAL, NULL, -1, prio);
   g_free(buf);
 
   return self;
@@ -1972,9 +1984,8 @@ log_msg_new_internal(gint prio, const gchar *msg, guint flags)
 LogMessage *
 log_msg_new_mark(void)
 {
-  LogMessage *self = log_msg_new("-- MARK --", 10, NULL, LP_NOPARSE, NULL, -1);
+  LogMessage *self = log_msg_new("-- MARK --", 10, NULL, LP_NOPARSE, NULL, -1, LOG_SYSLOG | LOG_INFO);
   self->flags = LF_LOCAL | LF_MARK | LF_INTERNAL;
-  self->pri = LOG_SYSLOG | LOG_INFO;
   return self;
 }
 

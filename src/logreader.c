@@ -238,9 +238,13 @@ log_reader_handle_line(LogReader *self, const guchar *line, gint length, GSockAd
             evt_tag_printf("line", "%.*s", length, line),
             NULL);
   /* use the current time to get the time zone offset */
-  m = log_msg_new((gchar *) line, length, saddr, parse_flags, self->options->bad_hostname, time_zone_info_get_offset(self->options->time_zone_info, time(NULL)));
+  m = log_msg_new((gchar *) line, length,
+                  saddr,
+                  parse_flags,
+                  self->options->bad_hostname,
+                  time_zone_info_get_offset(self->options->time_zone_info, time(NULL)),
+                  self->options->default_pri);
   
-      
   if (!m->saddr && self->peer_addr)
     {
       m->saddr = g_sockaddr_ref(self->peer_addr);
@@ -262,8 +266,6 @@ log_reader_fetch_log(LogReader *self, LogProto *proto)
     parse_flags |= LP_NOPARSE;
   if (self->options->check_hostname)
     parse_flags |= LP_CHECK_HOSTNAME;
-  if (self->options->options & LRO_KERNEL)
-    parse_flags |= LP_KERNEL;
   if (self->flags & LR_STRICT)
     parse_flags |= LP_STRICT;
   if (self->flags & LR_INTERNAL)
@@ -655,6 +657,7 @@ log_reader_options_defaults(LogReaderOptions *options)
   options->text_encoding = NULL;
   options->time_zone_string = NULL;
   options->time_zone_info = NULL;
+  options->default_pri = 0xFFFF;
   if (configuration && configuration->version < 0x0300)
     {
       static gboolean warned;
@@ -738,6 +741,13 @@ log_reader_options_init(LogReaderOptions *options, GlobalConfig *cfg, const gcha
     options->time_zone_string = g_strdup(cfg->recv_time_zone_string);
   if (options->time_zone_info == NULL)
     options->time_zone_info = time_zone_info_new(options->time_zone_string);
+  if (options->default_pri == 0xFFFF)
+    {
+      if (options->options & LRO_KERNEL)
+        options->default_pri = LOG_KERN | LOG_NOTICE;
+      else
+        options->default_pri = LOG_USER | LOG_NOTICE;
+    }
 }
 
 void

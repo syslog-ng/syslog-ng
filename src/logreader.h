@@ -58,6 +58,7 @@ typedef struct _LogReaderOptions
   gint fetch_limit;
   gchar *text_encoding;
   const gchar *group_name;
+  gint default_pri;
 
   /* source time zone if one is not specified in the message */
   gboolean check_hostname;
