@@ -40,10 +40,12 @@ class SocketSender(MessageSender):
             self.sock = socket(self.family, SOCK_STREAM)
         
         self.sock.connect(self.sock_name)
-        self.sock.setsockopt(SOL_SOCKET, SO_SNDTIMEO, struct.pack('ll', 3, 0))
         if self.dgram:
                 self.sock.send('')
-    
+        if sys.platform == 'linux2':
+                self.sock.setsockopt(SOL_SOCKET, SO_SNDTIMEO, struct.pack('ll', 3, 0))
+
+
     def sendMessage(self, msg):
         line = '%s%s' % (msg, self.terminate_seq)
         if self.send_by_bytes:
