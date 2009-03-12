@@ -1,7 +1,7 @@
 #ifndef COMPAT_H_INCLUDED
 #define COMPAT_H_INCLUDED
 
-#include "syslog-ng.h"
+#include <config.h>
 #include <sys/types.h>
 
 #if !HAVE_PREAD || HAVE_BROKEN_PREAD
