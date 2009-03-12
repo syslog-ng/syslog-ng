@@ -278,6 +278,11 @@ main(int argc, char *argv[])
           break;
         case 's':
           message_length = atoi(optarg);
+          if (message_length > MAX_MESSAGE_LENGTH)
+            {
+              fprintf(stderr, "Message size too large, limiting to %d\n", MAX_MESSAGE_LENGTH);
+              message_length = MAX_MESSAGE_LENGTH;
+            }
           break;
         case 'P':
           syslog_proto = 1;
