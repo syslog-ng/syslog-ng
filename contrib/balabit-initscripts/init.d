@@ -94,8 +94,10 @@ if [ -f /lib/lsb/init-functions ];then
 		esac
 	fi
 else
-	. $SYSLOGNG_PREFIX/lib/init-functions
+	INIT_FUNCTIONS=$SLNG_INIT_FUNCTIONS
 fi
+
+. $INIT_FUNCTIONS
 
 case "$OS" in
 	Linux)

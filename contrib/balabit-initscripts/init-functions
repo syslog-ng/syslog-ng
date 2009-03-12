@@ -189,7 +189,8 @@ killproc() {
   fi
 
   if [ -n "$pid" ]; then
-    kill $signal $pid || _status="$?"
+    kill $signal $pid
+    _status="$?"
     if [ $_status -eq  0 ];then
       pidofproc -p "${pidfile}" "$proc" >/dev/null || rm -f "${pidfile}"
     fi
