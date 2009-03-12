@@ -102,6 +102,8 @@ afsql_dd_set_type(LogDriver *s, const gchar *type)
   AFSqlDestDriver *self = (AFSqlDestDriver *) s;
   
   g_free(self->type);
+  if (strcmp(type, "mssql") == 0)
+    type = "freetds";
   self->type = g_strdup(type);
 }
 
