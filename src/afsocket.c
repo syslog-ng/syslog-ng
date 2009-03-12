@@ -393,10 +393,17 @@ afsocket_sd_process_connection(AFSocketSourceDriver *self, GSockAddr *peer_addr,
     {
       AFSocketSourceConnection *conn;
       
-      self->num_connections++;
       conn = afsocket_sc_new(self, peer_addr, fd);
-      log_pipe_init(&conn->super, NULL);
-      log_pipe_append(&conn->super, &self->super.super);
+      if (log_pipe_init(&conn->super, NULL))
+        {
+          self->num_connections++;
+          log_pipe_append(&conn->super, &self->super.super);
+        }
+      else
+        {
+          close(fd);
+          log_pipe_unref(&conn->super);
+        }
     }
   return TRUE;
 }
