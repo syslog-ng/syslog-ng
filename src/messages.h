@@ -29,7 +29,6 @@
 
 extern int debug_flag;
 extern int verbose_flag;
-extern int log_stderr;
 extern int trace_flag;
 
 void msg_set_context(LogMessage *msg);
@@ -39,8 +38,11 @@ void msg_event_send(EVTREC *e);
 
 void msg_syslog_started(void);
 
+void msg_redirect_to_syslog(const gchar *program_name);
 void msg_init(gboolean interactive);
 void msg_deinit(void);
+
+void msg_add_option_group(GOptionContext *ctx);
 
 
 #if ENABLE_THREADS

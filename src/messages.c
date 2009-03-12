@@ -41,8 +41,9 @@ typedef struct _MsgContext
 
 gboolean debug_flag = 0;
 gboolean verbose_flag = 0;
-gboolean log_stderr = FALSE;
 gboolean trace_flag = 0;
+static gboolean log_stderr = FALSE;
+static gboolean log_syslog = FALSE;
 static gboolean syslog_started = FALSE;
 static EVTCONTEXT *evt_context;
 MsgQueue *internal_msg_queue = NULL;
@@ -110,7 +111,7 @@ msg_limit_internal_message(void)
 static void
 msg_send_internal_message(int prio, const char *msg)
 {
-  if (log_stderr || (!syslog_started && (prio & 0x7) <= EVT_PRI_WARNING))
+  if (G_UNLIKELY(log_stderr || (!syslog_started && (prio & 0x7) <= EVT_PRI_WARNING)))
     {
       fprintf(stderr, "%s\n", msg);
     }
@@ -155,15 +156,16 @@ msg_event_send(EVTREC *e)
 {
   gchar *msg;
   
-  /* this prevents infinite loops, debug messages causing 
-   * internal messages causing debug messages again */
-  if (evt_rec_get_syslog_pri(e) != EVT_PRI_DEBUG || log_stderr)
+  msg = evt_format(e);
+  if (log_syslog)
     {
-      msg = evt_format(e);
-      
-      msg_send_internal_message(evt_rec_get_syslog_pri(e) | EVT_FAC_SYSLOG, msg); 
-      free(msg);
+      syslog(evt_rec_get_syslog_pri(e), "%s", msg);
     }
+  else
+    {
+      msg_send_internal_message(evt_rec_get_syslog_pri(e) | EVT_FAC_SYSLOG, msg); 
+    }
+  free(msg);
   g_static_mutex_lock(&evtlog_lock);
   evt_rec_free(e);
   g_static_mutex_unlock(&evtlog_lock);
@@ -189,6 +191,13 @@ void
 msg_syslog_started(void)
 {
   syslog_started = TRUE;
+}
+
+void
+msg_redirect_to_syslog(const gchar *program_name)
+{
+  log_syslog = TRUE;
+  openlog(program_name, LOG_NDELAY | LOG_PID, LOG_SYSLOG);
 }
 
 void
@@ -218,3 +227,23 @@ msg_deinit()
       internal_msg_queue = NULL;
     }
 }
+
+static GOptionEntry msg_option_entries[] =
+{
+  { "verbose",           'v',         0, G_OPTION_ARG_NONE, &verbose_flag, "Be a bit more verbose", NULL },
+  { "debug",             'd',         0, G_OPTION_ARG_NONE, &debug_flag, "Enable debug messages", NULL},
+  { "trace",             't',         0, G_OPTION_ARG_NONE, &trace_flag, "Enable trace messages", NULL },
+  { "stderr",            'e',         0, G_OPTION_ARG_NONE, &log_stderr,  "Log messages to stderr", NULL},
+  { NULL }
+};
+
+void
+msg_add_option_group(GOptionContext *ctx)
+{
+  GOptionGroup *group;
+
+  group = g_option_group_new("log", "Log options", "Log options", NULL, NULL);
+  g_option_group_add_entries(group, msg_option_entries);
+  g_option_context_add_group(ctx, group);
+}
+

@@ -244,10 +244,6 @@ static GOptionEntry syslogng_options[] =
 {
   { "cfgfile",           'f',         0, G_OPTION_ARG_STRING, &cfgfilename, "Set config file name, default=" PATH_SYSLOG_NG_CONF, "<config>" },
   { "persist-file",      'R',         0, G_OPTION_ARG_STRING, &persist_file, "Set the name of the persistent configuration file, default=" PATH_PERSIST_CONFIG, "<fname>" },
-  { "verbose",           'v',         0, G_OPTION_ARG_NONE, &verbose_flag, "Be a bit more verbose", NULL },
-  { "debug",             'd',         0, G_OPTION_ARG_NONE, &debug_flag, "Enable debug messages", NULL},
-  { "trace",             't',         0, G_OPTION_ARG_NONE, &trace_flag, "Enable trace messages", NULL },
-  { "stderr",            'e',         0, G_OPTION_ARG_NONE, &log_stderr,  "Log internal messages to stderr", NULL},
   { "syntax-only",       's',         0, G_OPTION_ARG_NONE, &syntax_only, "Only read and parse config file", NULL},
   { "version",           'V',         0, G_OPTION_ARG_NONE, &display_version, "Display version number (" PACKAGE " " VERSION ")", NULL },
   { "seed",              'S',         0, G_OPTION_ARG_NONE, &seed_rng, "Seed the RNG using ~/.rnd or $RANDFILE", NULL},
@@ -344,6 +340,7 @@ main(int argc, char *argv[])
   g_process_set_caps("cap_net_bind_service,cap_net_broadcast,cap_net_raw,cap_dac_read_search,cap_dac_override=p cap_sys_admin=ep");
   ctx = g_option_context_new("syslog-ng");
   g_process_add_option_group(ctx);
+  msg_add_option_group(ctx);
   g_option_context_add_main_entries(ctx, syslogng_options, NULL);
   if (!g_option_context_parse(ctx, &argc, &argv, &error))
     {
