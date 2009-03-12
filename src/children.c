@@ -36,7 +36,8 @@ GHashTable *child_hash;
 static void
 child_manager_child_entry_free(ChildEntry *ce)
 {
-  ce->callback_data_destroy(ce->callback_data);
+  if (ce->callback_data_destroy)
+    ce->callback_data_destroy(ce->callback_data);
   g_free(ce);
 }
 
