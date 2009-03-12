@@ -63,7 +63,6 @@ typedef struct _AFInetDestDriver
 {
   AFSocketDestDriver super;
   InetSocketOptions sock_options;
-  gchar *host;
 #if ENABLE_SPOOF_SOURCE
   gboolean spoof_source;
   libnet_t *lnet_ctx;

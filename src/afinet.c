@@ -258,7 +258,7 @@ afinet_dd_set_destport(LogDriver *s, gchar *service, const gchar *proto)
   afinet_set_port(self->super.dest_addr, service, proto);
   
   g_free(self->super.dest_name);
-  self->super.dest_name = g_strdup_printf("%s:%d", self->host, g_sockaddr_inet_get_port(self->super.dest_addr));
+  self->super.dest_name = g_strdup_printf("%s:%d", self->super.hostname, g_sockaddr_inet_get_port(self->super.dest_addr));
 }
 
 void 
@@ -312,7 +312,7 @@ afinet_dd_setup_socket(AFSocketDestDriver *s, gint fd)
 {
   AFInetDestDriver *self = (AFInetDestDriver *) s;
   
-  if (!resolve_hostname(&self->super.dest_addr, self->host))
+  if (!resolve_hostname(&self->super.dest_addr, self->super.hostname))
     return FALSE;
 
   return afinet_setup_socket(fd, self->super.dest_addr, (InetSocketOptions *) s->sock_options_ptr, AFSOCKET_DIR_SEND);
@@ -323,13 +323,6 @@ afinet_dd_init(LogPipe *s)
 {
   AFInetDestDriver *self G_GNUC_UNUSED = (AFInetDestDriver *) s;
   gboolean success;
-  
-  if (!resolve_hostname(&self->super.dest_addr, self->host))
-    {
-      msg_error("Target host cannot be resolved, persistent disk buffer file will be lost",
-                evt_tag_str("host", self->host),
-                NULL);
-    }
   
   success = afsocket_dd_init(s);
 #if ENABLE_SPOOF_SOURCE
@@ -524,10 +517,6 @@ afinet_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 void
 afinet_dd_free(LogPipe *s)
 {
-  AFInetDestDriver *self = (AFInetDestDriver *) s;
-  
-  g_free(self->host);
-  
   afsocket_dd_free(s);
 }
 
@@ -537,7 +526,7 @@ afinet_dd_new(gint af, gchar *host, gint port, guint flags)
 {
   AFInetDestDriver *self = g_new0(AFInetDestDriver, 1);
   
-  afsocket_dd_init_instance(&self->super, &self->sock_options.super, flags, g_strdup_printf("%s:%d", host, port));
+  afsocket_dd_init_instance(&self->super, &self->sock_options.super, flags, g_strdup(host), g_strdup_printf("%s:%d", host, port));
   self->super.super.super.init = afinet_dd_init;
   self->super.super.super.queue = afinet_dd_queue;
   self->super.super.super.free_fn = afinet_dd_free;
@@ -555,7 +544,6 @@ afinet_dd_new(gint af, gchar *host, gint port, guint flags)
       g_assert_not_reached();
 #endif
     }
-  self->host = g_strdup(host);
   self->super.setup_socket = afinet_dd_setup_socket;
   return &self->super.super;
 }

@@ -124,7 +124,7 @@ void afsocket_dd_set_tls_context(LogDriver *s, TLSContext *tls_context);
 #endif
 
 void afsocket_dd_set_keep_alive(LogDriver *self, gint enable);
-void afsocket_dd_init_instance(AFSocketDestDriver *self, SocketOptions *sock_options, guint32 flags, gchar *dest_name);
+void afsocket_dd_init_instance(AFSocketDestDriver *self, SocketOptions *sock_options, guint32 flags, gchar *hostname, gchar *dest_name);
 gboolean afsocket_dd_init(LogPipe *s);
 void afsocket_dd_free(LogPipe *s);
 

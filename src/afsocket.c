@@ -1091,7 +1091,7 @@ afsocket_dd_free(LogPipe *s)
 }
 
 void 
-afsocket_dd_init_instance(AFSocketDestDriver *self, SocketOptions *sock_options, guint32 flags, gchar *dest_name)
+afsocket_dd_init_instance(AFSocketDestDriver *self, SocketOptions *sock_options, guint32 flags, gchar *hostname, gchar *dest_name)
 {
   log_drv_init_instance(&self->super);
   
@@ -1104,5 +1104,6 @@ afsocket_dd_init_instance(AFSocketDestDriver *self, SocketOptions *sock_options,
   self->setup_socket = afsocket_dd_setup_socket;
   self->sock_options_ptr = sock_options;
   self->flags = flags  | AFSOCKET_KEEP_ALIVE;
+  self->hostname = hostname;
   self->dest_name = dest_name;
 }
