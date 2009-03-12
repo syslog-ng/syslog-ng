@@ -130,7 +130,7 @@ gchar *builtin_value_names[] =
 const gchar *
 log_msg_get_value_name(const gchar *value_name)
 {
-  gint value_id = GPOINTER_TO_UINT(value_name);
+  guint value_id = GPOINTER_TO_UINT(value_name);
 
   if (value_id < MAX_BUILTIN_VALUE)
     return builtin_value_names[value_id];
@@ -154,7 +154,7 @@ log_msg_translate_value_name(const gchar *value_name)
 void
 log_msg_free_value_name(const gchar *value_name)
 {
-  gint value_id = GPOINTER_TO_UINT(value_name);
+  guint value_id = GPOINTER_TO_UINT(value_name);
 
   if (value_id >= MAX_BUILTIN_VALUE)
     g_free((gchar *) value_name);
@@ -172,7 +172,7 @@ const gint sd_prefix_len = sizeof(sd_prefix) - 1;
 gchar *
 log_msg_get_value(LogMessage *self, const gchar *value_name, gssize *length)
 {
-  gint value_id = GPOINTER_TO_UINT(value_name);
+  guint value_id = GPOINTER_TO_UINT(value_name);
   gchar *value = NULL;
 
   if (value_id < MAX_BUILTIN_VALUE)
@@ -271,29 +271,28 @@ log_msg_get_value(LogMessage *self, const gchar *value_name, gssize *length)
 void
 log_msg_set_value(LogMessage *self, const gchar *value_name, gchar *new_value, gssize length)
 {
-  gint value_id = GPOINTER_TO_UINT(value_name);
+  guint value_id = GPOINTER_TO_UINT(value_name);
   static const char sd_prefix[] = ".SDATA.";
   const gint sd_prefix_len = sizeof(sd_prefix) - 1;
-  
-  if (value_id < 128)
+
+  if (value_id < MAX_BUILTIN_VALUE)
     {
       gint i;
       /* if the referenced matches use the field being changed, convert ref. matches to duplicated ones */
       for (i = 0; i < self->num_matches; i++)
         {
           LogMessageMatch *lmm = &self->matches[i];
-          
+
           if ((lmm->flags & LMM_REF_MATCH) && lmm->builtin_value == value_id)
             {
               gssize builtin_length;
               gchar *referenced_value;
-              
+
               referenced_value = log_msg_get_value(self, (gchar *) GINT_TO_POINTER((gint) lmm->builtin_value), &builtin_length);
               lmm->match = g_strndup(&referenced_value[lmm->ofs], lmm->len);
             }
         }
-    
-    
+
       switch (value_id)
         {
         case LM_F_HOST:
