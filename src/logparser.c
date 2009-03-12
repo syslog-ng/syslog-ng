@@ -399,6 +399,22 @@ struct _LogDBParser
 static void
 log_db_parser_reload_database(LogDBParser *self)
 {
+  struct stat st;
+
+  if (stat(self->db_file, &st) < 0)
+    {
+      msg_error("Error stating pattern database file, no automatic reload will be performed",
+                evt_tag_str("error", g_strerror(errno)),
+                NULL);
+      return;
+    }
+  if ((self->db_file_inode == st.st_ino && self->db_file_mtime == st.st_mtime))
+    {
+      return;
+    }
+  self->db_file_inode = st.st_ino;
+  self->db_file_mtime = st.st_mtime;
+
   log_pattern_database_free(&self->db);
   if (!log_pattern_database_load(&self->db, self->db_file))
     {
@@ -421,23 +437,10 @@ log_db_parser_process(LogParser *s, LogMessage *msg, const char *input)
   LogDBParser *self = (LogDBParser *) s;
   LogDBResult *verdict;
 
-  if (G_UNLIKELY(self->db_file_last_check == 0 || self->db_file_last_check < msg->timestamps[LM_TS_RECVD].time.tv_sec))
+  if (G_UNLIKELY(self->db_file_last_check == 0 || self->db_file_last_check < msg->timestamps[LM_TS_RECVD].time.tv_sec - 5))
     {
-      struct stat st;
-      if (stat(self->db_file, &st) < 0)
-        {
-          msg_error("Error stating pattern database file, no automatic reload will be performed",
-                    evt_tag_str("error", g_strerror(errno)),
-                    NULL);
-          return;
-        }
-      if (self->db_file_last_check != 0 && (self->db_file_inode != st.st_ino || self->db_file_mtime != st.st_mtime))
-        {
-          log_db_parser_reload_database(self);
-        }
-      self->db_file_inode = st.st_ino;
       self->db_file_last_check = msg->timestamps[LM_TS_RECVD].time.tv_sec;
-      self->db_file_mtime = st.st_mtime;
+      log_db_parser_reload_database(self);
     }
 
   verdict = log_pattern_database_lookup(&self->db, msg);
