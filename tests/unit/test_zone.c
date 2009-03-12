@@ -57,7 +57,7 @@ test_timezone_2(const time_t stamp_to_test, const char* time_zone)
   offset = time_zone_info_get_offset(info, stamp_to_test);
   expected_offset = get_local_timezone_ofs(stamp_to_test);
   if (offset != expected_offset)
-    printf("unixtimestamp: %d TimeZoneName (%s) localtime offset(%d), timezone file offset(%d)\n", (gint) stamp_to_test, time_zone, (gint) expected_offset, (gint) offset);
+    printf("unixtimestamp: %ld TimeZoneName (%s) localtime offset(%ld), timezone file offset(%ld)\n", (glong) stamp_to_test, time_zone, (glong) expected_offset, (glong) offset);
   time_zone_info_free(info);
   return offset == expected_offset;
 }

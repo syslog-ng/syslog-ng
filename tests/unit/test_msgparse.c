@@ -74,7 +74,7 @@ testcase(gchar *msg,
   if (bad_hostname_re)
     TEST_ASSERT(regcomp(&bad_hostname, bad_hostname_re, REG_NOSUB | REG_EXTENDED) == 0, "%d", 0, 0);
 
-  logmsg = log_msg_new(msg, strlen(msg), addr, parse_flags, bad_hostname_re ? &bad_hostname : NULL, -1);
+  logmsg = log_msg_new(msg, strlen(msg), addr, parse_flags, bad_hostname_re ? &bad_hostname : NULL, -1, 0xFFFF);
   
   /* NOTE: this if statement mimics what LogReader does when the message has no timezone information */
   if (logmsg->timestamps[LM_TS_STAMP].zone_offset == -1)

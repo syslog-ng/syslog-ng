@@ -65,7 +65,7 @@ testcase(gchar *msg, guint parse_flags, guint32 flags, gchar *delimiters, gchar 
     NULL
   };
   
-  logmsg = log_msg_new(msg, strlen(msg), NULL, parse_flags, NULL, -1);
+  logmsg = log_msg_new(msg, strlen(msg), NULL, parse_flags, NULL, -1, 0xFFFF);
   
   p = log_csv_parser_new();
   log_csv_parser_set_flags(p, flags);

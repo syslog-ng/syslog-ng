@@ -7,7 +7,7 @@ testcase_match(const gchar *log, gint parse_flags, const gchar *pattern, gint ma
   LogMessage *msg;
   gboolean result;
 
-  msg = log_msg_new(log, strlen(log), g_sockaddr_inet_new("10.10.10.10", 1010), parse_flags, NULL, -1);
+  msg = log_msg_new(log, strlen(log), g_sockaddr_inet_new("10.10.10.10", 1010), parse_flags, NULL, -1, 0xFFFF);
 
   /* NOTE: we test how our matchers cope with non-zero terminated values. We don't change message_len, only the value */
   LOG_MESSAGE_WRITABLE_FIELD(msg->message) = g_realloc(msg->message, msg->message_len + 10);
@@ -38,7 +38,7 @@ testcase_replace(const gchar *log, gint parse_flags, const gchar *re, gchar *rep
   gchar *result;
   gssize length;
 
-  msg = log_msg_new(log, strlen(log), g_sockaddr_inet_new("10.10.10.10", 1010), parse_flags, NULL, -1);
+  msg = log_msg_new(log, strlen(log), g_sockaddr_inet_new("10.10.10.10", 1010), parse_flags, NULL, -1, 0xFFFF);
 
   /* NOTE: we test how our matchers cope with non-zero terminated values. We don't change message_len, only the value */
   LOG_MESSAGE_WRITABLE_FIELD(msg->message) = g_realloc(msg->message, msg->message_len + 10);

@@ -13,7 +13,7 @@ testcase_update(const gchar *msg, const gchar *expected_sd_str, gchar *elem_name
   
   va_start(va, elem_name1);
   
-  logmsg = log_msg_new(msg, strlen(msg), NULL, LP_SYSLOG_PROTOCOL, NULL, -1);
+  logmsg = log_msg_new(msg, strlen(msg), NULL, LP_SYSLOG_PROTOCOL, NULL, -1, 0xFFFF);
   
   elem = elem_name1;
   param = va_arg(va, char *);

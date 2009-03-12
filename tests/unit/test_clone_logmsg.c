@@ -74,7 +74,7 @@ testcase(gchar *msg,
   if (bad_hostname_re)
     TEST_ASSERT(regcomp(&bad_hostname, bad_hostname_re, REG_NOSUB | REG_EXTENDED) == 0, "%d", 0, 0);
  
-  logmsg = log_msg_new(msg, strlen(msg), addr, parse_flags, bad_hostname_re ? &bad_hostname : NULL, -1);
+  logmsg = log_msg_new(msg, strlen(msg), addr, parse_flags, bad_hostname_re ? &bad_hostname : NULL, -1, 0xFFFF);
   TEST_ASSERT(logmsg->pri == expected_pri, "%d", logmsg->pri, expected_pri);
   if (expected_stamps_sec)
     {

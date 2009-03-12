@@ -28,7 +28,7 @@ feed_some_messages(LogQueue **q, int n, gboolean flow_control)
     {
       char *msg_str = "<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép";
       
-      msg = log_msg_new(msg_str, strlen(msg_str), g_sockaddr_inet_new("10.10.10.10", 1010), 0, NULL, -1);
+      msg = log_msg_new(msg_str, strlen(msg_str), g_sockaddr_inet_new("10.10.10.10", 1010), 0, NULL, -1, 0xFFFF);
       log_msg_add_ack(msg, &path_options);
       msg->ack_func = test_ack;
       if (!log_queue_push_tail((*q), msg, &path_options))

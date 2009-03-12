@@ -15,7 +15,7 @@ GSockAddr *sender_saddr;
 static gint
 facility_bits(gchar *fac)
 {
-  return 1 << syslog_name_lookup_facility_by_name(fac);
+  return 1 << (syslog_name_lookup_facility_by_name(fac) >> 3);
 }
 
 static gint
@@ -99,7 +99,7 @@ testcase(gchar *msg,
   static gint testno = 0;
   
   testno++;
-  logmsg = log_msg_new(msg, strlen(msg), NULL, parse_flags, NULL, -1);
+  logmsg = log_msg_new(msg, strlen(msg), NULL, parse_flags, NULL, -1, 0xFFFF);
   logmsg->saddr = g_sockaddr_ref(sender_saddr);
   
   res = filter_expr_eval(f, logmsg);
@@ -137,7 +137,7 @@ testcase_with_backref_chk(gchar *msg,
   gssize length;
   
   testno++;
-  logmsg = log_msg_new(msg, strlen(msg), NULL, parse_flags, NULL, -1);
+  logmsg = log_msg_new(msg, strlen(msg), NULL, parse_flags, NULL, -1, 0xFFFF);
   logmsg->saddr = g_sockaddr_inet_new("10.10.0.1", 5000);
   
   /* NOTE: we test how our filters cope with non-zero terminated values. We don't change message_len, only the value */

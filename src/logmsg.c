@@ -697,7 +697,7 @@ log_msg_parse_pri(LogMessage *self, const guchar **data, gint *length, guint fla
   /* No priority info in the buffer? Just assign a default. */
   else
     {
-      self->pri = default_pri;
+      self->pri = default_pri != 0xFFFF ? default_pri : (LOG_USER | LOG_NOTICE);
     }
 
   *data = src;
