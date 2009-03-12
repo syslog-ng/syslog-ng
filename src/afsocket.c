@@ -856,15 +856,18 @@ afsocket_dd_connected(AFSocketDestDriver *self)
       if (getsockopt(self->fd, SOL_SOCKET, SO_ERROR, &error, &errorlen) == -1)
         {
           msg_error("getsockopt(SOL_SOCKET, SO_ERROR) failed for connecting socket",
+                    evt_tag_int("fd", self->fd),
+                    evt_tag_str("server", g_sockaddr_format(self->dest_addr, buf2, sizeof(buf2), GSA_FULL)),
                     evt_tag_errno(EVT_TAG_OSERROR, errno),
-                    evt_tag_int("reconnect", self->time_reopen),
+                    evt_tag_int("time_reopen", self->time_reopen),
                     NULL);
           close(self->fd);
           goto error_reconnect;
         }
       if (error)
         {
-          msg_error("Connection failed",
+          msg_error("Syslog connection failed",
+                    evt_tag_int("fd", self->fd),
                     evt_tag_str("server", g_sockaddr_format(self->dest_addr, buf2, sizeof(buf2), GSA_FULL)),
                     evt_tag_errno(EVT_TAG_OSERROR, error),
                     evt_tag_int("time_reopen", self->time_reopen),
@@ -873,9 +876,10 @@ afsocket_dd_connected(AFSocketDestDriver *self)
           goto error_reconnect;
         }
     }
-  msg_verbose("Syslog connection established",
-              evt_tag_str("from", g_sockaddr_format(self->bind_addr, buf1, sizeof(buf1), GSA_FULL)),
-              evt_tag_str("to", g_sockaddr_format(self->dest_addr, buf2, sizeof(buf2), GSA_FULL)),
+  msg_notice("Syslog connection established",
+              evt_tag_int("fd", self->fd),
+              evt_tag_str("server", g_sockaddr_format(self->dest_addr, buf2, sizeof(buf2), GSA_FULL)),
+              evt_tag_str("local", g_sockaddr_format(self->bind_addr, buf1, sizeof(buf1), GSA_FULL)),
               NULL);
 
   if (self->source_id)
@@ -919,7 +923,7 @@ gboolean
 afsocket_dd_start_connect(AFSocketDestDriver *self)
 {
   int sock, rc;
-  
+  gchar buf1[MAX_SOCKADDR_STRING], buf2[MAX_SOCKADDR_STRING];
 
   if (!afsocket_open_socket(self->bind_addr, !!(self->flags & AFSOCKET_STREAM), &sock))
     {
@@ -958,6 +962,9 @@ afsocket_dd_start_connect(AFSocketDestDriver *self)
     {
       /* error establishing connection */
       msg_error("Connection failed",
+                evt_tag_int("fd", sock),
+                evt_tag_str("server", g_sockaddr_format(self->dest_addr, buf2, sizeof(buf2), GSA_FULL)),
+                evt_tag_str("local", g_sockaddr_format(self->bind_addr, buf1, sizeof(buf1), GSA_FULL)),
                 evt_tag_errno(EVT_TAG_OSERROR, errno),
                 NULL);
       close(sock);
@@ -1057,15 +1064,19 @@ static void
 afsocket_dd_notify(LogPipe *s, LogPipe *sender, gint notify_code, gpointer user_data)
 {
   AFSocketDestDriver *self = (AFSocketDestDriver *) s;
+  gchar buf[MAX_SOCKADDR_STRING];
+
   switch (notify_code)
     {
     case NC_CLOSE:
     case NC_WRITE_ERROR:
       log_writer_reopen(self->writer, NULL);
 
-      msg_error("Connection broken",
-                evt_tag_int("time_reopen", self->time_reopen),
-                NULL);
+      msg_notice("Syslog connection broken",
+                 evt_tag_int("fd", self->fd),
+                 evt_tag_str("server", g_sockaddr_format(self->dest_addr, buf, sizeof(buf), GSA_FULL)),
+                 evt_tag_int("time_reopen", self->time_reopen),
+                 NULL);
       if (self->reconnect_timer)
         {
           g_source_remove(self->reconnect_timer);
