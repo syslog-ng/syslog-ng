@@ -142,7 +142,7 @@ gen_messages(int sock)
           tm = localtime(&now.tv_sec);
           len = strftime(stamp, sizeof(stamp), "%Y-%m-%dT%H:%M:%S", tm);
           memcpy(&linebuf[pos_timestamp1], stamp, len);
-          //memcpy(&linebuf[pos_timestamp2], stamp, len);
+          memcpy(&linebuf[pos_timestamp2], stamp, len);
 
           
           if (csv)
@@ -191,7 +191,7 @@ gen_messages(int sock)
 
       /* add sequence number */
       snprintf(intbuf, sizeof(intbuf), "%010ld", count);
-      //memcpy(&linebuf[pos_seq], intbuf, 10);
+      memcpy(&linebuf[pos_seq], intbuf, 10);
       
       rc = write_chunk(sock, linebuf, linelen);
       if (rc < 0)
