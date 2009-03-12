@@ -671,7 +671,7 @@ log_proto_plain_server_fetch(LogProto *s, const guchar **msg, gsize *msg_len, GS
                             {
                               msg_error("Incoming byte stream requires a too large conversion buffer, probably invalid character sequence",
                                         evt_tag_str("encoding", self->super.encoding),
-                                        evt_tag_printf("buffer", "%.*s", self->buffer_end, self->buffer),
+                                        evt_tag_printf("buffer", "%.*s", (gint) self->buffer_end, self->buffer),
                                         NULL);
                               self->status = LPS_ERROR;
                               return self->status;
