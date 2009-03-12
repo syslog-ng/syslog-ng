@@ -6,6 +6,7 @@ import struct
 
 padding = 'x' * 250
 session_counter = 0
+need_to_flush = False
 
 class MessageSender:
     def __init__(self, repeat=100):
@@ -25,6 +26,8 @@ class MessageSender:
             msg = msg[msg.index('>')+1:]
         expected.append((msg, session_counter, self.repeat))
         session_counter = session_counter + 1
+        # avoid message reordering
+        time.sleep(1)
         return expected
 
 
@@ -52,6 +55,9 @@ class SocketSender(MessageSender):
 
 
     def sendMessage(self, msg):
+        global need_to_flush
+
+        need_to_flush = True
         line = '%s%s' % (msg, self.terminate_seq)
         if self.send_by_bytes:
             for c in line:
@@ -176,6 +182,23 @@ def stop_syslogng():
     print "syslog-ng exited with a non-zero value"
     return False
 
+def flush_files():
+    global syslogng_pid, need_to_flush
+
+    if syslogng_pid == 0 or not need_to_flush:
+        return True
+
+    # sendMessages waits between etaps, so we assume that syslog-ng has
+    # already received/processed everything we've sent to it. Go ahead send
+    # a HUP signal.
+    try:
+        os.kill(syslogng_pid, signal.SIGHUP)
+    except OSError:
+        print "Error sending HUP signal to syslog-ng"
+        raise
+    # allow syslog-ng to perform config reload
+    time.sleep(3)
+    need_to_flush = False
     
 
 def readpidfile(pidfile):
@@ -185,6 +208,7 @@ def readpidfile(pidfile):
     return int(pid.strip())
 
 def check_expected(fname, messages):
+    flush_files()
     try:
         f = open(fname, "r")
     except IOError:
@@ -302,10 +326,6 @@ def test_input_drivers():
     for s in senders:
         print("INFO: Generating messages using: %s" % str(s))
         expected.extend(s.sendMessages('%s %s' % (message, s)))
-        # allow buffers to be emptied
-        time.sleep(1)
-        
-    time.sleep(1)
 
     return check_expected("test-input1.log", expected);
 
@@ -315,7 +335,6 @@ def test_indep():
     
     s = SocketSender(AF_UNIX, 'log-stream', dgram=0, repeat=10)
     expected = s.sendMessages(message)
-    time.sleep(1)
     return check_expected("test-indep1.log", expected) and check_expected("test-indep2.log", expected)
 
 def test_final():
@@ -332,7 +351,6 @@ def test_final():
         if not expected[ndx]:
             expected[ndx] = []
         expected[ndx].extend(s.sendMessages(messages[ndx]))
-    time.sleep(1)
     
     for ndx in range(0, len(messages)):
         if not check_expected('test-final%d.log' % (ndx + 1,), expected[ndx]):
@@ -353,9 +371,6 @@ def test_fallback():
         if not expected[ndx]:
             expected[ndx] = []
         expected[ndx].extend(s.sendMessages(messages[ndx]))
-    time.sleep(1)
-    
-    print expected[0]
     
     for ndx in range(0, len(messages)):
         if not check_expected('test-fb%d.log' % (ndx + 1,), expected[ndx]):
@@ -388,11 +403,7 @@ def test_catchall():
     for s in senders:
         print("INFO: Generating messages using: %s" % str(s))
         expected.extend(s.sendMessages('%s %s' % (message, s)))
-        # allow buffers to be emptied
-        time.sleep(1)
         
-    time.sleep(1)
-
     return check_expected("test-catchall.log", expected);
 
 filter_conf = """@version: 3.0
@@ -455,7 +466,6 @@ def test_facility_single():
         if not expected[ndx]:
             expected[ndx] = []
         expected[ndx].extend(s.sendMessages(messages[ndx]))
-    time.sleep(1)
     
     for ndx in range(0, len(messages)):
         if not check_expected('test-facility%d.log' % (ndx + 1,), expected[ndx]):
@@ -473,7 +483,6 @@ def test_facility_multi():
     s = SocketSender(AF_UNIX, 'log-stream', dgram=0, repeat=10)
     for ndx in range(0, len(messages)):
         expected.extend(s.sendMessages(messages[ndx]))
-    time.sleep(1)
     
     if not check_expected('test-facility4.log', expected):
         return False
@@ -493,7 +502,6 @@ def test_level_single():
         if not expected[ndx]:
             expected[ndx] = []
         expected[ndx].extend(s.sendMessages(messages[ndx]))
-    time.sleep(1)
     
     for ndx in range(0, len(messages)):
         if not check_expected('test-level%d.log' % (ndx + 1,), expected[ndx]):
@@ -511,7 +519,6 @@ def test_level_multi():
     s = SocketSender(AF_UNIX, 'log-stream', dgram=0, repeat=10)
     for ndx in range(0, len(messages)):
         expected.extend(s.sendMessages(messages[ndx]))
-    time.sleep(1)
     
     if not check_expected('test-level4.log', expected):
         return False
