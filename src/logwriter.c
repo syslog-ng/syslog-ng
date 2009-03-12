@@ -253,7 +253,7 @@ log_writer_fd_dispatch(GSource *source,
 
           log_writer_broken(self->writer, NC_WRITE_ERROR);
           
-          if (self->error_suspend)
+          if (self->writer->source == (GSource *) self)
             {
               msg_notice("Suspending write operation because of an I/O error",
                          evt_tag_int("fd", log_proto_get_fd(self->proto)),
