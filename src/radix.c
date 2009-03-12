@@ -427,7 +427,9 @@ r_insert_node(RNode *root, gchar *key, gpointer value, gboolean parser)
                   r_add_pchild(root, node);
                 }
               else
-                r_free_pnode_only(parser_node);
+                {
+                  r_free_pnode_only(parser_node);
+                }
 
 
               if ((end - key) < (keylen - 1))
@@ -447,8 +449,8 @@ r_insert_node(RNode *root, gchar *key, gpointer value, gboolean parser)
                     {
                       /* FIXME: print parser type in string format */
                       msg_error("Duplicate parser node in radix tree",
-                                evt_tag_int("type", parser_node->type),
-                                evt_tag_str("name", (parser_node->name ? parser_node->name : "")),
+                                evt_tag_int("type", node->parser->type),
+                                evt_tag_str("name", (node->parser->name ? node->parser->name : "")),
                                 NULL);
                     }
                 }
