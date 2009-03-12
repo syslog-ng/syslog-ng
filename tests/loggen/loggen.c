@@ -148,7 +148,7 @@ gen_messages(int sock)
           if (csv)
             {
               time_val_diff_in_timeval(&diff_tv, &now, &start);
-              printf("%lu.%lu;%lu\n", diff_tv.tv_sec, diff_tv.tv_usec, count);
+              printf("%lu.%lu;%lu\n", (long) diff_tv.tv_sec, (long) diff_tv.tv_usec, count);
             }
           else
             {
@@ -207,7 +207,11 @@ gen_messages(int sock)
   gettimeofday(&now, NULL);
   diff_usec = time_val_diff_in_usec(&now, &start);
   time_val_diff_in_timeval(&diff_tv, &now, &start);
-  fprintf(stderr, "average rate = %.2lf msg/sec, count=%ld, time=%ld.%03ld, msg size=%d, bandwidth=%.2lf kB/sec\n", (double) count * USEC_PER_SEC / diff_usec, count, diff_tv.tv_sec, diff_tv.tv_usec / 1000, linelen, (double) count * linelen * (USEC_PER_SEC / 1024) / diff_usec);
+  fprintf(stderr, "average rate = %.2lf msg/sec, count=%ld, time=%ld.%03ld, msg size=%d, bandwidth=%.2lf kB/sec\n",
+       (double) count * USEC_PER_SEC / diff_usec, count,
+       (long) diff_tv.tv_sec, (long) diff_tv.tv_usec / 1000,
+       linelen,
+       (double) count * linelen * (USEC_PER_SEC / 1024) / diff_usec);
 }
 
 void
