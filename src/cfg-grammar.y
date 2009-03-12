@@ -1428,6 +1428,12 @@ rewrite_expr_opt
         : KW_VALUE '(' string ')'               { last_rewrite->value_name = log_msg_translate_value_name($3); free($3); }
         | KW_TYPE '(' string ')'                
           { 
+            if (strcmp($3, "glob") == 0)
+              {
+                msg_error("Rewrite rules do not support glob expressions",
+                          NULL);
+                YYERROR;
+              }
             log_rewrite_set_matcher(last_rewrite, log_matcher_new($3));
             free($3); 
           }
