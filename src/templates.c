@@ -324,6 +324,8 @@ log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, TimeZo
           }
         break;
       }
+
+
     case M_SDATA:
       if (flags & LT_ESCAPE)
         {
@@ -525,8 +527,6 @@ log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, TimeZo
           }
         break;
       }
-      g_assert_not_reached();
-      break;
     }
   return TRUE;
 }
