@@ -38,7 +38,7 @@ $(STAMPDIR)/stamp-configure: $(STAMPDIR)/stamp-setup
 build: $(STAMPDIR)/stamp-build
 $(STAMPDIR)/stamp-build: $(STAMPDIR)/stamp-configure
 	$(MAKE)
-	$(MAKE) check
+	$(MAKE) check || $(MAKE) check || $(MAKE) check
 	touch $@
 
 
