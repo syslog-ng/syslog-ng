@@ -91,6 +91,15 @@ main()
   testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép", 0, "tűrő", "faró", "árvízfarótükörfúrógép", LMF_SUBSTRING, log_matcher_string_new());
   testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép", 0, "tűrő", "", "árvíztükörfúrógép", LMF_SUBSTRING, log_matcher_string_new());
   testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép", 0, "árvíztűrőtükörfúrógép", "almafa", "almafa", 0, log_matcher_string_new());
+  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: ", 0, "valami-amivel-nem-szabadna-matchelni", "almafa", "", 0, log_matcher_string_new());
+  testcase_match("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: val", 0, "valami-amivel-nem-szabadna-matchelni", 0, FALSE, log_matcher_string_new());
+  testcase_match("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: ", 0, "valami-amivel-nem-szabadna-matchelni", 0, FALSE, log_matcher_string_new());
+  testcase_match("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: ", 0, "valami-amivel-nem-szabadna-matchelni", LMF_PREFIX, 0, log_matcher_string_new());
+  testcase_match("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: ", 0, "valami-amivel-nem-szabadna-matchelni", LMF_SUBSTRING, 0, log_matcher_string_new());
+
+  testcase_match("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: match", 0, "match", 0, TRUE, log_matcher_string_new());
+  testcase_match("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: match", 0, "ma", LMF_PREFIX, TRUE, log_matcher_string_new());
+  testcase_match("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: match", 0, "tch", LMF_SUBSTRING, TRUE, log_matcher_string_new());
 
   testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: abcdef", 0, "ABCDEF", "qwerty", "qwerty", LMF_PREFIX | LMF_ICASE, log_matcher_string_new());
   testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: abcdef", 0, "BCD", "qwerty", "aqwertyef", LMF_SUBSTRING | LMF_ICASE, log_matcher_string_new());

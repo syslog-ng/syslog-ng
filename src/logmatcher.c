@@ -300,6 +300,8 @@ log_matcher_string_match_string(LogMatcherString *self, const gchar *value, gsiz
   const gchar *result = NULL;
   gboolean match = FALSE;
 
+  if (self->pattern_len > value_len)
+    return NULL;
   if (G_LIKELY((self->super.flags & (LMF_SUBSTRING + LMF_PREFIX)) == 0))
     {
       if (self->super.flags & LMF_ICASE)
