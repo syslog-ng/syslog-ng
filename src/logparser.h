@@ -36,12 +36,12 @@ typedef struct _LogDBParser LogDBParser;
 struct _LogParser
 {
   struct _LogTemplate *template;
-  void (*process)(LogParser *s, LogMessage *msg, const gchar *input);
+  gboolean (*process)(LogParser *s, LogMessage *msg, const gchar *input);
   void (*free_fn)(LogParser *s);
 };
 
 void log_parser_set_template(LogParser *self, LogTemplate *template);
-void log_parser_process(LogParser *self, LogMessage *msg);
+gboolean log_parser_process(LogParser *self, LogMessage *msg);
 
 static inline void
 log_parser_free(LogParser *self)
@@ -64,6 +64,8 @@ void log_column_parser_set_columns(LogColumnParser *s, GList *fields);
 #define LOG_CSV_PARSER_ESCAPE_BACKSLASH   0x0002
 #define LOG_CSV_PARSER_ESCAPE_DOUBLE_CHAR 0x0004
 #define LOG_CSV_PARSER_STRIP_WHITESPACE   0x0008
+#define LOG_CSV_PARSER_GREEDY             0x0010
+#define LOG_CSV_PARSER_DROP_INVALID       0x0020
 
 
 void log_csv_parser_set_flags(LogColumnParser *s, guint32 flags);

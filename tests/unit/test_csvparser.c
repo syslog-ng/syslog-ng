@@ -22,7 +22,7 @@
   while (0)
 
 int 
-testcase(gchar *msg, guint parse_flags, guint32 flags, gchar *delimiters, gchar *quotes, gchar *null_value, gchar *first_value, ...)
+testcase(gchar *msg, guint parse_flags, gint max_columns, guint32 flags, gchar *delimiters, gchar *quotes, gchar *null_value, gchar *first_value, ...)
 {
   LogMessage *logmsg;
   LogColumnParser *p;
@@ -64,6 +64,13 @@ testcase(gchar *msg, guint parse_flags, guint32 flags, gchar *delimiters, gchar 
     "C30",
     NULL
   };
+  
+  if (max_columns != -1)
+    {
+      g_assert(max_columns < (sizeof(column_array) / sizeof(column_array[0])));
+  
+      column_array[max_columns] = NULL;
+    }
   
   logmsg = log_msg_new(msg, strlen(msg), NULL, parse_flags, NULL, -1, 0xFFFF);
   
@@ -112,73 +119,88 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   
   putenv("TZ=MET-1METDST");
   tzset();
-  testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, LOG_CSV_PARSER_ESCAPE_NONE, " ", NULL, NULL,
+  testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, -1, LOG_CSV_PARSER_ESCAPE_NONE, " ", NULL, NULL,
            "PTHREAD", "support", "initialized", NULL);
 
-  testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, LOG_CSV_PARSER_ESCAPE_NONE, " ,;", NULL, NULL,
+  testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, 2, LOG_CSV_PARSER_GREEDY | LOG_CSV_PARSER_ESCAPE_NONE, " ", NULL, NULL,
+           "PTHREAD", "support initialized", NULL);
+
+  testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, -1, LOG_CSV_PARSER_ESCAPE_NONE, " ,;", NULL, NULL,
            "PTHREAD", "support", "initialized", NULL);
 
-  testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, LOG_CSV_PARSER_ESCAPE_NONE, " ,;", NULL, "support",
+  testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, -1, LOG_CSV_PARSER_ESCAPE_NONE, " ,;", NULL, "support",
            "PTHREAD", "", "initialized", NULL);
 
-  testcase("<15> openvpn[2499]: \"PTHREAD\" \"support\" \"initialized\"", 0, LOG_CSV_PARSER_ESCAPE_NONE, " ", NULL, NULL,
+  testcase("<15> openvpn[2499]: \"PTHREAD\" \"support\" \"initialized\"", 0, -1, LOG_CSV_PARSER_ESCAPE_NONE, " ", NULL, NULL,
            "PTHREAD", "support", "initialized", NULL);
 
-  testcase("<15> openvpn[2499]: \"PTHREAD\"+\"support\" \"initialized\"", 0, LOG_CSV_PARSER_ESCAPE_NONE, " ", NULL, NULL,
+  testcase("<15> openvpn[2499]: \"PTHREAD\"+\"support\" \"initialized\"", 0, -1, LOG_CSV_PARSER_ESCAPE_NONE, " ", NULL, NULL,
            "PTHREAD", "+\"support\"", "initialized", NULL);
 
-  testcase("<15> openvpn[2499]: \"  PTHREAD  \" \" support\" \"initialized \"", 0, LOG_CSV_PARSER_ESCAPE_NONE + LOG_CSV_PARSER_STRIP_WHITESPACE, " ", NULL, NULL,
+  testcase("<15> openvpn[2499]: \"  PTHREAD  \" \" support\" \"initialized \"", 0, -1, LOG_CSV_PARSER_ESCAPE_NONE + LOG_CSV_PARSER_STRIP_WHITESPACE, " ", NULL, NULL,
            "PTHREAD", "support", "initialized", NULL);
 
-  testcase("<15> openvpn[2499]: \"PTHREAD support\" \"initialized\"", 0, LOG_CSV_PARSER_ESCAPE_NONE, " ", NULL, NULL,
+  testcase("<15> openvpn[2499]: \"PTHREAD support\" \"initialized\"", 0, -1, LOG_CSV_PARSER_ESCAPE_NONE, " ", NULL, NULL,
            "PTHREAD support", "initialized", NULL);
 
-  testcase("<15> openvpn[2499]: \"PTHREAD support initialized\"", 0, LOG_CSV_PARSER_ESCAPE_NONE, " ", NULL, NULL,
+  testcase("<15> openvpn[2499]: \"PTHREAD support initialized\"", 0, -1, LOG_CSV_PARSER_ESCAPE_NONE, " ", NULL, NULL,
            "PTHREAD support initialized", NULL);
 
-  testcase("<15> openvpn[2499]: \"PTHREAD support initialized", 0, LOG_CSV_PARSER_ESCAPE_NONE, " ", NULL, NULL,
+  testcase("<15> openvpn[2499]: \"PTHREAD support initialized", 0, -1, LOG_CSV_PARSER_ESCAPE_NONE, " ", NULL, NULL,
            "PTHREAD support initialized", NULL);
 
-  testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, LOG_CSV_PARSER_ESCAPE_BACKSLASH, " ", NULL, NULL,
+  testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, -1, LOG_CSV_PARSER_ESCAPE_BACKSLASH, " ", NULL, NULL,
            "PTHREAD", "support", "initialized", NULL);
 
-  testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, LOG_CSV_PARSER_ESCAPE_BACKSLASH, " ;,", NULL, NULL,
+  testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, 2, LOG_CSV_PARSER_GREEDY | LOG_CSV_PARSER_ESCAPE_BACKSLASH, " ", NULL, NULL,
+           "PTHREAD", "support initialized", NULL);
+
+  testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, -1, LOG_CSV_PARSER_ESCAPE_BACKSLASH, " ;,", NULL, NULL,
            "PTHREAD", "support", "initialized", NULL);
 
-  testcase("<15> openvpn[2499]: \"PTHREAD\" \"support\" \"initialized\"", 0, LOG_CSV_PARSER_ESCAPE_BACKSLASH, " ", NULL, NULL,
+  testcase("<15> openvpn[2499]: \"PTHREAD\" \"support\" \"initialized\"", 0, -1, LOG_CSV_PARSER_ESCAPE_BACKSLASH, " ", NULL, NULL,
            "PTHREAD", "support", "initialized", NULL);
 
-  testcase("<15> openvpn[2499]: \"  PTHREAD \" \"  support\" \"initialized  \"", 0, LOG_CSV_PARSER_ESCAPE_BACKSLASH + LOG_CSV_PARSER_STRIP_WHITESPACE, " ", NULL, NULL,
+  testcase("<15> openvpn[2499]: \"PTHREAD\" \"support\" \"initialized\"", 0, 2, LOG_CSV_PARSER_GREEDY | LOG_CSV_PARSER_ESCAPE_BACKSLASH, " ", NULL, NULL,
+           "PTHREAD", "\"support\" \"initialized\"", NULL);
+
+  testcase("<15> openvpn[2499]: \"  PTHREAD \" \"  support\" \"initialized  \"", 0, -1, LOG_CSV_PARSER_ESCAPE_BACKSLASH + LOG_CSV_PARSER_STRIP_WHITESPACE, " ", NULL, NULL,
            "PTHREAD", "support", "initialized", NULL);
 
-  testcase("<15> openvpn[2499]: \"PTHREAD support\" \"initialized\"", 0, LOG_CSV_PARSER_ESCAPE_BACKSLASH, " ", NULL, NULL,
+  testcase("<15> openvpn[2499]: \"PTHREAD support\" \"initialized\"", 0, -1, LOG_CSV_PARSER_ESCAPE_BACKSLASH, " ", NULL, NULL,
            "PTHREAD support", "initialized", NULL);
 
-  testcase("<15> openvpn[2499]: \"PTHREAD \\\"support initialized\"", 0, LOG_CSV_PARSER_ESCAPE_BACKSLASH, " ", NULL, NULL,
+  testcase("<15> openvpn[2499]: \"PTHREAD \\\"support initialized\"", 0, -1, LOG_CSV_PARSER_ESCAPE_BACKSLASH, " ", NULL, NULL,
            "PTHREAD \"support initialized", NULL);
 
-  testcase("<15> openvpn[2499]: \"PTHREAD support initialized", 0, LOG_CSV_PARSER_ESCAPE_BACKSLASH, " ", NULL, NULL,
+  testcase("<15> openvpn[2499]: \"PTHREAD support initialized", 0, -1, LOG_CSV_PARSER_ESCAPE_BACKSLASH, " ", NULL, NULL,
            "PTHREAD support initialized", NULL);
 
-  testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, LOG_CSV_PARSER_ESCAPE_DOUBLE_CHAR, " ", NULL, NULL,
+  testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, -1, LOG_CSV_PARSER_ESCAPE_DOUBLE_CHAR, " ", NULL, NULL,
            "PTHREAD", "support", "initialized", NULL);
 
-  testcase("<15> openvpn[2499]: \"PTHREAD\" \"support\" \"initialized\"", 0, LOG_CSV_PARSER_ESCAPE_DOUBLE_CHAR, " ", NULL, NULL,
+  testcase("<15> openvpn[2499]: \"PTHREAD\" \"support\" \"initialized\"", 0, -1, LOG_CSV_PARSER_ESCAPE_DOUBLE_CHAR, " ", NULL, NULL,
            "PTHREAD", "support", "initialized", NULL);
 
-  testcase("<15> openvpn[2499]: \"  PTHREAD \" \"  support\" \"initialized  \"", 0, LOG_CSV_PARSER_ESCAPE_DOUBLE_CHAR + LOG_CSV_PARSER_STRIP_WHITESPACE, " ", NULL, NULL,
+  testcase("<15> openvpn[2499]: \"PTHREAD\" \"support\" \"initialized\"", 0, 2, LOG_CSV_PARSER_GREEDY | LOG_CSV_PARSER_ESCAPE_DOUBLE_CHAR, " ", NULL, NULL,
+           "PTHREAD", "\"support\" \"initialized\"", NULL);
+
+  testcase("<15> openvpn[2499]: \"  PTHREAD \" \"  support\" \"initialized  \"", 0, -1, LOG_CSV_PARSER_ESCAPE_DOUBLE_CHAR + LOG_CSV_PARSER_STRIP_WHITESPACE, " ", NULL, NULL,
            "PTHREAD", "support", "initialized", NULL);
 
-  testcase("<15> openvpn[2499]: \"PTHREAD support\" \"initialized\"", 0, LOG_CSV_PARSER_ESCAPE_DOUBLE_CHAR, " ", NULL, NULL,
+  testcase("<15> openvpn[2499]: \"  PTHREAD \" \"  support\" \"initialized  \"", 0, 2, LOG_CSV_PARSER_GREEDY + LOG_CSV_PARSER_ESCAPE_DOUBLE_CHAR + LOG_CSV_PARSER_STRIP_WHITESPACE, " ", NULL, NULL,
+           "PTHREAD", "\"  support\" \"initialized  \"", NULL);
+
+  testcase("<15> openvpn[2499]: \"PTHREAD support\" \"initialized\"", 0, -1, LOG_CSV_PARSER_ESCAPE_DOUBLE_CHAR, " ", NULL, NULL,
            "PTHREAD support", "initialized", NULL);
 
-  testcase("<15> openvpn[2499]: \"PTHREAD \"\"support initialized\"", 0, LOG_CSV_PARSER_ESCAPE_DOUBLE_CHAR, " ", NULL, NULL,
+  testcase("<15> openvpn[2499]: \"PTHREAD \"\"support initialized\"", 0, -1, LOG_CSV_PARSER_ESCAPE_DOUBLE_CHAR, " ", NULL, NULL,
            "PTHREAD \"support initialized", NULL);
 
-  testcase("<15> openvpn[2499]: \"PTHREAD support initialized", 0, LOG_CSV_PARSER_ESCAPE_DOUBLE_CHAR, " ", NULL, NULL,
+  testcase("<15> openvpn[2499]: \"PTHREAD support initialized", 0, -1, LOG_CSV_PARSER_ESCAPE_DOUBLE_CHAR, " ", NULL, NULL,
            "PTHREAD support initialized", NULL);
 
-  testcase("10.100.20.1 - - [31/Dec/2007:00:17:10 +0100] \"GET /cgi-bin/bugzilla/buglist.cgi?keywords_type=allwords&keywords=public&format=simple HTTP/1.1\" 200 2708 \"-\" \"curl/7.15.5 (i4 86-pc-linux-gnu) libcurl/7.15.5 OpenSSL/0.9.8c zlib/1.2.3 libidn/0.6.5\" 2 bugzilla.balabit", LP_NOPARSE, LOG_CSV_PARSER_ESCAPE_BACKSLASH, " ", "\"\"[]", "-",
+  testcase("10.100.20.1 - - [31/Dec/2007:00:17:10 +0100] \"GET /cgi-bin/bugzilla/buglist.cgi?keywords_type=allwords&keywords=public&format=simple HTTP/1.1\" 200 2708 \"-\" \"curl/7.15.5 (i4 86-pc-linux-gnu) libcurl/7.15.5 OpenSSL/0.9.8c zlib/1.2.3 libidn/0.6.5\" 2 bugzilla.balabit", LP_NOPARSE, -1, LOG_CSV_PARSER_ESCAPE_BACKSLASH, " ", "\"\"[]", "-",
            "10.100.20.1", "", "", "31/Dec/2007:00:17:10 +0100", "GET /cgi-bin/bugzilla/buglist.cgi?keywords_type=allwords&keywords=public&format=simple HTTP/1.1", "200", "2708", "", "curl/7.15.5 (i4 86-pc-linux-gnu) libcurl/7.15.5 OpenSSL/0.9.8c zlib/1.2.3 libidn/0.6.5", "2", "bugzilla.balabit", NULL);
 
   app_shutdown();

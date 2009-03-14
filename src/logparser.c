@@ -40,21 +40,24 @@ log_parser_set_template(LogParser *self, LogTemplate *template)
   self->template = template;
 }
 
-void 
+gboolean
 log_parser_process(LogParser *self, LogMessage *msg)
 {
+  gboolean success;
+
   if (G_LIKELY(!self->template))
     {
-      self->process(self, msg, msg->message);
+      success = self->process(self, msg, msg->message);
     }
   else
     {
       GString *input = g_string_sized_new(256);
       
       log_template_format(self->template, msg, 0, TS_FMT_ISO, NULL, 0, 0, input);
-      self->process(self, msg, input->str);
+      success = self->process(self, msg, input->str);
       g_string_free(input, TRUE);
     }
+  return success;
 }
 
 
@@ -159,7 +162,7 @@ log_csv_parser_set_null_value(LogColumnParser *s, const gchar *null_value)
   self->null_value = g_strdup(null_value);
 }
 
-static void
+static gboolean
 log_csv_parser_process(LogParser *s, LogMessage *msg, const gchar *input)
 {
   LogCSVParser *self = (LogCSVParser *) s;
@@ -177,7 +180,7 @@ log_csv_parser_process(LogParser *s, LogMessage *msg, const gchar *input)
           const guchar *delim;
           guchar *quote;
           guchar current_quote;
-          
+
           quote = (guchar *) strchr(self->quotes_start, *src);
           if (quote != NULL)
             {
@@ -248,6 +251,12 @@ log_csv_parser_process(LogParser *s, LogMessage *msg, const gchar *input)
             break;
           src = (gchar *) delim + 1;
           cur_column = cur_column->next;
+
+          if (cur_column && cur_column->next == NULL && self->flags & LOG_CSV_PARSER_GREEDY)
+            {
+              log_msg_add_dyn_value(msg, (gchar *) cur_column->data, src);
+              cur_column = NULL;
+            }
         }
     }
   else if (self->flags & (LOG_CSV_PARSER_ESCAPE_BACKSLASH+LOG_CSV_PARSER_ESCAPE_DOUBLE_CHAR))
@@ -355,11 +364,19 @@ log_csv_parser_process(LogParser *s, LogMessage *msg, const gchar *input)
               cur_column = cur_column->next;
               state = PS_COLUMN_START;
               store_value = FALSE;
+
+              if (cur_column && cur_column->next == NULL && self->flags & LOG_CSV_PARSER_GREEDY)
+                {
+                  log_msg_add_dyn_value(msg, (gchar *) cur_column->data, src);
+                  cur_column = NULL;
+                }
             }
         }
       g_string_free(current_value, TRUE);
     }
-  return;
+  if (!cur_column && (self->flags & LOG_CSV_PARSER_DROP_INVALID))
+    return FALSE;
+  return TRUE;
 }
 
 static void
@@ -404,6 +421,10 @@ log_csv_parser_lookup_flag(const gchar *flag)
     return LOG_CSV_PARSER_ESCAPE_DOUBLE_CHAR;
   else if (strcmp(flag, "strip-whitespace") == 0)
     return LOG_CSV_PARSER_STRIP_WHITESPACE;
+  else if (strcmp(flag, "greedy") == 0)
+    return LOG_CSV_PARSER_GREEDY;
+  else if (strcmp(flag, "drop-invalid") == 0)
+    return LOG_CSV_PARSER_DROP_INVALID;
   msg_error("Unknown CSV parser flag", evt_tag_str("flag", flag), NULL);
   return 0;
 }
@@ -454,7 +475,7 @@ log_db_parser_reload_database(LogDBParser *self)
 
 }
 
-static void
+static gboolean
 log_db_parser_process(LogParser *s, LogMessage *msg, const char *input)
 {
   LogDBParser *self = (LogDBParser *) s;
@@ -476,7 +497,7 @@ log_db_parser_process(LogParser *s, LogMessage *msg, const char *input)
     {
       log_msg_add_dyn_value(msg, ".classifier.class", "unknown");
     }
-  
+  return TRUE;
 }
 
 void
@@ -530,8 +551,7 @@ log_parser_rule_process(LogProcessRule *s, LogMessage *msg)
 {
   LogParserRule *self = (LogParserRule *) s;
   
-  log_parser_process(self->parser, msg);
-  return TRUE;
+  return log_parser_process(self->parser, msg);
 }
 
 static void
