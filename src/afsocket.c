@@ -354,12 +354,13 @@ afsocket_sd_format_persist_name(AFSocketSourceDriver *self, gboolean listener_na
 }
 
 gboolean 
-afsocket_sd_process_connection(AFSocketSourceDriver *self, GSockAddr *peer_addr, gint fd)
+afsocket_sd_process_connection(AFSocketSourceDriver *self, GSockAddr *client_addr, GSockAddr *local_addr, gint fd)
 {
+  gchar buf[MAX_SOCKADDR_STRING], buf2[MAX_SOCKADDR_STRING];
 #if ENABLE_TCP_WRAPPER
-  if (peer_addr && (peer_addr->sa.sa_family == AF_INET
+  if (client_addr && (client_addr->sa.sa_family == AF_INET
 #if ENABLE_IPV6
-                   || peer_addr->sa.sa_family == AF_INET6
+                   || client_addr->sa.sa_family == AF_INET6
 #endif
      ))
     {
@@ -369,13 +370,12 @@ afsocket_sd_process_connection(AFSocketSourceDriver *self, GSockAddr *peer_addr,
       fromhost(&req);
       if (hosts_access(&req) == 0)
         {
-          gchar buf[256];
           
           msg_error("Syslog connection rejected by tcpd",
-                    evt_tag_str("from", g_sockaddr_format(peer_addr, buf, sizeof(buf), GSA_FULL)),
+                    evt_tag_str("client", g_sockaddr_format(client_addr, buf, sizeof(buf), GSA_FULL)),
+                    evt_tag_str("local", g_sockaddr_format(local_addr, buf2, sizeof(buf2), GSA_FULL)),
                     NULL);
-          close(fd);
-          return TRUE;
+          return FALSE;
         }
     }
   
@@ -383,17 +383,18 @@ afsocket_sd_process_connection(AFSocketSourceDriver *self, GSockAddr *peer_addr,
 
   if (self->num_connections >= self->max_connections)
     {
-      msg_error("Number of allowed concurrent connections exceeded",
-                evt_tag_int("num", self->num_connections),
+      msg_error("Number of allowed concurrent connections reached, rejecting connection",
+                evt_tag_str("client", g_sockaddr_format(client_addr, buf, sizeof(buf), GSA_FULL)),
+                evt_tag_str("local", g_sockaddr_format(local_addr, buf2, sizeof(buf2), GSA_FULL)),
                 evt_tag_int("max", self->max_connections),
                 NULL);
-      close(fd);
+      return FALSE;
     }
   else
     {
       AFSocketSourceConnection *conn;
       
-      conn = afsocket_sc_new(self, peer_addr, fd);
+      conn = afsocket_sc_new(self, client_addr, fd);
       if (log_pipe_init(&conn->super, NULL))
         {
           self->num_connections++;
@@ -401,8 +402,8 @@ afsocket_sd_process_connection(AFSocketSourceDriver *self, GSockAddr *peer_addr,
         }
       else
         {
-          close(fd);
           log_pipe_unref(&conn->super);
+          return FALSE;
         }
     }
   return TRUE;
@@ -445,24 +446,30 @@ afsocket_sd_accept(gpointer s)
         
       g_fd_set_nonblock(new_fd, TRUE);
       g_fd_set_cloexec(new_fd, TRUE);
-        
-      if (peer_addr->sa.sa_family != AF_UNIX)
-        msg_notice("Syslog connection accepted",
-                    evt_tag_int("fd", new_fd),
-                    evt_tag_str("client", g_sockaddr_format(peer_addr, buf1, sizeof(buf1), GSA_FULL)),
-                    evt_tag_str("local", g_sockaddr_format(self->bind_addr, buf2, sizeof(buf2), GSA_FULL)),
-                    NULL);
-      else
-        msg_verbose("Syslog connection accepted",
-                    evt_tag_int("fd", new_fd),
-                    evt_tag_str("client", g_sockaddr_format(peer_addr, buf1, sizeof(buf1), GSA_FULL)),
-                    evt_tag_str("local", g_sockaddr_format(self->bind_addr, buf2, sizeof(buf2), GSA_FULL)),
-                    NULL);
 
-      res = afsocket_sd_process_connection(self, peer_addr, new_fd);
+      res = afsocket_sd_process_connection(self, peer_addr, self->bind_addr, new_fd);
+
+      if (res)
+        {
+          if (peer_addr->sa.sa_family != AF_UNIX)
+            msg_notice("Syslog connection accepted",
+                        evt_tag_int("fd", new_fd),
+                        evt_tag_str("client", g_sockaddr_format(peer_addr, buf1, sizeof(buf1), GSA_FULL)),
+                        evt_tag_str("local", g_sockaddr_format(self->bind_addr, buf2, sizeof(buf2), GSA_FULL)),
+                        NULL);
+          else
+            msg_verbose("Syslog connection accepted",
+                        evt_tag_int("fd", new_fd),
+                        evt_tag_str("client", g_sockaddr_format(peer_addr, buf1, sizeof(buf1), GSA_FULL)),
+                        evt_tag_str("local", g_sockaddr_format(self->bind_addr, buf2, sizeof(buf2), GSA_FULL)),
+                        NULL);
+        }
+      else
+        {
+          close(new_fd);
+        }
+
       g_sockaddr_unref(peer_addr);
-      if (!res)
-        return FALSE;
       accepts++;
     }
   return TRUE;
@@ -600,7 +607,7 @@ afsocket_sd_init(LogPipe *s)
         }
       
       /* we either have self->connections != NULL, or sock contains a new fd */
-      if (self->connections || afsocket_sd_process_connection(self, NULL, sock))
+      if (self->connections || afsocket_sd_process_connection(self, NULL, self->bind_addr, sock))
         res = TRUE;
     }
   return res;
