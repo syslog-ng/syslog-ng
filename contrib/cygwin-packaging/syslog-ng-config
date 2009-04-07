@@ -205,7 +205,7 @@ if [ ! -f "${SYSCONFDIR}/syslog-ng.conf" ]
 then
   echo "Creating default ${SYSCONFDIR}/syslog-ng.conf file"
   cat > ${SYSCONFDIR}/syslog-ng.conf << EOF
-@version 3.0
+@version: 3.0
 options {
   keep_hostname(yes);
   owner("system");
