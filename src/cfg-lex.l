@@ -290,11 +290,13 @@ word	[^ \#'"\(\)\{\}\\;\n\t,|\.]
 
 \"                         {
 				str = buf;
+				*str = 0;
 				/* yy_push_state(string);*/
 				BEGIN(string);
 			   }
 \'			   {
 				str = buf;
+				*str = 0;
 				BEGIN(qstring);
 			   }
 <string>\\a		   { append_char(7); }

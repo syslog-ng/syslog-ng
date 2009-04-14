@@ -75,6 +75,7 @@ typedef struct _AFSqlDestDriver
   gboolean use_time_recvd;
   gint fields_len;
   AFSqlField *fields;
+  gchar *null_value;
   gint time_reopen;
   
   TimeZoneInfo *time_zone_info;
@@ -193,6 +194,16 @@ afsql_dd_set_values(LogDriver *s, GList *values)
 }
 
 void 
+afsql_dd_set_null_value(LogDriver *s, const gchar *null)
+{
+  AFSqlDestDriver *self = (AFSqlDestDriver *) s;
+
+  if (self->null_value)
+    g_free(self->null_value);
+  self->null_value = g_strdup(null);
+}
+
+void
 afsql_dd_set_mem_fifo_size(LogDriver *s, gint mem_fifo_size)
 {
   AFSqlDestDriver *self = (AFSqlDestDriver *) s;
@@ -523,15 +534,22 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
                               self->time_zone_info,
                               self->frac_digits,
                               self->seq_num, value);
-          dbi_conn_quote_string_copy(self->dbi_ctx, value->str, &quoted);
-          if (quoted)
+          if (self->null_value && strcmp(self->null_value, value->str) == 0)
             {
-              g_string_append(query_string, quoted);
-              free(quoted);
+              g_string_append(query_string, "NULL");
             }
           else
             {
-              g_string_append(query_string, "''");
+              dbi_conn_quote_string_copy(self->dbi_ctx, value->str, &quoted);
+              if (quoted)
+                {
+                  g_string_append(query_string, quoted);
+                  free(quoted);
+                }
+              else
+                {
+                  g_string_append(query_string, "''");
+                }
             }
           if (i != self->fields_len - 1)
             g_string_append(query_string, ", ");
@@ -882,6 +900,8 @@ afsql_dd_free(LogPipe *s)
   g_free(self->password);
   g_free(self->database);
   g_free(self->encoding);
+  if (self->null_value)
+    g_free(self->null_value);
   string_list_free(self->columns);
   string_list_free(self->values);
   log_template_unref(self->table);

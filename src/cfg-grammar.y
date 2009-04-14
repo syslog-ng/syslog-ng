@@ -1043,6 +1043,7 @@ dest_afsql_option
 	| KW_LOG_DISK_FIFO_SIZE '(' NUMBER ')'	{ afsql_dd_set_disk_fifo_size(last_driver, $3); }
         | KW_FRAC_DIGITS '(' NUMBER ')'         { afsql_dd_set_frac_digits(last_driver, $3); }
 	| KW_TIME_ZONE '(' string ')'           { afsql_dd_set_time_zone_string(last_driver,$3); free($3); }
+        | KW_NULL '(' string ')'                { afsql_dd_set_null_value(last_driver, $3); free($3); }
 
         | KW_ENDIF { 
 #endif /* ENABLE_SQL */ 
