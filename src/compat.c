@@ -31,7 +31,7 @@
 #if !HAVE_PREAD || HAVE_BROKEN_PREAD
 
 ssize_t 
-__pread(int fd, void *buf, size_t count, off_t offset)
+bb__pread(int fd, void *buf, size_t count, off_t offset)
 {
   ssize_t ret;
   off_t old_offset;
@@ -53,7 +53,7 @@ __pread(int fd, void *buf, size_t count, off_t offset)
 }
 
 ssize_t 
-__pwrite(int fd, const void *buf, size_t count, off_t offset)
+bb__pwrite(int fd, const void *buf, size_t count, off_t offset)
 {
   ssize_t ret;
   off_t old_offset;

@@ -27,12 +27,15 @@
 #include <config.h>
 #include <sys/types.h>
 
-#if !HAVE_PREAD || HAVE_BROKEN_PREAD
-#define pread __pread
-#define pwrite __pwrite
+/* NOTE: bb__ prefix is used for function names that might clash with system
+ * supplied symbols. */
 
-ssize_t __pread(int fd, void *buf, size_t count, off_t offset);
-ssize_t __pwrite(int fd, const void *buf, size_t count, off_t offset);
+#if !HAVE_PREAD || HAVE_BROKEN_PREAD
+#define pread bb__pread
+#define pwrite bb__pwrite
+
+ssize_t bb__pread(int fd, void *buf, size_t count, off_t offset);
+ssize_t bb__pwrite(int fd, const void *buf, size_t count, off_t offset);
 
 #endif
 
