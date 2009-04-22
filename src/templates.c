@@ -391,15 +391,15 @@ log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, TimeZo
     case M_SOURCE_IP:
       {
         gchar *ip;
-        
-        if (msg->saddr && g_sockaddr_inet_check(msg->saddr)) 
+
+        if (msg->saddr && (g_sockaddr_inet_check(msg->saddr) || g_sockaddr_inet6_check(msg->saddr)))
           {
-            gchar buf[16];
-            
-            g_inet_ntoa(buf, sizeof(buf), ((struct sockaddr_in *) &msg->saddr->sa)->sin_addr);
+            gchar buf[MAX_SOCKADDR_STRING];
+
+            g_sockaddr_format(msg->saddr, buf, sizeof(buf), GSA_ADDRESS_ONLY);
             ip = buf;
           }
-        else 
+        else
           {
             ip = "127.0.0.1";
           }
