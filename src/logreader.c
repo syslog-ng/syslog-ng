@@ -74,6 +74,7 @@ struct _LogReaderWatch
   LogReader *reader;
   GPollFD pollfd;
   LogProto *proto;
+  GTimeVal last_follow_freq_check;
 };
 
 static gboolean
@@ -176,6 +177,19 @@ log_reader_fd_check(GSource *source)
                         NULL);
               /* file was moved and we are at EOF, follow the new file */
               log_pipe_notify(self->reader->control, &self->reader->super.super, NC_FILE_MOVED, self);
+            }
+        }
+      else if (self->reader->follow_filename)
+        {
+          GTimeVal now;
+
+          g_source_get_current_time(source, &now);
+          if (g_time_val_diff(&now, &self->last_follow_freq_check) > self->reader->options->follow_freq * 1000)
+            {
+              msg_verbose("Follow mode file still does not exist",
+                          evt_tag_str("filename", self->reader->follow_filename),
+                          NULL);
+              self->last_follow_freq_check = now;
             }
         }
       return FALSE;
