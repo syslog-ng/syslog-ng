@@ -312,6 +312,7 @@ log_pattern_database_lookup(LogPatternDatabase *self, LogMessage *msg)
                */
 
               g_ptr_array_free(match_names, TRUE);
+              g_array_free(matches, FALSE);
               return ((LogDBResult *) msg_node->value);
             }
           g_ptr_array_free(match_names, TRUE);
