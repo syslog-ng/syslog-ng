@@ -705,7 +705,7 @@ r_find_node(RNode *root, gchar *whole_key, gchar *key, gint keylen, GArray *matc
                               match->ofs = match->ofs + (key + i) - whole_key;
                               match->len = match->len + len;
                             }
-                          if (parser_node->name)
+                          if (parser_node->name_len)
                             *match_name = g_strndup(parser_node->name, parser_node->name_len);
                           else
                             *match_name = NULL;
