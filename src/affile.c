@@ -58,9 +58,9 @@ affile_open_file(gchar *name, gint flags,
   if (create_dirs && !create_containing_directory(name, dir_uid, dir_gid, dir_mode))
     return FALSE;
 
+  saved_caps = g_process_cap_save();
   if (privileged)
     {
-      saved_caps = g_process_cap_save();
       g_process_cap_modify(CAP_DAC_READ_SEARCH, TRUE);
       g_process_cap_modify(CAP_SYS_ADMIN, TRUE);
     }
@@ -92,7 +92,8 @@ affile_open_file(gchar *name, gint flags,
     {
       g_fd_set_cloexec(*fd, TRUE);
       
-      g_process_cap_modify(CAP_DAC_OVERRIDE, TRUE);
+      g_process_cap_modify(CAP_CHOWN, TRUE);
+      g_process_cap_modify(CAP_FOWNER, TRUE);
       if (uid != (uid_t) -1)
         fchown(*fd, uid, -1);
       if (gid != (gid_t) -1)

@@ -337,7 +337,9 @@ main(int argc, char *argv[])
    * indicate readability. Enabling/disabling cap_sys_admin on every poll
    * invocation seems to be too expensive. So I enable it for now. */
   
-  g_process_set_caps("cap_net_bind_service,cap_net_broadcast,cap_net_raw,cap_dac_read_search,cap_dac_override=p cap_sys_admin=ep");
+  g_process_set_caps("cap_net_bind_service,cap_net_broadcast,cap_net_raw,"
+                     "cap_dac_read_search,cap_dac_override,cap_chown,cap_fowner=p "
+                     "cap_sys_admin=ep");
   ctx = g_option_context_new("syslog-ng");
   g_process_add_option_group(ctx);
   msg_add_option_group(ctx);
