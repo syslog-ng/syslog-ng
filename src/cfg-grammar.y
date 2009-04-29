@@ -155,6 +155,7 @@ cfg_check_template(LogTemplate *template)
 %token KW_TEMPLATE KW_TEMPLATE_ESCAPE
 %token KW_FOLLOW_FREQ
 %token KW_OVERWRITE_IF_OLDER
+%token KW_DEFAULT_FACILITY KW_DEFAULT_LEVEL
 
 /* socket related options */
 %token KW_KEEP_ALIVE KW_MAX_CONNECTIONS
@@ -307,6 +308,8 @@ cfg_check_template(LogTemplate *template)
 %type <token> KW_MESSAGE
 %type <token> KW_TYPE
 %type <token> KW_SQL
+%type <token> KW_DEFAULT_FACILITY
+%type <token> KW_DEFAULT_LEVEL
 
 %%
 
@@ -728,13 +731,13 @@ source_reader_option
 	| KW_FOLLOW_FREQ '(' NUMBER ')'		{ last_reader_options->follow_freq = ($3 * 1000); }
 	| KW_KEEP_TIMESTAMP '(' yesno ')'	{ last_reader_options->super.keep_timestamp = $3; }
         | KW_ENCODING '(' string ')'		{ last_reader_options->text_encoding = g_strdup($3); free($3); }
-	| KW_LEVEL '(' level_string ')'
+	| KW_DEFAULT_LEVEL '(' level_string ')'
 	  {
 	    if (last_reader_options->default_pri == 0xFFFF)
 	      last_reader_options->default_pri = LOG_USER;
 	    last_reader_options->default_pri = (last_reader_options->default_pri & ~7) | $3;
           }
-	| KW_FACILITY '(' facility_string ')'
+	| KW_DEFAULT_FACILITY '(' facility_string ')'
 	  {
 	    if (last_reader_options->default_pri == 0xFFFF)
 	      last_reader_options->default_pri = LOG_NOTICE;
@@ -1481,6 +1484,8 @@ reserved_words_as_strings
         | KW_MESSAGE
         | KW_TYPE
         | KW_SQL
+        | KW_DEFAULT_FACILITY
+        | KW_DEFAULT_LEVEL
 	;
 
 string_or_number

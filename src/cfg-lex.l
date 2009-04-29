@@ -139,6 +139,9 @@ static struct keyword keywords[] = {
  	{ "overwrite_if_older",	KW_OVERWRITE_IF_OLDER },
  	{ "file_template",	KW_FILE_TEMPLATE },
  	{ "proto_template",	KW_PROTO_TEMPLATE },
+	{ "default_level",      KW_DEFAULT_LEVEL },
+	{ "default_priority",   KW_DEFAULT_LEVEL },
+	{ "default_facility",   KW_DEFAULT_FACILITY },
 #if ENABLE_TIMESTAMPING
  	{ "timestamp_url",      KW_TIMESTAMP_URL },
 	{ "timestamp_freq",     KW_TIMESTAMP_FREQ },
