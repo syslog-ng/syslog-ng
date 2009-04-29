@@ -2,6 +2,7 @@
 #include "apphook.h"
 
 #include <stdlib.h>
+#include <string.h>
 
 void
 testcase_update(const gchar *msg, const gchar *expected_sd_str, gchar *elem_name1, ...)

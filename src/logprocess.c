@@ -22,6 +22,7 @@
  */
 
 #include "logprocess.h"
+#include <string.h>
 
 void
 log_process_rule_init(LogProcessRule *self, const gchar *name)

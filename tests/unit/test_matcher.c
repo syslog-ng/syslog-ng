@@ -1,5 +1,6 @@
 #include "logmatcher.h"
 #include <stdlib.h>
+#include <string.h>
 
 int
 testcase_match(const gchar *log, gint parse_flags, const gchar *pattern, gint matcher_flags, gboolean expected_result, LogMatcher *m)

@@ -2,8 +2,8 @@
 #include "logpipe.h"
 #include "apphook.h"
 
-
 #include <stdlib.h>
+#include <string.h>
 
 int acked_messages = 0;
 int fed_messages = 0;

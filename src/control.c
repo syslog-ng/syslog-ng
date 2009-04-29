@@ -26,6 +26,7 @@
 #include "messages.h"
 #include "stats.h"
 #include <errno.h>
+#include <string.h>
 
 static gint control_socket;
 
