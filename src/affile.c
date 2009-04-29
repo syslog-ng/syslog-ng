@@ -396,7 +396,7 @@ affile_sd_new(gchar *filename, guint32 flags)
   else
     {
       if ((self->flags & AFFILE_PIPE) == 0)
-        self->reader_options.follow_freq = 1;
+        self->reader_options.follow_freq = 1000;
         
 #if __linux__
       if (strcmp(filename, "/proc/kmsg") == 0)
