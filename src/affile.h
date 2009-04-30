@@ -65,6 +65,8 @@ typedef struct _AFFileDestDriver
   uid_t dir_uid;
   gid_t dir_gid;
   mode_t dir_perm;
+  gchar *local_time_zone;
+  TimeZoneInfo *local_time_zone_info;
   LogWriterOptions writer_options;
   GHashTable *writer_hash;
     
@@ -87,5 +89,6 @@ void affile_dd_set_dir_perm(LogDriver *s, mode_t dir_perm);
 void affile_dd_set_create_dirs(LogDriver *s, gboolean create_dirs);
 void affile_dd_set_fsync(LogDriver *s, gboolean enable);
 void affile_dd_set_overwrite_if_older(LogDriver *s, gint overwrite_if_older);
+void affile_dd_set_local_time_zone(LogDriver *s, const gchar *local_time_zone);
 
 #endif

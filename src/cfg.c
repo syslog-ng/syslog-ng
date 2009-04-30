@@ -311,8 +311,9 @@ cfg_new(gchar *fname)
   
   self->ts_format = TS_FMT_BSD;
   self->frac_digits = 0;
-  self->recv_time_zone_string = NULL;
-  self->send_time_zone_string = NULL;
+  self->recv_time_zone = NULL;
+  self->send_time_zone = NULL;
+  self->local_time_zone = NULL;
   self->keep_timestamp = TRUE;
   
   self->persist = persist_config_new();

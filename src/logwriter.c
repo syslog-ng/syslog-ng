@@ -503,7 +503,7 @@ log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
       g_string_sprintf(result, "<%d>%d ", lm->pri, 1);
  
       log_stamp_append_format(stamp, result, TS_FMT_ISO, 
-                              time_zone_info_get_offset(self->options->time_zone_info, stamp->time.tv_sec), 
+                              time_zone_info_get_offset(self->options->send_time_zone_info, stamp->time.tv_sec),
                               self->options->frac_digits);
       g_string_append_c(result, ' ');
       
@@ -535,7 +535,7 @@ log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
           log_template_append_format(self->options->template, lm, 
                                      (self->options->use_time_recvd ? LT_STAMP_RECVD : 0), 
                                      self->options->ts_format,
-                                     self->options->time_zone_info,
+                                     self->options->send_time_zone_info,
                                      self->options->frac_digits,
                                      seq_num,
                                      result);
@@ -570,7 +570,7 @@ log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
           log_template_format(template, lm, 
                               (self->options->use_time_recvd ? LT_STAMP_RECVD : 0), 
                               self->options->ts_format,
-                              self->options->time_zone_info,
+                              self->options->send_time_zone_info,
                               self->options->frac_digits,
                               seq_num,
                               result);
@@ -581,14 +581,18 @@ log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
      
           if (self->flags & LW_FORMAT_FILE)
             {
-              log_stamp_format(stamp, result, self->options->ts_format, time_zone_info_get_offset(self->options->time_zone_info, stamp->time.tv_sec), self->options->frac_digits);
+              log_stamp_format(stamp, result, self->options->ts_format,
+                               time_zone_info_get_offset(self->options->send_time_zone_info, stamp->time.tv_sec),
+                               self->options->frac_digits);
             }
           else if (self->flags & LW_FORMAT_PROTO)
             {
               g_string_sprintf(result, "<%d>", lm->pri);
 
               /* always use BSD timestamp by default, the use can override this using a custom template */
-              log_stamp_append_format(stamp, result, TS_FMT_BSD, time_zone_info_get_offset(self->options->time_zone_info, stamp->time.tv_sec), self->options->frac_digits);
+              log_stamp_append_format(stamp, result, TS_FMT_BSD,
+                                      time_zone_info_get_offset(self->options->send_time_zone_info, stamp->time.tv_sec),
+                                      self->options->frac_digits);
             }
           g_string_append_c(result, ' ');
 
@@ -821,8 +825,8 @@ log_writer_options_defaults(LogWriterOptions *options)
   options->flush_lines = -1;
   options->flush_timeout = -1;
   options->ts_format = -1;
-  options->time_zone_string = NULL;
-  options->time_zone_info = NULL;
+  options->send_time_zone = NULL;
+  options->send_time_zone_info = NULL;
   options->frac_digits = -1;
   options->time_reopen = -1;
   options->suppress = 0;
@@ -868,23 +872,23 @@ void
 log_writer_options_init(LogWriterOptions *options, GlobalConfig *cfg, guint32 option_flags)
 {
   LogTemplate *template;
-  gchar *time_zone_string;
-  TimeZoneInfo *time_zone_info;
+  gchar *send_time_zone;
+  TimeZoneInfo *send_time_zone_info;
 
   template = log_template_ref(options->template);
 
-  time_zone_string = options->time_zone_string;
-  options->time_zone_string = NULL;
+  send_time_zone = options->send_time_zone;
+  options->send_time_zone = NULL;
  
-  time_zone_info = options->time_zone_info;
-  options->time_zone_info = NULL;
+  send_time_zone_info = options->send_time_zone_info;
+  options->send_time_zone_info = NULL;
 
   log_writer_options_destroy(options);
   
   /* restroe the config */
   options->template = template;
-  options->time_zone_string = time_zone_string;
-  options->time_zone_info = time_zone_info;
+  options->send_time_zone = send_time_zone;
+  options->send_time_zone_info = send_time_zone_info;
 
   options->options |= option_flags;
   if (options->mem_fifo_size == -1)
@@ -910,10 +914,10 @@ log_writer_options_init(LogWriterOptions *options, GlobalConfig *cfg, guint32 op
 
   if (options->ts_format == -1)
     options->ts_format = cfg->ts_format;
-  if (options->time_zone_string == NULL)
-    options->time_zone_string = g_strdup(cfg->send_time_zone_string);
-  if (options->time_zone_info == NULL)
-    options->time_zone_info = time_zone_info_new(options->time_zone_string);
+  if (options->send_time_zone == NULL)
+    options->send_time_zone = g_strdup(cfg->send_time_zone);
+  if (options->send_time_zone_info == NULL)
+    options->send_time_zone_info = time_zone_info_new(options->send_time_zone);
  
   if (options->time_reopen == -1)
     options->time_reopen = cfg->time_reopen;
@@ -927,10 +931,10 @@ log_writer_options_destroy(LogWriterOptions *options)
   log_template_unref(options->template);
   log_template_unref(options->file_template);
   log_template_unref(options->proto_template);
-  if (options->time_zone_string)
-    g_free(options->time_zone_string);
-  if (options->time_zone_info)
-    time_zone_info_free(options->time_zone_info);
+  if (options->send_time_zone)
+    g_free(options->send_time_zone);
+  if (options->send_time_zone_info)
+    time_zone_info_free(options->send_time_zone_info);
 }
 
 gint

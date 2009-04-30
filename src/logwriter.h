@@ -65,8 +65,8 @@ typedef struct _LogWriterOptions
   gboolean use_time_recvd; /* deprecated */
   gboolean fsync;
   gshort ts_format;
-  gchar *time_zone_string;
-  TimeZoneInfo *time_zone_info;
+  gchar *send_time_zone;
+  TimeZoneInfo *send_time_zone_info;
 
   gshort frac_digits;
   gint throttle; /* messages per sec, 0 means unlimited */

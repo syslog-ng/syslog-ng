@@ -62,8 +62,8 @@ typedef struct _LogReaderOptions
 
   /* source time zone if one is not specified in the message */
   gboolean check_hostname;
-  gchar *time_zone_string;
-  TimeZoneInfo *time_zone_info;
+  gchar *recv_time_zone;
+  TimeZoneInfo *recv_time_zone_info;
   regex_t *bad_hostname;
 } LogReaderOptions;
 

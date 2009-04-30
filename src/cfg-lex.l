@@ -125,6 +125,7 @@ static struct keyword keywords[] = {
         { "time_zone",		KW_TIME_ZONE },
         { "recv_time_zone",	KW_RECV_TIME_ZONE },
         { "send_time_zone",	KW_SEND_TIME_ZONE },
+        { "local_time_zone",    KW_LOCAL_TIME_ZONE },
         { "use_time_recvd",	KW_USE_TIME_RECVD, KWS_OBSOLETE, "Use R_ or S_ prefixed macros in templates" },
         { "use_fqdn",           KW_USE_FQDN },
 	{ "use_dns",		KW_USE_DNS },

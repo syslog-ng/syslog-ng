@@ -78,8 +78,10 @@ typedef struct _AFSqlDestDriver
   gchar *null_value;
   gint time_reopen;
   
-  TimeZoneInfo *time_zone_info;
-  gchar *time_zone_string;
+  TimeZoneInfo *local_time_zone_info;
+  gchar *local_time_zone;
+  TimeZoneInfo *send_time_zone_info;
+  gchar *send_time_zone;
   gshort frac_digits; 
 
   guint32 *dropped_messages;
@@ -228,11 +230,19 @@ afsql_dd_set_frac_digits(LogDriver *s, gint frac_digits)
 }
 
 void
-afsql_dd_set_time_zone_string(LogDriver *s, const gchar *time_zone_string)
+afsql_dd_set_send_time_zone(LogDriver *s, const gchar *send_time_zone)
 {
   AFSqlDestDriver *self = (AFSqlDestDriver *) s;
   
-  self->time_zone_string = g_strdup(time_zone_string);
+  self->send_time_zone = g_strdup(send_time_zone);
+}
+
+void
+afsql_dd_set_local_time_zone(LogDriver *s, const gchar *local_time_zone)
+{
+  AFSqlDestDriver *self = (AFSqlDestDriver *) s;
+
+  self->local_time_zone = g_strdup(local_time_zone);
 }
 
 
@@ -507,7 +517,7 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
       log_template_format(self->table, msg, 
                           (self->use_time_recvd ? LT_STAMP_RECVD : 0),
                           TS_FMT_BSD, 
-                          NULL,
+                          self->local_time_zone_info,
                           0, 0, table);
 
       if (!afsql_dd_validate_table(self, table->str))
@@ -531,7 +541,7 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
           log_template_format(self->fields[i].value, msg, 
                               (self->use_time_recvd ? LT_STAMP_RECVD : 0), 
                               TS_FMT_BSD, 
-                              self->time_zone_info,
+                              self->send_time_zone_info,
                               self->frac_digits,
                               self->seq_num, value);
           if (self->null_value && strcmp(self->null_value, value->str) == 0)
@@ -801,10 +811,16 @@ afsql_dd_init(LogPipe *s)
 
   if (self->frac_digits == -1)
     self->frac_digits = cfg->frac_digits;
-  if (self->time_zone_string == NULL)
-    self->time_zone_string = g_strdup(cfg->send_time_zone_string);
-  if (self->time_zone_info == NULL)
-    self->time_zone_info = time_zone_info_new(self->time_zone_string);
+  if (self->send_time_zone == NULL)
+    self->send_time_zone = g_strdup(cfg->send_time_zone);
+
+  if (self->send_time_zone_info)
+    time_zone_info_free(self->send_time_zone_info);
+  self->send_time_zone_info = time_zone_info_new(self->send_time_zone);
+
+  if (self->local_time_zone_info)
+    time_zone_info_free(self->local_time_zone_info);
+  self->local_time_zone_info = time_zone_info_new(self->local_time_zone);
 
   if (!db_thread)
     {
@@ -887,11 +903,12 @@ afsql_dd_free(LogPipe *s)
       log_template_unref(self->fields[i].value);
     }
 
-  if (self->time_zone_info)
-    {
-      time_zone_info_free(self->time_zone_info);
-    }
-  g_free(self->time_zone_string);
+  if (self->send_time_zone_info)
+    time_zone_info_free(self->send_time_zone_info);
+  if (self->local_time_zone_info)
+    time_zone_info_free(self->local_time_zone_info);
+  g_free(self->send_time_zone);
+  g_free(self->local_time_zone);
   g_free(self->fields);
   g_free(self->type);
   g_free(self->host);
@@ -970,8 +987,9 @@ afsql_dd_new()
   self->uses_default_indexes = TRUE;
   self->mem_fifo_size = 1000;
   self->disk_fifo_size = 0;
-  self->time_zone_string = NULL;
-  self->time_zone_info = NULL;
+  self->send_time_zone = NULL;
+  self->send_time_zone_info = NULL;
+  self->local_time_zone_info = NULL;
   self->frac_digits = -1;
 
   self->validated_tables = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);

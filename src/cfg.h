@@ -89,8 +89,9 @@ struct _GlobalConfig
   gint ts_format;
   gint frac_digits;
 
-  gchar *recv_time_zone_string;
-  gchar *send_time_zone_string;
+  gchar *recv_time_zone;
+  gchar *send_time_zone;
+  gchar *local_time_zone;
   
   gchar *file_template_name;
   gchar *proto_template_name;

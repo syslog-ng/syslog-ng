@@ -137,7 +137,7 @@ cfg_check_template(LogTemplate *template)
 %token KW_FLAGS
 
 /* reader options */
-%token KW_PAD_SIZE KW_TIME_ZONE KW_RECV_TIME_ZONE KW_SEND_TIME_ZONE
+%token KW_PAD_SIZE KW_TIME_ZONE KW_RECV_TIME_ZONE KW_SEND_TIME_ZONE KW_LOCAL_TIME_ZONE
 
 /* timers */
 %token KW_TIME_REOPEN KW_TIME_REAP KW_TIME_SLEEP 
@@ -721,7 +721,7 @@ source_reader_option
 	| KW_PROGRAM_OVERRIDE '(' string ')'	{ last_reader_options->super.program_override = g_strdup($3); free($3); }
 	| KW_HOST_OVERRIDE '(' string ')'	{ last_reader_options->super.host_override = g_strdup($3); free($3); }
 	| KW_LOG_PREFIX '(' string ')'	        { gchar *p = strrchr($3, ':'); if (p) *p = 0; last_reader_options->super.program_override = g_strdup($3); free($3); }
-	| KW_TIME_ZONE '(' string ')'		{ last_reader_options->time_zone_string = g_strdup($3); free($3); }
+	| KW_TIME_ZONE '(' string ')'		{ last_reader_options->recv_time_zone = g_strdup($3); free($3); }
 	| KW_CHECK_HOSTNAME '(' yesno ')'	{ last_reader_options->check_hostname = $3; }
 	| KW_FLAGS '(' source_reader_option_flags ')' { last_reader_options->options = $3; }
 	| KW_LOG_MSG_SIZE '(' NUMBER ')'	{ last_reader_options->msg_size = $3; }
@@ -800,6 +800,7 @@ dest_affile_option
 	| KW_CREATE_DIRS '(' yesno ')'		{ affile_dd_set_create_dirs(last_driver, $3); }
 	| KW_OVERWRITE_IF_OLDER '(' NUMBER ')'	{ affile_dd_set_overwrite_if_older(last_driver, $3); }
 	| KW_FSYNC '(' yesno ')'		{ affile_dd_set_fsync(last_driver, $3); }
+	| KW_LOCAL_TIME_ZONE '(' string ')'     { affile_dd_set_local_time_zone(last_driver, $3); free($3); }
 	;
 
 dest_afpipe
@@ -1042,7 +1043,8 @@ dest_afsql_option
 	| KW_LOG_FIFO_SIZE '(' NUMBER ')'	{ afsql_dd_set_mem_fifo_size(last_driver, $3); }
 	| KW_LOG_DISK_FIFO_SIZE '(' NUMBER ')'	{ afsql_dd_set_disk_fifo_size(last_driver, $3); }
         | KW_FRAC_DIGITS '(' NUMBER ')'         { afsql_dd_set_frac_digits(last_driver, $3); }
-	| KW_TIME_ZONE '(' string ')'           { afsql_dd_set_time_zone_string(last_driver,$3); free($3); }
+	| KW_TIME_ZONE '(' string ')'           { afsql_dd_set_send_time_zone(last_driver,$3); free($3); }
+	| KW_LOCAL_TIME_ZONE '(' string ')'     { afsql_dd_set_local_time_zone(last_driver,$3); free($3); }
         | KW_NULL '(' string ')'                { afsql_dd_set_null_value(last_driver, $3); free($3); }
 
         | KW_ENDIF { 
@@ -1072,7 +1074,7 @@ dest_writer_option
 	                                          free($3);
 	                                        }
 	| KW_TEMPLATE_ESCAPE '(' yesno ')'	{ log_writer_options_set_template_escape(last_writer_options, $3); }
-	| KW_TIME_ZONE '(' string ')'           { last_writer_options->time_zone_string = g_strdup($3); free($3); }
+	| KW_TIME_ZONE '(' string ')'           { last_writer_options->send_time_zone = g_strdup($3); free($3); }
 	| KW_TS_FORMAT '(' string ')'		{ last_writer_options->ts_format = cfg_ts_format_value($3); free($3); }
 	| KW_FRAC_DIGITS '(' NUMBER ')'		{ last_writer_options->frac_digits = $3; }
 	| KW_THROTTLE '(' NUMBER ')'            { last_writer_options->throttle = $3; }
@@ -1138,8 +1140,9 @@ options_item
 	| KW_DNS_CACHE_HOSTS '(' string ')'     { configuration->dns_cache_hosts = g_strdup($3); free($3); }
 	| KW_FILE_TEMPLATE '(' string ')'	{ configuration->file_template_name = g_strdup($3); free($3); }
 	| KW_PROTO_TEMPLATE '(' string ')'	{ configuration->proto_template_name = g_strdup($3); free($3); }
-	| KW_RECV_TIME_ZONE '(' string ')'      { configuration->recv_time_zone_string = g_strdup($3); free($3); }
-	| KW_SEND_TIME_ZONE '(' string ')'      { configuration->send_time_zone_string = g_strdup($3); free($3); }
+	| KW_RECV_TIME_ZONE '(' string ')'      { configuration->recv_time_zone = g_strdup($3); free($3); }
+	| KW_SEND_TIME_ZONE '(' string ')'      { configuration->send_time_zone = g_strdup($3); free($3); }
+	| KW_LOCAL_TIME_ZONE '(' string ')'     { configuration->local_time_zone = g_strdup($3); free($3); }
 	;
 
 /* BEGIN MARK: tls */

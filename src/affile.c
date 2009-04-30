@@ -675,6 +675,14 @@ affile_dd_set_fsync(LogDriver *s, gboolean fsync)
     self->flags &= ~AFFILE_FSYNC;
 }
 
+void
+affile_dd_set_local_time_zone(LogDriver *s, const gchar *local_time_zone)
+{
+  AFFileDestDriver *self = (AFFileDestDriver *) s;
+
+  self->local_time_zone = g_strdup(local_time_zone);
+}
+
 static inline gchar *
 affile_dd_format_persist_name(AFFileDestDriver *self)
 {
@@ -765,6 +773,10 @@ affile_dd_init(LogPipe *s)
     self->time_reap = cfg->time_reap;
   
   self->use_time_recvd = cfg->use_time_recvd;
+
+  if (self->local_time_zone_info)
+    time_zone_info_free(self->local_time_zone_info);
+  self->local_time_zone_info = time_zone_info_new(self->local_time_zone);
   
   log_writer_options_init(&self->writer_options, cfg, 0);
               
@@ -899,13 +911,13 @@ affile_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 
       filename = g_string_sized_new(32);
       log_template_format(self->filename_template, msg, 
-		    ((self->flags & AFFILE_TMPL_ESCAPE) ? LT_ESCAPE : 0) |
-		    (self->use_time_recvd ? LT_STAMP_RECVD : 0),
-		    TS_FMT_BSD,
-		    NULL,
-		    0,
-		    0,
-		    filename);
+                    ((self->flags & AFFILE_TMPL_ESCAPE) ? LT_ESCAPE : 0) |
+                    (self->use_time_recvd ? LT_STAMP_RECVD : 0),
+                    TS_FMT_BSD,
+                    self->local_time_zone_info,
+                    0,
+                    0,
+                    filename);
       next = g_hash_table_lookup(self->writer_hash, filename->str);
       if (!next)
 	{
@@ -937,6 +949,10 @@ affile_dd_free(LogPipe *s)
 
   log_template_unref(self->filename_template);
   log_writer_options_destroy(&self->writer_options);
+  if (self->local_time_zone_info)
+    time_zone_info_free(self->local_time_zone_info);
+  if (self->local_time_zone)
+    g_free(self->local_time_zone);
   log_drv_free(s);
 }
 

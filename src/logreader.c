@@ -256,7 +256,7 @@ log_reader_handle_line(LogReader *self, const guchar *line, gint length, GSockAd
                   saddr,
                   parse_flags,
                   self->options->bad_hostname,
-                  time_zone_info_get_offset(self->options->time_zone_info, time(NULL)),
+                  time_zone_info_get_offset(self->options->recv_time_zone_info, time(NULL)),
                   self->options->default_pri);
   
   if (!m->saddr && self->peer_addr)
@@ -669,8 +669,8 @@ log_reader_options_defaults(LogReaderOptions *options)
   options->follow_freq = -1; 
   options->bad_hostname = NULL;
   options->text_encoding = NULL;
-  options->time_zone_string = NULL;
-  options->time_zone_info = NULL;
+  options->recv_time_zone = NULL;
+  options->recv_time_zone_info = NULL;
   options->default_pri = 0xFFFF;
   if (configuration && configuration->version < 0x0300)
     {
@@ -710,14 +710,14 @@ log_reader_options_defaults(LogReaderOptions *options)
 void
 log_reader_options_init(LogReaderOptions *options, GlobalConfig *cfg, const gchar *group_name)
 {
-  gchar *time_zone_string;
-  TimeZoneInfo *time_zone_info;
+  gchar *recv_time_zone;
+  TimeZoneInfo *recv_time_zone_info;
   gchar *host_override, *program_override, *text_encoding;
 
-  time_zone_string = options->time_zone_string;
-  options->time_zone_string = NULL;
-  time_zone_info = options->time_zone_info;
-  options->time_zone_info = NULL;
+  recv_time_zone = options->recv_time_zone;
+  options->recv_time_zone = NULL;
+  recv_time_zone_info = options->recv_time_zone_info;
+  options->recv_time_zone_info = NULL;
   text_encoding = options->text_encoding;
   options->text_encoding = NULL;
 
@@ -735,8 +735,8 @@ log_reader_options_init(LogReaderOptions *options, GlobalConfig *cfg, const gcha
   options->super.host_override = host_override;
   options->super.program_override = program_override;
   
-  options->time_zone_string = time_zone_string;
-  options->time_zone_info = time_zone_info;
+  options->recv_time_zone = recv_time_zone;
+  options->recv_time_zone_info = recv_time_zone_info;
   options->text_encoding = text_encoding;
 
   log_source_options_init(&options->super, cfg, group_name);
@@ -751,10 +751,10 @@ log_reader_options_init(LogReaderOptions *options, GlobalConfig *cfg, const gcha
     options->check_hostname = cfg->check_hostname;
   if (cfg->bad_hostname_compiled)
     options->bad_hostname = &cfg->bad_hostname;
-  if (options->time_zone_string == NULL)
-    options->time_zone_string = g_strdup(cfg->recv_time_zone_string);
-  if (options->time_zone_info == NULL)
-    options->time_zone_info = time_zone_info_new(options->time_zone_string);
+  if (options->recv_time_zone == NULL)
+    options->recv_time_zone = g_strdup(cfg->recv_time_zone);
+  if (options->recv_time_zone_info == NULL)
+    options->recv_time_zone_info = time_zone_info_new(options->recv_time_zone);
   if (options->default_pri == 0xFFFF)
     {
       if (options->options & LRO_KERNEL)
@@ -773,15 +773,15 @@ log_reader_options_destroy(LogReaderOptions *options)
       g_free(options->text_encoding);
       options->text_encoding = NULL;
     }
-  if (options->time_zone_string)
+  if (options->recv_time_zone)
     {
-      g_free(options->time_zone_string);
-      options->time_zone_string = NULL;
+      g_free(options->recv_time_zone);
+      options->recv_time_zone = NULL;
     }
-  if (options->time_zone_info)
+  if (options->recv_time_zone_info)
     {
-      time_zone_info_free(options->time_zone_info);
-      options->time_zone_info = NULL;
+      time_zone_info_free(options->recv_time_zone_info);
+      options->recv_time_zone_info = NULL;
     }
 }
 
