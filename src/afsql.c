@@ -65,6 +65,7 @@ typedef struct _AFSqlDestDriver
   gchar *password;
   gchar *database;
   gchar *encoding;
+  gboolean uses_default_columns:1, uses_default_values:1, uses_default_indexes:1;
   GList *columns;
   GList *values;
   GList *indexes;
@@ -168,6 +169,7 @@ afsql_dd_set_columns(LogDriver *s, GList *columns)
   
   string_list_free(self->columns);
   self->columns = columns;
+  self->uses_default_columns = FALSE;
 }
 
 void 
@@ -177,6 +179,7 @@ afsql_dd_set_indexes(LogDriver *s, GList *indexes)
   
   string_list_free(self->indexes);
   self->indexes = indexes;
+  self->uses_default_indexes = FALSE;
 }
 
 void 
@@ -186,6 +189,7 @@ afsql_dd_set_values(LogDriver *s, GList *values)
   
   string_list_free(self->values);
   self->values = values;
+  self->uses_default_values = FALSE;
 }
 
 void 
@@ -707,6 +711,12 @@ afsql_dd_init(LogPipe *s)
    * db_thread_wakeup_cond is not signaled as no new messages enter the
    * queue).
    */
+
+  if (self->uses_default_columns || self->uses_default_indexes || self->uses_default_values)
+    {
+      msg_warning("WARNING: You are using the default values for columns(), indexes() or values(), "
+                  "please specify these explicitly as the default will be dropped in the future", NULL);
+    }
   
   if (db_thread_max_sleep_time == -1 || (cfg->time_reopen * 1000 / 2) < db_thread_max_sleep_time)
     db_thread_max_sleep_time = ((cfg->time_reopen * 1000) + 1) / 2;
@@ -935,6 +945,9 @@ afsql_dd_new()
   self->columns = string_array_to_list(default_columns);
   self->values = string_array_to_list(default_values);
   self->indexes = string_array_to_list(default_indexes);
+  self->uses_default_columns = TRUE;
+  self->uses_default_values = TRUE;
+  self->uses_default_indexes = TRUE;
   self->mem_fifo_size = 1000;
   self->disk_fifo_size = 0;
   self->time_zone_string = NULL;
