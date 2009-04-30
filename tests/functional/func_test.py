@@ -12,6 +12,13 @@ padding = 'x' * 250
 session_counter = 0
 need_to_flush = False
 port_number = os.getpid() % 30000 + 33000
+ssl_port_number = port_number + 1
+
+current_dir = os.getcwd()
+try:
+    src_dir = os.environ["srcdir"]
+except KeyError:
+    src_dir = current_dir
 
 syslog_prefix = "2004-09-07T10:43:21+01:00 bzorp prog:"
 
@@ -59,7 +66,7 @@ class MessageSender(object):
 
 
 class SocketSender(MessageSender):
-    def __init__(self, family, sock_name, dgram=0, send_by_bytes=0, terminate_seq='\n', repeat=100):
+    def __init__(self, family, sock_name, dgram=0, send_by_bytes=0, terminate_seq='\n', repeat=100, ssl=0):
         MessageSender.__init__(self, repeat)
         self.family = family
         self.sock_name = sock_name
@@ -67,6 +74,7 @@ class SocketSender(MessageSender):
         self.dgram = dgram
         self.send_by_bytes = send_by_bytes
         self.terminate_seq = terminate_seq
+        self.ssl = ssl
         
     def initSender(self):
         if self.dgram:
@@ -79,6 +87,8 @@ class SocketSender(MessageSender):
                 self.sock.send('')
         if sys.platform == 'linux2':
                 self.sock.setsockopt(SOL_SOCKET, SO_SNDTIMEO, struct.pack('ll', 3, 0))
+        if not self.dgram and self.ssl:
+                self.sock = ssl(self.sock)
 
 
     def sendMessage(self, msg):
@@ -86,7 +96,10 @@ class SocketSender(MessageSender):
         if self.send_by_bytes:
             for c in line:
                 try:
-                    self.sock.send(c)
+                    if self.ssl:
+                        self.sock.write(c)
+                    else:
+                        self.sock.send(c)
                 except error, e:
                     if e[0] == errno.ENOBUFS:
                         print_user('got ENOBUFS, sleeping...')
@@ -100,7 +113,12 @@ class SocketSender(MessageSender):
             while repeat:
                 try:
                     repeat = False
-                    self.sock.send(line)
+
+                    # WTF? SSLObject only has write, whereas sockets only have send methods
+                    if self.ssl:
+                        self.sock.write(line)
+                    else:
+                        self.sock.send(line)
                     
                     if self.dgram:
                         time.sleep(0.01)
@@ -122,8 +140,10 @@ class SocketSender(MessageSender):
         else:
             if self.dgram:
                 return 'udp(%s)' % (self.sock_name,)
-            else:
+            elif not self.ssl:
                 return 'tcp(%s)' % (self.sock_name,)
+            else:
+                return 'tls(%s)' % (self.sock_name,)
 
 
 class FileSender(MessageSender):
@@ -348,6 +368,7 @@ options { ts_format(iso); chain_hostnames(no); keep_hostname(yes); };
 source s_int { internal(); };
 source s_unix { unix-stream("log-stream"); unix-dgram("log-dgram");  };
 source s_inet { tcp(port(%(port_number)d)); udp(port(%(port_number)d) so_rcvbuf(131072)); };
+source s_inetssl { tcp(port(%(ssl_port_number)d) tls(peer-verify(none) cert-file("%(src_dir)s/ssl.crt") key-file("%(src_dir)s/ssl.key"))); };
 source s_pipe { pipe("log-pipe"); pipe("log-padded-pipe" pad_size(2048)); };
 source s_file { file("log-file"); };
 source s_catchall { unix-stream("log-stream-catchall"); };
@@ -355,7 +376,7 @@ source s_catchall { unix-stream("log-stream-catchall"); };
 filter f_input1 { message("input_drivers"); };
 destination d_input1 { file("test-input1.log"); logstore("test-input1.lgs"); };
 
-log { source(s_int); source(s_unix); source(s_inet); source(s_pipe); source(s_file);
+log { source(s_int); source(s_unix); source(s_inet); source(s_inetssl); source(s_pipe); source(s_file);
         log { filter(f_input1); destination(d_input1); };
 };
 
@@ -366,7 +387,7 @@ destination d_indep2 { file("test-indep2.log"); logstore("test-indep2.lgs"); };
 filter f_indep { message("indep_pipes"); };
 
 # test independent log pipes
-log { source(s_int); source(s_unix); source(s_inet); filter(f_indep);
+log { source(s_int); source(s_unix); source(s_inet); source(s_inetssl); filter(f_indep);
         log { destination(d_indep1); };
         log { destination(d_indep2); };
 };
@@ -384,7 +405,7 @@ destination d_final4 { file("test-final4.log"); logstore("test-final4.lgs"); };
 
 
 # test final flag + rest
-log { source(s_int); source(s_unix); source(s_inet);  filter(f_final);
+log { source(s_int); source(s_unix); source(s_inet); source(s_inetssl);  filter(f_final);
         log { filter(f_final1); destination(d_final1); flags(final); };
         log { filter(f_final2); destination(d_final2); flags(final); };
         log { filter(f_final3); destination(d_final3); flags(final); };
@@ -402,7 +423,7 @@ destination d_fb3 { file("test-fb3.log"); logstore("test-fb3.lgs"); };
 destination d_fb4 { file("test-fb4.log"); logstore("test-fb4.lgs"); };
 
 # test fallback flag
-log { source(s_int); source(s_unix); source(s_inet); filter(f_fb);
+log { source(s_int); source(s_unix); source(s_inet); source(s_inetssl); filter(f_fb);
         log { destination(d_fb4); flags(fallback); };
         log { filter(f_fb1); destination(d_fb1); };
         log { filter(f_fb2); destination(d_fb2); };
@@ -431,6 +452,8 @@ def test_input_drivers():
         SocketSender(AF_INET, ('localhost', port_number), dgram=1, terminate_seq='\0\n'),
         SocketSender(AF_INET, ('localhost', port_number), dgram=0),
         SocketSender(AF_INET, ('localhost', port_number), dgram=0, send_by_bytes=1),
+        SocketSender(AF_INET, ('localhost', ssl_port_number), dgram=0, ssl=1),
+        SocketSender(AF_INET, ('localhost', ssl_port_number), dgram=0, send_by_bytes=1, ssl=1),
         FileSender('log-pipe'),
         FileSender('log-pipe', send_by_bytes=1),
         FileSender('log-padded-pipe', padding=2048),
