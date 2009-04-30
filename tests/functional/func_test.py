@@ -223,7 +223,7 @@ def is_premium():
 def start_syslogng(conf, keep_persist=False, verbose=False):
     global syslogng_pid
     
-    os.system('rm -f test-*.log test-*.lgs wildcard/* log-file')
+    os.system('rm -f test-*.log test-*.lgs test-*.db wildcard/* log-file')
     if not keep_persist:
         os.system('rm -f syslog-ng.persist')
 
@@ -734,16 +734,48 @@ def test_performance():
     # we expect to be able to process at least 1000 msgs/sec even on our venerable HP-UX
     return rate > 1000
 
+sql_conf = """@version: 3.0
+
+options { use_dns(no); };
+
+source s_int { internal(); };
+source s_tcp { tcp(port(%(port_number)d)); };
+
+destination d_sql {
+    sql(type(sqlite3) database("%(current_dir)s/test-sql.db") host(dummy) port(1234) username(dummy) password(dummy)
+        table("logs")
+        null("@NULL@")
+        columns("date datetime", "host", "program", "pid", "msg")
+        values("$DATE", "$HOST", "$PROGRAM", "${PID:-@NULL@}", "$MSG")
+        indexes("date", "host", "program"));
+};
+
+log { source(s_tcp); destination(d_sql); };
+
+""" % locals()
+
+def test_sql():
+    s = SocketSender(AF_INET, ('localhost', port_number), dgram=0)
+
+    expected = s.sendMessages("sql1", pri=7)
+    flush_files(settle_time=3)
+    expected = s.sendMessages("sql2", pri=7)
+    return True
+
+
 tests = (
-  (performance_conf, (
-     test_performance,
-  )),
   (drvtest_conf, (
      test_input_drivers,
      test_catchall,
      test_fallback,
      test_final,
      test_indep
+  )),
+  (sql_conf, (
+     test_sql,
+  )),
+  (performance_conf, (
+     test_performance,
   )),
   (filter_conf, (
     test_facility_single,
