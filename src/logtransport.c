@@ -31,11 +31,13 @@
 void
 log_transport_free_method(LogTransport *s)
 {
-  if ((s->flags & LTF_DONTCLOSE) == 0)
+  if (((s->flags & LTF_DONTCLOSE) == 0) && s->fd != -1)
     {
       msg_verbose("Closing log transport fd",
                   evt_tag_int("fd", s->fd),
                   NULL);
+      if (s->flags & LTF_SHUTDOWN)
+        shutdown(s->fd, SHUT_RDWR);
       close(s->fd);
     }
 }

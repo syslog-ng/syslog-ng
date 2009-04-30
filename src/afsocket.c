@@ -857,9 +857,11 @@ afsocket_dd_connected(AFSocketDestDriver *self)
   socklen_t errorlen = sizeof(error);
   LogTransport *transport;
   LogProto *proto;
+  guint32 transport_flags = 0;
 
   if (self->flags & AFSOCKET_STREAM)
     {
+      transport_flags |= LTF_SHUTDOWN;
       if (getsockopt(self->fd, SOL_SOCKET, SO_ERROR, &error, &errorlen) == -1)
         {
           msg_error("getsockopt(SOL_SOCKET, SO_ERROR) failed for connecting socket",
@@ -908,11 +910,11 @@ afsocket_dd_connected(AFSocketDestDriver *self)
         }
         
       tls_session_set_verify(tls_session, afsocket_dd_tls_verify_callback, self, NULL);
-      transport = log_transport_tls_new(tls_session, self->fd, 0);
+      transport = log_transport_tls_new(tls_session, self->fd, transport_flags);
     }
   else
 #endif
-    transport = log_transport_plain_new(self->fd, 0);
+    transport = log_transport_plain_new(self->fd, transport_flags);
 
   if (self->flags & AFSOCKET_SYSLOG_PROTOCOL)
     proto = log_proto_framed_new_client(transport);

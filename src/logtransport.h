@@ -31,6 +31,7 @@
 #define LTF_FSYNC     0x0002
 #define LTF_APPEND    0x0004
 #define LTF_RECV      0x0008
+#define LTF_SHUTDOWN  0x0010
 
 
 typedef struct _LogTransport LogTransport;
