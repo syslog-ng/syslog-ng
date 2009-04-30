@@ -11,6 +11,7 @@ wildcard_file_source_supported = False
 padding = 'x' * 250
 session_counter = 0
 need_to_flush = False
+port_number = os.getpid() % 30000 + 33000
 
 syslog_prefix = "2004-09-07T10:43:21+01:00 bzorp prog:"
 
@@ -346,7 +347,7 @@ options { ts_format(iso); chain_hostnames(no); keep_hostname(yes); };
 
 source s_int { internal(); };
 source s_unix { unix-stream("log-stream"); unix-dgram("log-dgram");  };
-source s_inet { tcp(port(2000)); udp(port(2000) so_rcvbuf(131072)); };
+source s_inet { tcp(port(%(port_number)d)); udp(port(%(port_number)d) so_rcvbuf(131072)); };
 source s_pipe { pipe("log-pipe"); pipe("log-padded-pipe" pad_size(2048)); };
 source s_file { file("log-file"); };
 source s_catchall { unix-stream("log-stream-catchall"); };
@@ -414,7 +415,7 @@ filter f_catchall { message("catchall"); };
 destination d_catchall { file("test-catchall.log"); logstore("test-catchall.lgs"); };
 
 log { filter(f_catchall); destination(d_catchall); flags(catch-all); };
-"""
+""" % locals()
 
 def test_input_drivers():
     message = 'input_drivers';
@@ -425,11 +426,11 @@ def test_input_drivers():
         SocketSender(AF_UNIX, 'log-dgram', dgram=1, terminate_seq='\0\n'),
         SocketSender(AF_UNIX, 'log-stream', dgram=0),
         SocketSender(AF_UNIX, 'log-stream', dgram=0, send_by_bytes=1),
-        SocketSender(AF_INET, ('localhost', 2000), dgram=1),
-        SocketSender(AF_INET, ('localhost', 2000), dgram=1, terminate_seq='\0'),
-        SocketSender(AF_INET, ('localhost', 2000), dgram=1, terminate_seq='\0\n'),
-        SocketSender(AF_INET, ('localhost', 2000), dgram=0),
-        SocketSender(AF_INET, ('localhost', 2000), dgram=0, send_by_bytes=1),
+        SocketSender(AF_INET, ('localhost', port_number), dgram=1),
+        SocketSender(AF_INET, ('localhost', port_number), dgram=1, terminate_seq='\0'),
+        SocketSender(AF_INET, ('localhost', port_number), dgram=1, terminate_seq='\0\n'),
+        SocketSender(AF_INET, ('localhost', port_number), dgram=0),
+        SocketSender(AF_INET, ('localhost', port_number), dgram=0, send_by_bytes=1),
         FileSender('log-pipe'),
         FileSender('log-pipe', send_by_bytes=1),
         FileSender('log-padded-pipe', padding=2048),
@@ -503,11 +504,11 @@ def test_catchall():
         SocketSender(AF_UNIX, 'log-dgram', dgram=1, terminate_seq='\0\n'),
         SocketSender(AF_UNIX, 'log-stream', dgram=0),
         SocketSender(AF_UNIX, 'log-stream', dgram=0, send_by_bytes=1),
-        SocketSender(AF_INET, ('localhost', 2000), dgram=1),
-        SocketSender(AF_INET, ('localhost', 2000), dgram=1, terminate_seq='\0'),
-        SocketSender(AF_INET, ('localhost', 2000), dgram=1, terminate_seq='\0\n'),
-        SocketSender(AF_INET, ('localhost', 2000), dgram=0),
-        SocketSender(AF_INET, ('localhost', 2000), dgram=0, send_by_bytes=1),
+        SocketSender(AF_INET, ('localhost', port_number), dgram=1),
+        SocketSender(AF_INET, ('localhost', port_number), dgram=1, terminate_seq='\0'),
+        SocketSender(AF_INET, ('localhost', port_number), dgram=1, terminate_seq='\0\n'),
+        SocketSender(AF_INET, ('localhost', port_number), dgram=0),
+        SocketSender(AF_INET, ('localhost', port_number), dgram=0, send_by_bytes=1),
         FileSender('log-pipe'),
         FileSender('log-pipe', send_by_bytes=1),
         FileSender('log-padded-pipe', padding=2048),
@@ -565,7 +566,7 @@ log { source(s_unix);
     log { filter(f_level4); destination(d_level4); };
 };
 
-"""
+""" % locals()
 
 def test_facility_single():
     messages = (
@@ -649,7 +650,7 @@ destination d_wildcard { file("test-wildcard.log"); logstore("test-wildcard.lgs"
 
 log { source(s_wildcard); destination(d_wildcard); };
 
-"""
+""" % locals()
 
 def test_wildcard_files():
     messages = (
