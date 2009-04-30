@@ -1,4 +1,4 @@
 
-SUBDIRS = unit functional loggen
+SUBDIRS = unit loggen functional
 
 TESTS = collect-cov.sh
