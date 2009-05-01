@@ -224,6 +224,7 @@ static struct keyword keywords[] = {
         { "match",		KW_MATCH },
         { "netmask",		KW_NETMASK },
         { "type",               KW_TYPE },
+        { "tags",               KW_TAGS },
 
 	/* on/off switches */
 	{ "yes",		KW_YES },

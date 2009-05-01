@@ -3,6 +3,7 @@
 #include "tags.h"
 #include "logmsg.h"
 #include "messages.h"
+#include "filter.h"
 
 #include <stdio.h>
 #include <sys/time.h>
@@ -121,6 +122,39 @@ test_msg_tags()
   log_msg_unref(msg);
 }
 
+void
+test_filters(void)
+{
+  LogMessage *msg = log_msg_new_empty();
+  FilterExprNode *f = filter_tags_new(NULL);
+  guint i;
+  GList *l = NULL;
+
+  test_msg("=== filter tests ===\n");
+
+  for (i = 1; i < FILTER_TAGS; i += 3)
+    l = g_list_prepend(l, get_tag_by_id(i));
+
+  filter_tags_add(f, l);
+
+  for (i = 0; i < FILTER_TAGS; i++)
+    {
+      test_msg("Testing filter, message has tag %d\n", i);
+      log_msg_set_tag_by_id(msg, i);
+
+      if (((i % 3 == 1) ^ filter_expr_eval(f, msg)))
+        test_fail("Failed to match message by tag %d\n", i);
+
+      test_msg("Testing filter, message no tag\n");
+      log_msg_clear_tag_by_id(msg, i);
+      if (filter_expr_eval(f, msg))
+        test_fail("Failed to match message with no tags\n");
+    }
+
+  filter_expr_free(f);
+  log_msg_unref(msg);
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -133,6 +167,7 @@ main(int argc, char *argv[])
   
   test_tags();
   test_msg_tags();
+  test_filters();
 
   app_shutdown();
   return  (fail ? 1 : 0);

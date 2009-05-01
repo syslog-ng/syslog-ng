@@ -166,7 +166,7 @@ cfg_check_template(LogTemplate *template)
 %token KW_USE_TIME_RECVD
 
 /* filter items*/
-%token KW_FACILITY KW_LEVEL KW_HOST KW_MATCH KW_MESSAGE KW_NETMASK
+%token KW_FACILITY KW_LEVEL KW_HOST KW_MATCH KW_MESSAGE KW_NETMASK KW_TAGS
 
 /* parser items */
 %token KW_CSV_PARSER KW_VALUE KW_DB_PARSER
@@ -1210,6 +1210,7 @@ filter_simple_expr
 	| KW_LEVEL '(' filter_level_list ')' 	{ $$ = filter_level_new($3); }
 	| KW_FILTER '(' string ')'		{ $$ = filter_call_new($3, configuration); free($3); }
 	| KW_NETMASK '(' string ')'		{ $$ = filter_netmask_new($3); free($3); }
+    | KW_TAGS '(' string_list ')'   { $$ = filter_tags_new($3); }
 	| KW_PROGRAM '(' string
 	  { 
 	    last_re_filter = (FilterRE *) filter_re_new(LOG_MESSAGE_BUILTIN_FIELD(PROGRAM)); 

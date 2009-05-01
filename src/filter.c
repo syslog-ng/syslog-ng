@@ -28,6 +28,7 @@
 #include "logprocess.h"
 #include "gsocket.h"
 #include "misc.h"
+#include "tags.h"
 
 #include <regex.h>
 #include <string.h>
@@ -418,6 +419,64 @@ filter_netmask_new(gchar *cidr)
   self->address.s_addr &= self->netmask.s_addr;
   self->super.eval = filter_netmask_eval;
   return &self->super;
+}
+
+typedef struct _FilterTags
+{
+  FilterExprNode super;
+  GArray *tags;
+} FilterTags;
+
+static gboolean
+filter_tags_eval(FilterExprNode *s, LogMessage *msg)
+{
+  FilterTags *self = (FilterTags *)s;
+  gint i;
+
+  for (i = 0; i < self->tags->len; i++)
+    if (log_msg_is_tag_by_id(msg, g_array_index(self->tags, guint, i)))
+      return TRUE;
+
+  return FALSE;
+}
+
+static void
+filter_tags_free(FilterExprNode *s)
+{
+  FilterTags *self = (FilterTags *)s;
+
+  g_array_free(self->tags, TRUE);
+
+  g_free(self);
+}
+
+FilterExprNode *
+filter_tags_new(GList *tags)
+{
+  FilterTags *self = g_new0(FilterTags, 1);
+
+  self->tags = g_array_new(FALSE, FALSE, sizeof(guint));
+
+  filter_tags_add(self, tags);
+
+  self->super.eval = filter_tags_eval;
+  self->super.free_fn = filter_tags_free;
+  return &self->super;
+}
+
+void
+filter_tags_add(FilterExprNode *s, GList *tags)
+{
+  FilterTags *self = (FilterTags *)s;
+  guint id;
+  
+  while (tags)
+    {
+      id = log_tags_get_by_name((gchar *) tags->data);
+      g_free(tags->data);
+      tags = g_list_delete_link(tags, tags);
+      g_array_append_val(self->tags, id);
+    }
 }
 
 static void

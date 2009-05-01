@@ -55,6 +55,7 @@ typedef struct _FilterRE
 void filter_re_set_matcher(FilterRE *self, LogMatcher *matcher);
 gboolean filter_re_set_regexp(FilterRE *self, gchar *re);
 void filter_re_set_flags(FilterRE *self, gint flags);
+void filter_tags_add(FilterExprNode *s, GList *tags);
 
 /* various constructors */
 
@@ -67,6 +68,7 @@ FilterExprNode *filter_call_new(gchar *rule, struct _GlobalConfig *cfg);
 FilterExprNode *filter_netmask_new(gchar *cidr);
 FilterExprNode *filter_re_new(const gchar *value_name);
 FilterExprNode *filter_match_new(void);
+FilterExprNode *filter_tags_new(GList *tags);
 
 LogProcessRule *log_filter_rule_new(const gchar *name, FilterExprNode *expr);
 
