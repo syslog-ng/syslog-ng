@@ -1,0 +1,89 @@
+# syslog-ng process control
+
+import os, sys, signal, traceback, time, errno, re
+
+from globals import *
+from log import *
+import messagegen
+
+syslogng_pid = 0
+
+
+def start_syslogng(conf, keep_persist=False, verbose=False):
+    global syslogng_pid
+
+    os.system('rm -f test-*.log test-*.lgs test-*.db wildcard/* log-file')
+    if not keep_persist:
+        os.system('rm -f syslog-ng.persist')
+
+    if not logstore_store_supported:
+        conf = re.sub('logstore\(.*\);', '', conf)
+
+    f = open('test.conf', 'w')
+    f.write(conf)
+    f.close()
+
+    if verbose:
+        verbose_opt = '-edv'
+    else:
+        verbose_opt = '-e'
+
+    syslogng_pid = os.fork()
+    if syslogng_pid == 0:
+        rc = os.execl('../../src/syslog-ng', '../../src/syslog-ng', '-f', 'test.conf', '--fd-limit', '1024', '-F', verbose_opt, '-p', 'syslog-ng.pid', '-R', 'syslog-ng.persist', '--no-caps', '--enable-core')
+        sys.exit(rc)
+    time.sleep(3)
+    return True
+
+def stop_syslogng():
+    global syslogng_pid
+
+    if syslogng_pid == 0:
+        return True
+
+    try:
+        os.kill(syslogng_pid, signal.SIGTERM)
+    except OSError:
+        pass
+    try:
+        try:
+            (pid, rc) = os.waitpid(syslogng_pid, 0)
+        except OSError:
+            raise
+    finally:
+        syslogng_pid = 0
+    if rc == 0:
+        return True
+    print_user("syslog-ng exited with a non-zero value")
+    return False
+
+def flush_files(settle_time=1):
+    global syslogng_pid
+
+    if syslogng_pid == 0 or not messagegen.need_to_flush:
+        return True
+
+    print_user("waiting for syslog-ng to settle down before SIGHUP (%d secs)" % settle_time)
+    # allow syslog-ng to settle
+    time.sleep(settle_time)
+
+    # sendMessages waits between etaps, so we assume that syslog-ng has
+    # already received/processed everything we've sent to it. Go ahead send
+    # a HUP signal.
+    try:
+        print_user("Sending syslog-ng the HUP signal (pid: %d)" % syslogng_pid)
+        os.kill(syslogng_pid, signal.SIGHUP)
+    except OSError:
+        print_user("Error sending HUP signal to syslog-ng")
+        raise
+    # allow syslog-ng to perform config reload & file flush
+    print_user("waiting for syslog-ng to process SIGHUP (%d secs)" % 1)
+    time.sleep(1)
+    messagegen.need_to_flush = False
+
+
+def readpidfile(pidfile):
+    f = open(pidfile, 'r')
+    pid = f.read()
+    f.close()
+    return int(pid.strip())
