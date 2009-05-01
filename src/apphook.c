@@ -27,6 +27,7 @@
 #include "dnscache.h"
 #include "alarms.h"
 #include "stats.h"
+#include "tags.h"
 #include <time.h>
 
 typedef struct _ApplicationHookEntry
@@ -103,6 +104,7 @@ app_startup(void)
   alarm_init();
   stats_init();
   tzset();
+  log_tags_init();
 }
 
 void
@@ -131,6 +133,7 @@ app_shutdown(void)
   dns_cache_destroy();
   child_manager_deinit();
   msg_deinit();
+  log_tags_deinit();
   g_list_free(application_hooks);
 }
 

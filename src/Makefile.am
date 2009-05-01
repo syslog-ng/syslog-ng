@@ -32,6 +32,7 @@ libsyslog_ng_a_SOURCES = \
 	logpatterns.c logpatterns.h \
 	cfg-lex.l cfg-grammar.y \
 	timeutils.c timeutils.h \
+	tags.c tags.h \
 	alarms.c alarms.h \
 	logparser.c logparser.h \
 	logprocess.c logprocess.h \
