@@ -279,6 +279,8 @@ log_reader_handle_line(LogReader *self, const guchar *line, gint length, GSockAd
     for (i = 0; i < self->options->tags->len; i++)
       log_msg_set_tag_by_id(m, g_array_index(self->options->tags, guint, i));
 
+  log_msg_set_tag_by_id(m, self->super.options->source_group_tag);
+
   log_pipe_queue(&self->super.super, m, &path_options);
   return log_source_free_to_send(&self->super);
 }

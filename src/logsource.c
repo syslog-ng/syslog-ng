@@ -26,6 +26,7 @@
 #include "misc.h"
 #include "timeutils.h"
 #include "stats.h"
+#include "tags.h"
 
 static void
 log_source_msg_ack(LogMessage *msg, gpointer user_data)
@@ -256,6 +257,7 @@ void
 log_source_options_init(LogSourceOptions *options, GlobalConfig *cfg, const gchar *group_name)
 {
   gchar *host_override, *program_override;
+  gchar *source_group_name;
   
   host_override = options->host_override;
   options->host_override = NULL;
@@ -285,6 +287,10 @@ log_source_options_init(LogSourceOptions *options, GlobalConfig *cfg, const gcha
   if (options->keep_timestamp == -1)
     options->keep_timestamp = cfg->keep_timestamp;
   options->group_name = group_name;
+
+  source_group_name = g_strdup_printf(".source.%s", group_name);
+  options->source_group_tag = log_tags_get_by_name(source_group_name);
+  g_free(source_group_name);
 }
 
 void
