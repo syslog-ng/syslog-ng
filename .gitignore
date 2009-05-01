@@ -19,3 +19,4 @@ stamp-h.in
 stamp-h
 ylwrap
 .*.swp
+*.pyc
