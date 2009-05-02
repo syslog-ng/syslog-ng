@@ -32,30 +32,7 @@ import test_input_drivers
 import test_performance
 import test_sql
 
-tests = (test_file_source, test_filters, test_input_drivers, test_performance, test_sql)
-
-#tests = (
-#  (drvtest_conf, (
-#     test_input_drivers,
-#     test_catchall,
-#     test_fallback,
-#     test_final,
-#     test_indep
-#  )),
-#  (sql_conf, (
-#     test_sql,
-#  )),
-#  (performance_conf, (
-#     test_performance,
-#  )),
-#  (filter_conf, (
-#    test_facility_single,
-#    test_facility_multi,
-#    test_level_single,
-#    test_level_multi)),
-#  (wildcard_conf, (
-#    test_wildcard_files,)),
-#)
+tests = (test_input_drivers, test_sql, test_file_source, test_filters, test_performance)
 
 init_env()
 
@@ -67,7 +44,9 @@ if len(sys.argv) > 1:
     verbose = True
 try:
     for test_module in tests:
-        for obj in dir(test_module):
+        contents = dir(test_module)
+        contents.sort()
+        for obj in contents:
             if obj[:5] != 'test_':
                 continue
             test_case = getattr(test_module, obj)
