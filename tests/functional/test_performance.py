@@ -5,7 +5,7 @@ from messagecheck import *
 
 config = """@version: 3.0
 
-options { use_dns(no); };
+options { ts_format(iso); chain_hostnames(no); keep_hostname(yes); };
 
 source s_int { internal(); };
 source s_tcp { tcp(port(%(port_number)d)); };
