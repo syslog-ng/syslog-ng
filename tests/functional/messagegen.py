@@ -4,7 +4,7 @@ import os, sys
 
 from log import *
 
-syslog_prefix = "2004-09-07T10:43:21+01:00 bzorp prog:"
+syslog_prefix = "2004-09-07T10:43:21+01:00 bzorp prog[12345]:"
 session_counter = 0
 need_to_flush = False
 padding = 'x' * 250
@@ -27,7 +27,7 @@ class MessageSender(object):
         expected = []
 
         for counter in range(1, self.repeat):
-            line = '<%d>%s %s %d/%d %s %s' % (pri, syslog_prefix, msg, session_counter, counter, str(self), padding)
+            line = '<%d>%s %s %03d/%05d %s %s' % (pri, syslog_prefix, msg, session_counter, counter, str(self), padding)
             self.sendMessage(line)
         expected.append((msg, session_counter, self.repeat))
         session_counter = session_counter + 1
