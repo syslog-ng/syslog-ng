@@ -2,11 +2,11 @@ from globals import *
 from log import *
 from messagegen import *
 from messagecheck import *
-from control import flush_files
+from control import flush_files, stop_syslogng
 
 config = """@version: 3.0
 
-options { use_dns(no); };
+options { ts_format(iso); chain_hostnames(no); keep_hostname(yes); };
 
 source s_int { internal(); };
 source s_tcp { tcp(port(%(port_number)d)); };
@@ -25,9 +25,15 @@ log { source(s_tcp); destination(d_sql); };
 """ % locals()
 
 def test_sql():
+    messages = (
+        'sql1',
+        'sql2'
+    )
     s = SocketSender(AF_INET, ('localhost', port_number), dgram=0)
 
-    expected = s.sendMessages("sql1", pri=7)
-    flush_files(settle_time=3)
-    expected = s.sendMessages("sql2", pri=7)
-    return True
+    expected = []
+    for msg in messages:
+        expected.extend(s.sendMessages(msg, pri=7))
+    time.sleep(5)
+    stop_syslogng()
+    return check_sql_expected("%s/test-sql.db" % current_dir, "logs", expected, settle_time=5, syslog_prefix="Sep  7 10:43:21 bzorp prog 12345")
