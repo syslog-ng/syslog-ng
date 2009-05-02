@@ -76,17 +76,17 @@ try:
 
             if not start_syslogng(test_module.config, verbose):
                 sys.exit(1)
-            print_user("Syslog-ng started")
 
             print_user("Starting test case...")
             if not test_case():
                 print_end(test_name, False)
                 success = False
+                sys.exit(1)
 
             if not stop_syslogng():
                 sys.exit(1)
-            print_user("syslog-ng stopped")
-            print_end(test_name, True)
+            if success:
+                print_end(test_name, True)
 finally:
     stop_syslogng()
 

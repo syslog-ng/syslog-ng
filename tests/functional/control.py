@@ -33,6 +33,7 @@ def start_syslogng(conf, keep_persist=False, verbose=False):
         rc = os.execl('../../src/syslog-ng', '../../src/syslog-ng', '-f', 'test.conf', '--fd-limit', '1024', '-F', verbose_opt, '-p', 'syslog-ng.pid', '-R', 'syslog-ng.persist', '--no-caps', '--enable-core')
         sys.exit(rc)
     time.sleep(3)
+    print_user("Syslog-ng started")
     return True
 
 def stop_syslogng():
@@ -52,6 +53,7 @@ def stop_syslogng():
             raise
     finally:
         syslogng_pid = 0
+    print_user("syslog-ng stopped")
     if rc == 0:
         return True
     print_user("syslog-ng exited with a non-zero value")
