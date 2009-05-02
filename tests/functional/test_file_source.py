@@ -41,6 +41,6 @@ def test_wildcard_files():
     # to read the contents for all 4 files (1 sec to discover there are
     # messages)
 
-    if not check_expected('test-wildcard', expected, settle_time=12):
+    if not check_file_expected('test-wildcard', expected, settle_time=12):
         return False
     return True

@@ -65,7 +65,7 @@ def test_facility_single():
         expected[ndx].extend(s.sendMessages(messages[ndx][1], pri=messages[ndx][0]))
 
     for ndx in range(0, len(messages)):
-        if not check_expected('test-facility%d' % (ndx + 1,), expected[ndx]):
+        if not check_file_expected('test-facility%d' % (ndx + 1,), expected[ndx]):
             return False
     return True
 
@@ -81,7 +81,7 @@ def test_facility_multi():
     for ndx in range(0, len(messages)):
         expected.extend(s.sendMessages(messages[ndx][1], pri=messages[ndx][0]))
 
-    if not check_expected('test-facility4', expected):
+    if not check_file_expected('test-facility4', expected):
         return False
     return True
 
@@ -101,7 +101,7 @@ def test_level_single():
         expected[ndx].extend(s.sendMessages(messages[ndx][1], pri=messages[ndx][0]))
 
     for ndx in range(0, len(messages)):
-        if not check_expected('test-level%d' % (ndx + 1,), expected[ndx]):
+        if not check_file_expected('test-level%d' % (ndx + 1,), expected[ndx]):
             return False
     return True
 
@@ -117,6 +117,6 @@ def test_level_multi():
     for ndx in range(0, len(messages)):
         expected.extend(s.sendMessages(messages[ndx][1], pri=messages[ndx][0]))
 
-    if not check_expected('test-level4', expected):
+    if not check_file_expected('test-level4', expected):
         return False
     return True

@@ -109,7 +109,7 @@ def test_input_drivers():
     for s in senders:
         expected.extend(s.sendMessages(message))
 
-    return check_expected("test-input1", expected, settle_time=6);
+    return check_file_expected("test-input1", expected, settle_time=6);
 
 
 def test_indep():
@@ -117,7 +117,7 @@ def test_indep():
 
     s = SocketSender(AF_UNIX, 'log-stream', dgram=0, repeat=10)
     expected = s.sendMessages(message)
-    return check_expected("test-indep1", expected) and check_expected("test-indep2", expected)
+    return check_file_expected("test-indep1", expected) and check_file_expected("test-indep2", expected)
 
 def test_final():
     messages = (
@@ -135,7 +135,7 @@ def test_final():
         expected[ndx].extend(s.sendMessages(messages[ndx]))
 
     for ndx in range(0, len(messages)):
-        if not check_expected('test-final%d' % (ndx + 1,), expected[ndx]):
+        if not check_file_expected('test-final%d' % (ndx + 1,), expected[ndx]):
             return False
     return True
 
@@ -155,7 +155,7 @@ def test_fallback():
         expected[ndx].extend(s.sendMessages(messages[ndx]))
 
     for ndx in range(0, len(messages)):
-        if not check_expected('test-fb%d' % (ndx + 1,), expected[ndx]):
+        if not check_file_expected('test-fb%d' % (ndx + 1,), expected[ndx]):
             return False
     return True
 
@@ -185,5 +185,5 @@ def test_catchall():
     for s in senders:
         expected.extend(s.sendMessages(message))
 
-    return check_expected("test-catchall", expected);
+    return check_file_expected("test-catchall", expected);
 
