@@ -184,11 +184,11 @@ cfg_check_template(LogTemplate *template)
 %token KW_IFDEF
 %token KW_ENDIF
 
-%token  DOTDOT
-%token	<cptr> IDENTIFIER
-%token	<num>  NUMBER
-%token	<fnum> FLOAT
-%token	<cptr> STRING
+%token  LL_DOTDOT
+%token	<cptr> LL_IDENTIFIER
+%token	<num>  LL_NUMBER
+%token	<fnum> LL_FLOAT
+%token	<cptr> LL_STRING
 
 %left	KW_OR
 %left	KW_AND
@@ -431,16 +431,16 @@ template_item
 	;
 
 socket_option
-	: KW_SO_SNDBUF '(' NUMBER ')'           { last_sock_options->sndbuf = $3; }
-	| KW_SO_RCVBUF '(' NUMBER ')'           { last_sock_options->rcvbuf = $3; }
+	: KW_SO_SNDBUF '(' LL_NUMBER ')'           { last_sock_options->sndbuf = $3; }
+	| KW_SO_RCVBUF '(' LL_NUMBER ')'           { last_sock_options->rcvbuf = $3; }
 	| KW_SO_BROADCAST '(' yesno ')'         { last_sock_options->broadcast = $3; }
 	| KW_SO_KEEPALIVE '(' yesno ')'         { last_sock_options->keepalive = $3; }
 	;
 
 inet_socket_option
 	: socket_option
-	| KW_IP_TTL '(' NUMBER ')'              { ((InetSocketOptions *) last_sock_options)->ttl = $3; }
-	| KW_IP_TOS '(' NUMBER ')'              { ((InetSocketOptions *) last_sock_options)->tos = $3; }
+	| KW_IP_TTL '(' LL_NUMBER ')'              { ((InetSocketOptions *) last_sock_options)->ttl = $3; }
+	| KW_IP_TOS '(' LL_NUMBER ')'              { ((InetSocketOptions *) last_sock_options)->tos = $3; }
 	;
 
 source_items
@@ -535,7 +535,7 @@ source_afunix_options
 source_afunix_option
 	: KW_OWNER '(' string_or_number ')'	{ afunix_sd_set_uid(last_driver, $3); free($3); }
 	| KW_GROUP '(' string_or_number ')'	{ afunix_sd_set_gid(last_driver, $3); free($3); }
-	| KW_PERM '(' NUMBER ')'		{ afunix_sd_set_perm(last_driver, $3); }
+	| KW_PERM '(' LL_NUMBER ')'		{ afunix_sd_set_perm(last_driver, $3); }
 	| KW_OPTIONAL '(' yesno ')'		{ last_driver->optional = $3; }
 	| source_afsocket_stream_params		{}
 	| source_reader_option			{}
@@ -610,7 +610,7 @@ source_afinet_tcp_option
 
 source_afsocket_stream_params
 	: KW_KEEP_ALIVE '(' yesno ')'		{ afsocket_sd_set_keep_alive(last_driver, $3); }
-	| KW_MAX_CONNECTIONS '(' NUMBER ')'	{ afsocket_sd_set_max_connections(last_driver, $3); }
+	| KW_MAX_CONNECTIONS '(' LL_NUMBER ')'	{ afsocket_sd_set_max_connections(last_driver, $3); }
 	;
 
 source_afsyslog	
@@ -711,7 +711,7 @@ source_reader_options
 	;
 	
 source_reader_option
-	: KW_LOG_IW_SIZE '(' NUMBER ')'		{ last_reader_options->super.init_window_size = $3; }
+	: KW_LOG_IW_SIZE '(' LL_NUMBER ')'		{ last_reader_options->super.init_window_size = $3; }
 	| KW_CHAIN_HOSTNAMES '(' yesno ')'	{ last_reader_options->super.chain_hostnames = $3; }
 	| KW_NORMALIZE_HOSTNAMES '(' yesno ')'	{ last_reader_options->super.normalize_hostnames = $3; }
 	| KW_KEEP_HOSTNAME '(' yesno ')'	{ last_reader_options->super.keep_hostname = $3; }
@@ -724,11 +724,11 @@ source_reader_option
 	| KW_TIME_ZONE '(' string ')'		{ last_reader_options->recv_time_zone = g_strdup($3); free($3); }
 	| KW_CHECK_HOSTNAME '(' yesno ')'	{ last_reader_options->check_hostname = $3; }
 	| KW_FLAGS '(' source_reader_option_flags ')' { last_reader_options->options = $3; }
-	| KW_LOG_MSG_SIZE '(' NUMBER ')'	{ last_reader_options->msg_size = $3; }
-	| KW_LOG_FETCH_LIMIT '(' NUMBER ')'	{ last_reader_options->fetch_limit = $3; }
-	| KW_PAD_SIZE '(' NUMBER ')'		{ last_reader_options->padding = $3; }
-	| KW_FOLLOW_FREQ '(' FLOAT ')'		{ last_reader_options->follow_freq = (long) ($3 * 1000); }
-	| KW_FOLLOW_FREQ '(' NUMBER ')'		{ last_reader_options->follow_freq = ($3 * 1000); }
+	| KW_LOG_MSG_SIZE '(' LL_NUMBER ')'	{ last_reader_options->msg_size = $3; }
+	| KW_LOG_FETCH_LIMIT '(' LL_NUMBER ')'	{ last_reader_options->fetch_limit = $3; }
+	| KW_PAD_SIZE '(' LL_NUMBER ')'		{ last_reader_options->padding = $3; }
+	| KW_FOLLOW_FREQ '(' LL_FLOAT ')'		{ last_reader_options->follow_freq = (long) ($3 * 1000); }
+	| KW_FOLLOW_FREQ '(' LL_NUMBER ')'		{ last_reader_options->follow_freq = ($3 * 1000); }
 	| KW_KEEP_TIMESTAMP '(' yesno ')'	{ last_reader_options->super.keep_timestamp = $3; }
         | KW_ENCODING '(' string ')'		{ last_reader_options->text_encoding = g_strdup($3); free($3); }
 	| KW_DEFAULT_LEVEL '(' level_string ')'
@@ -793,12 +793,12 @@ dest_affile_option
 	| KW_OPTIONAL '(' yesno ')'		{ last_driver->optional = $3; }
 	| KW_OWNER '(' string_or_number ')'	{ affile_dd_set_file_uid(last_driver, $3); free($3); }
 	| KW_GROUP '(' string_or_number ')'	{ affile_dd_set_file_gid(last_driver, $3); free($3); }
-	| KW_PERM '(' NUMBER ')'		{ affile_dd_set_file_perm(last_driver, $3); }
+	| KW_PERM '(' LL_NUMBER ')'		{ affile_dd_set_file_perm(last_driver, $3); }
 	| KW_DIR_OWNER '(' string_or_number ')'	{ affile_dd_set_dir_uid(last_driver, $3); free($3); }
 	| KW_DIR_GROUP '(' string_or_number ')'	{ affile_dd_set_dir_gid(last_driver, $3); free($3); }
-	| KW_DIR_PERM '(' NUMBER ')'		{ affile_dd_set_dir_perm(last_driver, $3); }
+	| KW_DIR_PERM '(' LL_NUMBER ')'		{ affile_dd_set_dir_perm(last_driver, $3); }
 	| KW_CREATE_DIRS '(' yesno ')'		{ affile_dd_set_create_dirs(last_driver, $3); }
-	| KW_OVERWRITE_IF_OLDER '(' NUMBER ')'	{ affile_dd_set_overwrite_if_older(last_driver, $3); }
+	| KW_OVERWRITE_IF_OLDER '(' LL_NUMBER ')'	{ affile_dd_set_overwrite_if_older(last_driver, $3); }
 	| KW_FSYNC '(' yesno ')'		{ affile_dd_set_fsync(last_driver, $3); }
 	| KW_LOCAL_TIME_ZONE '(' string ')'     { affile_dd_set_local_time_zone(last_driver, $3); free($3); }
 	;
@@ -827,7 +827,7 @@ dest_afpipe_option
 	: dest_writer_option
 	| KW_OWNER '(' string_or_number ')'	{ affile_dd_set_file_uid(last_driver, $3); free($3); }
 	| KW_GROUP '(' string_or_number ')'	{ affile_dd_set_file_gid(last_driver, $3); free($3); }
-	| KW_PERM '(' NUMBER ')'		{ affile_dd_set_file_perm(last_driver, $3); }
+	| KW_PERM '(' LL_NUMBER ')'		{ affile_dd_set_file_perm(last_driver, $3); }
 	;
 
 dest_afsocket
@@ -1040,9 +1040,9 @@ dest_afsql_option
         | KW_COLUMNS '(' string_list ')'	{ afsql_dd_set_columns(last_driver, $3); }
         | KW_INDEXES '(' string_list ')'        { afsql_dd_set_indexes(last_driver, $3); }
         | KW_VALUES '(' string_list ')'		{ afsql_dd_set_values(last_driver, $3); }
-	| KW_LOG_FIFO_SIZE '(' NUMBER ')'	{ afsql_dd_set_mem_fifo_size(last_driver, $3); }
-	| KW_LOG_DISK_FIFO_SIZE '(' NUMBER ')'	{ afsql_dd_set_disk_fifo_size(last_driver, $3); }
-        | KW_FRAC_DIGITS '(' NUMBER ')'         { afsql_dd_set_frac_digits(last_driver, $3); }
+	| KW_LOG_FIFO_SIZE '(' LL_NUMBER ')'	{ afsql_dd_set_mem_fifo_size(last_driver, $3); }
+	| KW_LOG_DISK_FIFO_SIZE '(' LL_NUMBER ')'	{ afsql_dd_set_disk_fifo_size(last_driver, $3); }
+        | KW_FRAC_DIGITS '(' LL_NUMBER ')'         { afsql_dd_set_frac_digits(last_driver, $3); }
 	| KW_TIME_ZONE '(' string ')'           { afsql_dd_set_send_time_zone(last_driver,$3); free($3); }
 	| KW_LOCAL_TIME_ZONE '(' string ')'     { afsql_dd_set_local_time_zone(last_driver,$3); free($3); }
         | KW_NULL '(' string ')'                { afsql_dd_set_null_value(last_driver, $3); free($3); }
@@ -1061,10 +1061,10 @@ dest_writer_options
 	
 dest_writer_option
 	: KW_FLAGS '(' dest_writer_options_flags ')' { last_writer_options->options = $3; }
-	| KW_LOG_FIFO_SIZE '(' NUMBER ')'	{ last_writer_options->mem_fifo_size = $3; }
-	| KW_FLUSH_LINES '(' NUMBER ')'		{ last_writer_options->flush_lines = $3; }
-	| KW_FLUSH_TIMEOUT '(' NUMBER ')'	{ last_writer_options->flush_timeout = $3; }
-        | KW_SUPPRESS '(' NUMBER ')'            { last_writer_options->suppress = $3; }
+	| KW_LOG_FIFO_SIZE '(' LL_NUMBER ')'	{ last_writer_options->mem_fifo_size = $3; }
+	| KW_FLUSH_LINES '(' LL_NUMBER ')'		{ last_writer_options->flush_lines = $3; }
+	| KW_FLUSH_TIMEOUT '(' LL_NUMBER ')'	{ last_writer_options->flush_timeout = $3; }
+        | KW_SUPPRESS '(' LL_NUMBER ')'            { last_writer_options->suppress = $3; }
 	| KW_TEMPLATE '(' string ')'       	{ 
 	                                          last_writer_options->template = cfg_check_inline_template(configuration, $3);
                                                   if (!cfg_check_template(last_writer_options->template))
@@ -1076,8 +1076,8 @@ dest_writer_option
 	| KW_TEMPLATE_ESCAPE '(' yesno ')'	{ log_writer_options_set_template_escape(last_writer_options, $3); }
 	| KW_TIME_ZONE '(' string ')'           { last_writer_options->send_time_zone = g_strdup($3); free($3); }
 	| KW_TS_FORMAT '(' string ')'		{ last_writer_options->ts_format = cfg_ts_format_value($3); free($3); }
-	| KW_FRAC_DIGITS '(' NUMBER ')'		{ last_writer_options->frac_digits = $3; }
-	| KW_THROTTLE '(' NUMBER ')'            { last_writer_options->throttle = $3; }
+	| KW_FRAC_DIGITS '(' LL_NUMBER ')'		{ last_writer_options->frac_digits = $3; }
+	| KW_THROTTLE '(' LL_NUMBER ')'            { last_writer_options->throttle = $3; }
 	;
 
 dest_writer_options_flags
@@ -1092,22 +1092,22 @@ options_items
 	;
 
 options_item
-	: KW_MARK_FREQ '(' NUMBER ')'		{ configuration->mark_freq = $3; }
-	| KW_STATS_FREQ '(' NUMBER ')'          { configuration->stats_freq = $3; }
-	| KW_STATS_LEVEL '(' NUMBER ')'         { configuration->stats_level = $3; }
-	| KW_FLUSH_LINES '(' NUMBER ')'		{ configuration->flush_lines = $3; }
-	| KW_FLUSH_TIMEOUT '(' NUMBER ')'	{ configuration->flush_timeout = $3; }
+	: KW_MARK_FREQ '(' LL_NUMBER ')'		{ configuration->mark_freq = $3; }
+	| KW_STATS_FREQ '(' LL_NUMBER ')'          { configuration->stats_freq = $3; }
+	| KW_STATS_LEVEL '(' LL_NUMBER ')'         { configuration->stats_level = $3; }
+	| KW_FLUSH_LINES '(' LL_NUMBER ')'		{ configuration->flush_lines = $3; }
+	| KW_FLUSH_TIMEOUT '(' LL_NUMBER ')'	{ configuration->flush_timeout = $3; }
 	| KW_CHAIN_HOSTNAMES '(' yesno ')'	{ configuration->chain_hostnames = $3; }
 	| KW_NORMALIZE_HOSTNAMES '(' yesno ')'	{ configuration->normalize_hostnames = $3; }
 	| KW_KEEP_HOSTNAME '(' yesno ')'	{ configuration->keep_hostname = $3; }
 	| KW_CHECK_HOSTNAME '(' yesno ')'	{ configuration->check_hostname = $3; }
-	| KW_BAD_HOSTNAME '(' STRING ')'	{ cfg_bad_hostname_set(configuration, $3); free($3); }
+	| KW_BAD_HOSTNAME '(' LL_STRING ')'	{ cfg_bad_hostname_set(configuration, $3); free($3); }
 	| KW_USE_TIME_RECVD '(' yesno ')'	{ configuration->use_time_recvd = $3; }
 	| KW_USE_FQDN '(' yesno ')'		{ configuration->use_fqdn = $3; }
 	| KW_USE_DNS '(' dnsmode ')'		{ configuration->use_dns = $3; }
-	| KW_TIME_REOPEN '(' NUMBER ')'		{ configuration->time_reopen = $3; }
-	| KW_TIME_REAP '(' NUMBER ')'		{ configuration->time_reap = $3; }
-	| KW_TIME_SLEEP '(' NUMBER ')'		
+	| KW_TIME_REOPEN '(' LL_NUMBER ')'		{ configuration->time_reopen = $3; }
+	| KW_TIME_REAP '(' LL_NUMBER ')'		{ configuration->time_reap = $3; }
+	| KW_TIME_SLEEP '(' LL_NUMBER ')'		
 		{ 
 		  configuration->time_sleep = $3; 
 		  if ($3 > 500) 
@@ -1116,26 +1116,26 @@ options_item
 		      configuration->time_sleep = 500;
 		    }
 		}
-	| KW_LOG_FIFO_SIZE '(' NUMBER ')'	{ configuration->log_fifo_size = $3; }
-	| KW_LOG_IW_SIZE '(' NUMBER ')'		{ configuration->log_iw_size = $3; }
-	| KW_LOG_FETCH_LIMIT '(' NUMBER ')'	{ configuration->log_fetch_limit = $3; }
-	| KW_LOG_MSG_SIZE '(' NUMBER ')'	{ configuration->log_msg_size = $3; }
+	| KW_LOG_FIFO_SIZE '(' LL_NUMBER ')'	{ configuration->log_fifo_size = $3; }
+	| KW_LOG_IW_SIZE '(' LL_NUMBER ')'		{ configuration->log_iw_size = $3; }
+	| KW_LOG_FETCH_LIMIT '(' LL_NUMBER ')'	{ configuration->log_fetch_limit = $3; }
+	| KW_LOG_MSG_SIZE '(' LL_NUMBER ')'	{ configuration->log_msg_size = $3; }
 	| KW_KEEP_TIMESTAMP '(' yesno ')'	{ configuration->keep_timestamp = $3; }
 	| KW_TS_FORMAT '(' string ')'		{ configuration->ts_format = cfg_ts_format_value($3); free($3); }
-	| KW_FRAC_DIGITS '(' NUMBER ')'		{ configuration->frac_digits = $3; }
-	| KW_GC_BUSY_THRESHOLD '(' NUMBER ')' 	{ /* ignored */; }
-	| KW_GC_IDLE_THRESHOLD '(' NUMBER ')'	{ /* ignored */; }
+	| KW_FRAC_DIGITS '(' LL_NUMBER ')'		{ configuration->frac_digits = $3; }
+	| KW_GC_BUSY_THRESHOLD '(' LL_NUMBER ')' 	{ /* ignored */; }
+	| KW_GC_IDLE_THRESHOLD '(' LL_NUMBER ')'	{ /* ignored */; }
 	| KW_CREATE_DIRS '(' yesno ')'		{ configuration->create_dirs = $3; }
 	| KW_OWNER '(' string_or_number ')'	{ cfg_file_owner_set(configuration, $3); free($3); }
 	| KW_GROUP '(' string_or_number ')'	{ cfg_file_group_set(configuration, $3); free($3); }
-	| KW_PERM '(' NUMBER ')'		{ cfg_file_perm_set(configuration, $3); }
+	| KW_PERM '(' LL_NUMBER ')'		{ cfg_file_perm_set(configuration, $3); }
 	| KW_DIR_OWNER '(' string_or_number ')'	{ cfg_dir_owner_set(configuration, $3); free($3); }
 	| KW_DIR_GROUP '(' string_or_number ')'	{ cfg_dir_group_set(configuration, $3); free($3); }
-	| KW_DIR_PERM '(' NUMBER ')'		{ cfg_dir_perm_set(configuration, $3); }
+	| KW_DIR_PERM '(' LL_NUMBER ')'		{ cfg_dir_perm_set(configuration, $3); }
 	| KW_DNS_CACHE '(' yesno ')' 		{ configuration->use_dns_cache = $3; }
-	| KW_DNS_CACHE_SIZE '(' NUMBER ')'	{ configuration->dns_cache_size = $3; }
-	| KW_DNS_CACHE_EXPIRE '(' NUMBER ')'	{ configuration->dns_cache_expire = $3; }
-	| KW_DNS_CACHE_EXPIRE_FAILED '(' NUMBER ')'
+	| KW_DNS_CACHE_SIZE '(' LL_NUMBER ')'	{ configuration->dns_cache_size = $3; }
+	| KW_DNS_CACHE_EXPIRE '(' LL_NUMBER ')'	{ configuration->dns_cache_expire = $3; }
+	| KW_DNS_CACHE_EXPIRE_FAILED '(' LL_NUMBER ')'
 	  			{ configuration->dns_cache_expire_failed = $3; }
 	| KW_DNS_CACHE_HOSTS '(' string ')'     { configuration->dns_cache_hosts = g_strdup($3); free($3); }
 	| KW_FILE_TEMPLATE '(' string ')'	{ configuration->file_template_name = g_strdup($3); free($3); }
@@ -1206,7 +1206,7 @@ filter_expr
 
 filter_simple_expr
 	: KW_FACILITY '(' filter_fac_list ')'	{ $$ = filter_facility_new($3);  }
-	| KW_FACILITY '(' NUMBER ')'		{ $$ = filter_facility_new(0x80000000 | $3); }
+	| KW_FACILITY '(' LL_NUMBER ')'		{ $$ = filter_facility_new(0x80000000 | $3); }
 	| KW_LEVEL '(' filter_level_list ')' 	{ $$ = filter_level_new($3); }
 	| KW_FILTER '(' string ')'		{ $$ = filter_call_new($3, configuration); free($3); }
 	| KW_NETMASK '(' string ')'		{ $$ = filter_netmask_new($3); free($3); }
@@ -1323,7 +1323,7 @@ filter_level_list
 	;
 
 filter_level
-	: level_string DOTDOT level_string
+	: level_string LL_DOTDOT level_string
 	  { 
 	    $$ = syslog_make_range($1, $3);
 	  }
@@ -1450,7 +1450,7 @@ rewrite_expr_opt
 yesno
 	: KW_YES				{ $$ = 1; }
 	| KW_NO					{ $$ = 0; }
-	| NUMBER				{ $$ = $1; }
+	| LL_NUMBER				{ $$ = $1; }
 	;
 
 dnsmode
@@ -1459,8 +1459,8 @@ dnsmode
 	;
 
 string
-	: IDENTIFIER
-	| STRING
+	: LL_IDENTIFIER
+	| LL_STRING
 	| reserved_words_as_strings             { $$ = cfg_lex_get_keyword_string($1); }
 	;
 
@@ -1494,7 +1494,7 @@ reserved_words_as_strings
 
 string_or_number
         : string                                { $$ = $1; }
-        | NUMBER                                { char buf[32]; snprintf(buf, sizeof(buf), "%" G_GINT64_FORMAT, $1); $$ = strdup(buf); }
+        | LL_NUMBER                                { char buf[32]; snprintf(buf, sizeof(buf), "%" G_GINT64_FORMAT, $1); $$ = strdup(buf); }
         ;
 
 string_list

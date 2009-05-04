@@ -275,11 +275,11 @@ word	[^ \#'"\(\)\{\}\\;\n\t,|\.]
 \#.*$                      ;
 \r?\n			   { include_stack[include_depth].linenum++; }
 {white}+		   ;
-\.\.                       { return DOTDOT; }
-(-|\+)?{digit}+\.{digit}+  { yylval.fnum = strtod(yytext, NULL); return FLOAT; }
-0x{digit}+ 		   { yylval.num = strtoll(yytext, NULL, 16); return NUMBER; }
-0{digit}+		   { yylval.num = strtoll(yytext, NULL, 8); return NUMBER; }
-(-|\+)?{digit}+            { yylval.num = strtoll(yytext, NULL, 10); return NUMBER; }
+\.\.                       { return LL_DOTDOT; }
+(-|\+)?{digit}+\.{digit}+  { yylval.fnum = strtod(yytext, NULL); return LL_FLOAT; }
+0x{digit}+ 		   { yylval.num = strtoll(yytext, NULL, 16); return LL_NUMBER; }
+0{digit}+		   { yylval.num = strtoll(yytext, NULL, 8); return LL_NUMBER; }
+(-|\+)?{digit}+            { yylval.num = strtoll(yytext, NULL, 10); return LL_NUMBER; }
 ({word}+(\.)?)*{word}+ 	   { return check_reserved_words(yytext); }
 \(	      		   { return '('; }
 \)			   { return ')'; }
@@ -310,14 +310,14 @@ word	[^ \#'"\(\)\{\}\\;\n\t,|\.]
 				BEGIN(INITIAL);
 				/* yy_pop_state();*/
 				yylval.cptr = strdup(buf);
-				return STRING; 
+				return LL_STRING; 
 		           }
 <string>[^"\\]+		   { append_string(strlen(yytext), yytext); }
 <qstring>[^']+		   { append_string(strlen(yytext), yytext); }
 <qstring>\'		   { 
 				BEGIN(INITIAL);
 				yylval.cptr = strdup(buf);
-				return STRING;
+				return LL_STRING;
 			   }
 
 
@@ -363,7 +363,7 @@ check_reserved_words(char *token)
         }
     }
   yylval.cptr = strdup(token);
-  return IDENTIFIER;
+  return LL_IDENTIFIER;
 }
 
 
