@@ -102,10 +102,7 @@ affile_open_file(gchar *name, gint flags,
         fchmod(*fd, mode);
     }
  exit:
-  if (privileged)
-    {
-      g_process_cap_restore(saved_caps);
-    }
+  g_process_cap_restore(saved_caps);
   msg_trace("affile_open_file",
             evt_tag_str("path", name),
             evt_tag_int("fd",*fd),
