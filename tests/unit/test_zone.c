@@ -10,14 +10,9 @@ void
 set_tz(const char *tz)
 {
   static char envbuf[64];
-  static int first = 1;
 
   snprintf(envbuf, sizeof(envbuf), "TZ=%s", tz);
-  if (first)
-    {
-      putenv(envbuf);
-      first = 0;
-    }
+  putenv(envbuf);
   tzset();
   clean_time_cache();
 }
