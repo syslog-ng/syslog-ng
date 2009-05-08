@@ -1,6 +1,6 @@
 import struct, stat, re
 from socket import *
-import os, sys
+import os, sys, errno
 
 from log import *
 

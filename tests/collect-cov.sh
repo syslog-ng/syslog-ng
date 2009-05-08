@@ -1,7 +1,12 @@
 #!/bin/sh
 cd ../src
 
-for i in `ls *.gcda`; do
+GCDATA="`ls *.gcda 2>/dev/null`"
+if [ -z "$GCDATA" ]; then
+    echo "syslog-ng was not compiled with coverage information, unable to collect them"
+    exit 0
+fi
+for i in $GCDATA; do
     cfile=`basename $i .gcda`.c;
     gcov $cfile  | grep ^Lines | tail -1 | sed -e "s/^Lines executed:/$cfile,/g" -e 's/ of /,/g' -e 's/%//g';
 done | awk -F , '

@@ -25,6 +25,11 @@ log { source(s_tcp); destination(d_sql); };
 """ % locals()
 
 def test_sql():
+
+    if os.path.isfile("/usr/bin/sqlite3") or os.path.isfile("/usr/local/bin/sqlite3"):
+        print_user("no sqlite3 tool, skipping SQL test")
+        return True
+
     messages = (
         'sql1',
         'sql2'

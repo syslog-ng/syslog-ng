@@ -30,7 +30,8 @@ def start_syslogng(conf, keep_persist=False, verbose=False):
 
     syslogng_pid = os.fork()
     if syslogng_pid == 0:
-        rc = os.execl('../../src/syslog-ng', '../../src/syslog-ng', '-f', 'test.conf', '--fd-limit', '1024', '-F', verbose_opt, '-p', 'syslog-ng.pid', '-R', 'syslog-ng.persist', '--no-caps', '--enable-core')
+        os.putenv("RANDFILE", "rnd")
+        rc = os.execl('../../src/syslog-ng', '../../src/syslog-ng', '-f', 'test.conf', '--fd-limit', '1024', '-F', verbose_opt, '-p', 'syslog-ng.pid', '-R', 'syslog-ng.persist', '--no-caps', '--enable-core', '--seed')
         sys.exit(rc)
     time.sleep(3)
     print_user("Syslog-ng started")
@@ -59,7 +60,7 @@ def stop_syslogng():
     print_user("syslog-ng exited with a non-zero value")
     return False
 
-def flush_files(settle_time=1):
+def flush_files(settle_time=3):
     global syslogng_pid
 
     if syslogng_pid == 0 or not messagegen.need_to_flush:
@@ -79,8 +80,8 @@ def flush_files(settle_time=1):
         print_user("Error sending HUP signal to syslog-ng")
         raise
     # allow syslog-ng to perform config reload & file flush
-    print_user("waiting for syslog-ng to process SIGHUP (%d secs)" % 1)
-    time.sleep(1)
+    print_user("waiting for syslog-ng to process SIGHUP (%d secs)" % 2)
+    time.sleep(2)
     messagegen.need_to_flush = False
 
 
