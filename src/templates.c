@@ -396,7 +396,7 @@ log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, TimeZo
 #if ENABLE_IPV6
             g_sockaddr_inet6_check(msg->saddr))
 #else
-            0
+            0)
 #endif
            )
           {
