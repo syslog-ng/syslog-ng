@@ -392,7 +392,13 @@ log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, TimeZo
       {
         gchar *ip;
 
-        if (msg->saddr && (g_sockaddr_inet_check(msg->saddr) || g_sockaddr_inet6_check(msg->saddr)))
+        if (msg->saddr && (g_sockaddr_inet_check(msg->saddr) ||
+#if ENABLE_IPV6
+            g_sockaddr_inet6_check(msg->saddr))
+#else
+            0
+#endif
+           )
           {
             gchar buf[MAX_SOCKADDR_STRING];
 
