@@ -62,6 +62,8 @@ typedef struct _RParserNode
   void (*free_state)(gpointer state);
 } RParserNode;
 
+typedef gchar *(*RNodeGetValueFunc) (gpointer value);
+
 typedef struct _RNode RNode;
 
 struct _RNode
@@ -80,7 +82,7 @@ struct _RNode
 
 RNode *r_new_node(gchar *key, gpointer value);
 void r_free_node(RNode *node, void (*free_fn)(gpointer data));
-void r_insert_node(RNode *root, gchar *key, gpointer value, gboolean parser);
+void r_insert_node(RNode *root, gchar *key, gpointer value, gboolean parser, RNodeGetValueFunc value_func);
 RNode *r_find_node(RNode *root, gchar *whole_key, gchar *key, gint keylen, GArray *matches, GPtrArray *match_names);
 
 #endif

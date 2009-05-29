@@ -70,6 +70,17 @@ log_db_result_unref(void *s)
     }
 }
 
+static gchar *
+log_db_result_name(gpointer s)
+{
+  LogDBResult *self = (LogDBResult *) s;
+
+  if (self)
+    return self->rule_id;
+  else
+    return NULL;
+}
+
 
 /*
  * Database based parser. The patterns are stored in an XML database.
@@ -239,7 +250,7 @@ log_classifier_xml_text(GMarkupParseContext *context, const gchar *text, gsize t
       r_insert_node(state->current_program ? state->current_program->rules : state->root_program->rules,
                     txt,
                     log_db_result_ref(state->current_result),
-                    TRUE);
+                    TRUE, log_db_result_name);
     }
   else if (state->in_ruleset)
     {
@@ -254,7 +265,7 @@ log_classifier_xml_text(GMarkupParseContext *context, const gchar *text, gsize t
           r_insert_node(state->db->programs,
                     txt,
                     state->current_program,
-                    TRUE);
+                    TRUE, NULL);
         }
     }
 

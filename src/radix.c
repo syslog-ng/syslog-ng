@@ -379,7 +379,7 @@ r_add_child(RNode *parent, RNode *child)
 }
 
 static inline void
-r_add_child_check(RNode *root, gchar *key, gpointer value, gboolean parser)
+r_add_child_check(RNode *root, gchar *key, gpointer value, gboolean parser, RNodeGetValueFunc value_func)
 {
   gchar *at;
 
@@ -396,12 +396,12 @@ r_add_child_check(RNode *root, gchar *key, gpointer value, gboolean parser)
 
           /* and insert the rest begining from @ under the newly created literal node */
           *at = '@';
-          r_insert_node(child, at, value, parser);
+          r_insert_node(child, at, value, parser, value_func);
         }
       else
         {
           /* @ is the first so let's insert it simply and let insert_node handle @ */
-          r_insert_node(root, key, value, parser);
+          r_insert_node(root, key, value, parser, value_func);
         }
     }
   else
@@ -473,7 +473,7 @@ r_find_child(RNode *root, char key)
 }
 
 void
-r_insert_node(RNode *root, gchar *key, gpointer value, gboolean parser)
+r_insert_node(RNode *root, gchar *key, gpointer value, gboolean parser, RNodeGetValueFunc value_func)
 {
   RNode *node;
   gint keylen = strlen(key);
@@ -505,12 +505,15 @@ r_insert_node(RNode *root, gchar *key, gpointer value, gboolean parser)
               if (!node->value)
                 node->value = value;
               else
-                msg_error("Duplicate key in parser radix tree", evt_tag_str("key", "@"), NULL);
+                msg_error("Duplicate key in parser radix tree",
+                    evt_tag_str("key", "@"),
+                    evt_tag_str("value", value_func ? value_func(value) : "unknown"),
+                    NULL);
             }
 
           /* go down building the tree if there is key left */
           if (keylen > 2)
-            r_insert_node(node, key + 2, value, parser);
+            r_insert_node(node, key + 2, value, parser, value_func);
 
         }
       else if ((keylen >= 2) && (end = strchr((const gchar *)key + 1, '@')) != NULL)
@@ -540,7 +543,7 @@ r_insert_node(RNode *root, gchar *key, gpointer value, gboolean parser)
               if ((end - key) < (keylen - 1))
                 {
                   /* the key is not over so go on building the tree */
-                  r_insert_node(node, end + 1, value, parser);
+                  r_insert_node(node, end + 1, value, parser, value_func);
                 }
               else
                 {
@@ -556,6 +559,7 @@ r_insert_node(RNode *root, gchar *key, gpointer value, gboolean parser)
                       msg_error("Duplicate parser node in radix tree",
                                 evt_tag_int("type", node->parser->type),
                                 evt_tag_str("name", (node->parser->name ? node->parser->name : "")),
+                                evt_tag_str("value", value_func ? value_func(value) : "unknown"),
                                 NULL);
                     }
                 }
@@ -563,7 +567,10 @@ r_insert_node(RNode *root, gchar *key, gpointer value, gboolean parser)
 
         }
       else
-        msg_error("Key contains '@' without escaping", evt_tag_str("key", key), NULL);
+        msg_error("Key contains '@' without escaping",
+                    evt_tag_str("key", key),
+                    evt_tag_str("value", value_func ? value_func(value) : "unknown"),
+                    NULL);
     }
   else
     {
@@ -589,13 +596,13 @@ r_insert_node(RNode *root, gchar *key, gpointer value, gboolean parser)
             {
               /* @ is always a singel node, and we also have an @ so insert us under root */
               if (parser && key[i] == '@')
-                r_insert_node(root, key + i, value, parser);
+                r_insert_node(root, key + i, value, parser, value_func);
               else
-                r_insert_node(node, key + i, value, parser);
+                r_insert_node(node, key + i, value, parser, value_func);
             }
           else
             {
-              r_add_child_check(root, key + i, value, parser);
+              r_add_child_check(root, key + i, value, parser, value_func);
             }
         }
       else if (i == keylen && i == nodelen)
@@ -605,7 +612,10 @@ r_insert_node(RNode *root, gchar *key, gpointer value, gboolean parser)
           if (!root->value)
             root->value = value;
           else
-            msg_error("Duplicate key in radix tree", evt_tag_str("key", key), NULL);
+            msg_error("Duplicate key in radix tree",
+                        evt_tag_str("key", key),
+                        evt_tag_str("value", value_func ? value_func(value) : "unknown"),
+                        NULL);
         }
       else if (i > 0 && i < nodelen)
         {
@@ -641,7 +651,7 @@ r_insert_node(RNode *root, gchar *key, gpointer value, gboolean parser)
           if (i < keylen)
             {
               /* we add a new sub tree */
-              r_add_child_check(root, key + i, value, parser); 
+              r_add_child_check(root, key + i, value, parser, value_func);
             }
           else
             {
@@ -652,7 +662,7 @@ r_insert_node(RNode *root, gchar *key, gpointer value, gboolean parser)
       else
         {
           /* simply a new children */
-          r_add_child_check(root, key + i, value, parser);
+          r_add_child_check(root, key + i, value, parser, value_func);
         }
     }
 }
