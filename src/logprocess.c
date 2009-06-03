@@ -70,7 +70,10 @@ log_process_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_o
   if (log_process_rule_process(self->rule, msg))
     {
       /* forward message */
-      log_pipe_queue(s->pipe_next, msg, path_options);
+      if (s->pipe_next)
+        log_pipe_queue(s->pipe_next, msg, path_options);
+      else
+        log_msg_drop(msg, path_options);
     }
   else
     {
