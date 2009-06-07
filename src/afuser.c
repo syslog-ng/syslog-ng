@@ -95,7 +95,7 @@ afuser_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
           else
             line[0] = 0;
           strncat(line, ut->ut_line, sizeof(line));
-          fd = open(line, O_NOCTTY | O_APPEND | O_WRONLY);
+          fd = open(line, O_NOCTTY | O_APPEND | O_WRONLY | O_NONBLOCK);
           if (fd != -1) 
             {
               alarm_set(10);
