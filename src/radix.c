@@ -88,6 +88,13 @@ r_parser_estring(gchar *str, gint *len, const gchar *param, gpointer state, LogM
 }
 
 gboolean
+r_parser_anystring(gchar *str, gint *len, const gchar *param, gpointer state, LogMessageMatch *match)
+{
+  *len = strlen(str);
+  return TRUE;
+}
+
+gboolean
 r_parser_ipv4(gchar *str, gint *len, const gchar *param, gpointer state, LogMessageMatch *match)
 {
   gint dots = 0;
@@ -178,6 +185,13 @@ r_new_pnode(gchar *key)
     {
       parser_node->parse = r_parser_estring;
       parser_node->type = RPT_ESTRING;
+      parser_node->mask = 0;
+      parser_node->first = 0;
+    }
+  else if (g_str_has_prefix(params[0], "ANYSTRING"))
+    {
+      parser_node->parse = r_parser_anystring;
+      parser_node->type = RPT_ANYSTRING;
       parser_node->mask = 0;
       parser_node->first = 0;
     }

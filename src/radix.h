@@ -27,14 +27,17 @@
 #include "logmsg.h"
 #include "messages.h"
 
-/* parser types */
+/* parser types, these are saved in the serialized log message along with
+ * the match information thus they have to remain the same in order to keep
+ * compatibility, thus add new stuff at the end */
 enum
 {
   RPT_STRING,
   RPT_QSTRING,
   RPT_ESTRING,
   RPT_IPV4,
-  RPT_NUMBER
+  RPT_NUMBER,
+  RPT_ANYSTRING,
 };
 
 typedef struct _RParserNode
