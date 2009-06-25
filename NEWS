@@ -1,3 +1,23 @@
+3.0.3
+        Thu, 25 Jun 2009 08:20:28 +0200
+
+        IMPORTANT CHANGES:
+        * There was an unintended change in the meaning of command line
+          argument -C (--chroot) and -R (--persist-file) between 2.x and 3.x
+          versions of syslog-ng. This release reverts this change back to
+          the original 2.x behaviour. This is a incompatible change
+          compared against 3.0.2. Please review your startup scripts if you
+          use either -C or -R.
+
+        Bugfixes:
+        * Fixed a compilation problem if IPv6 is disabled.
+        * Fixed a crash problem if a log statement has a filter but no
+          destinations.
+        * The usertty() driver was changed to open the terminal device in
+          nonblocking mode, as open on a serial device might block which
+          cause the syslog-ng process to hang.
+
+
 3.0.2
 	Thu, 07 May 2009 08:30:06 +0200
 
