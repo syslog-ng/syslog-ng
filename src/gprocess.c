@@ -1329,12 +1329,12 @@ static GOptionEntry g_process_option_entries[] =
   { "uid",            0,  G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_STRING,   &process_opts.user,              NULL, NULL },
   { "group",        'g',                     0, G_OPTION_ARG_STRING,   &process_opts.group,             "Set the group to run as", "<group>" },
   { "gid",            0,  G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_STRING,   &process_opts.group,             NULL, NULL },
-  { "chroot",       'R',                     0, G_OPTION_ARG_STRING,   &process_opts.chroot_dir,        "Chroot to this directory", "<dir>" },
-  { "caps",         'C',                     0, G_OPTION_ARG_STRING,   &process_opts.caps,              "Set default capability set", "<capspec>" },
-  { "no-caps",      'N', G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE,     &process_opts.caps,              "Disable managing Linux capabilities", NULL },
+  { "chroot",       'C',                     0, G_OPTION_ARG_STRING,   &process_opts.chroot_dir,        "Chroot to this directory", "<dir>" },
+  { "caps",           0,                     0, G_OPTION_ARG_STRING,   &process_opts.caps,              "Set default capability set", "<capspec>" },
+  { "no-caps",        0, G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE,     &process_opts.caps,              "Disable managing Linux capabilities", NULL },
   { "pidfile",      'p',                     0, G_OPTION_ARG_STRING,   &process_opts.pidfile,           "Set path to pid file", "<pidfile>" },
   { "enable-core",    0,                     0, G_OPTION_ARG_NONE,     &process_opts.core,              "Enable dumping core files", NULL },
-  { "fd-limit",       0,                  0, G_OPTION_ARG_INT,      &process_opts.fd_limit_min,      "The minimum required number of fds", NULL },
+  { "fd-limit",       0,                  0, G_OPTION_ARG_INT,      &process_opts.fd_limit_min,         "The minimum required number of fds", NULL },
   { NULL, 0, 0, 0, NULL, NULL, NULL },
 };
 
