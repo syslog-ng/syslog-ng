@@ -92,6 +92,10 @@ afunix_sd_new(gchar *filename, guint32 flags)
   AFUnixSourceDriver *self = g_new0(AFUnixSourceDriver, 1);
 
   afsocket_sd_init_instance(&self->super, &self->sock_options, flags);
+  if (self->super.flags & AFSOCKET_DGRAM)
+    self->super.transport = g_strdup("unix-dgram");
+  else if (self->super.flags & AFSOCKET_STREAM)
+    self->super.transport = g_strdup("unix-stream");
   self->super.max_connections = 256;
   self->super.bind_addr = g_sockaddr_unix_new(filename);
   self->super.super.super.init = afunix_sd_init;
@@ -109,6 +113,10 @@ afunix_dd_new(gchar *filename, guint flags)
   AFUnixDestDriver *self = g_new0(AFUnixDestDriver, 1);
   
   afsocket_dd_init_instance(&self->super, &self->sock_options, flags, NULL, NULL);
+  if (self->super.flags & AFSOCKET_DGRAM)
+    self->super.transport = g_strdup("unix-dgram");
+  else if (self->super.flags & AFSOCKET_STREAM)
+    self->super.transport = g_strdup("unix-stream");
   self->super.bind_addr = g_sockaddr_unix_new(NULL);
   self->super.dest_addr = g_sockaddr_unix_new(filename);
   return &self->super.super;
