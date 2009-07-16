@@ -36,29 +36,45 @@ log_db_result_new(gchar *class, gchar *rule_id)
 
   self->class = class;
   self->rule_id = rule_id;
+  self->ref_cnt = 1;
+
+  return self;
+}
+
+LogDBResult *
+log_db_result_ref(LogDBResult *self)
+{
+  g_assert(self->ref_cnt > 0);
+
+  self->ref_cnt++;
 
   return self;
 }
 
 static void
-log_db_result_free(void *s)
+log_db_result_unref(void *s)
 {
   LogDBResult *self = (LogDBResult *) s;
 
-  if (self->rule_id)
-    g_free(self->rule_id);
+  g_assert(self->ref_cnt > 0);
 
-  if (self->class)
-    g_free(self->class);
+  if (--(self->ref_cnt) == 0)
+    {
+      if (self->rule_id)
+        g_free(self->rule_id);
 
-  g_free(self);
+      if (self->class)
+        g_free(self->class);
+
+      g_free(self);
+    }
 }
 
 
 /*
  * Database based parser. The patterns are stored in an XML database.
  * Data structure is: 
- *   - Parser -> programs -> rules
+ *   - Parser -> programs -> rules -> patterns
  */
 
 /*
@@ -70,12 +86,11 @@ log_db_result_free(void *s)
 typedef struct _LogDBProgram
 {
   RNode *rules;
-  gchar *name;
 } LogDBProgram;
 
 
 LogDBProgram *
-log_db_program_new(const gchar *name)
+log_db_program_new(void)
 {
   LogDBProgram *self = g_new0(LogDBProgram, 1);
 
@@ -90,10 +105,7 @@ log_db_program_free(void *s)
   LogDBProgram *self = (LogDBProgram *) s;
 
   if (self->rules)
-    r_free_node(self->rules, log_db_result_free);
-
-  if (self->name)
-    g_free(self->name);
+    r_free_node(self->rules, log_db_result_unref);
 
   g_free(self);
 }
@@ -103,9 +115,11 @@ typedef struct _LogDBParserState
 {
   LogPatternDatabase *db;
   LogDBProgram *current_program;
-  gchar *current_class;
-  gchar *current_rule_id;
+  LogDBProgram *root_program;
+  LogDBResult *current_result;
   gboolean in_pattern;
+  gboolean in_ruleset;
+  gboolean in_rule;
 } LogDBParserState;
 
 void
@@ -113,31 +127,23 @@ log_classifier_xml_start_element(GMarkupParseContext *context, const gchar *elem
                                     const gchar **attribute_values, gpointer user_data, GError **error)
 {
   LogDBParserState *state = (LogDBParserState *) user_data;
+  gchar *current_class = NULL;
+  gchar *current_rule_id = NULL;
   gint i;
 
-  if (strcmp(element_name, "program") == 0)
+  if (strcmp(element_name, "ruleset") == 0)
     {
-      if (state->current_program)
+      if (state->in_ruleset)
         {
-          *error = g_error_new(1, 1, "Unexpected <program> element");
+          *error = g_error_new(1, 1, "Unexpected <ruleset> element");
           return;
         }
 
-      for (i = 0; attribute_names[i]; i++)
-        if (strcmp(attribute_names[i], "name") == 0)
-          break;
-
-      if (!attribute_values[i])
-        {
-          *error = g_error_new(1, 0, "No name attribute for program element");
-          return;
-        }
-
-      state->current_program = log_db_program_new(attribute_values[i]);
+      state->in_ruleset = TRUE;
     }
   else if (strcmp(element_name, "rule") == 0)
     {
-      if (!state->current_program)
+      if (state->in_rule)
         {
           *error = g_error_new(1, 0, "Unexpected <rule> element");
           return;
@@ -146,22 +152,24 @@ log_classifier_xml_start_element(GMarkupParseContext *context, const gchar *elem
       for (i = 0; attribute_names[i]; i++)
         {
           if (strcmp(attribute_names[i], "class") == 0)
-            state->current_class = g_strdup(attribute_values[i]);
+            current_class = g_strdup(attribute_values[i]);
           else if (strcmp(attribute_names[i], "id") == 0)
-            state->current_rule_id = g_strdup(attribute_values[i]);
+            current_rule_id = g_strdup(attribute_values[i]);
         }
 
-      if (!state->current_class)
+      if (!current_class)
         {
           *error = g_error_new(1, 0, "No class attribute for rule element");
           return;
         }
-      if (!state->current_rule_id)
+      if (!current_rule_id)
         {
           *error = g_error_new(1, 0, "No id attribute for rule element");
           return;
         }
 
+      state->in_rule = TRUE;
+      state->current_result = log_db_result_new(current_class, current_rule_id);
     }
   else if (strcmp(element_name, "pattern") == 0)
     {
@@ -184,28 +192,30 @@ log_classifier_xml_end_element(GMarkupParseContext *context, const gchar *elemen
 {
   LogDBParserState *state = (LogDBParserState *) user_data;
 
-  if (strcmp(element_name, "program") == 0)
+  if (strcmp(element_name, "ruleset") == 0)
     {
-      if (!state->current_program)
+      if (!state->in_ruleset)
         {
-          *error = g_error_new(1, 0, "Unexpected </program> element");
+          *error = g_error_new(1, 0, "Unexpected </ruleset> element");
           return;
         }
 
       state->current_program = NULL;
+      state->in_ruleset = FALSE;
     }
   else if (strcmp(element_name, "rule") == 0)
     {
-      if (state->current_class)
+      if (!state->in_rule)
         {
-          g_free(state->current_class);
-          state->current_class = NULL;
+          *error = g_error_new(1, 0, "Unexpected </rule> element");
+          return;
         }
 
-      if (state->current_rule_id)
+      state->in_rule = FALSE;
+      if (state->current_result)
         {
-          g_free(state->current_rule_id);
-          state->current_rule_id = NULL;
+          log_db_result_unref(state->current_result);
+          state->current_result = NULL;
         }
     }
   else if (strcmp(element_name, "pattern") == 0)
@@ -216,6 +226,7 @@ void
 log_classifier_xml_text(GMarkupParseContext *context, const gchar *text, gsize text_len, gpointer user_data, GError **error)
 {
   LogDBParserState *state = (LogDBParserState *) user_data;
+  RNode *node = NULL;
   gchar *txt;
 
   if (!state->in_pattern)
@@ -223,22 +234,30 @@ log_classifier_xml_text(GMarkupParseContext *context, const gchar *text, gsize t
 
   txt = g_strdup(text);
 
-  if (state->current_rule_id)
+  if (state->in_rule)
     {
-      r_insert_node(state->current_program->rules,
+      r_insert_node(state->current_program ? state->current_program->rules : state->root_program->rules,
                     txt,
-                    log_db_result_new(state->current_class, state->current_rule_id),
+                    log_db_result_ref(state->current_result),
                     TRUE);
-      state->current_rule_id = NULL;
-      state->current_class = NULL;
     }
-  else if (state->current_program)
+  else if (state->in_ruleset)
     {
-      r_insert_node(state->db->programs,
+      node = r_find_node(state->db->programs, txt, txt, strlen(txt), NULL, NULL);
+
+      if (node && node->value && node != state->db->programs)
+        state->current_program = node->value;
+      else
+        {
+          state->current_program = log_db_program_new();
+
+          r_insert_node(state->db->programs,
                     txt,
                     state->current_program,
                     TRUE);
+        }
     }
+
   g_free(txt);
 }
 
@@ -260,6 +279,7 @@ log_pattern_database_lookup(LogPatternDatabase *self, LogMessage *msg)
 
   if (G_UNLIKELY(!self->programs))
     return NULL;
+
   node = r_find_node(self->programs, msg->program, msg->program, msg->program_len, NULL, NULL);
 
   if (node)
@@ -342,12 +362,15 @@ log_pattern_database_load(LogPatternDatabase *self, const gchar *config)
       goto error;
     }
 
-  self->programs = r_new_node("", NULL);
-
   state.db = self;
-  state.current_program = NULL;
-  state.current_rule_id = NULL; 
   state.in_pattern = FALSE;
+  state.in_rule = FALSE;
+  state.in_ruleset = FALSE;
+  state.current_result = NULL;
+  state.current_program = NULL;
+  state.root_program = log_db_program_new();
+
+  self->programs = r_new_node("", state.root_program);
 
   parse_ctx = g_markup_parse_context_new(&db_parser, 0, &state, NULL);
 
