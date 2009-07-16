@@ -304,6 +304,7 @@ test_matches(void)
   insert_node(root, "ccc @QSTRING:qstring:'@");
   insert_node(root, "ddd @ESTRING:estring::@");
   insert_node(root, "eee @STRING:string@");
+  insert_node(root, "fff @FLOAT:float@");
 
   test_search_matches(root, "aaa 12345 hihihi",
                       "number", "12345",
@@ -311,6 +312,10 @@ test_matches(void)
 
   test_search_matches(root, "bbb 192.168.1.1 huhuhu",
                       "ip", "192.168.1.1",
+                      NULL);
+
+  test_search_matches(root, "aaa 12345 hihihi",
+                      "number", "12345",
                       NULL);
 
   test_search_matches(root, "aaa 0xaf12345 hihihi",
@@ -404,6 +409,24 @@ test_matches(void)
   test_search_matches(root, "eee string hehehe",
                       "string", "string",
                       NULL);
+
+  test_search_matches(root, "fff 12345 hihihi",
+                      "float", "12345", NULL);
+
+  test_search_matches(root, "fff 12345hihihi",
+                      "float", "12345", NULL);
+
+  test_search_matches(root, "fff 12.345hihihi",
+                      "float", "12.345", NULL);
+
+  test_search_matches(root, "fff 12.345.hihihi",
+                      "float", "12.345", NULL);
+
+  test_search_matches(root, "fff 12.345.6hihihi",
+                      "float", "12.345", NULL);
+
+  test_search_matches(root, "fff 12345.hihihi",
+                      "float", "12345.", NULL);
 
   r_free_node(root, NULL);
 }

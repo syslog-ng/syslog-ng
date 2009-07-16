@@ -197,6 +197,19 @@ r_parser_ip(gchar *str, gint *len, const gchar *param, gpointer state, LogMessag
 }
 
 gboolean
+r_parser_float(gchar *str, gint *len, const gchar *param, gpointer state, LogMessageMatch *match)
+{
+  gboolean dot = FALSE;
+
+  *len = 1;
+
+  while (g_ascii_isdigit(str[*len]) || (!dot && str[*len] == '.' && (dot = TRUE)))
+    (*len)++;
+
+  return TRUE;
+}
+
+gboolean
 r_parser_number(gchar *str, gint *len, const gchar *param, gpointer state, LogMessageMatch *match)
 {
   gboolean hex = FALSE;
@@ -262,6 +275,14 @@ r_new_pnode(gchar *key)
     {
       parser_node->parse = r_parser_number;
       parser_node->type = RPT_NUMBER;
+      parser_node->mask = '0';
+      parser_node->first = '9' & '0';
+    }
+  else if (strcmp(params[0], "FLOAT") == 0 || strcmp(params[0], "DOUBLE") == 0)
+    {
+      /* DOUBLE is a deprecated alias for FLOAT */
+      parser_node->parse = r_parser_float;
+      parser_node->type = RPT_FLOAT;
       parser_node->mask = '0';
       parser_node->first = '9' & '0';
     }
