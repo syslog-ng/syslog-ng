@@ -448,7 +448,10 @@ r_equal_pnode(RParserNode *a, RParserNode *b)
 {
   return ((a->parse == b->parse) &&
       ((a->name == NULL && b->name == NULL) ||
-       (a->name != NULL && b->name != NULL && g_str_equal(a->name, b->name))));
+       (a->name != NULL && b->name != NULL && g_str_equal(a->name, b->name))) &&
+      ((a->param == NULL && b->param == NULL) ||
+       (a->param != NULL && b->param != NULL && g_str_equal(a->param, b->param)))
+      );
 }
 
 RNode *
