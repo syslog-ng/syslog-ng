@@ -163,6 +163,11 @@ test_search_matches(RNode *root, gchar *key, gchar *name1, ...)
       if (verbose)
         printf("PASS: all values match: '%s'\n", key);
     }
+  else if (!ret && !name1)
+    {
+      if (verbose)
+        printf("PASS: nothing was matched as expected: '%s'\n", key);
+    }
   else
     {
       printf("FAIL: not found while expected: '%s' => none\n", key);
@@ -427,6 +432,14 @@ test_matches(void)
 
   test_search_matches(root, "fff 12345.hihihi",
                       "float", "12345.", NULL);
+
+  test_search_matches(root, "aaa v12345", NULL);
+  test_search_matches(root, "bbb v12345", NULL);
+  test_search_matches(root, "bbb4 v12345", NULL);
+  test_search_matches(root, "bbb6 v12345", NULL);
+  test_search_matches(root, "ccc v12345", NULL);
+  test_search_matches(root, "ddd v12345", NULL);
+  test_search_matches(root, "fff v12345", NULL);
 
   r_free_node(root, NULL);
 }

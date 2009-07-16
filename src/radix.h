@@ -54,8 +54,8 @@ typedef struct _RParserNode
   /* internal state of the parser node */
   gpointer state;
 
-  guchar mask;
-  gchar first;
+  guchar first;
+  guchar last;
   guint8 name_len;
   guint8 type;
 

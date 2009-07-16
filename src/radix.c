@@ -250,62 +250,55 @@ r_new_pnode(gchar *key)
   gchar **params = g_strsplit(key, ":", 3);
   guint params_len = g_strv_length(params);
 
+  parser_node->first = 0;
+  parser_node->last = 255;
+
   if (strcmp(params[0], "IPv4") == 0)
     {
       parser_node->parse = r_parser_ipv4;
       parser_node->type = RPT_IPV4;
-      parser_node->mask = '0';
-      parser_node->first = '9' & '0';
+      parser_node->first = '0';
+      parser_node->last = '9';
     }
   else if (strcmp(params[0], "IPv6") == 0)
     {
       parser_node->parse = r_parser_ipv6;
       parser_node->type = RPT_IPV6;
-      parser_node->mask = 0;
-      parser_node->first = 0;
     }
   else if (strcmp(params[0], "IPvANY") == 0)
     {
       parser_node->parse = r_parser_ip;
       parser_node->type = RPT_IP;
-      parser_node->mask = 0;
-      parser_node->first = 0;
     }
   else if (strcmp(params[0], "NUMBER") == 0)
     {
       parser_node->parse = r_parser_number;
       parser_node->type = RPT_NUMBER;
-      parser_node->mask = '0';
-      parser_node->first = '9' & '0';
+      parser_node->first = '0';
+      parser_node->last = '9';
     }
   else if (strcmp(params[0], "FLOAT") == 0 || strcmp(params[0], "DOUBLE") == 0)
     {
       /* DOUBLE is a deprecated alias for FLOAT */
       parser_node->parse = r_parser_float;
       parser_node->type = RPT_FLOAT;
-      parser_node->mask = '0';
-      parser_node->first = '9' & '0';
+      parser_node->first = '0';
+      parser_node->last = '9';
     }
   else if (strcmp(params[0], "STRING") == 0)
     {
       parser_node->parse = r_parser_string;
       parser_node->type = RPT_STRING;
-      parser_node->mask = 0;
-      parser_node->first = 0;
     }
   else if (strcmp(params[0], "ESTRING") == 0)
     {
       parser_node->parse = r_parser_estring;
       parser_node->type = RPT_ESTRING;
-      parser_node->mask = 0;
-      parser_node->first = 0;
     }
   else if (strcmp(params[0], "ANYSTRING") == 0)
     {
       parser_node->parse = r_parser_anystring;
       parser_node->type = RPT_ANYSTRING;
-      parser_node->mask = 0;
-      parser_node->first = 0;
     }
   else if (strcmp(params[0], "QSTRING") == 0 && params_len == 3)
     {
@@ -313,8 +306,8 @@ r_new_pnode(gchar *key)
 
       parser_node->parse = r_parser_qstring;
       parser_node->type = RPT_QSTRING;
-      parser_node->mask = 0xff;
       parser_node->first = params[2][0];
+      parser_node->last = params[2][0];
       
       if (strlen(params[2]) == 2)
         state[0] = params[2][1];
@@ -796,7 +789,7 @@ r_find_node(RNode *root, gchar *whole_key, gchar *key, gint keylen, GArray *matc
                   memset(match, 0, sizeof(*match));
                   match->flags = LMM_REF_MATCH;
                 }
-              if (((key[i] & parser_node->mask) == parser_node->first) &&
+              if (((parser_node->first <= key[i]) && (key[i] <= parser_node->last)) &&
                   (parser_node->parse(key + i, &len, parser_node->param, parser_node->state, match)))
                 {
 
