@@ -23,10 +23,10 @@ testcase(LogMessage *msg, gchar *template, gchar *expected)
 
   if (!tzinfo)
     tzinfo = time_zone_info_new(NULL);
-  
+
   templ = log_template_new("dummy", template);
   log_template_format(templ, msg, LT_ESCAPE, TS_FMT_BSD, tzinfo, 3, 0, res);
-  
+
   if (strcmp(res->str, expected) != 0)
     {
       fprintf(stderr, "FAIL: template test failed, template=%s, [%s] <=> [%s]\n", template, res->str, expected);
@@ -40,21 +40,21 @@ testcase(LogMessage *msg, gchar *template, gchar *expected)
   g_string_free(res, TRUE);
 }
 
-int 
+int
 main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 {
   LogMessage *msg;
   char *msg_str = "<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép";
   GlobalConfig dummy;
-  
+
   if (argc > 1)
     verbose = TRUE;
 
   configuration = &dummy;
   dummy.version = 0x0201;
-  
+
   app_startup();
-  
+
   putenv("TZ=MET-1METDST");
   tzset();
 
@@ -64,7 +64,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   msg->matches[0].match = g_strdup("whole-match");
   msg->matches[1].match = g_strdup("first-match");
   msg->num_matches = 2;
-  
+
   /* fix some externally or automatically defined values */
   log_msg_set_host_from(msg, g_strdup("kismacska"), -1);
   msg->timestamps[LM_TS_RECVD].time.tv_sec = 1139684315;
@@ -169,8 +169,8 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase(msg, "$MSG", "árvíztűrőtükörfúrógép");
   testcase(msg, "$MESSAGE", "árvíztűrőtükörfúrógép");
 
-  log_msg_unref(msg);  
-  
+  log_msg_unref(msg);
+
   msg_str = "syslog-ng: árvíztűrőtükörfúrógép [pid test]";
   msg = log_msg_new(msg_str, strlen(msg_str), g_sockaddr_inet_new("10.10.10.10", 1010), 0, NULL, -1, 0xFFFF);
 
@@ -185,7 +185,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase(msg, "$MSGHDR", "syslog-ng[23323]:");
   log_msg_unref(msg);
 
-  msg_str = "<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog 3535 ID47 [exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] BOMAn application event log entry..."; 
+  msg_str = "<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog 3535 ID47 [exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] BOMAn application event log entry...";
   msg = log_msg_new(msg_str, strlen(msg_str), g_sockaddr_inet_new("10.10.10.10", 1010), LP_SYSLOG_PROTOCOL, NULL, -1, 0xFFFF);
 
   testcase(msg, "$PRI", "132");
@@ -198,9 +198,9 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase(msg, "${.SDATA.exampleSDID@0.eventID}", "1011");
   testcase(msg, "${.SDATA.examplePriority@0.class}", "high");
 
-  
+
   app_shutdown();
-  
+
   if (success)
     return 0;
   return 1;

@@ -21,8 +21,8 @@
     }				\
   while (0)
 
-  
-unsigned long 
+
+unsigned long
 absolute_value(signed long diff)
 {
   if (diff < 0)
@@ -46,20 +46,20 @@ check_val_in_hash_clone(gchar *msg, LogMessage *self,LogMessage *msg_clone , con
 }
 
 
-int 
-testcase(gchar *msg, 
+int
+testcase(gchar *msg,
          gint parse_flags, /* LP_NEW_PROTOCOL */
          gchar *bad_hostname_re,
-         gint expected_pri, 
+         gint expected_pri,
          guint expected_version,
-         unsigned long expected_stamps_sec, 
-         unsigned long expected_stamps_usec, 
+         unsigned long expected_stamps_sec,
+         unsigned long expected_stamps_usec,
          unsigned long expected_stamps_ofs,
-         const gchar *expected_host, 
+         const gchar *expected_host,
          const gchar *expected_msg,
-         const gchar *expected_program, 
-         const gchar *expected_sd_str, 
-         const gchar *expected_process_id, 
+         const gchar *expected_program,
+         const gchar *expected_sd_str,
+         const gchar *expected_process_id,
          const gchar *expected_message_id
          )
 {
@@ -70,10 +70,10 @@ testcase(gchar *msg,
   gchar logmsg_addr[256], cloned_addr[256];
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
   GString *sd_str = g_string_sized_new(0);
-  
+
   if (bad_hostname_re)
     TEST_ASSERT(regcomp(&bad_hostname, bad_hostname_re, REG_NOSUB | REG_EXTENDED) == 0, "%d", 0, 0);
- 
+
   logmsg = log_msg_new(msg, strlen(msg), addr, parse_flags, bad_hostname_re ? &bad_hostname : NULL, -1, 0xFFFF);
   TEST_ASSERT(logmsg->pri == expected_pri, "%d", logmsg->pri, expected_pri);
   if (expected_stamps_sec)
@@ -102,13 +102,13 @@ testcase(gchar *msg,
 
   /* check if the sockaddr matches */
   g_sockaddr_format(logmsg->saddr, logmsg_addr, sizeof(logmsg_addr), GSA_FULL);
-  
+
   path_options.flow_control = FALSE;
   cloned = log_msg_clone_cow(logmsg, &path_options);
 
   g_sockaddr_format(cloned->saddr, cloned_addr, sizeof(cloned_addr), GSA_FULL);
   TEST_ASSERT(strcmp(logmsg_addr, cloned_addr) == 0, "%s", cloned_addr, logmsg_addr);
-  
+
   TEST_ASSERT(logmsg->pri == cloned->pri, "%d", logmsg->pri, cloned->pri);
   TEST_ASSERT(logmsg->timestamps[LM_TS_STAMP].time.tv_sec == cloned->timestamps[LM_TS_STAMP].time.tv_sec, "%d", (int) logmsg->timestamps[LM_TS_STAMP].time.tv_sec, (int) cloned->timestamps[LM_TS_STAMP].time.tv_sec);
   TEST_ASSERT(logmsg->timestamps[LM_TS_STAMP].time.tv_usec == cloned->timestamps[LM_TS_STAMP].time.tv_usec, "%d", (int) logmsg->timestamps[LM_TS_STAMP].time.tv_usec, (int) cloned->timestamps[LM_TS_STAMP].time.tv_usec);
@@ -151,22 +151,22 @@ testcase(gchar *msg,
   TEST_ASSERT(strcmp(cloned->pid, "newpid") == 0, "%s", cloned->pid, "newpid");
   TEST_ASSERT(strcmp(cloned->msgid, "newmsgid") == 0, "%s", cloned->msgid, "newmsgid");
   TEST_ASSERT(strcmp(cloned->source, "newsource") == 0, "%s", cloned->msgid, "newsource");
- 
+
   log_msg_unref(cloned);
   log_msg_unref(logmsg);
   g_string_free(sd_str, TRUE);
   return 0;
 }
 
-int 
+int
 main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 {
   app_startup();
-  
+
   putenv("TZ=MET-1METDST");
   tzset();
 
-  testcase("<7>1 2006-10-29T01:59:59.156+01:00 mymachine.example.com evntslog - ID47 [exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] BOMAn application event log entry...", 
+  testcase("<7>1 2006-10-29T01:59:59.156+01:00 mymachine.example.com evntslog - ID47 [exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] BOMAn application event log entry...",
            LP_SYSLOG_PROTOCOL, //flags
            NULL,  //bad host
            7, 			// pri
@@ -181,7 +181,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            );
 
   /*NOTE bad sd format FIXME: check BOM*/
-  testcase("<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [exampleSDID@0 iut=\"3\"] [eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] BOMAn application event log entry...", 
+  testcase("<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [exampleSDID@0 iut=\"3\"] [eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] BOMAn application event log entry...",
            LP_SYSLOG_PROTOCOL, //flags
            NULL,  //bad host
            132, 			// pri
@@ -194,7 +194,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            "",//processid
            ""//msgid
            );
- 
+
   app_shutdown();
   return 0;
 }

@@ -17,21 +17,21 @@ testcase_match(const gchar *log, gint parse_flags, const gchar *pattern, gint ma
   log_matcher_set_flags(m, matcher_flags);
 
   log_matcher_compile(m, pattern);
-  
+
   result = log_matcher_match(m, msg, GINT_TO_POINTER(LM_F_MESSAGE), msg->message, msg->message_len);
-  
+
   if (result != expected_result)
     {
       fprintf(stderr, "Testcase match failure. pattern=%s, result=%d, expected=%d\n", pattern, result, expected_result);
       exit(1);
     }
-  
+
   log_matcher_free(m);
   log_msg_unref(msg);
   return 0;
 }
 
-int 
+int
 testcase_replace(const gchar *log, gint parse_flags, const gchar *re, gchar *replacement, const gchar *expected_result, const gint matcher_flags, LogMatcher *m)
 {
   LogMessage *msg;
@@ -48,17 +48,17 @@ testcase_replace(const gchar *log, gint parse_flags, const gchar *re, gchar *rep
   log_matcher_set_flags(m, matcher_flags);
 
   log_matcher_compile(m, re);
-  
+
   r = log_template_new(NULL, replacement);
-  
+
   result = log_matcher_replace(m, msg, GINT_TO_POINTER(LM_F_MESSAGE), msg->message, msg->message_len, r, &length);
-  
+
   if (strncmp(result ? result : msg->message, expected_result, result ? length : msg->message_len) != 0)
     {
       fprintf(stderr, "Testcase failure. pattern=%s, result=%.*s, expected=%s\n", re, (gint) length, result ? result : msg->message, expected_result);
       exit(1);
     }
-  
+
   g_free(result);
 
   log_template_unref(r);
@@ -67,7 +67,7 @@ testcase_replace(const gchar *log, gint parse_flags, const gchar *re, gchar *rep
   return 0;
 }
 
-int 
+int
 main()
 {
   /* POSIX regexp */
@@ -80,13 +80,13 @@ main()
 #endif
   testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: wikiwiki", 0, "wi", "", "kiki", LMF_GLOBAL, log_matcher_posix_re_new());
   testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: wikiwiki", 0, "wi", "kuku", "kukukikukuki", LMF_GLOBAL, log_matcher_posix_re_new());
- 
+
   /* empty match with global flag*/
   testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: aa bb", 0, "c*", "#", "#a#a# #b#b#", LMF_GLOBAL, log_matcher_posix_re_new());
   testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: aa bb", 0, "a*", "#", "# #b#b#", LMF_GLOBAL, log_matcher_posix_re_new());
 
   /* string match */
-  
+
   testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép", 0, "árvíz", "favíz", "favíztűrőtükörfúrógép", LMF_PREFIX, log_matcher_string_new());
   testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép", 0, "tűrő", "faró", "árvízfarótükörfúrógép", LMF_SUBSTRING, log_matcher_string_new());
   testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép", 0, "tűrő", "", "árvíztükörfúrógép", LMF_SUBSTRING, log_matcher_string_new());
@@ -103,7 +103,7 @@ main()
 
   testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: abcdef", 0, "ABCDEF", "qwerty", "qwerty", LMF_PREFIX | LMF_ICASE, log_matcher_string_new());
   testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: abcdef", 0, "BCD", "qwerty", "aqwertyef", LMF_SUBSTRING | LMF_ICASE, log_matcher_string_new());
-  
+
   /* glob match */
 
   testcase_match("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép", 0, "árvíz*", 0, TRUE, log_matcher_glob_new());
@@ -111,7 +111,7 @@ main()
   testcase_match("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép", 0, "*fúró*", 0, TRUE, log_matcher_glob_new());
   testcase_match("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép", 0, "tükör", 0, FALSE, log_matcher_glob_new());
   testcase_match("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép", 0, "viziló", 0, FALSE, log_matcher_glob_new());
-  
+
   /* match in iso-8859-2 never matches */
   testcase_match("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: \xe1rv\xedzt\xfbr\xf5t\xfck\xf6rf\xfar\xf3g\xe9p", 0, "\xe1rv\xed*", 0, FALSE, log_matcher_glob_new());
 

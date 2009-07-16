@@ -21,7 +21,7 @@
     }				\
   while (0)
 
-unsigned long 
+unsigned long
 absolute_value(signed long diff)
 {
   if (diff < 0)
@@ -47,20 +47,20 @@ check_sd_param_in_clone(gchar *msg, LogMessage *self, LogMessage *msg_clone, con
   TEST_ASSERT(strcmp(a1, pair[1]) == 0 && strcmp(a2, pair[1]) == 0, "%s", a1, a2);
 }
 
-int 
-testcase(gchar *msg, 
+int
+testcase(gchar *msg,
          gint parse_flags,
          gchar *bad_hostname_re,
-         gint expected_pri, 
-         unsigned long expected_stamp_sec, 
-         unsigned long expected_stamp_usec, 
+         gint expected_pri,
+         unsigned long expected_stamp_sec,
+         unsigned long expected_stamp_usec,
          unsigned long expected_stamp_ofs,
-         const gchar *expected_host, 
-         const gchar *expected_program, 
+         const gchar *expected_host,
+         const gchar *expected_program,
          const gchar *expected_msg,
-         const gchar *expected_sd_str, 
-         const gchar *expected_pid, 
-         const gchar *expected_msgid, 
+         const gchar *expected_sd_str,
+         const gchar *expected_pid,
+         const gchar *expected_msgid,
          const gchar *expected_sd_pairs[][2])
 {
   LogMessage *logmsg;
@@ -70,16 +70,16 @@ testcase(gchar *msg,
   gchar logmsg_addr[256];
   gint i;
   GString *sd_str = g_string_sized_new(0);
-  
+
   if (bad_hostname_re)
     TEST_ASSERT(regcomp(&bad_hostname, bad_hostname_re, REG_NOSUB | REG_EXTENDED) == 0, "%d", 0, 0);
 
   logmsg = log_msg_new(msg, strlen(msg), addr, parse_flags, bad_hostname_re ? &bad_hostname : NULL, -1, 0xFFFF);
-  
+
   /* NOTE: this if statement mimics what LogReader does when the message has no timezone information */
   if (logmsg->timestamps[LM_TS_STAMP].zone_offset == -1)
     logmsg->timestamps[LM_TS_STAMP].zone_offset = get_local_timezone_ofs(logmsg->timestamps[LM_TS_STAMP].time.tv_sec);
-  
+
   TEST_ASSERT(logmsg->pri == expected_pri, "%d", logmsg->pri, expected_pri);
   if (expected_stamp_sec)
     {
@@ -100,30 +100,30 @@ testcase(gchar *msg,
   TEST_ASSERT(strcmp(logmsg->message, expected_msg) == 0, "%s", logmsg->message, expected_msg);
   TEST_ASSERT(!expected_pid || strcmp(logmsg->pid, expected_pid) == 0, "%s", logmsg->pid, expected_pid);
   TEST_ASSERT(!expected_msgid || strcmp(logmsg->msgid, expected_msgid) == 0, "%s", logmsg->msgid, expected_msgid);
-  
+
   /* SD elements */
   log_msg_format_sdata(logmsg, sd_str);
   TEST_ASSERT(!expected_sd_str || strcmp(sd_str->str, expected_sd_str) == 0, "%s", sd_str->str, expected_sd_str);
-  
-  
+
+
   if (expected_sd_pairs)
     {
       for (i = 0; expected_sd_pairs[i][0] != NULL;i++)
         check_sd_param(msg, logmsg, expected_sd_pairs[i]);
     }
-  
+
   g_sockaddr_format(logmsg->saddr, logmsg_addr, sizeof(logmsg_addr), GSA_FULL);
-  
+
   log_msg_unref(logmsg);
   g_string_free(sd_str, TRUE);
   return 0;
 }
 
-int 
+int
 main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 {
   app_startup();
-  
+
   putenv("TZ=MET-1METDST");
   tzset();
   testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, NULL,
@@ -219,7 +219,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            "PTHREAD support initialized", // msg
            NULL, "2499", NULL, NULL
            );
-  
+
   /* the same in a foreign timezone */
   testcase("<7>2006-10-29T01:00:00.156+01:00 bzorp openvpn[2499]: PTHREAD support initialized", 0, NULL,
            7, 			// pri
@@ -245,7 +245,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            "PTHREAD support initialized", // msg
            NULL, "2499", NULL, NULL
            );
-  
+
   /* check hostname */
 
   testcase("<7>2006-10-29T02:00:00.156+01:00 %bzorp openvpn[2499]: PTHREAD support initialized", LP_CHECK_HOSTNAME, NULL,
@@ -341,9 +341,9 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            NULL, NULL, NULL, NULL
            );
 
-  const gchar *expected_sd_pairs_test_1[][2]= 
+  const gchar *expected_sd_pairs_test_1[][2]=
   {
-    { "exampleSDID@0.iut", "3"}, 
+    { "exampleSDID@0.iut", "3"},
     { "exampleSDID@0.eventSource", "Application"},
     { "exampleSDID@0.eventID", "1011"},
     { "examplePriority@0.class", "high"},
@@ -408,11 +408,11 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            "8710",
            "",
            NULL);
-           
 
-  const gchar *expected_sd_pairs_test_2[][2]= 
+
+  const gchar *expected_sd_pairs_test_2[][2]=
   {
-    { "exampleSDID@0.iut", "3"}, 
+    { "exampleSDID@0.iut", "3"},
     {  NULL , NULL}
   };
 

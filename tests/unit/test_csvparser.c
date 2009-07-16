@@ -21,7 +21,7 @@
     }				\
   while (0)
 
-int 
+int
 testcase(gchar *msg, guint parse_flags, gint max_columns, guint32 flags, gchar *delimiters, gchar *quotes, gchar *null_value, gchar *first_value, ...)
 {
   LogMessage *logmsg;
@@ -29,7 +29,7 @@ testcase(gchar *msg, guint parse_flags, gint max_columns, guint32 flags, gchar *
   gchar *expected_value;
   gint i;
   va_list va;
-  
+
   const gchar *column_array[] =
   {
     "C1",
@@ -64,16 +64,16 @@ testcase(gchar *msg, guint parse_flags, gint max_columns, guint32 flags, gchar *
     "C30",
     NULL
   };
-  
+
   if (max_columns != -1)
     {
       g_assert(max_columns < (sizeof(column_array) / sizeof(column_array[0])));
-  
+
       column_array[max_columns] = NULL;
     }
-  
+
   logmsg = log_msg_new(msg, strlen(msg), NULL, parse_flags, NULL, -1, 0xFFFF);
-  
+
   p = log_csv_parser_new();
   log_csv_parser_set_flags(p, flags);
   log_column_parser_set_columns(p, string_array_to_list(column_array));
@@ -85,7 +85,7 @@ testcase(gchar *msg, guint parse_flags, gint max_columns, guint32 flags, gchar *
     log_csv_parser_set_null_value(p, null_value);
   log_parser_process(&p->super, logmsg);
   log_parser_free(&p->super);
-  
+
   va_start(va, first_value);
   expected_value = first_value;
   i = 0;
@@ -93,7 +93,7 @@ testcase(gchar *msg, guint parse_flags, gint max_columns, guint32 flags, gchar *
     {
       gchar *value;
       value = g_hash_table_lookup(logmsg->values, column_array[i]);
-      
+
       if (expected_value && expected_value[0])
         {
           TEST_ASSERT(value && value[0], "expected value set, but no actual value");
@@ -103,20 +103,20 @@ testcase(gchar *msg, guint parse_flags, gint max_columns, guint32 flags, gchar *
         {
           TEST_ASSERT(!(value && value[0]), "expected unset, but actual value present");
         }
-      
+
       expected_value = va_arg(va, char *);
       i++;
     }
-  
+
   log_msg_unref(logmsg);
   return 1;
 }
 
-int 
+int
 main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 {
   app_startup();
-  
+
   putenv("TZ=MET-1METDST");
   tzset();
   testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, -1, LOG_CSV_PARSER_ESCAPE_NONE, " ", NULL, NULL,

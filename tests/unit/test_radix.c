@@ -50,10 +50,10 @@ void
 insert_node(RNode *root, gchar *key)
 {
   gchar *dup;
-  
+
   /* NOTE: we need to duplicate the key as r_insert_node modifies its input
    * and it might be a read-only string literal */
-  
+
   dup = g_strdup(key);
   r_insert_node(root, dup, key, TRUE);
   g_free(dup);
@@ -104,11 +104,11 @@ test_search_matches(RNode *root, gchar *key, gchar *name1, ...)
   LogMessageMatch *match;
   gchar *match_name;
   gint i;
-  
+
   g_array_set_size(matches, 1);
   g_ptr_array_set_size(match_names, 1);
   va_start(args, name1);
-  
+
   ret = r_find_node(root, key, key, strlen(key), matches, match_names);
   if (ret && !name1)
     {
@@ -119,7 +119,7 @@ test_search_matches(RNode *root, gchar *key, gchar *name1, ...)
     {
       gint i = 1;
       gchar *name, *value;
-      
+
       name = name1;
       value = va_arg(args, gchar *);
       while (name)
@@ -132,13 +132,13 @@ test_search_matches(RNode *root, gchar *key, gchar *name1, ...)
             }
           match = &g_array_index(matches, LogMessageMatch, i);
           match_name = g_ptr_array_index(match_names, i);
-          
+
           if (strcmp(match_name, name) != 0)
             {
               printf("FAIL: name does not match: '%s' => expecting %d. match, name %s != %s\n", key, i, name, match_name);
               fail = TRUE;
             }
-          
+
           if (match->flags & LMM_REF_MATCH)
             {
               if (strncmp(&key[match->ofs], value, match->len) != 0)
@@ -168,10 +168,10 @@ test_search_matches(RNode *root, gchar *key, gchar *name1, ...)
       printf("FAIL: not found while expected: '%s' => none\n", key);
       fail = TRUE;
     }
-    
+
  out:
   va_end(args);
-  
+
   for (i = 0; i < matches->len; i++)
     {
       match_name = g_ptr_array_index(match_names, i);
@@ -189,7 +189,7 @@ void
 test_literals(void)
 {
   RNode *root = r_new_node("", NULL);
-  
+
   insert_node(root, "alma");
   insert_node(root, "korte");
   insert_node(root, "barack");
@@ -205,7 +205,7 @@ test_literals(void)
   insert_node(root, "korozott");
   insert_node(root, "al");
   insert_node(root, "all");
-  
+
   test_search(root, "alma", TRUE);
   test_search(root, "korte", TRUE);
   test_search(root, "barack", TRUE);
@@ -237,7 +237,7 @@ test_literals(void)
   test_search_value(root, "koromi", "korom");
 
   test_search(root, "qwqw", FALSE);
-  
+
   r_free_node(root, NULL);
 }
 
@@ -245,12 +245,12 @@ void
 test_parsers(void)
 {
   RNode *root = r_new_node("", NULL);
-  
+
   /* FIXME: more parsers */
   insert_node(root, "a@@NUMBER@@aa@@@@");
   insert_node(root, "a@@ab");
   insert_node(root, "a@@a@@");
-  
+
   insert_node(root, "a@@@NUMBER:szam0@");
   insert_node(root, "a@NUMBER:szamx@aaa");
   insert_node(root, "a@NUMBER@");
@@ -277,18 +277,18 @@ test_parsers(void)
   test_search_value(root, "a@ax", NULL);
 
   test_search_value(root, "a@15555", "a@@@NUMBER:szam0@");
-  
+
   /* FIXME: this one fails, because the shorter match is returned. The
    * current radix implementation does not ensure the longest match when the
    * radix tree is split on a parser node. */
-  
+
 #if 0
   test_search_value(root, "a15555aaa", "a@NUMBER:szamx@aaa");
 #endif
   test_search_value(root, "@a", "@@a");
   test_search_value(root, "@", "@@");
   test_search_value(root, "@@", "@@@@");
-  
+
   r_free_node(root, NULL);
 }
 
@@ -296,7 +296,7 @@ void
 test_matches(void)
 {
   RNode *root = r_new_node("", NULL);
-  
+
   insert_node(root, "aaa @NUMBER:number@");
   insert_node(root, "bbb @IPvANY:ip@");
   insert_node(root, "bbb4 @IPv4:ipv4@");
@@ -410,12 +410,12 @@ int
 main(int argc, char *argv[])
 {
   app_startup();
-  
+
   if (argc > 1)
     verbose = TRUE;
 
   msg_init(TRUE);
-  
+
   test_literals();
   test_parsers();
   test_matches();

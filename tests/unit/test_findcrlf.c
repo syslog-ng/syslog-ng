@@ -6,9 +6,9 @@ static void
 testcase(gchar *msg, gsize msg_len, gsize eom_ofs)
 {
   gchar *eom;
-  
+
   eom = find_cr_or_lf(msg, msg_len);
-  
+
   if (eom_ofs == -1 && eom != NULL)
     {
       fprintf(stderr, "EOM returned is not NULL, which was expected. eom_ofs=%d, eom=%s\n", (gint) eom_ofs, eom);
@@ -16,7 +16,7 @@ testcase(gchar *msg, gsize msg_len, gsize eom_ofs)
     }
   if (eom_ofs == -1)
     return;
-  
+
   if (eom - msg != eom_ofs)
     {
       fprintf(stderr, "EOM is at wrong location. msg=%s, eom_ofs=%d, eom=%s\n", msg, (gint) eom_ofs, eom);
@@ -24,7 +24,7 @@ testcase(gchar *msg, gsize msg_len, gsize eom_ofs)
     }
 }
 
-int 
+int
 main()
 {
   testcase("a\nb\nc\n",  6,  1);

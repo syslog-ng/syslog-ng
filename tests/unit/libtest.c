@@ -1,5 +1,5 @@
 
-void 
+void
 msg_event(int prio, const char *desc, void *tag1, ...)
 {
   ;

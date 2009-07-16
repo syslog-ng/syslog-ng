@@ -10,7 +10,7 @@ int fed_messages = 0;
 
 #define OVERFLOW_SIZE 10000
 
-void 
+void
 test_ack(LogMessage *msg, gpointer user_data)
 {
   acked_messages++;
@@ -22,12 +22,12 @@ feed_some_messages(LogQueue **q, int n, gboolean flow_control)
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
   LogMessage *msg;
   gint i;
-  
+
   path_options.flow_control = flow_control;
   for (i = 0; i < n; i++)
     {
       char *msg_str = "<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép";
-      
+
       msg = log_msg_new(msg_str, strlen(msg_str), g_sockaddr_inet_new("10.10.10.10", 1010), 0, NULL, -1, 0xFFFF);
       log_msg_add_ack(msg, &path_options);
       msg->ack_func = test_ack;
@@ -38,7 +38,7 @@ feed_some_messages(LogQueue **q, int n, gboolean flow_control)
         }
       fed_messages++;
     }
-  
+
 }
 
 void
@@ -47,7 +47,7 @@ send_some_messages(LogQueue *q, gint n, gboolean use_app_acks)
   gint i;
   LogMessage *msg;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
-  
+
   for (i = 0; i < n; i++)
     {
       log_queue_pop_head(q, &msg, &path_options, use_app_acks);
@@ -73,13 +73,13 @@ testcase_zero_diskbuf_and_normal_acks()
 {
   LogQueue *q;
   gint i;
-  
+
   q = log_queue_new(OVERFLOW_SIZE);
   fed_messages = 0;
-  acked_messages = 0;  
+  acked_messages = 0;
   for (i = 0; i < 10; i++)
     feed_some_messages(&q, 10, TRUE);
-    
+
   send_some_messages(q, fed_messages, TRUE);
   app_ack_some_messages(q, fed_messages);
   if (fed_messages != acked_messages)
@@ -87,7 +87,7 @@ testcase_zero_diskbuf_and_normal_acks()
       fprintf(stderr, "did not receive enough acknowledgements: fed_messages=%d, acked_messages=%d\n", fed_messages, acked_messages);
       exit(1);
     }
-    
+
   log_queue_free(q);
 }
 
@@ -96,7 +96,7 @@ testcase_zero_diskbuf_alternating_send_acks()
 {
   LogQueue *q;
   gint i;
-  
+
   q = log_queue_new(OVERFLOW_SIZE);
   fed_messages = 0;
   acked_messages = 0;
@@ -111,7 +111,7 @@ testcase_zero_diskbuf_alternating_send_acks()
       fprintf(stderr, "did not receive enough acknowledgements: fed_messages=%d, acked_messages=%d\n", fed_messages, acked_messages);
       exit(1);
     }
-    
+
   log_queue_free(q);
 }
 
@@ -200,7 +200,7 @@ testcase_with_threads()
 }
 #endif
 
-int 
+int
 main()
 {
   app_startup();

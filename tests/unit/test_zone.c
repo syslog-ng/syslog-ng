@@ -17,13 +17,13 @@ set_tz(const char *tz)
   clean_time_cache();
 }
 
-void 
+void
 testcase(const gchar *zone, time_t utc, long expected_ofs)
 {
   long ofs;
-  
+
   set_tz(zone);
-  
+
   ofs = get_local_timezone_ofs(utc);
   if (ofs != expected_ofs)
     {
@@ -37,7 +37,7 @@ test_timezone_2(const time_t stamp_to_test, const char* time_zone)
 {
   TimeZoneInfo *info;
   time_t offset, expected_offset;
-  
+
   set_tz(time_zone);
   info = time_zone_info_new(time_zone);
   offset = time_zone_info_get_offset(info, stamp_to_test);
@@ -66,12 +66,12 @@ test_timezone(const time_t stamp_to_test, const char* time_zone)
   } while (0)
 
 
-int 
+int
 main(int argc, char *argv[])
 {
   gint rc = 0;
   time_t now;
-  
+
   app_startup();
   /* 2005-10-14 21:47:37 CEST, dst enabled */
   testcase("MET-1METDST", 1129319257, 7200);
@@ -97,11 +97,11 @@ main(int argc, char *argv[])
   testcase("EST5EDT", 1130652000, -5*3600);
 
 #ifdef __linux__
-  
+
   /* NOTE: not all of our build systems have been upgraded to work correctly
    * with post 2007 years. Therefore we restrict their tests to Linux which
    * work ok. */
-  
+
   /* USA DST change in 2007, 2nd sunday of March instead of 1st Sunday of April */
   /* 2007-03-11 01:00:00 EST, DST disabled */
   testcase("EST5EDT", 1173592800, -5*3600);
@@ -115,7 +115,7 @@ main(int argc, char *argv[])
   testcase("EST5EDT", 1194156000, -5*3600);
 #endif
 
-#ifdef __linux__  
+#ifdef __linux__
   /* Oct 31 01:59:59 2004 (EST) +1000 */
   testcase("Australia/Victoria", 1099151999, 10*3600);
   /* Oct 31 03:00:00 2004 (EST) +1100 */
