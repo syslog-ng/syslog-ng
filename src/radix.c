@@ -199,12 +199,26 @@ r_parser_ip(gchar *str, gint *len, const gchar *param, gpointer state, LogMessag
 gboolean
 r_parser_number(gchar *str, gint *len, const gchar *param, gpointer state, LogMessageMatch *match)
 {
-  *len = 0;
+  gboolean hex = FALSE;
 
-  while (g_ascii_isdigit(str[*len]))
-    (*len)++;
+  if (g_str_has_prefix(str, "0x") || g_str_has_prefix(str, "0X"))
+    {
+      *len = 2;
+      hex = TRUE;
 
-  if (*len > 0)
+      while (g_ascii_isxdigit(str[*len]))
+        (*len)++;
+
+    }
+  else
+    {
+      *len = 0;
+
+      while (g_ascii_isdigit(str[*len]))
+        (*len)++;
+    }
+
+  if ((!hex && *len > 0) || (hex && *len > 2))
     {
       return TRUE;
     }

@@ -313,6 +313,26 @@ test_matches(void)
                       "ip", "192.168.1.1",
                       NULL);
 
+  test_search_matches(root, "aaa 0xaf12345 hihihi",
+                      "number", "0xaf12345",
+                      NULL);
+
+  test_search_matches(root, "aaa 0xAF12345 hihihi",
+                      "number", "0xAF12345",
+                      NULL);
+
+  test_search_matches(root, "aaa 0x12345 hihihi",
+                      "number", "0x12345",
+                      NULL);
+
+  test_search_matches(root, "aaa 0XABCDEF12345ABCDEF hihihi",
+                      "number", "0XABCDEF12345ABCDEF",
+                      NULL);
+
+  test_search_matches(root, "bbb 192.168.1.1 huhuhu",
+                      "ip", "192.168.1.1",
+                      NULL);
+
   test_search_matches(root, "bbb4 192.168.1.1 huhuhu",
                       "ipv4", "192.168.1.1",
                       NULL);
