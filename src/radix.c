@@ -134,6 +134,69 @@ r_parser_ipv4(gchar *str, gint *len, const gchar *param, gpointer state, LogMess
 }
 
 gboolean
+r_parser_ipv6(gchar *str, gint *len, const gchar *param, gpointer state, LogMessageMatch *match)
+{
+  gint colons = 0;
+  gint dots = 0;
+  gint octet = 0;
+  gint digit = 16;
+  gboolean shortened = FALSE;
+
+  *len = 0;
+
+  while (1)
+    {
+      if (str[*len] == ':')
+        {
+          if (digit == 10)
+            return FALSE;
+
+          if (octet > 0xffff || (octet == -1 && shortened))
+            return FALSE;
+
+          if (octet == -1)
+            shortened = TRUE;
+
+          colons++;
+          octet = -1;
+        }
+      else if (g_ascii_isxdigit(str[*len]))
+        {
+          if (octet == -1)
+            octet = 0;
+          else
+            octet *= digit;
+
+          octet += g_ascii_xdigit_value(str[*len]);
+        }
+      else if (str[*len] == '.')
+        {
+          if ((digit == 10 && octet > 255) || (digit == 16 && octet > 597) || octet == -1)
+            return FALSE;
+
+          dots++;
+          octet = -1;
+          digit = 10;
+        }
+      else
+        break;
+
+      (*len)++;
+    }
+
+  if (colons < 2 || colons > 7 || (digit == 10 && octet > 255) || (digit == 16 && octet > 0xffff) || !(dots == 0 || dots == 3))
+    return FALSE;
+
+  return TRUE;
+}
+
+gboolean
+r_parser_ip(gchar *str, gint *len, const gchar *param, gpointer state, LogMessageMatch *match)
+{
+  return r_parser_ipv4(str, len, param, state, match) || r_parser_ipv6(str, len, param, state, match);
+}
+
+gboolean
 r_parser_number(gchar *str, gint *len, const gchar *param, gpointer state, LogMessageMatch *match)
 {
   *len = 0;
@@ -166,6 +229,20 @@ r_new_pnode(gchar *key)
       parser_node->type = RPT_IPV4;
       parser_node->mask = '0';
       parser_node->first = '9' & '0';
+    }
+  else if (g_str_has_prefix(params[0], "IPv6"))
+    {
+      parser_node->parse = r_parser_ipv6;
+      parser_node->type = RPT_IPV6;
+      parser_node->mask = 0;
+      parser_node->first = 0;
+    }
+  else if (g_str_has_prefix(params[0], "IPvANY"))
+    {
+      parser_node->parse = r_parser_ip;
+      parser_node->type = RPT_IP;
+      parser_node->mask = 0;
+      parser_node->first = 0;
     }
   else if (g_str_has_prefix(params[0], "NUMBER"))
     {

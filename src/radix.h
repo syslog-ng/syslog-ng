@@ -38,6 +38,8 @@ enum
   RPT_IPV4,
   RPT_NUMBER,
   RPT_ANYSTRING,
+  RPT_IPV6,
+  RPT_IP,
 };
 
 typedef struct _RParserNode
