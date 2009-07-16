@@ -250,28 +250,28 @@ r_new_pnode(gchar *key)
   gchar **params = g_strsplit(key, ":", 3);
   guint params_len = g_strv_length(params);
 
-  if (g_str_has_prefix(params[0], "IPv4"))
+  if (strcmp(params[0], "IPv4") == 0)
     {
       parser_node->parse = r_parser_ipv4;
       parser_node->type = RPT_IPV4;
       parser_node->mask = '0';
       parser_node->first = '9' & '0';
     }
-  else if (g_str_has_prefix(params[0], "IPv6"))
+  else if (strcmp(params[0], "IPv6") == 0)
     {
       parser_node->parse = r_parser_ipv6;
       parser_node->type = RPT_IPV6;
       parser_node->mask = 0;
       parser_node->first = 0;
     }
-  else if (g_str_has_prefix(params[0], "IPvANY"))
+  else if (strcmp(params[0], "IPvANY") == 0)
     {
       parser_node->parse = r_parser_ip;
       parser_node->type = RPT_IP;
       parser_node->mask = 0;
       parser_node->first = 0;
     }
-  else if (g_str_has_prefix(params[0], "NUMBER"))
+  else if (strcmp(params[0], "NUMBER") == 0)
     {
       parser_node->parse = r_parser_number;
       parser_node->type = RPT_NUMBER;
@@ -286,28 +286,28 @@ r_new_pnode(gchar *key)
       parser_node->mask = '0';
       parser_node->first = '9' & '0';
     }
-  else if (g_str_has_prefix(params[0], "STRING"))
+  else if (strcmp(params[0], "STRING") == 0)
     {
       parser_node->parse = r_parser_string;
       parser_node->type = RPT_STRING;
       parser_node->mask = 0;
       parser_node->first = 0;
     }
-  else if (g_str_has_prefix(params[0], "ESTRING"))
+  else if (strcmp(params[0], "ESTRING") == 0)
     {
       parser_node->parse = r_parser_estring;
       parser_node->type = RPT_ESTRING;
       parser_node->mask = 0;
       parser_node->first = 0;
     }
-  else if (g_str_has_prefix(params[0], "ANYSTRING"))
+  else if (strcmp(params[0], "ANYSTRING") == 0)
     {
       parser_node->parse = r_parser_anystring;
       parser_node->type = RPT_ANYSTRING;
       parser_node->mask = 0;
       parser_node->first = 0;
     }
-  else if (g_str_has_prefix(params[0], "QSTRING") && params_len == 3)
+  else if (strcmp(params[0], "QSTRING") == 0 && params_len == 3)
     {
       gchar *state = (gchar *) &(parser_node->state);
 
