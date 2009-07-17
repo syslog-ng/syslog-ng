@@ -138,13 +138,13 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
     {
       if (self->options->program_override_len < 0)
         self->options->program_override_len = strlen(self->options->program_override);
-      log_msg_set_program(msg, g_strdup(self->options->program_override), self->options->program_override_len);
+      log_msg_set_program(msg, g_strndup(self->options->program_override, self->options->program_override_len), self->options->program_override_len);
     }
   if (self->options->host_override)
     {
       if (self->options->host_override_len < 0)
         self->options->host_override_len = strlen(self->options->host_override);
-      log_msg_set_host(msg, g_strdup(self->options->host_override), self->options->host_override_len);
+      log_msg_set_host(msg, g_strndup(self->options->host_override, self->options->host_override_len), self->options->host_override_len);
     }
     
   handle = stats_register_dynamic_counter(2, SCS_HOST | SCS_SOURCE, NULL, msg->host, SC_TYPE_PROCESSED, &processed_counter, &new);
