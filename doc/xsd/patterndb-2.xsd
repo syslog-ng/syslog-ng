@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+    <xs:element name="patterndb">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="ruleset" type="rulesetType" minOccurs="0" maxOccurs="unbounded">
+                    <xs:annotation>
+                        <xs:documentation>
+                            A container to group log patterns for an application/program.
+                        </xs:documentation>
+                    </xs:annotation>
+                </xs:element>
+            </xs:sequence>
+            <xs:attribute name="version" type="xs:NMTOKEN" use="required" fixed="2">
+                <xs:annotation>
+                    <xs:documentation>
+                        The schema version of the pattern database.
+                        The current version is '2'.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="pub_date" type="xs:date" use="required">
+                <xs:annotation>
+                    <xs:documentation>
+                        The publication date of the XML file.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+        </xs:complexType>
+        <xs:unique name="ruleset_name">
+            <xs:selector xpath="ruleset"/>
+            <xs:field xpath="@name"/>
+        </xs:unique>
+        <xs:unique name="ids">
+            <xs:selector xpath=".//*"/>
+            <xs:field xpath="@id"/>
+        </xs:unique>
+    </xs:element>
+
+    <xs:complexType name="rulesetType">
+        <xs:all>
+            <xs:element name="description" type="xs:string" minOccurs="0">
+                <xs:annotation>
+                    <xs:documentation>
+                        An optional element to attach description to a ruleset.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="url" type="xs:anyURI" minOccurs="0">
+                <xs:annotation>
+                    <xs:documentation>
+                        An optional element to point to a URL related to the ruleset.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="pattern" type="patternType" minOccurs="0">
+                <xs:annotation>
+                    <xs:documentation>
+                        An optional element with a pattern representing the name of the application related
+                        to the ruleset in the syslog program field.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="rules">
+                <xs:annotation>
+                    <xs:documentation>
+                        The rules in the ruleset.
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="rule" type="ruleType" minOccurs="0" maxOccurs="unbounded">
+                            <xs:annotation>
+                                <xs:documentation>
+                                    A rule describes one log event with classifications and details.
+                                </xs:documentation>
+                            </xs:annotation>
+                        </xs:element>
+                    </xs:sequence>
+                </xs:complexType>
+                <xs:unique name="patterns">
+                    <xs:selector xpath="rule/patterns/pattern"/>
+                    <xs:field xpath="."/>
+                </xs:unique>
+            </xs:element>
+        </xs:all>
+        <xs:attribute name="name" type="xs:string" use="required">
+            <xs:annotation>
+                <xs:documentation>
+                    The name of the application.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="id" type="uuidType" use="required"/>
+    </xs:complexType>
+
+    <xs:complexType name="ruleType">
+        <xs:all>
+            <xs:element name="description" type="xs:string" minOccurs="0">
+                <xs:annotation>
+                    <xs:documentation>
+                        An optional element to describe the log disposition.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="urls" minOccurs="0">
+                <xs:annotation>
+                    <xs:documentation>
+                        Optional elements to point to some external resource for disposition.
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="url" type="xs:anyURI" minOccurs="0" maxOccurs="unbounded"/>
+                    </xs:sequence>
+                </xs:complexType>
+                <xs:unique name="urls">
+                    <xs:selector xpath="url"/>
+                    <xs:field xpath="."/>
+                </xs:unique>
+            </xs:element>
+            <xs:element name="tags" minOccurs="0">
+                <xs:annotation>
+                    <xs:documentation>
+                        Optional keywords that can be used for a freeform grouping of the rules.
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="tag" type="xs:token" minOccurs="0"  maxOccurs="unbounded"/>
+                    </xs:sequence>
+                </xs:complexType>
+                <xs:unique name="tags">
+                    <xs:selector xpath="tag"/>
+                    <xs:field xpath="."/>
+                </xs:unique>
+            </xs:element>
+            <xs:element name="patterns">
+                <xs:annotation>
+                    <xs:documentation>
+                        Patterns representing the rule. Log messages matching any one of the patterns
+                        are classified to this rule.
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="pattern" type="patternType" minOccurs="0" maxOccurs="unbounded">
+                            <xs:annotation>
+                                <xs:documentation>
+                                    A pattern representing the log message.
+                                </xs:documentation>
+                            </xs:annotation>
+                        </xs:element>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+        </xs:all>
+        <xs:attribute name="provider" type="xs:string" use="required">
+            <xs:annotation>
+                <xs:documentation>
+                    The provider of the rule. To distinguish between who supplied the rule,
+                    or if it has been added to the xml by a local user.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="id" type="uuidType" use="required"/>
+        <xs:attribute name="class" type="classType" use="required">
+            <xs:annotation>
+                <xs:documentation>
+                    The class of the rule.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+    </xs:complexType>
+
+    <xs:simpleType name="uuidType">
+        <xs:annotation>
+            <xs:documentation>
+                The globaly unique ID of the rule.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:pattern value="[a-zA-Z0-9]{8}-([a-zA-Z0-9]{4}-){3}[a-zA-Z0-9]{12}"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="patternType">
+        <xs:annotation>
+            <xs:documentation>
+                This type describes a radix/parser pattern which is used to match
+                a program name or a whole log message.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string"/>
+    </xs:simpleType>
+
+    <xs:simpleType name="classType">
+        <xs:annotation>
+            <xs:documentation>
+                The classification class for a single rule.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="violation">
+                <xs:annotation>
+                    <xs:documentation>
+                        The log message is a VIOLATION where immediate action must be taken.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="security">
+                <xs:annotation>
+                    <xs:documentation>
+                        The log message is related to a SECURITY event.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="system">
+                <xs:annotation>
+                    <xs:documentation>
+                        The log message is related to a normal SYSTEM event.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="unknown">
+                <xs:annotation>
+                    <xs:documentation>
+                        The log message is UNKNOWN and as is an anomaly.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+
+</xs:schema>
