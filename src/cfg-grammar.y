@@ -731,6 +731,7 @@ source_reader_option
 	| KW_FOLLOW_FREQ '(' LL_NUMBER ')'		{ last_reader_options->follow_freq = ($3 * 1000); }
 	| KW_KEEP_TIMESTAMP '(' yesno ')'	{ last_reader_options->super.keep_timestamp = $3; }
         | KW_ENCODING '(' string ')'		{ last_reader_options->text_encoding = g_strdup($3); free($3); }
+    | KW_TAGS '(' string_list ')'       { log_reader_options_set_tags(last_reader_options, $3); }
 	| KW_DEFAULT_LEVEL '(' level_string ')'
 	  {
 	    if (last_reader_options->default_pri == 0xFFFF)

@@ -26,6 +26,7 @@
 #include "logproto.h"
 #include "misc.h"
 #include "stats.h"
+#include "tags.h"
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -256,6 +257,7 @@ log_reader_handle_line(LogReader *self, const guchar *line, gint length, GSockAd
 {
   LogMessage *m;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
+  gint i;
   
   msg_debug("Incoming log entry", 
             evt_tag_printf("line", "%.*s", length, line),
@@ -272,6 +274,10 @@ log_reader_handle_line(LogReader *self, const guchar *line, gint length, GSockAd
     {
       m->saddr = g_sockaddr_ref(self->peer_addr);
     }
+
+  if (self->options->tags)
+    for (i = 0; i < self->options->tags->len; i++)
+      log_msg_set_tag_by_id(m, g_array_index(self->options->tags, guint, i));
 
   log_pipe_queue(&self->super.super, m, &path_options);
   return log_source_free_to_send(&self->super);
@@ -722,6 +728,7 @@ log_reader_options_init(LogReaderOptions *options, GlobalConfig *cfg, const gcha
   gchar *recv_time_zone;
   TimeZoneInfo *recv_time_zone_info;
   gchar *host_override, *program_override, *text_encoding;
+  GArray *tags;
 
   recv_time_zone = options->recv_time_zone;
   options->recv_time_zone = NULL;
@@ -729,6 +736,8 @@ log_reader_options_init(LogReaderOptions *options, GlobalConfig *cfg, const gcha
   options->recv_time_zone_info = NULL;
   text_encoding = options->text_encoding;
   options->text_encoding = NULL;
+  tags = options->tags;
+  options->tags = NULL;
 
   /* NOTE: having to save super's variables is a crude hack, but I know of
    * no other way to do it in the scheme described above. Be sure that you
@@ -747,6 +756,7 @@ log_reader_options_init(LogReaderOptions *options, GlobalConfig *cfg, const gcha
   options->recv_time_zone = recv_time_zone;
   options->recv_time_zone_info = recv_time_zone_info;
   options->text_encoding = text_encoding;
+  options->tags = tags;
 
   log_source_options_init(&options->super, cfg, group_name);
 
@@ -792,6 +802,11 @@ log_reader_options_destroy(LogReaderOptions *options)
       time_zone_info_free(options->recv_time_zone_info);
       options->recv_time_zone_info = NULL;
     }
+  if (options->tags)
+    {
+      g_array_free(options->tags, TRUE);
+      options->tags = NULL;
+    }
 }
 
 gint
@@ -813,4 +828,22 @@ log_reader_options_lookup_flag(const gchar *flag)
     return LRO_EMPTY_LINES;
   msg_error("Unknown parse flag", evt_tag_str("flag", flag), NULL);
   return 0;
+}
+
+void
+log_reader_options_set_tags(LogReaderOptions *options, GList *tags)
+{
+  guint id;
+
+  if (!options->tags)
+    options->tags = g_array_new(FALSE, FALSE, sizeof(guint));
+
+  while (tags)
+    {
+      id = log_tags_get_by_name((gchar *) tags->data);
+      g_array_append_val(options->tags, id);
+
+      g_free(tags->data);
+      tags = g_list_delete_link(tags, tags);
+    }
 }

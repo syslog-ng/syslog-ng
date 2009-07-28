@@ -65,6 +65,7 @@ typedef struct _LogReaderOptions
   gchar *recv_time_zone;
   TimeZoneInfo *recv_time_zone_info;
   regex_t *bad_hostname;
+  GArray *tags;
 } LogReaderOptions;
 
 typedef struct _LogReader
@@ -98,6 +99,7 @@ void log_reader_options_defaults(LogReaderOptions *options);
 void log_reader_options_init(LogReaderOptions *options, GlobalConfig *cfg, const gchar *group_name);
 void log_reader_options_destroy(LogReaderOptions *options);
 gint log_reader_options_lookup_flag(const gchar *flag);
+void log_reader_options_set_tags(LogReaderOptions *options, GList *tags);
 
 
 #endif
