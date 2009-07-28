@@ -24,6 +24,7 @@
 
 #include "logpatterns.h"
 #include "logmsg.h"
+#include "tags.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -65,6 +66,9 @@ log_db_result_unref(void *s)
 
       if (self->class)
         g_free(self->class);
+
+      if (self->tags)
+        g_array_free(self->tags, TRUE);
 
       g_free(self);
     }
@@ -131,6 +135,7 @@ typedef struct _LogDBParserState
   gboolean in_pattern;
   gboolean in_ruleset;
   gboolean in_rule;
+  gboolean in_tag;
 } LogDBParserState;
 
 void
@@ -186,6 +191,10 @@ log_classifier_xml_start_element(GMarkupParseContext *context, const gchar *elem
     {
       state->in_pattern = TRUE;
     }
+  else if (strcmp(element_name, "tag") == 0)
+    {
+      state->in_tag = TRUE;
+    }
   else if (strcmp(element_name, "patterndb") == 0)
     {
       for (i = 0; attribute_names[i]; i++)
@@ -231,6 +240,8 @@ log_classifier_xml_end_element(GMarkupParseContext *context, const gchar *elemen
     }
   else if (strcmp(element_name, "pattern") == 0)
     state->in_pattern = FALSE;
+  else if (strcmp(element_name, "tag") == 0)
+    state->in_tag = FALSE;
 }
 
 void
@@ -239,37 +250,45 @@ log_classifier_xml_text(GMarkupParseContext *context, const gchar *text, gsize t
   LogDBParserState *state = (LogDBParserState *) user_data;
   RNode *node = NULL;
   gchar *txt;
+  guint tag;
 
-  if (!state->in_pattern)
-    return;
-
-  txt = g_strdup(text);
-
-  if (state->in_rule)
+  if (state->in_pattern)
     {
-      r_insert_node(state->current_program ? state->current_program->rules : state->root_program->rules,
-                    txt,
-                    log_db_result_ref(state->current_result),
-                    TRUE, log_db_result_name);
-    }
-  else if (state->in_ruleset)
-    {
-      node = r_find_node(state->db->programs, txt, txt, strlen(txt), NULL, NULL);
+      txt = g_strdup(text);
 
-      if (node && node->value && node != state->db->programs)
-        state->current_program = node->value;
-      else
+      if (state->in_rule)
         {
-          state->current_program = log_db_program_new();
-
-          r_insert_node(state->db->programs,
-                    txt,
-                    state->current_program,
-                    TRUE, NULL);
+          r_insert_node(state->current_program ? state->current_program->rules : state->root_program->rules,
+                        txt,
+                        log_db_result_ref(state->current_result),
+                        TRUE, log_db_result_name);
         }
-    }
+      else if (state->in_ruleset)
+        {
+          node = r_find_node(state->db->programs, txt, txt, strlen(txt), NULL, NULL);
 
-  g_free(txt);
+          if (node && node->value && node != state->db->programs)
+            state->current_program = node->value;
+          else
+            {
+              state->current_program = log_db_program_new();
+
+              r_insert_node(state->db->programs,
+                        txt,
+                        state->current_program,
+                        TRUE, NULL);
+            }
+        }
+      g_free(txt);
+    }
+  else if (state->in_tag)
+    {
+      if (!state->current_result->tags)
+        state->current_result->tags = g_array_new(FALSE, FALSE, sizeof(guint));
+
+      tag = log_tags_get_by_name(text);
+      g_array_append_val(state->current_result->tags, tag);
+    }
 }
 
 GMarkupParser db_parser =
@@ -375,6 +394,7 @@ log_pattern_database_load(LogPatternDatabase *self, const gchar *config)
 
   state.db = self;
   state.in_pattern = FALSE;
+  state.in_tag = FALSE;
   state.in_rule = FALSE;
   state.in_ruleset = FALSE;
   state.current_result = NULL;

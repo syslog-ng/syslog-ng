@@ -480,6 +480,7 @@ log_db_parser_process(LogParser *s, LogMessage *msg, const char *input)
 {
   LogDBParser *self = (LogDBParser *) s;
   LogDBResult *verdict;
+  gint i;
 
   if (G_UNLIKELY(self->db_file_last_check == 0 || self->db_file_last_check < msg->timestamps[LM_TS_RECVD].time.tv_sec - 5))
     {
@@ -492,6 +493,13 @@ log_db_parser_process(LogParser *s, LogMessage *msg, const char *input)
     {
       log_msg_add_dyn_value(msg, ".classifier.class", verdict->class);
       log_msg_add_dyn_value(msg, ".classifier.rule_id", verdict->rule_id);
+
+      if (verdict->tags)
+        {
+          for (i = 0; i < verdict->tags->len; i++)
+            log_msg_set_tag_by_id(msg, g_array_index(verdict->tags, guint, i));
+
+        }
     }
   else
     {
