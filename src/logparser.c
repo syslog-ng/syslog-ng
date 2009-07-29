@@ -498,7 +498,18 @@ log_db_parser_process(LogParser *s, LogMessage *msg, const char *input)
         {
           for (i = 0; i < verdict->tags->len; i++)
             log_msg_set_tag_by_id(msg, g_array_index(verdict->tags, guint, i));
+        }
 
+      if (verdict->values)
+        {
+          GString *result = g_string_sized_new(32);
+
+          for (i = 0; i < verdict->values->len; i++)
+            {
+              log_template_format(g_ptr_array_index(verdict->values, i), msg, 0, TS_FMT_ISO, NULL, 0, 0, result);
+              log_msg_add_sized_dyn_value(msg, ((LogTemplate *)g_ptr_array_index(verdict->values, i))->name, result->str, result->len);
+            }
+          g_string_free(result, TRUE);
         }
     }
   else

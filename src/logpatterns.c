@@ -25,10 +25,12 @@
 #include "logpatterns.h"
 #include "logmsg.h"
 #include "tags.h"
+#include "templates.h"
 
 #include <string.h>
 #include <stdio.h>
 #include <errno.h>
+
 
 LogDBResult *
 log_db_result_new(gchar *class, gchar *rule_id)
@@ -56,6 +58,7 @@ static void
 log_db_result_unref(void *s)
 {
   LogDBResult *self = (LogDBResult *) s;
+  gint i;
 
   g_assert(self->ref_cnt > 0);
 
@@ -69,6 +72,14 @@ log_db_result_unref(void *s)
 
       if (self->tags)
         g_array_free(self->tags, TRUE);
+
+      if (self->values)
+        {
+          for (i = 0; i < self->values->len; i++)
+            log_template_unref(g_ptr_array_index(self->values, i));
+
+          g_ptr_array_free(self->values, TRUE);
+        }
 
       g_free(self);
     }
@@ -136,6 +147,7 @@ typedef struct _LogDBParserState
   gboolean in_ruleset;
   gboolean in_rule;
   gboolean in_tag;
+  gchar *value_name;
 } LogDBParserState;
 
 void
@@ -195,6 +207,13 @@ log_classifier_xml_start_element(GMarkupParseContext *context, const gchar *elem
     {
       state->in_tag = TRUE;
     }
+  else if (strcmp(element_name, "value") == 0)
+    {
+      if (attribute_names[0] && g_str_equal(attribute_names[0], "name"))
+        state->value_name = g_strdup(attribute_values[0]);
+      else
+        msg_error("No name is specified for value", evt_tag_str("rule_id", state->current_result->rule_id), NULL);
+    }
   else if (strcmp(element_name, "patterndb") == 0)
     {
       for (i = 0; attribute_names[i]; i++)
@@ -238,6 +257,13 @@ log_classifier_xml_end_element(GMarkupParseContext *context, const gchar *elemen
           state->current_result = NULL;
         }
     }
+  else if (strcmp(element_name, "value") == 0)
+    {
+      if (state->value_name)
+        g_free(state->value_name);
+
+      state->value_name = NULL;
+    }
   else if (strcmp(element_name, "pattern") == 0)
     state->in_pattern = FALSE;
   else if (strcmp(element_name, "tag") == 0)
@@ -248,6 +274,8 @@ void
 log_classifier_xml_text(GMarkupParseContext *context, const gchar *text, gsize text_len, gpointer user_data, GError **error)
 {
   LogDBParserState *state = (LogDBParserState *) user_data;
+  LogTemplate *value;
+  GError *err = NULL;
   RNode *node = NULL;
   gchar *txt;
   guint tag;
@@ -288,6 +316,24 @@ log_classifier_xml_text(GMarkupParseContext *context, const gchar *text, gsize t
 
       tag = log_tags_get_by_name(text);
       g_array_append_val(state->current_result->tags, tag);
+    }
+  else if (state->value_name)
+    {
+      if (!state->current_result->values)
+        state->current_result->values = g_ptr_array_new();
+
+      value = log_template_new(state->value_name, text);
+      if (!log_template_compile(value, &err))
+        {
+          msg_error("Error compiling value template",
+            evt_tag_str("name", state->value_name),
+            evt_tag_str("value", text),
+            evt_tag_str("error", err->message), NULL);
+          g_error_free(err);
+          log_template_unref(value);
+        }
+      else
+        g_ptr_array_add(state->current_result->values, value);
     }
 }
 
@@ -397,6 +443,7 @@ log_pattern_database_load(LogPatternDatabase *self, const gchar *config)
   state.in_tag = FALSE;
   state.in_rule = FALSE;
   state.in_ruleset = FALSE;
+  state.value_name = NULL;
   state.current_result = NULL;
   state.current_program = NULL;
   state.root_program = log_db_program_new();

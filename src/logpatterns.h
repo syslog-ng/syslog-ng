@@ -35,6 +35,7 @@ typedef struct _LogDBResult
   gchar *class;
   gchar *rule_id;
   GArray *tags;
+  GPtrArray *values;
   guint ref_cnt;
 } LogDBResult;
 

@@ -26,6 +26,11 @@ gchar *pdb = "<patterndb version='2' pub_date='2009-07-28'>\
     <tag>tag11-1</tag>\
     <tag>tag11-2</tag>\
    </tags>\
+   <values>\
+    <value name='n11-1'>v11-1</value>\
+    <value name='n11-2'>v11-2</value>\
+    <value name='vvv'>${HOST}</value>\
+   </values>\
   </rule>\
   <rule provider='test' id='12' class='system'>\
    <patterns>\
@@ -46,6 +51,43 @@ do {\
 do { \
   if (verbose) printf(fmt, ##args); \
 } while (0);
+
+#define MYHOST "MYHOST"
+
+void
+test_rule_value(LogPatternDatabase *patterndb, const gchar *pattern, const gchar *name, const gchar *value)
+{
+  LogDBResult *result;
+  LogMessage *msg = log_msg_new_empty();
+  gboolean found = FALSE;
+  GString *val = g_string_sized_new(256);
+  gint i = 0;
+
+  log_msg_set_message(msg, g_strdup(pattern), strlen(pattern));
+  log_msg_set_host(msg, g_strdup(MYHOST), strlen(MYHOST));
+
+  result = log_pattern_database_lookup(patterndb, msg);
+  if (result)
+    {
+       if (result->values)
+         {
+           while (i < result->values->len && !g_str_equal(((LogTemplate *)g_ptr_array_index(result->values, i))->name, name))
+             i++;
+
+           if (i < result->values->len)
+             {
+               log_template_format(g_ptr_array_index(result->values, i), msg, 0, TS_FMT_ISO, NULL, 0, 0, val);
+               found = g_str_equal(val->str, value);
+             }
+         }
+    }
+
+  if (!!value ^ found)
+    test_fail("Value '%s' is %smatching for pattern '%s' (%d)\n", name, found ? "" : "not ", pattern, !!result);
+
+  log_msg_unref(msg);
+  g_string_free(val, TRUE);
+}
 
 void
 test_rule_tag(LogPatternDatabase *patterndb, const gchar *pattern, const gchar *tag, gboolean set)
@@ -120,6 +162,21 @@ main(int argc, char *argv[])
       test_rule_tag(&patterndb, "pattern1xa", "tag1x-1", FALSE);
       test_rule_tag(&patterndb, "pattern1xa", "tag1x-2", FALSE);
       test_rule_tag(&patterndb, "pattern1xa", "tag1x-3", FALSE);
+
+      test_rule_value(&patterndb, "pattern11", "n11-1", "v11-1");
+      test_rule_value(&patterndb, "pattern11", "n11-2", "v11-2");
+      test_rule_value(&patterndb, "pattern11", "n11-3", NULL);
+      test_rule_value(&patterndb, "pattern11a", "n11-1", "v11-1");
+      test_rule_value(&patterndb, "pattern11a", "n11-2", "v11-2");
+      test_rule_value(&patterndb, "pattern11a", "n11-3", NULL);
+      test_rule_value(&patterndb, "pattern12", "n12-1", NULL);
+      test_rule_value(&patterndb, "pattern12", "n12-2", NULL);
+      test_rule_value(&patterndb, "pattern12", "n12-3", NULL);
+      test_rule_value(&patterndb, "pattern1x", "n1x-1", NULL);
+      test_rule_value(&patterndb, "pattern1x", "n1x-2", NULL);
+      test_rule_value(&patterndb, "pattern1x", "n1x-3", NULL);
+
+      test_rule_value(&patterndb, "pattern11", "vvv", MYHOST);
 
       log_pattern_database_free(&patterndb);
     }
