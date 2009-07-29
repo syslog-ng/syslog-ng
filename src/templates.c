@@ -678,6 +678,14 @@ log_template_compile(LogTemplate *self, GError **error)
               start = p;
               while (*p && *p != '}')
                 p++;
+
+              if (!*p)
+                {
+                  error_pos = p - self->template;
+                  error_info = "Invalid macro, '}' is missing";
+                  goto error;
+                }
+
               p++;
               
               colon = memchr(start, ':', p - start - 1);
