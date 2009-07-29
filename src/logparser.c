@@ -475,20 +475,13 @@ log_db_parser_reload_database(LogDBParser *self)
 
 }
 
-static gboolean
-log_db_parser_process(LogParser *s, LogMessage *msg, const char *input)
+static inline void
+log_db_parser_process_real(LogPatternDatabase *db, LogMessage *msg)
 {
-  LogDBParser *self = (LogDBParser *) s;
   LogDBResult *verdict;
   gint i;
 
-  if (G_UNLIKELY(self->db_file_last_check == 0 || self->db_file_last_check < msg->timestamps[LM_TS_RECVD].time.tv_sec - 5))
-    {
-      self->db_file_last_check = msg->timestamps[LM_TS_RECVD].time.tv_sec;
-      log_db_parser_reload_database(self);
-    }
-
-  verdict = log_pattern_database_lookup(&self->db, msg);
+  verdict = log_pattern_database_lookup(db, msg);
   if (verdict)
     {
       log_msg_add_dyn_value(msg, ".classifier.class", verdict->class);
@@ -516,7 +509,27 @@ log_db_parser_process(LogParser *s, LogMessage *msg, const char *input)
     {
       log_msg_add_dyn_value(msg, ".classifier.class", "unknown");
     }
+}
+
+static gboolean
+log_db_parser_process(LogParser *s, LogMessage *msg, const char *input)
+{
+  LogDBParser *self = (LogDBParser *) s;
+
+  if (G_UNLIKELY(self->db_file_last_check == 0 || self->db_file_last_check < msg->timestamps[LM_TS_RECVD].time.tv_sec - 5))
+    {
+      self->db_file_last_check = msg->timestamps[LM_TS_RECVD].time.tv_sec;
+      log_db_parser_reload_database(self);
+    }
+
+  log_db_parser_process_real(&self->db, msg);
   return TRUE;
+}
+
+void
+log_db_parser_process_lookup(LogPatternDatabase *db, LogMessage *msg)
+{
+  log_db_parser_process_real(db, msg);
 }
 
 void

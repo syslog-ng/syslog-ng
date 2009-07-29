@@ -7,11 +7,15 @@ else
 sbin_PROGRAMS = syslog-ng
 endif
 
+bin_PROGRAMS = pdbtool
+
 noinst_LIBRARIES = libsyslog-ng.a
 
 syslog_ng_SOURCES = main.c
 syslog_ng_LDADD = libsyslog-ng.a @DEPS_LIBS@
 syslog_ng_wrapper_SOURCES = wrapper.c
+pdbtool_SOURCES = pdbtool.c
+pdbtool_LDADD = libsyslog-ng.a @DEPS_LIBS@
 
 libsyslog_ng_a_SOURCES = \
 	misc.c misc.h utils.c utils.h messages.c messages.h syslog-names.c syslog-names.h \
