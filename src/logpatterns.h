@@ -39,6 +39,16 @@ typedef struct _LogDBResult
   guint ref_cnt;
 } LogDBResult;
 
+/*
+ * This class encapsulates a set of program related rules in the
+ * pattern database. Its instances are stored as "value" in the
+ * program name RADIX tree. It basically contains another RADIX for
+ * the per-program patterns.
+ */
+typedef struct _LogDBProgram
+{
+  RNode *rules;
+} LogDBProgram;
 
 typedef struct _LogPatternDatabase
 {

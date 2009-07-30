@@ -4,9 +4,11 @@
 #include "misc.h"
 #include "logpatterns.h"
 #include "logparser.h"
+#include "radix.h"
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 #if HAVE_GETOPT_H
 #include <getopt.h>
@@ -92,6 +94,71 @@ static GOptionEntry match_options[] =
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
 };
 
+static gboolean dump_program_tree = FALSE;
+
+void
+pdbtool_walk_tree(RNode *root, gint level, gboolean program)
+{
+  gint i;
+
+  for (i = 0; i < level; i++)
+    printf(" ");
+
+  if (root->parser)
+    printf("@%s:%s@ ", r_parser_type_name(root->parser->type), root->parser->name ? root->parser->name : "");
+  else
+    printf("'%s' ", root->key ? root->key : "");
+
+  if (root->value)
+    {
+      if (!program)
+        printf("rule_id='%s'", ((LogDBResult*)root->value)->rule_id);
+      else
+        printf("RULES");
+    }
+
+  printf("\n");
+
+  for (i = 0; i < root->num_children; i++)
+    pdbtool_walk_tree(root->children[i], level + 1, program);
+
+  for (i = 0; i < root->num_pchildren; i++)
+    pdbtool_walk_tree(root->pchildren[i], level + 1, program);
+}
+
+static gint
+pdbtool_dump(int argc, char *argv[])
+{
+ LogPatternDatabase patterndb;
+
+ memset(&patterndb, 0x0, sizeof(LogPatternDatabase));
+
+ if (!log_pattern_database_load(&patterndb, patterndb_file))
+   return 1;
+
+ if (dump_program_tree)
+   pdbtool_walk_tree(patterndb.programs, 0, TRUE);
+ else if (match_program)
+   {
+     RNode *ruleset = r_find_node(patterndb.programs, g_strdup(match_program), g_strdup(match_program), strlen(match_program), NULL, NULL);
+     if (ruleset && ruleset->value)
+       pdbtool_walk_tree(((LogDBProgram *)ruleset->value)->rules, 0, FALSE);
+   }
+
+ return 0;
+}
+
+static GOptionEntry dump_options[] =
+{
+  { "program", 'P', 0, G_OPTION_ARG_STRING, &match_program,
+    "Program name ($PROGRAM) to dump", "<program>" },
+  { "program-tree", 'T', 0, G_OPTION_ARG_NONE, &dump_program_tree,
+    "Dump the program ($PROGRAM) tree", NULL },
+  { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
+};
+
+
+
 const gchar *
 pdbtool_mode(int *argc, char **argv[])
 {
@@ -139,6 +206,7 @@ static struct
 } modes[] =
 {
   { "match", match_options, "Match a message against the pattern database", pdbtool_match },
+  { "dump", dump_options, "Dump pattern datebase tree", pdbtool_dump },
   { NULL, NULL },
 };
 

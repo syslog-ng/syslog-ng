@@ -80,6 +80,33 @@ struct _RNode
   RNode **pchildren;
 };
 
+static inline gchar *
+r_parser_type_name(guint8 type)
+{
+  switch (type)
+    {
+      case RPT_STRING:
+        return "STRING";
+      case RPT_QSTRING:
+        return "QSTRING";
+      case RPT_ESTRING:
+        return "ESTRING";
+      case RPT_IPV4:
+        return "IPv4";
+      case RPT_NUMBER:
+        return "NUMBER";
+      case RPT_ANYSTRING:
+        return "ANYSTRING";
+      case RPT_IPV6:
+        return "IPv6";
+      case RPT_IP:
+        return "IP";
+      case RPT_FLOAT:
+        return "FLOAT";
+      default:
+        return "UNKNOWN";
+    }
+}
 
 RNode *r_new_node(gchar *key, gpointer value);
 void r_free_node(RNode *node, void (*free_fn)(gpointer data));
