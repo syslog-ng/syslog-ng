@@ -51,7 +51,7 @@ pdbtool_match_values(gpointer key, gpointer value, gpointer user_data)
 
   printf("%s=%s\n", n, v);
   if (g_str_equal(n, ".classifier.rule_id"))
-    *ret = 1;
+    *ret = 0;
 }
 
 static gint
