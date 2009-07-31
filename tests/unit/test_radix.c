@@ -141,9 +141,9 @@ test_search_matches(RNode *root, gchar *key, gchar *name1, ...)
           
           if (match->flags & LMM_REF_MATCH)
             {
-              if (strncmp(&key[match->ofs], value, match->len) != 0)
+              if (strncmp(&key[match->ofs], value, match->len) != 0 || strlen(value) != match->len)
                 {
-                  printf("FAIL: value does not match: '%s' => expecting %d. match, value %s != %.*s, total %d\n", key, i, value, match->len, &key[match->ofs], matches->len);
+                  printf("FAIL: value does not match: '%s' => expecting %d. match, value '%s' != '%.*s', total %d\n", key, i, value, match->len, &key[match->ofs], matches->len);
                   fail = TRUE;
                 }
             }
@@ -151,7 +151,7 @@ test_search_matches(RNode *root, gchar *key, gchar *name1, ...)
             {
               if (strcmp(match->match, value) != 0)
                 {
-                  printf("FAIL: value does not match: '%s' => expecting %d. match, value %s != %s, total %d\n", key, i, value, match->match, matches->len);
+                  printf("FAIL: value does not match: '%s' => expecting %d. match, value '%s' != '%s', total %d\n", key, i, value, match->match, matches->len);
                   fail = TRUE;
                 }
             }
@@ -334,8 +334,10 @@ test_zorp_logs(void)
   /* these are conflicting logs */
   r_insert_node(root, strdup("core.error(2): (svc/@STRING:service:._@:@NUMBER:instance_id@/plug): Connection to remote end failed; local='AF_INET(@IPv4:local_ip@:@NUMBER:local_port@)', remote='AF_INET(@IPv4:remote_ip@:@NUMBER:remote_port@)', error=@QSTRING:errormsg:'@"), "ZORP", TRUE);
   r_insert_node(root, strdup("core.error(2): (svc/@STRING:service:._@:@NUMBER:instance_id@/plug): Connection to remote end failed; local=@QSTRING:p:'@, remote=@QSTRING:p:'@, error=@QSTRING:p:'@"), "ZORP1", TRUE);
+  r_insert_node(root, strdup("@NUMBER:Seq@, @ESTRING:DateTime:,@@ESTRING:Severity:,@@ESTRING:Comp:,@"), "3com", TRUE);
 
   test_search_value(root, "core.error(2): (svc/intra.servers.alef_SSH_dmz.zajin:111/plug): Connection to remote end failed; local='AF_INET(172.16.0.1:56867)', remote='AF_INET(172.18.0.1:22)', error='No route to host'PAS", "ZORP");
+  test_search_matches(root, "1, 2006-08-22 16:31:39,INFO,BLK,", "Seq", "1", "DateTime", "2006-08-22 16:31:39", "Severity", "INFO", "Comp", "BLK", NULL);
   r_free_node(root, NULL);
 
 }

@@ -80,7 +80,9 @@ r_parser_estring(gchar *str, gint *len, const gchar *param, gpointer state, LogM
 
   if ((end = strchr(str, param[0])) != NULL)
     {
-      *len = (end - str);
+      *len = (end - str) + 1;
+      if (match)
+        match->len = -1;
       return TRUE;
     }
   else
