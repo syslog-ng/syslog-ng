@@ -258,7 +258,9 @@ afinet_dd_set_destport(LogDriver *s, gchar *service, const gchar *proto)
   afinet_set_port(self->super.dest_addr, service, proto);
   
   g_free(self->super.dest_name);
-  self->super.dest_name = g_strdup_printf("%s:%d", self->super.hostname, g_sockaddr_inet_get_port(self->super.dest_addr));
+  self->super.dest_name = g_strdup_printf("%s:%d", self->super.hostname,
+                  g_sockaddr_inet_check(self->super.dest_addr) ? g_sockaddr_inet_get_port(self->super.dest_addr)
+                                                               : g_sockaddr_inet6_get_port(self->super.dest_addr));
 }
 
 void 
