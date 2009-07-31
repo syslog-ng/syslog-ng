@@ -388,7 +388,7 @@ g_sockaddr_inet6_format(GSockAddr *addr, gchar *text, gulong n, gint format)
   if (format == GSA_FULL)
     {
       inet_ntop(AF_INET6, &self->sin6.sin6_addr, buf, sizeof(buf));
-      g_snprintf(text, n, "AF_INET6(%s:%d)", 
+      g_snprintf(text, n, "AF_INET6([%s]:%d)",
 	         buf, 
                  htons(self->sin6.sin6_port));
     }
