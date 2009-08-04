@@ -204,6 +204,15 @@ log_reader_fd_dispatch(GSource *source,
                        gpointer user_data)
 {
   LogReaderWatch *self = (LogReaderWatch *) source;
+
+  /* The window status can change between check() and dispatch()
+   * because multiple tcp connections can have messages ready
+   * from the same source at check() time, but the queue may
+   * fill before we dispatch() them all
+   */
+  if (!log_source_free_to_send(&self->reader->super))
+    return TRUE;
+
   if (!log_reader_fetch_log(self->reader, self->proto))
     {
       return FALSE;
