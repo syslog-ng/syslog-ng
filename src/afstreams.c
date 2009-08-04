@@ -143,7 +143,6 @@ afstreams_init_door(int hook_type G_GNUC_UNUSED, gpointer user_data)
                 evt_tag_str(EVT_TAG_FILENAME, self->door_filename->str),
                 evt_tag_errno(EVT_TAG_OSERROR, errno),
                 NULL);
-      close(self->door_fd);
       return;
     }
   g_fd_set_cloexec(self->door_fd, TRUE);
@@ -154,6 +153,7 @@ afstreams_init_door(int hook_type G_GNUC_UNUSED, gpointer user_data)
                 evt_tag_errno(EVT_TAG_OSERROR, errno),
                 NULL);
       close(self->door_fd);
+      self->door_fd = -1;
       return;
     }
 }
@@ -228,8 +228,11 @@ afstreams_sd_deinit(LogPipe *s)
 
   if (self->reader)
     log_pipe_deinit(self->reader);
-  door_revoke(self->door_fd);
-  close(self->door_fd);
+  if (self->door_fd != -1)
+    {
+      door_revoke(self->door_fd);
+      close(self->door_fd);
+    }
   return TRUE;
 }
 
