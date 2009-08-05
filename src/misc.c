@@ -88,6 +88,7 @@ resolve_hostname(GSockAddr **addr, gchar *name)
 #if HAVE_GETADDRINFO
       struct addrinfo hints;
       struct addrinfo *res;
+      guint16 port;
 
       memset(&hints, 0, sizeof(hints));
       hints.ai_family = (*addr)->sa.sa_family;
@@ -104,7 +105,14 @@ resolve_hostname(GSockAddr **addr, gchar *name)
               break;
 #if ENABLE_IPV6
             case AF_INET6:
+
+              /* we need to copy the whole sockaddr_in6 structure as it
+               * might contain scope and other required data */
+              port = g_sockaddr_inet6_get_port(*addr);
               *g_sockaddr_inet6_get_sa(*addr) = *((struct sockaddr_in6 *) res->ai_addr);
+
+              /* we need to restore the port number as it is zeroed out by the previous assignment */
+              g_sockaddr_inet6_set_port(*addr, port);
               break;
 #endif
             default: 

@@ -1,5 +1,6 @@
 import struct, stat, re
 from socket import *
+from socket import ssl
 import os, sys, errno
 
 from log import *

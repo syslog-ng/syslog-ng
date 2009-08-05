@@ -138,13 +138,13 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
     {
       if (self->options->program_override_len < 0)
         self->options->program_override_len = strlen(self->options->program_override);
-      log_msg_set_program(msg, g_strdup(self->options->program_override), self->options->program_override_len);
+      log_msg_set_program(msg, g_strndup(self->options->program_override, self->options->program_override_len), self->options->program_override_len);
     }
   if (self->options->host_override)
     {
       if (self->options->host_override_len < 0)
         self->options->host_override_len = strlen(self->options->host_override);
-      log_msg_set_host(msg, g_strdup(self->options->host_override), self->options->host_override_len);
+      log_msg_set_host(msg, g_strndup(self->options->host_override, self->options->host_override_len), self->options->host_override_len);
     }
     
   handle = stats_register_dynamic_counter(2, SCS_HOST | SCS_SOURCE, NULL, msg->host, SC_TYPE_PROCESSED, &processed_counter, &new);
@@ -162,6 +162,17 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
   msg->ack_userdata = log_pipe_ref(s);
     
   g_atomic_counter_dec_and_test(&self->options->window_size);
+
+  /* NOTE: we don't need to be very accurate here, it is a bug if
+   * window_size goes below 0, but an atomic operation is expensive and
+   * reading it without locks does not always get the most accurate value,
+   * but the only outcome might be that window_size is larger (since the
+   * update we can lose is the atomic decrement in the consuming thread,
+   * most probably SQL), thus the assert is safe.
+   */
+
+  g_assert(g_atomic_counter_racy_get(&self->options->window_size) >= 0);
+
   stats_counter_inc(self->recvd_messages);
   stats_counter_set(self->last_message_seen, msg->timestamps[LM_TS_RECVD].time.tv_sec);
   log_pipe_queue(s->pipe_next, msg, &local_options);

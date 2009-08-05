@@ -191,6 +191,8 @@ afinet_sd_set_transport(LogDriver *s, const gchar *transport)
 {
   AFInetSourceDriver *self = (AFInetSourceDriver *) s;
   
+  if (self->super.transport)
+    g_free(self->super.transport);
   self->super.transport = g_strdup(transport);
   if (strcasecmp(transport, "udp") == 0)
     {
@@ -218,6 +220,10 @@ afinet_sd_new(gint af, gchar *host, gint port, guint flags)
   AFInetSourceDriver *self = g_new0(AFInetSourceDriver, 1);
   
   afsocket_sd_init_instance(&self->super, &self->sock_options.super, flags);
+  if (self->super.flags & AFSOCKET_DGRAM)
+    self->super.transport = g_strdup("udp");
+  else if (self->super.flags & AFSOCKET_STREAM)
+    self->super.transport = g_strdup("tcp");
   if (af == AF_INET)
     {
       self->super.bind_addr = g_sockaddr_inet_new("0.0.0.0", port);
@@ -258,7 +264,9 @@ afinet_dd_set_destport(LogDriver *s, gchar *service, const gchar *proto)
   afinet_set_port(self->super.dest_addr, service, proto);
   
   g_free(self->super.dest_name);
-  self->super.dest_name = g_strdup_printf("%s:%d", self->super.hostname, g_sockaddr_inet_get_port(self->super.dest_addr));
+  self->super.dest_name = g_strdup_printf("%s:%d", self->super.hostname,
+                  g_sockaddr_inet_check(self->super.dest_addr) ? g_sockaddr_inet_get_port(self->super.dest_addr)
+                                                               : g_sockaddr_inet6_get_port(self->super.dest_addr));
 }
 
 void 
@@ -285,7 +293,9 @@ void
 afinet_dd_set_transport(LogDriver *s, const gchar *transport)
 {
   AFInetDestDriver *self = (AFInetDestDriver *) s;
-  
+
+  if (self->super.transport)
+    g_free(self->super.transport);
   self->super.transport = g_strdup(transport);
   if (strcasecmp(transport, "udp") == 0)
     {
@@ -527,6 +537,10 @@ afinet_dd_new(gint af, gchar *host, gint port, guint flags)
   AFInetDestDriver *self = g_new0(AFInetDestDriver, 1);
   
   afsocket_dd_init_instance(&self->super, &self->sock_options.super, flags, g_strdup(host), g_strdup_printf("%s:%d", host, port));
+  if (self->super.flags & AFSOCKET_DGRAM)
+    self->super.transport = g_strdup("udp");
+  else if (self->super.flags & AFSOCKET_STREAM)
+    self->super.transport = g_strdup("tcp");
   self->super.super.super.init = afinet_dd_init;
   self->super.super.super.queue = afinet_dd_queue;
   self->super.super.super.free_fn = afinet_dd_free;

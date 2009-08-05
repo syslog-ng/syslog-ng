@@ -1101,7 +1101,7 @@ options_item
 	| KW_NORMALIZE_HOSTNAMES '(' yesno ')'	{ configuration->normalize_hostnames = $3; }
 	| KW_KEEP_HOSTNAME '(' yesno ')'	{ configuration->keep_hostname = $3; }
 	| KW_CHECK_HOSTNAME '(' yesno ')'	{ configuration->check_hostname = $3; }
-	| KW_BAD_HOSTNAME '(' LL_STRING ')'	{ cfg_bad_hostname_set(configuration, $3); free($3); }
+	| KW_BAD_HOSTNAME '(' string ')'	{ cfg_bad_hostname_set(configuration, $3); free($3); }
 	| KW_USE_TIME_RECVD '(' yesno ')'	{ configuration->use_time_recvd = $3; }
 	| KW_USE_FQDN '(' yesno ')'		{ configuration->use_fqdn = $3; }
 	| KW_USE_DNS '(' dnsmode ')'		{ configuration->use_dns = $3; }

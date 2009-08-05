@@ -358,7 +358,7 @@ log_pattern_database_load(LogPatternDatabase *self, const gchar *config)
 {
   LogDBParserState state;
   GMarkupParseContext *parse_ctx = NULL;
-  GError *error;
+  GError *error = NULL;
   FILE *cfg = NULL;
   gint bytes_read;
   gchar buff[4096];
@@ -391,7 +391,7 @@ log_pattern_database_load(LogPatternDatabase *self, const gchar *config)
         {
           msg_error("Error parsing pattern database file",
                     evt_tag_str(EVT_TAG_FILENAME, config),
-                    evt_tag_str("error", error->message),
+                    evt_tag_str("error", error ? error->message : "unknown"),
                     NULL);
           goto error;
         }
@@ -403,7 +403,7 @@ log_pattern_database_load(LogPatternDatabase *self, const gchar *config)
     {
       msg_error("Error parsing pattern database file",
                 evt_tag_str(EVT_TAG_FILENAME, config),
-                evt_tag_str("error", error->message),
+                evt_tag_str("error", error ? error->message : "unknown"),
                 NULL);
       goto error;
     }
