@@ -1,3 +1,23 @@
+3.0.4
+        Wed, 05 Aug 2009 12:51:31 +0200
+
+        Bugfixes:
+        * The use of the tcp6 destination caused aborts during startup,
+          which has now been fixed.
+        * The window size used for flow control could be decremented to a
+          negative value in case multiple incoming connections overflowed
+          the queue. This could cause an abort if a SIGHUP was received at
+          this time.
+        * Fixed a possible segmentation fault under Solaris if the syslog()
+          driver was used without explicitly specifying a transport()
+          option.
+        * Fixed parse error handling when loading the patterndb.
+        * Fixed the handling of door initialization failures on Solaris.
+
+        Other changes:
+        * Fixed performance degradation when using the
+          host_override/program_override options.
+
 3.0.3
         Thu, 25 Jun 2009 08:20:28 +0200
 
