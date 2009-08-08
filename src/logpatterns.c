@@ -238,6 +238,7 @@ log_classifier_xml_text(GMarkupParseContext *context, const gchar *text, gsize t
                     txt,
                     state->current_program,
                     TRUE);
+      state->current_program = NULL;
     }
   g_free(txt);
 }
