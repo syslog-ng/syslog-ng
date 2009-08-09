@@ -11,6 +11,7 @@
 #include <time.h>
 #include <string.h>
 #include <stdlib.h>
+#include <glib/gstdio.h>
 
 gboolean fail = FALSE;
 gboolean verbose = FALSE;
