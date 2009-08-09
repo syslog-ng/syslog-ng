@@ -440,6 +440,21 @@ filter_tags_eval(FilterExprNode *s, LogMessage *msg)
   return FALSE;
 }
 
+void
+filter_tags_add(FilterExprNode *s, GList *tags)
+{
+  FilterTags *self = (FilterTags *)s;
+  guint id;
+
+  while (tags)
+    {
+      id = log_tags_get_by_name((gchar *) tags->data);
+      g_free(tags->data);
+      tags = g_list_delete_link(tags, tags);
+      g_array_append_val(self->tags, id);
+    }
+}
+
 static void
 filter_tags_free(FilterExprNode *s)
 {
@@ -457,27 +472,13 @@ filter_tags_new(GList *tags)
 
   self->tags = g_array_new(FALSE, FALSE, sizeof(guint));
 
-  filter_tags_add(self, tags);
+  filter_tags_add(&self->super, tags);
 
   self->super.eval = filter_tags_eval;
   self->super.free_fn = filter_tags_free;
   return &self->super;
 }
 
-void
-filter_tags_add(FilterExprNode *s, GList *tags)
-{
-  FilterTags *self = (FilterTags *)s;
-  guint id;
-  
-  while (tags)
-    {
-      id = log_tags_get_by_name((gchar *) tags->data);
-      g_free(tags->data);
-      tags = g_list_delete_link(tags, tags);
-      g_array_append_val(self->tags, id);
-    }
-}
 
 static void
 log_filter_rule_free(LogProcessRule *s)
