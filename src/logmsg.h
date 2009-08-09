@@ -95,15 +95,16 @@ enum
   LF_OWN_SADDR        = 0x1000,
   LF_OWN_SOURCE       = 0x2000,
   LF_OWN_MATCHES      = 0x4000,
-  LF_OWN_ALL          = 0x7FF0,
-  LF_CHAINED_HOSTNAME = 0x8000,
+  LF_OWN_TAGS         = 0x8000,
+  LF_OWN_ALL          = 0xFFF0,
+  LF_CHAINED_HOSTNAME = 0x10000,
 
   /* originally parsed from RFC 3164 format and the legacy message header
    * was saved in $LEGACY_MSGHDR. This flag is a hack to avoid a hash lookup
    * in the fast path and indicates that the parser has saved the legacy
    * message header intact in a value named LEGACY_MSGHDR.
    */
-  LF_LEGACY_MSGHDR    = 0x00010000,
+  LF_LEGACY_MSGHDR    = 0x00020000,
 };
 
 typedef struct _LogMessageSDParam  LogMessageSDParam;
@@ -189,6 +190,7 @@ struct _LogMessage
     gchar * const pid;
     gchar * const msgid;
     gchar * const source;
+    guint32 *tags;
     guint8 host_len;
     guint8 host_from_len;
     guint8 program_len;
@@ -197,6 +199,7 @@ struct _LogMessage
     guint8 source_len;
     guint8 recurse_count;
     guint8 num_matches;
+    guint8 num_tags;
 
     LogMessageMatch *matches;
     GHashTable *values;
@@ -247,6 +250,13 @@ void log_msg_set_sdata(LogMessage *self, LogMessageSDElement *elements);
 void log_msg_set_matches(LogMessage *self, gint num_matches, LogMessageMatch *matches);
 void log_msg_clear_matches(LogMessage *self);
 void log_msg_free_matches_elements(LogMessageMatch *matches, gint num_matches);
+
+void log_msg_set_tag_by_id(LogMessage *self, guint id);
+void log_msg_set_tag_by_name(LogMessage *self, const gchar *name);
+void log_msg_clear_tag_by_id(LogMessage *self, guint id);
+void log_msg_clear_tag_by_name(LogMessage *self, const gchar *name);
+gboolean log_msg_is_tag_by_id(LogMessage *self, guint id);
+gboolean log_msg_is_tag_by_name(LogMessage *self, const gchar *name);
 
 /* runtime field get/set support */
 const gchar *log_msg_get_field_name(gint field);

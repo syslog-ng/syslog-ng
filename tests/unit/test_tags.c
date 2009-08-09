@@ -1,6 +1,7 @@
 
 #include "apphook.h"
 #include "tags.h"
+#include "logmsg.h"
 #include "messages.h"
 
 #include <stdio.h>
@@ -77,6 +78,49 @@ test_tags(void)
     }
 }
 
+void
+test_msg_tags()
+{
+  LogMessage *msg = log_msg_new_empty();
+  gchar *name;
+  gint i, set;
+
+  test_msg("=== LogMessage tests ===\n");
+
+  for (set = 1; set != -1; set--)
+    {
+      for (i = NUM_TAGS; i > -1; i--)
+        {
+          name = get_tag_by_id(i);
+          if (set)
+            log_msg_set_tag_by_name(msg, name);
+          else
+            log_msg_clear_tag_by_name(msg, name);
+          test_msg("%s tag %d %s\n", set ? "Setting" : "Clearing", i, name);
+
+          if (set ^ log_msg_is_tag_by_id(msg, i))
+            test_fail("Tag is %sset now (by id) %d\n", set ? "not " : "", i);
+
+          g_free(name);
+        }
+    
+      for (i = 0; i < NUM_TAGS; i++)
+        {
+          name = get_tag_by_id(i);
+          test_msg("Checking tag %d %s\n", i, name);
+    
+          if (set ^ log_msg_is_tag_by_id(msg, i))
+            test_fail("Tag is %sset (by id) %d\n", set ? "not " : "", i);
+          if (set ^ log_msg_is_tag_by_name(msg, name))
+            test_fail("Tag is %sset (by name) %s\n", set ? "not " : "", name);
+          
+          g_free(name);
+        }
+    }
+
+  log_msg_unref(msg);
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -88,6 +132,7 @@ main(int argc, char *argv[])
   msg_init(TRUE);
   
   test_tags();
+  test_msg_tags();
 
   app_shutdown();
   return  (fail ? 1 : 0);

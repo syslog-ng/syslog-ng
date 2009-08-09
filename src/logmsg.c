@@ -26,6 +26,7 @@
 #include "messages.h"
 #include "logpipe.h"
 #include "timeutils.h"
+#include "tags.h"
 
 #include <sys/types.h>
 #include <time.h>
@@ -109,6 +110,87 @@ log_msg_clear_matches(LogMessage *self)
 
   self->matches = NULL;
   self->num_matches = 0;
+}
+
+static inline void
+log_msg_set_tag_by_id_onoff(LogMessage *self, guint id, gboolean on)
+{
+  guint32 *tags;
+  gint old_num_tags;
+
+  if (!log_msg_chk_flag(self, LF_OWN_TAGS) && self->num_tags)
+    {
+      tags = self->tags;
+      self->tags = g_new0(guint32, self->num_tags);
+      memcpy(self->tags, tags, sizeof(guint32) * self->num_tags);
+    }
+  log_msg_set_flag(self, LF_OWN_TAGS);
+
+  if ((self->num_tags * 32) <= id)
+    {
+      if (G_UNLIKELY(8159 < id))
+        {
+          msg_error("Maximum number of tags reached", NULL);
+          return;
+        }
+      old_num_tags = self->num_tags;
+      self->num_tags = (id / 32) + 1;
+
+      tags = self->tags;
+      self->tags = g_new0(guint32, self->num_tags);
+      if (tags)
+        {
+          memcpy(self->tags, tags, sizeof(guint32) * old_num_tags);
+          g_free(tags);
+        }
+    }
+
+  if (on)
+    self->tags[id / 32] |= (guint32)(1 << (id % 32));
+  else
+    self->tags[id / 32] &= (guint32) ~((guint32)(1 << (id % 32)));
+}
+
+void
+log_msg_set_tag_by_id(LogMessage *self, guint id)
+{
+  log_msg_set_tag_by_id_onoff(self, id, TRUE);
+}
+
+void
+log_msg_set_tag_by_name(LogMessage *self, const gchar *name)
+{
+  log_msg_set_tag_by_id_onoff(self, log_tags_get_by_name(name), TRUE);
+}
+
+void
+log_msg_clear_tag_by_id(LogMessage *self, guint id)
+{
+  log_msg_set_tag_by_id_onoff(self, id, FALSE);
+}
+
+void
+log_msg_clear_tag_by_name(LogMessage *self, const gchar *name)
+{
+  log_msg_set_tag_by_id_onoff(self, log_tags_get_by_name(name), FALSE);
+}
+
+gboolean
+log_msg_is_tag_by_id(LogMessage *self, guint id)
+{
+  if (G_UNLIKELY(8159 < id))
+    {
+      msg_error("Invalid tag", evt_tag_int("id", id), NULL);
+      return FALSE;
+    }
+
+  return (id < (self->num_tags * 32)) && (self->tags[id / 32] & (guint32) ((guint32) 1 << (id % 32))) != (guint32) 0;
+}
+
+gboolean
+log_msg_is_tag_by_name(LogMessage *self, const gchar *name)
+{
+  return log_msg_is_tag_by_id(self, log_tags_get_by_name(name));
 }
 
 /* the index matches the value id */
@@ -1781,6 +1863,8 @@ log_msg_free(LogMessage *self)
     g_free(self->message);
   if (log_msg_chk_flag(self, LF_OWN_SOURCE))
     g_free(self->source);
+  if (log_msg_chk_flag(self, LF_OWN_TAGS) && self->tags)
+    g_free(self->tags);
   log_msg_clear_matches(self);
 
   if (log_msg_chk_flag(self, LF_OWN_SDATA) && self->sdata)
