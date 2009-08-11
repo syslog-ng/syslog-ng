@@ -111,6 +111,9 @@ r_parser_ipv4(gchar *str, gint *len, const gchar *param, gpointer state, LogMess
           if (octet > 255 || octet == -1)
             return FALSE;
 
+          if (G_UNLIKELY(dots == 3))
+            break;
+
           dots++;
           octet = -1;
         }
@@ -150,14 +153,14 @@ r_parser_ipv6(gchar *str, gint *len, const gchar *param, gpointer state, LogMess
     {
       if (str[*len] == ':')
         {
-          if (digit == 10)
-            return FALSE;
-
-          if (octet > 0xffff || (octet == -1 && shortened))
+          if (G_UNLIKELY(octet > 0xffff || (octet == -1 && shortened) || digit == 10))
             return FALSE;
 
           if (octet == -1)
             shortened = TRUE;
+
+          if (G_UNLIKELY(colons == 7))
+            break;
 
           colons++;
           octet = -1;
@@ -173,8 +176,11 @@ r_parser_ipv6(gchar *str, gint *len, const gchar *param, gpointer state, LogMess
         }
       else if (str[*len] == '.')
         {
-          if ((digit == 10 && octet > 255) || (digit == 16 && octet > 597) || octet == -1)
-            return FALSE;
+          if (G_UNLIKELY((digit == 10 && octet > 255)))
+              return FALSE;
+
+          if (G_UNLIKELY((digit == 16 && octet > 597) || octet == -1 || colons == 7 || dots == 3))
+            break;
 
           dots++;
           octet = -1;
@@ -186,7 +192,19 @@ r_parser_ipv6(gchar *str, gint *len, const gchar *param, gpointer state, LogMess
       (*len)++;
     }
 
-  if (colons < 2 || colons > 7 || (digit == 10 && octet > 255) || (digit == 16 && octet > 0xffff) || !(dots == 0 || dots == 3))
+  if (G_UNLIKELY(str[*len - 1] == '.'))
+    {
+      (*len)--;
+      dots--;
+    }
+  else if (G_UNLIKELY(str[*len - 1] == ':' && str[*len - 2] != ':'))
+    {
+      (*len)--;
+      colons--;
+    }
+
+  if (colons < 2 || colons > 7 || (digit == 10 && octet > 255) || (digit == 16 && octet > 0xffff) ||
+      !(dots == 0 || dots == 3) || (!shortened && colons < 7 && dots == 0))
     return FALSE;
 
   return TRUE;

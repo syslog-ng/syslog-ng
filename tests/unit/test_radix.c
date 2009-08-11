@@ -112,7 +112,20 @@ test_search_matches(RNode *root, gchar *key, gchar *name1, ...)
   ret = r_find_node(root, key, key, strlen(key), matches, match_names);
   if (ret && !name1)
     {
-      printf("FAIL: found unexpected: '%s' => '%s'\n", key, (gchar *) ret->value);
+      printf("FAIL: found unexpected: '%s' => '%s' matches: ", key, (gchar *) ret->value);
+      for (i = 0; i < matches->len; i++)
+        {
+          match = &g_array_index(matches, LogMessageMatch, i);
+          match_name = g_ptr_array_index(match_names, i);
+          if (match_name)
+            {
+              if (match->flags & LMM_REF_MATCH)
+                printf("'%s' => '%.*s'", match_name, match->len, &key[match->ofs]);
+              else
+                printf("'%s' => '%s'", match_name, match->match);
+            }
+        }
+      printf("\n");
       fail = TRUE;
     }
   else if (ret && name1)
@@ -343,7 +356,15 @@ test_matches(void)
                       "ip", "192.168.1.1",
                       NULL);
 
+  test_search_matches(root, "bbb 192.168.1.1. huhuhu",
+                      "ip", "192.168.1.1",
+                      NULL);
+
   test_search_matches(root, "bbb4 192.168.1.1 huhuhu",
+                      "ipv4", "192.168.1.1",
+                      NULL);
+
+  test_search_matches(root, "bbb4 192.168.1.1. huhuhu",
                       "ipv4", "192.168.1.1",
                       NULL);
 
@@ -354,6 +375,15 @@ test_matches(void)
   test_search_matches(root, "bbb4 192.168.1.1huhuhu",
                       "ipv4", "192.168.1.1",
                       NULL);
+
+  test_search_matches(root, "bbb4 192.168.1huhuhu", NULL);
+  test_search_matches(root, "bbb4 192.168.1.huhuhu", NULL);
+  test_search_matches(root, "bbb4 192.168.1 huhuhu", NULL);
+  test_search_matches(root, "bbb4 192.168.1. huhuhu", NULL);
+  test_search_matches(root, "bbb 192.168.1huhuhu", NULL);
+  test_search_matches(root, "bbb 192.168.1.huhuhu", NULL);
+  test_search_matches(root, "bbb 192.168.1 huhuhu", NULL);
+  test_search_matches(root, "bbb 192.168.1. huhuhu", NULL);
 
   test_search_matches(root, "bbb6 ABCD:EF01:2345:6789:ABCD:EF01:2345:6789 huhuhu",
                       "ipv6", "ABCD:EF01:2345:6789:ABCD:EF01:2345:6789", NULL);
@@ -402,6 +432,72 @@ test_matches(void)
 
   test_search_matches(root, "bbb 2001:0DB8:0:CD30:: huhuhu",
                       "ip", "2001:0DB8:0:CD30::", NULL);
+
+  test_search_matches(root, "bbb6 ABCD:EF01:2345:6789:ABCD:EF01:2345:6789.huhuhu",
+                      "ipv6", "ABCD:EF01:2345:6789:ABCD:EF01:2345:6789", NULL);
+
+  test_search_matches(root, "bbb6 abcd:ef01:2345:6789:abcd:ef01:2345:6789.huhuhu",
+                      "ipv6", "abcd:ef01:2345:6789:abcd:ef01:2345:6789", NULL);
+
+  test_search_matches(root, "bbb6 0:0:0:0:0:0:0:0.huhuhu",
+                      "ipv6", "0:0:0:0:0:0:0:0", NULL);
+
+  test_search_matches(root, "bbb6 2001:DB8::8:800:200C:417A.huhuhu",
+                      "ipv6", "2001:DB8::8:800:200C:417A", NULL);
+
+  test_search_matches(root, "bbb6 FF01::101.huhuhu",
+                      "ipv6", "FF01::101", NULL);
+
+  test_search_matches(root, "bbb6 ::1.huhuhu",
+                      "ipv6", "::1", NULL);
+
+  test_search_matches(root, "bbb6 ::.huhuhu",
+                      "ipv6", "::", NULL);
+
+  test_search_matches(root, "bbb6 0:0:0:0:0:0:13.1.68.3.huhuhu",
+                      "ipv6", "0:0:0:0:0:0:13.1.68.3", NULL);
+
+  test_search_matches(root, "bbb6 ::202.1.68.3.huhuhu",
+                      "ipv6", "::202.1.68.3", NULL);
+
+  test_search_matches(root, "bbb6 2001:0DB8:0:CD30::.huhuhu",
+                      "ipv6", "2001:0DB8:0:CD30::", NULL);
+
+  test_search_matches(root, "bbb ABCD:EF01:2345:6789:ABCD:EF01:2345:6789.huhuhu",
+                      "ip", "ABCD:EF01:2345:6789:ABCD:EF01:2345:6789", NULL);
+
+  test_search_matches(root, "bbb abcd:ef01:2345:6789:abcd:ef01:2345:6789.huhuhu",
+                      "ip", "abcd:ef01:2345:6789:abcd:ef01:2345:6789", NULL);
+
+  test_search_matches(root, "bbb ::.huhuhu",
+                      "ip", "::", NULL);
+
+  test_search_matches(root, "bbb 0:0:0:0:0:0:13.1.68.3.huhuhu",
+                      "ip", "0:0:0:0:0:0:13.1.68.3", NULL);
+
+  test_search_matches(root, "bbb ::202.1.68.3.huhuhu",
+                      "ip", "::202.1.68.3", NULL);
+
+  test_search_matches(root, "bbb 2001:0DB8:0:CD30::.huhuhu",
+                      "ip", "2001:0DB8:0:CD30::", NULL);
+
+  test_search_matches(root, "bbb 1:2:3:4:5:6:7:8.huhuhu",
+                      "ip", "1:2:3:4:5:6:7:8", NULL);
+
+  test_search_matches(root, "bbb 1:2:3:4:5:6:7:8 huhuhu",
+                      "ip", "1:2:3:4:5:6:7:8", NULL);
+
+  test_search_matches(root, "bbb 1:2:3:4:5:6:7:8:huhuhu",
+                      "ip", "1:2:3:4:5:6:7:8", NULL);
+
+  test_search_matches(root, "bbb 1:2:3:4:5:6:7 huhu", NULL);
+  test_search_matches(root, "bbb 1:2:3:4:5:6:7.huhu", NULL);
+  test_search_matches(root, "bbb 1:2:3:4:5:6:7:huhu", NULL);
+  test_search_matches(root, "bbb6 1:2:3:4:5:6:7 huhu", NULL);
+  test_search_matches(root, "bbb6 1:2:3:4:5:6:7.huhu", NULL);
+  test_search_matches(root, "bbb6 1:2:3:4:5:6:7:huhu", NULL);
+  test_search_matches(root, "bbb 1:2:3:4:5:6:77777:8 huhu", NULL);
+  test_search_matches(root, "bbb 1:2:3:4:5:6:1.2.333.4 huhu", NULL);
 
   test_search_matches(root, "ccc 'quoted string' hehehe",
                       "qstring", "quoted string",
