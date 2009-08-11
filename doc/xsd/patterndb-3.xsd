@@ -141,7 +141,7 @@
                 </xs:complexType>
                 <xs:unique name="values">
                     <xs:selector xpath="value"/>
-                    <xs:field xpath="."/>
+                    <xs:field xpath="@name"/>
                 </xs:unique>
             </xs:element>
              <xs:element name="examples" minOccurs="0">
@@ -304,6 +304,10 @@
                         </xs:element>
                     </xs:sequence>
                 </xs:complexType>
+                <xs:unique name="test-values">
+                    <xs:selector xpath="test_value"/>
+                    <xs:field xpath="@name"/>
+                </xs:unique>
             </xs:element>
             <xs:element name="test_tags" minOccurs="0">
                 <xs:complexType>
