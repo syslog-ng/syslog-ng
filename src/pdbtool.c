@@ -19,25 +19,210 @@
 
 static gchar *patterndb_file = PATH_PATTERNDB_FILE;
 
-static void
-print_indented(FILE *stream, const gchar *str, gsize len)
+static gchar *merge_dir = NULL;
+
+typedef struct _PdbToolMergeState
 {
-  const gchar *eol;
-  const gchar *sol;
+  GString *merged;
+  gint version;
+  gboolean in_rule;
+} PdbToolMergeState;
 
-  sol = str;
-  while (len > 0)
+void
+pdbtool_merge_start_element(GMarkupParseContext *context, const gchar *element_name, const gchar **attribute_names,
+                                        const gchar **attribute_values, gpointer user_data, GError **error)
+{
+  PdbToolMergeState *state = (PdbToolMergeState *) user_data;
+  gchar *buff;
+  gint i;
+
+  if (g_str_equal(element_name, "patterndb"))
     {
-      eol = memchr(sol, '\n', len);
-      if (!eol)
-        eol = sol + len;
-
-      if (sol != eol)
-        fprintf(stream, "    %.*s\n", (gint) (eol - sol), sol);
-      len -= eol - sol + 1;
-      sol = eol + 1;
+      for (i = 0; attribute_names[i]; i++)
+        {
+          if (g_str_equal(attribute_names[i], "version"))
+            state->version = strtol(attribute_values[i], NULL, 10);
+        }
+      return;
     }
+  else if (g_str_equal(element_name, "rule"))
+    state->in_rule = TRUE;
+
+  if (g_str_equal(element_name, "program"))
+    g_string_append(state->merged, "<ruleset");
+  else if (state->version == 1 && state->in_rule && g_str_equal(element_name, "pattern"))
+    g_string_append_printf(state->merged, "<patterns>\n<%s", element_name);
+  else if (state->version == 1 && state->in_rule && g_str_equal(element_name, "url"))
+    g_string_append_printf(state->merged, "<urls>\n<%s", element_name);
+  else
+    g_string_append_printf(state->merged, "<%s", element_name);
+
+  for (i = 0; attribute_names[i]; i++)
+    {
+      buff = g_markup_printf_escaped(" %s='%s'", attribute_names[i], attribute_values[i]);
+      g_string_append_printf(state->merged, buff);
+      g_free(buff);
+    }
+
+  g_string_append(state->merged, ">");
 }
+
+
+void
+pdbtool_merge_end_element(GMarkupParseContext *context, const gchar *element_name, gpointer user_data, GError **error)
+{
+  PdbToolMergeState *state = (PdbToolMergeState *) user_data;
+  
+  if (g_str_equal(element_name, "patterndb"))
+    return;
+  else if (g_str_equal(element_name, "rule"))
+    state->in_rule = FALSE;
+
+  if (g_str_equal(element_name, "program"))
+    g_string_append(state->merged, "</ruleset>");
+  else if (state->version == 1 && state->in_rule && g_str_equal(element_name, "pattern"))
+    g_string_append_printf(state->merged, "</%s>\n</patterns>", element_name);
+  else if (state->version == 1 && state->in_rule && g_str_equal(element_name, "url"))
+    g_string_append_printf(state->merged, "</%s>\n</urls>", element_name);
+  else
+    g_string_append_printf(state->merged, "</%s>", element_name);
+}
+
+void
+pdbtool_merge_text(GMarkupParseContext *context, const gchar *text, gsize text_len, gpointer user_data, GError **error)
+{
+  PdbToolMergeState *state = (PdbToolMergeState *) user_data;
+  gchar *buff = g_markup_printf_escaped("%s", text);
+
+  g_string_append(state->merged, buff);
+
+  g_free(buff);
+}
+
+GMarkupParser pdbtool_merge_parser =
+{
+  .start_element = pdbtool_merge_start_element,
+  .end_element = pdbtool_merge_end_element,
+  .text = pdbtool_merge_text,
+  .passthrough = NULL,
+  .error = NULL
+};
+
+static gboolean
+pdbtool_merge_file(const gchar *filename, GString *merged)
+{
+  GMarkupParseContext *parse_ctx = NULL;
+  gchar *full_name = g_build_filename(merge_dir, filename, NULL);
+  PdbToolMergeState state;
+  GError *error = NULL;
+  gboolean success = TRUE;
+  gchar *buff = NULL;
+  gsize buff_len;
+
+  if (!g_file_get_contents(full_name, &buff, &buff_len, &error))
+    {
+      fprintf(stderr, "Error reading pattern database file; filename='%s', error='%s'\n",
+            filename, error ? error->message : "Unknown error");
+      success = FALSE;
+      goto error;
+    }
+
+  state.version = 0;
+  state.merged = merged;
+  state.in_rule = FALSE;
+
+  parse_ctx = g_markup_parse_context_new(&pdbtool_merge_parser, 0, &state, NULL);
+  if (!g_markup_parse_context_parse(parse_ctx, buff, buff_len, &error))
+    {
+      fprintf(stderr, "Error parsing pattern database file; filename='%s', error='%s'\n",
+            filename, error ? error->message : "Unknown error");
+      success = FALSE;
+      goto error;
+    }
+
+  if (!g_markup_parse_context_end_parse(parse_ctx, &error))
+    {
+      fprintf(stderr, "Error parsing pattern database file; filename='%s', error='%s'\n",
+            filename, error ? error->message : "Unknown error");
+      success = FALSE;
+      goto error;
+    }
+
+error:
+  g_free(full_name);
+
+  if (buff)
+    g_free(buff);
+
+  if (parse_ctx)
+    g_markup_parse_context_free(parse_ctx);
+
+  return success;
+}
+
+static gint
+pdbtool_merge(int argc, char *argv[])
+{
+  GDir *pdb_dir;
+  GDate date;
+  const gchar *filename;
+  GError *error = NULL;
+  GString *merged = NULL;
+  gchar *buff;
+  gboolean ok = TRUE;
+
+  if (!merge_dir)
+    {
+      fprintf(stderr, "No directory is specified to merge from\n");
+      return 1;
+    }
+
+  if (!patterndb_file)
+    {
+      fprintf(stderr, "No patterndb file is specified to merge to\n");
+      return 1;
+    }
+
+  if ((pdb_dir = g_dir_open(merge_dir, 0, &error)) == NULL)
+    {
+      fprintf(stderr, "Error opening patterndb directory; errror='%s'\n", error ? error->message : "Unknown error");
+      return 1;
+    }
+
+  merged = g_string_sized_new(4096);
+  g_date_clear(&date, 1);
+  g_date_set_time_t(&date, time (NULL)); 
+
+  buff = g_markup_printf_escaped("<?xml version='1.0' encoding='UTF-8'?>\n<patterndb version='3' pub_date='%d-%02d-%2d'>",
+                                    g_date_get_year(&date), g_date_get_month(&date), g_date_get_day(&date));
+  g_string_append(merged, buff);
+  g_free(buff);
+
+  while ((filename = g_dir_read_name(pdb_dir)) != NULL && ok)
+    ok = pdbtool_merge_file(filename, merged);
+
+  g_dir_close(pdb_dir);
+
+  g_string_append(merged, "</patterndb>\n");
+
+  if (ok)
+    if (!g_file_set_contents(patterndb_file, merged->str, merged->len, &error))
+      {
+        fprintf(stderr, "Error storing patterndb; filename='%s', errror='%s'\n", patterndb_file, error ? error->message : "Unknown error");
+        ok = FALSE;
+      }
+
+  g_string_free(merged, TRUE);
+
+  return ok ? 0 : 1;
+}
+
+static GOptionEntry merge_options[] =
+{
+  { "directory", 'D', 0, G_OPTION_ARG_STRING, &merge_dir,
+    "Directory from merge pattern databases", "<directory>" },
+  { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
+};
 
 static gchar *match_program = NULL;
 static gchar *match_message = NULL;
@@ -207,6 +392,7 @@ static struct
 {
   { "match", match_options, "Match a message against the pattern database", pdbtool_match },
   { "dump", dump_options, "Dump pattern datebase tree", pdbtool_dump },
+  { "merge", merge_options, "Merge pattern databases", pdbtool_merge },
   { NULL, NULL },
 };
 
