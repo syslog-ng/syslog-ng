@@ -71,7 +71,7 @@ r_parser_qstring(gchar *str, gint *len, const gchar *param, gpointer state, LogM
 }
 
 gboolean
-r_parser_estring(gchar *str, gint *len, const gchar *param, gpointer state, LogMessageMatch *match)
+r_parser_estring_c(gchar *str, gint *len, const gchar *param, gpointer state, LogMessageMatch *match)
 {
   gchar *end;
   
@@ -83,6 +83,25 @@ r_parser_estring(gchar *str, gint *len, const gchar *param, gpointer state, LogM
       *len = (end - str) + 1;
       if (match)
         match->len = -1;
+      return TRUE;
+    }
+  else
+    return FALSE;
+}
+
+gboolean
+r_parser_estring(gchar *str, gint *len, const gchar *param, gpointer state, LogMessageMatch *match)
+{
+  gchar *end;
+  
+  if (!param)
+    return FALSE;
+
+  if ((end = strstr(str, param)) != NULL)
+    {
+      *len = (end - str) + GPOINTER_TO_INT(state);
+      if (match)
+        match->len = -GPOINTER_TO_INT(state);
       return TRUE;
     }
   else
@@ -312,8 +331,15 @@ r_new_pnode(gchar *key)
     }
   else if (strcmp(params[0], "ESTRING") == 0)
     {
-      parser_node->parse = r_parser_estring;
+      parser_node->parse = r_parser_estring_c;
       parser_node->type = RPT_ESTRING;
+
+      if (params[2] && (strlen(params[2]) > 1))
+        {
+          gint len = strlen(params[2]); 
+          parser_node->state = GINT_TO_POINTER(len);
+          parser_node->parse = r_parser_estring;
+        }
     }
   else if (strcmp(params[0], "ANYSTRING") == 0)
     {

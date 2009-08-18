@@ -321,6 +321,8 @@ test_matches(void)
   insert_node(root, "bbb6 @IPv6:ipv6@");
   insert_node(root, "ccc @QSTRING:qstring:'@");
   insert_node(root, "ddd @ESTRING:estring::@");
+  insert_node(root, "dddd @ESTRING:estring::*@");
+  insert_node(root, "dddd2 @ESTRING:estring::*@ d");
   insert_node(root, "eee @STRING:string@");
   insert_node(root, "fff @FLOAT:float@");
 
@@ -507,6 +509,27 @@ test_matches(void)
                       "estring", "estring",
                       NULL);
 
+  test_search_matches(root, "dddd estring:* hehehe",
+                      "estring", "estring",
+                      NULL);
+
+  test_search_matches(root, "dddd estring:estring:* hehehe",
+                      "estring", "estring:estring",
+                      NULL);
+
+  test_search_matches(root, "dddd estring:estring::* hehehe",
+                      "estring", "estring:estring:",
+                      NULL);
+
+  test_search_matches(root, "dddd2 estring:estring::* d",
+                      "estring", "estring:estring:",
+                      NULL);
+
+  test_search_matches(root, "dddd2 estring:estring::* ", NULL);
+  test_search_matches(root, "dddd2 estring:estring::*", NULL);
+  test_search_matches(root, "dddd2 estring:estring:*", NULL);
+  test_search_matches(root, "dddd2 estring:estring", NULL);
+
   test_search_matches(root, "eee string hehehe",
                       "string", "string",
                       NULL);
@@ -535,6 +558,7 @@ test_matches(void)
   test_search_matches(root, "bbb6 v12345", NULL);
   test_search_matches(root, "ccc v12345", NULL);
   test_search_matches(root, "ddd v12345", NULL);
+  test_search_matches(root, "dddd v12345", NULL);
   test_search_matches(root, "fff v12345", NULL);
 
   r_free_node(root, NULL);
