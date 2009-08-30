@@ -332,6 +332,15 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            "Teardown TCP connection 1688438 for bloomberg-net:1.2.3.4/8294 to inside:5.6.7.8/3639 duration 0:07:01 bytes 16975 TCP FINs",
            NULL, NULL, NULL, NULL
            );
+
+  testcase("<190>Apr 15 2007 21:28:13 %ASA: this is a Cisco ASA timestamp", 0, "^%",
+           190,
+           1176665293, 0, 7200,
+           "",
+           "%ASA",
+           "this is a Cisco ASA timestamp",
+           NULL, NULL, NULL, NULL
+           );
   testcase("<190>Apr 15 21:28:13 2007 linksys app: msg", 0, NULL,
            190,
            1176665293, 0, 7200,
