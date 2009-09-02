@@ -17,16 +17,16 @@ BuildRoot: %{_tmppath}/%{name}-root
 Conflicts: syslog-ng
 %ifnos aix5.2
 %if "%(echo $ZBS_DIST)" != "rhel-3"
-BuildRequires: bison, flex, gcc-c++,glib2-devel, pkgconfig, libevtlog-devel, openssl-devel, libzlicense-devel, libnet-devel, libdbi8-devel
+BuildRequires: bison, flex, gcc-c++,glib2-devel, pkgconfig, libevtlog-devel, openssl-devel, libnet-devel, libdbi8-devel
 Requires: libdbi8
 %else
-BuildRequires: bison, flex, gcc-c++,glib2-devel, pkgconfig, libevtlog-devel, openssl-devel, libzlicense-devel, libnet-devel
+BuildRequires: bison, flex, gcc-c++,glib2-devel, pkgconfig, libevtlog-devel, openssl-devel, libnet-devel
 %endif
 %else
-BuildRequires: bison, flex, gcc-c++,glib2-devel, pkgconfig, libevtlog-devel, openssl-devel, libzlicense-devel, libnet-devel
+BuildRequires: bison, flex, gcc-c++,glib2-devel, pkgconfig, libevtlog-devel, openssl-devel, libnet-devel
 %endif
 %else
-BuildRequires: bison, flex, gcc-c++,glib2-devel, pkgconfig, libevtlog-devel, openssl-devel, libzlicense-devel, libnet-devel
+BuildRequires: bison, flex, gcc-c++,glib2-devel, pkgconfig, libevtlog-devel, openssl-devel, libnet-devel
 %endif
 Provides: syslog
 #BuildConflicts:
@@ -86,10 +86,6 @@ fi
 
 # install documentation
 [ -d "${RPM_BUILD_ROOT}/%{_prefix}/share/doc/syslog-ng-@VERSION@" ] || ./install-sh -d "${RPM_BUILD_ROOT}/%{_prefix}/share/doc/syslog-ng-@VERSION@"
-./install-sh -o root -g root -m 0644 doc/reference/syslog-ng.html.tar.gz \
-  ${RPM_BUILD_ROOT}/%{_prefix}/share/doc/syslog-ng-@VERSION@/syslog-ng.html.tar.gz
-./install-sh -o root -g root -m 0644 doc/reference/syslog-ng.txt \
-  ${RPM_BUILD_ROOT}/%{_prefix}/share/doc/syslog-ng-@VERSION@/syslog-ng.txt
 ./install-sh -o root -g root -m 0644 ChangeLog \
   ${RPM_BUILD_ROOT}/%{_prefix}/share/doc/syslog-ng-@VERSION@/ChangeLog
 ./install-sh -o root -g root -m 0644 NEWS \
@@ -234,6 +230,8 @@ fi
 [ $RPM_BUILD_ROOT = / ] || rm -rf $RPM_BUILD_ROOT
 
 %changelog
+* Wed Sep 02 2009 Balazs Scheidler <bazsi@balabit.com> @VERSION@-1
+- Removed the references to the documentation and libzlicense-devel
 * Wed Apr 04 2007 Tamas Pal <folti@balabit.com> @VERSION@-1 
 - Added libnet-devel and libzlicense-devel to BuildRequires.
 - Changed Packager to Tamas Pal.
