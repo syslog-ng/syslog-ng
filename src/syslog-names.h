@@ -25,7 +25,6 @@
 #define __SYSLOG_NAMES_H_INCLUDED
 
 #include "syslog-ng.h"
-#include <syslog.h>
 
 struct sl_name
 {

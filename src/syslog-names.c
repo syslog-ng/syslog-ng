@@ -25,49 +25,52 @@
 #include "syslog-ng.h"
 #include <string.h>
 
+#define LEVEL_CODE(n)    ((n) & 7)
+#define FACILITY_CODE(n) ((n) << 3)
+
+
 struct sl_name sl_levels[] = {
-  {"emerg", LOG_EMERG},
-  {"panic", LOG_EMERG},		/* DEPRECATED */
-  {"alert", LOG_ALERT},
-  {"crit", LOG_CRIT},
-  {"err", LOG_ERR},
-  {"error", LOG_ERR},		/* DEPRECATED */
-  {"warning", LOG_WARNING},
-  {"warn", LOG_WARNING},	/* DEPRECATED */
-  {"notice", LOG_NOTICE},
-  {"info", LOG_INFO},
-  {"debug", LOG_DEBUG},
+  {"emerg",     LEVEL_CODE(0) },
+  {"panic",     LEVEL_CODE(0) },
+  {"alert",     LEVEL_CODE(1) },
+  {"crit",      LEVEL_CODE(2) },
+  {"err",       LEVEL_CODE(3) },
+  {"error",     LEVEL_CODE(3) },
+  {"warning",   LEVEL_CODE(4) },
+  {"warn",      LEVEL_CODE(4) },
+  {"notice",    LEVEL_CODE(5) },
+  {"info",      LEVEL_CODE(6) },
+  {"debug",     LEVEL_CODE(7) },
   {NULL, -1}
 };
 
+
 struct sl_name sl_facilities[] = {
-  {"auth", LOG_AUTH},
-#ifdef LOG_AUTHPRIV
-  {"authpriv", LOG_AUTHPRIV},
-#endif
-#ifdef LOG_CRON
-  {"cron", LOG_CRON},
-#endif
-  {"daemon", LOG_DAEMON},
-#ifdef LOG_FTP
-  {"ftp", LOG_FTP},
-#endif
-  {"kern", LOG_KERN},
-  {"lpr", LOG_LPR},
-  {"mail", LOG_MAIL},
-  {"news", LOG_NEWS},
-  {"security", LOG_AUTH},	/* DEPRECATED */
-  {"syslog", LOG_SYSLOG},
-  {"user", LOG_USER},
-  {"uucp", LOG_UUCP},
-  {"local0", LOG_LOCAL0},
-  {"local1", LOG_LOCAL1},
-  {"local2", LOG_LOCAL2},
-  {"local3", LOG_LOCAL3},
-  {"local4", LOG_LOCAL4},
-  {"local5", LOG_LOCAL5},
-  {"local6", LOG_LOCAL6},
-  {"local7", LOG_LOCAL7},
+  {"kern",      FACILITY_CODE(0)  },
+  {"user",      FACILITY_CODE(1)  },
+  {"mail",      FACILITY_CODE(2)  },
+  {"daemon",    FACILITY_CODE(3)  },
+  {"auth",      FACILITY_CODE(4)  },
+  {"syslog",    FACILITY_CODE(5)  },
+  {"lpr",       FACILITY_CODE(6)  },
+  {"news",      FACILITY_CODE(7)  },
+  {"uucp",      FACILITY_CODE(8)  },
+  {"cron",      FACILITY_CODE(9)  },
+  {"authpriv",  FACILITY_CODE(10) },
+  {"megasafe",  FACILITY_CODE(10) }, /* DEC UNIX AdvFS logging */
+  {"ftp",       FACILITY_CODE(11) },
+  {"ntp",       FACILITY_CODE(12) },
+  {"security",  FACILITY_CODE(13) },
+  {"console",   FACILITY_CODE(14) },
+
+  {"local0",    FACILITY_CODE(16) },
+  {"local1",    FACILITY_CODE(17) },
+  {"local2",    FACILITY_CODE(18) },
+  {"local3",    FACILITY_CODE(19) },
+  {"local4",    FACILITY_CODE(20) },
+  {"local5",    FACILITY_CODE(21) },
+  {"local6",    FACILITY_CODE(22) },
+  {"local7",    FACILITY_CODE(23) },
   {NULL, -1}
 };
 
