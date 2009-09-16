@@ -972,7 +972,8 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guchar *
     }
   else if ((parse_flags & LP_SYSLOG_PROTOCOL) == 0)
     {
-      if (left >= 21 && src[3] == ' ' && src[6] == ' ' && src[11] == ' ' && src[14] == ':' && src[17] == ':' && src[20] == ':')
+      if (left >= 21 && src[3] == ' ' && src[6] == ' ' && src[11] == ' ' && src[14] == ':' && src[17] == ':' && src[20] == ':' &&
+          (isdigit(src[7]) && isdigit(src[8]) && isdigit(src[9]) && isdigit(src[10])))
         {
           /* PIX timestamp, expected format: MMM DD YYYY HH:MM:SS: */
 
@@ -992,6 +993,32 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guchar *
             
           tm.tm_isdst = -1;
             
+          /* NOTE: no timezone information in the message, assume it is local time */
+          unnormalized_hour = tm.tm_hour;
+          self->timestamps[LM_TS_STAMP].time.tv_sec = cached_mktime(&tm);
+          self->timestamps[LM_TS_STAMP].time.tv_usec = 0;
+        }
+      else if (left >= 21 && src[3] == ' ' && src[6] == ' ' && src[11] == ' ' && src[14] == ':' && src[17] == ':' && src[20] == ' ' &&
+          (isdigit(src[7]) && isdigit(src[8]) && isdigit(src[9]) && isdigit(src[10])))
+        {
+          /* ASA timestamp, expected format: MMM DD YYYY HH:MM:SS */
+
+          /* Just read the buffer data into a textual
+             datestamp. */
+
+          copy_string_fixed_buf(date, src, MIN(date_len, 21));
+          src += 20;
+          left -= 20;
+
+          /* And also make struct time timestamp for the msg */
+
+          cached_localtime(&now, &tm);
+          p = (guchar *) strptime((gchar *) date, "%b %e %Y %H:%M:%S ", &tm);
+          if (!p || (p && *p))
+            goto error;
+
+          tm.tm_isdst = -1;
+
           /* NOTE: no timezone information in the message, assume it is local time */
           unnormalized_hour = tm.tm_hour;
           self->timestamps[LM_TS_STAMP].time.tv_sec = cached_mktime(&tm);

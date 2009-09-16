@@ -55,7 +55,7 @@
  *      - destination file writers use the expanded filename
  *      - for those which have no notion for instance, NULL is used
  *
- *   * state: active (1) or inactive (0), this indicates whether the given
+ *   * state: dynamic, active or orphaned, this indicates whether the given
  *     counter is in use or in orphaned state
  *
  *   * type: counter type (processed, dropped, stored, etc)
@@ -144,17 +144,19 @@ stats_add_counter(gint stats_level, gint source, const gchar *id, const gchar *i
 
 /**
  * stats_register_counter:
- * @type: counter type 
- * @counter_name: name to identify this stats counter
+ * @stats_level: the required statistics level to make this counter available
+ * @source: a reference to the syslog-ng component that this counter belongs to (SCS_*)
+ * @id: the unique identifier of the configuration item that this counter belongs to
+ * @instance: if a given configuration item manages multiple similar counters
+ *            this makes those unique (like destination filename in case macros are used)
+ * @type: the counter type (processed, dropped, etc)
  * @counter: returned pointer to the counter
- * @shared: whether multiple sources will use the same counter
  *
  * This fuction registers a general purpose counter. Whenever multiple
  * objects touch the same counter all of these should register the counter
- * with the same name, specifying TRUE for the value of permit_dup,
- * internally the stats subsystem counts the number of users of the same
- * counter in this case, thus the counter will only be freed when all of
- * these uses are unregistered.
+ * with the same name. Internally the stats subsystem counts the number of
+ * users of the same counter in this case, thus the counter will only be
+ * freed when all of these uses are unregistered.
  **/
 void
 stats_register_counter(gint stats_level, gint source, const gchar *id, const gchar *instance, StatsCounterType type, guint32 **counter)
@@ -198,6 +200,15 @@ stats_register_dynamic_counter(gint stats_level, gint source, const gchar *id, c
   return sc;
 }
 
+/**
+ * stats_register_associated_counter:
+ * @sc: the dynamic counter that was registered with stats_register_dynamic_counter
+ * @type: the type that we want to use in the same StatsCounter instance
+ * @counter: the returned pointer to the counter itself
+ *
+ * This function registers another counter type in the same StatsCounter
+ * instance in order to avoid an unnecessary lookup.
+ **/
 void
 stats_register_associated_counter(StatsCounter *sc, StatsCounterType type, guint32 **counter)
 {

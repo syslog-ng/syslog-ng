@@ -761,7 +761,7 @@ AC_SUBST(PACKAGE_SUFFIX)
 
 AC_OUTPUT(dist.conf
           Makefile 
-	  syslog-ng.spec.bb
+	  syslog-ng.spec
 	  src/Makefile 
 	  doc/Makefile
           doc/docvars.xml

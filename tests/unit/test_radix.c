@@ -459,8 +459,6 @@ test_zorp_logs(void)
   test_search_value(root, "Deny udp src OUTSIDE:10.0.0.0/1234 dst INSIDE:192.168.0.0/5678 by access-group \"OUTSIDE\" [0xb74026ad, 0x0]", "CISCO");
   test_search_matches(root, "1, 2006-08-22 16:31:39,INFO,BLK,", "Seq", "1", "DateTime", "2006-08-22 16:31:39", "Severity", "INFO", "Comp", "BLK", NULL);
 
-
-
   r_free_node(root, NULL);
 
 }

@@ -49,7 +49,8 @@ void msg_add_option_group(GOptionContext *ctx);
 
 #define MsgQueue         GAsyncQueue
 #define msg_queue_push   g_async_queue_push
-#define msg_queue_pop    g_async_queue_pop
+/* we're using try_pop here as we don't want to block in our dispatch callback */
+#define msg_queue_pop    g_async_queue_try_pop
 #define msg_queue_new    g_async_queue_new
 #define msg_queue_free   g_async_queue_unref
 #define msg_queue_length g_async_queue_length

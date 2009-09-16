@@ -266,7 +266,9 @@ log_source_options_init(LogSourceOptions *options, GlobalConfig *cfg, const gcha
   log_source_options_destroy(options);
   
   options->host_override = host_override;
+  options->host_override_len = -1;
   options->program_override = program_override;
+  options->program_override_len = -1;
   
   if (options->init_window_size == -1)
     options->init_window_size = cfg->log_iw_size;
