@@ -101,3 +101,10 @@ strcasestr(const char *haystack, const char *needle)
   return (char *) haystack;
 }
 #endif
+
+#ifdef _AIX
+intmax_t __strtollmax(const char *__nptr, char **__endptr, int __base)
+{
+  return strtoll(__nptr, __endptr, __base);
+}
+#endif
