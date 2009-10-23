@@ -62,6 +62,7 @@ struct sl_name sl_facilities[] = {
   {"ntp",       FACILITY_CODE(12) },
   {"security",  FACILITY_CODE(13) },
   {"console",   FACILITY_CODE(14) },
+  {"solaris-cron",  FACILITY_CODE(15) },
 
   {"local0",    FACILITY_CODE(16) },
   {"local1",    FACILITY_CODE(17) },
