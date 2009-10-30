@@ -82,6 +82,9 @@ log_writer_fd_prepare(GSource *source,
   GTimeVal now;
   GIOCondition proto_cond;
 
+  self->pollfd.events = G_IO_ERR;
+  self->pollfd.revents = 0;
+
   g_source_get_current_time(source, &now);
   if (log_proto_prepare(self->proto, &self->pollfd.fd, &proto_cond, timeout))
     return TRUE;
@@ -117,7 +120,6 @@ log_writer_fd_prepare(GSource *source,
         }
     }
 
-  self->pollfd.events = 0;
   if (G_UNLIKELY(self->error_suspend))
     {
       *timeout = g_time_val_diff(&self->error_suspend_target, &now) / 1000;
@@ -139,7 +141,7 @@ log_writer_fd_prepare(GSource *source,
       (self->writer->options->flush_lines > 0  && (!log_writer_throttling(self->writer) && num_elements >= self->writer->options->flush_lines)))
     {
       /* we need to flush our buffers */
-      self->pollfd.events = proto_cond;
+      self->pollfd.events |= proto_cond;
     }
   else if (num_elements && !log_writer_throttling(self->writer))
     {
@@ -187,7 +189,6 @@ log_writer_fd_prepare(GSource *source,
     }
     
   self->flush_waiting_for_timeout = FALSE;
-  self->pollfd.revents = 0;
   
   if ((self->pollfd.events & G_IO_OUT) && (self->writer->flags & LW_ALWAYS_WRITABLE))
     {

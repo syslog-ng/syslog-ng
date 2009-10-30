@@ -78,6 +78,9 @@ load_rc_config "$name"
 
 case $1 in
 	start)
+		# Reportedly needed on 7.x.
+		PATH=$PATH:$SYSLOGNG_PREFIX/sbin
+		export PATH
 		syslogng_flags="${syslog_ng_flags}"
 	;;
 esac

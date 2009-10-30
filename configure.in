@@ -113,6 +113,14 @@ AC_ARG_ENABLE(spoof-source,
               [  --enable-spoof-source   Enable support for spoofed source addresses.]
               ,,enable_spoof_source="auto")
 
+AC_ARG_ENABLE(sun-streams,
+              [  --enable-sun-streams    Enable support for Solaris /dev/log STREAMS device.]
+              ,,enable_sun_streams="auto")
+
+AC_ARG_ENABLE(sun-door,
+              [  --enable-sun-door       Enable support for Solaris /var/run/syslog_door door device.]
+              ,,enable_sun_door="auto")
+
 AC_ARG_ENABLE(sql,
 	      [  --enable-sql            Enable support for SQL destinations. (default: auto)]
 	      ,,enable_sql="auto")
@@ -410,6 +418,7 @@ if test "x$ac_cv_header_stropts_h" = "xyes" -a \
         enable_sun_streams=yes
         AC_MSG_RESULT(yes)
 else
+        enable_sun_streams=no
         AC_MSG_RESULT(no)
 fi
 

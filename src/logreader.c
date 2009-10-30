@@ -86,7 +86,7 @@ log_reader_fd_prepare(GSource *source,
   GIOCondition proto_cond;
 
   self->pollfd.revents = 0;
-  self->pollfd.events = 0;
+  self->pollfd.events = G_IO_ERR;
 
   /* never indicate readability if flow control prevents us from sending messages */
   
@@ -109,7 +109,7 @@ log_reader_fd_prepare(GSource *source,
       return FALSE;
     }
   
-  self->pollfd.events = proto_cond;
+  self->pollfd.events |= proto_cond;
   return FALSE;
 }
 
