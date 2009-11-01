@@ -22,3 +22,7 @@ ylwrap
 *.pyc
 ltmain.sh
 m4/
+.project
+.cproject
+.settings
+Debug
