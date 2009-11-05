@@ -214,8 +214,18 @@ afsocket_sc_init(LogPipe *s)
     }
   else
     {
-      /* framed protocol */
-      proto = log_proto_framed_new_server(transport, self->owner->reader_options.msg_size);
+      if (self->owner->flags & AFSOCKET_DGRAM)
+        {
+          /* plain protocol */
+          proto = log_proto_plain_new_server(transport, self->owner->reader_options.padding,
+                       self->owner->reader_options.msg_size,
+                      (self->owner->flags & AFSOCKET_DGRAM) ? (LPPF_PKTTERM + LPPF_IGNORE_EOF) : 0);
+        }
+      else
+        {
+          /* framed protocol */
+          proto = log_proto_framed_new_server(transport, self->owner->reader_options.msg_size);
+        }
     }
 
   self->reader = log_reader_new(proto,
@@ -917,7 +927,10 @@ afsocket_dd_connected(AFSocketDestDriver *self)
     transport = log_transport_plain_new(self->fd, transport_flags);
 
   if (self->flags & AFSOCKET_SYSLOG_PROTOCOL)
-    proto = log_proto_framed_new_client(transport);
+    if(self->flags & AFSOCKET_STREAM)
+      proto = log_proto_framed_new_client(transport);
+    else
+      proto = log_proto_plain_new_client(transport);
   else
     proto = log_proto_plain_new_client(transport);
 
