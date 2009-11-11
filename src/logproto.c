@@ -214,7 +214,7 @@ log_proto_plain_server_is_preemptable(LogProtoPlainServer *self)
 { 
   gsize buffer_bytes = self->buffer_end - self->buffer_pos; 
   
-  return (self->buffer_cached_eol == NULL) && ((self->buffer_size / 10) > (buffer_bytes));
+  return (self->buffer_cached_eol == NULL);
 }
 
 static gboolean 
