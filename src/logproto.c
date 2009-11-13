@@ -852,7 +852,7 @@ typedef struct _LogProtoFramedServer
 static gboolean
 log_proto_framed_server_prepare(LogProto *s, gint *fd, GIOCondition *cond, gint *timeout)
 {
-  LogProtoPlainServer *self = (LogProtoPlainServer *) s;
+  LogProtoFramedServer *self = (LogProtoFramedServer *) s;
   
   *fd = self->super.transport->fd;
   *cond = self->super.transport->cond;
