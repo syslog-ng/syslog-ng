@@ -87,14 +87,18 @@ afuser_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
            memcmp(self->username->str, ut->ut_name, self->username->len) == 0)) 
 #endif
         {
-          char line[128];
+          gchar line[128];
+          gchar *p = line;
           int fd;
 
           if (ut->ut_line[0] != '/')
-            strcpy(line, "/dev/");
+            {
+              strcpy(line, "/dev/");
+              p = line + 5;
+            }
           else
             line[0] = 0;
-          strncat(line, ut->ut_line, sizeof(line));
+          strncpy(p, ut->ut_line, sizeof(line) - (p - line));
           fd = open(line, O_NOCTTY | O_APPEND | O_WRONLY | O_NONBLOCK);
           if (fd != -1) 
             {
