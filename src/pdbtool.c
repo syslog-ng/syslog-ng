@@ -60,7 +60,7 @@ pdbtool_merge_start_element(GMarkupParseContext *context, const gchar *element_n
   for (i = 0; attribute_names[i]; i++)
     {
       buff = g_markup_printf_escaped(" %s='%s'", attribute_names[i], attribute_values[i]);
-      g_string_append_printf(state->merged, buff);
+      g_string_append_printf(state->merged, "%s", buff);
       g_free(buff);
     }
 
