@@ -28,6 +28,8 @@
 #include "alarms.h"
 #include "stats.h"
 #include "tags.h"
+#include "logmsg.h"
+
 #include <time.h>
 
 typedef struct _ApplicationHookEntry
@@ -104,6 +106,7 @@ app_startup(void)
   alarm_init();
   stats_init();
   tzset();
+  log_msg_global_init();
   log_tags_init();
 }
 

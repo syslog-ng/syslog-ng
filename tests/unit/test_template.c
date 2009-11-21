@@ -59,14 +59,12 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   tzset();
 
   msg = log_msg_new(msg_str, strlen(msg_str), g_sockaddr_inet_new("10.10.10.10", 1010), 0, NULL, -1, 0xFFFF);
-  log_msg_add_dyn_value(msg, "APP.VALUE", "value");
-  msg->matches = g_new0(LogMessageMatch, 2);
-  msg->matches[0].match = g_strdup("whole-match");
-  msg->matches[1].match = g_strdup("first-match");
-  msg->num_matches = 2;
+  log_msg_set_value(msg, log_msg_get_value_handle("APP.VALUE"), "value", -1);
+  log_msg_set_match(msg, 0, "whole-match", -1);
+  log_msg_set_match(msg, 1, "first-match", -1);
 
   /* fix some externally or automatically defined values */
-  log_msg_set_host_from(msg, g_strdup("kismacska"), -1);
+  log_msg_set_value(msg, LM_V_HOST_FROM, "kismacska", -1);
   msg->timestamps[LM_TS_RECVD].time.tv_sec = 1139684315;
   msg->timestamps[LM_TS_RECVD].time.tv_usec = 639000;
   msg->timestamps[LM_TS_RECVD].zone_offset = get_local_timezone_ofs(1139684315);

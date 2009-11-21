@@ -33,13 +33,12 @@
 static void
 log_rewrite_init(LogRewrite *self)
 {
-  self->value_name = LOG_MESSAGE_BUILTIN_FIELD(MESSAGE);
+  self->value_handle = LM_V_MESSAGE;
 }
 
 void
 log_rewrite_free(LogRewrite *self)
 {
-  log_msg_free_value_name(self->value_name);
   self->free_fn(self);
   g_free(self);
 }
@@ -58,19 +57,20 @@ log_rewrite_subst_process(LogRewrite *s, LogMessage *msg)
 {
   LogRewriteSubst *self = (LogRewriteSubst *) s;
   GError *regexp_error;
-  gchar *value;
+  const gchar *value;
   gchar *new_value;
   regexp_error = NULL;
   gssize length;
   gssize new_length = -1;
 
-  value = log_msg_get_value(msg, self->super.value_name, &length);
-  if (!value)
-    return;
+  value = log_msg_get_value(msg, self->super.value_handle, &length);
 
-  new_value = log_matcher_replace(self->matcher, msg, self->super.value_name, value, length, self->replacement, &new_length);
+  new_value = log_matcher_replace(self->matcher, msg, self->super.value_handle, value, length, self->replacement, &new_length);
   if (new_value)
-    log_msg_set_value(msg, self->super.value_name, new_value, new_length);
+    {
+      log_msg_set_value(msg, self->super.value_handle, new_value, new_length);
+    }
+  g_free(new_value);
 }
 
 void 
@@ -134,8 +134,8 @@ log_rewrite_set_process(LogRewrite *s, LogMessage *msg)
   result = g_string_sized_new(64);
   log_template_format(self->value_template, msg, 0, TS_FMT_BSD, NULL, 0, 0, result);
 
-  log_msg_set_value(msg, self->super.value_name, result->str, result->len);
-  g_string_free(result, FALSE);
+  log_msg_set_value(msg, self->super.value_handle, result->str, result->len);
+  g_string_free(result, TRUE);
 }
 
 static void
@@ -187,14 +187,14 @@ log_rewrite_rule_call_item(gpointer item, gpointer user_data)
   LogRewrite *r = (LogRewrite *) item;
   LogMessage *msg = (LogMessage *) user_data;
   gssize length;
-  gchar *value;
+  const gchar *value;
 
   r->process(r, msg);
   if (G_UNLIKELY(debug_flag))
     {
-      value = log_msg_get_value(msg, r->value_name, &length);
+      value = log_msg_get_value(msg, r->value_handle, &length);
       msg_debug("Rewrite expression evaluation result",
-                evt_tag_str("value", log_msg_get_value_name(r->value_name)),
+                evt_tag_str("value", log_msg_get_value_name(r->value_handle)),
                 evt_tag_printf("new_value", "%.*s", (gint) length, value),
                 NULL);
     }

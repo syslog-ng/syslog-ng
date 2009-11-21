@@ -183,27 +183,27 @@ filter_level_new(guint32 levels)
 }
 
 static gboolean
-filter_re_eval_string(FilterExprNode *s, LogMessage *msg, const gchar *str, gssize str_len)
+filter_re_eval_string(FilterExprNode *s, LogMessage *msg, gint value_handle, const gchar *str, gssize str_len)
 {
   FilterRE *self = (FilterRE *) s;
 
   if (str_len < 0)
     str_len = strlen(str);
 
-  return log_matcher_match(self->matcher, msg, self->value_name, str, str_len) ^ self->super.comp;
+  return log_matcher_match(self->matcher, msg, value_handle, str, str_len) ^ self->super.comp;
 }
 
 static gboolean
 filter_re_eval(FilterExprNode *s, LogMessage *msg)
 {
   FilterRE *self = (FilterRE *) s;
-  gchar *value;
-  gssize len;
+  const gchar *value;
+  gssize len = 0;
   
-  value = log_msg_get_value(msg, self->value_name, &len);
+  value = log_msg_get_value(msg, self->value_handle, &len);
   
   value = APPEND_ZERO(value, len);
-  return filter_re_eval_string(s, msg, value, len);
+  return filter_re_eval_string(s, msg, self->value_handle, value, len);
 }
 
 
@@ -213,7 +213,6 @@ filter_re_free(FilterExprNode *s)
   FilterRE *self = (FilterRE *) s;
   
   log_matcher_free(self->matcher);
-  log_msg_free_value_name(self->value_name);
   g_free(s);
 }
 
@@ -253,11 +252,11 @@ filter_re_set_regexp(FilterRE *self, gchar *re)
 }
 
 FilterExprNode *
-filter_re_new(const gchar *value_name)
+filter_re_new(NVHandle value_handle)
 {
   FilterRE *self = g_new0(FilterRE, 1);
 
-  self->value_name = value_name;
+  self->value_handle = value_handle;
   self->super.eval = filter_re_eval;
   self->super.free_fn = filter_re_free;
   return &self->super;
@@ -270,16 +269,21 @@ filter_match_eval(FilterExprNode *s, LogMessage *msg)
   gchar *str;
   gboolean res;
 
-  if (G_UNLIKELY(self->value_name == 0))
+  if (G_UNLIKELY(!self->value_handle))
     {
+      const gchar *pid;
+      gssize pid_len;
+
+      pid = log_msg_get_value(msg, LM_V_PID, &pid_len);
+
       /* compatibility mode */
       str = g_strdup_printf("%s%s%s%s: %s", 
-                            msg->program, 
-                            msg->pid_len > 0 ? "[" : "", 
-                            msg->pid,
-                            msg->pid_len > 0 ? "]" : "",
-                            msg->message);
-      res = filter_re_eval_string(s, msg, str, -1);
+                            log_msg_get_value(msg, LM_V_PROGRAM, NULL),
+                            pid_len > 0 ? "[" : "",
+                            pid,
+                            pid_len > 0 ? "]" : "",
+                            log_msg_get_value(msg, LM_V_MESSAGE, NULL));
+      res = filter_re_eval_string(s, msg, LM_V_NONE, str, -1);
       g_free(str);
     }
   else
@@ -293,6 +297,7 @@ FilterExprNode *
 filter_match_new()
 {
   FilterRE *self = g_new0(FilterRE, 1);
+
   self->super.free_fn = filter_re_free;
   self->super.eval = filter_match_eval;
   return &self->super;

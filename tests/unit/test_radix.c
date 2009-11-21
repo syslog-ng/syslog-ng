@@ -21,7 +21,7 @@ r_print_pnode(RNode *node, int depth)
   for (i = 0; i < depth; i++)
     printf(" ");
 
-  printf("%dPNODE: %d('%s') => '%s'\n", depth, node->parser->type, node->parser->name, (char *)node->value);
+  printf("%dPNODE: %d('%s') => '%s'\n", depth, node->parser->type, log_msg_get_value_name(node->parser->handle), (char *)node->value);
 
   for (i = 0; i < node->num_children; i++)
     r_print_node(node->children[i], depth + 1);
@@ -62,7 +62,7 @@ insert_node(RNode *root, gchar *key)
 void
 test_search_value(RNode *root, gchar *key, gchar *expected_value)
 {
-  RNode *ret = r_find_node(root, key, key, strlen(key), NULL, NULL);
+  RNode *ret = r_find_node(root, key, key, strlen(key), NULL);
 
   if (ret && expected_value)
     {
@@ -99,27 +99,25 @@ test_search_matches(RNode *root, gchar *key, gchar *name1, ...)
 {
   RNode *ret;
   va_list args;
-  GArray *matches = g_array_new(FALSE, TRUE, sizeof(LogMessageMatch));
-  GPtrArray *match_names = g_ptr_array_new();
-  LogMessageMatch *match;
-  gchar *match_name;
+  GArray *matches = g_array_new(FALSE, TRUE, sizeof(RParserMatch));
+  RParserMatch *match;
+  const gchar *match_name;
   gint i;
 
   g_array_set_size(matches, 1);
-  g_ptr_array_set_size(match_names, 1);
   va_start(args, name1);
 
-  ret = r_find_node(root, key, key, strlen(key), matches, match_names);
+  ret = r_find_node(root, key, key, strlen(key), matches);
   if (ret && !name1)
     {
       printf("FAIL: found unexpected: '%s' => '%s' matches: ", key, (gchar *) ret->value);
       for (i = 0; i < matches->len; i++)
         {
-          match = &g_array_index(matches, LogMessageMatch, i);
-          match_name = g_ptr_array_index(match_names, i);
+          match = &g_array_index(matches, RParserMatch, i);
+          match_name = log_msg_get_value_name(match->handle);
           if (match_name)
             {
-              if (match->flags & LMM_REF_MATCH)
+              if (!match->match)
                 printf("'%s' => '%.*s'", match_name, match->len, &key[match->ofs]);
               else
                 printf("'%s' => '%s'", match_name, match->match);
@@ -143,8 +141,8 @@ test_search_matches(RNode *root, gchar *key, gchar *name1, ...)
               fail = TRUE;
               goto out;
             }
-          match = &g_array_index(matches, LogMessageMatch, i);
-          match_name = g_ptr_array_index(match_names, i);
+          match = &g_array_index(matches, RParserMatch, i);
+          match_name = log_msg_get_value_name(match->handle);
 
           if (strcmp(match_name, name) != 0)
             {
@@ -152,7 +150,7 @@ test_search_matches(RNode *root, gchar *key, gchar *name1, ...)
               fail = TRUE;
             }
 
-          if (match->flags & LMM_REF_MATCH)
+          if (!match->match)
             {
               if (strncmp(&key[match->ofs], value, match->len) != 0 || strlen(value) != match->len)
                 {
@@ -192,15 +190,13 @@ test_search_matches(RNode *root, gchar *key, gchar *name1, ...)
 
   for (i = 0; i < matches->len; i++)
     {
-      match_name = g_ptr_array_index(match_names, i);
-
-      match = &g_array_index(matches, LogMessageMatch, i);
-      if ((match->flags & LMM_REF_MATCH) == 0)
+      match = &g_array_index(matches, RParserMatch, i);
+      if (match->match)
         {
           g_free(match->match);
         }
-      g_free(match_name);
     }
+  g_array_free(matches, TRUE);
 }
 
 void

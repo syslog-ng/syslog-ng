@@ -227,16 +227,15 @@ static GOptionEntry merge_options[] =
 static gchar *match_program = NULL;
 static gchar *match_message = NULL;
 
-void
-pdbtool_match_values(gpointer key, gpointer value, gpointer user_data)
+gboolean
+pdbtool_match_values(NVHandle handle, const gchar *name, const gchar *value, gssize length, gpointer user_data)
 {
-  gchar *n = key;
-  gchar *v = value;
   gint *ret = user_data;
 
-  printf("%s=%s\n", n, v);
-  if (g_str_equal(n, ".classifier.rule_id"))
+  printf("%s=%.*s\n", name, (gint) length, value);
+  if (g_str_equal(name, ".classifier.rule_id"))
     *ret = 0;
+  return FALSE;
 }
 
 static gint
@@ -257,13 +256,13 @@ pdbtool_match(int argc, char *argv[])
   if (!log_pattern_database_load(&patterndb, patterndb_file))
     return ret;
 
-  log_msg_set_message(msg, match_message, strlen(match_message));
+  log_msg_set_value(msg, LM_V_MESSAGE, match_message, strlen(match_message));
   if (match_program && match_program[0])
-    log_msg_set_program(msg, match_program, strlen(match_program));
+    log_msg_set_value(msg, LM_V_PROGRAM, match_program, strlen(match_program));
 
   log_db_parser_process_lookup(&patterndb, msg);
 
-  g_hash_table_foreach(msg->values, pdbtool_match_values, &ret);
+  nv_table_foreach(msg->payload, pdbtool_match_values, &ret);
 
   log_pattern_database_free(&patterndb);
   log_msg_unref(msg);
@@ -290,9 +289,8 @@ pdbtool_walk_tree(RNode *root, gint level, gboolean program)
     printf(" ");
 
   if (root->parser)
-    printf("@%s:%s@ ", r_parser_type_name(root->parser->type), root->parser->name ? root->parser->name : "");
-  else
-    printf("'%s' ", root->key ? root->key : "");
+    printf("@%s:%s@ ", r_parser_type_name(root->parser->type), log_msg_get_value_name(root->parser->handle));
+  printf("'%s' ", root->key ? root->key : "");
 
   if (root->value)
     {
@@ -325,7 +323,7 @@ pdbtool_dump(int argc, char *argv[])
    pdbtool_walk_tree(patterndb.programs, 0, TRUE);
  else if (match_program)
    {
-     RNode *ruleset = r_find_node(patterndb.programs, g_strdup(match_program), g_strdup(match_program), strlen(match_program), NULL, NULL);
+     RNode *ruleset = r_find_node(patterndb.programs, g_strdup(match_program), g_strdup(match_program), strlen(match_program), NULL);
      if (ruleset && ruleset->value)
        pdbtool_walk_tree(((LogDBProgram *)ruleset->value)->rules, 0, FALSE);
    }

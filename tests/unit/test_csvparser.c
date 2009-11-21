@@ -91,13 +91,16 @@ testcase(gchar *msg, guint parse_flags, gint max_columns, guint32 flags, gchar *
   i = 0;
   while (expected_value && column_array[i])
     {
-      gchar *value;
-      value = g_hash_table_lookup(logmsg->values, column_array[i]);
+      const gchar *value;
+      gssize value_len;
+
+      value = log_msg_get_value(logmsg, log_msg_get_value_handle(column_array[i]), &value_len);
 
       if (expected_value && expected_value[0])
         {
           TEST_ASSERT(value && value[0], "expected value set, but no actual value");
-          TEST_ASSERT(strcmp(value, expected_value) == 0, "value does not match expected value");
+          TEST_ASSERT(strlen(expected_value) == value_len, "value length doesn't match actual length");
+          TEST_ASSERT(strncmp(value, expected_value, value_len) == 0, "value does not match expected value");
         }
       else
         {

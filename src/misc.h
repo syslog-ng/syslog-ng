@@ -40,7 +40,7 @@ gboolean g_fd_set_cloexec(int fd, gboolean enable);
 gboolean resolve_user(const char *user, uid_t *uid);
 gboolean resolve_group(const char *group, gid_t *gid);
 gboolean resolve_user_group(char *arg, uid_t *uid, gid_t *gid);
-gboolean resolve_sockaddr(gchar **result, GSockAddr *saddr, gboolean usedns, gboolean usefqdn, gboolean use_dns_cache, gboolean normalize_hostnames);
+void resolve_sockaddr(gchar **result, GSockAddr *saddr, gboolean usedns, gboolean usefqdn, gboolean use_dns_cache, gboolean normalize_hostnames);
 gboolean resolve_hostname(GSockAddr **addr, gchar *name);
 
 gchar *format_hex_string(gpointer str, gsize str_len, gchar *result, gsize result_len);

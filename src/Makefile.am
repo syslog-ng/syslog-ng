@@ -21,6 +21,7 @@ libsyslog_ng_a_SOURCES = \
 	misc.c misc.h utils.c utils.h messages.c messages.h syslog-names.c syslog-names.h \
 	cfg.c cfg.h filter.c filter.h \
 	logmsg.c logmsg.h logstamp.c logstamp.h \
+	nvtable.c nvtable.h \
 	logpipe.c logpipe.h logsource.c logsource.h driver.c driver.h sgroup.c sgroup.h \
 	dgroup.c dgroup.h center.c center.h templates.c templates.h \
 	logreader.c logreader.h logwriter.c logwriter.h \

@@ -34,7 +34,7 @@ typedef struct _LogRewrite LogRewrite;
 
 struct _LogRewrite
 {
-  const gchar *value_name;
+  NVHandle value_handle;
   void (*process)(LogRewrite *s, LogMessage *msg);
   void (*free_fn)(LogRewrite *s);
 };

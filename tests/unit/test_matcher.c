@@ -1,4 +1,6 @@
 #include "logmatcher.h"
+#include "apphook.h"
+
 #include <stdlib.h>
 #include <string.h>
 
@@ -7,18 +9,22 @@ testcase_match(const gchar *log, gint parse_flags, const gchar *pattern, gint ma
 {
   LogMessage *msg;
   gboolean result;
+  gchar buf[1024];
+  NVHandle nonasciiz = log_msg_get_value_handle("NON-ASCIIZ");
+  gssize msglen;
 
   msg = log_msg_new(log, strlen(log), g_sockaddr_inet_new("10.10.10.10", 1010), parse_flags, NULL, -1, 0xFFFF);
 
-  /* NOTE: we test how our matchers cope with non-zero terminated values. We don't change message_len, only the value */
-  LOG_MESSAGE_WRITABLE_FIELD(msg->message) = g_realloc(msg->message, msg->message_len + 10);
-  memset(msg->message + msg->message_len, 'A', 10);
+  g_snprintf(buf, sizeof(buf), "%sAAAAAAAAAAAA", log_msg_get_value(msg, LM_V_MESSAGE, &msglen));
+  log_msg_set_value(msg, log_msg_get_value_handle("MESSAGE2"), buf, -1);
 
+  /* add a non-zero terminated indirect value which contains the whole message */
+  log_msg_set_value_indirect(msg, nonasciiz, log_msg_get_value_handle("MESSAGE2"), 0, 0, msglen);
   log_matcher_set_flags(m, matcher_flags);
 
   log_matcher_compile(m, pattern);
 
-  result = log_matcher_match(m, msg, GINT_TO_POINTER(LM_F_MESSAGE), msg->message, msg->message_len);
+  result = log_matcher_match(m, msg, nonasciiz, log_msg_get_value(msg, nonasciiz, &msglen), msglen);
 
   if (result != expected_result)
     {
@@ -38,12 +44,20 @@ testcase_replace(const gchar *log, gint parse_flags, const gchar *re, gchar *rep
   LogTemplate *r;
   gchar *result;
   gssize length;
+  gchar buf[1024];
+  gssize msglen;
+  NVHandle nonasciiz = log_msg_get_value_handle("NON-ASCIIZ");
+  const gchar *msgbuf;
 
   msg = log_msg_new(log, strlen(log), g_sockaddr_inet_new("10.10.10.10", 1010), parse_flags, NULL, -1, 0xFFFF);
 
   /* NOTE: we test how our matchers cope with non-zero terminated values. We don't change message_len, only the value */
-  LOG_MESSAGE_WRITABLE_FIELD(msg->message) = g_realloc(msg->message, msg->message_len + 10);
-  memset(msg->message + msg->message_len, 'A', 10);
+
+  g_snprintf(buf, sizeof(buf), "%sAAAAAAAAAAAA", log_msg_get_value(msg, LM_V_MESSAGE, &msglen));
+  log_msg_set_value(msg, log_msg_get_value_handle("MESSAGE2"), buf, -1);
+
+  /* add a non-zero terminated indirect value which contains the whole message */
+  log_msg_set_value_indirect(msg, nonasciiz, log_msg_get_value_handle("MESSAGE2"), 0, 0, msglen);
 
   log_matcher_set_flags(m, matcher_flags);
 
@@ -51,11 +65,12 @@ testcase_replace(const gchar *log, gint parse_flags, const gchar *re, gchar *rep
 
   r = log_template_new(NULL, replacement);
 
-  result = log_matcher_replace(m, msg, GINT_TO_POINTER(LM_F_MESSAGE), msg->message, msg->message_len, r, &length);
+  result = log_matcher_replace(m, msg, nonasciiz, log_msg_get_value(msg, nonasciiz, &msglen), msglen, r, &length);
+  msgbuf = log_msg_get_value(msg, nonasciiz, &msglen);
 
-  if (strncmp(result ? result : msg->message, expected_result, result ? length : msg->message_len) != 0)
+  if (strncmp(result ? result : msgbuf, expected_result, result ? length : msglen) != 0)
     {
-      fprintf(stderr, "Testcase failure. pattern=%s, result=%.*s, expected=%s\n", re, (gint) length, result ? result : msg->message, expected_result);
+      fprintf(stderr, "Testcase failure. pattern=%s, result=%.*s, expected=%s\n", re, (gint) length, result ? result : msgbuf, expected_result);
       exit(1);
     }
 
@@ -70,6 +85,8 @@ testcase_replace(const gchar *log, gint parse_flags, const gchar *re, gchar *rep
 int
 main()
 {
+  app_startup();
+
   /* POSIX regexp */
   testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép", 0, "árvíz", "favíz", "favíztűrőtükörfúrógép", 0, log_matcher_posix_re_new());
   testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép", 0, "^tűrő", "faró", "árvíztűrőtükörfúrógép", 0, log_matcher_posix_re_new());

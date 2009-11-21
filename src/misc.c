@@ -153,7 +153,7 @@ resolve_hostname(GSockAddr **addr, gchar *name)
   return TRUE;
 }
 
-gboolean
+void
 resolve_sockaddr(gchar **result, GSockAddr *saddr, gboolean usedns, gboolean usefqdn, gboolean use_dns_cache, gboolean normalize_hostnames)
 {
   static gchar local_hostname[256] = "";
@@ -235,7 +235,6 @@ resolve_sockaddr(gchar **result, GSockAddr *saddr, gboolean usedns, gboolean use
 
     }
   *result = normalize_hostnames ? g_ascii_strdown(hname, -1) : g_strdup(hname);
-  return TRUE;
 }
 
 gboolean

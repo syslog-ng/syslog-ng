@@ -90,7 +90,7 @@ log_source_group_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_o
   LogSourceGroup *self = (LogSourceGroup *) s;
   GlobalConfig *cfg = log_pipe_get_config(s);
   
-  log_msg_set_source(msg, g_strndup(self->name, self->name_len), self->name_len);
+  log_msg_set_value(msg, LM_V_SOURCE, self->name, self->name_len);
 
   if (msg->flags & LF_LOCAL)
     afinter_postpone_mark(cfg->mark_freq);

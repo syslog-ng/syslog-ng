@@ -1214,7 +1214,7 @@ filter_simple_expr
     | KW_TAGS '(' string_list ')'   { $$ = filter_tags_new($3); }
 	| KW_PROGRAM '(' string
 	  { 
-	    last_re_filter = (FilterRE *) filter_re_new(LOG_MESSAGE_BUILTIN_FIELD(PROGRAM)); 
+	    last_re_filter = (FilterRE *) filter_re_new(LM_V_PROGRAM);
           }
           filter_re_opts ')'  
           {
@@ -1226,7 +1226,7 @@ filter_simple_expr
           }
 	| KW_HOST '(' string
 	  {
-	    last_re_filter = (FilterRE *) filter_re_new(LOG_MESSAGE_BUILTIN_FIELD(HOST)); 
+	    last_re_filter = (FilterRE *) filter_re_new(LM_V_HOST);
           }
           filter_re_opts ')'  
           {
@@ -1247,7 +1247,7 @@ filter_simple_expr
             free($3); 
             $$ = &last_re_filter->super;
             
-            if (last_re_filter->value_name == 0)
+            if (last_re_filter->value_handle == 0)
               {
                 static gboolean warn_written = FALSE;
                 
@@ -1261,7 +1261,7 @@ filter_simple_expr
           }
         | KW_MESSAGE '(' string           
           {
-	    last_re_filter = (FilterRE *) filter_re_new(LOG_MESSAGE_BUILTIN_FIELD(MESSAGE)); 
+	    last_re_filter = (FilterRE *) filter_re_new(LM_V_MESSAGE);
           }
           filter_re_opts ')'  
           {
@@ -1272,7 +1272,7 @@ filter_simple_expr
           }
         | KW_SOURCE '(' string           
           {
-	    last_re_filter = (FilterRE *) filter_re_new(LOG_MESSAGE_BUILTIN_FIELD(SOURCE)); 
+	    last_re_filter = (FilterRE *) filter_re_new(LM_V_SOURCE);
             filter_re_set_matcher(last_re_filter, log_matcher_string_new());
           }
           filter_re_opts ')'  
@@ -1291,7 +1291,7 @@ filter_match_opts
         
 filter_match_opt
         : filter_re_opt
-        | KW_VALUE '(' string ')'               { last_re_filter->value_name = log_msg_translate_value_name($3); free($3); }
+        | KW_VALUE '(' string ')'               { last_re_filter->value_handle = log_msg_get_value_handle($3); free($3); }
         ;
 	
 filter_re_opts 
@@ -1434,7 +1434,7 @@ rewrite_expr_opts
         ;
         
 rewrite_expr_opt
-        : KW_VALUE '(' string ')'               { last_rewrite->value_name = log_msg_translate_value_name($3); free($3); }
+        : KW_VALUE '(' string ')'               { last_rewrite->value_handle = log_msg_get_value_handle($3); free($3); }
         | KW_TYPE '(' string ')'                
           { 
             if (strcmp($3, "glob") == 0)

@@ -47,6 +47,14 @@ check_sd_param_in_clone(gchar *msg, LogMessage *self, LogMessage *msg_clone, con
   TEST_ASSERT(strcmp(a1, pair[1]) == 0 && strcmp(a2, pair[1]) == 0, "%s", a1, a2);
 }
 
+void
+check_value(gchar *msg, LogMessage *logmsg, NVHandle handle, const gchar *expected)
+{
+  const gchar *p = log_msg_get_value(logmsg, handle, NULL);
+
+  TEST_ASSERT(strcmp(p, expected) == 0, "%s", p, expected);
+}
+
 int
 testcase(gchar *msg,
          gint parse_flags,
@@ -95,16 +103,17 @@ testcase(gchar *msg,
       time(&now);
       TEST_ASSERT(absolute_value(logmsg->timestamps[LM_TS_STAMP].time.tv_sec - now) < 1, "%d", 0, 0);
     }
-  TEST_ASSERT(strcmp(logmsg->host, expected_host) == 0, "%s", logmsg->host, expected_host);
-  TEST_ASSERT(strcmp(logmsg->program, expected_program) == 0, "%s", logmsg->program, expected_program);
-  TEST_ASSERT(strcmp(logmsg->message, expected_msg) == 0, "%s", logmsg->message, expected_msg);
-  TEST_ASSERT(!expected_pid || strcmp(logmsg->pid, expected_pid) == 0, "%s", logmsg->pid, expected_pid);
-  TEST_ASSERT(!expected_msgid || strcmp(logmsg->msgid, expected_msgid) == 0, "%s", logmsg->msgid, expected_msgid);
+  check_value(msg, logmsg, LM_V_HOST, expected_host);
+  check_value(msg, logmsg, LM_V_PROGRAM, expected_program);
+  check_value(msg, logmsg, LM_V_MESSAGE, expected_msg);
+  if (expected_pid)
+    check_value(msg, logmsg, LM_V_PID, expected_pid);
+  if (expected_msgid)
+    check_value(msg, logmsg, LM_V_MSGID, expected_msgid);
 
   /* SD elements */
   log_msg_format_sdata(logmsg, sd_str);
   TEST_ASSERT(!expected_sd_str || strcmp(sd_str->str, expected_sd_str) == 0, "%s", sd_str->str, expected_sd_str);
-
 
   if (expected_sd_pairs)
     {

@@ -64,8 +64,8 @@ test_rule_value(LogPatternDatabase *patterndb, const gchar *pattern, const gchar
   GString *val = g_string_sized_new(256);
   gint i = 0;
 
-  log_msg_set_message(msg, g_strdup(pattern), strlen(pattern));
-  log_msg_set_host(msg, g_strdup(MYHOST), strlen(MYHOST));
+  log_msg_set_value(msg, LM_V_MESSAGE, pattern, strlen(pattern));
+  log_msg_set_value(msg, LM_V_HOST, MYHOST, strlen(MYHOST));
 
   result = log_pattern_database_lookup(patterndb, msg);
   if (result)
@@ -99,7 +99,7 @@ test_rule_tag(LogPatternDatabase *patterndb, const gchar *pattern, const gchar *
   gboolean found = FALSE;
   gint i = 0;
 
-  log_msg_set_message(msg, g_strdup(pattern), strlen(pattern));
+  log_msg_set_value(msg, LM_V_MESSAGE, pattern, strlen(pattern));
 
   result = log_pattern_database_lookup(patterndb, msg);
   if (result)

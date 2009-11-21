@@ -27,6 +27,7 @@
 #include "logpipe.h"
 #include "timeutils.h"
 #include "tags.h"
+#include "nvtable.h"
 
 #include <sys/types.h>
 #include <time.h>
@@ -39,9 +40,10 @@
 
 static const char aix_fwd_string[] = "Message forwarded from ";
 static const char repeat_msg_string[] = "last message repeated";
-static gchar *null_string = "";
 
-/* clonable LogMessage support with shared data pointers */
+/**********************************************************************
+ * LogMessage
+ **********************************************************************/
 
 static inline gboolean
 log_msg_chk_flag(LogMessage *self, gint32 flag)
@@ -55,60 +57,135 @@ log_msg_set_flag(LogMessage *self, gint32 flag)
   self->flags |= flag;
 }
 
-#define FUNC_MSG_STR_SETTER(field, macro)   \
-  void log_msg_set_##field(LogMessage *self, gchar *field, gssize len)  \
-  {                                                                     \
-    if (log_msg_chk_flag(self, LF_OWN_##macro))                         \
-      g_free(self->field);                                              \
-    LOG_MESSAGE_WRITABLE_FIELD(self->field) = field;                    \
-    self->field ## _len = len > 0 ? len : strlen(field);                \
-    log_msg_set_flag(self, LF_OWN_##macro);                             \
-  }                                                                     
-
-FUNC_MSG_STR_SETTER(host, HOST);
-FUNC_MSG_STR_SETTER(host_from, HOST_FROM);
-FUNC_MSG_STR_SETTER(message, MESSAGE);
-FUNC_MSG_STR_SETTER(program, PROGRAM);
-FUNC_MSG_STR_SETTER(pid, PID);
-FUNC_MSG_STR_SETTER(msgid, MSGID);
-FUNC_MSG_STR_SETTER(source, SOURCE);
-
-void
-log_msg_set_matches(LogMessage *self, gint num_matches, LogMessageMatch *matches)
+/* the index matches the value id */
+const gchar *builtin_value_names[] =
 {
-  if (log_msg_chk_flag(self, LF_OWN_MATCHES))
-    {
-      log_msg_clear_matches(self);
-    }
-  self->num_matches = num_matches;
-  self->matches = matches;
-  log_msg_set_flag(self, LF_OWN_MATCHES);
+  "HOST",
+  "HOST_FROM",
+  "MESSAGE",
+  "PROGRAM",
+  "PID",
+  "MSGID",
+  "SOURCE",
+  "LEGACY_MSGHDR",
+  NULL,
+};
+
+static NVRegistry *logmsg_registry;
+static const char sd_prefix[] = ".SDATA.";
+const gint sd_prefix_len = sizeof(sd_prefix) - 1;
+
+
+NVHandle
+log_msg_get_value_handle(const gchar *value_name)
+{
+  return nv_registry_get_value_handle(logmsg_registry, value_name);
+}
+
+const gchar *
+log_msg_get_value_name(NVHandle handle)
+{
+  return nv_registry_get_value_name(logmsg_registry, handle, NULL);
 }
 
 void
-log_msg_free_matches_elements(LogMessageMatch *matches, gint num_matches)
+log_msg_set_value(LogMessage *self, NVHandle handle, const gchar *value, gssize value_len)
 {
-  gint i;
-  for (i = 0; i < num_matches; i++)
+  const gchar *name;
+  gssize name_len;
+
+  if (handle == LM_V_NONE)
+    return;
+
+  name = nv_registry_get_value_name(logmsg_registry, handle, &name_len);
+
+  if (value_len < 0)
+    value_len = strlen(value);
+
+  if (!log_msg_chk_flag(self, LF_OWN_PAYLOAD))
     {
-      if ((matches[i].flags & LMM_REF_MATCH) == 0)
+      self->payload = nv_table_clone(self->payload, name_len + value_len + 2);
+      log_msg_set_flag(self, LF_OWN_PAYLOAD);
+    }
+
+  do
+    {
+      if (!nv_table_add_value(self->payload, handle, name, name_len, value, value_len))
         {
-          g_free(matches[i].match);
-          matches[i].match = NULL;
+          /* error allocating string in payload, reallocate */
+          self->payload = nv_table_realloc(self->payload);
+        }
+      else
+        {
+          break;
         }
     }
+  while (1);
+}
+
+void
+log_msg_set_value_indirect(LogMessage *self, NVHandle handle, NVHandle ref_handle, guint8 type, guint16 ofs, guint16 len)
+{
+  const gchar *name;
+  gssize name_len;
+
+  if (handle == LM_V_NONE)
+    return;
+
+  g_assert(handle >= LM_V_MAX);
+
+  name = nv_registry_get_value_name(logmsg_registry, handle, &name_len);
+
+  if (!log_msg_chk_flag(self, LF_OWN_PAYLOAD))
+    {
+      self->payload = nv_table_clone(self->payload, name_len + 1);
+      log_msg_set_flag(self, LF_OWN_PAYLOAD);
+    }
+
+  do
+    {
+      if (!nv_table_add_value_indirect(self->payload, handle, name, name_len, ref_handle, type, ofs, len))
+        {
+          /* error allocating string in payload, reallocate */
+          self->payload = nv_table_realloc(self->payload);
+        }
+      else
+        {
+          break;
+        }
+    }
+  while (1);
+}
+
+NVHandle match_handles[256];
+
+void
+log_msg_set_match(LogMessage *self, gint index, const gchar *value, gssize value_len)
+{
+  g_assert(index < 256);
+
+  if (index >= self->num_matches)
+    self->num_matches = index + 1;
+  log_msg_set_value(self, match_handles[index], value, value_len);
+}
+
+void
+log_msg_set_match_indirect(LogMessage *self, gint index, NVHandle ref_handle, guint8 type, guint16 ofs, guint16 len)
+{
+  g_assert(index < 256);
+
+  log_msg_set_value_indirect(self, match_handles[index], ref_handle, type, ofs, len);
 }
 
 void
 log_msg_clear_matches(LogMessage *self)
 {
-  if (log_msg_chk_flag(self, LF_OWN_MATCHES) && self->matches)
-    {
-      log_msg_free_matches_elements(self->matches, self->num_matches);
-      g_free(self->matches);
-    }
+  gint i;
 
-  self->matches = NULL;
+  for (i = 0; i < self->num_matches; i++)
+    {
+      log_msg_set_value(self, match_handles[i], "", 0);
+    }
   self->num_matches = 0;
 }
 
@@ -191,239 +268,6 @@ gboolean
 log_msg_is_tag_by_name(LogMessage *self, const gchar *name)
 {
   return log_msg_is_tag_by_id(self, log_tags_get_by_name(name));
-}
-
-/* the index matches the value id */
-gchar *builtin_value_names[] = 
-{
-  NULL,
-  "HOST", 
-  "HOST_FROM", 
-  "MESSAGE",
-  "PROGRAM",
-  "PID",
-  "MSGID",
-  "SOURCE",
-  NULL,
-};
-
-#define MAX_BUILTIN_VALUE  8
-
-const gchar *
-log_msg_get_value_name(const gchar *value_name)
-{
-  guint value_id = GPOINTER_TO_UINT(value_name);
-
-  if (value_id < MAX_BUILTIN_VALUE)
-    return builtin_value_names[value_id];
-  else
-    return value_name;
-}
-
-const gchar *
-log_msg_translate_value_name(const gchar *value_name)
-{
-  gint i;
-
-  for (i = 1; builtin_value_names[i]; i++)
-    {
-      if (strcasecmp(builtin_value_names[i], value_name) == 0)
-        return GUINT_TO_POINTER(i);
-    }
-  return g_strdup(value_name);
-}
-
-void
-log_msg_free_value_name(const gchar *value_name)
-{
-  guint value_id = GPOINTER_TO_UINT(value_name);
-
-  if (value_id >= MAX_BUILTIN_VALUE)
-    g_free((gchar *) value_name);
-}
-
-static const char sd_prefix[] = ".SDATA.";
-const gint sd_prefix_len = sizeof(sd_prefix) - 1;
-
-/**
- *
- * NOTE: length can be set to NULL in which case length is not
- * returned.
- *
- **/
-gchar *
-log_msg_get_value(LogMessage *self, const gchar *value_name, gssize *length)
-{
-  guint value_id = GPOINTER_TO_UINT(value_name);
-  gchar *value = NULL;
-
-  if (value_id < MAX_BUILTIN_VALUE)
-    {
-      switch (value_id)
-        {
-        case LM_F_HOST:
-          *length = self->host_len;
-          return self->host;
-        case LM_F_HOST_FROM:
-          *length = self->host_from_len;
-          return self->host_from;
-        case LM_F_MESSAGE:
-          *length = self->message_len;
-          return self->message;
-        case LM_F_PROGRAM:
-          *length = self->program_len;
-          return self->program;
-        case LM_F_PID:
-          *length = self->pid_len;
-          return self->pid;
-        case LM_F_MSGID:
-          *length = self->msgid_len;
-          return self->msgid;
-        case LM_F_SOURCE:
-          *length = self->source_len;
-          return self->source;
-        default:
-          g_assert_not_reached();
-          break;
-        }
-    }
-  else if (strncmp(value_name, sd_prefix, sd_prefix_len) == 0)
-    {
-      gint value_name_len = strlen(value_name);
-      if (self->sdata)
-        value = log_msg_lookup_sdata(self, value_name + sd_prefix_len, value_name_len - sd_prefix_len);
-      *length = value ? strlen(value) : 0;
-    }
-  else if (value_name[0] >= '0' && value_name[0] <= '9')
-    {
-      gint value_int = atoi(value_name);
-      
-      if (value_int < self->num_matches)
-        {
-          LogMessageMatch *lmm = &self->matches[value_int];
-          
-          if (lmm->flags & LMM_REF_MATCH)
-            {
-              /* this match is a reference */
-              gchar *referenced_value;
-              gssize builtin_length;
-              
-              referenced_value = log_msg_get_value(self, (gchar *) GINT_TO_POINTER((gint) lmm->builtin_value), &builtin_length);
-              
-              if (referenced_value)
-                {
-                  value = referenced_value + lmm->ofs;
-                  *length = lmm->len;
-                }
-            }
-          else if (lmm->match)
-            {
-              /* this match is a copied string, return that */
-              
-              value = lmm->match;
-              *length = strlen(value);
-            }
-          else
-            {
-              value = null_string;
-              *length = 0;
-            }
-        }
-    }
-  else
-    {
-      value = log_msg_lookup_dyn_value(self, value_name);
-      *length = value ? strlen(value) : 0;
-    }
-  if (!value)
-    {
-      msg_debug("No such value known",
-                evt_tag_str("value", log_msg_get_value_name(value_name)),
-                NULL);
-      value = null_string;
-      *length = 0;
-    }
-  return value;
-}
-
-/**
- * NOTE: the new_value is taken as a reference, e.g. it'll be assigned to
- * the LogMessage and freed later on.
- **/
-void
-log_msg_set_value(LogMessage *self, const gchar *value_name, gchar *new_value, gssize length)
-{
-  guint value_id = GPOINTER_TO_UINT(value_name);
-  static const char sd_prefix[] = ".SDATA.";
-  const gint sd_prefix_len = sizeof(sd_prefix) - 1;
-
-  if (value_id < MAX_BUILTIN_VALUE)
-    {
-      gint i;
-      /* if the referenced matches use the field being changed, convert ref. matches to duplicated ones */
-      for (i = 0; i < self->num_matches; i++)
-        {
-          LogMessageMatch *lmm = &self->matches[i];
-
-          if ((lmm->flags & LMM_REF_MATCH) && lmm->builtin_value == value_id)
-            {
-              gssize builtin_length;
-              gchar *referenced_value;
-
-              referenced_value = log_msg_get_value(self, (gchar *) GINT_TO_POINTER((gint) lmm->builtin_value), &builtin_length);
-              lmm->match = g_strndup(&referenced_value[lmm->ofs], lmm->len);
-            }
-        }
-
-      switch (value_id)
-        {
-        case LM_F_HOST:
-          log_msg_set_host(self, new_value, length);
-          break;
-        case LM_F_HOST_FROM:
-          log_msg_set_host(self, new_value, length);
-          break;
-        case LM_F_MESSAGE:
-          log_msg_set_message(self, new_value, length);
-          break;
-        case LM_F_PROGRAM:
-          log_msg_set_program(self, new_value, length);
-          break;
-        case LM_F_PID:
-          log_msg_set_pid(self, new_value, length);
-          break;
-        case LM_F_MSGID:
-          log_msg_set_msgid(self, new_value, length);
-          break;
-        case LM_F_SOURCE:
-          log_msg_set_source(self, new_value, length);
-          break;
-        default:
-          g_assert_not_reached();
-          break;
-        }
-    }
-  else if (value_name[0] >= '0' && value_name[0] <= '9')
-    {
-      gint value_int = atoi(value_name);
-      
-      if (value_int < self->num_matches)
-        {
-          LogMessageMatch *lmm = &self->matches[value_int];
-          
-          if ((lmm->flags & LMM_REF_MATCH) == 0 && lmm->match)
-            g_free(lmm->match);
-            
-          lmm->match = g_strndup(new_value, length);
-        }
-    }
-  else if (strncmp(value_name, sd_prefix, sd_prefix_len) == 0)
-    {
-    }
-  else
-    {
-      log_msg_add_dyn_value_ref(self, g_strdup(value_name), new_value);
-    }
 }
 
 struct  _LogMessageSDParam
@@ -846,7 +690,7 @@ log_msg_parse_skip_chars_until(LogMessage *self, const guchar **data, gint *leng
 }
 
 static void
-log_msg_parse_column(LogMessage *self, gchar **result, gint *result_len, const guchar **data, gint *length, gint max_length)
+log_msg_parse_column(LogMessage *self, NVHandle handle, const guchar **data, gint *length, gint max_length)
 {
   const guchar *src, *space;
   gint left;
@@ -866,14 +710,10 @@ log_msg_parse_column(LogMessage *self, gchar **result, gint *result_len, const g
     }
   if (left)
     {
-      if ((*length - left) == 1 && (*data)[0] == '-')
+      if ((*length - left) > 1 || (*data)[0] != '-')
         {
-          *result = NULL;
-        }
-      else
-        {
-          *result_len = (*length - left) > max_length ? max_length : (*length - left);
-          *result = g_strndup((gchar *) *data, *result_len);
+          gint len = (*length - left) > max_length ? max_length : (*length - left);
+          log_msg_set_value(self, handle, (gchar *) *data, len);
         }
     }
   *data = src;
@@ -1187,8 +1027,7 @@ log_msg_parse_legacy_program_name(LogMessage *self, const guchar **data, gint *l
       src++;
       left--;
     }
-  self->program_len = src - prog_start;
-  LOG_MESSAGE_WRITABLE_FIELD(self->program) = g_strndup((gchar *) prog_start, self->program_len);
+  log_msg_set_value(self, LM_V_PROGRAM, (gchar *) prog_start, src - prog_start);
   if (left > 0 && *src == '[')
     {
       const guchar *pid_start = src + 1;
@@ -1199,8 +1038,7 @@ log_msg_parse_legacy_program_name(LogMessage *self, const guchar **data, gint *l
         }
       if (left)
         {
-          self->pid_len = src - pid_start;
-          LOG_MESSAGE_WRITABLE_FIELD(self->pid) = g_strndup((gchar *) pid_start, self->pid_len);
+          log_msg_set_value(self, LM_V_PID, (gchar *) pid_start, src - pid_start);
         }
       if (left > 0 && *src == ']')
         {
@@ -1220,7 +1058,7 @@ log_msg_parse_legacy_program_name(LogMessage *self, const guchar **data, gint *l
     }
   if (flags & LP_STORE_LEGACY_MSGHDR)
     {
-      log_msg_set_value(self, "LEGACY_MSGHDR", g_strndup((gchar *) *data, *length - left), *length - left);
+      log_msg_set_value(self, LM_V_LEGACY_MSGHDR, g_strndup((gchar *) *data, *length - left), *length - left);
       self->flags |= LF_LEGACY_MSGHDR;
     }
   *data = src;
@@ -1545,7 +1383,6 @@ log_msg_parse_syslog_proto(LogMessage *self, const guchar *data, gint length, gu
   guchar date[32];
   const guchar *hostname_start = NULL;
   gint hostname_len = 0;
-  gint value_len;
   
   src = (guchar *) data;
   left = length;
@@ -1577,25 +1414,21 @@ log_msg_parse_syslog_proto(LogMessage *self, const guchar *data, gint length, gu
     ;
   else if (hostname_start)
     {
-      LOG_MESSAGE_WRITABLE_FIELD(self->host) = g_strndup((gchar *) hostname_start, hostname_len);
-      self->host_len = hostname_len;
+      log_msg_set_value(self, LM_V_HOST, (gchar *) hostname_start, hostname_len);
     }
 
   /* application name 48 ascii*/
-  log_msg_parse_column(self, &LOG_MESSAGE_WRITABLE_FIELD(self->program), &value_len, &src, &left, 48);
-  self->program_len = value_len;
+  log_msg_parse_column(self, LM_V_PROGRAM, &src, &left, 48);
   if (!log_msg_parse_skip_space(self, &src, &left))
     return FALSE;
       
   /* process id 128 ascii */
-  log_msg_parse_column(self, &LOG_MESSAGE_WRITABLE_FIELD(self->pid), &value_len, &src, &left, 128);
-  self->pid_len = value_len;
+  log_msg_parse_column(self, LM_V_PID, &src, &left, 128);
   if (!log_msg_parse_skip_space(self, &src, &left))
     return FALSE;
  
   /* message id 32 ascii */
-  log_msg_parse_column(self, &LOG_MESSAGE_WRITABLE_FIELD(self->msgid), &value_len, &src, &left, 32);
-  self->msgid_len = value_len;
+  log_msg_parse_column(self, LM_V_MSGID, &src, &left, 32);
   if (!log_msg_parse_skip_space(self, &src, &left))
     return FALSE;
 
@@ -1618,8 +1451,7 @@ log_msg_parse_syslog_proto(LogMessage *self, const guchar *data, gint length, gu
     {
       self->flags |= LF_UTF8;
     }
-  LOG_MESSAGE_WRITABLE_FIELD(self->message) = g_strndup((gchar *) src, left);
-  self->message_len = left;
+  log_msg_set_value(self, LM_V_MESSAGE, (gchar *) src, left);
   return TRUE;
 }
 
@@ -1697,8 +1529,7 @@ log_msg_parse_legacy(LogMessage *self,
       /* If we did manage to find a hostname, store it. */
       if (hostname_start)
         {
-          LOG_MESSAGE_WRITABLE_FIELD(self->host) = g_strndup((gchar *) hostname_start, hostname_len);
-          self->host_len = hostname_len;
+          log_msg_set_value(self, LM_V_HOST, (gchar *) hostname_start, hostname_len);
         }
     }
   else
@@ -1709,8 +1540,7 @@ log_msg_parse_legacy(LogMessage *self,
       /* A kernel message? Use 'kernel' as the program name. */
       if ((self->flags & LF_INTERNAL) == 0 && ((self->pri & LOG_FACMASK) == LOG_KERN))
         {
-          LOG_MESSAGE_WRITABLE_FIELD(self->program) = g_strndup("kernel", 6);
-          self->program_len = 6;
+          log_msg_set_value(self, LM_V_PROGRAM, "kernel", 6);
         }
       /* No, not a kernel message. */
       else
@@ -1721,8 +1551,7 @@ log_msg_parse_legacy(LogMessage *self,
       self->timestamps[LM_TS_STAMP] = self->timestamps[LM_TS_RECVD];
     }
 
-  LOG_MESSAGE_WRITABLE_FIELD(self->message) = g_strndup((gchar *) src, left);
-  self->message_len = left;
+  log_msg_set_value(self, LM_V_MESSAGE, (gchar *) src, left);
   if ((flags & LP_VALIDATE_UTF8) && g_utf8_validate((gchar *) src, left, NULL))
     self->flags |= LF_UTF8;
 
@@ -1745,10 +1574,9 @@ log_msg_parse(LogMessage *self,
     
   if (flags & LP_NOPARSE)
     {
-      LOG_MESSAGE_WRITABLE_FIELD(self->message) = g_strndup((gchar *) data, length);
+      log_msg_set_value(self, LM_V_MESSAGE, (gchar *) data, length);
       self->pri = default_pri;
-      self->message_len = length;
-      goto exit;
+      return;
     }
   
   if (G_UNLIKELY(flags & LP_INTERNAL))
@@ -1764,12 +1592,17 @@ log_msg_parse(LogMessage *self,
     success = log_msg_parse_legacy(self, data, length, flags, bad_hostname, assume_timezone, default_pri);
   if (G_UNLIKELY(!success))
     {
+      gchar buf[2048];
+
       self->timestamps[LM_TS_STAMP] = self->timestamps[LM_TS_RECVD];
-      log_msg_set_host(self, g_strdup(""), 0);
-      log_msg_set_message(self, g_strdup_printf("Error processing log message: %.*s", length, data), -1);
-      log_msg_set_program(self, g_strndup("syslog-ng", 9), 9);
-      log_msg_set_pid(self, g_strdup_printf("%d", (int) getpid()), -1);
-      log_msg_set_msgid(self, g_strdup(""), 0);
+      log_msg_set_value(self, LM_V_HOST, "", 0);
+
+      g_snprintf(buf, sizeof(buf), "Error processing log message: %.*s", length, data);
+      log_msg_set_value(self, LM_V_MESSAGE, buf, -1);
+      log_msg_set_value(self, LM_V_PROGRAM, "syslog-ng", 9);
+      g_snprintf(buf, sizeof(buf), "%d", (int) getpid());
+      log_msg_set_value(self, LM_V_PID, buf, -1);
+      log_msg_set_value(self, LM_V_MSGID, "", 0);
 
       if (self->sdata)
         {
@@ -1777,94 +1610,22 @@ log_msg_parse(LogMessage *self,
           self->sdata = NULL;
         }
       self->pri = LOG_SYSLOG | LOG_ERR;
-      goto exit;
+      return;
     }
 
   if (G_UNLIKELY(flags & LP_NO_MULTI_LINE))
     {
-      p = self->message;
-      while ((p = find_cr_or_lf(p, self->message + self->message_len - p)))
+      gssize msglen;
+      gchar *msg;
+
+      p = msg = (gchar *) log_msg_get_value(self, LM_V_MESSAGE, &msglen);
+      while ((p = find_cr_or_lf(p, msg + msglen - p)))
         {
           *p = ' ';
           p++;
         }
 
     }
- exit:
-
-#define ENSURE_STRING_VALUE(field, macro) \
-  do                                            \
-    {                                           \
-      if (!self->field)                         \
-        {                                       \
-          LOG_MESSAGE_WRITABLE_FIELD(self->field) = null_string; \
-          self->field##_len = 0;                \
-          self->flags &= ~LF_OWN_##macro;       \
-        }                                       \
-    }                                           \
-  while (0)
-
-  ENSURE_STRING_VALUE(host, HOST);
-  ENSURE_STRING_VALUE(host_from, HOST_FROM);
-  ENSURE_STRING_VALUE(message, MESSAGE);
-  ENSURE_STRING_VALUE(program, PROGRAM);
-  ENSURE_STRING_VALUE(pid, PID);
-  ENSURE_STRING_VALUE(msgid, MSGID);
-  ENSURE_STRING_VALUE(source, SOURCE);
-
-#undef ENSURE_STRING_VALUE
-
-  return;
-}
-
-/**
- * NOTE: acquires a reference to the strings, e.g. it takes care of freeing
- * them.
- **/
-void
-log_msg_add_dyn_value_ref(LogMessage *self, gchar *name, gchar *value)
-{
-  if (!log_msg_chk_flag(self, LF_OWN_VALUES))
-   {
-     self->values = NULL;
-     log_msg_set_flag(self, LF_OWN_VALUES);
-   }
-  if (!self->values)
-    self->values = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
-  
-  g_hash_table_insert(self->values, name, value);
-}
-
-void
-log_msg_add_dyn_value(LogMessage *self, const gchar *name, const gchar *value)
-{
-  log_msg_add_dyn_value_ref(self, g_strdup(name), g_strdup(value));
-}
-
-void
-log_msg_add_sized_dyn_value(LogMessage *self, const gchar *name, const gchar *value, gsize value_len)
-{
-  log_msg_add_dyn_value_ref(self, g_strdup(name), g_strndup(value, value_len));
-}
-
-gchar * 
-log_msg_lookup_dyn_value(LogMessage *self, const gchar *name)
-{
-  gchar *value = NULL;
-
-  if (log_msg_chk_flag(self, LF_OWN_VALUES))
-    {
-      if (self->values)
-        value = (gchar *) g_hash_table_lookup(self->values, name);
-      
-      if (!value && self->original)
-        value = log_msg_lookup_dyn_value(self->original, name);
-    }
-  else if (self->original)
-    {
-      value = log_msg_lookup_dyn_value(self->original, name);
-    }
-  return value;
 }
 
 /**
@@ -1876,31 +1637,15 @@ log_msg_lookup_dyn_value(LogMessage *self, const gchar *name)
 static void
 log_msg_free(LogMessage *self)
 {
-  if (log_msg_chk_flag(self, LF_OWN_HOST))
-    g_free(self->host);
-  if (log_msg_chk_flag(self, LF_OWN_HOST_FROM))
-    g_free(self->host_from);
-  if (log_msg_chk_flag(self, LF_OWN_PID))
-    g_free(self->pid);
-  if (log_msg_chk_flag(self, LF_OWN_MSGID))
-    g_free(self->msgid);
-  if (log_msg_chk_flag(self, LF_OWN_PROGRAM))
-    g_free(self->program);
-  if (log_msg_chk_flag(self, LF_OWN_MESSAGE))
-    g_free(self->message);
-  if (log_msg_chk_flag(self, LF_OWN_SOURCE))
-    g_free(self->source);
+  if (log_msg_chk_flag(self, LF_OWN_PAYLOAD) && self->payload)
+    nv_table_free(self->payload);
   if (log_msg_chk_flag(self, LF_OWN_TAGS) && self->tags)
     g_free(self->tags);
-  log_msg_clear_matches(self);
 
   if (log_msg_chk_flag(self, LF_OWN_SDATA) && self->sdata)
     log_msg_sd_elements_free(self->sdata);
   if (log_msg_chk_flag(self, LF_OWN_SADDR))
     g_sockaddr_unref(self->saddr);
-
-  if (log_msg_chk_flag(self, LF_OWN_VALUES) && self->values)
-    g_hash_table_destroy(self->values);
 
   if (self->original)
     log_msg_unref(self->original);
@@ -1960,8 +1705,6 @@ log_msg_init(LogMessage *self, GSockAddr *saddr)
 
   self->original = NULL;
   self->flags |= LF_OWN_ALL;
-
-
 }
 
 /**
@@ -1984,6 +1727,8 @@ log_msg_new(const gchar *msg, gint length,
   LogMessage *self = g_new0(LogMessage, 1);
   
   log_msg_init(self, saddr);
+  self->payload = nv_table_new(LM_V_MAX, 16, MAX(length * 2, 256));
+
   log_msg_parse(self, (guchar *) msg, length, flags, bad_hostname, assume_timezone, default_pri);
   return self;
 }
@@ -1994,6 +1739,7 @@ log_msg_new_empty(void)
   LogMessage *self = g_new0(LogMessage, 1);
   
   log_msg_init(self, NULL);
+  self->payload = nv_table_new(LM_V_MAX, 16, 256);
   return self;
 }
 
@@ -2127,4 +1873,23 @@ log_msg_drop(LogMessage *msg, const LogPathOptions *path_options)
   log_msg_unref(msg);
 }
 
+void
+log_msg_global_init(void)
+{
+  gint i;
 
+  logmsg_registry = nv_registry_new(builtin_value_names);
+  nv_registry_add_alias(logmsg_registry, LM_V_MESSAGE, "MSG");
+  nv_registry_add_alias(logmsg_registry, LM_V_MESSAGE, "MSGONLY");
+  nv_registry_add_alias(logmsg_registry, LM_V_HOST, "FULLHOST");
+  nv_registry_add_alias(logmsg_registry, LM_V_HOST_FROM, "FULLHOST_FROM");
+
+  /* register $0 - $255 in order */
+  for (i = 0; i < 255; i++)
+    {
+      gchar buf[8];
+
+      g_snprintf(buf, sizeof(buf), "%d", i);
+      match_handles[i] = nv_registry_get_value_handle(logmsg_registry, buf);
+    }
+}

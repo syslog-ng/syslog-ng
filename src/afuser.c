@@ -68,7 +68,10 @@ afuser_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
   
   timestamp = g_string_sized_new(0);
   log_stamp_format(&msg->timestamps[LM_TS_STAMP], timestamp, TS_FMT_FULL, -1, 0);
-  g_snprintf(buf, sizeof(buf), "%s %s %s\n", timestamp->str, msg->host, msg->message);
+  g_snprintf(buf, sizeof(buf), "%s %s %s\n",
+             timestamp->str,
+             log_msg_get_value(msg, LM_V_HOST, NULL),
+             log_msg_get_value(msg, LM_V_MESSAGE, NULL));
   g_string_free(timestamp, TRUE);
   
   /* NOTE: there's a private implementations of getutent in utils.c on Systems which do not provide one. */

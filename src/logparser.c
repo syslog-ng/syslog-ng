@@ -47,7 +47,7 @@ log_parser_process(LogParser *self, LogMessage *msg)
 
   if (G_LIKELY(!self->template))
     {
-      success = self->process(self, msg, msg->message);
+      success = self->process(self, msg, log_msg_get_value(msg, LM_V_MESSAGE, NULL));
     }
   else
     {
@@ -243,9 +243,9 @@ log_csv_parser_process(LogParser *s, LogMessage *msg, const gchar *input)
                 len--;
             }
           if (self->null_value && strncmp(src, self->null_value, len) == 0)
-            log_msg_add_dyn_value(msg, (gchar *) cur_column->data, "");
+            log_msg_set_value(msg, log_msg_get_value_handle((gchar *) cur_column->data), "", 0);
           else
-            log_msg_add_sized_dyn_value(msg, (gchar *) cur_column->data, src, len);
+            log_msg_set_value(msg, log_msg_get_value_handle((gchar *) cur_column->data), src, len);
             
           if (*delim == 0)
             break;
@@ -254,7 +254,7 @@ log_csv_parser_process(LogParser *s, LogMessage *msg, const gchar *input)
 
           if (cur_column && cur_column->next == NULL && self->flags & LOG_CSV_PARSER_GREEDY)
             {
-              log_msg_add_dyn_value(msg, (gchar *) cur_column->data, src);
+              log_msg_set_value(msg, log_msg_get_value_handle((gchar *) cur_column->data), src, -1);
               cur_column = NULL;
             }
         }
@@ -357,9 +357,9 @@ log_csv_parser_process(LogParser *s, LogMessage *msg, const gchar *input)
                     len--;
                 }
               if (self->null_value && strcmp(current_value->str, self->null_value) == 0)
-                log_msg_add_dyn_value(msg, (gchar *) cur_column->data, "");
+                log_msg_set_value(msg, log_msg_get_value_handle((gchar *) cur_column->data), "", 0);
               else
-                log_msg_add_sized_dyn_value(msg, (gchar *) cur_column->data, current_value->str, len);
+                log_msg_set_value(msg, log_msg_get_value_handle((gchar *) cur_column->data), current_value->str, len);
               g_string_truncate(current_value, 0);
               cur_column = cur_column->next;
               state = PS_COLUMN_START;
@@ -367,7 +367,7 @@ log_csv_parser_process(LogParser *s, LogMessage *msg, const gchar *input)
 
               if (cur_column && cur_column->next == NULL && self->flags & LOG_CSV_PARSER_GREEDY)
                 {
-                  log_msg_add_dyn_value(msg, (gchar *) cur_column->data, src);
+                  log_msg_set_value(msg, log_msg_get_value_handle((gchar *) cur_column->data), src, -1);
                   cur_column = NULL;
                 }
             }
@@ -475,6 +475,9 @@ log_db_parser_reload_database(LogDBParser *self)
 
 }
 
+NVHandle class_handle = 0;
+NVHandle rule_id_handle = 0;
+
 static inline void
 log_db_parser_process_real(LogPatternDatabase *db, LogMessage *msg)
 {
@@ -484,8 +487,8 @@ log_db_parser_process_real(LogPatternDatabase *db, LogMessage *msg)
   verdict = log_pattern_database_lookup(db, msg);
   if (verdict)
     {
-      log_msg_add_dyn_value(msg, ".classifier.class", verdict->class);
-      log_msg_add_dyn_value(msg, ".classifier.rule_id", verdict->rule_id);
+      log_msg_set_value(msg, class_handle, verdict->class, -1);
+      log_msg_set_value(msg, rule_id_handle, verdict->rule_id, -1);
 
       if (verdict->tags)
         {
@@ -500,14 +503,14 @@ log_db_parser_process_real(LogPatternDatabase *db, LogMessage *msg)
           for (i = 0; i < verdict->values->len; i++)
             {
               log_template_format(g_ptr_array_index(verdict->values, i), msg, 0, TS_FMT_ISO, NULL, 0, 0, result);
-              log_msg_add_sized_dyn_value(msg, ((LogTemplate *)g_ptr_array_index(verdict->values, i))->name, result->str, result->len);
+              log_msg_set_value(msg, log_msg_get_value_handle(((LogTemplate *)g_ptr_array_index(verdict->values, i))->name), result->str, result->len);
             }
           g_string_free(result, TRUE);
         }
     }
   else
     {
-      log_msg_add_dyn_value(msg, ".classifier.class", "unknown");
+      log_msg_set_value(msg, class_handle, "unknown", 7);
     }
 }
 
@@ -546,6 +549,8 @@ log_db_parser_post_config_hook(gint type, gpointer user_data)
   LogDBParser *self = (LogDBParser *) user_data;
 
   log_db_parser_reload_database(self);
+  class_handle = log_msg_get_value_handle(".classifier.class");
+  rule_id_handle = log_msg_get_value_handle(".classifier.rule_id");
 }
 
 static void

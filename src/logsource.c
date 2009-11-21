@@ -56,14 +56,18 @@ log_source_msg_ack(LogMessage *msg, gpointer user_data)
 void
 log_source_mangle_hostname(LogSource *self, LogMessage *msg)
 {
-  gchar *resolved_name;
+  gchar *resolved_name = NULL;
+  gint resolved_name_len;
+  const gchar *orig_host;
   
-  if (resolve_sockaddr(&resolved_name, msg->saddr, self->options->use_dns, self->options->use_fqdn, self->options->use_dns_cache, self->options->normalize_hostnames))
-    log_msg_set_host_from(msg, resolved_name, -1);
+  resolve_sockaddr(&resolved_name, msg->saddr, self->options->use_dns, self->options->use_fqdn, self->options->use_dns_cache, self->options->normalize_hostnames);
+  resolved_name_len = strlen(resolved_name);
+  log_msg_set_value(msg, LM_V_HOST_FROM, resolved_name, resolved_name_len);
 
-  if (!self->options->keep_hostname || !msg->host_len) 
+  orig_host = log_msg_get_value(msg, LM_V_HOST, NULL);
+  if (!self->options->keep_hostname || !orig_host)
     {
-      gchar *host;
+      gchar host[256];
       gint host_len = -1;
       if (G_UNLIKELY(self->options->chain_hostnames)) 
 	{
@@ -71,29 +75,31 @@ log_source_mangle_hostname(LogSource *self, LogMessage *msg)
 	  if (msg->flags & LF_LOCAL) 
 	    {
 	      /* local */
-	      host = g_strdup_printf("%s@%s", self->options->group_name, resolved_name);
+	      host_len = g_snprintf(host, sizeof(host), "%s@%s", self->options->group_name, resolved_name);
 	    }
-	  else if (!msg->host_len) 
+	  else if (!orig_host)
 	    {
 	      /* remote && no hostname */
-	      host = g_strdup_printf("%s/%s", resolved_name, resolved_name);
+	      host_len = g_snprintf(host, sizeof(host), "%s/%s", resolved_name, resolved_name);
 	    } 
 	  else 
 	    {
 	      /* everything else, append source hostname */
-	      if (msg->host_len)
-		host = g_strdup_printf("%s/%s", msg->host, resolved_name);
+	      if (orig_host)
+		host_len = g_snprintf(host, sizeof(host), "%s/%s", orig_host, resolved_name);
 	      else
-                host = g_strdup(resolved_name);
+                {
+                  strncpy(host, resolved_name, sizeof(host));
+                  /* just in case it is not zero terminated */
+                  host[255] = 0;
+                }
 	    }
+          log_msg_set_value(msg, LM_V_HOST, host, host_len);
 	}
-      else 
+      else
 	{
-          host = g_strndup(msg->host_from, msg->host_from_len);
-          host_len = msg->host_from_len;
+          log_msg_set_value(msg, LM_V_HOST, resolved_name, resolved_name_len);
 	}
-      log_msg_set_host(msg, host, host_len);
-
     }
 }
 
@@ -139,16 +145,16 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
     {
       if (self->options->program_override_len < 0)
         self->options->program_override_len = strlen(self->options->program_override);
-      log_msg_set_program(msg, g_strndup(self->options->program_override, self->options->program_override_len), self->options->program_override_len);
+      log_msg_set_value(msg, LM_V_PROGRAM, self->options->program_override, self->options->program_override_len);
     }
   if (self->options->host_override)
     {
       if (self->options->host_override_len < 0)
         self->options->host_override_len = strlen(self->options->host_override);
-      log_msg_set_host(msg, g_strndup(self->options->host_override, self->options->host_override_len), self->options->host_override_len);
+      log_msg_set_value(msg, LM_V_PROGRAM, self->options->host_override, self->options->host_override_len);
     }
     
-  handle = stats_register_dynamic_counter(2, SCS_HOST | SCS_SOURCE, NULL, msg->host, SC_TYPE_PROCESSED, &processed_counter, &new);
+  handle = stats_register_dynamic_counter(2, SCS_HOST | SCS_SOURCE, NULL, log_msg_get_value(msg, LM_V_HOST, NULL), SC_TYPE_PROCESSED, &processed_counter, &new);
   stats_register_associated_counter(handle, SC_TYPE_STAMP, &stamp);
   stats_counter_inc(processed_counter);
   stats_counter_set(stamp, msg->timestamps[LM_TS_RECVD].time.tv_sec);

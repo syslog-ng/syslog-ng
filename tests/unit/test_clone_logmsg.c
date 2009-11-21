@@ -34,17 +34,18 @@ absolute_value(signed long diff)
 void
 check_val_in_hash(gchar *msg, LogMessage *self, const gchar* pair[2])
 {
-   TEST_ASSERT(strcmp(g_hash_table_lookup(self->values, pair[0]), pair[1]) == 0, "%s", (gchar*)g_hash_table_lookup(self->values, pair[0]), pair[1]);
+  const gchar *a = log_msg_get_value(self, log_msg_get_value_handle(pair[0]), NULL);
+
+  TEST_ASSERT(strcmp(a, pair[1]) == 0, "%s", a, pair[1]);
 }
 
 void
 check_val_in_hash_clone(gchar *msg, LogMessage *self,LogMessage *msg_clone , const gchar* pair[2])
 {
-  const  gchar * a1 = g_hash_table_lookup(self->values, pair[0]);
-  const  gchar * a2 = g_hash_table_lookup(msg_clone->values, pair[0]);
+  const  gchar * a1 = log_msg_get_value(self, log_msg_get_value_handle(pair[0]), NULL);
+  const  gchar * a2 = log_msg_get_value(msg_clone, log_msg_get_value_handle(pair[0]), NULL);
   TEST_ASSERT(strcmp( a1, pair[1]) == 0 && strcmp(a2, pair[1] ) == 0, "%s", a1, a2);
 }
-
 
 int
 testcase(gchar *msg,
@@ -90,11 +91,11 @@ testcase(gchar *msg,
       time(&now);
       TEST_ASSERT(absolute_value(logmsg->timestamps[LM_TS_STAMP].time.tv_sec - now) < 1, "%d", 0, 0);
     }
-  TEST_ASSERT(strcmp(logmsg->host, expected_host) == 0, "%s", logmsg->host, expected_host);
-  TEST_ASSERT(strcmp(logmsg->program, expected_program) == 0, "%s", logmsg->program, expected_program);
-  TEST_ASSERT(strcmp(logmsg->message, expected_msg) == 0, "%s", logmsg->message, expected_msg);
-  TEST_ASSERT(strcmp(logmsg->pid, expected_process_id) == 0, "%s", logmsg->pid, expected_process_id);
-  TEST_ASSERT(strcmp(logmsg->msgid, expected_message_id) == 0, "%s", logmsg->msgid, expected_message_id);
+  TEST_ASSERT(strcmp(log_msg_get_value(logmsg, LM_V_HOST, NULL), expected_host) == 0, "%s", log_msg_get_value(logmsg, LM_V_HOST, NULL), expected_host);
+  TEST_ASSERT(strcmp(log_msg_get_value(logmsg, LM_V_PROGRAM, NULL), expected_program) == 0, "%s", log_msg_get_value(logmsg, LM_V_PROGRAM, NULL), expected_program);
+  TEST_ASSERT(strcmp(log_msg_get_value(logmsg, LM_V_MESSAGE, NULL), expected_msg) == 0, "%s", log_msg_get_value(logmsg, LM_V_MESSAGE, NULL), expected_msg);
+  TEST_ASSERT(strcmp(log_msg_get_value(logmsg, LM_V_PID, NULL), expected_process_id) == 0, "%s", log_msg_get_value(logmsg, LM_V_PID, NULL), expected_process_id);
+  TEST_ASSERT(strcmp(log_msg_get_value(logmsg, LM_V_MSGID, NULL), expected_message_id) == 0, "%s", log_msg_get_value(logmsg, LM_V_MSGID, NULL), expected_message_id);
 
   /* SD elements */
   log_msg_format_sdata(logmsg, sd_str);
@@ -113,44 +114,44 @@ testcase(gchar *msg,
   TEST_ASSERT(logmsg->timestamps[LM_TS_STAMP].time.tv_sec == cloned->timestamps[LM_TS_STAMP].time.tv_sec, "%d", (int) logmsg->timestamps[LM_TS_STAMP].time.tv_sec, (int) cloned->timestamps[LM_TS_STAMP].time.tv_sec);
   TEST_ASSERT(logmsg->timestamps[LM_TS_STAMP].time.tv_usec == cloned->timestamps[LM_TS_STAMP].time.tv_usec, "%d", (int) logmsg->timestamps[LM_TS_STAMP].time.tv_usec, (int) cloned->timestamps[LM_TS_STAMP].time.tv_usec);
   TEST_ASSERT(logmsg->timestamps[LM_TS_STAMP].zone_offset == cloned->timestamps[LM_TS_STAMP].zone_offset, "%d", (int) logmsg->timestamps[LM_TS_STAMP].zone_offset, (int) cloned->timestamps[LM_TS_STAMP].zone_offset);
-  TEST_ASSERT(strcmp(logmsg->host, cloned->host) == 0, "%s", logmsg->host, cloned->host);
-  TEST_ASSERT(strcmp(logmsg->program, cloned->program) == 0, "%s", logmsg->program, cloned->program);
-  TEST_ASSERT(strcmp(logmsg->message, cloned->message) == 0, "%s", logmsg->message, cloned->message);
-  TEST_ASSERT(strcmp(logmsg->pid, cloned->pid) == 0, "%s", logmsg->pid, cloned->pid);
-  TEST_ASSERT(strcmp(logmsg->msgid, cloned->msgid) == 0, "%s", logmsg->msgid, cloned->msgid);
+  TEST_ASSERT(strcmp(log_msg_get_value(logmsg, LM_V_HOST, NULL), log_msg_get_value(cloned, LM_V_HOST, NULL)) == 0, "%s", log_msg_get_value(logmsg, LM_V_HOST, NULL), log_msg_get_value(cloned, LM_V_HOST, NULL));
+  TEST_ASSERT(strcmp(log_msg_get_value(logmsg, LM_V_PROGRAM, NULL), log_msg_get_value(cloned, LM_V_PROGRAM, NULL)) == 0, "%s", log_msg_get_value(logmsg, LM_V_PROGRAM, NULL), log_msg_get_value(cloned, LM_V_PROGRAM, NULL));
+  TEST_ASSERT(strcmp(log_msg_get_value(logmsg, LM_V_MESSAGE, NULL), log_msg_get_value(cloned, LM_V_MESSAGE, NULL)) == 0, "%s", log_msg_get_value(logmsg, LM_V_MESSAGE, NULL), log_msg_get_value(cloned, LM_V_MESSAGE, NULL));
+  TEST_ASSERT(strcmp(log_msg_get_value(logmsg, LM_V_PID, NULL), log_msg_get_value(cloned, LM_V_PID, NULL)) == 0, "%s", log_msg_get_value(logmsg, LM_V_PID, NULL), log_msg_get_value(cloned, LM_V_PID, NULL));
+  TEST_ASSERT(strcmp(log_msg_get_value(logmsg, LM_V_MSGID, NULL), log_msg_get_value(cloned, LM_V_MSGID, NULL)) == 0, "%s", log_msg_get_value(logmsg, LM_V_MSGID, NULL), log_msg_get_value(cloned, LM_V_MSGID, NULL));
 
   /* SD elements */
   log_msg_format_sdata(cloned, sd_str);
   TEST_ASSERT(strcmp(sd_str->str, expected_sd_str) == 0, "%s", sd_str->str, expected_sd_str);
 
 
-  log_msg_set_host(cloned, g_strdup("newhost"), -1);
-  log_msg_set_host_from(cloned, g_strdup("newhost"), -1);
-  log_msg_set_message(cloned, g_strdup("newmsg"), -1);
-  log_msg_set_program(cloned, g_strdup("newprogram"), -1);
-  log_msg_set_pid(cloned, g_strdup("newpid"), -1);
-  log_msg_set_msgid(cloned, g_strdup("newmsgid"), -1);
-  log_msg_set_source(cloned, g_strdup("newsource"), -1);
-  log_msg_add_dyn_value(cloned, "newvalue", "newvalue");
+  log_msg_set_value(cloned, LM_V_HOST, "newhost", -1);
+  log_msg_set_value(cloned, LM_V_HOST_FROM, "newhost", -1);
+  log_msg_set_value(cloned, LM_V_MESSAGE, g_strdup("newmsg"), -1);
+  log_msg_set_value(cloned, LM_V_PROGRAM, g_strdup("newprogram"), -1);
+  log_msg_set_value(cloned, LM_V_PID, g_strdup("newpid"), -1);
+  log_msg_set_value(cloned, LM_V_MSGID, g_strdup("newmsgid"), -1);
+  log_msg_set_value(cloned, LM_V_SOURCE, g_strdup("newsource"), -1);
+  log_msg_set_value(cloned, log_msg_get_value_handle("newvalue"), "newvalue", -1);
 
   /* retest values in original logmsg */
 
-  TEST_ASSERT(strcmp(logmsg->host, expected_host) == 0, "%s", logmsg->host, expected_host);
-  TEST_ASSERT(strcmp(logmsg->program, expected_program) == 0, "%s", logmsg->program, expected_program);
-  TEST_ASSERT(strcmp(logmsg->message, expected_msg) == 0, "%s", logmsg->message, expected_msg);
-  TEST_ASSERT(strcmp(logmsg->pid, expected_process_id) == 0, "%s", logmsg->pid, expected_process_id);
-  TEST_ASSERT(strcmp(logmsg->msgid, expected_message_id) == 0, "%s", logmsg->msgid, expected_message_id);
-  TEST_ASSERT(strcmp(logmsg->source, "") == 0, "%s", logmsg->source, "");
+  TEST_ASSERT(strcmp(log_msg_get_value(logmsg, LM_V_HOST, NULL), expected_host) == 0, "%s", log_msg_get_value(logmsg, LM_V_HOST, NULL), expected_host);
+  TEST_ASSERT(strcmp(log_msg_get_value(logmsg, LM_V_PROGRAM, NULL), expected_program) == 0, "%s", log_msg_get_value(logmsg, LM_V_PROGRAM, NULL), expected_program);
+  TEST_ASSERT(strcmp(log_msg_get_value(logmsg, LM_V_MESSAGE, NULL), expected_msg) == 0, "%s", log_msg_get_value(logmsg, LM_V_MESSAGE, NULL), expected_msg);
+  TEST_ASSERT(strcmp(log_msg_get_value(logmsg, LM_V_PID, NULL), expected_process_id) == 0, "%s", log_msg_get_value(logmsg, LM_V_PID, NULL), expected_process_id);
+  TEST_ASSERT(strcmp(log_msg_get_value(logmsg, LM_V_MSGID, NULL), expected_message_id) == 0, "%s", log_msg_get_value(logmsg, LM_V_MSGID, NULL), expected_message_id);
+  TEST_ASSERT(strcmp(log_msg_get_value(logmsg, LM_V_SOURCE, NULL), "") == 0, "%s", log_msg_get_value(logmsg, LM_V_SOURCE, NULL), "");
 
   /* check newly set values in cloned */
 
-  TEST_ASSERT(strcmp(cloned->host, "newhost") == 0, "%s", cloned->host, "newhost");
-  TEST_ASSERT(strcmp(cloned->host_from, "newhost") == 0, "%s", cloned->host_from, "newhost");
-  TEST_ASSERT(strcmp(cloned->program, "newprogram") == 0, "%s", cloned->program, "newprogram");
-  TEST_ASSERT(strcmp(cloned->message, "newmsg") == 0, "%s", cloned->message, "newmsg");
-  TEST_ASSERT(strcmp(cloned->pid, "newpid") == 0, "%s", cloned->pid, "newpid");
-  TEST_ASSERT(strcmp(cloned->msgid, "newmsgid") == 0, "%s", cloned->msgid, "newmsgid");
-  TEST_ASSERT(strcmp(cloned->source, "newsource") == 0, "%s", cloned->msgid, "newsource");
+  TEST_ASSERT(strcmp(log_msg_get_value(cloned, LM_V_HOST, NULL), "newhost") == 0, "%s", log_msg_get_value(cloned, LM_V_HOST, NULL), "newhost");
+  TEST_ASSERT(strcmp(log_msg_get_value(cloned, LM_V_HOST_FROM, NULL), "newhost") == 0, "%s", log_msg_get_value(cloned, LM_V_HOST_FROM, NULL), "newhost");
+  TEST_ASSERT(strcmp(log_msg_get_value(cloned, LM_V_PROGRAM, NULL), "newprogram") == 0, "%s", log_msg_get_value(cloned, LM_V_PROGRAM, NULL), "newprogram");
+  TEST_ASSERT(strcmp(log_msg_get_value(cloned, LM_V_MESSAGE, NULL), "newmsg") == 0, "%s", log_msg_get_value(cloned, LM_V_MESSAGE, NULL), "newmsg");
+  TEST_ASSERT(strcmp(log_msg_get_value(cloned, LM_V_PID, NULL), "newpid") == 0, "%s", log_msg_get_value(cloned, LM_V_PID, NULL), "newpid");
+  TEST_ASSERT(strcmp(log_msg_get_value(cloned, LM_V_MSGID, NULL), "newmsgid") == 0, "%s", log_msg_get_value(cloned, LM_V_MSGID, NULL), "newmsgid");
+  TEST_ASSERT(strcmp(log_msg_get_value(cloned, LM_V_SOURCE, NULL), "newsource") == 0, "%s", log_msg_get_value(cloned, LM_V_SOURCE, NULL), "newsource");
 
   log_msg_unref(cloned);
   log_msg_unref(logmsg);

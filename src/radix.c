@@ -34,7 +34,7 @@
 /* FIXME: maybe we should return gchar with the result */
 
 gboolean
-r_parser_string(gchar *str, gint *len, const gchar *param, gpointer state, LogMessageMatch *match)
+r_parser_string(gchar *str, gint *len, const gchar *param, gpointer state, RParserMatch *match)
 {
   *len = 0;
 
@@ -49,7 +49,7 @@ r_parser_string(gchar *str, gint *len, const gchar *param, gpointer state, LogMe
 }
 
 gboolean
-r_parser_qstring(gchar *str, gint *len, const gchar *param, gpointer state, LogMessageMatch *match)
+r_parser_qstring(gchar *str, gint *len, const gchar *param, gpointer state, RParserMatch *match)
 {
   gchar *end;
 
@@ -71,7 +71,7 @@ r_parser_qstring(gchar *str, gint *len, const gchar *param, gpointer state, LogM
 }
 
 gboolean
-r_parser_estring_c(gchar *str, gint *len, const gchar *param, gpointer state, LogMessageMatch *match)
+r_parser_estring_c(gchar *str, gint *len, const gchar *param, gpointer state, RParserMatch *match)
 {
   gchar *end;
   
@@ -90,7 +90,7 @@ r_parser_estring_c(gchar *str, gint *len, const gchar *param, gpointer state, Lo
 }
 
 gboolean
-r_parser_estring(gchar *str, gint *len, const gchar *param, gpointer state, LogMessageMatch *match)
+r_parser_estring(gchar *str, gint *len, const gchar *param, gpointer state, RParserMatch *match)
 {
   gchar *end;
   
@@ -109,14 +109,14 @@ r_parser_estring(gchar *str, gint *len, const gchar *param, gpointer state, LogM
 }
 
 gboolean
-r_parser_anystring(gchar *str, gint *len, const gchar *param, gpointer state, LogMessageMatch *match)
+r_parser_anystring(gchar *str, gint *len, const gchar *param, gpointer state, RParserMatch *match)
 {
   *len = strlen(str);
   return TRUE;
 }
 
 gboolean
-r_parser_ipv4(gchar *str, gint *len, const gchar *param, gpointer state, LogMessageMatch *match)
+r_parser_ipv4(gchar *str, gint *len, const gchar *param, gpointer state, RParserMatch *match)
 {
   gint dots = 0;
   gint octet = -1;
@@ -158,7 +158,7 @@ r_parser_ipv4(gchar *str, gint *len, const gchar *param, gpointer state, LogMess
 }
 
 gboolean
-r_parser_ipv6(gchar *str, gint *len, const gchar *param, gpointer state, LogMessageMatch *match)
+r_parser_ipv6(gchar *str, gint *len, const gchar *param, gpointer state, RParserMatch *match)
 {
   gint colons = 0;
   gint dots = 0;
@@ -230,13 +230,13 @@ r_parser_ipv6(gchar *str, gint *len, const gchar *param, gpointer state, LogMess
 }
 
 gboolean
-r_parser_ip(gchar *str, gint *len, const gchar *param, gpointer state, LogMessageMatch *match)
+r_parser_ip(gchar *str, gint *len, const gchar *param, gpointer state, RParserMatch *match)
 {
   return r_parser_ipv4(str, len, param, state, match) || r_parser_ipv6(str, len, param, state, match);
 }
 
 gboolean
-r_parser_float(gchar *str, gint *len, const gchar *param, gpointer state, LogMessageMatch *match)
+r_parser_float(gchar *str, gint *len, const gchar *param, gpointer state, RParserMatch *match)
 {
   gboolean dot = FALSE;
 
@@ -249,7 +249,7 @@ r_parser_float(gchar *str, gint *len, const gchar *param, gpointer state, LogMes
 }
 
 gboolean
-r_parser_number(gchar *str, gint *len, const gchar *param, gpointer state, LogMessageMatch *match)
+r_parser_number(gchar *str, gint *len, const gchar *param, gpointer state, RParserMatch *match)
 {
   gboolean hex = FALSE;
 
@@ -370,8 +370,7 @@ r_new_pnode(gchar *key)
 
   if (parser_node && params[1])
     {
-      parser_node->name = g_strdup(params[1]);
-      parser_node->name_len = strlen(parser_node->name);
+      parser_node->handle = log_msg_get_value_handle(params[1]);
 
       if (params[2])
         parser_node->param = g_strdup(params[2]);
@@ -387,9 +386,6 @@ r_new_pnode(gchar *key)
 void
 r_free_pnode_only(RParserNode *parser)
 {
-  if (parser->name)
-    g_free(parser->name);
-
   if (parser->param)
     g_free(parser->param);
 
@@ -486,10 +482,9 @@ gboolean
 r_equal_pnode(RParserNode *a, RParserNode *b)
 {
   return ((a->parse == b->parse) &&
-      ((a->name == NULL && b->name == NULL) ||
-       (a->name != NULL && b->name != NULL && g_str_equal(a->name, b->name))) &&
-      ((a->param == NULL && b->param == NULL) ||
-       (a->param != NULL && b->param != NULL && g_str_equal(a->param, b->param)))
+          (a->handle == b->handle) &&
+          ((a->param == NULL && b->param == NULL) ||
+           (a->param != NULL && b->param != NULL && g_str_equal(a->param, b->param)))
       );
 }
 
@@ -621,7 +616,7 @@ r_insert_node(RNode *root, gchar *key, gpointer value, gboolean parser, RNodeGet
                       /* FIXME: print parser type in string format */
                       msg_error("Duplicate parser node in radix tree",
                                 evt_tag_int("type", node->parser->type),
-                                evt_tag_str("name", (node->parser->name ? node->parser->name : "")),
+                                evt_tag_str("name", log_msg_get_value_name(node->parser->handle)),
                                 evt_tag_str("value", value_func ? value_func(value) : "unknown"),
                                 NULL);
                     }
@@ -733,7 +728,7 @@ r_insert_node(RNode *root, gchar *key, gpointer value, gboolean parser, RNodeGet
 
 /* FIXME: a non-recursive algorithm might be faster */
 RNode *
-r_find_node(RNode *root, gchar *whole_key, gchar *key, gint keylen, GArray *matches, GPtrArray *match_names)
+r_find_node(RNode *root, gchar *whole_key, gchar *key, gint keylen, GArray *matches)
 {
   RNode *node, *ret;
   gint nodelen = root->keylen;
@@ -807,7 +802,7 @@ r_find_node(RNode *root, gchar *whole_key, gchar *key, gint keylen, GArray *matc
       node = r_find_child(root, key[i]);
 
       if (node)
-        ret = r_find_node(node, whole_key, key + i, keylen - i, matches, match_names);
+        ret = r_find_node(node, whole_key, key + i, keylen - i, matches);
 
       /* we only search if there is no match */
       if (!ret)
@@ -815,15 +810,13 @@ r_find_node(RNode *root, gchar *whole_key, gchar *key, gint keylen, GArray *matc
           gint len;
           RParserNode *parser_node;
           gint match_ofs = 0;
-          LogMessageMatch *match = NULL;
-          gchar **match_name;
+          RParserMatch *match = NULL;
 
           if (matches)
             {
               match_ofs = matches->len;
               
               g_array_set_size(matches, match_ofs + 1);
-              g_ptr_array_set_size(match_names, match_ofs + 1);
             }
           for (j = 0; j < root->num_pchildren; j++)
             {
@@ -831,9 +824,8 @@ r_find_node(RNode *root, gchar *whole_key, gchar *key, gint keylen, GArray *matc
 
               if (matches)
                 {
-                  match = &g_array_index(matches, LogMessageMatch, match_ofs);
+                  match = &g_array_index(matches, RParserMatch, match_ofs);
                   memset(match, 0, sizeof(*match));
-                  match->flags = LMM_REF_MATCH;
                 }
               if (((parser_node->first <= key[i]) && (key[i] <= parser_node->last)) &&
                   (parser_node->parse(key + i, &len, parser_node->param, parser_node->state, match)))
@@ -848,16 +840,15 @@ r_find_node(RNode *root, gchar *whole_key, gchar *key, gint keylen, GArray *matc
                    * collision occurs, so there's a slight chance we'll
                    * recognize if this happens in real life. */
                   
-                  ret = r_find_node(root->pchildren[j], whole_key, key + i + len, keylen - (i + len), matches, match_names);
+                  ret = r_find_node(root->pchildren[j], whole_key, key + i + len, keylen - (i + len), matches);
                   if (matches)
                     {
 
-                      match = &g_array_index(matches, LogMessageMatch, match_ofs);
-                      match_name = (gchar **) &g_ptr_array_index(match_names, match_ofs);
+                      match = &g_array_index(matches, RParserMatch, match_ofs);
 
                       if (ret)
                         {
-                          if ((match->flags & LMM_REF_MATCH))
+                          if (!(match->match))
                             {
                               /* NOTE: we allow the parser to return relative
                                * offset & length to the field parsed, this way
@@ -868,19 +859,17 @@ r_find_node(RNode *root, gchar *whole_key, gchar *key, gint keylen, GArray *matc
                               match->type = parser_node->type;
                               match->ofs = match->ofs + (key + i) - whole_key;
                               match->len = match->len + len;
+                              match->handle = parser_node->handle;
                             }
-                          if (parser_node->name_len)
-                            *match_name = g_strndup(parser_node->name, parser_node->name_len);
-                          else
-                            *match_name = NULL;
                           break;
                         }
                       else
                         {
-                          if ((match->flags & LMM_REF_MATCH) == 0)
+                          if (match->match)
                             {
                               /* free the stored match, if this was a dead-end */
                               g_free(match->match);
+                              match->match = NULL;
                             }
                         }
                     }

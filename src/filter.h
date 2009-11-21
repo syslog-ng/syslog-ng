@@ -48,9 +48,11 @@ void filter_expr_free(FilterExprNode *self);
 typedef struct _FilterRE
 {
   FilterExprNode super;
-  const gchar *value_name;
+  NVHandle value_handle;
   LogMatcher *matcher;
 } FilterRE;
+
+typedef struct _FilterMatch FilterMatch;
 
 void filter_re_set_matcher(FilterRE *self, LogMatcher *matcher);
 gboolean filter_re_set_regexp(FilterRE *self, gchar *re);
@@ -66,7 +68,7 @@ FilterExprNode *filter_facility_new(guint32 facilities);
 FilterExprNode *filter_level_new(guint32 levels);
 FilterExprNode *filter_call_new(gchar *rule, struct _GlobalConfig *cfg);
 FilterExprNode *filter_netmask_new(gchar *cidr);
-FilterExprNode *filter_re_new(const gchar *value_name);
+FilterExprNode *filter_re_new(NVHandle value_handle);
 FilterExprNode *filter_match_new(void);
 FilterExprNode *filter_tags_new(GList *tags);
 

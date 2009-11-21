@@ -46,13 +46,10 @@ enum
   M_BSDTAG,
   M_PRI,
 
-  M_FULLHOST,
   M_HOST,
   M_SDATA,
-  M_FULLHOST_FROM,
 
   M_MSGHDR,
-  M_MSGONLY,
   M_MESSAGE,
   M_SOURCE_IP,
   M_SEQNUM,
@@ -173,18 +170,15 @@ macros[] =
         { "S_TZ",             M_STAMP_OFS + M_TZ },
         { "S_UNIXTIME",       M_STAMP_OFS + M_UNIXTIME },
 
-        { "FULLHOST_FROM", M_FULLHOST_FROM },
-        { "FULLHOST", M_FULLHOST },
-
         { "SDATA", M_SDATA },
-        { "HOST", M_HOST },
         { "MSGHDR", M_MSGHDR },
-        
+        { "SOURCEIP", M_SOURCE_IP },
+        { "SEQNUM", M_SEQNUM },
+
+        /* values that have specific behaviour with older syslog-ng config versions */
         { "MSG", M_MESSAGE },
         { "MESSAGE", M_MESSAGE },
-        { "MSGONLY", M_MSGONLY },
-        { "SOURCEIP", M_SOURCE_IP },
-        { "SEQNUM", M_SEQNUM }
+        { "HOST", M_HOST },
 };
 
 GHashTable *macro_hash;
@@ -217,7 +211,16 @@ result_append(GString *result, const gchar *sstr, gssize len, gboolean escape)
     }
   else
     g_string_append_len(result, sstr, len);
-    
+}
+
+static void
+result_append_value(GString *result, LogMessage *lm, NVHandle handle, gboolean escape)
+{
+  const gchar *str;
+  gssize len = 0;
+
+  str = log_msg_get_value(lm, handle, &len);
+  result_append(result, str, len, escape);
 }
 
 gboolean
@@ -283,49 +286,35 @@ log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, TimeZo
         g_string_sprintfa(result, "%d", msg->pri);
         break;
       }
-    case M_FULLHOST_FROM:
-      {
-        /* FULLHOST_FROM and $HOST_FROM are the same */
-
-        result_append(result, msg->host_from, msg->host_from_len, !!(flags & LT_ESCAPE));
-        break;
-      }
-    case M_FULLHOST:
-      {
-        /* full hostname */
-        result_append(result, msg->host, msg->host_len, !!(flags & LT_ESCAPE));
-        break;
-      }
     case M_HOST:
       {
         if (msg->flags & LF_CHAINED_HOSTNAME)
           {
             /* host */
-            gchar *p1;
-            gchar *p2;
+            const gchar *p1, *p2;
             int remaining, length;
+            gssize host_len;
+            const gchar *host = log_msg_get_value(msg, LM_V_HOST, &host_len);
             
-            p1 = memchr(msg->host, '@', msg->host_len);
+            p1 = memchr(host, '@', host_len);
             
             if (p1)
               p1++;
             else
-              p1 = msg->host;
-            remaining = msg->host_len - (p1 - msg->host);
+              p1 = host;
+            remaining = host_len - (p1 - host);
             p2 = memchr(p1, '/', remaining);
             length = p2 ? p2 - p1 
-              : msg->host_len - (p1 - msg->host);
+              : host_len - (p1 - host);
             
             result_append(result, p1, length, !!(flags & LT_ESCAPE));
           }
         else
           {
-            result_append(result, msg->host, msg->host_len, !!(flags & LT_ESCAPE));
+            result_append_value(result, msg, LM_V_HOST, !!(flags & LT_ESCAPE));
           }
         break;
       }
-
-
     case M_SDATA:
       if (flags & LT_ESCAPE)
         {
@@ -343,50 +332,34 @@ log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, TimeZo
     case M_MSGHDR:
       if ((msg->flags & LF_LEGACY_MSGHDR))
         {
-          gssize length;
-          const gchar *msghdr;
-
           /* fast path for now, as most messages come from legacy devices */
 
-          msghdr = log_msg_get_value(msg, "LEGACY_MSGHDR", &length);
-          if (msghdr)
-            {
-              result_append(result, msghdr, length, !!(flags & LT_ESCAPE));
-            }
+          result_append_value(result, msg, LM_V_LEGACY_MSGHDR, !!(flags & LT_ESCAPE));
         }
       else
         {
           /* message, complete with program name and pid */
-          result_append(result, msg->program, msg->program_len, !!(flags & LT_ESCAPE));
-          if (msg->program_len > 0)
+          gssize len;
+
+          len = result->len;
+          result_append_value(result, msg, LM_V_PROGRAM, !!(flags & LT_ESCAPE));
+          if (len != result->len)
             {
-              if (msg->pid_len > 0)
+              const gchar *pid = log_msg_get_value(msg, LM_V_PID, &len);
+              if (len > 0)
                 {
-                  result_append(result, "[", 1, !!(flags & LT_ESCAPE));
-                  result_append(result, msg->pid, msg->pid_len, !!(flags & LT_ESCAPE));
-                  result_append(result, "]", 1, !!(flags & LT_ESCAPE));
+                  result_append(result, "[", 1, FALSE);
+                  result_append(result, pid, len, !!(flags & LT_ESCAPE));
+                  result_append(result, "]", 1, FALSE);
                 }
-              result_append(result, ": ", 2, !!(flags & LT_ESCAPE));
+              result_append(result, ": ", 2, FALSE);
             }
         }
       break;
     case M_MESSAGE:
       if (!cfg_check_current_config_version(0x0300))
-        {
-          /* message, complete with program name and pid */
-          result_append(result, msg->program, msg->program_len, !!(flags & LT_ESCAPE));
-          if (msg->pid_len > 0)
-            {
-              result_append(result, "[", 1, !!(flags & LT_ESCAPE));
-              result_append(result, msg->pid, msg->pid_len, !!(flags & LT_ESCAPE));
-              result_append(result, "]", 1, !!(flags & LT_ESCAPE));
-            }
-          result_append(result, ": ", 2, !!(flags & LT_ESCAPE));
-          result_append(result, msg->message, msg->message_len, !!(flags & LT_ESCAPE));
-          break;
-        } 
-    case M_MSGONLY:
-      result_append(result, msg->message, msg->message_len, !!(flags & LT_ESCAPE));
+        log_macro_expand(result, M_MSGHDR, flags, ts_format, zone_info, frac_digits, seq_num, msg);
+      result_append_value(result, msg, LM_V_MESSAGE, !!(flags & LT_ESCAPE));
       break;
     case M_SOURCE_IP:
       {
@@ -574,7 +547,7 @@ typedef struct _LogTemplateElem
   gsize text_len;
   gchar *text;
   guint macro;
-  const gchar *value_name;
+  NVHandle value_handle;
   gchar *default_value;
 } LogTemplateElem;
 
@@ -596,8 +569,6 @@ log_template_reset_compiled(LogTemplate *self)
 
       e = self->compiled_template->data;
       self->compiled_template = g_list_delete_link(self->compiled_template, self->compiled_template);
-      if (e->value_name)
-        log_msg_free_value_name(e->value_name);
       if (e->default_value)
         g_free(e->default_value);
       if (e->text)
@@ -619,7 +590,7 @@ log_template_add_macro_elem(LogTemplate *self, guint macro, GString *text, gchar
   e->text_len = text ? text->len : 0;
   e->text = text ? text->str : 0;
   e->macro = macro;
-  e->value_name = NULL;
+  e->value_handle = 0;
   e->default_value = default_value;
   self->compiled_template = g_list_prepend(self->compiled_template, e);
 }
@@ -639,7 +610,7 @@ log_template_add_value_elem(LogTemplate *self, gchar *value_name, gsize value_na
   e->macro = M_NONE;
   /* value_name is not NUL terminated */
   dup = g_strndup(value_name, value_name_len);
-  e->value_name = log_msg_translate_value_name(dup);
+  e->value_handle = log_msg_get_value_handle(dup);
   g_free(dup);
   e->default_value = default_value;
   self->compiled_template = g_list_prepend(self->compiled_template, e);
@@ -798,12 +769,12 @@ log_template_append_format(LogTemplate *self, LogMessage *lm, guint flags, gint 
           g_string_append_len(result, e->text, e->text_len);
         }
 
-      if (e->value_name)
+      if (e->value_handle)
         {
-          gchar *value = NULL;
+          const gchar *value = NULL;
           gssize value_len = -1;
 
-          value = log_msg_get_value(lm, e->value_name, &value_len);
+          value = log_msg_get_value(lm, e->value_handle, &value_len);
           if (value && value[0])
             result_append(result, value, value_len, !!(flags & LT_ESCAPE));
           else if (e->default_value)

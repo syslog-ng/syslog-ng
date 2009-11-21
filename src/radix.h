@@ -43,12 +43,24 @@ enum
   RPT_FLOAT
 };
 
+typedef struct _RParserMatch
+{
+  /* if this pointer is non-NULL, it means that we've transformed the
+   * original message to something else, and thus we couldn't get a
+   * reference from the original payload */
+
+  gchar *match;
+  /* the value in which to store this match */
+  NVHandle handle;
+  guint16 len;
+  guint16 ofs;
+  guint8 type;
+} RParserMatch;
+
 typedef struct _RParserNode
 {
   /* user supplied parameters */
 
-  /* name of the parsed value */
-  gchar *name;
   /* user supplied parameters */
   gchar *param;
   /* internal state of the parser node */
@@ -56,10 +68,10 @@ typedef struct _RParserNode
 
   guchar first;
   guchar last;
-  guint8 name_len;
   guint8 type;
+  NVHandle handle;
 
-  gboolean (*parse)(gchar *str, gint *len, const gchar *param, gpointer state, LogMessageMatch *match);
+  gboolean (*parse)(gchar *str, gint *len, const gchar *param, gpointer state, RParserMatch *match);
   void (*free_state)(gpointer state);
 } RParserNode;
 
@@ -111,7 +123,7 @@ r_parser_type_name(guint8 type)
 RNode *r_new_node(gchar *key, gpointer value);
 void r_free_node(RNode *node, void (*free_fn)(gpointer data));
 void r_insert_node(RNode *root, gchar *key, gpointer value, gboolean parser, RNodeGetValueFunc value_func);
-RNode *r_find_node(RNode *root, gchar *whole_key, gchar *key, gint keylen, GArray *matches, GPtrArray *match_names);
+RNode *r_find_node(RNode *root, gchar *whole_key, gchar *key, gint keylen, GArray *matches);
 
 #endif
 

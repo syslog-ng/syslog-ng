@@ -281,7 +281,7 @@ log_classifier_xml_text(GMarkupParseContext *context, const gchar *text, gsize t
         }
       else if (state->in_ruleset)
         {
-          node = r_find_node(state->db->programs, txt, txt, strlen(txt), NULL, NULL);
+          node = r_find_node(state->db->programs, txt, txt, strlen(txt), NULL);
 
           if (node && node->value && node != state->db->programs)
             state->current_program = node->value;
@@ -340,11 +340,15 @@ log_pattern_database_lookup(LogPatternDatabase *self, LogMessage *msg)
   RNode *node;
   GArray *matches;
   GPtrArray *match_names;
+  const gchar *program;
+  gssize program_len;
 
   if (G_UNLIKELY(!self->programs))
     return NULL;
 
-  node = r_find_node(self->programs, msg->program, msg->program, msg->program_len, NULL, NULL);
+  program = log_msg_get_value(msg, LM_V_PROGRAM, &program_len);
+
+  node = r_find_node(self->programs, (gchar *) program, (gchar *) program, program_len, NULL);
 
   if (node)
     {
@@ -353,17 +357,20 @@ log_pattern_database_lookup(LogPatternDatabase *self, LogMessage *msg)
       if (program->rules)
         {
           RNode *msg_node;
+          const gchar *message;
+          gssize message_len;
 
           /* NOTE: We're not using g_array_sized_new as that does not
            * correctly zero-initialize the new items even if clear_ is TRUE
            */
           
-          matches = g_array_new(FALSE, TRUE, sizeof(LogMessageMatch));
+          matches = g_array_new(FALSE, TRUE, sizeof(RParserMatch));
           g_array_set_size(matches, 1);
           match_names = g_ptr_array_new();
           g_ptr_array_set_size(match_names, 1);
 
-          msg_node = r_find_node(program->rules, msg->message, msg->message, msg->message_len, matches, match_names);
+          message = log_msg_get_value(msg, LM_V_MESSAGE, &message_len);
+          msg_node = r_find_node(program->rules, (gchar *) message, (gchar *) message, message_len, matches);
 
           if (msg_node)
             {
@@ -371,35 +378,22 @@ log_pattern_database_lookup(LogPatternDatabase *self, LogMessage *msg)
 
               for (i = 0; i < matches->len; i++)
                 {
-                  LogMessageMatch *match = &g_array_index(matches, LogMessageMatch, i);
-                  gchar *match_name = g_ptr_array_index(match_names, i);
-                  gchar *value;
+                  RParserMatch *match = &g_array_index(matches, RParserMatch, i);
 
-                  if (!match->match)
-                    continue;
-                  if (match->flags & LMM_REF_MATCH)
-                    match->builtin_value = LM_F_MESSAGE;
-                    
-                  if (match_name && match_name[0])
+                  if (match->match)
                     {
-                      if ((match->flags & LMM_REF_MATCH) != 0)
-                        value = g_strndup(msg->message + match->ofs, match->len);
-                      else
-                        value = g_strdup(match->match);
-                      log_msg_add_dyn_value_ref(msg, match_name, value);
+                      log_msg_set_value(msg, match->handle, match->match, match->len);
+                      g_free(match->match);
+                    }
+                  else
+                    {
+                      log_msg_set_value_indirect(msg, match->handle, LM_V_MESSAGE, match->type, match->ofs, match->len);
                     }
                 }
-              log_msg_set_matches(msg, matches->len, (LogMessageMatch *) matches->data);
 
-              /* NOTE: the area pointed to by match_names elements is
-               * passed as a reference above, so no need to free it 
-               */
-
-              g_ptr_array_free(match_names, TRUE);
-              g_array_free(matches, FALSE);
+              g_array_free(matches, TRUE);
               return ((LogDBResult *) msg_node->value);
             }
-          g_ptr_array_free(match_names, TRUE);
           g_array_free(matches, TRUE);
         }
     }

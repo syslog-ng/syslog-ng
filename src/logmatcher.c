@@ -131,36 +131,25 @@ log_matcher_posix_re_compile(LogMatcher *s, const gchar *re)
 }
 
 static void
-log_matcher_posix_re_feed_backrefs(LogMatcher *s, LogMessage *msg, const gchar *value_name, regmatch_t *matches, const gchar *value)
+log_matcher_posix_re_feed_backrefs(LogMatcher *s, LogMessage *msg, gint value_handle, regmatch_t *matches, const gchar *value)
 {
-  GArray *a;
   gint i;
 
-  a = g_array_new(FALSE, TRUE, sizeof(LogMessageMatch));
-  
   for (i = 0; i < RE_MAX_MATCHES && matches[i].rm_so != -1; i++)
     {
-      LogMessageMatch match;
-
-      if (LOG_MESSAGE_IS_BUILTIN_FIELD(value_name))
+      if (value_handle != LM_V_NONE)
         {
-          match.flags = LMM_REF_MATCH;
-          match.builtin_value = GPOINTER_TO_INT(value_name);
-          match.type = 0;
-          match.ofs = matches[i].rm_so;
-          match.len = matches[i].rm_eo - matches[i].rm_so;
+          log_msg_set_match_indirect(msg, i, value_handle, 0, matches[i].rm_so, matches[i].rm_eo - matches[i].rm_so);
         }
       else
         {
-          match.match = g_strndup(&value[matches[i].rm_so], matches[i].rm_eo - matches[i].rm_so);
+          log_msg_set_match(msg, i, &value[matches[i].rm_so], matches[i].rm_eo - matches[i].rm_so);
         }
-      g_array_append_val(a, match);
     }
-  log_msg_set_matches(msg, i, (LogMessageMatch *) g_array_free(a, FALSE));
 }
 
 static gboolean
-log_matcher_posix_re_match(LogMatcher *s, LogMessage *msg, const gchar *value_name, const gchar *value, gssize value_len)
+log_matcher_posix_re_match(LogMatcher *s, LogMessage *msg, gint value_handle, const gchar *value, gssize value_len)
 {
   LogMatcherPosixRe *self = (LogMatcherPosixRe *) s; 
   regmatch_t matches[RE_MAX_MATCHES];
@@ -171,13 +160,13 @@ log_matcher_posix_re_match(LogMatcher *s, LogMessage *msg, const gchar *value_na
   rc = !regexec(&self->pattern, buf, RE_MAX_MATCHES, matches, 0);
   if (rc && (s->flags & LMF_STORE_MATCHES))
     {
-      log_matcher_posix_re_feed_backrefs(s, msg, value_name, matches, value);
+      log_matcher_posix_re_feed_backrefs(s, msg, value_handle, matches, value);
     }
   return rc;
 }
 
 static gchar *
-log_matcher_posix_re_replace(LogMatcher *s, LogMessage *msg, const gchar *value_name, const gchar *value, gssize value_len, LogTemplate *replacement, gssize *new_length)
+log_matcher_posix_re_replace(LogMatcher *s, LogMessage *msg, gint value_handle, const gchar *value, gssize value_len, LogTemplate *replacement, gssize *new_length)
 {
   LogMatcherPosixRe *self = (LogMatcherPosixRe *) s; 
   regmatch_t matches[RE_MAX_MATCHES];
@@ -207,7 +196,7 @@ log_matcher_posix_re_replace(LogMatcher *s, LogMessage *msg, const gchar *value_
               end_ofs++;
             }
 
-          log_matcher_posix_re_feed_backrefs(s, msg, value_name, matches, buf + current_ofs);
+          log_matcher_posix_re_feed_backrefs(s, msg, value_handle, matches, buf + current_ofs);
 
           if (!new_value)
             new_value = g_string_sized_new(value_len);
@@ -340,7 +329,7 @@ log_matcher_string_match_string(LogMatcherString *self, const gchar *value, gsiz
 }
 
 static gboolean
-log_matcher_string_match(LogMatcher *s, LogMessage *msg, const gchar *value_name, const gchar *value, gssize value_len)
+log_matcher_string_match(LogMatcher *s, LogMessage *msg, gint value_handle, const gchar *value, gssize value_len)
 {
   LogMatcherString *self = (LogMatcherString *) s; 
   
@@ -348,7 +337,7 @@ log_matcher_string_match(LogMatcher *s, LogMessage *msg, const gchar *value_name
 }
 
 static gchar *
-log_matcher_string_replace(LogMatcher *s, LogMessage *msg, const gchar *value_name, const gchar *value, gssize value_len, LogTemplate *replacement, gssize *new_length)
+log_matcher_string_replace(LogMatcher *s, LogMessage *msg, gint value_handle, const gchar *value, gssize value_len, LogTemplate *replacement, gssize *new_length)
 {
   LogMatcherString *self = (LogMatcherString *) s; 
   GString *new_value = NULL;
@@ -456,7 +445,7 @@ log_matcher_glob_compile(LogMatcher *s, const gchar *pattern)
  * a crash
  */
 static gboolean
-log_matcher_glob_match(LogMatcher *s, LogMessage *msg, const gchar *value_name, const gchar *value, gssize value_len)
+log_matcher_glob_match(LogMatcher *s, LogMessage *msg, gint value_handle, const gchar *value, gssize value_len)
 {
   LogMatcherGlob *self =  (LogMatcherGlob *) s;
   
@@ -582,31 +571,21 @@ log_matcher_pcre_re_compile(LogMatcher *s, const gchar *re)
 }
 
 static void
-log_matcher_pcre_re_feed_backrefs(LogMatcher *s, LogMessage *msg, const gchar *value_name, int *matches, gint match_num, const gchar *value)
+log_matcher_pcre_re_feed_backrefs(LogMatcher *s, LogMessage *msg, gint value_handle, int *matches, gint match_num, const gchar *value)
 {
-  GArray *a;
   gint i;
 
-  a = g_array_sized_new(FALSE, TRUE, sizeof(LogMessageMatch), match_num);
-  
   for (i = 0; i < (RE_MAX_MATCHES) && i < match_num; i++)
     {
-      LogMessageMatch *match = &g_array_index(a, LogMessageMatch, i);
-
-      if (LOG_MESSAGE_IS_BUILTIN_FIELD(value_name))
+      if (value_handle != LM_V_NONE)
         {
-          match->flags = LMM_REF_MATCH;
-          match->builtin_value = GPOINTER_TO_INT(value_name);
-          match->type = 0;
-          match->ofs = matches[2 * i];
-          match->len = matches[2 * i + 1] - matches[2 * i];
+          log_msg_set_match_indirect(msg, i, value_handle, 0, matches[2 * i], matches[2 * i + 1] - matches[2 * i]);
         }
       else
         {
-          match->match = g_strndup(&value[matches[2 * i]], matches[2 * i + 1] - matches[2 * i]);
+          log_msg_set_match(msg, i, &value[matches[2 * i]], matches[2 * i + 1] - matches[2 * i]);
         }
     }
-  log_msg_set_matches(msg, match_num, (LogMessageMatch *) g_array_free(a, FALSE));
 }
 
 static void
@@ -634,14 +613,14 @@ log_matcher_pcre_re_feed_named_substrings(LogMatcher *s, LogMessage *msg, int *m
        for (i = 0; i < namecount; i++)
          {
            int n = (tabptr[0] << 8) | tabptr[1];
-           log_msg_add_sized_dyn_value(msg, tabptr + 2, value + matches[2*n] , matches[2*n+1] - matches[2*n]);
+           log_msg_set_value(msg, log_msg_get_value_handle(tabptr + 2), value + matches[2*n], matches[2*n+1] - matches[2*n]);
            tabptr += name_entry_size;
          }
      }  
 }
 
 static gboolean
-log_matcher_pcre_re_match(LogMatcher *s, LogMessage *msg, const gchar *value_name, const gchar *value, gssize value_len)
+log_matcher_pcre_re_match(LogMatcher *s, LogMessage *msg, gint value_handle, const gchar *value, gssize value_len)
 {
   LogMatcherPcreRe *self = (LogMatcherPcreRe *) s; 
   int matches[RE_MAX_MATCHES * 3];
@@ -678,7 +657,7 @@ log_matcher_pcre_re_match(LogMatcher *s, LogMessage *msg, const gchar *value_nam
     {
       if ((s->flags & LMF_STORE_MATCHES))
         {
-          log_matcher_pcre_re_feed_backrefs(s, msg, value_name, matches, rc, value);
+          log_matcher_pcre_re_feed_backrefs(s, msg, value_handle, matches, rc, value);
           log_matcher_pcre_re_feed_named_substrings(s, msg, matches, value);
         }
     }
@@ -686,7 +665,7 @@ log_matcher_pcre_re_match(LogMatcher *s, LogMessage *msg, const gchar *value_nam
 }
 
 static gchar *
-log_matcher_pcre_re_replace(LogMatcher *s, LogMessage *msg, const gchar *value_name, const gchar *value, gssize value_len, LogTemplate *replacement, gssize *new_length)
+log_matcher_pcre_re_replace(LogMatcher *s, LogMessage *msg, gint value_handle, const gchar *value, gssize value_len, LogTemplate *replacement, gssize *new_length)
 {
   LogMatcherPcreRe *self = (LogMatcherPcreRe *) s; 
   int matches[RE_MAX_MATCHES * 3];
@@ -747,7 +726,7 @@ log_matcher_pcre_re_replace(LogMatcher *s, LogMessage *msg, const gchar *value_n
         }
       else
         {
-          log_matcher_pcre_re_feed_backrefs(s, msg, value_name, matches, rc, value);
+          log_matcher_pcre_re_feed_backrefs(s, msg, value_handle, matches, rc, value);
           log_matcher_pcre_re_feed_named_substrings(s, msg, matches, value);
 
           if (!new_value)
