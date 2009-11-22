@@ -101,3 +101,19 @@ strcasestr(const char *haystack, const char *needle)
   return (char *) haystack;
 }
 #endif
+
+#if !HAVE_MEMRCHR
+const void *
+memrchr(const void *s, int c, size_t n)
+{
+  const unsigned char *p = (unsigned char *) s + n - 1;
+
+  while (p >= (unsigned char *) s)
+    {
+      if (*p == c)
+        return p;
+      p--;
+    }
+  return NULL;
+}
+#endif
