@@ -33,7 +33,7 @@ absolute_value(signed long diff)
 void
 check_sd_param(gchar *msg, LogMessage *self, const gchar* pair[2])
 {
-  const gchar *a = log_msg_lookup_sdata(self, pair[0], -1);
+  const gchar *a = log_msg_get_value(self, log_msg_get_value_handle(pair[0]), NULL);
 
   TEST_ASSERT(strcmp(a, pair[1]) == 0, "%s", a, pair[1]);
 }
@@ -41,8 +41,8 @@ check_sd_param(gchar *msg, LogMessage *self, const gchar* pair[2])
 void
 check_sd_param_in_clone(gchar *msg, LogMessage *self, LogMessage *msg_clone, const gchar* pair[2])
 {
-  const gchar *a1 = log_msg_lookup_sdata(self, pair[0], -1);
-  const gchar *a2 = log_msg_lookup_sdata(msg_clone, pair[0], -1);
+  const gchar *a1 = log_msg_get_value(self, log_msg_get_value_handle(pair[0]), NULL);
+  const gchar *a2 = log_msg_get_value(msg_clone, log_msg_get_value_handle(pair[0]), NULL);
 
   TEST_ASSERT(strcmp(a1, pair[1]) == 0 && strcmp(a2, pair[1]) == 0, "%s", a1, a2);
 }
@@ -361,10 +361,10 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 
   const gchar *expected_sd_pairs_test_1[][2]=
   {
-    { "exampleSDID@0.iut", "3"},
-    { "exampleSDID@0.eventSource", "Application"},
-    { "exampleSDID@0.eventID", "1011"},
-    { "examplePriority@0.class", "high"},
+    { ".SDATA.exampleSDID@0.iut", "3"},
+    { ".SDATA.exampleSDID@0.eventSource", "Application"},
+    { ".SDATA.exampleSDID@0.eventID", "1011"},
+    { ".SDATA.examplePriority@0.class", "high"},
     {  NULL , NULL}
   };
 
@@ -430,7 +430,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 
   const gchar *expected_sd_pairs_test_2[][2]=
   {
-    { "exampleSDID@0.iut", "3"},
+    { ".SDATA.exampleSDID@0.iut", "3"},
     {  NULL , NULL}
   };
 

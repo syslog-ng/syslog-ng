@@ -99,17 +99,6 @@ enum
   LF_LEGACY_MSGHDR    = 0x00020000,
 };
 
-typedef struct _LogMessageSDParam  LogMessageSDParam;
-typedef struct _LogMessageSDElement LogMessageSDElement;
-
-enum
-{
-  /* this flag represents that this match is a reference to a field using offset + length */
-  LMM_REF_MATCH = 0x0001,
-};
-
-
-
 /* NOTE: the members are ordered according to the presumed use frequency. 
  * The structure itself is 2 cachelines, the border is right after the "msg"
  * member */
@@ -132,17 +121,19 @@ struct _LogMessage
   struct
   {
     guint32 flags;
-    guint32 message_len;
     guint16 pri;
-    /* 6 bytes hole */
+    guint8 initial_parse:1,
+      recurse_count:7;
+    guint8 num_matches;
+    guint8 num_tags;
+    guint8 alloc_sdata;
+    guint8 num_sdata;
+    /* 5 bytes hole */
     
     LogStamp timestamps[LM_TS_MAX];
     guint32 *tags;
-    guint8 recurse_count;
-    guint8 num_matches;
-    guint8 num_tags;
+    NVHandle *sdata;
 
-    LogMessageSDElement *sdata;
     GSockAddr *saddr;
     NVTable *payload;
   };
@@ -158,12 +149,12 @@ gboolean log_msg_read(LogMessage *self, SerializeArchive *sa);
 
 /* generic values that encapsulate log message fields, dynamic values and structured data */
 NVHandle log_msg_get_value_handle(const gchar *value_name);
-const gchar *log_msg_get_value_name(NVHandle handle);
+const gchar *log_msg_get_value_name(NVHandle handle, gssize *name_len);
 
 static inline const gchar *
 log_msg_get_value(LogMessage *self, NVHandle handle, gssize *value_len)
 {
-  return nv_table_get_value(self->payload, handle, value_len);
+  return __nv_table_get_value(self->payload, handle, NV_TABLE_BOUND_NUM_STATIC(LM_V_MAX), value_len);
 }
 
 void log_msg_set_value(LogMessage *self, NVHandle handle, const gchar *new_value, gssize length);
@@ -172,9 +163,8 @@ void log_msg_set_match(LogMessage *self, gint index, const gchar *value, gssize 
 void log_msg_set_match_indirect(LogMessage *self, gint index, NVHandle ref_handle, guint8 type, guint16 ofs, guint16 len);
 void log_msg_clear_matches(LogMessage *self);
 
-#if 0
-void log_msg_set_sdata(LogMessage *self, LogMessageSDElement *elements);
-#endif
+void log_msg_append_format_sdata(LogMessage *self, GString *result);
+void log_msg_format_sdata(LogMessage *self, GString *result);
 
 void log_msg_set_tag_by_id(LogMessage *self, guint id);
 void log_msg_set_tag_by_name(LogMessage *self, const gchar *name);
@@ -196,11 +186,6 @@ LogMessage *log_msg_new_empty(void);
 void log_msg_add_ack(LogMessage *msg, const LogPathOptions *path_options);
 void log_msg_ack(LogMessage *msg, const LogPathOptions *path_options);
 void log_msg_drop(LogMessage *msg, const LogPathOptions *path_options);
-
-gchar *log_msg_lookup_sdata(LogMessage *self, const gchar *name, gssize param_len);
-void log_msg_append_format_sdata(LogMessage *self, GString *result);
-void log_msg_format_sdata(LogMessage *self, GString *result);
-void log_msg_update_sdata(LogMessage *self, const gchar *element_id, const gchar *param_name, const gchar *param_value);
 
 void log_msg_global_init();
 

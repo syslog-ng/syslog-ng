@@ -48,11 +48,14 @@ nv_registry_get_value_handle(NVRegistry *self, const gchar *name)
       return 0;
     }
   /* first byte is the length, then the zero terminated string */
-  stored = g_malloc(len + 2);
-  stored[0] = len;
-  memcpy(&stored[1], name, len+1);
+  stored = g_malloc(len + 3);
+
+  /* memory layout: flags || length || name (NUL terminated) */
+  stored[0] = 0;
+  stored[1] = len;
+  memcpy(&stored[2], name, len+1);
   g_ptr_array_add(self->names, stored);
-  g_hash_table_insert(self->name_map, stored + 1, GUINT_TO_POINTER(self->names->len));
+  g_hash_table_insert(self->name_map, stored + 2, GUINT_TO_POINTER(self->names->len));
   return self->names->len;
 }
 
@@ -65,6 +68,30 @@ void
 nv_registry_add_alias(NVRegistry *self, NVHandle handle, const gchar *alias)
 {
   g_hash_table_insert(self->name_map, (gchar *) alias, GUINT_TO_POINTER(handle));
+}
+
+guint8
+nv_registry_get_handle_flags(NVRegistry *self, NVHandle handle)
+{
+  gchar *stored;
+
+  if (!handle)
+      return 0;
+
+  stored = (gchar *) g_ptr_array_index(self->names, handle - 1);
+  return stored[0];
+}
+
+void
+nv_registry_set_handle_flags(NVRegistry *self, NVHandle handle, guint8 flags)
+{
+  gchar *stored;
+
+  if (!handle)
+    return;
+
+  stored = (gchar *) g_ptr_array_index(self->names, handle - 1);
+  stored[0] = flags;
 }
 
 const gchar *
@@ -81,8 +108,8 @@ nv_registry_get_value_name(NVRegistry *self, NVHandle handle, gssize *length)
 
   stored = (gchar *) g_ptr_array_index(self->names, handle - 1);
   if (length)
-    *length = ((guint8 *) stored)[0];
-  return stored + 1;
+    *length = ((guint8 *) stored)[1];
+  return stored + 2;
 }
 
 NVRegistry *
@@ -326,7 +353,7 @@ nv_table_make_direct(NVHandle handle, NVEntry *entry, gpointer user_data)
       gssize value_len;
 
       value = nv_table_resolve_indirect(self, entry, &value_len);
-      if (!nv_table_add_value(self, handle, entry->vindirect.name, entry->name_len, value, value_len))
+      if (!nv_table_add_value(self, handle, entry->vindirect.name, entry->name_len, value, value_len, NULL))
         {
           /* nvtable full, but we can't realloc it ourselves,
            * propagate this back as a failure of
@@ -339,16 +366,21 @@ nv_table_make_direct(NVHandle handle, NVEntry *entry, gpointer user_data)
 }
 
 gboolean
-nv_table_add_value(NVTable *self, NVHandle handle, const gchar *name, gsize name_len, const gchar *value, gsize value_len)
+nv_table_add_value(NVTable *self, NVHandle handle, const gchar *name, gsize name_len, const gchar *value, gsize value_len, gboolean *new_entry)
 {
   NVEntry *entry;
   guint16 ofs;
   guint32 *dyn_slot;
 
+  if (new_entry)
+    *new_entry = FALSE;
   entry = nv_table_get_entry(self, handle, &dyn_slot);
-  if (!entry && value_len == 0)
+  if (!entry && !new_entry && value_len == 0)
     {
-      /* we don't store zero length matches */
+      /* we don't store zero length matches unless the caller is
+       * interested in whether a new entry was created. It is used by
+       * the SDATA support code to decide whether a previously
+       * not-present SDATA was set */
       return TRUE;
     }
   if (entry && !entry->indirect && entry->referenced)
@@ -387,6 +419,8 @@ nv_table_add_value(NVTable *self, NVHandle handle, const gchar *name, gsize name
         }
       return TRUE;
     }
+  else if (!entry && new_entry)
+    *new_entry = TRUE;
 
   /* check if there's enough free space: size of the struct plus the
    * size needed for a dynamic table slot */
@@ -411,12 +445,14 @@ nv_table_add_value(NVTable *self, NVHandle handle, const gchar *name, gsize name
 }
 
 gboolean
-nv_table_add_value_indirect(NVTable *self, NVHandle handle, const gchar *name, gsize name_len, NVHandle ref_handle, guint8 type, guint16 rofs, guint16 rlen)
+nv_table_add_value_indirect(NVTable *self, NVHandle handle, const gchar *name, gsize name_len, NVHandle ref_handle, guint8 type, guint16 rofs, guint16 rlen, gboolean *new_entry)
 {
   NVEntry *entry, *ref_entry;
   guint32 *dyn_slot;
   guint16 ofs;
 
+  if (new_entry)
+    *new_entry = FALSE;
   ref_entry = nv_table_get_entry(self, ref_handle, &dyn_slot);
   if (ref_entry && ref_entry->indirect)
     {
@@ -437,13 +473,17 @@ nv_table_add_value_indirect(NVTable *self, NVHandle handle, const gchar *name, g
         {
           rlen = MIN(rofs + rlen, ref_length) - rofs;
         }
-      return nv_table_add_value(self, handle, name, name_len, ref_value + rofs, rlen);
+      return nv_table_add_value(self, handle, name, name_len, ref_value + rofs, rlen, new_entry);
     }
 
   entry = nv_table_get_entry(self, handle, &dyn_slot);
-  if (!entry && (rlen == 0 || !ref_entry))
+  if (!entry && !new_entry && (rlen == 0 || !ref_entry))
     {
-      /* we don't store zero length matches */
+      /* we don't store zero length matches unless the caller is
+       * interested in whether a new entry was created. It is used by
+       * the SDATA support code to decide whether a previously
+       * not-present SDATA was set */
+
       return TRUE;
     }
   if (entry && !entry->indirect && entry->referenced)
@@ -470,6 +510,8 @@ nv_table_add_value_indirect(NVTable *self, NVHandle handle, const gchar *name, g
         }
       return TRUE;
     }
+  else if (!entry && new_entry)
+    *new_entry = TRUE;
 
   if (!nv_table_reserve_table_entry(self, handle, dyn_slot))
     return FALSE;
@@ -560,7 +602,7 @@ nv_table_new(gint num_static_entries, gint num_dyn_values, gint init_length)
   self->size = alloc_length >> NV_TABLE_SCALE;
   self->used = 0;
   self->num_dyn_entries = 0;
-  self->num_static_entries = (num_static_entries + 1) & ~1;
+  self->num_static_entries = NV_TABLE_BOUND_NUM_STATIC(num_static_entries);
   self->dyn_sorted = TRUE;
   memset(&self->static_entries[0], 0, self->num_static_entries * sizeof(self->static_entries[0]));
   return self;

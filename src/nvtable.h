@@ -38,6 +38,8 @@ extern const gchar *null_string;
 void nv_registry_add_alias(NVRegistry *self, NVHandle handle, const gchar *alias);
 NVHandle nv_registry_get_value_handle(NVRegistry *self, const gchar *name);
 const gchar *nv_registry_get_value_name(NVRegistry *self, NVHandle handle, gssize *length);
+guint8 nv_registry_get_handle_flags(NVRegistry *self, NVHandle handle);
+void nv_registry_set_handle_flags(NVRegistry *self, NVHandle handle, guint8 flags);
 NVRegistry *nv_registry_new(const gchar **static_names);
 void nv_registry_free(NVRegistry *self);
 
@@ -130,10 +132,11 @@ struct _NVTable
 #define NV_TABLE_BOUND(x)  (((x) + 0x3) & ~0x3)
 #define NV_TABLE_ADDR(self, x) ((gchar *) ((self)) + ((x) << NV_TABLE_SCALE))
 #define NV_TABLE_ESTIMATE(value_num, string_sum)  ((value_num) * (sizeof(guint16) + sizeof(LogMessageStringTableEntry) + string_sum)
+#define NV_TABLE_BOUND_NUM_STATIC(x) ((x) & ~1)
 
 
-gboolean nv_table_add_value(NVTable *self, NVHandle handle, const gchar *name, gsize name_len, const gchar *value, gsize value_len);
-gboolean nv_table_add_value_indirect(NVTable *self, NVHandle handle, const gchar *name, gsize name_len, NVHandle ref_handle, guint8 type, guint16 ofs, guint16 len);
+gboolean nv_table_add_value(NVTable *self, NVHandle handle, const gchar *name, gsize name_len, const gchar *value, gsize value_len, gboolean *new_entry);
+gboolean nv_table_add_value_indirect(NVTable *self, NVHandle handle, const gchar *name, gsize name_len, NVHandle ref_handle, guint8 type, guint16 ofs, guint16 len, gboolean *new_entry);
 
 gboolean nv_table_foreach(NVTable *self, NVTableForeachFunc func, gpointer user_data);
 gboolean nv_table_foreach_entry(NVTable *self, NVTableForeachEntryFunc func, gpointer user_data);
@@ -155,7 +158,7 @@ const gchar *nv_table_resolve_indirect(NVTable *self, NVEntry *entry, gssize *le
 
 
 static inline NVEntry *
-nv_table_get_entry(NVTable *self, NVHandle handle, guint32 **dyn_slot)
+__nv_table_get_entry(NVTable *self, NVHandle handle, guint16 num_static_entries, guint32 **dyn_slot)
 {
   guint16 ofs;
 
@@ -165,7 +168,7 @@ nv_table_get_entry(NVTable *self, NVHandle handle, guint32 **dyn_slot)
       return NULL;
     }
 
-  if (G_LIKELY(handle <= self->num_static_entries))
+  if (G_LIKELY(handle <= num_static_entries))
     {
       ofs = self->static_entries[handle - 1];
       *dyn_slot = NULL;
@@ -179,14 +182,20 @@ nv_table_get_entry(NVTable *self, NVHandle handle, guint32 **dyn_slot)
     }
 }
 
+static inline NVEntry *
+nv_table_get_entry(NVTable *self, NVHandle handle, guint32 **dyn_slot)
+{
+  return __nv_table_get_entry(self, handle, self->num_static_entries, dyn_slot);
+}
+
 static inline const gchar *
-nv_table_get_value(NVTable *self, NVHandle handle, gssize *length)
+__nv_table_get_value(NVTable *self, NVHandle handle, guint16 num_static_entries, gssize *length)
 {
   NVEntry *entry;
   guint32 *dyn_slot;
 
   entry = nv_table_get_entry(self, handle, &dyn_slot);
-  if (!entry)
+  if (G_UNLIKELY(!entry))
     {
       if (length)
         *length = 0;
@@ -201,5 +210,12 @@ nv_table_get_value(NVTable *self, NVHandle handle, gssize *length)
     }
   return nv_table_resolve_indirect(self, entry, length);
 }
+
+static inline const gchar *
+nv_table_get_value(NVTable *self, NVHandle handle, gssize *length)
+{
+  return __nv_table_get_value(self, handle, self->num_static_entries, length);
+}
+
 
 #endif

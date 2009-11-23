@@ -179,14 +179,14 @@ test_nvtable_direct()
 
       /* one that fits */
       tab = nv_table_new(STATIC_VALUES, STATIC_VALUES, 256);
-      success = nv_table_add_value(tab, handle, name, strlen(name), value, 128);
+      success = nv_table_add_value(tab, handle, name, strlen(name), value, 128, NULL);
       TEST_ASSERT(success == TRUE);
       TEST_NVTABLE_ASSERT(tab, handle, value, 128);
       nv_table_free(tab);
 
       /* one that is too large */
       tab = nv_table_new(STATIC_VALUES, STATIC_VALUES, 256);
-      success = nv_table_add_value(tab, handle, name, strlen(name), value, 512);
+      success = nv_table_add_value(tab, handle, name, strlen(name), value, 512, NULL);
       TEST_ASSERT(success == FALSE);
       nv_table_free(tab);
 
@@ -196,11 +196,11 @@ test_nvtable_direct()
 
       /* one that fits, but realloced size wouldn't fit */
       tab = nv_table_new(STATIC_VALUES, STATIC_VALUES, 192);
-      success = nv_table_add_value(tab, handle, name, strlen(name), value, 128);
+      success = nv_table_add_value(tab, handle, name, strlen(name), value, 128, NULL);
       TEST_ASSERT(success == TRUE);
       used = tab->used;
 
-      success = nv_table_add_value(tab, handle, name, strlen(name), value, 64);
+      success = nv_table_add_value(tab, handle, name, strlen(name), value, 64, NULL);
       TEST_ASSERT(success == TRUE);
       TEST_ASSERT(tab->used == used);
       TEST_NVTABLE_ASSERT(tab, handle, value, 64);
@@ -208,11 +208,11 @@ test_nvtable_direct()
 
       /* one that is too large for the given entry, but still fits in the NVTable */
       tab = nv_table_new(STATIC_VALUES, STATIC_VALUES, 256);
-      success = nv_table_add_value(tab, handle, name, strlen(name), value, 64);
+      success = nv_table_add_value(tab, handle, name, strlen(name), value, 64, NULL);
       TEST_ASSERT(success == TRUE);
       used = tab->used;
 
-      success = nv_table_add_value(tab, handle, name, strlen(name), value, 128);
+      success = nv_table_add_value(tab, handle, name, strlen(name), value, 128, NULL);
       TEST_ASSERT(success == TRUE);
       TEST_ASSERT(tab->used > used);
       TEST_NVTABLE_ASSERT(tab, handle, value, 128);
@@ -220,10 +220,10 @@ test_nvtable_direct()
 
       /* one that is too large for the given entry, and also for the NVTable */
       tab = nv_table_new(STATIC_VALUES, STATIC_VALUES, 256);
-      success = nv_table_add_value(tab, handle, name, strlen(name), value, 64);
+      success = nv_table_add_value(tab, handle, name, strlen(name), value, 64, NULL);
       TEST_ASSERT(success == TRUE);
 
-      success = nv_table_add_value(tab, handle, name, strlen(name), value, 512);
+      success = nv_table_add_value(tab, handle, name, strlen(name), value, 512, NULL);
       TEST_ASSERT(success == FALSE);
       TEST_NVTABLE_ASSERT(tab, handle, value, 64);
       nv_table_free(tab);
@@ -238,14 +238,14 @@ test_nvtable_direct()
 
           /* setup code: add static and a dynamic-indirect entry */
           tab = nv_table_new(STATIC_VALUES, STATIC_VALUES, 192);
-          success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 128);
+          success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 128, NULL);
           TEST_ASSERT(success == TRUE);
-          success = nv_table_add_value_indirect(tab, handle, name, strlen(name), STATIC_HANDLE, 0, 1, 126);
+          success = nv_table_add_value_indirect(tab, handle, name, strlen(name), STATIC_HANDLE, 0, 1, 126, NULL);
           TEST_ASSERT(success == TRUE);
           used = tab->used;
 
           /* store a direct entry over the indirect one */
-          success = nv_table_add_value(tab, handle, name, strlen(name), value, 1);
+          success = nv_table_add_value(tab, handle, name, strlen(name), value, 1, NULL);
           TEST_ASSERT(success == TRUE);
           TEST_ASSERT(tab->used == used);
           TEST_NVTABLE_ASSERT(tab, STATIC_HANDLE, value, 128);
@@ -255,15 +255,15 @@ test_nvtable_direct()
 
           /* setup code: add static and a dynamic-indirect entry */
           tab = nv_table_new(STATIC_VALUES, STATIC_VALUES, 256);
-          success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 64);
+          success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 64, NULL);
           TEST_ASSERT(success == TRUE);
-          success = nv_table_add_value_indirect(tab, handle, name, strlen(name), STATIC_HANDLE, 0, 1, 63);
+          success = nv_table_add_value_indirect(tab, handle, name, strlen(name), STATIC_HANDLE, 0, 1, 63, NULL);
           TEST_ASSERT(success == TRUE);
 
           used = tab->used;
 
           /* store a direct entry over the indirect one, we don't fit in the allocated space */
-          success = nv_table_add_value(tab, handle, name, strlen(name), value, 128);
+          success = nv_table_add_value(tab, handle, name, strlen(name), value, 128, NULL);
           TEST_ASSERT(success == TRUE);
           TEST_ASSERT(tab->used > used);
           TEST_NVTABLE_ASSERT(tab, STATIC_HANDLE, value, 64);
@@ -273,14 +273,14 @@ test_nvtable_direct()
 
           /* setup code: add static and a dynamic-indirect entry */
           tab = nv_table_new(STATIC_VALUES, STATIC_VALUES, 256);
-          success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 64);
+          success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 64, NULL);
           TEST_ASSERT(success == TRUE);
-          success = nv_table_add_value_indirect(tab, handle, name, strlen(name), STATIC_HANDLE, 0, 1, 62);
+          success = nv_table_add_value_indirect(tab, handle, name, strlen(name), STATIC_HANDLE, 0, 1, 62, NULL);
           TEST_ASSERT(success == TRUE);
           used = tab->used;
 
           /* store a direct entry over the indirect one, we don't fit in the allocated space */
-          success = nv_table_add_value(tab, handle, name, strlen(name), value, 256);
+          success = nv_table_add_value(tab, handle, name, strlen(name), value, 256, NULL);
           TEST_ASSERT(success == FALSE);
           TEST_NVTABLE_ASSERT(tab, STATIC_HANDLE, value, 64);
           TEST_NVTABLE_ASSERT(tab, handle, value + 1, 62);
@@ -351,10 +351,10 @@ test_nvtable_indirect()
 
   /* one that fits */
   tab = nv_table_new(STATIC_VALUES, STATIC_VALUES, 192);
-  success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 128);
+  success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 128, NULL);
   TEST_ASSERT(success == TRUE);
 
-  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), STATIC_HANDLE, 0, 1, 126);
+  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), STATIC_HANDLE, 0, 1, 126, NULL);
   TEST_ASSERT(success == TRUE);
   TEST_NVTABLE_ASSERT(tab, STATIC_HANDLE, value, 128);
   TEST_NVTABLE_ASSERT(tab, handle, value + 1, 126);
@@ -366,10 +366,10 @@ test_nvtable_indirect()
      to make it possible to store one direct entry */
 
   tab = nv_table_new(STATIC_VALUES, 0, 138);
-  success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 128);
+  success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 128, NULL);
   TEST_ASSERT(success == TRUE);
 
-  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), STATIC_HANDLE, 0, 1, 126);
+  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), STATIC_HANDLE, 0, 1, 126, NULL);
   TEST_ASSERT(success == FALSE);
 
   nv_table_free(tab);
@@ -379,13 +379,13 @@ test_nvtable_indirect()
   /*************************************************************/
 
   tab = nv_table_new(STATIC_VALUES, STATIC_VALUES, 192);
-  success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 128);
+  success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 128, NULL);
   TEST_ASSERT(success == TRUE);
-  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), STATIC_HANDLE, 0, 1, 126);
+  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), STATIC_HANDLE, 0, 1, 126, NULL);
   TEST_ASSERT(success == TRUE);
   used = tab->used;
 
-  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), STATIC_HANDLE, 0, 1, 62);
+  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), STATIC_HANDLE, 0, 1, 62, NULL);
 
   TEST_ASSERT(success == TRUE);
   TEST_ASSERT(used == tab->used);
@@ -402,13 +402,13 @@ test_nvtable_indirect()
 
   /* setup code: add static and a dynamic-direct entry */
   tab = nv_table_new(STATIC_VALUES, STATIC_VALUES, 256);
-  success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 128);
+  success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 128, NULL);
   TEST_ASSERT(success == TRUE);
-  success = nv_table_add_value(tab, handle, name, strlen(name), value, 64);
+  success = nv_table_add_value(tab, handle, name, strlen(name), value, 64, NULL);
   TEST_ASSERT(success == TRUE);
   used = tab->used;
 
-  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), STATIC_HANDLE, 0, 1, 126);
+  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), STATIC_HANDLE, 0, 1, 126, NULL);
   TEST_ASSERT(success == TRUE);
   TEST_ASSERT(tab->used == used);
   TEST_NVTABLE_ASSERT(tab, STATIC_HANDLE, value, 128);
@@ -420,13 +420,13 @@ test_nvtable_indirect()
 
   /* setup code: add static and a dynamic-direct entry */
   tab = nv_table_new(STATIC_VALUES, STATIC_VALUES, 256);
-  success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 128);
+  success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 128, NULL);
   TEST_ASSERT(success == TRUE);
-  success = nv_table_add_value(tab, handle, name, strlen(name), value, 1);
+  success = nv_table_add_value(tab, handle, name, strlen(name), value, 1, NULL);
   TEST_ASSERT(success == TRUE);
   used = tab->used;
 
-  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), STATIC_HANDLE, 0, 1, 126);
+  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), STATIC_HANDLE, 0, 1, 126, NULL);
   TEST_ASSERT(success == TRUE);
   TEST_ASSERT(tab->used > used);
   TEST_NVTABLE_ASSERT(tab, STATIC_HANDLE, value, 128);
@@ -438,12 +438,12 @@ test_nvtable_indirect()
 
   /* setup code: add static and a dynamic-direct entry */
   tab = nv_table_new(STATIC_VALUES, 1, 150);
-  success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 128);
+  success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 128, NULL);
   TEST_ASSERT(success == TRUE);
-  success = nv_table_add_value(tab, handle, name, strlen(name), value, 1);
+  success = nv_table_add_value(tab, handle, name, strlen(name), value, 1, NULL);
   TEST_ASSERT(success == TRUE);
 
-  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), STATIC_HANDLE, 0, 1, 126);
+  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), STATIC_HANDLE, 0, 1, 126, NULL);
   TEST_ASSERT(success == FALSE);
   TEST_NVTABLE_ASSERT(tab, STATIC_HANDLE, value, 128);
   TEST_NVTABLE_ASSERT(tab, handle, value, 1);
@@ -463,12 +463,12 @@ test_nvtable_indirect()
 
   /* one that fits */
   tab = nv_table_new(STATIC_VALUES, STATIC_VALUES, 256);
-  success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 128);
+  success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 128, NULL);
   TEST_ASSERT(success == TRUE);
-  success = nv_table_add_value_indirect(tab, DYN_HANDLE, DYN_NAME, strlen(DYN_NAME), STATIC_HANDLE, 0, 1, 126);
+  success = nv_table_add_value_indirect(tab, DYN_HANDLE, DYN_NAME, strlen(DYN_NAME), STATIC_HANDLE, 0, 1, 126, NULL);
   TEST_ASSERT(success == TRUE);
 
-  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), DYN_HANDLE, 0, 1, 122);
+  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), DYN_HANDLE, 0, 1, 122, NULL);
   TEST_ASSERT(success == TRUE);
   TEST_NVTABLE_ASSERT(tab, STATIC_HANDLE, value, 128);
   TEST_NVTABLE_ASSERT(tab, DYN_HANDLE, value + 1, 126);
@@ -477,12 +477,12 @@ test_nvtable_indirect()
 
   /* one that is too large */
   tab = nv_table_new(STATIC_VALUES, STATIC_VALUES, 192);
-  success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 128);
+  success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 128, NULL);
   TEST_ASSERT(success == TRUE);
-  success = nv_table_add_value_indirect(tab, DYN_HANDLE, DYN_NAME, strlen(DYN_NAME), STATIC_HANDLE, 0, 1, 126);
+  success = nv_table_add_value_indirect(tab, DYN_HANDLE, DYN_NAME, strlen(DYN_NAME), STATIC_HANDLE, 0, 1, 126, NULL);
   TEST_ASSERT(success == TRUE);
 
-  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), DYN_HANDLE, 0, 1, 122);
+  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), DYN_HANDLE, 0, 1, 122, NULL);
   TEST_ASSERT(success == FALSE);
   TEST_NVTABLE_ASSERT(tab, STATIC_HANDLE, value, 128);
   TEST_NVTABLE_ASSERT(tab, DYN_HANDLE, value + 1, 126);
@@ -496,15 +496,15 @@ test_nvtable_indirect()
 
   /* we fit to the space of the old */
   tab = nv_table_new(STATIC_VALUES, STATIC_VALUES, 256);
-  success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 128);
+  success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 128, NULL);
   TEST_ASSERT(success == TRUE);
-  success = nv_table_add_value_indirect(tab, DYN_HANDLE, DYN_NAME, strlen(DYN_NAME), STATIC_HANDLE, 0, 1, 126);
+  success = nv_table_add_value_indirect(tab, DYN_HANDLE, DYN_NAME, strlen(DYN_NAME), STATIC_HANDLE, 0, 1, 126, NULL);
   TEST_ASSERT(success == TRUE);
-  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), STATIC_HANDLE, 0, 1, 126);
+  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), STATIC_HANDLE, 0, 1, 126, NULL);
   TEST_ASSERT(success == TRUE);
   used = tab->used;
 
-  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), DYN_HANDLE, 0, 1, 1);
+  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), DYN_HANDLE, 0, 1, 1, NULL);
   TEST_ASSERT(success == TRUE);
 
   TEST_ASSERT(tab->used == used);
@@ -516,15 +516,15 @@ test_nvtable_indirect()
   /* the new entry will not fit to the space allocated to the old */
 
   tab = nv_table_new(STATIC_VALUES, STATIC_VALUES, 256);
-  success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 128);
+  success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 128, NULL);
   TEST_ASSERT(success == TRUE);
-  success = nv_table_add_value_indirect(tab, DYN_HANDLE, DYN_NAME, strlen(DYN_NAME), STATIC_HANDLE, 0, 1, 126);
+  success = nv_table_add_value_indirect(tab, DYN_HANDLE, DYN_NAME, strlen(DYN_NAME), STATIC_HANDLE, 0, 1, 126, NULL);
   TEST_ASSERT(success == TRUE);
-  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), STATIC_HANDLE, 0, 1, 126);
+  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), STATIC_HANDLE, 0, 1, 126, NULL);
   TEST_ASSERT(success == TRUE);
   used = tab->used;
 
-  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), DYN_HANDLE, 0, 1, 16);
+  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), DYN_HANDLE, 0, 1, 16, NULL);
   TEST_ASSERT(success == TRUE);
 
   TEST_ASSERT(tab->used > used);
@@ -536,15 +536,15 @@ test_nvtable_indirect()
   /* one that is too large */
 
   tab = nv_table_new(STATIC_VALUES, STATIC_VALUES, 256);
-  success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 128);
+  success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 128, NULL);
   TEST_ASSERT(success == TRUE);
-  success = nv_table_add_value_indirect(tab, DYN_HANDLE, DYN_NAME, strlen(DYN_NAME), STATIC_HANDLE, 0, 1, 126);
+  success = nv_table_add_value_indirect(tab, DYN_HANDLE, DYN_NAME, strlen(DYN_NAME), STATIC_HANDLE, 0, 1, 126, NULL);
   TEST_ASSERT(success == TRUE);
-  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), STATIC_HANDLE, 0, 1, 126);
+  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), STATIC_HANDLE, 0, 1, 126, NULL);
   TEST_ASSERT(success == TRUE);
   used = tab->used;
 
-  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), DYN_HANDLE, 0, 1, 124);
+  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), DYN_HANDLE, 0, 1, 124, NULL);
   TEST_ASSERT(success == FALSE);
 
   TEST_ASSERT(tab->used == used);
@@ -560,15 +560,15 @@ test_nvtable_indirect()
 
   /* we fit to the space of the old */
   tab = nv_table_new(STATIC_VALUES, STATIC_VALUES, 256);
-  success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 128);
+  success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 128, NULL);
   TEST_ASSERT(success == TRUE);
-  success = nv_table_add_value_indirect(tab, DYN_HANDLE, DYN_NAME, strlen(DYN_NAME), STATIC_HANDLE, 0, 1, 126);
+  success = nv_table_add_value_indirect(tab, DYN_HANDLE, DYN_NAME, strlen(DYN_NAME), STATIC_HANDLE, 0, 1, 126, NULL);
   TEST_ASSERT(success == TRUE);
-  success = nv_table_add_value(tab, handle, name, strlen(name), value, 64);
+  success = nv_table_add_value(tab, handle, name, strlen(name), value, 64, NULL);
   TEST_ASSERT(success == TRUE);
   used = tab->used;
 
-  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), DYN_HANDLE, 0, 1, 16);
+  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), DYN_HANDLE, 0, 1, 16, NULL);
   TEST_ASSERT(success == TRUE);
 
   TEST_ASSERT(tab->used == used);
@@ -581,15 +581,15 @@ test_nvtable_indirect()
   /* the new entry will not fit to the space allocated to the old */
 
   tab = nv_table_new(STATIC_VALUES, STATIC_VALUES, 256);
-  success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 128);
+  success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 128, NULL);
   TEST_ASSERT(success == TRUE);
-  success = nv_table_add_value_indirect(tab, DYN_HANDLE, DYN_NAME, strlen(DYN_NAME), STATIC_HANDLE, 0, 1, 126);
+  success = nv_table_add_value_indirect(tab, DYN_HANDLE, DYN_NAME, strlen(DYN_NAME), STATIC_HANDLE, 0, 1, 126, NULL);
   TEST_ASSERT(success == TRUE);
-  success = nv_table_add_value(tab, handle, name, strlen(name), value, 16);
+  success = nv_table_add_value(tab, handle, name, strlen(name), value, 16, NULL);
   TEST_ASSERT(success == TRUE);
   used = tab->used;
 
-  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), DYN_HANDLE, 0, 1, 32);
+  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), DYN_HANDLE, 0, 1, 32, NULL);
   TEST_ASSERT(success == TRUE);
 
   TEST_ASSERT(tab->used > used);
@@ -601,15 +601,15 @@ test_nvtable_indirect()
   /* one that is too large */
 
   tab = nv_table_new(STATIC_VALUES, STATIC_VALUES, 256);
-  success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 128);
+  success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 128, NULL);
   TEST_ASSERT(success == TRUE);
-  success = nv_table_add_value_indirect(tab, DYN_HANDLE, DYN_NAME, strlen(DYN_NAME), STATIC_HANDLE, 0, 1, 126);
+  success = nv_table_add_value_indirect(tab, DYN_HANDLE, DYN_NAME, strlen(DYN_NAME), STATIC_HANDLE, 0, 1, 126, NULL);
   TEST_ASSERT(success == TRUE);
-  success = nv_table_add_value(tab, handle, name, strlen(name), value, 16);
+  success = nv_table_add_value(tab, handle, name, strlen(name), value, 16, NULL);
   TEST_ASSERT(success == TRUE);
   used = tab->used;
 
-  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), DYN_HANDLE, 0, 1, 124);
+  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), DYN_HANDLE, 0, 1, 124, NULL);
   TEST_ASSERT(success == FALSE);
 
   TEST_ASSERT(tab->used == used);
@@ -625,7 +625,7 @@ test_nvtable_indirect()
   tab = nv_table_new(STATIC_VALUES, STATIC_VALUES, 192);
   used = tab->used;
 
-  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), STATIC_HANDLE, 0, 1, 126);
+  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), STATIC_HANDLE, 0, 1, 126, NULL);
   TEST_ASSERT(success == TRUE);
   TEST_ASSERT(used == tab->used);
   TEST_NVTABLE_ASSERT(tab, STATIC_HANDLE, "", 0);
@@ -652,7 +652,6 @@ test_nvtable_others(void)
   gchar value[1024], name[16];
   gboolean success;
   gint i;
-  guint16 used;
 
   for (i = 0; i < sizeof(value); i++)
     value[i] = 'A' + (i % 26);
@@ -663,12 +662,12 @@ test_nvtable_others(void)
 
   /* one that fits */
   tab = nv_table_new(STATIC_VALUES, STATIC_VALUES, 256);
-  success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 128);
+  success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 128, NULL);
   TEST_ASSERT(success == TRUE);
 
-  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), STATIC_HANDLE, 0, 1, 126);
+  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), STATIC_HANDLE, 0, 1, 126, NULL);
   TEST_ASSERT(success == TRUE);
-  success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value + 32, 32);
+  success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value + 32, 32, NULL);
   TEST_ASSERT(success == TRUE);
 
   TEST_NVTABLE_ASSERT(tab, STATIC_HANDLE, value + 32, 32);
@@ -677,12 +676,12 @@ test_nvtable_others(void)
 
   /* one that doesn't fit */
   tab = nv_table_new(STATIC_VALUES, STATIC_VALUES, 192);
-  success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 128);
+  success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 128, NULL);
   TEST_ASSERT(success == TRUE);
 
-  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), STATIC_HANDLE, 0, 1, 126);
+  success = nv_table_add_value_indirect(tab, handle, name, strlen(name), STATIC_HANDLE, 0, 1, 126, NULL);
   TEST_ASSERT(success == TRUE);
-  success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value + 32, 32);
+  success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value + 32, 32, NULL);
   TEST_ASSERT(success == FALSE);
 
   TEST_NVTABLE_ASSERT(tab, STATIC_HANDLE, value, 128);
@@ -698,7 +697,6 @@ test_nvtable_lookup()
   gchar name[16];
   gboolean success;
   gint i;
-  guint16 used;
   NVHandle handles[100];
   gint x;
 
@@ -716,7 +714,7 @@ test_nvtable_lookup()
             }
           while (handle == 0);
           g_snprintf(name, sizeof(name), "VAL%d", handle);
-          success = nv_table_add_value(tab, handle, name, strlen(name), name, strlen(name));
+          success = nv_table_add_value(tab, handle, name, strlen(name), name, strlen(name), NULL);
           TEST_ASSERT(success == TRUE);
           handles[i] = handle;
         }

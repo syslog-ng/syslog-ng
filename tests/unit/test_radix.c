@@ -21,7 +21,7 @@ r_print_pnode(RNode *node, int depth)
   for (i = 0; i < depth; i++)
     printf(" ");
 
-  printf("%dPNODE: %d('%s') => '%s'\n", depth, node->parser->type, log_msg_get_value_name(node->parser->handle), (char *)node->value);
+  printf("%dPNODE: %d('%s') => '%s'\n", depth, node->parser->type, log_msg_get_value_name(node->parser->handle, NULL), (char *)node->value);
 
   for (i = 0; i < node->num_children; i++)
     r_print_node(node->children[i], depth + 1);
@@ -114,7 +114,7 @@ test_search_matches(RNode *root, gchar *key, gchar *name1, ...)
       for (i = 0; i < matches->len; i++)
         {
           match = &g_array_index(matches, RParserMatch, i);
-          match_name = log_msg_get_value_name(match->handle);
+          match_name = log_msg_get_value_name(match->handle, NULL);
           if (match_name)
             {
               if (!match->match)
@@ -142,7 +142,7 @@ test_search_matches(RNode *root, gchar *key, gchar *name1, ...)
               goto out;
             }
           match = &g_array_index(matches, RParserMatch, i);
-          match_name = log_msg_get_value_name(match->handle);
+          match_name = log_msg_get_value_name(match->handle, NULL);
 
           if (strcmp(match_name, name) != 0)
             {

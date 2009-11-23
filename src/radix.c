@@ -616,7 +616,7 @@ r_insert_node(RNode *root, gchar *key, gpointer value, gboolean parser, RNodeGet
                       /* FIXME: print parser type in string format */
                       msg_error("Duplicate parser node in radix tree",
                                 evt_tag_int("type", node->parser->type),
-                                evt_tag_str("name", log_msg_get_value_name(node->parser->handle)),
+                                evt_tag_str("name", log_msg_get_value_name(node->parser->handle, NULL)),
                                 evt_tag_str("value", value_func ? value_func(value) : "unknown"),
                                 NULL);
                     }

@@ -484,22 +484,27 @@ log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
   LogTemplate *template = NULL;
   LogStamp *stamp;
   guint32 seq_num;
-  
+  static NVHandle meta_seqid = 0;
+
+  if (!meta_seqid)
+    meta_seqid = log_msg_get_value_handle(".SDATA.meta.sequenceId");
+
   if (lm->flags & LF_LOCAL)
     {
       seq_num = self->seq_num;
     }
   else
     {
-      const gchar *sequence_id;
-      
-      sequence_id = log_msg_lookup_sdata(lm, "meta.sequenceId", 15);
-      if (sequence_id)
-        seq_num = strtol(sequence_id, NULL, 10);
+      const gchar *seqid;
+      gssize seqid_length;
+
+      seqid = log_msg_get_value(lm, meta_seqid, &seqid_length);
+      seqid = APPEND_ZERO(seqid, seqid_length);
+      if (seqid[0])
+        seq_num = strtol(seqid, NULL, 10);
       else
         seq_num = 0;
     }
-
   
   /* no template was specified, use default */
   if (self->options->use_time_recvd)
@@ -523,7 +528,8 @@ log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
       log_writer_append_value(result, lm, LM_V_PROGRAM, TRUE, TRUE);
       log_writer_append_value(result, lm, LM_V_PID, TRUE, TRUE);
       log_writer_append_value(result, lm, LM_V_MSGID, TRUE, TRUE);
-      
+
+#if 0
       if (lm->flags & LF_LOCAL)
         {
           gchar sequence_id[16];
@@ -531,6 +537,7 @@ log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
           g_snprintf(sequence_id, sizeof(sequence_id), "%d", seq_num);
           log_msg_update_sdata(lm, "meta", "sequenceId", sequence_id);
         }
+#endif
       len = result->len;
       log_msg_append_format_sdata(lm, result);
       if (len == result->len)
@@ -552,19 +559,22 @@ log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
                                      seq_num,
                                      result);
         }
-      else if (lm->message_len != 0)
+      else
         {
           const gchar *p;
           gssize len;
 
-          g_string_append_c(result, ' ');
-          if (lm->flags & LF_UTF8)
-            g_string_append_len(result, "\xEF\xBB\xBF", 3);
-
           p = log_msg_get_value(lm, LM_V_MESSAGE, &len);
-          g_string_append_len(result, p, len);
+          g_string_append_c(result, ' ');
+          if (len != 0)
+            {
+              if (lm->flags & LF_UTF8)
+                g_string_append_len(result, "\xEF\xBB\xBF", 3);
+
+              g_string_append_len(result, p, len);
+            }
+          g_string_append_c(result, '\n');
         }
-      g_string_append_c(result, '\n');
     }
   else
     {

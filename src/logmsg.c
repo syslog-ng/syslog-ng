@@ -71,21 +71,125 @@ const gchar *builtin_value_names[] =
   NULL,
 };
 
+enum
+{
+  LM_VF_SDATA = 0x0001,
+  LM_VF_MATCH = 0x0002,
+};
+
 static NVRegistry *logmsg_registry;
 static const char sd_prefix[] = ".SDATA.";
 const gint sd_prefix_len = sizeof(sd_prefix) - 1;
 
+static void
+log_msg_update_sdata(LogMessage *self, NVHandle handle, const gchar *name, gssize name_len)
+{
+  guint8 flags;
+
+  flags = nv_registry_get_handle_flags(logmsg_registry, handle);
+  if (flags & LM_VF_SDATA)
+    {
+      guint16 alloc_sdata;
+      guint16 prefix_and_block_len;
+      gint i;
+      const gchar *dot;
+
+      /* this was a structured data element, insert a ref to the sdata array */
+
+      if (self->num_sdata == 255)
+        {
+          msg_error("syslog-ng only supports 255 SD elements right now, just drop an email to the mailing list that it was not enough with your use-case so we can increase it", NULL);
+          return;
+        }
+
+      if (self->alloc_sdata <= self->num_sdata)
+        {
+          alloc_sdata = MAX(self->num_sdata + 1, (self->num_sdata + 8) & ~7);
+          if (alloc_sdata > 255)
+            alloc_sdata = 255;
+        }
+      else
+        alloc_sdata = self->alloc_sdata;
+
+      if (log_msg_chk_flag(self, LF_OWN_SDATA) && self->sdata)
+        {
+          if (self->alloc_sdata < alloc_sdata)
+            {
+              self->sdata = g_realloc(self->sdata, alloc_sdata * sizeof(self->sdata[0]));
+              memset(&self->sdata[self->alloc_sdata], 0, (alloc_sdata - self->alloc_sdata) * sizeof(self->sdata[0]));
+            }
+        }
+      else
+        {
+          NVHandle *sdata;
+
+          sdata = g_malloc(alloc_sdata * sizeof(self->sdata[0]));
+          if (self->num_sdata)
+            memcpy(sdata, self->sdata, self->num_sdata * sizeof(self->sdata[0]));
+          memset(&sdata[self->num_sdata], 0, sizeof(self->sdata[0]) * (self->alloc_sdata - self->num_sdata));
+          self->sdata = sdata;
+          log_msg_set_flag(self, LF_OWN_SDATA);
+        }
+      self->alloc_sdata = alloc_sdata;
+
+      /* ok, we have our own SDATA array now which has at least one free slot */
+
+      if (!self->initial_parse)
+        {
+          dot = memrchr(name, '.', name_len);
+          prefix_and_block_len = dot - name;
+
+          for (i = self->num_sdata - 1; i >= 0; i--)
+            {
+              gssize sdata_name_len;
+              const gchar *sdata_name;
+
+              sdata_name = log_msg_get_value_name(self->sdata[i], &sdata_name_len);
+              if (sdata_name_len > prefix_and_block_len &&
+                  strncmp(sdata_name, name, prefix_and_block_len) == 0)
+                {
+                  /* ok we have found the last SDATA entry that has the same block */
+                  break;
+                }
+            }
+        }
+      else
+        i = -1;
+
+      if (i >= 0)
+        {
+          memmove(&self->sdata[i+1], &self->sdata[i], (self->num_sdata - i) * sizeof(self->sdata[0]));
+          self->sdata[i] = handle;
+        }
+      else
+        {
+          self->sdata[self->num_sdata] = handle;
+        }
+      self->num_sdata++;
+    }
+
+}
 
 NVHandle
 log_msg_get_value_handle(const gchar *value_name)
 {
-  return nv_registry_get_value_handle(logmsg_registry, value_name);
+  NVHandle handle;
+
+  handle = nv_registry_get_value_handle(logmsg_registry, value_name);
+
+  /* check if name starts with sd_prefix and has at least one additional character */
+  if (strncmp(value_name, sd_prefix, sizeof(sd_prefix) - 1) == 0 && value_name[6])
+    {
+      nv_registry_set_handle_flags(logmsg_registry, handle, LM_VF_SDATA);
+    }
+
+  return handle;
 }
 
 const gchar *
-log_msg_get_value_name(NVHandle handle)
+log_msg_get_value_name(NVHandle handle, gssize *name_len)
 {
-  return nv_registry_get_value_name(logmsg_registry, handle, NULL);
+  return nv_registry_get_value_name(logmsg_registry, handle, name_len);
 }
 
 void
@@ -93,11 +197,12 @@ log_msg_set_value(LogMessage *self, NVHandle handle, const gchar *value, gssize 
 {
   const gchar *name;
   gssize name_len;
+  gboolean new_entry = FALSE;
 
   if (handle == LM_V_NONE)
     return;
 
-  name = nv_registry_get_value_name(logmsg_registry, handle, &name_len);
+  name = log_msg_get_value_name(handle, &name_len);
 
   if (value_len < 0)
     value_len = strlen(value);
@@ -110,7 +215,7 @@ log_msg_set_value(LogMessage *self, NVHandle handle, const gchar *value, gssize 
 
   do
     {
-      if (!nv_table_add_value(self->payload, handle, name, name_len, value, value_len))
+      if (!nv_table_add_value(self->payload, handle, name, name_len, value, value_len, &new_entry))
         {
           /* error allocating string in payload, reallocate */
           self->payload = nv_table_realloc(self->payload);
@@ -121,6 +226,9 @@ log_msg_set_value(LogMessage *self, NVHandle handle, const gchar *value, gssize 
         }
     }
   while (1);
+
+  if (new_entry)
+    log_msg_update_sdata(self, handle, name, name_len);
 }
 
 void
@@ -128,13 +236,14 @@ log_msg_set_value_indirect(LogMessage *self, NVHandle handle, NVHandle ref_handl
 {
   const gchar *name;
   gssize name_len;
+  gboolean new_entry = FALSE;
 
   if (handle == LM_V_NONE)
     return;
 
   g_assert(handle >= LM_V_MAX);
 
-  name = nv_registry_get_value_name(logmsg_registry, handle, &name_len);
+  name = log_msg_get_value_name(handle, &name_len);
 
   if (!log_msg_chk_flag(self, LF_OWN_PAYLOAD))
     {
@@ -144,7 +253,7 @@ log_msg_set_value_indirect(LogMessage *self, NVHandle handle, NVHandle ref_handl
 
   do
     {
-      if (!nv_table_add_value_indirect(self->payload, handle, name, name_len, ref_handle, type, ofs, len))
+      if (!nv_table_add_value_indirect(self->payload, handle, name, name_len, ref_handle, type, ofs, len, &new_entry))
         {
           /* error allocating string in payload, reallocate */
           self->payload = nv_table_realloc(self->payload);
@@ -155,6 +264,9 @@ log_msg_set_value_indirect(LogMessage *self, NVHandle handle, NVHandle ref_handl
         }
     }
   while (1);
+
+  if (new_entry)
+    log_msg_update_sdata(self, handle, name, name_len);
 }
 
 NVHandle match_handles[256];
@@ -270,137 +382,60 @@ log_msg_is_tag_by_name(LogMessage *self, const gchar *name)
   return log_msg_is_tag_by_id(self, log_tags_get_by_name(name));
 }
 
-struct  _LogMessageSDParam
-{
-  LogMessageSDParam *next_param;
-  gchar *name;
-  gchar *value;
-};
-
-struct _LogMessageSDElement
-{
-  LogMessageSDElement *next_element;
-  gchar *name;
-  LogMessageSDParam *params;
-};
-
-
-/* SD parameters  */
-static LogMessageSDParam *
-log_msg_sd_param_new(const gchar *param_name, const gchar *param_value)
-{
-  LogMessageSDParam *self = g_new0(LogMessageSDParam, 1);
-
-  self->next_param = NULL;
-  self->name = g_strdup(param_name);
-  self->value = g_strdup(param_value);
-  return self;
-}
-
-static void
-log_msg_sd_param_free(LogMessageSDParam *self)
-{
-  g_free(self->name);
-  g_free(self->value);
-  g_free(self);
-}
-
-static LogMessageSDParam *
-log_msg_sd_param_append(LogMessageSDParam *self, const gchar *param_name, const gchar *param_value)
-{
-  g_assert(self);
-  g_assert(!self->next_param);
-
-  self->next_param = log_msg_sd_param_new(param_name, param_value);
-  return self->next_param;
-}
-
-/* SD elements */
-
-static LogMessageSDParam *
-log_msg_sd_element_lookup(LogMessageSDElement *self, const gchar *param_name)
-{
-  LogMessageSDParam *param = self->params;
-  
-  while (param && strcmp(param->name, param_name) != 0)
-    param = param->next_param;
-  return param;
-}
-
-static LogMessageSDElement *
-log_msg_sd_element_new(const gchar *element_name)
-{
-  LogMessageSDElement *self = g_new0(LogMessageSDElement, 1);
-
-  self->params = NULL;
-  self->next_element = NULL;
-  self->name = g_strdup(element_name);
-  return self;
-}
-
-static void
-log_msg_sd_element_free(LogMessageSDElement *self)
-{
-  LogMessageSDParam *param, *param_next;
-  
-  param = self->params;
-  while (param)
-    {
-      param_next = param->next_param;
-      log_msg_sd_param_free(param);
-      param = param_next;
-    }
-  g_free(self->name);
-  g_free(self);
-}
-
-static void 
-log_msg_sd_elements_free(LogMessageSDElement *elems)
-{
-  LogMessageSDElement *elem, *elem_next;
-  
-  elem = elems;
-  while (elem)
-    {
-      elem_next = elem->next_element;
-      log_msg_sd_element_free(elem);
-      elem = elem_next;
-    }
-}
-
-static LogMessageSDElement *
-log_msg_sd_element_append(LogMessageSDElement *self, const gchar *elem_name)
-{
-  g_assert(!self->next_element);
-
-  self->next_element = log_msg_sd_element_new(elem_name);
-  return self->next_element;
-}
-
+/* structured data elements */
 
 void
 log_msg_append_format_sdata(LogMessage *self, GString *result)
 {
-  LogMessageSDElement *element = NULL;
-  LogMessageSDParam *param = NULL;
+  const gchar *value;
+  const gchar *sdata_name, *sdata_elem, *sdata_param, *cur_elem = NULL, *dot;
+  gssize sdata_name_len, sdata_elem_len, sdata_param_len, cur_elem_len = 0, len;
+  gint i;
 
-  element = self->sdata;
-  while (element)
+  for (i = 0; i < self->num_sdata; i++)
     {
-      g_string_append_c(result, '[');
-      g_string_append(result, element->name);
-      param = element->params;
-      while (param)
+      NVHandle handle = self->sdata[i];
+
+      sdata_name = log_msg_get_value_name(handle, &sdata_name_len);
+
+      /* sdata_name always begins with .SDATA. */
+      g_assert(sdata_name_len > 6);
+
+      sdata_elem = sdata_name + 7;
+      dot = memchr(sdata_elem, '.', sdata_name_len - 7);
+      g_assert(dot != NULL);
+      sdata_elem_len = dot - sdata_elem;
+
+      sdata_param = dot + 1;
+      sdata_param_len = sdata_name_len - (dot + 1 - sdata_name);
+
+      if (!cur_elem || sdata_elem_len != cur_elem_len || strncmp(cur_elem, sdata_elem, sdata_elem_len) != 0)
         {
-          g_string_append_c(result, ' ');
-          g_string_append(result, param->name);
-          g_string_append(result, "=\"");
-          g_string_append(result, param->value);
-          g_string_append_c(result, '"');
-          param = param->next_param;
+          if (cur_elem)
+            {
+              /* close the previous block */
+              g_string_append_c(result, ']');
+            }
+
+          /* the current SD block has changed, emit a start */
+          g_string_append_c(result, '[');
+          g_string_append_len(result, sdata_elem, sdata_elem_len);
+
+          /* update cur_elem */
+          cur_elem = sdata_elem;
+          cur_elem_len = sdata_elem_len;
         }
+      g_string_append_c(result, ' ');
+      g_string_append_len(result, sdata_param, sdata_param_len);
+      g_string_append(result, "=\"");
+
+      value = log_msg_get_value(self, handle, &len);
+      g_string_append_len(result, value, len);
+      g_string_append_c(result, '"');
+    }
+  if (cur_elem)
+    {
       g_string_append_c(result, ']');
-      element = element->next_element;
     }
 }
 
@@ -409,174 +444,6 @@ log_msg_format_sdata(LogMessage *self, GString *result)
 {
   g_string_truncate(result, 0);
   log_msg_append_format_sdata(self, result);
-}
-
-static LogMessageSDElement *
-log_msg_lookup_sdata_element(LogMessage *self, const gchar *elem_name)
-{
-  LogMessageSDElement *element = self->sdata;
-  
-  while (element && strcmp(element->name, elem_name) != 0)
-    element = element->next_element;
-
-  return element;
-}
-
-
-/**
- *
- * This function looks up a structured data element based on a query string
- * composed of "SD-ID.SD-PARAM", a syntax used in user supplied templates.
- *
- * NOTE: this function does not care about LF_OWN_SDATA, it goes
- * straight to self->sd_elements. In order to treat LF_OWN_SDATA
- * properly use the log_msg_lookup_sdata_value function below.
- **/
-static gchar *
-log_msg_lookup_sdata_internal(LogMessage *self, const gchar *query, gssize query_len)
-{
-  gchar *elem_name, *param_name, *ret = NULL;
-  
-  if (query_len < 0)
-    query_len = strlen(query);
-
-  elem_name = g_strndup(query, query_len);
-  param_name = memchr(elem_name, '.', query_len);
-  if (param_name != NULL)
-    {
-      LogMessageSDElement *element;
-
-      *param_name = '\0';
-      param_name++;
-      element = log_msg_lookup_sdata_element(self, elem_name);
-      if (element)
-        {
-          LogMessageSDParam *param = log_msg_sd_element_lookup(element, param_name);
-          ret = param ? param->value : NULL;
-        }
-     }
-  g_free(elem_name);
-  return ret;
-}
-
-gchar * 
-log_msg_lookup_sdata(LogMessage *self, const gchar *query, gssize query_len)
-{
-  gchar *value = NULL;
-
-  if (log_msg_chk_flag(self, LF_OWN_SDATA))
-    {
-      if (self->sdata)
-        value = log_msg_lookup_sdata_internal(self, query, query_len);
-    }
-  else if (self->original)
-     value = log_msg_lookup_sdata_internal(self->original, query, query_len);               
-  return value;
-}
-
-void 
-log_msg_set_sdata(LogMessage *self, LogMessageSDElement *new_sdata)
-{
-  if (!log_msg_chk_flag(self, LF_OWN_SDATA))
-    {
-      self->sdata = NULL;
-      log_msg_set_flag(self, LF_OWN_SDATA);
-    }
-  if (self->sdata)
-    log_msg_sd_elements_free(self->sdata);
-  self->sdata = new_sdata;
-}
-
-
-static void 
-log_msg_clone_sdata(LogMessage *msg)
-{
-  LogMessageSDElement *element = NULL;
-  LogMessageSDElement *new_element = NULL;
-  LogMessageSDParam *param = NULL;
-  LogMessageSDParam *new_param = NULL;
-  
-  g_assert((msg->flags & LF_OWN_SDATA) == 0);
- 
-  element = msg->sdata;
-  while (element)
-    {
-      if (!new_element)
-        { 
-          /* First element in the copy, so store the pointer in the log message*/
-          msg->sdata = new_element = log_msg_sd_element_new(element->name);
-        }
-      else
-        { 
-          /* Append the next element to the previous */
-          new_element = log_msg_sd_element_append(new_element, element->name);
-        }
-        
-      new_param = NULL;
-      while (param)
-        {
-          if (new_param)
-            new_param = log_msg_sd_param_append(new_param, param->name, param->value);
-          else
-            new_element->params = new_param = log_msg_sd_param_new(param->name, param->value);
-          param = param->next_param;
-        }
-      element = element->next_element;
-    }
-  log_msg_set_flag(msg, LF_OWN_SDATA);
-}
-
-void 
-log_msg_update_sdata(LogMessage *msg, const gchar *elem_name, const gchar *param_name, const gchar *param_value)
-{
-  LogMessageSDElement *element = NULL;
-  LogMessageSDParam *param = NULL;
-
-  if (!log_msg_chk_flag(msg, LF_OWN_SDATA))
-    log_msg_clone_sdata(msg);
-
-  element = log_msg_lookup_sdata_element(msg, elem_name);
-  if (!element)
-    {
-      if (msg->sdata)
-        { 
-          /* sd_elements contains some elements */
-          element = msg->sdata;
-          /* find the last one*/
-          while (element->next_element != NULL)
-            element = element->next_element;
-          element = log_msg_sd_element_append(element, elem_name);
-        }
-      else
-        { 
-          /* sd_elements contain no elements so create a new one and store the pointer in the msg structure*/
-          element = log_msg_sd_element_new(elem_name);
-          msg->sdata = element; 
-        }
-    }
-
-  /* no try to find the param in the current element */
-  param = log_msg_sd_element_lookup(element, param_name);
-  if (!param)
-    { 
-      if (element->params)
-        {
-          /* the element has no such param */
-          param = element->params;
-          while (param->next_param != NULL)
-            param = param->next_param;
-          log_msg_sd_param_append(param, param_name, param_value);
-        }
-      else
-        {
-          element->params = log_msg_sd_param_new(param_name, param_value);
-        }
-    }
-  else
-    {
-      g_free(param->value);
-      param->value = g_strdup(param_value);
-    }
 }
 
 static inline void
@@ -1188,18 +1055,17 @@ log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, guint flag
   const guchar *src = *data;
   /* ASCII string */
   gchar sd_id_name[33];
+  gsize sd_id_len;
   gchar sd_param_name[33];
+  gsize sd_param_len;
 
   /* UTF-8 string */
   gchar sd_param_value[256];
+  gsize sd_param_value_len;
+  gchar sd_value_name[66];
   
   guint open_sd = 0;
   gint left = *length, pos;
-  LogMessageSDElement *element = NULL; 
-  LogMessageSDParam *param = NULL;
-
-  /* this function will allocate the first element pointer */
-  g_assert(!self->sdata);
 
   if (left && src[0] == '-')
     {
@@ -1238,22 +1104,16 @@ log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, guint flag
                 }
               sd_step_and_store(self, &src, &left);
             }
- 
-          if (pos > 0)
-            {
-              sd_id_name[pos] = 0;
-              if (element)
-                {
-                  element = log_msg_sd_element_append(element, sd_id_name);
-                }
-              else
-                {
-                  self->sdata = log_msg_sd_element_new(sd_id_name);
-                  element = self->sdata;
-                } 
-              /* start a new parameter list to the new element */
-              param = NULL;
-            }
+
+          if (pos == 0)
+            goto error;
+
+          sd_id_name[pos] = 0;
+          sd_id_len = pos;
+          strcpy(sd_value_name, sd_prefix);
+          /* this strcat is safe, as sd_id_name is at most 32 chars */
+          strncpy(sd_value_name + sd_prefix_len, sd_id_name, sizeof(sd_value_name) - sd_prefix_len);
+          sd_value_name[sd_prefix_len + pos] = '.';
 
           /* read sd-element */
           while (left && *src != ']')
@@ -1287,45 +1147,59 @@ log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, guint flag
                   sd_step_and_store(self, &src, &left);
                 }
               sd_param_name[pos] = 0;
+              sd_param_len = pos;
+              strncpy(&sd_value_name[sd_prefix_len + 1 + sd_id_len], sd_param_name, sizeof(sd_value_name) - sd_prefix_len - 1 - sd_id_len);
 
               if (left && *src == '=')
                 sd_step_and_store(self, &src, &left);
               else
                 goto error;
 
-             /* read sd-param-value */
+              /* read sd-param-value */
 
-             if (left && *src == '"')
-               {
-                 /* opening quote */
-                 sd_step_and_store(self, &src, &left);
-                 pos = 0;
+              if (left && *src == '"')
+                {
+                  gboolean quote = FALSE;
+                  /* opening quote */
+                  sd_step_and_store(self, &src, &left);
+                  pos = 0;
 
-                 while (left && *src != '"')
-                   {
-                     if (pos < sizeof(sd_param_value))
+                  while (left && *src != '"' && !quote)
+                    {
+                      if (!quote && *src == '\"')
+                        {
+                          quote = TRUE;
+                        }
+                      else
                        {
-                         sd_param_value[pos] = *src;
-                         pos++;
+                         if (quote && *src != '"' && *src != ']' && *src != '\\' && pos < sizeof(sd_param_value))
+                           {
+                             sd_param_value[pos] = '\\';
+                             pos++;
+                           }
+                         if (pos < sizeof(sd_param_value))
+                           {
+                             sd_param_value[pos] = *src;
+                             pos++;
+                           }
+                         quote = FALSE;
                        }
-                     sd_step_and_store(self, &src, &left);
-                   }
-                 sd_param_value[pos] = 0;
-                 if (left && *src == '"')/* closing quote */
-                   sd_step_and_store(self, &src, &left);
-                else
-                   goto error;
-               }
-             else
-               {
-                 goto error;
-               }
+                      sd_step_and_store(self, &src, &left);
+                    }
+                  sd_param_value[pos] = 0;
+                  sd_param_value_len = pos;
 
-             if (param)
-               param = log_msg_sd_param_append(param, sd_param_name, sd_param_value);
-             else
-               param = element->params = log_msg_sd_param_new(sd_param_name, sd_param_value);
+                  if (left && *src == '"')/* closing quote */
+                    sd_step_and_store(self, &src, &left);
+                  else
+                    goto error;
+                }
+              else
+                {
+                  goto error;
+                }
 
+              log_msg_set_value(self, log_msg_get_value_handle(sd_value_name), sd_param_value, sd_param_value_len);
             }
             
           if (left && *src == ']')
@@ -1586,10 +1460,13 @@ log_msg_parse(LogMessage *self,
   if (flags & LP_ASSUME_UTF8)
     self->flags |= LF_UTF8;
 
+  self->initial_parse = TRUE;
   if (flags & LP_SYSLOG_PROTOCOL)
     success = log_msg_parse_syslog_proto(self, data, length, flags, assume_timezone, default_pri);
   else
     success = log_msg_parse_legacy(self, data, length, flags, bad_hostname, assume_timezone, default_pri);
+  self->initial_parse = FALSE;
+
   if (G_UNLIKELY(!success))
     {
       gchar buf[2048];
@@ -1606,7 +1483,8 @@ log_msg_parse(LogMessage *self,
 
       if (self->sdata)
         {
-          log_msg_sd_elements_free(self->sdata);
+          g_free(self->sdata);
+          self->alloc_sdata = self->num_sdata = 0;
           self->sdata = NULL;
         }
       self->pri = LOG_SYSLOG | LOG_ERR;
@@ -1643,7 +1521,7 @@ log_msg_free(LogMessage *self)
     g_free(self->tags);
 
   if (log_msg_chk_flag(self, LF_OWN_SDATA) && self->sdata)
-    log_msg_sd_elements_free(self->sdata);
+    g_free(self->sdata);
   if (log_msg_chk_flag(self, LF_OWN_SADDR))
     g_sockaddr_unref(self->saddr);
 
