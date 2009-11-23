@@ -24,7 +24,6 @@
 #include "compat.h"
 
 #include <fcntl.h>
-#include <unistd.h>
 #include <ctype.h>
 #include <string.h>
 

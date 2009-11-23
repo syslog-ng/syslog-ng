@@ -26,11 +26,18 @@
 
 #include <config.h>
 #include <sys/types.h>
+#include <unistd.h>
 
 /* NOTE: bb__ prefix is used for function names that might clash with system
  * supplied symbols. */
 
 #if !HAVE_PREAD || HAVE_BROKEN_PREAD
+# ifdef pread
+#  undef pread
+# endif
+# ifdef pwrite
+#  undef pwrite
+# endif
 #define pread bb__pread
 #define pwrite bb__pwrite
 
