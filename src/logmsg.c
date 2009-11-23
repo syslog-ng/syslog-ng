@@ -82,92 +82,95 @@ static const char sd_prefix[] = ".SDATA.";
 const gint sd_prefix_len = sizeof(sd_prefix) - 1;
 
 static void
+log_msg_update_sdata_slow(LogMessage *self, NVHandle handle, const gchar *name, gssize name_len)
+{
+  guint16 alloc_sdata;
+  guint16 prefix_and_block_len;
+  gint i;
+  const gchar *dot;
+
+  /* this was a structured data element, insert a ref to the sdata array */
+
+  if (self->num_sdata == 255)
+    {
+      msg_error("syslog-ng only supports 255 SD elements right now, just drop an email to the mailing list that it was not enough with your use-case so we can increase it", NULL);
+      return;
+    }
+
+  if (self->alloc_sdata <= self->num_sdata)
+    {
+      alloc_sdata = MAX(self->num_sdata + 1, (self->num_sdata + 8) & ~7);
+      if (alloc_sdata > 255)
+        alloc_sdata = 255;
+    }
+  else
+    alloc_sdata = self->alloc_sdata;
+
+  if (log_msg_chk_flag(self, LF_OWN_SDATA) && self->sdata)
+    {
+      if (self->alloc_sdata < alloc_sdata)
+        {
+          self->sdata = g_realloc(self->sdata, alloc_sdata * sizeof(self->sdata[0]));
+          memset(&self->sdata[self->alloc_sdata], 0, (alloc_sdata - self->alloc_sdata) * sizeof(self->sdata[0]));
+        }
+    }
+  else
+    {
+      NVHandle *sdata;
+
+      sdata = g_malloc(alloc_sdata * sizeof(self->sdata[0]));
+      if (self->num_sdata)
+        memcpy(sdata, self->sdata, self->num_sdata * sizeof(self->sdata[0]));
+      memset(&sdata[self->num_sdata], 0, sizeof(self->sdata[0]) * (self->alloc_sdata - self->num_sdata));
+      self->sdata = sdata;
+      log_msg_set_flag(self, LF_OWN_SDATA);
+    }
+  self->alloc_sdata = alloc_sdata;
+
+  /* ok, we have our own SDATA array now which has at least one free slot */
+
+  if (!self->initial_parse)
+    {
+      dot = memrchr(name, '.', name_len);
+      prefix_and_block_len = dot - name;
+
+      for (i = self->num_sdata - 1; i >= 0; i--)
+        {
+          gssize sdata_name_len;
+          const gchar *sdata_name;
+
+          sdata_name = log_msg_get_value_name(self->sdata[i], &sdata_name_len);
+          if (sdata_name_len > prefix_and_block_len &&
+              strncmp(sdata_name, name, prefix_and_block_len) == 0)
+            {
+              /* ok we have found the last SDATA entry that has the same block */
+              break;
+            }
+        }
+    }
+  else
+    i = -1;
+
+  if (i >= 0)
+    {
+      memmove(&self->sdata[i+1], &self->sdata[i], (self->num_sdata - i) * sizeof(self->sdata[0]));
+      self->sdata[i] = handle;
+    }
+  else
+    {
+      self->sdata[self->num_sdata] = handle;
+    }
+  self->num_sdata++;
+}
+
+static inline void
 log_msg_update_sdata(LogMessage *self, NVHandle handle, const gchar *name, gssize name_len)
 {
   guint8 flags;
 
   flags = nv_registry_get_handle_flags(logmsg_registry, handle);
-  if (flags & LM_VF_SDATA)
-    {
-      guint16 alloc_sdata;
-      guint16 prefix_and_block_len;
-      gint i;
-      const gchar *dot;
-
-      /* this was a structured data element, insert a ref to the sdata array */
-
-      if (self->num_sdata == 255)
-        {
-          msg_error("syslog-ng only supports 255 SD elements right now, just drop an email to the mailing list that it was not enough with your use-case so we can increase it", NULL);
-          return;
-        }
-
-      if (self->alloc_sdata <= self->num_sdata)
-        {
-          alloc_sdata = MAX(self->num_sdata + 1, (self->num_sdata + 8) & ~7);
-          if (alloc_sdata > 255)
-            alloc_sdata = 255;
-        }
-      else
-        alloc_sdata = self->alloc_sdata;
-
-      if (log_msg_chk_flag(self, LF_OWN_SDATA) && self->sdata)
-        {
-          if (self->alloc_sdata < alloc_sdata)
-            {
-              self->sdata = g_realloc(self->sdata, alloc_sdata * sizeof(self->sdata[0]));
-              memset(&self->sdata[self->alloc_sdata], 0, (alloc_sdata - self->alloc_sdata) * sizeof(self->sdata[0]));
-            }
-        }
-      else
-        {
-          NVHandle *sdata;
-
-          sdata = g_malloc(alloc_sdata * sizeof(self->sdata[0]));
-          if (self->num_sdata)
-            memcpy(sdata, self->sdata, self->num_sdata * sizeof(self->sdata[0]));
-          memset(&sdata[self->num_sdata], 0, sizeof(self->sdata[0]) * (self->alloc_sdata - self->num_sdata));
-          self->sdata = sdata;
-          log_msg_set_flag(self, LF_OWN_SDATA);
-        }
-      self->alloc_sdata = alloc_sdata;
-
-      /* ok, we have our own SDATA array now which has at least one free slot */
-
-      if (!self->initial_parse)
-        {
-          dot = memrchr(name, '.', name_len);
-          prefix_and_block_len = dot - name;
-
-          for (i = self->num_sdata - 1; i >= 0; i--)
-            {
-              gssize sdata_name_len;
-              const gchar *sdata_name;
-
-              sdata_name = log_msg_get_value_name(self->sdata[i], &sdata_name_len);
-              if (sdata_name_len > prefix_and_block_len &&
-                  strncmp(sdata_name, name, prefix_and_block_len) == 0)
-                {
-                  /* ok we have found the last SDATA entry that has the same block */
-                  break;
-                }
-            }
-        }
-      else
-        i = -1;
-
-      if (i >= 0)
-        {
-          memmove(&self->sdata[i+1], &self->sdata[i], (self->num_sdata - i) * sizeof(self->sdata[0]));
-          self->sdata[i] = handle;
-        }
-      else
-        {
-          self->sdata[self->num_sdata] = handle;
-        }
-      self->num_sdata++;
-    }
-
+  if (G_UNLIKELY(flags & LM_VF_SDATA))
+    log_msg_update_sdata_slow(self, handle, name, name_len);
 }
 
 NVHandle

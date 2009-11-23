@@ -75,8 +75,8 @@ nv_registry_get_handle_flags(NVRegistry *self, NVHandle handle)
 {
   gchar *stored;
 
-  if (!handle)
-      return 0;
+  if (G_UNLIKELY(!handle))
+    return 0;
 
   stored = (gchar *) g_ptr_array_index(self->names, handle - 1);
   return stored[0];
@@ -87,7 +87,7 @@ nv_registry_set_handle_flags(NVRegistry *self, NVHandle handle, guint8 flags)
 {
   gchar *stored;
 
-  if (!handle)
+  if (G_UNLIKELY(!handle))
     return;
 
   stored = (gchar *) g_ptr_array_index(self->names, handle - 1);
@@ -99,7 +99,7 @@ nv_registry_get_value_name(NVRegistry *self, NVHandle handle, gssize *length)
 {
   gchar *stored;
 
-  if (!handle)
+  if (G_UNLIKELY(!handle))
     {
       if (length)
         *length = 4;
@@ -107,7 +107,7 @@ nv_registry_get_value_name(NVRegistry *self, NVHandle handle, gssize *length)
     }
 
   stored = (gchar *) g_ptr_array_index(self->names, handle - 1);
-  if (length)
+  if (G_LIKELY(length))
     *length = ((guint8 *) stored)[1];
   return stored + 2;
 }
@@ -168,7 +168,7 @@ nv_table_get_dyn_entries(NVTable *self)
   return (guint32 *) &self->static_entries[self->num_static_entries];
 }
 
-static gboolean
+static inline gboolean
 nv_table_alloc_check(NVTable *self, gsize alloc_size)
 {
   if (nv_table_get_bottom(self) - alloc_size < nv_table_get_ofs_table_top(self))
@@ -177,7 +177,7 @@ nv_table_alloc_check(NVTable *self, gsize alloc_size)
 }
 
 /* return the offset to a newly allocated payload string */
-static NVEntry *
+static inline NVEntry *
 nv_table_alloc_value(NVTable *self, gsize alloc_size)
 {
   NVEntry *entry;
@@ -228,7 +228,7 @@ nv_table_resolve_indirect(NVTable *self, NVEntry *entry, gssize *length)
   return referenced_value + entry->vindirect.ofs;
 }
 
-const gchar *
+const inline gchar *
 nv_table_resolve_entry(NVTable *self, NVEntry *entry, gssize *length)
 {
   if (!entry->indirect)
@@ -319,10 +319,10 @@ nv_table_drop_table_entry(NVTable *self, NVHandle handle, guint32 *dyn_slot)
   return TRUE;
 }
 
-static void
+static inline void
 nv_table_set_table_entry(NVTable *self, NVHandle handle, guint16 ofs, guint32 *dyn_slot)
 {
-  if (handle <= self->num_static_entries)
+  if (G_LIKELY(handle <= self->num_static_entries))
     {
       /* this is a statically allocated value, simply store the offset */
       self->static_entries[handle-1] = ofs;
@@ -375,7 +375,7 @@ nv_table_add_value(NVTable *self, NVHandle handle, const gchar *name, gsize name
   if (new_entry)
     *new_entry = FALSE;
   entry = nv_table_get_entry(self, handle, &dyn_slot);
-  if (!entry && !new_entry && value_len == 0)
+  if (G_UNLIKELY(!entry && !new_entry && value_len == 0))
     {
       /* we don't store zero length matches unless the caller is
        * interested in whether a new entry was created. It is used by
@@ -383,7 +383,7 @@ nv_table_add_value(NVTable *self, NVHandle handle, const gchar *name, gsize name
        * not-present SDATA was set */
       return TRUE;
     }
-  if (entry && !entry->indirect && entry->referenced)
+  if (G_UNLIKELY(entry && !entry->indirect && entry->referenced))
     {
       gpointer data[2] = { self, GUINT_TO_POINTER(handle) };
 
@@ -395,7 +395,7 @@ nv_table_add_value(NVTable *self, NVHandle handle, const gchar *name, gsize name
           return FALSE;
         }
     }
-  if (entry && (((guint) entry->alloc_len << NV_TABLE_SCALE)) >= value_len + NV_ENTRY_DIRECT_HDR + name_len + 2)
+  if (G_UNLIKELY(entry && (((guint) entry->alloc_len << NV_TABLE_SCALE)) >= value_len + NV_ENTRY_DIRECT_HDR + name_len + 2))
     {
       gchar *dst;
       /* this value already exists and the new value fits in the old space */
@@ -427,7 +427,7 @@ nv_table_add_value(NVTable *self, NVHandle handle, const gchar *name, gsize name
   if (!nv_table_reserve_table_entry(self, handle, dyn_slot))
     return FALSE;
   entry = nv_table_alloc_value(self, NV_ENTRY_DIRECT_HDR + name_len + value_len + 2);
-  if (!entry)
+  if (G_UNLIKELY(!entry))
     {
       nv_table_drop_table_entry(self, handle, dyn_slot);
       return FALSE;
