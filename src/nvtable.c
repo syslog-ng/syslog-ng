@@ -194,21 +194,6 @@ nv_table_alloc_value(NVTable *self, gsize alloc_size)
   return entry;
 }
 
-static gint
-cmp_uints(const void *p1, const void *p2)
-{
-  if (*(guint32 *) p1 < *(guint32 *) p2)
-    {
-      return -1;
-    }
-  else if (*(guint32 *) p1 > *(guint32 *) p2)
-    {
-      return 1;
-    }
-  else
-    return 0;
-}
-
 /* we only support single indirection */
 const gchar *
 nv_table_resolve_indirect(NVTable *self, NVEntry *entry, gssize *length)
@@ -255,13 +240,6 @@ nv_table_get_entry_slow(NVTable *self, NVHandle handle, guint32 **dyn_slot)
       return NULL;
     }
 
-  /* search for handle in the dynamic entries section */
-  if (!self->dyn_sorted)
-    {
-      qsort(dyn_entries, self->num_dyn_entries, sizeof(dyn_entries[0]), cmp_uints);
-      self->dyn_sorted = 1;
-    }
-
   /* open-coded binary search */
   *dyn_slot = NULL;
   l = 0;
@@ -291,30 +269,60 @@ nv_table_get_entry_slow(NVTable *self, NVHandle handle, guint32 **dyn_slot)
 }
 
 static gboolean
-nv_table_reserve_table_entry(NVTable *self, NVHandle handle, guint32 *dyn_slot)
+nv_table_reserve_table_entry(NVTable *self, NVHandle handle, guint32 **dyn_slot)
 {
-  if (!dyn_slot && handle > self->num_static_entries)
+  if (G_UNLIKELY(!(*dyn_slot) && handle > self->num_static_entries))
     {
       /* this is a dynamic value */
       guint32 *dyn_entries = nv_table_get_dyn_entries(self);;
+      gint l, h, m, ndx;
+      gboolean found = FALSE;
 
       if (!nv_table_alloc_check(self, sizeof(dyn_entries[0])))
         return FALSE;
 
-      if (self->num_dyn_entries > 0 && handle < NV_TABLE_DYNVALUE_HANDLE(dyn_entries[self->num_dyn_entries - 1]))
-        self->dyn_sorted = 0;
-      dyn_entries[self->num_dyn_entries] = (handle << 16) + 0;
-      self->num_dyn_entries++;
-    }
-  return TRUE;
-}
+      l = 0;
+      h = self->num_dyn_entries - 1;
+      ndx = -1;
+      while (l <= h)
+        {
+          guint16 mv;
 
-static gboolean
-nv_table_drop_table_entry(NVTable *self, NVHandle handle, guint32 *dyn_slot)
-{
-  if (!dyn_slot && handle > self->num_static_entries)
-    {
-      self->num_dyn_entries--;
+          m = (l+h) >> 1;
+          mv = NV_TABLE_DYNVALUE_HANDLE(dyn_entries[m]);
+
+          if (mv == handle)
+            {
+              ndx = m;
+              found = TRUE;
+              break;
+            }
+          else if (mv > handle)
+            {
+              h = m - 1;
+            }
+          else
+            {
+              l = m + 1;
+            }
+        }
+      /* if we find the proper slot we set that, if we don't, we insert a new entry */
+      if (!found)
+        ndx = l;
+
+      g_assert(ndx >= 0 && ndx <= self->num_dyn_entries);
+      if (ndx < self->num_dyn_entries)
+        {
+          memmove(&dyn_entries[ndx + 1], &dyn_entries[ndx], (self->num_dyn_entries - ndx) * sizeof(dyn_entries[0]));
+        }
+
+      *dyn_slot = &dyn_entries[ndx];
+
+      /* we set ofs to zero here, which means that the NVEntry won't
+         be found even if the slot is present in dyn_entries */
+      **dyn_slot = (handle << 16) + 0;
+      if (!found)
+        self->num_dyn_entries++;
     }
   return TRUE;
 }
@@ -330,13 +338,6 @@ nv_table_set_table_entry(NVTable *self, NVHandle handle, guint16 ofs, guint32 *d
   else
     {
       /* this is a dynamic value */
-
-      if (!dyn_slot)
-        {
-          guint32 *dyn_entries = nv_table_get_dyn_entries(self);;
-
-          dyn_slot = &dyn_entries[self->num_dyn_entries - 1];
-        }
       *dyn_slot = (handle << 16) + ofs;
     }
 }
@@ -424,12 +425,11 @@ nv_table_add_value(NVTable *self, NVHandle handle, const gchar *name, gsize name
 
   /* check if there's enough free space: size of the struct plus the
    * size needed for a dynamic table slot */
-  if (!nv_table_reserve_table_entry(self, handle, dyn_slot))
+  if (!nv_table_reserve_table_entry(self, handle, &dyn_slot))
     return FALSE;
   entry = nv_table_alloc_value(self, NV_ENTRY_DIRECT_HDR + name_len + value_len + 2);
   if (G_UNLIKELY(!entry))
     {
-      nv_table_drop_table_entry(self, handle, dyn_slot);
       return FALSE;
     }
 
@@ -513,12 +513,11 @@ nv_table_add_value_indirect(NVTable *self, NVHandle handle, const gchar *name, g
   else if (!entry && new_entry)
     *new_entry = TRUE;
 
-  if (!nv_table_reserve_table_entry(self, handle, dyn_slot))
+  if (!nv_table_reserve_table_entry(self, handle, &dyn_slot))
     return FALSE;
   entry = nv_table_alloc_value(self, NV_ENTRY_INDIRECT_HDR + name_len + 1);
   if (!entry)
     {
-      nv_table_drop_table_entry(self, handle, dyn_slot);
       return FALSE;
     }
 
@@ -603,7 +602,6 @@ nv_table_new(gint num_static_entries, gint num_dyn_values, gint init_length)
   self->used = 0;
   self->num_dyn_entries = 0;
   self->num_static_entries = NV_TABLE_BOUND_NUM_STATIC(num_static_entries);
-  self->dyn_sorted = TRUE;
   memset(&self->static_entries[0], 0, self->num_static_entries * sizeof(self->static_entries[0]));
   return self;
 }

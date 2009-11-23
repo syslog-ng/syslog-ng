@@ -117,7 +117,6 @@ struct _NVTable
   guint16 used;
   guint16 num_dyn_entries;
   guint8 num_static_entries;
-  guint8 dyn_sorted:1;
 
   /* variable data, see memory layout in the comment above */
   union
