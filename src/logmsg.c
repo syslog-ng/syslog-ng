@@ -28,6 +28,7 @@
 #include "timeutils.h"
 #include "tags.h"
 #include "nvtable.h"
+#include "stats.h"
 
 #include <sys/types.h>
 #include <time.h>
@@ -79,7 +80,11 @@ enum
 
 static NVRegistry *logmsg_registry;
 static const char sd_prefix[] = ".SDATA.";
-const gint sd_prefix_len = sizeof(sd_prefix) - 1;
+static const gint sd_prefix_len = sizeof(sd_prefix) - 1;
+/* statistics */
+static guint32 *count_msg_clones;
+static guint32 *count_payload_reallocs;
+static guint32 *count_sdata_updates;
 
 static void
 log_msg_update_sdata_slow(LogMessage *self, NVHandle handle, const gchar *name, gssize name_len)
@@ -91,6 +96,7 @@ log_msg_update_sdata_slow(LogMessage *self, NVHandle handle, const gchar *name, 
 
   /* this was a structured data element, insert a ref to the sdata array */
 
+  stats_counter_inc(count_sdata_updates);
   if (self->num_sdata == 255)
     {
       msg_error("syslog-ng only supports 255 SD elements right now, just drop an email to the mailing list that it was not enough with your use-case so we can increase it", NULL);
@@ -222,6 +228,7 @@ log_msg_set_value(LogMessage *self, NVHandle handle, const gchar *value, gssize 
         {
           /* error allocating string in payload, reallocate */
           self->payload = nv_table_realloc(self->payload);
+          stats_counter_inc(count_payload_reallocs);
         }
       else
         {
@@ -260,6 +267,7 @@ log_msg_set_value_indirect(LogMessage *self, NVHandle handle, NVHandle ref_handl
         {
           /* error allocating string in payload, reallocate */
           self->payload = nv_table_realloc(self->payload);
+          stats_counter_inc(count_payload_reallocs);
         }
       else
         {
@@ -1663,6 +1671,8 @@ LogMessage *
 log_msg_clone_cow(LogMessage *msg, const LogPathOptions *path_options)
 {
   LogMessage *self = g_new(LogMessage, 1);
+
+  stats_counter_inc(count_msg_clones);
   if ((msg->flags & LF_STATE_OWN_MASK) == 0)
     {
       /* the message we're cloning has no original content, everything
@@ -1782,4 +1792,8 @@ log_msg_global_init(void)
       g_snprintf(buf, sizeof(buf), "%d", i);
       match_handles[i] = nv_registry_get_value_handle(logmsg_registry, buf);
     }
+
+  stats_register_counter(0, SCS_GLOBAL, "msg_clones", NULL, SC_TYPE_PROCESSED, &count_msg_clones);
+  stats_register_counter(0, SCS_GLOBAL, "payload_reallocs", NULL, SC_TYPE_PROCESSED, &count_payload_reallocs);
+  stats_register_counter(0, SCS_GLOBAL, "sdata_updates", NULL, SC_TYPE_PROCESSED, &count_sdata_updates);
 }

@@ -59,6 +59,7 @@ enum
   SCS_GROUP          = 16,
   SCS_CENTER         = 17,
   SCS_HOST           = 18,
+  SCS_GLOBAL         = 19,
   SCS_MAX,
   SCS_SOURCE_MASK    = 0xff
 };

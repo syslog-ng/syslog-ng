@@ -107,14 +107,13 @@ stats_add_counter(gint stats_level, gint source, const gchar *id, const gchar *i
   StatsCounter key;
   StatsCounter *sc;
 
-  if (!configuration || stats_level < 0 || configuration->stats_level < stats_level)
+  if (stats_level != 0 && (!configuration || stats_level < 0 || configuration->stats_level < stats_level))
     return NULL;
   
   if (!id)
     id = "";
   if (!instance)
     instance = "";
-
   
   key.source = source;
   key.id = (gchar *) id;
@@ -302,6 +301,7 @@ const gchar *source_names[SCS_MAX] =
   "group",
   "center",
   "host",
+  "global",
 };
 
 
