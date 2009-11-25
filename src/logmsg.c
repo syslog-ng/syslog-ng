@@ -106,7 +106,7 @@ log_msg_update_sdata_slow(LogMessage *self, NVHandle handle, const gchar *name, 
   else
     alloc_sdata = self->alloc_sdata;
 
-  if (log_msg_chk_flag(self, LF_OWN_SDATA) && self->sdata)
+  if (log_msg_chk_flag(self, LF_STATE_OWN_SDATA) && self->sdata)
     {
       if (self->alloc_sdata < alloc_sdata)
         {
@@ -123,7 +123,7 @@ log_msg_update_sdata_slow(LogMessage *self, NVHandle handle, const gchar *name, 
         memcpy(sdata, self->sdata, self->num_sdata * sizeof(self->sdata[0]));
       memset(&sdata[self->num_sdata], 0, sizeof(self->sdata[0]) * (self->alloc_sdata - self->num_sdata));
       self->sdata = sdata;
-      log_msg_set_flag(self, LF_OWN_SDATA);
+      log_msg_set_flag(self, LF_STATE_OWN_SDATA);
     }
   self->alloc_sdata = alloc_sdata;
 
@@ -210,10 +210,10 @@ log_msg_set_value(LogMessage *self, NVHandle handle, const gchar *value, gssize 
   if (value_len < 0)
     value_len = strlen(value);
 
-  if (!log_msg_chk_flag(self, LF_OWN_PAYLOAD))
+  if (!log_msg_chk_flag(self, LF_STATE_OWN_PAYLOAD))
     {
       self->payload = nv_table_clone(self->payload, name_len + value_len + 2);
-      log_msg_set_flag(self, LF_OWN_PAYLOAD);
+      log_msg_set_flag(self, LF_STATE_OWN_PAYLOAD);
     }
 
   do
@@ -248,10 +248,10 @@ log_msg_set_value_indirect(LogMessage *self, NVHandle handle, NVHandle ref_handl
 
   name = log_msg_get_value_name(handle, &name_len);
 
-  if (!log_msg_chk_flag(self, LF_OWN_PAYLOAD))
+  if (!log_msg_chk_flag(self, LF_STATE_OWN_PAYLOAD))
     {
       self->payload = nv_table_clone(self->payload, name_len + 1);
-      log_msg_set_flag(self, LF_OWN_PAYLOAD);
+      log_msg_set_flag(self, LF_STATE_OWN_PAYLOAD);
     }
 
   do
@@ -310,13 +310,13 @@ log_msg_set_tag_by_id_onoff(LogMessage *self, guint id, gboolean on)
   guint32 *tags;
   gint old_num_tags;
 
-  if (!log_msg_chk_flag(self, LF_OWN_TAGS) && self->num_tags)
+  if (!log_msg_chk_flag(self, LF_STATE_OWN_TAGS) && self->num_tags)
     {
       tags = self->tags;
       self->tags = g_new0(guint32, self->num_tags);
       memcpy(self->tags, tags, sizeof(guint32) * self->num_tags);
     }
-  log_msg_set_flag(self, LF_OWN_TAGS);
+  log_msg_set_flag(self, LF_STATE_OWN_TAGS);
 
   if ((self->num_tags * 32) <= id)
     {
@@ -1518,14 +1518,14 @@ log_msg_parse(LogMessage *self,
 static void
 log_msg_free(LogMessage *self)
 {
-  if (log_msg_chk_flag(self, LF_OWN_PAYLOAD) && self->payload)
+  if (log_msg_chk_flag(self, LF_STATE_OWN_PAYLOAD) && self->payload)
     nv_table_free(self->payload);
-  if (log_msg_chk_flag(self, LF_OWN_TAGS) && self->tags)
+  if (log_msg_chk_flag(self, LF_STATE_OWN_TAGS) && self->tags)
     g_free(self->tags);
 
-  if (log_msg_chk_flag(self, LF_OWN_SDATA) && self->sdata)
+  if (log_msg_chk_flag(self, LF_STATE_OWN_SDATA) && self->sdata)
     g_free(self->sdata);
-  if (log_msg_chk_flag(self, LF_OWN_SADDR))
+  if (log_msg_chk_flag(self, LF_STATE_OWN_SADDR))
     g_sockaddr_unref(self->saddr);
 
   if (self->original)
@@ -1585,7 +1585,7 @@ log_msg_init(LogMessage *self, GSockAddr *saddr)
   self->saddr = g_sockaddr_ref(saddr);
 
   self->original = NULL;
-  self->flags |= LF_OWN_ALL;
+  self->flags |= LF_STATE_OWN_MASK;
 }
 
 /**
@@ -1663,6 +1663,15 @@ LogMessage *
 log_msg_clone_cow(LogMessage *msg, const LogPathOptions *path_options)
 {
   LogMessage *self = g_new(LogMessage, 1);
+  if ((msg->flags & LF_STATE_OWN_MASK) == 0)
+    {
+      /* the message we're cloning has no original content, everything
+       * is referenced from its "original", use that with this clone
+       * as well, effectively avoiding the "referenced" flag on the
+       * clone. */
+      msg = msg->original;
+    }
+  msg->flags |= LF_STATE_REFERENCED;
 
   memcpy(self, msg, sizeof(*msg));
 
@@ -1686,7 +1695,7 @@ log_msg_clone_cow(LogMessage *msg, const LogPathOptions *path_options)
       self->ack_userdata = NULL;
     }
   
-  self->flags = self->flags & ~LF_OWN_ALL;
+  self->flags &= ~LF_STATE_MASK;
   return self;
 }
 

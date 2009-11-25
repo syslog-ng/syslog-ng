@@ -69,6 +69,7 @@ log_queue_push_tail(LogQueue *self, LogMessage *msg, const LogPathOptions *path_
     {
       g_queue_push_tail(self->qoverflow, msg);
       g_queue_push_tail(self->qoverflow, LOG_PATH_OPTIONS_TO_POINTER(path_options));
+      msg->flags |= LF_STATE_REFERENCED;
       log_msg_ref(msg);
       local_options.flow_control = FALSE;
     }
@@ -87,6 +88,7 @@ log_queue_push_head(LogQueue *self, LogMessage *msg, const LogPathOptions *path_
 {
   g_queue_push_head(self->qoverflow, LOG_PATH_OPTIONS_TO_POINTER(path_options));
   g_queue_push_head(self->qoverflow, msg);
+  msg->flags |= LF_STATE_REFERENCED;
   stats_counter_inc(self->stored_messages);
   return TRUE;
 }

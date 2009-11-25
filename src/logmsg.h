@@ -77,19 +77,26 @@ enum
 
 enum
 {
-  LF_OLD_UNPARSED     = 0x0001,
-  LF_UTF8             = 0x0001,
-  LF_INTERNAL         = 0x0002,
-  LF_LOCAL            = 0x0004,
-  LF_MARK             = 0x0008,
+  /* these flags also matter when the message is serialized */
+  LF_OLD_UNPARSED      = 0x0001,
+  LF_UTF8              = 0x0001,
+  LF_INTERNAL          = 0x0002,
+  LF_LOCAL             = 0x0004,
+  LF_MARK              = 0x0008,
 
-  LF_OWN_NONE         = 0x0000,
-  LF_OWN_PAYLOAD      = 0x0010,
-  LF_OWN_SADDR        = 0x0020,
-  LF_OWN_TAGS         = 0x0040,
-  LF_OWN_SDATA        = 0x0080,
-  LF_OWN_ALL          = 0xFFF0,
-  LF_CHAINED_HOSTNAME = 0x10000,
+  /* state flags that only matter during syslog-ng runtime and never
+   * when a message is serialized */
+  LF_STATE_MASK        = 0xFFF0,
+  LF_STATE_OWN_PAYLOAD = 0x0010,
+  LF_STATE_OWN_SADDR   = 0x0020,
+  LF_STATE_OWN_TAGS    = 0x0040,
+  LF_STATE_OWN_SDATA   = 0x0080,
+  LF_STATE_OWN_MASK    = 0x00F0,
+
+  /* mark messages whose payload is referenced by a clone */
+  LF_STATE_REFERENCED  = 0x0100,
+
+  LF_CHAINED_HOSTNAME  = 0x00010000,
 
   /* originally parsed from RFC 3164 format and the legacy message header
    * was saved in $LEGACY_MSGHDR. This flag is a hack to avoid a hash lookup
