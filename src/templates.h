@@ -41,7 +41,6 @@ enum LogTemplateError
   LOG_TEMPLATE_ERROR_COMPILE,
 };
 
-
 typedef struct _LogTemplate
 {
   gint ref_cnt;
@@ -52,10 +51,20 @@ typedef struct _LogTemplate
   gboolean def_inline;
 } LogTemplate;
 
+typedef struct _LogMacroDef
+{
+  char *name;
+  int id;
+} LogMacroDef;
+
+extern LogMacroDef macros[];
+
 void log_template_set_escape(LogTemplate *self, gboolean enable);
 gboolean log_template_compile(LogTemplate *self, GError **error);
 void log_template_format(LogTemplate *self, LogMessage *lm, guint macro_flags, gint ts_format, TimeZoneInfo *zone_info, gint frac_digits, gint32 seq_num, GString *result);
 void log_template_append_format(LogTemplate *self, LogMessage *lm, guint macro_flags, gint ts_format, TimeZoneInfo *zone_info, gint frac_digits, gint32 seq_num, GString *result);
+gboolean log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, TimeZoneInfo *zone_info, gint frac_digits, gint32 seq_num, LogMessage *msg);
+
 
 LogTemplate *log_template_new(gchar *name, const gchar *template);
 LogTemplate *log_template_ref(LogTemplate *s);

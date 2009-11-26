@@ -77,6 +77,13 @@ enum
 
 enum
 {
+  LM_VF_SDATA = 0x0001,
+  LM_VF_MATCH = 0x0002,
+  LM_VF_MACRO = 0x0004,
+};
+
+enum
+{
   /* these flags also matter when the message is serialized */
   LF_OLD_UNPARSED      = 0x0001,
   LF_UTF8              = 0x0001,
@@ -147,6 +154,8 @@ struct _LogMessage
 
 };
 
+extern NVRegistry *logmsg_registry;
+
 LogMessage *log_msg_ref(LogMessage *m);
 void log_msg_unref(LogMessage *m);
 LogMessage *log_msg_clone_cow(LogMessage *m, const LogPathOptions *path_options);
@@ -157,11 +166,18 @@ gboolean log_msg_read(LogMessage *self, SerializeArchive *sa);
 /* generic values that encapsulate log message fields, dynamic values and structured data */
 NVHandle log_msg_get_value_handle(const gchar *value_name);
 const gchar *log_msg_get_value_name(NVHandle handle, gssize *name_len);
+const gchar *log_msg_get_macro_value(LogMessage *self, gint id, gssize *value_len);
 
 static inline const gchar *
 log_msg_get_value(LogMessage *self, NVHandle handle, gssize *value_len)
 {
-  return __nv_table_get_value(self->payload, handle, NV_TABLE_BOUND_NUM_STATIC(LM_V_MAX), value_len);
+  guint16 flags;
+
+  flags = nv_registry_get_handle_flags(logmsg_registry, handle);
+  if ((flags & LM_VF_MACRO) == 0)
+    return __nv_table_get_value(self->payload, handle, NV_TABLE_BOUND_NUM_STATIC(LM_V_MAX), value_len);
+  else
+    return log_msg_get_macro_value(self, flags >> 8, value_len);
 }
 
 void log_msg_set_value(LogMessage *self, NVHandle handle, const gchar *new_value, gssize length);

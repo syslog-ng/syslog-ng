@@ -85,12 +85,7 @@ enum
 
 #define M_TIME_MACROS 15
 
-struct macro_def
-{
-  char *name;
-  int id;
-}
-macros[] =
+LogMacroDef macros[] =
 {
         { "FACILITY", M_FACILITY },
         { "FACILITY_NUM", M_FACILITY_NUM },
@@ -179,6 +174,7 @@ macros[] =
         { "MSG", M_MESSAGE },
         { "MESSAGE", M_MESSAGE },
         { "HOST", M_HOST },
+        { NULL, 0 }
 };
 
 GHashTable *macro_hash;
@@ -521,7 +517,7 @@ log_macro_lookup(gchar *macro, gint len)
     {
       int i;
       macro_hash = g_hash_table_new(g_str_hash, g_str_equal);
-      for (i = 0; i < sizeof(macros) / sizeof(macros[0]); i++)
+      for (i = 0; macros[i].name; i++)
         {
           g_hash_table_insert(macro_hash, macros[i].name,
                               GINT_TO_POINTER(macros[i].id));

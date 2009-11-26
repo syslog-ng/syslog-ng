@@ -29,6 +29,7 @@
 #include "tags.h"
 #include "nvtable.h"
 #include "stats.h"
+#include "templates.h"
 
 #include <sys/types.h>
 #include <time.h>
@@ -72,13 +73,7 @@ const gchar *builtin_value_names[] =
   NULL,
 };
 
-enum
-{
-  LM_VF_SDATA = 0x0001,
-  LM_VF_MATCH = 0x0002,
-};
-
-static NVRegistry *logmsg_registry;
+NVRegistry *logmsg_registry;
 static const char sd_prefix[] = ".SDATA.";
 static const gint sd_prefix_len = sizeof(sd_prefix) - 1;
 /* statistics */
@@ -199,6 +194,21 @@ const gchar *
 log_msg_get_value_name(NVHandle handle, gssize *name_len)
 {
   return nv_registry_get_handle_name(logmsg_registry, handle, name_len);
+}
+
+const gchar *
+log_msg_get_macro_value(LogMessage *self, gint id, gssize *value_len)
+{
+  static GString *value = NULL;
+
+  if (!value)
+    value = g_string_sized_new(256);
+  g_string_truncate(value, 0);
+
+  log_macro_expand(value, id, 0, TS_FMT_BSD, NULL, 0, 0, self);
+  if (value_len)
+    *value_len = value->len;
+  return value->str;
 }
 
 void
@@ -1783,6 +1793,17 @@ log_msg_global_init(void)
   nv_registry_add_alias(logmsg_registry, LM_V_MESSAGE, "MSGONLY");
   nv_registry_add_alias(logmsg_registry, LM_V_HOST, "FULLHOST");
   nv_registry_add_alias(logmsg_registry, LM_V_HOST_FROM, "FULLHOST_FROM");
+
+  for (i = 0; macros[i].name; i++)
+    {
+      if (nv_registry_get_handle(logmsg_registry, macros[i].name) == 0)
+        {
+          NVHandle handle;
+
+          handle = nv_registry_alloc_handle(logmsg_registry, macros[i].name);
+          nv_registry_set_handle_flags(logmsg_registry, handle, (macros[i].id << 8) + LM_VF_MACRO);
+        }
+    }
 
   /* register $0 - $255 in order */
   for (i = 0; i < 255; i++)
