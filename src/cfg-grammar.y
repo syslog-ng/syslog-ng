@@ -71,7 +71,7 @@ cfg_check_inline_template(GlobalConfig *cfg, const gchar *template_or_name)
   struct _LogTemplate *template = cfg_lookup_template(configuration, template_or_name);
   if (template == NULL)
     {
-      template = log_template_new(NULL, template_or_name); 
+      template = log_template_new(NULL, template_or_name);
       template->def_inline = TRUE;
     }
   return template;
@@ -121,7 +121,7 @@ cfg_check_template(LogTemplate *template)
 
 %token KW_CHAIN_HOSTNAMES KW_NORMALIZE_HOSTNAMES KW_KEEP_HOSTNAME KW_CHECK_HOSTNAME KW_BAD_HOSTNAME
 %token KW_KEEP_TIMESTAMP
-%token KW_USE_DNS KW_USE_FQDN 
+%token KW_USE_DNS KW_USE_FQDN
 %token KW_DNS_CACHE KW_DNS_CACHE_SIZE
 %token KW_DNS_CACHE_EXPIRE KW_DNS_CACHE_EXPIRE_FAILED KW_DNS_CACHE_HOSTS
 %token KW_PERSIST_ONLY
@@ -140,7 +140,7 @@ cfg_check_template(LogTemplate *template)
 %token KW_PAD_SIZE KW_TIME_ZONE KW_RECV_TIME_ZONE KW_SEND_TIME_ZONE KW_LOCAL_TIME_ZONE
 
 /* timers */
-%token KW_TIME_REOPEN KW_TIME_REAP KW_TIME_SLEEP 
+%token KW_TIME_REOPEN KW_TIME_REAP KW_TIME_SLEEP
 
 /* destination options */
 %token KW_TMPL_ESCAPE
@@ -149,9 +149,9 @@ cfg_check_template(LogTemplate *template)
 %token KW_OPTIONAL
 
 /* file related options */
-%token KW_CREATE_DIRS 
-%token KW_OWNER KW_GROUP KW_PERM 
-%token KW_DIR_OWNER KW_DIR_GROUP KW_DIR_PERM 
+%token KW_CREATE_DIRS
+%token KW_OWNER KW_GROUP KW_PERM
+%token KW_DIR_OWNER KW_DIR_GROUP KW_DIR_PERM
 %token KW_TEMPLATE KW_TEMPLATE_ESCAPE
 %token KW_FOLLOW_FREQ
 %token KW_OVERWRITE_IF_OLDER
@@ -178,7 +178,7 @@ cfg_check_template(LogTemplate *template)
 %token KW_YES KW_NO
 
 /* obsolete, compatibility and not-yet supported options */
-%token KW_GC_IDLE_THRESHOLD KW_GC_BUSY_THRESHOLD  
+%token KW_GC_IDLE_THRESHOLD KW_GC_BUSY_THRESHOLD
 %token KW_COMPRESS KW_MAC KW_AUTH KW_ENCRYPT
 
 %token KW_IFDEF
@@ -313,19 +313,19 @@ cfg_check_template(LogTemplate *template)
 
 %%
 
-start   
+start
         : stmts
 	;
 
-stmts   
-        : stmt ';' 
-          { 
-            if (last_include_file && !cfg_lex_process_include(last_include_file)) 
-              { 
+stmts
+        : stmt ';'
+          {
+            if (last_include_file && !cfg_lex_process_include(last_include_file))
+              {
                 free(last_include_file);
                 last_include_file = NULL;
-                YYERROR; 
-              } 
+                YYERROR;
+              }
             if (last_include_file)
               {
                 free(last_include_file);
@@ -336,7 +336,7 @@ stmts
 	|	
 	;
 
-stmt    
+stmt
         : KW_SOURCE source_stmt			{ cfg_add_source(configuration, $2); }
 	| KW_DESTINATION dest_stmt		{ cfg_add_dest(configuration, $2); }
 	| KW_LOG log_stmt			{ cfg_add_connection(configuration, $2); }
@@ -349,7 +349,7 @@ stmt
 	;
 
 source_stmt
-	: string '{' source_items '}'		{ $$ = log_source_group_new($1, $3); free($1); }        
+	: string '{' source_items '}'		{ $$ = log_source_group_new($1, $3); free($1); }
 	;
 
 filter_stmt
@@ -358,10 +358,10 @@ filter_stmt
 	
 parser_stmt
         : string '{' parser_expr ';' '}'	{ $$ = log_parser_rule_new($1, $3); free($1); }
-        
+
 rewrite_stmt
         : string '{' rewrite_expr_list '}'	{ $$ = log_rewrite_rule_new($1, $3); free($1); }
- 
+
 dest_stmt
         : string '{' dest_items '}'		{ $$ = log_dest_group_new($1, $3); free($1); }
 	;
@@ -386,7 +386,7 @@ log_item
 	| KW_DESTINATION '(' string ')'		{ $$ = log_pipe_item_new(EP_DESTINATION, $3); free($3); }
 	;
 
-log_forks 
+log_forks
         : log_fork log_forks			{ log_pipe_item_append($1, $2); $$ = $1; }
         |                                       { $$ = NULL; }
         ;
@@ -412,7 +412,7 @@ options_stmt
 	;
 	
 template_stmt
-	: string 
+	: string
 	  {
 	    last_template = log_template_new($1, NULL);
 	    free($1);
@@ -469,8 +469,8 @@ source_affile
 source_affile_params
 	: string
 	  {
-	    last_driver = affile_sd_new($1, 0); 
-	    free($1); 
+	    last_driver = affile_sd_new($1, 0);
+	    free($1);
 	    last_reader_options = &((AFFileSourceDriver *) last_driver)->reader_options;
 	  }
           source_reader_options                 { $$ = last_driver; }
@@ -479,8 +479,8 @@ source_affile_params
 source_afpipe_params
 	: string
 	  {
-	    last_driver = affile_sd_new($1, AFFILE_PIPE); 
-	    free($1); 
+	    last_driver = affile_sd_new($1, AFFILE_PIPE);
+	    free($1);
 	    last_reader_options = &((AFFileSourceDriver *) last_driver)->reader_options;
 	  }
 	  source_afpipe_options				{ $$ = last_driver; }
@@ -494,19 +494,19 @@ source_afpipe_options
 source_afsocket
 	: KW_UNIX_DGRAM '(' source_afunix_dgram_params ')'	{ $$ = $3; }
 	| KW_UNIX_STREAM '(' source_afunix_stream_params ')' 	{ $$ = $3; }
-	| KW_UDP { last_addr_family = AF_INET; } '(' source_afinet_udp_params ')'		{ $$ = $4; } 
-	| KW_TCP { last_addr_family = AF_INET; } '(' source_afinet_tcp_params ')'		{ $$ = $4; } 
-	| KW_UDP6 { last_addr_family = AF_INET6; } '(' source_afinet_udp_params ')'		{ $$ = $4; } 
-	| KW_TCP6 { last_addr_family = AF_INET6; } '(' source_afinet_tcp_params ')'		{ $$ = $4; } 
+	| KW_UDP { last_addr_family = AF_INET; } '(' source_afinet_udp_params ')'		{ $$ = $4; }
+	| KW_TCP { last_addr_family = AF_INET; } '(' source_afinet_tcp_params ')'		{ $$ = $4; }
+	| KW_UDP6 { last_addr_family = AF_INET6; } '(' source_afinet_udp_params ')'		{ $$ = $4; }
+	| KW_TCP6 { last_addr_family = AF_INET6; } '(' source_afinet_tcp_params ')'		{ $$ = $4; }
 	;
  	
 source_afunix_dgram_params
-	: string 
-	  { 
+	: string
+	  {
 	    last_driver = afunix_sd_new(
 		$1,
-		AFSOCKET_DGRAM | AFSOCKET_LOCAL); 
-	    free($1); 
+		AFSOCKET_DGRAM | AFSOCKET_LOCAL);
+	    free($1);
 	    last_reader_options = &((AFSocketSourceDriver *) last_driver)->reader_options;
 	    last_sock_options = &((AFUnixSourceDriver *) last_driver)->sock_options;
 	  }
@@ -514,8 +514,8 @@ source_afunix_dgram_params
 	;
 	
 source_afunix_stream_params
-	: string 
-	  { 
+	: string
+	  {
 	    last_driver = afunix_sd_new(
 		$1,
 		AFSOCKET_STREAM | AFSOCKET_KEEP_ALIVE | AFSOCKET_LOCAL);
@@ -540,11 +540,11 @@ source_afunix_option
 	| source_afsocket_stream_params		{}
 	| source_reader_option			{}
 	| socket_option				{}
-	; 
+	;
 
 source_afinet_udp_params
-        : 
-          { 
+        :
+          {
 	    last_driver = afinet_sd_new(last_addr_family,
 			NULL, 514,
 			AFSOCKET_DGRAM);
@@ -573,8 +573,8 @@ source_afinet_option
 	;
 
 source_afinet_tcp_params
-	: 
-	  { 
+	:
+	  {
 	    last_driver = afinet_sd_new(last_addr_family,
 			NULL, 514,
 			AFSOCKET_STREAM);
@@ -592,16 +592,16 @@ source_afinet_tcp_options
 source_afinet_tcp_option
         : source_afinet_option
 /* BEGIN MARK: tls */
-	| KW_TLS 
+	| KW_TLS
 	  {
 #if ENABLE_SSL
 	    last_tls_context = tls_context_new(TM_SERVER);
 #endif
 	  }
 	  '(' tls_options ')'			
-	  { 
+	  {
 #if ENABLE_SSL
-	    afsocket_sd_set_tls_context(last_driver, last_tls_context); 
+	    afsocket_sd_set_tls_context(last_driver, last_tls_context);
 #endif
           }
 /* END MARK */
@@ -614,12 +614,12 @@ source_afsocket_stream_params
 	;
 
 source_afsyslog	
-	: KW_SYSLOG { last_addr_family = AF_INET; } '(' source_afsyslog_params ')'		{ $$ = $4; } 
+	: KW_SYSLOG { last_addr_family = AF_INET; } '(' source_afsyslog_params ')'		{ $$ = $4; }
 	;
 	
 source_afsyslog_params
-	: 
-	  { 
+	:
+	  {
 	    last_driver = afinet_sd_new(last_addr_family,
 			NULL, 601,
 			AFSOCKET_STREAM | AFSOCKET_SYSLOG_PROTOCOL);
@@ -640,16 +640,16 @@ source_afsyslog_option
         | KW_TRANSPORT '(' KW_TCP ')'           { afinet_sd_set_transport(last_driver, "tcp"); }
         | KW_TRANSPORT '(' KW_UDP ')'           { afinet_sd_set_transport(last_driver, "udp"); }
         | KW_TRANSPORT '(' KW_TLS ')'           { afinet_sd_set_transport(last_driver, "tls"); }
-	| KW_TLS 
+	| KW_TLS
 	  {
 #if ENABLE_SSL
 	    last_tls_context = tls_context_new(TM_SERVER);
 #endif
 	  }
 	  '(' tls_options ')'			
-	  { 
+	  {
 #if ENABLE_SSL
-	    afsocket_sd_set_tls_context(last_driver, last_tls_context); 
+	    afsocket_sd_set_tls_context(last_driver, last_tls_context);
 #endif
           }
 	| source_afsocket_stream_params		{}
@@ -660,10 +660,10 @@ source_afprogram
 	;
 
 source_afprogram_params
-	: string 
-	  { 
-	    last_driver = afprogram_sd_new($1); 
-	    free($1); 
+	: string
+	  {
+	    last_driver = afprogram_sd_new($1);
+	    free($1);
 	    last_reader_options = &((AFProgramSourceDriver *) last_driver)->reader_options;
 	  }
 	  source_reader_options			{ $$ = last_driver; }
@@ -681,10 +681,10 @@ source_afstreams
 	
 source_afstreams_params
 	: string
-	  { 
+	  {
 #if ENABLE_SUN_STREAMS
-	    last_driver = afstreams_sd_new($1); 
-	    free($1); 
+	    last_driver = afstreams_sd_new($1);
+	    free($1);
 #endif
 	  }
 	  source_afstreams_options		{ $$ = last_driver; }
@@ -774,12 +774,12 @@ dest_affile
 	;
 
 dest_affile_params
-	: string 
-	  { 
-	    last_driver = affile_dd_new($1, 0); 
-	    free($1); 
+	: string
+	  {
+	    last_driver = affile_dd_new($1, 0);
+	    free($1);
 	    last_writer_options = &((AFFileDestDriver *) last_driver)->writer_options;
-	  } 
+	  }
 	  dest_affile_options
 	  					{ $$ = last_driver; }
 	;
@@ -809,13 +809,13 @@ dest_afpipe
 	;
 
 dest_afpipe_params
-	: string 
-	  { 
+	: string
+	  {
 	    last_driver = affile_dd_new($1, AFFILE_PIPE);
-	    free($1); 
+	    free($1);
 	    last_writer_options = &((AFFileDestDriver *) last_driver)->writer_options;
 	    last_writer_options->flush_lines = 0;
-	  } 
+	  }
 	  dest_afpipe_options                   { $$ = last_driver; }
 	;
 
@@ -835,14 +835,14 @@ dest_afsocket
 	: KW_UNIX_DGRAM '(' dest_afunix_dgram_params ')'	{ $$ = $3; }
 	| KW_UNIX_STREAM '(' dest_afunix_stream_params ')'	{ $$ = $3; }
 	| KW_UDP { last_addr_family = AF_INET; } '(' dest_afinet_udp_params ')'			{ $$ = $4; }
-	| KW_TCP { last_addr_family = AF_INET; } '(' dest_afinet_tcp_params ')'			{ $$ = $4; } 
+	| KW_TCP { last_addr_family = AF_INET; } '(' dest_afinet_tcp_params ')'			{ $$ = $4; }
 	| KW_UDP6 { last_addr_family = AF_INET6; } '(' dest_afinet_udp_params ')'			{ $$ = $4; }
-	| KW_TCP6 { last_addr_family = AF_INET6; } '(' dest_afinet_tcp_params ')'			{ $$ = $4; } 
+	| KW_TCP6 { last_addr_family = AF_INET6; } '(' dest_afinet_tcp_params ')'			{ $$ = $4; }
 	;
 
 dest_afunix_dgram_params
 	: string				
-	  { 
+	  {
 	    last_driver = afunix_dd_new($1, AFSOCKET_DGRAM);
 	    free($1);
 	    last_writer_options = &((AFSocketDestDriver *) last_driver)->writer_options;
@@ -853,7 +853,7 @@ dest_afunix_dgram_params
 
 dest_afunix_stream_params
 	: string				
-	  { 
+	  {
 	    last_driver = afunix_dd_new($1, AFSOCKET_STREAM);
 	    free($1);
 	    last_writer_options = &((AFSocketDestDriver *) last_driver)->writer_options;
@@ -875,7 +875,7 @@ dest_afunix_option
 
 dest_afinet_udp_params
 	: string 	
-	  { 
+	  {
 	    last_driver = afinet_dd_new(last_addr_family,
 			$1, 514,
 			AFSOCKET_DGRAM);
@@ -909,10 +909,10 @@ dest_afinet_udp_option
 
 dest_afinet_tcp_params
 	: string 	
-	  { 
+	  {
 	    last_driver = afinet_dd_new(last_addr_family,
 			$1, 514,
-			AFSOCKET_STREAM); 
+			AFSOCKET_STREAM);
 	    free($1);
 	    last_writer_options = &((AFSocketDestDriver *) last_driver)->writer_options;
 	    last_sock_options = &((AFInetDestDriver *) last_driver)->sock_options.super;
@@ -927,16 +927,16 @@ dest_afinet_tcp_options
 
 dest_afinet_tcp_option
 	: dest_afinet_option
-	| KW_TLS 
+	| KW_TLS
 	  {
 #if ENABLE_SSL
 	    last_tls_context = tls_context_new(TM_CLIENT);
 #endif
 	  }
 	  '(' tls_options ')'			
-	  { 
+	  {
 #if ENABLE_SSL
-	    afsocket_dd_set_tls_context(last_driver, last_tls_context); 
+	    afsocket_dd_set_tls_context(last_driver, last_tls_context);
 #endif
           }
 	;
@@ -973,16 +973,16 @@ dest_afsyslog_option
         | KW_TRANSPORT '(' KW_UDP ')'           { afinet_dd_set_transport(last_driver, "udp"); }
         | KW_TRANSPORT '(' KW_TLS ')'           { afinet_dd_set_transport(last_driver, "tls"); }
 	| KW_SPOOF_SOURCE '(' yesno ')'		{ afinet_dd_set_spoof_source(last_driver, $3); }
-	| KW_TLS 
+	| KW_TLS
 	  {
 #if ENABLE_SSL
 	    last_tls_context = tls_context_new(TM_CLIENT);
 #endif
 	  }
 	  '(' tls_options ')'			
-	  { 
+	  {
 #if ENABLE_SSL
-	    afsocket_dd_set_tls_context(last_driver, last_tls_context); 
+	    afsocket_dd_set_tls_context(last_driver, last_tls_context);
 #endif
           }
 	;
@@ -997,10 +997,10 @@ dest_afprogram
 	;
 
 dest_afprogram_params
-	: string 
-	  { 
-	    last_driver = afprogram_dd_new($1); 
-	    free($1); 
+	: string
+	  {
+	    last_driver = afprogram_dd_new($1);
+	    free($1);
 	    last_writer_options = &((AFProgramDestDriver *) last_driver)->writer_options;
 	  }
 	  dest_writer_options			{ $$ = last_driver; }
@@ -1013,7 +1013,7 @@ dest_afsql
         ;
 
 dest_afsql_params
-        : 
+        :
           {
             #if ENABLE_SQL	
             last_driver = afsql_dd_new();
@@ -1026,11 +1026,11 @@ dest_afsql_options
         : dest_afsql_option dest_afsql_options
         |
         ;
-        
+
 dest_afsql_option
-        : KW_IFDEF { 
-#if ENABLE_SQL 
-} 
+        : KW_IFDEF {
+#if ENABLE_SQL
+}
         | KW_TYPE '(' string ')'		{ afsql_dd_set_type(last_driver, $3); free($3); }
         | KW_HOST '(' string ')'		{ afsql_dd_set_host(last_driver, $3); free($3); }
         | KW_PORT '(' string_or_number ')'	{ afsql_dd_set_port(last_driver, $3); free($3); }
@@ -1048,15 +1048,15 @@ dest_afsql_option
 	| KW_LOCAL_TIME_ZONE '(' string ')'     { afsql_dd_set_local_time_zone(last_driver,$3); free($3); }
         | KW_NULL '(' string ')'                { afsql_dd_set_null_value(last_driver, $3); free($3); }
 
-        | KW_ENDIF { 
-#endif /* ENABLE_SQL */ 
+        | KW_ENDIF {
+#endif /* ENABLE_SQL */
 }
         ;
 /* END MARK */
 
 
 dest_writer_options
-	: dest_writer_option dest_writer_options 
+	: dest_writer_option dest_writer_options
 	|
 	;
 	
@@ -1066,7 +1066,7 @@ dest_writer_option
 	| KW_FLUSH_LINES '(' LL_NUMBER ')'		{ last_writer_options->flush_lines = $3; }
 	| KW_FLUSH_TIMEOUT '(' LL_NUMBER ')'	{ last_writer_options->flush_timeout = $3; }
         | KW_SUPPRESS '(' LL_NUMBER ')'            { last_writer_options->suppress = $3; }
-	| KW_TEMPLATE '(' string ')'       	{ 
+	| KW_TEMPLATE '(' string ')'       	{
 	                                          last_writer_options->template = cfg_check_inline_template(configuration, $3);
                                                   if (!cfg_check_template(last_writer_options->template))
 	                                            {
@@ -1109,10 +1109,10 @@ options_item
 	| KW_TIME_REOPEN '(' LL_NUMBER ')'		{ configuration->time_reopen = $3; }
 	| KW_TIME_REAP '(' LL_NUMBER ')'		{ configuration->time_reap = $3; }
 	| KW_TIME_SLEEP '(' LL_NUMBER ')'		
-		{ 
-		  configuration->time_sleep = $3; 
-		  if ($3 > 500) 
-		    { 
+		{
+		  configuration->time_sleep = $3;
+		  if ($3 > 500)
+		    {
 		      msg_notice("The value specified for time_sleep is too large", evt_tag_int("time_sleep", $3), NULL);
 		      configuration->time_sleep = 500;
 		    }
@@ -1153,46 +1153,46 @@ tls_options
 	;
 
 tls_option
-        : KW_IFDEF { 
+        : KW_IFDEF {
 #if ENABLE_SSL
-} 
+}
 
 	| KW_PEER_VERIFY '(' string ')'		
-	  { 
-	    last_tls_context->verify_mode = tls_lookup_verify_mode($3); 
-            free($3); 
+	  {
+	    last_tls_context->verify_mode = tls_lookup_verify_mode($3);
+            free($3);
           }
 	| KW_KEY_FILE '(' string ')'		
-	  { 
-	    last_tls_context->key_file = g_strdup($3); 
+	  {
+	    last_tls_context->key_file = g_strdup($3);
             free($3);
           }
 	| KW_CERT_FILE '(' string ')'		
-	  { 
-	    last_tls_context->cert_file = g_strdup($3); 
+	  {
+	    last_tls_context->cert_file = g_strdup($3);
             free($3);
           }
 	| KW_CA_DIR '(' string ')'		
-	  { 
-	    last_tls_context->ca_dir = g_strdup($3); 
+	  {
+	    last_tls_context->ca_dir = g_strdup($3);
             free($3);
           }
 	| KW_CRL_DIR '(' string ')'		
-	  { 
-	    last_tls_context->crl_dir = g_strdup($3); 
+	  {
+	    last_tls_context->crl_dir = g_strdup($3);
             free($3);
           }
-        | KW_TRUSTED_KEYS '(' string_list ')' 
-          { 
-            tls_session_set_trusted_fingerprints(last_tls_context, $3); 
+        | KW_TRUSTED_KEYS '(' string_list ')'
+          {
+            tls_session_set_trusted_fingerprints(last_tls_context, $3);
           }
-        | KW_TRUSTED_DN '(' string_list ')' 
-          { 
-            tls_session_set_trusted_dn(last_tls_context, $3); 
+        | KW_TRUSTED_DN '(' string_list ')'
+          {
+            tls_session_set_trusted_dn(last_tls_context, $3);
           }
         | KW_ENDIF {
 #endif
-} 
+}
         ;
 /* END MARK */
 
@@ -1338,31 +1338,31 @@ filter_level_list
 
 filter_level
 	: level_string LL_DOTDOT level_string
-	  { 
+	  {
 	    $$ = syslog_make_range($1, $3);
 	  }
 	| level_string
-	  { 
+	  {
 	    $$ = 1 << $1;
 	  }
 	;
 
 	
 parser_expr
-        : KW_CSV_PARSER '(' 
-          { 
-            last_parser = (LogParser *) log_csv_parser_new(); 
+        : KW_CSV_PARSER '('
+          {
+            last_parser = (LogParser *) log_csv_parser_new();
           }
           parser_csv_opts
           ')'					{ $$ = last_parser; }
-        | KW_DB_PARSER '(' 
+        | KW_DB_PARSER '('
           {
             last_parser = (LogParser *) log_db_parser_new();
           }
-          parser_db_opts 
+          parser_db_opts
           ')'                                   { $$ = last_parser; }
         ;
-        
+
 parser_db_opts
         : parser_db_opt parser_db_opts
         |
@@ -1579,7 +1579,7 @@ facility_string
 
 extern int linenum;
 
-void 
+void
 yyerror(char *msg)
 {
   fprintf(stderr, "%s in %s at line %d.\n\n"
