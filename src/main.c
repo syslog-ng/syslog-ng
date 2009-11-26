@@ -58,6 +58,8 @@
 #endif
 
 static gchar *cfgfilename = PATH_SYSLOG_NG_CONF;
+static gchar *install_dat_filename = PATH_INSTALL_DAT;
+static gchar *installer_version = NULL;
 static const gchar *persist_file = PATH_PERSIST_CONFIG;
 static gboolean syntax_only = FALSE;
 static gboolean seed_rng = FALSE;
@@ -284,12 +286,47 @@ initial_init(GlobalConfig **cfg)
   return 0;
 }
 
+#define INSTALL_DAT_INSTALLER_VERSION "INSTALLER_VERSION"
+
+gboolean
+get_installer_version(gchar **inst_version)
+{
+  gchar line[1024];
+  gboolean result = FALSE;
+  FILE *f_install = fopen(install_dat_filename, "r");
+
+  if (!f_install)
+    return FALSE;
+
+  while (fgets(line, sizeof(line), f_install) != NULL)
+    {
+      if (strncmp(line, INSTALL_DAT_INSTALLER_VERSION, strlen(INSTALL_DAT_INSTALLER_VERSION)) == 0)
+        {
+          gchar *pos = strchr(line, '=');
+          if (pos)
+            {
+              *inst_version = strdup(pos+1);
+              result = TRUE;
+              break;
+            }
+        }
+    }
+  fclose(f_install);
+  return result;
+}
+
 #define ON_OFF_STR(x) (x ? "on" : "off")
+
 
 void
 version(void)
 {
+  if (!get_installer_version(&installer_version) || installer_version==NULL)
+    {
+      installer_version=VERSION;
+    }
   printf(PACKAGE " " VERSION "\n"
+         "Installer-Version: %s\n"
          "Revision: " SOURCE_REVISION "\n"
          "Compile-Date: " __DATE__ " " __TIME__ "\n"
          "Enable-Threads: %s\n"
@@ -305,6 +342,7 @@ version(void)
          "Enable-SQL: %s\n"
          "Enable-Linux-Caps: %s\n"
          "Enable-Pcre: %s\n",
+         installer_version,
          ON_OFF_STR(ENABLE_THREADS),
          ON_OFF_STR(ENABLE_DEBUG),
          ON_OFF_STR(ENABLE_GPROF),
@@ -318,7 +356,6 @@ version(void)
          ON_OFF_STR(ENABLE_SQL),
          ON_OFF_STR(ENABLE_LINUX_CAPS),
          ON_OFF_STR(ENABLE_PCRE));
-
 }
 
 int 
