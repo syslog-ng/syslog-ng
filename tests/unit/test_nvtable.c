@@ -44,9 +44,9 @@ test_nv_registry()
 
   for (i = 0; builtins[i]; i++)
     {
-      handle = nv_registry_get_value_handle(reg, builtins[i]);
+      handle = nv_registry_alloc_handle(reg, builtins[i]);
       TEST_ASSERT(handle == (i+1));
-      name = nv_registry_get_value_name(reg, handle, &len);
+      name = nv_registry_get_handle_name(reg, handle, &len);
       TEST_ASSERT(strcmp(name, builtins[i]) == 0);
       TEST_ASSERT(strlen(name) == len);
     }
@@ -61,17 +61,17 @@ test_nv_registry()
       prev_handle = 0;
       for (j = 0; j < 4; j++)
         {
-          handle = nv_registry_get_value_handle(reg, dyn_name);
+          handle = nv_registry_alloc_handle(reg, dyn_name);
           TEST_ASSERT(prev_handle == 0 || (handle == prev_handle));
           prev_handle = handle;
         }
-      name = nv_registry_get_value_name(reg, handle, &len);
+      name = nv_registry_get_handle_name(reg, handle, &len);
       TEST_ASSERT(strcmp(name, dyn_name) == 0);
       TEST_ASSERT(strlen(name) == len);
 
       g_snprintf(dyn_name, sizeof(dyn_name), "ALIAS%05d", i);
       nv_registry_add_alias(reg, handle, dyn_name);
-      handle = nv_registry_get_value_handle(reg, dyn_name);
+      handle = nv_registry_alloc_handle(reg, dyn_name);
       TEST_ASSERT(handle == prev_handle);
     }
 
@@ -85,17 +85,17 @@ test_nv_registry()
       prev_handle = 0;
       for (j = 0; j < 4; j++)
         {
-          handle = nv_registry_get_value_handle(reg, dyn_name);
+          handle = nv_registry_alloc_handle(reg, dyn_name);
           TEST_ASSERT(prev_handle == 0 || (handle == prev_handle));
           prev_handle = handle;
         }
-      name = nv_registry_get_value_name(reg, handle, &len);
+      name = nv_registry_get_handle_name(reg, handle, &len);
       TEST_ASSERT(strcmp(name, dyn_name) == 0);
       TEST_ASSERT(strlen(name) == len);
     }
 
   fprintf(stderr, "One error message about too many values is to be expected\n");
-  handle = nv_registry_get_value_handle(reg, "too-many-values");
+  handle = nv_registry_alloc_handle(reg, "too-many-values");
   TEST_ASSERT(handle == 0);
 
   nv_registry_free(reg);

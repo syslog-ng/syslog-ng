@@ -6,19 +6,22 @@
 
 const gchar *null_string = "";
 
-struct _NVRegistry
-{
-  /* number of static names that are statically allocated in each payload */
-  gint num_static_names;
-  GPtrArray *names;
-  GHashTable *name_map;
-};
-
 NVHandle
-nv_registry_get_value_handle(NVRegistry *self, const gchar *name)
+nv_registry_get_handle(NVRegistry *self, const gchar *name)
 {
   gpointer p;
-  gchar *stored;
+
+  p = g_hash_table_lookup(self->name_map, name);
+  if (p)
+    return GPOINTER_TO_UINT(p);
+  return 0;
+}
+
+NVHandle
+nv_registry_alloc_handle(NVRegistry *self, const gchar *name)
+{
+  gpointer p;
+  NVHandleDesc stored;
   gsize len;
 
   p = g_hash_table_lookup(self->name_map, name);
@@ -47,15 +50,13 @@ nv_registry_get_value_handle(NVRegistry *self, const gchar *name)
                 NULL);
       return 0;
     }
-  /* first byte is the length, then the zero terminated string */
-  stored = g_malloc(len + 3);
-
+  /* flags (2 bytes) || length (1 byte) || name (len bytes) || NUL */
   /* memory layout: flags || length || name (NUL terminated) */
-  stored[0] = 0;
-  stored[1] = len;
-  memcpy(&stored[2], name, len+1);
-  g_ptr_array_add(self->names, stored);
-  g_hash_table_insert(self->name_map, stored + 2, GUINT_TO_POINTER(self->names->len));
+  stored.flags = 0;
+  stored.name_len = len;
+  stored.name = g_strdup(name);
+  g_array_append_val(self->names, stored);
+  g_hash_table_insert(self->name_map, stored.name, GUINT_TO_POINTER(self->names->len));
   return self->names->len;
 }
 
@@ -70,46 +71,16 @@ nv_registry_add_alias(NVRegistry *self, NVHandle handle, const gchar *alias)
   g_hash_table_insert(self->name_map, (gchar *) alias, GUINT_TO_POINTER(handle));
 }
 
-guint8
-nv_registry_get_handle_flags(NVRegistry *self, NVHandle handle)
-{
-  gchar *stored;
-
-  if (G_UNLIKELY(!handle))
-    return 0;
-
-  stored = (gchar *) g_ptr_array_index(self->names, handle - 1);
-  return stored[0];
-}
-
 void
-nv_registry_set_handle_flags(NVRegistry *self, NVHandle handle, guint8 flags)
+nv_registry_set_handle_flags(NVRegistry *self, NVHandle handle, guint16 flags)
 {
-  gchar *stored;
+  NVHandleDesc *stored;
 
   if (G_UNLIKELY(!handle))
     return;
 
-  stored = (gchar *) g_ptr_array_index(self->names, handle - 1);
-  stored[0] = flags;
-}
-
-const gchar *
-nv_registry_get_value_name(NVRegistry *self, NVHandle handle, gssize *length)
-{
-  gchar *stored;
-
-  if (G_UNLIKELY(!handle))
-    {
-      if (length)
-        *length = 4;
-      return "None";
-    }
-
-  stored = (gchar *) g_ptr_array_index(self->names, handle - 1);
-  if (G_LIKELY(length))
-    *length = ((guint8 *) stored)[1];
-  return stored + 2;
+  stored = &g_array_index(self->names, NVHandleDesc, handle - 1);
+  stored->flags = flags;
 }
 
 NVRegistry *
@@ -119,10 +90,10 @@ nv_registry_new(const gchar **static_names)
   gint i;
 
   self->name_map = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, NULL);
-  self->names = g_ptr_array_new();
+  self->names = g_array_new(FALSE, FALSE, sizeof(NVHandleDesc));
   for (i = 0; static_names[i]; i++)
     {
-      nv_registry_get_value_handle(self, static_names[i]);
+      nv_registry_alloc_handle(self, static_names[i]);
     }
   return self;
 }
@@ -130,8 +101,11 @@ nv_registry_new(const gchar **static_names)
 void
 nv_registry_free(NVRegistry *self)
 {
-  g_ptr_array_foreach(self->names, (GFunc) g_free, NULL);
-  g_ptr_array_free(self->names, TRUE);
+  gint i;
+
+  for (i = 0; i < self->names->len; i++)
+    g_free(g_array_index(self->names, NVHandleDesc, i).name);
+  g_array_free(self->names, TRUE);
   g_hash_table_destroy(self->name_map);
   g_free(self);
 }

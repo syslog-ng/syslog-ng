@@ -30,19 +30,63 @@ typedef struct _NVTable NVTable;
 typedef struct _NVRegistry NVRegistry;
 typedef struct _NVEntry NVEntry;
 typedef guint16 NVHandle;
+typedef struct _NVHandleDesc NVHandleDesc;
 typedef gboolean (*NVTableForeachFunc)(NVHandle handle, const gchar *name, const gchar *value, gssize value_len, gpointer user_data);
 typedef gboolean (*NVTableForeachEntryFunc)(NVHandle handle, NVEntry *entry, gpointer user_data);
+
+struct _NVHandleDesc
+{
+  gchar *name;
+  guint16 flags;
+  guint8 name_len;
+};
+
+struct _NVRegistry
+{
+  /* number of static names that are statically allocated in each payload */
+  gint num_static_names;
+  GArray *names;
+  GHashTable *name_map;
+};
 
 extern const gchar *null_string;
 
 void nv_registry_add_alias(NVRegistry *self, NVHandle handle, const gchar *alias);
-NVHandle nv_registry_get_value_handle(NVRegistry *self, const gchar *name);
-const gchar *nv_registry_get_value_name(NVRegistry *self, NVHandle handle, gssize *length);
-guint8 nv_registry_get_handle_flags(NVRegistry *self, NVHandle handle);
-void nv_registry_set_handle_flags(NVRegistry *self, NVHandle handle, guint8 flags);
+NVHandle nv_registry_get_handle(NVRegistry *self, const gchar *name);
+NVHandle nv_registry_alloc_handle(NVRegistry *self, const gchar *name);
+void nv_registry_set_handle_flags(NVRegistry *self, NVHandle handle, guint16 flags);
 NVRegistry *nv_registry_new(const gchar **static_names);
 void nv_registry_free(NVRegistry *self);
 
+static inline guint16
+nv_registry_get_handle_flags(NVRegistry *self, NVHandle handle)
+{
+  NVHandleDesc *stored;
+
+  if (G_UNLIKELY(!handle))
+    return 0;
+
+  stored = &g_array_index(self->names, NVHandleDesc, handle - 1);
+  return stored->flags;
+}
+
+static inline const gchar *
+nv_registry_get_handle_name(NVRegistry *self, NVHandle handle, gssize *length)
+{
+  NVHandleDesc *stored;
+
+  if (G_UNLIKELY(!handle))
+    {
+      if (length)
+        *length = 4;
+      return "None";
+    }
+
+  stored = &g_array_index(self->names, NVHandleDesc, handle - 1);
+  if (G_LIKELY(length))
+    *length = stored->name_len;
+  return stored->name;
+}
 
 /*
  * Contains a name-value pair.

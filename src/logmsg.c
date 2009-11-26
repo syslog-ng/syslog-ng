@@ -184,7 +184,7 @@ log_msg_get_value_handle(const gchar *value_name)
 {
   NVHandle handle;
 
-  handle = nv_registry_get_value_handle(logmsg_registry, value_name);
+  handle = nv_registry_alloc_handle(logmsg_registry, value_name);
 
   /* check if name starts with sd_prefix and has at least one additional character */
   if (strncmp(value_name, sd_prefix, sizeof(sd_prefix) - 1) == 0 && value_name[6])
@@ -198,7 +198,7 @@ log_msg_get_value_handle(const gchar *value_name)
 const gchar *
 log_msg_get_value_name(NVHandle handle, gssize *name_len)
 {
-  return nv_registry_get_value_name(logmsg_registry, handle, name_len);
+  return nv_registry_get_handle_name(logmsg_registry, handle, name_len);
 }
 
 void
@@ -1790,7 +1790,7 @@ log_msg_global_init(void)
       gchar buf[8];
 
       g_snprintf(buf, sizeof(buf), "%d", i);
-      match_handles[i] = nv_registry_get_value_handle(logmsg_registry, buf);
+      match_handles[i] = nv_registry_alloc_handle(logmsg_registry, buf);
     }
 
   stats_register_counter(0, SCS_GLOBAL, "msg_clones", NULL, SC_TYPE_PROCESSED, &count_msg_clones);
