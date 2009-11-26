@@ -10,6 +10,125 @@ ECHO=echo
 
 OS=`uname -s`
 
+# LSB Functions
+# ripped from ubuntu/debian lsb
+log_use_fancy_output() {
+  case "$TERM" in
+    dumb|raw|serial|vt*|cons*|unknown)
+      return 1
+      ;;
+    *)
+      if [ -n "$FANCYTTY" ] && [ $FANCYTTY -ne 1 ]; then
+        return 1
+      fi
+      RED="\033[31m"
+      YELLOW="\033[33m"
+      NORMAL="\033[0m"
+      return 0
+      ;;
+  esac
+  return 1
+}
+
+log_success_msg() {
+  $ECHO "$@"
+}
+
+log_failure_msg() {
+  log_use_fancy_output
+  $ECHO "${RED}$@${NORMAL}"
+}
+
+log_warning_msg() {
+  log_use_fancy_output
+  $ECHO "${YELLOW}$@${NORMAL}"
+}
+
+# NON-LSB Functions
+
+log_begin_msg() {
+  if [ -z "$1" ]; then
+    return 1
+  fi
+
+  $ECHO "$@\c "
+}
+
+log_daemon_msg() {
+  if [ -z "$1" ];then
+    return 1
+  fi
+
+  if [ -z "$2" ]; then
+    $ECHO "$1:\c "
+    return
+  fi
+
+  $ECHO "$1: $2\c "
+}
+
+log_progress_msg() {
+  if [ -z "$1" ]; then
+    return 1
+  fi
+
+  if [ $1 -eq 0 ]; then
+    $ECHO "."
+  else
+    $ECHO " failed"
+  fi
+}
+
+log_end_msg() {
+  if [ -z "$1" ]; then
+    return 1
+  fi
+
+  log_fancy_output
+  if [ $1 -eq 0 ];then
+    $ECHO "."
+  else
+    $ECHO "${RED}failed!${NORMAL}"
+  fi
+  return $1
+}
+
+log_action_msg() {
+  $ECHO "$@."
+}
+
+log_action_begin_msg() {
+  $ECHO "$@...\c "
+}
+
+log_action_cont_msg() {
+  $ECHO "$@...\c "
+}
+
+log_action_end_msg() {
+  if [ -z "$2" ]; then
+    end="."
+  else
+    end=" ($2)."
+  fi
+
+  log_fancy_output
+  if [ $1 -eq 0 ]; then
+    $ECHO "done${end}"
+  else
+    $ECHO "${RED}failed${end}${NORMAL}"
+  fi
+}
+
+# overide log_*_msg if the init-functions file exits on the system
+[ -f /lib/lsb/init-functions ] && . /lib/lsb/init-functions
+
+# in these three cases we have to use our functions
+unalias start_daemon 2>/dev/null
+unalias killproc 2>/dev/null
+unalias pidofproc 2>/dev/null
+
+
 disable_xpg_echo() {
   # \X chars only passed to echo under bash, if xpg_echo enabled or echo -e
   # used on Linux.
@@ -197,117 +316,6 @@ killproc() {
   fi
   return $_retval
 }
-
-# ripped from ubuntu/debian lsb
-log_use_fancy_output() {
-  case "$TERM" in
-    dumb|raw|serial|vt*|cons*|unknown)
-      return 1
-      ;;
-    *)
-      if [ -n "$FANCYTTY" ] && [ $FANCYTTY -ne 1 ]; then
-        return 1
-      fi
-      RED="\033[31m"
-      YELLOW="\033[33m"
-      NORMAL="\033[0m"
-      return 0
-      ;;
-  esac
-  return 1
-}
-
-
-log_success_msg() {
-  $ECHO "$@"
-}
-
-log_failure_msg() {
-  log_use_fancy_output
-  $ECHO "${RED}$@${NORMAL}"
-}
-
-log_warning_msg() {
-  log_use_fancy_output
-  $ECHO "${YELLOW}$@${NORMAL}"
-}
-
-# NON-LSB Functions
-
-log_begin_msg() {
-  if [ -z "$1" ]; then
-    return 1
-  fi
-
-  $ECHO "$@\c "
-}
-
-log_daemon_msg() {
-  if [ -z "$1" ];then
-    return 1
-  fi
-
-  if [ -z "$2" ]; then
-    $ECHO "$1:\c "
-    return
-  fi
-
-  $ECHO "$1: $2\c "
-}
-
-log_progress_msg() {
-  if [ -z "$1" ]; then
-    return 1
-  fi
-
-  if [ $1 -eq 0 ]; then
-    $ECHO "."
-  else
-    $ECHO " failed"
-  fi
-}
-
-log_end_msg() {
-  if [ -z "$1" ]; then
-    return 1
-  fi
-
-  log_fancy_output
-  if [ $1 -eq 0 ];then
-    $ECHO "."
-  else
-    $ECHO "${RED}failed!${NORMAL}"
-  fi
-  return $1
-}
-
-log_action_msg() {
-  $ECHO "$@."
-}
-
-log_action_begin_msg() {
-  $ECHO "$@...\c "
-}
-
-log_action_cont_msg() {
-  $ECHO "$@...\c "
-}
-
-log_action_end_msg() {
-  if [ -z "$2" ]; then
-    end="."
-  else
-    end=" ($2)."
-  fi
-
-  log_fancy_output
-  if [ $1 -eq 0 ]; then
-    $ECHO "done${end}"
-  else
-    $ECHO "${RED}failed${end}${NORMAL}"
-  fi
-}
-
 
 # vim: ft=sh ts=2 expandtab
 
