@@ -354,6 +354,7 @@ create_containing_directory(gchar *name, uid_t dir_uid, gid_t dir_gid, mode_t di
   gchar *dirname;
   struct stat st;
   gint rc;
+  gchar *p;
   
   /* check that the directory exists */
   dirname = g_path_get_dirname(name);
@@ -372,7 +373,7 @@ create_containing_directory(gchar *name, uid_t dir_uid, gid_t dir_gid, mode_t di
     }
     
   /* directory does not exist */
-  char *p = name + 1;
+  p = name + 1;
   
   p = strchr(p, '/');
   while (p) 
