@@ -1213,14 +1213,14 @@ filter_simple_expr
 	| KW_NETMASK '(' string ')'		{ $$ = filter_netmask_new($3); free($3); }
     | KW_TAGS '(' string_list ')'   { $$ = filter_tags_new($3); }
 	| KW_PROGRAM '(' string
-	  { 
+	  {
 	    last_re_filter = (FilterRE *) filter_re_new(LM_V_PROGRAM);
           }
-          filter_re_opts ')'  
+          filter_re_opts ')'
           {
             if(!filter_re_set_regexp(last_re_filter, $3))
               YYERROR;
-            free($3); 
+            free($3);
 
             $$ = &last_re_filter->super;
           }
@@ -1228,29 +1228,29 @@ filter_simple_expr
 	  {
 	    last_re_filter = (FilterRE *) filter_re_new(LM_V_HOST);
           }
-          filter_re_opts ')'  
+          filter_re_opts ')'
           {
             if(!filter_re_set_regexp(last_re_filter, $3))
               YYERROR;
-            free($3); 
-            
+            free($3);
+
             $$ = &last_re_filter->super;
           }
 	| KW_MATCH '(' string
-	  { 
-	    last_re_filter = (FilterRE *) filter_match_new(); 
+	  {
+	    last_re_filter = (FilterRE *) filter_match_new();
 	  }
-          filter_match_opts ')'  
+          filter_match_opts ')'
           {
             if(!filter_re_set_regexp(last_re_filter, $3))
               YYERROR;
-            free($3); 
+            free($3);
             $$ = &last_re_filter->super;
-            
+
             if (last_re_filter->value_handle == 0)
               {
                 static gboolean warn_written = FALSE;
-                
+
                 if (!warn_written)
                   {
                     msg_warning("WARNING: the match() filter without the use of the value() option is deprecated and hinders performance, please update your configuration",
@@ -1259,27 +1259,27 @@ filter_simple_expr
                   }
               }
           }
-        | KW_MESSAGE '(' string           
+        | KW_MESSAGE '(' string
           {
 	    last_re_filter = (FilterRE *) filter_re_new(LM_V_MESSAGE);
           }
-          filter_re_opts ')'  
+          filter_re_opts ')'
           {
             if(!filter_re_set_regexp(last_re_filter, $3))
               YYERROR;
-	    free($3); 
+	    free($3);
             $$ = &last_re_filter->super;
           }
-        | KW_SOURCE '(' string           
+        | KW_SOURCE '(' string
           {
 	    last_re_filter = (FilterRE *) filter_re_new(LM_V_SOURCE);
             filter_re_set_matcher(last_re_filter, log_matcher_string_new());
           }
-          filter_re_opts ')'  
+          filter_re_opts ')'
           {
             if(!filter_re_set_regexp(last_re_filter, $3))
               YYERROR;
-	    free($3); 
+	    free($3);
             $$ = &last_re_filter->super;
           }
 	;
@@ -1288,22 +1288,34 @@ filter_match_opts
         : filter_match_opt filter_match_opts
         |
         ;
-        
+
 filter_match_opt
         : filter_re_opt
-        | KW_VALUE '(' string ')'               { last_re_filter->value_handle = log_msg_get_value_handle($3); free($3); }
+        | KW_VALUE '(' string ')'
+          {
+            const gchar *p = $3;
+            if (p[0] == '$')
+              {
+                msg_warning("Value references in filters should not use the '$' prefix, those are only needed in templates",
+                            evt_tag_str("value", $3),
+                            NULL);
+                p++;
+              }
+            last_re_filter->value_handle = log_msg_get_value_handle(p);
+            free($3);
+          }
         ;
 	
-filter_re_opts 
+filter_re_opts
         : filter_re_opt filter_re_opts
         |
         ;
 
 filter_re_opt
-        : KW_TYPE '(' string ')'                
-          { 
+        : KW_TYPE '(' string ')'
+          {
             filter_re_set_matcher(last_re_filter, log_matcher_new($3));
-            free($3); 
+            free($3);
           }
         | KW_FLAGS '(' regexp_option_flags ')' { filter_re_set_flags(last_re_filter, $3); }
         ;
@@ -1367,14 +1379,14 @@ parser_column_opt
         ;
 
 parser_opt
-        : KW_TEMPLATE '(' string ')'            { 
+        : KW_TEMPLATE '(' string ')'            {
                                                   LogTemplate *template = cfg_check_inline_template(configuration, $3);
                                                   if (!cfg_check_template(template))
                                                     {
                                                       YYERROR;
                                                     }
-                                                  log_parser_set_template(last_parser, template); 
-                                                  free($3); 
+                                                  log_parser_set_template(last_parser, template);
+                                                  free($3);
                                                 }
         ;
 
@@ -1383,7 +1395,7 @@ parser_csv_opts
         : parser_csv_opt parser_csv_opts
         |
         ;
-        
+
 parser_csv_opt
         : parser_column_opt
         | KW_FLAGS '(' parser_csv_flags ')'     { log_csv_parser_set_flags((LogColumnParser *) last_parser, $3); }
@@ -1392,7 +1404,7 @@ parser_csv_opt
         | KW_QUOTE_PAIRS '(' string ')'         { log_csv_parser_set_quote_pairs((LogColumnParser *) last_parser, $3); free($3); }
         | KW_NULL '(' string ')'                { log_csv_parser_set_null_value((LogColumnParser *) last_parser, $3); free($3); }
         ;
-        
+
 parser_csv_flags
         : string parser_csv_flags               { $$ = log_csv_parser_lookup_flag($1) | $2; free($1); }
         |					{ $$ = 0; }
@@ -1402,41 +1414,60 @@ rewrite_expr_list
         : rewrite_expr_list_build               { $$ = g_list_reverse($1); }
         ;
 
-rewrite_expr_list_build       
+rewrite_expr_list_build
         : rewrite_expr rewrite_expr_list_build  { $$ = g_list_append($2, $1); }
         |                                       { $$ = NULL; }
-        ;     
+        ;
 
 rewrite_expr
-        : KW_SUBST '(' string string 
-          { 
-            last_rewrite = log_rewrite_subst_new($4); 
-            free($4);  
+        : KW_SUBST '(' string string
+          {
+            last_rewrite = log_rewrite_subst_new($4);
+            free($4);
           }
-          rewrite_expr_opts ')' ';'             
-          { 
+          rewrite_expr_opts ')' ';'
+          {
             if(!log_rewrite_set_regexp(last_rewrite, $3))
               YYERROR;
             free($3);
-            $$ = last_rewrite; 
+            $$ = last_rewrite;
           }
-        | KW_SET '(' string 
+        | KW_SET '(' string
           {
-            last_rewrite = log_rewrite_set_new($3); 
+            last_rewrite = log_rewrite_set_new($3);
             free($3);
           }
           rewrite_expr_opts ')' ';'             { $$ = last_rewrite; }
         ;
-        
+
 rewrite_expr_opts
         : rewrite_expr_opt rewrite_expr_opts
         |
         ;
-        
+
 rewrite_expr_opt
-        : KW_VALUE '(' string ')'               { last_rewrite->value_handle = log_msg_get_value_handle($3); free($3); }
-        | KW_TYPE '(' string ')'                
-          { 
+        : KW_VALUE '(' string ')'
+          {
+            const gchar *p = $3;
+            if (p[0] == '$')
+              {
+                msg_warning("Value references in rewrite rules should not use the '$' prefix, those are only needed in templates",
+                            evt_tag_str("value", $3),
+                            NULL);
+                p++;
+              }
+            last_rewrite->value_handle = log_msg_get_value_handle(p);
+            if (log_msg_is_handle_macro(last_rewrite->value_handle))
+              {
+                msg_warning("Macros are read-only, they cannot be changed in rewrite rules, falling back to MESSAGE instead",
+                            evt_tag_str("macro", p),
+                            NULL);
+                last_rewrite->value_handle = LM_V_MESSAGE;
+              }
+            free($3);
+          }
+        | KW_TYPE '(' string ')'
+          {
             if (strcmp($3, "glob") == 0)
               {
                 msg_error("Rewrite rules do not support glob expressions",
@@ -1444,7 +1475,7 @@ rewrite_expr_opt
                 YYERROR;
               }
             log_rewrite_set_matcher(last_rewrite, log_matcher_new($3));
-            free($3); 
+            free($3);
           }
         | KW_FLAGS '(' regexp_option_flags ')' { log_rewrite_set_flags(last_rewrite, $3); }
         ;

@@ -211,6 +211,15 @@ log_msg_get_macro_value(LogMessage *self, gint id, gssize *value_len)
   return value->str;
 }
 
+gboolean
+log_msg_is_handle_macro(NVHandle handle)
+{
+  guint16 flags;
+
+  flags = nv_registry_get_handle_flags(logmsg_registry, handle);
+  return !!(flags & LM_VF_MACRO);
+}
+
 void
 log_msg_set_value(LogMessage *self, NVHandle handle, const gchar *value, gssize value_len)
 {
