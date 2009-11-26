@@ -619,17 +619,24 @@ cfg_lex_deinit(void)
 {
   gint i;
   
-  for (i = 0; i < include_depth; i++)
+  for (i = 0; i <= include_depth; i++)
     {
       CfgIncludeLevel *level = &include_stack[i];
 
       if (level->current_file)
-        g_free(level->current_file);
+        {
+          g_free(level->current_file);
+          level->current_file = NULL;
+        }
       
       g_slist_foreach(level->files, (GFunc) g_free, NULL);
       g_slist_free(level->files);
       level->files = NULL;
       if (level->yybuf)
-        yy_delete_buffer(level->yybuf);
+        {
+          yy_delete_buffer(level->yybuf);
+          level->yybuf = NULL;
+        }
     }
+  include_depth = 0;
 }

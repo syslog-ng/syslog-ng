@@ -399,13 +399,17 @@ affile_sd_new(gchar *filename, guint32 flags)
     {
       if ((self->flags & AFFILE_PIPE) == 0)
         self->reader_options.follow_freq = 1000;
-        
+
+      if (0 ||
 #if __linux__
-      if (strcmp(filename, "/proc/kmsg") == 0)
+          (strcmp(filename, "/proc/kmsg") == 0) ||
+#elif __FreeBSD__
+          (strcmp(filename, "/dev/klog") == 0) ||
+#endif
+          0)
         {
           self->reader_options.follow_freq = 0;
         }
-#endif
     }
 #if __linux__
   if (strcmp(filename, "/proc/kmsg") == 0)
