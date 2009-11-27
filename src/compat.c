@@ -115,6 +115,7 @@ memrchr(const void *s, int c, size_t n)
       p--;
     }
   return NULL;
+}
 #endif
 
 #ifdef _AIX

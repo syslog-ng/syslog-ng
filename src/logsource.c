@@ -28,6 +28,8 @@
 #include "stats.h"
 #include "tags.h"
 
+#include <string.h>
+
 static void
 log_source_msg_ack(LogMessage *msg, gpointer user_data)
 {

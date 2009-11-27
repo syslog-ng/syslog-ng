@@ -68,7 +68,7 @@ nv_registry_alloc_handle(NVRegistry *self, const gchar *name)
 void
 nv_registry_add_alias(NVRegistry *self, NVHandle handle, const gchar *alias)
 {
-  g_hash_table_insert(self->name_map, (gchar *) alias, GUINT_TO_POINTER(handle));
+  g_hash_table_insert(self->name_map, (gchar *) alias, GUINT_TO_POINTER((glong) handle));
 }
 
 void
@@ -360,7 +360,7 @@ nv_table_add_value(NVTable *self, NVHandle handle, const gchar *name, gsize name
     }
   if (G_UNLIKELY(entry && !entry->indirect && entry->referenced))
     {
-      gpointer data[2] = { self, GUINT_TO_POINTER(handle) };
+      gpointer data[2] = { self, GUINT_TO_POINTER((glong) handle) };
 
       if (nv_table_foreach_entry(self, nv_table_make_direct, data))
         {
@@ -462,7 +462,7 @@ nv_table_add_value_indirect(NVTable *self, NVHandle handle, const gchar *name, g
     }
   if (entry && !entry->indirect && entry->referenced)
     {
-      gpointer data[2] = { self, GUINT_TO_POINTER(handle) };
+      gpointer data[2] = { self, GUINT_TO_POINTER((glong) handle) };
 
       if (!nv_table_foreach_entry(self, nv_table_make_direct, data))
         return FALSE;
