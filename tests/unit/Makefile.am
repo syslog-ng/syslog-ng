@@ -23,6 +23,7 @@ test_radix_SOURCES = test_radix.c
 test_msgsdata_SOURCES = test_msgsdata.c
 test_tags_SOURCES = test_tags.c
 test_nvtable_SOURCES = test_nvtable.c
+test_template_speed_SOURCES = test_template_speed.c
 
 TESTS = $(check_PROGRAMS)
 

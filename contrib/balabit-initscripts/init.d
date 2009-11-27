@@ -27,7 +27,6 @@ CONFFILE=$SYSLOGNG_PREFIX/etc/syslog-ng.conf
 PIDFILE=$SYSLOGNG_PREFIX/var/run/syslog-ng.pid
 SYSLOGPIDFILE="/var/run/syslog.pid"
 
-INIT_FUNCTIONS=/lib/lsb/init-functions
 SLNG_INIT_FUNCTIONS=$SYSLOGNG_PREFIX/lib/init-functions
 MAXWAIT=30
 
@@ -76,28 +75,7 @@ if [ "$OS" = "SunOS" ] || [ "$OS" = "Solaris" ];then
 	fi
 fi
 
-if [ -f /lib/lsb/init-functions ];then
-	# long list of exclusions... 
-	if [ -f "/etc/redhat-release" ] || [ -f "/etc/SuSE-release" ];then
-		# RHEL's and SuSE's LSB implementations are broken in different ways ...
-		INIT_FUNCTIONS=$SLNG_INIT_FUNCTIONS
-	elif [ -n "$DISTRIB_ID" ];then
-		case "$DISTRIB_ID" in
-			Ubuntu)
-				# hardy's init-functions contains a broken killproc implementation
-				if [ "$DISTRIB_RELEASE" = "8.04" ] && \
-					[ "$DISTRIB_CODENAME" = "hardy" ]; then
-					INIT_FUNCTIONS=$SLNG_INIT_FUNCTIONS
-				fi
-				;;
-			*) ;;
-		esac
-	fi
-else
-	INIT_FUNCTIONS=$SLNG_INIT_FUNCTIONS
-fi
-
-. $INIT_FUNCTIONS
+. $SLNG_INIT_FUNCTIONS
 
 case "$OS" in
 	Linux)
@@ -152,10 +130,25 @@ slng_waitforpid() {
 
 returnmessage() {
 	_rval=$1
+        is_debian=0
+        case "$OS" in
+            Linux)
+               res=`cat /etc/issue | grep Debian`
+               is_debian=$?
+            ;;
+        esac
 	if [ $_rval -ne 0 ];then
-		log_failure_msg "failed"
+                if [ $is_debian -eq 0 ];then
+			log_failure_msg "failed"
+		else
+			log_failure_msg
+		fi
 	else
-		log_success_msg "OK"
+		if [ $is_debian -eq 0 ];then
+			log_success_msg "OK"
+		else
+			log_success_msg
+		fi
 	fi
 }
 
@@ -166,7 +159,7 @@ syslogng_start() {
 		log_success_msg "already running: $PID"
 		return $retval
 	fi
-	start_daemon -p ${PIDFILE} ${SYSLOGNG} ${SYSLOGNG_OPTIONS}
+	start_daemon -f -p ${PIDFILE} ${SYSLOGNG} ${SYSLOGNG_OPTIONS}
 	retval=$?
 	returnmessage $retval
 	if [ $retval -eq 0 ];then

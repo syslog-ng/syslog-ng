@@ -115,5 +115,11 @@ memrchr(const void *s, int c, size_t n)
       p--;
     }
   return NULL;
+#endif
+
+#ifdef _AIX
+intmax_t __strtollmax(const char *__nptr, char **__endptr, int __base)
+{
+  return strtoll(__nptr, __endptr, __base);
 }
 #endif

@@ -750,7 +750,7 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guchar *
           /* And also make struct time timestamp for the msg */
 
           cached_localtime(&now, &tm);
-          p = (guchar *) strptime((gchar *) date, "%b %e %Y %H:%M:%S ", &tm);
+          p = (guchar *) strptime((gchar *) date, "%b %e %Y %H:%M:%S", &tm);
           if (!p || (p && *p))
             goto error;
 
