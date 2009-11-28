@@ -128,10 +128,14 @@ main(int argc, char *argv[])
   testcase("EST5EDT", 1173592800, -5*3600);
   /* 2007-03-11 01:59:59 EST, DST disabled */
   testcase("EST5EDT", 1173596399, -5*3600);
+# if __GLIBC__ && __GLIBC_MINOR__ > 3
+  /* Except on legacy systems lacking updated timezone info.
+   * Like Debian Potato ... */
   /* 2007-03-11 03:00:00 EST, DST enabled */
   testcase("EST5EDT", 1173596400, -4*3600);
   /* 2007-11-04 01:59:59 EST, DST enabled */
   testcase("EST5EDT", 1194155999, -4*3600);
+# endif
   /* 2007-11-04 01:00:00 EST, DST disabled */
   testcase("EST5EDT", 1194156000, -5*3600);
 #endif
