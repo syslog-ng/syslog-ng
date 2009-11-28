@@ -35,6 +35,7 @@ def test_sql():
         soext='.sl'
     if not os.path.isfile('/opt/syslog-ng/lib/dbd/libdbdsqlite3%s' % soext):
         print_user('No sqlite3 backend for libdbi. Skipping SQL test')
+        return True
 
     messages = (
         'sql1',
@@ -45,6 +46,7 @@ def test_sql():
     expected = []
     for msg in messages:
         expected.extend(s.sendMessages(msg, pri=7))
-    time.sleep(5)
+    print_user("Waiting for 10 seconds until syslog-ng writes all records to the SQL table")
+    time.sleep(10)
     stop_syslogng()
     return check_sql_expected("%s/test-sql.db" % current_dir, "logs", expected, settle_time=5, syslog_prefix="Sep  7 10:43:21 bzorp prog 12345")
