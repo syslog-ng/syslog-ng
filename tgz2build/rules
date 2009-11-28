@@ -2,7 +2,7 @@
 STAMPDIR=tgz2build/stamps
 DOCDIR=$(PREFIX)/doc
 
-
+CC:=gcc
 CONFIGURE_OPTS := --prefix $(ZBS_PREFIX) --enable-ssl --enable-dynamic-linking --enable-sql --enable-spoof-source --disable-tcp-wrapper --disable-pcre --with-ld-library-path=$(ZBS_PREFIX)/lib --with-pidfile-dir=$(ZBS_PREFIX)/var/run
 INSTALL:=./install-sh
 RPATH=-Wl,-R/opt/syslog-ng/lib
@@ -20,6 +20,12 @@ ifneq (,$(findstring hpux,$(ZBS_DIST)))
   RPATH=-Wl,+b/opt/syslog-ng/lib
 endif
 
+ifneq (,$(findstring linux-glibc2.1.3,$(ZBS_DIST)))
+  CONFIGURE_OPTS+=--disable-ipv6
+  # syslog-ng needs a C99 standtard compliant C compiler. GCC 2.95 is not compliant so we have to use a home built GCC 3.3 for this.
+  CC=gcc-3.3
+endif
+
 all: binary
 
 binary: $(STAMPDIR)/stamp-setup $(STAMPDIR)/stamp-configure $(STAMPDIR)/stamp-build $(STAMPDIR)/stamp-install
@@ -31,7 +37,7 @@ $(STAMPDIR)/stamp-setup:
 
 configure: $(STAMPDIR)/stamp-configure
 $(STAMPDIR)/stamp-configure: $(STAMPDIR)/stamp-setup
-	CFLAGS="-g $(CFLAGS)" LDFLAGS="$(RPATH) $(LDFLAGS)" ./configure $(CONFIGURE_OPTS)
+	CC=$(CC) CFLAGS="-g $(CFLAGS)" LDFLAGS="$(RPATH) $(LDFLAGS)" ./configure $(CONFIGURE_OPTS)
 	touch $@
 
 

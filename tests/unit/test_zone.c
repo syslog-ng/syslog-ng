@@ -33,6 +33,22 @@ testcase(const gchar *zone, time_t utc, long expected_ofs)
 }
 
 int
+timezone_exists(const char *time_zone)
+{
+  TimeZoneInfo *info;
+
+  set_tz(time_zone);
+  info = time_zone_info_new(time_zone);
+
+  if (info)
+    {
+      time_zone_info_free(info);
+      return TRUE;
+    }
+  return FALSE;
+}
+
+int
 test_timezone_2(const time_t stamp_to_test, const char* time_zone)
 {
   TimeZoneInfo *info;
@@ -51,6 +67,11 @@ test_timezone_2(const time_t stamp_to_test, const char* time_zone)
 int
 test_timezone(const time_t stamp_to_test, const char* time_zone)
 {
+  if (!timezone_exists(time_zone))
+    {
+      printf("SKIP: %s\n", time_zone);
+      return TRUE;
+    }
   return test_timezone_2(stamp_to_test, time_zone) &&
          test_timezone_2(stamp_to_test - 6*30*24*60*60, time_zone) &&
          test_timezone_2(stamp_to_test + 6*30*24*6, time_zone);
@@ -107,10 +128,14 @@ main(int argc, char *argv[])
   testcase("EST5EDT", 1173592800, -5*3600);
   /* 2007-03-11 01:59:59 EST, DST disabled */
   testcase("EST5EDT", 1173596399, -5*3600);
+# if __GLIBC__ && __GLIBC_MINOR__ > 3
+  /* Except on legacy systems lacking updated timezone info.
+   * Like Debian Potato ... */
   /* 2007-03-11 03:00:00 EST, DST enabled */
   testcase("EST5EDT", 1173596400, -4*3600);
   /* 2007-11-04 01:59:59 EST, DST enabled */
   testcase("EST5EDT", 1194155999, -4*3600);
+# endif
   /* 2007-11-04 01:00:00 EST, DST disabled */
   testcase("EST5EDT", 1194156000, -5*3600);
 #endif
