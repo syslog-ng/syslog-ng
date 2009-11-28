@@ -726,6 +726,18 @@ afsql_dd_format_stats_instance(AFSqlDestDriver *self)
   return persist_name;
 }
 
+static inline gchar *
+afsql_dd_format_persist_name(AFSqlDestDriver *self)
+{
+  static gchar persist_name[256];
+
+  g_snprintf(persist_name, sizeof(persist_name),
+             "afsql_dd(%s,%s,%s,%s)",
+             self->type, self->host, self->port, self->database);
+  return persist_name;
+}
+
+
 static gboolean
 afsql_dd_init(LogPipe *s)
 {
@@ -754,7 +766,9 @@ afsql_dd_init(LogPipe *s)
 
   if (!self->queue)
     {
-      self->queue = log_queue_new(self->mem_fifo_size);
+      self->queue = cfg_persist_config_fetch(cfg, afsql_dd_format_persist_name(self), NULL, NULL);
+      if (!self->queue)
+        self->queue = log_queue_new(self->mem_fifo_size);
     }
   
   if (!self->fields)
@@ -844,9 +858,13 @@ static gboolean
 afsql_dd_deinit(LogPipe *s)
 {
   AFSqlDestDriver *self = (AFSqlDestDriver *) s;
+  GlobalConfig *cfg = log_pipe_get_config(s);
   
   afsql_deactivate(self);
   /* self->dbi_ctx is freed in the DB thread, through the sql_dbi_context_free_queue queue */
+
+  cfg_persist_config_add(cfg, afsql_dd_format_persist_name(self), self->queue, -1, (GDestroyNotify) log_queue_free, FALSE);
+  self->queue = NULL;
 
   stats_unregister_counter(SCS_SQL | SCS_DESTINATION, self->super.id, afsql_dd_format_stats_instance(self), SC_TYPE_STORED, &self->stored_messages);
   stats_unregister_counter(SCS_SQL | SCS_DESTINATION, self->super.id, afsql_dd_format_stats_instance(self), SC_TYPE_DROPPED, &self->dropped_messages);
