@@ -84,6 +84,7 @@ void log_db_parser_process_lookup(LogPatternDatabase *db, LogMessage *msg);
 
 LogProcessRule *log_parser_rule_new(const gchar *name, LogParser *parser);
 
+void log_db_parser_global_init(void);
 
 #endif
 

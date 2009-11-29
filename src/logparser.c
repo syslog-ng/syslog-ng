@@ -548,10 +548,7 @@ log_db_parser_post_config_hook(gint type, gpointer user_data)
 {
   LogDBParser *self = (LogDBParser *) user_data;
 
-  log_db_parser_reload_database(self);
-  class_handle = log_msg_get_value_handle(".classifier.class");
-  rule_id_handle = log_msg_get_value_handle(".classifier.rule_id");
-}
+  log_db_parser_reload_database(self);}
 
 static void
 log_db_parser_free(LogParser *s)
@@ -615,3 +612,9 @@ log_parser_rule_new(const gchar *name, LogParser *parser)
   return &self->super;
 }
 
+void
+log_db_parser_global_init(void)
+{
+  class_handle = log_msg_get_value_handle(".classifier.class");
+  rule_id_handle = log_msg_get_value_handle(".classifier.rule_id");
+}
