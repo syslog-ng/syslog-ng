@@ -370,7 +370,8 @@ r_new_pnode(gchar *key)
 
   if (parser_node && params[1])
     {
-      parser_node->handle = log_msg_get_value_handle(params[1]);
+      if (params[1][0])
+        parser_node->handle = log_msg_get_value_handle(params[1]);
 
       if (params[2])
         parser_node->param = g_strdup(params[2]);
