@@ -415,6 +415,8 @@ main(int argc, char *argv[])
   gint mode, ret = 0;
   GError *error = NULL;
 
+  log_msg_registry_init();
+  log_db_parser_global_init();
   mode_string = pdbtool_mode(&argc, &argv);
   if (!mode_string)
     {
