@@ -247,7 +247,7 @@ pdbtool_match(int argc, char *argv[])
 
   if (!match_message)
     {
-      msg_error("No message is given", NULL);
+      fprintf(stderr, "No message is given\n");
       return ret;
     }
 
@@ -347,15 +347,7 @@ pdbtool_mode(int *argc, char **argv[])
 {
   gint i;
   const gchar *mode;
-  const gchar *slash;
 
-  slash = strrchr((*argv)[0], '/');
-
-  /*if ((*argc) > 0 && ((slash && strcmp(slash+1, "logcat") == 0) || (strcmp((*argv)[0], "logcat") == 0)))
-    {
-      return "cat";
-    }
-*/
   for (i = 1; i < (*argc); i++)
     {
       if ((*argv)[i][0] != '-')
