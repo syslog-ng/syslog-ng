@@ -211,6 +211,7 @@ void log_msg_add_ack(LogMessage *msg, const LogPathOptions *path_options);
 void log_msg_ack(LogMessage *msg, const LogPathOptions *path_options);
 void log_msg_drop(LogMessage *msg, const LogPathOptions *path_options);
 
+void log_msg_registry_init();
 void log_msg_global_init();
 
 #endif

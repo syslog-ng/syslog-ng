@@ -1793,7 +1793,7 @@ log_msg_drop(LogMessage *msg, const LogPathOptions *path_options)
 }
 
 void
-log_msg_global_init(void)
+log_msg_registry_init(void)
 {
   gint i;
 
@@ -1822,7 +1822,12 @@ log_msg_global_init(void)
       g_snprintf(buf, sizeof(buf), "%d", i);
       match_handles[i] = nv_registry_alloc_handle(logmsg_registry, buf);
     }
+}
 
+void
+log_msg_global_init(void)
+{
+  log_msg_registry_init();
   stats_register_counter(0, SCS_GLOBAL, "msg_clones", NULL, SC_TYPE_PROCESSED, &count_msg_clones);
   stats_register_counter(0, SCS_GLOBAL, "payload_reallocs", NULL, SC_TYPE_PROCESSED, &count_payload_reallocs);
   stats_register_counter(0, SCS_GLOBAL, "sdata_updates", NULL, SC_TYPE_PROCESSED, &count_sdata_updates);
