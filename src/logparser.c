@@ -47,7 +47,9 @@ log_parser_process(LogParser *self, LogMessage *msg)
 
   if (G_LIKELY(!self->template))
     {
+      NVTable *payload = nv_table_ref(msg->payload);
       success = self->process(self, msg, log_msg_get_value(msg, LM_V_MESSAGE, NULL));
+      nv_table_unref(payload);
     }
   else
     {
