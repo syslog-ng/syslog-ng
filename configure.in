@@ -24,6 +24,7 @@ GLIB_MIN_VERSION="2.10.1"
 EVTLOG_MIN_VERSION="0.2"
 OPENSSL_MIN_VERSION="0.9.8"
 LIBDBI_MIN_VERSION="0.8.0"
+PCRE_MIN_VERSION="7.3"
 
 dnl ***************************************************************************
 dnl Initial setup
@@ -294,7 +295,19 @@ if test "x$enable_linux_caps" = "xyes" -o "x$enable_linux_caps" = "xauto"; then
 	AC_CHECK_LIB(cap, cap_set_proc, LIBCAP_LIBS="-lcap")
 fi
 if test "x$enable_pcre" = "xyes" -o "x$enable_pcre" = "xauto"; then
-	AC_CHECK_LIB(pcre, pcre_compile, PCRE_LIBS="-lpcre")
+	PKG_CHECK_MODULES(PCRE, libpcre >= $PCRE_MIN_VERSION,, PCRE_LIBS="")
+	if test -z "$PCRE_LIBS"; then
+		if test "x$enable_pcre" = "xyes"; then
+			AC_MSG_ERROR(Cannot find pcre version >= $PCRE_MIN_VERSION.)
+		else
+			AC_MSG_WARN(Cannot find pcre version >= $PCRE_MIN_VERSION. pcre support disabled.)
+		fi
+	fi
+fi
+
+if test -z "$PCRE_LIBS"; then
+		PCRE_LIBS=""
+		PCRE_CFLAGS=""
 fi
 
 if test "x$enable_env_wrapper" = "xauto"; then
@@ -497,7 +510,7 @@ fi
 
 if test "x$enable_pcre" = "xauto"; then
         AC_MSG_CHECKING(whether to enable PCRE support)
-        if test "x$ac_cv_lib_pcre_pcre_compile" = "xyes"; then
+        if test "x$PCRE_LIBS" != "x"; then
                 enable_pcre="yes" 
         else
                 enable_pcre="no"
