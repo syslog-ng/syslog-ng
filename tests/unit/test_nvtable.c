@@ -182,13 +182,13 @@ test_nvtable_direct()
       success = nv_table_add_value(tab, handle, name, strlen(name), value, 128, NULL);
       TEST_ASSERT(success == TRUE);
       TEST_NVTABLE_ASSERT(tab, handle, value, 128);
-      nv_table_free(tab);
+      nv_table_unref(tab);
 
       /* one that is too large */
       tab = nv_table_new(STATIC_VALUES, STATIC_VALUES, 256);
       success = nv_table_add_value(tab, handle, name, strlen(name), value, 512, NULL);
       TEST_ASSERT(success == FALSE);
-      nv_table_free(tab);
+      nv_table_unref(tab);
 
       /*************************************************************/
       /* overwrite NV entry */
@@ -204,7 +204,7 @@ test_nvtable_direct()
       TEST_ASSERT(success == TRUE);
       TEST_ASSERT(tab->used == used);
       TEST_NVTABLE_ASSERT(tab, handle, value, 64);
-      nv_table_free(tab);
+      nv_table_unref(tab);
 
       /* one that is too large for the given entry, but still fits in the NVTable */
       tab = nv_table_new(STATIC_VALUES, STATIC_VALUES, 256);
@@ -216,7 +216,7 @@ test_nvtable_direct()
       TEST_ASSERT(success == TRUE);
       TEST_ASSERT(tab->used > used);
       TEST_NVTABLE_ASSERT(tab, handle, value, 128);
-      nv_table_free(tab);
+      nv_table_unref(tab);
 
       /* one that is too large for the given entry, and also for the NVTable */
       tab = nv_table_new(STATIC_VALUES, STATIC_VALUES, 256);
@@ -226,7 +226,7 @@ test_nvtable_direct()
       success = nv_table_add_value(tab, handle, name, strlen(name), value, 512, NULL);
       TEST_ASSERT(success == FALSE);
       TEST_NVTABLE_ASSERT(tab, handle, value, 64);
-      nv_table_free(tab);
+      nv_table_unref(tab);
 
       /*************************************************************/
       /* overwrite indirect entry */
@@ -251,7 +251,7 @@ test_nvtable_direct()
           TEST_NVTABLE_ASSERT(tab, STATIC_HANDLE, value, 128);
           TEST_NVTABLE_ASSERT(tab, handle, value, 1);
 
-          nv_table_free(tab);
+          nv_table_unref(tab);
 
           /* setup code: add static and a dynamic-indirect entry */
           tab = nv_table_new(STATIC_VALUES, STATIC_VALUES, 256);
@@ -269,7 +269,7 @@ test_nvtable_direct()
           TEST_NVTABLE_ASSERT(tab, STATIC_HANDLE, value, 64);
           TEST_NVTABLE_ASSERT(tab, handle, value, 128);
 
-          nv_table_free(tab);
+          nv_table_unref(tab);
 
           /* setup code: add static and a dynamic-indirect entry */
           tab = nv_table_new(STATIC_VALUES, STATIC_VALUES, 256);
@@ -285,7 +285,7 @@ test_nvtable_direct()
           TEST_NVTABLE_ASSERT(tab, STATIC_HANDLE, value, 64);
           TEST_NVTABLE_ASSERT(tab, handle, value + 1, 62);
 
-          nv_table_free(tab);
+          nv_table_unref(tab);
 
         }
 
@@ -358,7 +358,7 @@ test_nvtable_indirect()
   TEST_ASSERT(success == TRUE);
   TEST_NVTABLE_ASSERT(tab, STATIC_HANDLE, value, 128);
   TEST_NVTABLE_ASSERT(tab, handle, value + 1, 126);
-  nv_table_free(tab);
+  nv_table_unref(tab);
 
   /* one that is too large */
 
@@ -372,7 +372,7 @@ test_nvtable_indirect()
   success = nv_table_add_value_indirect(tab, handle, name, strlen(name), STATIC_HANDLE, 0, 1, 126, NULL);
   TEST_ASSERT(success == FALSE);
 
-  nv_table_free(tab);
+  nv_table_unref(tab);
 
   /*************************************************************/
   /* overwrite NV entry */
@@ -391,7 +391,7 @@ test_nvtable_indirect()
   TEST_ASSERT(used == tab->used);
   TEST_NVTABLE_ASSERT(tab, STATIC_HANDLE, value, 128);
   TEST_NVTABLE_ASSERT(tab, handle, value + 1, 62);
-  nv_table_free(tab);
+  nv_table_unref(tab);
 
 
   /*************************************************************/
@@ -414,7 +414,7 @@ test_nvtable_indirect()
   TEST_NVTABLE_ASSERT(tab, STATIC_HANDLE, value, 128);
   TEST_NVTABLE_ASSERT(tab, handle, value + 1, 126);
 
-  nv_table_free(tab);
+  nv_table_unref(tab);
 
   /* the new entry will not fit to the space allocated to the old */
 
@@ -432,7 +432,7 @@ test_nvtable_indirect()
   TEST_NVTABLE_ASSERT(tab, STATIC_HANDLE, value, 128);
   TEST_NVTABLE_ASSERT(tab, handle, value + 1, 126);
 
-  nv_table_free(tab);
+  nv_table_unref(tab);
 
   /* the new entry will not fit to the space allocated to the old and neither to the NVTable */
 
@@ -448,7 +448,7 @@ test_nvtable_indirect()
   TEST_NVTABLE_ASSERT(tab, STATIC_HANDLE, value, 128);
   TEST_NVTABLE_ASSERT(tab, handle, value, 1);
 
-  nv_table_free(tab);
+  nv_table_unref(tab);
 
   /*************************************************************/
   /*************************************************************/
@@ -473,7 +473,7 @@ test_nvtable_indirect()
   TEST_NVTABLE_ASSERT(tab, STATIC_HANDLE, value, 128);
   TEST_NVTABLE_ASSERT(tab, DYN_HANDLE, value + 1, 126);
   TEST_NVTABLE_ASSERT(tab, handle, value + 2, 122);
-  nv_table_free(tab);
+  nv_table_unref(tab);
 
   /* one that is too large */
   tab = nv_table_new(STATIC_VALUES, STATIC_VALUES, 192);
@@ -487,7 +487,7 @@ test_nvtable_indirect()
   TEST_NVTABLE_ASSERT(tab, STATIC_HANDLE, value, 128);
   TEST_NVTABLE_ASSERT(tab, DYN_HANDLE, value + 1, 126);
   TEST_NVTABLE_ASSERT(tab, handle, "", 0);
-  nv_table_free(tab);
+  nv_table_unref(tab);
 
   /*************************************************************/
   /* overwrite indirect NV entry */
@@ -511,7 +511,7 @@ test_nvtable_indirect()
   TEST_NVTABLE_ASSERT(tab, STATIC_HANDLE, value, 128);
   TEST_NVTABLE_ASSERT(tab, DYN_HANDLE, value + 1, 126);
   TEST_NVTABLE_ASSERT(tab, handle, value + 2, 1);
-  nv_table_free(tab);
+  nv_table_unref(tab);
 
   /* the new entry will not fit to the space allocated to the old */
 
@@ -531,7 +531,7 @@ test_nvtable_indirect()
   TEST_NVTABLE_ASSERT(tab, STATIC_HANDLE, value, 128);
   TEST_NVTABLE_ASSERT(tab, DYN_HANDLE, value + 1, 126);
   TEST_NVTABLE_ASSERT(tab, handle, value + 2, 16);
-  nv_table_free(tab);
+  nv_table_unref(tab);
 
   /* one that is too large */
 
@@ -551,7 +551,7 @@ test_nvtable_indirect()
   TEST_NVTABLE_ASSERT(tab, STATIC_HANDLE, value, 128);
   TEST_NVTABLE_ASSERT(tab, DYN_HANDLE, value + 1, 126);
   TEST_NVTABLE_ASSERT(tab, handle, value + 1, 126);
-  nv_table_free(tab);
+  nv_table_unref(tab);
 
   /*************************************************************/
   /* overwrite direct NV entry */
@@ -575,7 +575,7 @@ test_nvtable_indirect()
   TEST_NVTABLE_ASSERT(tab, STATIC_HANDLE, value, 128);
   TEST_NVTABLE_ASSERT(tab, DYN_HANDLE, value + 1, 126);
   TEST_NVTABLE_ASSERT(tab, handle, value + 2, 16);
-  nv_table_free(tab);
+  nv_table_unref(tab);
 
 
   /* the new entry will not fit to the space allocated to the old */
@@ -596,7 +596,7 @@ test_nvtable_indirect()
   TEST_NVTABLE_ASSERT(tab, STATIC_HANDLE, value, 128);
   TEST_NVTABLE_ASSERT(tab, DYN_HANDLE, value + 1, 126);
   TEST_NVTABLE_ASSERT(tab, handle, value + 2, 32);
-  nv_table_free(tab);
+  nv_table_unref(tab);
 
   /* one that is too large */
 
@@ -616,7 +616,7 @@ test_nvtable_indirect()
   TEST_NVTABLE_ASSERT(tab, STATIC_HANDLE, value, 128);
   TEST_NVTABLE_ASSERT(tab, DYN_HANDLE, value + 1, 126);
   TEST_NVTABLE_ASSERT(tab, handle, value, 16);
-  nv_table_free(tab);
+  nv_table_unref(tab);
 
   /*************************************************************/
   /* indirect that refers to non-existant entry */
@@ -630,7 +630,7 @@ test_nvtable_indirect()
   TEST_ASSERT(used == tab->used);
   TEST_NVTABLE_ASSERT(tab, STATIC_HANDLE, "", 0);
   TEST_NVTABLE_ASSERT(tab, handle, "", 0);
-  nv_table_free(tab);
+  nv_table_unref(tab);
 }
 
 /*
@@ -672,7 +672,7 @@ test_nvtable_others(void)
 
   TEST_NVTABLE_ASSERT(tab, STATIC_HANDLE, value + 32, 32);
   TEST_NVTABLE_ASSERT(tab, handle, value + 1, 126);
-  nv_table_free(tab);
+  nv_table_unref(tab);
 
   /* one that doesn't fit */
   tab = nv_table_new(STATIC_VALUES, STATIC_VALUES, 192);
@@ -686,7 +686,7 @@ test_nvtable_others(void)
 
   TEST_NVTABLE_ASSERT(tab, STATIC_HANDLE, value, 128);
   TEST_NVTABLE_ASSERT(tab, handle, value + 1, 126);
-  nv_table_free(tab);
+  nv_table_unref(tab);
 }
 
 void
@@ -725,7 +725,7 @@ test_nvtable_lookup()
           g_snprintf(name, sizeof(name), "VAL%d", handle);
           TEST_NVTABLE_ASSERT(tab, handles[i], name, strlen(name));
         }
-      nv_table_free(tab);
+      nv_table_unref(tab);
     }
 }
 

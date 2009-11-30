@@ -576,6 +576,7 @@ nv_table_new(gint num_static_entries, gint num_dyn_values, gint init_length)
   self->used = 0;
   self->num_dyn_entries = 0;
   self->num_static_entries = NV_TABLE_BOUND_NUM_STATIC(num_static_entries);
+  self->ref_cnt = 1;
   memset(&self->static_entries[0], 0, self->num_static_entries * sizeof(self->static_entries[0]));
   return self;
 }
@@ -584,20 +585,50 @@ NVTable *
 nv_table_realloc(NVTable *self)
 {
   gint old_size = self->size;
+  NVTable *new = NULL;
 
-  self = g_realloc(self, old_size << (NV_TABLE_SCALE + 1));
-  self->size <<= 1;
+  if (self->ref_cnt == 1)
+    {
+      self = g_realloc(self, old_size << (NV_TABLE_SCALE + 1));
 
-  memmove(NV_TABLE_ADDR(self, self->size - self->used),
-          NV_TABLE_ADDR(self, old_size - self->used),
-          self->used << NV_TABLE_SCALE);
+      self->size <<= 1;
+      memmove(NV_TABLE_ADDR(self, self->size - self->used),
+              NV_TABLE_ADDR(self, old_size - self->used),
+              self->used << NV_TABLE_SCALE);
+    }
+  else
+    {
+      new = g_malloc(old_size << (NV_TABLE_SCALE + 1));
+
+      /* we only copy the header in this case */
+      memcpy(new, self, sizeof(NVTable) + self->num_static_entries * sizeof(self->static_entries[0]) + self->num_dyn_entries * sizeof(guint32));
+      self->size <<= 1;
+      new->ref_cnt = 1;
+
+      memmove(NV_TABLE_ADDR(new, new->size - new->used),
+              NV_TABLE_ADDR(self, old_size - self->used),
+              self->used << NV_TABLE_SCALE);
+
+      nv_table_unref(self);
+      self = new;
+    }
+  return self;
+}
+
+NVTable *
+nv_table_ref(NVTable *self)
+{
+  self->ref_cnt++;
   return self;
 }
 
 void
-nv_table_free(NVTable *self)
+nv_table_unref(NVTable *self)
 {
-  g_free(self);
+  if (--self->ref_cnt == 0)
+    {
+      g_free(self);
+    }
 }
 
 /**
@@ -621,6 +652,7 @@ nv_table_clone(NVTable *self, gint additional_space)
   new = g_malloc(new_size << NV_TABLE_SCALE);
   memcpy(new, self, sizeof(NVTable) + self->num_static_entries * sizeof(self->static_entries[0]) + self->num_dyn_entries * sizeof(guint32));
   new->size = new_size;
+  new->ref_cnt = 1;
 
   memcpy(NV_TABLE_ADDR(new, new->size - new->used),
           NV_TABLE_ADDR(self, self->size - self->used),

@@ -161,6 +161,7 @@ struct _NVTable
   guint16 used;
   guint16 num_dyn_entries;
   guint8 num_static_entries;
+  guint8 ref_cnt;
 
   /* variable data, see memory layout in the comment above */
   union
@@ -187,7 +188,8 @@ gboolean nv_table_foreach_entry(NVTable *self, NVTableForeachEntryFunc func, gpo
 NVTable *nv_table_new(gint num_static_values, gint num_dyn_values, gint init_length);
 NVTable *nv_table_realloc(NVTable *self);
 NVTable *nv_table_clone(NVTable *self, gint additional_space);
-void nv_table_free(NVTable *self);
+NVTable *nv_table_ref(NVTable *self);
+void nv_table_unref(NVTable *self);
 
 static inline gchar *
 nv_table_get_top(NVTable *self)

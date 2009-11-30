@@ -1546,7 +1546,7 @@ static void
 log_msg_free(LogMessage *self)
 {
   if (log_msg_chk_flag(self, LF_STATE_OWN_PAYLOAD) && self->payload)
-    nv_table_free(self->payload);
+    nv_table_unref(self->payload);
   if (log_msg_chk_flag(self, LF_STATE_OWN_TAGS) && self->tags)
     g_free(self->tags);
 
