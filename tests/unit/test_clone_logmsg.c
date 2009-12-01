@@ -127,11 +127,11 @@ testcase(gchar *msg,
 
   log_msg_set_value(cloned, LM_V_HOST, "newhost", -1);
   log_msg_set_value(cloned, LM_V_HOST_FROM, "newhost", -1);
-  log_msg_set_value(cloned, LM_V_MESSAGE, g_strdup("newmsg"), -1);
-  log_msg_set_value(cloned, LM_V_PROGRAM, g_strdup("newprogram"), -1);
-  log_msg_set_value(cloned, LM_V_PID, g_strdup("newpid"), -1);
-  log_msg_set_value(cloned, LM_V_MSGID, g_strdup("newmsgid"), -1);
-  log_msg_set_value(cloned, LM_V_SOURCE, g_strdup("newsource"), -1);
+  log_msg_set_value(cloned, LM_V_MESSAGE, "newmsg", -1);
+  log_msg_set_value(cloned, LM_V_PROGRAM, "newprogram", -1);
+  log_msg_set_value(cloned, LM_V_PID, "newpid", -1);
+  log_msg_set_value(cloned, LM_V_MSGID, "newmsgid", -1);
+  log_msg_set_value(cloned, LM_V_SOURCE, "newsource", -1);
   log_msg_set_value(cloned, log_msg_get_value_handle("newvalue"), "newvalue", -1);
 
   /* retest values in original logmsg */
