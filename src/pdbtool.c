@@ -262,7 +262,7 @@ pdbtool_match(int argc, char *argv[])
 
   log_db_parser_process_lookup(&patterndb, msg);
 
-  nv_table_foreach(msg->payload, pdbtool_match_values, &ret);
+  nv_table_foreach(msg->payload, logmsg_registry, pdbtool_match_values, &ret);
 
   log_pattern_database_free(&patterndb);
   log_msg_unref(msg);

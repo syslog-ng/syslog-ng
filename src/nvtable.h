@@ -182,7 +182,7 @@ struct _NVTable
 gboolean nv_table_add_value(NVTable *self, NVHandle handle, const gchar *name, gsize name_len, const gchar *value, gsize value_len, gboolean *new_entry);
 gboolean nv_table_add_value_indirect(NVTable *self, NVHandle handle, const gchar *name, gsize name_len, NVHandle ref_handle, guint8 type, guint16 ofs, guint16 len, gboolean *new_entry);
 
-gboolean nv_table_foreach(NVTable *self, NVTableForeachFunc func, gpointer user_data);
+gboolean nv_table_foreach(NVTable *self, NVRegistry *registry, NVTableForeachFunc func, gpointer user_data);
 gboolean nv_table_foreach_entry(NVTable *self, NVTableForeachEntryFunc func, gpointer user_data);
 
 NVTable *nv_table_new(gint num_static_values, gint num_dyn_values, gint init_length);

@@ -409,9 +409,15 @@ nv_table_add_value(NVTable *self, NVHandle handle, const gchar *name, gsize name
 
   ofs = (nv_table_get_top(self) - (gchar *) entry) >> NV_TABLE_SCALE;
   entry->vdirect.value_len = value_len;
-  entry->name_len = name_len;
-  memcpy(entry->vdirect.data, name, name_len + 1);
-  memcpy(entry->vdirect.data + name_len + 1, value, value_len);
+  if (handle >= self->num_static_entries)
+    {
+      /* we only store the name for non-builtin values */
+      entry->name_len = name_len;
+      memcpy(entry->vdirect.data, name, name_len + 1);
+    }
+  else
+    entry->name_len = 0;
+  memcpy(entry->vdirect.data + entry->name_len + 1, value, value_len);
   entry->vdirect.data[entry->name_len + 1 + value_len] = 0;
 
   nv_table_set_table_entry(self, handle, ofs, dyn_slot);
@@ -479,8 +485,15 @@ nv_table_add_value_indirect(NVTable *self, NVHandle handle, const gchar *name, g
         {
           /* previously a non-indirect entry, convert it */
           entry->indirect = 1;
-          entry->name_len = name_len;
-          memcpy(entry->vindirect.name, name, name_len + 1);
+          if (handle >= self->num_static_entries)
+            {
+              entry->name_len = name_len;
+              memcpy(entry->vindirect.name, name, name_len + 1);
+            }
+          else
+            {
+              entry->name_len = 0;
+            }
         }
       return TRUE;
     }
@@ -500,10 +513,15 @@ nv_table_add_value_indirect(NVTable *self, NVHandle handle, const gchar *name, g
   entry->vindirect.ofs = rofs;
   entry->vindirect.len = rlen;
   entry->vindirect.type = type;
-  entry->name_len = name_len;
   entry->indirect = 1;
   ref_entry->referenced = TRUE;
-  memcpy(entry->vindirect.name, name, name_len + 1);
+  if (handle >= self->num_static_entries)
+    {
+      entry->name_len = name_len;
+      memcpy(entry->vindirect.name, name, name_len + 1);
+    }
+  else
+    entry->name_len = 0;
 
   nv_table_set_table_entry(self, handle, ofs, dyn_slot);
   return TRUE;
@@ -513,19 +531,20 @@ static gboolean
 nv_table_call_foreach(NVHandle handle, NVEntry *entry, gpointer user_data)
 {
   NVTable *self = (NVTable *) ((gpointer *) user_data)[0];
-  NVTableForeachFunc func = ((gpointer *) user_data)[1];
-  gpointer func_data = ((gpointer *) user_data)[2];
+  NVRegistry *registry = (NVRegistry *) ((gpointer *) user_data)[1];
+  NVTableForeachFunc func = ((gpointer *) user_data)[2];
+  gpointer func_data = ((gpointer *) user_data)[3];
   const gchar *value;
   gssize value_len;
 
   value = nv_table_resolve_entry(self, entry, &value_len);
-  return func(handle, nv_entry_get_name(entry), value, value_len, func_data);
+  return func(handle, nv_registry_get_handle_name(registry, handle, NULL), value, value_len, func_data);
 }
 
 gboolean
-nv_table_foreach(NVTable *self, NVTableForeachFunc func, gpointer user_data)
+nv_table_foreach(NVTable *self, NVRegistry *registry, NVTableForeachFunc func, gpointer user_data)
 {
-  gpointer data[3] = { self, func, user_data };
+  gpointer data[4] = { self, registry, func, user_data };
 
   return nv_table_foreach_entry(self, nv_table_call_foreach, data);
 }
