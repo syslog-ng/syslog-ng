@@ -1,230 +1,473 @@
-.TH syslog-ng.conf 5
-.SH NAME
-/etc/syslog-ng/syslog-ng.conf - syslog-ng configuration file
-.SH DESCRIPTION
+.\"     Title: syslog-ng.conf
+.\"    Author: 
+.\" Generator: DocBook XSL Stylesheets v1.73.2 <http://docbook.sf.net/>
+.\"      Date: 11/30/2009
+.\"    Manual: The syslog-ng.conf manual page
+.\"    Source: 
+.\"
+.TH "SYSLOG\-NG\.CONF" "5" "11/30/2009" "" "The syslog-ng.conf manual page"
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.SH "NAME"
+syslog-ng.conf - syslog-ng configuration file
+.SH "SYNOPSIS"
+.HP 15
+\fBsyslog\-ng\.conf\fR
+.SH "DESCRIPTION"
+.PP
+NOTE: This manual page covers both editions of syslog\-ng: syslog\-ng Open Source Edition and the commercial syslog\-ng Premium Edition\. Features that are only included in the Premium Edition are marked with an asterisk (\fI*\fR)\. For details, see the official syslog\-ng website:
+\fIhttp://www\.balabit\.com/network\-security/syslog\-ng/\fR\.
+.PP
+This manual page is only an abstract; for the complete documentation of syslog\-ng, see
+\fI \fBThe syslog\-ng Administrator Guide\fR \fR\&[1]\.
+.PP
+The syslog\-ng application is a flexible and highly scalable system logging application\. Typically, syslog\-ng is used to manage log messages and implement centralized logging, where the aim is to collect the log messages of several devices on a single, central log server\. The different devices \- called syslog\-ng clients \- all run syslog\-ng, and collect the log messages from the various applications, files, and other
+\fIsources\fR\. The clients send all important log messages to the remote syslog\-ng server, where the server sorts and stores them\.
+.PP
+The syslog\-ng application reads incoming messages and forwards them to the selected
+\fIdestinations\fR\. The syslog\-ng application can receive messages from files, remote hosts, and other
+\fIsources\fR\.
+.PP
+Log messages enter syslog\-ng in one of the defined sources, and are sent to one or more
+\fIdestinations\fR\.
+.PP
+Sources and destinations are independent objects;
+\fIlog paths\fR
+define what syslog\-ng does with a message, connecting the sources to the destinations\. A log path consists of one or more sources and one or more destinations; messages arriving to a source are sent to every destination listed in the log path\. A log path defined in syslog\-ng is called a
+\fIlog statement\fR\.
+.PP
+Optionally, log paths can include
+\fIfilters\fR\. Filters are rules that select only certain messages, for example, selecting only messages sent by a specific application\. If a log path includes filters, syslog\-ng sends only the messages satisfying the filter rules to the destinations set in the log path\.
+.SH "CONFIGURING SYSLOG-NG"
+.PP
+Global objects (e\.g\., sources, destinations, log paths, or filters) are defined in the syslog\-ng configuration file\. Object definitions consist of the following elements:
+.sp
+.RS 4
+\h'-04'\(bu\h'+03'\fIType of the object\fR: One of
+\fIsource\fR,
+\fIdestination\fR,
+\fIlog\fR,
+\fIfilter\fR,
+\fIparser\fR,
+\fIrewrite\fR
+rule, or
+\fItemplate\fR\.
+.RE
+.sp
+.RS 4
+\h'-04'\(bu\h'+03'\fIIdentifier of the object\fR: A unique name identifying the object\. When using a reserved word as an identifier, enclose the identifier in quotation marks\.
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+Tip
+Use identifiers that refer to the type of the object they identify\. For example, prefix source objects with
+\fIs_\fR, destinations with
+\fId_\fR, and so on\.
+.RE
+.sp
+.RS 4
+\h'-04'\(bu\h'+03'\fIParameters\fR: The parameters of the object, enclosed in braces
+\fI{parameters}\fR\.
+.RE
+.sp
+.RS 4
+\h'-04'\(bu\h'+03'\fISemicolon\fR: Object definitions end with a semicolon (\fI;\fR)\.
+.RE
+.PP
+The syntax is summarized as follows:
+.PP
+The syntax of log statements is as follows:
+.sp
+.RS 4
+.nf
+log {
+    source(s1); source(s2); \.\.\. 
+    optional_element(filter1|parser1|rewrite1); optional_element(filter2|parser2|rewrite2);\.\.\. 
+    destination(d1); destination(d2); \.\.\. 
+    flags(flag1[, flag2\.\.\.]);
+    };
+.fi
+.RE
+.PP
+The following log statement sends all messages arriving to the localhost to a remote server\.
+.sp
+.RS 4
+.nf
+source s_localhost { tcp(ip(127\.0\.0\.1) port(1999) ); };
+destination d_tcp { tcp("10\.1\.2\.3" port(1999); localport(999)); };
+log { source(s_localhost); destination(d_tcp); };
+.fi
+.RE
+.PP
+The syslog\-ng application has a number of global options governing DNS usage, the timestamp format used, and other general points\. Each option may have parameters, similarly to driver specifications\. To set global options, add an option statement to the syslog\-ng configuration file using the following syntax:
+.sp
+.RS 4
+.nf
+options { option1(params); option2(params); \.\.\. };
+.fi
+.RE
+.PP
+The sources, destinations, and filters available in syslog\-ng are listed below\. For details, see
+\fI \fBThe syslog\-ng Administrator Guide\fR \fR\&[1]\.
+.PP
+.B Table\ 1.\ Source drivers available in syslog-ng
+.sp -1n
+.TS
+allbox tab(:);
+lB lB.
+T{
+Name
+T}:T{
+Description
+T}
+.T&
+l l
+l l
+l l
+l l
+l l
+l l
+l l
+l l
+l l
+l l.
+T{
+internal()
+T}:T{
+Messages generated internally in syslog\-ng\.
+T}
+T{
+file()
+T}:T{
+Opens the specified file and reads messages\.
+T}
+T{
+pipe(), fifo
+T}:T{
+Opens the specified named pipe and reads messages\.
+T}
+T{
+program()
+T}:T{
+Opens the specified application and reads messages from its standard
+                            output\.
+T}
+T{
+sun\-stream(),
+                                sun\-streams()
+T}:T{
+Opens the specified \fISTREAMS\fR device on Solaris
+                            systems and reads incoming messages\.
+T}
+T{
+syslog()
+T}:T{
+Listens for incoming messages using the new IETF\-standard syslog
+                            protocol\.
+T}
+T{
+tcp(), tcp6()
+T}:T{
+Listens on the specified TCP port for incoming messages using the
+                                BSD\-syslog
+                            protocol over IPv4 and IPv6 networks, respectively\.
+T}
+T{
+udp(), udp6()
+T}:T{
+Listens on the specified UDP port for incoming messages using the
+                                BSD\-syslog
+                            protocol over IPv4 and IPv6 networks, respectively\.
+T}
+T{
+unix\-dgram()
+T}:T{
+Opens the specified unix socket in \fISOCK_DGRAM\fR
+                            mode and listens for incoming messages\.
+T}
+T{
+unix\-stream()
+T}:T{
+Opens the specified unix socket in \fISOCK_STREAM\fR
+                            mode and listens for incoming messages\.
+T}
+.TE
+.PP
+.B Table\ 2.\ Destination drivers available in syslog-ng
+.sp -1n
+.TS
+allbox tab(:);
+lB lB.
+T{
+Name
+T}:T{
+Description
+T}
+.T&
+l l
+l l
+l l
+l l
+l l
+l l
+l l
+l l
+l l
+l l
+l l.
+T{
+file()
+T}:T{
+Writes messages to the specified file\.
+T}
+T{
+logstore()\fI*\fR
+T}:T{
+Writes messages to the specified binary logstore file\.
+                            \fI*\fRAvailable only in syslog\-ng Premium
+                        Edition\.
+T}
+T{
+fifo(), pipe()
+T}:T{
+Writes messages to the specified named pipe\.
+T}
+T{
+program()
+T}:T{
+Forks and launches the specified program, and sends messages to its
+                            standard input\.
+T}
+T{
+sql()
+T}:T{
+Sends messages into an SQL database\. In addition to the standard
+                            syslog\-ng packages, the \fIsql()\fR destination
+                            requires database\-specific packages to be installed\. Refer to the
+                            section appropriate for your platform in ???\.
+T}
+T{
+syslog()
+T}:T{
+Sends messages to the specified remote host using the IETF\-syslog protocol\.
+                            The IETF standard supports message transport using the UDP, TCP, and TLS
+                            networking protocols\.
+T}
+T{
+tcp() and tcp6()
+T}:T{
+Sends messages to the specified TCP port of a remote host using the
+                                BSD\-syslog
+                            protocol over IPv4 and IPv6, respectively\.
+T}
+T{
+udp() and udp6()
+T}:T{
+Sends messages to the specified UDP port of a remote host using the
+                                BSD\-syslog
+                            protocol over IPv4 and IPv6, respectively\.
+T}
+T{
+unix\-dgram()
+T}:T{
+Sends messages to the specified unix socket in
+                            \fISOCK_DGRAM\fR style (BSD)\.
+T}
+T{
+unix\-stream()
+T}:T{
+Sends messages to the specified unix socket in
+                            \fISOCK_STREAM\fR style (Linux)\.
+T}
+T{
+usertty()
+T}:T{
+Sends messages to the terminal of the specified user, if the user is
+                            logged in\.
+T}
+.TE
+.PP
+.B Table\ 3.\ Filter functions in syslog-ng
+.sp -1n
+.TS
+allbox tab(:);
+lB lB lB.
+T{
+Name
+T}:T{
+Synopsis
+T}:T{
+Description
+T}
+.T&
+l l l
+l l l
+l l l
+l l l
+l l l
+l l l
+l l l
+l l l
+l l l
+l l l
+l l l.
+T{
+facility()
+T}:T{
+facility(facility[,facility])
+T}:T{
+Match messages having one of the listed facility code\. An alternate
+                            syntax permits the use an arbitrary facility codes\.
+T}
+T{
+facility()
+T}:T{
+facility(<numeric facility code>)
+T}:T{
+An alternate syntax for \fIfacility\fR permitting
+                            the use of an arbitrary facility code\. Facility codes 0\-23 are
+                            predefined and can be referenced by their usual name\. Facility codes
+                            above 24 are not defined but can be used by this alternate syntax\.
+T}
+T{
+filter()
+T}:T{
+filter(filtername)
+T}:T{
+Call another filter rule and evaluate its value\.
+T}
+T{
+host()
+T}:T{
+host(regexp)
+T}:T{
+Match messages by using a regular expression against the hostname
+                            field of log messages\.
+T}
+T{
+level() or priority()
+T}:T{
+level(pri[,pri1\.\.pri2[,pri3]])
+T}:T{
+Match messages based on priority\.
+T}
+T{
+match()
+T}:T{
+match(regexp)
+T}:T{
+Match a regular expression to the headers and the message itself
+                            (i\.e\., the values returned by the \fIMSGHDR\fR and
+                                \fIMSG\fR macros)\. Note that in syslog\-ng version
+                            2\.1 and earlier, the \fImatch()\fR filter was applied
+                            only to the text of the message, excluding the headers\. This
+                            functionality has been moved to the \fImessage()\fR
+                            filter\. To limit the scope of the match to a specific part of the
+                            message (identified with a macro), use the \fImatch(regexp
+                                value("$MACRO"))\fR syntax\.
+T}
+T{
+message()
+T}:T{
+message(regexp)
+T}:T{
+Match a regular expression to the text of the log message, excluding
+                            the headers (i\.e\., the value returned by the \fIMSG\fR
+                            macros)\. Note that in syslog\-ng version 2\.1 and earlier, this
+                            functionality was performed by the \fImatch()\fR
+                            filter\.
+T}
+T{
+netmask()
+T}:T{
+netmask(ip/mask)
+T}:T{
+Select only messages sent by a host whose IP address belongs to the
+                            specified IP subnet\. Note that this filter checks the IP address of the
+                            last\-hop relay (the host that actually sent the message to syslog\-ng),
+                            not the contents of the \fIHOST\fR field of the
+                            message\.
+T}
+T{
+program()
+T}:T{
+program(regexp)
+T}:T{
+Match messages by using a regular expression against the program name
+                            field of log messages\.
+T}
+T{
+source()
+T}:T{
+string
+T}:T{
+Select messages of a source statement\. This filter can be used in
+                            embedded log statements if the parent statement contains multiple source
+                            groups \(em only messages originating from the selected source
+                            group are sent to the destination of the embedded log statement\.
+T}
+T{
+tags()
+T}:T{
+tag
+T}:T{
+Select messages labeled with the specified tag\. Every message
+                            automatically has the tag of its source in
+                                \fI\.source\.<id_of_the_source_statement>\fR
+                            format\. This option is available only in syslog\-ng 3\.1 and later\.
+T}
+.TE
+.sp
+.SH "FILES"
 .PP
 
-The configuration file for \fBsyslog-ng\fP
-
-A message route in syslog-ng is made up from three parts: a source, 
-a destination and filtering rules. 
-
-.SH SOURCES
-
-You can declare source statements using the "source" keyword:
-
-source <sourcename> { sourcedriver params; sourcedriver params; ... };
-
-Sourcename is an identifier you'll use to refer to this group of messages. 
-Sourcedriver is a method of getting a given message. The following drivers 
-are available:
-
-* file <filename> - reads messages from the given file
-
-* unix-dgram <filename> - reads messages from the given AF_UNIX, SOCK_DGRAM socket (BSDi style)
-
-* unix-stream <filename> - reads messages from the given AF_UNIX, SOCK_STREAM socket (Linux style)
-
-* udp <ip>,<port> - network source using the UDP protocol. If you do not want to bind to a specific interface use 0.0.0.0.
-
-* tcp <ip>,<port> - network source using the TCP protocol.
-
-* sun-streams <filename> - local source used on Solaris systems
-
-.SH DESTINATIONS
-
-Destinations can be created using the destination keyword:
-
-destination <destname> { destdriver params; destdriver params; ... ; };
-
-* file <filename> - writes messages to the given file
-
-* unix-dgram <filename> - writes messages to the given AF_UNIX, SOCK_DGRAM socket (BSDi style)
-
-* unix-stream <filename> - writes messages to the given AF_UNIX, SOCK_STREAM socket (Linux style)
-
-* udp <ip>,<port> - network destination using the UDP protocol
-
-* tcp <ip>,<port> - network destination using the TCP protocol
-
-* usertty <username> - sends log to the given user's terminal
-
-.SH FILTERS
-
-You can create filters using the filter keyword:
-
-filter <filtername> { expression; };
-
-Where expression is a simple boolean expression. You can use "and", "or" 
-and "not" to connect builtin functions. Functions can be one of:
-
-* facility(list of comma seperated facility names)
-
-* level(list of comma seperated priority nammes OR a range separated by "..")
-
-* program(regexp to match program name)
-
-* host(regexp to match program name)
-
-* match(regexp to match program name)
-
-* tags(list of comma separated tag names)
-
-.SH LOG STATEMENTS
-
-You can connect sources and destinations using the log statement:
-
-log { source S1; source S2; ... filter F1; filter F2; ... destination D1; destination D2; ... };
-
-Where Sx refers to one of the declared log sources, Fx one of the filters and 
-Dx one of the destinations.
-
-Filters are ANDed together.
-
-.SH OPTIONS
-
-You can specify several global options to syslog-ng in the options statement:
-
-options { opt1; opt2; ... };
-
-Where an option can be any of the following:
-
-
-.TP
-.B chain_hostnames(yes|no)
-Enable or disable the chained hostname format.
-
-.TP
-.B long_hostnames(yes|no)
-This is a deprecated alias for chain_hostnames().
-
-.TP
-.B keep_hostname(yes|no)
-Specifies whether to trust hostname as it is included in the log message. If
-keep_hostname is yes and there is a hostname in the message it is not
-touched, otherwise it is always rewritten based on the information where the
-message was received from.
-
-.TP
-.B use_dns(yes|no)
-Enable or disable DNS usage.  syslog-ng blocks on DNS queries, so
-enabling DNS may lead to a Denial of Service attack.  To prevent DoS,
-protect your syslog-ng network endpoint with firewall rules, and make
-sure that all hosts, which may get to syslog-ng is resolvable.
-
-.TP
-.B use_fqdn(yes|no)
-Add Fully Qualified Domain Name instead of short hostname.
-
-.TP
-.B check_hostname(yes|no)
-Enable or disable whether the hostname contains valid characters.
-
-.TP
-.B bad_hostname(regex)
-A regexp which matches hostnames which should not be taken as such.
-
-.TP
-.B dns_cache(yes|no)
-Enable or disable DNS cache usage.
-
-.TP
-.B dns_cache_expire(n)
-Number of seconds while a successful lookup is cached.
-
-.TP
-.B dns_cache_expire_failed(n)
-Number of seconds while a failed lookup is cached.
-
-.TP
-.B dns_cache_size(n)
-Number of hostnames in the DNS cache.
-
-.TP
-.B create_dirs(yes|no)
-Enable or disable directory creation for destination files.
-
-.TP
-.B dir_owner(uid)
-User id.
-
-.TP
-.B dir_group(gid)
-Group id.
-
-.TP
-.B dir_perm(perm)
-Permission value (octal mask).
-
-.TP
-.B owner(uid)
-User id for created files.
-
-.TP
-.B group(gid)
-Group id for created files.
-
-.TP
-.B perm(perm)
-Permission value for created files.
-
-.TP
-.B gc_busy_threshold(n)
-Sets the threshold value for the garbage collector, when syslog-ng is
-busy.  GC phase starts when the number of allocated objects reach this
-number.  Default: 3000.
-
-.TP
-.B gc_idle_threshold(n)
-Sets the threshold value for the garbage collector, when syslog-ng is
-idle.  GC phase starts when the number of allocated objects reach this
-number.  Default: 100.
-
-.TP
-.B log_fifo_size(n)
-The number of lines fitting to the output queue. An output queue is present
-for all destinations.
-
-.TP
-.B log_msg_size(n)
-Maximum length of message in bytes (NOTE: some syslogd implementations have
-a fixed limit of 1024 characters).
-
-.TP
-.B mark(n)
-The number of seconds between two MARK lines.
-NOTE: not implemented yet.
-
-.TP
-.B stats(n)
-The number of seconds between two STATS messages.
-
-.TP
-.B sync(n)
-The number of lines buffered before written to file
-(can be overridden locally).
-
-.TP
-.B time_reap(n)
-The time to wait before an idle destination file is closed.
-
-.TP
-.B time_reopen(n)
-The time to wait before a died connection is reestablished.
-
-.TP
-.B use_time_recvd(yes|no)
-This variable is used only for macro expansion where the meaning of the time
-specific macros depend on this setting, however as there are separate macros
-for referring to the received timestamp (R_ macros) and the log message timestamp (S_),
-so using this value is not recommended.
-
-.SH FILES
-/etc/syslog-ng/syslog-ng.conf
-.SH COPYRIGHT
-syslog-ng and this file is Copyright (c) 1999-2004 BalaBit IT Ltd, portions
-were contributed by Jose Pedro Oliveira.
-
-.SH SEE ALSO
-syslog-ng(8), syslogd(8)
-
+\fI/opt/syslog\-ng/etc/syslog\-ng/\fR
+.PP
+
+\fI/opt/syslog\-ng/etc/syslog\-ng/syslog\-ng\.conf\fR
+.SH "SEE ALSO"
+.PP
+
+\fBsyslog\-ng\fR(8)
+.PP
+
+\fI \fBThe syslog\-ng Administrator Guide\fR \fR\&[1]
+.PP
+If you experience any problems or need help with syslog\-ng, visit the
+\fI \fBsyslog\-ng mailing list\fR \fR\&[2]
+.PP
+For news and notifications about the documentation of syslog\-ng, visit the
+\fI\fBBalaBit Documentation Blog\fR\fR\&[3]\.
+.SH "AUTHOR"
+.PP
+This manual page was written by the BalaBit Documentation Team <documentation@balabit\.com>\.
+.SH "COPYRIGHT"
+.PP
+Copyright \(co 2000\-2009 BalaBit IT Security Ltd\. Published under the Creative Commons Attribution\-Noncommercial\-No Derivative Works (by\-nc\-nd) 3\.0 license\. See
+\fIhttp://creativecommons\.org/\fR
+for details\. The latest version is always available at
+\fIhttp://www\.balabit\.com/support/documentation\fR\.
+.SH "NOTES"
+.IP " 1." 4
+
+          \fBThe syslog-ng Administrator Guide\fR
+        
+.RS 4
+\%http://www.balabit.com/support/documentation/
+.RE
+.IP " 2." 4
+
+          \fBsyslog-ng mailing list\fR
+        
+.RS 4
+\%https://lists.balabit.hu/mailman/listinfo/syslog-ng
+.RE
+.IP " 3." 4
+\fBBalaBit Documentation Blog\fR
+.RS 4
+\%http://robert.blogs.balabit.com
+.RE

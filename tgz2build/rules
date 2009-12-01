@@ -70,6 +70,14 @@ $(STAMPDIR)/stamp-install: $(STAMPDIR)/stamp-build
 	$(INSTALL) -m 644 -c COPYING $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/share/doc
 	$(INSTALL) -m 644 -c AUTHORS $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/share/doc
 	$(INSTALL) -m 644 -c NEWS $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/share/doc
+	$(INSTALL) -d -m 755 $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/share/man
+	$(INSTALL) -d -m 755 $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/share/man/man1
+	$(INSTALL) -d -m 755 $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/share/man/man5
+	$(INSTALL) -d -m 755 $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/share/man/man8
+	$(INSTALL) -m 644 -c doc/man/pdbtool.1 $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/share/man/man1
+	$(INSTALL) -m 644 -c doc/man/syslog-ng.8 $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/share/man/man8
+	$(INSTALL) -m 644 -c doc/man/syslog-ng.conf.5 $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/share/man/man5
+
 	$(INSTALL) -m 644 $(ZBS_SOURCE_DIR)/contrib/balabit-initscripts/init-functions $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/lib
 
 	cd $(ZBS_SOURCE_DIR)/contrib && cp -R solaris-packaging balabit-initscripts/ && \
