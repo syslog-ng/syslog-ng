@@ -1,3 +1,40 @@
+3.0.5
+        Thu, 03 Dec 2009 18:02:56 +0100
+
+        Bugfixes:
+        * Fixed a possible hang that caused syslog-ng to completely stop
+          processing messages, in case SQL destination is enabled in
+          configure. The bug does not need a working SQL destination.
+        * Fixed a possible 100% CPU usage in case an udp destination went
+          down.
+        * Fixed host_override/program_override options that were broken in
+          3.0.4.
+        * Fixed the SQL destination to avoid dropping the output queue in
+          case a HUP was received.
+        * Fixed a possible segmentation fault when parsing syntactically
+          incorrect patterndb files.
+        * Fixed ESTRING parser to include the ending quote character in the
+          result.
+        * Report an error in case there's no terminating brace in template
+          macro references, e.g. no closing brace in ${macro} format.
+        * Fixed FreeBSD init script to add $prefix/sbin to the PATH
+          environment variable. This problem caused syslog-ng not to start
+          up on boot.
+        * Fixed FreeBSD /dev/klog message reading, follow_freq() needs to
+          default to zero in this case (just like Linux /proc/kmsg).
+        * Fixed a possible segfault in SIGHUP processing if an included file
+          contains a syntax error.
+        * RFC5424 over UDP erroneously required frame length, just like TCP,
+          this is now fixed.
+        * Fixed HP-UX 11iv2 compilation issue related to pread/pwrite
+          compile errors.
+
+        Other changes:
+        * Added support for Cisco ASA timestamps.
+        * Integrate with system LSB init scripts a bit better, with 3.0.5
+          the init script status reports should nicely integrate with
+          the host system.
+
 3.0.4
         Wed, 05 Aug 2009 12:51:31 +0200
 
