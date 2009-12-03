@@ -71,6 +71,7 @@ typedef struct _LogDBProgram
 {
   RNode *rules;
   gchar *name;
+  gboolean inserted;
 } LogDBProgram;
 
 
@@ -80,6 +81,7 @@ log_db_program_new(const gchar *name)
   LogDBProgram *self = g_new0(LogDBProgram, 1);
 
   self->rules = r_new_node("", NULL);
+  self->inserted = FALSE;
 
   return self;
 }
@@ -232,13 +234,13 @@ log_classifier_xml_text(GMarkupParseContext *context, const gchar *text, gsize t
       state->current_rule_id = NULL;
       state->current_class = NULL;
     }
-  else if (state->current_program)
+  else if (state->current_program && !state->current_program->inserted)
     {
       r_insert_node(state->db->programs,
                     txt,
                     state->current_program,
                     TRUE);
-      state->current_program = NULL;
+      state->current_program->inserted = TRUE;
     }
   g_free(txt);
 }
