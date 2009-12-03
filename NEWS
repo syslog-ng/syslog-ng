@@ -31,6 +31,7 @@
 
         Other changes:
         * Added support for Cisco ASA timestamps.
+        * Added version checks for PCRE in the configure script.
         * Integrate with system LSB init scripts a bit better, with 3.0.5
           the init script status reports should nicely integrate with
           the host system.
