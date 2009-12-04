@@ -45,6 +45,6 @@ def test_sql():
     expected = []
     for msg in messages:
         expected.extend(s.sendMessages(msg, pri=7))
-    time.sleep(5)
+    time.sleep(15)
     stop_syslogng()
     return check_sql_expected("%s/test-sql.db" % current_dir, "logs", expected, settle_time=5, syslog_prefix="Sep  7 10:43:21 bzorp prog 12345")
