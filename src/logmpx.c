@@ -29,7 +29,7 @@ log_multiplexer_add_next_hop(LogMultiplexer *self, LogPipe *next_hop)
 {
   /* NOTE: this flag is currently unused. it'll be used to tell whether we can process the multiplexed pipes in parallel threads. */
   if (next_hop->flags & (PIF_FINAL + PIF_FALLBACK))
-    self->super.flags &= PIF_MPX_INDEP_PATHS;
+    self->super.flags &= ~PIF_MPX_INDEP_PATHS;
   g_ptr_array_add(self->next_hops, next_hop);
 }
 
