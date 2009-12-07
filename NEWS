@@ -28,6 +28,10 @@
           this is now fixed.
         * Fixed HP-UX 11iv2 compilation issue related to pread/pwrite
           compile errors.
+        * The flow-control flag was erroneously enabled if any of the log
+          statements contained either "final" or "fallback".
+        * Fixed rewrite processing, in some cases a rewritten value could
+          be propagated to wrong branches in the log processing tree.
 
         Other changes:
         * Added support for Cisco ASA timestamps.
