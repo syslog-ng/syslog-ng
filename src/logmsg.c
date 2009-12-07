@@ -443,15 +443,29 @@ log_msg_append_format_sdata(LogMessage *self, GString *result)
   for (i = 0; i < self->num_sdata; i++)
     {
       NVHandle handle = self->sdata[i];
+      guint16 handle_flags;
+      gint sd_id_len;
 
       sdata_name = log_msg_get_value_name(handle, &sdata_name_len);
+      handle_flags = nv_registry_get_handle_flags(logmsg_registry, handle);
+
+      g_assert(handle_flags & LM_VF_SDATA);
 
       /* sdata_name always begins with .SDATA. */
       g_assert(sdata_name_len > 6);
 
       sdata_elem = sdata_name + 7;
-      dot = memchr(sdata_elem, '.', sdata_name_len - 7);
-      g_assert(dot != NULL);
+      sd_id_len = (handle_flags >> 8);
+
+      if (sd_id_len)
+        {
+          dot = sdata_elem + sd_id_len;
+          g_assert((dot - sdata_name < sdata_name_len) && *dot == '.');
+        }
+      else
+        {
+          dot = memchr(sdata_elem, '.', sdata_name_len - 7);
+        }
       sdata_elem_len = dot - sdata_elem;
 
       sdata_param = dot + 1;
@@ -1111,6 +1125,7 @@ log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, guint flag
   gchar sd_param_value[256];
   gsize sd_param_value_len;
   gchar sd_value_name[66];
+  NVHandle handle;
   
   guint open_sd = 0;
   gint left = *length, pos;
@@ -1247,7 +1262,10 @@ log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, guint flag
                   goto error;
                 }
 
-              log_msg_set_value(self, log_msg_get_value_handle(sd_value_name), sd_param_value, sd_param_value_len);
+              handle = log_msg_get_value_handle(sd_value_name);
+              nv_registry_set_handle_flags(logmsg_registry, handle, (sd_id_len << 8) + LM_VF_SDATA);
+
+              log_msg_set_value(self, handle, sd_param_value, sd_param_value_len);
             }
             
           if (left && *src == ']')
