@@ -1194,9 +1194,9 @@ log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, guint flag
                   sd_step_and_store(self, &src, &left);
                   pos = 0;
 
-                  while (left && *src != '"' && !quote)
+                  while (left && (*src != '"' || quote))
                     {
-                      if (!quote && *src == '\"')
+                      if (!quote && *src == '\\')
                         {
                           quote = TRUE;
                         }
