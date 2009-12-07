@@ -414,6 +414,24 @@ log_msg_is_tag_by_name(LogMessage *self, const gchar *name)
 
 /* structured data elements */
 
+static void
+log_msg_sdata_append_escaped(GString *result, const gchar *sstr, gssize len)
+{
+  gint i;
+  const guchar *ustr = (const guchar *) sstr;
+
+  for (i = 0; i < len; i++)
+    {
+      if (ustr[i] == '"' || ustr[i] == '\\' || ustr[i] == ']')
+        {
+          g_string_append_c(result, '\\');
+          g_string_append_c(result, ustr[i]);
+        }
+      else
+        g_string_append_c(result, ustr[i]);
+    }
+}
+
 void
 log_msg_append_format_sdata(LogMessage *self, GString *result)
 {
@@ -460,7 +478,7 @@ log_msg_append_format_sdata(LogMessage *self, GString *result)
       g_string_append(result, "=\"");
 
       value = log_msg_get_value(self, handle, &len);
-      g_string_append_len(result, value, len);
+      log_msg_sdata_append_escaped(result, value, len);
       g_string_append_c(result, '"');
     }
   if (cur_elem)
