@@ -1952,6 +1952,15 @@ LogMessage *
 log_msg_clone_cow(LogMessage *msg, const LogPathOptions *path_options)
 {
   LogMessage *self = g_new(LogMessage, 1);
+  if ((msg->flags & LF_OWN_ALL) == 0)
+    {
+      /* the message we're cloning has no original content, everything
+       * is referenced from its "original", use that with this clone
+       * as well, effectively avoiding the "referenced" flag on the
+       * clone. */
+      msg = msg->original;
+    }
+  msg->flags |= LF_REFERENCED;
 
   memcpy(self, msg, sizeof(*msg));
 

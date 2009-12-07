@@ -104,6 +104,7 @@ enum
    * message header intact in a value named LEGACY_MSGHDR.
    */
   LF_LEGACY_MSGHDR    = 0x00010000,
+  LF_REFERENCED       = 0x00020000,
 };
 
 typedef struct _LogMessageSDParam  LogMessageSDParam;
