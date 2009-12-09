@@ -64,5 +64,9 @@ ssize_t bb__pwrite(int fd, const void *buf, size_t count, off_t offset);
 char *strcasestr(const char *s, const char *find);
 #endif
 
+#if !HAVE_MEMRCHR
+const void *memrchr(const void *s, int c, size_t n);
+#endif
+
 
 #endif
