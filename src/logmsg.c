@@ -521,7 +521,7 @@ log_msg_lookup_sdata_internal(LogMessage *self, const gchar *query, gssize query
     query_len = strlen(query);
 
   elem_name = g_strndup(query, query_len);
-  param_name = memchr(elem_name, '.', query_len);
+  param_name = memrchr(elem_name, '.', query_len);
   if (param_name != NULL)
     {
       LogMessageSDElement *element;
