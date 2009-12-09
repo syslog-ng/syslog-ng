@@ -541,12 +541,15 @@ log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
                                      seq_num,
                                      result);
         }
-      else if (lm->message_len != 0)
+      else
         {
           g_string_append_c(result, ' ');
-          if (lm->flags & LF_UTF8)
-            g_string_append_len(result, "\xEF\xBB\xBF", 3);
-          g_string_append_len(result, lm->message, lm->message_len);
+          if (lm->message_len != 0)
+            {
+              if (lm->flags & LF_UTF8)
+                g_string_append_len(result, "\xEF\xBB\xBF", 3);
+              g_string_append_len(result, lm->message, lm->message_len);
+            }
         }
       g_string_append_c(result, '\n');
     }

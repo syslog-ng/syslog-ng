@@ -54,6 +54,12 @@ log_msg_set_flag(LogMessage *self, gint32 flag)
   self->flags |= flag;
 }
 
+static inline void
+log_msg_unset_flag(LogMessage *self, gint32 flag)
+{
+  self->flags &= ~flag;
+}
+
 #define FUNC_MSG_STR_SETTER(field, macro)   \
   void log_msg_set_##field(LogMessage *self, gchar *field, gssize len)  \
   {                                                                     \
@@ -1521,9 +1527,19 @@ log_msg_parse_syslog_proto(LogMessage *self, const guchar *data, gint length, gu
   if (!log_msg_parse_sd(self, &src, &left, flags))
     return FALSE;
     
-  /* optional part of the log message [SP MSG]*/
+  /* checking if there are remaining data in log message */
+  if (left == 0)
+    {
+      log_msg_unset_flag(self, LF_OWN_MESSAGE);
+      LOG_MESSAGE_WRITABLE_FIELD(self->message) = null_string;
+      self->message_len = 0;
+      return TRUE;
+    }
+  /* optional part of the log message [SP MSG] */
   if (!log_msg_parse_skip_space(self, &src, &left))
-    return FALSE;
+    {
+      return FALSE;
+    }
   
   if (left >= 3 && memcmp(src, "\xEF\xBB\xBF", 3) == 0)
     {

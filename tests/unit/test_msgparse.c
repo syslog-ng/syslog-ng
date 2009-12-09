@@ -436,7 +436,14 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            "",//msgid
            expected_sd_pairs_test_2
            );
-
+   testcase("<7>Aug 29 02:00:00 bzorp ctld/snmpd[2499]:", 0, NULL,
+           7,           // pri
+           1, 0, 7200,          // timestamp (sec/usec/zone)
+           "bzorp",         // host
+           "ctld/snmpd",    // openvpn
+           "", // msg
+           NULL, "2499", NULL, NULL
+           );
   app_shutdown();
   return 0;
 }
