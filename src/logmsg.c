@@ -1913,7 +1913,7 @@ static void
 log_msg_init(LogMessage *self, GSockAddr *saddr)
 {
   g_atomic_counter_set(&self->ref_cnt, 1);
-  g_get_current_time(&self->timestamps[LM_TS_RECVD].time);
+  cached_g_current_time(&self->timestamps[LM_TS_RECVD].time);
   self->timestamps[LM_TS_RECVD].zone_offset = get_local_timezone_ofs(self->timestamps[LM_TS_RECVD].time.tv_sec);
   self->timestamps[LM_TS_STAMP].time.tv_sec = -1;
   self->timestamps[LM_TS_STAMP].zone_offset = -1;

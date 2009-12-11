@@ -48,6 +48,7 @@ const char *weekday_names[] =
   "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"
 };
 
+static GTimeVal current_time_value;
 
 #define TZCACHE_SIZE 4
 #define TZCACHE_SIZE_MASK (TZCACHE_SIZE - 1)
@@ -88,6 +89,26 @@ get_time_zone_basedir(void)
       time_zone_basedir = time_zone_path_list[i];
     }
   return time_zone_basedir;
+}
+
+/*
+ * this shuld replace the g_get_current_time and the g_source_get_current_time calls in the main thread
+ * (log_msg_init, afinter_postpone_mark)
+ */
+void
+cached_g_current_time(GTimeVal *result)
+{
+  g_assert(result);
+  *result  = current_time_value;
+}
+
+/*
+ * only our g_main_context_poll_func may call this
+ */
+void
+update_g_current_time()
+{
+  g_get_current_time(&current_time_value);
 }
 
 time_t
