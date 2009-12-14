@@ -467,6 +467,154 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            expected_sd_pairs_test_3
            );
 
+  const gchar *expected_sd_pairs_test_4[][2]=
+  {
+    { "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.i", "ok_32"},
+    {  NULL , NULL}
+  };
+
+  testcase("<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa i=\"ok_32\"] An application event log entry...",  LP_SYSLOG_PROTOCOL, NULL,
+           132, 			// pri
+           1162083599, 156000, 3600,	// timestamp (sec/usec/zone)
+           "mymachine",		// host
+           "evntslog", //app
+           "An application event log entry...", // msg
+           "[aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa i=\"ok_32\"]", //sd_str
+           "",//processid
+           "",//msgid
+           expected_sd_pairs_test_4
+           );
+
+   const gchar *expected_sd_pairs_test_5[][2]=
+     {
+       { "a.i", "]\"\\"},
+       {  NULL , NULL}
+    };
+
+   testcase("<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [a i=\"\\]\\\"\\\\\"] An application event log entry...",  LP_SYSLOG_PROTOCOL, NULL,
+           132, 			// pri
+           1162083599, 156000, 3600,	// timestamp (sec/usec/zone)
+           "mymachine",		// host
+           "evntslog", //app
+           "An application event log entry...", // msg
+           "[a i=\"\\]\\\"\\\\\"]", //sd_str
+           "",//processid
+           "",//msgid
+           expected_sd_pairs_test_5
+           );
+
+ // failed to parse to long sd name
+
+  testcase("<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa i=\"long_33\"] An application event log entry...",  LP_SYSLOG_PROTOCOL, NULL,
+           43, 			// pri
+           0, 0, 0,	// timestamp (sec/usec/zone)
+           "",		// host
+           "syslog-ng", //app
+           "Error processing log message: <132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa i=\"long_33\"] An application event log entry...", // msg
+           "", //sd_str
+           0,//processid
+           0,//msgid
+           0
+           );
+
+  testcase("<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [a aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa=\"long_33\"] An application event log entry...",  LP_SYSLOG_PROTOCOL, NULL,
+           43, 			// pri
+           0, 0, 0,	// timestamp (sec/usec/zone)
+           "",		// host
+           "syslog-ng", //app
+           "Error processing log message: <132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [a aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa=\"long_33\"] An application event log entry...", // msg
+           "", //sd_str
+           0,//processid
+           0,//msgid
+           0
+           );
+
+   const gchar *expected_sd_pairs_test_6[][2]=
+     {
+       { "a.i", "ok"},
+       {  NULL , NULL}
+    };
+
+// to long hostname
+   testcase("<132>1 2006-10-29T01:59:59.156+01:00 aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa evntslog - - [a i=\"ok\"] An application event log entry...",  LP_SYSLOG_PROTOCOL, NULL,
+           43,		// pri
+           0, 0, 0,	// timestamp (sec/usec/zone)
+           "", //host
+           "syslog-ng", //app
+           "Error processing log message: <132>1 2006-10-29T01:59:59.156+01:00 aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa evntslog - - [a i=\"ok\"] An application event log entry...",		// msg
+           "", //sd_str
+           0,//processid
+           0,//msgid
+           0
+           );
+
+ // failed to parse to long appname
+  testcase("<132>1 2006-10-29T01:59:59.156+01:00 mymachine aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa - - [a i=\"ok\"] An application event log entry...",  LP_SYSLOG_PROTOCOL, NULL,
+           132, 			// pri
+           1162083599, 156000, 3600,	// timestamp (sec/usec/zone)
+           "mymachine",		// host
+           "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", //app
+           "An application event log entry...", // msg
+           "[a i=\"ok\"]", //sd_str
+           0,//processid
+           0,//msgid
+           expected_sd_pairs_test_6
+           );
+ // failed to parse to long procid
+
+  testcase("<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa - [a i=\"ok\"] An application event log entry...",  LP_SYSLOG_PROTOCOL, NULL,
+           132, 			// pri
+           1162083599, 156000, 3600,	// timestamp (sec/usec/zone)
+           "mymachine",		// host
+           "evntslog", //app
+           "An application event log entry...", // msg
+           "[a i=\"ok\"]", //sd_str
+           "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",//processid
+           0,//msgid
+           expected_sd_pairs_test_6
+           );
+
+ // failed to parse to long msgid
+
+  testcase("<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa [a i=\"ok\"] An application event log entry...",  LP_SYSLOG_PROTOCOL, NULL,
+           132, 	// pri
+           1162083599, 156000, 3600,	// timestamp (sec/usec/zone)
+           "mymachine",		// host
+           "evntslog", //app
+           "An application event log entry...", // msg
+           "[a i=\"ok\"]", //sd_str
+           0,//processid
+           "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",//msgid
+           expected_sd_pairs_test_6
+           );
+// unescaped ]
+
+testcase("<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [a i=\"]ok\"] An application event log entry...",  LP_SYSLOG_PROTOCOL, NULL,
+           43, 			// pri
+           0, 0, 0,	// timestamp (sec/usec/zone)
+           "",		// host
+           "syslog-ng", //app
+           "Error processing log message: <132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [a i=\"]ok\"] An application event log entry...", // msg
+           "", //sd_str
+           0,//processid
+           0,//msgid
+           0
+           );
+// unescaped \
+
+// bad sd data unescaped "
+ testcase("<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [a i=\"\"ok\"] An application event log entry...",  LP_SYSLOG_PROTOCOL, NULL,
+           43, 			// pri
+           0, 0, 0,	// timestamp (sec/usec/zone)
+           "",		// host
+           "syslog-ng", //app
+           "Error processing log message: <132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [a i=\"\"ok\"] An application event log entry...", // msg
+           "", //sd_str
+           0,//processid
+           0,//msgid
+           0
+           );
+
   app_shutdown();
   return 0;
 }
