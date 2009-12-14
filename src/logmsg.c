@@ -1418,6 +1418,10 @@ log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, guint flag
                              sd_param_value[pos] = '\\';
                              pos++;
                            }
+                         else if (!quote &&  *src == ']')
+                           {
+                             goto error;
+                           }
                          if (pos < sizeof(sd_param_value))
                            {
                              sd_param_value[pos] = *src;
