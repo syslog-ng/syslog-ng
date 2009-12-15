@@ -102,7 +102,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 
   char *msg_bsd_str = "<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép";
   char *expected_msg_bsd_str = " bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép\n";
-  char *expected_msg_bsd_str_t = "23323";
+  char *expected_msg_bsd_str_t = "23323 árvíztűrőtükörfúrógép";
 
   char *msg_bsd_empty_str = "<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]:";
   char *expected_msg_bsd_empty_str = " bzorp syslog-ng[23323]: \n";
@@ -117,14 +117,16 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   app_startup();
   putenv("TZ=MET-1METDST");
   tzset();
-  testcase(msg_syslog_empty_str,NULL,TRUE,expected_msg_syslog_empty_str);
-  testcase(msg_syslog_empty_str,"$MSGID",TRUE,expected_msg_syslog_empty_str_t);
   testcase(msg_syslog_str,NULL,TRUE,expeted_msg_syslog_str);
   testcase(msg_syslog_str,"$MSGID $MSG",TRUE,expeted_msg_syslog_str_t);
+  testcase(msg_syslog_empty_str,NULL,TRUE,expected_msg_syslog_empty_str);
+  testcase(msg_syslog_empty_str,"$MSGID",TRUE,expected_msg_syslog_empty_str_t);
+
   testcase(msg_bsd_str,NULL,FALSE,expected_msg_bsd_str);
-  testcase(msg_bsd_str,"$PID",FALSE,expected_msg_bsd_str_t);
+  testcase(msg_bsd_str,"$PID $MSG",FALSE,expected_msg_bsd_str_t);
   testcase(msg_bsd_empty_str,NULL,FALSE,expected_msg_bsd_empty_str);
   testcase(msg_bsd_empty_str,"$PID",FALSE,expected_msg_bsd_empty_str_t);
+
   app_shutdown();
   return 0;
 }
