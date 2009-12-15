@@ -683,10 +683,8 @@ log_proto_plain_server_fetch(LogProto *s, const guchar **msg, gsize *msg_len, GS
                                      evt_tag_str("encoding", self->super.encoding),
                                      evt_tag_printf("char", "0x%02x", *(guchar *) raw_buffer),
                                      NULL);
-                          self->buffer_end = self->buffer_size - avail_out;
-                          raw_buffer++;
-                          avail_in--;
-                          break;
+                          self->status = LPS_ERROR;
+                          return self->status;
                         }
                     }
                   else
