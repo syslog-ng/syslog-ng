@@ -339,7 +339,6 @@ log_pattern_database_lookup(LogPatternDatabase *self, LogMessage *msg)
 {
   RNode *node;
   GArray *matches;
-  GPtrArray *match_names;
   const gchar *program;
   gssize program_len;
 
@@ -366,8 +365,6 @@ log_pattern_database_lookup(LogPatternDatabase *self, LogMessage *msg)
           
           matches = g_array_new(FALSE, TRUE, sizeof(RParserMatch));
           g_array_set_size(matches, 1);
-          match_names = g_ptr_array_new();
-          g_ptr_array_set_size(match_names, 1);
 
           message = log_msg_get_value(msg, LM_V_MESSAGE, &message_len);
           msg_node = r_find_node(program->rules, (gchar *) message, (gchar *) message, message_len, matches);
