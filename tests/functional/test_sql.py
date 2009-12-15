@@ -31,7 +31,7 @@ def test_sql():
         return True
 
     soext='.so'
-    if re.match('hp-ux', sys.platform):
+    if re.match('hp-ux', sys.platform) and not re.match('ia64', os.uname()[4]):
         soext='.sl'
     if not os.path.isfile('/opt/syslog-ng/lib/dbd/libdbdsqlite3%s' % soext):
         print_user('No sqlite3 backend for libdbi. Skipping SQL test')
