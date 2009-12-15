@@ -154,7 +154,7 @@ resolve_hostname(GSockAddr **addr, gchar *name)
 }
 
 void
-resolve_sockaddr(gchar **result, GSockAddr *saddr, gboolean usedns, gboolean usefqdn, gboolean use_dns_cache, gboolean normalize_hostnames)
+resolve_sockaddr(gchar *result, gsize *result_len, GSockAddr *saddr, gboolean usedns, gboolean usefqdn, gboolean use_dns_cache, gboolean normalize_hostnames)
 {
   static gchar local_hostname[256] = "";
   gchar *hname;
@@ -234,7 +234,23 @@ resolve_sockaddr(gchar **result, GSockAddr *saddr, gboolean usedns, gboolean use
 	}
 
     }
-  *result = normalize_hostnames ? g_ascii_strdown(hname, -1) : g_strdup(hname);
+  if (normalize_hostnames)
+    {
+      gint i;
+
+      for (i = 0; hname[i] && i < (*result_len); i++)
+        {
+          result[i] = g_ascii_tolower(hname[i]);
+        }
+      *result_len = i;
+    }
+  else
+    {
+      gsize len = g_strlcpy(result, hname, *result_len);
+
+      if (len <= *result_len)
+        *result_len = len;
+    }
 }
 
 gboolean
