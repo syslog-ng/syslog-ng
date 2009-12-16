@@ -613,8 +613,6 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
             }
           else
             {
-              const gchar *dbi_error;
-              dbi_conn_error(self->dbi_ctx, &dbi_error);
               msg_error("Error inserting message into database. It is tried to insert 3 times, but it's failed. Message is dropped",NULL,NULL);
               stats_counter_inc(self->dropped_messages);
               log_msg_drop(msg,&path_options);
