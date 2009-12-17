@@ -17,9 +17,6 @@
             <service_fmri value='svc:/milestone/sysconfig' />
     </dependency>
 
-    <!--
-      syslogd(1M) can log to non-root local directories.
-    -->
     <dependency
             name='filesystem'
             grouping='require_all'
@@ -39,9 +36,6 @@
             <service_fmri value='svc:/system/filesystem/autofs' />
     </dependency>
 
-    <!--
-      syslogd(1M) needs nameservice resolution to log to remote hosts.
-    -->
     <dependency
             name='name-services'
             grouping='require_all'
@@ -56,11 +50,6 @@
             restart_on='none'>
             <service_fmri value='svc:/milestone/multi-user' />
     </dependent>
-
-    <!--
-            The system-log start method includes a "savecore -m".
-            Use an appropriately long timeout value.
-    -->
 
     <exec_method
       type='method'
@@ -85,6 +74,16 @@
     <exec_method
       type='method'
       name='stop'
+      exec='/lib/svc/method/syslog-ng %m'
+      timeout_seconds='60' >
+      <method_context>
+        <method_credential user='root' />
+      </method_context>
+    </exec_method>
+
+    <exec_method
+      type='method'
+      name='refresh'
       exec='/lib/svc/method/syslog-ng %m'
       timeout_seconds='60' >
       <method_context>
