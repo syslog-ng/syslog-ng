@@ -1,3 +1,19 @@
+3.1beta2
+        Fri, 18 Dec 2009 09:19:39 +0100
+
+        Bugfixes:
+        * Fixed two major memory leaks, one on input messages, one in
+          patterndb.
+        * Fixed escaped structured data processing.
+        * Fixed expanding SDATA references in templates which have multiple
+          dots in its name (e.g. when an OID is present in the name of the
+          SD param or SD-ID.
+        * pdbtool now correctly zero pads month and day fields in publish
+          date of the merged patterndb file.
+        * pdbtool won't link to unnecessary libraries, which fixes a
+          compilation problem on Solaris with flex installed.
+
+
 3.1beta1
         Sun, 29 Nov 2009 16:25:18 +0100
 
