@@ -36,6 +36,16 @@
 #include <stdlib.h>
 #include <assert.h>
 
+/*
+ * Used in log_msg_parse_date(). Need to differentiate because Tru64's strptime
+ * works differently than the rest of the supported systems.
+ */
+#if defined(__digital__) && defined(__osf__)
+#define STRPTIME_ISOFORMAT "%Y-%m-%dT%H:%M:%S"
+#else
+#define STRPTIME_ISOFORMAT "%Y-%m-%d T%H:%M:%S"
+#endif
+
 static const char aix_fwd_string[] = "Message forwarded from ";
 static const char repeat_msg_string[] = "last message repeated";
 static gchar *null_string = "";
@@ -850,7 +860,7 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guchar *
        * time-zone barriers */
       
       cached_localtime(&now, &tm);
-      p = (guchar *) strptime((gchar *) date, "%Y-%m-%d T%H:%M:%S", &tm);
+      p = (guchar *) strptime((gchar *) date, STRPTIME_ISOFORMAT, &tm);
 
       if (!p || (p && *p))
         {

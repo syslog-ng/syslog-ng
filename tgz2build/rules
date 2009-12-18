@@ -11,13 +11,16 @@ ifneq (,$(findstring debug,$(TGZ_BUILD_OPTS)))
   CONFIGURE_OPTS += --enable-debug
 endif
 
-
 ifneq (,$(findstring aix,$(ZBS_DIST)))
   RPATH=-Wl,-blibpath:/opt/syslog-ng/lib:/usr/lib:/lib
 endif
 
 ifneq (,$(findstring hpux,$(ZBS_DIST)))
   RPATH=-Wl,+b/opt/syslog-ng/lib
+endif
+
+ifneq (,$(findstring tru64,$(ZBS_DIST)))
+RPATH=-Wl,-rpath,/opt/syslog-ng/lib
 endif
 
 ifneq (,$(findstring linux-glibc2.1.3,$(ZBS_DIST)))
@@ -76,7 +79,6 @@ $(STAMPDIR)/stamp-install: $(STAMPDIR)/stamp-build
 	tar cvf - balabit-initscripts selinux apparmor | (cd $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/share/doc/ && tar xf -)
 	cd $(ZBS_SOURCE_DIR)
 	rm -rf $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/share/doc/contrib/Makefile*
-	
  
 	touch $@ 
 
@@ -84,6 +86,6 @@ clean:
 	rm -rf tgz2build/stamps || true
 	rm -rf tgz2build/syslog-ng || true
 	rm -rf tgz2build/staging || true
-	make clean
+	$(MAKE) clean
 
 
