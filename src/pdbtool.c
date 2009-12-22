@@ -18,8 +18,30 @@
 
 #define BOOL(x) ((x) ? "TRUE" : "FALSE")
 
+static gchar *full_colors[] =
+{
+  "\33[01;34m", /* blue */
+  "\33[01;33m", /* yellow */
+  "\33[01;32m", /* green */
+  "\33[01;31m"  /* red */
+};
+
+static gchar *empty_colors[] =
+{
+  "", "", "", ""
+};
+
+#define COLOR_BLUE 0
+#define COLOR_YELLOW 1
+#define COLOR_GREEN 2
+#define COLOR_RED 3
+
+static gchar *no_color = "\33[01;0m";
+static gchar **colors = empty_colors;
+
 
 static gchar *patterndb_file = PATH_PATTERNDB_FILE;
+static gboolean color_out = FALSE;
 
 static gchar *merge_dir = NULL;
 
@@ -228,6 +250,8 @@ static GOptionEntry merge_options[] =
 
 static gchar *match_program = NULL;
 static gchar *match_message = NULL;
+static gboolean debug_pattern = FALSE;
+static gboolean debug_pattern_parse = FALSE;
 
 gboolean
 pdbtool_match_values(NVHandle handle, const gchar *name, const gchar *value, gssize length, gpointer user_data)
@@ -245,7 +269,12 @@ pdbtool_match(int argc, char *argv[])
 {
   LogPatternDatabase patterndb;
   LogMessage *msg = log_msg_new_empty();
+  GSList *dbg_list = NULL, *p;
+  RDebugInfo *dbg_info;
+  gint i = 0, pos = 0;
   gint ret = 1;
+  const gchar *name;
+  gssize name_len;
 
   if (!match_message)
     {
@@ -262,7 +291,83 @@ pdbtool_match(int argc, char *argv[])
   if (match_program && match_program[0])
     log_msg_set_value(msg, LM_V_PROGRAM, match_program, strlen(match_program));
 
-  log_db_parser_process_lookup(&patterndb, msg, NULL);
+  log_db_parser_process_lookup(&patterndb, msg, debug_pattern ? &dbg_list : NULL);
+
+  if (debug_pattern && !debug_pattern_parse)
+    {
+      printf("Pattern matching part:\n");
+      p = dbg_list;
+      while (p)
+        {
+          dbg_info = p->data;
+
+          pos += dbg_info->i;
+
+          if (dbg_info->pnode)
+            {
+              name = nv_registry_get_handle_name(logmsg_registry, dbg_info->pnode->handle, &name_len);
+
+              printf("%s@%s:%s=%.*s@%s",
+                    colors[COLOR_YELLOW],
+                    r_parser_type_name(dbg_info->pnode->type),
+                    name_len ? name : "",
+                    name_len ? dbg_info->match_len : 0,
+                    name_len ? match_message + dbg_info->match_off : "",
+                    no_color
+                  );
+            }
+          else if (dbg_info->i == dbg_info->node->keylen)
+            {
+              printf("%s%s%s", colors[COLOR_GREEN], dbg_info->node->key, no_color);
+            }
+          else
+            {
+              printf("%s%.*s%s", colors[COLOR_RED], dbg_info->i, dbg_info->node->key, no_color);
+            }
+
+          p = p->next;
+        }
+      printf("%s%s%s", colors[COLOR_BLUE], match_message + pos, no_color);
+
+      printf("\nMatching part:\n");
+    }
+
+  if (debug_pattern && debug_pattern_parse)
+    printf("PDBTOOL_HEADER=i:len:key;keylen:match_off;match_len:parser_type:parser_name\n");
+
+  pos = 0;
+  while (dbg_list)
+    {
+      /* NOTE: if i is smaller than node->keylen than we did not match the full node
+       * so matching failed on this node, we need to highlight it somehow
+       */
+      dbg_info = dbg_list->data;
+      if (debug_pattern_parse)
+        {
+          if (dbg_info->pnode)
+            name = nv_registry_get_handle_name(logmsg_registry, dbg_info->pnode->handle, &name_len);
+
+          printf("PDBTOOL_DEBUG=%d:%d:%d:%d:%d:%s:%s\n",
+                i++, dbg_info->i, dbg_info->node->keylen, dbg_info->match_off, dbg_info->match_len,
+                dbg_info->pnode ? r_parser_type_name(dbg_info->pnode->type) : "",
+                dbg_info->pnode && name_len ? name : ""
+                );
+        }
+      else
+        {
+          if (dbg_info->i == dbg_info->node->keylen || dbg_info->pnode)
+            printf("%s%.*s%s", dbg_info->pnode ? colors[COLOR_YELLOW] : colors[COLOR_GREEN], dbg_info->i, match_message + pos, no_color);
+          else
+            printf("%s%.*s%s", colors[COLOR_RED], dbg_info->i, match_message + pos, no_color);
+          pos += dbg_info->i;
+        }
+
+      g_free(dbg_info);
+      dbg_list = g_slist_delete_link(dbg_list, dbg_list);
+    }
+
+  if (debug_pattern && !debug_pattern_parse)
+    printf("\nValues:\n");
 
   nv_table_foreach(msg->payload, logmsg_registry, pdbtool_match_values, &ret);
 
@@ -277,6 +382,12 @@ static GOptionEntry match_options[] =
     "Program name to match as $PROGRAM", "<program>" },
   { "message", 'M', 0, G_OPTION_ARG_STRING, &match_message,
     "Message to match as $MSG", "<message>" },
+  { "debug-pattern", 'D', 0, G_OPTION_ARG_NONE, &debug_pattern,
+    "Print debuging information on pattern matching", NULL },
+  { "csv-out", 'C', 0, G_OPTION_ARG_NONE, &debug_pattern_parse,
+    "Output debuging information in parseable format", NULL },
+  { "color-out", 'c', 0, G_OPTION_ARG_NONE, &color_out,
+    "Color terminal output", NULL },
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
 };
 
@@ -444,6 +555,10 @@ main(int argc, char *argv[])
   g_option_context_free(ctx);
 
   msg_init(TRUE);
+
+  if (color_out)
+    colors = full_colors;
+
   ret = modes[mode].main(argc, argv);
   stats_destroy();
   log_tags_deinit();
@@ -451,4 +566,3 @@ main(int argc, char *argv[])
   msg_deinit();
   return ret;
 }
-
