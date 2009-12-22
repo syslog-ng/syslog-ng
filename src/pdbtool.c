@@ -435,7 +435,7 @@ main(int argc, char *argv[])
 
   if (!g_option_context_parse(ctx, &argc, &argv, &error))
     {
-      fprintf(stderr, "Error parsing command line arguments: %s", error ? error->message : "Invalid arguments");
+      fprintf(stderr, "Error parsing command line arguments: %s\n", error ? error->message : "Invalid arguments");
       g_clear_error(&error);
       g_option_context_free(ctx);
       return 1;
