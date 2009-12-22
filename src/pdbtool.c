@@ -367,10 +367,6 @@ static GOptionEntry pdbtool_options[] =
 {
   { "pdb",       'p', 0, G_OPTION_ARG_STRING, &patterndb_file,
     "Name of the patterndb file", "<patterndb_file>" },
-  { "debug",     'd', 0, G_OPTION_ARG_NONE, &debug_flag,
-    "Enable debug/diagnostic messages on stderr", NULL },
-  { "verbose",   'v', 0, G_OPTION_ARG_NONE, &verbose_flag,
-    "Enable verbose messages on stderr", NULL },
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
 };
 
@@ -428,6 +424,7 @@ main(int argc, char *argv[])
           g_option_context_set_summary(ctx, modes[mode].description);
           g_option_context_add_main_entries(ctx, modes[mode].options, NULL);
           g_option_context_add_main_entries(ctx, pdbtool_options, NULL);
+          msg_add_option_group(ctx);
           break;
         }
     }
