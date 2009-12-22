@@ -260,7 +260,7 @@ pdbtool_match(int argc, char *argv[])
   if (match_program && match_program[0])
     log_msg_set_value(msg, LM_V_PROGRAM, match_program, strlen(match_program));
 
-  log_db_parser_process_lookup(&patterndb, msg);
+  log_db_parser_process_lookup(&patterndb, msg, NULL);
 
   nv_table_foreach(msg->payload, logmsg_registry, pdbtool_match_values, &ret);
 

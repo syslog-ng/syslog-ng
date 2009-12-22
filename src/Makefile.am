@@ -57,7 +57,7 @@ cfg-grammar.h: cfg-grammar.y
 
 cfg-grammar.c: cfg-grammar.y
 
-EXTRA_DIST = cfg-grammar.h cfg-lex.c cfg-grammar.c syslog-ng.h
+EXTRA_DIST = cfg-grammar.h cfg-lex.c cfg-grammar.c syslog-ng.h radix-find.c
 
 MAINTAINER_CLEAN_FILES = cfg-lex.c cfg-grammar.c cfg-grammar.h
 

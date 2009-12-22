@@ -481,12 +481,12 @@ NVHandle class_handle = 0;
 NVHandle rule_id_handle = 0;
 
 static inline void
-log_db_parser_process_real(LogPatternDatabase *db, LogMessage *msg)
+log_db_parser_process_real(LogPatternDatabase *db, LogMessage *msg, GSList **dbg_list)
 {
   LogDBResult *verdict;
   gint i;
 
-  verdict = log_pattern_database_lookup(db, msg);
+  verdict = log_pattern_database_lookup(db, msg, dbg_list);
   if (verdict)
     {
       log_msg_set_value(msg, class_handle, verdict->class, -1);
@@ -527,14 +527,14 @@ log_db_parser_process(LogParser *s, LogMessage *msg, const char *input)
       log_db_parser_reload_database(self);
     }
 
-  log_db_parser_process_real(&self->db, msg);
+  log_db_parser_process_real(&self->db, msg, NULL);
   return TRUE;
 }
 
 void
-log_db_parser_process_lookup(LogPatternDatabase *db, LogMessage *msg)
+log_db_parser_process_lookup(LogPatternDatabase *db, LogMessage *msg, GSList **dbg_list)
 {
-  log_db_parser_process_real(db, msg);
+  log_db_parser_process_real(db, msg, dbg_list);
 }
 
 void
@@ -550,7 +550,8 @@ log_db_parser_post_config_hook(gint type, gpointer user_data)
 {
   LogDBParser *self = (LogDBParser *) user_data;
 
-  log_db_parser_reload_database(self);}
+  log_db_parser_reload_database(self);
+}
 
 static void
 log_db_parser_free(LogParser *s)

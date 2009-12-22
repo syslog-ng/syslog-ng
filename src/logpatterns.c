@@ -335,7 +335,7 @@ GMarkupParser db_parser =
 };
 
 LogDBResult *
-log_pattern_database_lookup(LogPatternDatabase *self, LogMessage *msg)
+log_pattern_database_lookup(LogPatternDatabase *self, LogMessage *msg, GSList **dbg_list)
 {
   RNode *node;
   GArray *matches;
@@ -367,7 +367,10 @@ log_pattern_database_lookup(LogPatternDatabase *self, LogMessage *msg)
           g_array_set_size(matches, 1);
 
           message = log_msg_get_value(msg, LM_V_MESSAGE, &message_len);
-          msg_node = r_find_node(program->rules, (gchar *) message, (gchar *) message, message_len, matches);
+          if (G_UNLIKELY(dbg_list))
+            msg_node = r_find_node_dbg(program->rules, (gchar *) message, (gchar *) message, message_len, matches, dbg_list);
+          else
+            msg_node = r_find_node(program->rules, (gchar *) message, (gchar *) message, message_len, matches);
 
           if (msg_node)
             {

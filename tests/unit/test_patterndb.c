@@ -67,7 +67,7 @@ test_rule_value(LogPatternDatabase *patterndb, const gchar *pattern, const gchar
   log_msg_set_value(msg, LM_V_MESSAGE, pattern, strlen(pattern));
   log_msg_set_value(msg, LM_V_HOST, MYHOST, strlen(MYHOST));
 
-  result = log_pattern_database_lookup(patterndb, msg);
+  result = log_pattern_database_lookup(patterndb, msg, NULL);
   if (result)
     {
        if (result->values)
@@ -101,7 +101,7 @@ test_rule_tag(LogPatternDatabase *patterndb, const gchar *pattern, const gchar *
 
   log_msg_set_value(msg, LM_V_MESSAGE, pattern, strlen(pattern));
 
-  result = log_pattern_database_lookup(patterndb, msg);
+  result = log_pattern_database_lookup(patterndb, msg, NULL);
   if (result)
     {
        if (result->tags)
