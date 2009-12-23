@@ -2,9 +2,9 @@ YFLAGS=@YFLAGS@
 
 if ENABLE_ENV_WRAPPER
 libexec_PROGRAMS = syslog-ng
-sbin_PROGRAMS = syslog-ng-wrapper
+sbin_PROGRAMS = syslog-ng-wrapper syslog-ng-ctl
 else
-sbin_PROGRAMS = syslog-ng
+sbin_PROGRAMS = syslog-ng syslog-ng-ctl
 endif
 
 bin_PROGRAMS = pdbtool
@@ -16,6 +16,9 @@ syslog_ng_LDADD = libsyslog-ng.a @DEPS_LIBS@
 syslog_ng_wrapper_SOURCES = wrapper.c
 pdbtool_SOURCES = pdbtool.c
 pdbtool_LDADD = libsyslog-ng.a @BASE_LIBS@ @GLIB_LIBS@ @EVTLOG_LIBS@
+
+syslog_ng_ctl_SOURCES = syslog-ng-ctl.c gsockaddr.c  gsockaddr.h  gsocket.c    gsocket.h
+syslog_ng_ctl_LDADD = @GLIB_LIBS@
 
 libsyslog_ng_a_SOURCES = \
 	misc.c misc.h utils.c utils.h messages.c messages.h syslog-names.c syslog-names.h \
