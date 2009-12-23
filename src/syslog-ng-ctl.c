@@ -101,6 +101,13 @@ slng_read_response(void)
           return NULL;
         }
 
+      if (len == 0)
+        {
+          fprintf(stderr, "EOF occured while reading control socket\n");
+          g_string_free(rsp, TRUE);
+          return NULL;
+        }
+
       g_string_append_len(rsp, buff, len);
 
       if (rsp->str[rsp->len - 1] == '\n' &&
