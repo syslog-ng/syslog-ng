@@ -888,6 +888,9 @@ log_proto_framed_server_fetch_data(LogProtoFramedServer *self, gboolean *may_rea
     }
   else if (rc == 0)
     {
+      msg_verbose("EOF occurred while reading",
+                  evt_tag_int(EVT_TAG_FD, self->super.transport->fd),
+                  NULL);
       return LPS_EOF;
     }
   else 
