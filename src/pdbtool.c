@@ -5,6 +5,8 @@
 #include "logpatterns.h"
 #include "logparser.h"
 #include "radix.h"
+#include "tags.h"
+#include "stats.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -407,6 +409,8 @@ main(int argc, char *argv[])
   gint mode, ret = 0;
   GError *error = NULL;
 
+  stats_init();
+  log_tags_init();
   log_msg_registry_init();
   log_db_parser_global_init();
   mode_string = pdbtool_mode(&argc, &argv);
@@ -444,6 +448,10 @@ main(int argc, char *argv[])
 
   msg_init(TRUE);
   ret = modes[mode].main(argc, argv);
+  stats_destroy();
+  log_tags_deinit();
+
   msg_deinit();
   return ret;
 }
+
