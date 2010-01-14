@@ -213,17 +213,22 @@ cfg_read_pragmas(GlobalConfig *self, FILE *cfg, gint *lineno)
   self->version = 0;
   while (!feof(cfg))
     {
-      gchar *pragma, *value, *colon, *eol;
+      gchar *pragma, *value, *colon, *eol, *p;
       gchar line[1024];
 
-      if (fgets(line, sizeof(line), cfg) == NULL || line[0] != '@')
+      start_ofs = ftell(cfg);
+      p = fgets(line, sizeof(line), cfg);
+      (*lineno)++;
+
+      if (p && (p[0] == '#' || p[0] == '\n'))
+        continue;
+      if (!p || line[0] != '@')
         {
+          lineno--;
           fseek(cfg, start_ofs, SEEK_SET);
           return TRUE;
         }
-      (*lineno)++;
       
-      start_ofs += strlen(line);
       colon = strchr(line, ':');
       eol = strchr(line, '\n');
 
@@ -322,7 +327,7 @@ cfg_new(gchar *fname)
  
   if ((cfg = fopen(fname, "r")) != NULL)
     {
-      gint lineno = 1;
+      gint lineno = 0;
       
       if (!cfg_read_pragmas(self, cfg, &lineno))
         {
