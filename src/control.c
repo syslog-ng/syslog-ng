@@ -27,6 +27,7 @@
 #include "stats.h"
 #include <errno.h>
 #include <string.h>
+#include <stdio.h>
 
 static gint control_socket;
 
@@ -93,13 +94,73 @@ control_channel_send_reply(GIOChannel *channel, GString *buffer)
 }
 
 static gboolean
-control_channel_send_stats(GIOChannel *channel)
+control_channel_send_stats(GIOChannel *channel, GString *command)
 {
   GString *csv;
   
   csv = stats_generate_csv();
   return control_channel_send_reply(channel, csv);
 }
+
+static gboolean
+control_channel_message_log(GIOChannel *channel, GString *command)
+{
+  gchar **cmds = g_strsplit(command->str, " ", 3);
+  gboolean on;
+  int *type = NULL;
+
+  if (!cmds[1])
+    {
+      control_channel_send_reply(channel, g_string_new("Invalid arguments received"));
+      goto exit;
+    }
+
+  if (g_str_equal(cmds[1], "DEBUG"))
+    type = &debug_flag;
+  else if (g_str_equal(cmds[1], "VERBOSE")) 
+    type = &verbose_flag;
+  else if (g_str_equal(cmds[1], "TRACE")) 
+    type = &trace_flag;
+
+  if (type)
+    {
+      if (cmds[2])
+        {
+          on = g_str_equal(cmds[2], "ON");
+          if (*type != on)
+            {
+              msg_info("Verbosity changed", evt_tag_str("type", cmds[1]), evt_tag_int("on", on), NULL);
+              *type = on;
+            }
+
+          control_channel_send_reply(channel, g_string_new("OK"));
+        }
+      else
+        {
+          gchar buff[17];
+          snprintf(buff, 16, "%s=%d", cmds[1], *type);
+          control_channel_send_reply(channel, g_string_new(buff));
+        }
+    }
+  else
+    control_channel_send_reply(channel, g_string_new("Invalid arguments received"));
+
+exit:
+  g_strfreev(cmds);
+  return TRUE;
+}
+
+static struct
+{
+  const gchar *command;
+  const gchar *description;
+  gboolean (*func)(GIOChannel *channel, GString *command);
+} commands[] = 
+{
+  { "STATS", NULL, control_channel_send_stats },
+  { "LOG", NULL, control_channel_message_log },
+  { NULL, NULL, NULL },
+};
 
 /*
  * NOTE: the channel is not in nonblocking mode, thus the control channel
@@ -111,6 +172,7 @@ control_channel_input(GIOChannel *channel, GIOCondition cond, gpointer user_data
   GString *command = g_string_sized_new(32);
   gsize command_len = 0;
   GError *error = NULL;
+  gint cmd;
   GIOStatus status;
   
   status = g_io_channel_read_line_string(channel, command, &command_len, &error);
@@ -130,11 +192,14 @@ control_channel_input(GIOChannel *channel, GIOCondition cond, gpointer user_data
     }
   /* strip EOL */
   g_string_truncate(command, command_len);
-  if (strcmp(command->str, "STATS") == 0)
+
+  for (cmd = 0; commands[cmd].func; cmd++)
     {
-      return control_channel_send_stats(channel);
+      if (strncmp(commands[cmd].command, command->str, strlen(commands[cmd].command)) == 0)
+        return commands[cmd].func(channel, command);
     }
-  msg_error("Unknown command read on control channel, closing control channel", NULL);
+  msg_error("Unknown command read on control channel, closing control channel",
+                evt_tag_str("command", command->str), NULL);
   return FALSE;
 }
 

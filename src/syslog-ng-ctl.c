@@ -123,8 +123,45 @@ slng_read_response(void)
   return rsp;
 }
 
+static gchar *verbose_set = NULL;
+
 static gint
-slng_stats(int argc, char *argv[])
+slng_verbose(int argc, char *argv[], const gchar *mode)
+{
+  gint ret = 0;
+  GString *rsp = NULL;
+  gchar buff[256];
+
+  if (!verbose_set)
+    snprintf(buff, 255, "LOG %s\n", mode);
+  else
+    snprintf(buff, 255, "LOG %s %s\n", mode,
+        strncasecmp(verbose_set, "on", 2) == 0 || verbose_set[0] == '1' ? "ON" : "OFF");
+
+  g_strup(buff);
+
+  if (!(slng_send_cmd(buff) && ((rsp = slng_read_response()) != NULL)))
+    return 1;
+
+  if (!verbose_set)
+    printf("%s\n", rsp->str);
+  else
+    ret = g_str_equal(rsp->str, "OK");
+
+  g_string_free(rsp, TRUE);
+
+  return ret;
+}
+
+static GOptionEntry verbose_options[] =
+{
+  { "set", 's', 0, G_OPTION_ARG_STRING, &verbose_set,
+    "enable/disable messages", "<on|off|0|1>" },
+  { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
+};
+
+static gint
+slng_stats(int argc, char *argv[], const gchar *mode)
 {
   GString *rsp = NULL;
 
@@ -174,10 +211,13 @@ static struct
   const gchar *mode;
   const GOptionEntry *options;
   const gchar *description;
-  gint (*main)(gint argc, gchar *argv[]);
+  gint (*main)(gint argc, gchar *argv[], const gchar *mode);
 } modes[] =
 {
   { "stats", stats_options, "Dump syslog-ng statistics", slng_stats },
+  { "verbose", verbose_options, "Enable/query verbose messages", slng_verbose },
+  { "debug", verbose_options, "Enable/query debug messages", slng_verbose },
+  { "trace", verbose_options, "Enable/query trace messages", slng_verbose },
   { NULL, NULL },
 };
 
@@ -235,5 +275,5 @@ main(int argc, char *argv[])
     }
   g_option_context_free(ctx);
 
-  return modes[mode].main(argc, argv);
+  return modes[mode].main(argc, argv, modes[mode].mode);
 }
