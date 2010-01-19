@@ -159,6 +159,7 @@ syslogng_start() {
 		log_success_msg "already running: $PID"
 		return $retval
 	fi
+	rm -f ${PIDFILE}
 	start_daemon -f -p ${PIDFILE} ${SYSLOGNG} ${SYSLOGNG_OPTIONS}
 	retval=$?
 	returnmessage $retval
