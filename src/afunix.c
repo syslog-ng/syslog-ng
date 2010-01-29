@@ -112,7 +112,7 @@ afunix_dd_new(gchar *filename, guint flags)
 {
   AFUnixDestDriver *self = g_new0(AFUnixDestDriver, 1);
   
-  afsocket_dd_init_instance(&self->super, &self->sock_options, flags, NULL, NULL);
+  afsocket_dd_init_instance(&self->super, &self->sock_options, flags, g_strdup("localhost"), g_strdup_printf("localhost.afunix:%s", filename));
   if (self->super.flags & AFSOCKET_DGRAM)
     self->super.transport = g_strdup("unix-dgram");
   else if (self->super.flags & AFSOCKET_STREAM)
