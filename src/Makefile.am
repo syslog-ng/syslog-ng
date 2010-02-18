@@ -12,7 +12,7 @@ bin_PROGRAMS = pdbtool
 noinst_LIBRARIES = libsyslog-ng.a
 
 syslog_ng_SOURCES = main.c
-syslog_ng_LDADD = libsyslog-ng.a @DEPS_LIBS@
+syslog_ng_LDADD = libsyslog-ng.a @DEPS_LIBS@ globals.o
 syslog_ng_wrapper_SOURCES = wrapper.c
 pdbtool_SOURCES = pdbtool.c
 pdbtool_LDADD = libsyslog-ng.a @BASE_LIBS@ @GLIB_LIBS@ @EVTLOG_LIBS@
