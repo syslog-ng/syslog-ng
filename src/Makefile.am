@@ -10,7 +10,7 @@ endif
 noinst_LIBRARIES = libsyslog-ng.a
 
 syslog_ng_SOURCES = main.c
-syslog_ng_LDADD = libsyslog-ng.a @DEPS_LIBS@
+syslog_ng_LDADD = libsyslog-ng.a @DEPS_LIBS@ globals.o
 syslog_ng_wrapper_SOURCES = wrapper.c
 
 libsyslog_ng_a_SOURCES = \
