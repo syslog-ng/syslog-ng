@@ -66,7 +66,7 @@ log_source_mangle_hostname(LogSource *self, LogMessage *msg)
   log_msg_set_value(msg, LM_V_HOST_FROM, resolved_name, resolved_name_len);
 
   orig_host = log_msg_get_value(msg, LM_V_HOST, NULL);
-  if (!self->options->keep_hostname || !orig_host)
+  if (!self->options->keep_hostname || !orig_host || !orig_host[0])
     {
       gchar host[256];
       gint host_len = -1;
@@ -78,7 +78,7 @@ log_source_mangle_hostname(LogSource *self, LogMessage *msg)
 	      /* local */
 	      host_len = g_snprintf(host, sizeof(host), "%s@%s", self->options->group_name, resolved_name);
 	    }
-	  else if (!orig_host)
+	  else if (!orig_host || !orig_host[0])
 	    {
 	      /* remote && no hostname */
 	      host_len = g_snprintf(host, sizeof(host), "%s/%s", resolved_name, resolved_name);
@@ -86,7 +86,7 @@ log_source_mangle_hostname(LogSource *self, LogMessage *msg)
 	  else 
 	    {
 	      /* everything else, append source hostname */
-	      if (orig_host)
+	      if (orig_host && orig_host[0])
 		host_len = g_snprintf(host, sizeof(host), "%s/%s", orig_host, resolved_name);
 	      else
                 {
