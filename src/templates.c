@@ -695,7 +695,7 @@ log_template_compile(LogTemplate *self, GError **error)
           else
             {
               start = p;
-              while ((*p >= 'A' && *p <= 'Z') || (*p == '_') || (*p >= '0' && *p <= '9'))
+              while ((*p >= 'A' && *p <= 'Z') || (*p >= 'a' && *p <= 'z') || (*p == '_') || (*p >= '0' && *p <= '9'))
                 {
                   p++;
                 }
