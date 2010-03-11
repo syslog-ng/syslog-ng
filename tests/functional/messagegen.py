@@ -6,18 +6,22 @@ import os, sys, errno
 from log import *
 
 syslog_prefix = "2004-09-07T10:43:21+01:00 bzorp prog[12345]:"
+syslog_new_prefix = "2004-09-07T10:43:21+01:00 bzorp prog 12345 - -"
 session_counter = 0
 need_to_flush = False
 padding = 'x' * 250
 
 class MessageSender(object):
-    def __init__(self, repeat=100):
+    def __init__(self, repeat=100, new_protocol=0, dgram=0):
         self.repeat = repeat
+        self.new_protocol = new_protocol
+        self.dgram = dgram
 
     def sendMessages(self, msg, pri=7):
         global session_counter
         global need_to_flush
         global syslog_prefix
+        global syslog_prefix_new
 
         need_to_flush = True
 
@@ -28,16 +32,22 @@ class MessageSender(object):
         expected = []
 
         for counter in range(1, self.repeat):
-            line = '<%d>%s %s %03d/%05d %s %s' % (pri, syslog_prefix, msg, session_counter, counter, str(self), padding)
-            self.sendMessage(line)
+            if self.new_protocol == 0:
+                line = '<%d>%s %s %03d/%05d %s %s' % (pri, syslog_prefix, msg, session_counter, counter, str(self), padding)
+            else:
+                line = '<%d>1 %s %s %03d/%05d %s %s' % (pri, syslog_new_prefix, msg, session_counter, counter, str(self), padding)
+
+            # add framing on tcp with new protocol
+            if self.dgram == 0 and self.new_protocol == 1:
+                line = '%d %s' % (len(line), line)
+            self.sendMessage(line) # file or socket
         expected.append((msg, session_counter, self.repeat))
         session_counter = session_counter + 1
         return expected
 
-
 class SocketSender(MessageSender):
-    def __init__(self, family, sock_name, dgram=0, send_by_bytes=0, terminate_seq='\n', repeat=100, ssl=0):
-        MessageSender.__init__(self, repeat)
+    def __init__(self, family, sock_name, dgram=0, send_by_bytes=0, terminate_seq='\n', repeat=100, ssl=0, new_protocol=0):
+        MessageSender.__init__(self, repeat, new_protocol, dgram)
         self.family = family
         self.sock_name = sock_name
         self.sock = None
@@ -45,7 +55,7 @@ class SocketSender(MessageSender):
         self.send_by_bytes = send_by_bytes
         self.terminate_seq = terminate_seq
         self.ssl = ssl
-
+        self.new_protocol = new_protocol
     def initSender(self):
         if self.dgram:
             self.sock = socket(self.family, SOCK_DGRAM)

@@ -23,7 +23,7 @@ def sql_reader(name):
         print_user("Error opening file: %s, %s" % (fname, str(e)))
 
 
-def check_contents(f, messages, syslog_prefix):
+def check_contents(f, messages, syslog_prefix, skip_prefix):
 
     if not f:
         print_user("Failed to open file/database")
@@ -39,10 +39,12 @@ def check_contents(f, messages, syslog_prefix):
 
     read_line = f.readline().strip()
     while read_line:
-        if read_line[:len(syslog_prefix)] != syslog_prefix:
-            print_user("message does not start with syslog_prefix, file=%s:%d, line=%s" % (f, lineno, read_line))
+        prefix_len = len(syslog_prefix);
+
+        if read_line[skip_prefix:prefix_len+skip_prefix] != syslog_prefix:
+            print_user("message does not start with syslog_prefix=%s, file=%s:%d, line=%s" % (syslog_prefix, f, lineno, read_line))
             return False
-        msg = read_line[len(syslog_prefix):]
+        msg = read_line[skip_prefix+prefix_len:]
         m = re.match("^ (\S+) (\d+)/(\d+)", msg)
 
         if not m:
@@ -73,10 +75,10 @@ def check_contents(f, messages, syslog_prefix):
             return False
     return True
 
-def check_reader_expected(reader, messages, settle_time, syslog_prefix):
-    return check_contents(reader, messages, syslog_prefix)
+def check_reader_expected(reader, messages, settle_time, syslog_prefix, skip_prefix):
+    return check_contents(reader, messages, syslog_prefix, skip_prefix)
 
-def check_file_expected(fname, messages, settle_time=1, syslog_prefix=syslog_prefix):
+def check_file_expected(fname, messages, settle_time=1, syslog_prefix=syslog_prefix, skip_prefix = 0):
     print_user("Checking contents of output files: %s" % fname)
     flush_files(settle_time)
 
@@ -85,8 +87,8 @@ def check_file_expected(fname, messages, settle_time=1, syslog_prefix=syslog_pre
     else:
         iter = (file_reader,)
     for reader in iter:
-        return check_reader_expected(reader(fname), messages, settle_time, syslog_prefix)
+        return check_reader_expected(reader(fname), messages, settle_time, syslog_prefix, skip_prefix)
 
-def check_sql_expected(dbname, tablename, messages, settle_time=1, syslog_prefix=""):
+def check_sql_expected(dbname, tablename, messages, settle_time=1, syslog_prefix="", skip_prefix=0 ):
     print_user("Checking contents of output database %s, table: %s" % (dbname, tablename))
-    return check_reader_expected(sql_reader((dbname, tablename)), messages, settle_time, syslog_prefix)
+    return check_reader_expected(sql_reader((dbname, tablename)), messages, settle_time, syslog_prefix, skip_prefix)

@@ -15,13 +15,20 @@ source s_pipe { pipe("log-pipe"); pipe("log-padded-pipe" pad_size(2048)); };
 source s_file { file("log-file"); };
 source s_catchall { unix-stream("log-stream-catchall"); };
 
+source s_syslog { syslog(port(%(port_number_syslog)d) transport("tcp") so_rcvbuf(131072)); syslog(port(%(port_number_syslog)d) transport("udp") so_rcvbuf(131072)); };
+
+# test input drivers
 filter f_input1 { message("input_drivers"); };
 destination d_input1 { file("test-input1.log"); logstore("test-input1.lgs"); };
+destination d_input1_new { file("test-input1_new.log" flags(syslog-protocol)); logstore("test-input1_new.lgs"); };
 
 log { source(s_int); source(s_unix); source(s_inet); source(s_inetssl); source(s_pipe); source(s_file);
         log { filter(f_input1); destination(d_input1); };
 };
 
+log { source(s_syslog);
+        log { filter(f_input1); destination(d_input1_new); };
+};
 
 destination d_indep1 { file("test-indep1.log"); logstore("test-indep1.lgs"); };
 destination d_indep2 { file("test-indep2.log"); logstore("test-indep2.lgs"); };
@@ -83,6 +90,7 @@ log { filter(f_catchall); destination(d_catchall); flags(catch-all); };
 
 def test_input_drivers():
     message = 'input_drivers';
+    message_new = 'input_drivers_new';
 
     senders = (
         SocketSender(AF_UNIX, 'log-dgram', dgram=1),
@@ -105,12 +113,20 @@ def test_input_drivers():
         FileSender('log-file', send_by_bytes=1),
     )
 
+    senders_new = (
+        SocketSender(AF_INET, ('localhost', port_number_syslog), dgram=1, new_protocol=1, terminate_seq=''),
+        SocketSender(AF_INET, ('localhost', port_number_syslog), dgram=0, new_protocol=1, terminate_seq=''),
+    )
+
     expected = []
     for s in senders:
         expected.extend(s.sendMessages(message))
 
-    return check_file_expected("test-input1", expected, settle_time=6);
+    expected_new = []
+    for s_n in senders_new:
+        expected_new.extend(s_n.sendMessages(message_new))
 
+    return check_file_expected("test-input1", expected, settle_time=6) and check_file_expected("test-input1_new", expected_new, settle_time=6, syslog_prefix=syslog_new_prefix, skip_prefix=len('<7>1 '))
 
 def test_indep():
     message = 'indep_pipes';

@@ -17,6 +17,7 @@ else:
 
 port_number = os.getpid() % 30000 + 33000
 ssl_port_number = port_number + 1
+port_number_syslog = ssl_port_number + 1
 
 current_dir = os.getcwd()
 try:
