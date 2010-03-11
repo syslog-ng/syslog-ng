@@ -457,6 +457,23 @@ log_msg_sd_element_append(LogMessageSDElement *self, const gchar *elem_name)
   return self->next_element;
 }
 
+static void
+log_msg_sdata_append_escaped(GString *result, const gchar *sstr)
+{
+  gint i;
+  const guchar *ustr = (const guchar *) sstr;
+
+  for (i = 0; ustr[i]; i++)
+    {
+      if (ustr[i] == '"' || ustr[i] == '\\' || ustr[i] == ']')
+        {
+          g_string_append_c(result, '\\');
+          g_string_append_c(result, ustr[i]);
+        }
+      else
+        g_string_append_c(result, ustr[i]);
+    }
+}
 
 void
 log_msg_append_format_sdata(LogMessage *self, GString *result)
@@ -475,7 +492,7 @@ log_msg_append_format_sdata(LogMessage *self, GString *result)
           g_string_append_c(result, ' ');
           g_string_append(result, param->name);
           g_string_append(result, "=\"");
-          g_string_append(result, param->value);
+          log_msg_sdata_append_escaped(result, param->value);
           g_string_append_c(result, '"');
           param = param->next_param;
         }
@@ -1383,16 +1400,30 @@ log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, guint flag
 
              if (left && *src == '"')
                {
+                 gboolean quote = FALSE;
                  /* opening quote */
                  sd_step_and_store(self, &src, &left);
                  pos = 0;
 
-                 while (left && *src != '"')
+                 while (left && (*src != '"' || quote))
                    {
-                     if (pos < sizeof(sd_param_value))
+                     if (!quote && *src == '\\')
                        {
-                         sd_param_value[pos] = *src;
-                         pos++;
+                         quote = TRUE;
+                       }
+                     else
+                       {
+                         if (quote && *src != '"' && *src != ']' && *src != '\\' && pos < sizeof(sd_param_value))
+                           {
+                             sd_param_value[pos] = '\\';
+                             pos++;
+                           }
+                         if (pos < sizeof(sd_param_value))
+                           {
+                             sd_param_value[pos] = *src;
+                             pos++;
+                           }
+                         quote = FALSE;
                        }
                      sd_step_and_store(self, &src, &left);
                    }

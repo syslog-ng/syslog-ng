@@ -436,7 +436,8 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            "",//msgid
            expected_sd_pairs_test_2
            );
-   testcase("<7>Aug 29 02:00:00 bzorp ctld/snmpd[2499]:", 0, NULL,
+   
+  testcase("<7>Aug 29 02:00:00 bzorp ctld/snmpd[2499]:", 0, NULL,
            7,           // pri
            1, 0, 7200,          // timestamp (sec/usec/zone)
            "bzorp",         // host
@@ -444,6 +445,28 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            "", // msg
            NULL, "2499", NULL, NULL
            );
+
+  const gchar *expected_sd_pairs_test_3[][2]=
+  {
+    { "origin.ip", "exchange.macartney.esbjerg"},
+    { "meta.sequenceId", "191732"},
+    { "EventData@18372.4.Data", "MSEXCHANGEOWAAPPPOOL.CONFIG\" -W \"\" -M 1 -AP \"MSEXCHANGEOWAAPPPOOL5244fileserver.macartney.esbjerg CDG 1 7 7 1 0 1 1 7 1 mail.macartney.esbjerg CDG 1 7 7 1 0 1 1 7 1 maindc.macartney.esbjerg CD- 1 6 6 0 0 1 1 6 1 " },
+    {  NULL , NULL}
+  };
+
+  testcase("<134>1 2009-10-16T11:51:56+02:00 exchange.macartney.esbjerg MSExchange_ADAccess 20208 - [origin ip=\"exchange.macartney.esbjerg\"][meta sequenceId=\"191732\" sysUpTime=\"68807696\"][EventData@18372.4 Data=\"MSEXCHANGEOWAAPPPOOL.CONFIG\\\" -W \\\"\\\" -M 1 -AP \\\"MSEXCHANGEOWAAPPPOOL5244fileserver.macartney.esbjerg CDG 1 7 7 1 0 1 1 7 1 mail.macartney.esbjerg CDG 1 7 7 1 0 1 1 7 1 maindc.macartney.esbjerg CD- 1 6 6 0 0 1 1 6 1 \"][Keywords@18372.4 Keyword=\"Classic\"] ApplicationMSExchangeADAccess: message",
+           LP_SYSLOG_PROTOCOL, NULL,
+           134, 			// pri
+           1255686716, 0, 7200,	// timestamp (sec/usec/zone)
+           "exchange.macartney.esbjerg",		// host
+           "MSExchange_ADAccess", //app
+           "ApplicationMSExchangeADAccess: message", // msg
+           "[origin ip=\"exchange.macartney.esbjerg\"][meta sequenceId=\"191732\" sysUpTime=\"68807696\"][EventData@18372.4 Data=\"MSEXCHANGEOWAAPPPOOL.CONFIG\\\" -W \\\"\\\" -M 1 -AP \\\"MSEXCHANGEOWAAPPPOOL5244fileserver.macartney.esbjerg CDG 1 7 7 1 0 1 1 7 1 mail.macartney.esbjerg CDG 1 7 7 1 0 1 1 7 1 maindc.macartney.esbjerg CD- 1 6 6 0 0 1 1 6 1 \"][Keywords@18372.4 Keyword=\"Classic\"]", //sd_str
+           "20208",//processid
+           "",//msgid
+           expected_sd_pairs_test_3
+           );
+
   app_shutdown();
   return 0;
 }
