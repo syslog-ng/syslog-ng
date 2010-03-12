@@ -1323,7 +1323,7 @@ log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, guint flag
           while (left && *src != ' ')
             {
               /* the sd_id_name is max 32, the other chars are only stored in the self->sd_str*/
-              if (pos < sizeof(sd_id_name))
+              if (pos < sizeof(sd_id_name) - 1)
                 {
                   if (isascii(*src) && *src != '=' && *src != ' ' && *src != ']' && *src != '"')
                     {
@@ -1344,7 +1344,9 @@ log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, guint flag
  
           if (pos > 0)
             {
+              /* set the last byte to 0 */
               sd_id_name[pos] = 0;
+
               if (element)
                 {
                   element = log_msg_sd_element_append(element, sd_id_name);
@@ -1373,7 +1375,7 @@ log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, guint flag
               pos = 0;
               while (left && *src != '=')
                 {
-                  if (pos < sizeof(sd_param_name))
+                  if (pos < sizeof(sd_param_name) - 1)
                     {
                       if (isascii(*src) && *src != '=' && *src != ' ' && *src != ']' && *src != '"')
                         {
@@ -1413,7 +1415,7 @@ log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, guint flag
                        }
                      else
                        {
-                         if (quote && *src != '"' && *src != ']' && *src != '\\' && pos < sizeof(sd_param_value))
+                         if (quote && *src != '"' && *src != ']' && *src != '\\' && pos < sizeof(sd_param_value) - 1)
                            {
                              sd_param_value[pos] = '\\';
                              pos++;
@@ -1422,7 +1424,7 @@ log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, guint flag
                            {
                              goto error;
                            }
-                         if (pos < sizeof(sd_param_value))
+                         if (pos < sizeof(sd_param_value) - 1)
                            {
                              sd_param_value[pos] = *src;
                              pos++;
