@@ -464,13 +464,27 @@ log_msg_append_format_sdata(LogMessage *self, GString *result)
         }
       else
         {
-          dot = memchr(sdata_elem, '.', sdata_name_len - 7);
+          dot = memrchr(sdata_elem, '.', sdata_name_len - 7);
         }
-      sdata_elem_len = dot - sdata_elem;
 
-      sdata_param = dot + 1;
-      sdata_param_len = sdata_name_len - (dot + 1 - sdata_name);
+      if (G_LIKELY(dot))
+        {
+          sdata_elem_len = dot - sdata_elem;
 
+          sdata_param = dot + 1;
+          sdata_param_len = sdata_name_len - (dot + 1 - sdata_name);
+        }
+      else
+        {
+          sdata_elem_len = sdata_name_len - 7;
+          if (sdata_elem_len == 0)
+            {
+              sdata_elem = "none";
+              sdata_elem_len = 4;
+            }
+          sdata_param = "none";
+          sdata_param_len = 4;
+        }
       if (!cur_elem || sdata_elem_len != cur_elem_len || strncmp(cur_elem, sdata_elem, sdata_elem_len) != 0)
         {
           if (cur_elem)
