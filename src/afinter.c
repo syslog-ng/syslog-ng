@@ -41,8 +41,7 @@ afinter_postpone_mark(gint mark_freq)
   if (mark_freq > 0)
     {
       GTimeVal tv;
-      
-      g_get_current_time(&tv);
+      cached_g_current_time(&tv);
       next_mark_target = tv.tv_sec + mark_freq;
     }
 }

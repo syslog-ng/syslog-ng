@@ -573,8 +573,8 @@ log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
 
               g_string_append_len(result, p, len);
             }
-          g_string_append_c(result, '\n');
         }
+      g_string_append_c(result, '\n');
     }
   else
     {

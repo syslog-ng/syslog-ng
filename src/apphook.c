@@ -31,7 +31,7 @@
 #include "logmsg.h"
 #include "logparser.h"
 
-#include <time.h>
+#include "timeutils.h"
 
 typedef struct _ApplicationHookEntry
 {
@@ -101,6 +101,7 @@ app_startup(void)
 #if ENABLE_THREADS
   g_thread_init(NULL);
 #endif
+  update_g_current_time();
   msg_init(FALSE);
   child_manager_init();
   dns_cache_init();

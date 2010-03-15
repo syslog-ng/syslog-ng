@@ -681,10 +681,8 @@ log_proto_plain_server_fetch(LogProto *s, const guchar **msg, gsize *msg_len, GS
                                      evt_tag_str("encoding", self->super.encoding),
                                      evt_tag_printf("char", "0x%02x", *(guchar *) raw_buffer),
                                      NULL);
-                          self->buffer_end = self->buffer_size - avail_out;
-                          raw_buffer++;
-                          avail_in--;
-                          break;
+                          self->status = LPS_ERROR;
+                          return self->status;
                         }
                     }
                   else
@@ -843,6 +841,7 @@ typedef struct _LogProtoFramedServer
   gsize buffer_size, buffer_pos, buffer_end;
   gsize frame_len;
   gsize max_msg_size;
+  gboolean half_message_in_buffer;
   GSockAddr *prev_saddr;
   LogProtoStatus status;
 } LogProtoFramedServer;
@@ -850,10 +849,20 @@ typedef struct _LogProtoFramedServer
 static gboolean
 log_proto_framed_server_prepare(LogProto *s, gint *fd, GIOCondition *cond, gint *timeout)
 {
-  LogProtoPlainServer *self = (LogProtoPlainServer *) s;
-  
+  LogProtoFramedServer *self = (LogProtoFramedServer *) s;
+
   *fd = self->super.transport->fd;
   *cond = self->super.transport->cond;
+
+  /* there is a half message in our buffer so try to wait */
+  if (!self->half_message_in_buffer)
+    {
+      if (self->buffer_pos != self->buffer_end)
+        {
+          /* we have a full message in our buffer so parse it without reading new data from the transport layer */
+          return TRUE;
+        }
+    }
 
   /* if there's no pending I/O in the transport layer, then we want to do a read */
   if (*cond == 0)
@@ -884,6 +893,11 @@ log_proto_framed_server_fetch_data(LogProtoFramedServer *self, gboolean *may_rea
                     evt_tag_errno("error", errno),
                     NULL);
           return LPS_ERROR;
+        }
+      else
+        {
+          /* we need more data to parse this message but the data is not available yet */
+          self->half_message_in_buffer = TRUE;
         }
     }
   else if (rc == 0)
@@ -1002,6 +1016,9 @@ log_proto_framed_server_fetch(LogProto *s, const guchar **msg, gsize *msg_len, G
           *msg_len = self->frame_len;
           self->buffer_pos += self->frame_len;
           self->state = LPFSS_FRAME_READ;
+
+          /* we have the full message here so reset the half message flag */
+          self->half_message_in_buffer = FALSE;
           return LPS_SUCCESS;
         }
       if (try_read)
@@ -1040,6 +1057,7 @@ log_proto_framed_new_server(LogTransport *transport, gint max_msg_size)
   self->max_msg_size = max_msg_size;
   self->buffer_size = max_msg_size + LPFS_FRAME_BUFFER;
   self->buffer = g_malloc(self->buffer_size);
+  self->half_message_in_buffer = FALSE;
   return &self->super;
 }
 

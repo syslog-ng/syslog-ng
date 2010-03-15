@@ -97,6 +97,7 @@ typedef struct _AFSqlDestDriver
   dbi_conn dbi_ctx;
   GHashTable *validated_tables;
   time_t last_conn_attempt;
+  guint32 failed_message_counter;
 } AFSqlDestDriver;
 
 
@@ -421,6 +422,15 @@ static GThread *db_thread;
 static gint db_thread_max_sleep_time = -1;
 
 #define INSERTS_AT_A_TIME 30
+#define MAX_FAILED_ATTEMPTS 3
+
+static void
+afsql_dd_disconnect(AFSqlDestDriver *self,GString *table)
+{
+  dbi_conn_close(self->dbi_ctx);
+  self->dbi_ctx = NULL;
+  g_hash_table_remove(self->validated_tables, table->str);
+}
 
 /**
  * afsql_dd_insert_db:
@@ -476,7 +486,6 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
                         NULL);
               dbi_conn_close(self->dbi_ctx);
               self->dbi_ctx = NULL;
-              self->last_conn_attempt = time(NULL);
               return FALSE;
             }
         }
@@ -487,6 +496,7 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
                     NULL);
           return FALSE;
         }
+      self->last_conn_attempt = time(NULL);
     }
 
   while (!db_thread_terminate && count < INSERTS_AT_A_TIME)
@@ -522,6 +532,11 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
 
       if (!afsql_dd_validate_table(self, table->str))
         {
+          /* If validate table is FALSE then close the connection and wait time_reopen time (next call) */
+          msg_error("Error checking table, disconnecting from database, trying again shortly",
+                    evt_tag_int("time_reopen", self->time_reopen),
+                    NULL);
+          afsql_dd_disconnect(self,table);
           success = FALSE;
           goto error;
         }
@@ -570,10 +585,8 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
       if (!afsql_dd_run_query(self, query_string->str, FALSE, NULL))
         {
           /* error running INSERT on an already validated table, too bad. Try to reconnect. Maybe that helps. */
+          afsql_dd_disconnect(self,table);
           success = FALSE;
-          dbi_conn_close(self->dbi_ctx);
-          self->dbi_ctx = NULL;
-          g_hash_table_remove(self->validated_tables, table->str);
         }
       
     error:
@@ -588,11 +601,25 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
           log_msg_ack(msg, &path_options);
           log_msg_unref(msg);
           step_sequence_number(&self->seq_num);
+          self->failed_message_counter = 0;
         }
       else
         {
-          self->pending_msg = msg;
-          self->pending_msg_flow_control = path_options.flow_control;
+          if (self->failed_message_counter < MAX_FAILED_ATTEMPTS - 1)
+            {
+              self->pending_msg = msg;
+              self->pending_msg_flow_control = path_options.flow_control;
+              self->failed_message_counter++;
+            }
+          else
+            {
+              msg_error("Multiple failures while inserting this record into the database, message dropped",
+                        evt_tag_int("attempts", MAX_FAILED_ATTEMPTS),
+                        NULL);
+              stats_counter_inc(self->dropped_messages);
+              log_msg_drop(msg, &path_options);
+              self->failed_message_counter = 0;
+            }
           return FALSE;
         }
       count++;
@@ -1009,6 +1036,7 @@ afsql_dd_new()
   self->send_time_zone_info = NULL;
   self->local_time_zone_info = NULL;
   self->frac_digits = -1;
+  self->failed_message_counter = 0;
 
   self->validated_tables = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
   g_static_mutex_init(&self->queue_lock);

@@ -40,6 +40,16 @@
 #include <stdlib.h>
 #include <assert.h>
 
+/*
+ * Used in log_msg_parse_date(). Need to differentiate because Tru64's strptime
+ * works differently than the rest of the supported systems.
+ */
+#if defined(__digital__) && defined(__osf__)
+#define STRPTIME_ISOFORMAT "%Y-%m-%dT%H:%M:%S"
+#else
+#define STRPTIME_ISOFORMAT "%Y-%m-%d T%H:%M:%S"
+#endif
+
 static const char aix_fwd_string[] = "Message forwarded from ";
 static const char repeat_msg_string[] = "last message repeated";
 
@@ -57,6 +67,12 @@ static inline void
 log_msg_set_flag(LogMessage *self, gint32 flag)
 {
   self->flags |= flag;
+}
+
+static inline void
+log_msg_unset_flag(LogMessage *self, gint32 flag)
+{
+  self->flags &= ~flag;
 }
 
 /* the index matches the value id */
@@ -692,7 +708,7 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guchar *
        * time-zone barriers */
       
       cached_localtime(&now, &tm);
-      p = (guchar *) strptime((gchar *) date, "%Y-%m-%d T%H:%M:%S", &tm);
+      p = (guchar *) strptime((gchar *) date, STRPTIME_ISOFORMAT, &tm);
 
       if (!p || (p && *p))
         {
@@ -1163,7 +1179,7 @@ log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, guint flag
           while (left && *src != ' ')
             {
               /* the sd_id_name is max 32, the other chars are only stored in the self->sd_str*/
-              if (pos < sizeof(sd_id_name))
+              if (pos < sizeof(sd_id_name) - 1)
                 {
                   if (isascii(*src) && *src != '=' && *src != ' ' && *src != ']' && *src != '"')
                     {
@@ -1207,7 +1223,7 @@ log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, guint flag
               pos = 0;
               while (left && *src != '=')
                 {
-                  if (pos < sizeof(sd_param_name))
+                  if (pos < sizeof(sd_param_name) - 1)
                     {
                       if (isascii(*src) && *src != '=' && *src != ' ' && *src != ']' && *src != '"')
                         {
@@ -1249,12 +1265,16 @@ log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, guint flag
                         }
                       else
                        {
-                         if (quote && *src != '"' && *src != ']' && *src != '\\' && pos < sizeof(sd_param_value))
+                         if (quote && *src != '"' && *src != ']' && *src != '\\' && pos < sizeof(sd_param_value) - 1)
                            {
                              sd_param_value[pos] = '\\';
                              pos++;
                            }
-                         if (pos < sizeof(sd_param_value))
+                         else if (!quote &&  *src == ']')
+                           {
+                             goto error;
+                           }
+                         if (pos < sizeof(sd_param_value) - 1)
                            {
                              sd_param_value[pos] = *src;
                              pos++;
@@ -1390,9 +1410,18 @@ log_msg_parse_syslog_proto(LogMessage *self, const guchar *data, gint length, gu
   if (!log_msg_parse_sd(self, &src, &left, flags))
     return FALSE;
     
-  /* optional part of the log message [SP MSG]*/
+  /* checking if there are remaining data in log message */
+  if (left == 0)
+    {
+      /*  no message, this is valid */
+      return TRUE;
+    }
+
+  /* optional part of the log message [SP MSG] */
   if (!log_msg_parse_skip_space(self, &src, &left))
-    return FALSE;
+    {
+      return FALSE;
+    }
   
   if (left >= 3 && memcmp(src, "\xEF\xBB\xBF", 3) == 0)
     {
@@ -1653,7 +1682,7 @@ static void
 log_msg_init(LogMessage *self, GSockAddr *saddr)
 {
   g_atomic_counter_set(&self->ref_cnt, 1);
-  g_get_current_time(&self->timestamps[LM_TS_RECVD].time);
+  cached_g_current_time(&self->timestamps[LM_TS_RECVD].time);
   self->timestamps[LM_TS_RECVD].zone_offset = get_local_timezone_ofs(self->timestamps[LM_TS_RECVD].time.tv_sec);
   self->timestamps[LM_TS_STAMP].time.tv_sec = -1;
   self->timestamps[LM_TS_STAMP].zone_offset = -1;

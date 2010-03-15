@@ -117,7 +117,7 @@ case "$1" in
         stop)
                 slng_stop $*
                 ;;
-        reload)
+        refresh)
                 if [ -f $PIDFILE ]; then
                         syspid=`head -1 $PIDFILE`
                         [ "$syspid" -gt 0 ] && kill -1 $syspid && echo "syslog-ng service reloaded"

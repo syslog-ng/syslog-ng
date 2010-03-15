@@ -33,6 +33,7 @@
 #include "logqueue.h"
 #include "gprocess.h"
 #include "control.h"
+#include "timeutils.h"
 
 #if ENABLE_SSL
 #include <openssl/ssl.h>
@@ -49,7 +50,6 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/wait.h>
-#include <time.h>
 
 #include <grp.h>
 
@@ -114,6 +114,7 @@ stats_timer(gpointer st)
 
 static GStaticMutex main_loop_lock = G_STATIC_MUTEX_INIT;
 static GMainLoop *main_loop = NULL;
+static GPollFunc system_poll_func = NULL;
 
 void
 main_loop_wakeup(void)
@@ -122,6 +123,14 @@ main_loop_wakeup(void)
   if (main_loop)
     g_main_context_wakeup(g_main_loop_get_context(main_loop));
   g_static_mutex_unlock(&main_loop_lock);
+}
+
+gint
+main_context_poll(GPollFD *ufds, guint nfsd, gint timeout_)
+{
+  gint ret = (*system_poll_func)(ufds, nfsd, timeout_);
+  update_g_current_time();
+  return ret;
 }
 
 int 
@@ -137,6 +146,9 @@ main_loop_run(GlobalConfig **cfg)
     stats_timer_id = g_timeout_add((*cfg)->stats_freq * 1000, stats_timer, NULL);
     
   control_init(PATH_CONTROL_SOCKET, g_main_loop_get_context(main_loop));
+
+  system_poll_func = g_main_context_get_poll_func(g_main_loop_get_context(main_loop));
+  g_main_context_set_poll_func(g_main_loop_get_context(main_loop), main_context_poll);
   while (g_main_loop_is_running(main_loop))
     {
       if ((*cfg)->time_sleep > 0)
