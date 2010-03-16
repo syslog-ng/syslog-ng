@@ -1,3 +1,25 @@
+3.1.0
+        Tue, 16 Mar 2010 17:15:40 +0100
+
+        Bugfixes:
+        * Fixed Solaris 10 SMF script to properly handle svcadm refresh
+          requests.
+        * Fixed a possible segmentation fault for unix-dgram/unix-stream
+          destinations on some (non-Linux) platforms.
+        * Fixed processing empty log entries when using the syslog() protocol.
+        * Fixed processing partially received syslog messages.
+
+        Other changes:
+        * Decrease the frequency of gettimeofday() calls during syslog-ng
+          operation, as gettimeofday() is expensive to call on some
+          platforms.
+        * The SQL destination will only attempt to INSERT a given log
+          message 3 times, and after that it gives up, instead of trying
+          indefinitely.
+        * Tru64 portability fixes.
+        * The functional test program was improved to check the new RFC5424
+          syslog protocol.
+
 3.1beta2
         Fri, 18 Dec 2009 09:19:39 +0100
 
