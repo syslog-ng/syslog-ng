@@ -64,6 +64,7 @@ affile_open_file(gchar *name, gint flags,
       g_process_cap_modify(CAP_DAC_READ_SEARCH, TRUE);
       g_process_cap_modify(CAP_SYS_ADMIN, TRUE);
     }
+  *fd = -1;
   if (stat(name, &st) >= 0)
     {
       if (is_pipe && !S_ISFIFO(st.st_mode))

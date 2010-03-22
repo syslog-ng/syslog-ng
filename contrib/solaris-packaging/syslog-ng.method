@@ -80,8 +80,14 @@ slng_stop() {
 
 slng_start () {
         if [ -f $PIDFILE ];then
-            echo "syslog-ng already running."
-            exit 1
+            _process=`basename $SYSLOGNG`
+            _pid=`head -1 $PIDFILE`
+            pgrep $_process | grep $_pid > /dev/null 2>&1
+            if [ $? -eq 0 ]; then
+                echo "syslog-ng already running."
+                exit 1
+            fi
+            rm -f $PIDFILE
         fi
         if [ -f $CONFFILE -a -x $SYSLOGNG ]; then
                 echo 'syslog-ng service starting.'
@@ -89,11 +95,15 @@ slng_start () {
                 # Before syslog-ng starts, save any messages from previous
                 # crash dumps so that messages appear in chronological order.
                 #
-                /usr/bin/savecore -m
+                if [ -r /dev/dump ]; then
+                    /usr/bin/savecore -m
+                fi
                 if [ -r /etc/dumpadm.conf ]; then
-                        . /etc/dumpadm.conf
-                        [ "x$DUMPADM_DEVICE" != xswap ] && \
-                            /usr/bin/savecore -m -f $DUMPADM_DEVICE
+                    . /etc/dumpadm.conf
+                    if [ -n "$DUMPADM_DEVICE" ] && [ -r "$DUMPADM_DEVICE" ] && \
+                       [ "x$DUMPADM_DEVICE" != xswap ]; then
+                        /usr/bin/savecore -m -f $DUMPADM_DEVICE
+                    fi
                 fi
                 check_syntax
                 $SYSLOGNG $OPTIONS
