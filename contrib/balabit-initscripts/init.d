@@ -266,11 +266,15 @@ case $OS in
 			# Before syslog-ng starts, save any messages from previous
 			# crash dumps so that messages appear in chronological order.
 			#
-			/usr/bin/savecore -m
+                        if [ -r /dev/dump ]; then
+                                /usr/bin/savecore -m
+                        fi
 			if [ -r /etc/dumpadm.conf ]; then
 				. /etc/dumpadm.conf
-				[ "x$DUMPADM_DEVICE" != xswap ] && \
-				    /usr/bin/savecore -m -f $DUMPADM_DEVICE
+                                if [ -n "$DUMPADM_DEVICE" ] && [ -r "$DUMPADM_DEVICE" ] && \
+                                   [ "x$DUMPADM_DEVICE" != xswap ]; then
+                                        /usr/bin/savecore -m -f $DUMPADM_DEVICE
+                                fi
 			fi
 		;;
 	HP-UX)
