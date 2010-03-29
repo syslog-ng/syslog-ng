@@ -69,17 +69,15 @@ affile_open_file(gchar *name, gint flags,
     {
       if (is_pipe && !S_ISFIFO(st.st_mode))
         {
-          msg_error("Error opening pipe, underlying file is not a FIFO, it should be used by file()",
+          msg_warning("WARNING: you are using the pipe driver, underlying file is not a FIFO, it should be used by file()",
                     evt_tag_str("filename", name),
                     NULL);
-          goto exit;
         }
       else if (!is_pipe && S_ISFIFO(st.st_mode))
         {
-          msg_error("Error opening file, underlying file is a FIFO, it should be used by pipe()",
-                    evt_tag_str("filename", name),
-                    NULL);
-          goto exit;
+          msg_warning("WARNING: you are using the file driver, underlying file is a FIFO, it should be used by pipe()",
+                      evt_tag_str("filename", name),
+                      NULL);
         }
     }
   *fd = open(name, flags, mode);
@@ -102,7 +100,6 @@ affile_open_file(gchar *name, gint flags,
       if (mode != (mode_t) -1)
         fchmod(*fd, mode);
     }
- exit:
   g_process_cap_restore(saved_caps);
   msg_trace("affile_open_file",
             evt_tag_str("path", name),
