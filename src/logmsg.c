@@ -895,8 +895,9 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guchar *
           p = (guchar *) strptime((gchar *) date, "%b %e %H:%M:%S", &tm);
           if (!p || (p && *p))
             goto error;
-            
-          tm.tm_isdst = -1;
+
+          /* In case of daylight saving let's assume that the message came under daylight saving also */
+          tm.tm_isdst = nowtm.tm_isdst;
           tm.tm_year = nowtm.tm_year;
           if (tm.tm_mon > nowtm.tm_mon + 1)
             tm.tm_year--;
@@ -926,12 +927,16 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guchar *
    * (tm.tm_hour - * unnormalized_hour) part fixes up. */
   
   if (self->timestamps[LM_TS_STAMP].zone_offset == -1)
-    self->timestamps[LM_TS_STAMP].zone_offset = assume_timezone;
-   
-  if (self->timestamps[LM_TS_STAMP].zone_offset != -1)
-    self->timestamps[LM_TS_STAMP].time.tv_sec = self->timestamps[LM_TS_STAMP].time.tv_sec + get_local_timezone_ofs(self->timestamps[LM_TS_STAMP].time.tv_sec) - (tm.tm_hour - unnormalized_hour) * 3600 - self->timestamps[LM_TS_STAMP].zone_offset;
-  else
-    self->timestamps[LM_TS_STAMP].zone_offset = get_local_timezone_ofs(self->timestamps[LM_TS_STAMP].time.tv_sec);
+    {
+      self->timestamps[LM_TS_STAMP].zone_offset = assume_timezone;
+    }
+  if (self->timestamps[LM_TS_STAMP].zone_offset == -1)
+    {
+      self->timestamps[LM_TS_STAMP].zone_offset = get_local_timezone_ofs(self->timestamps[LM_TS_STAMP].time.tv_sec);
+    }
+  self->timestamps[LM_TS_STAMP].time.tv_sec = self->timestamps[LM_TS_STAMP].time.tv_sec +
+                                              get_local_timezone_ofs(self->timestamps[LM_TS_STAMP].time.tv_sec) -
+                                              (tm.tm_hour - unnormalized_hour) * 3600 - self->timestamps[LM_TS_STAMP].zone_offset;
 
   *data = src;
   *length = left;
