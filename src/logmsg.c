@@ -347,6 +347,48 @@ log_msg_clear_matches(LogMessage *self)
   self->num_matches = 0;
 }
 
+static guint
+swap_index_big_endian(guint index)
+{
+  return G_BYTE_ORDER == G_BIG_ENDIAN ? 1-index : index;
+}
+
+gboolean
+log_msg_tags_foreach(LogMessage *self, LogMessageTableForeachFunc callback, gpointer user_data)
+{
+  guint i, j, k;
+  guint tag_id;
+  for (i = 0; i != self->num_tags; ++i)
+    {
+      if (G_LIKELY(!self->tags[i]))
+        continue;
+      for (j = 0; j != 2; ++j)
+        {
+          if (G_LIKELY(! * ( ((guint16*) (&self->tags[i])) + swap_index_big_endian(j))))
+            continue;
+
+          for (k = 0; k != 2; ++k)
+            {
+              if (G_LIKELY(! * ( ((guint8*) (&self->tags[i])) + swap_index_big_endian(j) * 2 + swap_index_big_endian(k))))
+                continue;
+
+              guint bitidx;
+
+              for (bitidx = 0; bitidx != 8; ++bitidx)
+                {
+                  if ( *(((guint8*) (&self->tags[i])) + swap_index_big_endian(j) * 2 +swap_index_big_endian(k)) & (1 << bitidx))
+                    {
+                      tag_id = i * 32  + j * 16 + k * 8 + bitidx;
+                      gchar *name =  log_tags_get_by_id(tag_id);
+                      callback(self, i , tag_id, name, user_data);
+                    }
+                }
+            }
+        }
+    }
+  return TRUE;
+}
+
 static inline void
 log_msg_set_tag_by_id_onoff(LogMessage *self, guint id, gboolean on)
 {
@@ -1618,6 +1660,29 @@ log_msg_parse(LogMessage *self,
         }
 
     }
+}
+
+gboolean
+log_msg_append_tags_callback(LogMessage *self, guint32 log_msg_tag_index, guint32 tag_id, const gchar *name, gpointer user_data)
+{
+  GString *result = (GString *) ((gpointer *) user_data)[0];
+  gint original_length = GPOINTER_TO_UINT(((gpointer *) user_data)[1]);
+
+  g_assert(result);
+
+  if (result->len > original_length)
+    g_string_append_c(result, ',');
+
+  g_string_append(result, name);
+  return TRUE;
+}
+
+void
+log_msg_print_tags(LogMessage *self, GString *result)
+{
+  gpointer args[] = { result, GUINT_TO_POINTER(result->len) };
+
+  log_msg_tags_foreach(self, log_msg_append_tags_callback, args);
 }
 
 /**

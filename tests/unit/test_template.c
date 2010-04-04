@@ -62,6 +62,9 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   log_msg_set_value(msg, log_msg_get_value_handle("APP.VALUE"), "value", -1);
   log_msg_set_match(msg, 0, "whole-match", -1);
   log_msg_set_match(msg, 1, "first-match", -1);
+  log_msg_set_tag_by_name(msg, "alma");
+  log_msg_set_tag_by_name(msg, "korte");
+  log_msg_set_tag_by_name(msg, "citrom");
 
   /* fix some externally or automatically defined values */
   log_msg_set_value(msg, LM_V_HOST_FROM, "kismacska", -1);
@@ -77,6 +80,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase(msg, "$LEVEL", "err");
   testcase(msg, "$LEVEL_NUM", "3");
   testcase(msg, "$TAG", "9b");
+  testcase(msg, "$TAGS", "alma,korte,citrom");
   testcase(msg, "$PRI", "155");
   testcase(msg, "$DATE", "Feb 11 10:34:56.000");
   testcase(msg, "$FULLDATE", "2006 Feb 11 10:34:56.000");
