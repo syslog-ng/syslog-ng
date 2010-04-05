@@ -121,6 +121,8 @@ void cfg_add_rewrite(GlobalConfig *cfg, struct _LogProcessRule *rule);
 void cfg_add_connection(GlobalConfig *configuration, struct _LogConnection *conn);
 void cfg_add_template(GlobalConfig *cfg, struct _LogTemplate *template);
 struct _LogTemplate *cfg_lookup_template(GlobalConfig *cfg, const gchar *name);
+struct _LogTemplate *cfg_check_inline_template(GlobalConfig *cfg, const gchar *template_or_name);
+gboolean cfg_check_template(struct _LogTemplate *template);
 
 void cfg_file_owner_set(GlobalConfig *self, gchar *owner);
 void cfg_file_group_set(GlobalConfig *self, gchar *group);
@@ -149,19 +151,6 @@ gint cfg_persist_get_version(GlobalConfig *cfg);
 void cfg_persist_set_version(GlobalConfig *cfg, const gint version);
 
 void persist_config_free(PersistentConfig *persist);
-
-/* defined in the lexer */
-void yyerror(char *msg);
-int yylex();
-int cfg_lex_init(FILE *file, gint init_line_num);
-void cfg_lex_deinit(void);
-gboolean cfg_lex_process_include(const gchar *filename);
-const gchar *cfg_lex_get_current_file(void);
-gint cfg_lex_get_current_lineno(void);
-char *cfg_lex_get_keyword_string(int kw);
-
-/* defined in the parser */
-int yyparse(void);
 
 static inline gboolean 
 cfg_check_current_config_version(gint req)

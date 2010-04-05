@@ -29,6 +29,7 @@
 #include "messages.h"
 #include "logprocess.h"
 #include "logmatcher.h"
+#include "cfg-parser.h"
 
 struct _GlobalConfig;
 

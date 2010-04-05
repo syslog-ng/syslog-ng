@@ -253,7 +253,11 @@ cfg_read_pragmas(GlobalConfig *self, FILE *cfg, gint *lineno)
       if (strcmp(pragma, "version") == 0)
         {
           /* version number of the configuration file */
-          if (strcmp(value, "3.0") == 0)
+          if (strcmp(value, "3.2") == 0)
+            self->version = 0x0302;
+          else if (strcmp(value, "3.1") == 0)
+            self->version = 0x0301;
+          else if (strcmp(value, "3.0") == 0)
             self->version = 0x0300;
           else if (strncmp(value, "2.", 2) == 0)
             self->version = 0x0201;
@@ -265,7 +269,33 @@ cfg_read_pragmas(GlobalConfig *self, FILE *cfg, gint *lineno)
                       NULL);
         }
     }
+}
   /* file with only pragmas? */
+struct _LogTemplate *
+cfg_check_inline_template(GlobalConfig *cfg, const gchar *template_or_name)
+{
+  struct _LogTemplate *template = cfg_lookup_template(configuration, template_or_name);
+  if (template == NULL)
+    {
+      template = log_template_new(NULL, template_or_name);
+      template->def_inline = TRUE;
+    }
+  return template;
+}
+
+gboolean
+cfg_check_template(LogTemplate *template)
+{
+  GError *error = NULL;
+  if (!log_template_compile(template, &error))
+    {
+      msg_error("Error compiling template",
+                evt_tag_str("template", template->template),
+                evt_tag_str("error", error->message),
+                NULL);
+      g_clear_error(&error);
+      return FALSE;
+    }
   return TRUE;
 }
 
@@ -328,6 +358,7 @@ cfg_new(gchar *fname)
   if ((cfg = fopen(fname, "r")) != NULL)
     {
       gint lineno = 0;
+      CfgLexer *lexer;
       
       if (!cfg_read_pragmas(self, cfg, &lineno))
         {
@@ -357,11 +388,11 @@ cfg_new(gchar *fname)
           self->chain_hostnames = TRUE;
         }
 
-      cfg_lex_init(cfg, lineno);
-      res = yyparse();
-      cfg_lex_deinit();
+      lexer = cfg_lexer_new(cfg, fname, lineno);
+      res = cfg_parser_parse(&main_parser, lexer, (gpointer *) &self);
+      cfg_lexer_free(lexer);
       fclose(cfg);
-      if (!res)
+      if (res)
 	{
 	  /* successfully parsed */
 	  self->center = log_center_new();

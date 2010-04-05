@@ -31,6 +31,7 @@
 #endif
 
 #if ENABLE_DEBUG
+#undef YYDEBUG
 #define YYDEBUG 1
 #endif
 

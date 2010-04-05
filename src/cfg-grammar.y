@@ -1,6 +1,250 @@
-%{
+%code requires {
 
-#include "syslog-ng.h"
+/* YYSTYPE and YYLTYPE is defined by the lexer */
+#include "cfg-lexer.h"
+
+}
+
+%name-prefix "main_"
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {gpointer *dummy}
+
+/* START_DECLS */
+
+%require "2.4.1"
+%locations
+%define api.pure
+%pure-parser
+
+/* plugin types, must be equal to the numerical values of the plugin type in plugin.h */
+
+%token PLUGIN_TYPE_DEST_DRIVER        1
+%token PLUGIN_TYPE_SRC_DRIVER         2
+%token PLUGIN_TYPE_PARSER             3
+%token PLUGIN_TYPE_REWRITE            4
+%token PLUGIN_TYPE_FILTER             5
+
+/* statements */
+%token KW_SOURCE                      10000
+%token KW_FILTER                      10001
+%token KW_PARSER                      10002
+%token KW_DESTINATION                 10003
+%token KW_LOG                         10004
+%token KW_OPTIONS                     10005
+%token KW_INCLUDE                     10006
+
+/* source & destination items */
+%token KW_INTERNAL                    10010
+%token KW_FILE                        10011
+%token KW_PIPE                        10012
+%token KW_UNIX_STREAM                 10013
+%token KW_UNIX_DGRAM                  10014
+%token KW_TCP                         10015
+%token KW_UDP                         10016
+%token KW_TCP6                        10017
+%token KW_UDP6                        10018
+%token KW_USERTTY                     10019
+%token KW_DOOR                        10020
+%token KW_SUN_STREAMS                 10021
+%token KW_PROGRAM                     10022
+
+%token KW_SQL                         10030
+%token KW_TYPE                        10031
+%token KW_COLUMNS                     10032
+%token KW_INDEXES                     10033
+%token KW_VALUES                      10034
+%token KW_PASSWORD                    10035
+%token KW_DATABASE                    10036
+%token KW_USERNAME                    10037
+%token KW_TABLE                       10038
+%token KW_ENCODING                    10039
+
+%token KW_DELIMITERS                  10050
+%token KW_QUOTES                      10051
+%token KW_QUOTE_PAIRS                 10052
+%token KW_NULL                        10053
+
+%token KW_SYSLOG                      10060
+%token KW_TRANSPORT                   10061
+
+/* option items */
+%token KW_FSYNC                       10070
+%token KW_MARK_FREQ                   10071
+%token KW_STATS_FREQ                  10072
+%token KW_STATS_LEVEL                 10073
+%token KW_FLUSH_LINES                 10074
+%token KW_SUPPRESS                    10075
+%token KW_FLUSH_TIMEOUT               10076
+%token KW_LOG_MSG_SIZE                10077
+%token KW_FILE_TEMPLATE               10078
+%token KW_PROTO_TEMPLATE              10079
+
+%token KW_CHAIN_HOSTNAMES             10090
+%token KW_NORMALIZE_HOSTNAMES         10091
+%token KW_KEEP_HOSTNAME               10092
+%token KW_CHECK_HOSTNAME              10093
+%token KW_BAD_HOSTNAME                10094
+
+%token KW_KEEP_TIMESTAMP              10100
+
+%token KW_USE_DNS                     10110
+%token KW_USE_FQDN                    10111
+
+%token KW_DNS_CACHE                   10120
+%token KW_DNS_CACHE_SIZE              10121
+
+%token KW_DNS_CACHE_EXPIRE            10130
+%token KW_DNS_CACHE_EXPIRE_FAILED     10131
+%token KW_DNS_CACHE_HOSTS             10132
+
+%token KW_PERSIST_ONLY                10140
+
+%token KW_TZ_CONVERT                  10150
+%token KW_TS_FORMAT                   10151
+%token KW_FRAC_DIGITS                 10152
+
+%token KW_LOG_FIFO_SIZE               10160
+%token KW_LOG_DISK_FIFO_SIZE          10161
+%token KW_LOG_FETCH_LIMIT             10162
+%token KW_LOG_IW_SIZE                 10163
+%token KW_LOG_PREFIX                  10164
+%token KW_PROGRAM_OVERRIDE            10165
+%token KW_HOST_OVERRIDE               10166
+
+%token KW_THROTTLE                    10170
+
+/* SSL support */
+
+%token KW_TLS                         10180
+%token KW_PEER_VERIFY                 10181
+%token KW_KEY_FILE                    10182
+%token KW_CERT_FILE                   10183
+%token KW_CA_DIR                      10184
+%token KW_CRL_DIR                     10185
+%token KW_TRUSTED_KEYS                10186
+%token KW_TRUSTED_DN                  10187
+
+/* log statement options */
+%token KW_FLAGS                       10190
+
+/* reader options */
+%token KW_PAD_SIZE                    10200
+%token KW_TIME_ZONE                   10201
+%token KW_RECV_TIME_ZONE              10202
+%token KW_SEND_TIME_ZONE              10203
+%token KW_LOCAL_TIME_ZONE             10204
+
+/* timers */
+%token KW_TIME_REOPEN                 10210
+%token KW_TIME_REAP                   10211
+%token KW_TIME_SLEEP                  10212
+
+/* destination options */
+%token KW_TMPL_ESCAPE                 10220
+
+/* driver specific options */
+%token KW_OPTIONAL                    10230
+
+/* file related options */
+%token KW_CREATE_DIRS                 10240
+
+%token KW_OWNER                       10250
+%token KW_GROUP                       10251
+%token KW_PERM                        10252
+
+%token KW_DIR_OWNER                   10260
+%token KW_DIR_GROUP                   10261
+%token KW_DIR_PERM                    10262
+
+%token KW_TEMPLATE                    10270
+%token KW_TEMPLATE_ESCAPE             10271
+
+%token KW_FOLLOW_FREQ                 10280
+
+%token KW_OVERWRITE_IF_OLDER          10290
+
+%token KW_DEFAULT_FACILITY            10300
+%token KW_DEFAULT_LEVEL               10301
+
+/* socket related options */
+
+%token KW_KEEP_ALIVE                  10310
+%token KW_MAX_CONNECTIONS             10311
+
+%token KW_LOCALIP                     10320
+%token KW_IP                          10321
+%token KW_LOCALPORT                   10322
+%token KW_PORT                        10323
+%token KW_DESTPORT                    10324
+
+%token KW_IP_TTL                      10330
+%token KW_SO_BROADCAST                10331
+%token KW_IP_TOS                      10332
+%token KW_SO_SNDBUF                   10333
+%token KW_SO_RCVBUF                   10334
+%token KW_SO_KEEPALIVE                10335
+%token KW_SPOOF_SOURCE                10336
+
+/* misc options */
+
+%token KW_USE_TIME_RECVD              10340
+
+/* filter items*/
+%token KW_FACILITY                    10350
+%token KW_LEVEL                       10351
+%token KW_HOST                        10352
+%token KW_MATCH                       10353
+%token KW_MESSAGE                     10354
+%token KW_NETMASK                     10355
+%token KW_TAGS                        10356
+
+/* parser items */
+
+%token KW_CSV_PARSER                  10360
+%token KW_VALUE                       10361
+%token KW_DB_PARSER                   10362
+
+/* rewrite items */
+
+%token KW_REWRITE                     10370
+%token KW_SET                         10371
+%token KW_SUBST                       10372
+
+/* yes/no switches */
+
+%token KW_YES                         10380
+%token KW_NO                          10381
+
+/* obsolete, compatibility and not-yet supported options */
+%token KW_GC_IDLE_THRESHOLD           10390
+%token KW_GC_BUSY_THRESHOLD           10391
+
+%token KW_COMPRESS                    10400
+%token KW_MAC                         10401
+%token KW_AUTH                        10402
+%token KW_ENCRYPT                     10403
+
+%token KW_IFDEF                       10410
+%token KW_ENDIF                       10411
+
+%token LL_DOTDOT                      10420
+
+%token <cptr> LL_IDENTIFIER
+%token <num>  LL_NUMBER
+%token <fnum> LL_FLOAT
+%token <cptr> LL_STRING
+%token <token> LL_TOKEN
+
+%left	KW_OR
+%left	KW_AND
+%left   KW_NOT
+
+/* END_DECLS */
+
+%code {
+
+#include "cfg-parser.h"
 #include "cfg.h"
 #include "sgroup.h"
 #include "dgroup.h"
@@ -10,16 +254,12 @@
 #include "logreader.h"
 #include "logparser.h"
 #include "logrewrite.h"
+#include "filter-expr-parser.h"
+#include "plugin.h"
 
-#if ENABLE_SSL /* BEGIN MARK: tls */
-#include "tlscontext.h"
-#endif         /* END MARK */
 
 #include "affile.h"
 #include "afinter.h"
-#include "afsocket.h"
-#include "afinet.h"
-#include "afunix.h"
 #include "afstreams.h"
 #include "afuser.h"
 #include "afprog.h"
@@ -36,163 +276,19 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* FIXME: the lexer allocates strings with strdup instead of g_strdup,
- * therefore there are unnecessary g_strdup/free pairs in the grammar. These
- * should be removed. */
-
-void yyerror(char *msg);
-int yylex();
+#include "cfg-grammar.h"
 
 LogDriver *last_driver;
 LogReaderOptions *last_reader_options;
 LogWriterOptions *last_writer_options;
 LogTemplate *last_template;
-SocketOptions *last_sock_options;
 LogParser *last_parser;
-FilterRE *last_re_filter;
 LogRewrite *last_rewrite;
-gint last_addr_family = AF_INET;
 gchar *last_include_file;
+FilterExprNode *last_filter_expr;
 
-#if ENABLE_SSL
-TLSContext *last_tls_context;
-#endif
-
-
-#if ! ENABLE_IPV6
-#undef AF_INET6
-#define AF_INET6 0; g_assert_not_reached()
-
-#endif
-
-static struct _LogTemplate *
-cfg_check_inline_template(GlobalConfig *cfg, const gchar *template_or_name)
-{
-  struct _LogTemplate *template = cfg_lookup_template(configuration, template_or_name);
-  if (template == NULL)
-    {
-      template = log_template_new(NULL, template_or_name);
-      template->def_inline = TRUE;
-    }
-  return template;
 }
 
-static gboolean
-cfg_check_template(LogTemplate *template)
-{
-  GError *error = NULL;
-  if (!log_template_compile(template, &error))
-    {
-      msg_error("Error compiling template",
-                evt_tag_str("template", template->template),
-                evt_tag_str("error", error->message),
-                NULL);
-      g_clear_error(&error);
-      return FALSE;
-    }
-  return TRUE;
-}
-
-
-%}
-
-%union {
-        gint token;
-	gint64 num;
-	double fnum;
-	char *cptr;
-	void *ptr;
-	FilterExprNode *node;
-}
-
-/* statements */
-%token	KW_SOURCE KW_FILTER KW_PARSER KW_DESTINATION KW_LOG KW_OPTIONS KW_INCLUDE
-
-/* source & destination items */
-%token	KW_INTERNAL KW_FILE KW_PIPE KW_UNIX_STREAM KW_UNIX_DGRAM
-%token  KW_TCP KW_UDP KW_TCP6 KW_UDP6
-%token  KW_USERTTY KW_DOOR KW_SUN_STREAMS KW_PROGRAM
-%token  KW_SQL KW_TYPE KW_COLUMNS KW_INDEXES KW_VALUES KW_PASSWORD KW_DATABASE KW_USERNAME KW_TABLE KW_ENCODING
-%token  KW_DELIMITERS KW_QUOTES KW_QUOTE_PAIRS KW_NULL
-%token  KW_SYSLOG KW_TRANSPORT
-
-/* option items */
-%token KW_FSYNC KW_MARK_FREQ KW_STATS_FREQ KW_STATS_LEVEL KW_FLUSH_LINES KW_SUPPRESS KW_FLUSH_TIMEOUT KW_LOG_MSG_SIZE KW_FILE_TEMPLATE KW_PROTO_TEMPLATE
-
-%token KW_CHAIN_HOSTNAMES KW_NORMALIZE_HOSTNAMES KW_KEEP_HOSTNAME KW_CHECK_HOSTNAME KW_BAD_HOSTNAME
-%token KW_KEEP_TIMESTAMP
-%token KW_USE_DNS KW_USE_FQDN
-%token KW_DNS_CACHE KW_DNS_CACHE_SIZE
-%token KW_DNS_CACHE_EXPIRE KW_DNS_CACHE_EXPIRE_FAILED KW_DNS_CACHE_HOSTS
-%token KW_PERSIST_ONLY
-%token KW_TZ_CONVERT KW_TS_FORMAT KW_FRAC_DIGITS
-
-%token KW_LOG_FIFO_SIZE KW_LOG_DISK_FIFO_SIZE KW_LOG_FETCH_LIMIT KW_LOG_IW_SIZE KW_LOG_PREFIX KW_PROGRAM_OVERRIDE KW_HOST_OVERRIDE
-%token KW_THROTTLE
-
-/* SSL support */
-%token KW_TLS KW_PEER_VERIFY KW_KEY_FILE KW_CERT_FILE KW_CA_DIR KW_CRL_DIR KW_TRUSTED_KEYS KW_TRUSTED_DN
-
-/* log statement options */
-%token KW_FLAGS
-
-/* reader options */
-%token KW_PAD_SIZE KW_TIME_ZONE KW_RECV_TIME_ZONE KW_SEND_TIME_ZONE KW_LOCAL_TIME_ZONE
-
-/* timers */
-%token KW_TIME_REOPEN KW_TIME_REAP KW_TIME_SLEEP
-
-/* destination options */
-%token KW_TMPL_ESCAPE
-
-/* driver specific options */
-%token KW_OPTIONAL
-
-/* file related options */
-%token KW_CREATE_DIRS
-%token KW_OWNER KW_GROUP KW_PERM
-%token KW_DIR_OWNER KW_DIR_GROUP KW_DIR_PERM
-%token KW_TEMPLATE KW_TEMPLATE_ESCAPE
-%token KW_FOLLOW_FREQ
-%token KW_OVERWRITE_IF_OLDER
-%token KW_DEFAULT_FACILITY KW_DEFAULT_LEVEL
-
-/* socket related options */
-%token KW_KEEP_ALIVE KW_MAX_CONNECTIONS
-%token KW_LOCALIP KW_IP KW_LOCALPORT KW_PORT KW_DESTPORT
-%token KW_IP_TTL KW_SO_BROADCAST KW_IP_TOS KW_SO_SNDBUF KW_SO_RCVBUF KW_SO_KEEPALIVE KW_SPOOF_SOURCE
-
-/* misc options */
-%token KW_USE_TIME_RECVD
-
-/* filter items*/
-%token KW_FACILITY KW_LEVEL KW_HOST KW_MATCH KW_MESSAGE KW_NETMASK KW_TAGS
-
-/* parser items */
-%token KW_CSV_PARSER KW_VALUE KW_DB_PARSER
-
-/* rewrite items */
-%token KW_REWRITE KW_SET KW_SUBST
-
-/* yes/no switches */
-%token KW_YES KW_NO
-
-/* obsolete, compatibility and not-yet supported options */
-%token KW_GC_IDLE_THRESHOLD KW_GC_BUSY_THRESHOLD
-%token KW_COMPRESS KW_MAC KW_AUTH KW_ENCRYPT
-
-%token KW_IFDEF
-%token KW_ENDIF
-
-%token  LL_DOTDOT
-%token	<cptr> LL_IDENTIFIER
-%token	<num>  LL_NUMBER
-%token	<fnum> LL_FLOAT
-%token	<cptr> LL_STRING
-
-%left	KW_OR
-%left	KW_AND
-%left   KW_NOT
 
 %type	<ptr> source_stmt
 %type	<ptr> filter_stmt
@@ -320,7 +416,7 @@ start
 stmts
         : stmt ';'
           {
-            if (last_include_file && !cfg_lex_process_include(last_include_file))
+            if (last_include_file && !cfg_lexer_process_include(lexer, last_include_file))
               {
                 free(last_include_file);
                 last_include_file = NULL;
@@ -1494,7 +1590,7 @@ dnsmode
 string
 	: LL_IDENTIFIER
 	| LL_STRING
-	| reserved_words_as_strings             { $$ = cfg_lex_get_keyword_string($1); }
+	| reserved_words_as_strings             { $$ = cfg_lexer_get_keyword_string(lexer, $1); }
 	;
 
 reserved_words_as_strings
@@ -1575,15 +1671,7 @@ facility_string
         ;
 
 
+
+
 %%
-
-extern int linenum;
-
-void
-yyerror(char *msg)
-{
-  fprintf(stderr, "%s in %s at line %d.\n\n"
-                  "syslog-ng documentation: http://www.balabit.com/support/documentation/?product=syslog-ng\n"
-                  "mailing list: https://lists.balabit.hu/mailman/listinfo/syslog-ng\n", msg, cfg_lex_get_current_file(), cfg_lex_get_current_lineno());
-}
 

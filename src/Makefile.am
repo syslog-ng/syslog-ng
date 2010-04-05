@@ -38,7 +38,6 @@ libsyslog_ng_a_SOURCES = \
 	dnscache.c dnscache.h serialize.c serialize.h apphook.c apphook.h atomic.h \
 	radix.c radix.h \
 	logpatterns.c logpatterns.h \
-	cfg-lex.l cfg-grammar.y \
 	timeutils.c timeutils.h \
 	tags.c tags.h \
 	alarms.c alarms.h \
@@ -52,6 +51,8 @@ libsyslog_ng_a_SOURCES = \
 	control.c control.h \
 	compat.c compat.h \
 	logqueue.c logqueue.h afsql.c afsql.h \
+	cfg-lexer.c cfg-lexer.h cfg-lex.l \
+	cfg-parser.c cfg-parser.h cfg-grammar.y \
 	tlscontext.c tlscontext.h tlstransport.c tlstransport.h
 
 cfg-lex.c: cfg-grammar.c
@@ -73,3 +74,6 @@ else
 install-exec-hook:
 	echo Nothing to do!
 endif
+
+.l.c:
+	$(am__skiplex) $(SHELL) $(YLWRAP) $< $(LEX_OUTPUT_ROOT).c $*.c $(LEX_OUTPUT_ROOT).h $*.h -- $(LEXCOMPILE)
