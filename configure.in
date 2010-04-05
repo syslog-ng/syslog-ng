@@ -56,7 +56,8 @@ fi
 if test "x$prefix" = "xNONE"; then
         prefix=$ac_default_prefix
 fi
-pidfiledir="${localstatedir}"
+pidfiledir='${localstatedir}'
+plugindir='${prefix}/lib/syslog-ng'
 
 AM_CONFIG_HEADER(config.h)
 
@@ -71,6 +72,10 @@ AC_ARG_WITH(libnet,
 AC_ARG_WITH(pidfile-dir,
    [  --with-pidfile-dir=path   Use path as the directory for storing pidfiles],
    pidfiledir=$with_pidfile_dir)
+
+AC_ARG_WITH(plugin-dir,
+   [  --with-plugin-dir=path   Use path as the directory for storing pidfiles],
+   plugindir=$with_plugin_dir)
 	
 AC_ARG_WITH(timezone-dir,
    [  --with-timezone-dir=path   Use path as the directory to get the timezone files],
@@ -150,7 +155,7 @@ fi
 AC_PROG_YACC
 AM_PROG_LEX
 AC_PROG_MAKE_SET
-AC_PROG_RANLIB
+LT_INIT
 
 dnl ***************************************************************************
 dnl Set up CFLAGS
@@ -525,9 +530,9 @@ if test "x$enable_pcre" = "xauto"; then
         AC_MSG_RESULT([$enable_pcre])
 fi
 
-GLIB_ADDONS=""
+GLIB_ADDONS="gmodule"
 if test "x$enable_sql" = "xyes"; then
-	GLIB_ADDONS="gthread"
+	GLIB_ADDONS="${GLIB_ADDONS} gthread"
 fi
 
 AM_PATH_GLIB_2_0($GLIB_MIN_VERSION,,
@@ -751,6 +756,7 @@ AC_DEFINE_UNQUOTED(PATH_PREFIX, "`patheval $prefix`", [prefix directory])
 AC_DEFINE_UNQUOTED(PATH_SYSCONFDIR, "`patheval $sysconfdir`", [sysconfdir])
 AC_DEFINE_UNQUOTED(PATH_LOCALSTATEDIR, "`patheval $localstatedir`", [local state directory])
 AC_DEFINE_UNQUOTED(PATH_PIDFILEDIR, "`patheval $pidfiledir`", [local state directory])
+AC_DEFINE_UNQUOTED(PATH_PLUGINDIR, "`patheval $plugindir`", [plugin directory])
 if test -n "$timezonedir"; then
         AC_DEFINE_UNQUOTED(PATH_TIMEZONEDIR, "`patheval $timezonedir`", [timezone base directory])
 fi
@@ -776,6 +782,7 @@ AM_CONDITIONAL(ENABLE_ENV_WRAPPER, [test "$enable_env_wrapper" = "yes"])
 
 AC_SUBST(timezonedir)
 AC_SUBST(pidfiledir)
+AC_SUBST(plugindir)
 AC_SUBST(DEPS_CPPFLAGS)
 AC_SUBST(DEPS_LIBS)
 AC_SUBST(BASE_LIBS)
@@ -792,6 +799,7 @@ AC_OUTPUT(dist.conf
           Makefile 
 	  syslog-ng.spec
 	  src/Makefile 
+          src/dummy/Makefile
 	  doc/Makefile
           doc/docvars.xml
 	  contrib/Makefile

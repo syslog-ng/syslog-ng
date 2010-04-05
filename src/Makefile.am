@@ -56,6 +56,7 @@ libsyslog_ng_a_SOURCES = \
 	logqueue.c logqueue.h afsql.c afsql.h \
 	cfg-lexer.c cfg-lexer.h cfg-lex.l \
 	cfg-parser.c cfg-parser.h cfg-grammar.y \
+	plugin.c plugin.h \
 	filter-expr-grammar.y filter-expr-parser.c filter-expr-parser.h
 
 filter-expr-grammar.y: filter-expr-grammar.y.in merge-grammar.pl cfg-grammar.y

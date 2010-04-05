@@ -318,6 +318,7 @@ FilterExprNode *last_filter_expr;
 %type	<num> source_reader_option_flags
 %type   <ptr> source_afprogram
 %type   <ptr> source_afprogram_params
+%type   <ptr> source_plugin
 
 %type	<ptr> dest_items
 %type	<ptr> dest_item
@@ -339,6 +340,7 @@ FilterExprNode *last_filter_expr;
 %type   <ptr> dest_afsql
 %type   <ptr> dest_afsql_params
 /* END MARK */
+%type   <ptr> dest_plugin
 %type	<num> dest_writer_options_flags
 
 %type	<ptr> log_items
@@ -559,7 +561,25 @@ source_item
 	| source_afsyslog			{ $$ = $1; }
 	| source_afstreams			{ $$ = $1; }
         | source_afprogram                      { $$ = $1; }
+        | source_plugin                         { $$ = $1; }
 	;
+
+source_plugin
+        : LL_IDENTIFIER
+          {
+            gchar errbuf[256];
+
+            g_snprintf(errbuf, sizeof(errbuf), "Error parsing configuration block for plugin %s", $1);
+            last_driver = (LogDriver *) plugin_new_instance(lexer, PLUGIN_TYPE_SRC_DRIVER, $1);
+            free($1);
+            if (!last_driver)
+              {
+                yyerror(&yylloc, lexer, dummy, errbuf);
+                YYERROR;
+              }
+            $$ = last_driver;
+          }
+        ;
 
 source_afinter
 	: KW_INTERNAL '(' ')'			{ $$ = afinter_sd_new(); }
@@ -871,7 +891,25 @@ dest_item
 /* BEGIN MARK: sql */
 	| dest_afsql				{ $$ = $1; }
 /* END MARK */
+        | dest_plugin                           { $$ = $1; }
 	;
+
+dest_plugin
+        : LL_IDENTIFIER
+          {
+            gchar errbuf[256];
+
+            g_snprintf(errbuf, sizeof(errbuf), "Error parsing configuration block for plugin %s", $1);
+            last_driver = (LogDriver *) plugin_new_instance(lexer, PLUGIN_TYPE_DEST_DRIVER, $1);
+            free($1);
+            if (!last_driver)
+              {
+                yyerror(&yylloc, lexer, dummy, errbuf);
+                YYERROR;
+              }
+            $$ = last_driver;
+          }
+        ;
 
 dest_affile
 	: KW_FILE '(' dest_affile_params ')'	{ $$ = $3; }
@@ -1535,6 +1573,8 @@ regexp_option_flags
         |                                       { $$ = 0; }
         ;
 
+
+/* END_RULES */
 
 
 %%

@@ -33,6 +33,7 @@
 #include "dnscache.h"
 #include "logparser.h"
 #include "serialize.h"
+#include "plugin.h"
 #include "cfg-parser.h"
 
 #include <sys/types.h>
@@ -227,7 +228,7 @@ cfg_read_pragmas(GlobalConfig *self, FILE *cfg, gint *lineno)
         {
           lineno--;
           fseek(cfg, start_ofs, SEEK_SET);
-          return TRUE;
+          goto success;
         }
       
       colon = strchr(line, ':');
@@ -263,6 +264,22 @@ cfg_read_pragmas(GlobalConfig *self, FILE *cfg, gint *lineno)
           else if (strncmp(value, "2.", 2) == 0)
             self->version = 0x0201;
         }
+      else if (strcmp(pragma, "module") == 0)
+        {
+          if (!plugin_load_module(value))
+            {
+              msg_error("Error loading module",
+                        evt_tag_str("module", value),
+                        NULL);
+              return FALSE;
+            }
+          else
+            {
+              msg_verbose("Module successfully loaded",
+                          evt_tag_str("module", value),
+                          NULL);
+            }
+        }
       else
         {
           msg_warning("Unknown configuration file pragma",
@@ -270,8 +287,15 @@ cfg_read_pragmas(GlobalConfig *self, FILE *cfg, gint *lineno)
                       NULL);
         }
     }
+ success:
+  if (self->version <= 0x0301)
+    {
+      /* auto load modules for old configurations */
+      plugin_load_module("afsocket");
+    }
+  return TRUE;
 }
-  /* file with only pragmas? */
+
 struct _LogTemplate *
 cfg_check_inline_template(GlobalConfig *cfg, const gchar *template_or_name)
 {

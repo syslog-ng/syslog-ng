@@ -1,0 +1,47 @@
+%code requires {
+
+#include "dummy-parser.h"
+
+}
+
+%code {
+
+#include "cfg-parser.h"
+#include "dummy-grammar.h"
+
+}
+
+%name-prefix "dummy_"
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {DummyDestDriver **dummy_dd_instance}
+
+
+/* INCLUDE_DECLS */
+
+%token KW_DUMMY
+%token KW_DUMMY_OPT
+
+%%
+
+start
+        : PLUGIN_TYPE_DEST_DRIVER KW_DUMMY
+          {
+            *dummy_dd_instance = dummy_dd_new();
+          }
+          '(' dummy_options ')'         { YYACCEPT; }
+	;
+
+dummy_options
+        : dummy_option dummy_options
+	|
+	;
+
+dummy_option
+        : KW_DUMMY_OPT '(' yesno ')'    { (*dummy_dd_instance)->opt = $3; };
+        ;
+
+
+/* INCLUDE_RULES */
+
+%%
