@@ -58,18 +58,14 @@ libsyslog_ng_a_SOURCES = \
 	cfg-lexer.c cfg-lexer.h cfg-lex.l \
 	cfg-parser.c cfg-parser.h cfg-grammar.y \
 	plugin.c plugin.h \
-	filter-expr-grammar.y filter-expr-parser.c filter-expr-parser.h
+	filter-expr-grammar.ym filter-expr-parser.c filter-expr-parser.h
 
-filter-expr-grammar.y: filter-expr-grammar.y.in merge-grammar.pl cfg-grammar.y
-	$(top_srcdir)/src/merge-grammar.pl $(srcdir)/filter-expr-grammar.y.in > $@
+.ym.y: $(srcdir)/$*.ym $(top_srcdir)/src/merge-grammar.pl $(top_srcdir)/src/cfg-grammar.y
+	$(top_srcdir)/src/merge-grammar.pl $< > $@
 
-cfg-lex.c: cfg-grammar.c
 
-cfg-grammar.h: cfg-grammar.y
 
-cfg-grammar.c: cfg-grammar.y
-
-EXTRA_DIST = cfg-grammar.h cfg-lex.c cfg-grammar.c syslog-ng.h radix-find.c
+EXTRA_DIST = cfg-grammar.h cfg-grammar.c cfg-lex.h cfg-lex.c syslog-ng.h radix-find.c
 
 MAINTAINER_CLEAN_FILES = cfg-lex.c cfg-grammar.c cfg-grammar.h
 
@@ -85,3 +81,12 @@ endif
 
 .l.c:
 	$(am__skiplex) $(SHELL) $(YLWRAP) $< $(LEX_OUTPUT_ROOT).c $*.c $(LEX_OUTPUT_ROOT).h $*.h -- $(LEXCOMPILE)
+
+.l.h:
+	$(am__skiplex) $(SHELL) $(YLWRAP) $< $(LEX_OUTPUT_ROOT).c $*.c $(LEX_OUTPUT_ROOT).h $*.h -- $(LEXCOMPILE)
+
+.y.c:
+	$(am__skipyacc) $(SHELL) $(YLWRAP) $< y.tab.c $@ y.tab.h $*.h y.output $*.output -- $(YACCCOMPILE)
+
+.y.h:
+	$(am__skipyacc) $(SHELL) $(YLWRAP) $< y.tab.c $@ y.tab.h $*.h y.output $*.output -- $(YACCCOMPILE)

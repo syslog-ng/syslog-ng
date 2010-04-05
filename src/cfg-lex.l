@@ -46,7 +46,7 @@
 
 %option bison-bridge bison-locations reentrant
 %option prefix="_cfg_lexer_"
-%option header-file="cfg-lex.h"
+%option header-file="lex.yy.h"
 %option outfile="lex.yy.c"
 %option extra-type="CfgLexer *"
 %option noyywrap

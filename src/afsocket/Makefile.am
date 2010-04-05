@@ -9,5 +9,17 @@ libafsocket_la_SOURCES = \
 	tlscontext.c tlscontext.h tlstransport.c tlstransport.h \
 	afsocket-grammar.y afsocket-parser.c afsocket-parser.h afsocket-plugin.c
 
-afsocket-grammar.y: afsocket-grammar.y.in ../merge-grammar.pl ../cfg-grammar.y
-	$(top_srcdir)/src/merge-grammar.pl $(srcdir)/afsocket-grammar.y.in > $@
+.ym.y: $(srcdir)/$*.ym $(top_srcdir)/src/merge-grammar.pl $(top_srcdir)/src/cfg-grammar.y
+	$(top_srcdir)/src/merge-grammar.pl $< > $@
+
+.l.c:
+	$(am__skiplex) $(SHELL) $(YLWRAP) $< $(LEX_OUTPUT_ROOT).c $*.c $(LEX_OUTPUT_ROOT).h $*.h -- $(LEXCOMPILE)
+
+.l.h:
+	$(am__skiplex) $(SHELL) $(YLWRAP) $< $(LEX_OUTPUT_ROOT).c $*.c $(LEX_OUTPUT_ROOT).h $*.h -- $(LEXCOMPILE)
+
+.y.c:
+	$(am__skipyacc) $(SHELL) $(YLWRAP) $< y.tab.c $@ y.tab.h $*.h y.output $*.output -- $(YACCCOMPILE)
+
+.y.h:
+	$(am__skipyacc) $(SHELL) $(YLWRAP) $< y.tab.c $@ y.tab.h $*.h y.output $*.output -- $(YACCCOMPILE)
