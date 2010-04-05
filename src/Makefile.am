@@ -1,5 +1,8 @@
 YFLAGS=@YFLAGS@
 
+export top_srcdir
+
+
 if ENABLE_ENV_WRAPPER
 libexec_PROGRAMS = syslog-ng
 sbin_PROGRAMS = syslog-ng-wrapper syslog-ng-ctl
@@ -53,6 +56,10 @@ libsyslog_ng_a_SOURCES = \
 	logqueue.c logqueue.h afsql.c afsql.h \
 	cfg-lexer.c cfg-lexer.h cfg-lex.l \
 	cfg-parser.c cfg-parser.h cfg-grammar.y \
+	filter-expr-grammar.y filter-expr-parser.c filter-expr-parser.h
+
+filter-expr-grammar.y: filter-expr-grammar.y.in merge-grammar.pl cfg-grammar.y
+	$(top_srcdir)/src/merge-grammar.pl $(srcdir)/filter-expr-grammar.y.in > $@
 	tlscontext.c tlscontext.h tlstransport.c tlstransport.h
 
 cfg-lex.c: cfg-grammar.c

@@ -33,6 +33,7 @@
 #include "dnscache.h"
 #include "logparser.h"
 #include "serialize.h"
+#include "cfg-parser.h"
 
 #include <sys/types.h>
 #include <signal.h>

@@ -353,13 +353,6 @@ FilterExprNode *last_filter_expr;
 %type	<ptr> options_items
 %type	<ptr> options_item
 
-%type	<node> filter_expr
-%type	<node> filter_simple_expr
-
-%type   <num> filter_fac_list
-%type	<num> filter_level_list
-%type	<num> filter_level
-
 %type	<ptr> parser_expr
 %type   <num> parser_csv_flags
 
@@ -367,10 +360,13 @@ FilterExprNode *last_filter_expr;
 %type   <ptr> rewrite_expr_list
 %type   <ptr> rewrite_expr_list_build
 
-%type   <num> regexp_option_flags
+
+
+/* START_DECLS */
 
 %type	<num> yesno
 %type   <num> dnsmode
+%type   <num> regexp_option_flags
 
 %type	<cptr> string
 %type	<cptr> string_or_number
@@ -406,6 +402,9 @@ FilterExprNode *last_filter_expr;
 %type <token> KW_SQL
 %type <token> KW_DEFAULT_FACILITY
 %type <token> KW_DEFAULT_LEVEL
+
+/* END_DECLS */
+
 
 %%
 
@@ -449,7 +448,16 @@ source_stmt
 	;
 
 filter_stmt
-	: string '{' filter_expr ';' '}'	{ $$ = log_filter_rule_new($1, $3); free($1); }
+	: string '{'
+	  {
+	    last_filter_expr = NULL;
+	    if (!cfg_parser_parse(&filter_expr_parser, lexer, (gpointer *) &last_filter_expr))
+              {
+                yyerror(&yylloc, lexer, dummy, "Error parsing filter expression");
+                YYERROR;
+              }
+	  }
+	  '}'                               { $$ = log_filter_rule_new($1, last_filter_expr); free($1); }
 	;
 	
 parser_stmt
@@ -1292,158 +1300,6 @@ tls_option
         ;
 /* END MARK */
 
-
-filter_expr
-	: filter_simple_expr			{ $$ = $1; if (!$1) return 1; }
-        | KW_NOT filter_expr			{ $2->comp = !($2->comp); $$ = $2; }
-	| filter_expr KW_OR filter_expr		{ $$ = fop_or_new($1, $3); }
-	| filter_expr KW_AND filter_expr	{ $$ = fop_and_new($1, $3); }
-	| '(' filter_expr ')'			{ $$ = $2; }
-	;
-
-filter_simple_expr
-	: KW_FACILITY '(' filter_fac_list ')'	{ $$ = filter_facility_new($3);  }
-	| KW_FACILITY '(' LL_NUMBER ')'		{ $$ = filter_facility_new(0x80000000 | $3); }
-	| KW_LEVEL '(' filter_level_list ')' 	{ $$ = filter_level_new($3); }
-	| KW_FILTER '(' string ')'		{ $$ = filter_call_new($3, configuration); free($3); }
-	| KW_NETMASK '(' string ')'		{ $$ = filter_netmask_new($3); free($3); }
-    | KW_TAGS '(' string_list ')'   { $$ = filter_tags_new($3); }
-	| KW_PROGRAM '(' string
-	  {
-	    last_re_filter = (FilterRE *) filter_re_new(LM_V_PROGRAM);
-          }
-          filter_re_opts ')'
-          {
-            if(!filter_re_set_regexp(last_re_filter, $3))
-              YYERROR;
-            free($3);
-
-            $$ = &last_re_filter->super;
-          }
-	| KW_HOST '(' string
-	  {
-	    last_re_filter = (FilterRE *) filter_re_new(LM_V_HOST);
-          }
-          filter_re_opts ')'
-          {
-            if(!filter_re_set_regexp(last_re_filter, $3))
-              YYERROR;
-            free($3);
-
-            $$ = &last_re_filter->super;
-          }
-	| KW_MATCH '(' string
-	  {
-	    last_re_filter = (FilterRE *) filter_match_new();
-	  }
-          filter_match_opts ')'
-          {
-            if(!filter_re_set_regexp(last_re_filter, $3))
-              YYERROR;
-            free($3);
-            $$ = &last_re_filter->super;
-
-            if (last_re_filter->value_handle == 0)
-              {
-                static gboolean warn_written = FALSE;
-
-                if (!warn_written)
-                  {
-                    msg_warning("WARNING: the match() filter without the use of the value() option is deprecated and hinders performance, please update your configuration",
-                                NULL);
-                    warn_written = TRUE;
-                  }
-              }
-          }
-        | KW_MESSAGE '(' string
-          {
-	    last_re_filter = (FilterRE *) filter_re_new(LM_V_MESSAGE);
-          }
-          filter_re_opts ')'
-          {
-            if(!filter_re_set_regexp(last_re_filter, $3))
-              YYERROR;
-	    free($3);
-            $$ = &last_re_filter->super;
-          }
-        | KW_SOURCE '(' string
-          {
-	    last_re_filter = (FilterRE *) filter_re_new(LM_V_SOURCE);
-            filter_re_set_matcher(last_re_filter, log_matcher_string_new());
-          }
-          filter_re_opts ')'
-          {
-            if(!filter_re_set_regexp(last_re_filter, $3))
-              YYERROR;
-	    free($3);
-            $$ = &last_re_filter->super;
-          }
-	;
-	
-filter_match_opts
-        : filter_match_opt filter_match_opts
-        |
-        ;
-
-filter_match_opt
-        : filter_re_opt
-        | KW_VALUE '(' string ')'
-          {
-            const gchar *p = $3;
-            if (p[0] == '$')
-              {
-                msg_warning("Value references in filters should not use the '$' prefix, those are only needed in templates",
-                            evt_tag_str("value", $3),
-                            NULL);
-                p++;
-              }
-            last_re_filter->value_handle = log_msg_get_value_handle(p);
-            free($3);
-          }
-        ;
-	
-filter_re_opts
-        : filter_re_opt filter_re_opts
-        |
-        ;
-
-filter_re_opt
-        : KW_TYPE '(' string ')'
-          {
-            filter_re_set_matcher(last_re_filter, log_matcher_new($3));
-            free($3);
-          }
-        | KW_FLAGS '(' regexp_option_flags ')' { filter_re_set_flags(last_re_filter, $3); }
-        ;
-
-regexp_option_flags
-        : string regexp_option_flags            { $$ = log_matcher_lookup_flag($1) | $2; free($1); }
-        |                                       { $$ = 0; }
-        ;
-
-
-filter_fac_list
-	: facility_string filter_fac_list	{ $$ = (1 << ($1 >> 3)) | $2; }
-	| facility_string			{ $$ = (1 << ($1 >> 3)); }
-	;
-
-filter_level_list
-	: filter_level filter_level_list	{ $$ = $1 | $2; }
-	| filter_level				{ $$ = $1; }
-	;
-
-filter_level
-	: level_string LL_DOTDOT level_string
-	  {
-	    $$ = syslog_make_range($1, $3);
-	  }
-	| level_string
-	  {
-	    $$ = 1 << $1;
-	  }
-	;
-
-	
 parser_expr
         : KW_CSV_PARSER '('
           {
@@ -1576,16 +1432,9 @@ rewrite_expr_opt
         | KW_FLAGS '(' regexp_option_flags ')' { log_rewrite_set_flags(last_rewrite, $3); }
         ;
 
-yesno
-	: KW_YES				{ $$ = 1; }
-	| KW_NO					{ $$ = 0; }
-	| LL_NUMBER				{ $$ = $1; }
-	;
 
-dnsmode
-	: yesno					{ $$ = $1; }
-	| KW_PERSIST_ONLY                       { $$ = 2; }
-	;
+
+/* START_RULES */
 
 string
 	: LL_IDENTIFIER
@@ -1619,6 +1468,17 @@ reserved_words_as_strings
         | KW_SQL
         | KW_DEFAULT_FACILITY
         | KW_DEFAULT_LEVEL
+	;
+
+yesno
+	: KW_YES				{ $$ = 1; }
+	| KW_NO					{ $$ = 0; }
+	| LL_NUMBER				{ $$ = $1; }
+	;
+
+dnsmode
+	: yesno					{ $$ = $1; }
+	| KW_PERSIST_ONLY                       { $$ = 2; }
 	;
 
 string_or_number
@@ -1670,6 +1530,10 @@ facility_string
         | KW_SYSLOG 				{ $$ = LOG_SYSLOG; }
         ;
 
+regexp_option_flags
+        : string regexp_option_flags            { $$ = log_matcher_lookup_flag($1) | $2; free($1); }
+        |                                       { $$ = 0; }
+        ;
 
 
 
