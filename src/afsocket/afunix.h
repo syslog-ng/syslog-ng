@@ -20,7 +20,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-  
+
 #ifndef SDUNIX_H_INCLUDED
 #define SDUNIX_H_INCLUDED
 
@@ -52,4 +52,3 @@ typedef struct _AFUnixDestDriver
 LogDriver *afunix_dd_new(gchar *filename, guint flags);
 
 #endif
-

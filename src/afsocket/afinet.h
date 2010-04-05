@@ -20,7 +20,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-  
+
 #ifndef AFINET_H_INCLUDED
 #define AFINET_H_INCLUDED
 
@@ -81,7 +81,7 @@ static inline const gchar *
 afinet_sd_get_proto_name(LogDriver *s)
 {
   AFInetSourceDriver *self = (AFInetSourceDriver *) s;
-  
+
   if (self->super.flags & AFSOCKET_DGRAM)
     return "udp";
   else
@@ -92,7 +92,7 @@ static inline const gchar *
 afinet_dd_get_proto_name(LogDriver *s)
 {
   AFInetDestDriver *self = (AFInetDestDriver *) s;
-  
+
   if (self->super.flags & AFSOCKET_DGRAM)
     return "udp";
   else

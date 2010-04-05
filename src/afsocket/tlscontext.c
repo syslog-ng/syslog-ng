@@ -64,11 +64,11 @@ tls_session_verify_fingerprint(X509_STORE_CTX *ctx)
     return match;
 
   hash = g_string_sized_new(EVP_MAX_MD_SIZE * 3);
- 
+
   if (tls_get_x509_digest(cert, hash))
     {
       do
-        {  
+        {
           if (strcmp((const gchar*)(current_fingerprint->data), hash->str) == 0)
             {
               match = TRUE;
@@ -77,7 +77,7 @@ tls_session_verify_fingerprint(X509_STORE_CTX *ctx)
         }
       while ((current_fingerprint = g_list_next(current_fingerprint)) != NULL);
     }
- 
+
   g_string_free(hash, TRUE);
   return match;
 }
@@ -88,7 +88,7 @@ tls_x509_format_dn(X509_NAME *name, GString *dn)
   BIO *bio;
   gchar *buf;
   long len;
-  
+
   bio = BIO_new(BIO_s_mem());
   X509_NAME_print_ex(bio, name, 0, ASN1_STRFLGS_ESC_2253 | ASN1_STRFLGS_UTF8_CONVERT | XN_FLAG_SEP_CPLUS_SPC | XN_FLAG_DN_REV);
   len = BIO_get_mem_data(bio, &buf);
@@ -104,7 +104,7 @@ tls_session_verify_dn(X509_STORE_CTX *ctx)
   gboolean match = FALSE;
   GList *current_dn = self->ctx->trusted_dn_list;
   X509 *cert = X509_STORE_CTX_get_current_cert(ctx);
-  GString *dn; 
+  GString *dn;
 
   if (!current_dn || !cert)
     return TRUE;
@@ -112,7 +112,7 @@ tls_session_verify_dn(X509_STORE_CTX *ctx)
   dn = g_string_sized_new(128);
   tls_x509_format_dn(X509_get_subject_name(cert), dn);
 
-  do 
+  do
     {
       if (g_pattern_match_simple((const gchar *) current_dn->data, dn->str))
         {
@@ -144,7 +144,7 @@ tls_session_verify(TLSSession *self, int ok, X509_STORE_CTX *ctx)
       ctx->error = X509_V_ERR_INVALID_CA;
       return 0;
     }
- 
+
   /* reject certificate if it is valid, but its DN is not trusted */
   if (ok && ctx->error_depth == 0 && !tls_session_verify_dn(ctx))
     {
@@ -169,9 +169,9 @@ tls_session_verify_callback(int ok, X509_STORE_CTX *ctx)
   TLSSession *self = SSL_get_app_data(ssl);
 
   ok = tls_session_verify(self, ok, ctx);
-    
+
   tls_log_certificate_validation_progress(ok, ctx);
-  
+
   if (self->verify_func)
     return self->verify_func(ok, ctx, self->verify_data);
   return ok;
@@ -205,7 +205,7 @@ static TLSSession *
 tls_session_new(SSL *ssl, TLSContext *ctx)
 {
   TLSSession *self = g_new0(TLSSession, 1);
-  
+
   self->ssl = ssl;
   self->ctx = ctx;
 
@@ -230,7 +230,7 @@ file_exists(const gchar *fname)
     return FALSE;
   if (access(fname, R_OK) < 0)
     {
-      msg_error("Error opening TLS file", 
+      msg_error("Error opening TLS file",
                 evt_tag_str("filename", fname),
                 evt_tag_errno("error", errno),
                 NULL);
@@ -247,10 +247,10 @@ tls_context_setup_session(TLSContext *self)
   gint ssl_error;
 
   if (!self->ssl_ctx)
-    {  
+    {
       gint verify_mode = 0;
       gint verify_flags = X509_V_FLAG_POLICY_CHECK;
-      
+
       if (self->mode == TM_CLIENT)
         self->ssl_ctx = SSL_CTX_new(SSLv23_client_method());
       else
@@ -260,23 +260,23 @@ tls_context_setup_session(TLSContext *self)
         goto error;
       if (file_exists(self->key_file) && !SSL_CTX_use_PrivateKey_file(self->ssl_ctx, self->key_file, SSL_FILETYPE_PEM))
         goto error;
-        
+
       if (file_exists(self->cert_file) && !SSL_CTX_use_certificate_file(self->ssl_ctx, self->cert_file, SSL_FILETYPE_PEM))
         goto error;
       if (self->key_file && self->cert_file && !SSL_CTX_check_private_key(self->ssl_ctx))
         goto error;
-        
+
       if (file_exists(self->ca_dir) && !SSL_CTX_load_verify_locations(self->ssl_ctx, NULL, self->ca_dir))
         goto error;
 
       if (file_exists(self->crl_dir) && !SSL_CTX_load_verify_locations(self->ssl_ctx, NULL, self->crl_dir))
         goto error;
-      
+
       if (self->crl_dir)
         verify_flags |= X509_V_FLAG_CRL_CHECK | X509_V_FLAG_CRL_CHECK_ALL;
 
       X509_VERIFY_PARAM_set_flags(self->ssl_ctx->param, verify_flags);
-        
+
       switch (self->verify_mode)
         {
         case TVM_NONE:
@@ -296,14 +296,14 @@ tls_context_setup_session(TLSContext *self)
           break;
         default:
           g_assert_not_reached();
-        }  
-      
+        }
+
       SSL_CTX_set_verify(self->ssl_ctx, verify_mode, tls_session_verify_callback);
       SSL_CTX_set_options(self->ssl_ctx, SSL_OP_NO_SSLv2);
     }
 
   ssl = SSL_new(self->ssl_ctx);
-  
+
   if (self->mode == TM_CLIENT)
     SSL_set_connect_state(ssl);
   else
@@ -324,20 +324,20 @@ tls_context_setup_session(TLSContext *self)
       SSL_CTX_free(self->ssl_ctx);
       self->ssl_ctx = NULL;
     }
-  return NULL;              
+  return NULL;
 }
 
 TLSContext *
 tls_context_new(TLSMode mode)
 {
   TLSContext *self = g_new0(TLSContext, 1);
-  
+
   self->mode = mode;
   self->verify_mode = TVM_REQUIRED | TVM_TRUSTED;
   return self;
 }
 
-void 
+void
 tls_context_free(TLSContext *self)
 {
   SSL_CTX_free(self->ssl_ctx);
@@ -350,7 +350,7 @@ tls_context_free(TLSContext *self)
   g_free(self);
 }
 
-TLSVerifyMode 
+TLSVerifyMode
 tls_lookup_verify_mode(const gchar *mode_str)
 {
   if (strcasecmp(mode_str, "none") == 0)
@@ -363,7 +363,7 @@ tls_lookup_verify_mode(const gchar *mode_str)
     return TVM_REQUIRED | TVM_TRUSTED;
   else if (strcasecmp(mode_str, "required-untrusted") == 0 || strcasecmp(mode_str, "required_untrusted") == 0)
     return TVM_REQUIRED | TVM_UNTRUSTED;
-  
+
   return TVM_REQUIRED | TVM_TRUSTED;
 }
 
@@ -372,9 +372,9 @@ tls_log_certificate_validation_progress(int ok, X509_STORE_CTX *ctx)
 {
   X509 *xs;
   GString *subject_name, *issuer_name;
-  
+
   xs = X509_STORE_CTX_get_current_cert(ctx);
-  
+
   subject_name = g_string_sized_new(128);
   issuer_name = g_string_sized_new(128);
   tls_x509_format_dn(X509_get_subject_name(xs), subject_name);
@@ -390,7 +390,7 @@ tls_log_certificate_validation_progress(int ok, X509_STORE_CTX *ctx)
   else
     {
       gint errnum, errdepth;
-      
+
       errnum = X509_STORE_CTX_get_error(ctx);
       errdepth = X509_STORE_CTX_get_error_depth(ctx);
       msg_error("Certificate validation failed",
@@ -477,7 +477,7 @@ tls_verify_certificate_name(X509 *cert, const gchar *host_name)
               else if (gen_name->type == GEN_IPADD)
                 {
                   char *dotted_ip = inet_ntoa(*(struct in_addr *) gen_name->d.iPAddress->data);
-                  
+
                   g_strlcpy(pattern_buf, dotted_ip, sizeof(pattern_buf));
                   found = TRUE;
                   result = strcmp(host_name, pattern_buf) == 0;
@@ -512,7 +512,7 @@ tls_verify_certificate_name(X509 *cert, const gchar *host_name)
                 evt_tag_str("certificate", pattern_buf),
                 NULL);
     }
-    
+
   return result;
 }
 

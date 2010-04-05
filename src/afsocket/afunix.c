@@ -20,7 +20,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-  
+
 #include "afunix.h"
 #include "misc.h"
 #include "messages.h"
@@ -31,18 +31,18 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-void 
+void
 afunix_sd_set_uid(LogDriver *s, gchar *owner)
 {
   AFUnixSourceDriver *self = (AFUnixSourceDriver *) s;
-  
+
   if (!resolve_user(owner, &self->owner))
-    msg_error("Error resolving username", 
+    msg_error("Error resolving username",
               evt_tag_str("owner", owner),
               NULL);
 }
 
-void 
+void
 afunix_sd_set_gid(LogDriver *s, gchar *group)
 {
   AFUnixSourceDriver *self = (AFUnixSourceDriver *) s;
@@ -53,7 +53,7 @@ afunix_sd_set_gid(LogDriver *s, gchar *group)
               NULL);
 }
 
-void 
+void
 afunix_sd_set_perm(LogDriver *s, mode_t perm)
 {
   AFUnixSourceDriver *self = (AFUnixSourceDriver *) s;
@@ -65,7 +65,7 @@ static gboolean
 afunix_sd_init(LogPipe *s)
 {
   AFUnixSourceDriver *self = (AFUnixSourceDriver *) s;
-  
+
   if (afsocket_sd_init(s))
     {
       if (self->owner != (uid_t) -1 || self->group != (gid_t) -1)
@@ -77,11 +77,11 @@ afunix_sd_init(LogPipe *s)
   return FALSE;
 }
 
-static void 
+static void
 afunix_sd_free(LogPipe *s)
 {
   AFUnixSourceDriver *self = (AFUnixSourceDriver *) s;
-  
+
   g_free(self->filename);
   afsocket_sd_free(s);
 }
@@ -111,7 +111,7 @@ LogDriver *
 afunix_dd_new(gchar *filename, guint flags)
 {
   AFUnixDestDriver *self = g_new0(AFUnixDestDriver, 1);
-  
+
   afsocket_dd_init_instance(&self->super, &self->sock_options, flags, g_strdup("localhost"), g_strdup_printf("localhost.afunix:%s", filename));
   if (self->super.flags & AFSOCKET_DGRAM)
     self->super.transport = g_strdup("unix-dgram");

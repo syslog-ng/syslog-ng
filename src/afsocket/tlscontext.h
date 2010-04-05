@@ -20,7 +20,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-  
+
 #ifndef TLSCONTEXT_H_INCLUDED
 #define TLSCONTEXT_H_INCLUDED
 
@@ -30,7 +30,7 @@
 
 #include <openssl/ssl.h>
 
-typedef enum 
+typedef enum
 {
   TM_CLIENT,
   TM_SERVER,

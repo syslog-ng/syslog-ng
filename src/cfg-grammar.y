@@ -305,17 +305,8 @@ FilterExprNode *last_filter_expr;
 %type	<ptr> source_affile
 %type	<ptr> source_affile_params
 %type	<ptr> source_afpipe_params
-%type	<ptr> source_afsocket
-%type	<ptr> source_afunix_dgram_params
-%type	<ptr> source_afunix_stream_params
-%type	<ptr> source_afinet_udp_params
-%type	<ptr> source_afinet_tcp_params
-%type   <ptr> source_afsyslog
-%type   <ptr> source_afsyslog_params
-%type   <ptr> source_afsocket_stream_params
 %type	<ptr> source_afstreams
 %type	<ptr> source_afstreams_params
-%type	<num> source_reader_option_flags
 %type   <ptr> source_afprogram
 %type   <ptr> source_afprogram_params
 %type   <ptr> source_plugin
@@ -326,13 +317,6 @@ FilterExprNode *last_filter_expr;
 %type	<ptr> dest_affile_params
 %type   <ptr> dest_afpipe
 %type   <ptr> dest_afpipe_params
-%type	<ptr> dest_afsocket
-%type	<ptr> dest_afunix_dgram_params
-%type	<ptr> dest_afunix_stream_params
-%type	<ptr> dest_afinet_udp_params
-%type	<ptr> dest_afinet_tcp_params
-%type   <ptr> dest_afsyslog
-%type   <ptr> dest_afsyslog_params
 %type   <ptr> dest_afuser
 %type   <ptr> dest_afprogram
 %type   <ptr> dest_afprogram_params
@@ -341,7 +325,6 @@ FilterExprNode *last_filter_expr;
 %type   <ptr> dest_afsql_params
 /* END MARK */
 %type   <ptr> dest_plugin
-%type	<num> dest_writer_options_flags
 
 %type	<ptr> log_items
 %type	<ptr> log_item
@@ -369,6 +352,8 @@ FilterExprNode *last_filter_expr;
 %type	<num> yesno
 %type   <num> dnsmode
 %type   <num> regexp_option_flags
+%type	<num> source_reader_option_flags
+%type	<num> dest_writer_options_flags
 
 %type	<cptr> string
 %type	<cptr> string_or_number
@@ -536,18 +521,6 @@ template_item
 	| KW_TEMPLATE_ESCAPE '(' yesno ')'	{ log_template_set_escape(last_template, $3); }
 	;
 
-socket_option
-	: KW_SO_SNDBUF '(' LL_NUMBER ')'           { last_sock_options->sndbuf = $3; }
-	| KW_SO_RCVBUF '(' LL_NUMBER ')'           { last_sock_options->rcvbuf = $3; }
-	| KW_SO_BROADCAST '(' yesno ')'         { last_sock_options->broadcast = $3; }
-	| KW_SO_KEEPALIVE '(' yesno ')'         { last_sock_options->keepalive = $3; }
-	;
-
-inet_socket_option
-	: socket_option
-	| KW_IP_TTL '(' LL_NUMBER ')'              { ((InetSocketOptions *) last_sock_options)->ttl = $3; }
-	| KW_IP_TOS '(' LL_NUMBER ')'              { ((InetSocketOptions *) last_sock_options)->tos = $3; }
-	;
 
 source_items
         : source_item ';' source_items		{ if ($1) {log_drv_append($1, $3); log_drv_unref($3); $$ = $1; } else { YYERROR; } }
@@ -557,8 +530,6 @@ source_items
 source_item
   	: source_afinter			{ $$ = $1; }
 	| source_affile				{ $$ = $1; }
-	| source_afsocket			{ $$ = $1; }
-	| source_afsyslog			{ $$ = $1; }
 	| source_afstreams			{ $$ = $1; }
         | source_afprogram                      { $$ = $1; }
         | source_plugin                         { $$ = $1; }
@@ -615,170 +586,6 @@ source_afpipe_options
 	| source_reader_options				{}
 	;
 
-source_afsocket
-	: KW_UNIX_DGRAM '(' source_afunix_dgram_params ')'	{ $$ = $3; }
-	| KW_UNIX_STREAM '(' source_afunix_stream_params ')' 	{ $$ = $3; }
-	| KW_UDP { last_addr_family = AF_INET; } '(' source_afinet_udp_params ')'		{ $$ = $4; }
-	| KW_TCP { last_addr_family = AF_INET; } '(' source_afinet_tcp_params ')'		{ $$ = $4; }
-	| KW_UDP6 { last_addr_family = AF_INET6; } '(' source_afinet_udp_params ')'		{ $$ = $4; }
-	| KW_TCP6 { last_addr_family = AF_INET6; } '(' source_afinet_tcp_params ')'		{ $$ = $4; }
-	;
- 	
-source_afunix_dgram_params
-	: string
-	  {
-	    last_driver = afunix_sd_new(
-		$1,
-		AFSOCKET_DGRAM | AFSOCKET_LOCAL);
-	    free($1);
-	    last_reader_options = &((AFSocketSourceDriver *) last_driver)->reader_options;
-	    last_sock_options = &((AFUnixSourceDriver *) last_driver)->sock_options;
-	  }
-	  source_afunix_options			{ $$ = last_driver; }
-	;
-	
-source_afunix_stream_params
-	: string
-	  {
-	    last_driver = afunix_sd_new(
-		$1,
-		AFSOCKET_STREAM | AFSOCKET_KEEP_ALIVE | AFSOCKET_LOCAL);
-	    free($1);
-	    last_reader_options = &((AFSocketSourceDriver *) last_driver)->reader_options;
-	    last_sock_options = &((AFUnixSourceDriver *) last_driver)->sock_options;
-	  }
-	  source_afunix_options			{ $$ = last_driver; }
-	;
-
-/* options are common between dgram & stream */
-source_afunix_options
-	: source_afunix_option source_afunix_options
-	|
-	;
-
-source_afunix_option
-	: KW_OWNER '(' string_or_number ')'	{ afunix_sd_set_uid(last_driver, $3); free($3); }
-	| KW_GROUP '(' string_or_number ')'	{ afunix_sd_set_gid(last_driver, $3); free($3); }
-	| KW_PERM '(' LL_NUMBER ')'		{ afunix_sd_set_perm(last_driver, $3); }
-	| KW_OPTIONAL '(' yesno ')'		{ last_driver->optional = $3; }
-	| source_afsocket_stream_params		{}
-	| source_reader_option			{}
-	| socket_option				{}
-	;
-
-source_afinet_udp_params
-        :
-          {
-	    last_driver = afinet_sd_new(last_addr_family,
-			NULL, 514,
-			AFSOCKET_DGRAM);
-	    last_reader_options = &((AFSocketSourceDriver *) last_driver)->reader_options;
-	    last_sock_options = &((AFInetSourceDriver *) last_driver)->sock_options.super;
-	  }
-	  source_afinet_udp_options		{ $$ = last_driver; }
-	;
-
-source_afinet_udp_options
-	: source_afinet_udp_option source_afinet_udp_options
-	|
-	;
-
-source_afinet_udp_option
-	: source_afinet_option
-	;
-
-source_afinet_option
-	: KW_LOCALIP '(' string ')'		{ afinet_sd_set_localip(last_driver, $3); free($3); }
-	| KW_IP '(' string ')'			{ afinet_sd_set_localip(last_driver, $3); free($3); }
-	| KW_LOCALPORT '(' string_or_number ')'	{ afinet_sd_set_localport(last_driver, $3, afinet_sd_get_proto_name(last_driver)); free($3); }
-	| KW_PORT '(' string_or_number ')'	{ afinet_sd_set_localport(last_driver, $3, afinet_sd_get_proto_name(last_driver)); free($3); }
-	| source_reader_option
-	| inet_socket_option
-	;
-
-source_afinet_tcp_params
-	:
-	  {
-	    last_driver = afinet_sd_new(last_addr_family,
-			NULL, 514,
-			AFSOCKET_STREAM);
-	    last_reader_options = &((AFSocketSourceDriver *) last_driver)->reader_options;
-	    last_sock_options = &((AFInetSourceDriver *) last_driver)->sock_options.super;
-	  }
-	  source_afinet_tcp_options	{ $$ = last_driver; }
-	;
-
-source_afinet_tcp_options
-	: source_afinet_tcp_option source_afinet_tcp_options
-	|
-	;
-
-source_afinet_tcp_option
-        : source_afinet_option
-/* BEGIN MARK: tls */
-	| KW_TLS
-	  {
-#if ENABLE_SSL
-	    last_tls_context = tls_context_new(TM_SERVER);
-#endif
-	  }
-	  '(' tls_options ')'			
-	  {
-#if ENABLE_SSL
-	    afsocket_sd_set_tls_context(last_driver, last_tls_context);
-#endif
-          }
-/* END MARK */
-	| source_afsocket_stream_params		{}
-	;
-
-source_afsocket_stream_params
-	: KW_KEEP_ALIVE '(' yesno ')'		{ afsocket_sd_set_keep_alive(last_driver, $3); }
-	| KW_MAX_CONNECTIONS '(' LL_NUMBER ')'	{ afsocket_sd_set_max_connections(last_driver, $3); }
-	;
-
-source_afsyslog	
-	: KW_SYSLOG { last_addr_family = AF_INET; } '(' source_afsyslog_params ')'		{ $$ = $4; }
-	;
-	
-source_afsyslog_params
-	:
-	  {
-	    last_driver = afinet_sd_new(last_addr_family,
-			NULL, 601,
-			AFSOCKET_STREAM | AFSOCKET_SYSLOG_PROTOCOL);
-	    last_reader_options = &((AFSocketSourceDriver *) last_driver)->reader_options;
-	    last_sock_options = &((AFInetSourceDriver *) last_driver)->sock_options.super;
-	  }
-	  source_afsyslog_options	{ $$ = last_driver; }
-	;
-
-source_afsyslog_options
-	: source_afsyslog_option source_afsyslog_options
-	|
-	;
-
-source_afsyslog_option
-        : source_afinet_option
-        | KW_TRANSPORT '(' string ')'           { afinet_sd_set_transport(last_driver, $3); free($3); }
-        | KW_TRANSPORT '(' KW_TCP ')'           { afinet_sd_set_transport(last_driver, "tcp"); }
-        | KW_TRANSPORT '(' KW_UDP ')'           { afinet_sd_set_transport(last_driver, "udp"); }
-        | KW_TRANSPORT '(' KW_TLS ')'           { afinet_sd_set_transport(last_driver, "tls"); }
-	| KW_TLS
-	  {
-#if ENABLE_SSL
-	    last_tls_context = tls_context_new(TM_SERVER);
-#endif
-	  }
-	  '(' tls_options ')'			
-	  {
-#if ENABLE_SSL
-	    afsocket_sd_set_tls_context(last_driver, last_tls_context);
-#endif
-          }
-	| source_afsocket_stream_params		{}
-	;
-
 source_afprogram
 	: KW_PROGRAM '(' source_afprogram_params ')' { $$ = $3; }
 	;
@@ -829,51 +636,6 @@ source_afstreams_option
 }
 	;
 	
-source_reader_options
-	: source_reader_option source_reader_options
-	|
-	;
-	
-source_reader_option
-	: KW_LOG_IW_SIZE '(' LL_NUMBER ')'		{ last_reader_options->super.init_window_size = $3; }
-	| KW_CHAIN_HOSTNAMES '(' yesno ')'	{ last_reader_options->super.chain_hostnames = $3; }
-	| KW_NORMALIZE_HOSTNAMES '(' yesno ')'	{ last_reader_options->super.normalize_hostnames = $3; }
-	| KW_KEEP_HOSTNAME '(' yesno ')'	{ last_reader_options->super.keep_hostname = $3; }
-        | KW_USE_FQDN '(' yesno ')'             { last_reader_options->super.use_fqdn = $3; }
-        | KW_USE_DNS '(' dnsmode ')'            { last_reader_options->super.use_dns = $3; }
-	| KW_DNS_CACHE '(' yesno ')' 		{ last_reader_options->super.use_dns_cache = $3; }
-	| KW_PROGRAM_OVERRIDE '(' string ')'	{ last_reader_options->super.program_override = g_strdup($3); free($3); }
-	| KW_HOST_OVERRIDE '(' string ')'	{ last_reader_options->super.host_override = g_strdup($3); free($3); }
-	| KW_LOG_PREFIX '(' string ')'	        { gchar *p = strrchr($3, ':'); if (p) *p = 0; last_reader_options->super.program_override = g_strdup($3); free($3); }
-	| KW_TIME_ZONE '(' string ')'		{ last_reader_options->recv_time_zone = g_strdup($3); free($3); }
-	| KW_CHECK_HOSTNAME '(' yesno ')'	{ last_reader_options->check_hostname = $3; }
-	| KW_FLAGS '(' source_reader_option_flags ')' { last_reader_options->options = $3; }
-	| KW_LOG_MSG_SIZE '(' LL_NUMBER ')'	{ last_reader_options->msg_size = $3; }
-	| KW_LOG_FETCH_LIMIT '(' LL_NUMBER ')'	{ last_reader_options->fetch_limit = $3; }
-	| KW_PAD_SIZE '(' LL_NUMBER ')'		{ last_reader_options->padding = $3; }
-	| KW_FOLLOW_FREQ '(' LL_FLOAT ')'		{ last_reader_options->follow_freq = (long) ($3 * 1000); }
-	| KW_FOLLOW_FREQ '(' LL_NUMBER ')'		{ last_reader_options->follow_freq = ($3 * 1000); }
-	| KW_KEEP_TIMESTAMP '(' yesno ')'	{ last_reader_options->super.keep_timestamp = $3; }
-        | KW_ENCODING '(' string ')'		{ last_reader_options->text_encoding = g_strdup($3); free($3); }
-    | KW_TAGS '(' string_list ')'       { log_reader_options_set_tags(last_reader_options, $3); }
-	| KW_DEFAULT_LEVEL '(' level_string ')'
-	  {
-	    if (last_reader_options->default_pri == 0xFFFF)
-	      last_reader_options->default_pri = LOG_USER;
-	    last_reader_options->default_pri = (last_reader_options->default_pri & ~7) | $3;
-          }
-	| KW_DEFAULT_FACILITY '(' facility_string ')'
-	  {
-	    if (last_reader_options->default_pri == 0xFFFF)
-	      last_reader_options->default_pri = LOG_NOTICE;
-	    last_reader_options->default_pri = (last_reader_options->default_pri & 7) | $3;
-          }
-	;
-
-source_reader_option_flags
-	: string source_reader_option_flags     { $$ = log_reader_options_lookup_flag($1) | $2; free($1); }
-	|					{ $$ = 0; }
-	;
 
 
 dest_items
@@ -884,10 +646,8 @@ dest_items
 dest_item
 	: dest_affile				{ $$ = $1; }
 	| dest_afpipe				{ $$ = $1; }
-	| dest_afsocket				{ $$ = $1; }
 	| dest_afuser				{ $$ = $1; }
 	| dest_afprogram			{ $$ = $1; }
-	| dest_afsyslog                         { $$ = $1; }
 /* BEGIN MARK: sql */
 	| dest_afsql				{ $$ = $1; }
 /* END MARK */
@@ -973,163 +733,6 @@ dest_afpipe_option
 	| KW_PERM '(' LL_NUMBER ')'		{ affile_dd_set_file_perm(last_driver, $3); }
 	;
 
-dest_afsocket
-	: KW_UNIX_DGRAM '(' dest_afunix_dgram_params ')'	{ $$ = $3; }
-	| KW_UNIX_STREAM '(' dest_afunix_stream_params ')'	{ $$ = $3; }
-	| KW_UDP { last_addr_family = AF_INET; } '(' dest_afinet_udp_params ')'			{ $$ = $4; }
-	| KW_TCP { last_addr_family = AF_INET; } '(' dest_afinet_tcp_params ')'			{ $$ = $4; }
-	| KW_UDP6 { last_addr_family = AF_INET6; } '(' dest_afinet_udp_params ')'			{ $$ = $4; }
-	| KW_TCP6 { last_addr_family = AF_INET6; } '(' dest_afinet_tcp_params ')'			{ $$ = $4; }
-	;
-
-dest_afunix_dgram_params
-	: string				
-	  {
-	    last_driver = afunix_dd_new($1, AFSOCKET_DGRAM);
-	    free($1);
-	    last_writer_options = &((AFSocketDestDriver *) last_driver)->writer_options;
-	    last_sock_options = &((AFUnixDestDriver *) last_driver)->sock_options;
-	  }
-	  dest_afunix_options			{ $$ = last_driver; }
-	;
-
-dest_afunix_stream_params
-	: string				
-	  {
-	    last_driver = afunix_dd_new($1, AFSOCKET_STREAM);
-	    free($1);
-	    last_writer_options = &((AFSocketDestDriver *) last_driver)->writer_options;
-	    last_sock_options = &((AFUnixDestDriver *) last_driver)->sock_options;
-	  }
-	  dest_afunix_options			{ $$ = last_driver; }
-	;
-
-dest_afunix_options
-	: dest_afunix_options dest_afunix_option
-	|
-	;
-
-dest_afunix_option
-	: dest_writer_option
-	| dest_afsocket_option
-	| socket_option
-	;
-
-dest_afinet_udp_params
-	: string 	
-	  {
-	    last_driver = afinet_dd_new(last_addr_family,
-			$1, 514,
-			AFSOCKET_DGRAM);
-	    free($1);
-	    last_writer_options = &((AFSocketDestDriver *) last_driver)->writer_options;
-	    last_sock_options = &((AFInetDestDriver *) last_driver)->sock_options.super;
-	  }
-	  dest_afinet_udp_options		{ $$ = last_driver; }
-	;
-
-dest_afinet_udp_options
-        : dest_afinet_udp_options dest_afinet_udp_option
-	|
-	;
-
-
-dest_afinet_option
-	: KW_LOCALIP '(' string ')'		{ afinet_dd_set_localip(last_driver, $3); free($3); }
-	| KW_LOCALPORT '(' string_or_number ')'	{ afinet_dd_set_localport(last_driver, $3, afinet_dd_get_proto_name(last_driver)); free($3); }
-	| KW_PORT '(' string_or_number ')'	{ afinet_dd_set_destport(last_driver, $3, afinet_dd_get_proto_name(last_driver)); free($3); }
-	| KW_DESTPORT '(' string_or_number ')'	{ afinet_dd_set_destport(last_driver, $3, afinet_dd_get_proto_name(last_driver)); free($3); }
-	| inet_socket_option
-	| dest_writer_option
-	| dest_afsocket_option
-	;
-
-dest_afinet_udp_option
-	: dest_afinet_option
-	| KW_SPOOF_SOURCE '(' yesno ')'		{ afinet_dd_set_spoof_source(last_driver, $3); }
-	;
-
-dest_afinet_tcp_params
-	: string 	
-	  {
-	    last_driver = afinet_dd_new(last_addr_family,
-			$1, 514,
-			AFSOCKET_STREAM);
-	    free($1);
-	    last_writer_options = &((AFSocketDestDriver *) last_driver)->writer_options;
-	    last_sock_options = &((AFInetDestDriver *) last_driver)->sock_options.super;
-	  }
-	  dest_afinet_tcp_options		{ $$ = last_driver; }
-	;
-
-dest_afinet_tcp_options
-	: dest_afinet_tcp_options dest_afinet_tcp_option
-	|
-	;
-
-dest_afinet_tcp_option
-	: dest_afinet_option
-	| KW_TLS
-	  {
-#if ENABLE_SSL
-	    last_tls_context = tls_context_new(TM_CLIENT);
-#endif
-	  }
-	  '(' tls_options ')'			
-	  {
-#if ENABLE_SSL
-	    afsocket_dd_set_tls_context(last_driver, last_tls_context);
-#endif
-          }
-	;
-	
-dest_afsocket_option
-        : KW_KEEP_ALIVE '(' yesno ')'        { afsocket_dd_set_keep_alive(last_driver, $3); }
-        ;
-
-
-dest_afsyslog
-        : KW_SYSLOG '(' dest_afsyslog_params ')'   { $$ = $3; }
-
-dest_afsyslog_params
-        : string
-          {
-            last_driver = afinet_dd_new(last_addr_family, $1, 601, AFSOCKET_STREAM | AFSOCKET_SYSLOG_PROTOCOL);
-	    last_writer_options = &((AFSocketDestDriver *) last_driver)->writer_options;
-	    last_sock_options = &((AFInetDestDriver *) last_driver)->sock_options.super;
-	    free($1);
-	  }
-	  dest_afsyslog_options			{ $$ = last_driver; }
-        ;
-
-
-dest_afsyslog_options
-	: dest_afsyslog_options dest_afsyslog_option
-	|
-	;
-
-dest_afsyslog_option
-	: dest_afinet_option
-        | KW_TRANSPORT '(' string ')'           { afinet_dd_set_transport(last_driver, $3); free($3); }
-        | KW_TRANSPORT '(' KW_TCP ')'           { afinet_dd_set_transport(last_driver, "tcp"); }
-        | KW_TRANSPORT '(' KW_UDP ')'           { afinet_dd_set_transport(last_driver, "udp"); }
-        | KW_TRANSPORT '(' KW_TLS ')'           { afinet_dd_set_transport(last_driver, "tls"); }
-	| KW_SPOOF_SOURCE '(' yesno ')'		{ afinet_dd_set_spoof_source(last_driver, $3); }
-	| KW_TLS
-	  {
-#if ENABLE_SSL
-	    last_tls_context = tls_context_new(TM_CLIENT);
-#endif
-	  }
-	  '(' tls_options ')'			
-	  {
-#if ENABLE_SSL
-	    afsocket_dd_set_tls_context(last_driver, last_tls_context);
-#endif
-          }
-	;
-
-
 dest_afuser
 	: KW_USERTTY '(' string ')'		{ $$ = afuser_dd_new($3); free($3); }
 	;
@@ -1197,36 +800,6 @@ dest_afsql_option
 /* END MARK */
 
 
-dest_writer_options
-	: dest_writer_option dest_writer_options
-	|
-	;
-	
-dest_writer_option
-	: KW_FLAGS '(' dest_writer_options_flags ')' { last_writer_options->options = $3; }
-	| KW_LOG_FIFO_SIZE '(' LL_NUMBER ')'	{ last_writer_options->mem_fifo_size = $3; }
-	| KW_FLUSH_LINES '(' LL_NUMBER ')'		{ last_writer_options->flush_lines = $3; }
-	| KW_FLUSH_TIMEOUT '(' LL_NUMBER ')'	{ last_writer_options->flush_timeout = $3; }
-        | KW_SUPPRESS '(' LL_NUMBER ')'            { last_writer_options->suppress = $3; }
-	| KW_TEMPLATE '(' string ')'       	{
-	                                          last_writer_options->template = cfg_check_inline_template(configuration, $3);
-                                                  if (!cfg_check_template(last_writer_options->template))
-	                                            {
-	                                              YYERROR;
-	                                            }
-	                                          free($3);
-	                                        }
-	| KW_TEMPLATE_ESCAPE '(' yesno ')'	{ log_writer_options_set_template_escape(last_writer_options, $3); }
-	| KW_TIME_ZONE '(' string ')'           { last_writer_options->send_time_zone = g_strdup($3); free($3); }
-	| KW_TS_FORMAT '(' string ')'		{ last_writer_options->ts_format = cfg_ts_format_value($3); free($3); }
-	| KW_FRAC_DIGITS '(' LL_NUMBER ')'		{ last_writer_options->frac_digits = $3; }
-	| KW_THROTTLE '(' LL_NUMBER ')'            { last_writer_options->throttle = $3; }
-	;
-
-dest_writer_options_flags
-	: string dest_writer_options_flags      { $$ = log_writer_options_lookup_flag($1) | $2; free($1); }
-	|					{ $$ = 0; }
-	;
 
 
 options_items
@@ -1288,55 +861,7 @@ options_item
 	| KW_LOCAL_TIME_ZONE '(' string ')'     { configuration->local_time_zone = g_strdup($3); free($3); }
 	;
 
-/* BEGIN MARK: tls */
-tls_options
-	: tls_option tls_options
-	|
-	;
 
-tls_option
-        : KW_IFDEF {
-#if ENABLE_SSL
-}
-
-	| KW_PEER_VERIFY '(' string ')'		
-	  {
-	    last_tls_context->verify_mode = tls_lookup_verify_mode($3);
-            free($3);
-          }
-	| KW_KEY_FILE '(' string ')'		
-	  {
-	    last_tls_context->key_file = g_strdup($3);
-            free($3);
-          }
-	| KW_CERT_FILE '(' string ')'		
-	  {
-	    last_tls_context->cert_file = g_strdup($3);
-            free($3);
-          }
-	| KW_CA_DIR '(' string ')'		
-	  {
-	    last_tls_context->ca_dir = g_strdup($3);
-            free($3);
-          }
-	| KW_CRL_DIR '(' string ')'		
-	  {
-	    last_tls_context->crl_dir = g_strdup($3);
-            free($3);
-          }
-        | KW_TRUSTED_KEYS '(' string_list ')'
-          {
-            tls_session_set_trusted_fingerprints(last_tls_context, $3);
-          }
-        | KW_TRUSTED_DN '(' string_list ')'
-          {
-            tls_session_set_trusted_dn(last_tls_context, $3);
-          }
-        | KW_ENDIF {
-#endif
-}
-        ;
-/* END MARK */
 
 parser_expr
         : KW_CSV_PARSER '('
@@ -1573,6 +1098,83 @@ regexp_option_flags
         |                                       { $$ = 0; }
         ;
 
+
+source_reader_options
+	: source_reader_option source_reader_options
+	|
+	;
+
+source_reader_option
+	: KW_LOG_IW_SIZE '(' LL_NUMBER ')'		{ last_reader_options->super.init_window_size = $3; }
+	| KW_CHAIN_HOSTNAMES '(' yesno ')'	{ last_reader_options->super.chain_hostnames = $3; }
+	| KW_NORMALIZE_HOSTNAMES '(' yesno ')'	{ last_reader_options->super.normalize_hostnames = $3; }
+	| KW_KEEP_HOSTNAME '(' yesno ')'	{ last_reader_options->super.keep_hostname = $3; }
+        | KW_USE_FQDN '(' yesno ')'             { last_reader_options->super.use_fqdn = $3; }
+        | KW_USE_DNS '(' dnsmode ')'            { last_reader_options->super.use_dns = $3; }
+	| KW_DNS_CACHE '(' yesno ')' 		{ last_reader_options->super.use_dns_cache = $3; }
+	| KW_PROGRAM_OVERRIDE '(' string ')'	{ last_reader_options->super.program_override = g_strdup($3); free($3); }
+	| KW_HOST_OVERRIDE '(' string ')'	{ last_reader_options->super.host_override = g_strdup($3); free($3); }
+	| KW_LOG_PREFIX '(' string ')'	        { gchar *p = strrchr($3, ':'); if (p) *p = 0; last_reader_options->super.program_override = g_strdup($3); free($3); }
+	| KW_TIME_ZONE '(' string ')'		{ last_reader_options->recv_time_zone = g_strdup($3); free($3); }
+	| KW_CHECK_HOSTNAME '(' yesno ')'	{ last_reader_options->check_hostname = $3; }
+	| KW_FLAGS '(' source_reader_option_flags ')' { last_reader_options->options = $3; }
+	| KW_LOG_MSG_SIZE '(' LL_NUMBER ')'	{ last_reader_options->msg_size = $3; }
+	| KW_LOG_FETCH_LIMIT '(' LL_NUMBER ')'	{ last_reader_options->fetch_limit = $3; }
+	| KW_PAD_SIZE '(' LL_NUMBER ')'		{ last_reader_options->padding = $3; }
+	| KW_FOLLOW_FREQ '(' LL_FLOAT ')'		{ last_reader_options->follow_freq = (long) ($3 * 1000); }
+	| KW_FOLLOW_FREQ '(' LL_NUMBER ')'		{ last_reader_options->follow_freq = ($3 * 1000); }
+	| KW_KEEP_TIMESTAMP '(' yesno ')'	{ last_reader_options->super.keep_timestamp = $3; }
+        | KW_ENCODING '(' string ')'		{ last_reader_options->text_encoding = g_strdup($3); free($3); }
+        | KW_TAGS '(' string_list ')'           { log_reader_options_set_tags(last_reader_options, $3); }
+	| KW_DEFAULT_LEVEL '(' level_string ')'
+	  {
+	    if (last_reader_options->default_pri == 0xFFFF)
+	      last_reader_options->default_pri = LOG_USER;
+	    last_reader_options->default_pri = (last_reader_options->default_pri & ~7) | $3;
+          }
+	| KW_DEFAULT_FACILITY '(' facility_string ')'
+	  {
+	    if (last_reader_options->default_pri == 0xFFFF)
+	      last_reader_options->default_pri = LOG_NOTICE;
+	    last_reader_options->default_pri = (last_reader_options->default_pri & 7) | $3;
+          }
+	;
+
+source_reader_option_flags
+	: string source_reader_option_flags     { $$ = log_reader_options_lookup_flag($1) | $2; free($1); }
+	|					{ $$ = 0; }
+	;
+
+dest_writer_options
+	: dest_writer_option dest_writer_options
+	|
+	;
+
+dest_writer_option
+	: KW_FLAGS '(' dest_writer_options_flags ')' { last_writer_options->options = $3; }
+	| KW_LOG_FIFO_SIZE '(' LL_NUMBER ')'	{ last_writer_options->mem_fifo_size = $3; }
+	| KW_FLUSH_LINES '(' LL_NUMBER ')'		{ last_writer_options->flush_lines = $3; }
+	| KW_FLUSH_TIMEOUT '(' LL_NUMBER ')'	{ last_writer_options->flush_timeout = $3; }
+        | KW_SUPPRESS '(' LL_NUMBER ')'            { last_writer_options->suppress = $3; }
+	| KW_TEMPLATE '(' string ')'       	{
+	                                          last_writer_options->template = cfg_check_inline_template(configuration, $3);
+                                                  if (!cfg_check_template(last_writer_options->template))
+	                                            {
+	                                              YYERROR;
+	                                            }
+	                                          free($3);
+	                                        }
+	| KW_TEMPLATE_ESCAPE '(' yesno ')'	{ log_writer_options_set_template_escape(last_writer_options, $3); }
+	| KW_TIME_ZONE '(' string ')'           { last_writer_options->send_time_zone = g_strdup($3); free($3); }
+	| KW_TS_FORMAT '(' string ')'		{ last_writer_options->ts_format = cfg_ts_format_value($3); free($3); }
+	| KW_FRAC_DIGITS '(' LL_NUMBER ')'		{ last_writer_options->frac_digits = $3; }
+	| KW_THROTTLE '(' LL_NUMBER ')'            { last_writer_options->throttle = $3; }
+	;
+
+dest_writer_options_flags
+	: string dest_writer_options_flags      { $$ = log_writer_options_lookup_flag($1) | $2; free($1); }
+	|					{ $$ = 0; }
+	;
 
 /* END_RULES */
 

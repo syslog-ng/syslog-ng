@@ -800,6 +800,7 @@ AC_OUTPUT(dist.conf
 	  syslog-ng.spec
 	  src/Makefile 
           src/dummy/Makefile
+          src/afsocket/Makefile
 	  doc/Makefile
           doc/docvars.xml
 	  contrib/Makefile

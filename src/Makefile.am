@@ -1,3 +1,4 @@
+SUBDIRS = . afsocket dummy
 YFLAGS=@YFLAGS@
 
 export top_srcdir
@@ -32,7 +33,7 @@ libsyslog_ng_a_SOURCES = \
 	dgroup.c dgroup.h center.c center.h templates.c templates.h \
 	logreader.c logreader.h logwriter.c logwriter.h \
 	affile.c affile.h afstreams.c afstreams.h afuser.c afuser.h afprog.c afprog.h \
-	afsocket.c afsocket.h afunix.c afunix.h afinet.c afinet.h afinter.c afinter.h \
+	afinter.c afinter.h \
 	children.c children.h stats.c stats.h \
 	gsockaddr.c gsockaddr.h gsocket.c gsocket.h \
 	logtransport.c logtransport.h \
@@ -61,7 +62,6 @@ libsyslog_ng_a_SOURCES = \
 
 filter-expr-grammar.y: filter-expr-grammar.y.in merge-grammar.pl cfg-grammar.y
 	$(top_srcdir)/src/merge-grammar.pl $(srcdir)/filter-expr-grammar.y.in > $@
-	tlscontext.c tlscontext.h tlstransport.c tlstransport.h
 
 cfg-lex.c: cfg-grammar.c
 

@@ -43,14 +43,14 @@ log_transport_tls_read_method(LogTransport *s, gpointer buf, gsize buflen, GSock
   LogTransportTLS *self = (LogTransportTLS *) s;
   gint ssl_error;
   gint rc;
-  
+
   if (sa)
     *sa = NULL;
 
   /* assume that we need to poll our input for reading unless
    * SSL_ERROR_WANT_WRITE is specified by libssl */
   self->super.cond = G_IO_IN;
-  
+
   do
     {
       rc = SSL_read(self->tls_session->ssl, buf, buflen);
@@ -78,19 +78,19 @@ log_transport_tls_read_method(LogTransport *s, gpointer buf, gsize buflen, GSock
         }
     }
   while (rc == -1 && errno == EINTR);
-  
+
   return rc;
  tls_error:
 
   ssl_error = ERR_get_error();
-  msg_error("SSL error while reading stream", 
+  msg_error("SSL error while reading stream",
             evt_tag_printf("tls_error", "%s:%s:%s", ERR_lib_error_string(ssl_error), ERR_func_error_string(ssl_error), ERR_reason_error_string(ssl_error)),
             NULL);
   ERR_clear_error();
- 
+
   errno = ECONNRESET;
   return -1;
- 
+
 }
 
 static gssize
@@ -99,14 +99,14 @@ log_transport_tls_write_method(LogTransport *s, const gpointer buf, gsize buflen
   LogTransportTLS *self = (LogTransportTLS *) s;
   gint ssl_error;
   gint rc;
-  
+
   /* assume that we need to poll our output for writing unless
    * SSL_ERROR_WANT_READ is specified by libssl */
-  
+
   self->super.cond = G_IO_OUT;
 
   rc = SSL_write(self->tls_session->ssl, buf, buflen);
-    
+
   if (rc < 0)
     {
       ssl_error = SSL_get_error(self->tls_session->ssl, rc);
@@ -132,13 +132,13 @@ log_transport_tls_write_method(LogTransport *s, const gpointer buf, gsize buflen
   return rc;
 
  tls_error:
- 
+
   ssl_error = ERR_get_error();
-  msg_error("SSL error while writing stream", 
+  msg_error("SSL error while writing stream",
             evt_tag_printf("tls_error", "%s:%s:%s", ERR_lib_error_string(ssl_error), ERR_func_error_string(ssl_error), ERR_reason_error_string(ssl_error)),
             NULL);
   ERR_clear_error();
- 
+
   errno = EPIPE;
   return -1;
 }
@@ -150,7 +150,7 @@ LogTransport *
 log_transport_tls_new(TLSSession *tls_session, gint fd, guint flags)
 {
   LogTransportTLS *self = g_new0(LogTransportTLS, 1);
-  
+
   self->super.flags = flags;
   self->super.fd = fd;
   self->super.cond = G_IO_IN | G_IO_OUT;
@@ -158,9 +158,9 @@ log_transport_tls_new(TLSSession *tls_session, gint fd, guint flags)
   self->super.write = log_transport_tls_write_method;
   self->super.free_fn = log_transport_tls_free_method;
   self->tls_session = tls_session;
-  
+
   SSL_set_fd(self->tls_session->ssl, fd);
-  
+
   g_assert((self->super.flags & LTF_RECV) == 0);
   return &self->super;
 }
@@ -169,7 +169,7 @@ static void
 log_transport_tls_free_method(LogTransport *s)
 {
   LogTransportTLS *self = (LogTransportTLS *) s;
-  
+
   tls_session_free(self->tls_session);
   log_transport_free_method(s);
 }
