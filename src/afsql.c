@@ -326,9 +326,10 @@ static gboolean
 afsql_dd_check_sql_identifier(gchar *token, gboolean sanitize)
 {
   gint i;
+
   for (i = 0; token[i]; i++)
     {
-      if (!((token[i] == '_') || (i && token[i] >= '0' && token[i] <= '9') || (g_ascii_tolower(token[i]) >= 'a' && g_ascii_tolower(token[i]) <= 'z')))
+      if (!((token[i] == '.') || (token[i] == '_') || (i && token[i] >= '0' && token[i] <= '9') || (g_ascii_tolower(token[i]) >= 'a' && g_ascii_tolower(token[i]) <= 'z')))
         {
           if (sanitize)
             token[i] = '_';
