@@ -59,6 +59,7 @@
 %token KW_USERNAME                    10037
 %token KW_TABLE                       10038
 %token KW_ENCODING                    10039
+%token KW_SESSION_STATEMENTS          10040
 
 %token KW_DELIMITERS                  10050
 %token KW_QUOTES                      10051
@@ -320,10 +321,9 @@ FilterExprNode *last_filter_expr;
 %type   <ptr> dest_afuser
 %type   <ptr> dest_afprogram
 %type   <ptr> dest_afprogram_params
-/* BEGIN MARK: sql */
 %type   <ptr> dest_afsql
 %type   <ptr> dest_afsql_params
-/* END MARK */
+%type   <num> dest_afsql_flags
 %type   <ptr> dest_plugin
 
 %type	<ptr> log_items
@@ -648,9 +648,7 @@ dest_item
 	| dest_afpipe				{ $$ = $1; }
 	| dest_afuser				{ $$ = $1; }
 	| dest_afprogram			{ $$ = $1; }
-/* BEGIN MARK: sql */
 	| dest_afsql				{ $$ = $1; }
-/* END MARK */
         | dest_plugin                           { $$ = $1; }
 	;
 
@@ -751,8 +749,6 @@ dest_afprogram_params
 	  dest_writer_options			{ $$ = last_driver; }
 	;
 	
-/* BEGIN MARK: sql */
-
 dest_afsql
         : KW_SQL '(' dest_afsql_params ')'	{ $$ = $3; }
         ;
@@ -792,15 +788,19 @@ dest_afsql_option
 	| KW_TIME_ZONE '(' string ')'           { afsql_dd_set_send_time_zone(last_driver,$3); free($3); }
 	| KW_LOCAL_TIME_ZONE '(' string ')'     { afsql_dd_set_local_time_zone(last_driver,$3); free($3); }
         | KW_NULL '(' string ')'                { afsql_dd_set_null_value(last_driver, $3); free($3); }
-
+        | KW_FLUSH_LINES '(' LL_NUMBER ')'      { afsql_dd_set_flush_lines(last_driver, $3); }
+        | KW_FLUSH_TIMEOUT '(' LL_NUMBER ')'    { afsql_dd_set_flush_timeout(last_driver, $3); }
+        | KW_SESSION_STATEMENTS '(' string_list ')' { afsql_dd_set_session_statements(last_driver, $3); }
+        | KW_FLAGS '(' dest_afsql_flags ')'     { afsql_dd_set_flags(last_driver, $3); }
         | KW_ENDIF {
 #endif /* ENABLE_SQL */
 }
         ;
-/* END MARK */
 
-
-
+dest_afsql_flags
+        : string dest_afsql_flags               { $$ = afsql_dd_lookup_flag($1) | $2; free($1); }
+        |
+        ;
 
 options_items
 	: options_item ';' options_items	{ $$ = $1; }

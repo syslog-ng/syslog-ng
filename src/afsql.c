@@ -36,6 +36,8 @@
 #include <dbi/dbi.h>
 #include <string.h>
 
+#define AFSQL_DDF_EXPLICIT_COMMITS 0x0001
+
 typedef struct _AFSqlField
 {
   gchar *name;
@@ -77,6 +79,12 @@ typedef struct _AFSqlDestDriver
   AFSqlField *fields;
   gchar *null_value;
   gint time_reopen;
+  gint flush_lines;
+  gint flush_timeout;
+  guint flush_timer_tag;
+  gint flush_lines_queued;
+  gint flags;
+  GList *session_statements;
   
   TimeZoneInfo *local_time_zone_info;
   gchar *local_time_zone;
@@ -246,12 +254,43 @@ afsql_dd_set_local_time_zone(LogDriver *s, const gchar *local_time_zone)
   self->local_time_zone = g_strdup(local_time_zone);
 }
 
+void
+afsql_dd_set_flush_lines(LogDriver *s, gint flush_lines)
+{
+  AFSqlDestDriver *self = (AFSqlDestDriver *) s;
+
+  self->flush_lines = flush_lines;
+}
+
+void
+afsql_dd_set_flush_timeout(LogDriver *s, gint flush_timeout)
+{
+  AFSqlDestDriver *self = (AFSqlDestDriver *) s;
+
+  self->flush_timeout = flush_timeout;
+}
+
+void
+afsql_dd_set_session_statements(LogDriver *s, GList *session_statements)
+{
+  AFSqlDestDriver *self = (AFSqlDestDriver *) s;
+
+  self->session_statements = session_statements;
+}
+
+void
+afsql_dd_set_flags(LogDriver *s, gint flags)
+{
+  AFSqlDestDriver *self = (AFSqlDestDriver *) s;
+
+  self->flags = flags;
+}
 
 static gboolean
 afsql_dd_run_query(AFSqlDestDriver *self, const gchar *query, gboolean silent, dbi_result *result)
 {
   dbi_result db_res;
-  
+
   msg_debug("Running SQL query",
             evt_tag_str("query", query),
             NULL);
@@ -425,6 +464,34 @@ static gint db_thread_max_sleep_time = -1;
 #define MAX_FAILED_ATTEMPTS 3
 
 static void
+afsql_dd_begin_txn(AFSqlDestDriver *self)
+{
+  afsql_dd_run_query(self, "BEGIN", FALSE, NULL);
+  self->flush_lines_queued = 0;
+}
+
+static void
+afsql_dd_commit_txn(AFSqlDestDriver *self)
+{
+  afsql_dd_run_query(self, "COMMIT", FALSE, NULL);
+  self->flush_lines_queued = 0;
+  if (self->flush_timer_tag)
+    {
+      g_source_remove(self->flush_timer_tag);
+      self->flush_timer_tag = 0;
+    }
+}
+
+static gboolean
+afsql_dd_commit_db_timer(gpointer p)
+{
+  AFSqlDestDriver *self = (AFSqlDestDriver *) p;
+
+  afsql_dd_commit_txn(self);
+  return TRUE;
+}
+
+static void
 afsql_dd_disconnect(AFSqlDestDriver *self,GString *table)
 {
   dbi_conn_close(self->dbi_ctx);
@@ -497,6 +564,24 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
           return FALSE;
         }
       self->last_conn_attempt = time(NULL);
+
+      if (self->session_statements != NULL)
+        {
+          GList *l;
+
+          for (l = self->session_statements; l; l = l->next)
+            {
+              if (!afsql_dd_run_query(self, (gchar *) l->data, FALSE, NULL))
+                {
+                  msg_error("Error executing SQL connection statement",
+                            evt_tag_str("statement", (gchar *) l->data),
+                            NULL);
+                  dbi_conn_close(self->dbi_ctx);
+                  self->dbi_ctx = NULL;
+                  return FALSE;
+                }
+            }
+        }
     }
 
   while (!db_thread_terminate && count < INSERTS_AT_A_TIME)
@@ -580,6 +665,11 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
             g_string_append(query_string, ", ");
         }
       g_string_append(query_string, ")");
+
+      if (self->flush_lines_queued == 0)
+        {
+          afsql_dd_begin_txn(self);
+        }
       
       success = TRUE;
       if (!afsql_dd_run_query(self, query_string->str, FALSE, NULL))
@@ -588,7 +678,20 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
           afsql_dd_disconnect(self,table);
           success = FALSE;
         }
-      
+
+      if (success && self->flush_lines_queued != -1)
+        {
+          self->flush_lines_queued++;
+          if (self->flush_lines && self->flush_lines_queued == self->flush_lines)
+            afsql_dd_commit_txn(self);
+#if 0
+          else if (self->flush_timeout > 0 && !self->flush_timer_tag)
+            {
+              /* FIXME: this will run from the main thread !!! */
+              self->flush_timer_tag = g_timeout_add(self->flush_timeout, afsql_dd_commit_db_timer, self);
+            }
+#endif
+        }
     error:
       g_string_free(table, TRUE);
       g_string_free(value, TRUE);
@@ -667,6 +770,10 @@ afsql_db_thread(gpointer arg)
       for (l = sql_deactivate_drivers; l; l = l->next)
         {
           AFSqlDestDriver *dd = (AFSqlDestDriver *) l->data;
+          if (dd->flush_lines_queued > 0)
+            afsql_dd_commit_txn(dd);
+          if (dd->flush_timer_tag)
+            g_source_remove(dd->flush_timer_tag);
 
   	  sql_active_drivers = g_list_remove(sql_active_drivers, dd);
           dbi_conn_close(dd->dbi_ctx);
@@ -863,6 +970,14 @@ afsql_dd_init(LogPipe *s)
     time_zone_info_free(self->local_time_zone_info);
   self->local_time_zone_info = time_zone_info_new(self->local_time_zone);
 
+  if (self->flush_lines == -1)
+    self->flush_lines = cfg->flush_lines;
+  if (self->flush_timeout == -1)
+    self->flush_timeout = cfg->flush_timeout;
+
+  if ((self->flags & AFSQL_DDF_EXPLICIT_COMMITS) && (self->flush_lines > 0 || self->flush_timeout > 0))
+    self->flush_lines_queued = 0;
+
   if (!db_thread)
     {
       register_application_hook(AH_POST_DAEMONIZED, afsql_init_db_thread, self);
@@ -968,6 +1083,8 @@ afsql_dd_free(LogPipe *s)
   string_list_free(self->values);
   log_template_unref(self->table);
   g_hash_table_destroy(self->validated_tables);
+  if(self->session_statements)
+    string_list_free(self->session_statements);
   log_drv_free(s);
 }
 
@@ -1005,7 +1122,7 @@ const gchar *default_indexes[] =
 };
 
 LogDriver *
-afsql_dd_new()
+afsql_dd_new(void)
 {
   AFSqlDestDriver *self = g_new0(AFSqlDestDriver, 1);
   
@@ -1038,11 +1155,29 @@ afsql_dd_new()
   self->frac_digits = -1;
   self->failed_message_counter = 0;
 
+  self->flush_lines = -1;
+  self->flush_timeout = -1;
+  self->flush_lines_queued = -1;
+  self->flush_timer_tag = 0;
+  self->session_statements = NULL;
+
   self->validated_tables = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
   g_static_mutex_init(&self->queue_lock);
   
   init_sequence_number(&self->seq_num);
   return &self->super;  
+}
+
+gint
+afsql_dd_lookup_flag(const gchar *flag)
+{
+  if (strcmp(flag, "explicit-commits") == 0 || strcmp(flag, "explicit_commits") == 0)
+    return AFSQL_DDF_EXPLICIT_COMMITS;
+  else
+    msg_warning("Unknown SQL flag",
+                evt_tag_str("flag", flag),
+                NULL);
+  return 0;
 }
 
 #endif

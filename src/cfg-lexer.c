@@ -44,6 +44,7 @@ static CfgLexerKeyword global_keywords[] = {
         { "columns",            KW_COLUMNS },
         { "indexes",            KW_INDEXES },
         { "values",             KW_VALUES },
+        { "session_statements", KW_SESSION_STATEMENTS },
 #endif
 /* END MARK */
         { "columns",            KW_COLUMNS },
