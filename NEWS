@@ -1,3 +1,24 @@
+3.1.1
+        Sun, 11 Apr 2010 10:26:57 +0200
+
+        Bugfixes:
+        * Solaris 10 SMF script now checks if the pid file refers to an
+          actual instance of syslog-ng to make sure that syslog-ng is
+          started even after a system crash.
+        * The System V init script used on Solaris 8/9 gave ugly error messages
+          if the dump device doesn't exist (which happens in a chroot/zone
+          environment), this was fixed.
+        * Fixed a 100% CPU usage if the configuration file uses the pipe
+          driver on a regular file or a file driver on a named pipe.
+        * Fixed a daylight saving problem in the transition window when
+          receiving a BSD timestamp.
+        * syslog-ng CSV format statistics (reachable via syslog-ng-ctl) is
+          now properly escaped.
+
+        Other changes:
+        * Added "TAGS" macro which expands to a list of comma separated
+          message tags.
+
 3.1.0
         Tue, 16 Mar 2010 17:15:40 +0100
 
