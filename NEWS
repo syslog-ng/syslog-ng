@@ -1,3 +1,51 @@
+3.0.6
+        Sun, 11 Apr 2010 10:35:46 +0200
+
+        Bugfixes:
+        * Fixed a boundary checking error on the usertty() destination,
+          which can cause a local buffer to be overflown if the wtmp file on
+          the system contains more than 123 characters in its ut_line
+          member. It is not believed to be exploitable on the following
+          platforms:
+            Linux (32 chars)
+            Solaris (12 chars)
+            AIX (64 chars)
+            HP-UX (12 chars)
+            FreeBSD (8 chars)
+            OpenBSD (8 chars)
+
+        * Fixed a possible loss of the last partial message in the TCP and
+          TLS transports of the syslog() driver.
+        * Fixed empty line handling in the syslog() driver. The parser now
+          accepts empty lines (which it didn't, but should have) and empty
+          lines have the required trailing space which it didn't previously.
+        * Fixed SDATA value lookup in case the the SD-ID contains dots.
+        * Added escaping support to the structured-data parser.
+        * Fixed an off-by-one bug in the structured data parser.
+        * Fixed a possible segmentation fault after initializing the
+          configuration when using unix-stream() and unix-dgram() destinations.
+        * Fixed the Solaris 10 SMF script to handle "refresh" calls.
+        * Fixed the Solaris 10 SMF script to handle an existing PID file
+          without syslog-ng running with that pid.
+        * Fixed the Solaris init/SMF scripts to avoid ugly error messages if
+          the dump device doesn't exist. This situation can easily happen in
+          a chroot or a zone.
+        * Fixed a 100% CPU usage if the pipe() driver is applied to a regular
+          file, or a file() driver on a named pipe.
+        * Fixed a daylight saving problem in the transition window when
+          receiving a BSD timestamp.
+        * syslog-ng CSV format statistics (reachable via the syslog-ng.ctl
+          socket) is now properly escaped.
+
+        Other changes:
+        * Fixed a linking problem with the MacOSX linker.
+        * Added automatic test coverage for RFC5424 protocol format.
+        * The SQL driver will drop a message after 3 failed attempts to
+          insert it into the database.
+        * If a character set conversion problem occurs on a connection,
+          syslog-ng will drop the connection instead of trying to read
+          further.
+
 3.0.5
         Thu, 03 Dec 2009 18:02:56 +0100
 
