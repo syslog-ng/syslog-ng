@@ -20,7 +20,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-  
+
 #include "afsql.h"
 
 #if ENABLE_SQL
@@ -116,102 +116,102 @@ static dbi_inst dbi_instance;
 
 #define MAX_FAILED_ATTEMPTS 3
 
-void 
+void
 afsql_dd_set_type(LogDriver *s, const gchar *type)
 {
   AFSqlDestDriver *self = (AFSqlDestDriver *) s;
-  
+
   g_free(self->type);
   if (strcmp(type, "mssql") == 0)
     type = "freetds";
   self->type = g_strdup(type);
 }
 
-void 
+void
 afsql_dd_set_host(LogDriver *s, const gchar *host)
 {
   AFSqlDestDriver *self = (AFSqlDestDriver *) s;
-  
+
   g_free(self->host);
   self->host = g_strdup(host);
 }
 
-void 
+void
 afsql_dd_set_port(LogDriver *s, const gchar *port)
 {
   AFSqlDestDriver *self = (AFSqlDestDriver *) s;
-  
+
   g_free(self->port);
   self->port = g_strdup(port);
 }
 
-void 
+void
 afsql_dd_set_user(LogDriver *s, const gchar *user)
 {
   AFSqlDestDriver *self = (AFSqlDestDriver *) s;
-  
+
   g_free(self->user);
   self->user = g_strdup(user);
 }
 
-void 
+void
 afsql_dd_set_password(LogDriver *s, const gchar *password)
 {
   AFSqlDestDriver *self = (AFSqlDestDriver *) s;
-  
+
   g_free(self->password);
   self->password = g_strdup(password);
 }
 
-void 
+void
 afsql_dd_set_database(LogDriver *s, const gchar *database)
 {
   AFSqlDestDriver *self = (AFSqlDestDriver *) s;
-  
+
   g_free(self->database);
   self->database = g_strdup(database);
 }
 
-void 
+void
 afsql_dd_set_table(LogDriver *s, const gchar *table)
 {
   AFSqlDestDriver *self = (AFSqlDestDriver *) s;
-  
+
   log_template_unref(self->table);
   self->table = log_template_new(NULL, table);
 }
 
-void 
+void
 afsql_dd_set_columns(LogDriver *s, GList *columns)
 {
   AFSqlDestDriver *self = (AFSqlDestDriver *) s;
-  
+
   string_list_free(self->columns);
   self->columns = columns;
   self->uses_default_columns = FALSE;
 }
 
-void 
+void
 afsql_dd_set_indexes(LogDriver *s, GList *indexes)
 {
   AFSqlDestDriver *self = (AFSqlDestDriver *) s;
-  
+
   string_list_free(self->indexes);
   self->indexes = indexes;
   self->uses_default_indexes = FALSE;
 }
 
-void 
+void
 afsql_dd_set_values(LogDriver *s, GList *values)
 {
   AFSqlDestDriver *self = (AFSqlDestDriver *) s;
-  
+
   string_list_free(self->values);
   self->values = values;
   self->uses_default_values = FALSE;
 }
 
-void 
+void
 afsql_dd_set_null_value(LogDriver *s, const gchar *null)
 {
   AFSqlDestDriver *self = (AFSqlDestDriver *) s;
@@ -225,15 +225,15 @@ void
 afsql_dd_set_mem_fifo_size(LogDriver *s, gint mem_fifo_size)
 {
   AFSqlDestDriver *self = (AFSqlDestDriver *) s;
-  
+
   self->mem_fifo_size = mem_fifo_size;
 }
 
-void 
+void
 afsql_dd_set_disk_fifo_size(LogDriver *s, gint64 disk_fifo_size)
 {
   AFSqlDestDriver *self = (AFSqlDestDriver *) s;
-  
+
   self->disk_fifo_size = disk_fifo_size;
 }
 
@@ -241,7 +241,7 @@ void
 afsql_dd_set_frac_digits(LogDriver *s, gint frac_digits)
 {
   AFSqlDestDriver *self = (AFSqlDestDriver *) s;
-  
+
   self->frac_digits = frac_digits;
 }
 
@@ -249,7 +249,7 @@ void
 afsql_dd_set_send_time_zone(LogDriver *s, const gchar *send_time_zone)
 {
   AFSqlDestDriver *self = (AFSqlDestDriver *) s;
-  
+
   self->send_time_zone = g_strdup(send_time_zone);
 }
 
@@ -313,7 +313,7 @@ afsql_dd_run_query(AFSqlDestDriver *self, const gchar *query, gboolean silent, d
   if (!db_res)
     {
       const gchar *dbi_error;
-      
+
       if (!silent)
         {
           dbi_conn_error(self->dbi_ctx, &dbi_error);
@@ -367,9 +367,9 @@ afsql_dd_create_index(AFSqlDestDriver *self, gchar *table, gchar *column)
 {
   GString *query_string;
   gboolean success = TRUE;
-  
+
   query_string = g_string_sized_new(64);
-  
+
   if (strcmp(self->type, "oracle") == 0)
     g_string_printf(query_string, "CREATE INDEX %s_%s_idx ON %s ('%s')",
                     table, column, table, column);
@@ -378,7 +378,7 @@ afsql_dd_create_index(AFSqlDestDriver *self, gchar *table, gchar *column)
                     table, column, table, column);
   if (!afsql_dd_run_query(self, query_string->str, FALSE, NULL))
     {
-      msg_error("Error adding missing index", 
+      msg_error("Error adding missing index",
                 evt_tag_str("table", table),
                 evt_tag_str("column", column),
                 NULL);
@@ -404,17 +404,17 @@ afsql_dd_validate_table(AFSqlDestDriver *self, gchar *table)
   dbi_result db_res;
   gboolean success = FALSE;
   gint i;
-  
+
   afsql_dd_check_sql_identifier(table, TRUE);
 
   if (g_hash_table_lookup(self->validated_tables, table))
     return TRUE;
-  
+
   query_string = g_string_sized_new(32);
   g_string_printf(query_string, "SELECT * FROM %s WHERE 0=1", table);
   if (afsql_dd_run_query(self, query_string->str, TRUE, &db_res))
     {
-      
+
       /* table exists, check structure */
       success = TRUE;
       for (i = 0; success && (i < self->fields_len); i++)
@@ -426,7 +426,7 @@ afsql_dd_validate_table(AFSqlDestDriver *self, gchar *table)
               g_string_printf(query_string, "ALTER TABLE %s ADD %s %s", table, self->fields[i].name, self->fields[i].type);
               if (!afsql_dd_run_query(self, query_string->str, FALSE, NULL))
                 {
-                  msg_error("Error adding missing column, giving up", 
+                  msg_error("Error adding missing column, giving up",
                             evt_tag_str("table", table),
                             evt_tag_str("column", self->fields[i].name),
                             NULL);
@@ -448,7 +448,7 @@ afsql_dd_validate_table(AFSqlDestDriver *self, gchar *table)
   else
     {
       /* table does not exist, create it */
-      
+
       g_string_printf(query_string, "CREATE TABLE %s (", table);
       for (i = 0; i < self->fields_len; i++)
         {
@@ -460,7 +460,7 @@ afsql_dd_validate_table(AFSqlDestDriver *self, gchar *table)
       if (afsql_dd_run_query(self, query_string->str, FALSE, NULL))
         {
           GList *l;
-          
+
           success = TRUE;
           for (l = self->indexes; l; l = l->next)
             {
@@ -469,7 +469,7 @@ afsql_dd_validate_table(AFSqlDestDriver *self, gchar *table)
         }
       else
         {
-          msg_error("Error creating table, giving up", 
+          msg_error("Error creating table, giving up",
                     evt_tag_str("table", table),
                     NULL);
         }
@@ -563,13 +563,13 @@ afsql_dd_disconnect(AFSqlDestDriver *self)
  **/
 static gboolean
 afsql_dd_insert_db(AFSqlDestDriver *self)
-{  
+{
   GString *table, *query_string, *value;
   LogMessage *msg;
   gboolean success;
   gint i;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
-  
+
   if (!self->dbi_ctx)
     {
       self->dbi_ctx = dbi_conn_new_r(self->type, dbi_instance);
@@ -589,9 +589,9 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
           if (dbi_conn_connect(self->dbi_ctx) < 0)
             {
               const gchar *dbi_error;
-              
+
               dbi_conn_error(self->dbi_ctx, &dbi_error);
-              
+
               msg_error("Error establishing SQL connection",
                         evt_tag_str("type", self->type),
                         evt_tag_str("host", self->host),
@@ -666,7 +666,7 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
       success = FALSE;
       goto error;
     }
-      
+
   g_string_printf(query_string, "INSERT INTO %s (", table->str);
   for (i = 0; i < self->fields_len; i++)
     {
@@ -872,7 +872,7 @@ static gchar *
 afsql_dd_format_stats_instance(AFSqlDestDriver *self)
 {
   static gchar persist_name[64];
-  
+
   g_snprintf(persist_name, sizeof(persist_name),
              "%s,%s,%s,%s",
              self->type, self->host, self->port, self->database);
@@ -897,7 +897,7 @@ afsql_dd_init(LogPipe *s)
   AFSqlDestDriver *self = (AFSqlDestDriver *) s;
   GlobalConfig *cfg = log_pipe_get_config(s);
   gint len_cols, len_values;
-  
+
   /* the maximum time to sleep on a condvar in the db_thread is the smallest
    * time_reopen value divided by 2. This ensures that we are not stuck with
    * a complete queue and a failed DB connection. (in which case the
@@ -910,7 +910,7 @@ afsql_dd_init(LogPipe *s)
       msg_warning("WARNING: You are using the default values for columns(), indexes() or values(), "
                   "please specify these explicitly as the default will be dropped in the future", NULL);
     }
-  
+
   stats_register_counter(0, SCS_SQL | SCS_DESTINATION, self->super.id, afsql_dd_format_stats_instance(self), SC_TYPE_STORED, &self->stored_messages);
   stats_register_counter(0, SCS_SQL | SCS_DESTINATION, self->super.id, afsql_dd_format_stats_instance(self), SC_TYPE_DROPPED, &self->dropped_messages);
 
@@ -920,12 +920,12 @@ afsql_dd_init(LogPipe *s)
       if (!self->queue)
         self->queue = log_queue_new(self->mem_fifo_size);
     }
-  
+
   if (!self->fields)
     {
       GList *col, *value;
       gint i;
-      
+
       len_cols = g_list_length(self->columns);
       len_values = g_list_length(self->values);
       if (len_cols != len_values)
@@ -938,11 +938,11 @@ afsql_dd_init(LogPipe *s)
         }
       self->fields_len = len_cols;
       self->fields = g_new0(AFSqlField, len_cols);
-      
+
       for (i = 0, col = self->columns, value = self->values; col && value; i++, col = col->next, value = value->next)
         {
           gchar *space;
-          
+
           space = strchr(col->data, ' ');
           if (space)
             {
@@ -969,7 +969,7 @@ afsql_dd_init(LogPipe *s)
           self->fields[i].value = log_template_new(NULL, (gchar *) value->data);
         }
     }
-    
+
   self->use_time_recvd = cfg->use_time_recvd;
   self->time_reopen = cfg->time_reopen;
 
@@ -1016,7 +1016,7 @@ afsql_dd_deinit(LogPipe *s)
 {
   AFSqlDestDriver *self = (AFSqlDestDriver *) s;
   GlobalConfig *cfg = log_pipe_get_config(s);
-  
+
   afsql_dd_stop_thread(self);
 
   cfg_persist_config_add(cfg, afsql_dd_format_persist_name(self), self->queue, -1, (GDestroyNotify) log_queue_free, FALSE);
@@ -1024,7 +1024,7 @@ afsql_dd_deinit(LogPipe *s)
 
   stats_unregister_counter(SCS_SQL | SCS_DESTINATION, self->super.id, afsql_dd_format_stats_instance(self), SC_TYPE_STORED, &self->stored_messages);
   stats_unregister_counter(SCS_SQL | SCS_DESTINATION, self->super.id, afsql_dd_format_stats_instance(self), SC_TYPE_DROPPED, &self->dropped_messages);
-  
+
   return TRUE;
 }
 
@@ -1033,7 +1033,7 @@ afsql_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 {
   AFSqlDestDriver *self = (AFSqlDestDriver *) s;
   gboolean consumed, queue_was_empty;
-  
+
   g_mutex_lock(self->db_thread_mutex);
   queue_was_empty = log_queue_get_length(self->queue) == 0;
   consumed = log_queue_push_tail(self->queue, msg, path_options);
@@ -1049,9 +1049,9 @@ afsql_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
        * window_sizes of sources feeding this writer exceeds log_fifo_size
        * or if flow control is not turned on.
        */
-      
+
       /* we don't send a message here since the system is draining anyway */
-      
+
       stats_counter_inc(self->dropped_messages);
       msg_debug("Destination queue full, dropping message",
                 evt_tag_int("queue_len", log_queue_get_length(self->queue)),
@@ -1141,7 +1141,7 @@ LogDriver *
 afsql_dd_new(void)
 {
   AFSqlDestDriver *self = g_new0(AFSqlDestDriver, 1);
-  
+
   log_drv_init_instance(&self->super);
   self->super.super.init = afsql_dd_init;
   self->super.super.deinit = afsql_dd_deinit;
@@ -1155,7 +1155,7 @@ afsql_dd_new(void)
   self->password = g_strdup("");
   self->database = g_strdup("logs");
   self->encoding = g_strdup("UTF-8");
-  
+
   self->table = log_template_new(NULL, "messages");
   self->columns = string_array_to_list(default_columns);
   self->values = string_array_to_list(default_values);
@@ -1177,9 +1177,9 @@ afsql_dd_new(void)
   self->session_statements = NULL;
 
   self->validated_tables = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
-  
+
   init_sequence_number(&self->seq_num);
-  return &self->super;  
+  return &self->super;
 }
 
 gint
