@@ -437,7 +437,7 @@ test_nvtable_indirect()
   /* the new entry will not fit to the space allocated to the old and neither to the NVTable */
 
   /* setup code: add static and a dynamic-direct entry */
-  tab = nv_table_new(STATIC_VALUES, 1, 150);
+  tab = nv_table_new(STATIC_VALUES, 1, 154);
   success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, 4, value, 128, NULL);
   TEST_ASSERT(success == TRUE);
   success = nv_table_add_value(tab, handle, name, strlen(name), value, 1, NULL);

@@ -193,7 +193,7 @@ nv_table_resolve_entry(NVTable *self, NVEntry *entry, gssize *length)
   if (!entry->indirect)
     {
       if (length)
-        *length = entry->vdirect.value_len;
+        *length = entry->vdirect.value_len_lo + (entry->vdirect.value_len_hi << 16);
       return entry->vdirect.data + entry->name_len + 1;
     }
   else
@@ -347,6 +347,8 @@ nv_table_add_value(NVTable *self, NVHandle handle, const gchar *name, gsize name
   guint16 ofs;
   guint32 *dyn_slot;
 
+  if (value_len > 255 * 1024)
+    value_len = 255 * 1024;
   if (new_entry)
     *new_entry = FALSE;
   entry = nv_table_get_entry(self, handle, &dyn_slot);
@@ -378,7 +380,8 @@ nv_table_add_value(NVTable *self, NVHandle handle, const gchar *name, gsize name
         {
           dst = entry->vdirect.data + entry->name_len + 1;
 
-          entry->vdirect.value_len = value_len;
+          entry->vdirect.value_len_lo = value_len & 0xFFFF;
+          entry->vdirect.value_len_hi = (value_len >> 16);
           memcpy(dst, value, value_len);
           dst[value_len] = 0;
         }
@@ -386,7 +389,8 @@ nv_table_add_value(NVTable *self, NVHandle handle, const gchar *name, gsize name
         {
           /* this was an indirect entry, convert it */
           entry->indirect = 0;
-          entry->vdirect.value_len = value_len;
+          entry->vdirect.value_len_lo = value_len & 0xFFFF;
+          entry->vdirect.value_len_hi = (value_len >> 16);
           entry->name_len = name_len;
           memcpy(entry->vdirect.data, name, name_len + 1);
           memcpy(entry->vdirect.data + name_len + 1, value, value_len);
@@ -408,7 +412,8 @@ nv_table_add_value(NVTable *self, NVHandle handle, const gchar *name, gsize name
     }
 
   ofs = (nv_table_get_top(self) - (gchar *) entry) >> NV_TABLE_SCALE;
-  entry->vdirect.value_len = value_len;
+  entry->vdirect.value_len_lo = value_len & 0xFFFF;
+  entry->vdirect.value_len_hi = value_len >> 16;
   if (handle >= self->num_static_entries)
     {
       /* we only store the name for non-builtin values */
