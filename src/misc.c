@@ -561,7 +561,7 @@ create_worker_thread(GThreadFunc func, gpointer data, gboolean joinable, GError 
   p->func = func;
   p->data = data;
   
-  h = g_thread_create(worker_thread_func, p, joinable, error);
+  h = g_thread_create_full(worker_thread_func, p, 64 * 1024, joinable, TRUE, G_THREAD_PRIORITY_NORMAL, error);
   if (!h)
     {
       g_free(p);
