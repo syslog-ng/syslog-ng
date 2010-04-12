@@ -182,14 +182,25 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
 void
 log_source_set_options(LogSource *self, LogSourceOptions *options, gint stats_level, gint stats_source, const gchar *stats_id, const gchar *stats_instance)
 {
-  gint current_window;
   
   if (self->options)
-    current_window = g_atomic_counter_get(&self->options->window_size);
-  else
-    current_window = options->init_window_size;
+    {
+      gint current_window;
+
+      /* this LogSource instance was originally used for an old
+       * configuration, and after config reload it has become part of the
+       * new config.  Make sure our window is propagated to avoid filling up
+       * the queue with SIGHUPs.
+       *
+       * NOTE: although atomic_get/set without locks is racy, this is not,
+       * since the old configuration is already deinitialized, thus any
+       * threads that might acknowledge back messages is already stopped.
+       */
+
+      current_window = g_atomic_counter_get(&self->options->window_size);
+      g_atomic_counter_set(&options->window_size, current_window);
+    }
   self->options = options;
-  g_atomic_counter_set(&self->options->window_size, current_window);
   self->stats_level = stats_level;
   self->stats_source = stats_source;
   self->stats_id = stats_id ? g_strdup(stats_id) : NULL;
