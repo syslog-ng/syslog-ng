@@ -81,22 +81,26 @@ typedef struct _AFSqlDestDriver
   gint time_reopen;
   gint flush_lines;
   gint flush_timeout;
-  guint flush_timer_tag;
   gint flush_lines_queued;
   gint flags;
   GList *session_statements;
-  
+
   TimeZoneInfo *local_time_zone_info;
   gchar *local_time_zone;
   TimeZoneInfo *send_time_zone_info;
   gchar *send_time_zone;
-  gshort frac_digits; 
+  gshort frac_digits;
 
   guint32 *dropped_messages;
   guint32 *stored_messages;
-  
+
   /* shared by the main/db thread */
-  GStaticMutex queue_lock;
+  GThread *db_thread;
+  GMutex *db_thread_mutex;
+  GCond *db_thread_wakeup_cond;
+  gboolean db_thread_terminate;
+  gboolean db_thread_suspended;
+  GTimeVal db_thread_suspend_target;
   LogQueue *queue;
   /* used exclusively by the db thread */
   gint32 seq_num;
@@ -104,10 +108,13 @@ typedef struct _AFSqlDestDriver
   gboolean pending_msg_flow_control;
   dbi_conn dbi_ctx;
   GHashTable *validated_tables;
-  time_t last_conn_attempt;
   guint32 failed_message_counter;
 } AFSqlDestDriver;
 
+static gboolean dbi_initialized = FALSE;
+static dbi_inst dbi_instance;
+
+#define MAX_FAILED_ATTEMPTS 3
 
 void 
 afsql_dd_set_type(LogDriver *s, const gchar *type)
@@ -286,6 +293,13 @@ afsql_dd_set_flags(LogDriver *s, gint flags)
   self->flags = flags;
 }
 
+/**
+ * afsql_dd_run_query:
+ *
+ * Run an SQL query on the connected database.
+ *
+ * NOTE: This function can only be called from the database thread.
+ **/
 static gboolean
 afsql_dd_run_query(AFSqlDestDriver *self, const gchar *query, gboolean silent, dbi_result *result)
 {
@@ -340,6 +354,14 @@ afsql_dd_check_sql_identifier(gchar *token, gboolean sanitize)
   return TRUE;
 }
 
+/**
+ * afsql_dd_create_index:
+ *
+ * This function creates an index for the column specified and returns
+ * TRUE to indicate success.
+ *
+ * NOTE: This function can only be called from the database thread.
+ **/
 static gboolean
 afsql_dd_create_index(AFSqlDestDriver *self, gchar *table, gchar *column)
 {
@@ -366,6 +388,15 @@ afsql_dd_create_index(AFSqlDestDriver *self, gchar *table, gchar *column)
   return success;
 }
 
+/**
+ * afsql_dd_validate_table:
+ *
+ * Check if the given table exists in the database. If it doesn't
+ * create it, if it does, check if all the required fields are
+ * present and create them if they don't.
+ *
+ * NOTE: This function can only be called from the database thread.
+ **/
 static gboolean
 afsql_dd_validate_table(AFSqlDestDriver *self, gchar *table)
 {
@@ -452,52 +483,74 @@ afsql_dd_validate_table(AFSqlDestDriver *self, gchar *table)
   return success;
 }
 
-static GMutex *sql_drivers_lock;
-static GList *sql_active_drivers;
-static GList *sql_deactivate_drivers;
-static gboolean db_thread_iter_finished;
-static GCond *db_thread_iter_finished_cond, *db_thread_wakeup_cond;
-static gboolean db_thread_terminate = FALSE;
-static GThread *db_thread;
-static gint db_thread_max_sleep_time = -1;
-
-#define INSERTS_AT_A_TIME 30
-#define MAX_FAILED_ATTEMPTS 3
-
-static void
+/**
+ * afsql_dd_begin_txn:
+ *
+ * Begin SQL transaction.
+ *
+ * NOTE: This function can only be called from the database thread.
+ **/
+static gboolean
 afsql_dd_begin_txn(AFSqlDestDriver *self)
 {
-  afsql_dd_run_query(self, "BEGIN", FALSE, NULL);
-  self->flush_lines_queued = 0;
+  gboolean success;
+
+  success = afsql_dd_run_query(self, "BEGIN", FALSE, NULL);
+  return success;
 }
 
-static void
-afsql_dd_commit_txn(AFSqlDestDriver *self)
-{
-  afsql_dd_run_query(self, "COMMIT", FALSE, NULL);
-  self->flush_lines_queued = 0;
-  if (self->flush_timer_tag)
-    {
-      g_source_remove(self->flush_timer_tag);
-      self->flush_timer_tag = 0;
-    }
-}
-
+/**
+ * afsql_dd_begin_txn:
+ *
+ * Commit SQL transaction.
+ *
+ * NOTE: This function can only be called from the database thread.
+ **/
 static gboolean
-afsql_dd_commit_db_timer(gpointer p)
+afsql_dd_commit_txn(AFSqlDestDriver *self, gboolean lock)
 {
-  AFSqlDestDriver *self = (AFSqlDestDriver *) p;
+  gboolean success;
 
-  afsql_dd_commit_txn(self);
-  return TRUE;
+  success = afsql_dd_run_query(self, "COMMIT", FALSE, NULL);
+  if (lock)
+    g_mutex_lock(self->db_thread_mutex);
+  if (success)
+    {
+      log_queue_ack_backlog(self->queue, self->flush_lines_queued);
+    }
+  else
+    {
+      msg_notice("SQL transaction commit failed, rewinding backlog and starting again",
+                 NULL);
+      log_queue_rewind_backlog(self->queue);
+    }
+  if (lock)
+    g_mutex_unlock(self->db_thread_mutex);
+  self->flush_lines_queued = 0;
+  return success;
+}
+
+/**
+ * afsql_dd_suspend:
+ * timeout: in milliseconds
+ *
+ * This function is assumed to be called from the database thread
+ * only!
+ **/
+static void
+afsql_dd_suspend(AFSqlDestDriver *self)
+{
+  self->db_thread_suspended = TRUE;
+  g_get_current_time(&self->db_thread_suspend_target);
+  g_time_val_add(&self->db_thread_suspend_target, self->time_reopen * 1000);
 }
 
 static void
-afsql_dd_disconnect(AFSqlDestDriver *self,GString *table)
+afsql_dd_disconnect(AFSqlDestDriver *self)
 {
   dbi_conn_close(self->dbi_ctx);
   self->dbi_ctx = NULL;
-  g_hash_table_remove(self->validated_tables, table->str);
+  g_hash_table_remove_all(self->validated_tables);
 }
 
 /**
@@ -505,7 +558,8 @@ afsql_dd_disconnect(AFSqlDestDriver *self,GString *table)
  *
  * This function is running in the database thread
  *
- * Returns: TRUE to indicate that more data is available to be sent 
+ * Returns: FALSE to indicate that the connection should be closed and
+ * this destination suspended for time_reopen() time.
  **/
 static gboolean
 afsql_dd_insert_db(AFSqlDestDriver *self)
@@ -513,18 +567,12 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
   GString *table, *query_string, *value;
   LogMessage *msg;
   gboolean success;
-  gint count = 0, i;
-  time_t now;
+  gint i;
+  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
   
   if (!self->dbi_ctx)
     {
-      now = time(NULL);
-      
-      if (self->last_conn_attempt >= now - self->time_reopen)
-        {
-          return FALSE;
-        }
-      self->dbi_ctx = dbi_conn_new(self->type);
+      self->dbi_ctx = dbi_conn_new_r(self->type, dbi_instance);
       if (self->dbi_ctx)
         {
           dbi_conn_set_option(self->dbi_ctx, "host", self->host);
@@ -552,8 +600,6 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
                         evt_tag_str("database", self->database),
                         evt_tag_str("error", dbi_error),
                         NULL);
-              dbi_conn_close(self->dbi_ctx);
-              self->dbi_ctx = NULL;
               return FALSE;
             }
         }
@@ -564,7 +610,6 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
                     NULL);
           return FALSE;
         }
-      self->last_conn_attempt = time(NULL);
 
       if (self->session_statements != NULL)
         {
@@ -577,277 +622,250 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
                   msg_error("Error executing SQL connection statement",
                             evt_tag_str("statement", (gchar *) l->data),
                             NULL);
-                  dbi_conn_close(self->dbi_ctx);
-                  self->dbi_ctx = NULL;
                   return FALSE;
                 }
             }
         }
     }
 
-  while (!db_thread_terminate && count < INSERTS_AT_A_TIME)
+  /* connection established, try to insert a message */
+
+  if (self->pending_msg)
     {
-      LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
+      msg = self->pending_msg;
+      path_options.flow_control = self->pending_msg_flow_control;
+      self->pending_msg = NULL;
+    }
+  else
+    {
+      g_mutex_lock(self->db_thread_mutex);
+      success = log_queue_pop_head(self->queue, &msg, &path_options, (self->flags & AFSQL_DDF_EXPLICIT_COMMITS));
+      g_mutex_unlock(self->db_thread_mutex);
+      if (!success)
+        return TRUE;
+    }
+
+  msg_set_context(msg);
+
+  table = g_string_sized_new(32);
+  value = g_string_sized_new(256);
+  query_string = g_string_sized_new(512);
+
+  log_template_format(self->table, msg,
+                      (self->use_time_recvd ? LT_STAMP_RECVD : 0),
+                      TS_FMT_BSD,
+                      self->local_time_zone_info,
+                      0, 0, table);
+
+  if (!afsql_dd_validate_table(self, table->str))
+    {
+      /* If validate table is FALSE then close the connection and wait time_reopen time (next call) */
+      msg_error("Error checking table, disconnecting from database, trying again shortly",
+                evt_tag_int("time_reopen", self->time_reopen),
+                NULL);
+      success = FALSE;
+      goto error;
+    }
       
-      if (self->pending_msg)
+  g_string_printf(query_string, "INSERT INTO %s (", table->str);
+  for (i = 0; i < self->fields_len; i++)
+    {
+      g_string_append(query_string, self->fields[i].name);
+      if (i != self->fields_len - 1)
+        g_string_append(query_string, ", ");
+    }
+  g_string_append(query_string, ") VALUES (");
+
+  for (i = 0; i < self->fields_len; i++)
+    {
+      gchar *quoted;
+      log_template_format(self->fields[i].value, msg,
+                          (self->use_time_recvd ? LT_STAMP_RECVD : 0),
+                          TS_FMT_BSD,
+                          self->send_time_zone_info,
+                          self->frac_digits,
+                          self->seq_num, value);
+      if (self->null_value && strcmp(self->null_value, value->str) == 0)
         {
-          msg = self->pending_msg;  
-          path_options.flow_control = self->pending_msg_flow_control;
-          self->pending_msg = NULL;
+          g_string_append(query_string, "NULL");
         }
       else
         {
-          g_static_mutex_lock(&self->queue_lock);
-          success = log_queue_pop_head(self->queue, &msg, &path_options, FALSE);
-          g_static_mutex_unlock(&self->queue_lock);
-          if (!success)
-            return FALSE;
-        }  
-      
-      msg_set_context(msg);
-        
-      table = g_string_sized_new(32);
-      value = g_string_sized_new(256);
-      query_string = g_string_sized_new(512);
-      
-      log_template_format(self->table, msg, 
-                          (self->use_time_recvd ? LT_STAMP_RECVD : 0),
-                          TS_FMT_BSD, 
-                          self->local_time_zone_info,
-                          0, 0, table);
-
-      if (!afsql_dd_validate_table(self, table->str))
-        {
-          /* If validate table is FALSE then close the connection and wait time_reopen time (next call) */
-          msg_error("Error checking table, disconnecting from database, trying again shortly",
-                    evt_tag_int("time_reopen", self->time_reopen),
-                    NULL);
-          afsql_dd_disconnect(self,table);
-          success = FALSE;
-          goto error;
-        }
-      
-      g_string_printf(query_string, "INSERT INTO %s (", table->str);
-      for (i = 0; i < self->fields_len; i++)
-        {
-          g_string_append(query_string, self->fields[i].name);
-          if (i != self->fields_len - 1)
-            g_string_append(query_string, ", ");
-        }
-      g_string_append(query_string, ") VALUES (");
-
-      for (i = 0; i < self->fields_len; i++)
-        {
-          gchar *quoted;
-          log_template_format(self->fields[i].value, msg, 
-                              (self->use_time_recvd ? LT_STAMP_RECVD : 0), 
-                              TS_FMT_BSD, 
-                              self->send_time_zone_info,
-                              self->frac_digits,
-                              self->seq_num, value);
-          if (self->null_value && strcmp(self->null_value, value->str) == 0)
+          dbi_conn_quote_string_copy(self->dbi_ctx, value->str, &quoted);
+          if (quoted)
             {
-              g_string_append(query_string, "NULL");
+              g_string_append(query_string, quoted);
+              free(quoted);
             }
           else
             {
-              dbi_conn_quote_string_copy(self->dbi_ctx, value->str, &quoted);
-              if (quoted)
-                {
-                  g_string_append(query_string, quoted);
-                  free(quoted);
-                }
-              else
-                {
-                  g_string_append(query_string, "''");
-                }
+              g_string_append(query_string, "''");
             }
-          if (i != self->fields_len - 1)
-            g_string_append(query_string, ", ");
         }
-      g_string_append(query_string, ")");
+      if (i != self->fields_len - 1)
+        g_string_append(query_string, ", ");
+    }
+  g_string_append(query_string, ")");
 
-      if (self->flush_lines_queued == 0)
-        {
-          afsql_dd_begin_txn(self);
-        }
-      
-      success = TRUE;
-      if (!afsql_dd_run_query(self, query_string->str, FALSE, NULL))
-        {
-          /* error running INSERT on an already validated table, too bad. Try to reconnect. Maybe that helps. */
-          afsql_dd_disconnect(self,table);
-          success = FALSE;
-        }
+  /* we have the INSERT statement ready in query_string */
 
-      if (success && self->flush_lines_queued != -1)
-        {
-          self->flush_lines_queued++;
-          if (self->flush_lines && self->flush_lines_queued == self->flush_lines)
-            afsql_dd_commit_txn(self);
-#if 0
-          else if (self->flush_timeout > 0 && !self->flush_timer_tag)
-            {
-              /* FIXME: this will run from the main thread !!! */
-              self->flush_timer_tag = g_timeout_add(self->flush_timeout, afsql_dd_commit_db_timer, self);
-            }
-#endif
-        }
-    error:
-      g_string_free(table, TRUE);
-      g_string_free(value, TRUE);
-      g_string_free(query_string, TRUE);
+  if (self->flush_lines_queued == 0 && !afsql_dd_begin_txn(self))
+    return FALSE;
 
-      msg_set_context(NULL);
-      
-      if (success)
+  success = TRUE;
+  if (!afsql_dd_run_query(self, query_string->str, FALSE, NULL))
+    {
+      /* error running INSERT on an already validated table, too bad. Try to reconnect. Maybe that helps. */
+      success = FALSE;
+    }
+
+  if (success && self->flush_lines_queued != -1)
+    {
+      self->flush_lines_queued++;
+
+      if (self->flush_lines && self->flush_lines_queued == self->flush_lines && !afsql_dd_commit_txn(self, TRUE))
+        return FALSE;
+    }
+ error:
+  g_string_free(table, TRUE);
+  g_string_free(value, TRUE);
+  g_string_free(query_string, TRUE);
+
+  msg_set_context(NULL);
+
+  if (success)
+    {
+      /* we only ACK if each INSERT is a separate transaction */
+      if ((self->flags & AFSQL_DDF_EXPLICIT_COMMITS) == 0)
+        log_msg_ack(msg, &path_options);
+      log_msg_unref(msg);
+      step_sequence_number(&self->seq_num);
+      self->failed_message_counter = 0;
+    }
+  else
+    {
+      if (self->failed_message_counter < MAX_FAILED_ATTEMPTS - 1)
         {
-          log_msg_ack(msg, &path_options);
-          log_msg_unref(msg);
-          step_sequence_number(&self->seq_num);
+          self->pending_msg = msg;
+          self->pending_msg_flow_control = path_options.flow_control;
+          self->failed_message_counter++;
+        }
+      else
+        {
+          msg_error("Multiple failures while inserting this record into the database, message dropped",
+                    evt_tag_int("attempts", MAX_FAILED_ATTEMPTS),
+                    NULL);
+          stats_counter_inc(self->dropped_messages);
+          log_msg_drop(msg, &path_options);
           self->failed_message_counter = 0;
         }
-      else
-        {
-          if (self->failed_message_counter < MAX_FAILED_ATTEMPTS - 1)
-            {
-              self->pending_msg = msg;
-              self->pending_msg_flow_control = path_options.flow_control;
-              self->failed_message_counter++;
-            }
-          else
-            {
-              msg_error("Multiple failures while inserting this record into the database, message dropped",
-                        evt_tag_int("attempts", MAX_FAILED_ATTEMPTS),
-                        NULL);
-              stats_counter_inc(self->dropped_messages);
-              log_msg_drop(msg, &path_options);
-              self->failed_message_counter = 0;
-            }
-          return FALSE;
-        }
-      count++;
     }
   return TRUE;
 }
 
 
-
+/**
+ * afsql_dd_database_thread:
+ *
+ * This is the thread inserting records into the database.
+ **/
 static gpointer
-afsql_db_thread(gpointer arg)
+afsql_dd_database_thread(gpointer arg)
 {
-  GList *drivers, *l;
-  
-  msg_verbose("Database thread started", NULL);
-  while (!db_thread_terminate)
-    {
-      gboolean remaining_data;
-      
-      g_mutex_lock(sql_drivers_lock);
-      drivers = g_list_copy(sql_active_drivers);
-      g_mutex_unlock(sql_drivers_lock);
-      
-      remaining_data = FALSE;
-      for (l = drivers; !db_thread_terminate && l; l = l->next)
-        {
-          AFSqlDestDriver *dd = (AFSqlDestDriver *) l->data;
-          
-          remaining_data |= afsql_dd_insert_db(dd);
-        }
-      g_list_free(drivers);
-      
-      g_mutex_lock(sql_drivers_lock);
-      db_thread_iter_finished = TRUE;
-      g_cond_signal(db_thread_iter_finished_cond);
-      
-      if (!remaining_data)
-        {
-          GTimeVal target;
-          
-          g_get_current_time(&target);
-          g_time_val_add(&target, db_thread_max_sleep_time * 1000);
-          g_cond_timed_wait(db_thread_wakeup_cond, sql_drivers_lock, &target);
-        }
-      for (l = sql_deactivate_drivers; l; l = l->next)
-        {
-          AFSqlDestDriver *dd = (AFSqlDestDriver *) l->data;
-          if (dd->flush_lines_queued > 0)
-            afsql_dd_commit_txn(dd);
-          if (dd->flush_timer_tag)
-            g_source_remove(dd->flush_timer_tag);
+  AFSqlDestDriver *self = (AFSqlDestDriver *) arg;
 
-  	  sql_active_drivers = g_list_remove(sql_active_drivers, dd);
-          dbi_conn_close(dd->dbi_ctx);
-	  dd->dbi_ctx = NULL;
+  msg_verbose("Database thread started",
+              evt_tag_str("driver", self->super.id),
+              NULL);
+  while (!self->db_thread_terminate)
+    {
+      g_mutex_lock(self->db_thread_mutex);
+      if (self->db_thread_suspended)
+        {
+          /* we got suspended, probably because of a connection error,
+           * during this time we only get wakeups if we need to be
+           * terminated. */
+          g_cond_timed_wait(self->db_thread_wakeup_cond, self->db_thread_mutex, &self->db_thread_suspend_target);
+          self->db_thread_suspended = FALSE;
+          g_mutex_unlock(self->db_thread_mutex);
+
+          /* we loop back to check if the thread was requested to terminate */
         }
-      g_list_free(sql_deactivate_drivers);
-      sql_deactivate_drivers = NULL;
-      g_mutex_unlock(sql_drivers_lock);
+      else if (!self->pending_msg && log_queue_get_length(self->queue) == 0)
+        {
+          /* we have nothing to INSERT into the database, let's wait we get some new stuff */
+
+          if (self->flush_lines_queued > 0 && self->flush_timeout > 0)
+            {
+              GTimeVal flush_target;
+
+              g_get_current_time(&flush_target);
+              g_time_val_add(&flush_target, self->flush_timeout * 1000);
+              if (!g_cond_timed_wait(self->db_thread_wakeup_cond, self->db_thread_mutex, &flush_target))
+                {
+                  /* timeout elapsed */
+                  if (!afsql_dd_commit_txn(self, FALSE))
+                    {
+                      afsql_dd_disconnect(self);
+                      afsql_dd_suspend(self);
+                      continue;
+                    }
+                }
+            }
+          else
+            {
+              g_cond_wait(self->db_thread_wakeup_cond, self->db_thread_mutex);
+            }
+          g_mutex_unlock(self->db_thread_mutex);
+
+          /* we loop back to check if the thread was requested to terminate */
+        }
+      else
+        g_mutex_unlock(self->db_thread_mutex);
+
+      if (self->db_thread_terminate)
+        break;
+
+      if (!afsql_dd_insert_db(self))
+        {
+          afsql_dd_disconnect(self);
+          afsql_dd_suspend(self);
+        }
     }
-  msg_verbose("Database thread finished", NULL);
+  if (self->flush_lines_queued > 0)
+    {
+      /* we can't do anything with the return value here. if commit isn't
+       * successful, we get our backlog back, but we have no chance
+       * submitting that back to the SQL engine.
+       */
+
+      afsql_dd_commit_txn(self, TRUE);
+    }
+
+  afsql_dd_disconnect(self);
+
+  msg_verbose("Database thread finished",
+              evt_tag_str("driver", self->super.id),
+              NULL);
   return NULL;
 }
 
 static void
-afsql_thread_sync()
+afsql_dd_start_thread(AFSqlDestDriver *self)
 {
-  g_mutex_lock(sql_drivers_lock);
-  db_thread_iter_finished = FALSE;
-  g_cond_signal(db_thread_wakeup_cond);
-  while (!db_thread_iter_finished)
-    g_cond_wait(db_thread_iter_finished_cond, sql_drivers_lock);
-  g_mutex_unlock(sql_drivers_lock);
+  self->db_thread_wakeup_cond = g_cond_new();
+  self->db_thread_mutex = g_mutex_new();
+  self->db_thread = create_worker_thread(afsql_dd_database_thread, self, TRUE, NULL);
 }
 
 static void
-afsql_activate(AFSqlDestDriver *dd)
+afsql_dd_stop_thread(AFSqlDestDriver *self)
 {
-  g_mutex_lock(sql_drivers_lock);
-  sql_active_drivers = g_list_prepend(sql_active_drivers, dd);
-  g_mutex_unlock(sql_drivers_lock);
-}
-
-static void
-afsql_deactivate(AFSqlDestDriver *dd)
-{
-  g_mutex_lock(sql_drivers_lock);
-  sql_deactivate_drivers = g_list_prepend(sql_deactivate_drivers, dd);
-  g_mutex_unlock(sql_drivers_lock);
-  afsql_thread_sync();
-}
-
-
-static void
-afsql_kill_db_thread(gint hook_type G_GNUC_UNUSED, gpointer user_data G_GNUC_UNUSED)
-{
-  db_thread_terminate = TRUE;
-  g_cond_signal(db_thread_wakeup_cond);
-  g_thread_join(db_thread);
-}
-
-/**
- *
- * This function is registered by SQL destinations to be called after
- * syslog-ng went into background. Since threads cannot be propagated
- * through forks, we postpone thread creation until post-daemonize time.
- **/
-static void
-afsql_init_db_thread(gint hook_type G_GNUC_UNUSED, gpointer user_data)
-{
-  AFSqlDestDriver *activate = (AFSqlDestDriver *) user_data;
-  
-  if (!db_thread)
-    {
-      dbi_initialize(NULL);
-      sql_drivers_lock = g_mutex_new();
-      db_thread_iter_finished_cond = g_cond_new();
-      db_thread_wakeup_cond = g_cond_new();
-      db_thread = create_worker_thread(afsql_db_thread, NULL, TRUE, NULL);
-      register_application_hook(AH_SHUTDOWN, afsql_kill_db_thread, NULL);
-    }
-  
-  /* activate the destination that had been created before the thread was created */
-  afsql_activate(activate);
+  self->db_thread_terminate = TRUE;
+  g_cond_signal(self->db_thread_wakeup_cond);
+  g_thread_join(self->db_thread);
+  g_mutex_free(self->db_thread_mutex);
+  g_cond_free(self->db_thread_wakeup_cond);
 }
 
 static gchar *
@@ -893,9 +911,6 @@ afsql_dd_init(LogPipe *s)
                   "please specify these explicitly as the default will be dropped in the future", NULL);
     }
   
-  if (db_thread_max_sleep_time == -1 || (cfg->time_reopen * 1000 / 2) < db_thread_max_sleep_time)
-    db_thread_max_sleep_time = ((cfg->time_reopen * 1000) + 1) / 2;
-
   stats_register_counter(0, SCS_SQL | SCS_DESTINATION, self->super.id, afsql_dd_format_stats_instance(self), SC_TYPE_STORED, &self->stored_messages);
   stats_register_counter(0, SCS_SQL | SCS_DESTINATION, self->super.id, afsql_dd_format_stats_instance(self), SC_TYPE_DROPPED, &self->dropped_messages);
 
@@ -979,14 +994,13 @@ afsql_dd_init(LogPipe *s)
   if ((self->flags & AFSQL_DDF_EXPLICIT_COMMITS) && (self->flush_lines > 0 || self->flush_timeout > 0))
     self->flush_lines_queued = 0;
 
-  if (!db_thread)
+  if (!dbi_initialized)
     {
-      register_application_hook(AH_POST_DAEMONIZED, afsql_init_db_thread, self);
+      dbi_initialize_r(NULL, &dbi_instance);
+      dbi_initialized = TRUE;
     }
-  else
-    {
-      afsql_activate(self);
-    }
+
+  afsql_dd_start_thread(self);
   return TRUE;
 
  error:
@@ -1003,8 +1017,7 @@ afsql_dd_deinit(LogPipe *s)
   AFSqlDestDriver *self = (AFSqlDestDriver *) s;
   GlobalConfig *cfg = log_pipe_get_config(s);
   
-  afsql_deactivate(self);
-  /* self->dbi_ctx is freed in the DB thread, through the sql_dbi_context_free_queue queue */
+  afsql_dd_stop_thread(self);
 
   cfg_persist_config_add(cfg, afsql_dd_format_persist_name(self), self->queue, -1, (GDestroyNotify) log_queue_free, FALSE);
   self->queue = NULL;
@@ -1019,12 +1032,16 @@ static void
 afsql_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 {
   AFSqlDestDriver *self = (AFSqlDestDriver *) s;
-  gboolean consumed;
+  gboolean consumed, queue_was_empty;
   
-  g_static_mutex_lock(&self->queue_lock);
+  g_mutex_lock(self->db_thread_mutex);
+  queue_was_empty = log_queue_get_length(self->queue) == 0;
   consumed = log_queue_push_tail(self->queue, msg, path_options);
-  g_static_mutex_unlock(&self->queue_lock);
-  g_cond_signal(db_thread_wakeup_cond);
+
+  if (consumed && queue_was_empty && !self->db_thread_suspended)
+    g_cond_signal(self->db_thread_wakeup_cond);
+  g_mutex_unlock(self->db_thread_mutex);
+
   if (!consumed)
     {
       /* drop incoming message, we must ack here, otherwise the sender might
@@ -1044,8 +1061,6 @@ afsql_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
       log_msg_drop(msg, path_options);
     }
 }
-
-
 
 static void
 afsql_dd_free(LogPipe *s)
@@ -1159,11 +1174,9 @@ afsql_dd_new(void)
   self->flush_lines = -1;
   self->flush_timeout = -1;
   self->flush_lines_queued = -1;
-  self->flush_timer_tag = 0;
   self->session_statements = NULL;
 
   self->validated_tables = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
-  g_static_mutex_init(&self->queue_lock);
   
   init_sequence_number(&self->seq_num);
   return &self->super;  

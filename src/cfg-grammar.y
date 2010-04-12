@@ -799,7 +799,7 @@ dest_afsql_option
 
 dest_afsql_flags
         : string dest_afsql_flags               { $$ = afsql_dd_lookup_flag($1) | $2; free($1); }
-        |
+        |                                       { $$ = 0; }
         ;
 
 options_items
