@@ -25,7 +25,7 @@
 %%
 
 start
-        : PLUGIN_TYPE_DEST_DRIVER KW_DUMMY
+        : LL_CONTEXT_DESTINATION KW_DUMMY
           {
             *dummy_dd_instance = dummy_dd_new();
           }

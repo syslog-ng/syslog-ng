@@ -70,10 +70,10 @@ TLSContext *last_tls_context;
 %%
 
 start
-        : PLUGIN_TYPE_SRC_DRIVER source_afsocket                   { YYACCEPT; }
-        | PLUGIN_TYPE_SRC_DRIVER source_afsyslog                   { YYACCEPT; }
-        | PLUGIN_TYPE_DEST_DRIVER dest_afsocket                    { YYACCEPT; }
-        | PLUGIN_TYPE_DEST_DRIVER dest_afsyslog                    { YYACCEPT; }
+        : LL_CONTEXT_SOURCE source_afsocket                   { YYACCEPT; }
+        | LL_CONTEXT_SOURCE source_afsyslog                   { YYACCEPT; }
+        | LL_CONTEXT_DESTINATION dest_afsocket                    { YYACCEPT; }
+        | LL_CONTEXT_DESTINATION dest_afsyslog                    { YYACCEPT; }
         ;
 
 

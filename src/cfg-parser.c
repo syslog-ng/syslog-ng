@@ -3,6 +3,8 @@
 #include "cfg-lexer.h"
 #include "cfg-grammar.h"
 
+#include <string.h>
+
 extern int main_debug;
 
 /* defined in the parser */
@@ -14,20 +16,48 @@ CfgParser main_parser =
   .parse = (int (*)(CfgLexer *, gpointer *)) main_parse,
 };
 
-int
-main_lex(YYSTYPE *yylval, YYLTYPE *yylloc, CfgLexer *lexer)
-{
-  return cfg_lexer_lex(lexer, yylval, yylloc);
-}
+CFG_PARSER_IMPLEMENT_LEXER_BINDING(main_, gpointer *)
 
 void
-main_error(YYLTYPE *yylloc, CfgLexer *lexer, gpointer *configuration, const char *msg)
+report_syntax_error(YYLTYPE *yylloc, const char *what, const char *msg)
 {
-  fprintf(stderr, "%s in %s at line %d, column %d\n\n"
-                  "syslog-ng documentation: http://www.balabit.com/support/documentation/?product=syslog-ng\n"
-                  "mailing list: https://lists.balabit.hu/mailman/listinfo/syslog-ng\n",
+  fprintf(stderr, "Error parsing %s, %s in %s at line %d, column %d:\n",
+                  what,
                   msg,
                   yylloc->filename,
                   yylloc->first_line,
                   yylloc->first_column);
+
+  if (yylloc->filename)
+    {
+      FILE *f;
+
+      f = fopen(yylloc->filename, "r");
+      if (f)
+        {
+          gint lineno = 1;
+          gint i;
+          gchar buf[1024];
+
+          while (fgets(buf, sizeof(buf), f) && lineno < yylloc->first_line)
+            lineno++;
+          if (lineno == yylloc->first_line && buf[0])
+            {
+              fprintf(stderr, "\n%s", buf);
+              if (buf[strlen(buf) - 1] != '\n')
+                fprintf(stderr, "\n");
+              for (i = 0; buf[i] && i < yylloc->first_column - 1; i++)
+                {
+                  fprintf(stderr, "%c", buf[i] == '\t' ? '\t' : ' ');
+                }
+              for (i = yylloc->first_column; i < yylloc->last_column; i++)
+                fprintf(stderr, "^");
+              fprintf(stderr, "\n");
+            }
+          fclose(f);
+        }
+    }
+  fprintf(stderr, "\nsyslog-ng documentation: http://www.balabit.com/support/documentation/?product=syslog-ng\n"
+                  "mailing list: https://lists.balabit.hu/mailman/listinfo/syslog-ng\n");
+
 }

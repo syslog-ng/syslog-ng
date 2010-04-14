@@ -6,72 +6,72 @@ extern CfgParser afsocket_parser;
 static Plugin afsocket_plugins[] =
 {
   {
-    .type = PLUGIN_TYPE_SRC_DRIVER,
+    .type = LL_CONTEXT_SOURCE,
     .name = "unix-stream",
     .parser = &afsocket_parser,
   },
   {
-    .type = PLUGIN_TYPE_DEST_DRIVER,
+    .type = LL_CONTEXT_DESTINATION,
     .name = "unix-stream",
     .parser = &afsocket_parser,
   },
   {
-    .type = PLUGIN_TYPE_SRC_DRIVER,
+    .type = LL_CONTEXT_SOURCE,
     .name = "unix-dgram",
     .parser = &afsocket_parser,
   },
   {
-    .type = PLUGIN_TYPE_DEST_DRIVER,
+    .type = LL_CONTEXT_DESTINATION,
     .name = "unix-dgram",
     .parser = &afsocket_parser,
   },
   {
-    .type = PLUGIN_TYPE_SRC_DRIVER,
+    .type = LL_CONTEXT_SOURCE,
     .name = "tcp",
     .parser = &afsocket_parser,
   },
   {
-    .type = PLUGIN_TYPE_DEST_DRIVER,
+    .type = LL_CONTEXT_DESTINATION,
     .name = "tcp",
     .parser = &afsocket_parser,
   },
   {
-    .type = PLUGIN_TYPE_SRC_DRIVER,
+    .type = LL_CONTEXT_SOURCE,
     .name = "tcp6",
     .parser = &afsocket_parser,
   },
   {
-    .type = PLUGIN_TYPE_DEST_DRIVER,
+    .type = LL_CONTEXT_DESTINATION,
     .name = "tcp6",
     .parser = &afsocket_parser,
   },
   {
-    .type = PLUGIN_TYPE_SRC_DRIVER,
+    .type = LL_CONTEXT_SOURCE,
     .name = "udp",
     .parser = &afsocket_parser,
   },
   {
-    .type = PLUGIN_TYPE_DEST_DRIVER,
+    .type = LL_CONTEXT_DESTINATION,
     .name = "udp",
     .parser = &afsocket_parser,
   },
   {
-    .type = PLUGIN_TYPE_SRC_DRIVER,
+    .type = LL_CONTEXT_SOURCE,
     .name = "udp6",
     .parser = &afsocket_parser,
   },
   {
-    .type = PLUGIN_TYPE_DEST_DRIVER,
+    .type = LL_CONTEXT_DESTINATION,
     .name = "udp6",
     .parser = &afsocket_parser,
   },
   {
-    .type = PLUGIN_TYPE_SRC_DRIVER,
+    .type = LL_CONTEXT_SOURCE,
     .name = "syslog",
     .parser = &afsocket_parser,
   },
   {
-    .type = PLUGIN_TYPE_DEST_DRIVER,
+    .type = LL_CONTEXT_DESTINATION,
     .name = "syslog",
     .parser = &afsocket_parser,
   },

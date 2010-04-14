@@ -191,6 +191,77 @@ static CfgLexerKeyword global_keywords[] = {
         { NULL, 0 }
 };
 
+typedef struct _CfgLexerContext
+{
+  gint type;
+  gchar desc[0];
+} CfgLexerContext;
+
+/*
+ * cfg_lexer_push_context:
+ *
+ * This function can be used to push a lexer context to the stack. The top
+ * of the stack determines how an error is reported and can also influence
+ * the lexer.
+ */
+void
+cfg_lexer_push_context(CfgLexer *self, gint type, const gchar *desc)
+{
+  CfgLexerContext *context;
+
+  context = g_malloc(sizeof(CfgLexerContext) + strlen(desc) + 1);
+  context->type = type;
+  memcpy(&context->desc, desc, strlen(desc) + 1);
+  self->context_stack = g_list_prepend(self->context_stack, context);
+}
+
+/*
+ * cfg_lexer_pop_context:
+ *
+ * Pop the topmost item off the stack.
+ */
+void
+cfg_lexer_pop_context(CfgLexer *self)
+{
+  if (self->context_stack)
+    {
+      g_free((gchar *) self->context_stack->data);
+      self->context_stack = g_list_remove_link(self->context_stack, self->context_stack);
+    }
+}
+
+/*
+ * cfg_lexer_get_context_type:
+ *
+ * Get the current context type (one of LL_CONTEXT_* values).
+ */
+gint
+cfg_lexer_get_context_type(CfgLexer *self)
+{
+  GList *l;
+
+  l = self->context_stack;
+  if (l)
+    return ((CfgLexerContext *) l->data)->type;
+  return 0;
+}
+
+/*
+ * cfg_lexer_get_context_description:
+ *
+ * Get the description of the current context.
+ */
+const gchar *
+cfg_lexer_get_context_description(CfgLexer *self)
+{
+  GList *l;
+
+  l = self->context_stack;
+  if (l)
+    return ((CfgLexerContext *) l->data)->desc;
+  return "configuration";
+}
+
 void
 cfg_lexer_append_string(CfgLexer *self, int length, char *s)
 {
@@ -572,6 +643,8 @@ cfg_lexer_free(CfgLexer *self)
   _cfg_lexer_lex_destroy(self->state);
   self->include_depth = 0;
   g_string_free(self->pattern_buffer, TRUE);
+  while (self->context_stack)
+    cfg_lexer_pop_context(self);
   g_free(self);
 }
 

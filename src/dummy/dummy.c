@@ -46,7 +46,7 @@ extern CfgParser dummy_dd_parser;
 
 static Plugin dummy_plugin =
 {
-  .type = PLUGIN_TYPE_DEST_DRIVER,
+  .type = LL_CONTEXT_DESTINATION,
   .name = "dummy",
   .parser = &dummy_parser,
 };

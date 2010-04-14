@@ -78,6 +78,7 @@ typedef struct _CfgLexer
 {
   gpointer state;
   CfgIncludeLevel include_stack[MAX_INCLUDE_DEPTH];
+  GList *context_stack;
   gint include_depth;
   GList *token_blocks;
   GString *pattern_buffer;
@@ -102,6 +103,13 @@ gboolean cfg_lexer_process_include(CfgLexer *self, const gchar *filename);
 
 /* location tracking */
 YYLTYPE *cfg_lexer_get_yylloc(CfgLexer *self);
+
+/* context tracking */
+void cfg_lexer_push_context(CfgLexer *self, gint context, const gchar *desc);
+void cfg_lexer_pop_context(CfgLexer *self);
+const gchar *cfg_lexer_get_context_description(CfgLexer *self);
+gint cfg_lexer_get_context_type(CfgLexer *self);
+
 
 /* */
 void cfg_lexer_add_token_block(CfgLexer *self, CfgTokenBlock *block);

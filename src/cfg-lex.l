@@ -127,5 +127,7 @@ cfg_lexer_unput_string(CfgLexer *self, const char *str)
   for (i = len - 1; i >= 0; i--)
     {
       yyunput(str[i], _cfg_lexer_get_text(self->state), self->state);
+      self->include_stack[self->include_depth].lloc.first_column--;
+      self->include_stack[self->include_depth].lloc.last_column--;
     }
 }

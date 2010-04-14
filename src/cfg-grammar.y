@@ -19,11 +19,11 @@
 
 /* plugin types, must be equal to the numerical values of the plugin type in plugin.h */
 
-%token PLUGIN_TYPE_DEST_DRIVER        1
-%token PLUGIN_TYPE_SRC_DRIVER         2
-%token PLUGIN_TYPE_PARSER             3
-%token PLUGIN_TYPE_REWRITE            4
-%token PLUGIN_TYPE_FILTER             5
+%token LL_CONTEXT_DESTINATION         1
+%token LL_CONTEXT_SOURCE              2
+%token LL_CONTEXT_PARSER              3
+%token LL_CONTEXT_REWRITE             4
+%token LL_CONTEXT_FILTER              5
 
 /* statements */
 %token KW_SOURCE                      10000
@@ -438,11 +438,13 @@ filter_stmt
 	: string '{'
 	  {
 	    last_filter_expr = NULL;
+	    cfg_lexer_push_context(lexer, LL_CONTEXT_FILTER, "filter expression");
 	    if (!cfg_parser_parse(&filter_expr_parser, lexer, (gpointer *) &last_filter_expr))
               {
-                yyerror(&yylloc, lexer, dummy, "Error parsing filter expression");
+                cfg_lexer_pop_context(lexer);
                 YYERROR;
               }
+            cfg_lexer_pop_context(lexer);
 	  }
 	  '}'                               { $$ = log_filter_rule_new($1, last_filter_expr); free($1); }
 	;
@@ -540,12 +542,13 @@ source_plugin
           {
             gchar errbuf[256];
 
-            g_snprintf(errbuf, sizeof(errbuf), "Error parsing configuration block for plugin %s", $1);
-            last_driver = (LogDriver *) plugin_new_instance(lexer, PLUGIN_TYPE_SRC_DRIVER, $1);
+            g_snprintf(errbuf, sizeof(errbuf), "plugin %s", $1);
+            cfg_lexer_push_context(lexer, LL_CONTEXT_SOURCE, errbuf);
+            last_driver = (LogDriver *) plugin_new_instance(lexer, LL_CONTEXT_SOURCE, $1);
+            cfg_lexer_pop_context(lexer);
             free($1);
             if (!last_driver)
               {
-                yyerror(&yylloc, lexer, dummy, errbuf);
                 YYERROR;
               }
             $$ = last_driver;
@@ -657,12 +660,13 @@ dest_plugin
           {
             gchar errbuf[256];
 
-            g_snprintf(errbuf, sizeof(errbuf), "Error parsing configuration block for plugin %s", $1);
-            last_driver = (LogDriver *) plugin_new_instance(lexer, PLUGIN_TYPE_DEST_DRIVER, $1);
+            g_snprintf(errbuf, sizeof(errbuf), "plugin %s", $1);
+            cfg_lexer_push_context(lexer, LL_CONTEXT_DESTINATION, errbuf);
+            last_driver = (LogDriver *) plugin_new_instance(lexer, LL_CONTEXT_DESTINATION, $1);
+            cfg_lexer_pop_context(lexer);
             free($1);
             if (!last_driver)
               {
-                yyerror(&yylloc, lexer, dummy, errbuf);
                 YYERROR;
               }
             $$ = last_driver;
