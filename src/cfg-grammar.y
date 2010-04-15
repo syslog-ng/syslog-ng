@@ -100,7 +100,6 @@
 %token KW_FRAC_DIGITS                 10152
 
 %token KW_LOG_FIFO_SIZE               10160
-%token KW_LOG_DISK_FIFO_SIZE          10161
 %token KW_LOG_FETCH_LIMIT             10162
 %token KW_LOG_IW_SIZE                 10163
 %token KW_LOG_PREFIX                  10164
@@ -181,15 +180,6 @@
 
 %token KW_YES                         10380
 %token KW_NO                          10381
-
-/* obsolete, compatibility and not-yet supported options */
-%token KW_GC_IDLE_THRESHOLD           10390
-%token KW_GC_BUSY_THRESHOLD           10391
-
-%token KW_COMPRESS                    10400
-%token KW_MAC                         10401
-%token KW_AUTH                        10402
-%token KW_ENCRYPT                     10403
 
 %token KW_IFDEF                       10410
 %token KW_ENDIF                       10411
@@ -721,7 +711,6 @@ dest_afsql_option
         | KW_INDEXES '(' string_list ')'        { afsql_dd_set_indexes(last_driver, $3); }
         | KW_VALUES '(' string_list ')'		{ afsql_dd_set_values(last_driver, $3); }
 	| KW_LOG_FIFO_SIZE '(' LL_NUMBER ')'	{ afsql_dd_set_mem_fifo_size(last_driver, $3); }
-	| KW_LOG_DISK_FIFO_SIZE '(' LL_NUMBER ')'	{ afsql_dd_set_disk_fifo_size(last_driver, $3); }
         | KW_FRAC_DIGITS '(' LL_NUMBER ')'         { afsql_dd_set_frac_digits(last_driver, $3); }
 	| KW_TIME_ZONE '(' string ')'           { afsql_dd_set_send_time_zone(last_driver,$3); free($3); }
 	| KW_LOCAL_TIME_ZONE '(' string ')'     { afsql_dd_set_local_time_zone(last_driver,$3); free($3); }
@@ -777,8 +766,6 @@ options_item
 	| KW_KEEP_TIMESTAMP '(' yesno ')'	{ configuration->keep_timestamp = $3; }
 	| KW_TS_FORMAT '(' string ')'		{ configuration->ts_format = cfg_ts_format_value($3); free($3); }
 	| KW_FRAC_DIGITS '(' LL_NUMBER ')'		{ configuration->frac_digits = $3; }
-	| KW_GC_BUSY_THRESHOLD '(' LL_NUMBER ')' 	{ /* ignored */; }
-	| KW_GC_IDLE_THRESHOLD '(' LL_NUMBER ')'	{ /* ignored */; }
 	| KW_CREATE_DIRS '(' yesno ')'		{ configuration->create_dirs = $3; }
 	| KW_OWNER '(' string_or_number ')'	{ cfg_file_owner_set(configuration, $3); free($3); }
 	| KW_GROUP '(' string_or_number ')'	{ cfg_file_group_set(configuration, $3); free($3); }

@@ -279,11 +279,6 @@ source_afsyslog_option
 	| source_afsocket_stream_params		{}
 	;
 
-source_afsocket_stream_params
-	: KW_KEEP_ALIVE '(' yesno ')'		{ afsocket_sd_set_keep_alive((*last_driver), $3); }
-	| KW_MAX_CONNECTIONS '(' LL_NUMBER ')'	{ afsocket_sd_set_max_connections((*last_driver), $3); }
-	;
-
 dest_afsocket
 	: KW_UNIX_DGRAM '(' dest_afunix_dgram_params ')'	{ $$ = $3; }
 	| KW_UNIX_STREAM '(' dest_afunix_stream_params ')'	{ $$ = $3; }
