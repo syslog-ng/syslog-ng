@@ -36,8 +36,11 @@ typedef struct YYSTYPE
     gpointer node;
   };
 } YYSTYPE;
-# define YYSTYPE_IS_TRIVIAL 1
-# define YYSTYPE_IS_DECLARED 1
+#define YYSTYPE_IS_TRIVIAL 1
+#define YYSTYPE_IS_DECLARED 1
+
+#define KWS_NORMAL        0
+#define KWS_OBSOLETE      1
 
 /* used to describe a syslog-ng keyword */
 typedef struct _CfgLexerKeyword

@@ -48,6 +48,41 @@ TLSContext *last_tls_context;
 %parse-param {CfgLexer *lexer}
 %parse-param {LogDriver **last_driver}
 
+%token KW_UNIX_STREAM 20000
+%token KW_UNIX_DGRAM
+%token KW_TCP
+%token KW_UDP
+%token KW_TCP6
+%token KW_UDP6
+%token KW_TRANSPORT
+
+%token KW_IP_TTL
+%token KW_SO_BROADCAST
+%token KW_IP_TOS
+%token KW_SO_SNDBUF
+%token KW_SO_RCVBUF
+%token KW_SO_KEEPALIVE
+%token KW_SPOOF_SOURCE
+
+%token KW_KEEP_ALIVE
+%token KW_MAX_CONNECTIONS
+
+%token KW_LOCALIP
+%token KW_IP
+%token KW_LOCALPORT
+%token KW_DESTPORT
+
+/* SSL support */
+
+%token KW_TLS
+%token KW_PEER_VERIFY
+%token KW_KEY_FILE
+%token KW_CERT_FILE
+%token KW_CA_DIR
+%token KW_CRL_DIR
+%token KW_TRUSTED_KEYS
+%token KW_TRUSTED_DN
+
 /* INCLUDE_DECLS */
 
 %type	<ptr> source_afsocket

@@ -18,8 +18,12 @@ FilterRE *last_re_filter;
 %parse-param {CfgLexer *lexer}
 %parse-param {FilterExprNode **result}
 
-
 /* INCLUDE_DECLS */
+
+%left	KW_OR
+%left	KW_AND
+%left   KW_NOT
+
 
 %type	<node> filter_expr
 %type	<node> filter_simple_expr

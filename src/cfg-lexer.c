@@ -7,8 +7,6 @@
 #include <string.h>
 #include <sys/stat.h>
 
-#define KWS_NORMAL        0
-#define KWS_OBSOLETE      1
 
 static CfgLexerKeyword global_keywords[] = {
         /* statements */
@@ -32,6 +30,7 @@ static CfgLexerKeyword global_keywords[] = {
         { "sun_stream",         KW_SUN_STREAMS },
         { "sun_streams",        KW_SUN_STREAMS },
 #endif
+        { "syslog",             KW_SYSLOG },
         { "program",            KW_PROGRAM },
 #if ENABLE_SQL
         { "sql",                KW_SQL },
@@ -118,20 +117,6 @@ static CfgLexerKeyword global_keywords[] = {
 
         { "create_dirs",        KW_CREATE_DIRS },
         { "optional",           KW_OPTIONAL },
-        { "localip",            KW_LOCALIP },
-        { "ip",                 KW_IP },
-        { "localport",          KW_LOCALPORT },
-        { "port",               KW_PORT },
-        { "destport",           KW_DESTPORT },
-        { "ip_ttl",             KW_IP_TTL },
-        { "ip_tos",             KW_IP_TOS },
-        { "so_broadcast",       KW_SO_BROADCAST },
-        { "so_rcvbuf",          KW_SO_RCVBUF },
-        { "so_sndbuf",          KW_SO_SNDBUF },
-        { "so_keepalive",       KW_SO_KEEPALIVE },
-        { "tcp_keep_alive",     KW_SO_KEEPALIVE, KWS_OBSOLETE, "so_keepalive" },
-        { "spoof_source",       KW_SPOOF_SOURCE },
-        { "transport",          KW_TRANSPORT },
 
         { "owner",              KW_OWNER },
         { "group",              KW_GROUP },
@@ -141,8 +126,6 @@ static CfgLexerKeyword global_keywords[] = {
         { "dir_perm",           KW_DIR_PERM },
         { "template",           KW_TEMPLATE },
         { "template_escape",    KW_TEMPLATE_ESCAPE },
-        { "keep_alive",         KW_KEEP_ALIVE },
-        { "max_connections",    KW_MAX_CONNECTIONS },
         { "mac",                KW_MAC },
         { "authentication",     KW_AUTH },
         { "encrypt",            KW_ENCRYPT },
@@ -154,33 +137,9 @@ static CfgLexerKeyword global_keywords[] = {
         { "dns_cache_expire",   KW_DNS_CACHE_EXPIRE },
         { "dns_cache_expire_failed", KW_DNS_CACHE_EXPIRE_FAILED },
 
-#if ENABLE_SSL /* BEGIN MARK: tls */
-        /* ssl */
-        { "tls",                KW_TLS },
-        { "peer_verify",        KW_PEER_VERIFY },
-        { "key_file",           KW_KEY_FILE },
-        { "cert_file",          KW_CERT_FILE },
-        { "ca_dir",             KW_CA_DIR },
-        { "crl_dir",            KW_CRL_DIR },
-        { "trusted_keys",       KW_TRUSTED_KEYS },
-        { "trusted_dn",         KW_TRUSTED_DN },
-#endif /* END MARK */
-
         /* filter items */
         { "type",               KW_TYPE, 0x0300 },
         { "tags",               KW_TAGS, 0x0300 },
-        { "tags",               KW_TAGS, 0x0301 },
-        { "or",                 KW_OR },
-        { "and",                KW_AND },
-        { "not",                KW_NOT },
-        { "level",              KW_LEVEL },
-        { "priority",           KW_LEVEL },
-        { "facility",           KW_FACILITY },
-        { "program",            KW_PROGRAM },
-        { "host",               KW_HOST },
-        { "message",            KW_MESSAGE },
-        { "match",              KW_MATCH },
-        { "netmask",            KW_NETMASK },
 
         /* on/off switches */
         { "yes",                KW_YES },

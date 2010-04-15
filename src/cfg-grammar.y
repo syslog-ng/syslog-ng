@@ -38,12 +38,6 @@
 %token KW_INTERNAL                    10010
 %token KW_FILE                        10011
 %token KW_PIPE                        10012
-%token KW_UNIX_STREAM                 10013
-%token KW_UNIX_DGRAM                  10014
-%token KW_TCP                         10015
-%token KW_UDP                         10016
-%token KW_TCP6                        10017
-%token KW_UDP6                        10018
 %token KW_USERTTY                     10019
 %token KW_DOOR                        10020
 %token KW_SUN_STREAMS                 10021
@@ -67,7 +61,7 @@
 %token KW_NULL                        10053
 
 %token KW_SYSLOG                      10060
-%token KW_TRANSPORT                   10061
+
 
 /* option items */
 %token KW_FSYNC                       10070
@@ -115,17 +109,6 @@
 
 %token KW_THROTTLE                    10170
 
-/* SSL support */
-
-%token KW_TLS                         10180
-%token KW_PEER_VERIFY                 10181
-%token KW_KEY_FILE                    10182
-%token KW_CERT_FILE                   10183
-%token KW_CA_DIR                      10184
-%token KW_CRL_DIR                     10185
-%token KW_TRUSTED_KEYS                10186
-%token KW_TRUSTED_DN                  10187
-
 /* log statement options */
 %token KW_FLAGS                       10190
 
@@ -168,25 +151,7 @@
 %token KW_DEFAULT_FACILITY            10300
 %token KW_DEFAULT_LEVEL               10301
 
-/* socket related options */
-
-%token KW_KEEP_ALIVE                  10310
-%token KW_MAX_CONNECTIONS             10311
-
-%token KW_LOCALIP                     10320
-%token KW_IP                          10321
-%token KW_LOCALPORT                   10322
 %token KW_PORT                        10323
-%token KW_DESTPORT                    10324
-
-%token KW_IP_TTL                      10330
-%token KW_SO_BROADCAST                10331
-%token KW_IP_TOS                      10332
-%token KW_SO_SNDBUF                   10333
-%token KW_SO_RCVBUF                   10334
-%token KW_SO_KEEPALIVE                10335
-%token KW_SPOOF_SOURCE                10336
-
 /* misc options */
 
 %token KW_USE_TIME_RECVD              10340
@@ -237,9 +202,6 @@
 %token <cptr> LL_STRING               10424
 %token <token> LL_TOKEN               10425
 
-%left	KW_OR
-%left	KW_AND
-%left   KW_NOT
 
 /* END_DECLS */
 
