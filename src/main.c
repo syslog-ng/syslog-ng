@@ -350,7 +350,6 @@ version(void)
          "Enable-IPv6: %s\n"
          "Enable-Spoof-Source: %s\n"
          "Enable-TCP-Wrapper: %s\n"
-         "Enable-SSL: %s\n"
          "Enable-SQL: %s\n"
          "Enable-Linux-Caps: %s\n"
          "Enable-Pcre: %s\n",
@@ -364,7 +363,6 @@ version(void)
          ON_OFF_STR(ENABLE_IPV6),
          ON_OFF_STR(ENABLE_SPOOF_SOURCE),
          ON_OFF_STR(ENABLE_TCP_WRAPPER),
-         ON_OFF_STR(ENABLE_SSL),
          ON_OFF_STR(ENABLE_SQL),
          ON_OFF_STR(ENABLE_LINUX_CAPS),
          ON_OFF_STR(ENABLE_PCRE));
