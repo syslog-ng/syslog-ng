@@ -231,11 +231,11 @@
 
 %token LL_DOTDOT                      10420
 
-%token <cptr> LL_IDENTIFIER
-%token <num>  LL_NUMBER
-%token <fnum> LL_FLOAT
-%token <cptr> LL_STRING
-%token <token> LL_TOKEN
+%token <cptr> LL_IDENTIFIER           10421
+%token <num>  LL_NUMBER               10422
+%token <fnum> LL_FLOAT                10423
+%token <cptr> LL_STRING               10424
+%token <token> LL_TOKEN               10425
 
 %left	KW_OR
 %left	KW_AND
@@ -361,34 +361,6 @@ FilterExprNode *last_filter_expr;
 %type   <ptr> string_list_build
 %type   <num> facility_string
 %type   <num> level_string
-
-%type   <token> reserved_words_as_strings
-
-%type <token> KW_PARSER
-%type <token> KW_REWRITE
-%type <token> KW_INCLUDE
-%type <token> KW_SYSLOG
-%type <token> KW_COLUMNS
-%type <token> KW_DELIMITERS
-%type <token> KW_QUOTES
-%type <token> KW_QUOTE_PAIRS
-%type <token> KW_NULL
-%type <token> KW_CSV_PARSER
-%type <token> KW_DB_PARSER
-%type <token> KW_ENCODING
-%type <token> KW_SET
-%type <token> KW_SUBST
-%type <token> KW_VALUE
-%type <token> KW_PROGRAM_OVERRIDE
-%type <token> KW_HOST_OVERRIDE
-%type <token> KW_TRANSPORT
-%type <token> KW_TRUSTED_KEYS
-%type <token> KW_TRUSTED_DN
-%type <token> KW_MESSAGE
-%type <token> KW_TYPE
-%type <token> KW_SQL
-%type <token> KW_DEFAULT_FACILITY
-%type <token> KW_DEFAULT_LEVEL
 
 /* END_DECLS */
 
@@ -1006,35 +978,6 @@ rewrite_expr_opt
 string
 	: LL_IDENTIFIER
 	| LL_STRING
-	| reserved_words_as_strings             { $$ = cfg_lexer_get_keyword_string(lexer, $1); }
-	;
-
-reserved_words_as_strings
-        /* these keywords were introduced in syslog-ng 3.0 */
-        : KW_PARSER
-        | KW_REWRITE
-        | KW_INCLUDE
-        | KW_COLUMNS
-        | KW_DELIMITERS
-        | KW_QUOTES
-        | KW_QUOTE_PAIRS
-        | KW_NULL
-        | KW_CSV_PARSER
-        | KW_DB_PARSER
-        | KW_ENCODING
-        | KW_SET
-        | KW_SUBST
-        | KW_VALUE
-        | KW_PROGRAM_OVERRIDE
-        | KW_HOST_OVERRIDE
-        | KW_TRANSPORT
-        | KW_TRUSTED_KEYS
-        | KW_TRUSTED_DN
-        | KW_MESSAGE
-        | KW_TYPE
-        | KW_SQL
-        | KW_DEFAULT_FACILITY
-        | KW_DEFAULT_LEVEL
 	;
 
 yesno

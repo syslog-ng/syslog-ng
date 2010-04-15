@@ -2,6 +2,7 @@
 #include "cfg-lex.h"
 #include "cfg-grammar.h"
 #include "messages.h"
+#include "cfg.h"
 
 #include <string.h>
 #include <sys/stat.h>
@@ -13,12 +14,12 @@ static CfgLexerKeyword global_keywords[] = {
         /* statements */
         { "source",             KW_SOURCE },
         { "filter",             KW_FILTER },
-        { "parser",             KW_PARSER },
-        { "rewrite",            KW_REWRITE },
+        { "parser",             KW_PARSER, 0x0300, },
+        { "rewrite",            KW_REWRITE, 0x0300, },
         { "destination",        KW_DESTINATION },
         { "log",                KW_LOG },
         { "options",            KW_OPTIONS },
-        { "include",            KW_INCLUDE },
+        { "include",            KW_INCLUDE, 0x0300, },
 
         /* source or destination items */
         { "file",               KW_FILE },
@@ -32,42 +33,38 @@ static CfgLexerKeyword global_keywords[] = {
         { "sun_streams",        KW_SUN_STREAMS },
 #endif
         { "program",            KW_PROGRAM },
-/* BEGIN MARK: sql */
 #if ENABLE_SQL
         { "sql",                KW_SQL },
         { "username",           KW_USERNAME },
         { "password",           KW_PASSWORD },
         { "database",           KW_DATABASE },
-        { "encoding",           KW_ENCODING },
         { "table",              KW_TABLE },
 
-        { "columns",            KW_COLUMNS },
         { "indexes",            KW_INDEXES },
         { "values",             KW_VALUES },
-        { "session_statements", KW_SESSION_STATEMENTS },
+        { "session_statements", KW_SESSION_STATEMENTS, 0x0302 },
 #endif
-/* END MARK */
-        { "columns",            KW_COLUMNS },
-        { "delimiters",         KW_DELIMITERS },
-        { "quotes",             KW_QUOTES },
-        { "quote_pairs",        KW_QUOTE_PAIRS },
-        { "null",               KW_NULL },
-        { "csv_parser",         KW_CSV_PARSER },
-        { "db_parser",          KW_DB_PARSER },
+        { "columns",            KW_COLUMNS, 0x0300 },
+        { "delimiters",         KW_DELIMITERS, 0x0300 },
+        { "quotes",             KW_QUOTES, 0x0300 },
+        { "quote_pairs",        KW_QUOTE_PAIRS, 0x0300},
+        { "null",               KW_NULL, 0x0300 },
+        { "csv_parser",         KW_CSV_PARSER, 0x0300 },
+        { "db_parser",          KW_DB_PARSER, 0x0300 },
 
         /* option items */
         { "flags",              KW_FLAGS },
         { "pad_size",           KW_PAD_SIZE },
         { "mark_freq",          KW_MARK_FREQ },
-        { "mark",               KW_MARK_FREQ, KWS_OBSOLETE, "mark_freq" },
+        { "mark",               KW_MARK_FREQ, 0, KWS_OBSOLETE, "mark_freq" },
         { "stats_freq",         KW_STATS_FREQ },
         { "stats_level",        KW_STATS_LEVEL },
-        { "stats",              KW_STATS_FREQ, KWS_OBSOLETE, "stats_freq" },
+        { "stats",              KW_STATS_FREQ, 0, KWS_OBSOLETE, "stats_freq" },
         { "flush_lines",        KW_FLUSH_LINES },
         { "flush_timeout",      KW_FLUSH_TIMEOUT },
         { "suppress",           KW_SUPPRESS },
-        { "sync_freq",          KW_FLUSH_LINES, KWS_OBSOLETE, "flush_lines" },
-        { "sync",               KW_FLUSH_LINES, KWS_OBSOLETE, "flush_lines" },
+        { "sync_freq",          KW_FLUSH_LINES, 0, KWS_OBSOLETE, "flush_lines" },
+        { "sync",               KW_FLUSH_LINES, 0, KWS_OBSOLETE, "flush_lines" },
         { "fsync",              KW_FSYNC },
         { "long_hostnames",     KW_CHAIN_HOSTNAMES },
         { "chain_hostnames",    KW_CHAIN_HOSTNAMES },
@@ -76,14 +73,14 @@ static CfgLexerKeyword global_keywords[] = {
         { "check_hostname",     KW_CHECK_HOSTNAME },
         { "bad_hostname",       KW_BAD_HOSTNAME },
         { "keep_timestamp",     KW_KEEP_TIMESTAMP },
-        { "encoding",           KW_ENCODING },
+        { "encoding",           KW_ENCODING, 0x0300 },
         { "ts_format",          KW_TS_FORMAT },
         { "frac_digits",        KW_FRAC_DIGITS },
         { "time_zone",          KW_TIME_ZONE },
         { "recv_time_zone",     KW_RECV_TIME_ZONE },
         { "send_time_zone",     KW_SEND_TIME_ZONE },
-        { "local_time_zone",    KW_LOCAL_TIME_ZONE },
-        { "use_time_recvd",     KW_USE_TIME_RECVD, KWS_OBSOLETE, "Use R_ or S_ prefixed macros in templates" },
+        { "local_time_zone",    KW_LOCAL_TIME_ZONE, 0x0300 },
+        { "use_time_recvd",     KW_USE_TIME_RECVD, 0, KWS_OBSOLETE, "Use R_ or S_ prefixed macros in templates" },
         { "use_fqdn",           KW_USE_FQDN },
         { "use_dns",            KW_USE_DNS },
         { "gc_threshold",       KW_GC_BUSY_THRESHOLD },
@@ -93,29 +90,30 @@ static CfgLexerKeyword global_keywords[] = {
         { "time_reap",          KW_TIME_REAP },
         { "time_sleep",         KW_TIME_SLEEP },
         { "follow_freq",        KW_FOLLOW_FREQ,  },
-        { "remove_if_older",    KW_OVERWRITE_IF_OLDER, KWS_OBSOLETE, "overwrite_if_older" },
+        { "remove_if_older",    KW_OVERWRITE_IF_OLDER, 0, KWS_OBSOLETE, "overwrite_if_older" },
         { "overwrite_if_older", KW_OVERWRITE_IF_OLDER },
         { "file_template",      KW_FILE_TEMPLATE },
         { "proto_template",     KW_PROTO_TEMPLATE },
-        { "default_level",      KW_DEFAULT_LEVEL },
-        { "default_priority",   KW_DEFAULT_LEVEL },
-        { "default_facility",   KW_DEFAULT_FACILITY },
+        { "default_level",      KW_DEFAULT_LEVEL, 0x0300 },
+        { "default_priority",   KW_DEFAULT_LEVEL, 0x0300 },
+        { "default_facility",   KW_DEFAULT_FACILITY, 0x0300 },
+
+        { "set",                KW_SET, 0x0300 },
+        { "subst",              KW_SUBST, 0x0300 },
+        { "value",              KW_VALUE, 0x0300 },
 #if ENABLE_TIMESTAMPING
         { "timestamp_url",      KW_TIMESTAMP_URL },
         { "timestamp_freq",     KW_TIMESTAMP_FREQ },
 #endif
-        { "set",                KW_SET },
-        { "subst",              KW_SUBST },
-        { "value",              KW_VALUE },
 
         { "log_fifo_size",      KW_LOG_FIFO_SIZE },
         { "log_disk_fifo_size", KW_LOG_DISK_FIFO_SIZE },
         { "log_fetch_limit",    KW_LOG_FETCH_LIMIT },
         { "log_iw_size",        KW_LOG_IW_SIZE },
         { "log_msg_size",       KW_LOG_MSG_SIZE },
-        { "log_prefix",         KW_LOG_PREFIX, KWS_OBSOLETE, "program_override" },
-        { "program_override",   KW_PROGRAM_OVERRIDE },
-        { "host_override",      KW_HOST_OVERRIDE },
+        { "log_prefix",         KW_LOG_PREFIX, 0, KWS_OBSOLETE, "program_override" },
+        { "program_override",   KW_PROGRAM_OVERRIDE, 0x0300 },
+        { "host_override",      KW_HOST_OVERRIDE, 0x0300 },
         { "throttle",           KW_THROTTLE },
 
         { "create_dirs",        KW_CREATE_DIRS },
@@ -169,6 +167,9 @@ static CfgLexerKeyword global_keywords[] = {
 #endif /* END MARK */
 
         /* filter items */
+        { "type",               KW_TYPE, 0x0300 },
+        { "tags",               KW_TAGS, 0x0300 },
+        { "tags",               KW_TAGS, 0x0301 },
         { "or",                 KW_OR },
         { "and",                KW_AND },
         { "not",                KW_NOT },
@@ -180,8 +181,6 @@ static CfgLexerKeyword global_keywords[] = {
         { "message",            KW_MESSAGE },
         { "match",              KW_MATCH },
         { "netmask",            KW_NETMASK },
-        { "type",               KW_TYPE },
-        { "tags",               KW_TAGS },
 
         /* on/off switches */
         { "yes",                KW_YES },
@@ -280,40 +279,8 @@ cfg_lexer_set_current_keywords(CfgLexer *self, CfgLexerKeyword *keywords)
   self->current_keywords = keywords;
 }
 
-static char *
-cfg_lexer_get_keyword_string_in_table(CfgLexer *self, int kw, CfgLexerKeyword *keywords)
-{
-  gint i;
-  YYLTYPE *lloc = cfg_lexer_get_yylloc(self);
-
-  for (i = 0; keywords[i].kw_name; i++)
-    {
-      if (keywords[i].kw_token == kw)
-        {
-          msg_warning("WARNING: Your configuration uses a newly introduced reserved word as identifier, please use a different name",
-                      evt_tag_str("keyword", keywords[i].kw_name),
-                      evt_tag_str("filename", lloc->filename),
-                      evt_tag_printf("line", "%d:%d", lloc->first_line, lloc->first_column),
-                      NULL);
-          return strdup(keywords[i].kw_name);
-        }
-    }
-  g_assert_not_reached();
-}
-
-char *
-cfg_lexer_get_keyword_string(CfgLexer *self, int kw)
-{
-  char *res;
-
-  res = cfg_lexer_get_keyword_string_in_table(self, kw, self->current_keywords);
-  if (!res)
-    res = cfg_lexer_get_keyword_string_in_table(self, kw, global_keywords);
-  return res;
-}
-
 int
-cfg_lexer_lookup_keyword_in_table(CfgLexer *self, YYSTYPE *yylval, char *token, CfgLexerKeyword *keywords)
+cfg_lexer_lookup_keyword_in_table(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *lloc, char *token, CfgLexerKeyword *keywords)
 {
   int i, j;
 
@@ -331,7 +298,17 @@ cfg_lexer_lookup_keyword_in_table(CfgLexer *self, YYSTYPE *yylval, char *token, 
         }
       if (token[j] == 0 && keywords[i].kw_name[j] == 0)
         {
-
+          if (keywords[i].kw_req_version > configuration->version)
+            {
+              msg_warning("WARNING: Your configuration uses a newly introduced reserved word as identifier, please use a different name or enclose it in quotes",
+                      evt_tag_str("keyword", keywords[i].kw_name),
+                      evt_tag_printf("config-version", "%d.%d", configuration->version >> 8, configuration->version & 0xFF),
+                      evt_tag_printf("version", "%d.%d", (keywords[i].kw_req_version >> 8), keywords[i].kw_req_version & 0xFF),
+                      evt_tag_str("filename", lloc->filename),
+                      evt_tag_printf("line", "%d:%d", lloc->first_line, lloc->first_column),
+                      NULL);
+              break;
+            }
           switch (keywords[i].kw_status)
             {
             case KWS_OBSOLETE:
@@ -354,14 +331,14 @@ cfg_lexer_lookup_keyword_in_table(CfgLexer *self, YYSTYPE *yylval, char *token, 
 }
 
 int
-cfg_lexer_lookup_keyword(CfgLexer *self, YYSTYPE *yylval, char *token)
+cfg_lexer_lookup_keyword(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc, char *token)
 {
   gint res = LL_IDENTIFIER;
 
   if (self->current_keywords)
-    res = cfg_lexer_lookup_keyword_in_table(self, yylval, token, self->current_keywords);
+    res = cfg_lexer_lookup_keyword_in_table(self, yylval, yylloc, token, self->current_keywords);
   if (res == LL_IDENTIFIER)
-    res = cfg_lexer_lookup_keyword_in_table(self, yylval, token, global_keywords);
+    res = cfg_lexer_lookup_keyword_in_table(self, yylval, yylloc, token, global_keywords);
   return res;
 }
 

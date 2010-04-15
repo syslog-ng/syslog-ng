@@ -44,6 +44,7 @@ typedef struct _CfgLexerKeyword
 {
   gchar	*kw_name;
   gint  kw_token;
+  gint  kw_req_version;
   gint  kw_status;
   gchar *kw_explain;
 } CfgLexerKeyword;
@@ -95,7 +96,7 @@ void cfg_lexer_append_char(CfgLexer *self, char c);
 /* keyword handling */
 void cfg_lexer_set_current_keywords(CfgLexer *self, CfgLexerKeyword *keywords);
 char *cfg_lexer_get_keyword_string(CfgLexer *self, int kw);
-int cfg_lexer_lookup_keyword(CfgLexer *self, YYSTYPE *yylval, char *token);
+int cfg_lexer_lookup_keyword(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc, char *token);
 
 /* include files */
 gboolean cfg_lexer_start_next_include(CfgLexer *self, gboolean first_on_this_level);

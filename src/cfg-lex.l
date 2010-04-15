@@ -75,7 +75,7 @@ word	[^ \#'"\(\)\{\}\\;\n\t,|\.]
 0x{digit}+ 		   { yylval->num = strtoll(yytext, NULL, 16); return LL_NUMBER; }
 0{digit}+		   { yylval->num = strtoll(yytext, NULL, 8); return LL_NUMBER; }
 (-|\+)?{digit}+            { yylval->num = strtoll(yytext, NULL, 10); return LL_NUMBER; }
-({word}+(\.)?)*{word}+ 	   { return cfg_lexer_lookup_keyword(yyextra, yylval, yytext); }
+({word}+(\.)?)*{word}+ 	   { return cfg_lexer_lookup_keyword(yyextra, yylval, yylloc, yytext); }
 \(	      		   { return '('; }
 \)			   { return ')'; }
 \;			   { return ';'; }
