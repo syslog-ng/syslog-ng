@@ -20,7 +20,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-  
+
 #ifndef AFSQL_H_INCLUDED
 #define AFSQL_H_INCLUDED
 
@@ -71,4 +71,3 @@ gint afsql_dd_lookup_flag(const gchar *flag);
 #endif
 
 #endif
-

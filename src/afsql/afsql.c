@@ -25,6 +25,10 @@
 
 #if ENABLE_SQL
 
+#ifndef ENABLE_THREADS
+#error "SQL module requires threads to be enabled"
+#endif
+
 #include "logqueue.h"
 #include "templates.h"
 #include "messages.h"

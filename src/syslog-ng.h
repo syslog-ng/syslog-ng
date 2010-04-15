@@ -38,12 +38,6 @@
 #include <glib.h>
 #include "compat.h"
 
-#if ENABLE_SQL || ENABLE_TIMESTAMPING
-#define ENABLE_THREADS 1
-#else
-#define ENABLE_THREADS 0
-#endif
-
 #define PATH_SYSLOG_NG_CONF     PATH_SYSCONFDIR "/syslog-ng.conf"
 #define PATH_INSTALL_DAT	PATH_SYSCONFDIR "/install.dat"
 #define PATH_PIDFILE            PATH_PIDFILEDIR "/syslog-ng.pid"

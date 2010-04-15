@@ -764,6 +764,13 @@ if test -n "$env_ld_library_path"; then
         AC_DEFINE_UNQUOTED(ENV_LD_LIBRARY_PATH, "$env_ld_library_path", [set LD_LIBRARY_PATH to this value])
 fi
 
+if test "x$enable_sql" = "xyes"; then
+        enable_threads=yes
+else
+        enable_threads=no
+fi
+
+AC_DEFINE_UNQUOTED(ENABLE_THREADS, `enable_value $enable_threads`, [whether to enable threads support in the syslog-ng core])
 AC_DEFINE_UNQUOTED(ENABLE_SUN_STREAMS, `enable_value $enable_sun_streams`, [have STREAMS support])
 AC_DEFINE_UNQUOTED(ENABLE_SUN_DOOR, `enable_value $enable_sun_door`, [have Solaris door support])
 AC_DEFINE_UNQUOTED(ENABLE_DEBUG, `enable_value $enable_debug`, [Enable debugging])
@@ -772,13 +779,13 @@ AC_DEFINE_UNQUOTED(ENABLE_MEMTRACE, `enable_value $enable_memtrace`, [Enable mem
 AC_DEFINE_UNQUOTED(ENABLE_SPOOF_SOURCE, `enable_value $enable_spoof_source`, [Enable spoof source support])
 AC_DEFINE_UNQUOTED(ENABLE_IPV6, `enable_value $enable_ipv6`, [Enable IPv6 support])
 AC_DEFINE_UNQUOTED(ENABLE_TCP_WRAPPER, `enable_value $enable_tcp_wrapper`, [Enable TCP wrapper support])
-AC_DEFINE_UNQUOTED(ENABLE_SQL, `enable_value $enable_sql`, [Enable SQL support])
 AC_DEFINE_UNQUOTED(ENABLE_LINUX_CAPS, `enable_value $enable_linux_caps`, [Enable Linux capability management support])
 AC_DEFINE_UNQUOTED(ENABLE_PCRE, `enable_value $enable_pcre`, [Enable PCRE support])
 AC_DEFINE_UNQUOTED(ENABLE_ENV_WRAPPER, `enable_value $enable_env_wrapper`, [Enable environment wrapper support])
 
 AM_CONDITIONAL(ENABLE_ENV_WRAPPER, [test "$enable_env_wrapper" = "yes"])
 AM_CONDITIONAL(ENABLE_SSL, [test "$enable_ssl" = "yes"])
+AM_CONDITIONAL(ENABLE_SQL, [test "$enable_sql" = "yes"])
 
 AC_SUBST(timezonedir)
 AC_SUBST(pidfiledir)
@@ -801,6 +808,7 @@ AC_OUTPUT(dist.conf
 	  src/Makefile 
           src/dummy/Makefile
           src/afsocket/Makefile
+          src/afsql/Makefile
 	  doc/Makefile
           doc/docvars.xml
 	  contrib/Makefile

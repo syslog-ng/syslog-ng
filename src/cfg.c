@@ -292,6 +292,7 @@ cfg_read_pragmas(GlobalConfig *self, FILE *cfg, gint *lineno)
     {
       /* auto load modules for old configurations */
       plugin_load_module("afsocket");
+      plugin_load_module("afsql");
     }
   return TRUE;
 }

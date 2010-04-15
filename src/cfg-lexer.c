@@ -32,17 +32,6 @@ static CfgLexerKeyword global_keywords[] = {
 #endif
         { "syslog",             KW_SYSLOG },
         { "program",            KW_PROGRAM },
-#if ENABLE_SQL
-        { "sql",                KW_SQL },
-        { "username",           KW_USERNAME },
-        { "password",           KW_PASSWORD },
-        { "database",           KW_DATABASE },
-        { "table",              KW_TABLE },
-
-        { "indexes",            KW_INDEXES },
-        { "values",             KW_VALUES },
-        { "session_statements", KW_SESSION_STATEMENTS, 0x0302 },
-#endif
         { "columns",            KW_COLUMNS, 0x0300 },
         { "delimiters",         KW_DELIMITERS, 0x0300 },
         { "quotes",             KW_QUOTES, 0x0300 },

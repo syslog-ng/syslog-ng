@@ -1,4 +1,4 @@
-SUBDIRS = . afsocket dummy
+SUBDIRS = . afsocket afsql dummy
 YFLAGS=@YFLAGS@
 
 export top_srcdir
@@ -54,7 +54,7 @@ libsyslog_ng_a_SOURCES = \
 	globals.c \
 	control.c control.h \
 	compat.c compat.h \
-	logqueue.c logqueue.h afsql.c afsql.h \
+	logqueue.c logqueue.h \
 	cfg-lexer.c cfg-lexer.h cfg-lex.l \
 	cfg-parser.c cfg-parser.h cfg-grammar.y \
 	plugin.c plugin.h \

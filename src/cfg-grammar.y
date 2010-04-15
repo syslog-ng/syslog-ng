@@ -216,9 +216,6 @@
 #include "afstreams.h"
 #include "afuser.h"
 #include "afprog.h"
-#if ENABLE_SQL
-#include "afsql.h"
-#endif
 
 #include "messages.h"
 
@@ -273,9 +270,6 @@ FilterExprNode *last_filter_expr;
 %type   <ptr> dest_afuser
 %type   <ptr> dest_afprogram
 %type   <ptr> dest_afprogram_params
-%type   <ptr> dest_afsql
-%type   <ptr> dest_afsql_params
-%type   <num> dest_afsql_flags
 %type   <ptr> dest_plugin
 
 %type	<ptr> log_items
@@ -575,7 +569,6 @@ dest_item
 	| dest_afpipe				{ $$ = $1; }
 	| dest_afuser				{ $$ = $1; }
 	| dest_afprogram			{ $$ = $1; }
-	| dest_afsql				{ $$ = $1; }
         | dest_plugin                           { $$ = $1; }
 	;
 
@@ -677,57 +670,6 @@ dest_afprogram_params
 	  dest_writer_options			{ $$ = last_driver; }
 	;
 	
-dest_afsql
-        : KW_SQL '(' dest_afsql_params ')'	{ $$ = $3; }
-        ;
-
-dest_afsql_params
-        :
-          {
-            #if ENABLE_SQL	
-            last_driver = afsql_dd_new();
-            #endif /* ENABLE_SQL */
-          }
-          dest_afsql_options			{ $$ = last_driver; }
-        ;
-
-dest_afsql_options
-        : dest_afsql_option dest_afsql_options
-        |
-        ;
-
-dest_afsql_option
-        : KW_IFDEF {
-#if ENABLE_SQL
-}
-        | KW_TYPE '(' string ')'		{ afsql_dd_set_type(last_driver, $3); free($3); }
-        | KW_HOST '(' string ')'		{ afsql_dd_set_host(last_driver, $3); free($3); }
-        | KW_PORT '(' string_or_number ')'	{ afsql_dd_set_port(last_driver, $3); free($3); }
-        | KW_USERNAME '(' string ')'		{ afsql_dd_set_user(last_driver, $3); free($3); }
-        | KW_PASSWORD '(' string ')'		{ afsql_dd_set_password(last_driver, $3); free($3); }
-        | KW_DATABASE '(' string ')'		{ afsql_dd_set_database(last_driver, $3); free($3); }
-        | KW_TABLE '(' string ')'		{ afsql_dd_set_table(last_driver, $3); free($3); }
-        | KW_COLUMNS '(' string_list ')'	{ afsql_dd_set_columns(last_driver, $3); }
-        | KW_INDEXES '(' string_list ')'        { afsql_dd_set_indexes(last_driver, $3); }
-        | KW_VALUES '(' string_list ')'		{ afsql_dd_set_values(last_driver, $3); }
-	| KW_LOG_FIFO_SIZE '(' LL_NUMBER ')'	{ afsql_dd_set_mem_fifo_size(last_driver, $3); }
-        | KW_FRAC_DIGITS '(' LL_NUMBER ')'         { afsql_dd_set_frac_digits(last_driver, $3); }
-	| KW_TIME_ZONE '(' string ')'           { afsql_dd_set_send_time_zone(last_driver,$3); free($3); }
-	| KW_LOCAL_TIME_ZONE '(' string ')'     { afsql_dd_set_local_time_zone(last_driver,$3); free($3); }
-        | KW_NULL '(' string ')'                { afsql_dd_set_null_value(last_driver, $3); free($3); }
-        | KW_FLUSH_LINES '(' LL_NUMBER ')'      { afsql_dd_set_flush_lines(last_driver, $3); }
-        | KW_FLUSH_TIMEOUT '(' LL_NUMBER ')'    { afsql_dd_set_flush_timeout(last_driver, $3); }
-        | KW_SESSION_STATEMENTS '(' string_list ')' { afsql_dd_set_session_statements(last_driver, $3); }
-        | KW_FLAGS '(' dest_afsql_flags ')'     { afsql_dd_set_flags(last_driver, $3); }
-        | KW_ENDIF {
-#endif /* ENABLE_SQL */
-}
-        ;
-
-dest_afsql_flags
-        : string dest_afsql_flags               { $$ = afsql_dd_lookup_flag($1) | $2; free($1); }
-        |                                       { $$ = 0; }
-        ;
 
 options_items
 	: options_item ';' options_items	{ $$ = $1; }

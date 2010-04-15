@@ -39,7 +39,12 @@ plugin_new_instance(CfgLexer *lexer, gint plugin_type, const gchar *plugin_name)
   /* make sure '_' and '-' are handled equally in plugin name */
   p = plugin_find(plugin_type, plugin_name);
   if (!p)
-    return NULL;
+    {
+      msg_error("Error constructing plugin instance",
+                evt_tag_str("plugin", plugin_name),
+                NULL);
+      return NULL;
+    }
 
   if (!p->setup_context)
     {
