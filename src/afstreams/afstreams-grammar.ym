@@ -1,0 +1,81 @@
+%code top {
+#include "afstreams-parser.h"
+
+}
+
+
+%code {
+
+#include "afstreams.h"
+#include "cfg-parser.h"
+#include "afstreams-grammar.h"
+#include "messages.h"
+
+}
+
+%name-prefix "afstreams_"
+
+/* this parameter is needed in order to instruct bison to use a complete
+ * argument list for yylex/yyerror */
+
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {LogDriver **last_driver}
+
+
+/* INCLUDE_DECLS */
+
+%token KW_DOOR                        10020
+%token KW_SUN_STREAMS                 10021
+
+
+%type	<ptr> source_afstreams
+%type	<ptr> source_afstreams_params
+
+%%
+
+start
+        : LL_CONTEXT_SOURCE source_afstreams                        { YYACCEPT; }
+        ;
+
+
+source_afstreams
+	: KW_IFDEF {
+#if ENABLE_SUN_STREAMS
+}
+        | KW_SUN_STREAMS '(' source_afstreams_params ')'	{ $$ = $3; }
+        | KW_ENDIF {
+#endif
+}
+	;
+
+source_afstreams_params
+	: string
+	  {
+#if ENABLE_SUN_STREAMS
+	    (*last_driver) = afstreams_sd_new($1);
+	    free($1);
+#endif
+	  }
+	  source_afstreams_options		{ $$ = (*last_driver); }
+	;
+
+source_afstreams_options
+	: source_afstreams_option source_afstreams_options
+	|
+	;
+
+source_afstreams_option
+	: KW_IFDEF {
+#if ENABLE_SUN_STREAMS
+}
+	| KW_DOOR '(' string ')'		{ afstreams_sd_set_sundoor((*last_driver), $3); free($3); }
+	| KW_ENDIF {
+#endif
+}
+	;
+
+
+/* INCLUDE_RULES */
+
+%%

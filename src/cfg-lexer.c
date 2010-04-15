@@ -25,11 +25,6 @@ static CfgLexerKeyword global_keywords[] = {
         { "pipe",               KW_PIPE },
         { "internal",           KW_INTERNAL },
         { "usertty",            KW_USERTTY },
-        { "door",               KW_DOOR },
-#if ENABLE_SUN_STREAMS
-        { "sun_stream",         KW_SUN_STREAMS },
-        { "sun_streams",        KW_SUN_STREAMS },
-#endif
         { "syslog",             KW_SYSLOG },
         { "program",            KW_PROGRAM },
         { "columns",            KW_COLUMNS, 0x0300 },

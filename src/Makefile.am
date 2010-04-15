@@ -1,4 +1,4 @@
-SUBDIRS = . afsocket afsql dummy
+SUBDIRS = . afsocket afsql afstreams dummy
 YFLAGS=@YFLAGS@
 
 export top_srcdir
@@ -32,7 +32,7 @@ libsyslog_ng_a_SOURCES = \
 	logpipe.c logpipe.h logsource.c logsource.h driver.c driver.h sgroup.c sgroup.h \
 	dgroup.c dgroup.h center.c center.h templates.c templates.h \
 	logreader.c logreader.h logwriter.c logwriter.h \
-	affile.c affile.h afstreams.c afstreams.h afuser.c afuser.h afprog.c afprog.h \
+	affile.c affile.h afuser.c afuser.h afprog.c afprog.h \
 	afinter.c afinter.h \
 	children.c children.h stats.c stats.h \
 	gsockaddr.c gsockaddr.h gsocket.c gsocket.h \

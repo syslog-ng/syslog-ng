@@ -20,7 +20,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-  
+
 #include "afstreams.h"
 #include "messages.h"
 #include "logreader.h"
@@ -91,7 +91,7 @@ LogTransport *
 log_transport_streams_new(gint fd)
 {
   LogTransport *self = g_new0(LogTransport, 1);
-  
+
   self->fd = fd;
   self->cond = G_IO_IN;
   self->read = log_transport_streams_read;
@@ -99,15 +99,15 @@ log_transport_streams_new(gint fd)
   return self;
 }
 
-void 
+void
 afstreams_sd_set_sundoor(LogDriver *s, gchar *filename)
 {
   AFStreamsSourceDriver *self = (AFStreamsSourceDriver *) s;
-  
+
   self->door_filename = g_string_new(filename);
 }
 
-static void 
+static void
 afstreams_sd_door_server_proc(void *cookie, char *argp, size_t arg_size, door_desc_t *dp, uint_t n_desc)
 {
   door_return(NULL, 0, NULL, 0);
@@ -120,7 +120,7 @@ afstreams_init_door(int hook_type G_GNUC_UNUSED, gpointer user_data)
   AFStreamsSourceDriver *self = (AFStreamsSourceDriver *) user_data;
   struct stat st;
   gint fd;
-  
+
   if (stat(self->door_filename->str, &st) == -1)
     {
       /* file does not exist, create it */
@@ -164,18 +164,18 @@ afstreams_sd_init(LogPipe *s)
   AFStreamsSourceDriver *self = (AFStreamsSourceDriver *) s;
   GlobalConfig *cfg = log_pipe_get_config(s);
   gint fd;
-  
+
   log_reader_options_init(&self->reader_options, cfg, self->super.group);
-  
+
   fd = open(self->dev_filename->str, O_RDONLY | O_NOCTTY | O_NONBLOCK);
   if (fd != -1)
     {
       struct strioctl ioc;
-      
+
       g_fd_set_cloexec(fd, TRUE);
       memset(&ioc, 0, sizeof(ioc));
       ioc.ic_cmd = I_CONSLOG;
-      if (ioctl(fd, I_STR, &ioc) < 0) 
+      if (ioctl(fd, I_STR, &ioc) < 0)
         {
           msg_error("Error in ioctl(I_STR, I_CONSLOG)",
                     evt_tag_str(EVT_TAG_FILENAME, self->dev_filename->str),
@@ -188,14 +188,14 @@ afstreams_sd_init(LogPipe *s)
       self->reader = log_reader_new(log_proto_plain_new_server(log_transport_streams_new(fd), 0, self->reader_options.msg_size, LPPF_PKTTERM), LR_LOCAL);
       log_reader_set_options(self->reader, s, &self->reader_options, 1, SCS_SUN_STREAMS, self->super.id, self->dev_filename->str);
       log_pipe_append(self->reader, s);
-      
+
       if (self->door_filename)
         {
-          
+
           /* door creation is deferred, because it creates threads which is
            * not inherited through forks, and syslog-ng forks during
            * startup, but _after_ the configuration was initialized */
-          
+
           register_application_hook(AH_POST_DAEMONIZED, afstreams_init_door, self);
         }
       if (!log_pipe_init(self->reader, NULL))
@@ -264,6 +264,36 @@ afstreams_sd_new(gchar *filename)
   self->super.super.free_fn = afstreams_sd_free;
   log_reader_options_defaults(&self->reader_options);
   return &self->super;
+}
+#else
+
+void
+afstreams_sd_set_sundoor(LogDriver *s, gchar *filename)
+{
+}
+
+static gboolean
+afstreams_sd_dummy_init(LogPipe *s)
+{
+  return TRUE;
+}
+
+static gboolean
+afstreams_sd_dummy_deinit(LogPipe *s)
+{
+  return TRUE;
+}
+
+LogDriver *
+afstreams_sd_new(gchar *filename)
+{
+  LogDriver *self = g_new0(LogDriver, 1);
+
+  log_drv_init_instance(self);
+  self->super.init = afstreams_sd_dummy_init;
+  self->super.deinit = afstreams_sd_dummy_deinit;
+  self->super.free_fn = log_drv_free;
+  return self;
 }
 
 #endif

@@ -39,8 +39,6 @@
 %token KW_FILE                        10011
 %token KW_PIPE                        10012
 %token KW_USERTTY                     10019
-%token KW_DOOR                        10020
-%token KW_SUN_STREAMS                 10021
 %token KW_PROGRAM                     10022
 
 %token KW_SQL                         10030
@@ -213,7 +211,6 @@
 
 #include "affile.h"
 #include "afinter.h"
-#include "afstreams.h"
 #include "afuser.h"
 #include "afprog.h"
 
@@ -255,8 +252,6 @@ FilterExprNode *last_filter_expr;
 %type	<ptr> source_affile
 %type	<ptr> source_affile_params
 %type	<ptr> source_afpipe_params
-%type	<ptr> source_afstreams
-%type	<ptr> source_afstreams_params
 %type   <ptr> source_afprogram
 %type   <ptr> source_afprogram_params
 %type   <ptr> source_plugin
@@ -450,7 +445,6 @@ source_items
 source_item
   	: source_afinter			{ $$ = $1; }
 	| source_affile				{ $$ = $1; }
-	| source_afstreams			{ $$ = $1; }
         | source_afprogram                      { $$ = $1; }
         | source_plugin                         { $$ = $1; }
 	;
@@ -519,42 +513,6 @@ source_afprogram_params
 	    last_reader_options = &((AFProgramSourceDriver *) last_driver)->reader_options;
 	  }
 	  source_reader_options			{ $$ = last_driver; }
-	;
-	
-source_afstreams
-	: KW_IFDEF {
-#if ENABLE_SUN_STREAMS
-}
-        | KW_SUN_STREAMS '(' source_afstreams_params ')'	{ $$ = $3; }
-        | KW_ENDIF {
-#endif
-}
-	;
-	
-source_afstreams_params
-	: string
-	  {
-#if ENABLE_SUN_STREAMS
-	    last_driver = afstreams_sd_new($1);
-	    free($1);
-#endif
-	  }
-	  source_afstreams_options		{ $$ = last_driver; }
-	;
-	
-source_afstreams_options
-	: source_afstreams_option source_afstreams_options
-	|
-	;
-
-source_afstreams_option
-	: KW_IFDEF {
-#if ENABLE_SUN_STREAMS
-}
-	| KW_DOOR '(' string ')'		{ afstreams_sd_set_sundoor(last_driver, $3); free($3); }
-	| KW_ENDIF {
-#endif
-}
 	;
 	
 

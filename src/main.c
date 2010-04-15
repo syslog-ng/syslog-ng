@@ -345,7 +345,6 @@ version(void)
          "Enable-Debug: %s\n"
          "Enable-GProf: %s\n"
          "Enable-Memtrace: %s\n"
-         "Enable-Sun-STREAMS: %s\n"
          "Enable-Sun-Door: %s\n"
          "Enable-IPv6: %s\n"
          "Enable-Spoof-Source: %s\n"
@@ -357,7 +356,6 @@ version(void)
          ON_OFF_STR(ENABLE_DEBUG),
          ON_OFF_STR(ENABLE_GPROF),
          ON_OFF_STR(ENABLE_MEMTRACE),
-         ON_OFF_STR(ENABLE_SUN_STREAMS),
          ON_OFF_STR(ENABLE_SUN_DOOR),
          ON_OFF_STR(ENABLE_IPV6),
          ON_OFF_STR(ENABLE_SPOOF_SOURCE),

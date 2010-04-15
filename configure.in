@@ -771,7 +771,6 @@ else
 fi
 
 AC_DEFINE_UNQUOTED(ENABLE_THREADS, `enable_value $enable_threads`, [whether to enable threads support in the syslog-ng core])
-AC_DEFINE_UNQUOTED(ENABLE_SUN_STREAMS, `enable_value $enable_sun_streams`, [have STREAMS support])
 AC_DEFINE_UNQUOTED(ENABLE_SUN_DOOR, `enable_value $enable_sun_door`, [have Solaris door support])
 AC_DEFINE_UNQUOTED(ENABLE_DEBUG, `enable_value $enable_debug`, [Enable debugging])
 AC_DEFINE_UNQUOTED(ENABLE_GPROF, `enable_value $enable_gprof`, [Enable gcc profiling])
@@ -786,6 +785,7 @@ AC_DEFINE_UNQUOTED(ENABLE_ENV_WRAPPER, `enable_value $enable_env_wrapper`, [Enab
 AM_CONDITIONAL(ENABLE_ENV_WRAPPER, [test "$enable_env_wrapper" = "yes"])
 AM_CONDITIONAL(ENABLE_SSL, [test "$enable_ssl" = "yes"])
 AM_CONDITIONAL(ENABLE_SQL, [test "$enable_sql" = "yes"])
+AM_CONDITIONAL(ENABLE_SUN_STREAMS, [test "$enable_sun_streams" = "yes"])
 
 AC_SUBST(timezonedir)
 AC_SUBST(pidfiledir)
@@ -809,6 +809,7 @@ AC_OUTPUT(dist.conf
           src/dummy/Makefile
           src/afsocket/Makefile
           src/afsql/Makefile
+          src/afstreams/Makefile
 	  doc/Makefile
           doc/docvars.xml
 	  contrib/Makefile
