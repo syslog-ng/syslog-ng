@@ -630,6 +630,8 @@ log_template_compile(LogTemplate *self, GError **error)
   
   while (*p)
     {
+      if (last_text == NULL)
+        last_text = g_string_sized_new(32);
       if (*p == '$')
         {
           gboolean finished = FALSE;
@@ -692,7 +694,7 @@ log_template_compile(LogTemplate *self, GError **error)
                 }
               finished = TRUE;
             }
-          else
+          else if (*p != '$')
             {
               start = p;
               while ((*p >= 'A' && *p <= 'Z') || (*p >= 'a' && *p <= 'z') || (*p == '_') || (*p >= '0' && *p <= '9'))
@@ -711,6 +713,11 @@ log_template_compile(LogTemplate *self, GError **error)
                 }
               finished = TRUE;
             }
+          else
+            {
+              g_string_append_c(last_text, '$');
+              p++;
+            }
           if (finished)
             {
               if (last_text)
@@ -721,8 +728,6 @@ log_template_compile(LogTemplate *self, GError **error)
         }
       else
         {
-          if (last_text == NULL)
-            last_text = g_string_sized_new(32);
           g_string_append_c(last_text, *p);
           p++;
         }
