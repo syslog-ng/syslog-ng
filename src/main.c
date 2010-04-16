@@ -62,7 +62,6 @@ static gchar *install_dat_filename = PATH_INSTALL_DAT;
 static gchar *installer_version = NULL;
 static const gchar *persist_file = PATH_PERSIST_CONFIG;
 static gboolean syntax_only = FALSE;
-static gboolean seed_rng = FALSE;
 static gboolean display_version = FALSE;
 
 static gboolean sig_hup_received = FALSE;
@@ -213,42 +212,6 @@ main_loop_run(GlobalConfig **cfg)
   return 0;
 }
 
-#if ENABLE_SSL
-static void
-tls_init(void)
-{
-  char rnd_file[256];
-  
-  if (seed_rng)
-    {
-      RAND_file_name(rnd_file, sizeof(rnd_file));
-      if (rnd_file[0])
-        RAND_load_file(rnd_file, -1);
-    }
-  SSL_library_init();
-  SSL_load_error_strings();
-  SSLeay_add_all_algorithms();
-}
-
-static void
-tls_deinit(void)
-{
-  char rnd_file[256];
-  
-  if (seed_rng)
-    {
-      RAND_file_name(rnd_file, sizeof(rnd_file));
-      if (rnd_file[0])
-        RAND_write_file(rnd_file);
-    }
-}
-#else
-
-#define tls_init()
-#define tls_deinit()
-
-#endif
-
 #ifdef YYDEBUG
 extern int yydebug;
 #endif
@@ -277,7 +240,6 @@ initial_init(GlobalConfig **cfg)
   app_startup();
   setup_signals();
 
-  tls_init();
   *cfg = cfg_new(cfgfilename);
   if (!(*cfg))
     {
@@ -446,7 +408,6 @@ main(int argc, char *argv[])
   cfg_free(cfg);
   
   app_shutdown();
-  tls_deinit();
   z_mem_trace_dump();
   g_process_finish();
   return rc;

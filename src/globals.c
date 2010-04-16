@@ -25,3 +25,4 @@
 
 GlobalConfig *configuration;
 int yydebug;
+gboolean seed_rng;

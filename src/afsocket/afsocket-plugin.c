@@ -1,7 +1,7 @@
+#include "afsocket-parser.h"
 #include "cfg-parser.h"
 #include "plugin.h"
-
-extern CfgParser afsocket_parser;
+#include "tlscontext.h"
 
 static Plugin afsocket_plugins[] =
 {
@@ -80,6 +80,7 @@ static Plugin afsocket_plugins[] =
 gboolean
 syslogng_module_init(void)
 {
+  tls_init();
   plugin_register(afsocket_plugins, G_N_ELEMENTS(afsocket_plugins));
   return TRUE;
 }

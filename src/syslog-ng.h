@@ -61,6 +61,7 @@ typedef struct _LogMessage LogMessage;
 typedef struct _GlobalConfig GlobalConfig;
 
 extern GlobalConfig *configuration;
+extern gboolean seed_rng;
 
 void main_loop_wakeup(void);
 
