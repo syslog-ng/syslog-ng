@@ -264,6 +264,8 @@ static gboolean cfg_start_next_include(gboolean first_on_this_level);
 
 white	[ \t]
 digit	[0-9]
+xdigit	[0-9a-fA-F]
+odigit  [0-7]
 alpha		[a-zA-Z]
 alphanum	[a-zA-Z0-9]
 word	[^ \#'"\(\)\{\}\\;\n\t,|\.]
@@ -277,7 +279,7 @@ word	[^ \#'"\(\)\{\}\\;\n\t,|\.]
 {white}+		   ;
 \.\.                       { return LL_DOTDOT; }
 (-|\+)?{digit}+\.{digit}+  { yylval.fnum = strtod(yytext, NULL); return LL_FLOAT; }
-0x{digit}+ 		   { yylval.num = strtoll(yytext, NULL, 16); return LL_NUMBER; }
+0x{xdigit}+ 		   { yylval.num = strtoll(yytext, NULL, 16); return LL_NUMBER; }
 0{digit}+		   { yylval.num = strtoll(yytext, NULL, 8); return LL_NUMBER; }
 (-|\+)?{digit}+            { yylval.num = strtoll(yytext, NULL, 10); return LL_NUMBER; }
 ({word}+(\.)?)*{word}+ 	   { return check_reserved_words(yytext); }
@@ -305,6 +307,8 @@ word	[^ \#'"\(\)\{\}\\;\n\t,|\.]
 <string>\\r		   { append_char(13); }
 <string>\\t		   { append_char(9); }
 <string>\\v		   { append_char(11); }
+<string>\\x{xdigit}+       { append_char(strtol(yytext+2, NULL, 16)); }
+<string>\\{odigit}+        { append_char(strtol(yytext+2, NULL, 8)); }
 <string>\\[^anrtv]	   { append_string(1, yytext + 1); }
 <string>\"		   { 
 				BEGIN(INITIAL);
