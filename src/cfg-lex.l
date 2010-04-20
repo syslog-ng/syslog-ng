@@ -50,6 +50,7 @@
 %option outfile="lex.yy.c"
 %option extra-type="CfgLexer *"
 %option noyywrap
+%option stack
 
 white	[ \t]
 digit	[0-9]
@@ -88,11 +89,11 @@ word	[^ \#'"\(\)\{\}\\;\n\t,|\.]
 
 \"                         {
 				g_string_truncate(yyextra->pattern_buffer, 0);
-				BEGIN(string);
+				yy_push_state(string, yyscanner);
 			   }
 \'			   {
 				g_string_truncate(yyextra->pattern_buffer, 0);
-				BEGIN(qstring);
+				yy_push_state(qstring, yyscanner);
 			   }
 <string>\\a		   { cfg_lexer_append_char(yyextra, 7); }
 <string>\\n	   	   { cfg_lexer_append_char(yyextra, 10); }
@@ -103,15 +104,14 @@ word	[^ \#'"\(\)\{\}\\;\n\t,|\.]
 <string>\\{odigit}+        { cfg_lexer_append_char(yyextra, strtol(yytext+2, NULL, 8)); }
 <string>\\[^anrtv]	   { cfg_lexer_append_string(yyextra, 1, yytext + 1); }
 <string>\"		   { 
-				BEGIN(INITIAL);
-				/* yy_pop_state();*/
+				yy_pop_state(yyscanner);
 				yylval->cptr = strdup(yyextra->pattern_buffer->str);
 				return LL_STRING; 
 		           }
 <string>[^"\\]+		   { cfg_lexer_append_string(yyextra, strlen(yytext), yytext); }
 <qstring>[^']+		   { cfg_lexer_append_string(yyextra, strlen(yytext), yytext); }
 <qstring>\'		   { 
-				BEGIN(INITIAL);
+				yy_pop_state(yyscanner);
 				yylval->cptr = strdup(yyextra->pattern_buffer->str);
 				return LL_STRING;
 			   }
