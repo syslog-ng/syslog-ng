@@ -53,6 +53,8 @@
 
 white	[ \t]
 digit	[0-9]
+xdigit	[0-9a-fA-F]
+odigit  [0-7]
 alpha		[a-zA-Z]
 alphanum	[a-zA-Z0-9]
 word	[^ \#'"\(\)\{\}\\;\n\t,|\.]
@@ -72,8 +74,8 @@ word	[^ \#'"\(\)\{\}\\;\n\t,|\.]
 {white}+		   ;
 \.\.                       { return LL_DOTDOT; }
 (-|\+)?{digit}+\.{digit}+  { yylval->fnum = strtod(yytext, NULL); return LL_FLOAT; }
-0x{digit}+ 		   { yylval->num = strtoll(yytext, NULL, 16); return LL_NUMBER; }
-0{digit}+		   { yylval->num = strtoll(yytext, NULL, 8); return LL_NUMBER; }
+0x{xdigit}+ 		   { yylval->num = strtoll(yytext + 2, NULL, 16); return LL_NUMBER; }
+0{odigit}+		   { yylval->num = strtoll(yytext + 1, NULL, 8); return LL_NUMBER; }
 (-|\+)?{digit}+            { yylval->num = strtoll(yytext, NULL, 10); return LL_NUMBER; }
 ({word}+(\.)?)*{word}+ 	   { return cfg_lexer_lookup_keyword(yyextra, yylval, yylloc, yytext); }
 \(	      		   { return '('; }
@@ -97,6 +99,8 @@ word	[^ \#'"\(\)\{\}\\;\n\t,|\.]
 <string>\\r		   { cfg_lexer_append_char(yyextra, 13); }
 <string>\\t		   { cfg_lexer_append_char(yyextra, 9); }
 <string>\\v		   { cfg_lexer_append_char(yyextra, 11); }
+<string>\\x{xdigit}+       { cfg_lexer_append_char(yyextra, strtol(yytext+2, NULL, 16)); }
+<string>\\{odigit}+        { cfg_lexer_append_char(yyextra, strtol(yytext+2, NULL, 8)); }
 <string>\\[^anrtv]	   { cfg_lexer_append_string(yyextra, 1, yytext + 1); }
 <string>\"		   { 
 				BEGIN(INITIAL);
