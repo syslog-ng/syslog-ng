@@ -125,12 +125,26 @@ cfg_lexer_get_context_description(CfgLexer *self)
   return "configuration";
 }
 
+/**
+ * cfg_lexer_append_string:
+ *
+ * This function appends a string to the internal pattern buffer. It
+ * is used by the generated flex code to store intermediate results
+ * (like the unescaped version of the string being parsed).
+ **/
 void
 cfg_lexer_append_string(CfgLexer *self, int length, char *s)
 {
   g_string_append_len(self->pattern_buffer, s, length);
 }
 
+/**
+ * cfg_lexer_append_char:
+ *
+ * This function appends a character to the internal pattern buffer. It
+ * is used by the generated flex code to store intermediate results
+ * (like the unescaped version of the string being parsed).
+ **/
 void
 cfg_lexer_append_char(CfgLexer *self, char c)
 {
