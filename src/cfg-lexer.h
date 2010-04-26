@@ -66,7 +66,6 @@ typedef struct _CfgLexerKeyword
  * however is missing as of now.  (though would be trivial to add)
  */
 typedef gboolean (*CfgBlockGeneratorFunc)(CfgLexer *lexer, gint type, const gchar *name, CfgBlockGeneratorArgs *args, gpointer user_data);
-#define MAX_REGEXP_LEN	1024
 
 /* structure that describes a given location in the include stack */
 struct _CfgIncludeLevel
@@ -117,7 +116,6 @@ void cfg_lexer_unput_token(CfgLexer *self, YYSTYPE *yylval);
 
 void _cfg_lexer_force_block_state(gpointer state);
 
-void cfg_lexer_unput_string(CfgLexer *self, const char *string);
 void cfg_lexer_append_string(CfgLexer *self, int length, char *str);
 void cfg_lexer_append_char(CfgLexer *self, char c);
 
