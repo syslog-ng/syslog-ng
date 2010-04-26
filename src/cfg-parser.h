@@ -77,10 +77,10 @@ extern CfgParser main_parser;
     void                                                                      \
     parser_prefix ## error(YYLTYPE *yylloc, CfgLexer *lexer, root_type instance, const char *msg) \
     {                                                                                             \
-      report_syntax_error(yylloc, cfg_lexer_get_context_description(lexer), msg);                 \
+      report_syntax_error(lexer, yylloc, cfg_lexer_get_context_description(lexer), msg);          \
     }
 
-void report_syntax_error(YYLTYPE *yylloc, const char *what, const char *msg);
+void report_syntax_error(CfgLexer *lexer, YYLTYPE *yylloc, const char *what, const char *msg);
 
 CFG_PARSER_DECLARE_LEXER_BINDING(main_, gpointer *)
 

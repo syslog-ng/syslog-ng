@@ -137,44 +137,78 @@ CfgParser main_parser =
 CFG_PARSER_IMPLEMENT_LEXER_BINDING(main_, gpointer *)
 
 void
-report_syntax_error(YYLTYPE *yylloc, const char *what, const char *msg)
+report_syntax_error(CfgLexer *lexer, YYLTYPE *yylloc, const char *what, const char *msg)
 {
-  fprintf(stderr, "Error parsing %s, %s in %s at line %d, column %d:\n",
-                  what,
-                  msg,
-                  yylloc->filename,
-                  yylloc->first_line,
-                  yylloc->first_column);
+  CfgIncludeLevel *level = yylloc->level, *from;
+  gint lineno = 1;
+  gint i;
+  gint file_pos;
+  gchar buf[1024];
 
-  if (yylloc->filename)
+  fprintf(stderr, "Error parsing %s, %s in %n%s at line %d, column %d:\n",
+          what,
+          msg,
+          &file_pos,
+          yylloc->level->name,
+          yylloc->first_line,
+          yylloc->first_column);
+
+  from = level - 1;
+  while (from >= lexer->include_stack)
+    {
+      fprintf(stderr, "%*sincluded from %s line %d, column %d\n", MAX(file_pos - 14, 0), "", from->name, from->lloc.first_line, from->lloc.first_column);
+      from--;
+    }
+
+  buf[0] = 0;
+  if (level->include_type == CFGI_FILE)
     {
       FILE *f;
 
-      f = fopen(yylloc->filename, "r");
+      f = fopen(level->name, "r");
       if (f)
         {
-          gint lineno = 1;
-          gint i;
-          gchar buf[1024];
-
           while (fgets(buf, sizeof(buf), f) && lineno < yylloc->first_line)
             lineno++;
-          if (lineno == yylloc->first_line && buf[0])
-            {
-              fprintf(stderr, "\n%s", buf);
-              if (buf[strlen(buf) - 1] != '\n')
-                fprintf(stderr, "\n");
-              for (i = 0; buf[i] && i < yylloc->first_column - 1; i++)
-                {
-                  fprintf(stderr, "%c", buf[i] == '\t' ? '\t' : ' ');
-                }
-              for (i = yylloc->first_column; i < yylloc->last_column; i++)
-                fprintf(stderr, "^");
-              fprintf(stderr, "\n");
-            }
+          if (lineno != yylloc->first_line)
+            buf[0] = 0;
           fclose(f);
         }
     }
+  else if (level->include_type == CFGI_BUFFER)
+    {
+      gchar *sol, *eol;
+
+      sol = level->buffer.content;
+      eol = strchr(sol, '\n');
+      while (eol && lineno < yylloc->first_line)
+        {
+          lineno++;
+          sol = eol + 1;
+          eol = strchr(sol, '\n');
+        }
+      if (lineno == yylloc->first_line)
+        {
+          gsize cs = MIN(eol - sol - 1, sizeof(buf) - 2);
+
+          memcpy(buf, sol, cs);
+          buf[cs] = 0;
+        }
+    }
+  if (buf[0])
+    {
+      fprintf(stderr, "\n%s", buf);
+      if (buf[strlen(buf) - 1] != '\n')
+        fprintf(stderr, "\n");
+      for (i = 0; buf[i] && i < yylloc->first_column - 1; i++)
+        {
+          fprintf(stderr, "%c", buf[i] == '\t' ? '\t' : ' ');
+        }
+      for (i = yylloc->first_column; i < yylloc->last_column; i++)
+        fprintf(stderr, "^");
+      fprintf(stderr, "\n");
+    }
+
   fprintf(stderr, "\nsyslog-ng documentation: http://www.balabit.com/support/documentation/?product=syslog-ng\n"
                   "mailing list: https://lists.balabit.hu/mailman/listinfo/syslog-ng\n");
 

@@ -187,7 +187,7 @@ word	[^ \#'"\(\)\{\}\\;\n\t,|\.]
 
 <block_content>[^}\"\'\n\r]+   { cfg_lexer_append_string(yyextra, strlen(yytext), yytext); }
 
-<INITIAL><<EOF>>           { if (!cfg_lexer_start_next_include(yyextra, FALSE)) yyterminate(); }
+<INITIAL><<EOF>>           { if (!cfg_lexer_start_next_include(yyextra)) yyterminate(); }
 
 %%
 

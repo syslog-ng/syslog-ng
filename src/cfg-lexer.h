@@ -7,8 +7,9 @@
 /* this module provides a higher level encapsulation for the configuration
  * file lexer. */
 
-#define MAX_INCLUDE_DEPTH 16
+#define MAX_INCLUDE_DEPTH 256
 
+typedef struct _CfgIncludeLevel CfgIncludeLevel;
 /* the location type to carry location information from the lexer to the grammar */
 #define YYLTYPE YYLTYPE
 typedef struct YYLTYPE
@@ -17,7 +18,7 @@ typedef struct YYLTYPE
   int first_column;
   int last_line;
   int last_column;
-  char *filename;
+  CfgIncludeLevel *level;
 } YYLTYPE;
 #define YYLTYPE_IS_TRIVIAL 1
 
@@ -55,13 +56,30 @@ typedef struct _CfgLexerKeyword
 #define MAX_REGEXP_LEN	1024
 
 /* structure that describes a given location in the include stack */
-typedef struct _CfgIncludeLevel
+struct _CfgIncludeLevel
 {
-  GSList *files;
+  enum
+  {
+    CFGI_FILE,
+    CFGI_BUFFER,
+  } include_type;
+  /* include file or block name */
+  gchar *name;
+  union
+  {
+    struct
+    {
+      GSList *files;
+      FILE *include_file;
+    } file;
+    struct
+    {
+      gchar *content;
+      gsize content_length;
+    } buffer;
+  };
   YYLTYPE lloc;
-  FILE *include_file;
   struct yy_buffer_state *yybuf;
-} CfgIncludeLevel;
 
 /*
  * A token block is a series of tokens to be injected into the tokens
@@ -105,9 +123,9 @@ int cfg_lexer_lookup_keyword_in_table(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *
 int cfg_lexer_lookup_keyword(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc, const char *token);
 
 /* include files */
+gboolean cfg_lexer_start_next_include(CfgLexer *self);
 gboolean cfg_lexer_include_file(CfgLexer *self, const gchar *filename);
-gboolean cfg_lexer_start_next_include(CfgLexer *self, gboolean first_on_this_level);
-
+gboolean cfg_lexer_include_buffer(CfgLexer *self, const gchar *name, gchar *buffer, gsize length);
 
 /* context tracking */
 void cfg_lexer_push_context(CfgLexer *self, gint context, CfgLexerKeyword *keywords, const gchar *desc);
