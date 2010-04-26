@@ -362,7 +362,7 @@ cfg_lexer_start_next_include(CfgLexer *self, gboolean first_on_this_level)
 }
 
 gboolean
-cfg_lexer_process_include(CfgLexer *self, const gchar *filename)
+cfg_lexer_include_file(CfgLexer *self, const gchar *filename)
 {
   struct stat st;
   gchar buf[1024];
@@ -480,6 +480,8 @@ cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
   YYSTYPE *token;
   gint tok;
 
+ relex:
+
   while (self->token_blocks)
     {
       block = self->token_blocks->data;
@@ -499,6 +501,32 @@ cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
     }
   tok = _cfg_lexer_lex(yylval, yylloc, self->state);
   yylval->type = tok;
+  if (tok == KW_INCLUDE)
+    {
+      gchar *include_file;
+
+      tok = cfg_lexer_lex(self, yylval, yylloc);
+      if (tok != LL_STRING && tok != LL_IDENTIFIER)
+        {
+          return LL_ERROR;
+        }
+
+      include_file = g_strdup(yylval->cptr);
+      free(yylval->cptr);
+
+      tok = cfg_lexer_lex(self, yylval, yylloc);
+      if (tok != ';')
+        {
+          return LL_ERROR;
+        }
+
+      if (!cfg_lexer_include_file(self, include_file))
+        {
+          return LL_ERROR;
+        }
+
+      goto relex;
+    }
   return tok;
 }
 

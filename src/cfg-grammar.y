@@ -189,6 +189,7 @@
 %token <fnum> LL_FLOAT                10423
 %token <cptr> LL_STRING               10424
 %token <token> LL_TOKEN               10425
+%token LL_ERROR                       10427
 
 
 /* END_DECLS */
@@ -231,7 +232,6 @@ LogWriterOptions *last_writer_options;
 LogTemplate *last_template;
 LogParser *last_parser;
 LogRewrite *last_rewrite;
-gchar *last_include_file;
 FilterExprNode *last_filter_expr;
 
 }
@@ -313,22 +313,8 @@ start
 	;
 
 stmts
-        : stmt ';'
-          {
-            if (last_include_file && !cfg_lexer_process_include(lexer, last_include_file))
-              {
-                free(last_include_file);
-                last_include_file = NULL;
-                YYERROR;
-              }
-            if (last_include_file)
-              {
-                free(last_include_file);
-                last_include_file = NULL;
-              }
-          }
-          stmts
-	|	
+        : stmt ';' stmts
+	|
 	;
 
 stmt
@@ -340,7 +326,6 @@ stmt
         | KW_REWRITE rewrite_stmt               { cfg_add_rewrite(configuration, $2); }
 	| KW_TEMPLATE template_stmt		{ cfg_add_template(configuration, $2); }
 	| KW_OPTIONS options_stmt		{  }
-	| KW_INCLUDE include_stmt		{  }
 	;
 
 source_stmt
@@ -376,8 +361,6 @@ log_stmt
         : '{' log_items log_forks log_flags '}'		{ LogPipeItem *pi = log_pipe_item_append_tail($2, $3); $$ = log_connection_new(pi, $4); }
 	;
 	
-include_stmt
-        : string                                { last_include_file = $1; }
 
 log_items
 	: log_item ';' log_items		{ log_pipe_item_append($1, $3); $$ = $1; }

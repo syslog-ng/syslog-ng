@@ -102,8 +102,8 @@ char *cfg_lexer_get_keyword_string(CfgLexer *self, int kw);
 int cfg_lexer_lookup_keyword(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc, char *token);
 
 /* include files */
+gboolean cfg_lexer_include_file(CfgLexer *self, const gchar *filename);
 gboolean cfg_lexer_start_next_include(CfgLexer *self, gboolean first_on_this_level);
-gboolean cfg_lexer_process_include(CfgLexer *self, const gchar *filename);
 
 /* location tracking */
 YYLTYPE *cfg_lexer_get_yylloc(CfgLexer *self);
