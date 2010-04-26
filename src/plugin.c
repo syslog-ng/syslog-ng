@@ -46,10 +46,12 @@ plugin_new_instance(CfgLexer *lexer, Plugin *plugin, YYLTYPE *yylloc)
 
       memset(&token, 0, sizeof(token));
       token.type = LL_TOKEN;
-      token.token = plugin_type;
+      token.token = plugin->type;
       cfg_token_block_add_token(block, &token);
-      cfg_lexer_add_token_block(lexer, block);
-      cfg_lexer_unput_string(lexer, plugin_name);
+      cfg_lexer_lookup_keyword_in_table(lexer, &token, yylloc, plugin->name, plugin->parser->keywords);
+      cfg_token_block_add_token(block, &token);
+
+      cfg_lexer_inject_token_block(lexer, block);
     }
   else
     {

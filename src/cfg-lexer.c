@@ -7,8 +7,39 @@
 #include <string.h>
 #include <sys/stat.h>
 
+struct _CfgBlockGeneratorArgs
+{
+  GHashTable *args;
+};
 
+/*
+ * A token block is a series of tokens to be injected into the tokens
+ * fetched by the lexer.  It is assumed to be filled and then depleted, the
+ * two operations cannot be intermixed.
+ */
+struct _CfgTokenBlock
+{
+  gint pos;
+  GArray *tokens;
+};
 
+/**
+ * CfgBlockGenerator:
+ *
+ * This class describes a block generator, e.g. a function callback
+ * that returns a configuration snippet in a given context. Each
+ * user-defined "block" results in a generator to be registered, but
+ * theoretically this mechanism can be used to write plugins that
+ * generate syslog-ng configuration on the fly, based on system
+ * settings for example.
+ **/
+struct _CfgBlockGenerator
+{
+  gint context;
+  gchar *name;
+  CfgBlockGeneratorFunc generator;
+  gpointer generator_data;
+  GDestroyNotify generator_data_free;
 };
 
 /**
@@ -422,14 +453,62 @@ cfg_lexer_include_buffer(CfgLexer *self, const gchar *name, gchar *buffer, gsize
 }
 
 void
-cfg_lexer_add_token_block(CfgLexer *self, CfgTokenBlock *block)
+cfg_lexer_inject_token_block(CfgLexer *self, CfgTokenBlock *block)
 {
   self->token_blocks = g_list_append(self->token_blocks, block);
+}
+
+void
+cfg_lexer_register_block_generator(CfgLexer *self, gint context, const gchar *name, CfgBlockGeneratorFunc generator, gpointer generator_data, GDestroyNotify generator_data_free)
+{
+  CfgBlockGenerator *gen = g_new0(CfgBlockGenerator, 1);
+
+  gen->context = context;
+  gen->name = g_strdup(name);
+  gen->generator = generator;
+  gen->generator_data = generator_data;
+  gen->generator_data_free = generator_data_free;
+
+  self->generators = g_list_append(self->generators, gen);
+}
+
+static CfgBlockGenerator *
+cfg_lexer_find_generator(CfgLexer *self, gint context, const gchar *name)
+{
+  GList *l;
+
+  for (l = self->generators; l; l = l->next)
+    {
+      CfgBlockGenerator *gen = (CfgBlockGenerator *) l->data;
+
+      if ((gen->context == 0 || gen->context == context) && strcmp(gen->name, name) == 0)
+        {
+          return gen;
+        }
+    }
+  return NULL;
+}
+
+static gboolean
+cfg_lexer_generate_block(CfgLexer *self, gint context, const gchar *name, CfgBlockGenerator *gen, CfgBlockGeneratorArgs *args)
+{
+  return gen->generator(self, context, name, args, gen->generator_data);
+}
+
+void
+cfg_lexer_unput_token(CfgLexer *self, YYSTYPE *yylval)
+{
+ CfgTokenBlock *block;
+
+ block = cfg_token_block_new();
+ cfg_token_block_add_token(block, yylval);
+ cfg_lexer_inject_token_block(self, block);
 }
 
 int
 cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
 {
+  CfgBlockGenerator *gen;
   CfgTokenBlock *block;
   YYSTYPE *token;
   gint tok;
@@ -547,9 +626,47 @@ cfg_lexer_free(CfgLexer *self)
   g_string_free(self->pattern_buffer, TRUE);
   while (self->context_stack)
     cfg_lexer_pop_context(self);
+  while (self->generators)
+    {
+      CfgBlockGenerator *gen = self->generators->data;
+
+      gen->generator_data_free(gen->generator_data);
+      g_free(gen->name);
+      g_free(gen);
+      self->generators = g_list_remove_link(self->generators, self->generators);
+    }
   g_free(self);
 }
 
+/* token block args */
+
+void
+cfg_block_generator_args_set_arg(CfgBlockGeneratorArgs *self, const gchar *name, const gchar *value)
+{
+  g_hash_table_insert(self->args, g_strdup(name), g_strdup(value));
+}
+
+const gchar *
+cfg_block_generator_args_get_arg(CfgBlockGeneratorArgs *self, const gchar *name)
+{
+  return g_hash_table_lookup(self->args, name);
+}
+
+CfgBlockGeneratorArgs *
+cfg_block_generator_args_new(void)
+{
+  CfgBlockGeneratorArgs *self = g_new0(CfgBlockGeneratorArgs, 1);
+
+  self->args = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
+  return self;
+}
+
+void
+cfg_block_generator_args_free(CfgBlockGeneratorArgs *self)
+{
+  g_hash_table_destroy(self->args);
+  g_free(self);
+}
 
 /* token blocks */
 

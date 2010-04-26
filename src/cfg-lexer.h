@@ -10,6 +10,12 @@
 #define MAX_INCLUDE_DEPTH 256
 
 typedef struct _CfgIncludeLevel CfgIncludeLevel;
+typedef struct _CfgTokenBlock CfgTokenBlock;
+typedef struct _CfgBlockGeneratorArgs CfgBlockGeneratorArgs;
+typedef struct _CfgBlockGenerator CfgBlockGenerator;
+typedef struct _CfgBlock CfgBlock;
+typedef struct _CfgLexer CfgLexer;
+
 /* the location type to carry location information from the lexer to the grammar */
 #define YYLTYPE YYLTYPE
 typedef struct YYLTYPE
@@ -53,6 +59,13 @@ typedef struct _CfgLexerKeyword
   gchar *kw_explain;
 } CfgLexerKeyword;
 
+/* a block generator is a function that includes a configuration file
+ * snippet in place to the block reference.  This is used by the
+ * "block" statement, but can also be used by external plugins to
+ * generate configuration snippets programmatically.  That code
+ * however is missing as of now.  (though would be trivial to add)
+ */
+typedef gboolean (*CfgBlockGeneratorFunc)(CfgLexer *lexer, gint type, const gchar *name, CfgBlockGeneratorArgs *args, gpointer user_data);
 #define MAX_REGEXP_LEN	1024
 
 /* structure that describes a given location in the include stack */
@@ -80,35 +93,28 @@ struct _CfgIncludeLevel
   };
   YYLTYPE lloc;
   struct yy_buffer_state *yybuf;
-
-/*
- * A token block is a series of tokens to be injected into the tokens
- * fetched by the lexer.  It is assumed to be filled and then depleted, the
- * two operations cannot be intermixed.
- */
-typedef struct _CfgTokenBlock
-{
-  gint pos;
-  GArray *tokens;
-} CfgTokenBlock;
+};
 
 /* Lexer class that encapsulates a flex generated lexer. This can be
  * instantiated multiple times in parallel, e.g.  doesn't use any global
  * state as we're using the "reentrant" code by flex
  */
-typedef struct _CfgLexer
+struct _CfgLexer
 {
+  /* flex state, not using yyscan_t as it is not defined */
   gpointer state;
   CfgIncludeLevel include_stack[MAX_INCLUDE_DEPTH];
   GList *context_stack;
   gint include_depth;
   gint brace_count;
   GList *token_blocks;
+  GList *generators;
   GString *pattern_buffer;
-} CfgLexer;
-
+};
 
 /* pattern buffer */
+void cfg_lexer_unput_token(CfgLexer *self, YYSTYPE *yylval);
+
 void _cfg_lexer_force_block_state(gpointer state);
 
 void cfg_lexer_unput_string(CfgLexer *self, const char *string);
@@ -133,13 +139,23 @@ void cfg_lexer_pop_context(CfgLexer *self);
 const gchar *cfg_lexer_get_context_description(CfgLexer *self);
 gint cfg_lexer_get_context_type(CfgLexer *self);
 
+/* token blocks */
+void cfg_lexer_inject_token_block(CfgLexer *self, CfgTokenBlock *block);
+void cfg_lexer_register_block_generator(CfgLexer *self, gint context, const gchar *name, CfgBlockGeneratorFunc generator, gpointer user_data, GDestroyNotify user_data_free);
 
-/* */
-void cfg_lexer_add_token_block(CfgLexer *self, CfgTokenBlock *block);
+
 int cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc);
 
 CfgLexer *cfg_lexer_new(FILE *file, const gchar *filename, gint init_line_num);
 void  cfg_lexer_free(CfgLexer *self);
+
+/* argument list for a block generator */
+void cfg_block_generator_args_set_arg(CfgBlockGeneratorArgs *self, const gchar *name, const gchar *value);
+const gchar *cfg_block_generator_args_get_arg(CfgBlockGeneratorArgs *self, const gchar *name);
+CfgBlockGeneratorArgs *cfg_block_generator_args_new(void);
+void cfg_block_generator_args_free(CfgBlockGeneratorArgs *self);
+
+/* token block objects */
 
 void cfg_token_block_add_token(CfgTokenBlock *self, YYSTYPE *token);
 YYSTYPE *cfg_token_block_get_token(CfgTokenBlock *self);
