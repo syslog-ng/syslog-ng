@@ -281,6 +281,8 @@ FilterExprNode *last_filter_expr;
 %type	<ptr> options_item
 
 %type	<ptr> parser_expr
+%type	<ptr> parser_expr_csv
+%type	<ptr> parser_expr_db
 %type   <num> parser_csv_flags
 
 %type   <ptr> rewrite_expr
@@ -420,6 +422,7 @@ template_item
 
 source_items
         : source_item ';' source_items		{ if ($1) {log_drv_append($1, $3); log_drv_unref($3); $$ = $1; } else { YYERROR; } }
+        | ';' source_items                      { $$ = $2; }
 	|					{ $$ = NULL; }
 	;
 
@@ -507,6 +510,7 @@ source_afprogram_params
 
 dest_items
 	: dest_item ';' dest_items		{ log_drv_append($1, $3); log_drv_unref($3); $$ = $1; }
+        | ';' dest_items                        { $$ = $2; }
 	|					{ $$ = NULL; }
 	;
 
@@ -685,13 +689,26 @@ options_item
 
 
 parser_expr
+        : parser_expr_csv parser_expr_semicolons
+        | parser_expr_db parser_expr_semicolons
+        ;
+
+parser_expr_semicolons
+        : ';' parser_expr_semicolons
+        |
+        ;
+
+parser_expr_csv
         : KW_CSV_PARSER '('
           {
             last_parser = (LogParser *) log_csv_parser_new();
           }
           parser_csv_opts
           ')'					{ $$ = last_parser; }
-        | KW_DB_PARSER '('
+        ;
+
+parser_expr_db
+        : KW_DB_PARSER '('
           {
             last_parser = (LogParser *) log_db_parser_new();
           }
@@ -751,8 +768,9 @@ rewrite_expr_list
         ;
 
 rewrite_expr_list_build
-        : rewrite_expr rewrite_expr_list_build  { $$ = g_list_append($2, $1); }
-        |                                       { $$ = NULL; }
+        : rewrite_expr ';' rewrite_expr_list_build  { $$ = g_list_append($3, $1); }
+        | ';' rewrite_expr_list_build               { $$ = $2; }
+        |                                           { $$ = NULL; }
         ;
 
 rewrite_expr
@@ -761,7 +779,7 @@ rewrite_expr
             last_rewrite = log_rewrite_subst_new($4);
             free($4);
           }
-          rewrite_expr_opts ')' ';'
+          rewrite_expr_opts ')'
           {
             if(!log_rewrite_set_regexp(last_rewrite, $3))
               YYERROR;
@@ -773,7 +791,7 @@ rewrite_expr
             last_rewrite = log_rewrite_set_new($3);
             free($3);
           }
-          rewrite_expr_opts ')' ';'             { $$ = last_rewrite; }
+          rewrite_expr_opts ')'                 { $$ = last_rewrite; }
         ;
 
 rewrite_expr_opts
