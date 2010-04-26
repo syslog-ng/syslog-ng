@@ -18,6 +18,7 @@ static CfgLexerKeyword afstreams_keywords[] = {
 CfgParser afstreams_parser =
 {
   .debug_flag = &afstreams_debug,
+  .name = "afstreams",
   .keywords = afstreams_keywords,
   .parse = (gint (*)(CfgLexer *, gpointer *)) afstreams_parse,
   .cleanup = (void (*)(gpointer)) log_pipe_unref,

@@ -1,6 +1,7 @@
 #include "plugin.h"
 #include "driver.h"
 #include "messages.h"
+#include "cfg-lexer.h"
 
 #include <gmodule.h>
 
@@ -15,7 +16,7 @@ plugin_register(Plugin *p, gint number)
     plugins = g_list_prepend(plugins, &p[i]);
 }
 
-static Plugin *
+Plugin *
 plugin_find(gint plugin_type, const gchar *plugin_name)
 {
   GList *p;
@@ -31,22 +32,12 @@ plugin_find(gint plugin_type, const gchar *plugin_name)
 }
 
 gpointer
-plugin_new_instance(CfgLexer *lexer, gint plugin_type, const gchar *plugin_name)
+plugin_new_instance(CfgLexer *lexer, Plugin *plugin, YYLTYPE *yylloc)
 {
-  Plugin *p;
   gpointer instance = NULL;
 
   /* make sure '_' and '-' are handled equally in plugin name */
-  p = plugin_find(plugin_type, plugin_name);
-  if (!p)
-    {
-      msg_error("Error constructing plugin instance",
-                evt_tag_str("plugin", plugin_name),
-                NULL);
-      return NULL;
-    }
-
-  if (!p->setup_context)
+  if (!plugin->setup_context)
     {
       CfgTokenBlock *block;
       YYSTYPE token;
@@ -62,12 +53,12 @@ plugin_new_instance(CfgLexer *lexer, gint plugin_type, const gchar *plugin_name)
     }
   else
     {
-      (p->setup_context)(p, lexer, plugin_type, plugin_name);
+      (plugin->setup_context)(plugin, lexer, plugin->type, plugin->name);
     }
 
-  if (!cfg_parser_parse(p->parser, lexer, &instance))
+  if (!cfg_parser_parse(plugin->parser, lexer, &instance))
     {
-      cfg_parser_cleanup(p->parser, instance);
+      cfg_parser_cleanup(plugin->parser, instance);
       instance = NULL;
     }
 

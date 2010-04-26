@@ -24,6 +24,7 @@ static CfgLexerKeyword afsql_keywords[] = {
 CfgParser afsql_parser =
 {
   .debug_flag = &afsql_debug,
+  .name = "afsql",
   .keywords = afsql_keywords,
   .parse = (gint (*)(CfgLexer *, gpointer *)) afsql_parse,
   .cleanup = (void (*)(gpointer)) log_pipe_unref,

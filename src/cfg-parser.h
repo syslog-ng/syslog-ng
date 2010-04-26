@@ -10,6 +10,8 @@ typedef struct _CfgParser
 {
   /* how to enable bison debug in the parser */
   gint *debug_flag;
+  gint context;
+  const gchar *name;
 
   /* parser specific keywords to be pushed to the lexer */
   CfgLexerKeyword *keywords;
@@ -28,8 +30,21 @@ extern int yydebug;
 static inline gboolean
 cfg_parser_parse(CfgParser *self, CfgLexer *lexer, gpointer *instance)
 {
+  gboolean success;
+
+  if (yydebug)
+    {
+      fprintf(stderr, "\n\nStarting parser %s\n", self->name);
+    }
   (*self->debug_flag) = yydebug;
-  return self->parse(lexer, instance) == 0;
+  cfg_lexer_push_context(lexer, self->context, self->keywords, self->name);
+  success = (self->parse(lexer, instance) == 0);
+  cfg_lexer_pop_context(lexer);
+  if (yydebug)
+    {
+      fprintf(stderr, "\nStopping parser %s, result: %d\n", self->name, success);
+    }
+  return success;
 }
 
 static inline void
@@ -55,9 +70,7 @@ extern CfgParser main_parser;
     {                                                                         \
       int token;                                                              \
                                                                               \
-      cfg_lexer_set_current_keywords(lexer, parser_prefix ## parser.keywords);\
       token = cfg_lexer_lex(lexer, yylval, yylloc);                           \
-      cfg_lexer_set_current_keywords(lexer, NULL);                            \
       return token;                                                           \
     }                                                                         \
                                                                               \

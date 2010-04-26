@@ -23,6 +23,8 @@ static CfgLexerKeyword filter_expr_keywords[] = {
 CfgParser filter_expr_parser =
 {
   .debug_flag = &filter_expr_debug,
+  .name = "filter expression",
+  .context = LL_CONTEXT_FILTER,
   .keywords = filter_expr_keywords,
   .parse = (gint (*)(CfgLexer *, gpointer *)) filter_expr_parse,
 };

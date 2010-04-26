@@ -86,7 +86,6 @@ typedef struct _CfgLexer
   gint include_depth;
   GList *token_blocks;
   GString *pattern_buffer;
-  CfgLexerKeyword *current_keywords;
 } CfgLexer;
 
 
@@ -99,17 +98,16 @@ void cfg_lexer_append_char(CfgLexer *self, char c);
 /* keyword handling */
 void cfg_lexer_set_current_keywords(CfgLexer *self, CfgLexerKeyword *keywords);
 char *cfg_lexer_get_keyword_string(CfgLexer *self, int kw);
-int cfg_lexer_lookup_keyword(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc, char *token);
+int cfg_lexer_lookup_keyword_in_table(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *lloc, const char *token, CfgLexerKeyword *keywords);
+int cfg_lexer_lookup_keyword(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc, const char *token);
 
 /* include files */
 gboolean cfg_lexer_include_file(CfgLexer *self, const gchar *filename);
 gboolean cfg_lexer_start_next_include(CfgLexer *self, gboolean first_on_this_level);
 
-/* location tracking */
-YYLTYPE *cfg_lexer_get_yylloc(CfgLexer *self);
 
 /* context tracking */
-void cfg_lexer_push_context(CfgLexer *self, gint context, const gchar *desc);
+void cfg_lexer_push_context(CfgLexer *self, gint context, CfgLexerKeyword *keywords, const gchar *desc);
 void cfg_lexer_pop_context(CfgLexer *self);
 const gchar *cfg_lexer_get_context_description(CfgLexer *self);
 gint cfg_lexer_get_context_type(CfgLexer *self);

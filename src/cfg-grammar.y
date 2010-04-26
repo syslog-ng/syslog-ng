@@ -19,11 +19,12 @@
 
 /* plugin types, must be equal to the numerical values of the plugin type in plugin.h */
 
-%token LL_CONTEXT_DESTINATION         1
-%token LL_CONTEXT_SOURCE              2
-%token LL_CONTEXT_PARSER              3
-%token LL_CONTEXT_REWRITE             4
-%token LL_CONTEXT_FILTER              5
+%token LL_CONTEXT_ROOT                1
+%token LL_CONTEXT_DESTINATION         2
+%token LL_CONTEXT_SOURCE              3
+%token LL_CONTEXT_PARSER              4
+%token LL_CONTEXT_REWRITE             5
+%token LL_CONTEXT_FILTER              6
 
 /* statements */
 %token KW_SOURCE                      10000
@@ -336,15 +337,12 @@ filter_stmt
 	: string '{'
 	  {
 	    last_filter_expr = NULL;
-	    cfg_lexer_push_context(lexer, LL_CONTEXT_FILTER, "filter expression");
 	    if (!cfg_parser_parse(&filter_expr_parser, lexer, (gpointer *) &last_filter_expr))
               {
-                cfg_lexer_pop_context(lexer);
                 YYERROR;
               }
-            cfg_lexer_pop_context(lexer);
 	  }
-	  '}'                               { $$ = log_filter_rule_new($1, last_filter_expr); free($1); }
+          '}'                               { $$ = log_filter_rule_new($1, last_filter_expr); free($1); }
 	;
 	
 parser_stmt
@@ -435,12 +433,19 @@ source_item
 source_plugin
         : LL_IDENTIFIER
           {
-            gchar errbuf[256];
+            gchar buf[256];
+            Plugin *p;
+            gint context = LL_CONTEXT_SOURCE;
 
-            g_snprintf(errbuf, sizeof(errbuf), "plugin %s", $1);
-            cfg_lexer_push_context(lexer, LL_CONTEXT_SOURCE, errbuf);
-            last_driver = (LogDriver *) plugin_new_instance(lexer, LL_CONTEXT_SOURCE, $1);
-            cfg_lexer_pop_context(lexer);
+            p = plugin_find(context, $1);
+            if (!p)
+              {
+                g_snprintf(buf, sizeof(buf), "%s plugin %s not found", cfg_lexer_lookup_context_name_by_type(context), $1);
+                yyerror(&@1, lexer, NULL, buf);
+                YYERROR;
+              }
+
+            last_driver = (LogDriver *) plugin_new_instance(lexer, p, &@1);
             free($1);
             if (!last_driver)
               {
@@ -516,12 +521,20 @@ dest_item
 dest_plugin
         : LL_IDENTIFIER
           {
-            gchar errbuf[256];
 
-            g_snprintf(errbuf, sizeof(errbuf), "plugin %s", $1);
-            cfg_lexer_push_context(lexer, LL_CONTEXT_DESTINATION, errbuf);
-            last_driver = (LogDriver *) plugin_new_instance(lexer, LL_CONTEXT_DESTINATION, $1);
-            cfg_lexer_pop_context(lexer);
+            gchar buf[256];
+            Plugin *p;
+            gint context = LL_CONTEXT_DESTINATION;
+
+            p = plugin_find(context, $1);
+            if (!p)
+              {
+                g_snprintf(buf, sizeof(buf), "%s plugin %s not found", cfg_lexer_lookup_context_name_by_type(context), $1);
+                yyerror(&@1, lexer, NULL, buf);
+                YYERROR;
+              }
+
+            last_driver = (LogDriver *) plugin_new_instance(lexer, p, &@1);
             free($1);
             if (!last_driver)
               {

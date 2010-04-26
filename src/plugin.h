@@ -37,7 +37,9 @@ struct _Plugin
   CfgParser *parser;
 };
 
-gpointer plugin_new_instance(CfgLexer *lexer, gint plugin_type, const gchar *plugin_name);
+Plugin *plugin_find(gint plugin_type, const gchar *plugin_name);
+gpointer plugin_new_instance(CfgLexer *lexer, Plugin *plugin, YYLTYPE *yylloc);
+
 
 void plugin_register(Plugin *p, int number);
 gboolean plugin_load_module(const gchar *module_name);
