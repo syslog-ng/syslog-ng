@@ -445,7 +445,17 @@ cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
         {
           *yylval = *token;
           *yylloc = self->include_stack[self->include_depth].lloc;
-          return token->type == LL_TOKEN ? token->token : token->type;
+          tok = token->type;
+          if (token->type == LL_TOKEN)
+            {
+              tok = token->token;
+            }
+          else if (token->type == LL_IDENTIFIER || token->type == LL_STRING)
+            {
+              yylval->cptr = strdup(token->cptr);
+            }
+
+          goto exit;
         }
       else
         {
