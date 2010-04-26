@@ -149,6 +149,9 @@ int cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc);
 CfgLexer *cfg_lexer_new(FILE *file, const gchar *filename, gint init_line_num);
 void  cfg_lexer_free(CfgLexer *self);
 
+gint cfg_lexer_lookup_context_type_by_name(const gchar *name);
+const gchar *cfg_lexer_lookup_context_name_by_type(gint id);
+
 /* argument list for a block generator */
 void cfg_block_generator_args_set_arg(CfgBlockGeneratorArgs *self, const gchar *name, const gchar *value);
 const gchar *cfg_block_generator_args_get_arg(CfgBlockGeneratorArgs *self, const gchar *name);
@@ -162,6 +165,13 @@ YYSTYPE *cfg_token_block_get_token(CfgTokenBlock *self);
 
 CfgTokenBlock *cfg_token_block_new(void);
 void cfg_token_block_free(CfgTokenBlock *self);
+
+/* user defined configuration block */
+
+gboolean cfg_block_generate(CfgLexer *self, gint context, const gchar *name, CfgBlockGeneratorArgs *args, gpointer user_data);
+CfgBlock *cfg_block_new(const gchar *content, CfgBlockGeneratorArgs *arg_defs);
+void cfg_block_free(CfgBlock *self);
+
 
 
 #endif

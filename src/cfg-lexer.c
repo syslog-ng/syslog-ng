@@ -1,6 +1,7 @@
 #include "cfg-lexer.h"
 #include "cfg-lex.h"
 #include "cfg-grammar.h"
+#include "block-ref-parser.h"
 #include "messages.h"
 #include "cfg.h"
 
@@ -556,8 +557,13 @@ cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
           cfg_token_block_free(block);
         }
     }
+
+  if (cfg_lexer_get_context_type(self) == LL_CONTEXT_BLOCK_CONTENT)
+    _cfg_lexer_force_block_state(self->state);
+
   tok = _cfg_lexer_lex(yylval, yylloc, self->state);
   yylval->type = tok;
+ exit:
   if (tok == KW_INCLUDE)
     {
       gchar *include_file;
@@ -583,6 +589,23 @@ cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
         }
 
       goto relex;
+    }
+  else if (tok == LL_IDENTIFIER && (gen = cfg_lexer_find_generator(self, cfg_lexer_get_context_type(self), yylval->cptr)))
+    {
+      CfgBlockGeneratorArgs *args;
+
+      if (cfg_parser_parse(&block_ref_parser, self, (gpointer *) &args))
+        {
+          gboolean success;
+
+          success = cfg_lexer_generate_block(self, cfg_lexer_get_context_type(self), yylval->cptr, gen, args);
+          cfg_block_generator_args_free(args);
+          if (success)
+            {
+              goto relex;
+            }
+        }
+      return LL_ERROR;
     }
   return tok;
 }
@@ -650,6 +673,38 @@ cfg_lexer_free(CfgLexer *self)
       self->generators = g_list_remove_link(self->generators, self->generators);
     }
   g_free(self);
+}
+
+static const gchar *lexer_contexts[] =
+{
+  [LL_CONTEXT_DESTINATION] = "destination",
+  [LL_CONTEXT_SOURCE] = "source",
+  [LL_CONTEXT_PARSER] = "parser",
+  [LL_CONTEXT_REWRITE] = "rewrite",
+  [LL_CONTEXT_FILTER] = "filter",
+  [LL_CONTEXT_BLOCK_DEF] = "block-def",
+  [LL_CONTEXT_BLOCK_REF] = "block-ref",
+  [LL_CONTEXT_BLOCK_CONTENT] = "block-content",
+};
+
+gint
+cfg_lexer_lookup_context_type_by_name(const gchar *name)
+{
+  gint i;
+
+  for (i = 0; i < G_N_ELEMENTS(lexer_contexts); i++)
+    {
+      if (lexer_contexts[i] && strcmp(lexer_contexts[i], name) == 0)
+        return i;
+    }
+  return 0;
+}
+
+const gchar *
+cfg_lexer_lookup_context_name_by_type(gint type)
+{
+  g_assert(type < G_N_ELEMENTS(lexer_contexts));
+  return lexer_contexts[type];
 }
 
 /* token block args */
@@ -728,5 +783,160 @@ cfg_token_block_free(CfgTokenBlock *self)
 
     }
   g_array_free(self->tokens, TRUE);
+  g_free(self);
+}
+
+/* user defined blocks */
+
+/*
+ * This class encapsulates a configuration block that the user defined
+ * via the configuration file. It behaves like a macro, e.g. when
+ * referenced the content of the block is expanded.
+ *
+ * Each block is identified by its name and the context (source,
+ * destination, etc.) where it is meant to be used.
+ *
+ * A block has a set of name-value pairs to allow expansion to be
+ * parameterized. The set of allowed NV pairs is defined at block
+ * definition time
+ */
+struct _CfgBlock
+{
+  gchar *content;
+  CfgBlockGeneratorArgs *arg_defs;
+};
+
+static gchar *
+cfg_block_subst_args(CfgBlockGeneratorArgs *defs, CfgBlockGeneratorArgs *args, gchar *cptr, gsize *length)
+{
+  gboolean backtick = FALSE;
+  gchar *p, *ref_start;
+  GString *result = g_string_sized_new(32);
+
+  p = cptr;
+  while (*p)
+    {
+      if (!backtick && (*p) == '`')
+        {
+          /* start of reference */
+          backtick = TRUE;
+          ref_start = p + 1;
+        }
+      else if (backtick && (*p) == '`')
+        {
+          /* end of reference */
+          backtick = FALSE;
+
+          if (ref_start == p)
+            {
+              /* empty ref, just include a ` character */
+              g_string_append_c(result, '`');
+            }
+          else
+            {
+              const gchar *arg, *def;
+
+              *p = 0;
+              def = cfg_block_generator_args_get_arg(defs, ref_start);
+              arg = cfg_block_generator_args_get_arg(args, ref_start);
+              *p = '`';
+              g_string_append(result, arg ? arg : (def ? def : ""));
+            }
+        }
+      else if (!backtick)
+        g_string_append_c(result, *p);
+      p++;
+    }
+
+  if (backtick)
+    {
+      g_string_free(result, TRUE);
+      return NULL;
+    }
+
+  *length = result->len;
+  return g_string_free(result, FALSE);
+}
+
+static void
+cfg_block_validate_arg(gpointer k, gpointer v, gpointer user_data)
+{
+  CfgBlockGeneratorArgs *defs = ((gpointer *) user_data)[0];
+  gchar **bad_key = (gchar **) &((gpointer *) user_data)[1];
+  gchar **bad_value = (gchar **) &((gpointer *) user_data)[2];
+
+  if ((*bad_key == NULL) && cfg_block_generator_args_get_arg(defs, k) == NULL)
+    {
+      *bad_key = k;
+      *bad_value = v;
+    }
+}
+
+/*
+ * cfg_block_generate:
+ *
+ * This is a CfgBlockGeneratorFunc, which takes a CfgBlock defined by
+ * the user, substitutes backtick values and generates input tokens
+ * for the lexer.
+ */
+gboolean
+cfg_block_generate(CfgLexer *lexer, gint context, const gchar *name, CfgBlockGeneratorArgs *args, gpointer user_data)
+{
+  CfgBlock *block = (CfgBlock *) user_data;
+  gchar *value;
+  gpointer validate_params[] = { block->arg_defs, NULL, NULL };
+  gchar buf[256];
+  gsize length;
+
+  g_hash_table_foreach(args->args, cfg_block_validate_arg, validate_params);
+
+  if (validate_params[1])
+    {
+      msg_warning("Unknown block argument",
+                  evt_tag_str("context", cfg_lexer_lookup_context_name_by_type(context)),
+                  evt_tag_str("block", name),
+                  evt_tag_str("arg", validate_params[1]),
+                  evt_tag_str("value", validate_params[2]),
+                  NULL);
+      return FALSE;
+    }
+
+  value = cfg_block_subst_args(block->arg_defs, args, block->content, &length);
+
+  if (!value)
+    {
+      msg_warning("Syntax error while resolving backtick references in block, missing closing '`' character",
+                  evt_tag_str("context", cfg_lexer_lookup_context_name_by_type(context)),
+                  evt_tag_str("block", name),
+                  NULL);
+      return FALSE;
+    }
+
+  g_snprintf(buf, sizeof(buf), "%s block %s", cfg_lexer_lookup_context_name_by_type(context), name);
+  cfg_lexer_include_buffer(lexer, buf, value, length);
+  return TRUE;
+}
+
+/*
+ * Construct a user defined block.
+ */
+CfgBlock *
+cfg_block_new(const gchar *content, CfgBlockGeneratorArgs *arg_defs)
+{
+  CfgBlock *self = g_new0(CfgBlock, 1);
+
+  self->content = g_strdup(content);
+  self->arg_defs = arg_defs;
+  return self;
+}
+
+/*
+ * Free a user defined block.
+ */
+void
+cfg_block_free(CfgBlock *self)
+{
+  g_free(self->content);
+  cfg_block_generator_args_free(self->arg_defs);
   g_free(self);
 }

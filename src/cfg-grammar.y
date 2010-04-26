@@ -25,6 +25,9 @@
 %token LL_CONTEXT_PARSER              4
 %token LL_CONTEXT_REWRITE             5
 %token LL_CONTEXT_FILTER              6
+%token LL_CONTEXT_BLOCK_DEF           7
+%token LL_CONTEXT_BLOCK_REF           8
+%token LL_CONTEXT_BLOCK_CONTENT       9
 
 /* statements */
 %token KW_SOURCE                      10000
@@ -34,6 +37,7 @@
 %token KW_LOG                         10004
 %token KW_OPTIONS                     10005
 %token KW_INCLUDE                     10006
+%token KW_BLOCK                       10007
 
 /* source & destination items */
 %token KW_INTERNAL                    10010
@@ -190,8 +194,8 @@
 %token <fnum> LL_FLOAT                10423
 %token <cptr> LL_STRING               10424
 %token <token> LL_TOKEN               10425
+%token <cptr> LL_BLOCK                10426
 %token LL_ERROR                       10427
-
 
 /* END_DECLS */
 
@@ -234,6 +238,7 @@ LogTemplate *last_template;
 LogParser *last_parser;
 LogRewrite *last_rewrite;
 FilterExprNode *last_filter_expr;
+CfgBlockGeneratorArgs *last_block_args;
 
 }
 
@@ -329,10 +334,14 @@ stmt
         | KW_REWRITE rewrite_stmt               { cfg_add_rewrite(configuration, $2); }
 	| KW_TEMPLATE template_stmt		{ cfg_add_template(configuration, $2); }
 	| KW_OPTIONS options_stmt		{  }
+	| KW_BLOCK block_stmt                   {  }
 	;
 
 source_stmt
-	: string '{' source_items '}'		{ $$ = log_source_group_new($1, $3); free($1); }
+	: string
+          { cfg_lexer_push_context(lexer, LL_CONTEXT_SOURCE, NULL, "source"); }
+          '{' source_items '}'
+          { cfg_lexer_pop_context(lexer); }     { $$ = log_source_group_new($1, $4); free($1); }
 	;
 
 filter_stmt
@@ -348,19 +357,60 @@ filter_stmt
 	;
 	
 parser_stmt
-        : string '{' parser_expr ';' '}'	{ $$ = log_parser_rule_new($1, $3); free($1); }
+        : string '{'
+          { cfg_lexer_push_context(lexer, LL_CONTEXT_PARSER, NULL, "parser expression"); }
+          parser_expr
+          { cfg_lexer_pop_context(lexer); }
+          '}'	                                { $$ = log_parser_rule_new($1, $4); free($1); }
 
 rewrite_stmt
-        : string '{' rewrite_expr_list '}'	{ $$ = log_rewrite_rule_new($1, $3); free($1); }
+        : string
+          { cfg_lexer_push_context(lexer, LL_CONTEXT_REWRITE, NULL, "rewrite"); }
+          '{' rewrite_expr_list '}'
+          { cfg_lexer_pop_context(lexer); }
+                                                { $$ = log_rewrite_rule_new($1, $4); free($1); }
 
 dest_stmt
-        : string '{' dest_items '}'		{ $$ = log_dest_group_new($1, $3); free($1); }
+        : string
+          { cfg_lexer_push_context(lexer, LL_CONTEXT_DESTINATION, NULL, "destination"); }
+          '{' dest_items '}'
+          { cfg_lexer_pop_context(lexer); }         { $$ = log_dest_group_new($1, $4); free($1); }
 	;
 
 log_stmt
         : '{' log_items log_forks log_flags '}'		{ LogPipeItem *pi = log_pipe_item_append_tail($2, $3); $$ = log_connection_new(pi, $4); }
 	;
 	
+block_stmt
+        : { cfg_lexer_push_context(lexer, LL_CONTEXT_BLOCK_DEF, NULL, "block definition"); }
+          LL_IDENTIFIER LL_IDENTIFIER
+          '(' { last_block_args = cfg_block_generator_args_new(); } block_args ')'
+          { cfg_lexer_push_context(lexer, LL_CONTEXT_BLOCK_CONTENT, NULL, "block content"); }
+          LL_BLOCK
+                                                          {
+                                                            CfgBlock *block;
+
+                                                            /* block content */
+                                                            cfg_lexer_pop_context(lexer);
+                                                            /* block definition */
+                                                            cfg_lexer_pop_context(lexer);
+
+                                                            block = cfg_block_new($9, last_block_args);
+                                                            cfg_lexer_register_block_generator(lexer, cfg_lexer_lookup_context_type_by_name($2), $3, cfg_block_generate, block, (GDestroyNotify) cfg_block_free);
+                                                            free($9);
+                                                            last_block_args = NULL;
+                                                          }
+        ;
+
+block_args
+        : block_arg block_args
+        |
+        ;
+
+block_arg
+        : LL_IDENTIFIER '(' string_or_number ')'          { cfg_block_generator_args_set_arg(last_block_args, $1, $3); free($1); free($3); }
+        | LL_IDENTIFIER '(' ')'                           {}
+        ;
 
 log_items
 	: log_item ';' log_items		{ log_pipe_item_append($1, $3); $$ = $1; }
