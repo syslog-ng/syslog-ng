@@ -64,7 +64,15 @@ word	[^ \#'"\(\)\{\}\\;\n\t,|\.]
 %x qstring
 %%
 
-\#.*$                      ;
+\#                         {
+                             char ch;
+
+                             ch = input(yyscanner);
+                             while (ch != '\n' && ch != EOF)
+                               {
+                                 ch = input(yyscanner);
+                               }
+                           }
 \r?\n                      {
                              yyextra->include_stack[yyextra->include_depth].lloc.first_line++;
                              yyextra->include_stack[yyextra->include_depth].lloc.last_line++;
