@@ -62,6 +62,10 @@ word	[^ \#'"\(\)\{\}\\;\n\t,|\.]
 
 %x string
 %x qstring
+%x block
+%x block_content
+%x block_string
+%x block_qstring
 %%
 
 \#                         {
@@ -73,7 +77,8 @@ word	[^ \#'"\(\)\{\}\\;\n\t,|\.]
                                  ch = input(yyscanner);
                                }
                            }
-\r?\n                      {
+<*>\r?\n                   {
+                             cfg_lexer_append_string(yyextra, strlen(yytext), yytext);
                              yyextra->include_stack[yyextra->include_depth].lloc.first_line++;
                              yyextra->include_stack[yyextra->include_depth].lloc.last_line++;
                              yyextra->include_stack[yyextra->include_depth].lloc.first_column = 1;
@@ -125,6 +130,63 @@ word	[^ \#'"\(\)\{\}\\;\n\t,|\.]
 			   }
 
 
+     /* rules to parse a block as a LL_BLOCK token */
+<block>{white}+            ;
+<block>[^{ \t]+            { return LL_ERROR; }
+<block>\{                  {
+				g_string_truncate(yyextra->pattern_buffer, 0);
+                                yyextra->brace_count = 1;
+                                yy_push_state(block_content, yyscanner);
+                           }
+
+<block_content>\"          {
+                                cfg_lexer_append_char(yyextra, yytext[0]);
+                                yy_push_state(block_string, yyscanner);
+                           }
+
+<block_content>\'          {
+                                cfg_lexer_append_char(yyextra, yytext[0]);
+                                yy_push_state(block_qstring, yyscanner);
+                           }
+
+<block_string>[^"]+        {    cfg_lexer_append_string(yyextra, strlen(yytext), yytext); }
+<block_string>\\\"         {    cfg_lexer_append_string(yyextra, strlen(yytext), yytext); }
+<block_string>\"           {
+                                cfg_lexer_append_char(yyextra, yytext[0]);
+                                yy_pop_state(yyscanner);
+                           }
+
+<block_qstring>\'          {
+                                cfg_lexer_append_char(yyextra, yytext[0]);
+                                yy_pop_state(yyscanner);
+                           }
+<block_qstring>[^']+       {
+                                cfg_lexer_append_string(yyextra, strlen(yytext), yytext);
+                           }
+
+
+<block_content>\{          {
+                                cfg_lexer_append_char(yyextra, yytext[0]);
+                                yyextra->brace_count++;
+                           }
+<block_content>\}          {
+                                yyextra->brace_count--;
+                                if (yyextra->brace_count == 0)
+                                  {
+                                    yy_pop_state(yyscanner);
+                                    yy_pop_state(yyscanner);
+                                    yylval->cptr = strdup(yyextra->pattern_buffer->str);
+                                    return LL_BLOCK;
+                                  }
+                                else
+                                  {
+                                    cfg_lexer_append_char(yyextra, yytext[0]);
+                                  }
+
+                           }
+
+<block_content>[^}\"\'\n\r]+   { cfg_lexer_append_string(yyextra, strlen(yytext), yytext); }
+
 <INITIAL><<EOF>>           { if (!cfg_lexer_start_next_include(yyextra, FALSE)) yyterminate(); }
 
 %%
@@ -143,3 +205,12 @@ cfg_lexer_unput_string(CfgLexer *self, const char *str)
       self->include_stack[self->include_depth].lloc.last_column--;
     }
 }
+
+void
+_cfg_lexer_force_block_state(yyscan_t yyscanner)
+{
+  yy_push_state(block, yyscanner);
+}
+
+/* avoid warnings of unused symbols */
+gpointer __dummy[] = { input, yy_top_state };

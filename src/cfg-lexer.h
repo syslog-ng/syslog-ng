@@ -84,12 +84,15 @@ typedef struct _CfgLexer
   CfgIncludeLevel include_stack[MAX_INCLUDE_DEPTH];
   GList *context_stack;
   gint include_depth;
+  gint brace_count;
   GList *token_blocks;
   GString *pattern_buffer;
 } CfgLexer;
 
 
 /* pattern buffer */
+void _cfg_lexer_force_block_state(gpointer state);
+
 void cfg_lexer_unput_string(CfgLexer *self, const char *string);
 void cfg_lexer_append_string(CfgLexer *self, int length, char *str);
 void cfg_lexer_append_char(CfgLexer *self, char c);
