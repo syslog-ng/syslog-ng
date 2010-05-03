@@ -168,6 +168,7 @@ main_loop_run(GlobalConfig **cfg)
 	  app_post_config_loaded();
           msg_notice("Configuration reload request received, reloading configuration", 
                        NULL);
+          reset_cached_hostname();
           sig_hup_received = FALSE;
           if ((*cfg)->stats_freq > 0)
             {

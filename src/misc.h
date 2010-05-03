@@ -32,14 +32,16 @@
 
 GString *g_string_assign_len(GString *s, const gchar *val, gint len);
 
-char *getlonghostname(char *buf, size_t buflen);
-char *getshorthostname(char *buf, size_t buflen);
 gboolean g_fd_set_nonblock(int fd, gboolean enable);
 gboolean g_fd_set_cloexec(int fd, gboolean enable);
 
 gboolean resolve_user(const char *user, uid_t *uid);
 gboolean resolve_group(const char *group, gid_t *gid);
 gboolean resolve_user_group(char *arg, uid_t *uid, gid_t *gid);
+
+/* name resolution */
+void reset_cached_hostname(void);
+void getlonghostname(gchar *buf, gsize buflen);
 gboolean resolve_sockaddr(gchar **result, GSockAddr *saddr, gboolean usedns, gboolean usefqdn, gboolean use_dns_cache, gboolean normalize_hostnames);
 gboolean resolve_hostname(GSockAddr **addr, gchar *name);
 

@@ -41,6 +41,9 @@
 #include <stdio.h>
 #include <signal.h>
 
+static gchar local_hostname_fqdn[256];
+static gchar local_hostname_short[256];
+
 GString *
 g_string_assign_len(GString *s, const gchar *val, gint len)
 {
@@ -50,34 +53,35 @@ g_string_assign_len(GString *s, const gchar *val, gint len)
   return s;
 }
 
-char *
-getshorthostname(char *buf, size_t bufsize)
+void
+reset_cached_hostname(void)
 {
-  char *s;
+  gchar *s;
   
-  gethostname(buf, bufsize - 1);
-  buf[bufsize - 1] = '\0';
-  s = strchr(buf, '.');
-  if (s != NULL)
-    *s = '\0';
-  return buf;
-}
-
-char *
-getlonghostname(char *buf, size_t bufsize)
-{
-  gethostname(buf, bufsize - 1);
-  buf[bufsize - 1] = '\0';
-  if (strchr(buf, '.') == NULL)
+  gethostname(local_hostname_fqdn, sizeof(local_hostname_fqdn) - 1);
+  local_hostname_fqdn[sizeof(local_hostname_fqdn) - 1] = '\0';
+  if (strchr(local_hostname_fqdn, '.') == NULL)
     {
-      struct hostent *result = gethostbyname(buf);
+      /* not fully qualified, resolve it using DNS or /etc/hosts */
+      struct hostent *result = gethostbyname(local_hostname_fqdn);
       if (result)
         {
-          strncpy(buf, result->h_name, bufsize - 1);
-          buf[bufsize - 1] = 0;
+          strncpy(local_hostname_fqdn, result->h_name, sizeof(local_hostname_fqdn) - 1);
+          local_hostname_fqdn[sizeof(local_hostname_fqdn) - 1] = '\0';
         }
     }
-  return buf;
+  /* NOTE: they are the same size, they'll fit */
+  strcpy(local_hostname_short, local_hostname_fqdn);
+  s = strchr(local_hostname_short, '.');
+  if (s != NULL)
+    *s = '\0';
+}
+
+void
+getlonghostname(gchar *buf, gsize buflen)
+{
+  strncpy(buf, local_hostname_fqdn, buflen);
+  buf[buflen - 1] = 0;
 }
 
 gboolean
@@ -156,7 +160,6 @@ resolve_hostname(GSockAddr **addr, gchar *name)
 gboolean
 resolve_sockaddr(gchar **result, GSockAddr *saddr, gboolean usedns, gboolean usefqdn, gboolean use_dns_cache, gboolean normalize_hostnames)
 {
-  static gchar local_hostname[256] = "";
   gchar *hname;
   gchar *p, buf[256];
  
@@ -222,17 +225,17 @@ resolve_sockaddr(gchar **result, GSockAddr *saddr, gboolean usedns, gboolean use
     }
   else 
     {
-      hname = local_hostname;
-      
-      if (!local_hostname[0]) 
-	{
-          if (usefqdn)
-            getlonghostname(local_hostname, sizeof(local_hostname));
-          else
-	    getshorthostname(local_hostname, sizeof(local_hostname));
-
-	}
-
+      if (!local_hostname_fqdn[0])
+        reset_cached_hostname();
+      if (usefqdn)
+        {
+          /* avoid copy */
+          hname = local_hostname_fqdn;
+        }
+      else
+        {
+          hname = local_hostname_short;
+        }
     }
   *result = normalize_hostnames ? g_ascii_strdown(hname, -1) : g_strdup(hname);
   return TRUE;
