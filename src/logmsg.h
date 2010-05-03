@@ -47,7 +47,7 @@
 #define LP_ASSUME_UTF8     0x0080
 #define LP_VALIDATE_UTF8   0x0100
 #define LP_NO_MULTI_LINE   0x0200
-#define LP_STORE_LEGACY_MSGHDR 0x0400
+#define LP_DONT_STORE_LEGACY_MSGHDR 0x0400
 
 
 typedef struct _LogPathOptions LogPathOptions;

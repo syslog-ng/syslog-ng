@@ -99,11 +99,11 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   char *expected_msg_syslog_empty_str_t ="<132>1 2006-10-29T01:59:59+01:00 mymachine evntslog 3535 ID47 [exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] ID47\n";
 
   char *msg_bsd_str = "<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép";
-  char *expected_msg_bsd_str = " bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép\n";
+  char *expected_msg_bsd_str = " bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép\n";
   char *expected_msg_bsd_str_t = "23323 árvíztűrőtükörfúrógép";
 
   char *msg_bsd_empty_str = "<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]:";
-  char *expected_msg_bsd_empty_str = " bzorp syslog-ng[23323]: \n";
+  char *expected_msg_bsd_empty_str = " bzorp syslog-ng[23323]:\n";
   char *expected_msg_bsd_empty_str_t = "23323";
   GlobalConfig dummy;
 
