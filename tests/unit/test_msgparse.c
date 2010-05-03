@@ -266,6 +266,16 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            NULL, NULL, NULL, NULL
            );
 
+
+  testcase("<7>2006-10-29T02:00:00.156+01:00 bzorp openvpn[2499]: PTHREAD support initialized", LP_LOCAL, NULL,
+           7, 			// pri
+           1162083600, 156000, 3600,	// timestamp (sec/usec/zone)
+           "",	        	// host
+           "bzorp",	// program
+           "openvpn[2499]: PTHREAD support initialized", // msg
+           NULL, NULL, NULL, NULL
+           );
+
   testcase("<7>2006-10-29T02:00:00.156+01:00 ", 0, NULL,
            7, 			// pri
            1162083600, 156000, 3600,	// timestamp (sec/usec/zone)
