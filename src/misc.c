@@ -280,57 +280,51 @@ g_fd_set_cloexec(int fd, gboolean enable)
 }
 
 gboolean 
-resolve_user(const char *user, uid_t *uid)
+resolve_user(const char *user, gint *uid)
 {
   struct passwd *pw;
+  gchar *endptr;
 
   *uid = 0;
   if (!(*user))
     return FALSE;
-    
-  pw = getpwnam(user);
-  if (pw) 
+
+  *uid = strtol(user, &endptr, 0);
+  if (*endptr)
     {
-      *uid = pw->pw_uid;
-    }
-  else 
-    {
-      gchar *endptr;
-      
-      *uid = strtol(user, &endptr, 0);
-      if (*endptr)
+      pw = getpwnam(user);
+      if (!pw)
         return FALSE;
+
+      *uid = pw->pw_uid;
     }
   return TRUE;
 }
 
 gboolean 
-resolve_group(const char *group, gid_t *gid)
+resolve_group(const char *group, gint *gid)
 {
   struct group *gr;
+  gchar *endptr;
 
   *gid = 0;
   if (!(*group))
     return FALSE;
     
-  gr = getgrnam(group);
-  if (gr) 
+  *gid = strtol(group, &endptr, 0);
+  if (*endptr)
     {
-      *gid = gr->gr_gid;
-    }
-  else 
-    {
-      gchar *endptr;
-      
-      *gid = strtol(group, &endptr, 0);
-      if (*endptr)
+      gr = getgrnam(group);
+      if (!gr)
         return FALSE;
+
+      *gid = gr->gr_gid;
     }
   return TRUE;
 }
 
 gboolean 
-resolve_user_group(char *arg, uid_t *uid, gid_t *gid)
+resolve_user_group(char *arg, gint *uid, gint *gid)
 {
   char *user, *group;
 
@@ -353,7 +347,7 @@ resolve_user_group(char *arg, uid_t *uid, gid_t *gid)
  * returns. (at least it won't fail because of missing directories).
  **/
 gboolean
-create_containing_directory(gchar *name, uid_t dir_uid, gid_t dir_gid, mode_t dir_mode)
+create_containing_directory(gchar *name, gint dir_uid, gint dir_gid, gint dir_mode)
 {
   gchar *dirname;
   struct stat st;
@@ -389,12 +383,14 @@ create_containing_directory(gchar *name, uid_t dir_uid, gid_t dir_gid, mode_t di
         }
       else if (errno == ENOENT) 
         {
-          if (mkdir(name, dir_mode) == -1)
+          if (mkdir(name, (mode_t) dir_mode) == -1)
             return FALSE;
-          if (dir_uid != -1 || dir_gid != -1)
-            chown(name, dir_uid, dir_gid);
-          if (dir_mode != -1)
-            chmod(name, dir_mode);
+          if (dir_uid >= 0)
+            chown(name, (uid_t) dir_uid, -1);
+          if (dir_gid >= 0)
+            chown(name, -1, (gid_t) dir_gid);
+          if (dir_mode >= 0)
+            chmod(name, (mode_t) dir_mode);
         }
       *p = '/';
       p = strchr(p + 1, '/');

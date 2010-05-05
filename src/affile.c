@@ -40,8 +40,8 @@
 
 static gboolean
 affile_open_file(gchar *name, gint flags,
-                 uid_t uid, gid_t gid, mode_t mode,
-                 uid_t dir_uid, gid_t dir_gid, mode_t dir_mode,
+                 gint uid, gint gid, gint mode,
+                 gint dir_uid, gint dir_gid, gint dir_mode,
                  gboolean create_dirs, gboolean privileged, gboolean is_pipe, gint *fd)
 {
   cap_t saved_caps;
@@ -95,12 +95,12 @@ affile_open_file(gchar *name, gint flags,
       
       g_process_cap_modify(CAP_CHOWN, TRUE);
       g_process_cap_modify(CAP_FOWNER, TRUE);
-      if (uid != (uid_t) -1)
-        fchown(*fd, uid, -1);
-      if (gid != (gid_t) -1)
-        fchown(*fd, -1, gid);
-      if (mode != (mode_t) -1)
-        fchmod(*fd, mode);
+      if (uid >= 0)
+        fchown(*fd, (uid_t) uid, -1);
+      if (gid >= 0)
+        fchown(*fd, -1, (gid_t) gid);
+      if (mode >= 0)
+        fchmod(*fd, (mode_t) mode);
     }
  exit:
   g_process_cap_restore(saved_caps);
@@ -763,13 +763,13 @@ affile_dd_init(LogPipe *s)
     self->file_uid = cfg->file_uid;
   if (self->file_gid == -1)
     self->file_gid = cfg->file_gid;
-  if (self->file_perm == (mode_t) -1)
+  if (self->file_perm == -1)
     self->file_perm = cfg->file_perm;
   if (self->dir_uid == -1)
     self->dir_uid = cfg->dir_uid;
   if (self->dir_gid == -1)
     self->dir_gid = cfg->dir_gid;
-  if (self->dir_perm == (mode_t) -1)
+  if (self->dir_perm == -1)
     self->dir_perm = cfg->dir_perm;
   if (self->time_reap == -1)
     self->time_reap = cfg->time_reap;

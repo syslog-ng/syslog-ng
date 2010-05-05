@@ -4,7 +4,7 @@ AM_CFLAGS = -I$(top_srcdir)/src
 LIBS = @DEPS_LIBS@
 LDADD = $(top_builddir)/src/libsyslog-ng.a
 
-check_PROGRAMS = test_template_speed test_msgsdata test_radix  test_logqueue test_matcher test_clone_logmsg test_csvparser test_serialize test_msgparse test_template test_zone test_filters test_dnscache test_findeom test_findcrlf test_logwriter
+check_PROGRAMS = test_resolve_pwgr test_template_speed test_msgsdata test_radix  test_logqueue test_matcher test_clone_logmsg test_csvparser test_serialize test_msgparse test_template test_zone test_filters test_dnscache test_findeom test_findcrlf test_logwriter
 
 test_msgparse_SOURCES = test_msgparse.c libtest.c
 test_template_SOURCES = test_template.c libtest.c
@@ -22,6 +22,7 @@ test_radix_SOURCES = test_radix.c
 test_msgsdata_SOURCES = test_msgsdata.c
 test_template_speed_SOURCES = test_template_speed.c
 test_logwriter_SOURCES = test_logwriter.c
+test_resolve_pwgr_SOURCES = test_resolve_pwgr.c
 
 TESTS = $(check_PROGRAMS)
 

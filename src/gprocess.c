@@ -105,9 +105,9 @@ static struct
   GProcessMode mode;
   const gchar *name;
   const gchar *user;
-  uid_t uid;
+  gint uid;
   const gchar *group;
-  gid_t gid;
+  gint gid;
   const gchar *chroot_dir;
   const gchar *pidfile;
   const gchar *pidfile_dir;
@@ -700,15 +700,15 @@ g_process_change_user(void)
     prctl(PR_SET_KEEPCAPS, 1, 0, 0, 0);
 #endif
 
-  if ((gint) process_opts.gid != -1)
+  if (process_opts.gid >= 0)
     {
-      if (setgid(process_opts.gid) < 0)
+      if (setgid((gid_t) process_opts.gid) < 0)
         {
-          g_process_message("Error in setgid(); group='%s', gid='%d', error='%s'", process_opts.group, (gint) process_opts.gid, g_strerror(errno));
+          g_process_message("Error in setgid(); group='%s', gid='%d', error='%s'", process_opts.group, process_opts.gid, g_strerror(errno));
           if (getuid() == 0)
             return FALSE;
         }
-      if (process_opts.user && initgroups(process_opts.user, process_opts.gid) < 0)
+      if (process_opts.user && initgroups(process_opts.user, (gid_t) process_opts.gid) < 0)
         {
           g_process_message("Error in initgroups(); user='%s', error='%s'", process_opts.user, g_strerror(errno));
           if (getuid() == 0)
@@ -716,11 +716,11 @@ g_process_change_user(void)
         }
     }
 
-  if ((gint) process_opts.uid != -1)
+  if (process_opts.uid >= 0)
     {
-      if (setuid(process_opts.uid) < 0)
+      if (setuid((uid_t) process_opts.uid) < 0)
         {
-          g_process_message("Error in setuid(); user='%s', uid='%d', error='%s'", process_opts.user, (gint) process_opts.uid, g_strerror(errno));
+          g_process_message("Error in setuid(); user='%s', uid='%d', error='%s'", process_opts.user, process_opts.uid, g_strerror(errno));
           if (getuid() == 0)
             return FALSE;
         }
@@ -783,12 +783,12 @@ g_process_resolve_names(void)
   if (process_opts.user && !resolve_user(process_opts.user, &process_opts.uid))
     {
       g_process_message("Error resolving user; user='%s'", process_opts.user);
-      process_opts.uid = (uid_t) -1;
+      process_opts.uid = -1;
     }
   if (process_opts.group && !resolve_group(process_opts.group, &process_opts.gid))
     {
       g_process_message("Error resolving group; group='%s'", process_opts.group);
-      process_opts.gid = (gid_t) -1;
+      process_opts.gid = -1;
     }
 }
 
