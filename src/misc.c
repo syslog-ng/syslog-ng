@@ -41,6 +41,9 @@
 #include <stdio.h>
 #include <signal.h>
 
+static gchar local_hostname_fqdn[256];
+static gchar local_hostname_short[256];
+
 GString *
 g_string_assign_len(GString *s, const gchar *val, gint len)
 {
@@ -50,34 +53,35 @@ g_string_assign_len(GString *s, const gchar *val, gint len)
   return s;
 }
 
-char *
-getshorthostname(char *buf, size_t bufsize)
+void
+reset_cached_hostname(void)
 {
-  char *s;
+  gchar *s;
   
-  gethostname(buf, bufsize - 1);
-  buf[bufsize - 1] = '\0';
-  s = strchr(buf, '.');
-  if (s != NULL)
-    *s = '\0';
-  return buf;
-}
-
-char *
-getlonghostname(char *buf, size_t bufsize)
-{
-  gethostname(buf, bufsize - 1);
-  buf[bufsize - 1] = '\0';
-  if (strchr(buf, '.') == NULL)
+  gethostname(local_hostname_fqdn, sizeof(local_hostname_fqdn) - 1);
+  local_hostname_fqdn[sizeof(local_hostname_fqdn) - 1] = '\0';
+  if (strchr(local_hostname_fqdn, '.') == NULL)
     {
-      struct hostent *result = gethostbyname(buf);
+      /* not fully qualified, resolve it using DNS or /etc/hosts */
+      struct hostent *result = gethostbyname(local_hostname_fqdn);
       if (result)
         {
-          strncpy(buf, result->h_name, bufsize - 1);
-          buf[bufsize - 1] = 0;
+          strncpy(local_hostname_fqdn, result->h_name, sizeof(local_hostname_fqdn) - 1);
+          local_hostname_fqdn[sizeof(local_hostname_fqdn) - 1] = '\0';
         }
     }
-  return buf;
+  /* NOTE: they are the same size, they'll fit */
+  strcpy(local_hostname_short, local_hostname_fqdn);
+  s = strchr(local_hostname_short, '.');
+  if (s != NULL)
+    *s = '\0';
+}
+
+void
+getlonghostname(gchar *buf, gsize buflen)
+{
+  strncpy(buf, local_hostname_fqdn, buflen);
+  buf[buflen - 1] = 0;
 }
 
 gboolean
@@ -156,7 +160,6 @@ resolve_hostname(GSockAddr **addr, gchar *name)
 void
 resolve_sockaddr(gchar *result, gsize *result_len, GSockAddr *saddr, gboolean usedns, gboolean usefqdn, gboolean use_dns_cache, gboolean normalize_hostnames)
 {
-  static gchar local_hostname[256] = "";
   gchar *hname;
   gchar *p, buf[256];
  
@@ -222,17 +225,17 @@ resolve_sockaddr(gchar *result, gsize *result_len, GSockAddr *saddr, gboolean us
     }
   else 
     {
-      hname = local_hostname;
-      
-      if (!local_hostname[0]) 
-	{
-          if (usefqdn)
-            getlonghostname(local_hostname, sizeof(local_hostname));
-          else
-	    getshorthostname(local_hostname, sizeof(local_hostname));
-
-	}
-
+      if (!local_hostname_fqdn[0])
+        reset_cached_hostname();
+      if (usefqdn)
+        {
+          /* avoid copy */
+          hname = local_hostname_fqdn;
+        }
+      else
+        {
+          hname = local_hostname_short;
+        }
     }
   if (normalize_hostnames)
     {
@@ -292,57 +295,51 @@ g_fd_set_cloexec(int fd, gboolean enable)
 }
 
 gboolean 
-resolve_user(const char *user, uid_t *uid)
+resolve_user(const char *user, gint *uid)
 {
   struct passwd *pw;
+  gchar *endptr;
 
   *uid = 0;
   if (!(*user))
     return FALSE;
-    
-  pw = getpwnam(user);
-  if (pw) 
+
+  *uid = strtol(user, &endptr, 0);
+  if (*endptr)
     {
-      *uid = pw->pw_uid;
-    }
-  else 
-    {
-      gchar *endptr;
-      
-      *uid = strtol(user, &endptr, 0);
-      if (*endptr)
+      pw = getpwnam(user);
+      if (!pw)
         return FALSE;
+
+      *uid = pw->pw_uid;
     }
   return TRUE;
 }
 
 gboolean 
-resolve_group(const char *group, gid_t *gid)
+resolve_group(const char *group, gint *gid)
 {
   struct group *gr;
+  gchar *endptr;
 
   *gid = 0;
   if (!(*group))
     return FALSE;
     
-  gr = getgrnam(group);
-  if (gr) 
+  *gid = strtol(group, &endptr, 0);
+  if (*endptr)
     {
-      *gid = gr->gr_gid;
-    }
-  else 
-    {
-      gchar *endptr;
-      
-      *gid = strtol(group, &endptr, 0);
-      if (*endptr)
+      gr = getgrnam(group);
+      if (!gr)
         return FALSE;
+
+      *gid = gr->gr_gid;
     }
   return TRUE;
 }
 
 gboolean 
-resolve_user_group(char *arg, uid_t *uid, gid_t *gid)
+resolve_user_group(char *arg, gint *uid, gint *gid)
 {
   char *user, *group;
 
@@ -365,7 +362,7 @@ resolve_user_group(char *arg, uid_t *uid, gid_t *gid)
  * returns. (at least it won't fail because of missing directories).
  **/
 gboolean
-create_containing_directory(gchar *name, uid_t dir_uid, gid_t dir_gid, mode_t dir_mode)
+create_containing_directory(gchar *name, gint dir_uid, gint dir_gid, gint dir_mode)
 {
   gchar *dirname;
   struct stat st;
@@ -402,12 +399,14 @@ create_containing_directory(gchar *name, uid_t dir_uid, gid_t dir_gid, mode_t di
         }
       else if (errno == ENOENT) 
         {
-          if (mkdir(name, dir_mode) == -1)
+          if (mkdir(name, (mode_t) dir_mode) == -1)
             return FALSE;
-          if (dir_uid != -1 || dir_gid != -1)
-            chown(name, dir_uid, dir_gid);
-          if (dir_mode != -1)
-            chmod(name, dir_mode);
+          if (dir_uid >= 0)
+            chown(name, (uid_t) dir_uid, -1);
+          if (dir_gid >= 0)
+            chown(name, -1, (gid_t) dir_gid);
+          if (dir_mode >= 0)
+            chmod(name, (mode_t) dir_mode);
         }
       *p = '/';
       p = strchr(p + 1, '/');

@@ -32,21 +32,24 @@
 
 GString *g_string_assign_len(GString *s, const gchar *val, gint len);
 
-char *getlonghostname(char *buf, size_t buflen);
-char *getshorthostname(char *buf, size_t buflen);
 gboolean g_fd_set_nonblock(int fd, gboolean enable);
 gboolean g_fd_set_cloexec(int fd, gboolean enable);
 
-gboolean resolve_user(const char *user, uid_t *uid);
-gboolean resolve_group(const char *group, gid_t *gid);
-gboolean resolve_user_group(char *arg, uid_t *uid, gid_t *gid);
+/* deliberately using gint here as the extremal values may not fit into uid_t/gid_t */
+gboolean resolve_user(const char *user, gint *uid);
+gboolean resolve_group(const char *group, gint *gid);
+gboolean resolve_user_group(char *arg, gint *uid, gint *gid);
+
+/* name resolution */
+void reset_cached_hostname(void);
+void getlonghostname(gchar *buf, gsize buflen);
 void resolve_sockaddr(gchar *result, gsize *result_len, GSockAddr *saddr, gboolean usedns, gboolean usefqdn, gboolean use_dns_cache, gboolean normalize_hostnames);
 gboolean resolve_hostname(GSockAddr **addr, gchar *name);
 
 gchar *format_hex_string(gpointer str, gsize str_len, gchar *result, gsize result_len);
 gchar *find_cr_or_lf(gchar *s, gsize n);
 
-gboolean create_containing_directory(gchar *name, uid_t dir_uid, gid_t dir_gid, mode_t dir_mode);
+gboolean create_containing_directory(gchar *name, gint dir_uid, gint dir_gid, gint dir_mode);
 GThread *create_worker_thread(GThreadFunc func, gpointer data, gboolean joinable, GError **error);
 
 

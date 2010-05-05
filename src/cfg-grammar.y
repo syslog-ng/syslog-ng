@@ -534,8 +534,11 @@ source_afunix_options
 
 source_afunix_option
 	: KW_OWNER '(' string_or_number ')'	{ afunix_sd_set_uid(last_driver, $3); free($3); }
+	| KW_OWNER '(' ')'	                { afunix_sd_set_uid(last_driver, "-2"); }
 	| KW_GROUP '(' string_or_number ')'	{ afunix_sd_set_gid(last_driver, $3); free($3); }
+	| KW_GROUP '(' ')'	                { afunix_sd_set_gid(last_driver, "-2"); }
 	| KW_PERM '(' LL_NUMBER ')'		{ afunix_sd_set_perm(last_driver, $3); }
+	| KW_PERM '(' ')'		        { afunix_sd_set_perm(last_driver, -2); }
 	| KW_OPTIONAL '(' yesno ')'		{ last_driver->optional = $3; }
 	| source_afsocket_stream_params		{}
 	| source_reader_option			{}
@@ -793,11 +796,17 @@ dest_affile_option
 	: dest_writer_option
 	| KW_OPTIONAL '(' yesno ')'		{ last_driver->optional = $3; }
 	| KW_OWNER '(' string_or_number ')'	{ affile_dd_set_file_uid(last_driver, $3); free($3); }
+	| KW_OWNER '(' ')'	                { affile_dd_set_file_uid(last_driver, "-2"); }
 	| KW_GROUP '(' string_or_number ')'	{ affile_dd_set_file_gid(last_driver, $3); free($3); }
+	| KW_GROUP '(' ')'	                { affile_dd_set_file_gid(last_driver, "-2"); }
 	| KW_PERM '(' LL_NUMBER ')'		{ affile_dd_set_file_perm(last_driver, $3); }
+	| KW_PERM '(' ')'		        { affile_dd_set_file_perm(last_driver, -2); }
 	| KW_DIR_OWNER '(' string_or_number ')'	{ affile_dd_set_dir_uid(last_driver, $3); free($3); }
+	| KW_DIR_OWNER '(' ')'	                { affile_dd_set_dir_uid(last_driver, "-2"); }
 	| KW_DIR_GROUP '(' string_or_number ')'	{ affile_dd_set_dir_gid(last_driver, $3); free($3); }
+	| KW_DIR_GROUP '(' ')'	                { affile_dd_set_dir_gid(last_driver, "-2"); }
 	| KW_DIR_PERM '(' LL_NUMBER ')'		{ affile_dd_set_dir_perm(last_driver, $3); }
+	| KW_DIR_PERM '(' ')'		        { affile_dd_set_dir_perm(last_driver, -2); }
 	| KW_CREATE_DIRS '(' yesno ')'		{ affile_dd_set_create_dirs(last_driver, $3); }
 	| KW_OVERWRITE_IF_OLDER '(' LL_NUMBER ')'	{ affile_dd_set_overwrite_if_older(last_driver, $3); }
 	| KW_FSYNC '(' yesno ')'		{ affile_dd_set_fsync(last_driver, $3); }
@@ -827,8 +836,11 @@ dest_afpipe_options
 dest_afpipe_option
 	: dest_writer_option
 	| KW_OWNER '(' string_or_number ')'	{ affile_dd_set_file_uid(last_driver, $3); free($3); }
+	| KW_OWNER '(' ')'	                { affile_dd_set_file_uid(last_driver, "-2"); }
 	| KW_GROUP '(' string_or_number ')'	{ affile_dd_set_file_gid(last_driver, $3); free($3); }
+	| KW_GROUP '(' ')'	                { affile_dd_set_file_gid(last_driver, "-2"); }
 	| KW_PERM '(' LL_NUMBER ')'		{ affile_dd_set_file_perm(last_driver, $3); }
+	| KW_PERM '(' ')'       		{ affile_dd_set_file_perm(last_driver, -2); }
 	;
 
 dest_afsocket
@@ -1128,11 +1140,17 @@ options_item
 	| KW_GC_IDLE_THRESHOLD '(' LL_NUMBER ')'	{ /* ignored */; }
 	| KW_CREATE_DIRS '(' yesno ')'		{ configuration->create_dirs = $3; }
 	| KW_OWNER '(' string_or_number ')'	{ cfg_file_owner_set(configuration, $3); free($3); }
+	| KW_OWNER '(' ')'	                { cfg_file_owner_set(configuration, "-2"); }
 	| KW_GROUP '(' string_or_number ')'	{ cfg_file_group_set(configuration, $3); free($3); }
+	| KW_GROUP '(' ')'                    	{ cfg_file_group_set(configuration, "-2"); }
 	| KW_PERM '(' LL_NUMBER ')'		{ cfg_file_perm_set(configuration, $3); }
+	| KW_PERM '(' ')'		        { cfg_file_perm_set(configuration, -2); }
 	| KW_DIR_OWNER '(' string_or_number ')'	{ cfg_dir_owner_set(configuration, $3); free($3); }
+	| KW_DIR_OWNER '('  ')'	                { cfg_dir_owner_set(configuration, "-2"); }
 	| KW_DIR_GROUP '(' string_or_number ')'	{ cfg_dir_group_set(configuration, $3); free($3); }
+	| KW_DIR_GROUP '('  ')'	                { cfg_dir_group_set(configuration, "-2"); }
 	| KW_DIR_PERM '(' LL_NUMBER ')'		{ cfg_dir_perm_set(configuration, $3); }
+	| KW_DIR_PERM '('  ')'		        { cfg_dir_perm_set(configuration, -2); }
 	| KW_DNS_CACHE '(' yesno ')' 		{ configuration->use_dns_cache = $3; }
 	| KW_DNS_CACHE_SIZE '(' LL_NUMBER ')'	{ configuration->dns_cache_size = $3; }
 	| KW_DNS_CACHE_EXPIRE '(' LL_NUMBER ')'	{ configuration->dns_cache_expire = $3; }

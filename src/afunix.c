@@ -68,10 +68,13 @@ afunix_sd_init(LogPipe *s)
   
   if (afsocket_sd_init(s))
     {
-      if (self->owner != (uid_t) -1 || self->group != (gid_t) -1)
-        chown(self->filename, self->owner, self->group);
-      if (self->perm != (mode_t) -1)
-        chmod(self->filename, self->perm);
+      /* change ownership separately, as chgrp may succeed while chown may not */
+      if (self->owner >= 0)
+        chown(self->filename, (uid_t) self->owner, -1);
+      if (self->group >= 0)
+        chown(self->filename, -1, (gid_t) self->group);
+      if (self->perm >= 0)
+        chmod(self->filename, (mode_t) self->perm);
       return TRUE;
     }
   return FALSE;
