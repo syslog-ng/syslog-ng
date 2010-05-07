@@ -33,7 +33,6 @@
 
 #include <sys/types.h>
 #include <time.h>
-#include <syslog.h>
 #include <ctype.h>
 #include <unistd.h>
 #include <string.h>

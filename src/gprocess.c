@@ -34,7 +34,6 @@
 #include <errno.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <syslog.h>
 #include <termios.h>
 #include <signal.h>
 
