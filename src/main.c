@@ -64,6 +64,7 @@ static const gchar *persist_file = PATH_PERSIST_CONFIG;
 static gboolean syntax_only = FALSE;
 static gboolean seed_rng = FALSE;
 static gboolean display_version = FALSE;
+static gchar *ctlfilename = PATH_CONTROL_SOCKET;
 
 static volatile sig_atomic_t sig_hup_received = FALSE;
 static volatile sig_atomic_t sig_term_received = FALSE;
@@ -147,7 +148,7 @@ main_loop_run(GlobalConfig **cfg)
   if ((*cfg)->stats_freq > 0)
     stats_timer_id = g_timeout_add((*cfg)->stats_freq * 1000, stats_timer, NULL);
     
-  control_init(PATH_CONTROL_SOCKET, g_main_loop_get_context(main_loop));
+  control_init(ctlfilename, g_main_loop_get_context(main_loop));
 
   system_poll_func = g_main_context_get_poll_func(g_main_loop_get_context(main_loop));
   g_main_context_set_poll_func(g_main_loop_get_context(main_loop), main_context_poll);
@@ -286,6 +287,7 @@ static GOptionEntry syslogng_options[] =
   { "syntax-only",       's',         0, G_OPTION_ARG_NONE, &syntax_only, "Only read and parse config file", NULL},
   { "version",           'V',         0, G_OPTION_ARG_NONE, &display_version, "Display version number (" PACKAGE " " VERSION ")", NULL },
   { "seed",              'S',         0, G_OPTION_ARG_NONE, &seed_rng, "Seed the RNG using ~/.rnd or $RANDFILE", NULL},
+  { "control",           'c',         0, G_OPTION_ARG_STRING, &ctlfilename, "Set syslog-ng control socket, default=" PATH_CONTROL_SOCKET, "<ctlpath>" },
 #ifdef YYDEBUG
   { "yydebug",           'y',         0, G_OPTION_ARG_NONE, &yydebug, "Enable configuration parser debugging", NULL },
 #endif
