@@ -792,6 +792,8 @@ AC_OUTPUT(dist.conf
           Makefile 
 	  syslog-ng.spec
 	  src/Makefile 
+	  scripts/Makefile
+	  scripts/update-patterndb
 	  doc/Makefile
           doc/docvars.xml
 	  contrib/Makefile
