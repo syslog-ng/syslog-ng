@@ -2,8 +2,8 @@
 
 int main(void)
 {
-  uid_t uid;
-  gid_t gid;
+  gint uid;
+  gint gid;
 
   if (!resolve_user("root", &uid))
     return 1;
