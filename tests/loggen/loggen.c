@@ -31,6 +31,7 @@ int sock = -1;
 int message_length = 256;
 int interval = 10;
 int csv = 0;
+int quiet = 0;
 int syslog_proto = 0;
 int framing = 1;
 
@@ -159,6 +160,13 @@ gen_messages(int sock)
           last_count = count;
 
         }
+      else if (!quiet)
+        {
+          diff_usec = time_val_diff_in_usec(&now, &last_ts_format);
+          fprintf(stderr, "count=%ld diff=%.lf rate = %.2lf msg/sec              \r", count, (double)diff_usec, ((double) (count - last_count) * USEC_PER_SEC) / diff_usec);
+        }
+      last_ts_format = now;
+      last_count = count;
 
       diff_usec = time_val_diff_in_usec(&now, &last_throttle_check);
       if (buckets == 0 || diff_usec > 10e5)
@@ -229,7 +237,8 @@ usage()
          "  --interval, or -I <sec> Number of seconds to run the test for\n"
          "  --syslog-proto, or -P   Use the new syslog-protocol message format (see also framing)\n"
          "  --no-framing, or -F     Don't use syslog-protocol style framing, even if syslog-proto is set\n"
-         "  --csv, or -C            Produce CSV output\n");
+         "  --csv, or -C            Produce CSV output\n"
+         "  --quiet or -q           Don't print the msg/sec data\n");
   exit(0);
 }
 
@@ -249,15 +258,16 @@ main(int argc, char *argv[])
       { "syslog-proto", no_argument, NULL, 'P' },
       { "no-framing", no_argument, NULL, 'F' },
       { "csv", no_argument, NULL, 'C' },
+      { "quiet", no_argument, NULL, 'q' },
       { NULL, 0, NULL, 0 }
     };
 #endif
   int opt;
 
 #if HAVE_GETOPT_LONG
-  while ((opt = getopt_long(argc, argv, "r:I:ixs:SDhPCF", syslog_ng_options, NULL)) != -1)
+  while ((opt = getopt_long(argc, argv, "r:I:ixs:SDhPCFq:", syslog_ng_options, NULL)) != -1)
 #else
-  while ((opt = getopt(argc, argv, "r:I:ixs:SDhPCF")) != -1)
+  while ((opt = getopt(argc, argv, "r:I:ixs:SDhPCFq:")) != -1)
 #endif
     {
       switch (opt) 
@@ -294,6 +304,9 @@ main(int argc, char *argv[])
           break;
         case 'C':
           csv = 1;
+          break;
+        case 'q':
+          quiet = 1;
           break;
         case 'F':
           framing = 0;
