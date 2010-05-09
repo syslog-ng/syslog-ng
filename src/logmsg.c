@@ -1545,16 +1545,11 @@ log_msg_parse_legacy(LogMessage *self,
         }
       else
         {
-
-          if ((flags & LP_LOCAL) == 0)
-            {
-              /* Don't parse a hostname if it is local */
-              /* It's a regular ol' message. */
-              log_msg_parse_hostname(self, &src, &left, &hostname_start, &hostname_len, flags, bad_hostname);
-
-              /* Skip whitespace. */
-              log_msg_parse_skip_chars(self, &src, &left, " ", -1);
-            }
+          /* It's a regular ol' message. */
+          log_msg_parse_hostname(self, &src, &left, &hostname_start, &hostname_len, flags, bad_hostname);
+    
+          /* Skip whitespace. */
+          log_msg_parse_skip_chars(self, &src, &left, " ", -1);
 
           /* Try to extract a program name */
           log_msg_parse_legacy_program_name(self, &src, &left, flags);
