@@ -47,7 +47,7 @@
 #define LP_ASSUME_UTF8     0x0080
 #define LP_VALIDATE_UTF8   0x0100
 #define LP_NO_MULTI_LINE   0x0200
-#define LP_STORE_LEGACY_MSGHDR 0x0400
+#define LP_DONT_STORE_LEGACY_MSGHDR 0x0400
 
 
 typedef struct _LogPathOptions LogPathOptions;
@@ -181,6 +181,8 @@ log_msg_get_value(LogMessage *self, NVHandle handle, gssize *value_len)
     return log_msg_get_macro_value(self, flags >> 8, value_len);
 }
 
+typedef gboolean (*LogMessageTableForeachFunc)(LogMessage *self, guint32 log_msg_tag_index, guint32 tag_id, const gchar *name, gpointer user_data);
+
 void log_msg_set_value(LogMessage *self, NVHandle handle, const gchar *new_value, gssize length);
 void log_msg_set_value_indirect(LogMessage *self, NVHandle handle, NVHandle ref_handle, guint8 type, guint16 ofs, guint16 len);
 void log_msg_set_match(LogMessage *self, gint index, const gchar *value, gssize value_len);
@@ -196,6 +198,8 @@ void log_msg_clear_tag_by_id(LogMessage *self, guint id);
 void log_msg_clear_tag_by_name(LogMessage *self, const gchar *name);
 gboolean log_msg_is_tag_by_id(LogMessage *self, guint id);
 gboolean log_msg_is_tag_by_name(LogMessage *self, const gchar *name);
+gboolean log_msg_tags_foreach(LogMessage *self, LogMessageTableForeachFunc callback, gpointer user_data);
+void log_msg_print_tags(LogMessage *self, GString *result);
 
 LogMessage *log_msg_new(const gchar *msg, gint length,
                         GSockAddr *saddr,

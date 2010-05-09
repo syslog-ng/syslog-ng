@@ -33,7 +33,6 @@
 
 #include <sys/types.h>
 #include <time.h>
-#include <syslog.h>
 #include <ctype.h>
 #include <unistd.h>
 #include <string.h>
@@ -345,6 +344,48 @@ log_msg_clear_matches(LogMessage *self)
       log_msg_set_value(self, match_handles[i], "", 0);
     }
   self->num_matches = 0;
+}
+
+static guint
+swap_index_big_endian(guint index)
+{
+  return G_BYTE_ORDER == G_BIG_ENDIAN ? 1-index : index;
+}
+
+gboolean
+log_msg_tags_foreach(LogMessage *self, LogMessageTableForeachFunc callback, gpointer user_data)
+{
+  guint i, j, k;
+  guint tag_id;
+  for (i = 0; i != self->num_tags; ++i)
+    {
+      if (G_LIKELY(!self->tags[i]))
+        continue;
+      for (j = 0; j != 2; ++j)
+        {
+          if (G_LIKELY(! * ( ((guint16*) (&self->tags[i])) + swap_index_big_endian(j))))
+            continue;
+
+          for (k = 0; k != 2; ++k)
+            {
+              if (G_LIKELY(! * ( ((guint8*) (&self->tags[i])) + swap_index_big_endian(j) * 2 + swap_index_big_endian(k))))
+                continue;
+
+              guint bitidx;
+
+              for (bitidx = 0; bitidx != 8; ++bitidx)
+                {
+                  if ( *(((guint8*) (&self->tags[i])) + swap_index_big_endian(j) * 2 +swap_index_big_endian(k)) & (1 << bitidx))
+                    {
+                      tag_id = i * 32  + j * 16 + k * 8 + bitidx;
+                      gchar *name =  log_tags_get_by_id(tag_id);
+                      callback(self, i , tag_id, name, user_data);
+                    }
+                }
+            }
+        }
+    }
+  return TRUE;
 }
 
 static inline void
@@ -895,8 +936,9 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guchar *
           p = (guchar *) strptime((gchar *) date, "%b %e %H:%M:%S", &tm);
           if (!p || (p && *p))
             goto error;
-            
-          tm.tm_isdst = -1;
+
+          /* In case of daylight saving let's assume that the message came under daylight saving also */
+          tm.tm_isdst = nowtm.tm_isdst;
           tm.tm_year = nowtm.tm_year;
           if (tm.tm_mon > nowtm.tm_mon + 1)
             tm.tm_year--;
@@ -926,12 +968,16 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guchar *
    * (tm.tm_hour - * unnormalized_hour) part fixes up. */
   
   if (self->timestamps[LM_TS_STAMP].zone_offset == -1)
-    self->timestamps[LM_TS_STAMP].zone_offset = assume_timezone;
-   
-  if (self->timestamps[LM_TS_STAMP].zone_offset != -1)
-    self->timestamps[LM_TS_STAMP].time.tv_sec = self->timestamps[LM_TS_STAMP].time.tv_sec + get_local_timezone_ofs(self->timestamps[LM_TS_STAMP].time.tv_sec) - (tm.tm_hour - unnormalized_hour) * 3600 - self->timestamps[LM_TS_STAMP].zone_offset;
-  else
-    self->timestamps[LM_TS_STAMP].zone_offset = get_local_timezone_ofs(self->timestamps[LM_TS_STAMP].time.tv_sec);
+    {
+      self->timestamps[LM_TS_STAMP].zone_offset = assume_timezone;
+    }
+  if (self->timestamps[LM_TS_STAMP].zone_offset == -1)
+    {
+      self->timestamps[LM_TS_STAMP].zone_offset = get_local_timezone_ofs(self->timestamps[LM_TS_STAMP].time.tv_sec);
+    }
+  self->timestamps[LM_TS_STAMP].time.tv_sec = self->timestamps[LM_TS_STAMP].time.tv_sec +
+                                              get_local_timezone_ofs(self->timestamps[LM_TS_STAMP].time.tv_sec) -
+                                              (tm.tm_hour - unnormalized_hour) * 3600 - self->timestamps[LM_TS_STAMP].zone_offset;
 
   *data = src;
   *length = left;
@@ -1015,7 +1061,7 @@ log_msg_parse_legacy_program_name(LogMessage *self, const guchar **data, gint *l
       src++;
       left--;
     }
-  if (flags & LP_STORE_LEGACY_MSGHDR)
+  if ((flags & LP_DONT_STORE_LEGACY_MSGHDR) == 0)
     {
       log_msg_set_value(self, LM_V_LEGACY_MSGHDR, (gchar *) *data, *length - left);
       self->flags |= LF_LEGACY_MSGHDR;
@@ -1613,6 +1659,29 @@ log_msg_parse(LogMessage *self,
         }
 
     }
+}
+
+gboolean
+log_msg_append_tags_callback(LogMessage *self, guint32 log_msg_tag_index, guint32 tag_id, const gchar *name, gpointer user_data)
+{
+  GString *result = (GString *) ((gpointer *) user_data)[0];
+  gint original_length = GPOINTER_TO_UINT(((gpointer *) user_data)[1]);
+
+  g_assert(result);
+
+  if (result->len > original_length)
+    g_string_append_c(result, ',');
+
+  g_string_append(result, name);
+  return TRUE;
+}
+
+void
+log_msg_print_tags(LogMessage *self, GString *result)
+{
+  gpointer args[] = { result, GUINT_TO_POINTER(result->len) };
+
+  log_msg_tags_foreach(self, log_msg_append_tags_callback, args);
 }
 
 /**

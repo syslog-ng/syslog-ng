@@ -1,0 +1,13 @@
+# syslog-ng - system logging daemon
+#
+# syslog-ng is an replacement for the traditionala syslog daemon, logging messages from applications
+
+description	"system logging daemon"
+
+start on filesystem
+stop on runlevel [06]
+
+expect fork
+respawn
+
+exec syslog-ng

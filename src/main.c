@@ -63,10 +63,11 @@ static gchar *installer_version = NULL;
 static const gchar *persist_file = PATH_PERSIST_CONFIG;
 static gboolean syntax_only = FALSE;
 static gboolean display_version = FALSE;
+static gchar *ctlfilename = PATH_CONTROL_SOCKET;
 
-static gboolean sig_hup_received = FALSE;
-static gboolean sig_term_received = FALSE;
-static gboolean sig_child_received = FALSE;
+static volatile sig_atomic_t sig_hup_received = FALSE;
+static volatile sig_atomic_t sig_term_received = FALSE;
+static volatile sig_atomic_t sig_child_received = FALSE;
 
 static void 
 sig_hup_handler(int signo)
@@ -137,6 +138,8 @@ main_loop_run(GlobalConfig **cfg)
 {
   gint iters;
   guint stats_timer_id = 0;
+  sigset_t ss;
+
   msg_notice("syslog-ng starting up", 
              evt_tag_str("version", VERSION),
              NULL);
@@ -144,7 +147,7 @@ main_loop_run(GlobalConfig **cfg)
   if ((*cfg)->stats_freq > 0)
     stats_timer_id = g_timeout_add((*cfg)->stats_freq * 1000, stats_timer, NULL);
     
-  control_init(PATH_CONTROL_SOCKET, g_main_loop_get_context(main_loop));
+  control_init(ctlfilename, g_main_loop_get_context(main_loop));
 
   system_poll_func = g_main_context_get_poll_func(g_main_loop_get_context(main_loop));
   g_main_context_set_poll_func(g_main_loop_get_context(main_loop), main_context_poll);
@@ -162,12 +165,25 @@ main_loop_run(GlobalConfig **cfg)
       g_main_context_iteration(g_main_loop_get_context(main_loop), TRUE);
       if (sig_hup_received)
         {
+          sigemptyset(&ss);
+          sigaddset(&ss, SIGHUP);
+          sigprocmask(SIG_BLOCK, &ss, NULL);
+          sig_hup_received = FALSE;
+
+          /* this may handle multiple SIGHUP signals, however it doesn't
+           * really matter if we received only a single or multiple SIGHUPs
+           * until we make sure that we handle the last one.  Since we
+           * blocked the SIGHUP signal and reset sig_hup_received to FALSE,
+           * we can be sure that if we receive an additional SIGHUP during
+           * signal processing we get the new one when we finished this, and
+           * handle that one as well. */
+
 	  app_pre_config_loaded();
           (*cfg) = cfg_reload_config(cfgfilename, (*cfg));
 	  app_post_config_loaded();
           msg_notice("Configuration reload request received, reloading configuration", 
                        NULL);
-          sig_hup_received = FALSE;
+          reset_cached_hostname();
           if ((*cfg)->stats_freq > 0)
             {
               if (stats_timer_id != 0)
@@ -175,6 +191,7 @@ main_loop_run(GlobalConfig **cfg)
               stats_timer_id = g_timeout_add((*cfg)->stats_freq * 1000, stats_timer, NULL);
             }
           stats_cleanup_orphans();
+          sigprocmask(SIG_UNBLOCK, &ss, NULL);
         }
       if (sig_term_received)
         {
@@ -187,13 +204,22 @@ main_loop_run(GlobalConfig **cfg)
 	  pid_t pid;
 	  int status;
 
+          sigemptyset(&ss);
+          sigaddset(&ss, SIGCHLD);
+          sigprocmask(SIG_BLOCK, &ss, NULL);
+	  sig_child_received = FALSE;
+
+	  /* this may handle multiple SIGCHLD signals, however it doesn't
+	   * matter if one or multiple SIGCHLD was received assuming that
+	   * all exited child process are waited for */
+
           do
 	    {
 	      pid = waitpid(-1, &status, WNOHANG);
 	      child_manager_sigchild(pid, status);
 	    }
           while (pid > 0);
-	  sig_child_received = FALSE;
+          sigprocmask(SIG_UNBLOCK, &ss, NULL);
 	}
     }
   control_destroy();
@@ -224,6 +250,7 @@ static GOptionEntry syslogng_options[] =
   { "syntax-only",       's',         0, G_OPTION_ARG_NONE, &syntax_only, "Only read and parse config file", NULL},
   { "version",           'V',         0, G_OPTION_ARG_NONE, &display_version, "Display version number (" PACKAGE " " VERSION ")", NULL },
   { "seed",              'S',         0, G_OPTION_ARG_NONE, &seed_rng, "Seed the RNG using ~/.rnd or $RANDFILE", NULL},
+  { "control",           'c',         0, G_OPTION_ARG_STRING, &ctlfilename, "Set syslog-ng control socket, default=" PATH_CONTROL_SOCKET, "<ctlpath>" },
 #ifdef YYDEBUG
   { "yydebug",           'y',         0, G_OPTION_ARG_NONE, &yydebug, "Enable configuration parser debugging", NULL },
 #endif

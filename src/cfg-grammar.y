@@ -718,11 +718,17 @@ options_item
 	| KW_FRAC_DIGITS '(' LL_NUMBER ')'		{ configuration->frac_digits = $3; }
 	| KW_CREATE_DIRS '(' yesno ')'		{ configuration->create_dirs = $3; }
 	| KW_OWNER '(' string_or_number ')'	{ cfg_file_owner_set(configuration, $3); free($3); }
+	| KW_OWNER '(' ')'	                { cfg_file_owner_set(configuration, "-2"); }
 	| KW_GROUP '(' string_or_number ')'	{ cfg_file_group_set(configuration, $3); free($3); }
+	| KW_GROUP '(' ')'                    	{ cfg_file_group_set(configuration, "-2"); }
 	| KW_PERM '(' LL_NUMBER ')'		{ cfg_file_perm_set(configuration, $3); }
+	| KW_PERM '(' ')'		        { cfg_file_perm_set(configuration, -2); }
 	| KW_DIR_OWNER '(' string_or_number ')'	{ cfg_dir_owner_set(configuration, $3); free($3); }
+	| KW_DIR_OWNER '('  ')'	                { cfg_dir_owner_set(configuration, "-2"); }
 	| KW_DIR_GROUP '(' string_or_number ')'	{ cfg_dir_group_set(configuration, $3); free($3); }
+	| KW_DIR_GROUP '('  ')'	                { cfg_dir_group_set(configuration, "-2"); }
 	| KW_DIR_PERM '(' LL_NUMBER ')'		{ cfg_dir_perm_set(configuration, $3); }
+	| KW_DIR_PERM '('  ')'		        { cfg_dir_perm_set(configuration, -2); }
 	| KW_DNS_CACHE '(' yesno ')' 		{ configuration->use_dns_cache = $3; }
 	| KW_DNS_CACHE_SIZE '(' LL_NUMBER ')'	{ configuration->dns_cache_size = $3; }
 	| KW_DNS_CACHE_EXPIRE '(' LL_NUMBER ')'	{ configuration->dns_cache_expire = $3; }

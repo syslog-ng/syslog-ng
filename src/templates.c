@@ -43,6 +43,7 @@ enum
   M_LEVEL,
   M_LEVEL_NUM,
   M_TAG,
+  M_TAGS,
   M_BSDTAG,
   M_PRI,
 
@@ -93,6 +94,7 @@ LogMacroDef macros[] =
         { "LEVEL", M_LEVEL },
         { "LEVEL_NUM", M_LEVEL_NUM },
         { "TAG", M_TAG },
+        { "TAGS", M_TAGS },
         { "BSDTAG", M_BSDTAG },
         { "PRI", M_PRI },
 
@@ -270,6 +272,11 @@ log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, TimeZo
     case M_TAG:
       {
         g_string_sprintfa(result, "%02x", msg->pri);
+        break;
+      }
+    case M_TAGS:
+      {
+        log_msg_print_tags(msg, result);
         break;
       }
     case M_BSDTAG:

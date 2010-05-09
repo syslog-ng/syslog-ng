@@ -446,6 +446,8 @@ static void
 log_db_parser_reload_database(LogDBParser *self)
 {
   struct stat st;
+  LogPatternDatabase db_old;
+  gchar *db_file_old;
 
   if (stat(self->db_file, &st) < 0)
     {
@@ -460,11 +462,15 @@ log_db_parser_reload_database(LogDBParser *self)
     }
   self->db_file_inode = st.st_ino;
   self->db_file_mtime = st.st_mtime;
+  db_old = self->db;
+  db_file_old = self->db_file;
 
-  log_pattern_database_free(&self->db);
   if (!log_pattern_database_load(&self->db, self->db_file))
     {
-      msg_error("Error reloading pattern database, no pattern recognition will be done", NULL);
+      msg_error("Error reloading pattern database, no automatic reload will be performed", NULL);
+      /* restore the old object pointers */
+      self->db = db_old;
+      self->db_file = db_file_old;
     }
   else
     {
@@ -473,6 +479,8 @@ log_db_parser_reload_database(LogDBParser *self)
                  evt_tag_str("version", self->db.version),
                  evt_tag_str("pub_date", self->db.pub_date),
                  NULL);
+      /* free the old database if the new was loaded successfully */
+      log_pattern_database_free(&db_old);
     }
 
 }

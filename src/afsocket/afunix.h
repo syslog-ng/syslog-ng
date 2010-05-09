@@ -31,9 +31,10 @@ typedef struct _AFUnixSourceDriver
 {
   AFSocketSourceDriver super;
   gchar *filename;
-  uid_t owner;
-  gid_t group;
-  mode_t perm;
+  /* deliberately using int type here, as we may not fit into 16 bits (e.g. when using -1) */
+  gint owner;
+  gint group;
+  gint perm;
   SocketOptions sock_options;
 } AFUnixSourceDriver;
 

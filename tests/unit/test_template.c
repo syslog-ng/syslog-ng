@@ -62,6 +62,9 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   log_msg_set_value(msg, log_msg_get_value_handle("APP.VALUE"), "value", -1);
   log_msg_set_match(msg, 0, "whole-match", -1);
   log_msg_set_match(msg, 1, "first-match", -1);
+  log_msg_set_tag_by_name(msg, "alma");
+  log_msg_set_tag_by_name(msg, "korte");
+  log_msg_set_tag_by_name(msg, "citrom");
 
   /* fix some externally or automatically defined values */
   log_msg_set_value(msg, LM_V_HOST_FROM, "kismacska", -1);
@@ -77,6 +80,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase(msg, "$LEVEL", "err");
   testcase(msg, "$LEVEL_NUM", "3");
   testcase(msg, "$TAG", "9b");
+  testcase(msg, "$TAGS", "alma,korte,citrom");
   testcase(msg, "$PRI", "155");
   testcase(msg, "$DATE", "Feb 11 10:34:56.000");
   testcase(msg, "$FULLDATE", "2006 Feb 11 10:34:56.000");
@@ -150,10 +154,10 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase(msg, "$FULLHOST", "bzorp");
   testcase(msg, "$PROGRAM", "syslog-ng");
   testcase(msg, "$PID", "23323");
-  testcase(msg, "$MSGHDR", "syslog-ng[23323]: ");
-  testcase(msg, "$MSG", "syslog-ng[23323]: árvíztűrőtükörfúrógép");
+  testcase(msg, "$MSGHDR", "syslog-ng[23323]:");
+  testcase(msg, "$MSG", "syslog-ng[23323]:árvíztűrőtükörfúrógép");
   testcase(msg, "$MSGONLY", "árvíztűrőtükörfúrógép");
-  testcase(msg, "$MESSAGE", "syslog-ng[23323]: árvíztűrőtükörfúrógép");
+  testcase(msg, "$MESSAGE", "syslog-ng[23323]:árvíztűrőtükörfúrógép");
   testcase(msg, "$SOURCEIP", "10.10.10.10");
   testcase(msg, "$PROGRAM/var/log/messages/$HOST/$HOST_FROM/$MONTH$DAY${QQQQQ}valami", "syslog-ng/var/log/messages/bzorp/kismacska/0211valami");
   testcase(msg, "${APP.VALUE}", "value");
@@ -164,7 +168,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase(msg, "$$$1$$", "$first-match$");
 
   dummy.version = 0x0300;
-  testcase(msg, "$MSGHDR", "syslog-ng[23323]: ");
+  testcase(msg, "$MSGHDR", "syslog-ng[23323]:");
   testcase(msg, "$MSG", "árvíztűrőtükörfúrógép");
   testcase(msg, "$MESSAGE", "árvíztűrőtükörfúrógép");
 
@@ -178,10 +182,10 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 
   msg_str = "<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép";
 
-  msg = log_msg_new(msg_str, strlen(msg_str), g_sockaddr_inet_new("10.10.10.10", 1010), LP_STORE_LEGACY_MSGHDR, NULL, -1, 0xFFFF);
+  msg = log_msg_new(msg_str, strlen(msg_str), g_sockaddr_inet_new("10.10.10.10", 1010), LP_DONT_STORE_LEGACY_MSGHDR, NULL, -1, 0xFFFF);
 
-  testcase(msg, "$LEGACY_MSGHDR", "syslog-ng[23323]:");
-  testcase(msg, "$MSGHDR", "syslog-ng[23323]:");
+  testcase(msg, "$LEGACY_MSGHDR", "");
+  testcase(msg, "$MSGHDR", "syslog-ng[23323]: ");
   log_msg_unref(msg);
 
   msg_str = "<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog 3535 ID47 [exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] BOMAn application event log entry...";

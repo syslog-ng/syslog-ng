@@ -354,14 +354,64 @@ stats_generate_log(void)
   msg_event_send(e);
 }
 
+static gboolean
+has_csv_special_character(const gchar *var)
+{
+  gchar *p1 = strchr(var,';');
+  if(p1)
+    return TRUE;
+  p1 = strchr(var,'\n');
+  if(p1)
+    return TRUE;
+  if(var[0] == '"')
+    return TRUE;
+  return FALSE;
+}
+
+static gchar *
+stats_format_csv_escapevar(const gchar *var)
+{
+  guint32 index;
+  guint32 e_index;
+  guint32 varlen = strlen(var);
+  gchar *result;
+
+  if (varlen != 0 && has_csv_special_character(var))
+    {
+      result = g_malloc(varlen*2);
+      result[0] = '"';
+      e_index = 1;
+      for (index = 0; index < varlen; index++)
+        {
+          if (var[index] == '"')
+            {
+              result[e_index]='\\';
+              e_index++;
+            }
+          result[e_index] = var[index];
+          e_index++;
+        }
+      result[e_index]='"';
+      result[e_index+1] = 0;
+    }
+  else
+    {
+      result = g_strdup(var);
+    }
+  return result;
+}
+
 static void
 stats_format_csv(gpointer key, gpointer value, gpointer user_data)
 {
   GString *csv = (GString *) user_data;
   StatsCounter *sc = (StatsCounter *) value;
   StatsCounterType type;
+  gchar *s_id, *s_instance, *tag_name;
   gchar buf[32];
 
+  s_id = stats_format_csv_escapevar(sc->id);
+  s_instance = stats_format_csv_escapevar(sc->instance);
   for (type = 0; type < SC_TYPE_MAX; type++)
     {
 
@@ -392,11 +442,13 @@ stats_format_csv(gpointer key, gpointer value, gpointer user_data)
                          (sc->source & SCS_SOURCE ? "src." : (sc->source & SCS_DESTINATION ? "dst." : "")),
                          source_names[sc->source & SCS_SOURCE_MASK]);
             }
-            
-          g_string_append_printf(csv, "%s;%s;%s;%c;%s;%u\n", source_name, sc->id, sc->instance, state, tag_names[type], sc->counters[type]);
+          tag_name = stats_format_csv_escapevar(tag_names[type]);
+          g_string_append_printf(csv, "%s;%s;%s;%c;%s;%u\n", source_name, s_id, s_instance, state, tag_name, sc->counters[type]);
+          g_free(tag_name);
         }
     }
-
+    g_free(s_id);
+    g_free(s_instance);
 }
 
 
@@ -404,6 +456,7 @@ GString *
 stats_generate_csv(void)
 {
   GString *csv = g_string_sized_new(1024);
+  g_string_append_printf(csv, "%s;%s;%s;%s;%s;%s\n", "SourceName", "SourceId", "SourceInstance", "State", "Type", "Number");
   g_hash_table_foreach(counter_hash, stats_format_csv, csv);
   return csv;
 }

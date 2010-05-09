@@ -501,6 +501,7 @@ cfg_free(GlobalConfig *self)
   g_free(self->bad_hostname_re);
   g_free(self->dns_cache_hosts);
   g_free(self);
+  configuration = NULL;
 }
 
 static void 

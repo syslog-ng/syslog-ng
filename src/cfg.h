@@ -77,13 +77,13 @@ struct _GlobalConfig
 
   gint follow_freq;
   gboolean create_dirs;
-  uid_t file_uid;
-  gid_t file_gid;
-  mode_t file_perm;
+  gint file_uid;
+  gint file_gid;
+  gint file_perm;
   
-  uid_t dir_uid;
-  gid_t dir_gid;
-  mode_t dir_perm;
+  gint dir_uid;
+  gint dir_gid;
+  gint dir_perm;
 
   gboolean keep_timestamp;  
   gint ts_format;

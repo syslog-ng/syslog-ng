@@ -59,12 +59,12 @@ typedef struct _AFFileDestDriver
   LogTemplate *filename_template;
   AFFileDestWriter *single_writer;
   guint32 flags;
-  uid_t file_uid;
-  gid_t file_gid;
-  mode_t file_perm;
-  uid_t dir_uid;
-  gid_t dir_gid;
-  mode_t dir_perm;
+  gint file_uid;
+  gint file_gid;
+  gint file_perm;
+  gint dir_uid;
+  gint dir_gid;
+  gint dir_perm;
   gchar *local_time_zone;
   TimeZoneInfo *local_time_zone_info;
   LogWriterOptions writer_options;

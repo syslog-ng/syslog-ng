@@ -156,8 +156,11 @@ source_afunix_options
 
 source_afunix_option
 	: KW_OWNER '(' string_or_number ')'	{ afunix_sd_set_uid((*last_driver), $3); free($3); }
+	| KW_OWNER '(' ')'	                { afunix_sd_set_uid((*last_driver), "-2"); }
 	| KW_GROUP '(' string_or_number ')'	{ afunix_sd_set_gid((*last_driver), $3); free($3); }
+	| KW_GROUP '(' ')'	                { afunix_sd_set_gid((*last_driver), "-2"); }
 	| KW_PERM '(' LL_NUMBER ')'		{ afunix_sd_set_perm((*last_driver), $3); }
+	| KW_PERM '(' ')'		        { afunix_sd_set_perm((*last_driver), -2); }
 	| KW_OPTIONAL '(' yesno ')'		{ (*last_driver)->optional = $3; }
 	| source_afsocket_stream_params		{}
 	| source_reader_option			{}

@@ -29,4 +29,5 @@ EXTRA_DIST = README init.d.solaris init.d.HP-UX init.d.RedHat init.d.SuSE 	\
 	apparmor/opt.syslog-ng.sbin.syslog-ng \
 	balabit-initscripts/init.d \
 	balabit-initscripts/init.d.freebsd \
-	balabit-initscripts/init-functions
+	balabit-initscripts/init-functions \
+        upstart/syslog-ng.conf.upstart
