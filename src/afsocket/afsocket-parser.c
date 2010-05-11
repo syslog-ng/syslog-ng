@@ -11,6 +11,7 @@ static CfgLexerKeyword afsocket_keywords[] = {
   { "unix_stream",	KW_UNIX_STREAM },
   { "udp",                KW_UDP },
   { "tcp",                KW_TCP },
+  { "syslog",             KW_SYSLOG },
 #if ENABLE_IPV6
   { "udp6",               KW_UDP6 },
   { "tcp6",               KW_TCP6 },

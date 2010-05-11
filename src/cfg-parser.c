@@ -28,7 +28,6 @@ static CfgLexerKeyword main_keywords[] = {
   { "pipe",               KW_PIPE },
   { "internal",           KW_INTERNAL },
   { "usertty",            KW_USERTTY },
-  { "syslog",             KW_SYSLOG },
   { "program",            KW_PROGRAM },
   { "columns",            KW_COLUMNS, 0x0300 },
   { "delimiters",         KW_DELIMITERS, 0x0300 },
