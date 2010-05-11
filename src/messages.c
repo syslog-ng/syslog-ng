@@ -125,7 +125,7 @@ msg_send_internal_message(int prio, const char *msg)
 
           if (context->recurse_count == 0)
             context->recurse_warning = FALSE;
-          m = log_msg_new_internal(prio, msg, LP_INTERNAL | LP_LOCAL);
+          m = log_msg_new_internal(prio, msg);
           m->recurse_count = context->recurse_count;
           msg_queue_push(internal_msg_queue, m);
         }

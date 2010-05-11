@@ -14,10 +14,18 @@
 
 gboolean success = TRUE;
 gboolean verbose = FALSE;
+LogParseOptions parse_options;
 
-LogMessage *init_msg(gchar *msg_string, gboolean msg_flags)
+LogMessage *
+init_msg(gchar *msg_string, gboolean use_syslog_protocol)
 {
-  LogMessage *msg = log_msg_new(msg_string, strlen(msg_string), g_sockaddr_inet_new("10.10.10.10", 1010), msg_flags, NULL, -1, 0xFFFF);
+  LogMessage *msg;
+
+  if (use_syslog_protocol)
+    parse_options.flags |= LP_SYSLOG_PROTOCOL;
+  else
+    parse_options.flags &= ~LP_SYSLOG_PROTOCOL;
+  msg = log_msg_new(msg_string, strlen(msg_string), g_sockaddr_inet_new("10.10.10.10", 1010), &parse_options);
   log_msg_set_value(msg, log_msg_get_value_handle("APP.VALUE"), "value", 5);
   log_msg_set_match(msg, 0, "whole-match", 11);
   log_msg_set_match(msg, 1, "first-match", 11);
@@ -39,7 +47,6 @@ testcase(gchar *msg_string, gchar *template, gboolean use_syslog_protocol,gchar 
   GError *error = NULL;
   LogMessage *msg = NULL;
   LogWriterOptions opt = {0};
-  guint msg_flags = 0;
   guint writer_flags = 0;
 
   static TimeZoneInfo *tzinfo = NULL;
@@ -52,7 +59,6 @@ testcase(gchar *msg_string, gchar *template, gboolean use_syslog_protocol,gchar 
   if (use_syslog_protocol)
     {
       opt.options |= LWO_SYSLOG_PROTOCOL;
-      msg_flags =  LP_SYSLOG_PROTOCOL;
       writer_flags = LW_SYSLOG_PROTOCOL;
     }
   if (template)
@@ -61,7 +67,7 @@ testcase(gchar *msg_string, gchar *template, gboolean use_syslog_protocol,gchar 
       log_template_compile(templ,&error);
     }
   opt.template = templ;
-  msg = init_msg(msg_string,msg_flags);
+  msg = init_msg(msg_string, use_syslog_protocol);
   writer = (LogWriter*)log_writer_new(writer_flags);
   if (writer)
     {
@@ -115,6 +121,8 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   app_startup();
   putenv("TZ=MET-1METDST");
   tzset();
+
+  log_parse_syslog_options_defaults(&parse_options);
   testcase(msg_syslog_str,NULL,TRUE,expeted_msg_syslog_str);
   testcase(msg_syslog_str,"$MSGID $MSG",TRUE,expeted_msg_syslog_str_t);
   testcase(msg_syslog_empty_str,NULL,TRUE,expected_msg_syslog_empty_str);

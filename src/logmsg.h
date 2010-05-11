@@ -30,25 +30,12 @@
 #include "serialize.h"
 #include "logstamp.h"
 #include "nvtable.h"
+#include "parse-syslog.h"
 
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <sys/time.h>
-#include <regex.h>
-
-#define LP_NOPARSE         0x0001
-#define LP_INTERNAL        0x0002
-#define LP_LOCAL           0x0004
-#define LP_CHECK_HOSTNAME  0x0008
-#define LP_STRICT	   0x0010
-#define LP_SYSLOG_PROTOCOL    0x0040
-/* the caller knows the message is valid UTF-8 */
-#define LP_ASSUME_UTF8     0x0080
-#define LP_VALIDATE_UTF8   0x0100
-#define LP_NO_MULTI_LINE   0x0200
-#define LP_DONT_STORE_LEGACY_MSGHDR 0x0400
-
 
 typedef struct _LogPathOptions LogPathOptions;
 
@@ -155,6 +142,8 @@ struct _LogMessage
 };
 
 extern NVRegistry *logmsg_registry;
+extern const char logmsg_sd_prefix[];
+extern const gint logmsg_sd_prefix_len;
 
 LogMessage *log_msg_ref(LogMessage *m);
 void log_msg_unref(LogMessage *m);
@@ -203,12 +192,9 @@ void log_msg_print_tags(LogMessage *self, GString *result);
 
 LogMessage *log_msg_new(const gchar *msg, gint length,
                         GSockAddr *saddr,
-                        guint flags,
-                        regex_t *bad_hostname,
-                        glong assume_timezone,
-                        guint16 default_pri);
+                        LogParseOptions *parse_options);
 LogMessage *log_msg_new_mark(void);
-LogMessage *log_msg_new_internal(gint prio, const gchar *msg, guint flags);
+LogMessage *log_msg_new_internal(gint prio, const gchar *msg);
 LogMessage *log_msg_new_empty(void);
 
 void log_msg_add_ack(LogMessage *msg, const LogPathOptions *path_options);

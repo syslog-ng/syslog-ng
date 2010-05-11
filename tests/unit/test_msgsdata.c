@@ -11,10 +11,14 @@ testcase_update(const gchar *msg, const gchar *expected_sd_str, gchar *elem_name
   GString *sd_str = g_string_new("");
   va_list va;
   gchar *elem, *param, *value;
+  LogParseOptions parse_options;
+
+  log_parse_syslog_options_defaults(&parse_options);
+  parse_options.flags |= LP_SYSLOG_PROTOCOL;
 
   va_start(va, elem_name1);
 
-  logmsg = log_msg_new(msg, strlen(msg), NULL, LP_SYSLOG_PROTOCOL, NULL, -1, 0xFFFF);
+  logmsg = log_msg_new(msg, strlen(msg), NULL, &parse_options);
 
   elem = elem_name1;
   param = va_arg(va, char *);

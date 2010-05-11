@@ -13,6 +13,7 @@
 
 gboolean success = TRUE;
 gboolean verbose = FALSE;
+LogParseOptions parse_options;
 
 /* Beginning of Message character encoded in UTF8 */
 #define BOM "\xEF\xBB\xBF"
@@ -20,7 +21,7 @@ gboolean verbose = FALSE;
 #define BENCHMARK_COUNT 1000
 
 void
-testcase(const gchar *msg_str, guint32 parse_flags, gchar *template)
+testcase(const gchar *msg_str, gboolean syslog_proto, gchar *template)
 {
   LogTemplate *templ;
   LogMessage *msg;
@@ -32,7 +33,11 @@ testcase(const gchar *msg_str, guint32 parse_flags, gchar *template)
   if (!tzinfo)
     tzinfo = time_zone_info_new(NULL);
 
-  msg = log_msg_new(msg_str, strlen(msg_str), g_sockaddr_inet_new("10.10.10.10", 1010), parse_flags, NULL, -1, 0xFFFF);
+  if (syslog_proto)
+    parse_options.flags |= LP_SYSLOG_PROTOCOL;
+  else
+    parse_options.flags &= ~LP_SYSLOG_PROTOCOL;
+  msg = log_msg_new(msg_str, strlen(msg_str), g_sockaddr_inet_new("10.10.10.10", 1010), &parse_options);
   log_msg_set_value(msg, log_msg_get_value_handle("APP.VALUE"), "value", -1);
   log_msg_set_value(msg, log_msg_get_value_handle("APP.VALUE2"), "value", -1);
   log_msg_set_value(msg, log_msg_get_value_handle("APP.VALUE3"), "value", -1);
@@ -81,40 +86,42 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   putenv("TZ=MET-1METDST");
   tzset();
 
-  testcase("<155>2006-02-11T10:34:56.156+01:00 bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép", 0,
+  log_parse_syslog_options_defaults(&parse_options);
+
+  testcase("<155>2006-02-11T10:34:56.156+01:00 bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép", FALSE,
            "<$PRI>$DATE $HOST $MSGHDR$MSG\n");
 
-  testcase("<155>2006-02-11T10:34:56.156+01:00 bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép", 0,
+  testcase("<155>2006-02-11T10:34:56.156+01:00 bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép", FALSE,
            "$DATE $HOST $MSGHDR$MSG\n");
 
-  testcase("<155>2006-02-11T10:34:56.156+01:00 bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép", 0,
+  testcase("<155>2006-02-11T10:34:56.156+01:00 bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép", FALSE,
            "$DATE $HOST $MSGHDR$MSG value\n");
 
-  testcase("<155>2006-02-11T10:34:56.156+01:00 bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép", 0,
+  testcase("<155>2006-02-11T10:34:56.156+01:00 bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép", FALSE,
            "$DATE $HOST $MSGHDR$MSG ${APP.VALUE}\n");
 
-  testcase("<155>2006-02-11T10:34:56.156+01:00 bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép", 0,
+  testcase("<155>2006-02-11T10:34:56.156+01:00 bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép", FALSE,
            "$MSG\n");
 
-  testcase("<155>2006-02-11T10:34:56.156+01:00 bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép", 0,
+  testcase("<155>2006-02-11T10:34:56.156+01:00 bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép", FALSE,
            "$DATE $FACILITY.$PRIORITY $HOST $MSGHDR$MSG $SEQNO\n");
 
-  testcase("<155>2006-02-11T10:34:56.156+01:00 bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép", 0,
+  testcase("<155>2006-02-11T10:34:56.156+01:00 bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép", FALSE,
            "${APP.VALUE} ${APP.VALUE2}\n");
 
-  testcase("<155>1 2006-02-11T10:34:56.156+01:00 bzorp syslog-ng 23323 ID47 [exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] " BOM "árvíztűrőtükörfúrógép", LP_SYSLOG_PROTOCOL,
+  testcase("<155>1 2006-02-11T10:34:56.156+01:00 bzorp syslog-ng 23323 ID47 [exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] " BOM "árvíztűrőtükörfúrógép", TRUE,
            "<$PRI>$DATE $HOST $MSGHDR$MSG\n");
 
-  testcase("<155>1 2006-02-11T10:34:56.156+01:00 bzorp syslog-ng 23323 ID47 [exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] " BOM "árvíztűrőtükörfúrógép", LP_SYSLOG_PROTOCOL,
+  testcase("<155>1 2006-02-11T10:34:56.156+01:00 bzorp syslog-ng 23323 ID47 [exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] " BOM "árvíztűrőtükörfúrógép", TRUE,
            "${SDATA}\n");
 
-  testcase("<155>1 2006-02-11T10:34:56.156+01:00 bzorp syslog-ng 23323 ID47 [exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] " BOM "árvíztűrőtükörfúrógép", LP_SYSLOG_PROTOCOL,
+  testcase("<155>1 2006-02-11T10:34:56.156+01:00 bzorp syslog-ng 23323 ID47 [exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] " BOM "árvíztűrőtükörfúrógép", TRUE,
            "$DATE $HOST $PROGRAM $PID $MSGID $SDATA $MSG\n");
 
-  testcase("<155>1 2006-02-11T10:34:56.156+01:00 bzorp syslog-ng 23323 ID47 [exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] " BOM "árvíztűrőtükörfúrógép", LP_SYSLOG_PROTOCOL,
+  testcase("<155>1 2006-02-11T10:34:56.156+01:00 bzorp syslog-ng 23323 ID47 [exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] " BOM "árvíztűrőtükörfúrógép", TRUE,
            "$DATE $HOST $PROGRAM $PID $MSGID $MSG\n");
 
-  testcase("<155>1 2006-02-11T10:34:56.156+01:00 bzorp syslog-ng 23323 ID47 [exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] " BOM "árvíztűrőtükörfúrógép", LP_SYSLOG_PROTOCOL,
+  testcase("<155>1 2006-02-11T10:34:56.156+01:00 bzorp syslog-ng 23323 ID47 [exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] " BOM "árvíztűrőtükörfúrógép", TRUE,
            "$DATE ${HOST:--} ${PROGRAM:--} ${PID:--} ${MSGID:--} ${SDATA:--} $MSG\n");
 
   app_shutdown();

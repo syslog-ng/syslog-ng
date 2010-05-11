@@ -7,6 +7,7 @@
 
 int acked_messages = 0;
 int fed_messages = 0;
+LogParseOptions parse_options;
 
 #define OVERFLOW_SIZE 10000
 
@@ -28,7 +29,7 @@ feed_some_messages(LogQueue **q, int n, gboolean flow_control)
     {
       char *msg_str = "<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép";
 
-      msg = log_msg_new(msg_str, strlen(msg_str), g_sockaddr_inet_new("10.10.10.10", 1010), 0, NULL, -1, 0xFFFF);
+      msg = log_msg_new(msg_str, strlen(msg_str), g_sockaddr_inet_new("10.10.10.10", 1010), &parse_options);
       log_msg_add_ack(msg, &path_options);
       msg->ack_func = test_ack;
       if (!log_queue_push_tail((*q), msg, &path_options))
@@ -134,7 +135,7 @@ threaded_feed(gpointer st)
 
   for (i = 0; i < 100000; i++)
     {
-      msg = log_msg_new(msg_str, strlen(msg_str), g_sockaddr_inet_new("10.10.10.10", 1010), 0, NULL, -1);
+      msg = log_msg_new(msg_str, strlen(msg_str), g_sockaddr_inet_new("10.10.10.10", 1010), &parse_options);
       log_msg_add_ack(msg, &path_options);
       msg->ack_func = test_ack;
 
@@ -206,6 +207,8 @@ main()
   app_startup();
   putenv("TZ=MET-1METDST");
   tzset();
+
+  log_parse_syslog_options_defaults(&parse_options);
 
   testcase_zero_diskbuf_alternating_send_acks();
   testcase_zero_diskbuf_and_normal_acks();

@@ -21,6 +21,8 @@
     }				\
   while (0)
 
+LogParseOptions parse_options;
+
 unsigned long
 absolute_value(signed long diff)
 {
@@ -82,7 +84,9 @@ testcase(gchar *msg,
   if (bad_hostname_re)
     TEST_ASSERT(regcomp(&bad_hostname, bad_hostname_re, REG_NOSUB | REG_EXTENDED) == 0, "%d", 0, 0);
 
-  logmsg = log_msg_new(msg, strlen(msg), addr, parse_flags, bad_hostname_re ? &bad_hostname : NULL, -1, 0xFFFF);
+  parse_options.flags = parse_flags;
+  parse_options.bad_hostname = bad_hostname_re ? &bad_hostname : NULL;
+  logmsg = log_msg_new(msg, strlen(msg), addr, &parse_options);
 
   /* NOTE: this if statement mimics what LogReader does when the message has no timezone information */
   if (logmsg->timestamps[LM_TS_STAMP].zone_offset == -1)
@@ -135,7 +139,9 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 
   putenv("TZ=MET-1METDST");
   tzset();
-  testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, NULL,
+
+  log_parse_syslog_options_defaults(&parse_options);
+  testcase("<15> openvpn[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, NULL,
            15, 			// pri
            0, 0, 0,		// timestamp (sec/usec/zone)
            "",		// host
@@ -144,7 +150,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            NULL, "2499", NULL, NULL
            );
 
-  testcase("<7>2006-11-10T10:43:21.156+02:00 bzorp openvpn[2499]: PTHREAD support initialized", 0, NULL,
+  testcase("<7>2006-11-10T10:43:21.156+02:00 bzorp openvpn[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, NULL,
            7, 			// pri
            1163148201, 156000, 7200,	// timestamp (sec/usec/zone)
            "bzorp",		// host
@@ -153,7 +159,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            NULL, "2499", NULL, NULL
            );
 
-  testcase("<7>2006-11-10T10:43:21.156+01:00 bzorp openvpn[2499]: PTHREAD support initialized", 0, NULL,
+  testcase("<7>2006-11-10T10:43:21.156+01:00 bzorp openvpn[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, NULL,
            7, 			// pri
            1163151801, 156000, 3600,	// timestamp (sec/usec/zone)
            "bzorp",		// host
@@ -162,7 +168,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            NULL, "2499", NULL, NULL
            );
 
-  testcase("<7>2006-11-10T10:43:21.15600000000000000000000000000000000000000000000000000000000000+01:00 bzorp openvpn[2499]: PTHREAD support initialized", 0, NULL,
+  testcase("<7>2006-11-10T10:43:21.15600000000000000000000000000000000000000000000000000000000000+01:00 bzorp openvpn[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, NULL,
            7, 			// pri
            1163151801, 156000, 3600,	// timestamp (sec/usec/zone)
            "bzorp",		// host
@@ -170,7 +176,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            "PTHREAD support initialized", // msg
            NULL, "2499", NULL, NULL
            );
-  testcase("<7>2006-11-10T10:43:21.15600000000 bzorp openvpn[2499]: PTHREAD support initialized", 0, NULL,
+  testcase("<7>2006-11-10T10:43:21.15600000000 bzorp openvpn[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, NULL,
            7, 			// pri
            1163151801, 156000, 3600,	// timestamp (sec/usec/zone)
            "bzorp",		// host
@@ -179,7 +185,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            NULL, "2499", NULL, NULL
            );
 
-  testcase("<7>2006-03-26T01:59:59.156+01:00 bzorp openvpn[2499]: PTHREAD support initialized", 0, NULL,
+  testcase("<7>2006-03-26T01:59:59.156+01:00 bzorp openvpn[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, NULL,
            7, 			// pri
            1143334799, 156000, 3600,	// timestamp (sec/usec/zone)
            "bzorp",		// host
@@ -188,7 +194,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            NULL, "2499", NULL, NULL
            );
 
-  testcase("<7>2006-03-26T02:00:00.156+01:00 bzorp openvpn[2499]: PTHREAD support initialized", 0, NULL,
+  testcase("<7>2006-03-26T02:00:00.156+01:00 bzorp openvpn[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, NULL,
            7, 			// pri
            1143334800, 156000, 3600,	// timestamp (sec/usec/zone)
            "bzorp",		// host
@@ -196,7 +202,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            "PTHREAD support initialized", // msg
            NULL, "2499", NULL, NULL
            );
-  testcase("<7>2006-03-26T03:00:00.156+02:00 bzorp openvpn[2499]: PTHREAD support initialized", 0, NULL,
+  testcase("<7>2006-03-26T03:00:00.156+02:00 bzorp openvpn[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, NULL,
            7, 			// pri
            1143334800, 156000, 7200,	// timestamp (sec/usec/zone)
            "bzorp",		// host
@@ -204,7 +210,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            "PTHREAD support initialized", // msg
            NULL, "2499", NULL, NULL
            );
-  testcase("<7>2006-10-29T01:00:00.156+02:00 bzorp openvpn[2499]: PTHREAD support initialized", 0, NULL,
+  testcase("<7>2006-10-29T01:00:00.156+02:00 bzorp openvpn[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, NULL,
            7, 			// pri
            1162076400, 156000, 7200,	// timestamp (sec/usec/zone)
            "bzorp",		// host
@@ -212,7 +218,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            "PTHREAD support initialized", // msg
            NULL, "2499", NULL, NULL
            );
-  testcase("<7>2006-10-29T01:59:59.156+02:00 bzorp openvpn[2499]: PTHREAD support initialized", 0, NULL,
+  testcase("<7>2006-10-29T01:59:59.156+02:00 bzorp openvpn[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, NULL,
            7, 			// pri
            1162079999, 156000, 7200,	// timestamp (sec/usec/zone)
            "bzorp",		// host
@@ -220,7 +226,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            "PTHREAD support initialized", // msg
            NULL, "2499", NULL, NULL
            );
-  testcase("<7>2006-10-29T02:00:00.156+02:00 bzorp openvpn[2499]: PTHREAD support initialized", 0, NULL,
+  testcase("<7>2006-10-29T02:00:00.156+02:00 bzorp openvpn[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, NULL,
            7, 			// pri
            1162080000, 156000, 7200,	// timestamp (sec/usec/zone)
            "bzorp",		// host
@@ -230,7 +236,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            );
 
   /* the same in a foreign timezone */
-  testcase("<7>2006-10-29T01:00:00.156+01:00 bzorp openvpn[2499]: PTHREAD support initialized", 0, NULL,
+  testcase("<7>2006-10-29T01:00:00.156+01:00 bzorp openvpn[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, NULL,
            7, 			// pri
            1162080000, 156000, 3600,	// timestamp (sec/usec/zone)
            "bzorp",		// host
@@ -238,7 +244,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            "PTHREAD support initialized", // msg
            NULL, "2499", NULL, NULL
            );
-  testcase("<7>2006-10-29T01:59:59.156+01:00 bzorp openvpn[2499]: PTHREAD support initialized", 0, NULL,
+  testcase("<7>2006-10-29T01:59:59.156+01:00 bzorp openvpn[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, NULL,
            7, 			// pri
            1162083599, 156000, 3600,	// timestamp (sec/usec/zone)
            "bzorp",		// host
@@ -246,7 +252,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            "PTHREAD support initialized", // msg
            NULL, "2499", NULL, NULL
            );
-  testcase("<7>2006-10-29T02:00:00.156+01:00 bzorp openvpn[2499]: PTHREAD support initialized", 0, NULL,
+  testcase("<7>2006-10-29T02:00:00.156+01:00 bzorp openvpn[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, NULL,
            7, 			// pri
            1162083600, 156000, 3600,	// timestamp (sec/usec/zone)
            "bzorp",		// host
@@ -257,7 +263,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 
   /* check hostname */
 
-  testcase("<7>2006-10-29T02:00:00.156+01:00 %bzorp openvpn[2499]: PTHREAD support initialized", LP_CHECK_HOSTNAME, NULL,
+  testcase("<7>2006-10-29T02:00:00.156+01:00 %bzorp openvpn[2499]: PTHREAD support initialized", LP_CHECK_HOSTNAME | LP_EXPECT_HOSTNAME, NULL,
            7, 			// pri
            1162083600, 156000, 3600,	// timestamp (sec/usec/zone)
            "",	        	// host
@@ -266,7 +272,17 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            NULL, NULL, NULL, NULL
            );
 
-  testcase("<7>2006-10-29T02:00:00.156+01:00 ", 0, NULL,
+
+  testcase("<7>2006-10-29T02:00:00.156+01:00 bzorp openvpn[2499]: PTHREAD support initialized", 0, NULL,
+           7, 			// pri
+           1162083600, 156000, 3600,	// timestamp (sec/usec/zone)
+           "",	        	// host
+           "bzorp",	// program
+           "openvpn[2499]: PTHREAD support initialized", // msg
+           NULL, NULL, NULL, NULL
+           );
+
+  testcase("<7>2006-10-29T02:00:00.156+01:00 ", LP_EXPECT_HOSTNAME, NULL,
            7, 			// pri
            1162083600, 156000, 3600,	// timestamp (sec/usec/zone)
            "",	        	// host
@@ -275,7 +291,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            NULL, NULL, NULL, NULL
            );
 
-  testcase("<7>2006-10-29T02:00:00.156+01:00", 0, NULL,
+  testcase("<7>2006-10-29T02:00:00.156+01:00", LP_EXPECT_HOSTNAME, NULL,
            7, 			// pri
            1162083600, 156000, 3600,	// timestamp (sec/usec/zone)
            "",	        	// host
@@ -284,7 +300,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            NULL, NULL, NULL, NULL
            );
 
-  testcase("<7>2006-10-29T02:00:00.156+01:00 ctld snmpd[2499]: PTHREAD support initialized", 0, "^ctld",
+  testcase("<7>2006-10-29T02:00:00.156+01:00 ctld snmpd[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, "^ctld",
            7, 			// pri
            1162083600, 156000, 3600,	// timestamp (sec/usec/zone)
            "",		        // host
@@ -293,7 +309,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            NULL, NULL, NULL, NULL
            );
 
-  testcase("<7> Aug 29 02:00:00.156 ctld snmpd[2499]: PTHREAD support initialized", 0, "^ctld",
+  testcase("<7> Aug 29 02:00:00.156 ctld snmpd[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, "^ctld",
            7, 			// pri
            1, 156000, 7200,	// timestamp (sec/usec/zone)
            "",		        // host
@@ -301,7 +317,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            "snmpd[2499]: PTHREAD support initialized", // msg
            NULL, NULL, NULL, NULL
            );
-  testcase("<7> Aug 29 02:00:00.156789 ctld snmpd[2499]: PTHREAD support initialized", 0, "^ctld",
+  testcase("<7> Aug 29 02:00:00.156789 ctld snmpd[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, "^ctld",
            7, 			// pri
            1, 156789, 7200,	// timestamp (sec/usec/zone)
            "",		        // host
@@ -309,7 +325,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            "snmpd[2499]: PTHREAD support initialized", // msg
            NULL, NULL, NULL, NULL
            );
-  testcase("<7> Aug 29 02:00:00. ctld snmpd[2499]: PTHREAD support initialized", 0, "^ctld",
+  testcase("<7> Aug 29 02:00:00. ctld snmpd[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, "^ctld",
            7, 			// pri
            1, 0, 7200,	        // timestamp (sec/usec/zone)
            "",		        // host
@@ -317,7 +333,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            "snmpd[2499]: PTHREAD support initialized", // msg
            NULL, NULL, NULL, NULL
            );
-  testcase("<7> Aug 29 02:00:00 ctld snmpd[2499]: PTHREAD support initialized", 0, "^ctld",
+  testcase("<7> Aug 29 02:00:00 ctld snmpd[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, "^ctld",
            7, 			// pri
            1, 0, 7200,	        // timestamp (sec/usec/zone)
            "",		        // host
@@ -325,7 +341,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            "snmpd[2499]: PTHREAD support initialized", // msg
            NULL, NULL, NULL, NULL
            );
-  testcase("<7>Aug 29 02:00:00 bzorp ctld/snmpd[2499]: PTHREAD support initialized", 0, NULL,
+  testcase("<7>Aug 29 02:00:00 bzorp ctld/snmpd[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, NULL,
            7, 			// pri
            1, 0, 7200,	        // timestamp (sec/usec/zone)
            "bzorp",	        // host
@@ -333,7 +349,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            "PTHREAD support initialized", // msg
            NULL, "2499", NULL, NULL
            );
-  testcase("<190>Apr 15 2007 21:28:13: %PIX-6-302014: Teardown TCP connection 1688438 for bloomberg-net:1.2.3.4/8294 to inside:5.6.7.8/3639 duration 0:07:01 bytes 16975 TCP FINs", 0, "^%",
+  testcase("<190>Apr 15 2007 21:28:13: %PIX-6-302014: Teardown TCP connection 1688438 for bloomberg-net:1.2.3.4/8294 to inside:5.6.7.8/3639 duration 0:07:01 bytes 16975 TCP FINs", LP_EXPECT_HOSTNAME, "^%",
            190,
            1176665293, 0, 7200,
            "",
@@ -342,7 +358,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            NULL, NULL, NULL, NULL
            );
 
-  testcase("<190>Apr 15 2007 21:28:13 %ASA: this is a Cisco ASA timestamp", 0, "^%",
+  testcase("<190>Apr 15 2007 21:28:13 %ASA: this is a Cisco ASA timestamp", LP_EXPECT_HOSTNAME, "^%",
            190,
            1176665293, 0, 7200,
            "",
@@ -350,7 +366,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            "this is a Cisco ASA timestamp",
            NULL, NULL, NULL, NULL
            );
-  testcase("<190>Apr 15 21:28:13 2007 linksys app: msg", 0, NULL,
+  testcase("<190>Apr 15 21:28:13 2007 linksys app: msg", LP_EXPECT_HOSTNAME, NULL,
            190,
            1176665293, 0, 7200,
            "linksys",
@@ -446,7 +462,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            expected_sd_pairs_test_2
            );
 
-  testcase("<7>Aug 29 02:00:00 bzorp ctld/snmpd[2499]:", 0, NULL,
+  testcase("<7>Aug 29 02:00:00 bzorp ctld/snmpd[2499]:", LP_EXPECT_HOSTNAME, NULL,
            7,           // pri
            1, 0, 7200,          // timestamp (sec/usec/zone)
            "bzorp",         // host

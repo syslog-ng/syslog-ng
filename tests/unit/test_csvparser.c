@@ -21,6 +21,8 @@
     }				\
   while (0)
 
+LogParseOptions parse_options;
+
 int
 testcase(gchar *msg, guint parse_flags, gint max_columns, guint32 flags, gchar *delimiters, gchar *quotes, gchar *null_value, gchar *first_value, ...)
 {
@@ -72,7 +74,8 @@ testcase(gchar *msg, guint parse_flags, gint max_columns, guint32 flags, gchar *
       column_array[max_columns] = NULL;
     }
 
-  logmsg = log_msg_new(msg, strlen(msg), NULL, parse_flags, NULL, -1, 0xFFFF);
+  parse_options.flags = parse_flags;
+  logmsg = log_msg_new(msg, strlen(msg), NULL, &parse_options);
 
   p = log_csv_parser_new();
   log_csv_parser_set_flags(p, flags);
@@ -122,6 +125,9 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 
   putenv("TZ=MET-1METDST");
   tzset();
+
+  log_parse_syslog_options_defaults(&parse_options);
+
   testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, -1, LOG_CSV_PARSER_ESCAPE_NONE, " ", NULL, NULL,
            "PTHREAD", "support", "initialized", NULL);
 
