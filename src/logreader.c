@@ -27,6 +27,7 @@
 #include "misc.h"
 #include "stats.h"
 #include "tags.h"
+#include "cfg-parser.h"
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -103,7 +104,7 @@ log_reader_fd_prepare(GSource *source,
       return FALSE;
     }
 
-  if (self->reader->flags & LR_FOLLOW)
+  if (self->reader->options->follow_freq > 0)
     {
       *timeout = self->reader->options->follow_freq;
       return FALSE;
@@ -121,7 +122,7 @@ log_reader_fd_check(GSource *source)
   if (!log_source_free_to_send(&self->reader->super))
     return FALSE;
 
-  if (self->reader->flags & LR_FOLLOW)
+  if (self->reader->options->follow_freq > 0)
     {
       struct stat st, followed_st;
       off_t pos = -1;
@@ -265,10 +266,7 @@ log_reader_handle_line(LogReader *self, const guchar *line, gint length, GSockAd
   /* use the current time to get the time zone offset */
   m = log_msg_new((gchar *) line, length,
                   saddr,
-                  parse_flags,
-                  self->options->bad_hostname,
-                  time_zone_info_get_offset(self->options->recv_time_zone_info, time(NULL)),
-                  self->options->default_pri);
+                  &self->options->parse_options);
   
   if (!m->saddr && self->peer_addr)
     {
@@ -293,27 +291,6 @@ log_reader_fetch_log(LogReader *self, LogProto *proto)
   gboolean may_read = TRUE;
   guint parse_flags = 0;
 
-  if (self->options->options & LRO_NOPARSE)
-    parse_flags |= LP_NOPARSE;
-  if (self->options->check_hostname)
-    parse_flags |= LP_CHECK_HOSTNAME;
-  if (self->flags & LR_STRICT)
-    parse_flags |= LP_STRICT;
-  if (self->flags & LR_INTERNAL)
-    parse_flags |= LP_INTERNAL;
-  if (self->flags & LR_LOCAL)
-    parse_flags |= LF_LOCAL;
-  if ((self->flags & LR_SYSLOG_PROTOCOL) || (self->options->options & LRO_SYSLOG_PROTOCOL))
-    parse_flags |= LP_SYSLOG_PROTOCOL;
-  if (self->options->text_encoding)
-    parse_flags |= LP_ASSUME_UTF8;
-  if (self->options->options & LRO_VALIDATE_UTF8)
-    parse_flags |= LP_VALIDATE_UTF8;
-  if (self->options->options & LRO_NO_MULTI_LINE)
-    parse_flags |= LP_NO_MULTI_LINE;
-  if (self->options->options & LRO_DONT_STORE_LEGACY_MSGHDR)
-    parse_flags |= LP_DONT_STORE_LEGACY_MSGHDR;
-    
   if (self->waiting_for_preemption)
     may_read = FALSE;
     
@@ -356,7 +333,7 @@ log_reader_fetch_log(LogReader *self, LogProto *proto)
           /* no more messages for now */
           break;
         }
-      if (msg_len > 0 || (self->options->options & LRO_EMPTY_LINES))
+      if (msg_len > 0 || (self->options->flags & LR_EMPTY_LINES))
         {
           msg_count++;
 
@@ -369,7 +346,7 @@ log_reader_fetch_log(LogReader *self, LogProto *proto)
         }
       g_sockaddr_unref(sa);
     }
-  if (self->flags & LR_PREEMPT)
+  if (self->options->flags & LR_PREEMPT)
     {
       /* NOTE: we assume that self->proto is a LogProtoPlainServer */
       LogProtoPlainServer *s = (LogProtoPlainServer*)self->proto;
@@ -468,9 +445,6 @@ log_reader_set_options(LogPipe *s, LogPipe *control, LogReaderOptions *options, 
   self->control = control;
 
   self->options = options;
-
-  if (options->follow_freq > 0)
-    self->flags |= LR_FOLLOW;
 }
 
 void
@@ -653,7 +627,7 @@ log_reader_restore_state(LogReader *self, SerializeArchive *archive)
 }
 
 LogPipe *
-log_reader_new(LogProto *proto, guint32 flags)
+log_reader_new(LogProto *proto)
 {
   LogReader *self = g_new0(LogReader, 1);
 
@@ -661,7 +635,6 @@ log_reader_new(LogProto *proto, guint32 flags)
   self->super.super.init = log_reader_init;
   self->super.super.deinit = log_reader_deinit;
   self->super.super.free_fn = log_reader_free;
-  self->flags = flags;
   self->proto = proto;
   self->immediate_check = FALSE;
   return &self->super.super;
@@ -679,16 +652,12 @@ void
 log_reader_options_defaults(LogReaderOptions *options)
 {
   log_source_options_defaults(&options->super);
+  log_parse_syslog_options_defaults(&options->parse_options);
   options->padding = 0;
-  options->options = 0;
   options->fetch_limit = -1;
   options->msg_size = -1;
   options->follow_freq = -1; 
-  options->bad_hostname = NULL;
   options->text_encoding = NULL;
-  options->recv_time_zone = NULL;
-  options->recv_time_zone_info = NULL;
-  options->default_pri = 0xFFFF;
   if (configuration && configuration->version < 0x0300)
     {
       static gboolean warned;
@@ -698,7 +667,7 @@ log_reader_options_defaults(LogReaderOptions *options)
                       NULL);
           warned = TRUE;
         }
-      options->options = LRO_NO_MULTI_LINE;
+      options->parse_options.flags |= LP_NO_MULTI_LINE;
     }
 }
 
@@ -732,10 +701,10 @@ log_reader_options_init(LogReaderOptions *options, GlobalConfig *cfg, const gcha
   gchar *host_override, *program_override, *text_encoding;
   GArray *tags;
 
-  recv_time_zone = options->recv_time_zone;
-  options->recv_time_zone = NULL;
-  recv_time_zone_info = options->recv_time_zone_info;
-  options->recv_time_zone_info = NULL;
+  recv_time_zone = options->parse_options.recv_time_zone;
+  options->parse_options.recv_time_zone = NULL;
+  recv_time_zone_info = options->parse_options.recv_time_zone_info;
+  options->parse_options.recv_time_zone_info = NULL;
   text_encoding = options->text_encoding;
   options->text_encoding = NULL;
   tags = options->tags;
@@ -755,12 +724,13 @@ log_reader_options_init(LogReaderOptions *options, GlobalConfig *cfg, const gcha
   options->super.host_override = host_override;
   options->super.program_override = program_override;
   
-  options->recv_time_zone = recv_time_zone;
-  options->recv_time_zone_info = recv_time_zone_info;
+  options->parse_options.recv_time_zone = recv_time_zone;
+  options->parse_options.recv_time_zone_info = recv_time_zone_info;
   options->text_encoding = text_encoding;
   options->tags = tags;
 
   log_source_options_init(&options->super, cfg, group_name);
+  log_parse_syslog_options_init(&options->parse_options, cfg);
 
   if (options->fetch_limit == -1)
     options->fetch_limit = cfg->log_fetch_limit;
@@ -770,39 +740,30 @@ log_reader_options_init(LogReaderOptions *options, GlobalConfig *cfg, const gcha
     options->follow_freq = cfg->follow_freq;
   if (options->check_hostname == -1)
     options->check_hostname = cfg->check_hostname;
-  if (cfg->bad_hostname_compiled)
-    options->bad_hostname = &cfg->bad_hostname;
-  if (options->recv_time_zone == NULL)
-    options->recv_time_zone = g_strdup(cfg->recv_time_zone);
-  if (options->recv_time_zone_info == NULL)
-    options->recv_time_zone_info = time_zone_info_new(options->recv_time_zone);
-  if (options->default_pri == 0xFFFF)
+  if (options->check_hostname)
     {
-      if (options->options & LRO_KERNEL)
-        options->default_pri = LOG_KERN | LOG_NOTICE;
-      else
-        options->default_pri = LOG_USER | LOG_NOTICE;
+      options->parse_options.flags |= LP_CHECK_HOSTNAME;
     }
+  if (options->parse_options.default_pri == 0xFFFF)
+    {
+      if (options->flags & LR_KERNEL)
+        options->parse_options.default_pri = LOG_KERN | LOG_NOTICE;
+      else
+        options->parse_options.default_pri = LOG_USER | LOG_NOTICE;
+    }
+  if (options->text_encoding)
+    options->parse_options.flags |= LP_ASSUME_UTF8;
 }
 
 void
 log_reader_options_destroy(LogReaderOptions *options)
 {
   log_source_options_destroy(&options->super);
+  log_parse_syslog_options_destroy(&options->parse_options);
   if (options->text_encoding)
     {
       g_free(options->text_encoding);
       options->text_encoding = NULL;
-    }
-  if (options->recv_time_zone)
-    {
-      g_free(options->recv_time_zone);
-      options->recv_time_zone = NULL;
-    }
-  if (options->recv_time_zone_info)
-    {
-      time_zone_info_free(options->recv_time_zone_info);
-      options->recv_time_zone_info = NULL;
     }
   if (options->tags)
     {
@@ -811,27 +772,29 @@ log_reader_options_destroy(LogReaderOptions *options)
     }
 }
 
-gint
-log_reader_options_lookup_flag(const gchar *flag)
+CfgFlagHandler log_reader_flag_handlers[] =
 {
-  if (strcmp(flag, "no_parse") == 0 || strcmp(flag, "no-parse") == 0)
-    return LRO_NOPARSE;
-  if (strcmp(flag, "kernel") == 0)
-    return LRO_KERNEL;
-  if (strcmp(flag, "syslog_protocol") == 0 || strcmp(flag, "syslog-protocol") == 0)
-    return LRO_SYSLOG_PROTOCOL;
-  if (strcmp(flag, "validate-utf8") == 0 || strcmp(flag, "validate_utf8") == 0)
-    return LRO_VALIDATE_UTF8;
-  if (strcmp(flag, "no-multi-line") == 0 || strcmp(flag, "no_multi_line") == 0)
-    return LRO_NO_MULTI_LINE;
-  if (strcmp(flag, "store-legacy-msghdr") == 0 || strcmp(flag, "store_legacy_msghdr") == 0)
-    return 0;
-  if (strcmp(flag, "dont-store-legacy-msghdr") == 0 || strcmp(flag, "dont_store_legacy_msghdr") == 0)
-    return LRO_DONT_STORE_LEGACY_MSGHDR;
-  if (strcmp(flag, "empty-lines") == 0 || strcmp(flag, "empty_lines") == 0)
-    return LRO_EMPTY_LINES;
-  msg_error("Unknown parse flag", evt_tag_str("flag", flag), NULL);
-  return 0;
+  /* LogParseOptions */
+  { "no-parse",                   CFH_SET, offsetof(LogReaderOptions, parse_options.flags), LP_NOPARSE },
+  { "check-hostname",             CFH_SET, offsetof(LogReaderOptions, parse_options.flags), LP_CHECK_HOSTNAME },
+  { "syslog-protocol",            CFH_SET, offsetof(LogReaderOptions, parse_options.flags), LP_SYSLOG_PROTOCOL },
+  { "assume-utf8",                CFH_SET, offsetof(LogReaderOptions, parse_options.flags), LP_ASSUME_UTF8 },
+  { "validate-utf8",              CFH_SET, offsetof(LogReaderOptions, parse_options.flags), LP_VALIDATE_UTF8 },
+  { "no-multi-line",              CFH_SET, offsetof(LogReaderOptions, parse_options.flags), LP_NO_MULTI_LINE },
+  { "store-legacy-msghdr",        CFH_SET, offsetof(LogReaderOptions, parse_options.flags), LP_STORE_LEGACY_MSGHDR },
+  { "dont-store-legacy-msghdr", CFH_CLEAR, offsetof(LogReaderOptions, parse_options.flags), LP_STORE_LEGACY_MSGHDR },
+  { "expect-hostname",            CFH_SET, offsetof(LogReaderOptions, parse_options.flags), LP_EXPECT_HOSTNAME },
+  { "no-hostname",              CFH_CLEAR, offsetof(LogReaderOptions, parse_options.flags), LP_EXPECT_HOSTNAME },
+
+  /* LogReaderOptions */
+  { "kernel",                     CFH_SET, offsetof(LogReaderOptions, flags),               LR_KERNEL },
+  { "empty-lines",                CFH_SET, offsetof(LogReaderOptions, flags),               LR_EMPTY_LINES },
+};
+
+gboolean
+log_reader_options_process_flag(LogReaderOptions *options, gchar *flag)
+{
+  return cfg_process_flag(log_reader_flag_handlers, options, flag);
 }
 
 void

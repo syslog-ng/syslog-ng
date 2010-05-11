@@ -228,9 +228,7 @@ afsocket_sc_init(LogPipe *s)
         }
     }
 
-  self->reader = log_reader_new(proto,
-                                ((self->owner->flags & AFSOCKET_LOCAL) ? LR_LOCAL : 0) |
-                                ((self->owner->flags & AFSOCKET_SYSLOG_PROTOCOL) ? LR_SYSLOG_PROTOCOL : 0));
+  self->reader = log_reader_new(proto);
   log_reader_set_options(self->reader, s, &self->owner->reader_options, 1, afsocket_sc_stats_source(self), self->owner->super.id, afsocket_sc_stats_instance(self));
   log_reader_set_peer_addr(self->reader, self->peer_addr);
   log_pipe_append(self->reader, s);
@@ -741,6 +739,32 @@ afsocket_sd_init_instance(AFSocketSourceDriver *self, SocketOptions *sock_option
   self->listen_backlog = 255;
   self->flags = flags | AFSOCKET_KEEP_ALIVE;
   log_reader_options_defaults(&self->reader_options);
+
+  if (self->flags & AFSOCKET_LOCAL)
+    {
+      static gboolean warned = FALSE;
+
+      self->reader_options.flags |= LR_LOCAL;
+      if (configuration && configuration->version < 0x0302)
+        {
+          if (!warned)
+            {
+              msg_warning("WARNING: the expected message format is being changed for unix-domain transports to improve "
+                          "syslogd compatibity with syslog-ng 3.2. If you are using custom "
+                          "applications which bypass the syslog() API, you might "
+                          "need the 'expect-hostname' flag to get the old behaviour back", NULL);
+              warned = TRUE;
+            }
+        }
+      else
+        {
+          self->reader_options.parse_options.flags &= ~LP_EXPECT_HOSTNAME;
+        }
+    }
+  if ((self->flags & AFSOCKET_SYSLOG_PROTOCOL))
+    {
+      self->reader_options.parse_options.flags |= LP_SYSLOG_PROTOCOL;
+    }
 }
 
 /* socket destinations */

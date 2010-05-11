@@ -146,10 +146,10 @@ afprogram_sd_init(LogPipe *s)
   if (!self->reader)
     {
       LogTransport *transport;
+
       transport = log_transport_plain_new(fd, 0);
       transport->timeout = 10;
-      self->reader = log_reader_new(log_proto_plain_new_server(transport, self->reader_options.padding, self->reader_options.msg_size, 0), 
-                                     LR_LOCAL);
+      self->reader = log_reader_new(log_proto_plain_new_server(transport, self->reader_options.padding, self->reader_options.msg_size, 0));
       log_reader_set_options(self->reader, s, &self->reader_options, 0, SCS_PROGRAM, self->super.id, self->cmdline->str);
     }
   log_pipe_append(self->reader, &self->super.super);
@@ -225,6 +225,7 @@ afprogram_sd_new(gchar *cmdline)
   self->super.super.notify = afprogram_sd_notify;
   self->cmdline = g_string_new(cmdline);
   log_reader_options_defaults(&self->reader_options);
+  self->reader_options.flags |= LR_LOCAL;
   return &self->super;
 }
 

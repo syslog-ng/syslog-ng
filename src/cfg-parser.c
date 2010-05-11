@@ -213,3 +213,39 @@ report_syntax_error(CfgLexer *lexer, YYLTYPE *yylloc, const char *what, const ch
                   "mailing list: https://lists.balabit.hu/mailman/listinfo/syslog-ng\n");
 
 }
+
+/*
+ * This function can be used to parse flags in a flags(...) option. It
+ * makes it quite easy to write a flags parser by specifying the
+ * operations to be performed in a getopt-like array.
+ */
+gboolean
+cfg_process_flag(CfgFlagHandler *handlers, gpointer base, gchar *flag)
+{
+  gint h;
+
+  for (h = 0; flag[h]; h++)
+    {
+      if (flag[h] == '_')
+        flag[h] = '_';
+    }
+
+  for (h = 0; handlers[h].name; h++)
+    {
+      CfgFlagHandler *handler = &handlers[h];
+
+      if (strcmp(handlers[h].name, flag) == 0)
+        {
+          switch (handler->op)
+            {
+            case CFH_SET:
+              (*(guint32 *) (((gchar *) base) + handler->ofs)) |= handler->param;
+              return TRUE;
+            case CFH_CLEAR:
+              (*(guint32 *) (((gchar *) base) + handler->ofs)) &= ~handler->param;
+              return TRUE;
+            }
+        }
+    }
+  return FALSE;
+}

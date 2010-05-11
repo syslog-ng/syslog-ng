@@ -23,6 +23,22 @@ typedef struct _CfgParser
   void (*cleanup)(gpointer instance);
 } CfgParser;
 
+enum
+{
+  CFH_SET,
+  CFH_CLEAR,
+};
+
+typedef struct _CfgFlagHandler
+{
+  const gchar *name;
+  gint op;
+  gint ofs;
+  guint32 param;
+} CfgFlagHandler;
+
+gboolean
+cfg_process_flag(CfgFlagHandler *handlers, gpointer base, gchar *flag);
 
 /* the debug flag for the main parser will be used for all parsers */
 extern int yydebug;

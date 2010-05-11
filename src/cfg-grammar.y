@@ -981,9 +981,9 @@ source_reader_option
 	| KW_PROGRAM_OVERRIDE '(' string ')'	{ last_reader_options->super.program_override = g_strdup($3); free($3); }
 	| KW_HOST_OVERRIDE '(' string ')'	{ last_reader_options->super.host_override = g_strdup($3); free($3); }
 	| KW_LOG_PREFIX '(' string ')'	        { gchar *p = strrchr($3, ':'); if (p) *p = 0; last_reader_options->super.program_override = g_strdup($3); free($3); }
-	| KW_TIME_ZONE '(' string ')'		{ last_reader_options->recv_time_zone = g_strdup($3); free($3); }
+	| KW_TIME_ZONE '(' string ')'		{ last_reader_options->parse_options.recv_time_zone = g_strdup($3); free($3); }
 	| KW_CHECK_HOSTNAME '(' yesno ')'	{ last_reader_options->check_hostname = $3; }
-	| KW_FLAGS '(' source_reader_option_flags ')' { last_reader_options->options = $3; }
+	| KW_FLAGS '(' source_reader_option_flags ')'
 	| KW_LOG_MSG_SIZE '(' LL_NUMBER ')'	{ last_reader_options->msg_size = $3; }
 	| KW_LOG_FETCH_LIMIT '(' LL_NUMBER ')'	{ last_reader_options->fetch_limit = $3; }
 	| KW_PAD_SIZE '(' LL_NUMBER ')'		{ last_reader_options->padding = $3; }
@@ -994,21 +994,21 @@ source_reader_option
         | KW_TAGS '(' string_list ')'           { log_reader_options_set_tags(last_reader_options, $3); }
 	| KW_DEFAULT_LEVEL '(' level_string ')'
 	  {
-	    if (last_reader_options->default_pri == 0xFFFF)
-	      last_reader_options->default_pri = LOG_USER;
-	    last_reader_options->default_pri = (last_reader_options->default_pri & ~7) | $3;
+	    if (last_reader_options->parse_options.default_pri == 0xFFFF)
+	      last_reader_options->parse_options.default_pri = LOG_USER;
+	    last_reader_options->parse_options.default_pri = (last_reader_options->parse_options.default_pri & ~7) | $3;
           }
 	| KW_DEFAULT_FACILITY '(' facility_string ')'
 	  {
-	    if (last_reader_options->default_pri == 0xFFFF)
-	      last_reader_options->default_pri = LOG_NOTICE;
-	    last_reader_options->default_pri = (last_reader_options->default_pri & 7) | $3;
+	    if (last_reader_options->parse_options.default_pri == 0xFFFF)
+	      last_reader_options->parse_options.default_pri = LOG_NOTICE;
+	    last_reader_options->parse_options.default_pri = (last_reader_options->parse_options.default_pri & 7) | $3;
           }
 	;
 
 source_reader_option_flags
-	: string source_reader_option_flags     { $$ = log_reader_options_lookup_flag($1) | $2; free($1); }
-	|					{ $$ = 0; }
+        : string source_reader_option_flags     { CHECK_ERROR(log_reader_options_process_flag(last_reader_options, $1), @1, "Unknown flag %s", $1); free($1); }
+	|
 	;
 
 dest_writer_options

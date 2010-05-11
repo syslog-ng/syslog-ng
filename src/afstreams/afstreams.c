@@ -185,7 +185,7 @@ afstreams_sd_init(LogPipe *s)
           return FALSE;
         }
       g_fd_set_nonblock(fd, TRUE);
-      self->reader = log_reader_new(log_proto_plain_new_server(log_transport_streams_new(fd), 0, self->reader_options.msg_size, LPPF_PKTTERM), LR_LOCAL);
+      self->reader = log_reader_new(log_proto_plain_new_server(log_transport_streams_new(fd), 0, self->reader_options.msg_size, LPPF_PKTTERM));
       log_reader_set_options(self->reader, s, &self->reader_options, 1, SCS_SUN_STREAMS, self->super.id, self->dev_filename->str);
       log_pipe_append(self->reader, s);
 
@@ -263,6 +263,8 @@ afstreams_sd_new(gchar *filename)
   self->super.super.deinit = afstreams_sd_deinit;
   self->super.super.free_fn = afstreams_sd_free;
   log_reader_options_defaults(&self->reader_options);
+  self->reader_options.flags |= LR_LOCAL;
+  self->reader_options.parse_options.flags &= ~LP_EXPECT_HOSTNAME;
   return &self->super;
 }
 #else

@@ -222,8 +222,7 @@ affile_sd_notify(LogPipe *s, LogPipe *sender, gint notify_code, gpointer user_da
                                                              ((self->reader_options.follow_freq > 0)
                                                                     ? LPPF_IGNORE_EOF
                                                                     : LPPF_NOMREAD)
-                                                            ),
-                                  LR_LOCAL);
+                                                             ));
 
             log_reader_set_options(self->reader, s, &self->reader_options, 1, SCS_FILE, self->super.id, self->filename->str);
 
@@ -301,8 +300,7 @@ affile_sd_init(LogPipe *s)
                                                        ((self->reader_options.follow_freq > 0)
                                                             ? LPPF_IGNORE_EOF
                                                             : LPPF_NOMREAD)
-                                                      ),
-                            LR_LOCAL);
+                                                       ));
       log_reader_set_options(self->reader, s, &self->reader_options, 1, SCS_FILE, self->super.id, self->filename->str);
 
       log_reader_set_follow_filename(self->reader, self->filename->str);
@@ -381,6 +379,28 @@ affile_sd_new(gchar *filename, guint32 flags)
   self->super.super.notify = affile_sd_notify;
   self->super.super.free_fn = affile_sd_free;
   log_reader_options_defaults(&self->reader_options);
+  self->reader_options.flags |= LR_LOCAL;
+
+  if ((self->flags & AFFILE_PIPE))
+    {
+      static gboolean warned = FALSE;
+
+      if (configuration && configuration->version < 0x0302)
+        {
+          if (!warned)
+            {
+              msg_warning("WARNING: the expected message format is being changed for pipe() to improve "
+                          "syslogd compatibity with syslog-ng 3.2. If you are using custom "
+                          "applications which bypass the syslog() API, you might "
+                          "need the 'expect-hostname' flag to get the old behaviour back", NULL);
+              warned = TRUE;
+            }
+        }
+      else
+        {
+          self->reader_options.parse_options.flags &= ~LP_EXPECT_HOSTNAME;
+        }
+    }
   
   if (configuration && configuration->version < 0x0300)
     {

@@ -3,17 +3,18 @@ from log import *
 from messagegen import *
 from messagecheck import *
 
-config = """@version: 3.0
+config = """@version: 3.2
+@module: afsocket
 
 options { ts_format(iso); chain_hostnames(no); keep_hostname(yes); };
 
 source s_int { internal(); };
-source s_unix { unix-stream("log-stream"); unix-dgram("log-dgram");  };
+source s_unix { unix-stream("log-stream" flags(expect-hostname)); unix-dgram("log-dgram" flags(expect-hostname));  };
 source s_inet { tcp(port(%(port_number)d)); udp(port(%(port_number)d) so_rcvbuf(131072)); };
 source s_inetssl { tcp(port(%(ssl_port_number)d) tls(peer-verify(none) cert-file("%(src_dir)s/ssl.crt") key-file("%(src_dir)s/ssl.key"))); };
-source s_pipe { pipe("log-pipe"); pipe("log-padded-pipe" pad_size(2048)); };
+source s_pipe { pipe("log-pipe" flags(expect-hostname)); pipe("log-padded-pipe" pad_size(2048) flags(expect-hostname)); };
 source s_file { file("log-file"); };
-source s_catchall { unix-stream("log-stream-catchall"); };
+source s_catchall { unix-stream("log-stream-catchall" flags(expect-hostname)); };
 
 source s_syslog { syslog(port(%(port_number_syslog)d) transport("tcp") so_rcvbuf(131072)); syslog(port(%(port_number_syslog)d) transport("udp") so_rcvbuf(131072)); };
 

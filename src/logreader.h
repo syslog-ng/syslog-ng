@@ -29,42 +29,31 @@
 #include "timeutils.h"
 
 /* flags */
-#define LR_LOCAL          0x0001
-#define LR_INTERNAL       0x0002
-#define LR_FOLLOW         0x0010
-#define LR_STRICT         0x0020
-#define LR_IGNORE_TIMEOUT 0x0040
-#define LR_SYSLOG_PROTOCOL 0x0080
-#define LR_PREEMPT         0x0100
+#define LR_LOCAL           0x0001
+#define LR_KERNEL          0x0002
+#define LR_EMPTY_LINES     0x0004
+#define LR_IGNORE_TIMEOUT  0x0008
+#define LR_SYSLOG_PROTOCOL 0x0010
+#define LR_PREEMPT         0x0020
 
 /* options */
-#define LRO_NOPARSE          0x0001
-#define LRO_KERNEL           0x0002
-#define LRO_SYSLOG_PROTOCOL  0x0004
-#define LRO_VALIDATE_UTF8    0x0008
-#define LRO_NO_MULTI_LINE    0x0010
-#define LRO_DONT_STORE_LEGACY_MSGHDR 0x0020
-#define LRO_EMPTY_LINES      0x0040
 
 typedef struct _LogReaderWatch LogReaderWatch;
 
 typedef struct _LogReaderOptions
 {
   LogSourceOptions super;
-  guint32 options;
+  LogParseOptions parse_options;
+  guint32 flags;
   gint padding;
   gint msg_size;
   gint follow_freq;
   gint fetch_limit;
   gchar *text_encoding;
   const gchar *group_name;
-  gint default_pri;
 
   /* source time zone if one is not specified in the message */
   gboolean check_hostname;
-  gchar *recv_time_zone;
-  TimeZoneInfo *recv_time_zone_info;
-  regex_t *bad_hostname;
   GArray *tags;
 } LogReaderOptions;
 
@@ -73,7 +62,6 @@ typedef struct _LogReader
   LogSource super;
   LogProto *proto;
   LogReaderWatch *source;
-  guint32 flags;
   gboolean immediate_check;
   gboolean waiting_for_preemption;
   LogPipe *control;
@@ -82,7 +70,6 @@ typedef struct _LogReader
   gchar *follow_filename;
   ino_t inode;
   gint64 size;
-  
 } LogReader;
 
 void log_reader_set_options(LogPipe *s, LogPipe *control, LogReaderOptions *options, gint stats_level, gint stats_source, const gchar *stats_id, const gchar *stats_instance);
@@ -94,12 +81,13 @@ void log_reader_update_pos(LogReader *self, gint64 ofs);
 void log_reader_save_state(LogReader *self, SerializeArchive *archive);
 void log_reader_restore_state(LogReader *self, SerializeArchive *archive);
 
-LogPipe *log_reader_new(LogProto *proto, guint32 flags);
+LogPipe *log_reader_new(LogProto *proto);
 void log_reader_options_defaults(LogReaderOptions *options);
 void log_reader_options_init(LogReaderOptions *options, GlobalConfig *cfg, const gchar *group_name);
 void log_reader_options_destroy(LogReaderOptions *options);
 gint log_reader_options_lookup_flag(const gchar *flag);
 void log_reader_options_set_tags(LogReaderOptions *options, GList *tags);
+gboolean log_reader_options_process_flag(LogReaderOptions *options, gchar *flag);
 
 
 #endif
