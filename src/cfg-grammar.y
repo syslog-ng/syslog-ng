@@ -17,6 +17,23 @@
 %define api.pure
 %pure-parser
 
+%code {
+#define CHECK_ERROR(val, token, errorfmt, ...) do {                     \
+    if (!(val))                                                         \
+      {                                                                 \
+        if (errorfmt)                                                   \
+          {                                                             \
+            gchar __buf[256];                                           \
+            g_snprintf(__buf, sizeof(__buf), errorfmt, ## __VA_ARGS__); \
+            yyerror(& (token), lexer, NULL, __buf);                     \
+          }                                                             \
+        YYERROR;                                                        \
+      }                                                                 \
+  } while (0)
+
+
+}
+
 /* plugin types, must be equal to the numerical values of the plugin type in plugin.h */
 
 %token LL_CONTEXT_ROOT                1
@@ -348,10 +365,7 @@ filter_stmt
 	: string '{'
 	  {
 	    last_filter_expr = NULL;
-	    if (!cfg_parser_parse(&filter_expr_parser, lexer, (gpointer *) &last_filter_expr))
-              {
-                YYERROR;
-              }
+	    CHECK_ERROR(cfg_parser_parse(&filter_expr_parser, lexer, (gpointer *) &last_filter_expr), @1, NULL);
 	  }
           '}'                               { $$ = log_filter_rule_new($1, last_filter_expr); free($1); }
 	;
@@ -465,7 +479,12 @@ template_items
 	;
 
 template_item
-	: KW_TEMPLATE '(' string ')'		{ last_template->template = g_strdup($3); free($3); if (!cfg_check_template(last_template)) { YYERROR; } }
+	: KW_TEMPLATE '(' string ')'		{
+                                                  GError *error = NULL;
+
+                                                  last_template->template = g_strdup($3); free($3);
+                                                  CHECK_ERROR(log_template_compile(last_template, &error), @3, "Error compiling template (%s)", error->message);
+                                                }
 	| KW_TEMPLATE_ESCAPE '(' yesno ')'	{ log_template_set_escape(last_template, $3); }
 	;
 
@@ -486,17 +505,11 @@ source_item
 source_plugin
         : LL_IDENTIFIER
           {
-            gchar buf[256];
             Plugin *p;
             gint context = LL_CONTEXT_SOURCE;
 
             p = plugin_find(context, $1);
-            if (!p)
-              {
-                g_snprintf(buf, sizeof(buf), "%s plugin %s not found", cfg_lexer_lookup_context_name_by_type(context), $1);
-                yyerror(&@1, lexer, NULL, buf);
-                YYERROR;
-              }
+            CHECK_ERROR(p, @1, "%s plugin %s not found", cfg_lexer_lookup_context_name_by_type(context), $1);
 
             last_driver = (LogDriver *) plugin_new_instance(lexer, p, &@1);
             free($1);
@@ -575,18 +588,11 @@ dest_item
 dest_plugin
         : LL_IDENTIFIER
           {
-
-            gchar buf[256];
             Plugin *p;
             gint context = LL_CONTEXT_DESTINATION;
 
             p = plugin_find(context, $1);
-            if (!p)
-              {
-                g_snprintf(buf, sizeof(buf), "%s plugin %s not found", cfg_lexer_lookup_context_name_by_type(context), $1);
-                yyerror(&@1, lexer, NULL, buf);
-                YYERROR;
-              }
+            CHECK_ERROR(p, @1, "%s plugin %s not found", cfg_lexer_lookup_context_name_by_type(context), $1);
 
             last_driver = (LogDriver *) plugin_new_instance(lexer, p, &@1);
             free($1);
@@ -790,10 +796,9 @@ parser_column_opt
 parser_opt
         : KW_TEMPLATE '(' string ')'            {
                                                   LogTemplate *template = cfg_check_inline_template(configuration, $3);
-                                                  if (!cfg_check_template(template))
-                                                    {
-                                                      YYERROR;
-                                                    }
+                                                  GError *error = NULL;
+
+                                                  CHECK_ERROR(log_template_compile(template, &error), @3, "Error compiling template (%s)", error->message);
                                                   log_parser_set_template(last_parser, template);
                                                   free($3);
                                                 }
@@ -837,8 +842,7 @@ rewrite_expr
           }
           rewrite_expr_opts ')'
           {
-            if(!log_rewrite_set_regexp(last_rewrite, $3))
-              YYERROR;
+            CHECK_ERROR(log_rewrite_set_regexp(last_rewrite, $3), @3, "Error compiling regular expression", "alma");
             free($3);
             $$ = last_rewrite;
           }
@@ -878,12 +882,7 @@ rewrite_expr_opt
           }
         | KW_TYPE '(' string ')'
           {
-            if (strcmp($3, "glob") == 0)
-              {
-                msg_error("Rewrite rules do not support glob expressions",
-                          NULL);
-                YYERROR;
-              }
+            CHECK_ERROR((strcmp($3, "glob") != 0), @3, "Rewrite rules do not support glob expressions");
             log_rewrite_set_matcher(last_rewrite, log_matcher_new($3));
             free($3);
           }
@@ -929,13 +928,7 @@ level_string
 	  {
 	    /* return the numeric value of the "level" */
 	    int n = syslog_name_lookup_level_by_name($1);
-	    if (n == -1)
-	      {
-	        msg_error("Unknown priority level",
-                          evt_tag_str("priority", $1),
-                          NULL);
-	        YYERROR;
-	      }
+	    CHECK_ERROR((n != -1), @1, "Unknown priority level\"%s\"", $1);
 	    free($1);
             $$ = n;
 	  }
@@ -946,13 +939,7 @@ facility_string
           {
             /* return the numeric value of facility */
 	    int n = syslog_name_lookup_facility_by_name($1);
-	    if (n == -1)
-	      {
-	        msg_error("Unknown facility",
-	                  evt_tag_str("facility", $1),
-	                  NULL);
-                YYERROR;
-	      }
+	    CHECK_ERROR((n != -1), @1, "Unknown facility \"%s\"", $1);
 	    free($1);
 	    $$ = n;
 	  }
@@ -1023,11 +1010,10 @@ dest_writer_option
 	| KW_FLUSH_TIMEOUT '(' LL_NUMBER ')'	{ last_writer_options->flush_timeout = $3; }
         | KW_SUPPRESS '(' LL_NUMBER ')'            { last_writer_options->suppress = $3; }
 	| KW_TEMPLATE '(' string ')'       	{
+                                                  GError *error = NULL;
+
 	                                          last_writer_options->template = cfg_check_inline_template(configuration, $3);
-                                                  if (!cfg_check_template(last_writer_options->template))
-	                                            {
-	                                              YYERROR;
-	                                            }
+                                                  CHECK_ERROR(log_template_compile(last_writer_options->template, &error), @3, "Error compiling template (%s)", error->message);
 	                                          free($3);
 	                                        }
 	| KW_TEMPLATE_ESCAPE '(' yesno ')'	{ log_writer_options_set_template_escape(last_writer_options, $3); }

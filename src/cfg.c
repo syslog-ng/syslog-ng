@@ -309,22 +309,6 @@ cfg_check_inline_template(GlobalConfig *cfg, const gchar *template_or_name)
   return template;
 }
 
-gboolean
-cfg_check_template(LogTemplate *template)
-{
-  GError *error = NULL;
-  if (!log_template_compile(template, &error))
-    {
-      msg_error("Error compiling template",
-                evt_tag_str("template", template->template),
-                evt_tag_str("error", error->message),
-                NULL);
-      g_clear_error(&error);
-      return FALSE;
-    }
-  return TRUE;
-}
-
 GlobalConfig *
 cfg_new(gchar *fname)
 {
