@@ -40,7 +40,14 @@
   *yylloc = yyextra->include_stack[yyextra->include_depth].lloc;                                                              \
 } while(0);
 
-
+static void
+_cfg_lex_new_line(CfgLexer *lexer)
+{
+  lexer->include_stack[lexer->include_depth].lloc.first_line++;
+  lexer->include_stack[lexer->include_depth].lloc.last_line++;
+  lexer->include_stack[lexer->include_depth].lloc.first_column = 1;
+  lexer->include_stack[lexer->include_depth].lloc.last_column = 1;
+}
 
 %}
 
@@ -76,14 +83,15 @@ word	[^ \#'"\(\)\{\}\\;\n\t,|\.]
                                {
                                  ch = input(yyscanner);
                                }
+                             if (ch == '\n')
+                               {
+                                 _cfg_lex_new_line(yyextra);
+                               }
                            }
 <*>\r?\n                   {
-                             cfg_lexer_append_string(yyextra, strlen(yytext), yytext);
-                             yyextra->include_stack[yyextra->include_depth].lloc.first_line++;
-                             yyextra->include_stack[yyextra->include_depth].lloc.last_line++;
-                             yyextra->include_stack[yyextra->include_depth].lloc.first_column = 1;
-                             yyextra->include_stack[yyextra->include_depth].lloc.last_column = 1;
                              *yylloc = yyextra->include_stack[yyextra->include_depth].lloc;
+                             _cfg_lex_new_line(yyextra);
+                             cfg_lexer_append_string(yyextra, strlen(yytext), yytext);
                            }
 {white}+		   ;
 \.\.                       { return LL_DOTDOT; }
