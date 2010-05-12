@@ -588,15 +588,21 @@ log_db_parser_new(void)
 typedef struct _LogParserRule
 {
   LogProcessRule super;
-  LogParser *parser;
+  GList *parser_list;
 } LogParserRule;
 
 static gboolean
 log_parser_rule_process(LogProcessRule *s, LogMessage *msg)
 {
   LogParserRule *self = (LogParserRule *) s;
+  GList *l;
   
-  return log_parser_process(self->parser, msg);
+  for (l = self->parser_list; l; l = l->next)
+    {
+      if (!log_parser_process(l->data, msg))
+        return FALSE;
+    }
+  return TRUE;
 }
 
 static void
@@ -604,7 +610,9 @@ log_parser_rule_free(LogProcessRule *s)
 {
   LogParserRule *self = (LogParserRule *) s;
 
-  log_parser_free(self->parser);
+  g_list_foreach(self->parser_list, (GFunc) log_parser_free, NULL);
+  g_list_free(self->parser_list);
+  self->parser_list = NULL;
 }
 
 
@@ -612,14 +620,14 @@ log_parser_rule_free(LogProcessRule *s)
  * LogParserRule, a configuration block encapsulating a LogParser instance.
  */ 
 LogProcessRule *
-log_parser_rule_new(const gchar *name, LogParser *parser)
+log_parser_rule_new(const gchar *name, GList *parser_list)
 {
   LogParserRule *self = g_new0(LogParserRule, 1);
   
   log_process_rule_init(&self->super, name);
   self->super.free_fn = log_parser_rule_free;
   self->super.process = log_parser_rule_process;
-  self->parser = parser;
+  self->parser_list = parser_list;
   return &self->super;
 }
 

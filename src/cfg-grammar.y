@@ -326,6 +326,8 @@ CfgBlockGeneratorArgs *last_block_args;
 %type	<ptr> parser_expr_csv
 %type	<ptr> parser_expr_db
 %type   <num> parser_csv_flags
+%type   <ptr> parser_expr_list
+%type   <ptr> parser_expr_list_build
 
 %type   <ptr> rewrite_expr
 %type   <ptr> rewrite_expr_list
@@ -338,7 +340,6 @@ CfgBlockGeneratorArgs *last_block_args;
 %type	<num> yesno
 %type   <num> dnsmode
 %type   <num> regexp_option_flags
-%type	<num> source_reader_option_flags
 %type	<num> dest_writer_options_flags
 
 %type	<cptr> string
@@ -393,7 +394,7 @@ filter_stmt
 parser_stmt
         : string '{'
           { cfg_lexer_push_context(lexer, LL_CONTEXT_PARSER, NULL, "parser expression"); }
-          parser_expr
+          parser_expr_list
           { cfg_lexer_pop_context(lexer); }
           '}'	                                { $$ = log_parser_rule_new($1, $4); free($1); }
 
@@ -768,16 +769,20 @@ options_item
 	| KW_LOCAL_TIME_ZONE '(' string ')'     { configuration->local_time_zone = g_strdup($3); free($3); }
 	;
 
+parser_expr_list
+        : parser_expr_list_build                { $$ = g_list_reverse($1); }
+        ;
+
+parser_expr_list_build
+        : parser_expr ';' parser_expr_list_build    { $$ = g_list_append($3, $1); }
+        | ';' parser_expr_list_build                { $$ = $2; }
+        |                                           { $$ = NULL; }
+        ;
 
 
 parser_expr
-        : parser_expr_csv parser_expr_semicolons
-        | parser_expr_db parser_expr_semicolons
-        ;
-
-parser_expr_semicolons
-        : ';' parser_expr_semicolons
-        |
+        : parser_expr_csv
+        | parser_expr_db
         ;
 
 parser_expr_csv
