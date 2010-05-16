@@ -554,7 +554,7 @@ main(int argc, char *argv[])
 
       if (argc - optind < 2)
         {
-          fprintf(stderr, "No target server specified\n");
+          fprintf(stderr, "No target server or port specified\n");
           usage();
         }
 
