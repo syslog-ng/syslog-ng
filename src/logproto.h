@@ -48,6 +48,7 @@ struct _LogProto
   void (*reset_state)(LogProto *s);
   gboolean (*prepare)(LogProto *s, gint *fd, GIOCondition *cond, gint *timeout);
   LogProtoStatus (*fetch)(LogProto *s, const guchar **msg, gsize *msg_len, GSockAddr **sa, gboolean *may_read);
+  void (*queued)(LogProto *s);
   LogProtoStatus (*post)(LogProto *s, guchar *msg, gsize msg_len, gboolean *consumed);
   void (*free_fn)(LogProto *s);
 };
@@ -91,6 +92,13 @@ static inline LogProtoStatus
 log_proto_fetch(LogProto *s, const guchar **msg, gsize *msg_len, GSockAddr **sa, gboolean *may_read)
 {
   return s->fetch(s, msg, msg_len, sa, may_read);
+}
+
+static inline void
+log_proto_queued(LogProto *s)
+{
+  if (s->queued)
+    s->queued(s);
 }
 
 static inline gint 
