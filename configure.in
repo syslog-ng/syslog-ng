@@ -530,17 +530,14 @@ if test "x$enable_pcre" = "xauto"; then
         AC_MSG_RESULT([$enable_pcre])
 fi
 
-GLIB_ADDONS="gmodule"
+GLIB_ADDONS="gmodule-2.0"
 if test "x$enable_sql" = "xyes"; then
-	GLIB_ADDONS="${GLIB_ADDONS} gthread"
+	GLIB_ADDONS="${GLIB_ADDONS} gthread-2.0"
 fi
 
-AM_PATH_GLIB_2_0($GLIB_MIN_VERSION,,
-    AC_MSG_ERROR(Cannot find GLIB version >= $GLIB_MIN_VERSION: is pkg-config in path?), $GLIB_ADDONS)
+PKG_CHECK_MODULES(GLIB, glib-2.0 >= $GLIB_MIN_VERSION $GLIB_ADDONS,,)
+PKG_CHECK_MODULES(EVTLOG, eventlog >= $EVTLOG_MIN_VERSION,,)
 
-
-PKG_CHECK_MODULES(EVTLOG, eventlog >= $EVTLOG_MIN_VERSION,,
-                AC_MSG_ERROR(Cannot find eventlog version >= $EVTLOG_MIN_VERSION: is pkg-config in path?))
 
 if test "x$enable_spoof_source" = "xyes"; then
 	AC_MSG_CHECKING(for LIBNET)
