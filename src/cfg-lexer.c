@@ -800,6 +800,39 @@ cfg_lexer_lookup_context_name_by_type(gint type)
 
 /* token block args */
 
+static void
+cfg_args_validate_callback(gpointer k, gpointer v, gpointer user_data)
+{
+  CfgArgs *defs = ((gpointer *) user_data)[0];
+  gchar **bad_key = (gchar **) &((gpointer *) user_data)[1];
+  gchar **bad_value = (gchar **) &((gpointer *) user_data)[2];
+
+  if ((*bad_key == NULL) && (!defs || cfg_args_get(defs, k) == NULL))
+    {
+      *bad_key = k;
+      *bad_value = v;
+    }
+}
+
+gboolean
+cfg_args_validate(CfgArgs *self, CfgArgs *defs, const gchar *context)
+{
+  gpointer validate_params[] = { defs, NULL, NULL };
+
+  g_hash_table_foreach(self->args, cfg_args_validate_callback, validate_params);
+
+  if (validate_params[1])
+    {
+      msg_error("Unknown argument",
+                evt_tag_str("context", context),
+                evt_tag_str("arg", validate_params[1]),
+                evt_tag_str("value", validate_params[2]),
+                NULL);
+      return FALSE;
+    }
+  return TRUE;
+}
+
 void
 cfg_args_set(CfgArgs *self, const gchar *name, const gchar *value)
 {
@@ -897,20 +930,6 @@ struct _CfgBlock
   CfgArgs *arg_defs;
 };
 
-static void
-cfg_block_validate_arg(gpointer k, gpointer v, gpointer user_data)
-{
-  CfgArgs *defs = ((gpointer *) user_data)[0];
-  gchar **bad_key = (gchar **) &((gpointer *) user_data)[1];
-  gchar **bad_value = (gchar **) &((gpointer *) user_data)[2];
-
-  if ((*bad_key == NULL) && cfg_args_get(defs, k) == NULL)
-    {
-      *bad_key = k;
-      *bad_value = v;
-    }
-}
-
 /*
  * cfg_block_generate:
  *
@@ -923,20 +942,12 @@ cfg_block_generate(CfgLexer *lexer, gint context, const gchar *name, CfgArgs *ar
 {
   CfgBlock *block = (CfgBlock *) user_data;
   gchar *value;
-  gpointer validate_params[] = { block->arg_defs, NULL, NULL };
   gchar buf[256];
   gsize length;
 
-  g_hash_table_foreach(args->args, cfg_block_validate_arg, validate_params);
-
-  if (validate_params[1])
+  g_snprintf(buf, sizeof(buf), "%s block %s", cfg_lexer_lookup_context_name_by_type(context), name);
+  if (!cfg_args_validate(args, block->arg_defs, buf))
     {
-      msg_warning("Unknown block argument",
-                  evt_tag_str("context", cfg_lexer_lookup_context_name_by_type(context)),
-                  evt_tag_str("block", name),
-                  evt_tag_str("arg", validate_params[1]),
-                  evt_tag_str("value", validate_params[2]),
-                  NULL);
       return FALSE;
     }
 
@@ -951,7 +962,6 @@ cfg_block_generate(CfgLexer *lexer, gint context, const gchar *name, CfgArgs *ar
       return FALSE;
     }
 
-  g_snprintf(buf, sizeof(buf), "%s block %s", cfg_lexer_lookup_context_name_by_type(context), name);
   cfg_lexer_include_buffer(lexer, buf, value, length);
   return TRUE;
 }

@@ -158,6 +158,7 @@ gint cfg_lexer_lookup_context_type_by_name(const gchar *name);
 const gchar *cfg_lexer_lookup_context_name_by_type(gint id);
 
 /* argument list for a block generator */
+gboolean cfg_args_validate(CfgArgs *self, CfgArgs *defs, const gchar *context);
 void cfg_args_set(CfgArgs *self, const gchar *name, const gchar *value);
 const gchar *cfg_args_get(CfgArgs *self, const gchar *name);
 CfgArgs *cfg_args_new(void);
