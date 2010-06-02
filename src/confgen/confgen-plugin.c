@@ -1,0 +1,94 @@
+#include "confgen.h"
+#include "cfg.h"
+#include "cfg-lexer.h"
+#include "cfg-grammar.h"
+#include "messages.h"
+
+#include <string.h>
+#include <errno.h>
+
+gboolean
+confgen_generate(CfgLexer *lexer, gint type, const gchar *name, CfgArgs *args, gpointer user_data)
+{
+  gchar *value;
+  gsize value_len = 0;
+  FILE *out;
+  gchar *exec = (gchar *) user_data;
+  gsize res;
+  gchar buf[256];
+
+  g_snprintf(buf, sizeof(buf), "%s confgen %s", cfg_lexer_lookup_context_name_by_type(type), name);
+  if (!cfg_args_validate(args, NULL, buf))
+    {
+      msg_error("confgen: confgen invocations do not process arguments, but your argument list is not empty",
+                evt_tag_str("context", cfg_lexer_lookup_context_name_by_type(type)),
+                evt_tag_str("block", name),
+                NULL);
+      return FALSE;
+    }
+
+  out = popen((gchar *) user_data, "r");
+  if (!out)
+    {
+      msg_error("confgen: Error executing generator program",
+                evt_tag_str("context", cfg_lexer_lookup_context_name_by_type(type)),
+                evt_tag_str("block", name),
+                evt_tag_str("exec", exec),
+                evt_tag_errno("error", errno),
+                NULL);
+      return FALSE;
+    }
+  value = g_malloc(1024);
+  while ((res = fread(value + value_len, 1, 1024, out)) > 0)
+    {
+      value_len += res;
+      value = g_realloc(value, value_len + 1024);
+    }
+  res = pclose(out);
+  if (res != 0)
+    {
+      msg_error("confgen: Generator program returned with non-zero exit code",
+                evt_tag_str("block", name),
+                evt_tag_str("exec", exec),
+                evt_tag_int("rc", res),
+                NULL);
+      g_free(value);
+      return FALSE;
+    }
+  if (!cfg_lexer_include_buffer(lexer, buf, value, value_len))
+    {
+      g_free(value);
+      return FALSE;
+    }
+  return TRUE;
+}
+
+gboolean
+syslogng_module_init(GlobalConfig *cfg, CfgArgs *args)
+{
+  const gchar *name, *context, *exec;
+
+  name = cfg_args_get(args, "name");
+  if (!name)
+    {
+      msg_error("confgen: name argument expected",
+                NULL);
+      return FALSE;
+    }
+  context = cfg_args_get(args, "context");
+  if (!context)
+    {
+      msg_error("confgen: context argument expected",
+                NULL);
+      return FALSE;
+    }
+  exec = cfg_args_get(args, "exec");
+  if (!exec)
+    {
+      msg_error("confgen: exec argument expected",
+                NULL);
+      return FALSE;
+    }
+  cfg_lexer_register_block_generator(cfg->lexer, cfg_lexer_lookup_context_type_by_name(context), name, confgen_generate, g_strdup(exec), g_free);
+  return TRUE;
+}

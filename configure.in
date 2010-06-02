@@ -812,6 +812,7 @@ AC_OUTPUT(dist.conf
           src/afsocket/Makefile
           src/afsql/Makefile
           src/afstreams/Makefile
+          src/confgen/Makefile
 	  scripts/Makefile
 	  scripts/update-patterndb
 	  doc/Makefile

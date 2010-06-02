@@ -1,4 +1,4 @@
-SUBDIRS = . afsocket afsql afstreams dummy
+SUBDIRS = . afsocket afsql afstreams confgen dummy
 YFLAGS=@YFLAGS@
 
 export top_srcdir
