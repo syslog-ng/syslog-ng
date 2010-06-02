@@ -59,11 +59,12 @@ libsyslog_ng_a_SOURCES = \
 	cfg-parser.c cfg-parser.h cfg-grammar.y \
 	plugin.c plugin.h \
 	filter-expr-grammar.y filter-expr-parser.c filter-expr-parser.h \
-	block-ref-grammar.y block-ref-parser.c block-ref-parser.h
+	block-ref-grammar.y block-ref-parser.c block-ref-parser.h \
+	pragma-grammar.y pragma-parser.h pragma-parser.c
 
-EXTRA_DIST = cfg-grammar.h cfg-grammar.c cfg-lex.h cfg-lex.c syslog-ng.h radix-find.c
+EXTRA_DIST = cfg-grammar.h cfg-grammar.c cfg-lex.h cfg-lex.c syslog-ng.h radix-find.c filter-expr-grammar.c filter-expr-gammar.h pragma-grammar.c pragma-grammar.y
 
-CLEANFILES = cfg-lex.c cfg-lex.h cfg-grammar.c cfg-grammar.h filter-expr-grammar.c filter-expr-grammar.h
+CLEANFILES = cfg-lex.c cfg-lex.h cfg-grammar.c cfg-grammar.h filter-expr-grammar.y filter-expr-grammar.c filter-expr-grammar.h pragma-grammar.y pragma-grammar.c pragma-grammar.h
 
 if ENABLE_ENV_WRAPPER
 

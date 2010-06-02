@@ -108,6 +108,7 @@ struct _CfgLexer
   GList *context_stack;
   gint include_depth;
   gint brace_count;
+  gint tokenize_eol;
   GList *token_blocks;
   GList *generators;
   GString *pattern_buffer;
@@ -150,7 +151,7 @@ void cfg_lexer_register_block_generator(CfgLexer *self, gint context, const gcha
 
 int cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc);
 
-CfgLexer *cfg_lexer_new(FILE *file, const gchar *filename, gint init_line_num);
+CfgLexer *cfg_lexer_new(FILE *file, const gchar *filename);
 void  cfg_lexer_free(CfgLexer *self);
 
 gint cfg_lexer_lookup_context_type_by_name(const gchar *name);

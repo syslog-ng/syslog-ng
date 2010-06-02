@@ -40,6 +40,7 @@
 #include <signal.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 gint
 cfg_ts_format_value(gchar *format)
@@ -207,94 +208,34 @@ cfg_deinit(GlobalConfig *cfg)
   return log_center_deinit(cfg->center);
 }
 
-gboolean
-cfg_read_pragmas(GlobalConfig *self, FILE *cfg, gint *lineno)
+void
+cfg_set_version(GlobalConfig *self, gint version)
 {
-  gint start_ofs = 0;
-
-  self->version = 0;
-  while (!feof(cfg))
+  self->version = version;
+  if (self->version < 0x0300)
     {
-      gchar *pragma, *value, *colon, *eol, *p;
-      gchar line[1024];
-
-      start_ofs = ftell(cfg);
-      p = fgets(line, sizeof(line), cfg);
-      (*lineno)++;
-
-      if (p && (p[0] == '#' || p[0] == '\n'))
-        continue;
-      if (!p || line[0] != '@')
-        {
-          lineno--;
-          fseek(cfg, start_ofs, SEEK_SET);
-          goto success;
-        }
-      
-      colon = strchr(line, ':');
-      eol = strchr(line, '\n');
-
-      if (!colon)
-        {
-          msg_error("Improperly formatted configuration pragma, colon expected",
-                      evt_tag_str("line", line),
-                      NULL);
-          return FALSE;
-        }
-
-      pragma = line + 1;
-      *colon = 0;
-      
-      value = colon + 1;
-      while (*value == ' ')
-        value++;
-
-      while (eol && eol > value && (*eol == '\n' || *eol == '\r' || *eol == ' '))
-        *eol = 0;
-        
-      if (strcmp(pragma, "version") == 0)
-        {
-          /* version number of the configuration file */
-          if (strcmp(value, "3.2") == 0)
-            self->version = 0x0302;
-          else if (strcmp(value, "3.1") == 0)
-            self->version = 0x0301;
-          else if (strcmp(value, "3.0") == 0)
-            self->version = 0x0300;
-          else if (strncmp(value, "2.", 2) == 0)
-            self->version = 0x0201;
-        }
-      else if (strcmp(pragma, "module") == 0)
-        {
-          if (!plugin_load_module(value))
-            {
-              msg_error("Error loading module",
-                        evt_tag_str("module", value),
-                        NULL);
-              return FALSE;
-            }
-          else
-            {
-              msg_verbose("Module successfully loaded",
-                          evt_tag_str("module", value),
-                          NULL);
-            }
-        }
-      else
-        {
-          msg_warning("Unknown configuration file pragma",
-                      evt_tag_str("pragma", pragma),
-                      NULL);
-        }
+      msg_warning("Configuration file format is not current, please update it to use the 3.0 format as some constructs might operate inefficiently",
+                  NULL);
     }
- success:
-  if (self->version <= 0x0301)
+
+  if (self->version < 0x0300)
+    {
+      msg_warning("WARNING: global: the default value of chain_hostnames is changing to 'no' in version 3.0, please update your configuration accordingly",
+                  NULL);
+      self->chain_hostnames = TRUE;
+    }
+
+  if (self->version <= 0x0301 || atoi(cfg_args_get(self->lexer->globals, "autoload-compiled-modules")))
     {
       /* auto load modules for old configurations */
-      plugin_load_module("afsocket");
-      plugin_load_module("afsql");
+      plugin_load_module("afsocket", self, NULL);
+#if ENABLE_SQL_MODULE
+      plugin_load_module("afsql", self, NULL);
+#endif
+#if ENABLE_SUN_STREAMS_MODULE
+      plugin_load_module("afstreams", self, NULL);
+#endif
     }
-  return TRUE;
 }
 
 struct _LogTemplate *
@@ -313,7 +254,7 @@ GlobalConfig *
 cfg_new(gchar *fname)
 {
   GlobalConfig *self = g_new0(GlobalConfig, 1);
-  FILE *cfg;
+  FILE *cfg_file;
   gint res;
 
   self->filename = fname;
@@ -365,43 +306,18 @@ cfg_new(gchar *fname)
  
   configuration = self;
  
-  if ((cfg = fopen(fname, "r")) != NULL)
+  if ((cfg_file = fopen(fname, "r")) != NULL)
     {
-      gint lineno = 0;
-      CfgLexer *lexer;
-      
-      if (!cfg_read_pragmas(self, cfg, &lineno))
-        {
-          cfg_free(self);
-          configuration = NULL;
-          return NULL;
-        }
+      self->lexer = cfg_lexer_new(cfg_file, fname);
+      cfg_args_set(self->lexer->globals, "syslog-ng-root", PATH_PREFIX);
+      cfg_args_set(self->lexer->globals, "module-path", PATH_PLUGINDIR);
+      cfg_args_set(self->lexer->globals, "include-path", PATH_SYSCONFDIR);
+      cfg_args_set(self->lexer->globals, "autoload-compiled-modules", "1");
+      res = cfg_parser_parse(&main_parser, self->lexer, (gpointer *) &self);
+      cfg_lexer_free(self->lexer);
+      self->lexer = NULL;
 
-      /* the current default is 2.1 format as syslog-ng 2.1 didn't have
-       * version number in its configuration file */
-      if (self->version == 0)
-        {
-          self->version = 0x0201;
-          msg_warning("Configuration file has no version number, assuming syslog-ng 2.1 format. Please add @version: maj.min to the beginning of the file",
-                      NULL);
-        }
-      else if (self->version < 0x0300)
-        {
-          msg_warning("Configuration file format is not current, please update it to use the 3.0 format as some constructs might operate inefficiently",
-                      NULL);
-        }
-        
-      if (self->version < 0x0300)
-        {
-          msg_warning("WARNING: global: the default value of chain_hostnames is changing to 'no' in version 3.0, please update your configuration accordingly",
-                      NULL);
-          self->chain_hostnames = TRUE;
-        }
-
-      lexer = cfg_lexer_new(cfg, fname, lineno);
-      res = cfg_parser_parse(&main_parser, lexer, (gpointer *) &self);
-      cfg_lexer_free(lexer);
-      fclose(cfg);
+      fclose(cfg_file);
       if (res)
 	{
 	  /* successfully parsed */
@@ -451,6 +367,7 @@ void
 cfg_free(GlobalConfig *self)
 {
   int i;
+
   if (self->persist != NULL)
     persist_config_free(self->persist);
 

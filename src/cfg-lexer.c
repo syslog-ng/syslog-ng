@@ -2,8 +2,9 @@
 #include "cfg-lex.h"
 #include "cfg-grammar.h"
 #include "block-ref-parser.h"
+#include "pragma-parser.h"
 #include "messages.h"
-#include "cfg.h"
+#include "misc.h"
 
 #include <string.h>
 #include <sys/stat.h>
@@ -628,7 +629,17 @@ cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
   tok = _cfg_lexer_lex(yylval, yylloc, self->state);
   yylval->type = tok;
  exit:
-  if (tok == KW_INCLUDE)
+  if (tok == LL_PRAGMA)
+    {
+      gpointer dummy;
+
+      if (!cfg_parser_parse(&pragma_parser, self, &dummy))
+        {
+          return LL_ERROR;
+        }
+      goto relex;
+    }
+  else if (tok == KW_INCLUDE && cfg_lexer_get_context_type(self) != LL_CONTEXT_PRAGMA)
     {
       gchar *include_file;
 
@@ -671,11 +682,25 @@ cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
         }
       return LL_ERROR;
     }
+  else if (cfg_lexer_get_context_type(self) != LL_CONTEXT_PRAGMA)
+    {
+      if (configuration->version == 0)
+        {
+          /* no version selected yet, and we have a non-pragma token, this
+           * means that the configuration is meant for syslog-ng 2.1 */
+
+          msg_warning("Configuration file has no version number, assuming syslog-ng 2.1 format. Please add @version: maj.min to the beginning of the file",
+                      NULL);
+          configuration->version = 0x0201;
+        }
+      cfg_set_version(configuration, configuration->version );
+    }
+    }
   return tok;
 }
 
 CfgLexer *
-cfg_lexer_new(FILE *file, const gchar *filename, gint init_line_num)
+cfg_lexer_new(FILE *file, const gchar *filename)
 {
   CfgLexer *self;
   CfgIncludeLevel *level;
@@ -689,7 +714,7 @@ cfg_lexer_new(FILE *file, const gchar *filename, gint init_line_num)
   self->pattern_buffer = g_string_sized_new(32);
 
   level = &self->include_stack[0];
-  level->lloc.first_line = level->lloc.last_line = init_line_num;
+  level->lloc.first_line = level->lloc.last_line = 1;
   level->lloc.first_column = level->lloc.last_column = 1;
   level->lloc.level = level;
   level->name = g_strdup(filename);

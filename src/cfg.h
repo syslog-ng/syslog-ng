@@ -25,6 +25,7 @@
 #define CFG_H_INCLUDED
 
 #include "syslog-ng.h"
+#include "cfg-lexer.h"
 
 #include <sys/types.h>
 #include <regex.h>
@@ -136,6 +137,7 @@ void cfg_dir_perm_set(GlobalConfig *self, gint perm);
 gint cfg_tz_convert_value(gchar *convert);
 gint cfg_ts_format_value(gchar *format);
 
+void cfg_set_version(GlobalConfig *self, gint version);
 GlobalConfig *cfg_new(gchar *fname);
 void cfg_free(GlobalConfig *self);
 gboolean cfg_init(GlobalConfig *cfg);

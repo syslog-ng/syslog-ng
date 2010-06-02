@@ -65,6 +65,7 @@
 %token LL_CONTEXT_BLOCK_DEF           7
 %token LL_CONTEXT_BLOCK_REF           8
 %token LL_CONTEXT_BLOCK_CONTENT       9
+%token LL_CONTEXT_PRAGMA              10
 
 /* statements */
 %token KW_SOURCE                      10000
@@ -232,7 +233,9 @@
 %token <cptr> LL_STRING               10424
 %token <token> LL_TOKEN               10425
 %token <cptr> LL_BLOCK                10426
-%token LL_ERROR                       10427
+%token LL_PRAGMA                      10427
+%token LL_EOL                         10428
+%token LL_ERROR                       10429
 
 /* END_DECLS */
 
@@ -937,7 +940,8 @@ dnsmode
 
 string_or_number
         : string                                { $$ = $1; }
-        | LL_NUMBER                                { char buf[32]; snprintf(buf, sizeof(buf), "%" G_GINT64_FORMAT, $1); $$ = strdup(buf); }
+        | LL_NUMBER                             { char buf[32]; snprintf(buf, sizeof(buf), "%" G_GINT64_FORMAT, $1); $$ = strdup(buf); }
+        | LL_FLOAT                              { char buf[32]; snprintf(buf, sizeof(buf), "%.2f" , $1); $$ = strdup(buf); }
         ;
 
 string_list

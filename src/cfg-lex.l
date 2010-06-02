@@ -98,7 +98,7 @@ xdigit	[0-9a-fA-F]
 odigit  [0-7]
 alpha		[a-zA-Z]
 alphanum	[a-zA-Z0-9]
-word	[^ \#'"\(\)\{\}\\;\n\t,|\.]
+word	[^ \#'"\(\)\{\}\\;\n\t,|\.@:]
 
 %x string
 %x qstring
@@ -118,13 +118,19 @@ word	[^ \#'"\(\)\{\}\\;\n\t,|\.]
                                }
                              if (ch == '\n')
                                {
-                                 _cfg_lex_new_line(yyextra);
+                                 unput(ch);
                                }
+                           }
+^@                         {
+                             return LL_PRAGMA;
                            }
 <*>\r?\n                   {
                              *yylloc = yyextra->include_stack[yyextra->include_depth].lloc;
                              _cfg_lex_new_line(yyextra);
-                             cfg_lexer_append_string(yyextra, strlen(yytext), yytext);
+                             if (yyextra->tokenize_eol)
+                               return LL_EOL;
+                             else
+                               cfg_lexer_append_string(yyextra, strlen(yytext), yytext);
                            }
 {white}+		   ;
 \.\.                       { return LL_DOTDOT; }
@@ -133,12 +139,13 @@ word	[^ \#'"\(\)\{\}\\;\n\t,|\.]
 0{odigit}+		   { yylval->num = strtoll(yytext + 1, NULL, 8); return LL_NUMBER; }
 (-|\+)?{digit}+            { yylval->num = strtoll(yytext, NULL, 10); return LL_NUMBER; }
 ({word}+(\.)?)*{word}+ 	   { return cfg_lexer_lookup_keyword(yyextra, yylval, yylloc, yytext); }
-\(	      		   { return '('; }
-\)			   { return ')'; }
-\;			   { return ';'; }
-\{			   { return '{'; }
-\}			   { return '}'; }
-\|			   { return '|'; }
+\(	      		   |
+\)			   |
+\;			   |
+\{			   |
+\}			   |
+\:			   |
+\|			   { return yytext[0]; }
 \,			   ;
 
 \"                         {
@@ -254,4 +261,4 @@ _cfg_lexer_force_block_state(yyscan_t yyscanner)
 }
 
 /* avoid warnings of unused symbols */
-gpointer __dummy[] = { input, yy_top_state };
+gpointer __dummy[] = { yy_top_state };
