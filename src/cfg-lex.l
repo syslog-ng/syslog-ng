@@ -34,6 +34,39 @@
 #include <strings.h>
 
 
+#define YY_INPUT(buf, result, max_size)                                 \
+  do {                                                                  \
+    buf[0] = 0;                                                         \
+    if (fgets(buf, max_size, yyin))                                     \
+      {                                                                 \
+        gchar *res;                                                     \
+        gsize len = strlen(buf);                                        \
+                                                                        \
+        res = cfg_lexer_subst_args(yyextra->globals, NULL, NULL, buf, &len); \
+        if (!res)                                                       \
+          {                                                             \
+            result = strlen(buf);                                       \
+          }                                                             \
+        else                                                            \
+          {                                                             \
+            result = strlen(res);                                       \
+            if (max_size < result)                                      \
+              {                                                         \
+                YY_FATAL_ERROR("Not enough buffer space in lexer");     \
+                result = YY_NULL;                                       \
+              }                                                         \
+            else                                                        \
+              {                                                         \
+                memcpy(buf, res, result);                               \
+              }                                                         \
+            g_free(res);                                                \
+          }                                                             \
+      }                                                                 \
+    else                                                                \
+      result = YY_NULL;                                                 \
+  } while(0)
+
+
 #define YY_USER_ACTION do { \
   yyextra->include_stack[yyextra->include_depth].lloc.first_column = yyextra->include_stack[yyextra->include_depth].lloc.last_column;         \
   yyextra->include_stack[yyextra->include_depth].lloc.last_column = yyextra->include_stack[yyextra->include_depth].lloc.last_column + yyleng; \

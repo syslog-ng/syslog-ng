@@ -111,7 +111,12 @@ struct _CfgLexer
   GList *token_blocks;
   GList *generators;
   GString *pattern_buffer;
+  CfgArgs *globals;
 };
+
+/* preprocessor help */
+gchar *
+cfg_lexer_subst_args(CfgArgs *globals, CfgArgs *defs, CfgArgs *args, gchar *cptr, gsize *length);
 
 /* pattern buffer */
 void cfg_lexer_unput_token(CfgLexer *self, YYSTYPE *yylval);

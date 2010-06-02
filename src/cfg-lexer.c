@@ -126,6 +126,67 @@ cfg_lexer_get_context_description(CfgLexer *self)
   return "configuration";
 }
 
+gchar *
+cfg_lexer_subst_args(CfgArgs *globals, CfgArgs *defs, CfgArgs *args, gchar *cptr, gsize *length)
+{
+  gboolean backtick = FALSE;
+  gchar *p, *ref_start;
+  GString *result = g_string_sized_new(32);
+
+  p = cptr;
+  while (*p)
+    {
+      if (!backtick && (*p) == '`')
+        {
+          /* start of reference */
+          backtick = TRUE;
+          ref_start = p + 1;
+        }
+      else if (backtick && (*p) == '`')
+        {
+          /* end of reference */
+          backtick = FALSE;
+
+          if (ref_start == p)
+            {
+              /* empty ref, just include a ` character */
+              g_string_append_c(result, '`');
+            }
+          else
+            {
+              const gchar *arg;
+
+              *p = 0;
+              if (args && (arg = cfg_args_get(args, ref_start)))
+                ;
+              else if (defs && (arg = cfg_args_get(defs, ref_start)))
+                ;
+              else if (globals && (arg = cfg_args_get(globals, ref_start)))
+                ;
+              else if ((arg = g_getenv(ref_start)))
+                ;
+              else
+                arg = NULL;
+
+              *p = '`';
+              g_string_append(result, arg ? arg : "");
+            }
+        }
+      else if (!backtick)
+        g_string_append_c(result, *p);
+      p++;
+    }
+
+  if (backtick)
+    {
+      g_string_free(result, TRUE);
+      return NULL;
+    }
+
+  *length = result->len;
+  return g_string_free(result, FALSE);
+}
+
 /**
  * cfg_lexer_append_string:
  *
@@ -609,6 +670,8 @@ cfg_lexer_new(FILE *file, const gchar *filename, gint init_line_num)
 
   self = g_new0(CfgLexer, 1);
 
+  self->globals = cfg_args_new();
+
   _cfg_lexer_lex_init_extra(self, &self->state);
   _cfg_lexer_restart(NULL, self->state);
   self->pattern_buffer = g_string_sized_new(32);
@@ -663,6 +726,7 @@ cfg_lexer_free(CfgLexer *self)
       g_free(gen);
       self->generators = g_list_remove_link(self->generators, self->generators);
     }
+  cfg_args_free(self->globals);
   g_free(self);
 }
 
@@ -797,58 +861,6 @@ struct _CfgBlock
   CfgArgs *arg_defs;
 };
 
-static gchar *
-cfg_block_subst_args(CfgBlockGeneratorArgs *defs, CfgBlockGeneratorArgs *args, gchar *cptr, gsize *length)
-{
-  gboolean backtick = FALSE;
-  gchar *p, *ref_start;
-  GString *result = g_string_sized_new(32);
-
-  p = cptr;
-  while (*p)
-    {
-      if (!backtick && (*p) == '`')
-        {
-          /* start of reference */
-          backtick = TRUE;
-          ref_start = p + 1;
-        }
-      else if (backtick && (*p) == '`')
-        {
-          /* end of reference */
-          backtick = FALSE;
-
-          if (ref_start == p)
-            {
-              /* empty ref, just include a ` character */
-              g_string_append_c(result, '`');
-            }
-          else
-            {
-              const gchar *arg, *def;
-
-              *p = 0;
-              def = cfg_block_generator_args_get_arg(defs, ref_start);
-              arg = cfg_block_generator_args_get_arg(args, ref_start);
-              *p = '`';
-              g_string_append(result, arg ? arg : (def ? def : ""));
-            }
-        }
-      else if (!backtick)
-        g_string_append_c(result, *p);
-      p++;
-    }
-
-  if (backtick)
-    {
-      g_string_free(result, TRUE);
-      return NULL;
-    }
-
-  *length = result->len;
-  return g_string_free(result, FALSE);
-}
-
 static void
 cfg_block_validate_arg(gpointer k, gpointer v, gpointer user_data)
 {
@@ -892,7 +904,7 @@ cfg_block_generate(CfgLexer *lexer, gint context, const gchar *name, CfgArgs *ar
       return FALSE;
     }
 
-  value = cfg_block_subst_args(block->arg_defs, args, block->content, &length);
+  value = cfg_lexer_subst_args(lexer->globals, block->arg_defs, args, block->content, &length);
 
   if (!value)
     {
