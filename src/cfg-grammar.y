@@ -16,6 +16,7 @@
 %locations
 %define api.pure
 %pure-parser
+%error-verbose
 
 %code {
 
@@ -871,7 +872,7 @@ rewrite_expr
           }
           rewrite_expr_opts ')'
           {
-            CHECK_ERROR(log_rewrite_set_regexp(last_rewrite, $3), @3, "Error compiling regular expression", "alma");
+            CHECK_ERROR(log_rewrite_set_regexp(last_rewrite, $3), @3, "Error compiling regular expression");
             free($3);
             $$ = last_rewrite;
           }
