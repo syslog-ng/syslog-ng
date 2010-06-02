@@ -275,7 +275,7 @@ LogTemplate *last_template;
 LogParser *last_parser;
 LogRewrite *last_rewrite;
 FilterExprNode *last_filter_expr;
-CfgBlockGeneratorArgs *last_block_args;
+CfgArgs *last_block_args;
 
 }
 
@@ -419,7 +419,7 @@ log_stmt
 block_stmt
         : { cfg_lexer_push_context(lexer, LL_CONTEXT_BLOCK_DEF, NULL, "block definition"); }
           LL_IDENTIFIER LL_IDENTIFIER
-          '(' { last_block_args = cfg_block_generator_args_new(); } block_args ')'
+          '(' { last_block_args = cfg_args_new(); } block_args ')'
           { cfg_lexer_push_context(lexer, LL_CONTEXT_BLOCK_CONTENT, NULL, "block content"); }
           LL_BLOCK
                                                           {
@@ -443,7 +443,7 @@ block_args
         ;
 
 block_arg
-        : LL_IDENTIFIER '(' string_or_number ')'          { cfg_block_generator_args_set_arg(last_block_args, $1, $3); free($1); free($3); }
+        : LL_IDENTIFIER '(' string_or_number ')'          { cfg_args_set(last_block_args, $1, $3); free($1); free($3); }
         | LL_IDENTIFIER '(' ')'                           {}
         ;
 

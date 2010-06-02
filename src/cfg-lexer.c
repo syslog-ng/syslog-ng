@@ -8,7 +8,7 @@
 #include <string.h>
 #include <sys/stat.h>
 
-struct _CfgBlockGeneratorArgs
+struct _CfgArgs
 {
   GHashTable *args;
 };
@@ -505,7 +505,7 @@ cfg_lexer_find_generator(CfgLexer *self, gint context, const gchar *name)
 }
 
 static gboolean
-cfg_lexer_generate_block(CfgLexer *self, gint context, const gchar *name, CfgBlockGenerator *gen, CfgBlockGeneratorArgs *args)
+cfg_lexer_generate_block(CfgLexer *self, gint context, const gchar *name, CfgBlockGenerator *gen, CfgArgs *args)
 {
   return gen->generator(self, context, name, args, gen->generator_data);
 }
@@ -592,14 +592,14 @@ cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
     }
   else if (tok == LL_IDENTIFIER && (gen = cfg_lexer_find_generator(self, cfg_lexer_get_context_type(self), yylval->cptr)))
     {
-      CfgBlockGeneratorArgs *args;
+      CfgArgs *args;
 
       if (cfg_parser_parse(&block_ref_parser, self, (gpointer *) &args))
         {
           gboolean success;
 
           success = cfg_lexer_generate_block(self, cfg_lexer_get_context_type(self), yylval->cptr, gen, args);
-          cfg_block_generator_args_free(args);
+          cfg_args_free(args);
           if (success)
             {
               goto relex;
@@ -710,28 +710,28 @@ cfg_lexer_lookup_context_name_by_type(gint type)
 /* token block args */
 
 void
-cfg_block_generator_args_set_arg(CfgBlockGeneratorArgs *self, const gchar *name, const gchar *value)
+cfg_args_set(CfgArgs *self, const gchar *name, const gchar *value)
 {
   g_hash_table_insert(self->args, g_strdup(name), g_strdup(value));
 }
 
 const gchar *
-cfg_block_generator_args_get_arg(CfgBlockGeneratorArgs *self, const gchar *name)
+cfg_args_get(CfgArgs *self, const gchar *name)
 {
   return g_hash_table_lookup(self->args, name);
 }
 
-CfgBlockGeneratorArgs *
-cfg_block_generator_args_new(void)
+CfgArgs *
+cfg_args_new(void)
 {
-  CfgBlockGeneratorArgs *self = g_new0(CfgBlockGeneratorArgs, 1);
+  CfgArgs *self = g_new0(CfgArgs, 1);
 
   self->args = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
   return self;
 }
 
 void
-cfg_block_generator_args_free(CfgBlockGeneratorArgs *self)
+cfg_args_free(CfgArgs *self)
 {
   g_hash_table_destroy(self->args);
   g_free(self);
@@ -803,7 +803,7 @@ cfg_token_block_free(CfgTokenBlock *self)
 struct _CfgBlock
 {
   gchar *content;
-  CfgBlockGeneratorArgs *arg_defs;
+  CfgArgs *arg_defs;
 };
 
 static gchar *
@@ -861,11 +861,11 @@ cfg_block_subst_args(CfgBlockGeneratorArgs *defs, CfgBlockGeneratorArgs *args, g
 static void
 cfg_block_validate_arg(gpointer k, gpointer v, gpointer user_data)
 {
-  CfgBlockGeneratorArgs *defs = ((gpointer *) user_data)[0];
+  CfgArgs *defs = ((gpointer *) user_data)[0];
   gchar **bad_key = (gchar **) &((gpointer *) user_data)[1];
   gchar **bad_value = (gchar **) &((gpointer *) user_data)[2];
 
-  if ((*bad_key == NULL) && cfg_block_generator_args_get_arg(defs, k) == NULL)
+  if ((*bad_key == NULL) && cfg_args_get(defs, k) == NULL)
     {
       *bad_key = k;
       *bad_value = v;
@@ -880,7 +880,7 @@ cfg_block_validate_arg(gpointer k, gpointer v, gpointer user_data)
  * for the lexer.
  */
 gboolean
-cfg_block_generate(CfgLexer *lexer, gint context, const gchar *name, CfgBlockGeneratorArgs *args, gpointer user_data)
+cfg_block_generate(CfgLexer *lexer, gint context, const gchar *name, CfgArgs *args, gpointer user_data)
 {
   CfgBlock *block = (CfgBlock *) user_data;
   gchar *value;
@@ -921,7 +921,7 @@ cfg_block_generate(CfgLexer *lexer, gint context, const gchar *name, CfgBlockGen
  * Construct a user defined block.
  */
 CfgBlock *
-cfg_block_new(const gchar *content, CfgBlockGeneratorArgs *arg_defs)
+cfg_block_new(const gchar *content, CfgArgs *arg_defs)
 {
   CfgBlock *self = g_new0(CfgBlock, 1);
 
@@ -937,6 +937,6 @@ void
 cfg_block_free(CfgBlock *self)
 {
   g_free(self->content);
-  cfg_block_generator_args_free(self->arg_defs);
+  cfg_args_free(self->arg_defs);
   g_free(self);
 }

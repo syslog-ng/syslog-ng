@@ -11,7 +11,7 @@
 
 typedef struct _CfgIncludeLevel CfgIncludeLevel;
 typedef struct _CfgTokenBlock CfgTokenBlock;
-typedef struct _CfgBlockGeneratorArgs CfgBlockGeneratorArgs;
+typedef struct _CfgArgs CfgArgs;
 typedef struct _CfgBlockGenerator CfgBlockGenerator;
 typedef struct _CfgBlock CfgBlock;
 typedef struct _CfgLexer CfgLexer;
@@ -65,7 +65,7 @@ typedef struct _CfgLexerKeyword
  * generate configuration snippets programmatically.  That code
  * however is missing as of now.  (though would be trivial to add)
  */
-typedef gboolean (*CfgBlockGeneratorFunc)(CfgLexer *lexer, gint type, const gchar *name, CfgBlockGeneratorArgs *args, gpointer user_data);
+typedef gboolean (*CfgBlockGeneratorFunc)(CfgLexer *lexer, gint type, const gchar *name, CfgArgs *args, gpointer user_data);
 
 /* structure that describes a given location in the include stack */
 struct _CfgIncludeLevel
@@ -151,10 +151,10 @@ gint cfg_lexer_lookup_context_type_by_name(const gchar *name);
 const gchar *cfg_lexer_lookup_context_name_by_type(gint id);
 
 /* argument list for a block generator */
-void cfg_block_generator_args_set_arg(CfgBlockGeneratorArgs *self, const gchar *name, const gchar *value);
-const gchar *cfg_block_generator_args_get_arg(CfgBlockGeneratorArgs *self, const gchar *name);
-CfgBlockGeneratorArgs *cfg_block_generator_args_new(void);
-void cfg_block_generator_args_free(CfgBlockGeneratorArgs *self);
+void cfg_args_set(CfgArgs *self, const gchar *name, const gchar *value);
+const gchar *cfg_args_get(CfgArgs *self, const gchar *name);
+CfgArgs *cfg_args_new(void);
+void cfg_args_free(CfgArgs *self);
 
 /* token block objects */
 
@@ -166,8 +166,8 @@ void cfg_token_block_free(CfgTokenBlock *self);
 
 /* user defined configuration block */
 
-gboolean cfg_block_generate(CfgLexer *self, gint context, const gchar *name, CfgBlockGeneratorArgs *args, gpointer user_data);
-CfgBlock *cfg_block_new(const gchar *content, CfgBlockGeneratorArgs *arg_defs);
+gboolean cfg_block_generate(CfgLexer *lexer, gint context, const gchar *name, CfgArgs *args, gpointer user_data);
+CfgBlock *cfg_block_new(const gchar *content, CfgArgs *arg_defs);
 void cfg_block_free(CfgBlock *self);
 
 

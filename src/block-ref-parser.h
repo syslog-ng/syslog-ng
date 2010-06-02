@@ -7,6 +7,6 @@
 
 extern CfgParser block_ref_parser;
 
-CFG_PARSER_DECLARE_LEXER_BINDING(block_ref_, CfgBlockGeneratorArgs **)
+CFG_PARSER_DECLARE_LEXER_BINDING(block_ref_, CfgArgs **)
 
 #endif

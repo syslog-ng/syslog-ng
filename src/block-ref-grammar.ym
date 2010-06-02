@@ -7,7 +7,7 @@
 %name-prefix "block_ref_"
 %lex-param {CfgLexer *lexer}
 %parse-param {CfgLexer *lexer}
-%parse-param {CfgBlockGeneratorArgs **result}
+%parse-param {CfgArgs **result}
 
 
 /* INCLUDE_DECLS */
@@ -16,10 +16,9 @@
 
 start
         : {
-            *result = cfg_block_generator_args_new();
-            cfg_lexer_push_context(lexer, LL_CONTEXT_BLOCK_REF, NULL, "block reference");
+            *result = cfg_args_new();
           }
-          '(' block_args ')'                                    { cfg_lexer_pop_context(lexer); YYACCEPT; }
+          '(' block_args ')'                                    { YYACCEPT; }
 	;
 
 block_args
@@ -28,7 +27,7 @@ block_args
         ;
 
 block_arg
-        : LL_IDENTIFIER '(' string_or_number ')'                { cfg_block_generator_args_set_arg(*result, $1, $3); free($1); free($3); }
+        : LL_IDENTIFIER '(' string_or_number ')'                { cfg_args_set(*result, $1, $3); free($1); free($3); }
         ;
 
 /* INCLUDE_RULES */

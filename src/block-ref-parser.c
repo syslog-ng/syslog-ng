@@ -2,11 +2,13 @@
 #include "block-ref-grammar.h"
 
 extern int block_ref_debug;
-int block_ref_parse(CfgLexer *lexer, CfgBlockGeneratorArgs **node);
+int block_ref_parse(CfgLexer *lexer, CfgArgs **node);
 
 static CfgLexerKeyword block_ref_keywords[] = {
   { NULL }
 };
+
+CfgLexerKeyword *block_def_keywords = block_ref_keywords;
 
 CfgParser block_ref_parser =
 {
@@ -17,4 +19,4 @@ CfgParser block_ref_parser =
   .parse = (gint (*)(CfgLexer *, gpointer *)) block_ref_parse,
 };
 
-CFG_PARSER_IMPLEMENT_LEXER_BINDING(block_ref_, CfgBlockGeneratorArgs **)
+CFG_PARSER_IMPLEMENT_LEXER_BINDING(block_ref_, CfgArgs **)
