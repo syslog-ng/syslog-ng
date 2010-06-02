@@ -50,6 +50,8 @@ gchar *format_hex_string(gpointer str, gsize str_len, gchar *result, gsize resul
 gchar *find_cr_or_lf(gchar *s, gsize n);
 
 gboolean create_containing_directory(gchar *name, gint dir_uid, gint dir_gid, gint dir_mode);
+gchar *find_file_in_path(const gchar *path, const gchar *filename, GFileTest test);
+
 GThread *create_worker_thread(GThreadFunc func, gpointer data, gboolean joinable, GError **error);
 
 
