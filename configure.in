@@ -760,7 +760,6 @@ else
 fi
 
 AC_DEFINE_UNQUOTED(ENABLE_THREADS, `enable_value $enable_threads`, [whether to enable threads support in the syslog-ng core])
-AC_DEFINE_UNQUOTED(ENABLE_SUN_DOOR, `enable_value $enable_sun_door`, [have Solaris door support])
 AC_DEFINE_UNQUOTED(ENABLE_DEBUG, `enable_value $enable_debug`, [Enable debugging])
 AC_DEFINE_UNQUOTED(ENABLE_GPROF, `enable_value $enable_gprof`, [Enable gcc profiling])
 AC_DEFINE_UNQUOTED(ENABLE_MEMTRACE, `enable_value $enable_memtrace`, [Enable memtrace])
@@ -770,6 +769,11 @@ AC_DEFINE_UNQUOTED(ENABLE_TCP_WRAPPER, `enable_value $enable_tcp_wrapper`, [Enab
 AC_DEFINE_UNQUOTED(ENABLE_LINUX_CAPS, `enable_value $enable_linux_caps`, [Enable Linux capability management support])
 AC_DEFINE_UNQUOTED(ENABLE_PCRE, `enable_value $enable_pcre`, [Enable PCRE support])
 AC_DEFINE_UNQUOTED(ENABLE_ENV_WRAPPER, `enable_value $enable_env_wrapper`, [Enable environment wrapper support])
+
+AC_DEFINE_UNQUOTED(ENABLE_SSL_MODULE, `enable_value $enable_ssl`, [SSL was detected and compiled in the afsocket module])
+AC_DEFINE_UNQUOTED(ENABLE_SQL_MODULE, `enable_value $enable_sql`, [SQL was compiled as a module])
+AC_DEFINE_UNQUOTED(ENABLE_SUN_STREAMS_MODULE, `enable_value $enable_sun_streams`, [SUN STREAMS device support was compiled as a module])
+AC_DEFINE_UNQUOTED(ENABLE_SUN_DOOR_MODULE, `enable_value $enable_sun_door`, [Solaris door support was compiled in the afstreams module])
 
 AM_CONDITIONAL(ENABLE_ENV_WRAPPER, [test "$enable_env_wrapper" = "yes"])
 AM_CONDITIONAL(ENABLE_SSL, [test "$enable_ssl" = "yes"])
@@ -830,16 +834,16 @@ echo "  linker flags                : $LDFLAGS $LIBS"
 echo "  prefix                      : $prefix"
 echo "  linking mode                : $linking_mode"
 echo " Features:"
-echo "  Sun STREAMS support         : ${enable_sun_streams:=no}"
-echo "  Sun Door support            : ${enable_sun_door:=no}"
+echo "  Sun STREAMS support (module): ${enable_sun_streams:=no}"
+echo "  Sun Door support (module)   : ${enable_sun_door:=no}"
 echo "  Debug symbols               : ${enable_debug:=no}"
 echo "  GCC profiling               : ${enable_gprof:=no}"
 echo "  Memtrace                    : ${enable_memtrace:=no}"
 echo "  IPV6 support                : ${enable_ipv6:=no}"
 echo "  spoof-source support        : ${enable_spoof_source:=no}"
 echo "  tcp-wrapper support         : ${enable_tcp_wrapper:=no}"
-echo "  SSL support                 : ${enable_ssl:=no}"
-echo "  SQL support                 : ${enable_sql:=no}"
+echo "  SSL support (module)        : ${enable_ssl:=no}"
+echo "  SQL support (module)        : ${enable_sql:=no}"
 echo "  Linux capability support    : ${enable_linux_caps:=no}"
 echo "  PCRE support                : ${enable_pcre:=no}"
 echo "  Env wrapper support         : ${enable_env_wrapper:=no}"

@@ -334,10 +334,13 @@ version(void)
          "Enable-Debug: %s\n"
          "Enable-GProf: %s\n"
          "Enable-Memtrace: %s\n"
+         "Enable-Sun-STREAMS: %s\n"
          "Enable-Sun-Door: %s\n"
          "Enable-IPv6: %s\n"
          "Enable-Spoof-Source: %s\n"
          "Enable-TCP-Wrapper: %s\n"
+         "Enable-SSL: %s\n"
+         "Enable-SQL: %s\n"
          "Enable-Linux-Caps: %s\n"
          "Enable-Pcre: %s\n",
          installer_version,
@@ -345,10 +348,13 @@ version(void)
          ON_OFF_STR(ENABLE_DEBUG),
          ON_OFF_STR(ENABLE_GPROF),
          ON_OFF_STR(ENABLE_MEMTRACE),
-         ON_OFF_STR(ENABLE_SUN_DOOR),
+         ON_OFF_STR(ENABLE_SUN_STREAMS_MODULE),
+         ON_OFF_STR(ENABLE_SUN_DOOR_MODULE),
          ON_OFF_STR(ENABLE_IPV6),
          ON_OFF_STR(ENABLE_SPOOF_SOURCE),
          ON_OFF_STR(ENABLE_TCP_WRAPPER),
+         ON_OFF_STR(ENABLE_SSL_MODULE),
+         ON_OFF_STR(ENABLE_SQL_MODULE),
          ON_OFF_STR(ENABLE_LINUX_CAPS),
          ON_OFF_STR(ENABLE_PCRE));
 }
