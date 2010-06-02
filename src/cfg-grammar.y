@@ -249,6 +249,7 @@
 #include "logparser.h"
 #include "logrewrite.h"
 #include "filter-expr-parser.h"
+#include "block-ref-parser.h"
 #include "plugin.h"
 
 
@@ -417,7 +418,7 @@ log_stmt
 	;
 	
 block_stmt
-        : { cfg_lexer_push_context(lexer, LL_CONTEXT_BLOCK_DEF, NULL, "block definition"); }
+        : { cfg_lexer_push_context(lexer, LL_CONTEXT_BLOCK_DEF, block_def_keywords, "block definition"); }
           LL_IDENTIFIER LL_IDENTIFIER
           '(' { last_block_args = cfg_args_new(); } block_args ')'
           { cfg_lexer_push_context(lexer, LL_CONTEXT_BLOCK_CONTENT, NULL, "block content"); }

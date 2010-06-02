@@ -153,84 +153,75 @@ cfg_lexer_append_char(CfgLexer *self, char c)
 }
 
 int
-cfg_lexer_lookup_keyword_in_table(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *lloc, const char *token, CfgLexerKeyword *keywords)
-{
-  int i, j;
-
-  for (i = 0; keywords[i].kw_name; i++)
-    {
-      for (j = 0; token[j] && keywords[i].kw_name[j]; j++)
-        {
-          if (token[j] == '-' || token[j] == '_')
-            {
-              if (keywords[i].kw_name[j] != '_')
-                break;
-            }
-          else if (token[j] != keywords[i].kw_name[j])
-            break;
-        }
-      if (token[j] == 0 && keywords[i].kw_name[j] == 0)
-        {
-          if (keywords[i].kw_req_version > configuration->version)
-            {
-              msg_warning("WARNING: Your configuration uses a newly introduced reserved word as identifier, please use a different name or enclose it in quotes",
-                          evt_tag_str("keyword", keywords[i].kw_name),
-                          evt_tag_printf("config-version", "%d.%d", configuration->version >> 8, configuration->version & 0xFF),
-                          evt_tag_printf("version", "%d.%d", (keywords[i].kw_req_version >> 8), keywords[i].kw_req_version & 0xFF),
-                          lloc ? evt_tag_str("filename", lloc->level->name) : NULL,
-                          lloc ? evt_tag_printf("line", "%d:%d", lloc->first_line, lloc->first_column) : NULL,
-                          NULL);
-              break;
-            }
-          switch (keywords[i].kw_status)
-            {
-            case KWS_OBSOLETE:
-              msg_warning("Your configuration file uses an obsoleted keyword, please update your configuration",
-                          evt_tag_str("keyword", keywords[i].kw_name),
-                          evt_tag_str("change", keywords[i].kw_explain),
-                          NULL);
-              break;
-            default:
-              break;
-            }
-          keywords[i].kw_status = KWS_NORMAL;
-          yylval->type = LL_TOKEN;
-          yylval->token = keywords[i].kw_token;
-          return keywords[i].kw_token;
-        }
-    }
-  yylval->cptr = strdup(token);
-  return LL_IDENTIFIER;
-}
-
-int
 cfg_lexer_lookup_keyword(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc, const char *token)
 {
-  gint res = LL_IDENTIFIER;
   GList *l;
-
-  if (cfg_lexer_get_context_type(self) == LL_CONTEXT_BLOCK_DEF || cfg_lexer_get_context_type(self) == LL_CONTEXT_BLOCK_REF)
-    {
-      /* no reserved words inside a block definition/reference */
-      yylval->cptr = strdup(token);
-      return LL_IDENTIFIER;
-    }
 
   l = self->context_stack;
   while (l)
     {
       CfgLexerContext *context = ((CfgLexerContext *) l->data);
+      CfgLexerKeyword *keywords = context->keywords;
 
-      if (context->keywords)
+      if (keywords)
         {
-          res = cfg_lexer_lookup_keyword_in_table(self, yylval, yylloc, token, context->keywords);
-          if (res != LL_IDENTIFIER)
-            return res;
+          int i, j;
+
+          for (i = 0; keywords[i].kw_name; i++)
+            {
+              if (strcmp(keywords[i].kw_name, CFG_KEYWORD_STOP) == 0)
+                {
+                  yylval->cptr = strdup(token);
+                  return LL_IDENTIFIER;
+                }
+
+              for (j = 0; token[j] && keywords[i].kw_name[j]; j++)
+                {
+                  if (token[j] == '-' || token[j] == '_')
+                    {
+                      if (keywords[i].kw_name[j] != '_')
+                        break;
+                    }
+                  else if (token[j] != keywords[i].kw_name[j])
+                    break;
+                }
+              if (token[j] == 0 && keywords[i].kw_name[j] == 0)
+                {
+                  /* match */
+                  if (keywords[i].kw_req_version > configuration->version)
+                    {
+                      msg_warning("WARNING: Your configuration uses a newly introduced reserved word as identifier, please use a different name or enclose it in quotes",
+                                  evt_tag_str("keyword", keywords[i].kw_name),
+                                  evt_tag_printf("config-version", "%d.%d", configuration->version >> 8, configuration->version & 0xFF),
+                                  evt_tag_printf("version", "%d.%d", (keywords[i].kw_req_version >> 8), keywords[i].kw_req_version & 0xFF),
+                                  yylloc ? evt_tag_str("filename", yylloc->level->name) : NULL,
+                                  yylloc ? evt_tag_printf("line", "%d:%d", yylloc->first_line, yylloc->first_column) : NULL,
+                                  NULL);
+                      break;
+                    }
+                  switch (keywords[i].kw_status)
+                    {
+                    case KWS_OBSOLETE:
+                      msg_warning("Your configuration file uses an obsoleted keyword, please update your configuration",
+                                  evt_tag_str("keyword", keywords[i].kw_name),
+                                  evt_tag_str("change", keywords[i].kw_explain),
+                                  NULL);
+                      break;
+                    default:
+                      break;
+                    }
+                  keywords[i].kw_status = KWS_NORMAL;
+                  yylval->type = LL_TOKEN;
+                  yylval->token = keywords[i].kw_token;
+                  yylval->keyword = keywords[i].kw_name;
+                  return keywords[i].kw_token;
+                }
+            }
         }
       l = l->next;
     }
-
-  return res;
+  yylval->cptr = strdup(token);
+  return LL_IDENTIFIER;
 }
 
 gboolean

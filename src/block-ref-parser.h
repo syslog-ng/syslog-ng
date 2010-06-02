@@ -6,6 +6,7 @@
 #include "filter.h"
 
 extern CfgParser block_ref_parser;
+extern CfgLexerKeyword *block_def_keywords;
 
 CFG_PARSER_DECLARE_LEXER_BINDING(block_ref_, CfgArgs **)
 

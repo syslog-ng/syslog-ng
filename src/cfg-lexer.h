@@ -59,6 +59,8 @@ typedef struct _CfgLexerKeyword
   gchar *kw_explain;
 } CfgLexerKeyword;
 
+#define CFG_KEYWORD_STOP "@!#?"
+
 /* a block generator is a function that includes a configuration file
  * snippet in place to the block reference.  This is used by the
  * "block" statement, but can also be used by external plugins to
@@ -123,7 +125,6 @@ void cfg_lexer_append_char(CfgLexer *self, char c);
 /* keyword handling */
 void cfg_lexer_set_current_keywords(CfgLexer *self, CfgLexerKeyword *keywords);
 char *cfg_lexer_get_keyword_string(CfgLexer *self, int kw);
-int cfg_lexer_lookup_keyword_in_table(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *lloc, const char *token, CfgLexerKeyword *keywords);
 int cfg_lexer_lookup_keyword(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc, const char *token);
 
 /* include files */

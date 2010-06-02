@@ -5,7 +5,7 @@ extern int block_ref_debug;
 int block_ref_parse(CfgLexer *lexer, CfgArgs **node);
 
 static CfgLexerKeyword block_ref_keywords[] = {
-  { NULL }
+  { CFG_KEYWORD_STOP },
 };
 
 CfgLexerKeyword *block_def_keywords = block_ref_keywords;
