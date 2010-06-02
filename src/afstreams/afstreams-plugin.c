@@ -13,8 +13,8 @@ static Plugin afstreams_plugins[] =
 };
 
 gboolean
-syslogng_module_init(void)
+syslogng_module_init(GlobalConfig *cfg, CfgBlockGeneratorArgs *args)
 {
-  plugin_register(afstreams_plugins, G_N_ELEMENTS(afstreams_plugins));
+  plugin_register(cfg, afstreams_plugins, G_N_ELEMENTS(afstreams_plugins));
   return TRUE;
 }

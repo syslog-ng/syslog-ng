@@ -52,8 +52,8 @@ static Plugin dummy_plugin =
 };
 
 gboolean
-syslogng_module_init(void)
+syslogng_module_init(GlobalConfig *cfg, CfgArgs *args)
 {
-  plugin_register(&dummy_plugin, 1);
+  plugin_register(cfg, &dummy_plugin, 1);
   return TRUE;
 }

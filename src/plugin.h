@@ -33,15 +33,18 @@ struct _Plugin
 {
   gint type;
   const gchar *name;
-  void (*setup_context)(Plugin *self, CfgLexer *lexer, gint plugin_type, const gchar *plugin_name);
+  void (*setup_context)(Plugin *self, GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name);
   CfgParser *parser;
 };
 
-Plugin *plugin_find(gint plugin_type, const gchar *plugin_name);
-gpointer plugin_new_instance(CfgLexer *lexer, Plugin *plugin, YYLTYPE *yylloc);
+/* instantiate a new plugin */
+Plugin *plugin_find(GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name);
+gpointer plugin_new_instance(GlobalConfig *cfg, Plugin *plugin, YYLTYPE *yylloc);
 
+/* plugin side API */
+void plugin_register(GlobalConfig *cfg, Plugin *p, gint number);
+gboolean plugin_load_module(const gchar *module_name, GlobalConfig *cfg, CfgArgs *args);
 
-void plugin_register(Plugin *p, int number);
-gboolean plugin_load_module(const gchar *module_name);
+gboolean syslogng_module_init(GlobalConfig *cfg, CfgArgs *args);
 
 #endif

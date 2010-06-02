@@ -5,24 +5,32 @@
 
 #include <gmodule.h>
 
-GList *plugins;
-
 void
-plugin_register(Plugin *p, gint number)
+plugin_register(GlobalConfig *cfg, Plugin *p, gint number)
 {
   gint i;
 
   for (i = 0; i < number; i++)
-    plugins = g_list_prepend(plugins, &p[i]);
+    {
+      if (plugin_find(cfg, p[i].type, p[i].name))
+        {
+          msg_debug("Attempted to register the same plugin multiple times, ignoring",
+                    evt_tag_str("context", cfg_lexer_lookup_context_name_by_type(p[i].type)),
+                    evt_tag_str("name", p[i].name),
+                    NULL);
+          continue;
+        }
+      cfg->plugins = g_list_prepend(cfg->plugins, &p[i]);
+    }
 }
 
 Plugin *
-plugin_find(gint plugin_type, const gchar *plugin_name)
+plugin_find(GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name)
 {
   GList *p;
   Plugin *plugin;
 
-  for (p = plugins; p; p = g_list_next(p))
+  for (p = cfg->plugins; p; p = g_list_next(p))
     {
       plugin = p->data;
       if (plugin->type == plugin_type && strcmp(plugin->name, plugin_name) == 0)
@@ -32,7 +40,7 @@ plugin_find(gint plugin_type, const gchar *plugin_name)
 }
 
 gpointer
-plugin_new_instance(CfgLexer *lexer, Plugin *plugin, YYLTYPE *yylloc)
+plugin_new_instance(GlobalConfig *cfg, Plugin *plugin, YYLTYPE *yylloc)
 {
   gpointer instance = NULL;
 
@@ -57,10 +65,10 @@ plugin_new_instance(CfgLexer *lexer, Plugin *plugin, YYLTYPE *yylloc)
     }
   else
     {
-      (plugin->setup_context)(plugin, lexer, plugin->type, plugin->name);
+      (plugin->setup_context)(plugin, cfg, plugin->type, plugin->name);
     }
 
-  if (!cfg_parser_parse(plugin->parser, lexer, &instance))
+  if (!cfg_parser_parse(plugin->parser, cfg->lexer, &instance))
     {
       cfg_parser_cleanup(plugin->parser, instance);
       instance = NULL;
@@ -70,11 +78,11 @@ plugin_new_instance(CfgLexer *lexer, Plugin *plugin, YYLTYPE *yylloc)
 }
 
 gboolean
-plugin_load_module(const gchar *module_name)
+plugin_load_module(const gchar *module_name, GlobalConfig *cfg, CfgArgs *args)
 {
   GModule *mod;
-  gboolean (*init_func)(void);
-  gchar *plugin_module_name;
+  gboolean (*init_func)(GlobalConfig *cfg, CfgArgs *args);
+  gchar *plugin_module_name = NULL;
 
   plugin_module_name = g_module_build_path(PATH_PLUGINDIR, module_name);
   mod = g_module_open(plugin_module_name, G_MODULE_BIND_LOCAL);
@@ -97,5 +105,5 @@ plugin_load_module(const gchar *module_name)
                 NULL);
       return FALSE;
     }
-  return (*init_func)();
+  return (*init_func)(cfg, args);
 }

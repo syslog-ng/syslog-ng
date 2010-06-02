@@ -525,20 +525,6 @@ cfg_lexer_inject_token_block(CfgLexer *self, CfgTokenBlock *block)
   self->token_blocks = g_list_append(self->token_blocks, block);
 }
 
-void
-cfg_lexer_register_block_generator(CfgLexer *self, gint context, const gchar *name, CfgBlockGeneratorFunc generator, gpointer generator_data, GDestroyNotify generator_data_free)
-{
-  CfgBlockGenerator *gen = g_new0(CfgBlockGenerator, 1);
-
-  gen->context = context;
-  gen->name = g_strdup(name);
-  gen->generator = generator;
-  gen->generator_data = generator_data;
-  gen->generator_data_free = generator_data_free;
-
-  self->generators = g_list_append(self->generators, gen);
-}
-
 static CfgBlockGenerator *
 cfg_lexer_find_generator(CfgLexer *self, gint context, const gchar *name)
 {
@@ -554,6 +540,32 @@ cfg_lexer_find_generator(CfgLexer *self, gint context, const gchar *name)
         }
     }
   return NULL;
+}
+
+void
+cfg_lexer_register_block_generator(CfgLexer *self, gint context, const gchar *name, CfgBlockGeneratorFunc generator, gpointer generator_data, GDestroyNotify generator_data_free)
+{
+  CfgBlockGenerator *gen;
+
+  if (cfg_lexer_find_generator(self, context, name))
+    {
+      msg_debug("Attempted to register the same generator multiple times, ignoring",
+                evt_tag_str("context", cfg_lexer_lookup_context_name_by_type(context)),
+                evt_tag_str("name", name),
+                NULL);
+      generator_data_free(generator_data);
+      return;
+    }
+
+  gen = g_new0(CfgBlockGenerator, 1);
+
+  gen->context = context;
+  gen->name = g_strdup(name);
+  gen->generator = generator;
+  gen->generator_data = generator_data;
+  gen->generator_data_free = generator_data_free;
+
+  self->generators = g_list_append(self->generators, gen);
 }
 
 static gboolean
@@ -721,7 +733,8 @@ cfg_lexer_free(CfgLexer *self)
     {
       CfgBlockGenerator *gen = self->generators->data;
 
-      gen->generator_data_free(gen->generator_data);
+      if (gen->generator_data && gen->generator_data_free)
+        gen->generator_data_free(gen->generator_data);
       g_free(gen->name);
       g_free(gen);
       self->generators = g_list_remove_link(self->generators, self->generators);

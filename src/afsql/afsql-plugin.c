@@ -13,8 +13,8 @@ static Plugin afsql_plugins[] =
 };
 
 gboolean
-syslogng_module_init(void)
+syslogng_module_init(GlobalConfig *cfg, CfgArgs *args)
 {
-  plugin_register(afsql_plugins, G_N_ELEMENTS(afsql_plugins));
+  plugin_register(cfg, afsql_plugins, G_N_ELEMENTS(afsql_plugins));
   return TRUE;
 }
