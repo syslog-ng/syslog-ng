@@ -818,6 +818,7 @@ AC_OUTPUT(dist.conf
 	  doc/Makefile
           doc/docvars.xml
 	  contrib/Makefile
+	  scl/Makefile
 	  tests/Makefile 
 	  debian/Makefile
 	  tgz2build/Makefile
