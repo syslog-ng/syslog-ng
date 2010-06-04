@@ -28,7 +28,7 @@
 #include "cfg-lexer.h"
 #include "cfg-grammar.h"
 #include "messages.h"
-
+#include "misc.h"
 
 #include <string.h>
 #include <strings.h>
@@ -66,12 +66,28 @@
       result = YY_NULL;                                                 \
   } while(0)
 
+#define YY_USER_ACTION                                                  \
+  do {                                                                  \
+    YYLTYPE *cur_lloc = &yyextra->include_stack[yyextra->include_depth].lloc; \
+    if (YY_START == INITIAL)                                            \
+      {                                                                 \
+        cur_lloc->first_column = cur_lloc->last_column;                 \
+      }                                                                 \
+    cur_lloc->last_column = cur_lloc->last_column + yyleng;             \
+    if (yyextra->token_text)                                            \
+      g_string_append_len(yyextra->token_text, yytext, yyleng);         \
+    *yylloc = *cur_lloc;                                                \
+  } while(0);
 
-#define YY_USER_ACTION do { \
-  yyextra->include_stack[yyextra->include_depth].lloc.first_column = yyextra->include_stack[yyextra->include_depth].lloc.last_column;         \
-  yyextra->include_stack[yyextra->include_depth].lloc.last_column = yyextra->include_stack[yyextra->include_depth].lloc.last_column + yyleng; \
-  *yylloc = yyextra->include_stack[yyextra->include_depth].lloc;                                                              \
-} while(0);
+#define YY_BREAK \
+  do {                                                                  \
+    if (yyextra->token_text && YY_START == INITIAL)                     \
+      {                                                                 \
+        g_string_append_len(yyextra->token_pretext, yyextra->token_text->str, yyextra->token_text->len); \
+        g_string_truncate(yyextra->token_text, 0);                      \
+      }                                                                 \
+  } while (0);                                                          \
+  break;
 
 static void
 _cfg_lex_new_line(CfgLexer *lexer)
@@ -114,6 +130,8 @@ word	[^ \#'"\(\)\{\}\\;\n\t,|\.@:]
                              ch = input(yyscanner);
                              while (ch != '\n' && ch != EOF)
                                {
+                                 if (yyextra->token_text)
+                                   g_string_append_c(yyextra->token_text, ch);
                                  ch = input(yyscanner);
                                }
                              if (ch == '\n')
@@ -130,7 +148,7 @@ word	[^ \#'"\(\)\{\}\\;\n\t,|\.@:]
                              if (yyextra->tokenize_eol)
                                return LL_EOL;
                              else
-                               cfg_lexer_append_string(yyextra, strlen(yytext), yytext);
+                               g_string_append(yyextra->string_buffer, yytext);
                            }
 {white}+		   ;
 \.\.                       { return LL_DOTDOT; }
@@ -149,32 +167,32 @@ word	[^ \#'"\(\)\{\}\\;\n\t,|\.@:]
 \,			   ;
 
 \"                         {
-				g_string_truncate(yyextra->pattern_buffer, 0);
-				yy_push_state(string, yyscanner);
+			     g_string_truncate(yyextra->string_buffer, 0);
+			     yy_push_state(string, yyscanner);
 			   }
 \'			   {
-				g_string_truncate(yyextra->pattern_buffer, 0);
-				yy_push_state(qstring, yyscanner);
+			     g_string_truncate(yyextra->string_buffer, 0);
+			     yy_push_state(qstring, yyscanner);
 			   }
-<string>\\a		   { cfg_lexer_append_char(yyextra, 7); }
-<string>\\n	   	   { cfg_lexer_append_char(yyextra, 10); }
-<string>\\r		   { cfg_lexer_append_char(yyextra, 13); }
-<string>\\t		   { cfg_lexer_append_char(yyextra, 9); }
-<string>\\v		   { cfg_lexer_append_char(yyextra, 11); }
-<string>\\x{xdigit}+       { cfg_lexer_append_char(yyextra, strtol(yytext+2, NULL, 16)); }
-<string>\\{odigit}+        { cfg_lexer_append_char(yyextra, strtol(yytext+2, NULL, 8)); }
-<string>\\[^anrtv]	   { cfg_lexer_append_string(yyextra, 1, yytext + 1); }
+<string>\\a		   { g_string_append_c(yyextra->string_buffer, 7); }
+<string>\\n	   	   { g_string_append_c(yyextra->string_buffer, 10); }
+<string>\\r		   { g_string_append_c(yyextra->string_buffer, 13); }
+<string>\\t		   { g_string_append_c(yyextra->string_buffer, 9); }
+<string>\\v		   { g_string_append_c(yyextra->string_buffer, 11); }
+<string>\\x{xdigit}+       { g_string_append_c(yyextra->string_buffer, strtol(yytext+2, NULL, 16)); }
+<string>\\{odigit}+        { g_string_append_c(yyextra->string_buffer, strtol(yytext+2, NULL, 8)); }
+<string>\\[^anrtv]	   { g_string_append_c(yyextra->string_buffer, yytext[1]); }
 <string>\"		   { 
-				yy_pop_state(yyscanner);
-				yylval->cptr = strdup(yyextra->pattern_buffer->str);
-				return LL_STRING; 
+			     yy_pop_state(yyscanner);
+			     yylval->cptr = strdup(yyextra->string_buffer->str);
+			     return LL_STRING;
 		           }
-<string>[^"\\]+		   { cfg_lexer_append_string(yyextra, strlen(yytext), yytext); }
-<qstring>[^']+		   { cfg_lexer_append_string(yyextra, strlen(yytext), yytext); }
+<string>[^"\\]+		   { g_string_append(yyextra->string_buffer, yytext); }
+<qstring>[^']+		   { g_string_append(yyextra->string_buffer, yytext); }
 <qstring>\'		   { 
-				yy_pop_state(yyscanner);
-				yylval->cptr = strdup(yyextra->pattern_buffer->str);
-				return LL_STRING;
+			     yy_pop_state(yyscanner);
+			     yylval->cptr = strdup(yyextra->string_buffer->str);
+			     return LL_STRING;
 			   }
 
 
@@ -182,58 +200,58 @@ word	[^ \#'"\(\)\{\}\\;\n\t,|\.@:]
 <block>{white}+            ;
 <block>[^{ \t]+            { return LL_ERROR; }
 <block>\{                  {
-				g_string_truncate(yyextra->pattern_buffer, 0);
-                                yyextra->brace_count = 1;
-                                yy_push_state(block_content, yyscanner);
+                             g_string_truncate(yyextra->string_buffer, 0);
+                             yyextra->brace_count = 1;
+                             yy_push_state(block_content, yyscanner);
                            }
 
 <block_content>\"          {
-                                cfg_lexer_append_char(yyextra, yytext[0]);
-                                yy_push_state(block_string, yyscanner);
-                           }
+                             g_string_append_c(yyextra->string_buffer, yytext[0]);
+                             yy_push_state(block_string, yyscanner);
+   }
 
 <block_content>\'          {
-                                cfg_lexer_append_char(yyextra, yytext[0]);
-                                yy_push_state(block_qstring, yyscanner);
+                             g_string_append_c(yyextra->string_buffer, yytext[0]);
+                             yy_push_state(block_qstring, yyscanner);
                            }
 
-<block_string>[^"]+        {    cfg_lexer_append_string(yyextra, strlen(yytext), yytext); }
-<block_string>\\\"         {    cfg_lexer_append_string(yyextra, strlen(yytext), yytext); }
+<block_string>[^"]+        { g_string_append(yyextra->string_buffer, yytext); }
+<block_string>\\\"         { g_string_append(yyextra->string_buffer, yytext); }
 <block_string>\"           {
-                                cfg_lexer_append_char(yyextra, yytext[0]);
-                                yy_pop_state(yyscanner);
+                             g_string_append_c(yyextra->string_buffer, yytext[0]);
+                             yy_pop_state(yyscanner);
                            }
 
 <block_qstring>\'          {
-                                cfg_lexer_append_char(yyextra, yytext[0]);
-                                yy_pop_state(yyscanner);
+                             g_string_append_c(yyextra->string_buffer, yytext[0]);
+                             yy_pop_state(yyscanner);
                            }
 <block_qstring>[^']+       {
-                                cfg_lexer_append_string(yyextra, strlen(yytext), yytext);
+                             g_string_append(yyextra->string_buffer, yytext);
                            }
 
 
 <block_content>\{          {
-                                cfg_lexer_append_char(yyextra, yytext[0]);
-                                yyextra->brace_count++;
+                             g_string_append_c(yyextra->string_buffer, yytext[0]);
+                             yyextra->brace_count++;
                            }
 <block_content>\}          {
-                                yyextra->brace_count--;
-                                if (yyextra->brace_count == 0)
-                                  {
-                                    yy_pop_state(yyscanner);
-                                    yy_pop_state(yyscanner);
-                                    yylval->cptr = strdup(yyextra->pattern_buffer->str);
-                                    return LL_BLOCK;
-                                  }
-                                else
-                                  {
-                                    cfg_lexer_append_char(yyextra, yytext[0]);
-                                  }
+                             yyextra->brace_count--;
+                             if (yyextra->brace_count == 0)
+                               {
+                                 yy_pop_state(yyscanner);
+                                 yy_pop_state(yyscanner);
+                                 yylval->cptr = strdup(yyextra->string_buffer->str);
+                                 return LL_BLOCK;
+                               }
+                             else
+                               {
+                                 g_string_append_c(yyextra->string_buffer, yytext[0]);
+                               }
 
                            }
 
-<block_content>[^}\"\'\n\r]+   { cfg_lexer_append_string(yyextra, strlen(yytext), yytext); }
+<block_content>[^}\"\'\n\r]+   { g_string_append(yyextra->string_buffer, yytext); }
 
 <INITIAL><<EOF>>           { if (!cfg_lexer_start_next_include(yyextra)) yyterminate(); }
 

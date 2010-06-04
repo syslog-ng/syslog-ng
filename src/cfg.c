@@ -251,7 +251,7 @@ cfg_check_inline_template(GlobalConfig *cfg, const gchar *template_or_name)
 }
 
 GlobalConfig *
-cfg_new(gchar *fname)
+cfg_new(gchar *fname, gboolean syntax_only, gchar *preprocess_into)
 {
   GlobalConfig *self = g_new0(GlobalConfig, 1);
   FILE *cfg_file;
@@ -308,7 +308,7 @@ cfg_new(gchar *fname)
  
   if ((cfg_file = fopen(fname, "r")) != NULL)
     {
-      self->lexer = cfg_lexer_new(cfg_file, fname);
+      self->lexer = cfg_lexer_new(cfg_file, fname, preprocess_into);
       cfg_args_set(self->lexer->globals, "syslog-ng-root", PATH_PREFIX);
       cfg_args_set(self->lexer->globals, "module-path", PATH_PLUGINDIR);
       cfg_args_set(self->lexer->globals, "include-path", PATH_SYSCONFDIR);
@@ -418,7 +418,7 @@ GlobalConfig *
 cfg_reload_config(gchar *fname, GlobalConfig *cfg)
 {
   GlobalConfig *new_cfg;
-  new_cfg = cfg_new(fname);
+  new_cfg = cfg_new(fname, FALSE, NULL);
   if (!new_cfg)
     {
       msg_error("Error parsing configuration",

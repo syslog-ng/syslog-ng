@@ -111,7 +111,11 @@ struct _CfgLexer
   gint tokenize_eol;
   GList *token_blocks;
   GList *generators;
-  GString *pattern_buffer;
+  GString *string_buffer;
+  FILE *preprocess_output;
+  gint preprocess_suppress_tokens;
+  GString *token_pretext;
+  GString *token_text;
   CfgArgs *globals;
 };
 
@@ -151,7 +155,7 @@ void cfg_lexer_register_block_generator(CfgLexer *self, gint context, const gcha
 
 int cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc);
 
-CfgLexer *cfg_lexer_new(FILE *file, const gchar *filename);
+CfgLexer *cfg_lexer_new(FILE *file, const gchar *filename, const gchar *preprocess_into);
 void  cfg_lexer_free(CfgLexer *self);
 
 gint cfg_lexer_lookup_context_type_by_name(const gchar *name);

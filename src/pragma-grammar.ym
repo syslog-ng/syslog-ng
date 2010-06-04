@@ -50,18 +50,26 @@ __process_version_string(gchar *value)
 
 start
         : { lexer->tokenize_eol++; }
-          pragma_stmt LL_EOL                                   { lexer->tokenize_eol--; if (yychar != YYEMPTY) { cfg_lexer_unput_token(lexer, &yylval); } YYACCEPT; }
+          stmt_and_eol                                  { lexer->tokenize_eol--; if (yychar != YYEMPTY) { cfg_lexer_unput_token(lexer, &yylval); } YYACCEPT; }
+
+stmt_and_eol
+        : pragma_stmt LL_EOL
+        | include_stmt
+        ;
 
 pragma_stmt
-        : KW_VERSION ':' string_or_number                      { configuration->version = __process_version_string($3); free($3); }
-        | KW_INCLUDE string
+        : KW_VERSION ':' string_or_number               { configuration->version = __process_version_string($3); free($3); }
+	| define_stmt
+        | module_stmt
+	;
+
+include_stmt
+        : KW_INCLUDE string LL_EOL
           {
             CHECK_ERROR(cfg_lexer_include_file(lexer, $2), @2, "Error including %s", $2);
             free($2);
           }
-	| define_stmt
-        | module_stmt
-	;
+        ;
 
 define_stmt
 	: KW_DEFINE LL_IDENTIFIER string_or_number		{ msg_debug("Global value changed",

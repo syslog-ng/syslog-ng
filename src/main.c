@@ -64,6 +64,7 @@ static const gchar *persist_file = PATH_PERSIST_CONFIG;
 static gboolean syntax_only = FALSE;
 static gboolean display_version = FALSE;
 static gchar *ctlfilename = PATH_CONTROL_SOCKET;
+static gchar *preprocess_into = NULL;
 
 static volatile sig_atomic_t sig_hup_received = FALSE;
 static volatile sig_atomic_t sig_term_received = FALSE;
@@ -248,6 +249,7 @@ static GOptionEntry syslogng_options[] =
   { "cfgfile",           'f',         0, G_OPTION_ARG_STRING, &cfgfilename, "Set config file name, default=" PATH_SYSLOG_NG_CONF, "<config>" },
   { "persist-file",      'R',         0, G_OPTION_ARG_STRING, &persist_file, "Set the name of the persistent configuration file, default=" PATH_PERSIST_CONFIG, "<fname>" },
   { "syntax-only",       's',         0, G_OPTION_ARG_NONE, &syntax_only, "Only read and parse config file", NULL},
+  { "preprocess-into",     0,         0, G_OPTION_ARG_STRING, &preprocess_into, "Write the preprocessed configuration file to the file specified", "output" },
   { "version",           'V',         0, G_OPTION_ARG_NONE, &display_version, "Display version number (" PACKAGE " " VERSION ")", NULL },
   { "seed",              'S',         0, G_OPTION_ARG_NONE, &seed_rng, "Seed the RNG using ~/.rnd or $RANDFILE", NULL},
   { "control",           'c',         0, G_OPTION_ARG_STRING, &ctlfilename, "Set syslog-ng control socket, default=" PATH_CONTROL_SOCKET, "<ctlpath>" },
@@ -267,7 +269,7 @@ initial_init(GlobalConfig **cfg)
   app_startup();
   setup_signals();
 
-  *cfg = cfg_new(cfgfilename);
+  *cfg = cfg_new(cfgfilename, syntax_only, preprocess_into);
   if (!(*cfg))
     {
       return 1;
@@ -400,6 +402,8 @@ main(int argc, char *argv[])
       version();
       return 0;
     }
+  if (preprocess_into)
+    syntax_only = TRUE;
 
   g_process_set_name("syslog-ng");
   

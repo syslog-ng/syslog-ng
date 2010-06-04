@@ -138,7 +138,7 @@ gint cfg_tz_convert_value(gchar *convert);
 gint cfg_ts_format_value(gchar *format);
 
 void cfg_set_version(GlobalConfig *self, gint version);
-GlobalConfig *cfg_new(gchar *fname);
+GlobalConfig *cfg_new(gchar *fname, gboolean syntax_only, gchar *preprocess_into);
 void cfg_free(GlobalConfig *self);
 gboolean cfg_init(GlobalConfig *cfg);
 gboolean cfg_deinit(GlobalConfig *cfg);

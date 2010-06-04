@@ -188,32 +188,6 @@ cfg_lexer_subst_args(CfgArgs *globals, CfgArgs *defs, CfgArgs *args, gchar *cptr
   return g_string_free(result, FALSE);
 }
 
-/**
- * cfg_lexer_append_string:
- *
- * This function appends a string to the internal pattern buffer. It
- * is used by the generated flex code to store intermediate results
- * (like the unescaped version of the string being parsed).
- **/
-void
-cfg_lexer_append_string(CfgLexer *self, int length, char *s)
-{
-  g_string_append_len(self->pattern_buffer, s, length);
-}
-
-/**
- * cfg_lexer_append_char:
- *
- * This function appends a character to the internal pattern buffer. It
- * is used by the generated flex code to store intermediate results
- * (like the unescaped version of the string being parsed).
- **/
-void
-cfg_lexer_append_char(CfgLexer *self, char c)
-{
-  g_string_append_c(self->pattern_buffer, c);
-}
-
 int
 cfg_lexer_lookup_keyword(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc, const char *token)
 {
@@ -275,7 +249,6 @@ cfg_lexer_lookup_keyword(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc, const
                   keywords[i].kw_status = KWS_NORMAL;
                   yylval->type = LL_TOKEN;
                   yylval->token = keywords[i].kw_token;
-                  yylval->keyword = keywords[i].kw_name;
                   return keywords[i].kw_token;
                 }
             }
@@ -590,9 +563,11 @@ cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
   CfgTokenBlock *block;
   YYSTYPE *token;
   gint tok;
+  gboolean injected;
 
  relex:
 
+  injected = FALSE;
   while (self->token_blocks)
     {
       block = self->token_blocks->data;
@@ -606,6 +581,7 @@ cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
           if (token->type == LL_TOKEN)
             {
               tok = token->token;
+              injected = TRUE;
             }
           else if (token->type == LL_IDENTIFIER || token->type == LL_STRING)
             {
@@ -624,13 +600,27 @@ cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
   if (cfg_lexer_get_context_type(self) == LL_CONTEXT_BLOCK_CONTENT)
     _cfg_lexer_force_block_state(self->state);
 
+  yylval->type = 0;
+
+  if (self->token_text)
+    {
+      g_string_truncate(self->token_text, 0);
+      g_string_truncate(self->token_pretext, 0);
+    }
+
   tok = _cfg_lexer_lex(yylval, yylloc, self->state);
-  yylval->type = tok;
+  if (yylval->type == 0)
+    yylval->type = tok;
+
+  if (self->preprocess_output)
+    fprintf(self->preprocess_output, "%s", self->token_pretext->str);
  exit:
   if (tok == LL_PRAGMA)
     {
       gpointer dummy;
 
+      if (self->preprocess_output)
+        fprintf(self->preprocess_output, "@");
       if (!cfg_parser_parse(&pragma_parser, self, &dummy))
         {
           return LL_ERROR;
@@ -641,9 +631,11 @@ cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
     {
       gchar *include_file;
 
+      self->preprocess_suppress_tokens++;
       tok = cfg_lexer_lex(self, yylval, yylloc);
       if (tok != LL_STRING && tok != LL_IDENTIFIER)
         {
+          self->preprocess_suppress_tokens--;
           return LL_ERROR;
         }
 
@@ -653,30 +645,38 @@ cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
       tok = cfg_lexer_lex(self, yylval, yylloc);
       if (tok != ';')
         {
+          self->preprocess_suppress_tokens--;
           return LL_ERROR;
         }
 
       if (!cfg_lexer_include_file(self, include_file))
         {
+          self->preprocess_suppress_tokens--;
           return LL_ERROR;
         }
-
+      self->preprocess_suppress_tokens--;
       goto relex;
     }
   else if (tok == LL_IDENTIFIER && (gen = cfg_lexer_find_generator(self, cfg_lexer_get_context_type(self), yylval->cptr)))
     {
       CfgArgs *args;
 
+      self->preprocess_suppress_tokens++;
       if (cfg_parser_parse(&block_ref_parser, self, (gpointer *) &args))
         {
           gboolean success;
 
+          self->preprocess_suppress_tokens--;
           success = cfg_lexer_generate_block(self, cfg_lexer_get_context_type(self), yylval->cptr, gen, args);
           cfg_args_free(args);
           if (success)
             {
               goto relex;
             }
+        }
+      else
+        {
+          self->preprocess_suppress_tokens--;
         }
       return LL_ERROR;
     }
@@ -691,25 +691,41 @@ cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
                       NULL);
           configuration->version = 0x0201;
         }
-      cfg_set_version(configuration, configuration->version );
+      cfg_set_version(configuration, configuration->version);
     }
+
+  if (!injected)
+    {
+      if (self->preprocess_suppress_tokens == 0)
+        {
+          if (self->preprocess_output)
+            fprintf(self->preprocess_output, "%s", self->token_text->str);
+        }
     }
   return tok;
 }
 
 CfgLexer *
-cfg_lexer_new(FILE *file, const gchar *filename)
+cfg_lexer_new(FILE *file, const gchar *filename, const gchar *preprocess_into)
 {
   CfgLexer *self;
   CfgIncludeLevel *level;
 
   self = g_new0(CfgLexer, 1);
 
+  if (preprocess_into)
+    self->preprocess_output = fopen(preprocess_into, "w");
+
   self->globals = cfg_args_new();
 
   _cfg_lexer_lex_init_extra(self, &self->state);
   _cfg_lexer_restart(NULL, self->state);
-  self->pattern_buffer = g_string_sized_new(32);
+  self->string_buffer = g_string_sized_new(32);
+  if (self->preprocess_output)
+    {
+      self->token_text = g_string_sized_new(32);
+      self->token_pretext = g_string_sized_new(32);
+    }
 
   level = &self->include_stack[0];
   level->lloc.first_line = level->lloc.last_line = 1;
@@ -749,7 +765,14 @@ cfg_lexer_free(CfgLexer *self)
     }
   self->include_depth = 0;
   _cfg_lexer_lex_destroy(self->state);
-  g_string_free(self->pattern_buffer, TRUE);
+  g_string_free(self->string_buffer, TRUE);
+  if (self->token_text)
+    g_string_free(self->token_text, TRUE);
+  if (self->token_pretext)
+    g_string_free(self->token_pretext, TRUE);
+  if (self->preprocess_output)
+    fclose(self->preprocess_output);
+
   while (self->context_stack)
     cfg_lexer_pop_context(self);
   while (self->generators)
