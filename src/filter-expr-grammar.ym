@@ -8,6 +8,7 @@
 
 #include "syslog-names.h"
 #include "filter-expr-grammar.h"
+#include "plugin.h"
 
 FilterRE *last_re_filter;
 
@@ -127,6 +128,25 @@ filter_simple_expr
 	    free($3);
             $$ = &last_re_filter->super;
           }
+        | LL_IDENTIFIER
+          {
+            Plugin *p;
+            gint context = LL_CONTEXT_FILTER;
+            FilterExprNode *node;
+
+            p = plugin_find(configuration, context, $1);
+            CHECK_ERROR(p, @1, "%s plugin %s not found", cfg_lexer_lookup_context_name_by_type(context), $1);
+
+            node = (FilterExprNode *) plugin_new_instance(configuration, p, &@1);
+            free($1);
+            if (!node)
+              {
+                YYERROR;
+              }
+            $$ = node;
+          }
+        ;
+
 	;
 
 filter_match_opts

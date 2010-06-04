@@ -788,6 +788,23 @@ parser_expr_list_build
 parser_expr
         : parser_expr_csv
         | parser_expr_db
+        | LL_IDENTIFIER
+          {
+            Plugin *p;
+            gint context = LL_CONTEXT_PARSER;
+
+            p = plugin_find(configuration, context, $1);
+            CHECK_ERROR(p, @1, "%s plugin %s not found", cfg_lexer_lookup_context_name_by_type(context), $1);
+
+            last_parser = (LogParser *) plugin_new_instance(configuration, p, &@1);
+            free($1);
+            if (!last_parser)
+              {
+                YYERROR;
+              }
+            $$ = last_parser;
+          }
+
         ;
 
 parser_expr_csv
@@ -882,6 +899,22 @@ rewrite_expr
             free($3);
           }
           rewrite_expr_opts ')'                 { $$ = last_rewrite; }
+        | LL_IDENTIFIER
+          {
+            Plugin *p;
+            gint context = LL_CONTEXT_REWRITE;
+
+            p = plugin_find(configuration, context, $1);
+            CHECK_ERROR(p, @1, "%s plugin %s not found", cfg_lexer_lookup_context_name_by_type(context), $1);
+
+            last_rewrite = (LogRewrite *) plugin_new_instance(configuration, p, &@1);
+            free($1);
+            if (!last_rewrite)
+              {
+                YYERROR;
+              }
+            $$ = last_rewrite;
+          }
         ;
 
 rewrite_expr_opts
