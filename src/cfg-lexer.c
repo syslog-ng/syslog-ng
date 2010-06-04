@@ -372,7 +372,7 @@ cfg_lexer_include_file(CfgLexer *self, const gchar *filename_)
     }
 
   filename = find_file_in_path(cfg_args_get(self->globals, "include-path"), filename_, G_FILE_TEST_EXISTS);
-  if (!filename)
+  if (!filename || stat(filename, &st) < 0)
     {
       msg_error("Include file/directory not found",
                 evt_tag_str("filename", filename_),
