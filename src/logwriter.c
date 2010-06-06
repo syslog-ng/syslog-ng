@@ -159,9 +159,16 @@ log_writer_fd_prepare(GSource *source,
         }
       else
         {
-          *timeout = g_time_val_diff(&self->flush_target, &now) / 1000;
-          if (*timeout < 0)
-            return TRUE;
+          glong to = g_time_val_diff(&self->flush_target, &now) / 1000;
+          if (to <= 0)
+            {
+              /* timeout elapsed, start polling again */
+              self->pollfd.events = proto_cond;
+            }
+          else
+            {
+              *timeout = to;
+            }
         }
       return FALSE;
     }
@@ -215,7 +222,8 @@ log_writer_fd_check(GSource *source)
           GTimeVal tv;
           /* check if timeout elapsed */
           g_source_get_current_time(source, &tv);
-          return self->flush_target.tv_sec <= tv.tv_sec || (self->flush_target.tv_sec == tv.tv_sec && self->flush_target.tv_usec <= tv.tv_usec);
+          if (!(self->flush_target.tv_sec <= tv.tv_sec || (self->flush_target.tv_sec == tv.tv_sec && self->flush_target.tv_usec <= tv.tv_usec)))
+            return FALSE;
         }
     }
   return !!(self->pollfd.revents & (G_IO_OUT | G_IO_ERR | G_IO_HUP | G_IO_IN));
@@ -703,6 +711,9 @@ log_writer_flush_log(LogWriter *self, LogProto *proto)
         {
           /* push back to the queue */
           log_queue_push_head(self->queue, lm, &path_options);
+
+          /* force exit of the loop */
+          num_elements = 1;
         }
         
       msg_set_context(NULL);
