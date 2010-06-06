@@ -1,3 +1,35 @@
+3.0.7
+	Sun, 06 Jun 2010 13:27:38 +0200
+
+	Bugfixes:
+	* When syslog-ng is reloaded, the local hostname value was not
+	  refreshed, causing syslog-ng to remember the hostname until the
+          next restart. This may not play nice with DHCP configured
+          hostnames, which may change dynamically.
+	* When several SIGHUP signals are received in quick succession, the
+	  last one may have been dropped. This problem is fixed.
+	* Make sure that numbers never get resolved using getpwnam/getgrnam
+	  (e.g.  libnss functions), because this may cause deadlocks if the
+	  NSS provider is LDAP and the LDAP server is trying to log a
+	  message to syslog about invalid usernames.
+	* Fixed flush_timeout() handling in for non-file destinations.
+	  Enabling flush_lines()/flush_timeout() for a non-file destination,
+	  either using a global option, or a per-destination option could
+          cause excess CPU usage as long as the destination wasn't writable.
+
+	Other changes:
+	* Introduced a new, cleaner syntax to specify that the permissions
+          of a file are not to be changed. Use owner/group/perm options of a
+          file without any parameters instead of "-1". The old mechanism had
+          the problem that both per-file and global settings had to use "-1"
+          to effectively stop syslog-ng from changing the uid/gid/perm
+          values. The new syntax will make it possible to specify defaults in
+          the global options section and customize those on a per-file
+          basis.
+	* syslog-ng will not go into the background if either the
+	  --syntax-only or --debug options are specified.
+
+
 3.0.6
         Sun, 11 Apr 2010 10:35:46 +0200
 
