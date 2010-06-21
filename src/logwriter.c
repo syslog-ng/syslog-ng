@@ -163,6 +163,8 @@ log_writer_fd_prepare(GSource *source,
           if (to <= 0)
             {
               /* timeout elapsed, start polling again */
+              if (self->writer->flags & LW_ALWAYS_WRITABLE)
+                return TRUE;
               self->pollfd.events = proto_cond;
             }
           else
@@ -220,10 +222,13 @@ log_writer_fd_check(GSource *source)
       if (self->flush_waiting_for_timeout)
         {
           GTimeVal tv;
+
           /* check if timeout elapsed */
           g_source_get_current_time(source, &tv);
           if (!(self->flush_target.tv_sec <= tv.tv_sec || (self->flush_target.tv_sec == tv.tv_sec && self->flush_target.tv_usec <= tv.tv_usec)))
             return FALSE;
+          if ((self->writer->flags & LW_ALWAYS_WRITABLE))
+            return TRUE;
         }
     }
   return !!(self->pollfd.revents & (G_IO_OUT | G_IO_ERR | G_IO_HUP | G_IO_IN));
