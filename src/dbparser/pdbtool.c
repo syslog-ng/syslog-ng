@@ -96,7 +96,7 @@ void
 pdbtool_merge_end_element(GMarkupParseContext *context, const gchar *element_name, gpointer user_data, GError **error)
 {
   PdbToolMergeState *state = (PdbToolMergeState *) user_data;
-  
+
   if (g_str_equal(element_name, "patterndb"))
     return;
   else if (g_str_equal(element_name, "rule"))
@@ -215,7 +215,7 @@ pdbtool_merge(int argc, char *argv[])
 
   merged = g_string_sized_new(4096);
   g_date_clear(&date, 1);
-  g_date_set_time_t(&date, time (NULL)); 
+  g_date_set_time_t(&date, time (NULL));
 
   buff = g_markup_printf_escaped("<?xml version='1.0' encoding='UTF-8'?>\n<patterndb version='3' pub_date='%04d-%02d-%02d'>",
                                     g_date_get_year(&date), g_date_get_month(&date), g_date_get_day(&date));

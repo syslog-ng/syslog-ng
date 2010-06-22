@@ -74,7 +74,7 @@ gboolean
 r_parser_estring_c(gchar *str, gint *len, const gchar *param, gpointer state, RParserMatch *match)
 {
   gchar *end;
-  
+
   if (!param)
     return FALSE;
 
@@ -93,7 +93,7 @@ gboolean
 r_parser_estring(gchar *str, gint *len, const gchar *param, gpointer state, RParserMatch *match)
 {
   gchar *end;
-  
+
   if (!param)
     return FALSE;
 
@@ -279,7 +279,7 @@ r_parser_number(gchar *str, gint *len, const gchar *param, gpointer state, RPars
 
 /**
  * r_new_pnode:
- * 
+ *
  * Create a new parsing node.
  **/
 RParserNode *
@@ -336,7 +336,7 @@ r_new_pnode(gchar *key)
 
       if (params[2] && (strlen(params[2]) > 1))
         {
-          gint len = strlen(params[2]); 
+          gint len = strlen(params[2]);
           parser_node->state = GINT_TO_POINTER(len);
           parser_node->parse = r_parser_estring;
         }
@@ -354,7 +354,7 @@ r_new_pnode(gchar *key)
       parser_node->type = RPT_QSTRING;
       parser_node->first = params[2][0];
       parser_node->last = params[2][0];
-      
+
       if (strlen(params[2]) == 2)
         state[0] = params[2][1];
       else
@@ -363,7 +363,7 @@ r_new_pnode(gchar *key)
   else
     {
       g_free(parser_node);
-      msg_error("Unknown parser type specified", 
+      msg_error("Unknown parser type specified",
                  evt_tag_str("type", params[0]), NULL);
       parser_node = NULL;
     }
@@ -400,7 +400,7 @@ void
 r_free_pnode(RNode *node, void (*free_fn)(gpointer data))
 {
   r_free_pnode_only(node->parser);
- 
+
   node->key = NULL;
 
   r_free_node(node, free_fn);
@@ -411,7 +411,7 @@ r_free_pnode(RNode *node, void (*free_fn)(gpointer data))
  **************************************************************/
 
 
-gint 
+gint
 r_node_cmp(const void *ap, const void *bp)
 {
   RNode *a = *(RNode * const *) ap;
@@ -444,7 +444,7 @@ r_add_child_check(RNode *root, gchar *key, gpointer value, gboolean parser, RNod
     {
       /* there is an @ somewhere in the string */
       if ((at - key) > 0)
-        { 
+        {
           /* there are some literal characters before @ so add a new child till @ */
           *at = '\0';
 
@@ -538,7 +538,7 @@ r_insert_node(RNode *root, gchar *key, gpointer value, gboolean parser, RNodeGet
   gint keylen = strlen(key);
   gint nodelen = root->keylen;
   gint i = 0;
-  
+
   if (parser && key[0] == '@')
     {
       gchar *end;
@@ -547,11 +547,11 @@ r_insert_node(RNode *root, gchar *key, gpointer value, gboolean parser, RNodeGet
         {
           /* we found and escape, so check if we already have a child with '@', or add a child like that */
           node = r_find_child(root, key[1]);
-          
+
           if (!node)
             {
               /* no child so we create one
-               * if we are at the end of the key than use value, otherwise it is just a gap node 
+               * if we are at the end of the key than use value, otherwise it is just a gap node
                */
               node = r_new_node("@", (keylen == 2 ? value : NULL));
               r_add_child(root, node);
@@ -634,23 +634,23 @@ r_insert_node(RNode *root, gchar *key, gpointer value, gboolean parser, RNodeGet
   else
     {
       /* we are not starting with @ sign or we are not interested in @ at all */
-      
+
       while (i < keylen && i < nodelen)
         {
           /* check if key is the same, or if it is a parser */
           if ((key[i] != root->key[i]) || (parser && key[i] == '@'))
             break;
-          
+
           i++;
         }
-      
-      
+
+
       if (nodelen == 0 || i == 0 || (i < keylen && i >= nodelen))
         {
           /*either at the root or we need to go down the tree on the right child */
-          
+
           node = r_find_child(root, key[i]);
-          
+
           if (node)
             {
               /* @ is always a singel node, and we also have an @ so insert us under root */
@@ -667,7 +667,7 @@ r_insert_node(RNode *root, gchar *key, gpointer value, gboolean parser, RNodeGet
       else if (i == keylen && i == nodelen)
         {
           /* exact match */
-          
+
           if (!root->value)
             root->value = value;
           else
@@ -680,7 +680,7 @@ r_insert_node(RNode *root, gchar *key, gpointer value, gboolean parser, RNodeGet
         {
           RNode *old_tree;
           gchar *new_key;
-          
+
           /* we need to split the current node */
           old_tree = r_new_node(root->key + i, root->value);
           if (root->num_children)
@@ -690,7 +690,7 @@ r_insert_node(RNode *root, gchar *key, gpointer value, gboolean parser, RNodeGet
               root->children = NULL;
               root->num_children = 0;
             }
-          
+
           if (root->num_pchildren)
             {
               old_tree->pchildren = root->pchildren;
@@ -698,15 +698,15 @@ r_insert_node(RNode *root, gchar *key, gpointer value, gboolean parser, RNodeGet
               root->pchildren = NULL;
               root->num_pchildren = 0;
             }
-          
+
           root->value = NULL;
           new_key = g_strndup(root->key, i);
           g_free(root->key);
           root->key = new_key;
           root->keylen = i;
-          
+
           r_add_child(root, old_tree);
-          
+
           if (i < keylen)
             {
               /* we add a new sub tree */
