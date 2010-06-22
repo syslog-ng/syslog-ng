@@ -34,6 +34,7 @@
 #include "gprocess.h"
 #include "control.h"
 #include "timeutils.h"
+#include "logsource.h"
 
 #if ENABLE_SSL
 #include <openssl/ssl.h>
@@ -140,6 +141,8 @@ main_loop_run(GlobalConfig **cfg)
   gint iters;
   guint stats_timer_id = 0;
   sigset_t ss;
+
+  log_source_set_wakeup_func(main_loop_wakeup);
 
   msg_notice("syslog-ng starting up", 
              evt_tag_str("version", VERSION),

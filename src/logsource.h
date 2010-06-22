@@ -83,5 +83,7 @@ void log_source_options_init(LogSourceOptions *options, GlobalConfig *cfg, const
 void log_source_options_destroy(LogSourceOptions *options);
 void log_source_free(LogPipe *s);
 
+void log_source_set_wakeup_func(void (*func)(void));
+
 
 #endif

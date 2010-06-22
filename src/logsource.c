@@ -30,6 +30,14 @@
 
 #include <string.h>
 
+void (*log_source_wakeup)(void);
+
+void
+log_source_set_wakeup_func(void (*func)(void))
+{
+  log_source_wakeup = func;
+}
+
 static void
 log_source_msg_ack(LogMessage *msg, gpointer user_data)
 {
@@ -48,8 +56,8 @@ log_source_msg_ack(LogMessage *msg, gpointer user_data)
    *    might be no concurrencies here, even if all destinations are in different threads
    *    
    */
-  if (old_window_size == 0)
-    main_loop_wakeup();
+  if (old_window_size == 0 && log_source_wakeup)
+    log_source_wakeup();
   log_msg_unref(msg);
   
   log_pipe_unref(&self->super);

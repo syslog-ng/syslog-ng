@@ -13,18 +13,19 @@ endif
 
 bin_PROGRAMS = pdbtool
 
-noinst_LIBRARIES = libsyslog-ng.a
+lib_LTLIBRARIES = libsyslog-ng.la
+libsyslog_ng_la_LIBADD =  @BASE_LIBS@ @DEPS_LIBS@
 
 syslog_ng_SOURCES = main.c
-syslog_ng_LDADD = libsyslog-ng.a @DEPS_LIBS@ globals.o
+syslog_ng_LDADD = libsyslog-ng.la
 syslog_ng_wrapper_SOURCES = wrapper.c
 pdbtool_SOURCES = pdbtool.c
-pdbtool_LDADD = libsyslog-ng.a @BASE_LIBS@ @GLIB_LIBS@ @EVTLOG_LIBS@
+pdbtool_LDADD = libsyslog-ng.la
 
-syslog_ng_ctl_SOURCES = syslog-ng-ctl.c gsockaddr.c  gsockaddr.h  gsocket.c    gsocket.h
-syslog_ng_ctl_LDADD = @DEPS_LIBS@
+syslog_ng_ctl_SOURCES = syslog-ng-ctl.c
+syslog_ng_ctl_LDADD = libsyslog-ng.la
 
-libsyslog_ng_a_SOURCES = \
+libsyslog_ng_la_SOURCES = \
 	misc.c misc.h utils.c utils.h messages.c messages.h syslog-names.c syslog-names.h \
 	cfg.c cfg.h filter.c filter.h \
 	logmsg.c logmsg.h logstamp.c logstamp.h parse-syslog.c parse-syslog.h \
