@@ -231,6 +231,7 @@ cfg_set_version(GlobalConfig *self, gint version)
       plugin_load_module("afsocket", self, NULL);
       plugin_load_module("affile", self, NULL);
       plugin_load_module("afprog", self, NULL);
+      plugin_load_module("afuser", self, NULL);
 #if ENABLE_SQL_MODULE
       plugin_load_module("afsql", self, NULL);
 #endif

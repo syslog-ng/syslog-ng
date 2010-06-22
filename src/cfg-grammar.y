@@ -81,8 +81,6 @@
 /* source & destination items */
 %token KW_INTERNAL                    10010
 %token KW_FILE                        10011
-%token KW_PIPE                        10012
-%token KW_USERTTY                     10019
 
 %token KW_SQL                         10030
 %token KW_TYPE                        10031
@@ -254,7 +252,6 @@
 
 
 #include "afinter.h"
-#include "afuser.h"
 #include "logwriter.h"
 
 #include "messages.h"
@@ -296,7 +293,6 @@ CfgArgs *last_block_args;
 
 %type	<ptr> dest_items
 %type	<ptr> dest_item
-%type   <ptr> dest_afuser
 %type   <ptr> dest_plugin
 
 %type	<ptr> log_items
@@ -525,8 +521,7 @@ dest_items
 	;
 
 dest_item
-        : dest_afuser				{ $$ = $1; }
-        | dest_plugin                           { $$ = $1; }
+        : dest_plugin                           { $$ = $1; }
 	;
 
 dest_plugin
@@ -547,11 +542,6 @@ dest_plugin
             $$ = last_driver;
           }
         ;
-
-
-dest_afuser
-	: KW_USERTTY '(' string ')'		{ $$ = afuser_dd_new($3); free($3); }
-	;
 
 options_items
 	: options_item ';' options_items	{ $$ = $1; }

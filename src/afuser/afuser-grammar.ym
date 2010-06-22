@@ -1,0 +1,44 @@
+%code top {
+#include "afuser-parser.h"
+
+}
+
+
+%code {
+
+#include "afuser.h"
+#include "cfg-parser.h"
+#include "afuser-grammar.h"
+#include "syslog-names.h"
+#include "messages.h"
+
+}
+
+%name-prefix "afuser_"
+
+/* this parameter is needed in order to instruct bison to use a complete
+ * argument list for yylex/yyerror */
+
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {LogDriver **last_driver}
+
+/* INCLUDE_DECLS */
+
+%type   <ptr> dest_afuser
+
+%token KW_USERTTY
+
+%%
+
+start
+	: LL_CONTEXT_DESTINATION dest_afuser			 { *last_driver = $2; YYACCEPT; }
+        ;
+
+dest_afuser
+	: KW_USERTTY '(' string ')'		{ $$ = afuser_dd_new($3); free($3); }
+	;
+
+/* INCLUDE_RULES */
+
+%%
