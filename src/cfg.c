@@ -230,6 +230,7 @@ cfg_set_version(GlobalConfig *self, gint version)
       /* auto load modules for old configurations */
       plugin_load_module("afsocket", self, NULL);
       plugin_load_module("affile", self, NULL);
+      plugin_load_module("afprog", self, NULL);
 #if ENABLE_SQL_MODULE
       plugin_load_module("afsql", self, NULL);
 #endif

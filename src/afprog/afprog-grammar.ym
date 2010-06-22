@@ -1,0 +1,76 @@
+%code top {
+#include "afprog-parser.h"
+
+}
+
+
+%code {
+
+#include "afprog.h"
+#include "cfg-parser.h"
+#include "afprog-grammar.h"
+#include "syslog-names.h"
+#include "messages.h"
+
+extern LogReaderOptions *last_reader_options;
+extern LogWriterOptions *last_writer_options;
+
+}
+
+%name-prefix "afprog_"
+
+/* this parameter is needed in order to instruct bison to use a complete
+ * argument list for yylex/yyerror */
+
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {LogDriver **last_driver}
+
+/* INCLUDE_DECLS */
+
+%token KW_PROGRAM
+
+%type   <ptr> source_afprogram
+%type   <ptr> source_afprogram_params
+%type   <ptr> dest_afprogram
+%type   <ptr> dest_afprogram_params
+
+
+%%
+
+start
+        : LL_CONTEXT_SOURCE source_afprogram                     { YYACCEPT; }
+	| LL_CONTEXT_DESTINATION dest_afprogram			 { YYACCEPT; }
+        ;
+
+source_afprogram
+	: KW_PROGRAM '(' source_afprogram_params ')' { $$ = $3; }
+	;
+
+source_afprogram_params
+	: string
+	  {
+	    (*last_driver) = afprogram_sd_new($1);
+	    free($1);
+	    last_reader_options = &((AFProgramSourceDriver *) (*last_driver))->reader_options;
+	  }
+	  source_reader_options			{ $$ = (*last_driver); }
+	;
+
+dest_afprogram
+	: KW_PROGRAM '(' dest_afprogram_params ')' { $$ = $3; }
+	;
+
+dest_afprogram_params
+	: string
+	  {
+	    (*last_driver) = afprogram_dd_new($1);
+	    free($1);
+	    last_writer_options = &((AFProgramDestDriver *) (*last_driver))->writer_options;
+	  }
+	  dest_writer_options			{ $$ = (*last_driver); }
+	;
+
+/* INCLUDE_RULES */
+
+%%

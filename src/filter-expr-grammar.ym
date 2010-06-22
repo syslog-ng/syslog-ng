@@ -21,6 +21,8 @@ FilterRE *last_re_filter;
 
 /* INCLUDE_DECLS */
 
+%token KW_PROGRAM
+
 %left   ';'
 %left	KW_OR
 %left	KW_AND

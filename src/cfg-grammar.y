@@ -83,7 +83,6 @@
 %token KW_FILE                        10011
 %token KW_PIPE                        10012
 %token KW_USERTTY                     10019
-%token KW_PROGRAM                     10022
 
 %token KW_SQL                         10030
 %token KW_TYPE                        10031
@@ -256,7 +255,7 @@
 
 #include "afinter.h"
 #include "afuser.h"
-#include "afprog.h"
+#include "logwriter.h"
 
 #include "messages.h"
 
@@ -293,15 +292,11 @@ CfgArgs *last_block_args;
 %type	<ptr> source_items
 %type	<ptr> source_item
 %type   <ptr> source_afinter
-%type   <ptr> source_afprogram
-%type   <ptr> source_afprogram_params
 %type   <ptr> source_plugin
 
 %type	<ptr> dest_items
 %type	<ptr> dest_item
 %type   <ptr> dest_afuser
-%type   <ptr> dest_afprogram
-%type   <ptr> dest_afprogram_params
 %type   <ptr> dest_plugin
 
 %type	<ptr> log_items
@@ -497,7 +492,6 @@ source_items
 
 source_item
   	: source_afinter			{ $$ = $1; }
-        | source_afprogram                      { $$ = $1; }
         | source_plugin                         { $$ = $1; }
 	;
 
@@ -524,23 +518,6 @@ source_afinter
 	: KW_INTERNAL '(' ')'			{ $$ = afinter_sd_new(); }
 	;
 
-
-source_afprogram
-	: KW_PROGRAM '(' source_afprogram_params ')' { $$ = $3; }
-	;
-
-source_afprogram_params
-	: string
-	  {
-	    last_driver = afprogram_sd_new($1);
-	    free($1);
-	    last_reader_options = &((AFProgramSourceDriver *) last_driver)->reader_options;
-	  }
-	  source_reader_options			{ $$ = last_driver; }
-	;
-	
-
-
 dest_items
 	: dest_item ';' dest_items		{ log_drv_append($1, $3); log_drv_unref($3); $$ = $1; }
         | ';' dest_items                        { $$ = $2; }
@@ -549,7 +526,6 @@ dest_items
 
 dest_item
         : dest_afuser				{ $$ = $1; }
-	| dest_afprogram			{ $$ = $1; }
         | dest_plugin                           { $$ = $1; }
 	;
 
@@ -576,21 +552,6 @@ dest_plugin
 dest_afuser
 	: KW_USERTTY '(' string ')'		{ $$ = afuser_dd_new($3); free($3); }
 	;
-
-dest_afprogram
-	: KW_PROGRAM '(' dest_afprogram_params ')' { $$ = $3; }
-	;
-
-dest_afprogram_params
-	: string
-	  {
-	    last_driver = afprogram_dd_new($1);
-	    free($1);
-	    last_writer_options = &((AFProgramDestDriver *) last_driver)->writer_options;
-	  }
-	  dest_writer_options			{ $$ = last_driver; }
-	;
-	
 
 options_items
 	: options_item ';' options_items	{ $$ = $1; }
