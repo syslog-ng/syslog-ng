@@ -308,7 +308,7 @@ word	[^ \#'"\(\)\{\}\\;\n\t,|\.]
 <string>\\t		   { append_char(9); }
 <string>\\v		   { append_char(11); }
 <string>\\x{xdigit}+       { append_char(strtol(yytext+2, NULL, 16)); }
-<string>\\{odigit}+        { append_char(strtol(yytext+2, NULL, 8)); }
+<string>\\o{odigit}+        { append_char(strtol(yytext+2, NULL, 8)); }
 <string>\\[^anrtv]	   { append_string(1, yytext + 1); }
 <string>\"		   { 
 				BEGIN(INITIAL);
