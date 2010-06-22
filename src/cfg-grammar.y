@@ -249,6 +249,7 @@
 #include "logrewrite.h"
 #include "filter-expr-parser.h"
 #include "block-ref-parser.h"
+#include "parser-expr-parser.h"
 #include "plugin.h"
 
 
@@ -271,8 +272,8 @@ LogDriver *last_driver;
 LogReaderOptions *last_reader_options;
 LogWriterOptions *last_writer_options;
 LogTemplate *last_template;
-LogParser *last_parser;
 LogRewrite *last_rewrite;
+GList *last_parser_expr;
 FilterExprNode *last_filter_expr;
 CfgArgs *last_block_args;
 
@@ -313,13 +314,6 @@ CfgArgs *last_block_args;
 
 %type	<ptr> options_items
 %type	<ptr> options_item
-
-%type	<ptr> parser_expr
-%type	<ptr> parser_expr_csv
-%type	<ptr> parser_expr_db
-%type   <num> parser_csv_flags
-%type   <ptr> parser_expr_list
-%type   <ptr> parser_expr_list_build
 
 %type   <ptr> rewrite_expr
 %type   <ptr> rewrite_expr_list
@@ -385,10 +379,9 @@ filter_stmt
 	
 parser_stmt
         : string '{'
-          { cfg_lexer_push_context(lexer, LL_CONTEXT_PARSER, NULL, "parser expression"); }
-          parser_expr_list
-          { cfg_lexer_pop_context(lexer); }
-          '}'	                                { $$ = log_parser_rule_new($1, $4); free($1); }
+          {
+            CHECK_ERROR(cfg_parser_parse(&parser_expr_parser, lexer, (gpointer *) &last_parser_expr), @1, NULL);
+          } '}'	                                { $$ = log_parser_rule_new($1, last_parser_expr); free($1); }
 
 rewrite_stmt
         : string
@@ -667,103 +660,6 @@ options_item
 	| KW_SEND_TIME_ZONE '(' string ')'      { configuration->send_time_zone = g_strdup($3); free($3); }
 	| KW_LOCAL_TIME_ZONE '(' string ')'     { configuration->local_time_zone = g_strdup($3); free($3); }
 	;
-
-parser_expr_list
-        : parser_expr_list_build                { $$ = g_list_reverse($1); }
-        ;
-
-parser_expr_list_build
-        : parser_expr ';' parser_expr_list_build    { $$ = g_list_append($3, $1); }
-        | ';' parser_expr_list_build                { $$ = $2; }
-        |                                           { $$ = NULL; }
-        ;
-
-
-parser_expr
-        : parser_expr_csv
-        | parser_expr_db
-        | LL_IDENTIFIER
-          {
-            Plugin *p;
-            gint context = LL_CONTEXT_PARSER;
-
-            p = plugin_find(configuration, context, $1);
-            CHECK_ERROR(p, @1, "%s plugin %s not found", cfg_lexer_lookup_context_name_by_type(context), $1);
-
-            last_parser = (LogParser *) plugin_new_instance(configuration, p, &@1);
-            free($1);
-            if (!last_parser)
-              {
-                YYERROR;
-              }
-            $$ = last_parser;
-          }
-
-        ;
-
-parser_expr_csv
-        : KW_CSV_PARSER '('
-          {
-            last_parser = (LogParser *) log_csv_parser_new();
-          }
-          parser_csv_opts
-          ')'					{ $$ = last_parser; }
-        ;
-
-parser_expr_db
-        : KW_DB_PARSER '('
-          {
-            last_parser = (LogParser *) log_db_parser_new();
-          }
-          parser_db_opts
-          ')'                                   { $$ = last_parser; }
-        ;
-
-parser_db_opts
-        : parser_db_opt parser_db_opts
-        |
-        ;
-
-/* NOTE: we don't support parser_opt as we don't want the user to specify a template */
-parser_db_opt
-        : KW_FILE '(' string ')'                { log_db_parser_set_db_file(((LogDBParser *) last_parser), $3); free($3); }
-        ;
-
-parser_column_opt
-        : parser_opt
-        | KW_COLUMNS '(' string_list ')'        { log_column_parser_set_columns((LogColumnParser *) last_parser, $3); }
-        ;
-
-parser_opt
-        : KW_TEMPLATE '(' string ')'            {
-                                                  LogTemplate *template = cfg_check_inline_template(configuration, $3);
-                                                  GError *error = NULL;
-
-                                                  CHECK_ERROR(log_template_compile(template, &error), @3, "Error compiling template (%s)", error->message);
-                                                  log_parser_set_template(last_parser, template);
-                                                  free($3);
-                                                }
-        ;
-
-
-parser_csv_opts
-        : parser_csv_opt parser_csv_opts
-        |
-        ;
-
-parser_csv_opt
-        : parser_column_opt
-        | KW_FLAGS '(' parser_csv_flags ')'     { log_csv_parser_set_flags((LogColumnParser *) last_parser, $3); }
-        | KW_DELIMITERS '(' string ')'          { log_csv_parser_set_delimiters((LogColumnParser *) last_parser, $3); free($3); }
-        | KW_QUOTES '(' string ')'              { log_csv_parser_set_quotes((LogColumnParser *) last_parser, $3); free($3); }
-        | KW_QUOTE_PAIRS '(' string ')'         { log_csv_parser_set_quote_pairs((LogColumnParser *) last_parser, $3); free($3); }
-        | KW_NULL '(' string ')'                { log_csv_parser_set_null_value((LogColumnParser *) last_parser, $3); free($3); }
-        ;
-
-parser_csv_flags
-        : string parser_csv_flags               { $$ = log_csv_parser_lookup_flag($1) | $2; free($1); }
-        |					{ $$ = 0; }
-        ;
 
 rewrite_expr_list
         : rewrite_expr_list_build               { $$ = g_list_reverse($1); }

@@ -23,7 +23,6 @@ static CfgLexerKeyword main_keywords[] = {
   { "block",              KW_BLOCK, 0x0302 },
 
   /* source or destination items */
-  { "file",               KW_FILE },
   { "internal",           KW_INTERNAL },
   { "usertty",            KW_USERTTY },
   { "program",            KW_PROGRAM },
