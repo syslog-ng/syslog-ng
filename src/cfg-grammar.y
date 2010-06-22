@@ -106,7 +106,6 @@
 
 
 /* option items */
-%token KW_FSYNC                       10070
 %token KW_MARK_FREQ                   10071
 %token KW_STATS_FREQ                  10072
 %token KW_STATS_LEVEL                 10073
@@ -185,10 +184,6 @@
 %token KW_TEMPLATE                    10270
 %token KW_TEMPLATE_ESCAPE             10271
 
-%token KW_FOLLOW_FREQ                 10280
-
-%token KW_OVERWRITE_IF_OLDER          10290
-
 %token KW_DEFAULT_FACILITY            10300
 %token KW_DEFAULT_LEVEL               10301
 
@@ -257,7 +252,6 @@
 #include "plugin.h"
 
 
-#include "affile.h"
 #include "afinter.h"
 #include "afuser.h"
 #include "afprog.h"
@@ -297,19 +291,12 @@ CfgArgs *last_block_args;
 %type	<ptr> source_items
 %type	<ptr> source_item
 %type   <ptr> source_afinter
-%type	<ptr> source_affile
-%type	<ptr> source_affile_params
-%type	<ptr> source_afpipe_params
 %type   <ptr> source_afprogram
 %type   <ptr> source_afprogram_params
 %type   <ptr> source_plugin
 
 %type	<ptr> dest_items
 %type	<ptr> dest_item
-%type   <ptr> dest_affile
-%type	<ptr> dest_affile_params
-%type   <ptr> dest_afpipe
-%type   <ptr> dest_afpipe_params
 %type   <ptr> dest_afuser
 %type   <ptr> dest_afprogram
 %type   <ptr> dest_afprogram_params
@@ -523,7 +510,6 @@ source_items
 
 source_item
   	: source_afinter			{ $$ = $1; }
-	| source_affile				{ $$ = $1; }
         | source_afprogram                      { $$ = $1; }
         | source_plugin                         { $$ = $1; }
 	;
@@ -551,35 +537,6 @@ source_afinter
 	: KW_INTERNAL '(' ')'			{ $$ = afinter_sd_new(); }
 	;
 
-source_affile
-	: KW_FILE '(' source_affile_params ')'	{ $$ = $3; }
-	| KW_PIPE '(' source_afpipe_params ')'	{ $$ = $3; }
-	;
-
-source_affile_params
-	: string
-	  {
-	    last_driver = affile_sd_new($1, 0);
-	    free($1);
-	    last_reader_options = &((AFFileSourceDriver *) last_driver)->reader_options;
-	  }
-          source_reader_options                 { $$ = last_driver; }
-       ;
-
-source_afpipe_params
-	: string
-	  {
-	    last_driver = affile_sd_new($1, AFFILE_PIPE);
-	    free($1);
-	    last_reader_options = &((AFFileSourceDriver *) last_driver)->reader_options;
-	  }
-	  source_afpipe_options				{ $$ = last_driver; }
-	;
-
-source_afpipe_options
-	: KW_OPTIONAL '(' yesno ')'			{ last_driver->optional = $3; }
-	| source_reader_options				{}
-	;
 
 source_afprogram
 	: KW_PROGRAM '(' source_afprogram_params ')' { $$ = $3; }
@@ -604,9 +561,7 @@ dest_items
 	;
 
 dest_item
-	: dest_affile				{ $$ = $1; }
-	| dest_afpipe				{ $$ = $1; }
-	| dest_afuser				{ $$ = $1; }
+        : dest_afuser				{ $$ = $1; }
 	| dest_afprogram			{ $$ = $1; }
         | dest_plugin                           { $$ = $1; }
 	;
@@ -630,67 +585,6 @@ dest_plugin
           }
         ;
 
-dest_affile
-	: KW_FILE '(' dest_affile_params ')'	{ $$ = $3; }
-	;
-
-dest_affile_params
-	: string
-	  {
-	    last_driver = affile_dd_new($1, 0);
-	    free($1);
-	    last_writer_options = &((AFFileDestDriver *) last_driver)->writer_options;
-	  }
-	  dest_affile_options
-	  					{ $$ = last_driver; }
-	;
-
-dest_affile_options
-	: dest_affile_option dest_affile_options		
-        |
-	;	
-
-dest_affile_option
-	: dest_writer_option
-	| KW_OPTIONAL '(' yesno ')'		{ last_driver->optional = $3; }
-	| KW_OWNER '(' string_or_number ')'	{ affile_dd_set_file_uid(last_driver, $3); free($3); }
-	| KW_GROUP '(' string_or_number ')'	{ affile_dd_set_file_gid(last_driver, $3); free($3); }
-	| KW_PERM '(' LL_NUMBER ')'		{ affile_dd_set_file_perm(last_driver, $3); }
-	| KW_DIR_OWNER '(' string_or_number ')'	{ affile_dd_set_dir_uid(last_driver, $3); free($3); }
-	| KW_DIR_GROUP '(' string_or_number ')'	{ affile_dd_set_dir_gid(last_driver, $3); free($3); }
-	| KW_DIR_PERM '(' LL_NUMBER ')'		{ affile_dd_set_dir_perm(last_driver, $3); }
-	| KW_CREATE_DIRS '(' yesno ')'		{ affile_dd_set_create_dirs(last_driver, $3); }
-	| KW_OVERWRITE_IF_OLDER '(' LL_NUMBER ')'	{ affile_dd_set_overwrite_if_older(last_driver, $3); }
-	| KW_FSYNC '(' yesno ')'		{ affile_dd_set_fsync(last_driver, $3); }
-	| KW_LOCAL_TIME_ZONE '(' string ')'     { affile_dd_set_local_time_zone(last_driver, $3); free($3); }
-	;
-
-dest_afpipe
-	: KW_PIPE '(' dest_afpipe_params ')'    { $$ = $3; }
-	;
-
-dest_afpipe_params
-	: string
-	  {
-	    last_driver = affile_dd_new($1, AFFILE_PIPE);
-	    free($1);
-	    last_writer_options = &((AFFileDestDriver *) last_driver)->writer_options;
-	    last_writer_options->flush_lines = 0;
-	  }
-	  dest_afpipe_options                   { $$ = last_driver; }
-	;
-
-dest_afpipe_options
-	: dest_afpipe_option dest_afpipe_options
-	|
-	;
-
-dest_afpipe_option
-	: dest_writer_option
-	| KW_OWNER '(' string_or_number ')'	{ affile_dd_set_file_uid(last_driver, $3); free($3); }
-	| KW_GROUP '(' string_or_number ')'	{ affile_dd_set_file_gid(last_driver, $3); free($3); }
-	| KW_PERM '(' LL_NUMBER ')'		{ affile_dd_set_file_perm(last_driver, $3); }
-	;
 
 dest_afuser
 	: KW_USERTTY '(' string ')'		{ $$ = afuser_dd_new($3); free($3); }
@@ -1038,8 +932,6 @@ source_reader_option
 	| KW_LOG_MSG_SIZE '(' LL_NUMBER ')'	{ last_reader_options->msg_size = $3; }
 	| KW_LOG_FETCH_LIMIT '(' LL_NUMBER ')'	{ last_reader_options->fetch_limit = $3; }
 	| KW_PAD_SIZE '(' LL_NUMBER ')'		{ last_reader_options->padding = $3; }
-	| KW_FOLLOW_FREQ '(' LL_FLOAT ')'		{ last_reader_options->follow_freq = (long) ($3 * 1000); }
-	| KW_FOLLOW_FREQ '(' LL_NUMBER ')'		{ last_reader_options->follow_freq = ($3 * 1000); }
 	| KW_KEEP_TIMESTAMP '(' yesno ')'	{ last_reader_options->super.keep_timestamp = $3; }
         | KW_ENCODING '(' string ')'		{ last_reader_options->text_encoding = g_strdup($3); free($3); }
         | KW_TAGS '(' string_list ')'           { log_reader_options_set_tags(last_reader_options, $3); }

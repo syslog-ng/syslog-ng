@@ -24,8 +24,6 @@ static CfgLexerKeyword main_keywords[] = {
 
   /* source or destination items */
   { "file",               KW_FILE },
-  { "fifo",               KW_PIPE },
-  { "pipe",               KW_PIPE },
   { "internal",           KW_INTERNAL },
   { "usertty",            KW_USERTTY },
   { "program",            KW_PROGRAM },
@@ -50,7 +48,6 @@ static CfgLexerKeyword main_keywords[] = {
   { "suppress",           KW_SUPPRESS },
   { "sync_freq",          KW_FLUSH_LINES, 0, KWS_OBSOLETE, "flush_lines" },
   { "sync",               KW_FLUSH_LINES, 0, KWS_OBSOLETE, "flush_lines" },
-  { "fsync",              KW_FSYNC },
   { "long_hostnames",     KW_CHAIN_HOSTNAMES },
   { "chain_hostnames",    KW_CHAIN_HOSTNAMES },
   { "normalize_hostnames",KW_NORMALIZE_HOSTNAMES },
@@ -71,9 +68,6 @@ static CfgLexerKeyword main_keywords[] = {
   { "time_reopen",        KW_TIME_REOPEN },
   { "time_reap",          KW_TIME_REAP },
   { "time_sleep",         KW_TIME_SLEEP },
-  { "follow_freq",        KW_FOLLOW_FREQ,  },
-  { "remove_if_older",    KW_OVERWRITE_IF_OLDER, 0, KWS_OBSOLETE, "overwrite_if_older" },
-  { "overwrite_if_older", KW_OVERWRITE_IF_OLDER },
   { "file_template",      KW_FILE_TEMPLATE },
   { "proto_template",     KW_PROTO_TEMPLATE },
   { "default_level",      KW_DEFAULT_LEVEL, 0x0300 },
