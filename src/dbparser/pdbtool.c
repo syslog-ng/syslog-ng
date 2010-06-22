@@ -3,7 +3,7 @@
 #include "templates.h"
 #include "misc.h"
 #include "logpatterns.h"
-#include "logparser.h"
+#include "dbparser.h"
 #include "radix.h"
 #include "tags.h"
 #include "stats.h"

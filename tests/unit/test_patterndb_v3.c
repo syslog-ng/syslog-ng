@@ -4,7 +4,7 @@
 #include "logmsg.h"
 #include "messages.h"
 #include "filter.h"
-#include "logpatterns.h"
+#include "dbparser/logpatterns.h"
 
 #include <stdio.h>
 #include <sys/time.h>

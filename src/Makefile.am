@@ -1,4 +1,4 @@
-SUBDIRS = . afsocket afsql afstreams affile afprog afuser confgen dummy
+SUBDIRS = . afsocket afsql afstreams affile afprog afuser dbparser confgen dummy
 YFLAGS=@YFLAGS@
 
 export top_srcdir
@@ -11,16 +11,12 @@ else
 sbin_PROGRAMS = syslog-ng syslog-ng-ctl
 endif
 
-bin_PROGRAMS = pdbtool
-
 lib_LTLIBRARIES = libsyslog-ng.la
 libsyslog_ng_la_LIBADD =  @BASE_LIBS@ @DEPS_LIBS@
 
 syslog_ng_SOURCES = main.c
 syslog_ng_LDADD = libsyslog-ng.la
 syslog_ng_wrapper_SOURCES = wrapper.c
-pdbtool_SOURCES = pdbtool.c
-pdbtool_LDADD = libsyslog-ng.la
 
 syslog_ng_ctl_SOURCES = syslog-ng-ctl.c
 syslog_ng_ctl_LDADD = libsyslog-ng.la
@@ -40,8 +36,6 @@ libsyslog_ng_la_SOURCES = \
 	logproto.c logproto.h \
 	memtrace.c memtrace.h \
 	dnscache.c dnscache.h serialize.c serialize.h apphook.c apphook.h atomic.h \
-	radix.c radix.h \
-	logpatterns.c logpatterns.h \
 	timeutils.c timeutils.h \
 	tags.c tags.h \
 	alarms.c alarms.h \

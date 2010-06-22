@@ -21,7 +21,6 @@ LogParser *last_parser;
 
 %type	<ptr> parser_expr
 %type	<ptr> parser_expr_csv
-%type	<ptr> parser_expr_db
 %type   <num> parser_csv_flags
 %type   <ptr> parser_expr_list
 %type   <ptr> parser_expr_list_build
@@ -47,7 +46,6 @@ parser_expr_list_build
 
 parser_expr
         : parser_expr_csv
-        | parser_expr_db
         | LL_IDENTIFIER
           {
             Plugin *p;
@@ -74,25 +72,6 @@ parser_expr_csv
           }
           parser_csv_opts
           ')'					{ $$ = last_parser; }
-        ;
-
-parser_expr_db
-        : KW_DB_PARSER '('
-          {
-            last_parser = (LogParser *) log_db_parser_new();
-          }
-          parser_db_opts
-          ')'                                   { $$ = last_parser; }
-        ;
-
-parser_db_opts
-        : parser_db_opt parser_db_opts
-        |
-        ;
-
-/* NOTE: we don't support parser_opt as we don't want the user to specify a template */
-parser_db_opt
-        : KW_FILE '(' string ')'                { log_db_parser_set_db_file(((LogDBParser *) last_parser), $3); free($3); }
         ;
 
 parser_column_opt

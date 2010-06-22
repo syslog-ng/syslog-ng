@@ -109,7 +109,6 @@ app_startup(void)
   stats_init();
   tzset();
   log_msg_global_init();
-  log_db_parser_global_init();
   log_tags_init();
 }
 
