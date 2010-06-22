@@ -1,0 +1,118 @@
+%code requires {
+
+#include "rewrite-expr-parser.h"
+
+}
+
+%code {
+
+#include "syslog-names.h"
+#include "rewrite-expr-grammar.h"
+#include "logrewrite.h"
+#include "plugin.h"
+
+LogRewrite *last_rewrite;
+
+}
+
+%name-prefix "rewrite_expr_"
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {GList **result}
+
+%type   <ptr> rewrite_expr
+%type   <ptr> rewrite_expr_list
+%type   <ptr> rewrite_expr_list_build
+
+/* INCLUDE_DECLS */
+
+%%
+
+start
+        : rewrite_expr_list                       { *result = $1; if (yychar != YYEMPTY) { cfg_lexer_unput_token(lexer, &yylval); } YYACCEPT; }
+	;
+
+rewrite_expr_list
+        : rewrite_expr_list_build               { $$ = g_list_reverse($1); }
+        ;
+
+rewrite_expr_list_build
+        : rewrite_expr ';' rewrite_expr_list_build  { $$ = g_list_append($3, $1); }
+        | ';' rewrite_expr_list_build               { $$ = $2; }
+        |                                           { $$ = NULL; }
+        ;
+
+rewrite_expr
+        : KW_SUBST '(' string string
+          {
+            last_rewrite = log_rewrite_subst_new($4);
+            free($4);
+          }
+          rewrite_expr_opts ')'
+          {
+            CHECK_ERROR(log_rewrite_set_regexp(last_rewrite, $3), @3, "Error compiling regular expression");
+            free($3);
+            $$ = last_rewrite;
+          }
+        | KW_SET '(' string
+          {
+            last_rewrite = log_rewrite_set_new($3);
+            free($3);
+          }
+          rewrite_expr_opts ')'                 { $$ = last_rewrite; }
+        | LL_IDENTIFIER
+          {
+            Plugin *p;
+            gint context = LL_CONTEXT_REWRITE;
+
+            p = plugin_find(configuration, context, $1);
+            CHECK_ERROR(p, @1, "%s plugin %s not found", cfg_lexer_lookup_context_name_by_type(context), $1);
+
+            last_rewrite = (LogRewrite *) plugin_new_instance(configuration, p, &@1);
+            free($1);
+            if (!last_rewrite)
+              {
+                YYERROR;
+              }
+            $$ = last_rewrite;
+          }
+        ;
+
+rewrite_expr_opts
+        : rewrite_expr_opt rewrite_expr_opts
+        |
+        ;
+
+rewrite_expr_opt
+        : KW_VALUE '(' string ')'
+          {
+            const gchar *p = $3;
+            if (p[0] == '$')
+              {
+                msg_warning("Value references in rewrite rules should not use the '$' prefix, those are only needed in templates",
+                            evt_tag_str("value", $3),
+                            NULL);
+                p++;
+              }
+            last_rewrite->value_handle = log_msg_get_value_handle(p);
+            if (log_msg_is_handle_macro(last_rewrite->value_handle))
+              {
+                msg_warning("Macros are read-only, they cannot be changed in rewrite rules, falling back to MESSAGE instead",
+                            evt_tag_str("macro", p),
+                            NULL);
+                last_rewrite->value_handle = LM_V_MESSAGE;
+              }
+            free($3);
+          }
+        | KW_TYPE '(' string ')'
+          {
+            CHECK_ERROR((strcmp($3, "glob") != 0), @3, "Rewrite rules do not support glob expressions");
+            log_rewrite_set_matcher(last_rewrite, log_matcher_new($3));
+            free($3);
+          }
+        | KW_FLAGS '(' regexp_option_flags ')' { log_rewrite_set_flags(last_rewrite, $3); }
+        ;
+
+/* INCLUDE_RULES */
+
+%%

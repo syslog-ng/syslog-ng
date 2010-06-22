@@ -73,8 +73,6 @@ static CfgLexerKeyword main_keywords[] = {
   { "default_priority",   KW_DEFAULT_LEVEL, 0x0300 },
   { "default_facility",   KW_DEFAULT_FACILITY, 0x0300 },
 
-  { "set",                KW_SET, 0x0300 },
-  { "subst",              KW_SUBST, 0x0300 },
   { "value",              KW_VALUE, 0x0300 },
 
   { "log_fifo_size",      KW_LOG_FIFO_SIZE },

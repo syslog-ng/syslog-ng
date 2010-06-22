@@ -248,6 +248,7 @@
 #include "logparser.h"
 #include "logrewrite.h"
 #include "filter-expr-parser.h"
+#include "rewrite-expr-parser.h"
 #include "block-ref-parser.h"
 #include "parser-expr-parser.h"
 #include "plugin.h"
@@ -272,7 +273,7 @@ LogDriver *last_driver;
 LogReaderOptions *last_reader_options;
 LogWriterOptions *last_writer_options;
 LogTemplate *last_template;
-LogRewrite *last_rewrite;
+GList *last_rewrite_expr;
 GList *last_parser_expr;
 FilterExprNode *last_filter_expr;
 CfgArgs *last_block_args;
@@ -314,12 +315,6 @@ CfgArgs *last_block_args;
 
 %type	<ptr> options_items
 %type	<ptr> options_item
-
-%type   <ptr> rewrite_expr
-%type   <ptr> rewrite_expr_list
-%type   <ptr> rewrite_expr_list_build
-
-
 
 /* START_DECLS */
 
@@ -384,11 +379,10 @@ parser_stmt
           } '}'	                                { $$ = log_parser_rule_new($1, last_parser_expr); free($1); }
 
 rewrite_stmt
-        : string
-          { cfg_lexer_push_context(lexer, LL_CONTEXT_REWRITE, NULL, "rewrite"); }
-          '{' rewrite_expr_list '}'
-          { cfg_lexer_pop_context(lexer); }
-                                                { $$ = log_rewrite_rule_new($1, $4); free($1); }
+        : string '{'
+          {
+            CHECK_ERROR(cfg_parser_parse(&rewrite_expr_parser, lexer, (gpointer *) &last_rewrite_expr), @1, NULL);
+          } '}'                                 { $$ = log_rewrite_rule_new($1, last_rewrite_expr); free($1); }
 
 dest_stmt
         : string
@@ -660,89 +654,6 @@ options_item
 	| KW_SEND_TIME_ZONE '(' string ')'      { configuration->send_time_zone = g_strdup($3); free($3); }
 	| KW_LOCAL_TIME_ZONE '(' string ')'     { configuration->local_time_zone = g_strdup($3); free($3); }
 	;
-
-rewrite_expr_list
-        : rewrite_expr_list_build               { $$ = g_list_reverse($1); }
-        ;
-
-rewrite_expr_list_build
-        : rewrite_expr ';' rewrite_expr_list_build  { $$ = g_list_append($3, $1); }
-        | ';' rewrite_expr_list_build               { $$ = $2; }
-        |                                           { $$ = NULL; }
-        ;
-
-rewrite_expr
-        : KW_SUBST '(' string string
-          {
-            last_rewrite = log_rewrite_subst_new($4);
-            free($4);
-          }
-          rewrite_expr_opts ')'
-          {
-            CHECK_ERROR(log_rewrite_set_regexp(last_rewrite, $3), @3, "Error compiling regular expression");
-            free($3);
-            $$ = last_rewrite;
-          }
-        | KW_SET '(' string
-          {
-            last_rewrite = log_rewrite_set_new($3);
-            free($3);
-          }
-          rewrite_expr_opts ')'                 { $$ = last_rewrite; }
-        | LL_IDENTIFIER
-          {
-            Plugin *p;
-            gint context = LL_CONTEXT_REWRITE;
-
-            p = plugin_find(configuration, context, $1);
-            CHECK_ERROR(p, @1, "%s plugin %s not found", cfg_lexer_lookup_context_name_by_type(context), $1);
-
-            last_rewrite = (LogRewrite *) plugin_new_instance(configuration, p, &@1);
-            free($1);
-            if (!last_rewrite)
-              {
-                YYERROR;
-              }
-            $$ = last_rewrite;
-          }
-        ;
-
-rewrite_expr_opts
-        : rewrite_expr_opt rewrite_expr_opts
-        |
-        ;
-
-rewrite_expr_opt
-        : KW_VALUE '(' string ')'
-          {
-            const gchar *p = $3;
-            if (p[0] == '$')
-              {
-                msg_warning("Value references in rewrite rules should not use the '$' prefix, those are only needed in templates",
-                            evt_tag_str("value", $3),
-                            NULL);
-                p++;
-              }
-            last_rewrite->value_handle = log_msg_get_value_handle(p);
-            if (log_msg_is_handle_macro(last_rewrite->value_handle))
-              {
-                msg_warning("Macros are read-only, they cannot be changed in rewrite rules, falling back to MESSAGE instead",
-                            evt_tag_str("macro", p),
-                            NULL);
-                last_rewrite->value_handle = LM_V_MESSAGE;
-              }
-            free($3);
-          }
-        | KW_TYPE '(' string ')'
-          {
-            CHECK_ERROR((strcmp($3, "glob") != 0), @3, "Rewrite rules do not support glob expressions");
-            log_rewrite_set_matcher(last_rewrite, log_matcher_new($3));
-            free($3);
-          }
-        | KW_FLAGS '(' regexp_option_flags ')' { log_rewrite_set_flags(last_rewrite, $3); }
-        ;
-
-
 
 /* START_RULES */
 

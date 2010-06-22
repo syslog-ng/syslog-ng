@@ -61,7 +61,8 @@ libsyslog_ng_a_SOURCES = \
 	filter-expr-grammar.y filter-expr-parser.c filter-expr-parser.h \
 	block-ref-grammar.y block-ref-parser.c block-ref-parser.h \
 	pragma-grammar.y pragma-parser.h pragma-parser.c \
-	parser-expr-grammar.y parser-expr-parser.c parser-expr-parser.h
+	parser-expr-grammar.y parser-expr-parser.c parser-expr-parser.h \
+	rewrite-expr-grammar.y rewrite-expr-parser.c rewrite-expr-parser.h
 
 EXTRA_DIST = cfg-grammar.h cfg-grammar.c cfg-lex.h cfg-lex.c syslog-ng.h radix-find.c filter-expr-grammar.c filter-expr-gammar.h pragma-grammar.c pragma-grammar.y
 
