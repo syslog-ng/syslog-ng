@@ -12,11 +12,11 @@ typedef struct _LogCSVParser
 
 #define LOG_CSV_PARSER_SINGLE_CHAR_DELIM 0x0100
 
-void 
+void
 log_csv_parser_set_flags(LogColumnParser *s, guint32 flags)
 {
   LogCSVParser *self = (LogCSVParser *) s;
-  
+
   self->flags = flags;
 }
 
@@ -57,10 +57,10 @@ log_csv_parser_set_quote_pairs(LogColumnParser *s, const gchar *quote_pairs)
     g_free(self->quotes_start);
   if (self->quotes_end)
     g_free(self->quotes_end);
-  
+
   self->quotes_start = g_malloc((strlen(quote_pairs) / 2) + 1);
   self->quotes_end = g_malloc((strlen(quote_pairs) / 2) + 1);
-  
+
   for (i = 0; quote_pairs[i] && quote_pairs[i+1]; i += 2)
     {
       self->quotes_start[i / 2] = quote_pairs[i];
@@ -87,12 +87,12 @@ log_csv_parser_process(LogParser *s, LogMessage *msg, const gchar *input)
   const gchar *src;
   GList *cur_column = self->super.columns;
   gint len;
-  
+
   src = input;
   if (self->flags & LOG_CSV_PARSER_ESCAPE_NONE)
     {
       /* no escaping, no need to keep state, we split input and trim if necessary */
-      
+
       while (cur_column && *src)
         {
           const guchar *delim;
@@ -111,7 +111,7 @@ log_csv_parser_process(LogParser *s, LogMessage *msg, const gchar *input)
               /* we didn't start with a quote character, no need for escaping, delimiter terminates */
               current_quote = 0;
             }
-          
+
           if (self->flags & LOG_CSV_PARSER_STRIP_WHITESPACE)
             {
               while (*src == ' ' || *src == '\t')
@@ -122,10 +122,10 @@ log_csv_parser_process(LogParser *s, LogMessage *msg, const gchar *input)
             {
               /* search for end of quote */
               delim = (guchar *) strchr(src, current_quote);
-              
-              if (delim && 
-                  (((self->flags & LOG_CSV_PARSER_SINGLE_CHAR_DELIM) && *(delim + 1) == self->delimiters[0]) || 
-                     strchr(self->delimiters, *(delim + 1)) != NULL)) 
+
+              if (delim &&
+                  (((self->flags & LOG_CSV_PARSER_SINGLE_CHAR_DELIM) && *(delim + 1) == self->delimiters[0]) ||
+                     strchr(self->delimiters, *(delim + 1)) != NULL))
                 {
                   /* closing quote, and then a delimiter, everything is nice */
                   delim++;
@@ -149,7 +149,7 @@ log_csv_parser_process(LogParser *s, LogMessage *msg, const gchar *input)
                   delim = (guchar *) src + strcspn(src, self->delimiters);
                 }
             }
-            
+
 
           len = delim - (guchar *) src;
           /* move in front of the terminating quote character */
@@ -164,7 +164,7 @@ log_csv_parser_process(LogParser *s, LogMessage *msg, const gchar *input)
             log_msg_set_value(msg, log_msg_get_value_handle((gchar *) cur_column->data), "", 0);
           else
             log_msg_set_value(msg, log_msg_get_value_handle((gchar *) cur_column->data), src, len);
-            
+
           if (*delim == 0)
             break;
           src = (gchar *) delim + 1;
@@ -181,7 +181,7 @@ log_csv_parser_process(LogParser *s, LogMessage *msg, const gchar *input)
     {
       /* stateful parser */
       gint state;
-      enum 
+      enum
         {
           PS_COLUMN_START,
           PS_WHITESPACE,
@@ -193,7 +193,7 @@ log_csv_parser_process(LogParser *s, LogMessage *msg, const gchar *input)
       GString *current_value;
       gboolean store_value = FALSE;
       gchar *quote;
-      
+
       current_value = g_string_sized_new(128);
 
       state = PS_COLUMN_START;
@@ -319,7 +319,7 @@ LogColumnParser *
 log_csv_parser_new(void)
 {
   LogCSVParser *self = g_new0(LogCSVParser, 1);
-  
+
   self->super.super.process = log_csv_parser_process;
   self->super.super.free_fn = log_csv_parser_free;
   log_csv_parser_set_delimiters(&self->super, " ");
