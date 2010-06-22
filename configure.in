@@ -816,6 +816,7 @@ AC_OUTPUT(dist.conf
           src/afprog/Makefile
           src/afuser/Makefile
           src/dbparser/Makefile
+          src/csvparser/Makefile
           src/confgen/Makefile
 	  scripts/Makefile
 	  scripts/update-patterndb

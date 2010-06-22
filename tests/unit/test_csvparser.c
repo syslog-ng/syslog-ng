@@ -1,7 +1,7 @@
 #include "syslog-ng.h"
 #include "logmsg.h"
 #include "apphook.h"
-#include "logparser.h"
+#include "csvparser/csvparser.h"
 #include "misc.h"
 
 #include <time.h>
