@@ -4,7 +4,6 @@ from messagegen import *
 from messagecheck import *
 
 config = """@version: 3.2
-@module: afsocket
 
 options { ts_format(iso); chain_hostnames(no); keep_hostname(yes); };
 

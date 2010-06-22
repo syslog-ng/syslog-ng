@@ -3,12 +3,12 @@ from log import *
 from messagegen import *
 from messagecheck import *
 
-config = """@version: 3.0
+config = """@version: 3.2
 
 options { ts_format(iso); chain_hostnames(no); keep_hostname(yes); };
 
 source s_int { internal(); };
-source s_unix { unix-stream("log-stream"); };
+source s_unix { unix-stream("log-stream" flags(expect-hostname)); };
 
 filter f_facility { message("facility"); };
 filter f_facility1 { facility(syslog); };
