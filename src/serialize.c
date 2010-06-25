@@ -42,6 +42,14 @@ typedef struct _SerializeStringArchive
   GString *string;
 } SerializeStringArchive;
 
+typedef struct _SerializeBufferArchive
+{
+  SerializeArchive super;
+  gsize pos;
+  gsize len;
+  gchar *buff;
+} SerializeBufferArchive;
+
 static gboolean
 serialize_archive_read_bytes(SerializeArchive *self, gchar *buf, gsize buflen)
 {
@@ -51,9 +59,12 @@ serialize_archive_read_bytes(SerializeArchive *self, gchar *buf, gsize buflen)
         {
           g_set_error(&self->error, G_FILE_ERROR, G_FILE_ERROR_IO, "Error reading data");
         }
-      msg_error("Error reading serialized data",
-                evt_tag_str("error", self->error->message),
-                NULL);
+      if (!self->silent)
+        {
+          msg_error("Error reading serialized data",
+                    evt_tag_str("error", self->error->message),
+                    NULL);
+        }
     }
   return self->error == NULL;
 }
@@ -67,9 +78,12 @@ serialize_archive_write_bytes(SerializeArchive *self, const gchar *buf, gsize bu
         {
           g_set_error(&self->error, G_FILE_ERROR, G_FILE_ERROR_IO, "Error writing data");
         }
-      msg_error("Error writing serializing data",
-                evt_tag_str("error", self->error->message),
-                NULL);
+      if (!self->silent)
+        {
+          msg_error("Error writing serializing data",
+                    evt_tag_str("error", self->error->message),
+                    NULL);
+        }
     }
   return self->error == NULL;
 }
@@ -159,10 +173,66 @@ SerializeArchive *
 serialize_string_archive_new(GString *str)
 {
   SerializeStringArchive *self = g_new0(SerializeStringArchive, 1);
-  
+
   self->super.read_bytes = serialize_string_archive_read_bytes;
   self->super.write_bytes = serialize_string_archive_write_bytes;
   self->string = str;
+  return &self->super;
+}
+
+static gboolean
+serialize_buffer_archive_read_bytes(SerializeArchive *s, gchar *buf, gsize buflen, GError **error)
+{
+  SerializeBufferArchive *self = (SerializeBufferArchive *) s;
+
+  g_return_val_if_fail(error == NULL || (*error) == NULL, FALSE);
+
+  if ((gssize) self->pos + buflen > (gssize) self->len)
+    {
+      g_set_error(error, G_FILE_ERROR, G_FILE_ERROR_IO, "Error reading from buffer, stored data too short");
+      return FALSE;
+    }
+  memcpy(buf, &self->buff[self->pos], buflen);
+  self->pos += buflen;
+  return TRUE;
+}
+
+static gboolean
+serialize_buffer_archive_write_bytes(SerializeArchive *s, const gchar *buf, gsize buflen, GError **error)
+{
+  SerializeBufferArchive *self = (SerializeBufferArchive *) s;
+
+  g_return_val_if_fail(error == NULL || (*error) == NULL, FALSE);
+
+  if (self->pos + buflen > self->len)
+    {
+      g_set_error(error, G_FILE_ERROR, G_FILE_ERROR_IO, "Error writing to buffer, buffer is too small");
+      return FALSE;
+    }
+
+  memcpy(self->buff + self->pos, buf, buflen);
+  self->pos += buflen;
+  return TRUE;
+}
+
+gsize
+serialize_buffer_archive_get_pos(SerializeArchive *s)
+{
+  SerializeBufferArchive *self = (SerializeBufferArchive *) s;
+
+  return self->pos;
+}
+
+SerializeArchive *
+serialize_buffer_archive_new(gchar *buff, gsize len)
+{
+  SerializeBufferArchive *self = g_new0(SerializeBufferArchive, 1);
+
+  self->super.read_bytes = serialize_buffer_archive_read_bytes;
+  self->super.write_bytes = serialize_buffer_archive_write_bytes;
+  self->super.len = sizeof(SerializeBufferArchive);
+  self->buff = buff;
+  self->len = len;
   return &self->super;
 }
 

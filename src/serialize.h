@@ -32,7 +32,9 @@ typedef struct _SerializeArchive SerializeArchive;
 struct _SerializeArchive
 {
   GError *error;
-  
+  guint16 len;
+  guint16 silent:1;
+
   gboolean (*read_bytes)(SerializeArchive *archive, gchar *buf, gsize count, GError **error);
   gboolean (*write_bytes)(SerializeArchive *archive, const gchar *buf, gsize count, GError **error);
 };
@@ -54,6 +56,8 @@ gboolean serialize_read_uint8(SerializeArchive *archive, guint8 *value);
 
 SerializeArchive *serialize_file_archive_new(FILE *f);
 SerializeArchive *serialize_string_archive_new(GString *str);
+SerializeArchive *serialize_buffer_archive_new(gchar *buff, gsize len);
+gsize serialize_buffer_archive_get_pos(SerializeArchive *self);
 void serialize_archive_free(SerializeArchive *self);
 
 #endif
