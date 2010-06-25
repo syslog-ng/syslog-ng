@@ -92,6 +92,7 @@ serialize_archive_write_bytes(SerializeArchive *self, const gchar *buf, gsize bu
 void
 serialize_archive_free(SerializeArchive *self)
 {
+  g_clear_error(&self->error);
   g_free(self);
 }
 
