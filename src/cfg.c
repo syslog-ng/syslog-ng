@@ -414,6 +414,8 @@ cfg_free(GlobalConfig *self)
 
   if (self->persist)
     persist_config_free(self->persist);
+  if (self->state)
+    persist_state_free(self->state);
 
   g_free(self->file_template_name);
   g_free(self->proto_template_name);  
@@ -455,13 +457,35 @@ cfg_persist_config_move(GlobalConfig *src, GlobalConfig *dest)
   if (dest->persist != NULL)
     persist_config_free(dest->persist);
   dest->persist = src->persist;
+  dest->state = src->state;
   src->persist = NULL;
+  src->state = NULL;
 }
 
+/* called when syslog-ng first starts up */
+gboolean
+cfg_initial_init(GlobalConfig *cfg, const gchar *persist_filename)
+{
+  gboolean success;
+
+  cfg->state = persist_state_new(persist_filename);
+  if (!persist_state_start(cfg->state))
+    return FALSE;
+
+  success = cfg_init(cfg);
+  if (success)
+    persist_state_commit(cfg->state);
+  else
+    persist_state_cancel(cfg->state);
+  return success;
+}
+
+/* called to reload the configuration */
 GlobalConfig *
 cfg_reload_config(gchar *fname, GlobalConfig *cfg)
 {
   GlobalConfig *new_cfg;
+
   new_cfg = cfg_new(fname, FALSE, NULL);
   if (!new_cfg)
     {

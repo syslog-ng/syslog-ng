@@ -26,6 +26,7 @@
 
 #include "syslog-ng.h"
 #include "cfg-lexer.h"
+#include "persist-state.h"
 
 #include <sys/types.h>
 #include <regex.h>
@@ -111,6 +112,7 @@ struct _GlobalConfig
   GHashTable *templates;
   GPtrArray *connections;
   PersistConfig *persist;
+  PersistState *state;
 
   struct _LogCenter *center;
   
@@ -143,6 +145,7 @@ void cfg_free(GlobalConfig *self);
 gboolean cfg_init(GlobalConfig *cfg);
 gboolean cfg_deinit(GlobalConfig *cfg);
 GlobalConfig *cfg_reload_config(gchar *fname, GlobalConfig *cfg);
+gboolean cfg_initial_init(GlobalConfig *cfg, const gchar *persist_filename);
 
 
 void cfg_persist_config_add(GlobalConfig *cfg, gchar *name, gpointer value, GDestroyNotify destroy, gboolean force);

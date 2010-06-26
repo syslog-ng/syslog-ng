@@ -283,7 +283,7 @@ initial_init(GlobalConfig **cfg)
       return 0;
     }
 
-  if (!cfg_init(*cfg))
+  if (!cfg_initial_init(*cfg, persist_file))
     {
       return 2;
     }
@@ -437,7 +437,6 @@ main(int argc, char *argv[])
   rc = main_loop_run(&cfg);
 
   cfg_deinit(cfg);
-  
   cfg_free(cfg);
   
   app_shutdown();
