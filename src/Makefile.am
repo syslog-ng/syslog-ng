@@ -35,6 +35,7 @@ libsyslog_ng_la_SOURCES = \
 	logtransport.c logtransport.h \
 	logproto.c logproto.h \
 	memtrace.c memtrace.h \
+	persist-state.c persist-state.h \
 	dnscache.c dnscache.h serialize.c serialize.h apphook.c apphook.h atomic.h \
 	timeutils.c timeutils.h \
 	tags.c tags.h \
