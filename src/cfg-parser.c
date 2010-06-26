@@ -29,7 +29,6 @@ static CfgLexerKeyword main_keywords[] = {
   { "quotes",             KW_QUOTES, 0x0300 },
   { "quote_pairs",        KW_QUOTE_PAIRS, 0x0300},
   { "null",               KW_NULL, 0x0300 },
-  { "csv_parser",         KW_CSV_PARSER, 0x0300 },
 
   /* option items */
   { "flags",              KW_FLAGS },

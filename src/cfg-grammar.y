@@ -200,7 +200,6 @@
 
 /* parser items */
 
-%token KW_CSV_PARSER                  10360
 %token KW_VALUE                       10361
 
 /* rewrite items */
