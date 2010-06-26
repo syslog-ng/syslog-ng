@@ -283,8 +283,6 @@ initial_init(GlobalConfig **cfg)
       return 0;
     }
 
-  cfg_persist_config_load(*cfg, persist_file);
-
   if (!cfg_init(*cfg))
     {
       return 2;
@@ -440,11 +438,6 @@ main(int argc, char *argv[])
 
   cfg_deinit(cfg);
   
-  if (cfg->persist)
-    {
-      cfg_persist_config_save(cfg, persist_file);
-    }
-
   cfg_free(cfg);
   
   app_shutdown();

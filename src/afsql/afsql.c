@@ -920,7 +920,7 @@ afsql_dd_init(LogPipe *s)
 
   if (!self->queue)
     {
-      self->queue = cfg_persist_config_fetch(cfg, afsql_dd_format_persist_name(self), NULL, NULL);
+      self->queue = cfg_persist_config_fetch(cfg, afsql_dd_format_persist_name(self));
       if (!self->queue)
         self->queue = log_queue_new(self->mem_fifo_size);
     }
@@ -1022,8 +1022,7 @@ afsql_dd_deinit(LogPipe *s)
   GlobalConfig *cfg = log_pipe_get_config(s);
 
   afsql_dd_stop_thread(self);
-
-  cfg_persist_config_add(cfg, afsql_dd_format_persist_name(self), self->queue, -1, (GDestroyNotify) log_queue_free, FALSE);
+  cfg_persist_config_add(cfg, afsql_dd_format_persist_name(self), self->queue, (GDestroyNotify) log_queue_free, FALSE);
   self->queue = NULL;
 
   stats_unregister_counter(SCS_SQL | SCS_DESTINATION, self->super.id, afsql_dd_format_stats_instance(self), SC_TYPE_STORED, &self->stored_messages);

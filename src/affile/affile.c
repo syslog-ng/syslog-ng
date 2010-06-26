@@ -145,7 +145,7 @@ affile_sd_save_pos(LogPipe *s, GlobalConfig *cfg)
   
       archive = serialize_string_archive_new(str);
       log_reader_save_state((LogReader *) self->reader, archive);
-      cfg_persist_config_add_survivor(cfg, affile_sd_format_persist_name(self), str->str,  str->len, TRUE);
+      /* cfg_persist_config_add_survivor(cfg, affile_sd_format_persist_name(self), str->str,  str->len, TRUE); */
       serialize_archive_free(archive);
       g_string_free(str, TRUE);
     }
@@ -162,8 +162,8 @@ affile_sd_load_pos(LogPipe *s, GlobalConfig *cfg)
   
   if ((self->flags & AFFILE_PIPE) || !cfg->persist)
     return;
-     
-  str = cfg_persist_config_fetch(cfg, affile_sd_format_persist_name(self), &str_len, &version);
+
+  str = NULL; /* cfg_persist_config_fetch(cfg, affile_sd_format_persist_name(self), &str_len, &version); */
   if (!str)
     return;
 
@@ -807,13 +807,13 @@ affile_dd_init(LogPipe *s)
   if ((self->flags & AFFILE_NO_EXPAND) == 0)
     {
       self->reap_timer = g_timeout_add_full(G_PRIORITY_DEFAULT, self->time_reap * 1000 / 2, affile_dd_reap, self, NULL);
-      self->writer_hash = cfg_persist_config_fetch(cfg, affile_dd_format_persist_name(self), NULL, NULL);
+      self->writer_hash = cfg_persist_config_fetch(cfg, affile_dd_format_persist_name(self));
       if (self->writer_hash)
         g_hash_table_foreach(self->writer_hash, affile_dd_reuse_writer, self);
     }
   else
     {
-      self->single_writer = cfg_persist_config_fetch(cfg, affile_dd_format_persist_name(self), NULL, NULL);
+      self->single_writer = cfg_persist_config_fetch(cfg, affile_dd_format_persist_name(self));
       if (self->single_writer)
         {
           affile_dw_set_owner(self->single_writer, self);
@@ -882,7 +882,7 @@ affile_dd_deinit(LogPipe *s)
       g_assert(self->writer_hash == NULL);
 
       log_pipe_deinit(&self->single_writer->super);
-      cfg_persist_config_add(cfg, affile_dd_format_persist_name(self), self->single_writer, -1, affile_dd_destroy_writer, FALSE);
+      cfg_persist_config_add(cfg, affile_dd_format_persist_name(self), self->single_writer, affile_dd_destroy_writer, FALSE);
       self->single_writer = NULL;
     }
   else if (self->writer_hash)
@@ -890,7 +890,7 @@ affile_dd_deinit(LogPipe *s)
       g_assert(self->single_writer == NULL);
       
       g_hash_table_foreach(self->writer_hash, affile_dd_deinit_writer, NULL);
-      cfg_persist_config_add(cfg, affile_dd_format_persist_name(self), self->writer_hash, -1, affile_dd_destroy_writer_hash, FALSE);
+      cfg_persist_config_add(cfg, affile_dd_format_persist_name(self), self->writer_hash, affile_dd_destroy_writer_hash, FALSE);
       self->writer_hash = NULL;
     }
   if (self->reap_timer)

@@ -40,7 +40,7 @@ struct _LogTemplate;
 
 
 /* configuration data kept between configuration reloads */
-typedef struct _PersistentConfig PersistentConfig;
+typedef struct _PersistConfig PersistConfig;
 
 /* configuration data as loaded from the config file */
 struct _GlobalConfig
@@ -110,7 +110,7 @@ struct _GlobalConfig
   GHashTable *rewriters;
   GHashTable *templates;
   GPtrArray *connections;
-  PersistentConfig *persist;
+  PersistConfig *persist;
 
   struct _LogCenter *center;
   
@@ -144,16 +144,9 @@ gboolean cfg_init(GlobalConfig *cfg);
 gboolean cfg_deinit(GlobalConfig *cfg);
 GlobalConfig *cfg_reload_config(gchar *fname, GlobalConfig *cfg);
 
-PersistentConfig *persist_config_new(void);
-void cfg_persist_config_add(GlobalConfig *cfg, gchar *name, gpointer value, gssize value_len, GDestroyNotify destroy, gboolean force);
-void cfg_persist_config_add_survivor(GlobalConfig *cfg, gchar *name, gchar *value, gssize value_len, gboolean force);
-gpointer cfg_persist_config_fetch(GlobalConfig *cfg, gchar *name, gsize *result_len, gint *version);
-void cfg_persist_config_save(GlobalConfig *cfg, const gchar *filename);
-void cfg_persist_config_load(GlobalConfig *cfg, const gchar *filename);
-gint cfg_persist_get_version(GlobalConfig *cfg);
-void cfg_persist_set_version(GlobalConfig *cfg, const gint version);
 
-void persist_config_free(PersistentConfig *persist);
+void cfg_persist_config_add(GlobalConfig *cfg, gchar *name, gpointer value, GDestroyNotify destroy, gboolean force);
+gpointer cfg_persist_config_fetch(GlobalConfig *cfg, gchar *name);
 
 static inline gboolean 
 cfg_check_current_config_version(gint req)

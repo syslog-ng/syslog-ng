@@ -42,6 +42,45 @@
 #include <string.h>
 #include <stdlib.h>
 
+/* PersistentConfig */
+
+struct _PersistConfig
+{
+  GHashTable *keys;
+};
+
+typedef struct _PersistConfigEntry
+{
+  gpointer value;
+  GDestroyNotify destroy;
+} PersistConfigEntry;
+
+static void
+persist_config_entry_free(PersistConfigEntry *self)
+{
+  if (self->destroy)
+    {
+      self->destroy(self->value);
+    }
+  g_free(self);
+}
+
+PersistConfig *
+persist_config_new(void)
+{
+  PersistConfig *self = g_new0(PersistConfig, 1);
+
+  self->keys = g_hash_table_new_full(g_str_hash, g_str_equal, (GDestroyNotify) g_free, (GDestroyNotify) persist_config_entry_free);
+  return self;
+}
+
+void
+persist_config_free(PersistConfig *self)
+{
+  g_hash_table_destroy(self->keys);
+  g_free(self);
+}
+
 gint
 cfg_ts_format_value(gchar *format)
 {
@@ -373,7 +412,7 @@ cfg_free(GlobalConfig *self)
 {
   int i;
 
-  if (self->persist != NULL)
+  if (self->persist)
     persist_config_free(self->persist);
 
   g_free(self->file_template_name);
@@ -458,39 +497,10 @@ cfg_reload_config(gchar *fname, GlobalConfig *cfg)
     }
 }
 
-/* PersistentConfig */
-
-struct _PersistentConfig
-{
-  gint version;
-  GHashTable *keys;
-};
-
-typedef struct _PersistentConfigEntry
-{
-  gpointer value;
-  gssize value_len;
-  GDestroyNotify destroy;
-  gint version;
-  /* this value is a string and should be saved */
-  gboolean survive_across_restarts:1;
-} PersistentConfigEntry;
-
-static void
-cfg_persist_config_entry_free(PersistentConfigEntry *self)
-{
-  if (self->destroy)
-  {
-    self->destroy(self->value);
-    self->value_len = 0;
-  }
-  g_free(self);
-}
-
-static PersistentConfigEntry *
-cfg_persist_config_add_entry(GlobalConfig *cfg, gchar *name, gpointer value, gssize value_len, GDestroyNotify destroy, gint version, gboolean force)
+static PersistConfigEntry *
+cfg_persist_config_add_entry(GlobalConfig *cfg, gchar *name, gpointer value, GDestroyNotify destroy, gboolean force)
 { 
-  PersistentConfigEntry *p;
+  PersistConfigEntry *p;
   
   if (cfg->persist && value)
     {
@@ -506,12 +516,10 @@ cfg_persist_config_add_entry(GlobalConfig *cfg, gchar *name, gpointer value, gss
             }
         }
   
-      p = g_new0(PersistentConfigEntry, 1);
+      p = g_new0(PersistConfigEntry, 1);
   
       p->value = value;
       p->destroy = destroy;
-      p->value_len = value_len;
-      p->version = version < 0 ? cfg->persist->version : version;
       g_hash_table_insert(cfg->persist->keys, g_strdup(name), p);
       return p;
     }
@@ -519,160 +527,30 @@ cfg_persist_config_add_entry(GlobalConfig *cfg, gchar *name, gpointer value, gss
 }
 
 void
-cfg_persist_config_add(GlobalConfig *cfg, gchar *name, gpointer value, gssize value_len, GDestroyNotify destroy, gboolean force)
+cfg_persist_config_add(GlobalConfig *cfg, gchar *name, gpointer value,  GDestroyNotify destroy, gboolean force)
 { 
-  cfg_persist_config_add_entry(cfg, name, value, value_len, destroy, -1, force);
-}
-
-/**
- * cfg_persist_config_add_survivor:
- *
- * Add a "surviving" value, a value that is remembered accross restarts.
- **/
-void
-cfg_persist_config_add_survivor(GlobalConfig *cfg, gchar *name, gchar *value, gssize value_len, gboolean force)
-{
-  PersistentConfigEntry *p;
-  
-  if (value_len < 0)
-    p = cfg_persist_config_add_entry(cfg, name, g_strdup(value), -1, g_free, -1, force);
-  else
-    p = cfg_persist_config_add_entry(cfg, name, g_memdup(value, value_len), value_len, g_free, -1, force);
-
-  if (p)
-    {
-      p->survive_across_restarts = TRUE;
-    }
+  cfg_persist_config_add_entry(cfg, name, value, destroy, force);
 }
 
 gpointer
-cfg_persist_config_fetch(GlobalConfig *cfg, gchar *name, gsize *result_len, gint *version)
+cfg_persist_config_fetch(GlobalConfig *cfg, gchar *name)
 {
   gpointer res = NULL;
   gchar *orig_key;
-  PersistentConfigEntry *p;
+  PersistConfigEntry *p;
   gpointer tmp1, tmp2;
 
   if (cfg->persist && g_hash_table_lookup_extended(cfg->persist->keys, name, &tmp1, &tmp2))
     {
       orig_key = (gchar *) tmp1;
-      p = (PersistentConfigEntry *) tmp2;
+      p = (PersistConfigEntry *) tmp2;
 
       res = p->value;
-
-      if (result_len)
-        *result_len = p->value_len;
-      if (version)
-        *version = p->version;
 
       g_hash_table_steal(cfg->persist->keys, name);
       g_free(orig_key);
       g_free(p);
     }
   return res;
-}
-
-static void
-cfg_persist_config_save_value(gchar *key, PersistentConfigEntry *entry, SerializeArchive *sa)
-{
-  if (entry->survive_across_restarts)
-    {
-      /* NOTE: we ignore errors here, as we cannot bail out from the
-       * g_hash_table_foreach() loop anyway. */
-      
-      serialize_write_cstring(sa, key, -1);
-      serialize_write_cstring(sa, (gchar *) entry->value, entry->value_len);
-    }
-}
-
-void
-cfg_persist_config_save(GlobalConfig *cfg, const gchar *filename)
-{
-  FILE *persist_file;
-  
-  persist_file = fopen(filename, "w");
-  if (persist_file)
-    {
-      SerializeArchive *sa;
-      
-      sa = serialize_file_archive_new(persist_file);
-      
-      serialize_write_blob(sa, "SLP3", 4);
-      g_hash_table_foreach(cfg->persist->keys, (GHFunc) cfg_persist_config_save_value, sa);
-      serialize_write_cstring(sa, "", 0);
-      if (sa->error)
-        goto error;
-        
-      serialize_archive_free(sa);
-      fclose(persist_file);
-      return;
-    }
- error:
-  msg_error("Error saving persistent configuration file",
-            evt_tag_str("name", PATH_PERSIST_CONFIG),
-            NULL);
-  
-}
-
-void
-cfg_persist_config_load(GlobalConfig *cfg, const gchar *filename)
-{
-  FILE *persist_file;
-  
-  persist_file = fopen(filename, "r");
-  if (persist_file)
-    {
-      gchar magic[4];
-      gchar *key, *value;
-      SerializeArchive *sa;
-      gint version;
-      
-      sa = serialize_file_archive_new(persist_file);
-      serialize_read_blob(sa, magic, 4);
-      if (memcmp(magic, "SLP2", 4) != 0 && memcmp(magic, "SLP3", 4) != 0)
-        {
-          msg_error("Persistent configuration file is in invalid format, ignoring", NULL);
-          goto close_and_exit;
-        }
-      version = magic[3] - '0';
-
-      while (serialize_read_cstring(sa, &key, NULL))
-        {
-          gsize len;
-          if (key[0] && serialize_read_cstring(sa, &value, &len))
-            {
-              /* add a non-surviving entry, thus each value is only
-               * written/read once unless the code readds it, this is needed
-               * to limit the size of the persistent configuration file */
-              
-              cfg_persist_config_add_entry(cfg, key, value, len, g_free, version, FALSE);
-            }
-          else
-            {
-              g_free(key);
-              break;
-            }
-          g_free(key);
-        }
- close_and_exit:
-      serialize_archive_free(sa);
-      fclose(persist_file);
-    }
-}
-
-PersistentConfig *
-persist_config_new(void)
-{
-  PersistentConfig *self = g_new0(PersistentConfig, 1);
-  self->version = 3;
-  self->keys = g_hash_table_new_full(g_str_hash, g_str_equal, (GDestroyNotify) g_free, (GDestroyNotify) cfg_persist_config_entry_free);
-  return self;
-}
-
-void 
-persist_config_free(PersistentConfig *self)
-{
-  g_hash_table_destroy(self->keys);
-  g_free(self);
 }
 

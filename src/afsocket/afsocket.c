@@ -547,7 +547,7 @@ afsocket_sd_init(LogPipe *s)
     {
       GList *p;
 
-      self->connections = cfg_persist_config_fetch(cfg, afsocket_sd_format_persist_name(self, FALSE), NULL, NULL);
+      self->connections = cfg_persist_config_fetch(cfg, afsocket_sd_format_persist_name(self, FALSE));
       for (p = self->connections; p; p = p->next)
         {
           afsocket_sc_set_owner((AFSocketSourceConnection *) p->data, self);
@@ -564,7 +564,7 @@ afsocket_sd_init(LogPipe *s)
         {
           /* NOTE: this assumes that fd 0 will never be used for listening fds,
            * main.c opens fd 0 so this assumption can hold */
-          sock = GPOINTER_TO_UINT(cfg_persist_config_fetch(cfg, afsocket_sd_format_persist_name(self, TRUE), NULL, NULL)) - 1;
+          sock = GPOINTER_TO_UINT(cfg_persist_config_fetch(cfg, afsocket_sd_format_persist_name(self, TRUE))) - 1;
         }
 
       if (sock == -1)
@@ -654,7 +654,7 @@ afsocket_sd_deinit(LogPipe *s)
       /* for AFSOCKET_STREAM source drivers this is a list, for
        * AFSOCKET_DGRAM this is a single connection */
 
-      cfg_persist_config_add(cfg, afsocket_sd_format_persist_name(self, FALSE), self->connections, -1, (GDestroyNotify) afsocket_sd_kill_connection_list, FALSE);
+      cfg_persist_config_add(cfg, afsocket_sd_format_persist_name(self, FALSE), self->connections, (GDestroyNotify) afsocket_sd_kill_connection_list, FALSE);
     }
   self->connections = NULL;
 
@@ -675,7 +675,7 @@ afsocket_sd_deinit(LogPipe *s)
           /* NOTE: the fd is incremented by one when added to persistent config
            * as persist config cannot store NULL */
 
-          cfg_persist_config_add(cfg, afsocket_sd_format_persist_name(self, TRUE), GUINT_TO_POINTER(self->fd + 1), -1, afsocket_sd_close_fd, FALSE);
+          cfg_persist_config_add(cfg, afsocket_sd_format_persist_name(self, TRUE), GUINT_TO_POINTER(self->fd + 1), afsocket_sd_close_fd, FALSE);
         }
     }
   else if (self->flags & AFSOCKET_DGRAM)
@@ -1058,7 +1058,7 @@ afsocket_dd_init(LogPipe *s)
        * even while the connection is not established */
 
       if ((self->flags & AFSOCKET_KEEP_ALIVE))
-        self->writer = cfg_persist_config_fetch(cfg, afsocket_dd_format_persist_name(self, self->dest_name, FALSE), NULL, NULL);
+        self->writer = cfg_persist_config_fetch(cfg, afsocket_dd_format_persist_name(self, self->dest_name, FALSE));
 
       if (!self->writer)
         self->writer = log_writer_new(LW_FORMAT_PROTO |
@@ -1099,7 +1099,7 @@ afsocket_dd_deinit(LogPipe *s)
 
   if (self->flags & AFSOCKET_KEEP_ALIVE)
     {
-      cfg_persist_config_add(cfg, afsocket_dd_format_persist_name(self, self->dest_name, FALSE), self->writer, -1, (GDestroyNotify) log_pipe_unref, FALSE);
+      cfg_persist_config_add(cfg, afsocket_dd_format_persist_name(self, self->dest_name, FALSE), self->writer, (GDestroyNotify) log_pipe_unref, FALSE);
       self->writer = NULL;
     }
 
