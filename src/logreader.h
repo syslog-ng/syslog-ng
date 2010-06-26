@@ -77,10 +77,6 @@ void log_reader_set_follow_filename(LogPipe *self, const gchar *follow_filename)
 void log_reader_set_peer_addr(LogPipe *s, GSockAddr *peer_addr);
 void log_reader_set_immediate_check(LogPipe *s);
 
-void log_reader_update_pos(LogReader *self, gint64 ofs);
-void log_reader_save_state(LogReader *self, SerializeArchive *archive);
-void log_reader_restore_state(LogReader *self, SerializeArchive *archive);
-
 LogPipe *log_reader_new(LogProto *proto);
 void log_reader_options_defaults(LogReaderOptions *options);
 void log_reader_options_init(LogReaderOptions *options, GlobalConfig *cfg, const gchar *group_name);

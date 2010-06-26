@@ -28,6 +28,7 @@
 #include "stats.h"
 #include "tags.h"
 #include "cfg-parser.h"
+#include "compat.h"
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -37,8 +38,8 @@
 #include <ctype.h>
 #include <time.h>
 #include <errno.h>
-
 #include <stdio.h>
+#include <stdlib.h>
 
 /**
  * FIXME: LogReader has grown big enough that it is difficult to
@@ -340,18 +341,20 @@ log_reader_fetch_log(LogReader *self, LogProto *proto)
           if (!log_reader_handle_line(self, msg, msg_len, sa, parse_flags))
             {
               /* window is full, don't generate further messages */
+              log_proto_queued(self->proto);
               g_sockaddr_unref(sa);
               break;
             }
         }
+      log_proto_queued(self->proto);
       g_sockaddr_unref(sa);
     }
   if (self->options->flags & LR_PREEMPT)
     {
-      /* NOTE: we assume that self->proto is a LogProtoPlainServer */
-      LogProtoPlainServer *s = (LogProtoPlainServer*)self->proto;
+      /* NOTE: we assume that self->proto is a LogProtoFileReader */
+      LogProtoFileReader *s = (LogProtoFileReader*)self->proto;
       
-      if (log_proto_plain_server_is_preemptable(s))
+      if (log_proto_file_reader_is_preemptable(s))
         {
           self->waiting_for_preemption = FALSE;
           log_pipe_notify(self->control, &self->super.super, NC_FILE_SKIP, self);
@@ -461,169 +464,6 @@ log_reader_set_peer_addr(LogPipe *s, GSockAddr *peer_addr)
 {
   LogReader *self = (LogReader *) s;
   self->peer_addr = g_sockaddr_ref(peer_addr);
-}
-
-/**
- * log_reader_get_pos:
- *
- * This function returns the current read position of the associated fd. It
- * should be used to query the current read position right before exiting. 
- * The returned value is adjusted with the bytes already read from the
- * stream but still in the input buffer. It is not intended to be used on
- * anything non-seekable (e.g. sockets)
- **/
-static gint64
-log_reader_get_pos(LogReader *self)
-{
-  gint64 res;
-  gint fd;
-
-  fd = log_proto_get_fd(self->proto);
-  if (fd >= 0)
-    {
-      res = lseek(fd, 0, SEEK_CUR);
-      return res;
-    }
-  return 0;
-}
-
-/**
- * log_reader_get_inode:
- *
- * This function returns the current inode of the associated fd. 
- **/ 
-static gint64
-log_reader_get_inode(LogReader *self)
-{
-  struct stat sb;
-  gint fd;
-
-  fd = log_proto_get_fd(self->proto);
-  
-  if (fd >= 0 && fstat(fd, &sb) == 0)
-    return sb.st_ino;
-  else 
-    return 0;
-}
-
-/**
- * log_reader_get_size:
- *
- * This function returns the current size of the associated fd in bytes. 
- **/ 
-static gint64
-log_reader_get_size(LogReader *self)
-{
-  struct stat sb;
-  gint fd;
-
-  fd = log_proto_get_fd(self->proto);
-
-  if (fd >= 0 && fstat(fd, &sb) == 0)
-    return sb.st_size;
-  else 
-    return 0;
-}
-
-
-/**
- * log_reader_set_file_info:
- *
- * This function sets the current read position of the associated fd. It
- * should be used as a first operation before any message is read and is
- * useful to restart at a specific file position. It is not intended to be
- * used on anything non-seekable (e.g. sockets).
- *
- * NOTE: this function should not be used directly, the
- * log_reader_{save,restore}_state functions should be used instead. The only
- * reason it is public is that some legacy code uses it directly (2.1->3.0
- * upgrade code in affile.c). In that time the state was not serialized,
- * only the current position was stored as a string.
- *
- **/
-void
-log_reader_update_pos(LogReader *self, gint64 ofs)
-{
-  gint64 size;
-  gint fd;
-
-  fd = log_proto_get_fd(self->proto);
-  if (fd < 0)
-    return;
-
-  size = log_reader_get_size(self);
-  if (ofs > size)
-    ofs = size;
-  lseek(fd, ofs, SEEK_SET);
-}
-
-
-void
-log_reader_save_state(LogReader *self, SerializeArchive *archive)
-{
-  gint64 cur_pos;
-  gint64 cur_size;
-  gint64 cur_inode;
-  gint16 version = 0;
-
-  cur_pos = log_reader_get_pos(self);
-  cur_size = log_reader_get_size(self);
-  cur_inode = log_reader_get_inode(self);
-
-  serialize_write_uint16(archive, version);
-  serialize_write_uint64(archive, cur_pos);
-  serialize_write_uint64(archive, cur_inode);
-  serialize_write_uint64(archive, cur_size);
-
-  log_proto_write_state(self->proto, archive);
-}
-
-void
-log_reader_restore_state(LogReader *self, SerializeArchive *archive)
-{
-  gint64 cur_size;
-  gint64 cur_inode;
-  gint64 cur_pos;
-  guint16 version;
-      
-  if (!serialize_read_uint16(archive, &version) || version != 0)
-    {
-      msg_error("Internal error restoring log reader state, stored data has incorrect version",
-                evt_tag_int("version", version));
-      goto error;
-    }
-    
-  if (!serialize_read_uint64(archive, (guint64 *) &cur_pos) ||
-      !serialize_read_uint64(archive, (guint64 *) &cur_inode) ||
-      !serialize_read_uint64(archive, (guint64 *) &cur_size) ||
-      !log_proto_read_state(self->proto, archive))
-    {
-      msg_error("Internal error restoring information about the current file position, restarting from the beginning",
-                evt_tag_str("filename", self->follow_filename),
-                NULL);
-      goto error;
-    }
-
-  if (cur_inode && 
-      cur_inode == log_reader_get_inode(self) &&
-      cur_size <= log_reader_get_size(self))
-    {
-      /* ok, the stored state matches the current file */
-      log_reader_update_pos(self, cur_pos);
-      return;
-    }
-  else
-    {
-      /* the stored state does not match the current file */
-      msg_notice("The current log file has a mismatching size/inode information, restarting from the beginning",
-                  evt_tag_str("filename", self->follow_filename),
-                  NULL);
-      goto error;
-    }
- error:
-  /* error happened,  restart the file from the beginning */
-  log_reader_update_pos(self, 0);
-  log_proto_reset_state(self->proto);
 }
 
 LogPipe *

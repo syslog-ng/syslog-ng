@@ -376,14 +376,25 @@ persist_state_load_v23(PersistState *self, gint version, SerializeArchive *sa)
   while (serialize_read_cstring(sa, &key, NULL))
     {
       gsize len;
+      guint32 str_len;
       if (key[0] && serialize_read_cstring(sa, &value, &len))
         {
           gpointer new_block;
           PersistEntryHandle new_handle;
 
-          new_handle = persist_state_alloc_value(self, len, FALSE, version);
+          /*  add length of the string */
+          new_handle = persist_state_alloc_value(self, len + sizeof(str_len), FALSE, version);
           new_block = persist_state_map_entry(self, new_handle);
-          memcpy(new_block, value, len);
+
+          /* NOTE: we add an extra length field to the old value, as our
+           * persist_state_lookup_string() needs that.
+           * persist_state_lookup_string is used to fetch disk queue file
+           * names.  It could have been solved somewhat better, but now it
+           * doesn't justify a persist-state file format change.
+           */
+          str_len = GUINT32_TO_BE(len);
+          memcpy(new_block, &str_len, sizeof(str_len));
+          memcpy(new_block + sizeof(str_len), value, len);
           persist_state_unmap_entry(self, new_handle);
           /* add key to the current file */
           persist_state_add_key(self, key, new_handle);

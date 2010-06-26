@@ -26,9 +26,11 @@
 
 #include "logtransport.h"
 #include "serialize.h"
+#include "persist-state.h"
 
 typedef struct _LogProto LogProto;
 typedef struct _LogProtoPlainServer LogProtoPlainServer;
+typedef struct _LogProtoFileReader LogProtoFileReader;
 
 typedef enum
 {
@@ -42,39 +44,13 @@ struct _LogProto
   LogTransport *transport;
   GIConv convert;
   gchar *encoding;
-  guint flags;
-  gboolean (*read_state)(LogProto *s, SerializeArchive *archive);
-  gboolean (*write_state)(LogProto *s, SerializeArchive *archive);
-  void (*reset_state)(LogProto *s);
+  guint16 flags;
   gboolean (*prepare)(LogProto *s, gint *fd, GIOCondition *cond, gint *timeout);
   LogProtoStatus (*fetch)(LogProto *s, const guchar **msg, gsize *msg_len, GSockAddr **sa, gboolean *may_read);
   void (*queued)(LogProto *s);
   LogProtoStatus (*post)(LogProto *s, guchar *msg, gsize msg_len, gboolean *consumed);
   void (*free_fn)(LogProto *s);
 };
-
-static inline gboolean
-log_proto_read_state(LogProto *s, SerializeArchive *archive)
-{
-  if (s->read_state)
-    return s->read_state(s, archive);
-  return TRUE;
-}
-
-static inline gboolean
-log_proto_write_state(LogProto *s, SerializeArchive *archive)
-{
-  if (s->write_state)
-    return s->write_state(s, archive);
-  return TRUE;
-}
-
-static inline void
-log_proto_reset_state(LogProto *s)
-{
-  if (s->reset_state)
-    s->reset_state(s);
-}
 
 static inline gboolean
 log_proto_prepare(LogProto *s, gint *fd, GIOCondition *cond, gint *timeout)
@@ -117,11 +93,17 @@ void log_proto_free(LogProto *s);
 /* issue a single read in a poll loop as /proc/kmsg does not support non-blocking mode */
 #define LPPF_NOMREAD        0x0002
 #define LPPF_IGNORE_EOF     0x0004
+#define LPPF_POS_TRACKING   0x0008
 
 /* */
 LogProto *log_proto_plain_new_server(LogTransport *transport, gint padding_size, gint max_msg_size, guint flags);
 LogProto *log_proto_plain_new_client(LogTransport *transport);
-gboolean log_proto_plain_server_is_preemptable(LogProtoPlainServer *s);
+
+/* file reader with persistent state */
+gboolean log_proto_file_reader_is_preemptable(LogProtoFileReader *s);
+gboolean log_proto_file_reader_restart_with_state(LogProto *s, PersistState *persist_state, const gchar *persist_name);
+LogProto *log_proto_file_reader_new(LogTransport *transport, const gchar *filename, gint padding_size, gint max_msg_size, guint flags);
+
 
 /* framed */
 LogProto *log_proto_framed_new_client(LogTransport *transport);

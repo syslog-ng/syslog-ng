@@ -134,60 +134,19 @@ affile_sd_format_persist_name(AFFileSourceDriver *self)
 }
  
 static void
-affile_sd_save_pos(LogPipe *s, GlobalConfig *cfg)
+affile_sd_recover_state(LogPipe *s, GlobalConfig *cfg, LogProto *proto)
 {
   AFFileSourceDriver *self = (AFFileSourceDriver *) s;
 
-  if (cfg->persist && (self->flags & AFFILE_PIPE) == 0)
-    {
-      SerializeArchive *archive;
-      GString *str = g_string_sized_new(0);
-  
-      archive = serialize_string_archive_new(str);
-      log_reader_save_state((LogReader *) self->reader, archive);
-      /* cfg_persist_config_add_survivor(cfg, affile_sd_format_persist_name(self), str->str,  str->len, TRUE); */
-      serialize_archive_free(archive);
-      g_string_free(str, TRUE);
-    }
-}
-
-static void
-affile_sd_load_pos(LogPipe *s, GlobalConfig *cfg)
-{
-  AFFileSourceDriver *self = (AFFileSourceDriver *) s;
-  gchar *str;
-  off_t cur_pos;
-  gsize str_len;
-  gint version;
-  
-  if ((self->flags & AFFILE_PIPE) || !cfg->persist)
+  if ((self->flags & AFFILE_PIPE))
     return;
 
-  str = NULL; /* cfg_persist_config_fetch(cfg, affile_sd_format_persist_name(self), &str_len, &version); */
-  if (!str)
-    return;
-
-  if (version == 2)
+  if (!log_proto_file_reader_restart_with_state(proto, cfg->state, affile_sd_format_persist_name(self)))
     {
-      /* NOTE: legacy, should be removed once the release after 3.0 is published */
-      cur_pos = strtoll(str, NULL, 10);
-      log_reader_update_pos((LogReader *) self->reader, cur_pos);
-      g_free(str);
-    }
-  else if (version >= 3)
-    {
-      GString *g_str = g_string_new("");
-      SerializeArchive *archive;
-
-      g_str = g_string_assign_len(g_str, str, str_len);
-      archive = serialize_string_archive_new(g_str);
-      
-      log_reader_restore_state((LogReader *) self->reader, archive);
-
-      serialize_archive_free(archive);
-      g_string_free(g_str, TRUE);
-      g_free(str);
-      
+      msg_error("Error converting persistent state from on-disk format, losing file position information",
+                evt_tag_str("filename", self->filename->str),
+                NULL);
+      return;
     }
 }
 
@@ -212,23 +171,25 @@ affile_sd_notify(LogPipe *s, LogPipe *sender, gint notify_code, gpointer user_da
         if (affile_sd_open_file(self, self->filename->str, &fd))
           {
             LogTransport *transport;
+            LogProto *proto;
             
             transport = log_transport_plain_new(fd, 0);
             transport->timeout = 10;
 
-            self->reader = log_reader_new(
-                                  log_proto_plain_new_server(transport, self->reader_options.padding,
-                                                             self->reader_options.msg_size,
-                                                             ((self->reader_options.follow_freq > 0)
-                                                                    ? LPPF_IGNORE_EOF
-                                                                    : LPPF_NOMREAD)
-                                                             ));
+            proto = log_proto_file_reader_new(transport, self->filename->str,
+                                              self->reader_options.padding,
+                                              self->reader_options.msg_size,
+                                              ((self->reader_options.follow_freq > 0)
+                                              ? LPPF_IGNORE_EOF
+                                              : LPPF_NOMREAD)
+                                             );
+
+            self->reader = log_reader_new(proto);
 
             log_reader_set_options(self->reader, s, &self->reader_options, 1, SCS_FILE, self->super.id, self->filename->str);
-
             log_reader_set_follow_filename(self->reader, self->filename->str);
-      
             log_reader_set_immediate_check(self->reader);
+
 
             log_pipe_append(self->reader, s);
             if (!log_pipe_init(self->reader, cfg))
@@ -240,6 +201,7 @@ affile_sd_notify(LogPipe *s, LogPipe *sender, gint notify_code, gpointer user_da
                 self->reader = NULL;
                 close(fd);
               }
+            affile_sd_recover_state(s, cfg, proto);
           }
         else
           {
@@ -289,27 +251,34 @@ affile_sd_init(LogPipe *s)
   if (file_opened || open_deferred)
     {
       LogTransport *transport;
+      LogProto *proto;
 
       transport = log_transport_plain_new(fd, 0);
       transport->timeout = 10;
 
+      if (self->flags & AFFILE_PIPE)
+        proto = log_proto_plain_new_server(transport, self->reader_options.padding,
+                                          self->reader_options.msg_size,
+                                          ((self->reader_options.follow_freq > 0)
+                                           ? LPPF_IGNORE_EOF
+                                           : LPPF_NOMREAD));
+      else
+        proto = log_proto_file_reader_new(transport, self->filename->str,
+                                          self->reader_options.padding,
+                                          self->reader_options.msg_size,
+                                          ((self->reader_options.follow_freq > 0)
+                                           ? LPPF_IGNORE_EOF
+                                           : LPPF_NOMREAD));
       /* FIXME: we shouldn't use reader_options to store log protocol parameters */
-      self->reader = log_reader_new(
-                            log_proto_plain_new_server(transport, self->reader_options.padding,
-                                                       self->reader_options.msg_size,
-                                                       ((self->reader_options.follow_freq > 0)
-                                                            ? LPPF_IGNORE_EOF
-                                                            : LPPF_NOMREAD)
-                                                       ));
-      log_reader_set_options(self->reader, s, &self->reader_options, 1, SCS_FILE, self->super.id, self->filename->str);
+      self->reader = log_reader_new(proto);
 
+      log_reader_set_options(self->reader, s, &self->reader_options, 1, SCS_FILE, self->super.id, self->filename->str);
       log_reader_set_follow_filename(self->reader, self->filename->str);
 
       /* NOTE: if the file could not be opened, we ignore the last
        * remembered file position, if the file is created in the future
        * we're going to read from the start. */
       
-      affile_sd_load_pos(s, cfg);
       log_pipe_append(self->reader, s);
 
       if (!log_pipe_init(self->reader, NULL))
@@ -322,6 +291,7 @@ affile_sd_init(LogPipe *s)
           close(fd);
           return FALSE;
         }
+      affile_sd_recover_state(s, cfg, proto);
     }
   else
     {
@@ -339,11 +309,9 @@ static gboolean
 affile_sd_deinit(LogPipe *s)
 {
   AFFileSourceDriver *self = (AFFileSourceDriver *) s;
-  GlobalConfig *cfg = log_pipe_get_config(s);
 
   if (self->reader)
     {
-      affile_sd_save_pos(s, cfg);
       log_pipe_deinit(self->reader);
       log_pipe_unref(self->reader);
       self->reader = NULL;
