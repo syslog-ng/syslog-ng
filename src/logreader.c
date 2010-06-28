@@ -140,10 +140,21 @@ log_reader_fd_check(GSource *source)
 
 	  if (fstat(fd, &st) < 0)
 	    {
-	      msg_error("Error invoking fstat() on followed file",
-			evt_tag_errno("error", errno),
-			NULL);
-	      return FALSE;
+              if (errno == ESTALE)
+                {
+                  msg_trace("log_reader_fd_check file moved ESTALE",
+                            evt_tag_str("follow_filename",self->reader->follow_filename),
+                            NULL);
+                  log_pipe_notify(self->reader->control, &self->reader->super.super, NC_FILE_MOVED, self);
+                  return FALSE;
+                }
+              else
+                {
+                  msg_error("Error invoking fstat() on followed file",
+                            evt_tag_errno("error", errno),
+                            NULL);
+                  return FALSE;
+                }
 	    }
 
           msg_trace("log_reader_fd_check",
