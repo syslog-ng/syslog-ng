@@ -17,7 +17,7 @@ gboolean verbose = FALSE;
 /* Beginning of Message character encoded in UTF8 */
 #define BOM "\xEF\xBB\xBF"
 
-#define BENCHMARK_COUNT 1000000
+#define BENCHMARK_COUNT 100000
 
 void
 testcase(const gchar *msg_str, guint32 parse_flags, gchar *template)
