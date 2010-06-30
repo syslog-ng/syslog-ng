@@ -356,7 +356,15 @@ log_writer_last_msg_flush(LogWriter *self)
                                          
                                          
   path_options.flow_control = FALSE;
-  log_queue_push_tail(self->queue, m, &path_options);
+  if (!log_queue_push_tail(self->queue, m, &path_options))
+    {
+      stats_counter_inc(self->dropped_messages);
+      msg_debug("Destination queue full, dropping suppressed message",
+                evt_tag_int("queue_len", log_queue_get_length(self->queue)),
+                evt_tag_int("mem_fifo_size", self->options->mem_fifo_size),
+                NULL);
+      log_msg_drop(m, &path_options);
+    }
 
   log_writer_last_msg_release(self);
 }
