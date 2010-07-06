@@ -163,6 +163,8 @@ log_writer_fd_prepare(GSource *source,
           if (to <= 0)
             {
               /* timeout elapsed, start polling again */
+              if (self->writer->flags & LW_ALWAYS_WRITABLE)
+                return TRUE;
               self->pollfd.events = proto_cond;
             }
           else
@@ -220,10 +222,13 @@ log_writer_fd_check(GSource *source)
       if (self->flush_waiting_for_timeout)
         {
           GTimeVal tv;
+
           /* check if timeout elapsed */
           g_source_get_current_time(source, &tv);
           if (!(self->flush_target.tv_sec <= tv.tv_sec || (self->flush_target.tv_sec == tv.tv_sec && self->flush_target.tv_usec <= tv.tv_usec)))
             return FALSE;
+          if ((self->writer->flags & LW_ALWAYS_WRITABLE))
+            return TRUE;
         }
     }
   return !!(self->pollfd.revents & (G_IO_OUT | G_IO_ERR | G_IO_HUP | G_IO_IN));
@@ -358,7 +363,15 @@ log_writer_last_msg_flush(LogWriter *self)
   log_msg_set_value(m, LM_V_MESSAGE, buf, len);
 
   path_options.flow_control = FALSE;
-  log_queue_push_tail(self->queue, m, &path_options);
+  if (!log_queue_push_tail(self->queue, m, &path_options))
+    {
+      stats_counter_inc(self->dropped_messages);
+      msg_debug("Destination queue full, dropping suppressed message",
+                evt_tag_int("queue_len", log_queue_get_length(self->queue)),
+                evt_tag_int("mem_fifo_size", self->options->mem_fifo_size),
+                NULL);
+      log_msg_drop(m, &path_options);
+    }
 
   log_writer_last_msg_release(self);
 }

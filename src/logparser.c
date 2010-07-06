@@ -257,7 +257,7 @@ log_csv_parser_process(LogParser *s, LogMessage *msg, const gchar *input)
           if (cur_column && cur_column->next == NULL && self->flags & LOG_CSV_PARSER_GREEDY)
             {
               log_msg_set_value(msg, log_msg_get_value_handle((gchar *) cur_column->data), src, -1);
-              cur_column = NULL;
+              break;
             }
         }
     }
@@ -370,7 +370,7 @@ log_csv_parser_process(LogParser *s, LogMessage *msg, const gchar *input)
               if (cur_column && cur_column->next == NULL && self->flags & LOG_CSV_PARSER_GREEDY)
                 {
                   log_msg_set_value(msg, log_msg_get_value_handle((gchar *) cur_column->data), src, -1);
-                  cur_column = NULL;
+                  break;
                 }
             }
         }

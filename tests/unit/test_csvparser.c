@@ -64,6 +64,7 @@ testcase(gchar *msg, guint parse_flags, gint max_columns, guint32 flags, gchar *
     "C30",
     NULL
   };
+  gboolean success;
 
   if (max_columns != -1)
     {
@@ -83,7 +84,18 @@ testcase(gchar *msg, guint parse_flags, gint max_columns, guint32 flags, gchar *
     log_csv_parser_set_quote_pairs(p, quotes);
   if (null_value)
     log_csv_parser_set_null_value(p, null_value);
-  log_parser_process(&p->super, logmsg);
+  success = log_parser_process(&p->super, logmsg);
+
+  if (success && !first_value)
+    {
+      fprintf(stderr, "unexpected match; msg=%s\n", msg);
+      exit(1);
+    }
+  if (!success && first_value)
+    {
+      fprintf(stderr, "unexpected non-match; msg=%s\n", msg);
+      exit(1);
+    }
   log_parser_free(&p->super);
 
   va_start(va, first_value);
@@ -122,8 +134,15 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 
   putenv("TZ=MET-1METDST");
   tzset();
+
   testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, -1, LOG_CSV_PARSER_ESCAPE_NONE, " ", NULL, NULL,
            "PTHREAD", "support", "initialized", NULL);
+
+  testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, 3, LOG_CSV_PARSER_ESCAPE_NONE, " ", NULL, NULL,
+           "PTHREAD", "support", "initialized", NULL);
+
+  testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, 2, LOG_CSV_PARSER_ESCAPE_NONE | LOG_CSV_PARSER_DROP_INVALID, " ", NULL, NULL,
+          NULL);
 
   testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, 2, LOG_CSV_PARSER_GREEDY | LOG_CSV_PARSER_ESCAPE_NONE, " ", NULL, NULL,
            "PTHREAD", "support initialized", NULL);
@@ -203,8 +222,26 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase("<15> openvpn[2499]: \"PTHREAD support initialized", 0, -1, LOG_CSV_PARSER_ESCAPE_DOUBLE_CHAR, " ", NULL, NULL,
            "PTHREAD support initialized", NULL);
 
+  testcase("postfix/smtpd", LP_NOPARSE, 2, LOG_CSV_PARSER_ESCAPE_NONE | LOG_CSV_PARSER_GREEDY | LOG_CSV_PARSER_DROP_INVALID, "/", NULL, NULL,
+           "postfix", "smtpd", NULL);
+
+  testcase("postfix/smtpd/ququ", LP_NOPARSE, 2, LOG_CSV_PARSER_ESCAPE_NONE | LOG_CSV_PARSER_GREEDY | LOG_CSV_PARSER_DROP_INVALID, "/", NULL, NULL,
+           "postfix", "smtpd/ququ", NULL);
+
   testcase("10.100.20.1 - - [31/Dec/2007:00:17:10 +0100] \"GET /cgi-bin/bugzilla/buglist.cgi?keywords_type=allwords&keywords=public&format=simple HTTP/1.1\" 200 2708 \"-\" \"curl/7.15.5 (i4 86-pc-linux-gnu) libcurl/7.15.5 OpenSSL/0.9.8c zlib/1.2.3 libidn/0.6.5\" 2 bugzilla.balabit", LP_NOPARSE, -1, LOG_CSV_PARSER_ESCAPE_BACKSLASH, " ", "\"\"[]", "-",
            "10.100.20.1", "", "", "31/Dec/2007:00:17:10 +0100", "GET /cgi-bin/bugzilla/buglist.cgi?keywords_type=allwords&keywords=public&format=simple HTTP/1.1", "200", "2708", "", "curl/7.15.5 (i4 86-pc-linux-gnu) libcurl/7.15.5 OpenSSL/0.9.8c zlib/1.2.3 libidn/0.6.5", "2", "bugzilla.balabit", NULL);
+
+  testcase("10.100.20.1 - - [31/Dec/2007:00:17:10 +0100] \"GET /cgi-bin/bugzilla/buglist.cgi?keywords_type=allwords&keywords=public&format=simple HTTP/1.1\" 200 2708 \"-\" \"curl/7.15.5 (i4 86-pc-linux-gnu) libcurl/7.15.5 OpenSSL/0.9.8c zlib/1.2.3 libidn/0.6.5\" 2 bugzilla.balabit", LP_NOPARSE, 11, LOG_CSV_PARSER_ESCAPE_BACKSLASH, " ", "\"\"[]", "-",
+           "10.100.20.1", "", "", "31/Dec/2007:00:17:10 +0100", "GET /cgi-bin/bugzilla/buglist.cgi?keywords_type=allwords&keywords=public&format=simple HTTP/1.1", "200", "2708", "", "curl/7.15.5 (i4 86-pc-linux-gnu) libcurl/7.15.5 OpenSSL/0.9.8c zlib/1.2.3 libidn/0.6.5", "2", "bugzilla.balabit", NULL);
+
+  testcase("10.100.20.1 - - [31/Dec/2007:00:17:10 +0100] \"GET /cgi-bin/bugzilla/buglist.cgi?keywords_type=allwords&keywords=public&format=simple HTTP/1.1\" 200 2708 \"-\" \"curl/7.15.5 (i4 86-pc-linux-gnu) libcurl/7.15.5 OpenSSL/0.9.8c zlib/1.2.3 libidn/0.6.5\" 2 bugzilla.balabit", LP_NOPARSE, 10, LOG_CSV_PARSER_ESCAPE_BACKSLASH, " ", "\"\"[]", "-",
+           "10.100.20.1", "", "", "31/Dec/2007:00:17:10 +0100", "GET /cgi-bin/bugzilla/buglist.cgi?keywords_type=allwords&keywords=public&format=simple HTTP/1.1", "200", "2708", "", "curl/7.15.5 (i4 86-pc-linux-gnu) libcurl/7.15.5 OpenSSL/0.9.8c zlib/1.2.3 libidn/0.6.5", "2", NULL);
+
+  testcase("10.100.20.1 - - [31/Dec/2007:00:17:10 +0100] \"GET /cgi-bin/bugzilla/buglist.cgi?keywords_type=allwords&keywords=public&format=simple HTTP/1.1\" 200 2708 \"-\" \"curl/7.15.5 (i4 86-pc-linux-gnu) libcurl/7.15.5 OpenSSL/0.9.8c zlib/1.2.3 libidn/0.6.5\" 2 bugzilla.balabit", LP_NOPARSE, 12, LOG_CSV_PARSER_ESCAPE_BACKSLASH, " ", "\"\"[]", "-",
+           "10.100.20.1", "", "", "31/Dec/2007:00:17:10 +0100", "GET /cgi-bin/bugzilla/buglist.cgi?keywords_type=allwords&keywords=public&format=simple HTTP/1.1", "200", "2708", "", "curl/7.15.5 (i4 86-pc-linux-gnu) libcurl/7.15.5 OpenSSL/0.9.8c zlib/1.2.3 libidn/0.6.5", "2", "bugzilla.balabit", "", NULL);
+
+  testcase("10.100.20.1 - - [31/Dec/2007:00:17:10 +0100] \"GET /cgi-bin/bugzilla/buglist.cgi?keywords_type=allwords&keywords=public&format=simple HTTP/1.1\" 200 2708 \"-\" \"curl/7.15.5 (i4 86-pc-linux-gnu) libcurl/7.15.5 OpenSSL/0.9.8c zlib/1.2.3 libidn/0.6.5\" 2 bugzilla.balabit almafa", LP_NOPARSE, 11, LOG_CSV_PARSER_ESCAPE_BACKSLASH | LOG_CSV_PARSER_DROP_INVALID, " ", "\"\"[]", "-",
+           NULL);
 
   app_shutdown();
   return 0;
