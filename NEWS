@@ -1,3 +1,14 @@
+3.0.8
+	Fri, 09 Jul 2010 09:27:37 +0200
+
+	Bugfixes:
+	* The flush_timeout() fix in 3.0.7 was not working properly for file()
+	  destinations. This has been fixed.
+	* Fixed the use of the greedy and drop-invalid flags for csv-parser.
+	* Fixed a possible but rare memory leak in the handling of message
+	  suppression.
+
+
 3.0.7
 	Sun, 06 Jun 2010 13:27:38 +0200
 
