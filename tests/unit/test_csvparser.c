@@ -225,6 +225,9 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase("postfix/smtpd", LP_NOPARSE, 2, LOG_CSV_PARSER_ESCAPE_NONE | LOG_CSV_PARSER_GREEDY | LOG_CSV_PARSER_DROP_INVALID, "/", NULL, NULL,
            "postfix", "smtpd", NULL);
 
+  testcase("postfix", LP_NOPARSE, 3, LOG_CSV_PARSER_ESCAPE_NONE | LOG_CSV_PARSER_GREEDY | LOG_CSV_PARSER_DROP_INVALID, "/", NULL, NULL,
+           NULL);
+
   testcase("postfix/smtpd/ququ", LP_NOPARSE, 2, LOG_CSV_PARSER_ESCAPE_NONE | LOG_CSV_PARSER_GREEDY | LOG_CSV_PARSER_DROP_INVALID, "/", NULL, NULL,
            "postfix", "smtpd/ququ", NULL);
 
@@ -242,6 +245,20 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 
   testcase("10.100.20.1 - - [31/Dec/2007:00:17:10 +0100] \"GET /cgi-bin/bugzilla/buglist.cgi?keywords_type=allwords&keywords=public&format=simple HTTP/1.1\" 200 2708 \"-\" \"curl/7.15.5 (i4 86-pc-linux-gnu) libcurl/7.15.5 OpenSSL/0.9.8c zlib/1.2.3 libidn/0.6.5\" 2 bugzilla.balabit almafa", LP_NOPARSE, 11, LOG_CSV_PARSER_ESCAPE_BACKSLASH | LOG_CSV_PARSER_DROP_INVALID, " ", "\"\"[]", "-",
            NULL);
+
+  testcase("random.vhost 10.0.0.1 - \"GET /index.html HTTP/1.1\" 200", LP_NOPARSE, 5, LOG_CSV_PARSER_ESCAPE_NONE | LOG_CSV_PARSER_DROP_INVALID, " ", "\"\"", "-",
+           "random.vhost", "10.0.0.1", "", "GET /index.html HTTP/1.1", "200", NULL);
+
+  testcase("random.vhost 10.0.0.1 - \"GET /index.html HTTP/1.1\" 200", LP_NOPARSE, 5, LOG_CSV_PARSER_ESCAPE_BACKSLASH | LOG_CSV_PARSER_DROP_INVALID, " ", "\"\"", "-",
+           "random.vhost", "10.0.0.1", "", "GET /index.html HTTP/1.1", "200", NULL);
+
+  /* greedy column can be empty */
+  testcase("random.vhost 10.0.0.1 - \"GET /index.html HTTP/1.1\" 200", LP_NOPARSE, 6, LOG_CSV_PARSER_ESCAPE_NONE | LOG_CSV_PARSER_GREEDY | LOG_CSV_PARSER_DROP_INVALID, " ", "\"\"", "-",
+           "random.vhost", "10.0.0.1", "", "GET /index.html HTTP/1.1", "200", "", NULL);
+
+  testcase("random.vhost 10.0.0.1 - \"GET /index.html HTTP/1.1\" 200", LP_NOPARSE, 6, LOG_CSV_PARSER_ESCAPE_BACKSLASH | LOG_CSV_PARSER_GREEDY | LOG_CSV_PARSER_DROP_INVALID, " ", "\"\"", "-",
+           "random.vhost", "10.0.0.1", "", "GET /index.html HTTP/1.1", "200", "", NULL);
+
 
   app_shutdown();
   return 0;
