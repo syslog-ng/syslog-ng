@@ -1,4 +1,4 @@
-#include "parse-syslog.h"
+#include "syslog-format.h"
 #include "logmsg.h"
 #include "messages.h"
 #include "timeutils.h"
@@ -1032,9 +1032,9 @@ log_msg_parse_legacy(MsgFormatOptions *parse_options,
 }
 
 void
-log_parse_syslog(MsgFormatOptions *parse_options,
-                 const guchar *data, gint length,
-                 LogMessage *self)
+syslog_format_handler(MsgFormatOptions *parse_options,
+                      const guchar *data, gsize length,
+                      LogMessage *self)
 {
   gboolean success;
   gchar *p;
@@ -1066,7 +1066,7 @@ log_parse_syslog(MsgFormatOptions *parse_options,
       self->timestamps[LM_TS_STAMP] = self->timestamps[LM_TS_RECVD];
       log_msg_set_value(self, LM_V_HOST, "", 0);
 
-      g_snprintf(buf, sizeof(buf), "Error processing log message: %.*s", length, data);
+      g_snprintf(buf, sizeof(buf), "Error processing log message: %.*s", (gint) length, data);
       log_msg_set_value(self, LM_V_MESSAGE, buf, -1);
       log_msg_set_value(self, LM_V_PROGRAM, "syslog-ng", 9);
       g_snprintf(buf, sizeof(buf), "%d", (int) getpid());

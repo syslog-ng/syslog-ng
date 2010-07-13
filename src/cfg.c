@@ -266,6 +266,7 @@ cfg_set_version(GlobalConfig *self, gint version)
 
   if (self->version <= 0x0301 || atoi(cfg_args_get(self->lexer->globals, "autoload-compiled-modules")))
     {
+      plugin_load_module("syslogformat", self, NULL);
       /* auto load modules for old configurations */
       plugin_load_module("afsocket", self, NULL);
       plugin_load_module("affile", self, NULL);

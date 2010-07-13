@@ -818,6 +818,7 @@ AC_OUTPUT(dist.conf
           src/dbparser/Makefile
           src/csvparser/Makefile
           src/confgen/Makefile
+          src/syslogformat/Makefile
 	  scripts/Makefile
 	  scripts/update-patterndb
 	  doc/Makefile

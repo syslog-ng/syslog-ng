@@ -1,4 +1,4 @@
-SUBDIRS = . afsocket afsql afstreams affile afprog afuser dbparser csvparser confgen dummy
+SUBDIRS = . afsocket afsql afstreams affile afprog afuser dbparser csvparser confgen syslogformat dummy
 YFLAGS=@YFLAGS@
 
 export top_srcdir
@@ -26,7 +26,6 @@ libsyslog_ng_la_SOURCES = \
 	cfg.c cfg.h filter.c filter.h \
 	logmsg.c logmsg.h logstamp.c logstamp.h \
 	msg-format.c msg-format.h \
-	parse-syslog.c parse-syslog.h \
 	nvtable.c nvtable.h \
 	logpipe.c logpipe.h logsource.c logsource.h driver.c driver.h sgroup.c sgroup.h \
 	dgroup.c dgroup.h center.c center.h templates.c templates.h \
