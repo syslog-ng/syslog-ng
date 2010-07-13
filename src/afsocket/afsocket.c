@@ -180,7 +180,6 @@ afsocket_sc_stats_instance(AFSocketSourceConnection *self)
   return buf;
 }
 
-
 static gboolean
 afsocket_sc_init(LogPipe *s)
 {
@@ -208,23 +207,25 @@ afsocket_sc_init(LogPipe *s)
   if ((self->owner->flags & AFSOCKET_SYSLOG_PROTOCOL) == 0)
     {
       /* plain protocol */
-      proto = log_proto_plain_new_server(transport, self->owner->reader_options.padding,
-                   self->owner->reader_options.msg_size,
-                   (self->owner->flags & AFSOCKET_DGRAM) ? (LPPF_PKTTERM + LPPF_IGNORE_EOF) : 0);
+
+      if (self->owner->flags & AFSOCKET_DGRAM)
+        proto = log_proto_dgram_server_new(transport, self->owner->reader_options.msg_size, 0);
+      else if (self->owner->reader_options.padding)
+        proto = log_proto_record_server_new(transport, self->owner->reader_options.padding, 0);
+      else
+        proto = log_proto_text_server_new(transport, self->owner->reader_options.msg_size, 0);
     }
   else
     {
       if (self->owner->flags & AFSOCKET_DGRAM)
         {
           /* plain protocol */
-          proto = log_proto_plain_new_server(transport, self->owner->reader_options.padding,
-                       self->owner->reader_options.msg_size,
-                      (self->owner->flags & AFSOCKET_DGRAM) ? (LPPF_PKTTERM + LPPF_IGNORE_EOF) : 0);
+          proto = log_proto_dgram_server_new(transport, self->owner->reader_options.msg_size, 0);
         }
       else
         {
           /* framed protocol */
-          proto = log_proto_framed_new_server(transport, self->owner->reader_options.msg_size);
+          proto = log_proto_framed_server_new(transport, self->owner->reader_options.msg_size);
         }
     }
 
@@ -951,12 +952,16 @@ afsocket_dd_connected(AFSocketDestDriver *self)
     transport = log_transport_plain_new(self->fd, transport_flags);
 
   if (self->flags & AFSOCKET_SYSLOG_PROTOCOL)
-    if(self->flags & AFSOCKET_STREAM)
-      proto = log_proto_framed_new_client(transport);
-    else
-      proto = log_proto_plain_new_client(transport);
+    {
+      if (self->flags & AFSOCKET_STREAM)
+        proto = log_proto_framed_client_new(transport);
+      else
+        proto = log_proto_text_client_new(transport);
+    }
   else
-    proto = log_proto_plain_new_client(transport);
+    {
+      proto = log_proto_text_client_new(transport);
+    }
 
   log_writer_reopen(self->writer, proto);
   return TRUE;

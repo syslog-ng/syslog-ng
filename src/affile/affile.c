@@ -141,13 +141,35 @@ affile_sd_recover_state(LogPipe *s, GlobalConfig *cfg, LogProto *proto)
   if ((self->flags & AFFILE_PIPE))
     return;
 
-  if (!log_proto_file_reader_restart_with_state(proto, cfg->state, affile_sd_format_persist_name(self)))
+  if (!log_proto_restart_with_state(proto, cfg->state, affile_sd_format_persist_name(self)))
     {
       msg_error("Error converting persistent state from on-disk format, losing file position information",
                 evt_tag_str("filename", self->filename->str),
                 NULL);
       return;
     }
+}
+
+static LogProto *
+affile_sd_construct_proto(AFFileSourceDriver *self, LogTransport *transport)
+{
+  guint flags;
+  LogProto *proto;
+
+  flags = ((self->reader_options.follow_freq > 0)
+           ? LPBS_IGNORE_EOF
+           : LPBS_NOMREAD);
+
+  if (self->flags & AFFILE_PIPE)
+    {
+      if (self->reader_options.padding)
+        proto = log_proto_record_server_new(transport, self->reader_options.padding, flags);
+      else
+        proto = log_proto_text_server_new(transport, self->reader_options.msg_size, flags);
+    }
+  else
+    proto = log_proto_text_server_new(transport, self->reader_options.msg_size, LPBS_POS_TRACKING | flags);
+  return proto;
 }
 
 static void
@@ -176,13 +198,7 @@ affile_sd_notify(LogPipe *s, LogPipe *sender, gint notify_code, gpointer user_da
             transport = log_transport_plain_new(fd, 0);
             transport->timeout = 10;
 
-            proto = log_proto_file_reader_new(transport, self->filename->str,
-                                              self->reader_options.padding,
-                                              self->reader_options.msg_size,
-                                              ((self->reader_options.follow_freq > 0)
-                                              ? LPPF_IGNORE_EOF
-                                              : LPPF_NOMREAD)
-                                             );
+            proto = affile_sd_construct_proto(self, transport);
 
             self->reader = log_reader_new(proto);
 
@@ -256,19 +272,7 @@ affile_sd_init(LogPipe *s)
       transport = log_transport_plain_new(fd, 0);
       transport->timeout = 10;
 
-      if (self->flags & AFFILE_PIPE)
-        proto = log_proto_plain_new_server(transport, self->reader_options.padding,
-                                          self->reader_options.msg_size,
-                                          ((self->reader_options.follow_freq > 0)
-                                           ? LPPF_IGNORE_EOF
-                                           : LPPF_NOMREAD));
-      else
-        proto = log_proto_file_reader_new(transport, self->filename->str,
-                                          self->reader_options.padding,
-                                          self->reader_options.msg_size,
-                                          ((self->reader_options.follow_freq > 0)
-                                           ? LPPF_IGNORE_EOF
-                                           : LPPF_NOMREAD));
+      proto = affile_sd_construct_proto(self, transport);
       /* FIXME: we shouldn't use reader_options to store log protocol parameters */
       self->reader = log_reader_new(proto);
 
@@ -478,7 +482,7 @@ affile_dw_init(LogPipe *s)
           return FALSE;
         }
       write_flags = ((self->owner->flags & AFFILE_FSYNC) ? LTF_FSYNC : 0) | LTF_APPEND;
-      log_writer_reopen(self->writer, log_proto_plain_new_client(log_transport_plain_new(fd, write_flags)));
+      log_writer_reopen(self->writer, log_proto_text_client_new(log_transport_plain_new(fd, write_flags)));
     }
   else
     {

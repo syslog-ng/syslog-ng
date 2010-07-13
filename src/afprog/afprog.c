@@ -149,7 +149,7 @@ afprogram_sd_init(LogPipe *s)
 
       transport = log_transport_plain_new(fd, 0);
       transport->timeout = 10;
-      self->reader = log_reader_new(log_proto_plain_new_server(transport, self->reader_options.padding, self->reader_options.msg_size, 0));
+      self->reader = log_reader_new(log_proto_text_server_new(transport, self->reader_options.msg_size, 0));
       log_reader_set_options(self->reader, s, &self->reader_options, 0, SCS_PROGRAM, self->super.id, self->cmdline->str);
     }
   log_pipe_append(self->reader, &self->super.super);
@@ -278,7 +278,7 @@ afprogram_dd_init(LogPipe *s)
       self->writer = log_writer_new(LW_FORMAT_FILE);
       log_writer_set_options((LogWriter *) self->writer, s, &self->writer_options, 0, SCS_PROGRAM, self->super.id, self->cmdline->str);
     }
-  log_writer_reopen(self->writer, log_proto_plain_new_client(log_transport_plain_new(fd, 0)));
+  log_writer_reopen(self->writer, log_proto_text_client_new(log_transport_plain_new(fd, 0)));
   log_pipe_init(self->writer, NULL);
   log_pipe_append(&self->super.super, self->writer);
   return TRUE;

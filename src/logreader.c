@@ -351,10 +351,7 @@ log_reader_fetch_log(LogReader *self, LogProto *proto)
     }
   if (self->options->flags & LR_PREEMPT)
     {
-      /* NOTE: we assume that self->proto is a LogProtoFileReader */
-      LogProtoFileReader *s = (LogProtoFileReader*)self->proto;
-      
-      if (log_proto_file_reader_is_preemptable(s))
+      if (log_proto_is_preemptable(self->proto))
         {
           self->waiting_for_preemption = FALSE;
           log_pipe_notify(self->control, &self->super.super, NC_FILE_SKIP, self);

@@ -29,7 +29,7 @@
 #include "persist-state.h"
 
 typedef struct _LogProto LogProto;
-typedef struct _LogProtoPlainServer LogProtoPlainServer;
+typedef struct _LogProtoTextServer LogProtoTextServer;
 typedef struct _LogProtoFileReader LogProtoFileReader;
 
 typedef enum
@@ -46,6 +46,8 @@ struct _LogProto
   gchar *encoding;
   guint16 flags;
   gboolean (*prepare)(LogProto *s, gint *fd, GIOCondition *cond, gint *timeout);
+  gboolean (*is_preemptable)(LogProto *s);
+  gboolean (*restart_with_state)(LogProto *s, PersistState *state, const gchar *persist_name);
   LogProtoStatus (*fetch)(LogProto *s, const guchar **msg, gsize *msg_len, GSockAddr **sa, gboolean *may_read);
   void (*queued)(LogProto *s);
   LogProtoStatus (*post)(LogProto *s, guchar *msg, gsize msg_len, gboolean *consumed);
@@ -56,6 +58,22 @@ static inline gboolean
 log_proto_prepare(LogProto *s, gint *fd, GIOCondition *cond, gint *timeout)
 {
   return s->prepare(s, fd, cond, timeout);
+}
+
+static inline gboolean
+log_proto_is_preemptable(LogProto *s)
+{
+  if (s->is_preemptable)
+    return s->is_preemptable(s);
+  return TRUE;
+}
+
+static inline gboolean
+log_proto_restart_with_state(LogProto *s, PersistState *state, const gchar *persist_name)
+{
+  if (s->restart_with_state)
+    return s->restart_with_state(s, state, persist_name);
+  return FALSE;
 }
 
 static inline LogProtoStatus
@@ -89,24 +107,46 @@ void log_proto_free(LogProto *s);
 
 /* flags for log proto plain server */
 /* end-of-packet terminates log message (UDP sources) */
-#define LPPF_PKTTERM        0x0001
+
 /* issue a single read in a poll loop as /proc/kmsg does not support non-blocking mode */
-#define LPPF_NOMREAD        0x0002
-#define LPPF_IGNORE_EOF     0x0004
-#define LPPF_POS_TRACKING   0x0008
+#define LPBS_NOMREAD        0x0001
+/* don't exit when EOF is read */
+#define LPBS_IGNORE_EOF     0x0002
+/* track the current file position */
+#define LPBS_POS_TRACKING   0x0004
 
-/* */
-LogProto *log_proto_plain_new_server(LogTransport *transport, gint padding_size, gint max_msg_size, guint flags);
-LogProto *log_proto_plain_new_client(LogTransport *transport);
+#define LPRS_BINARY         0x0008
 
-/* file reader with persistent state */
-gboolean log_proto_file_reader_is_preemptable(LogProtoFileReader *s);
-gboolean log_proto_file_reader_restart_with_state(LogProto *s, PersistState *persist_state, const gchar *persist_name);
-LogProto *log_proto_file_reader_new(LogTransport *transport, const gchar *filename, gint padding_size, gint max_msg_size, guint flags);
+/*
+ * LogProtoRecordServer
+ *
+ * This class reads input in equally sized chunks. If LPRS_BINARY is
+ * specified the record is returned as a whole, if it is not, then the
+ * message lasts until the first EOL/NUL character.
+ */
+LogProto *log_proto_record_server_new(LogTransport *transport, gint record_size, guint flags);
 
+/*
+ * LogProtoDGramServer
+ *
+ * This class reads input as datagrams, each datagram is a separate
+ * message, regardless of embedded EOL/NUL characters.
+ */
+LogProto *log_proto_dgram_server_new(LogTransport *transport, gint max_msg_size, guint flags);
+
+/* LogProtoTextServer
+ *
+ * This class processes text files/streams. Each record is terminated via an EOL character.
+ */
+LogProto *log_proto_text_server_new(LogTransport *transport, gint max_msg_size, guint flags);
+
+/*
+ * LogProtoTextClient
+ */
+LogProto *log_proto_text_client_new(LogTransport *transport);
 
 /* framed */
-LogProto *log_proto_framed_new_client(LogTransport *transport);
-LogProto *log_proto_framed_new_server(LogTransport *transport, gint max_msg_size);
+LogProto *log_proto_framed_client_new(LogTransport *transport);
+LogProto *log_proto_framed_server_new(LogTransport *transport, gint max_msg_size);
 
 #endif
