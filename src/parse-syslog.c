@@ -828,7 +828,7 @@ log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, guint flag
  * Parse a message according to the latest syslog-protocol drafts.
  **/
 static gboolean
-log_msg_parse_syslog_proto(LogParseOptions *parse_options, const guchar *data, gint length, LogMessage *self)
+log_msg_parse_syslog_proto(MsgFormatOptions *parse_options, const guchar *data, gint length, LogMessage *self)
 {
   /**
    *	SYSLOG-MSG      = HEADER SP STRUCTURED-DATA [SP MSG]
@@ -937,7 +937,7 @@ log_msg_parse_syslog_proto(LogParseOptions *parse_options, const guchar *data, g
  * in @self. Parsing is affected by the bits set @flags argument.
  **/
 static gboolean
-log_msg_parse_legacy(LogParseOptions *parse_options,
+log_msg_parse_legacy(MsgFormatOptions *parse_options,
                      const guchar *data, gint length,
                      LogMessage *self)
 {
@@ -1032,7 +1032,7 @@ log_msg_parse_legacy(LogParseOptions *parse_options,
 }
 
 void
-log_parse_syslog(LogParseOptions *parse_options,
+log_parse_syslog(MsgFormatOptions *parse_options,
                  const guchar *data, gint length,
                  LogMessage *self)
 {
@@ -1095,77 +1095,5 @@ log_parse_syslog(LogParseOptions *parse_options,
           p++;
         }
 
-    }
-}
-
-void
-log_parse_syslog_options_defaults(LogParseOptions *options)
-{
-  options->flags = LP_EXPECT_HOSTNAME | LP_STORE_LEGACY_MSGHDR;
-  options->recv_time_zone = NULL;
-  options->recv_time_zone_info = NULL;
-  options->bad_hostname = NULL;
-  options->default_pri = 0xFFFF;
-}
-
-/*
- * NOTE: options_init and options_destroy are a bit weird, because their
- * invocation is not completely symmetric:
- *
- *   - init is called from driver init (e.g. affile_sd_init),
- *   - destroy is called from driver free method (e.g. affile_sd_free, NOT affile_sd_deinit)
- *
- * The reason:
- *   - when initializing the reloaded configuration fails for some reason,
- *     we have to fall back to the old configuration, thus we cannot dump
- *     the information stored in the Options structure.
- *
- * For the reasons above, init and destroy behave the following way:
- *
- *   - init is idempotent, it can be called multiple times without leaking
- *     memory, and without loss of information
- *   - destroy is only called once, when the options are indeed to be destroyed
- *
- * As init allocates memory, it has to take care about freeing memory
- * allocated by the previous init call (or it has to reuse those).
- *
- */
-void
-log_parse_syslog_options_init(LogParseOptions *options, GlobalConfig *cfg)
-{
-  gchar *recv_time_zone;
-  TimeZoneInfo *recv_time_zone_info;
-
-  recv_time_zone = options->recv_time_zone;
-  options->recv_time_zone = NULL;
-  recv_time_zone_info = options->recv_time_zone_info;
-  options->recv_time_zone_info = NULL;
-
-  log_parse_syslog_options_destroy(options);
-
-  options->recv_time_zone = recv_time_zone;
-  options->recv_time_zone_info = recv_time_zone_info;
-
-  if (cfg->bad_hostname_compiled)
-    options->bad_hostname = &cfg->bad_hostname;
-  if (options->recv_time_zone == NULL)
-    options->recv_time_zone = g_strdup(cfg->recv_time_zone);
-  if (options->recv_time_zone_info == NULL)
-    options->recv_time_zone_info = time_zone_info_new(options->recv_time_zone);
-
-}
-
-void
-log_parse_syslog_options_destroy(LogParseOptions *options)
-{
-  if (options->recv_time_zone)
-    {
-      g_free(options->recv_time_zone);
-      options->recv_time_zone = NULL;
-    }
-  if (options->recv_time_zone_info)
-    {
-      time_zone_info_free(options->recv_time_zone_info);
-      options->recv_time_zone_info = NULL;
     }
 }

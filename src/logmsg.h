@@ -30,7 +30,7 @@
 #include "serialize.h"
 #include "logstamp.h"
 #include "nvtable.h"
-#include "parse-syslog.h"
+#include "msg-format.h"
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -192,7 +192,7 @@ void log_msg_print_tags(LogMessage *self, GString *result);
 
 LogMessage *log_msg_new(const gchar *msg, gint length,
                         GSockAddr *saddr,
-                        LogParseOptions *parse_options);
+                        MsgFormatOptions *parse_options);
 LogMessage *log_msg_new_mark(void);
 LogMessage *log_msg_new_internal(gint prio, const gchar *msg);
 LogMessage *log_msg_new_empty(void);

@@ -43,7 +43,7 @@ typedef struct _LogReaderWatch LogReaderWatch;
 typedef struct _LogReaderOptions
 {
   LogSourceOptions super;
-  LogParseOptions parse_options;
+  MsgFormatOptions parse_options;
   guint32 flags;
   gint padding;
   gint msg_size;

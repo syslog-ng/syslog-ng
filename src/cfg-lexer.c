@@ -799,6 +799,8 @@ static const gchar *lexer_contexts[] =
   [LL_CONTEXT_BLOCK_DEF] = "block-def",
   [LL_CONTEXT_BLOCK_REF] = "block-ref",
   [LL_CONTEXT_BLOCK_CONTENT] = "block-content",
+  [LL_CONTEXT_PRAGMA] = "pragma",
+  [LL_CONTEXT_FORMAT] = "format",
 };
 
 gint

@@ -67,6 +67,7 @@
 %token LL_CONTEXT_BLOCK_REF           8
 %token LL_CONTEXT_BLOCK_CONTENT       9
 %token LL_CONTEXT_PRAGMA              10
+%token LL_CONTEXT_FORMAT              11
 
 /* statements */
 %token KW_SOURCE                      10000
@@ -155,6 +156,7 @@
 %token KW_RECV_TIME_ZONE              10202
 %token KW_SEND_TIME_ZONE              10203
 %token KW_LOCAL_TIME_ZONE             10204
+%token KW_FORMAT                      10205
 
 /* timers */
 %token KW_TIME_REOPEN                 10210
@@ -691,6 +693,7 @@ source_reader_option
 	| KW_KEEP_TIMESTAMP '(' yesno ')'	{ last_reader_options->super.keep_timestamp = $3; }
         | KW_ENCODING '(' string ')'		{ last_reader_options->text_encoding = g_strdup($3); free($3); }
         | KW_TAGS '(' string_list ')'           { log_reader_options_set_tags(last_reader_options, $3); }
+        | KW_FORMAT '(' string ')'              { last_reader_options->parse_options.format = g_strdup($3); free($3); }
 	| KW_DEFAULT_LEVEL '(' level_string ')'
 	  {
 	    if (last_reader_options->parse_options.default_pri == 0xFFFF)

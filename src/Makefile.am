@@ -24,7 +24,9 @@ syslog_ng_ctl_LDADD = libsyslog-ng.la
 libsyslog_ng_la_SOURCES = \
 	misc.c misc.h utils.c utils.h messages.c messages.h syslog-names.c syslog-names.h \
 	cfg.c cfg.h filter.c filter.h \
-	logmsg.c logmsg.h logstamp.c logstamp.h parse-syslog.c parse-syslog.h \
+	logmsg.c logmsg.h logstamp.c logstamp.h \
+	msg-format.c msg-format.h \
+	parse-syslog.c parse-syslog.h \
 	nvtable.c nvtable.h \
 	logpipe.c logpipe.h logsource.c logsource.h driver.c driver.h sgroup.c sgroup.h \
 	dgroup.c dgroup.h center.c center.h templates.c templates.h \

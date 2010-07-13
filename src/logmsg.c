@@ -30,7 +30,6 @@
 #include "nvtable.h"
 #include "stats.h"
 #include "templates.h"
-#include "parse-syslog.h"
 
 #include <sys/types.h>
 #include <time.h>
@@ -679,14 +678,14 @@ log_msg_init(LogMessage *self, GSockAddr *saddr)
 LogMessage *
 log_msg_new(const gchar *msg, gint length,
             GSockAddr *saddr,
-            LogParseOptions *parse_options)
+            MsgFormatOptions *parse_options)
 {
   LogMessage *self = g_new0(LogMessage, 1);
   
   log_msg_init(self, saddr);
   self->payload = nv_table_new(LM_V_MAX, 16, MAX(length * 2, 256));
 
-  log_parse_syslog(parse_options, (guchar *) msg, length, self);
+  parse_options->format_handler->parse(parse_options, (guchar *) msg, length, self);
   return self;
 }
 

@@ -255,7 +255,7 @@ log_reader_watch_new(LogReader *reader, LogProto *proto)
 
 
 static gboolean
-log_reader_handle_line(LogReader *self, const guchar *line, gint length, GSockAddr *saddr, guint parse_flags)
+log_reader_handle_line(LogReader *self, const guchar *line, gint length, GSockAddr *saddr)
 {
   LogMessage *m;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
@@ -290,7 +290,6 @@ log_reader_fetch_log(LogReader *self, LogProto *proto)
   GSockAddr *sa;
   gint msg_count = 0;
   gboolean may_read = TRUE;
-  guint parse_flags = 0;
 
   if (self->waiting_for_preemption)
     may_read = FALSE;
@@ -338,7 +337,7 @@ log_reader_fetch_log(LogReader *self, LogProto *proto)
         {
           msg_count++;
 
-          if (!log_reader_handle_line(self, msg, msg_len, sa, parse_flags))
+          if (!log_reader_handle_line(self, msg, msg_len, sa))
             {
               /* window is full, don't generate further messages */
               log_proto_queued(self->proto);
@@ -394,7 +393,13 @@ log_reader_init(LogPipe *s)
                     NULL);
           return FALSE;
         }
-      
+    }
+  if (!self->options->parse_options.format_handler)
+    {
+      msg_error("Unknown format plugin specified",
+                evt_tag_str("format", self->options->parse_options.format),
+                NULL);
+      return FALSE;
     }
   /* the source added below references this logreader, it will be unref'd
      when the source is destroyed */ 
@@ -491,7 +496,7 @@ void
 log_reader_options_defaults(LogReaderOptions *options)
 {
   log_source_options_defaults(&options->super);
-  log_parse_syslog_options_defaults(&options->parse_options);
+  msg_format_options_defaults(&options->parse_options);
   options->padding = 0;
   options->fetch_limit = -1;
   options->msg_size = -1;
@@ -537,7 +542,8 @@ log_reader_options_init(LogReaderOptions *options, GlobalConfig *cfg, const gcha
 {
   gchar *recv_time_zone;
   TimeZoneInfo *recv_time_zone_info;
-  gchar *host_override, *program_override, *text_encoding;
+  gchar *host_override, *program_override, *text_encoding, *format;
+  MsgFormatHandler *format_handler;
   GArray *tags;
 
   recv_time_zone = options->parse_options.recv_time_zone;
@@ -558,7 +564,15 @@ log_reader_options_init(LogReaderOptions *options, GlobalConfig *cfg, const gcha
   program_override = options->super.program_override;
   options->super.program_override = NULL;
 
+  format = options->parse_options.format;
+  options->parse_options.format = NULL;
+  format_handler = options->parse_options.format_handler;
+  options->parse_options.format_handler = NULL;
+
   log_reader_options_destroy(options);
+
+  options->parse_options.format = format;
+  options->parse_options.format_handler = format_handler;
 
   options->super.host_override = host_override;
   options->super.program_override = program_override;
@@ -567,9 +581,10 @@ log_reader_options_init(LogReaderOptions *options, GlobalConfig *cfg, const gcha
   options->parse_options.recv_time_zone_info = recv_time_zone_info;
   options->text_encoding = text_encoding;
   options->tags = tags;
+  options->parse_options.format = format;
 
   log_source_options_init(&options->super, cfg, group_name);
-  log_parse_syslog_options_init(&options->parse_options, cfg);
+  msg_format_options_init(&options->parse_options, cfg);
 
   if (options->fetch_limit == -1)
     options->fetch_limit = cfg->log_fetch_limit;
@@ -598,7 +613,7 @@ void
 log_reader_options_destroy(LogReaderOptions *options)
 {
   log_source_options_destroy(&options->super);
-  log_parse_syslog_options_destroy(&options->parse_options);
+  msg_format_options_destroy(&options->parse_options);
   if (options->text_encoding)
     {
       g_free(options->text_encoding);
