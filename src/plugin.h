@@ -33,13 +33,16 @@ struct _Plugin
 {
   gint type;
   const gchar *name;
-  void (*setup_context)(Plugin *self, GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name);
   CfgParser *parser;
+  void (*setup_context)(Plugin *self, GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name);
+  gpointer (*construct)(Plugin *self, GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name);
 };
 
 /* instantiate a new plugin */
 Plugin *plugin_find(GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name);
-gpointer plugin_new_instance(GlobalConfig *cfg, Plugin *plugin, YYLTYPE *yylloc);
+gpointer plugin_construct(Plugin *self, GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name);
+gpointer plugin_parse_config(Plugin *plugin, GlobalConfig *cfg, YYLTYPE *yylloc);
+
 
 /* plugin side API */
 void plugin_register(GlobalConfig *cfg, Plugin *p, gint number);

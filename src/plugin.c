@@ -39,13 +39,28 @@ plugin_find(GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name)
   return NULL;
 }
 
+/* construct a plugin without having a configuration file to parse */
 gpointer
-plugin_new_instance(GlobalConfig *cfg, Plugin *plugin, YYLTYPE *yylloc)
+plugin_construct(Plugin *self, GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name)
+{
+  g_assert(self->parser == NULL);
+  if (self->construct)
+    {
+      return self->construct(self, cfg, plugin_type, plugin_name);
+    }
+  return NULL;
+}
+
+/* construct a plugin instance by parsing a configuration file */
+gpointer
+plugin_parse_config(Plugin *self, GlobalConfig *cfg, YYLTYPE *yylloc)
 {
   gpointer instance = NULL;
 
+  g_assert(self->construct == NULL);
+
   /* make sure '_' and '-' are handled equally in plugin name */
-  if (!plugin->setup_context)
+  if (!self->setup_context)
     {
       CfgTokenBlock *block;
       YYSTYPE token;
@@ -54,10 +69,10 @@ plugin_new_instance(GlobalConfig *cfg, Plugin *plugin, YYLTYPE *yylloc)
 
       memset(&token, 0, sizeof(token));
       token.type = LL_TOKEN;
-      token.token = plugin->type;
+      token.token = self->type;
       cfg_token_block_add_token(block, &token);
-      cfg_lexer_push_context(cfg->lexer, plugin->parser->context, plugin->parser->keywords, plugin->parser->name);
-      cfg_lexer_lookup_keyword(cfg->lexer, &token, yylloc, plugin->name);
+      cfg_lexer_push_context(cfg->lexer, self->parser->context, self->parser->keywords, self->parser->name);
+      cfg_lexer_lookup_keyword(cfg->lexer, &token, yylloc, self->name);
       cfg_lexer_pop_context(cfg->lexer);
       cfg_token_block_add_token(block, &token);
 
@@ -65,12 +80,12 @@ plugin_new_instance(GlobalConfig *cfg, Plugin *plugin, YYLTYPE *yylloc)
     }
   else
     {
-      (plugin->setup_context)(plugin, cfg, plugin->type, plugin->name);
+      (self->setup_context)(self, cfg, self->type, self->name);
     }
 
-  if (!cfg_parser_parse(plugin->parser, cfg->lexer, &instance))
+  if (!cfg_parser_parse(self->parser, cfg->lexer, &instance))
     {
-      cfg_parser_cleanup(plugin->parser, instance);
+      cfg_parser_cleanup(self->parser, instance);
       instance = NULL;
     }
 

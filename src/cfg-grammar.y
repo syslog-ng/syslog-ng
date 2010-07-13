@@ -498,7 +498,7 @@ source_plugin
             p = plugin_find(configuration, context, $1);
             CHECK_ERROR(p, @1, "%s plugin %s not found", cfg_lexer_lookup_context_name_by_type(context), $1);
 
-            last_driver = (LogDriver *) plugin_new_instance(configuration, p, &@1);
+            last_driver = (LogDriver *) plugin_parse_config(p, configuration, &@1);
             free($1);
             if (!last_driver)
               {
@@ -531,7 +531,7 @@ dest_plugin
             p = plugin_find(configuration, context, $1);
             CHECK_ERROR(p, @1, "%s plugin %s not found", cfg_lexer_lookup_context_name_by_type(context), $1);
 
-            last_driver = (LogDriver *) plugin_new_instance(configuration, p, &@1);
+            last_driver = (LogDriver *) plugin_parse_config(p, configuration, &@1);
             free($1);
             if (!last_driver)
               {
