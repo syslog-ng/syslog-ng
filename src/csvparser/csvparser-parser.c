@@ -37,7 +37,9 @@ static CfgLexerKeyword csvparser_keywords[] =
 
 CfgParser csvparser_parser =
 {
+#if ENABLE_DEBUG
   .debug_flag = &csvparser_debug,
+#endif
   .name = "csvparser",
   .keywords = csvparser_keywords,
   .parse = (gint (*)(CfgLexer *, gpointer *)) csvparser_parse,

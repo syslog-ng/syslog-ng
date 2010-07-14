@@ -36,7 +36,9 @@ static CfgLexerKeyword afprog_keywords[] = {
 
 CfgParser afprog_parser =
 {
+#if ENABLE_DEBUG
   .debug_flag = &afprog_debug,
+#endif
   .name = "afprog",
   .keywords = afprog_keywords,
   .parse = (gint (*)(CfgLexer *, gpointer *)) afprog_parse,

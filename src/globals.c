@@ -25,5 +25,5 @@
 #include "syslog-ng.h"
 
 GlobalConfig *configuration;
-int yydebug;
+int cfg_parser_debug;
 gboolean seed_rng;

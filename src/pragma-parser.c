@@ -38,7 +38,9 @@ static CfgLexerKeyword pragma_keywords[] = {
 
 CfgParser pragma_parser =
 {
+#if ENABLE_DEBUG
   .debug_flag = &pragma_debug,
+#endif
   .name = "pragma",
   .context = LL_CONTEXT_PRAGMA,
   .keywords = pragma_keywords,

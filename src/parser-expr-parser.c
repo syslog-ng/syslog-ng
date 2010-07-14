@@ -35,7 +35,9 @@ static CfgLexerKeyword parser_expr_keywords[] = {
 
 CfgParser parser_expr_parser =
 {
+#if ENABLE_DEBUG
   .debug_flag = &parser_expr_debug,
+#endif
   .name = "parser expression",
   .context = LL_CONTEXT_PARSER,
   .keywords = parser_expr_keywords,

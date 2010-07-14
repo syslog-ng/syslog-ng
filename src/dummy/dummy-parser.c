@@ -36,7 +36,9 @@ static CfgLexerKeyword dummy_keywords[] = {
 
 CfgParser dummy_parser =
 {
+#if ENABLE_DEBUG
   .debug_flag = &dummy_debug,
+#endif
   .name = "dummy",
   .keywords = dummy_keywords,
   .parse = (int (*)(CfgLexer *lexer, gpointer *instance)) dummy_parse,

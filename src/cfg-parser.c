@@ -137,7 +137,9 @@ static CfgLexerKeyword main_keywords[] = {
 
 CfgParser main_parser =
 {
+#if ENABLE_DEBUG
   .debug_flag = &main_debug,
+#endif
   .name = "main",
   .context = LL_CONTEXT_ROOT,
   .keywords = main_keywords,

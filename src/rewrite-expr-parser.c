@@ -40,7 +40,9 @@ static CfgLexerKeyword rewrite_expr_keywords[] = {
 
 CfgParser rewrite_expr_parser =
 {
+#if ENABLE_DEBUG
   .debug_flag = &rewrite_expr_debug,
+#endif
   .name = "rewrite expression",
   .context = LL_CONTEXT_REWRITE,
   .keywords = rewrite_expr_keywords,

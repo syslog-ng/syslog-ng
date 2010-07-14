@@ -37,7 +37,9 @@ static CfgLexerKeyword dbparser_keywords[] =
 
 CfgParser dbparser_parser =
 {
+#if ENABLE_DEBUG
   .debug_flag = &dbparser_debug,
+#endif
   .name = "dbparser",
   .keywords = dbparser_keywords,
   .parse = (gint (*)(CfgLexer *, gpointer *)) dbparser_parse,

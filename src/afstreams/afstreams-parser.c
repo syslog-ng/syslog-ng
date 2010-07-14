@@ -40,7 +40,9 @@ static CfgLexerKeyword afstreams_keywords[] = {
 
 CfgParser afstreams_parser =
 {
+#if ENABLE_DEBUG
   .debug_flag = &afstreams_debug,
+#endif
   .name = "afstreams",
   .keywords = afstreams_keywords,
   .parse = (gint (*)(CfgLexer *, gpointer *)) afstreams_parse,

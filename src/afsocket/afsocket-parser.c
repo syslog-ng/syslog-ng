@@ -72,7 +72,9 @@ static CfgLexerKeyword afsocket_keywords[] = {
 
 CfgParser afsocket_parser =
 {
+#if ENABLE_DEBUG
   .debug_flag = &afsocket_debug,
+#endif
   .name = "afsocket",
   .keywords = afsocket_keywords,
   .parse = (gint (*)(CfgLexer *, gpointer *)) afsocket_parse,

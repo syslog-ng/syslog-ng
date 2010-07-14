@@ -44,7 +44,9 @@ static CfgLexerKeyword affile_keywords[] = {
 
 CfgParser affile_parser =
 {
+#if ENABLE_DEBUG
   .debug_flag = &affile_debug,
+#endif
   .name = "affile",
   .keywords = affile_keywords,
   .parse = (gint (*)(CfgLexer *, gpointer *)) affile_parse,

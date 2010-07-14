@@ -244,7 +244,7 @@ main_loop_run(GlobalConfig **cfg)
 }
 
 #ifdef YYDEBUG
-extern int yydebug;
+extern int cfg_parser_debug;
 #endif
 
 
@@ -258,7 +258,7 @@ static GOptionEntry syslogng_options[] =
   { "seed",              'S',         0, G_OPTION_ARG_NONE, &seed_rng, "Seed the RNG using ~/.rnd or $RANDFILE", NULL},
   { "control",           'c',         0, G_OPTION_ARG_STRING, &ctlfilename, "Set syslog-ng control socket, default=" PATH_CONTROL_SOCKET, "<ctlpath>" },
 #ifdef YYDEBUG
-  { "yydebug",           'y',         0, G_OPTION_ARG_NONE, &yydebug, "Enable configuration parser debugging", NULL },
+  { "yydebug",           'y',         0, G_OPTION_ARG_NONE, &cfg_parser_debug, "Enable configuration parser debugging", NULL },
 #endif
   { NULL },
 };

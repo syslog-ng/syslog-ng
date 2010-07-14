@@ -46,7 +46,9 @@ static CfgLexerKeyword filter_expr_keywords[] = {
 
 CfgParser filter_expr_parser =
 {
+#if ENABLE_DEBUG
   .debug_flag = &filter_expr_debug,
+#endif
   .name = "filter expression",
   .context = LL_CONTEXT_FILTER,
   .keywords = filter_expr_keywords,
