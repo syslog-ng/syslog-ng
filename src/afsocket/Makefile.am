@@ -25,9 +25,11 @@ EXTRA_DIST = $(BUILT_SOURCES) afsocket-grammar.ym
 
 if ENABLE_SSL
 install-exec-hook:
+	mkdir -p $(DESTDIR)/$(plugindir) || true
 	ln -sf libafsocket-tls.so $(DESTDIR)/$(plugindir)/libafsocket.so
 else
 install-exec-hook:
+	mkdir -p $(DESTDIR)/$(plugindir) || true
 	ln -sf libafsocket-notls.so $(DESTDIR)/$(plugindir)/libafsocket.so
 endif
 
