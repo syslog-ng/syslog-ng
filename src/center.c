@@ -369,7 +369,7 @@ log_center_init_pipe_line(LogCenter *self, LogConnection *conn, GlobalConfig *cf
           if (!ep->ref)
             {
               msg_error("Error in configuration, unresolved destination reference",
-                        evt_tag_str("filter", ep->name->str),
+                        evt_tag_str("destination", ep->name->str),
                         NULL);
               return FALSE;
             }
