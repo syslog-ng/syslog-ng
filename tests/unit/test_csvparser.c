@@ -3,6 +3,7 @@
 #include "apphook.h"
 #include "csvparser/csvparser.h"
 #include "misc.h"
+#include "cfg.h"
 
 #include <time.h>
 #include <string.h>
@@ -21,7 +22,8 @@
     }				\
   while (0)
 
-LogParseOptions parse_options;
+MsgFormatOptions parse_options;
+GlobalConfig dummy_cfg;
 
 int
 testcase(gchar *msg, guint parse_flags, gint max_columns, guint32 flags, gchar *delimiters, gchar *quotes, gchar *null_value, gchar *first_value, ...)
@@ -126,7 +128,9 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   putenv("TZ=MET-1METDST");
   tzset();
 
-  log_parse_syslog_options_defaults(&parse_options);
+  plugin_load_module("syslogformat", &dummy_cfg, NULL);
+  msg_format_options_defaults(&parse_options);
+  msg_format_options_init(&parse_options, &dummy_cfg);
 
   testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, -1, LOG_CSV_PARSER_ESCAPE_NONE, " ", NULL, NULL,
            "PTHREAD", "support", "initialized", NULL);

@@ -102,7 +102,11 @@ plugin_load_module(const gchar *module_name, GlobalConfig *cfg, CfgArgs *args)
   gchar **module_path_dirs;
   gint i;
 
-  module_path = cfg_args_get(cfg->lexer->globals, "module-path");
+  if (cfg->lexer)
+    module_path = cfg_args_get(cfg->lexer->globals, "module-path");
+  else
+    module_path = NULL;
+
   if (!module_path)
     module_path = PATH_PLUGINDIR;
 

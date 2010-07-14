@@ -6,6 +6,7 @@
 #include "apphook.h"
 #include "cfg.h"
 #include "timeutils.h"
+#include "plugin.h"
 
 #include <time.h>
 #include <stdlib.h>
@@ -14,7 +15,8 @@
 
 gboolean success = TRUE;
 gboolean verbose = FALSE;
-LogParseOptions parse_options;
+MsgFormatOptions parse_options;
+GlobalConfig dummy_cfg;
 
 LogMessage *
 init_msg(gchar *msg_string, gboolean use_syslog_protocol)
@@ -122,7 +124,12 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   putenv("TZ=MET-1METDST");
   tzset();
 
-  log_parse_syslog_options_defaults(&parse_options);
+  plugin_load_module("syslogformat", &dummy_cfg, NULL);
+  msg_format_options_defaults(&parse_options);
+  msg_format_options_init(&parse_options, &dummy_cfg);
+
+
+  msg_format_options_defaults(&parse_options);
   testcase(msg_syslog_str,NULL,TRUE,expeted_msg_syslog_str);
   testcase(msg_syslog_str,"$MSGID $MSG",TRUE,expeted_msg_syslog_str_t);
   testcase(msg_syslog_empty_str,NULL,TRUE,expected_msg_syslog_empty_str);

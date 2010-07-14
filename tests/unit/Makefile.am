@@ -1,6 +1,6 @@
 
 
-AM_CFLAGS = -I$(top_srcdir)/src
+AM_CFLAGS = -I$(top_srcdir)/src -I../../src
 LIBS = @DEPS_LIBS@
 LDADD = $(top_builddir)/src/libsyslog-ng.la
 

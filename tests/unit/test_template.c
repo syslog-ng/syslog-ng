@@ -13,7 +13,8 @@
 
 gboolean success = TRUE;
 gboolean verbose = FALSE;
-LogParseOptions parse_options;
+MsgFormatOptions parse_options;
+GlobalConfig dummy_cfg;
 
 void
 testcase(LogMessage *msg, gchar *template, gchar *expected)
@@ -51,7 +52,9 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   if (argc > 1)
     verbose = TRUE;
 
-  log_parse_syslog_options_defaults(&parse_options);
+  plugin_load_module("syslogformat", &dummy_cfg, NULL);
+  msg_format_options_defaults(&parse_options);
+  msg_format_options_init(&parse_options, &dummy_cfg);
 
   configuration = &dummy;
   dummy.version = 0x0201;

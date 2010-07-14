@@ -1,13 +1,15 @@
 #include "logqueue.h"
 #include "logpipe.h"
 #include "apphook.h"
+#include "plugin.h"
 
 #include <stdlib.h>
 #include <string.h>
 
 int acked_messages = 0;
 int fed_messages = 0;
-LogParseOptions parse_options;
+MsgFormatOptions parse_options;
+GlobalConfig dummy_cfg;
 
 #define OVERFLOW_SIZE 10000
 
@@ -208,7 +210,9 @@ main()
   putenv("TZ=MET-1METDST");
   tzset();
 
-  log_parse_syslog_options_defaults(&parse_options);
+  plugin_load_module("syslogformat", &dummy_cfg, NULL);
+  msg_format_options_defaults(&parse_options);
+  msg_format_options_init(&parse_options, &dummy_cfg);
 
   testcase_zero_diskbuf_alternating_send_acks();
   testcase_zero_diskbuf_and_normal_acks();

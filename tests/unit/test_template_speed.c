@@ -5,6 +5,7 @@
 #include "apphook.h"
 #include "cfg.h"
 #include "timeutils.h"
+#include "plugin.h"
 
 #include <time.h>
 #include <stdlib.h>
@@ -13,7 +14,8 @@
 
 gboolean success = TRUE;
 gboolean verbose = FALSE;
-LogParseOptions parse_options;
+MsgFormatOptions parse_options;
+GlobalConfig dummy_cfg;
 
 /* Beginning of Message character encoded in UTF8 */
 #define BOM "\xEF\xBB\xBF"
@@ -86,7 +88,9 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   putenv("TZ=MET-1METDST");
   tzset();
 
-  log_parse_syslog_options_defaults(&parse_options);
+  plugin_load_module("syslogformat", &dummy_cfg, NULL);
+  msg_format_options_defaults(&parse_options);
+  msg_format_options_init(&parse_options, &dummy_cfg);
 
   testcase("<155>2006-02-11T10:34:56.156+01:00 bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép", FALSE,
            "<$PRI>$DATE $HOST $MSGHDR$MSG\n");

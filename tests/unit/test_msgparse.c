@@ -4,6 +4,8 @@
 #include "apphook.h"
 #include "gsockaddr.h"
 #include "timeutils.h"
+#include "cfg.h"
+#include "plugin.h"
 
 #include <time.h>
 #include <string.h>
@@ -21,7 +23,8 @@
     }				\
   while (0)
 
-LogParseOptions parse_options;
+MsgFormatOptions parse_options;
+GlobalConfig dummy_cfg;
 
 unsigned long
 absolute_value(signed long diff)
@@ -140,7 +143,10 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   putenv("TZ=MET-1METDST");
   tzset();
 
-  log_parse_syslog_options_defaults(&parse_options);
+  plugin_load_module("syslogformat", &dummy_cfg, NULL);
+  msg_format_options_defaults(&parse_options);
+  msg_format_options_init(&parse_options, &dummy_cfg);
+
   testcase("<15> openvpn[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, NULL,
            15, 			// pri
            0, 0, 0,		// timestamp (sec/usec/zone)

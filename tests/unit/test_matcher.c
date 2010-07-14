@@ -1,10 +1,13 @@
 #include "logmatcher.h"
 #include "apphook.h"
+#include "plugin.h"
+#include "cfg.h"
 
 #include <stdlib.h>
 #include <string.h>
 
-LogParseOptions parse_options;
+MsgFormatOptions parse_options;
+GlobalConfig dummy_cfg;
 
 int
 testcase_match(const gchar *log, const gchar *pattern, gint matcher_flags, gboolean expected_result, LogMatcher *m)
@@ -89,7 +92,9 @@ main()
 {
   app_startup();
 
-  log_parse_syslog_options_defaults(&parse_options);
+  plugin_load_module("syslogformat", &dummy_cfg, NULL);
+  msg_format_options_defaults(&parse_options);
+  msg_format_options_init(&parse_options, &dummy_cfg);
 
   /* POSIX regexp */
   testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép", "árvíz", "favíz", "favíztűrőtükörfúrógép", 0, log_matcher_posix_re_new());
