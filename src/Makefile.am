@@ -1,4 +1,4 @@
-SUBDIRS = . afsocket afsql afstreams affile afprog afuser dbparser csvparser confgen syslogformat dummy
+SUBDIRS = . afsocket afsql afstreams affile afprog afuser dbparser csvparser confgen syslogformat pacctformat dummy
 YFLAGS=@YFLAGS@
 
 export top_srcdir

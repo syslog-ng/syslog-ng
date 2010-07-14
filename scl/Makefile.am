@@ -1,4 +1,4 @@
-SCL_SUBDIRS = system
+SCL_SUBDIRS = system pacct
 SCL_CONFIGS = scl.conf modules.conf syslog-ng.conf
 EXTRA_DIST = ./scl.conf $(SCL_SUBDIRS)
 
