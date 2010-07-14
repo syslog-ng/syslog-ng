@@ -3,6 +3,7 @@
 
 #include "syslog-ng.h"
 #include "timeutils.h"
+#include "logproto.h"
 
 #include <regex.h>
 
@@ -41,6 +42,7 @@ typedef struct _MsgFormatOptions
 
 struct _MsgFormatHandler
 {
+  LogProto *(*construct_proto)(MsgFormatOptions *options, LogTransport *transport, guint flags);
   void (*parse)(MsgFormatOptions *options, const guchar *data, gsize length, LogMessage *msg);
 };
 

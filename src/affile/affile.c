@@ -155,20 +155,22 @@ affile_sd_construct_proto(AFFileSourceDriver *self, LogTransport *transport)
 {
   guint flags;
   LogProto *proto;
+  MsgFormatHandler *handler;
 
-  flags = ((self->reader_options.follow_freq > 0)
-           ? LPBS_IGNORE_EOF
-           : LPBS_NOMREAD);
+  flags =
+    ((self->reader_options.follow_freq > 0)
+     ? LPBS_IGNORE_EOF
+     : LPBS_NOMREAD) |
+    ((self->flags & AFFILE_PIPE) ? 0 : LPBS_POS_TRACKING);
 
-  if (self->flags & AFFILE_PIPE)
-    {
-      if (self->reader_options.padding)
-        proto = log_proto_record_server_new(transport, self->reader_options.padding, flags);
-      else
-        proto = log_proto_text_server_new(transport, self->reader_options.msg_size, flags);
-    }
+  handler = self->reader_options.parse_options.format_handler;
+  if ((handler && handler->construct_proto))
+    proto = self->reader_options.parse_options.format_handler->construct_proto(&self->reader_options.parse_options, transport, flags);
+  else if (self->reader_options.padding)
+    proto = log_proto_record_server_new(transport, self->reader_options.padding, flags);
   else
-    proto = log_proto_text_server_new(transport, self->reader_options.msg_size, LPBS_POS_TRACKING | flags);
+    proto = log_proto_text_server_new(transport, self->reader_options.msg_size, flags);
+
   return proto;
 }
 
@@ -205,7 +207,6 @@ affile_sd_notify(LogPipe *s, LogPipe *sender, gint notify_code, gpointer user_da
             log_reader_set_options(self->reader, s, &self->reader_options, 1, SCS_FILE, self->super.id, self->filename->str);
             log_reader_set_follow_filename(self->reader, self->filename->str);
             log_reader_set_immediate_check(self->reader);
-
 
             log_pipe_append(self->reader, s);
             if (!log_pipe_init(self->reader, cfg))
