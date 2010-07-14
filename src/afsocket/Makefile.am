@@ -20,6 +20,8 @@ libafsocket_tls_la_CPPFLAGS = $(AM_CPPFLAGS) -DENABLE_SSL=1
 libafsocket_tls_la_LIBADD = $(OPENSSL_LIBS) $(ZLIB_LIBS) $(LIBNET_LIBS) $(LIBWRAP_LIBS)
 endif
 
+BUILT_SOURCES = afsocket-grammar.y afsocket-grammar.c afsocket-grammar.h
+EXTRA_DIST = $(BUILT_SOURCES) afsocket-grammar.ym
 
 if ENABLE_SSL
 install-exec-hook:

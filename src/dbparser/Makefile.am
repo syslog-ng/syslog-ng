@@ -15,5 +15,8 @@ bin_PROGRAMS = pdbtool
 pdbtool_SOURCES = pdbtool.c
 pdbtool_LDADD = ../libsyslog-ng.la libdbparser.la
 
+BUILT_SOURCES = dbparser-grammar.y dbparser-grammar.c dbparser-grammar.h
+EXTRA_DIST = $(BUILT_SOURCES) radix-find.c dbparser-grammar.ym
+
 
 include $(top_srcdir)/build/lex-rules.am

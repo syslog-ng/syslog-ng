@@ -9,4 +9,7 @@ libcsvparser_la_SOURCES = \
 
 libcsvparser_la_CPPFLAGS = $(AM_CPPFLAGS)
 
+BUILT_SOURCES = csvparser-grammar.y csvparser-grammar.c csvparser-grammar.h
+EXTRA_DIST = $(BUILT_SOURCES) csvparser-grammar.ym
+
 include $(top_srcdir)/build/lex-rules.am

@@ -12,6 +12,10 @@ libafsql_la_SOURCES = \
 libafsql_la_CPPFLAGS = $(AM_CPPFLAGS) -DENABLE_SQL=1
 libafsql_la_LIBADD = $(LIBDBI_LIBS)
 
+
 endif
+
+BUILT_SOURCES = afsql-grammar.y afsql-grammar.c afsql-grammar.h
+EXTRA_DIST = $(BUILT_SOURCES) afsql-grammar.ym
 
 include $(top_srcdir)/build/lex-rules.am

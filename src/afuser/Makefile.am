@@ -9,4 +9,7 @@ libafuser_la_SOURCES = \
 
 libafuser_la_CPPFLAGS = $(AM_CPPFLAGS)
 
+BUILT_SOURCES = afuser-grammar.y afuser-grammar.c afuser-grammar.h
+EXTRA_DIST = $(BUILT_SOURCES) afuser-grammar.ym
+
 include $(top_srcdir)/build/lex-rules.am

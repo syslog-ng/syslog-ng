@@ -60,9 +60,19 @@ libsyslog_ng_la_SOURCES = \
 	parser-expr-grammar.y parser-expr-parser.c parser-expr-parser.h \
 	rewrite-expr-grammar.y rewrite-expr-parser.c rewrite-expr-parser.h
 
-EXTRA_DIST = cfg-grammar.h cfg-grammar.c cfg-lex.h cfg-lex.c syslog-ng.h radix-find.c filter-expr-grammar.c filter-expr-gammar.h pragma-grammar.c pragma-grammar.y
 
-CLEANFILES = cfg-lex.c cfg-lex.h cfg-grammar.c cfg-grammar.h filter-expr-grammar.y filter-expr-grammar.c filter-expr-grammar.h pragma-grammar.y pragma-grammar.c pragma-grammar.h
+BUILT_SOURCES = cfg-lex.c cfg-lex.h cfg-grammar.c cfg-grammar.h \
+	filter-expr-grammar.y filter-expr-grammar.c filter-expr-grammar.h \
+	block-ref-grammar.y block-ref-grammar.c block-ref-grammar.h \
+	pragma-grammar.y pragma-grammar.h pragma-grammar.c \
+	parser-expr-grammar.y parser-expr-grammar.c parser-expr-grammar.h \
+	rewrite-expr-grammar.y rewrite-expr-grammar.c rewrite-expr-grammar.h
+
+EXTRA_DIST = $(BUILT_SOURCES) \
+	filter-expr-grammar.ym block-ref-grammar.ym pragma-grammar.ym parser-expr-grammar.ym rewrite-expr-grammar.ym \
+	syslog-ng.h
+
+CLEAN_FILES = $(BUILT_SOURCES)
 
 if ENABLE_ENV_WRAPPER
 

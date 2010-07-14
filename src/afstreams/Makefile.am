@@ -13,4 +13,7 @@ libafstreams_la_CPPFLAGS = $(AM_CPPFLAGS) -DENABLE_SUN_STREAMS=1
 
 endif
 
+BUILT_SOURCES = afstreams-grammar.y afstreams-grammar.c afstreams-grammar.h
+EXTRA_DIST = $(BUILT_SOURCES) afstreams-grammar.ym
+
 include $(top_srcdir)/build/lex-rules.am
