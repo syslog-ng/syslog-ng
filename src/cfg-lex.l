@@ -34,15 +34,18 @@
 #include <strings.h>
 
 
-#define YY_INPUT(buf, result, max_size)                                 \
-  do {                                                                  \
-    buf[0] = 0;                                                         \
-    if (fgets(buf, max_size, yyin))                                     \
+#define YY_INPUT(buf, result, max_size)                               \
+  do {                                                                \
+    buf[0] = 0;                                                       \
+    if (fgets(buf, max_size, yyin))                                   \
       {                                                                 \
         gchar *res;                                                     \
         gsize len = strlen(buf);                                        \
                                                                         \
-        res = cfg_lexer_subst_args(yyextra->globals, NULL, NULL, buf, &len); \
+        if (YY_START < block)                                           \
+          res = cfg_lexer_subst_args(yyextra->globals, NULL, NULL, buf, &len); \
+        else                                                            \
+          res = FALSE;                                                  \
         if (!res)                                                       \
           {                                                             \
             result = strlen(buf);                                       \
@@ -116,6 +119,7 @@ alpha		[a-zA-Z]
 alphanum	[a-zA-Z0-9]
 word	[^ \#'"\(\)\{\}\\;\n\t,|\.@:]
 
+/* block related states must be last, as we use this fact in YY_INPUT */
 %x string
 %x qstring
 %x block
