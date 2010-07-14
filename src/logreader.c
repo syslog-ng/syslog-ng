@@ -361,6 +361,8 @@ log_reader_fetch_log(LogReader *self, LogProto *proto)
           self->waiting_for_preemption = TRUE;
         }
     }
+  if (msg_count == self->options->fetch_limit)
+    self->immediate_check = TRUE;
   return TRUE;
 }
 
