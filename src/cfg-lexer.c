@@ -155,7 +155,7 @@ gchar *
 cfg_lexer_subst_args(CfgArgs *globals, CfgArgs *defs, CfgArgs *args, gchar *cptr, gsize *length)
 {
   gboolean backtick = FALSE;
-  gchar *p, *ref_start;
+  gchar *p, *ref_start = cptr;
   GString *result = g_string_sized_new(32);
 
   p = cptr;
