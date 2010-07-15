@@ -173,7 +173,7 @@ r_find_node_dbg(RNode *root, gchar *whole_key, gchar *key, gint keylen, GArray *
 #ifndef RADIX_DBG
                   ret = r_find_node(root->pchildren[j], whole_key, key + i + len, keylen - (i + len), matches);
 #else
-                  r_add_debug_info(dbg_list, root, parser_node, len, match->ofs + (key + i) - whole_key, match->len + len);
+                  r_add_debug_info(dbg_list, root, parser_node, len, match->ofs + (key + i) - whole_key, ((gint16) match->len) + len);
                   ret = r_find_node_dbg(root->pchildren[j], whole_key, key + i + len, keylen - (i + len), matches, dbg_list);
 #endif
                   if (matches)
@@ -193,7 +193,7 @@ r_find_node_dbg(RNode *root, gchar *whole_key, gchar *key, gint keylen, GArray *
                                */
                               match->type = parser_node->type;
                               match->ofs = match->ofs + (key + i) - whole_key;
-                              match->len = match->len + len;
+                              match->len = (gint16) match->len + len;
                               match->handle = parser_node->handle;
                             }
                           break;
