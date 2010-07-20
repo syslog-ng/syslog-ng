@@ -30,14 +30,14 @@
 #include "radix.h"
 #include "tags.h"
 #include "stats.h"
+#include "plugin.h"
+#include "filter-expr-parser.h"
 
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-
-#if HAVE_GETOPT_H
-#include <getopt.h>
-#endif
+#include <fcntl.h>
+#include <unistd.h>
 
 #define BOOL(x) ((x) ? "TRUE" : "FALSE")
 
@@ -273,6 +273,9 @@ static GOptionEntry merge_options[] =
 
 static gchar *match_program = NULL;
 static gchar *match_message = NULL;
+static gchar *match_file = NULL;
+static gchar *template_string = NULL;
+static gchar *filter_string = NULL;
 static gboolean debug_pattern = FALSE;
 static gboolean debug_pattern_parse = FALSE;
 
@@ -291,111 +294,227 @@ static gint
 pdbtool_match(int argc, char *argv[])
 {
   LogPatternDatabase patterndb;
-  LogMessage *msg = log_msg_new_empty();
   GSList *dbg_list = NULL, *p;
   RDebugInfo *dbg_info;
   gint i = 0, pos = 0;
   gint ret = 1;
   const gchar *name;
   gssize name_len;
+  MsgFormatOptions parse_options;
+  gboolean eof = FALSE;
+  const guchar *buf = NULL;
+  gsize buflen;
+  LogMessage *msg = NULL;
+  LogTemplate *template = NULL;
+  GString *output = NULL;
+  FilterExprNode *filter = NULL;
+  gboolean matched;
+  LogProto *proto = NULL;
+  gboolean may_read = TRUE;
+  GlobalConfig *cfg;
 
-  if (!match_message)
+  cfg = cfg_new(0x0302);
+  memset(&patterndb, 0x0, sizeof(LogPatternDatabase));
+  memset(&parse_options, 0, sizeof(parse_options));
+
+  if (!match_message && !match_file)
     {
-      fprintf(stderr, "No message is given\n");
+      fprintf(stderr, "Either -M or -f is required to specify which message to match\n");
       return ret;
     }
 
-  memset(&patterndb, 0x0, sizeof(LogPatternDatabase));
-
-  if (!log_pattern_database_load(&patterndb, patterndb_file))
-    return ret;
-
-  log_msg_set_value(msg, LM_V_MESSAGE, match_message, strlen(match_message));
-  if (match_program && match_program[0])
-    log_msg_set_value(msg, LM_V_PROGRAM, match_program, strlen(match_program));
-
-  log_db_parser_process_lookup(&patterndb, msg, debug_pattern ? &dbg_list : NULL);
-
-  if (debug_pattern && !debug_pattern_parse)
+  if (template_string)
     {
-      printf("Pattern matching part:\n");
-      p = dbg_list;
-      while (p)
-        {
-          dbg_info = p->data;
+      gchar *t;
 
-          pos += dbg_info->i;
+      t = g_strcompress(template_string);
+      template = log_template_new(NULL, t);
+      g_free(t);
 
-          if (dbg_info->pnode)
-            {
-              name = nv_registry_get_handle_name(logmsg_registry, dbg_info->pnode->handle, &name_len);
-
-              printf("%s@%s:%s=%.*s@%s",
-                    colors[COLOR_YELLOW],
-                    r_parser_type_name(dbg_info->pnode->type),
-                    name_len ? name : "",
-                    name_len ? dbg_info->match_len : 0,
-                    name_len ? match_message + dbg_info->match_off : "",
-                    no_color
-                  );
-            }
-          else if (dbg_info->i == dbg_info->node->keylen)
-            {
-              printf("%s%s%s", colors[COLOR_GREEN], dbg_info->node->key, no_color);
-            }
-          else
-            {
-              printf("%s%.*s%s", colors[COLOR_RED], dbg_info->i, dbg_info->node->key, no_color);
-            }
-
-          p = p->next;
-        }
-      printf("%s%s%s", colors[COLOR_BLUE], match_message + pos, no_color);
-
-      printf("\nMatching part:\n");
+      output = g_string_sized_new(512);
     }
 
-  if (debug_pattern && debug_pattern_parse)
-    printf("PDBTOOL_HEADER=i:len:key;keylen:match_off;match_len:parser_type:parser_name\n");
-
-  pos = 0;
-  while (dbg_list)
+  if (filter_string)
     {
-      /* NOTE: if i is smaller than node->keylen than we did not match the full node
-       * so matching failed on this node, we need to highlight it somehow
-       */
-      dbg_info = dbg_list->data;
-      if (debug_pattern_parse)
-        {
-          if (dbg_info->pnode)
-            name = nv_registry_get_handle_name(logmsg_registry, dbg_info->pnode->handle, &name_len);
+      CfgLexer *lexer;
 
-          printf("PDBTOOL_DEBUG=%d:%d:%d:%d:%d:%s:%s\n",
-                i++, dbg_info->i, dbg_info->node->keylen, dbg_info->match_off, dbg_info->match_len,
-                dbg_info->pnode ? r_parser_type_name(dbg_info->pnode->type) : "",
-                dbg_info->pnode && name_len ? name : ""
-                );
+      lexer = cfg_lexer_new_buffer(filter_string, strlen(filter_string));
+      if (!cfg_run_parser(cfg, lexer, &filter_expr_parser, (gpointer *) &filter))
+        {
+          fprintf(stderr, "Error parsing filter expression\n");
+          return 1;
+        }
+    }
+
+
+  plugin_load_module("syslogformat", cfg, NULL);
+  msg_format_options_defaults(&parse_options);
+  msg_format_options_init(&parse_options, cfg);
+
+  if (!log_pattern_database_load(&patterndb, patterndb_file))
+    {
+      goto error;
+    }
+
+  msg = log_msg_new_empty();
+  if (!match_file)
+    {
+      log_msg_set_value(msg, LM_V_MESSAGE, match_message, strlen(match_message));
+      if (match_program && match_program[0])
+        log_msg_set_value(msg, LM_V_PROGRAM, match_program, strlen(match_program));
+    }
+  else
+    {
+      LogTransport *transport;
+      gint fd;
+
+      if (strcmp(match_file, "-") == 0)
+        {
+          fd = 0;
         }
       else
         {
-          if (dbg_info->i == dbg_info->node->keylen || dbg_info->pnode)
-            printf("%s%.*s%s", dbg_info->pnode ? colors[COLOR_YELLOW] : colors[COLOR_GREEN], dbg_info->i, match_message + pos, no_color);
-          else
-            printf("%s%.*s%s", colors[COLOR_RED], dbg_info->i, match_message + pos, no_color);
-          pos += dbg_info->i;
-        }
 
-      g_free(dbg_info);
-      dbg_list = g_slist_delete_link(dbg_list, dbg_list);
+          fd = open(match_file, O_RDONLY);
+          if (fd < 0)
+            {
+              fprintf(stderr, "Error opening file to be processed: %s\n", g_strerror(errno));
+              goto error;
+            }
+        }
+      transport = log_transport_plain_new(fd, 0);
+      proto = log_proto_text_server_new(transport, 65536, 0);
+      eof = log_proto_fetch(proto, &buf, &buflen, NULL, &may_read) != LPS_SUCCESS;
     }
 
-  if (debug_pattern && !debug_pattern_parse)
-    printf("\nValues:\n");
+  while (!eof)
+    {
+      if (G_LIKELY(proto))
+        {
+          log_msg_clear(msg);
+          parse_options.format_handler->parse(&parse_options, buf, buflen, msg);
+        }
 
-  nv_table_foreach(msg->payload, logmsg_registry, pdbtool_match_values, &ret);
+      if (G_UNLIKELY(debug_pattern))
+        {
+          log_db_parser_process_lookup(&patterndb, msg, &dbg_list);
+          if (!debug_pattern_parse)
+            {
+              printf("Pattern matching part:\n");
+              p = dbg_list;
+              while (p)
+                {
+                  dbg_info = p->data;
 
+                  pos += dbg_info->i;
+
+                  if (dbg_info->pnode)
+                    {
+                      name = nv_registry_get_handle_name(logmsg_registry, dbg_info->pnode->handle, &name_len);
+
+                      printf("%s@%s:%s=%.*s@%s",
+                            colors[COLOR_YELLOW],
+                            r_parser_type_name(dbg_info->pnode->type),
+                            name_len ? name : "",
+                            name_len ? dbg_info->match_len : 0,
+                            name_len ? match_message + dbg_info->match_off : "",
+                            no_color
+                          );
+                    }
+                  else if (dbg_info->i == dbg_info->node->keylen)
+                    {
+                      printf("%s%s%s", colors[COLOR_GREEN], dbg_info->node->key, no_color);
+                    }
+                  else
+                    {
+                      printf("%s%.*s%s", colors[COLOR_RED], dbg_info->i, dbg_info->node->key, no_color);
+                    }
+
+                  p = p->next;
+                }
+              printf("%s%s%s", colors[COLOR_BLUE], match_message + pos, no_color);
+
+              printf("\nMatching part:\n");
+            }
+
+          if (debug_pattern_parse)
+            printf("PDBTOOL_HEADER=i:len:key;keylen:match_off;match_len:parser_type:parser_name\n");
+
+          pos = 0;
+          while (dbg_list)
+            {
+              /* NOTE: if i is smaller than node->keylen than we did not match the full node
+               * so matching failed on this node, we need to highlight it somehow
+               */
+              dbg_info = dbg_list->data;
+              if (debug_pattern_parse)
+                {
+                  if (dbg_info->pnode)
+                    name = nv_registry_get_handle_name(logmsg_registry, dbg_info->pnode->handle, &name_len);
+
+                  printf("PDBTOOL_DEBUG=%d:%d:%d:%d:%d:%s:%s\n",
+                        i++, dbg_info->i, dbg_info->node->keylen, dbg_info->match_off, dbg_info->match_len,
+                        dbg_info->pnode ? r_parser_type_name(dbg_info->pnode->type) : "",
+                        dbg_info->pnode && name_len ? name : ""
+                        );
+                }
+              else
+                {
+                  if (dbg_info->i == dbg_info->node->keylen || dbg_info->pnode)
+                    printf("%s%.*s%s", dbg_info->pnode ? colors[COLOR_YELLOW] : colors[COLOR_GREEN], dbg_info->i, match_message + pos, no_color);
+                  else
+                    printf("%s%.*s%s", colors[COLOR_RED], dbg_info->i, match_message + pos, no_color);
+                  pos += dbg_info->i;
+                }
+
+              g_free(dbg_info);
+              dbg_list = g_slist_delete_link(dbg_list, dbg_list);
+            }
+          dbg_info = NULL;
+          matched = TRUE;
+        }
+      else
+        {
+          log_db_parser_process_lookup(&patterndb, msg, NULL);
+          matched = !filter || filter_expr_eval(filter, msg);
+        }
+
+      if (matched)
+        {
+          if (G_UNLIKELY(!template))
+            {
+              if (debug_pattern && !debug_pattern_parse)
+                printf("\nValues:\n");
+
+              nv_table_foreach(msg->payload, logmsg_registry, pdbtool_match_values, &ret);
+            }
+          else
+            {
+              log_template_format(template, msg, 0, TS_FMT_BSD, NULL, 0, 0, output);
+              printf("%s", output->str);
+            }
+        }
+
+      if (G_LIKELY(proto))
+        {
+          eof = log_proto_fetch(proto, &buf, &buflen, NULL, &may_read) != LPS_SUCCESS;
+        }
+      else
+        {
+          eof = TRUE;
+        }
+    }
+ error:
+  if (proto)
+    log_proto_free(proto);
+  if (template)
+    log_template_unref(template);
+  g_string_free(output, TRUE);
   log_pattern_database_free(&patterndb);
   log_msg_unref(msg);
+  msg_format_options_destroy(&parse_options);
+  cfg_free(cfg);
+
   return ret;
 }
 
@@ -407,10 +526,16 @@ static GOptionEntry match_options[] =
     "Message to match as $MSG", "<message>" },
   { "debug-pattern", 'D', 0, G_OPTION_ARG_NONE, &debug_pattern,
     "Print debuging information on pattern matching", NULL },
-  { "csv-out", 'C', 0, G_OPTION_ARG_NONE, &debug_pattern_parse,
+  { "debug-csv", 'C', 0, G_OPTION_ARG_NONE, &debug_pattern_parse,
     "Output debuging information in parseable format", NULL },
   { "color-out", 'c', 0, G_OPTION_ARG_NONE, &color_out,
     "Color terminal output", NULL },
+  { "template", 'T', 0, G_OPTION_ARG_STRING, &template_string,
+    "Template string to be used to format the output", "template" },
+  { "file", 'f', 0, G_OPTION_ARG_STRING, &match_file,
+    "Read the messages from the file specified", NULL },
+  { "filter", 'F', 0, G_OPTION_ARG_STRING, &filter_string,
+    "Only print messages matching the specified syslog-ng filter", "expr" },
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
 };
 
@@ -558,7 +683,6 @@ main(int argc, char *argv[])
           g_option_context_set_summary(ctx, modes[mode].description);
           g_option_context_add_main_entries(ctx, modes[mode].options, NULL);
           g_option_context_add_main_entries(ctx, pdbtool_options, NULL);
-          msg_add_option_group(ctx);
           break;
         }
     }
