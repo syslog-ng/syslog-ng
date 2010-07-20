@@ -541,7 +541,7 @@ main(int argc, char *argv[])
 
   stats_init();
   log_tags_init();
-  log_msg_registry_init();
+  log_msg_global_init();
   log_db_parser_global_init();
   mode_string = pdbtool_mode(&argc, &argv);
   if (!mode_string)
@@ -585,6 +585,7 @@ main(int argc, char *argv[])
   ret = modes[mode].main(argc, argv);
   stats_destroy();
   log_tags_deinit();
+  log_msg_global_deinit();
 
   msg_deinit();
   return ret;
