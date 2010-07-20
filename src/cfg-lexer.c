@@ -729,6 +729,22 @@ cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
   return tok;
 }
 
+static void
+cfg_lexer_init(CfgLexer *self)
+{
+  self->globals = cfg_args_new();
+  CfgIncludeLevel *level;
+
+  _cfg_lexer_lex_init_extra(self, &self->state);
+  _cfg_lexer_restart(NULL, self->state);
+  self->string_buffer = g_string_sized_new(32);
+
+  level = &self->include_stack[0];
+  level->lloc.first_line = level->lloc.last_line = 1;
+  level->lloc.first_column = level->lloc.last_column = 1;
+  level->lloc.level = level;
+}
+
 CfgLexer *
 cfg_lexer_new(FILE *file, const gchar *filename, const gchar *preprocess_into)
 {
@@ -736,27 +752,46 @@ cfg_lexer_new(FILE *file, const gchar *filename, const gchar *preprocess_into)
   CfgIncludeLevel *level;
 
   self = g_new0(CfgLexer, 1);
+  cfg_lexer_init(self);
 
   if (preprocess_into)
-    self->preprocess_output = fopen(preprocess_into, "w");
-
-  self->globals = cfg_args_new();
-
-  _cfg_lexer_lex_init_extra(self, &self->state);
-  _cfg_lexer_restart(NULL, self->state);
-  self->string_buffer = g_string_sized_new(32);
-  if (self->preprocess_output)
     {
-      self->token_text = g_string_sized_new(32);
-      self->token_pretext = g_string_sized_new(32);
+      self->preprocess_output = fopen(preprocess_into, "w");
+
+      if (self->preprocess_output)
+        {
+          self->token_text = g_string_sized_new(32);
+          self->token_pretext = g_string_sized_new(32);
+        }
     }
 
   level = &self->include_stack[0];
-  level->lloc.first_line = level->lloc.last_line = 1;
-  level->lloc.first_column = level->lloc.last_column = 1;
-  level->lloc.level = level;
+  level->include_type = CFGI_FILE;
   level->name = g_strdup(filename);
   level->yybuf = _cfg_lexer__create_buffer(file, YY_BUF_SIZE, self->state);
+  _cfg_lexer__switch_to_buffer(level->yybuf, self->state);
+
+  return self;
+}
+
+CfgLexer *
+cfg_lexer_new_buffer(const gchar *buffer, gsize length)
+{
+  CfgLexer *self;
+  CfgIncludeLevel *level;
+
+  self = g_new0(CfgLexer, 1);
+  cfg_lexer_init(self);
+
+  level = &self->include_stack[0];
+  level->include_type = CFGI_BUFFER;
+  level->buffer.content = g_malloc(length + 2);
+  memcpy(level->buffer.content, buffer, length);
+  level->buffer.content[length] = 0;
+  level->buffer.content[length + 1] = 0;
+  level->buffer.content_length = length + 2;
+  level->name = g_strdup("<string>");
+  level->yybuf = _cfg_lexer__scan_buffer(level->buffer.content, level->buffer.content_length, self->state);
   _cfg_lexer__switch_to_buffer(level->yybuf, self->state);
 
   return self;
