@@ -573,11 +573,11 @@ cfg_lexer_generate_block(CfgLexer *self, gint context, const gchar *name, CfgBlo
 void
 cfg_lexer_unput_token(CfgLexer *self, YYSTYPE *yylval)
 {
- CfgTokenBlock *block;
+  CfgTokenBlock *block;
 
- block = cfg_token_block_new();
- cfg_token_block_add_token(block, yylval);
- cfg_lexer_inject_token_block(self, block);
+  block = cfg_token_block_new();
+  cfg_token_block_add_token(block, yylval);
+  cfg_lexer_inject_token_block(self, block);
 }
 
 int
@@ -845,6 +845,8 @@ cfg_lexer_free(CfgLexer *self)
       self->generators = g_list_remove_link(self->generators, self->generators);
     }
   cfg_args_free(self->globals);
+  g_list_foreach(self->token_blocks, (GFunc) cfg_token_block_free, NULL);
+  g_list_free(self->token_blocks);
   g_free(self);
 }
 
