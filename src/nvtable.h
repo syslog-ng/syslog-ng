@@ -187,6 +187,7 @@ gboolean nv_table_add_value_indirect(NVTable *self, NVHandle handle, const gchar
 gboolean nv_table_foreach(NVTable *self, NVRegistry *registry, NVTableForeachFunc func, gpointer user_data);
 gboolean nv_table_foreach_entry(NVTable *self, NVTableForeachEntryFunc func, gpointer user_data);
 
+void nv_table_clear(NVTable *self);
 NVTable *nv_table_new(gint num_static_values, gint num_dyn_values, gint init_length);
 NVTable *nv_table_realloc(NVTable *self);
 NVTable *nv_table_clone(NVTable *self, gint additional_space);

@@ -609,6 +609,14 @@ nv_table_foreach_entry(NVTable *self, NVTableForeachEntryFunc func, gpointer use
   return FALSE;
 }
 
+void
+nv_table_clear(NVTable *self)
+{
+  g_assert(self->ref_cnt == 1);
+  self->used = 0;
+  self->num_dyn_entries = 0;
+  memset(&self->static_entries[0], 0, self->num_static_entries * sizeof(self->static_entries[0]));
+}
 
 NVTable *
 nv_table_new(gint num_static_entries, gint num_dyn_values, gint init_length)

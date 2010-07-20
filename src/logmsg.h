@@ -191,6 +191,7 @@ gboolean log_msg_is_tag_by_name(LogMessage *self, const gchar *name);
 gboolean log_msg_tags_foreach(LogMessage *self, LogMessageTableForeachFunc callback, gpointer user_data);
 void log_msg_print_tags(LogMessage *self, GString *result);
 
+void log_msg_clear(LogMessage *self);
 LogMessage *log_msg_new(const gchar *msg, gint length,
                         GSockAddr *saddr,
                         MsgFormatOptions *parse_options);
