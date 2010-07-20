@@ -297,14 +297,11 @@ cfg_check_inline_template(GlobalConfig *cfg, const gchar *template_or_name)
 }
 
 GlobalConfig *
-cfg_new(gchar *fname, gboolean syntax_only, gchar *preprocess_into)
+cfg_new(gint version)
 {
   GlobalConfig *self = g_new0(GlobalConfig, 1);
-  FILE *cfg_file;
-  gint res;
 
-  self->filename = fname;
-  
+  self->version = version;
   self->sources = g_hash_table_new(g_str_hash, g_str_equal);
   self->destinations = g_hash_table_new(g_str_hash, g_str_equal);
   self->filters = g_hash_table_new(g_str_hash, g_str_equal);
@@ -349,26 +346,49 @@ cfg_new(gchar *fname, gboolean syntax_only, gchar *preprocess_into)
   self->keep_timestamp = TRUE;
   
   self->persist = persist_config_new();
- 
+  return self;
+}
+
+gboolean
+cfg_run_parser(GlobalConfig *self, CfgLexer *lexer, CfgParser *parser, gpointer *result)
+{
+  gboolean res;
+
   configuration = self;
- 
+  self->lexer = lexer;
+  cfg_args_set(self->lexer->globals, "syslog-ng-root", PATH_PREFIX);
+  cfg_args_set(self->lexer->globals, "module-path", PATH_PLUGINDIR);
+  cfg_args_set(self->lexer->globals, "include-path", PATH_SYSCONFDIR);
+  cfg_args_set(self->lexer->globals, "autoload-compiled-modules", "1");
+
+  res = cfg_parser_parse(parser, lexer, result);
+
+  cfg_lexer_free(lexer);
+  self->lexer = NULL;
+  configuration = NULL;
+  return res;
+}
+
+gboolean
+cfg_read_config(GlobalConfig *self, gchar *fname, gboolean syntax_only, gchar *preprocess_into)
+{
+  FILE *cfg_file;
+  gint res;
+
+  self->filename = fname;
+
   if ((cfg_file = fopen(fname, "r")) != NULL)
     {
-      self->lexer = cfg_lexer_new(cfg_file, fname, preprocess_into);
-      cfg_args_set(self->lexer->globals, "syslog-ng-root", PATH_PREFIX);
-      cfg_args_set(self->lexer->globals, "module-path", PATH_PLUGINDIR);
-      cfg_args_set(self->lexer->globals, "include-path", PATH_SYSCONFDIR);
-      cfg_args_set(self->lexer->globals, "autoload-compiled-modules", "1");
-      res = cfg_parser_parse(&main_parser, self->lexer, (gpointer *) &self);
-      cfg_lexer_free(self->lexer);
-      self->lexer = NULL;
+      CfgLexer *lexer;
 
+      lexer = cfg_lexer_new(cfg_file, fname, preprocess_into);
+      res = cfg_run_parser(self, lexer, &main_parser, (gpointer *) &self);
       fclose(cfg_file);
       if (res)
 	{
 	  /* successfully parsed */
 	  self->center = log_center_new();
-	  return self;
+	  return TRUE;
 	}
     }
   else
@@ -379,9 +399,7 @@ cfg_new(gchar *fname, gboolean syntax_only, gchar *preprocess_into)
                 NULL);
     }
   
-  cfg_free(self);
-  configuration = NULL;
-  return NULL;
+  return FALSE;
 }
 
 static gboolean
@@ -450,7 +468,6 @@ cfg_free(GlobalConfig *self)
   g_free(self->bad_hostname_re);
   g_free(self->dns_cache_hosts);
   g_free(self);
-  configuration = NULL;
 }
 
 static void 
@@ -488,13 +505,14 @@ cfg_reload_config(gchar *fname, GlobalConfig *cfg)
 {
   GlobalConfig *new_cfg;
 
-  new_cfg = cfg_new(fname, FALSE, NULL);
-  if (!new_cfg)
+  new_cfg = cfg_new(0);
+  if (!cfg_read_config(new_cfg, fname, FALSE, NULL))
     {
+      cfg_free(new_cfg);
       msg_error("Error parsing configuration",
                 evt_tag_str(EVT_TAG_FILENAME, fname),
                 NULL);
-      return cfg;
+      return NULL;
     }
   
   cfg_deinit(cfg);
@@ -519,6 +537,7 @@ cfg_reload_config(gchar *fname, GlobalConfig *cfg)
           kill(getpid(), SIGQUIT);
           g_assert_not_reached();
         }
+      cfg_free(new_cfg);
       return cfg;
     }
 }

@@ -269,12 +269,11 @@ static GOptionEntry syslogng_options[] =
 int 
 initial_init(GlobalConfig **cfg)
 {
-  
   app_startup();
   setup_signals();
 
-  *cfg = cfg_new(cfgfilename, syntax_only, preprocess_into);
-  if (!(*cfg))
+  *cfg = cfg_new(0);
+  if (!cfg_read_config(*cfg, cfgfilename, syntax_only, preprocess_into))
     {
       return 1;
     }

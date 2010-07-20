@@ -27,6 +27,7 @@
 
 #include "syslog-ng.h"
 #include "cfg-lexer.h"
+#include "cfg-parser.h"
 #include "persist-state.h"
 
 #include <sys/types.h>
@@ -141,7 +142,9 @@ gint cfg_tz_convert_value(gchar *convert);
 gint cfg_ts_format_value(gchar *format);
 
 void cfg_set_version(GlobalConfig *self, gint version);
-GlobalConfig *cfg_new(gchar *fname, gboolean syntax_only, gchar *preprocess_into);
+GlobalConfig *cfg_new(gint version);
+gboolean cfg_run_parser(GlobalConfig *self, CfgLexer *lexer, CfgParser *parser, gpointer *result);
+gboolean cfg_read_config(GlobalConfig *cfg, gchar *fname, gboolean syntax_only, gchar *preprocess_into);
 void cfg_free(GlobalConfig *self);
 gboolean cfg_init(GlobalConfig *cfg);
 gboolean cfg_deinit(GlobalConfig *cfg);
