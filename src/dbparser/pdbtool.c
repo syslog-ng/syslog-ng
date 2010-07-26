@@ -509,7 +509,8 @@ pdbtool_match(int argc, char *argv[])
     log_proto_free(proto);
   if (template)
     log_template_unref(template);
-  g_string_free(output, TRUE);
+  if (output)
+    g_string_free(output, TRUE);
   log_pattern_database_free(&patterndb);
   log_msg_unref(msg);
   msg_format_options_destroy(&parse_options);
