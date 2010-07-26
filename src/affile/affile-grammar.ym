@@ -35,6 +35,8 @@
 #include "syslog-names.h"
 #include "messages.h"
 
+#include <string.h>
+
 extern LogReaderOptions *last_reader_options;
 extern LogWriterOptions *last_writer_options;
 

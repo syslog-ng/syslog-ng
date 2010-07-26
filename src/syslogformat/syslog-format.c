@@ -30,6 +30,7 @@
 
 #include <regex.h>
 #include <ctype.h>
+#include <string.h>
 
 /*
  * Used in log_msg_parse_date(). Need to differentiate because Tru64's strptime

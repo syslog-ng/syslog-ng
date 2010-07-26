@@ -23,6 +23,8 @@
 
 #include "csvparser.h"
 
+#include <string.h>
+
 typedef struct _LogCSVParser
 {
   LogColumnParser super;

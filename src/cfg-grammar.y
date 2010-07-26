@@ -69,7 +69,7 @@
         if (errorfmt)                                                   \
           {                                                             \
             gchar __buf[256];                                           \
-            g_snprintf(__buf, sizeof(__buf), errorfmt, ## __VA_ARGS__); \
+            g_snprintf(__buf, sizeof(__buf), errorfmt ? errorfmt : "x", ## __VA_ARGS__); \
             yyerror(& (token), lexer, NULL, __buf);                     \
           }                                                             \
         YYERROR;                                                        \

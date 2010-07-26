@@ -35,6 +35,8 @@
 #include "logrewrite.h"
 #include "plugin.h"
 
+#include <string.h>
+
 LogRewrite *last_rewrite;
 
 }

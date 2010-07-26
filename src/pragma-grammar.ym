@@ -27,6 +27,8 @@
 #include "pragma-parser.h"
 #include "plugin.h"
 
+#include <string.h>
+
 }
 
 %name-prefix "pragma_"

@@ -26,6 +26,8 @@
 
 #include "block-ref-parser.h"
 
+#include <string.h>
+
 }
 
 %name-prefix "block_ref_"

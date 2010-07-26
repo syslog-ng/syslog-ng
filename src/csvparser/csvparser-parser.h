@@ -21,8 +21,8 @@
  *
  */
 
-#ifndef DBPARSER_PARSER_H_INCLUDED
-#define DBPARSER_PARSER_H_INCLUDED
+#ifndef CSVPARSER_PARSER_H_INCLUDED
+#define CSVPARSER_PARSER_H_INCLUDED
 
 #include "cfg-parser.h"
 #include "cfg-lexer.h"

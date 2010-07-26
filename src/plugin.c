@@ -28,6 +28,7 @@
 #include "cfg-lexer.h"
 
 #include <gmodule.h>
+#include <string.h>
 
 void
 plugin_register(GlobalConfig *cfg, Plugin *p, gint number)

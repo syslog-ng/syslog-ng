@@ -544,7 +544,7 @@ persist_state_load_v4(PersistState *self)
                   if (chain_ofs == 0 || chain_ofs > file_size)
                     {
                       msg_error("Persistent file format error, key block chain offset is too large or zero",
-                                evt_tag_printf("key_block", "%08lx", (gchar *) key_block - (gchar *) map),
+                                evt_tag_printf("key_block", "%08lx", (gulong) ((gchar *) key_block - (gchar *) map)),
                                 evt_tag_printf("key_size", "%d", key_size),
                                 evt_tag_int("ofs", chain_ofs),
                                 NULL);
