@@ -39,6 +39,19 @@ typedef struct _LogDBResult
   guint ref_cnt;
 } LogDBResult;
 
+/* this class encapsulates an example message in the pattern database
+ * used for testing rules and patterns. It contains the message with the
+ * program field and the expected rule_id with the expected name/value
+ * pairs. */
+
+typedef struct _LogDBExample
+{
+  LogDBResult *result;
+  gchar *message;
+  gchar *program;
+  GPtrArray *values;
+} LogDBExample;
+
 /*
  * This class encapsulates a set of program related rules in the
  * pattern database. Its instances are stored as "value" in the
@@ -58,8 +71,9 @@ typedef struct _LogPatternDatabase
 } LogPatternDatabase;
 
 LogDBResult *log_pattern_database_lookup(LogPatternDatabase *self, LogMessage *msg, GSList **dbg_list);
-gboolean log_pattern_database_load(LogPatternDatabase *self, const gchar *config);
+gboolean log_pattern_database_load(LogPatternDatabase *self, const gchar *config, GList **examples);
 void log_pattern_database_free(LogPatternDatabase *self);
 
+void log_pattern_example_free(gpointer s);
 
 #endif

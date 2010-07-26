@@ -61,7 +61,7 @@ log_db_parser_reload_database(LogDBParser *self)
   db_old = self->db;
   db_file_old = self->db_file;
 
-  if (!log_pattern_database_load(&self->db, self->db_file))
+  if (!log_pattern_database_load(&self->db, self->db_file, NULL))
     {
       msg_error("Error reloading pattern database, no automatic reload will be performed", NULL);
       /* restore the old object pointers */

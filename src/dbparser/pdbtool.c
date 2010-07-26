@@ -351,7 +351,7 @@ pdbtool_match(int argc, char *argv[])
   msg_format_options_defaults(&parse_options);
   msg_format_options_init(&parse_options, cfg);
 
-  if (!log_pattern_database_load(&patterndb, patterndb_file))
+  if (!log_pattern_database_load(&patterndb, patterndb_file, NULL))
     {
       goto error;
     }
@@ -539,6 +539,76 @@ static GOptionEntry match_options[] =
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
 };
 
+static gboolean
+pdbtool_test_value(LogMessage *msg, const gchar *name, const gchar *test_value)
+{
+  const gchar *value;
+  gssize value_len;
+  gboolean ret = TRUE;
+
+  value = log_msg_get_value(msg, log_msg_get_value_handle(name), &value_len);
+  if (!(value && strncmp(value, test_value, value_len) == 0 && value_len == strlen(test_value)))
+    {
+      if (value)
+        printf(" Wrong match name='%s', value='%.*s', expected='%s'\n", name, value_len, value, test_value);
+      else
+        printf(" No value to match name='%s', expected='%s'\n", name, test_value);
+
+      ret = FALSE;
+    }
+  else if (verbose_flag)
+    printf(" Match name='%s', value='%.*s', expected='%s'\n", name, value_len, value, test_value);
+
+  return ret;
+}
+
+static gint
+pdbtool_test(int argc, char *argv[])
+{
+  LogPatternDatabase patterndb;
+  LogDBExample *example;
+  LogMessage *msg;
+  GList *examples = NULL;
+  gint i, ret = 1;
+
+  memset(&patterndb, 0x0, sizeof(LogPatternDatabase));
+
+  if (!log_pattern_database_load(&patterndb, patterndb_file, &examples))
+    return 1;
+
+  while (examples)
+    {
+      example = examples->data;
+
+      msg = log_msg_new_empty();
+      log_msg_set_value(msg, LM_V_MESSAGE, example->message, strlen(example->message));
+      if (example->program && example->program[0])
+        log_msg_set_value(msg, LM_V_PROGRAM, example->program, strlen(example->program));
+
+      printf("Testing message program='%s' message='%s'\n", example->program, example->message);
+      log_db_parser_process_lookup(&patterndb, msg, NULL);
+
+      pdbtool_test_value(msg, ".classifier.rule_id", example->result->rule_id);
+
+      for (i = 0; i < example->values->len; i++)
+        {
+          gchar **nv = g_ptr_array_index(example->values, i);
+          ret = pdbtool_test_value(msg, nv[0], nv[1]) && ret;
+        }
+
+      log_msg_unref(msg);
+      examples = g_list_delete_link(examples, examples);
+    }
+
+  log_pattern_database_free(&patterndb);
+  return !ret;
+}
+
+static GOptionEntry test_options[] =
+{
+  { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
+};
+
 static gboolean dump_program_tree = FALSE;
 
 void
@@ -577,7 +647,7 @@ pdbtool_dump(int argc, char *argv[])
 
  memset(&patterndb, 0x0, sizeof(LogPatternDatabase));
 
- if (!log_pattern_database_load(&patterndb, patterndb_file))
+ if (!log_pattern_database_load(&patterndb, patterndb_file, NULL))
    return 1;
 
  if (dump_program_tree)
@@ -588,6 +658,8 @@ pdbtool_dump(int argc, char *argv[])
      if (ruleset && ruleset->value)
        pdbtool_walk_tree(((LogDBProgram *)ruleset->value)->rules, 0, FALSE);
    }
+
+ log_pattern_database_free(&patterndb);
 
  return 0;
 }
@@ -640,6 +712,7 @@ static struct
   { "match", match_options, "Match a message against the pattern database", pdbtool_match },
   { "dump", dump_options, "Dump pattern datebase tree", pdbtool_dump },
   { "merge", merge_options, "Merge pattern databases", pdbtool_merge },
+  { "test", test_options, "Test pattern databases", pdbtool_test },
   { NULL, NULL },
 };
 

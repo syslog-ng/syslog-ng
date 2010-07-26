@@ -84,6 +84,38 @@ log_db_result_unref(void *s)
     }
 }
 
+void
+log_pattern_example_free(gpointer s)
+{
+  LogDBExample *self = (LogDBExample *) s;
+  gint i;
+
+  if (self->result)
+    log_db_result_unref(self->result);
+
+  if (self->message)
+    g_free(self->message);
+
+  if (self->program)
+    g_free(self->program);
+
+  if (self->values)
+    {
+      for (i = 0; i < self->values->len; i++)
+        {
+          gchar **nv = g_ptr_array_index(self->values, i);
+
+          g_free(nv[0]);
+          g_free(nv[1]);
+          g_free(nv);
+        }
+
+      g_ptr_array_free(self->values, TRUE);
+    }
+
+  g_free(self);
+}
+
 static gchar *
 log_db_result_name(gpointer s)
 {
@@ -130,11 +162,18 @@ typedef struct _LogDBParserState
   LogDBProgram *current_program;
   LogDBProgram *root_program;
   LogDBResult *current_result;
+  LogDBExample *current_example;
   gboolean in_pattern;
   gboolean in_ruleset;
   gboolean in_rule;
   gboolean in_tag;
+  gboolean in_example;
+  gboolean in_test_msg;
+  gboolean in_test_value;
+  gboolean load_examples;
+  GList *examples;
   gchar *value_name;
+  gchar *test_value_name;
 } LogDBParserState;
 
 void
@@ -155,6 +194,49 @@ log_classifier_xml_start_element(GMarkupParseContext *context, const gchar *elem
         }
 
       state->in_ruleset = TRUE;
+    }
+  else if (strcmp(element_name, "example") == 0)
+    {
+      if (state->in_example || !state->in_rule)
+        {
+          *error = g_error_new(1, 1, "Unexpected <example> element");
+          return;
+        }
+
+      state->in_example = TRUE;
+      state->current_example = g_new0(LogDBExample, 1);
+      state->current_example->result = log_db_result_ref(state->current_result);
+    }
+  else if (strcmp(element_name, "test_message") == 0)
+    {
+      if (state->in_test_msg || !state->in_example)
+        {
+          *error = g_error_new(1, 1, "Unexpected <test_message> element");
+          return;
+        }
+
+      state->in_test_msg = TRUE;
+
+      for (i = 0; attribute_names[i]; i++)
+        {
+          if (strcmp(attribute_names[i], "program") == 0)
+            state->current_example->program = g_strdup(attribute_values[i]);
+        }
+    }
+  else if (strcmp(element_name, "test_value") == 0)
+    {
+      if (state->in_test_value || !state->in_example)
+        {
+          *error = g_error_new(1, 1, "Unexpected <test_value> element");
+          return;
+        }
+
+      state->in_test_value = TRUE;
+
+      if (attribute_names[0] && g_str_equal(attribute_names[0], "name"))
+        state->test_value_name = g_strdup(attribute_values[0]);
+      else
+        msg_error("No name is specified for test_value", evt_tag_str("rule_id", state->current_result->rule_id), NULL);
     }
   else if (strcmp(element_name, "rule") == 0)
     {
@@ -229,6 +311,48 @@ log_classifier_xml_end_element(GMarkupParseContext *context, const gchar *elemen
       state->current_program = NULL;
       state->in_ruleset = FALSE;
     }
+  else if (strcmp(element_name, "example") == 0)
+    {
+      if (!state->in_example)
+        {
+          *error = g_error_new(1, 0, "Unexpected </example> element");
+          return;
+        }
+
+      state->in_example = FALSE;
+
+      if (state->load_examples)
+        state->examples = g_list_prepend(state->examples, state->current_example);
+      else
+        log_pattern_example_free(state->current_example);
+
+      state->current_example = NULL;
+    }
+  else if (strcmp(element_name, "test_message") == 0)
+    {
+      if (!state->in_test_msg)
+        {
+          *error = g_error_new(1, 0, "Unexpected </test_message> element");
+          return;
+        }
+
+      state->in_test_msg = FALSE;
+    }
+  else if (strcmp(element_name, "test_value") == 0)
+    {
+      if (!state->in_test_value)
+        {
+          *error = g_error_new(1, 0, "Unexpected </test_value> element");
+          return;
+        }
+
+      state->in_test_value = FALSE;
+
+      if (state->test_value_name)
+        g_free(state->test_value_name);
+
+      state->test_value_name = NULL;
+    }
   else if (strcmp(element_name, "rule") == 0)
     {
       if (!state->in_rule)
@@ -265,6 +389,7 @@ log_classifier_xml_text(GMarkupParseContext *context, const gchar *text, gsize t
   GError *err = NULL;
   RNode *node = NULL;
   gchar *txt;
+  gchar **nv;
   guint tag;
 
   if (state->in_pattern)
@@ -321,6 +446,22 @@ log_classifier_xml_text(GMarkupParseContext *context, const gchar *text, gsize t
         }
       else
         g_ptr_array_add(state->current_result->values, value);
+    }
+  else if (state->in_test_msg)
+    {
+      state->current_example->message = g_strdup(text);
+    }
+  else if (state->in_test_value)
+    {
+      if (!state->current_example->values)
+        state->current_example->values = g_ptr_array_new();
+
+      nv = g_new(gchar *, 2);
+      nv[0] = state->test_value_name;
+      state->test_value_name = NULL;
+      nv[1] = g_strdup(text);
+
+      g_ptr_array_add(state->current_example->values, nv);
     }
 }
 
@@ -400,7 +541,7 @@ log_pattern_database_lookup(LogPatternDatabase *self, LogMessage *msg, GSList **
 }
 
 gboolean
-log_pattern_database_load(LogPatternDatabase *self, const gchar *config)
+log_pattern_database_load(LogPatternDatabase *self, const gchar *config, GList **examples)
 {
   LogDBParserState state;
   GMarkupParseContext *parse_ctx = NULL;
@@ -419,15 +560,11 @@ log_pattern_database_load(LogPatternDatabase *self, const gchar *config)
       goto error;
     }
 
+  memset(&state, 0x0, sizeof(state));
+
   state.db = self;
-  state.in_pattern = FALSE;
-  state.in_tag = FALSE;
-  state.in_rule = FALSE;
-  state.in_ruleset = FALSE;
-  state.value_name = NULL;
-  state.current_result = NULL;
-  state.current_program = NULL;
   state.root_program = log_db_program_new();
+  state.load_examples = !!examples;
 
   self->programs = r_new_node("", state.root_program);
 
@@ -455,6 +592,9 @@ log_pattern_database_load(LogPatternDatabase *self, const gchar *config)
                 NULL);
       goto error;
     }
+
+  if (state.load_examples)
+    *examples = state.examples;
 
   success = TRUE;
 
