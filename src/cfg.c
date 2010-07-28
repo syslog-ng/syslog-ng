@@ -45,6 +45,9 @@
 
 /* PersistentConfig */
 
+#define CFG_CURRENT_VERSION 0x0302
+#define CFG_CURRENT_VERSION_STRING "3.2"
+
 struct _PersistConfig
 {
   GHashTable *keys;
@@ -252,10 +255,16 @@ void
 cfg_set_version(GlobalConfig *self, gint version)
 {
   self->version = version;
-  if (self->version < 0x0300)
+  if (self->version < CFG_CURRENT_VERSION)
     {
-      msg_warning("Configuration file format is not current, please update it to use the 3.0 format as some constructs might operate inefficiently",
+      msg_warning("WARNING: Configuration file format is too old, please update it to use the " CFG_CURRENT_VERSION_STRING " format as some constructs might operate inefficiently",
                   NULL);
+    }
+  else if (self->version > CFG_CURRENT_VERSION)
+    {
+      msg_warning("WARNING: Configuration file format is newer than the current version, please specify the current version number (" CFG_CURRENT_VERSION_STRING ") in the @version directive",
+                  NULL);
+      self->version = CFG_CURRENT_VERSION;
     }
 
   if (self->version < 0x0300)
