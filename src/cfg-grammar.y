@@ -650,8 +650,8 @@ dnsmode
 
 string_or_number
         : string                                { $$ = $1; }
-        | LL_NUMBER                             { char buf[32]; snprintf(buf, sizeof(buf), "%" G_GINT64_FORMAT, $1); $$ = strdup(buf); }
-        | LL_FLOAT                              { char buf[32]; snprintf(buf, sizeof(buf), "%.2f" , $1); $$ = strdup(buf); }
+        | LL_NUMBER                             { $$ = strdup(lexer->token_text->str); }
+        | LL_FLOAT                              { $$ = strdup(lexer->token_text->str); }
         ;
 
 string_list

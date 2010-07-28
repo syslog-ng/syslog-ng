@@ -626,11 +626,8 @@ cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
 
   yylval->type = 0;
 
-  if (self->token_text)
-    {
-      g_string_truncate(self->token_text, 0);
-      g_string_truncate(self->token_pretext, 0);
-    }
+  g_string_truncate(self->token_text, 0);
+  g_string_truncate(self->token_pretext, 0);
 
   tok = _cfg_lexer_lex(yylval, yylloc, self->state);
   if (yylval->type == 0)
@@ -738,6 +735,8 @@ cfg_lexer_init(CfgLexer *self)
   _cfg_lexer_lex_init_extra(self, &self->state);
   _cfg_lexer_restart(NULL, self->state);
   self->string_buffer = g_string_sized_new(32);
+  self->token_text = g_string_sized_new(32);
+  self->token_pretext = g_string_sized_new(32);
 
   level = &self->include_stack[0];
   level->lloc.first_line = level->lloc.last_line = 1;
@@ -757,12 +756,6 @@ cfg_lexer_new(FILE *file, const gchar *filename, const gchar *preprocess_into)
   if (preprocess_into)
     {
       self->preprocess_output = fopen(preprocess_into, "w");
-
-      if (self->preprocess_output)
-        {
-          self->token_text = g_string_sized_new(32);
-          self->token_pretext = g_string_sized_new(32);
-        }
     }
 
   level = &self->include_stack[0];
