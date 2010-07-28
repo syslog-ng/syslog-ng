@@ -40,7 +40,8 @@
 #include <dbi/dbi.h>
 #include <string.h>
 
-#define AFSQL_DDF_EXPLICIT_COMMITS 0x0001
+#define AFSQL_DDF_EXPLICIT_COMMITS   0x0001
+#define AFSQL_DDF_DONT_CREATE_TABLES 0x0002
 
 typedef struct _AFSqlField
 {
@@ -408,6 +409,9 @@ afsql_dd_validate_table(AFSqlDestDriver *self, gchar *table)
   dbi_result db_res;
   gboolean success = FALSE;
   gint i;
+
+  if (self->flags & AFSQL_DDF_DONT_CREATE_TABLES)
+    return TRUE;
 
   afsql_dd_check_sql_identifier(table, TRUE);
 
@@ -1190,6 +1194,8 @@ afsql_dd_lookup_flag(const gchar *flag)
 {
   if (strcmp(flag, "explicit-commits") == 0 || strcmp(flag, "explicit_commits") == 0)
     return AFSQL_DDF_EXPLICIT_COMMITS;
+  else if (strcmp(flag, "dont-create-tables") == 0 || strcmp(flag, "dont_create_tables") == 0)
+    return AFSQL_DDF_DONT_CREATE_TABLES;
   else
     msg_warning("Unknown SQL flag",
                 evt_tag_str("flag", flag),
