@@ -31,6 +31,12 @@
 
 /* rewrite */
 
+void
+log_rewrite_set_condition(LogRewrite *self, FilterExprNode *condition)
+{
+  self->condition = condition;
+}
+
 static void
 log_rewrite_init(LogRewrite *self)
 {
@@ -40,6 +46,8 @@ log_rewrite_init(LogRewrite *self)
 void
 log_rewrite_free(LogRewrite *self)
 {
+  if (self->condition)
+    filter_expr_free(self->condition);
   self->free_fn(self);
   g_free(self);
 }
@@ -201,6 +209,13 @@ log_rewrite_rule_call_item(gpointer item, gpointer user_data)
   gssize length;
   const gchar *value;
 
+  if (r->condition && !filter_expr_eval(r->condition, msg))
+    {
+      msg_debug("Rewrite condition unmatched, skipping rewrite",
+                evt_tag_str("value", log_msg_get_value_name(r->value_handle, NULL)),
+                NULL);
+      return;
+    }
   r->process(r, msg);
   if (G_UNLIKELY(debug_flag))
     {

@@ -30,17 +30,20 @@
 #include "logprocess.h"
 #include "templates.h"
 #include "logmatcher.h"
+#include "filter.h"
 
 typedef struct _LogRewrite LogRewrite;
 
 struct _LogRewrite
 {
   NVHandle value_handle;
+  FilterExprNode *condition;
   void (*process)(LogRewrite *s, LogMessage *msg);
   void (*free_fn)(LogRewrite *s);
 };
 
 /* LogRewrite, abstract class */
+void log_rewrite_set_condition(LogRewrite *s, FilterExprNode *condition);
 void log_rewrite_free(LogRewrite *self);
 
 

@@ -34,6 +34,8 @@
 #include "rewrite-expr-grammar.h"
 #include "logrewrite.h"
 #include "plugin.h"
+#include "filter.h"
+#include "filter-expr-parser.h"
 
 #include <string.h>
 
@@ -51,6 +53,8 @@ LogRewrite *last_rewrite;
 %type   <ptr> rewrite_expr_list_build
 
 /* INCLUDE_DECLS */
+
+%token KW_CONDITION
 
 %%
 
@@ -146,6 +150,13 @@ rewrite_expr_opt
               }
             free($3);
           }
+        | KW_CONDITION '('
+          {
+            FilterExprNode *filter_expr;
+
+            CHECK_ERROR(cfg_parser_parse(&filter_expr_parser, lexer, (gpointer *) &filter_expr), @1, NULL);
+            log_rewrite_set_condition(last_rewrite, filter_expr);
+          } ')'
         ;
 
 /* INCLUDE_RULES */
