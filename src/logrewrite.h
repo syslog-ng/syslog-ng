@@ -40,13 +40,19 @@ struct _LogRewrite
   void (*free_fn)(LogRewrite *s);
 };
 
+/* LogRewrite, abstract class */
+void log_rewrite_free(LogRewrite *self);
+
+
+/* LogRewriteSet */
+LogRewrite *log_rewrite_set_new(const gchar *new_value);
+
+/* LogRewriteSubst */
+gboolean log_rewrite_subst_set_regexp(LogRewrite *s, const gchar *regexp);
+void log_rewrite_subst_set_matcher(LogRewrite *s, LogMatcher *matcher);
+void log_rewrite_subst_set_flags(LogRewrite *s, gint flags);
 
 LogRewrite *log_rewrite_subst_new(const gchar *replacement);
-LogRewrite *log_rewrite_set_new(const gchar *new_value);
-void log_rewrite_free(LogRewrite *self);
-gboolean log_rewrite_set_regexp(LogRewrite *s, const gchar *regexp);
-void log_rewrite_set_matcher(LogRewrite *s, LogMatcher *matcher);
-void log_rewrite_set_flags(LogRewrite *s, gint flags);
 
 LogProcessRule *log_rewrite_rule_new(const gchar *name, GList *rewrite_list);
 

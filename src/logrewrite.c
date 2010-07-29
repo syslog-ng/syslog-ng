@@ -44,6 +44,10 @@ log_rewrite_free(LogRewrite *self)
   g_free(self);
 }
 
+/* LogRewriteSet
+ *
+ * This class implements the "subst" expression in a rewrite rule.
+ */
 typedef struct _LogRewriteSubst LogRewriteSubst;
 
 struct _LogRewriteSubst
@@ -74,7 +78,45 @@ log_rewrite_subst_process(LogRewrite *s, LogMessage *msg)
   g_free(new_value);
 }
 
-void 
+void
+log_rewrite_subst_set_matcher(LogRewrite *s, LogMatcher *matcher)
+{
+  LogRewriteSubst *self = (LogRewriteSubst*) s;
+  gint flags = 0;
+
+  if(self->matcher)
+    {
+      flags = self->matcher->flags;
+      log_matcher_free(self->matcher);
+    }
+  self->matcher = matcher;
+
+  log_rewrite_subst_set_flags(s, flags);
+}
+
+gboolean
+log_rewrite_subst_set_regexp(LogRewrite *s, const gchar *regexp)
+{
+  LogRewriteSubst *self = (LogRewriteSubst*) s;
+
+  if (!self->matcher)
+    self->matcher = log_matcher_posix_re_new();
+
+  return log_matcher_compile(self->matcher, regexp);
+}
+
+void
+log_rewrite_subst_set_flags(LogRewrite *s, gint flags)
+{
+  LogRewriteSubst *self = (LogRewriteSubst*)s;
+
+  if (!self->matcher)
+    self->matcher = log_matcher_posix_re_new();
+
+  log_matcher_set_flags(self->matcher, flags);
+}
+
+void
 log_rewrite_subst_free(LogRewrite *s)
 {
   LogRewriteSubst *self = (LogRewriteSubst *) s;
@@ -97,27 +139,10 @@ log_rewrite_subst_new(const gchar *replacement)
   return &self->super;
 }
 
-gboolean 
-log_rewrite_set_regexp(LogRewrite *s, const gchar *regexp)
-{
-  LogRewriteSubst *self = (LogRewriteSubst*)s;
-  if(!self->matcher)
-    self->matcher = log_matcher_posix_re_new();
-
-  return log_matcher_compile(self->matcher, regexp);
-}
-
-void
-log_rewrite_set_flags(LogRewrite *s, gint flags)
-{
-  LogRewriteSubst *self = (LogRewriteSubst*)s;
-
-  if(!self->matcher)
-    self->matcher = log_matcher_posix_re_new();
-
-  log_matcher_set_flags(self->matcher, flags);
-}
-
+/* LogRewriteSet
+ *
+ * This class implements the "set" expression in a rewrite rule.
+ */
 typedef struct _LogRewriteSet LogRewriteSet;
 
 struct _LogRewriteSet
@@ -161,20 +186,6 @@ log_rewrite_set_new(const gchar *new_value)
   return &self->super;
 }
 
-void
-log_rewrite_set_matcher(LogRewrite *s, LogMatcher *matcher)
-{
-  gint flags = 0;
-  LogRewriteSubst *self = (LogRewriteSubst*)s;
-  if(self->matcher)
-    {
-      flags = self->matcher->flags;
-      log_matcher_free(self->matcher);
-    }
-  self->matcher = matcher;  
-
-  log_rewrite_set_flags(s, flags);
-}
 
 typedef struct _LogRewriteRule
 {
