@@ -345,7 +345,8 @@ version(void)
          "Enable-SSL: %s\n"
          "Enable-SQL: %s\n"
          "Enable-Linux-Caps: %s\n"
-         "Enable-Pcre: %s\n",
+         "Enable-Pcre: %s\n"
+         "Enable-Pacct: %s\n",
          installer_version,
          ON_OFF_STR(ENABLE_THREADS),
          ON_OFF_STR(ENABLE_DEBUG),
@@ -359,7 +360,8 @@ version(void)
          ON_OFF_STR(ENABLE_SSL_MODULE),
          ON_OFF_STR(ENABLE_SQL_MODULE),
          ON_OFF_STR(ENABLE_LINUX_CAPS),
-         ON_OFF_STR(ENABLE_PCRE));
+         ON_OFF_STR(ENABLE_PCRE),
+         ON_OFF_STR(ENABLE_PACCT_MODULE));
 }
 
 int 
