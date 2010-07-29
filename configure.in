@@ -9,8 +9,8 @@ dnl BINARY_BRANCH      - the value is added to all source/binary packages
 dnl SOURCE_REVISION    - Revision of the source-tree, will added to the version string
 dnl
 AC_INIT(src/main.c)
+AC_CONFIG_MACRO_DIR([m4])
 
-PKG_PROG_PKG_CONFIG
 dnl ***************************************************************************
 dnl definitions
 
@@ -159,6 +159,7 @@ fi
 AC_PROG_YACC
 AM_PROG_LEX
 AC_PROG_MAKE_SET
+PKG_PROG_PKG_CONFIG
 LT_INIT
 
 dnl ***************************************************************************

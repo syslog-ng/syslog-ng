@@ -21,3 +21,4 @@ ylwrap
 .*.swp
 *.pyc
 ltmain.sh
+m4/
