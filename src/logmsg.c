@@ -719,7 +719,14 @@ log_msg_new(const gchar *msg, gint length,
   log_msg_init(self, saddr);
   self->payload = nv_table_new(LM_V_MAX, 16, MAX(length * 2, 256));
 
-  parse_options->format_handler->parse(parse_options, (guchar *) msg, length, self);
+  if (G_LIKELY(parse_options->format_handler))
+    {
+      parse_options->format_handler->parse(parse_options, (guchar *) msg, length, self);
+    }
+  else
+    {
+      log_msg_set_value(self, LM_V_MESSAGE, "Error parsing message, format module is not loaded", -1);
+    }
   return self;
 }
 
