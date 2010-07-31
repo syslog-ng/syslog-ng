@@ -223,7 +223,7 @@ create_pattern_db(LogPatternDatabase *patterndb, gchar *pattern, gchar ** filena
   g_file_open_tmp("patterndbXXXXXX.xml", filename, NULL);
   g_file_set_contents(*filename, str->str, str->len, NULL);
 
-  if (log_pattern_database_load(patterndb, *filename))
+  if (log_pattern_database_load(patterndb, *filename, NULL))
     {
      if (!g_str_equal(patterndb->version, "3"))
         test_fail("Invalid version '%s'\n", patterndb->version);

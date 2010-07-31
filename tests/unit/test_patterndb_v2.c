@@ -138,7 +138,7 @@ main(int argc, char *argv[])
   g_file_open_tmp("patterndbXXXXXX.xml", &filename, NULL);
   g_file_set_contents(filename, pdb, strlen(pdb), NULL);
 
-  if (log_pattern_database_load(&patterndb, filename))
+  if (log_pattern_database_load(&patterndb, filename, NULL))
     {
       if (!g_str_equal(patterndb.version, "2"))
         test_fail("Invalid version '%s'\n", patterndb.version);
