@@ -31,7 +31,11 @@ def start_syslogng(conf, keep_persist=False, verbose=False):
     syslogng_pid = os.fork()
     if syslogng_pid == 0:
         os.putenv("RANDFILE", "rnd")
-        rc = os.execl('../../src/syslog-ng', '../../src/syslog-ng', '-f', 'test.conf', '--fd-limit', '1024', '-F', verbose_opt, '-p', 'syslog-ng.pid', '-R', 'syslog-ng.persist', '--no-caps', '--enable-core', '--seed')
+        module_path = ''
+        for (root, dirs, files) in os.walk(os.path.abspath(os.path.join(os.environ['top_builddir'], 'src'))):
+            module_path = ':'.join(map(lambda x: root + '/' + x, dirs))
+            break
+        rc = os.execl('../../src/syslog-ng', '../../src/syslog-ng', '-f', 'test.conf', '--fd-limit', '1024', '-F', verbose_opt, '-p', 'syslog-ng.pid', '-R', 'syslog-ng.persist', '--no-caps', '--enable-core', '--seed', '--module-path', module_path)
         sys.exit(rc)
     time.sleep(3)
     print_user("Syslog-ng started")
