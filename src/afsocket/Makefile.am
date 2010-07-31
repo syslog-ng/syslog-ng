@@ -3,6 +3,7 @@ AM_CPPFLAGS = -I$(top_srcdir)/src -I..
 export top_srcdir
 
 module_LTLIBRARIES := libafsocket-notls.la
+noinst_DATA = libafsocket.la
 libafsocket_notls_la_SOURCES = \
 	afsocket.c afsocket.h afunix.c afunix.h afinet.c afinet.h \
 	tlscontext.c tlscontext.h tlstransport.c tlstransport.h \
@@ -27,10 +28,18 @@ if ENABLE_SSL
 install-exec-hook:
 	mkdir -p $(DESTDIR)/$(moduledir) || true
 	ln -sf libafsocket-tls.so $(DESTDIR)/$(moduledir)/libafsocket.so
+
+libafsocket.la: libafsocket-tls.la
+	ln -sf libafsocket-tls.la libafsocket.la
+
 else
 install-exec-hook:
 	mkdir -p $(DESTDIR)/$(moduledir) || true
 	ln -sf libafsocket-notls.so $(DESTDIR)/$(moduledir)/libafsocket.so
+
+libafsocket.la: libafsocket-tls.la
+	ln -sf libafsocket-notls.la libafsocket.la
+
 endif
 
 include $(top_srcdir)/build/lex-rules.am
