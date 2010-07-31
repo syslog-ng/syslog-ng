@@ -57,7 +57,7 @@ if test "x$prefix" = "xNONE"; then
         prefix=$ac_default_prefix
 fi
 pidfiledir='${localstatedir}'
-plugindir='${prefix}/lib/syslog-ng'
+moduledir='${prefix}/lib/syslog-ng'
 
 AM_CONFIG_HEADER(config.h)
 
@@ -73,9 +73,9 @@ AC_ARG_WITH(pidfile-dir,
    [  --with-pidfile-dir=path   Use path as the directory for storing pidfiles],
    pidfiledir=$with_pidfile_dir)
 
-AC_ARG_WITH(plugin-dir,
-   [  --with-plugin-dir=path   Use path as the directory for storing pidfiles],
-   plugindir=$with_plugin_dir)
+AC_ARG_WITH(module-dir,
+   [  --with-module-dir=path   Use path as the directory for storing pidfiles],
+   moduledir=$with_module_dir)
 	
 AC_ARG_WITH(timezone-dir,
    [  --with-timezone-dir=path   Use path as the directory to get the timezone files],
@@ -750,7 +750,7 @@ AC_DEFINE_UNQUOTED(PATH_PREFIX, "`patheval $prefix`", [prefix directory])
 AC_DEFINE_UNQUOTED(PATH_SYSCONFDIR, "`patheval $sysconfdir`", [sysconfdir])
 AC_DEFINE_UNQUOTED(PATH_LOCALSTATEDIR, "`patheval $localstatedir`", [local state directory])
 AC_DEFINE_UNQUOTED(PATH_PIDFILEDIR, "`patheval $pidfiledir`", [local state directory])
-AC_DEFINE_UNQUOTED(PATH_PLUGINDIR, "`patheval $plugindir`", [plugin directory])
+AC_DEFINE_UNQUOTED(PATH_MODULEDIR, "`patheval $moduledir`", [module directory])
 if test -n "$timezonedir"; then
         AC_DEFINE_UNQUOTED(PATH_TIMEZONEDIR, "`patheval $timezonedir`", [timezone base directory])
 fi
@@ -789,7 +789,7 @@ AM_CONDITIONAL(ENABLE_PACCT, [test "$enable_pacct" = "yes"])
 
 AC_SUBST(timezonedir)
 AC_SUBST(pidfiledir)
-AC_SUBST(plugindir)
+AC_SUBST(moduledir)
 AC_SUBST(DEPS_CPPFLAGS)
 AC_SUBST(DEPS_LIBS)
 AC_SUBST(BASE_LIBS)

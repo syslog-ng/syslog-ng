@@ -1,8 +1,8 @@
-plugindir = @plugindir@
+moduledir = @moduledir@
 AM_CPPFLAGS = -I$(top_srcdir)/src -I..
 export top_srcdir
 
-plugin_LTLIBRARIES := libafsocket-notls.la
+module_LTLIBRARIES := libafsocket-notls.la
 libafsocket_notls_la_SOURCES = \
 	afsocket.c afsocket.h afunix.c afunix.h afinet.c afinet.h \
 	tlscontext.c tlscontext.h tlstransport.c tlstransport.h \
@@ -11,7 +11,7 @@ libafsocket_notls_la_CPPFLAGS = $(AM_CPPFLAGS)
 libafsocket_notls_la_LIBADD = $(LIBNET_LIBS) $(LIBWRAP_LIBS)
 
 if ENABLE_SSL
-plugin_LTLIBRARIES += libafsocket-tls.la
+module_LTLIBRARIES += libafsocket-tls.la
 libafsocket_tls_la_SOURCES = \
 	afsocket.c afsocket.h afunix.c afunix.h afinet.c afinet.h \
 	tlscontext.c tlscontext.h tlstransport.c tlstransport.h \
@@ -25,12 +25,12 @@ EXTRA_DIST = $(BUILT_SOURCES) afsocket-grammar.ym
 
 if ENABLE_SSL
 install-exec-hook:
-	mkdir -p $(DESTDIR)/$(plugindir) || true
-	ln -sf libafsocket-tls.so $(DESTDIR)/$(plugindir)/libafsocket.so
+	mkdir -p $(DESTDIR)/$(moduledir) || true
+	ln -sf libafsocket-tls.so $(DESTDIR)/$(moduledir)/libafsocket.so
 else
 install-exec-hook:
-	mkdir -p $(DESTDIR)/$(plugindir) || true
-	ln -sf libafsocket-notls.so $(DESTDIR)/$(plugindir)/libafsocket.so
+	mkdir -p $(DESTDIR)/$(moduledir) || true
+	ln -sf libafsocket-notls.so $(DESTDIR)/$(moduledir)/libafsocket.so
 endif
 
 include $(top_srcdir)/build/lex-rules.am

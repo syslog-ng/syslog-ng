@@ -1,6 +1,6 @@
-plugindir = @plugindir@
+moduledir = @moduledir@
 AM_CPPFLAGS = -I$(top_srcdir)/src -I..
-plugin_LTLIBRARIES = libdummy.la
+module_LTLIBRARIES = libdummy.la
 
 export top_srcdir
 

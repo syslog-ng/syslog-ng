@@ -1,8 +1,8 @@
-plugindir = @plugindir@
+moduledir = @moduledir@
 AM_CPPFLAGS = -I$(top_srcdir)/src -I..
 export top_srcdir
 
-plugin_LTLIBRARIES := libdbparser.la
+module_LTLIBRARIES := libdbparser.la
 libdbparser_la_SOURCES = \
 	dbparser.c dbparser.h \
 	radix.c radix.h \

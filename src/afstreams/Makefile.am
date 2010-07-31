@@ -1,10 +1,10 @@
-plugindir = @plugindir@
+moduledir = @moduledir@
 AM_CPPFLAGS = -I$(top_srcdir)/src -I..
 export top_srcdir
 
 if ENABLE_SUN_STREAMS
 
-plugin_LTLIBRARIES := libafstreams.la
+module_LTLIBRARIES := libafstreams.la
 libafstreams_la_SOURCES = \
 	afstreams.c afstreams.h \
 	afstreams-grammar.y afstreams-parser.c afstreams-parser.h afstreams-plugin.c

@@ -133,7 +133,7 @@ plugin_load_module(const gchar *module_name, GlobalConfig *cfg, CfgArgs *args)
     module_path = NULL;
 
   if (!module_path)
-    module_path = PATH_PLUGINDIR;
+    module_path = PATH_MODULEDIR;
 
   module_path_dirs = g_strsplit(module_path, G_SEARCHPATH_SEPARATOR_S, 0);
   i = 0;
