@@ -36,7 +36,7 @@ static Plugin afuser_plugins[] =
 };
 
 gboolean
-syslogng_module_init(GlobalConfig *cfg, CfgArgs *args)
+afuser_module_init(GlobalConfig *cfg, CfgArgs *args)
 {
   plugin_register(cfg, afuser_plugins, G_N_ELEMENTS(afuser_plugins));
   return TRUE;

@@ -37,7 +37,7 @@ static Plugin dbparser_plugins[] =
 };
 
 gboolean
-syslogng_module_init(GlobalConfig *cfg, CfgArgs *args)
+dbparser_module_init(GlobalConfig *cfg, CfgArgs *args)
 {
   log_db_parser_global_init();
   plugin_register(cfg, dbparser_plugins, G_N_ELEMENTS(dbparser_plugins));

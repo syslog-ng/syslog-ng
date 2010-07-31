@@ -87,7 +87,7 @@ confgen_generate(CfgLexer *lexer, gint type, const gchar *name, CfgArgs *args, g
 }
 
 gboolean
-syslogng_module_init(GlobalConfig *cfg, CfgArgs *args)
+confgen_module_init(GlobalConfig *cfg, CfgArgs *args)
 {
   const gchar *name, *context, *exec;
 

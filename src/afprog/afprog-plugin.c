@@ -41,7 +41,7 @@ static Plugin afprog_plugins[] =
 };
 
 gboolean
-syslogng_module_init(GlobalConfig *cfg, CfgArgs *args)
+afprog_module_init(GlobalConfig *cfg, CfgArgs *args)
 {
   plugin_register(cfg, afprog_plugins, G_N_ELEMENTS(afprog_plugins));
   return TRUE;

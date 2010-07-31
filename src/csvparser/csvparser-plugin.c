@@ -37,7 +37,7 @@ static Plugin csvparser_plugins[] =
 };
 
 gboolean
-syslogng_module_init(GlobalConfig *cfg, CfgArgs *args)
+csvparser_module_init(GlobalConfig *cfg, CfgArgs *args)
 {
   plugin_register(cfg, csvparser_plugins, G_N_ELEMENTS(csvparser_plugins));
   return TRUE;

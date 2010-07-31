@@ -101,7 +101,7 @@ static Plugin afsocket_plugins[] =
 };
 
 gboolean
-syslogng_module_init(GlobalConfig *cfg, CfgArgs *args)
+afsocket_module_init(GlobalConfig *cfg, CfgArgs *args)
 {
   tls_init();
   plugin_register(cfg, afsocket_plugins, G_N_ELEMENTS(afsocket_plugins));

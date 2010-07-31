@@ -2,7 +2,7 @@
 
 AM_CFLAGS = -I$(top_srcdir)/src -I../../src
 LIBS = @DEPS_LIBS@
-LDADD = $(top_builddir)/src/libsyslog-ng.la
+LDADD = $(top_builddir)/src/libsyslog-ng.la $(top_builddir)/src/syslogformat/libsyslogformat.la
 
 check_PROGRAMS = test_persist_state test_resolve_pwgr test_nvtable test_msgsdata \
 	test_radix test_logqueue test_matcher test_clone_logmsg test_csvparser \

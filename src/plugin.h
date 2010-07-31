@@ -49,6 +49,4 @@ gpointer plugin_parse_config(Plugin *plugin, GlobalConfig *cfg, YYLTYPE *yylloc)
 void plugin_register(GlobalConfig *cfg, Plugin *p, gint number);
 gboolean plugin_load_module(const gchar *module_name, GlobalConfig *cfg, CfgArgs *args);
 
-gboolean syslogng_module_init(GlobalConfig *cfg, CfgArgs *args);
-
 #endif
