@@ -1,3 +1,61 @@
+3.1.2
+	Mon, 02 Aug 2010 17:06:28 +0200
+
+	INCOMPATIBLE CHANGES:
+	* This release changes the default for 'store-legacy-msghdr' flag
+	  for log sources.  In previous releases this had to be enabled
+	  explicitly, because of the performance penalties, which do not
+          apply to 3.1. The original behaviour can be restored by explicitly
+	  specifying 'dont-store-legacy-msghdr'.
+
+	Bugfixes:
+        * When syslog-ng is reloaded, the local hostname value was not
+          refreshed, causing syslog-ng to remember the hostname until the
+          next restart. This may not play nice with DHCP configured
+          hostnames, which may change dynamically.
+        * When several SIGHUP signals are received in quick succession, the
+          last one may have been dropped. This problem is fixed.
+        * Make sure that numbers never get resolved using getpwnam/getgrnam
+          (e.g.  libnss functions), because this may cause deadlocks if the
+          NSS provider is LDAP and the LDAP server is trying to log a
+          message to syslog about invalid usernames.
+        * Fixed flush_timeout() handling in for non-file destinations.
+          Enabling flush_lines()/flush_timeout() for a non-file destination,
+          either using a global option, or a per-destination option could
+          cause excess CPU usage as long as the destination wasn't writable.
+	* In case patterndb has a syntax error when reloading the file,
+	  syslog-ng automatically reverts to the old version instead of
+	  dropping pattern matching altogether.
+	* Fixed pdbtool to properly handle accented characters in the
+	  command line.
+        * Fixed the use of the greedy and drop-invalid flags for csv-parser.
+        * Fixed a possible but rare memory leak in the handling of message
+          suppression.
+
+	Other changes:
+	* Added "update-patterndb" command that merges patterndb files from
+	  ${sysconfdir}/patterndb.d and produces ${localstatedir}/patterndb.xml,
+          the default file of the db-parser().
+	* Make it possible to specify the path to the syslog-ng control
+	  socket using a command line option in order to make it easier to
+	  launch multiple syslog-ng instances.
+        * Introduced a new, cleaner syntax to specify that the permissions
+          of a file are not to be changed. Use owner/group/perm options of a
+          file without any parameters instead of "-1". The old mechanism had
+          the problem that both per-file and global settings had to use "-1"
+          to effectively stop syslog-ng from changing the uid/gid/perm
+          values. The new syntax will make it possible to specify defaults
+          in
+          the global options section and customize those on a per-file
+          basis.
+        * syslog-ng will not go into the background if either the
+          --syntax-only or --debug options are specified.
+
+	Loggen:
+	* Added SSL support.
+	* Added the ability to read from a sample file
+
+
 3.1.1
         Sun, 11 Apr 2010 10:26:57 +0200
 
