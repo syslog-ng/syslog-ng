@@ -397,6 +397,9 @@ pdbtool_match(int argc, char *argv[])
 
       if (G_UNLIKELY(debug_pattern))
         {
+          const gchar *msg_string;
+
+          msg_string = log_msg_get_value(msg, LM_V_MESSAGE, NULL);
           log_db_parser_process_lookup(&patterndb, msg, &dbg_list);
           if (!debug_pattern_parse)
             {
@@ -417,7 +420,7 @@ pdbtool_match(int argc, char *argv[])
                             r_parser_type_name(dbg_info->pnode->type),
                             name_len ? name : "",
                             name_len ? dbg_info->match_len : 0,
-                            name_len ? match_message + dbg_info->match_off : "",
+                            name_len ? msg_string + dbg_info->match_off : "",
                             no_color
                           );
                     }
@@ -432,7 +435,7 @@ pdbtool_match(int argc, char *argv[])
 
                   p = p->next;
                 }
-              printf("%s%s%s", colors[COLOR_BLUE], match_message + pos, no_color);
+              printf("%s%s%s", colors[COLOR_BLUE], msg_string + pos, no_color);
 
               printf("\nMatching part:\n");
             }
@@ -461,9 +464,9 @@ pdbtool_match(int argc, char *argv[])
               else
                 {
                   if (dbg_info->i == dbg_info->node->keylen || dbg_info->pnode)
-                    printf("%s%.*s%s", dbg_info->pnode ? colors[COLOR_YELLOW] : colors[COLOR_GREEN], dbg_info->i, match_message + pos, no_color);
+                    printf("%s%.*s%s", dbg_info->pnode ? colors[COLOR_YELLOW] : colors[COLOR_GREEN], dbg_info->i, msg_string + pos, no_color);
                   else
-                    printf("%s%.*s%s", colors[COLOR_RED], dbg_info->i, match_message + pos, no_color);
+                    printf("%s%.*s%s", colors[COLOR_RED], dbg_info->i, msg_string + pos, no_color);
                   pos += dbg_info->i;
                 }
 
@@ -551,14 +554,14 @@ pdbtool_test_value(LogMessage *msg, const gchar *name, const gchar *test_value)
   if (!(value && strncmp(value, test_value, value_len) == 0 && value_len == strlen(test_value)))
     {
       if (value)
-        printf(" Wrong match name='%s', value='%.*s', expected='%s'\n", name, value_len, value, test_value);
+        printf(" Wrong match name='%s', value='%.*s', expected='%s'\n", name, (gint) value_len, value, test_value);
       else
         printf(" No value to match name='%s', expected='%s'\n", name, test_value);
 
       ret = FALSE;
     }
   else if (verbose_flag)
-    printf(" Match name='%s', value='%.*s', expected='%s'\n", name, value_len, value, test_value);
+    printf(" Match name='%s', value='%.*s', expected='%s'\n", name, (gint) value_len, value, test_value);
 
   return ret;
 }
