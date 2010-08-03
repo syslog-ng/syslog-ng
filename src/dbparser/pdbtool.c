@@ -584,6 +584,9 @@ pdbtool_test(int argc, char *argv[])
     {
       example = examples->data;
 
+      if (!example->message || !example->program)
+        continue;
+
       msg = log_msg_new_empty();
       log_msg_set_value(msg, LM_V_MESSAGE, example->message, strlen(example->message));
       if (example->program && example->program[0])
@@ -594,7 +597,7 @@ pdbtool_test(int argc, char *argv[])
 
       pdbtool_test_value(msg, ".classifier.rule_id", example->result->rule_id);
 
-      for (i = 0; i < example->values->len; i++)
+      for (i = 0; example->values && i < example->values->len; i++)
         {
           gchar **nv = g_ptr_array_index(example->values, i);
           ret = pdbtool_test_value(msg, nv[0], nv[1]) && ret;
