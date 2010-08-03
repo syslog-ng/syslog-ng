@@ -48,7 +48,7 @@ typedef struct _AFStreamsSourceDriver
 #include <fcntl.h>
 #include <string.h>
 
-#if ENABLE_SUN_DOOR && HAVE_DOOR_H
+#if HAVE_DOOR_H
 #include <door.h>
 #endif
 

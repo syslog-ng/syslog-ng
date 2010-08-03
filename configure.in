@@ -123,10 +123,6 @@ AC_ARG_ENABLE(sun-streams,
               [  --enable-sun-streams    Enable support for Solaris /dev/log STREAMS device.]
               ,,enable_sun_streams="auto")
 
-AC_ARG_ENABLE(sun-door,
-              [  --enable-sun-door       Enable support for Solaris /var/run/syslog_door door device.]
-              ,,enable_sun_door="auto")
-
 AC_ARG_ENABLE(sql,
 	      [  --enable-sql            Enable support for SQL destinations. (default: auto)]
 	      ,,enable_sql="auto")
@@ -452,15 +448,6 @@ else
         AC_MSG_RESULT(no)
 fi
 
-AC_MSG_CHECKING(whether to enable Sun door support)
-if test "x$enable_sun_streams" = "xyes" -a "x$ac_cv_header_door_h" = "xyes" -a "x$ac_cv_header_pthread_h" = "xyes" -a "x$enable_sun_door" != "xno" -o "x$enable_sun_door" = "xyes"; then
-        enable_sun_door=yes
-        AC_MSG_RESULT(yes)
-else
-        enable_sun_door=no
-        AC_MSG_RESULT(no)
-fi
-
 if test "x$enable_tcp_wrapper" = "xauto"; then
 	AC_MSG_CHECKING(whether to enable TCP wrapper support)
         if test "x$ac_cv_header_tcpd_h" = "xyes" -a "x$blb_cv_c_lwrap" != "x"; then
@@ -778,7 +765,6 @@ AC_DEFINE_UNQUOTED(ENABLE_ENV_WRAPPER, `enable_value $enable_env_wrapper`, [Enab
 AC_DEFINE_UNQUOTED(ENABLE_SSL_MODULE, `enable_value $enable_ssl`, [SSL was detected and compiled in the afsocket module])
 AC_DEFINE_UNQUOTED(ENABLE_SQL_MODULE, `enable_value $enable_sql`, [SQL was compiled as a module])
 AC_DEFINE_UNQUOTED(ENABLE_SUN_STREAMS_MODULE, `enable_value $enable_sun_streams`, [SUN STREAMS device support was compiled as a module])
-AC_DEFINE_UNQUOTED(ENABLE_SUN_DOOR_MODULE, `enable_value $enable_sun_door`, [Solaris door support was compiled in the afstreams module])
 AC_DEFINE_UNQUOTED(ENABLE_PACCT_MODULE, `enable_value $enable_pacct`, [Process accounting format (pacct) was compiled as a module])
 
 AM_CONDITIONAL(ENABLE_ENV_WRAPPER, [test "$enable_env_wrapper" = "yes"])
@@ -851,7 +837,6 @@ echo "  prefix                      : $prefix"
 echo "  linking mode                : $linking_mode"
 echo " Features:"
 echo "  Sun STREAMS support (module): ${enable_sun_streams:=no}"
-echo "  Sun Door support (module)   : ${enable_sun_door:=no}"
 echo "  Debug symbols               : ${enable_debug:=no}"
 echo "  GCC profiling               : ${enable_gprof:=no}"
 echo "  Memtrace                    : ${enable_memtrace:=no}"
