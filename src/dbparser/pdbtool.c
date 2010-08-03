@@ -490,6 +490,7 @@ pdbtool_match(int argc, char *argv[])
                 printf("\nValues:\n");
 
               nv_table_foreach(msg->payload, logmsg_registry, pdbtool_match_values, &ret);
+              printf("\n");
             }
           else
             {
