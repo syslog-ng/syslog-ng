@@ -647,25 +647,25 @@ pdbtool_walk_tree(RNode *root, gint level, gboolean program)
 static gint
 pdbtool_dump(int argc, char *argv[])
 {
- LogPatternDatabase patterndb;
+  LogPatternDatabase patterndb;
 
- memset(&patterndb, 0x0, sizeof(LogPatternDatabase));
+  memset(&patterndb, 0x0, sizeof(LogPatternDatabase));
 
- if (!log_pattern_database_load(&patterndb, patterndb_file, NULL))
-   return 1;
+  if (!log_pattern_database_load(&patterndb, patterndb_file, NULL))
+    return 1;
 
- if (dump_program_tree)
-   pdbtool_walk_tree(patterndb.programs, 0, TRUE);
- else if (match_program)
-   {
-     RNode *ruleset = r_find_node(patterndb.programs, g_strdup(match_program), g_strdup(match_program), strlen(match_program), NULL);
-     if (ruleset && ruleset->value)
-       pdbtool_walk_tree(((LogDBProgram *)ruleset->value)->rules, 0, FALSE);
-   }
+  if (dump_program_tree)
+    pdbtool_walk_tree(patterndb.programs, 0, TRUE);
+  else if (match_program)
+    {
+      RNode *ruleset = r_find_node(patterndb.programs, g_strdup(match_program), g_strdup(match_program), strlen(match_program), NULL);
+      if (ruleset && ruleset->value)
+        pdbtool_walk_tree(((LogDBProgram *)ruleset->value)->rules, 0, FALSE);
+    }
 
- log_pattern_database_free(&patterndb);
+  log_pattern_database_free(&patterndb);
 
- return 0;
+  return 0;
 }
 
 static GOptionEntry dump_options[] =
