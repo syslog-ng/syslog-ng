@@ -29,7 +29,7 @@
 
 typedef struct acct_v3 acct_t;
 
-#define PACCT_PREFIX "pacct."
+#define PACCT_PREFIX ".pacct."
 
 static gboolean handles_registered = FALSE;
 static NVHandle handle_ac_flag;
