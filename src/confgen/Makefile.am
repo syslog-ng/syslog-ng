@@ -5,6 +5,7 @@ export top_srcdir
 module_LTLIBRARIES := libconfgen.la
 libconfgen_la_SOURCES = \
 	confgen.h confgen-plugin.c
-libconfgen_CPPFLAGS = $(AM_CPPFLAGS)
+libconfgen_la_CPPFLAGS = $(AM_CPPFLAGS)
+libconfgen_la_LIBADD = ../libsyslog-ng.la
 
 include $(top_srcdir)/build/lex-rules.am

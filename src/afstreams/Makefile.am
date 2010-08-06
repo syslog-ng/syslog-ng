@@ -10,6 +10,7 @@ libafstreams_la_SOURCES = \
 	afstreams-grammar.y afstreams-parser.c afstreams-parser.h afstreams-plugin.c
 
 libafstreams_la_CPPFLAGS = $(AM_CPPFLAGS) -DENABLE_SUN_STREAMS=1
+libafstreams_la_LIBADD = ../libsyslog-ng.la
 
 endif
 

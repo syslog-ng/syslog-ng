@@ -10,7 +10,7 @@ libafsql_la_SOURCES = \
 	afsql-grammar.y afsql-parser.c afsql-parser.h afsql-plugin.c
 
 libafsql_la_CPPFLAGS = $(AM_CPPFLAGS) -DENABLE_SQL=1
-libafsql_la_LIBADD = $(LIBDBI_LIBS)
+libafsql_la_LIBADD = ../libsyslog-ng.la $(LIBDBI_LIBS)
 
 
 endif

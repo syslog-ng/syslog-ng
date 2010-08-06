@@ -9,6 +9,7 @@ libpacctformat_la_SOURCES = \
 	pacct-format.c pacct-format.h pacct-format-plugin.c
 
 libpacctformat_la_CPPFLAGS = $(AM_CPPFLAGS)
+libpacctformat_la_LIBADD = ../libsyslog-ng.la
 
 endif
 

@@ -10,10 +10,11 @@ libdbparser_la_SOURCES = \
 	dbparser-grammar.y dbparser-parser.c dbparser-parser.h dbparser-plugin.c
 
 libdbparser_la_CPPFLAGS = $(AM_CPPFLAGS)
+libdbparser_la_LIBADD = ../libsyslog-ng.la
 
 bin_PROGRAMS = pdbtool
 pdbtool_SOURCES = pdbtool.c
-pdbtool_LDADD = ../libsyslog-ng.la libdbparser.la
+pdbtool_LDADD = ../libsyslog-ng.la libdbparser.la @DEPS_LIBS@
 
 BUILT_SOURCES = dbparser-grammar.y dbparser-grammar.c dbparser-grammar.h
 EXTRA_DIST = $(BUILT_SOURCES) radix-find.c dbparser-grammar.ym

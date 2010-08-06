@@ -9,7 +9,7 @@ libafsocket_notls_la_SOURCES = \
 	tlscontext.c tlscontext.h tlstransport.c tlstransport.h \
 	afsocket-grammar.y afsocket-parser.c afsocket-parser.h afsocket-plugin.c
 libafsocket_notls_la_CPPFLAGS = $(AM_CPPFLAGS)
-libafsocket_notls_la_LIBADD = $(LIBNET_LIBS) $(LIBWRAP_LIBS)
+libafsocket_notls_la_LIBADD = ../libsyslog-ng.la $(LIBNET_LIBS) $(LIBWRAP_LIBS)
 
 if ENABLE_SSL
 module_LTLIBRARIES += libafsocket-tls.la
@@ -18,7 +18,7 @@ libafsocket_tls_la_SOURCES = \
 	tlscontext.c tlscontext.h tlstransport.c tlstransport.h \
 	afsocket-grammar.y afsocket-parser.c afsocket-parser.h afsocket-plugin.c
 libafsocket_tls_la_CPPFLAGS = $(AM_CPPFLAGS) -DENABLE_SSL=1
-libafsocket_tls_la_LIBADD = $(OPENSSL_LIBS) $(ZLIB_LIBS) $(LIBNET_LIBS) $(LIBWRAP_LIBS)
+libafsocket_tls_la_LIBADD = ../libsyslog-ng.la $(OPENSSL_LIBS) $(ZLIB_LIBS) $(LIBNET_LIBS) $(LIBWRAP_LIBS)
 endif
 
 BUILT_SOURCES = afsocket-grammar.y afsocket-grammar.c afsocket-grammar.h

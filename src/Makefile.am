@@ -12,14 +12,14 @@ sbin_PROGRAMS = syslog-ng syslog-ng-ctl
 endif
 
 lib_LTLIBRARIES = libsyslog-ng.la
-libsyslog_ng_la_LIBADD =  @BASE_LIBS@ @DEPS_LIBS@
+libsyslog_ng_la_LIBADD = @DEPS_LIBS@
 
 syslog_ng_SOURCES = main.c
-syslog_ng_LDADD = libsyslog-ng.la
+syslog_ng_LDADD = libsyslog-ng.la @DEPS_LIBS@
 syslog_ng_wrapper_SOURCES = wrapper.c
 
 syslog_ng_ctl_SOURCES = syslog-ng-ctl.c
-syslog_ng_ctl_LDADD = libsyslog-ng.la
+syslog_ng_ctl_LDADD = libsyslog-ng.la @DEPS_LIBS@
 
 libsyslog_ng_la_SOURCES = \
 	misc.c misc.h utils.c utils.h messages.c messages.h syslog-names.c syslog-names.h \

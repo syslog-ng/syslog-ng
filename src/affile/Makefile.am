@@ -11,5 +11,6 @@ BUILT_SOURCES = affile-grammar.y affile-grammar.c affile-grammar.h
 EXTRA_DIST = $(BUILT_SOURCES) affile-grammar.ym
 
 libaffile_la_CPPFLAGS = $(AM_CPPFLAGS)
+libaffile_la_LIBADD = ../libsyslog-ng.la
 
 include $(top_srcdir)/build/lex-rules.am

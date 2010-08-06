@@ -8,6 +8,7 @@ libafuser_la_SOURCES = \
 	afuser-grammar.y afuser-parser.c afuser-parser.h afuser-plugin.c
 
 libafuser_la_CPPFLAGS = $(AM_CPPFLAGS)
+libafuser_la_LIBADD = ../libsyslog-ng.la
 
 BUILT_SOURCES = afuser-grammar.y afuser-grammar.c afuser-grammar.h
 EXTRA_DIST = $(BUILT_SOURCES) afuser-grammar.ym

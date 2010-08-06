@@ -157,6 +157,7 @@ AM_PROG_LEX
 AC_PROG_MAKE_SET
 PKG_PROG_PKG_CONFIG
 LT_INIT
+AC_DISABLE_STATIC
 
 dnl ***************************************************************************
 dnl Set up CFLAGS
@@ -192,6 +193,15 @@ case "$ostype" in
 		if test "$ac_cv_sys_large_files" -ne 0; then
 			CFLAGS="${CFLAGS} -D_LARGE_FILES=1"
 		fi
+
+                # NOTE: The -brtl option to the linker must be set before calling the
+                # configure script, as otherwise the generated libtool will behave
+                # differently. We need the runtime linker during execution (hence the
+                # -brtl) to load external modules. Also, please note that with -brtl the
+                # linker behaves similarly to what is expected on other UNIX systems,
+                # without it, it refuses to link an .so in if there's no reference from
+                # the main program, even if there is a proper -llibname option.
+		LDFLAGS="$LDFLAGS -Wl,-brtl"
 		;;
 	OSF1)
 		CFLAGS="${CFLAGS} -D_XOPEN_SOURCE=500 -D_XOPEN_SOURCE_EXTENDED -D_OSF_SOURCE -D_POSIX_C_SOURCE"
