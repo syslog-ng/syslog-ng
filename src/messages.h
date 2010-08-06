@@ -31,6 +31,7 @@
 extern int debug_flag;
 extern int verbose_flag;
 extern int trace_flag;
+extern int log_stderr;
 
 void msg_set_context(LogMessage *msg);
 gboolean msg_limit_internal_message(void);

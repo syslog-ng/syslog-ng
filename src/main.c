@@ -407,6 +407,16 @@ main(int argc, char *argv[])
   if (preprocess_into)
     syntax_only = TRUE;
 
+  if (debug_flag)
+    {
+      log_stderr = TRUE;
+    }
+
+  if (syntax_only || debug_flag)
+    {
+      g_process_set_mode(G_PM_FOREGROUND);
+    }
+
   g_process_set_name("syslog-ng");
   
   /* in this case we switch users early while retaining a limited set of

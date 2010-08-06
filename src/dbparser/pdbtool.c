@@ -39,6 +39,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+#include <locale.h>
+
 #define BOOL(x) ((x) ? "TRUE" : "FALSE")
 
 static gchar *full_colors[] =
@@ -773,6 +775,7 @@ main(int argc, char *argv[])
       usage();
     }
 
+  setlocale(LC_ALL, "");
   if (!g_option_context_parse(ctx, &argc, &argv, &error))
     {
       fprintf(stderr, "Error parsing command line arguments: %s\n", error ? error->message : "Invalid arguments");

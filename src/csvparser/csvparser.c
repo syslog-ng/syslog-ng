@@ -114,7 +114,7 @@ log_csv_parser_process(LogParser *s, LogMessage *msg, const gchar *input)
   gint len;
 
   src = input;
-  if (self->flags & LOG_CSV_PARSER_ESCAPE_NONE)
+  if ((self->flags & LOG_CSV_PARSER_ESCAPE_NONE) || ((self->flags & LOG_CSV_PARSER_ESCAPE_MASK) == 0))
     {
       /* no escaping, no need to keep state, we split input and trim if necessary */
 
@@ -190,15 +190,18 @@ log_csv_parser_process(LogParser *s, LogMessage *msg, const gchar *input)
           else
             log_msg_set_value(msg, log_msg_get_value_handle((gchar *) cur_column->data), src, len);
 
-          if (*delim == 0)
-            break;
-          src = (gchar *) delim + 1;
+          src = (gchar *) delim;
+          if (*src)
+            src++;
           cur_column = cur_column->next;
 
           if (cur_column && cur_column->next == NULL && self->flags & LOG_CSV_PARSER_GREEDY)
             {
+              /* greedy mode, the last column gets it all, without taking escaping, quotes or anything into account */
               log_msg_set_value(msg, log_msg_get_value_handle((gchar *) cur_column->data), src, -1);
               cur_column = NULL;
+              src = NULL;
+              break;
             }
         }
     }
@@ -310,15 +313,22 @@ log_csv_parser_process(LogParser *s, LogMessage *msg, const gchar *input)
 
               if (cur_column && cur_column->next == NULL && self->flags & LOG_CSV_PARSER_GREEDY)
                 {
+                  /* greedy mode, the last column gets it all, without taking escaping, quotes or anything into account */
                   log_msg_set_value(msg, log_msg_get_value_handle((gchar *) cur_column->data), src, -1);
                   cur_column = NULL;
+                  src = NULL;
+                  break;
                 }
             }
         }
       g_string_free(current_value, TRUE);
     }
-  if (!cur_column && (self->flags & LOG_CSV_PARSER_DROP_INVALID))
-    return FALSE;
+  if ((cur_column || (src && *src)) && (self->flags & LOG_CSV_PARSER_DROP_INVALID))
+    {
+      /* there are unfilled variables, OR not all of the input was processed
+       * and "drop-invalid" flag is specified */
+      return FALSE;
+    }
   return TRUE;
 }
 

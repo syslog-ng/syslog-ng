@@ -43,7 +43,7 @@ typedef struct _MsgContext
 gboolean debug_flag = 0;
 gboolean verbose_flag = 0;
 gboolean trace_flag = 0;
-static gboolean log_stderr = FALSE;
+gboolean log_stderr = FALSE;
 static gboolean log_syslog = FALSE;
 static gboolean syslog_started = FALSE;
 static EVTCONTEXT *evt_context;
