@@ -125,7 +125,7 @@ plugin_load_module(const gchar *module_name, GlobalConfig *cfg, CfgArgs *args)
   gboolean (*init_func)(GlobalConfig *cfg, CfgArgs *args);
   gchar *plugin_module_name = NULL;
   gchar *module_init_func;
-  const gchar *module_path;
+  const gchar *mp;
   gchar **module_path_dirs, *p, *dot;
   gint i;
 
@@ -145,14 +145,14 @@ plugin_load_module(const gchar *module_name, GlobalConfig *cfg, CfgArgs *args)
     }
 
   if (cfg->lexer)
-    module_path = cfg_args_get(cfg->lexer->globals, "module-path");
+    mp = cfg_args_get(cfg->lexer->globals, "module-path");
   else
-    module_path = NULL;
+    mp = NULL;
 
-  if (!module_path)
-    module_path = PATH_MODULEDIR;
+  if (!mp)
+    mp = module_path;
 
-  module_path_dirs = g_strsplit(module_path, G_SEARCHPATH_SEPARATOR_S, 0);
+  module_path_dirs = g_strsplit(mp, G_SEARCHPATH_SEPARATOR_S, 0);
   i = 0;
   while (module_path_dirs && module_path_dirs[i])
     {
@@ -179,7 +179,7 @@ plugin_load_module(const gchar *module_name, GlobalConfig *cfg, CfgArgs *args)
   if (!plugin_module_name)
     {
       msg_error("Plugin module not found in 'module-path'",
-                evt_tag_str("module-path", module_path),
+                evt_tag_str("module-path", mp),
                 evt_tag_str("module", module_name),
                 NULL);
       return FALSE;
