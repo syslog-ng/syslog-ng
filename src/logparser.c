@@ -173,7 +173,7 @@ log_csv_parser_process(LogParser *s, LogMessage *msg, const gchar *input)
   gint len;
   
   src = input;
-  if (self->flags & LOG_CSV_PARSER_ESCAPE_NONE)
+  if ((self->flags & LOG_CSV_PARSER_ESCAPE_NONE) || ((self->flags & LOG_CSV_PARSER_ESCAPE_MASK) == 0))
     {
       /* no escaping, no need to keep state, we split input and trim if necessary */
       
