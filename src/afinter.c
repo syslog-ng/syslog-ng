@@ -154,6 +154,7 @@ afinter_source_watch_new(LogSource *afinter_source, gint mark_freq)
 {
   AFInterWatch *self = (AFInterWatch *) g_source_new(&afinter_source_watch_funcs, sizeof(AFInterWatch));
   
+  next_mark_target = -1;
   self->mark_freq = mark_freq;
   self->afinter_source = afinter_source;
   g_source_set_callback(&self->super, (GSourceFunc) afinter_source_dispatch_msg, log_pipe_ref(&afinter_source->super), (GDestroyNotify) log_pipe_unref);
