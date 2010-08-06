@@ -23,7 +23,7 @@ int main(void)
   if (!resolve_group("-1", &gid) || gid != -1)
     return 1;
 
-  if (!resolve_group("daemon", &gid))
+  if (!resolve_group("sys", &gid))
     return 1;
 
   if (resolve_group("nincsily", &gid))
