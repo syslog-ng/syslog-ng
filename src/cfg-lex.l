@@ -183,7 +183,7 @@ word	[^ \#'"\(\)\{\}\\;\n\t,|\.@:]
 <string>\\t		   { g_string_append_c(yyextra->string_buffer, 9); }
 <string>\\v		   { g_string_append_c(yyextra->string_buffer, 11); }
 <string>\\x{xdigit}+       { g_string_append_c(yyextra->string_buffer, strtol(yytext+2, NULL, 16)); }
-<string>\\{odigit}+        { g_string_append_c(yyextra->string_buffer, strtol(yytext+2, NULL, 8)); }
+<string>\\o{odigit}+       { g_string_append_c(yyextra->string_buffer, strtol(yytext+2, NULL, 8)); }
 <string>\\[^anrtv]	   { g_string_append_c(yyextra->string_buffer, yytext[1]); }
 <string>\"		   { 
 			     yy_pop_state(yyscanner);
