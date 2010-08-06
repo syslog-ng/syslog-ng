@@ -63,6 +63,7 @@ void log_column_parser_set_columns(LogColumnParser *s, GList *fields);
 #define LOG_CSV_PARSER_ESCAPE_NONE        0x0001
 #define LOG_CSV_PARSER_ESCAPE_BACKSLASH   0x0002
 #define LOG_CSV_PARSER_ESCAPE_DOUBLE_CHAR 0x0004
+#define LOG_CSV_PARSER_ESCAPE_MASK        0x0007
 #define LOG_CSV_PARSER_STRIP_WHITESPACE   0x0008
 #define LOG_CSV_PARSER_GREEDY             0x0010
 #define LOG_CSV_PARSER_DROP_INVALID       0x0020
