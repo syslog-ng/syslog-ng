@@ -37,7 +37,7 @@ def start_syslogng(conf, keep_persist=False, verbose=False):
             break
         rc = os.execl('../../src/syslog-ng', '../../src/syslog-ng', '-f', 'test.conf', '--fd-limit', '1024', '-F', verbose_opt, '-p', 'syslog-ng.pid', '-R', 'syslog-ng.persist', '--no-caps', '--enable-core', '--seed', '--module-path', module_path)
         sys.exit(rc)
-    time.sleep(3)
+    time.sleep(5)
     print_user("Syslog-ng started")
     return True
 
