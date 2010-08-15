@@ -67,8 +67,45 @@ static gchar **colors = empty_colors;
 
 static gchar *patterndb_file = PATH_PATTERNDB_FILE;
 static gboolean color_out = FALSE;
-
 static gchar *merge_dir = NULL;
+
+static gint
+pdbfile_detect_version(const gchar *pdbfile)
+{
+  FILE *pdb;
+  gchar line[1024];
+  gint result = 0;
+
+  pdb = fopen(pdbfile, "r");
+  if (!pdb)
+    return 0;
+
+  while (fgets(line, sizeof(line), pdb))
+    {
+      if (strstr(line, "<patterndb"))
+        {
+          gchar *version, *start_quote, *end_quote;
+
+          /* ok, we do have the patterndb tag, look for the version attribute */
+          version = strstr(line, "version=");
+
+          if (!version)
+            goto exit;
+          start_quote = version + 8;
+          end_quote = strchr(start_quote + 1, *start_quote);
+          if (!end_quote)
+            {
+              goto exit;
+            }
+          *end_quote = 0;
+          result = strtoll(start_quote + 1, NULL, 0);
+          break;
+        }
+    }
+ exit:
+  fclose(pdb);
+  return result;
+}
 
 typedef struct _PdbToolMergeState
 {
@@ -268,6 +305,8 @@ pdbtool_merge(int argc, char *argv[])
 
 static GOptionEntry merge_options[] =
 {
+  { "pdb",       'p', 0, G_OPTION_ARG_STRING, &patterndb_file,
+    "Name of the patterndb file", "<patterndb_file>" },
   { "directory", 'D', 0, G_OPTION_ARG_STRING, &merge_dir,
     "Directory from merge pattern databases", "<directory>" },
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
@@ -527,6 +566,8 @@ pdbtool_match(int argc, char *argv[])
 
 static GOptionEntry match_options[] =
 {
+  { "pdb",       'p', 0, G_OPTION_ARG_STRING, &patterndb_file,
+    "Name of the patterndb file", "<patterndb_file>" },
   { "program", 'P', 0, G_OPTION_ARG_STRING, &match_program,
     "Program name to match as $PROGRAM", "<program>" },
   { "message", 'M', 0, G_OPTION_ARG_STRING, &match_message,
@@ -545,6 +586,8 @@ static GOptionEntry match_options[] =
     "Only print messages matching the specified syslog-ng filter", "expr" },
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
 };
+
+static gboolean test_validate = FALSE;
 
 static gboolean
 pdbtool_test_value(LogMessage *msg, const gchar *name, const gchar *test_value)
@@ -576,46 +619,80 @@ pdbtool_test(int argc, char *argv[])
   LogDBExample *example;
   LogMessage *msg;
   GList *examples = NULL;
-  gint i, ret = 1;
+  gint i, arg_pos;
+  gboolean failed_to_load = FALSE;
+  gboolean failed_to_match = FALSE;
+  gboolean failed_to_validate = FALSE;
 
-  memset(&patterndb, 0x0, sizeof(LogPatternDatabase));
-
-  if (!log_pattern_database_load(&patterndb, patterndb_file, &examples))
-    return 1;
-
-  while (examples)
+  for (arg_pos = 1; arg_pos < argc; arg_pos++)
     {
-      example = examples->data;
-
-      if (!example->message || !example->program)
-        continue;
-
-      msg = log_msg_new_empty();
-      log_msg_set_value(msg, LM_V_MESSAGE, example->message, strlen(example->message));
-      if (example->program && example->program[0])
-        log_msg_set_value(msg, LM_V_PROGRAM, example->program, strlen(example->program));
-
-      printf("Testing message program='%s' message='%s'\n", example->program, example->message);
-      log_db_parser_process_lookup(&patterndb, msg, NULL);
-
-      pdbtool_test_value(msg, ".classifier.rule_id", example->result->rule_id);
-
-      for (i = 0; example->values && i < example->values->len; i++)
+      if (test_validate)
         {
-          gchar **nv = g_ptr_array_index(example->values, i);
-          ret = pdbtool_test_value(msg, nv[0], nv[1]) && ret;
+          gchar cmd[1024];
+          gint version;
+
+          version = pdbfile_detect_version(argv[arg_pos]);
+          if (!version)
+            {
+              fprintf(stderr, "%s: Unable to detect patterndb version, please write the <patterndb> tag on a single line\n", argv[arg_pos]);
+              failed_to_validate = TRUE;
+            }
+          g_snprintf(cmd, sizeof(cmd), "xmllint --noout --nonet --schema %s/xsd/patterndb-%d.xsd %s", PATH_DATAROOTDIR, version, argv[arg_pos]);
+          if (system(cmd) != 0)
+            {
+              fprintf(stderr, "%s: xmllint returned an error, the executed command was: %s", argv[arg_pos], cmd);
+              failed_to_validate = TRUE;
+            }
+        }
+      memset(&patterndb, 0x0, sizeof(LogPatternDatabase));
+
+      if (!log_pattern_database_load(&patterndb, argv[arg_pos], &examples))
+        {
+          failed_to_load = TRUE;
+          continue;
         }
 
-      log_msg_unref(msg);
-      examples = g_list_delete_link(examples, examples);
-    }
+      while (examples)
+        {
+          example = examples->data;
 
-  log_pattern_database_free(&patterndb);
-  return !ret;
+          if (!example->message || !example->program)
+            continue;
+
+          msg = log_msg_new_empty();
+          log_msg_set_value(msg, LM_V_MESSAGE, example->message, strlen(example->message));
+          if (example->program && example->program[0])
+            log_msg_set_value(msg, LM_V_PROGRAM, example->program, strlen(example->program));
+
+          printf("Testing message program='%s' message='%s'\n", example->program, example->message);
+          log_db_parser_process_lookup(&patterndb, msg, NULL);
+
+          pdbtool_test_value(msg, ".classifier.rule_id", example->result->rule_id);
+
+          for (i = 0; example->values && i < example->values->len; i++)
+            {
+              gchar **nv = g_ptr_array_index(example->values, i);
+              if (!pdbtool_test_value(msg, nv[0], nv[1]))
+                failed_to_match = TRUE;
+            }
+
+          log_msg_unref(msg);
+          examples = g_list_delete_link(examples, examples);
+        }
+
+      log_pattern_database_free(&patterndb);
+    }
+  if (failed_to_load || failed_to_validate)
+    return 1;
+  if (failed_to_match)
+    return 2;
+  return 0;
 }
 
 static GOptionEntry test_options[] =
 {
+  { "validate", 0, 0, G_OPTION_ARG_NONE, &test_validate,
+    "Validate the pdb file against the xsd (requires xmllint from libxml2)", NULL },
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
 };
 
@@ -706,8 +783,6 @@ pdbtool_mode(int *argc, char **argv[])
 
 static GOptionEntry pdbtool_options[] =
 {
-  { "pdb",       'p', 0, G_OPTION_ARG_STRING, &patterndb_file,
-    "Name of the patterndb file", "<patterndb_file>" },
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
 };
 

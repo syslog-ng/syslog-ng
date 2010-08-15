@@ -748,6 +748,7 @@ AC_DEFINE_UNQUOTED(PATH_SYSCONFDIR, "`patheval $sysconfdir`", [sysconfdir])
 AC_DEFINE_UNQUOTED(PATH_LOCALSTATEDIR, "`patheval $localstatedir`", [local state directory])
 AC_DEFINE_UNQUOTED(PATH_PIDFILEDIR, "`patheval $pidfiledir`", [local state directory])
 AC_DEFINE_UNQUOTED(PATH_MODULEDIR, "`patheval $moduledir`", [module directory])
+AC_DEFINE_UNQUOTED(PATH_DATAROOTDIR, "`patheval $datarootdir`", [data root directory])
 if test -n "$timezonedir"; then
         AC_DEFINE_UNQUOTED(PATH_TIMEZONEDIR, "`patheval $timezonedir`", [timezone base directory])
 fi
