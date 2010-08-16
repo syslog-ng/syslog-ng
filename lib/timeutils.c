@@ -69,12 +69,14 @@ static const gchar *time_zone_path_list[] =
 
 static const gchar *time_zone_basedir = NULL;
 
-static struct 
+typedef struct _TimeCache
 {
   time_t when;
-  long tzoff;
-} timezone_cache[TZCACHE_SIZE];
-static int timezone_cache_pos = 0;
+  struct tm tm;
+} TimeCache;
+
+static TimeCache local_time_cache[64];
+static TimeCache gm_time_cache[64];
 GStaticMutex cache_lock = G_STATIC_MUTEX_INIT;
 
 
@@ -144,21 +146,44 @@ cached_mktime(struct tm *tm)
 void
 cached_localtime(time_t *when, struct tm *tm)
 {
-  static time_t prev_when;
-  static struct tm prev_tm;
-  
+  guchar i = 0;
   g_static_mutex_lock(&cache_lock);
-  if (G_LIKELY(*when == prev_when))
+  i = *when & 0x3F;
+  if (G_LIKELY(*when == local_time_cache[i].when))
     {
-      *tm = prev_tm;
+      *tm = local_time_cache[i].tm;
       g_static_mutex_unlock(&cache_lock);
       return;
     }
   g_static_mutex_unlock(&cache_lock);
   localtime_r(when, tm);
   g_static_mutex_lock(&cache_lock);
-  prev_tm = *tm;
-  prev_when = *when;
+  local_time_cache[i].tm = *tm;
+  local_time_cache[i].when = *when;
+  g_static_mutex_unlock(&cache_lock);
+}
+
+void
+cached_gmtime(time_t *when, struct tm *tm)
+{
+  guchar i = 0;
+  g_static_mutex_lock(&cache_lock);
+  i = *when & 0x3F;
+  if (G_LIKELY(*when == gm_time_cache[i].when))
+    {
+      *tm = gm_time_cache[i].tm;
+      g_static_mutex_unlock(&cache_lock);
+      return;
+    }
+  g_static_mutex_unlock(&cache_lock);
+  #ifdef _MSC_VER
+  tm = gmtime(when);
+  #else
+  gmtime_r(when, tm);
+  #endif
+  g_static_mutex_lock(&cache_lock);
+  gm_time_cache[i].tm = *tm;
+  gm_time_cache[i].when = *when;
   g_static_mutex_unlock(&cache_lock);
 }
 
@@ -174,28 +199,17 @@ get_local_timezone_ofs(time_t when)
 {
   struct tm ltm;
   long tzoff;
-  gint i;
   
-  g_static_mutex_lock(&cache_lock);
-  for (i = 0; i < TZCACHE_SIZE; i++)
-    {
-      if (timezone_cache[(timezone_cache_pos + i) & TZCACHE_SIZE_MASK].when == when)
-        {
-          tzoff = timezone_cache[(timezone_cache_pos + i) & TZCACHE_SIZE_MASK].tzoff;
-          g_static_mutex_unlock(&cache_lock);
-          return tzoff;
-        }
-    }
-  g_static_mutex_unlock(&cache_lock);
-  
-#if HAVE_STRUCT_TM_TM_GMTOFF && 0
-  localtime_r(&when, &ltm);
+#if HAVE_STRUCT_TM_TM_GMTOFF
+  cached_localtime(&when, &ltm);
   tzoff = ltm.tm_gmtoff;
 #else
   struct tm gtm;
   
-  localtime_r(&when, &ltm);
-  gmtime_r(&when, &gtm);
+  cached_localtime(&when, &ltm_store);
+  cached_gmtime(&when, &gtm_stroe);
+  ltm = &ltm_store;
+  gtm = &gtm_store
 
   tzoff = (ltm.tm_hour - gtm.tm_hour) * 3600;
   tzoff += (ltm.tm_min - gtm.tm_min) * 60;
@@ -206,12 +220,7 @@ get_local_timezone_ofs(time_t when)
   else if (tzoff < 0 && (ltm.tm_year > gtm.tm_year || ltm.tm_mon > gtm.tm_mon || ltm.tm_mday > gtm.tm_mday))
     tzoff += 86400;
   
-#endif
-  g_static_mutex_lock(&cache_lock);
-  timezone_cache_pos = (timezone_cache_pos + 1) & TZCACHE_SIZE_MASK;
-  timezone_cache[timezone_cache_pos].when = when;
-  timezone_cache[timezone_cache_pos].tzoff = tzoff;
-  g_static_mutex_unlock(&cache_lock);
+#endif /* HAVE_STRUCT_TM_TM_GMTOFF */
   return tzoff;
 }
 
@@ -220,7 +229,8 @@ void
 clean_time_cache()
 {
   g_static_mutex_lock(&cache_lock);
-  memset(&timezone_cache, 0, sizeof(timezone_cache));
+  memset(&gm_time_cache, 0, 64 * sizeof(TimeCache));
+  memset(&local_time_cache, 0, 64 * sizeof(TimeCache));
   g_static_mutex_unlock(&cache_lock);
 }
 

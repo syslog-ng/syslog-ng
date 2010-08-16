@@ -440,7 +440,9 @@ log_macro_expand(GString *result, gint id, gboolean escape, LogTemplateOptions *
           zone_ofs = stamp->zone_offset;
 
         t = stamp->time.tv_sec + zone_ofs;
-        tm = gmtime_r(&t, &tm_storage);
+
+        cached_gmtime(&t, &tm_storage);
+        tm  = &tm_storage;
 
         switch (id)
           {
