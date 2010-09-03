@@ -67,7 +67,6 @@ static gchar **colors = empty_colors;
 
 static gchar *patterndb_file = PATH_PATTERNDB_FILE;
 static gboolean color_out = FALSE;
-static gchar *merge_dir = NULL;
 
 static gint
 pdbfile_detect_version(const gchar *pdbfile)
@@ -198,14 +197,13 @@ static gboolean
 pdbtool_merge_file(const gchar *filename, GString *merged)
 {
   GMarkupParseContext *parse_ctx = NULL;
-  gchar *full_name = g_build_filename(merge_dir, filename, NULL);
   PdbToolMergeState state;
   GError *error = NULL;
   gboolean success = TRUE;
   gchar *buff = NULL;
   gsize buff_len;
 
-  if (!g_file_get_contents(full_name, &buff, &buff_len, &error))
+  if (!g_file_get_contents(filename, &buff, &buff_len, &error))
     {
       fprintf(stderr, "Error reading pattern database file; filename='%s', error='%s'\n",
             filename, error ? error->message : "Unknown error");
@@ -235,8 +233,6 @@ pdbtool_merge_file(const gchar *filename, GString *merged)
     }
 
 error:
-  g_free(full_name);
-
   if (buff)
     g_free(buff);
 
@@ -246,16 +242,51 @@ error:
   return success;
 }
 
+static gchar *merge_dir = NULL;
+static gchar *merge_glob = NULL;
+static gboolean merge_recursive = FALSE;
+
+static gboolean
+pdbtool_merge_dir(const gchar *dir, gboolean recursive, GString *merged)
+{
+  GDir *pdb_dir;
+  gboolean ok = TRUE;
+  GError *error = NULL;
+  const gchar *filename;
+
+  if ((pdb_dir = g_dir_open(dir, 0, &error)) == NULL)
+    {
+      fprintf(stderr, "Error opening directory %s, error='%s'\n", merge_dir, error ? error->message : "Unknown error");
+      g_clear_error(&error);
+      return FALSE;
+    }
+
+  while ((filename = g_dir_read_name(pdb_dir)) != NULL && ok)
+    {
+      gchar *full_name = g_build_filename(dir, filename, NULL);
+
+      if (recursive && g_file_test(full_name, G_FILE_TEST_IS_DIR))
+        {
+          ok = pdbtool_merge_dir(full_name, recursive, merged);
+        }
+      else if (g_file_test(full_name, G_FILE_TEST_IS_REGULAR) && (!merge_glob || g_pattern_match_simple(merge_glob, filename)))
+        {
+          ok = pdbtool_merge_file(full_name, merged);
+        }
+      g_free(full_name);
+    }
+  g_dir_close(pdb_dir);
+  return TRUE;
+}
+
 static gint
 pdbtool_merge(int argc, char *argv[])
 {
-  GDir *pdb_dir;
   GDate date;
-  const gchar *filename;
   GError *error = NULL;
   GString *merged = NULL;
   gchar *buff;
-  gboolean ok = TRUE;
+  gboolean ok;
 
   if (!merge_dir)
     {
@@ -269,12 +300,6 @@ pdbtool_merge(int argc, char *argv[])
       return 1;
     }
 
-  if ((pdb_dir = g_dir_open(merge_dir, 0, &error)) == NULL)
-    {
-      fprintf(stderr, "Error opening patterndb directory; errror='%s'\n", error ? error->message : "Unknown error");
-      return 1;
-    }
-
   merged = g_string_sized_new(4096);
   g_date_clear(&date, 1);
   g_date_set_time_t(&date, time (NULL));
@@ -284,19 +309,15 @@ pdbtool_merge(int argc, char *argv[])
   g_string_append(merged, buff);
   g_free(buff);
 
-  while ((filename = g_dir_read_name(pdb_dir)) != NULL && ok)
-    ok = pdbtool_merge_file(filename, merged);
-
-  g_dir_close(pdb_dir);
+  ok = pdbtool_merge_dir(merge_dir, merge_recursive, merged);
 
   g_string_append(merged, "</patterndb>\n");
 
-  if (ok)
-    if (!g_file_set_contents(patterndb_file, merged->str, merged->len, &error))
-      {
-        fprintf(stderr, "Error storing patterndb; filename='%s', errror='%s'\n", patterndb_file, error ? error->message : "Unknown error");
-        ok = FALSE;
-      }
+  if (ok && !g_file_set_contents(patterndb_file, merged->str, merged->len, &error))
+    {
+      fprintf(stderr, "Error storing patterndb; filename='%s', errror='%s'\n", patterndb_file, error ? error->message : "Unknown error");
+      ok = FALSE;
+    }
 
   g_string_free(merged, TRUE);
 
@@ -306,7 +327,11 @@ pdbtool_merge(int argc, char *argv[])
 static GOptionEntry merge_options[] =
 {
   { "pdb",       'p', 0, G_OPTION_ARG_STRING, &patterndb_file,
-    "Name of the patterndb file", "<patterndb_file>" },
+    "Name of the patterndb output file", "<patterndb_file>" },
+  { "recursive", 'r', 0, G_OPTION_ARG_NONE, &merge_recursive,
+    "Recurse into subdirectories", NULL },
+  { "glob",      'G', 0, G_OPTION_ARG_STRING, &merge_glob,
+     "Filenames to consider for merging", "<pattern>" },
   { "directory", 'D', 0, G_OPTION_ARG_STRING, &merge_dir,
     "Directory from merge pattern databases", "<directory>" },
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }

@@ -5,4 +5,4 @@ bindir=@bindir@
 sysconfdir=@sysconfdir@
 localstatedir=@localstatedir@
 
-${bindir}/pdbtool merge -D ${sysconfdir}/patterndb.d -p ${localstatedir}/patterndb.xml
+${bindir}/pdbtool merge -r --glob *.pdb -D ${sysconfdir}/patterndb.d -p ${localstatedir}/patterndb.xml
