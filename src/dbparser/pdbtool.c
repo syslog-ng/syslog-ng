@@ -656,27 +656,27 @@ pdbtool_test(int argc, char *argv[])
         {
           example = examples->data;
 
-          if (!example->message || !example->program)
-            continue;
-
-          msg = log_msg_new_empty();
-          log_msg_set_value(msg, LM_V_MESSAGE, example->message, strlen(example->message));
-          if (example->program && example->program[0])
-            log_msg_set_value(msg, LM_V_PROGRAM, example->program, strlen(example->program));
-
-          printf("Testing message program='%s' message='%s'\n", example->program, example->message);
-          log_db_parser_process_lookup(&patterndb, msg, NULL);
-
-          pdbtool_test_value(msg, ".classifier.rule_id", example->result->rule_id);
-
-          for (i = 0; example->values && i < example->values->len; i++)
+          if (example->message && example->program)
             {
-              gchar **nv = g_ptr_array_index(example->values, i);
-              if (!pdbtool_test_value(msg, nv[0], nv[1]))
-                failed_to_match = TRUE;
-            }
+              msg = log_msg_new_empty();
+              log_msg_set_value(msg, LM_V_MESSAGE, example->message, strlen(example->message));
+              if (example->program && example->program[0])
+                log_msg_set_value(msg, LM_V_PROGRAM, example->program, strlen(example->program));
 
-          log_msg_unref(msg);
+              printf("Testing message program='%s' message='%s'\n", example->program, example->message);
+              log_db_parser_process_lookup(&patterndb, msg, NULL);
+
+              pdbtool_test_value(msg, ".classifier.rule_id", example->result->rule_id);
+
+              for (i = 0; example->values && i < example->values->len; i++)
+                {
+                  gchar **nv = g_ptr_array_index(example->values, i);
+                  if (!pdbtool_test_value(msg, nv[0], nv[1]))
+                    failed_to_match = TRUE;
+                }
+
+              log_msg_unref(msg);
+            }
           examples = g_list_delete_link(examples, examples);
         }
 
