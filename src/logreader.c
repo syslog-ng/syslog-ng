@@ -276,8 +276,12 @@ log_reader_handle_line(LogReader *self, const guchar *line, gint length, GSockAd
     }
 
   if (self->options->tags)
-    for (i = 0; i < self->options->tags->len; i++)
-      log_msg_set_tag_by_id(m, g_array_index(self->options->tags, guint, i));
+    {
+      for (i = 0; i < self->options->tags->len; i++)
+        {
+          log_msg_set_tag_by_id(m, g_array_index(self->options->tags, LogTagId, i));
+        }
+    }
 
   log_msg_set_tag_by_id(m, self->super.options->source_group_tag);
 
@@ -655,10 +659,10 @@ log_reader_options_process_flag(LogReaderOptions *options, gchar *flag)
 void
 log_reader_options_set_tags(LogReaderOptions *options, GList *tags)
 {
-  guint id;
+  LogTagId id;
 
   if (!options->tags)
-    options->tags = g_array_new(FALSE, FALSE, sizeof(guint));
+    options->tags = g_array_new(FALSE, FALSE, sizeof(LogTagId));
 
   while (tags)
     {

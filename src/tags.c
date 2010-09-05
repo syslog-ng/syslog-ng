@@ -25,9 +25,12 @@
 #include "tags.h"
 #include "messages.h"
 
+/* NOTE: this aligns the members in the LogTag structure */
+#define MAX_BUNCHES 14
+
 typedef struct _LogTag
 {
-  guint id;
+  LogTagId id;
   gchar *name;
 } LogTag;
 
@@ -48,10 +51,10 @@ static GStaticMutex log_tags_lock = G_STATIC_MUTEX_INIT;
  * @name:   the name of the tag
  *
  */
-guint
+LogTagId
 log_tags_get_by_name(const gchar *name)
 {
-  guint id;
+  gint id;
 
   g_static_mutex_lock(&log_tags_lock);
 
@@ -60,7 +63,7 @@ log_tags_get_by_name(const gchar *name)
     {
       id = log_tags_num;
       log_tags_list = g_renew(LogTag, log_tags_list, ++log_tags_num);
-      log_tags_list[id].id = id;
+      log_tags_list[id].id = (LogTagId) id;
       log_tags_list[id].name = g_strdup(name);
       g_hash_table_insert(log_tags_hash, log_tags_list[id].name, GUINT_TO_POINTER(log_tags_list[id].id + 1));
     }
@@ -83,7 +86,7 @@ log_tags_get_by_name(const gchar *name)
  *
  */
 gchar *
-log_tags_get_by_id(guint id)
+log_tags_get_by_id(LogTagId id)
 {
   gchar *name = NULL;
 

@@ -29,7 +29,7 @@ do { \
 } while (0);
 
 gchar *
-get_tag_by_id(guint id)
+get_tag_by_id(LogTagId id)
 {
   return g_strdup_printf("tags%d", id);
 }

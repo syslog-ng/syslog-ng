@@ -440,8 +440,10 @@ filter_tags_eval(FilterExprNode *s, LogMessage *msg)
   gint i;
 
   for (i = 0; i < self->tags->len; i++)
-    if (log_msg_is_tag_by_id(msg, g_array_index(self->tags, guint, i)))
-      return TRUE;
+    {
+      if (log_msg_is_tag_by_id(msg, g_array_index(self->tags, LogTagId, i)))
+        return TRUE;
+    }
 
   return FALSE;
 }
@@ -450,7 +452,7 @@ void
 filter_tags_add(FilterExprNode *s, GList *tags)
 {
   FilterTags *self = (FilterTags *)s;
-  guint id;
+  LogTagId id;
 
   while (tags)
     {
@@ -476,7 +478,7 @@ filter_tags_new(GList *tags)
 {
   FilterTags *self = g_new0(FilterTags, 1);
 
-  self->tags = g_array_new(FALSE, FALSE, sizeof(guint));
+  self->tags = g_array_new(FALSE, FALSE, sizeof(LogTagId));
 
   filter_tags_add(&self->super, tags);
 

@@ -32,6 +32,7 @@
 #include "logstamp.h"
 #include "nvtable.h"
 #include "msg-format.h"
+#include "tags.h"
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -171,7 +172,7 @@ log_msg_get_value(LogMessage *self, NVHandle handle, gssize *value_len)
     return log_msg_get_macro_value(self, flags >> 8, value_len);
 }
 
-typedef gboolean (*LogMessageTableForeachFunc)(LogMessage *self, guint32 log_msg_tag_index, guint32 tag_id, const gchar *name, gpointer user_data);
+typedef gboolean (*LogMessageTagsForeachFunc)(LogMessage *self, LogTagId tag_id, const gchar *name, gpointer user_data);
 
 void log_msg_set_value(LogMessage *self, NVHandle handle, const gchar *new_value, gssize length);
 void log_msg_set_value_indirect(LogMessage *self, NVHandle handle, NVHandle ref_handle, guint8 type, guint16 ofs, guint16 len);
@@ -182,13 +183,13 @@ void log_msg_clear_matches(LogMessage *self);
 void log_msg_append_format_sdata(LogMessage *self, GString *result);
 void log_msg_format_sdata(LogMessage *self, GString *result);
 
-void log_msg_set_tag_by_id(LogMessage *self, guint id);
+void log_msg_set_tag_by_id(LogMessage *self, LogTagId id);
 void log_msg_set_tag_by_name(LogMessage *self, const gchar *name);
-void log_msg_clear_tag_by_id(LogMessage *self, guint id);
+void log_msg_clear_tag_by_id(LogMessage *self, LogTagId id);
 void log_msg_clear_tag_by_name(LogMessage *self, const gchar *name);
-gboolean log_msg_is_tag_by_id(LogMessage *self, guint id);
+gboolean log_msg_is_tag_by_id(LogMessage *self, LogTagId id);
 gboolean log_msg_is_tag_by_name(LogMessage *self, const gchar *name);
-gboolean log_msg_tags_foreach(LogMessage *self, LogMessageTableForeachFunc callback, gpointer user_data);
+gboolean log_msg_tags_foreach(LogMessage *self, LogMessageTagsForeachFunc callback, gpointer user_data);
 void log_msg_print_tags(LogMessage *self, GString *result);
 
 void log_msg_clear(LogMessage *self);

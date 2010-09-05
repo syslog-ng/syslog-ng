@@ -43,7 +43,7 @@ typedef struct _LogSourceOptions
   gint program_override_len;
   gchar *host_override;
   gint host_override_len;
-  guint source_group_tag;
+  LogTagId source_group_tag;
 
 } LogSourceOptions;
 

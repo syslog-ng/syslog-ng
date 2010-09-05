@@ -339,10 +339,13 @@ swap_index_big_endian(guint index)
 }
 
 gboolean
-log_msg_tags_foreach(LogMessage *self, LogMessageTableForeachFunc callback, gpointer user_data)
+log_msg_tags_foreach(LogMessage *self, LogMessageTagsForeachFunc callback, gpointer user_data)
 {
   guint i, j, k;
-  guint tag_id;
+  LogTagId tag_id;
+  guint bitidx;
+  gchar *name;
+
   for (i = 0; i != self->num_tags; ++i)
     {
       if (G_LIKELY(!self->tags[i]))
@@ -357,15 +360,14 @@ log_msg_tags_foreach(LogMessage *self, LogMessageTableForeachFunc callback, gpoi
               if (G_LIKELY(! * ( ((guint8*) (&self->tags[i])) + swap_index_big_endian(j) * 2 + swap_index_big_endian(k))))
                 continue;
 
-              guint bitidx;
-
               for (bitidx = 0; bitidx != 8; ++bitidx)
                 {
                   if ( *(((guint8*) (&self->tags[i])) + swap_index_big_endian(j) * 2 +swap_index_big_endian(k)) & (1 << bitidx))
                     {
-                      tag_id = i * 32  + j * 16 + k * 8 + bitidx;
-                      gchar *name =  log_tags_get_by_id(tag_id);
-                      callback(self, i , tag_id, name, user_data);
+                      tag_id = (LogTagId) (i * 32  + j * 16 + k * 8 + bitidx);
+
+                      name = log_tags_get_by_id(tag_id);
+                      callback(self, tag_id, name, user_data);
                     }
                 }
             }
@@ -375,7 +377,7 @@ log_msg_tags_foreach(LogMessage *self, LogMessageTableForeachFunc callback, gpoi
 }
 
 static inline void
-log_msg_set_tag_by_id_onoff(LogMessage *self, guint id, gboolean on)
+log_msg_set_tag_by_id_onoff(LogMessage *self, LogTagId id, gboolean on)
 {
   guint32 *tags;
   gint old_num_tags;
@@ -414,7 +416,7 @@ log_msg_set_tag_by_id_onoff(LogMessage *self, guint id, gboolean on)
 }
 
 void
-log_msg_set_tag_by_id(LogMessage *self, guint id)
+log_msg_set_tag_by_id(LogMessage *self, LogTagId id)
 {
   log_msg_set_tag_by_id_onoff(self, id, TRUE);
 }
@@ -426,7 +428,7 @@ log_msg_set_tag_by_name(LogMessage *self, const gchar *name)
 }
 
 void
-log_msg_clear_tag_by_id(LogMessage *self, guint id)
+log_msg_clear_tag_by_id(LogMessage *self, LogTagId id)
 {
   log_msg_set_tag_by_id_onoff(self, id, FALSE);
 }
@@ -438,11 +440,11 @@ log_msg_clear_tag_by_name(LogMessage *self, const gchar *name)
 }
 
 gboolean
-log_msg_is_tag_by_id(LogMessage *self, guint id)
+log_msg_is_tag_by_id(LogMessage *self, LogTagId id)
 {
   if (G_UNLIKELY(8159 < id))
     {
-      msg_error("Invalid tag", evt_tag_int("id", id), NULL);
+      msg_error("Invalid tag", evt_tag_int("id", (gint) id), NULL);
       return FALSE;
     }
 
@@ -566,7 +568,7 @@ log_msg_format_sdata(LogMessage *self, GString *result)
 }
 
 gboolean
-log_msg_append_tags_callback(LogMessage *self, guint32 log_msg_tag_index, guint32 tag_id, const gchar *name, gpointer user_data)
+log_msg_append_tags_callback(LogMessage *self, LogTagId tag_id, const gchar *name, gpointer user_data)
 {
   GString *result = (GString *) ((gpointer *) user_data)[0];
   gint original_length = GPOINTER_TO_UINT(((gpointer *) user_data)[1]);
