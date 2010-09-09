@@ -15,7 +15,7 @@ sub include_block
 {
     my ($start_re, $end_re) = @_;
 
-    open(GR, "<" .$ENV{'top_srcdir'}. "/src/cfg-grammar.y") || die "Error opening cfg-grammar.y";
+    open(GR, "<" .$ENV{'top_srcdir'}. "/lib/cfg-grammar.y") || die "Error opening cfg-grammar.y";
 
     my $decl_started = 0;
     while (<GR>) {

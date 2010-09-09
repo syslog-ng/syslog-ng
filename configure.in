@@ -8,7 +8,7 @@ dnl SNAPSHOT_VERSION   - snapshot version to add to version number
 dnl BINARY_BRANCH      - the value is added to all source/binary packages
 dnl SOURCE_REVISION    - Revision of the source-tree, will added to the version string
 dnl
-AC_INIT(src/main.c)
+AC_INIT(syslog-ng/main.c)
 AC_CONFIG_MACRO_DIR([m4])
 
 dnl ***************************************************************************
@@ -811,19 +811,21 @@ AC_SUBST(PACKAGE_SUFFIX)
 AC_OUTPUT(dist.conf
           Makefile 
 	  syslog-ng.spec
-	  src/Makefile 
-          src/dummy/Makefile
-          src/afsocket/Makefile
-          src/afsql/Makefile
-          src/afstreams/Makefile
-          src/affile/Makefile
-          src/afprog/Makefile
-          src/afuser/Makefile
-          src/dbparser/Makefile
-          src/csvparser/Makefile
-          src/confgen/Makefile
-          src/syslogformat/Makefile
-          src/pacctformat/Makefile
+	  lib/Makefile 
+	  syslog-ng/Makefile 
+	  modules/Makefile 
+          modules/dummy/Makefile
+          modules/afsocket/Makefile
+          modules/afsql/Makefile
+          modules/afstreams/Makefile
+          modules/affile/Makefile
+          modules/afprog/Makefile
+          modules/afuser/Makefile
+          modules/dbparser/Makefile
+          modules/csvparser/Makefile
+          modules/confgen/Makefile
+          modules/syslogformat/Makefile
+          modules/pacctformat/Makefile
 	  scripts/Makefile
 	  scripts/update-patterndb
 	  doc/Makefile

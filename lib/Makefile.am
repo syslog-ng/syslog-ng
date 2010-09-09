@@ -1,25 +1,9 @@
-SUBDIRS = . afsocket afsql afstreams affile afprog afuser dbparser csvparser confgen syslogformat pacctformat dummy
 YFLAGS=@YFLAGS@
 
 export top_srcdir
 
-
-if ENABLE_ENV_WRAPPER
-libexec_PROGRAMS = syslog-ng
-sbin_PROGRAMS = syslog-ng-wrapper syslog-ng-ctl
-else
-sbin_PROGRAMS = syslog-ng syslog-ng-ctl
-endif
-
 lib_LTLIBRARIES = libsyslog-ng.la
 libsyslog_ng_la_LIBADD = @DEPS_LIBS@
-
-syslog_ng_SOURCES = main.c
-syslog_ng_LDADD = libsyslog-ng.la @DEPS_LIBS@
-syslog_ng_wrapper_SOURCES = wrapper.c
-
-syslog_ng_ctl_SOURCES = syslog-ng-ctl.c
-syslog_ng_ctl_LDADD = libsyslog-ng.la @DEPS_LIBS@
 
 libsyslog_ng_la_SOURCES = \
 	misc.c misc.h utils.c utils.h messages.c messages.h syslog-names.c syslog-names.h \
@@ -74,15 +58,5 @@ EXTRA_DIST = $(BUILT_SOURCES) \
 	syslog-ng.h
 
 CLEAN_FILES = $(BUILT_SOURCES)
-
-if ENABLE_ENV_WRAPPER
-
-install-exec-hook:
-	mv $(DESTDIR)/$(sbindir)/syslog-ng-wrapper $(DESTDIR)/$(sbindir)/syslog-ng
-else
-
-install-exec-hook:
-	echo Nothing to do!
-endif
 
 include $(top_srcdir)/build/lex-rules.am

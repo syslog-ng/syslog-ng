@@ -1,5 +1,5 @@
-%.y: %.ym $(top_srcdir)/src/merge-grammar.pl $(top_srcdir)/src/cfg-grammar.y
-	$(top_srcdir)/src/merge-grammar.pl $< > $@
+%.y: %.ym $(top_srcdir)/lib/merge-grammar.pl $(top_srcdir)/lib/cfg-grammar.y
+	$(top_srcdir)/lib/merge-grammar.pl $< > $@
 
 .l.c:
 	$(am__skiplex) $(SHELL) $(YLWRAP) $< $(LEX_OUTPUT_ROOT).c $*.c $(LEX_OUTPUT_ROOT).h $*.h -- $(LEXCOMPILE)

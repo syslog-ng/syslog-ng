@@ -1,4 +1,4 @@
-SUBDIRS = src scripts tests doc contrib scl debian tgz2build
+SUBDIRS = lib modules syslog-ng scripts tests doc contrib scl debian tgz2build
 
 ACLOCAL_AMFLAGS = -I m4
 
