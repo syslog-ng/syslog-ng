@@ -92,6 +92,7 @@
 %token LL_CONTEXT_BLOCK_CONTENT       9
 %token LL_CONTEXT_PRAGMA              10
 %token LL_CONTEXT_FORMAT              11
+%token LL_CONTEXT_TEMPLATE_FUNC       12
 
 /* statements */
 %token KW_SOURCE                      10000

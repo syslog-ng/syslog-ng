@@ -46,6 +46,22 @@ gpointer plugin_parse_config(Plugin *plugin, GlobalConfig *cfg, YYLTYPE *yylloc)
 
 
 /* plugin side API */
+
+/* helper macros for template function plugins */
+#define TEMPLATE_FUNCTION(x) \
+  static LogTemplateFunction \
+  x ## _construct(Plugin *self, GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name) \
+  {                                                                                            \
+    return x;                                                                                  \
+  }
+
+#define TEMPLATE_FUNCTION_PLUGIN(x, tf_name) \
+  {                                     \
+    .type = LL_CONTEXT_TEMPLATE_FUNC,   \
+    .name = tf_name,                    \
+    .construct = x ## _construct,       \
+  }
+
 void plugin_register(GlobalConfig *cfg, Plugin *p, gint number);
 gboolean plugin_load_module(const gchar *module_name, GlobalConfig *cfg, CfgArgs *args);
 

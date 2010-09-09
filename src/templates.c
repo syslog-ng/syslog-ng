@@ -30,6 +30,7 @@
 #include "misc.h"
 #include "filter.h"
 #include "gsocket.h"
+#include "plugin.h"
 
 #include <time.h>
 #include <string.h>
@@ -638,26 +639,13 @@ log_template_add_value_elem(LogTemplate *self, gchar *value_name, gsize value_na
   self->compiled_template = g_list_prepend(self->compiled_template, e);
 }
 
-static void
-tl_echo(GString *result, LogMessage *msg, gint argc, GString *argv[])
-{
-  gint i;
-
-  for (i = 0; i < argc; i++)
-    {
-      g_string_append_len(result, argv[i]->str, argv[i]->len);
-      if (i < argc - 1)
-        g_string_append_c(result, ' ');
-    }
-}
-
 /* NOTE: this steals argv if successful */
 static gboolean
 log_template_add_func_elem(LogTemplate *self, GString *text, gint argc, gchar *argv[], GError **error)
 {
   LogTemplateElem *e;
   gint i;
-  gboolean success = TRUE;
+  Plugin *p;
 
   g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
 
@@ -668,32 +656,39 @@ log_template_add_func_elem(LogTemplate *self, GString *text, gint argc, gchar *a
   e->type = LTE_FUNC;
   e->text_len = text ? text->len : 0;
   e->text = text ? g_strndup(text->str, text->len) : NULL;
-  /*  e->func.func = log_template_func_lookup(argv[0]); not yet implemented */
-  e->func.func = tl_echo;
+
+  p = plugin_find(self->cfg, LL_CONTEXT_TEMPLATE_FUNC, argv[0]);
+  if (!p)
+    {
+      g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE, "Unknown template function %s", argv[0]);
+      goto error;
+    }
+  else
+    {
+      e->func.func = plugin_construct(p, self->cfg, LL_CONTEXT_TEMPLATE_FUNC, argv[0]);
+    }
+
   e->func.argc = argc - 1;
   for (i = 1; i < argc; i++)
     {
       e->func.argv[i - 1] = log_template_new(self->cfg, NULL, argv[i]);
       if (!log_template_compile(e->func.argv[i - 1], error))
-        success = FALSE;
+        goto error;
     }
-  if (success)
+  g_strfreev(argv);
+  self->compiled_template = g_list_prepend(self->compiled_template, e);
+  return TRUE;
+
+ error:
+  for (i = 0; i < e->func.argc; i++)
     {
-      g_strfreev(argv);
-      self->compiled_template = g_list_prepend(self->compiled_template, e);
+      if (e->func.argv[i])
+        log_template_unref(e->func.argv[i]);
     }
-  else
-    {
-      for (i = 0; i < e->func.argc; i++)
-        {
-          if (e->func.argv[i])
-            log_template_unref(e->func.argv[i]);
-        }
-      if (e->text)
-        g_free(e->text);
-      g_free(e);
-    }
-  return success;
+  if (e->text)
+    g_free(e->text);
+  g_free(e);
+  return FALSE;
 }
 
 gboolean

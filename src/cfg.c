@@ -274,6 +274,7 @@ cfg_set_version(GlobalConfig *self, gint version)
       self->chain_hostnames = TRUE;
     }
 
+  plugin_load_module("builtin_tmpl_func", self, NULL);
   if (self->version <= 0x0301 || atoi(cfg_args_get(self->lexer->globals, "autoload-compiled-modules")))
     {
       plugin_load_module("syslogformat", self, NULL);

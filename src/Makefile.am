@@ -54,6 +54,7 @@ libsyslog_ng_la_SOURCES = \
 	cfg-lexer.c cfg-lexer.h cfg-lex.l \
 	cfg-parser.c cfg-parser.h cfg-grammar.y \
 	plugin.c plugin.h \
+	builtin-tmpl-func.c \
 	filter-expr-grammar.y filter-expr-parser.c filter-expr-parser.h \
 	block-ref-grammar.y block-ref-parser.c block-ref-parser.h \
 	pragma-grammar.y pragma-parser.h pragma-parser.c \
