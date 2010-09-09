@@ -24,7 +24,6 @@
   while (0)
 
 MsgFormatOptions parse_options;
-GlobalConfig dummy_cfg;
 
 unsigned long
 absolute_value(signed long diff)
@@ -143,9 +142,10 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   putenv("TZ=MET-1METDST");
   tzset();
 
-  plugin_load_module("syslogformat", &dummy_cfg, NULL);
+  configuration = cfg_new(0x0302);
+  plugin_load_module("syslogformat", configuration, NULL);
   msg_format_options_defaults(&parse_options);
-  msg_format_options_init(&parse_options, &dummy_cfg);
+  msg_format_options_init(&parse_options, configuration);
 
   testcase("<15> openvpn[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, NULL,
            15, 			// pri

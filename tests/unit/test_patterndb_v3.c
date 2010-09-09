@@ -182,7 +182,7 @@ test_rule_pattern(LogPatternDatabase *patterndb, const gchar *pattern, const gch
   if (!tzinfo)
     tzinfo = time_zone_info_new(NULL);
   if (!templ)
-    templ = log_template_new("dummy", "$TEST");
+    templ = log_template_new(configuration, "dummy", "$TEST");
 
   log_msg_set_value(msg, LM_V_HOST, MYHOST, strlen(MYHOST));
   log_msg_set_value(msg, LM_V_PROGRAM, "test", strlen(MYHOST));
@@ -223,7 +223,7 @@ create_pattern_db(LogPatternDatabase *patterndb, gchar *pattern, gchar ** filena
   g_file_open_tmp("patterndbXXXXXX.xml", filename, NULL);
   g_file_set_contents(*filename, str->str, str->len, NULL);
 
-  if (log_pattern_database_load(patterndb, *filename, NULL))
+  if (log_pattern_database_load(patterndb, configuration, *filename, NULL))
     {
      if (!g_str_equal(patterndb->version, "3"))
         test_fail("Invalid version '%s'\n", patterndb->version);
@@ -265,8 +265,10 @@ main(int argc, char *argv[])
 {
   app_startup();
 
-  //if (argc > 1)
+  if (argc > 1)
     verbose = TRUE;
+
+  configuration = cfg_new(0x0302);
 
   msg_init(TRUE);
   test_case(test1);

@@ -24,7 +24,6 @@
   while (0)
 
 MsgFormatOptions parse_options;
-GlobalConfig dummy_cfg;
 
 unsigned long
 absolute_value(signed long diff)
@@ -173,9 +172,10 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   putenv("TZ=MET-1METDST");
   tzset();
 
-  plugin_load_module("syslogformat", &dummy_cfg, NULL);
+  configuration = cfg_new(0x0302);
+  plugin_load_module("syslogformat", configuration, NULL);
   msg_format_options_defaults(&parse_options);
-  msg_format_options_init(&parse_options, &dummy_cfg);
+  msg_format_options_init(&parse_options, configuration);
 
   testcase("<7>1 2006-10-29T01:59:59.156+01:00 mymachine.example.com evntslog - ID47 [exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] BOMAn application event log entry...",
            LP_SYSLOG_PROTOCOL, //flags

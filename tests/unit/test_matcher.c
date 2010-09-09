@@ -7,7 +7,6 @@
 #include <string.h>
 
 MsgFormatOptions parse_options;
-GlobalConfig dummy_cfg;
 
 int
 testcase_match(const gchar *log, const gchar *pattern, gint matcher_flags, gboolean expected_result, LogMatcher *m)
@@ -68,7 +67,7 @@ testcase_replace(const gchar *log, const gchar *re, gchar *replacement, const gc
 
   log_matcher_compile(m, re);
 
-  r = log_template_new(NULL, replacement);
+  r = log_template_new(configuration, NULL, replacement);
 
   result = log_matcher_replace(m, msg, nonasciiz, log_msg_get_value(msg, nonasciiz, &msglen), msglen, r, &length);
   msgbuf = log_msg_get_value(msg, nonasciiz, &msglen);
@@ -92,9 +91,10 @@ main()
 {
   app_startup();
 
-  plugin_load_module("syslogformat", &dummy_cfg, NULL);
+  configuration = cfg_new(0x0302);
+  plugin_load_module("syslogformat", configuration, NULL);
   msg_format_options_defaults(&parse_options);
-  msg_format_options_init(&parse_options, &dummy_cfg);
+  msg_format_options_init(&parse_options, configuration);
 
   /* POSIX regexp */
   testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép", "árvíz", "favíz", "favíztűrőtükörfúrógép", 0, log_matcher_posix_re_new());

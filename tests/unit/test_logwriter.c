@@ -16,7 +16,6 @@
 gboolean success = TRUE;
 gboolean verbose = FALSE;
 MsgFormatOptions parse_options;
-GlobalConfig dummy_cfg;
 
 LogMessage *
 init_msg(gchar *msg_string, gboolean use_syslog_protocol)
@@ -65,7 +64,7 @@ testcase(gchar *msg_string, gchar *template, gboolean use_syslog_protocol,gchar 
     }
   if (template)
     {
-      templ = log_template_new("dummy", template);
+      templ = log_template_new(configuration, "dummy", template);
       log_template_compile(templ,&error);
     }
   opt.template = templ;
@@ -113,20 +112,18 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   char *msg_bsd_empty_str = "<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]:";
   char *expected_msg_bsd_empty_str = " bzorp syslog-ng[23323]:\n";
   char *expected_msg_bsd_empty_str_t = "23323";
-  GlobalConfig dummy;
 
   if (argc > 1)
     verbose = TRUE;
 
-  configuration = &dummy;
-  dummy.version = 0x0300;
+  configuration = cfg_new(0x0300);
   app_startup();
   putenv("TZ=MET-1METDST");
   tzset();
 
-  plugin_load_module("syslogformat", &dummy_cfg, NULL);
+  plugin_load_module("syslogformat", configuration, NULL);
   msg_format_options_defaults(&parse_options);
-  msg_format_options_init(&parse_options, &dummy_cfg);
+  msg_format_options_init(&parse_options, configuration);
 
 
   msg_format_options_defaults(&parse_options);

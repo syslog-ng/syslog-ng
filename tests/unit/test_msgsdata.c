@@ -7,7 +7,6 @@
 #include <string.h>
 
 MsgFormatOptions parse_options;
-GlobalConfig dummy_cfg;
 
 void
 testcase_update(const gchar *msg, const gchar *expected_sd_str, gchar *elem_name1, ...)
@@ -54,9 +53,10 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 {
   app_startup();
 
-  plugin_load_module("syslogformat", &dummy_cfg, NULL);
+  configuration = cfg_new(0x0302);
+  plugin_load_module("syslogformat", configuration, NULL);
   msg_format_options_defaults(&parse_options);
-  msg_format_options_init(&parse_options, &dummy_cfg);
+  msg_format_options_init(&parse_options, configuration);
 
   testcase_update("<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] An application event log entry...",
                   "[exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"][meta sequenceId=\"11\"][syslog-ng param=\"value\"]",

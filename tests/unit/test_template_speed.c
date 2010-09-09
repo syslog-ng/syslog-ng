@@ -15,7 +15,6 @@
 gboolean success = TRUE;
 gboolean verbose = FALSE;
 MsgFormatOptions parse_options;
-GlobalConfig dummy_cfg;
 
 /* Beginning of Message character encoded in UTF8 */
 #define BOM "\xEF\xBB\xBF"
@@ -57,7 +56,7 @@ testcase(const gchar *msg_str, gboolean syslog_proto, gchar *template)
   msg->timestamps[LM_TS_RECVD].time.tv_usec = 639000;
   msg->timestamps[LM_TS_RECVD].zone_offset = get_local_timezone_ofs(1139684315);
 
-  templ = log_template_new("dummy", template);
+  templ = log_template_new(configuration, "dummy", template);
   g_get_current_time(&start);
 
   for (i = 0; i < BENCHMARK_COUNT; i++)
@@ -75,22 +74,19 @@ testcase(const gchar *msg_str, gboolean syslog_proto, gchar *template)
 int
 main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 {
-  GlobalConfig dummy;
-
   if (argc > 1)
     verbose = TRUE;
 
-  configuration = &dummy;
-  dummy.version = 0x0300;
+  configuration = cfg_new(0x0300);
 
   app_startup();
 
   putenv("TZ=MET-1METDST");
   tzset();
 
-  plugin_load_module("syslogformat", &dummy_cfg, NULL);
+  plugin_load_module("syslogformat", configuration, NULL);
   msg_format_options_defaults(&parse_options);
-  msg_format_options_init(&parse_options, &dummy_cfg);
+  msg_format_options_init(&parse_options, configuration);
 
   testcase("<155>2006-02-11T10:34:56.156+01:00 bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép", FALSE,
            "<$PRI>$DATE $HOST $MSGHDR$MSG\n");

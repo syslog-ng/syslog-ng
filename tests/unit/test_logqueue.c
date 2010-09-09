@@ -9,7 +9,6 @@
 int acked_messages = 0;
 int fed_messages = 0;
 MsgFormatOptions parse_options;
-GlobalConfig dummy_cfg;
 
 #define OVERFLOW_SIZE 10000
 
@@ -210,9 +209,10 @@ main()
   putenv("TZ=MET-1METDST");
   tzset();
 
-  plugin_load_module("syslogformat", &dummy_cfg, NULL);
+  configuration = cfg_new(0x0302);
+  plugin_load_module("syslogformat", configuration, NULL);
   msg_format_options_defaults(&parse_options);
-  msg_format_options_init(&parse_options, &dummy_cfg);
+  msg_format_options_init(&parse_options, configuration);
 
   testcase_zero_diskbuf_alternating_send_acks();
   testcase_zero_diskbuf_and_normal_acks();

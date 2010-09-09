@@ -15,7 +15,6 @@
 gboolean success = TRUE;
 gboolean verbose = FALSE;
 MsgFormatOptions parse_options;
-GlobalConfig dummy_cfg;
 
 void
 testcase(LogMessage *msg, gchar *template, gchar *expected)
@@ -28,7 +27,7 @@ testcase(LogMessage *msg, gchar *template, gchar *expected)
   if (!tzinfo)
     tzinfo = time_zone_info_new(NULL);
 
-  templ = log_template_new("dummy", template);
+  templ = log_template_new(configuration, "dummy", template);
   if (!log_template_compile(templ, &error))
     {
       fprintf(stderr, "FAIL: error compiling template, template=%s, error=%s\n", template, error->message);
@@ -58,7 +57,7 @@ testcase_failure(gchar *template, const gchar *expected_error)
   LogTemplate *templ;
   GError *error = NULL;
 
-  templ = log_template_new(NULL, template);
+  templ = log_template_new(configuration, NULL, template);
   if (log_template_compile(templ, &error))
     {
       fprintf(stderr, "FAIL: compilation failure expected to template, but success was returned, template=%s, expected_error=%s\n", template, expected_error);
@@ -80,17 +79,15 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 {
   LogMessage *msg;
   char *msg_str = "<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép";
-  GlobalConfig dummy;
 
   if (argc > 1)
     verbose = TRUE;
 
-  plugin_load_module("syslogformat", &dummy_cfg, NULL);
+  configuration = cfg_new(0x0201);
+  plugin_load_module("syslogformat", configuration, NULL);
+  plugin_load_module("builtin_tmpl_func", configuration, NULL);
   msg_format_options_defaults(&parse_options);
-  msg_format_options_init(&parse_options, &dummy_cfg);
-
-  configuration = &dummy;
-  dummy.version = 0x0201;
+  msg_format_options_init(&parse_options, configuration);
 
   app_startup();
 
@@ -220,7 +217,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase_failure("$(unbalanced_paren", "missing function name or inbalanced '('");
   testcase(msg, "$unbalanced_paren)", ")");
 
-  dummy.version = 0x0300;
+  configuration->version = 0x0300;
   testcase(msg, "$MSGHDR", "syslog-ng[23323]:");
   testcase(msg, "$MSG", "árvíztűrőtükörfúrógép");
   testcase(msg, "$MESSAGE", "árvíztűrőtükörfúrógép");
