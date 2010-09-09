@@ -7,7 +7,7 @@
 #
 
 libtoolize
-aclocal
+aclocal -I m4 --install
 sed -i -e 's/PKG_PROG_PKG_CONFIG(\[0\.16\])/PKG_PROG_PKG_CONFIG([0.14])/g' aclocal.m4
 
 autoheader
