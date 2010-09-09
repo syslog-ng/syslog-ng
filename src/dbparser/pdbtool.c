@@ -781,7 +781,11 @@ static GOptionEntry dump_options[] =
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
 };
 
-
+static gboolean
+pdbtool_load_module(const gchar *option_name, const gchar *value, gpointer data, GError **error)
+{
+  return plugin_load_module(value, configuration, NULL);
+}
 
 const gchar *
 pdbtool_mode(int *argc, char **argv[])
@@ -804,6 +808,10 @@ pdbtool_mode(int *argc, char **argv[])
 
 static GOptionEntry pdbtool_options[] =
 {
+  { "module", 0, 0, G_OPTION_ARG_CALLBACK, pdbtool_load_module,
+    "Load the module specified as parameter", "<module>" },
+  { "module-path",         0,         0, G_OPTION_ARG_STRING, &module_path,
+    "Set the list of colon separated directories to search for modules, default=" PATH_MODULEDIR, "<path>" },
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
 };
 
