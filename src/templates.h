@@ -50,6 +50,7 @@ typedef struct _LogTemplate
   GList *compiled_template;
   guint flags;
   gboolean def_inline;
+  GPtrArray *arg_bufs;
 } LogTemplate;
 
 typedef struct _LogMacroDef
@@ -59,6 +60,9 @@ typedef struct _LogMacroDef
 } LogMacroDef;
 
 extern LogMacroDef macros[];
+
+/* appends the formatted output into result */
+typedef void (*LogTemplateFunction)(GString *result, LogMessage *msg, gint argc, GString *argv[]);
 
 void log_template_set_escape(LogTemplate *self, gboolean enable);
 gboolean log_template_compile(LogTemplate *self, GError **error);

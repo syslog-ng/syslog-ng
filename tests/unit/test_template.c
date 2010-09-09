@@ -5,6 +5,7 @@
 #include "apphook.h"
 #include "cfg.h"
 #include "timeutils.h"
+#include "plugin.h"
 
 #include <time.h>
 #include <stdlib.h>
@@ -22,11 +23,19 @@ testcase(LogMessage *msg, gchar *template, gchar *expected)
   LogTemplate *templ;
   GString *res = g_string_sized_new(128);
   static TimeZoneInfo *tzinfo = NULL;
+  GError *error = NULL;
 
   if (!tzinfo)
     tzinfo = time_zone_info_new(NULL);
 
   templ = log_template_new("dummy", template);
+  if (!log_template_compile(templ, &error))
+    {
+      fprintf(stderr, "FAIL: error compiling template, template=%s, error=%s\n", template, error->message);
+      g_clear_error(&error);
+      success = FALSE;
+      goto error;
+    }
   log_template_format(templ, msg, LT_ESCAPE, TS_FMT_BSD, tzinfo, 3, 0, res);
 
   if (strcmp(res->str, expected) != 0)
@@ -38,8 +47,32 @@ testcase(LogMessage *msg, gchar *template, gchar *expected)
     {
       fprintf(stderr, "PASS: template test success, template=%s => %s\n", template, expected);
     }
+ error:
   log_template_unref(templ);
   g_string_free(res, TRUE);
+}
+
+void
+testcase_failure(gchar *template, const gchar *expected_error)
+{
+  LogTemplate *templ;
+  GError *error = NULL;
+
+  templ = log_template_new(NULL, template);
+  if (log_template_compile(templ, &error))
+    {
+      fprintf(stderr, "FAIL: compilation failure expected to template, but success was returned, template=%s, expected_error=%s\n", template, expected_error);
+      success = FALSE;
+      goto error;
+    }
+  if (strstr(error->message, expected_error) == NULL)
+    {
+      fprintf(stderr, "FAIL: compilation error doesn't match, error=%s, expected_error=%s\n", error->message, expected_error);
+      success = FALSE;
+      goto error;
+    }
+ error:
+  log_template_unref(templ);
 }
 
 int
@@ -172,6 +205,20 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase(msg, "${1}", "first-match");
   testcase(msg, "$1", "first-match");
   testcase(msg, "$$$1$$", "$first-match$");
+
+  /* template functions */
+  testcase(msg, "$(echo $HOST $PID)", "bzorp 23323");
+  testcase(msg, "$(echo \"$(echo $HOST)\" $PID)", "bzorp 23323");
+  testcase(msg, "$(echo \"$(echo '$(echo $HOST)')\" $PID)", "bzorp 23323");
+  testcase(msg, "$(echo \"$(echo '$(echo $HOST)')\" $PID)", "bzorp 23323");
+  testcase(msg, "$(echo '\"$(echo $(echo $HOST))\"' $PID)", "\"bzorp\" 23323");
+
+  /* template syntax errors */
+  testcase_failure("${unbalanced_brace", "'}' is missing");
+  testcase(msg, "$unbalanced_brace}", "}");
+  testcase(msg, "$}", "$}");
+  testcase_failure("$(unbalanced_paren", "missing function name or inbalanced '('");
+  testcase(msg, "$unbalanced_paren)", ")");
 
   dummy.version = 0x0300;
   testcase(msg, "$MSGHDR", "syslog-ng[23323]:");

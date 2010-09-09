@@ -108,6 +108,9 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            "$MSG\n");
 
   testcase("<155>2006-02-11T10:34:56.156+01:00 bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép", FALSE,
+           "$(echo $MSG)\n");
+
+  testcase("<155>2006-02-11T10:34:56.156+01:00 bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép", FALSE,
            "$DATE $FACILITY.$PRIORITY $HOST $MSGHDR$MSG $SEQNO\n");
 
   testcase("<155>2006-02-11T10:34:56.156+01:00 bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép", FALSE,
