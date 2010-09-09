@@ -482,7 +482,7 @@ options_stmt
 template_stmt
 	: string
 	  {
-	    last_template = log_template_new($1, NULL);
+	    last_template = log_template_new(configuration, $1, NULL);
 	    free($1);
 	  }
 	  '{' template_items '}'		{ $$ = last_template;  }

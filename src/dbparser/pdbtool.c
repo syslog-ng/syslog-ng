@@ -377,9 +377,7 @@ pdbtool_match(int argc, char *argv[])
   gboolean matched;
   LogProto *proto = NULL;
   gboolean may_read = TRUE;
-  GlobalConfig *cfg;
 
-  cfg = cfg_new(0x0302);
   memset(&patterndb, 0x0, sizeof(LogPatternDatabase));
   memset(&parse_options, 0, sizeof(parse_options));
 
@@ -394,7 +392,7 @@ pdbtool_match(int argc, char *argv[])
       gchar *t;
 
       t = g_strcompress(template_string);
-      template = log_template_new(NULL, t);
+      template = log_template_new(configuration, NULL, t);
       g_free(t);
 
       output = g_string_sized_new(512);
@@ -405,7 +403,7 @@ pdbtool_match(int argc, char *argv[])
       CfgLexer *lexer;
 
       lexer = cfg_lexer_new_buffer(filter_string, strlen(filter_string));
-      if (!cfg_run_parser(cfg, lexer, &filter_expr_parser, (gpointer *) &filter))
+      if (!cfg_run_parser(configuration, lexer, &filter_expr_parser, (gpointer *) &filter))
         {
           fprintf(stderr, "Error parsing filter expression\n");
           return 1;
@@ -413,11 +411,10 @@ pdbtool_match(int argc, char *argv[])
     }
 
 
-  plugin_load_module("syslogformat", cfg, NULL);
   msg_format_options_defaults(&parse_options);
-  msg_format_options_init(&parse_options, cfg);
+  msg_format_options_init(&parse_options, configuration);
 
-  if (!log_pattern_database_load(&patterndb, patterndb_file, NULL))
+  if (!log_pattern_database_load(&patterndb, configuration, patterndb_file, NULL))
     {
       goto error;
     }
@@ -584,7 +581,6 @@ pdbtool_match(int argc, char *argv[])
   log_pattern_database_free(&patterndb);
   log_msg_unref(msg);
   msg_format_options_destroy(&parse_options);
-  cfg_free(cfg);
 
   return ret;
 }
@@ -671,7 +667,7 @@ pdbtool_test(int argc, char *argv[])
         }
       memset(&patterndb, 0x0, sizeof(LogPatternDatabase));
 
-      if (!log_pattern_database_load(&patterndb, argv[arg_pos], &examples))
+      if (!log_pattern_database_load(&patterndb, configuration, argv[arg_pos], &examples))
         {
           failed_to_load = TRUE;
           continue;
@@ -759,7 +755,7 @@ pdbtool_dump(int argc, char *argv[])
 
   memset(&patterndb, 0x0, sizeof(LogPatternDatabase));
 
-  if (!log_pattern_database_load(&patterndb, patterndb_file, NULL))
+  if (!log_pattern_database_load(&patterndb, configuration, patterndb_file, NULL))
     return 1;
 
   if (dump_program_tree)
@@ -851,6 +847,8 @@ main(int argc, char *argv[])
   log_tags_init();
   log_msg_global_init();
   log_db_parser_global_init();
+  configuration = cfg_new(0x0302);
+
   mode_string = pdbtool_mode(&argc, &argv);
   if (!mode_string)
     {
@@ -886,6 +884,7 @@ main(int argc, char *argv[])
   g_option_context_free(ctx);
 
   msg_init(TRUE);
+  plugin_load_module("syslogformat", configuration, NULL);
 
   if (color_out)
     colors = full_colors;
@@ -895,6 +894,8 @@ main(int argc, char *argv[])
   log_tags_deinit();
   log_msg_global_deinit();
 
+  cfg_free(configuration);
+  configuration = NULL;
   msg_deinit();
   return ret;
 }

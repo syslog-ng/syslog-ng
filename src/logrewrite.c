@@ -143,7 +143,7 @@ log_rewrite_subst_new(const gchar *replacement)
   self->super.free_fn = log_rewrite_subst_free;
   self->super.process = log_rewrite_subst_process;
   
-  self->replacement = log_template_new(NULL, replacement);
+  self->replacement = log_template_new(configuration, NULL, replacement);
   return &self->super;
 }
 
@@ -189,7 +189,7 @@ log_rewrite_set_new(const gchar *new_value)
   self->super.free_fn = log_rewrite_set_free;
   self->super.process = log_rewrite_set_process;
 
-  self->value_template = log_template_new(NULL, new_value);
+  self->value_template = log_template_new(configuration, NULL, new_value);
   
   return &self->super;
 }

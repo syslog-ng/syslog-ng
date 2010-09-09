@@ -71,7 +71,7 @@ typedef struct _LogPatternDatabase
 } LogPatternDatabase;
 
 LogDBResult *log_pattern_database_lookup(LogPatternDatabase *self, LogMessage *msg, GSList **dbg_list);
-gboolean log_pattern_database_load(LogPatternDatabase *self, const gchar *config, GList **examples);
+gboolean log_pattern_database_load(LogPatternDatabase *self, GlobalConfig *cfg, const gchar *config, GList **examples);
 void log_pattern_database_free(LogPatternDatabase *self);
 
 void log_pattern_example_free(gpointer s);

@@ -32,6 +32,7 @@ struct _LogDBParser
 {
   LogParser super;
   LogPatternDatabase db;
+  GlobalConfig *cfg;
   gchar *db_file;
   time_t db_file_last_check;
   ino_t db_file_inode;
@@ -61,7 +62,7 @@ log_db_parser_reload_database(LogDBParser *self)
   db_old = self->db;
   db_file_old = self->db_file;
 
-  if (!log_pattern_database_load(&self->db, self->db_file, NULL))
+  if (!log_pattern_database_load(&self->db, self->cfg, self->db_file, NULL))
     {
       msg_error("Error reloading pattern database, no automatic reload will be performed", NULL);
       /* restore the old object pointers */
@@ -176,6 +177,7 @@ log_db_parser_new(void)
   self->super.process = log_db_parser_process;
   self->super.free_fn = log_db_parser_free;
   self->db_file = g_strdup(PATH_PATTERNDB_FILE);
+  self->cfg = configuration;
 
   register_application_hook(AH_POST_CONFIG_LOADED, log_db_parser_post_config_hook, self);
   return &self->super;

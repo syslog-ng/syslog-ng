@@ -673,7 +673,7 @@ log_template_add_func_elem(LogTemplate *self, GString *text, gint argc, gchar *a
   e->func.argc = argc - 1;
   for (i = 1; i < argc; i++)
     {
-      e->func.argv[i - 1] = log_template_new(NULL, argv[i]);
+      e->func.argv[i - 1] = log_template_new(self->cfg, NULL, argv[i]);
       if (!log_template_compile(e->func.argv[i - 1], error))
         success = FALSE;
     }
@@ -1017,13 +1017,14 @@ log_template_format(LogTemplate *self, LogMessage *lm, guint macro_flags, gint t
 }
 
 LogTemplate *
-log_template_new(gchar *name, const gchar *template)
+log_template_new(GlobalConfig *cfg, gchar *name, const gchar *template)
 {
   LogTemplate *self = g_new0(LogTemplate, 1);
   
   self->name = g_strdup(name);
   self->template = template ? g_strdup(template) : NULL;
   self->ref_cnt = 1;
+  self->cfg = cfg;
   if (configuration && configuration->version < 0x0300)
     {
       static gboolean warn_written = FALSE;

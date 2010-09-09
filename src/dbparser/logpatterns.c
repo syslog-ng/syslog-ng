@@ -174,6 +174,7 @@ typedef struct _LogDBParserState
   GList *examples;
   gchar *value_name;
   gchar *test_value_name;
+  GlobalConfig *cfg;
 } LogDBParserState;
 
 void
@@ -434,7 +435,7 @@ log_classifier_xml_text(GMarkupParseContext *context, const gchar *text, gsize t
       if (!state->current_result->values)
         state->current_result->values = g_ptr_array_new();
 
-      value = log_template_new(state->value_name, text);
+      value = log_template_new(state->cfg, state->value_name, text);
       if (!log_template_compile(value, &err))
         {
           msg_error("Error compiling value template",
@@ -541,17 +542,17 @@ log_pattern_database_lookup(LogPatternDatabase *self, LogMessage *msg, GSList **
 }
 
 gboolean
-log_pattern_database_load(LogPatternDatabase *self, const gchar *config, GList **examples)
+log_pattern_database_load(LogPatternDatabase *self, GlobalConfig *cfg, const gchar *config, GList **examples)
 {
   LogDBParserState state;
   GMarkupParseContext *parse_ctx = NULL;
   GError *error = NULL;
-  FILE *cfg = NULL;
+  FILE *dbfile = NULL;
   gint bytes_read;
   gchar buff[4096];
   gboolean success = FALSE;
 
-  if ((cfg = fopen(config, "r")) == NULL)
+  if ((dbfile = fopen(config, "r")) == NULL)
     {
       msg_error("Error opening classifier configuration file",
                  evt_tag_str(EVT_TAG_FILENAME, config),
@@ -565,12 +566,13 @@ log_pattern_database_load(LogPatternDatabase *self, const gchar *config, GList *
   state.db = self;
   state.root_program = log_db_program_new();
   state.load_examples = !!examples;
+  state.cfg = cfg;
 
   self->programs = r_new_node("", state.root_program);
 
   parse_ctx = g_markup_parse_context_new(&db_parser, 0, &state, NULL);
 
-  while ((bytes_read = fread(buff, sizeof(gchar), 4096, cfg)) != 0)
+  while ((bytes_read = fread(buff, sizeof(gchar), 4096, dbfile)) != 0)
     {
       if (!g_markup_parse_context_parse(parse_ctx, buff, bytes_read, &error))
         {
@@ -581,8 +583,8 @@ log_pattern_database_load(LogPatternDatabase *self, const gchar *config, GList *
           goto error;
         }
     }
-  fclose(cfg);
-  cfg = NULL;
+  fclose(dbfile);
+  dbfile = NULL;
 
   if (!g_markup_parse_context_end_parse(parse_ctx, &error))
     {
@@ -603,8 +605,8 @@ log_pattern_database_load(LogPatternDatabase *self, const gchar *config, GList *
     {
       log_pattern_database_free(self);
     }
-  if (cfg)
-    fclose(cfg);
+  if (dbfile)
+    fclose(dbfile);
   if (parse_ctx)
     g_markup_parse_context_free(parse_ctx);
   return success;

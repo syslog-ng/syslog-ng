@@ -28,6 +28,7 @@
 #include "syslog-ng.h"
 #include "timeutils.h"
 #include "logmsg.h"
+#include "cfg.h"
 
 #define LT_ESCAPE      0x0001
 #define LT_STAMP_RECVD 0x0002
@@ -50,6 +51,7 @@ typedef struct _LogTemplate
   GList *compiled_template;
   guint flags;
   gboolean def_inline;
+  GlobalConfig *cfg;
   GPtrArray *arg_bufs;
 } LogTemplate;
 
@@ -71,7 +73,7 @@ void log_template_append_format(LogTemplate *self, LogMessage *lm, guint macro_f
 gboolean log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, TimeZoneInfo *zone_info, gint frac_digits, gint32 seq_num, LogMessage *msg);
 
 
-LogTemplate *log_template_new(gchar *name, const gchar *template);
+LogTemplate *log_template_new(GlobalConfig *cfg, gchar *name, const gchar *template);
 LogTemplate *log_template_ref(LogTemplate *s);
 void log_template_unref(LogTemplate *s);
 

@@ -299,7 +299,7 @@ cfg_check_inline_template(GlobalConfig *cfg, const gchar *template_or_name)
   struct _LogTemplate *template = cfg_lookup_template(configuration, template_or_name);
   if (template == NULL)
     {
-      template = log_template_new(NULL, template_or_name);
+      template = log_template_new(cfg, NULL, template_or_name);
       template->def_inline = TRUE;
     }
   return template;
@@ -362,7 +362,9 @@ gboolean
 cfg_run_parser(GlobalConfig *self, CfgLexer *lexer, CfgParser *parser, gpointer *result)
 {
   gboolean res;
+  GlobalConfig *old_cfg;
 
+  old_cfg = configuration;
   configuration = self;
   self->lexer = lexer;
   cfg_args_set(self->lexer->globals, "syslog-ng-root", PATH_PREFIX);
@@ -374,7 +376,7 @@ cfg_run_parser(GlobalConfig *self, CfgLexer *lexer, CfgParser *parser, gpointer 
 
   cfg_lexer_free(lexer);
   self->lexer = NULL;
-  configuration = NULL;
+  configuration = old_cfg;
   return res;
 }
 

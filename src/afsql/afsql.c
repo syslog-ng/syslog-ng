@@ -183,7 +183,7 @@ afsql_dd_set_table(LogDriver *s, const gchar *table)
   AFSqlDestDriver *self = (AFSqlDestDriver *) s;
 
   log_template_unref(self->table);
-  self->table = log_template_new(NULL, table);
+  self->table = log_template_new(log_pipe_get_config(&s->super), NULL, table);
 }
 
 void
@@ -974,7 +974,7 @@ afsql_dd_init(LogPipe *s)
                         NULL);
               return FALSE;
             }
-          self->fields[i].value = log_template_new(NULL, (gchar *) value->data);
+          self->fields[i].value = log_template_new(cfg, NULL, (gchar *) value->data);
         }
     }
 
@@ -1163,7 +1163,7 @@ afsql_dd_new(void)
   self->database = g_strdup("logs");
   self->encoding = g_strdup("UTF-8");
 
-  self->table = log_template_new(NULL, "messages");
+  self->table = log_template_new(configuration, NULL, "messages");
   self->columns = string_array_to_list(default_columns);
   self->values = string_array_to_list(default_values);
   self->indexes = string_array_to_list(default_indexes);
