@@ -3,7 +3,7 @@ YFLAGS=@YFLAGS@
 export top_srcdir
 
 lib_LTLIBRARIES = libsyslog-ng.la
-libsyslog_ng_la_LIBADD = @DEPS_LIBS@
+libsyslog_ng_la_LIBADD = @CORE_DEPS_LIBS@
 
 libsyslog_ng_la_SOURCES = \
 	misc.c misc.h utils.c utils.h messages.c messages.h syslog-names.c syslog-names.h \
