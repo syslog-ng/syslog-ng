@@ -369,6 +369,7 @@ cfg_run_parser(GlobalConfig *self, CfgLexer *lexer, CfgParser *parser, gpointer 
   configuration = self;
   self->lexer = lexer;
   cfg_args_set(self->lexer->globals, "syslog-ng-root", PATH_PREFIX);
+  cfg_args_set(self->lexer->globals, "syslog-ng-data", PATH_DATADIR);
   cfg_args_set(self->lexer->globals, "module-path", module_path);
   cfg_args_set(self->lexer->globals, "include-path", PATH_SYSCONFDIR);
   cfg_args_set(self->lexer->globals, "autoload-compiled-modules", "1");

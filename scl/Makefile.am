@@ -2,7 +2,7 @@ SCL_SUBDIRS = system pacct
 SCL_CONFIGS = scl.conf modules.conf syslog-ng.conf
 EXTRA_DIST = $(SCL_CONFIGS) $(SCL_SUBDIRS)
 
-scldir = $(datarootdir)/include/scl
+scldir = $(datadir)/include/scl
 
 install-data-local:
 	for cfg in $(SCL_CONFIGS); do \
