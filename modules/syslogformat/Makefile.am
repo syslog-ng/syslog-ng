@@ -8,5 +8,7 @@ libsyslogformat_la_SOURCES = \
 
 libsyslogformat_la_CPPFLAGS = $(AM_CPPFLAGS)
 libsyslogformat_la_LIBADD = ../../lib/libsyslog-ng.la
+libsyslogformat_la_LDFLAGS = -avoid-version -module
+
 
 include $(top_srcdir)/build/lex-rules.am

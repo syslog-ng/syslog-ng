@@ -10,6 +10,7 @@ libafsocket_notls_la_SOURCES = \
 	afsocket-grammar.y afsocket-parser.c afsocket-parser.h afsocket-plugin.c
 libafsocket_notls_la_CPPFLAGS = $(AM_CPPFLAGS)
 libafsocket_notls_la_LIBADD = ../../lib/libsyslog-ng.la $(LIBNET_LIBS) $(LIBWRAP_LIBS)
+libafsocket_notls_la_LDFLAGS = -avoid-version -module
 
 if ENABLE_SSL
 module_LTLIBRARIES += libafsocket-tls.la
@@ -19,6 +20,7 @@ libafsocket_tls_la_SOURCES = \
 	afsocket-grammar.y afsocket-parser.c afsocket-parser.h afsocket-plugin.c
 libafsocket_tls_la_CPPFLAGS = $(AM_CPPFLAGS) -DENABLE_SSL=1
 libafsocket_tls_la_LIBADD = ../../lib/libsyslog-ng.la $(OPENSSL_LIBS) $(ZLIB_LIBS) $(LIBNET_LIBS) $(LIBWRAP_LIBS)
+libafsocket_tls_la_LDFLAGS = -avoid-version -module
 endif
 
 BUILT_SOURCES = afsocket-grammar.y afsocket-grammar.c afsocket-grammar.h

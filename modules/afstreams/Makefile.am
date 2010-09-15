@@ -11,6 +11,8 @@ libafstreams_la_SOURCES = \
 
 libafstreams_la_CPPFLAGS = $(AM_CPPFLAGS) -DENABLE_SUN_STREAMS=1
 libafstreams_la_LIBADD = ../../lib/libsyslog-ng.la
+libafstreams_la_LDFLAGS = -avoid-version -module
+
 
 endif
 
