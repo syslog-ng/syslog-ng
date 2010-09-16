@@ -33,7 +33,7 @@ gchar *pdb = "<patterndb version='2' pub_date='2009-07-28'>\
     <value name='vvv'>${HOST}</value>\
    </values>\
   </rule>\
-  <rule provider='test' id='12' class='system'>\
+  <rule provider='test' id='12' class='violation'>\
    <patterns>\
     <pattern>pattern12</pattern>\
     <pattern>pattern12a</pattern>\
@@ -95,7 +95,7 @@ test_rule_tag(LogPatternDatabase *patterndb, const gchar *pattern, const gchar *
 {
   LogDBResult *result;
   LogMessage *msg = log_msg_new_empty();
-  guint tag_id = log_tags_get_by_name(tag);
+  LogTagId tag_id = log_tags_get_by_name(tag);
   gboolean found = FALSE;
   gint i = 0;
 
@@ -106,7 +106,7 @@ test_rule_tag(LogPatternDatabase *patterndb, const gchar *pattern, const gchar *
     {
        if (result->tags)
          {
-           while (i < result->tags->len && g_array_index(result->tags, guint, i) != tag_id)
+           while (i < result->tags->len && g_array_index(result->tags, LogTagId, i) != tag_id)
              i++;
 
            if (i < result->tags->len)
@@ -146,11 +146,13 @@ main(int argc, char *argv[])
         test_fail("Invalid pub_date '%s'\n", patterndb.pub_date);
 
       test_rule_tag(&patterndb, "pattern11", "tag11-1", TRUE);
+      test_rule_tag(&patterndb, "pattern11", ".classifier.system", TRUE);
       test_rule_tag(&patterndb, "pattern11", "tag11-2", TRUE);
       test_rule_tag(&patterndb, "pattern11", "tag11-3", FALSE);
       test_rule_tag(&patterndb, "pattern11a", "tag11-1", TRUE);
       test_rule_tag(&patterndb, "pattern11a", "tag11-2", TRUE);
       test_rule_tag(&patterndb, "pattern11a", "tag11-3", FALSE);
+      test_rule_tag(&patterndb, "pattern12", ".classifier.violation", TRUE);
       test_rule_tag(&patterndb, "pattern12", "tag12-1", FALSE);
       test_rule_tag(&patterndb, "pattern12", "tag12-2", FALSE);
       test_rule_tag(&patterndb, "pattern12", "tag12-3", FALSE);

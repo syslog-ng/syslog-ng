@@ -100,7 +100,7 @@ log_db_parser_process_real(LogPatternDatabase *db, LogMessage *msg, GSList **dbg
       if (verdict->tags)
         {
           for (i = 0; i < verdict->tags->len; i++)
-            log_msg_set_tag_by_id(msg, g_array_index(verdict->tags, guint, i));
+            log_msg_set_tag_by_id(msg, g_array_index(verdict->tags, LogTagId, i));
         }
 
       if (verdict->values)

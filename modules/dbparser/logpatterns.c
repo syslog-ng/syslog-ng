@@ -391,7 +391,7 @@ log_classifier_xml_text(GMarkupParseContext *context, const gchar *text, gsize t
   RNode *node = NULL;
   gchar *txt;
   gchar **nv;
-  guint tag;
+  LogTagId tag;
 
   if (state->in_pattern)
     {
