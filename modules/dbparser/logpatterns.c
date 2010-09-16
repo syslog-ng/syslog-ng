@@ -147,19 +147,29 @@ log_db_program_new(void)
   LogDBProgram *self = g_new0(LogDBProgram, 1);
 
   self->rules = r_new_node("", NULL);
+  self->ref_cnt = 1;
+  return self;
+}
 
+static LogDBProgram *
+log_db_program_ref(LogDBProgram *self)
+{
+  self->ref_cnt++;
   return self;
 }
 
 static void
-log_db_program_free(void *s)
+log_db_program_unref(LogDBProgram *s)
 {
   LogDBProgram *self = (LogDBProgram *) s;
 
-  if (self->rules)
-    r_free_node(self->rules, log_db_result_unref);
+  if (--self->ref_cnt == 0)
+    {
+      if (self->rules)
+        r_free_node(self->rules, log_db_result_unref);
 
-  g_free(self);
+      g_free(self);
+    }
 }
 
 
@@ -170,6 +180,7 @@ typedef struct _LogDBParserState
   LogDBProgram *root_program;
   LogDBResult *current_result;
   LogDBExample *current_example;
+  gboolean first_program;
   gboolean in_pattern;
   gboolean in_ruleset;
   gboolean in_rule;
@@ -202,6 +213,7 @@ log_classifier_xml_start_element(GMarkupParseContext *context, const gchar *elem
         }
 
       state->in_ruleset = TRUE;
+      state->first_program = TRUE;
     }
   else if (strcmp(element_name, "example") == 0)
     {
@@ -408,18 +420,35 @@ log_classifier_xml_text(GMarkupParseContext *context, const gchar *text, gsize t
         }
       else if (state->in_ruleset)
         {
-          node = r_find_node(state->db->programs, txt, txt, strlen(txt), NULL);
 
-          if (node && node->value && node != state->db->programs)
-            state->current_program = node->value;
-          else
+          if (state->first_program)
             {
-              state->current_program = log_db_program_new();
+              node = r_find_node(state->db->programs, txt, txt, strlen(txt), NULL);
 
-              r_insert_node(state->db->programs,
-                        txt,
-                        state->current_program,
-                        TRUE, NULL);
+              if (node && node->value && node != state->db->programs)
+                state->current_program = node->value;
+              else
+                {
+                  state->current_program = log_db_program_new();
+
+                  r_insert_node(state->db->programs,
+                            txt,
+                            state->current_program,
+                            TRUE, NULL);
+                }
+              state->first_program = FALSE;
+            }
+          else if (state->current_program)
+            {
+              node = r_find_node(state->db->programs, txt, txt, strlen(txt), NULL);
+
+              if (!node || !node->value || node == state->db->programs)
+                {
+                  r_insert_node(state->db->programs,
+                            txt,
+                            log_db_program_ref(state->current_program),
+                            TRUE, NULL);
+                }
             }
         }
       g_free(txt);
@@ -615,7 +644,7 @@ void
 log_pattern_database_free(LogPatternDatabase *self)
 {
   if (self->programs)
-    r_free_node(self->programs, log_db_program_free);
+    r_free_node(self->programs, (GDestroyNotify) log_db_program_unref);
   if (self->version)
     g_free(self->version);
   if (self->pub_date)

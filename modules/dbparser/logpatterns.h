@@ -60,6 +60,7 @@ typedef struct _LogDBExample
  */
 typedef struct _LogDBProgram
 {
+  guint ref_cnt;
   RNode *rules;
 } LogDBProgram;
 

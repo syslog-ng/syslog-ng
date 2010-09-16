@@ -54,7 +54,29 @@
                     </xs:documentation>
                 </xs:annotation>
             </xs:element>
-            <xs:element name="pattern" type="patternType" minOccurs="0">
+            <xs:element name="patterns" minOccurs="0">
+                <xs:annotation>
+                    <xs:documentation>
+                        If an application uses multiple values for its
+                        program name, then you can list them all in a
+                        patterns element containing multiple  pattern
+                        elements.
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="pattern" type="patternType" minOccurs="0" maxOccurs="unbounded">
+                            <xs:annotation>
+                                <xs:documentation>
+                                  An optional element with a pattern representing the name of the application related
+                                  to the ruleset in the syslog program field.
+                                </xs:documentation>
+                            </xs:annotation>
+                        </xs:element>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="pattern" type="patternType" minOccurs="0" maxOccurs="1">
                 <xs:annotation>
                     <xs:documentation>
                         An optional element with a pattern representing the name of the application related
