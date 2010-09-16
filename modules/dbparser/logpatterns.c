@@ -503,7 +503,10 @@ GMarkupParser db_parser =
   .error = NULL
 };
 
-LogDBResult *
+static NVHandle class_handle = 0;
+static NVHandle rule_id_handle = 0;
+
+gboolean
 log_pattern_database_lookup(LogPatternDatabase *self, LogMessage *msg, GSList **dbg_list)
 {
   RNode *node;
@@ -512,7 +515,7 @@ log_pattern_database_lookup(LogPatternDatabase *self, LogMessage *msg, GSList **
   gssize program_len;
 
   if (G_UNLIKELY(!self->programs))
-    return NULL;
+    return FALSE;
 
   program = log_msg_get_value(msg, LM_V_PROGRAM, &program_len);
 
@@ -543,7 +546,11 @@ log_pattern_database_lookup(LogPatternDatabase *self, LogMessage *msg, GSList **
 
           if (msg_node)
             {
+              LogDBResult *verdict = (LogDBResult *) msg_node->value;
               gint i;
+
+              log_msg_set_value(msg, class_handle, verdict->class ? verdict->class : "system", -1);
+              log_msg_set_value(msg, rule_id_handle, verdict->rule_id, -1);
 
               for (i = 0; i < matches->len; i++)
                 {
@@ -561,12 +568,34 @@ log_pattern_database_lookup(LogPatternDatabase *self, LogMessage *msg, GSList **
                 }
 
               g_array_free(matches, TRUE);
-              return ((LogDBResult *) msg_node->value);
+
+              if (verdict->tags)
+                {
+                  for (i = 0; i < verdict->tags->len; i++)
+                    log_msg_set_tag_by_id(msg, g_array_index(verdict->tags, LogTagId, i));
+                }
+
+              if (verdict->values)
+                {
+                  GString *result = g_string_sized_new(32);
+
+                  for (i = 0; i < verdict->values->len; i++)
+                    {
+                      log_template_format(g_ptr_array_index(verdict->values, i), msg, 0, TS_FMT_ISO, NULL, 0, 0, result);
+                      log_msg_set_value(msg, log_msg_get_value_handle(((LogTemplate *)g_ptr_array_index(verdict->values, i))->name), result->str, result->len);
+                    }
+                  g_string_free(result, TRUE);
+                }
+              return TRUE;
+            }
+          else
+            {
+              log_msg_set_value(msg, class_handle, "unknown", 7);
             }
           g_array_free(matches, TRUE);
         }
     }
-  return NULL;
+  return FALSE;
 }
 
 gboolean
@@ -652,4 +681,11 @@ log_pattern_database_free(LogPatternDatabase *self)
   self->programs = NULL;
   self->version = NULL;
   self->pub_date = NULL;
+}
+
+void
+log_pattern_database_init(void)
+{
+  class_handle = log_msg_get_value_handle(".classifier.class");
+  rule_id_handle = log_msg_get_value_handle(".classifier.rule_id");
 }

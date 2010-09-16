@@ -58,61 +58,34 @@ do { \
 void
 test_rule_value(LogPatternDatabase *patterndb, const gchar *pattern, const gchar *name, const gchar *value)
 {
-  LogDBResult *result;
+  gboolean result;
   LogMessage *msg = log_msg_new_empty();
   gboolean found = FALSE;
-  GString *val = g_string_sized_new(256);
-  gint i = 0;
+  const gchar *val;
+  gssize len;
 
   log_msg_set_value(msg, LM_V_MESSAGE, pattern, strlen(pattern));
   log_msg_set_value(msg, LM_V_HOST, MYHOST, strlen(MYHOST));
 
   result = log_pattern_database_lookup(patterndb, msg, NULL);
-  if (result)
-    {
-       if (result->values)
-         {
-           while (i < result->values->len && !g_str_equal(((LogTemplate *)g_ptr_array_index(result->values, i))->name, name))
-             i++;
+  val = log_msg_get_value(msg, log_msg_get_value_handle(name), &len);
 
-           if (i < result->values->len)
-             {
-               log_template_format(g_ptr_array_index(result->values, i), msg, 0, TS_FMT_ISO, NULL, 0, 0, val);
-               found = g_str_equal(val->str, value);
-             }
-         }
-    }
-
-  if (!!value ^ found)
+  if (!!value ^ (len > 0))
     test_fail("Value '%s' is %smatching for pattern '%s' (%d)\n", name, found ? "" : "not ", pattern, !!result);
 
   log_msg_unref(msg);
-  g_string_free(val, TRUE);
 }
 
 void
 test_rule_tag(LogPatternDatabase *patterndb, const gchar *pattern, const gchar *tag, gboolean set)
 {
-  LogDBResult *result;
   LogMessage *msg = log_msg_new_empty();
-  LogTagId tag_id = log_tags_get_by_name(tag);
-  gboolean found = FALSE;
-  gint i = 0;
+  gboolean found, result;
 
   log_msg_set_value(msg, LM_V_MESSAGE, pattern, strlen(pattern));
 
   result = log_pattern_database_lookup(patterndb, msg, NULL);
-  if (result)
-    {
-       if (result->tags)
-         {
-           while (i < result->tags->len && g_array_index(result->tags, LogTagId, i) != tag_id)
-             i++;
-
-           if (i < result->tags->len)
-             found = TRUE;
-         }
-    }
+  found = log_msg_is_tag_by_name(msg, tag);
 
   if (set ^ found)
     test_fail("Tag '%s' is %sset for pattern '%s' (%d)\n", tag, found ? "" : "not ", pattern, !!result);
@@ -132,6 +105,7 @@ main(int argc, char *argv[])
     verbose = TRUE;
 
   msg_init(TRUE);
+  log_pattern_database_init();
 
   memset(&patterndb, 0x0, sizeof(LogPatternDatabase));
 
@@ -167,11 +141,13 @@ main(int argc, char *argv[])
       test_rule_tag(&patterndb, "pattern1xa", "tag1x-3", FALSE);
 
       test_rule_value(&patterndb, "pattern11", "n11-1", "v11-1");
+      test_rule_value(&patterndb, "pattern11", ".classifier.class", "system");
       test_rule_value(&patterndb, "pattern11", "n11-2", "v11-2");
       test_rule_value(&patterndb, "pattern11", "n11-3", NULL);
       test_rule_value(&patterndb, "pattern11a", "n11-1", "v11-1");
       test_rule_value(&patterndb, "pattern11a", "n11-2", "v11-2");
       test_rule_value(&patterndb, "pattern11a", "n11-3", NULL);
+      test_rule_value(&patterndb, "pattern12", ".classifier.class", "violation");
       test_rule_value(&patterndb, "pattern12", "n12-1", NULL);
       test_rule_value(&patterndb, "pattern12", "n12-2", NULL);
       test_rule_value(&patterndb, "pattern12", "n12-3", NULL);

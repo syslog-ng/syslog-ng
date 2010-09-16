@@ -855,7 +855,6 @@ main(int argc, char *argv[])
   stats_init();
   log_tags_init();
   log_msg_global_init();
-  log_db_parser_global_init();
   configuration = cfg_new(0x0302);
 
   mode_string = pdbtool_mode(&argc, &argv);
@@ -894,6 +893,7 @@ main(int argc, char *argv[])
 
   msg_init(TRUE);
   plugin_load_module("syslogformat", configuration, NULL);
+  plugin_load_module("dbparser", configuration, NULL);
 
   if (color_out)
     colors = full_colors;

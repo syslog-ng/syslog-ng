@@ -172,7 +172,7 @@ do { \
 void
 test_rule_pattern(LogPatternDatabase *patterndb, const gchar *pattern, const gchar *rule, gboolean match)
 {
-  LogDBResult *result;
+  gboolean result;
   LogMessage *msg = log_msg_new_empty();
   static LogTemplate *templ;
 
@@ -269,6 +269,7 @@ main(int argc, char *argv[])
     verbose = TRUE;
 
   configuration = cfg_new(0x0302);
+  log_pattern_database_init();
 
   msg_init(TRUE);
   test_case(test1);
