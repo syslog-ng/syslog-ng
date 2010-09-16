@@ -50,6 +50,7 @@
 #define PATH_PERSIST_CONFIG     PATH_LOCALSTATEDIR "/syslog-ng.persist"
 #define PATH_QDISK              PATH_LOCALSTATEDIR
 #define PATH_PATTERNDB_FILE     PATH_LOCALSTATEDIR "/patterndb.xml"
+#define PATH_XSDDIR             PATH_DATADIR "/xsd"
 
 #define LOG_PRIORITY_LISTEN 0
 #define LOG_PRIORITY_READER 0
