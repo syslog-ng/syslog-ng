@@ -206,7 +206,7 @@
             </xs:annotation>
         </xs:attribute>
         <xs:attribute name="id" type="uuidType" use="required"/>
-        <xs:attribute name="class" type="classType" use="required">
+        <xs:attribute name="class" type="classType">
             <xs:annotation>
                 <xs:documentation>
                     The class of the rule.
@@ -243,34 +243,7 @@
             </xs:documentation>
         </xs:annotation>
         <xs:restriction base="xs:string">
-            <xs:enumeration value="violation">
-                <xs:annotation>
-                    <xs:documentation>
-                        The log message is a VIOLATION where immediate action must be taken.
-                    </xs:documentation>
-                </xs:annotation>
-            </xs:enumeration>
-            <xs:enumeration value="security">
-                <xs:annotation>
-                    <xs:documentation>
-                        The log message is related to a SECURITY event.
-                    </xs:documentation>
-                </xs:annotation>
-            </xs:enumeration>
-            <xs:enumeration value="system">
-                <xs:annotation>
-                    <xs:documentation>
-                        The log message is related to a normal SYSTEM event.
-                    </xs:documentation>
-                </xs:annotation>
-            </xs:enumeration>
-            <xs:enumeration value="unknown">
-                <xs:annotation>
-                    <xs:documentation>
-                        The log message is UNKNOWN and as is an anomaly.
-                    </xs:documentation>
-                </xs:annotation>
-            </xs:enumeration>
+            <xs:pattern value="[a-zA-Z0-9_\.]+"/>
         </xs:restriction>
     </xs:simpleType>
 

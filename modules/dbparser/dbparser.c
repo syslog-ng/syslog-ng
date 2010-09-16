@@ -94,7 +94,7 @@ log_db_parser_process_real(LogPatternDatabase *db, LogMessage *msg, GSList **dbg
   verdict = log_pattern_database_lookup(db, msg, dbg_list);
   if (verdict)
     {
-      log_msg_set_value(msg, class_handle, verdict->class, -1);
+      log_msg_set_value(msg, class_handle, verdict->class ? verdict->class : "system", -1);
       log_msg_set_value(msg, rule_id_handle, verdict->rule_id, -1);
 
       if (verdict->tags)

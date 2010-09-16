@@ -35,10 +35,17 @@ LogDBResult *
 log_db_result_new(gchar *class, gchar *rule_id)
 {
   LogDBResult *self = g_new0(LogDBResult, 1);
+  LogTagId class_tag;
+  gchar class_tag_text[32];
 
   self->class = class;
   self->rule_id = rule_id;
   self->ref_cnt = 1;
+  self->tags = g_array_new(FALSE, FALSE, sizeof(LogTagId));
+
+  g_snprintf(class_tag_text, sizeof(class_tag_text), ".classifier.%s", class ? class : "system");
+  class_tag = log_tags_get_by_name(class_tag_text);
+  g_array_append_val(self->tags, class_tag);
 
   return self;
 }
@@ -255,11 +262,6 @@ log_classifier_xml_start_element(GMarkupParseContext *context, const gchar *elem
             current_rule_id = g_strdup(attribute_values[i]);
         }
 
-      if (!current_class)
-        {
-          *error = g_error_new(1, 0, "No class attribute for rule element");
-          return;
-        }
       if (!current_rule_id)
         {
           *error = g_error_new(1, 0, "No id attribute for rule element");
@@ -424,9 +426,6 @@ log_classifier_xml_text(GMarkupParseContext *context, const gchar *text, gsize t
     }
   else if (state->in_tag)
     {
-      if (!state->current_result->tags)
-        state->current_result->tags = g_array_new(FALSE, FALSE, sizeof(guint));
-
       tag = log_tags_get_by_name(text);
       g_array_append_val(state->current_result->tags, tag);
     }
