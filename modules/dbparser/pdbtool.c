@@ -579,7 +579,8 @@ pdbtool_match(int argc, char *argv[])
   if (output)
     g_string_free(output, TRUE);
   log_pattern_database_free(&patterndb);
-  log_msg_unref(msg);
+  if (msg)
+    log_msg_unref(msg);
   msg_format_options_destroy(&parse_options);
 
   return ret;
