@@ -768,7 +768,6 @@ affile_dd_init(LogPipe *s)
   if (self->time_reap == -1)
     self->time_reap = cfg->time_reap;
   
-  self->use_time_recvd = cfg->use_time_recvd;
 
   if (self->local_time_zone_info)
     time_zone_info_free(self->local_time_zone_info);
@@ -908,7 +907,6 @@ affile_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
       filename = g_string_sized_new(32);
       log_template_format(self->filename_template, msg, 
                     ((self->flags & AFFILE_TMPL_ESCAPE) ? LT_ESCAPE : 0) |
-                    (self->use_time_recvd ? LT_STAMP_RECVD : 0),
                     TS_FMT_BSD,
                     self->local_time_zone_info,
                     0,

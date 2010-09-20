@@ -79,7 +79,6 @@ typedef struct _AFSqlDestDriver
   LogTemplate *table;
   gint mem_fifo_size;
   gint64 disk_fifo_size;
-  gboolean use_time_recvd;
   gint fields_len;
   AFSqlField *fields;
   gchar *null_value;
@@ -659,7 +658,6 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
   query_string = g_string_sized_new(512);
 
   log_template_format(self->table, msg,
-                      (self->use_time_recvd ? LT_STAMP_RECVD : 0),
                       TS_FMT_BSD,
                       self->local_time_zone_info,
                       0, 0, table);
@@ -687,7 +685,6 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
     {
       gchar *quoted;
       log_template_format(self->fields[i].value, msg,
-                          (self->use_time_recvd ? LT_STAMP_RECVD : 0),
                           TS_FMT_BSD,
                           self->send_time_zone_info,
                           self->frac_digits,
@@ -977,7 +974,6 @@ afsql_dd_init(LogPipe *s)
         }
     }
 
-  self->use_time_recvd = cfg->use_time_recvd;
   self->time_reopen = cfg->time_reopen;
 
   if (self->frac_digits == -1)

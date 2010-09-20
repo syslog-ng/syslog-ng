@@ -408,10 +408,7 @@ log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, TimeZo
 
         if (id >= M_TIME_FIRST && id <= M_TIME_LAST)
           {
-            if (flags & LT_STAMP_RECVD)
-              stamp = &msg->timestamps[LM_TS_RECVD];
-            else
-              stamp = &msg->timestamps[LM_TS_STAMP];
+            stamp = &msg->timestamps[LM_TS_STAMP];
           }
         else if (id >= M_TIME_FIRST + M_RECVD_OFS && id <= M_TIME_LAST + M_RECVD_OFS)
           {

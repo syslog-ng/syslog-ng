@@ -66,7 +66,6 @@ struct _GlobalConfig
   gboolean bad_hostname_compiled;
   regex_t bad_hostname;
   gchar *bad_hostname_re;
-  gboolean use_time_recvd;
   gboolean use_fqdn;
   gboolean use_dns;
   gboolean use_dns_cache;

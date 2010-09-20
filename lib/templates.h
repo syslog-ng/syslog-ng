@@ -31,7 +31,6 @@
 #include "cfg.h"
 
 #define LT_ESCAPE      0x0001
-#define LT_STAMP_RECVD 0x0002
 
 #define LOG_TEMPLATE_ERROR log_template_error_quark()
 

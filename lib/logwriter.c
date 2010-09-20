@@ -529,10 +529,7 @@ log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
     }
   
   /* no template was specified, use default */
-  if (self->options->use_time_recvd)
-    stamp = &lm->timestamps[LM_TS_RECVD];
-  else
-    stamp = &lm->timestamps[LM_TS_STAMP];
+  stamp = &lm->timestamps[LM_TS_STAMP];
 
   if ((self->flags & LW_SYSLOG_PROTOCOL) || (self->options->options & LWO_SYSLOG_PROTOCOL))
     {
@@ -876,7 +873,6 @@ log_writer_options_defaults(LogWriterOptions *options)
 {
   options->mem_fifo_size = -1;
   options->template = NULL;
-  options->use_time_recvd = -1;
   options->flush_lines = -1;
   options->flush_timeout = -1;
   options->ts_format = -1;
