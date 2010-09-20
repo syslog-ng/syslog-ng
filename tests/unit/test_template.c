@@ -81,7 +81,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 
   configuration = cfg_new(0x0201);
   plugin_load_module("syslogformat", configuration, NULL);
-  plugin_load_module("builtin_tmpl_func", configuration, NULL);
+  plugin_load_module("basicfuncs", configuration, NULL);
   msg_format_options_defaults(&parse_options);
   msg_format_options_init(&parse_options, configuration);
   configuration->template_options.frac_digits = 3;
@@ -207,6 +207,13 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase(msg, "$(echo \"$(echo '$(echo $HOST)')\" $PID)", "bzorp 23323");
   testcase(msg, "$(echo \"$(echo '$(echo $HOST)')\" $PID)", "bzorp 23323");
   testcase(msg, "$(echo '\"$(echo $(echo $HOST))\"' $PID)", "\"bzorp\" 23323");
+
+
+  testcase(msg, "$(grep 'facility(local3)' $PID)", "23323");
+  testcase(msg, "$(grep 'facility(local3)' $PID $PROGRAM)", "23323,syslog-ng");
+  testcase(msg, "$(grep 'facility(local4)' $PID)", "");
+  testcase(msg, "$(if 'facility(local4)' alma korte)", "korte");
+  testcase(msg, "$(if 'facility(local3)' alma korte)", "alma");
 
   /* template syntax errors */
   testcase_failure("${unbalanced_brace", "'}' is missing");
