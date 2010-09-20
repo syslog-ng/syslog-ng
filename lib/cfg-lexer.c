@@ -400,6 +400,7 @@ cfg_lexer_include_file(CfgLexer *self, const gchar *filename_)
     {
       msg_error("Include file/directory not found",
                 evt_tag_str("filename", filename_),
+                evt_tag_str("include-path", cfg_args_get(self->globals, "include-path")),
                 evt_tag_errno("error", errno),
                 NULL);
       return FALSE;
