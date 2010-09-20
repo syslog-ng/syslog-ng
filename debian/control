@@ -2,7 +2,7 @@ Source: syslog-ng
 Section: admin
 Priority: extra
 Maintainer: SZALAY Attila <sasa@debian.org>
-Build-depends: debhelper (>=3.0.0), libevtlog-dev, libnet1-dev, libglib2.0-dev (>= 2.4), pkg-config, libdbi0-dev, libssl-dev
+Build-depends: debhelper (>=3.0.0), libevtlog-dev, libnet1-dev, libglib2.0-dev (>= 2.4), pkg-config, libdbi0-dev, libssl-dev, uuid-dev
 Standards-Version: 3.6.1
 
 Package: syslog-ng

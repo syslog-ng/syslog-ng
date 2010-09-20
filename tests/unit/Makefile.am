@@ -8,7 +8,7 @@ check_PROGRAMS = test_persist_state test_resolve_pwgr test_nvtable test_msgsdata
 	test_radix test_logqueue test_matcher test_clone_logmsg test_csvparser \
 	test_serialize test_msgparse test_template test_template_speed test_zone \
 	test_filters test_dnscache test_findeom test_findcrlf test_tags \
-	test_patterndb_v2 test_patterndb_v3 test_logwriter
+	test_patterndb_v2 test_patterndb_v3 test_patternize test_logwriter
 
 test_msgparse_SOURCES = test_msgparse.c libtest.c
 test_template_SOURCES = test_template.c libtest.c
@@ -36,6 +36,8 @@ test_patterndb_v2_SOURCES = test_patterndb_v2.c
 test_patterndb_v2_LDADD = $(LDADD) $(top_builddir)/modules/dbparser/libdbparser.la
 test_patterndb_v3_SOURCES = test_patterndb_v3.c
 test_patterndb_v3_LDADD = $(LDADD) $(top_builddir)/modules/dbparser/libdbparser.la
+test_patternize_LDADD = $(LDADD) $(top_builddir)/modules/dbparser/libdbparser.la
+test_patternize_SOURCES = test_patternize.c
 test_persist_state_SOURCES = test_persist_state.c
 
 TESTS = $(check_PROGRAMS)
