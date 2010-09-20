@@ -460,7 +460,7 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
       if (self->dbi_ctx)
         {
           dbi_conn_set_option(self->dbi_ctx, "host", self->host);
-          dbi_conn_set_option(self->dbi_ctx, "port", self->port);
+          dbi_conn_set_option_numeric(self->dbi_ctx, "port", atoi(self->port));
           dbi_conn_set_option(self->dbi_ctx, "username", self->user);
           dbi_conn_set_option(self->dbi_ctx, "password", self->password);
           dbi_conn_set_option(self->dbi_ctx, "dbname", self->database);
