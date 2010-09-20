@@ -71,14 +71,69 @@ typedef struct _LogMacroDef
 
 extern LogMacroDef macros[];
 
+typedef struct _LogTemplateFunction LogTemplateFunction;
+struct _LogTemplateFunction
+{
+  /* called when parsing the arguments to be compiled into an internal
+   * representation if necessary.  Returns the compiled state in *state */
+  gboolean (*prepare)(LogTemplateFunction *self, LogTemplate *parent, gint argc, gchar *argv[], gpointer *state, GDestroyNotify *state_destroy, GError **error);
+
+  /* evaluate arguments, storing argument buffers in arg_bufs in case it
+   * makes sense to reuse those buffers */
+  void (*eval)(LogTemplateFunction *self, gpointer state, GPtrArray *arg_bufs, LogMessage **messages, gint num_messages, LogTemplateOptions *opts, gint tz, gint seq_num);
+
+  /* call the function */
+  void (*call)(LogTemplateFunction *self, gpointer state, GPtrArray *arg_bufs, LogMessage **messages, gint num_messages, LogTemplateOptions *opts, gint tz, gint seq_num, GString *result);
+  gpointer arg;
+};
+
+typedef struct _TFSimpleFuncState
+{
+  gint argc;
+  LogTemplate *argv[0];
+} TFSimpleFuncState;
+
+typedef void (*TFSimpleFunc)(LogMessage *msg, gint argc, GString *argv[], GString *result);
+
+gboolean tf_simple_func_prepare(LogTemplateFunction *self, LogTemplate *parent, gint argc, gchar *argv[], gpointer *state, GDestroyNotify *state_destroy, GError **error);
+void tf_simple_func_eval(LogTemplateFunction *self, gpointer state, GPtrArray *arg_bufs, LogMessage **messages, gint num_messages, LogTemplateOptions *opts, gint tz, gint32 seq_num);
+void tf_simple_func_call(LogTemplateFunction *self, gpointer state, GPtrArray *arg_bufs, LogMessage **messages, gint num_messages, LogTemplateOptions *opts, gint tz, gint seq_num, GString *result);
+void tf_simple_func_free_state(gpointer state);
+
+/* helper macros for template function plugins */
+#define TEMPLATE_FUNCTION(prefix, prepare, eval, call, arg)             \
+  static gpointer                                                       \
+  prefix ## _construct(Plugin *self,                                    \
+                  GlobalConfig *cfg,                                    \
+                  gint plugin_type, const gchar *plugin_name)           \
+  {                                                                     \
+    static LogTemplateFunction func = {                                 \
+      prepare,                                                          \
+      eval,                                                             \
+      call,                                                             \
+      arg                                                               \
+    };                                                                  \
+    return &func;                                                       \
+  }
+
+#define TEMPLATE_FUNCTION_SIMPLE(x) TEMPLATE_FUNCTION(x, tf_simple_func_prepare, tf_simple_func_eval, tf_simple_func_call, x)
+
+#define TEMPLATE_FUNCTION_PLUGIN(x, tf_name) \
+  {                                     \
+    .type = LL_CONTEXT_TEMPLATE_FUNC,   \
+    .name = tf_name,                    \
+    .construct = x ## _construct,       \
+  }
+
+
 /* appends the formatted output into result */
-typedef void (*LogTemplateFunction)(GString *result, LogMessage *msg, gint argc, GString *argv[]);
 
 void log_template_set_escape(LogTemplate *self, gboolean enable);
 gboolean log_template_compile(LogTemplate *self, GError **error);
 void log_template_format(LogTemplate *self, LogMessage *lm, LogTemplateOptions *opts, gint tz, gint32 seq_num, GString *result);
 void log_template_append_format(LogTemplate *self, LogMessage *lm, LogTemplateOptions *opts, gint tz, gint32 seq_num, GString *result);
-
+void log_template_append_format_with_context(LogTemplate *self, LogMessage **messages, gint num_messages, LogTemplateOptions *opts, gint tz, gint32 seq_num, GString *result);
+void log_template_format_with_context(LogTemplate *self, LogMessage **messages, gint num_messages, LogTemplateOptions *opts, gint tz, gint32 seq_num, GString *result);
 gboolean log_macro_expand(GString *result, gint id, gboolean escape, LogTemplateOptions *opts, gint tz, gint32 seq_num, LogMessage *msg);
 
 LogTemplate *log_template_new(GlobalConfig *cfg, gchar *name, const gchar *template);

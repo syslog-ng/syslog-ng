@@ -559,19 +559,91 @@ typedef struct _LogTemplateElem
   gsize text_len;
   gchar *text;
   gchar *default_value;
-  gint type;
+  guint16 msg_ref;
+  guint8 type;
   union
   {
     guint macro;
     NVHandle value_handle;
     struct
     {
-      LogTemplateFunction func;
-      gint argc;
-      LogTemplate *argv[0];
+      LogTemplateFunction *ops;
+      gpointer state;
+      GDestroyNotify state_destroy;
     } func;
   };
 } LogTemplateElem;
+
+
+/* simple template functions which take templates as arguments */
+void
+tf_simple_func_free_state(gpointer state)
+{
+  TFSimpleFuncState *args = (TFSimpleFuncState *) state;
+  gint i;
+
+  for (i = 0; i < args->argc; i++)
+    {
+      if (args->argv[i])
+        log_template_unref(args->argv[i]);
+    }
+  g_free(args);
+}
+
+gboolean
+tf_simple_func_prepare(LogTemplateFunction *self, LogTemplate *parent, gint argc, gchar *argv[], gpointer *state, GDestroyNotify *state_destroy, GError **error)
+{
+  TFSimpleFuncState *args;
+  gint i;
+
+  g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
+
+  args = g_malloc0(sizeof(TFSimpleFuncState) + argc * sizeof(LogTemplate *));
+  for (i = 0; i < argc; i++)
+    {
+      args->argv[i] = log_template_new(parent->cfg, NULL, argv[i]);
+      if (!log_template_compile(args->argv[i], error))
+        goto error;
+    }
+  args->argc = argc;
+  *state = args;
+  *state_destroy = tf_simple_func_free_state;
+  return TRUE;
+ error:
+  tf_simple_func_free_state(args);
+  return FALSE;
+}
+
+void
+tf_simple_func_eval(LogTemplateFunction *self, gpointer state, GPtrArray *arg_bufs, LogMessage **messages, gint num_messages,
+                    LogTemplateOptions *opts, gint tz, gint32 seq_num)
+{
+  TFSimpleFuncState *args = (TFSimpleFuncState *) state;
+  gint i;
+
+  for (i = 0; i < args->argc; i++)
+    {
+      GString **arg;
+
+      if (arg_bufs->len <= i)
+        g_ptr_array_add(arg_bufs, g_string_sized_new(256));
+
+      arg = (GString **) &g_ptr_array_index(arg_bufs, i);
+      g_string_truncate(*arg, 0);
+
+      log_template_append_format_with_context(args->argv[i], messages, num_messages, opts, tz, seq_num, *arg);
+    }
+}
+
+void
+tf_simple_func_call(LogTemplateFunction *self, gpointer state, GPtrArray *arg_bufs, LogMessage **messages, gint num_messages,
+                    LogTemplateOptions *opts, gint tz, gint32 seq_num, GString *result)
+{
+  TFSimpleFunc simple_func = (TFSimpleFunc) self->arg;
+  TFSimpleFuncState *args = (TFSimpleFuncState *) state;
+
+  simple_func(messages[num_messages-1], args->argc, (GString **) arg_bufs->pdata, result);
+}
 
 void
 log_template_set_escape(LogTemplate *self, gboolean enable)
@@ -585,15 +657,14 @@ log_template_reset_compiled(LogTemplate *self)
   while (self->compiled_template)
     {
       LogTemplateElem *e;
-      gint i;
 
       e = self->compiled_template->data;
       self->compiled_template = g_list_delete_link(self->compiled_template, self->compiled_template);
       switch (e->type)
         {
         case LTE_FUNC:
-          for (i = 0; i < e->func.argc; i++)
-            log_template_unref(e->func.argv[i]);
+          if (e->func.state_destroy)
+            e->func.state_destroy(e->func.state);
           break;
         }
       if (e->default_value)
@@ -606,7 +677,7 @@ log_template_reset_compiled(LogTemplate *self)
 }
 
 static void
-log_template_add_macro_elem(LogTemplate *self, guint macro, GString *text, gchar *default_value)
+log_template_add_macro_elem(LogTemplate *self, guint macro, GString *text, gchar *default_value, gint msg_ref)
 {
   LogTemplateElem *e;
   
@@ -616,11 +687,12 @@ log_template_add_macro_elem(LogTemplate *self, guint macro, GString *text, gchar
   e->text = text ? g_strndup(text->str, text->len) : NULL;
   e->macro = macro;
   e->default_value = default_value;
+  e->msg_ref = msg_ref + 1;
   self->compiled_template = g_list_prepend(self->compiled_template, e);
 }
 
 static void
-log_template_add_value_elem(LogTemplate *self, gchar *value_name, gsize value_name_len, GString *text, gchar *default_value)
+log_template_add_value_elem(LogTemplate *self, gchar *value_name, gsize value_name_len, GString *text, gchar *default_value, gint msg_ref)
 {
   LogTemplateElem *e;
   gchar *dup;
@@ -634,15 +706,16 @@ log_template_add_value_elem(LogTemplate *self, gchar *value_name, gsize value_na
   e->value_handle = log_msg_get_value_handle(dup);
   g_free(dup);
   e->default_value = default_value;
+  e->msg_ref = msg_ref + 1;
   self->compiled_template = g_list_prepend(self->compiled_template, e);
 }
 
+
 /* NOTE: this steals argv if successful */
 static gboolean
-log_template_add_func_elem(LogTemplate *self, GString *text, gint argc, gchar *argv[], GError **error)
+log_template_add_func_elem(LogTemplate *self, GString *text, gint argc, gchar *argv[], gint msg_ref, GError **error)
 {
   LogTemplateElem *e;
-  gint i;
   Plugin *p;
 
   g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
@@ -654,6 +727,7 @@ log_template_add_func_elem(LogTemplate *self, GString *text, gint argc, gchar *a
   e->type = LTE_FUNC;
   e->text_len = text ? text->len : 0;
   e->text = text ? g_strndup(text->str, text->len) : NULL;
+  e->msg_ref = msg_ref + 1;
 
   p = plugin_find(self->cfg, LL_CONTEXT_TEMPLATE_FUNC, argv[0]);
   if (!p)
@@ -663,30 +737,36 @@ log_template_add_func_elem(LogTemplate *self, GString *text, gint argc, gchar *a
     }
   else
     {
-      e->func.func = plugin_construct(p, self->cfg, LL_CONTEXT_TEMPLATE_FUNC, argv[0]);
+      e->func.ops = plugin_construct(p, self->cfg, LL_CONTEXT_TEMPLATE_FUNC, argv[0]);
     }
 
-  e->func.argc = argc - 1;
-  for (i = 1; i < argc; i++)
-    {
-      e->func.argv[i - 1] = log_template_new(self->cfg, NULL, argv[i]);
-      if (!log_template_compile(e->func.argv[i - 1], error))
-        goto error;
-    }
+  if (!e->func.ops->prepare(e->func.ops, self, argc - 1, &argv[1], &e->func.state, &e->func.state_destroy, error))
+    goto error;
   g_strfreev(argv);
   self->compiled_template = g_list_prepend(self->compiled_template, e);
   return TRUE;
 
  error:
-  for (i = 0; i < e->func.argc; i++)
-    {
-      if (e->func.argv[i])
-        log_template_unref(e->func.argv[i]);
-    }
   if (e->text)
     g_free(e->text);
   g_free(e);
   return FALSE;
+}
+
+static void
+parse_msg_ref(gchar **p, gint *msg_ref)
+{
+  *msg_ref = 0;
+  if ((**p) == '@')
+    {
+      (*p)++;
+      /* syntax: ${name}@1 to denote the log message index in the correllation state */
+      while ((**p) >= '0' && (**p) <= '9')
+        {
+          (*msg_ref) += (*msg_ref) * 10 + ((**p) - '0');
+          (*p)++;
+        }
+    }
 }
 
 gboolean
@@ -709,7 +789,16 @@ log_template_compile(LogTemplate *self, GError **error)
     {
       if (last_text == NULL)
         last_text = g_string_sized_new(32);
-      if (*p == '$')
+      if (*p == '\\')
+        {
+          p++;
+          if (*p)
+            {
+              g_string_append_c(last_text, *p);
+              p++;
+            }
+        }
+      else if (*p == '$')
         {
           gboolean finished = FALSE;
           p++;
@@ -719,6 +808,7 @@ log_template_compile(LogTemplate *self, GError **error)
               gchar *colon, *fncode;
               gint macro_len;
               gchar *default_value = NULL;
+              gint msg_ref = 0;
 
               p++;
               start = p;
@@ -759,15 +849,16 @@ log_template_compile(LogTemplate *self, GError **error)
                       goto error;
                     }
                 }
+              parse_msg_ref(&p, &msg_ref);
               last_macro = log_macro_lookup(start, macro_len);
               if (last_macro == M_NONE)
                 {
                   /* this was not a known macro, take it as a "value" reference  */
-                  log_template_add_value_elem(self, start, macro_len, last_text, default_value);
+                  log_template_add_value_elem(self, start, macro_len, last_text, default_value, msg_ref);
                 }
               else
                 {
-                  log_template_add_macro_elem(self, last_macro, last_text, default_value);
+                  log_template_add_macro_elem(self, last_macro, last_text, default_value, msg_ref);
                 }
               finished = TRUE;
             }
@@ -778,6 +869,7 @@ log_template_compile(LogTemplate *self, GError **error)
               gint parens = 1;
               GPtrArray *strv;
               GString *arg_buf;
+              gint msg_ref;
 
               strv = g_ptr_array_new();
               arg_buf = g_string_sized_new(32);
@@ -848,7 +940,8 @@ log_template_compile(LogTemplate *self, GError **error)
                   goto error;
                 }
               p++;
-              if (!log_template_add_func_elem(self, last_text, strv->len - 1, (gchar **) strv->pdata, error))
+              parse_msg_ref(&p, &msg_ref);
+              if (!log_template_add_func_elem(self, last_text, strv->len - 1, (gchar **) strv->pdata, msg_ref, error))
                 {
                   g_ptr_array_free(strv, TRUE);
                   goto error_set;
@@ -868,11 +961,11 @@ log_template_compile(LogTemplate *self, GError **error)
               if (last_macro == M_NONE)
                 {
                   /* this was not a known macro, take it as a "value" reference  */
-                  log_template_add_value_elem(self, start, p-start, last_text, NULL);
+                  log_template_add_value_elem(self, start, p-start, last_text, NULL, 0);
                 }
               else
                 {
-                  log_template_add_macro_elem(self, last_macro, last_text, NULL);
+                  log_template_add_macro_elem(self, last_macro, last_text, NULL, 0);
                 }
               finished = TRUE;
             }
@@ -903,7 +996,7 @@ log_template_compile(LogTemplate *self, GError **error)
     }
   if (last_macro != M_NONE || last_text)
     {
-      log_template_add_macro_elem(self, last_macro, last_text, NULL);
+      log_template_add_macro_elem(self, last_macro, last_text, NULL, 0);
       g_string_free(last_text, TRUE);
     }
   self->compiled_template = g_list_reverse(self->compiled_template);
@@ -917,29 +1010,36 @@ log_template_compile(LogTemplate *self, GError **error)
   if (!last_text)
     last_text = g_string_sized_new(0);
   g_string_sprintf(last_text, "error in template: %s", self->template);
-  log_template_add_macro_elem(self, M_NONE, last_text, NULL);
+  log_template_add_macro_elem(self, M_NONE, last_text, NULL, 0);
   g_string_free(last_text, TRUE);
   return FALSE;
 }
 
 void
-log_template_append_format(LogTemplate *self, LogMessage *lm, guint flags, gint ts_format, TimeZoneInfo *zone_info, gint frac_digits, gint32 seq_num, GString *result)
+log_template_append_format_with_context(LogTemplate *self, LogMessage **messages, gint num_messages, LogTemplateOptions *opts, gint tz, gint32 seq_num, GString *result)
 {
   GList *p;
   LogTemplateElem *e;
-  
-  flags |= self->flags;
   
   if (!log_template_compile(self, NULL))
     return;
 
   for (p = self->compiled_template; p; p = g_list_next(p))
     {
+      gint msg_ndx;
+
       e = (LogTemplateElem *) p->data;
       if (e->text)
         {
           g_string_append_len(result, e->text, e->text_len);
         }
+
+      /* NOTE: msg_ref is 1 larger than the index specified by the user in
+       * order to make it distinguishable from the zero value.  Therefore
+       * the '>' instead of '>=' */
+      if (e->msg_ref > num_messages)
+        continue;
+      msg_ndx = num_messages - e->msg_ref;
 
       switch (e->type)
         {
@@ -948,11 +1048,11 @@ log_template_append_format(LogTemplate *self, LogMessage *lm, guint flags, gint 
             const gchar *value = NULL;
             gssize value_len = -1;
 
-            value = log_msg_get_value(lm, e->value_handle, &value_len);
+            value = log_msg_get_value(messages[msg_ndx], e->value_handle, &value_len);
             if (value && value[0])
-              result_append(result, value, value_len, !!(flags & LT_ESCAPE));
+              result_append(result, value, value_len, self->escape);
             else if (e->default_value)
-              result_append(result, e->default_value, -1, !!(flags & LT_ESCAPE));
+              result_append(result, e->default_value, -1, self->escape);
             break;
           }
         case LTE_MACRO:
@@ -961,13 +1061,7 @@ log_template_append_format(LogTemplate *self, LogMessage *lm, guint flags, gint 
 
             if (e->macro)
               {
-                log_macro_expand(result, e->macro,
-                                 flags,
-                                 ts_format,
-                                 zone_info,
-                                 frac_digits,
-                                 seq_num,
-                                 lm);
+                log_macro_expand(result, e->macro, self->escape, opts ? opts : &self->cfg->template_options, tz, seq_num, messages[msg_ndx]);
                 if (len == result->len && e->default_value)
                   g_string_append(result, e->default_value);
               }
@@ -975,27 +1069,22 @@ log_template_append_format(LogTemplate *self, LogMessage *lm, guint flags, gint 
           }
         case LTE_FUNC:
           {
-            gint i;
-
             if (!self->arg_bufs)
               self->arg_bufs = g_ptr_array_sized_new(0);
 
-            for (i = 0; i < e->func.argc; i++)
-              {
-                GString **arg;
-
-                if (self->arg_bufs->len <= i)
-                  g_ptr_array_add(self->arg_bufs, g_string_sized_new(256));
-
-                arg = (GString **) &g_ptr_array_index(self->arg_bufs, i);
-                if (!(*arg))
-                  *arg = g_string_sized_new(256);
-                else
-                  g_string_truncate(*arg, 0);
-
-                log_template_append_format(e->func.argv[i], lm, flags, ts_format, zone_info, frac_digits, seq_num, *arg);
-              }
-            e->func.func(result, lm, e->func.argc, (GString **) self->arg_bufs->pdata);
+              /* if a function call is called with an msg_ref, we only
+               * pass that given logmsg to argument resolution, otherwise
+               * we pass the whole set so the arguments can individually
+               * specify which message they want to resolve from
+               */
+            e->func.ops->eval(e->func.ops, e->func.state, self->arg_bufs,
+                              e->msg_ref ? &messages[msg_ndx] : messages,
+                              e->msg_ref ? 1 : num_messages,
+                              opts, tz, seq_num);
+            e->func.ops->call(e->func.ops, e->func.state, self->arg_bufs,
+                              e->msg_ref ? &messages[msg_ndx] : messages,
+                              e->msg_ref ? 1 : num_messages,
+                              opts, tz, seq_num, result);
             break;
           }
         }
@@ -1003,10 +1092,23 @@ log_template_append_format(LogTemplate *self, LogMessage *lm, guint flags, gint 
 }
 
 void
-log_template_format(LogTemplate *self, LogMessage *lm, guint macro_flags, gint ts_format, TimeZoneInfo *zone_info, gint frac_digits, gint32 seq_num, GString *result)
+log_template_format_with_context(LogTemplate *self, LogMessage **messages, gint num_messages, LogTemplateOptions *opts, gint tz, gint32 seq_num, GString *result)
 {
   g_string_truncate(result, 0);
-  log_template_append_format(self, lm, macro_flags, ts_format, zone_info, frac_digits, seq_num, result);
+  log_template_append_format_with_context(self, messages, num_messages, opts, tz, seq_num, result);
+}
+
+void
+log_template_append_format(LogTemplate *self, LogMessage *lm, LogTemplateOptions *opts, gint tz, gint32 seq_num, GString *result)
+{
+  log_template_append_format_with_context(self, &lm, 1, opts, tz, seq_num, result);
+}
+
+void
+log_template_format(LogTemplate *self, LogMessage *lm, LogTemplateOptions *opts, gint tz, gint32 seq_num, GString *result)
+{
+  g_string_truncate(result, 0);
+  log_template_append_format(self, lm, opts, tz, seq_num, result);
 }
 
 LogTemplate *
