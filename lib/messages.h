@@ -78,12 +78,28 @@ extern MsgQueue *internal_msg_queue;
 #define msg_notice(desc, tag1, tags...) do { if (msg_limit_internal_message()) { msg_event_send(msg_event_create(EVT_PRI_NOTICE, desc, tag1, ##tags )); } } while (0)
 #define msg_info(desc, tag1, tags...) do { if (msg_limit_internal_message()) { msg_event_send(msg_event_create(EVT_PRI_INFO, desc, tag1, ##tags )); } } while (0)
 
+/* just like msg_info, but prepends the message with a timestamp -- useful in interactive
+ * tools with long running time to provide some feedback */
+#define msg_progress(desc, tag1, tags...) \
+        do { \
+          if (msg_limit_internal_message()) { \
+            time_t t; \
+            char *timestamp, *newdesc; \
+            t = time(0); \
+            timestamp = ctime(&t); \
+            timestamp[strlen(timestamp) - 1] = 0; \
+            newdesc = g_strdup_printf("[%s] %s", timestamp, desc); \
+            msg_event_send(msg_event_create(EVT_PRI_INFO, newdesc, tag1, ##tags )); \
+            g_free(newdesc); \
+           }\
+        } while (0)
+
 #define msg_verbose(desc, tag1, tags...) \
 	do { \
 	  if (G_UNLIKELY(verbose_flag))    \
 	    msg_info(desc, tag1, ##tags ); \
 	} while (0)
-	
+
 #define msg_debug(desc, tag1, tags...) \
 	do { \
 	  if (G_UNLIKELY(debug_flag))                                   \
