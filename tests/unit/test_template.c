@@ -79,7 +79,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   if (argc > 1)
     verbose = TRUE;
 
-  configuration = cfg_new(0x0201);
+  configuration = cfg_new(0x0302);
   plugin_load_module("syslogformat", configuration, NULL);
   plugin_load_module("basicfuncs", configuration, NULL);
   msg_format_options_defaults(&parse_options);
@@ -189,9 +189,8 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase(msg, "$PROGRAM", "syslog-ng");
   testcase(msg, "$PID", "23323");
   testcase(msg, "$MSGHDR", "syslog-ng[23323]:");
-  testcase(msg, "$MSG", "syslog-ng[23323]:árvíztűrőtükörfúrógép");
-  testcase(msg, "$MSGONLY", "árvíztűrőtükörfúrógép");
-  testcase(msg, "$MESSAGE", "syslog-ng[23323]:árvíztűrőtükörfúrógép");
+  testcase(msg, "$MSG", "árvíztűrőtükörfúrógép");
+  testcase(msg, "$MESSAGE", "árvíztűrőtükörfúrógép");
   testcase(msg, "$SOURCEIP", "10.10.10.10");
   testcase(msg, "$PROGRAM/var/log/messages/$HOST/$HOST_FROM/$MONTH$DAY${QQQQQ}valami", "syslog-ng/var/log/messages/bzorp/kismacska/0211valami");
   testcase(msg, "${APP.VALUE}", "value");
@@ -222,12 +221,16 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase_failure("$(unbalanced_paren", "missing function name or inbalanced '('");
   testcase(msg, "$unbalanced_paren)", ")");
 
-  configuration->version = 0x0300;
+
+  configuration->version = 0x0201;
   testcase(msg, "$MSGHDR", "syslog-ng[23323]:");
-  testcase(msg, "$MSG", "árvíztűrőtükörfúrógép");
-  testcase(msg, "$MESSAGE", "árvíztűrőtükörfúrógép");
+  testcase(msg, "$MSG", "syslog-ng[23323]:árvíztűrőtükörfúrógép");
+  testcase(msg, "$MSGONLY", "árvíztűrőtükörfúrógép");
+  testcase(msg, "$MESSAGE", "syslog-ng[23323]:árvíztűrőtükörfúrógép");
 
   log_msg_unref(msg);
+
+  configuration->version = 0x0302;
 
   msg_str = "syslog-ng: árvíztűrőtükörfúrógép [pid test]";
   msg = log_msg_new(msg_str, strlen(msg_str), g_sockaddr_inet_new("10.10.10.10", 1010), &parse_options);
