@@ -454,7 +454,8 @@ pdbtool_match(int argc, char *argv[])
     {
       if (G_LIKELY(proto))
         {
-          log_msg_clear(msg);
+          log_msg_unref(msg);
+          msg = log_msg_new_empty();
           parse_options.format_handler->parse(&parse_options, buf, buflen, msg);
         }
 
@@ -557,7 +558,7 @@ pdbtool_match(int argc, char *argv[])
             }
           else
             {
-              log_template_format(template, msg, 0, TS_FMT_BSD, NULL, 0, 0, output);
+              log_template_format(template, msg, NULL, LTZ_LOCAL, 0, output);
               printf("%s", output->str);
             }
         }
@@ -893,6 +894,7 @@ main(int argc, char *argv[])
 
   msg_init(TRUE);
   plugin_load_module("syslogformat", configuration, NULL);
+  plugin_load_module("basicfuncs", configuration, NULL);
   plugin_load_module("dbparser", configuration, NULL);
 
   if (color_out)

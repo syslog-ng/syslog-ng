@@ -25,6 +25,7 @@
 #define LOGPATTERNS_H_INCLUDED
 
 #include "radix.h"
+#include "templates.h"
 
 
 /* this class encapsulates a single rule in the pattern database and
@@ -32,11 +33,14 @@
  * a reference the the original rule in the rule database. */
 typedef struct _LogDBResult
 {
+  guint ref_cnt;
   gchar *class;
   gchar *rule_id;
   GArray *tags;
+  LogTemplate *values_join_id;
   GPtrArray *values;
-  guint ref_cnt;
+  LogTemplate *store_id;
+  gint store_timeout;
 } LogDBResult;
 
 /* this class encapsulates an example message in the pattern database
@@ -69,6 +73,7 @@ typedef struct _LogPatternDatabase
   RNode *programs;
   gchar *version;
   gchar *pub_date;
+  GHashTable *state;
 } LogPatternDatabase;
 
 gboolean log_pattern_database_lookup(LogPatternDatabase *self, LogMessage *msg, GSList **dbg_list);

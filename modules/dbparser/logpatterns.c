@@ -25,11 +25,12 @@
 #include "logmsg.h"
 #include "tags.h"
 #include "templates.h"
+#include "compat.h"
 
 #include <string.h>
 #include <stdio.h>
 #include <errno.h>
-
+#include <stdlib.h>
 
 LogDBResult *
 log_db_result_new(gchar *class, gchar *rule_id)
@@ -70,6 +71,9 @@ log_db_result_unref(void *s)
 
   if (--(self->ref_cnt) == 0)
     {
+      if (self->store_id)
+        log_template_unref(self->store_id);
+
       if (self->rule_id)
         g_free(self->rule_id);
 
@@ -291,6 +295,14 @@ log_classifier_xml_start_element(GMarkupParseContext *context, const gchar *elem
     {
       state->in_tag = TRUE;
     }
+  else if (strcmp(element_name, "values") == 0)
+    {
+      for (i = 0; attribute_names[i]; i++)
+        {
+          if (strcmp(attribute_names[i], "join") == 0)
+            state->current_result->values_join_id = log_template_new(state->cfg, NULL, attribute_values[i]);
+        }
+    }
   else if (strcmp(element_name, "value") == 0)
     {
       if (attribute_names[0] && g_str_equal(attribute_names[0], "name"))
@@ -306,6 +318,16 @@ log_classifier_xml_start_element(GMarkupParseContext *context, const gchar *elem
             state->db->version = g_strdup(attribute_values[i]);
           else if (strcmp(attribute_names[i], "pub_date") == 0)
             state->db->pub_date = g_strdup(attribute_values[i]);
+        }
+    }
+  else if (strcmp(element_name, "store") == 0)
+    {
+      for (i = 0; attribute_names[i]; i++)
+        {
+          if (strcmp(attribute_names[i], "id") == 0)
+            state->current_result->store_id = log_template_new(state->cfg, NULL, attribute_values[i]);
+          else if (strcmp(attribute_names[i], "timeout") == 0)
+            state->current_result->store_timeout = strtol(attribute_values[i], NULL, 0);
         }
     }
 }
@@ -506,6 +528,16 @@ GMarkupParser db_parser =
 static NVHandle class_handle = 0;
 static NVHandle rule_id_handle = 0;
 
+static void
+log_state_free(GPtrArray *array)
+{
+  gint i;
+
+  for (i = 0; i < array->len; i++)
+    log_msg_unref((LogMessage *) g_ptr_array_index(array, i));
+  g_ptr_array_free(array, TRUE);
+}
+
 gboolean
 log_pattern_database_lookup(LogPatternDatabase *self, LogMessage *msg, GSList **dbg_list)
 {
@@ -530,6 +562,7 @@ log_pattern_database_lookup(LogPatternDatabase *self, LogMessage *msg, GSList **
           RNode *msg_node;
           const gchar *message;
           gssize message_len;
+          GPtrArray *context = NULL;
 
           /* NOTE: We're not using g_array_sized_new as that does not
            * correctly zero-initialize the new items even if clear_ is TRUE
@@ -547,6 +580,7 @@ log_pattern_database_lookup(LogPatternDatabase *self, LogMessage *msg, GSList **
           if (msg_node)
             {
               LogDBResult *verdict = (LogDBResult *) msg_node->value;
+              GString *result = g_string_sized_new(32);
               gint i;
 
               log_msg_set_value(msg, class_handle, verdict->class ? verdict->class : "system", -1);
@@ -577,15 +611,45 @@ log_pattern_database_lookup(LogPatternDatabase *self, LogMessage *msg, GSList **
 
               if (verdict->values)
                 {
-                  GString *result = g_string_sized_new(32);
+                  if (verdict->values_join_id)
+                    {
+                      log_template_format(verdict->values_join_id, msg, NULL, LTZ_LOCAL, 0, result);
+                      context = g_hash_table_lookup(self->state, result->str);
+                      if (context)
+                        g_ptr_array_add(context, log_msg_ref(msg));
+                    }
 
                   for (i = 0; i < verdict->values->len; i++)
                     {
-                      log_template_format(g_ptr_array_index(verdict->values, i), msg, 0, TS_FMT_ISO, NULL, 0, 0, result);
+                      log_template_format_with_context(g_ptr_array_index(verdict->values, i),
+                                                       context ? (LogMessage **) context->pdata : &msg, context ? context->len : 1,
+                                                       NULL, LTZ_LOCAL, 0, result);
                       log_msg_set_value(msg, log_msg_get_value_handle(((LogTemplate *)g_ptr_array_index(verdict->values, i))->name), result->str, result->len);
                     }
-                  g_string_free(result, TRUE);
                 }
+              if (verdict->store_id)
+                {
+                  gboolean new_array = FALSE;
+
+                  if (!self->state)
+                    self->state = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, (GDestroyNotify) log_state_free);
+                  log_template_format(verdict->store_id, msg, NULL, LTZ_LOCAL, 0, result);
+
+                  context = g_hash_table_lookup(self->state, result->str);
+                  if (!context)
+                    {
+                      context = g_ptr_array_new();
+                      new_array = TRUE;
+                    }
+                  g_ptr_array_add(context, log_msg_ref(msg));
+                  if (new_array)
+                    {
+                      g_hash_table_insert(self->state, result->str, context);
+                      g_string_free(result, FALSE);
+                      return TRUE;
+                    }
+                }
+              g_string_free(result, TRUE);
               return TRUE;
             }
           else
@@ -672,6 +736,8 @@ log_pattern_database_load(LogPatternDatabase *self, GlobalConfig *cfg, const gch
 void
 log_pattern_database_free(LogPatternDatabase *self)
 {
+  if (self->state)
+    g_hash_table_destroy(self->state);
   if (self->programs)
     r_free_node(self->programs, (GDestroyNotify) log_db_program_unref);
   if (self->version)
