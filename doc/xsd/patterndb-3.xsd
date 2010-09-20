@@ -16,7 +16,7 @@
                 <xs:annotation>
                     <xs:documentation>
                         The schema version of the pattern database.
-                        The current version is '2'.
+                        The current version is '3'.
                     </xs:documentation>
                 </xs:annotation>
             </xs:attribute>
