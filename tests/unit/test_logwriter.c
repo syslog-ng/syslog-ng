@@ -55,7 +55,7 @@ testcase(gchar *msg_string, gchar *template, gboolean use_syslog_protocol,gchar 
   if (!tzinfo)
     tzinfo = time_zone_info_new(NULL);
   opt.options = LWO_NO_MULTI_LINE | LWO_NO_STATS | LWO_SHARE_STATS;
-  opt.send_time_zone_info=tzinfo;
+  opt.template_options.time_zone_info[LTZ_SEND]=tzinfo;
 
   if (use_syslog_protocol)
     {

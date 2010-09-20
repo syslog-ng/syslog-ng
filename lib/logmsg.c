@@ -206,7 +206,7 @@ log_msg_get_macro_value(LogMessage *self, gint id, gssize *value_len)
     value = g_string_sized_new(256);
   g_string_truncate(value, 0);
 
-  log_macro_expand(value, id, 0, TS_FMT_BSD, NULL, 0, 0, self);
+  log_macro_expand(value, id, FALSE, NULL, LTZ_LOCAL, 0, self);
   if (value_len)
     *value_len = value->len;
   return value->str;

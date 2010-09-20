@@ -52,7 +52,7 @@ log_parser_process(LogParser *self, LogMessage *msg)
     {
       GString *input = g_string_sized_new(256);
       
-      log_template_format(self->template, msg, 0, TS_FMT_ISO, NULL, 0, 0, input);
+      log_template_format(self->template, msg, NULL, LTZ_LOCAL, 0, input);
       success = self->process(self, msg, input->str);
       g_string_free(input, TRUE);
     }

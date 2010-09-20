@@ -21,11 +21,7 @@ testcase(LogMessage *msg, gchar *template, gchar *expected)
 {
   LogTemplate *templ;
   GString *res = g_string_sized_new(128);
-  static TimeZoneInfo *tzinfo = NULL;
   GError *error = NULL;
-
-  if (!tzinfo)
-    tzinfo = time_zone_info_new(NULL);
 
   templ = log_template_new(configuration, "dummy", template);
   if (!log_template_compile(templ, &error))
@@ -35,7 +31,7 @@ testcase(LogMessage *msg, gchar *template, gchar *expected)
       success = FALSE;
       goto error;
     }
-  log_template_format(templ, msg, LT_ESCAPE, TS_FMT_BSD, tzinfo, 3, 0, res);
+  log_template_format(templ, msg, NULL, LTZ_LOCAL, 0, res);
 
   if (strcmp(res->str, expected) != 0)
     {
@@ -88,6 +84,8 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   plugin_load_module("builtin_tmpl_func", configuration, NULL);
   msg_format_options_defaults(&parse_options);
   msg_format_options_init(&parse_options, configuration);
+  configuration->template_options.frac_digits = 3;
+  configuration->template_options.time_zone_info[LTZ_LOCAL] = time_zone_info_new(NULL);
 
   app_startup();
 

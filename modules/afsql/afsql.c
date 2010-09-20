@@ -89,11 +89,7 @@ typedef struct _AFSqlDestDriver
   gint flags;
   GList *session_statements;
 
-  TimeZoneInfo *local_time_zone_info;
-  gchar *local_time_zone;
-  TimeZoneInfo *send_time_zone_info;
-  gchar *send_time_zone;
-  gshort frac_digits;
+  LogTemplateOptions template_options;
 
   guint32 *dropped_messages;
   guint32 *stored_messages;
@@ -245,7 +241,7 @@ afsql_dd_set_frac_digits(LogDriver *s, gint frac_digits)
 {
   AFSqlDestDriver *self = (AFSqlDestDriver *) s;
 
-  self->frac_digits = frac_digits;
+  self->template_options.frac_digits = frac_digits;
 }
 
 void
@@ -253,7 +249,7 @@ afsql_dd_set_send_time_zone(LogDriver *s, const gchar *send_time_zone)
 {
   AFSqlDestDriver *self = (AFSqlDestDriver *) s;
 
-  self->send_time_zone = g_strdup(send_time_zone);
+  self->template_options.time_zone[LTZ_SEND] = g_strdup(send_time_zone);
 }
 
 void
@@ -261,7 +257,7 @@ afsql_dd_set_local_time_zone(LogDriver *s, const gchar *local_time_zone)
 {
   AFSqlDestDriver *self = (AFSqlDestDriver *) s;
 
-  self->local_time_zone = g_strdup(local_time_zone);
+  self->template_options.time_zone[LTZ_LOCAL] = g_strdup(local_time_zone);
 }
 
 void
@@ -657,10 +653,7 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
   value = g_string_sized_new(256);
   query_string = g_string_sized_new(512);
 
-  log_template_format(self->table, msg,
-                      TS_FMT_BSD,
-                      self->local_time_zone_info,
-                      0, 0, table);
+  log_template_format(self->table, msg, &self->template_options, LTZ_LOCAL, 0, table);
 
   if (!afsql_dd_validate_table(self, table->str))
     {
@@ -684,11 +677,8 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
   for (i = 0; i < self->fields_len; i++)
     {
       gchar *quoted;
-      log_template_format(self->fields[i].value, msg,
-                          TS_FMT_BSD,
-                          self->send_time_zone_info,
-                          self->frac_digits,
-                          self->seq_num, value);
+
+      log_template_format(self->fields[i].value, msg, &self->template_options, LTZ_SEND, self->seq_num, value);
       if (self->null_value && strcmp(self->null_value, value->str) == 0)
         {
           g_string_append(query_string, "NULL");
@@ -976,18 +966,7 @@ afsql_dd_init(LogPipe *s)
 
   self->time_reopen = cfg->time_reopen;
 
-  if (self->frac_digits == -1)
-    self->frac_digits = cfg->frac_digits;
-  if (self->send_time_zone == NULL)
-    self->send_time_zone = g_strdup(cfg->send_time_zone);
-
-  if (self->send_time_zone_info)
-    time_zone_info_free(self->send_time_zone_info);
-  self->send_time_zone_info = time_zone_info_new(self->send_time_zone);
-
-  if (self->local_time_zone_info)
-    time_zone_info_free(self->local_time_zone_info);
-  self->local_time_zone_info = time_zone_info_new(self->local_time_zone);
+  log_template_options_init(&self->template_options, cfg);
 
   if (self->flush_lines == -1)
     self->flush_lines = cfg->flush_lines;
@@ -1069,6 +1048,7 @@ afsql_dd_free(LogPipe *s)
   AFSqlDestDriver *self = (AFSqlDestDriver *) s;
   gint i;
 
+  log_template_options_destroy(&self->template_options);
   if (self->pending_msg)
     log_msg_unref(self->pending_msg);
   if (self->queue)
@@ -1080,12 +1060,6 @@ afsql_dd_free(LogPipe *s)
       log_template_unref(self->fields[i].value);
     }
 
-  if (self->send_time_zone_info)
-    time_zone_info_free(self->send_time_zone_info);
-  if (self->local_time_zone_info)
-    time_zone_info_free(self->local_time_zone_info);
-  g_free(self->send_time_zone);
-  g_free(self->local_time_zone);
   g_free(self->fields);
   g_free(self->type);
   g_free(self->host);
@@ -1166,10 +1140,6 @@ afsql_dd_new(void)
   self->uses_default_indexes = TRUE;
   self->mem_fifo_size = 1000;
   self->disk_fifo_size = 0;
-  self->send_time_zone = NULL;
-  self->send_time_zone_info = NULL;
-  self->local_time_zone_info = NULL;
-  self->frac_digits = -1;
   self->failed_message_counter = 0;
 
   self->flush_lines = -1;
@@ -1179,6 +1149,7 @@ afsql_dd_new(void)
 
   self->validated_tables = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
 
+  log_template_options_defaults(&self->template_options);
   init_sequence_number(&self->seq_num);
   return &self->super;
 }

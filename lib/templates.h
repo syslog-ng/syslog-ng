@@ -28,9 +28,10 @@
 #include "syslog-ng.h"
 #include "timeutils.h"
 #include "logmsg.h"
-#include "cfg.h"
 
-#define LT_ESCAPE      0x0001
+#define LTZ_LOCAL 0
+#define LTZ_SEND  1
+#define LTZ_MAX   2
 
 #define LOG_TEMPLATE_ERROR log_template_error_quark()
 
@@ -48,11 +49,19 @@ typedef struct _LogTemplate
   gchar *name;
   gchar *template;
   GList *compiled_template;
-  guint flags;
+  gboolean escape;
   gboolean def_inline;
   GlobalConfig *cfg;
   GPtrArray *arg_bufs;
 } LogTemplate;
+
+typedef struct _LogTemplateOptions
+{
+  gint ts_format;
+  gchar *time_zone[LTZ_MAX];
+  TimeZoneInfo *time_zone_info[LTZ_MAX];
+  gint frac_digits;
+} LogTemplateOptions;
 
 typedef struct _LogMacroDef
 {
@@ -67,14 +76,19 @@ typedef void (*LogTemplateFunction)(GString *result, LogMessage *msg, gint argc,
 
 void log_template_set_escape(LogTemplate *self, gboolean enable);
 gboolean log_template_compile(LogTemplate *self, GError **error);
-void log_template_format(LogTemplate *self, LogMessage *lm, guint macro_flags, gint ts_format, TimeZoneInfo *zone_info, gint frac_digits, gint32 seq_num, GString *result);
-void log_template_append_format(LogTemplate *self, LogMessage *lm, guint macro_flags, gint ts_format, TimeZoneInfo *zone_info, gint frac_digits, gint32 seq_num, GString *result);
-gboolean log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, TimeZoneInfo *zone_info, gint frac_digits, gint32 seq_num, LogMessage *msg);
+void log_template_format(LogTemplate *self, LogMessage *lm, LogTemplateOptions *opts, gint tz, gint32 seq_num, GString *result);
+void log_template_append_format(LogTemplate *self, LogMessage *lm, LogTemplateOptions *opts, gint tz, gint32 seq_num, GString *result);
 
+gboolean log_macro_expand(GString *result, gint id, gboolean escape, LogTemplateOptions *opts, gint tz, gint32 seq_num, LogMessage *msg);
 
 LogTemplate *log_template_new(GlobalConfig *cfg, gchar *name, const gchar *template);
 LogTemplate *log_template_ref(LogTemplate *s);
 void log_template_unref(LogTemplate *s);
+
+
+void log_template_options_init(LogTemplateOptions *options, GlobalConfig *cfg);
+void log_template_options_destroy(LogTemplateOptions *options);
+void log_template_options_defaults(LogTemplateOptions *options);
 
 
 #endif

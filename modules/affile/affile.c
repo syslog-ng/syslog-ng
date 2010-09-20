@@ -768,14 +768,9 @@ affile_dd_init(LogPipe *s)
   if (self->time_reap == -1)
     self->time_reap = cfg->time_reap;
   
-
-  if (self->local_time_zone_info)
-    time_zone_info_free(self->local_time_zone_info);
-  self->local_time_zone_info = time_zone_info_new(self->local_time_zone);
-  
   log_writer_options_init(&self->writer_options, cfg, 0);
+  log_template_options_init(&self->template_fname_options, cfg);
               
-  
   if ((self->flags & AFFILE_NO_EXPAND) == 0)
     {
       self->reap_timer = g_timeout_add_full(G_PRIORITY_DEFAULT, self->time_reap * 1000 / 2, affile_dd_reap, self, NULL);
@@ -905,13 +900,7 @@ affile_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 	self->writer_hash = g_hash_table_new(g_str_hash, g_str_equal);
 
       filename = g_string_sized_new(32);
-      log_template_format(self->filename_template, msg, 
-                    ((self->flags & AFFILE_TMPL_ESCAPE) ? LT_ESCAPE : 0) |
-                    TS_FMT_BSD,
-                    self->local_time_zone_info,
-                    0,
-                    0,
-                    filename);
+      log_template_format(self->filename_template, msg, &self->template_fname_options, LTZ_LOCAL, 0, filename);
       next = g_hash_table_lookup(self->writer_hash, filename->str);
       if (!next)
 	{
@@ -941,12 +930,9 @@ affile_dd_free(LogPipe *s)
   /* NOTE: this must be NULL as deinit has freed it, otherwise we'd have circular references */
   g_assert(self->single_writer == NULL && self->writer_hash == NULL);
 
+  log_template_options_destroy(&self->template_fname_options);
   log_template_unref(self->filename_template);
   log_writer_options_destroy(&self->writer_options);
-  if (self->local_time_zone_info)
-    time_zone_info_free(self->local_time_zone_info);
-  if (self->local_time_zone)
-    g_free(self->local_time_zone);
   log_drv_free(s);
 }
 
@@ -972,5 +958,6 @@ affile_dd_new(gchar *filename, guint32 flags)
       self->flags |= AFFILE_NO_EXPAND;
     }
   self->time_reap = -1;
+  log_template_options_defaults(&self->template_fname_options);
   return &self->super;
 }

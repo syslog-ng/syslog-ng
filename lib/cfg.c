@@ -348,11 +348,10 @@ cfg_new(gint version)
   self->dns_cache_expire = 3600;
   self->dns_cache_expire_failed = 60;
   
-  self->ts_format = TS_FMT_BSD;
-  self->frac_digits = 0;
+  log_template_options_defaults(&self->template_options);
+  self->template_options.ts_format = TS_FMT_BSD;
+  self->template_options.frac_digits = 0;
   self->recv_time_zone = NULL;
-  self->send_time_zone = NULL;
-  self->local_time_zone = NULL;
   self->keep_timestamp = TRUE;
   
   self->persist = persist_config_new();

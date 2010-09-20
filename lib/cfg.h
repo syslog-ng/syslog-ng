@@ -29,6 +29,7 @@
 #include "cfg-lexer.h"
 #include "cfg-parser.h"
 #include "persist-state.h"
+#include "templates.h"
 
 #include <sys/types.h>
 #include <regex.h>
@@ -91,12 +92,9 @@ struct _GlobalConfig
   gint dir_perm;
 
   gboolean keep_timestamp;  
-  gint ts_format;
-  gint frac_digits;
 
   gchar *recv_time_zone;
-  gchar *send_time_zone;
-  gchar *local_time_zone;
+  LogTemplateOptions template_options;
   
   gchar *file_template_name;
   gchar *proto_template_name;

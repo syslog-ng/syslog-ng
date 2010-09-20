@@ -224,8 +224,12 @@ result_append_value(GString *result, LogMessage *lm, NVHandle handle, gboolean e
 }
 
 gboolean
-log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, TimeZoneInfo *zone_info, gint frac_digits, gint32 seq_num, LogMessage *msg)
+log_macro_expand(GString *result, gint id, gboolean escape, LogTemplateOptions *opts, gint tz, gint32 seq_num, LogMessage *msg)
 {
+  static LogTemplateOptions default_opts = { TS_FMT_BSD, { NULL, NULL }, { NULL, NULL }, 0 };
+
+  if (!opts)
+    opts = &default_opts;
   switch (id)
     {
     case M_FACILITY:
@@ -312,16 +316,16 @@ log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, TimeZo
             length = p2 ? p2 - p1 
               : host_len - (p1 - host);
             
-            result_append(result, p1, length, !!(flags & LT_ESCAPE));
+            result_append(result, p1, length, escape);
           }
         else
           {
-            result_append_value(result, msg, LM_V_HOST, !!(flags & LT_ESCAPE));
+            result_append_value(result, msg, LM_V_HOST, escape);
           }
         break;
       }
     case M_SDATA:
-      if (flags & LT_ESCAPE)
+      if (escape)
         {
           GString *sdstr = g_string_sized_new(0);
           
@@ -339,7 +343,7 @@ log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, TimeZo
         {
           /* fast path for now, as most messages come from legacy devices */
 
-          result_append_value(result, msg, LM_V_LEGACY_MSGHDR, !!(flags & LT_ESCAPE));
+          result_append_value(result, msg, LM_V_LEGACY_MSGHDR, escape);
         }
       else
         {
@@ -347,14 +351,14 @@ log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, TimeZo
           gssize len;
 
           len = result->len;
-          result_append_value(result, msg, LM_V_PROGRAM, !!(flags & LT_ESCAPE));
+          result_append_value(result, msg, LM_V_PROGRAM, escape);
           if (len != result->len)
             {
               const gchar *pid = log_msg_get_value(msg, LM_V_PID, &len);
               if (len > 0)
                 {
                   result_append(result, "[", 1, FALSE);
-                  result_append(result, pid, len, !!(flags & LT_ESCAPE));
+                  result_append(result, pid, len, escape);
                   result_append(result, "]", 1, FALSE);
                 }
               result_append(result, ": ", 2, FALSE);
@@ -363,8 +367,8 @@ log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, TimeZo
       break;
     case M_MESSAGE:
       if (!cfg_check_current_config_version(0x0300))
-        log_macro_expand(result, M_MSGHDR, flags, ts_format, zone_info, frac_digits, seq_num, msg);
-      result_append_value(result, msg, LM_V_MESSAGE, !!(flags & LT_ESCAPE));
+        log_macro_expand(result, M_MSGHDR, escape, opts, tz, seq_num, msg);
+      result_append_value(result, msg, LM_V_MESSAGE, escape);
       break;
     case M_SOURCE_IP:
       {
@@ -387,7 +391,7 @@ log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, TimeZo
           {
             ip = "127.0.0.1";
           }
-        result_append(result, ip, strlen(ip), !!(flags & LT_ESCAPE));
+        result_append(result, ip, strlen(ip), escape);
         break;
       }
     case M_SEQNUM:
@@ -431,7 +435,7 @@ log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, TimeZo
          *   message specific timezone, if one is specified
          *   local timezone
          */
-        zone_ofs = (zone_info != NULL ? time_zone_info_get_offset(zone_info, stamp->time.tv_sec) : stamp->zone_offset);
+        zone_ofs = (opts->time_zone_info[tz] != NULL ? time_zone_info_get_offset(opts->time_zone_info[tz], stamp->time.tv_sec) : stamp->zone_offset);
         if (zone_ofs == -1)
           zone_ofs = stamp->zone_offset;
 
@@ -493,9 +497,9 @@ log_macro_expand(GString *result, gint id, guint32 flags, gint ts_format, TimeZo
                             id == M_ISODATE ? TS_FMT_ISO :
                             id == M_FULLDATE ? TS_FMT_FULL :
                             id == M_UNIXTIME ? TS_FMT_UNIX :
-                            ts_format;
+                            opts->ts_format;
               
-              log_stamp_format(stamp, s, format, zone_ofs, frac_digits);
+              log_stamp_format(stamp, s, format, zone_ofs, opts->frac_digits);
               g_string_append_len(result, s->str, s->len);
               g_string_free(s, TRUE);
               break;
@@ -572,10 +576,7 @@ typedef struct _LogTemplateElem
 void
 log_template_set_escape(LogTemplate *self, gboolean enable)
 {
-  if (enable)
-    self->flags |= LT_ESCAPE;
-  else
-    self->flags &= ~LT_ESCAPE;
+  self->escape = enable;
 }
 
 static void
@@ -1027,7 +1028,7 @@ log_template_new(GlobalConfig *cfg, gchar *name, const gchar *template)
                       NULL);
           warn_written = TRUE;
         }
-      self->flags = LT_ESCAPE;
+      self->escape = TRUE;
     }
   return self;
 }
@@ -1069,6 +1070,47 @@ log_template_unref(LogTemplate *s)
       if (--s->ref_cnt == 0)
         log_template_free(s);
     }
+}
+
+void
+log_template_options_init(LogTemplateOptions *options, GlobalConfig *cfg)
+{
+  gint i;
+
+  if (options->ts_format == -1)
+    options->ts_format = cfg->template_options.ts_format;
+  for (i = 0; i < LTZ_MAX; i++)
+    {
+      if (options->time_zone[i] == NULL)
+        options->time_zone[i] = g_strdup(cfg->template_options.time_zone[i]);
+      if (options->time_zone_info[i] == NULL)
+        options->time_zone_info[i] = time_zone_info_new(options->time_zone[i]);
+    }
+
+  if (options->frac_digits == -1)
+    options->frac_digits = cfg->template_options.frac_digits;
+}
+
+void
+log_template_options_destroy(LogTemplateOptions *options)
+{
+  gint i;
+
+  for (i = 0; i < LTZ_MAX; i++)
+    {
+      if (options->time_zone[i])
+        g_free(options->time_zone[i]);
+      if (options->time_zone_info[i])
+        time_zone_info_free(options->time_zone_info[i]);
+    }
+}
+
+void
+log_template_options_defaults(LogTemplateOptions *options)
+{
+  memset(options, 0, sizeof(options));
+  options->frac_digits = -1;
+  options->ts_format = -1;
 }
 
 GQuark

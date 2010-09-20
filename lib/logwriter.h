@@ -64,11 +64,8 @@ typedef struct _LogWriterOptions
   LogTemplate *proto_template;
   
   gboolean fsync;
-  gshort ts_format;
-  gchar *send_time_zone;
-  TimeZoneInfo *send_time_zone_info;
+  LogTemplateOptions template_options;
 
-  gshort frac_digits;
   gint throttle; /* messages per sec, 0 means unlimited */
   gint time_reopen;
   gint suppress;

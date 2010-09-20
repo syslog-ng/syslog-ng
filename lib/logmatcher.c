@@ -203,7 +203,7 @@ log_matcher_posix_re_replace(LogMatcher *s, LogMessage *msg, gint value_handle, 
             new_value = g_string_sized_new(value_len);
 
           g_string_append_len(new_value, buf + current_ofs, start_ofs - current_ofs);
-          log_template_append_format(replacement, msg, 0, TS_FMT_BSD, NULL, 0, 0, new_value);
+          log_template_append_format(replacement, msg, NULL, LTZ_LOCAL, 0, new_value);
           current_ofs = end_ofs;
 
           if ((self->super.flags & LMF_GLOBAL) == 0)
@@ -376,7 +376,7 @@ log_matcher_string_replace(LogMatcher *s, LogMessage *msg, gint value_handle, co
             new_value = g_string_sized_new(value_len);
 
           g_string_append_len(new_value, value + current_ofs, start_ofs - current_ofs);
-          log_template_append_format(replacement, msg, 0, TS_FMT_BSD, NULL, 0, 0, new_value);
+          log_template_append_format(replacement, msg, NULL, LTZ_LOCAL, 0, new_value);
           current_ofs = end_ofs;
 
           if ((self->super.flags & LMF_GLOBAL) == 0)
@@ -735,7 +735,7 @@ log_matcher_pcre_re_replace(LogMatcher *s, LogMessage *msg, gint value_handle, c
           /* literal */
           g_string_append_len(new_value, &value[last_offset], matches[0] - last_offset);
           /* replacement */
-          log_template_append_format(replacement, msg, 0, TS_FMT_BSD, NULL, 0, 0, new_value);
+          log_template_append_format(replacement, msg, NULL, LTZ_LOCAL, 0, new_value);
           last_offset = matches[1];
         }
       first_round = FALSE;

@@ -166,7 +166,7 @@ log_rewrite_set_process(LogRewrite *s, LogMessage *msg)
   GString *result;
 
   result = g_string_sized_new(64);
-  log_template_format(self->value_template, msg, 0, TS_FMT_BSD, NULL, 0, 0, result);
+  log_template_format(self->value_template, msg, NULL, LTZ_LOCAL, 0, result);
 
   log_msg_set_value(msg, self->super.value_handle, result->str, result->len);
   g_string_free(result, TRUE);

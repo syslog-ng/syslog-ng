@@ -190,7 +190,7 @@ test_rule_pattern(LogPatternDatabase *patterndb, const gchar *pattern, const gch
 
   result = log_pattern_database_lookup(patterndb, msg, NULL);
 
-  log_template_format(templ, msg, LT_ESCAPE, TS_FMT_BSD, tzinfo, 3, 0, res);
+  log_template_format(templ, msg, NULL, LTZ_LOCAL, 0, res);
 
   if (strcmp(res->str, pattern) == 0)
     {
