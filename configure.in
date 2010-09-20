@@ -769,6 +769,7 @@ AC_OUTPUT(dist.conf
           modules/syslogformat/Makefile
           modules/pacctformat/Makefile
           modules/basicfuncs/Makefile
+          modules/convertfuncs/Makefile
 	  scripts/Makefile
 	  scripts/update-patterndb
 	  doc/Makefile

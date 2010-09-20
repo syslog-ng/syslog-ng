@@ -82,6 +82,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   configuration = cfg_new(0x0302);
   plugin_load_module("syslogformat", configuration, NULL);
   plugin_load_module("basicfuncs", configuration, NULL);
+  plugin_load_module("convertfuncs", configuration, NULL);
   msg_format_options_defaults(&parse_options);
   msg_format_options_init(&parse_options, configuration);
   configuration->template_options.frac_digits = 3;
@@ -92,7 +93,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   putenv("TZ=MET-1METDST");
   tzset();
 
-  msg = log_msg_new(msg_str, strlen(msg_str), g_sockaddr_inet_new("10.10.10.10", 1010), &parse_options);
+  msg = log_msg_new(msg_str, strlen(msg_str), g_sockaddr_inet_new("10.11.12.13", 1010), &parse_options);
   log_msg_set_value(msg, log_msg_get_value_handle("APP.VALUE"), "value", -1);
   log_msg_set_match(msg, 0, "whole-match", -1);
   log_msg_set_match(msg, 1, "first-match", -1);
@@ -191,7 +192,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase(msg, "$MSGHDR", "syslog-ng[23323]:");
   testcase(msg, "$MSG", "árvíztűrőtükörfúrógép");
   testcase(msg, "$MESSAGE", "árvíztűrőtükörfúrógép");
-  testcase(msg, "$SOURCEIP", "10.10.10.10");
+  testcase(msg, "$SOURCEIP", "10.11.12.13");
   testcase(msg, "$PROGRAM/var/log/messages/$HOST/$HOST_FROM/$MONTH$DAY${QQQQQ}valami", "syslog-ng/var/log/messages/bzorp/kismacska/0211valami");
   testcase(msg, "${APP.VALUE}", "value");
   testcase(msg, "${APP.VALUE:-ures}", "value");
@@ -206,7 +207,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase(msg, "$(echo \"$(echo '$(echo $HOST)')\" $PID)", "bzorp 23323");
   testcase(msg, "$(echo \"$(echo '$(echo $HOST)')\" $PID)", "bzorp 23323");
   testcase(msg, "$(echo '\"$(echo $(echo $HOST))\"' $PID)", "\"bzorp\" 23323");
-
+  testcase(msg, "$(ipv4-to-int $SOURCEIP)", "168496141");
 
   testcase(msg, "$(grep 'facility(local3)' $PID)", "23323");
   testcase(msg, "$(grep 'facility(local3)' $PID $PROGRAM)", "23323,syslog-ng");
@@ -233,7 +234,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   configuration->version = 0x0302;
 
   msg_str = "syslog-ng: árvíztűrőtükörfúrógép [pid test]";
-  msg = log_msg_new(msg_str, strlen(msg_str), g_sockaddr_inet_new("10.10.10.10", 1010), &parse_options);
+  msg = log_msg_new(msg_str, strlen(msg_str), g_sockaddr_inet_new("10.11.12.13", 1010), &parse_options);
 
   testcase(msg, "$PID", "");
   log_msg_unref(msg);
@@ -241,7 +242,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   msg_str = "<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép";
 
   parse_options.flags = LP_EXPECT_HOSTNAME;
-  msg = log_msg_new(msg_str, strlen(msg_str), g_sockaddr_inet_new("10.10.10.10", 1010), &parse_options);
+  msg = log_msg_new(msg_str, strlen(msg_str), g_sockaddr_inet_new("10.11.12.13", 1010), &parse_options);
 
   testcase(msg, "$LEGACY_MSGHDR", "");
   testcase(msg, "$MSGHDR", "syslog-ng[23323]: ");
@@ -249,7 +250,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 
   msg_str = "<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog 3535 ID47 [exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] BOMAn application event log entry...";
   parse_options.flags = LP_SYSLOG_PROTOCOL;
-  msg = log_msg_new(msg_str, strlen(msg_str), g_sockaddr_inet_new("10.10.10.10", 1010), &parse_options);
+  msg = log_msg_new(msg_str, strlen(msg_str), g_sockaddr_inet_new("10.11.12.13", 1010), &parse_options);
 
   testcase(msg, "$PRI", "132");
   testcase(msg, "$HOST", "mymachine");
