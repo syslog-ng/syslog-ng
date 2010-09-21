@@ -60,6 +60,12 @@ ptz_load_file(Patternizer *self, gchar *input_file)
   msg_format_options_defaults(&parse_options);
   msg_format_options_init(&parse_options, configuration);
 
+  if (!input_file)
+    {
+      msg_error("No input file specified", evt_tag_str("filename", NULL), NULL);
+      return 0;
+    }
+
   if (strcmp(input_file, "-") != 0)
     {
       if (!(file = fopen(input_file, "r")))
