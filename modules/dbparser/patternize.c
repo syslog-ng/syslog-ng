@@ -465,6 +465,7 @@ ptz_print_patterndb_rule(gpointer key, gpointer value, gpointer user_data)
   gchar *splitstr;
   gchar *escapedstr;
   gchar **escapedparts;
+  gchar *samplestr;
   gboolean named_parsers = *((gboolean*) user_data);
   guint parser_counts[PTZ_NUM_OF_PARSERS];
   int i;
@@ -480,7 +481,6 @@ ptz_print_patterndb_rule(gpointer key, gpointer value, gpointer user_data)
   uuid_unparse_lower(uuid, uuid_string);
   printf("      <rule id='%s' class='system' provider='patternize'>\n", uuid_string);
   printf("        <!-- support: %d -->\n", ((Cluster *) value)->support);
-  printf("        <!-- sample: %s -->\n", g_markup_escape_text(((Cluster *) value)->sample, strlen(((Cluster *) value)->sample)));
   printf("        <patterns>\n");
   printf("          <pattern>");
 
@@ -540,7 +540,15 @@ ptz_print_patterndb_rule(gpointer key, gpointer value, gpointer user_data)
 
   printf("</pattern>\n");
   printf("        </patterns>\n");
+
+  samplestr = g_markup_escape_text(((Cluster *) value)->sample, strlen(((Cluster *) value)->sample));
+  printf("        <examples>\n");
+  printf("            <example>\n");
+  printf("                <test_message program='patternize'>%s</test_message>\n", samplestr);
+  printf("            </example>\n");
+  printf("        </examples>\n");
   printf("      </rule>\n");
+  g_free(samplestr);
 
 }
 
