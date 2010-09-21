@@ -218,7 +218,7 @@ ptz_find_clusters_remove_cluster_predicate(gpointer key, gpointer value, gpointe
 }
 
 GHashTable *
-ptz_find_clusters_slct(GPtrArray *logs, guint num_of_logs, guint support, guint cluster_tag_id)
+ptz_find_clusters_slct(GPtrArray *logs, guint num_of_logs, guint support, guint cluster_tag_id, guint num_of_samples)
 {
   GHashTable *wordlist;
   GHashTable *clusters;
@@ -276,7 +276,12 @@ ptz_find_clusters_slct(GPtrArray *logs, guint num_of_logs, guint support, guint 
                cluster = g_new0(Cluster, 1);
 
                cluster->support = 1;
-               cluster->sample = g_strdup(msgstr);
+               if (num_of_samples > 0)
+                 {
+                   cluster->curr_samples = 1;
+                   cluster->samples = g_ptr_array_sized_new(5);
+                   g_ptr_array_add(cluster->samples, g_strdup(msgstr));
+                 }
                cluster->loglines = g_ptr_array_sized_new(PTZ_LOGTABLE_ALLOC_BASE);
                g_ptr_array_add(cluster->loglines, (gpointer) msg);
                cluster->words = g_strdupv(words);
@@ -287,6 +292,11 @@ ptz_find_clusters_slct(GPtrArray *logs, guint num_of_logs, guint support, guint 
              {
                cluster->support += 1;
                g_ptr_array_add(cluster->loglines, (gpointer) msg);
+               if (cluster->curr_samples < num_of_samples)
+                 {
+                   cluster->curr_samples += 1;
+                   g_ptr_array_add(cluster->samples, g_strdup(msgstr));
+                 }
                g_free(cluster_key);
              }
           log_msg_set_tag_by_id(msg, cluster_tag_id);
@@ -338,11 +348,11 @@ ptz_merge_clusterlists(gpointer _key, gpointer _value, gpointer _target)
 }
 
 GHashTable *
-ptz_find_clusters_step(Patternizer *self, GPtrArray *logs, guint num_of_logs, guint support)
+ptz_find_clusters_step(Patternizer *self, GPtrArray *logs, guint num_of_logs, guint support, guint num_of_samples)
 {
   msg_progress("Searching clusters", evt_tag_int("input lines", num_of_logs), NULL);
   if (self->algo == PTZ_ALGO_SLCT)
-    return ptz_find_clusters_slct(logs, num_of_logs, support, self->cluster_tag_id);
+    return ptz_find_clusters_slct(logs, num_of_logs, support, self->cluster_tag_id, num_of_samples);
   else
     {
       msg_error("Unknown clustering algorithm", evt_tag_int("algo_id", self->algo));
@@ -367,7 +377,7 @@ ptz_find_clusters(Patternizer *self)
   prev_logs = NULL;
 
   if (self->iterate == PTZ_ITERATE_NONE)
-    return ptz_find_clusters_step(self, self->logs, self->num_of_logs, self->support);
+    return ptz_find_clusters_step(self, self->logs, self->num_of_logs, self->support, self->num_of_samples);
 
   if (self->iterate == PTZ_ITERATE_OUTLIERS)
     {
@@ -378,7 +388,7 @@ ptz_find_clusters(Patternizer *self)
 
       while (TRUE)
         {
-          curr_clusters = ptz_find_clusters_step(self, curr_logs, curr_num_of_logs, curr_support);
+          curr_clusters = ptz_find_clusters_step(self, curr_logs, curr_num_of_logs, curr_support, self->num_of_samples);
 
           if (ptz_get_clusters_size(curr_clusters) == 0)
             break;
@@ -423,7 +433,7 @@ ptz_find_clusters(Patternizer *self)
 }
 
 Patternizer *
-ptz_new(gchar *input_file, gdouble support_treshold, guint algo, guint iterate)
+ptz_new(gchar *input_file, gdouble support_treshold, guint algo, guint iterate, guint num_of_samples)
 {
   Patternizer *self = g_new0(Patternizer, 1);
 
@@ -438,6 +448,7 @@ ptz_new(gchar *input_file, gdouble support_treshold, guint algo, guint iterate)
     }
   self->support = (self->num_of_logs * (support_treshold / 100.0));
   self->support_treshold = support_treshold;
+  self->num_of_samples = num_of_samples;
   log_msg_registry_init();
   log_tags_init();
   self->cluster_tag_id = log_tags_get_by_name(".in_patternize_cluster");
@@ -465,11 +476,12 @@ ptz_print_patterndb_rule(gpointer key, gpointer value, gpointer user_data)
   gchar *splitstr;
   gchar *escapedstr;
   gchar **escapedparts;
-  gchar *samplestr;
+  gchar *samplestr, *samplestr_escaped;
   gboolean named_parsers = *((gboolean*) user_data);
   guint parser_counts[PTZ_NUM_OF_PARSERS];
   int i;
   uuid_t uuid;
+  Cluster *cluster;
 
   if (named_parsers)
     {
@@ -541,14 +553,23 @@ ptz_print_patterndb_rule(gpointer key, gpointer value, gpointer user_data)
   printf("</pattern>\n");
   printf("        </patterns>\n");
 
-  samplestr = g_markup_escape_text(((Cluster *) value)->sample, strlen(((Cluster *) value)->sample));
-  printf("        <examples>\n");
-  printf("            <example>\n");
-  printf("                <test_message program='patternize'>%s</test_message>\n", samplestr);
-  printf("            </example>\n");
-  printf("        </examples>\n");
-  printf("      </rule>\n");
-  g_free(samplestr);
+  cluster = (Cluster *) value;
+  if (cluster->curr_samples > 0)
+    {
+      printf("        <examples>\n");
+      for (i = 0; i < cluster->curr_samples; ++i)
+        {
+          samplestr = (gchar *) g_ptr_array_index(cluster->samples, i);
+          samplestr_escaped = g_markup_escape_text(samplestr, strlen(samplestr));
+          printf("            <example>\n");
+          printf("                <test_message program='patternize'>%s</test_message>\n", samplestr_escaped);
+          printf("            </example>\n");
+          g_free(samplestr);
+          g_free(samplestr_escaped);
+        }
+      printf("        </examples>\n");
+      printf("      </rule>\n");
+    }
 
 }
 

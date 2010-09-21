@@ -43,6 +43,7 @@ typedef struct _Patternizer
   guint algo;
   guint iterate;
   guint support;
+  guint num_of_samples;
   gdouble support_treshold;
   guint num_of_logs;
   guint cluster_tag_id;
@@ -58,7 +59,8 @@ typedef struct _Cluster
 {
   GPtrArray *loglines;
   char **words;
-  char *sample;
+  GPtrArray *samples;
+  guint curr_samples;
   guint support;
 } Cluster;
 
@@ -68,7 +70,7 @@ typedef struct _ClusterData
   guint cluster_tag_id;
 } ClusterData;
 
-Patternizer *ptz_new(gchar *input_file, gdouble support_treshold, guint algo, guint iterate);
+Patternizer *ptz_new(gchar *input_file, gdouble support_treshold, guint algo, guint iterate, guint num_of_samples);
 void ptz_free(Patternizer *self);
 GHashTable *ptz_find_clusters(Patternizer *self);
 void ptz_print_patterndb(GHashTable *clusters, gboolean named_parsers);

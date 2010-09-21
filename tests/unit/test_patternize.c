@@ -286,7 +286,7 @@ testcase_find_clusters_slct(gchar* logs, guint support, gchar *expected)
 
   logmessages = testcase_get_logmessages(logs);
 
-  clusters = ptz_find_clusters_slct(logmessages->logmessages, logmessages->num_of_logs, support, log_tags_get_by_name(".in_patternize_cluster"));
+  clusters = ptz_find_clusters_slct(logmessages->logmessages, logmessages->num_of_logs, support, log_tags_get_by_name(".in_patternize_cluster"), 0);
 
   expecteds = g_strsplit(expected, "|", 0);
   for (i = 0; expecteds[i]; ++i)

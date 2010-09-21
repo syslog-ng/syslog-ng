@@ -793,6 +793,7 @@ static gchar *input_logfile = NULL;
 static gdouble support_treshold = 4.0;
 static gboolean iterate_outliers = FALSE;
 static gboolean named_parsers = FALSE;
+static gint num_of_samples = 1;
 
 static gint
 pdbtool_patternize(int argc, char *argv[])
@@ -805,7 +806,7 @@ pdbtool_patternize(int argc, char *argv[])
     iterate = PTZ_ITERATE_OUTLIERS;
 
   // FIXME: proper input param handling should go here...
-  if (!(ptz = ptz_new(input_logfile, support_treshold, PTZ_ALGO_SLCT, iterate)))
+  if (!(ptz = ptz_new(input_logfile, support_treshold, PTZ_ALGO_SLCT, iterate, num_of_samples)))
     {
       return 1;
     }
@@ -829,6 +830,8 @@ static GOptionEntry patternize_options[] =
     "Recursively iterate on the log lines that do not make it into a cluster in the previous step", NULL},
   { "named-parsers", 'n', 0, G_OPTION_ARG_NONE, &named_parsers,
       "Give the parsers a name in the patterns, eg.: .dict.string1, .dict.string2... (default: no)", NULL},
+  { "samples", NULL, 0, G_OPTION_ARG_INT, &num_of_samples,
+    "Number of example lines to add for the patterns (default: 1", "<samples>" },
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
 };
 
