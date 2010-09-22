@@ -30,6 +30,7 @@
 #include "gsocket.h"
 #include "misc.h"
 #include "tags.h"
+#include "filter-expr-grammar.h"
 
 #include <regex.h>
 #include <string.h>
@@ -66,7 +67,6 @@ filter_expr_free(FilterExprNode *self)
   else
     g_free(self);
 }
-
 
 typedef struct _FilterOp
 {
@@ -127,6 +127,129 @@ fop_and_new(FilterExprNode *e1, FilterExprNode *e2)
   self->super.type = "AND";
   return &self->super;
 }
+
+#define FCMP_EQ  0x0001
+#define FCMP_LT  0x0002
+#define FCMP_GT  0x0004
+#define FCMP_NUM 0x0010
+
+typedef struct _FilterCmp
+{
+  FilterExprNode super;
+  LogTemplate *left, *right;
+  GString *left_buf, *right_buf;
+  gint cmp_op;
+} FilterCmp;
+
+gboolean
+fop_cmp_eval(FilterExprNode *s, LogMessage *msg)
+{
+  FilterCmp *self = (FilterCmp *) s;
+  gboolean result = FALSE;
+  gint cmp;
+
+  log_template_format(self->left, msg, NULL, LTZ_LOCAL, 0, self->left_buf);
+  log_template_format(self->right, msg, NULL, LTZ_LOCAL, 0, self->right_buf);
+
+  if (self->cmp_op & FCMP_NUM)
+    {
+      gint l, r;
+
+      l = atoi(self->left_buf->str);
+      r = atoi(self->right_buf->str);
+      if (l == r)
+        cmp = 0;
+      else if (l > r)
+        cmp = -1;
+      else
+        cmp = 1;
+    }
+  else
+    {
+      cmp = strcmp(self->left_buf->str, self->right_buf->str);
+    }
+
+  if (cmp == 0)
+    {
+      result = self->cmp_op & FCMP_EQ;
+    }
+  else if (cmp < 0)
+    {
+      result = self->cmp_op & FCMP_LT || self->cmp_op == 0;
+    }
+  else
+    {
+      result = self->cmp_op & FCMP_GT || self->cmp_op == 0;
+    }
+  return result ^ s->comp;
+}
+
+void
+fop_cmp_free(FilterExprNode *s)
+{
+  FilterCmp *self = (FilterCmp *) s;
+
+  log_template_unref(self->left);
+  log_template_unref(self->right);
+  g_string_free(self->left_buf, TRUE);
+  g_string_free(self->right_buf, TRUE);
+  g_free(self);
+}
+
+FilterExprNode *
+fop_cmp_new(LogTemplate *left, LogTemplate *right, gint op)
+{
+  FilterCmp *self = g_new0(FilterCmp, 1);
+
+  self->super.eval = fop_cmp_eval;
+  self->super.free_fn = fop_cmp_free;
+  self->left = left;
+  self->right = right;
+  self->left_buf = g_string_sized_new(32);
+  self->right_buf = g_string_sized_new(32);
+  self->super.type = "CMP";
+
+  switch (op)
+    {
+    case KW_NUM_LT:
+      self->cmp_op = FCMP_NUM;
+    case KW_LT:
+      self->cmp_op = FCMP_LT;
+      break;
+
+    case KW_NUM_LE:
+      self->cmp_op = FCMP_NUM;
+    case KW_LE:
+      self->cmp_op = FCMP_LT | FCMP_EQ;
+      break;
+
+    case KW_NUM_EQ:
+      self->cmp_op = FCMP_NUM;
+    case KW_EQ:
+      self->cmp_op = FCMP_EQ;
+      break;
+
+    case KW_NUM_NE:
+      self->cmp_op = FCMP_NUM;
+    case KW_NE:
+      self->cmp_op = 0;
+      break;
+
+    case KW_NUM_GE:
+      self->cmp_op = FCMP_NUM;
+    case KW_GE:
+      self->cmp_op = FCMP_GT | FCMP_EQ;
+      break;
+
+    case KW_NUM_GT:
+      self->cmp_op = FCMP_NUM;
+    case KW_GT:
+      self->cmp_op = FCMP_GT;
+      break;
+    }
+  return &self->super;
+}
+
 
 typedef struct _FilterPri
 {

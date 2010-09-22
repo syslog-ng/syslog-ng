@@ -51,6 +51,8 @@ FilterRE *last_re_filter;
 %left	KW_OR
 %left	KW_AND
 %left   KW_NOT
+%left   KW_LT KW_LE KW_EQ KW_NE KW_GE KW_GT
+%left   KW_NUM_LT KW_NUM_LE KW_NUM_EQ KW_NUM_NE KW_NUM_GE KW_NUM_GT
 
 %type	<node> filter_expr
 %type	<node> filter_simple_expr
@@ -59,7 +61,7 @@ FilterRE *last_re_filter;
 %type	<num> filter_level_list
 %type	<num> filter_level
 
-
+%type   <token> operator
 
 %%
 
@@ -171,8 +173,35 @@ filter_simple_expr
               }
             $$ = node;
           }
+	| string operator string
+          {
+            LogTemplate *left, *right;
+            GError *error = NULL;
+
+            left = log_template_new(configuration, NULL, $1);
+            right = log_template_new(configuration, NULL, $3);
+            free($1);
+            free($3);
+            CHECK_ERROR(log_template_compile(left, &error), @1, "error compiling template: %s", error->message);
+            CHECK_ERROR(log_template_compile(right, &error), @3, "error compiling template: %s", error->message);
+
+            $$ = fop_cmp_new(left, right, $2);
+          }
         ;
 
+operator
+	: KW_NUM_LT	{ $$ = yylval.token; }
+	| KW_NUM_LE	{ $$ = yylval.token; }
+	| KW_NUM_EQ     { $$ = yylval.token; }
+	| KW_NUM_NE     { $$ = yylval.token; }
+	| KW_NUM_GE     { $$ = yylval.token; }
+	| KW_NUM_GT     { $$ = yylval.token; }
+	| KW_LT		{ $$ = yylval.token; }
+	| KW_LE		{ $$ = yylval.token; }
+	| KW_EQ         { $$ = yylval.token; }
+	| KW_NE         { $$ = yylval.token; }
+	| KW_GE         { $$ = yylval.token; }
+	| KW_GT         { $$ = yylval.token; }
 	;
 
 filter_match_opts

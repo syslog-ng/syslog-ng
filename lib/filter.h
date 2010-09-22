@@ -65,6 +65,7 @@ void filter_tags_add(FilterExprNode *s, GList *tags);
 
 FilterExprNode *fop_or_new(FilterExprNode *e1, FilterExprNode *e2);
 FilterExprNode *fop_and_new(FilterExprNode *e1, FilterExprNode *e2);
+FilterExprNode *fop_cmp_new(LogTemplate *left, LogTemplate *right, gint op);
 
 FilterExprNode *filter_facility_new(guint32 facilities);
 FilterExprNode *filter_level_new(guint32 levels);

@@ -4,6 +4,7 @@
 #include "logmsg.h"
 #include "apphook.h"
 #include "plugin.h"
+#include "filter-expr-grammar.h"
 
 #include <time.h>
 #include <string.h>
@@ -285,7 +286,6 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", create_posix_regexp_match("(?i)pthread", 0), 1);
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", create_posix_regexp_match("pthread", LMF_ICASE), 1);
 
-
   fprintf(stderr, "One \"invalid regular expression\" message is to be expected\n");
   TEST_ASSERT(create_posix_regexp_match("((", 0) == NULL);
 
@@ -310,6 +310,27 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", fop_and_new(create_posix_regexp_match("^PTHREAD$", 0), create_posix_regexp_match(" PTHREAD ", 0)), 0);
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", fop_and_new(create_posix_regexp_match(" PAD ", 0), create_posix_regexp_match("^PTHREAD$", 0)), 0);
 
+
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", fop_cmp_new(log_template_new(configuration, NULL, "alma"), log_template_new(configuration, NULL, "korte"), KW_LT), 1);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", fop_cmp_new(log_template_new(configuration, NULL, "alma"), log_template_new(configuration, NULL, "korte"), KW_LE), 1);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", fop_cmp_new(log_template_new(configuration, NULL, "alma"), log_template_new(configuration, NULL, "korte"), KW_EQ), 0);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", fop_cmp_new(log_template_new(configuration, NULL, "alma"), log_template_new(configuration, NULL, "korte"), KW_NE), 1);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", fop_cmp_new(log_template_new(configuration, NULL, "alma"), log_template_new(configuration, NULL, "korte"), KW_GE), 0);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", fop_cmp_new(log_template_new(configuration, NULL, "alma"), log_template_new(configuration, NULL, "korte"), KW_GT), 0);
+
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", fop_cmp_new(log_template_new(configuration, NULL, "korte"), log_template_new(configuration, NULL, "alma"), KW_LT), 0);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", fop_cmp_new(log_template_new(configuration, NULL, "korte"), log_template_new(configuration, NULL, "alma"), KW_LE), 0);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", fop_cmp_new(log_template_new(configuration, NULL, "korte"), log_template_new(configuration, NULL, "alma"), KW_EQ), 0);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", fop_cmp_new(log_template_new(configuration, NULL, "korte"), log_template_new(configuration, NULL, "alma"), KW_NE), 1);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", fop_cmp_new(log_template_new(configuration, NULL, "korte"), log_template_new(configuration, NULL, "alma"), KW_GE), 1);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", fop_cmp_new(log_template_new(configuration, NULL, "korte"), log_template_new(configuration, NULL, "alma"), KW_GT), 1);
+
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", fop_cmp_new(log_template_new(configuration, NULL, "alma"), log_template_new(configuration, NULL, "alma"), KW_LT), 0);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", fop_cmp_new(log_template_new(configuration, NULL, "alma"), log_template_new(configuration, NULL, "alma"), KW_LE), 1);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", fop_cmp_new(log_template_new(configuration, NULL, "alma"), log_template_new(configuration, NULL, "alma"), KW_EQ), 1);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", fop_cmp_new(log_template_new(configuration, NULL, "alma"), log_template_new(configuration, NULL, "alma"), KW_NE), 0);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", fop_cmp_new(log_template_new(configuration, NULL, "alma"), log_template_new(configuration, NULL, "alma"), KW_GE), 1);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", fop_cmp_new(log_template_new(configuration, NULL, "alma"), log_template_new(configuration, NULL, "alma"), KW_GT), 0);
 
 
   testcase_with_backref_chk("<15>Oct 15 16:17:01 host openvpn[2499]: al fa", create_posix_regexp_filter(LM_V_MESSAGE, "(a)(l) (fa)", LMF_STORE_MATCHES), 1, "1","a");

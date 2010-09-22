@@ -215,6 +215,22 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase(msg, "$(if 'facility(local4)' alma korte)", "korte");
   testcase(msg, "$(if 'facility(local3)' alma korte)", "alma");
 
+  testcase(msg, "$(if '\"$FACILITY\" lt \"local3\"' alma korte)", "korte");
+  testcase(msg, "$(if '\"$FACILITY\" le \"local3\"' alma korte)", "alma");
+  testcase(msg, "$(if '\"$FACILITY\" eq \"local3\"' alma korte)", "alma");
+  testcase(msg, "$(if '\"$FACILITY\" ne \"local3\"' alma korte)", "korte");
+  testcase(msg, "$(if '\"$FACILITY\" gt \"local3\"' alma korte)", "korte");
+  testcase(msg, "$(if '\"$FACILITY\" ge \"local3\"' alma korte)", "alma");
+
+  testcase(msg, "$(if '\"$FACILITY_NUM\" < \"19\"' alma korte)", "korte");
+  testcase(msg, "$(if '\"$FACILITY_NUM\" <= \"19\"' alma korte)", "alma");
+  testcase(msg, "$(if '\"$FACILITY_NUM\" == \"19\"' alma korte)", "alma");
+  testcase(msg, "$(if '\"$FACILITY_NUM\" != \"19\"' alma korte)", "korte");
+  testcase(msg, "$(if '\"$FACILITY_NUM\" > \"19\"' alma korte)", "korte");
+  testcase(msg, "$(if '\"$FACILITY_NUM\" >= \"19\"' alma korte)", "alma");
+  testcase(msg, "$(if '\"$FACILITY_NUM\" >= \"19\" and \"kicsi\" == \"nagy\"' alma korte)", "korte");
+  testcase(msg, "$(if '\"$FACILITY_NUM\" >= \"19\" or \"kicsi\" == \"nagy\"' alma korte)", "alma");
+
   /* template syntax errors */
   testcase_failure("${unbalanced_brace", "'}' is missing");
   testcase(msg, "$unbalanced_brace}", "}");
