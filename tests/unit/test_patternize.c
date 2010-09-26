@@ -183,7 +183,7 @@ frequent_words_tests()
       "0 a:2");
 }
 
-GHashTable * ptz_find_clusters_slct(GPtrArray *logs, guint num_of_logs, guint support, guint cluster_tag_id);
+GHashTable * ptz_find_clusters_slct(GPtrArray *logs, guint num_of_logs, guint support, guint cluster_tag_id, guint num_of_samples);
 
 typedef struct _clusterfindData
 {
