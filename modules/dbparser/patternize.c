@@ -256,12 +256,18 @@ ptz_find_clusters_slct(GPtrArray *logs, guint num_of_logs, guint support, guint 
 
           if (g_hash_table_lookup(wordlist, hash_key))
             {
+              gchar *to_add;
+              to_add = g_strdup_printf("%s%c", hash_key, PTZ_SEPARATOR_CHAR);
               is_candidate = TRUE;
-              strcat(cluster_key, g_strdup_printf("%s%c", hash_key, PTZ_SEPARATOR_CHAR));
+              strcat(cluster_key, to_add);
+              g_free(to_add);
             }
           else
             {
-              strcat(cluster_key, g_strdup_printf("%d *%c", j, PTZ_SEPARATOR_CHAR));
+              gchar *to_add;
+              to_add = g_strdup_printf("%d *%c", j, PTZ_SEPARATOR_CHAR);
+              strcat(cluster_key, to_add);
+              g_free(to_add);
             }
 
           g_free(hash_key);
