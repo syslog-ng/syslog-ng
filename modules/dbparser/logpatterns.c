@@ -176,6 +176,44 @@ log_db_program_unref(LogDBProgram *s)
     }
 }
 
+/*
+ * NOTE: borrows "db" and consumes "id" parameters.
+ */
+LogDBContext *
+log_db_context_new(LogPatternDatabase *db, gchar *id)
+{
+  LogDBContext *self = g_new0(LogDBContext, 1);
+
+  self->messages = g_ptr_array_new();
+  self->db = db;
+  self->id = id;
+  self->ref_cnt = 1;
+  return self;
+}
+
+LogDBContext *
+log_db_context_ref(LogDBContext *self)
+{
+  self->ref_cnt++;
+  return self;
+}
+
+void
+log_db_context_unref(LogDBContext *self)
+{
+  gint i;
+
+  if (--self->ref_cnt == 0)
+    {
+      for (i = 0; i < self->messages->len; i++)
+        {
+          log_msg_unref((LogMessage *) g_ptr_array_index(self->messages, i));
+        }
+      g_ptr_array_free(self->messages, TRUE);
+      g_free(self->id);
+      g_free(self);
+    }
+}
 
 typedef struct _LogDBParserState
 {
@@ -529,13 +567,15 @@ static NVHandle class_handle = 0;
 static NVHandle rule_id_handle = 0;
 
 static void
-log_state_free(GPtrArray *array)
+log_pattern_database_expire_state(guint64 now, gpointer user_data)
 {
-  gint i;
+  LogDBContext *context = user_data;
 
-  for (i = 0; i < array->len; i++)
-    log_msg_unref((LogMessage *) g_ptr_array_index(array, i));
-  g_ptr_array_free(array, TRUE);
+  g_hash_table_remove(context->db->state, context->id);
+
+  /* log_db_context_free is automatically called when returning from
+     this function by the timerwheel code as a destroy notify
+     callback. */
 }
 
 gboolean
@@ -549,6 +589,7 @@ log_pattern_database_lookup(LogPatternDatabase *self, LogMessage *msg, GSList **
   if (G_UNLIKELY(!self->programs))
     return FALSE;
 
+  timer_wheel_set_time(self->timer_wheel, msg->timestamps[LM_TS_STAMP].time.tv_sec);
   program = log_msg_get_value(msg, LM_V_PROGRAM, &program_len);
 
   node = r_find_node(self->programs, (gchar *) program, (gchar *) program, program_len, NULL);
@@ -562,7 +603,7 @@ log_pattern_database_lookup(LogPatternDatabase *self, LogMessage *msg, GSList **
           RNode *msg_node;
           const gchar *message;
           gssize message_len;
-          GPtrArray *context = NULL;
+          LogDBContext *context = NULL;
 
           /* NOTE: We're not using g_array_sized_new as that does not
            * correctly zero-initialize the new items even if clear_ is TRUE
@@ -616,35 +657,47 @@ log_pattern_database_lookup(LogPatternDatabase *self, LogMessage *msg, GSList **
                       log_template_format(verdict->values_join_id, msg, NULL, LTZ_LOCAL, 0, result);
                       context = g_hash_table_lookup(self->state, result->str);
                       if (context)
-                        g_ptr_array_add(context, log_msg_ref(msg));
+                        g_ptr_array_add(context->messages, msg);
                     }
 
                   for (i = 0; i < verdict->values->len; i++)
                     {
                       log_template_format_with_context(g_ptr_array_index(verdict->values, i),
-                                                       context ? (LogMessage **) context->pdata : &msg, context ? context->len : 1,
+                                                       context ? (LogMessage **) context->messages->pdata : &msg, context ? context->messages->len : 1,
                                                        NULL, LTZ_LOCAL, 0, result);
                       log_msg_set_value(msg, log_msg_get_value_handle(((LogTemplate *)g_ptr_array_index(verdict->values, i))->name), result->str, result->len);
+                    }
+                  if (context)
+                    {
+                      /* remove the current element from the state */
+                      g_ptr_array_remove_index_fast(context->messages, context->messages->len - 1);
                     }
                 }
               if (verdict->store_id)
                 {
-                  gboolean new_array = FALSE;
+                  gboolean new_state = FALSE;
 
-                  if (!self->state)
-                    self->state = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, (GDestroyNotify) log_state_free);
                   log_template_format(verdict->store_id, msg, NULL, LTZ_LOCAL, 0, result);
 
                   context = g_hash_table_lookup(self->state, result->str);
                   if (!context)
                     {
-                      context = g_ptr_array_new();
-                      new_array = TRUE;
+                      context = log_db_context_new(self, result->str);
+                      new_state = TRUE;
                     }
-                  g_ptr_array_add(context, log_msg_ref(msg));
-                  if (new_array)
+                  g_ptr_array_add(context->messages, log_msg_ref(msg));
+
+                  if (context->timer)
                     {
-                      g_hash_table_insert(self->state, result->str, context);
+                      timer_wheel_mod_timer(self->timer_wheel, context->timer, verdict->store_timeout);
+                    }
+                  else
+                    {
+                      timer_wheel_add_timer(self->timer_wheel, verdict->store_timeout, log_pattern_database_expire_state, log_db_context_ref(context), (GDestroyNotify) log_db_context_unref);
+                    }
+                  if (new_state)
+                    {
+                      g_hash_table_insert(self->state, context->id, context);
                       g_string_free(result, FALSE);
                       return TRUE;
                     }
@@ -737,6 +790,9 @@ LogPatternDatabase *
 log_pattern_database_new(void)
 {
   LogPatternDatabase *self = g_new0(LogPatternDatabase, 1);
+
+  self->state = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, (GDestroyNotify) log_db_context_unref);
+  self->timer_wheel = timer_wheel_new();
   return self;
 }
 

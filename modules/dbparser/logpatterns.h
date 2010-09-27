@@ -26,8 +26,24 @@
 
 #include "radix.h"
 #include "templates.h"
+#include "timerwheel.h"
 
 typedef struct _LogPatternDatabase LogPatternDatabase;
+
+/* This class encapsulates a correllation context stored in
+   db->state. */
+typedef struct _LogDBContext
+{
+  /* key in the hash table*/
+  gchar *id;
+  /* back reference to the LogPatternDatabase */
+  LogPatternDatabase *db;
+  /* timeout timer */
+  TWEntry *timer;
+  /* messages belonging to this context */
+  GPtrArray *messages;
+  gint ref_cnt;
+} LogDBContext;
 
 /* this class encapsulates a single rule in the pattern database and
  * is stored as the "value" member in the RADIX tree node. It contains
@@ -75,6 +91,7 @@ struct _LogPatternDatabase
   gchar *version;
   gchar *pub_date;
   GHashTable *state;
+  TimerWheel *timer_wheel;
 };
 
 gboolean log_pattern_database_lookup(LogPatternDatabase *self, LogMessage *msg, GSList **dbg_list);
