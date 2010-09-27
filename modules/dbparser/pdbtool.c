@@ -32,6 +32,7 @@
 #include "stats.h"
 #include "plugin.h"
 #include "filter-expr-parser.h"
+#include "patternize.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -788,6 +789,55 @@ pdbtool_load_module(const gchar *option_name, const gchar *value, gpointer data,
   return plugin_load_module(value, configuration, NULL);
 }
 
+static gchar *input_logfile = NULL;
+static gdouble support_treshold = 4.0;
+static gboolean iterate_outliers = FALSE;
+static gboolean named_parsers = FALSE;
+static gint num_of_samples = 1;
+
+static gint
+pdbtool_patternize(int argc, char *argv[])
+{
+  Patternizer *ptz;
+  GHashTable *clusters;
+  guint iterate = PTZ_ITERATE_NONE;
+
+  if (iterate_outliers)
+    iterate = PTZ_ITERATE_OUTLIERS;
+
+  // FIXME: proper input param handling should go here...
+  if (!(ptz = ptz_new(input_logfile, support_treshold, PTZ_ALGO_SLCT, iterate, num_of_samples)))
+    {
+      return 1;
+    }
+
+  clusters = ptz_find_clusters(ptz);
+  ptz_print_patterndb(clusters, named_parsers);
+
+  g_hash_table_destroy(clusters);
+  ptz_free(ptz);
+
+  return 0;
+}
+
+static GOptionEntry patternize_options[] =
+{
+  { "logfile", 'L', 0, G_OPTION_ARG_STRING, &input_logfile,
+    "Logfile to create pattern database from, use '-' for stdin", "<path>" },
+  { "support", 'S', 0, G_OPTION_ARG_DOUBLE, &support_treshold,
+    "Percentage of lines that have to support a pattern (default: 4.0)", "<support>" },
+  { "iterate-outliers", 'o', 0, G_OPTION_ARG_NONE, &iterate_outliers,
+    "Recursively iterate on the log lines that do not make it into a cluster in the previous step", NULL},
+  { "named-parsers", 'n', 0, G_OPTION_ARG_NONE, &named_parsers,
+      "Give the parsers a name in the patterns, eg.: .dict.string1, .dict.string2... (default: no)", NULL},
+  { "samples", NULL, 0, G_OPTION_ARG_INT, &num_of_samples,
+    "Number of example lines to add for the patterns (default: 1", "<samples>" },
+  { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
+};
+
+
+
+
 const gchar *
 pdbtool_mode(int *argc, char **argv[])
 {
@@ -828,6 +878,7 @@ static struct
   { "dump", dump_options, "Dump pattern datebase tree", pdbtool_dump },
   { "merge", merge_options, "Merge pattern databases", pdbtool_merge },
   { "test", test_options, "Test pattern databases", pdbtool_test },
+  { "patternize", patternize_options, "Create a pattern database from logs", pdbtool_patternize },
   { NULL, NULL },
 };
 

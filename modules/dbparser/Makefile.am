@@ -9,7 +9,8 @@ libdbparser_la_SOURCES = \
 	radix.c radix.h \
 	logpatterns.c logpatterns.h \
 	dbparser-grammar.y dbparser-parser.c dbparser-parser.h dbparser-plugin.c \
-	timerwheel.c timerwheel.h
+	timerwheel.c timerwheel.h \
+	patternize.c patternize.h
 
 libdbparser_la_CPPFLAGS = $(AM_CPPFLAGS)
 libdbparser_la_LIBADD = ../../lib/libsyslog-ng.la
