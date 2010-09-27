@@ -96,7 +96,7 @@ test_rule_tag(LogPatternDatabase *patterndb, const gchar *pattern, const gchar *
 int
 main(int argc, char *argv[])
 {
-  LogPatternDatabase patterndb;
+  LogPatternDatabase *patterndb;
   gchar *filename = NULL;
 
   app_startup();
@@ -112,52 +112,53 @@ main(int argc, char *argv[])
   g_file_open_tmp("patterndbXXXXXX.xml", &filename, NULL);
   g_file_set_contents(filename, pdb, strlen(pdb), NULL);
 
-  if (log_pattern_database_load(&patterndb, configuration, filename, NULL))
+  patterndb = log_pattern_database_new();
+  if (log_pattern_database_load(patterndb, configuration, filename, NULL))
     {
-      if (!g_str_equal(patterndb.version, "2"))
-        test_fail("Invalid version '%s'\n", patterndb.version);
-      if (!g_str_equal(patterndb.pub_date, "2009-07-28"))
-        test_fail("Invalid pub_date '%s'\n", patterndb.pub_date);
+      if (!g_str_equal(patterndb->version, "2"))
+        test_fail("Invalid version '%s'\n", patterndb->version);
+      if (!g_str_equal(patterndb->pub_date, "2009-07-28"))
+        test_fail("Invalid pub_date '%s'\n", patterndb->pub_date);
 
-      test_rule_tag(&patterndb, "pattern11", "tag11-1", TRUE);
-      test_rule_tag(&patterndb, "pattern11", ".classifier.system", TRUE);
-      test_rule_tag(&patterndb, "pattern11", "tag11-2", TRUE);
-      test_rule_tag(&patterndb, "pattern11", "tag11-3", FALSE);
-      test_rule_tag(&patterndb, "pattern11a", "tag11-1", TRUE);
-      test_rule_tag(&patterndb, "pattern11a", "tag11-2", TRUE);
-      test_rule_tag(&patterndb, "pattern11a", "tag11-3", FALSE);
-      test_rule_tag(&patterndb, "pattern12", ".classifier.violation", TRUE);
-      test_rule_tag(&patterndb, "pattern12", "tag12-1", FALSE);
-      test_rule_tag(&patterndb, "pattern12", "tag12-2", FALSE);
-      test_rule_tag(&patterndb, "pattern12", "tag12-3", FALSE);
-      test_rule_tag(&patterndb, "pattern12a", "tag12-1", FALSE);
-      test_rule_tag(&patterndb, "pattern12a", "tag12-2", FALSE);
-      test_rule_tag(&patterndb, "pattern12a", "tag12-3", FALSE);
-      test_rule_tag(&patterndb, "pattern1x", "tag1x-1", FALSE);
-      test_rule_tag(&patterndb, "pattern1x", "tag1x-2", FALSE);
-      test_rule_tag(&patterndb, "pattern1x", "tag1x-3", FALSE);
-      test_rule_tag(&patterndb, "pattern1xa", "tag1x-1", FALSE);
-      test_rule_tag(&patterndb, "pattern1xa", "tag1x-2", FALSE);
-      test_rule_tag(&patterndb, "pattern1xa", "tag1x-3", FALSE);
+      test_rule_tag(patterndb, "pattern11", "tag11-1", TRUE);
+      test_rule_tag(patterndb, "pattern11", ".classifier.system", TRUE);
+      test_rule_tag(patterndb, "pattern11", "tag11-2", TRUE);
+      test_rule_tag(patterndb, "pattern11", "tag11-3", FALSE);
+      test_rule_tag(patterndb, "pattern11a", "tag11-1", TRUE);
+      test_rule_tag(patterndb, "pattern11a", "tag11-2", TRUE);
+      test_rule_tag(patterndb, "pattern11a", "tag11-3", FALSE);
+      test_rule_tag(patterndb, "pattern12", ".classifier.violation", TRUE);
+      test_rule_tag(patterndb, "pattern12", "tag12-1", FALSE);
+      test_rule_tag(patterndb, "pattern12", "tag12-2", FALSE);
+      test_rule_tag(patterndb, "pattern12", "tag12-3", FALSE);
+      test_rule_tag(patterndb, "pattern12a", "tag12-1", FALSE);
+      test_rule_tag(patterndb, "pattern12a", "tag12-2", FALSE);
+      test_rule_tag(patterndb, "pattern12a", "tag12-3", FALSE);
+      test_rule_tag(patterndb, "pattern1x", "tag1x-1", FALSE);
+      test_rule_tag(patterndb, "pattern1x", "tag1x-2", FALSE);
+      test_rule_tag(patterndb, "pattern1x", "tag1x-3", FALSE);
+      test_rule_tag(patterndb, "pattern1xa", "tag1x-1", FALSE);
+      test_rule_tag(patterndb, "pattern1xa", "tag1x-2", FALSE);
+      test_rule_tag(patterndb, "pattern1xa", "tag1x-3", FALSE);
 
-      test_rule_value(&patterndb, "pattern11", "n11-1", "v11-1");
-      test_rule_value(&patterndb, "pattern11", ".classifier.class", "system");
-      test_rule_value(&patterndb, "pattern11", "n11-2", "v11-2");
-      test_rule_value(&patterndb, "pattern11", "n11-3", NULL);
-      test_rule_value(&patterndb, "pattern11a", "n11-1", "v11-1");
-      test_rule_value(&patterndb, "pattern11a", "n11-2", "v11-2");
-      test_rule_value(&patterndb, "pattern11a", "n11-3", NULL);
-      test_rule_value(&patterndb, "pattern12", ".classifier.class", "violation");
-      test_rule_value(&patterndb, "pattern12", "n12-1", NULL);
-      test_rule_value(&patterndb, "pattern12", "n12-2", NULL);
-      test_rule_value(&patterndb, "pattern12", "n12-3", NULL);
-      test_rule_value(&patterndb, "pattern1x", "n1x-1", NULL);
-      test_rule_value(&patterndb, "pattern1x", "n1x-2", NULL);
-      test_rule_value(&patterndb, "pattern1x", "n1x-3", NULL);
+      test_rule_value(patterndb, "pattern11", "n11-1", "v11-1");
+      test_rule_value(patterndb, "pattern11", ".classifier.class", "system");
+      test_rule_value(patterndb, "pattern11", "n11-2", "v11-2");
+      test_rule_value(patterndb, "pattern11", "n11-3", NULL);
+      test_rule_value(patterndb, "pattern11a", "n11-1", "v11-1");
+      test_rule_value(patterndb, "pattern11a", "n11-2", "v11-2");
+      test_rule_value(patterndb, "pattern11a", "n11-3", NULL);
+      test_rule_value(patterndb, "pattern12", ".classifier.class", "violation");
+      test_rule_value(patterndb, "pattern12", "n12-1", NULL);
+      test_rule_value(patterndb, "pattern12", "n12-2", NULL);
+      test_rule_value(patterndb, "pattern12", "n12-3", NULL);
+      test_rule_value(patterndb, "pattern1x", "n1x-1", NULL);
+      test_rule_value(patterndb, "pattern1x", "n1x-2", NULL);
+      test_rule_value(patterndb, "pattern1x", "n1x-3", NULL);
 
-      test_rule_value(&patterndb, "pattern11", "vvv", MYHOST);
+      test_rule_value(patterndb, "pattern11", "vvv", MYHOST);
 
-      log_pattern_database_free(&patterndb);
+      log_pattern_database_free(patterndb);
     }
   else
     fail = TRUE;

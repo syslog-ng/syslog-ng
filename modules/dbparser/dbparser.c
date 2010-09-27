@@ -31,7 +31,7 @@
 struct _LogDBParser
 {
   LogParser super;
-  LogPatternDatabase db;
+  LogPatternDatabase *db;
   GlobalConfig *cfg;
   gchar *db_file;
   time_t db_file_last_check;
@@ -43,8 +43,7 @@ static void
 log_db_parser_reload_database(LogDBParser *self)
 {
   struct stat st;
-  LogPatternDatabase db_old;
-  gchar *db_file_old;
+  LogPatternDatabase *db_new;
 
   if (stat(self->db_file, &st) < 0)
     {
@@ -57,35 +56,31 @@ log_db_parser_reload_database(LogDBParser *self)
     {
       return;
     }
+
   self->db_file_inode = st.st_ino;
   self->db_file_mtime = st.st_mtime;
-  db_old = self->db;
-  db_file_old = self->db_file;
 
-  if (!log_pattern_database_load(&self->db, self->cfg, self->db_file, NULL))
+  db_new = log_pattern_database_new();
+  if (!log_pattern_database_load(db_new, self->cfg, self->db_file, NULL))
     {
       msg_error("Error reloading pattern database, no automatic reload will be performed", NULL);
       /* restore the old object pointers */
-      self->db = db_old;
-      self->db_file = db_file_old;
+      log_pattern_database_free(db_new);
     }
   else
     {
+      /* free the old database if the new was loaded successfully */
+      log_pattern_database_free(self->db);
+      self->db = db_new;
+
       msg_notice("Log pattern database reloaded",
                  evt_tag_str("file", self->db_file),
-                 evt_tag_str("version", self->db.version),
-                 evt_tag_str("pub_date", self->db.pub_date),
+                 evt_tag_str("version", self->db->version),
+                 evt_tag_str("pub_date", self->db->pub_date),
                  NULL);
-      /* free the old database if the new was loaded successfully */
-      log_pattern_database_free(&db_old);
+
     }
 
-}
-
-static inline void
-log_db_parser_process_real(LogPatternDatabase *db, LogMessage *msg, GSList **dbg_list)
-{
-  log_pattern_database_lookup(db, msg, dbg_list);
 }
 
 static gboolean
@@ -99,14 +94,8 @@ log_db_parser_process(LogParser *s, LogMessage *msg, const char *input)
       log_db_parser_reload_database(self);
     }
 
-  log_db_parser_process_real(&self->db, msg, NULL);
+  log_pattern_database_lookup(self->db, msg, NULL);
   return TRUE;
-}
-
-void
-log_db_parser_process_lookup(LogPatternDatabase *db, LogMessage *msg, GSList **dbg_list)
-{
-  log_db_parser_process_real(db, msg, dbg_list);
 }
 
 void
@@ -130,7 +119,7 @@ log_db_parser_free(LogParser *s)
 {
   LogDBParser *self = (LogDBParser *) s;
 
-  log_pattern_database_free(&self->db);
+  log_pattern_database_free(self->db);
 
   if (self->db_file)
     g_free(self->db_file);

@@ -733,6 +733,13 @@ log_pattern_database_load(LogPatternDatabase *self, GlobalConfig *cfg, const gch
   return success;
 }
 
+LogPatternDatabase *
+log_pattern_database_new(void)
+{
+  LogPatternDatabase *self = g_new0(LogPatternDatabase, 1);
+  return self;
+}
+
 void
 log_pattern_database_free(LogPatternDatabase *self)
 {
@@ -747,6 +754,7 @@ log_pattern_database_free(LogPatternDatabase *self)
   self->programs = NULL;
   self->version = NULL;
   self->pub_date = NULL;
+  g_free(self);
 }
 
 void

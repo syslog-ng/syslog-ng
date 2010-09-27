@@ -212,31 +212,32 @@ test_rule_pattern(LogPatternDatabase *patterndb, const gchar *pattern, const gch
 }
 
 void
-create_pattern_db(LogPatternDatabase *patterndb, gchar *pattern, gchar ** filename)
+create_pattern_db(LogPatternDatabase **patterndb, gchar *pattern, gchar ** filename)
 {
   GString *str = g_string_new(pdb_prefix);
-  memset(patterndb, 0x0, sizeof(LogPatternDatabase));
 
+  *patterndb = log_pattern_database_new();
   g_string_append(str,pattern);
   g_string_append(str,pdb_postfix);
 
   g_file_open_tmp("patterndbXXXXXX.xml", filename, NULL);
   g_file_set_contents(*filename, str->str, str->len, NULL);
 
-  if (log_pattern_database_load(patterndb, configuration, *filename, NULL))
+  if (log_pattern_database_load(*patterndb, configuration, *filename, NULL))
     {
-     if (!g_str_equal(patterndb->version, "3"))
-        test_fail("Invalid version '%s'\n", patterndb->version);
-      if (!g_str_equal(patterndb->pub_date, "2010-02-22"))
-        test_fail("Invalid pub_date '%s'\n", patterndb->pub_date);
+      if (!g_str_equal((*patterndb)->version, "3"))
+        test_fail("Invalid version '%s'\n", (*patterndb)->version);
+      if (!g_str_equal((*patterndb)->pub_date, "2010-02-22"))
+        test_fail("Invalid pub_date '%s'\n", (*patterndb)->pub_date);
     }
- g_string_free(str,TRUE);
+  g_string_free(str,TRUE);
 }
 
 void
-clean_pattern_db(LogPatternDatabase *patterndb, gchar**filename)
+clean_pattern_db(LogPatternDatabase **patterndb, gchar**filename)
 {
-  log_pattern_database_free(patterndb);
+  log_pattern_database_free(*patterndb);
+  *patterndb = NULL;
 
   g_unlink(*filename);
   g_free(*filename);
@@ -246,16 +247,16 @@ clean_pattern_db(LogPatternDatabase *patterndb, gchar**filename)
 void
 test_case(gchar** test)
 {
-  LogPatternDatabase patterndb;
+  LogPatternDatabase *patterndb;
   gchar *filename = NULL;
   gint index = 1;
 
   create_pattern_db(&patterndb, test[0], &filename);
 
   while(test[index] != NULL)
-    test_rule_pattern(&patterndb, test[index++], test[0], TRUE);
+    test_rule_pattern(patterndb, test[index++], test[0], TRUE);
   while(test[index] != NULL)
-    test_rule_pattern(&patterndb, test[index++], test[0], FALSE);
+    test_rule_pattern(patterndb, test[index++], test[0], FALSE);
 
   clean_pattern_db(&patterndb, &filename);
 }

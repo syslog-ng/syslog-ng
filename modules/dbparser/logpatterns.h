@@ -27,6 +27,7 @@
 #include "radix.h"
 #include "templates.h"
 
+typedef struct _LogPatternDatabase LogPatternDatabase;
 
 /* this class encapsulates a single rule in the pattern database and
  * is stored as the "value" member in the RADIX tree node. It contains
@@ -68,18 +69,22 @@ typedef struct _LogDBProgram
   RNode *rules;
 } LogDBProgram;
 
-typedef struct _LogPatternDatabase
+struct _LogPatternDatabase
 {
   RNode *programs;
   gchar *version;
   gchar *pub_date;
   GHashTable *state;
-} LogPatternDatabase;
+};
 
 gboolean log_pattern_database_lookup(LogPatternDatabase *self, LogMessage *msg, GSList **dbg_list);
 gboolean log_pattern_database_load(LogPatternDatabase *self, GlobalConfig *cfg, const gchar *config, GList **examples);
+
+LogPatternDatabase *log_pattern_database_new(void);
 void log_pattern_database_free(LogPatternDatabase *self);
 
 void log_pattern_example_free(gpointer s);
+
+void log_pattern_database_init(void);
 
 #endif
