@@ -40,7 +40,7 @@ static Plugin syslog_format_plugin =
 {
   .type = LL_CONTEXT_FORMAT,
   .name = "syslog",
-  .construct = &syslog_format_construct,
+  .construct = (gpointer (*)(Plugin *self, GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name)) syslog_format_construct,
 };
 
 gboolean
