@@ -13,7 +13,7 @@ libdbparser_la_SOURCES = \
 
 libdbparser_la_CPPFLAGS = $(AM_CPPFLAGS)
 libdbparser_la_LIBADD = ../../lib/libsyslog-ng.la
-libdbparser_la_LDFLAGS = -avoid-version -module
+libdbparser_la_LDFLAGS = -avoid-version
 
 bin_PROGRAMS = pdbtool
 pdbtool_SOURCES = pdbtool.c

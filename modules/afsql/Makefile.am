@@ -11,7 +11,7 @@ libafsql_la_SOURCES = \
 
 libafsql_la_CPPFLAGS = $(AM_CPPFLAGS) -DENABLE_SQL=1
 libafsql_la_LIBADD = ../../lib/libsyslog-ng.la $(LIBDBI_LIBS)
-libafsql_la_LDFLAGS = -avoid-version -module
+libafsql_la_LDFLAGS = -avoid-version
 
 endif
 

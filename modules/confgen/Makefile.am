@@ -7,7 +7,7 @@ libconfgen_la_SOURCES = \
 	confgen.h confgen-plugin.c
 libconfgen_la_CPPFLAGS = $(AM_CPPFLAGS)
 libconfgen_la_LIBADD = ../../lib/libsyslog-ng.la
-libconfgen_la_LDFLAGS = -avoid-version -module
+libconfgen_la_LDFLAGS = -avoid-version
 
 
 include $(top_srcdir)/build/lex-rules.am

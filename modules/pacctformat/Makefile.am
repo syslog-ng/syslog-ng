@@ -10,7 +10,7 @@ libpacctformat_la_SOURCES = \
 
 libpacctformat_la_CPPFLAGS = $(AM_CPPFLAGS)
 libpacctformat_la_LIBADD = ../../lib/libsyslog-ng.la
-libpacctformat_la_LDFLAGS = -avoid-version -module
+libpacctformat_la_LDFLAGS = -avoid-version
 
 endif
 
