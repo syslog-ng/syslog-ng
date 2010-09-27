@@ -764,6 +764,7 @@ AC_OUTPUT(dist.conf
           modules/afprog/Makefile
           modules/afuser/Makefile
           modules/dbparser/Makefile
+          modules/dbparser/tests/Makefile
           modules/csvparser/Makefile
           modules/confgen/Makefile
           modules/syslogformat/Makefile

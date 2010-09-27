@@ -1,3 +1,4 @@
+SUBDIRS = . tests
 moduledir = @moduledir@
 AM_CPPFLAGS = -I$(top_srcdir)/lib -I../../lib
 export top_srcdir
@@ -7,7 +8,8 @@ libdbparser_la_SOURCES = \
 	dbparser.c dbparser.h \
 	radix.c radix.h \
 	logpatterns.c logpatterns.h \
-	dbparser-grammar.y dbparser-parser.c dbparser-parser.h dbparser-plugin.c
+	dbparser-grammar.y dbparser-parser.c dbparser-parser.h dbparser-plugin.c \
+	timerwheel.c timerwheel.h
 
 libdbparser_la_CPPFLAGS = $(AM_CPPFLAGS)
 libdbparser_la_LIBADD = ../../lib/libsyslog-ng.la
