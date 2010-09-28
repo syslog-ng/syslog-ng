@@ -107,8 +107,6 @@ main(int argc, char *argv[])
   msg_init(TRUE);
   log_pattern_database_init();
 
-  memset(&patterndb, 0x0, sizeof(LogPatternDatabase));
-
   g_file_open_tmp("patterndbXXXXXX.xml", &filename, NULL);
   g_file_set_contents(filename, pdb, strlen(pdb), NULL);
 
