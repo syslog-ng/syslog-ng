@@ -1,15 +1,13 @@
 /*
  * NOTE: most of the algorithms come from SLCT and LogHound, written by Risto Vaarandi
  */
-
-#include <uuid/uuid.h>
-#include <stdlib.h>
-
 #include "patternize.h"
 #include "logmsg.h"
 #include "messages.h"
 #include "tags.h"
 
+#include <stdlib.h>
+#include <openssl/rand.h>
 /*
  * Constants
  */
@@ -17,6 +15,38 @@
 #define PTZ_MAXWORDS 512      /* maximum number of words in one line */
 #define PTZ_LOGTABLE_ALLOC_BASE 3000
 #define PTZ_WORDLIST_CACHE 3 // FIXME: make this a commandline parameter?
+
+static void
+uuid_gen_random(gchar *buf, gsize buflen)
+{
+  union
+  {
+    struct
+    {
+      guint32 time_low;
+      guint16 time_mid;
+      guint16 time_hi_and_version;
+      guint8  clk_seq_hi_res;
+      guint8  clk_seq_low;
+      guint8  node[6];
+      guint16 node_low;
+      guint32 node_hi;
+    };
+    guchar __rnd[16];
+  } uuid;
+
+  RAND_bytes(uuid.__rnd, sizeof(uuid));
+
+  uuid.clk_seq_hi_res = (uuid.clk_seq_hi_res & ~0xC0) | 0x80;
+  uuid.time_hi_and_version = htons((uuid.time_hi_and_version & ~0xF000) | 0x4000);
+
+  g_snprintf(buf, buflen, "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+                  uuid.time_low, uuid.time_mid, uuid.time_hi_and_version,
+                  uuid.clk_seq_hi_res, uuid.clk_seq_low,
+                  uuid.node[0], uuid.node[1], uuid.node[2],
+                  uuid.node[3], uuid.node[4], uuid.node[5]);
+
+}
 
 #if 0
 static void _ptz_debug_print_word(gpointer key, gpointer value, gpointer dummy)
@@ -486,7 +516,6 @@ ptz_print_patterndb_rule(gpointer key, gpointer value, gpointer user_data)
   gboolean named_parsers = *((gboolean*) user_data);
   guint parser_counts[PTZ_NUM_OF_PARSERS];
   int i;
-  uuid_t uuid;
   Cluster *cluster;
 
   if (named_parsers)
@@ -495,8 +524,7 @@ ptz_print_patterndb_rule(gpointer key, gpointer value, gpointer user_data)
         parser_counts[i] = 0;
     }
 
-  uuid_generate(uuid);
-  uuid_unparse_lower(uuid, uuid_string);
+  uuid_gen_random(uuid_string, sizeof(uuid_string));
   printf("      <rule id='%s' class='system' provider='patternize'>\n", uuid_string);
   printf("        <!-- support: %d -->\n", ((Cluster *) value)->support);
   printf("        <patterns>\n");
@@ -584,14 +612,13 @@ ptz_print_patterndb(GHashTable *clusters, gboolean named_parsers)
 {
   char date[12], uuid_string[37];
   time_t currtime;
-  uuid_t uuid;
 
   // print the header
   time(&currtime);
   strftime(date, 12, "%Y-%m-%d", localtime(&currtime));
   printf("<patterndb version='3' pub_date='%s'>\n", date);
-  uuid_generate(uuid);
-  uuid_unparse_lower(uuid, uuid_string);
+  uuid_gen_random(uuid_string, sizeof(uuid_string));
+
   printf("  <ruleset name='patternize' id='%s'>\n", uuid_string);
   printf("    <rules>\n");
 

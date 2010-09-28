@@ -264,7 +264,6 @@ AC_HEADER_STDC
 AC_CHECK_HEADER(dmalloc.h)
 AC_CHECK_HEADERS(strings.h getopt.h stropts.h sys/strlog.h door.h sys/capability.h sys/prctl.h)
 AC_CHECK_HEADERS(tcpd.h)
-AC_CHECK_HEADERS(uuid/uuid.h)
 
 
 dnl ***************************************************************************
@@ -335,7 +334,6 @@ AC_CHECK_LIB(door, door_create, BASE_LIBS="$BASE_LIBS -ldoor")
 AC_CHECK_LIB(socket, socket, BASE_LIBS="$BASE_LIBS -lsocket")
 AC_CHECK_LIB(rt, nanosleep, BASE_LIBS="$BASE_LIBS -lrt")
 AC_CHECK_LIB(nsl, gethostbyname, BASE_LIBS="$BASE_LIBS -lnsl")
-AC_CHECK_LIB(uuid, uuid_parse, BASE_LIBS="$BASE_LIBS -luuid")
 AC_CHECK_LIB(regex, regexec, REGEX_LIBS="-lregex")
 AC_CHECK_LIB(resolv, res_init, RESOLV_LIBS="-lresolv")
 
