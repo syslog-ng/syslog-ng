@@ -801,20 +801,33 @@ pdbtool_patternize(int argc, char *argv[])
   Patternizer *ptz;
   GHashTable *clusters;
   guint iterate = PTZ_ITERATE_NONE;
+  gint i;
+  GError *error = NULL;
 
   if (iterate_outliers)
     iterate = PTZ_ITERATE_OUTLIERS;
 
-  // FIXME: proper input param handling should go here...
-  if (!(ptz = ptz_new(input_logfile, support_treshold, PTZ_ALGO_SLCT, iterate, num_of_samples)))
+  if (!(ptz = ptz_new(support_treshold, PTZ_ALGO_SLCT, iterate, num_of_samples)))
     {
       return 1;
     }
 
+  argv[0] = input_logfile;
+  for (i = 0; i < argc; i++)
+    {
+      if (argv[i] && !ptz_load_file(ptz, argv[i], &error))
+        {
+          fprintf(stderr, "Error adding log file as patternize input: %s\n", error->message);
+          g_clear_error(&error);
+          goto exit;
+        }
+    }
+
   clusters = ptz_find_clusters(ptz);
   ptz_print_patterndb(clusters, named_parsers);
-
   g_hash_table_destroy(clusters);
+
+ exit:
   ptz_free(ptz);
 
   return 0;
@@ -822,20 +835,18 @@ pdbtool_patternize(int argc, char *argv[])
 
 static GOptionEntry patternize_options[] =
 {
-  { "logfile", 'L', 0, G_OPTION_ARG_STRING, &input_logfile,
+  { "file",             'f', 0, G_OPTION_ARG_STRING, &input_logfile,
     "Logfile to create pattern database from, use '-' for stdin", "<path>" },
-  { "support", 'S', 0, G_OPTION_ARG_DOUBLE, &support_treshold,
+  { "support",          'S', 0, G_OPTION_ARG_DOUBLE, &support_treshold,
     "Percentage of lines that have to support a pattern (default: 4.0)", "<support>" },
   { "iterate-outliers", 'o', 0, G_OPTION_ARG_NONE, &iterate_outliers,
     "Recursively iterate on the log lines that do not make it into a cluster in the previous step", NULL},
-  { "named-parsers", 'n', 0, G_OPTION_ARG_NONE, &named_parsers,
+  { "named-parsers",    'n', 0, G_OPTION_ARG_NONE, &named_parsers,
       "Give the parsers a name in the patterns, eg.: .dict.string1, .dict.string2... (default: no)", NULL},
-  { "samples", NULL, 0, G_OPTION_ARG_INT, &num_of_samples,
-    "Number of example lines to add for the patterns (default: 1", "<samples>" },
+  { "samples",           0, 0, G_OPTION_ARG_INT, &num_of_samples,
+    "Number of example lines to add for the patterns (default: 1)", "<samples>" },
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
 };
-
-
 
 
 const gchar *

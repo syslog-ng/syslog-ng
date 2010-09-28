@@ -1,6 +1,8 @@
-#include "syslog-ng.h"
+#include "patternize.h"
 #include "logmsg.h"
-#include "dbparser/patternize.h"
+#include "cfg.h"
+#include "plugin.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -10,9 +12,6 @@ gboolean fail = FALSE;
 
 MsgFormatOptions parse_options;
 
-GHashTable *
-ptz_find_frequent_words(GPtrArray *logs, guint num_of_logs, guint support, gboolean two_pass);
-
 static void _debug_print(gpointer key, gpointer value, gpointer dummy)
 {
   fprintf(stderr, "%s: %d\n", (gchar*) key, *((guint*) value));
@@ -20,7 +19,7 @@ static void _debug_print(gpointer key, gpointer value, gpointer dummy)
 
 static void _debug_print2(gpointer key, gpointer value, gpointer dummy)
 {
-  fprintf(stderr, "%s: %d\n", (gchar*) key, ((Cluster *) value)->support);
+  fprintf(stderr, "%s: %d\n", (gchar*) key, ((Cluster *) value)->loglines->len);
 }
 
 typedef struct _loglinesType
@@ -77,7 +76,7 @@ testcase_frequent_words(gchar* logs, guint support, gchar *expected)
 
   for (twopass = 1; twopass <= 2; ++twopass)
     {
-      wordlist = ptz_find_frequent_words(logmessages->logmessages, logmessages->num_of_logs, support, twopass == 1);
+      wordlist = ptz_find_frequent_words(logmessages->logmessages, support, twopass == 1);
 
       for (i = 0; expecteds[i]; ++i)
         {
@@ -183,8 +182,6 @@ frequent_words_tests()
       "0 a:2");
 }
 
-GHashTable * ptz_find_clusters_slct(GPtrArray *logs, guint num_of_logs, guint support, guint cluster_tag_id, guint num_of_samples);
-
 typedef struct _clusterfindData
 {
   guint *lines;
@@ -281,19 +278,18 @@ testcase_find_clusters_slct(gchar* logs, guint support, gchar *expected)
   gchar **expecteds;
   loglinesType *logmessages;
   clusterfindData *find_data;
-  GPtrArray *clusters;
+  GHashTable *clusters;
   Cluster *test_cluster;
 
   logmessages = testcase_get_logmessages(logs);
 
-  clusters = ptz_find_clusters_slct(logmessages->logmessages, logmessages->num_of_logs, support, log_tags_get_by_name(".in_patternize_cluster"), 0);
+  clusters = ptz_find_clusters_slct(logmessages->logmessages, support, 0);
 
   expecteds = g_strsplit(expected, "|", 0);
   for (i = 0; expecteds[i]; ++i)
     {
       gchar **expected_item, **expected_lines_s;
       guint expected_lines[100];
-      gboolean expected_lines_found[100];
       guint num_of_expected_lines = 0;
       guint expected_support;
 
@@ -304,7 +300,6 @@ testcase_find_clusters_slct(gchar* logs, guint support, gchar *expected)
 
       for (j = 0; expected_lines_s[j]; ++j)
         {
-          guint expected_line;
           sscanf(expected_lines_s[j], "%d", &expected_lines[j]);
           ++num_of_expected_lines;
         }
@@ -315,7 +310,7 @@ testcase_find_clusters_slct(gchar* logs, guint support, gchar *expected)
       find_data->logs = logmessages->logmessages;
       test_cluster = (Cluster *) g_hash_table_find(clusters, test_clusters_find, find_data);
 
-      if (!test_cluster || test_cluster->support != expected_support)
+      if (!test_cluster || test_cluster->loglines->len != expected_support)
         {
           if (!test_cluster)
             fprintf(stderr, "No cluster found;");
