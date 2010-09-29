@@ -156,6 +156,20 @@ PKG_PROG_PKG_CONFIG
 LT_INIT([disable-static])
 
 dnl ***************************************************************************
+dnl Validate yacc
+if echo "$YACC" | grep bison > /dev/null; then
+	# NOTE: m4 removes [], that's why it needs to be escaped
+	bison_version=[`$YACC --version | head -1 | sed -e 's/[^0-9.]*\([0-9.]\+\)$/\1/'`]
+	bison_version_major=`echo $bison_version | cut -d. -f1`
+	bison_version_minor=`echo $bison_version | cut -d. -f2`
+	if test "$bison_version_major" -lt 2 -o "$bison_version_minor" -lt 4; then
+		AC_MSG_WARN([syslog-ng requires bison 2.4. You may not be able to regenerate parsers if you change them.])
+	fi
+else
+	AC_MSG_WARN([syslog-ng only supports bison and not traditional yacc. You may not be able to regenerate the parsers if you change them.])
+fi
+
+dnl ***************************************************************************
 dnl Set up CFLAGS
 
 if test "x$ac_compiler_gnu" = "xyes"; then
