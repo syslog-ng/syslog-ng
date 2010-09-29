@@ -412,6 +412,8 @@ pdbtool_match(int argc, char *argv[])
 
 
   msg_format_options_defaults(&parse_options);
+  /* the syslog protocol parser automatically falls back to RFC3164 format */
+  parse_options.flags |= LP_SYSLOG_PROTOCOL;
   msg_format_options_init(&parse_options, configuration);
 
   patterndb = log_pattern_database_new();

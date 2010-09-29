@@ -592,6 +592,7 @@ ptz_load_file(Patternizer *self, gchar *input_file, GError **error)
 
   memset(&parse_options, 0, sizeof(parse_options));
   msg_format_options_defaults(&parse_options);
+  parse_options.flags |= LP_SYSLOG_PROTOCOL;
   msg_format_options_init(&parse_options, configuration);
 
   while (fgets(line, PTZ_MAXLINELEN, file))

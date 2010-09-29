@@ -846,109 +846,6 @@ log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, guint flag
   return ret;
 }
 
-/**
- * log_msg_parse_syslog_proto:
- *
- * Parse a message according to the latest syslog-protocol drafts.
- **/
-static gboolean
-log_msg_parse_syslog_proto(MsgFormatOptions *parse_options, const guchar *data, gint length, LogMessage *self)
-{
-  /**
-   *	SYSLOG-MSG      = HEADER SP STRUCTURED-DATA [SP MSG]
-   *	HEADER          = PRI VERSION SP TIMESTAMP SP HOSTNAME
-   *                        SP APP-NAME SP PROCID SP MSGID
-   *    SP              = ' ' (space)
-   *
-   *    <165>1 2003-10-11T22:14:15.003Z mymachine.example.com evntslog - ID47 [exampleSDID@0 iut="3" eventSource="Application" eventID="1011"] BOMAn application
-   *    event log entry...
-   **/
-
-  const guchar *src;
-  gint left;
-  guchar date[32];
-  const guchar *hostname_start = NULL;
-  gint hostname_len = 0;
-
-  src = (guchar *) data;
-  left = length;
-
-
-  if (!log_msg_parse_pri(self, &src, &left, parse_options->flags, parse_options->default_pri) ||
-      !log_msg_parse_version(self, &src, &left))
-    {
-      return FALSE;
-    }
-
-  if (!log_msg_parse_skip_space(self, &src, &left))
-    return FALSE;
-
-  /* ISO time format */
-  if (!log_msg_parse_date(self, &src, &left, date, sizeof(date), parse_options->flags, time_zone_info_get_offset(parse_options->recv_time_zone_info, time(NULL))))
-    return FALSE;
-
-  if (!log_msg_parse_skip_space(self, &src, &left))
-    return FALSE;
-
-  /* hostname 255 ascii */
-  log_msg_parse_hostname(self, &src, &left, &hostname_start, &hostname_len, parse_options->flags, NULL);
-  if (!log_msg_parse_skip_space(self, &src, &left))
-    return FALSE;
-
-  /* If we did manage to find a hostname, store it. */
-  if (hostname_start && hostname_len == 1 && *hostname_start == '-')
-    ;
-  else if (hostname_start)
-    {
-      log_msg_set_value(self, LM_V_HOST, (gchar *) hostname_start, hostname_len);
-    }
-
-  /* application name 48 ascii*/
-  log_msg_parse_column(self, LM_V_PROGRAM, &src, &left, 48);
-  if (!log_msg_parse_skip_space(self, &src, &left))
-    return FALSE;
-
-  /* process id 128 ascii */
-  log_msg_parse_column(self, LM_V_PID, &src, &left, 128);
-  if (!log_msg_parse_skip_space(self, &src, &left))
-    return FALSE;
-
-  /* message id 32 ascii */
-  log_msg_parse_column(self, LM_V_MSGID, &src, &left, 32);
-  if (!log_msg_parse_skip_space(self, &src, &left))
-    return FALSE;
-
-  /* structured data part */
-  if (!log_msg_parse_sd(self, &src, &left, parse_options->flags))
-    return FALSE;
-
-  /* checking if there are remaining data in log message */
-  if (left == 0)
-    {
-      /*  no message, this is valid */
-      return TRUE;
-    }
-
-  /* optional part of the log message [SP MSG] */
-  if (!log_msg_parse_skip_space(self, &src, &left))
-    {
-      return FALSE;
-    }
-
-  if (left >= 3 && memcmp(src, "\xEF\xBB\xBF", 3) == 0)
-    {
-      /* we have a BOM, this is UTF8 */
-      self->flags |= LF_UTF8;
-      src += 3;
-      left -= 3;
-    }
-  else if ((parse_options->flags & LP_VALIDATE_UTF8) && g_utf8_validate((gchar *) src, left, NULL))
-    {
-      self->flags |= LF_UTF8;
-    }
-  log_msg_set_value(self, LM_V_MESSAGE, (gchar *) src, left);
-  return TRUE;
-}
 
 /**
  * log_msg_parse_legacy:
@@ -1054,6 +951,111 @@ log_msg_parse_legacy(MsgFormatOptions *parse_options,
 
   return TRUE;
 }
+
+/**
+ * log_msg_parse_syslog_proto:
+ *
+ * Parse a message according to the latest syslog-protocol drafts.
+ **/
+static gboolean
+log_msg_parse_syslog_proto(MsgFormatOptions *parse_options, const guchar *data, gint length, LogMessage *self)
+{
+  /**
+   *	SYSLOG-MSG      = HEADER SP STRUCTURED-DATA [SP MSG]
+   *	HEADER          = PRI VERSION SP TIMESTAMP SP HOSTNAME
+   *                        SP APP-NAME SP PROCID SP MSGID
+   *    SP              = ' ' (space)
+   *
+   *    <165>1 2003-10-11T22:14:15.003Z mymachine.example.com evntslog - ID47 [exampleSDID@0 iut="3" eventSource="Application" eventID="1011"] BOMAn application
+   *    event log entry...
+   **/
+
+  const guchar *src;
+  gint left;
+  guchar date[32];
+  const guchar *hostname_start = NULL;
+  gint hostname_len = 0;
+
+  src = (guchar *) data;
+  left = length;
+
+
+  if (!log_msg_parse_pri(self, &src, &left, parse_options->flags, parse_options->default_pri) ||
+      !log_msg_parse_version(self, &src, &left))
+    {
+      return log_msg_parse_legacy(parse_options, data, length, self);
+    }
+
+  if (!log_msg_parse_skip_space(self, &src, &left))
+    return FALSE;
+
+  /* ISO time format */
+  if (!log_msg_parse_date(self, &src, &left, date, sizeof(date), parse_options->flags, time_zone_info_get_offset(parse_options->recv_time_zone_info, time(NULL))))
+    return FALSE;
+
+  if (!log_msg_parse_skip_space(self, &src, &left))
+    return FALSE;
+
+  /* hostname 255 ascii */
+  log_msg_parse_hostname(self, &src, &left, &hostname_start, &hostname_len, parse_options->flags, NULL);
+  if (!log_msg_parse_skip_space(self, &src, &left))
+    return FALSE;
+
+  /* If we did manage to find a hostname, store it. */
+  if (hostname_start && hostname_len == 1 && *hostname_start == '-')
+    ;
+  else if (hostname_start)
+    {
+      log_msg_set_value(self, LM_V_HOST, (gchar *) hostname_start, hostname_len);
+    }
+
+  /* application name 48 ascii*/
+  log_msg_parse_column(self, LM_V_PROGRAM, &src, &left, 48);
+  if (!log_msg_parse_skip_space(self, &src, &left))
+    return FALSE;
+
+  /* process id 128 ascii */
+  log_msg_parse_column(self, LM_V_PID, &src, &left, 128);
+  if (!log_msg_parse_skip_space(self, &src, &left))
+    return FALSE;
+
+  /* message id 32 ascii */
+  log_msg_parse_column(self, LM_V_MSGID, &src, &left, 32);
+  if (!log_msg_parse_skip_space(self, &src, &left))
+    return FALSE;
+
+  /* structured data part */
+  if (!log_msg_parse_sd(self, &src, &left, parse_options->flags))
+    return FALSE;
+
+  /* checking if there are remaining data in log message */
+  if (left == 0)
+    {
+      /*  no message, this is valid */
+      return TRUE;
+    }
+
+  /* optional part of the log message [SP MSG] */
+  if (!log_msg_parse_skip_space(self, &src, &left))
+    {
+      return FALSE;
+    }
+
+  if (left >= 3 && memcmp(src, "\xEF\xBB\xBF", 3) == 0)
+    {
+      /* we have a BOM, this is UTF8 */
+      self->flags |= LF_UTF8;
+      src += 3;
+      left -= 3;
+    }
+  else if ((parse_options->flags & LP_VALIDATE_UTF8) && g_utf8_validate((gchar *) src, left, NULL))
+    {
+      self->flags |= LF_UTF8;
+    }
+  log_msg_set_value(self, LM_V_MESSAGE, (gchar *) src, left);
+  return TRUE;
+}
+
 
 void
 syslog_format_handler(MsgFormatOptions *parse_options,
