@@ -39,9 +39,14 @@ install-exec-hook:
 	mkdir -p $(DESTDIR)/$(moduledir) || true
 	ln -sf libafsocket-notls.so $(DESTDIR)/$(moduledir)/libafsocket.so
 
+
 libafsocket.la: libafsocket-tls.la
 	ln -sf libafsocket-notls.la libafsocket.la
 
 endif
+
+uninstall-hook:
+	rm -f $(DESTDIR)/$(moduledir)/libafsocket.so
+
 
 include $(top_srcdir)/build/lex-rules.am
