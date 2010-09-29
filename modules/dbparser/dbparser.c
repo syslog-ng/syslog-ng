@@ -70,7 +70,8 @@ log_db_parser_reload_database(LogDBParser *self)
   else
     {
       /* free the old database if the new was loaded successfully */
-      log_pattern_database_free(self->db);
+      if (self->db)
+        log_pattern_database_free(self->db);
       self->db = db_new;
 
       msg_notice("Log pattern database reloaded",
@@ -119,7 +120,8 @@ log_db_parser_free(LogParser *s)
 {
   LogDBParser *self = (LogDBParser *) s;
 
-  log_pattern_database_free(self->db);
+  if (self->db)
+    log_pattern_database_free(self->db);
 
   if (self->db_file)
     g_free(self->db_file);
