@@ -51,6 +51,7 @@ struct _GlobalConfig
 {
   /* version number of the configuration file, hex-encoded syslog-ng major/minor, e.g. 0x0201 is syslog-ng 2.1 format */
   gint version;
+  gint parsed_version;
   gchar *filename;
   GList *plugins;
   CfgLexer *lexer;
