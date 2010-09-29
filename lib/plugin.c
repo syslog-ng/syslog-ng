@@ -54,12 +54,25 @@ plugin_find(GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name)
 {
   GList *p;
   Plugin *plugin;
+  gint i;
 
   for (p = cfg->plugins; p; p = g_list_next(p))
     {
       plugin = p->data;
-      if (plugin->type == plugin_type && strcmp(plugin->name, plugin_name) == 0)
-        return plugin;
+      if (plugin->type == plugin_type)
+        {
+          for (i = 0; plugin->name[i] && plugin_name[i]; i++)
+            {
+              if (plugin->name[i] != plugin_name[i] &&
+                  !((plugin->name[i] == '-' || plugin->name[i] == '_') &&
+                    (plugin_name[i] == '-' || plugin_name[i] == '_')))
+                {
+                  break;
+                }
+            }
+          if (plugin_name[i] == 0)
+            return plugin;
+        }
     }
   return NULL;
 }
