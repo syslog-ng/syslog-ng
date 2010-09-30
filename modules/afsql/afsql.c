@@ -978,6 +978,7 @@ afsql_dd_init(LogPipe *s)
 
   if (!dbi_initialized)
     {
+      dbi_initialize(NULL);
       dbi_initialized = TRUE;
     }
 
