@@ -1,6 +1,6 @@
 
 #include "apphook.h"
-#include "dbparser/radix.h"
+#include "radix.h"
 #include "messages.h"
 
 #include <stdio.h>
@@ -598,4 +598,3 @@ main(int argc, char *argv[])
   app_shutdown();
   return  (fail ? 1 : 0);
 }
-
