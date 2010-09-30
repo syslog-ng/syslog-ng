@@ -846,6 +846,7 @@ cfg_lexer_free(CfgLexer *self)
 
 static const gchar *lexer_contexts[] =
 {
+  [LL_CONTEXT_ROOT] = "root",
   [LL_CONTEXT_DESTINATION] = "destination",
   [LL_CONTEXT_SOURCE] = "source",
   [LL_CONTEXT_PARSER] = "parser",
