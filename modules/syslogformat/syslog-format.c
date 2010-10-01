@@ -875,7 +875,7 @@ log_msg_parse_legacy(MsgFormatOptions *parse_options,
     }
 
   log_msg_parse_skip_chars(self, &src, &left, " ", -1);
-  log_msg_parse_date(self, &src, &left, date, sizeof(date), parse_options->flags, time_zone_info_get_offset(parse_options->recv_time_zone_info, time(NULL)));
+  log_msg_parse_date(self, &src, &left, date, sizeof(date), parse_options->flags & ~LP_SYSLOG_PROTOCOL, time_zone_info_get_offset(parse_options->recv_time_zone_info, time(NULL)));
 
   if (date[0])
     {
