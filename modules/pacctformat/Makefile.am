@@ -2,7 +2,7 @@ moduledir = @moduledir@
 AM_CPPFLAGS = -I$(top_srcdir)/lib -I../../lib
 export top_srcdir
 
-if ENABLE_SUN_STREAMS
+if ENABLE_PACCT
 
 module_LTLIBRARIES := libpacctformat.la
 libpacctformat_la_SOURCES = \
