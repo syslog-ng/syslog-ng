@@ -152,7 +152,7 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
     {
       if (self->options->host_override_len < 0)
         self->options->host_override_len = strlen(self->options->host_override);
-      log_msg_set_value(msg, LM_V_PROGRAM, self->options->host_override, self->options->host_override_len);
+      log_msg_set_value(msg, LM_V_HOST, self->options->host_override, self->options->host_override_len);
     }
     
   handle = stats_register_dynamic_counter(2, SCS_HOST | SCS_SOURCE, NULL, log_msg_get_value(msg, LM_V_HOST, NULL), SC_TYPE_PROCESSED, &processed_counter, &new);
