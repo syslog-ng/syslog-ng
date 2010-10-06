@@ -363,9 +363,11 @@ cfg_run_parser(GlobalConfig *self, CfgLexer *lexer, CfgParser *parser, gpointer 
 {
   gboolean res;
   GlobalConfig *old_cfg;
+  CfgLexer *old_lexer;
 
   old_cfg = configuration;
   configuration = self;
+  old_lexer = self->lexer;
   self->lexer = lexer;
   cfg_args_set(self->lexer->globals, "syslog-ng-root", PATH_PREFIX);
   cfg_args_set(self->lexer->globals, "syslog-ng-data", PATH_DATADIR);
@@ -377,6 +379,7 @@ cfg_run_parser(GlobalConfig *self, CfgLexer *lexer, CfgParser *parser, gpointer 
 
   cfg_lexer_free(lexer);
   self->lexer = NULL;
+  self->lexer = old_lexer;
   configuration = old_cfg;
   return res;
 }
