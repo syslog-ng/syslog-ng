@@ -31,7 +31,9 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
+/* functions that should be implemented by GLib but they aren't */
 GString *g_string_assign_len(GString *s, const gchar *val, gint len);
+void g_string_steal(GString *s);
 
 gboolean g_fd_set_nonblock(int fd, gboolean enable);
 gboolean g_fd_set_cloexec(int fd, gboolean enable);

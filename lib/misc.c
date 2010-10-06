@@ -55,6 +55,14 @@ g_string_assign_len(GString *s, const gchar *val, gint len)
 }
 
 void
+g_string_steal(GString *s)
+{
+  s->str = g_malloc0(1);
+  s->allocated_len = 1;
+  s->len = 0;
+}
+
+void
 reset_cached_hostname(void)
 {
   gchar *s;
