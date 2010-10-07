@@ -195,6 +195,7 @@ plugin_load_module(const gchar *module_name, GlobalConfig *cfg, CfgArgs *args)
                 evt_tag_str("module-path", mp),
                 evt_tag_str("module", module_name),
                 NULL);
+      g_free(module_init_func);
       return FALSE;
     }
   msg_debug("Trying to open module",
@@ -210,6 +211,7 @@ plugin_load_module(const gchar *module_name, GlobalConfig *cfg, CfgArgs *args)
                 evt_tag_str("module", module_name),
                 evt_tag_str("error", g_module_error()),
                 NULL);
+      g_free(module_init_func);
       return FALSE;
     }
   g_module_make_resident(mod);
@@ -221,9 +223,10 @@ plugin_load_module(const gchar *module_name, GlobalConfig *cfg, CfgArgs *args)
                 evt_tag_str("symbol", "syslogng_module_init"),
                 evt_tag_str("error", g_module_error()),
                 NULL);
+      g_free(module_init_func);
       return FALSE;
     }
-  g_free(module_init_func);
  call_init:
+  g_free(module_init_func);
   return (*init_func)(cfg, args);
 }
