@@ -115,7 +115,7 @@ cfg_lexer_pop_context(CfgLexer *self)
   if (self->context_stack)
     {
       g_free((gchar *) self->context_stack->data);
-      self->context_stack = g_list_remove_link(self->context_stack, self->context_stack);
+      self->context_stack = g_list_delete_link(self->context_stack, self->context_stack);
     }
 }
 
@@ -734,7 +734,6 @@ cfg_lexer_init(CfgLexer *self)
   CfgIncludeLevel *level;
 
   _cfg_lexer_lex_init_extra(self, &self->state);
-  _cfg_lexer_restart(NULL, self->state);
   self->string_buffer = g_string_sized_new(32);
   self->token_text = g_string_sized_new(32);
   self->token_pretext = g_string_sized_new(32);
