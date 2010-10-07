@@ -7,7 +7,7 @@ module_LTLIBRARIES := libdbparser.la
 libdbparser_la_SOURCES = \
 	dbparser.c dbparser.h \
 	radix.c radix.h \
-	logpatterns.c logpatterns.h \
+	patterndb.c patterndb.h \
 	dbparser-grammar.y dbparser-parser.c dbparser-parser.h dbparser-plugin.c \
 	timerwheel.c timerwheel.h
 

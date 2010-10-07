@@ -22,7 +22,7 @@
  */
 
 #include "dbparser.h"
-#include "logpatterns.h"
+#include "patterndb.h"
 #include "radix.h"
 #include "apphook.h"
 

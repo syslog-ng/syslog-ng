@@ -25,7 +25,7 @@
 #include "messages.h"
 #include "templates.h"
 #include "misc.h"
-#include "logpatterns.h"
+#include "patterndb.h"
 #include "dbparser.h"
 #include "radix.h"
 #include "tags.h"

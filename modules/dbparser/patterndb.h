@@ -20,9 +20,9 @@
  * COPYING for details.
  *
  */
-  
-#ifndef LOGPATTERNS_H_INCLUDED
-#define LOGPATTERNS_H_INCLUDED
+
+#ifndef PATTERNDB_H_INCLUDED
+#define PATTERNDB_H_INCLUDED
 
 #include "radix.h"
 #include "templates.h"

@@ -21,7 +21,7 @@
  *
  */
 
-#include "logpatterns.h"
+#include "patterndb.h"
 #include "logmsg.h"
 #include "tags.h"
 #include "templates.h"
@@ -240,12 +240,12 @@ pdb_rule_get_name(gpointer s)
 
 /*
  * Database based parser. The patterns are stored in an XML database.
- * Data structure is: 
+ * Data structure is:
  *   - Parser -> programs -> rules -> patterns
  */
 
 PDBProgram *
-log_db_program_new(void)
+pdb_program_new(void)
 {
   PDBProgram *self = g_new0(PDBProgram, 1);
 
@@ -255,14 +255,14 @@ log_db_program_new(void)
 }
 
 static PDBProgram *
-log_db_program_ref(PDBProgram *self)
+pdb_program_ref(PDBProgram *self)
 {
   self->ref_cnt++;
   return self;
 }
 
 static void
-log_db_program_unref(PDBProgram *s)
+pdb_program_unref(PDBProgram *s)
 {
   PDBProgram *self = (PDBProgram *) s;
 
@@ -279,7 +279,7 @@ log_db_program_unref(PDBProgram *s)
  * NOTE: borrows "db" and consumes "id" parameters.
  */
 PDBContext *
-log_db_context_new(PatternDB *db, gchar *id)
+pdb_context_new(PatternDB *db, gchar *id)
 {
   PDBContext *self = g_new0(PDBContext, 1);
 
@@ -291,14 +291,14 @@ log_db_context_new(PatternDB *db, gchar *id)
 }
 
 PDBContext *
-log_db_context_ref(PDBContext *self)
+pdb_context_ref(PDBContext *self)
 {
   self->ref_cnt++;
   return self;
 }
 
 void
-log_db_context_unref(PDBContext *self)
+pdb_context_unref(PDBContext *self)
 {
   gint i;
 
@@ -578,7 +578,7 @@ pdb_loader_text(GMarkupParseContext *context, const gchar *text, gsize text_len,
                 state->current_program = node->value;
               else
                 {
-                  state->current_program = log_db_program_new();
+                  state->current_program = pdb_program_new();
 
                   r_insert_node(state->db->programs,
                             txt,
@@ -595,7 +595,7 @@ pdb_loader_text(GMarkupParseContext *context, const gchar *text, gsize text_len,
                 {
                   r_insert_node(state->db->programs,
                             txt,
-                            log_db_program_ref(state->current_program),
+                            pdb_program_ref(state->current_program),
                             TRUE, NULL);
                 }
             }
@@ -662,7 +662,7 @@ pattern_db_expire_state(guint64 now, gpointer user_data)
 
   g_hash_table_remove(context->db->state, context->id);
 
-  /* log_db_context_free is automatically called when returning from
+  /* pdb_context_free is automatically called when returning from
      this function by the timerwheel code as a destroy notify
      callback. */
 }
@@ -697,7 +697,7 @@ pattern_db_lookup(PatternDB *self, LogMessage *msg, GSList **dbg_list)
           /* NOTE: We're not using g_array_sized_new as that does not
            * correctly zero-initialize the new items even if clear_ is TRUE
            */
-          
+
           matches = g_array_new(FALSE, TRUE, sizeof(RParserMatch));
           g_array_set_size(matches, 1);
 
@@ -739,7 +739,7 @@ pattern_db_lookup(PatternDB *self, LogMessage *msg, GSList **dbg_list)
                   context = g_hash_table_lookup(self->state, buffer->str);
                   if (!context)
                     {
-                      context = log_db_context_new(self, buffer->str);
+                      context = pdb_context_new(self, buffer->str);
                       g_hash_table_insert(self->state, context->id, context);
                       g_string_steal(buffer);
                     }
@@ -752,7 +752,7 @@ pattern_db_lookup(PatternDB *self, LogMessage *msg, GSList **dbg_list)
                     }
                   else
                     {
-                      context->timer = timer_wheel_add_timer(self->timer_wheel, rule->context_timeout, pattern_db_expire_state, log_db_context_ref(context), (GDestroyNotify) log_db_context_unref);
+                      context->timer = timer_wheel_add_timer(self->timer_wheel, rule->context_timeout, pattern_db_expire_state, pdb_context_ref(context), (GDestroyNotify) pdb_context_unref);
                     }
                 }
               else
@@ -797,7 +797,7 @@ pattern_db_load(PatternDB *self, GlobalConfig *cfg, const gchar *config, GList *
   memset(&state, 0x0, sizeof(state));
 
   state.db = self;
-  state.root_program = log_db_program_new();
+  state.root_program = pdb_program_new();
   state.load_examples = !!examples;
   state.cfg = cfg;
 
@@ -850,7 +850,7 @@ pattern_db_new(void)
 {
   PatternDB *self = g_new0(PatternDB, 1);
 
-  self->state = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, (GDestroyNotify) log_db_context_unref);
+  self->state = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, (GDestroyNotify) pdb_context_unref);
   self->timer_wheel = timer_wheel_new();
   return self;
 }
@@ -861,7 +861,7 @@ pattern_db_free(PatternDB *self)
   if (self->state)
     g_hash_table_destroy(self->state);
   if (self->programs)
-    r_free_node(self->programs, (GDestroyNotify) log_db_program_unref);
+    r_free_node(self->programs, (GDestroyNotify) pdb_program_unref);
   if (self->version)
     g_free(self->version);
   if (self->pub_date)
