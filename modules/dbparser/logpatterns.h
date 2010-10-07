@@ -27,51 +27,66 @@
 #include "radix.h"
 #include "templates.h"
 #include "timerwheel.h"
+#include "filter.h"
 
-typedef struct _LogPatternDatabase LogPatternDatabase;
+typedef struct _PatternDB PatternDB;
 
 /* This class encapsulates a correllation context stored in
    db->state. */
-typedef struct _LogDBContext
+typedef struct _PDBContext
 {
   /* key in the hash table*/
   gchar *id;
-  /* back reference to the LogPatternDatabase */
-  LogPatternDatabase *db;
+  /* back reference to the PatternDB */
+  PatternDB *db;
   /* timeout timer */
   TWEntry *timer;
   /* messages belonging to this context */
   GPtrArray *messages;
   gint ref_cnt;
-} LogDBContext;
+} PDBContext;
 
-/* this class encapsulates a single rule in the pattern database and
- * is stored as the "value" member in the RADIX tree node. It contains
- * a reference the the original rule in the rule database. */
-typedef struct _LogDBResult
+typedef struct _PDBMessage
+{
+  GArray *tags;
+  GPtrArray *values;
+} PDBMessage;
+
+enum
+{
+  LCS_GLOBAL,
+  LCS_HOST,
+  LCS_PROGRAM,
+};
+
+/* this class encapsulates a the verdict of a rule in the pattern
+ * database and is stored as the "value" member in the RADIX tree
+ * node. It contains a reference the the original rule in the rule
+ * database. */
+typedef struct _PDBRule
 {
   guint ref_cnt;
   gchar *class;
   gchar *rule_id;
-  GArray *tags;
-  LogTemplate *values_join_id;
-  GPtrArray *values;
-  LogTemplate *store_id;
-  gint store_timeout;
-} LogDBResult;
+  PDBMessage msg;
+  gint context_timeout;
+  gint context_scope;
+  LogTemplate *context_id_template;
+  GPtrArray *actions;
+} PDBRule;
 
 /* this class encapsulates an example message in the pattern database
  * used for testing rules and patterns. It contains the message with the
  * program field and the expected rule_id with the expected name/value
  * pairs. */
 
-typedef struct _LogDBExample
+typedef struct _PDBExample
 {
-  LogDBResult *result;
+  PDBRule *rule;
   gchar *message;
   gchar *program;
   GPtrArray *values;
-} LogDBExample;
+} PDBExample;
 
 /*
  * This class encapsulates a set of program related rules in the
@@ -79,13 +94,13 @@ typedef struct _LogDBExample
  * program name RADIX tree. It basically contains another RADIX for
  * the per-program patterns.
  */
-typedef struct _LogDBProgram
+typedef struct _PDBProgram
 {
   guint ref_cnt;
   RNode *rules;
-} LogDBProgram;
+} PDBProgram;
 
-struct _LogPatternDatabase
+struct _PatternDB
 {
   RNode *programs;
   gchar *version;
@@ -94,14 +109,14 @@ struct _LogPatternDatabase
   TimerWheel *timer_wheel;
 };
 
-gboolean log_pattern_database_lookup(LogPatternDatabase *self, LogMessage *msg, GSList **dbg_list);
-gboolean log_pattern_database_load(LogPatternDatabase *self, GlobalConfig *cfg, const gchar *config, GList **examples);
+gboolean pattern_db_lookup(PatternDB *self, LogMessage *msg, GSList **dbg_list);
+gboolean pattern_db_load(PatternDB *self, GlobalConfig *cfg, const gchar *config, GList **examples);
 
-LogPatternDatabase *log_pattern_database_new(void);
-void log_pattern_database_free(LogPatternDatabase *self);
+PatternDB *pattern_db_new(void);
+void pattern_db_free(PatternDB *self);
 
-void log_pattern_example_free(gpointer s);
+void pdb_example_free(PDBExample *s);
 
-void log_pattern_database_init(void);
+void pattern_db_global_init(void);
 
 #endif

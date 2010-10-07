@@ -31,7 +31,7 @@
 struct _LogDBParser
 {
   LogParser super;
-  LogPatternDatabase *db;
+  PatternDB *db;
   GlobalConfig *cfg;
   gchar *db_file;
   time_t db_file_last_check;
@@ -43,7 +43,7 @@ static void
 log_db_parser_reload_database(LogDBParser *self)
 {
   struct stat st;
-  LogPatternDatabase *db_new;
+  PatternDB *db_new;
 
   if (stat(self->db_file, &st) < 0)
     {
@@ -60,18 +60,18 @@ log_db_parser_reload_database(LogDBParser *self)
   self->db_file_inode = st.st_ino;
   self->db_file_mtime = st.st_mtime;
 
-  db_new = log_pattern_database_new();
-  if (!log_pattern_database_load(db_new, self->cfg, self->db_file, NULL))
+  db_new = pattern_db_new();
+  if (!pattern_db_load(db_new, self->cfg, self->db_file, NULL))
     {
       msg_error("Error reloading pattern database, no automatic reload will be performed", NULL);
       /* restore the old object pointers */
-      log_pattern_database_free(db_new);
+      pattern_db_free(db_new);
     }
   else
     {
       /* free the old database if the new was loaded successfully */
       if (self->db)
-        log_pattern_database_free(self->db);
+        pattern_db_free(self->db);
       self->db = db_new;
 
       msg_notice("Log pattern database reloaded",
@@ -95,7 +95,7 @@ log_db_parser_process(LogParser *s, LogMessage *msg, const char *input)
       log_db_parser_reload_database(self);
     }
 
-  log_pattern_database_lookup(self->db, msg, NULL);
+  pattern_db_lookup(self->db, msg, NULL);
   return TRUE;
 }
 
@@ -121,7 +121,7 @@ log_db_parser_free(LogParser *s)
   LogDBParser *self = (LogDBParser *) s;
 
   if (self->db)
-    log_pattern_database_free(self->db);
+    pattern_db_free(self->db);
 
   if (self->db_file)
     g_free(self->db_file);

@@ -39,7 +39,7 @@ static Plugin dbparser_plugins[] =
 gboolean
 dbparser_module_init(GlobalConfig *cfg, CfgArgs *args)
 {
-  log_pattern_database_init();
+  pattern_db_global_init();
   plugin_register(cfg, dbparser_plugins, G_N_ELEMENTS(dbparser_plugins));
   return TRUE;
 }

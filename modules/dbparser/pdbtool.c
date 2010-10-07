@@ -360,7 +360,7 @@ pdbtool_match_values(NVHandle handle, const gchar *name, const gchar *value, gss
 static gint
 pdbtool_match(int argc, char *argv[])
 {
-  LogPatternDatabase *patterndb;
+  PatternDB *patterndb;
   GSList *dbg_list = NULL, *p;
   RDebugInfo *dbg_info;
   gint i = 0, pos = 0;
@@ -416,8 +416,8 @@ pdbtool_match(int argc, char *argv[])
   parse_options.flags |= LP_SYSLOG_PROTOCOL;
   msg_format_options_init(&parse_options, configuration);
 
-  patterndb = log_pattern_database_new();
-  if (!log_pattern_database_load(patterndb, configuration, patterndb_file, NULL))
+  patterndb = pattern_db_new();
+  if (!pattern_db_load(patterndb, configuration, patterndb_file, NULL))
     {
       goto error;
     }
@@ -467,7 +467,7 @@ pdbtool_match(int argc, char *argv[])
           const gchar *msg_string;
 
           msg_string = log_msg_get_value(msg, LM_V_MESSAGE, NULL);
-          log_pattern_database_lookup(patterndb, msg, &dbg_list);
+          pattern_db_lookup(patterndb, msg, &dbg_list);
           if (!debug_pattern_parse)
             {
               printf("Pattern matching part:\n");
@@ -545,7 +545,7 @@ pdbtool_match(int argc, char *argv[])
         }
       else
         {
-          log_pattern_database_lookup(patterndb, msg, NULL);
+          pattern_db_lookup(patterndb, msg, NULL);
           matched = !filter || filter_expr_eval(filter, msg);
         }
 
@@ -582,7 +582,7 @@ pdbtool_match(int argc, char *argv[])
     log_template_unref(template);
   if (output)
     g_string_free(output, TRUE);
-  log_pattern_database_free(patterndb);
+  pattern_db_free(patterndb);
   if (msg)
     log_msg_unref(msg);
   msg_format_options_destroy(&parse_options);
@@ -641,8 +641,8 @@ pdbtool_test_value(LogMessage *msg, const gchar *name, const gchar *test_value)
 static gint
 pdbtool_test(int argc, char *argv[])
 {
-  LogPatternDatabase *patterndb;
-  LogDBExample *example;
+  PatternDB *patterndb;
+  PDBExample *example;
   LogMessage *msg;
   GList *examples = NULL;
   gint i, arg_pos;
@@ -671,8 +671,8 @@ pdbtool_test(int argc, char *argv[])
             }
         }
 
-      patterndb = log_pattern_database_new();
-      if (!log_pattern_database_load(patterndb, configuration, argv[arg_pos], &examples))
+      patterndb = pattern_db_new();
+      if (!pattern_db_load(patterndb, configuration, argv[arg_pos], &examples))
         {
           failed_to_load = TRUE;
           continue;
@@ -690,9 +690,9 @@ pdbtool_test(int argc, char *argv[])
                 log_msg_set_value(msg, LM_V_PROGRAM, example->program, strlen(example->program));
 
               printf("Testing message program='%s' message='%s'\n", example->program, example->message);
-              log_pattern_database_lookup(patterndb, msg, NULL);
+              pattern_db_lookup(patterndb, msg, NULL);
 
-              pdbtool_test_value(msg, ".classifier.rule_id", example->result->rule_id);
+              pdbtool_test_value(msg, ".classifier.rule_id", example->rule->rule_id);
 
               for (i = 0; example->values && i < example->values->len; i++)
                 {
@@ -706,7 +706,7 @@ pdbtool_test(int argc, char *argv[])
           examples = g_list_delete_link(examples, examples);
         }
 
-      log_pattern_database_free(patterndb);
+      pattern_db_free(patterndb);
     }
   if (failed_to_load || failed_to_validate)
     return 1;
@@ -739,7 +739,7 @@ pdbtool_walk_tree(RNode *root, gint level, gboolean program)
   if (root->value)
     {
       if (!program)
-        printf("rule_id='%s'", ((LogDBResult*)root->value)->rule_id);
+        printf("rule_id='%s'", ((PDBRule *) root->value)->rule_id);
       else
         printf("RULES");
     }
@@ -756,10 +756,10 @@ pdbtool_walk_tree(RNode *root, gint level, gboolean program)
 static gint
 pdbtool_dump(int argc, char *argv[])
 {
-  LogPatternDatabase *patterndb;
+  PatternDB *patterndb;
 
-  patterndb = log_pattern_database_new();
-  if (!log_pattern_database_load(patterndb, configuration, patterndb_file, NULL))
+  patterndb = pattern_db_new();
+  if (!pattern_db_load(patterndb, configuration, patterndb_file, NULL))
     return 1;
 
   if (dump_program_tree)
@@ -768,10 +768,10 @@ pdbtool_dump(int argc, char *argv[])
     {
       RNode *ruleset = r_find_node(patterndb->programs, g_strdup(match_program), g_strdup(match_program), strlen(match_program), NULL);
       if (ruleset && ruleset->value)
-        pdbtool_walk_tree(((LogDBProgram *)ruleset->value)->rules, 0, FALSE);
+        pdbtool_walk_tree(((PDBProgram *) ruleset->value)->rules, 0, FALSE);
     }
 
-  log_pattern_database_free(patterndb);
+  pattern_db_free(patterndb);
 
   return 0;
 }

@@ -170,7 +170,7 @@ do { \
 #define MYHOST "MYHOST"
 
 void
-test_rule_pattern(LogPatternDatabase *patterndb, const gchar *pattern, const gchar *rule, gboolean match)
+test_rule_pattern(PatternDB *patterndb, const gchar *pattern, const gchar *rule, gboolean match)
 {
   gboolean result;
   LogMessage *msg = log_msg_new_empty();
@@ -188,7 +188,7 @@ test_rule_pattern(LogPatternDatabase *patterndb, const gchar *pattern, const gch
   log_msg_set_value(msg, LM_V_PROGRAM, "test", strlen(MYHOST));
   log_msg_set_value(msg, LM_V_MESSAGE, pattern, strlen(pattern));
 
-  result = log_pattern_database_lookup(patterndb, msg, NULL);
+  result = pattern_db_lookup(patterndb, msg, NULL);
 
   log_template_format(templ, msg, NULL, LTZ_LOCAL, 0, res);
 
@@ -212,18 +212,18 @@ test_rule_pattern(LogPatternDatabase *patterndb, const gchar *pattern, const gch
 }
 
 void
-create_pattern_db(LogPatternDatabase **patterndb, gchar *pattern, gchar ** filename)
+create_pattern_db(PatternDB **patterndb, gchar *pattern, gchar ** filename)
 {
   GString *str = g_string_new(pdb_prefix);
 
-  *patterndb = log_pattern_database_new();
+  *patterndb = pattern_db_new();
   g_string_append(str,pattern);
   g_string_append(str,pdb_postfix);
 
   g_file_open_tmp("patterndbXXXXXX.xml", filename, NULL);
   g_file_set_contents(*filename, str->str, str->len, NULL);
 
-  if (log_pattern_database_load(*patterndb, configuration, *filename, NULL))
+  if (pattern_db_load(*patterndb, configuration, *filename, NULL))
     {
       if (!g_str_equal((*patterndb)->version, "3"))
         test_fail("Invalid version '%s'\n", (*patterndb)->version);
@@ -234,9 +234,9 @@ create_pattern_db(LogPatternDatabase **patterndb, gchar *pattern, gchar ** filen
 }
 
 void
-clean_pattern_db(LogPatternDatabase **patterndb, gchar**filename)
+clean_pattern_db(PatternDB **patterndb, gchar**filename)
 {
-  log_pattern_database_free(*patterndb);
+  pattern_db_free(*patterndb);
   *patterndb = NULL;
 
   g_unlink(*filename);
@@ -247,7 +247,7 @@ clean_pattern_db(LogPatternDatabase **patterndb, gchar**filename)
 void
 test_case(gchar** test)
 {
-  LogPatternDatabase *patterndb;
+  PatternDB *patterndb;
   gchar *filename = NULL;
   gint index = 1;
 
@@ -270,7 +270,7 @@ main(int argc, char *argv[])
     verbose = TRUE;
 
   configuration = cfg_new(0x0302);
-  log_pattern_database_init();
+  pattern_db_global_init();
 
   msg_init(TRUE);
   test_case(test1);

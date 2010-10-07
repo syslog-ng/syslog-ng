@@ -56,7 +56,7 @@ do { \
 #define MYHOST "MYHOST"
 
 void
-test_rule_value(LogPatternDatabase *patterndb, const gchar *pattern, const gchar *name, const gchar *value)
+test_rule_value(PatternDB *patterndb, const gchar *pattern, const gchar *name, const gchar *value)
 {
   gboolean result;
   LogMessage *msg = log_msg_new_empty();
@@ -67,7 +67,7 @@ test_rule_value(LogPatternDatabase *patterndb, const gchar *pattern, const gchar
   log_msg_set_value(msg, LM_V_MESSAGE, pattern, strlen(pattern));
   log_msg_set_value(msg, LM_V_HOST, MYHOST, strlen(MYHOST));
 
-  result = log_pattern_database_lookup(patterndb, msg, NULL);
+  result = pattern_db_lookup(patterndb, msg, NULL);
   val = log_msg_get_value(msg, log_msg_get_value_handle(name), &len);
 
   if (!!value ^ (len > 0))
@@ -77,14 +77,14 @@ test_rule_value(LogPatternDatabase *patterndb, const gchar *pattern, const gchar
 }
 
 void
-test_rule_tag(LogPatternDatabase *patterndb, const gchar *pattern, const gchar *tag, gboolean set)
+test_rule_tag(PatternDB *patterndb, const gchar *pattern, const gchar *tag, gboolean set)
 {
   LogMessage *msg = log_msg_new_empty();
   gboolean found, result;
 
   log_msg_set_value(msg, LM_V_MESSAGE, pattern, strlen(pattern));
 
-  result = log_pattern_database_lookup(patterndb, msg, NULL);
+  result = pattern_db_lookup(patterndb, msg, NULL);
   found = log_msg_is_tag_by_name(msg, tag);
 
   if (set ^ found)
@@ -96,7 +96,7 @@ test_rule_tag(LogPatternDatabase *patterndb, const gchar *pattern, const gchar *
 int
 main(int argc, char *argv[])
 {
-  LogPatternDatabase *patterndb;
+  PatternDB *patterndb;
   gchar *filename = NULL;
 
   app_startup();
@@ -105,13 +105,13 @@ main(int argc, char *argv[])
     verbose = TRUE;
 
   msg_init(TRUE);
-  log_pattern_database_init();
+  pattern_db_global_init();
 
   g_file_open_tmp("patterndbXXXXXX.xml", &filename, NULL);
   g_file_set_contents(filename, pdb, strlen(pdb), NULL);
 
-  patterndb = log_pattern_database_new();
-  if (log_pattern_database_load(patterndb, configuration, filename, NULL))
+  patterndb = pattern_db_new();
+  if (pattern_db_load(patterndb, configuration, filename, NULL))
     {
       if (!g_str_equal(patterndb->version, "2"))
         test_fail("Invalid version '%s'\n", patterndb->version);
@@ -156,7 +156,7 @@ main(int argc, char *argv[])
 
       test_rule_value(patterndb, "pattern11", "vvv", MYHOST);
 
-      log_pattern_database_free(patterndb);
+      pattern_db_free(patterndb);
     }
   else
     fail = TRUE;

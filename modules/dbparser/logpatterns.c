@@ -26,33 +26,139 @@
 #include "tags.h"
 #include "templates.h"
 #include "compat.h"
+#include "misc.h"
 
 #include <string.h>
 #include <stdio.h>
 #include <errno.h>
 #include <stdlib.h>
 
-LogDBResult *
-log_db_result_new(gchar *class, gchar *rule_id)
+/*********************************************************
+ * PDBMessage
+ *********************************************************/
+
+static void
+pdb_message_apply(PDBMessage *self, PDBContext *context, LogMessage *msg, GString *buffer)
 {
-  LogDBResult *self = g_new0(LogDBResult, 1);
+  gint i;
+
+  if (self->tags)
+    {
+      for (i = 0; i < self->tags->len; i++)
+        log_msg_set_tag_by_id(msg, g_array_index(self->tags, LogTagId, i));
+    }
+
+  if (self->values)
+    {
+      for (i = 0; i < self->values->len; i++)
+        {
+          log_template_format_with_context(g_ptr_array_index(self->values, i),
+                                           context ? (LogMessage **) context->messages->pdata : &msg,
+                                           context ? context->messages->len : 1,
+                                           NULL, LTZ_LOCAL, 0, buffer);
+          log_msg_set_value(msg,
+                            log_msg_get_value_handle(((LogTemplate *) g_ptr_array_index(self->values, i))->name),
+                            buffer->str, buffer->len);
+        }
+    }
+
+}
+
+void
+pdb_message_init(PDBMessage *self)
+{
+  self->tags = g_array_new(FALSE, FALSE, sizeof(LogTagId));
+}
+
+void
+pdb_message_clean(PDBMessage *self)
+{
+  gint i;
+
+  if (self->tags)
+    g_array_free(self->tags, TRUE);
+
+  if (self->values)
+    {
+      for (i = 0; i < self->values->len; i++)
+        log_template_unref(g_ptr_array_index(self->values, i));
+
+      g_ptr_array_free(self->values, TRUE);
+    }
+}
+
+void
+pdb_message_free(PDBMessage *self)
+{
+  pdb_message_clean(self);
+  g_free(self);
+}
+
+/*********************************************************
+ * PDBRule
+ *********************************************************/
+
+void
+pdb_rule_set_class(PDBRule *self, const gchar *class)
+{
   LogTagId class_tag;
   gchar class_tag_text[32];
 
-  self->class = class;
-  self->rule_id = rule_id;
+  if (self->class)
+    {
+      g_free(self->class);
+    }
+  else
+    {
+      /* FIXME: the class == NULL handling should be done at apply time */
+      g_snprintf(class_tag_text, sizeof(class_tag_text), ".classifier.%s", class ? class : "system");
+      class_tag = log_tags_get_by_name(class_tag_text);
+      g_array_append_val(self->msg.tags, class_tag);
+    }
+  self->class = class ? g_strdup(class) : NULL;
+
+}
+
+void
+pdb_rule_set_rule_id(PDBRule *self, const gchar *rule_id)
+{
+  if (self->rule_id)
+    g_free(self->rule_id);
+  self->rule_id = g_strdup(rule_id);
+}
+
+void
+pdb_rule_set_context_id_template(PDBRule *self, LogTemplate *context_id_template)
+{
+  if (self->context_id_template)
+    log_template_unref(self->context_id_template);
+  self->context_id_template = context_id_template;
+}
+
+void
+pdb_rule_set_context_timeout(PDBRule *self, gint timeout)
+{
+  self->context_timeout = timeout;
+}
+
+void
+pdb_rule_set_context_scope(PDBRule *self, const gchar *scope)
+{
+  /* FIXME */
+}
+
+PDBRule *
+pdb_rule_new(void)
+{
+  PDBRule *self = g_new0(PDBRule, 1);
+
   self->ref_cnt = 1;
-  self->tags = g_array_new(FALSE, FALSE, sizeof(LogTagId));
-
-  g_snprintf(class_tag_text, sizeof(class_tag_text), ".classifier.%s", class ? class : "system");
-  class_tag = log_tags_get_by_name(class_tag_text);
-  g_array_append_val(self->tags, class_tag);
-
+  pdb_message_init(&self->msg);
   return self;
 }
 
-LogDBResult *
-log_db_result_ref(LogDBResult *self)
+PDBRule *
+pdb_rule_ref(PDBRule *self)
 {
   g_assert(self->ref_cnt > 0);
 
@@ -62,17 +168,16 @@ log_db_result_ref(LogDBResult *self)
 }
 
 static void
-log_db_result_unref(void *s)
+pdb_rule_unref(void *s)
 {
-  LogDBResult *self = (LogDBResult *) s;
-  gint i;
+  PDBRule *self = (PDBRule *) s;
 
   g_assert(self->ref_cnt > 0);
 
   if (--(self->ref_cnt) == 0)
     {
-      if (self->store_id)
-        log_template_unref(self->store_id);
+      if (self->context_id_template)
+        log_template_unref(self->context_id_template);
 
       if (self->rule_id)
         g_free(self->rule_id);
@@ -80,29 +185,23 @@ log_db_result_unref(void *s)
       if (self->class)
         g_free(self->class);
 
-      if (self->tags)
-        g_array_free(self->tags, TRUE);
-
-      if (self->values)
-        {
-          for (i = 0; i < self->values->len; i++)
-            log_template_unref(g_ptr_array_index(self->values, i));
-
-          g_ptr_array_free(self->values, TRUE);
-        }
-
+      pdb_message_clean(&self->msg);
       g_free(self);
     }
 }
 
+/*********************************************************
+ * PDBExample
+ *********************************************************/
+
+
 void
-log_pattern_example_free(gpointer s)
+pdb_example_free(PDBExample *self)
 {
-  LogDBExample *self = (LogDBExample *) s;
   gint i;
 
-  if (self->result)
-    log_db_result_unref(self->result);
+  if (self->rule)
+    pdb_rule_unref(self->rule);
 
   if (self->message)
     g_free(self->message);
@@ -128,9 +227,9 @@ log_pattern_example_free(gpointer s)
 }
 
 static gchar *
-log_db_result_name(gpointer s)
+pdb_rule_get_name(gpointer s)
 {
-  LogDBResult *self = (LogDBResult *) s;
+  PDBRule *self = (PDBRule *) s;
 
   if (self)
     return self->rule_id;
@@ -145,32 +244,32 @@ log_db_result_name(gpointer s)
  *   - Parser -> programs -> rules -> patterns
  */
 
-LogDBProgram *
+PDBProgram *
 log_db_program_new(void)
 {
-  LogDBProgram *self = g_new0(LogDBProgram, 1);
+  PDBProgram *self = g_new0(PDBProgram, 1);
 
   self->rules = r_new_node("", NULL);
   self->ref_cnt = 1;
   return self;
 }
 
-static LogDBProgram *
-log_db_program_ref(LogDBProgram *self)
+static PDBProgram *
+log_db_program_ref(PDBProgram *self)
 {
   self->ref_cnt++;
   return self;
 }
 
 static void
-log_db_program_unref(LogDBProgram *s)
+log_db_program_unref(PDBProgram *s)
 {
-  LogDBProgram *self = (LogDBProgram *) s;
+  PDBProgram *self = (PDBProgram *) s;
 
   if (--self->ref_cnt == 0)
     {
       if (self->rules)
-        r_free_node(self->rules, log_db_result_unref);
+        r_free_node(self->rules, pdb_rule_unref);
 
       g_free(self);
     }
@@ -179,10 +278,10 @@ log_db_program_unref(LogDBProgram *s)
 /*
  * NOTE: borrows "db" and consumes "id" parameters.
  */
-LogDBContext *
-log_db_context_new(LogPatternDatabase *db, gchar *id)
+PDBContext *
+log_db_context_new(PatternDB *db, gchar *id)
 {
-  LogDBContext *self = g_new0(LogDBContext, 1);
+  PDBContext *self = g_new0(PDBContext, 1);
 
   self->messages = g_ptr_array_new();
   self->db = db;
@@ -191,15 +290,15 @@ log_db_context_new(LogPatternDatabase *db, gchar *id)
   return self;
 }
 
-LogDBContext *
-log_db_context_ref(LogDBContext *self)
+PDBContext *
+log_db_context_ref(PDBContext *self)
 {
   self->ref_cnt++;
   return self;
 }
 
 void
-log_db_context_unref(LogDBContext *self)
+log_db_context_unref(PDBContext *self)
 {
   gint i;
 
@@ -215,13 +314,13 @@ log_db_context_unref(LogDBContext *self)
     }
 }
 
-typedef struct _LogDBParserState
+typedef struct _PDBLoader
 {
-  LogPatternDatabase *db;
-  LogDBProgram *current_program;
-  LogDBProgram *root_program;
-  LogDBResult *current_result;
-  LogDBExample *current_example;
+  PatternDB *db;
+  PDBProgram *root_program;
+  PDBProgram *current_program;
+  PDBRule *current_rule;
+  PDBExample *current_example;
   gboolean first_program;
   gboolean in_pattern;
   gboolean in_ruleset;
@@ -235,15 +334,13 @@ typedef struct _LogDBParserState
   gchar *value_name;
   gchar *test_value_name;
   GlobalConfig *cfg;
-} LogDBParserState;
+} PDBLoader;
 
 void
-log_classifier_xml_start_element(GMarkupParseContext *context, const gchar *element_name, const gchar **attribute_names,
-                                    const gchar **attribute_values, gpointer user_data, GError **error)
+pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name, const gchar **attribute_names,
+                         const gchar **attribute_values, gpointer user_data, GError **error)
 {
-  LogDBParserState *state = (LogDBParserState *) user_data;
-  gchar *current_class = NULL;
-  gchar *current_rule_id = NULL;
+  PDBLoader *state = (PDBLoader *) user_data;
   gint i;
 
   if (strcmp(element_name, "ruleset") == 0)
@@ -266,8 +363,8 @@ log_classifier_xml_start_element(GMarkupParseContext *context, const gchar *elem
         }
 
       state->in_example = TRUE;
-      state->current_example = g_new0(LogDBExample, 1);
-      state->current_example->result = log_db_result_ref(state->current_result);
+      state->current_example = g_new0(PDBExample, 1);
+      state->current_example->rule = pdb_rule_ref(state->current_rule);
     }
   else if (strcmp(element_name, "test_message") == 0)
     {
@@ -298,7 +395,9 @@ log_classifier_xml_start_element(GMarkupParseContext *context, const gchar *elem
       if (attribute_names[0] && g_str_equal(attribute_names[0], "name"))
         state->test_value_name = g_strdup(attribute_values[0]);
       else
-        msg_error("No name is specified for test_value", evt_tag_str("rule_id", state->current_result->rule_id), NULL);
+        msg_error("No name is specified for test_value",
+                  evt_tag_str("rule_id", state->current_rule->rule_id),
+                  NULL);
     }
   else if (strcmp(element_name, "rule") == 0)
     {
@@ -308,22 +407,30 @@ log_classifier_xml_start_element(GMarkupParseContext *context, const gchar *elem
           return;
         }
 
+      state->current_rule = pdb_rule_new();
       for (i = 0; attribute_names[i]; i++)
         {
           if (strcmp(attribute_names[i], "class") == 0)
-            current_class = g_strdup(attribute_values[i]);
+            pdb_rule_set_class(state->current_rule, attribute_values[i]);
           else if (strcmp(attribute_names[i], "id") == 0)
-            current_rule_id = g_strdup(attribute_values[i]);
+            pdb_rule_set_rule_id(state->current_rule, attribute_values[i]);
+          else if (strcmp(attribute_names[i], "context-id") == 0)
+            pdb_rule_set_context_id_template(state->current_rule, log_template_new(state->cfg, NULL, attribute_values[i]));
+          else if (strcmp(attribute_names[i], "context-timeout") == 0)
+            pdb_rule_set_context_timeout(state->current_rule, strtol(attribute_values[i], NULL, 0));
+          else if (strcmp(attribute_names[i], "context-scope") == 0)
+            pdb_rule_set_context_scope(state->current_rule, attribute_values[i]);
         }
 
-      if (!current_rule_id)
+      if (!state->current_rule->rule_id)
         {
           *error = g_error_new(1, 0, "No id attribute for rule element");
+          pdb_rule_unref(state->current_rule);
+          state->current_rule = NULL;
           return;
         }
 
       state->in_rule = TRUE;
-      state->current_result = log_db_result_new(current_class, current_rule_id);
     }
   else if (strcmp(element_name, "pattern") == 0)
     {
@@ -333,20 +440,12 @@ log_classifier_xml_start_element(GMarkupParseContext *context, const gchar *elem
     {
       state->in_tag = TRUE;
     }
-  else if (strcmp(element_name, "values") == 0)
-    {
-      for (i = 0; attribute_names[i]; i++)
-        {
-          if (strcmp(attribute_names[i], "join") == 0)
-            state->current_result->values_join_id = log_template_new(state->cfg, NULL, attribute_values[i]);
-        }
-    }
   else if (strcmp(element_name, "value") == 0)
     {
       if (attribute_names[0] && g_str_equal(attribute_names[0], "name"))
         state->value_name = g_strdup(attribute_values[0]);
       else
-        msg_error("No name is specified for value", evt_tag_str("rule_id", state->current_result->rule_id), NULL);
+        msg_error("No name is specified for value", evt_tag_str("rule_id", state->current_rule->rule_id), NULL);
     }
   else if (strcmp(element_name, "patterndb") == 0)
     {
@@ -358,22 +457,12 @@ log_classifier_xml_start_element(GMarkupParseContext *context, const gchar *elem
             state->db->pub_date = g_strdup(attribute_values[i]);
         }
     }
-  else if (strcmp(element_name, "store") == 0)
-    {
-      for (i = 0; attribute_names[i]; i++)
-        {
-          if (strcmp(attribute_names[i], "id") == 0)
-            state->current_result->store_id = log_template_new(state->cfg, NULL, attribute_values[i]);
-          else if (strcmp(attribute_names[i], "timeout") == 0)
-            state->current_result->store_timeout = strtol(attribute_values[i], NULL, 0);
-        }
-    }
 }
 
 void
-log_classifier_xml_end_element(GMarkupParseContext *context, const gchar *element_name, gpointer user_data, GError **error)
+pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, gpointer user_data, GError **error)
 {
-  LogDBParserState *state = (LogDBParserState *) user_data;
+  PDBLoader *state = (PDBLoader *) user_data;
 
   if (strcmp(element_name, "ruleset") == 0)
     {
@@ -399,7 +488,7 @@ log_classifier_xml_end_element(GMarkupParseContext *context, const gchar *elemen
       if (state->load_examples)
         state->examples = g_list_prepend(state->examples, state->current_example);
       else
-        log_pattern_example_free(state->current_example);
+        pdb_example_free(state->current_example);
 
       state->current_example = NULL;
     }
@@ -437,10 +526,10 @@ log_classifier_xml_end_element(GMarkupParseContext *context, const gchar *elemen
         }
 
       state->in_rule = FALSE;
-      if (state->current_result)
+      if (state->current_rule)
         {
-          log_db_result_unref(state->current_result);
-          state->current_result = NULL;
+          pdb_rule_unref(state->current_rule);
+          state->current_rule = NULL;
         }
     }
   else if (strcmp(element_name, "value") == 0)
@@ -457,9 +546,9 @@ log_classifier_xml_end_element(GMarkupParseContext *context, const gchar *elemen
 }
 
 void
-log_classifier_xml_text(GMarkupParseContext *context, const gchar *text, gsize text_len, gpointer user_data, GError **error)
+pdb_loader_text(GMarkupParseContext *context, const gchar *text, gsize text_len, gpointer user_data, GError **error)
 {
-  LogDBParserState *state = (LogDBParserState *) user_data;
+  PDBLoader *state = (PDBLoader *) user_data;
   LogTemplate *value;
   GError *err = NULL;
   RNode *node = NULL;
@@ -475,8 +564,8 @@ log_classifier_xml_text(GMarkupParseContext *context, const gchar *text, gsize t
         {
           r_insert_node(state->current_program ? state->current_program->rules : state->root_program->rules,
                         txt,
-                        log_db_result_ref(state->current_result),
-                        TRUE, log_db_result_name);
+                        pdb_rule_ref(state->current_rule),
+                        TRUE, pdb_rule_get_name);
         }
       else if (state->in_ruleset)
         {
@@ -516,12 +605,12 @@ log_classifier_xml_text(GMarkupParseContext *context, const gchar *text, gsize t
   else if (state->in_tag)
     {
       tag = log_tags_get_by_name(text);
-      g_array_append_val(state->current_result->tags, tag);
+      g_array_append_val(state->current_rule->msg.tags, tag);
     }
   else if (state->value_name)
     {
-      if (!state->current_result->values)
-        state->current_result->values = g_ptr_array_new();
+      if (!state->current_rule->msg.values)
+        state->current_rule->msg.values = g_ptr_array_new();
 
       value = log_template_new(state->cfg, state->value_name, text);
       if (!log_template_compile(value, &err))
@@ -530,11 +619,11 @@ log_classifier_xml_text(GMarkupParseContext *context, const gchar *text, gsize t
             evt_tag_str("name", state->value_name),
             evt_tag_str("value", text),
             evt_tag_str("error", err->message), NULL);
-          g_error_free(err);
+          g_clear_error(&err);
           log_template_unref(value);
         }
       else
-        g_ptr_array_add(state->current_result->values, value);
+        g_ptr_array_add(state->current_rule->msg.values, value);
     }
   else if (state->in_test_msg)
     {
@@ -556,9 +645,9 @@ log_classifier_xml_text(GMarkupParseContext *context, const gchar *text, gsize t
 
 GMarkupParser db_parser =
 {
-  .start_element = log_classifier_xml_start_element,
-  .end_element = log_classifier_xml_end_element,
-  .text = log_classifier_xml_text,
+  .start_element = pdb_loader_start_element,
+  .end_element = pdb_loader_end_element,
+  .text = pdb_loader_text,
   .passthrough = NULL,
   .error = NULL
 };
@@ -567,9 +656,9 @@ static NVHandle class_handle = 0;
 static NVHandle rule_id_handle = 0;
 
 static void
-log_pattern_database_expire_state(guint64 now, gpointer user_data)
+pattern_db_expire_state(guint64 now, gpointer user_data)
 {
-  LogDBContext *context = user_data;
+  PDBContext *context = user_data;
 
   g_hash_table_remove(context->db->state, context->id);
 
@@ -579,7 +668,7 @@ log_pattern_database_expire_state(guint64 now, gpointer user_data)
 }
 
 gboolean
-log_pattern_database_lookup(LogPatternDatabase *self, LogMessage *msg, GSList **dbg_list)
+pattern_db_lookup(PatternDB *self, LogMessage *msg, GSList **dbg_list)
 {
   RNode *node;
   GArray *matches;
@@ -596,14 +685,14 @@ log_pattern_database_lookup(LogPatternDatabase *self, LogMessage *msg, GSList **
 
   if (node)
     {
-      LogDBProgram *program = (LogDBProgram *) node->value;
+      PDBProgram *program = (PDBProgram *) node->value;
 
       if (program->rules)
         {
           RNode *msg_node;
           const gchar *message;
           gssize message_len;
-          LogDBContext *context = NULL;
+          PDBContext *context = NULL;
 
           /* NOTE: We're not using g_array_sized_new as that does not
            * correctly zero-initialize the new items even if clear_ is TRUE
@@ -620,12 +709,12 @@ log_pattern_database_lookup(LogPatternDatabase *self, LogMessage *msg, GSList **
 
           if (msg_node)
             {
-              LogDBResult *verdict = (LogDBResult *) msg_node->value;
-              GString *result = g_string_sized_new(32);
+              PDBRule *rule = (PDBRule *) msg_node->value;
+              GString *buffer = g_string_sized_new(32);
               gint i;
 
-              log_msg_set_value(msg, class_handle, verdict->class ? verdict->class : "system", -1);
-              log_msg_set_value(msg, rule_id_handle, verdict->rule_id, -1);
+              log_msg_set_value(msg, class_handle, rule->class ? rule->class : "system", -1);
+              log_msg_set_value(msg, rule_id_handle, rule->rule_id, -1);
 
               for (i = 0; i < matches->len; i++)
                 {
@@ -644,65 +733,35 @@ log_pattern_database_lookup(LogPatternDatabase *self, LogMessage *msg, GSList **
 
               g_array_free(matches, TRUE);
 
-              if (verdict->tags)
+              if (rule->context_id_template)
                 {
-                  for (i = 0; i < verdict->tags->len; i++)
-                    log_msg_set_tag_by_id(msg, g_array_index(verdict->tags, LogTagId, i));
-                }
-
-              if (verdict->values)
-                {
-                  if (verdict->values_join_id)
-                    {
-                      log_template_format(verdict->values_join_id, msg, NULL, LTZ_LOCAL, 0, result);
-                      context = g_hash_table_lookup(self->state, result->str);
-                      if (context)
-                        g_ptr_array_add(context->messages, msg);
-                    }
-
-                  for (i = 0; i < verdict->values->len; i++)
-                    {
-                      log_template_format_with_context(g_ptr_array_index(verdict->values, i),
-                                                       context ? (LogMessage **) context->messages->pdata : &msg, context ? context->messages->len : 1,
-                                                       NULL, LTZ_LOCAL, 0, result);
-                      log_msg_set_value(msg, log_msg_get_value_handle(((LogTemplate *)g_ptr_array_index(verdict->values, i))->name), result->str, result->len);
-                    }
-                  if (context)
-                    {
-                      /* remove the current element from the state */
-                      g_ptr_array_remove_index_fast(context->messages, context->messages->len - 1);
-                    }
-                }
-              if (verdict->store_id)
-                {
-                  gboolean new_state = FALSE;
-
-                  log_template_format(verdict->store_id, msg, NULL, LTZ_LOCAL, 0, result);
-
-                  context = g_hash_table_lookup(self->state, result->str);
+                  log_template_format(rule->context_id_template, msg, NULL, LTZ_LOCAL, 0, buffer);
+                  context = g_hash_table_lookup(self->state, buffer->str);
                   if (!context)
                     {
-                      context = log_db_context_new(self, result->str);
-                      new_state = TRUE;
+                      context = log_db_context_new(self, buffer->str);
+                      g_hash_table_insert(self->state, context->id, context);
+                      g_string_steal(buffer);
                     }
+
                   g_ptr_array_add(context->messages, log_msg_ref(msg));
 
                   if (context->timer)
                     {
-                      timer_wheel_mod_timer(self->timer_wheel, context->timer, verdict->store_timeout);
+                      timer_wheel_mod_timer(self->timer_wheel, context->timer, rule->context_timeout);
                     }
                   else
                     {
-                      timer_wheel_add_timer(self->timer_wheel, verdict->store_timeout, log_pattern_database_expire_state, log_db_context_ref(context), (GDestroyNotify) log_db_context_unref);
-                    }
-                  if (new_state)
-                    {
-                      g_hash_table_insert(self->state, context->id, context);
-                      g_string_free(result, FALSE);
-                      return TRUE;
+                      context->timer = timer_wheel_add_timer(self->timer_wheel, rule->context_timeout, pattern_db_expire_state, log_db_context_ref(context), (GDestroyNotify) log_db_context_unref);
                     }
                 }
-              g_string_free(result, TRUE);
+              else
+                {
+                  context = NULL;
+                }
+
+              pdb_message_apply(&rule->msg, context, msg, buffer);
+              g_string_free(buffer, TRUE);
               return TRUE;
             }
           else
@@ -716,9 +775,9 @@ log_pattern_database_lookup(LogPatternDatabase *self, LogMessage *msg, GSList **
 }
 
 gboolean
-log_pattern_database_load(LogPatternDatabase *self, GlobalConfig *cfg, const gchar *config, GList **examples)
+pattern_db_load(PatternDB *self, GlobalConfig *cfg, const gchar *config, GList **examples)
 {
-  LogDBParserState state;
+  PDBLoader state;
   GMarkupParseContext *parse_ctx = NULL;
   GError *error = NULL;
   FILE *dbfile = NULL;
@@ -777,7 +836,7 @@ log_pattern_database_load(LogPatternDatabase *self, GlobalConfig *cfg, const gch
  error:
   if (!success)
     {
-      log_pattern_database_free(self);
+      pattern_db_free(self);
     }
   if (dbfile)
     fclose(dbfile);
@@ -786,10 +845,10 @@ log_pattern_database_load(LogPatternDatabase *self, GlobalConfig *cfg, const gch
   return success;
 }
 
-LogPatternDatabase *
-log_pattern_database_new(void)
+PatternDB *
+pattern_db_new(void)
 {
-  LogPatternDatabase *self = g_new0(LogPatternDatabase, 1);
+  PatternDB *self = g_new0(PatternDB, 1);
 
   self->state = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, (GDestroyNotify) log_db_context_unref);
   self->timer_wheel = timer_wheel_new();
@@ -797,7 +856,7 @@ log_pattern_database_new(void)
 }
 
 void
-log_pattern_database_free(LogPatternDatabase *self)
+pattern_db_free(PatternDB *self)
 {
   if (self->state)
     g_hash_table_destroy(self->state);
@@ -814,7 +873,7 @@ log_pattern_database_free(LogPatternDatabase *self)
 }
 
 void
-log_pattern_database_init(void)
+pattern_db_global_init(void)
 {
   class_handle = log_msg_get_value_handle(".classifier.class");
   rule_id_handle = log_msg_get_value_handle(".classifier.rule_id");
