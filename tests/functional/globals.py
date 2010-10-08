@@ -1,7 +1,7 @@
 import os
 
 def is_premium():
-    version = os.popen('../../src/syslog-ng -V', 'r').read()
+    version = os.popen('../../syslog-ng/syslog-ng -V', 'r').read()
     if version.find('premium-edition') != -1:
         return True
     return False
