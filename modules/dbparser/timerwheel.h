@@ -12,5 +12,7 @@ void timer_wheel_del_timer(TimerWheel *self, TWEntry *entry);
 void timer_wheel_mod_timer(TimerWheel *self, TWEntry *entry, gint new_timeout);
 void timer_wheel_set_time(TimerWheel *self, guint64 new_now);
 TimerWheel *timer_wheel_new(void);
+void timer_wheel_free(TimerWheel *self);
+
 
 #endif

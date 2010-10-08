@@ -75,6 +75,7 @@ tw_level_free(TWLevel *self)
           tw_entry_free(entry);
         }
     }
+  g_free(self);
 }
 
 struct _TimerWheel
@@ -281,6 +282,6 @@ timer_wheel_free(TimerWheel *self)
 {
   gint i;
   for (i = 0; i < G_N_ELEMENTS(self->levels); i++)
-    tw_level_free(self->levels[0]);
+    tw_level_free(self->levels[i]);
   g_free(self);
 }
