@@ -88,7 +88,7 @@ log_pipe_init(LogPipe *s, GlobalConfig *cfg)
   if (!(s->flags & PIF_INITIALIZED))
     {
       s->cfg = cfg;
-      if (s->init(s))
+      if (!s->init || s->init(s))
         {
           s->flags |= PIF_INITIALIZED;
           return TRUE;
@@ -103,7 +103,7 @@ log_pipe_deinit(LogPipe *s)
 {
   if ((s->flags & PIF_INITIALIZED))
     {
-      if (s->deinit(s))
+      if (!s->deinit || s->deinit(s))
         {
           s->cfg = NULL;
 
