@@ -201,7 +201,7 @@ report_syntax_error(CfgLexer *lexer, YYLTYPE *yylloc, const char *what, const ch
         }
       if (lineno == yylloc->first_line)
         {
-          gsize cs = MIN(eol - sol - 1, sizeof(buf) - 2);
+          gsize cs = MIN(eol ? eol - sol - 1 : strlen(sol), sizeof(buf) - 2);
 
           memcpy(buf, sol, cs);
           buf[cs] = 0;
