@@ -935,6 +935,9 @@ log_template_compile(LogTemplate *self, GError **error)
               g_ptr_array_add(strv, NULL);
               if (*p != ')')
                 {
+                  g_string_free(arg_buf, TRUE);
+                  g_ptr_array_free(strv, TRUE);
+
                   error_pos = p - self->template;
                   error_info = "Invalid template function reference, missing function name or inbalanced '('";
                   goto error;
@@ -944,9 +947,11 @@ log_template_compile(LogTemplate *self, GError **error)
               if (!log_template_add_func_elem(self, last_text, strv->len - 1, (gchar **) strv->pdata, msg_ref, error))
                 {
                   g_ptr_array_free(strv, TRUE);
+                  g_string_free(arg_buf, TRUE);
                   goto error_set;
                 }
               g_ptr_array_free(strv, FALSE);
+              g_string_free(arg_buf, TRUE);
               finished = TRUE;
             }
           else if ((*p >= 'A' && *p <= 'Z') || (*p >= 'a' && *p <= 'z') || (*p == '_') || (*p >= '0' && *p <= '9'))
