@@ -482,6 +482,7 @@ cfg_free(GlobalConfig *self)
     regfree(&self->bad_hostname);
   g_free(self->bad_hostname_re);
   g_free(self->dns_cache_hosts);
+  g_list_free(self->plugins);
   g_free(self);
 }
 
