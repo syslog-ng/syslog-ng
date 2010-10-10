@@ -116,5 +116,7 @@ extern MsgQueue *internal_msg_queue;
 #define msg_trace(desc, tag1, tags...)
 #endif
 
+void msg_post_message(LogMessage *msg);
+
 
 #endif
