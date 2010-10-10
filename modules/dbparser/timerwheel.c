@@ -260,6 +260,12 @@ timer_wheel_set_time(TimerWheel *self, guint64 new_now)
     }
 }
 
+guint64
+timer_wheel_get_time(TimerWheel *self)
+{
+  return self->now;
+}
+
 TimerWheel *
 timer_wheel_new(void)
 {
