@@ -63,14 +63,14 @@ $(STAMPDIR)/stamp-install: $(STAMPDIR)/stamp-build
 	$(INSTALL) -d -m 755 $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/etc
 	
 	# Store syslog-ng version
-	VER=`src/syslog-ng -V | \
+	VER=`syslog-ng/syslog-ng -V | \
 		head -1 | cut -d ' ' -f 2` ; (echo "VERSION=$$VER"; echo "EDITION=ose") > \
 		$(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/etc/install.dat
 	    
 	$(INSTALL) -d -m 755 $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/share/doc
 
 	#Store syslog-ng build options
-	src/syslog-ng -V \
+	syslog-ng/syslog-ng -V \
 		| grep 'Enable' > $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/share/doc/buildopts
 
 	$(INSTALL) -d -m 755 $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/lib
