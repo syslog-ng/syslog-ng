@@ -103,8 +103,8 @@ log_db_parser_process(LogParser *s, LogMessage *msg, const char *input)
       self->db_file_last_check = msg->timestamps[LM_TS_RECVD].time.tv_sec;
       log_db_parser_reload_database(self);
     }
-
-  pattern_db_process(self->db, msg, NULL);
+  if (self->db)
+    pattern_db_process(self->db, msg, NULL);
   return TRUE;
 }
 
