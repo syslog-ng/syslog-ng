@@ -1,3 +1,85 @@
+3.2beta1
+	Mon, 11 Oct 2010 12:25:07 +0200
+
+	New features since 3.2alpha2:
+	* Added support for message correllation in db-parser. See the
+	  relevant blog posts for more information:
+
+	  http://bazsi.blogs.balabit.com/2010/10/syslog-ng-correllation-updated/
+	  http://bazsi.blogs.balabit.com/2010/09/syslog-ng-correllation/
+
+	* Added "pdbtool patternize", which implements automatic patterndb
+	  generation from a sample log file.
+
+	  http://gyp.blogs.balabit.com/2010/01/introducing-pdbtool-patternize/ 
+
+	* Added template functions framework and some initial functions:
+
+          http://bazsi.blogs.balabit.com/2010/09/introducing-template-functions/
+
+	  The new functions are: $(echo), $(grep) and $(if)
+
+	* Added support to process native syslog.conf file using the
+	  syslogconf SCL plugin.
+
+	  http://bazsi.blogs.balabit.com/2010/09/syslog-ng-now-supports-the-syslog-conf-file-format/
+
+	* Added support for comparison operators in filter expressions, e.g.
+	  it is now possible to use "$FACILITY_NUM" < "5". String and
+	  numeric operators are also provided, the same way as in perl.
+
+	* syslog-ng now automatically detects if an incoming message is in
+	  RFC3164 or RFC5424 format. This means that the syslog driver can
+	  be used to process both.
+
+	* Added pdbtool validation support, using the "pdbtool test --validate". 
+          Requires an installed xmllint program.
+
+	* pdbtool is now able to merge patterndb XML files recursively in
+	  order to make it easy to use the results of the patterndb project.
+
+	* db-parser() automatically assigns class-specific tags to messages,
+	  this means that a message classified "system" will get a
+	  ".classifier.system" tag in addition to storing the class in a
+	  name-value pair named ${.classifier.class}
+
+	* It is now possible to use multiple program name patterns for a
+	  single ruleset in patterndb.
+
+	* Added $(ipv4-to-int) template function to convert an IP address to
+	  its numeric representation.
+
+	Bugfixes since 3.2alpha2:
+	* Fixed a possible infinite loop in "pdbtool test" in case
+	  program/message was missing from the sample message.
+
+	* SQL: revert don't require the current CVS version of libdbi
+
+	* Don't report "this config file version is too old" multiple times.
+
+	* Underscore and dash are assumed to be equivalent in plugin names.
+
+	* Various memory leaks were plugged.
+
+	Removed functions:
+	* Removed the use_time_recvd() global and per-destination option,
+	  deprecated since 3.0. Can be substituted with $R_ prefix in macro
+	  names.
+
+	Other changes:
+	* Restructured the source tree in order to make compilations of
+	  independent plugins easier and faster. Modules go to modules/
+	  subdirectory, the core lives under lib/ and the main executables
+	  go into syslog-ng/
+
+	* SCL paths are determined relative to ${datadir} instead of
+	  ${prefix} to make distribution packaging easier.
+
+	* Pass -avoid-version when linking modules.
+
+	* syslog-ng now requires bison 2.4, this is also checked by the
+	  configure script.
+
 3.2alpha2
 	Fri, 06 Aug 2010 21:17:50 +0200
 
