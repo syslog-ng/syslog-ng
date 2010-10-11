@@ -161,7 +161,7 @@
                         </xs:element>
                     </xs:sequence>
                 </xs:complexType>
-                <xs:unique name="values">
+                <xs:unique name="rule_values">
                     <xs:selector xpath="value"/>
                     <xs:field xpath="@name"/>
                 </xs:unique>
@@ -194,10 +194,17 @@
                         <xs:element name="tag" type="xs:token" minOccurs="0"  maxOccurs="unbounded"/>
                     </xs:sequence>
                 </xs:complexType>
-                <xs:unique name="tags">
+                <xs:unique name="rule_tags">
                     <xs:selector xpath="tag"/>
                     <xs:field xpath="."/>
                 </xs:unique>
+            </xs:element>
+            <xs:element name="actions" minOccurs="0" maxOccurs="1">
+                 <xs:complexType>
+                     <xs:sequence>
+                         <xs:element name="action" type="actionType" minOccurs="1" maxOccurs="unbounded"/>
+                     </xs:sequence>
+                 </xs:complexType>
             </xs:element>
             <xs:element name="patterns">
                 <xs:annotation>
@@ -228,6 +235,38 @@
             </xs:annotation>
         </xs:attribute>
         <xs:attribute name="id" type="uuidType" use="required"/>
+        <xs:attribute name="context-id" type="xs:string"/>
+        <xs:attribute name="context-scope">
+          <xs:simpleType>
+                <xs:restriction base="xs:string">
+                    <xs:enumeration value="process">
+                        <xs:annotation>
+                            <xs:documentation>
+                            </xs:documentation>
+                        </xs:annotation>
+                    </xs:enumeration>
+                    <xs:enumeration value="program">
+                        <xs:annotation>
+                            <xs:documentation>
+                            </xs:documentation>
+                        </xs:annotation>
+                    </xs:enumeration>
+                    <xs:enumeration value="host">
+                        <xs:annotation>
+                            <xs:documentation>
+                            </xs:documentation>
+                        </xs:annotation>
+                    </xs:enumeration>
+                    <xs:enumeration value="global">
+                        <xs:annotation>
+                            <xs:documentation>
+                            </xs:documentation>
+                        </xs:annotation>
+                    </xs:enumeration>
+                </xs:restriction>
+          </xs:simpleType>
+        </xs:attribute>
+        <xs:attribute name="context-timeout" type="xs:integer"/>
         <xs:attribute name="class" type="classType">
             <xs:annotation>
                 <xs:documentation>
@@ -235,6 +274,112 @@
                 </xs:documentation>
             </xs:annotation>
         </xs:attribute>
+    </xs:complexType>
+
+    <xs:complexType name="actionType">
+        <xs:all>
+            <xs:element name="message" type="messageType" minOccurs="1" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>
+                        The message to be generated when the action
+                        triggers.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:all>
+
+        <xs:attribute name="condition" type="xs:string">
+            <xs:annotation>
+                <xs:documentation>
+                    A filter expression guarding the triggering of this
+                    action. If the filter evaluates to TRUE the action is
+                    executed, otherwise it is skipped.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="rate" type="xs:string">
+            <xs:annotation>
+                <xs:documentation>
+                    The maximum rate at which this action is executed.
+                    Excess actions are ignored.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="trigger">
+            <xs:annotation>
+                <xs:documentation>
+                    Specifies when the action is to be executed.
+                </xs:documentation>
+            </xs:annotation>
+            <xs:simpleType>
+                <xs:restriction base="xs:string">
+                    <xs:enumeration value="timeout">
+                        <xs:annotation>
+                            <xs:documentation>
+                                Specifies that the action is to be executed when
+                                the correllation timeout elapses without
+                                matching a further rule.
+                            </xs:documentation>
+                        </xs:annotation>
+                    </xs:enumeration>
+                    <xs:enumeration value="match">
+                        <xs:annotation>
+                            <xs:documentation>
+                                Specifies that the action is to be executed
+                                immediately as the rule matches.
+                            </xs:documentation>
+                        </xs:annotation>
+                    </xs:enumeration>
+                </xs:restriction>
+            </xs:simpleType>
+        </xs:attribute>
+    </xs:complexType>
+
+    <xs:complexType name="messageType">
+        <xs:all>
+            <xs:element name="values" minOccurs="0">
+                <xs:annotation>
+                    <xs:documentation>
+                        Name-value pairs that make up the message to be
+                        generated.
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="value" minOccurs="0"  maxOccurs="unbounded">
+                            <xs:complexType>
+                                <xs:simpleContent>
+                                    <xs:extension base="xs:string">
+                                        <xs:attribute name="name" type="xs:string" use="required"/>
+                                    </xs:extension>
+                                </xs:simpleContent>
+                            </xs:complexType>
+                        </xs:element>
+                    </xs:sequence>
+                </xs:complexType>
+                <xs:unique name="message_values">
+                    <xs:selector xpath="value"/>
+                    <xs:field xpath="@name"/>
+                </xs:unique>
+            </xs:element>
+
+            <xs:element name="tags" minOccurs="0">
+                <xs:annotation>
+                    <xs:documentation>
+                        Optional keywords that can be used for a freeform grouping of the rules.
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="tag" type="xs:token" minOccurs="0"  maxOccurs="unbounded"/>
+                    </xs:sequence>
+                </xs:complexType>
+                <xs:unique name="message_tags">
+                    <xs:selector xpath="tag"/>
+                    <xs:field xpath="."/>
+                </xs:unique>
+            </xs:element>
+        </xs:all>
     </xs:complexType>
 
     <xs:simpleType name="uuidType">

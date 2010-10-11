@@ -357,6 +357,37 @@ pdbtool_match_values(NVHandle handle, const gchar *name, const gchar *value, gss
   return FALSE;
 }
 
+static void
+pdbtool_pdb_emit(LogMessage *msg, gboolean synthetic, gpointer user_data)
+{
+  gpointer *args = (gpointer *) user_data;
+  FilterExprNode *filter = (FilterExprNode *) args[0];
+  LogTemplate *template = (LogTemplate *) args[1];
+  gint *ret = (gint *) args[2];
+  GString *output = (GString *) args[3];
+  gboolean matched;
+
+  matched = !filter || filter_expr_eval(filter, msg);
+  if (matched)
+    {
+      if (G_UNLIKELY(!template))
+        {
+          if (debug_pattern && !debug_pattern_parse)
+            printf("\nValues:\n");
+
+          nv_table_foreach(msg->payload, logmsg_registry, pdbtool_match_values, ret);
+          printf("\n");
+        }
+      else
+        {
+          log_template_format(template, msg, NULL, LTZ_LOCAL, 0, output);
+          printf("%s", output->str);
+        }
+    }
+  if (synthetic)
+    log_msg_unref(msg);
+}
+
 static gint
 pdbtool_match(int argc, char *argv[])
 {
@@ -375,7 +406,6 @@ pdbtool_match(int argc, char *argv[])
   LogTemplate *template = NULL;
   GString *output = NULL;
   FilterExprNode *filter = NULL;
-  gboolean matched;
   LogProto *proto = NULL;
   gboolean may_read = TRUE;
 
@@ -453,6 +483,12 @@ pdbtool_match(int argc, char *argv[])
       eof = log_proto_fetch(proto, &buf, &buflen, NULL, &may_read) != LPS_SUCCESS;
     }
 
+  if (!debug_pattern)
+    {
+      gpointer args[] = { filter, template, &ret, output };
+      pattern_db_set_emit_func(patterndb, pdbtool_pdb_emit, args);
+    }
+
   while (!eof)
     {
       if (G_LIKELY(proto))
@@ -467,7 +503,7 @@ pdbtool_match(int argc, char *argv[])
           const gchar *msg_string;
 
           msg_string = log_msg_get_value(msg, LM_V_MESSAGE, NULL);
-          pattern_db_lookup(patterndb, msg, &dbg_list);
+          pattern_db_process(patterndb, msg, &dbg_list);
           if (!debug_pattern_parse)
             {
               printf("Pattern matching part:\n");
@@ -541,29 +577,14 @@ pdbtool_match(int argc, char *argv[])
               dbg_list = g_slist_delete_link(dbg_list, dbg_list);
             }
           dbg_info = NULL;
-          matched = TRUE;
+          {
+            gpointer nulls[] = { NULL, NULL, NULL, output };
+            pdbtool_pdb_emit(msg, FALSE, nulls);
+          }
         }
       else
         {
-          pattern_db_lookup(patterndb, msg, NULL);
-          matched = !filter || filter_expr_eval(filter, msg);
-        }
-
-      if (matched)
-        {
-          if (G_UNLIKELY(!template))
-            {
-              if (debug_pattern && !debug_pattern_parse)
-                printf("\nValues:\n");
-
-              nv_table_foreach(msg->payload, logmsg_registry, pdbtool_match_values, &ret);
-              printf("\n");
-            }
-          else
-            {
-              log_template_format(template, msg, NULL, LTZ_LOCAL, 0, output);
-              printf("%s", output->str);
-            }
+          pattern_db_process(patterndb, msg, NULL);
         }
 
       if (G_LIKELY(proto))
@@ -690,7 +711,7 @@ pdbtool_test(int argc, char *argv[])
                 log_msg_set_value(msg, LM_V_PROGRAM, example->program, strlen(example->program));
 
               printf("Testing message program='%s' message='%s'\n", example->program, example->message);
-              pattern_db_lookup(patterndb, msg, NULL);
+              pattern_db_process(patterndb, msg, NULL);
 
               pdbtool_test_value(msg, ".classifier.rule_id", example->rule->rule_id);
 

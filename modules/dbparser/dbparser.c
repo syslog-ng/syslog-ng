@@ -40,6 +40,14 @@ struct _LogDBParser
 };
 
 static void
+log_db_parser_emit(LogMessage *msg, gboolean synthetic, gpointer user_data)
+{
+  if (synthetic)
+    msg_post_message(msg);
+}
+
+
+static void
 log_db_parser_reload_database(LogDBParser *self)
 {
   struct stat st;
@@ -73,6 +81,7 @@ log_db_parser_reload_database(LogDBParser *self)
       if (self->db)
         pattern_db_free(self->db);
       self->db = db_new;
+      pattern_db_set_emit_func(self->db, log_db_parser_emit, self);
 
       msg_notice("Log pattern database reloaded",
                  evt_tag_str("file", self->db_file),
@@ -95,7 +104,7 @@ log_db_parser_process(LogParser *s, LogMessage *msg, const char *input)
       log_db_parser_reload_database(self);
     }
 
-  pattern_db_lookup(self->db, msg, NULL);
+  pattern_db_process(self->db, msg, NULL);
   return TRUE;
 }
 
@@ -132,8 +141,8 @@ log_db_parser_new(void)
 {
   LogDBParser *self = g_new0(LogDBParser, 1);
 
-  self->super.process = log_db_parser_process;
   self->super.free_fn = log_db_parser_free;
+  self->super.process = log_db_parser_process;
   self->db_file = g_strdup(PATH_PATTERNDB_FILE);
   self->cfg = configuration;
 

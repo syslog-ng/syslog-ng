@@ -30,15 +30,49 @@
 #include "filter.h"
 
 typedef struct _PatternDB PatternDB;
+typedef struct _PDBRule PDBRule;
 
-/* This class encapsulates a correllation context stored in
-   db->state. */
+/* rule context scope */
+enum
+{
+  /* correllation happens globally, e.g. log messages even on different hosts are considered */
+  RCS_GLOBAL,
+  /* correllation happens inside the same host only, e.g. messages from other hosts are not considered */
+  RCS_HOST,
+  /* correllation happens for the same program only, e.g. messages from other programs are not considered */
+  RCS_PROGRAM,
+  /* correllation happens for the same process only, e.g. messages from a different program/pid are not considered */
+  RCS_PROCESS,
+};
+
+/* type field for state key */
+enum
+{
+  /* state entry contains a context */
+  PSK_CONTEXT,
+  /* state entry contains a ratelimit state */
+  PSK_RATE_LIMIT,
+};
+
+typedef struct _PDBStateKey
+{
+  const gchar *host;
+  const gchar *program;
+  const gchar *pid;
+  gchar *session_id;
+  guint8 scope;
+  guint8 type;
+} PDBStateKey;
+
+/* This class encapsulates a correllation context, keyed by PDBStateKey, type == PSK_RULE. */
 typedef struct _PDBContext
 {
-  /* key in the hash table*/
-  gchar *id;
+  /* key in the hashtable. NOTE: host/program/pid/session_id are borrowed pointers from the first message in the state */
+  PDBStateKey key;
   /* back reference to the PatternDB */
   PatternDB *db;
+  /* back reference to the last rule touching this context */
+  PDBRule *rule;
   /* timeout timer */
   TWEntry *timer;
   /* messages belonging to this context */
@@ -46,24 +80,68 @@ typedef struct _PDBContext
   gint ref_cnt;
 } PDBContext;
 
+/* This class encapsulates a rate-limit state stored in
+   db->state. */
+typedef struct _PDBRateLimit
+{
+  /* key in the hashtable. NOTE: host/program/pid/session_id are allocated, thus they need to be freed when the structure is freed. */
+  PDBStateKey key;
+  gint buckets;
+  guint64 last_check;
+} PDBRateLimit;
+
+typedef struct _PDBStateEntry
+{
+  union
+  {
+    PDBStateKey key;
+    PDBContext context;
+    PDBRateLimit rate_limit;
+  };
+} PDBStateEntry;
+
 typedef struct _PDBMessage
 {
   GArray *tags;
   GPtrArray *values;
 } PDBMessage;
 
+
+/* rule action triggers */
+enum
+ {
+  RAT_MATCH = 1,
+  RAT_TIMEOUT
+};
+
+/* action content*/
 enum
 {
-  LCS_GLOBAL,
-  LCS_HOST,
-  LCS_PROGRAM,
+  RAC_NONE,
+  RAC_MESSAGE
 };
+
+/* a rule may contain one or more actions to be performed */
+typedef struct _PDBAction
+{
+  FilterExprNode *condition;
+  guint8 trigger;
+  guint8 content_type;
+  guint16 rate;
+  guint32 id:8, rate_quantum:24;
+  union
+  {
+    PDBMessage message;
+  } content;
+} PDBAction;
+
+
 
 /* this class encapsulates a the verdict of a rule in the pattern
  * database and is stored as the "value" member in the RADIX tree
  * node. It contains a reference the the original rule in the rule
  * database. */
-typedef struct _PDBRule
+struct _PDBRule
 {
   guint ref_cnt;
   gchar *class;
@@ -73,7 +151,7 @@ typedef struct _PDBRule
   gint context_scope;
   LogTemplate *context_id_template;
   GPtrArray *actions;
-} PDBRule;
+};
 
 /* this class encapsulates an example message in the pattern database
  * used for testing rules and patterns. It contains the message with the
@@ -100,6 +178,8 @@ typedef struct _PDBProgram
   RNode *rules;
 } PDBProgram;
 
+typedef void (*PatternDBEmitFunc)(LogMessage *msg, gboolean synthetic, gpointer user_data);
+
 struct _PatternDB
 {
   RNode *programs;
@@ -107,10 +187,14 @@ struct _PatternDB
   gchar *pub_date;
   GHashTable *state;
   TimerWheel *timer_wheel;
+  PatternDBEmitFunc emit;
+  gpointer emit_data;
 };
 
-gboolean pattern_db_lookup(PatternDB *self, LogMessage *msg, GSList **dbg_list);
+void pattern_db_set_emit_func(PatternDB *self, PatternDBEmitFunc emit_func, gpointer emit_data);
+gboolean pattern_db_process(PatternDB *self, LogMessage *msg, GSList **dbg_list);
 gboolean pattern_db_load(PatternDB *self, GlobalConfig *cfg, const gchar *config, GList **examples);
+void pattern_db_forget_state(PatternDB *self);
 
 PatternDB *pattern_db_new(void);
 void pattern_db_free(PatternDB *self);
