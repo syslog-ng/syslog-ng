@@ -1267,10 +1267,6 @@ pattern_db_load(PatternDB *self, GlobalConfig *cfg, const gchar *config, GList *
   success = TRUE;
 
  error:
-  if (!success)
-    {
-      pattern_db_free(self);
-    }
   if (dbfile)
     fclose(dbfile);
   if (parse_ctx)
