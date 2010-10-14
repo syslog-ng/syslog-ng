@@ -251,10 +251,11 @@ resolve_sockaddr(gchar *result, gsize *result_len, GSockAddr *saddr, gboolean us
     {
       gint i;
 
-      for (i = 0; hname[i] && i < (*result_len); i++)
+      for (i = 0; hname[i] && i < ((*result_len) - 1); i++)
         {
           result[i] = g_ascii_tolower(hname[i]);
         }
+      result[i] = '\0'; /* the closing \0 is not copied by the previous loop */
       *result_len = i;
     }
   else
