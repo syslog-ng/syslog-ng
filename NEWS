@@ -1,6 +1,16 @@
 3.2beta1
 	Mon, 11 Oct 2010 12:25:07 +0200
 
+	Changes and new features destined to the syslog-ng 3.2 release are
+	complete, and starting with this release, only bugfixes and minor
+	changes are possible. There's only one exception to this: the
+	correllation framework in db-parser() is still considered
+	experimental and is recommended for early adopters only.
+
+	This beta has gone through some testing and initial blocker problems
+	were fixed before the release. Right now I'm not aware of any
+	serious issues, but as always, testing is appreciated.
+
 	New features since 3.2alpha2:
 	* Added support for message correllation in db-parser. See the
 	  relevant blog posts for more information:
