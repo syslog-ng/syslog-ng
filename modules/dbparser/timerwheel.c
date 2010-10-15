@@ -285,6 +285,7 @@ timer_wheel_set_time(TimerWheel *self, guint64 new_now)
 
           entry->callback(self->now, entry->user_data);
           tw_entry_free(entry);
+          self->num_timers--;
         }
       *head = NULL;
 
