@@ -43,7 +43,12 @@ static void
 log_db_parser_emit(LogMessage *msg, gboolean synthetic, gpointer user_data)
 {
   if (synthetic)
-    msg_post_message(msg);
+    {
+      msg_post_message(msg);
+      msg_debug("db-parser: emitting synthetic message",
+                evt_tag_str("msg", log_msg_get_value(msg, LM_V_MESSAGE, NULL)),
+                NULL);
+    }
 }
 
 

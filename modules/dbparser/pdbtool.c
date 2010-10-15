@@ -384,8 +384,6 @@ pdbtool_pdb_emit(LogMessage *msg, gboolean synthetic, gpointer user_data)
           printf("%s", output->str);
         }
     }
-  if (synthetic)
-    log_msg_unref(msg);
 }
 
 static gint

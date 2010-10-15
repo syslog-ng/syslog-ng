@@ -136,7 +136,7 @@ msg_send_internal_message(int prio, const char *msg)
 void
 msg_post_message(LogMessage *msg)
 {
-  msg_queue_push(internal_msg_queue, msg);
+  msg_queue_push(internal_msg_queue, log_msg_ref(msg));
 }
 
 EVTREC *

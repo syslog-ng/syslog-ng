@@ -525,6 +525,7 @@ pdb_rule_run_actions(PDBRule *self, gint trigger, PatternDB *db, PDBContext *con
                   pdb_message_apply(&action->content.message, context, genmsg, buffer);
                   g_ptr_array_remove_index_fast(context->messages, context->messages->len - 1);
                   emit(genmsg, TRUE, emit_data);
+                  log_msg_unref(genmsg);
                   break;
                 default:
                   g_assert_not_reached();
@@ -1127,6 +1128,9 @@ pattern_db_process(PatternDB *self, LogMessage *msg, GSList **dbg_list)
               GString *buffer = g_string_sized_new(32);
               gint i;
 
+              msg_debug("patterndb rule matches",
+                        evt_tag_str("rule_id", rule->rule_id),
+                        NULL);
               log_msg_set_value(msg, class_handle, rule->class ? rule->class : "system", -1);
               log_msg_set_value(msg, rule_id_handle, rule->rule_id, -1);
 
