@@ -29,21 +29,33 @@ do { \
 
 #define MYHOST "MYHOST"
 
+PatternDB *patterndb;
+gchar *filename;
+GPtrArray *messages;
 
 void
-create_pattern_db(PatternDB **patterndb, gchar *pdb, gchar ** filename)
+test_emit_func(LogMessage *msg, gboolean synthetic, gpointer user_data)
 {
-  *patterndb = pattern_db_new();
+  g_ptr_array_add(messages, log_msg_ref(msg));
+}
 
-  g_file_open_tmp("patterndbXXXXXX.xml", filename, NULL);
-  g_file_set_contents(*filename, pdb, strlen(pdb), NULL);
+void
+create_pattern_db(gchar *pdb)
+{
+  patterndb = pattern_db_new();
+  messages = g_ptr_array_new();
 
-  if (pattern_db_load(*patterndb, configuration, *filename, NULL))
+  pattern_db_set_emit_func(patterndb, test_emit_func, NULL);
+
+  g_file_open_tmp("patterndbXXXXXX.xml", &filename, NULL);
+  g_file_set_contents(filename, pdb, strlen(pdb), NULL);
+
+  if (pattern_db_load(patterndb, configuration, filename, NULL))
     {
-      if (!g_str_equal((*patterndb)->version, "3"))
-        test_fail("Invalid version '%s'\n", (*patterndb)->version);
-      if (!g_str_equal((*patterndb)->pub_date, "2010-02-22"))
-        test_fail("Invalid pub_date '%s'\n", (*patterndb)->pub_date);
+      if (!g_str_equal((patterndb)->version, "3"))
+        test_fail("Invalid version '%s'\n", (patterndb)->version);
+      if (!g_str_equal((patterndb)->pub_date, "2010-02-22"))
+        test_fail("Invalid pub_date '%s'\n", (patterndb)->pub_date);
     }
   else
     {
@@ -52,14 +64,16 @@ create_pattern_db(PatternDB **patterndb, gchar *pdb, gchar ** filename)
 }
 
 void
-clean_pattern_db(PatternDB **patterndb, gchar **filename)
+clean_pattern_db(void)
 {
-  pattern_db_free(*patterndb);
-  *patterndb = NULL;
+  g_ptr_array_foreach(messages, (GFunc) log_msg_unref, NULL);
+  g_ptr_array_free(messages, TRUE);
+  pattern_db_free(patterndb);
+  patterndb = NULL;
 
-  g_unlink(*filename);
-  g_free(*filename);
-
+  g_unlink(filename);
+  g_free(filename);
+  filename = NULL;
 }
 
 /* pdb skeleton used to test patterndb rule actions. E.g. whenever a rule
@@ -86,7 +100,7 @@ gchar *pdb_ruletest_skeleton = "<patterndb version='3' pub_date='2010-02-22'>\
     <value name='vvv'>${HOST}</value>\
    </values>\
    <actions>\
-     <action rate='1/60' condition='\"${n11-1}\" == v11-1' trigger='match'>\
+     <action rate='1/60' condition='\"${n11-1}\" == \"v11-1\"' trigger='match'>\
        <message>\
          <value name='MESSAGE'>rule11 matched</value>\
          <tags>\
@@ -94,7 +108,7 @@ gchar *pdb_ruletest_skeleton = "<patterndb version='3' pub_date='2010-02-22'>\
          </tags>\
        </message>\
      </action>\
-     <action rate='1/60' condition='\"${n11-1}\" == v11-1' trigger='timeout'>\
+     <action rate='1/60' condition='\"${n11-1}\" == \"v11-1\"' trigger='timeout'>\
        <message>\
          <value name='MESSAGE'>rule11 timed out</value>\
          <tags>\
@@ -113,9 +127,16 @@ gchar *pdb_ruletest_skeleton = "<patterndb version='3' pub_date='2010-02-22'>\
  </ruleset>\
 </patterndb>";
 
+void
+test_clean_state(void)
+{
+  pattern_db_forget_state(patterndb);
+  g_ptr_array_foreach(messages, (GFunc) log_msg_unref, NULL);
+  g_ptr_array_set_size(messages, 0);
+}
 
 void
-test_rule_value(PatternDB *patterndb, const gchar *pattern, const gchar *name, const gchar *value)
+test_rule_value(const gchar *pattern, const gchar *name, const gchar *value)
 {
   gboolean result;
   LogMessage *msg = log_msg_new_empty();
@@ -129,16 +150,18 @@ test_rule_value(PatternDB *patterndb, const gchar *pattern, const gchar *name, c
 
   result = pattern_db_process(patterndb, msg, NULL);
   val = log_msg_get_value(msg, log_msg_get_value_handle(name), &len);
+  if (value)
+    found = strcmp(val, value) == 0;
 
   if (!!value ^ (len > 0))
     test_fail("Value '%s' is %smatching for pattern '%s' (%d)\n", name, found ? "" : "not ", pattern, !!result);
 
   log_msg_unref(msg);
-  pattern_db_forget_state(patterndb);
+  test_clean_state();
 }
 
 void
-test_rule_tag(PatternDB *patterndb, const gchar *pattern, const gchar *tag, gboolean set)
+test_rule_tag(const gchar *pattern, const gchar *tag, gboolean set)
 {
   LogMessage *msg = log_msg_new_empty();
   gboolean found, result;
@@ -153,99 +176,121 @@ test_rule_tag(PatternDB *patterndb, const gchar *pattern, const gchar *tag, gboo
     test_fail("Tag '%s' is %sset for pattern '%s' (%d)\n", tag, found ? "" : "not ", pattern, !!result);
 
   log_msg_unref(msg);
-  pattern_db_forget_state(patterndb);
+  test_clean_state();
 }
 
 void
-test_rule_action_message_value(PatternDB *patterndb, const gchar *pattern, gint trigger, const gchar *value, const gchar *expected)
+test_rule_action_message_value(const gchar *pattern, gint timeout, gint ndx, const gchar *name, const gchar *value)
 {
   LogMessage *msg = log_msg_new_empty();
-  gboolean found, result;
+  gboolean found = FALSE, result;
+  const gchar *val;
+  gssize len;
 
   log_msg_set_value(msg, LM_V_MESSAGE, pattern, strlen(pattern));
   log_msg_set_value(msg, LM_V_PROGRAM, "prog2", 5);
+  msg->timestamps[LM_TS_STAMP].time.tv_sec = msg->timestamps[LM_TS_RECVD].time.tv_sec;
 
   result = pattern_db_process(patterndb, msg, NULL);
-#if 0
-  val = log_msg_get_value(msg, log_msg_get_value_handle(name), &len);
+  if (timeout)
+    timer_wheel_set_time(patterndb->timer_wheel, timer_wheel_get_time(patterndb->timer_wheel) + timeout + 1);
+
+  if (ndx >= messages->len)
+    {
+      test_fail("Expected the %d. message, but no such message was returned by patterndb\n", ndx);
+      goto exit;
+    }
+
+  val = log_msg_get_value((LogMessage *) g_ptr_array_index(messages, ndx), log_msg_get_value_handle(name), &len);
+  if (value)
+    found = strcmp(val, value) == 0;
 
   if (!!value ^ (len > 0))
-    test_fail("Value '%s' is %smatching for pattern '%s' (%d)\n", name, found ? "" : "not ", pattern, !!result);
-#endif
+    test_fail("Value '%s' is %smatching for pattern '%s' (%d) index %d\n", name, found ? "" : "not ", pattern, !!result, ndx);
+
+exit:
   log_msg_unref(msg);
-  pattern_db_forget_state(patterndb);
+  test_clean_state();
 }
 
 void
-test_rule_action_message_tag(PatternDB *patterndb, const gchar *pattern, gint trigger, const gchar *tag, gboolean set)
+test_rule_action_message_tag(const gchar *pattern, gint timeout, gint ndx, const gchar *tag, gboolean set)
 {
   LogMessage *msg = log_msg_new_empty();
   gboolean found, result;
 
   log_msg_set_value(msg, LM_V_MESSAGE, pattern, strlen(pattern));
   log_msg_set_value(msg, LM_V_PROGRAM, "prog2", 5);
+  msg->timestamps[LM_TS_STAMP].time.tv_sec = msg->timestamps[LM_TS_RECVD].time.tv_sec;
 
   result = pattern_db_process(patterndb, msg, NULL);
-#if 0
-  found = log_msg_is_tag_by_name(msg, tag);
+  if (timeout)
+    timer_wheel_set_time(patterndb->timer_wheel, timer_wheel_get_time(patterndb->timer_wheel) + timeout + 5);
+  if (ndx >= messages->len)
+    {
+      test_fail("Expected the %d. message, but no such message was returned by patterndb\n", ndx);
+      goto exit;
+    }
+  found = log_msg_is_tag_by_name((LogMessage *) g_ptr_array_index(messages, ndx), tag);
 
   if (set ^ found)
-    test_fail("Tag '%s' is %sset for pattern '%s' (%d)\n", tag, found ? "" : "not ", pattern, !!result);
-#endif
+    test_fail("Tag '%s' is %sset for pattern '%s' (%d), index %d\n", tag, found ? "" : "not ", pattern, !!result, ndx);
+exit:
   log_msg_unref(msg);
-  pattern_db_forget_state(patterndb);
+  test_clean_state();
 }
 
 
 void
 test_patterndb_rule(void)
 {
-  PatternDB *patterndb;
-  gchar *filename = NULL;
+  create_pattern_db(pdb_ruletest_skeleton);
+  test_rule_tag("pattern11", "tag11-1", TRUE);
+  test_rule_tag("pattern11", ".classifier.system", TRUE);
+  test_rule_tag("pattern11", "tag11-2", TRUE);
+  test_rule_tag("pattern11", "tag11-3", FALSE);
+  test_rule_tag("pattern11a", "tag11-1", TRUE);
+  test_rule_tag("pattern11a", "tag11-2", TRUE);
+  test_rule_tag("pattern11a", "tag11-3", FALSE);
+  test_rule_tag("pattern12", ".classifier.violation", TRUE);
+  test_rule_tag("pattern12", "tag12-1", FALSE);
+  test_rule_tag("pattern12", "tag12-2", FALSE);
+  test_rule_tag("pattern12", "tag12-3", FALSE);
+  test_rule_tag("pattern12a", "tag12-1", FALSE);
+  test_rule_tag("pattern12a", "tag12-2", FALSE);
+  test_rule_tag("pattern12a", "tag12-3", FALSE);
+  test_rule_tag("pattern1x", "tag1x-1", FALSE);
+  test_rule_tag("pattern1x", "tag1x-2", FALSE);
+  test_rule_tag("pattern1x", "tag1x-3", FALSE);
+  test_rule_tag("pattern1xa", "tag1x-1", FALSE);
+  test_rule_tag("pattern1xa", "tag1x-2", FALSE);
+  test_rule_tag("pattern1xa", "tag1x-3", FALSE);
 
-  create_pattern_db(&patterndb, pdb_ruletest_skeleton, &filename);
-  test_rule_tag(patterndb, "pattern11", "tag11-1", TRUE);
-  test_rule_tag(patterndb, "pattern11", ".classifier.system", TRUE);
-  test_rule_tag(patterndb, "pattern11", "tag11-2", TRUE);
-  test_rule_tag(patterndb, "pattern11", "tag11-3", FALSE);
-  test_rule_tag(patterndb, "pattern11a", "tag11-1", TRUE);
-  test_rule_tag(patterndb, "pattern11a", "tag11-2", TRUE);
-  test_rule_tag(patterndb, "pattern11a", "tag11-3", FALSE);
-  test_rule_tag(patterndb, "pattern12", ".classifier.violation", TRUE);
-  test_rule_tag(patterndb, "pattern12", "tag12-1", FALSE);
-  test_rule_tag(patterndb, "pattern12", "tag12-2", FALSE);
-  test_rule_tag(patterndb, "pattern12", "tag12-3", FALSE);
-  test_rule_tag(patterndb, "pattern12a", "tag12-1", FALSE);
-  test_rule_tag(patterndb, "pattern12a", "tag12-2", FALSE);
-  test_rule_tag(patterndb, "pattern12a", "tag12-3", FALSE);
-  test_rule_tag(patterndb, "pattern1x", "tag1x-1", FALSE);
-  test_rule_tag(patterndb, "pattern1x", "tag1x-2", FALSE);
-  test_rule_tag(patterndb, "pattern1x", "tag1x-3", FALSE);
-  test_rule_tag(patterndb, "pattern1xa", "tag1x-1", FALSE);
-  test_rule_tag(patterndb, "pattern1xa", "tag1x-2", FALSE);
-  test_rule_tag(patterndb, "pattern1xa", "tag1x-3", FALSE);
+  test_rule_value("pattern11", "n11-1", "v11-1");
+  test_rule_value("pattern11", ".classifier.class", "system");
+  test_rule_value("pattern11", "n11-2", "v11-2");
+  test_rule_value("pattern11", "n11-3", NULL);
+  test_rule_value("pattern11a", "n11-1", "v11-1");
+  test_rule_value("pattern11a", "n11-2", "v11-2");
+  test_rule_value("pattern11a", "n11-3", NULL);
+  test_rule_value("pattern12", ".classifier.class", "violation");
+  test_rule_value("pattern12", "n12-1", NULL);
+  test_rule_value("pattern12", "n12-2", NULL);
+  test_rule_value("pattern12", "n12-3", NULL);
+  test_rule_value("pattern1x", "n1x-1", NULL);
+  test_rule_value("pattern1x", "n1x-2", NULL);
+  test_rule_value("pattern1x", "n1x-3", NULL);
+  test_rule_value("pattern11", "vvv", MYHOST);
 
-  test_rule_value(patterndb, "pattern11", "n11-1", "v11-1");
-  test_rule_value(patterndb, "pattern11", ".classifier.class", "system");
-  test_rule_value(patterndb, "pattern11", "n11-2", "v11-2");
-  test_rule_value(patterndb, "pattern11", "n11-3", NULL);
-  test_rule_value(patterndb, "pattern11a", "n11-1", "v11-1");
-  test_rule_value(patterndb, "pattern11a", "n11-2", "v11-2");
-  test_rule_value(patterndb, "pattern11a", "n11-3", NULL);
-  test_rule_value(patterndb, "pattern12", ".classifier.class", "violation");
-  test_rule_value(patterndb, "pattern12", "n12-1", NULL);
-  test_rule_value(patterndb, "pattern12", "n12-2", NULL);
-  test_rule_value(patterndb, "pattern12", "n12-3", NULL);
-  test_rule_value(patterndb, "pattern1x", "n1x-1", NULL);
-  test_rule_value(patterndb, "pattern1x", "n1x-2", NULL);
-  test_rule_value(patterndb, "pattern1x", "n1x-3", NULL);
-  test_rule_value(patterndb, "pattern11", "vvv", MYHOST);
+  test_rule_action_message_value("pattern11", 0, 1, "MESSAGE", "rule11 matched");
+  test_rule_action_message_tag("pattern11", 0, 1, "tag11-3", TRUE);
+  test_rule_action_message_tag("pattern11", 0, 1, "tag11-4", FALSE);
 
-  test_rule_action_message_value(patterndb, "pattern11", RAT_MATCH, "MESSAGE", "rule11 matched");
-  test_rule_action_message_tag(patterndb, "pattern11", RAT_MATCH, "tag11-3", TRUE);
-  test_rule_action_message_tag(patterndb, "pattern11", RAT_MATCH, "tag11-4", FALSE);
+  test_rule_action_message_value("pattern11", 60, 2, "MESSAGE", "rule11 timed out");
+  test_rule_action_message_tag("pattern11", 60, 2, "tag11-3", FALSE);
+  test_rule_action_message_tag("pattern11", 60, 2, "tag11-4", TRUE);
 
-  clean_pattern_db(&patterndb, &filename);
+  clean_pattern_db();
 }
 
 gchar *pdb_parser_skeleton_prefix ="<?xml version='1.0' encoding='UTF-8'?>\
@@ -264,7 +309,7 @@ gchar *pdb_parser_skeleton_postfix =  "</pattern>\
 
 
 void
-test_pattern(PatternDB *patterndb, const gchar *pattern, const gchar *rule, gboolean match)
+test_pattern(const gchar *pattern, const gchar *rule, gboolean match)
 {
   gboolean result;
   LogMessage *msg = log_msg_new_empty();
@@ -308,22 +353,21 @@ test_pattern(PatternDB *patterndb, const gchar *pattern, const gchar *rule, gboo
 void
 test_parser(gchar **test)
 {
-  PatternDB *patterndb;
   GString *str;
-  gchar *filename = NULL;
   gint index = 1;
 
   str = g_string_new(pdb_parser_skeleton_prefix);
   g_string_append(str, test[0]);
   g_string_append(str, pdb_parser_skeleton_postfix);
 
-  create_pattern_db(&patterndb, str->str, &filename);
+  create_pattern_db(str->str);
+  g_string_free(str, TRUE);
   while(test[index] != NULL)
-    test_pattern(patterndb, test[index++], test[0], TRUE);
+    test_pattern(test[index++], test[0], TRUE);
   while(test[index] != NULL)
-    test_pattern(patterndb, test[index++], test[0], FALSE);
+    test_pattern(test[index++], test[0], FALSE);
 
-  clean_pattern_db(&patterndb, &filename);
+  clean_pattern_db();
 }
 
 gchar * test1 [] = {
