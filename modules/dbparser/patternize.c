@@ -26,6 +26,7 @@
 #include "tags.h"
 
 #include <stdlib.h>
+#include <string.h>
 #include <openssl/rand.h>
 
 /*
