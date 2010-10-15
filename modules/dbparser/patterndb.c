@@ -118,6 +118,7 @@ pdb_rate_limit_free(PDBRateLimit *self)
   if (self->key.pid)
     g_free((gchar *) self->key.pid);
   g_free(self->key.session_id);
+  g_free(self);
 }
 
 /*********************************************************
