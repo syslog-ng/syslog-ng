@@ -14,6 +14,8 @@ tw_entry_prepend(TWEntry **pfirst, TWEntry *new)
 {
   new->next = *pfirst;
   new->pprev = pfirst;
+  if (*pfirst)
+    (*pfirst)->pprev = &new->next;
   *pfirst = new;
 }
 
@@ -32,6 +34,32 @@ tw_entry_free(TWEntry *entry)
     entry->user_data_free(entry->user_data);
   g_free(entry);
 }
+
+#if ENABLE_DEBUG
+static void
+tw_entry_list_validate(TWEntry **head)
+{
+  TWEntry *last, *first, *p;
+
+  last = NULL;
+  first = *head;
+  g_assert(first->pprev == head);
+  for (p = first; p; p = p->next)
+    {
+      if (last)
+        g_assert(p->pprev == &last->next);
+      last = p;
+    }
+}
+
+#else
+
+static inline void
+tw_entry_list_validate(TWEntry **head)
+{
+}
+
+#endif
 
 typedef struct _TWLevel
 {
@@ -119,11 +147,13 @@ timer_wheel_add_timer_entry(TimerWheel *self, TWEntry *entry)
 
       slot = (entry->target & level->mask) >> level->shift;
       tw_entry_prepend(&level->slots[slot], entry);
+      tw_entry_list_validate(&level->slots[slot]);
       break;
     }
   if (level_ndx >= G_N_ELEMENTS(self->levels))
     {
       tw_entry_prepend(&self->future, entry);
+      tw_entry_list_validate(&self->future);
     }
 
 }
@@ -190,6 +220,7 @@ timer_wheel_cascade(TimerWheel *self)
 
           /* we don't need to unlink entry from the list as that list is completely emptied anyway */
           tw_entry_prepend(target_head, entry);
+          tw_entry_list_validate(target_head);
         }
       *source_head = NULL;
 
@@ -213,7 +244,9 @@ timer_wheel_cascade(TimerWheel *self)
 
               /* unlink current entry */
               tw_entry_unlink(entry);
+              tw_entry_list_validate(source_head);
               tw_entry_prepend(target_head, entry);
+              tw_entry_list_validate(target_head);
             }
         }
     }

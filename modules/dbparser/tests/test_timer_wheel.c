@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <time.h>
 
-#define NUM_TIMERS 1000000
+#define NUM_TIMERS 10000
 
 gint num_callbacks;
 guint64 prev_now;
@@ -47,7 +47,8 @@ test_wheel(gint seed)
   for (i = 0; i < NUM_TIMERS; i++)
     {
       guint64 expires;
-      TWEntry *timer;
+      TWEntry *timer1, *timer2, *timer3;
+      gint r;
 
       expires = rand() & ((1 << 24) - 1);
       if (expires <= 1)
@@ -55,13 +56,30 @@ test_wheel(gint seed)
 
       if (expires > latest)
         latest = expires;
-      timer = timer_wheel_add_timer(wheel, expires - 1, timer_callback,
+      timer1 = timer_wheel_add_timer(wheel, expires - 1, timer_callback,
                                     g_memdup(&expires, sizeof(expires)), (GDestroyNotify) g_free);
-      expected_callbacks++;
-      if ((rand() & 0xFF) < 128)
+      timer2 = timer_wheel_add_timer(wheel, expires - 1, timer_callback,
+                                    g_memdup(&expires, sizeof(expires)), (GDestroyNotify) g_free);
+      timer3 = timer_wheel_add_timer(wheel, expires - 1, timer_callback,
+                                    g_memdup(&expires, sizeof(expires)), (GDestroyNotify) g_free);
+      expected_callbacks += 3;
+      r = rand() & 0xFF;
+      if (r < 64)
         {
-          /* delete the timer with 50% chance */
-          timer_wheel_del_timer(wheel, timer);
+          /* delete the timer with 25% chance */
+          timer_wheel_del_timer(wheel, timer1);
+          expected_callbacks--;
+        }
+      else if (r < 128)
+        {
+          /* delete the timer with 25% chance */
+          timer_wheel_del_timer(wheel, timer2);
+          expected_callbacks--;
+        }
+      else if (r < 192)
+        {
+          /* delete the timer with 25% chance */
+          timer_wheel_del_timer(wheel, timer3);
           expected_callbacks--;
         }
     }
@@ -71,6 +89,7 @@ test_wheel(gint seed)
       fprintf(stderr, "Error: not enough callbacks received, num_callbacks=%d, expected=%d\n", num_callbacks, expected_callbacks);
       exit(1);
     }
+  timer_wheel_free(wheel);
 }
 
 int
