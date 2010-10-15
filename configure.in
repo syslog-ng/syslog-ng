@@ -445,7 +445,7 @@ PKG_CHECK_MODULES(GLIB, glib-2.0 >= $GLIB_MIN_VERSION $GLIB_ADDONS,,)
 
 if test "$linking_mode" != "dynamic"; then
 	# strip out -ldl & -lrt as it cannot be linked statically
-	GLIB_LIBS="`echo $GLIB_LIBS | tr ' ' '\n' | egrep -v "^(-ldld?)|(-lrt)$" | tr '\n' ' '`"
+	GLIB_LIBS=`echo $GLIB_LIBS | tr ' ' '\n' | egrep -v "^(-ldld?)|(-lrt)$" | tr '\n' ' '`
 
 	old_LIBS=$LIBS
 	LIBS="$LD_START_STATIC $GLIB_LIBS $LD_END_STATIC"
