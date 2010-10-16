@@ -70,7 +70,7 @@ plugin_find(GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name)
                   break;
                 }
             }
-          if (plugin_name[i] == 0)
+          if (plugin_name[i] == 0 && plugin->name[i] == 0)
             return plugin;
         }
     }
