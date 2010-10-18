@@ -24,6 +24,7 @@
 #include "afunix.h"
 #include "misc.h"
 #include "messages.h"
+#include "gprocess.h"
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -65,9 +66,15 @@ static gboolean
 afunix_sd_init(LogPipe *s)
 {
   AFUnixSourceDriver *self = (AFUnixSourceDriver *) s;
+  cap_t saved_caps;
 
   if (afsocket_sd_init(s))
     {
+      saved_caps = g_process_cap_save();
+      g_process_cap_modify(CAP_CHOWN, TRUE);
+      g_process_cap_modify(CAP_FOWNER, TRUE);
+      g_process_cap_modify(CAP_DAC_OVERRIDE, TRUE);
+
       /* change ownership separately, as chgrp may succeed while chown may not */
       if (self->owner >= 0)
         chown(self->filename, (uid_t) self->owner, -1);
@@ -75,6 +82,7 @@ afunix_sd_init(LogPipe *s)
         chown(self->filename, -1, (gid_t) self->group);
       if (self->perm >= 0)
         chmod(self->filename, (mode_t) self->perm);
+      g_process_cap_restore(saved_caps);
       return TRUE;
     }
   return FALSE;
