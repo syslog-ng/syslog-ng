@@ -55,15 +55,23 @@ affile_open_file(gchar *name, gint flags,
       return FALSE;
     }
 
-  if (create_dirs && !create_containing_directory(name, dir_uid, dir_gid, dir_mode))
-    return FALSE;
-
   saved_caps = g_process_cap_save();
   if (privileged)
     {
       g_process_cap_modify(CAP_DAC_READ_SEARCH, TRUE);
       g_process_cap_modify(CAP_SYS_ADMIN, TRUE);
     }
+  else
+    {
+      g_process_cap_modify(CAP_DAC_OVERRIDE, TRUE);
+    }
+
+  if (create_dirs && !create_containing_directory(name, dir_uid, dir_gid, dir_mode))
+    {
+      g_process_cap_restore(saved_caps);
+      return FALSE;
+    }
+
   *fd = -1;
   if (stat(name, &st) >= 0)
     {

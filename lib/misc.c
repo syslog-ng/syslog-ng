@@ -25,6 +25,7 @@
 #include "misc.h"
 #include "dnscache.h"
 #include "messages.h"
+#include "gprocess.h"
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -377,6 +378,7 @@ create_containing_directory(gchar *name, gint dir_uid, gint dir_gid, gint dir_mo
   struct stat st;
   gint rc;
   gchar *p;
+  cap_t saved_caps;
   
   /* check that the directory exists */
   dirname = g_path_get_dirname(name);
@@ -410,12 +412,16 @@ create_containing_directory(gchar *name, gint dir_uid, gint dir_gid, gint dir_mo
         {
           if (mkdir(name, (mode_t) dir_mode) == -1)
             return FALSE;
+          saved_caps = g_process_cap_save();
+          g_process_cap_modify(CAP_CHOWN, TRUE);
+          g_process_cap_modify(CAP_FOWNER, TRUE);
           if (dir_uid >= 0)
             chown(name, (uid_t) dir_uid, -1);
           if (dir_gid >= 0)
             chown(name, -1, (gid_t) dir_gid);
           if (dir_mode >= 0)
             chmod(name, (mode_t) dir_mode);
+          g_process_cap_restore(saved_caps);
         }
       *p = '/';
       p = strchr(p + 1, '/');
