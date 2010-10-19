@@ -170,6 +170,13 @@ else
 fi
 
 dnl ***************************************************************************
+dnl Validate flex
+
+if -z "LEX"; then
+	AC_MSG_WARN([No lex found. syslog-ng requires flex if you want to change the lexer files cfg-lex.l.  You may not be able to regenerate the lexer if you change them.])
+fi
+
+dnl ***************************************************************************
 dnl Set up CFLAGS
 
 if test "x$ac_compiler_gnu" = "xyes"; then
