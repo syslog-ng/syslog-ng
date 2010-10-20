@@ -135,6 +135,6 @@ log_pipe_append(LogPipe *s, LogPipe *next)
   s->pipe_next = next;
 }
 
-void log_pipe_free(LogPipe *s);
+void log_pipe_free_method(LogPipe *s);
 
 #endif

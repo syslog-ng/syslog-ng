@@ -30,12 +30,12 @@ log_pipe_init_instance(LogPipe *self)
   g_atomic_counter_set(&self->ref_cnt, 1);
   self->pipe_next = NULL;
   self->queue = log_pipe_forward_msg;
-  self->free_fn = log_pipe_free;
+  self->free_fn = log_pipe_free_method;
 /*  self->notify = log_pipe_forward_notify; */
 }
 
 void
-log_pipe_free(LogPipe *self)
+log_pipe_free_method(LogPipe *self)
 {
   ;
 }

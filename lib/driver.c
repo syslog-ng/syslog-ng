@@ -50,6 +50,6 @@ log_drv_free(LogPipe *s)
     g_free(self->group);
   if (self->id)
     g_free(self->id);
-  log_pipe_free(s);
+  log_pipe_free_method(s);
 }
 

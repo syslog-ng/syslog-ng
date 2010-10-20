@@ -144,7 +144,7 @@ log_multiplexer_free(LogPipe *s)
   LogMultiplexer *self = (LogMultiplexer *) s;
 
   g_ptr_array_free(self->next_hops, TRUE);
-  log_pipe_free(s);
+  log_pipe_free_method(s);
 }
 
 LogMultiplexer *

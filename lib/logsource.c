@@ -241,7 +241,7 @@ log_source_free(LogPipe *s)
   
   g_free(self->stats_id);
   g_free(self->stats_instance);
-  log_pipe_free(s);
+  log_pipe_free_method(s);
 }
 
 void

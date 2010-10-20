@@ -59,6 +59,11 @@ log_parser_process(LogParser *self, LogMessage *msg)
   return success;
 }
 
+void
+log_parser_free_method(LogParser *self)
+{
+  log_template_unref(self->template);
+}
 
 /*
  * Abstract class that has a column list to parse fields into.
@@ -74,11 +79,12 @@ log_column_parser_set_columns(LogColumnParser *s, GList *columns)
 }
 
 void
-log_column_parser_free(LogParser *s)
+log_column_parser_free_method(LogParser *s)
 {
   LogColumnParser *self = (LogColumnParser *) s;
   
   string_list_free(self->columns);
+  log_parser_free_method(s);
 }
 
 typedef struct _LogParserRule

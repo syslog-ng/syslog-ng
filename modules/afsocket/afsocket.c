@@ -298,7 +298,7 @@ afsocket_sc_free(LogPipe *s)
 
   g_assert(!self->reader);
   g_sockaddr_unref(self->peer_addr);
-  log_pipe_free(s);
+  log_pipe_free_method(s);
 }
 
 AFSocketSourceConnection *

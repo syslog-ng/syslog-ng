@@ -344,7 +344,7 @@ log_csv_parser_free(LogParser *s)
     g_free(self->null_value);
   if (self->delimiters)
     g_free(self->delimiters);
-  log_column_parser_free(s);
+  log_column_parser_free_method(s);
 }
 
 /*

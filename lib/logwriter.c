@@ -806,7 +806,7 @@ log_writer_free(LogPipe *s)
   log_writer_last_msg_release(self);
   g_free(self->stats_id);
   g_free(self->stats_instance);
-  log_pipe_free(s);
+  log_pipe_free_method(s);
 }
 
 gboolean

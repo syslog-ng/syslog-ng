@@ -554,7 +554,7 @@ affile_dw_free(LogPipe *s)
   self->writer = NULL;
   g_string_free(self->filename, TRUE);
   log_pipe_unref(&self->owner->super.super);
-  log_pipe_free(s);
+  log_pipe_free_method(s);
 }
 
 static AFFileDestWriter *

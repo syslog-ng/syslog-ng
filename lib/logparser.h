@@ -42,12 +42,12 @@ struct _LogParser
 
 void log_parser_set_template(LogParser *self, LogTemplate *template);
 gboolean log_parser_process(LogParser *self, LogMessage *msg);
+void log_parser_free_method(LogParser *s);
 
 static inline void
 log_parser_free(LogParser *self)
 {
   self->free_fn(self);
-  log_template_unref(self->template);
   g_free(self);
 }
 

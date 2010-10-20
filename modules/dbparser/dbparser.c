@@ -139,6 +139,7 @@ log_db_parser_free(LogParser *s)
 
   if (self->db_file)
     g_free(self->db_file);
+  log_parser_free_method(s);
 }
 
 LogParser *

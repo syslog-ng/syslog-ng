@@ -90,7 +90,7 @@ log_process_pipe_free(LogPipe *s)
   LogProcessPipe *self = (LogProcessPipe *) s;
   
   log_process_rule_unref(self->rule);
-  log_pipe_free(s);
+  log_pipe_free_method(s);
 }
 
 LogPipe *

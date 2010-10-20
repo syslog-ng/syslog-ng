@@ -106,7 +106,7 @@ log_source_group_free(LogPipe *s)
   
   log_drv_unref(self->drivers);
   g_free(self->name);
-  log_pipe_free(s);
+  log_pipe_free_method(s);
 }
 
 LogSourceGroup *
