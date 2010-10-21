@@ -114,7 +114,7 @@
                 </xs:documentation>
             </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="id" type="uuidType" use="required"/>
+        <xs:attribute name="id" type="xs:string" use="required"/>
     </xs:complexType>
 
     <xs:complexType name="ruleType">
@@ -234,7 +234,7 @@
                 </xs:documentation>
             </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="id" type="uuidType" use="required"/>
+        <xs:attribute name="id" type="xs:string" use="required"/>
         <xs:attribute name="context-id" type="xs:string"/>
         <xs:attribute name="context-scope">
           <xs:simpleType>
@@ -385,7 +385,10 @@
     <xs:simpleType name="uuidType">
         <xs:annotation>
             <xs:documentation>
-                The globaly unique ID of the rule.
+                This describes a UUID syntax. Currently it is not used for
+                the IDing to avoid enforcing the use of UUIDs, which some
+                users complained about. Once the decision on the rule id
+                format happens this may completely be removed.
             </xs:documentation>
         </xs:annotation>
         <xs:restriction base="xs:string">
