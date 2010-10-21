@@ -46,11 +46,17 @@ typedef struct _LogFilterRule
  * Filter expression nodes
  ****************************************************************/
 
+void
+filter_expr_node_init(FilterExprNode *self)
+{
+  self->ref_cnt = 1;
+}
+
 gboolean
 filter_expr_eval(FilterExprNode *self, LogMessage *msg)
 {
   gboolean res;
-  
+
   res = self->eval(self, msg);
   msg_debug("Filter node evaluation result",
             evt_tag_str("filter_result", res ? "match" : "not-match"),
@@ -59,13 +65,22 @@ filter_expr_eval(FilterExprNode *self, LogMessage *msg)
   return res;
 }
 
-void
-filter_expr_free(FilterExprNode *self)
+FilterExprNode *
+filter_expr_ref(FilterExprNode *self)
 {
-  if (self->free_fn)
-    self->free_fn(self);
-  else
-    g_free(self);
+  self->ref_cnt++;
+  return self;
+}
+
+void
+filter_expr_unref(FilterExprNode *self)
+{
+  if (--self->ref_cnt == 0)
+    {
+      if (self->free_fn)
+        self->free_fn(self);
+      g_free(self);
+    }
 }
 
 typedef struct _FilterOp
@@ -79,9 +94,8 @@ fop_free(FilterExprNode *s)
 {
   FilterOp *self = (FilterOp *) s;
   
-  filter_expr_free(self->left);
-  filter_expr_free(self->right);
-  g_free(self);
+  filter_expr_unref(self->left);
+  filter_expr_unref(self->right);
 }
 
 static gboolean
@@ -97,6 +111,7 @@ fop_or_new(FilterExprNode *e1, FilterExprNode *e2)
 {
   FilterOp *self = g_new0(FilterOp, 1);
   
+  filter_expr_node_init(&self->super);
   self->super.eval = fop_or_eval;
   self->super.free_fn = fop_free;
   self->super.modify = e1->modify || e2->modify;
@@ -119,6 +134,7 @@ fop_and_new(FilterExprNode *e1, FilterExprNode *e2)
 {
   FilterOp *self = g_new0(FilterOp, 1);
   
+  filter_expr_node_init(&self->super);
   self->super.eval = fop_and_eval;
   self->super.free_fn = fop_free;
   self->super.modify = e1->modify || e2->modify;
@@ -193,7 +209,6 @@ fop_cmp_free(FilterExprNode *s)
   log_template_unref(self->right);
   g_string_free(self->left_buf, TRUE);
   g_string_free(self->right_buf, TRUE);
-  g_free(self);
 }
 
 FilterExprNode *
@@ -201,6 +216,7 @@ fop_cmp_new(LogTemplate *left, LogTemplate *right, gint op)
 {
   FilterCmp *self = g_new0(FilterCmp, 1);
 
+  filter_expr_node_init(&self->super);
   self->super.eval = fop_cmp_eval;
   self->super.free_fn = fop_cmp_free;
   self->left = left;
@@ -280,6 +296,7 @@ filter_facility_new(guint32 facilities)
 {
   FilterPri *self = g_new0(FilterPri, 1);
 
+  filter_expr_node_init(&self->super);
   self->super.eval = filter_facility_eval;
   self->valid = facilities;
   self->super.type = "facility";
@@ -300,6 +317,7 @@ filter_level_new(guint32 levels)
 {
   FilterPri *self = g_new0(FilterPri, 1);
 
+  filter_expr_node_init(&self->super);
   self->super.eval = filter_level_eval;
   self->valid = levels;
   self->super.type = "level";
@@ -337,7 +355,6 @@ filter_re_free(FilterExprNode *s)
   FilterRE *self = (FilterRE *) s;
   
   log_matcher_free(self->matcher);
-  g_free(s);
 }
 
 void
@@ -380,6 +397,7 @@ filter_re_new(NVHandle value_handle)
 {
   FilterRE *self = g_new0(FilterRE, 1);
 
+  filter_expr_node_init(&self->super);
   self->value_handle = value_handle;
   self->super.eval = filter_re_eval;
   self->super.free_fn = filter_re_free;
@@ -422,6 +440,7 @@ filter_match_new()
 {
   FilterRE *self = g_new0(FilterRE, 1);
 
+  filter_expr_node_init(&self->super);
   self->super.free_fn = filter_re_free;
   self->super.eval = filter_match_eval;
   return &self->super;
@@ -467,7 +486,6 @@ filter_call_free(FilterExprNode *s)
   
   g_string_free(self->rule, TRUE);
   g_free((gchar *) self->super.type);
-  g_free(self);
 }
 
 FilterExprNode *
@@ -475,6 +493,7 @@ filter_call_new(gchar *rule, GlobalConfig *cfg)
 {
   FilterCall *self = g_new0(FilterCall, 1);
   
+  filter_expr_node_init(&self->super);
   self->super.eval = filter_call_eval;
   self->super.free_fn = filter_call_free;
   self->rule = g_string_new(rule);
@@ -521,6 +540,7 @@ filter_netmask_new(gchar *cidr)
   gchar buf[32];
   gchar *slash;
   
+  filter_expr_node_init(&self->super);
   slash = strchr(cidr, '/');
   if (strlen(cidr) >= sizeof(buf) || !slash)
     {
@@ -592,8 +612,6 @@ filter_tags_free(FilterExprNode *s)
   FilterTags *self = (FilterTags *)s;
 
   g_array_free(self->tags, TRUE);
-
-  g_free(self);
 }
 
 FilterExprNode *
@@ -601,6 +619,7 @@ filter_tags_new(GList *tags)
 {
   FilterTags *self = g_new0(FilterTags, 1);
 
+  filter_expr_node_init(&self->super);
   self->tags = g_array_new(FALSE, FALSE, sizeof(LogTagId));
 
   filter_tags_add(&self->super, tags);

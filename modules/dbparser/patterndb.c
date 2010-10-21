@@ -359,7 +359,7 @@ void
 pdb_action_free(PDBAction *self)
 {
   if (self->condition)
-    filter_expr_free(self->condition);
+    filter_expr_unref(self->condition);
   if (self->content_type == RAC_MESSAGE)
     pdb_message_clean(&self->content.message);
   g_free(self);

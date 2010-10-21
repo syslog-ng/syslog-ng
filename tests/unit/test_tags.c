@@ -151,7 +151,7 @@ test_filters(void)
         test_fail("Failed to match message with no tags\n");
     }
 
-  filter_expr_free(f);
+  filter_expr_unref(f);
   log_msg_unref(msg);
 }
 

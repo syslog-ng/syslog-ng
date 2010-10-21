@@ -47,7 +47,7 @@ void
 log_rewrite_free(LogRewrite *self)
 {
   if (self->condition)
-    filter_expr_free(self->condition);
+    filter_expr_unref(self->condition);
   self->free_fn(self);
   g_free(self);
 }

@@ -33,19 +33,20 @@
 #include "cfg-parser.h"
 
 struct _GlobalConfig;
+typedef struct _FilterExprNode FilterExprNode;
 
-typedef struct _FilterExprNode
+struct _FilterExprNode
 {
-  gboolean comp;
-  /* this filter changes the log message */
-  gboolean modify;
+  guint32 ref_cnt;
+  guint32 comp:1,   /* this not is negated */
+          modify:1; /* this filter changes the log message */
   const gchar *type;
-  gboolean (*eval)(struct _FilterExprNode *self, LogMessage *msg);
-  void (*free_fn)(struct _FilterExprNode *self);
-} FilterExprNode;
+  gboolean (*eval)(FilterExprNode *self, LogMessage *msg);
+  void (*free_fn)(FilterExprNode *self);
+};
 
 gboolean filter_expr_eval(FilterExprNode *self, LogMessage *msg);
-void filter_expr_free(FilterExprNode *self);
+void filter_expr_unref(FilterExprNode *self);
 
 typedef struct _FilterRE
 {

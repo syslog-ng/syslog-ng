@@ -120,7 +120,7 @@ testcase(gchar *msg,
     }
 
   log_msg_unref(logmsg);
-  filter_expr_free(f);
+  filter_expr_unref(f);
 }
 
 void
@@ -185,7 +185,7 @@ testcase_with_backref_chk(gchar *msg,
         }
     }
   log_msg_unref(logmsg);
-  filter_expr_free(f);
+  filter_expr_unref(f);
 }
 
 
