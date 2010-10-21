@@ -89,7 +89,8 @@ testcase(gchar *msg, guint parse_flags, gint max_columns, guint32 flags, gchar *
     log_csv_parser_set_quote_pairs(p, quotes);
   if (null_value)
     log_csv_parser_set_null_value(p, null_value);
-  success = log_parser_process(&p->super, logmsg);
+
+  success = log_parser_process(&p->super, logmsg, log_msg_get_value(logmsg, LM_V_MESSAGE, NULL));
 
   if (success && !first_value)
     {
@@ -101,7 +102,7 @@ testcase(gchar *msg, guint parse_flags, gint max_columns, guint32 flags, gchar *
       fprintf(stderr, "unexpected non-match; msg=%s\n", msg);
       exit(1);
     }
-  log_parser_free(&p->super);
+  log_pipe_unref(&p->super.super.super);
 
   va_start(va, first_value);
   expected_value = first_value;

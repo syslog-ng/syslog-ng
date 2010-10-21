@@ -36,16 +36,15 @@ typedef struct _LogRewrite LogRewrite;
 
 struct _LogRewrite
 {
+  LogProcessPipe super;
   NVHandle value_handle;
   FilterExprNode *condition;
   void (*process)(LogRewrite *s, LogMessage *msg);
-  void (*free_fn)(LogRewrite *s);
 };
 
 /* LogRewrite, abstract class */
 void log_rewrite_set_condition(LogRewrite *s, FilterExprNode *condition);
-void log_rewrite_free(LogRewrite *self);
-
+void log_rewrite_free_method(LogPipe *self);
 
 /* LogRewriteSet */
 LogRewrite *log_rewrite_set_new(const gchar *new_value);
@@ -56,9 +55,6 @@ void log_rewrite_subst_set_matcher(LogRewrite *s, LogMatcher *matcher);
 void log_rewrite_subst_set_flags(LogRewrite *s, gint flags);
 
 LogRewrite *log_rewrite_subst_new(const gchar *replacement);
-
-LogProcessRule *log_rewrite_rule_new(const gchar *name, GList *rewrite_list);
-
 
 #endif
 

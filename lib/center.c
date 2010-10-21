@@ -34,47 +34,6 @@
 
 #include <string.h>
 
-/**
- *
- * Processing pipeline
- *
- *   This module builds a pipe-line of LogPipe objects, described by a log
- *   statement in the user configuration. Then each source, referenced by the
- *   LogConnection is piped into the newly created pipe.
- *  
- *   Something like this:
- *
- *    log statement:
- *       mpx | filter | parser | dest1 | dest2 | dest3
- *
- *    source1 -> log statement1
- *            |-> log statement2
- *
- *   E.g. each source is sending to each log path it was referenced from. Each
- *   item in the log path is a pipe, which receives messages and forwards it
- *   at its discretion. Filters are pipes too, which lose data. Destinations
- *   are piping their output to the next element on the pipeline. This
- *   basically means that the pipeline is a wired representation of the user
- *   configuration without having to loop through configuration data.
- *
- * Reference counting
- *
- *   The pipes do not reference each other through their pipe_next member,
- *   simply because there'd be too much reference loops to care about. 
- *   Instead pipe_next is a borrowed reference, which is assumed to be valid
- *   as long as the configuration is not freed.
- *
- *   As there are pipes that are dynamically created during init, these
- *   references must be dropped. The LogCenter->initialized_pipes array has
- *   the following use:
- *
- *      - it is used to init/deinit pipes in the complete configuration 
- *      - it is used to _the_ reference from config->pipe which makes the
- *        assumption above true (e.g. that pipe_next is valid as long as the
- *        configuration is not freed)
- *
- **/
-
 
 struct _LogPipeItem
 {
@@ -268,6 +227,82 @@ log_center_connect_source(gpointer key, gpointer value, gpointer user_data)
   g_ptr_array_add(self->initialized_pipes, log_pipe_ref(pipe));
 }
 
+/*
+ * This function basically pastes a LogProcessRule (e.g. filter, parser,
+ * rewrite) into to log processing pipeline at the place of the reference.
+ * Upon the first reference the LogPipe instances created during config
+ * parsing are used.  If the same rule is referenced multiple times, then we
+ * clone the rule to get distinct LogPipe instances.
+ *
+ * The reasons for this are that I want to allow processing elements to emit
+ * messages and if they are not duplicated like this, it is very difficult
+ * to know where they need to send their "output".  Since we duplicate the
+ * LogPipe instances for each reference, each of these instances have a
+ * proper pipe_next pointer, thus each knows in which path it got the
+ * message and where to send it on, plus where to send synthetic messages.
+ */
+static LogPipe *
+log_center_instantiate_process_pipe_line(LogCenter *self, LogProcessRule *rule)
+{
+  GList *p;
+  LogPipe *first = NULL;
+  LogPipe *last = NULL;
+  LogPipe *pipe, *next;
+
+  p = rule->head;
+  if ((((LogPipe *) p->data)->flags & PIF_INLINED) == 0)
+    {
+      /* This is the first reference of this process rule, thus we can use it directly */
+
+      for (p = rule->head; p; p = p->next)
+        {
+          pipe = (LogPipe *) p->data;
+          pipe->flags |= PIF_INLINED;
+          if (last)
+            log_pipe_append(last, pipe);
+          g_ptr_array_add(self->initialized_pipes, log_pipe_ref(pipe));
+          last = pipe;
+        }
+      return rule->head->data;
+    }
+  else
+    {
+      /* This rule has already been referenced once, we need to duplicate it for further references */
+
+      for (p = rule->head; p; p = p->next)
+        {
+          pipe = log_process_pipe_clone(p->data);
+
+          if (!pipe)
+            goto exit_error;
+
+          pipe->flags |= PIF_INLINED;
+          if (!first)
+            first = pipe;
+          if (last)
+            {
+              log_pipe_append(last, pipe);
+              last->pipe_next = pipe;
+            }
+          last = pipe;
+        }
+      for (pipe = first; pipe; pipe = pipe->pipe_next)
+        {
+          g_ptr_array_add(self->initialized_pipes, pipe);
+        }
+      return first;
+    exit_error:
+      for (pipe = first; pipe; pipe = next)
+        {
+          next = pipe->pipe_next;
+          log_pipe_unref(pipe);
+        }
+
+      return NULL;
+    }
+}
+
+
 /* NOTE: returns a borrowed reference! */
 LogPipe *
 log_center_init_pipe_line(LogCenter *self, LogConnection *conn, GlobalConfig *cfg, gboolean toplevel, gboolean flow_controlled_parent)
@@ -332,39 +367,49 @@ log_center_init_pipe_line(LogCenter *self, LogConnection *conn, GlobalConfig *cf
               goto error;
             }
           break;
-        case EP_FILTER:
-          {
-            LogProcessRule *rule;
 
-            rule = ep->ref = g_hash_table_lookup(cfg->filters, ep->name->str);
+        case EP_FILTER:
+        case EP_PARSER:
+        case EP_REWRITE:
+          {
+            GHashTable *t;
+
+            switch (ep->type)
+              {
+              case EP_FILTER:
+                t = cfg->filters;
+                break;
+              case EP_PARSER:
+                t = cfg->parsers;
+                break;
+              case EP_REWRITE:
+                t = cfg->rewriters;
+                break;
+              default:
+                g_assert_not_reached();
+              }
+            ep->ref = g_hash_table_lookup(t, ep->name->str);
             if (!ep->ref)
               {
-                msg_error("Error in configuration, unresolved filter reference",
-                          evt_tag_str("filter", ep->name->str),
+                msg_error("Error in configuration, unresolved processing element reference",
+                          evt_tag_str("pipeline", ep->name->str),
                           NULL);
                 goto error;
               }
-            log_process_rule_ref(rule);
-            pipe = log_process_pipe_new(rule);
-            g_ptr_array_add(self->initialized_pipes, pipe);
-            if (rule->modify)
+            pipe = log_center_instantiate_process_pipe_line(self, ep->ref);
+            if (!pipe)
+              {
+                msg_error("Error referencing processing element",
+                          evt_tag_str("pipeline", ep->name->str),
+                          NULL);
+                goto error;
+              }
+            log_process_rule_ref(ep->ref);
+            if ((ep->type != EP_FILTER) || (pipe->flags & PIF_CLONE))
               path_changes_the_message = TRUE;
             break;
           }
-        case EP_PARSER:
-          ep->ref = g_hash_table_lookup(cfg->parsers, ep->name->str);
-          if (!ep->ref)
-            {
-              msg_error("Error in configuration, unresolved parser reference",
-                        evt_tag_str("parser", ep->name->str),
-                        NULL);
-              goto error;
-            }
-          log_process_rule_ref(ep->ref);
-          pipe = log_process_pipe_new((LogProcessRule *) ep->ref);
-          g_ptr_array_add(self->initialized_pipes, pipe);
-          path_changes_the_message = TRUE;
-          break;
+
         case EP_DESTINATION:
           ep->ref = g_hash_table_lookup(cfg->destinations, ep->name->str);
           if (!ep->ref)
@@ -381,6 +426,7 @@ log_center_init_pipe_line(LogCenter *self, LogConnection *conn, GlobalConfig *cf
           log_multiplexer_add_next_hop((LogMultiplexer *) pipe, ep->ref);
           g_ptr_array_add(self->initialized_pipes, pipe);
           break;
+
         case EP_PIPE:
         
           if (!fork_mpx)
@@ -398,20 +444,6 @@ log_center_init_pipe_line(LogCenter *self, LogConnection *conn, GlobalConfig *cf
           log_multiplexer_add_next_hop(fork_mpx, sub_pipe);
           if (sub_pipe->flags & PIF_FLOW_CONTROL)
             flow_controlled_child = TRUE;
-          break;
-        case EP_REWRITE:
-          ep->ref = g_hash_table_lookup(cfg->rewriters, ep->name->str);
-          if (!ep->ref)
-            {
-              msg_error("Error in configuration, unresolved rewrite reference",
-                        evt_tag_str("rewrite", ep->name->str),
-                        NULL);
-              goto error;
-            }
-          log_process_rule_ref(ep->ref);
-          pipe = log_process_pipe_new((LogProcessRule *) ep->ref);
-          g_ptr_array_add(self->initialized_pipes, pipe);
-          path_changes_the_message = TRUE;
           break;
         default:
           g_assert_not_reached();
@@ -503,6 +535,12 @@ log_center_init(LogCenter *self, GlobalConfig *cfg)
         }
     }
 
+  /*
+   *   As there are pipes that are dynamically created during init, these
+   *   pipes must be deinited before destroying the configuration, otherwise
+   *   circular references will inhibit the free of the configuration
+   *   structure.
+   */
   for (i = 0; i < self->initialized_pipes->len; i++)
     {
       if (!log_pipe_init(g_ptr_array_index(self->initialized_pipes, i), cfg))

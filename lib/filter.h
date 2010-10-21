@@ -76,6 +76,20 @@ FilterExprNode *filter_re_new(NVHandle value_handle);
 FilterExprNode *filter_match_new(void);
 FilterExprNode *filter_tags_new(GList *tags);
 
-LogProcessRule *log_filter_rule_new(const gchar *name, FilterExprNode *expr);
+/* convert a filter expression into a drop/accept LogPipe */
+
+/*
+ * This class encapsulates a LogPipe that either drops/allows a LogMessage
+ * to go through.
+ */
+typedef struct _LogFilterPipe
+{
+  LogProcessPipe super;
+  FilterExprNode *expr;
+  gchar *name;
+} LogFilterPipe;
+
+
+LogPipe *log_filter_pipe_new(FilterExprNode *expr, const gchar *name);
 
 #endif

@@ -385,20 +385,20 @@ filter_stmt
 	    last_filter_expr = NULL;
 	    CHECK_ERROR(cfg_parser_parse(&filter_expr_parser, lexer, (gpointer *) &last_filter_expr), @1, NULL);
 	  }
-          '}'                               { $$ = log_filter_rule_new($1, last_filter_expr); free($1); }
+          '}'                               { $$ = log_process_rule_new($1, g_list_prepend(NULL, log_filter_pipe_new(last_filter_expr, $1))); free($1); }
 	;
 	
 parser_stmt
         : string '{'
           {
             CHECK_ERROR(cfg_parser_parse(&parser_expr_parser, lexer, (gpointer *) &last_parser_expr), @1, NULL);
-          } '}'	                                { $$ = log_parser_rule_new($1, last_parser_expr); free($1); }
+          } '}'	                                { $$ = log_process_rule_new($1, last_parser_expr); free($1); }
 
 rewrite_stmt
         : string '{'
           {
             CHECK_ERROR(cfg_parser_parse(&rewrite_expr_parser, lexer, (gpointer *) &last_rewrite_expr), @1, NULL);
-          } '}'                                 { $$ = log_rewrite_rule_new($1, last_rewrite_expr); free($1); }
+          } '}'                                 { $$ = log_process_rule_new($1, last_rewrite_expr); free($1); }
 
 dest_stmt
         : string

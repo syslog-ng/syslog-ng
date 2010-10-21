@@ -129,8 +129,15 @@ log_db_parser_post_config_hook(gint type, gpointer user_data)
   log_db_parser_reload_database(self);
 }
 
+static LogPipe *
+log_db_parser_clone(LogProcessPipe *s)
+{
+  msg_error("It is not supported to reference a single db-parser() instance from multiple locations of the configuration file. Please create separate db-parser() parsers for that purpose.", NULL);
+  return NULL;
+}
+
 static void
-log_db_parser_free(LogParser *s)
+log_db_parser_free(LogPipe *s)
 {
   LogDBParser *self = (LogDBParser *) s;
 
@@ -147,7 +154,9 @@ log_db_parser_new(void)
 {
   LogDBParser *self = g_new0(LogDBParser, 1);
 
-  self->super.free_fn = log_db_parser_free;
+  log_parser_init_instance(&self->super);
+  self->super.super.super.free_fn = log_db_parser_free;
+  self->super.super.clone = log_db_parser_clone;
   self->super.process = log_db_parser_process;
   self->db_file = g_strdup(PATH_PATTERNDB_FILE);
   self->cfg = configuration;

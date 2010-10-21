@@ -332,10 +332,30 @@ log_csv_parser_process(LogParser *s, LogMessage *msg, const gchar *input)
   return TRUE;
 }
 
-static void
-log_csv_parser_free(LogParser *s)
+static LogPipe *
+log_csv_parser_clone(LogProcessPipe *s)
 {
   LogCSVParser *self = (LogCSVParser *) s;
+  LogCSVParser *cloned;
+
+  cloned = (LogCSVParser *) log_csv_parser_new();
+  g_free(cloned->delimiters);
+  g_free(cloned->quotes_start);
+  g_free(cloned->quotes_end);
+
+  cloned->delimiters = g_strdup(self->delimiters);
+  cloned->quotes_start = g_strdup(self->quotes_start);
+  cloned->quotes_end = g_strdup(self->quotes_end);
+  cloned->null_value = self->null_value ? g_strdup(self->null_value) : NULL;
+  cloned->flags = self->flags;
+  return &cloned->super.super.super.super;
+}
+
+static void
+log_csv_parser_free(LogPipe *s)
+{
+  LogCSVParser *self = (LogCSVParser *) s;
+
   if (self->quotes_start)
     g_free(self->quotes_start);
   if (self->quotes_end)
@@ -355,8 +375,10 @@ log_csv_parser_new(void)
 {
   LogCSVParser *self = g_new0(LogCSVParser, 1);
 
+  log_column_parser_init_instance(&self->super);
+  self->super.super.super.super.free_fn = log_csv_parser_free;
+  self->super.super.super.clone = log_csv_parser_clone;
   self->super.super.process = log_csv_parser_process;
-  self->super.super.free_fn = log_csv_parser_free;
   log_csv_parser_set_delimiters(&self->super, " ");
   log_csv_parser_set_quote_pairs(&self->super, "\"\"''");
   self->flags = LOG_CSV_PARSER_STRIP_WHITESPACE | LOG_CSV_PARSER_ESCAPE_NONE;

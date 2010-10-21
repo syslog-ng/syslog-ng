@@ -35,20 +35,19 @@ typedef struct _LogColumnParser LogColumnParser;
 
 struct _LogParser
 {
-  struct _LogTemplate *template;
+  LogProcessPipe super;
+  LogTemplate *template;
   gboolean (*process)(LogParser *s, LogMessage *msg, const gchar *input);
-  void (*free_fn)(LogParser *s);
 };
 
 void log_parser_set_template(LogParser *self, LogTemplate *template);
-gboolean log_parser_process(LogParser *self, LogMessage *msg);
-void log_parser_free_method(LogParser *s);
+void log_parser_init_instance(LogParser *self);
+void log_parser_free_method(LogPipe *self);
 
-static inline void
-log_parser_free(LogParser *self)
+static inline gboolean
+log_parser_process(LogParser *self, LogMessage *msg, const gchar *input)
 {
-  self->free_fn(self);
-  g_free(self);
+  return self->process(self, msg, input);
 }
 
 struct _LogColumnParser
@@ -58,9 +57,8 @@ struct _LogColumnParser
 };
 
 void log_column_parser_set_columns(LogColumnParser *s, GList *fields);
-void log_column_parser_free(LogParser *s);
-
-LogProcessRule *log_parser_rule_new(const gchar *name, GList *parser_list);
+void log_column_parser_init_instance(LogColumnParser *self);
+void log_column_parser_free_method(LogPipe *s);
 
 #endif
 

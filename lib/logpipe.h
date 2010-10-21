@@ -42,10 +42,48 @@
 #define PIF_FINAL        0x0002
 #define PIF_FALLBACK     0x0004
 #define PIF_FLOW_CONTROL 0x0008
-
 #define PIF_CLONE        0x0010
+#define PIF_INLINED      0x0020
 
 /* some more flags are defined in logmpx.h */
+
+/**
+ *
+ * Processing pipeline
+ *
+ *   Within syslog-ng, the user configuration is converted into a tree-like
+ *   structure.  It's node in this tree is a LogPipe object responsible for
+ *   queueing message towards the destination.  Each node is free to
+ *   drop/transform the message it receives.
+ *
+ *   The center.c module contains code that transforms the configuration
+ *   into the log processing tree.  Each log statement in user configuration
+ *   becomes a linked list of pipes, then each source, referenced by the
+ *   is piped into the newly created pipe.
+ *
+ *   Something like this:
+ *
+ *    log statement:
+ *       mpx | filter | parser | dest1 | dest2 | dest3
+ *
+ *    source1 -> log statement1
+ *            |-> log statement2
+ *
+ *   E.g. each source is sending to each log path it was referenced from. Each
+ *   item in the log path is a pipe, which receives messages and forwards it
+ *   at its discretion. Filters are pipes too, which lose data. Destinations
+ *   are piping their output to the next element on the pipeline. This
+ *   basically means that the pipeline is a wired representation of the user
+ *   configuration without having to loop through configuration data.
+ *
+ * Reference counting
+ *
+ *   The pipes do not reference each other through their pipe_next member,
+ *   simply because there'd be too much reference loops to care about.
+ *   Instead pipe_next is a borrowed reference, which is assumed to be valid
+ *   as long as the configuration is not freed.
+ *
+ **/
 
 struct _LogPathOptions
 {

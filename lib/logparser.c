@@ -37,9 +37,10 @@ log_parser_set_template(LogParser *self, LogTemplate *template)
   self->template = template;
 }
 
-gboolean
-log_parser_process(LogParser *self, LogMessage *msg)
+static void
+log_parser_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 {
+  LogParser *self = (LogParser *) s;
   gboolean success;
 
   if (G_LIKELY(!self->template))
@@ -56,13 +57,33 @@ log_parser_process(LogParser *self, LogMessage *msg)
       success = self->process(self, msg, input->str);
       g_string_free(input, TRUE);
     }
-  return success;
+  if (success)
+    {
+      log_pipe_forward_msg(s, msg, path_options);
+    }
+  else
+    {
+      if (path_options->matched)
+        (*path_options->matched) = FALSE;
+      log_msg_drop(msg, path_options);
+    }
 }
 
 void
-log_parser_free_method(LogParser *self)
+log_parser_free_method(LogPipe *s)
 {
+  LogParser *self = (LogParser *) s;
+
   log_template_unref(self->template);
+  log_process_pipe_free_method(s);
+}
+
+void
+log_parser_init_instance(LogParser *self)
+{
+  log_process_pipe_init_instance(&self->super);
+  self->super.super.free_fn = log_parser_free_method;
+  self->super.super.queue = log_parser_queue;
 }
 
 /*
@@ -79,7 +100,7 @@ log_column_parser_set_columns(LogColumnParser *s, GList *columns)
 }
 
 void
-log_column_parser_free_method(LogParser *s)
+log_column_parser_free_method(LogPipe *s)
 {
   LogColumnParser *self = (LogColumnParser *) s;
   
@@ -87,48 +108,9 @@ log_column_parser_free_method(LogParser *s)
   log_parser_free_method(s);
 }
 
-typedef struct _LogParserRule
+void
+log_column_parser_init_instance(LogColumnParser *self)
 {
-  LogProcessRule super;
-  GList *parser_list;
-} LogParserRule;
-
-static gboolean
-log_parser_rule_process(LogProcessRule *s, LogMessage *msg)
-{
-  LogParserRule *self = (LogParserRule *) s;
-  GList *l;
-  
-  for (l = self->parser_list; l; l = l->next)
-    {
-      if (!log_parser_process(l->data, msg))
-        return FALSE;
-    }
-  return TRUE;
-}
-
-static void
-log_parser_rule_free(LogProcessRule *s)
-{
-  LogParserRule *self = (LogParserRule *) s;
-
-  g_list_foreach(self->parser_list, (GFunc) log_parser_free, NULL);
-  g_list_free(self->parser_list);
-  self->parser_list = NULL;
-}
-
-
-/*
- * LogParserRule, a configuration block encapsulating a LogParser instance.
- */ 
-LogProcessRule *
-log_parser_rule_new(const gchar *name, GList *parser_list)
-{
-  LogParserRule *self = g_new0(LogParserRule, 1);
-  
-  log_process_rule_init(&self->super, name);
-  self->super.free_fn = log_parser_rule_free;
-  self->super.process = log_parser_rule_process;
-  self->parser_list = parser_list;
-  return &self->super;
+  log_parser_init_instance(&self->super);
+  self->super.super.super.free_fn = log_column_parser_free_method;
 }

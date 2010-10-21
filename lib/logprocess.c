@@ -26,12 +26,29 @@
 #include <string.h>
 
 void
-log_process_rule_init(LogProcessRule *self, const gchar *name)
+log_process_pipe_free_method(LogPipe *s)
 {
-  memset(self, 0, sizeof(LogProcessRule));
+  log_pipe_free_method(s);
+}
+
+void
+log_process_pipe_init_instance(LogProcessPipe *self)
+{
+  log_pipe_init_instance(&self->super);
+  self->super.free_fn = log_process_pipe_free_method;
+}
+
+
+LogProcessRule *
+log_process_rule_new(const gchar *name, GList *head)
+{
+  LogProcessRule *self = g_new0(LogProcessRule, 1);
+
   self->ref_cnt = 1;
+  self->head = head;
   self->name = g_strdup(name);
 
+  return self;
 }
 
 void
@@ -45,66 +62,9 @@ log_process_rule_unref(LogProcessRule *self)
 {
   if (--self->ref_cnt == 0)
     {
-      if (self->free_fn)
-        self->free_fn(self);
+      g_list_foreach(self->head, (GFunc) log_pipe_unref, NULL);
+      g_list_free(self->head);
       g_free(self->name);
       g_free(self);
     }
 }
-
-static gboolean
-log_process_pipe_init(LogPipe *self)
-{
-  return TRUE;
-}
-
-static gboolean 
-log_process_pipe_deinit(LogPipe *self)
-{
-  return TRUE;
-}
-
-static void
-log_process_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
-{
-  LogProcessPipe *self = (LogProcessPipe *) s;
-  if (log_process_rule_process(self->rule, msg))
-    {
-      /* forward message */
-      if (s->pipe_next)
-        log_pipe_queue(s->pipe_next, msg, path_options);
-      else
-        log_msg_drop(msg, path_options);
-    }
-  else
-    {
-      if (path_options->matched)
-        (*path_options->matched) = FALSE;
-      log_msg_drop(msg, path_options);
-    }
-}
-
-static void
-log_process_pipe_free(LogPipe *s)
-{
-  LogProcessPipe *self = (LogProcessPipe *) s;
-  
-  log_process_rule_unref(self->rule);
-  log_pipe_free_method(s);
-}
-
-LogPipe *
-log_process_pipe_new(LogProcessRule *rule)
-{
-  LogProcessPipe *self = g_new0(LogProcessPipe, 1);
-  
-  log_pipe_init_instance(&self->super);
-  log_process_rule_ref(rule);
-  self->rule = rule;
-  self->super.init = log_process_pipe_init;
-  self->super.deinit = log_process_pipe_deinit;
-  self->super.queue = log_process_pipe_queue;
-  self->super.free_fn = log_process_pipe_free;
-  return &self->super;
-}
-

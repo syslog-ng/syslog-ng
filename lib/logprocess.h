@@ -28,49 +28,51 @@
 #include "logmsg.h"
 #include "logpipe.h"
 
+/**
+ * This class encapsulates a processing pipe, e.g. that makes some kind of
+ * transformation on the message going through.  Such a pipe element may be
+ * a filter, a parser or a rewrite rule.
+ *
+ * Also note, that the user configuration is parsed into a GList of
+ * LogProcessPipes, which is then instantiated to all references, e.g.  if
+ * the user has a single filter referenced from 3 locations, it'll be cloned
+ * 2 times and inserted into the log processing pipeline.
+ **/
+typedef struct _LogProcessPipe LogProcessPipe;
+struct _LogProcessPipe
+{
+  LogPipe super;
+  /* clone this pipe for inlining */
+  LogPipe *(*clone)(LogProcessPipe *self);
+};
+
+void log_process_pipe_init_instance(LogProcessPipe *self);
+void log_process_pipe_free_method(LogPipe *s);
+
+static inline LogPipe *
+log_process_pipe_clone(LogProcessPipe *self)
+{
+  if (self->clone)
+    return self->clone(self);
+  return NULL;
+}
 
 /**
- * This class encapsulates a processing rule (currently filter or parser) as
- * present in the configuration. It defines a common interface that can be
- * implemented by various processing elements, e.g. it can be extended for
- * rewrite rules
+ * This class encapsulates a processing rule (currently
+ * filter/parser/rewrite) as present in the configuration.  It contains a
+ * list of LogPipe instances that can be inserted into the log processing
+ * pipeline when the given filter/parser/rewrite rule is referenced.
  **/
 typedef struct _LogProcessRule LogProcessRule;
 struct _LogProcessRule
 {
   gint ref_cnt;
   gchar *name;
-  /* this processing element changes the logmessage */
-  gboolean modify;
-  gboolean (*process)(LogProcessRule *s, LogMessage *msg);
-  void (*free_fn)(LogProcessRule *s);
+  GList *head;
 };
 
-static inline gboolean
-log_process_rule_process(LogProcessRule *s, LogMessage *msg)
-{
-  return s->process(s, msg);
-}
-
-void log_process_rule_init(LogProcessRule *self, const gchar *name);
+LogProcessRule *log_process_rule_new(const gchar *name, GList *head);
 void log_process_rule_ref(LogProcessRule *self);
 void log_process_rule_unref(LogProcessRule *self);
-
-
-/**
- * This class encapsulates a LogPipe that performs some kind of processing.
- * It uses the LogProcessRule object to perform its work, but the same
- * LogProcessPipe object can be reused for different LogProcessRules. This
- * means that filter/parser/rewrite all use this pipe.
- **/
-typedef struct _LogProcessPipe LogProcessPipe;
-struct _LogProcessPipe
-{
-  LogPipe super;
-  LogProcessRule *rule;
-};
-
-LogPipe *log_process_pipe_new(LogProcessRule *rule);
-
 
 #endif
