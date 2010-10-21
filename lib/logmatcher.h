@@ -60,6 +60,7 @@ typedef struct _LogMatcher LogMatcher;
 
 struct _LogMatcher
 {
+  gint ref_cnt;
   gint type;
   gint flags;
   gboolean (*compile)(LogMatcher *s, const gchar *re);
@@ -90,13 +91,6 @@ log_matcher_replace(LogMatcher *s, LogMessage *msg, gint value_handle, const gch
   return NULL;
 }
 
-static inline void
-log_matcher_free(LogMatcher *s)
-{
-  if (s->free_fn)
-    s->free_fn(s);
-  g_free(s);
-}
 
 static inline void
 log_matcher_set_flags(LogMatcher *s, gint flags)
@@ -112,5 +106,7 @@ LogMatcher *log_matcher_string_new(void);
 LogMatcher *log_matcher_glob_new(void);
 
 LogMatcher *log_matcher_new(const gchar *type);
+LogMatcher *log_matcher_ref(LogMatcher *s);
+void log_matcher_unref(LogMatcher *s);
 
 #endif

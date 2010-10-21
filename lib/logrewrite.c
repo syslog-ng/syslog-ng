@@ -95,7 +95,7 @@ log_rewrite_subst_set_matcher(LogRewrite *s, LogMatcher *matcher)
   if(self->matcher)
     {
       flags = self->matcher->flags;
-      log_matcher_free(self->matcher);
+      log_matcher_unref(self->matcher);
     }
   self->matcher = matcher;
 
@@ -129,7 +129,7 @@ log_rewrite_subst_free(LogRewrite *s)
 {
   LogRewriteSubst *self = (LogRewriteSubst *) s;
   
-  log_matcher_free(self->matcher);
+  log_matcher_unref(self->matcher);
   log_template_unref(self->replacement);
 }
 

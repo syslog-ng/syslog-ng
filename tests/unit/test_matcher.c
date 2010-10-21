@@ -36,7 +36,7 @@ testcase_match(const gchar *log, const gchar *pattern, gint matcher_flags, gbool
       exit(1);
     }
 
-  log_matcher_free(m);
+  log_matcher_unref(m);
   log_msg_unref(msg);
   return 0;
 }
@@ -81,7 +81,7 @@ testcase_replace(const gchar *log, const gchar *re, gchar *replacement, const gc
   g_free(result);
 
   log_template_unref(r);
-  log_matcher_free(m);
+  log_matcher_unref(m);
   log_msg_unref(msg);
   return 0;
 }

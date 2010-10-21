@@ -806,3 +806,21 @@ log_matcher_new(const gchar *type)
     }
 
 }
+
+LogMatcher *
+log_matcher_ref(LogMatcher *s)
+{
+  s->ref_cnt++;
+  return s;
+}
+
+void
+log_matcher_unref(LogMatcher *s)
+{
+  if (--s->ref_cnt)
+    {
+      if (s->free_fn)
+        s->free_fn(s);
+      g_free(s);
+    }
+}

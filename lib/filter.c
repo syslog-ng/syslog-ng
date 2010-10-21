@@ -354,7 +354,7 @@ filter_re_free(FilterExprNode *s)
 {
   FilterRE *self = (FilterRE *) s;
   
-  log_matcher_free(self->matcher);
+  log_matcher_unref(self->matcher);
 }
 
 void
@@ -365,7 +365,7 @@ filter_re_set_matcher(FilterRE *self, LogMatcher *matcher)
     {
       /* save the flags to use them in the new matcher */
       flags = self->matcher->flags;
-      log_matcher_free(self->matcher);
+      log_matcher_unref(self->matcher);
     }
    self->matcher = matcher;
 
