@@ -433,7 +433,7 @@ struct _AFFileDestWriter
 static gboolean
 affile_dw_reapable(AFFileDestWriter *self)
 {
-  return log_queue_get_length(((LogWriter *) self->writer)->queue) == 0;
+  return !log_writer_has_pending_writes((LogWriter *) self->writer);
 }
 
 static gboolean

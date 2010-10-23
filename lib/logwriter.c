@@ -40,7 +40,6 @@ typedef struct _LogWriterWatch
   LogProto *proto;
   GTimeVal flush_target;
   GTimeVal error_suspend_target;
-  GTimeVal last_throttle_check;
   gboolean flush_waiting_for_timeout:1,
            input_means_connection_broken:1,
            error_suspend:1;
@@ -72,7 +71,6 @@ typedef struct _LogWriterWatch
 static gboolean log_writer_flush(LogWriter *self, gboolean flush_all);
 static gboolean log_writer_flush_log(LogWriter *self, LogProto *proto, gboolean flush_all);
 static void log_writer_broken(LogWriter *self, gint notify_code);
-static gboolean log_writer_throttling(LogWriter *self);
 
 
 static gboolean
@@ -80,48 +78,18 @@ log_writer_fd_prepare(GSource *source,
                       gint *timeout)
 {
   LogWriterWatch *self = (LogWriterWatch *) source;
-  gint64 num_elements = log_queue_get_length(self->writer->queue);
   GTimeVal now;
   GIOCondition proto_cond;
+  gboolean partial_batch = FALSE;
 
   self->pollfd.events = G_IO_ERR;
   self->pollfd.revents = 0;
 
   g_source_get_current_time(source, &now);
-  if (log_proto_prepare(self->proto, &self->pollfd.fd, &proto_cond, timeout))
+  if (log_proto_prepare(self->proto, &self->pollfd.fd, &proto_cond))
     return TRUE;
-  
-  /* recalculate buckets */
-  
-  if (self->writer->options->throttle > 0)
-    {
-      gint64 diff;
-      gint new_buckets;
-      
-      /* throttling is enabled, calculate new buckets */
-      if (self->last_throttle_check.tv_sec != 0)
-        {
-          diff = g_time_val_diff(&now, &self->last_throttle_check);
-        }
-      else
-        {
-          diff = 0;
-          self->last_throttle_check = now;
-        }
-      new_buckets = (self->writer->options->throttle * diff) / G_USEC_PER_SEC;
-      if (new_buckets)
-        {
-          
-          /* if new_buckets is zero, we don't save the current time as
-           * last_throttle_check. The reason is that new_buckets could be
-           * rounded to zero when only a minimal interval passes between
-           * poll iterations.
-           */
-          self->writer->throttle_buckets = MIN(self->writer->options->throttle, self->writer->throttle_buckets + new_buckets);
-          self->last_throttle_check = now;
-        }
-    }
 
+  /* write error handling */
   if (G_UNLIKELY(self->error_suspend))
     {
       *timeout = g_time_val_diff(&self->error_suspend_target, &now) / 1000;
@@ -138,18 +106,18 @@ log_writer_fd_prepare(GSource *source,
           return FALSE;
         }
     }
-  
-  if ((self->writer->options->flush_lines == 0 && (!log_writer_throttling(self->writer) && num_elements != 0)) ||
-      (self->writer->options->flush_lines > 0  && (!log_writer_throttling(self->writer) && num_elements >= self->writer->options->flush_lines)))
+
+  if (log_queue_check_items(self->writer->queue, self->writer->options->flush_lines, &partial_batch, timeout,
+                            (LogQueuePushNotifyFunc) g_main_context_wakeup,
+                            g_main_context_ref(g_source_get_context(source)),
+                            (GDestroyNotify) g_main_context_unref))
     {
-      /* we need to flush our buffers */
+      /* flush_lines number of element is already available and throttle would permit us to send */
       self->pollfd.events |= proto_cond;
     }
-  else if (num_elements && !log_writer_throttling(self->writer))
+  else if (partial_batch)
     {
-      /* our buffer does not contain enough elements to flush, but we do not
-       * want to wait more than flush_timeout time */
-      
+      /* only a few elements are available, but less than flush_lines, we need to start a timer to initiate a flush */
       if (!self->flush_waiting_for_timeout)
         {
           /* start waiting */
@@ -178,15 +146,7 @@ log_writer_fd_prepare(GSource *source,
     }
   else
     {
-      if (num_elements && log_writer_throttling(self->writer))
-        {
-          /* we are unable to send because of throttling, make sure that we
-           * wake up when the rate limits lets us send at least 1 message */
-          *timeout = (1000 / self->writer->options->throttle) + 1;
-          msg_debug("Throttling output", 
-                    evt_tag_int("wait", *timeout), 
-                    NULL);
-        }
+      /* no elements or no throttle space, wait for a wakeup or until timeout elapses */
     }
   
   if (self->writer->flags & LW_DETECT_EOF && (self->pollfd.events & G_IO_IN) == 0)
@@ -213,26 +173,28 @@ static gboolean
 log_writer_fd_check(GSource *source)
 {
   LogWriterWatch *self = (LogWriterWatch *) source;
-  gint64 num_elements = log_queue_get_length(self->writer->queue);
   
   if (self->error_suspend)
     return FALSE;
-  
-  if (num_elements && !log_writer_throttling(self->writer))
-    {
-      /* we have data to flush */
-      if (self->flush_waiting_for_timeout)
-        {
-          GTimeVal tv;
 
-          /* check if timeout elapsed */
-          g_source_get_current_time(source, &tv);
-          if (!(self->flush_target.tv_sec <= tv.tv_sec || (self->flush_target.tv_sec == tv.tv_sec && self->flush_target.tv_usec <= tv.tv_usec)))
-            return FALSE;
-          if ((self->writer->flags & LW_ALWAYS_WRITABLE))
-            return TRUE;
-        }
+  if (log_queue_check_items(self->writer->queue, self->writer->options->flush_lines, NULL, NULL, NULL, NULL, NULL))
+    {
+      /* we do have flush_lines lines & throttle space, let's go on  */
+      self->flush_waiting_for_timeout = FALSE;
+      return TRUE;
     }
+  else if (self->flush_waiting_for_timeout)
+    {
+      GTimeVal tv;
+
+      /* check if timeout elapsed */
+      g_source_get_current_time(source, &tv);
+      if (!(self->flush_target.tv_sec <= tv.tv_sec || (self->flush_target.tv_sec == tv.tv_sec && self->flush_target.tv_usec <= tv.tv_usec)))
+        return FALSE;
+      if ((self->writer->flags & LW_ALWAYS_WRITABLE))
+        return TRUE;
+    }
+
   return !!(self->pollfd.revents & (G_IO_OUT | G_IO_ERR | G_IO_HUP | G_IO_IN));
 }
 
@@ -242,7 +204,6 @@ log_writer_fd_dispatch(GSource *source,
 		       gpointer user_data)
 {
   LogWriterWatch *self = (LogWriterWatch *) source;
-  gint64 num_elements = log_queue_get_length(self->writer->queue);
 
   if (self->pollfd.revents & (G_IO_HUP | G_IO_IN) && self->input_means_connection_broken)
     {
@@ -252,14 +213,14 @@ log_writer_fd_dispatch(GSource *source,
       log_writer_broken(self->writer, NC_CLOSE);
       return FALSE;
     }
-  else if (self->pollfd.revents & (G_IO_ERR) && num_elements == 0)
+  else if (self->pollfd.revents & (G_IO_ERR) && ((self->pollfd.events & (G_IO_IN + G_IO_OUT)) == 0))
     {
       msg_error("POLLERR occurred while idle",
                 evt_tag_int("fd", log_proto_get_fd(self->proto)),
                 NULL);
       log_writer_broken(self->writer, NC_WRITE_ERROR);
     }
-  else if (num_elements)
+  else
     {
       if (!log_writer_flush(self->writer, self->flush_waiting_for_timeout))
         {
@@ -314,12 +275,6 @@ log_writer_watch_new(LogWriter *writer, LogProto *proto)
   return &self->super;
 }
 
-static gboolean
-log_writer_throttling(LogWriter *self)
-{
-  return self->options->throttle > 0 && self->throttle_buckets == 0;
-}
-
 static void
 log_writer_last_msg_release(LogWriter *self)
 {
@@ -369,8 +324,7 @@ log_writer_last_msg_flush(LogWriter *self)
     {
       stats_counter_inc(self->dropped_messages);
       msg_debug("Destination queue full, dropping suppressed message",
-                evt_tag_int("queue_len", log_queue_get_length(self->queue)),
-                evt_tag_int("mem_fifo_size", self->options->mem_fifo_size),
+                evt_tag_int("log_fifo_size", self->options->mem_fifo_size),
                 NULL);
       log_msg_drop(m, &path_options);
     }
@@ -469,8 +423,7 @@ log_writer_queue(LogPipe *s, LogMessage *lm, const LogPathOptions *path_options)
       
       stats_counter_inc(self->dropped_messages);
       msg_debug("Destination queue full, dropping message",
-                evt_tag_int("queue_len", log_queue_get_length(self->queue)),
-                evt_tag_int("mem_fifo_size", self->options->mem_fifo_size),
+                evt_tag_int("log_fifo_size", self->options->mem_fifo_size),
                 NULL);
       log_msg_drop(lm, path_options);
       return;
@@ -696,33 +649,27 @@ log_writer_broken(LogWriter *self, gint notify_code)
 gboolean
 log_writer_flush(LogWriter *self, gboolean flush_all)
 {
-  gint64 num_elements = 0;
   LogProto *proto = self->source ? ((LogWriterWatch *) self->source)->proto : NULL;
   gint count = 0;
   
   if (!proto)
     return FALSE;
 
-  if (self->queue)
-    num_elements = log_queue_get_length(self->queue);
-  else
-    num_elements = 0;
-
-  while (num_elements > 0 && (flush_all || !log_writer_throttling(self)))
+  while (1)
     {
       LogMessage *lm;
       LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
       gboolean consumed = FALSE;
       
       if (!log_queue_pop_head(self->queue, &lm, &path_options, FALSE))
-        g_assert_not_reached();
+        {
+          /* no more items are available */
+          break;
+        }
 
       msg_set_context(lm);
 
       log_writer_format_log(self, lm, self->line_buffer);
-      
-      /* account this message against the throttle rate */
-      self->throttle_buckets--;
       
       if (self->line_buffer->len)
         {
@@ -753,12 +700,11 @@ log_writer_flush(LogWriter *self, gboolean flush_all)
           /* push back to the queue */
           log_queue_push_head(self->queue, lm, &path_options);
 
-          /* force exit of the loop */
-          num_elements = 1;
+          msg_set_context(NULL);
+          break;
         }
         
       msg_set_context(NULL);
-      num_elements--;
       count++;
     }
 
@@ -778,6 +724,7 @@ log_writer_init(LogPipe *s)
 
   if (!self->queue)
     self->queue = log_queue_new(self->options->mem_fifo_size);
+  log_queue_set_throttle(self->queue, self->options->throttle);
   
   if ((self->options->options & LWO_NO_STATS) == 0 && !self->dropped_messages)
     {
@@ -861,7 +808,6 @@ log_writer_set_options(LogWriter *self, LogPipe *control, LogWriterOptions *opti
   self->stats_id = stats_id ? g_strdup(stats_id) : NULL;
   self->stats_instance = stats_instance ? g_strdup(stats_instance) : NULL;
 
-  self->throttle_buckets = self->options->throttle;
 }
 
 LogPipe *

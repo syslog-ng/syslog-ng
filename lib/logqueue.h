@@ -32,6 +32,7 @@ typedef struct _LogQueue LogQueue;
 typedef void (*LogQueuePushNotifyFunc)(gpointer user_data);
 
 void log_queue_reset_parallel_push(LogQueue *self);
+gboolean log_queue_check_items(LogQueue *self, gint batch_items, gboolean *partial_batch, gint *timeout, LogQueuePushNotifyFunc parallel_push_notify, gpointer user_data, GDestroyNotify user_data_destroy);
 gint64 log_queue_get_length(LogQueue *self);
 gboolean log_queue_push_tail(LogQueue *self, LogMessage *msg, const LogPathOptions *path_options);
 gboolean log_queue_push_head(LogQueue *self, LogMessage *msg, const LogPathOptions *path_options);
@@ -40,6 +41,7 @@ void log_queue_rewind_backlog(LogQueue *self);
 void log_queue_ack_backlog(LogQueue *self, gint n);
 
 LogQueue *log_queue_new(gint qoverflow_size);
+void log_queue_set_throttle(LogQueue *self, gint throttle);
 void log_queue_free(LogQueue *self);
 
 #endif

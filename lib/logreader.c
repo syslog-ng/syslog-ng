@@ -96,7 +96,7 @@ log_reader_fd_prepare(GSource *source,
   if (!log_source_free_to_send(&self->reader->super))
     return FALSE;
 
-  if (log_proto_prepare(self->proto, &self->pollfd.fd, &proto_cond, timeout))
+  if (log_proto_prepare(self->proto, &self->pollfd.fd, &proto_cond))
     return TRUE;
 
   if (self->reader->immediate_check)

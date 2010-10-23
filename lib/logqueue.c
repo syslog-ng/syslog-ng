@@ -50,12 +50,50 @@ struct _LogQueue
   GQueue *qbacklog;    /* entries that were sent but not acked yet */
   gint qoverflow_size; /* in number of elements */
   guint32 *stored_messages;
+  gint throttle;
+  gint throttle_buckets;
+  GTimeVal last_throttle_check;
+  gint parallel_push_notify_limit;
+  LogQueuePushNotifyFunc parallel_push_notify;
+  gpointer parallel_push_data;
+  GDestroyNotify parallel_push_data_destroy;
 };
 
+/* NOTE: this is inherently racy */
 gint64 
 log_queue_get_length(LogQueue *self)
 {
   return (self->qoverflow->length / 2);
+}
+
+static void
+log_queue_push_notify(LogQueue *self)
+{
+  if (self->parallel_push_notify)
+    {
+      gint64 num_elements;
+
+      num_elements = log_queue_get_length(self);
+      if (num_elements >= self->parallel_push_notify_limit)
+        {
+          /* make sure the callback can call log_queue_check_items() again */
+          GDestroyNotify destroy = self->parallel_push_data_destroy;
+          gpointer user_data = self->parallel_push_data;
+          LogQueuePushNotifyFunc func = self->parallel_push_notify;
+
+          self->parallel_push_data = NULL;
+          self->parallel_push_data_destroy = NULL;
+          self->parallel_push_notify = NULL;
+
+          g_mutex_unlock(self->lock);
+
+          func(user_data);
+          if (destroy && user_data)
+            destroy(user_data);
+
+          g_mutex_lock(self->lock);
+        }
+    }
 }
 
 /**
@@ -75,6 +113,7 @@ log_queue_push_tail(LogQueue *self, LogMessage *msg, const LogPathOptions *path_
       msg->flags |= LF_STATE_REFERENCED;
       log_msg_ref(msg);
       local_options.flow_control = FALSE;
+      log_queue_push_notify(self);
       g_mutex_unlock(self->lock);
     }
   else
@@ -94,6 +133,7 @@ log_queue_push_head(LogQueue *self, LogMessage *msg, const LogPathOptions *path_
   g_mutex_lock(self->lock);
   g_queue_push_head(self->qoverflow, LOG_PATH_OPTIONS_TO_POINTER(path_options));
   g_queue_push_head(self->qoverflow, msg);
+  log_queue_push_notify(self);
   g_mutex_unlock(self->lock);
   msg->flags |= LF_STATE_REFERENCED;
   stats_counter_inc(self->stored_messages);
@@ -219,6 +259,11 @@ gboolean
 log_queue_pop_head(LogQueue *self, LogMessage **msg, LogPathOptions *path_options, gboolean push_to_backlog)
 {
   g_mutex_lock(self->lock);
+  if (self->throttle && self->throttle_buckets == 0)
+    {
+      g_mutex_unlock(self->lock);
+      return FALSE;
+    }
   if (self->qoverflow->length > 0)
     {
       *msg = g_queue_pop_head(self->qoverflow);
@@ -236,7 +281,8 @@ log_queue_pop_head(LogQueue *self, LogMessage **msg, LogPathOptions *path_option
       log_msg_ref(*msg);
       g_queue_push_tail(self->qbacklog, *msg);
       g_queue_push_tail(self->qbacklog, LOG_PATH_OPTIONS_TO_POINTER(path_options));
-    }    
+    }
+  self->throttle_buckets--;
   g_mutex_unlock(self->lock);
   return TRUE;
 }
@@ -271,9 +317,10 @@ log_queue_rewind_backlog(LogQueue *self)
 {
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
   LogMessage *msg;
-  gint i, n = self->qbacklog->length / 2;
+  gint i, n;
 
   g_mutex_lock(self->lock);
+  n = self->qbacklog->length / 2;
   for (i = 0; i < n; i++)
     {
       msg = g_queue_pop_head(self->qbacklog);
@@ -283,7 +330,15 @@ log_queue_rewind_backlog(LogQueue *self)
       g_queue_push_head(self->qoverflow, LOG_PATH_OPTIONS_TO_POINTER(&path_options));
       g_queue_push_head(self->qoverflow, msg);
     }
+  log_queue_push_notify(self);
   g_mutex_unlock(self->lock);
+}
+
+void
+log_queue_set_throttle(LogQueue *self, gint throttle)
+{
+  self->throttle = throttle;
+  self->throttle_buckets = throttle;
 }
 
 LogQueue *

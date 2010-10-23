@@ -82,7 +82,6 @@ typedef struct _LogWriter
   guint32 *suppressed_messages;
   guint32 *processed_messages;
   guint32 *stored_messages;
-  gint throttle_buckets;
   LogPipe *control;
   LogWriterOptions *options;
   LogMessage *last_msg;
