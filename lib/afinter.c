@@ -167,6 +167,15 @@ typedef struct _AFInterSource
   GSource *watch;
 } AFInterSource;
 
+static void
+afinter_source_wakeup(LogSource *s)
+{
+  AFInterSource *self = (AFInterSource *) s;
+
+  if (self->watch)
+    g_main_context_wakeup(g_source_get_context(self->watch));
+}
+
 static gboolean
 afinter_source_init(LogPipe *s)
 {
@@ -206,6 +215,7 @@ afinter_source_new(AFInterSourceDriver *owner, LogSourceOptions *options)
   log_source_set_options(&self->super, options, 0, SCS_INTERNAL, owner->super.id, NULL);
   self->super.super.init = afinter_source_init;
   self->super.super.deinit = afinter_source_deinit;
+  self->super.wakeup = afinter_source_wakeup;
   return &self->super;
 }
 

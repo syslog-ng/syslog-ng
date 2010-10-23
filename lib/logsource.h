@@ -47,6 +47,8 @@ typedef struct _LogSourceOptions
 
 } LogSourceOptions;
 
+typedef struct _LogSource LogSource;
+
 /**
  * LogSource:
  *
@@ -55,7 +57,7 @@ typedef struct _LogSourceOptions
  * derived class is LogReader which is an extended RFC3164 capable syslog
  * message processor used everywhere.
  **/
-typedef struct _LogSource
+struct _LogSource
 {
   LogPipe super;
   LogSourceOptions *options;
@@ -65,12 +67,20 @@ typedef struct _LogSource
   gchar *stats_instance;
   guint32 *last_message_seen;
   guint32 *recvd_messages;
-} LogSource;
+  void (*wakeup)(LogSource *s);
+};
 
 static inline gboolean
 log_source_free_to_send(LogSource *self)
 {
   return g_atomic_counter_get(&self->options->window_size) > 0;
+}
+
+static inline void
+log_source_wakeup(LogSource *self)
+{
+  if (self->wakeup)
+    self->wakeup(self);
 }
 
 gboolean log_source_init(LogPipe *s);

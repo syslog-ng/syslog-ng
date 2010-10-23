@@ -265,6 +265,15 @@ log_reader_watch_new(LogReader *reader, LogProto *proto)
   return self;
 }
 
+/* NOTE: may be running in the destination's thread, thus proper locking must be used */
+static void
+log_reader_wakeup(LogSource *s)
+{
+  LogReader *self = (LogReader *) s;
+
+  if (self->source)
+    g_main_context_wakeup(g_source_get_context((GSource *) self->source));
+}
 
 static gboolean
 log_reader_handle_line(LogReader *self, const guchar *line, gint length, GSockAddr *saddr)
@@ -495,6 +504,7 @@ log_reader_new(LogProto *proto)
   self->super.super.init = log_reader_init;
   self->super.super.deinit = log_reader_deinit;
   self->super.super.free_fn = log_reader_free;
+  self->super.wakeup = log_reader_wakeup;
   self->proto = proto;
   self->immediate_check = FALSE;
   return &self->super.super;

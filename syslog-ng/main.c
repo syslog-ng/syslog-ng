@@ -143,8 +143,6 @@ main_loop_run(GlobalConfig **cfg)
   guint stats_timer_id = 0;
   sigset_t ss;
 
-  log_source_set_wakeup_func(main_loop_wakeup);
-
   msg_notice("syslog-ng starting up", 
              evt_tag_str("version", VERSION),
              NULL);
