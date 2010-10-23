@@ -29,6 +29,9 @@
 
 typedef struct _LogQueue LogQueue;
 
+typedef void (*LogQueuePushNotifyFunc)(gpointer user_data);
+
+void log_queue_reset_parallel_push(LogQueue *self);
 gint64 log_queue_get_length(LogQueue *self);
 gboolean log_queue_push_tail(LogQueue *self, LogMessage *msg, const LogPathOptions *path_options);
 gboolean log_queue_push_head(LogQueue *self, LogMessage *msg, const LogPathOptions *path_options);
