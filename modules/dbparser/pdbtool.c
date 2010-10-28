@@ -352,7 +352,7 @@ pdbtool_match_values(NVHandle handle, const gchar *name, const gchar *value, gss
   gint *ret = user_data;
 
   printf("%s=%.*s\n", name, (gint) length, value);
-  if (g_str_equal(name, ".classifier.rule_id"))
+  if (g_str_equal(name, ".classifier.rule_id") && ret)
     *ret = 0;
   return FALSE;
 }
