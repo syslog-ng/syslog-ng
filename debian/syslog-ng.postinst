@@ -26,6 +26,7 @@ fi
 
 if [ "$1" = "configure" ]
 then
+	mkdir /var/lib/syslog-ng || /bin/true
 	if [ -z "$2" ]
 	then
 		COMMAND="start"
