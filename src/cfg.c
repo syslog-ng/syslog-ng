@@ -38,6 +38,7 @@
 #include <signal.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 gint
 cfg_ts_format_value(gchar *format)
@@ -213,8 +214,9 @@ cfg_read_pragmas(GlobalConfig *self, FILE *cfg, gint *lineno)
   self->version = 0;
   while (!feof(cfg))
     {
-      gchar *pragma, *value, *colon, *eol, *p;
+      gchar *pragma, *value, *colon, *eol, *p, *end;
       gchar line[1024];
+      guint8 major, minor;
 
       start_ofs = ftell(cfg);
       p = fgets(line, sizeof(line), cfg);
@@ -253,10 +255,19 @@ cfg_read_pragmas(GlobalConfig *self, FILE *cfg, gint *lineno)
       if (strcmp(pragma, "version") == 0)
         {
           /* version number of the configuration file */
-          if (strcmp(value, "3.0") == 0)
-            self->version = 0x0300;
-          else if (strncmp(value, "2.", 2) == 0)
-            self->version = 0x0201;
+          p = strchr(value, '.');
+          if (p)
+            {
+              major = strtol(value, &end, 10);
+              if (end == p)
+                {
+                  minor = strtol(p+1, &end, 10);
+                  if (end)
+                    {
+                      self->version = (major << 8) + minor;
+                    }
+                }
+            }
         }
       else
         {
