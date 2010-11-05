@@ -500,8 +500,9 @@ pdbtool_match(int argc, char *argv[])
         {
           const gchar *msg_string;
 
-          msg_string = log_msg_get_value(msg, LM_V_MESSAGE, NULL);
           pattern_db_process(patterndb, msg, &dbg_list);
+          msg_string = log_msg_get_value(msg, LM_V_MESSAGE, NULL);
+          pos = 0;
           if (!debug_pattern_parse)
             {
               printf("Pattern matching part:\n");
