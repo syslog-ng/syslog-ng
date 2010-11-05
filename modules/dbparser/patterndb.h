@@ -192,7 +192,7 @@ struct _PatternDB
 };
 
 void pattern_db_set_emit_func(PatternDB *self, PatternDBEmitFunc emit_func, gpointer emit_data);
-gboolean pattern_db_process(PatternDB *self, LogMessage *msg, GSList **dbg_list);
+gboolean pattern_db_process(PatternDB *self, LogMessage *msg, GArray *dbg_list);
 gboolean pattern_db_load(PatternDB *self, GlobalConfig *cfg, const gchar *config, GList **examples);
 void pattern_db_forget_state(PatternDB *self);
 

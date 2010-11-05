@@ -47,9 +47,9 @@
 static gchar *full_colors[] =
 {
   "\33[01;34m", /* blue */
-  "\33[01;33m", /* yellow */
+  "\33[0;33m", /* brown */
   "\33[01;32m", /* green */
-  "\33[01;31m"  /* red */
+  "\33[0;31m"  /* red */
 };
 
 static gchar *empty_colors[] =
@@ -57,10 +57,10 @@ static gchar *empty_colors[] =
   "", "", "", ""
 };
 
-#define COLOR_BLUE 0
-#define COLOR_YELLOW 1
-#define COLOR_GREEN 2
-#define COLOR_RED 3
+#define COLOR_TRAILING_JUNK 0
+#define COLOR_PARSER 1
+#define COLOR_LITERAL 2
+#define COLOR_PARTIAL 3
 
 static gchar *no_color = "\33[01;0m";
 static gchar **colors = empty_colors;
@@ -390,7 +390,7 @@ static gint
 pdbtool_match(int argc, char *argv[])
 {
   PatternDB *patterndb;
-  GSList *dbg_list = NULL, *p;
+  GArray *dbg_list = NULL;
   RDebugInfo *dbg_info;
   gint i = 0, pos = 0;
   gint ret = 1;
@@ -486,7 +486,10 @@ pdbtool_match(int argc, char *argv[])
       gpointer args[] = { filter, template, &ret, output };
       pattern_db_set_emit_func(patterndb, pdbtool_pdb_emit, args);
     }
-
+  else
+    {
+      dbg_list = g_array_new(FALSE, FALSE, sizeof(RDebugInfo));
+    }
   while (!eof)
     {
       if (G_LIKELY(proto))
@@ -500,16 +503,15 @@ pdbtool_match(int argc, char *argv[])
         {
           const gchar *msg_string;
 
-          pattern_db_process(patterndb, msg, &dbg_list);
+          pattern_db_process(patterndb, msg, dbg_list);
           msg_string = log_msg_get_value(msg, LM_V_MESSAGE, NULL);
           pos = 0;
           if (!debug_pattern_parse)
             {
               printf("Pattern matching part:\n");
-              p = dbg_list;
-              while (p)
+              for (i = 0; i < dbg_list->len; i++)
                 {
-                  dbg_info = p->data;
+                  dbg_info = &g_array_index(dbg_list, RDebugInfo, i);
 
                   pos += dbg_info->i;
 
@@ -518,7 +520,7 @@ pdbtool_match(int argc, char *argv[])
                       name = nv_registry_get_handle_name(logmsg_registry, dbg_info->pnode->handle, &name_len);
 
                       printf("%s@%s:%s=%.*s@%s",
-                            colors[COLOR_YELLOW],
+                            colors[COLOR_PARSER],
                             r_parser_type_name(dbg_info->pnode->type),
                             name_len ? name : "",
                             name_len ? dbg_info->match_len : 0,
@@ -528,16 +530,15 @@ pdbtool_match(int argc, char *argv[])
                     }
                   else if (dbg_info->i == dbg_info->node->keylen)
                     {
-                      printf("%s%s%s", colors[COLOR_GREEN], dbg_info->node->key, no_color);
+                      printf("%s%s%s", colors[COLOR_LITERAL], dbg_info->node->key, no_color);
                     }
                   else
                     {
-                      printf("%s%.*s%s", colors[COLOR_RED], dbg_info->i, dbg_info->node->key, no_color);
+                      printf("%s%.*s%s", colors[COLOR_PARTIAL], dbg_info->i, dbg_info->node->key, no_color);
                     }
 
-                  p = p->next;
                 }
-              printf("%s%s%s", colors[COLOR_BLUE], msg_string + pos, no_color);
+              printf("%s%s%s", colors[COLOR_TRAILING_JUNK], msg_string + pos, no_color);
 
               printf("\nMatching part:\n");
             }
@@ -546,12 +547,12 @@ pdbtool_match(int argc, char *argv[])
             printf("PDBTOOL_HEADER=i:len:key;keylen:match_off;match_len:parser_type:parser_name\n");
 
           pos = 0;
-          while (dbg_list)
+          for (i = 0; i < dbg_list->len; i++)
             {
               /* NOTE: if i is smaller than node->keylen than we did not match the full node
                * so matching failed on this node, we need to highlight it somehow
                */
-              dbg_info = dbg_list->data;
+              dbg_info = &g_array_index(dbg_list, RDebugInfo, i);
               if (debug_pattern_parse)
                 {
                   if (dbg_info->pnode)
@@ -566,15 +567,13 @@ pdbtool_match(int argc, char *argv[])
               else
                 {
                   if (dbg_info->i == dbg_info->node->keylen || dbg_info->pnode)
-                    printf("%s%.*s%s", dbg_info->pnode ? colors[COLOR_YELLOW] : colors[COLOR_GREEN], dbg_info->i, msg_string + pos, no_color);
+                    printf("%s%.*s%s", dbg_info->pnode ? colors[COLOR_PARSER] : colors[COLOR_LITERAL], dbg_info->i, msg_string + pos, no_color);
                   else
-                    printf("%s%.*s%s", colors[COLOR_RED], dbg_info->i, msg_string + pos, no_color);
+                    printf("%s%.*s%s", colors[COLOR_PARTIAL], dbg_info->i, msg_string + pos, no_color);
                   pos += dbg_info->i;
                 }
-
-              g_free(dbg_info);
-              dbg_list = g_slist_delete_link(dbg_list, dbg_list);
             }
+          g_array_set_size(dbg_list, 0);
           dbg_info = NULL;
           {
             gpointer nulls[] = { NULL, NULL, NULL, output };

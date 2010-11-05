@@ -1084,7 +1084,7 @@ pattern_db_set_emit_func(PatternDB *self, PatternDBEmitFunc emit, gpointer emit_
 }
 
 gboolean
-pattern_db_process(PatternDB *self, LogMessage *msg, GSList **dbg_list)
+pattern_db_process(PatternDB *self, LogMessage *msg, GArray *dbg_list)
 {
   RNode *node;
   GArray *matches;

@@ -30,17 +30,23 @@
 
 #ifdef RADIX_DBG
 static void
-r_add_debug_info(GSList **dbg_list, RNode *node, RParserNode *pnode, gint i, gint match_off, gint match_len)
+r_add_debug_info(GArray *dbg_list, RNode *node, RParserNode *pnode, gint i, gint match_off, gint match_len)
 {
-  RDebugInfo *self = g_new0(RDebugInfo, 1);
+  RDebugInfo dbg_info;
 
-  self->node = node;
-  self->pnode = pnode;
-  self->i = i;
-  self->match_off = match_off;
-  self->match_len = match_len;
+  dbg_info.node = node;
+  dbg_info.pnode = pnode;
+  dbg_info.i = i;
+  dbg_info.match_off = match_off;
+  dbg_info.match_len = match_len;
 
-  *dbg_list = g_slist_append(*dbg_list, self);
+  g_array_append_val(dbg_list, dbg_info);
+}
+
+static void
+r_truncate_debug_info(GArray *dbg_list, gint truncated_size)
+{
+  g_array_set_size(dbg_list, truncated_size);
 }
 #endif
 
@@ -49,13 +55,16 @@ RNode *
 r_find_node(RNode *root, gchar *whole_key, gchar *key, gint keylen, GArray *matches)
 #else
 RNode *
-r_find_node_dbg(RNode *root, gchar *whole_key, gchar *key, gint keylen, GArray *matches, GSList **dbg_list)
+r_find_node_dbg(RNode *root, gchar *whole_key, gchar *key, gint keylen, GArray *matches, GArray *dbg_list)
 #endif
 {
   RNode *node, *ret;
   gint nodelen = root->keylen;
   gint j, m;
   register gint i;
+#ifdef RADIX_DBG
+  gint dbg_entries;
+#endif
 
   if (nodelen < 1)
     i = 0;
@@ -107,6 +116,7 @@ r_find_node_dbg(RNode *root, gchar *whole_key, gchar *key, gint keylen, GArray *
 
 #ifdef RADIX_DBG
   r_add_debug_info(dbg_list, root, NULL, i, 0, 0);
+  dbg_entries = dbg_list->len;
 #endif
 
   msg_trace("Looking up node in the radix tree",
@@ -128,11 +138,13 @@ r_find_node_dbg(RNode *root, gchar *whole_key, gchar *key, gint keylen, GArray *
       node = r_find_child(root, key[i]);
 
       if (node)
+        {
 #ifndef RADIX_DBG
-        ret = r_find_node(node, whole_key, key + i, keylen - i, matches);
+          ret = r_find_node(node, whole_key, key + i, keylen - i, matches);
 #else
-        ret = r_find_node_dbg(node, whole_key, key + i, keylen - i, matches, dbg_list);
+          ret = r_find_node_dbg(node, whole_key, key + i, keylen - i, matches, dbg_list);
 #endif
+        }
 
       /* we only search if there is no match */
       if (!ret)
@@ -157,6 +169,9 @@ r_find_node_dbg(RNode *root, gchar *whole_key, gchar *key, gint keylen, GArray *
                   match = &g_array_index(matches, RParserMatch, match_ofs);
                   memset(match, 0, sizeof(*match));
                 }
+#ifdef RADIX_DBG
+              r_truncate_debug_info(dbg_list, dbg_entries);
+#endif
               if (((parser_node->first <= key[i]) && (key[i] <= parser_node->last)) &&
                   (parser_node->parse(key + i, &len, parser_node->param, parser_node->state, match)))
                 {
@@ -173,7 +188,7 @@ r_find_node_dbg(RNode *root, gchar *whole_key, gchar *key, gint keylen, GArray *
 #ifndef RADIX_DBG
                   ret = r_find_node(root->pchildren[j], whole_key, key + i + len, keylen - (i + len), matches);
 #else
-                  r_add_debug_info(dbg_list, root, parser_node, len, match->ofs + (key + i) - whole_key, ((gint16) match->len) + len);
+                  r_add_debug_info(dbg_list, root, parser_node, len, ((gint16) match->ofs) + (key + i) - whole_key, ((gint16) match->len) + len);
                   ret = r_find_node_dbg(root->pchildren[j], whole_key, key + i + len, keylen - (i + len), matches, dbg_list);
 #endif
                   if (matches)
