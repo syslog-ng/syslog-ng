@@ -165,6 +165,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase(msg, "${APP.VALUE2:-ures}", "ures");
   testcase(msg, "${1}", "first-match");
   testcase(msg, "$1", "first-match");
+  testcase(msg, "$$$1$$", "$first-match$");
 
   dummy.version = 0x0300;
   testcase(msg, "$MSGHDR", "syslog-ng[23323]:");

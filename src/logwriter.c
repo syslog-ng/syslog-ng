@@ -68,7 +68,7 @@ typedef struct _LogWriterWatch
  *
  **/
 
-static gboolean log_writer_flush_log(LogWriter *self, LogProto *proto);
+static gboolean log_writer_flush(LogWriter *self, gboolean flush_all);
 static void log_writer_broken(LogWriter *self, gint notify_code);
 static gboolean log_writer_throttling(LogWriter *self);
 
@@ -259,7 +259,7 @@ log_writer_fd_dispatch(GSource *source,
     }
   else if (num_elements)
     {
-      if (!log_writer_flush_log(self->writer, self->proto))
+      if (!log_writer_flush(self->writer, FALSE))
         {
           self->error_suspend = TRUE;
           g_source_get_current_time(source, &self->error_suspend_target);
@@ -698,15 +698,23 @@ log_writer_broken(LogWriter *self, gint notify_code)
   log_pipe_notify(self->control, &self->super, notify_code, self);
 }
 
-static gboolean 
-log_writer_flush_log(LogWriter *self, LogProto *proto)
+gboolean 
+log_writer_flush(LogWriter *self, gboolean flush_all)
 {
   GString *line = NULL;
-  gint64 num_elements;
+  gint64 num_elements = 0;
+  LogProto *proto = self->source ? ((LogWriterWatch *) self->source)->proto : NULL;
+  
+  if (!proto)
+    return FALSE;
   
   line = g_string_sized_new(128);
-  num_elements = log_queue_get_length(self->queue);
-  while (num_elements > 0 && !log_writer_throttling(self))
+  if (self->queue)
+    num_elements = log_queue_get_length(self->queue);
+  else
+    num_elements = 0;
+
+  while (num_elements > 0 && (flush_all || !log_writer_throttling(self)))
     {
       LogMessage *lm;
       LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
@@ -787,6 +795,7 @@ log_writer_deinit(LogPipe *s)
 {
   LogWriter *self = (LogWriter *) s;
 
+  log_writer_flush(self, TRUE);
   if (self->source)
     {
       g_source_destroy(self->source);

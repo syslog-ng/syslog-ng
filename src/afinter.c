@@ -49,6 +49,7 @@ afinter_postpone_mark(gint mark_freq)
 typedef struct _AFInterWatch
 {
   GSource super;
+  LogSource *afinter_source;
   gint mark_freq;
 } AFInterWatch;
 
@@ -59,6 +60,9 @@ afinter_source_prepare(GSource *source, gint *timeout)
   GTimeVal tv;
   
   *timeout = -1;
+
+  if (!log_source_free_to_send(self->afinter_source))
+    return FALSE;
 
   if (self->mark_freq > 0 && next_mark_target == -1)
     {
@@ -81,7 +85,11 @@ afinter_source_prepare(GSource *source, gint *timeout)
 static gboolean
 afinter_source_check(GSource *source)
 {
+  AFInterWatch *self = (AFInterWatch *) source;
   GTimeVal tv;
+
+  if (!log_source_free_to_send(self->afinter_source))
+    return FALSE;
 
   g_source_get_current_time(source, &tv);
   
@@ -95,9 +103,13 @@ afinter_source_dispatch(GSource *source,
                         GSourceFunc callback,
                         gpointer user_data)
 {
+  AFInterWatch *self = (AFInterWatch *) source;
   LogMessage *msg;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
   GTimeVal tv;
+
+  if (!log_source_free_to_send(self->afinter_source))
+    return FALSE;
   
   g_source_get_current_time(source, &tv);
   
@@ -137,13 +149,14 @@ afinter_source_dispatch_msg(LogPipe *pipe, LogMessage *msg, const LogPathOptions
 }
 
 static inline GSource *
-afinter_source_watch_new(LogPipe *pipe, gint mark_freq)
+afinter_source_watch_new(LogSource *afinter_source, gint mark_freq)
 {
   AFInterWatch *self = (AFInterWatch *) g_source_new(&afinter_source_watch_funcs, sizeof(AFInterWatch));
   
   next_mark_target = -1;
   self->mark_freq = mark_freq;
-  g_source_set_callback(&self->super, (GSourceFunc) afinter_source_dispatch_msg, log_pipe_ref(pipe), (GDestroyNotify) log_pipe_unref);
+  self->afinter_source = afinter_source;
+  g_source_set_callback(&self->super, (GSourceFunc) afinter_source_dispatch_msg, log_pipe_ref(&afinter_source->super), (GDestroyNotify) log_pipe_unref);
   return &self->super;
 }
 
@@ -164,7 +177,7 @@ afinter_source_init(LogPipe *s)
   
   /* the source added below references this logreader, it will be unref'd
      when the source is destroyed */ 
-  self->watch = afinter_source_watch_new(&self->super.super, cfg->mark_freq);
+  self->watch = afinter_source_watch_new(&self->super, cfg->mark_freq);
   g_source_attach(self->watch, NULL);
   return TRUE;
 }
