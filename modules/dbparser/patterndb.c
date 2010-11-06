@@ -1253,6 +1253,7 @@ pattern_db_process(PatternDB *self, LogMessage *msg, GArray *dbg_list)
                       g_string_steal(buffer);
                     }
 
+                  msg->flags |= LF_STATE_REFERENCED;
                   g_ptr_array_add(context->messages, log_msg_ref(msg));
 
                   if (context->timer)
