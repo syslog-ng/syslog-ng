@@ -565,10 +565,10 @@ filter_tags_eval(FilterExprNode *s, LogMessage *msg)
   for (i = 0; i < self->tags->len; i++)
     {
       if (log_msg_is_tag_by_id(msg, g_array_index(self->tags, LogTagId, i)))
-        return TRUE;
+        return TRUE ^ s->comp;
     }
 
-  return FALSE;
+  return FALSE ^ s->comp;
 }
 
 void
