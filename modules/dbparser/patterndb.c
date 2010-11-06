@@ -57,6 +57,13 @@ pdb_context_new(PatternDB *db, PDBStateKey *key)
   self->messages = g_ptr_array_new();
   self->db = db;
   memcpy(&self->key, key, sizeof(self->key));
+
+  if (self->key.pid)
+    self->key.pid = g_strdup(self->key.pid);
+  if (self->key.program)
+    self->key.program = g_strdup(self->key.program);
+  if (self->key.host)
+    self->key.host = g_strdup(self->key.host);
   self->ref_cnt = 1;
   return self;
 }
@@ -82,6 +89,13 @@ pdb_context_unref(PDBContext *self)
       g_ptr_array_free(self->messages, TRUE);
       if (self->rule)
         pdb_rule_unref(self->rule);
+
+      if (self->key.host)
+        g_free((gchar *) self->key.host);
+      if (self->key.program)
+        g_free((gchar *) self->key.program);
+      if (self->key.pid)
+        g_free((gchar *) self->key.pid);
       g_free(self->key.session_id);
       g_free(self);
     }
@@ -104,7 +118,6 @@ pdb_rate_limit_new(PDBStateKey *key)
     self->key.program = g_strdup(self->key.program);
   if (self->key.host)
     self->key.host = g_strdup(self->key.host);
-  self->key.session_id = self->key.session_id;
   return self;
 }
 
