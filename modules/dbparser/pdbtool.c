@@ -594,6 +594,7 @@ pdbtool_match(int argc, char *argv[])
           eof = TRUE;
         }
     }
+  pattern_db_expire_state(patterndb);
  error:
   if (proto)
     log_proto_free(proto);

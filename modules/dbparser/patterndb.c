@@ -1060,7 +1060,7 @@ GMarkupParser db_parser =
 
 
 static void
-pattern_db_expire_state(guint64 now, gpointer user_data)
+pattern_db_expire_state_entry(guint64 now, gpointer user_data)
 {
   PDBContext *context = user_data;
   PatternDB *self = context->db;
@@ -1248,7 +1248,7 @@ pattern_db_process(PatternDB *self, LogMessage *msg, GArray *dbg_list)
                     }
                   else
                     {
-                      context->timer = timer_wheel_add_timer(self->timer_wheel, rule->context_timeout, pattern_db_expire_state, pdb_context_ref(context), (GDestroyNotify) pdb_context_unref);
+                      context->timer = timer_wheel_add_timer(self->timer_wheel, rule->context_timeout, pattern_db_expire_state_entry, pdb_context_ref(context), (GDestroyNotify) pdb_context_unref);
                     }
                   if (context->rule != rule)
                     {
@@ -1352,6 +1352,12 @@ pattern_db_load(PatternDB *self, GlobalConfig *cfg, const gchar *config, GList *
   if (parse_ctx)
     g_markup_parse_context_free(parse_ctx);
   return success;
+}
+
+void
+pattern_db_expire_state(PatternDB *self)
+{
+  timer_wheel_expire_all(self->timer_wheel);
 }
 
 void
