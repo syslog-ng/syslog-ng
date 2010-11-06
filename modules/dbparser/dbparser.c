@@ -33,6 +33,7 @@ struct _LogDBParser
   LogParser super;
   PatternDB *db;
   GlobalConfig *cfg;
+  guint timer_tick_id;
   gchar *db_file;
   time_t db_file_last_check;
   ino_t db_file_inode;
@@ -99,6 +100,15 @@ log_db_parser_reload_database(LogDBParser *self)
 }
 
 static gboolean
+log_db_parser_timer_tick(gpointer s)
+{
+  LogDBParser *self = (LogDBParser *) s;
+
+  pattern_db_timer_tick(self->db);
+  return TRUE;
+}
+
+static gboolean
 log_db_parser_process(LogParser *s, LogMessage *msg, const char *input)
 {
   LogDBParser *self = (LogDBParser *) s;
@@ -107,6 +117,10 @@ log_db_parser_process(LogParser *s, LogMessage *msg, const char *input)
     {
       self->db_file_last_check = msg->timestamps[LM_TS_RECVD].time.tv_sec;
       log_db_parser_reload_database(self);
+    }
+  if (G_UNLIKELY(self->timer_tick_id == 0))
+    {
+      self->timer_tick_id = g_timeout_add_seconds(1, log_db_parser_timer_tick, self);
     }
   if (self->db)
     pattern_db_process(self->db, msg, NULL);
@@ -133,6 +147,14 @@ static void
 log_db_parser_free(LogParser *s)
 {
   LogDBParser *self = (LogDBParser *) s;
+
+  if (self->timer_tick_id)
+    {
+      GSource *source = g_main_context_find_source_by_id(NULL, self->timer_tick_id);
+
+      g_source_destroy(source);
+      self->timer_tick_id = 0;
+    }
 
   if (self->db)
     pattern_db_free(self->db);
