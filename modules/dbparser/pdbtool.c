@@ -534,7 +534,7 @@ pdbtool_match(int argc, char *argv[])
                     }
                   else
                     {
-                      printf("%s%.*s%s", colors[COLOR_PARTIAL], dbg_info->i, dbg_info->node->key, no_color);
+                      printf("%s%.*s%s", colors[COLOR_PARTIAL], dbg_info->node->key ? dbg_info->i : 6 , dbg_info->node->key ? dbg_info->node->key : "(null)", no_color);
                     }
 
                 }
