@@ -46,7 +46,8 @@ struct _LogProto
   GIConv convert;
   gchar *encoding;
   guint16 flags;
-  gboolean (*prepare)(LogProto *s, gint *fd, GIOCondition *cond, gint *timeout);
+  /* FIXME: rename to something else */
+  gboolean (*prepare)(LogProto *s, gint *fd, GIOCondition *cond);
   gboolean (*is_preemptable)(LogProto *s);
   gboolean (*restart_with_state)(LogProto *s, PersistState *state, const gchar *persist_name);
   LogProtoStatus (*fetch)(LogProto *s, const guchar **msg, gsize *msg_len, GSockAddr **sa, gboolean *may_read);
@@ -57,9 +58,9 @@ struct _LogProto
 };
 
 static inline gboolean
-log_proto_prepare(LogProto *s, gint *fd, GIOCondition *cond, gint *timeout)
+log_proto_prepare(LogProto *s, gint *fd, GIOCondition *cond)
 {
-  return s->prepare(s, fd, cond, timeout);
+  return s->prepare(s, fd, cond);
 }
 
 static inline gboolean
