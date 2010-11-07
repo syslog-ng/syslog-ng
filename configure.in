@@ -25,6 +25,7 @@ EVTLOG_MIN_VERSION="0.2"
 OPENSSL_MIN_VERSION="0.9.8"
 LIBDBI_MIN_VERSION="0.8.0"
 PCRE_MIN_VERSION="7.3"
+IVYKIS_MIN_VERSION="0.18"
 
 dnl ***************************************************************************
 dnl Initial setup
@@ -611,6 +612,12 @@ elif test "x$enable_spoof_source" != "xyes"; then
 fi
 
 dnl ***************************************************************************
+dnl ivykis headers/libraries
+dnl ***************************************************************************
+
+PKG_CHECK_MODULES(IVYKIS, ivykis >= $IVYKIS_MIN_VERSION ivykis-modules,,)
+
+dnl ***************************************************************************
 dnl misc features to be enabled
 dnl ***************************************************************************
 
@@ -663,17 +670,17 @@ if test "x$enable_linux_caps" = "xauto"; then
         AC_MSG_RESULT([$enable_linux_caps])
 fi
 
-DEPS_CPPFLAGS="$CPPFLAGS $GLIB_CFLAGS $EVTLOG_CFLAGS $OPENSSL_CFLAGS $LIBNET_CFLAGS $LIBDBI_CFLAGS"
+DEPS_CPPFLAGS="$CPPFLAGS $GLIB_CFLAGS $EVTLOG_CFLAGS $OPENSSL_CFLAGS $LIBNET_CFLAGS $LIBDBI_CFLAGS $IVYKIS_CFLAGS"
 CPPFLAGS="$DEPS_CPPFLAGS -D_GNU_SOURCE -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64"
 
 if test "x$linking_mode" = "xdynamic"; then
-	DEPS_LIBS="$LIBS $BASE_LIBS $GLIB_LIBS $EVTLOG_LIBS $RESOLV_LIBS $LIBCAP_LIBS $PCRE_LIBS $REGEX_LIBS"
+	DEPS_LIBS="$LIBS $BASE_LIBS $GLIB_LIBS $EVTLOG_LIBS $RESOLV_LIBS $LIBCAP_LIBS $PCRE_LIBS $REGEX_LIBS $IVYKIS_LIBS"
 	CORE_DEPS_LIBS="$DEPS_LIBS"
 	SYSLOGNG_LINK='$(LINK)'
 else
-	DEPS_LIBS="$LIBS $BASE_LIBS $RESOLV_LIBS $LD_START_STATIC -Wl,--whole-archive $GLIB_LIBS $EVTLOG_LIBS $PCRE_LIBS $REGEX_LIBS -Wl,--no-whole-archive $LD_END_STATIC $LIBCAP_LIBS $DL_LIBS "
+	DEPS_LIBS="$LIBS $BASE_LIBS $RESOLV_LIBS $LD_START_STATIC -Wl,--whole-archive $GLIB_LIBS $EVTLOG_LIBS $PCRE_LIBS $REGEX_LIBS $IVYKIS_LIBS -Wl,--no-whole-archive $LD_END_STATIC $LIBCAP_LIBS $DL_LIBS "
 	CORE_DEPS_LIBS=""
-	# bypass libtool in case we want to do mixel linking
+	# bypass libtool in case we want to do mixed linking
 	SYSLOGNG_LINK='$(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@'
 fi
 YFLAGS="-d"
