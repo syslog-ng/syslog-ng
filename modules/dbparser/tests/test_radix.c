@@ -321,6 +321,7 @@ test_matches(void)
   insert_node(root, "dddd2 @ESTRING:estring::*@ d");
   insert_node(root, "eee @STRING:string@");
   insert_node(root, "fff @FLOAT:float@");
+  insert_node(root, "zzz @ESTRING:test:gép@");
 
   test_search_matches(root, "aaa 12345 hihihi",
                       "number", "12345",
@@ -556,6 +557,7 @@ test_matches(void)
   test_search_matches(root, "ddd v12345", NULL);
   test_search_matches(root, "dddd v12345", NULL);
   test_search_matches(root, "fff v12345", NULL);
+  test_search_matches(root, "zzz árvíztűrőtükörfúrógép", "test", "árvíztűrőtükörfúró", NULL);
 
   r_free_node(root, NULL);
 }

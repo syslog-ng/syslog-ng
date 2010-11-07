@@ -1,4 +1,4 @@
-AM_CFLAGS = -I$(top_srcdir)/lib -I../../../lib -I$(top_srcdir)/modules/dbparser -I..
+AM_CFLAGS = -I$(top_srcdir)/lib -I../../../lib -I$(top_srcdir)/modules/dbparser -I.. -Wno-pointer-sign
 LIBS = @DEPS_LIBS@
 
 LDADD = $(top_builddir)/lib/libsyslog-ng.la ../libdbparser.la ../../syslogformat/libsyslogformat.la ../patternize.lo @OPENSSL_LIBS@

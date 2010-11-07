@@ -52,10 +52,10 @@ r_truncate_debug_info(GArray *dbg_list, gint truncated_size)
 
 #ifndef RADIX_DBG
 RNode *
-r_find_node(RNode *root, gchar *whole_key, gchar *key, gint keylen, GArray *matches)
+r_find_node(RNode *root, guint8 *whole_key, guint8 *key, gint keylen, GArray *matches)
 #else
 RNode *
-r_find_node_dbg(RNode *root, gchar *whole_key, gchar *key, gint keylen, GArray *matches, GArray *dbg_list)
+r_find_node_dbg(RNode *root, guint8 *whole_key, guint8 *key, gint keylen, GArray *matches, GArray *dbg_list)
 #endif
 {
   RNode *node, *ret;
