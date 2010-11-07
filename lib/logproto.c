@@ -383,9 +383,10 @@ log_proto_buffered_server_apply_state(LogProtoBufferedServer *self, PersistEntry
 
   if (state->file_inode &&
       state->file_inode == st.st_ino &&
-      state->file_size <= st.st_size)
+      state->file_size <= st.st_size &&
+      state->raw_stream_pos <= st.st_size)
     {
-      ofs = MIN(st.st_size, state->raw_stream_pos);
+      ofs = state->raw_stream_pos;
 
       lseek(fd, ofs, SEEK_SET);
     }
@@ -400,6 +401,7 @@ log_proto_buffered_server_apply_state(LogProtoBufferedServer *self, PersistEntry
                      evt_tag_int("cur_file_inode", st.st_ino),
                      evt_tag_int("stored_size", state->file_size),
                      evt_tag_int("cur_file_size", st.st_size),
+                     evt_tag_int("raw_stream_pos", state->raw_stream_pos),
                      NULL);
         }
       goto error;
