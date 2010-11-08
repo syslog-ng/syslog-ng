@@ -36,6 +36,9 @@
 #define LR_IGNORE_TIMEOUT  0x0008
 #define LR_SYSLOG_PROTOCOL 0x0010
 #define LR_PREEMPT         0x0020
+/* the fd referenced is references a regular file (e.g. not pipe, socket) */
+#define LR_FILE_FD         0x0040
+#define LR_THREADED        0x0080
 
 /* options */
 
@@ -58,20 +61,7 @@ typedef struct _LogReaderOptions
   GArray *tags;
 } LogReaderOptions;
 
-typedef struct _LogReader
-{
-  LogSource super;
-  LogProto *proto;
-  LogReaderWatch *source;
-  gboolean immediate_check;
-  gboolean waiting_for_preemption;
-  LogPipe *control;
-  LogReaderOptions *options;
-  GSockAddr *peer_addr;
-  gchar *follow_filename;
-  ino_t inode;
-  gint64 size;
-} LogReader;
+typedef struct _LogReader LogReader;
 
 void log_reader_set_options(LogPipe *s, LogPipe *control, LogReaderOptions *options, gint stats_level, gint stats_source, const gchar *stats_id, const gchar *stats_instance);
 void log_reader_set_follow_filename(LogPipe *self, const gchar *follow_filename);
@@ -85,6 +75,5 @@ void log_reader_options_destroy(LogReaderOptions *options);
 gint log_reader_options_lookup_flag(const gchar *flag);
 void log_reader_options_set_tags(LogReaderOptions *options, GList *tags);
 gboolean log_reader_options_process_flag(LogReaderOptions *options, gchar *flag);
-
 
 #endif

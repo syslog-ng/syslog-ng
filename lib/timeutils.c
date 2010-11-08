@@ -28,6 +28,7 @@
 
 #include <ctype.h>
 #include <string.h>
+#include <iv.h>
 
 const char *month_names_abbrev[] =
 {
@@ -49,7 +50,6 @@ const char *weekday_names[] =
   "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"
 };
 
-static GTimeVal current_time_value;
 
 #define TZCACHE_SIZE 4
 #define TZCACHE_SIZE_MASK (TZCACHE_SIZE - 1)
@@ -94,6 +94,15 @@ get_time_zone_basedir(void)
   return time_zone_basedir;
 }
 
+static __thread GTimeVal current_time_value;
+static __thread struct iv_task invalidate_time_task;
+
+void
+invalidate_cached_time(void)
+{
+  current_time_value.tv_sec = 0;
+}
+
 /*
  * this shuld replace the g_get_current_time and the g_source_get_current_time calls in the main thread
  * (log_msg_init, afinter_postpone_mark)
@@ -101,17 +110,19 @@ get_time_zone_basedir(void)
 void
 cached_g_current_time(GTimeVal *result)
 {
-  g_assert(result);
-  *result  = current_time_value;
-}
+  if (current_time_value.tv_sec == 0)
+    {
+      g_get_current_time(&current_time_value);
+    }
+  *result = current_time_value;
 
-/*
- * only our g_main_context_poll_func may call this
- */
-void
-update_g_current_time()
-{
-  g_get_current_time(&current_time_value);
+  if (invalidate_time_task.handler == NULL)
+    {
+      IV_TASK_INIT(&invalidate_time_task);
+      invalidate_time_task.handler = (void (*)(void *)) invalidate_cached_time;
+    }
+  if (!iv_task_registered(&invalidate_time_task))
+    iv_task_register(&invalidate_time_task);
 }
 
 time_t

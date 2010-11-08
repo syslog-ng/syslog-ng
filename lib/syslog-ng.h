@@ -66,6 +66,4 @@ extern GlobalConfig *configuration;
 extern gboolean seed_rng;
 extern gchar *module_path;
 
-void main_loop_wakeup(void);
-
 #endif

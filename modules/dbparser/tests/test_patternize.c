@@ -2,6 +2,7 @@
 #include "logmsg.h"
 #include "cfg.h"
 #include "plugin.h"
+#include "apphook.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -421,8 +422,7 @@ find_clusters_slct_tests()
 int
 main()
 {
-  log_msg_registry_init();
-  log_tags_init();
+  app_startup();
   configuration = cfg_new(0x0201);
   plugin_load_module("syslogformat", configuration, NULL);
   msg_format_options_defaults(&parse_options);

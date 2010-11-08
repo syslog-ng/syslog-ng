@@ -40,7 +40,7 @@ main()
     }
 
   sleep(3);
-  update_g_current_time();
+  invalidate_cached_time();
 
   for (i = 0; i < 10000; i++)
     {

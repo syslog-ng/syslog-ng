@@ -31,8 +31,13 @@
 #include "tags.h"
 #include "logmsg.h"
 #include "logparser.h"
-
 #include "timeutils.h"
+#include "logsource.h"
+#include "logwriter.h"
+#include "afinter.h"
+
+#include <iv.h>
+#include <iv_work.h>
 
 typedef struct _ApplicationHookEntry
 {
@@ -99,10 +104,10 @@ run_application_hook(gint type)
 void 
 app_startup(void)
 {
+  iv_init();
 #if ENABLE_THREADS
   g_thread_init(NULL);
 #endif
-  update_g_current_time();
   msg_init(FALSE);
   child_manager_init();
   dns_cache_init();
@@ -111,6 +116,8 @@ app_startup(void)
   tzset();
   log_msg_global_init();
   log_tags_init();
+  log_source_global_init();
+  afinter_global_init();
 }
 
 void

@@ -29,5 +29,6 @@
 
 void afinter_postpone_mark(gint mark_freq);
 LogDriver *afinter_sd_new(void);
+void afinter_global_init(void);
 
 #endif

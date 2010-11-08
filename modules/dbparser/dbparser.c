@@ -27,6 +27,7 @@
 #include "apphook.h"
 
 #include <sys/stat.h>
+#include <iv.h>
 
 struct _LogDBParser
 {
@@ -38,6 +39,7 @@ struct _LogDBParser
   time_t db_file_last_check;
   ino_t db_file_inode;
   time_t db_file_mtime;
+  struct iv_timer tick;
 };
 
 static void
@@ -45,7 +47,7 @@ log_db_parser_emit(LogMessage *msg, gboolean synthetic, gpointer user_data)
 {
   if (synthetic)
     {
-      msg_post_message(msg);
+      msg_post_message(log_msg_ref(msg));
       msg_debug("db-parser: emitting synthetic message",
                 evt_tag_str("msg", log_msg_get_value(msg, LM_V_MESSAGE, NULL)),
                 NULL);
@@ -97,13 +99,14 @@ log_db_parser_reload_database(LogDBParser *self)
 
 }
 
-static gboolean
+static void
 log_db_parser_timer_tick(gpointer s)
 {
   LogDBParser *self = (LogDBParser *) s;
 
   pattern_db_timer_tick(self->db);
-  return TRUE;
+  self->tick.expires.tv_sec++;
+  iv_timer_register(&self->tick);
 }
 
 static gchar *
@@ -143,7 +146,14 @@ log_db_parser_init(LogPipe *s)
       log_db_parser_reload_database(self);
     }
 
-  self->timer_tick_id = g_timeout_add_seconds(1, log_db_parser_timer_tick, self);
+  iv_validate_now();
+  IV_TIMER_INIT(&self->tick);
+  self->tick.cookie = self;
+  self->tick.handler = log_db_parser_timer_tick;
+  self->tick.expires = now;
+  self->tick.expires.tv_sec++;
+  self->tick.expires.tv_nsec = 0;
+  iv_timer_register(&self->tick);
   return self->db != NULL;
 }
 
@@ -153,12 +163,9 @@ log_db_parser_deinit(LogPipe *s)
   LogDBParser *self = (LogDBParser *) s;
   GlobalConfig *cfg = log_pipe_get_config(s);
 
-  if (self->timer_tick_id)
+  if (iv_timer_registered(&self->tick))
     {
-      GSource *source = g_main_context_find_source_by_id(NULL, self->timer_tick_id);
-
-      g_source_destroy(source);
-      self->timer_tick_id = 0;
+      iv_timer_unregister(&self->tick);
     }
 
   cfg_persist_config_add(cfg, log_db_parser_format_persist_name(self), self->db, (GDestroyNotify) pattern_db_free, FALSE);

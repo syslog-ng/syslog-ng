@@ -35,7 +35,8 @@ void cached_gmtime(time_t *when, struct tm *tm);
 long get_local_timezone_ofs(time_t when);
 void clean_time_cache();
 
-void update_g_current_time();
+
+void invalidate_cached_time(void);
 void cached_g_current_time(GTimeVal *result);
 
 gboolean check_nanosleep(void);

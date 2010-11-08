@@ -33,42 +33,19 @@ extern int verbose_flag;
 extern int trace_flag;
 extern int log_stderr;
 
+typedef void (*MsgPostFunc)(LogMessage *msg);
+
 void msg_set_context(LogMessage *msg);
 gboolean msg_limit_internal_message(void);
 EVTREC *msg_event_create(gint prio, const char *desc, EVTTAG *tag1, ...);
 void msg_event_send(EVTREC *e);
 
-void msg_syslog_started(void);
-
+void msg_set_post_func(MsgPostFunc func);
 void msg_redirect_to_syslog(const gchar *program_name);
 void msg_init(gboolean interactive);
 void msg_deinit(void);
 
 void msg_add_option_group(GOptionContext *ctx);
-
-
-#if ENABLE_THREADS
-
-#define MsgQueue         GAsyncQueue
-#define msg_queue_push   g_async_queue_push
-/* we're using try_pop here as we don't want to block in our dispatch callback */
-#define msg_queue_pop    g_async_queue_try_pop
-#define msg_queue_new    g_async_queue_new
-#define msg_queue_free   g_async_queue_unref
-#define msg_queue_length g_async_queue_length
-
-#else
-
-#define MsgQueue         GQueue
-#define msg_queue_push   g_queue_push_tail
-#define msg_queue_pop    g_queue_pop_head
-#define msg_queue_new    g_queue_new
-#define msg_queue_free   g_queue_free
-#define msg_queue_length(q) q->length
-
-#endif
-
-extern MsgQueue *internal_msg_queue;
 
 /* fatal->warning goes out to the console during startup, notice and below
  * comes goes to the log even during startup */

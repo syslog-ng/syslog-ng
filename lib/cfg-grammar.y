@@ -173,6 +173,7 @@
 %token KW_HOST_OVERRIDE               10166
 
 %token KW_THROTTLE                    10170
+%token KW_THREADED                    10171
 
 /* log statement options */
 %token KW_FLAGS                       10190
@@ -590,15 +591,8 @@ options_item
 	| KW_USE_DNS '(' dnsmode ')'		{ configuration->use_dns = $3; }
 	| KW_TIME_REOPEN '(' LL_NUMBER ')'		{ configuration->time_reopen = $3; }
 	| KW_TIME_REAP '(' LL_NUMBER ')'		{ configuration->time_reap = $3; }
-	| KW_TIME_SLEEP '(' LL_NUMBER ')'		
-		{
-		  configuration->time_sleep = $3;
-		  if ($3 > 500)
-		    {
-		      msg_notice("The value specified for time_sleep is too large", evt_tag_int("time_sleep", $3), NULL);
-		      configuration->time_sleep = 500;
-		    }
-		}
+	| KW_TIME_SLEEP '(' LL_NUMBER ')'	{}
+	| KW_THREADED '(' yesno ')'		{ configuration->threaded = $3; }
 	| KW_LOG_FIFO_SIZE '(' LL_NUMBER ')'	{ configuration->log_fifo_size = $3; }
 	| KW_LOG_IW_SIZE '(' LL_NUMBER ')'	{ msg_error("Using a global log-iw-size() option was removed, please use a per-source log-iw-size()", NULL); }
 	| KW_LOG_FETCH_LIMIT '(' LL_NUMBER ')'	{ msg_error("Using a global log-fetch-limit() option was removed, please use a per-source log-fetch-limit()", NULL); }

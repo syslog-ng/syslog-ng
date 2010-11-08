@@ -26,6 +26,7 @@
 #define LOGSOURCE_H_INCLUDED
 
 #include "logpipe.h"
+#include <iv_event.h>
 
 typedef struct _LogSourceOptions
 {
@@ -67,6 +68,11 @@ struct _LogSource
   GAtomicCounter window_size;
   guint32 *last_message_seen;
   guint32 *recvd_messages;
+  guint32 last_ack_count;
+  guint32 ack_count;
+  glong window_full_sleep_nsec;
+  struct timespec last_ack_rate_time;
+
   void (*wakeup)(LogSource *s);
 };
 
@@ -74,13 +80,6 @@ static inline gboolean
 log_source_free_to_send(LogSource *self)
 {
   return g_atomic_counter_get(&self->window_size) > 0;
-}
-
-static inline void
-log_source_wakeup(LogSource *self)
-{
-  if (self->wakeup)
-    self->wakeup(self);
 }
 
 gboolean log_source_init(LogPipe *s);
@@ -94,7 +93,7 @@ void log_source_options_init(LogSourceOptions *options, GlobalConfig *cfg, const
 void log_source_options_destroy(LogSourceOptions *options);
 void log_source_free(LogPipe *s);
 
-void log_source_set_wakeup_func(void (*func)(void));
+void log_source_global_init(void);
 
 
 #endif

@@ -26,85 +26,79 @@
 #include "gsocket.h"
 #include "messages.h"
 #include "stats.h"
+#include "misc.h"
 #include <errno.h>
 #include <string.h>
 #include <stdio.h>
+#include <iv.h>
+
+#define MAX_CONTROL_LINE_LENGTH 4096
 
 static gint control_socket;
+static struct iv_fd control_listen;
 
-typedef struct _ControlConnectionOutput
+typedef struct _ControlConnection
 {
-  GString *buffer;
+  struct iv_fd control_io;
+  GString *input_buffer;
+  GString *output_buffer;
   gsize pos;
-} ControlConnectionOutput;
+} ControlConnection;
 
-static gboolean control_channel_input(GIOChannel *channel, GIOCondition cond, gpointer user_data);
+static void control_connection_update_watches(ControlConnection *self);
+static void control_connection_stop_watches(ControlConnection *self);
+void control_connection_free(ControlConnection *self);
 
-
-static gboolean
-control_channel_output(GIOChannel *channel, GIOCondition cond, gpointer user_data)
+static void
+control_connection_io_output(gpointer s)
 {
-  ControlConnectionOutput *output = (ControlConnectionOutput *) user_data;
-  GIOError error;
-  gsize bytes_written;
+  ControlConnection *self = (ControlConnection *) s;
+  gint rc;
   
-  /* NOTE: write is deprecated as it bypasses the output buffer. But using
-   * buffered I/O is incompatible with using nonblocking i/o and we don't
-   * need buffering anyway
-   */
-  
-  error = g_io_channel_write(channel, output->buffer->str + output->pos, output->buffer->len - output->pos, &bytes_written);
-  if (error == G_IO_ERROR_AGAIN)
-    return TRUE;
-  else if (error != G_IO_ERROR_NONE)
+  rc = write(self->control_io.fd, self->output_buffer->str + self->pos, self->output_buffer->len - self->pos);
+  if (rc < 0)
     {
-      msg_error("Error writing control channel",
-                evt_tag_errno("error", errno),
-                NULL);
-      return FALSE;
+      if (errno != EAGAIN)
+        {
+          msg_error("Error writing control channel",
+                    evt_tag_errno("error", errno),
+                    NULL);
+          control_connection_stop_watches(self);
+          control_connection_free(self);
+          return;
+        }
     }
-    
-  /* normal, some characters were written */
-  output->pos += bytes_written;
-
-  if (output->pos == output->buffer->len)
+  else
     {
-      /**/
-      g_string_free(output->buffer, TRUE);
-      g_free(output);
-      g_io_channel_set_flags(channel, 0, NULL);
-      g_io_add_watch(channel, G_IO_IN, control_channel_input, NULL);
-      return FALSE;
+      self->pos += rc;
     }
-  return TRUE;
+  control_connection_update_watches(self);
 }
 
-static gboolean
-control_channel_send_reply(GIOChannel *channel, GString *buffer)
+static void
+control_connection_send_reply(ControlConnection *self, gchar *reply, gboolean free_reply)
 {
-  ControlConnectionOutput *output = g_new0(ControlConnectionOutput, 1);
-  
-  output->buffer = buffer;
-  if (output->buffer->str[output->buffer->len - 1] != '\n')
-    g_string_append_c(output->buffer, '\n');
-  g_string_append(output->buffer, ".\n");
-  
-  g_io_channel_set_flags(channel, G_IO_FLAG_NONBLOCK, NULL);
-  g_io_add_watch(channel, G_IO_OUT, control_channel_output, output);
-  return FALSE;
+  g_string_assign(self->output_buffer, reply);
+  if (free_reply)
+    g_free(reply);
+
+  self->pos = 0;
+
+  if (self->output_buffer->str[self->output_buffer->len - 1] != '\n')
+    g_string_append_c(self->output_buffer, '\n');
+  g_string_append(self->output_buffer, ".\n");
+
+  control_connection_update_watches(self);
 }
 
-static gboolean
-control_channel_send_stats(GIOChannel *channel, GString *command)
+static void
+control_connection_send_stats(ControlConnection *self, GString *command)
 {
-  GString *csv;
-  
-  csv = stats_generate_csv();
-  return control_channel_send_reply(channel, csv);
+  control_connection_send_reply(self, stats_generate_csv(), TRUE);
 }
 
-static gboolean
-control_channel_message_log(GIOChannel *channel, GString *command)
+static void
+control_connection_message_log(ControlConnection *self, GString *command)
 {
   gchar **cmds = g_strsplit(command->str, " ", 3);
   gboolean on;
@@ -112,7 +106,7 @@ control_channel_message_log(GIOChannel *channel, GString *command)
 
   if (!cmds[1])
     {
-      control_channel_send_reply(channel, g_string_new("Invalid arguments received"));
+      control_connection_send_reply(self, "Invalid arguments received, expected at least one argument", FALSE);
       goto exit;
     }
 
@@ -134,32 +128,29 @@ control_channel_message_log(GIOChannel *channel, GString *command)
               *type = on;
             }
 
-          control_channel_send_reply(channel, g_string_new("OK"));
+          control_connection_send_reply(self, "OK", FALSE);
         }
       else
         {
-          gchar buff[17];
-          snprintf(buff, 16, "%s=%d", cmds[1], *type);
-          control_channel_send_reply(channel, g_string_new(buff));
+          control_connection_send_reply(self, g_strdup_printf("%s=%d", cmds[1], *type), TRUE);
         }
     }
   else
-    control_channel_send_reply(channel, g_string_new("Invalid arguments received"));
+    control_connection_send_reply(self, "Invalid arguments received", FALSE);
 
 exit:
   g_strfreev(cmds);
-  return TRUE;
 }
 
 static struct
 {
   const gchar *command;
   const gchar *description;
-  gboolean (*func)(GIOChannel *channel, GString *command);
+  void (*func)(ControlConnection *self, GString *command);
 } commands[] = 
 {
-  { "STATS", NULL, control_channel_send_stats },
-  { "LOG", NULL, control_channel_message_log },
+  { "STATS", NULL, control_connection_send_stats },
+  { "LOG", NULL, control_connection_message_log },
   { NULL, NULL, NULL },
 };
 
@@ -167,53 +158,159 @@ static struct
  * NOTE: the channel is not in nonblocking mode, thus the control channel
  * may block syslog-ng completely.
  */
-static gboolean
-control_channel_input(GIOChannel *channel, GIOCondition cond, gpointer user_data)
+static void
+control_connection_io_input(void *s)
 {
-  GString *command = g_string_sized_new(32);
-  gsize command_len = 0;
-  GError *error = NULL;
+  ControlConnection *self = (ControlConnection *) s;
+  GString *command = NULL;
+  gchar *nl;
+  gint rc;
   gint cmd;
-  GIOStatus status;
+  gint orig_len;
   
-  status = g_io_channel_read_line_string(channel, command, &command_len, &error);
-  if (status == G_IO_STATUS_ERROR)
+  if (self->input_buffer->len > MAX_CONTROL_LINE_LENGTH)
     {
-      msg_error("Error reading command on control channel, closing control channel",
-                evt_tag_str("error", error->message),
+      /* too much data in input, drop the connection */
+      msg_error("Too much data in the control socket input buffer",
                 NULL);
-      g_clear_error(&error);
-      return FALSE;
+      control_connection_stop_watches(self);
+      control_connection_free(self);
+      return;
     }
-  else if (status != G_IO_STATUS_NORMAL)
+
+  orig_len = self->input_buffer->len;
+
+  /* NOTE: plus one for the terminating NUL */
+  g_string_set_size(self->input_buffer, self->input_buffer->len + 128 + 1);
+  rc = read(self->control_io.fd, self->input_buffer->str + orig_len, 128);
+  if (rc < 0)
     {
-      /* EAGAIN or EOF */
-      msg_verbose("EOF or EAGAIN on control channel, closing control channel", NULL);
-      return FALSE;
+      if (errno != EAGAIN)
+        {
+          msg_error("Error reading command on control channel, closing control channel",
+                    evt_tag_errno("error", errno),
+                    NULL);
+          goto destroy_connection;
+        }
+      /* EAGAIN, should try again when data comes */
+      control_connection_update_watches(self);
+      return;
     }
-  /* strip EOL */
-  g_string_truncate(command, command_len);
+  else if (rc == 0)
+    {
+      msg_error("EOF on control channel, closing connection",
+                NULL);
+      goto destroy_connection;
+    }
+  else
+    {
+      self->input_buffer->len = orig_len + rc;
+      self->input_buffer->str[self->input_buffer->len] = 0;
+    }
+
+  /* here we have finished reading the input, check if there's a newline somewhere */
+  nl = strchr(self->input_buffer->str, '\n');
+  if (nl)
+    {
+      command = g_string_sized_new(128);
+      /* command doesn't contain NL */
+      g_string_assign_len(command, self->input_buffer->str, nl - self->input_buffer->str);
+      /* strip NL */
+      g_string_erase(self->input_buffer, 0, command->len + 1);
+    }
+  else
+    {
+      /* no EOL in the input buffer, wait for more data */
+      control_connection_update_watches(self);
+      return;
+    }
 
   for (cmd = 0; commands[cmd].func; cmd++)
     {
       if (strncmp(commands[cmd].command, command->str, strlen(commands[cmd].command)) == 0)
-        return commands[cmd].func(channel, command);
+        {
+          commands[cmd].func(self, command);
+          break;
+        }
     }
-  msg_error("Unknown command read on control channel, closing control channel",
+  if (!commands[cmd].func)
+    {
+      msg_error("Unknown command read on control channel, closing control channel",
                 evt_tag_str("command", command->str), NULL);
-  return FALSE;
+      goto destroy_connection;
+    }
+  control_connection_update_watches(self);
+  g_string_free(command, TRUE);
+  return;
+ destroy_connection:
+  control_connection_stop_watches(self);
+  control_connection_free(self);
+
 }
 
-static gboolean
+static void
+control_connection_start_watches(ControlConnection *self, gint sock)
+{
+  IV_FD_INIT(&self->control_io);
+  self->control_io.cookie = self;
+  self->control_io.fd = sock;
+  iv_fd_register(&self->control_io);
+
+  control_connection_update_watches(self);
+}
+
+static void
+control_connection_stop_watches(ControlConnection *self)
+{
+  iv_fd_unregister(&self->control_io);
+}
+
+static void
+control_connection_update_watches(ControlConnection *self)
+{
+  if (self->output_buffer->len > self->pos)
+    {
+      iv_fd_set_handler_out(&self->control_io, control_connection_io_output);
+      iv_fd_set_handler_in(&self->control_io, NULL);
+    }
+  else
+    {
+      iv_fd_set_handler_out(&self->control_io, NULL);
+      iv_fd_set_handler_in(&self->control_io, control_connection_io_input);
+    }
+}
+
+ControlConnection *
+control_connection_new(gint sock)
+{
+  ControlConnection *self = g_new0(ControlConnection, 1);
+
+  self->output_buffer = g_string_sized_new(256);
+  self->input_buffer = g_string_sized_new(128);
+
+  control_connection_start_watches(self, sock);
+  return self;
+}
+
+void
+control_connection_free(ControlConnection *self)
+{
+  g_string_free(self->output_buffer, TRUE);
+  g_string_free(self->input_buffer, TRUE);
+  g_free(self);
+}
+
+
+static void
 control_socket_accept(gpointer user_data)
 {
   gint conn_socket;
   GSockAddr *peer_addr;
   GIOStatus status;
-  GIOChannel *channel;
+  ControlConnection *conn;
   
   if (control_socket == -1)
-    return FALSE;
+    return;
   status = g_accept(control_socket, &conn_socket, &peer_addr);
   if (status != G_IO_STATUS_NORMAL)
     {
@@ -222,21 +319,17 @@ control_socket_accept(gpointer user_data)
                 NULL);
       goto error;
     }
+  /* NOTE: the connection will free itself if the peer terminates */
+  conn = control_connection_new(conn_socket);
   g_sockaddr_unref(peer_addr);
-  channel = g_io_channel_unix_new(conn_socket);
-  g_io_channel_set_encoding(channel, NULL, NULL);
-  g_io_channel_set_close_on_unref(channel, TRUE);
-  g_io_add_watch(channel, G_IO_IN, control_channel_input, NULL);
-  g_io_channel_unref(channel);
  error:
-  return TRUE;
+  ;
 }
 
 void 
-control_init(const gchar *control_name, GMainContext *main_context)
+control_init(const gchar *control_name)
 {
   GSockAddr *saddr;
-  GSource *source;
   
   saddr = g_sockaddr_unix_new(control_name);
   control_socket = socket(PF_UNIX, SOCK_STREAM, 0);
@@ -263,11 +356,12 @@ control_init(const gchar *control_name, GMainContext *main_context)
                NULL);
       goto error;
     }
-  
-  source = g_listen_source_new(control_socket);
-  g_source_set_callback(source, control_socket_accept, NULL, NULL);
-  g_source_attach(source, main_context);
-  g_source_unref(source);
+
+  IV_FD_INIT(&control_listen);
+  control_listen.fd = control_socket;
+  control_listen.handler_in = control_socket_accept;
+  iv_fd_register(&control_listen);
+
   g_sockaddr_unref(saddr);
   return;
  error:

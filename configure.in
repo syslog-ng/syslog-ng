@@ -364,7 +364,7 @@ if test "x$enable_linux_caps" = "xyes" -o "x$enable_linux_caps" = "xauto"; then
 	AC_CHECK_LIB(cap, cap_set_proc, LIBCAP_LIBS="-lcap")
 fi
 
-AC_CHECK_FUNCS(strdup strtol strtoll strtoimax inet_aton inet_ntoa getopt_long getaddrinfo getutent pread pwrite strcasestr memrchr)
+AC_CHECK_FUNCS(strdup strtol strtoll strtoimax inet_aton inet_ntoa getopt_long getaddrinfo getutent pread pwrite strcasestr memrchr clock_gettime)
 
 dnl ***************************************************************************
 dnl libevtlog headers/libraries

@@ -7,6 +7,7 @@ libsyslog_ng_la_LIBADD = @CORE_DEPS_LIBS@
 
 libsyslog_ng_la_SOURCES = \
 	misc.c misc.h utils.c utils.h messages.c messages.h syslog-names.c syslog-names.h \
+	mainloop.c mainloop.h \
 	cfg.c cfg.h filter.c filter.h \
 	logmsg.c logmsg.h logstamp.c logstamp.h \
 	msg-format.c msg-format.h \

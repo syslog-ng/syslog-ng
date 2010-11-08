@@ -31,6 +31,8 @@
 #include "tlscontext.h"
 #endif
 
+#include <iv.h>
+
 #define AFSOCKET_DGRAM               0x0001
 #define AFSOCKET_STREAM              0x0002
 #define AFSOCKET_LOCAL               0x0004
@@ -64,8 +66,8 @@ struct _AFSocketSourceDriver
 {
   LogDriver super;
   guint32 flags;
+  struct iv_fd listen_fd;
   gint fd;
-  guint source_id;
   LogReaderOptions reader_options;
 #if ENABLE_SSL
   TLSContext *tls_context;
@@ -100,7 +102,6 @@ struct _AFSocketDestDriver
   LogDriver super;
   guint32 flags;
   gint fd;
-  guint source_id;
   LogPipe *writer;
   LogWriterOptions writer_options;
 #if ENABLE_SSL
@@ -113,7 +114,8 @@ struct _AFSocketDestDriver
   GSockAddr *dest_addr;
   gchar *dest_name;
   gint time_reopen;
-  guint reconnect_timer;
+  struct iv_fd connect_fd;
+  struct iv_timer reconnect_timer;
   SocketOptions *sock_options_ptr;
   gboolean (*setup_socket)(AFSocketDestDriver *s, gint fd);
 };

@@ -28,10 +28,6 @@
 #include "syslog-ng.h"
 #include "gsockaddr.h"
 
-GSource *g_listen_source_new(gint fd);
-GSource *g_connect_source_new(gint fd);
-
-
 GIOStatus g_bind(int fd, GSockAddr *addr);
 GIOStatus g_accept(int fd, int *newfd, GSockAddr **addr);
 GIOStatus g_connect(int fd, GSockAddr *remote);

@@ -44,10 +44,9 @@ gboolean debug_flag = 0;
 gboolean verbose_flag = 0;
 gboolean trace_flag = 0;
 gboolean log_stderr = FALSE;
+static MsgPostFunc msg_post_func;
 static gboolean log_syslog = FALSE;
-static gboolean syslog_started = FALSE;
 static EVTCONTEXT *evt_context;
-MsgQueue *internal_msg_queue = NULL;
 static GStaticPrivate msg_context_private = G_STATIC_PRIVATE_INIT;
 static GStaticMutex evtlog_lock = G_STATIC_MUTEX_INIT;
 
@@ -81,6 +80,21 @@ msg_set_context(LogMessage *msg)
     }
 }
 
+void
+msg_set_post_func(MsgPostFunc func)
+{
+  msg_post_func = func;
+}
+
+void
+msg_post_message(LogMessage *msg)
+{
+  if (msg_post_func)
+    msg_post_func(msg);
+  else
+    log_msg_unref(msg);
+}
+
 #define MAX_RECURSIONS 1
 
 gboolean
@@ -112,7 +126,7 @@ msg_limit_internal_message(void)
 static void
 msg_send_internal_message(int prio, const char *msg)
 {
-  if (G_UNLIKELY(log_stderr || (!syslog_started && (prio & 0x7) <= EVT_PRI_WARNING)))
+  if (G_UNLIKELY(log_stderr || (msg_post_func == NULL && (prio & 0x7) <= EVT_PRI_WARNING)))
     {
       fprintf(stderr, "%s\n", msg);
     }
@@ -120,24 +134,16 @@ msg_send_internal_message(int prio, const char *msg)
     {
       LogMessage *m;
       
-      if (G_LIKELY(internal_msg_queue))
-        {
-          MsgContext *context = msg_get_context();
+      MsgContext *context = msg_get_context();
 
-          if (context->recurse_count == 0)
-            context->recurse_warning = FALSE;
-          m = log_msg_new_internal(prio, msg);
-          m->recurse_count = context->recurse_count;
-          msg_queue_push(internal_msg_queue, m);
-        }
+      if (context->recurse_count == 0)
+        context->recurse_warning = FALSE;
+      m = log_msg_new_internal(prio, msg);
+      m->recurse_count = context->recurse_count;
+      msg_post_message(m);
     }
 }
 
-void
-msg_post_message(LogMessage *msg)
-{
-  msg_queue_push(internal_msg_queue, log_msg_ref(msg));
-}
 
 EVTREC *
 msg_event_create(gint prio, const gchar *desc, EVTTAG *tag1, ...)
@@ -195,12 +201,6 @@ msg_log_func(const gchar *log_domain, GLogLevelFlags log_flags, const gchar *msg
 }
 
 void
-msg_syslog_started(void)
-{
-  syslog_started = TRUE;
-}
-
-void
 msg_redirect_to_syslog(const gchar *program_name)
 {
   log_syslog = TRUE;
@@ -212,7 +212,6 @@ msg_init(gboolean interactive)
 {
   if (!interactive)
     {
-      internal_msg_queue = msg_queue_new();
       g_log_set_handler(G_LOG_DOMAIN, 0xff, msg_log_func, NULL);
       g_log_set_handler("GLib", 0xff, msg_log_func, NULL);
     }
@@ -228,11 +227,6 @@ void
 msg_deinit()
 {
   evt_ctx_free(evt_context);
-  if (internal_msg_queue)
-    {
-      msg_queue_free(internal_msg_queue);
-      internal_msg_queue = NULL;
-    }
 }
 
 static GOptionEntry msg_option_entries[] =

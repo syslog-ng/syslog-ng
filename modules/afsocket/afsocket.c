@@ -420,7 +420,7 @@ afsocket_sd_process_connection(AFSocketSourceDriver *self, GSockAddr *client_add
 
 #define MAX_ACCEPTS_AT_A_TIME 30
 
-static gboolean
+static void
 afsocket_sd_accept(gpointer s)
 {
   AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
@@ -445,12 +445,12 @@ afsocket_sd_accept(gpointer s)
           msg_error("Error accepting new connection",
                     evt_tag_errno(EVT_TAG_OSERROR, errno),
                     NULL);
-          return TRUE;
+          return;
         }
       if (self->setup_socket && !self->setup_socket(self, new_fd))
         {
           close(new_fd);
-          return TRUE;
+          return;
         }
 
       g_fd_set_nonblock(new_fd, TRUE);
@@ -481,7 +481,7 @@ afsocket_sd_accept(gpointer s)
       g_sockaddr_unref(peer_addr);
       accepts++;
     }
-  return TRUE;
+  return;
 }
 
 static void
@@ -519,6 +519,22 @@ afsocket_sd_kill_connection_list(GList *list)
   GList *l;
   for (l = list; l; l = g_list_next(l))
     afsocket_sd_kill_connection((AFSocketSourceConnection *) l->data);
+}
+
+static void
+afsocket_sd_start_watches(AFSocketSourceDriver *self)
+{
+  INIT_IV_FD(&self->listen_fd);
+  self->listen_fd.fd = self->fd;
+  self->listen_fd.cookie = self;
+  self->listen_fd.handler_in = afsocket_sd_accept;
+  iv_register_fd(&self->listen_fd);
+}
+
+static void
+afsocket_sd_stop_watches(AFSocketSourceDriver *self)
+{
+  iv_unregister_fd(&self->listen_fd);
 }
 
 gboolean
@@ -578,8 +594,6 @@ afsocket_sd_init(LogPipe *s)
   sock = -1;
   if (self->flags & AFSOCKET_STREAM)
     {
-      GSource *source;
-
       if (self->flags & AFSOCKET_KEEP_ALIVE)
         {
           /* NOTE: this assumes that fd 0 will never be used for listening fds,
@@ -610,13 +624,7 @@ afsocket_sd_init(LogPipe *s)
         }
 
       self->fd = sock;
-      source = g_listen_source_new(self->fd);
-
-      /* the listen_source references us, which is freed when the source is deleted */
-      log_pipe_ref(s);
-      g_source_set_callback(source, afsocket_sd_accept, self, (GDestroyNotify) log_pipe_unref);
-      self->source_id = g_source_attach(source, NULL);
-      g_source_unref(source);
+      afsocket_sd_start_watches(self);
       res = TRUE;
     }
   else
@@ -680,9 +688,7 @@ afsocket_sd_deinit(LogPipe *s)
 
   if (self->flags & AFSOCKET_STREAM)
     {
-
-      g_source_remove(self->source_id);
-      self->source_id = 0;
+      afsocket_sd_stop_watches(self);
       if ((self->flags & AFSOCKET_KEEP_ALIVE) == 0)
         {
           msg_verbose("Closing listener fd",
@@ -791,7 +797,6 @@ afsocket_sd_init_instance(AFSocketSourceDriver *self, SocketOptions *sock_option
 
 /* socket destinations */
 
-void afsocket_dd_reconnect(AFSocketDestDriver *self);
 
 #if ENABLE_SSL
 void
@@ -873,15 +878,6 @@ afsocket_dd_stats_instance(AFSocketDestDriver *self)
     }
 }
 
-static gboolean
-afsocket_dd_reconnect_timer(gpointer s)
-{
-  AFSocketDestDriver *self = (AFSocketDestDriver *) s;
-
-  afsocket_dd_reconnect(self);
-  return FALSE;
-}
-
 #if ENABLE_SSL
 static gint
 afsocket_dd_tls_verify_callback(gint ok, X509_STORE_CTX *ctx, gpointer user_data)
@@ -897,15 +893,53 @@ afsocket_dd_tls_verify_callback(gint ok, X509_STORE_CTX *ctx, gpointer user_data
 }
 #endif
 
+static gboolean afsocket_dd_connected(AFSocketDestDriver *self);
+static void afsocket_dd_reconnect(AFSocketDestDriver *self);
+
+static void
+afsocket_dd_start_watches(AFSocketDestDriver *self)
+{
+  INIT_IV_FD(&self->connect_fd);
+  self->connect_fd.fd = self->fd;
+  self->connect_fd.cookie = self;
+  self->connect_fd.handler_out = (void (*)(void *)) afsocket_dd_connected;
+  iv_register_fd(&self->connect_fd);
+
+  INIT_IV_TIMER(&self->reconnect_timer);
+  self->reconnect_timer.cookie = self;
+  self->reconnect_timer.handler = (void (*)(void *)) afsocket_dd_reconnect;
+}
+
+static void
+afsocket_dd_stop_watches(AFSocketDestDriver *self)
+{
+  if (iv_fd_registered(&self->connect_fd))
+    {
+      iv_unregister_fd(&self->connect_fd);
+
+      /* need to close the fd in this case as it wasn't established yet */
+      msg_verbose("Closing connecting fd",
+                  evt_tag_int("fd", self->fd),
+                  NULL);
+      close(self->fd);
+    }
+  if (iv_timer_registered(&self->reconnect_timer))
+    iv_unregister_timer(&self->reconnect_timer);
+}
+
 static void
 afsocket_dd_start_reconnect_timer(AFSocketDestDriver *self)
 {
-  if (self->reconnect_timer)
-    g_source_remove(self->reconnect_timer);
-  self->reconnect_timer = g_timeout_add(self->time_reopen * 1000, afsocket_dd_reconnect_timer, self);
+  if (iv_timer_registered(&self->reconnect_timer))
+    iv_unregister_timer(&self->reconnect_timer);
+  iv_validate_now();
+
+  self->reconnect_timer.expires = now;
+  timespec_add_msec(&self->reconnect_timer.expires, self->time_reopen * 1000);
+  iv_register_timer(&self->reconnect_timer);
 }
 
-gboolean
+static gboolean
 afsocket_dd_connected(AFSocketDestDriver *self)
 {
   gchar buf1[256], buf2[256];
@@ -947,11 +981,7 @@ afsocket_dd_connected(AFSocketDestDriver *self)
               evt_tag_str("local", g_sockaddr_format(self->bind_addr, buf1, sizeof(buf1), GSA_FULL)),
               NULL);
 
-  if (self->source_id)
-    {
-      g_source_remove(self->source_id);
-      self->source_id = 0;
-    }
+  iv_unregister_fd(&self->connect_fd);
 
 #if ENABLE_SSL
   if (self->tls_context)
@@ -991,7 +1021,7 @@ afsocket_dd_connected(AFSocketDestDriver *self)
   return FALSE;
 }
 
-gboolean
+static gboolean
 afsocket_dd_start_connect(AFSocketDestDriver *self)
 {
   int sock, rc;
@@ -1016,19 +1046,10 @@ afsocket_dd_start_connect(AFSocketDestDriver *self)
     }
   else if (rc == G_IO_STATUS_ERROR && errno == EINPROGRESS)
     {
-      GSource *source;
-
       /* we must wait until connect succeeds */
 
       self->fd = sock;
-      source = g_connect_source_new(sock);
-
-      /* a reference is added on behalf of the source, it will be unrefed when
-       * the source is destroyed */
-      log_pipe_ref(&self->super.super);
-      g_source_set_callback(source, (GSourceFunc) afsocket_dd_connected, self, (GDestroyNotify) log_pipe_unref);
-      self->source_id = g_source_attach(source, NULL);
-      g_source_unref(source);
+      afsocket_dd_start_watches(self);
     }
   else
     {
@@ -1046,7 +1067,7 @@ afsocket_dd_start_connect(AFSocketDestDriver *self)
   return TRUE;
 }
 
-void
+static void
 afsocket_dd_reconnect(AFSocketDestDriver *self)
 {
   if (!afsocket_dd_start_connect(self))
@@ -1109,15 +1130,7 @@ afsocket_dd_deinit(LogPipe *s)
   AFSocketDestDriver *self = (AFSocketDestDriver *) s;
   GlobalConfig *cfg = log_pipe_get_config(s);
 
-  if (self->reconnect_timer)
-    g_source_remove(self->reconnect_timer);
-  if (self->source_id && g_source_remove(self->source_id))
-    {
-      msg_verbose("Closing connecting fd",
-                  evt_tag_int("fd", self->fd),
-                  NULL);
-      close(self->fd);
-    }
+  afsocket_dd_stop_watches(self);
   if (self->writer)
     {
       log_pipe_deinit(self->writer);
@@ -1149,12 +1162,7 @@ afsocket_dd_notify(LogPipe *s, LogPipe *sender, gint notify_code, gpointer user_
                  evt_tag_str("server", g_sockaddr_format(self->dest_addr, buf, sizeof(buf), GSA_FULL)),
                  evt_tag_int("time_reopen", self->time_reopen),
                  NULL);
-      if (self->reconnect_timer)
-        {
-          g_source_remove(self->reconnect_timer);
-          self->reconnect_timer = 0;
-        }
-      self->reconnect_timer = g_timeout_add(self->time_reopen * 1000, afsocket_dd_reconnect_timer, self);
+      afsocket_dd_start_reconnect_timer(self);
       break;
     }
 }

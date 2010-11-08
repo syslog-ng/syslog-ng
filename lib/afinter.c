@@ -26,154 +26,229 @@
 #include "logreader.h"
 #include "stats.h"
 #include "messages.h"
+#include "apphook.h"
 
-typedef struct _AFInterSourceDriver
+typedef struct _AFInterSourceDriver AFInterSourceDriver;
+typedef struct _AFInterSource AFInterSource;
+
+static GStaticMutex internal_msg_lock;
+static GQueue *internal_msg_queue;
+static AFInterSource *current_internal_source;
+
+/*
+ * This is the actual source driver, linked into the configuration tree.
+ */
+struct _AFInterSourceDriver
 {
   LogDriver super;
   LogSource *source;
   LogSourceOptions source_options;
-} AFInterSourceDriver;
+};
 
-static gint next_mark_target = -1;
+/* the expiration timer of the next MARK message */
+static struct timespec next_mark_target = { -1, 0 };
 
-void 
-afinter_postpone_mark(gint mark_freq)
+
+/*
+ * This class is parallel to LogReader, e.g. it hangs on the
+ * AFInterSourceDriver on the left (e.g.  feeds messages to
+ * AFInterSourceDriver).
+ *
+ * Threading:
+ * ==========
+ *
+ * syslog-ng can generate internal() messages in any of its threads, thus
+ * some care must be taken to make the internal() source multithreaded.
+ * This is how it works:
+ *
+ * Whenever a thread decides to send a message using the msg_() API, it puts
+ * an entry into the internal_msg_queue under the protection of
+ * "internal_msg_lock".
+ *
+ * The receiving side of this queue is in the main thread, where the
+ * internal() source is operating.  This object will publish a pointer to
+ * itself into current_internal_source.  This pointer will be set under the
+ * protection of the internal_msg_lock.  The internal source will define an
+ * ivykis event, a post is submitted to this event whenever a new message is
+ * added to the queue.
+ *
+ * Once the event arrives to the main loop, it wakes up and feeds all
+ * internal messages into the log path.
+ *
+ * If the window is depleted (e.g. flow control is enabled and the
+ * destination is unable to process any more messages),
+ * current_internal_source will be set to NULL, which means that messages
+ * will be added to the queue, but the wakeup will not be done.
+ *
+ * When the window becomes free, log_source_wakeup() is called, which
+ * restores the current_internal_source pointer (e.g.  further messages will
+ * wake up the source) and also starts emptying the messages accumulated in the queue.
+ *
+ * Possible races:
+ * ===============
+ *
+ * The biggest offenders are when a client thread submits a message and
+ * we're in the process of getting asleep (no window), or waking up.  There
+ * are notes in the code how we handle these cases (search for "Possible race").
+ *
+ */
+struct _AFInterSource
 {
-  if (mark_freq > 0)
-    {
-      GTimeVal tv;
-      cached_g_current_time(&tv);
-      next_mark_target = tv.tv_sec + mark_freq;
-    }
-}
-
-typedef struct _AFInterWatch
-{
-  GSource super;
-  LogSource *afinter_source;
+  LogSource super;
   gint mark_freq;
-} AFInterWatch;
+  struct iv_event post;
+  struct iv_event schedule_wakeup;
+  struct iv_timer mark_timer;
+  struct iv_task restart_task;
+  gboolean watches_running:1;
+};
 
-static gboolean
-afinter_source_prepare(GSource *source, gint *timeout)
+static void afinter_source_update_watches(AFInterSource *self);
+
+static void
+afinter_source_post(gpointer s)
 {
-  AFInterWatch *self = (AFInterWatch *) source;
-  GTimeVal tv;
-  
-  *timeout = -1;
-
-  if (!log_source_free_to_send(self->afinter_source))
-    return FALSE;
-
-  if (self->mark_freq > 0 && next_mark_target == -1)
-    {
-      g_source_get_current_time(source, &tv);
-      next_mark_target = tv.tv_sec + self->mark_freq;
-    }
-    
-  if (next_mark_target != -1)
-    {
-      g_source_get_current_time(source, &tv);
-      *timeout = MAX((next_mark_target - tv.tv_sec) * 1000, 0);
-    }
-  else
-    {
-      *timeout = -1;
-    }
-  return msg_queue_length(internal_msg_queue) > 0;
-}
-
-static gboolean
-afinter_source_check(GSource *source)
-{
-  AFInterWatch *self = (AFInterWatch *) source;
-  GTimeVal tv;
-
-  if (!log_source_free_to_send(self->afinter_source))
-    return FALSE;
-
-  g_source_get_current_time(source, &tv);
-  
-  if (next_mark_target != -1 && next_mark_target <= tv.tv_sec)
-    return TRUE;
-  return msg_queue_length(internal_msg_queue) > 0;
-}
-
-static gboolean
-afinter_source_dispatch(GSource *source,
-                        GSourceFunc callback,
-                        gpointer user_data)
-{
-  AFInterWatch *self = (AFInterWatch *) source;
+  AFInterSource *self = (AFInterSource *) s;
   LogMessage *msg;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
-  GTimeVal tv;
 
-  if (!log_source_free_to_send(self->afinter_source))
-    return FALSE;
-  
-  g_source_get_current_time(source, &tv);
-  
-  if (next_mark_target != -1 && next_mark_target <= tv.tv_sec)
+  while (log_source_free_to_send(&self->super))
+    {
+      g_static_mutex_lock(&internal_msg_lock);
+      msg = g_queue_pop_head(internal_msg_queue);
+      g_static_mutex_unlock(&internal_msg_lock);
+      if (!msg)
+        break;
+
+      log_pipe_queue(&self->super.super, msg, &path_options);
+    }
+  afinter_source_update_watches(self);
+}
+
+static void
+afinter_source_mark(gpointer s)
+{
+  AFInterSource *self = (AFInterSource *) s;
+  LogMessage *msg;
+  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
+
+  if (log_source_free_to_send(&self->super))
     {
       msg = log_msg_new_mark();
       path_options.flow_control = FALSE;
+
+      log_pipe_queue(&self->super.super, msg, &path_options);
+
+      next_mark_target.tv_sec += self->mark_freq;
     }
-  else
-    {
-      msg = msg_queue_pop(internal_msg_queue);
-    }
-
-
-  if (msg)
-    ((void (*)(LogPipe *, LogMessage *, const LogPathOptions *))callback) ((LogPipe *) user_data, msg, &path_options);
-  return TRUE;
+  afinter_source_update_watches(self);
 }
-
-static void
-afinter_source_finalize(GSource *source)
-{
-}
-
-GSourceFuncs afinter_source_watch_funcs =
-{
-  afinter_source_prepare,
-  afinter_source_check,
-  afinter_source_dispatch,
-  afinter_source_finalize
-};
-
-static void
-afinter_source_dispatch_msg(LogPipe *pipe, LogMessage *msg, const LogPathOptions *path_options)
-{
-  log_pipe_queue(pipe, msg, path_options);
-}
-
-static inline GSource *
-afinter_source_watch_new(LogSource *afinter_source, gint mark_freq)
-{
-  AFInterWatch *self = (AFInterWatch *) g_source_new(&afinter_source_watch_funcs, sizeof(AFInterWatch));
-  
-  next_mark_target = -1;
-  self->mark_freq = mark_freq;
-  self->afinter_source = afinter_source;
-  g_source_set_callback(&self->super, (GSourceFunc) afinter_source_dispatch_msg, log_pipe_ref(&afinter_source->super), (GDestroyNotify) log_pipe_unref);
-  return &self->super;
-}
-
-typedef struct _AFInterSource
-{
-  LogSource super;
-  GSource *watch;
-} AFInterSource;
 
 static void
 afinter_source_wakeup(LogSource *s)
 {
   AFInterSource *self = (AFInterSource *) s;
 
-  if (self->watch)
-    g_main_context_wakeup(g_source_get_context(self->watch));
+  iv_event_post(&self->schedule_wakeup);
+}
+
+static void
+afinter_source_init_watches(AFInterSource *self)
+{
+  IV_EVENT_INIT(&self->post);
+  self->post.cookie = self;
+  self->post.handler = afinter_source_post;
+  IV_TIMER_INIT(&self->mark_timer);
+  self->mark_timer.cookie = self;
+  self->mark_timer.handler = afinter_source_mark;
+  IV_EVENT_INIT(&self->schedule_wakeup);
+  self->schedule_wakeup.cookie = self;
+  self->schedule_wakeup.handler = (void (*)(void *)) afinter_source_update_watches;
+  IV_TASK_INIT(&self->restart_task);
+  self->restart_task.cookie = self;
+  self->restart_task.handler = afinter_source_post;
+}
+
+static void
+afinter_source_start_watches(AFInterSource *self)
+{
+  if (!self->watches_running)
+    {
+      if (self->mark_timer.expires.tv_sec >= 0)
+        iv_timer_register(&self->mark_timer);
+      self->watches_running = TRUE;
+    }
+}
+
+static void
+afinter_source_stop_watches(AFInterSource *self)
+{
+  if (self->watches_running)
+    {
+      if (iv_task_registered(&self->restart_task))
+        iv_task_unregister(&self->restart_task);
+      if (iv_timer_registered(&self->mark_timer))
+        iv_timer_unregister(&self->mark_timer);
+      self->watches_running = FALSE;
+    }
+}
+
+static void
+afinter_source_update_watches(AFInterSource *self)
+{
+  if (!log_source_free_to_send(&self->super))
+    {
+      /* ok, we go to sleep now. let's disable the post event by setting
+       * current_internal_source to NULL.  Messages get accumulated into
+       * internal_msg_queue.  */
+      g_static_mutex_lock(&internal_msg_lock);
+      current_internal_source = NULL;
+      g_static_mutex_unlock(&internal_msg_lock);
+
+      /* Possible race:
+       *
+       * After the check log_source_free_to_send() above, the destination
+       * may actually write out a message, thus by the time we get here, the
+       * window may have space again.  This is taken care of by the fact
+       * that the wakeup is running in the main thread, which we do too.  So
+       * the wakeup is either completely performed before we entered this
+       * function, or after we return.
+       *
+       * In case it happened earlier, the check above will find that we have
+       * window space, in case it's going to be happening afterwards, we
+       * will be woken up by the schedule_wakeup event (which calls
+       * update_watches again).
+       */
+
+      /* MARK events also get disabled */
+      afinter_source_stop_watches(self);
+    }
+  else
+    {
+      /* ok we can send our stuff. make sure we wake up */
+      afinter_source_stop_watches(self);
+      self->mark_timer.expires = next_mark_target;
+      afinter_source_start_watches(self);
+
+      /* Possible race:
+       *
+       * Our current_internal_source pointer is set to NULL here (in case
+       * we're just waking up).  In case the sender submits a message, it'll
+       * not trigger the self->post (since the pointer is NULL).  This is
+       * taken care of by the queue-length check in the locked region below.
+       * If the queue has elements, we need to wake up, because we may have
+       * lost a wakeup call.  If it happens after the locked region, that
+       * doesn't matter, in that case we already pointed
+       * current_internal_source to ourselves, thus the post event will also
+       * be triggered.
+       */
+
+      g_static_mutex_lock(&internal_msg_lock);
+      if (internal_msg_queue && g_queue_get_length(internal_msg_queue) > 0)
+        iv_task_register(&self->restart_task);
+      current_internal_source = self;
+      g_static_mutex_unlock(&internal_msg_lock);
+    }
 }
 
 static gboolean
@@ -184,11 +259,22 @@ afinter_source_init(LogPipe *s)
   
   if (!log_source_init(s))
     return FALSE;
-  
-  /* the source added below references this logreader, it will be unref'd
-     when the source is destroyed */ 
-  self->watch = afinter_source_watch_new(&self->super, cfg->mark_freq);
-  g_source_attach(self->watch, NULL);
+
+  self->mark_freq = cfg->mark_freq;
+  afinter_postpone_mark(self->mark_freq);
+  self->mark_timer.expires = next_mark_target;
+
+  /* post event is used by other threads and can only be unregistered if
+   * current_afinter_source is set to NULL in a thread safe manner */
+  iv_event_register(&self->post);
+  iv_event_register(&self->schedule_wakeup);
+
+  afinter_source_start_watches(self);
+
+  g_static_mutex_lock(&internal_msg_lock);
+  current_internal_source = self;
+  g_static_mutex_unlock(&internal_msg_lock);
+
   return TRUE;
 }
 
@@ -197,12 +283,17 @@ afinter_source_deinit(LogPipe *s)
 {
   AFInterSource *self = (AFInterSource *) s;
   
-  if (self->watch)
-    {
-      g_source_destroy(self->watch);
-      g_source_unref(self->watch);
-      self->watch = NULL;
-    }
+  g_static_mutex_lock(&internal_msg_lock);
+  current_internal_source = NULL;
+  g_static_mutex_unlock(&internal_msg_lock);
+
+  /* the post handler can now be unregistered as current_internal_source is
+   * set to NULL.  Locks are only used as a memory barrier.  */
+
+  iv_event_unregister(&self->post);
+  iv_event_unregister(&self->schedule_wakeup);
+
+  afinter_source_stop_watches(self);
   return log_source_deinit(s);
 }
 
@@ -213,6 +304,7 @@ afinter_source_new(AFInterSourceDriver *owner, LogSourceOptions *options)
   
   log_source_init_instance(&self->super);
   log_source_set_options(&self->super, options, 0, SCS_INTERNAL, owner->super.id, NULL);
+  afinter_source_init_watches(self);
   self->super.super.init = afinter_source_init;
   self->super.super.deinit = afinter_source_deinit;
   self->super.wakeup = afinter_source_wakeup;
@@ -225,6 +317,12 @@ afinter_sd_init(LogPipe *s)
 {
   AFInterSourceDriver *self = (AFInterSourceDriver *) s;
   GlobalConfig *cfg = log_pipe_get_config(s);
+
+  if (current_internal_source != NULL)
+    {
+      msg_error("Multiple internal() sources were detected, this is not possible", NULL);
+      return FALSE;
+    }
 
   log_source_options_init(&self->source_options, cfg, self->super.group);
   self->source = afinter_source_new(self, &self->source_options);
@@ -257,6 +355,7 @@ afinter_sd_free(LogPipe *s)
   log_drv_free(s);
 }
 
+
 LogDriver *
 afinter_sd_new(void)
 {
@@ -270,3 +369,43 @@ afinter_sd_new(void)
   return &self->super;
 }
 
+/****************************************************************************
+ * Global entry points, without an AFInterSourceDriver instance.
+ ****************************************************************************/
+
+void
+afinter_postpone_mark(gint mark_freq)
+{
+  if (mark_freq > 0)
+    {
+      iv_validate_now();
+      next_mark_target = now;
+      timespec_add_msec(&next_mark_target, mark_freq * 1000);
+    }
+}
+
+void
+afinter_message_posted(LogMessage *msg)
+{
+  g_static_mutex_lock(&internal_msg_lock);
+  if (!internal_msg_queue)
+    {
+      internal_msg_queue = g_queue_new();
+    }
+  g_queue_push_tail(internal_msg_queue, msg);
+  if (current_internal_source)
+    iv_event_post(&current_internal_source->post);
+  g_static_mutex_unlock(&internal_msg_lock);
+}
+
+static void
+afinter_register_posted_hook(gint hook_type, gpointer user_data)
+{
+  msg_set_post_func(afinter_message_posted);
+}
+
+void
+afinter_global_init(void)
+{
+  register_application_hook(AH_POST_CONFIG_LOADED, afinter_register_posted_hook, NULL);
+}

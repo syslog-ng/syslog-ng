@@ -261,6 +261,8 @@ affile_sd_init(LogPipe *s)
   gint fd;
   gboolean file_opened, open_deferred = FALSE;
 
+  if ((self->flags & AFFILE_PIPE) == 0 && self->reader_options.follow_freq != 0)
+    self->reader_options.flags |= LR_FILE_FD;
   log_reader_options_init(&self->reader_options, cfg, self->super.group);
 
   file_opened = affile_sd_open_file(self, self->filename->str, &fd);
@@ -397,17 +399,21 @@ affile_sd_new(gchar *filename, guint32 flags)
   else
     {
       if ((self->flags & AFFILE_PIPE) == 0)
-        self->reader_options.follow_freq = 1000;
-
-      if (0 ||
-#if __linux__
-          (strcmp(filename, "/proc/kmsg") == 0) ||
-#elif __FreeBSD__
-          (strcmp(filename, "/dev/klog") == 0) ||
-#endif
-          0)
         {
-          self->reader_options.follow_freq = 0;
+          if (0 ||
+#if __linux__
+              (strcmp(filename, "/proc/kmsg") == 0) ||
+#elif __FreeBSD__
+              (strcmp(filename, "/dev/klog") == 0) ||
+#endif
+               0)
+            {
+              self->reader_options.follow_freq = 0;
+            }
+          else
+            {
+              self->reader_options.follow_freq = 1000;
+            }
         }
     }
 #if __linux__
@@ -478,7 +484,7 @@ affile_dw_init(LogPipe *s)
       
       if (!self->writer)
         {
-          self->writer = log_writer_new(LW_FORMAT_FILE | ((self->owner->flags & AFFILE_PIPE) ? 0 : LW_ALWAYS_WRITABLE));
+          self->writer = log_writer_new(LW_FORMAT_FILE | ((self->owner->flags & AFFILE_PIPE) ? 0 : LW_FILE_FD));
           log_writer_set_options((LogWriter *) self->writer, s, &self->owner->writer_options, 1, self->owner->flags & AFFILE_PIPE ? SCS_PIPE : SCS_FILE, self->owner->super.id, self->filename->str);
           log_pipe_append(&self->super, self->writer);
         }
@@ -699,15 +705,15 @@ affile_dd_format_persist_name(AFFileDestDriver *self)
   return persist_name;
 }
 
-static time_t reap_now = 0;
-
 static gboolean
 affile_dd_reap_writers(gpointer key, gpointer value, gpointer user_data)
 {
   AFFileDestDriver *self = (AFFileDestDriver *) user_data;
   AFFileDestWriter *dw = (AFFileDestWriter *) value;
+  GTimeVal now;
   
-  if ((reap_now - dw->last_msg_stamp) >= self->time_reap && affile_dw_reapable(dw))
+  cached_g_current_time(&now);
+  if ((now.tv_sec - dw->last_msg_stamp) >= self->time_reap && affile_dw_reapable(dw))
     {
       msg_verbose("Destination timed out, reaping", 
                   evt_tag_str("template", self->filename_template->template),
@@ -722,20 +728,21 @@ affile_dd_reap_writers(gpointer key, gpointer value, gpointer user_data)
   return FALSE;
 }
 
-static gboolean
+static void
 affile_dd_reap(gpointer s)
 {
   AFFileDestDriver *self = (AFFileDestDriver *) s;
-  GTimeVal now;
   
-  cached_g_current_time(&now);
   msg_verbose("Reaping unused destination files",
               evt_tag_str("template", self->filename_template->template),
               NULL);  
-  reap_now = now.tv_sec;
   if (self->writer_hash)
     g_hash_table_foreach_remove(self->writer_hash, affile_dd_reap_writers, self);
-  return TRUE;
+
+  iv_validate_now();
+  self->reap_timer.expires = now;
+  timespec_add_msec(&self->reap_timer.expires, self->time_reap * 1000 / 2);
+  iv_timer_register(&self->reap_timer);
 }
 
 /**
@@ -784,9 +791,16 @@ affile_dd_init(LogPipe *s)
   log_writer_options_init(&self->writer_options, cfg, 0);
   log_template_options_init(&self->template_fname_options, cfg);
               
+  IV_TIMER_INIT(&self->reap_timer);
   if ((self->flags & AFFILE_NO_EXPAND) == 0)
     {
-      self->reap_timer = g_timeout_add_full(G_PRIORITY_DEFAULT, self->time_reap * 1000 / 2, affile_dd_reap, self, NULL);
+      self->reap_timer.cookie = self;
+      self->reap_timer.handler = affile_dd_reap;
+
+      iv_validate_now();
+      self->reap_timer.expires = now;
+      timespec_add_msec(&self->reap_timer.expires, self->time_reap * 1000 / 2);
+      iv_timer_register(&self->reap_timer);
       self->writer_hash = cfg_persist_config_fetch(cfg, affile_dd_format_persist_name(self));
       if (self->writer_hash)
         g_hash_table_foreach(self->writer_hash, affile_dd_reuse_writer, self);
@@ -873,8 +887,8 @@ affile_dd_deinit(LogPipe *s)
       cfg_persist_config_add(cfg, affile_dd_format_persist_name(self), self->writer_hash, affile_dd_destroy_writer_hash, FALSE);
       self->writer_hash = NULL;
     }
-  if (self->reap_timer)
-    g_source_remove(self->reap_timer);
+  if (iv_timer_registered(&self->reap_timer))
+    iv_timer_unregister(&self->reap_timer);
   return TRUE;
 }
 

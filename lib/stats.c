@@ -453,13 +453,14 @@ stats_format_csv(gpointer key, gpointer value, gpointer user_data)
 }
 
 
-GString *
+gchar *
 stats_generate_csv(void)
 {
   GString *csv = g_string_sized_new(1024);
+
   g_string_append_printf(csv, "%s;%s;%s;%s;%s;%s\n", "SourceName", "SourceId", "SourceInstance", "State", "Type", "Number");
   g_hash_table_foreach(counter_hash, stats_format_csv, csv);
-  return csv;
+  return g_string_free(csv, FALSE);
 }
 
 void

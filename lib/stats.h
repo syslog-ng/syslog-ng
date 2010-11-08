@@ -69,7 +69,7 @@ typedef struct _StatsCounter StatsCounter;
 
 
 void stats_generate_log(void);
-GString *stats_generate_csv(void);
+gchar *stats_generate_csv(void);
 void stats_register_counter(gint level, gint source, const gchar *id, const gchar *instance, StatsCounterType type, guint32 **counter);
 StatsCounter *
 stats_register_dynamic_counter(gint stats_level, gint source, const gchar *id, const gchar *instance, StatsCounterType type, guint32 **counter, gboolean *new);

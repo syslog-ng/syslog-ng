@@ -61,6 +61,7 @@ struct _GlobalConfig
   gint mark_freq;
   gint flush_lines;
   gint flush_timeout;
+  gboolean threaded;
   gboolean chain_hostnames;
   gboolean normalize_hostnames;
   gboolean keep_hostname;
@@ -75,7 +76,6 @@ struct _GlobalConfig
   gchar *dns_cache_hosts;
   gint time_reopen;
   gint time_reap;
-  gint time_sleep;
 
   gint log_fifo_size;
   gint log_msg_size;
@@ -144,9 +144,7 @@ gboolean cfg_read_config(GlobalConfig *cfg, gchar *fname, gboolean syntax_only, 
 void cfg_free(GlobalConfig *self);
 gboolean cfg_init(GlobalConfig *cfg);
 gboolean cfg_deinit(GlobalConfig *cfg);
-GlobalConfig *cfg_reload_config(gchar *fname, GlobalConfig *cfg);
-gboolean cfg_initial_init(GlobalConfig *cfg, const gchar *persist_filename);
-
+void  cfg_persist_config_move(GlobalConfig *src, GlobalConfig *dest);
 
 void cfg_persist_config_add(GlobalConfig *cfg, gchar *name, gpointer value, GDestroyNotify destroy, gboolean force);
 gpointer cfg_persist_config_fetch(GlobalConfig *cfg, gchar *name);

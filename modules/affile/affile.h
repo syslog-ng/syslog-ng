@@ -74,7 +74,7 @@ typedef struct _AFFileDestDriver
   gint overwrite_if_older;
   gboolean use_time_recvd;
   gint time_reap;
-  guint reap_timer;
+  struct iv_timer reap_timer;
 } AFFileDestDriver;
 
 LogDriver *affile_dd_new(gchar *filename, guint32 flags);

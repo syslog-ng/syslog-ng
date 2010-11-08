@@ -31,6 +31,15 @@
 
 #include <string.h>
 
+gboolean accurate_nanosleep = FALSE;
+
+void
+log_source_wakeup(LogSource *self)
+{
+  if (self->wakeup)
+    self->wakeup(self);
+}
+
 /**
  * log_source_msg_ack:
  *
@@ -42,22 +51,70 @@ log_source_msg_ack(LogMessage *msg, gpointer user_data)
 {
   LogSource *self = (LogSource *) user_data;
   guint32 old_window_size;
+  guint32 cur_ack_count, last_ack_count;
   
   old_window_size = g_atomic_counter_exchange_and_add(&self->window_size, 1);
-  
-  /* NOTE: this check could be racy, but it isn't for the following reasons:
-   *  - if the current window size went down to zero, the source does not emit new messages
-   *  - the only possible change in this case is: the destinations processed a 
-   *    message and it got acked back
-   *  - so the 0 -> change can only happen because of the destinations
-   *  - from all the possible destinations the ACK happens at the last one, thus there 
-   *    might be no concurrencies here, even if all destinations are in different threads
-   *    
-   */
   if (old_window_size == 0)
-    log_source_wakeup(self);
+    {
+      log_source_wakeup(self);
+    }
   log_msg_unref(msg);
-  
+
+  /* NOTE: this is racy. msg_ack may be executing in different writer
+   * threads. I don't want to lock, all we need is an approximate value of
+   * the ACK rate of the last couple of seconds.  */
+
+  if (accurate_nanosleep)
+    {
+      cur_ack_count = ++self->ack_count;
+      if ((cur_ack_count & 0x3FFF) == 0)
+        {
+          struct timespec now;
+          glong diff;
+
+          /* do this every once in a while, once in 16k messages should be fine */
+
+          last_ack_count = self->last_ack_count;
+
+          /* make sure that we have at least 16k messages to measure the rate
+           * for.  Because of the race we may have last_ack_count ==
+           * cur_ack_count if another thread already measured the same span */
+
+          if (last_ack_count < cur_ack_count - 16383)
+            {
+              clock_gettime(CLOCK_MONOTONIC, &now);
+              if (now.tv_sec > self->last_ack_rate_time.tv_sec + 6)
+                {
+                  /* last check was too far apart, this means the rate is quite slow. turn off sleeping. */
+                  self->window_full_sleep_nsec = 0;
+                  self->last_ack_rate_time = now;
+                }
+              else
+                {
+                  /* ok, we seem to have a close enough measurement, this means
+                   * we do have a high rate.  Calculate how much we should sleep
+                   * in case the window gets full */
+
+                  diff = timespec_diff_nsec(&now, &self->last_ack_rate_time);
+                  self->window_full_sleep_nsec = (diff / (cur_ack_count - self->last_ack_count));
+                  if (self->window_full_sleep_nsec > 1e6)
+                    {
+                      /* in case we'd be waiting for 1msec for another free slot in the window, let's go to background instead */
+                      self->window_full_sleep_nsec = 0;
+                    }
+                  else
+                    {
+                      /* otherwise let's wait for about 8 message to be emptied before going back to the loop, but clamp the maximum time to 0.1msec */
+                      self->window_full_sleep_nsec <<= 3;
+                      if (self->window_full_sleep_nsec > 1e5)
+                        self->window_full_sleep_nsec = 1e5;
+                    }
+                  self->last_ack_count = cur_ack_count;
+                  self->last_ack_rate_time = now;
+                }
+            }
+        }
+    }
   log_pipe_unref(&self->super);
 }
 
@@ -139,6 +196,7 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
   guint32 *processed_counter, *stamp;
   gboolean new;
   StatsCounter *handle;
+  gint old_window_size;
   
   msg_set_context(msg);
 
@@ -176,22 +234,24 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
   msg->ack_func = log_source_msg_ack;
   msg->ack_userdata = log_pipe_ref(s);
     
-  g_atomic_counter_dec_and_test(&self->window_size);
-
-  /* NOTE: we don't need to be very accurate here, it is a bug if
-   * window_size goes below 0, but an atomic operation is expensive and
-   * reading it without locks does not always get the most accurate value,
-   * but the only outcome might be that window_size is larger (since the
-   * update we can lose is the atomic decrement in the consuming thread,
-   * most probably SQL), thus the assert is safe.
-   */
-
-  g_assert(g_atomic_counter_racy_get(&self->window_size) >= 0);
+  old_window_size = g_atomic_counter_exchange_and_add(&self->window_size, -1);
+  g_assert(old_window_size > 0);
 
   stats_counter_inc(self->recvd_messages);
   stats_counter_set(self->last_message_seen, msg->timestamps[LM_TS_RECVD].time.tv_sec);
   log_pipe_queue(s->pipe_next, msg, &local_options);
   msg_set_context(NULL);
+
+  if (accurate_nanosleep && self->window_full_sleep_nsec > 0 && !log_source_free_to_send(self))
+    {
+      struct timespec ts;
+
+      /* wait one 0.1msec in the hope that the buffer clears up */
+      ts.tv_sec = 0;
+      ts.tv_nsec = self->window_full_sleep_nsec;
+      nanosleep(&ts, NULL);
+    }
+
 }
 
 void
@@ -311,4 +371,14 @@ log_source_options_destroy(LogSourceOptions *options)
     g_free(options->program_override);
   if (options->host_override)
     g_free(options->host_override);
+}
+
+void
+log_source_global_init(void)
+{
+  accurate_nanosleep = check_nanosleep();
+  if (!accurate_nanosleep)
+    {
+      msg_debug("nanosleep() is not accurate enough to introduce minor stalls on the reader side, multi-threaded performance may be affected", NULL);
+    }
 }

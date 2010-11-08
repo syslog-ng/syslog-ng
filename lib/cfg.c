@@ -42,6 +42,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <iv_work.h>
 
 /* PersistentConfig */
 
@@ -345,6 +346,7 @@ cfg_new(gint version)
   self->dns_cache_size = 1007;
   self->dns_cache_expire = 3600;
   self->dns_cache_expire_failed = 60;
+  self->threaded = FALSE;
   
   log_template_options_defaults(&self->template_options);
   self->template_options.ts_format = TS_FMT_BSD;
@@ -484,7 +486,7 @@ cfg_free(GlobalConfig *self)
   g_free(self);
 }
 
-static void 
+void
 cfg_persist_config_move(GlobalConfig *src, GlobalConfig *dest)
 {
   if (dest->persist != NULL)
@@ -493,67 +495,6 @@ cfg_persist_config_move(GlobalConfig *src, GlobalConfig *dest)
   dest->state = src->state;
   src->persist = NULL;
   src->state = NULL;
-}
-
-/* called when syslog-ng first starts up */
-gboolean
-cfg_initial_init(GlobalConfig *cfg, const gchar *persist_filename)
-{
-  gboolean success;
-
-  cfg->state = persist_state_new(persist_filename);
-  if (!persist_state_start(cfg->state))
-    return FALSE;
-
-  success = cfg_init(cfg);
-  if (success)
-    persist_state_commit(cfg->state);
-  else
-    persist_state_cancel(cfg->state);
-  return success;
-}
-
-/* called to reload the configuration */
-GlobalConfig *
-cfg_reload_config(gchar *fname, GlobalConfig *cfg)
-{
-  GlobalConfig *new_cfg;
-
-  new_cfg = cfg_new(0);
-  if (!cfg_read_config(new_cfg, fname, FALSE, NULL))
-    {
-      cfg_free(new_cfg);
-      msg_error("Error parsing configuration",
-                evt_tag_str(EVT_TAG_FILENAME, fname),
-                NULL);
-      return NULL;
-    }
-  
-  cfg_deinit(cfg);
-  cfg_persist_config_move(cfg, new_cfg);
-
-  if (cfg_init(new_cfg))
-    {
-      msg_verbose("New configuration initialized", NULL);
-      cfg_free(cfg);
-      return new_cfg;
-    }
-  else
-    {
-      msg_error("Error initializing new configuration, reverting to old config", NULL);
-      cfg_persist_config_move(new_cfg, cfg);
-      if (!cfg_init(cfg))
-        {
-          /* hmm. hmmm, error reinitializing old configuration, we're hosed.
-           * Best is to kill ourselves in the hope that the supervisor
-           * restarts us.
-           */
-          kill(getpid(), SIGQUIT);
-          g_assert_not_reached();
-        }
-      cfg_free(new_cfg);
-      return cfg;
-    }
 }
 
 static PersistConfigEntry *

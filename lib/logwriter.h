@@ -35,7 +35,8 @@
 #define LW_DETECT_EOF      0x0001
 #define LW_FORMAT_FILE     0x0002
 #define LW_FORMAT_PROTO    0x0004
-#define LW_ALWAYS_WRITABLE 0x0008
+/* the fd refers to a disk file */
+#define LW_FILE_FD         0x0008
 #define LW_SYSLOG_PROTOCOL 0x0010
 
 /* writer options (set by the user) */
@@ -45,6 +46,7 @@
 #define LWO_NO_STATS        0x0004
 /* several writers use the same counter */
 #define LWO_SHARE_STATS     0x0008
+#define LWO_THREADED        0x0010
 
 typedef struct _LogWriterOptions
 {
@@ -71,33 +73,12 @@ typedef struct _LogWriterOptions
   gint suppress;
 } LogWriterOptions;
 
-typedef struct _LogWriter
-{
-  LogPipe super;
-  GSource *source;
-  LogQueue *queue;
-  guint32 flags;
-  gint32 seq_num;
-  guint32 *dropped_messages;
-  guint32 *suppressed_messages;
-  guint32 *processed_messages;
-  guint32 *stored_messages;
-  LogPipe *control;
-  LogWriterOptions *options;
-  LogMessage *last_msg;
-  guint32 last_msg_count;
-  guint last_msg_timerid;
-  GString *line_buffer;
-
-  gint stats_level;
-  guint16 stats_source;
-  gchar *stats_id;
-  gchar *stats_instance;
-} LogWriter;
+typedef struct _LogWriter LogWriter;
 
 void log_writer_set_options(LogWriter *self, LogPipe *control, LogWriterOptions *options, gint stats_level, gint stats_source, const gchar *stats_id, const gchar *stats_instance);
 void log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result);
-gboolean log_writer_reopen(LogPipe *s, LogProto *proto);
+gboolean log_writer_has_pending_writes(LogWriter *self);
+void log_writer_reopen(LogPipe *s, LogProto *proto);
 LogPipe *log_writer_new(guint32 flags);
 
 void log_writer_options_set_template_escape(LogWriterOptions *options, gboolean enable);
@@ -105,5 +86,7 @@ void log_writer_options_defaults(LogWriterOptions *options);
 void log_writer_options_init(LogWriterOptions *options, GlobalConfig *cfg, guint32 option_flags);
 void log_writer_options_destroy(LogWriterOptions *options);
 gint log_writer_options_lookup_flag(const gchar *flag);
+
+void log_writer_global_init(void);
 
 #endif

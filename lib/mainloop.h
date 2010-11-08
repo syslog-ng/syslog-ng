@@ -21,13 +21,47 @@
  * COPYING for details.
  *
  */
-
-#ifndef CONTROL_H_INCLUDED
-#define CONTROL_H_INCLUDED
+#ifndef MAINLOOP_H_INCLUDED
+#define MAINLOOP_H_INCLUDED
 
 #include "syslog-ng.h"
 
-void  control_init(const gchar *control_name);
-void control_destroy(void);
+#include <iv_work.h>
+
+extern volatile gboolean main_loop_io_workers_quit;
+extern gboolean syntax_only;
+extern __thread gboolean in_main_thread;
+
+typedef gpointer (*MainLoopTaskFunc)(gpointer user_data);
+
+typedef struct _MainLoopIOWorkerJob
+{
+  void (*work)(gpointer user_data);
+  void (*completion)(gpointer user_data);
+  gpointer user_data;
+  gboolean working:1;
+  struct iv_work_item work_item;
+} MainLoopIOWorkerJob;
+
+static inline gboolean
+main_loop_io_worker_job_quit(void)
+{
+  return main_loop_io_workers_quit;
+}
+
+void main_loop_io_worker_job_init(MainLoopIOWorkerJob *self);
+void main_loop_io_worker_job_submit(MainLoopIOWorkerJob *self);
+
+static inline void
+main_loop_assert_main_thread(void)
+{
+  g_assert(in_main_thread == TRUE);
+}
+
+gpointer main_loop_call(MainLoopTaskFunc func, gpointer user_data, gboolean wait);
+int main_loop_init(void);
+int  main_loop_run(void);
+
+void main_loop_add_options(GOptionContext *ctx);
 
 #endif
