@@ -72,7 +72,7 @@ testcase(gchar *msg_string, gchar *template, gboolean use_syslog_protocol,gchar 
   writer = (LogWriter*)log_writer_new(writer_flags);
   if (writer)
     {
-      writer->options = &opt;
+      log_writer_set_options(writer, NULL, &opt, 0, 0, NULL, NULL);
       log_writer_format_log(writer,msg,res);
       if(strcmp(res->str,expected_value)!=0)
         {
