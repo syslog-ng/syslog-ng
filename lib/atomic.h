@@ -51,6 +51,12 @@ g_atomic_counter_get(GAtomicCounter *c)
 }
 
 static inline gint
+g_atomic_counter_exchange_and_add(GAtomicCounter *c, gint val)
+{
+  return g_atomic_int_exchange_and_add(&c->counter, val);
+}
+
+static inline gint
 g_atomic_counter_racy_get(GAtomicCounter *c)
 {
   return c->counter;
@@ -89,6 +95,15 @@ g_atomic_counter_get(GAtomicCounter *c)
 {
   return *c;
 }
+
+static inline gint
+g_atomic_counter_exchange_and_add(GAtomicCounter *c, gint val)
+{
+  gint old = c->counter;
+  c->counter += val;
+  return old;
+}
+
 
 static inline gint
 g_atomic_counter_racy_get(GAtomicCounter *c)
