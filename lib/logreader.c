@@ -514,7 +514,7 @@ log_reader_options_defaults(LogReaderOptions *options)
   log_source_options_defaults(&options->super);
   msg_format_options_defaults(&options->parse_options);
   options->padding = 0;
-  options->fetch_limit = -1;
+  options->fetch_limit = 10;
   options->msg_size = -1;
   options->follow_freq = -1; 
   options->text_encoding = NULL;
@@ -602,8 +602,6 @@ log_reader_options_init(LogReaderOptions *options, GlobalConfig *cfg, const gcha
   log_source_options_init(&options->super, cfg, group_name);
   msg_format_options_init(&options->parse_options, cfg);
 
-  if (options->fetch_limit == -1)
-    options->fetch_limit = cfg->log_fetch_limit;
   if (options->msg_size == -1)
     options->msg_size = cfg->log_msg_size;
   if (options->follow_freq == -1)

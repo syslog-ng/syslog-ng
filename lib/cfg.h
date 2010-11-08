@@ -78,8 +78,6 @@ struct _GlobalConfig
   gint time_sleep;
 
   gint log_fifo_size;
-  gint log_fetch_limit;
-  gint log_iw_size;
   gint log_msg_size;
 
   gint follow_freq;

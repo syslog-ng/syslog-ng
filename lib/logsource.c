@@ -247,8 +247,7 @@ log_source_free(LogPipe *s)
 void
 log_source_options_defaults(LogSourceOptions *options)
 {
-  options->init_window_size = -1;
-  g_atomic_counter_set(&options->window_size, -1);
+  options->init_window_size = 100;
   options->keep_hostname = -1;
   options->chain_hostnames = -1;
   options->use_dns = -1;
@@ -297,10 +296,6 @@ log_source_options_init(LogSourceOptions *options, GlobalConfig *cfg, const gcha
   options->program_override = program_override;
   options->program_override_len = -1;
   
-  if (options->init_window_size == -1)
-    options->init_window_size = cfg->log_iw_size;
-  if (g_atomic_counter_get(&options->window_size) == -1)
-    g_atomic_counter_set(&options->window_size, options->init_window_size);
   if (options->keep_hostname == -1)
     options->keep_hostname = cfg->keep_hostname;
   if (options->chain_hostnames == -1)
