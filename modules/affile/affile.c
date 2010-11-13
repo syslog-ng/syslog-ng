@@ -520,8 +520,11 @@ static void
 affile_dw_queue(LogPipe *s, LogMessage *lm, const LogPathOptions *path_options)
 {
   AFFileDestWriter *self = (AFFileDestWriter *) s;
+  GTimeVal now;
 
-  self->last_msg_stamp = time(NULL);
+  cached_g_current_time(&now);
+
+  self->last_msg_stamp = now.tv_sec;
   if (!s->pipe_next && self->last_open_stamp < self->last_msg_stamp - self->time_reopen)
     {
       log_pipe_init(&self->super, NULL);
@@ -723,11 +726,13 @@ static gboolean
 affile_dd_reap(gpointer s)
 {
   AFFileDestDriver *self = (AFFileDestDriver *) s;
+  GTimeVal now;
   
+  cached_g_current_time(&now);
   msg_verbose("Reaping unused destination files",
               evt_tag_str("template", self->filename_template->template),
               NULL);  
-  reap_now = time(NULL);
+  reap_now = now.tv_sec;
   if (self->writer_hash)
     g_hash_table_foreach_remove(self->writer_hash, affile_dd_reap_writers, self);
   return TRUE;

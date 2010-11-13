@@ -24,6 +24,7 @@
 
 #include "dnscache.h"
 #include "messages.h"
+#include "timeutils.h"
 
 #include <sys/types.h>
 #include <netinet/in.h>
@@ -155,10 +156,9 @@ dns_cache_cleanup_persistent_hosts(void)
 }
 
 static void
-dns_cache_check_hosts(void)
+dns_cache_check_hosts(glong t)
 {
   struct stat st;
-  time_t t = time(NULL);
 
   if (G_LIKELY(dns_cache_hosts_checktime == t))
     return;
@@ -238,18 +238,18 @@ dns_cache_lookup(gint family, void *addr, const gchar **hostname)
 {
   DNSCacheKey key;
   DNSCacheEntry *entry;
-  time_t now;
+  GTimeVal now;
   
-  dns_cache_check_hosts();
+  dns_cache_check_hosts(now.tv_sec);
   
   dns_cache_fill_key(&key, family, addr);
   entry = g_hash_table_lookup(cache, &key);
   if (entry)
     {
-      now = time(NULL);
+      cached_g_current_time(&now);
       if (entry->resolved && 
-          ((entry->hostname && entry->resolved < now - dns_cache_expire) ||
-           (!entry->hostname && entry->resolved < now - dns_cache_expire_failed)))
+          ((entry->hostname && entry->resolved < now.tv_sec - dns_cache_expire) ||
+           (!entry->hostname && entry->resolved < now.tv_sec - dns_cache_expire_failed)))
         {
           /* the entry is not persistent and is too old */
         }
@@ -267,6 +267,7 @@ dns_cache_store(gboolean persistent, gint family, void *addr, const gchar *hostn
 {
   DNSCacheEntry *entry;
   guint hash_size;
+  GTimeVal now;
   
   entry = g_new(DNSCacheEntry, 1);
 
@@ -274,7 +275,8 @@ dns_cache_store(gboolean persistent, gint family, void *addr, const gchar *hostn
   entry->hostname = hostname ? g_strdup(hostname) : NULL;
   if (!persistent)
     {
-      entry->resolved = time(NULL);
+      cached_g_current_time(&now);
+      entry->resolved = now.tv_sec;
       dns_cache_entry_insert_before(&cache_last, entry);
     }
   else

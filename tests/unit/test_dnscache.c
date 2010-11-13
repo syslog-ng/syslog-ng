@@ -1,5 +1,7 @@
 #include "dnscache.h"
 #include "apphook.h"
+#include "timeutils.h"
+
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -38,6 +40,7 @@ main()
     }
 
   sleep(3);
+  update_g_current_time();
 
   for (i = 0; i < 10000; i++)
     {
