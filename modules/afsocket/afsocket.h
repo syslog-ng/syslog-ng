@@ -39,6 +39,8 @@
 #define AFSOCKET_KEEP_ALIVE          0x0100
 #define AFSOCKET_REQUIRE_TLS         0x0200
 
+#define AFSOCKET_WNDSIZE_INITED      0x10000
+
 typedef enum
 {
   AFSOCKET_DIR_RECV = 0x01,

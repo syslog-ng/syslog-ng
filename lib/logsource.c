@@ -43,8 +43,7 @@ log_source_msg_ack(LogMessage *msg, gpointer user_data)
   LogSource *self = (LogSource *) user_data;
   guint32 old_window_size;
   
-  old_window_size = g_atomic_counter_get(&self->options->window_size);
-  g_atomic_counter_inc(&self->options->window_size);
+  old_window_size = g_atomic_counter_exchange_and_add(&self->window_size, 1);
   
   /* NOTE: this check could be racy, but it isn't for the following reasons:
    *  - if the current window size went down to zero, the source does not emit new messages
@@ -115,6 +114,7 @@ gboolean
 log_source_init(LogPipe *s)
 {
   LogSource *self = (LogSource *) s;
+
   stats_register_counter(self->stats_level, self->stats_source | SCS_SOURCE, self->stats_id, self->stats_instance, SC_TYPE_PROCESSED, &self->recvd_messages);
   stats_register_counter(self->stats_level, self->stats_source | SCS_SOURCE, self->stats_id, self->stats_instance, SC_TYPE_STAMP, &self->last_message_seen);
   return TRUE;
@@ -176,7 +176,7 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
   msg->ack_func = log_source_msg_ack;
   msg->ack_userdata = log_pipe_ref(s);
     
-  g_atomic_counter_dec_and_test(&self->options->window_size);
+  g_atomic_counter_dec_and_test(&self->window_size);
 
   /* NOTE: we don't need to be very accurate here, it is a bug if
    * window_size goes below 0, but an atomic operation is expensive and
@@ -186,7 +186,7 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
    * most probably SQL), thus the assert is safe.
    */
 
-  g_assert(g_atomic_counter_racy_get(&self->options->window_size) >= 0);
+  g_assert(g_atomic_counter_racy_get(&self->window_size) >= 0);
 
   stats_counter_inc(self->recvd_messages);
   stats_counter_set(self->last_message_seen, msg->timestamps[LM_TS_RECVD].time.tv_sec);
@@ -197,24 +197,12 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
 void
 log_source_set_options(LogSource *self, LogSourceOptions *options, gint stats_level, gint stats_source, const gchar *stats_id, const gchar *stats_instance)
 {
+  /* NOTE: we don't adjust window_size even in case it was changed in the
+   * configuration and we received a SIGHUP.  This means that opened
+   * connections will not have their window_size changed. */
   
-  if (self->options)
-    {
-      gint current_window;
-
-      /* this LogSource instance was originally used for an old
-       * configuration, and after config reload it has become part of the
-       * new config.  Make sure our window is propagated to avoid filling up
-       * the queue with SIGHUPs.
-       *
-       * NOTE: although atomic_get/set without locks is racy, this is not,
-       * since the old configuration is already deinitialized, thus any
-       * threads that might acknowledge back messages is already stopped.
-       */
-
-      current_window = g_atomic_counter_get(&self->options->window_size);
-      g_atomic_counter_set(&options->window_size, current_window);
-    }
+  if (g_atomic_counter_get(&self->window_size) == -1)
+    g_atomic_counter_set(&self->window_size, options->init_window_size);
   self->options = options;
   self->stats_level = stats_level;
   self->stats_source = stats_source;
@@ -230,6 +218,7 @@ log_source_init_instance(LogSource *self)
   self->super.free_fn = log_source_free;
   self->super.init = log_source_init;
   self->super.deinit = log_source_deinit;
+  g_atomic_counter_set(&self->window_size, -1);
 }
 
 void

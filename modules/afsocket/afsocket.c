@@ -541,6 +541,25 @@ afsocket_sd_init(LogPipe *s)
     {
       msg_error("No bind address set;", NULL);
     }
+  if ((self->flags & (AFSOCKET_STREAM + AFSOCKET_WNDSIZE_INITED)) == AFSOCKET_STREAM)
+    {
+      /* distribute the window evenly between each of our possible
+       * connections.  This is quite pessimistic and can result in very low
+       * window sizes. Increase that but warn the user at the same time
+       */
+
+      self->reader_options.super.init_window_size /= self->max_connections;
+      if (self->reader_options.super.init_window_size < 10)
+        {
+          msg_warning("WARNING: window sizing for tcp sources were changed in syslog-ng 3.3, the configuration value was divided by the value of max-connections(). The result was too small, clamping to 10 entries. Ensure you have a proper log_fifo_size setting to avoid message loss.",
+                      evt_tag_int("orig_log_iw_size", self->reader_options.super.init_window_size),
+                      evt_tag_int("new_log_iw_size", 10),
+                      evt_tag_int("min_log_fifo_size", 10 * self->max_connections),
+                      NULL);
+          self->reader_options.super.init_window_size = 10;
+        }
+      self->flags |= AFSOCKET_WNDSIZE_INITED;
+    }
   log_reader_options_init(&self->reader_options, cfg, self->super.group);
 
   /* fetch persistent connections first */
@@ -740,6 +759,8 @@ afsocket_sd_init_instance(AFSocketSourceDriver *self, SocketOptions *sock_option
   self->listen_backlog = 255;
   self->flags = flags | AFSOCKET_KEEP_ALIVE;
   log_reader_options_defaults(&self->reader_options);
+  if (self->flags & AFSOCKET_STREAM)
+    self->reader_options.super.init_window_size = 1000;
 
   if (self->flags & AFSOCKET_LOCAL)
     {

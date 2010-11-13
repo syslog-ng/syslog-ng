@@ -30,7 +30,6 @@
 typedef struct _LogSourceOptions
 {
   gint init_window_size;
-  GAtomicCounter window_size;
   const gchar *group_name;
   gboolean keep_timestamp;
   gboolean keep_hostname;
@@ -65,6 +64,7 @@ struct _LogSource
   guint16 stats_source;
   gchar *stats_id;
   gchar *stats_instance;
+  GAtomicCounter window_size;
   guint32 *last_message_seen;
   guint32 *recvd_messages;
   void (*wakeup)(LogSource *s);
@@ -73,7 +73,7 @@ struct _LogSource
 static inline gboolean
 log_source_free_to_send(LogSource *self)
 {
-  return g_atomic_counter_get(&self->options->window_size) > 0;
+  return g_atomic_counter_get(&self->window_size) > 0;
 }
 
 static inline void
