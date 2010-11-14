@@ -49,7 +49,7 @@ static gchar *full_colors[] =
   "\33[01;34m", /* blue */
   "\33[0;33m", /* brown */
   "\33[01;32m", /* green */
-  "\33[0;31m"  /* red */
+  "\33[01;31m"  /* red */
 };
 
 static gchar *empty_colors[] =
@@ -534,7 +534,7 @@ pdbtool_match(int argc, char *argv[])
                     }
                   else
                     {
-                      printf("%s%.*s%s", colors[COLOR_PARTIAL], dbg_info->node->key ? dbg_info->i : 6 , dbg_info->node->key ? (gchar *) dbg_info->node->key : "(null)", no_color);
+                      printf("%s%.*s%s", colors[COLOR_PARTIAL], dbg_info->node->key ? dbg_info->i : 0, dbg_info->node->key ? (gchar *) dbg_info->node->key : "", no_color);
                     }
 
                 }
