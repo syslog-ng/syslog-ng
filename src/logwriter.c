@@ -737,6 +737,7 @@ log_writer_flush(LogWriter *self, gboolean flush_all)
           status = log_proto_post(proto, (guchar *) line->str, line->len, &consumed);
           if (status == LPS_ERROR)
             {
+              msg_set_context(NULL);
               g_string_free(line, TRUE);
               return FALSE;
             }
