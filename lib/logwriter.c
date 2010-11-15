@@ -70,6 +70,7 @@ typedef struct _LogWriterWatch
  **/
 
 static gboolean log_writer_flush(LogWriter *self, gboolean flush_all);
+static gboolean log_writer_flush_log(LogWriter *self, LogProto *proto, gboolean flush_all);
 static void log_writer_broken(LogWriter *self, gint notify_code);
 static gboolean log_writer_throttling(LogWriter *self);
 
@@ -260,7 +261,7 @@ log_writer_fd_dispatch(GSource *source,
     }
   else if (num_elements)
     {
-      if (!log_writer_flush(self->writer, FALSE))
+      if (!log_writer_flush(self->writer, self->flush_waiting_for_timeout))
         {
           self->error_suspend = TRUE;
           g_source_get_current_time(source, &self->error_suspend_target);
@@ -697,6 +698,7 @@ log_writer_flush(LogWriter *self, gboolean flush_all)
 {
   gint64 num_elements = 0;
   LogProto *proto = self->source ? ((LogWriterWatch *) self->source)->proto : NULL;
+  gint count = 0;
   
   if (!proto)
     return FALSE;
@@ -757,7 +759,15 @@ log_writer_flush(LogWriter *self, gboolean flush_all)
         
       msg_set_context(NULL);
       num_elements--;
+      count++;
     }
+
+  if (flush_all || count == 0)
+    {
+      if (log_proto_flush(proto) == LPS_ERROR)
+        return FALSE;
+    }
+
   return TRUE;
 }
 

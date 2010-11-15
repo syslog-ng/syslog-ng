@@ -52,6 +52,7 @@ struct _LogProto
   LogProtoStatus (*fetch)(LogProto *s, const guchar **msg, gsize *msg_len, GSockAddr **sa, gboolean *may_read);
   void (*queued)(LogProto *s);
   LogProtoStatus (*post)(LogProto *s, guchar *msg, gsize msg_len, gboolean *consumed);
+  LogProtoStatus (*flush)(LogProto *s);
   void (*free_fn)(LogProto *s);
 };
 
@@ -78,6 +79,15 @@ log_proto_restart_with_state(LogProto *s, PersistState *state, const gchar *pers
 }
 
 static inline LogProtoStatus
+log_proto_flush(LogProto *s)
+{
+  if (s->flush)
+    return s->flush(s);
+  else
+    return LPS_SUCCESS;
+}
+
+static inline LogProtoStatus
 log_proto_post(LogProto *s, guchar *msg, gsize msg_len, gboolean *consumed)
 {
   return s->post(s, msg, msg_len, consumed);
@@ -96,7 +106,7 @@ log_proto_queued(LogProto *s)
     s->queued(s);
 }
 
-static inline gint 
+static inline gint
 log_proto_get_fd(LogProto *s)
 {
   /* FIXME: Layering violation */
@@ -140,6 +150,8 @@ LogProto *log_proto_dgram_server_new(LogTransport *transport, gint max_msg_size,
  * This class processes text files/streams. Each record is terminated via an EOL character.
  */
 LogProto *log_proto_text_server_new(LogTransport *transport, gint max_msg_size, guint flags);
+
+LogProto *log_proto_file_writer_new(LogTransport *transport, gint flush_lines);
 
 /*
  * LogProtoTextClient

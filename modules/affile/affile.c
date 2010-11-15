@@ -491,7 +491,7 @@ affile_dw_init(LogPipe *s)
           return FALSE;
         }
       write_flags = ((self->owner->flags & AFFILE_FSYNC) ? LTF_FSYNC : 0) | LTF_APPEND;
-      log_writer_reopen(self->writer, log_proto_text_client_new(log_transport_plain_new(fd, write_flags)));
+      log_writer_reopen(self->writer, log_proto_file_writer_new(log_transport_plain_new(fd, write_flags), self->owner->writer_options.flush_lines));
     }
   else
     {
