@@ -499,15 +499,29 @@ log_writer_last_msg_check(LogWriter *self, LogMessage *lm, const LogPathOptions 
   return FALSE;
 }
 
+/* NOTE: runs in the reader thread */
 static void
 log_writer_queue(LogPipe *s, LogMessage *lm, const LogPathOptions *path_options)
 {
   LogWriter *self = (LogWriter *) s;
+  LogPathOptions local_options;
 
+  if (self->suspended && path_options->flow_control && path_options->soft_flow_control)
+    {
+      /* NOTE: this code ACKs the message back if there's a write error in
+       * order not to hang the client in case of a disk full */
+
+      local_options = *path_options;
+      log_msg_ack(lm, path_options);
+
+      local_options.flow_control = FALSE;
+      path_options = &local_options;
+    }
 #if 0
   if (self->options->suppress > 0 && log_writer_last_msg_check(self, lm, path_options))
     return;
 #endif
+
   stats_counter_inc(self->processed_messages);
   if (!log_queue_push_tail(self->queue, lm, path_options))
     {

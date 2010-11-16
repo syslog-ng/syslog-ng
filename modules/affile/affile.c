@@ -969,6 +969,8 @@ affile_dd_new(gchar *filename, guint32 flags)
   AFFileDestDriver *self = g_new0(AFFileDestDriver, 1);
 
   log_drv_init_instance(&self->super);
+  if ((flags & AFFILE_PIPE) == 0)
+    self->super.super.flags |= PIF_SOFT_FLOW_CONTROL;
   self->super.super.init = affile_dd_init;
   self->super.super.deinit = affile_dd_deinit;
   self->super.super.queue = affile_dd_queue;

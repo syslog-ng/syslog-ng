@@ -82,6 +82,7 @@ void
 log_parser_init_instance(LogParser *self)
 {
   log_process_pipe_init_instance(&self->super);
+  self->super.super.flags |= PIF_CLONE;
   self->super.super.free_fn = log_parser_free_method;
   self->super.super.queue = log_parser_queue;
 }

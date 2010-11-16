@@ -216,7 +216,7 @@ log_center_connect_source(gpointer key, gpointer value, gpointer user_data)
 
   if (!pipe->pipe_next)
     {
-      mpx = log_multiplexer_new(PIF_MPX_FLOW_CTRL_BARRIER);
+      mpx = log_multiplexer_new(PIF_FLOW_CTRL_BARRIER);
       /* NOTE: initialized_pipes holds a ref */
       g_ptr_array_add(self->initialized_pipes, mpx);
       log_pipe_append(pipe, &mpx->super);
@@ -310,7 +310,6 @@ log_center_init_pipe_line(LogCenter *self, LogConnection *conn, GlobalConfig *cf
   LogPipeItem *ep;
   LogPipe *first_pipe, *pipe, *last_pipe, *sub_pipe;
   LogMultiplexer *mpx, *fork_mpx = NULL;
-  gboolean path_changes_the_message = FALSE, flow_controlled_child = FALSE;
 
   /* resolve pipe references, find first pipe */
   
@@ -348,7 +347,7 @@ log_center_init_pipe_line(LogCenter *self, LogConnection *conn, GlobalConfig *cf
 
               if (!pipe->pipe_next)
                 {
-                  mpx = log_multiplexer_new(PIF_MPX_FLOW_CTRL_BARRIER);
+                  mpx = log_multiplexer_new(PIF_FLOW_CTRL_BARRIER);
                   g_ptr_array_add(self->initialized_pipes, mpx);
                   log_pipe_append(pipe, &mpx->super);
                 }
@@ -405,8 +404,6 @@ log_center_init_pipe_line(LogCenter *self, LogConnection *conn, GlobalConfig *cf
                 goto error;
               }
             log_process_rule_ref(ep->ref);
-            if ((ep->type != EP_FILTER) || (pipe->flags & PIF_CLONE))
-              path_changes_the_message = TRUE;
             break;
           }
 
@@ -431,7 +428,7 @@ log_center_init_pipe_line(LogCenter *self, LogConnection *conn, GlobalConfig *cf
         
           if (!fork_mpx)
             {
-              fork_mpx = log_multiplexer_new(PIF_MPX_FLOW_CTRL_BARRIER);
+              fork_mpx = log_multiplexer_new(PIF_FLOW_CTRL_BARRIER);
               pipe = &fork_mpx->super;
               g_ptr_array_add(self->initialized_pipes, pipe);
             }
@@ -442,8 +439,6 @@ log_center_init_pipe_line(LogCenter *self, LogConnection *conn, GlobalConfig *cf
               goto error;
             }
           log_multiplexer_add_next_hop(fork_mpx, sub_pipe);
-          if (sub_pipe->flags & PIF_FLOW_CONTROL)
-            flow_controlled_child = TRUE;
           break;
         default:
           g_assert_not_reached();
@@ -468,8 +463,12 @@ log_center_init_pipe_line(LogCenter *self, LogConnection *conn, GlobalConfig *cf
               pipe = NULL;
             }
 
+          first_pipe->flags |= (last_pipe->flags & PIF_PROPAGATED_MASK);
           while (last_pipe->pipe_next)
-            last_pipe = last_pipe->pipe_next;
+            {
+              last_pipe = last_pipe->pipe_next;
+              first_pipe->flags |= (last_pipe->flags & PIF_PROPAGATED_MASK);
+            }
         }
     }
   
@@ -481,13 +480,16 @@ log_center_init_pipe_line(LogCenter *self, LogConnection *conn, GlobalConfig *cf
     }
   
   if (conn->flags & LC_FALLBACK)
-    first_pipe->flags |= PIF_FALLBACK;
+    first_pipe->flags |= PIF_BRANCH_FALLBACK;
   if (conn->flags & LC_FINAL)
-    first_pipe->flags |= PIF_FINAL;
-  if ((conn->flags & LC_FLOW_CONTROL) || flow_controlled_child || flow_controlled_parent)
-    first_pipe->flags |= PIF_FLOW_CONTROL;
-  if (path_changes_the_message)
-    first_pipe->flags |= PIF_CLONE;
+    first_pipe->flags |= PIF_BRANCH_FINAL;
+  if ((conn->flags & LC_FLOW_CONTROL) || flow_controlled_parent ||
+      (first_pipe->flags & (PIF_HARD_FLOW_CONTROL + PIF_SOFT_FLOW_CONTROL)) == (PIF_HARD_FLOW_CONTROL + PIF_SOFT_FLOW_CONTROL))
+    {
+      /* hard flow control is enabled by the user. set it in the flags & override soft flow control in this case */
+      first_pipe->flags |= PIF_HARD_FLOW_CONTROL;
+      first_pipe->flags &= ~PIF_SOFT_FLOW_CONTROL;
+    }
     
   if ((conn->flags & LC_CATCHALL) == 0)
     {

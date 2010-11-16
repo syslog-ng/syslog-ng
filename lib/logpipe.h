@@ -38,14 +38,28 @@
 #define NC_FILE_EOF    5
 #define NC_FILE_SKIP   6
 
-#define PIF_INITIALIZED  0x0001
-#define PIF_FINAL        0x0002
-#define PIF_FALLBACK     0x0004
-#define PIF_FLOW_CONTROL 0x0008
-#define PIF_CLONE        0x0010
-#define PIF_INLINED      0x0020
+/* indicates that the LogPipe was initialized */
+#define PIF_INITIALIZED       0x0001
+/* indicates that this LogPipe got cloned into the tree already */
+#define PIF_INLINED           0x0002
 
-/* some more flags are defined in logmpx.h */
+/* log statement flags that are copied to the head of a branch */
+#define PIF_BRANCH_FINAL      0x0004
+#define PIF_BRANCH_FALLBACK   0x0008
+
+/* set of flags propagated towards the log center from destinations (not properly implemented everywhere! only in LogDestGroup and LogMultiplexer) */
+#define PIF_PROPAGATED_MASK   0x00F0
+
+/* branch starting with this pipe wants hard flow control */
+#define PIF_HARD_FLOW_CONTROL 0x0010
+/* branch starting with this pipe wants slow flow control */
+#define PIF_SOFT_FLOW_CONTROL 0x0020
+
+/* branch starting with this pipe needs a cloned message because it modifies it */
+#define PIF_CLONE             0x0040
+
+/* the given multiplexer is a barrier in flow control */
+#define PIF_FLOW_CTRL_BARRIER 0x0100
 
 /**
  *
@@ -83,15 +97,73 @@
  *   Instead pipe_next is a borrowed reference, which is assumed to be valid
  *   as long as the configuration is not freed.
  *
+ * Flow control
+ *
+ *   Flow control is the mechanism used to control the message rate between
+ *   input/output sides of syslog-ng in order to avoid message loss.  If the
+ *   two sides were independent, the input side could well receive messages
+ *   at a much higher rate than the destination is able to cope with.
+ *
+ *   This is implemented by allocating a per-source window (similar to a TCP
+ *   window), which can be "filled" by the source without the danger of
+ *   output queue overflow.  Also, whenever a message is processed by the
+ *   destination it invokes an ACK, which in turn increments the window size.
+ *
+ *   This basically boils down to the following:
+ *     * the source is free to receive as much messages as fits into its window
+ *     * whenever the destination has processed a message, this is signalled
+ *       to freeing up a lot in its window
+ *     * if the message is full, the source is suspended, no further messages
+ *       are received.
+ *
+ *   This controls the message rate but doesn't completely ruin throughput,
+ *   as the source has some space without being suspended, as suspension and
+ *   resuming action takes considerable amount of time (mostly latency, but
+ *   CPU is certainly also used).
+ *
+ *   There are currently two forms of flow control:
+ *     * hard flow control
+ *     * soft flow control
+ *
+ *   The first is the form of flow control present in earlier syslog-ng
+ *   versions and was renamed as "hard" in order to differentiate from the
+ *   other form.  Hard means that the source is completely suspended until
+ *   the destination indeed processed a message.  If the network is down,
+ *   the disk is full, the source will not accept messages.
+ *
+ *   Soft flow control was introduced when syslog-ng became threaded and the
+ *   earlier priority based behaviour couldn't be mimiced any other way.
+ *   Soft flow control cannot be configured, it is automatically used by
+ *   file destinations if "hard" flow control is not enabled by the user.
+ *   Soft flow control means that flow is only controlled as long as the
+ *   destination is writable, if an error occurs (disk full, etc) messages
+ *   get dropped on the floor.  But as long as the destination is writable,
+ *   the destination rate controls the source rate as well.
+ *
+ *   The behaviour in non-threaded syslog-ng was, that destinations were
+ *   prioritized over sources, and whenever a destination was writable,
+ *   sources were implicitly suspended.  This is not easily implementable by
+ *   threads and ivykis, thus this alternative mechanism was created.
+ *
+ *   Please note that soft-flow-control is a somewhat stronger guarantee
+ *   than the earlier behaviour, therefore it is currently only used for
+ *   destination files.
+ *
  **/
 
 struct _LogPathOptions
 {
-  gboolean flow_control:1;
+  /* this path has flow control enabled, e.g. the destination must ACK messages it receives */
+  gboolean flow_control:1,
+
+  /* the flow control on this path is soft (only enabled if flow_control is
+   * TRUE), which means that the destination is allowed to ACK early, e.g.
+   * when an error occurs. */
+           soft_flow_control:1;
   gboolean *matched;
 };
 
-#define LOG_PATH_OPTIONS_INIT { TRUE, NULL }
+#define LOG_PATH_OPTIONS_INIT { TRUE, FALSE, NULL }
 
 typedef struct _LogPipe
 {

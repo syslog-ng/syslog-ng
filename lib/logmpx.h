@@ -27,12 +27,6 @@
 
 #include "logpipe.h"
 
-/* indicates that the multiplexed paths are independend, they can
- * potentically be processed by independent threads */
-#define PIF_MPX_INDEP_PATHS       0x0100
-/* the given multiplexer is a break in flow control */
-#define PIF_MPX_FLOW_CTRL_BARRIER 0x0200
-
 /**
  * This class encapsulates a fork of the message pipe-line. It receives
  * messages via its queue() method and forwards them to its list of

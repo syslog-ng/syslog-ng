@@ -77,6 +77,8 @@ static void
 log_rewrite_init(LogRewrite *self)
 {
   log_process_pipe_init_instance(&self->super);
+  /* indicate that the rewrite rule is changing the message */
+  self->super.super.flags |= PIF_CLONE;
   self->super.super.free_fn = log_rewrite_free_method;
   self->super.super.queue = log_rewrite_queue;
   self->value_handle = LM_V_MESSAGE;

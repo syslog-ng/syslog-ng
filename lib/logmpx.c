@@ -28,10 +28,8 @@
 void
 log_multiplexer_add_next_hop(LogMultiplexer *self, LogPipe *next_hop)
 {
-  /* NOTE: this flag is currently unused. it'll be used to tell whether we can process the multiplexed pipes in parallel threads. */
-  if (next_hop->flags & (PIF_FINAL + PIF_FALLBACK))
-    self->super.flags &= ~PIF_MPX_INDEP_PATHS;
   g_ptr_array_add(self->next_hops, next_hop);
+  self->super.flags |= next_hop->flags & PIF_PROPAGATED_MASK;
 }
 
 static gboolean
@@ -44,7 +42,7 @@ log_multiplexer_init(LogPipe *s)
     {
       LogPipe *next_hop = g_ptr_array_index(self->next_hops, i);
           
-      if ((next_hop->flags & PIF_FALLBACK) != 0)
+      if ((next_hop->flags & PIF_BRANCH_FALLBACK) != 0)
         {
           self->fallback_exists = TRUE;
         }
@@ -78,19 +76,25 @@ log_multiplexer_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_op
           LogPipe *next_hop = g_ptr_array_index(self->next_hops, i);
           LogMessage *next_msg = NULL;
 
-          if (G_UNLIKELY(fallback == 0 && (next_hop->flags & PIF_FALLBACK) != 0))
+          if (G_UNLIKELY(fallback == 0 && (next_hop->flags & PIF_BRANCH_FALLBACK) != 0))
             {
               continue;
             }
-          else if (G_UNLIKELY(fallback && (next_hop->flags & PIF_FALLBACK) == 0))
+          else if (G_UNLIKELY(fallback && (next_hop->flags & PIF_BRANCH_FALLBACK) == 0))
             {
               continue;
             }
           
-          if (self->super.flags & PIF_MPX_FLOW_CTRL_BARRIER)
-            local_options.flow_control = (next_hop->flags & PIF_FLOW_CONTROL) ? TRUE : FALSE;
+          if (self->super.flags & PIF_FLOW_CTRL_BARRIER)
+            {
+              local_options.flow_control = !!(next_hop->flags & (PIF_HARD_FLOW_CONTROL + PIF_SOFT_FLOW_CONTROL));
+              local_options.soft_flow_control = !!(next_hop->flags & PIF_SOFT_FLOW_CONTROL);
+            }
           else
-            local_options.flow_control = path_options->flow_control;
+            {
+              local_options.flow_control = path_options->flow_control;
+              local_options.soft_flow_control = path_options->soft_flow_control;
+            }
             
           matched = TRUE;
           log_msg_add_ack(msg, &local_options);
@@ -130,7 +134,7 @@ log_multiplexer_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_op
           if (matched)
             {
               delivered = TRUE; 
-              if (G_UNLIKELY(next_hop->flags & PIF_FINAL))
+              if (G_UNLIKELY(next_hop->flags & PIF_BRANCH_FINAL))
                 break;
             }
         }
@@ -158,6 +162,6 @@ log_multiplexer_new(guint32 flags)
   self->super.queue = log_multiplexer_queue;
   self->super.free_fn = log_multiplexer_free;
   self->next_hops = g_ptr_array_new();
-  self->super.flags = PIF_MPX_INDEP_PATHS | flags;
+  self->super.flags = flags;
   return self;
 }
