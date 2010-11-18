@@ -1,3 +1,31 @@
+3.1.3
+	Thu, 18 Nov 2010 07:50:42 +0100
+
+        Bugfixes:
+        * csv-parser() defaults to "escape-none" mode even if it is not
+          specified.
+        * Fixed a possible CPU spinning in case mark_freq() is changed from
+          a non-zero value to zero and syslog-ng is reloaded.
+        * Fixed a flow control problem for the internal() source possibly
+          causing an assertion to fail, e.g. syslog-ng to crash voluntarily.
+        * Make it possible to use a literal '$' character by using two of
+          them.
+        * Make it possible to use binary characters within strings in
+          configuration files by using a C-like \xHH, \oOOO syntax.
+        * Attempt to flush the messages sitting in output queues a bit
+          harder at shutdown.
+        * Handle ESTALE errors in the file source for NFS file systems,
+          which might cause a spin on the CPU otherwise.
+        * Fixed a possible use-after-free problem potentially causing
+          crashes or misbehaviour. No concrete errors were reported though.
+	* The SQL driver didn't honour the port() option, this was fixed.
+	* Fixed program_override() option, previously it overrode the
+	  hostname instead because of a typo.
+	* Accept 3.1 as configuration version, previously it only accepted
+	  3.0.
+	* Fixed internal() message loop detection in case an error happened
+	  on the log writer flush path.
+
 3.1.2
 	Mon, 02 Aug 2010 17:06:28 +0200
 
