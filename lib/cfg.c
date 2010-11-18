@@ -45,8 +45,8 @@
 
 /* PersistentConfig */
 
-#define CFG_CURRENT_VERSION 0x0302
-#define CFG_CURRENT_VERSION_STRING "3.2"
+#define CFG_CURRENT_VERSION 0x0303
+#define CFG_CURRENT_VERSION_STRING "3.3"
 
 struct _PersistConfig
 {
