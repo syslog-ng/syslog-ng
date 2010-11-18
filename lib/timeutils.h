@@ -38,6 +38,8 @@ void clean_time_cache();
 void update_g_current_time();
 void cached_g_current_time(GTimeVal *result);
 
+gboolean check_nanosleep(void);
+
 int format_zone_info(gchar *buf, size_t buflen, long gmtoff);
 long get_local_timezone_ofs(time_t when);
 glong g_time_val_diff(GTimeVal *t1, GTimeVal *t2);

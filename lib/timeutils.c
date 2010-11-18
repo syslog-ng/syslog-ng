@@ -244,6 +244,39 @@ format_zone_info(gchar *buf, size_t buflen, glong gmtoff)
 }
 
 /**
+ * check_nanosleep:
+ *
+ * Check if nanosleep() is accurate enough for sub-millisecond sleeping. If
+ * it is not good enough, we're skipping the minor sleeps in LogReader to
+ * balance the cost of returning to the main loop (e.g.  we're always going
+ * to return to the main loop, instead of trying to wait for the writer).
+ **/
+gboolean
+check_nanosleep(void)
+{
+  struct timespec start, stop, sleep;
+  glong diff;
+  gint attempts;
+
+  for (attempts = 0; attempts < 3; attempts++)
+    {
+      clock_gettime(CLOCK_MONOTONIC, &start);
+      sleep.tv_sec = 0;
+      /* 0.1 msec */
+      sleep.tv_nsec = 1e5;
+
+      while (nanosleep(&sleep, &sleep) < 0)
+        ;
+
+      clock_gettime(CLOCK_MONOTONIC, &stop);
+      diff = timespec_diff_nsec(&stop, &start);
+      if (diff < 5e5)
+        return TRUE;
+    }
+  return FALSE;
+}
+
+/**
  * g_time_val_diff:
  * @t1: time value t1
  * @t2: time value t2
