@@ -19,14 +19,14 @@ MsgFormatOptions parse_options;
 /* Beginning of Message character encoded in UTF8 */
 #define BOM "\xEF\xBB\xBF"
 
-#define BENCHMARK_COUNT 1000
+#define BENCHMARK_COUNT 10000
 
 void
 testcase(const gchar *msg_str, gboolean syslog_proto, gchar *template)
 {
   LogTemplate *templ;
   LogMessage *msg;
-  GString *res = g_string_sized_new(128);
+  GString *res = g_string_sized_new(1024);
   static TimeZoneInfo *tzinfo = NULL;
   gint i;
   GTimeVal start, end;
@@ -89,7 +89,18 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   msg_format_options_init(&parse_options, configuration);
 
   testcase("<155>2006-02-11T10:34:56.156+01:00 bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép", FALSE,
+           "$DATE\n");
+  testcase("<155>2006-02-11T10:34:56.156+01:00 bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép", FALSE,
            "<$PRI>$DATE $HOST $MSGHDR$MSG\n");
+
+  testcase("<155>2006-02-11T10:34:56.156+01:00 bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép", FALSE,
+           "$DATE\n");
+
+  testcase("<155>2006-02-11T10:34:56.156+01:00 bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép", FALSE,
+           "$DATE $HOST\n");
+
+  testcase("<155>2006-02-11T10:34:56.156+01:00 bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép", FALSE,
+           "$DATE $HOST $MSGHDR\n");
 
   testcase("<155>2006-02-11T10:34:56.156+01:00 bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép", FALSE,
            "$DATE $HOST $MSGHDR$MSG\n");

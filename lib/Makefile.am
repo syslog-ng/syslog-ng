@@ -23,6 +23,7 @@ libsyslog_ng_la_SOURCES = \
 	persist-state.c persist-state.h \
 	dnscache.c dnscache.h serialize.c serialize.h apphook.c apphook.h atomic.h \
 	timeutils.c timeutils.h \
+	str-format.c str-format.h \
 	tags.c tags.h \
 	alarms.c alarms.h \
 	logparser.c logparser.h \

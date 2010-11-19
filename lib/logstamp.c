@@ -25,6 +25,7 @@
 #include "logstamp.h"
 #include "messages.h"
 #include "timeutils.h"
+#include "str-format.h"
 
 static void
 log_stamp_append_frac_digits(LogStamp *stamp, GString *target, gint frac_digits)
@@ -71,40 +72,61 @@ log_stamp_append_format(LogStamp *stamp, GString *target, gint ts_format, glong 
     target_zone_offset = stamp->zone_offset;
 
   t = stamp->time.tv_sec + target_zone_offset;
-  if (!(tm = gmtime_r(&t, &tm_storage))) 
+  cached_gmtime(&t, &tm_storage);
+  tm = &tm_storage;
+  switch (ts_format)
     {
-      /* this should never happen */
-      g_string_sprintf(target, "%d", (int) stamp->time.tv_sec);
-      msg_error("Error formatting time stamp, gmtime() failed",
-                evt_tag_int("stamp", (int) t),
-                NULL);
-    } 
-  else 
-    {
-      switch (ts_format)
-        {
-        case TS_FMT_BSD:
-          g_string_append_printf(target, "%s %2d %02d:%02d:%02d", month_names_abbrev[tm->tm_mon], tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
-          log_stamp_append_frac_digits(stamp, target, frac_digits);
-          break;
-        case TS_FMT_ISO:
-          g_string_append_printf(target, "%d-%02d-%02dT%02d:%02d:%02d", tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
-          log_stamp_append_frac_digits(stamp, target, frac_digits);
-          format_zone_info(buf, sizeof(buf), target_zone_offset);
-          g_string_append(target, buf);
-          break;
-        case TS_FMT_FULL:
-          g_string_append_printf(target, "%d %s %2d %02d:%02d:%02d", tm->tm_year + 1900, month_names_abbrev[tm->tm_mon], tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
-          log_stamp_append_frac_digits(stamp, target, frac_digits);
-          break;
-        case TS_FMT_UNIX:
-          g_string_append_printf(target, "%d", (int) stamp->time.tv_sec);
-          log_stamp_append_frac_digits(stamp, target, frac_digits);
-          break;
-        default:
-          g_assert_not_reached();
-          break;
-        }
+    case TS_FMT_BSD:
+      g_string_append(target, month_names_abbrev[tm->tm_mon]);
+      g_string_append_c(target, ' ');
+      format_uint32_padded(target, 2, ' ', 10, tm->tm_mday);
+      g_string_append_c(target, ' ');
+      format_uint32_padded(target, 2, '0', 10, tm->tm_hour);
+      g_string_append_c(target, ':');
+      format_uint32_padded(target, 2, '0', 10, tm->tm_min);
+      g_string_append_c(target, ':');
+      format_uint32_padded(target, 2, '0', 10, tm->tm_sec);
+      log_stamp_append_frac_digits(stamp, target, frac_digits);
+      break;
+    case TS_FMT_ISO:
+      format_uint32_padded(target, 0, 0, 10, tm->tm_year + 1900);
+      g_string_append_c(target, '-');
+      format_uint32_padded(target, 2, '0', 10, tm->tm_mon + 1);
+      g_string_append_c(target, '-');
+      format_uint32_padded(target, 2, '0', 10, tm->tm_mday);
+      g_string_append_c(target, 'T');
+      format_uint32_padded(target, 2, '0', 10, tm->tm_hour);
+      g_string_append_c(target, ':');
+      format_uint32_padded(target, 2, '0', 10, tm->tm_min);
+      g_string_append_c(target, ':');
+      format_uint32_padded(target, 2, '0', 10, tm->tm_sec);
+
+      log_stamp_append_frac_digits(stamp, target, frac_digits);
+      format_zone_info(buf, sizeof(buf), target_zone_offset);
+      g_string_append(target, buf);
+      break;
+    case TS_FMT_FULL:
+      format_uint32_padded(target, 0, 0, 10, tm->tm_year + 1900);
+      g_string_append_c(target, ' ');
+      g_string_append(target, month_names_abbrev[tm->tm_mon]);
+      g_string_append_c(target, ' ');
+      format_uint32_padded(target, 2, ' ', 10, tm->tm_mday);
+      g_string_append_c(target, ' ');
+      format_uint32_padded(target, 2, '0', 10, tm->tm_hour);
+      g_string_append_c(target, ':');
+      format_uint32_padded(target, 2, '0', 10, tm->tm_min);
+      g_string_append_c(target, ':');
+      format_uint32_padded(target, 2, '0', 10, tm->tm_sec);
+
+      log_stamp_append_frac_digits(stamp, target, frac_digits);
+      break;
+    case TS_FMT_UNIX:
+      format_uint32_padded(target, 0, 0, 10, (int) stamp->time.tv_sec);
+      log_stamp_append_frac_digits(stamp, target, frac_digits);
+      break;
+    default:
+      g_assert_not_reached();
+      break;
     }
 }
 

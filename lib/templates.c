@@ -31,6 +31,7 @@
 #include "filter.h"
 #include "gsocket.h"
 #include "plugin.h"
+#include "str-format.h"
 
 #include <time.h>
 #include <string.h>
@@ -244,13 +245,13 @@ log_macro_expand(GString *result, gint id, gboolean escape, LogTemplateOptions *
           }
         else
           {
-            g_string_sprintfa(result, "%x", (msg->pri & LOG_FACMASK) >> 3);
+            format_uint32_padded(result, 0, 0, 16, (msg->pri & LOG_FACMASK) >> 3);
           }
         break;
       }
     case M_FACILITY_NUM:
       {
-        g_string_sprintfa(result, "%d", (msg->pri & LOG_FACMASK) >> 3);
+        format_uint32_padded(result, 0, 0, 10, (msg->pri & LOG_FACMASK) >> 3);
         break;
       }
     case M_LEVEL:
@@ -265,19 +266,19 @@ log_macro_expand(GString *result, gint id, gboolean escape, LogTemplateOptions *
           }
         else
           {
-            g_string_sprintfa(result, "%d", msg->pri & LOG_PRIMASK);
+            format_uint32_padded(result, 0, 0, 10, msg->pri & LOG_PRIMASK);
           }
 
         break;
       }
     case M_LEVEL_NUM:
       {
-        g_string_sprintfa(result, "%d", (msg->pri & LOG_PRIMASK));
+        format_uint32_padded(result, 0, 0, 10, msg->pri & LOG_PRIMASK);
         break;
       }
     case M_TAG:
       {
-        g_string_sprintfa(result, "%02x", msg->pri);
+        format_uint32_padded(result, 2, '0', 16, msg->pri);
         break;
       }
     case M_TAGS:
@@ -287,12 +288,13 @@ log_macro_expand(GString *result, gint id, gboolean escape, LogTemplateOptions *
       }
     case M_BSDTAG:
       {
-        g_string_sprintfa(result, "%1d%c", (msg->pri & LOG_PRIMASK), (((msg->pri & LOG_FACMASK) >> 3) + 'A'));
+        format_uint32_padded(result, 0, 0, 10, (msg->pri & LOG_PRIMASK));
+        g_string_append_c(result, (((msg->pri & LOG_FACMASK) >> 3) + 'A'));
         break;
       }
     case M_PRI:
       {
-        g_string_sprintfa(result, "%d", msg->pri);
+        format_uint32_padded(result, 0, 0, 10, msg->pri);
         break;
       }
     case M_HOST:
@@ -397,7 +399,9 @@ log_macro_expand(GString *result, gint id, gboolean escape, LogTemplateOptions *
     case M_SEQNUM:
       {
         if (seq_num)
-          g_string_sprintfa(result, "%d", seq_num);
+          {
+            format_uint32_padded(result, 0, 0, 10, seq_num);
+          }
         break;
       }
     default:
@@ -453,22 +457,22 @@ log_macro_expand(GString *result, gint id, gboolean escape, LogTemplateOptions *
             g_string_append(result, weekday_names[tm->tm_wday]);
             break;
           case M_WEEK_DAY:
-            g_string_sprintfa(result, "%d", tm->tm_wday + 1);
+            format_uint32_padded(result, 0, 0, 10, tm->tm_wday + 1);
             break;
           case M_WEEK:
-            g_string_sprintfa(result, "%02d", (tm->tm_yday - (tm->tm_wday - 1 + 7) % 7 + 7) / 7);
+            format_uint32_padded(result, 2, '0', 10, (tm->tm_yday - (tm->tm_wday - 1 + 7) % 7 + 7) / 7);
             break;
           case M_YEAR:
-            g_string_sprintfa(result, "%04d", tm->tm_year + 1900);
+            format_uint32_padded(result, 4, '0', 10, tm->tm_year + 1900);
             break;
           case M_YEAR_DAY:
-            g_string_sprintfa(result, "%03d", tm->tm_yday + 1);
+            format_uint32_padded(result, 3, '0', 10, tm->tm_yday + 1);
             break;
           case M_MONTH:
-            g_string_sprintfa(result, "%02d", tm->tm_mon + 1);
+            format_uint32_padded(result, 2, '0', 10, tm->tm_mon + 1);
             break;
           case M_MONTH_WEEK:
-            g_string_sprintfa(result, "%d", ((tm->tm_mday / 7) + ((tm->tm_wday > 0) && ((tm->tm_mday % 7) >= tm->tm_wday))));
+            format_uint32_padded(result, 0, 0, 10, ((tm->tm_mday / 7) + ((tm->tm_wday > 0) && ((tm->tm_mday % 7) >= tm->tm_wday))));
             break;
           case M_MONTH_ABBREV:
             g_string_append_len(result, month_names_abbrev[tm->tm_mon], 3);
@@ -477,16 +481,16 @@ log_macro_expand(GString *result, gint id, gboolean escape, LogTemplateOptions *
             g_string_append(result, month_names[tm->tm_mon]);
             break;
           case M_DAY:
-            g_string_sprintfa(result, "%02d", tm->tm_mday);
+            format_uint32_padded(result, 2, '0', 10, tm->tm_mday);
             break;
           case M_HOUR:
-            g_string_sprintfa(result, "%02d", tm->tm_hour);
+            format_uint32_padded(result, 2, '0', 10, tm->tm_hour);
             break;
           case M_MIN:
-            g_string_sprintfa(result, "%02d", tm->tm_min);
+            format_uint32_padded(result, 2, '0', 10, tm->tm_min);
             break;
           case M_SEC:
-            g_string_sprintfa(result, "%02d", tm->tm_sec);
+            format_uint32_padded(result, 2, '0', 10, tm->tm_sec);
             break;
           case M_DATE:
           case M_STAMP:
@@ -494,16 +498,13 @@ log_macro_expand(GString *result, gint id, gboolean escape, LogTemplateOptions *
           case M_FULLDATE:
           case M_UNIXTIME:
             {
-              GString *s = g_string_sized_new(0);
               gint format = id == M_DATE ? TS_FMT_BSD : 
                             id == M_ISODATE ? TS_FMT_ISO :
                             id == M_FULLDATE ? TS_FMT_FULL :
                             id == M_UNIXTIME ? TS_FMT_UNIX :
                             opts->ts_format;
               
-              log_stamp_format(stamp, s, format, zone_ofs, opts->frac_digits);
-              g_string_append_len(result, s->str, s->len);
-              g_string_free(s, TRUE);
+              log_stamp_append_format(stamp, result, format, zone_ofs, opts->frac_digits);
               break;
             }
           case M_TZ:

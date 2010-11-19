@@ -27,6 +27,7 @@
 #include "timeutils.h"
 #include "misc.h"
 #include "cfg.h"
+#include "str-format.h"
 
 #include <regex.h>
 #include <ctype.h>
@@ -44,13 +45,6 @@
 
 static const char aix_fwd_string[] = "Message forwarded from ";
 static const char repeat_msg_string[] = "last message repeated";
-
-static inline void
-copy_string_fixed_buf(guchar *dest, const guchar *src, gsize dest_len)
-{
-  strncpy((gchar *) dest, (gchar *) src, dest_len);
-  dest[dest_len-1] = 0;
-}
 
 static gboolean
 log_msg_parse_pri(LogMessage *self, const guchar **data, gint *length, guint flags, guint16 default_pri)
@@ -188,16 +182,13 @@ log_msg_parse_column(LogMessage *self, NVHandle handle, const guchar **data, gin
 
 
 static gboolean
-log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guchar *date, gsize date_len, guint parse_flags, glong assume_timezone)
+log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint parse_flags, glong assume_timezone)
 {
   const guchar *src = *data;
   gint left = *length;
   time_t now = time(NULL);
   struct tm tm;
-  guchar *p;
   gint unnormalized_hour;
-
-  date[0] = 0;
 
   /* If the next chars look like a date, then read them as a date. */
   if (left >= 19 && src[4] == '-' && src[7] == '-' && src[10] == 'T' && src[13] == ':' && src[16] == ':')
@@ -207,25 +198,16 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guchar *
 
       self->timestamps[LM_TS_STAMP].time.tv_usec = 0;
 
-      copy_string_fixed_buf(date, src, MIN(date_len, 20));
-
       /* NOTE: we initialize various unportable fields in tm using a
        * localtime call, as the value of tm_gmtoff does matter but it does
        * not exist on all platforms and 0 initializing it causes trouble on
        * time-zone barriers */
 
       cached_localtime(&now, &tm);
-      p = (guchar *) strptime((gchar *) date, STRPTIME_ISOFORMAT, &tm);
-
-      if (!p || (p && *p))
+      if (!scan_iso_timestamp((const gchar **) &src, &left, &tm))
         {
-          /* not the complete stamp could be parsed */
           goto error;
         }
-
-      src += p - date;
-      left -= p - date;
-
 
       self->timestamps[LM_TS_STAMP].time.tv_usec = 0;
       if (left > 0 && *src == '.')
@@ -278,50 +260,21 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guchar *
     }
   else if ((parse_flags & LP_SYSLOG_PROTOCOL) == 0)
     {
-      if (left >= 21 && src[3] == ' ' && src[6] == ' ' && src[11] == ' ' && src[14] == ':' && src[17] == ':' && src[20] == ':' &&
+      if (left >= 21 && src[3] == ' ' && src[6] == ' ' && src[11] == ' ' && src[14] == ':' && src[17] == ':' && (src[20] == ':' || src[20] == ' ') &&
           (isdigit(src[7]) && isdigit(src[8]) && isdigit(src[9]) && isdigit(src[10])))
         {
           /* PIX timestamp, expected format: MMM DD YYYY HH:MM:SS: */
-
-          /* Just read the buffer data into a textual
-             datestamp. */
-
-          copy_string_fixed_buf(date, src, MIN(date_len, 22));
-          src += 21;
-          left -= 21;
-
-          /* And also make struct time timestamp for the msg */
-
-          cached_localtime(&now, &tm);
-          p = (guchar *) strptime((gchar *) date, "%b %e %Y %H:%M:%S:", &tm);
-          if (!p || (p && *p))
-            goto error;
-
-          tm.tm_isdst = -1;
-
-          /* NOTE: no timezone information in the message, assume it is local time */
-          unnormalized_hour = tm.tm_hour;
-          self->timestamps[LM_TS_STAMP].time.tv_sec = cached_mktime(&tm);
-          self->timestamps[LM_TS_STAMP].time.tv_usec = 0;
-        }
-      else if (left >= 21 && src[3] == ' ' && src[6] == ' ' && src[11] == ' ' && src[14] == ':' && src[17] == ':' && src[20] == ' ' &&
-          (isdigit(src[7]) && isdigit(src[8]) && isdigit(src[9]) && isdigit(src[10])))
-        {
           /* ASA timestamp, expected format: MMM DD YYYY HH:MM:SS */
 
-          /* Just read the buffer data into a textual
-             datestamp. */
-
-          copy_string_fixed_buf(date, src, MIN(date_len, 21));
-          src += 20;
-          left -= 20;
-
-          /* And also make struct time timestamp for the msg */
-
           cached_localtime(&now, &tm);
-          p = (guchar *) strptime((gchar *) date, "%b %e %Y %H:%M:%S", &tm);
-          if (!p || (p && *p))
+          if (!scan_pix_timestamp((const gchar **) &src, &left, &tm))
             goto error;
+
+          if (*src == ':')
+            {
+              src++;
+              left--;
+            }
 
           tm.tm_isdst = -1;
 
@@ -335,18 +288,8 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guchar *
         {
           /* LinkSys timestamp, expected format: MMM DD HH:MM:SS YYYY */
 
-          /* Just read the buffer data into a textual
-             datestamp. */
-
-          copy_string_fixed_buf(date, src, 21);
-          src += 20;
-          left -= 20;
-
-          /* And also make struct time timestamp for the msg */
-
           cached_localtime(&now, &tm);
-          p = (guchar *) strptime((gchar *) date, "%b %e %H:%M:%S %Y", &tm);
-          if (!p || (p && *p))
+          if (!scan_linksys_timestamp((const gchar **) &src, &left, &tm))
             goto error;
           tm.tm_isdst = -1;
 
@@ -362,12 +305,10 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guchar *
           struct tm nowtm;
           glong usec = 0;
 
-          /* Just read the buffer data into a textual
-             datestamp. */
-
-          copy_string_fixed_buf(date, src, MIN(date_len, 16));
-          src += 15;
-          left -= 15;
+          cached_localtime(&now, &nowtm);
+          tm = nowtm;
+          if (!scan_bsd_timestamp((const gchar **) &src, &left, &tm))
+            goto error;
 
           if (left > 0 && src[0] == '.')
             {
@@ -391,23 +332,18 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guchar *
               src += i;
             }
 
-          /* And also make struct time timestamp for the msg */
-
-          /* we use a separate variable for the current timestamp as strptime on
-           * solaris sometimes touches fields that are not in the format string
-           * of strptime
+          /* detect if the message is coming from last year. If its
+           * month is at least one larger than the current month. This
+           * handles both clocks that are in the future, or in the
+           * past:
+           *   in January we receive a message from December (past) => last year
+           *   in January we receive a message from February (future) => same year
+           *   in December we receive a message from January (future) => next year
            */
-          cached_localtime(&now, &nowtm);
-          tm = nowtm;
-          p = (guchar *) strptime((gchar *) date, "%b %e %H:%M:%S", &tm);
-          if (!p || (p && *p))
-            goto error;
-
-          /* In case of daylight saving let's assume that the message came under daylight saving also */
-          tm.tm_isdst = nowtm.tm_isdst;
-          tm.tm_year = nowtm.tm_year;
           if (tm.tm_mon > nowtm.tm_mon + 1)
             tm.tm_year--;
+          if (tm.tm_mon < nowtm.tm_mon - 1)
+            tm.tm_year++;
 
           /* NOTE: no timezone information in the message, assume it is local time */
           unnormalized_hour = tm.tm_hour;
@@ -864,7 +800,6 @@ log_msg_parse_legacy(MsgFormatOptions *parse_options,
 {
   const guchar *src;
   gint left;
-  guchar date[32];
 
   src = (const guchar *) data;
   left = length;
@@ -875,9 +810,7 @@ log_msg_parse_legacy(MsgFormatOptions *parse_options,
     }
 
   log_msg_parse_skip_chars(self, &src, &left, " ", -1);
-  log_msg_parse_date(self, &src, &left, date, sizeof(date), parse_options->flags & ~LP_SYSLOG_PROTOCOL, time_zone_info_get_offset(parse_options->recv_time_zone_info, time(NULL)));
-
-  if (date[0])
+  if (log_msg_parse_date(self, &src, &left, parse_options->flags & ~LP_SYSLOG_PROTOCOL, time_zone_info_get_offset(parse_options->recv_time_zone_info, time(NULL))))
     {
       /* Expected format: hostname program[pid]: */
       /* Possibly: Message forwarded from hostname: ... */
@@ -972,7 +905,6 @@ log_msg_parse_syslog_proto(MsgFormatOptions *parse_options, const guchar *data, 
 
   const guchar *src;
   gint left;
-  guchar date[32];
   const guchar *hostname_start = NULL;
   gint hostname_len = 0;
 
@@ -990,7 +922,7 @@ log_msg_parse_syslog_proto(MsgFormatOptions *parse_options, const guchar *data, 
     return FALSE;
 
   /* ISO time format */
-  if (!log_msg_parse_date(self, &src, &left, date, sizeof(date), parse_options->flags, time_zone_info_get_offset(parse_options->recv_time_zone_info, time(NULL))))
+  if (!log_msg_parse_date(self, &src, &left, parse_options->flags, time_zone_info_get_offset(parse_options->recv_time_zone_info, time(NULL))))
     return FALSE;
 
   if (!log_msg_parse_skip_space(self, &src, &left))

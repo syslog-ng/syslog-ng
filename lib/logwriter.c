@@ -695,10 +695,8 @@ log_writer_broken(LogWriter *self, gint notify_code)
 static gboolean 
 log_writer_flush_log(LogWriter *self, LogProto *proto)
 {
-  GString *line = NULL;
   gint64 num_elements;
   
-  line = g_string_sized_new(128);
   num_elements = log_queue_get_length(self->queue);
   while (num_elements > 0 && !log_writer_throttling(self))
     {
@@ -711,26 +709,25 @@ log_writer_flush_log(LogWriter *self, LogProto *proto)
 
       msg_set_context(lm);
 
-      log_writer_format_log(self, lm, line);
+      log_writer_format_log(self, lm, self->line_buffer);
       
       /* account this message against the throttle rate */
       self->throttle_buckets--;
       
-      if (line->len)
+      if (self->line_buffer->len)
         {
           LogProtoStatus status;
 
-          status = log_proto_post(proto, (guchar *) line->str, line->len, &consumed);
+          status = log_proto_post(proto, (guchar *) self->line_buffer->str, self->line_buffer->len, &consumed);
           if (status == LPS_ERROR)
             {
-              g_string_free(line, TRUE);
               return FALSE;
             }
           if (consumed)
             {
-              line->str = g_malloc0(1);
-              line->allocated_len = 1;
-              line->len = 0;
+              self->line_buffer->str = g_malloc(self->line_buffer->allocated_len);
+              self->line_buffer->str[0] = 0;
+              self->line_buffer->len = 0;
             }
         }
       if (consumed)
@@ -752,7 +749,6 @@ log_writer_flush_log(LogWriter *self, LogProto *proto)
       msg_set_context(NULL);
       num_elements--;
     }
-  g_string_free(line, TRUE);
   return TRUE;
 }
 
@@ -801,6 +797,8 @@ log_writer_free(LogPipe *s)
 {
   LogWriter *self = (LogWriter *) s;
   
+  if (self->line_buffer)
+    g_string_free(self->line_buffer, TRUE);
   if (self->queue)
     log_queue_free(self->queue);
   log_writer_last_msg_release(self);
@@ -861,6 +859,7 @@ log_writer_new(guint32 flags)
   self->last_msg = NULL;
   self->last_msg_count = 0;
   self->last_msg_timerid = 0;
+  self->line_buffer = g_string_sized_new(128);
   return &self->super;
 }
 

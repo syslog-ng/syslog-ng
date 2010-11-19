@@ -88,6 +88,7 @@ typedef struct _LogWriter
   LogMessage *last_msg;
   guint32 last_msg_count;
   guint last_msg_timerid;
+  GString *line_buffer;
 
   gint stats_level;
   guint16 stats_source;
