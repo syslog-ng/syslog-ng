@@ -11,23 +11,18 @@
 #include <unistd.h>
 #include <netdb.h>
 #include <string.h>
+#include <glib.h>
 
-#if ENABLE_SSL
 #include <openssl/crypto.h>
 #include <openssl/x509.h>
 #include <openssl/pem.h>
 #include <openssl/ssl.h>
 #include <openssl/err.h>
-#endif
 #include <unistd.h>
-
-#if HAVE_GETOPT_H
-#include <getopt.h>
-#endif
 
 #define MAX_MESSAGE_LENGTH 8192
 
-#define USEC_PER_SEC     10e6
+#define USEC_PER_SEC      1000000
 
 #ifndef MIN
 #define MIN(a, b)    ((a) < (b) ? (a) : (b))
@@ -36,16 +31,22 @@
 FILE *readfrom = NULL;
 int rate = 1000;
 int unix_socket = 0;
+int unix_socket_i = 0;
+int unix_socket_x = 0;
+int sock_type_s = 0;
+int sock_type_d = 0;
 int sock_type = SOCK_STREAM;
 int sock = -1;
 int message_length = 256;
 int interval = 10;
+int number_of_messages = 0;
 int csv = 0;
 int quiet = 0;
 int syslog_proto = 0;
 int framing = 1;
 int usessl = 0;
 int skip_tokens = 3;
+char *read_file = NULL;
 
 typedef ssize_t (*send_data_t)(void *user_data, void *buf, size_t length);
 
@@ -111,6 +112,7 @@ parse_line(const char *line, char *host, char *program, char *pid, char **msg)
   const char *pos = line;
   const char *end;
   int space = skip_tokens;
+  int pid_len;
 
   /* Find token */
   while (space)
@@ -128,6 +130,7 @@ parse_line(const char *line, char *host, char *program, char *pid, char **msg)
   if (!pos)
     return -1;
 
+  /* pid */
   pos0 = pos;
   if (*(--pos) == ']')
     {
@@ -135,11 +138,15 @@ parse_line(const char *line, char *host, char *program, char *pid, char **msg)
       while (*(--pos) != '[')
         ;
 
-      memcpy(pid, pos + 1, end - pos - 1);
-      pid[end-pos-1] = '\0';
+      pid_len = end - pos; /* 'end' points to the last character of the pid string (not off by one), *pos = '[' -> pid length = end - pos*/
+      memcpy(pid, pos + 1, pid_len);
+      pid[pid_len] = '\0';
     }
   else
-    pid[0] = '\0';
+    {
+      pid[0] = '\0';
+      ++pos; /* the 'pos' has been decreased in the condition (']'), reset it to the original position */
+    }
 
   /* Program */
   end = pos;
@@ -172,22 +179,25 @@ gen_next_message(FILE *source, char *buf, int buflen)
   char stamp[32];
   int linelen;
   int tslen;
+  char *temp;
 
   char host[128], program[128], pid[16];
   char *msg;
 
   while (1)
     {
+      temp = NULL;
       if (feof(source))
         return -1;
-      fgets(line, sizeof(line), source);
+      temp = fgets(line, sizeof(line), source);
+      if (!temp)
+        return -1;
 
       if (parse_line(line, host, program, pid, &msg) > 0)
         break;
 
       fprintf(stderr, "\rInvalid line %d                  \n", ++lineno);
     }
-
   gettimeofday(&now, NULL);
   tm = localtime(&now.tv_sec);
   tslen = strftime(stamp, sizeof(stamp), "%Y-%m-%dT%H:%M:%S", tm);
@@ -218,17 +228,18 @@ gen_messages(send_data_t send_func, void *send_func_ud)
   char linebuf[MAX_MESSAGE_LENGTH + 1];
   char stamp[32];
   char intbuf[16];
-  int linelen;
+  int linelen = 0;
   int i, run_id;
   unsigned long count = 0, last_count = 0;
   char padding[] = "PADD";
   long buckets = rate - (rate / 10);
   double diff_usec;
   struct timeval diff_tv;
-  int pos_timestamp1, pos_timestamp2, pos_seq;
+  int pos_timestamp1 = 0, pos_timestamp2 = 0, pos_seq = 0;
   int rc, hdr_len = 0;
+  unsigned int counter = 0;
   uint64_t sum_len = 0;
-  
+
   gettimeofday(&start, NULL);
   now = start;
   last_throttle_check = now;
@@ -244,7 +255,7 @@ gen_messages(send_data_t send_func, void *send_func_ud)
         {
           if (sock_type == SOCK_STREAM && framing)
             hdr_len = snprintf(linebuf, sizeof(linebuf), "%d ", message_length);
-        
+
           linelen = snprintf(linebuf + hdr_len, sizeof(linebuf) - hdr_len, "<38>1 2007-12-24T12:28:51+02:00 localhost localprg 1234 - - \xEF\xBB\xBFseq: %010d, runid: %-10d, stamp: %-19s ", 0, run_id, "");
           pos_timestamp1 = 6 + hdr_len;
           pos_seq = 68 + hdr_len;
@@ -264,7 +275,7 @@ gen_messages(send_data_t send_func, void *send_func_ud)
           return 1;
         }
     }
-  
+
   for (i = linelen; i < message_length - 1; i++)
     {
       linebuf[i + hdr_len] = padding[(i - linelen) % (sizeof(padding) - 1)];
@@ -272,9 +283,13 @@ gen_messages(send_data_t send_func, void *send_func_ud)
   linebuf[hdr_len + message_length - 1] = '\n';
   linebuf[hdr_len + message_length] = 0;
   linelen = strlen(linebuf);
-  
-  while (time_val_diff_in_usec(&now, &start) < interval * USEC_PER_SEC)
+  counter = 0;
+  while (time_val_diff_in_usec(&now, &start) < ((int64_t)interval) * USEC_PER_SEC)
     {
+      if(number_of_messages != 0 && count >= number_of_messages)
+        {
+          break;
+        }
       gettimeofday(&now, NULL);
 
       diff_usec = time_val_diff_in_usec(&now, &last_throttle_check);
@@ -302,23 +317,23 @@ gen_messages(send_data_t send_func, void *send_func_ud)
             {
               tspec = trem;
             }
-          /* recalculate buckets */
-          //gettimeofday(&last_ts_format, NULL);
           continue;
         }
 
       if (readfrom)
         {
           rc = gen_next_message(readfrom, linebuf, sizeof(linebuf));
-
           if (rc == -1)
             break;
 
           linelen = rc;
         }
-      else
+
+      if (now.tv_sec != last_ts_format.tv_sec)
         {
-          if (now.tv_sec != last_ts_format.tv_sec)
+          /* tv_has has changed, update message timestamp & print current message rate */
+
+          if (!readfrom)
             {
               int len;
               struct tm *tm;
@@ -328,20 +343,20 @@ gen_messages(send_data_t send_func, void *send_func_ud)
               memcpy(&linebuf[pos_timestamp1], stamp, len);
               memcpy(&linebuf[pos_timestamp2], stamp, len);
             }
-        }
-      sum_len += linelen;
 
-      if (csv)
-        {
-          time_val_diff_in_timeval(&diff_tv, &now, &start);
-          printf("%lu.%lu;%lu\n", (long) diff_tv.tv_sec, (long) diff_tv.tv_usec, count);
+          if (csv)
+            {
+              time_val_diff_in_timeval(&diff_tv, &now, &start);
+              printf("%lu.%06lu;%lu\n", (long) diff_tv.tv_sec, (long) diff_tv.tv_usec, count);
+            }
+          else if (!quiet)
+            {
+              diff_usec = time_val_diff_in_usec(&now, &last_ts_format);
+              fprintf(stderr, "count=%ld, rate = %.2lf msg/sec                 \r", count, ((double) (count - last_count) * USEC_PER_SEC) / diff_usec);
+            }
+          last_ts_format = now;
+          last_count = count;
         }
-      else if (!quiet)
-        {
-          fprintf(stderr, "count=%ld diff=%.lf rate = %.2lf msg/sec              \r", count, (double)diff_usec, ((double) (count - last_count) * USEC_PER_SEC) / diff_usec);
-        }
-      last_ts_format = now;
-      last_count = count;
 
       if (!readfrom)
         {
@@ -349,20 +364,22 @@ gen_messages(send_data_t send_func, void *send_func_ud)
           snprintf(intbuf, sizeof(intbuf), "%010ld", count);
           memcpy(&linebuf[pos_seq], intbuf, 10);
         }
-      
+
+      sum_len += linelen;
       rc = write_chunk(send_func, send_func_ud, linebuf, linelen);
       if (rc < 0)
         {
-          fprintf(stderr, "Send error %s\n", strerror(errno));
+          fprintf(stderr, "Send error %s, results may be skewed.\n", strerror(errno));
           break;
         }
       buckets--;
       count++;
     }
-  
+
   gettimeofday(&now, NULL);
   diff_usec = time_val_diff_in_usec(&now, &start);
   time_val_diff_in_timeval(&diff_tv, &now, &start);
+  printf("%lu.%06lu;%lu\n", (long) diff_tv.tv_sec, (long) diff_tv.tv_usec, count);
   fprintf(stderr, "average rate = %.2lf msg/sec, count=%ld, time=%ld.%03ld, (last) msg size=%d, bandwidth=%.2lf kB/sec\n",
     (double) count * USEC_PER_SEC / diff_usec, count, diff_tv.tv_sec, diff_tv.tv_usec / 1000, linelen,
     (double) sum_len * (USEC_PER_SEC / 1024) / diff_usec);
@@ -419,130 +436,85 @@ gen_messages_plain(int sock)
   return gen_messages(send_plain, (void *)((long)sock));
 }
 
-void
-usage()
-{
-  printf("loggen [options] target [port]\n"
-         "Generate syslog messages at the specified rate\n\n"
-         "Options:\n"
-         "  --rate, or -r <msg/sec> Number of messages to generate per second\n"
-         "  --inet, or -i           Use IP based transport (TCP, UDP)\n"
-         "  --unix, or -x           Use UNIX domain socket transport\n"
-         "  --stream, or -S         Use stream socket (TCP and unix-stream)\n"
-         "  --dgram, or -D          Use datagram socket (UDP and unix-dgram)\n"
-         "  --size, or -s <size>    Specify the size of the syslog message\n"
-         "  --interval, or -I <sec> Number of seconds to run the test for\n"
-         "  --syslog-proto, or -P   Use the new syslog-protocol message format (see also framing)\n"
-         "  --no-framing, or -F     Don't use syslog-protocol style framing, even if syslog-proto is set\n"
+static GOptionEntry loggen_options[] = {
+  { "rate", 'r', 0, G_OPTION_ARG_INT, &rate, "Number of messages to generate per second", "<msg/sec>" },
+  { "inet", 'i', 0, G_OPTION_ARG_NONE, &unix_socket_i, "Use IP-based transport (TCP, UDP)", NULL },
+  { "unix", 'x', 0, G_OPTION_ARG_NONE, &unix_socket_x, "Use UNIX domain socket transport", NULL },
+  { "stream", 'S', 0, G_OPTION_ARG_NONE, &sock_type_s, "Use stream socket (TCP and unix-stream)", NULL },
+  { "dgram", 'D', 0, G_OPTION_ARG_NONE, &sock_type_d, "Use datagram socket (UDP and unix-dgram)", NULL },
+  { "size", 's', 0, G_OPTION_ARG_INT, &message_length, "Specify the size of the syslog message", "<size>" },
+  { "interval", 'I', 0, G_OPTION_ARG_INT, &interval, "Number of seconds to run the test for", "<sec>" },
+  { "syslog-proto", 'P', 0, G_OPTION_ARG_NONE, &syslog_proto, "Use the new syslog-protocol message format (see also framing)", NULL },
+  { "no-framing", 'F', G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &framing, "Don't use syslog-protocol style framing, even if syslog-proto is set", NULL },
 #if ENABLE_SSL
-         "  --use-ssl or -U         Use ssl layer\n"
+  { "use-ssl", 'U', 0, G_OPTION_ARG_NONE, &usessl, "Use ssl layer", NULL },
 #endif
-         "  --read-file or -R       Read log messages from file\n"
-         "  --skip-tokens or -K     Skip the given number of tokens (delimined by a space) at the beginning of each line\n"
-         "  --csv, or -C            Produce CSV output\n"
-         "  --verbose or -V         print the msg/sec data\n");
-  exit(0);
-}
+  { "read-file", 'R', 0, G_OPTION_ARG_STRING, &read_file, "Read log messages from file", "<filename>" },
+  { "skip-tokens", 0, 0, G_OPTION_ARG_INT, &skip_tokens, "Skip the given number of tokens (delimined by a space) at the beginning of each line (default value: 3)", "<number>" },
+  { "csv", 'C', 0, G_OPTION_ARG_NONE, &csv, "Produce CSV output", NULL },
+  { "number", 'n', 0, G_OPTION_ARG_INT, &number_of_messages, "Number of messages to generate", "<number>" },
+  { "quiet", 'Q', 0, G_OPTION_ARG_NONE, &quiet, "Don't print the msg/sec data", NULL },
+  { NULL }
+};
 
-int 
+int
 main(int argc, char *argv[])
 {
-#if HAVE_GETOPT_LONG
-  struct option syslog_ng_options[] = 
-    {
-      { "rate", required_argument, NULL, 'r' },
-      { "inet", no_argument, NULL, 'i' },
-      { "unix", no_argument, NULL, 'x' },
-      { "stream", no_argument, NULL, 'S' },
-      { "dgram", no_argument, NULL, 'D' },
-      { "size", required_argument, NULL, 's' },
-      { "interval", required_argument, NULL, 'I' },
-      { "syslog-proto", no_argument, NULL, 'P' },
-      { "no-framing", no_argument, NULL, 'F' },
-#if ENABLE_SSL
-      { "use-ssl", no_argument, NULL, 'U'},
-#endif
-      { "csv", no_argument, NULL, 'C' },
-      { "read-file", required_argument, NULL, 'R' },
-      { "skip-tokens", required_argument, NULL, 'K' },
-      { "verbose", no_argument, NULL, 'V' },
-      { NULL, 0, NULL, 0 }
-    };
-#endif
-  int opt;
-  int ret;
+  int ret = 0;
+  GError *error = NULL;
+  GOptionContext *ctx = NULL;
 
-#if HAVE_GETOPT_LONG
-  while ((opt = getopt_long(argc, argv, "r:I:ixs:SDhPCFUqR:", syslog_ng_options, NULL)) != -1)
-#else
-  while ((opt = getopt(argc, argv, "r:I:ixs:SDhPCFUqR:")) != -1)
-#endif
+  ctx = g_option_context_new(" target port");
+  g_option_context_add_main_entries(ctx, loggen_options, 0);
+  if (!g_option_context_parse(ctx, &argc, &argv, &error))
     {
-      switch (opt) 
-	{
-	case 'r':
-	  rate = atoi(optarg);
-	  break;
-        case 'I':
-          interval = atoi(optarg);
-          break;
-        case 'i':
-          unix_socket = 0;
-          break;
-        case 'x':
-          unix_socket = 1;
-          break;
-        case 'D':
-          sock_type = SOCK_DGRAM;
-          break;
-        case 'S':
-          sock_type = SOCK_STREAM;
-          break;
-        case 's':
-          message_length = atoi(optarg);
-          if (message_length > MAX_MESSAGE_LENGTH)
-            {
-              fprintf(stderr, "Message size too large, limiting to %d\n", MAX_MESSAGE_LENGTH);
-              message_length = MAX_MESSAGE_LENGTH;
-            }
-          break;
-        case 'P':
-          syslog_proto = 1;
-          framing = 1;
-          break;
-        case 'C':
-          csv = 1;
-          break;
-        case 'q':
-          quiet = 1;
-          break;
-        case 'F':
-          framing = 0;
-          break;
-        case 'U':
-          usessl = 1;
-          break;
-        case 'R':
-          if (optarg[0] == '-' && optarg[1] == '\0')
-            {
-              readfrom = stdin;
-              break;
-            }
-          readfrom = fopen(optarg, "r");
+      fprintf(stderr, "Option parsing failed: %s\n", error->message);
+      return 1;
+    }
+
+  if (unix_socket_i)
+    unix_socket = 0;
+  if (unix_socket_x)
+    unix_socket = 1;
+
+  if (sock_type_d)
+    sock_type = SOCK_DGRAM;
+  if (sock_type_s)
+    sock_type = SOCK_STREAM;
+
+  if (message_length > MAX_MESSAGE_LENGTH)
+    {
+      fprintf(stderr, "Message size too large, limiting to %d\n", MAX_MESSAGE_LENGTH);
+      message_length = MAX_MESSAGE_LENGTH;
+    }
+
+  if (syslog_proto)
+    framing = 1;
+
+  if (read_file != NULL)
+    {
+      if (read_file[0] == '-' && read_file[1] == '\0')
+        {
+          readfrom = stdin;
+        }
+      else
+        {
+          readfrom = fopen(read_file, "r");
           if (!readfrom)
             {
-              perror("fopen");
+              const int bufsize = 1024;
+              char cbuf[bufsize];
+              snprintf(cbuf, bufsize, "fopen: %s", read_file);
+              perror(cbuf);
               return 1;
             }
-          break;
-        case 'K':
-          skip_tokens = atoi(optarg);
-          break;
-        case 'h':
-          usage();
-          break;
-	}
+        }
     }
+
+  /* skip the program name after parsing - argc is at least 1 with argv containing the program name
+     we will only have the parameters after the '--' (if any) */
+  --argc;
+  ++argv;
 
   if (unix_socket && usessl)
     {
@@ -552,14 +524,14 @@ main(int argc, char *argv[])
   if (!unix_socket)
     {
 
-      if (argc - optind < 2)
+      if (argc < 2)
         {
           fprintf(stderr, "No target server or port specified\n");
-          usage();
+          return 1;
         }
 
       if (1)
-        {      
+        {
 #if HAVE_GETADDRINFO
           struct addrinfo hints;
           struct addrinfo *res, *rp;
@@ -571,13 +543,13 @@ main(int argc, char *argv[])
           hints.ai_flags = AI_ADDRCONFIG;
 #endif
           hints.ai_protocol = 0;
-          if (getaddrinfo(argv[optind], argv[optind + 1], &hints, &res) != 0)
+          if (getaddrinfo(argv[0], argv[1], &hints, &res) != 0)
             {
               fprintf(stderr, "Name lookup error\n");
               return 2;
             }
 
-          for (rp = res; rp != NULL; rp = rp->ai_next) 
+          for (rp = res; rp != NULL; rp = rp->ai_next)
             {
               sock = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
               if (sock == -1)
@@ -594,8 +566,8 @@ main(int argc, char *argv[])
           struct hostent *he;
           struct servent *se;
           struct sockaddr_in s_in;
-          
-          he = gethostbyname(argv[optind]);
+
+          he = gethostbyname(argv[0]);
           if (!he)
             {
               fprintf(stderr, "Name lookup error\n");
@@ -603,21 +575,21 @@ main(int argc, char *argv[])
             }
           s_in.sin_family = AF_INET;
           s_in.sin_addr = *(struct in_addr *) he->h_addr;
-          
-          se = getservbyname(argv[optind + 1], sock_type == SOCK_STREAM ? "tcp" : "udp");
+
+          se = getservbyname(argv[1], sock_type == SOCK_STREAM ? "tcp" : "udp");
           if (se)
             s_in.sin_port = se->s_port;
           else
-            s_in.sin_port = htons(atoi(argv[optind + 1]));
+            s_in.sin_port = htons(atoi(argv[1]));
 
-          
+
           sock = socket(AF_INET, sock_type, 0);
           if (sock < 0)
             {
               fprintf(stderr, "Error creating socket: %s\n", strerror(errno));
               return 2;
             }
-            
+
           if (connect(sock, (struct sockaddr *) &s_in, sizeof(s_in)) < 0)
             {
               close(sock);
@@ -625,7 +597,7 @@ main(int argc, char *argv[])
             }
 #endif
         }
-      
+
       if (sock == -1)
         {
           fprintf(stderr, "Error connecting to target server: %s\n", strerror(errno));
@@ -635,10 +607,10 @@ main(int argc, char *argv[])
   else
     {
       struct sockaddr_un saun;
-      
+
       sock = socket(AF_UNIX, sock_type, 0);
       saun.sun_family = AF_UNIX;
-      strncpy(saun.sun_path, argv[optind], sizeof(saun.sun_path));
+      strncpy(saun.sun_path, argv[0], sizeof(saun.sun_path));
       if (connect(sock, (struct sockaddr *) &saun, sizeof(saun)) < 0)
         {
           fprintf(stderr, "Error connecting to target server: %s\n", strerror(errno));
