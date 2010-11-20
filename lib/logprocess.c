@@ -26,7 +26,7 @@
 #include <string.h>
 
 void
-log_process_rule_init(LogProcessRule *self, const gchar *name)
+log_process_rule_init_instance(LogProcessRule *self, const gchar *name)
 {
   memset(self, 0, sizeof(LogProcessRule));
   self->ref_cnt = 1;
@@ -53,14 +53,19 @@ log_process_rule_unref(LogProcessRule *self)
 }
 
 static gboolean
-log_process_pipe_init(LogPipe *self)
+log_process_pipe_init(LogPipe *s)
 {
-  return TRUE;
+  LogProcessPipe *self = (LogProcessPipe *) s;
+
+  return log_process_rule_init(self->rule, self->super.cfg);
 }
 
 static gboolean 
-log_process_pipe_deinit(LogPipe *self)
+log_process_pipe_deinit(LogPipe *s)
 {
+  LogProcessPipe *self = (LogProcessPipe *) s;
+
+  log_process_rule_deinit(self->rule, self->super.cfg);
   return TRUE;
 }
 

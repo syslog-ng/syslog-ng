@@ -36,9 +36,33 @@ typedef struct _LogColumnParser LogColumnParser;
 struct _LogParser
 {
   struct _LogTemplate *template;
+
+  /* NOTE: init/deinit methods are added because db-parser() needs them, which now
+   * requires adding init/deinit methods into 3 layers (LogProcessRule,
+   * LogParser & LogDBParser).  The infrastructure in OSE 3.3 is much
+   * better in this regard (LogParsers are LogPipes too, thus they have
+   * their own init/deinit methods), so it is just a temporary solution for
+   * 3.2.*/
+  gboolean (*init)(LogParser *s, GlobalConfig *cfg);
+  void (*deinit)(LogParser *s, GlobalConfig *cfg);
   gboolean (*process)(LogParser *s, LogMessage *msg, const gchar *input);
   void (*free_fn)(LogParser *s);
 };
+
+static inline gboolean
+log_parser_init(LogParser *s, GlobalConfig *cfg)
+{
+  if (s->init)
+    return s->init(s, cfg);
+  return TRUE;
+}
+
+static inline void
+log_parser_deinit(LogParser *s, GlobalConfig *cfg)
+{
+  if (s->deinit)
+    s->deinit(s, cfg);
+}
 
 void log_parser_set_template(LogParser *self, LogTemplate *template);
 gboolean log_parser_process(LogParser *self, LogMessage *msg);

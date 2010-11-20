@@ -260,7 +260,7 @@ log_rewrite_rule_new(const gchar *name, GList *rule_list)
 {
   LogRewriteRule *self = g_new0(LogRewriteRule, 1);
   
-  log_process_rule_init(&self->super, name);
+  log_process_rule_init_instance(&self->super, name);
   self->super.free_fn = log_rewrite_rule_free;
   self->super.process = log_rewrite_rule_process;
   self->rewrite_list = rule_list;

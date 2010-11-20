@@ -94,6 +94,34 @@ typedef struct _LogParserRule
 } LogParserRule;
 
 static gboolean
+log_parser_rule_init(LogProcessRule *s, GlobalConfig *cfg)
+{
+  LogParserRule *self = (LogParserRule *) s;
+  GList *l;
+  gboolean success = TRUE;
+
+  for (l = self->parser_list; l; l = l->next)
+    {
+      if (!log_parser_init(l->data, cfg))
+        success = FALSE;
+    }
+  return success;
+
+}
+
+static void
+log_parser_rule_deinit(LogProcessRule *s, GlobalConfig *cfg)
+{
+  LogParserRule *self = (LogParserRule *) s;
+  GList *l;
+
+  for (l = self->parser_list; l; l = l->next)
+    {
+      log_parser_deinit(l->data, cfg);
+    }
+}
+
+static gboolean
 log_parser_rule_process(LogProcessRule *s, LogMessage *msg)
 {
   LogParserRule *self = (LogParserRule *) s;
@@ -126,9 +154,11 @@ log_parser_rule_new(const gchar *name, GList *parser_list)
 {
   LogParserRule *self = g_new0(LogParserRule, 1);
   
-  log_process_rule_init(&self->super, name);
+  log_process_rule_init_instance(&self->super, name);
   self->super.free_fn = log_parser_rule_free;
   self->super.process = log_parser_rule_process;
+  self->super.init = log_parser_rule_init;
+  self->super.deinit = log_parser_rule_deinit;
   self->parser_list = parser_list;
   return &self->super;
 }

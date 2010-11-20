@@ -42,9 +42,33 @@ struct _LogProcessRule
   gchar *name;
   /* this processing element changes the logmessage */
   gboolean modify;
+
+  /* NOTE: init/deinit methods are added because db-parser() needs them, which now
+   * requires adding init/deinit methods into 3 layers (LogProcessRule,
+   * LogParser & LogDBParser).  The infrastructure in OSE 3.3 is much
+   * better in this regard (LogParsers are LogPipes too, thus they have
+   * their own init/deinit methods), so it is just a temporary solution for
+   * 3.2.*/
+  gboolean (*init)(LogProcessRule *s, GlobalConfig *cfg);
+  void (*deinit)(LogProcessRule *s, GlobalConfig *cfg);
   gboolean (*process)(LogProcessRule *s, LogMessage *msg);
   void (*free_fn)(LogProcessRule *s);
 };
+
+static inline gboolean
+log_process_rule_init(LogProcessRule *s, GlobalConfig *cfg)
+{
+  if (s->init)
+    return s->init(s, cfg);
+  return TRUE;
+}
+
+static inline void
+log_process_rule_deinit(LogProcessRule *s, GlobalConfig *cfg)
+{
+  if (s->deinit)
+    s->deinit(s, cfg);
+}
 
 static inline gboolean
 log_process_rule_process(LogProcessRule *s, LogMessage *msg)
@@ -52,7 +76,7 @@ log_process_rule_process(LogProcessRule *s, LogMessage *msg)
   return s->process(s, msg);
 }
 
-void log_process_rule_init(LogProcessRule *self, const gchar *name);
+void log_process_rule_init_instance(LogProcessRule *self, const gchar *name);
 void log_process_rule_ref(LogProcessRule *self);
 void log_process_rule_unref(LogProcessRule *self);
 

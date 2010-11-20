@@ -641,7 +641,7 @@ log_filter_rule_new(const gchar *name, FilterExprNode *expr)
 {
   LogFilterRule *self = g_new0(LogFilterRule, 1);
 
-  log_process_rule_init(&self->super, name);  
+  log_process_rule_init_instance(&self->super, name);
   self->super.process = log_filter_rule_process;
   self->super.free_fn = log_filter_rule_free;
   self->super.modify = expr->modify;
