@@ -211,6 +211,22 @@ log_classifier_xml_start_element(GMarkupParseContext *context, const gchar *elem
           else if (strcmp(attribute_names[i], "pub_date") == 0)
             state->db->pub_date = g_strdup(attribute_values[i]);
         }
+
+      if (!state->db->version)
+        {
+          msg_warning("patterndb version is unspecified, assuming v3 format", NULL);
+          state->db->version = g_strdup("3");
+        }
+      else if (state->db->version && atoi(state->db->version) < 2)
+        {
+          *error = g_error_new(1, 0, "patterndb version too old, this version of syslog-ng only supports v3 formatted patterndb files, please upgrade it using pdbtool");
+          return;
+        }
+      else if (state->db->version && atoi(state->db->version) > 3)
+        {
+          *error = g_error_new(1, 0, "patterndb version too new, this version of syslog-ng supports only v3 formatted patterndb files.");
+          return;
+        }
     }
 }
 
