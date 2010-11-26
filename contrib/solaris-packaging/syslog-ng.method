@@ -87,7 +87,8 @@ slng_start () {
                 echo "syslog-ng already running."
                 exit 1
             fi
-            rm -f $PIDFILE
+            echo "syslog-ng is not running, removing $PIDFILE."
+            /usr/bin/rm -f $PIDFILE
         fi
         if [ -f $CONFFILE -a -x $SYSLOGNG ]; then
                 echo 'syslog-ng service starting.'

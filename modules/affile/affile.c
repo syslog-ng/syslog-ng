@@ -88,7 +88,7 @@ affile_open_file(gchar *name, gint flags,
                       NULL);
         }
     }
-  *fd = open(name, flags, mode);
+  *fd = open(name, flags, mode < 0 ? 0600 : mode);
   if (is_pipe && *fd < 0 && errno == ENOENT)
     {
       if (mkfifo(name, 0666) >= 0)
