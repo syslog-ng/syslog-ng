@@ -74,7 +74,7 @@ AC_ARG_WITH(pidfile-dir,
    pidfiledir=$with_pidfile_dir)
 
 AC_ARG_WITH(module-dir,
-   [  --with-module-dir=path   Use path as the directory for storing pidfiles],
+   [  --with-module-dir=path   Use path as the list of directories looked up when searching for modules],
    moduledir=$with_module_dir)
 	
 AC_ARG_WITH(timezone-dir,
