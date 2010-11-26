@@ -36,6 +36,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define YYMAXDEPTH 20000
+
 /* FIXME: the lexer allocates strings with strdup instead of g_strdup,
  * therefore there are unnecessary g_strdup/free pairs in the grammar. These
  * should be removed. */
