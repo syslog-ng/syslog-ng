@@ -36,7 +36,8 @@ int unix_socket_x = 0;
 int sock_type_s = 0;
 int sock_type_d = 0;
 int sock_type = SOCK_STREAM;
-int sock = -1;
+struct sockaddr *dest_addr;
+socklen_t dest_addr_len;
 int message_length = 256;
 int interval = 10;
 int number_of_messages = 0;
@@ -47,6 +48,13 @@ int framing = 1;
 int usessl = 0;
 int skip_tokens = 3;
 char *read_file = NULL;
+int idle_connections = 0;
+int active_connections = 1;
+
+/* results */
+guint64 sum_count;
+struct timeval sum_time;
+gint raw_message_length;
 
 typedef ssize_t (*send_data_t)(void *user_data, void *buf, size_t length);
 
@@ -64,13 +72,13 @@ send_ssl(void *user_data, void *buf, size_t length)
 }
 #endif
 
-static inline unsigned long
+static unsigned long
 time_val_diff_in_usec(struct timeval *t1, struct timeval *t2)
 {
   return (t1->tv_sec - t2->tv_sec) * USEC_PER_SEC + (t1->tv_usec - t2->tv_usec);
 }
 
-static inline void
+static void
 time_val_diff_in_timeval(struct timeval *res, const struct timeval *t1, const struct timeval *t2)
 {
   res->tv_sec = (t1->tv_sec - t2->tv_sec);
@@ -79,6 +87,18 @@ time_val_diff_in_timeval(struct timeval *res, const struct timeval *t1, const st
     {
       res->tv_sec--;
       res->tv_usec += USEC_PER_SEC;
+    }
+}
+
+static void
+time_val_add_time_val(struct timeval *res, const struct timeval *t1, const struct timeval *t2)
+{
+  res->tv_sec = (t1->tv_sec + t2->tv_sec);
+  res->tv_usec = (t1->tv_usec + t2->tv_usec);
+  if (res->tv_usec >= 1e6)
+    {
+      res->tv_sec++;
+      res->tv_usec -= USEC_PER_SEC;
     }
 }
 
@@ -222,7 +242,27 @@ gen_next_message(FILE *source, char *buf, int buflen)
 }
 
 static int
-gen_messages(send_data_t send_func, void *send_func_ud)
+connect_server(void)
+{
+  int sock;
+
+  sock = socket(dest_addr->sa_family, sock_type, 0);
+  if (sock < 0)
+    {
+      fprintf(stderr, "Error creating socket: %s", g_strerror(errno));
+      return -1;
+    }
+  if (connect(sock, dest_addr, dest_addr_len) < 0)
+    {
+      fprintf(stderr, "Error connecting socket: %s", g_strerror(errno));
+      close(sock);
+      return -1;
+    }
+  return sock;
+}
+
+static guint64
+gen_messages(send_data_t send_func, void *send_func_ud, int thread_id)
 {
   struct timeval now, start, last_ts_format, last_throttle_check;
   char linebuf[MAX_MESSAGE_LENGTH + 1];
@@ -238,7 +278,6 @@ gen_messages(send_data_t send_func, void *send_func_ud)
   int pos_timestamp1 = 0, pos_timestamp2 = 0, pos_seq = 0;
   int rc, hdr_len = 0;
   unsigned int counter = 0;
-  uint64_t sum_len = 0;
 
   gettimeofday(&start, NULL);
   now = start;
@@ -256,33 +295,34 @@ gen_messages(send_data_t send_func, void *send_func_ud)
           if (sock_type == SOCK_STREAM && framing)
             hdr_len = snprintf(linebuf, sizeof(linebuf), "%d ", message_length);
 
-          linelen = snprintf(linebuf + hdr_len, sizeof(linebuf) - hdr_len, "<38>1 2007-12-24T12:28:51+02:00 localhost localprg 1234 - - \xEF\xBB\xBFseq: %010d, runid: %-10d, stamp: %-19s ", 0, run_id, "");
+          linelen = snprintf(linebuf + hdr_len, sizeof(linebuf) - hdr_len, "<38>1 2007-12-24T12:28:51+02:00 localhost localprg 1234 - - \xEF\xBB\xBFseq: %010d, thread: %04d, runid: %-10d, stamp: %-19s ", 0, thread_id, run_id, "");
           pos_timestamp1 = 6 + hdr_len;
           pos_seq = 68 + hdr_len;
-          pos_timestamp2 = 106 + hdr_len;
+          pos_timestamp2 = 120 + hdr_len;
         }
       else
         {
-          linelen = snprintf(linebuf, sizeof(linebuf), "<38>2007-12-24T12:28:51 localhost localprg[1234]: seq: %010d, runid: %-10d, stamp: %-19s ", 0, run_id, "");
+          linelen = snprintf(linebuf, sizeof(linebuf), "<38>2007-12-24T12:28:51 localhost localprg[1234]: seq: %010d, thread: %04d, runid: %-10d, stamp: %-19s ", 0, thread_id, run_id, "");
           pos_timestamp1 = 4;
           pos_seq = 55;
-          pos_timestamp2 = 93;
+          pos_timestamp2 = 107;
         }
 
       if (linelen > message_length)
         {
           fprintf(stderr, "Warning: message length is too small, the minimum is %d bytes\n", linelen);
-          return 1;
+          return 0;
         }
     }
-
   for (i = linelen; i < message_length - 1; i++)
     {
       linebuf[i + hdr_len] = padding[(i - linelen) % (sizeof(padding) - 1)];
     }
   linebuf[hdr_len + message_length - 1] = '\n';
   linebuf[hdr_len + message_length] = 0;
-  linelen = strlen(linebuf);
+
+  /* NOTE: all threads calculate raw_message_length. This code could use some refactorization. */
+  raw_message_length = linelen = strlen(linebuf);
   counter = 0;
   while (time_val_diff_in_usec(&now, &start) < ((int64_t)interval) * USEC_PER_SEC)
     {
@@ -347,7 +387,7 @@ gen_messages(send_data_t send_func, void *send_func_ud)
           if (csv)
             {
               time_val_diff_in_timeval(&diff_tv, &now, &start);
-              printf("%lu.%06lu;%lu\n", (long) diff_tv.tv_sec, (long) diff_tv.tv_usec, count);
+              printf("%d;%lu.%06lu;%lu\n", thread_id, (long) diff_tv.tv_sec, (long) diff_tv.tv_usec, count);
             }
           else if (!quiet)
             {
@@ -365,7 +405,6 @@ gen_messages(send_data_t send_func, void *send_func_ud)
           memcpy(&linebuf[pos_seq], intbuf, 10);
         }
 
-      sum_len += linelen;
       rc = write_chunk(send_func, send_func_ud, linebuf, linelen);
       if (rc < 0)
         {
@@ -379,16 +418,14 @@ gen_messages(send_data_t send_func, void *send_func_ud)
   gettimeofday(&now, NULL);
   diff_usec = time_val_diff_in_usec(&now, &start);
   time_val_diff_in_timeval(&diff_tv, &now, &start);
-  printf("%lu.%06lu;%lu\n", (long) diff_tv.tv_sec, (long) diff_tv.tv_usec, count);
-  fprintf(stderr, "average rate = %.2lf msg/sec, count=%ld, time=%ld.%03ld, (last) msg size=%d, bandwidth=%.2lf kB/sec\n",
-    (double) count * USEC_PER_SEC / diff_usec, count, diff_tv.tv_sec, diff_tv.tv_usec / 1000, linelen,
-    (double) sum_len * (USEC_PER_SEC / 1024) / diff_usec);
+  if (csv)
+    printf("%d;%lu.%06lu;%lu\n", thread_id, (long) diff_tv.tv_sec, (long) diff_tv.tv_usec, count);
 
-  return 0;
+  return count;
 }
 
 #if ENABLE_SSL
-static inline int
+static guint64
 gen_messages_ssl(int sock)
 {
   int ret = 0;
@@ -430,10 +467,82 @@ gen_messages_ssl(int sock)
 #define gen_messages_ssl gen_messages_plain
 #endif
 
-static inline int
-gen_messages_plain(int sock)
+static guint64
+gen_messages_plain(int sock, int id)
 {
-  return gen_messages(send_plain, (void *)((long)sock));
+  return gen_messages(send_plain, GINT_TO_POINTER(sock), id);
+}
+
+GMutex *thread_lock;
+GCond *thread_cond;
+GCond *thread_finished;
+GCond *thread_connected;
+gboolean threads_start;
+gboolean threads_stop;
+gint active_finished;
+gint connect_finished;
+guint64 sum_count;
+
+gpointer
+idle_thread(gpointer st)
+{
+  int sock;
+
+  sock = connect_server();
+  if (sock < 0)
+    goto error;
+  g_mutex_lock(thread_lock);
+  connect_finished++;
+  if (connect_finished == active_connections + idle_connections)
+    g_cond_signal(thread_connected);
+
+  while (!threads_start)
+    g_cond_wait(thread_cond, thread_lock);
+
+
+  while (!threads_stop)
+    g_cond_wait(thread_cond, thread_lock);
+  g_mutex_unlock(thread_lock);
+  close(sock);
+error:
+  return NULL;
+}
+
+gpointer
+active_thread(gpointer st)
+{
+  int id = GPOINTER_TO_INT(st);
+  gint sock;
+  guint64 count;
+  struct timeval start, end, diff_tv;
+
+  sock = connect_server();
+  if (sock < 0)
+    goto error;
+  g_mutex_lock(thread_lock);
+  connect_finished++;
+  if (connect_finished == active_connections + idle_connections)
+    g_cond_signal(thread_connected);
+
+  while (!threads_start)
+    g_cond_wait(thread_cond, thread_lock);
+  g_mutex_unlock(thread_lock);
+
+  gettimeofday(&start, NULL);
+  count = (usessl ? gen_messages_ssl : gen_messages_plain)(sock, id);
+  gettimeofday(&end, NULL);
+  time_val_diff_in_timeval(&diff_tv, &end, &start);
+
+  g_mutex_lock(thread_lock);
+  sum_count += count;
+  time_val_add_time_val(&sum_time, &sum_time, &diff_tv);
+  active_finished++;
+  if (active_finished == active_connections)
+    g_cond_signal(thread_finished);
+  g_mutex_unlock(thread_lock);
+  close(sock);
+error:
+  return NULL;
 }
 
 static GOptionEntry loggen_options[] = {
@@ -446,6 +555,8 @@ static GOptionEntry loggen_options[] = {
   { "interval", 'I', 0, G_OPTION_ARG_INT, &interval, "Number of seconds to run the test for", "<sec>" },
   { "syslog-proto", 'P', 0, G_OPTION_ARG_NONE, &syslog_proto, "Use the new syslog-protocol message format (see also framing)", NULL },
   { "no-framing", 'F', G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &framing, "Don't use syslog-protocol style framing, even if syslog-proto is set", NULL },
+  { "active-connections", 0, 0, G_OPTION_ARG_INT, &active_connections, "Number of active connections to the server (default = 1)", "<number>" },
+  { "idle-connections", 0, 0, G_OPTION_ARG_INT, &idle_connections, "Number of inactive connections to the server (default = 0)", "<number>" },
 #if ENABLE_SSL
   { "use-ssl", 'U', 0, G_OPTION_ARG_NONE, &usessl, "Use ssl layer", NULL },
 #endif
@@ -463,6 +574,10 @@ main(int argc, char *argv[])
   int ret = 0;
   GError *error = NULL;
   GOptionContext *ctx = NULL;
+  int i;
+  guint64 diff_usec;
+
+  g_thread_init(NULL);
 
   ctx = g_option_context_new(" target port");
   g_option_context_add_main_entries(ctx, loggen_options, 0);
@@ -523,7 +638,6 @@ main(int argc, char *argv[])
     }
   if (!unix_socket)
     {
-
       if (argc < 2)
         {
           fprintf(stderr, "No target server or port specified\n");
@@ -532,12 +646,12 @@ main(int argc, char *argv[])
 
       if (1)
         {
-#if HAVE_GETADDRINFO
+#if HAVE_GETADDRINFO && 0
           struct addrinfo hints;
-          struct addrinfo *res, *rp;
+          struct addrinfo *res;
 
           memset(&hints, 0, sizeof(hints));
-          hints.ai_family = AF_UNSPEC;
+          hints.ai_family = AF_INET;
           hints.ai_socktype = sock_type;
 #ifdef AI_ADDRCONFIG
           hints.ai_flags = AI_ADDRCONFIG;
@@ -549,23 +663,12 @@ main(int argc, char *argv[])
               return 2;
             }
 
-          for (rp = res; rp != NULL; rp = rp->ai_next)
-            {
-              sock = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
-              if (sock == -1)
-                continue;
-
-              if (connect(sock, rp->ai_addr, rp->ai_addrlen) != -1)
-                break;
-
-              close(sock);
-              sock = -1;
-            }
-          freeaddrinfo(res);
+          dest_addr = res->ai_addr;
+          dest_addr_len = res->ai_addrlen;
 #else
           struct hostent *he;
           struct servent *se;
-          struct sockaddr_in s_in;
+          static struct sockaddr_in s_in;
 
           he = gethostbyname(argv[0]);
           if (!he)
@@ -582,45 +685,72 @@ main(int argc, char *argv[])
           else
             s_in.sin_port = htons(atoi(argv[1]));
 
-
-          sock = socket(AF_INET, sock_type, 0);
-          if (sock < 0)
-            {
-              fprintf(stderr, "Error creating socket: %s\n", strerror(errno));
-              return 2;
-            }
-
-          if (connect(sock, (struct sockaddr *) &s_in, sizeof(s_in)) < 0)
-            {
-              close(sock);
-              sock = -1;
-            }
+          dest_addr = (struct sockaddr *) &s_in;
+          dest_addr_len = sizeof(s_in);
 #endif
-        }
-
-      if (sock == -1)
-        {
-          fprintf(stderr, "Error connecting to target server: %s\n", strerror(errno));
-          return 2;
         }
     }
   else
     {
-      struct sockaddr_un saun;
+      static struct sockaddr_un saun;
 
-      sock = socket(AF_UNIX, sock_type, 0);
       saun.sun_family = AF_UNIX;
       strncpy(saun.sun_path, argv[0], sizeof(saun.sun_path));
-      if (connect(sock, (struct sockaddr *) &saun, sizeof(saun)) < 0)
-        {
-          fprintf(stderr, "Error connecting to target server: %s\n", strerror(errno));
-          return 2;
-        }
+
+      dest_addr = (struct sockaddr *) &saun;
+      dest_addr_len = sizeof(saun);
     }
 
-  ret = (usessl ? gen_messages_ssl : gen_messages_plain)(sock);
+  /* used for startup & to signal inactive threads to exit */
+  thread_cond = g_cond_new();
+  /* active threads signal when they are ready */
+  thread_finished = g_cond_new();
+  thread_connected = g_cond_new();
+  /* mutex used for both cond vars */
+  thread_lock = g_mutex_new();
 
-  shutdown(sock, SHUT_RDWR);
+  for (i = 0; i < idle_connections; i++)
+    {
+      if (!g_thread_create_full(idle_thread, NULL, 1024 * 64, FALSE, FALSE, G_THREAD_PRIORITY_NORMAL, NULL))
+        goto stop_and_exit;
+    }
+  for (i = 0; i < active_connections; i++)
+    {
+      if (!g_thread_create_full(active_thread, GINT_TO_POINTER(i), 1024 * 64, FALSE, FALSE, G_THREAD_PRIORITY_NORMAL, NULL))
+        goto stop_and_exit;
+    }
+
+  g_mutex_lock(thread_lock);
+  while (connect_finished < active_connections + idle_connections)
+    g_cond_wait(thread_connected, thread_lock);
+
+  /* tell everyone to start */
+  threads_start = TRUE;
+  g_cond_broadcast(thread_cond);
+
+  /* wait until active ones finish */
+  while (active_finished < active_connections)
+    g_cond_wait(thread_finished, thread_lock);
+
+  /* tell inactive ones to exit (active ones exit automatically) */
+  threads_stop = TRUE;
+  g_cond_broadcast(thread_cond);
+  g_mutex_unlock(thread_lock);
+
+  sum_time.tv_sec /= active_connections;
+  sum_time.tv_usec /= active_connections;
+  diff_usec = sum_time.tv_sec * USEC_PER_SEC + sum_time.tv_usec;
+
+  fprintf(stderr, "average rate = %.2lf msg/sec, count=%ld, time=%ld.%03ld, (last) msg size=%d, bandwidth=%.2lf kB/sec\n",
+    (double) sum_count * USEC_PER_SEC / diff_usec, sum_count, sum_time.tv_sec, sum_time.tv_usec / 1000, raw_message_length,
+    (double) sum_count * raw_message_length * (USEC_PER_SEC / 1024) / diff_usec);
+
+stop_and_exit:
+  threads_start = TRUE;
+  threads_stop = TRUE;
+  g_mutex_lock(thread_lock);
+  g_cond_broadcast(thread_cond);
+  g_mutex_unlock(thread_lock);
 
   if (readfrom && readfrom != stdin)
     fclose(readfrom);
