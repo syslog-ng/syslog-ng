@@ -254,9 +254,14 @@ timer_wheel_cascade(TimerWheel *self)
   self->base += self->levels[0]->num;
 }
 
+
+/*
+ * Main time adjustment function
+ */
 void
 timer_wheel_set_time(TimerWheel *self, guint64 new_now)
 {
+  /* time is not allowed to go backwards */
   if (self->now >= new_now)
     return;
 
@@ -289,6 +294,12 @@ timer_wheel_set_time(TimerWheel *self, guint64 new_now)
         }
       *head = NULL;
 
+      if (self->num_timers == 0)
+        {
+          self->now = new_now;
+          break;
+        }
+
       if (slot == level->num - 1)
         timer_wheel_cascade(self);
     }
@@ -298,6 +309,16 @@ guint64
 timer_wheel_get_time(TimerWheel *self)
 {
   return self->now;
+}
+
+void
+timer_wheel_expire_all(TimerWheel *self)
+{
+  guint64 now;
+
+  now = self->now;
+  timer_wheel_set_time(self, (guint64) -1);
+  self->now = now;
 }
 
 TimerWheel *

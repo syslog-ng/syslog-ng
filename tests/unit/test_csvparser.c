@@ -273,6 +273,11 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase("random.vhost 10.0.0.1 - \"GET /index.html HTTP/1.1\" 200", LP_NOPARSE, 6, LOG_CSV_PARSER_ESCAPE_BACKSLASH | LOG_CSV_PARSER_GREEDY | LOG_CSV_PARSER_DROP_INVALID, " ", "\"\"", "-",
            "random.vhost", "10.0.0.1", "", "GET /index.html HTTP/1.1", "200", "", NULL);
 
+  testcase("random.vhost\t10.0.0.1\t-\t\"GET /index.html HTTP/1.1\"\t200", LP_NOPARSE, 6, LOG_CSV_PARSER_ESCAPE_BACKSLASH, "\t", "\"\"", "-",
+           "random.vhost", "10.0.0.1", "", "GET /index.html HTTP/1.1", "200", "", NULL);
+  testcase("random.vhost\t10.0.0.1\t-\t\"GET /index.html HTTP/1.1\"\t\t200", LP_NOPARSE, 7, LOG_CSV_PARSER_ESCAPE_BACKSLASH, "\t", "\"\"", "-",
+           "random.vhost", "10.0.0.1", "", "GET /index.html HTTP/1.1", "", "200", "", NULL);
+
 
   app_shutdown();
   return 0;

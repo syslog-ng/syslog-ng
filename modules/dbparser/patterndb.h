@@ -187,13 +187,16 @@ struct _PatternDB
   gchar *pub_date;
   GHashTable *state;
   TimerWheel *timer_wheel;
+  GTimeVal last_tick;
   PatternDBEmitFunc emit;
   gpointer emit_data;
 };
 
 void pattern_db_set_emit_func(PatternDB *self, PatternDBEmitFunc emit_func, gpointer emit_data);
-gboolean pattern_db_process(PatternDB *self, LogMessage *msg, GSList **dbg_list);
+void pattern_db_timer_tick(PatternDB *self);
+gboolean pattern_db_process(PatternDB *self, LogMessage *msg, GArray *dbg_list);
 gboolean pattern_db_load(PatternDB *self, GlobalConfig *cfg, const gchar *config, GList **examples);
+void pattern_db_expire_state(PatternDB *self);
 void pattern_db_forget_state(PatternDB *self);
 
 PatternDB *pattern_db_new(void);

@@ -33,6 +33,7 @@ struct _LogDBParser
   LogParser super;
   PatternDB *db;
   GlobalConfig *cfg;
+  guint timer_tick_id;
   gchar *db_file;
   time_t db_file_last_check;
   ino_t db_file_inode;
@@ -50,7 +51,6 @@ log_db_parser_emit(LogMessage *msg, gboolean synthetic, gpointer user_data)
                 NULL);
     }
 }
-
 
 static void
 log_db_parser_reload_database(LogDBParser *self)
@@ -93,9 +93,77 @@ log_db_parser_reload_database(LogDBParser *self)
                  evt_tag_str("version", self->db->version),
                  evt_tag_str("pub_date", self->db->pub_date),
                  NULL);
-
     }
 
+}
+
+static gboolean
+log_db_parser_timer_tick(gpointer s)
+{
+  LogDBParser *self = (LogDBParser *) s;
+
+  pattern_db_timer_tick(self->db);
+  return TRUE;
+}
+
+static gchar *
+log_db_parser_format_persist_name(LogDBParser *self)
+{
+  static gchar persist_name[512];
+
+  g_snprintf(persist_name, sizeof(persist_name), "db-parser(%s)", self->db_file);
+  return persist_name;
+}
+
+static gboolean
+log_db_parser_init(LogPipe *s)
+{
+  LogDBParser *self = (LogDBParser *) s;
+  GlobalConfig *cfg = log_pipe_get_config(s);
+
+  self->db = cfg_persist_config_fetch(cfg, log_db_parser_format_persist_name(self));
+  if (self->db)
+    {
+      struct stat st;
+
+      if (stat(self->db_file, &st) < 0)
+        {
+          msg_error("Error stating pattern database file, no automatic reload will be performed",
+                    evt_tag_str("error", g_strerror(errno)),
+                    NULL);
+        }
+      else
+        {
+          self->db_file_inode = st.st_ino;
+          self->db_file_mtime = st.st_mtime;
+        }
+    }
+  else
+    {
+      log_db_parser_reload_database(self);
+    }
+
+  self->timer_tick_id = g_timeout_add_seconds(1, log_db_parser_timer_tick, self);
+  return self->db != NULL;
+}
+
+static gboolean
+log_db_parser_deinit(LogPipe *s)
+{
+  LogDBParser *self = (LogDBParser *) s;
+  GlobalConfig *cfg = log_pipe_get_config(s);
+
+  if (self->timer_tick_id)
+    {
+      GSource *source = g_main_context_find_source_by_id(NULL, self->timer_tick_id);
+
+      g_source_destroy(source);
+      self->timer_tick_id = 0;
+    }
+
+  cfg_persist_config_add(cfg, log_db_parser_format_persist_name(self), self->db, (GDestroyNotify) pattern_db_free, FALSE);
+  self->db = NULL;
+  return TRUE;
 }
 
 static gboolean
@@ -119,14 +187,6 @@ log_db_parser_set_db_file(LogDBParser *self, const gchar *db_file)
   if (self->db_file)
     g_free(self->db_file);
   self->db_file = g_strdup(db_file);
-}
-
-static void
-log_db_parser_post_config_hook(gint type, gpointer user_data)
-{
-  LogDBParser *self = (LogDBParser *) user_data;
-
-  log_db_parser_reload_database(self);
 }
 
 static LogPipe *
@@ -156,11 +216,12 @@ log_db_parser_new(void)
 
   log_parser_init_instance(&self->super);
   self->super.super.super.free_fn = log_db_parser_free;
+  self->super.super.super.init = log_db_parser_init;
+  self->super.super.super.deinit = log_db_parser_deinit;
   self->super.super.clone = log_db_parser_clone;
   self->super.process = log_db_parser_process;
   self->db_file = g_strdup(PATH_PATTERNDB_FILE);
   self->cfg = configuration;
 
-  register_application_hook(AH_POST_CONFIG_LOADED, log_db_parser_post_config_hook, self);
   return &self->super;
 }

@@ -1,6 +1,14 @@
 SUBDIRS = . tests
 moduledir = @moduledir@
 AM_CPPFLAGS = -I$(top_srcdir)/lib -I../../lib
+#
+# The radix tree uses unsigned char internally but passes these values to
+# string.h functions, which trigger a lot of harmless warnings.  Of course
+# these could be fixed by adding a lot of casts to the code, but I
+# considered these to be less readable, than simply adding -Wno-pointer-sign
+# warning option.
+#
+AM_CFLAGS = -Wno-pointer-sign
 export top_srcdir
 
 module_LTLIBRARIES := libdbparser.la

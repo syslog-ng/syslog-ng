@@ -74,7 +74,7 @@ AC_ARG_WITH(pidfile-dir,
    pidfiledir=$with_pidfile_dir)
 
 AC_ARG_WITH(module-dir,
-   [  --with-module-dir=path   Use path as the directory for storing pidfiles],
+   [  --with-module-dir=path   Use path as the list of directories looked up when searching for modules],
    moduledir=$with_module_dir)
 	
 AC_ARG_WITH(timezone-dir,
@@ -172,7 +172,7 @@ fi
 dnl ***************************************************************************
 dnl Validate flex
 
-if -z "LEX"; then
+if test -z "$LEX" ; then
 	AC_MSG_WARN([No lex found. syslog-ng requires flex if you want to change the lexer files cfg-lex.l.  You may not be able to regenerate the lexer if you change them.])
 fi
 
@@ -746,9 +746,13 @@ AM_CONDITIONAL(ENABLE_SQL, [test "$enable_sql" = "yes"])
 AM_CONDITIONAL(ENABLE_SUN_STREAMS, [test "$enable_sun_streams" = "yes"])
 AM_CONDITIONAL(ENABLE_PACCT, [test "$enable_pacct" = "yes"])
 
+# substitution into manual pages
+expanded_sysconfdir=[`patheval $sysconfdir | sed -e 's/-/\\\\-/g'`]
+
 AC_SUBST(timezonedir)
 AC_SUBST(pidfiledir)
 AC_SUBST(moduledir)
+AC_SUBST(expanded_sysconfdir)
 AC_SUBST(SYSLOGNG_LINK)
 AC_SUBST(DEPS_CPPFLAGS)
 AC_SUBST(DEPS_LIBS)
@@ -796,7 +800,11 @@ AC_OUTPUT(dist.conf
 	  scripts/Makefile
 	  scripts/update-patterndb
 	  doc/Makefile
-          doc/docvars.xml
+	  doc/man/loggen.1
+	  doc/man/pdbtool.1
+	  doc/man/syslog-ng.8
+	  doc/man/syslog-ng.conf.5
+	  doc/man/syslog-ng-ctl.1
 	  contrib/Makefile
 	  scl/Makefile
 	  tests/Makefile 

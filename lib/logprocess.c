@@ -38,7 +38,6 @@ log_process_pipe_init_instance(LogProcessPipe *self)
   self->super.free_fn = log_process_pipe_free_method;
 }
 
-
 LogProcessRule *
 log_process_rule_new(const gchar *name, GList *head)
 {

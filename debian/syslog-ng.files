@@ -1,3 +1,5 @@
 /sbin/syslog-ng
 /bin/loggen
 /bin/pdbtool
+/lib/*
+/lib/syslog-ng/*

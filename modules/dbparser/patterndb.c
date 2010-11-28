@@ -57,6 +57,13 @@ pdb_context_new(PatternDB *db, PDBStateKey *key)
   self->messages = g_ptr_array_new();
   self->db = db;
   memcpy(&self->key, key, sizeof(self->key));
+
+  if (self->key.pid)
+    self->key.pid = g_strdup(self->key.pid);
+  if (self->key.program)
+    self->key.program = g_strdup(self->key.program);
+  if (self->key.host)
+    self->key.host = g_strdup(self->key.host);
   self->ref_cnt = 1;
   return self;
 }
@@ -82,6 +89,13 @@ pdb_context_unref(PDBContext *self)
       g_ptr_array_free(self->messages, TRUE);
       if (self->rule)
         pdb_rule_unref(self->rule);
+
+      if (self->key.host)
+        g_free((gchar *) self->key.host);
+      if (self->key.program)
+        g_free((gchar *) self->key.program);
+      if (self->key.pid)
+        g_free((gchar *) self->key.pid);
       g_free(self->key.session_id);
       g_free(self);
     }
@@ -104,7 +118,6 @@ pdb_rate_limit_new(PDBStateKey *key)
     self->key.program = g_strdup(self->key.program);
   if (self->key.host)
     self->key.host = g_strdup(self->key.host);
-  self->key.session_id = self->key.session_id;
   return self;
 }
 
@@ -823,6 +836,21 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
           else if (strcmp(attribute_names[i], "pub_date") == 0)
             state->db->pub_date = g_strdup(attribute_values[i]);
         }
+      if (!state->db->version)
+        {
+          msg_warning("patterndb version is unspecified, assuming v4 format", NULL);
+          state->db->version = g_strdup("4");
+        }
+      else if (state->db->version && atoi(state->db->version) < 2)
+        {
+          *error = g_error_new(1, 0, "patterndb version too old, this version of syslog-ng only supports v3 and v4 formatted patterndb files, please upgrade it using pdbtool");
+          return;
+        }
+      else if (state->db->version && atoi(state->db->version) > 4)
+        {
+          *error = g_error_new(1, 0, "patterndb version too new, this version of syslog-ng supports v3 and v4 formatted patterndb files.");
+          return;
+        }
     }
   else if (strcmp(element_name, "action") == 0)
     {
@@ -1060,7 +1088,7 @@ GMarkupParser db_parser =
 
 
 static void
-pattern_db_expire_state(guint64 now, gpointer user_data)
+pattern_db_expire_state_entry(guint64 now, gpointer user_data)
 {
   PDBContext *context = user_data;
   PatternDB *self = context->db;
@@ -1083,20 +1111,93 @@ pattern_db_set_emit_func(PatternDB *self, PatternDBEmitFunc emit, gpointer emit_
   self->emit_data = emit_data;
 }
 
+/*
+ * This function can be called any time when pattern-db is not processing
+ * messages, but we expect the correllation timer to move forward.  It
+ * doesn't need to be called absolutely regularly as it'll use the current
+ * system time to determine how much time has passed since the last
+ * invocation.  See the timing comment at pattern_db_process() for more
+ * information.
+ */
+void
+pattern_db_timer_tick(PatternDB *self)
+{
+  GTimeVal now;
+  glong diff;
+
+  cached_g_current_time(&now);
+  diff = g_time_val_diff(&now, &self->last_tick);
+
+  if (diff > 1e6)
+    {
+      glong diff_sec = diff / 1e6;
+
+      timer_wheel_set_time(self->timer_wheel, timer_wheel_get_time(self->timer_wheel) + diff_sec);
+
+      /* update last_tick, take the fraction of the seconds not calculated into this update into account */
+
+      self->last_tick = now;
+      g_time_val_add(&self->last_tick, -(diff - diff_sec * 1e6));
+    }
+}
+
+/*
+ * Timing
+ * ======
+ *
+ * The time tries to follow the message stream, e.g. it is independent from
+ * the current system time.  Whenever a message comes in, its timestamp
+ * moves the current time forward, which means it is quite easy to process
+ * logs from the past, correllation timeouts will be measured in "message
+ * time".  There's one exception to this rule: when the patterndb is idle
+ * (e.g.  no messages are coming in), the current system time is used to
+ * measure as real time passes, and that will also increase the time of the
+ * correllation engine. This is based on the following assumptions:
+ *
+ *    1) dbparser can only be idle in case on-line logs are processed
+ *       (otherwise messages are read from the disk much faster)
+ *
+ *    2) if on-line processing is done, it is expected that messages have
+ *       roughly correct timestamps, e.g. if 1 second passes in current
+ *       system time, further incoming messages will have a timestamp close
+ *       to this.
+ *
+ * Thus whenever the patterndb is idle, a timer tick callback arrives, which
+ * checks the real elapsed time between the last message (or last tick) and
+ * increments the current known time with this value.
+ *
+ * This behaviour makes it possible to properly work in these use-cases:
+ *
+ *    1) process a log file stored on disk, containing messages in the past
+ *    2) process an incoming message stream on-line, expiring correllation
+ *    states even if there are no incoming messages
+ */
 gboolean
-pattern_db_process(PatternDB *self, LogMessage *msg, GSList **dbg_list)
+pattern_db_process(PatternDB *self, LogMessage *msg, GArray *dbg_list)
 {
   RNode *node;
   GArray *matches;
   const gchar *program;
   gssize program_len;
+  GTimeVal now;
 
   if (G_UNLIKELY(!self->programs))
     return FALSE;
 
-  timer_wheel_set_time(self->timer_wheel, msg->timestamps[LM_TS_STAMP].time.tv_sec);
-  program = log_msg_get_value(msg, LM_V_PROGRAM, &program_len);
+  /* clamp the current time between the timestamp of the current message
+   * (low limit) and the current system time (high limit).  This ensures
+   * that incorrect clocks do not skew the current time know by the
+   * correllation engine too much. */
 
+  cached_g_current_time(&now);
+  self->last_tick = now;
+
+  if (msg->timestamps[LM_TS_STAMP].time.tv_sec < now.tv_sec)
+    now.tv_sec = msg->timestamps[LM_TS_STAMP].time.tv_sec;
+
+  timer_wheel_set_time(self->timer_wheel, msg->timestamps[LM_TS_STAMP].time.tv_sec);
+
+  program = log_msg_get_value(msg, LM_V_PROGRAM, &program_len);
   node = r_find_node(self->programs, (gchar *) program, (gchar *) program, program_len, NULL);
 
   if (node)
@@ -1167,6 +1268,7 @@ pattern_db_process(PatternDB *self, LogMessage *msg, GSList **dbg_list)
                       g_string_steal(buffer);
                     }
 
+                  msg->flags |= LF_STATE_REFERENCED;
                   g_ptr_array_add(context->messages, log_msg_ref(msg));
 
                   if (context->timer)
@@ -1175,7 +1277,7 @@ pattern_db_process(PatternDB *self, LogMessage *msg, GSList **dbg_list)
                     }
                   else
                     {
-                      context->timer = timer_wheel_add_timer(self->timer_wheel, rule->context_timeout, pattern_db_expire_state, pdb_context_ref(context), (GDestroyNotify) pdb_context_unref);
+                      context->timer = timer_wheel_add_timer(self->timer_wheel, rule->context_timeout, pattern_db_expire_state_entry, pdb_context_ref(context), (GDestroyNotify) pdb_context_unref);
                     }
                   if (context->rule != rule)
                     {
@@ -1282,6 +1384,12 @@ pattern_db_load(PatternDB *self, GlobalConfig *cfg, const gchar *config, GList *
 }
 
 void
+pattern_db_expire_state(PatternDB *self)
+{
+  timer_wheel_expire_all(self->timer_wheel);
+}
+
+void
 pattern_db_forget_state(PatternDB *self)
 {
   if (self->timer_wheel)
@@ -1300,6 +1408,7 @@ pattern_db_new(void)
 
   self->state = g_hash_table_new_full(pdb_state_key_hash, pdb_state_key_equal, NULL, (GDestroyNotify) pdb_state_entry_free);
   self->timer_wheel = timer_wheel_new();
+  cached_g_current_time(&self->last_tick);
   return self;
 }
 

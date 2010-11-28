@@ -182,8 +182,8 @@ word	[^ \#'"\(\)\{\}\\;\n\t,|\.@:]
 <string>\\r		   { g_string_append_c(yyextra->string_buffer, 13); }
 <string>\\t		   { g_string_append_c(yyextra->string_buffer, 9); }
 <string>\\v		   { g_string_append_c(yyextra->string_buffer, 11); }
-<string>\\x{xdigit}+       { g_string_append_c(yyextra->string_buffer, strtol(yytext+2, NULL, 16)); }
-<string>\\o{odigit}+       { g_string_append_c(yyextra->string_buffer, strtol(yytext+2, NULL, 8)); }
+<string>\\x{xdigit}{1,2}   { g_string_append_c(yyextra->string_buffer, strtol(yytext+2, NULL, 16)); }
+<string>\\o{odigit}{1,3}   { g_string_append_c(yyextra->string_buffer, strtol(yytext+2, NULL, 8)); }
 <string>\\[^anrtv]	   { g_string_append_c(yyextra->string_buffer, yytext[1]); }
 <string>\"		   { 
 			     yy_pop_state(yyscanner);

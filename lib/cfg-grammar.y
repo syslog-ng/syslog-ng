@@ -76,6 +76,8 @@
       }                                                                 \
   } while (0)
 
+#define YYMAXDEPTH 20000
+
 
 }
 
