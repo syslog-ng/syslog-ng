@@ -56,8 +56,11 @@ fi
 if test "x$prefix" = "xNONE"; then
         prefix=$ac_default_prefix
 fi
+if test "x$exec_prefix" = "xNONE"; then
+        exec_prefix='${prefix}'
+fi
 pidfiledir='${localstatedir}'
-moduledir='${prefix}/lib/syslog-ng'
+moduledir='${exec_prefix}/lib/syslog-ng'
 
 AM_CONFIG_HEADER(config.h)
 
