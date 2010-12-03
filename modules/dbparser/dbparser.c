@@ -142,7 +142,11 @@ log_db_parser_init(LogParser *s, GlobalConfig *cfg)
       log_db_parser_reload_database(self);
     }
 
+#if GLIB_MAJOR_VERSION > 2 && GLIB_MINOR_VERSION > 13
   self->timer_tick_id = g_timeout_add_seconds(1, log_db_parser_timer_tick, self);
+#else
+  self->timer_tick_id = g_timeout_add(1000, log_db_parser_timer_tick, self);
+#endif
   return self->db != NULL;
 }
 
