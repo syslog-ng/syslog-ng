@@ -147,6 +147,7 @@ void cfg_persist_config_save(GlobalConfig *cfg, const gchar *filename);
 void cfg_persist_config_load(GlobalConfig *cfg, const gchar *filename);
 gint cfg_persist_get_version(GlobalConfig *cfg);
 void cfg_persist_set_version(GlobalConfig *cfg, const gint version);
+void cfg_persist_config_prune(GlobalConfig *cfg);
 
 void persist_config_free(PersistentConfig *persist);
 
