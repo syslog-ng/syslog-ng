@@ -487,6 +487,7 @@ cfg_reload_config(gchar *fname, GlobalConfig *cfg)
     {
       msg_verbose("New configuration initialized", NULL);
       cfg_free(cfg);
+      cfg_persist_config_prune(new_cfg);
       return new_cfg;
     }
   else
@@ -502,6 +503,7 @@ cfg_reload_config(gchar *fname, GlobalConfig *cfg)
           kill(getpid(), SIGQUIT);
           g_assert_not_reached();
         }
+      cfg_persist_config_prune(cfg);
       return cfg;
     }
 }
@@ -706,6 +708,18 @@ cfg_persist_config_load(GlobalConfig *cfg, const gchar *filename)
       serialize_archive_free(sa);
       fclose(persist_file);
     }
+}
+
+static gboolean
+cfg_persist_config_prune_entry(gchar *key, PersistentConfigEntry *entry, gpointer user_data)
+{
+  return !entry->survive_across_restarts;
+}
+
+void
+cfg_persist_config_prune(GlobalConfig *cfg)
+{
+  g_hash_table_foreach_remove(cfg->persist->keys, (GHRFunc) cfg_persist_config_prune_entry, NULL);
 }
 
 PersistentConfig *
