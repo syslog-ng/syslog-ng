@@ -353,8 +353,6 @@ cfg_new(gint version)
   self->template_options.frac_digits = 0;
   self->recv_time_zone = NULL;
   self->keep_timestamp = TRUE;
-  
-  self->persist = persist_config_new();
   return self;
 }
 
@@ -447,8 +445,7 @@ cfg_free(GlobalConfig *self)
 {
   int i;
 
-  if (self->persist)
-    persist_config_free(self->persist);
+  g_assert(self->persist == NULL);
   if (self->state)
     persist_state_free(self->state);
 
@@ -531,12 +528,15 @@ cfg_reload_config(gchar *fname, GlobalConfig *cfg)
       return NULL;
     }
   
+  cfg->persist = persist_config_new();
   cfg_deinit(cfg);
   cfg_persist_config_move(cfg, new_cfg);
 
   if (cfg_init(new_cfg))
     {
       msg_verbose("New configuration initialized", NULL);
+      persist_config_free(new_cfg->persist);
+      new_cfg->persist = NULL;
       cfg_free(cfg);
       return new_cfg;
     }
@@ -553,6 +553,8 @@ cfg_reload_config(gchar *fname, GlobalConfig *cfg)
           kill(getpid(), SIGQUIT);
           g_assert_not_reached();
         }
+      persist_config_free(cfg->persist);
+      cfg->persist = NULL;
       cfg_free(new_cfg);
       return cfg;
     }
