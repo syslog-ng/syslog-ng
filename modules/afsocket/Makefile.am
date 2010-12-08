@@ -28,16 +28,16 @@ EXTRA_DIST = $(BUILT_SOURCES) afsocket-grammar.ym
 
 if ENABLE_SSL
 install-exec-hook:
-	mkdir -p $(DESTDIR)/$(moduledir) || true
-	ln -sf libafsocket-tls.so $(DESTDIR)/$(moduledir)/libafsocket.so
+	mkdir -p $(DESTDIR)$(moduledir) || true
+	ln -sf libafsocket-tls.so $(DESTDIR)$(moduledir)/libafsocket.so
 
 libafsocket.la: libafsocket-tls.la
 	ln -sf libafsocket-tls.la libafsocket.la
 
 else
 install-exec-hook:
-	mkdir -p $(DESTDIR)/$(moduledir) || true
-	ln -sf libafsocket-notls.so $(DESTDIR)/$(moduledir)/libafsocket.so
+	mkdir -p $(DESTDIR)$(moduledir) || true
+	ln -sf libafsocket-notls.so $(DESTDIR)$(moduledir)/libafsocket.so
 
 
 libafsocket.la: libafsocket-tls.la
@@ -46,7 +46,7 @@ libafsocket.la: libafsocket-tls.la
 endif
 
 uninstall-hook:
-	rm -f $(DESTDIR)/$(moduledir)/libafsocket.so
+	rm -f $(DESTDIR)$(moduledir)/libafsocket.so
 
 
 include $(top_srcdir)/build/lex-rules.am
