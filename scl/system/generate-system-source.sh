@@ -64,7 +64,7 @@ EOF
 pipe("/dev/log" pad_size(2048));
 EOF
 		;;
-	AIX|OSF1)
+	AIX|OSF1|CYGWIN*)
 		cat <<EOF
 unix-dgram("/dev/log");
 EOF
