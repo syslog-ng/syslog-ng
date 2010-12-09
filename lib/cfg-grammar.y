@@ -445,7 +445,7 @@ block_arg
         ;
 
 log_items
-	: log_item ';' log_items		{ log_pipe_item_append($1, $3); $$ = $1; }
+	: log_item log_semicolons log_items		{ log_pipe_item_append($1, $3); $$ = $1; }
 	|					{ $$ = NULL; }
 	;
 
@@ -458,19 +458,23 @@ log_item
 	;
 
 log_forks
-        : log_fork log_forks			{ log_pipe_item_append($1, $2); $$ = $1; }
+        : log_fork log_semicolons log_forks		{ log_pipe_item_append($1, $3); $$ = $1; }
         |                                       { $$ = NULL; }
         ;
 
 log_fork
-        : KW_LOG '{' log_items log_forks log_flags '}' ';' { LogPipeItem *pi = log_pipe_item_append_tail($3, $4); $$ = log_pipe_item_new_ref(EP_PIPE, log_connection_new(pi, $5)); }
+        : KW_LOG '{' log_items log_forks log_flags '}' { LogPipeItem *pi = log_pipe_item_append_tail($3, $4); $$ = log_pipe_item_new_ref(EP_PIPE, log_connection_new(pi, $5)); }
         ;
 
 log_flags
-	: KW_FLAGS '(' log_flags_items ')' ';'	{ $$ = $3; }
+	: KW_FLAGS '(' log_flags_items ')' log_semicolons	{ $$ = $3; }
 	|					{ $$ = 0; }
 	;
 
+log_semicolons
+        : ';'
+        | ';' log_semicolons
+        ;
 
 log_flags_items
 	: string log_flags_items		{ $$ = log_connection_lookup_flag($1) | $2; free($1); }
