@@ -254,7 +254,7 @@ word	[^ \#'"\(\)\{\}\\;\n\t,|\.@:]
 
                            }
 
-<block_content>[^}\"\'\n\r]+   { g_string_append(yyextra->string_buffer, yytext); }
+<block_content>[^{}\"\'\n\r]+   { g_string_append(yyextra->string_buffer, yytext); }
 
 <INITIAL><<EOF>>           { if (!cfg_lexer_start_next_include(yyextra)) yyterminate(); }
 
