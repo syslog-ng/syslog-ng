@@ -89,12 +89,13 @@
 %token LL_CONTEXT_PARSER              4
 %token LL_CONTEXT_REWRITE             5
 %token LL_CONTEXT_FILTER              6
-%token LL_CONTEXT_BLOCK_DEF           7
-%token LL_CONTEXT_BLOCK_REF           8
-%token LL_CONTEXT_BLOCK_CONTENT       9
-%token LL_CONTEXT_PRAGMA              10
-%token LL_CONTEXT_FORMAT              11
-%token LL_CONTEXT_TEMPLATE_FUNC       12
+%token LL_CONTEXT_LOG                 7
+%token LL_CONTEXT_BLOCK_DEF           8
+%token LL_CONTEXT_BLOCK_REF           9
+%token LL_CONTEXT_BLOCK_CONTENT       10
+%token LL_CONTEXT_PRAGMA              11
+%token LL_CONTEXT_FORMAT              12
+%token LL_CONTEXT_TEMPLATE_FUNC       13
 
 /* statements */
 %token KW_SOURCE                      10000
@@ -410,7 +411,10 @@ dest_stmt
 	;
 
 log_stmt
-        : '{' log_items log_forks log_flags '}'		{ LogPipeItem *pi = log_pipe_item_append_tail($2, $3); $$ = log_connection_new(pi, $4); }
+        : { cfg_lexer_push_context(lexer, LL_CONTEXT_LOG, NULL, "log"); }
+          '{' log_items log_forks log_flags '}'
+           { cfg_lexer_pop_context(lexer); }	{ LogPipeItem *pi = log_pipe_item_append_tail($3, $4); $$ = log_connection_new(pi, $5); }
+
 	;
 	
 block_stmt
