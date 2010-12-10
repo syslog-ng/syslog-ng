@@ -1908,7 +1908,7 @@ LogMessage *
 log_msg_new_mark(void)
 {
   LogMessage *self = log_msg_new("-- MARK --", 10, NULL, LP_NOPARSE, NULL, -1, LOG_SYSLOG | LOG_INFO);
-  self->flags = LF_LOCAL | LF_MARK | LF_INTERNAL;
+  self->flags |= LF_LOCAL | LF_MARK | LF_INTERNAL;
   return self;
 }
 
