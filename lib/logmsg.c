@@ -840,7 +840,7 @@ log_msg_new_internal(gint prio, const gchar *msg)
   log_msg_set_value(self, LM_V_PID, buf, -1);
   log_msg_set_value(self, LM_V_MESSAGE, msg, -1);
   self->pri = prio;
-  self->flags = LF_INTERNAL | LF_LOCAL;
+  self->flags |= LF_INTERNAL | LF_LOCAL;
 
   return self;
 }
@@ -858,7 +858,7 @@ log_msg_new_mark(void)
 
   log_msg_set_value(self, LM_V_MESSAGE, "-- MARK --", 10);
   self->pri = LOG_SYSLOG | LOG_INFO;
-  self->flags = LF_LOCAL | LF_MARK | LF_INTERNAL;
+  self->flags |= LF_LOCAL | LF_MARK | LF_INTERNAL;
   return self;
 }
 
