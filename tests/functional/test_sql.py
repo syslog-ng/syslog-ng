@@ -4,9 +4,9 @@ from messagegen import *
 from messagecheck import *
 from control import flush_files, stop_syslogng
 
-config = """@version: 3.2
+config = """@version: 3.3
 
-options { ts_format(iso); chain_hostnames(no); keep_hostname(yes); };
+options { ts_format(iso); chain_hostnames(no); keep_hostname(yes); threaded(yes); };
 
 source s_int { internal(); };
 source s_tcp { tcp(port(%(port_number)d)); };
