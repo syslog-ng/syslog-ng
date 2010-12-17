@@ -26,6 +26,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <string.h>
+#include <errno.h>
 
 int 
 main(int argc, char *argv[])
@@ -46,5 +48,6 @@ main(int argc, char *argv[])
   }
 #endif
   execv(PATH_SYSLOGNG, argv);
+  fprintf(stderr, "Unable to execute main syslog-ng binary from env-wrapper, path=%s, error=%s\n", PATH_SYSLOGNG, strerror(errno));
   return 127;
 }
