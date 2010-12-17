@@ -38,6 +38,7 @@ struct _LogDBParser
   time_t db_file_last_check;
   ino_t db_file_inode;
   time_t db_file_mtime;
+  gboolean initialized;
 };
 
 static void
@@ -120,6 +121,12 @@ log_db_parser_init(LogParser *s, GlobalConfig *cfg)
 {
   LogDBParser *self = (LogDBParser *) s;
 
+  if (self->initialized)
+    {
+      return TRUE;
+    }
+  self->initialized = TRUE;
+
   self->db = cfg_persist_config_fetch(cfg, log_db_parser_format_persist_name(self));
   if (self->db)
     {
@@ -155,16 +162,20 @@ log_db_parser_deinit(LogParser *s, GlobalConfig *cfg)
 {
   LogDBParser *self = (LogDBParser *) s;
 
-  if (self->timer_tick_id)
+  if (self->initialized)
     {
-      GSource *source = g_main_context_find_source_by_id(NULL, self->timer_tick_id);
+      if (self->timer_tick_id)
+        {
+          GSource *source = g_main_context_find_source_by_id(NULL, self->timer_tick_id);
 
-      g_source_destroy(source);
-      self->timer_tick_id = 0;
+          g_source_destroy(source);
+          self->timer_tick_id = 0;
+        }
+
+      cfg_persist_config_add(cfg, log_db_parser_format_persist_name(self), self->db, (GDestroyNotify) pattern_db_free, FALSE);
+      self->db = NULL;
+      self->initialized = FALSE;
     }
-
-  cfg_persist_config_add(cfg, log_db_parser_format_persist_name(self), self->db, (GDestroyNotify) pattern_db_free, FALSE);
-  self->db = NULL;
 }
 
 static gboolean
