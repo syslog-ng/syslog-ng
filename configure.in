@@ -56,6 +56,9 @@ fi
 if test "x$prefix" = "xNONE"; then
         prefix=$ac_default_prefix
 fi
+if test "x$exec_prefix" = "xNONE"; then
+        exec_prefix='${prefix}'
+fi
 pidfiledir="${localstatedir}"
 
 AM_CONFIG_HEADER(config.h)
@@ -751,6 +754,7 @@ AC_DEFINE_UNQUOTED(PATH_PREFIX, "`patheval $prefix`", [prefix directory])
 AC_DEFINE_UNQUOTED(PATH_SYSCONFDIR, "`patheval $sysconfdir`", [sysconfdir])
 AC_DEFINE_UNQUOTED(PATH_LOCALSTATEDIR, "`patheval $localstatedir`", [local state directory])
 AC_DEFINE_UNQUOTED(PATH_PIDFILEDIR, "`patheval $pidfiledir`", [local state directory])
+AC_DEFINE_UNQUOTED(PATH_LIBEXECDIR, "`patheval $libexecdir`", [libexec directory])
 if test -n "$timezonedir"; then
         AC_DEFINE_UNQUOTED(PATH_TIMEZONEDIR, "`patheval $timezonedir`", [timezone base directory])
 fi
