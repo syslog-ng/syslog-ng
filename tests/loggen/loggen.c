@@ -295,14 +295,14 @@ gen_messages(send_data_t send_func, void *send_func_ud, int thread_id)
           if (sock_type == SOCK_STREAM && framing)
             hdr_len = snprintf(linebuf, sizeof(linebuf), "%d ", message_length);
 
-          linelen = snprintf(linebuf + hdr_len, sizeof(linebuf) - hdr_len, "<38>1 2007-12-24T12:28:51+02:00 localhost localprg 1234 - - \xEF\xBB\xBFseq: %010d, thread: %04d, runid: %-10d, stamp: %-19s ", 0, thread_id, run_id, "");
+          linelen = snprintf(linebuf + hdr_len, sizeof(linebuf) - hdr_len, "<38>1 2007-12-24T12:28:51+02:00 localhost prg%05d 1234 - - \xEF\xBB\xBFseq: %010d, thread: %04d, runid: %-10d, stamp: %-19s ", thread_id, 0, thread_id, run_id, "");
           pos_timestamp1 = 6 + hdr_len;
           pos_seq = 68 + hdr_len;
           pos_timestamp2 = 120 + hdr_len;
         }
       else
         {
-          linelen = snprintf(linebuf, sizeof(linebuf), "<38>2007-12-24T12:28:51 localhost localprg[1234]: seq: %010d, thread: %04d, runid: %-10d, stamp: %-19s ", 0, thread_id, run_id, "");
+          linelen = snprintf(linebuf, sizeof(linebuf), "<38>2007-12-24T12:28:51 localhost prg%05d[1234]: seq: %010d, thread: %04d, runid: %-10d, stamp: %-19s ", thread_id, 0, thread_id, run_id, "");
           pos_timestamp1 = 4;
           pos_seq = 55;
           pos_timestamp2 = 107;
@@ -699,6 +699,11 @@ main(int argc, char *argv[])
 
       dest_addr = (struct sockaddr *) &saun;
       dest_addr_len = sizeof(saun);
+    }
+  if (active_connections + idle_connections > 10000)
+    {
+      fprintf(stderr, "Loggen doesn't support more than 10k threads.\n");
+      return 2;
     }
 
   /* used for startup & to signal inactive threads to exit */
