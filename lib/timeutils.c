@@ -126,6 +126,15 @@ cached_g_current_time(GTimeVal *result)
 }
 
 time_t
+cached_g_current_time_sec()
+{
+  GTimeVal now;
+
+  cached_g_current_time(&now);
+  return now.tv_sec;
+}
+
+time_t
 cached_mktime(struct tm *tm)
 {
   static struct tm prev_tm;

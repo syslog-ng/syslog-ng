@@ -38,6 +38,7 @@ void clean_time_cache();
 
 void invalidate_cached_time(void);
 void cached_g_current_time(GTimeVal *result);
+time_t cached_g_current_time_sec(void);
 
 gboolean check_nanosleep(void);
 

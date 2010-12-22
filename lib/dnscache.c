@@ -238,18 +238,18 @@ dns_cache_lookup(gint family, void *addr, const gchar **hostname)
 {
   DNSCacheKey key;
   DNSCacheEntry *entry;
-  GTimeVal now;
+  time_t now;
   
-  dns_cache_check_hosts(now.tv_sec);
+  now = cached_g_current_time_sec();
+  dns_cache_check_hosts(now);
   
   dns_cache_fill_key(&key, family, addr);
   entry = g_hash_table_lookup(cache, &key);
   if (entry)
     {
-      cached_g_current_time(&now);
       if (entry->resolved && 
-          ((entry->hostname && entry->resolved < now.tv_sec - dns_cache_expire) ||
-           (!entry->hostname && entry->resolved < now.tv_sec - dns_cache_expire_failed)))
+          ((entry->hostname && entry->resolved < now - dns_cache_expire) ||
+           (!entry->hostname && entry->resolved < now - dns_cache_expire_failed)))
         {
           /* the entry is not persistent and is too old */
         }
@@ -267,7 +267,6 @@ dns_cache_store(gboolean persistent, gint family, void *addr, const gchar *hostn
 {
   DNSCacheEntry *entry;
   guint hash_size;
-  GTimeVal now;
   
   entry = g_new(DNSCacheEntry, 1);
 
@@ -275,8 +274,7 @@ dns_cache_store(gboolean persistent, gint family, void *addr, const gchar *hostn
   entry->hostname = hostname ? g_strdup(hostname) : NULL;
   if (!persistent)
     {
-      cached_g_current_time(&now);
-      entry->resolved = now.tv_sec;
+      entry->resolved = cached_g_current_time_sec();
       dns_cache_entry_insert_before(&cache_last, entry);
     }
   else
