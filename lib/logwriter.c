@@ -925,6 +925,12 @@ log_writer_has_pending_writes(LogWriter *self)
   return log_queue_get_length(self->queue) > 0;
 }
 
+gboolean
+log_writer_opened(LogWriter *self)
+{
+  return self->proto != NULL;
+}
+
 /* run in the main thread in reaction to a log_writer_reopen to change
  * the destination LogProto instance. It needs to be ran in the main
  * thread as it reregisters the watches associated with the main
