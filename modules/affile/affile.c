@@ -27,6 +27,7 @@
 #include "serialize.h"
 #include "gprocess.h"
 #include "stats.h"
+#include "mainloop.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -36,7 +37,6 @@
 #include <errno.h>
 #include <time.h>
 #include <stdlib.h>
-
 
 static gboolean
 affile_open_file(gchar *name, gint flags,
@@ -182,6 +182,7 @@ affile_sd_construct_proto(AFFileSourceDriver *self, LogTransport *transport)
   return proto;
 }
 
+/* NOTE: runs in the main thread */
 static void
 affile_sd_notify(LogPipe *s, LogPipe *sender, gint notify_code, gpointer user_data)
 {
@@ -425,39 +426,102 @@ affile_sd_new(gchar *filename, guint32 flags)
   return &self->super;
 }
 
+/*
+ * Threading notes:
+ *
+ * Apart from standard initialization/deinitialization (normally performed
+ * by the main thread when syslog-ng starts up) the following processes are
+ * performed in various threads.
+ *
+ *   - queue runs in the thread of the source thread that generated the message
+ *   - if the message is to be written to a not-yet-opened file, a new gets
+ *     opened and stored in the writer_hash hashtable (initiated from queue,
+ *     but performed in the main thread, but more on that later)
+ *   - currently opened destination files are checked regularly and closed
+ *     if they are idle for a given amount of time (time_reap) (this is done
+ *     in the main thread)
+ *
+ * Some of these operations have to be performed in the main thread, others
+ * are done in the queue call.
+ *
+ * References
+ * ==========
+ *
+ * The AFFileDestDriver instance is registered into the current
+ * configuration, thus its presence is always given, it cannot go away while
+ * syslog-ng is running.
+ *
+ * AFFileDestWriter instances are created dynamically when a new file is
+ * opened. A reference is stored in the writer_hash hashtable. This is then:
+ *    - looked up in _queue() (in the source thread)
+ *    - cleaned up in reap callback (in the main thread)
+ *
+ * writer_hash is locked (currently a simple mutex) using
+ * AFFileDestDriver->lock.  The "queue" method cannot hold the lock while
+ * forwarding it to the next pipe, thus a reference is taken under the
+ * protection of the lock, keeping a the next pipe alive, even if that would
+ * go away in a parallel reaper process.
+ */
+
 struct _AFFileDestWriter
 {
   LogPipe super;
+  GStaticMutex lock;
   AFFileDestDriver *owner;
   GString *filename;
   LogPipe *writer;
   time_t last_msg_stamp;
   time_t last_open_stamp;
   time_t time_reopen;
+  struct iv_timer reap_timer;
+  gboolean reopen_pending, queue_pending;
 };
 
-static gboolean
-affile_dw_reapable(AFFileDestWriter *self)
+static void affile_dd_reap_writer(AFFileDestDriver *self, AFFileDestWriter *dw);
+
+static void
+affile_dw_arm_reaper(AFFileDestWriter *self)
 {
-  return !log_writer_has_pending_writes((LogWriter *) self->writer);
+  /* not yet reaped, set up the next callback */
+  iv_validate_now();
+  self->reap_timer.expires = now;
+  timespec_add_msec(&self->reap_timer.expires, self->owner->time_reap * 1000 / 2);
+  iv_timer_register(&self->reap_timer);
+}
+
+static void
+affile_dw_reap(gpointer s)
+{
+  AFFileDestWriter *self = (AFFileDestWriter *) s;
+
+  main_loop_assert_main_thread();
+
+  g_static_mutex_lock(&self->lock);
+  if (!log_writer_has_pending_writes((LogWriter *) self->writer) &&
+      !self->queue_pending &&
+      (cached_g_current_time_sec() - self->last_msg_stamp) >= self->owner->time_reap)
+    {
+      g_static_mutex_unlock(&self->lock);
+      msg_verbose("Destination timed out, reaping",
+                  evt_tag_str("template", self->owner->filename_template->template),
+                  evt_tag_str("filename", self->filename->str),
+                  NULL);
+      affile_dd_reap_writer(self->owner, self);
+    }
+  else
+    {
+      g_static_mutex_unlock(&self->lock);
+      affile_dw_arm_reaper(self);
+    }
 }
 
 static gboolean
-affile_dw_init(LogPipe *s)
+affile_dw_reopen(AFFileDestWriter *self)
 {
-  AFFileDestWriter *self = (AFFileDestWriter *) s;
   int fd, flags;
   struct stat st;
-  GlobalConfig *cfg = log_pipe_get_config(s);
 
-  if (cfg)
-    self->time_reopen = cfg->time_reopen;
-
-  msg_verbose("Initializing destination file writer",
-              evt_tag_str("template", self->owner->filename_template->template),
-              evt_tag_str("filename", self->filename->str),
-              NULL);
-              
+  self->last_open_stamp = self->last_msg_stamp;
   if (self->owner->overwrite_if_older > 0 && 
       stat(self->filename->str, &st) == 0 && 
       st.st_mtime < time(NULL) - self->owner->overwrite_if_older)
@@ -474,7 +538,7 @@ affile_dw_init(LogPipe *s)
   else
     flags = O_WRONLY | O_CREAT | O_NOCTTY | O_NONBLOCK | O_LARGEFILE;
 
-  self->last_open_stamp = time(NULL);
+
   if (affile_open_file(self->filename->str, flags, 
                        self->owner->file_uid, self->owner->file_gid, self->owner->file_perm, 
                        self->owner->dir_uid, self->owner->dir_gid, self->owner->dir_perm, 
@@ -482,22 +546,10 @@ affile_dw_init(LogPipe *s)
     {
       guint write_flags;
       
-      if (!self->writer)
-        {
-          self->writer = log_writer_new(LW_FORMAT_FILE | ((self->owner->flags & AFFILE_PIPE) ? 0 : LW_FILE_FD));
-          log_writer_set_options((LogWriter *) self->writer, s, &self->owner->writer_options, 1, self->owner->flags & AFFILE_PIPE ? SCS_PIPE : SCS_FILE, self->owner->super.id, self->filename->str);
-          log_pipe_append(&self->super, self->writer);
-        }
-      if (!log_pipe_init(self->writer, NULL))
-        {
-          msg_error("Error initializing log writer", NULL);
-          log_pipe_unref(self->writer);
-          self->writer = NULL;
-          close(fd);
-          return FALSE;
-        }
       write_flags = ((self->owner->flags & AFFILE_FSYNC) ? LTF_FSYNC : 0) | LTF_APPEND;
       log_writer_reopen(self->writer, log_proto_file_writer_new(log_transport_plain_new(fd, write_flags), self->owner->writer_options.flush_lines));
+
+      main_loop_call((void * (*)(void *)) affile_dw_arm_reaper, self, TRUE);
     }
   else
     {
@@ -511,35 +563,81 @@ affile_dw_init(LogPipe *s)
 }
 
 static gboolean
+affile_dw_init(LogPipe *s)
+{
+  AFFileDestWriter *self = (AFFileDestWriter *) s;
+  GlobalConfig *cfg = log_pipe_get_config(s);
+
+  if (cfg)
+    self->time_reopen = cfg->time_reopen;
+
+  msg_verbose("Initializing destination file writer",
+              evt_tag_str("template", self->owner->filename_template->template),
+              evt_tag_str("filename", self->filename->str),
+              NULL);
+
+  if (!self->writer)
+    {
+      self->writer = log_writer_new(LW_FORMAT_FILE | ((self->owner->flags & AFFILE_PIPE) ? 0 : LW_FILE_FD));
+      log_writer_set_options((LogWriter *) self->writer, s, &self->owner->writer_options, 1, self->owner->flags & AFFILE_PIPE ? SCS_PIPE : SCS_FILE, self->owner->super.id, self->filename->str);
+
+      if (!log_pipe_init(self->writer, NULL))
+        {
+          msg_error("Error initializing log writer", NULL);
+          log_pipe_unref(self->writer);
+          self->writer = NULL;
+          return FALSE;
+        }
+      log_pipe_append(&self->super, self->writer);
+    }
+
+  return affile_dw_reopen(self);
+}
+
+static gboolean
 affile_dw_deinit(LogPipe *s)
 {
   AFFileDestWriter *self = (AFFileDestWriter *) s;
 
+  main_loop_assert_main_thread();
   if (self->writer)
     {
       log_pipe_deinit(self->writer);
     }
+  if (iv_timer_registered(&self->reap_timer))
+    iv_timer_unregister(&self->reap_timer);
   return TRUE;
 }
 
+/*
+ * NOTE: the caller (e.g. AFFileDestDriver) holds a reference to @self, thus
+ * @self may _never_ be freed, even if the reaper timer is elapsed in the
+ * main thread.
+ */
 static void
 affile_dw_queue(LogPipe *s, LogMessage *lm, const LogPathOptions *path_options)
 {
   AFFileDestWriter *self = (AFFileDestWriter *) s;
-  GTimeVal now;
 
-  cached_g_current_time(&now);
+  g_static_mutex_lock(&self->lock);
+  self->last_msg_stamp = cached_g_current_time_sec();
+  if (self->last_open_stamp == 0)
+    self->last_open_stamp = self->last_msg_stamp;
 
-  self->last_msg_stamp = now.tv_sec;
-  if (!s->pipe_next && self->last_open_stamp < self->last_msg_stamp - self->time_reopen)
+  if (!log_writer_opened((LogWriter *) self->writer) &&
+      !self->reopen_pending &&
+      (self->last_open_stamp < self->last_msg_stamp - self->time_reopen))
     {
-      log_pipe_init(&self->super, NULL);
+      self->reopen_pending = TRUE;
+      /* if the file couldn't be opened, try it again every time_reopen seconds */
+      g_static_mutex_unlock(&self->lock);
+      affile_dw_reopen(self);
+      g_static_mutex_lock(&self->lock);
+      self->reopen_pending = FALSE;
     }
-    
-  if (s->pipe_next)
-    log_pipe_forward_msg(s, lm, path_options);
-  else
-    log_msg_drop(lm, path_options);
+  g_static_mutex_unlock(&self->lock);
+
+  log_pipe_forward_msg(&self->super, lm, path_options);
 }
 
 static void
@@ -580,7 +678,11 @@ affile_dw_new(AFFileDestDriver *owner, GString *filename)
   log_pipe_ref(&owner->super.super);
   self->owner = owner;
   self->time_reopen = 60;
-  
+
+  IV_TIMER_INIT(&self->reap_timer);
+  self->reap_timer.cookie = self;
+  self->reap_timer.handler = affile_dw_reap;
+
   /* we have to take care about freeing filename later. 
      This avoids a move of the filename. */
   self->filename = filename;
@@ -705,45 +807,30 @@ affile_dd_format_persist_name(AFFileDestDriver *self)
   return persist_name;
 }
 
-static gboolean
-affile_dd_reap_writers(gpointer key, gpointer value, gpointer user_data)
-{
-  AFFileDestDriver *self = (AFFileDestDriver *) user_data;
-  AFFileDestWriter *dw = (AFFileDestWriter *) value;
-  GTimeVal now;
-  
-  cached_g_current_time(&now);
-  if ((now.tv_sec - dw->last_msg_stamp) >= self->time_reap && affile_dw_reapable(dw))
-    {
-      msg_verbose("Destination timed out, reaping", 
-                  evt_tag_str("template", self->filename_template->template),
-                  evt_tag_str("filename", dw->filename->str),
-                  NULL);
-      log_pipe_deinit(&dw->super);
-      log_pipe_unref(&dw->super);
-      
-      /* remove from hash table */
-      return TRUE;
-    }
-  return FALSE;
-}
-
 static void
-affile_dd_reap(gpointer s)
+affile_dd_reap_writer(AFFileDestDriver *self, AFFileDestWriter *dw)
 {
-  AFFileDestDriver *self = (AFFileDestDriver *) s;
+  main_loop_assert_main_thread();
   
-  msg_verbose("Reaping unused destination files",
-              evt_tag_str("template", self->filename_template->template),
-              NULL);  
-  if (self->writer_hash)
-    g_hash_table_foreach_remove(self->writer_hash, affile_dd_reap_writers, self);
+  if ((self->flags & AFFILE_NO_EXPAND) == 0)
+    {
+      g_static_mutex_lock(&self->lock);
+      /* remove from hash table */
+      g_hash_table_remove(self->writer_hash, dw->filename->str);
+      g_static_mutex_unlock(&self->lock);
+    }
+  else
+    {
+      g_static_mutex_lock(&self->lock);
+      g_assert(dw == self->single_writer);
+      self->single_writer = NULL;
+      g_static_mutex_unlock(&self->lock);
+    }
 
-  iv_validate_now();
-  self->reap_timer.expires = now;
-  timespec_add_msec(&self->reap_timer.expires, self->time_reap * 1000 / 2);
-  iv_timer_register(&self->reap_timer);
+  log_pipe_deinit(&dw->super);
+  log_pipe_unref(&dw->super);
 }
+
 
 /**
  * affile_dd_reuse_writer:
@@ -791,16 +878,8 @@ affile_dd_init(LogPipe *s)
   log_writer_options_init(&self->writer_options, cfg, 0);
   log_template_options_init(&self->template_fname_options, cfg);
               
-  IV_TIMER_INIT(&self->reap_timer);
   if ((self->flags & AFFILE_NO_EXPAND) == 0)
     {
-      self->reap_timer.cookie = self;
-      self->reap_timer.handler = affile_dd_reap;
-
-      iv_validate_now();
-      self->reap_timer.expires = now;
-      timespec_add_msec(&self->reap_timer.expires, self->time_reap * 1000 / 2);
-      iv_timer_register(&self->reap_timer);
       self->writer_hash = cfg_persist_config_fetch(cfg, affile_dd_format_persist_name(self));
       if (self->writer_hash)
         g_hash_table_foreach(self->writer_hash, affile_dd_reuse_writer, self);
@@ -828,6 +907,8 @@ static void
 affile_dd_destroy_writer(gpointer value)
 {
   AFFileDestWriter *writer = (AFFileDestWriter *) value;
+
+  main_loop_assert_main_thread();
   log_pipe_deinit(&writer->super);
   log_pipe_unref(&writer->super);
 }
@@ -887,18 +968,22 @@ affile_dd_deinit(LogPipe *s)
       cfg_persist_config_add(cfg, affile_dd_format_persist_name(self), self->writer_hash, affile_dd_destroy_writer_hash, FALSE);
       self->writer_hash = NULL;
     }
-  if (iv_timer_registered(&self->reap_timer))
-    iv_timer_unregister(&self->reap_timer);
   return TRUE;
 }
 
-static void
-affile_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
+/*
+ * This function is ran in the main thread whenever a writer is not yet
+ * instantiated.  Returns a reference to the newly constructed LogPipe
+ * instance where the caller needs to forward its message.
+ */
+static LogPipe *
+affile_dd_open_writer(gpointer args[])
 {
-  AFFileDestDriver *self = (AFFileDestDriver *) s;
+  AFFileDestDriver *self = args[0];
+  GlobalConfig *cfg = log_pipe_get_config(&self->super.super);
   AFFileDestWriter *next;
-  GlobalConfig *cfg = log_pipe_get_config(s);
 
+  main_loop_assert_main_thread();
   if (self->flags & AFFILE_NO_EXPAND)
     {
       if (!self->single_writer)
@@ -906,7 +991,10 @@ affile_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 	  next = affile_dw_new(self, g_string_new(self->filename_template->template));
           if (next && log_pipe_init(&next->super, cfg))
 	    {
+	      log_pipe_ref(&next->super);
+	      g_static_mutex_lock(&self->lock);
 	      self->single_writer = next;
+	      g_static_mutex_unlock(&self->lock);
 	    }
 	  else
 	    {
@@ -917,34 +1005,112 @@ affile_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
       else
         {
           next = self->single_writer;
+          log_pipe_ref(&next->super);
         }
     }
   else
     {
-      GString *filename;
+      GString *filename = args[1];
 
+      /* hash table construction is serialized, as we only do that in the main thread. */
       if (!self->writer_hash)
 	self->writer_hash = g_hash_table_new(g_str_hash, g_str_equal);
 
-      filename = g_string_sized_new(32);
-      log_template_format(self->filename_template, msg, &self->template_fname_options, LTZ_LOCAL, 0, filename);
+      /* we don't need to lock the hashtable as it is only written in the
+       * main thread, which we're running right now.  lookups in other
+       * threads must be locked. writers must be locked.  */
+
       next = g_hash_table_lookup(self->writer_hash, filename->str);
       if (!next)
 	{
 	  next = affile_dw_new(self, filename);
+	  args[1] = NULL;
           if (!log_pipe_init(&next->super, cfg))
 	    {
 	      log_pipe_unref(&next->super);
 	      next = NULL;
 	    }
 	  else
-	    g_hash_table_insert(self->writer_hash, filename->str, next);
+	    {
+	      log_pipe_ref(&next->super);
+	      g_static_mutex_lock(&self->lock);
+              g_hash_table_insert(self->writer_hash, filename->str, next);
+              g_static_mutex_unlock(&self->lock);
+            }
 	}
       else
         g_string_free(filename, TRUE);
     }
+  next->queue_pending = TRUE;
+  /* we're returning a reference */
+  return &next->super;
+
+}
+
+static void
+affile_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
+{
+  AFFileDestDriver *self = (AFFileDestDriver *) s;
+  AFFileDestWriter *next;
+  gpointer args[2] = { self, NULL };
+
+  if (self->flags & AFFILE_NO_EXPAND)
+    {
+      /* no need to lock the check below, the worst case that happens is
+       * that we go to the mainloop to return the same information, but this
+       * is not fast path anyway */
+
+      if (!self->single_writer)
+        {
+          next = main_loop_call((void *(*)(void *)) affile_dd_open_writer, args, TRUE);
+        }
+      else
+        {
+          /* we need to lock single_writer in order to get a reference and
+           * make sure it is not a stale pointer by the time we ref it */
+
+          g_static_mutex_lock(&self->lock);
+          next = self->single_writer;
+          next->queue_pending = TRUE;
+          log_pipe_ref(&next->super);
+          g_static_mutex_unlock(&self->lock);
+        }
+    }
+  else if ((self->flags & AFFILE_NO_EXPAND) == 0)
+    {
+      GString *filename;
+
+      filename = g_string_sized_new(32);
+      log_template_format(self->filename_template, msg, &self->template_fname_options, LTZ_LOCAL, 0, filename);
+
+      g_static_mutex_lock(&self->lock);
+      if (self->writer_hash)
+        next = g_hash_table_lookup(self->writer_hash, filename->str);
+      else
+        next = NULL;
+
+      if (next)
+        {
+          log_pipe_ref(&next->super);
+          next->queue_pending = TRUE;
+          g_static_mutex_unlock(&self->lock);
+        }
+      else
+	{
+	  g_static_mutex_unlock(&self->lock);
+	  args[1] = filename;
+	  next = main_loop_call((void *(*)(void *)) affile_dd_open_writer, args, TRUE);
+	}
+      /* args[1] is set to NULL whenever the affile_dd_open_writer uses it for the newly constructed AFFileDestWriter instance */
+      if (args[1])
+        g_string_free(filename, TRUE);
+    }
   if (next)
-    log_pipe_queue(&next->super, msg, path_options);
+    {
+      log_pipe_queue(&next->super, msg, path_options);
+      next->queue_pending = FALSE;
+      log_pipe_unref(&next->super);
+    }
   else
     log_msg_drop(msg, path_options);
 }

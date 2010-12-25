@@ -56,6 +56,7 @@ typedef struct _AFFileDestWriter AFFileDestWriter;
 typedef struct _AFFileDestDriver
 {
   LogDriver super;
+  GStaticMutex lock;
   LogTemplateOptions template_fname_options;
   LogTemplate *filename_template;
   AFFileDestWriter *single_writer;
@@ -74,7 +75,6 @@ typedef struct _AFFileDestDriver
   gint overwrite_if_older;
   gboolean use_time_recvd;
   gint time_reap;
-  struct iv_timer reap_timer;
 } AFFileDestDriver;
 
 LogDriver *affile_dd_new(gchar *filename, guint32 flags);
