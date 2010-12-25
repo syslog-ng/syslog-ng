@@ -88,6 +88,4 @@ void log_writer_options_init(LogWriterOptions *options, GlobalConfig *cfg, guint
 void log_writer_options_destroy(LogWriterOptions *options);
 gint log_writer_options_lookup_flag(const gchar *flag);
 
-void log_writer_global_init(void);
-
 #endif
