@@ -524,17 +524,17 @@ afsocket_sd_kill_connection_list(GList *list)
 static void
 afsocket_sd_start_watches(AFSocketSourceDriver *self)
 {
-  INIT_IV_FD(&self->listen_fd);
+  IV_FD_INIT(&self->listen_fd);
   self->listen_fd.fd = self->fd;
   self->listen_fd.cookie = self;
   self->listen_fd.handler_in = afsocket_sd_accept;
-  iv_register_fd(&self->listen_fd);
+  iv_fd_register(&self->listen_fd);
 }
 
 static void
 afsocket_sd_stop_watches(AFSocketSourceDriver *self)
 {
-  iv_unregister_fd(&self->listen_fd);
+  iv_fd_unregister(&self->listen_fd);
 }
 
 gboolean
@@ -899,13 +899,12 @@ static void afsocket_dd_reconnect(AFSocketDestDriver *self);
 static void
 afsocket_dd_init_watches(AFSocketDestDriver *self)
 {
-  INIT_IV_FD(&self->connect_fd);
+  IV_FD_INIT(&self->connect_fd);
   self->connect_fd.fd = self->fd;
   self->connect_fd.cookie = self;
   self->connect_fd.handler_out = (void (*)(void *)) afsocket_dd_connected;
-  iv_register_fd(&self->connect_fd);
 
-  INIT_IV_TIMER(&self->reconnect_timer);
+  IV_TIMER_INIT(&self->reconnect_timer);
   self->reconnect_timer.cookie = self;
   self->reconnect_timer.handler = (void (*)(void *)) afsocket_dd_reconnect;
 }
@@ -923,7 +922,7 @@ afsocket_dd_stop_watches(AFSocketDestDriver *self)
 {
   if (iv_fd_registered(&self->connect_fd))
     {
-      iv_unregister_fd(&self->connect_fd);
+      iv_fd_unregister(&self->connect_fd);
 
       /* need to close the fd in this case as it wasn't established yet */
       msg_verbose("Closing connecting fd",
@@ -932,19 +931,19 @@ afsocket_dd_stop_watches(AFSocketDestDriver *self)
       close(self->fd);
     }
   if (iv_timer_registered(&self->reconnect_timer))
-    iv_unregister_timer(&self->reconnect_timer);
+    iv_timer_unregister(&self->reconnect_timer);
 }
 
 static void
 afsocket_dd_start_reconnect_timer(AFSocketDestDriver *self)
 {
   if (iv_timer_registered(&self->reconnect_timer))
-    iv_unregister_timer(&self->reconnect_timer);
+    iv_timer_unregister(&self->reconnect_timer);
   iv_validate_now();
 
   self->reconnect_timer.expires = now;
   timespec_add_msec(&self->reconnect_timer.expires, self->time_reopen * 1000);
-  iv_register_timer(&self->reconnect_timer);
+  iv_timer_register(&self->reconnect_timer);
 }
 
 static gboolean
