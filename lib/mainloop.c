@@ -214,7 +214,7 @@ stats_timer_elapsed(gpointer st)
   iv_validate_now();
   stats_timer.expires = now;
   timespec_add_msec(&stats_timer.expires, stats_freq * 1000);
-  iv_register_timer(&stats_timer);
+  iv_timer_register(&stats_timer);
   stats_timer_first = FALSE;
 }
 
@@ -359,7 +359,7 @@ main_loop_reload_config_apply(void)
 
   /* stats: should probably be put to the stats.c module */
   if (iv_timer_registered(&stats_timer))
-    iv_unregister_timer(&stats_timer);
+    iv_timer_unregister(&stats_timer);
   stats_timer.cookie = GINT_TO_POINTER(current_configuration->stats_freq);
   if (current_configuration->stats_freq > 0)
     {
@@ -527,25 +527,25 @@ main_loop_run(void)
   sighup_poll.exclusive = 1;
   sighup_poll.cookie = NULL;
   sighup_poll.handler = sig_hup_handler;
-  iv_register_signal(&sighup_poll);
+  iv_signal_register(&sighup_poll);
 
   IV_SIGNAL_INIT(&sigchild_poll);
   sigchild_poll.signum = SIGCHLD;
   sigchild_poll.exclusive = 1;
   sigchild_poll.handler = sig_child_handler;
-  iv_register_signal(&sigchild_poll);
+  iv_signal_register(&sigchild_poll);
 
   IV_SIGNAL_INIT(&sigterm_poll);
   sigterm_poll.signum = SIGTERM;
   sigterm_poll.exclusive = 1;
   sigterm_poll.handler = sig_term_handler;
-  iv_register_signal(&sigterm_poll);
+  iv_signal_register(&sigterm_poll);
 
   IV_SIGNAL_INIT(&sigint_poll);
   sigint_poll.signum = SIGINT;
   sigint_poll.exclusive = 1;
   sigint_poll.handler = sig_term_handler;
-  iv_register_signal(&sigint_poll);
+  iv_signal_register(&sigint_poll);
 
   /* NOTE: generate first stats message, which rearms the timer */
   stats_timer_first = TRUE;
