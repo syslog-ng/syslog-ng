@@ -897,7 +897,7 @@ static gboolean afsocket_dd_connected(AFSocketDestDriver *self);
 static void afsocket_dd_reconnect(AFSocketDestDriver *self);
 
 static void
-afsocket_dd_start_watches(AFSocketDestDriver *self)
+afsocket_dd_init_watches(AFSocketDestDriver *self)
 {
   INIT_IV_FD(&self->connect_fd);
   self->connect_fd.fd = self->fd;
@@ -908,6 +908,14 @@ afsocket_dd_start_watches(AFSocketDestDriver *self)
   INIT_IV_TIMER(&self->reconnect_timer);
   self->reconnect_timer.cookie = self;
   self->reconnect_timer.handler = (void (*)(void *)) afsocket_dd_reconnect;
+}
+
+static void
+afsocket_dd_start_watches(AFSocketDestDriver *self)
+{
+  main_loop_assert_main_thread();
+
+  iv_fd_register(&self->connect_fd);
 }
 
 static void
@@ -1205,4 +1213,5 @@ afsocket_dd_init_instance(AFSocketDestDriver *self, SocketOptions *sock_options,
   self->flags = flags  | AFSOCKET_KEEP_ALIVE;
   self->hostname = hostname;
   self->dest_name = dest_name;
+  afsocket_dd_init_watches(self);
 }
