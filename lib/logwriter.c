@@ -117,13 +117,15 @@ log_writer_work_finished(gpointer s)
 
   if (!self->work_result)
     {
-      log_writer_suspend(self);
       log_writer_broken(self, NC_WRITE_ERROR);
-
-      msg_notice("Suspending write operation because of an I/O error",
-                 evt_tag_int("fd", log_proto_get_fd(self->proto)),
-                 evt_tag_int("time_reopen", self->options->time_reopen),
-                 NULL);
+      if (self->proto)
+        {
+          log_writer_suspend(self);
+          msg_notice("Suspending write operation because of an I/O error",
+                     evt_tag_int("fd", log_proto_get_fd(self->proto)),
+                     evt_tag_int("time_reopen", self->options->time_reopen),
+                     NULL);
+        }
       goto exit;
     }
   /* reenable polling the source */
@@ -275,7 +277,6 @@ log_writer_suspend(LogWriter *self)
   /* flush code indicates that we need to suspend our writing activities
    * until time_reopen elapses */
 
-  log_writer_update_fd_callbacks(self, 0);
   log_writer_arm_suspend_timer(self, log_writer_error_suspend_elapsed, self->options->time_reopen * 1e3);
   self->suspended = TRUE;
 }
@@ -313,6 +314,7 @@ log_writer_update_watches(LogWriter *self)
        * when the required number of items are added.  see the
        * log_queue_check_items and its parallel_push argument above
        */
+      log_writer_update_fd_callbacks(self, 0);
     }
 }
 
