@@ -32,6 +32,7 @@
 #include "gprocess.h"
 #include "gsocket.h"
 #include "stats.h"
+#include "mainloop.h"
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -920,6 +921,8 @@ afsocket_dd_start_watches(AFSocketDestDriver *self)
 static void
 afsocket_dd_stop_watches(AFSocketDestDriver *self)
 {
+  main_loop_assert_main_thread();
+
   if (iv_fd_registered(&self->connect_fd))
     {
       iv_fd_unregister(&self->connect_fd);
@@ -937,6 +940,8 @@ afsocket_dd_stop_watches(AFSocketDestDriver *self)
 static void
 afsocket_dd_start_reconnect_timer(AFSocketDestDriver *self)
 {
+  main_loop_assert_main_thread();
+
   if (iv_timer_registered(&self->reconnect_timer))
     iv_timer_unregister(&self->reconnect_timer);
   iv_validate_now();
@@ -955,6 +960,8 @@ afsocket_dd_connected(AFSocketDestDriver *self)
   LogTransport *transport;
   LogProto *proto;
   guint32 transport_flags = 0;
+
+  main_loop_assert_main_thread();
 
   if (iv_fd_registered(&self->connect_fd))
     iv_fd_unregister(&self->connect_fd);
@@ -1035,6 +1042,7 @@ afsocket_dd_start_connect(AFSocketDestDriver *self)
   int sock, rc;
   gchar buf1[MAX_SOCKADDR_STRING], buf2[MAX_SOCKADDR_STRING];
 
+  main_loop_assert_main_thread();
   if (!afsocket_open_socket(self->bind_addr, !!(self->flags & AFSOCKET_STREAM), &sock))
     {
       return FALSE;
