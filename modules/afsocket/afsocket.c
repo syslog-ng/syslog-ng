@@ -949,6 +949,9 @@ afsocket_dd_connected(AFSocketDestDriver *self)
   LogProto *proto;
   guint32 transport_flags = 0;
 
+  if (iv_fd_registered(&self->connect_fd))
+    iv_fd_unregister(&self->connect_fd);
+
   if (self->flags & AFSOCKET_STREAM)
     {
       transport_flags |= LTF_SHUTDOWN;
@@ -960,7 +963,6 @@ afsocket_dd_connected(AFSocketDestDriver *self)
                     evt_tag_errno(EVT_TAG_OSERROR, errno),
                     evt_tag_int("time_reopen", self->time_reopen),
                     NULL);
-          close(self->fd);
           goto error_reconnect;
         }
       if (error)
@@ -971,7 +973,6 @@ afsocket_dd_connected(AFSocketDestDriver *self)
                     evt_tag_errno(EVT_TAG_OSERROR, error),
                     evt_tag_int("time_reopen", self->time_reopen),
                     NULL);
-          close(self->fd);
           goto error_reconnect;
         }
     }
@@ -981,7 +982,6 @@ afsocket_dd_connected(AFSocketDestDriver *self)
               evt_tag_str("local", g_sockaddr_format(self->bind_addr, buf1, sizeof(buf1), GSA_FULL)),
               NULL);
 
-  iv_unregister_fd(&self->connect_fd);
 
 #if ENABLE_SSL
   if (self->tls_context)
@@ -991,7 +991,6 @@ afsocket_dd_connected(AFSocketDestDriver *self)
       tls_session = tls_context_setup_session(self->tls_context);
       if (!tls_session)
         {
-          close(self->fd);
           goto error_reconnect;
         }
 
@@ -1017,6 +1016,8 @@ afsocket_dd_connected(AFSocketDestDriver *self)
   log_writer_reopen(self->writer, proto);
   return TRUE;
  error_reconnect:
+  close(self->fd);
+  self->fd = -1;
   afsocket_dd_start_reconnect_timer(self);
   return FALSE;
 }
