@@ -992,6 +992,7 @@ log_writer_new(guint32 flags)
   self->line_buffer = g_string_sized_new(128);
 
   log_writer_init_watches(self);
+  g_static_mutex_init(&self->suppress_lock);
   return &self->super;
 }
 

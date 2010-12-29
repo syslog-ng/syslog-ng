@@ -31,7 +31,7 @@
 typedef struct _AFInterSourceDriver AFInterSourceDriver;
 typedef struct _AFInterSource AFInterSource;
 
-static GStaticMutex internal_msg_lock;
+static GStaticMutex internal_msg_lock = G_STATIC_MUTEX_INIT;
 static GQueue *internal_msg_queue;
 static AFInterSource *current_internal_source;
 

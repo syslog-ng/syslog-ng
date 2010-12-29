@@ -686,6 +686,7 @@ affile_dw_new(AFFileDestDriver *owner, GString *filename)
   /* we have to take care about freeing filename later. 
      This avoids a move of the filename. */
   self->filename = filename;
+  g_static_mutex_init(&self->lock);
   return self;
 }
 
@@ -1154,5 +1155,6 @@ affile_dd_new(gchar *filename, guint32 flags)
     }
   self->time_reap = -1;
   log_template_options_defaults(&self->template_fname_options);
+  g_static_mutex_init(&self->lock);
   return &self->super;
 }
