@@ -587,7 +587,7 @@ pdb_rule_new(void)
 {
   PDBRule *self = g_new0(PDBRule, 1);
 
-  self->ref_cnt = 1;
+  g_atomic_counter_set(&self->ref_cnt, 1);
   self->context_scope = RCS_PROCESS;
   return self;
 }
@@ -595,19 +595,14 @@ pdb_rule_new(void)
 static PDBRule *
 pdb_rule_ref(PDBRule *self)
 {
-  g_assert(self->ref_cnt > 0);
-
-  self->ref_cnt++;
-
+  g_atomic_counter_inc(&self->ref_cnt);
   return self;
 }
 
 void
 pdb_rule_unref(PDBRule *self)
 {
-  g_assert(self->ref_cnt > 0);
-
-  if (--(self->ref_cnt) == 0)
+  if (g_atomic_counter_dec_and_test(&self->ref_cnt))
     {
       if (self->context_id_template)
         log_template_unref(self->context_id_template);
@@ -1322,7 +1317,6 @@ pattern_db_expire_entry(guint64 now, gpointer user_data)
      callback. */
 }
 
-
 /*
  * This function can be called any time when pattern-db is not processing
  * messages, but we expect the correllation timer to move forward.  It
@@ -1337,6 +1331,7 @@ pattern_db_timer_tick(PatternDB *self)
   GTimeVal now;
   glong diff;
 
+  g_static_rw_lock_writer_lock(&self->lock);
   cached_g_current_time(&now);
   diff = g_time_val_diff(&now, &self->last_tick);
 
@@ -1351,8 +1346,10 @@ pattern_db_timer_tick(PatternDB *self)
       self->last_tick = now;
       g_time_val_add(&self->last_tick, -(diff - diff_sec * 1e6));
     }
+  g_static_rw_lock_writer_unlock(&self->lock);
 }
 
+/* NOTE: lock should be acquired for writing before calling this function. */
 void
 pattern_db_set_time(PatternDB *self, const GTimeVal *tv)
 {
@@ -1385,9 +1382,11 @@ pattern_db_reload_ruleset(PatternDB *self, GlobalConfig *cfg, const gchar *pdb_f
     }
   else
     {
+      g_static_rw_lock_writer_lock(&self->lock);
       if (self->ruleset)
         pdb_rule_set_free(self->ruleset);
       self->ruleset = new_ruleset;
+      g_static_rw_lock_writer_unlock(&self->lock);
       return TRUE;
     }
 }
@@ -1395,12 +1394,15 @@ pattern_db_reload_ruleset(PatternDB *self, GlobalConfig *cfg, const gchar *pdb_f
 void
 pattern_db_expire_state(PatternDB *self)
 {
+  g_static_rw_lock_writer_lock(&self->lock);
   timer_wheel_expire_all(self->timer_wheel);
+  g_static_rw_lock_writer_unlock(&self->lock);
 }
 
 void
 pattern_db_forget_state(PatternDB *self)
 {
+  g_static_rw_lock_writer_lock(&self->lock);
   if (self->timer_wheel)
     timer_wheel_free(self->timer_wheel);
 
@@ -1408,6 +1410,7 @@ pattern_db_forget_state(PatternDB *self)
     g_hash_table_destroy(self->state);
   self->state = g_hash_table_new_full(pdb_state_key_hash, pdb_state_key_equal, NULL, (GDestroyNotify) pdb_state_entry_free);
   self->timer_wheel = timer_wheel_new();
+  g_static_rw_lock_writer_unlock(&self->lock);
 }
 
 void
@@ -1437,14 +1440,17 @@ pattern_db_process(PatternDB *self, LogMessage *msg)
   if (G_UNLIKELY(!self->ruleset))
     return FALSE;
 
-  pattern_db_set_time(self, &msg->timestamps[LM_TS_STAMP].time);
 
+  g_static_rw_lock_reader_lock(&self->lock);
   rule = pdb_rule_set_lookup(self->ruleset, msg, NULL);
+  g_static_rw_lock_reader_unlock(&self->lock);
   if (rule)
     {
       PDBContext *context = NULL;
       GString *buffer = g_string_sized_new(32);
 
+      g_static_rw_lock_writer_lock(&self->lock);
+      pattern_db_set_time(self, &msg->timestamps[LM_TS_STAMP].time);
       if (rule->context_id_template)
         {
           PDBStateKey key;
@@ -1490,10 +1496,15 @@ pattern_db_process(PatternDB *self, LogMessage *msg)
           pdb_rule_run_actions(rule, RAT_MATCH, self, context, msg, self->emit, self->emit_data, buffer);
         }
       pdb_rule_unref(rule);
+      g_static_rw_lock_writer_unlock(&self->lock);
+
       g_string_free(buffer, TRUE);
     }
   else
     {
+      g_static_rw_lock_writer_lock(&self->lock);
+      pattern_db_set_time(self, &msg->timestamps[LM_TS_STAMP].time);
+      g_static_rw_lock_writer_unlock(&self->lock);
       if (self->emit)
         self->emit(msg, FALSE, self->emit_data);
     }
@@ -1510,6 +1521,7 @@ pattern_db_new(void)
   self->state = g_hash_table_new_full(pdb_state_key_hash, pdb_state_key_equal, NULL, (GDestroyNotify) pdb_state_entry_free);
   self->timer_wheel = timer_wheel_new();
   cached_g_current_time(&self->last_tick);
+  g_static_rw_lock_init(&self->lock);
   return self;
 }
 

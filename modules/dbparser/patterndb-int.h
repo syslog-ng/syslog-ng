@@ -138,7 +138,7 @@ typedef struct _PDBAction
  * database. */
 struct _PDBRule
 {
-  guint ref_cnt;
+  GAtomicCounter ref_cnt;
   gchar *class;
   gchar *rule_id;
   PDBMessage msg;
@@ -192,6 +192,7 @@ void pdb_rule_set_free(PDBRuleSet *self);
 
 struct _PatternDB
 {
+  GStaticRWLock lock;
   PDBRuleSet *ruleset;
   GHashTable *state;
   TimerWheel *timer_wheel;

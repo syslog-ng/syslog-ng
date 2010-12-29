@@ -32,11 +32,11 @@
 struct _LogDBParser
 {
   LogParser super;
+  GStaticMutex lock;
   PatternDB *db;
-  GlobalConfig *cfg;
-  guint timer_tick_id;
   gchar *db_file;
   time_t db_file_last_check;
+  gboolean db_file_reloading;
   ino_t db_file_inode;
   time_t db_file_mtime;
   struct iv_timer tick;
@@ -58,6 +58,7 @@ static void
 log_db_parser_reload_database(LogDBParser *self)
 {
   struct stat st;
+  GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
 
   if (stat(self->db_file, &st) < 0)
     {
@@ -134,9 +135,11 @@ log_db_parser_init(LogPipe *s)
     }
   else
     {
+      self->db = pattern_db_new();
       log_db_parser_reload_database(self);
     }
-
+  if (self->db)
+    pattern_db_set_emit_func(self->db, log_db_parser_emit, self);
   iv_validate_now();
   IV_TIMER_INIT(&self->tick);
   self->tick.cookie = self;
@@ -169,10 +172,27 @@ log_db_parser_process(LogParser *s, LogMessage *msg, const char *input)
 {
   LogDBParser *self = (LogDBParser *) s;
 
-  if (G_UNLIKELY(self->db_file_last_check == 0 || self->db_file_last_check < msg->timestamps[LM_TS_RECVD].time.tv_sec - 5))
+  if (G_UNLIKELY(!self->db_file_reloading && (self->db_file_last_check == 0 || self->db_file_last_check < msg->timestamps[LM_TS_RECVD].time.tv_sec - 5)))
     {
-      self->db_file_last_check = msg->timestamps[LM_TS_RECVD].time.tv_sec;
-      log_db_parser_reload_database(self);
+      /* first check if we need to reload without doing a lock, then grab
+       * the lock, recheck the condition to rule out parallel database
+       * reloads. This avoids a lock in the fast path. */
+
+      g_static_mutex_lock(&self->lock);
+
+      if (!self->db_file_reloading && (self->db_file_last_check == 0 || self->db_file_last_check < msg->timestamps[LM_TS_RECVD].time.tv_sec - 5))
+        {
+          self->db_file_last_check = msg->timestamps[LM_TS_RECVD].time.tv_sec;
+          self->db_file_reloading = TRUE;
+          g_static_mutex_unlock(&self->lock);
+
+          /* only one thread may come here, the others may continue to use self->db, until we update it here. */
+          log_db_parser_reload_database(self);
+
+          g_static_mutex_lock(&self->lock);
+          self->db_file_reloading = FALSE;
+        }
+      g_static_mutex_unlock(&self->lock);
     }
   if (self->db)
     pattern_db_process(self->db, msg);
@@ -219,7 +239,7 @@ log_db_parser_new(void)
   self->super.super.clone = log_db_parser_clone;
   self->super.process = log_db_parser_process;
   self->db_file = g_strdup(PATH_PATTERNDB_FILE);
-  self->cfg = configuration;
+  g_static_mutex_init(&self->lock);
 
   return &self->super;
 }
