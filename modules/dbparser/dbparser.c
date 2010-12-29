@@ -207,11 +207,18 @@ log_db_parser_set_db_file(LogDBParser *self, const gchar *db_file)
   self->db_file = g_strdup(db_file);
 }
 
+/*
+ * NOTE: we could be smarter than this by sharing the radix tree in this case.
+ */
 static LogPipe *
 log_db_parser_clone(LogProcessPipe *s)
 {
-  msg_error("It is not supported to reference a single db-parser() instance from multiple locations of the configuration file. Please create separate db-parser() parsers for that purpose.", NULL);
-  return NULL;
+  LogDBParser *clone;
+  LogDBParser *self = (LogDBParser *) s;
+
+  clone = (LogDBParser *) log_db_parser_new();
+  log_db_parser_set_db_file(clone, self->db_file);
+  return &clone->super.super.super;
 }
 
 static void
