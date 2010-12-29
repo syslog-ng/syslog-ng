@@ -28,6 +28,7 @@
 #include "compat.h"
 #include "misc.h"
 #include "filter-expr-parser.h"
+#include "patterndb-int.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -38,7 +39,38 @@ static NVHandle class_handle = 0;
 static NVHandle rule_id_handle = 0;
 static LogTagId system_tag;
 
-static void pdb_rule_unref(void *s);
+/*
+ * Timing
+ * ======
+ *
+ * The time tries to follow the message stream, e.g. it is independent from
+ * the current system time.  Whenever a message comes in, its timestamp
+ * moves the current time forward, which means it is quite easy to process
+ * logs from the past, correllation timeouts will be measured in "message
+ * time".  There's one exception to this rule: when the patterndb is idle
+ * (e.g.  no messages are coming in), the current system time is used to
+ * measure as real time passes, and that will also increase the time of the
+ * correllation engine. This is based on the following assumptions:
+ *
+ *    1) dbparser can only be idle in case on-line logs are processed
+ *       (otherwise messages are read from the disk much faster)
+ *
+ *    2) if on-line processing is done, it is expected that messages have
+ *       roughly correct timestamps, e.g. if 1 second passes in current
+ *       system time, further incoming messages will have a timestamp close
+ *       to this.
+ *
+ * Thus whenever the patterndb is idle, a timer tick callback arrives, which
+ * checks the real elapsed time between the last message (or last tick) and
+ * increments the current known time with this value.
+ *
+ * This behaviour makes it possible to properly work in these use-cases:
+ *
+ *    1) process a log file stored on disk, containing messages in the past
+ *    2) process an incoming message stream on-line, expiring correllation
+ *    states even if there are no incoming messages
+ *
+ */
 
 
 /**************************************************************************
@@ -570,11 +602,9 @@ pdb_rule_ref(PDBRule *self)
   return self;
 }
 
-static void
-pdb_rule_unref(void *s)
+void
+pdb_rule_unref(PDBRule *self)
 {
-  PDBRule *self = (PDBRule *) s;
-
   g_assert(self->ref_cnt > 0);
 
   if (--(self->ref_cnt) == 0)
@@ -681,16 +711,20 @@ pdb_program_unref(PDBProgram *s)
   if (--self->ref_cnt == 0)
     {
       if (self->rules)
-        r_free_node(self->rules, pdb_rule_unref);
+        r_free_node(self->rules, (void (*)(void *)) pdb_rule_unref);
 
       g_free(self);
     }
 }
 
+/*********************************************************
+ * PDBRuleSet
+ *********************************************************/
 
+/* arguments passed to the markup parser functions */
 typedef struct _PDBLoader
 {
-  PatternDB *db;
+  PDBRuleSet *ruleset;
   PDBProgram *root_program;
   PDBProgram *current_program;
   PDBRule *current_rule;
@@ -832,21 +866,21 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
       for (i = 0; attribute_names[i]; i++)
         {
           if (strcmp(attribute_names[i], "version") == 0)
-            state->db->version = g_strdup(attribute_values[i]);
+            state->ruleset->version = g_strdup(attribute_values[i]);
           else if (strcmp(attribute_names[i], "pub_date") == 0)
-            state->db->pub_date = g_strdup(attribute_values[i]);
+            state->ruleset->pub_date = g_strdup(attribute_values[i]);
         }
-      if (!state->db->version)
+      if (!state->ruleset->version)
         {
           msg_warning("patterndb version is unspecified, assuming v4 format", NULL);
-          state->db->version = g_strdup("4");
+          state->ruleset->version = g_strdup("4");
         }
-      else if (state->db->version && atoi(state->db->version) < 2)
+      else if (state->ruleset->version && atoi(state->ruleset->version) < 2)
         {
           *error = g_error_new(1, 0, "patterndb version too old, this version of syslog-ng only supports v3 and v4 formatted patterndb files, please upgrade it using pdbtool");
           return;
         }
-      else if (state->db->version && atoi(state->db->version) > 4)
+      else if (state->ruleset->version && atoi(state->ruleset->version) > 4)
         {
           *error = g_error_new(1, 0, "patterndb version too new, this version of syslog-ng supports v3 and v4 formatted patterndb files.");
           return;
@@ -1007,15 +1041,15 @@ pdb_loader_text(GMarkupParseContext *context, const gchar *text, gsize text_len,
 
           if (state->first_program)
             {
-              node = r_find_node(state->db->programs, txt, txt, strlen(txt), NULL);
+              node = r_find_node(state->ruleset->programs, txt, txt, strlen(txt), NULL);
 
-              if (node && node->value && node != state->db->programs)
+              if (node && node->value && node != state->ruleset->programs)
                 state->current_program = node->value;
               else
                 {
                   state->current_program = pdb_program_new();
 
-                  r_insert_node(state->db->programs,
+                  r_insert_node(state->ruleset->programs,
                             txt,
                             state->current_program,
                             TRUE, NULL);
@@ -1024,11 +1058,11 @@ pdb_loader_text(GMarkupParseContext *context, const gchar *text, gsize text_len,
             }
           else if (state->current_program)
             {
-              node = r_find_node(state->db->programs, txt, txt, strlen(txt), NULL);
+              node = r_find_node(state->ruleset->programs, txt, txt, strlen(txt), NULL);
 
-              if (!node || !node->value || node == state->db->programs)
+              if (!node || !node->value || node == state->ruleset->programs)
                 {
-                  r_insert_node(state->db->programs,
+                  r_insert_node(state->ruleset->programs,
                             txt,
                             pdb_program_ref(state->current_program),
                             TRUE, NULL);
@@ -1086,238 +1120,8 @@ GMarkupParser db_parser =
   .error = NULL
 };
 
-
-static void
-pattern_db_expire_state_entry(guint64 now, gpointer user_data)
-{
-  PDBContext *context = user_data;
-  PatternDB *self = context->db;
-  GString *buffer = g_string_sized_new(256);
-
-  if (self->emit)
-    pdb_rule_run_actions(context->rule, RAT_TIMEOUT, context->db, context, g_ptr_array_index(context->messages, context->messages->len - 1), self->emit, self->emit_data, buffer);
-  g_hash_table_remove(context->db->state, &context->key);
-  g_string_free(buffer, TRUE);
-
-  /* pdb_context_free is automatically called when returning from
-     this function by the timerwheel code as a destroy notify
-     callback. */
-}
-
-void
-pattern_db_set_emit_func(PatternDB *self, PatternDBEmitFunc emit, gpointer emit_data)
-{
-  self->emit = emit;
-  self->emit_data = emit_data;
-}
-
-/*
- * This function can be called any time when pattern-db is not processing
- * messages, but we expect the correllation timer to move forward.  It
- * doesn't need to be called absolutely regularly as it'll use the current
- * system time to determine how much time has passed since the last
- * invocation.  See the timing comment at pattern_db_process() for more
- * information.
- */
-void
-pattern_db_timer_tick(PatternDB *self)
-{
-  GTimeVal now;
-  glong diff;
-
-  cached_g_current_time(&now);
-  diff = g_time_val_diff(&now, &self->last_tick);
-
-  if (diff > 1e6)
-    {
-      glong diff_sec = diff / 1e6;
-
-      timer_wheel_set_time(self->timer_wheel, timer_wheel_get_time(self->timer_wheel) + diff_sec);
-
-      /* update last_tick, take the fraction of the seconds not calculated into this update into account */
-
-      self->last_tick = now;
-      g_time_val_add(&self->last_tick, -(diff - diff_sec * 1e6));
-    }
-}
-
-/*
- * Timing
- * ======
- *
- * The time tries to follow the message stream, e.g. it is independent from
- * the current system time.  Whenever a message comes in, its timestamp
- * moves the current time forward, which means it is quite easy to process
- * logs from the past, correllation timeouts will be measured in "message
- * time".  There's one exception to this rule: when the patterndb is idle
- * (e.g.  no messages are coming in), the current system time is used to
- * measure as real time passes, and that will also increase the time of the
- * correllation engine. This is based on the following assumptions:
- *
- *    1) dbparser can only be idle in case on-line logs are processed
- *       (otherwise messages are read from the disk much faster)
- *
- *    2) if on-line processing is done, it is expected that messages have
- *       roughly correct timestamps, e.g. if 1 second passes in current
- *       system time, further incoming messages will have a timestamp close
- *       to this.
- *
- * Thus whenever the patterndb is idle, a timer tick callback arrives, which
- * checks the real elapsed time between the last message (or last tick) and
- * increments the current known time with this value.
- *
- * This behaviour makes it possible to properly work in these use-cases:
- *
- *    1) process a log file stored on disk, containing messages in the past
- *    2) process an incoming message stream on-line, expiring correllation
- *    states even if there are no incoming messages
- */
 gboolean
-pattern_db_process(PatternDB *self, LogMessage *msg, GArray *dbg_list)
-{
-  RNode *node;
-  GArray *matches;
-  const gchar *program;
-  gssize program_len;
-  GTimeVal now;
-
-  if (G_UNLIKELY(!self->programs))
-    return FALSE;
-
-  /* clamp the current time between the timestamp of the current message
-   * (low limit) and the current system time (high limit).  This ensures
-   * that incorrect clocks do not skew the current time know by the
-   * correllation engine too much. */
-
-  cached_g_current_time(&now);
-  self->last_tick = now;
-
-  if (msg->timestamps[LM_TS_STAMP].time.tv_sec < now.tv_sec)
-    now.tv_sec = msg->timestamps[LM_TS_STAMP].time.tv_sec;
-
-  timer_wheel_set_time(self->timer_wheel, msg->timestamps[LM_TS_STAMP].time.tv_sec);
-
-  program = log_msg_get_value(msg, LM_V_PROGRAM, &program_len);
-  node = r_find_node(self->programs, (gchar *) program, (gchar *) program, program_len, NULL);
-
-  if (node)
-    {
-      PDBProgram *program = (PDBProgram *) node->value;
-
-      if (program->rules)
-        {
-          RNode *msg_node;
-          const gchar *message;
-          gssize message_len;
-          PDBContext *context = NULL;
-
-          /* NOTE: We're not using g_array_sized_new as that does not
-           * correctly zero-initialize the new items even if clear_ is TRUE
-           */
-
-          matches = g_array_new(FALSE, TRUE, sizeof(RParserMatch));
-          g_array_set_size(matches, 1);
-
-          message = log_msg_get_value(msg, LM_V_MESSAGE, &message_len);
-          if (G_UNLIKELY(dbg_list))
-            msg_node = r_find_node_dbg(program->rules, (gchar *) message, (gchar *) message, message_len, matches, dbg_list);
-          else
-            msg_node = r_find_node(program->rules, (gchar *) message, (gchar *) message, message_len, matches);
-
-          if (msg_node)
-            {
-              PDBRule *rule = (PDBRule *) msg_node->value;
-              GString *buffer = g_string_sized_new(32);
-              gint i;
-
-              msg_debug("patterndb rule matches",
-                        evt_tag_str("rule_id", rule->rule_id),
-                        NULL);
-              log_msg_set_value(msg, class_handle, rule->class ? rule->class : "system", -1);
-              log_msg_set_value(msg, rule_id_handle, rule->rule_id, -1);
-
-              for (i = 0; i < matches->len; i++)
-                {
-                  RParserMatch *match = &g_array_index(matches, RParserMatch, i);
-
-                  if (match->match)
-                    {
-                      log_msg_set_value(msg, match->handle, match->match, match->len);
-                      g_free(match->match);
-                    }
-                  else
-                    {
-                      log_msg_set_value_indirect(msg, match->handle, LM_V_MESSAGE, match->type, match->ofs, match->len);
-                    }
-                }
-
-              g_array_free(matches, TRUE);
-
-              if (rule->context_id_template)
-                {
-                  PDBStateKey key;
-
-                  log_template_format(rule->context_id_template, msg, NULL, LTZ_LOCAL, 0, buffer);
-
-                  pdb_state_key_setup(&key, PSK_CONTEXT, rule, msg, buffer->str);
-                  context = g_hash_table_lookup(self->state, &key);
-                  if (!context)
-                    {
-                      context = pdb_context_new(self, &key);
-                      g_hash_table_insert(self->state, &context->key, context);
-                      g_string_steal(buffer);
-                    }
-
-                  msg->flags |= LF_STATE_REFERENCED;
-                  g_ptr_array_add(context->messages, log_msg_ref(msg));
-
-                  if (context->timer)
-                    {
-                      timer_wheel_mod_timer(self->timer_wheel, context->timer, rule->context_timeout);
-                    }
-                  else
-                    {
-                      context->timer = timer_wheel_add_timer(self->timer_wheel, rule->context_timeout, pattern_db_expire_state_entry, pdb_context_ref(context), (GDestroyNotify) pdb_context_unref);
-                    }
-                  if (context->rule != rule)
-                    {
-                      if (context->rule)
-                        pdb_rule_unref(context->rule);
-                      context->rule = pdb_rule_ref(rule);
-                    }
-                }
-              else
-                {
-                  context = NULL;
-                }
-
-              pdb_message_apply(&rule->msg, context, msg, buffer);
-              if (!rule->class)
-                {
-                  log_msg_set_tag_by_id(msg, system_tag);
-                }
-              if (self->emit)
-                {
-                  self->emit(msg, FALSE, self->emit_data);
-                  pdb_rule_run_actions(rule, RAT_MATCH, self, context, msg, self->emit, self->emit_data, buffer);
-                }
-              g_string_free(buffer, TRUE);
-              return TRUE;
-            }
-          else
-            {
-              log_msg_set_value(msg, class_handle, "unknown", 7);
-              if (self->emit)
-                self->emit(msg, FALSE, self->emit_data);
-            }
-          g_array_free(matches, TRUE);
-        }
-    }
-  return FALSE;
-}
-
-gboolean
-pattern_db_load(PatternDB *self, GlobalConfig *cfg, const gchar *config, GList **examples)
+pdb_rule_set_load(PDBRuleSet *self, GlobalConfig *cfg, const gchar *config, GList **examples)
 {
   PDBLoader state;
   GMarkupParseContext *parse_ctx = NULL;
@@ -1338,7 +1142,7 @@ pattern_db_load(PatternDB *self, GlobalConfig *cfg, const gchar *config, GList *
 
   memset(&state, 0x0, sizeof(state));
 
-  state.db = self;
+  state.ruleset = self;
   state.root_program = pdb_program_new();
   state.load_examples = !!examples;
   state.cfg = cfg;
@@ -1383,6 +1187,211 @@ pattern_db_load(PatternDB *self, GlobalConfig *cfg, const gchar *config, GList *
   return success;
 }
 
+/*
+ * Looks up a matching rule in the ruleset.
+ *
+ * NOTE: it also modifies @msg to store the name-value pairs found during lookup, so
+ */
+PDBRule *
+pdb_rule_set_lookup(PDBRuleSet *self, LogMessage *msg, GArray *dbg_list)
+{
+  RNode *node;
+  GArray *matches;
+  const gchar *program;
+  gssize program_len;
+
+  if (G_UNLIKELY(!self->programs))
+    return FALSE;
+
+  program = log_msg_get_value(msg, LM_V_PROGRAM, &program_len);
+  node = r_find_node(self->programs, (gchar *) program, (gchar *) program, program_len, NULL);
+
+  if (node)
+    {
+      PDBProgram *program = (PDBProgram *) node->value;
+
+      if (program->rules)
+        {
+          RNode *msg_node;
+          const gchar *message;
+          gssize message_len;
+
+          /* NOTE: We're not using g_array_sized_new as that does not
+           * correctly zero-initialize the new items even if clear_ is TRUE
+           */
+
+          matches = g_array_new(FALSE, TRUE, sizeof(RParserMatch));
+          g_array_set_size(matches, 1);
+
+          message = log_msg_get_value(msg, LM_V_MESSAGE, &message_len);
+          if (G_UNLIKELY(dbg_list))
+            msg_node = r_find_node_dbg(program->rules, (gchar *) message, (gchar *) message, message_len, matches, dbg_list);
+          else
+            msg_node = r_find_node(program->rules, (gchar *) message, (gchar *) message, message_len, matches);
+
+          if (msg_node)
+            {
+              PDBRule *rule = (PDBRule *) msg_node->value;
+              GString *buffer = g_string_sized_new(32);
+              gint i;
+
+              msg_debug("patterndb rule matches",
+                        evt_tag_str("rule_id", rule->rule_id),
+                        NULL);
+              log_msg_set_value(msg, class_handle, rule->class ? rule->class : "system", -1);
+              log_msg_set_value(msg, rule_id_handle, rule->rule_id, -1);
+
+              for (i = 0; i < matches->len; i++)
+                {
+                  RParserMatch *match = &g_array_index(matches, RParserMatch, i);
+
+                  if (match->match)
+                    {
+                      log_msg_set_value(msg, match->handle, match->match, match->len);
+                      g_free(match->match);
+                    }
+                  else
+                    {
+                      log_msg_set_value_indirect(msg, match->handle, LM_V_MESSAGE, match->type, match->ofs, match->len);
+                    }
+                }
+
+              g_array_free(matches, TRUE);
+
+              if (!rule->class)
+                {
+                  log_msg_set_tag_by_id(msg, system_tag);
+                }
+              g_string_free(buffer, TRUE);
+              pdb_rule_ref(rule);
+              return rule;
+            }
+          else
+            {
+              log_msg_set_value(msg, class_handle, "unknown", 7);
+            }
+          g_array_free(matches, TRUE);
+        }
+    }
+  return NULL;
+
+}
+
+PDBRuleSet *
+pdb_rule_set_new(void)
+{
+  PDBRuleSet *self = g_new0(PDBRuleSet, 1);
+
+  return self;
+}
+
+void
+pdb_rule_set_free(PDBRuleSet *self)
+{
+  if (self->programs)
+    r_free_node(self->programs, (GDestroyNotify) pdb_program_unref);
+  if (self->version)
+    g_free(self->version);
+  if (self->pub_date)
+    g_free(self->pub_date);
+  self->programs = NULL;
+  self->version = NULL;
+  self->pub_date = NULL;
+
+  g_free(self);
+}
+
+/*********************************************************
+ * PatternDB
+ *********************************************************/
+
+static void
+pattern_db_expire_entry(guint64 now, gpointer user_data)
+{
+  PDBContext *context = user_data;
+  PatternDB *pdb = context->db;
+  GString *buffer = g_string_sized_new(256);
+
+  if (pdb->emit)
+    pdb_rule_run_actions(context->rule, RAT_TIMEOUT, context->db, context, g_ptr_array_index(context->messages, context->messages->len - 1), pdb->emit, pdb->emit_data, buffer);
+  g_hash_table_remove(context->db->state, &context->key);
+  g_string_free(buffer, TRUE);
+
+  /* pdb_context_free is automatically called when returning from
+     this function by the timerwheel code as a destroy notify
+     callback. */
+}
+
+
+/*
+ * This function can be called any time when pattern-db is not processing
+ * messages, but we expect the correllation timer to move forward.  It
+ * doesn't need to be called absolutely regularly as it'll use the current
+ * system time to determine how much time has passed since the last
+ * invocation.  See the timing comment at pattern_db_process() for more
+ * information.
+ */
+void
+pattern_db_timer_tick(PatternDB *self)
+{
+  GTimeVal now;
+  glong diff;
+
+  cached_g_current_time(&now);
+  diff = g_time_val_diff(&now, &self->last_tick);
+
+  if (diff > 1e6)
+    {
+      glong diff_sec = diff / 1e6;
+
+      timer_wheel_set_time(self->timer_wheel, timer_wheel_get_time(self->timer_wheel) + diff_sec);
+
+      /* update last_tick, take the fraction of the seconds not calculated into this update into account */
+
+      self->last_tick = now;
+      g_time_val_add(&self->last_tick, -(diff - diff_sec * 1e6));
+    }
+}
+
+void
+pattern_db_set_time(PatternDB *self, const GTimeVal *tv)
+{
+  GTimeVal now;
+
+  /* clamp the current time between the timestamp of the current message
+   * (low limit) and the current system time (high limit).  This ensures
+   * that incorrect clocks do not skew the current time know by the
+   * correllation engine too much. */
+
+  cached_g_current_time(&now);
+  self->last_tick = now;
+
+  if (tv->tv_sec < now.tv_sec)
+    now.tv_sec = tv->tv_sec;
+
+  timer_wheel_set_time(self->timer_wheel, now.tv_sec);
+}
+
+gboolean
+pattern_db_reload_ruleset(PatternDB *self, GlobalConfig *cfg, const gchar *pdb_file)
+{
+  PDBRuleSet *new_ruleset;
+
+  new_ruleset = pdb_rule_set_new();
+  if (!pdb_rule_set_load(new_ruleset, cfg, pdb_file, NULL))
+    {
+      pdb_rule_set_free(new_ruleset);
+      return FALSE;
+    }
+  else
+    {
+      if (self->ruleset)
+        pdb_rule_set_free(self->ruleset);
+      self->ruleset = new_ruleset;
+      return TRUE;
+    }
+}
+
 void
 pattern_db_expire_state(PatternDB *self)
 {
@@ -1401,11 +1410,103 @@ pattern_db_forget_state(PatternDB *self)
   self->timer_wheel = timer_wheel_new();
 }
 
+void
+pattern_db_set_emit_func(PatternDB *self, PatternDBEmitFunc emit, gpointer emit_data)
+{
+  self->emit = emit;
+  self->emit_data = emit_data;
+}
+
+const gchar *
+pattern_db_get_ruleset_pub_date(PatternDB *self)
+{
+  return self->ruleset->pub_date;
+}
+
+const gchar *
+pattern_db_get_ruleset_version(PatternDB *self)
+{
+  return self->ruleset->version;
+}
+
+gboolean
+pattern_db_process(PatternDB *self, LogMessage *msg)
+{
+  PDBRule *rule;
+
+  if (G_UNLIKELY(!self->ruleset))
+    return FALSE;
+
+  pattern_db_set_time(self, &msg->timestamps[LM_TS_STAMP].time);
+
+  rule = pdb_rule_set_lookup(self->ruleset, msg, NULL);
+  if (rule)
+    {
+      PDBContext *context = NULL;
+      GString *buffer = g_string_sized_new(32);
+
+      if (rule->context_id_template)
+        {
+          PDBStateKey key;
+
+          log_template_format(rule->context_id_template, msg, NULL, LTZ_LOCAL, 0, buffer);
+
+          pdb_state_key_setup(&key, PSK_CONTEXT, rule, msg, buffer->str);
+          context = g_hash_table_lookup(self->state, &key);
+          if (!context)
+            {
+              context = pdb_context_new(self, &key);
+              g_hash_table_insert(self->state, &context->key, context);
+              g_string_steal(buffer);
+            }
+
+          msg->flags |= LF_STATE_REFERENCED;
+          g_ptr_array_add(context->messages, log_msg_ref(msg));
+
+          if (context->timer)
+            {
+              timer_wheel_mod_timer(self->timer_wheel, context->timer, rule->context_timeout);
+            }
+          else
+            {
+              context->timer = timer_wheel_add_timer(self->timer_wheel, rule->context_timeout, pattern_db_expire_entry, pdb_context_ref(context), (GDestroyNotify) pdb_context_unref);
+            }
+          if (context->rule != rule)
+            {
+              if (context->rule)
+                pdb_rule_unref(context->rule);
+              context->rule = pdb_rule_ref(rule);
+            }
+        }
+      else
+        {
+          context = NULL;
+        }
+
+      pdb_message_apply(&rule->msg, context, msg, buffer);
+      if (self->emit)
+        {
+          self->emit(msg, FALSE, self->emit_data);
+          pdb_rule_run_actions(rule, RAT_MATCH, self, context, msg, self->emit, self->emit_data, buffer);
+        }
+      pdb_rule_unref(rule);
+      g_string_free(buffer, TRUE);
+    }
+  else
+    {
+      if (self->emit)
+        self->emit(msg, FALSE, self->emit_data);
+    }
+  return rule != NULL;
+}
+
+
 PatternDB *
 pattern_db_new(void)
 {
   PatternDB *self = g_new0(PatternDB, 1);
 
+  self->ruleset = pdb_rule_set_new();
   self->state = g_hash_table_new_full(pdb_state_key_hash, pdb_state_key_equal, NULL, (GDestroyNotify) pdb_state_entry_free);
   self->timer_wheel = timer_wheel_new();
   cached_g_current_time(&self->last_tick);
@@ -1415,19 +1516,13 @@ pattern_db_new(void)
 void
 pattern_db_free(PatternDB *self)
 {
+  if (self->ruleset)
+    pdb_rule_set_free(self->ruleset);
+
   if (self->state)
     g_hash_table_destroy(self->state);
-  if (self->programs)
-    r_free_node(self->programs, (GDestroyNotify) pdb_program_unref);
-  if (self->version)
-    g_free(self->version);
-  if (self->pub_date)
-    g_free(self->pub_date);
   if (self->timer_wheel)
     timer_wheel_free(self->timer_wheel);
-  self->programs = NULL;
-  self->version = NULL;
-  self->pub_date = NULL;
   g_free(self);
 }
 

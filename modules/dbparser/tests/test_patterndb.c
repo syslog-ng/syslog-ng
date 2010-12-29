@@ -5,6 +5,7 @@
 #include "filter.h"
 #include "patterndb.h"
 #include "plugin.h"
+#include "patterndb-int.h"
 
 #include <stdio.h>
 #include <sys/time.h>
@@ -50,12 +51,12 @@ create_pattern_db(gchar *pdb)
   g_file_open_tmp("patterndbXXXXXX.xml", &filename, NULL);
   g_file_set_contents(filename, pdb, strlen(pdb), NULL);
 
-  if (pattern_db_load(patterndb, configuration, filename, NULL))
+  if (pattern_db_reload_ruleset(patterndb, configuration, filename))
     {
-      if (!g_str_equal((patterndb)->version, "3"))
-        test_fail("Invalid version '%s'\n", (patterndb)->version);
-      if (!g_str_equal((patterndb)->pub_date, "2010-02-22"))
-        test_fail("Invalid pub_date '%s'\n", (patterndb)->pub_date);
+      if (!g_str_equal(pattern_db_get_ruleset_version(patterndb), "3"))
+        test_fail("Invalid version '%s'\n", pattern_db_get_ruleset_version(patterndb));
+      if (!g_str_equal(pattern_db_get_ruleset_pub_date(patterndb), "2010-02-22"))
+        test_fail("Invalid pub_date '%s'\n", pattern_db_get_ruleset_pub_date(patterndb));
     }
   else
     {
@@ -148,7 +149,7 @@ test_rule_value(const gchar *pattern, const gchar *name, const gchar *value)
   log_msg_set_value(msg, LM_V_PROGRAM, "prog1", 5);
   log_msg_set_value(msg, LM_V_HOST, MYHOST, strlen(MYHOST));
 
-  result = pattern_db_process(patterndb, msg, NULL);
+  result = pattern_db_process(patterndb, msg);
   val = log_msg_get_value(msg, log_msg_get_value_handle(name), &len);
   if (value)
     found = strcmp(val, value) == 0;
@@ -169,7 +170,7 @@ test_rule_tag(const gchar *pattern, const gchar *tag, gboolean set)
   log_msg_set_value(msg, LM_V_MESSAGE, pattern, strlen(pattern));
   log_msg_set_value(msg, LM_V_PROGRAM, "prog2", 5);
 
-  result = pattern_db_process(patterndb, msg, NULL);
+  result = pattern_db_process(patterndb, msg);
   found = log_msg_is_tag_by_name(msg, tag);
 
   if (set ^ found)
@@ -191,7 +192,7 @@ test_rule_action_message_value(const gchar *pattern, gint timeout, gint ndx, con
   log_msg_set_value(msg, LM_V_PROGRAM, "prog2", 5);
   msg->timestamps[LM_TS_STAMP].time.tv_sec = msg->timestamps[LM_TS_RECVD].time.tv_sec;
 
-  result = pattern_db_process(patterndb, msg, NULL);
+  result = pattern_db_process(patterndb, msg);
   if (timeout)
     timer_wheel_set_time(patterndb->timer_wheel, timer_wheel_get_time(patterndb->timer_wheel) + timeout + 1);
 
@@ -223,7 +224,7 @@ test_rule_action_message_tag(const gchar *pattern, gint timeout, gint ndx, const
   log_msg_set_value(msg, LM_V_PROGRAM, "prog2", 5);
   msg->timestamps[LM_TS_STAMP].time.tv_sec = msg->timestamps[LM_TS_RECVD].time.tv_sec;
 
-  result = pattern_db_process(patterndb, msg, NULL);
+  result = pattern_db_process(patterndb, msg);
   if (timeout)
     timer_wheel_set_time(patterndb->timer_wheel, timer_wheel_get_time(patterndb->timer_wheel) + timeout + 5);
   if (ndx >= messages->len)
@@ -327,7 +328,7 @@ test_pattern(const gchar *pattern, const gchar *rule, gboolean match)
   log_msg_set_value(msg, LM_V_PROGRAM, "test", strlen(MYHOST));
   log_msg_set_value(msg, LM_V_MESSAGE, pattern, strlen(pattern));
 
-  result = pattern_db_process(patterndb, msg, NULL);
+  result = pattern_db_process(patterndb, msg);
 
   log_template_format(templ, msg, NULL, LTZ_LOCAL, 0, res);
 
