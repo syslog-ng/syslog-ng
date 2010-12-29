@@ -81,6 +81,7 @@ const gint logmsg_sd_prefix_len = sizeof(logmsg_sd_prefix) - 1;
 static guint32 *count_msg_clones;
 static guint32 *count_payload_reallocs;
 static guint32 *count_sdata_updates;
+static GStaticPrivate priv_macro_value = G_STATIC_PRIVATE_INIT;
 
 static void
 log_msg_update_sdata_slow(LogMessage *self, NVHandle handle, const gchar *name, gssize name_len)
@@ -197,13 +198,23 @@ log_msg_get_value_name(NVHandle handle, gssize *name_len)
   return nv_registry_get_handle_name(logmsg_registry, handle, name_len);
 }
 
+static void
+__free_macro_value(void *val)
+{
+  g_string_free((GString *) val, TRUE);
+}
+
 const gchar *
 log_msg_get_macro_value(LogMessage *self, gint id, gssize *value_len)
 {
-  static GString *value = NULL;
+  GString *value;
 
+  value = g_static_private_get(&priv_macro_value);
   if (!value)
-    value = g_string_sized_new(256);
+    {
+      value = g_string_sized_new(256);
+      g_static_private_set(&priv_macro_value, value, __free_macro_value);
+    }
   g_string_truncate(value, 0);
 
   log_macro_expand(value, id, FALSE, NULL, LTZ_LOCAL, 0, self);
