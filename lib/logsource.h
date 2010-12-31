@@ -61,8 +61,9 @@ struct _LogSource
 {
   LogPipe super;
   LogSourceOptions *options;
-  gint stats_level;
+  guint16 stats_level;
   guint16 stats_source;
+  gboolean threaded;
   gchar *stats_id;
   gchar *stats_instance;
   GAtomicCounter window_size;
@@ -85,7 +86,7 @@ log_source_free_to_send(LogSource *self)
 gboolean log_source_init(LogPipe *s);
 gboolean log_source_deinit(LogPipe *s);
 
-void log_source_set_options(LogSource *self, LogSourceOptions *options, gint stats_level, gint stats_source, const gchar *stats_id, const gchar *stats_instance);
+void log_source_set_options(LogSource *self, LogSourceOptions *options, gint stats_level, gint stats_source, const gchar *stats_id, const gchar *stats_instance, gboolean threaded);
 void log_source_mangle_hostname(LogSource *self, LogMessage *msg);
 void log_source_init_instance(LogSource *self);
 void log_source_options_defaults(LogSourceOptions *options);

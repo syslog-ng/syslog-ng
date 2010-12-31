@@ -595,7 +595,7 @@ log_reader_set_options(LogPipe *s, LogPipe *control, LogReaderOptions *options, 
 {
   LogReader *self = (LogReader *) s;
 
-  log_source_set_options(&self->super, &options->super, stats_level, stats_source, stats_id, stats_instance);
+  log_source_set_options(&self->super, &options->super, stats_level, stats_source, stats_id, stats_instance, (options->flags & LR_THREADED));
 
   log_pipe_unref(self->control);
   log_pipe_ref(control);

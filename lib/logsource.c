@@ -64,7 +64,7 @@ log_source_msg_ack(LogMessage *msg, gpointer user_data)
    * threads. I don't want to lock, all we need is an approximate value of
    * the ACK rate of the last couple of seconds.  */
 
-  if (accurate_nanosleep)
+  if (accurate_nanosleep && self->threaded)
     {
       cur_ack_count = ++self->ack_count;
       if ((cur_ack_count & 0x3FFF) == 0)
@@ -242,7 +242,7 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
   log_pipe_queue(s->pipe_next, msg, &local_options);
   msg_set_context(NULL);
 
-  if (accurate_nanosleep && self->window_full_sleep_nsec > 0 && !log_source_free_to_send(self))
+  if (accurate_nanosleep && self->threaded && self->window_full_sleep_nsec > 0 && !log_source_free_to_send(self))
     {
       struct timespec ts;
 
@@ -255,7 +255,7 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
 }
 
 void
-log_source_set_options(LogSource *self, LogSourceOptions *options, gint stats_level, gint stats_source, const gchar *stats_id, const gchar *stats_instance)
+log_source_set_options(LogSource *self, LogSourceOptions *options, gint stats_level, gint stats_source, const gchar *stats_id, const gchar *stats_instance, gboolean threaded)
 {
   /* NOTE: we don't adjust window_size even in case it was changed in the
    * configuration and we received a SIGHUP.  This means that opened
@@ -267,7 +267,8 @@ log_source_set_options(LogSource *self, LogSourceOptions *options, gint stats_le
   self->stats_level = stats_level;
   self->stats_source = stats_source;
   self->stats_id = stats_id ? g_strdup(stats_id) : NULL;
-  self->stats_instance = stats_instance ? g_strdup(stats_instance): NULL;  
+  self->stats_instance = stats_instance ? g_strdup(stats_instance): NULL;
+  self->threaded = threaded;
 }
 
 void
