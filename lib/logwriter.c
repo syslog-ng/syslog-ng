@@ -64,6 +64,8 @@ struct _LogWriter
   struct iv_event queue_filled;
   MainLoopIOWorkerJob io_job;
   struct iv_timer suppress_timer;
+  struct timespec suppress_timer_expires;
+  gboolean suppress_timer_updated;
   gboolean work_result;
   LogProto *proto;
   gboolean watches_running:1, suspended:1, working:1, flush_waiting_for_timeout:1;
@@ -357,6 +359,71 @@ log_writer_stop_watches(LogWriter *self)
     }
 }
 
+/* function called using main_loop_call() in case the suppress timer needs
+ * to be updated */
+static void
+log_writer_perform_suppress_timer_update(LogWriter *self)
+{
+  main_loop_assert_main_thread();
+
+  if (iv_timer_registered(&self->suppress_timer))
+    iv_timer_unregister(&self->suppress_timer);
+  g_static_mutex_lock(&self->suppress_lock);
+  self->suppress_timer.expires = self->suppress_timer_expires;
+  self->suppress_timer_updated = TRUE;
+  g_static_mutex_unlock(&self->suppress_lock);
+  if (self->suppress_timer.expires.tv_sec > 0)
+    iv_timer_register(&self->suppress_timer);
+  log_pipe_unref(&self->super);
+}
+
+/*
+ * Update the suppress timer in a deferred manner, possibly batching the
+ * results of multiple updates to the suppress timer.  This is necessary as
+ * suppress timer updates must run in the main thread, and updating it every
+ * time a new message comes in would cause enormous latency in the fast
+ * path. By collecting multiple updates
+ *
+ * msec == 0 means to turn off the suppress timer
+ * msec >  0 to enable the timer with the specified timeout
+ *
+ * NOTE: suppress_lock must be held.
+ */
+static void
+log_writer_update_suppress_timer(LogWriter *self, glong sec)
+{
+  gboolean invoke;
+  struct timespec next_expires;
+
+  iv_validate_now();
+
+  /* we deliberately use nsec == 0 in order to increase the likelyhood that
+   * we target the same second, in case only a fraction of a second has
+   * passed between two updates.  */
+  if (sec)
+    {
+      next_expires.tv_nsec = 0;
+      next_expires.tv_sec = now.tv_sec + sec;
+    }
+  else
+    {
+      next_expires.tv_sec = 0;
+      next_expires.tv_nsec = 0;
+    }
+  /* last update was finished, we need to invoke the updater again */
+  invoke = ((next_expires.tv_sec != self->suppress_timer_expires.tv_sec) || (next_expires.tv_nsec != self->suppress_timer_expires.tv_nsec)) && self->suppress_timer_updated;
+  self->suppress_timer_updated = FALSE;
+
+  if (invoke)
+    {
+      self->suppress_timer_expires = next_expires;
+      g_static_mutex_unlock(&self->suppress_lock);
+      log_pipe_ref(&self->super);
+      main_loop_call((void *(*)(void *)) log_writer_perform_suppress_timer_update, self, FALSE);
+      g_static_mutex_lock(&self->suppress_lock);
+    }
+
+}
 
 /*
  * NOTE: suppress_lock must be held.
@@ -364,8 +431,7 @@ log_writer_stop_watches(LogWriter *self)
 static void
 log_writer_last_msg_release(LogWriter *self)
 {
-  if (iv_timer_registered(&self->suppress_timer))
-    iv_timer_unregister(&self->suppress_timer);
+  log_writer_update_suppress_timer(self, 0);
   if (self->last_msg)
     log_msg_unref(self->last_msg);
 
@@ -441,6 +507,8 @@ log_writer_last_msg_timer(gpointer pt)
 {
   LogWriter *self = (LogWriter *) pt;
 
+  main_loop_assert_main_thread();
+
   g_static_mutex_lock(&self->suppress_lock);
   log_writer_last_msg_flush(self);
   g_static_mutex_unlock(&self->suppress_lock);
@@ -475,10 +543,7 @@ log_writer_last_msg_check(LogWriter *self, LogMessage *lm, const LogPathOptions 
             {
               /* we only create the timer if this is the first suppressed message, otherwise it is already running. */
 
-              iv_validate_now();
-              self->suppress_timer.expires = now;
-              timespec_add_msec(&self->suppress_timer.expires, self->options->suppress * 1000);
-              //iv_timer_register(&self->suppress_timer);
+              log_writer_update_suppress_timer(self, self->options->suppress);
             }
           g_static_mutex_unlock(&self->suppress_lock);
 
@@ -519,10 +584,8 @@ log_writer_queue(LogPipe *s, LogMessage *lm, const LogPathOptions *path_options)
       local_options.flow_control = FALSE;
       path_options = &local_options;
     }
-#if 0
   if (self->options->suppress > 0 && log_writer_last_msg_check(self, lm, path_options))
     return;
-#endif
 
   stats_counter_inc(self->processed_messages);
   if (!log_queue_push_tail(self->queue, lm, path_options))
@@ -876,6 +939,7 @@ log_writer_init(LogPipe *s)
       
       stats_register_counter(self->stats_level, self->stats_source | SCS_DESTINATION, self->stats_id, self->stats_instance, SC_TYPE_STORED, &self->stored_messages);
     }
+  self->suppress_timer_updated = TRUE;
   return TRUE;
 }
 
@@ -914,7 +978,8 @@ log_writer_free(LogPipe *s)
     g_string_free(self->line_buffer, TRUE);
   if (self->queue)
     log_queue_free(self->queue);
-  log_writer_last_msg_release(self);
+  if (self->last_msg)
+    log_msg_unref(self->last_msg);
   g_free(self->stats_id);
   g_free(self->stats_instance);
   log_pipe_free_method(s);
