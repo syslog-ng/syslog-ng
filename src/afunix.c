@@ -54,7 +54,7 @@ afunix_sd_set_gid(LogDriver *s, gchar *group)
 }
 
 void 
-afunix_sd_set_perm(LogDriver *s, mode_t perm)
+afunix_sd_set_perm(LogDriver *s, gint perm)
 {
   AFUnixSourceDriver *self = (AFUnixSourceDriver *) s;
 

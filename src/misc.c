@@ -400,7 +400,7 @@ create_containing_directory(gchar *name, gint dir_uid, gint dir_gid, gint dir_mo
         }
       else if (errno == ENOENT) 
         {
-          if (mkdir(name, (mode_t) dir_mode) == -1)
+          if (mkdir(name, dir_mode < 0 ? 0700 : (mode_t) dir_mode) == -1)
             return FALSE;
           if (dir_uid >= 0)
             chown(name, (uid_t) dir_uid, -1);
