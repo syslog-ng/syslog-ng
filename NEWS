@@ -16,6 +16,15 @@
 	  platforms where mode_t is an unsigned 16 bit value. On these
 	  platforms syslog-ng may be using 0xFFFF as the permission bits.
 
+	Credits:
+
+	Philippe LEBRETON, Zhengxiang Pan, Matthew Hall and Steven Chamberlain
+	for reporting the bugs fixed in this release.
+
+	Patches were authored by by Attila Nagy (BalaBit) and Balazs
+	Scheidler (BalaBit).
+
+
 3.0.9
 	Thu, 18 Nov 2010 06:43:49 +0100
 
