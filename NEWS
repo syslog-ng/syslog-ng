@@ -1,3 +1,44 @@
+3.1.4
+        Sun, 02 Jan 2011 13:06:13 +0100
+
+        Bugfixes:
+        * Fixed hostname resolution in case normalize_hostnames() is
+          enabled. In this case syslog-ng didn't properly NUL terminate the
+	  string causing binary characters to be emitted in log messages.
+        * Fixed a possible security issue on FreeBSD and on
+          platforms where mode_t is an unsigned 16 bit value. On these
+          platforms syslog-ng may be using 0xFFFF as the permission bits
+          causing log files to be world readable/writable/executable/setuid.
+        * Fixed handling the port() options for SQL destinations.
+        * Fixed a possible segmentation fault when the port number is
+          changed for a TCP source, the configuration is reloaded and there
+          were open connections for the old port, which send messages after
+          the SIGHUP. This behaviour has been broken since 3.0.1.
+        * The configure script has been changed to properly honour the value
+          of ${exec_prefix} in case the env wrapper is enabled
+          (--enable-env-wrapper). Configurations not using the env wrapper
+          or using the same value for exec_prefix & prefix should not be
+          affected.
+
+        Other Changes:
+        * Added explicit patterndb version check, in order to inform the
+          user that a patterndb file is meant to be used by a newer
+          syslog-ng version.
+	* Increase YYMAXDEPTH value to make it possible to process larger
+	  configuration files.
+	* Clarified the message on the deprecated use of use_time_recvd()
+
+	Credits:
+
+        Paul Krizak, Mukarram Syed, Philippe LEBRETON, Zhengxiang Pan,
+        Matthew Hall, Craig Bell, Gergely Nagy, Laszlo Boszormenyi, Peter
+        Czanik and Steven Chamberlain for reporting the bugs fixed in this
+        release.
+
+        Patches were authored by by Attila Nagy (BalaBit) and Balazs
+        Scheidler (BalaBit).
+
+
 3.1.3
 	Thu, 18 Nov 2010 07:50:42 +0100
 
