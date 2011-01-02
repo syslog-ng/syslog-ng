@@ -1195,7 +1195,7 @@ pattern_db_process(PatternDB *self, LogMessage *msg, GArray *dbg_list)
   if (msg->timestamps[LM_TS_STAMP].time.tv_sec < now.tv_sec)
     now.tv_sec = msg->timestamps[LM_TS_STAMP].time.tv_sec;
 
-  timer_wheel_set_time(self->timer_wheel, msg->timestamps[LM_TS_STAMP].time.tv_sec);
+  timer_wheel_set_time(self->timer_wheel, now.tv_sec);
 
   program = log_msg_get_value(msg, LM_V_PROGRAM, &program_len);
   node = r_find_node(self->programs, (gchar *) program, (gchar *) program, program_len, NULL);
