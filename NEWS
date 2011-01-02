@@ -1,3 +1,21 @@
+3.0.10
+	Sun, 02 Jan 2011 12:43:46 +0100
+
+	Bugfixes:
+	* Fixed handling the port() options for SQL destinations.
+	* Fixed a possible segmentation fault when the port number is
+	  changed for a TCP source, the configuration is reloaded and there
+	  were open connections for the old port, which send messages after
+	  the SIGHUP. This behaviour has been broken since 3.0.1.
+	* The configure script has been changed to properly honour the value
+	  of ${exec_prefix} in case the env wrapper is enabled
+	  (--enable-env-wrapper). Configurations not using the env wrapper
+	  or using the same value for exec_prefix & prefix should not be
+	  affected.
+	* Fixed a possible security issue on Debian/kFreeBSD and on
+	  platforms where mode_t is an unsigned 16 bit value. On these
+	  platforms syslog-ng may be using 0xFFFF as the permission bits.
+
 3.0.9
 	Thu, 18 Nov 2010 06:43:49 +0100
 
