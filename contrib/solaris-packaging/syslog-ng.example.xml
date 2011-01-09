@@ -64,7 +64,7 @@
     <exec_method
       type='method'
       name='restart'
-      exec='/lib/svc/method/syslog-ng %m'
+      exec='/lib/svc/method/syslog-ng %m %{restarter/contract}'
       timeout_seconds='60'>
       <method_context>
         <method_credential user='root' />
@@ -74,7 +74,7 @@
     <exec_method
       type='method'
       name='stop'
-      exec='/lib/svc/method/syslog-ng %m'
+      exec='/lib/svc/method/syslog-ng %m %{restarter/contract}'
       timeout_seconds='60' >
       <method_context>
         <method_credential user='root' />

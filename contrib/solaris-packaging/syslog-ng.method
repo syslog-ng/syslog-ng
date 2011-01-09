@@ -43,9 +43,16 @@ slng_waitforpid() {
 }
 
 slng_stop() {
-        [ -f $PIDFILE ] || return $SMF_EXIT_OK
-        syspid=`head -1 $PIDFILE`
+        # if we have a contract, we should simply use smf_kill_contract to terminate the process
+        if [ -n "$2" ]; then
+                smf_kill_contract $2 TERM 1 $MAXWAIT
+                [ $? -ne 0 ] && exit $SMF_EXIT_ERR_FATAL
+                return $SMF_EXIT_OK
+        fi
 
+        [ -f $PIDFILE ] || return $SMF_EXIT_ERR_FATAL
+
+        syspid=`head -1 $PIDFILE`
 
         [ -z "$syspid" ] && return $SMF_EXIT_OK
         kill -0 $syspid >/dev/null 2>&1
@@ -63,11 +70,7 @@ slng_stop() {
                 $_ret=$?
         fi
 
-        if [ $_ret -ne 0 ] ;then
-                if [ -n "$2" ];then
-                         smf_kill_contract "$2" TERM 10
-                        [ $? -ne 0 ] && exit $SMF_EXIT_ERR_FATAL
-                fi
+        if [ $_ret -eq 0 ] ;then
                 rm -f $PIDFILE
                 if [ -h $SYSLOGPIDFILE ];then
                         rm -f $SYSLOGPIDFILE
