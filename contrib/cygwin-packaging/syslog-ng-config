@@ -220,7 +220,7 @@ source applications {
 };
 
 source kernel {
-  file("/dev/kmsg", program_override("kernel: "));
+  file("/dev/kmsg", program_override("kernel"));
 };
 
 destination messages {

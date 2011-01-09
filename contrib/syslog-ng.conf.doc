@@ -283,7 +283,7 @@ options
 #  source src 
 #    {
 #      internal();
-#      file("/proc/kmsg" log_prefix("kernel: "));
+#      file("/proc/kmsg" program_override("kernel"));
 #      tcp(ip(127.0.0.1) port(4800) keep-alive(yes));
 #      udp();
 #      unix-stream("/dev/log");
@@ -304,7 +304,7 @@ source s_internal
   { internal(); };
 
 source s_kernel
-  { file("/proc/kmsg" log_prefix("kernel: ")); };
+  { file("/proc/kmsg" program_override("kernel")); };
 
 source s_tcp
   { tcp(port(4800) keep-alive(yes) max_connections(100)); };

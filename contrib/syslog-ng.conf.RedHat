@@ -10,10 +10,10 @@
 # Updated by Frank Crawford (<Frank.Crawford@ac3.com.au>) - 10 Aug 2002
 # 	- for Red Hat 7.3
 #	- totally do away with klogd
-#	- add message "kernel:" as is done with klogd.
+#	- add message "kernel" as is done with klogd.
 #
 # Updated by Frank Crawford (<Frank.Crawford@ac3.com.au>) - 22 Aug 2002
-#	- use the log_prefix option as per Balazs Scheidler's email
+#	- use the program_override option as per Balazs Scheidler's email
 #
 
 options { sync (0);
@@ -36,7 +36,7 @@ options { sync (0);
 # libc and syslog clients generally automatically detect the socket type,
 # so you are free to decide which of unix-stream or unix-dgram you want to use.
 #
-source s_sys { file ("/proc/kmsg" log_prefix("kernel: ")); unix-stream ("/dev/log"); internal(); };
+source s_sys { file ("/proc/kmsg" program_override("kernel")); unix-stream ("/dev/log"); internal(); };
 
 destination d_cons { file("/dev/console"); };
 destination d_mesg { file("/var/log/messages"); };
