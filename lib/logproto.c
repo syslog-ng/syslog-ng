@@ -71,7 +71,7 @@ log_proto_free(LogProto *s)
 }
 
 
-typedef struct _LogProtoPlainClient
+typedef struct _LogProtoTextClient
 {
   LogProto super;
   guchar *partial;
