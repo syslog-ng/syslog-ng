@@ -612,6 +612,7 @@ persist_state_load(PersistState *self)
           msg_error("Persistent configuration file has an unsupported major version, ignoring",
                     evt_tag_int("version", version),
                     NULL);
+          success = TRUE;
         }
     close_and_exit:
       fclose(persist_file);
