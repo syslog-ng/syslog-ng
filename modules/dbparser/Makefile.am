@@ -21,12 +21,12 @@ libdbparser_la_SOURCES = \
 
 libdbparser_la_CPPFLAGS = $(AM_CPPFLAGS)
 libdbparser_la_LIBADD = ../../lib/libsyslog-ng.la
-libdbparser_la_LDFLAGS = -avoid-version
+libdbparser_la_LDFLAGS = -avoid-version -module -no-undefined
 
 bin_PROGRAMS = pdbtool
 pdbtool_SOURCES = pdbtool.c patternize.c patternize.h
 pdbtool_CPPFLAGS = $(AM_CPPFLAGS) @OPENSSL_CFLAGS@
-pdbtool_LDADD = ../../lib/libsyslog-ng.la libdbparser.la @OPENSSL_LIBS@ @DEPS_LIBS@
+pdbtool_LDADD = ../../lib/libsyslog-ng.la -dlpreopen libdbparser.la @OPENSSL_LIBS@ @DEPS_LIBS@
 
 BUILT_SOURCES = dbparser-grammar.y dbparser-grammar.c dbparser-grammar.h
 EXTRA_DIST = $(BUILT_SOURCES) radix-find.c dbparser-grammar.ym

@@ -156,7 +156,7 @@ AC_PROG_YACC
 AM_PROG_LEX
 AC_PROG_MAKE_SET
 PKG_PROG_PKG_CONFIG
-LT_INIT([disable-static])
+LT_INIT([dlopen disable-static])
 
 dnl ***************************************************************************
 dnl Validate yacc
