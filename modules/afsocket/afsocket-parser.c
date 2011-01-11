@@ -49,6 +49,7 @@ static CfgLexerKeyword afsocket_keywords[] = {
   { "crl_dir",            KW_CRL_DIR },
   { "trusted_keys",       KW_TRUSTED_KEYS },
   { "trusted_dn",         KW_TRUSTED_DN },
+  { "cipher_suite",       KW_CIPHER_SUITE },
 #endif
 
   { "localip",            KW_LOCALIP },

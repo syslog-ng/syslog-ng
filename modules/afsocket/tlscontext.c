@@ -302,6 +302,11 @@ tls_context_setup_session(TLSContext *self)
 
       SSL_CTX_set_verify(self->ssl_ctx, verify_mode, tls_session_verify_callback);
       SSL_CTX_set_options(self->ssl_ctx, SSL_OP_NO_SSLv2);
+      if (self->cipher_suite)
+        {
+          if (!SSL_CTX_set_cipher_list(self->ssl_ctx, self->cipher_suite))
+            goto error;
+        }
     }
 
   ssl = SSL_new(self->ssl_ctx);
@@ -349,6 +354,7 @@ tls_context_free(TLSContext *self)
   g_free(self->cert_file);
   g_free(self->ca_dir);
   g_free(self->crl_dir);
+  g_free(self->cipher_suite);
   g_free(self);
 }
 

@@ -69,6 +69,7 @@ struct _TLSContext
   gchar *cert_file;
   gchar *ca_dir;
   gchar *crl_dir;
+  gchar *cipher_suite;
   SSL_CTX *ssl_ctx;
   GList *trusted_fingerpint_list;
   GList *trusted_dn_list;

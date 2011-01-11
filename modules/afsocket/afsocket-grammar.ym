@@ -105,6 +105,7 @@ TLSContext *last_tls_context;
 %token KW_CRL_DIR
 %token KW_TRUSTED_KEYS
 %token KW_TRUSTED_DN
+%token KW_CIPHER_SUITE
 
 /* INCLUDE_DECLS */
 
@@ -504,6 +505,11 @@ tls_option
           {
             tls_session_set_trusted_dn(last_tls_context, $3);
           }
+	| KW_CIPHER_SUITE '(' string ')'
+	  {
+            last_tls_context->cipher_suite = g_strdup($3);
+            free($3);
+	  }
         | KW_ENDIF {
 #endif
 }
