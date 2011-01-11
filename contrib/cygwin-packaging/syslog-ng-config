@@ -1,19 +1,24 @@
 #!/bin/sh
 #
-# syslog-ng-config, Copyright 2005, 2006 Corinna Vinschen
+# syslog-ng-config, Copyright 2005, 2006, 2010 Corinna Vinschen
 #
 # This file is part of the Cygwin port of syslog-ng.
 
 # set -x
 
 # Subdirectory where the new package is being installed
-PREFIX=/usr
+PREFIX="/usr"
 
 # Directory where the config files are stored
-SYSCONFDIR=/etc
-DEVDIR=/dev
-LOGDIR=/var/log
-RUNDIR=/var/run
+SYSCONFDIR="/etc/syslog-ng"
+
+# Paths of the config files starting with 3.2.1.
+SYSCONFFILE="${SYSCONFDIR}/syslog-ng.conf"
+SCLFILE="${SYSCONFDIR}/scl.conf"
+MODULESFILE="${SYSCONFDIR}/modules.conf"
+
+# Directory in which the templates are stored.
+DEFAULTDIR="/etc/defaults"
 
 progname=$0
 auto_answer=""
@@ -96,149 +101,55 @@ fi
 
 # Create it if necessary
 
+[ ! -e "${SYSCONFDIR}" ] && mkdir -p "${SYSCONFDIR}"
 if [ ! -e "${SYSCONFDIR}" ]
 then
-  mkdir "${SYSCONFDIR}"
-  if [ ! -e "${SYSCONFDIR}" ]
-  then
-    echo
-    echo "Creating ${SYSCONFDIR} directory failed."
-    echo
-    exit 1
-  fi
+  echo
+  echo "Creating ${SYSCONFDIR} directory failed."
+  echo
+  exit 1
 fi
 setfacl -m u:system:rwx "${SYSCONFDIR}"
 
-# Check for ${DEVDIR} directory
+# Only offer to overwrite if template files exist.
 
-if [ -e "${DEVDIR}" -a ! -d "${DEVDIR}" ]
+if [ -f "${DEFAULTDIR}${SYSCONFFILE}" ]
 then
-  echo
-  echo "${DEVDIR} is existant but not a directory."
-  echo "syslogging using syslog-ng will not work."
-  echo
-  exit 1
-fi
 
-# Create it if necessary
+  # Check if syslog-ng.conf exists. If yes, ask for overwriting
 
-if [ ! -e "${DEVDIR}" ]
-then
-  mkdir "${DEVDIR}"
-  if [ ! -e "${DEVDIR}" ]
+  if [ -f "${SYSCONFFILE}" ]
   then
-    echo
-    echo "Creating ${DEVDIR} directory failed."
-    echo
-    exit 1
-  fi
-fi
-setfacl -m u:system:rwx "${DEVDIR}"
-
-# Check for ${LOGDIR} directory
-
-if [ -e "${LOGDIR}" -a ! -d "${LOGDIR}" ]
-then
-  echo
-  echo "${LOGDIR} is existant but not a directory."
-  echo "syslogging using syslog-ng will not work."
-  echo
-  exit 1
-fi
-
-# Create it if necessary
-
-if [ ! -e "${LOGDIR}" ]
-then
-  mkdir -p "${LOGDIR}"
-  if [ ! -e "${LOGDIR}" ]
-  then
-    echo
-    echo "Creating ${LOGDIR} directory failed."
-    echo
-    exit 1
-  fi
-fi
-setfacl -m u:system:rwx "${LOGDIR}"
-
-# Check for ${RUNDIR} directory
-
-if [ -e "${RUNDIR}" -a ! -d "${RUNDIR}" ]
-then
-  echo
-  echo "${RUNDIR} is existant but not a directory."
-  echo "syslogging using syslog-ng will not work."
-  echo
-  exit 1
-fi
-
-# Create it if necessary
-
-if [ ! -e "${RUNDIR}" ]
-then
-  mkdir -p "${RUNDIR}"
-  if [ ! -e "${RUNDIR}" ]
-  then
-    echo
-    echo "Creating ${RUNDIR} directory failed."
-    echo
-    exit 1
-  fi
-fi
-setfacl -m u:system:rwx "${RUNDIR}"
-
-# Check if syslog-ng.conf exists. If yes, ask for overwriting
-
-if [ -f "${SYSCONFDIR}/syslog-ng.conf" ]
-then
-  if request "Overwrite existing ${SYSCONFDIR}/syslog-ng.conf file?"
-  then
-    rm -f "${SYSCONFDIR}/syslog-ng.conf"
-    if [ -f "${SYSCONFDIR}/syslog-ng.conf" ]
+    if request "Overwrite existing ${SYSCONFFILE} file?"
     then
-      echo "Can't overwrite. ${SYSCONFDIR}/syslog-ng.conf is write protected."
+      mv -f "${SYSCONFFILE}" "${SYSCONFFILE}.old"
+      if [ -f "${SYSCONFFILE}" ]
+      then
+	echo "Can't overwrite. ${SYSCONFFILE} is write protected."
+      else
+	echo "${SYSCONFFILE} has been renamed to ${SYSCONFFILE}.old."
+      fi
     fi
   fi
+
+  if [ ! -f "${SYSCONFFILE}" ]
+  then
+    echo "Creating default syslog-ng configuration files in ${SYSCONFDIR}"
+    cp "${DEFAULTDIR}${SYSCONFFILE}" "${SYSCONFFILE}"
+    setfacl -m u:system:rw- "${SYSCONFFILE}"
+    if [ -f "${DEFAULTDIR}${SCLFILE}" ]
+    then
+      cp "${DEFAULTDIR}${SCLFILE}" "${SCLFILE}"
+      setfacl -m u:system:rw- "${SCLFILE}"
+    fi
+    if [ -f "${DEFAULTDIR}${MODULESFILE}" ]
+    then
+      cp "${DEFAULTDIR}${MODULESFILE}" "${MODULESFILE}"
+      setfacl -m u:system:rw- "${MODULESFILE}"
+    fi
+  fi
+
 fi
-
-if [ ! -f "${SYSCONFDIR}/syslog-ng.conf" ]
-then
-  echo "Creating default ${SYSCONFDIR}/syslog-ng.conf file"
-  cat > ${SYSCONFDIR}/syslog-ng.conf << EOF
-@version: 3.0
-options {
-  keep_hostname(yes);
-  owner("system");
-  group("root");
-  perm(0664);
-  flush_lines(0);
-};
-
-source applications {
-  unix-dgram("/dev/log");
-  internal();
-};
-
-source kernel {
-  file("/dev/kmsg", program_override("kernel: "));
-};
-
-destination messages {
-  file("/var/log/messages");
-};
-
-log {
-  source(applications);
-  destination(messages);
-};
-
-log {
-  source(kernel);
-  destination(messages);
-};
-EOF
-fi
-setfacl -m u:system:rw- "${SYSCONFDIR}/syslog-ng.conf"
 
 # Check if syslogd is installed and remove on user request.
 if cygrunsrv -Q syslogd > /dev/null 2>&1
@@ -262,7 +173,7 @@ then
   echo "Do you want to install syslog-ng as service?"
   if request "(Say \"no\" if it's already installed as service)"
   then
-    if cygrunsrv -I syslog-ng -d "CYGWIN syslog-ng" -p /usr/sbin/syslog-ng -a "-F --fd-limit 256"
+    if cygrunsrv -I syslog-ng -d "CYGWIN syslog-ng" -p /usr/sbin/syslog-ng -a "-F"
     then
      echo
      echo "The service has been installed under LocalSystem account."
