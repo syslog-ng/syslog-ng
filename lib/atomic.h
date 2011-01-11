@@ -26,7 +26,6 @@
 #define ATOMIC_H_INCLUDED
 
 
-#if ENABLE_THREADS
 typedef struct
 {
   gint counter;
@@ -73,50 +72,5 @@ g_atomic_counter_set(GAtomicCounter *c, gint value)
   
   c->counter = value;
 }
-
-#else
-typedef guint32 GAtomicCounter;
-
-static inline void
-g_atomic_counter_inc(GAtomicCounter *c)
-{
-  (*c)++;
-}
-
-static inline gboolean
-g_atomic_counter_dec_and_test(GAtomicCounter *c)
-{
-  (*c)--;
-  return (*c) == 0;
-}
-
-static inline gint
-g_atomic_counter_get(GAtomicCounter *c)
-{
-  return *c;
-}
-
-static inline gint
-g_atomic_counter_exchange_and_add(GAtomicCounter *c, gint val)
-{
-  gint old = c->counter;
-  c->counter += val;
-  return old;
-}
-
-
-static inline gint
-g_atomic_counter_racy_get(GAtomicCounter *c)
-{
-  return *c;
-}
-
-static inline void
-g_atomic_counter_set(GAtomicCounter *c, gint value)
-{
-  *c = value;
-}
-
-#endif
 
 #endif

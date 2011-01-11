@@ -105,9 +105,7 @@ void
 app_startup(void)
 {
   iv_init();
-#if ENABLE_THREADS
   g_thread_init(NULL);
-#endif
   msg_init(FALSE);
   child_manager_init();
   dns_cache_init();

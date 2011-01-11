@@ -127,7 +127,6 @@ version(void)
          "Installer-Version: %s\n"
          "Revision: " SOURCE_REVISION "\n"
          "Compile-Date: " __DATE__ " " __TIME__ "\n"
-         "Enable-Threads: %s\n"
          "Enable-Debug: %s\n"
          "Enable-GProf: %s\n"
          "Enable-Memtrace: %s\n"
@@ -141,7 +140,6 @@ version(void)
          "Enable-Pcre: %s\n"
          "Enable-Pacct: %s\n",
          installer_version,
-         ON_OFF_STR(ENABLE_THREADS),
          ON_OFF_STR(ENABLE_DEBUG),
          ON_OFF_STR(ENABLE_GPROF),
          ON_OFF_STR(ENABLE_MEMTRACE),

@@ -725,13 +725,6 @@ if test -n "$env_ld_library_path"; then
         AC_DEFINE_UNQUOTED(ENV_LD_LIBRARY_PATH, "$env_ld_library_path", [set LD_LIBRARY_PATH to this value])
 fi
 
-if test "x$enable_sql" = "xyes"; then
-        enable_threads=yes
-else
-        enable_threads=no
-fi
-
-AC_DEFINE_UNQUOTED(ENABLE_THREADS, `enable_value $enable_threads`, [whether to enable threads support in the syslog-ng core])
 AC_DEFINE_UNQUOTED(ENABLE_DEBUG, `enable_value $enable_debug`, [Enable debugging])
 AC_DEFINE_UNQUOTED(ENABLE_GPROF, `enable_value $enable_gprof`, [Enable gcc profiling])
 AC_DEFINE_UNQUOTED(ENABLE_MEMTRACE, `enable_value $enable_memtrace`, [Enable memtrace])
