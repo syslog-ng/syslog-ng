@@ -137,8 +137,12 @@ log_db_parser_init(LogParser *s, GlobalConfig *cfg)
     }
   else
     {
+      self->db = pattern_db_new();
       log_db_parser_reload_database(self);
     }
+
+  if (self->db)
+    pattern_db_set_emit_func(self->db, log_db_parser_emit, self);
 
 #if GLIB_MAJOR_VERSION > 2 && GLIB_MINOR_VERSION > 13
   self->timer_tick_id = g_timeout_add_seconds(1, log_db_parser_timer_tick, self);
