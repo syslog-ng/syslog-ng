@@ -444,11 +444,7 @@ dnl ***************************************************************************
 dnl GLib headers/libraries
 dnl ***************************************************************************
 
-GLIB_ADDONS="gmodule-2.0"
-if test "x$enable_sql" = "xyes"; then
-	GLIB_ADDONS="${GLIB_ADDONS} gthread-2.0"
-fi
-
+GLIB_ADDONS="gmodule-2.0 gthread-2.0"
 PKG_CHECK_MODULES(GLIB, glib-2.0 >= $GLIB_MIN_VERSION $GLIB_ADDONS,,)
 
 if test "$linking_mode" != "dynamic"; then
