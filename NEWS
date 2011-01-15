@@ -1,3 +1,80 @@
+3.2.2
+	Sat, 15 Jan 2011 13:50:35 +0100
+
+	Bugfixes:
+        * Fixed a possible segmentation fault when the port number is
+          changed for a TCP source, the configuration is reloaded and there
+          were open connections for the old port, which send messages after
+          the SIGHUP. This behaviour has been broken since 3.0.1.
+        * Fixed a possible security issue on FreeBSD and on
+          platforms where mode_t is an unsigned 16 bit value. On these
+          platforms syslog-ng may be using 0xFFFF as the permission bits
+          causing log files to be world readable/writable/executable/setuid.
+	* Fixed leaking the contents of internal() messages (such as MARK or
+	  the statistics message).
+	* Fixed current time tracking when calculating the time in the
+	  correllation engine.
+	* When the patterndb file got reloaded the correllation state was
+	  dropped. This behaviour was fixed.
+	* Really ignore invalid persist-state files, which caused syslog-ng
+	  startup to fail previously.
+	* Added the missing support for blocks inside log {} statements. 
+	* Fixed a configuration init error when the same db-parser()
+	  instance is referenced from multiple log paths.
+        * Fixed handling the port() options for SQL destinations.
+
+	Platform specific:
+	* Added cygwin support to the system() source.
+
+	Build related:
+	* syslog-ng modules are now linked with "-module -no-undefined"
+	  parameters, pdbtool and unit tests are using -dlpreopen when
+	  explicitly linking against such modules.
+	* The core patterndb functionality got split off to a separate
+	  library installed to $libdir to make it easier to be used by
+	  pdbtool.
+	* Fixed support for an explicit --exec-prefix configure parameter.
+	  Earlier if exec_prefix was different from prefix, the installation
+	  layout produced unworkable binaries.
+	* If no OpenSSL libraries are available, pdbtool patternize still
+	  can work, although in this case proper UUID generation is not
+	  possible.
+	* If syslog-ng is compiled against an old glib (earlier than 2.13),
+	  it'll not use an API that is present in newer ones. Please note
+	  however that there might be other similar compatibility issues
+	  with old Glib versions.
+	* Updated cygwin packaging files.
+	* Don't use -wno-pointer-sign in dbparser if gcc doesn't support it.
+	  This will emit a lot of warnings, but still make the code possible
+	  to compile with older gcc versions.
+
+	Credits:
+
+	syslog-ng is developed as a community project. All changes and
+	improvements requires effort, and this effort is really appreciated.
+
+	Writing code, testing changes or simply providing use-cases and
+	information on one's setup will make syslog-ng better.
+
+	Here are the people, listed in no specific order who made this
+	release possible.
+
+	  * Balázs Németh (BalaBit)
+	  * Sándor Gellér (Morgan Stanley)
+	  * Péter Czanik (BalaBit)
+	  * Owen Mann (Interactive Data)
+	  * Zhengxiang Pan (Alcatel Lucent)
+	  * Corinna Vinschen (RedHat)
+	  * Eric Berggren (Apple)
+	  * Gergely Nagy (BalaBit)
+	  * Matthew Hall
+	  * LEBRETON Philippe
+	  * Craig Bell
+	  * Steven Chamberlain
+	  * Balázs Scheidler (BalaBit)
+
+	Thanks for their efforts, it is appreciated.
+
 3.2.1
 	Tue, 23 Nov 2010 08:59:47 +0100
 
