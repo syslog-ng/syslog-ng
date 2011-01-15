@@ -596,6 +596,7 @@ persist_state_load(PersistState *self)
       if (memcmp(magic, "SLP", 3) != 0)
         {
           msg_error("Persistent configuration file is in invalid format, ignoring", NULL);
+          success = TRUE;
           goto close_and_exit;
         }
       version = magic[3] - '0';
@@ -612,6 +613,7 @@ persist_state_load(PersistState *self)
           msg_error("Persistent configuration file has an unsupported major version, ignoring",
                     evt_tag_int("version", version),
                     NULL);
+          success = TRUE;
         }
     close_and_exit:
       fclose(persist_file);
