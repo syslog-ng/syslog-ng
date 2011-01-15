@@ -57,7 +57,6 @@ static void
 log_db_parser_reload_database(LogDBParser *self)
 {
   struct stat st;
-  PatternDB *db_new;
 
   if (stat(self->db_file, &st) < 0)
     {
@@ -74,25 +73,17 @@ log_db_parser_reload_database(LogDBParser *self)
   self->db_file_inode = st.st_ino;
   self->db_file_mtime = st.st_mtime;
 
-  db_new = pattern_db_new();
-  if (!pattern_db_load(db_new, self->cfg, self->db_file, NULL))
+  if (!pattern_db_reload_ruleset(self->db, self->cfg, self->db_file))
     {
       msg_error("Error reloading pattern database, no automatic reload will be performed", NULL);
-      /* restore the old object pointers */
-      pattern_db_free(db_new);
     }
   else
     {
       /* free the old database if the new was loaded successfully */
-      if (self->db)
-        pattern_db_free(self->db);
-      self->db = db_new;
-      pattern_db_set_emit_func(self->db, log_db_parser_emit, self);
-
       msg_notice("Log pattern database reloaded",
                  evt_tag_str("file", self->db_file),
-                 evt_tag_str("version", self->db->version),
-                 evt_tag_str("pub_date", self->db->pub_date),
+                 evt_tag_str("version", pattern_db_get_ruleset_version(self->db)),
+                 evt_tag_str("pub_date", pattern_db_get_ruleset_pub_date(self->db)),
                  NULL);
     }
 
@@ -189,7 +180,7 @@ log_db_parser_process(LogParser *s, LogMessage *msg, const char *input)
       log_db_parser_reload_database(self);
     }
   if (self->db)
-    pattern_db_process(self->db, msg, NULL);
+    pattern_db_process(self->db, msg);
   return TRUE;
 }
 

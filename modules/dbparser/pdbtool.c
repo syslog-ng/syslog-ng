@@ -33,6 +33,8 @@
 #include "plugin.h"
 #include "filter-expr-parser.h"
 #include "patternize.h"
+#include "patterndb-int.h"
+#include "apphook.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -441,11 +443,11 @@ pdbtool_match(int argc, char *argv[])
 
   msg_format_options_defaults(&parse_options);
   /* the syslog protocol parser automatically falls back to RFC3164 format */
-  parse_options.flags |= LP_SYSLOG_PROTOCOL;
+  parse_options.flags |= LP_SYSLOG_PROTOCOL | LP_EXPECT_HOSTNAME;
   msg_format_options_init(&parse_options, configuration);
 
   patterndb = pattern_db_new();
-  if (!pattern_db_load(patterndb, configuration, patterndb_file, NULL))
+  if (!pattern_db_reload_ruleset(patterndb, configuration, patterndb_file))
     {
       goto error;
     }
@@ -502,8 +504,11 @@ pdbtool_match(int argc, char *argv[])
       if (G_UNLIKELY(debug_pattern))
         {
           const gchar *msg_string;
+          PDBRule *rule;
 
-          pattern_db_process(patterndb, msg, dbg_list);
+          rule = pdb_rule_set_lookup(patterndb->ruleset, msg, dbg_list);
+          pdb_rule_unref(rule);
+
           msg_string = log_msg_get_value(msg, LM_V_MESSAGE, NULL);
           pos = 0;
           if (!debug_pattern_parse)
@@ -582,7 +587,7 @@ pdbtool_match(int argc, char *argv[])
         }
       else
         {
-          pattern_db_process(patterndb, msg, NULL);
+          pattern_db_process(patterndb, msg);
         }
 
       if (G_LIKELY(proto))
@@ -692,7 +697,7 @@ pdbtool_test(int argc, char *argv[])
         }
 
       patterndb = pattern_db_new();
-      if (!pattern_db_load(patterndb, configuration, argv[arg_pos], &examples))
+      if (!pdb_rule_set_load(patterndb->ruleset, configuration, argv[arg_pos], &examples))
         {
           failed_to_load = TRUE;
           continue;
@@ -710,7 +715,7 @@ pdbtool_test(int argc, char *argv[])
                 log_msg_set_value(msg, LM_V_PROGRAM, example->program, strlen(example->program));
 
               printf("Testing message program='%s' message='%s'\n", example->program, example->message);
-              pattern_db_process(patterndb, msg, NULL);
+              pattern_db_process(patterndb, msg);
 
               pdbtool_test_value(msg, ".classifier.rule_id", example->rule->rule_id);
 
@@ -779,14 +784,14 @@ pdbtool_dump(int argc, char *argv[])
   PatternDB *patterndb;
 
   patterndb = pattern_db_new();
-  if (!pattern_db_load(patterndb, configuration, patterndb_file, NULL))
+  if (!pattern_db_reload_ruleset(patterndb, configuration, patterndb_file))
     return 1;
 
   if (dump_program_tree)
-    pdbtool_walk_tree(patterndb->programs, 0, TRUE);
+    pdbtool_walk_tree(patterndb->ruleset->programs, 0, TRUE);
   else if (match_program)
     {
-      RNode *ruleset = r_find_node(patterndb->programs, g_strdup(match_program), g_strdup(match_program), strlen(match_program), NULL);
+      RNode *ruleset = r_find_node(patterndb->ruleset->programs, g_strdup(match_program), g_strdup(match_program), strlen(match_program), NULL);
       if (ruleset && ruleset->value)
         pdbtool_walk_tree(((PDBProgram *) ruleset->value)->rules, 0, FALSE);
     }
@@ -936,9 +941,7 @@ main(int argc, char *argv[])
   gint mode, ret = 0;
   GError *error = NULL;
 
-  stats_init();
-  log_tags_init();
-  log_msg_global_init();
+  app_startup();
   configuration = cfg_new(0x0302);
 
   mode_string = pdbtool_mode(&argc, &argv);
