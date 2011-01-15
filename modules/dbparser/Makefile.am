@@ -13,7 +13,7 @@ export top_srcdir
 
 lib_LTLIBRARIES = libsyslog-ng-patterndb.la
 libsyslog_ng_patterndb_la_SOURCES = radix.c radix.h \
-	patterndb.c patterndb.h \
+	patterndb.c patterndb.h patterndb-int.h \
 	timerwheel.c timerwheel.h \
 	patternize.c patternize.h
 libsyslog_ng_patterndb_la_LDFLAGS = -no-undefined
