@@ -8,7 +8,7 @@ AM_CPPFLAGS = -I$(top_srcdir)/lib -I../../lib
 # considered these to be less readable, than simply adding -Wno-pointer-sign
 # warning option.
 #
-AM_CFLAGS = -Wno-pointer-sign
+AM_CFLAGS = @CFLAGS_NOWARN_POINTER_SIGN@
 export top_srcdir
 
 lib_LTLIBRARIES = libsyslog-ng-patterndb.la

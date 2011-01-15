@@ -21,8 +21,13 @@ ylwrap
 .*.swp
 *.pyc
 ltmain.sh
-m4/
 .project
 .cproject
 .settings
 Debug
+m4/libtool.m4
+m4/lt~obsolete.m4
+m4/ltoptions.m4
+m4/ltsugar.m4
+m4/ltversion.m4
+m4/pkg.m4
