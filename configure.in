@@ -771,6 +771,9 @@ AC_SUBST(SOURCE_REVISION)
 AC_SUBST(PACKAGE_FILES_SUFFIX)
 AC_SUBST(PACKAGE_SUFFIX)
 
+AC_CONFIG_SUBDIRS(
+	  modules/afmongodb/libmongo-client
+)
 
 AC_OUTPUT(dist.conf
           Makefile 
@@ -785,6 +788,7 @@ AC_OUTPUT(dist.conf
           modules/affile/Makefile
           modules/afprog/Makefile
           modules/afuser/Makefile
+	  modules/afmongodb/Makefile
           modules/dbparser/Makefile
           modules/dbparser/tests/Makefile
           modules/csvparser/Makefile

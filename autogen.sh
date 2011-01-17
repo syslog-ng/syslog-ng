@@ -6,11 +6,17 @@
 # source tree. 
 #
 
-libtoolize --force
-aclocal -I m4 --install
-sed -i -e 's/PKG_PROG_PKG_CONFIG(\[0\.16\])/PKG_PROG_PKG_CONFIG([0.14])/g' aclocal.m4
+origdir=`pwd`
 
-autoheader
-automake --foreign --add-missing
-autoconf
+for i in . modules/afmongodb/libmongo-client; do
+	echo "Running autogen in '$i'..."
+	cd "$i"
+	libtoolize --force
+	aclocal -I m4 --install
+	sed -i -e 's/PKG_PROG_PKG_CONFIG(\[0\.16\])/PKG_PROG_PKG_CONFIG([0.14])/g' aclocal.m4
 
+	autoheader
+	automake --foreign --add-missing
+	autoconf
+	cd "$origdir"
+done

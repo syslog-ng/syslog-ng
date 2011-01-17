@@ -1,0 +1,3 @@
+[submodule "modules/afmongodb/libmongo-client"]
+	path = modules/afmongodb/libmongo-client
+	url = git://github.com/algernon/libmongo-client.git
