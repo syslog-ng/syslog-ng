@@ -303,6 +303,7 @@ const gchar *source_names[SCS_MAX] =
   "center",
   "host",
   "global",
+  "mongodb",
 };
 
 

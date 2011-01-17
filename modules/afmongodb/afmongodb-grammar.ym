@@ -1,0 +1,78 @@
+/*
+ * Copyright (c) 2002-2011 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2010-2011 Gergely Nagy <algernon@balabit.hu>
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
+%code requires {
+
+#include "afmongodb-parser.h"
+
+}
+
+%code {
+
+#include "cfg-parser.h"
+#include "afmongodb-grammar.h"
+
+}
+
+%name-prefix "afmongodb_"
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {LogDriver **afmongodb_dd_instance}
+
+
+/* INCLUDE_DECLS */
+
+%token KW_MONGODB
+%token KW_COLLECTION
+%token KW_KEYS
+
+%%
+
+start
+        : LL_CONTEXT_DESTINATION KW_MONGODB
+          {
+            *afmongodb_dd_instance = afmongodb_dd_new();
+          }
+          '(' afmongodb_options ')'         { YYACCEPT; }
+	;
+
+afmongodb_options
+        : afmongodb_option afmongodb_options
+	|
+	;
+
+afmongodb_option
+        : KW_HOST '(' string ')'		{ afmongodb_dd_set_host((*afmongodb_dd_instance), $3); free($3); }
+        | KW_PORT '(' LL_NUMBER ')'		{ afmongodb_dd_set_port((*afmongodb_dd_instance), $3); }
+	| KW_DATABASE '(' string ')'		{ afmongodb_dd_set_database((*afmongodb_dd_instance), $3); free($3); }
+	| KW_COLLECTION '(' string ')'		{ afmongodb_dd_set_collection((*afmongodb_dd_instance), $3); free($3); }
+	| KW_VALUES '(' string_list ')'		{ afmongodb_dd_set_values((*afmongodb_dd_instance), $3); }
+	| KW_KEYS '(' string_list ')'		{ afmongodb_dd_set_keys((*afmongodb_dd_instance), $3); }
+	| KW_USERNAME '(' string ')'		{ afmongodb_dd_set_user((*afmongodb_dd_instance), $3); free($3); }
+	| KW_PASSWORD '(' string ')'		{ afmongodb_dd_set_password((*afmongodb_dd_instance), $3); free($3); }
+	| KW_LOG_FIFO_SIZE '(' LL_NUMBER ')'	{ afmongodb_dd_set_log_fifo_size((*afmongodb_dd_instance), $3); }
+        ;
+
+/* INCLUDE_RULES */
+
+%%

@@ -61,6 +61,7 @@ enum
   SCS_CENTER         = 17,
   SCS_HOST           = 18,
   SCS_GLOBAL         = 19,
+  SCS_MONGODB        = 20,
   SCS_MAX,
   SCS_SOURCE_MASK    = 0xff
 };
