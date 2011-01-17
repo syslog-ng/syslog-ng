@@ -100,7 +100,7 @@ static GlobalConfig *current_configuration;
  ************************************************************************************/
 typedef struct _MainLoopTaskCallSite
 {
-  struct iv_list_head list;
+  struct list_head list;
   MainLoopTaskFunc func;
   gpointer user_data;
   gpointer result;
@@ -111,7 +111,7 @@ typedef struct _MainLoopTaskCallSite
 } MainLoopTaskCallSite;
 
 static GStaticMutex main_task_lock = G_STATIC_MUTEX_INIT;
-static struct iv_list_head main_task_queue = LIST_HEAD_INIT(main_task_queue);
+static struct list_head main_task_queue = LIST_HEAD_INIT(main_task_queue);
 static struct iv_event main_task_posted;
 __thread gboolean in_main_thread;
 static __thread MainLoopTaskCallSite call_info;
@@ -148,7 +148,7 @@ main_loop_call(MainLoopTaskFunc func, gpointer user_data, gboolean wait)
   call_info.wait = wait;
   if (!call_info.cond)
     call_info.cond = g_cond_new();
-  iv_list_add(&call_info.list, &main_task_queue);
+  list_add(&call_info.list, &main_task_queue);
   iv_event_post(&main_task_posted);
   if (wait)
     {
@@ -163,13 +163,13 @@ static void
 main_loop_call_handler(gpointer user_data)
 {
   g_static_mutex_lock(&main_task_lock);
-  while (!iv_list_empty(&main_task_queue))
+  while (!list_empty(&main_task_queue))
     {
       MainLoopTaskCallSite *site;
       gpointer result;
 
-      site = iv_list_entry(main_task_queue.next, MainLoopTaskCallSite, list);
-      iv_list_del_init(&site->list);
+      site = list_entry(main_task_queue.next, MainLoopTaskCallSite, list);
+      list_del_init(&site->list);
       g_static_mutex_unlock(&main_task_lock);
 
       result = site->func(site->user_data);
