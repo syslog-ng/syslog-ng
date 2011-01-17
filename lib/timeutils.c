@@ -116,13 +116,20 @@ cached_g_current_time(GTimeVal *result)
     }
   *result = current_time_value;
 
-  if (invalidate_time_task.handler == NULL)
+  if (iv_inited())
     {
-      IV_TASK_INIT(&invalidate_time_task);
-      invalidate_time_task.handler = (void (*)(void *)) invalidate_cached_time;
+      if (invalidate_time_task.handler == NULL)
+        {
+          IV_TASK_INIT(&invalidate_time_task);
+          invalidate_time_task.handler = (void (*)(void *)) invalidate_cached_time;
+        }
+      if (!iv_task_registered(&invalidate_time_task))
+        iv_task_register(&invalidate_time_task);
     }
-  if (!iv_task_registered(&invalidate_time_task))
-    iv_task_register(&invalidate_time_task);
+  else
+    {
+      invalidate_cached_time();
+    }
 }
 
 time_t
