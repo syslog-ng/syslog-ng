@@ -257,7 +257,9 @@ afmongodb_worker_insert (MongoDBDestDriver *self)
 
   afmongodb_dd_connect(self, TRUE);
 
+  g_mutex_lock(self->queue_mutex);
   success = log_queue_pop_head(self->queue, &msg, &path_options, 0);
+  g_mutex_unlock(self->queue_mutex);
   if (!success)
     return TRUE;
 
@@ -314,7 +316,9 @@ afmongodb_worker_insert (MongoDBDestDriver *self)
     }
   else
     {
+      g_mutex_lock(self->queue_mutex);
       log_queue_push_head(self->queue, msg, &path_options);
+      g_mutex_unlock(self->queue_mutex);
     }
 
   return success;
@@ -529,8 +533,8 @@ afmongodb_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_optio
   g_mutex_lock(self->queue_mutex);
   self->last_msg_stamp = cached_g_current_time_sec ();
   queue_was_empty = log_queue_get_length(self->queue) == 0;
-  g_mutex_unlock(self->queue_mutex);
   consumed = log_queue_push_tail(self->queue, msg, path_options);
+  g_mutex_unlock(self->queue_mutex);
 
   g_mutex_lock(self->suspend_mutex);
   if (consumed && queue_was_empty && !self->writer_thread_suspended)
