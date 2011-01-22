@@ -6,17 +6,33 @@
 # source tree. 
 #
 
+SUBMODULES="modules/afmongodb/libmongo-client"
+
 origdir=`pwd`
 
-for i in . modules/afmongodb/libmongo-client; do
-	echo "Running autogen in '$i'..."
-	cd "$i"
-	libtoolize --force
-	aclocal -I m4 --install
-	sed -i -e 's/PKG_PROG_PKG_CONFIG(\[0\.16\])/PKG_PROG_PKG_CONFIG([0.14])/g' aclocal.m4
+if [ -f .gitmodules ]; then
+	git submodule update --init --recursive
+fi
 
-	autoheader
-	automake --foreign --add-missing
-	autoconf
+for submod in $SUBMODULES; do
+	echo "Running autogen in '$submod'..."
+	cd "$submod"
+	if [ -x autogen.sh ]; then
+		./autogen.sh
+	elif [ -f configure.in ] || [ -f configure.ac ]; then
+		autoreconf
+	else
+		echo "Don't know how to bootstrap submodule '$submod'" >&2
+		exit 1
+	fi
 	cd "$origdir"
 done
+
+# bootstrap syslog-ng itself
+libtoolize --force
+aclocal -I m4 --install
+sed -i -e 's/PKG_PROG_PKG_CONFIG(\[0\.16\])/PKG_PROG_PKG_CONFIG([0.14])/g' aclocal.m4
+
+autoheader
+automake --foreign --add-missing
+autoconf
