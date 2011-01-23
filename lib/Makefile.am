@@ -1,3 +1,5 @@
+SUBDIRS = ivykis
+
 YFLAGS=@YFLAGS@
 
 export top_srcdir
@@ -59,4 +61,8 @@ EXTRA_DIST = $(BUILT_SOURCES) \
 
 CLEAN_FILES = $(BUILT_SOURCES)
 
+# divert install/uninstall targets to avoid recursing into $(SUBDIRS)
+install: install-am
+
+uninstall: uninstall-am
 include $(top_srcdir)/build/lex-rules.am

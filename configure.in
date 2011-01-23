@@ -150,6 +150,11 @@ AC_ARG_WITH(libmongo-client,
                                          Link against the system supplied or the builting libmongo-client library.]
               ,,with_libmongo_client="internal")
 
+AC_ARG_WITH(ivykis,
+              [  --with-ivykis=[system/internal]
+                                         Link against the system supplied or the builting ivykis library.]
+              ,,with_ivykis="internal")
+
 dnl ***************************************************************************
 dnl Checks for programs.
 AC_PROG_CC
@@ -619,7 +624,22 @@ dnl ***************************************************************************
 dnl ivykis headers/libraries
 dnl ***************************************************************************
 
-PKG_CHECK_MODULES(IVYKIS, ivykis >= $IVYKIS_MIN_VERSION ivykis-modules,,)
+if test "x$with_ivykis" = "xinternal"; then
+	if test -f "$srcdir/lib/ivykis/lib/iv_main.c"; then
+		AC_CONFIG_SUBDIRS([lib/ivykis])
+
+		# these can only be used in lib as it assumes
+		# the current directory just one below ivykis
+
+		IVYKIS_LIBS="-Wl,--whole-archive -L\$(top_builddir)/lib/ivykis/lib -livykis -L\$(top_builddir)/lib/ivykis/modules -livykis-modules -Wl,--no-whole-archive"
+		IVYKIS_CFLAGS="-I\$(top_srcdir)/lib/ivykis/lib/include -I\$(top_srcdir)/lib/ivykis/modules/include"
+	else
+		AC_MSG_ERROR([Internal ivykis sources not found in lib/ivykis. This is a hard dependency, unable to build syslog-ng without them.])
+	fi
+else
+	with_ivykis="system"
+	PKG_CHECK_MODULES(IVYKIS, ivykis >= $IVYKIS_MIN_VERSION ivykis-modules,,)
+fi
 
 dnl ***************************************************************************
 dnl libmongo headers/libraries
@@ -713,8 +733,20 @@ DEPS_CPPFLAGS="$CPPFLAGS $GLIB_CFLAGS $EVTLOG_CFLAGS $OPENSSL_CFLAGS $LIBNET_CFL
 CPPFLAGS="$DEPS_CPPFLAGS -D_GNU_SOURCE -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64"
 
 if test "x$linking_mode" = "xdynamic"; then
-	DEPS_LIBS="$LIBS $BASE_LIBS $GLIB_LIBS $EVTLOG_LIBS $RESOLV_LIBS $LIBCAP_LIBS $PCRE_LIBS $REGEX_LIBS $IVYKIS_LIBS"
-	CORE_DEPS_LIBS="$DEPS_LIBS"
+	DEPS_LIBS="$LIBS $BASE_LIBS $GLIB_LIBS $EVTLOG_LIBS $RESOLV_LIBS $LIBCAP_LIBS $PCRE_LIBS $REGEX_LIBS"
+	if test "x$with_ivykis" = "internal"; then
+
+		# if we're to use the internal ivykis, then link it into the
+		# core .so statically.
+
+		CORE_DEPS_LIBS="$DEPS_LIBS $IVYKIS_LIBS"
+	else
+
+		# we're using the system installed ivykis, add that to DEPS_LIBS
+
+		DEPS_LIBS="$DEPS_LIBS $IVYKIS_LIBS"
+		CORE_DEPS_LIBS="$DEPS_LIBS"
+	fi
 	SYSLOGNG_LINK='$(LINK)'
 else
 	DEPS_LIBS="$LIBS $BASE_LIBS $RESOLV_LIBS $LD_START_STATIC -Wl,--whole-archive $GLIB_LIBS $EVTLOG_LIBS $PCRE_LIBS $REGEX_LIBS $IVYKIS_LIBS -Wl,--no-whole-archive $LD_END_STATIC $LIBCAP_LIBS $DL_LIBS "
@@ -784,6 +816,7 @@ AM_CONDITIONAL(ENABLE_SSL, [test "$enable_ssl" = "yes"])
 AM_CONDITIONAL(ENABLE_SQL, [test "$enable_sql" = "yes"])
 AM_CONDITIONAL(ENABLE_SUN_STREAMS, [test "$enable_sun_streams" = "yes"])
 AM_CONDITIONAL(ENABLE_PACCT, [test "$enable_pacct" = "yes"])
+AM_CONDITIONAL(ENABLE_MONGODB, [test "$enable_mongodb" = "yes"])
 
 # substitution into manual pages
 expanded_sysconfdir=[`patheval $sysconfdir | sed -e 's/-/\\\\-/g'`]
@@ -867,6 +900,7 @@ echo "  linker flags                : $LDFLAGS $LIBS"
 echo "  prefix                      : $prefix"
 echo "  linking mode                : $linking_mode"
 echo " Submodules:"
+echo "  ivykis                      : $with_ivykis"
 echo "  libmongo-client             : $with_libmongo_client"
 echo " Features:"
 echo "  Sun STREAMS support (module): ${enable_sun_streams:=no}"

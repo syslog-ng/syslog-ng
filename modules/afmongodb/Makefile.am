@@ -20,3 +20,6 @@ BUILT_SOURCES = afmongodb-grammar.y afmongodb-grammar.c afmongodb-grammar.h
 EXTRA_DIST = $(BUILT_SOURCES) afmongodb-grammar.ym
 
 include $(top_srcdir)/build/lex-rules.am
+
+install: install-am
+uninstall: uninstall-am

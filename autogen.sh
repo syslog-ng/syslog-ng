@@ -6,7 +6,7 @@
 # source tree. 
 #
 
-SUBMODULES="modules/afmongodb/libmongo-client"
+SUBMODULES="lib/ivykis modules/afmongodb/libmongo-client"
 
 origdir=`pwd`
 
