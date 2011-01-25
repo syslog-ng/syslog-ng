@@ -443,35 +443,44 @@ filter_match_new()
 typedef struct _FilterCall
 {
   FilterExprNode super;
-  GString *rule;
-  GlobalConfig *cfg;
-  gboolean error_logged;
+  FilterExprNode *filter_expr;
+  gchar *rule;
 } FilterCall;
 
 static gboolean
 filter_call_eval(FilterExprNode *s, LogMessage *msg)
 {
   FilterCall *self = (FilterCall *) s;
-  LogProcessRule *rule;
   
-  rule = g_hash_table_lookup(self->cfg->filters, self->rule->str);
-  
-  if (rule)
+  if (self->filter_expr)
     {
       /* rule is assumed to contain a single filter pipe */
 
-      return filter_expr_eval(((LogFilterPipe *) rule->head)->expr, msg) ^ s->comp;
+      return filter_expr_eval(self->filter_expr, msg) ^ s->comp;
     }
   else
     {
-      if (!self->error_logged)
-        {
-          msg_error("Referenced filter rule not found",
-                    evt_tag_str("rule", self->rule->str),
-                    NULL);
-          self->error_logged = TRUE;
-        }
-      return 1 ^ s->comp;
+      /* an unreferenced filter() expression never matches unless explicitly negated */
+      return (0 ^ s->comp);
+    }
+}
+
+static void
+filter_call_init(FilterExprNode *s, GlobalConfig *cfg)
+{
+  FilterCall *self = (FilterCall *) s;
+  LogProcessRule *rule;
+
+  rule = g_hash_table_lookup(cfg->filters, self->rule);
+  if (rule)
+    {
+      self->filter_expr = ((LogFilterPipe *) rule->head->data)->expr;
+    }
+  else
+    {
+      msg_error("Referenced filter rule not found in filter() expression",
+                evt_tag_str("rule", self->rule),
+                NULL);
     }
 }
 
@@ -480,8 +489,8 @@ filter_call_free(FilterExprNode *s)
 {
   FilterCall *self = (FilterCall *) s;
   
-  g_string_free(self->rule, TRUE);
   g_free((gchar *) self->super.type);
+  g_free(self->rule);
 }
 
 FilterExprNode *
@@ -490,11 +499,11 @@ filter_call_new(gchar *rule, GlobalConfig *cfg)
   FilterCall *self = g_new0(FilterCall, 1);
   
   filter_expr_node_init(&self->super);
+  self->super.init = filter_call_init;
   self->super.eval = filter_call_eval;
   self->super.free_fn = filter_call_free;
-  self->rule = g_string_new(rule);
-  self->cfg = cfg;
   self->super.type = g_strdup_printf("filter(%s)", rule);
+  self->rule = g_strdup(rule);
   return &self->super;
 }
 
@@ -630,6 +639,15 @@ filter_tags_new(GList *tags)
  * LogFilterPipe
  *******************************************************************/
 
+static gboolean
+log_filter_pipe_init(LogPipe *s)
+{
+  LogFilterPipe *self = (LogFilterPipe *) s;
+
+  if (self->expr->init)
+    self->expr->init(self->expr, log_pipe_get_config(s));
+  return TRUE;
+}
 
 static void
 log_filter_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
@@ -681,6 +699,7 @@ log_filter_pipe_new(FilterExprNode *expr, const gchar *name)
   LogFilterPipe *self = g_new0(LogFilterPipe, 1);
 
   log_process_pipe_init_instance(&self->super);
+  self->super.super.init = log_filter_pipe_init;
   self->super.super.queue = log_filter_pipe_queue;
   self->super.super.free_fn = log_filter_pipe_free;
   self->super.super.flags |= expr->modify ? PIF_CLONE : 0;

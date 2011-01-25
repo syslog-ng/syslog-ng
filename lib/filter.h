@@ -41,6 +41,7 @@ struct _FilterExprNode
   guint32 comp:1,   /* this not is negated */
           modify:1; /* this filter changes the log message */
   const gchar *type;
+  void (*init)(FilterExprNode *self, GlobalConfig *cfg);
   gboolean (*eval)(FilterExprNode *self, LogMessage *msg);
   void (*free_fn)(FilterExprNode *self);
 };
