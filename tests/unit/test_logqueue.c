@@ -5,6 +5,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <iv.h>
 
 int acked_messages = 0;
 int fed_messages = 0;
@@ -117,37 +118,50 @@ testcase_zero_diskbuf_alternating_send_acks()
   log_queue_free(q);
 }
 
-#if 0
+#define FEEDERS 1
+#define MESSAGES_PER_FEEDER 50000
+#define MESSAGES_SUM (FEEDERS * MESSAGES_PER_FEEDER)
+#define TEST_RUNS 10
 
-/* no synchronization between the feed/consume threads, therefore it does
- * not succeed reliably. commented out for now, will fix at the next
- * logqueue related threaded issue */
-
-GStaticMutex threaded_lock = G_STATIC_MUTEX_INIT;
+GStaticMutex time_lock;
+glong sum_time;
 
 gpointer
 threaded_feed(gpointer st)
 {
   LogQueue *q = (LogQueue *) st;
   char *msg_str = "<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép";
+  gint msg_len = strlen(msg_str);
   gint i;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
-  LogMessage *msg;
+  LogMessage *msg, *tmpl;
+  GTimeVal start, end;
+  GSockAddr *sa;
+  glong diff;
+  /* just to make sure time is properly cached */
+  iv_init();
 
-  for (i = 0; i < 100000; i++)
+  sa = g_sockaddr_inet_new("10.10.10.10", 1010);
+  tmpl = log_msg_new(msg_str, msg_len, g_sockaddr_ref(sa), &parse_options);
+  g_get_current_time(&start);
+  for (i = 0; i < MESSAGES_PER_FEEDER; i++)
     {
-      msg = log_msg_new(msg_str, strlen(msg_str), g_sockaddr_inet_new("10.10.10.10", 1010), &parse_options);
+      msg = log_msg_clone_cow(tmpl, &path_options);
       log_msg_add_ack(msg, &path_options);
       msg->ack_func = test_ack;
 
-      g_static_mutex_lock(&threaded_lock);
       if (!log_queue_push_tail(q, msg, &path_options))
         {
-          fprintf(stderr, "Queue unable to consume enough messages: %d\n", fed_messages);
+          fprintf(stderr, "Unable to feed enough messages to queue: %d\n", fed_messages);
           return GUINT_TO_POINTER(1);
         }
-      g_static_mutex_unlock(&threaded_lock);
     }
+  g_get_current_time(&end);
+  diff = g_time_val_diff(&end, &start);
+  g_static_mutex_lock(&time_lock);
+  sum_time += diff;
+  g_static_mutex_unlock(&time_lock);
+  log_msg_unref(tmpl);
   return NULL;
 }
 
@@ -160,12 +174,35 @@ threaded_consume(gpointer st)
   gboolean success;
   gint i;
 
-  for (i = 0; i < 100000; i++)
+  /* just to make sure time is properly cached */
+  iv_init();
+
+  for (i = 0; i < MESSAGES_SUM; i++)
     {
-      g_static_mutex_lock(&threaded_lock);
+      gint slept = 0;
       msg = NULL;
-      success = log_queue_pop_head(q, &msg, &path_options, FALSE);
-      g_static_mutex_unlock(&threaded_lock);
+
+      do
+        {
+          success = log_queue_pop_head(q, &msg, &path_options, FALSE);
+          if (!success)
+            {
+              struct timespec ns;
+
+              /* sleep 1 msec */
+              ns.tv_sec = 0;
+              ns.tv_nsec = 1000000;
+              nanosleep(&ns, NULL);
+              slept++;
+              if (slept > 10000)
+                {
+                  /* slept for more than 10 seconds */
+                  fprintf(stderr, "The wait for messages took too much time, i=%d\n", i);
+                  return GUINT_TO_POINTER(1);
+                }
+            }
+        }
+      while (!success);
 
       g_assert(!success || (success && msg != NULL));
       if (!success)
@@ -181,26 +218,31 @@ threaded_consume(gpointer st)
   return NULL;
 }
 
+
 void
 testcase_with_threads()
 {
   LogQueue *q;
-  GThread *thread_feed, *thread_consume;
-  gint i;
+  GThread *thread_feed[FEEDERS], *thread_consume;
+  gint i, j;
 
-  for (i = 0; i < 100; i++)
+  for (i = 0; i < TEST_RUNS; i++)
     {
-      q = log_queue_new(100000, 0, 64);
-      thread_feed = g_thread_create(threaded_feed, q, TRUE, NULL);
+      q = log_queue_new(MESSAGES_SUM);
+
+      for (j = 0; j < FEEDERS; j++)
+        thread_feed[j] = g_thread_create(threaded_feed, q, TRUE, NULL);
 
       thread_consume = g_thread_create(threaded_consume, q, TRUE, NULL);
-      g_thread_join(thread_feed);
+
+      for (j = 0; j < FEEDERS; j++)
+        g_thread_join(thread_feed[j]);
       g_thread_join(thread_consume);
 
       log_queue_free(q);
     }
+  fprintf(stderr, "Feed speed: %.2lf\n", (double) TEST_RUNS * MESSAGES_SUM * 1000000 / sum_time);
 }
-#endif
 
 int
 main()
@@ -214,7 +256,11 @@ main()
   msg_format_options_defaults(&parse_options);
   msg_format_options_init(&parse_options, configuration);
 
+  testcase_with_threads();
+
+#if 1
   testcase_zero_diskbuf_alternating_send_acks();
   testcase_zero_diskbuf_and_normal_acks();
+#endif
   return 0;
 }
