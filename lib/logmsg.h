@@ -38,6 +38,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <sys/time.h>
+#include <iv_list.h>
 
 typedef struct _LogPathOptions LogPathOptions;
 
@@ -102,6 +103,14 @@ enum
   LF_LEGACY_MSGHDR    = 0x00020000,
 };
 
+typedef struct _LogMessageQueueNode
+{
+  struct list_head list;
+  LogMessage *msg;
+  gboolean flow_controlled:1, embedded:1;
+} LogMessageQueueNode;
+
+
 /* NOTE: the members are ordered according to the presumed use frequency. 
  * The structure itself is 2 cachelines, the border is right after the "msg"
  * member */
@@ -117,35 +126,40 @@ struct _LogMessage
 
   /* message parts */ 
   
-  /* the contents of this struct is directly copied into another
-   * LogMessage with pointer values. To change any of the fields
-   * please use log_msg_set_*() functions.
+  /* the contents of the members below is directly copied into another
+   * LogMessage with pointer values.  To change any of the fields please use
+   * log_msg_set_*() functions, which will handle borrowed data members
+   * correctly.
    */
-  struct
-  {
-    guint32 flags;
-    guint16 pri;
-    guint8 initial_parse:1,
-      recurse_count:7;
-    guint8 num_matches;
-    guint8 num_tags;
-    guint8 alloc_sdata;
-    guint8 num_sdata;
-    /* 5 bytes hole */
-    
-    LogStamp timestamps[LM_TS_MAX];
-    guint32 *tags;
-    NVHandle *sdata;
+  /* ==== start of directly copied part ==== */
+  LogStamp timestamps[LM_TS_MAX];
+  guint32 *tags;
+  NVHandle *sdata;
 
-    GSockAddr *saddr;
-    NVTable *payload;
-  };
+  GSockAddr *saddr;
+  NVTable *payload;
 
+  guint32 flags;
+  guint16 pri;
+  guint8 initial_parse:1,
+    recurse_count:7;
+  guint8 num_matches;
+  guint8 num_tags;
+  guint8 alloc_sdata;
+  guint8 num_sdata;
+  /* ==== end of directly copied part ==== */
+
+  guint8 num_nodes;
+  guint8 cur_node;
+
+  /* preallocated LogQueueNodes used to insert this message into a LogQueue */
+  LogMessageQueueNode nodes[0];
 };
 
 extern NVRegistry *logmsg_registry;
 extern const char logmsg_sd_prefix[];
 extern const gint logmsg_sd_prefix_len;
+extern gint logmsg_node_max;
 
 LogMessage *log_msg_ref(LogMessage *m);
 void log_msg_unref(LogMessage *m);
@@ -191,6 +205,10 @@ gboolean log_msg_is_tag_by_id(LogMessage *self, LogTagId id);
 gboolean log_msg_is_tag_by_name(LogMessage *self, const gchar *name);
 gboolean log_msg_tags_foreach(LogMessage *self, LogMessageTagsForeachFunc callback, gpointer user_data);
 void log_msg_print_tags(LogMessage *self, GString *result);
+
+LogMessageQueueNode *log_msg_alloc_queue_node(LogMessage *msg, const LogPathOptions *path_options);
+LogMessageQueueNode *log_msg_alloc_dynamic_queue_node(LogMessage *msg, const LogPathOptions *path_options);
+void log_msg_free_queue_node(LogMessageQueueNode *node);
 
 void log_msg_clear(LogMessage *self);
 LogMessage *log_msg_new(const gchar *msg, gint length,

@@ -35,20 +35,15 @@
 #include <string.h>
 
 
-#define LOG_PATH_OPTIONS_TO_POINTER(lpo) GUINT_TO_POINTER(0x80000000 | (lpo)->flow_control)
-
-/* NOTE: this must not evaluate ptr multiple times, otherwise the code that
- * uses this breaks, as it passes the result of a g_queue_pop_head call,
- * which has side effects.
- */
-#define POINTER_TO_LOG_PATH_OPTIONS(ptr, lpo) (lpo)->flow_control = (GPOINTER_TO_INT(ptr) & ~0x80000000)
-
 typedef struct _LogQueueFifo
 {
   LogQueue super;
   GMutex *lock;
-  GQueue *qoverflow;   /* entries that did not fit to the disk based queue */
-  GQueue *qbacklog;    /* entries that were sent but not acked yet */
+  struct list_head qoverflow;   /* entries that did not fit to the disk based queue */
+  gint qoverflow_len;
+  struct list_head qbacklog;    /* entries that were sent but not acked yet */
+  gint qbacklog_len;
+
   gint qoverflow_size; /* in number of elements */
   GTimeVal last_throttle_check;
   gint parallel_push_notify_limit;
@@ -63,7 +58,7 @@ log_queue_fifo_get_length(LogQueue *s)
 {
   LogQueueFifo *self = (LogQueueFifo *) s;
 
-  return (self->qoverflow->length / 2);
+  return self->qoverflow_len;
 }
 
 static void
@@ -107,12 +102,14 @@ log_queue_fifo_push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *pat
   LogPathOptions local_options = *path_options;
 
   g_mutex_lock(self->lock);
-  if ((self->qoverflow->length / 2) < self->qoverflow_size)
+  if (self->qoverflow_len < self->qoverflow_size)
     {
-      g_queue_push_tail(self->qoverflow, msg);
-      g_queue_push_tail(self->qoverflow, LOG_PATH_OPTIONS_TO_POINTER(path_options));
-      msg->flags |= LF_STATE_REFERENCED;
-      log_msg_ref(msg);
+      LogMessageQueueNode *node;
+
+      node = log_msg_alloc_queue_node(msg, path_options);
+      list_add_tail(&node->list, &self->qoverflow);
+      self->qoverflow_len++;
+
       local_options.flow_control = FALSE;
       log_queue_fifo_push_notify(self);
       g_mutex_unlock(self->lock);
@@ -139,17 +136,19 @@ static void
 log_queue_fifo_push_head(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
 {
   LogQueueFifo *self = (LogQueueFifo *) s;
+  LogMessageQueueNode *node;
 
   /* we don't check limits when putting items "in-front", as it
    * normally happens when we start processing an item, but at the end
    * can't deliver it. No checks, no drops either. */
 
   g_mutex_lock(self->lock);
-  g_queue_push_head(self->qoverflow, LOG_PATH_OPTIONS_TO_POINTER(path_options));
-  g_queue_push_head(self->qoverflow, msg);
+  node = log_msg_alloc_dynamic_queue_node(msg, path_options);
+  list_add(&node->list, &self->qoverflow);
+  self->qoverflow_len++;
+
   log_queue_fifo_push_notify(self);
   g_mutex_unlock(self->lock);
-  msg->flags |= LF_STATE_REFERENCED;
   stats_counter_inc(self->super.stored_messages);
 }
 
@@ -275,6 +274,7 @@ static gboolean
 log_queue_fifo_pop_head(LogQueue *s, LogMessage **msg, LogPathOptions *path_options, gboolean push_to_backlog)
 {
   LogQueueFifo *self = (LogQueueFifo *) s;
+  LogMessageQueueNode *node;
 
   g_mutex_lock(self->lock);
   if (self->super.throttle && self->super.throttle_buckets == 0)
@@ -282,10 +282,21 @@ log_queue_fifo_pop_head(LogQueue *s, LogMessage **msg, LogPathOptions *path_opti
       g_mutex_unlock(self->lock);
       return FALSE;
     }
-  if (self->qoverflow->length > 0)
+  if (self->qoverflow_len > 0)
     {
-      *msg = g_queue_pop_head(self->qoverflow);
-      POINTER_TO_LOG_PATH_OPTIONS(g_queue_pop_head(self->qoverflow), path_options);
+      node = list_entry(self->qoverflow.next, LogMessageQueueNode, list);
+      *msg = node->msg;
+      path_options->flow_control = node->flow_controlled;
+      self->qoverflow_len--;
+      if (!push_to_backlog)
+        {
+          list_del(&node->list);
+          log_msg_free_queue_node(node);
+        }
+      else
+        {
+          list_del_init(&node->list);
+        }
     }
   else
     {
@@ -297,8 +308,8 @@ log_queue_fifo_pop_head(LogQueue *s, LogMessage **msg, LogPathOptions *path_opti
   if (push_to_backlog)
     {
       log_msg_ref(*msg);
-      g_queue_push_tail(self->qbacklog, *msg);
-      g_queue_push_tail(self->qbacklog, LOG_PATH_OPTIONS_TO_POINTER(path_options));
+      list_add_tail(&node->list, &self->qbacklog);
+      self->qbacklog_len++;
     }
   self->super.throttle_buckets--;
   g_mutex_unlock(self->lock);
@@ -314,10 +325,18 @@ log_queue_fifo_ack_backlog(LogQueue *s, gint n)
   gint i;
 
   g_mutex_lock(self->lock);
-  for (i = 0; i < n; i++)
+  for (i = 0; i < n && self->qbacklog_len > 0; i++)
     {
-      msg = g_queue_pop_head(self->qbacklog);
-      POINTER_TO_LOG_PATH_OPTIONS(g_queue_pop_head(self->qbacklog), &path_options);
+      LogMessageQueueNode *node;
+
+      node = list_entry(self->qbacklog.next, LogMessageQueueNode, list);
+      msg = node->msg;
+      path_options.flow_control = node->flow_controlled;
+
+      list_del(&node->list);
+      log_msg_free_queue_node(node);
+      self->qbacklog_len--;
+
       log_msg_ack(msg, &path_options);
       log_msg_unref(msg);
     }
@@ -335,39 +354,35 @@ static void
 log_queue_fifo_rewind_backlog(LogQueue *s)
 {
   LogQueueFifo *self = (LogQueueFifo *) s;
-  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
-  LogMessage *msg;
   gint i, n;
 
   g_mutex_lock(self->lock);
-  n = self->qbacklog->length / 2;
+  n = self->qbacklog_len;
   for (i = 0; i < n; i++)
     {
-      msg = g_queue_pop_head(self->qbacklog);
-      POINTER_TO_LOG_PATH_OPTIONS(g_queue_pop_head(self->qbacklog), &path_options);
+      LogMessageQueueNode *node;
 
-      /* NOTE: reverse order as we are pushing to the head */
-      g_queue_push_head(self->qoverflow, LOG_PATH_OPTIONS_TO_POINTER(&path_options));
-      g_queue_push_head(self->qoverflow, msg);
+      node = list_entry(self->qbacklog.next, LogMessageQueueNode, list);
+      list_add(&node->list, &self->qoverflow);
     }
   log_queue_fifo_push_notify(self);
   g_mutex_unlock(self->lock);
 }
 
 static void
-log_queue_fifo_free_queue(GQueue *q)
+log_queue_fifo_free_queue(struct list_head *q)
 {
-  while (!g_queue_is_empty(q))
+  while (!list_empty(q))
     {
-      LogMessage *lm;
+      LogMessageQueueNode *node;
       LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
 
-      lm = g_queue_pop_head(q);
-      POINTER_TO_LOG_PATH_OPTIONS(g_queue_pop_head(q), &path_options);
-      log_msg_ack(lm, &path_options);
-      log_msg_unref(lm);
+      node = list_entry(q->next, LogMessageQueueNode, list);
+      path_options.flow_control = node->flow_controlled;
+      log_msg_ack(node->msg, &path_options);
+      log_msg_unref(node->msg);
+      log_msg_free_queue_node(node);
     }
-  g_queue_free(q);
 }
 
 static void
@@ -375,8 +390,8 @@ log_queue_fifo_free(LogQueue *s)
 {
   LogQueueFifo *self = (LogQueueFifo *) s;
 
-  log_queue_fifo_free_queue(self->qoverflow);
-  log_queue_fifo_free_queue(self->qbacklog);
+  log_queue_fifo_free_queue(&self->qoverflow);
+  log_queue_fifo_free_queue(&self->qbacklog);
   g_mutex_free(self->lock);
 }
 
@@ -398,8 +413,9 @@ log_queue_fifo_new(gint qoverflow_size, const gchar *persist_name)
 
   self->super.free_fn = log_queue_fifo_free;
 
-  self->qoverflow = g_queue_new();
-  self->qbacklog = g_queue_new();
+  INIT_LIST_HEAD(&self->qoverflow);
+  INIT_LIST_HEAD(&self->qbacklog);
+
   self->qoverflow_size = qoverflow_size;
   self->lock = g_mutex_new();
   return &self->super;

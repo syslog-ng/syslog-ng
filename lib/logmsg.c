@@ -77,6 +77,7 @@ const gchar *builtin_value_names[] =
 NVRegistry *logmsg_registry;
 const char logmsg_sd_prefix[] = ".SDATA.";
 const gint logmsg_sd_prefix_len = sizeof(logmsg_sd_prefix) - 1;
+gint logmsg_queue_node_max = 1;
 /* statistics */
 static guint32 *count_msg_clones;
 static guint32 *count_payload_reallocs;
@@ -230,6 +231,71 @@ log_msg_is_handle_macro(NVHandle handle)
 
   flags = nv_registry_get_handle_flags(logmsg_registry, handle);
   return !!(flags & LM_VF_MACRO);
+}
+
+static void
+log_msg_init_queue_node(LogMessage *msg, LogMessageQueueNode *node, const LogPathOptions *path_options)
+{
+  INIT_LIST_HEAD(&node->list);
+  node->flow_controlled = path_options->flow_control;
+  node->msg = log_msg_ref(msg);
+  msg->flags |= LF_STATE_REFERENCED;
+}
+
+/*
+ * Allocates a new LogMessageQueueNode instance to be enqueued in a
+ * LogQueue.
+ *
+ * NOTE: Assumed to be runnning in the source thread, and that the same
+ * LogMessage instance is only put into queue from the same thread (e.g. 
+ * the related fields are _NOT_ locked).
+ */
+LogMessageQueueNode *
+log_msg_alloc_queue_node(LogMessage *msg, const LogPathOptions *path_options)
+{
+  LogMessageQueueNode *node;
+
+  if (msg->cur_node < msg->num_nodes)
+    {
+      node = &msg->nodes[msg->cur_node++];
+      node->embedded = TRUE;
+    }
+  else
+    {
+      gint nodes = (volatile gint) logmsg_queue_node_max;
+
+      /* this is a racy update, but it doesn't really hurt if we lose an
+       * update or if we continue with a smaller value in parallel threads
+       * for some time yet, since the smaller number only means that we
+       * pre-allocate somewhat less LogMsgQueueNodes in the message
+       * structure, but will be fine regardless (if we'd overflow the
+       * pre-allocated space, we start allocating nodes dynamically from
+       * heap.
+       */
+      if (nodes < 32 && nodes <= msg->num_nodes)
+        logmsg_queue_node_max = msg->num_nodes + 1;
+      node = g_slice_new(LogMessageQueueNode);
+      node->embedded = FALSE;
+    }
+  log_msg_init_queue_node(msg, node, path_options);
+  return node;
+}
+
+LogMessageQueueNode *
+log_msg_alloc_dynamic_queue_node(LogMessage *msg, const LogPathOptions *path_options)
+{
+  LogMessageQueueNode *node;
+  node = g_slice_new(LogMessageQueueNode);
+  node->embedded = FALSE;
+  log_msg_init_queue_node(msg, node, path_options);
+  return node;
+}
+
+void
+log_msg_free_queue_node(LogMessageQueueNode *node)
+{
+  if (!node->embedded)
+    g_slice_free(LogMessageQueueNode, node);
 }
 
 void
@@ -717,6 +783,19 @@ log_msg_clear(LogMessage *self)
   self->flags |= LF_STATE_OWN_MASK;
 }
 
+static inline LogMessage *
+log_msg_alloc(void)
+{
+  LogMessage *msg;
+
+  /* NOTE: logmsg_node_max is updated from parallel threads without locking. */
+  gint nodes = (volatile gint) logmsg_queue_node_max;
+
+  msg = g_malloc0(sizeof(LogMessage) + sizeof(LogMessageQueueNode) * nodes);
+  msg->num_nodes = nodes;
+  return msg;
+}
+
 /**
  * log_msg_new:
  * @msg: message to parse
@@ -731,7 +810,7 @@ log_msg_new(const gchar *msg, gint length,
             GSockAddr *saddr,
             MsgFormatOptions *parse_options)
 {
-  LogMessage *self = g_new0(LogMessage, 1);
+  LogMessage *self = log_msg_alloc();
   
   log_msg_init(self, saddr);
   self->payload = nv_table_new(LM_V_MAX, 16, MAX(length * 2, 256));
@@ -750,7 +829,7 @@ log_msg_new(const gchar *msg, gint length,
 LogMessage *
 log_msg_new_empty(void)
 {
-  LogMessage *self = g_new0(LogMessage, 1);
+  LogMessage *self = log_msg_alloc();
   
   log_msg_init(self, NULL);
   self->payload = nv_table_new(LM_V_MAX, 16, 256);
@@ -795,7 +874,7 @@ log_msg_clone_ack(LogMessage *msg, gpointer user_data)
 LogMessage *
 log_msg_clone_cow(LogMessage *msg, const LogPathOptions *path_options)
 {
-  LogMessage *self = g_new(LogMessage, 1);
+  LogMessage *self = log_msg_alloc();
 
   stats_counter_inc(count_msg_clones);
   if ((msg->flags & LF_STATE_OWN_MASK) == 0)
@@ -817,6 +896,7 @@ log_msg_clone_cow(LogMessage *msg, const LogPathOptions *path_options)
   self->original = log_msg_ref(msg);
   g_atomic_counter_set(&self->ref_cnt, 1);
   g_atomic_counter_set(&self->ack_cnt, 0);
+  self->cur_node = 0;
 
   log_msg_add_ack(self, path_options);
   if (!path_options->flow_control)
