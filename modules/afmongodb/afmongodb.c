@@ -265,7 +265,7 @@ afmongodb_worker_insert (MongoDBDestDriver *self)
 
   msg_set_context(msg);
 
-  bson_reset (self->bson_set);
+  bson_reset (self->bson_sel);
   bson_reset (self->bson_upd);
   bson_reset (self->bson_set);
 
