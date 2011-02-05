@@ -34,7 +34,7 @@ typedef struct _AFInterSourceDriver
   LogSourceOptions source_options;
 } AFInterSourceDriver;
 
-static gint next_mark_target = -1;
+static glong next_mark_target = -1;
 
 void 
 afinter_postpone_mark(gint mark_freq)
