@@ -42,7 +42,7 @@ static gboolean
 affile_open_file(gchar *name, gint flags,
                  gint uid, gint gid, gint mode,
                  gint dir_uid, gint dir_gid, gint dir_mode,
-                 gboolean create_dirs, gboolean privileged, gboolean is_pipe, gint *fd)
+                 gboolean create_dirs, gboolean privileged, gboolean is_pipe, gboolean *regular, gint *fd)
 {
   cap_t saved_caps;
   struct stat st;
@@ -87,7 +87,11 @@ affile_open_file(gchar *name, gint flags,
                       evt_tag_str("filename", name),
                       NULL);
         }
+      if (regular)
+        *regular = !!S_ISREG(st.st_mode);
     }
+  else if (regular)
+    *regular = TRUE;
   *fd = open(name, flags, mode < 0 ? 0600 : mode);
   if (is_pipe && *fd < 0 && errno == ENOENT)
     {
@@ -127,7 +131,7 @@ affile_sd_open_file(AFFileSourceDriver *self, gchar *name, gint *fd)
   else
     flags = O_RDONLY | O_NOCTTY | O_NONBLOCK | O_LARGEFILE;
 
-  if (affile_open_file(name, flags, -1, -1, -1, 0, 0, 0, 0, !!(self->flags & AFFILE_PRIVILEGED), !!(self->flags & AFFILE_PIPE), fd))
+  if (affile_open_file(name, flags, -1, -1, -1, 0, 0, 0, 0, !!(self->flags & AFFILE_PRIVILEGED), !!(self->flags & AFFILE_PIPE), NULL, fd))
     return TRUE;
   return FALSE;
 }
@@ -443,6 +447,7 @@ affile_dw_init(LogPipe *s)
   int fd, flags;
   struct stat st;
   GlobalConfig *cfg = log_pipe_get_config(s);
+  gboolean regular;
 
   if (cfg)
     self->time_reopen = cfg->time_reopen;
@@ -472,13 +477,13 @@ affile_dw_init(LogPipe *s)
   if (affile_open_file(self->filename->str, flags, 
                        self->owner->file_uid, self->owner->file_gid, self->owner->file_perm, 
                        self->owner->dir_uid, self->owner->dir_gid, self->owner->dir_perm, 
-                       !!(self->owner->flags & AFFILE_CREATE_DIRS), FALSE, !!(self->owner->flags & AFFILE_PIPE), &fd))
+                       !!(self->owner->flags & AFFILE_CREATE_DIRS), FALSE, !!(self->owner->flags & AFFILE_PIPE), &regular, &fd))
     {
       guint write_flags;
       
       if (!self->writer)
         {
-          self->writer = log_writer_new(LW_FORMAT_FILE | ((self->owner->flags & AFFILE_PIPE) ? 0 : LW_ALWAYS_WRITABLE));
+          self->writer = log_writer_new(LW_FORMAT_FILE | ((self->owner->flags & AFFILE_PIPE || !regular) ? 0 : LW_ALWAYS_WRITABLE));
           log_writer_set_options((LogWriter *) self->writer, s, &self->owner->writer_options, 1, self->owner->flags & AFFILE_PIPE ? SCS_PIPE : SCS_FILE, self->owner->super.id, self->filename->str);
           log_pipe_append(&self->super, self->writer);
         }
