@@ -1,3 +1,63 @@
-3.3alpha1
+3.3.0alpha1
+	Sun, 06 Feb 2011 17:30:51 +0100
 
-	No release was made yet.
+	This is the first alpha release of the upcoming syslog-ng OSE 3.3,
+	containing the following noteworthy changes over syslog-ng OSE 3.2.
+
+	Features:
+	=========
+	* Added mongodb() destination driver to insert messages into
+	  MongoDB, a NoSQL database.
+
+	* Uses multiple threads for message reception and output for
+	  scalability over multiple CPUs/cores.  To enable multiple threads
+	  use threaded(yes) in the global options section of your
+	  configuration file.
+
+	* Uses epoll() instead of traditional poll() for increased
+	  performance, using a thin abstraction layer implemented in the
+	  ivykis library. A copy of ivykis is available in the source tree
+	  of syslog-ng.
+
+	* loggen was made multi-threaded and added the ability to open
+	  several connections, instead of only one.
+
+	* Other performance related tweaks.
+
+	Important changes:
+	==================
+	* log_iw_size() is divided among all possible connections for a
+	  connection oriented transport like unix-stream(), tcp() and
+	  syslog(transport(tcp)). This is in contrast with earlier versions
+	  which shared the same window for all connections. At the same time
+	  the global log_iw_size()/log_fetch_limit() settings were removed.
+
+	Bugfixes:
+	=========
+	* This release is synced with syslog-ng 3.2.2 bugfix-wise.
+
+	Credits:
+	========
+	
+	Multi-threading, epoll support and other performance improvements by
+	Balazs Scheidler (BalaBit).
+
+	mongodb() destination driver by Gergely Nagy aka Algernon (BalaBit)
+
+	Bug reports, testing and other feedback by the following people:
+
+          * Balázs Németh (BalaBit)
+          * Sándor Gellér (Morgan Stanley)
+          * Péter Czanik (BalaBit)
+          * Owen Mann (Interactive Data)
+          * Zhengxiang Pan (Alcatel Lucent)
+          * Corinna Vinschen (RedHat)
+          * Eric Berggren (Apple)
+          * Gergely Nagy (BalaBit)
+          * Matthew Hall
+          * LEBRETON Philippe
+          * Craig Bell
+          * Steven Chamberlain
+          * Balázs Scheidler (BalaBit)
+	  * Roger (Verizon)
+	  * Paul Crizak (AMD)
