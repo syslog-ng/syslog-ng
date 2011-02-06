@@ -22,6 +22,7 @@
  */
 
 #include "csvparser.h"
+#include "logparser.h"
 
 #include <string.h>
 

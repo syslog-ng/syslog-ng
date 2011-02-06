@@ -144,8 +144,11 @@ gboolean cfg_read_config(GlobalConfig *cfg, gchar *fname, gboolean syntax_only, 
 void cfg_free(GlobalConfig *self);
 gboolean cfg_init(GlobalConfig *cfg);
 gboolean cfg_deinit(GlobalConfig *cfg);
-void  cfg_persist_config_move(GlobalConfig *src, GlobalConfig *dest);
 
+
+PersistConfig *persist_config_new(void);
+void persist_config_free(PersistConfig *self);
+void cfg_persist_config_move(GlobalConfig *src, GlobalConfig *dest);
 void cfg_persist_config_add(GlobalConfig *cfg, gchar *name, gpointer value, GDestroyNotify destroy, gboolean force);
 gpointer cfg_persist_config_fetch(GlobalConfig *cfg, gchar *name);
 

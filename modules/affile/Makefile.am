@@ -12,6 +12,6 @@ EXTRA_DIST = $(BUILT_SOURCES) affile-grammar.ym
 
 libaffile_la_CPPFLAGS = $(AM_CPPFLAGS)
 libaffile_la_LIBADD = ../../lib/libsyslog-ng.la
-libaffile_la_LDFLAGS = -avoid-version
+libaffile_la_LDFLAGS = -avoid-version -module -no-undefined
 
 include $(top_srcdir)/build/lex-rules.am

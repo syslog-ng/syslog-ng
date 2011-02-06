@@ -520,8 +520,13 @@ log_matcher_pcre_re_compile(LogMatcher *s, const gchar *re)
  
   if (self->super.flags & LMF_ICASE)
     flags |= PCRE_CASELESS;
+#ifdef PCRE_NEWLINE_ANYCRLF
   if (self->super.flags & LMF_NEWLINE)
     flags |= PCRE_NEWLINE_ANYCRLF;
+#else
+  if (self->super.flags & LMF_NEWLINE)
+    msg_warning("syslog-ng was compiled against an old PCRE which doesn't support the 'newline' flag", NULL);
+#endif
   if (self->super.flags & LMF_UTF8)
     {
        gint support;

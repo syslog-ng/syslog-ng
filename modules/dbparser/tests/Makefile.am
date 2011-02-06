@@ -1,7 +1,7 @@
-AM_CFLAGS = -I$(top_srcdir)/lib -I../../../lib -I$(top_srcdir)/modules/dbparser -I.. -Wno-pointer-sign
+AM_CFLAGS = -I$(top_srcdir)/lib -I../../../lib -I$(top_srcdir)/modules/dbparser -I.. @CFLAGS_NOWARN_POINTER_SIGN@
+AM_LDFLAGS = -dlpreopen ../../syslogformat/libsyslogformat.la
 LIBS = @DEPS_LIBS@
-
-LDADD = $(top_builddir)/lib/libsyslog-ng.la ../libdbparser.la ../../syslogformat/libsyslogformat.la ../patternize.lo @OPENSSL_LIBS@
+LDADD = $(top_builddir)/lib/libsyslog-ng.la ../libsyslog-ng-patterndb.la  ../patternize.lo @OPENSSL_LIBS@
 
 check_PROGRAMS = test_timer_wheel test_patternize test_patterndb test_radix
 

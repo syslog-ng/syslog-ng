@@ -563,6 +563,19 @@ affile_dw_reopen(AFFileDestWriter *self)
 }
 
 static gboolean
+is_file_regular(const gchar *filename)
+{
+  struct stat st;
+
+  if (stat(filename, &st) >= 0)
+    {
+      return S_ISREG(st.st_mode);
+    }
+  /* non existing files will be created by syslog-ng, they are guaranteed to be regular */
+  return TRUE;
+}
+
+static gboolean
 affile_dw_init(LogPipe *s)
 {
   AFFileDestWriter *self = (AFFileDestWriter *) s;
@@ -578,7 +591,7 @@ affile_dw_init(LogPipe *s)
 
   if (!self->writer)
     {
-      self->writer = log_writer_new(LW_FORMAT_FILE | ((self->owner->flags & AFFILE_PIPE) ? 0 : LW_FILE_FD));
+      self->writer = log_writer_new(LW_FORMAT_FILE | ((self->owner->flags & AFFILE_PIPE || !is_file_regular(self->filename->str)) ? 0 : LW_FILE_FD));
       log_writer_set_options((LogWriter *) self->writer, s, &self->owner->writer_options, 1, self->owner->flags & AFFILE_PIPE ? SCS_PIPE : SCS_FILE, self->owner->super.id, self->filename->str);
 
       if (!log_pipe_init(self->writer, NULL))
@@ -719,7 +732,7 @@ affile_dd_set_file_gid(LogDriver *s, const gchar *file_gid)
 }
 
 void 
-affile_dd_set_file_perm(LogDriver *s, mode_t file_perm)
+affile_dd_set_file_perm(LogDriver *s, gint file_perm)
 {
   AFFileDestDriver *self = (AFFileDestDriver *) s;
   
@@ -755,7 +768,7 @@ affile_dd_set_dir_gid(LogDriver *s, const gchar *dir_gid)
 }
 
 void 
-affile_dd_set_dir_perm(LogDriver *s, mode_t dir_perm)
+affile_dd_set_dir_perm(LogDriver *s, gint dir_perm)
 {
   AFFileDestDriver *self = (AFFileDestDriver *) s;
   
@@ -1145,9 +1158,9 @@ affile_dd_new(gchar *filename, guint32 flags)
   self->filename_template = log_template_new(configuration, NULL, filename);
   self->flags = flags;
   self->file_uid = self->file_gid = -1;
-  self->file_perm = (mode_t) -1;
+  self->file_perm = -1;
   self->dir_uid = self->dir_gid = -1;
-  self->dir_perm = (mode_t) -1;
+  self->dir_perm = -1;
   log_writer_options_defaults(&self->writer_options);
   if (strchr(filename, '$') == NULL)
     {

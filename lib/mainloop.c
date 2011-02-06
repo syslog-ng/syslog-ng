@@ -319,12 +319,15 @@ main_loop_initialize_state(GlobalConfig *cfg, const gchar *persist_filename)
 static void
 main_loop_reload_config_apply(void)
 {
+  main_loop_old_config->persist = persist_config_new();
   cfg_deinit(main_loop_old_config);
   cfg_persist_config_move(main_loop_old_config, main_loop_new_config);
 
   if (cfg_init(main_loop_new_config))
     {
       msg_verbose("New configuration initialized", NULL);
+      persist_config_free(main_loop_new_config->persist);
+      main_loop_new_config->persist = NULL;
       cfg_free(main_loop_old_config);
       current_configuration = main_loop_new_config;
     }
@@ -341,6 +344,8 @@ main_loop_reload_config_apply(void)
           kill(getpid(), SIGQUIT);
           g_assert_not_reached();
         }
+      persist_config_free(main_loop_old_config->persist);
+      main_loop_old_config->persist = NULL;
       cfg_free(main_loop_new_config);
       current_configuration = main_loop_old_config;
       goto finish;

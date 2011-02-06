@@ -851,6 +851,7 @@ static const gchar *lexer_contexts[] =
   [LL_CONTEXT_PARSER] = "parser",
   [LL_CONTEXT_REWRITE] = "rewrite",
   [LL_CONTEXT_FILTER] = "filter",
+  [LL_CONTEXT_LOG] = "log",
   [LL_CONTEXT_BLOCK_DEF] = "block-def",
   [LL_CONTEXT_BLOCK_REF] = "block-ref",
   [LL_CONTEXT_BLOCK_CONTENT] = "block-content",

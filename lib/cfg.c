@@ -353,8 +353,6 @@ cfg_new(gint version)
   self->template_options.frac_digits = 0;
   self->recv_time_zone = NULL;
   self->keep_timestamp = TRUE;
-  
-  self->persist = persist_config_new();
   return self;
 }
 
@@ -447,8 +445,7 @@ cfg_free(GlobalConfig *self)
 {
   int i;
 
-  if (self->persist)
-    persist_config_free(self->persist);
+  g_assert(self->persist == NULL);
   if (self->state)
     persist_state_free(self->state);
 

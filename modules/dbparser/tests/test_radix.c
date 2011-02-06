@@ -351,6 +351,10 @@ test_matches(void)
                       "number", "0XABCDEF12345ABCDEF",
                       NULL);
 
+  test_search_matches(root, "aaa -12345 hihihi",
+                      "number", "-12345",
+                      NULL);
+
   test_search_matches(root, "bbb 192.168.1.1 huhuhu",
                       "ip", "192.168.1.1",
                       NULL);
@@ -548,6 +552,33 @@ test_matches(void)
 
   test_search_matches(root, "fff 12345.hihihi",
                       "float", "12345.", NULL);
+
+  test_search_matches(root, "fff -12.345 hihihi",
+                      "float", "-12.345", NULL);
+
+  test_search_matches(root, "fff -12.345e12 hihihi",
+                      "float", "-12.345e12", NULL);
+
+  test_search_matches(root, "fff -12.345e-12 hihihi",
+                      "float", "-12.345e-12", NULL);
+
+  test_search_matches(root, "fff 12.345e12 hihihi",
+                      "float", "12.345e12", NULL);
+
+  test_search_matches(root, "fff 12.345e-12 hihihi",
+                      "float", "12.345e-12", NULL);
+
+  test_search_matches(root, "fff -12.345E12 hihihi",
+                      "float", "-12.345E12", NULL);
+
+  test_search_matches(root, "fff -12.345E-12 hihihi",
+                      "float", "-12.345E-12", NULL);
+
+  test_search_matches(root, "fff 12.345E12 hihihi",
+                      "float", "12.345E12", NULL);
+
+  test_search_matches(root, "fff 12.345E-12 hihihi",
+                      "float", "12.345E-12", NULL);
 
   test_search_matches(root, "aaa v12345", NULL);
   test_search_matches(root, "bbb v12345", NULL);
