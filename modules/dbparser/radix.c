@@ -240,23 +240,39 @@ r_parser_float(guint8 *str, gint *len, const gchar *param, gpointer state, RPars
 {
   gboolean dot = FALSE;
 
-  *len = 1;
+  *len = 0;
+  if (str[*len] == '-')
+    (*len)++;
 
   while (g_ascii_isdigit(str[*len]) || (!dot && str[*len] == '.' && (dot = TRUE)))
     (*len)++;
 
-  return TRUE;
+  if (*len > 0 && (str[*len] == 'e' || str[*len] == 'E'))
+    {
+      (*len)++;
+
+      if (str[*len] == '-')
+        (*len)++;
+
+      while (g_ascii_isdigit(str[*len]))
+        (*len)++;
+    }
+
+  if (*len)
+    return TRUE;
+
+  return FALSE;
 }
 
 gboolean
 r_parser_number(guint8 *str, gint *len, const gchar *param, gpointer state, RParserMatch *match)
 {
-  gboolean hex = FALSE;
+  gint min_len = 1;
 
   if (g_str_has_prefix(str, "0x") || g_str_has_prefix(str, "0X"))
     {
       *len = 2;
-      hex = TRUE;
+      min_len += 2;
 
       while (g_ascii_isxdigit(str[*len]))
         (*len)++;
@@ -266,11 +282,17 @@ r_parser_number(guint8 *str, gint *len, const gchar *param, gpointer state, RPar
     {
       *len = 0;
 
+      if (str[*len] == '-')
+        {
+          (*len)++;
+          min_len++;
+        }
+
       while (g_ascii_isdigit(str[*len]))
         (*len)++;
     }
 
-  if ((!hex && *len > 0) || (hex && *len > 2))
+  if (*len >= min_len)
     {
       return TRUE;
     }
@@ -313,7 +335,7 @@ r_new_pnode(guint8 *key)
     {
       parser_node->parse = r_parser_number;
       parser_node->type = RPT_NUMBER;
-      parser_node->first = '0';
+      parser_node->first = '-';
       parser_node->last = '9';
     }
   else if (strcmp(params[0], "FLOAT") == 0 || strcmp(params[0], "DOUBLE") == 0)
@@ -321,7 +343,7 @@ r_new_pnode(guint8 *key)
       /* DOUBLE is a deprecated alias for FLOAT */
       parser_node->parse = r_parser_float;
       parser_node->type = RPT_FLOAT;
-      parser_node->first = '0';
+      parser_node->first = '-';
       parser_node->last = '9';
     }
   else if (strcmp(params[0], "STRING") == 0)
