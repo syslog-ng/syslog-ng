@@ -1,5 +1,6 @@
 
 SUBDIRS = @LIBMONGO_SUBDIRS@
+DIST_SUBDIRS = libmongo-client
 
 moduledir = @moduledir@
 AM_CPPFLAGS = -I$(top_srcdir)/lib -I../../lib
@@ -23,3 +24,5 @@ include $(top_srcdir)/build/lex-rules.am
 
 install: install-am
 uninstall: uninstall-am
+check:
+	echo Make check is disabled, as it requires a newer glib.
