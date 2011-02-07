@@ -637,6 +637,7 @@ if test "x$with_ivykis" = "xinternal"; then
 
 		IVYKIS_LIBS="-Wl,--whole-archive -L\$(top_builddir)/lib/ivykis/lib -livykis -L\$(top_builddir)/lib/ivykis/modules -livykis-modules -Wl,--no-whole-archive"
 		IVYKIS_CFLAGS="-I\$(top_srcdir)/lib/ivykis/lib/include -I\$(top_srcdir)/lib/ivykis/modules/include"
+		IVYKIS_SUBDIRS=ivykis
 	else
 		AC_MSG_ERROR([Internal ivykis sources not found in lib/ivykis. This is a hard dependency, unable to build syslog-ng without them.])
 	fi
@@ -847,6 +848,7 @@ AC_SUBST(LIBDBI_CFLAGS)
 AC_SUBST(LIBMONGO_LIBS)
 AC_SUBST(LIBMONGO_CFLAGS)
 AC_SUBST(LIBMONGO_SUBDIRS)
+AC_SUBST(IVYKIS_SUBDIRS)
 AC_SUBST(CFLAGS_NOWARN_POINTER_SIGN)
 
 AC_SUBST(CURRDATE)
