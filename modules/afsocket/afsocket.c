@@ -901,7 +901,6 @@ static void
 afsocket_dd_init_watches(AFSocketDestDriver *self)
 {
   IV_FD_INIT(&self->connect_fd);
-  self->connect_fd.fd = self->fd;
   self->connect_fd.cookie = self;
   self->connect_fd.handler_out = (void (*)(void *)) afsocket_dd_connected;
 
@@ -915,6 +914,7 @@ afsocket_dd_start_watches(AFSocketDestDriver *self)
 {
   main_loop_assert_main_thread();
 
+  self->connect_fd.fd = self->fd;
   iv_fd_register(&self->connect_fd);
 }
 
