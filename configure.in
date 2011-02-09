@@ -160,23 +160,43 @@ LT_INIT([dlopen disable-static])
 
 dnl ***************************************************************************
 dnl Validate yacc
+
+yacc_ok=1
 if echo "$YACC" | grep bison > /dev/null; then
 	# NOTE: m4 removes [], that's why it needs to be escaped
 	bison_version=[`$YACC --version | head -1 | sed -e 's/[^0-9.]*\([0-9.]\+\)$/\1/'`]
 	bison_version_major=`echo $bison_version | cut -d. -f1`
 	bison_version_minor=`echo $bison_version | cut -d. -f2`
 	if test "$bison_version_major" -lt 2 -o "$bison_version_minor" -lt 4; then
-		AC_MSG_WARN([syslog-ng requires bison 2.4. You may not be able to regenerate parsers if you change them.])
+		yacc_ok=0
 	fi
 else
-	AC_MSG_WARN([syslog-ng only supports bison and not traditional yacc. You may not be able to regenerate the parsers if you change them.])
+	yacc_ok=0
+fi
+
+if test $yacc_ok = 0; then
+	if test -f $srcdir/lib/cfg-grammar.c || test -f lib/cfg-grammar.c; then
+		AC_MSG_WARN([No proper bison found, you'll not be able to change lib/cfg-grammar.y])
+	else
+		AC_MSG_ERROR([syslog-ng requires bison 2.4 or later (traditional yacc is not enough). Your source tree seems to be from git, which doesn't have lib/cfg-grammar.c. Please install bison or use a distribution tarball.])
+	fi
 fi
 
 dnl ***************************************************************************
 dnl Validate flex
 
-if test -z "$LEX" ; then
-	AC_MSG_WARN([No lex found. syslog-ng requires flex if you want to change the lexer files cfg-lex.l.  You may not be able to regenerate the lexer if you change them.])
+if $LEX --version | grep "flex" >/dev/null; then
+	lex_ok=1
+else
+	lex_ok=0
+fi
+
+if test $lex_ok = 0 ; then
+	if test -f $srcdir/lib/cfg-lex.c || test -f lib/cfg-lex.c; then
+		AC_MSG_WARN([No flex found, you'll not be able to change lib/cfg-lex.l])
+	else
+		AC_MSG_ERROR([syslog-ng requires flex in order to generate its config lexer. Your source tree seems to be from git, which doesn't have lib/cfg-lex.c. Please install flex or use a distribution tarball.])
+	fi
 fi
 
 dnl ***************************************************************************
