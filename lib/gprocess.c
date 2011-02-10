@@ -140,6 +140,56 @@ static struct
   .gid = -1
 };
 
+/**
+ * Inherits systemd socket activation from parent process updating the pid
+ * in LISTEN_PID to the pid of the child process.
+ *
+ * @return same as sd_listen_fds
+ *   r == 0: no socket activation or this process is not responsible
+ *   r >  0: success, number of sockets
+ *   r <  0: an error occured
+ */
+static int
+inherit_systemd_activation(void)
+{
+  const char *e;
+  char buf[24] = { '\0' };
+  char *p = NULL;
+  unsigned long l;
+
+  /* fetch listen pid */
+  if (!(e = getenv("LISTEN_PID")))
+    return 0;
+
+  errno = 0;
+  l = strtoul(e, &p, 10);
+  if (errno != 0 || !p || *p || l == 0)
+    return (errno) ? -errno : -EINVAL;
+
+  /* was it for our parent? */
+  if (getppid() != (pid_t)l)
+    return 0;
+
+  /* verify listen fds */
+  if (!(e = getenv("LISTEN_FDS")))
+    return 0;
+
+  errno = 0;
+  l = strtoul(e, &p, 10);
+  if (errno != 0 || !p || *p)
+    return (errno) ? -errno : -EINVAL;
+
+  /* update the listen pid to ours */
+  snprintf(buf, sizeof(buf), "%d", getpid());
+  if (errno != 0 || !*buf)
+    return (errno) ? -errno : -EINVAL;
+
+  if (setenv("LISTEN_PID", buf, 1) == 0)
+    return (int)l;
+
+  return -1;
+}
+
 #if ENABLE_LINUX_CAPS
 
 /**
@@ -1125,6 +1175,10 @@ g_process_perform_supervise(void)
           process_kind = G_PK_DAEMON;
           close(init_result_pipe[0]);
           init_result_pipe[0] = -1;
+
+          /* update systemd socket activation pid */
+          inherit_systemd_activation();
+
           memcpy(process_opts.argv_start, process_opts.argv_orig, process_opts.argv_env_len);
           return;
         }
@@ -1180,6 +1234,9 @@ g_process_start(void)
       /* shut down init_result_pipe read side */
       close(init_result_pipe[0]);
       init_result_pipe[0] = -1;
+
+      /* update systemd socket activation pid */
+      inherit_systemd_activation();
     }
   else if (process_opts.mode == G_PM_SAFE_BACKGROUND)
     {
@@ -1213,6 +1270,9 @@ g_process_start(void)
       close(startup_result_pipe[0]);
       startup_result_pipe[0] = -1;
       
+      /* update systemd socket activation pid */
+      inherit_systemd_activation();
+
       process_kind = G_PK_SUPERVISOR;
       g_process_perform_supervise();
       /* we only return in the daamon process here */

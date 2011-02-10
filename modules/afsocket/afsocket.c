@@ -570,7 +570,9 @@ afsocket_sd_init(LogPipe *s)
 
       if (sock == -1)
         {
-          if (!afsocket_open_socket(self->bind_addr, !!(self->flags & AFSOCKET_STREAM), &sock))
+          if (!afsocket_sd_acquire_socket(self, &sock))
+            return self->super.optional;
+          if (sock == -1 && !afsocket_open_socket(self->bind_addr, !!(self->flags & AFSOCKET_STREAM), &sock))
             return self->super.optional;
         }
 
@@ -604,7 +606,9 @@ afsocket_sd_init(LogPipe *s)
     {
       if (!self->connections)
         {
-          if (!afsocket_open_socket(self->bind_addr, !!(self->flags & AFSOCKET_STREAM), &sock))
+          if (!afsocket_sd_acquire_socket(self, &sock))
+            return self->super.optional;
+          if (sock == -1 && !afsocket_open_socket(self->bind_addr, !!(self->flags & AFSOCKET_STREAM), &sock))
             return self->super.optional;
         }
       self->fd = -1;

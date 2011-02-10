@@ -77,6 +77,7 @@ struct _AFSocketSourceDriver
   GList *connections;
   SocketOptions *sock_options_ptr;
   gboolean (*setup_socket)(AFSocketSourceDriver *s, gint fd);
+  gboolean (*acquire_socket)(AFSocketSourceDriver *s, gint *fd);
 };
 
 void afsocket_sd_set_keep_alive(LogDriver *self, gint enable);
@@ -86,6 +87,15 @@ void afsocket_sd_set_tls_context(LogDriver *s, TLSContext *tls_context);
 #else
 #define afsocket_sd_set_tls_context(s, t)
 #endif
+
+static inline gboolean
+afsocket_sd_acquire_socket(AFSocketSourceDriver *s, gint *fd)
+{
+  if (s->acquire_socket)
+    return s->acquire_socket(s, fd);
+  *fd = -1;
+  return TRUE;
+}
 
 gboolean afsocket_sd_init(LogPipe *s);
 gboolean afsocket_sd_deinit(LogPipe *s);
