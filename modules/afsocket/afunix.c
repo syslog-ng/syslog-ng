@@ -25,12 +25,14 @@
 #include "misc.h"
 #include "messages.h"
 #include "gprocess.h"
+#include "sd-daemon.h"
 
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <stdlib.h>
 
 void
 afunix_sd_set_uid(LogDriver *s, gchar *owner)
@@ -63,6 +65,63 @@ afunix_sd_set_perm(LogDriver *s, gint perm)
 }
 
 static gboolean
+afunix_sd_acquire_socket(AFSocketSourceDriver *s, gint *result_fd)
+{
+  AFUnixSourceDriver *self = (AFUnixSourceDriver *) s;
+  gint fd, fds, t, r;
+
+  *result_fd = -1;
+  fd = -1;
+  fds = sd_listen_fds(0);
+
+  if (fds == 0)
+    return TRUE;
+
+  msg_debug("Systemd socket activation",
+	    evt_tag_int("systemd-sockets", fds),
+	    evt_tag_str("systemd-listen-pid", getenv("LISTEN_PID")),
+	    evt_tag_str("systemd-listen-fds", getenv("LISTEN_FDS")),
+	    NULL);
+
+  if (fds < 0)
+    {
+      msg_error("Failed to acquire systemd sockets, incorrectly set LISTEN_FDS environment variable?",
+		NULL);
+      return FALSE;
+    }
+  else if (fds > 0)
+    {
+      for (fd = SD_LISTEN_FDS_START; fd < SD_LISTEN_FDS_START + fds; fd++)
+	{
+	  t = (self->super.flags & AFSOCKET_STREAM) ? SOCK_STREAM : SOCK_DGRAM;
+	  r = sd_is_socket_unix(fd, t, -1, self->filename, 0);
+	  if (r == 1)
+	    {
+	      *result_fd = fd;
+	      break;
+	    }
+	}
+    }
+  else
+    return TRUE;
+
+  if (*result_fd != -1)
+    {
+      msg_verbose("Acquired systemd socket",
+		  evt_tag_str("filename", self->filename),
+		  evt_tag_int("systemd-sock-fd", *result_fd),
+		  NULL);
+    }
+  else
+    {
+      msg_debug("Failed to acquire systemd socket, opening nevertheless",
+		evt_tag_str("filename", self->filename),
+		NULL);
+    }
+  return TRUE;
+}
+
+static gboolean
 afunix_sd_init(LogPipe *s)
 {
   AFUnixSourceDriver *self = (AFUnixSourceDriver *) s;
@@ -83,6 +142,7 @@ afunix_sd_init(LogPipe *s)
       if (self->perm >= 0)
         chmod(self->filename, (mode_t) self->perm);
       g_process_cap_restore(saved_caps);
+
       return TRUE;
     }
   return FALSE;
@@ -116,6 +176,7 @@ afunix_sd_new(gchar *filename, guint32 flags)
   self->super.bind_addr = g_sockaddr_unix_new(filename);
   self->super.super.super.init = afunix_sd_init;
   self->super.super.super.free_fn = afunix_sd_free;
+  self->super.acquire_socket = afunix_sd_acquire_socket;
   self->filename = g_strdup(filename);
   self->owner = -1;
   self->group = -1;
