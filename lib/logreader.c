@@ -418,6 +418,8 @@ log_reader_update_watches(LogReader *self)
 
       if (free_to_send)
         {
+          /* we have data in our input buffer, we need to start working
+           * on it immediately, without waiting for I/O events */
           if (!iv_task_registered(&self->restart_task))
             {
               iv_task_register(&self->restart_task);
@@ -432,7 +434,11 @@ log_reader_update_watches(LogReader *self)
 
   if (iv_fd_registered(&self->fd_watch))
     {
-      /* files cannot be polled using epoll, it results in an error */
+      /* this branch is executed when our fd is connected to a non-file
+       * source (e.g. TCP, UDP socket). We set up I/O callbacks here.
+       * files cannot be polled using epoll, as it causes an I/O error
+       * (thus abort in ivykis).
+       */
       if (cond & G_IO_IN)
         iv_fd_set_handler_in(&self->fd_watch, log_reader_io_process_input);
       else
