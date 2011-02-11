@@ -296,6 +296,7 @@ log_writer_update_watches(LogWriter *self)
   /* NOTE: we either start the suspend_timer or enable the fd_watch. The two MUST not happen at the same time. */
 
   if (log_proto_prepare(self->proto, &fd, &cond) ||
+      self->flush_waiting_for_timeout ||
       log_queue_check_items(self->queue, self->options->flush_lines, &partial_batch, &timeout_msec,
                             (LogQueuePushNotifyFunc) log_writer_schedule_update_watches, self, NULL))
     {
