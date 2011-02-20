@@ -70,6 +70,7 @@ testcase_frequent_words(gchar* logs, guint support, gchar *expected)
   gchar **expecteds;
   GHashTable *wordlist;
   loglinesType *logmessages;
+  gchar *delimiters = " :&~?![]=,;()'\"";
 
   logmessages = testcase_get_logmessages(logs);
 
@@ -77,7 +78,7 @@ testcase_frequent_words(gchar* logs, guint support, gchar *expected)
 
   for (twopass = 1; twopass <= 2; ++twopass)
     {
-      wordlist = ptz_find_frequent_words(logmessages->logmessages, support, twopass == 1);
+      wordlist = ptz_find_frequent_words(logmessages->logmessages, support, delimiters, twopass == 1);
 
       for (i = 0; expecteds[i]; ++i)
         {
@@ -281,10 +282,11 @@ testcase_find_clusters_slct(gchar* logs, guint support, gchar *expected)
   clusterfindData *find_data;
   GHashTable *clusters;
   Cluster *test_cluster;
+  gchar *delimiters = " :&~?![]=,;()'\"";
 
   logmessages = testcase_get_logmessages(logs);
 
-  clusters = ptz_find_clusters_slct(logmessages->logmessages, support, 0);
+  clusters = ptz_find_clusters_slct(logmessages->logmessages, support, delimiters, 0);
 
   expecteds = g_strsplit(expected, "|", 0);
   for (i = 0; expecteds[i]; ++i)

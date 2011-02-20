@@ -39,7 +39,7 @@
 #define PTZ_MAXLINELEN 10240
 #define PTZ_MAXWORDS 512      /* maximum number of words in one line */
 #define PTZ_LOGTABLE_ALLOC_BASE 3000
-#define PTZ_WORDLIST_CACHE 3 // FIXME: make this a commandline parameter?
+#define PTZ_WORDLIST_CACHE 3 /* FIXME: make this a commandline parameter? */
 
 static LogTagId cluster_tag_id;
 
@@ -101,7 +101,7 @@ static void _ptz_debug_print_word(gpointer key, gpointer value, gpointer dummy)
 
 static void _ptz_debug_print_cluster(gpointer key, gpointer value, gpointer dummy)
 {
-  fprintf(stderr, "%s: %d\n", (gchar*) key, ((Cluster *) value)->support);
+  fprintf(stderr, "%s: %s\n", (gchar*) key, ((Cluster *) value)->words[0]);
 }
 #endif
 
@@ -119,6 +119,27 @@ ptz_str2hash(gchar *string, guint modulo, guint seed)
   return seed % modulo;
 }
 
+gchar *
+ptz_find_delimiters(gchar *str, gchar *delimdef)
+{
+  gssize token_len;
+  gchar *remainder;
+  GString *delimiters = g_string_sized_new(32);
+
+  remainder = str;
+  while (remainder[0] != 0)
+    {
+      remainder += strcspn(remainder, delimdef);
+      if (remainder[0] != 0)
+        {
+          g_string_append_c(delimiters, remainder[0]);
+          remainder++;
+        }
+    }
+
+  return g_string_free(delimiters, FALSE);
+}
+
 gboolean
 ptz_find_frequent_words_remove_key_predicate(gpointer key, gpointer value, gpointer support)
 {
@@ -126,7 +147,7 @@ ptz_find_frequent_words_remove_key_predicate(gpointer key, gpointer value, gpoin
 }
 
 GHashTable *
-ptz_find_frequent_words(GPtrArray *logs, guint support, gboolean two_pass)
+ptz_find_frequent_words(GPtrArray *logs, guint support, gchar *delimiters, gboolean two_pass)
 {
   int i, j, pass;
   guint *curr_count;
@@ -164,14 +185,14 @@ ptz_find_frequent_words(GPtrArray *logs, guint support, gboolean two_pass)
         {
           msg = (LogMessage *) g_ptr_array_index(logs, i);
           msgstr = (gchar *) log_msg_get_value(msg, LM_V_MESSAGE, &msglen);
-          /* NOTE: we should split on more than a simple space... */
-          words = g_strsplit(msgstr, " ", PTZ_MAXWORDS);
+
+          words = g_strsplit_set(msgstr, delimiters, PTZ_MAXWORDS);
 
           for (j = 0; words[j]; ++j)
             {
               /* NOTE: to calculate the key for the hash, we prefix a word with
-               * its position in the row and a space -- as we split at spaces,
-               * this should not create confusion
+               * its position in the row and a space -- as we always split at
+               * spaces, this should not create confusion
                */
               hash_key = g_strdup_printf("%d %s", j, words[j]);
 
@@ -207,7 +228,7 @@ ptz_find_frequent_words(GPtrArray *logs, guint support, gboolean two_pass)
           g_strfreev(words);
         }
 
-      //g_hash_table_foreach(wordlist, _ptz_debug_print_word, NULL);
+      /* g_hash_table_foreach(wordlist, _ptz_debug_print_word, NULL); */
 
       g_hash_table_foreach_remove(wordlist, ptz_find_frequent_words_remove_key_predicate, GUINT_TO_POINTER(support));
     }
@@ -232,7 +253,7 @@ ptz_find_clusters_remove_cluster_predicate(gpointer key, gpointer value, gpointe
   ret = (val->loglines->len < support);
   if (ret)
     {
-      // remove cluster reference from the relevant logs
+      /* remove cluster reference from the relevant logs */
       for (i = 0; i < val->loglines->len; ++i)
         {
           msg = (LogMessage *) g_ptr_array_index(val->loglines, i);
@@ -262,7 +283,7 @@ cluster_free(Cluster *cluster)
 }
 
 GHashTable *
-ptz_find_clusters_slct(GPtrArray *logs, guint support, guint num_of_samples)
+ptz_find_clusters_slct(GPtrArray *logs, guint support, gchar *delimiters, guint num_of_samples)
 {
   GHashTable *wordlist;
   GHashTable *clusters;
@@ -275,10 +296,11 @@ ptz_find_clusters_slct(GPtrArray *logs, guint support, guint num_of_samples)
   gboolean is_candidate;
   Cluster *cluster;
   GString *cluster_key;
+  gchar * msgdelimiters;
 
   /* get the frequent word list */
-  wordlist = ptz_find_frequent_words(logs, support, TRUE);
-//  g_hash_table_foreach(wordlist, _debug_print, NULL);
+  wordlist = ptz_find_frequent_words(logs, support, delimiters, TRUE);
+  /* g_hash_table_foreach(wordlist, _ptz_debug_print_word, NULL); */
 
   /* find the cluster candidates */
   clusters = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, (GDestroyNotify) cluster_free);
@@ -290,8 +312,8 @@ ptz_find_clusters_slct(GPtrArray *logs, guint support, guint num_of_samples)
 
       g_string_truncate(cluster_key, 0);
 
-      /* NOTE: we should split on more than a simple space... */
-      words = g_strsplit(msgstr, " ", PTZ_MAXWORDS);
+      words = g_strsplit_set(msgstr, delimiters, PTZ_MAXWORDS);
+      msgdelimiters = ptz_find_delimiters(msgstr, delimiters);
 
       is_candidate = FALSE;
       for (j = 0; words[j]; ++j)
@@ -306,11 +328,18 @@ ptz_find_clusters_slct(GPtrArray *logs, guint support, guint num_of_samples)
             }
           else
             {
-              g_string_append_printf(cluster_key, "%d *%c", j, PTZ_SEPARATOR_CHAR);
+              g_string_append_printf(cluster_key, "%d %c%c", j, PTZ_PARSER_MARKER_CHAR, PTZ_SEPARATOR_CHAR);
             }
 
           g_free(hash_key);
         }
+
+      /* append the delimiters of the message to the cluster key to assure unicity
+       * otherwise the same words with different delimiters would still show as the
+       * same cluster
+       */
+      g_string_append_printf(cluster_key, "%s%c", msgdelimiters, PTZ_SEPARATOR_CHAR);
+      g_free(msgdelimiters);
 
       if (is_candidate)
         {
@@ -347,7 +376,7 @@ ptz_find_clusters_slct(GPtrArray *logs, guint support, guint num_of_samples)
 
   g_hash_table_foreach_remove(clusters, ptz_find_clusters_remove_cluster_predicate, GUINT_TO_POINTER(support));
 
-//  g_hash_table_foreach(clusters, _ptz_debug_print_cluster, NULL);
+  /* g_hash_table_foreach(clusters, _ptz_debug_print_cluster, NULL); */
 
   g_hash_table_unref(wordlist);
   g_string_free(cluster_key, TRUE);
@@ -372,7 +401,7 @@ ptz_find_clusters_step(Patternizer *self, GPtrArray *logs, guint support, guint 
 {
   msg_progress("Searching clusters", evt_tag_int("input lines", logs->len), NULL);
   if (self->algo == PTZ_ALGO_SLCT)
-    return ptz_find_clusters_slct(logs, support, num_of_samples);
+    return ptz_find_clusters_slct(logs, support, self->delimiters, num_of_samples);
   else
     {
       msg_error("Unknown clustering algorithm", evt_tag_int("algo_id", self->algo));
@@ -466,6 +495,11 @@ ptz_print_patterndb_rule(gpointer key, gpointer value, gpointer user_data)
   guint parser_counts[PTZ_NUM_OF_PARSERS];
   int i;
   Cluster *cluster;
+  GString *pattern = g_string_new("");
+  guint wordcount;
+  gchar *delimiters;
+
+  cluster = (Cluster *) value;
 
   if (named_parsers)
     {
@@ -475,8 +509,8 @@ ptz_print_patterndb_rule(gpointer key, gpointer value, gpointer user_data)
 
   uuid_gen_random(uuid_string, sizeof(uuid_string));
 
-  printf("      <rule id='%s'>\n", uuid_string);
-  printf("        <!-- support: %d -->\n", ((Cluster *) value)->loglines->len);
+  printf("      <rule id='%s' class='system' provider='patternize'>\n", uuid_string);
+  printf("        <!-- support: %d -->\n", cluster->loglines->len);
   printf("        <patterns>\n");
   printf("          <pattern>");
 
@@ -490,30 +524,45 @@ ptz_print_patterndb_rule(gpointer key, gpointer value, gpointer user_data)
   splitstr = g_strdup_printf("%c", PTZ_SEPARATOR_CHAR);
   words = g_strsplit(skey, splitstr, 0);
   g_free(splitstr);
+
+  /* pop the delimiters from the cluster key */
+  wordcount = g_strv_length(words);
+  delimiters = words[wordcount-1];
+  words[wordcount-1] = 0;
+
    for (i = 0; words[i]; ++i)
     {
-      gchar **word_parts;
+      g_string_truncate(pattern, 0);
 
+      gchar **word_parts;
       word_parts = g_strsplit(words[i], " ", 2);
 
-      if (word_parts[1][0] == '*')
+      if (word_parts[1][0] == PTZ_PARSER_MARKER_CHAR)
         {
           /* NOTE: nasty workaround: do not display last ESTRING as syslog-ng won't handle that well... */
           /* FIXME: enter a simple @STRING@ here instead... */
           if (words[i + 1])
             {
-              printf("@ESTRING:");
+              g_string_append(pattern, "@ESTRING:");
               if (named_parsers)
                 {
-                  // TODO: do not hardcode ESTRING here...
-                  printf(".dict.string%d", parser_counts[PTZ_PARSER_ESTRING]++);
+                  /* TODO: do not hardcode ESTRING here... */
+                  g_string_append_printf(pattern, ".dict.string%d", parser_counts[PTZ_PARSER_ESTRING]++);
                 }
-              printf(": @");
+              g_string_append_printf(pattern, ":%c@", delimiters[i]);
+              escapedstr = g_markup_escape_text(pattern->str, -1);
+              printf("%s", escapedstr);
+              g_free(escapedstr);
             }
         }
       else
         {
-          escapedstr = g_markup_escape_text(word_parts[1], -1);
+          g_string_append(pattern, word_parts[1]);
+
+          if (words[i + 1])
+            g_string_append_printf(pattern, "%c", delimiters[i]);
+
+          escapedstr = g_markup_escape_text(pattern->str, -1);
           if (g_strrstr(escapedstr, "@"))
             {
               escapedparts = g_strsplit(escapedstr, "@", -1);
@@ -521,23 +570,20 @@ ptz_print_patterndb_rule(gpointer key, gpointer value, gpointer user_data)
               escapedstr = g_strjoinv("@@", escapedparts);
               g_strfreev(escapedparts);
             }
-
           printf("%s", escapedstr);
           g_free(escapedstr);
-          if (words[i + 1])
-            printf(" ");
         }
-
       g_strfreev(word_parts);
     }
 
   g_free(skey);
+  g_free(delimiters);
   g_strfreev(words);
+  g_string_free(pattern, TRUE);
 
   printf("</pattern>\n");
   printf("        </patterns>\n");
 
-  cluster = (Cluster *) value;
   if (cluster->samples->len > 0)
     {
       printf("        <examples>\n");
@@ -557,12 +603,12 @@ ptz_print_patterndb_rule(gpointer key, gpointer value, gpointer user_data)
 }
 
 void
-ptz_print_patterndb(GHashTable *clusters, gboolean named_parsers)
+ptz_print_patterndb(GHashTable *clusters, gchar *delimiters, gboolean named_parsers)
 {
   char date[12], uuid_string[37];
   time_t currtime;
 
-  // print the header
+  /* print the header */
   time(&currtime);
   strftime(date, 12, "%Y-%m-%d", localtime(&currtime));
   printf("<patterndb version='3' pub_date='%s'>\n", date);
@@ -571,7 +617,7 @@ ptz_print_patterndb(GHashTable *clusters, gboolean named_parsers)
   printf("  <ruleset name='patternize' id='%s'>\n", uuid_string);
   printf("    <rules>\n");
 
-  g_hash_table_foreach(clusters, ptz_print_patterndb_rule, (gpointer) &named_parsers);
+  g_hash_table_foreach(clusters, ptz_print_patterndb_rule, (gpointer *) &named_parsers);
 
   printf("    </rules>\n");
   printf("  </ruleset>\n");
@@ -628,7 +674,7 @@ ptz_load_file(Patternizer *self, gchar *input_file, GError **error)
 }
 
 Patternizer *
-ptz_new(gdouble support_treshold, guint algo, guint iterate, guint num_of_samples)
+ptz_new(gdouble support_treshold, guint algo, guint iterate, guint num_of_samples, gchar *delimiters)
 {
   Patternizer *self = g_new0(Patternizer, 1);
 
@@ -637,6 +683,7 @@ ptz_new(gdouble support_treshold, guint algo, guint iterate, guint num_of_sample
 
   self->support_treshold = support_treshold;
   self->num_of_samples = num_of_samples;
+  self->delimiters = delimiters;
   self->logs = g_ptr_array_sized_new(PTZ_LOGTABLE_ALLOC_BASE);
 
   cluster_tag_id = log_tags_get_by_name(".in_patternize_cluster");

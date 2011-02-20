@@ -32,6 +32,7 @@
 #define PTZ_ITERATE_HIEARARCH 2
 
 #define PTZ_SEPARATOR_CHAR 0x1E
+#define PTZ_PARSER_MARKER_CHAR 0x1A
 
 #define PTZ_NUM_OF_PARSERS 1
 #define PTZ_PARSER_ESTRING 0
@@ -45,6 +46,7 @@ typedef struct _Patternizer
   guint support;
   guint num_of_samples;
   gdouble support_treshold;
+  gchar *delimiters;
 
   // NOTE: for now, we store all logs read in in the memory.
   // This brings in some obvious constraints and should be solved
@@ -61,16 +63,16 @@ typedef struct _Cluster
 } Cluster;
 
 /* only declared for the test program */
-GHashTable *ptz_find_frequent_words(GPtrArray *logs, guint support, gboolean two_pass);
-GHashTable *ptz_find_clusters_slct(GPtrArray *logs, guint support, guint num_of_samples);
+GHashTable *ptz_find_frequent_words(GPtrArray *logs, guint support, gchar *delimiters, gboolean two_pass);
+GHashTable *ptz_find_clusters_slct(GPtrArray *logs, guint support, gchar *delimiters, guint num_of_samples);
 
 
 GHashTable *ptz_find_clusters(Patternizer *self);
-void ptz_print_patterndb(GHashTable *clusters, gboolean named_parsers);
+void ptz_print_patterndb(GHashTable *clusters, gchar *delimiters, gboolean named_parsers);
 
 gboolean ptz_load_file(Patternizer *self, gchar *input_file, GError **error);
 
-Patternizer *ptz_new(gdouble support_treshold, guint algo, guint iterate, guint num_of_samples);
+Patternizer *ptz_new(gdouble support_treshold, guint algo, guint iterate, guint num_of_samples, gchar *delimiters);
 void ptz_free(Patternizer *self);
 
 #endif
