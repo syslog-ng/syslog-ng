@@ -50,5 +50,6 @@ endif
 uninstall-hook:
 	rm -f $(DESTDIR)$(moduledir)/libafsocket.so
 
+CLEANFILES = libafsocket.la
 
 include $(top_srcdir)/build/lex-rules.am
