@@ -122,7 +122,6 @@ ptz_str2hash(gchar *string, guint modulo, guint seed)
 gchar *
 ptz_find_delimiters(gchar *str, gchar *delimdef)
 {
-  gssize token_len;
   gchar *remainder;
   GString *delimiters = g_string_sized_new(32);
 
