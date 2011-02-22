@@ -981,7 +981,6 @@ main(int argc, char *argv[])
   msg_init(TRUE);
   plugin_load_module("syslogformat", configuration, NULL);
   plugin_load_module("basicfuncs", configuration, NULL);
-  plugin_load_module("dbparser", configuration, NULL);
 
   if (color_out)
     colors = full_colors;
