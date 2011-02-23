@@ -181,7 +181,7 @@ afunix_sd_new(gchar *filename, guint32 flags)
   else if (self->super.flags & AFSOCKET_STREAM)
     {
       self->super.transport = g_strdup("unix-stream");
-      self->super.reader_options.super.init_window_size = self->super.max_connections * 10;
+      self->super.reader_options.super.init_window_size = self->super.max_connections * 100;
     }
   self->super.bind_addr = g_sockaddr_unix_new(filename);
   self->super.super.super.super.init = afunix_sd_init;
