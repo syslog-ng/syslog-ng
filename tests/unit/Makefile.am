@@ -2,7 +2,7 @@
 
 AM_CFLAGS = -I$(top_srcdir)/lib -I$(top_srcdir)/modules -I../../lib -I../../modules
 AM_LDFLAGS = -dlpreopen $(top_builddir)/modules/syslogformat/libsyslogformat.la
-LIBS = @DEPS_LIBS@
+LIBS = @TOOL_DEPS_LIBS@
 LDADD = $(top_builddir)/lib/libsyslog-ng.la
 
 check_PROGRAMS = test_persist_state test_resolve_pwgr test_nvtable test_msgsdata \
