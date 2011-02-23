@@ -11,7 +11,7 @@ AM_CPPFLAGS = -I$(top_srcdir)/lib -I../../lib
 AM_CFLAGS = @CFLAGS_NOWARN_POINTER_SIGN@
 export top_srcdir
 
-lib_LIBRARIES = libsyslog-ng-patterndb.a
+noinst_LIBRARIES = libsyslog-ng-patterndb.a
 libsyslog_ng_patterndb_a_SOURCES = radix.c radix.h \
 	patterndb.c patterndb.h patterndb-int.h \
 	timerwheel.c timerwheel.h \
@@ -21,16 +21,17 @@ libsyslog_ng_patterndb_a_CFLAGS = $(AM_CFLAGS) -fPIC
 module_LTLIBRARIES = libdbparser.la
 libdbparser_la_SOURCES = \
 	dbparser.c dbparser.h \
-	dbparser-grammar.y dbparser-parser.c dbparser-parser.h dbparser-plugin.c
+	dbparser-grammar.y dbparser-parser.c dbparser-parser.h \
+	dbparser-plugin.c $(libsyslog_ng_patterndb_a_SOURCES)
 
 libdbparser_la_CPPFLAGS = $(AM_CPPFLAGS)
-libdbparser_la_LIBADD = ../../lib/libsyslog-ng.la libsyslog-ng-patterndb.a
+libdbparser_la_LIBADD = ../../lib/libsyslog-ng.la @OPENSSL_LIBS@
 libdbparser_la_LDFLAGS = -avoid-version -module -no-undefined
 
 bin_PROGRAMS = pdbtool
 pdbtool_SOURCES = pdbtool.c
 pdbtool_CPPFLAGS = $(AM_CPPFLAGS) @OPENSSL_CFLAGS@
-pdbtool_LDADD = ../../lib/libsyslog-ng.la libsyslog-ng-patterndb.a @TOOL_DEPS_LIBS@ @OPENSSL_LIBS@
+pdbtool_LDADD = libsyslog-ng-patterndb.a ../../lib/libsyslog-ng.la @TOOL_DEPS_LIBS@ @OPENSSL_LIBS@
 
 BUILT_SOURCES = dbparser-grammar.y dbparser-grammar.c dbparser-grammar.h
 EXTRA_DIST = $(BUILT_SOURCES) radix-find.c dbparser-grammar.ym
