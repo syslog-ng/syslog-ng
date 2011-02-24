@@ -32,7 +32,7 @@ log_stamp_append_frac_digits(LogStamp *stamp, GString *target, gint frac_digits)
 {
   glong usecs;
 
-  usecs = stamp->time.tv_usec % 1000000;
+  usecs = stamp->tv_usec % 1000000;
 
   if (frac_digits > 0)
     {
@@ -71,7 +71,7 @@ log_stamp_append_format(LogStamp *stamp, GString *target, gint ts_format, glong 
   else
     target_zone_offset = stamp->zone_offset;
 
-  t = stamp->time.tv_sec + target_zone_offset;
+  t = stamp->tv_sec + target_zone_offset;
   cached_gmtime(&t, &tm_storage);
   tm = &tm_storage;
   switch (ts_format)
@@ -121,7 +121,7 @@ log_stamp_append_format(LogStamp *stamp, GString *target, gint ts_format, glong 
       log_stamp_append_frac_digits(stamp, target, frac_digits);
       break;
     case TS_FMT_UNIX:
-      format_uint32_padded(target, 0, 0, 10, (int) stamp->time.tv_sec);
+      format_uint32_padded(target, 0, 0, 10, (int) stamp->tv_sec);
       log_stamp_append_frac_digits(stamp, target, frac_digits);
       break;
     default:

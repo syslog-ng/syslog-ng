@@ -50,7 +50,7 @@ afuser_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
   GString *timestamp;
   time_t now;
   
-  now = msg->timestamps[LM_TS_RECVD].time.tv_sec;
+  now = msg->timestamps[LM_TS_RECVD].tv_sec;
   if (self->disable_until && self->disable_until > now)
     goto finish;
   

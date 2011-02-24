@@ -86,15 +86,15 @@ testcase(gchar *msg,
     {
       if (expected_stamps_sec != 1)
         {
-            TEST_ASSERT(logmsg->timestamps[LM_TS_STAMP].time.tv_sec == expected_stamps_sec, "%d", (int) logmsg->timestamps[LM_TS_STAMP].time.tv_sec, (int) expected_stamps_sec);
+            TEST_ASSERT(logmsg->timestamps[LM_TS_STAMP].tv_sec == expected_stamps_sec, "%d", (int) logmsg->timestamps[LM_TS_STAMP].tv_sec, (int) expected_stamps_sec);
           }
-        TEST_ASSERT(logmsg->timestamps[LM_TS_STAMP].time.tv_usec == expected_stamps_usec, "%d", (int) logmsg->timestamps[LM_TS_STAMP].time.tv_usec, (int) expected_stamps_usec);
+        TEST_ASSERT(logmsg->timestamps[LM_TS_STAMP].tv_usec == expected_stamps_usec, "%d", (int) logmsg->timestamps[LM_TS_STAMP].tv_usec, (int) expected_stamps_usec);
         TEST_ASSERT(logmsg->timestamps[LM_TS_STAMP].zone_offset == expected_stamps_ofs, "%d", (int) logmsg->timestamps[LM_TS_STAMP].zone_offset, (int) expected_stamps_ofs);
     }
   else
     {
       time(&now);
-      TEST_ASSERT(absolute_value(logmsg->timestamps[LM_TS_STAMP].time.tv_sec - now) < 1, "%d", 0, 0);
+      TEST_ASSERT(absolute_value(logmsg->timestamps[LM_TS_STAMP].tv_sec - now) < 1, "%d", 0, 0);
     }
   TEST_ASSERT(strcmp(log_msg_get_value(logmsg, LM_V_HOST, NULL), expected_host) == 0, "%s", log_msg_get_value(logmsg, LM_V_HOST, NULL), expected_host);
   TEST_ASSERT(strcmp(log_msg_get_value(logmsg, LM_V_PROGRAM, NULL), expected_program) == 0, "%s", log_msg_get_value(logmsg, LM_V_PROGRAM, NULL), expected_program);
@@ -116,8 +116,8 @@ testcase(gchar *msg,
   TEST_ASSERT(strcmp(logmsg_addr, cloned_addr) == 0, "%s", cloned_addr, logmsg_addr);
 
   TEST_ASSERT(logmsg->pri == cloned->pri, "%d", logmsg->pri, cloned->pri);
-  TEST_ASSERT(logmsg->timestamps[LM_TS_STAMP].time.tv_sec == cloned->timestamps[LM_TS_STAMP].time.tv_sec, "%d", (int) logmsg->timestamps[LM_TS_STAMP].time.tv_sec, (int) cloned->timestamps[LM_TS_STAMP].time.tv_sec);
-  TEST_ASSERT(logmsg->timestamps[LM_TS_STAMP].time.tv_usec == cloned->timestamps[LM_TS_STAMP].time.tv_usec, "%d", (int) logmsg->timestamps[LM_TS_STAMP].time.tv_usec, (int) cloned->timestamps[LM_TS_STAMP].time.tv_usec);
+  TEST_ASSERT(logmsg->timestamps[LM_TS_STAMP].tv_sec == cloned->timestamps[LM_TS_STAMP].tv_sec, "%d", (int) logmsg->timestamps[LM_TS_STAMP].tv_sec, (int) cloned->timestamps[LM_TS_STAMP].tv_sec);
+  TEST_ASSERT(logmsg->timestamps[LM_TS_STAMP].tv_usec == cloned->timestamps[LM_TS_STAMP].tv_usec, "%d", (int) logmsg->timestamps[LM_TS_STAMP].tv_usec, (int) cloned->timestamps[LM_TS_STAMP].tv_usec);
   TEST_ASSERT(logmsg->timestamps[LM_TS_STAMP].zone_offset == cloned->timestamps[LM_TS_STAMP].zone_offset, "%d", (int) logmsg->timestamps[LM_TS_STAMP].zone_offset, (int) cloned->timestamps[LM_TS_STAMP].zone_offset);
   TEST_ASSERT(strcmp(log_msg_get_value(logmsg, LM_V_HOST, NULL), log_msg_get_value(cloned, LM_V_HOST, NULL)) == 0, "%s", log_msg_get_value(logmsg, LM_V_HOST, NULL), log_msg_get_value(cloned, LM_V_HOST, NULL));
   TEST_ASSERT(strcmp(log_msg_get_value(logmsg, LM_V_PROGRAM, NULL), log_msg_get_value(cloned, LM_V_PROGRAM, NULL)) == 0, "%s", log_msg_get_value(logmsg, LM_V_PROGRAM, NULL), log_msg_get_value(cloned, LM_V_PROGRAM, NULL));

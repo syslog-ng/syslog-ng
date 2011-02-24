@@ -667,10 +667,14 @@ log_msg_unref(LogMessage *self)
 static void
 log_msg_init(LogMessage *self, GSockAddr *saddr)
 {
+  GTimeVal tv;
+
   g_atomic_counter_set(&self->ref_cnt, 1);
-  cached_g_current_time(&self->timestamps[LM_TS_RECVD].time);
-  self->timestamps[LM_TS_RECVD].zone_offset = get_local_timezone_ofs(self->timestamps[LM_TS_RECVD].time.tv_sec);
-  self->timestamps[LM_TS_STAMP].time.tv_sec = -1;
+  cached_g_current_time(&tv);
+  self->timestamps[LM_TS_RECVD].tv_sec = tv.tv_sec;
+  self->timestamps[LM_TS_RECVD].tv_usec = tv.tv_usec;
+  self->timestamps[LM_TS_RECVD].zone_offset = get_local_timezone_ofs(self->timestamps[LM_TS_RECVD].tv_sec);
+  self->timestamps[LM_TS_STAMP].tv_sec = -1;
   self->timestamps[LM_TS_STAMP].zone_offset = -1;
  
   self->sdata = NULL;

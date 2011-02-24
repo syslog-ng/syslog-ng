@@ -1357,7 +1357,7 @@ pattern_db_timer_tick(PatternDB *self)
 
 /* NOTE: lock should be acquired for writing before calling this function. */
 void
-pattern_db_set_time(PatternDB *self, const GTimeVal *tv)
+pattern_db_set_time(PatternDB *self, const LogStamp *ls)
 {
   GTimeVal now;
 
@@ -1369,8 +1369,8 @@ pattern_db_set_time(PatternDB *self, const GTimeVal *tv)
   cached_g_current_time(&now);
   self->last_tick = now;
 
-  if (tv->tv_sec < now.tv_sec)
-    now.tv_sec = tv->tv_sec;
+  if (ls->tv_sec < now.tv_sec)
+    now.tv_sec = ls->tv_sec;
 
   timer_wheel_set_time(self->timer_wheel, now.tv_sec);
   msg_debug("Advancing patterndb current time because of an incoming message",
@@ -1459,7 +1459,7 @@ pattern_db_process(PatternDB *self, LogMessage *msg)
       GString *buffer = g_string_sized_new(32);
 
       g_static_rw_lock_writer_lock(&self->lock);
-      pattern_db_set_time(self, &msg->timestamps[LM_TS_STAMP].time);
+      pattern_db_set_time(self, &msg->timestamps[LM_TS_STAMP]);
       if (rule->context_id_template)
         {
           PDBStateKey key;
@@ -1528,7 +1528,7 @@ pattern_db_process(PatternDB *self, LogMessage *msg)
   else
     {
       g_static_rw_lock_writer_lock(&self->lock);
-      pattern_db_set_time(self, &msg->timestamps[LM_TS_STAMP].time);
+      pattern_db_set_time(self, &msg->timestamps[LM_TS_STAMP]);
       g_static_rw_lock_writer_unlock(&self->lock);
       if (self->emit)
         self->emit(msg, FALSE, self->emit_data);

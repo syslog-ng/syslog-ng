@@ -36,9 +36,10 @@
 
 typedef struct _LogStamp
 {
-  GTimeVal time;
+  time_t tv_sec;
+  guint32 tv_usec;
   /* zone offset in seconds, add this to UTC to get the time in local */
-  gint zone_offset;
+  gint32 zone_offset;
 } LogStamp;
 
 void log_stamp_format(LogStamp *stamp, GString *target, gint ts_format, glong zone_offset, gint frac_digits);

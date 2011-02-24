@@ -199,7 +199,7 @@ test_rule_action_message_value(const gchar *pattern, gint timeout, gint ndx, con
   log_msg_set_value(msg, LM_V_PROGRAM, "prog2", 5);
   log_msg_set_value(msg, LM_V_HOST, MYHOST, strlen(MYHOST));
   log_msg_set_value(msg, LM_V_PID, MYPID, strlen(MYPID));
-  msg->timestamps[LM_TS_STAMP].time.tv_sec = msg->timestamps[LM_TS_RECVD].time.tv_sec;
+  msg->timestamps[LM_TS_STAMP].tv_sec = msg->timestamps[LM_TS_RECVD].tv_sec;
 
   result = pattern_db_process(patterndb, msg);
   if (timeout)
@@ -233,7 +233,7 @@ test_rule_action_message_tag(const gchar *pattern, gint timeout, gint ndx, const
   log_msg_set_value(msg, LM_V_PROGRAM, "prog2", 5);
   log_msg_set_value(msg, LM_V_HOST, MYHOST, strlen(MYHOST));
   log_msg_set_value(msg, LM_V_PID, MYPID, strlen(MYPID));
-  msg->timestamps[LM_TS_STAMP].time.tv_sec = msg->timestamps[LM_TS_RECVD].time.tv_sec;
+  msg->timestamps[LM_TS_STAMP].tv_sec = msg->timestamps[LM_TS_RECVD].tv_sec;
 
   result = pattern_db_process(patterndb, msg);
   if (timeout)

@@ -523,7 +523,7 @@ log_writer_last_msg_check(LogWriter *self, LogMessage *lm, const LogPathOptions 
   g_static_mutex_lock(&self->suppress_lock);
   if (self->last_msg)
     {
-      if (self->last_msg->timestamps[LM_TS_RECVD].time.tv_sec >= lm->timestamps[LM_TS_RECVD].time.tv_sec - self->options->suppress &&
+      if (self->last_msg->timestamps[LM_TS_RECVD].tv_sec >= lm->timestamps[LM_TS_RECVD].tv_sec - self->options->suppress &&
           strcmp(log_msg_get_value(self->last_msg, LM_V_MESSAGE, NULL), log_msg_get_value(lm, LM_V_MESSAGE, NULL)) == 0 &&
           strcmp(log_msg_get_value(self->last_msg, LM_V_HOST, NULL), log_msg_get_value(lm, LM_V_HOST, NULL)) == 0 &&
           strcmp(log_msg_get_value(self->last_msg, LM_V_PROGRAM, NULL), log_msg_get_value(lm, LM_V_PROGRAM, NULL)) == 0 &&
@@ -648,7 +648,7 @@ log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
       g_string_sprintf(result, "<%d>%d ", lm->pri, 1);
  
       log_stamp_append_format(stamp, result, TS_FMT_ISO, 
-                              time_zone_info_get_offset(self->options->template_options.time_zone_info[LTZ_SEND], stamp->time.tv_sec),
+                              time_zone_info_get_offset(self->options->template_options.time_zone_info[LTZ_SEND], stamp->tv_sec),
                               self->options->template_options.frac_digits);
       g_string_append_c(result, ' ');
       
@@ -735,7 +735,7 @@ log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
           if (self->flags & LW_FORMAT_FILE)
             {
               log_stamp_format(stamp, result, self->options->template_options.ts_format,
-                               time_zone_info_get_offset(self->options->template_options.time_zone_info[LTZ_SEND], stamp->time.tv_sec),
+                               time_zone_info_get_offset(self->options->template_options.time_zone_info[LTZ_SEND], stamp->tv_sec),
                                self->options->template_options.frac_digits);
             }
           else if (self->flags & LW_FORMAT_PROTO)
@@ -744,7 +744,7 @@ log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
 
               /* always use BSD timestamp by default, the use can override this using a custom template */
               log_stamp_append_format(stamp, result, TS_FMT_BSD,
-                                      time_zone_info_get_offset(self->options->template_options.time_zone_info[LTZ_SEND], stamp->time.tv_sec),
+                                      time_zone_info_get_offset(self->options->template_options.time_zone_info[LTZ_SEND], stamp->tv_sec),
                                       self->options->template_options.frac_digits);
             }
           g_string_append_c(result, ' ');

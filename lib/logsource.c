@@ -200,7 +200,7 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
   
   msg_set_context(msg);
 
-  if (msg->timestamps[LM_TS_STAMP].time.tv_sec == -1 || !self->options->keep_timestamp)
+  if (msg->timestamps[LM_TS_STAMP].tv_sec == -1 || !self->options->keep_timestamp)
     msg->timestamps[LM_TS_STAMP] = msg->timestamps[LM_TS_RECVD];
     
   g_assert(msg->timestamps[LM_TS_STAMP].zone_offset != -1);
@@ -223,7 +223,7 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
   handle = stats_register_dynamic_counter(2, SCS_HOST | SCS_SOURCE, NULL, log_msg_get_value(msg, LM_V_HOST, NULL), SC_TYPE_PROCESSED, &processed_counter, &new);
   stats_register_associated_counter(handle, SC_TYPE_STAMP, &stamp);
   stats_counter_inc(processed_counter);
-  stats_counter_set(stamp, msg->timestamps[LM_TS_RECVD].time.tv_sec);
+  stats_counter_set(stamp, msg->timestamps[LM_TS_RECVD].tv_sec);
   stats_unregister_dynamic_counter(handle, SC_TYPE_PROCESSED, &processed_counter);
   stats_unregister_dynamic_counter(handle, SC_TYPE_STAMP, &stamp);
 
@@ -238,8 +238,9 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
   g_assert(old_window_size > 0);
 
   stats_counter_inc(self->recvd_messages);
-  stats_counter_set(self->last_message_seen, msg->timestamps[LM_TS_RECVD].time.tv_sec);
+  stats_counter_set(self->last_message_seen, msg->timestamps[LM_TS_RECVD].tv_sec);
   log_pipe_forward_msg(s, msg, &local_options);
+
   msg_set_context(NULL);
 
   if (accurate_nanosleep && self->threaded && self->window_full_sleep_nsec > 0 && !log_source_free_to_send(self))

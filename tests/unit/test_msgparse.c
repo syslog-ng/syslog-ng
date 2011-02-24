@@ -92,22 +92,22 @@ testcase(gchar *msg,
 
   /* NOTE: this if statement mimics what LogReader does when the message has no timezone information */
   if (logmsg->timestamps[LM_TS_STAMP].zone_offset == -1)
-    logmsg->timestamps[LM_TS_STAMP].zone_offset = get_local_timezone_ofs(logmsg->timestamps[LM_TS_STAMP].time.tv_sec);
+    logmsg->timestamps[LM_TS_STAMP].zone_offset = get_local_timezone_ofs(logmsg->timestamps[LM_TS_STAMP].tv_sec);
 
   TEST_ASSERT(logmsg->pri == expected_pri, "%d", logmsg->pri, expected_pri);
   if (expected_stamp_sec)
     {
       if (expected_stamp_sec != 1)
         {
-          TEST_ASSERT(logmsg->timestamps[LM_TS_STAMP].time.tv_sec == expected_stamp_sec, "%d", (int) logmsg->timestamps[LM_TS_STAMP].time.tv_sec, (int) expected_stamp_sec);
+          TEST_ASSERT(logmsg->timestamps[LM_TS_STAMP].tv_sec == expected_stamp_sec, "%d", (int) logmsg->timestamps[LM_TS_STAMP].tv_sec, (int) expected_stamp_sec);
         }
-      TEST_ASSERT(logmsg->timestamps[LM_TS_STAMP].time.tv_usec == expected_stamp_usec, "%d", (int) logmsg->timestamps[LM_TS_STAMP].time.tv_usec, (int) expected_stamp_usec);
+      TEST_ASSERT(logmsg->timestamps[LM_TS_STAMP].tv_usec == expected_stamp_usec, "%d", (int) logmsg->timestamps[LM_TS_STAMP].tv_usec, (int) expected_stamp_usec);
       TEST_ASSERT(logmsg->timestamps[LM_TS_STAMP].zone_offset == expected_stamp_ofs, "%d", (int) logmsg->timestamps[LM_TS_STAMP].zone_offset, (int) expected_stamp_ofs);
     }
   else
     {
       time(&now);
-      TEST_ASSERT(absolute_value(logmsg->timestamps[LM_TS_STAMP].time.tv_sec - now) < 1, "%d", 0, 0);
+      TEST_ASSERT(absolute_value(logmsg->timestamps[LM_TS_STAMP].tv_sec - now) < 1, "%d", 0, 0);
     }
   check_value(msg, logmsg, LM_V_HOST, expected_host);
   check_value(msg, logmsg, LM_V_PROGRAM, expected_program);

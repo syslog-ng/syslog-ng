@@ -105,8 +105,8 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 
   /* fix some externally or automatically defined values */
   log_msg_set_value(msg, LM_V_HOST_FROM, "kismacska", -1);
-  msg->timestamps[LM_TS_RECVD].time.tv_sec = 1139684315;
-  msg->timestamps[LM_TS_RECVD].time.tv_usec = 639000;
+  msg->timestamps[LM_TS_RECVD].tv_sec = 1139684315;
+  msg->timestamps[LM_TS_RECVD].tv_usec = 639000;
   msg->timestamps[LM_TS_RECVD].zone_offset = get_local_timezone_ofs(1139684315);
 
   /* pri 3, fac 19 == local3 */

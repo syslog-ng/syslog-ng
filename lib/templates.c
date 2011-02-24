@@ -449,11 +449,11 @@ log_macro_expand(GString *result, gint id, gboolean escape, LogTemplateOptions *
          *   message specific timezone, if one is specified
          *   local timezone
          */
-        zone_ofs = (opts->time_zone_info[tz] != NULL ? time_zone_info_get_offset(opts->time_zone_info[tz], stamp->time.tv_sec) : stamp->zone_offset);
+        zone_ofs = (opts->time_zone_info[tz] != NULL ? time_zone_info_get_offset(opts->time_zone_info[tz], stamp->tv_sec) : stamp->zone_offset);
         if (zone_ofs == -1)
           zone_ofs = stamp->zone_offset;
 
-        t = stamp->time.tv_sec + zone_ofs;
+        t = stamp->tv_sec + zone_ofs;
 
         cached_gmtime(&t, &tm_storage);
         tm  = &tm_storage;

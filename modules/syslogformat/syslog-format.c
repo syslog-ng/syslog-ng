@@ -198,7 +198,7 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint pa
       /* RFC3339 timestamp, expected format: YYYY-MM-DDTHH:MM:SS[.frac]<+/->ZZ:ZZ */
       gint hours, mins;
 
-      self->timestamps[LM_TS_STAMP].time.tv_usec = 0;
+      self->timestamps[LM_TS_STAMP].tv_usec = 0;
 
       /* NOTE: we initialize various unportable fields in tm using a
        * localtime call, as the value of tm_gmtoff does matter but it does
@@ -211,7 +211,7 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint pa
           goto error;
         }
 
-      self->timestamps[LM_TS_STAMP].time.tv_usec = 0;
+      self->timestamps[LM_TS_STAMP].tv_usec = 0;
       if (left > 0 && *src == '.')
         {
           gulong frac = 0;
@@ -232,7 +232,7 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint pa
               src++;
               left--;
             }
-          self->timestamps[LM_TS_STAMP].time.tv_usec = frac * (1000000 / div);
+          self->timestamps[LM_TS_STAMP].tv_usec = frac * (1000000 / div);
         }
 
       if (left > 0 && *src == 'Z')
@@ -258,7 +258,7 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint pa
 
       tm.tm_isdst = -1;
       unnormalized_hour = tm.tm_hour;
-      self->timestamps[LM_TS_STAMP].time.tv_sec = cached_mktime(&tm);
+      self->timestamps[LM_TS_STAMP].tv_sec = cached_mktime(&tm);
     }
   else if ((parse_flags & LP_SYSLOG_PROTOCOL) == 0)
     {
@@ -282,8 +282,8 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint pa
 
           /* NOTE: no timezone information in the message, assume it is local time */
           unnormalized_hour = tm.tm_hour;
-          self->timestamps[LM_TS_STAMP].time.tv_sec = cached_mktime(&tm);
-          self->timestamps[LM_TS_STAMP].time.tv_usec = 0;
+          self->timestamps[LM_TS_STAMP].tv_sec = cached_mktime(&tm);
+          self->timestamps[LM_TS_STAMP].tv_usec = 0;
         }
       else if (left >= 21 && src[3] == ' ' && src[6] == ' ' && src[9] == ':' && src[12] == ':' && src[15] == ' ' &&
                isdigit(src[16]) && isdigit(src[17]) && isdigit(src[18]) && isdigit(src[19]) && isspace(src[20]))
@@ -297,8 +297,8 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint pa
 
           /* NOTE: no timezone information in the message, assume it is local time */
           unnormalized_hour = tm.tm_hour;
-          self->timestamps[LM_TS_STAMP].time.tv_sec = cached_mktime(&tm);
-          self->timestamps[LM_TS_STAMP].time.tv_usec = 0;
+          self->timestamps[LM_TS_STAMP].tv_sec = cached_mktime(&tm);
+          self->timestamps[LM_TS_STAMP].tv_usec = 0;
 
         }
       else if (left >= 15 && src[3] == ' ' && src[6] == ' ' && src[9] == ':' && src[12] == ':')
@@ -349,8 +349,8 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint pa
 
           /* NOTE: no timezone information in the message, assume it is local time */
           unnormalized_hour = tm.tm_hour;
-          self->timestamps[LM_TS_STAMP].time.tv_sec = cached_mktime(&tm);
-          self->timestamps[LM_TS_STAMP].time.tv_usec = usec;
+          self->timestamps[LM_TS_STAMP].tv_sec = cached_mktime(&tm);
+          self->timestamps[LM_TS_STAMP].tv_usec = usec;
         }
       else
         {
@@ -377,10 +377,10 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint pa
     }
   if (self->timestamps[LM_TS_STAMP].zone_offset == -1)
     {
-      self->timestamps[LM_TS_STAMP].zone_offset = get_local_timezone_ofs(self->timestamps[LM_TS_STAMP].time.tv_sec);
+      self->timestamps[LM_TS_STAMP].zone_offset = get_local_timezone_ofs(self->timestamps[LM_TS_STAMP].tv_sec);
     }
-  self->timestamps[LM_TS_STAMP].time.tv_sec = self->timestamps[LM_TS_STAMP].time.tv_sec +
-                                              get_local_timezone_ofs(self->timestamps[LM_TS_STAMP].time.tv_sec) -
+  self->timestamps[LM_TS_STAMP].tv_sec = self->timestamps[LM_TS_STAMP].tv_sec +
+                                              get_local_timezone_ofs(self->timestamps[LM_TS_STAMP].tv_sec) -
                                               (tm.tm_hour - unnormalized_hour) * 3600 - self->timestamps[LM_TS_STAMP].zone_offset;
 
   *data = src;
