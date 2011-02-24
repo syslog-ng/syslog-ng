@@ -33,6 +33,7 @@ testcase(gchar *msg, guint parse_flags, gint max_columns, guint32 flags, gchar *
   gchar *expected_value;
   gint i;
   va_list va;
+  NVTable *nvtable;
 
   const gchar *column_array[] =
   {
@@ -90,7 +91,9 @@ testcase(gchar *msg, guint parse_flags, gint max_columns, guint32 flags, gchar *
   if (null_value)
     log_csv_parser_set_null_value(p, null_value);
 
+  nvtable = nv_table_ref(logmsg->payload);
   success = log_parser_process(&p->super, logmsg, log_msg_get_value(logmsg, LM_V_MESSAGE, NULL));
+  nv_table_unref(nvtable);
 
   if (success && !first_value)
     {
