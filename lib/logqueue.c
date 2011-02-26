@@ -1,6 +1,8 @@
 #include "logqueue.h"
 #include "stats.h"
 
+gint log_queue_max_threads = 0;
+
 void
 log_queue_set_counters(LogQueue *self, guint32 *stored_messages, guint32 *dropped_messages)
 {
@@ -24,3 +26,8 @@ log_queue_free_method(LogQueue *self)
   g_free(self);
 }
 
+void
+log_queue_set_max_threads(gint max_threads)
+{
+  log_queue_max_threads = max_threads;
+}

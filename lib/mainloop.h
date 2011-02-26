@@ -34,6 +34,19 @@ extern __thread gboolean in_main_thread;
 
 typedef gpointer (*MainLoopTaskFunc)(gpointer user_data);
 
+typedef struct _MainLoopIOWorkerFinishCallback
+{
+  struct list_head list;
+  MainLoopTaskFunc func;
+  gpointer user_data;
+} MainLoopIOWorkerFinishCallback;
+
+static inline void
+main_loop_io_worker_finish_callback_init(MainLoopIOWorkerFinishCallback *self)
+{
+  INIT_LIST_HEAD(&self->list);
+}
+
 typedef struct _MainLoopIOWorkerJob
 {
   void (*work)(gpointer user_data);
@@ -41,6 +54,9 @@ typedef struct _MainLoopIOWorkerJob
   gpointer user_data;
   gboolean working:1;
   struct iv_work_item work_item;
+
+  /* function to be called back when the current job is finished. */
+  struct list_head finish_callbacks;
 } MainLoopIOWorkerJob;
 
 static inline gboolean
@@ -49,8 +65,12 @@ main_loop_io_worker_job_quit(void)
   return main_loop_io_workers_quit;
 }
 
+void main_loop_io_worker_set_thread_id(gint id);
+gint main_loop_io_worker_thread_id(void);
 void main_loop_io_worker_job_init(MainLoopIOWorkerJob *self);
 void main_loop_io_worker_job_submit(MainLoopIOWorkerJob *self);
+void main_loop_io_worker_register_finish_callback(MainLoopIOWorkerFinishCallback *cb);
+
 
 static inline void
 main_loop_assert_main_thread(void)

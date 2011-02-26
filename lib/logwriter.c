@@ -933,6 +933,7 @@ log_writer_deinit(LogPipe *s)
 
   main_loop_assert_main_thread();
 
+  log_queue_reset_parallel_push(self->queue);
   log_writer_flush(self, TRUE);
   /* FIXME: by the time we arrive here, it must be guaranteed that no
    * _queue() call is running in a different thread, otherwise we'd need

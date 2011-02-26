@@ -27,6 +27,8 @@
 
 #include "logmsg.h"
 
+extern gint log_queue_max_threads;
+
 typedef void (*LogQueuePushNotifyFunc)(gpointer user_data);
 
 typedef struct _LogQueue LogQueue;
@@ -129,5 +131,7 @@ log_queue_set_throttle(LogQueue *self, gint throttle)
 void log_queue_set_counters(LogQueue *self, guint32 *stored_messages, guint32 *dropped_messages);
 void log_queue_init_instance(LogQueue *self, const gchar *persist_name);
 void log_queue_free_method(LogQueue *self);
+
+void log_queue_set_max_threads(gint max_threads);
 
 #endif

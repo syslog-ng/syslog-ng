@@ -3,10 +3,12 @@
 #include "logpipe.h"
 #include "apphook.h"
 #include "plugin.h"
+#include "mainloop.h"
 
 #include <stdlib.h>
 #include <string.h>
 #include <iv.h>
+#include <iv_thread.h>
 
 int acked_messages = 0;
 int fed_messages = 0;
@@ -120,13 +122,36 @@ testcase_zero_diskbuf_alternating_send_acks()
 #define MESSAGES_SUM (FEEDERS * MESSAGES_PER_FEEDER)
 #define TEST_RUNS 10
 
+static __thread struct list_head finish_callbacks;
+
+void
+main_loop_io_worker_register_finish_callback(MainLoopIOWorkerFinishCallback *cb)
+{
+  list_add(&cb->list, &finish_callbacks);
+}
+
+void
+main_loop_io_worker_invoke_finish_callbacks(void)
+{
+  struct list_head *lh, *lh2;
+
+  list_for_each_safe(lh, lh2, &finish_callbacks)
+    {
+      MainLoopIOWorkerFinishCallback *cb = list_entry(lh, MainLoopIOWorkerFinishCallback, list);
+                            
+      cb->func(cb->user_data);
+      list_del_init(&cb->list);
+    }
+}
+
 GStaticMutex time_lock;
 glong sum_time;
 
 gpointer
-threaded_feed(gpointer st)
+threaded_feed(gpointer args)
 {
-  LogQueue *q = (LogQueue *) st;
+  LogQueue *q = (LogQueue *) ((gpointer *) args)[0];
+  gint id = GPOINTER_TO_INT(((gpointer *) args)[1]);
   char *msg_str = "<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép";
   gint msg_len = strlen(msg_str);
   gint i;
@@ -135,8 +160,12 @@ threaded_feed(gpointer st)
   GTimeVal start, end;
   GSockAddr *sa;
   glong diff;
-  /* just to make sure time is properly cached */
+
   iv_init();
+  
+  /* emulate main loop for LogQueue */
+  main_loop_io_worker_set_thread_id(id);
+  INIT_LIST_HEAD(&finish_callbacks);
 
   sa = g_sockaddr_inet_new("10.10.10.10", 1010);
   tmpl = log_msg_new(msg_str, msg_len, g_sockaddr_ref(sa), &parse_options);
@@ -148,7 +177,11 @@ threaded_feed(gpointer st)
       msg->ack_func = test_ack;
 
       log_queue_push_tail(q, msg, &path_options);
+      
+      if ((i & 0xFF) == 0)
+        main_loop_io_worker_invoke_finish_callbacks();
     }
+  main_loop_io_worker_invoke_finish_callbacks();
   g_get_current_time(&end);
   diff = g_time_val_diff(&end, &start);
   g_static_mutex_lock(&time_lock);
@@ -217,14 +250,20 @@ testcase_with_threads()
 {
   LogQueue *q;
   GThread *thread_feed[FEEDERS], *thread_consume;
+  gpointer args[FEEDERS][2];
   gint i, j;
 
+  log_queue_set_max_threads(FEEDERS);
   for (i = 0; i < TEST_RUNS; i++)
     {
       q = log_queue_fifo_new(MESSAGES_SUM, NULL);
 
       for (j = 0; j < FEEDERS; j++)
-        thread_feed[j] = g_thread_create(threaded_feed, q, TRUE, NULL);
+        {
+          args[j][0] = q;
+          args[j][1] = GINT_TO_POINTER(j);
+          thread_feed[j] = g_thread_create(threaded_feed, args[j], TRUE, NULL);
+        }
 
       thread_consume = g_thread_create(threaded_consume, q, TRUE, NULL);
 

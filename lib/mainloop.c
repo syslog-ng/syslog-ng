@@ -29,6 +29,7 @@
 #include "children.h"
 #include "misc.h"
 #include "control.h"
+#include "logqueue.h"
 
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -231,7 +232,57 @@ static gint main_loop_io_workers_running;
 
 /* cause workers to stop, no new I/O jobs to be submitted */
 volatile gboolean main_loop_io_workers_quit;
+static __thread MainLoopIOWorkerJob *main_loop_current_job;
 
+static GStaticMutex main_loop_io_workers_idmap_lock = G_STATIC_MUTEX_INIT;
+static guint64 main_loop_io_workers_idmap;
+static __thread gint main_loop_io_worker_id = -1;
+
+void
+main_loop_io_worker_thread_start(void *cookie)
+{
+  gint id;
+
+  g_static_mutex_lock(&main_loop_io_workers_idmap_lock);
+
+  /* NOTE: this algorithm limits the number of I/O worker threads to 64,
+   * since the ID map is stored in a single 64 bit integer.  If we ever need
+   * more threads than that, we can generalize this algorithm further. */
+
+  for (id = 0; id < main_loop_io_workers.max_threads; id++)
+    {
+      if ((main_loop_io_workers_idmap & (1 << id)) == 0)
+        {
+          /* id not yet used */
+          main_loop_io_worker_id = id;
+          main_loop_io_workers_idmap |= (1 << id);
+          break;
+        }
+    }
+  g_static_mutex_unlock(&main_loop_io_workers_idmap_lock);
+}
+
+void
+main_loop_io_worker_thread_stop(void *cookie)
+{
+  g_static_mutex_lock(&main_loop_io_workers_idmap_lock);
+  main_loop_io_workers_idmap &= ~(1 << main_loop_io_worker_id);
+  main_loop_io_worker_id = -1;
+  g_static_mutex_unlock(&main_loop_io_workers_idmap_lock);
+}
+
+/* NOTE: only used by the unit test program to emulate worker threads with LogQueue */
+void
+main_loop_io_worker_set_thread_id(gint id)
+{
+  main_loop_io_worker_id = id;
+}
+
+gint
+main_loop_io_worker_thread_id(void)
+{
+  return main_loop_io_worker_id;
+}
 
 void
 main_loop_io_worker_job_submit(MainLoopIOWorkerJob *self)
@@ -244,16 +295,32 @@ main_loop_io_worker_job_submit(MainLoopIOWorkerJob *self)
   iv_work_pool_submit_work(&main_loop_io_workers, &self->work_item);
 }
 
-void
+static void
 main_loop_io_worker_job_start(MainLoopIOWorkerJob *self)
 {
+  struct list_head *lh, *lh2;
+
+  g_assert(main_loop_current_job == NULL);
+
+  main_loop_current_job = self;
   self->work(self->user_data);
+  
+  list_for_each_safe(lh, lh2, &self->finish_callbacks)
+    {
+      MainLoopIOWorkerFinishCallback *cb = list_entry(lh, MainLoopIOWorkerFinishCallback, list);
+      
+      cb->func(cb->user_data);
+      list_del_init(&cb->list);
+    }
+  g_assert(list_empty(&self->finish_callbacks));
+  main_loop_current_job = NULL;
 }
 
-void
-main_loop_io_worker_job_finish(MainLoopIOWorkerJob *self)
+static void
+main_loop_io_worker_job_complete(MainLoopIOWorkerJob *self)
 {
   self->completion(self->user_data);
+
   self->working = FALSE;
   main_loop_io_workers_running--;
   if (main_loop_io_workers_quit && main_loop_io_workers_running == 0)
@@ -264,13 +331,28 @@ main_loop_io_worker_job_finish(MainLoopIOWorkerJob *self)
     }
 }
 
+/*
+ * Register a function to be called back when the current I/O job is
+ * finished (in the worker thread).
+ *
+ * NOTE: we only support one pending callback at a time, may become a list of callbacks if needed in the future
+ */
+void
+main_loop_io_worker_register_finish_callback(MainLoopIOWorkerFinishCallback *cb)
+{
+  g_assert(main_loop_current_job != NULL);
+  
+  list_add(&cb->list, &main_loop_current_job->finish_callbacks);
+}
+
 void
 main_loop_io_worker_job_init(MainLoopIOWorkerJob *self)
 {
   IV_WORK_ITEM_INIT(&self->work_item);
   self->work_item.cookie = self;
   self->work_item.work = (void (*)(void *)) main_loop_io_worker_job_start;
-  self->work_item.completion = (void (*)(void *)) main_loop_io_worker_job_finish;
+  self->work_item.completion = (void (*)(void *)) main_loop_io_worker_job_complete;
+  INIT_LIST_HEAD(&self->finish_callbacks);
 }
 
 void
@@ -413,8 +495,6 @@ main_loop_exit_timer_elapsed(void *arg)
   main_loop_io_worker_sync_call(main_loop_exit_finish);
 }
 
-
-
 /************************************************************************************
  * signal handlers
  ************************************************************************************/
@@ -493,7 +573,10 @@ main_loop_init(void)
 
   app_startup();
   setup_signals();
+  main_loop_io_workers.thread_start = main_loop_io_worker_thread_start;
+  main_loop_io_workers.thread_stop = main_loop_io_worker_thread_stop;
   iv_work_pool_create(&main_loop_io_workers);
+  log_queue_set_max_threads(main_loop_io_workers.max_threads);
   main_loop_call_init();
 
   current_configuration = cfg_new(0);
@@ -586,7 +669,7 @@ void
 main_loop_add_options(GOptionContext *ctx)
 {
 #ifdef _SC_NPROCESSORS_ONLN
-  main_loop_io_workers.max_threads = 2 * sysconf(_SC_NPROCESSORS_ONLN);
+  main_loop_io_workers.max_threads = MIN(MAX(2, sysconf(_SC_NPROCESSORS_ONLN)), 64);
 #endif
 
   g_option_context_add_main_entries(ctx, main_loop_options, NULL);
