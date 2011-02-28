@@ -64,7 +64,14 @@ EXTRA_DIST = $(BUILT_SOURCES) \
 CLEAN_FILES = $(BUILT_SOURCES)
 
 # divert install/uninstall targets to avoid recursing into $(SUBDIRS)
-install: install-am
 
-uninstall: uninstall-am
+build-ivykis:
+	(cd ivykis; $(MAKE) $(AM_MAKEFLAGS) all)
+
+install: build-ivykis
+	$(MAKE) $(AM_MAKEFLAGS) install-am
+
+uninstall: build-ivykis
+	$(MAKE) $(AM_MAKEFLAGS) uninstall-am
+
 include $(top_srcdir)/build/lex-rules.am

@@ -5,28 +5,35 @@
 # This script is needed to setup build environment from checked out
 # source tree. 
 #
-
 SUBMODULES="lib/ivykis modules/afmongodb/libmongo-client"
 
-origdir=`pwd`
+autogen_submodules()
+{
 
-if [ -f .gitmodules ]; then
-	git submodule update --init --recursive
-fi
+	origdir=`pwd`
 
-for submod in $SUBMODULES; do
-	echo "Running autogen in '$submod'..."
-	cd "$submod"
-	if [ -x autogen.sh ]; then
-		./autogen.sh
-	elif [ -f configure.in ] || [ -f configure.ac ]; then
-		autoreconf
-	else
-		echo "Don't know how to bootstrap submodule '$submod'" >&2
-		exit 1
+	if [ -f .gitmodules ]; then
+		git submodule update --init --recursive
 	fi
-	cd "$origdir"
-done
+
+	for submod in $SUBMODULES; do
+		echo "Running autogen in '$submod'..."
+		cd "$submod"
+		if [ -x autogen.sh ]; then
+			./autogen.sh
+		elif [ -f configure.in ] || [ -f configure.ac ]; then
+			autoreconf
+		else
+			echo "Don't know how to bootstrap submodule '$submod'" >&2
+			exit 1
+		fi
+		cd "$origdir"
+	done
+}
+
+if [ "$skip_submodules" = 0 ]; then
+	autogen_submodules
+fi
 
 # bootstrap syslog-ng itself
 libtoolize --force

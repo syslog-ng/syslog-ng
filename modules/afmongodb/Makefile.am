@@ -22,7 +22,13 @@ EXTRA_DIST = $(BUILT_SOURCES) afmongodb-grammar.ym
 
 include $(top_srcdir)/build/lex-rules.am
 
-install: install-am
-uninstall: uninstall-am
-check:
-	echo Make check is disabled, as it requires a newer glib.
+# divert install/uninstall targets to avoid recursing into $(SUBDIRS)
+
+build-libmongo-client:
+	[ libmongo-client ] && (cd libmongo-client; $(MAKE) $(AM_MAKEFLAGS) all)
+
+install: build-libmongo-client
+	$(MAKE) $(AM_MAKEFLAGS) install-am
+
+uninstall: build-libmongo-client
+	$(MAKE) $(AM_MAKEFLAGS) uninstall-am
