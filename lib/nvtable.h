@@ -163,7 +163,8 @@ struct _NVTable
   guint16 used;
   guint16 num_dyn_entries;
   guint8 num_static_entries;
-  guint8 ref_cnt;
+  guint8 ref_cnt:7,
+    borrowed:1; /* specifies if the memory used by NVTable was borrowed from the container struct */
 
   /* variable data, see memory layout in the comment above */
   union
@@ -188,7 +189,9 @@ gboolean nv_table_foreach(NVTable *self, NVRegistry *registry, NVTableForeachFun
 gboolean nv_table_foreach_entry(NVTable *self, NVTableForeachEntryFunc func, gpointer user_data);
 
 void nv_table_clear(NVTable *self);
+gsize nv_table_get_alloc_size(gint num_static_entries, gint num_dyn_values, gint init_length);
 NVTable *nv_table_new(gint num_static_values, gint num_dyn_values, gint init_length);
+NVTable *nv_table_init_borrowed(gpointer space, gsize space_len, gint num_static_entries);
 NVTable *nv_table_realloc(NVTable *self);
 NVTable *nv_table_clone(NVTable *self, gint additional_space);
 NVTable *nv_table_ref(NVTable *self);

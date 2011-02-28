@@ -618,21 +618,47 @@ nv_table_clear(NVTable *self)
   memset(&self->static_entries[0], 0, self->num_static_entries * sizeof(self->static_entries[0]));
 }
 
+gsize
+nv_table_get_alloc_size(gint num_static_entries, gint num_dyn_values, gint init_length)
+{
+  NVTable *self G_GNUC_UNUSED; /* NOTE: only to calculage size */
+  return NV_TABLE_BOUND(init_length) + NV_TABLE_BOUND(sizeof(NVTable) + num_static_entries * sizeof(self->static_entries[0]) + num_dyn_values * sizeof(guint32));
+}
+
+void
+nv_table_init(NVTable *self, gsize alloc_length, gint num_static_entries)
+{
+  self->size = alloc_length >> NV_TABLE_SCALE;
+  self->used = 0;
+  self->num_dyn_entries = 0;
+  self->num_static_entries = NV_TABLE_BOUND_NUM_STATIC(num_static_entries);
+  self->ref_cnt = 1;
+  self->borrowed = FALSE;
+  memset(&self->static_entries[0], 0, self->num_static_entries * sizeof(self->static_entries[0]));
+}
+
 NVTable *
 nv_table_new(gint num_static_entries, gint num_dyn_values, gint init_length)
 {
   NVTable *self;
   gsize alloc_length;
 
-  alloc_length = NV_TABLE_BOUND(init_length) + NV_TABLE_BOUND(sizeof(NVTable) + num_static_entries * sizeof(self->static_entries[0]) + num_dyn_values * sizeof(guint32));
+  alloc_length = nv_table_get_alloc_size(num_static_entries, num_dyn_values, init_length);
   self = (NVTable *) g_malloc(alloc_length);
 
-  self->size = alloc_length >> NV_TABLE_SCALE;
-  self->used = 0;
-  self->num_dyn_entries = 0;
-  self->num_static_entries = NV_TABLE_BOUND_NUM_STATIC(num_static_entries);
-  self->ref_cnt = 1;
-  memset(&self->static_entries[0], 0, self->num_static_entries * sizeof(self->static_entries[0]));
+  nv_table_init(self, alloc_length, num_static_entries);
+  return self;
+}
+
+NVTable *
+nv_table_init_borrowed(gpointer space, gsize space_len, gint num_static_entries)
+{
+  NVTable *self = (NVTable *) space;
+
+  space_len &= ~3;
+  g_assert(space_len > num_static_entries * sizeof(self->static_entries[0]) + sizeof(NVTable));
+  nv_table_init(self, NV_TABLE_BOUND(space_len), num_static_entries);
+  self->borrowed = TRUE;
   return self;
 }
 
@@ -642,7 +668,7 @@ nv_table_realloc(NVTable *self)
   gint old_size = self->size;
   NVTable *new = NULL;
 
-  if (self->ref_cnt == 1)
+  if (self->ref_cnt == 1 && !self->borrowed)
     {
       self = g_realloc(self, old_size << (NV_TABLE_SCALE + 1));
 
@@ -659,6 +685,7 @@ nv_table_realloc(NVTable *self)
       memcpy(new, self, sizeof(NVTable) + self->num_static_entries * sizeof(self->static_entries[0]) + self->num_dyn_entries * sizeof(guint32));
       self->size <<= 1;
       new->ref_cnt = 1;
+      new->borrowed = FALSE;
 
       memmove(NV_TABLE_ADDR(new, new->size - new->used),
               NV_TABLE_ADDR(self, old_size - self->used),
@@ -680,7 +707,7 @@ nv_table_ref(NVTable *self)
 void
 nv_table_unref(NVTable *self)
 {
-  if (--self->ref_cnt == 0)
+  if ((--self->ref_cnt == 0) && !self->borrowed)
     {
       g_free(self);
     }

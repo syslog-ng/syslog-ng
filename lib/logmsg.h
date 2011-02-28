@@ -154,6 +154,8 @@ struct _LogMessage
 
   /* preallocated LogQueueNodes used to insert this message into a LogQueue */
   LogMessageQueueNode nodes[0];
+
+  /* a preallocated space for the inital NVTable (payload) may follow */
 };
 
 extern NVRegistry *logmsg_registry;

@@ -784,14 +784,30 @@ log_msg_clear(LogMessage *self)
 }
 
 static inline LogMessage *
-log_msg_alloc(void)
+log_msg_alloc(gsize payload_size)
 {
   LogMessage *msg;
+  gsize payload_space = payload_size ? nv_table_get_alloc_size(LM_V_MAX, 16, payload_size) : 0;
+  gsize alloc_size, payload_ofs;
 
   /* NOTE: logmsg_node_max is updated from parallel threads without locking. */
   gint nodes = (volatile gint) logmsg_queue_node_max;
 
-  msg = g_malloc0(sizeof(LogMessage) + sizeof(LogMessageQueueNode) * nodes);
+  alloc_size = sizeof(LogMessage) + sizeof(LogMessageQueueNode) * nodes;
+  /* align to 8 boundary */
+  if (payload_size)
+    {
+      alloc_size = (alloc_size + 7) & ~7;
+      payload_ofs = alloc_size;
+      alloc_size += payload_space;
+    }
+  msg = g_malloc(alloc_size);
+
+  memset(msg, 0, sizeof(LogMessage));
+
+  if (payload_size)
+    msg->payload = nv_table_init_borrowed(((gchar *) msg) + payload_ofs, payload_space, LM_V_MAX);
+
   msg->num_nodes = nodes;
   return msg;
 }
@@ -810,10 +826,9 @@ log_msg_new(const gchar *msg, gint length,
             GSockAddr *saddr,
             MsgFormatOptions *parse_options)
 {
-  LogMessage *self = log_msg_alloc();
+  LogMessage *self = log_msg_alloc(length * 2);
   
   log_msg_init(self, saddr);
-  self->payload = nv_table_new(LM_V_MAX, 16, MAX(length * 2, 256));
 
   if (G_LIKELY(parse_options->format_handler))
     {
@@ -829,10 +844,9 @@ log_msg_new(const gchar *msg, gint length,
 LogMessage *
 log_msg_new_empty(void)
 {
-  LogMessage *self = log_msg_alloc();
+  LogMessage *self = log_msg_alloc(256);
   
   log_msg_init(self, NULL);
-  self->payload = nv_table_new(LM_V_MAX, 16, 256);
   return self;
 }
 
@@ -874,7 +888,7 @@ log_msg_clone_ack(LogMessage *msg, gpointer user_data)
 LogMessage *
 log_msg_clone_cow(LogMessage *msg, const LogPathOptions *path_options)
 {
-  LogMessage *self = log_msg_alloc();
+  LogMessage *self = log_msg_alloc(0);
 
   stats_counter_inc(count_msg_clones);
   if ((msg->flags & LF_STATE_OWN_MASK) == 0)
