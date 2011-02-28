@@ -427,7 +427,8 @@ log_reader_handle_line(LogReader *self, const guchar *line, gint length, GSockAd
   m = log_msg_new((gchar *) line, length,
                   saddr,
                   &self->options->parse_options);
-  
+
+  log_msg_refcache_start(m, TRUE);
   if (!m->saddr && self->peer_addr)
     {
       m->saddr = g_sockaddr_ref(self->peer_addr);
@@ -444,6 +445,7 @@ log_reader_handle_line(LogReader *self, const guchar *line, gint length, GSockAd
   log_msg_set_tag_by_id(m, self->super.options->source_group_tag);
 
   log_pipe_queue(&self->super.super, m, &path_options);
+  log_msg_refcache_stop();
   return log_source_free_to_send(&self->super);
 }
 

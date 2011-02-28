@@ -823,6 +823,7 @@ log_writer_flush(LogWriter *self, gboolean flush_all)
           break;
         }
 
+      log_msg_refcache_start(lm, FALSE);
       msg_set_context(lm);
 
       log_writer_format_log(self, lm, self->line_buffer);
@@ -837,6 +838,7 @@ log_writer_flush(LogWriter *self, gboolean flush_all)
               if ((self->options->options & LWO_IGNORE_ERRORS) == 0)
                 {
                   msg_set_context(NULL);
+                  log_msg_refcache_stop();
                   return FALSE;
                 }
               else
@@ -865,10 +867,12 @@ log_writer_flush(LogWriter *self, gboolean flush_all)
           log_queue_push_head(self->queue, lm, &path_options);
 
           msg_set_context(NULL);
+          log_msg_refcache_stop();
           break;
         }
         
       msg_set_context(NULL);
+      log_msg_refcache_stop();
       count++;
     }
 

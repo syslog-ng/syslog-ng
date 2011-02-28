@@ -118,8 +118,20 @@ struct _LogMessage
 {
   /* if you change any of the fields here, be sure to adjust
    * log_msg_clone_cow() as well to initialize fields properly */
-  GAtomicCounter ref_cnt; 
-  GAtomicCounter ack_cnt; 
+
+  /* ack_and_ref is a 32 bit integer that is accessed in an atomic way. The
+   * upper half contains the ACK count, the lower half the REF count.  It is
+   * not a GAtomicCounter as due to ref/ack caching it has a lot of magic
+   * behind its implementation.  See the logmsg.c file, around
+   * log_msg_ref/unref.
+   */
+
+  /* FIXME: the structure has holes, but right now it's 1 byte short to make
+   * it smaller (it is possible to create a 7 byte contiguos block but 8
+   * byte alignment is needed. Let's check this with the inline-tags stuff */
+
+  gint ack_and_ref;
+
   LMAckFunc ack_func;
   gpointer ack_userdata;
   LogMessage *original;
@@ -223,6 +235,9 @@ LogMessage *log_msg_new_empty(void);
 void log_msg_add_ack(LogMessage *msg, const LogPathOptions *path_options);
 void log_msg_ack(LogMessage *msg, const LogPathOptions *path_options);
 void log_msg_drop(LogMessage *msg, const LogPathOptions *path_options);
+
+void log_msg_refcache_start(LogMessage *self, gboolean producer);
+void log_msg_refcache_stop(void);
 
 void log_msg_registry_init();
 void log_msg_registry_deinit();

@@ -38,6 +38,99 @@
 #include <string.h>
 #include <stdlib.h>
 
+/*
+ * Reference/ACK counting for LogMessage structures
+ *
+ * Each LogMessage structure is allocated when received by a LogSource
+ * instance, and then freed once all destinations finish with it.  Since a
+ * LogMessage is processed by different threads, reference counting must be
+ * atomic.
+ *
+ * A similar counter is used to track when a given message is considered to
+ * be delivered.  In case flow-control is in use, the number of
+ * to-be-expected ACKs are counted in an atomic variable.
+ *
+ * Code is written in a way, that it is explicitly mentioned whether a
+ * function expects a reference (called "consuming" the ref), or whether it
+ * gets a 'borrowed' reference (more common).  Also, a function that returns
+ * a LogMessage instance generally returns a reference too.
+ *
+ * Because of these rules, quite a number of refs/unrefs are being made
+ * during the processing of a message, even though they wouldn't cause the
+ * structure to be freed.  Considering that ref/unref operations are
+ * expensive atomic operations, these have a considerable overhead.
+ *
+ * The solution we employ in this module, is that we try to exploit the
+ * fact, that each thread is usually working on a single LogMessage
+ * instance, and once it is done with it, it fetches the next one, and so
+ * on.  In the LogReader/LogWriter cases, this usage pattern is quite
+ * normal.
+ *
+ * Also, a quite similar usage pattern can be applied to the ACK counter
+ * (the one which tracks how much flow-controlled destinations need to
+ * confirm the deliver of the message).
+ *
+ * The solution implemented here is outlined below (and the same rules are
+ * used for ACKs and REFs):
+ *
+ *    - ACKs and REFs are put into the same 32 bit integer value, one half
+ *      is used for the ref counter, the other is used for the ACK counter
+ *      (see the macros LOGMSG_REFCACHE_ below)
+ *
+ *    - The processing of a given message in a given thread is enclosed by
+ *      calls to log_msg_refcache_start() / log_msg_refcache_stop()
+ *
+ *    - The calls to these functions is optional, if they are not called,
+ *      then normal atomic reference counting is performed
+ *
+ *    - When refcache_start() is called, the atomic reference count is not
+ *      changed by log_msg_ref()/unref(). Rather, a per-thread variable is
+ *      used to count the _difference_ to the "would-be" value of the ref counter.
+ *
+ *    - When refcache_stop() is called, the atomic reference counter is
+ *      updated as a single atomic operation. This means, that if a thread
+ *      calls refcache_start() early enough, then the ref/unref operations
+ *      performed by the given thread can be completely atomic-op free.
+ *
+ *    - There's one catch: if the producer thread (e.g. LogReader), doesn't
+ *      add references to a consumer thread (e.g.  LogWriter), and the
+ *      consumer doesn't use the refcache infrastructure, then the counters
+ *      could become negative (simply because the reader's real number of
+ *      references is not represented in the refcounter).  This is solved by
+ *      adding a large-enough number (so called BIAS) to the ref counter in
+ *      refcache_start(), which ensures that all possible writers will see a
+ *      positive value.  This is then substracted in refcache_stop() the
+ *      same way as the other references.
+ *
+ * Since we use the same atomic variable to store two things, updating that
+ * counter becomes somewhat more complicated, therefore a g_atomic_int_add()
+ * doesn't suffice.  We're using a CAS loop (compare-and-exchange) to do our
+ * stuff, but that shouldn't have that much of an overhead.
+ */
+
+/* message that is being processed by the current thread. Its ack/ref changes are cached */
+static __thread LogMessage *logmsg_current;
+/* has to be signed as these can become negative */
+
+/* number of cached refs by the current thread */
+static __thread gint logmsg_cached_refs;
+/* number of cached acks by the current thread */
+static __thread gint logmsg_cached_acks;
+
+#define LOGMSG_REFCACHE_BIAS                  0x00004000 /* the BIAS we add to the ref counter in refcache_start */
+#define LOGMSG_REFCACHE_ACK_SHIFT                     16 /* number of bits to shift to get the ACK counter */
+#define LOGMSG_REFCACHE_ACK_MASK              0xFFFF0000 /* bit mask to extract the ACK counter */
+#define LOGMSG_REFCACHE_REF_SHIFT                      0 /* number of bits to shift to get the REF counter */
+#define LOGMSG_REFCACHE_REF_MASK              0x0000FFFF /* bit mask to extract the ACK counter */
+
+
+#define LOGMSG_REFCACHE_REF_TO_VALUE(x)    (((x) << LOGMSG_REFCACHE_REF_SHIFT) & LOGMSG_REFCACHE_REF_MASK)
+#define LOGMSG_REFCACHE_ACK_TO_VALUE(x)    (((x) << LOGMSG_REFCACHE_ACK_SHIFT) & LOGMSG_REFCACHE_ACK_MASK)
+
+#define LOGMSG_REFCACHE_VALUE_TO_REF(x)    (((x) & LOGMSG_REFCACHE_REF_MASK) >> LOGMSG_REFCACHE_REF_SHIFT)
+#define LOGMSG_REFCACHE_VALUE_TO_ACK(x)    (((x) & LOGMSG_REFCACHE_ACK_MASK) >> LOGMSG_REFCACHE_ACK_SHIFT)
+
+
 /**********************************************************************
  * LogMessage
  **********************************************************************/
@@ -680,7 +773,8 @@ log_msg_init(LogMessage *self, GSockAddr *saddr)
 {
   GTimeVal tv;
 
-  g_atomic_counter_set(&self->ref_cnt, 1);
+  /* ref is set to 1, ack is set to 0 */
+  self->ack_and_ref = LOGMSG_REFCACHE_REF_TO_VALUE(1);
   cached_g_current_time(&tv);
   self->timestamps[LM_TS_RECVD].tv_sec = tv.tv_sec;
   self->timestamps[LM_TS_RECVD].tv_usec = tv.tv_usec;
@@ -834,8 +928,7 @@ log_msg_clone_cow(LogMessage *msg, const LogPathOptions *path_options)
 
   /* reference the original message */
   self->original = log_msg_ref(msg);
-  g_atomic_counter_set(&self->ref_cnt, 1);
-  g_atomic_counter_set(&self->ack_cnt, 0);
+  self->ack_and_ref = LOGMSG_REFCACHE_REF_TO_VALUE(1) + LOGMSG_REFCACHE_ACK_TO_VALUE(0);
   self->cur_node = 0;
 
   log_msg_add_ack(self, path_options);
@@ -936,6 +1029,28 @@ log_msg_drop(LogMessage *msg, const LogPathOptions *path_options)
   log_msg_ack(msg, path_options);
   log_msg_unref(msg);
 }
+
+
+/***************************************************************************************
+ * In order to read & understand this code, reading the comment on the top
+ * of this file about ref/ack handling is strongly recommended.
+ ***************************************************************************************/
+
+/* Function to update the combined ACK and REF counter. */
+static inline gint
+log_msg_update_ack_and_ref(LogMessage *self, gint add_ref, gint add_ack)
+{
+  gint old_value, new_value;
+  do
+    {
+      new_value = old_value = (volatile gint) self->ack_and_ref;
+      new_value = (new_value & ~LOGMSG_REFCACHE_REF_MASK) + LOGMSG_REFCACHE_REF_TO_VALUE((LOGMSG_REFCACHE_VALUE_TO_REF(old_value) + add_ref));
+      new_value = (new_value & ~LOGMSG_REFCACHE_ACK_MASK) + LOGMSG_REFCACHE_ACK_TO_VALUE((LOGMSG_REFCACHE_VALUE_TO_ACK(old_value) + add_ack));
+    }
+  while (!g_atomic_int_compare_and_exchange(&self->ack_and_ref, old_value, new_value));
+  return old_value;
+}
+
 /**
  * log_msg_ref:
  * @self: LogMessage instance
@@ -945,8 +1060,20 @@ log_msg_drop(LogMessage *msg, const LogPathOptions *path_options)
 LogMessage *
 log_msg_ref(LogMessage *self)
 {
-  g_assert(g_atomic_counter_get(&self->ref_cnt) > 0);
-  g_atomic_counter_inc(&self->ref_cnt);
+  gint old_value;
+
+  if (G_LIKELY(logmsg_current == self))
+    {
+      /* fastpath, @self is the current message, ref/unref processing is
+       * delayed until log_msg_refcache_stop() is called */
+
+      logmsg_cached_refs++;
+      return self;
+    }
+
+  /* slow path, refcache is not used, do the ordinary way */
+  old_value = log_msg_update_ack_and_ref(self, 1, 0);
+  g_assert(LOGMSG_REFCACHE_VALUE_TO_REF(old_value) >= 1);
   return self;
 }
 
@@ -959,8 +1086,21 @@ log_msg_ref(LogMessage *self)
 void
 log_msg_unref(LogMessage *self)
 {
-  g_assert(g_atomic_counter_get(&self->ref_cnt) > 0);
-  if (g_atomic_counter_dec_and_test(&self->ref_cnt))
+  gint old_value;
+
+  if (G_LIKELY(logmsg_current == self))
+    {
+      /* fastpath, @self is the current message, ref/unref processing is
+       * delayed until log_msg_refcache_stop() is called */
+
+      logmsg_cached_refs--;
+      return;
+    }
+
+  old_value = log_msg_update_ack_and_ref(self, -1, 0);
+  g_assert(LOGMSG_REFCACHE_VALUE_TO_REF(old_value) >= 1);
+
+  if (LOGMSG_REFCACHE_VALUE_TO_REF(old_value) == 1)
     {
       log_msg_free(self);
     }
@@ -974,10 +1114,20 @@ log_msg_unref(LogMessage *self)
  * This function increments the number of required acknowledges.
  **/
 void
-log_msg_add_ack(LogMessage *msg, const LogPathOptions *path_options)
+log_msg_add_ack(LogMessage *self, const LogPathOptions *path_options)
 {
   if (path_options->flow_control)
-    g_atomic_counter_inc(&msg->ack_cnt);
+    {
+      if (G_LIKELY(logmsg_current == self))
+        {
+          /* fastpath, @self is the current message, add_ack/ack processing is
+           * delayed until log_msg_refcache_stop() is called */
+
+          logmsg_cached_acks++;
+          return;
+        }
+      log_msg_update_ack_and_ref(self, 0, 1);
+    }
 }
 
 /**
@@ -989,15 +1139,93 @@ log_msg_add_ack(LogMessage *msg, const LogPathOptions *path_options)
  * queue further messages.
  **/
 void
-log_msg_ack(LogMessage *msg, const LogPathOptions *path_options)
+log_msg_ack(LogMessage *self, const LogPathOptions *path_options)
 {
+  gint old_value;
+
   if (path_options->flow_control)
     {
-      if (g_atomic_counter_dec_and_test(&msg->ack_cnt))
+      if (G_LIKELY(logmsg_current == self))
         {
-          msg->ack_func(msg, msg->ack_userdata);
+          /* fastpath, @self is the current message, add_ack/ack processing is
+           * delayed until log_msg_refcache_stop() is called */
+
+          logmsg_cached_acks--;
+          return;
+        }
+
+      old_value = log_msg_update_ack_and_ref(self, 0, -1);
+      if (LOGMSG_REFCACHE_VALUE_TO_ACK(old_value) == 1)
+        {
+          self->ack_func(self, self->ack_userdata);
         }
     }
+}
+
+/*
+ * Start caching ref/unref/ack/add-ack operations in the current thread for
+ * the message specified by @self.  See the comment at the top of this file
+ * for more information.
+ *
+ * NOTE: in producer mode, this function must be called _prior_ to
+ * submitting the message to any kind of parallel operation.
+ */
+void
+log_msg_refcache_start(LogMessage *self, gboolean producer)
+{
+  g_assert(logmsg_current == NULL);
+
+  logmsg_current = self;
+  if (producer)
+    {
+      /* we're the producer of said message, and thus we want to inhibit
+       * freeing/acking it due to our cached refs, add a bias large enough
+       * to cover any possible unrefs/acks of the consumer side */
+
+      /* we don't need to be thread-safe here, as a producer has just created this message and no parallel access is yet possible */
+
+      self->ack_and_ref = (self->ack_and_ref & ~LOGMSG_REFCACHE_REF_MASK) + LOGMSG_REFCACHE_REF_TO_VALUE((LOGMSG_REFCACHE_VALUE_TO_REF(self->ack_and_ref) + LOGMSG_REFCACHE_BIAS));
+      self->ack_and_ref = (self->ack_and_ref & ~LOGMSG_REFCACHE_ACK_MASK) + LOGMSG_REFCACHE_ACK_TO_VALUE((LOGMSG_REFCACHE_VALUE_TO_ACK(self->ack_and_ref) + LOGMSG_REFCACHE_BIAS));
+      logmsg_cached_refs = -LOGMSG_REFCACHE_BIAS;
+      logmsg_cached_acks = -LOGMSG_REFCACHE_BIAS;
+    }
+  else
+    {
+      logmsg_cached_refs = 0;
+      logmsg_cached_acks = 0;
+    }
+}
+
+/*
+ * Stop caching ref/unref/ack/add-ack operations in the current thread for
+ * the message specified by the log_msg_refcache_start() function.
+ *
+ * See the comment at the top of this file for more information.
+ */
+void
+log_msg_refcache_stop(void)
+{
+  gint old_value;
+
+  g_assert(logmsg_current != NULL);
+
+  /* validate that we didn't overflow the counters */
+  g_assert((logmsg_cached_acks < LOGMSG_REFCACHE_BIAS - 1) && (logmsg_cached_acks > -LOGMSG_REFCACHE_BIAS));
+  g_assert((logmsg_cached_refs < LOGMSG_REFCACHE_BIAS - 1) && (logmsg_cached_refs > -LOGMSG_REFCACHE_BIAS));
+
+  old_value = log_msg_update_ack_and_ref(logmsg_current, logmsg_cached_refs, logmsg_cached_acks);
+
+  if (LOGMSG_REFCACHE_VALUE_TO_ACK(old_value) == -logmsg_cached_acks)
+    {
+      /* ack processing */
+      logmsg_current->ack_func(logmsg_current, logmsg_current->ack_userdata);
+    }
+  if (LOGMSG_REFCACHE_VALUE_TO_REF(old_value) == -logmsg_cached_refs)
+    {
+      /* ref processing */
+      log_msg_free(logmsg_current);
+    }
+  logmsg_current = NULL;
 }
 
 void
