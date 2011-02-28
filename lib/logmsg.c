@@ -668,61 +668,6 @@ log_msg_print_tags(LogMessage *self, GString *result)
 }
 
 /**
- * log_msg_free:
- * @self: LogMessage instance
- *
- * Frees a LogMessage instance.
- **/
-static void
-log_msg_free(LogMessage *self)
-{
-  if (log_msg_chk_flag(self, LF_STATE_OWN_PAYLOAD) && self->payload)
-    nv_table_unref(self->payload);
-  if (log_msg_chk_flag(self, LF_STATE_OWN_TAGS) && self->tags)
-    g_free(self->tags);
-
-  if (log_msg_chk_flag(self, LF_STATE_OWN_SDATA) && self->sdata)
-    g_free(self->sdata);
-  if (log_msg_chk_flag(self, LF_STATE_OWN_SADDR))
-    g_sockaddr_unref(self->saddr);
-
-  if (self->original)
-    log_msg_unref(self->original);
-
-  g_free(self);
-}
-
-/**
- * log_msg_ref:
- * @self: LogMessage instance
- *
- * Increment reference count of @self and return the new reference.
- **/
-LogMessage *
-log_msg_ref(LogMessage *self)
-{
-  g_assert(g_atomic_counter_get(&self->ref_cnt) > 0);
-  g_atomic_counter_inc(&self->ref_cnt);
-  return self;
-}
-
-/**
- * log_msg_unref:
- * @self: LogMessage instance
- *
- * Decrement reference count and free self if the reference count becomes 0.
- **/
-void
-log_msg_unref(LogMessage *self)
-{
-  g_assert(g_atomic_counter_get(&self->ref_cnt) > 0);
-  if (g_atomic_counter_dec_and_test(&self->ref_cnt))
-    {
-      log_msg_free(self);
-    }
-}
-
-/**
  * log_msg_init:
  * @self: LogMessage instance
  * @saddr: sender address 
@@ -850,25 +795,6 @@ log_msg_new_empty(void)
   return self;
 }
 
-/**
- * log_msg_ack:
- * @msg: LogMessage instance
- * @path_options: path specific options
- *
- * Indicate that the message was processed successfully and the sender can
- * queue further messages.
- **/
-void 
-log_msg_ack(LogMessage *msg, const LogPathOptions *path_options)
-{
-  if (path_options->flow_control)
-    {
-      if (g_atomic_counter_dec_and_test(&msg->ack_cnt))
-        {
-          msg->ack_func(msg, msg->ack_userdata);
-        }
-    }
-}
 
 void
 log_msg_clone_ack(LogMessage *msg, gpointer user_data)
@@ -972,16 +898,28 @@ log_msg_new_mark(void)
 }
 
 /**
- * log_msg_add_ack:
- * @m: LogMessage instance
+ * log_msg_free:
+ * @self: LogMessage instance
  *
- * This function increments the number of required acknowledges.
+ * Frees a LogMessage instance.
  **/
-void
-log_msg_add_ack(LogMessage *msg, const LogPathOptions *path_options)
+static void
+log_msg_free(LogMessage *self)
 {
-  if (path_options->flow_control)
-    g_atomic_counter_inc(&msg->ack_cnt);
+  if (log_msg_chk_flag(self, LF_STATE_OWN_PAYLOAD) && self->payload)
+    nv_table_unref(self->payload);
+  if (log_msg_chk_flag(self, LF_STATE_OWN_TAGS) && self->tags)
+    g_free(self->tags);
+
+  if (log_msg_chk_flag(self, LF_STATE_OWN_SDATA) && self->sdata)
+    g_free(self->sdata);
+  if (log_msg_chk_flag(self, LF_STATE_OWN_SADDR))
+    g_sockaddr_unref(self->saddr);
+
+  if (self->original)
+    log_msg_unref(self->original);
+
+  g_free(self);
 }
 
 /**
@@ -997,6 +935,69 @@ log_msg_drop(LogMessage *msg, const LogPathOptions *path_options)
 {
   log_msg_ack(msg, path_options);
   log_msg_unref(msg);
+}
+/**
+ * log_msg_ref:
+ * @self: LogMessage instance
+ *
+ * Increment reference count of @self and return the new reference.
+ **/
+LogMessage *
+log_msg_ref(LogMessage *self)
+{
+  g_assert(g_atomic_counter_get(&self->ref_cnt) > 0);
+  g_atomic_counter_inc(&self->ref_cnt);
+  return self;
+}
+
+/**
+ * log_msg_unref:
+ * @self: LogMessage instance
+ *
+ * Decrement reference count and free self if the reference count becomes 0.
+ **/
+void
+log_msg_unref(LogMessage *self)
+{
+  g_assert(g_atomic_counter_get(&self->ref_cnt) > 0);
+  if (g_atomic_counter_dec_and_test(&self->ref_cnt))
+    {
+      log_msg_free(self);
+    }
+}
+
+
+/**
+ * log_msg_add_ack:
+ * @m: LogMessage instance
+ *
+ * This function increments the number of required acknowledges.
+ **/
+void
+log_msg_add_ack(LogMessage *msg, const LogPathOptions *path_options)
+{
+  if (path_options->flow_control)
+    g_atomic_counter_inc(&msg->ack_cnt);
+}
+
+/**
+ * log_msg_ack:
+ * @msg: LogMessage instance
+ * @path_options: path specific options
+ *
+ * Indicate that the message was processed successfully and the sender can
+ * queue further messages.
+ **/
+void
+log_msg_ack(LogMessage *msg, const LogPathOptions *path_options)
+{
+  if (path_options->flow_control)
+    {
+      if (g_atomic_counter_dec_and_test(&msg->ack_cnt))
+        {
+          msg->ack_func(msg, msg->ack_userdata);
+        }
+    }
 }
 
 void
