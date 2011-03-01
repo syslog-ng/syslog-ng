@@ -219,12 +219,18 @@ resolve_sockaddr(gchar *result, gsize *result_len, GSockAddr *saddr, gboolean us
             }
           else 
             {
-              g_strlcpy(buf, hname, sizeof(buf));
-              hname = buf;
               if (!usefqdn) 
                 {
-                  p = strchr(buf, '.');
-                  if (p) *p = 0;
+                  p = strchr(hname, '.');
+
+                  if (p)
+                    {
+                      if (p - hname > sizeof(buf))
+                        p = &hname[sizeof(buf)] - 1;
+                      memcpy(buf, hname, p - hname);
+                      buf[p - hname] = 0;
+                      hname = buf;
+                    }
                 }
             }
         }
@@ -260,10 +266,13 @@ resolve_sockaddr(gchar *result, gsize *result_len, GSockAddr *saddr, gboolean us
     }
   else
     {
-      gsize len = g_strlcpy(result, hname, *result_len);
+      gsize len = strlen(hname);
 
-      if (len <= *result_len)
-        *result_len = len;
+      if (*result_len < len - 1)
+        len = *result_len - 1;
+      memcpy(result, hname, len);
+      result[len] = 0;
+      *result_len = len;
     }
 }
 
