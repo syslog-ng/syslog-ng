@@ -106,6 +106,8 @@ testcase(gchar *msg,
   log_msg_format_sdata(logmsg, sd_str);
   TEST_ASSERT(strcmp(sd_str->str, expected_sd_str) == 0, "%s", sd_str->str, expected_sd_str);
 
+  log_msg_set_tag_by_name(logmsg, "almafa");
+
   /* check if the sockaddr matches */
   g_sockaddr_format(logmsg->saddr, logmsg_addr, sizeof(logmsg_addr), GSA_FULL);
 
@@ -157,6 +159,8 @@ testcase(gchar *msg,
   TEST_ASSERT(strcmp(log_msg_get_value(cloned, LM_V_PID, NULL), "newpid") == 0, "%s", log_msg_get_value(cloned, LM_V_PID, NULL), "newpid");
   TEST_ASSERT(strcmp(log_msg_get_value(cloned, LM_V_MSGID, NULL), "newmsgid") == 0, "%s", log_msg_get_value(cloned, LM_V_MSGID, NULL), "newmsgid");
   TEST_ASSERT(strcmp(log_msg_get_value(cloned, LM_V_SOURCE, NULL), "newsource") == 0, "%s", log_msg_get_value(cloned, LM_V_SOURCE, NULL), "newsource");
+
+  TEST_ASSERT(log_msg_is_tag_by_name(cloned, "almafa"), "%d", log_msg_is_tag_by_name(cloned, "almafa"), TRUE);
 
   log_msg_unref(cloned);
   log_msg_unref(logmsg);

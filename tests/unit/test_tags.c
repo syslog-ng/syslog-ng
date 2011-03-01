@@ -82,17 +82,18 @@ test_tags(void)
 void
 test_msg_tags()
 {
-  LogMessage *msg = log_msg_new_empty();
   gchar *name;
   gint i, set;
 
   test_msg("=== LogMessage tests ===\n");
 
+  LogMessage *msg = log_msg_new_empty();
   for (set = 1; set != -1; set--)
     {
       for (i = NUM_TAGS; i > -1; i--)
         {
           name = get_tag_by_id(i);
+
           if (set)
             log_msg_set_tag_by_name(msg, name);
           else
@@ -104,22 +105,34 @@ test_msg_tags()
 
           g_free(name);
         }
-    
+    }
+  log_msg_unref(msg);
+
+  msg = log_msg_new_empty();
+  for (set = 1; set != -1; set--)
+    {
       for (i = 0; i < NUM_TAGS; i++)
         {
           name = get_tag_by_id(i);
-          test_msg("Checking tag %d %s\n", i, name);
-    
+
+          if (set)
+            log_msg_set_tag_by_name(msg, name);
+          else
+            log_msg_clear_tag_by_name(msg, name);
+
+          test_msg("%s tag %d %s\n", set ? "Setting" : "Clearing", i, name);
+
           if (set ^ log_msg_is_tag_by_id(msg, i))
-            test_fail("Tag is %sset (by id) %d\n", set ? "not " : "", i);
-          if (set ^ log_msg_is_tag_by_name(msg, name))
-            test_fail("Tag is %sset (by name) %s\n", set ? "not " : "", name);
+            test_fail("Tag is %sset now (by id) %d\n", set ? "not " : "", i);
+
+          if (set && i < sizeof(gulong) * 8 && msg->num_tags != 0)
+            test_fail("Small IDs are set which should be stored in-line but num_tags is non-zero");
           
           g_free(name);
         }
     }
-
   log_msg_unref(msg);
+
 }
 
 void

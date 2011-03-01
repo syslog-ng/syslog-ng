@@ -101,6 +101,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   log_msg_set_match(msg, 1, "first-match", -1);
   log_msg_set_tag_by_name(msg, "alma");
   log_msg_set_tag_by_name(msg, "korte");
+  log_msg_clear_tag_by_name(msg, "narancs");
   log_msg_set_tag_by_name(msg, "citrom");
 
   /* fix some externally or automatically defined values */

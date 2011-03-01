@@ -502,87 +502,123 @@ log_msg_clear_matches(LogMessage *self)
   self->num_matches = 0;
 }
 
-static guint
-swap_index_big_endian(guint index)
+#if GLIB_SIZEOF_LONG != GLIB_SIZEOF_VOID_P
+#error "The tags bit array assumes that long is the same size as the pointer"
+#endif
+
+#if GLIB_SIZEOF_LONG == 8
+#define LOGMSG_TAGS_NDX_SHIFT 6
+#define LOGMSG_TAGS_NDX_MASK  0x3F
+#define LOGMSG_TAGS_BITS      64
+#elif GLIB_SIZEOF_LONG == 4
+#define LOGMSG_TAGS_NDX_SHIFT 5
+#define LOGMSG_TAGS_NDX_MASK  0x1F
+#define LOGMSG_TAGS_BITS      32
+#else
+#error "Unsupported word length, only 32 or 64 bit platforms are supported"
+#endif
+
+static inline void
+log_msg_tags_foreach_item(LogMessage *self, gint base, gulong item, LogMessageTagsForeachFunc callback, gpointer user_data)
 {
-  return G_BYTE_ORDER == G_BIG_ENDIAN ? 1-index : index;
+  gint i;
+
+  for (i = 0; i < LOGMSG_TAGS_BITS; i++)
+    {
+      if (G_LIKELY(!item))
+        return;
+      if (item & 1)
+        {
+          LogTagId id = (LogTagId) base + i;
+
+          callback(self, id, log_tags_get_by_id(id), user_data);
+        }
+      item >>= 1;
+    }
 }
 
-gboolean
+
+void
 log_msg_tags_foreach(LogMessage *self, LogMessageTagsForeachFunc callback, gpointer user_data)
 {
-  guint i, j, k;
-  LogTagId tag_id;
-  guint bitidx;
-  gchar *name;
+  guint i;
 
-  for (i = 0; i != self->num_tags; ++i)
+  if (self->num_tags == 0)
     {
-      if (G_LIKELY(!self->tags[i]))
-        continue;
-      for (j = 0; j != 2; ++j)
+      log_msg_tags_foreach_item(self, 0, (gulong) self->tags, callback, user_data);
+    }
+  else
+    {
+      for (i = 0; i != self->num_tags; ++i)
         {
-          if (G_LIKELY(! * ( ((guint16*) (&self->tags[i])) + swap_index_big_endian(j))))
-            continue;
-
-          for (k = 0; k != 2; ++k)
-            {
-              if (G_LIKELY(! * ( ((guint8*) (&self->tags[i])) + swap_index_big_endian(j) * 2 + swap_index_big_endian(k))))
-                continue;
-
-              for (bitidx = 0; bitidx != 8; ++bitidx)
-                {
-                  if ( *(((guint8*) (&self->tags[i])) + swap_index_big_endian(j) * 2 +swap_index_big_endian(k)) & (1 << bitidx))
-                    {
-                      tag_id = (LogTagId) (i * 32  + j * 16 + k * 8 + bitidx);
-
-                      name = log_tags_get_by_id(tag_id);
-                      callback(self, tag_id, name, user_data);
-                    }
-                }
-            }
+          log_msg_tags_foreach_item(self, i * LOGMSG_TAGS_BITS, self->tags[i], callback, user_data);
         }
     }
-  return TRUE;
+}
+
+
+static inline void
+log_msg_set_bit(gulong *tags, gint index, gboolean value)
+{
+  if (value)
+    tags[index >> LOGMSG_TAGS_NDX_SHIFT] |= ((gulong) (1UL << (index & LOGMSG_TAGS_NDX_MASK)));
+  else
+    tags[index >> LOGMSG_TAGS_NDX_SHIFT] &= ~((gulong) (1UL << (index & LOGMSG_TAGS_NDX_MASK)));
+}
+
+static inline gboolean
+log_msg_get_bit(gulong *tags, gint index)
+{
+  return !!(tags[index >> LOGMSG_TAGS_NDX_SHIFT] & ((gulong) (1UL << (index & LOGMSG_TAGS_NDX_MASK))));
 }
 
 static inline void
 log_msg_set_tag_by_id_onoff(LogMessage *self, LogTagId id, gboolean on)
 {
-  guint32 *tags;
+  gulong *old_tags;
   gint old_num_tags;
+  gboolean inline_tags;
 
   if (!log_msg_chk_flag(self, LF_STATE_OWN_TAGS) && self->num_tags)
     {
-      tags = self->tags;
-      self->tags = g_new0(guint32, self->num_tags);
-      memcpy(self->tags, tags, sizeof(guint32) * self->num_tags);
+      self->tags = g_memdup(self->tags, sizeof(self->tags[0]) * self->num_tags);
     }
   log_msg_set_flag(self, LF_STATE_OWN_TAGS);
 
-  if ((self->num_tags * 32) <= id)
+  /* if num_tags is 0, it means that we use inline storage of tags */
+  inline_tags = self->num_tags == 0;
+  if (inline_tags && id < LOGMSG_TAGS_BITS)
     {
-      if (G_UNLIKELY(8159 < id))
-        {
-          msg_error("Maximum number of tags reached", NULL);
-          return;
-        }
-      old_num_tags = self->num_tags;
-      self->num_tags = (id / 32) + 1;
-
-      tags = self->tags;
-      self->tags = g_new0(guint32, self->num_tags);
-      if (tags)
-        {
-          memcpy(self->tags, tags, sizeof(guint32) * old_num_tags);
-          g_free(tags);
-        }
+      /* store this tag inline */
+      log_msg_set_bit((gulong *) &self->tags, id, on);
     }
-
-  if (on)
-    self->tags[id / 32] |= (guint32)(1 << (id % 32));
   else
-    self->tags[id / 32] &= (guint32) ~((guint32)(1 << (id % 32)));
+    {
+      /* we can't put this tag inline, either because it is too large, or we don't have the inline space any more */
+
+      if ((self->num_tags * LOGMSG_TAGS_BITS) <= id)
+        {
+          if (G_UNLIKELY(8159 < id))
+            {
+              msg_error("Maximum number of tags reached", NULL);
+              return;
+            }
+          old_num_tags = self->num_tags;
+          self->num_tags = (id / LOGMSG_TAGS_BITS) + 1;
+
+          old_tags = self->tags;
+          if (old_num_tags)
+            self->tags = g_realloc(self->tags, sizeof(self->tags[0]) * self->num_tags);
+          else
+            self->tags = g_malloc(sizeof(self->tags[0]) * self->num_tags);
+          memset(&self->tags[old_num_tags], 0, (self->num_tags - old_num_tags) * sizeof(self->tags[0]));
+
+          if (inline_tags)
+            self->tags[0] = (gulong) old_tags;
+        }
+
+      log_msg_set_bit(self->tags, id, on);
+    }
 }
 
 void
@@ -617,8 +653,12 @@ log_msg_is_tag_by_id(LogMessage *self, LogTagId id)
       msg_error("Invalid tag", evt_tag_int("id", (gint) id), NULL);
       return FALSE;
     }
-
-  return (id < (self->num_tags * 32)) && (self->tags[id / 32] & (guint32) ((guint32) 1 << (id % 32))) != (guint32) 0;
+  if (self->num_tags == 0 && id < LOGMSG_TAGS_BITS)
+    return log_msg_get_bit((gulong *) &self->tags, id);
+  else if (id < self->num_tags * LOGMSG_TAGS_BITS)
+    return log_msg_get_bit(self->tags, id);
+  else
+    return FALSE;
 }
 
 gboolean
@@ -911,7 +951,7 @@ log_msg_clone_cow(LogMessage *msg, const LogPathOptions *path_options)
   LogMessage *self = log_msg_alloc(0);
 
   stats_counter_inc(count_msg_clones);
-  if ((msg->flags & LF_STATE_OWN_MASK) == 0)
+  if ((msg->flags & LF_STATE_OWN_MASK) == 0 || ((msg->flags & LF_STATE_OWN_MASK) == LF_STATE_OWN_TAGS && msg->num_tags == 0))
     {
       /* the message we're cloning has no original content, everything
        * is referenced from its "original", use that with this clone
@@ -942,8 +982,11 @@ log_msg_clone_cow(LogMessage *msg, const LogPathOptions *path_options)
       self->ack_func = (LMAckFunc) log_msg_clone_ack;
       self->ack_userdata = NULL;
     }
-  
+
   self->flags &= ~LF_STATE_MASK;
+
+  if (self->num_tags == 0)
+    self->flags |= LF_STATE_OWN_TAGS;
   return self;
 }
 
@@ -1001,7 +1044,7 @@ log_msg_free(LogMessage *self)
 {
   if (log_msg_chk_flag(self, LF_STATE_OWN_PAYLOAD) && self->payload)
     nv_table_unref(self->payload);
-  if (log_msg_chk_flag(self, LF_STATE_OWN_TAGS) && self->tags)
+  if (log_msg_chk_flag(self, LF_STATE_OWN_TAGS) && self->tags && self->num_tags > 0)
     g_free(self->tags);
 
   if (log_msg_chk_flag(self, LF_STATE_OWN_SDATA) && self->sdata)

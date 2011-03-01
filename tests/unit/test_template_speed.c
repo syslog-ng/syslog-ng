@@ -51,6 +51,9 @@ testcase(const gchar *msg_str, gboolean syslog_proto, gchar *template)
 
   /* fix some externally or automatically defined values */
   log_msg_set_value(msg, LM_V_HOST_FROM, "kismacska", -1);
+  log_msg_set_tag_by_name(msg, "alma");
+  log_msg_set_tag_by_name(msg, "korte");
+  log_msg_set_tag_by_name(msg, "citrom");
 
   msg->timestamps[LM_TS_RECVD].tv_sec = 1139684315;
   msg->timestamps[LM_TS_RECVD].tv_usec = 639000;
@@ -113,6 +116,9 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 
   testcase("<155>2006-02-11T10:34:56.156+01:00 bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép", FALSE,
            "$MSG\n");
+
+  testcase("<155>2006-02-11T10:34:56.156+01:00 bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép", FALSE,
+           "$TAGS\n");
 
   testcase("<155>2006-02-11T10:34:56.156+01:00 bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép", FALSE,
            "$(echo $MSG)\n");
