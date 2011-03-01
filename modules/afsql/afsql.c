@@ -540,7 +540,7 @@ afsql_dd_suspend(AFSqlDestDriver *self)
 {
   self->db_thread_suspended = TRUE;
   g_get_current_time(&self->db_thread_suspend_target);
-  g_time_val_add(&self->db_thread_suspend_target, self->time_reopen * 1000);
+  g_time_val_add(&self->db_thread_suspend_target, self->time_reopen * 1000000);
 }
 
 static void
@@ -974,8 +974,27 @@ afsql_dd_init(LogPipe *s)
 
   if (!dbi_initialized)
     {
-      dbi_initialize(NULL);
-      dbi_initialized = TRUE;
+      gint rc = dbi_initialize(NULL);
+
+      if (rc < 0)
+        {
+          /* NOTE: errno might be unreliable, but that's all we have */
+          msg_error("Unable to initialize database access (DBI)",
+                    evt_tag_int("rc", rc),
+                    evt_tag_errno("error", errno),
+                    NULL);
+          goto error;
+        }
+      else if (rc == 0)
+        {
+          msg_error("The database access library (DBI) reports no usable SQL drivers, perhaps DBI drivers are not installed properly",
+                    NULL);
+          goto error;
+        }
+      else
+        {
+          dbi_initialized = TRUE;
+        }
     }
 
   afsql_dd_start_thread(self);
