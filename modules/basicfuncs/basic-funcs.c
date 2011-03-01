@@ -31,7 +31,8 @@ tf_cond_free_state(TFCondState *args)
 {
   gint i;
 
-  filter_expr_free(args->filter);
+  if (args->filter)
+    filter_expr_free(args->filter);
   for (i = 0; i < args->argc; i++)
     {
       if (args->argv[i])
