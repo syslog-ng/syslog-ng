@@ -36,9 +36,7 @@
 #define LR_IGNORE_TIMEOUT  0x0008
 #define LR_SYSLOG_PROTOCOL 0x0010
 #define LR_PREEMPT         0x0020
-/* the fd referenced is references a regular file (e.g. not pipe, socket) */
-#define LR_FILE_FD         0x0040
-#define LR_THREADED        0x0080
+#define LR_THREADED        0x0040
 
 /* options */
 

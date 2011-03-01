@@ -262,8 +262,6 @@ affile_sd_init(LogPipe *s)
   gint fd;
   gboolean file_opened, open_deferred = FALSE;
 
-  if ((self->flags & AFFILE_PIPE) == 0 && self->reader_options.follow_freq != 0)
-    self->reader_options.flags |= LR_FILE_FD;
   log_reader_options_init(&self->reader_options, cfg, self->super.group);
 
   file_opened = affile_sd_open_file(self, self->filename->str, &fd);
@@ -563,19 +561,6 @@ affile_dw_reopen(AFFileDestWriter *self)
 }
 
 static gboolean
-is_file_regular(const gchar *filename)
-{
-  struct stat st;
-
-  if (stat(filename, &st) >= 0)
-    {
-      return S_ISREG(st.st_mode);
-    }
-  /* non existing files will be created by syslog-ng, they are guaranteed to be regular */
-  return TRUE;
-}
-
-static gboolean
 affile_dw_init(LogPipe *s)
 {
   AFFileDestWriter *self = (AFFileDestWriter *) s;
@@ -591,7 +576,7 @@ affile_dw_init(LogPipe *s)
 
   if (!self->writer)
     {
-      self->writer = log_writer_new(LW_FORMAT_FILE | ((self->owner->flags & AFFILE_PIPE || !is_file_regular(self->filename->str)) ? 0 : LW_FILE_FD));
+      self->writer = log_writer_new(LW_FORMAT_FILE);
       log_writer_set_options((LogWriter *) self->writer, s, &self->owner->writer_options, 1, self->owner->flags & AFFILE_PIPE ? SCS_PIPE : SCS_FILE, self->owner->super.id, self->filename->str);
 
       if (!log_pipe_init(self->writer, NULL))

@@ -95,7 +95,7 @@ struct _LogReader
   struct iv_task restart_task;
   struct iv_event schedule_wakeup;
   MainLoopIOWorkerJob io_job;
-  gboolean suspended:1;
+  gboolean suspended:1, file_fd:1;
   gint notify_code;
 };
 
@@ -303,8 +303,8 @@ log_reader_start_watches(LogReader *self)
   GIOCondition cond;
 
   log_proto_prepare(self->proto, &fd, &cond);
-
-  if (fd >= 0 && ((self->options->flags & LR_FILE_FD) == 0 || self->options->follow_freq == 0))
+  self->file_fd = !iv_fd_pollable(fd);
+  if (fd >= 0 && (!self->file_fd || self->options->follow_freq == 0))
     {
       self->fd_watch.fd = fd;
       iv_fd_register(&self->fd_watch);

@@ -40,7 +40,7 @@ struct _LogWriter
 {
   LogPipe super;
   LogQueue *queue;
-  guint32 flags;
+  guint32 flags:31, file_fd:1;
   gint32 seq_num;
   guint32 *dropped_messages;
   guint32 *suppressed_messages;
@@ -202,7 +202,7 @@ log_writer_error_suspend_elapsed(gpointer s)
 static void
 log_writer_update_fd_callbacks(LogWriter *self, GIOCondition cond)
 {
-  if ((self->flags & LW_FILE_FD) == 0)
+  if (!self->file_fd)
     {
       if (self->flags & LW_DETECT_EOF && (cond & G_IO_IN) == 0 && (cond & G_IO_OUT))
         {
@@ -330,7 +330,8 @@ log_writer_start_watches(LogWriter *self)
     {
       log_proto_prepare(self->proto, &fd, &cond);
 
-      if ((self->flags & LW_FILE_FD) == 0)
+      self->file_fd = !iv_fd_pollable(fd);
+      if (!self->file_fd)
         {
           self->fd_watch.fd = fd;
           iv_fd_register(&self->fd_watch);
@@ -348,7 +349,7 @@ log_writer_stop_watches(LogWriter *self)
     {
       if (iv_timer_registered(&self->suspend_timer))
         iv_timer_unregister(&self->suspend_timer);
-      if ((self->flags & LW_FILE_FD) == 0)
+      if (!self->file_fd)
         iv_fd_unregister(&self->fd_watch);
       if (iv_task_registered(&self->immed_io_task))
         iv_task_unregister(&self->immed_io_task);
