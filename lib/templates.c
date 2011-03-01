@@ -892,7 +892,12 @@ log_template_compile(LogTemplate *self, GError **error)
                       else if (*p == '"' || *p == '\'')
                         {
                           quote = *p;
-                          p++;
+                          if (parens == 1)
+                            {
+                              /* skip the quote in top-level and don't skip in expressions enclosed in parens */
+                              p++;
+                              continue;
+                            }
                         }
                       else if (parens == 1 && (*p == ' ' || *p == '\t'))
                         {
@@ -919,8 +924,11 @@ log_template_compile(LogTemplate *self, GError **error)
                         {
                           /* end of string */
                           quote = 0;
-                          p++;
-                          continue;
+                          if (parens == 1)
+                            {
+                              p++;
+                              continue;
+                            }
                         }
                     }
                   if (*p)

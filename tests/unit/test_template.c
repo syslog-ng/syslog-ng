@@ -212,6 +212,10 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase(msg, "$(grep 'facility(local3)' $PID)", "23323");
   testcase(msg, "$(grep 'facility(local3)' $PID $PROGRAM)", "23323,syslog-ng");
   testcase(msg, "$(grep 'facility(local4)' $PID)", "");
+  testcase(msg, "$(grep ('$FACILITY' == 'local4') $PID)", "");
+  testcase(msg, "$(grep ('$FACILITY(' == 'local3(') $PID)", "23323");
+  testcase(msg, "$(grep ('$FACILITY(' == 'local4)') $PID)", "");
+  testcase(msg, "$(grep \\'$FACILITY\\'\\ ==\\ \\'local4\\' $PID)", "");
   testcase(msg, "$(if 'facility(local4)' alma korte)", "korte");
   testcase(msg, "$(if 'facility(local3)' alma korte)", "alma");
 
