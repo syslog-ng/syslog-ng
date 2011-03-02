@@ -818,6 +818,7 @@ pdbtool_load_module(const gchar *option_name, const gchar *value, gpointer data,
 }
 
 static gchar *input_logfile = NULL;
+static gboolean no_parse = FALSE;
 static gdouble support_treshold = 4.0;
 static gboolean iterate_outliers = FALSE;
 static gboolean named_parsers = FALSE;
@@ -854,7 +855,7 @@ pdbtool_patternize(int argc, char *argv[])
   argv[0] = input_logfile;
   for (i = 0; i < argc; i++)
     {
-      if (argv[i] && !ptz_load_file(ptz, argv[i], &error))
+      if (argv[i] && !ptz_load_file(ptz, argv[i], no_parse, &error))
         {
           fprintf(stderr, "Error adding log file as patternize input: %s\n", error->message);
           g_clear_error(&error);
@@ -876,6 +877,8 @@ static GOptionEntry patternize_options[] =
 {
   { "file",             'f', 0, G_OPTION_ARG_STRING, &input_logfile,
     "Logfile to create pattern database from, use '-' for stdin", "<path>" },
+  { "no-parse", 'p', 0, G_OPTION_ARG_NONE, &no_parse,
+    "Do try to parse the input file, consider the whole lines as the message part of the log", NULL},
   { "support",          'S', 0, G_OPTION_ARG_DOUBLE, &support_treshold,
     "Percentage of lines that have to support a pattern (default: 4.0)", "<support>" },
   { "iterate-outliers", 'o', 0, G_OPTION_ARG_NONE, &iterate_outliers,
