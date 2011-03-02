@@ -857,8 +857,16 @@ log_writer_flush(LogWriter *self, gboolean flush_all)
           status = log_proto_post(proto, (guchar *) self->line_buffer->str, self->line_buffer->len, &consumed);
           if (status == LPS_ERROR)
             {
-              msg_set_context(NULL);
-              return FALSE;
+              if ((self->options->options & LWO_IGNORE_ERRORS) == 0)
+                {
+                  msg_set_context(NULL);
+                  return FALSE;
+                }
+              else
+                {
+                  consumed = TRUE;
+                  g_free(self->line_buffer->str);
+                }
             }
           if (consumed)
             {
@@ -1183,6 +1191,8 @@ log_writer_options_lookup_flag(const gchar *flag)
     return LWO_NO_MULTI_LINE;
   if (strcmp(flag, "threaded") == 0)
     return LWO_THREADED;
+  if (strcmp(flag, "ignore-errors") == 0 || strcmp(flag, "ignore_errors") == 0)
+    return LWO_IGNORE_ERRORS;
   msg_error("Unknown dest writer flag", evt_tag_str("flag", flag), NULL);
   return 0;
 }

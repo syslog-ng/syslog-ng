@@ -45,6 +45,7 @@
 /* several writers use the same counter */
 #define LWO_SHARE_STATS     0x0008
 #define LWO_THREADED        0x0010
+#define LWO_IGNORE_ERRORS   0x0020
 
 typedef struct _LogWriterOptions
 {
