@@ -24,11 +24,9 @@ include $(top_srcdir)/build/lex-rules.am
 
 # divert install/uninstall targets to avoid recursing into $(SUBDIRS)
 
-build-libmongo-client:
-	[ libmongo-client ] && (cd libmongo-client; $(MAKE) $(AM_MAKEFLAGS) all)
-
-install: build-libmongo-client
+install:
+	$(MAKE) $(AM_MAKEFLAGS) all
 	$(MAKE) $(AM_MAKEFLAGS) install-am
 
-uninstall: build-libmongo-client
+uninstall:
 	$(MAKE) $(AM_MAKEFLAGS) uninstall-am
