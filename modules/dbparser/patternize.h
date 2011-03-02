@@ -68,7 +68,7 @@ GHashTable *ptz_find_clusters_slct(GPtrArray *logs, guint support, guint num_of_
 GHashTable *ptz_find_clusters(Patternizer *self);
 void ptz_print_patterndb(GHashTable *clusters, gboolean named_parsers);
 
-gboolean ptz_load_file(Patternizer *self, gchar *input_file, GError **error);
+gboolean ptz_load_file(Patternizer *self, gchar *input_file, gboolean no_parse, GError **error);
 
 Patternizer *ptz_new(gdouble support_treshold, guint algo, guint iterate, guint num_of_samples);
 void ptz_free(Patternizer *self);
