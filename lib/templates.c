@@ -687,7 +687,7 @@ log_template_add_macro_elem(LogTemplate *self, guint macro, GString *text, gchar
   e->text = text ? g_strndup(text->str, text->len) : NULL;
   e->macro = macro;
   e->default_value = default_value;
-  e->msg_ref = msg_ref + 1;
+  e->msg_ref = msg_ref;
   self->compiled_template = g_list_prepend(self->compiled_template, e);
 }
 
@@ -706,7 +706,7 @@ log_template_add_value_elem(LogTemplate *self, gchar *value_name, gsize value_na
   e->value_handle = log_msg_get_value_handle(dup);
   g_free(dup);
   e->default_value = default_value;
-  e->msg_ref = msg_ref + 1;
+  e->msg_ref = msg_ref;
   self->compiled_template = g_list_prepend(self->compiled_template, e);
 }
 
@@ -727,7 +727,7 @@ log_template_add_func_elem(LogTemplate *self, GString *text, gint argc, gchar *a
   e->type = LTE_FUNC;
   e->text_len = text ? text->len : 0;
   e->text = text ? g_strndup(text->str, text->len) : NULL;
-  e->msg_ref = msg_ref + 1;
+  e->msg_ref = msg_ref;
 
   p = plugin_find(self->cfg, LL_CONTEXT_TEMPLATE_FUNC, argv[0]);
   if (!p)
@@ -766,6 +766,7 @@ parse_msg_ref(gchar **p, gint *msg_ref)
           (*msg_ref) += (*msg_ref) * 10 + ((**p) - '0');
           (*p)++;
         }
+      *msg_ref += 1;
     }
 }
 
@@ -1049,10 +1050,17 @@ log_template_append_format_with_context(LogTemplate *self, LogMessage **messages
 
       /* NOTE: msg_ref is 1 larger than the index specified by the user in
        * order to make it distinguishable from the zero value.  Therefore
-       * the '>' instead of '>=' */
+       * the '>' instead of '>='
+       *
+       * msg_ref == 0 means that the user didn't specify msg_ref
+       * msg_ref >= 1 means that the user supplied the given msg_ref, 1 is equal to @0 */
       if (e->msg_ref > num_messages)
         continue;
       msg_ndx = num_messages - e->msg_ref;
+
+      /* value and macro can't understand a context, assume that no msg_ref means @0 */
+      if (e->msg_ref == 0)
+        msg_ndx--;
 
       switch (e->type)
         {

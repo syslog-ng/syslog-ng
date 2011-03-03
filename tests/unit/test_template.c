@@ -22,6 +22,7 @@ testcase(LogMessage *msg, gchar *template, gchar *expected)
   LogTemplate *templ;
   GString *res = g_string_sized_new(128);
   GError *error = NULL;
+  LogMessage *context[2] = { msg, msg };
 
   templ = log_template_new(configuration, "dummy", template);
   if (!log_template_compile(templ, &error))
@@ -31,7 +32,7 @@ testcase(LogMessage *msg, gchar *template, gchar *expected)
       success = FALSE;
       goto error;
     }
-  log_template_format(templ, msg, NULL, LTZ_LOCAL, 0, res);
+  log_template_format_with_context(templ, context, 2, NULL, LTZ_LOCAL, 0, res);
 
   if (strcmp(res->str, expected) != 0)
     {
@@ -209,11 +210,11 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase(msg, "$(echo '\"$(echo $(echo $HOST))\"' $PID)", "\"bzorp\" 23323");
   testcase(msg, "$(ipv4-to-int $SOURCEIP)", "168496141");
 
-  testcase(msg, "$(grep 'facility(local3)' $PID)", "23323");
-  testcase(msg, "$(grep 'facility(local3)' $PID $PROGRAM)", "23323,syslog-ng");
+  testcase(msg, "$(grep 'facility(local3)' $PID)", "23323,23323");
+  testcase(msg, "$(grep 'facility(local3)' $PID $PROGRAM)", "23323,syslog-ng,23323,syslog-ng");
   testcase(msg, "$(grep 'facility(local4)' $PID)", "");
   testcase(msg, "$(grep ('$FACILITY' == 'local4') $PID)", "");
-  testcase(msg, "$(grep ('$FACILITY(' == 'local3(') $PID)", "23323");
+  testcase(msg, "$(grep ('$FACILITY(' == 'local3(') $PID)", "23323,23323");
   testcase(msg, "$(grep ('$FACILITY(' == 'local4)') $PID)", "");
   testcase(msg, "$(grep \\'$FACILITY\\'\\ ==\\ \\'local4\\' $PID)", "");
   testcase(msg, "$(if 'facility(local4)' alma korte)", "korte");
@@ -234,6 +235,14 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase(msg, "$(if '\"$FACILITY_NUM\" >= \"19\"' alma korte)", "alma");
   testcase(msg, "$(if '\"$FACILITY_NUM\" >= \"19\" and \"kicsi\" == \"nagy\"' alma korte)", "korte");
   testcase(msg, "$(if '\"$FACILITY_NUM\" >= \"19\" or \"kicsi\" == \"nagy\"' alma korte)", "alma");
+
+  /* message refs */
+  testcase(msg, "$(echo ${HOST}@0 ${PID}@1)", "bzorp 23323");
+  testcase(msg, "$(echo $HOST $PID)@0", "bzorp 23323");
+
+  testcase(msg, "$(grep 'facility(local3)' $PID)@0", "23323");
+  testcase(msg, "$(grep 'facility(local3)' $PID)@1", "23323");
+  testcase(msg, "$(grep 'facility(local3)' $PID)@2", "");
 
   /* template syntax errors */
   testcase_failure("${unbalanced_brace", "'}' is missing");
