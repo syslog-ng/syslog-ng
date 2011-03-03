@@ -942,9 +942,6 @@ main(int argc, char *argv[])
   gint mode, ret = 0;
   GError *error = NULL;
 
-  app_startup();
-  configuration = cfg_new(0x0302);
-
   mode_string = pdbtool_mode(&argc, &argv);
   if (!mode_string)
     {
@@ -960,6 +957,7 @@ main(int argc, char *argv[])
           g_option_context_set_summary(ctx, modes[mode].description);
           g_option_context_add_main_entries(ctx, modes[mode].options, NULL);
           g_option_context_add_main_entries(ctx, pdbtool_options, NULL);
+          msg_add_option_group(ctx);
           break;
         }
     }
@@ -980,6 +978,12 @@ main(int argc, char *argv[])
   g_option_context_free(ctx);
 
   msg_init(TRUE);
+  stats_init();
+  log_msg_global_init();
+  log_tags_init();
+
+  configuration = cfg_new(0x0302);
+
   plugin_load_module("syslogformat", configuration, NULL);
   plugin_load_module("basicfuncs", configuration, NULL);
 
