@@ -507,7 +507,8 @@ pdbtool_match(int argc, char *argv[])
           PDBRule *rule;
 
           rule = pdb_rule_set_lookup(patterndb->ruleset, msg, dbg_list);
-          pdb_rule_unref(rule);
+          if (rule)
+            pdb_rule_unref(rule);
 
           msg_string = log_msg_get_value(msg, LM_V_MESSAGE, NULL);
           pos = 0;
