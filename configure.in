@@ -174,23 +174,43 @@ LT_INIT([dlopen disable-static])
 
 dnl ***************************************************************************
 dnl Validate yacc
+
+yacc_ok=1
 if echo "$YACC" | grep bison > /dev/null; then
 	# NOTE: m4 removes [], that's why it needs to be escaped
 	bison_version=[`$YACC --version | head -1 | sed -e 's/[^0-9.]*\([0-9.]\+\)$/\1/'`]
 	bison_version_major=`echo $bison_version | cut -d. -f1`
 	bison_version_minor=`echo $bison_version | cut -d. -f2`
 	if test "$bison_version_major" -lt 2 -o "$bison_version_minor" -lt 4; then
-		AC_MSG_WARN([syslog-ng requires bison 2.4. You may not be able to regenerate parsers if you change them.])
+		yacc_ok=0
 	fi
 else
-	AC_MSG_WARN([syslog-ng only supports bison and not traditional yacc. You may not be able to regenerate the parsers if you change them.])
+	yacc_ok=0
+fi
+
+if test $yacc_ok = 0; then
+	if test -f $srcdir/lib/cfg-grammar.c || test -f lib/cfg-grammar.c; then
+		AC_MSG_WARN([No proper bison found, you'll not be able to change lib/cfg-grammar.y])
+	else
+		AC_MSG_ERROR([syslog-ng requires bison 2.4 or later (traditional yacc is not enough). Your source tree seems to be from git, which doesn't have lib/cfg-grammar.c. Please install bison or use a distribution tarball.])
+	fi
 fi
 
 dnl ***************************************************************************
 dnl Validate flex
 
-if test -z "$LEX" ; then
-	AC_MSG_WARN([No lex found. syslog-ng requires flex if you want to change the lexer files cfg-lex.l.  You may not be able to regenerate the lexer if you change them.])
+if $LEX --version | grep "flex" >/dev/null; then
+	lex_ok=1
+else
+	lex_ok=0
+fi
+
+if test $lex_ok = 0 ; then
+	if test -f $srcdir/lib/cfg-lex.c || test -f lib/cfg-lex.c; then
+		AC_MSG_WARN([No flex found, you'll not be able to change lib/cfg-lex.l])
+	else
+		AC_MSG_ERROR([syslog-ng requires flex in order to generate its config lexer. Your source tree seems to be from git, which doesn't have lib/cfg-lex.c. Please install flex or use a distribution tarball.])
+	fi
 fi
 
 dnl ***************************************************************************
@@ -469,7 +489,7 @@ if test "$linking_mode" != "dynamic"; then
 	GLIB_LIBS=`echo $GLIB_LIBS | tr ' ' '\n' | egrep -v "^(-ldld?)|(-lrt)$" | tr '\n' ' '`
 
 	old_LIBS=$LIBS
-	LIBS="$LD_START_STATIC $GLIB_LIBS $LD_END_STATIC"
+	LIBS="$LD_START_STATIC $GLIB_LIBS $LD_END_STATIC $BASE_LIBS"
 	AC_CHECK_FUNC(g_hash_table_new, blb_cv_static_glib=yes, blb_cv_static_glib=no)
 	LIBS=$old_LIBS
 fi
@@ -734,29 +754,36 @@ if test "x$enable_mongodb" = "xauto"; then
 	AC_MSG_RESULT([$enable_mongodb])
 fi
 
-DEPS_CPPFLAGS="$CPPFLAGS $GLIB_CFLAGS $EVTLOG_CFLAGS $PCRE_CFLAGS $OPENSSL_CFLAGS $LIBNET_CFLAGS $LIBDBI_CFLAGS $IVYKIS_CFLAGS"
-CPPFLAGS="$DEPS_CPPFLAGS -D_GNU_SOURCE -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64"
+CPPFLAGS="$CPPFLAGS $GLIB_CFLAGS $EVTLOG_CFLAGS $PCRE_CFLAGS $OPENSSL_CFLAGS $LIBNET_CFLAGS $LIBDBI_CFLAGS $IVYKIS_CFLAGS -D_GNU_SOURCE -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64"
 
 if test "x$linking_mode" = "xdynamic"; then
-	DEPS_LIBS="$LIBS $BASE_LIBS $GLIB_LIBS $EVTLOG_LIBS $RESOLV_LIBS $LIBCAP_LIBS $PCRE_LIBS $REGEX_LIBS"
-	if test "x$with_ivykis" = "internal"; then
 
-		# if we're to use the internal ivykis, then link it into the
-		# core .so statically.
+	# all dependendent libraries used by binary that can be linked in mixed mode (e.g. syslog-ng binary).
+	SYSLOGNG_DEPS_LIBS="$LIBS $BASE_LIBS $GLIB_LIBS $EVTLOG_LIBS $RESOLV_LIBS $LIBCAP_LIBS $PCRE_LIBS $REGEX_LIBS $DL_LIBS"
 
-		CORE_DEPS_LIBS="$DEPS_LIBS $IVYKIS_LIBS"
-	else
+	# tools & unit tests that link against libsyslog-ng.so should be linked with this set of libraries.
+	# other tools that do not use libsyslog-ng.so can use the _LIBS variables directly.
+	TOOL_DEPS_LIBS="$SYSLOGNG_DEPS_LIBS"
 
-		# we're using the system installed ivykis, add that to DEPS_LIBS
+	# libsyslog-ng.so is linked with this set of libraries
+	CORE_DEPS_LIBS="$SYSLOGNG_DEPS_LIBS $IVYKIS_LIBS"
 
-		DEPS_LIBS="$DEPS_LIBS $IVYKIS_LIBS"
-		CORE_DEPS_LIBS="$DEPS_LIBS"
-	fi
+	# syslog-ng binary is linked with the default link command (e.g. libtool)
 	SYSLOGNG_LINK='$(LINK)'
 else
-	DEPS_LIBS="$LIBS $BASE_LIBS $RESOLV_LIBS $LD_START_STATIC -Wl,--whole-archive $GLIB_LIBS $EVTLOG_LIBS $PCRE_LIBS $REGEX_LIBS $IVYKIS_LIBS -Wl,--no-whole-archive $LD_END_STATIC $LIBCAP_LIBS $DL_LIBS "
+	# all dependendent libraries used by binary that can be linked in mixed mode (e.g. syslog-ng binary).
+	SYSLOGNG_DEPS_LIBS="$LIBS $BASE_LIBS $RESOLV_LIBS $LD_START_STATIC -Wl,--whole-archive $GLIB_LIBS $EVTLOG_LIBS $PCRE_LIBS $REGEX_LIBS $IVYKIS_LIBS -Wl,--no-whole-archive $LD_END_STATIC $LIBCAP_LIBS $DL_LIBS "
+
+	# tools & unit tests that link against libsyslog-ng.so should be linked with this set of libraries.
+	# other tools that do not use libsyslog-ng.so can use the _LIBS variables directly.
+        TOOL_DEPS_LIBS="$LIBS $BASE_LIBS $GLIB_LIBS $EVTLOG_LIBS $RESOLV_LIBS $LIBCAP_LIBS $PCRE_LIBS $REGEX_LIBS $DL_LIBS"
+
+	# libsyslog-ng.so is linked with this set of libraries
 	CORE_DEPS_LIBS=""
-	# bypass libtool in case we want to do mixed linking
+
+	# bypass libtool in case we want to do mixed linking because it
+	# doesn't support -Wl,-Bstatic -Wl,-Bdynamic on a per-library basis.
+
 	SYSLOGNG_LINK='$(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@'
 fi
 YFLAGS="-d"
@@ -832,8 +859,8 @@ AC_SUBST(pidfiledir)
 AC_SUBST(moduledir)
 AC_SUBST(expanded_sysconfdir)
 AC_SUBST(SYSLOGNG_LINK)
-AC_SUBST(DEPS_CPPFLAGS)
-AC_SUBST(DEPS_LIBS)
+AC_SUBST(SYSLOGNG_DEPS_LIBS)
+AC_SUBST(TOOL_DEPS_LIBS)
 AC_SUBST(CORE_DEPS_LIBS)
 AC_SUBST(BASE_LIBS)
 AC_SUBST(YFLAGS)

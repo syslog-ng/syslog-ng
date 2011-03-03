@@ -1461,9 +1461,23 @@ pattern_db_process(PatternDB *self, LogMessage *msg)
           context = g_hash_table_lookup(self->state, &key);
           if (!context)
             {
+              msg_debug("Correllation context lookup failure, starting a new context",
+                        evt_tag_str("rule", rule->rule_id),
+                        evt_tag_str("context", buffer->str),
+                        evt_tag_int("context_timeout", rule->context_timeout),
+                        NULL);
               context = pdb_context_new(self, &key);
               g_hash_table_insert(self->state, &context->key, context);
               g_string_steal(buffer);
+            }
+          else
+            {
+              msg_debug("Correllation context lookup successful",
+                        evt_tag_str("rule", rule->rule_id),
+                        evt_tag_str("context", buffer->str),
+                        evt_tag_int("context_timeout", rule->context_timeout),
+                        evt_tag_int("num_messages", context->messages->len),
+                        NULL);
             }
 
           msg->flags |= LF_STATE_REFERENCED;
