@@ -1307,6 +1307,10 @@ pattern_db_expire_entry(guint64 now, gpointer user_data)
   PatternDB *pdb = context->db;
   GString *buffer = g_string_sized_new(256);
 
+  msg_debug("Expiring patterndb correllation context",
+            evt_tag_str("last_rule", context->rule->rule_id),
+            evt_tag_long("utc", timer_wheel_get_time(context->db->timer_wheel)),
+            NULL);
   if (pdb->emit)
     pdb_rule_run_actions(context->rule, RAT_TIMEOUT, context->db, context, g_ptr_array_index(context->messages, context->messages->len - 1), pdb->emit, pdb->emit_data, buffer);
   g_hash_table_remove(context->db->state, &context->key);
@@ -1340,7 +1344,9 @@ pattern_db_timer_tick(PatternDB *self)
       glong diff_sec = diff / 1e6;
 
       timer_wheel_set_time(self->timer_wheel, timer_wheel_get_time(self->timer_wheel) + diff_sec);
-
+      msg_debug("Advancing patterndb current time because of timer tick",
+                evt_tag_long("utc", timer_wheel_get_time(self->timer_wheel)),
+                NULL);
       /* update last_tick, take the fraction of the seconds not calculated into this update into account */
 
       self->last_tick = now;
@@ -1367,6 +1373,9 @@ pattern_db_set_time(PatternDB *self, const GTimeVal *tv)
     now.tv_sec = tv->tv_sec;
 
   timer_wheel_set_time(self->timer_wheel, now.tv_sec);
+  msg_debug("Advancing patterndb current time because of an incoming message",
+            evt_tag_long("utc", timer_wheel_get_time(self->timer_wheel)),
+            NULL);
 }
 
 gboolean
@@ -1465,6 +1474,7 @@ pattern_db_process(PatternDB *self, LogMessage *msg)
                         evt_tag_str("rule", rule->rule_id),
                         evt_tag_str("context", buffer->str),
                         evt_tag_int("context_timeout", rule->context_timeout),
+                        evt_tag_int("context_expiration", timer_wheel_get_time(self->timer_wheel) + rule->context_timeout),
                         NULL);
               context = pdb_context_new(self, &key);
               g_hash_table_insert(self->state, &context->key, context);
@@ -1476,6 +1486,7 @@ pattern_db_process(PatternDB *self, LogMessage *msg)
                         evt_tag_str("rule", rule->rule_id),
                         evt_tag_str("context", buffer->str),
                         evt_tag_int("context_timeout", rule->context_timeout),
+                        evt_tag_int("context_expiration", timer_wheel_get_time(self->timer_wheel) + rule->context_timeout),
                         evt_tag_int("num_messages", context->messages->len),
                         NULL);
             }

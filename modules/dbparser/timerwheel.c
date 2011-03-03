@@ -190,6 +190,12 @@ timer_wheel_mod_timer(TimerWheel *self, TWEntry *entry, gint new_timeout)
   timer_wheel_add_timer_entry(self, entry);
 }
 
+guint64
+timer_wheel_get_timer_expiration(TimerWheel *self, TWEntry *entry)
+{
+  return entry->target;
+}
+
 static void
 timer_wheel_cascade(TimerWheel *self)
 {
