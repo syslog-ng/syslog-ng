@@ -303,6 +303,7 @@ timer_wheel_set_time(TimerWheel *self, guint64 new_now)
       if (self->num_timers == 0)
         {
           self->now = new_now;
+          self->base = new_now & ~self->levels[0]->mask;
           break;
         }
 
