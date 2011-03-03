@@ -981,6 +981,7 @@ main(int argc, char *argv[])
   stats_init();
   log_msg_global_init();
   log_tags_init();
+  pattern_db_global_init();
 
   configuration = cfg_new(0x0302);
 
