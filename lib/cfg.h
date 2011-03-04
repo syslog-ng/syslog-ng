@@ -76,6 +76,7 @@ struct _GlobalConfig
   gchar *dns_cache_hosts;
   gint time_reopen;
   gint time_reap;
+  gint suppress;
 
   gint log_fifo_size;
   gint log_msg_size;

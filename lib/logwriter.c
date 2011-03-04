@@ -1079,7 +1079,7 @@ log_writer_options_defaults(LogWriterOptions *options)
   options->flush_timeout = -1;
   log_template_options_defaults(&options->template_options);
   options->time_reopen = -1;
-  options->suppress = 0;
+  options->suppress = -1;
 }
 
 void 
@@ -1155,6 +1155,8 @@ log_writer_options_init(LogWriterOptions *options, GlobalConfig *cfg, guint32 op
     options->flush_lines = cfg->flush_lines;
   if (options->flush_timeout == -1)
     options->flush_timeout = cfg->flush_timeout;
+  if (options->suppress == -1)
+    options->suppress = cfg->suppress;
     
   if (options->mem_fifo_size < options->flush_lines)
     {

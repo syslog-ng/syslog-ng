@@ -600,6 +600,7 @@ options_item
 	| KW_TIME_REOPEN '(' LL_NUMBER ')'		{ configuration->time_reopen = $3; }
 	| KW_TIME_REAP '(' LL_NUMBER ')'		{ configuration->time_reap = $3; }
 	| KW_TIME_SLEEP '(' LL_NUMBER ')'	{}
+	| KW_SUPPRESS '(' LL_NUMBER ')'		{ configuration->suppress = $3; }
 	| KW_THREADED '(' yesno ')'		{ configuration->threaded = $3; }
 	| KW_LOG_FIFO_SIZE '(' LL_NUMBER ')'	{ configuration->log_fifo_size = $3; }
 	| KW_LOG_IW_SIZE '(' LL_NUMBER ')'	{ msg_error("Using a global log-iw-size() option was removed, please use a per-source log-iw-size()", NULL); }
