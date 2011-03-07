@@ -649,7 +649,7 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
   value = g_string_sized_new(256);
   query_string = g_string_sized_new(512);
 
-  log_template_format(self->table, msg, &self->template_options, LTZ_LOCAL, 0, table);
+  log_template_format(self->table, msg, &self->template_options, LTZ_LOCAL, 0, NULL, table);
 
   if (!afsql_dd_validate_table(self, table->str))
     {
@@ -674,7 +674,7 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
     {
       gchar *quoted;
 
-      log_template_format(self->fields[i].value, msg, &self->template_options, LTZ_SEND, self->seq_num, value);
+      log_template_format(self->fields[i].value, msg, &self->template_options, LTZ_SEND, self->seq_num, NULL, value);
       if (self->null_value && strcmp(self->null_value, value->str) == 0)
         {
           g_string_append(query_string, "NULL");

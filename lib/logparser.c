@@ -53,7 +53,7 @@ log_parser_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
     {
       GString *input = g_string_sized_new(256);
       
-      log_template_format(self->template, msg, NULL, LTZ_LOCAL, 0, input);
+      log_template_format(self->template, msg, NULL, LTZ_LOCAL, 0, NULL, input);
       success = self->process(self, msg, input->str);
       g_string_free(input, TRUE);
     }

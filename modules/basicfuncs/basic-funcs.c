@@ -75,7 +75,7 @@ tf_cond_prepare(LogTemplateFunction *self, LogTemplate *parent, gint argc, gchar
 }
 
 void
-tf_cond_eval(LogTemplateFunction *self, gpointer state, GPtrArray *arg_bufs, LogMessage **messages, gint num_messages, LogTemplateOptions *opts, gint tz, gint seq_num)
+tf_cond_eval(LogTemplateFunction *self, gpointer state, GPtrArray *arg_bufs, LogMessage **messages, gint num_messages, LogTemplateOptions *opts, gint tz, gint seq_num, const gchar *context_id)
 {
   return;
 }
@@ -94,7 +94,7 @@ tf_grep_prepare(LogTemplateFunction *self, LogTemplate *parent, gint argc, gchar
 
 
 void
-tf_grep_call(LogTemplateFunction *self, gpointer state, GPtrArray *arg_bufs, LogMessage **messages, gint num_messages, LogTemplateOptions *opts, gint tz, gint seq_num, GString *result)
+tf_grep_call(LogTemplateFunction *self, gpointer state, GPtrArray *arg_bufs, LogMessage **messages, gint num_messages, LogTemplateOptions *opts, gint tz, gint seq_num, const gchar *context_id, GString *result)
 {
   gint i, msg_ndx;
   gboolean first = TRUE;
@@ -110,7 +110,7 @@ tf_grep_call(LogTemplateFunction *self, gpointer state, GPtrArray *arg_bufs, Log
             {
               if (!first)
                 g_string_append_c(result, ',');
-              log_template_append_format(args->argv[i], msg, opts, tz, seq_num, result);
+              log_template_append_format(args->argv[i], msg, opts, tz, seq_num, context_id, result);
               first = FALSE;
             }
         }
@@ -133,7 +133,7 @@ tf_if_prepare(LogTemplateFunction *self, LogTemplate *parent, gint argc, gchar *
 TEMPLATE_FUNCTION(tf_grep, tf_grep_prepare, tf_cond_eval, tf_grep_call, NULL);
 
 void
-tf_if_call(LogTemplateFunction *self, gpointer state, GPtrArray *arg_bufs, LogMessage **messages, gint num_messages, LogTemplateOptions *opts, gint tz, gint seq_num, GString *result)
+tf_if_call(LogTemplateFunction *self, gpointer state, GPtrArray *arg_bufs, LogMessage **messages, gint num_messages, LogTemplateOptions *opts, gint tz, gint seq_num, const gchar *context_id, GString *result)
 {
   TFCondState *args = (TFCondState *) state;
   LogMessage *msg;
@@ -142,11 +142,11 @@ tf_if_call(LogTemplateFunction *self, gpointer state, GPtrArray *arg_bufs, LogMe
   msg = messages[num_messages - 1];
   if (filter_expr_eval(args->filter, msg))
     {
-      log_template_append_format(args->argv[0], msg, opts, tz, seq_num, result);
+      log_template_append_format(args->argv[0], msg, opts, tz, seq_num, context_id, result);
     }
   else
     {
-      log_template_append_format(args->argv[1], msg, opts, tz, seq_num, result);
+      log_template_append_format(args->argv[1], msg, opts, tz, seq_num, context_id, result);
     }
 }
 

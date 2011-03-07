@@ -158,8 +158,8 @@ fop_cmp_eval(FilterExprNode *s, LogMessage *msg)
   gboolean result = FALSE;
   gint cmp;
 
-  log_template_format(self->left, msg, NULL, LTZ_LOCAL, 0, self->left_buf);
-  log_template_format(self->right, msg, NULL, LTZ_LOCAL, 0, self->right_buf);
+  log_template_format(self->left, msg, NULL, LTZ_LOCAL, 0, NULL, self->left_buf);
+  log_template_format(self->right, msg, NULL, LTZ_LOCAL, 0, NULL, self->right_buf);
 
   if (self->cmp_op & FCMP_NUM)
     {

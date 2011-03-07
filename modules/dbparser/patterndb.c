@@ -299,7 +299,7 @@ pdb_message_apply(PDBMessage *self, PDBContext *context, LogMessage *msg, GStrin
           log_template_format_with_context(g_ptr_array_index(self->values, i),
                                            context ? (LogMessage **) context->messages->pdata : &msg,
                                            context ? context->messages->len : 1,
-                                           NULL, LTZ_LOCAL, 0, buffer);
+                                           NULL, LTZ_LOCAL, 0, context ? context->key.session_id : NULL, buffer);
           log_msg_set_value(msg,
                             log_msg_get_value_handle(((LogTemplate *) g_ptr_array_index(self->values, i))->name),
                             buffer->str, buffer->len);
@@ -1464,7 +1464,7 @@ pattern_db_process(PatternDB *self, LogMessage *msg)
         {
           PDBStateKey key;
 
-          log_template_format(rule->context_id_template, msg, NULL, LTZ_LOCAL, 0, buffer);
+          log_template_format(rule->context_id_template, msg, NULL, LTZ_LOCAL, 0, NULL, buffer);
 
           pdb_state_key_setup(&key, PSK_CONTEXT, rule, msg, buffer->str);
           context = g_hash_table_lookup(self->state, &key);

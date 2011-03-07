@@ -29,6 +29,7 @@ do { \
 } while (0);
 
 #define MYHOST "MYHOST"
+#define MYPID "999"
 
 PatternDB *patterndb;
 gchar *filename;
@@ -99,11 +100,13 @@ gchar *pdb_ruletest_skeleton = "<patterndb version='3' pub_date='2010-02-22'>\
     <value name='n11-1'>v11-1</value>\
     <value name='n11-2'>v11-2</value>\
     <value name='vvv'>${HOST}</value>\
+    <value name='context-id'>${CONTEXT_ID}</value>\
    </values>\
    <actions>\
      <action rate='1/60' condition='\"${n11-1}\" == \"v11-1\"' trigger='match'>\
        <message>\
          <value name='MESSAGE'>rule11 matched</value>\
+         <value name='context-id'>${CONTEXT_ID}</value>\
          <tags>\
            <tag>tag11-3</tag>\
          </tags>\
@@ -112,6 +115,7 @@ gchar *pdb_ruletest_skeleton = "<patterndb version='3' pub_date='2010-02-22'>\
      <action rate='1/60' condition='\"${n11-1}\" == \"v11-1\"' trigger='timeout'>\
        <message>\
          <value name='MESSAGE'>rule11 timed out</value>\
+         <value name='context-id'>${CONTEXT_ID}</value>\
          <tags>\
            <tag>tag11-4</tag>\
          </tags>\
@@ -148,6 +152,7 @@ test_rule_value(const gchar *pattern, const gchar *name, const gchar *value)
   log_msg_set_value(msg, LM_V_MESSAGE, pattern, strlen(pattern));
   log_msg_set_value(msg, LM_V_PROGRAM, "prog1", 5);
   log_msg_set_value(msg, LM_V_HOST, MYHOST, strlen(MYHOST));
+  log_msg_set_value(msg, LM_V_PID, MYPID, strlen(MYPID));
 
   result = pattern_db_process(patterndb, msg);
   val = log_msg_get_value(msg, log_msg_get_value_handle(name), &len);
@@ -169,6 +174,8 @@ test_rule_tag(const gchar *pattern, const gchar *tag, gboolean set)
 
   log_msg_set_value(msg, LM_V_MESSAGE, pattern, strlen(pattern));
   log_msg_set_value(msg, LM_V_PROGRAM, "prog2", 5);
+  log_msg_set_value(msg, LM_V_HOST, MYHOST, strlen(MYHOST));
+  log_msg_set_value(msg, LM_V_PID, MYPID, strlen(MYPID));
 
   result = pattern_db_process(patterndb, msg);
   found = log_msg_is_tag_by_name(msg, tag);
@@ -190,6 +197,8 @@ test_rule_action_message_value(const gchar *pattern, gint timeout, gint ndx, con
 
   log_msg_set_value(msg, LM_V_MESSAGE, pattern, strlen(pattern));
   log_msg_set_value(msg, LM_V_PROGRAM, "prog2", 5);
+  log_msg_set_value(msg, LM_V_HOST, MYHOST, strlen(MYHOST));
+  log_msg_set_value(msg, LM_V_PID, MYPID, strlen(MYPID));
   msg->timestamps[LM_TS_STAMP].time.tv_sec = msg->timestamps[LM_TS_RECVD].time.tv_sec;
 
   result = pattern_db_process(patterndb, msg);
@@ -222,6 +231,8 @@ test_rule_action_message_tag(const gchar *pattern, gint timeout, gint ndx, const
 
   log_msg_set_value(msg, LM_V_MESSAGE, pattern, strlen(pattern));
   log_msg_set_value(msg, LM_V_PROGRAM, "prog2", 5);
+  log_msg_set_value(msg, LM_V_HOST, MYHOST, strlen(MYHOST));
+  log_msg_set_value(msg, LM_V_PID, MYPID, strlen(MYPID));
   msg->timestamps[LM_TS_STAMP].time.tv_sec = msg->timestamps[LM_TS_RECVD].time.tv_sec;
 
   result = pattern_db_process(patterndb, msg);
@@ -271,6 +282,7 @@ test_patterndb_rule(void)
   test_rule_value("pattern11", ".classifier.class", "system");
   test_rule_value("pattern11", "n11-2", "v11-2");
   test_rule_value("pattern11", "n11-3", NULL);
+  test_rule_value("pattern11", "context-id", "999");
   test_rule_value("pattern11a", "n11-1", "v11-1");
   test_rule_value("pattern11a", "n11-2", "v11-2");
   test_rule_value("pattern11a", "n11-3", NULL);
@@ -284,10 +296,12 @@ test_patterndb_rule(void)
   test_rule_value("pattern11", "vvv", MYHOST);
 
   test_rule_action_message_value("pattern11", 0, 1, "MESSAGE", "rule11 matched");
+  test_rule_action_message_value("pattern11", 0, 1, "context-id", "999");
   test_rule_action_message_tag("pattern11", 0, 1, "tag11-3", TRUE);
   test_rule_action_message_tag("pattern11", 0, 1, "tag11-4", FALSE);
 
   test_rule_action_message_value("pattern11", 60, 2, "MESSAGE", "rule11 timed out");
+  test_rule_action_message_value("pattern11", 60, 2, "context-id", "999");
   test_rule_action_message_tag("pattern11", 60, 2, "tag11-3", FALSE);
   test_rule_action_message_tag("pattern11", 60, 2, "tag11-4", TRUE);
 
@@ -330,7 +344,7 @@ test_pattern(const gchar *pattern, const gchar *rule, gboolean match)
 
   result = pattern_db_process(patterndb, msg);
 
-  log_template_format(templ, msg, NULL, LTZ_LOCAL, 0, res);
+  log_template_format(templ, msg, NULL, LTZ_LOCAL, 0, NULL, res);
 
   if (strcmp(res->str, pattern) == 0)
     {

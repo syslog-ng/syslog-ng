@@ -23,6 +23,7 @@ testcase(LogMessage *msg, gchar *template, gchar *expected)
   GString *res = g_string_sized_new(128);
   GError *error = NULL;
   LogMessage *context[2] = { msg, msg };
+  const gchar *context_id = "test-context-id";
 
   templ = log_template_new(configuration, "dummy", template);
   if (!log_template_compile(templ, &error))
@@ -32,7 +33,7 @@ testcase(LogMessage *msg, gchar *template, gchar *expected)
       success = FALSE;
       goto error;
     }
-  log_template_format_with_context(templ, context, 2, NULL, LTZ_LOCAL, 0, res);
+  log_template_format_with_context(templ, context, 2, NULL, LTZ_LOCAL, 999, context_id, res);
 
   if (strcmp(res->str, expected) != 0)
     {
@@ -201,6 +202,9 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase(msg, "${1}", "first-match");
   testcase(msg, "$1", "first-match");
   testcase(msg, "$$$1$$", "$first-match$");
+
+  testcase(msg, "$SEQNUM", "999");
+  testcase(msg, "$CONTEXT_ID", "test-context-id");
 
   /* template functions */
   testcase(msg, "$(echo $HOST $PID)", "bzorp 23323");

@@ -276,12 +276,12 @@ afmongodb_worker_insert (MongoDBDestDriver *self)
 
   g_string_truncate(self->current_namespace, self->ns_prefix_len);
   log_template_append_format(self->coll, msg, NULL, LTZ_LOCAL,
-			     self->seq_num, self->current_namespace);
+			     self->seq_num, NULL, self->current_namespace);
 
   for (i = 0; i < self->num_fields; i++)
     {
       log_template_format(self->fields[i].value, msg, NULL, LTZ_SEND,
-			  self->seq_num, self->current_value);
+			  self->seq_num, NULL, self->current_value);
       if (self->current_value->len)
 	bson_append_string(self->bson_set, self->fields[i].name,
 			   self->current_value->str, -1);

@@ -705,7 +705,7 @@ log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
           log_template_append_format(self->options->template, lm, 
                                      &self->options->template_options,
                                      LTZ_SEND,
-                                     seq_num,
+                                     seq_num, NULL,
                                      result);
         }
       else
@@ -746,7 +746,7 @@ log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
           log_template_format(template, lm, 
                               &self->options->template_options,
                               LTZ_SEND,
-                              seq_num,
+                              seq_num, NULL,
                               result);
 
         }
