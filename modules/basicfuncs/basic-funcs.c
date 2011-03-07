@@ -32,7 +32,7 @@ tf_cond_free_state(TFCondState *args)
   gint i;
 
   if (args->filter)
-    filter_expr_free(args->filter);
+    filter_expr_unref(args->filter);
   for (i = 0; i < args->argc; i++)
     {
       if (args->argv[i])
