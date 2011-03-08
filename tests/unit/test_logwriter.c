@@ -91,7 +91,7 @@ testcase(gchar *msg_string, gchar *template, gboolean use_syslog_protocol,gchar 
   if (writer)
     free(writer);
   if (msg)
-    free(msg);
+    g_slice_free(LogMessage, msg);
   g_string_free(res, TRUE);
 }
 

@@ -122,6 +122,7 @@ g_sockaddr_ref(GSockAddr *a)
   return a;
 }
 
+gsize g_sockaddr_len(GSockAddr *);
 /*+
 
   Decrement the reference count of a GSockAddr instance, and free if
@@ -143,7 +144,7 @@ g_sockaddr_unref(GSockAddr *a)
       if (g_atomic_counter_dec_and_test(&a->refcnt))
         {
           if (!a->sa_funcs->freefn)
-            g_free(a);
+            g_slice_free1(g_sockaddr_len(a), a);
           else
             a->sa_funcs->freefn(a);
         }
@@ -198,7 +199,7 @@ g_sockaddr_inet_format(GSockAddr *addr, gchar *text, gulong n, gint format)
 void
 g_sockaddr_inet_free(GSockAddr *addr)
 {
-  g_free(addr);
+  g_slice_free1(g_sockaddr_len(addr), addr);
 }
 
 static GSockAddrFuncs inet_sockaddr_funcs = 
@@ -235,7 +236,7 @@ g_sockaddr_inet_new(gchar *ip, guint16 port)
 
   if (inet_aton(ip, &ina))
     {
-      addr = g_new0(GSockAddrInet, 1);
+      addr = g_slice_new0(GSockAddrInet);
   
       g_atomic_counter_set(&addr->refcnt, 1);
       addr->flags = 0;
@@ -263,7 +264,7 @@ g_sockaddr_inet_new(gchar *ip, guint16 port)
 GSockAddr *
 g_sockaddr_inet_new2(struct sockaddr_in *sin)
 {
-  GSockAddrInet *addr = g_new0(GSockAddrInet, 1);
+  GSockAddrInet *addr = g_slice_new0(GSockAddrInet);
   
   g_atomic_counter_set(&addr->refcnt, 1);
   addr->flags = 0;
@@ -342,7 +343,7 @@ static GSockAddrFuncs inet_range_sockaddr_funcs =
 GSockAddr *
 g_sockaddr_inet_range_new(gchar *ip, guint16 min_port, guint16 max_port)
 {
-  GSockAddrInetRange *addr = g_new0(GSockAddrInetRange, 1);
+  GSockAddrInetRange *addr = g_slice_new0(GSockAddrInetRange);
   
   g_atomic_counter_set(&addr->refcnt, 1);
   addr->flags = 0;
@@ -405,7 +406,7 @@ g_sockaddr_inet6_format(GSockAddr *addr, gchar *text, gulong n, gint format)
 static void
 g_sockaddr_inet6_free(GSockAddr *addr)
 {
-  g_free(addr);
+  g_slice_free1(g_sockaddr_len(addr), addr);
 }
 
 static GSockAddrFuncs inet6_sockaddr_funcs = 
@@ -438,7 +439,7 @@ g_sockaddr_inet6_check(GSockAddr *a)
 GSockAddr *
 g_sockaddr_inet6_new(gchar *ip, guint16 port)
 {
-  GSockAddrInet6 *addr = g_new0(GSockAddrInet6, 1);
+  GSockAddrInet6 *addr = g_slice_new0(GSockAddrInet6);
   
   g_atomic_counter_set(&addr->refcnt, 1);
   addr->flags = 0;
@@ -467,7 +468,7 @@ g_sockaddr_inet6_new(gchar *ip, guint16 port)
 GSockAddr *
 g_sockaddr_inet6_new2(struct sockaddr_in6 *sin6)
 {
-  GSockAddrInet6 *addr = g_new0(GSockAddrInet6, 1);
+  GSockAddrInet6 *addr = g_slice_new0(GSockAddrInet6);
   
   g_atomic_counter_set(&addr->refcnt, 1);
   addr->flags = 0;
@@ -524,7 +525,7 @@ static GSockAddrFuncs unix_sockaddr_funcs =
 GSockAddr *
 g_sockaddr_unix_new(const gchar *name)
 {
-  GSockAddrUnix *addr = g_new0(GSockAddrUnix, 1);
+  GSockAddrUnix *addr = g_slice_new0(GSockAddrUnix);
   
   g_atomic_counter_set(&addr->refcnt, 1);
   addr->flags = 0;
@@ -560,7 +561,7 @@ g_sockaddr_unix_new(const gchar *name)
 GSockAddr *
 g_sockaddr_unix_new2(struct sockaddr_un *saun, int sunlen)
 {
-  GSockAddrUnix *addr = g_new0(GSockAddrUnix, 1);
+  GSockAddrUnix *addr = g_slice_new0(GSockAddrUnix);
   
   g_atomic_counter_set(&addr->refcnt, 1);
   addr->flags = 0;
@@ -626,5 +627,26 @@ g_sockaddr_unix_format(GSockAddr *addr, gchar *text, gulong n, gint format)
       g_snprintf(text, n, "%s", unix_addr->salen > sizeof(unix_addr->saun.sun_family) && unix_addr->saun.sun_path[0] ? unix_addr->saun.sun_path : "anonymous");
     }
   return text;
+}
+
+gsize
+g_sockaddr_len(GSockAddr *a)
+{
+  gsize len;
+
+  if (a->sa_funcs == &inet_sockaddr_funcs)
+    len = sizeof(GSockAddrInet);
+#if ENABLE_IPV6
+  else if (a->sa_funcs == &inet6_sockaddr_funcs)
+    len = sizeof(GSockAddrInet6);
+#endif
+  else if (a->sa_funcs == &inet_range_sockaddr_funcs)
+    len = sizeof(GSockAddrInetRange);
+  else if (a->sa_funcs == &unix_sockaddr_funcs)
+    len = sizeof(GSockAddrUnix);
+  else
+    g_assert_not_reached();
+
+  return len;
 }
 

@@ -94,7 +94,7 @@ void
 serialize_archive_free(SerializeArchive *self)
 {
   g_clear_error(&self->error);
-  g_free(self);
+  g_slice_free1(self->len, self);
 }
 
 static gboolean 
@@ -134,10 +134,11 @@ serialize_file_archive_write_bytes(SerializeArchive *s, const gchar *buf, gsize 
 SerializeArchive *
 serialize_file_archive_new(FILE *f)
 {
-  SerializeFileArchive *self = g_new0(SerializeFileArchive, 1);
+  SerializeFileArchive *self = g_slice_new0(SerializeFileArchive);
   
   self->super.read_bytes = serialize_file_archive_read_bytes;
   self->super.write_bytes = serialize_file_archive_write_bytes;
+  self->super.len = sizeof(SerializeFileArchive);
   self->f = f;
   return &self->super;
 }
@@ -174,10 +175,11 @@ serialize_string_archive_write_bytes(SerializeArchive *s, const gchar *buf, gsiz
 SerializeArchive *
 serialize_string_archive_new(GString *str)
 {
-  SerializeStringArchive *self = g_new0(SerializeStringArchive, 1);
+  SerializeStringArchive *self = g_slice_new0(SerializeStringArchive);
 
   self->super.read_bytes = serialize_string_archive_read_bytes;
   self->super.write_bytes = serialize_string_archive_write_bytes;
+  self->super.len = sizeof(SerializeStringArchive);
   self->string = str;
   return &self->super;
 }
@@ -228,7 +230,7 @@ serialize_buffer_archive_get_pos(SerializeArchive *s)
 SerializeArchive *
 serialize_buffer_archive_new(gchar *buff, gsize len)
 {
-  SerializeBufferArchive *self = g_new0(SerializeBufferArchive, 1);
+  SerializeBufferArchive *self = g_slice_new0(SerializeBufferArchive);
 
   self->super.read_bytes = serialize_buffer_archive_read_bytes;
   self->super.write_bytes = serialize_buffer_archive_write_bytes;
