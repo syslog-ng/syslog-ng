@@ -1,3 +1,106 @@
+3.3.0alpha2
+	Thu, 10 Mar 2011 12:51:36 +0100
+
+	Features:
+	========
+	* Support for systemd activation added.
+
+	* Add support for customizable token delimiters in "pdbtool
+	  patternize", which makes the resulting patterns to have much
+	  better quality.
+
+	* Added support for a --no-parse command line option for "pdbtool
+	  patternize" to avoid parsing the input as normal syslog messages.
+
+	* Added a new flag 'ignore-errors' to LogWriter based destinations
+	  (file, pipe, tcp, udp, syslog)
+
+	* Added support for specifying the suppress() option globally.
+
+
+	Bugfixes:
+	=========
+	* Fixed a tcp()/udp()/syslog() destination driver issue that caused
+	  aborts during startup.
+
+	* Handle non-epollable devices like /dev/null normally by failling
+	  back to the regular file-like handling. Earlier these caused an
+	  abort inside ivykis.
+
+	* Makefile fixes to make it possible to compile syslog-ng from a
+	  "make dist" tarball.
+
+	* Added error messages about libdbi initialization failures, that
+	  would prevent the SQL destination from working.
+
+	* Make it possible to compile against PCRE not in a standard
+	  location (caused compilation failures on FreeBSD).
+
+	* Fixed several $(grep) related bugs:
+
+	  - not to cause a segmentation faule when the filter expression
+	    supplied contains syntax errors
+
+	  - the template parsing code removed quotes required by filter
+	    expressions, with the current change it is possible to use
+	    quotes in the filter expressions directly:
+               $(grep ('$username' == 'root') $MSG)
+
+	  - fixed the handling of template function invocations within
+	    correllation that had multiple messages in its context.
+
+	* Fixed a segmentation fault in pdbtool match --debug-pattern in
+	  case there was no matching rule.
+
+	* Fixed "pdbtool test".
+
+	* Added a new macro named $CONTEXT_ID that expands to the current
+	  context-id in correllated rules.
+
+	Other changes:
+	==============
+	* Changed the default syslog-ng.conf version number to 3.3 to match
+	  the current version.
+
+	* The pipe() destination used to override the default value of
+	  flush_lines() by explicitly setting it to 0. This behaviour has
+	  been removed, now the pipe() driver will properly use the default,
+	  unless overridden explicitly.
+
+	* Ported the 3.2 linking changes to 3.3, which means that:
+
+	  - libsyslog-ng-patterndb.so is gone, both the command line pdbtool
+	    command and the patterndb plugin (libpatterndb.so) links its
+	    contents statically, to improve portability on Cygwin.
+
+	  - unit tests & command line utilities link properly in
+	    --enable-mixed-linking mode
+
+	* Added debug messages in the correllation code to make it easier to
+	  debug correllation rules.
+
+	* Added debug/verbose options to pdbtool.
+
+	Credits:
+	========
+
+	Code, bugreports, testing, documentation suggestions and other
+	improvements were contributed by:
+
+	  * Arkadiusz Miśkiewicz (PLD Linux)
+          * Balazs Scheidler (BalaBit)
+          * Balint Kovacs (BalaBit)
+          * Corinna Vinschen (RedHat)
+          * Dalibor Toman (fortech.cz)
+          * Gergely Nagy (BalaBit)
+          * Laszlo Boszormenyi (lsc.hu)
+          * Marius Tomaschewski (Novell)
+          * Peter Czanik (BalaBit)
+          * Peter Gyongyosi (BalaBit)
+          * Tom Gundersen  (jklm.no)
+          * Valentijn Sessink  (blub.net)
+          * Zoltan Pallagi (BalaBit)
+
 3.3.0alpha1
 	Sun, 06 Feb 2011 17:30:51 +0100
 
