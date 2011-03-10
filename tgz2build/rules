@@ -6,8 +6,7 @@ CC:=gcc
 CONFIGURE_OPTS := --prefix $(ZBS_PREFIX) --enable-ssl --enable-dynamic-linking --enable-sql \
 	--enable-spoof-source --enable-pcre --disable-tcp-wrapper --with-ld-library-path=$(ZBS_PREFIX)/lib \
 	--with-pidfile-dir=$(ZBS_PREFIX)/var/run \
-	--with-module-dir=$(ZBS_PREFIX)/lib \
-	--with-ivykis=system
+	--with-module-dir=$(ZBS_PREFIX)/lib
 
 INSTALL:=./install-sh
 RPATH=-Wl,-R/opt/syslog-ng/lib
