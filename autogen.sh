@@ -31,7 +31,7 @@ autogen_submodules()
 	done
 }
 
-if [ "$skip_submodules" = 0 ]; then
+if [ -z "$skip_submodules" ] || [ "$skip_modules" = 0 ]; then
 	autogen_submodules
 fi
 
