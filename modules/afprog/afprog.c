@@ -278,9 +278,9 @@ afprogram_dd_init(LogPipe *s)
       self->writer = log_writer_new(LW_FORMAT_FILE);
       log_writer_set_options((LogWriter *) self->writer, s, &self->writer_options, 0, SCS_PROGRAM, self->super.id, self->cmdline->str);
     }
-  log_writer_reopen(self->writer, log_proto_text_client_new(log_transport_plain_new(fd, 0)));
   log_pipe_init(self->writer, NULL);
   log_pipe_append(&self->super.super, self->writer);
+  log_writer_reopen(self->writer, log_proto_text_client_new(log_transport_plain_new(fd, 0)));
   return TRUE;
 }
 
