@@ -277,21 +277,15 @@ cfg_set_version(GlobalConfig *self, gint version)
 
   if (self->version <= 0x0301 || atoi(cfg_args_get(self->lexer->globals, "autoload-compiled-modules")))
     {
-      plugin_load_module("syslogformat", self, NULL);
-      plugin_load_module("basicfuncs", self, NULL);
-      /* auto load modules for old configurations */
-      plugin_load_module("afsocket", self, NULL);
-      plugin_load_module("affile", self, NULL);
-      plugin_load_module("afprog", self, NULL);
-      plugin_load_module("afuser", self, NULL);
-      plugin_load_module("dbparser", self, NULL);
-      plugin_load_module("csvparser", self, NULL);
-#if ENABLE_SQL_MODULE
-      plugin_load_module("afsql", self, NULL);
-#endif
-#if ENABLE_SUN_STREAMS_MODULE
-      plugin_load_module("afstreams", self, NULL);
-#endif
+      gint i;
+      gchar **mods;
+
+      mods = g_strsplit(default_modules, ",", 0);
+      for (i = 0; mods[i]; i++)
+        {
+          plugin_load_module(mods[i], self, NULL);
+        }
+      g_strfreev(mods);
     }
 }
 

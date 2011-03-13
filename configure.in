@@ -85,6 +85,10 @@ AC_ARG_WITH(timezone-dir,
    [  --with-timezone-dir=path   Use path as the directory to get the timezone files],
    timezonedir=$with_timezone_dir)
 
+AC_ARG_WITH(default-modules,
+   [  --with-default-modules="mod1,mod2,mod3"   Use these as the list of automatically loaded modules],
+   default_modules=$default_modules, default_modules="auto")
+
 AC_ARG_WITH(ld-library-path,
    [  --with-ld-library-path=path  Set LD_LIBRARY_PATH during runtime to the value given],
    env_ld_library_path=$with_ld_library_path)
@@ -754,6 +758,27 @@ if test "x$enable_mongodb" = "xauto"; then
 	AC_MSG_RESULT([$enable_mongodb])
 fi
 
+dnl ***************************************************************************
+dnl default modules to be loaded
+dnl ***************************************************************************
+
+### The default set of modules are those that provide functionality that
+### were provided in syslog-ng 3.2 and prior, unless explicitly overridden
+### by the user.
+###
+### New plugins can be loaded by explicit "@module foo" lines in the
+### configuration file, that's the preferred form.
+
+if test "x$default_modules" = "xauto"; then
+	default_modules="affile,afprog,afsocket,afuser,basicfuncs,csvparser,dbparser,syslogformat"
+	if test "x$enable_sql" = "xyes"; then
+		default_modules="$default_modules,afsql"
+	fi
+	if test "x$enable_afstreams" = "xyes"; then
+		default_modules="$default_modules,afstreams"
+	fi
+fi
+
 CPPFLAGS="$CPPFLAGS $GLIB_CFLAGS $EVTLOG_CFLAGS $PCRE_CFLAGS $OPENSSL_CFLAGS $LIBNET_CFLAGS $LIBDBI_CFLAGS $IVYKIS_CFLAGS -D_GNU_SOURCE -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64"
 
 if test "x$linking_mode" = "xdynamic"; then
@@ -828,6 +853,7 @@ fi
 if test -n "$env_ld_library_path"; then
         AC_DEFINE_UNQUOTED(ENV_LD_LIBRARY_PATH, "$env_ld_library_path", [set LD_LIBRARY_PATH to this value])
 fi
+AC_DEFINE_UNQUOTED(DEFAULT_MODULES, "$default_modules", [The default set of modules loaded if an old config version is used or autoload-compiled-modules is 1])
 
 AC_DEFINE_UNQUOTED(ENABLE_DEBUG, `enable_value $enable_debug`, [Enable debugging])
 AC_DEFINE_UNQUOTED(ENABLE_GPROF, `enable_value $enable_gprof`, [Enable gcc profiling])
@@ -838,11 +864,6 @@ AC_DEFINE_UNQUOTED(ENABLE_TCP_WRAPPER, `enable_value $enable_tcp_wrapper`, [Enab
 AC_DEFINE_UNQUOTED(ENABLE_LINUX_CAPS, `enable_value $enable_linux_caps`, [Enable Linux capability management support])
 AC_DEFINE_UNQUOTED(ENABLE_PCRE, `enable_value $enable_pcre`, [Enable PCRE support])
 AC_DEFINE_UNQUOTED(ENABLE_ENV_WRAPPER, `enable_value $enable_env_wrapper`, [Enable environment wrapper support])
-
-AC_DEFINE_UNQUOTED(ENABLE_SSL_MODULE, `enable_value $enable_ssl`, [SSL was detected and compiled in the afsocket module])
-AC_DEFINE_UNQUOTED(ENABLE_SQL_MODULE, `enable_value $enable_sql`, [SQL was compiled as a module])
-AC_DEFINE_UNQUOTED(ENABLE_SUN_STREAMS_MODULE, `enable_value $enable_sun_streams`, [SUN STREAMS device support was compiled as a module])
-AC_DEFINE_UNQUOTED(ENABLE_PACCT_MODULE, `enable_value $enable_pacct`, [Process accounting format (pacct) was compiled as a module])
 
 AM_CONDITIONAL(ENABLE_ENV_WRAPPER, [test "$enable_env_wrapper" = "yes"])
 AM_CONDITIONAL(ENABLE_SSL, [test "$enable_ssl" = "yes"])

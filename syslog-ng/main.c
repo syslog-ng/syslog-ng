@@ -37,6 +37,7 @@
 #include "timeutils.h"
 #include "logsource.h"
 #include "mainloop.h"
+#include "plugin.h"
 
 #if ENABLE_SSL
 #include <openssl/ssl.h>
@@ -77,6 +78,7 @@ static GOptionEntry syslogng_options[] =
 {
   { "module-path",         0,         0, G_OPTION_ARG_STRING, &module_path, "Set the list of colon separated directories to search for modules, default=" PATH_MODULEDIR, "<path>" },
   { "version",           'V',         0, G_OPTION_ARG_NONE, &display_version, "Display version number (" PACKAGE " " VERSION ")", NULL },
+  { "default-modules",     0,         0, G_OPTION_ARG_STRING, &default_modules, "Set the set of auto-loaded modules, default=" DEFAULT_MODULES, "<module-list>" },
   { "seed",              'S',         0, G_OPTION_ARG_NONE, &seed_rng, "Seed the RNG using ~/.rnd or $RANDFILE", NULL},
 #ifdef YYDEBUG
   { "yydebug",           'y',         0, G_OPTION_ARG_NONE, &cfg_parser_debug, "Enable configuration parser debugging", NULL },

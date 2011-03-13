@@ -65,5 +65,6 @@ typedef struct _GlobalConfig GlobalConfig;
 extern GlobalConfig *configuration;
 extern gboolean seed_rng;
 extern gchar *module_path;
+extern gchar *default_modules;
 
 #endif
