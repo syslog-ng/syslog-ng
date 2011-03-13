@@ -29,6 +29,7 @@
 #include "cfg-grammar.h"
 
 typedef struct _Plugin Plugin;
+typedef struct _ModuleInfo ModuleInfo;
 
 struct _Plugin
 {
@@ -37,6 +38,20 @@ struct _Plugin
   CfgParser *parser;
   void (*setup_context)(Plugin *self, GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name);
   gpointer (*construct)(Plugin *self, GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name);
+};
+
+struct _ModuleInfo
+{
+  /* name of the module to be loaded as */
+  const gchar *canonical_name;
+  /* version number if any */
+  const gchar *version;
+  /* copyright information, homepage and other important information about the module */
+  const gchar *description;
+  /* git sha that identifies the core revision that this was compiled for */
+  const gchar *core_revision;
+  Plugin *plugins;
+  gint plugins_len;
 };
 
 /* instantiate a new plugin */
@@ -49,5 +64,8 @@ gpointer plugin_parse_config(Plugin *plugin, GlobalConfig *cfg, YYLTYPE *yylloc)
 
 void plugin_register(GlobalConfig *cfg, Plugin *p, gint number);
 gboolean plugin_load_module(const gchar *module_name, GlobalConfig *cfg, CfgArgs *args);
+
+void plugin_list_modules(FILE *out, gboolean verbose);
+
 
 #endif

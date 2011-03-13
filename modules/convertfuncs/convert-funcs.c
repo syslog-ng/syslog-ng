@@ -31,3 +31,13 @@ convertfuncs_module_init(GlobalConfig *cfg, CfgArgs *args)
   plugin_register(cfg, convert_func_plugins, G_N_ELEMENTS(convert_func_plugins));
   return TRUE;
 }
+
+const ModuleInfo module_info =
+{
+  .canonical_name = "convertfuncs",
+  .version = VERSION,
+  .description = "The convertfuncs module provides template functions that perform some kind of data conversion from one representation to the other.",
+  .core_revision = SOURCE_REVISION,
+  .plugins = convert_func_plugins,
+  .plugins_len = G_N_ELEMENTS(convert_func_plugins),
+};

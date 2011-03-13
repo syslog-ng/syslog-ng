@@ -79,3 +79,13 @@ dummy_module_init(GlobalConfig *cfg, CfgArgs *args)
   plugin_register(cfg, &dummy_plugin, 1);
   return TRUE;
 }
+
+const ModuleInfo module_info =
+{
+  .canonical_name = "dummy",
+  .version = VERSION,
+  .description = "The dummy module is a sample destination driver not really doing any kind of useful work.",
+  .core_revision = SOURCE_REVISION,
+  .plugins = &dummy_plugin,
+  .plugins_len = 1,
+};

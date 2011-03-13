@@ -26,6 +26,7 @@
 #include "cfg-lexer.h"
 #include "cfg-grammar.h"
 #include "messages.h"
+#include "plugin.h"
 
 #include <string.h>
 #include <errno.h>
@@ -115,3 +116,13 @@ confgen_module_init(GlobalConfig *cfg, CfgArgs *args)
   cfg_lexer_register_block_generator(cfg->lexer, cfg_lexer_lookup_context_type_by_name(context), name, confgen_generate, g_strdup(exec), g_free);
   return TRUE;
 }
+
+const ModuleInfo module_info =
+{
+  .canonical_name = "confgen",
+  .version = VERSION,
+  .description = "The confgen module provides support for dynamically generated configuration file snippets for syslog-ng, used for the SCL system() driver for example",
+  .core_revision = SOURCE_REVISION,
+  .plugins = NULL,
+  .plugins_len = 0,
+};

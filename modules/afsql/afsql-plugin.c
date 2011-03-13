@@ -41,3 +41,13 @@ afsql_module_init(GlobalConfig *cfg, CfgArgs *args)
   plugin_register(cfg, afsql_plugins, G_N_ELEMENTS(afsql_plugins));
   return TRUE;
 }
+
+const ModuleInfo module_info =
+{
+  .canonical_name = "afsql",
+  .version = VERSION,
+  .description = "The afsql module provides SQL destination support for syslog-ng",
+  .core_revision = SOURCE_REVISION,
+  .plugins = afsql_plugins,
+  .plugins_len = G_N_ELEMENTS(afsql_plugins),
+};

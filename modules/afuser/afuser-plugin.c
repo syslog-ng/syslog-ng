@@ -41,3 +41,13 @@ afuser_module_init(GlobalConfig *cfg, CfgArgs *args)
   plugin_register(cfg, afuser_plugins, G_N_ELEMENTS(afuser_plugins));
   return TRUE;
 }
+
+const ModuleInfo module_info =
+{
+  .canonical_name = "afuser",
+  .version = VERSION,
+  .description = "The afuser module provides the usertty() destination for syslog-ng",
+  .core_revision = SOURCE_REVISION,
+  .plugins = afuser_plugins,
+  .plugins_len = G_N_ELEMENTS(afuser_plugins),
+};

@@ -56,3 +56,13 @@ affile_module_init(GlobalConfig *cfg, CfgArgs *args)
   plugin_register(cfg, affile_plugins, G_N_ELEMENTS(affile_plugins));
   return TRUE;
 }
+
+const ModuleInfo module_info =
+{
+  .canonical_name = "affile",
+  .version = VERSION,
+  .description = "The affile module provides file source & destination support for syslog-ng.",
+  .core_revision = SOURCE_REVISION,
+  .plugins = affile_plugins,
+  .plugins_len = G_N_ELEMENTS(affile_plugins),
+};

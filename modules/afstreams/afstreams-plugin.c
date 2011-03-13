@@ -41,3 +41,13 @@ afstreams_module_init(GlobalConfig *cfg, CfgArgs *args)
   plugin_register(cfg, afstreams_plugins, G_N_ELEMENTS(afstreams_plugins));
   return TRUE;
 }
+
+const ModuleInfo module_info =
+{
+  .canonical_name = "afstreams",
+  .version = VERSION,
+  .description = "The afstreams module provides Solaris STREAMS logging device support for syslog-ng",
+  .core_revision = SOURCE_REVISION,
+  .plugins = afstreams_plugins,
+  .plugins_len = G_N_ELEMENTS(afstreams_plugins),
+};

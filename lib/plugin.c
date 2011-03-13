@@ -130,42 +130,15 @@ plugin_parse_config(Plugin *self, GlobalConfig *cfg, YYLTYPE *yylloc)
   return instance;
 }
 
-gboolean
-plugin_load_module(const gchar *module_name, GlobalConfig *cfg, CfgArgs *args)
+static GModule *
+plugin_dlopen_module(const gchar *module_name, const gchar *module_path)
 {
-  GModule *mod;
-  static GModule *main_module_handle;
-  gboolean (*init_func)(GlobalConfig *cfg, CfgArgs *args);
   gchar *plugin_module_name = NULL;
-  gchar *module_init_func;
-  const gchar *mp;
   gchar **module_path_dirs, *p, *dot;
+  GModule *mod;
   gint i;
 
-  if (!main_module_handle)
-    main_module_handle = g_module_open(NULL, 0);
-  module_init_func = g_strdup_printf("%s_module_init", module_name);
-  for (p = module_init_func; *p; p++)
-    {
-      if ((*p) == '-')
-        *p = '_';
-    }
-
-  if (g_module_symbol(main_module_handle, module_init_func, (gpointer *) &init_func))
-    {
-      /* already linked in, no need to load explicitly */
-      goto call_init;
-    }
-
-  if (cfg->lexer)
-    mp = cfg_args_get(cfg->lexer->globals, "module-path");
-  else
-    mp = NULL;
-
-  if (!mp)
-    mp = module_path;
-
-  module_path_dirs = g_strsplit(mp, G_SEARCHPATH_SEPARATOR_S, 0);
+  module_path_dirs = g_strsplit(module_path, G_SEARCHPATH_SEPARATOR_S, 0);
   i = 0;
   while (module_path_dirs && module_path_dirs[i])
     {
@@ -192,11 +165,10 @@ plugin_load_module(const gchar *module_name, GlobalConfig *cfg, CfgArgs *args)
   if (!plugin_module_name)
     {
       msg_error("Plugin module not found in 'module-path'",
-                evt_tag_str("module-path", mp),
+                evt_tag_str("module-path", module_path),
                 evt_tag_str("module", module_name),
                 NULL);
-      g_free(module_init_func);
-      return FALSE;
+      return NULL;
     }
   msg_debug("Trying to open module",
             evt_tag_str("module", module_name),
@@ -211,6 +183,47 @@ plugin_load_module(const gchar *module_name, GlobalConfig *cfg, CfgArgs *args)
                 evt_tag_str("module", module_name),
                 evt_tag_str("error", g_module_error()),
                 NULL);
+      return NULL;
+    }
+  return mod;
+}
+
+gboolean
+plugin_load_module(const gchar *module_name, GlobalConfig *cfg, CfgArgs *args)
+{
+  GModule *mod;
+  static GModule *main_module_handle;
+  gboolean (*init_func)(GlobalConfig *cfg, CfgArgs *args);
+  gchar *module_init_func;
+  const gchar *mp;
+  gchar *p;
+
+  if (!main_module_handle)
+    main_module_handle = g_module_open(NULL, 0);
+  module_init_func = g_strdup_printf("%s_module_init", module_name);
+  for (p = module_init_func; *p; p++)
+    {
+      if ((*p) == '-')
+        *p = '_';
+    }
+
+  if (g_module_symbol(main_module_handle, module_init_func, (gpointer *) &init_func))
+    {
+      /* already linked in, no need to load explicitly */
+      goto call_init;
+    }
+
+  if (cfg->lexer)
+    mp = cfg_args_get(cfg->lexer->globals, "module-path");
+  else
+    mp = NULL;
+
+  if (!mp)
+    mp = module_path;
+
+  mod = plugin_dlopen_module(module_name, mp);
+  if (!mod)
+    {
       g_free(module_init_func);
       return FALSE;
     }
@@ -220,7 +233,7 @@ plugin_load_module(const gchar *module_name, GlobalConfig *cfg, CfgArgs *args)
     {
       msg_error("Error finding init function in module",
                 evt_tag_str("module", module_name),
-                evt_tag_str("symbol", "syslogng_module_init"),
+                evt_tag_str("symbol", module_init_func),
                 evt_tag_str("error", g_module_error()),
                 NULL);
       g_free(module_init_func);
@@ -229,4 +242,97 @@ plugin_load_module(const gchar *module_name, GlobalConfig *cfg, CfgArgs *args)
  call_init:
   g_free(module_init_func);
   return (*init_func)(cfg, args);
+}
+
+void
+plugin_list_modules(FILE *out, gboolean verbose)
+{
+  GlobalConfig *cfg;
+  GModule *mod;
+  gchar **mod_paths;
+  gint i, j, k;
+  gboolean first = TRUE;
+
+  cfg = cfg_new(CFG_CURRENT_VERSION);
+  mod_paths = g_strsplit(module_path, ":", 0);
+  for (i = 0; mod_paths[i]; i++)
+    {
+      GDir *dir;
+      const gchar *fname;
+
+      dir = g_dir_open(mod_paths[i], 0, NULL);
+      if (!dir)
+        continue;
+      while ((fname = g_dir_read_name(dir)))
+        {
+          if (g_str_has_suffix(fname, G_MODULE_SUFFIX))
+            {
+              gchar *module_name;
+
+              if (g_str_has_prefix(fname, "lib"))
+                fname += 3;
+              module_name = g_strndup(fname, (gint) (strlen(fname) - strlen(G_MODULE_SUFFIX) - 1));
+
+              if (verbose)
+                {
+                  fprintf(out, "Module: %s\n", module_name);
+                  mod = plugin_dlopen_module(module_name, module_path);
+                  if (mod)
+                    {
+                      ModuleInfo *module_info;
+
+                      if (!g_module_symbol(mod, "module_info", (gpointer *) &module_info))
+                        {
+                          fprintf(out, "Status: Unable to resolve module_info variable, probably not a syslog-ng module\n");
+                        }
+                      else
+                        {
+                          if (strcmp(module_info->canonical_name, module_name) != 0)
+                            {
+                              fprintf(out, "Status: This module is to be loaded under the name %s instead of %s\n", module_info->canonical_name, module_name);
+                            }
+                          else
+                            {
+                              gchar **lines;
+
+                              fprintf(out, "Status: ok\n"
+                                           "Version: %s\n"
+                                           "Core-Revision: %s\n"
+                                           "Description:\n", module_info->version, module_info->core_revision);
+
+                              lines = g_strsplit(module_info->description, "\n", 0);
+                              for (k = 0; lines[k]; k++)
+                                fprintf(out, "  %s\n", lines[k][0] ? lines[k] : ".");
+                              g_strfreev(lines);
+
+                              fprintf(out, "Plugins:\n");
+                              for (j = 0; j < module_info->plugins_len; j++)
+                                {
+                                  Plugin *plugin = &module_info->plugins[j];
+
+                                  fprintf(out, "  %-15s %s\n", cfg_lexer_lookup_context_name_by_type(plugin->type), plugin->name);
+                                }
+                            }
+                        }
+                      g_module_close(mod);
+                    }
+                  else
+                    {
+                      fprintf(out, "Status: Unable to dlopen shared object, probably not a syslog-ng module\n");
+                    }
+                  fprintf(out, "\n");
+                }
+              else
+                {
+                  fprintf(out, "%s%s", first ? "" : ",", module_name);
+                  first = FALSE;
+                }
+              g_free(module_name);
+            }
+        }
+      g_dir_close(dir);
+    }
+  g_strfreev(mod_paths);
+  if (!verbose)
+    fprintf(out, "\n");
 }

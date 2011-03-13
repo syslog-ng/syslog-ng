@@ -43,3 +43,13 @@ dbparser_module_init(GlobalConfig *cfg, CfgArgs *args)
   plugin_register(cfg, dbparser_plugins, G_N_ELEMENTS(dbparser_plugins));
   return TRUE;
 }
+
+const ModuleInfo module_info =
+{
+  .canonical_name = "dbparser",
+  .version = VERSION,
+  .description = "The db-parser() module implements sample database based parsing for syslog-ng.",
+  .core_revision = SOURCE_REVISION,
+  .plugins = dbparser_plugins,
+  .plugins_len = G_N_ELEMENTS(dbparser_plugins),
+};

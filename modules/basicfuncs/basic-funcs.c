@@ -153,7 +153,7 @@ tf_if_call(LogTemplateFunction *self, gpointer state, GPtrArray *arg_bufs, LogMe
 TEMPLATE_FUNCTION(tf_if, tf_if_prepare, tf_cond_eval, tf_if_call, NULL);
 
 
-static Plugin builtin_tmpl_func_plugins[] =
+static Plugin basicfuncs_plugins[] =
 {
   TEMPLATE_FUNCTION_PLUGIN(tf_echo, "echo"),
   TEMPLATE_FUNCTION_PLUGIN(tf_grep, "grep"),
@@ -163,6 +163,16 @@ static Plugin builtin_tmpl_func_plugins[] =
 gboolean
 basicfuncs_module_init(GlobalConfig *cfg, CfgArgs *args)
 {
-  plugin_register(cfg, builtin_tmpl_func_plugins, G_N_ELEMENTS(builtin_tmpl_func_plugins));
+  plugin_register(cfg, basicfuncs_plugins, G_N_ELEMENTS(basicfuncs_plugins));
   return TRUE;
 }
+
+const ModuleInfo module_info =
+{
+  .canonical_name = "basicfuncs",
+  .version = VERSION,
+  .description = "The basicfuncs module provides various template functions for syslog-ng.",
+  .core_revision = SOURCE_REVISION,
+  .plugins = basicfuncs_plugins,
+  .plugins_len = G_N_ELEMENTS(basicfuncs_plugins),
+};

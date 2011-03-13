@@ -625,3 +625,13 @@ afmongodb_module_init(GlobalConfig *cfg, CfgArgs *args)
   plugin_register(cfg, &afmongodb_plugin, 1);
   return TRUE;
 }
+
+const ModuleInfo module_info =
+{
+  .canonical_name = "afmongodb",
+  .version = VERSION,
+  .description = "The afmongodb module provides MongoDB destination support for syslog-ng.",
+  .core_revision = SOURCE_REVISION,
+  .plugins = &afmongodb_plugin,
+  .plugins_len = 1,
+};

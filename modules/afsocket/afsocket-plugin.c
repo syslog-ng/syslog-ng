@@ -107,3 +107,13 @@ afsocket_module_init(GlobalConfig *cfg, CfgArgs *args)
   plugin_register(cfg, afsocket_plugins, G_N_ELEMENTS(afsocket_plugins));
   return TRUE;
 }
+
+const ModuleInfo module_info =
+{
+  .canonical_name = "afsocket",
+  .version = VERSION,
+  .description = "The afsocket module provides socket based transports for syslog-ng, such as the udp(), tcp() and syslog() drivers.",
+  .core_revision = SOURCE_REVISION,
+  .plugins = afsocket_plugins,
+  .plugins_len = G_N_ELEMENTS(afsocket_plugins),
+};

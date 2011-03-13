@@ -49,3 +49,13 @@ syslogformat_module_init(GlobalConfig *cfg, CfgArgs *args)
   plugin_register(cfg, &syslog_format_plugin, 1);
   return TRUE;
 }
+
+const ModuleInfo module_info =
+{
+  .canonical_name = "syslogformat",
+  .version = VERSION,
+  .description = "The syslogformat module provides support for parsing RFC3164 and RFC5424 format syslog messages.",
+  .core_revision = SOURCE_REVISION,
+  .plugins = &syslog_format_plugin,
+  .plugins_len = 1,
+};

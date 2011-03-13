@@ -42,3 +42,13 @@ csvparser_module_init(GlobalConfig *cfg, CfgArgs *args)
   plugin_register(cfg, csvparser_plugins, G_N_ELEMENTS(csvparser_plugins));
   return TRUE;
 }
+
+const ModuleInfo module_info =
+{
+  .canonical_name = "csvparser",
+  .version = VERSION,
+  .description = "The csvparser module provides parsing support for CSV and other separated value formats for syslog-ng.",
+  .core_revision = SOURCE_REVISION,
+  .plugins = csvparser_plugins,
+  .plugins_len = G_N_ELEMENTS(csvparser_plugins),
+};

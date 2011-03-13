@@ -67,17 +67,17 @@
 static gchar *install_dat_filename = PATH_INSTALL_DAT;
 static gchar *installer_version = NULL;
 static gboolean display_version = FALSE;
-
+static gboolean display_module_registry = FALSE;
 
 #ifdef YYDEBUG
 extern int cfg_parser_debug;
 #endif
 
-
 static GOptionEntry syslogng_options[] = 
 {
-  { "module-path",         0,         0, G_OPTION_ARG_STRING, &module_path, "Set the list of colon separated directories to search for modules, default=" PATH_MODULEDIR, "<path>" },
   { "version",           'V',         0, G_OPTION_ARG_NONE, &display_version, "Display version number (" PACKAGE " " VERSION ")", NULL },
+  { "module-path",         0,         0, G_OPTION_ARG_STRING, &module_path, "Set the list of colon separated directories to search for modules, default=" PATH_MODULEDIR, "<path>" },
+  { "module-registry",     0,         0, G_OPTION_ARG_NONE, &display_module_registry, "Display module information", NULL },
   { "default-modules",     0,         0, G_OPTION_ARG_STRING, &default_modules, "Set the set of auto-loaded modules, default=" DEFAULT_MODULES, "<module-list>" },
   { "seed",              'S',         0, G_OPTION_ARG_NONE, &seed_rng, "Seed the RNG using ~/.rnd or $RANDFILE", NULL},
 #ifdef YYDEBUG
@@ -121,40 +121,40 @@ get_installer_version(gchar **inst_version)
 void
 version(void)
 {
-  if (!get_installer_version(&installer_version) || installer_version==NULL)
+  if (!get_installer_version(&installer_version) || installer_version == NULL)
     {
-      installer_version=VERSION;
+      installer_version = VERSION;
     }
   printf(PACKAGE " " VERSION "\n"
          "Installer-Version: %s\n"
          "Revision: " SOURCE_REVISION "\n"
          "Compile-Date: " __DATE__ " " __TIME__ "\n"
-         "Enable-Debug: %s\n"
+         "Default-Modules: %s\n"
+         "Available-Modules: ",
+         installer_version,
+         default_modules);
+
+  plugin_list_modules(stdout, FALSE);
+
+  printf("Enable-Debug: %s\n"
          "Enable-GProf: %s\n"
          "Enable-Memtrace: %s\n"
-         "Enable-Sun-STREAMS: %s\n"
          "Enable-IPv6: %s\n"
          "Enable-Spoof-Source: %s\n"
          "Enable-TCP-Wrapper: %s\n"
-         "Enable-SSL: %s\n"
-         "Enable-SQL: %s\n"
          "Enable-Linux-Caps: %s\n"
-         "Enable-Pcre: %s\n"
-         "Enable-Pacct: %s\n",
-         installer_version,
+         "Enable-Pcre: %s\n",
          ON_OFF_STR(ENABLE_DEBUG),
          ON_OFF_STR(ENABLE_GPROF),
          ON_OFF_STR(ENABLE_MEMTRACE),
-         ON_OFF_STR(ENABLE_SUN_STREAMS_MODULE),
          ON_OFF_STR(ENABLE_IPV6),
          ON_OFF_STR(ENABLE_SPOOF_SOURCE),
          ON_OFF_STR(ENABLE_TCP_WRAPPER),
-         ON_OFF_STR(ENABLE_SSL_MODULE),
-         ON_OFF_STR(ENABLE_SQL_MODULE),
          ON_OFF_STR(ENABLE_LINUX_CAPS),
-         ON_OFF_STR(ENABLE_PCRE),
-         ON_OFF_STR(ENABLE_PACCT_MODULE));
+         ON_OFF_STR(ENABLE_PCRE));
+
 }
+
 
 int 
 main(int argc, char *argv[])
@@ -195,6 +195,11 @@ main(int argc, char *argv[])
   if (display_version)
     {
       version();
+      return 0;
+    }
+  if (display_module_registry)
+    {
+      plugin_list_modules(stdout, TRUE);
       return 0;
     }
 
