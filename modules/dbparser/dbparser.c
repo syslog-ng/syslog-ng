@@ -29,25 +29,44 @@
 #include <sys/stat.h>
 #include <iv.h>
 
+typedef enum
+{
+  LDBP_IM_PASSTHROUGH = 0,
+  LDBP_IM_INTERNAL = 1,
+} LogDBParserInjectMode;
+
 struct _LogDBParser
 {
   LogParser super;
   GStaticMutex lock;
+  struct iv_timer tick;
   PatternDB *db;
   gchar *db_file;
   time_t db_file_last_check;
-  gboolean db_file_reloading;
   ino_t db_file_inode;
   time_t db_file_mtime;
-  struct iv_timer tick;
+  gboolean db_file_reloading;
+  LogDBParserInjectMode inject_mode;
 };
 
 static void
 log_db_parser_emit(LogMessage *msg, gboolean synthetic, gpointer user_data)
 {
+  LogDBParser *self = (LogDBParser *) user_data;
+
   if (synthetic)
     {
-      msg_post_message(log_msg_ref(msg));
+      if (self->inject_mode == LDBP_IM_PASSTHROUGH)
+        {
+          LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
+
+          path_options.flow_control = FALSE;
+          log_pipe_forward_msg(&self->super.super.super, log_msg_ref(msg), &path_options);
+        }
+      else
+        {
+          msg_post_message(log_msg_ref(msg));
+        }
       msg_debug("db-parser: emitting synthetic message",
                 evt_tag_str("msg", log_msg_get_value(msg, LM_V_MESSAGE, NULL)),
                 NULL);
@@ -207,6 +226,25 @@ log_db_parser_set_db_file(LogDBParser *self, const gchar *db_file)
   self->db_file = g_strdup(db_file);
 }
 
+void
+log_db_parser_set_inject_mode(LogDBParser *self, const gchar *inject_mode)
+{
+  if (strcmp(inject_mode, "internal") == 0)
+    {
+      self->inject_mode = LDBP_IM_INTERNAL;
+    }
+  else if (strcmp(inject_mode, "pass-through") == 0 || strcmp(inject_mode, "pass_through") == 0)
+    {
+      self->inject_mode = LDBP_IM_PASSTHROUGH;
+    }
+  else
+    {
+      msg_warning("Unknown inject-mode specified for db-parser",
+                  evt_tag_str("inject-mode", inject_mode),
+                  NULL);
+    }
+}
+
 /*
  * NOTE: we could be smarter than this by sharing the radix tree in this case.
  */
@@ -247,6 +285,12 @@ log_db_parser_new(void)
   self->super.process = log_db_parser_process;
   self->db_file = g_strdup(PATH_PATTERNDB_FILE);
   g_static_mutex_init(&self->lock);
-
+  if (configuration && configuration->version < 0x0303)
+    {
+      msg_warning("WARNING: The default behaviour for injecting messages in db-parser() has changed in version 3.3 from internal to pass-through, use an explicit inject-mode(internal) option for old behaviour", NULL);
+      self->inject_mode = LDBP_IM_INTERNAL;
+    }
+  else
+    self->inject_mode = LDBP_IM_PASSTHROUGH;
   return &self->super;
 }

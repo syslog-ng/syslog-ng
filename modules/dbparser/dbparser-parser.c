@@ -32,6 +32,7 @@ int dbparser_parse(CfgLexer *lexer, LogParser **instance);
 static CfgLexerKeyword dbparser_keywords[] =
 {
   { "db_parser",          KW_DB_PARSER, 0x0300 },
+  { "inject_mode",        KW_INJECT_MODE, 0x0303 },
   { NULL }
 };
 

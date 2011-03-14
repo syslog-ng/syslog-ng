@@ -49,6 +49,9 @@
 /* INCLUDE_DECLS */
 
 %token KW_DB_PARSER
+%token KW_INJECT_MODE
+
+%type <cptr> parser_db_inject_mode
 
 %%
 
@@ -72,8 +75,14 @@ parser_db_opts
 
 /* NOTE: we don't support parser_opt as we don't want the user to specify a template */
 parser_db_opt
-        : KW_FILE '(' string ')'                { log_db_parser_set_db_file(((LogDBParser *) (*last_parser)), $3); free($3); }
+        : KW_FILE '(' string ')'                		{ log_db_parser_set_db_file(((LogDBParser *) (*last_parser)), $3); free($3); }
+	| KW_INJECT_MODE '(' parser_db_inject_mode ')'		{ log_db_parser_set_inject_mode(((LogDBParser *) (*last_parser)), $3); free($3); }
         ;
+
+parser_db_inject_mode
+	: string				{ $$ = $1; }
+	| KW_INTERNAL				{ $$ = strdup("internal"); }
+	;
 
 /* INCLUDE_RULES */
 
