@@ -1825,6 +1825,17 @@ log_proto_framed_server_fetch_data(LogProtoFramedServer *self, gboolean *may_rea
   if (self->buffer_pos == self->buffer_end)
     self->buffer_pos = self->buffer_end = 0;
 
+  if (self->buffer_size == self->buffer_end)
+    {
+      /* no more space in the buffer, we can't fetch further data. Move the
+       * things we already have to the beginning of the buffer to make
+       * space. */
+
+      memmove(self->buffer, &self->buffer[self->buffer_pos], self->buffer_end - self->buffer_pos);
+      self->buffer_end = self->buffer_end - self->buffer_pos;
+      self->buffer_pos = 0;
+    }
+
   if (!(*may_read))
     return LPS_SUCCESS;
 
@@ -1870,7 +1881,7 @@ log_proto_framed_server_extract_frame_length(LogProtoFramedServer *self, gboolea
   self->frame_len = 0;
   for (i = self->buffer_pos; i < self->buffer_end; i++)
     {
-      if (isdigit(self->buffer[i]))
+      if (isdigit(self->buffer[i]) && (i - self->buffer_pos < 10))
         {
           self->frame_len = self->frame_len * 10 + (self->buffer[i] - '0');
         }
