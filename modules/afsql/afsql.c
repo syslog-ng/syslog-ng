@@ -80,7 +80,6 @@ typedef struct _AFSqlDestDriver
   gchar *password;
   gchar *database;
   gchar *encoding;
-  gboolean uses_default_columns:1, uses_default_values:1, uses_default_indexes:1;
   GList *columns;
   GList *values;
   GList *indexes;
@@ -198,7 +197,6 @@ afsql_dd_set_columns(LogDriver *s, GList *columns)
 
   string_list_free(self->columns);
   self->columns = columns;
-  self->uses_default_columns = FALSE;
 }
 
 void
@@ -208,7 +206,6 @@ afsql_dd_set_indexes(LogDriver *s, GList *indexes)
 
   string_list_free(self->indexes);
   self->indexes = indexes;
-  self->uses_default_indexes = FALSE;
 }
 
 void
@@ -218,7 +215,6 @@ afsql_dd_set_values(LogDriver *s, GList *values)
 
   string_list_free(self->values);
   self->values = values;
-  self->uses_default_values = FALSE;
 }
 
 void
@@ -957,10 +953,12 @@ afsql_dd_init(LogPipe *s)
    * queue).
    */
 
-  if (self->uses_default_columns || self->uses_default_indexes || self->uses_default_values)
+  if (!self->columns || !self->indexes || self->values)
     {
-      msg_warning("WARNING: You are using the default values for columns(), indexes() or values(), "
-                  "please specify these explicitly as the default will be dropped in the future", NULL);
+      msg_error("Default columns, values and indexes must be specified for database destinations",
+                evt_tag_str("database type", self->type),
+                NULL);
+      return FALSE;
     }
 
   stats_register_counter(0, SCS_SQL | SCS_DESTINATION, self->super.id, afsql_dd_format_stats_instance(self), SC_TYPE_STORED, &self->stored_messages);
@@ -1173,39 +1171,6 @@ afsql_dd_free(LogPipe *s)
   log_drv_free(s);
 }
 
-const gchar *default_columns[] =
-{
-  "date datetime",
-  "facility int",
-  "level int",
-  "host varchar(255)",
-  "program varchar(64)",
-  "pid int",
-  "message text",
-  NULL
-};
-
-const gchar *default_values[] =
-{
-  "${R_YEAR}-${R_MONTH}-${R_DAY} ${R_HOUR}:${R_MIN}:${R_SEC}",
-  "$FACILITY_NUM",
-  "$LEVEL_NUM",
-  "$HOST",
-  "$PROGRAM",
-  "$PID",
-  "$MSGONLY",
-  NULL
-};
-
-const gchar *default_indexes[] =
-{
-  "date",
-  "facility",
-  "host",
-  "program",
-  NULL
-};
-
 LogDriver *
 afsql_dd_new(void)
 {
@@ -1226,12 +1191,6 @@ afsql_dd_new(void)
   self->encoding = g_strdup("UTF-8");
 
   self->table = log_template_new(configuration, NULL, "messages");
-  self->columns = string_array_to_list(default_columns);
-  self->values = string_array_to_list(default_values);
-  self->indexes = string_array_to_list(default_indexes);
-  self->uses_default_columns = TRUE;
-  self->uses_default_values = TRUE;
-  self->uses_default_indexes = TRUE;
   self->mem_fifo_size = 1000;
   self->disk_fifo_size = 0;
   self->failed_message_counter = 0;
