@@ -36,11 +36,22 @@
 #include <dbi/dbi.h>
 #include <string.h>
 
-#define AFSQL_DDF_EXPLICIT_COMMITS   0x0001
-#define AFSQL_DDF_DONT_CREATE_TABLES 0x0002
+/* field flags */
+enum
+{
+  AFSQL_FF_DEFAULT = 0x0001,
+};
+
+/* destination driver flags */
+enum
+{
+  AFSQL_DDF_EXPLICIT_COMMITS = 0x0001,
+  AFSQL_DDF_DONT_CREATE_TABLES = 0x0002,
+};
 
 typedef struct _AFSqlField
 {
+  guint32 flags;
   gchar *name;
   gchar *type;
   LogTemplate *value;
@@ -682,24 +693,34 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
     {
       gchar *quoted;
 
-      log_template_format(self->fields[i].value, msg, &self->template_options, LTZ_SEND, self->seq_num, NULL, value);
-      if (self->null_value && strcmp(self->null_value, value->str) == 0)
+      if (self->fields[i].value == NULL)
         {
-          g_string_append(query_string, "NULL");
+          /* the config used the 'default' value for this column -> the fields[i].value is NULL, use SQL default */
+          g_string_append(query_string, "DEFAULT");
         }
       else
         {
-          dbi_conn_quote_string_copy(self->dbi_ctx, value->str, &quoted);
-          if (quoted)
+          log_template_format(self->fields[i].value, msg, &self->template_options, LTZ_SEND, self->seq_num, NULL, value);
+
+          if (self->null_value && strcmp(self->null_value, value->str) == 0)
             {
-              g_string_append(query_string, quoted);
-              free(quoted);
+              g_string_append(query_string, "NULL");
             }
           else
             {
-              g_string_append(query_string, "''");
+              dbi_conn_quote_string_copy(self->dbi_ctx, value->str, &quoted);
+              if (quoted)
+                {
+                  g_string_append(query_string, quoted);
+                  free(quoted);
+                }
+              else
+                {
+                  g_string_append(query_string, "''");
+                }
             }
         }
+
       if (i != self->fields_len - 1)
         g_string_append(query_string, ", ");
     }
@@ -965,7 +986,23 @@ afsql_dd_init(LogPipe *s)
                         NULL);
               return FALSE;
             }
-          self->fields[i].value = log_template_new(cfg, NULL, (gchar *) value->data);
+
+          if (GPOINTER_TO_UINT(value->data) > 4096)
+            {
+              self->fields[i].value = log_template_new(cfg, NULL, (gchar *) value->data);
+            }
+          else
+            {
+              switch (GPOINTER_TO_UINT(value->data))
+                {
+                case AFSQL_COLUMN_DEFAULT:
+                  self->fields[i].flags |= AFSQL_FF_DEFAULT;
+                  break;
+                default:
+                  g_assert_not_reached();
+                  break;
+                }
+            }
         }
     }
 

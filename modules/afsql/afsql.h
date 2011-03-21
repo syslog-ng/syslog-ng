@@ -26,6 +26,11 @@
 
 #include "driver.h"
 
+enum
+{
+  AFSQL_COLUMN_DEFAULT = 1,
+};
+
 #if ENABLE_SQL
 
 void afsql_dd_set_type(LogDriver *s, const gchar *type);

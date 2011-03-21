@@ -48,10 +48,13 @@
 
 /* INCLUDE_DECLS */
 
+%token KW_DEFAULT
 %token KW_RETRY_SQL_INSERTS
 
 %type   <ptr> dest_afsql
 %type   <ptr> dest_afsql_params
+%type   <ptr> dest_afsql_values
+%type   <ptr> dest_afsql_values_build
 %type   <num> dest_afsql_flags
 
 %%
@@ -93,7 +96,7 @@ dest_afsql_option
         | KW_TABLE '(' string ')'		{ afsql_dd_set_table((*last_driver), $3); free($3); }
         | KW_COLUMNS '(' string_list ')'	{ afsql_dd_set_columns((*last_driver), $3); }
         | KW_INDEXES '(' string_list ')'        { afsql_dd_set_indexes((*last_driver), $3); }
-        | KW_VALUES '(' string_list ')'		{ afsql_dd_set_values((*last_driver), $3); }
+        | KW_VALUES '(' dest_afsql_values ')'		{ afsql_dd_set_values((*last_driver), $3); }
 	| KW_LOG_FIFO_SIZE '(' LL_NUMBER ')'	{ afsql_dd_set_mem_fifo_size((*last_driver), $3); }
         | KW_FRAC_DIGITS '(' LL_NUMBER ')'         { afsql_dd_set_frac_digits((*last_driver), $3); }
 	| KW_TIME_ZONE '(' string ')'           { afsql_dd_set_send_time_zone((*last_driver),$3); free($3); }
@@ -107,6 +110,16 @@ dest_afsql_option
         | KW_ENDIF {
 #endif /* ENABLE_SQL */
 }
+        ;
+
+dest_afsql_values
+        : dest_afsql_values_build               { $$ = g_list_reverse($1); }
+        ;
+
+dest_afsql_values_build
+        : string dest_afsql_values_build	{ $$ = g_list_append($2, g_strdup($1)); free($1); }
+        | KW_DEFAULT dest_afsql_values_build	{ $$ = g_list_append($2, GUINT_TO_POINTER(AFSQL_COLUMN_DEFAULT)); }
+        |					{ $$ = NULL; }
         ;
 
 dest_afsql_flags
