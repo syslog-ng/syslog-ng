@@ -35,6 +35,7 @@
 
 #include <dbi/dbi.h>
 #include <string.h>
+#include <openssl/md5.h>
 
 /* field flags */
 enum
@@ -383,12 +384,30 @@ afsql_dd_create_index(AFSqlDestDriver *self, gchar *table, gchar *column)
 {
   GString *query_string;
   gboolean success = TRUE;
+  guchar hash[MD5_DIGEST_LENGTH];
+  gchar hash_str[31];
 
   query_string = g_string_sized_new(64);
 
-  if (strcmp(self->type, "oracle") == 0)
-    g_string_printf(query_string, "CREATE INDEX %s_%s_idx ON %s ('%s')",
-                    table, column, table, column);
+  if (strcmp(self->type, s_oracle) == 0)
+    {
+      /* NOTE: oracle index indentifier length is max 30 characters
+       * so we use the first 30 characters of the table_column md5 hash */
+      if ((strlen(table) + strlen(column)) > 25)
+        {
+          gchar *cat = g_strjoin("_", table, column, NULL);
+          MD5((guchar *)cat, strlen(cat), hash);
+          g_free(cat);
+
+          format_hex_string(hash, sizeof(hash), hash_str, sizeof(hash_str));
+          hash_str[0] = 'i';
+          g_string_printf(query_string, "CREATE INDEX %s ON %s ('%s')",
+              hash_str, table, column);
+        }
+      else
+        g_string_printf(query_string, "CREATE INDEX %s_%s_idx ON %s ('%s')",
+            table, column, table, column);
+    }
   else
     g_string_printf(query_string, "CREATE INDEX %s_%s_idx ON %s (%s)",
                     table, column, table, column);
