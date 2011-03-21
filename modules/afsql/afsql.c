@@ -120,6 +120,8 @@ typedef struct _AFSqlDestDriver
 } AFSqlDestDriver;
 
 static gboolean dbi_initialized = FALSE;
+static const char *s_oracle = "oracle";
+static const char *s_freetds = "freetds";
 
 #define MAX_FAILED_ATTEMPTS 3
 
@@ -130,7 +132,7 @@ afsql_dd_set_type(LogDriver *s, const gchar *type)
 
   g_free(self->type);
   if (strcmp(type, "mssql") == 0)
-    type = "freetds";
+    type = s_freetds;
   self->type = g_strdup(type);
 }
 
@@ -510,9 +512,19 @@ afsql_dd_validate_table(AFSqlDestDriver *self, gchar *table)
 static gboolean
 afsql_dd_begin_txn(AFSqlDestDriver *self)
 {
-  gboolean success;
+  gboolean success = TRUE;
+  const char *s_begin = "BEGIN";
+  if (!strcmp(self->type, s_freetds))
+    {
+      /* the mssql requires this command */
+      s_begin = "BEGIN TRANSACTION";
+    }
 
-  success = afsql_dd_run_query(self, "BEGIN", FALSE, NULL);
+  if (strcmp(self->type, s_oracle) != 0)
+    {
+      /* oracle db has no BEGIN TRANSACTION command, it implicitly starts one, after every commit. */
+      success = afsql_dd_run_query(self, s_begin, FALSE, NULL);
+    }
   return success;
 }
 
@@ -598,6 +610,7 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
           dbi_conn_set_option(self->dbi_ctx, "password", self->password);
           dbi_conn_set_option(self->dbi_ctx, "dbname", self->database);
           dbi_conn_set_option(self->dbi_ctx, "encoding", self->encoding);
+          dbi_conn_set_option(self->dbi_ctx, "auto-commit", self->flags & AFSQL_DDF_EXPLICIT_COMMITS ? "false" : "true");
 
           /* database specific hacks */
           dbi_conn_set_option(self->dbi_ctx, "sqlite_dbdir", "");
