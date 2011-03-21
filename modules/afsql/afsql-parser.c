@@ -45,6 +45,7 @@ static CfgLexerKeyword afsql_keywords[] = {
   { "host",               KW_HOST },
   { "port",               KW_PORT },
   { "type",               KW_TYPE },
+  { "retry_sql_inserts",  KW_RETRY_SQL_INSERTS, 0x0302 },
 
   { "time_zone",          KW_TIME_ZONE },
   { "local_time_zone",    KW_LOCAL_TIME_ZONE },

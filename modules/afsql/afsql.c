@@ -79,6 +79,7 @@ typedef struct _AFSqlDestDriver
   AFSqlField *fields;
   gchar *null_value;
   gint time_reopen;
+  gint num_retries;
   gint flush_lines;
   gint flush_timeout;
   gint flush_lines_queued;
@@ -225,11 +226,18 @@ afsql_dd_set_mem_fifo_size(LogDriver *s, gint mem_fifo_size)
 }
 
 void
-afsql_dd_set_disk_fifo_size(LogDriver *s, gint64 disk_fifo_size)
+afsql_dd_set_retries(LogDriver *s, gint num_retries)
 {
   AFSqlDestDriver *self = (AFSqlDestDriver *) s;
 
-  self->disk_fifo_size = disk_fifo_size;
+  if (num_retries < 1)
+    {
+      self->num_retries = 1;
+    }
+  else
+    {
+      self->num_retries = num_retries;
+    }
 }
 
 void
@@ -734,7 +742,7 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
     }
   else
     {
-      if (self->failed_message_counter < MAX_FAILED_ATTEMPTS - 1)
+      if (self->failed_message_counter < self->num_retries - 1)
         {
           self->pending_msg = msg;
           self->pending_msg_flow_control = path_options.flow_control;
@@ -743,14 +751,15 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
       else
         {
           msg_error("Multiple failures while inserting this record into the database, message dropped",
-                    evt_tag_int("attempts", MAX_FAILED_ATTEMPTS),
+                    evt_tag_int("attempts", self->num_retries),
                     NULL);
           stats_counter_inc(self->dropped_messages);
           log_msg_drop(msg, &path_options);
           self->failed_message_counter = 0;
+          success = TRUE;
         }
     }
-  return TRUE;
+  return success;
 }
 
 
@@ -1162,6 +1171,7 @@ afsql_dd_new(void)
   self->flush_timeout = -1;
   self->flush_lines_queued = -1;
   self->session_statements = NULL;
+  self->num_retries = MAX_FAILED_ATTEMPTS;
 
   self->validated_tables = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
 
