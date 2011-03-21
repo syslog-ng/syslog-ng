@@ -274,6 +274,16 @@ log_reader_io_follow_file(gpointer s)
 static void
 log_reader_init_watches(LogReader *self)
 {
+  gint fd;
+  GIOCondition cond;
+
+  log_proto_prepare(self->proto, &fd, &cond);
+
+  if (fd >= 0)
+    self->file_fd = !iv_fd_pollable(fd);
+  else
+    self->file_fd = TRUE;
+
   IV_FD_INIT(&self->fd_watch);
   self->fd_watch.cookie = self;
   self->fd_watch.handler_err = log_reader_io_process_input;
@@ -303,7 +313,6 @@ log_reader_start_watches(LogReader *self)
   GIOCondition cond;
 
   log_proto_prepare(self->proto, &fd, &cond);
-  self->file_fd = !iv_fd_pollable(fd);
   if (fd >= 0 && (!self->file_fd || self->options->follow_freq == 0))
     {
       self->fd_watch.fd = fd;
