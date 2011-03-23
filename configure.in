@@ -662,12 +662,21 @@ if test "x$with_ivykis" = "xinternal"; then
 		IVYKIS_LIBS="-Wl,--whole-archive -L\$(top_builddir)/lib/ivykis/lib -livykis -L\$(top_builddir)/lib/ivykis/modules -livykis-modules -Wl,--no-whole-archive"
 		IVYKIS_CFLAGS="-I\$(top_srcdir)/lib/ivykis/lib/include -I\$(top_srcdir)/lib/ivykis/modules/include"
 		IVYKIS_SUBDIRS=ivykis
+
+		# LIBS to use when libtool is not applicable (when linking the main syslog-ng executable in mixed linking mode)
+		IVYKIS_NO_LIBTOOL_LIBS="-Wl,--whole-archive -L\$(top_builddir)/lib/ivykis/lib/.libs -livykis -L\$(top_builddir)/lib/ivykis/modules/.libs -livykis-modules -Wl,--no-whole-archive"
 	else
 		AC_MSG_ERROR([Internal ivykis sources not found in lib/ivykis. This is a hard dependency, unable to build syslog-ng without them.])
 	fi
 else
 	with_ivykis="system"
 	PKG_CHECK_MODULES(IVYKIS, ivykis >= $IVYKIS_MIN_VERSION ivykis-modules,,)
+
+	# in case we're using a system installed ivykis, we can link against
+	# it even without libtool and without extra linker arguments (as
+	# we're linking dynamically)
+
+	IVYKIS_NO_LIBTOOL_LIBS="$IVYKIS_LIBS"
 fi
 
 dnl ***************************************************************************
@@ -797,13 +806,16 @@ if test "x$linking_mode" = "xdynamic"; then
 	SYSLOGNG_LINK='$(LINK)'
 else
 	# all dependendent libraries used by binary that can be linked in mixed mode (e.g. syslog-ng binary).
-	SYSLOGNG_DEPS_LIBS="$LIBS $BASE_LIBS $RESOLV_LIBS $LD_START_STATIC -Wl,--whole-archive $GLIB_LIBS $EVTLOG_LIBS $PCRE_LIBS $REGEX_LIBS $IVYKIS_LIBS -Wl,--no-whole-archive $LD_END_STATIC $LIBCAP_LIBS $DL_LIBS "
+	SYSLOGNG_DEPS_LIBS="$LIBS $BASE_LIBS $RESOLV_LIBS $LD_START_STATIC -Wl,--whole-archive $GLIB_LIBS $EVTLOG_LIBS $PCRE_LIBS $REGEX_LIBS -Wl,--no-whole-archive $IVYKIS_NO_LIBTOOL_LIBS $LD_END_STATIC $LIBCAP_LIBS $DL_LIBS "
 
 	# tools & unit tests that link against libsyslog-ng.so should be linked with this set of libraries.
-	# other tools that do not use libsyslog-ng.so can use the _LIBS variables directly.
-        TOOL_DEPS_LIBS="$LIBS $BASE_LIBS $GLIB_LIBS $EVTLOG_LIBS $RESOLV_LIBS $LIBCAP_LIBS $PCRE_LIBS $REGEX_LIBS $DL_LIBS"
+	# assumed they are linked using libtool.
+	#
+	# NOTE: other tools that do not use libsyslog-ng.so can use the _LIBS variables directly.
+	TOOL_DEPS_LIBS="$LIBS $BASE_LIBS $GLIB_LIBS $EVTLOG_LIBS $RESOLV_LIBS $LIBCAP_LIBS $PCRE_LIBS $REGEX_LIBS $IVYKIS_LIBS $DL_LIBS"
 
-	# libsyslog-ng.so is linked with this set of libraries
+	# libsyslog-ng.so is linked with this set of libraries (in mixed
+	# mode, none, as all libraries are linked into the main executable)
 	CORE_DEPS_LIBS=""
 
 	# bypass libtool in case we want to do mixed linking because it
