@@ -922,6 +922,8 @@ AC_SUBST(PACKAGE_SUFFIX)
 AC_OUTPUT(dist.conf
           Makefile 
 	  syslog-ng.spec
+	  syslog-ng.pc
+	  build/Makefile
 	  lib/Makefile 
 	  syslog-ng/Makefile 
 	  modules/Makefile 

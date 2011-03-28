@@ -1,0 +1,5 @@
+opt/syslog-ng/include/*
+opt/syslog-ng/lib/pkgconfig/*
+opt/syslog-ng/lib/*.a
+opt/syslog-ng/lib/*.la
+opt/syslog-ng/lib/*.so*

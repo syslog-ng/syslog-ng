@@ -17,3 +17,14 @@ Description: Next generation logging daemon
    * filtering based on message content
    * portability
    * better network forwarding
+
+Package: syslog-ng-dev
+Architecture: any
+Depends: syslog-ng
+Section: libdevel
+Description: Next generation logging daemon dev package
+ Syslog-ng tries to fill the gaps original syslogd's were lacking:
+   * powerful configurability
+   * filtering based on message content
+   * portability
+   * better network forwarding

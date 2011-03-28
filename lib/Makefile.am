@@ -9,6 +9,16 @@ lib_LTLIBRARIES = libsyslog-ng.la
 libsyslog_ng_la_LIBADD = @CORE_DEPS_LIBS@
 libsyslog_ng_la_LDFLAGS = -no-undefined
 
+pkginclude_HEADERS = afinter.h center.h compat.h filter-expr-parser.h logmatcher.h \
+  logprocess.h logsource.h memtrace.h parser-expr-parser.h   serialize.h     syslog-ng.h \
+  alarms.h cfg.h control.h filter.h logmpx.h logproto.h logstamp.h messages.h persist-state.h \
+  sgroup.h tags.h apphook.h cfg-lexer.h dgroup.h gprocess.h logmsg.h logqueue.h logtransport.h \
+  misc.h plugin.h stats.h templates.h atomic.h cfg-parser.h dnscache.h gsockaddr.h logparser.h \
+  logreader.h logwriter.h msg-format.h pragma-parser.h str-format.h timeutils.h \
+  block-ref-parser.h children.h driver.h gsocket.h logpipe.h \
+  logrewrite.h mainloop.h nvtable.h rewrite-expr-parser.h \
+  syslog-names.h utils.h cfg-grammar.h cfg-lex.h
+
 libsyslog_ng_la_SOURCES = \
 	misc.c misc.h utils.c utils.h messages.c messages.h syslog-names.c syslog-names.h \
 	mainloop.c mainloop.h \
@@ -59,7 +69,7 @@ BUILT_SOURCES = cfg-lex.c cfg-lex.h cfg-grammar.c cfg-grammar.h \
 
 EXTRA_DIST = $(BUILT_SOURCES) \
 	filter-expr-grammar.ym block-ref-grammar.ym pragma-grammar.ym parser-expr-grammar.ym rewrite-expr-grammar.ym \
-	syslog-ng.h
+	syslog-ng.h merge-grammar.pl
 
 CLEAN_FILES = $(BUILT_SOURCES)
 
