@@ -147,7 +147,24 @@ log_proto_text_client_post(LogProto *s, guchar *msg, gsize msg_len, gboolean *co
   *consumed = FALSE;
   rc = log_proto_flush(s);
   if (rc == LPS_ERROR)
-    goto write_error;
+    {
+      goto write_error;
+    }
+  else if (self->partial)
+    {
+      /* NOTE: the partial buffer has not been emptied yet even with the
+       * flush above, we shouldn't attempt to write again.
+       *
+       * Otherwise: with the framed protocol this could case the frame
+       * header to be split, and interleaved with message payload, as in:
+       *
+       *     First bytes of frame header || payload || tail of frame header.
+       *
+       * This obviously would cause the framing to break. Also libssl
+       * returns an error in this case, which is how this was discovered.
+       */
+      return rc;
+    }
 
   /* OK, partial buffer empty, now flush msg that we just got */
   
@@ -1768,6 +1785,7 @@ log_proto_framed_client_new(LogTransport *transport)
 
   self->super.super.prepare = log_proto_text_client_prepare;
   self->super.super.post = log_proto_framed_client_post;
+  self->super.super.flush = log_proto_text_client_flush;
   self->super.super.transport = transport;
   self->super.super.convert = (GIConv) -1;
   return &self->super.super;  
