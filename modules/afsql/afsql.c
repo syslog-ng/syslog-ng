@@ -953,7 +953,7 @@ afsql_dd_init(LogPipe *s)
    * queue).
    */
 
-  if (!self->columns || !self->indexes || self->values)
+  if (!self->columns || !self->indexes || !self->values)
     {
       msg_error("Default columns, values and indexes must be specified for database destinations",
                 evt_tag_str("database type", self->type),
