@@ -26,7 +26,7 @@
 #include "pragma-grammar.h"
 
 extern int pragma_debug;
-int pragma_parse(CfgLexer *lexer, gpointer *result);
+int pragma_parse(CfgLexer *lexer, gpointer *result, gpointer arg);
 
 static CfgLexerKeyword pragma_keywords[] = {
   { "version",            KW_VERSION, },
@@ -44,7 +44,7 @@ CfgParser pragma_parser =
   .name = "pragma",
   .context = LL_CONTEXT_PRAGMA,
   .keywords = pragma_keywords,
-  .parse = (gint (*)(CfgLexer *, gpointer *)) pragma_parse,
+  .parse = pragma_parse,
 };
 
 CFG_PARSER_IMPLEMENT_LEXER_BINDING(pragma_, gpointer *)

@@ -49,6 +49,7 @@ extern LogWriterOptions *last_writer_options;
 %lex-param {CfgLexer *lexer}
 %parse-param {CfgLexer *lexer}
 %parse-param {LogDriver **last_driver}
+%parse-param {gpointer arg}
 
 /* INCLUDE_DECLS */
 

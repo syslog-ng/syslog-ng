@@ -27,7 +27,7 @@
 
 extern int afsocket_debug;
 
-int afsocket_parse(CfgLexer *lexer, LogDriver **instance);
+int afsocket_parse(CfgLexer *lexer, LogDriver **instance, gpointer arg);
 
 static CfgLexerKeyword afsocket_keywords[] = {
   { "unix_dgram",	KW_UNIX_DGRAM },
@@ -78,7 +78,7 @@ CfgParser afsocket_parser =
 #endif
   .name = "afsocket",
   .keywords = afsocket_keywords,
-  .parse = (gint (*)(CfgLexer *, gpointer *)) afsocket_parse,
+  .parse = (gint (*)(CfgLexer *, gpointer *, gpointer)) afsocket_parse,
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 

@@ -57,7 +57,7 @@ struct _ModuleInfo
 /* instantiate a new plugin */
 Plugin *plugin_find(GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name);
 gpointer plugin_construct(Plugin *self, GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name);
-gpointer plugin_parse_config(Plugin *plugin, GlobalConfig *cfg, YYLTYPE *yylloc);
+gpointer plugin_parse_config(Plugin *plugin, GlobalConfig *cfg, YYLTYPE *yylloc, gpointer arg);
 
 
 /* plugin side API */

@@ -27,7 +27,7 @@
 
 extern int afsql_debug;
 
-int afsql_parse(CfgLexer *lexer, LogDriver **instance);
+int afsql_parse(CfgLexer *lexer, LogDriver **instance, gpointer arg);
 
 static CfgLexerKeyword afsql_keywords[] = {
   { "sql",                KW_SQL },
@@ -64,7 +64,7 @@ CfgParser afsql_parser =
 #endif
   .name = "afsql",
   .keywords = afsql_keywords,
-  .parse = (gint (*)(CfgLexer *, gpointer *)) afsql_parse,
+  .parse = (gint (*)(CfgLexer *, gpointer *, gpointer)) afsql_parse,
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 

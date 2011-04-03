@@ -45,6 +45,7 @@
 %lex-param {CfgLexer *lexer}
 %parse-param {CfgLexer *lexer}
 %parse-param {LogParser **last_parser}
+%parse-param {gpointer arg}
 
 /* INCLUDE_DECLS */
 

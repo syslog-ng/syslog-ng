@@ -27,7 +27,7 @@
 
 extern int afuser_debug;
 
-int afuser_parse(CfgLexer *lexer, LogDriver **instance);
+int afuser_parse(CfgLexer *lexer, LogDriver **instance, gpointer);
 
 static CfgLexerKeyword afuser_keywords[] = {
   { "usertty",               KW_USERTTY },
@@ -42,7 +42,7 @@ CfgParser afuser_parser =
 #endif
   .name = "afuser",
   .keywords = afuser_keywords,
-  .parse = (gint (*)(CfgLexer *, gpointer *)) afuser_parse,
+  .parse = (gint (*)(CfgLexer *, gpointer *, gpointer)) afuser_parse,
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 

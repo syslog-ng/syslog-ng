@@ -27,7 +27,7 @@
 
 extern int afstreams_debug;
 
-int afstreams_parse(CfgLexer *lexer, LogDriver **instance);
+int afstreams_parse(CfgLexer *lexer, LogDriver **instance, gpointer arg);
 
 static CfgLexerKeyword afstreams_keywords[] = {
 #if ENABLE_SUN_STREAMS
@@ -45,7 +45,7 @@ CfgParser afstreams_parser =
 #endif
   .name = "afstreams",
   .keywords = afstreams_keywords,
-  .parse = (gint (*)(CfgLexer *, gpointer *)) afstreams_parse,
+  .parse = (gint (*)(CfgLexer *, gpointer *, gpointer)) afstreams_parse,
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 

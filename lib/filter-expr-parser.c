@@ -71,7 +71,7 @@ CfgParser filter_expr_parser =
   .name = "filter expression",
   .context = LL_CONTEXT_FILTER,
   .keywords = filter_expr_keywords,
-  .parse = (gint (*)(CfgLexer *, gpointer *)) filter_expr_parse,
+  .parse = (gint (*)(CfgLexer *, gpointer *, gpointer)) filter_expr_parse,
 };
 
 CFG_PARSER_IMPLEMENT_LEXER_BINDING(filter_expr_, FilterExprNode **)

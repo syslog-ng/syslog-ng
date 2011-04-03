@@ -27,7 +27,7 @@
 
 extern int dbparser_debug;
 
-int dbparser_parse(CfgLexer *lexer, LogParser **instance);
+int dbparser_parse(CfgLexer *lexer, LogParser **instance, gpointer arg);
 
 static CfgLexerKeyword dbparser_keywords[] =
 {
@@ -43,7 +43,7 @@ CfgParser dbparser_parser =
 #endif
   .name = "dbparser",
   .keywords = dbparser_keywords,
-  .parse = (gint (*)(CfgLexer *, gpointer *)) dbparser_parse,
+  .parse = (gint (*)(CfgLexer *, gpointer *, gpointer)) dbparser_parse,
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 

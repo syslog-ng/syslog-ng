@@ -31,7 +31,7 @@
 extern int main_debug;
 
 /* defined in the parser */
-int main_parse(CfgLexer *lexer, gpointer *dummy);
+int main_parse(CfgLexer *lexer, gpointer *dummy, gpointer arg);
 
 static CfgLexerKeyword main_keywords[] = {
   /* statements */
@@ -144,7 +144,7 @@ CfgParser main_parser =
   .name = "main",
   .context = LL_CONTEXT_ROOT,
   .keywords = main_keywords,
-  .parse = (int (*)(CfgLexer *, gpointer *)) main_parse,
+  .parse = main_parse,
 };
 
 CFG_PARSER_IMPLEMENT_LEXER_BINDING(main_, gpointer *)

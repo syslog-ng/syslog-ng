@@ -26,7 +26,7 @@
 #include "block-ref-grammar.h"
 
 extern int block_ref_debug;
-int block_ref_parse(CfgLexer *lexer, CfgArgs **node);
+int block_ref_parse(CfgLexer *lexer, CfgArgs **node, gpointer arg);
 
 static CfgLexerKeyword block_ref_keywords[] = {
   { CFG_KEYWORD_STOP },
@@ -42,7 +42,7 @@ CfgParser block_ref_parser =
   .name = "block reference",
   .context = LL_CONTEXT_BLOCK_REF,
   .keywords = block_ref_keywords,
-  .parse = (gint (*)(CfgLexer *, gpointer *)) block_ref_parse,
+  .parse = (gint (*)(CfgLexer *, gpointer *, gpointer arg)) block_ref_parse,
 };
 
 CFG_PARSER_IMPLEMENT_LEXER_BINDING(block_ref_, CfgArgs **)

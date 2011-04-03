@@ -348,7 +348,7 @@ cfg_new(gint version)
 }
 
 gboolean
-cfg_run_parser(GlobalConfig *self, CfgLexer *lexer, CfgParser *parser, gpointer *result)
+cfg_run_parser(GlobalConfig *self, CfgLexer *lexer, CfgParser *parser, gpointer *result, gpointer arg)
 {
   gboolean res;
   GlobalConfig *old_cfg;
@@ -364,7 +364,7 @@ cfg_run_parser(GlobalConfig *self, CfgLexer *lexer, CfgParser *parser, gpointer 
   cfg_args_set(self->lexer->globals, "include-path", PATH_SYSCONFDIR);
   cfg_args_set(self->lexer->globals, "autoload-compiled-modules", "1");
 
-  res = cfg_parser_parse(parser, lexer, result);
+  res = cfg_parser_parse(parser, lexer, result, arg);
 
   cfg_lexer_free(lexer);
   self->lexer = NULL;
@@ -386,7 +386,7 @@ cfg_read_config(GlobalConfig *self, gchar *fname, gboolean syntax_only, gchar *p
       CfgLexer *lexer;
 
       lexer = cfg_lexer_new(cfg_file, fname, preprocess_into);
-      res = cfg_run_parser(self, lexer, &main_parser, (gpointer *) &self);
+      res = cfg_run_parser(self, lexer, &main_parser, (gpointer *) &self, NULL);
       fclose(cfg_file);
       if (res)
 	{

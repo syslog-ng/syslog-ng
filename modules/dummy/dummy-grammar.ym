@@ -38,6 +38,7 @@
 %lex-param {CfgLexer *lexer}
 %parse-param {CfgLexer *lexer}
 %parse-param {DummyDestDriver **dummy_dd_instance}
+%parse-param {gpointer arg}
 
 
 /* INCLUDE_DECLS */

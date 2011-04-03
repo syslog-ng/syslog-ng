@@ -70,6 +70,7 @@ TLSContext *last_tls_context;
 %lex-param {CfgLexer *lexer}
 %parse-param {CfgLexer *lexer}
 %parse-param {LogDriver **last_driver}
+%parse-param {gpointer arg}
 
 %token KW_UNIX_STREAM 20000
 %token KW_UNIX_DGRAM

@@ -53,7 +53,7 @@ tf_cond_prepare(LogTemplateFunction *self, LogTemplate *parent, gint argc, gchar
   args = g_malloc0(sizeof(TFCondState) + (argc - 1) * sizeof(LogTemplate *));
   args->argc = argc - 1;
   lexer = cfg_lexer_new_buffer(argv[0], strlen(argv[0]));
-  if (!cfg_run_parser(parent->cfg, lexer, &filter_expr_parser, (gpointer *) &args->filter))
+  if (!cfg_run_parser(parent->cfg, lexer, &filter_expr_parser, (gpointer *) &args->filter, NULL))
     {
       g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE, "Error parsing conditional filter expression");
       goto error;

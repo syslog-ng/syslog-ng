@@ -35,6 +35,7 @@
 %lex-param {CfgLexer *lexer}
 %parse-param {CfgLexer *lexer}
 %parse-param {gpointer *result}
+%parse-param {gpointer arg}
 
 /* INCLUDE_DECLS */
 

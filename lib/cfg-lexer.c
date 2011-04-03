@@ -643,7 +643,7 @@ cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
 
       if (self->preprocess_output)
         fprintf(self->preprocess_output, "@");
-      if (!cfg_parser_parse(&pragma_parser, self, &dummy))
+      if (!cfg_parser_parse(&pragma_parser, self, &dummy, NULL))
         {
           return LL_ERROR;
         }
@@ -684,7 +684,7 @@ cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
       CfgArgs *args;
 
       self->preprocess_suppress_tokens++;
-      if (cfg_parser_parse(&block_ref_parser, self, (gpointer *) &args))
+      if (cfg_parser_parse(&block_ref_parser, self, (gpointer *) &args, NULL))
         {
           gboolean success;
 

@@ -26,7 +26,7 @@
 #include "afmongodb-grammar.h"
 
 extern int afmongodb_debug;
-int afmongodb_parse(CfgLexer *lexer, LogDriver **instance);
+int afmongodb_parse(CfgLexer *lexer, LogDriver **instance, gpointer arg);
 
 static CfgLexerKeyword afmongodb_keywords[] = {
   { "mongodb",			KW_MONGODB },
@@ -49,7 +49,7 @@ CfgParser afmongodb_parser =
 #endif
   .name = "afmongodb",
   .keywords = afmongodb_keywords,
-  .parse = (int (*)(CfgLexer *lexer, gpointer *instance)) afmongodb_parse,
+  .parse = (int (*)(CfgLexer *lexer, gpointer *instance, gpointer)) afmongodb_parse,
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 

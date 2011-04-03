@@ -142,7 +142,7 @@ gint cfg_ts_format_value(gchar *format);
 
 void cfg_set_version(GlobalConfig *self, gint version);
 GlobalConfig *cfg_new(gint version);
-gboolean cfg_run_parser(GlobalConfig *self, CfgLexer *lexer, CfgParser *parser, gpointer *result);
+gboolean cfg_run_parser(GlobalConfig *self, CfgLexer *lexer, CfgParser *parser, gpointer *result, gpointer arg);
 gboolean cfg_read_config(GlobalConfig *cfg, gchar *fname, gboolean syntax_only, gchar *preprocess_into);
 void cfg_free(GlobalConfig *self);
 gboolean cfg_init(GlobalConfig *cfg);

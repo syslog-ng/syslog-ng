@@ -33,6 +33,7 @@
 %lex-param {CfgLexer *lexer}
 %parse-param {CfgLexer *lexer}
 %parse-param {gpointer *dummy}
+%parse-param {gpointer arg}
 
 /* START_DECLS */
 
@@ -70,7 +71,7 @@
           {                                                             \
             gchar __buf[256];                                           \
             g_snprintf(__buf, sizeof(__buf), errorfmt ? errorfmt : "x", ## __VA_ARGS__); \
-            yyerror(& (token), lexer, NULL, __buf);                     \
+            yyerror(& (token), lexer, NULL, NULL, __buf);               \
           }                                                             \
         YYERROR;                                                        \
       }                                                                 \
@@ -387,7 +388,7 @@ filter_stmt
 	: string '{'
 	  {
 	    last_filter_expr = NULL;
-	    CHECK_ERROR(cfg_parser_parse(&filter_expr_parser, lexer, (gpointer *) &last_filter_expr), @1, NULL);
+	    CHECK_ERROR(cfg_parser_parse(&filter_expr_parser, lexer, (gpointer *) &last_filter_expr, NULL), @1, NULL);
 	  }
           '}'                               { $$ = log_process_rule_new($1, g_list_prepend(NULL, log_filter_pipe_new(last_filter_expr, $1))); free($1); }
 	;
@@ -395,13 +396,13 @@ filter_stmt
 parser_stmt
         : string '{'
           {
-            CHECK_ERROR(cfg_parser_parse(&parser_expr_parser, lexer, (gpointer *) &last_parser_expr), @1, NULL);
+            CHECK_ERROR(cfg_parser_parse(&parser_expr_parser, lexer, (gpointer *) &last_parser_expr, NULL), @1, NULL);
           } '}'	                                { $$ = log_process_rule_new($1, last_parser_expr); free($1); }
 
 rewrite_stmt
         : string '{'
           {
-            CHECK_ERROR(cfg_parser_parse(&rewrite_expr_parser, lexer, (gpointer *) &last_rewrite_expr), @1, NULL);
+            CHECK_ERROR(cfg_parser_parse(&rewrite_expr_parser, lexer, (gpointer *) &last_rewrite_expr, NULL), @1, NULL);
           } '}'                                 { $$ = log_process_rule_new($1, last_rewrite_expr); free($1); }
 
 dest_stmt
@@ -536,7 +537,7 @@ source_plugin
             p = plugin_find(configuration, context, $1);
             CHECK_ERROR(p, @1, "%s plugin %s not found", cfg_lexer_lookup_context_name_by_type(context), $1);
 
-            last_driver = (LogDriver *) plugin_parse_config(p, configuration, &@1);
+            last_driver = (LogDriver *) plugin_parse_config(p, configuration, &@1, NULL);
             free($1);
             if (!last_driver)
               {
@@ -569,7 +570,7 @@ dest_plugin
             p = plugin_find(configuration, context, $1);
             CHECK_ERROR(p, @1, "%s plugin %s not found", cfg_lexer_lookup_context_name_by_type(context), $1);
 
-            last_driver = (LogDriver *) plugin_parse_config(p, configuration, &@1);
+            last_driver = (LogDriver *) plugin_parse_config(p, configuration, &@1, NULL);
             free($1);
             if (!last_driver)
               {

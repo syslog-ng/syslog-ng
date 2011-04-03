@@ -41,7 +41,7 @@ CfgParser parser_expr_parser =
   .name = "parser expression",
   .context = LL_CONTEXT_PARSER,
   .keywords = parser_expr_keywords,
-  .parse = (gint (*)(CfgLexer *, gpointer *)) parser_expr_parse,
+  .parse = (gint (*)(CfgLexer *, gpointer *, gpointer)) parser_expr_parse,
 };
 
 CFG_PARSER_IMPLEMENT_LEXER_BINDING(parser_expr_, GList **)

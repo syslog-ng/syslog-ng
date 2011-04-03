@@ -27,7 +27,7 @@
 
 extern int csvparser_debug;
 
-int csvparser_parse(CfgLexer *lexer, LogParser **instance);
+int csvparser_parse(CfgLexer *lexer, LogParser **instance, gpointer arg);
 
 static CfgLexerKeyword csvparser_keywords[] =
 {
@@ -42,7 +42,7 @@ CfgParser csvparser_parser =
 #endif
   .name = "csvparser",
   .keywords = csvparser_keywords,
-  .parse = (gint (*)(CfgLexer *, gpointer *)) csvparser_parse,
+  .parse = (gint (*)(CfgLexer *, gpointer *, gpointer)) csvparser_parse,
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 

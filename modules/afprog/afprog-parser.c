@@ -27,7 +27,7 @@
 
 extern int afprog_debug;
 
-int afprog_parse(CfgLexer *lexer, LogDriver **instance);
+int afprog_parse(CfgLexer *lexer, LogDriver **instance, gpointer arg);
 
 static CfgLexerKeyword afprog_keywords[] = {
   { "program",            KW_PROGRAM },
@@ -41,7 +41,7 @@ CfgParser afprog_parser =
 #endif
   .name = "afprog",
   .keywords = afprog_keywords,
-  .parse = (gint (*)(CfgLexer *, gpointer *)) afprog_parse,
+  .parse = (gint (*)(CfgLexer *, gpointer *, gpointer arg)) afprog_parse,
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 

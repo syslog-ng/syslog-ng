@@ -26,7 +26,7 @@
 #include "dummy-grammar.h"
 
 extern int dummy_debug;
-int dummy_parse(CfgLexer *lexer, DummyDestDriver **instance);
+int dummy_parse(CfgLexer *lexer, DummyDestDriver **instance, gpointer arg);
 
 static CfgLexerKeyword dummy_keywords[] = {
   { "dummy",                    KW_DUMMY },
@@ -41,7 +41,7 @@ CfgParser dummy_parser =
 #endif
   .name = "dummy",
   .keywords = dummy_keywords,
-  .parse = (int (*)(CfgLexer *lexer, gpointer *instance)) dummy_parse,
+  .parse = (int (*)(CfgLexer *lexer, gpointer *instance, gpointer arg)) dummy_parse,
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 

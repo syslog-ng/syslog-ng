@@ -342,7 +342,7 @@ pdb_action_set_condition(PDBAction *self, GlobalConfig *cfg, const gchar *filter
   CfgLexer *lexer;
 
   lexer = cfg_lexer_new_buffer(filter_string, strlen(filter_string));
-  if (!cfg_run_parser(cfg, lexer, &filter_expr_parser, (gpointer *) &self->condition))
+  if (!cfg_run_parser(cfg, lexer, &filter_expr_parser, (gpointer *) &self->condition, NULL))
     {
       g_set_error(error, 0, 1, "Error compiling conditional expression");
       self->condition = NULL;

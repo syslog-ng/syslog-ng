@@ -91,7 +91,7 @@ plugin_construct(Plugin *self, GlobalConfig *cfg, gint plugin_type, const gchar 
 
 /* construct a plugin instance by parsing a configuration file */
 gpointer
-plugin_parse_config(Plugin *self, GlobalConfig *cfg, YYLTYPE *yylloc)
+plugin_parse_config(Plugin *self, GlobalConfig *cfg, YYLTYPE *yylloc, gpointer arg)
 {
   gpointer instance = NULL;
 
@@ -121,7 +121,7 @@ plugin_parse_config(Plugin *self, GlobalConfig *cfg, YYLTYPE *yylloc)
       (self->setup_context)(self, cfg, self->type, self->name);
     }
 
-  if (!cfg_parser_parse(self->parser, cfg->lexer, &instance))
+  if (!cfg_parser_parse(self->parser, cfg->lexer, &instance, arg))
     {
       cfg_parser_cleanup(self->parser, instance);
       instance = NULL;

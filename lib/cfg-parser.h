@@ -41,7 +41,7 @@ typedef struct _CfgParser
   CfgLexerKeyword *keywords;
 
   /* the parser entry point, returns the parsed object in *instance */
-  gint (*parse)(CfgLexer *lexer, gpointer *instance);
+  gint (*parse)(CfgLexer *lexer, gpointer *instance, gpointer arg);
 
   /* in case of parse failure and instance != NULL, this should free instance */
   void (*cleanup)(gpointer instance);
@@ -68,7 +68,7 @@ cfg_process_flag(CfgFlagHandler *handlers, gpointer base, gchar *flag);
 extern int cfg_parser_debug;
 
 static inline gboolean
-cfg_parser_parse(CfgParser *self, CfgLexer *lexer, gpointer *instance)
+cfg_parser_parse(CfgParser *self, CfgLexer *lexer, gpointer *instance, gpointer arg)
 {
   gboolean success;
 
@@ -79,7 +79,7 @@ cfg_parser_parse(CfgParser *self, CfgLexer *lexer, gpointer *instance)
   if (self->debug_flag)
     (*self->debug_flag) = cfg_parser_debug;
   cfg_lexer_push_context(lexer, self->context, self->keywords, self->name);
-  success = (self->parse(lexer, instance) == 0);
+  success = (self->parse(lexer, instance, arg) == 0);
   cfg_lexer_pop_context(lexer);
   if (cfg_parser_debug)
     {
@@ -102,7 +102,7 @@ extern CfgParser main_parser;
     parser_prefix ## lex(YYSTYPE *yylval, YYLTYPE *yylloc, CfgLexer *lexer);   \
                                                                                \
     void                                                                       \
-    parser_prefix ## error(YYLTYPE *yylloc, CfgLexer *lexer, root_type instance, const char *msg);
+    parser_prefix ## error(YYLTYPE *yylloc, CfgLexer *lexer, root_type instance, gpointer arg, const char *msg);
 
 
 #define CFG_PARSER_IMPLEMENT_LEXER_BINDING(parser_prefix, root_type)          \
@@ -116,7 +116,7 @@ extern CfgParser main_parser;
     }                                                                         \
                                                                               \
     void                                                                      \
-    parser_prefix ## error(YYLTYPE *yylloc, CfgLexer *lexer, root_type instance, const char *msg) \
+    parser_prefix ## error(YYLTYPE *yylloc, CfgLexer *lexer, root_type instance, gpointer arg, const char *msg) \
     {                                                                                             \
       report_syntax_error(lexer, yylloc, cfg_lexer_get_context_description(lexer), msg);          \
     }
