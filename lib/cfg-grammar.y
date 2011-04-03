@@ -704,6 +704,8 @@ source_reader_options
 	;
 
 source_reader_option
+        /* NOTE: plugins need to set "last_reader_options" in order to incorporate this rule in their grammar */
+
 	: KW_LOG_IW_SIZE '(' LL_NUMBER ')'		{ last_reader_options->super.init_window_size = $3; }
 	| KW_CHAIN_HOSTNAMES '(' yesno ')'	{ last_reader_options->super.chain_hostnames = $3; }
 	| KW_NORMALIZE_HOSTNAMES '(' yesno ')'	{ last_reader_options->super.normalize_hostnames = $3; }
@@ -749,6 +751,8 @@ dest_writer_options
 	;
 
 dest_writer_option
+        /* NOTE: plugins need to set "last_writer_options" in order to incorporate this rule in their grammar */
+
 	: KW_FLAGS '(' dest_writer_options_flags ')' { last_writer_options->options = $3; }
 	| KW_LOG_FIFO_SIZE '(' LL_NUMBER ')'	{ last_writer_options->mem_fifo_size = $3; }
 	| KW_FLUSH_LINES '(' LL_NUMBER ')'		{ last_writer_options->flush_lines = $3; }

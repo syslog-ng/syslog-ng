@@ -39,6 +39,7 @@
 
 extern LogReaderOptions *last_reader_options;
 extern LogWriterOptions *last_writer_options;
+extern LogDriver *last_driver;
 
 }
 
@@ -49,7 +50,7 @@ extern LogWriterOptions *last_writer_options;
 
 %lex-param {CfgLexer *lexer}
 %parse-param {CfgLexer *lexer}
-%parse-param {LogDriver **last_driver}
+%parse-param {LogDriver **instance}
 %parse-param {gpointer arg}
 
 /* INCLUDE_DECLS */
@@ -83,11 +84,11 @@ source_affile
 source_affile_params
 	: string
 	  {
-            (*last_driver) = affile_sd_new($1, 0);
+            last_driver = *instance = affile_sd_new($1, 0);
 	    free($1);
-	    last_reader_options = &((AFFileSourceDriver *) (*last_driver))->reader_options;
+	    last_reader_options = &((AFFileSourceDriver *) last_driver)->reader_options;
 	  }
-          source_affile_options                 { $$ = (*last_driver); }
+          source_affile_options                 { $$ = last_driver; }
         ;
 
 source_affile_options
@@ -105,11 +106,11 @@ source_affile_option
 source_afpipe_params
 	: string
 	  {
-	    (*last_driver) = affile_sd_new($1, AFFILE_PIPE);
+	    last_driver = *instance = affile_sd_new($1, AFFILE_PIPE);
 	    free($1);
-	    last_reader_options = &((AFFileSourceDriver *) (*last_driver))->reader_options;
+	    last_reader_options = &((AFFileSourceDriver *) last_driver)->reader_options;
 	  }
-	  source_afpipe_options				{ $$ = (*last_driver); }
+	  source_afpipe_options				{ $$ = last_driver; }
 	;
 
 source_afpipe_options
@@ -118,7 +119,7 @@ source_afpipe_options
         ;
 
 source_afpipe_option
-	: KW_OPTIONAL '(' yesno ')'			{ (*last_driver)->optional = $3; }
+	: KW_OPTIONAL '(' yesno ')'			{ last_driver->optional = $3; }
 	| source_reader_option
 	;
 
@@ -130,11 +131,11 @@ dest_affile
 dest_affile_params
 	: string
 	  {
-	    (*last_driver) = affile_dd_new($1, 0);
+	    last_driver = *instance = affile_dd_new($1, 0);
 	    free($1);
-	    last_writer_options = &((AFFileDestDriver *) (*last_driver))->writer_options;
+	    last_writer_options = &((AFFileDestDriver *) last_driver)->writer_options;
 	  }
-	  dest_affile_options                           { $$ = (*last_driver); }
+	  dest_affile_options                           { $$ = last_driver; }
 	;
 
 dest_affile_options
@@ -144,27 +145,27 @@ dest_affile_options
 
 dest_affile_option
 	: dest_writer_option
-	| KW_OPTIONAL '(' yesno ')'		{ (*last_driver)->optional = $3; }
-	| KW_OWNER '(' string_or_number ')'	{ affile_dd_set_file_uid((*last_driver), $3); free($3); }
-	| KW_GROUP '(' string_or_number ')'	{ affile_dd_set_file_gid((*last_driver), $3); free($3); }
-	| KW_PERM '(' LL_NUMBER ')'		{ affile_dd_set_file_perm((*last_driver), $3); }
-	| KW_DIR_OWNER '(' string_or_number ')'	{ affile_dd_set_dir_uid((*last_driver), $3); free($3); }
-	| KW_DIR_GROUP '(' string_or_number ')'	{ affile_dd_set_dir_gid((*last_driver), $3); free($3); }
-	| KW_DIR_PERM '(' LL_NUMBER ')'		{ affile_dd_set_dir_perm((*last_driver), $3); }
-	| KW_CREATE_DIRS '(' yesno ')'		{ affile_dd_set_create_dirs((*last_driver), $3); }
-	| KW_OVERWRITE_IF_OLDER '(' LL_NUMBER ')'	{ affile_dd_set_overwrite_if_older((*last_driver), $3); }
-	| KW_FSYNC '(' yesno ')'		{ affile_dd_set_fsync((*last_driver), $3); }
-	| KW_LOCAL_TIME_ZONE '(' string ')'     { affile_dd_set_local_time_zone((*last_driver), $3); free($3); }
+	| KW_OPTIONAL '(' yesno ')'		{ last_driver->optional = $3; }
+	| KW_OWNER '(' string_or_number ')'	{ affile_dd_set_file_uid(last_driver, $3); free($3); }
+	| KW_GROUP '(' string_or_number ')'	{ affile_dd_set_file_gid(last_driver, $3); free($3); }
+	| KW_PERM '(' LL_NUMBER ')'		{ affile_dd_set_file_perm(last_driver, $3); }
+	| KW_DIR_OWNER '(' string_or_number ')'	{ affile_dd_set_dir_uid(last_driver, $3); free($3); }
+	| KW_DIR_GROUP '(' string_or_number ')'	{ affile_dd_set_dir_gid(last_driver, $3); free($3); }
+	| KW_DIR_PERM '(' LL_NUMBER ')'		{ affile_dd_set_dir_perm(last_driver, $3); }
+	| KW_CREATE_DIRS '(' yesno ')'		{ affile_dd_set_create_dirs(last_driver, $3); }
+	| KW_OVERWRITE_IF_OLDER '(' LL_NUMBER ')'	{ affile_dd_set_overwrite_if_older(last_driver, $3); }
+	| KW_FSYNC '(' yesno ')'		{ affile_dd_set_fsync(last_driver, $3); }
+	| KW_LOCAL_TIME_ZONE '(' string ')'     { affile_dd_set_local_time_zone(last_driver, $3); free($3); }
 	;
 
 dest_afpipe_params
 	: string
 	  {
-	    (*last_driver) = affile_dd_new($1, AFFILE_PIPE);
+	    last_driver = *instance = affile_dd_new($1, AFFILE_PIPE);
 	    free($1);
-	    last_writer_options = &((AFFileDestDriver *) (*last_driver))->writer_options;
+	    last_writer_options = &((AFFileDestDriver *) last_driver)->writer_options;
 	  }
-	  dest_afpipe_options                   { $$ = (*last_driver); }
+	  dest_afpipe_options                   { $$ = last_driver; }
 	;
 
 dest_afpipe_options
@@ -174,9 +175,9 @@ dest_afpipe_options
 
 dest_afpipe_option
 	: dest_writer_option
-	| KW_OWNER '(' string_or_number ')'	{ affile_dd_set_file_uid((*last_driver), $3); free($3); }
-	| KW_GROUP '(' string_or_number ')'	{ affile_dd_set_file_gid((*last_driver), $3); free($3); }
-	| KW_PERM '(' LL_NUMBER ')'		{ affile_dd_set_file_perm((*last_driver), $3); }
+	| KW_OWNER '(' string_or_number ')'	{ affile_dd_set_file_uid(last_driver, $3); free($3); }
+	| KW_GROUP '(' string_or_number ')'	{ affile_dd_set_file_gid(last_driver, $3); free($3); }
+	| KW_PERM '(' LL_NUMBER ')'		{ affile_dd_set_file_perm(last_driver, $3); }
 	;
 
 

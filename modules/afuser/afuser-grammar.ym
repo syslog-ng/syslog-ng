@@ -35,6 +35,8 @@
 #include "syslog-names.h"
 #include "messages.h"
 
+extern LogDriver *last_driver;
+
 }
 
 %name-prefix "afuser_"
@@ -44,7 +46,7 @@
 
 %lex-param {CfgLexer *lexer}
 %parse-param {CfgLexer *lexer}
-%parse-param {LogDriver **last_driver}
+%parse-param {LogDriver **instance}
 %parse-param {gpointer arg}
 
 /* INCLUDE_DECLS */
@@ -56,7 +58,7 @@
 %%
 
 start
-	: LL_CONTEXT_DESTINATION dest_afuser			 { *last_driver = $2; YYACCEPT; }
+	: LL_CONTEXT_DESTINATION dest_afuser			 { last_driver = *instance = $2; YYACCEPT; }
         ;
 
 dest_afuser

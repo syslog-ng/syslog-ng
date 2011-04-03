@@ -32,6 +32,6 @@ typedef struct
   gint opt;
 } DummyDestDriver;
 
-DummyDestDriver *dummy_dd_new(void);
+LogDriver *dummy_dd_new(void);
 
 #endif

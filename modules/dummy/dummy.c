@@ -51,7 +51,7 @@ dummy_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
   log_msg_unref(msg);
 }
 
-DummyDestDriver *
+LogDriver *
 dummy_dd_new(void)
 {
   DummyDestDriver *self = g_new0(DummyDestDriver, 1);

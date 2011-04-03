@@ -43,7 +43,7 @@
 
 %lex-param {CfgLexer *lexer}
 %parse-param {CfgLexer *lexer}
-%parse-param {LogDriver **last_driver}
+%parse-param {LogDriver **instance}
 %parse-param {gpointer arg}
 
 
@@ -77,11 +77,11 @@ source_afstreams_params
 	: string
 	  {
 #if ENABLE_SUN_STREAMS
-	    (*last_driver) = afstreams_sd_new($1);
+	    last_driver = *instance = afstreams_sd_new($1);
 	    free($1);
 #endif
 	  }
-	  source_afstreams_options		{ $$ = (*last_driver); }
+	  source_afstreams_options		{ $$ = last_driver; }
 	;
 
 source_afstreams_options
@@ -93,7 +93,7 @@ source_afstreams_option
 	: KW_IFDEF {
 #if ENABLE_SUN_STREAMS
 }
-	| KW_DOOR '(' string ')'		{ afstreams_sd_set_sundoor((*last_driver), $3); free($3); }
+	| KW_DOOR '(' string ')'		{ afstreams_sd_set_sundoor(last_driver, $3); free($3); }
 	| KW_ENDIF {
 #endif
 }

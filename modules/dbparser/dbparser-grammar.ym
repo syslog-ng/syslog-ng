@@ -35,6 +35,8 @@
 #include "syslog-names.h"
 #include "messages.h"
 
+extern LogParser *last_parser;
+
 }
 
 %name-prefix "dbparser_"
@@ -44,7 +46,7 @@
 
 %lex-param {CfgLexer *lexer}
 %parse-param {CfgLexer *lexer}
-%parse-param {LogParser **last_parser}
+%parse-param {LogParser **instance}
 %parse-param {gpointer arg}
 
 /* INCLUDE_DECLS */
@@ -63,7 +65,7 @@ start
 parser_expr_db
         : KW_DB_PARSER '('
           {
-            (*last_parser) = (LogParser *) log_db_parser_new();
+            last_parser = *instance = (LogParser *) log_db_parser_new();
           }
           parser_db_opts
           ')'
@@ -76,8 +78,8 @@ parser_db_opts
 
 /* NOTE: we don't support parser_opt as we don't want the user to specify a template */
 parser_db_opt
-        : KW_FILE '(' string ')'                		{ log_db_parser_set_db_file(((LogDBParser *) (*last_parser)), $3); free($3); }
-	| KW_INJECT_MODE '(' parser_db_inject_mode ')'		{ log_db_parser_set_inject_mode(((LogDBParser *) (*last_parser)), $3); free($3); }
+        : KW_FILE '(' string ')'                		{ log_db_parser_set_db_file(((LogDBParser *) last_parser), $3); free($3); }
+	| KW_INJECT_MODE '(' parser_db_inject_mode ')'		{ log_db_parser_set_inject_mode(((LogDBParser *) last_parser), $3); free($3); }
         ;
 
 parser_db_inject_mode

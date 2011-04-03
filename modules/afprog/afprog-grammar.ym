@@ -38,6 +38,7 @@
 
 extern LogReaderOptions *last_reader_options;
 extern LogWriterOptions *last_writer_options;
+extern LogDriver *last_driver;
 
 }
 
@@ -48,7 +49,7 @@ extern LogWriterOptions *last_writer_options;
 
 %lex-param {CfgLexer *lexer}
 %parse-param {CfgLexer *lexer}
-%parse-param {LogDriver **last_driver}
+%parse-param {LogDriver **instance}
 %parse-param {gpointer arg}
 
 /* INCLUDE_DECLS */
@@ -75,11 +76,11 @@ source_afprogram
 source_afprogram_params
 	: string
 	  {
-	    (*last_driver) = afprogram_sd_new($1);
+	    last_driver = *instance = afprogram_sd_new($1);
 	    free($1);
-	    last_reader_options = &((AFProgramSourceDriver *) (*last_driver))->reader_options;
+	    last_reader_options = &((AFProgramSourceDriver *) last_driver)->reader_options;
 	  }
-	  source_reader_options			{ $$ = (*last_driver); }
+	  source_reader_options			{ $$ = last_driver; }
 	;
 
 dest_afprogram
@@ -89,11 +90,11 @@ dest_afprogram
 dest_afprogram_params
 	: string
 	  {
-	    (*last_driver) = afprogram_dd_new($1);
+	    last_driver = *instance = afprogram_dd_new($1);
 	    free($1);
-	    last_writer_options = &((AFProgramDestDriver *) (*last_driver))->writer_options;
+	    last_writer_options = &((AFProgramDestDriver *) last_driver)->writer_options;
 	  }
-	  dest_writer_options			{ $$ = (*last_driver); }
+	  dest_writer_options			{ $$ = last_driver; }
 	;
 
 /* INCLUDE_RULES */

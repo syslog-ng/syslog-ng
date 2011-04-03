@@ -32,12 +32,14 @@
 #include "cfg-parser.h"
 #include "dummy-grammar.h"
 
+extern LogDriver *last_driver;
+
 }
 
 %name-prefix "dummy_"
 %lex-param {CfgLexer *lexer}
 %parse-param {CfgLexer *lexer}
-%parse-param {DummyDestDriver **dummy_dd_instance}
+%parse-param {LogDriver **instance}
 %parse-param {gpointer arg}
 
 
@@ -51,7 +53,7 @@
 start
         : LL_CONTEXT_DESTINATION KW_DUMMY
           {
-            *dummy_dd_instance = dummy_dd_new();
+            last_driver = *instance = dummy_dd_new();
           }
           '(' dummy_options ')'         { YYACCEPT; }
 	;
@@ -62,7 +64,7 @@ dummy_options
 	;
 
 dummy_option
-        : KW_DUMMY_OPT '(' yesno ')'    { (*dummy_dd_instance)->opt = $3; };
+        : KW_DUMMY_OPT '(' yesno ')'    { ((DummyDestDriver *)last_driver)->opt = $3; };
         ;
 
 

@@ -32,12 +32,14 @@
 #include "cfg-parser.h"
 #include "afmongodb-grammar.h"
 
+extern LogDriver *last_driver;
+
 }
 
 %name-prefix "afmongodb_"
 %lex-param {CfgLexer *lexer}
 %parse-param {CfgLexer *lexer}
-%parse-param {LogDriver **afmongodb_dd_instance}
+%parse-param {LogDriver **instance}
 %parse-param {gpointer arg}
 
 
@@ -52,7 +54,7 @@
 start
         : LL_CONTEXT_DESTINATION KW_MONGODB
           {
-            *afmongodb_dd_instance = afmongodb_dd_new();
+            last_driver = *instance = afmongodb_dd_new();
           }
           '(' afmongodb_options ')'         { YYACCEPT; }
 	;
@@ -63,15 +65,14 @@ afmongodb_options
 	;
 
 afmongodb_option
-        : KW_HOST '(' string ')'		{ afmongodb_dd_set_host((*afmongodb_dd_instance), $3); free($3); }
-        | KW_PORT '(' LL_NUMBER ')'		{ afmongodb_dd_set_port((*afmongodb_dd_instance), $3); }
-	| KW_DATABASE '(' string ')'		{ afmongodb_dd_set_database((*afmongodb_dd_instance), $3); free($3); }
-	| KW_COLLECTION '(' string ')'		{ afmongodb_dd_set_collection((*afmongodb_dd_instance), $3); free($3); }
-	| KW_VALUES '(' string_list ')'		{ afmongodb_dd_set_values((*afmongodb_dd_instance), $3); }
-	| KW_KEYS '(' string_list ')'		{ afmongodb_dd_set_keys((*afmongodb_dd_instance), $3); }
-	| KW_USERNAME '(' string ')'		{ afmongodb_dd_set_user((*afmongodb_dd_instance), $3); free($3); }
-	| KW_PASSWORD '(' string ')'		{ afmongodb_dd_set_password((*afmongodb_dd_instance), $3); free($3); }
-	| KW_LOG_FIFO_SIZE '(' LL_NUMBER ')'	{ afmongodb_dd_set_log_fifo_size((*afmongodb_dd_instance), $3); }
+        : KW_HOST '(' string ')'		{ afmongodb_dd_set_host(last_driver, $3); free($3); }
+        | KW_PORT '(' LL_NUMBER ')'		{ afmongodb_dd_set_port(last_driver, $3); }
+	| KW_DATABASE '(' string ')'		{ afmongodb_dd_set_database(last_driver, $3); free($3); }
+	| KW_COLLECTION '(' string ')'		{ afmongodb_dd_set_collection(last_driver, $3); free($3); }
+	| KW_VALUES '(' string_list ')'		{ afmongodb_dd_set_values(last_driver, $3); }
+	| KW_KEYS '(' string_list ')'		{ afmongodb_dd_set_keys(last_driver, $3); }
+	| KW_USERNAME '(' string ')'		{ afmongodb_dd_set_user(last_driver, $3); free($3); }
+	| KW_PASSWORD '(' string ')'		{ afmongodb_dd_set_password(last_driver, $3); free($3); }
         ;
 
 /* INCLUDE_RULES */

@@ -30,6 +30,6 @@
 
 extern CfgParser dummy_parser;
 
-CFG_PARSER_DECLARE_LEXER_BINDING(dummy_, DummyDestDriver **)
+CFG_PARSER_DECLARE_LEXER_BINDING(dummy_, LogDriver **)
 
 #endif
