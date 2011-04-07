@@ -59,7 +59,11 @@
 #define PIF_CLONE             0x0040
 
 /* the given multiplexer is a barrier in flow control */
-#define PIF_FLOW_CTRL_BARRIER 0x0100
+#define PIF_FLOW_CTRL_BARRIER 0x0080
+
+/* private flags range, to be used by other LogPipe instances for their own purposes */
+
+#define PIF_PRIVATE(x)       ((x) << 16)
 
 /**
  *
