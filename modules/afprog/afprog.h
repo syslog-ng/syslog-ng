@@ -30,7 +30,7 @@
 
 typedef struct _AFProgramSourceDriver
 {
-  LogDriver super;
+  LogSrcDriver super;
   GString *cmdline;
   LogPipe *reader;
   pid_t pid;
@@ -39,7 +39,7 @@ typedef struct _AFProgramSourceDriver
 
 typedef struct _AFProgramDestDriver
 {
-  LogDriver super;
+  LogDestDriver super;
   GString *cmdline;
   LogPipe *writer;
   pid_t pid;

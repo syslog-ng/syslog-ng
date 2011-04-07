@@ -1,4 +1,5 @@
 #include "logqueue.h"
+#include "logqueue-fifo.h"
 #include "logpipe.h"
 #include "apphook.h"
 #include "plugin.h"
@@ -34,11 +35,7 @@ feed_some_messages(LogQueue **q, int n, gboolean flow_control)
       msg = log_msg_new(msg_str, strlen(msg_str), g_sockaddr_inet_new("10.10.10.10", 1010), &parse_options);
       log_msg_add_ack(msg, &path_options);
       msg->ack_func = test_ack;
-      if (!log_queue_push_tail((*q), msg, &path_options))
-        {
-          fprintf(stderr, "Queue unable to consume enough messages: %d\n", fed_messages);
-          exit(1);
-        }
+      log_queue_push_tail((*q), msg, &path_options);
       fed_messages++;
     }
 
@@ -77,7 +74,7 @@ testcase_zero_diskbuf_and_normal_acks()
   LogQueue *q;
   gint i;
 
-  q = log_queue_new(OVERFLOW_SIZE);
+  q = log_queue_fifo_new(OVERFLOW_SIZE, NULL);
   fed_messages = 0;
   acked_messages = 0;
   for (i = 0; i < 10; i++)
@@ -91,7 +88,7 @@ testcase_zero_diskbuf_and_normal_acks()
       exit(1);
     }
 
-  log_queue_free(q);
+  log_queue_unref(q);
 }
 
 void
@@ -100,7 +97,7 @@ testcase_zero_diskbuf_alternating_send_acks()
   LogQueue *q;
   gint i;
 
-  q = log_queue_new(OVERFLOW_SIZE);
+  q = log_queue_fifo_new(OVERFLOW_SIZE, NULL);
   fed_messages = 0;
   acked_messages = 0;
   for (i = 0; i < 10; i++)
@@ -115,7 +112,7 @@ testcase_zero_diskbuf_alternating_send_acks()
       exit(1);
     }
 
-  log_queue_free(q);
+  log_queue_unref(q);
 }
 
 #define FEEDERS 1
@@ -150,11 +147,7 @@ threaded_feed(gpointer st)
       log_msg_add_ack(msg, &path_options);
       msg->ack_func = test_ack;
 
-      if (!log_queue_push_tail(q, msg, &path_options))
-        {
-          fprintf(stderr, "Unable to feed enough messages to queue: %d\n", fed_messages);
-          return GUINT_TO_POINTER(1);
-        }
+      log_queue_push_tail(q, msg, &path_options);
     }
   g_get_current_time(&end);
   diff = g_time_val_diff(&end, &start);
@@ -228,7 +221,7 @@ testcase_with_threads()
 
   for (i = 0; i < TEST_RUNS; i++)
     {
-      q = log_queue_new(MESSAGES_SUM);
+      q = log_queue_fifo_new(MESSAGES_SUM, NULL);
 
       for (j = 0; j < FEEDERS; j++)
         thread_feed[j] = g_thread_create(threaded_feed, q, TRUE, NULL);
@@ -239,7 +232,7 @@ testcase_with_threads()
         g_thread_join(thread_feed[j]);
       g_thread_join(thread_consume);
 
-      log_queue_free(q);
+      log_queue_unref(q);
     }
   fprintf(stderr, "Feed speed: %.2lf\n", (double) TEST_RUNS * MESSAGES_SUM * 1000000 / sum_time);
 }

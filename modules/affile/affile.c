@@ -213,7 +213,7 @@ affile_sd_notify(LogPipe *s, LogPipe *sender, gint notify_code, gpointer user_da
 
             self->reader = log_reader_new(proto);
 
-            log_reader_set_options(self->reader, s, &self->reader_options, 1, SCS_FILE, self->super.id, self->filename->str);
+            log_reader_set_options(self->reader, s, &self->reader_options, 1, SCS_FILE, self->super.super.id, self->filename->str);
             log_reader_set_follow_filename(self->reader, self->filename->str);
             log_reader_set_immediate_check(self->reader);
 
@@ -241,7 +241,7 @@ affile_sd_notify(LogPipe *s, LogPipe *sender, gint notify_code, gpointer user_da
 }
 
 static void
-affile_sd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
+affile_sd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data)
 {
   AFFileSourceDriver *self = (AFFileSourceDriver *) s;
   static NVHandle filename_handle = 0;
@@ -262,7 +262,10 @@ affile_sd_init(LogPipe *s)
   gint fd;
   gboolean file_opened, open_deferred = FALSE;
 
-  log_reader_options_init(&self->reader_options, cfg, self->super.group);
+  if (!log_src_driver_init_method(s))
+    return FALSE;
+
+  log_reader_options_init(&self->reader_options, cfg, self->super.super.group);
 
   file_opened = affile_sd_open_file(self, self->filename->str, &fd);
   if (!file_opened && self->reader_options.follow_freq > 0)
@@ -286,7 +289,7 @@ affile_sd_init(LogPipe *s)
       /* FIXME: we shouldn't use reader_options to store log protocol parameters */
       self->reader = log_reader_new(proto);
 
-      log_reader_set_options(self->reader, s, &self->reader_options, 1, SCS_FILE, self->super.id, self->filename->str);
+      log_reader_set_options(self->reader, s, &self->reader_options, 1, SCS_FILE, self->super.super.id, self->filename->str);
       log_reader_set_follow_filename(self->reader, self->filename->str);
 
       /* NOTE: if the file could not be opened, we ignore the last
@@ -313,7 +316,7 @@ affile_sd_init(LogPipe *s)
                 evt_tag_str("filename", self->filename->str),
                 evt_tag_errno(EVT_TAG_OSERROR, errno),
                 NULL);
-      return self->super.optional;
+      return self->super.super.optional;
     }
   return TRUE;
 
@@ -331,6 +334,9 @@ affile_sd_deinit(LogPipe *s)
       self->reader = NULL;
     }
 
+  if (!log_src_driver_deinit_method(s))
+    return FALSE;
+
   return TRUE;
 }
 
@@ -344,7 +350,7 @@ affile_sd_free(LogPipe *s)
 
   log_reader_options_destroy(&self->reader_options);
 
-  log_drv_free(s);
+  log_src_driver_free(s);
 }
 
 LogDriver *
@@ -352,14 +358,14 @@ affile_sd_new(gchar *filename, guint32 flags)
 {
   AFFileSourceDriver *self = g_new0(AFFileSourceDriver, 1);
   
-  log_drv_init_instance(&self->super);
+  log_src_driver_init_instance(&self->super);
   self->filename = g_string_new(filename);
   self->flags = flags;
-  self->super.super.init = affile_sd_init;
-  self->super.super.queue = affile_sd_queue;
-  self->super.super.deinit = affile_sd_deinit;
-  self->super.super.notify = affile_sd_notify;
-  self->super.super.free_fn = affile_sd_free;
+  self->super.super.super.init = affile_sd_init;
+  self->super.super.super.queue = affile_sd_queue;
+  self->super.super.super.deinit = affile_sd_deinit;
+  self->super.super.super.notify = affile_sd_notify;
+  self->super.super.super.free_fn = affile_sd_free;
   log_reader_options_defaults(&self->reader_options);
   self->reader_options.flags |= LR_LOCAL;
 
@@ -421,7 +427,7 @@ affile_sd_new(gchar *filename, guint32 flags)
       self->flags |= AFFILE_PRIVILEGED;
     }
 #endif
-  return &self->super;
+  return &self->super.super;
 }
 
 /*
@@ -555,7 +561,7 @@ affile_dw_reopen(AFFileDestWriter *self)
                 evt_tag_str("filename", self->filename->str),
                 evt_tag_errno(EVT_TAG_OSERROR, errno),
                 NULL);
-      return self->owner->super.optional;
+      return self->owner->super.super.optional;
     }
   return TRUE;
 }
@@ -576,8 +582,8 @@ affile_dw_init(LogPipe *s)
 
   if (!self->writer)
     {
-      self->writer = log_writer_new(LW_FORMAT_FILE);
-      log_writer_set_options((LogWriter *) self->writer, s, &self->owner->writer_options, 1, self->owner->flags & AFFILE_PIPE ? SCS_PIPE : SCS_FILE, self->owner->super.id, self->filename->str);
+      self->writer = log_writer_new(LW_FORMAT_FILE, log_dest_driver_acquire_queue(&self->owner->super, NULL));
+      log_writer_set_options((LogWriter *) self->writer, s, &self->owner->writer_options, 1, self->owner->flags & AFFILE_PIPE ? SCS_PIPE : SCS_FILE, self->owner->super.super.id, self->filename->str);
 
       if (!log_pipe_init(self->writer, NULL))
         {
@@ -613,7 +619,7 @@ affile_dw_deinit(LogPipe *s)
  * main thread.
  */
 static void
-affile_dw_queue(LogPipe *s, LogMessage *lm, const LogPathOptions *path_options)
+affile_dw_queue(LogPipe *s, LogMessage *lm, const LogPathOptions *path_options, gpointer user_data)
 {
   AFFileDestWriter *self = (AFFileDestWriter *) s;
 
@@ -642,11 +648,11 @@ static void
 affile_dw_set_owner(AFFileDestWriter *self, AFFileDestDriver *owner)
 {
   if (self->owner)
-    log_pipe_unref(&self->owner->super.super);
-  log_pipe_ref(&owner->super.super);
+    log_pipe_unref(&self->owner->super.super.super);
+  log_pipe_ref(&owner->super.super.super);
   self->owner = owner;
   if (self->writer)
-    log_writer_set_options((LogWriter *) self->writer, &self->super, &owner->writer_options, 1, SCS_FILE, self->owner->super.id, self->filename->str);
+    log_writer_set_options((LogWriter *) self->writer, &self->super, &owner->writer_options, 1, SCS_FILE, self->owner->super.super.id, self->filename->str);
   
 }
 
@@ -658,7 +664,7 @@ affile_dw_free(LogPipe *s)
   log_pipe_unref(self->writer);
   self->writer = NULL;
   g_string_free(self->filename, TRUE);
-  log_pipe_unref(&self->owner->super.super);
+  log_pipe_unref(&self->owner->super.super.super);
   log_pipe_free_method(s);
 }
 
@@ -673,7 +679,7 @@ affile_dw_new(AFFileDestDriver *owner, GString *filename)
   self->super.deinit = affile_dw_deinit;
   self->super.free_fn = affile_dw_free;  
   self->super.queue = affile_dw_queue;
-  log_pipe_ref(&owner->super.super);
+  log_pipe_ref(&owner->super.super.super);
   self->owner = owner;
   self->time_reopen = 60;
 
@@ -857,6 +863,9 @@ affile_dd_init(LogPipe *s)
   AFFileDestDriver *self = (AFFileDestDriver *) s;
   GlobalConfig *cfg = log_pipe_get_config(s);
 
+  if (!log_dest_driver_init_method(s))
+    return FALSE;
+
   if (cfg->create_dirs)
     self->flags |= AFFILE_CREATE_DIRS;
   if (self->file_uid == -1)
@@ -967,6 +976,10 @@ affile_dd_deinit(LogPipe *s)
       cfg_persist_config_add(cfg, affile_dd_format_persist_name(self), self->writer_hash, affile_dd_destroy_writer_hash, FALSE);
       self->writer_hash = NULL;
     }
+
+  if (!log_dest_driver_deinit_method(s))
+    return FALSE;
+
   return TRUE;
 }
 
@@ -979,7 +992,7 @@ static LogPipe *
 affile_dd_open_writer(gpointer args[])
 {
   AFFileDestDriver *self = args[0];
-  GlobalConfig *cfg = log_pipe_get_config(&self->super.super);
+  GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
   AFFileDestWriter *next;
 
   main_loop_assert_main_thread();
@@ -1047,7 +1060,7 @@ affile_dd_open_writer(gpointer args[])
 }
 
 static void
-affile_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
+affile_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data)
 {
   AFFileDestDriver *self = (AFFileDestDriver *) s;
   AFFileDestWriter *next;
@@ -1125,7 +1138,7 @@ affile_dd_free(LogPipe *s)
   log_template_options_destroy(&self->template_fname_options);
   log_template_unref(self->filename_template);
   log_writer_options_destroy(&self->writer_options);
-  log_drv_free(s);
+  log_dest_driver_free(s);
 }
 
 LogDriver *
@@ -1133,13 +1146,13 @@ affile_dd_new(gchar *filename, guint32 flags)
 {
   AFFileDestDriver *self = g_new0(AFFileDestDriver, 1);
 
-  log_drv_init_instance(&self->super);
+  log_dest_driver_init_instance(&self->super);
   if ((flags & AFFILE_PIPE) == 0)
-    self->super.super.flags |= PIF_SOFT_FLOW_CONTROL;
-  self->super.super.init = affile_dd_init;
-  self->super.super.deinit = affile_dd_deinit;
-  self->super.super.queue = affile_dd_queue;
-  self->super.super.free_fn = affile_dd_free;
+    self->super.super.super.flags |= PIF_SOFT_FLOW_CONTROL;
+  self->super.super.super.init = affile_dd_init;
+  self->super.super.super.deinit = affile_dd_deinit;
+  self->super.super.super.queue = affile_dd_queue;
+  self->super.super.super.free_fn = affile_dd_free;
   self->filename_template = log_template_new(configuration, NULL, filename);
   self->flags = flags;
   self->file_uid = self->file_gid = -1;
@@ -1154,5 +1167,5 @@ affile_dd_new(gchar *filename, guint32 flags)
   self->time_reap = -1;
   log_template_options_defaults(&self->template_fname_options);
   g_static_mutex_init(&self->lock);
-  return &self->super;
+  return &self->super.super;
 }

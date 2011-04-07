@@ -44,8 +44,6 @@ void afsql_dd_set_columns(LogDriver *s, GList *columns);
 void afsql_dd_set_values(LogDriver *s, GList *values);
 void afsql_dd_set_null_value(LogDriver *s, const gchar *null);
 void afsql_dd_set_indexes(LogDriver *s, GList *indexes);
-void afsql_dd_set_mem_fifo_size(LogDriver *s, gint mem_fifo_size);
-void afsql_dd_set_disk_fifo_size(LogDriver *s, gint64 disk_fifo_size);
 void afsql_dd_set_retries(LogDriver *s, gint num_retries);
 void afsql_dd_set_frac_digits(LogDriver *s, gint frac_digits);
 void afsql_dd_set_local_time_zone(LogDriver *s, const gchar *local_time_zone);
@@ -69,8 +67,6 @@ gint afsql_dd_lookup_flag(const gchar *flag);
 #define afsql_dd_set_columns(s, c)
 #define afsql_dd_set_values(s, v)
 #define afsql_dd_set_null_value(s, v)
-#define afsql_dd_set_mem_fifo_size(s, f)
-#define afsql_dd_set_disk_fifo_size(s, f)
 
 #define afsql_dd_new() 0
 

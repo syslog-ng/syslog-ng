@@ -243,7 +243,7 @@ afinet_sd_new(gint af, gchar *host, gint port, guint flags)
   resolve_hostname(&self->super.bind_addr, host);
   self->super.setup_socket = afinet_sd_setup_socket;
 
-  return &self->super.super;
+  return &self->super.super.super;
 }
 
 /* afinet destination */
@@ -478,7 +478,7 @@ afinet_dd_construct_ipv6_packet(AFInetDestDriver *self, LogMessage *msg, GString
 #endif
 
 static void
-afinet_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
+afinet_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data)
 {
 #if ENABLE_SPOOF_SOURCE
   AFInetDestDriver *self = (AFInetDestDriver *) s;
@@ -546,9 +546,9 @@ afinet_dd_new(gint af, gchar *host, gint port, guint flags)
     self->super.transport = g_strdup("udp");
   else if (self->super.flags & AFSOCKET_STREAM)
     self->super.transport = g_strdup("tcp");
-  self->super.super.super.init = afinet_dd_init;
-  self->super.super.super.queue = afinet_dd_queue;
-  self->super.super.super.free_fn = afinet_dd_free;
+  self->super.super.super.super.init = afinet_dd_init;
+  self->super.super.super.super.queue = afinet_dd_queue;
+  self->super.super.super.super.free_fn = afinet_dd_free;
   if (af == AF_INET)
     {
       self->super.bind_addr = g_sockaddr_inet_new("0.0.0.0", 0);
@@ -564,5 +564,5 @@ afinet_dd_new(gint af, gchar *host, gint port, guint flags)
 #endif
     }
   self->super.setup_socket = afinet_dd_setup_socket;
-  return &self->super.super;
+  return &self->super.super.super;
 }

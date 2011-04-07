@@ -231,7 +231,7 @@ afsocket_sc_init(LogPipe *s)
     }
 
   self->reader = log_reader_new(proto);
-  log_reader_set_options(self->reader, s, &self->owner->reader_options, 1, afsocket_sc_stats_source(self), self->owner->super.id, afsocket_sc_stats_instance(self));
+  log_reader_set_options(self->reader, s, &self->owner->reader_options, 1, afsocket_sc_stats_source(self), self->owner->super.super.id, afsocket_sc_stats_instance(self));
   log_reader_set_peer_addr(self->reader, self->peer_addr);
   log_pipe_append(self->reader, s);
   if (log_pipe_init(self->reader, NULL))
@@ -253,7 +253,7 @@ afsocket_sc_deinit(LogPipe *s)
   AFSocketSourceConnection *self = (AFSocketSourceConnection *) s;
 
   self->owner->connections = g_list_remove(self->owner->connections, self);
-  log_pipe_unref(&self->owner->super.super);
+  log_pipe_unref(&self->owner->super.super.super);
   self->owner = NULL;
 
   log_pipe_deinit(self->reader);
@@ -283,12 +283,12 @@ static void
 afsocket_sc_set_owner(AFSocketSourceConnection *self, AFSocketSourceDriver *owner)
 {
   if (self->reader)
-    log_reader_set_options(self->reader, &self->super, &owner->reader_options, 1, afsocket_sc_stats_source(self), owner->super.id, afsocket_sc_stats_instance(self));
-  log_drv_unref(&self->owner->super);
-  log_drv_ref(&owner->super);
+    log_reader_set_options(self->reader, &self->super, &owner->reader_options, 1, afsocket_sc_stats_source(self), owner->super.super.id, afsocket_sc_stats_instance(self));
+  log_pipe_unref(&self->owner->super.super.super);
+  log_pipe_ref(&owner->super.super.super);
   self->owner = owner;
 
-  log_pipe_append(&self->super, &owner->super.super);
+  log_pipe_append(&self->super, &owner->super.super.super);
 
 }
 
@@ -312,7 +312,7 @@ afsocket_sc_new(AFSocketSourceDriver *owner, GSockAddr *peer_addr, int fd)
   self->super.deinit = afsocket_sc_deinit;
   self->super.notify = afsocket_sc_notify;
   self->super.free_fn = afsocket_sc_free;
-  log_drv_ref(&owner->super);
+  log_pipe_ref(&owner->super.super.super);
   self->owner = owner;
 
 
@@ -408,7 +408,7 @@ afsocket_sd_process_connection(AFSocketSourceDriver *self, GSockAddr *client_add
       if (log_pipe_init(&conn->super, NULL))
         {
           self->num_connections++;
-          log_pipe_append(&conn->super, &self->super.super);
+          log_pipe_append(&conn->super, &self->super.super.super);
         }
       else
         {
@@ -546,6 +546,9 @@ afsocket_sd_init(LogPipe *s)
   gboolean res = FALSE;
   GlobalConfig *cfg = log_pipe_get_config(s);
 
+  if (!log_src_driver_init_method(s))
+    return FALSE;
+
 #if ENABLE_SSL
   if (self->flags & AFSOCKET_REQUIRE_TLS && !self->tls_context)
     {
@@ -577,7 +580,7 @@ afsocket_sd_init(LogPipe *s)
         }
       self->flags |= AFSOCKET_WNDSIZE_INITED;
     }
-  log_reader_options_init(&self->reader_options, cfg, self->super.group);
+  log_reader_options_init(&self->reader_options, cfg, self->super.super.group);
 
   /* fetch persistent connections first */
   if ((self->flags & AFSOCKET_KEEP_ALIVE))
@@ -605,9 +608,9 @@ afsocket_sd_init(LogPipe *s)
       if (sock == -1)
         {
           if (!afsocket_sd_acquire_socket(self, &sock))
-            return self->super.optional;
+            return self->super.super.optional;
           if (sock == -1 && !afsocket_open_socket(self->bind_addr, !!(self->flags & AFSOCKET_STREAM), &sock))
-            return self->super.optional;
+            return self->super.super.optional;
         }
 
       /* set up listening source */
@@ -635,9 +638,9 @@ afsocket_sd_init(LogPipe *s)
       if (!self->connections)
         {
           if (!afsocket_sd_acquire_socket(self, &sock))
-            return self->super.optional;
+            return self->super.super.optional;
           if (sock == -1 && !afsocket_open_socket(self->bind_addr, !!(self->flags & AFSOCKET_STREAM), &sock))
-            return self->super.optional;
+            return self->super.super.optional;
         }
       self->fd = -1;
 
@@ -717,6 +720,8 @@ afsocket_sd_deinit(LogPipe *s)
       ;
     }
 
+  if (!log_src_driver_deinit_method(s))
+    return FALSE;
 
   return TRUE;
 }
@@ -751,19 +756,20 @@ afsocket_sd_free(LogPipe *s)
   self->bind_addr = NULL;
   g_free(self->transport);
 
-  log_drv_free(s);
+  log_src_driver_free(s);
 }
 
 void
 afsocket_sd_init_instance(AFSocketSourceDriver *self, SocketOptions *sock_options, guint32 flags)
 {
-  log_drv_init_instance(&self->super);
+  log_src_driver_init_instance(&self->super);
 
-  self->super.super.init = afsocket_sd_init;
-  self->super.super.deinit = afsocket_sd_deinit;
-  self->super.super.free_fn = afsocket_sd_free;
-  self->super.super.queue = log_pipe_forward_msg;
-  self->super.super.notify = afsocket_sd_notify;
+  self->super.super.super.init = afsocket_sd_init;
+  self->super.super.super.deinit = afsocket_sd_deinit;
+  self->super.super.super.free_fn = afsocket_sd_free;
+  /* NULL behaves as if log_pipe_forward_msg was specified */
+  self->super.super.super.queue = NULL;
+  self->super.super.super.notify = afsocket_sd_notify;
   self->sock_options_ptr = sock_options;
   self->setup_socket = afsocket_sd_setup_socket;
   self->max_connections = 10;
@@ -825,15 +831,15 @@ afsocket_dd_set_keep_alive(LogDriver *s, gint enable)
 }
 
 
-static inline gchar *
-afsocket_dd_format_persist_name(AFSocketDestDriver *self, const gchar *dest_name, gboolean qfile)
+static gchar *
+afsocket_dd_format_persist_name(AFSocketDestDriver *self, gboolean qfile)
 {
   static gchar persist_name[128];
 
   g_snprintf(persist_name, sizeof(persist_name),
              qfile ? "afsocket_dd_qfile(%s,%s)" : "afsocket_dd_connection(%s,%s)",
              !!(self->flags & AFSOCKET_STREAM) ? "stream" : "dgram",
-             dest_name);
+             self->dest_name);
   return persist_name;
 }
 
@@ -1105,6 +1111,9 @@ afsocket_dd_init(LogPipe *s)
   AFSocketDestDriver *self = (AFSocketDestDriver *) s;
   GlobalConfig *cfg = log_pipe_get_config(s);
 
+  if (!log_dest_driver_init_method(s))
+    return FALSE;
+
 #if ENABLE_SSL
   if (self->flags & AFSOCKET_REQUIRE_TLS && !self->tls_context)
     {
@@ -1125,7 +1134,7 @@ afsocket_dd_init(LogPipe *s)
        * even while the connection is not established */
 
       if ((self->flags & AFSOCKET_KEEP_ALIVE))
-        self->writer = cfg_persist_config_fetch(cfg, afsocket_dd_format_persist_name(self, self->dest_name, FALSE));
+        self->writer = cfg_persist_config_fetch(cfg, afsocket_dd_format_persist_name(self, FALSE));
 
       if (!self->writer)
         self->writer = log_writer_new(LW_FORMAT_PROTO |
@@ -1134,12 +1143,14 @@ afsocket_dd_init(LogPipe *s)
 #else
                                       ((self->flags & AFSOCKET_STREAM) ? LW_DETECT_EOF : 0) |
 #endif
-                                      (self->flags & AFSOCKET_SYSLOG_PROTOCOL ? LW_SYSLOG_PROTOCOL : 0));
-      log_writer_set_options((LogWriter *) self->writer, &self->super.super, &self->writer_options, 0, afsocket_dd_stats_source(self), self->super.id, afsocket_dd_stats_instance(self));
-      log_pipe_init(self->writer, NULL);
-      log_pipe_append(&self->super.super, self->writer);
-    }
+                                      (self->flags & AFSOCKET_SYSLOG_PROTOCOL ? LW_SYSLOG_PROTOCOL : 0),
+                                      /* queue */
+                                      log_dest_driver_acquire_queue(&self->super, afsocket_dd_format_persist_name(self, TRUE)));
 
+      log_writer_set_options((LogWriter *) self->writer, &self->super.super.super, &self->writer_options, 0, afsocket_dd_stats_source(self), self->super.super.id, afsocket_dd_stats_instance(self));
+      log_pipe_init(self->writer, NULL);
+      log_pipe_append(&self->super.super.super, self->writer);
+    }
   afsocket_dd_reconnect(self);
   return TRUE;
 }
@@ -1151,16 +1162,18 @@ afsocket_dd_deinit(LogPipe *s)
   GlobalConfig *cfg = log_pipe_get_config(s);
 
   afsocket_dd_stop_watches(self);
+
   if (self->writer)
-    {
-      log_pipe_deinit(self->writer);
-    }
+    log_pipe_deinit(self->writer);
 
   if (self->flags & AFSOCKET_KEEP_ALIVE)
     {
-      cfg_persist_config_add(cfg, afsocket_dd_format_persist_name(self, self->dest_name, FALSE), self->writer, (GDestroyNotify) log_pipe_unref, FALSE);
+      cfg_persist_config_add(cfg, afsocket_dd_format_persist_name(self, FALSE), self->writer, (GDestroyNotify) log_pipe_unref, FALSE);
       self->writer = NULL;
     }
+
+  if (!log_dest_driver_deinit_method(s))
+    return FALSE;
 
   return TRUE;
 }
@@ -1205,20 +1218,21 @@ afsocket_dd_free(LogPipe *s)
   log_writer_options_destroy(&self->writer_options);
   g_free(self->dest_name);
   g_free(self->transport);
-  log_drv_free(s);
+  log_dest_driver_free(s);
 }
 
 void
 afsocket_dd_init_instance(AFSocketDestDriver *self, SocketOptions *sock_options, guint32 flags, gchar *hostname, gchar *dest_name)
 {
-  log_drv_init_instance(&self->super);
+  log_dest_driver_init_instance(&self->super);
 
   log_writer_options_defaults(&self->writer_options);
-  self->super.super.init = afsocket_dd_init;
-  self->super.super.deinit = afsocket_dd_deinit;
-  self->super.super.queue = log_pipe_forward_msg;
-  self->super.super.free_fn = afsocket_dd_free;
-  self->super.super.notify = afsocket_dd_notify;
+  self->super.super.super.init = afsocket_dd_init;
+  self->super.super.super.deinit = afsocket_dd_deinit;
+  /* NULL behaves as if log_msg_forward_msg was specified */
+  self->super.super.super.queue = NULL;
+  self->super.super.super.free_fn = afsocket_dd_free;
+  self->super.super.super.notify = afsocket_dd_notify;
   self->setup_socket = afsocket_dd_setup_socket;
   self->sock_options_ptr = sock_options;
   self->flags = flags  | AFSOCKET_KEEP_ALIVE;

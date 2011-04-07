@@ -149,6 +149,25 @@
  *   than the earlier behaviour, therefore it is currently only used for
  *   destination files.
  *
+ * Plugin overrides
+ *
+ *   Various methods can be overridden by external objects within
+ *   LogPipe and derived classes. The aim of this functionality to
+ *   make it possible to attach new functions to a LogPipe at runtime.
+ *
+ *   For example, it'd make sense to implement the "suppress"
+ *   functionality as such plugin, which is currently implemented in
+ *   LogWriter, and in case a non-LogWriter destination would need it,
+ *   then a separate implementation would be needed.
+ *
+ *   The way to override a method by an external object is as follows:
+ *
+ *     - it should save the current value of the method address (for
+ *       example "queue" for the queue method), and the associated
+ *       user_data pointer (queue_data in this case)
+ *
+ *     - it should change the pointer pointing to the relevant method to
+ *       its own code (e.g. change "queue" in LogPipe)
  **/
 
 struct _LogPathOptions
@@ -165,24 +184,29 @@ struct _LogPathOptions
 
 #define LOG_PATH_OPTIONS_INIT { TRUE, FALSE, NULL }
 
-typedef struct _LogPipe
+typedef struct _LogPipe LogPipe;
+
+struct _LogPipe
 {
   GAtomicCounter ref_cnt;
   gint32 flags;
   GlobalConfig *cfg;
-  struct _LogPipe *pipe_next;
-  void (*queue)(struct _LogPipe *self, LogMessage *msg, const LogPathOptions *path_options);
-  gboolean (*init)(struct _LogPipe *self);
-  gboolean (*deinit)(struct _LogPipe *self);
-  void (*free_fn)(struct _LogPipe *self);
-  void (*notify)(struct _LogPipe *self, struct _LogPipe *sender, gint notify_code, gpointer user_data);
-} LogPipe;
+  LogPipe *pipe_next;
+
+  /* user_data pointer of the "queue" method in case it is overridden
+     by a plugin, see the explanation in the comment on the top. */
+  gpointer queue_data;
+  void (*queue)(LogPipe *self, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data);
+  gboolean (*init)(LogPipe *self);
+  gboolean (*deinit)(LogPipe *self);
+  void (*free_fn)(LogPipe *self);
+  void (*notify)(LogPipe *self, struct _LogPipe *sender, gint notify_code, gpointer user_data);
+};
 
 
 LogPipe *log_pipe_ref(LogPipe *self);
 void log_pipe_unref(LogPipe *self);
 void log_pipe_init_instance(LogPipe *self);
-void log_pipe_forward_msg(LogPipe *self, LogMessage *msg, const LogPathOptions *path_options);
 void log_pipe_forward_notify(LogPipe *self, LogPipe *sender, gint notify_code, gpointer user_data);
 
 
@@ -227,9 +251,32 @@ log_pipe_deinit(LogPipe *s)
 }
 
 static inline void
+log_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options);
+
+static inline void
+log_pipe_forward_msg(LogPipe *self, LogMessage *msg, const LogPathOptions *path_options)
+{
+  if (self->pipe_next)
+    {
+      log_pipe_queue(self->pipe_next, msg, path_options);
+    }
+  else
+    {
+      log_msg_drop(msg, path_options);
+    }
+}
+
+static inline void
 log_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 {
-  s->queue(s, msg, path_options);
+  if (s->queue)
+    {
+      s->queue(s, msg, path_options, s->queue_data);
+    }
+  else
+    {
+      log_pipe_forward_msg(s, msg, path_options);
+    }
 }
 
 static inline void

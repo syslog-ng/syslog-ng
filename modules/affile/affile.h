@@ -37,7 +37,7 @@
 
 typedef struct _AFFileSourceDriver
 {
-  LogDriver super;
+  LogSrcDriver super;
   GString *filename;
   /* FIXME: the code assumes that reader is a LogReader at a lot of places, so this should be changed to LogReader */
   LogPipe *reader;
@@ -55,7 +55,7 @@ typedef struct _AFFileDestWriter AFFileDestWriter;
 
 typedef struct _AFFileDestDriver
 {
-  LogDriver super;
+  LogDestDriver super;
   GStaticMutex lock;
   LogTemplateOptions template_fname_options;
   LogTemplate *filename_template;

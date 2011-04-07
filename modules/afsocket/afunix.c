@@ -174,14 +174,14 @@ afunix_sd_new(gchar *filename, guint32 flags)
       self->super.reader_options.super.init_window_size = self->super.max_connections * 10;
     }
   self->super.bind_addr = g_sockaddr_unix_new(filename);
-  self->super.super.super.init = afunix_sd_init;
-  self->super.super.super.free_fn = afunix_sd_free;
+  self->super.super.super.super.init = afunix_sd_init;
+  self->super.super.super.super.free_fn = afunix_sd_free;
   self->super.acquire_socket = afunix_sd_acquire_socket;
   self->filename = g_strdup(filename);
   self->owner = -1;
   self->group = -1;
   self->perm = 0666;
-  return &self->super.super;
+  return &self->super.super.super;
 }
 
 LogDriver *
@@ -196,5 +196,5 @@ afunix_dd_new(gchar *filename, guint flags)
     self->super.transport = g_strdup("unix-stream");
   self->super.bind_addr = g_sockaddr_unix_new(NULL);
   self->super.dest_addr = g_sockaddr_unix_new(filename);
-  return &self->super.super;
+  return &self->super.super.super;
 }

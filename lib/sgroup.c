@@ -86,7 +86,7 @@ log_source_group_deinit(LogPipe *s)
 }
 
 static void
-log_source_group_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
+log_source_group_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data)
 {
   LogSourceGroup *self = (LogSourceGroup *) s;
   GlobalConfig *cfg = log_pipe_get_config(s);
@@ -95,7 +95,7 @@ log_source_group_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_o
 
   if (msg->flags & LF_LOCAL)
     afinter_postpone_mark(cfg->mark_freq);
-  log_pipe_queue(self->super.pipe_next, msg, path_options);
+  log_pipe_forward_msg(s, msg, path_options);
   (*self->processed_messages)++;
 }
 
@@ -104,7 +104,7 @@ log_source_group_free(LogPipe *s)
 {
   LogSourceGroup *self = (LogSourceGroup *) s;
   
-  log_drv_unref(self->drivers);
+  log_pipe_unref(&self->drivers->super);
   g_free(self->name);
   log_pipe_free_method(s);
 }

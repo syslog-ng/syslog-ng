@@ -64,7 +64,7 @@ gboolean afsocket_setup_socket(gint fd, SocketOptions *sock_options, AFSocketDir
 
 struct _AFSocketSourceDriver
 {
-  LogDriver super;
+  LogSrcDriver super;
   guint32 flags;
   struct iv_fd listen_fd;
   gint fd;
@@ -109,7 +109,7 @@ void afsocket_sd_free(LogPipe *self);
 
 struct _AFSocketDestDriver
 {
-  LogDriver super;
+  LogDestDriver super;
   guint32 flags;
   gint fd;
   LogPipe *writer;

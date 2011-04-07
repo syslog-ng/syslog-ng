@@ -31,6 +31,7 @@
 
 #include "cfg-parser.h"
 #include "afmongodb-grammar.h"
+#include "plugin.h"
 
 extern LogDriver *last_driver;
 
@@ -73,6 +74,7 @@ afmongodb_option
 	| KW_KEYS '(' string_list ')'		{ afmongodb_dd_set_keys(last_driver, $3); }
 	| KW_USERNAME '(' string ')'		{ afmongodb_dd_set_user(last_driver, $3); free($3); }
 	| KW_PASSWORD '(' string ')'		{ afmongodb_dd_set_password(last_driver, $3); free($3); }
+	| dest_driver_option
         ;
 
 /* INCLUDE_RULES */

@@ -33,6 +33,7 @@
 #include "afprog-grammar.h"
 #include "syslog-names.h"
 #include "messages.h"
+#include "plugin.h"
 
 #include <string.h>
 
@@ -94,7 +95,17 @@ dest_afprogram_params
 	    free($1);
 	    last_writer_options = &((AFProgramDestDriver *) last_driver)->writer_options;
 	  }
-	  dest_writer_options			{ $$ = last_driver; }
+	  dest_afprogram_options			{ $$ = last_driver; }
+	;
+
+dest_afprogram_options
+	: dest_afprogram_option dest_afprogram_options
+	|
+	;
+
+dest_afprogram_option
+	: dest_writer_option
+	| dest_driver_option
 	;
 
 /* INCLUDE_RULES */

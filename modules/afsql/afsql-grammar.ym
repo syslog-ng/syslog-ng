@@ -110,6 +110,7 @@ dest_afsql_option
         | KW_SESSION_STATEMENTS '(' string_list ')' { afsql_dd_set_session_statements(last_driver, $3); }
         | KW_FLAGS '(' dest_afsql_flags ')'     { afsql_dd_set_flags(last_driver, $3); }
 	| KW_RETRY_SQL_INSERTS '(' LL_NUMBER ')'{ afsql_dd_set_retries(last_driver, $3); }
+	| dest_driver_option
         | KW_ENDIF {
 #endif /* ENABLE_SQL */
 }

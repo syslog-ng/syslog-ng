@@ -52,9 +52,6 @@ typedef struct _LogWriterOptions
   /* bitmask of LWO_* */
   guint32 options;
   
-  /* maximum number of entries in the memory based FIFO */
-  gint mem_fifo_size;
-  
   /* minimum number of entries to trigger a flush */
   gint flush_lines;
   
@@ -67,7 +64,6 @@ typedef struct _LogWriterOptions
   gboolean fsync;
   LogTemplateOptions template_options;
 
-  gint throttle; /* messages per sec, 0 means unlimited */
   gint time_reopen;
   gint suppress;
 } LogWriterOptions;
@@ -79,7 +75,7 @@ void log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result);
 gboolean log_writer_has_pending_writes(LogWriter *self);
 gboolean log_writer_opened(LogWriter *self);
 void log_writer_reopen(LogPipe *s, LogProto *proto);
-LogPipe *log_writer_new(guint32 flags);
+LogPipe *log_writer_new(guint32 flags, LogQueue *queue);
 
 void log_writer_options_set_template_escape(LogWriterOptions *options, gboolean enable);
 void log_writer_options_defaults(LogWriterOptions *options);

@@ -26,20 +26,8 @@
 #include "plugin.h"
 #include "messages.h"
 
-static gboolean
-dummy_dd_init(LogPipe *s)
-{
-  return TRUE;
-}
-
-static gboolean
-dummy_dd_deinit(LogPipe *s)
-{
-  return TRUE;
-}
-
 static void
-dummy_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
+dummy_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data)
 {
   DummyDestDriver *self = (DummyDestDriver *) s;
   msg_notice("Dummy plugin received a message",
@@ -56,12 +44,10 @@ dummy_dd_new(void)
 {
   DummyDestDriver *self = g_new0(DummyDestDriver, 1);
 
-  log_drv_init_instance(&self->super);
-  self->super.super.init = dummy_dd_init;
-  self->super.super.deinit = dummy_dd_deinit;
-  self->super.super.queue = dummy_dd_queue;
+  log_dest_driver_init_instance(&self->super);
+  self->super.super.super.queue = dummy_dd_queue;
 
-  return self;
+  return &self->super.super;
 }
 
 extern CfgParser dummy_dd_parser;

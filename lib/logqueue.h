@@ -27,21 +27,113 @@
 
 #include "logmsg.h"
 
-typedef struct _LogQueue LogQueue;
-
 typedef void (*LogQueuePushNotifyFunc)(gpointer user_data);
 
-void log_queue_reset_parallel_push(LogQueue *self);
-gboolean log_queue_check_items(LogQueue *self, gint batch_items, gboolean *partial_batch, gint *timeout, LogQueuePushNotifyFunc parallel_push_notify, gpointer user_data, GDestroyNotify user_data_destroy);
-gint64 log_queue_get_length(LogQueue *self);
-gboolean log_queue_push_tail(LogQueue *self, LogMessage *msg, const LogPathOptions *path_options);
-gboolean log_queue_push_head(LogQueue *self, LogMessage *msg, const LogPathOptions *path_options);
-gboolean log_queue_pop_head(LogQueue *self, LogMessage **msg, LogPathOptions *path_flags, gboolean push_to_backlog);
-void log_queue_rewind_backlog(LogQueue *self);
-void log_queue_ack_backlog(LogQueue *self, gint n);
+typedef struct _LogQueue LogQueue;
 
-LogQueue *log_queue_new(gint qoverflow_size);
-void log_queue_set_throttle(LogQueue *self, gint throttle);
-void log_queue_free(LogQueue *self);
+struct _LogQueue
+{
+  /* this object is reference counted, but it is _not_ thread safe to
+     acquire/release references in code executing in parallel */
+  gint ref_cnt;
+  gint throttle;
+  gint throttle_buckets;
+  gchar *persist_name;
+  guint32 *stored_messages;
+  guint32 *dropped_messages;
+
+  /* queue management */
+  gint64 (*get_length)(LogQueue *self);
+  void (*push_tail)(LogQueue *self, LogMessage *msg, const LogPathOptions *path_options);
+  void (*push_head)(LogQueue *self, LogMessage *msg, const LogPathOptions *path_options);
+  gboolean (*pop_head)(LogQueue *self, LogMessage **msg, LogPathOptions *path_options, gboolean push_to_backlog);
+  void (*ack_backlog)(LogQueue *self, gint n);
+  void (*rewind_backlog)(LogQueue *self);
+
+  /* async interface, used for polling */
+  void (*reset_parallel_push)(LogQueue *self);
+  gboolean (*check_items)(LogQueue *self, gint batch_items, gboolean *partial_batch, gint *timeout, LogQueuePushNotifyFunc parallel_push_notify, gpointer user_data, GDestroyNotify user_data_destroy);
+
+  void (*free_fn)(LogQueue *self);
+};
+
+static inline gint64
+log_queue_get_length(LogQueue *self)
+{
+  return self->get_length(self);
+}
+
+static inline void
+log_queue_push_tail(LogQueue *self, LogMessage *msg, const LogPathOptions *path_options)
+{
+  self->push_tail(self, msg, path_options);
+}
+
+static inline void
+log_queue_push_head(LogQueue *self, LogMessage *msg, const LogPathOptions *path_options)
+{
+  self->push_head(self, msg, path_options);
+}
+
+static inline gboolean
+log_queue_pop_head(LogQueue *self, LogMessage **msg, LogPathOptions *path_options, gboolean push_to_backlog)
+{
+  return self->pop_head(self, msg, path_options, push_to_backlog);
+}
+
+static inline void
+log_queue_reset_parallel_push(LogQueue *self)
+{
+  self->reset_parallel_push(self);
+}
+
+static inline gboolean
+log_queue_check_items(LogQueue *self, gint batch_items, gboolean *partial_batch, gint *timeout, LogQueuePushNotifyFunc parallel_push_notify, gpointer user_data, GDestroyNotify user_data_destroy)
+{
+  return self->check_items(self, batch_items, partial_batch, timeout, parallel_push_notify, user_data, user_data_destroy);
+}
+
+static inline void
+log_queue_rewind_backlog(LogQueue *self)
+{
+  return self->rewind_backlog(self);
+}
+
+static inline void
+log_queue_ack_backlog(LogQueue *self, gint n)
+{
+  return self->ack_backlog(self, n);
+}
+
+static inline LogQueue *
+log_queue_ref(LogQueue *self)
+{
+  self->ref_cnt++;
+  return self;
+}
+
+static inline void
+log_queue_unref(LogQueue *self)
+{
+  if (--self->ref_cnt == 0)
+    self->free_fn(self);
+}
+
+static inline void
+log_queue_set_throttle(LogQueue *self, gint throttle)
+{
+  self->throttle = throttle;
+  self->throttle_buckets = throttle;
+}
+
+static inline void
+log_queue_set_counters(LogQueue *self, guint32 *stored_messages, guint32 *dropped_messages)
+{
+  self->stored_messages = stored_messages;
+  self->dropped_messages = dropped_messages;
+}
+
+void log_queue_init_instance(LogQueue *self, const gchar *persist_name);
+void log_queue_free_method(LogQueue *self);
 
 #endif

@@ -474,15 +474,8 @@ log_writer_last_msg_flush(LogWriter *self)
   log_msg_set_value(m, LM_V_MESSAGE, buf, len);
 
   path_options.flow_control = FALSE;
-  if (!log_queue_push_tail(self->queue, m, &path_options))
-    {
-      stats_counter_inc(self->dropped_messages);
-      msg_debug("Destination queue full, dropping suppressed message",
-                evt_tag_int("log_fifo_size", self->options->mem_fifo_size),
-                NULL);
-      log_msg_drop(m, &path_options);
-    }
 
+  log_queue_push_tail(self->queue, m, &path_options);
   log_writer_last_msg_release(self);
 }
 
@@ -569,7 +562,7 @@ log_writer_last_msg_check(LogWriter *self, LogMessage *lm, const LogPathOptions 
 
 /* NOTE: runs in the reader thread */
 static void
-log_writer_queue(LogPipe *s, LogMessage *lm, const LogPathOptions *path_options)
+log_writer_queue(LogPipe *s, LogMessage *lm, const LogPathOptions *path_options, gpointer user_data)
 {
   LogWriter *self = (LogWriter *) s;
   LogPathOptions local_options;
@@ -589,23 +582,7 @@ log_writer_queue(LogPipe *s, LogMessage *lm, const LogPathOptions *path_options)
     return;
 
   stats_counter_inc(self->processed_messages);
-  if (!log_queue_push_tail(self->queue, lm, path_options))
-    {
-      /* drop incoming message, we must ack here, otherwise the sender might
-       * block forever, however this should not happen unless the sum of
-       * window_sizes of sources feeding this writer exceeds log_fifo_size
-       * or if flow control is not turned on.
-       */
-      
-      /* we don't send a message here since the system is draining anyway */
-      
-      stats_counter_inc(self->dropped_messages);
-      msg_debug("Destination queue full, dropping message",
-                evt_tag_int("log_fifo_size", self->options->mem_fifo_size),
-                NULL);
-      log_msg_drop(lm, path_options);
-      return;
-    }
+  log_queue_push_tail(self->queue, lm, path_options);
 }
 
 static void
@@ -935,10 +912,6 @@ log_writer_init(LogPipe *s)
 {
   LogWriter *self = (LogWriter *) s;
 
-  if (!self->queue)
-    self->queue = log_queue_new(self->options->mem_fifo_size);
-  log_queue_set_throttle(self->queue, self->options->throttle);
-  
   if ((self->options->options & LWO_NO_STATS) == 0 && !self->dropped_messages)
     {
       stats_register_counter(self->stats_level, self->stats_source | SCS_DESTINATION, self->stats_id, self->stats_instance, SC_TYPE_DROPPED, &self->dropped_messages);
@@ -949,6 +922,7 @@ log_writer_init(LogPipe *s)
       stats_register_counter(self->stats_level, self->stats_source | SCS_DESTINATION, self->stats_id, self->stats_instance, SC_TYPE_STORED, &self->stored_messages);
     }
   self->suppress_timer_updated = TRUE;
+  log_queue_set_counters(self->queue, self->stored_messages, self->dropped_messages);
   return TRUE;
 }
 
@@ -970,6 +944,8 @@ log_writer_deinit(LogPipe *s)
   if (iv_timer_registered(&self->suppress_timer))
     iv_timer_unregister(&self->suppress_timer);
 
+  log_queue_set_counters(self->queue, NULL, NULL);
+
   stats_unregister_counter(self->stats_source | SCS_DESTINATION, self->stats_id, self->stats_instance, SC_TYPE_DROPPED, &self->dropped_messages);
   stats_unregister_counter(self->stats_source | SCS_DESTINATION, self->stats_id, self->stats_instance, SC_TYPE_SUPPRESSED, &self->suppressed_messages);
   stats_unregister_counter(self->stats_source | SCS_DESTINATION, self->stats_id, self->stats_instance, SC_TYPE_PROCESSED, &self->processed_messages);
@@ -986,7 +962,7 @@ log_writer_free(LogPipe *s)
   if (self->line_buffer)
     g_string_free(self->line_buffer, TRUE);
   if (self->queue)
-    log_queue_free(self->queue);
+    log_queue_unref(self->queue);
   if (self->last_msg)
     log_msg_unref(self->last_msg);
   g_free(self->stats_id);
@@ -1053,7 +1029,7 @@ log_writer_set_options(LogWriter *self, LogPipe *control, LogWriterOptions *opti
 }
 
 LogPipe *
-log_writer_new(guint32 flags)
+log_writer_new(guint32 flags, LogQueue *queue)
 {
   LogWriter *self = g_new0(LogWriter, 1);
   
@@ -1064,6 +1040,7 @@ log_writer_new(guint32 flags)
   self->super.free_fn = log_writer_free;
   self->flags = flags;
   self->line_buffer = g_string_sized_new(128);
+  self->queue = queue;
 
   log_writer_init_watches(self);
   g_static_mutex_init(&self->suppress_lock);
@@ -1073,7 +1050,6 @@ log_writer_new(guint32 flags)
 void 
 log_writer_options_defaults(LogWriterOptions *options)
 {
-  options->mem_fifo_size = -1;
   options->template = NULL;
   options->flush_lines = -1;
   options->flush_timeout = -1;
@@ -1148,8 +1124,6 @@ log_writer_options_init(LogWriterOptions *options, GlobalConfig *cfg, guint32 op
     }
   log_template_options_init(&options->template_options, cfg);
   options->options |= option_flags;
-  if (options->mem_fifo_size == -1)
-    options->mem_fifo_size = MAX(1000, cfg->log_fifo_size);
     
   if (options->flush_lines == -1)
     options->flush_lines = cfg->flush_lines;
@@ -1157,16 +1131,6 @@ log_writer_options_init(LogWriterOptions *options, GlobalConfig *cfg, guint32 op
     options->flush_timeout = cfg->flush_timeout;
   if (options->suppress == -1)
     options->suppress = cfg->suppress;
-    
-  if (options->mem_fifo_size < options->flush_lines)
-    {
-      msg_error("The value of flush_lines must be less than log_fifo_size",
-                evt_tag_int("log_fifo_size", options->mem_fifo_size),
-                evt_tag_int("flush_lines", options->flush_lines),
-                NULL);
-      options->flush_lines = options->mem_fifo_size - 1;
-    }
-
   if (options->time_reopen == -1)
     options->time_reopen = cfg->time_reopen;
   options->file_template = log_template_ref(cfg->file_template);

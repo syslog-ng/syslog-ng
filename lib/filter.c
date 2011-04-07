@@ -650,7 +650,7 @@ log_filter_pipe_init(LogPipe *s)
 }
 
 static void
-log_filter_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
+log_filter_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data)
 {
   LogFilterPipe *self = (LogFilterPipe *) s;
   gboolean res;

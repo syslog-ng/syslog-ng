@@ -34,6 +34,8 @@
 #include "afstreams-grammar.h"
 #include "messages.h"
 
+extern LogDriver *last_driver;
+
 }
 
 %name-prefix "afstreams_"

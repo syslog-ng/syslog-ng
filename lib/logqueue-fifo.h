@@ -2,9 +2,10 @@
  * Copyright (c) 2002-2010 BalaBit IT Ltd, Budapest, Hungary
  * Copyright (c) 1998-2010 Balázs Scheidler
  *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms of the GNU General Public License version 2 as published
- * by the Free Software Foundation, or (at your option) any later version.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -21,17 +22,11 @@
  *
  */
 
-#ifndef DUMMY_H_INCLUDED
-#define DUMMY_H_INCLUDED
+#ifndef LOGQUEUE_FIFO_H_INCLUDED
+#define LOGQUEUE_FIFO_H_INCLUDED
 
-#include "driver.h"
+#include "logqueue.h"
 
-typedef struct
-{
-  LogDestDriver super;
-  gint opt;
-} DummyDestDriver;
-
-LogDriver *dummy_dd_new(void);
+LogQueue *log_queue_fifo_new(gint qoverflow_size, const gchar *persist_name);
 
 #endif

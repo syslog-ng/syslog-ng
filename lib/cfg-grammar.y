@@ -26,6 +26,7 @@
 
 /* YYSTYPE and YYLTYPE is defined by the lexer */
 #include "cfg-lexer.h"
+#include "driver.h"
 
 }
 
@@ -97,6 +98,8 @@
 %token LL_CONTEXT_PRAGMA              11
 %token LL_CONTEXT_FORMAT              12
 %token LL_CONTEXT_TEMPLATE_FUNC       13
+%token LL_CONTEXT_INNER_DEST          14
+%token LL_CONTEXT_INNER_SRC           15
 
 /* statements */
 %token KW_SOURCE                      10000
@@ -518,7 +521,7 @@ template_item
 
 
 source_items
-        : source_item ';' source_items		{ if ($1) {log_drv_append($1, $3); log_drv_unref($3); $$ = $1; } else { YYERROR; } }
+        : source_item ';' source_items		{ if ($1) {log_driver_append($1, $3); log_pipe_unref($3); $$ = $1; } else { YYERROR; } }
         | ';' source_items                      { $$ = $2; }
 	|					{ $$ = NULL; }
 	;
@@ -552,7 +555,7 @@ source_afinter
 	;
 
 dest_items
-	: dest_item ';' dest_items		{ log_drv_append($1, $3); log_drv_unref($3); $$ = $1; }
+	: dest_item ';' dest_items		{ log_driver_append($1, $3); log_pipe_unref($3); $$ = $1; }
         | ';' dest_items                        { $$ = $2; }
 	|					{ $$ = NULL; }
 	;
@@ -745,6 +748,31 @@ source_reader_option_flags
 	|
 	;
 
+dest_driver_option
+        /* NOTE: plugins need to set "last_driver" in order to incorporate this rule in their grammar */
+
+	: KW_LOG_FIFO_SIZE '(' LL_NUMBER ')'	{ ((LogDestDriver *) last_driver)->log_fifo_size = $3; }
+	| KW_THROTTLE '(' LL_NUMBER ')'         { ((LogDestDriver *) last_driver)->throttle = $3; }
+        | LL_IDENTIFIER
+          {
+            Plugin *p;
+            gint context = LL_CONTEXT_INNER_DEST;
+            gpointer value;
+
+            p = plugin_find(configuration, context, $1);
+            CHECK_ERROR(p, @1, "%s plugin %s not found", cfg_lexer_lookup_context_name_by_type(context), $1);
+
+            value = plugin_parse_config(p, configuration, &@1, last_driver);
+
+            free($1);
+            if (!value)
+              {
+                YYERROR;
+              }
+            log_driver_add_plugin(last_driver, (LogDriverPlugin *) value);
+          }
+        ;
+
 dest_writer_options
 	: dest_writer_option dest_writer_options
 	|
@@ -754,7 +782,6 @@ dest_writer_option
         /* NOTE: plugins need to set "last_writer_options" in order to incorporate this rule in their grammar */
 
 	: KW_FLAGS '(' dest_writer_options_flags ')' { last_writer_options->options = $3; }
-	| KW_LOG_FIFO_SIZE '(' LL_NUMBER ')'	{ last_writer_options->mem_fifo_size = $3; }
 	| KW_FLUSH_LINES '(' LL_NUMBER ')'		{ last_writer_options->flush_lines = $3; }
 	| KW_FLUSH_TIMEOUT '(' LL_NUMBER ')'	{ last_writer_options->flush_timeout = $3; }
         | KW_SUPPRESS '(' LL_NUMBER ')'            { last_writer_options->suppress = $3; }
@@ -769,7 +796,6 @@ dest_writer_option
 	| KW_TIME_ZONE '(' string ')'           { last_writer_options->template_options.time_zone[LTZ_SEND] = g_strdup($3); free($3); }
 	| KW_TS_FORMAT '(' string ')'		{ last_writer_options->template_options.ts_format = cfg_ts_format_value($3); free($3); }
 	| KW_FRAC_DIGITS '(' LL_NUMBER ')'	{ last_writer_options->template_options.frac_digits = $3; }
-	| KW_THROTTLE '(' LL_NUMBER ')'         { last_writer_options->throttle = $3; }
 	;
 
 dest_writer_options_flags

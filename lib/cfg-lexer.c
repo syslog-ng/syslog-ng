@@ -858,6 +858,8 @@ static const gchar *lexer_contexts[] =
   [LL_CONTEXT_PRAGMA] = "pragma",
   [LL_CONTEXT_FORMAT] = "format",
   [LL_CONTEXT_TEMPLATE_FUNC] = "template-func",
+  [LL_CONTEXT_INNER_DEST] = "inner-dest",
+  [LL_CONTEXT_INNER_SRC] = "inner-src",
 };
 
 gint

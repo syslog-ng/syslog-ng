@@ -82,7 +82,7 @@ log_dest_group_deinit(LogPipe *s)
 }
 
 static void
-log_dest_group_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
+log_dest_group_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data)
 {
   LogDestGroup *self = (LogDestGroup *) s;
   LogDriver *p;
@@ -101,7 +101,7 @@ log_dest_group_free(LogPipe *s)
 {
   LogDestGroup *self = (LogDestGroup *) s;
   
-  log_drv_unref(self->drivers);
+  log_pipe_unref(&self->drivers->super);
   g_free(self->name);
   log_pipe_free_method(s);
 }

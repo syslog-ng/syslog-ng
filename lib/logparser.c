@@ -38,7 +38,7 @@ log_parser_set_template(LogParser *self, LogTemplate *template)
 }
 
 static void
-log_parser_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
+log_parser_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data)
 {
   LogParser *self = (LogParser *) s;
   gboolean success;

@@ -40,7 +40,7 @@ static AFInterSource *current_internal_source;
  */
 struct _AFInterSourceDriver
 {
-  LogDriver super;
+  LogSrcDriver super;
   LogSource *source;
   LogSourceOptions source_options;
 };
@@ -303,7 +303,7 @@ afinter_source_new(AFInterSourceDriver *owner, LogSourceOptions *options)
   AFInterSource *self = g_new0(AFInterSource, 1);
   
   log_source_init_instance(&self->super);
-  log_source_set_options(&self->super, options, 0, SCS_INTERNAL, owner->super.id, NULL, FALSE);
+  log_source_set_options(&self->super, options, 0, SCS_INTERNAL, owner->super.super.id, NULL, FALSE);
   afinter_source_init_watches(self);
   self->super.super.init = afinter_source_init;
   self->super.super.deinit = afinter_source_deinit;
@@ -318,13 +318,16 @@ afinter_sd_init(LogPipe *s)
   AFInterSourceDriver *self = (AFInterSourceDriver *) s;
   GlobalConfig *cfg = log_pipe_get_config(s);
 
+  if (!log_src_driver_init_method(s))
+    return FALSE;
+
   if (current_internal_source != NULL)
     {
       msg_error("Multiple internal() sources were detected, this is not possible", NULL);
       return FALSE;
     }
 
-  log_source_options_init(&self->source_options, cfg, self->super.group);
+  log_source_options_init(&self->source_options, cfg, self->super.super.group);
   self->source = afinter_source_new(self, &self->source_options);
   log_pipe_append(&self->source->super, s);
   log_pipe_init(&self->source->super, cfg);
@@ -343,6 +346,10 @@ afinter_sd_deinit(LogPipe *s)
       log_pipe_unref(&self->source->super);
       self->source = NULL;
     }
+
+  if (!log_src_driver_deinit_method(s))
+    return FALSE;
+
   return TRUE;
 }
 
@@ -352,7 +359,7 @@ afinter_sd_free(LogPipe *s)
   AFInterSourceDriver *self = (AFInterSourceDriver *) s;
   
   g_assert(!self->source);
-  log_drv_free(s);
+  log_src_driver_free(s);
 }
 
 
@@ -361,12 +368,12 @@ afinter_sd_new(void)
 {
   AFInterSourceDriver *self = g_new0(AFInterSourceDriver, 1);
 
-  log_drv_init_instance(&self->super);
-  self->super.super.init = afinter_sd_init;
-  self->super.super.deinit = afinter_sd_deinit;
-  self->super.super.free_fn = afinter_sd_free;
+  log_src_driver_init_instance(&self->super);
+  self->super.super.super.init = afinter_sd_init;
+  self->super.super.super.deinit = afinter_sd_deinit;
+  self->super.super.super.free_fn = afinter_sd_free;
   log_source_options_defaults(&self->source_options);
-  return &self->super;
+  return &self->super.super;
 }
 
 /****************************************************************************

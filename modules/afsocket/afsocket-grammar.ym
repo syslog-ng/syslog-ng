@@ -349,6 +349,7 @@ dest_afunix_option
 	: dest_writer_option
 	| dest_afsocket_option
 	| socket_option
+	| dest_driver_option
 	;
 
 dest_afinet_udp_params

@@ -7,6 +7,7 @@
 #include "cfg.h"
 #include "timeutils.h"
 #include "plugin.h"
+#include "logqueue-fifo.h"
 
 #include <time.h>
 #include <stdlib.h>
@@ -69,7 +70,7 @@ testcase(gchar *msg_string, gchar *template, gboolean use_syslog_protocol,gchar 
     }
   opt.template = templ;
   msg = init_msg(msg_string, use_syslog_protocol);
-  writer = (LogWriter*)log_writer_new(writer_flags);
+  writer = (LogWriter*)log_writer_new(writer_flags, log_queue_fifo_new(1000, NULL));
   if (writer)
     {
       log_writer_set_options(writer, NULL, &opt, 0, 0, NULL, NULL);

@@ -129,8 +129,11 @@ afprogram_sd_init(LogPipe *s)
   GlobalConfig *cfg = log_pipe_get_config(s);
   gint fd;
 
+  if (!log_src_driver_init_method(s))
+    return FALSE;
+
   if (cfg)
-    log_reader_options_init(&self->reader_options, cfg, self->super.group);
+    log_reader_options_init(&self->reader_options, cfg, self->super.super.group);
   
   msg_verbose("Starting source program",
               evt_tag_str("cmdline", self->cmdline->str),
@@ -140,7 +143,7 @@ afprogram_sd_init(LogPipe *s)
     return FALSE;
 
   /* parent */
-  child_manager_register(self->pid, afprogram_sd_exit, log_pipe_ref(&self->super.super), (GDestroyNotify) log_pipe_unref);
+  child_manager_register(self->pid, afprogram_sd_exit, log_pipe_ref(&self->super.super.super), (GDestroyNotify) log_pipe_unref);
   
   g_fd_set_nonblock(fd, TRUE);
   if (!self->reader)
@@ -150,9 +153,9 @@ afprogram_sd_init(LogPipe *s)
       transport = log_transport_plain_new(fd, 0);
       transport->timeout = 10;
       self->reader = log_reader_new(log_proto_text_server_new(transport, self->reader_options.msg_size, 0));
-      log_reader_set_options(self->reader, s, &self->reader_options, 0, SCS_PROGRAM, self->super.id, self->cmdline->str);
+      log_reader_set_options(self->reader, s, &self->reader_options, 0, SCS_PROGRAM, self->super.super.id, self->cmdline->str);
     }
-  log_pipe_append(self->reader, &self->super.super);
+  log_pipe_append(self->reader, &self->super.super.super);
   if (!log_pipe_init(self->reader, NULL))
     { 
       msg_error("Error initializing program source, closing fd",
@@ -187,6 +190,10 @@ afprogram_sd_deinit(LogPipe *s)
       log_pipe_unref(self->reader);
       self->reader = NULL;
     }
+
+  if (!log_src_driver_deinit_method(s))
+    return FALSE;
+
   return TRUE;
 }
 
@@ -197,7 +204,7 @@ afprogram_sd_free(LogPipe *s)
   
   log_reader_options_destroy(&self->reader_options);
   g_string_free(self->cmdline, TRUE);
-  log_drv_free(s);
+  log_src_driver_free(s);
 }
 
 static void
@@ -217,19 +224,30 @@ LogDriver *
 afprogram_sd_new(gchar *cmdline)
 {
   AFProgramSourceDriver *self = g_new0(AFProgramSourceDriver, 1);
-  log_drv_init_instance(&self->super);
+  log_src_driver_init_instance(&self->super);
   
-  self->super.super.init = afprogram_sd_init;
-  self->super.super.deinit = afprogram_sd_deinit;
-  self->super.super.free_fn = afprogram_sd_free;
-  self->super.super.notify = afprogram_sd_notify;
+  self->super.super.super.init = afprogram_sd_init;
+  self->super.super.super.deinit = afprogram_sd_deinit;
+  self->super.super.super.free_fn = afprogram_sd_free;
+  self->super.super.super.notify = afprogram_sd_notify;
   self->cmdline = g_string_new(cmdline);
   log_reader_options_defaults(&self->reader_options);
   self->reader_options.flags |= LR_LOCAL;
-  return &self->super;
+  return &self->super.super;
 }
 
 /* dest driver */
+
+static gchar *
+afprogram_dd_format_persist_name(AFProgramDestDriver *self)
+{
+  static gchar persist_name[256];
+
+  g_snprintf(persist_name, sizeof(persist_name),
+             "afprogram_dd_qname(%s,%s)", self->cmdline->str, self->super.super.id);
+
+  return persist_name;
+}
 
 static void
 afprogram_dd_exit(pid_t pid, int status, gpointer s)
@@ -246,8 +264,8 @@ afprogram_dd_exit(pid_t pid, int status, gpointer s)
                   evt_tag_int("status", status),
                   NULL);
       self->pid = -1;
-      log_pipe_deinit(&self->super.super);
-      log_pipe_init(&self->super.super, NULL);
+      log_pipe_deinit(&self->super.super.super);
+      log_pipe_init(&self->super.super.super, NULL);
     }
 }
 
@@ -257,6 +275,9 @@ afprogram_dd_init(LogPipe *s)
   AFProgramDestDriver *self = (AFProgramDestDriver *) s;
   int fd;
   GlobalConfig *cfg = log_pipe_get_config(s);
+
+  if (!log_dest_driver_init_method(s))
+    return FALSE;
 
   if (cfg)
     log_writer_options_init(&self->writer_options, cfg, 0);
@@ -270,16 +291,16 @@ afprogram_dd_init(LogPipe *s)
 
   /* parent */
   
-  child_manager_register(self->pid, afprogram_dd_exit, log_pipe_ref(&self->super.super), (GDestroyNotify) log_pipe_unref);
+  child_manager_register(self->pid, afprogram_dd_exit, log_pipe_ref(&self->super.super.super), (GDestroyNotify) log_pipe_unref);
   
   g_fd_set_nonblock(fd, TRUE);
   if (!self->writer)
     {
-      self->writer = log_writer_new(LW_FORMAT_FILE);
-      log_writer_set_options((LogWriter *) self->writer, s, &self->writer_options, 0, SCS_PROGRAM, self->super.id, self->cmdline->str);
+      self->writer = log_writer_new(LW_FORMAT_FILE, log_dest_driver_acquire_queue(&self->super, afprogram_dd_format_persist_name(self)));
+      log_writer_set_options((LogWriter *) self->writer, s, &self->writer_options, 0, SCS_PROGRAM, self->super.super.id, self->cmdline->str);
     }
   log_pipe_init(self->writer, NULL);
-  log_pipe_append(&self->super.super, self->writer);
+  log_pipe_append(&self->super.super.super, self->writer);
   log_writer_reopen(self->writer, log_proto_text_client_new(log_transport_plain_new(fd, 0)));
   return TRUE;
 }
@@ -300,6 +321,9 @@ afprogram_dd_deinit(LogPipe *s)
     }
   if (self->writer)
     log_pipe_deinit(self->writer);
+
+  if (!log_dest_driver_deinit_method(s))
+    return FALSE;
   return TRUE;
 }
 
@@ -311,7 +335,7 @@ afprogram_dd_free(LogPipe *s)
   log_pipe_unref(self->writer);  
   g_string_free(self->cmdline, TRUE);
   log_writer_options_destroy(&self->writer_options);
-  log_drv_free(s);
+  log_dest_driver_free(s);
 }
 
 static void
@@ -331,13 +355,13 @@ LogDriver *
 afprogram_dd_new(gchar *cmdline)
 {
   AFProgramDestDriver *self = g_new0(AFProgramDestDriver, 1);
-  log_drv_init_instance(&self->super);
+  log_dest_driver_init_instance(&self->super);
   
-  self->super.super.init = afprogram_dd_init;
-  self->super.super.deinit = afprogram_dd_deinit;
-  self->super.super.free_fn = afprogram_dd_free;
-  self->super.super.notify = afprogram_dd_notify;
+  self->super.super.super.init = afprogram_dd_init;
+  self->super.super.super.deinit = afprogram_dd_deinit;
+  self->super.super.super.free_fn = afprogram_dd_free;
+  self->super.super.super.notify = afprogram_dd_notify;
   self->cmdline = g_string_new(cmdline);
   log_writer_options_defaults(&self->writer_options);
-  return &self->super;
+  return &self->super.super;
 }

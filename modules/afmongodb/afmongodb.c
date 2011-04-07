@@ -42,7 +42,7 @@ typedef struct
 
 typedef struct
 {
-  LogDriver super;
+  LogDestDriver super;
 
   /* Shared between main/writer; only read by the writer, never
      written */
@@ -65,8 +65,6 @@ typedef struct
 
   guint32 *dropped_messages;
   guint32 *stored_messages;
-
-  guint32 log_fifo_size;
 
   time_t last_msg_stamp;
 
@@ -169,14 +167,6 @@ afmongodb_dd_set_values(LogDriver *d, GList *values)
   self->values = values;
 }
 
-void
-afmongodb_dd_set_log_fifo_size(LogDriver *d, guint32 size)
-{
-  MongoDBDestDriver *self = (MongoDBDestDriver *)d;
-
-  self->log_fifo_size = size;
-}
-
 /*
  * Utilities
  */
@@ -187,7 +177,17 @@ afmongodb_dd_format_stats_instance(MongoDBDestDriver *self)
   static gchar persist_name[1024];
 
   g_snprintf(persist_name, sizeof(persist_name),
-	     "mongodb,%s,%u,%s", self->host, self->port, self->db);
+	     "mongodb,%s,%u,%s,%s", self->host, self->port, self->db, self->coll->template);
+  return persist_name;
+}
+
+static gchar *
+afmongodb_dd_format_persist_name(MongoDBDestDriver *self)
+{
+  static gchar persist_name[1024];
+
+  g_snprintf(persist_name, sizeof(persist_name),
+	     "afmongodb(%s,%u,%s,%s)", self->host, self->port, self->db, self->coll->template);
   return persist_name;
 }
 
@@ -331,7 +331,7 @@ afmongodb_worker_thread (gpointer arg)
   gboolean success;
 
   msg_debug ("Worker thread started",
-	     evt_tag_str("driver", self->super.id),
+	     evt_tag_str("driver", self->super.super.id),
 	     NULL);
 
   success = afmongodb_dd_connect(self, FALSE);
@@ -391,7 +391,7 @@ afmongodb_worker_thread (gpointer arg)
   bson_free (self->bson_set);
 
   msg_debug ("Worker thread finished",
-	     evt_tag_str("driver", self->super.id),
+	     evt_tag_str("driver", self->super.super.id),
 	     NULL);
 
   return NULL;
@@ -424,6 +424,9 @@ afmongodb_dd_init(LogPipe *s)
   gint num_keys, num_values, i;
   GList *key, *value;
 
+  if (!log_dest_driver_init_method(s))
+    return FALSE;
+
   if (cfg)
     self->time_reopen = cfg->time_reopen;
 
@@ -433,13 +436,7 @@ afmongodb_dd_init(LogPipe *s)
 	      evt_tag_str("database", self->db),
 	      NULL);
 
-  if (!self->queue)
-    {
-      self->queue = cfg_persist_config_fetch(cfg, afmongodb_dd_format_stats_instance(self));
-
-      if (!self->queue)
-	self->queue = log_queue_new (self->log_fifo_size);
-    }
+  self->queue = log_dest_driver_acquire_queue(&self->super, afmongodb_dd_format_persist_name(self));
 
   if (!self->fields)
     {
@@ -464,13 +461,14 @@ afmongodb_dd_init(LogPipe *s)
 	}
     }
 
-  stats_register_counter(0, SCS_MONGODB | SCS_DESTINATION, self->super.id,
+  stats_register_counter(0, SCS_MONGODB | SCS_DESTINATION, self->super.super.id,
 			 afmongodb_dd_format_stats_instance(self),
 			 SC_TYPE_STORED, &self->stored_messages);
-  stats_register_counter(0, SCS_MONGODB | SCS_DESTINATION, self->super.id,
+  stats_register_counter(0, SCS_MONGODB | SCS_DESTINATION, self->super.super.id,
 			 afmongodb_dd_format_stats_instance(self),
 			 SC_TYPE_DROPPED, &self->dropped_messages);
 
+  log_queue_set_counters(self->queue, self->stored_messages, self->dropped_messages);
   afmongodb_dd_start_thread(self);
 
   return TRUE;
@@ -483,12 +481,16 @@ afmongodb_dd_deinit(LogPipe *s)
 
   afmongodb_dd_stop_thread(self);
 
-  stats_unregister_counter(SCS_MONGODB | SCS_DESTINATION, self->super.id,
+  log_queue_set_counters(self->queue, NULL, NULL);
+  stats_unregister_counter(SCS_MONGODB | SCS_DESTINATION, self->super.super.id,
 			   afmongodb_dd_format_stats_instance(self),
 			   SC_TYPE_STORED, &self->stored_messages);
-  stats_unregister_counter(SCS_MONGODB | SCS_DESTINATION, self->super.id,
+  stats_unregister_counter(SCS_MONGODB | SCS_DESTINATION, self->super.super.id,
 			   afmongodb_dd_format_stats_instance(self),
 			   SC_TYPE_DROPPED, &self->dropped_messages);
+
+  if (!log_dest_driver_deinit_method(s))
+    return FALSE;
 
   return TRUE;
 }
@@ -504,7 +506,7 @@ afmongodb_dd_free(LogPipe *d)
   g_cond_free(self->writer_thread_wakeup_cond);
 
   if (self->queue)
-    log_queue_free(self->queue);
+    log_queue_unref(self->queue);
 
   for (i = 0; i < self->num_fields; i++)
     {
@@ -521,35 +523,25 @@ afmongodb_dd_free(LogPipe *d)
   string_list_free(self->keys);
   string_list_free(self->values);
 
-  log_drv_free(d);
+  log_dest_driver_free(d);
 }
 
 static void
-afmongodb_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
+afmongodb_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data)
 {
   MongoDBDestDriver *self = (MongoDBDestDriver *)s;
-  gboolean consumed, queue_was_empty;
+  gboolean queue_was_empty;
 
   g_mutex_lock(self->queue_mutex);
   self->last_msg_stamp = cached_g_current_time_sec ();
   queue_was_empty = log_queue_get_length(self->queue) == 0;
-  consumed = log_queue_push_tail(self->queue, msg, path_options);
+  log_queue_push_tail(self->queue, msg, path_options);
   g_mutex_unlock(self->queue_mutex);
 
   g_mutex_lock(self->suspend_mutex);
-  if (consumed && queue_was_empty && !self->writer_thread_suspended)
+  if (queue_was_empty && !self->writer_thread_suspended)
     g_cond_signal(self->writer_thread_wakeup_cond);
   g_mutex_unlock(self->suspend_mutex);
-
-  if (!consumed)
-    {
-      stats_counter_inc(self->dropped_messages);
-      msg_debug("Destination queue full, dropping message",
-		evt_tag_int("queue_len", log_queue_get_length(self->queue)),
-		evt_tag_int("log_fifo_size", self->log_fifo_size),
-		NULL);
-      log_msg_drop(msg, path_options);
-    }
 }
 
 /*
@@ -587,11 +579,11 @@ afmongodb_dd_new(void)
 
   mongo_util_oid_init (0);
 
-  log_drv_init_instance(&self->super);
-  self->super.super.init = afmongodb_dd_init;
-  self->super.super.deinit = afmongodb_dd_deinit;
-  self->super.super.queue = afmongodb_dd_queue;
-  self->super.super.free_fn = afmongodb_dd_free;
+  log_dest_driver_init_instance(&self->super);
+  self->super.super.super.init = afmongodb_dd_init;
+  self->super.super.super.deinit = afmongodb_dd_deinit;
+  self->super.super.super.queue = afmongodb_dd_queue;
+  self->super.super.super.free_fn = afmongodb_dd_free;
 
   afmongodb_dd_set_host((LogDriver *)self, "127.0.0.1");
   afmongodb_dd_set_port((LogDriver *)self, 27017);
@@ -599,7 +591,6 @@ afmongodb_dd_new(void)
   afmongodb_dd_set_collection((LogDriver *)self, "messages");
   afmongodb_dd_set_keys((LogDriver *)self, string_array_to_list(default_keys));
   afmongodb_dd_set_values((LogDriver *)self, string_array_to_list(default_values));
-  afmongodb_dd_set_log_fifo_size((LogDriver *)self, 1000);
 
   init_sequence_number(&self->seq_num);
 

@@ -29,9 +29,14 @@ log_pipe_init_instance(LogPipe *self)
 {
   g_atomic_counter_set(&self->ref_cnt, 1);
   self->pipe_next = NULL;
-  self->queue = log_pipe_forward_msg;
+
+  /* NOTE: queue == NULL means that this pipe simply forwards the
+   * message along the pipeline, e.g. like it has called
+   * log_msg_forward_msg. Since this is a common case, it is better
+   * inlined (than to use an indirect call) for performance. */
+
+  self->queue = NULL;
   self->free_fn = log_pipe_free_method;
-/*  self->notify = log_pipe_forward_notify; */
 }
 
 void
@@ -62,19 +67,6 @@ log_pipe_unref(LogPipe *self)
       if (self->free_fn)
         self->free_fn(self);
       g_free(self);
-    }
-}
-
-void
-log_pipe_forward_msg(LogPipe *self, LogMessage *msg, const LogPathOptions *path_options)
-{
-  if (self->pipe_next)
-    {
-      log_pipe_queue(self->pipe_next, msg, path_options);
-    }
-  else
-    {
-      log_msg_drop(msg, path_options);
     }
 }
 

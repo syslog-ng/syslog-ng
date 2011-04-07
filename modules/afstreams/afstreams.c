@@ -30,7 +30,7 @@
 
 typedef struct _AFStreamsSourceDriver
 {
-  LogDriver super;
+  LogSrcDriver super;
   GString *dev_filename;
   GString *door_filename;
   gint door_fd;
@@ -165,7 +165,10 @@ afstreams_sd_init(LogPipe *s)
   GlobalConfig *cfg = log_pipe_get_config(s);
   gint fd;
 
-  log_reader_options_init(&self->reader_options, cfg, self->super.group);
+  if (!log_src_driver_init_method(s))
+    return FALSE;
+
+  log_reader_options_init(&self->reader_options, cfg, self->super.super.group);
 
   fd = open(self->dev_filename->str, O_RDONLY | O_NOCTTY | O_NONBLOCK);
   if (fd != -1)
@@ -186,7 +189,7 @@ afstreams_sd_init(LogPipe *s)
         }
       g_fd_set_nonblock(fd, TRUE);
       self->reader = log_reader_new(log_proto_dgram_server_new(log_transport_streams_new(fd), self->reader_options.msg_size, 0));
-      log_reader_set_options(self->reader, s, &self->reader_options, 1, SCS_SUN_STREAMS, self->super.id, self->dev_filename->str);
+      log_reader_set_options(self->reader, s, &self->reader_options, 1, SCS_SUN_STREAMS, self->super.super.id, self->dev_filename->str);
       log_pipe_append(self->reader, s);
 
       if (self->door_filename)
@@ -233,6 +236,10 @@ afstreams_sd_deinit(LogPipe *s)
       door_revoke(self->door_fd);
       close(self->door_fd);
     }
+
+  if (!log_src_driver_deinit_method(s))
+    return FALSE;
+
   return TRUE;
 }
 
@@ -248,7 +255,7 @@ afstreams_sd_free(LogPipe *s)
     g_string_free(self->door_filename, TRUE);
   log_pipe_unref(self->reader);
 
-  log_drv_free(s);
+  log_src_driver_free(s);
 }
 
 LogDriver *
@@ -256,16 +263,16 @@ afstreams_sd_new(gchar *filename)
 {
   AFStreamsSourceDriver *self = g_new0(AFStreamsSourceDriver, 1);
 
-  log_drv_init_instance(&self->super);
+  log_src_driver_init_instance(&self->super);
 
   self->dev_filename = g_string_new(filename);
-  self->super.super.init = afstreams_sd_init;
-  self->super.super.deinit = afstreams_sd_deinit;
-  self->super.super.free_fn = afstreams_sd_free;
+  self->super.super.super.init = afstreams_sd_init;
+  self->super.super.super.deinit = afstreams_sd_deinit;
+  self->super.super.super.free_fn = afstreams_sd_free;
   log_reader_options_defaults(&self->reader_options);
   self->reader_options.flags |= LR_LOCAL;
   self->reader_options.parse_options.flags &= ~LP_EXPECT_HOSTNAME;
-  return &self->super;
+  return &self->super.super;
 }
 #else
 
@@ -291,10 +298,10 @@ afstreams_sd_new(gchar *filename)
 {
   LogDriver *self = g_new0(LogDriver, 1);
 
-  log_drv_init_instance(self);
+  log_src_driver_init_instance(self);
   self->super.init = afstreams_sd_dummy_init;
   self->super.deinit = afstreams_sd_dummy_deinit;
-  self->super.free_fn = log_drv_free;
+  self->super.free_fn = log_src_driver_free;
   return self;
 }
 

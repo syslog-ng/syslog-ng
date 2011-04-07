@@ -36,6 +36,5 @@ void afmongodb_dd_set_values(LogDriver *d, GList *values);
 void afmongodb_dd_set_keys(LogDriver *d, GList *keys);
 void afmongodb_dd_set_user(LogDriver *d, const gchar *user);
 void afmongodb_dd_set_password(LogDriver *d, const gchar *password);
-void afmongodb_dd_set_log_fifo_size(LogDriver *d, guint32 size);
 
 #endif

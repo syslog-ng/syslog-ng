@@ -71,7 +71,7 @@ typedef struct _AFSqlField
  **/
 typedef struct _AFSqlDestDriver
 {
-  LogDriver super;
+  LogDestDriver super;
   /* read by the db thread */
   gchar *type;
   gchar *host;
@@ -84,8 +84,6 @@ typedef struct _AFSqlDestDriver
   GList *values;
   GList *indexes;
   LogTemplate *table;
-  gint mem_fifo_size;
-  gint64 disk_fifo_size;
   gint fields_len;
   AFSqlField *fields;
   gchar *null_value;
@@ -225,14 +223,6 @@ afsql_dd_set_null_value(LogDriver *s, const gchar *null)
   if (self->null_value)
     g_free(self->null_value);
   self->null_value = g_strdup(null);
-}
-
-void
-afsql_dd_set_mem_fifo_size(LogDriver *s, gint mem_fifo_size)
-{
-  AFSqlDestDriver *self = (AFSqlDestDriver *) s;
-
-  self->mem_fifo_size = mem_fifo_size;
 }
 
 void
@@ -823,7 +813,7 @@ afsql_dd_database_thread(gpointer arg)
   AFSqlDestDriver *self = (AFSqlDestDriver *) arg;
 
   msg_verbose("Database thread started",
-              evt_tag_str("driver", self->super.id),
+              evt_tag_str("driver", self->super.super.id),
               NULL);
   while (!self->db_thread_terminate)
     {
@@ -893,7 +883,7 @@ afsql_dd_database_thread(gpointer arg)
   afsql_dd_disconnect(self);
 
   msg_verbose("Database thread finished",
-              evt_tag_str("driver", self->super.id),
+              evt_tag_str("driver", self->super.super.id),
               NULL);
   return NULL;
 }
@@ -946,12 +936,8 @@ afsql_dd_init(LogPipe *s)
   GlobalConfig *cfg = log_pipe_get_config(s);
   gint len_cols, len_values;
 
-  /* the maximum time to sleep on a condvar in the db_thread is the smallest
-   * time_reopen value divided by 2. This ensures that we are not stuck with
-   * a complete queue and a failed DB connection. (in which case the
-   * db_thread_wakeup_cond is not signaled as no new messages enter the
-   * queue).
-   */
+  if (!log_dest_driver_init_method(s))
+    return FALSE;
 
   if (!self->columns || !self->indexes || !self->values)
     {
@@ -961,16 +947,11 @@ afsql_dd_init(LogPipe *s)
       return FALSE;
     }
 
-  stats_register_counter(0, SCS_SQL | SCS_DESTINATION, self->super.id, afsql_dd_format_stats_instance(self), SC_TYPE_STORED, &self->stored_messages);
-  stats_register_counter(0, SCS_SQL | SCS_DESTINATION, self->super.id, afsql_dd_format_stats_instance(self), SC_TYPE_DROPPED, &self->dropped_messages);
+  stats_register_counter(0, SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self), SC_TYPE_STORED, &self->stored_messages);
+  stats_register_counter(0, SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self), SC_TYPE_DROPPED, &self->dropped_messages);
 
-  if (!self->queue)
-    {
-      self->queue = cfg_persist_config_fetch(cfg, afsql_dd_format_persist_name(self));
-      if (!self->queue)
-        self->queue = log_queue_new(self->mem_fifo_size);
-    }
-
+  self->queue = log_dest_driver_acquire_queue(&self->super, afsql_dd_format_persist_name(self));
+  log_queue_set_counters(self->queue, self->dropped_messages, self->stored_messages);
   if (!self->fields)
     {
       GList *col, *value;
@@ -1078,8 +1059,8 @@ afsql_dd_init(LogPipe *s)
 
  error:
 
-  stats_unregister_counter(SCS_SQL | SCS_DESTINATION, self->super.id, afsql_dd_format_stats_instance(self), SC_TYPE_STORED, &self->stored_messages);
-  stats_unregister_counter(SCS_SQL | SCS_DESTINATION, self->super.id, afsql_dd_format_stats_instance(self), SC_TYPE_DROPPED, &self->dropped_messages);
+  stats_unregister_counter(SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self), SC_TYPE_STORED, &self->stored_messages);
+  stats_unregister_counter(SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self), SC_TYPE_DROPPED, &self->dropped_messages);
 
   return FALSE;
 }
@@ -1088,50 +1069,33 @@ static gboolean
 afsql_dd_deinit(LogPipe *s)
 {
   AFSqlDestDriver *self = (AFSqlDestDriver *) s;
-  GlobalConfig *cfg = log_pipe_get_config(s);
 
   afsql_dd_stop_thread(self);
-  cfg_persist_config_add(cfg, afsql_dd_format_persist_name(self), self->queue, (GDestroyNotify) log_queue_free, FALSE);
-  self->queue = NULL;
 
-  stats_unregister_counter(SCS_SQL | SCS_DESTINATION, self->super.id, afsql_dd_format_stats_instance(self), SC_TYPE_STORED, &self->stored_messages);
-  stats_unregister_counter(SCS_SQL | SCS_DESTINATION, self->super.id, afsql_dd_format_stats_instance(self), SC_TYPE_DROPPED, &self->dropped_messages);
+  log_queue_set_counters(self->queue, NULL, NULL);
+
+  stats_unregister_counter(SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self), SC_TYPE_STORED, &self->stored_messages);
+  stats_unregister_counter(SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self), SC_TYPE_DROPPED, &self->dropped_messages);
+
+  if (!log_dest_driver_deinit_method(s))
+    return FALSE;
 
   return TRUE;
 }
 
 static void
-afsql_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
+afsql_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data)
 {
   AFSqlDestDriver *self = (AFSqlDestDriver *) s;
-  gboolean consumed, queue_was_empty;
+  gboolean queue_was_empty;
 
   g_mutex_lock(self->db_thread_mutex);
   queue_was_empty = log_queue_get_length(self->queue) == 0;
-  consumed = log_queue_push_tail(self->queue, msg, path_options);
+  log_queue_push_tail(self->queue, msg, path_options);
 
-  if (consumed && queue_was_empty && !self->db_thread_suspended)
+  if (queue_was_empty && !self->db_thread_suspended)
     g_cond_signal(self->db_thread_wakeup_cond);
   g_mutex_unlock(self->db_thread_mutex);
-
-  if (!consumed)
-    {
-      /* drop incoming message, we must ack here, otherwise the sender might
-       * block forever, however this should not happen unless the sum of
-       * window_sizes of sources feeding this writer exceeds log_fifo_size
-       * or if flow control is not turned on.
-       */
-
-      /* we don't send a message here since the system is draining anyway */
-
-      stats_counter_inc(self->dropped_messages);
-      msg_debug("Destination queue full, dropping message",
-                evt_tag_int("queue_len", log_queue_get_length(self->queue)),
-                evt_tag_int("mem_fifo_size", self->mem_fifo_size),
-                evt_tag_int("disk_fifo_size", self->disk_fifo_size),
-                NULL);
-      log_msg_drop(msg, path_options);
-    }
 }
 
 static void
@@ -1144,7 +1108,7 @@ afsql_dd_free(LogPipe *s)
   if (self->pending_msg)
     log_msg_unref(self->pending_msg);
   if (self->queue)
-    log_queue_free(self->queue);
+    log_queue_unref(self->queue);
   for (i = 0; i < self->fields_len; i++)
     {
       g_free(self->fields[i].name);
@@ -1168,7 +1132,7 @@ afsql_dd_free(LogPipe *s)
   g_hash_table_destroy(self->validated_tables);
   if(self->session_statements)
     string_list_free(self->session_statements);
-  log_drv_free(s);
+  log_dest_driver_free(s);
 }
 
 LogDriver *
@@ -1176,11 +1140,11 @@ afsql_dd_new(void)
 {
   AFSqlDestDriver *self = g_new0(AFSqlDestDriver, 1);
 
-  log_drv_init_instance(&self->super);
-  self->super.super.init = afsql_dd_init;
-  self->super.super.deinit = afsql_dd_deinit;
-  self->super.super.queue = afsql_dd_queue;
-  self->super.super.free_fn = afsql_dd_free;
+  log_dest_driver_init_instance(&self->super);
+  self->super.super.super.init = afsql_dd_init;
+  self->super.super.super.deinit = afsql_dd_deinit;
+  self->super.super.super.queue = afsql_dd_queue;
+  self->super.super.super.free_fn = afsql_dd_free;
 
   self->type = g_strdup("mysql");
   self->host = g_strdup("");
@@ -1191,8 +1155,6 @@ afsql_dd_new(void)
   self->encoding = g_strdup("UTF-8");
 
   self->table = log_template_new(configuration, NULL, "messages");
-  self->mem_fifo_size = 1000;
-  self->disk_fifo_size = 0;
   self->failed_message_counter = 0;
 
   self->flush_lines = -1;
@@ -1205,7 +1167,7 @@ afsql_dd_new(void)
 
   log_template_options_defaults(&self->template_options);
   init_sequence_number(&self->seq_num);
-  return &self->super;
+  return &self->super.super;
 }
 
 gint

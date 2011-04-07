@@ -36,25 +36,13 @@
 
 typedef struct _AFUserDestDriver
 {
-  LogDriver super;
+  LogDestDriver super;
   GString *username;
   time_t disable_until;
 } AFUserDestDriver;
 
-static gboolean
-afuser_dd_init(LogPipe *s)
-{
-  return TRUE;
-}
-
-static gboolean
-afuser_dd_deinit(LogPipe *s)
-{
-  return TRUE;
-}
-
 static void
-afuser_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
+afuser_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data)
 {
   AFUserDestDriver *self = (AFUserDestDriver *) s;
   gchar buf[8192];
@@ -129,10 +117,8 @@ afuser_dd_new(gchar *user)
 {
   AFUserDestDriver *self = g_new0(AFUserDestDriver, 1);
   
-  log_drv_init_instance(&self->super);
-  self->super.super.init = afuser_dd_init;
-  self->super.super.deinit = afuser_dd_deinit;
-  self->super.super.queue = afuser_dd_queue;
+  log_dest_driver_init_instance(&self->super);
+  self->super.super.super.queue = afuser_dd_queue;
   self->username = g_string_new(user);
-  return &self->super;
+  return &self->super.super;
 }

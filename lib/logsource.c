@@ -189,7 +189,7 @@ log_source_deinit(LogPipe *s)
 
 
 static void
-log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
+log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data)
 {
   LogSource *self = (LogSource *) s;
   LogPathOptions local_options = *path_options;
@@ -239,7 +239,7 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
 
   stats_counter_inc(self->recvd_messages);
   stats_counter_set(self->last_message_seen, msg->timestamps[LM_TS_RECVD].time.tv_sec);
-  log_pipe_queue(s->pipe_next, msg, &local_options);
+  log_pipe_forward_msg(s, msg, &local_options);
   msg_set_context(NULL);
 
   if (accurate_nanosleep && self->threaded && self->window_full_sleep_nsec > 0 && !log_source_free_to_send(self))
