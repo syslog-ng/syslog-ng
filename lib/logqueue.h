@@ -126,13 +126,7 @@ log_queue_set_throttle(LogQueue *self, gint throttle)
   self->throttle_buckets = throttle;
 }
 
-static inline void
-log_queue_set_counters(LogQueue *self, guint32 *stored_messages, guint32 *dropped_messages)
-{
-  self->stored_messages = stored_messages;
-  self->dropped_messages = dropped_messages;
-}
-
+void log_queue_set_counters(LogQueue *self, guint32 *stored_messages, guint32 *dropped_messages);
 void log_queue_init_instance(LogQueue *self, const gchar *persist_name);
 void log_queue_free_method(LogQueue *self);
 
