@@ -235,7 +235,7 @@ log_connection_free(LogConnection *self)
 gint
 log_connection_lookup_flag(const gchar *flag)
 {
-  if (strcmp(flag, "catch-all") == 0 || strcmp(flag, "catchall") == 0)
+  if (strcmp(flag, "catch-all") == 0 || strcmp(flag, "catchall") == 0 || strcmp(flag, "catch_all") == 0)
     return LC_CATCHALL;
   else if (strcmp(flag, "fallback") == 0)
     return LC_FALLBACK;
