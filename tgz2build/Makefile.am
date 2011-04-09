@@ -1,2 +1,2 @@
 
-EXTRA_DIST = syslog-ng.files syslog-ng-dev.files rules rules.conf tgz2deps
+EXTRA_DIST = syslog-ng.files syslog-ng-dev.files rules tgz2deps
