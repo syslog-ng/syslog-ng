@@ -1252,9 +1252,27 @@ log_msg_refcache_stop(void)
 
   g_assert(logmsg_current != NULL);
 
-  /* validate that we didn't overflow the counters */
-  g_assert((logmsg_cached_acks < LOGMSG_REFCACHE_BIAS - 1) && (logmsg_cached_acks > -LOGMSG_REFCACHE_BIAS));
-  g_assert((logmsg_cached_refs < LOGMSG_REFCACHE_BIAS - 1) && (logmsg_cached_refs > -LOGMSG_REFCACHE_BIAS));
+  /* validate that we didn't overflow the counters:
+   *
+   * Both counters must be:
+   *
+   * - at least 1 smaller than the bias, rationale:
+   *
+   *      - if we are caching "bias" number of refs, it may happen
+   *        that there are bias number of unrefs, potentially running
+   *        in consumer threads
+   *
+   *      - if the potential unrefs is larger than the bias value, it may
+   *        happen that the producer sets the bias (trying to avoid
+   *        the freeing of the LogMessage), but still it gets freed.
+   *
+   * - not smaller than the "-bias" value, rationale:
+   *      - if we are caching "bias" number of unrefs the same can happen
+   *        as with the ref case.
+   *
+   */
+  g_assert((logmsg_cached_acks < LOGMSG_REFCACHE_BIAS - 1) && (logmsg_cached_acks >= -LOGMSG_REFCACHE_BIAS));
+  g_assert((logmsg_cached_refs < LOGMSG_REFCACHE_BIAS - 1) && (logmsg_cached_refs >= -LOGMSG_REFCACHE_BIAS));
 
   old_value = log_msg_update_ack_and_ref(logmsg_current, logmsg_cached_refs, logmsg_cached_acks);
 
