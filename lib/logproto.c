@@ -250,6 +250,11 @@ log_proto_file_writer_flush(LogProto *s)
   LogProtoFileWriter *self = (LogProtoFileWriter *)s;
   gint rc, i, i0, sum, ofs;
 
+  /* we might be called from log_writer_deinit() without having a buffer at all */
+
+  if (self->buf_count == 0)
+    return LPS_SUCCESS;
+
   /* lseek() is used instead of O_APPEND, as on NFS  O_APPEND performs
    * poorly, as reported on the mailing list 2008/05/29 */
 
