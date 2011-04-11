@@ -74,6 +74,7 @@ struct _StatsCounter
 };
 
 static GHashTable *counter_hash;
+static gint current_stats_level;
 
 static gboolean
 stats_counter_equal(gconstpointer p1, gconstpointer p2)
@@ -108,7 +109,7 @@ stats_add_counter(gint stats_level, gint source, const gchar *id, const gchar *i
   StatsCounter key;
   StatsCounter *sc;
 
-  if (stats_level != 0 && (!configuration || stats_level < 0 || configuration->stats_level < stats_level))
+  if (stats_level != 0 && (current_stats_level < stats_level))
     return NULL;
   
   if (!id)
@@ -271,6 +272,12 @@ void
 stats_cleanup_orphans(void)
 {
   g_hash_table_foreach_remove(counter_hash, stats_counter_is_orphaned, NULL);
+}
+
+void
+stats_set_current_level(gint stats_level)
+{
+  current_stats_level = stats_level;
 }
 
 const gchar *tag_names[SC_TYPE_MAX] =

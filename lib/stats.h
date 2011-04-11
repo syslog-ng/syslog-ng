@@ -79,6 +79,7 @@ void stats_unregister_counter(gint source, const gchar *id, const gchar *instanc
 void stats_unregister_dynamic_counter(StatsCounter *handle, StatsCounterType type, guint32 **counter);
 void stats_cleanup_orphans(void);
 
+void stats_set_current_level(gint stats_level);
 void stats_init(void);
 void stats_destroy(void);
 
