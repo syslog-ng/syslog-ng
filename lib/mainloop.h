@@ -30,7 +30,7 @@
 
 extern volatile gboolean main_loop_io_workers_quit;
 extern gboolean syntax_only;
-extern __thread gboolean in_main_thread;
+extern GThread *main_thread_handle;
 
 typedef gpointer (*MainLoopTaskFunc)(gpointer user_data);
 
@@ -75,7 +75,9 @@ void main_loop_io_worker_register_finish_callback(MainLoopIOWorkerFinishCallback
 static inline void
 main_loop_assert_main_thread(void)
 {
-  g_assert(in_main_thread == TRUE);
+#if ENABLE_DEBUG
+  g_assert(main_thread_handle == g_thread_self());
+#endif
 }
 
 gpointer main_loop_call(MainLoopTaskFunc func, gpointer user_data, gboolean wait);

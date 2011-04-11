@@ -31,6 +31,7 @@
 #include "nvtable.h"
 #include "stats.h"
 #include "templates.h"
+#include "tls-support.h"
 
 #include <sys/types.h>
 #include <time.h>
@@ -108,14 +109,22 @@
  * stuff, but that shouldn't have that much of an overhead.
  */
 
-/* message that is being processed by the current thread. Its ack/ref changes are cached */
-static __thread LogMessage *logmsg_current;
-/* has to be signed as these can become negative */
+TLS_BLOCK_START
+{
+  /* message that is being processed by the current thread. Its ack/ref changes are cached */
+  LogMessage *logmsg_current;
+  /* has to be signed as these can become negative */
 
-/* number of cached refs by the current thread */
-static __thread gint logmsg_cached_refs;
-/* number of cached acks by the current thread */
-static __thread gint logmsg_cached_acks;
+  /* number of cached refs by the current thread */
+  gint logmsg_cached_refs;
+  /* number of cached acks by the current thread */
+  gint logmsg_cached_acks;
+}
+TLS_BLOCK_END;
+
+#define logmsg_current        __tls_deref(logmsg_current)
+#define logmsg_cached_refs    __tls_deref(logmsg_cached_refs)
+#define logmsg_cached_acks    __tls_deref(logmsg_cached_acks)
 
 #define LOGMSG_REFCACHE_BIAS                  0x00004000 /* the BIAS we add to the ref counter in refcache_start */
 #define LOGMSG_REFCACHE_ACK_SHIFT                     16 /* number of bits to shift to get the ACK counter */

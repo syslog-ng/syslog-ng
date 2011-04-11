@@ -25,6 +25,7 @@
 #include "timeutils.h"
 #include "messages.h"
 #include "syslog-ng.h"
+#include "tls-support.h"
 
 #include <ctype.h>
 #include <string.h>
@@ -94,8 +95,15 @@ get_time_zone_basedir(void)
   return time_zone_basedir;
 }
 
-static __thread GTimeVal current_time_value;
-static __thread struct iv_task invalidate_time_task;
+TLS_BLOCK_START
+{
+  GTimeVal current_time_value;
+  struct iv_task invalidate_time_task;
+}
+TLS_BLOCK_END;
+
+#define current_time_value   __tls_deref(current_time_value)
+#define invalidate_time_task __tls_deref(invalidate_time_task)
 
 void
 invalidate_cached_time(void)

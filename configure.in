@@ -294,6 +294,16 @@ elif test "x$enable_mixed_linking" = "xyes"; then
 	linking_mode="mixed"
 fi
 
+dnl ***************************************************************************
+dnl Is the __thread keyword available?
+dnl ***************************************************************************
+
+AC_LINK_IFELSE([AC_LANG_PROGRAM(
+[[#include <pthread.h>
+__thread int a;
+]],
+[a=0;])],
+[ac_cv_have_tls=yes; AC_DEFINE_UNQUOTED(HAVE_TLS, 1, "Whether Transport Layer Security is supported by the system")])
 
 dnl ***************************************************************************
 dnl How to do static linking?
@@ -969,6 +979,7 @@ echo "  compiler options            : $CFLAGS $CPPFLAGS"
 echo "  linker flags                : $LDFLAGS $LIBS"
 echo "  prefix                      : $prefix"
 echo "  linking mode                : $linking_mode"
+echo "  __thread keyword            : ${ac_cv_have_tls:=no}"
 echo " Submodules:"
 echo "  ivykis                      : $with_ivykis"
 echo "  libmongo-client             : $with_libmongo_client"

@@ -30,6 +30,7 @@
 #include "misc.h"
 #include "control.h"
 #include "logqueue.h"
+#include "tls-support.h"
 
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -95,11 +96,11 @@ static struct iv_signal sigchild_poll;
 /* current running configuration */
 static GlobalConfig *current_configuration;
 
-
 /************************************************************************************
  * Cross-thread function calls into the main loop
  ************************************************************************************/
-typedef struct _MainLoopTaskCallSite
+typedef struct _MainLoopTaskCallSite MainLoopTaskCallSite;
+struct _MainLoopTaskCallSite
 {
   struct list_head list;
   MainLoopTaskFunc func;
@@ -109,18 +110,27 @@ typedef struct _MainLoopTaskCallSite
   gboolean wait;
   GCond *cond;
   GStaticMutex lock;
-} MainLoopTaskCallSite;
+};
+
+TLS_BLOCK_START
+{
+  MainLoopIOWorkerJob *main_loop_current_job;
+  gint main_loop_io_worker_id;
+  MainLoopTaskCallSite call_info;
+}
+TLS_BLOCK_END;
 
 static GStaticMutex main_task_lock = G_STATIC_MUTEX_INIT;
 static struct list_head main_task_queue = LIST_HEAD_INIT(main_task_queue);
 static struct iv_event main_task_posted;
-__thread gboolean in_main_thread;
-static __thread MainLoopTaskCallSite call_info;
+GThread *main_thread_handle;
+
+#define call_info  __tls_deref(call_info)
 
 gpointer
 main_loop_call(MainLoopTaskFunc func, gpointer user_data, gboolean wait)
 {
-  if (in_main_thread)
+  if (main_thread_handle == g_thread_self())
     return func(user_data);
 
   g_static_mutex_lock(&main_task_lock);
@@ -232,11 +242,15 @@ static gint main_loop_io_workers_running;
 
 /* cause workers to stop, no new I/O jobs to be submitted */
 volatile gboolean main_loop_io_workers_quit;
-static __thread MainLoopIOWorkerJob *main_loop_current_job;
+#define main_loop_current_job  __tls_deref(main_loop_current_job)
 
 static GStaticMutex main_loop_io_workers_idmap_lock = G_STATIC_MUTEX_INIT;
 static guint64 main_loop_io_workers_idmap;
-static __thread gint main_loop_io_worker_id = -1;
+
+/* the thread id is shifted by one, to make 0 the uninitialized state,
+ * e.g. everything that sets it adds +1, everything that queries it
+ * subtracts 1 */
+#define main_loop_io_worker_id __tls_deref(main_loop_io_worker_id)
 
 void
 main_loop_io_worker_thread_start(void *cookie)
@@ -254,7 +268,8 @@ main_loop_io_worker_thread_start(void *cookie)
       if ((main_loop_io_workers_idmap & (1 << id)) == 0)
         {
           /* id not yet used */
-          main_loop_io_worker_id = id;
+
+          main_loop_io_worker_id = id + 1;
           main_loop_io_workers_idmap |= (1 << id);
           break;
         }
@@ -266,8 +281,8 @@ void
 main_loop_io_worker_thread_stop(void *cookie)
 {
   g_static_mutex_lock(&main_loop_io_workers_idmap_lock);
-  main_loop_io_workers_idmap &= ~(1 << main_loop_io_worker_id);
-  main_loop_io_worker_id = -1;
+  main_loop_io_workers_idmap &= ~(1 << (main_loop_io_worker_id - 1));
+  main_loop_io_worker_id = 0;
   g_static_mutex_unlock(&main_loop_io_workers_idmap_lock);
 }
 
@@ -275,13 +290,13 @@ main_loop_io_worker_thread_stop(void *cookie)
 void
 main_loop_io_worker_set_thread_id(gint id)
 {
-  main_loop_io_worker_id = id;
+  main_loop_io_worker_id = id + 1;
 }
 
 gint
 main_loop_io_worker_thread_id(void)
 {
-  return main_loop_io_worker_id;
+  return main_loop_io_worker_id - 1;
 }
 
 void
@@ -569,7 +584,7 @@ setup_signals(void)
 int
 main_loop_init(void)
 {
-  in_main_thread = TRUE;
+  main_thread_handle = g_thread_self();
 
   app_startup();
   setup_signals();
