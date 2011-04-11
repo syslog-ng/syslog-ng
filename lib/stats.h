@@ -84,6 +84,13 @@ void stats_init(void);
 void stats_destroy(void);
 
 static inline void
+stats_counter_add(guint32 *counter, gint add)
+{
+  if (counter)
+    (*counter) += add;
+}
+
+static inline void
 stats_counter_inc(guint32 *counter)
 {
   if (counter)

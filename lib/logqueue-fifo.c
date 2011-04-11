@@ -93,7 +93,7 @@ typedef struct _LogQueueFifo
   } qoverflow_input[0];
 } LogQueueFifo;
 
-/* NOTE: this is inherently racy */
+/* NOTE: this is inherently racy, unless protected by LogQueue->lock */
 static gint64
 log_queue_fifo_get_length(LogQueue *s)
 {
@@ -102,20 +102,47 @@ log_queue_fifo_get_length(LogQueue *s)
   return self->qoverflow_wait_len + self->qoverflow_output_len;
 }
 
+/* move items from the per-thread input queue to the lock-protected "wait" queue */
 static void
 log_queue_fifo_move_input_unlocked(LogQueueFifo *self, gint thread_id)
 {
+  if (log_queue_fifo_get_length(&self->super) + self->qoverflow_input[thread_id].len > self->qoverflow_size)
+    {
+      /* slow path, the input thread's queue would overflow the queue, let's drop some messages */
+
+      LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
+      gint n = self->qoverflow_input[thread_id].len - (self->qoverflow_size - log_queue_fifo_get_length(&self->super));
+      gint i;
+
+      for (i = 0; i < n; i++)
+        {
+          LogMessageQueueNode *node = list_entry(self->qoverflow_input[thread_id].items.next, LogMessageQueueNode, list);
+          LogMessage *msg = node->msg;
+
+          list_del(&node->list);
+          self->qoverflow_input[thread_id].len--;
+          path_options.flow_control = node->flow_controlled;
+          stats_counter_inc(self->super.dropped_messages);
+          log_msg_free_queue_node(node);
+          log_msg_drop(msg, &path_options);
+        }
+      msg_debug("Destination queue full, dropping messages",
+                evt_tag_int("queue_len", log_queue_fifo_get_length(&self->super)),
+                evt_tag_int("log_fifo_size", self->qoverflow_size),
+                evt_tag_int("count", n),
+                NULL);
+    }
+  stats_counter_add(self->super.stored_messages, self->qoverflow_input[thread_id].len);
   list_splice_tail_init(&self->qoverflow_input[thread_id].items, &self->qoverflow_wait);
   self->qoverflow_wait_len += self->qoverflow_input[thread_id].len;
   self->qoverflow_input[thread_id].len = 0;
-
-  /* FIXME: handle queue overflows, probably needs an API rework,
-   * log_queue_push_tail() currently returns FALSE to indicate that
-   * we're unable to process the item, however the items on the input
-   * lists were already accepted.  Probably the drop code should be
-   * moved to this function, somehow.  */
 }
 
+/* move items from the per-thread input queue to the lock-protected
+ * "wait" queue, but grabbing locks first. This is registered as a
+ * callback to be called when the input worker thread finishes its
+ * job.
+ */
 static gpointer
 log_queue_fifo_move_input(gpointer user_data)
 {
@@ -140,6 +167,8 @@ log_queue_fifo_move_input(gpointer user_data)
  *
  * Puts the message to the queue, and logs an error if it caused the
  * queue to be full.
+ *
+ * It attempts to put the item to the per-thread input queue.
  **/
 static void
 log_queue_fifo_push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
@@ -152,9 +181,18 @@ log_queue_fifo_push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *pat
 
   g_assert(thread_id < 0 || log_queue_max_threads > thread_id);
 
-  /* FIXME: hard-wired value */
-  if (thread_id >= 0 && self->qoverflow_input[thread_id].len < 256)
-    {
+  /* NOTE: we don't use high-water marks for now, as log_fetch_limit
+   * limits the number of items placed on the per-thread input queue
+   * anyway, and any sane number decreased the performance measurably.
+   *
+   * This means that per-thread input queues contain _all_ items that
+   * a single poll iteration produces. And once the reader is finished
+   * (either because the input is depleted or because of
+   * log_fetch_limit / window_size) the whole bunch is propagated to
+   * the "wait" queue.
+   */
+
+  if (thread_id >= 0) {
       /* fastpath, use per-thread input FIFOs */
       if (!self->qoverflow_input[thread_id].finish_cb_registered)
         {
@@ -180,40 +218,36 @@ log_queue_fifo_push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *pat
   if (thread_id >= 0)
     log_queue_fifo_move_input_unlocked(self, thread_id);
   
-  node = log_msg_alloc_queue_node(msg, path_options);
+  if (log_queue_fifo_get_length(s) < self->qoverflow_size)
+    {
+      node = log_msg_alloc_queue_node(msg, path_options);
 
-  list_add_tail(&node->list, &self->qoverflow_wait);
-  self->qoverflow_wait_len++;
-  log_queue_push_notify(&self->super);
-  g_static_mutex_unlock(&self->super.lock);
+      list_add_tail(&node->list, &self->qoverflow_wait);
+      self->qoverflow_wait_len++;
+      log_queue_push_notify(&self->super);
 
-  stats_counter_inc(self->super.stored_messages);
-  log_msg_unref(msg);
-  return;
+      stats_counter_inc(self->super.stored_messages);
+      g_static_mutex_unlock(&self->super.lock);
 
-#if 0
-/* FIXME: no way to handle overflows now */
-
+      log_msg_unref(msg);
+    }
   else
     {
-      g_mutex_unlock(self->super.lock);
-
       stats_counter_inc(self->super.dropped_messages);
+      g_static_mutex_unlock(&self->super.lock);
       log_msg_drop(msg, path_options);
 
       msg_debug("Destination queue full, dropping message",
-                evt_tag_int("queue_len", log_queue_get_length(s)),
+                evt_tag_int("queue_len", log_queue_fifo_get_length(&self->super)),
                 evt_tag_int("log_fifo_size", self->qoverflow_size),
                 NULL);
-      return;
     }
-  stats_counter_inc(self->super.stored_messages);
-  log_msg_ack(msg, &local_options);
-  log_msg_unref(msg);
-#endif
+  return;
 }
 
 /*
+ * Put an item back to the front of the queue.
+ *
  * This is assumed to be called only from the output thread.
  */
 static void
@@ -232,7 +266,9 @@ log_queue_fifo_push_head(LogQueue *s, LogMessage *msg, const LogPathOptions *pat
   list_add(&node->list, &self->qoverflow_output);
   self->qoverflow_output_len++;
 
+  g_static_mutex_lock(&self->super.lock);
   stats_counter_inc(self->super.stored_messages);
+  g_static_mutex_unlock(&self->super.lock);
 }
 
 /*
@@ -290,7 +326,9 @@ log_queue_fifo_pop_head(LogQueue *s, LogMessage **msg, LogPathOptions *path_opti
        */
       return FALSE;
     }
+  g_static_mutex_lock(&self->super.lock);
   stats_counter_dec(self->super.stored_messages);
+  g_static_mutex_unlock(&self->super.lock);
 
   if (push_to_backlog)
     {
@@ -352,6 +390,7 @@ log_queue_fifo_rewind_backlog(LogQueue *s)
 
   list_splice_tail_init(&self->qbacklog, &self->qoverflow_output);
   self->qoverflow_output_len += self->qbacklog_len;
+  stats_counter_add(self->super.stored_messages, self->qbacklog_len);
   self->qbacklog_len = 0;
 }
 
@@ -362,14 +401,16 @@ log_queue_fifo_free_queue(struct list_head *q)
     {
       LogMessageQueueNode *node;
       LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
+      LogMessage *msg;
 
       node = list_entry(q->next, LogMessageQueueNode, list);
       list_del(&node->list);
 
       path_options.flow_control = node->flow_controlled;
-      log_msg_ack(node->msg, &path_options);
-      log_msg_unref(node->msg);
+      msg = node->msg;
       log_msg_free_queue_node(node);
+      log_msg_ack(msg, &path_options);
+      log_msg_unref(msg);
     }
 }
 
