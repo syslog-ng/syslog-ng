@@ -286,7 +286,6 @@ log_reader_init_watches(LogReader *self)
 
   IV_FD_INIT(&self->fd_watch);
   self->fd_watch.cookie = self;
-  self->fd_watch.handler_err = log_reader_io_process_input;
 
   IV_TIMER_INIT(&self->follow_timer);
   self->follow_timer.cookie = self;
@@ -365,6 +364,21 @@ log_reader_update_watches(LogReader *self)
         {
           iv_fd_set_handler_in(&self->fd_watch, NULL);
           iv_fd_set_handler_out(&self->fd_watch, NULL);
+
+          /* we disable the error handler too, as it might be
+           * triggered even when we don't want to read data
+           * (e.g. log_source_free_to_send() is FALSE).
+           *
+           * And at least on Linux, it may happen that EPOLLERR is
+           * set, while there's still data in the socket buffer.  Thus
+           * in reaction to an EPOLLERR, we could possibly send
+           * further messages without validating the
+           * log_source_free_to_send() would allow us to, potentially
+           * overflowing our window (and causing a failed assertion in
+           * log_source_queue().
+           */
+
+          iv_fd_set_handler_err(&self->fd_watch, NULL);
         }
 
       if (iv_timer_registered(&self->follow_timer))
@@ -392,6 +406,9 @@ log_reader_update_watches(LogReader *self)
 
       if (cond & G_IO_OUT)
         iv_fd_set_handler_out(&self->fd_watch, log_reader_io_process_input);
+
+      if (cond & (G_IO_IN + G_IO_OUT))
+          iv_fd_set_handler_err(&self->fd_watch, log_reader_io_process_input);
     }
   else
     {
@@ -459,7 +476,7 @@ log_reader_fetch_log(LogReader *self)
 
   if (self->waiting_for_preemption)
     may_read = FALSE;
-    
+
   /* NOTE: this loop is here to decrease the load on the main loop, we try
    * to fetch a couple of messages in a single run (but only up to
    * fetch_limit).

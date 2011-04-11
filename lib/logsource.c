@@ -235,6 +235,15 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
   msg->ack_userdata = log_pipe_ref(s);
     
   old_window_size = g_atomic_counter_exchange_and_add(&self->window_size, -1);
+
+  /*
+   * NOTE: this assertion validates that the source is not overflowing its
+   * own flow-control window size, decreased above, by the atomic statement.
+   *
+   * If the _old_ value is zero, that means that the decrement operation
+   * above has decreased the value to -1.
+   */
+
   g_assert(old_window_size > 0);
 
   stats_counter_inc(self->recvd_messages);
