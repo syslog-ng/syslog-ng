@@ -254,7 +254,7 @@ log_writer_arm_suspend_timer(LogWriter *self, void (*handler)(void *), gint time
     iv_timer_unregister(&self->suspend_timer);
   iv_validate_now();
   self->suspend_timer.handler = handler;
-  self->suspend_timer.expires = now;
+  self->suspend_timer.expires = iv_now;
   timespec_add_msec(&self->suspend_timer.expires, timeout_msec);
   iv_timer_register(&self->suspend_timer);
 }
@@ -405,7 +405,7 @@ log_writer_update_suppress_timer(LogWriter *self, glong sec)
   if (sec)
     {
       next_expires.tv_nsec = 0;
-      next_expires.tv_sec = now.tv_sec + sec;
+      next_expires.tv_sec = iv_now.tv_sec + sec;
     }
   else
     {

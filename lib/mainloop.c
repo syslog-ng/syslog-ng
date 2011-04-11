@@ -213,7 +213,7 @@ stats_timer_elapsed(gpointer st)
     stats_generate_log();
 
   iv_validate_now();
-  stats_timer.expires = now;
+  stats_timer.expires = iv_now;
   timespec_add_msec(&stats_timer.expires, stats_freq * 1000);
   iv_timer_register(&stats_timer);
   stats_timer_first = FALSE;
@@ -525,7 +525,7 @@ sig_term_handler(void *s)
 
   IV_TIMER_INIT(&main_loop_exit_timer);
   iv_validate_now();
-  main_loop_exit_timer.expires = now;
+  main_loop_exit_timer.expires = iv_now;
   main_loop_exit_timer.handler = main_loop_exit_timer_elapsed;
   timespec_add_msec(&main_loop_exit_timer.expires, 100);
   iv_timer_register(&main_loop_exit_timer);

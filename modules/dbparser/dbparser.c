@@ -163,7 +163,7 @@ log_db_parser_init(LogPipe *s)
   IV_TIMER_INIT(&self->tick);
   self->tick.cookie = self;
   self->tick.handler = log_db_parser_timer_tick;
-  self->tick.expires = now;
+  self->tick.expires = iv_now;
   self->tick.expires.tv_sec++;
   self->tick.expires.tv_nsec = 0;
   iv_timer_register(&self->tick);

@@ -386,7 +386,7 @@ afinter_postpone_mark(gint mark_freq)
   if (mark_freq > 0)
     {
       iv_validate_now();
-      next_mark_target = now;
+      next_mark_target = iv_now;
       timespec_add_msec(&next_mark_target, mark_freq * 1000);
     }
 }

@@ -417,7 +417,7 @@ log_reader_update_watches(LogReader *self)
           if (iv_timer_registered(&self->follow_timer))
             iv_timer_unregister(&self->follow_timer);
           iv_validate_now();
-          self->follow_timer.expires = now;
+          self->follow_timer.expires = iv_now;
           timespec_add_msec(&self->follow_timer.expires, self->options->follow_freq);
           iv_timer_register(&self->follow_timer);
         }

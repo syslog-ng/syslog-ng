@@ -956,7 +956,7 @@ afsocket_dd_start_reconnect_timer(AFSocketDestDriver *self)
     iv_timer_unregister(&self->reconnect_timer);
   iv_validate_now();
 
-  self->reconnect_timer.expires = now;
+  self->reconnect_timer.expires = iv_now;
   timespec_add_msec(&self->reconnect_timer.expires, self->time_reopen * 1000);
   iv_timer_register(&self->reconnect_timer);
 }

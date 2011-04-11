@@ -660,7 +660,7 @@ if test "x$with_ivykis" = "xinternal"; then
 		# the current directory just one below ivykis
 
 		IVYKIS_LIBS="-Wl,--whole-archive -L\$(top_builddir)/lib/ivykis/lib -livykis -L\$(top_builddir)/lib/ivykis/modules -livykis-modules -Wl,--no-whole-archive"
-		IVYKIS_CFLAGS="-I\$(top_srcdir)/lib/ivykis/lib/include -I\$(top_srcdir)/lib/ivykis/modules/include"
+		IVYKIS_CFLAGS="-I\$(top_srcdir)/lib/ivykis/lib/include -I\$(top_builddir)/lib/ivykis/lib/include -I\$(top_srcdir)/lib/ivykis/modules/include"
 		IVYKIS_SUBDIRS=ivykis
 
 		# LIBS to use when libtool is not applicable (when linking the main syslog-ng executable in mixed linking mode)
