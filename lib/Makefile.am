@@ -17,7 +17,7 @@ pkginclude_HEADERS = afinter.h center.h compat.h filter-expr-parser.h logmatcher
   logreader.h logwriter.h msg-format.h pragma-parser.h str-format.h timeutils.h \
   block-ref-parser.h children.h driver.h gsocket.h logpipe.h \
   logrewrite.h mainloop.h nvtable.h rewrite-expr-parser.h \
-  syslog-names.h utils.h cfg-grammar.h cfg-lex.h logqueue-fifo.h
+  syslog-names.h utils.h cfg-grammar.h cfg-lex.h logqueue-fifo.h tls-support.h
 
 libsyslog_ng_la_SOURCES = \
 	misc.c misc.h utils.c utils.h messages.c messages.h syslog-names.c syslog-names.h \
