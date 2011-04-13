@@ -95,13 +95,14 @@ struct _LogReader
   struct iv_task restart_task;
   struct iv_event schedule_wakeup;
   MainLoopIOWorkerJob io_job;
-  gboolean suspended:1, file_fd:1;
+  gboolean suspended:1;
+  gint pollable_state;
   gint notify_code;
 };
 
 static gboolean log_reader_fetch_log(LogReader *self);
 
-static void log_reader_start_watches(LogReader *self);
+static gboolean log_reader_start_watches(LogReader *self);
 static void log_reader_stop_watches(LogReader *self);
 static void log_reader_update_watches(LogReader *self);
 
@@ -279,11 +280,6 @@ log_reader_init_watches(LogReader *self)
 
   log_proto_prepare(self->proto, &fd, &cond);
 
-  if (fd >= 0)
-    self->file_fd = !iv_fd_pollable(fd);
-  else
-    self->file_fd = TRUE;
-
   IV_FD_INIT(&self->fd_watch);
   self->fd_watch.cookie = self;
 
@@ -305,25 +301,48 @@ log_reader_init_watches(LogReader *self)
   self->io_job.completion = (void (*)(void *)) log_reader_work_finished;
 }
 
-static void
+/* NOTE: the return value is only used during initialization, and it is not
+ * expected that it'd change once it returns success */
+static gboolean
 log_reader_start_watches(LogReader *self)
 {
   gint fd;
   GIOCondition cond;
 
   log_proto_prepare(self->proto, &fd, &cond);
-  if (fd >= 0 && (!self->file_fd || self->options->follow_freq == 0))
-    {
-      self->fd_watch.fd = fd;
-      iv_fd_register(&self->fd_watch);
-    }
+
+  if (self->pollable_state < 0 && fd >= 0)
+    self->pollable_state = iv_fd_pollable(fd);
 
   if (self->options->follow_freq > 0)
     {
+      /* follow freq specified (only the file source does that, go into timed polling */
+
+      /* NOTE: the fd may not be set here, as it may not have been opened yet */
       iv_timer_register(&self->follow_timer);
+    }
+  else if (fd < 0)
+    {
+      msg_error("In order to poll non-yet-existing files, follow_freq() must be set",
+                NULL);
+      return FALSE;
+    }
+  else if (self->pollable_state > 0)
+    {
+      /* we have an FD, it is possible to poll it, register it  */
+      self->fd_watch.fd = fd;
+      iv_fd_register(&self->fd_watch);
+    }
+  else
+    {
+      msg_error("Unable to determine how to monitor this fd, follow_freq() not set and it is not possible to poll it with the current ivykis polling method, try changing IV_EXCLUDE_POLL_METHOD environment variable",
+                evt_tag_int("fd", fd),
+                NULL);
+      return FALSE;
     }
 
   log_reader_update_watches(self);
+  return TRUE;
 }
 
 
@@ -583,7 +602,8 @@ log_reader_init(LogPipe *s)
                 NULL);
       return FALSE;
     }
-  log_reader_start_watches(self);
+  if (!log_reader_start_watches(self))
+    return FALSE;
   iv_event_register(&self->schedule_wakeup);
 
   return TRUE;
@@ -660,6 +680,7 @@ log_reader_new(LogProto *proto)
   self->super.wakeup = log_reader_wakeup;
   self->proto = proto;
   self->immediate_check = FALSE;
+  self->pollable_state = -1;
   log_reader_init_watches(self);
   return &self->super.super;
 }
