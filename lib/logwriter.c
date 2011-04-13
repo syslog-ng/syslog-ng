@@ -32,6 +32,8 @@
 #include <assert.h>
 #include <string.h>
 #include <stdlib.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #include <iv.h>
 #include <iv_event.h>
 #include <iv_work.h>
@@ -40,7 +42,7 @@ struct _LogWriter
 {
   LogPipe super;
   LogQueue *queue;
-  guint32 flags:31, file_fd:1;
+  guint32 flags:31;
   gint32 seq_num;
   guint32 *dropped_messages;
   guint32 *suppressed_messages;
@@ -67,6 +69,7 @@ struct _LogWriter
   struct timespec suppress_timer_expires;
   gboolean suppress_timer_updated;
   gboolean work_result;
+  gint pollable_state;
   LogProto *proto;
   gboolean watches_running:1, suspended:1, working:1, flush_waiting_for_timeout:1;
 };
@@ -202,7 +205,7 @@ log_writer_error_suspend_elapsed(gpointer s)
 static void
 log_writer_update_fd_callbacks(LogWriter *self, GIOCondition cond)
 {
-  if (!self->file_fd)
+  if (self->pollable_state > 0)
     {
       if (self->flags & LW_DETECT_EOF && (cond & G_IO_IN) == 0 && (cond & G_IO_OUT))
         {
@@ -234,7 +237,7 @@ log_writer_update_fd_callbacks(LogWriter *self, GIOCondition cond)
     }
   else
     {
-      /* */
+      /* fd is not pollable, assume it is always writable */
       if (cond & G_IO_OUT)
         {
           if (!iv_task_registered(&self->immed_io_task))
@@ -321,6 +324,22 @@ log_writer_update_watches(LogWriter *self)
     }
 }
 
+static gboolean
+is_file_regular(gint fd)
+{
+  struct stat st;
+
+  if (fstat(fd, &st) >= 0)
+    {
+      return S_ISREG(st.st_mode);
+    }
+
+  /* if stat fails, that's interesting, but we should probably poll
+   * it, hopefully that's less likely to cause spinning */
+
+  return FALSE;
+}
+
 static void
 log_writer_start_watches(LogWriter *self)
 {
@@ -331,8 +350,15 @@ log_writer_start_watches(LogWriter *self)
     {
       log_proto_prepare(self->proto, &fd, &cond);
 
-      self->file_fd = !iv_fd_pollable(fd);
-      if (!self->file_fd)
+      if (self->pollable_state < 0)
+        {
+          if (is_file_regular(fd))
+            self->pollable_state = 0;
+          else
+            self->pollable_state = iv_fd_pollable(fd);
+        }
+
+      if (self->pollable_state)
         {
           self->fd_watch.fd = fd;
           iv_fd_register(&self->fd_watch);
@@ -350,7 +376,7 @@ log_writer_stop_watches(LogWriter *self)
     {
       if (iv_timer_registered(&self->suspend_timer))
         iv_timer_unregister(&self->suspend_timer);
-      if (!self->file_fd)
+      if (iv_fd_registered(&self->fd_watch))
         iv_fd_unregister(&self->fd_watch);
       if (iv_task_registered(&self->immed_io_task))
         iv_task_unregister(&self->immed_io_task);
@@ -1047,6 +1073,7 @@ log_writer_new(guint32 flags, LogQueue *queue)
   self->flags = flags;
   self->line_buffer = g_string_sized_new(128);
   self->queue = queue;
+  self->pollable_state = -1;
 
   log_writer_init_watches(self);
   g_static_mutex_init(&self->suppress_lock);

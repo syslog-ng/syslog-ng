@@ -583,7 +583,9 @@ affile_dw_init(LogPipe *s)
   if (!self->writer)
     {
       self->writer = log_writer_new(LW_FORMAT_FILE, log_dest_driver_acquire_queue(&self->owner->super, NULL));
-      log_writer_set_options((LogWriter *) self->writer, s, &self->owner->writer_options, 1, self->owner->flags & AFFILE_PIPE ? SCS_PIPE : SCS_FILE, self->owner->super.super.id, self->filename->str);
+      log_writer_set_options((LogWriter *) self->writer, s, &self->owner->writer_options, 1,
+                             self->owner->flags & AFFILE_PIPE ? SCS_PIPE : SCS_FILE,
+                             self->owner->super.super.id, self->filename->str);
 
       if (!log_pipe_init(self->writer, NULL))
         {
