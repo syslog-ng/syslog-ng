@@ -822,7 +822,7 @@ afsocket_dd_set_tls_context(LogDriver *s, TLSContext *tls_context)
 void
 afsocket_dd_set_keep_alive(LogDriver *s, gint enable)
 {
-  AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
+  AFSocketDestDriver *self = (AFSocketDestDriver *) s;
 
   if (enable)
     self->flags |= AFSOCKET_KEEP_ALIVE;
