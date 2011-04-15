@@ -14,3 +14,9 @@ install-data-local:
 	done
 	mkdir -p $(DESTDIR)/$(scldir) || true
 	(cd $(srcdir); tar cf - $(SCL_SUBDIRS)) | (cd $(DESTDIR)/$(scldir) && tar xf -)
+
+uninstall-local:
+	for cfg in $(SCL_CONFIGS); do \
+		rm -f $(DESTDIR)/$(sysconfdir)/$${cfg}; \
+	done
+	rm -rf $(DESTDIR)/$(scldir)
