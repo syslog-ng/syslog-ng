@@ -100,11 +100,12 @@
 %token LL_CONTEXT_BLOCK_DEF           8
 %token LL_CONTEXT_BLOCK_REF           9
 %token LL_CONTEXT_BLOCK_CONTENT       10
-%token LL_CONTEXT_PRAGMA              11
-%token LL_CONTEXT_FORMAT              12
-%token LL_CONTEXT_TEMPLATE_FUNC       13
-%token LL_CONTEXT_INNER_DEST          14
-%token LL_CONTEXT_INNER_SRC           15
+%token LL_CONTEXT_BLOCK_ARG           11
+%token LL_CONTEXT_PRAGMA              12
+%token LL_CONTEXT_FORMAT              13
+%token LL_CONTEXT_TEMPLATE_FUNC       14
+%token LL_CONTEXT_INNER_DEST          15
+%token LL_CONTEXT_INNER_SRC           16
 
 /* statements */
 %token KW_SOURCE                      10000
@@ -464,8 +465,16 @@ block_args
         ;
 
 block_arg
-        : LL_IDENTIFIER '(' string_or_number ')'          { cfg_args_set(last_block_args, $1, $3); free($1); free($3); }
-        | LL_IDENTIFIER '(' ')'                           {}
+        : LL_IDENTIFIER
+          {
+            cfg_lexer_push_context(lexer, LL_CONTEXT_BLOCK_ARG, NULL, "block argument");
+          }
+          LL_BLOCK
+          {
+            cfg_lexer_pop_context(lexer);
+            if (strcmp($3, "") != 0)
+              cfg_args_set(last_block_args, $1, $3); free($1); free($3);
+          }
         ;
 
 log_items

@@ -623,7 +623,9 @@ cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
     }
 
   if (cfg_lexer_get_context_type(self) == LL_CONTEXT_BLOCK_CONTENT)
-    _cfg_lexer_force_block_state(self->state);
+    cfg_lexer_start_block_state(self, "{}");
+  else if (cfg_lexer_get_context_type(self) == LL_CONTEXT_BLOCK_ARG)
+    cfg_lexer_start_block_state(self, "()");
 
   yylval->type = 0;
 

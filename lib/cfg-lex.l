@@ -201,8 +201,10 @@ word	[^ \#'"\(\)\{\}\\;\n\t,|\.@:]
 
      /* rules to parse a block as a LL_BLOCK token */
 <block>{white}+            ;
-<block>[^{ \t]+            { return LL_ERROR; }
-<block>\{                  {
+<block>[^{( \t]+           { return LL_ERROR; }
+<block>[{(]                {
+                             if (yytext[0] != yyextra->block_boundary[0])
+                               REJECT;
                              g_string_truncate(yyextra->string_buffer, 0);
                              yyextra->brace_count = 1;
                              yy_push_state(block_content, yyscanner);
@@ -211,7 +213,7 @@ word	[^ \#'"\(\)\{\}\\;\n\t,|\.@:]
 <block_content>\"          {
                              g_string_append_c(yyextra->string_buffer, yytext[0]);
                              yy_push_state(block_string, yyscanner);
-   }
+                           }
 
 <block_content>\'          {
                              g_string_append_c(yyextra->string_buffer, yytext[0]);
@@ -234,12 +236,14 @@ word	[^ \#'"\(\)\{\}\\;\n\t,|\.@:]
                            }
 
 
-<block_content>\{          {
+<block_content>[{(]        {
                              g_string_append_c(yyextra->string_buffer, yytext[0]);
-                             yyextra->brace_count++;
+                             if (yytext[0] == yyextra->block_boundary[0])
+                               yyextra->brace_count++;
                            }
-<block_content>\}          {
-                             yyextra->brace_count--;
+<block_content>[})]        {
+                             if (yytext[0] == yyextra->block_boundary[1])
+                               yyextra->brace_count--;
                              if (yyextra->brace_count == 0)
                                {
                                  yy_pop_state(yyscanner);
@@ -254,7 +258,7 @@ word	[^ \#'"\(\)\{\}\\;\n\t,|\.@:]
 
                            }
 
-<block_content>[^{}\"\'\n\r]+   { g_string_append(yyextra->string_buffer, yytext); }
+<block_content>[^{}()\"\'\n\r]+   { g_string_append(yyextra->string_buffer, yytext); }
 
 <INITIAL><<EOF>>           { if (!cfg_lexer_start_next_include(yyextra)) yyterminate(); }
 
@@ -276,9 +280,10 @@ cfg_lexer_unput_string(CfgLexer *self, const char *str)
 }
 
 void
-_cfg_lexer_force_block_state(yyscan_t yyscanner)
+cfg_lexer_start_block_state(CfgLexer *self, gchar block_boundary[2])
 {
-  yy_push_state(block, yyscanner);
+  memcpy(&self->block_boundary, block_boundary, sizeof(block_boundary));
+  yy_push_state(block, self->state);
 }
 
 /* avoid warnings of unused symbols */
