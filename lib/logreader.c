@@ -422,12 +422,19 @@ log_reader_update_watches(LogReader *self)
       /* files cannot be polled using epoll, it results in an error */
       if (cond & G_IO_IN)
         iv_fd_set_handler_in(&self->fd_watch, log_reader_io_process_input);
+      else
+        iv_fd_set_handler_in(&self->fd_watch, NULL);
 
       if (cond & G_IO_OUT)
         iv_fd_set_handler_out(&self->fd_watch, log_reader_io_process_input);
+      else
+        iv_fd_set_handler_out(&self->fd_watch, NULL);
 
       if (cond & (G_IO_IN + G_IO_OUT))
-          iv_fd_set_handler_err(&self->fd_watch, log_reader_io_process_input);
+        iv_fd_set_handler_err(&self->fd_watch, log_reader_io_process_input);
+      else
+        iv_fd_set_handler_err(&self->fd_watch, NULL);
+
     }
   else
     {
