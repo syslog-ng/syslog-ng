@@ -113,8 +113,10 @@ TLS_BLOCK_START
 {
   /* message that is being processed by the current thread. Its ack/ref changes are cached */
   LogMessage *logmsg_current;
-  /* has to be signed as these can become negative */
+  /* whether the consumer is flow-controlled, (the producer always is) */
+  gboolean logmsg_cached_flow_control;
 
+  /* has to be signed as these can become negative */
   /* number of cached refs by the current thread */
   gint logmsg_cached_refs;
   /* number of cached acks by the current thread */
@@ -122,9 +124,10 @@ TLS_BLOCK_START
 }
 TLS_BLOCK_END;
 
-#define logmsg_current        __tls_deref(logmsg_current)
-#define logmsg_cached_refs    __tls_deref(logmsg_cached_refs)
-#define logmsg_cached_acks    __tls_deref(logmsg_cached_acks)
+#define logmsg_current              __tls_deref(logmsg_current)
+#define logmsg_cached_refs          __tls_deref(logmsg_cached_refs)
+#define logmsg_cached_acks          __tls_deref(logmsg_cached_acks)
+#define logmsg_cached_flow_control  __tls_deref(logmsg_cached_flow_control)
 
 #define LOGMSG_REFCACHE_BIAS                  0x00004000 /* the BIAS we add to the ref counter in refcache_start */
 #define LOGMSG_REFCACHE_ACK_SHIFT                     16 /* number of bits to shift to get the ACK counter */
@@ -1219,34 +1222,56 @@ log_msg_ack(LogMessage *self, const LogPathOptions *path_options)
  * the message specified by @self.  See the comment at the top of this file
  * for more information.
  *
- * NOTE: in producer mode, this function must be called _prior_ to
- * submitting the message to any kind of parallel operation.
+ * This function is to be called by the producer thread (e.g. the one
+ * that generates new messages). You should use
+ * log_msg_refcache_start_consumer() in consumer threads instead.
+ *
+ * This function cannot be called for the same message from multiple
+ * threads.
+ *
  */
 void
-log_msg_refcache_start(LogMessage *self, gboolean producer)
+log_msg_refcache_start_producer(LogMessage *self)
 {
   g_assert(logmsg_current == NULL);
 
   logmsg_current = self;
-  if (producer)
-    {
-      /* we're the producer of said message, and thus we want to inhibit
-       * freeing/acking it due to our cached refs, add a bias large enough
-       * to cover any possible unrefs/acks of the consumer side */
+  /* we're the producer of said message, and thus we want to inhibit
+   * freeing/acking it due to our cached refs, add a bias large enough
+   * to cover any possible unrefs/acks of the consumer side */
 
-      /* we don't need to be thread-safe here, as a producer has just created this message and no parallel access is yet possible */
+  /* we don't need to be thread-safe here, as a producer has just created this message and no parallel access is yet possible */
 
-      self->ack_and_ref = (self->ack_and_ref & ~LOGMSG_REFCACHE_REF_MASK) + LOGMSG_REFCACHE_REF_TO_VALUE((LOGMSG_REFCACHE_VALUE_TO_REF(self->ack_and_ref) + LOGMSG_REFCACHE_BIAS));
-      self->ack_and_ref = (self->ack_and_ref & ~LOGMSG_REFCACHE_ACK_MASK) + LOGMSG_REFCACHE_ACK_TO_VALUE((LOGMSG_REFCACHE_VALUE_TO_ACK(self->ack_and_ref) + LOGMSG_REFCACHE_BIAS));
-      logmsg_cached_refs = -LOGMSG_REFCACHE_BIAS;
-      logmsg_cached_acks = -LOGMSG_REFCACHE_BIAS;
-    }
-  else
-    {
-      logmsg_cached_refs = 0;
-      logmsg_cached_acks = 0;
-    }
+  self->ack_and_ref = (self->ack_and_ref & ~LOGMSG_REFCACHE_REF_MASK) + LOGMSG_REFCACHE_REF_TO_VALUE((LOGMSG_REFCACHE_VALUE_TO_REF(self->ack_and_ref) + LOGMSG_REFCACHE_BIAS));
+  self->ack_and_ref = (self->ack_and_ref & ~LOGMSG_REFCACHE_ACK_MASK) + LOGMSG_REFCACHE_ACK_TO_VALUE((LOGMSG_REFCACHE_VALUE_TO_ACK(self->ack_and_ref) + LOGMSG_REFCACHE_BIAS));
+  logmsg_cached_refs = -LOGMSG_REFCACHE_BIAS;
+  logmsg_cached_acks = -LOGMSG_REFCACHE_BIAS;
+  logmsg_cached_flow_control = TRUE;
 }
+
+/*
+ * Start caching ref/unref/ack/add-ack operations in the current thread for
+ * the message specified by @self.  See the comment at the top of this file
+ * for more information.
+ *
+ * This function is to be called by the consumer threads (e.g. the
+ * ones that consume messages).
+ *
+ * This function can be called from mutliple consumer threads at the
+ * same time, even for the same message.
+ *
+ */
+void
+log_msg_refcache_start_consumer(LogMessage *self, const LogPathOptions *path_options)
+{
+  g_assert(logmsg_current == NULL);
+
+  logmsg_current = self;
+  logmsg_cached_flow_control = path_options->flow_control;
+  logmsg_cached_refs = 0;
+  logmsg_cached_acks = 0;
+}
+
 
 /*
  * Stop caching ref/unref/ack/add-ack operations in the current thread for
@@ -1285,7 +1310,7 @@ log_msg_refcache_stop(void)
 
   old_value = log_msg_update_ack_and_ref(logmsg_current, logmsg_cached_refs, logmsg_cached_acks);
 
-  if (LOGMSG_REFCACHE_VALUE_TO_ACK(old_value) == -logmsg_cached_acks)
+  if ((LOGMSG_REFCACHE_VALUE_TO_ACK(old_value) == -logmsg_cached_acks) && logmsg_cached_flow_control)
     {
       /* ack processing */
       logmsg_current->ack_func(logmsg_current, logmsg_current->ack_userdata);

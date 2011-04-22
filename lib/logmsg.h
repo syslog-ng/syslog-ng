@@ -236,7 +236,8 @@ void log_msg_add_ack(LogMessage *msg, const LogPathOptions *path_options);
 void log_msg_ack(LogMessage *msg, const LogPathOptions *path_options);
 void log_msg_drop(LogMessage *msg, const LogPathOptions *path_options);
 
-void log_msg_refcache_start(LogMessage *self, gboolean producer);
+void log_msg_refcache_start_producer(LogMessage *self);
+void log_msg_refcache_start_consumer(LogMessage *self, const LogPathOptions *path_options);
 void log_msg_refcache_stop(void);
 
 void log_msg_registry_init();

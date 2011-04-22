@@ -464,7 +464,7 @@ log_reader_handle_line(LogReader *self, const guchar *line, gint length, GSockAd
                   saddr,
                   &self->options->parse_options);
 
-  log_msg_refcache_start(m, TRUE);
+  log_msg_refcache_start_producer(m);
   if (!m->saddr && self->peer_addr)
     {
       m->saddr = g_sockaddr_ref(self->peer_addr);

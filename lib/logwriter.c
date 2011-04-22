@@ -850,7 +850,7 @@ log_writer_flush(LogWriter *self, gboolean flush_all)
           break;
         }
 
-      log_msg_refcache_start(lm, FALSE);
+      log_msg_refcache_start_consumer(lm, &path_options);
       msg_set_context(lm);
 
       log_writer_format_log(self, lm, self->line_buffer);
