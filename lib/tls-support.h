@@ -5,7 +5,7 @@
 
 #include <config.h>
 
-#ifndef HAVE_TLSQQQQ
+#ifndef HAVE_THREAD_KEYWORD
 
 #include <stdlib.h>
 #include <pthread.h>
