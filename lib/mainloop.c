@@ -234,6 +234,7 @@ stats_timer_elapsed(gpointer st)
  * I/O worker threads
  ************************************************************************************/
 
+static struct iv_task main_loop_io_workers_reenable_jobs_task;
 static struct iv_work_pool main_loop_io_workers;
 static void (*main_loop_io_workers_sync_func)(void);
 
@@ -300,6 +301,13 @@ main_loop_io_worker_thread_id(void)
 }
 
 void
+main_loop_io_worker_reenable_jobs(void *s)
+{
+  main_loop_io_workers_quit = FALSE;
+  main_loop_io_workers_sync_func = NULL;
+}
+
+void
 main_loop_io_worker_job_submit(MainLoopIOWorkerJob *self)
 {
   g_assert(self->working == FALSE);
@@ -340,9 +348,13 @@ main_loop_io_worker_job_complete(MainLoopIOWorkerJob *self)
   main_loop_io_workers_running--;
   if (main_loop_io_workers_quit && main_loop_io_workers_running == 0)
     {
-      main_loop_io_workers_quit = FALSE;
       main_loop_io_workers_sync_func();
-      main_loop_io_workers_sync_func = NULL;
+
+      /* NOTE: we need to delay resubmission for further jobs until the next
+       * poll iteration, because a callback to start another job might be invoked
+       */
+
+      iv_task_register(&main_loop_io_workers_reenable_jobs_task);
     }
 }
 
@@ -591,6 +603,8 @@ main_loop_init(void)
   main_loop_io_workers.thread_start = main_loop_io_worker_thread_start;
   main_loop_io_workers.thread_stop = main_loop_io_worker_thread_stop;
   iv_work_pool_create(&main_loop_io_workers);
+  IV_TASK_INIT(&main_loop_io_workers_reenable_jobs_task);
+  main_loop_io_workers_reenable_jobs_task.handler = main_loop_io_worker_reenable_jobs;
   log_queue_set_max_threads(main_loop_io_workers.max_threads);
   main_loop_call_init();
 
