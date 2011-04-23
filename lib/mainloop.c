@@ -342,10 +342,9 @@ main_loop_io_worker_job_start(MainLoopIOWorkerJob *self)
 static void
 main_loop_io_worker_job_complete(MainLoopIOWorkerJob *self)
 {
-  self->completion(self->user_data);
-
   self->working = FALSE;
   main_loop_io_workers_running--;
+  self->completion(self->user_data);
   if (main_loop_io_workers_quit && main_loop_io_workers_running == 0)
     {
       main_loop_io_workers_sync_func();
