@@ -605,6 +605,7 @@ active_thread(gpointer st)
 
   gettimeofday(&start, NULL);
   count = (usessl ? gen_messages_ssl : gen_messages_plain)(sock, id, readfrom);
+  shutdown(sock, SHUT_RDWR);
   gettimeofday(&end, NULL);
   time_val_diff_in_timeval(&diff_tv, &end, &start);
 
