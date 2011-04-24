@@ -685,6 +685,8 @@ main(int argc, char *argv[])
   g_thread_init(NULL);
   tzset();
 
+  signal(SIGPIPE, SIG_IGN);
+
   ctx = g_option_context_new(" target port");
   g_option_context_add_main_entries(ctx, loggen_options, 0);
 
