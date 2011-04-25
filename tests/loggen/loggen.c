@@ -31,6 +31,7 @@
 FILE *readfrom = NULL;
 int rate = 1000;
 int unix_socket = 0;
+int use_ipv6 = 0;
 int unix_socket_i = 0;
 int unix_socket_x = 0;
 int sock_type_s = 0;
@@ -550,6 +551,7 @@ static GOptionEntry loggen_options[] = {
   { "inet", 'i', 0, G_OPTION_ARG_NONE, &unix_socket_i, "Use IP-based transport (TCP, UDP)", NULL },
   { "unix", 'x', 0, G_OPTION_ARG_NONE, &unix_socket_x, "Use UNIX domain socket transport", NULL },
   { "stream", 'S', 0, G_OPTION_ARG_NONE, &sock_type_s, "Use stream socket (TCP and unix-stream)", NULL },
+  { "ipv6", '6', 0, G_OPTION_ARG_NONE, &use_ipv6, "Use AF_INET6 sockets instead of AF_INET (can use both IPv4 & IPv6)", NULL },
   { "dgram", 'D', 0, G_OPTION_ARG_NONE, &sock_type_d, "Use datagram socket (UDP and unix-dgram)", NULL },
   { "size", 's', 0, G_OPTION_ARG_INT, &message_length, "Specify the size of the syslog message", "<size>" },
   { "interval", 'I', 0, G_OPTION_ARG_INT, &interval, "Number of seconds to run the test for", "<sec>" },
@@ -646,12 +648,12 @@ main(int argc, char *argv[])
 
       if (1)
         {
-#if HAVE_GETADDRINFO && 0
+#if HAVE_GETADDRINFO
           struct addrinfo hints;
           struct addrinfo *res;
 
           memset(&hints, 0, sizeof(hints));
-          hints.ai_family = AF_INET;
+          hints.ai_family = use_ipv6 ? AF_INET6 : AF_INET;
           hints.ai_socktype = sock_type;
 #ifdef AI_ADDRCONFIG
           hints.ai_flags = AI_ADDRCONFIG;
