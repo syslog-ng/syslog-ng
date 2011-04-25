@@ -51,6 +51,8 @@ int skip_tokens = 3;
 char *read_file = NULL;
 int idle_connections = 0;
 int active_connections = 1;
+int loop_reading = 0;
+int dont_parse = 0;
 
 /* results */
 guint64 sum_count;
@@ -212,7 +214,18 @@ gen_next_message(FILE *source, char *buf, int buflen)
         return -1;
       temp = fgets(line, sizeof(line), source);
       if (!temp)
-        return -1;
+        {
+          if (loop_reading)
+          {
+            // Restart reading from the beginning of the file
+            rewind(source);
+            temp = fgets(line, sizeof(line), source);
+          }
+          else
+            return -1;
+        }
+      if (dont_parse)
+        break;
 
       if (parse_line(line, host, program, pid, &msg) > 0)
         break;
@@ -222,6 +235,12 @@ gen_next_message(FILE *source, char *buf, int buflen)
   gettimeofday(&now, NULL);
   tm = localtime(&now.tv_sec);
   tslen = strftime(stamp, sizeof(stamp), "%Y-%m-%dT%H:%M:%S", tm);
+
+  if (dont_parse)
+    {
+      linelen = snprintf(buf, sizeof(line), line);
+      return linelen;
+    }
 
   if (syslog_proto)
     {
@@ -562,13 +581,21 @@ static GOptionEntry loggen_options[] = {
 #if ENABLE_SSL
   { "use-ssl", 'U', 0, G_OPTION_ARG_NONE, &usessl, "Use ssl layer", NULL },
 #endif
-  { "read-file", 'R', 0, G_OPTION_ARG_STRING, &read_file, "Read log messages from file", "<filename>" },
-  { "skip-tokens", 0, 0, G_OPTION_ARG_INT, &skip_tokens, "Skip the given number of tokens (delimined by a space) at the beginning of each line (default value: 3)", "<number>" },
   { "csv", 'C', 0, G_OPTION_ARG_NONE, &csv, "Produce CSV output", NULL },
   { "number", 'n', 0, G_OPTION_ARG_INT, &number_of_messages, "Number of messages to generate", "<number>" },
   { "quiet", 'Q', 0, G_OPTION_ARG_NONE, &quiet, "Don't print the msg/sec data", NULL },
   { NULL }
 };
+
+static GOptionEntry file_option_entries[] =
+{
+  { "read-file", 'R', 0, G_OPTION_ARG_STRING, &read_file, "Read log messages from file", "<filename>" },
+  { "loop-reading",'l',0, G_OPTION_ARG_NONE, &loop_reading, "Read the file specified in read-file option in loop (it will restart the reading if reached the end of the file)", NULL },
+  { "dont-parse", 'd', 0, G_OPTION_ARG_NONE, &dont_parse, "Don't parse the lines coming from the readed files. Loggen will send the whole lines as it is in the readed file", NULL },
+  { "skip-tokens", 0, 0, G_OPTION_ARG_INT, &skip_tokens, "Skip the given number of tokens (delimined by a space) at the beginning of each line (default value: 3)", "<number>" },
+  { NULL }
+};
+
 
 int
 main(int argc, char *argv[])
@@ -578,11 +605,18 @@ main(int argc, char *argv[])
   GOptionContext *ctx = NULL;
   int i;
   guint64 diff_usec;
+  GOptionGroup *group;
 
   g_thread_init(NULL);
 
   ctx = g_option_context_new(" target port");
   g_option_context_add_main_entries(ctx, loggen_options, 0);
+
+
+  group = g_option_group_new("file", "File options", "File options", NULL, NULL);
+  g_option_group_add_entries(group, file_option_entries);
+  g_option_context_add_group(ctx, group);
+
   if (!g_option_context_parse(ctx, &argc, &argv, &error))
     {
       fprintf(stderr, "Option parsing failed: %s\n", error->message);
