@@ -28,7 +28,6 @@
 #define MIN(a, b)    ((a) < (b) ? (a) : (b))
 #endif
 
-FILE *readfrom = NULL;
 int rate = 1000;
 int unix_socket = 0;
 int use_ipv6 = 0;
@@ -53,6 +52,8 @@ int idle_connections = 0;
 int active_connections = 1;
 int loop_reading = 0;
 int dont_parse = 0;
+static gint display_version;
+char *sdata_value = NULL;
 
 /* results */
 guint64 sum_count;
@@ -196,22 +197,30 @@ static int
 gen_next_message(FILE *source, char *buf, int buflen)
 {
   static int lineno = 0;
-  struct tm *tm;
+  struct tm tm;
   struct timeval now;
-  char line[4096];
+  char line[MAX_MESSAGE_LENGTH+1];
   char stamp[32];
   int linelen;
   int tslen;
   char *temp;
 
   char host[128], program[128], pid[16];
-  char *msg;
+  char *msg = NULL;
 
   while (1)
     {
       temp = NULL;
       if (feof(source))
-        return -1;
+        {
+          if (loop_reading)
+          {
+            // Restart reading from the beginning of the file
+            rewind(source);
+          }
+          else
+            return -1;
+        }
       temp = fgets(line, sizeof(line), source);
       if (!temp)
         {
@@ -233,12 +242,12 @@ gen_next_message(FILE *source, char *buf, int buflen)
       fprintf(stderr, "\rInvalid line %d                  \n", ++lineno);
     }
   gettimeofday(&now, NULL);
-  tm = localtime(&now.tv_sec);
-  tslen = strftime(stamp, sizeof(stamp), "%Y-%m-%dT%H:%M:%S", tm);
+  localtime_r(&now.tv_sec, &tm);
+  tslen = strftime(stamp, sizeof(stamp), "%Y-%m-%dT%H:%M:%S", &tm);
 
   if (dont_parse)
     {
-      linelen = snprintf(buf, sizeof(line), line);
+      linelen = snprintf(buf, buflen-1, "%s", line);
       return linelen;
     }
 
@@ -269,12 +278,12 @@ connect_server(void)
   sock = socket(dest_addr->sa_family, sock_type, 0);
   if (sock < 0)
     {
-      fprintf(stderr, "Error creating socket: %s", g_strerror(errno));
+      fprintf(stderr, "Error creating socket: %s\n", g_strerror(errno));
       return -1;
     }
   if (connect(sock, dest_addr, dest_addr_len) < 0)
     {
-      fprintf(stderr, "Error connecting socket: %s", g_strerror(errno));
+      fprintf(stderr, "Error connecting socket: %s\n", g_strerror(errno));
       close(sock);
       return -1;
     }
@@ -282,7 +291,7 @@ connect_server(void)
 }
 
 static guint64
-gen_messages(send_data_t send_func, void *send_func_ud, int thread_id)
+gen_messages(send_data_t send_func, void *send_func_ud, int thread_id, FILE *readfrom)
 {
   struct timeval now, start, last_ts_format, last_throttle_check;
   char linebuf[MAX_MESSAGE_LENGTH + 1];
@@ -298,6 +307,8 @@ gen_messages(send_data_t send_func, void *send_func_ud, int thread_id)
   int pos_timestamp1 = 0, pos_timestamp2 = 0, pos_seq = 0;
   int rc, hdr_len = 0;
   unsigned int counter = 0;
+  gint64 sum_linelen = 0;
+  char *testsdata = NULL;
 
   gettimeofday(&start, NULL);
   now = start;
@@ -308,6 +319,15 @@ gen_messages(send_data_t send_func, void *send_func_ud, int thread_id)
   last_ts_format = now;
   last_ts_format.tv_sec--;
 
+   if (sdata_value)
+     {
+       testsdata = strdup(sdata_value);
+     }
+   else
+     {
+       testsdata = strdup("-");
+     }
+
   if (!readfrom)
     {
       if (syslog_proto)
@@ -315,10 +335,11 @@ gen_messages(send_data_t send_func, void *send_func_ud, int thread_id)
           if (sock_type == SOCK_STREAM && framing)
             hdr_len = snprintf(linebuf, sizeof(linebuf), "%d ", message_length);
 
-          linelen = snprintf(linebuf + hdr_len, sizeof(linebuf) - hdr_len, "<38>1 2007-12-24T12:28:51+02:00 localhost prg%05d 1234 - - \xEF\xBB\xBFseq: %010d, thread: %04d, runid: %-10d, stamp: %-19s ", thread_id, 0, thread_id, run_id, "");
+          linelen = snprintf(linebuf + hdr_len, sizeof(linebuf) - hdr_len, "<38>1 2007-12-24T12:28:51+02:00 localhost prg%05d 1234 - %s \xEF\xBB\xBFseq: %010d, thread: %04d, runid: %-10d, stamp: %-19s ", thread_id, testsdata, 0, thread_id, run_id, "");
+
           pos_timestamp1 = 6 + hdr_len;
-          pos_seq = 68 + hdr_len;
-          pos_timestamp2 = 120 + hdr_len;
+          pos_seq = 68 + hdr_len + strlen(testsdata) - 1;
+          pos_timestamp2 = 120 + hdr_len + strlen(testsdata) - 1;
         }
       else
         {
@@ -387,6 +408,8 @@ gen_messages(send_data_t send_func, void *send_func_ud, int thread_id)
             break;
 
           linelen = rc;
+          sum_linelen = sum_linelen+rc;
+
         }
 
       if (now.tv_sec != last_ts_format.tv_sec)
@@ -396,22 +419,23 @@ gen_messages(send_data_t send_func, void *send_func_ud, int thread_id)
           if (!readfrom)
             {
               int len;
-              struct tm *tm;
+              struct tm tm;
 
-              tm = localtime(&now.tv_sec);
-              len = strftime(stamp, sizeof(stamp), "%Y-%m-%dT%H:%M:%S", tm);
+              localtime_r(&now.tv_sec, &tm);
+              len = strftime(stamp, sizeof(stamp), "%Y-%m-%dT%H:%M:%S", &tm);
               memcpy(&linebuf[pos_timestamp1], stamp, len);
               memcpy(&linebuf[pos_timestamp2], stamp, len);
             }
 
+          diff_usec = time_val_diff_in_usec(&now, &last_ts_format);
           if (csv)
             {
               time_val_diff_in_timeval(&diff_tv, &now, &start);
-              printf("%d;%lu.%06lu;%lu\n", thread_id, (long) diff_tv.tv_sec, (long) diff_tv.tv_usec, count);
+              printf("%d;%lu.%06lu;%.2lf;%lu\n", thread_id, (long) diff_tv.tv_sec, (long) diff_tv.tv_usec, (((double) (count - last_count) * USEC_PER_SEC) / diff_usec),count);
+
             }
           else if (!quiet)
             {
-              diff_usec = time_val_diff_in_usec(&now, &last_ts_format);
               fprintf(stderr, "count=%ld, rate = %.2lf msg/sec                 \r", count, ((double) (count - last_count) * USEC_PER_SEC) / diff_usec);
             }
           last_ts_format = now;
@@ -439,14 +463,17 @@ gen_messages(send_data_t send_func, void *send_func_ud, int thread_id)
   diff_usec = time_val_diff_in_usec(&now, &start);
   time_val_diff_in_timeval(&diff_tv, &now, &start);
   if (csv)
-    printf("%d;%lu.%06lu;%lu\n", thread_id, (long) diff_tv.tv_sec, (long) diff_tv.tv_usec, count);
+    printf("%d;%lu.%06lu;%.2lf;%lu\n", thread_id, (long) diff_tv.tv_sec, (long) diff_tv.tv_usec, (((double) (count - last_count) * USEC_PER_SEC) / diff_usec), count);
 
+  if (readfrom)
+    raw_message_length = sum_linelen/count;
+  free(testsdata);
   return count;
 }
 
 #if ENABLE_SSL
 static guint64
-gen_messages_ssl(int sock)
+gen_messages_ssl(int sock, int id, FILE *readfrom)
 {
   int ret = 0;
   int err;
@@ -473,7 +500,7 @@ gen_messages_ssl(int sock)
       return 2;
     }
 
-  ret = gen_messages(send_ssl, ssl);
+  ret = gen_messages(send_ssl, ssl, id, readfrom);
 
   SSL_shutdown (ssl);
 
@@ -488,9 +515,9 @@ gen_messages_ssl(int sock)
 #endif
 
 static guint64
-gen_messages_plain(int sock, int id)
+gen_messages_plain(int sock, int id, FILE *readfrom)
 {
-  return gen_messages(send_plain, GINT_TO_POINTER(sock), id);
+  return gen_messages(send_plain, GINT_TO_POINTER(sock), id, readfrom);
 }
 
 GMutex *thread_lock;
@@ -524,17 +551,25 @@ idle_thread(gpointer st)
     g_cond_wait(thread_cond, thread_lock);
   g_mutex_unlock(thread_lock);
   close(sock);
+  return NULL;
 error:
+  g_mutex_lock(thread_lock);
+  connect_finished++;
+  g_cond_signal(thread_connected);
+  g_cond_signal(thread_finished);
+  g_mutex_unlock(thread_lock);
   return NULL;
 }
 
 gpointer
 active_thread(gpointer st)
 {
+
   int id = GPOINTER_TO_INT(st);
   gint sock;
   guint64 count;
   struct timeval start, end, diff_tv;
+  FILE *readfrom = NULL;
 
   sock = connect_server();
   if (sock < 0)
@@ -548,8 +583,28 @@ active_thread(gpointer st)
     g_cond_wait(thread_cond, thread_lock);
   g_mutex_unlock(thread_lock);
 
+  if (read_file != NULL)
+    {
+      if (read_file[0] == '-' && read_file[1] == '\0')
+        {
+          readfrom = stdin;
+        }
+      else
+        {
+          readfrom = fopen(read_file, "r");
+          if (!readfrom)
+            {
+              const int bufsize = 1024;
+              char cbuf[bufsize];
+              snprintf(cbuf, bufsize, "fopen: %s", read_file);
+              perror(cbuf);
+              return NULL;
+            }
+        }
+    }
+
   gettimeofday(&start, NULL);
-  count = (usessl ? gen_messages_ssl : gen_messages_plain)(sock, id);
+  count = (usessl ? gen_messages_ssl : gen_messages_plain)(sock, id, readfrom);
   gettimeofday(&end, NULL);
   time_val_diff_in_timeval(&diff_tv, &end, &start);
 
@@ -561,12 +616,21 @@ active_thread(gpointer st)
     g_cond_signal(thread_finished);
   g_mutex_unlock(thread_lock);
   close(sock);
+  if (readfrom && readfrom != stdin)
+    fclose(readfrom);
+  return NULL;
 error:
+  g_mutex_lock(thread_lock);
+  connect_finished++;
+  active_finished++;
+  g_cond_signal(thread_connected);
+  g_cond_signal(thread_finished);
+  g_mutex_unlock(thread_lock);
   return NULL;
 }
 
 static GOptionEntry loggen_options[] = {
-  { "rate", 'r', 0, G_OPTION_ARG_INT, &rate, "Number of messages to generate per second", "<msg/sec>" },
+  { "rate", 'r', 0, G_OPTION_ARG_INT, &rate, "Number of messages to generate per second", "<msg/sec/active connection>" },
   { "inet", 'i', 0, G_OPTION_ARG_NONE, &unix_socket_i, "Use IP-based transport (TCP, UDP)", NULL },
   { "unix", 'x', 0, G_OPTION_ARG_NONE, &unix_socket_x, "Use UNIX domain socket transport", NULL },
   { "stream", 'S', 0, G_OPTION_ARG_NONE, &sock_type_s, "Use stream socket (TCP and unix-stream)", NULL },
@@ -575,15 +639,20 @@ static GOptionEntry loggen_options[] = {
   { "size", 's', 0, G_OPTION_ARG_INT, &message_length, "Specify the size of the syslog message", "<size>" },
   { "interval", 'I', 0, G_OPTION_ARG_INT, &interval, "Number of seconds to run the test for", "<sec>" },
   { "syslog-proto", 'P', 0, G_OPTION_ARG_NONE, &syslog_proto, "Use the new syslog-protocol message format (see also framing)", NULL },
+  { "sdata", 'p', 0, G_OPTION_ARG_STRING, &sdata_value, "Send the given sdata (e.g. \"[test name=\\\"value\\\"]) in case of syslog-proto", NULL },
   { "no-framing", 'F', G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &framing, "Don't use syslog-protocol style framing, even if syslog-proto is set", NULL },
   { "active-connections", 0, 0, G_OPTION_ARG_INT, &active_connections, "Number of active connections to the server (default = 1)", "<number>" },
   { "idle-connections", 0, 0, G_OPTION_ARG_INT, &idle_connections, "Number of inactive connections to the server (default = 0)", "<number>" },
 #if ENABLE_SSL
   { "use-ssl", 'U', 0, G_OPTION_ARG_NONE, &usessl, "Use ssl layer", NULL },
 #endif
+  { "read-file", 'R', 0, G_OPTION_ARG_STRING, &read_file, "Read log messages from file", "<filename>" },
+  { "loop-reading", 'l', 0, G_OPTION_ARG_NONE, &loop_reading, "Read the file specified in read-file option in loop (it will restart the reading if reached the end of the file)", NULL },
+  { "skip-tokens", 0, 0, G_OPTION_ARG_INT, &skip_tokens, "Skip the given number of tokens (delimined by a space) at the beginning of each line (default value: 3)", "<number>" },
   { "csv", 'C', 0, G_OPTION_ARG_NONE, &csv, "Produce CSV output", NULL },
   { "number", 'n', 0, G_OPTION_ARG_INT, &number_of_messages, "Number of messages to generate", "<number>" },
   { "quiet", 'Q', 0, G_OPTION_ARG_NONE, &quiet, "Don't print the msg/sec data", NULL },
+  { "version",   'V', 0, G_OPTION_ARG_NONE, &display_version, "Display version number (" PACKAGE " " VERSION ")", NULL },
   { NULL }
 };
 
@@ -596,6 +665,11 @@ static GOptionEntry file_option_entries[] =
   { NULL }
 };
 
+void
+version(void)
+{
+  printf(PACKAGE " " VERSION "\n");
+}
 
 int
 main(int argc, char *argv[])
@@ -608,18 +682,31 @@ main(int argc, char *argv[])
   GOptionGroup *group;
 
   g_thread_init(NULL);
+  tzset();
 
   ctx = g_option_context_new(" target port");
   g_option_context_add_main_entries(ctx, loggen_options, 0);
 
 
-  group = g_option_group_new("file", "File options", "File options", NULL, NULL);
+  group = g_option_group_new("file", "File options", "Show file options", NULL, NULL);
   g_option_group_add_entries(group, file_option_entries);
   g_option_context_add_group(ctx, group);
 
   if (!g_option_context_parse(ctx, &argc, &argv, &error))
     {
       fprintf(stderr, "Option parsing failed: %s\n", error->message);
+      return 1;
+    }
+
+  if (display_version)
+    {
+      version();
+      return 0;
+    }
+
+  if (active_connections <= 0)
+    {
+      fprintf(stderr, "Minimum value of active-connections must be greater than 0\n");
       return 1;
     }
 
@@ -646,18 +733,10 @@ main(int argc, char *argv[])
     {
       if (read_file[0] == '-' && read_file[1] == '\0')
         {
-          readfrom = stdin;
-        }
-      else
-        {
-          readfrom = fopen(read_file, "r");
-          if (!readfrom)
+          if (active_connections > 1)
             {
-              const int bufsize = 1024;
-              char cbuf[bufsize];
-              snprintf(cbuf, bufsize, "fopen: %s", read_file);
-              perror(cbuf);
-              return 1;
+              fprintf(stderr, "Warning: more than one active connection is not allowed if reading from stdin was specified. active-connections = '%d', new active-connections = '1'\n", active_connections);
+              active_connections = 1;
             }
         }
     }
@@ -749,6 +828,10 @@ main(int argc, char *argv[])
   thread_connected = g_cond_new();
   /* mutex used for both cond vars */
   thread_lock = g_mutex_new();
+  if(csv)
+    {
+      printf("ThreadId;Time;Rate;Count\n");
+    }
 
   for (i = 0; i < idle_connections; i++)
     {
@@ -782,7 +865,8 @@ main(int argc, char *argv[])
   sum_time.tv_usec /= active_connections;
   diff_usec = sum_time.tv_sec * USEC_PER_SEC + sum_time.tv_usec;
 
-  fprintf(stderr, "average rate = %.2lf msg/sec, count=%ld, time=%ld.%03ld, (last) msg size=%d, bandwidth=%.2lf kB/sec\n",
+  fprintf(stderr, "average rate = %.2lf msg/sec, count=%"G_GUINT64_FORMAT", time=%ld.%03ld, (average) msg size=%d, bandwidth=%.2lf kB/sec\n",
+
     (double) sum_count * USEC_PER_SEC / diff_usec, sum_count, sum_time.tv_sec, sum_time.tv_usec / 1000, raw_message_length,
     (double) sum_count * raw_message_length * (USEC_PER_SEC / 1024) / diff_usec);
 
@@ -793,7 +877,5 @@ stop_and_exit:
   g_cond_broadcast(thread_cond);
   g_mutex_unlock(thread_lock);
 
-  if (readfrom && readfrom != stdin)
-    fclose(readfrom);
   return ret;
 }
