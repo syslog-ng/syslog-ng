@@ -24,6 +24,11 @@
 
 %code requires {
 
+/* this block is inserted into cfg-grammar.h, so it is included
+   practically all of the syslog-ng code. Please add headers here
+   with care. If you need additional headers, please look for a
+   massive list of includes further below. */
+
 /* YYSTYPE and YYLTYPE is defined by the lexer */
 #include "cfg-lexer.h"
 #include "driver.h"
@@ -133,7 +138,6 @@
 %token KW_NULL                        10053
 
 %token KW_SYSLOG                      10060
-
 
 /* option items */
 %token KW_MARK_FREQ                   10071
@@ -263,6 +267,14 @@
 %token LL_EOL                         10428
 %token LL_ERROR                       10429
 
+/* value pairs */
+%token KW_VALUE_PAIRS                 10500
+%token KW_SELECT                      10501
+%token KW_EXCLUDE                     10502
+%token KW_PAIR                        10503
+%token KW_KEY                         10504
+%token KW_SCOPE                       10505
+
 /* END_DECLS */
 
 %code {
@@ -277,12 +289,12 @@
 #include "logreader.h"
 #include "logparser.h"
 #include "logrewrite.h"
+#include "value-pairs.h"
 #include "filter-expr-parser.h"
 #include "rewrite-expr-parser.h"
 #include "block-ref-parser.h"
 #include "parser-expr-parser.h"
 #include "plugin.h"
-
 
 #include "afinter.h"
 #include "logwriter.h"
@@ -306,6 +318,7 @@ GList *last_rewrite_expr;
 GList *last_parser_expr;
 FilterExprNode *last_filter_expr;
 CfgArgs *last_block_args;
+ValuePairs *last_value_pairs;
 
 }
 
@@ -341,6 +354,8 @@ CfgArgs *last_block_args;
 %type	<ptr> options_item
 
 /* START_DECLS */
+
+%type   <ptr> value_pair_option
 
 %type	<num> yesno
 %type   <num> dnsmode
@@ -801,6 +816,36 @@ dest_writer_option
 dest_writer_options_flags
 	: string dest_writer_options_flags      { $$ = log_writer_options_lookup_flag($1) | $2; free($1); }
 	|					{ $$ = 0; }
+	;
+
+value_pair_option
+	: KW_VALUE_PAIRS
+          { last_value_pairs = value_pairs_new(configuration); }
+          '(' vp_options ')'
+          { $$ = last_value_pairs; }
+	;
+
+vp_options
+	: vp_option vp_options
+	|
+	;
+
+vp_option
+	: KW_PAIR '(' string ':' string ')'      { value_pairs_add_pair(last_value_pairs, $3, $5); free($3); free($5); }
+	| KW_PAIR '(' string string ')'          { value_pairs_add_pair(last_value_pairs, $3, $4); free($3); free($4); }
+	| KW_KEY '(' string ')'		    {
+                gchar *k = g_strconcat("$", $3, NULL);
+                value_pairs_add_pair(last_value_pairs, $3, k);
+                g_free(k);
+                free($3);
+	  }
+	| KW_EXCLUDE '(' string ')'	         { value_pairs_exclude_glob_pattern(last_value_pairs, $3); free($3); }
+	| KW_SCOPE '(' vp_scope_list ')'
+	;
+
+vp_scope_list
+	: string vp_scope_list              { value_pairs_add_scope(last_value_pairs, $1); free($1); }
+	|
 	;
 
 /* END_RULES */

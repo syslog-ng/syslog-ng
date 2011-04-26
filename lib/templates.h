@@ -134,6 +134,9 @@ void log_template_format(LogTemplate *self, LogMessage *lm, LogTemplateOptions *
 void log_template_append_format(LogTemplate *self, LogMessage *lm, LogTemplateOptions *opts, gint tz, gint32 seq_num, const gchar *context_id, GString *result);
 void log_template_append_format_with_context(LogTemplate *self, LogMessage **messages, gint num_messages, LogTemplateOptions *opts, gint tz, gint32 seq_num, const gchar *context_id, GString *result);
 void log_template_format_with_context(LogTemplate *self, LogMessage **messages, gint num_messages, LogTemplateOptions *opts, gint tz, gint32 seq_num, const gchar *context_id, GString *result);
+
+/* low level macro functions */
+guint log_macro_lookup(gchar *macro, gint len);
 gboolean log_macro_expand(GString *result, gint id, gboolean escape, LogTemplateOptions *opts, gint tz, gint32 seq_num, const gchar *context_id, LogMessage *msg);
 
 LogTemplate *log_template_new(GlobalConfig *cfg, gchar *name, const gchar *template);

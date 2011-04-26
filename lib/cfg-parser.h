@@ -59,10 +59,11 @@ typedef struct _CfgFlagHandler
   gint op;
   gint ofs;
   guint32 param;
+  guint32 mask;
 } CfgFlagHandler;
 
 gboolean
-cfg_process_flag(CfgFlagHandler *handlers, gpointer base, gchar *flag);
+cfg_process_flag(CfgFlagHandler *handlers, gpointer base, const gchar *flag);
 
 /* the debug flag for the main parser will be used for all parsers */
 extern int cfg_parser_debug;

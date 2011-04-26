@@ -59,7 +59,8 @@ libsyslog_ng_la_SOURCES = \
 	block-ref-grammar.y block-ref-parser.c block-ref-parser.h \
 	pragma-grammar.y pragma-parser.h pragma-parser.c \
 	parser-expr-grammar.y parser-expr-parser.c parser-expr-parser.h \
-	rewrite-expr-grammar.y rewrite-expr-parser.c rewrite-expr-parser.h
+	rewrite-expr-grammar.y rewrite-expr-parser.c rewrite-expr-parser.h \
+	value-pairs.c value-pairs.h
 
 BUILT_SOURCES = cfg-lex.c cfg-lex.h cfg-grammar.c cfg-grammar.h \
 	filter-expr-grammar.y filter-expr-grammar.c filter-expr-grammar.h \

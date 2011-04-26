@@ -53,6 +53,14 @@ static CfgLexerKeyword main_keywords[] = {
   { "quote_pairs",        KW_QUOTE_PAIRS, 0x0300},
   { "null",               KW_NULL, 0x0300 },
 
+  /* value pairs */
+  { "value_pairs",        KW_VALUE_PAIRS, 0x0303 },
+  { "select",             KW_SELECT, 0x0303 },
+  { "exclude",            KW_EXCLUDE, 0x0303 },
+  { "pair",               KW_PAIR, 0x0303 },
+  { "key",                KW_KEY, 0x0303 },
+  { "scope",              KW_SCOPE, 0x0303 },
+
   /* option items */
   { "flags",              KW_FLAGS },
   { "pad_size",           KW_PAD_SIZE },
@@ -233,15 +241,19 @@ report_syntax_error(CfgLexer *lexer, YYLTYPE *yylloc, const char *what, const ch
  * operations to be performed in a getopt-like array.
  */
 gboolean
-cfg_process_flag(CfgFlagHandler *handlers, gpointer base, gchar *flag)
+cfg_process_flag(CfgFlagHandler *handlers, gpointer base, const gchar *flag_)
 {
   gint h;
+  gchar flag[32];
 
-  for (h = 0; flag[h]; h++)
+  for (h = 0; flag_[h] && h < sizeof(flag); h++)
     {
-      if (flag[h] == '_')
+      if (flag_[h] == '-')
         flag[h] = '_';
+      else
+        flag[h] = flag_[h];
     }
+  flag[h] = 0;
 
   for (h = 0; handlers[h].name; h++)
     {
@@ -249,13 +261,24 @@ cfg_process_flag(CfgFlagHandler *handlers, gpointer base, gchar *flag)
 
       if (strcmp(handlers[h].name, flag) == 0)
         {
+          guint32 *field = ((guint32 *) (((gchar *) base) + handler->ofs));
           switch (handler->op)
             {
             case CFH_SET:
-              (*(guint32 *) (((gchar *) base) + handler->ofs)) |= handler->param;
+              /* this works if handler->mask is unset and handler->param is a single bit only */
+
+              if (handler->mask)
+                *field = ((*field) & ~handler->mask) | handler->param;
+              else
+                *field = (*field) | handler->param;
               return TRUE;
             case CFH_CLEAR:
-              (*(guint32 *) (((gchar *) base) + handler->ofs)) &= ~handler->param;
+              /* set the bitfield to zero */
+
+              if (handler->mask)
+                *field = (*field) & ~handler->mask;
+              else
+                *field = (*field) & ~handler->param;
               return TRUE;
             }
         }

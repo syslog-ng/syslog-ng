@@ -5,7 +5,8 @@ AM_LDFLAGS = -dlpreopen $(top_builddir)/modules/syslogformat/libsyslogformat.la
 LIBS = @TOOL_DEPS_LIBS@
 LDADD = $(top_builddir)/lib/libsyslog-ng.la
 
-check_PROGRAMS = test_thread_wakeup test_persist_state test_resolve_pwgr test_nvtable test_msgsdata \
+check_PROGRAMS = test_value_pairs \
+	test_thread_wakeup test_persist_state test_resolve_pwgr test_nvtable test_msgsdata \
 	test_logqueue test_matcher test_clone_logmsg test_csvparser \
 	test_serialize test_msgparse test_template test_template_speed test_zone \
 	test_filters test_dnscache test_findeom test_findcrlf test_tags \
@@ -32,8 +33,8 @@ test_nvtable_SOURCES = test_nvtable.c
 test_logwriter_SOURCES = test_logwriter.c
 test_resolve_pwgr_SOURCES = test_resolve_pwgr.c
 test_persist_state_SOURCES = test_persist_state.c
-
 test_thread_wakeup_SOURCES = test_thread_wakeup.c
+test_value_pairs_SOURCES = test_value_pairs.c
 
 TESTS = $(check_PROGRAMS)
 
