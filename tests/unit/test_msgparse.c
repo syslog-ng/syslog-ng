@@ -160,6 +160,19 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
       0 // expected SD pairs should be empty!
       );
 
+// bad sd data unescaped "
+ testcase("<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [a i=\"\"ok\"] An application event log entry...",  LP_SYSLOG_PROTOCOL, NULL,
+           43, 			// pri
+           0, 0, 0,	// timestamp (sec/usec/zone)
+           "",		// host
+           "syslog-ng", //app
+           "Error processing log message: <132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [a i=\"\"ok\"] An application event log entry...", // msg
+           "", //sd_str
+           0,//processid
+           0,//msgid
+           0
+           );
+
   testcase("<15> openvpn[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, NULL,
            15, 			// pri
            0, 0, 0,		// timestamp (sec/usec/zone)
