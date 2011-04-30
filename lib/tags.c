@@ -113,10 +113,19 @@ log_tags_deinit(void)
 
   g_static_mutex_lock(&log_tags_lock);
   g_hash_table_destroy(log_tags_hash);
+  log_tags_hash = NULL;
 
   for (i = 0; i < log_tags_num; i++)
+  {
     g_free(log_tags_list[i].name);
-
-  g_free(log_tags_list);
+    log_tags_list[i].name = NULL;
+  }
+  if (log_tags_list)
+    {
+      g_free(log_tags_list);
+      log_tags_list = NULL;
+    }
+  log_tags_num = 0;
+  g_static_mutex_unlock(&log_tags_lock);
 }
 
