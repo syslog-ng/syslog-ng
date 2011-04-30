@@ -1026,6 +1026,10 @@ syslog_format_handler(MsgFormatOptions *parse_options,
       gchar buf[2048];
 
       self->timestamps[LM_TS_STAMP] = self->timestamps[LM_TS_RECVD];
+      if ((self->flags & LF_STATE_OWN_PAYLOAD) && self->payload)
+        nv_table_unref(self->payload);
+      self->flags |= LF_STATE_OWN_PAYLOAD;
+      self->payload = nv_table_new(LM_V_MAX, 16, MAX(length * 2, 256));
       log_msg_set_value(self, LM_V_HOST, "", 0);
 
       g_snprintf(buf, sizeof(buf), "Error processing log message: %.*s", (gint) length, data);
@@ -1033,7 +1037,6 @@ syslog_format_handler(MsgFormatOptions *parse_options,
       log_msg_set_value(self, LM_V_PROGRAM, "syslog-ng", 9);
       g_snprintf(buf, sizeof(buf), "%d", (int) getpid());
       log_msg_set_value(self, LM_V_PID, buf, -1);
-      log_msg_set_value(self, LM_V_MSGID, "", 0);
 
       if (self->sdata)
         {
