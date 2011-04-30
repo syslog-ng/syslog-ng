@@ -878,6 +878,7 @@ fi
 AC_DEFINE_UNQUOTED(DEFAULT_MODULES, "$default_modules", [The default set of modules loaded if an old config version is used or autoload-compiled-modules is 1])
 
 AC_DEFINE_UNQUOTED(ENABLE_DEBUG, `enable_value $enable_debug`, [Enable debugging])
+AC_DEFINE_UNQUOTED(ENABLE_SSL, `enable_value $enable_ssl`, [Enable SSL support])
 AC_DEFINE_UNQUOTED(ENABLE_GPROF, `enable_value $enable_gprof`, [Enable gcc profiling])
 AC_DEFINE_UNQUOTED(ENABLE_MEMTRACE, `enable_value $enable_memtrace`, [Enable memtrace])
 AC_DEFINE_UNQUOTED(ENABLE_SPOOF_SOURCE, `enable_value $enable_spoof_source`, [Enable spoof source support])

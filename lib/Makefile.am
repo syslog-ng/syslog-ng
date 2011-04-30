@@ -1,5 +1,7 @@
 SUBDIRS = @IVYKIS_SUBDIRS@
 DIST_SUBDIRS = ivykis
+moduledir = @moduledir@
+
 
 YFLAGS=@YFLAGS@
 
@@ -9,58 +11,141 @@ lib_LTLIBRARIES = libsyslog-ng.la
 libsyslog_ng_la_LIBADD = @CORE_DEPS_LIBS@
 libsyslog_ng_la_LDFLAGS = -no-undefined
 
-pkginclude_HEADERS = afinter.h center.h compat.h filter-expr-parser.h logmatcher.h \
-  logprocess.h logsource.h memtrace.h parser-expr-parser.h   serialize.h     syslog-ng.h \
-  alarms.h cfg.h control.h filter.h logmpx.h logproto.h logstamp.h messages.h persist-state.h \
-  sgroup.h tags.h apphook.h cfg-lexer.h dgroup.h gprocess.h logmsg.h logqueue.h logtransport.h \
-  misc.h plugin.h stats.h templates.h atomic.h cfg-parser.h dnscache.h gsockaddr.h logparser.h \
-  logreader.h logwriter.h msg-format.h pragma-parser.h str-format.h timeutils.h \
-  block-ref-parser.h children.h driver.h gsocket.h logpipe.h \
-  logrewrite.h mainloop.h nvtable.h rewrite-expr-parser.h \
-  syslog-names.h utils.h cfg-grammar.h cfg-lex.h logqueue-fifo.h tls-support.h
+module_LTLIBRARIES = libsyslog-ng-crypto.la
+libsyslog_ng_crypto_la_LIBADD = @CORE_DEPS_LIBS@ libsyslog-ng.la
+libsyslog_ng_crypto_la_LDFLAGS = -no-undefined
+
+# this is intentionally formatted so conflicts are less likely to arise. one name in every line.
+pkginclude_HEADERS = 		\
+	afinter.h		\
+	alarms.h		\
+	apphook.h		\
+	atomic.h		\
+	block-ref-parser.h	\
+	center.h		\
+	cfg.h                   \
+	cfg-lexer.h		\
+	cfg-parser.h		\
+	children.h		\
+	compat.h		\
+	control.h		\
+	crypto.h		\
+	dgroup.h		\
+	dnscache.h		\
+	driver.h		\
+	filter-expr-parser.h	\
+	filter.h		\
+	gprocess.h		\
+	gsockaddr.h		\
+	gsocket.h		\
+	logmatcher.h		\
+	logmpx.h		\
+	logmsg.h		\
+	logparser.h		\
+	logpipe.h		\
+	logprocess.h		\
+	logproto.h		\
+	logqueue-fifo.h		\
+	logqueue.h		\
+	logreader.h		\
+	logrewrite.h		\
+	logsource.h		\
+	logstamp.h		\
+	logtransport.h		\
+	logwriter.h		\
+	mainloop.h		\
+	memtrace.h		\
+	messages.h		\
+	misc.h			\
+	msg-format.h		\
+	nvtable.h		\
+	parser-expr-parser.h	\
+	persist-state.h		\
+	plugin.h		\
+	pragma-parser.h		\
+	rewrite-expr-parser.h	\
+	serialize.h		\
+	sgroup.h		\
+	stats.h			\
+	str-format.h		\
+	syslog-names.h		\
+	syslog-ng.h		\
+	tags.h			\
+	templates.h		\
+	timeutils.h		\
+	tls-support.h		\
+	utils.h			\
+	value-pairs.h
+
 
 libsyslog_ng_la_SOURCES = \
-	misc.c misc.h utils.c utils.h messages.c messages.h syslog-names.c syslog-names.h \
-	mainloop.c mainloop.h \
-	cfg.c cfg.h filter.c filter.h \
-	logmsg.c logmsg.h logstamp.c logstamp.h \
-	msg-format.c msg-format.h \
-	nvtable.c nvtable.h \
-	logpipe.c logpipe.h logsource.c logsource.h driver.c driver.h sgroup.c sgroup.h \
-	dgroup.c dgroup.h center.c center.h templates.c templates.h \
-	logreader.c logreader.h logwriter.c logwriter.h \
-	afinter.c afinter.h \
-	children.c children.h stats.c stats.h \
-	gsockaddr.c gsockaddr.h gsocket.c gsocket.h \
-	logtransport.c logtransport.h \
-	logproto.c logproto.h \
-	memtrace.c memtrace.h \
-	persist-state.c persist-state.h \
-	dnscache.c dnscache.h serialize.c serialize.h apphook.c apphook.h atomic.h \
-	timeutils.c timeutils.h \
-	str-format.c str-format.h \
-	tags.c tags.h \
-	alarms.c alarms.h \
-	logparser.c logparser.h \
-	logprocess.c logprocess.h \
-	logmpx.c logmpx.h \
-	logrewrite.c logrewrite.h \
-	logmatcher.c logmatcher.h \
-	gprocess.c gprocess.h \
-	globals.c \
-	control.c control.h \
-	compat.c compat.h \
-	logqueue.c logqueue.h \
-	logqueue-fifo.c logqueue-fifo.h \
-	cfg-lexer.c cfg-lexer.h cfg-lex.l \
-	cfg-parser.c cfg-parser.h cfg-grammar.y \
-	plugin.c plugin.h \
-	filter-expr-grammar.y filter-expr-parser.c filter-expr-parser.h \
-	block-ref-grammar.y block-ref-parser.c block-ref-parser.h \
-	pragma-grammar.y pragma-parser.h pragma-parser.c \
-	parser-expr-grammar.y parser-expr-parser.c parser-expr-parser.h \
-	rewrite-expr-grammar.y rewrite-expr-parser.c rewrite-expr-parser.h \
-	value-pairs.c value-pairs.h
+	afinter.c		\
+	alarms.c		\
+	apphook.c		\
+	block-ref-parser.c	\
+	center.c		\
+	cfg.c			\
+	cfg-lexer.c		\
+	cfg-parser.c		\
+	children.c		\
+	compat.c		\
+	control.c		\
+	dgroup.c		\
+	dnscache.c		\
+	driver.c		\
+	filter.c		\
+	filter-expr-parser.c	\
+	globals.c		\
+	gprocess.c		\
+	gsockaddr.c		\
+	gsocket.c		\
+	logmatcher.c		\
+	logmpx.c		\
+	logmsg.c		\
+	logparser.c		\
+	logpipe.c		\
+	logprocess.c		\
+	logproto.c		\
+	logqueue.c		\
+	logqueue-fifo.c		\
+	logreader.c		\
+	logrewrite.c		\
+	logsource.c		\
+	logstamp.c		\
+	logtransport.c		\
+	logwriter.c		\
+	mainloop.c		\
+	memtrace.c		\
+	messages.c		\
+	misc.c			\
+	msg-format.c		\
+	nvtable.c		\
+	parser-expr-parser.c	\
+	persist-state.c		\
+	plugin.c		\
+	pragma-parser.c		\
+	rewrite-expr-parser.c	\
+	serialize.c		\
+	sgroup.c		\
+	stats.c			\
+	str-format.c		\
+	syslog-names.c		\
+	tags.c			\
+	templates.c		\
+	timeutils.c		\
+	utils.c			\
+	value-pairs.c		\
+				\
+	cfg-lex.l		\
+	cfg-grammar.y		\
+	filter-expr-grammar.y	\
+	block-ref-grammar.y	\
+	pragma-grammar.y	\
+	parser-expr-grammar.y	\
+	rewrite-expr-grammar.y
+
+libsyslog_ng_crypto_la_SOURCES = \
+	crypto.c tlscontext.c tlstransport.c
 
 BUILT_SOURCES = cfg-lex.c cfg-lex.h cfg-grammar.c cfg-grammar.h \
 	filter-expr-grammar.y filter-expr-grammar.c filter-expr-grammar.h \

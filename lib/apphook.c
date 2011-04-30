@@ -35,6 +35,7 @@
 #include "logsource.h"
 #include "logwriter.h"
 #include "afinter.h"
+#include "crypto.h"
 
 #include <iv.h>
 #include <iv_work.h>
