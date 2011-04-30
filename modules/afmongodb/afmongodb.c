@@ -47,7 +47,7 @@ typedef struct
   /* Shared between main/writer; only read by the writer, never
      written */
   gchar *db;
-  LogTemplate *coll;
+  gchar *coll;
 
   gchar *host;
   gint port;
@@ -84,11 +84,9 @@ typedef struct
   mongo_connection *conn;
   gint32 seq_num;
 
-  GString *current_namespace;
-  gint ns_prefix_len;
+  gchar *ns;
 
   GString *current_value;
-
   bson *bson_sel, *bson_upd, *bson_set;
 } MongoDBDestDriver;
 
@@ -145,8 +143,8 @@ afmongodb_dd_set_collection(LogDriver *d, const gchar *collection)
 {
   MongoDBDestDriver *self = (MongoDBDestDriver *)d;
 
-  log_template_unref(self->coll);
-  self->coll = log_template_new(log_pipe_get_config(&d->super), NULL, collection);
+  g_free(self->coll);
+  self->coll = g_strdup(collection);
 }
 
 void
@@ -177,7 +175,7 @@ afmongodb_dd_format_stats_instance(MongoDBDestDriver *self)
   static gchar persist_name[1024];
 
   g_snprintf(persist_name, sizeof(persist_name),
-	     "mongodb,%s,%u,%s,%s", self->host, self->port, self->db, self->coll->template);
+	     "mongodb,%s,%u,%s,%s", self->host, self->port, self->db, self->coll);
   return persist_name;
 }
 
@@ -187,7 +185,7 @@ afmongodb_dd_format_persist_name(MongoDBDestDriver *self)
   static gchar persist_name[1024];
 
   g_snprintf(persist_name, sizeof(persist_name),
-	     "afmongodb(%s,%u,%s,%s)", self->host, self->port, self->db, self->coll->template);
+	     "afmongodb(%s,%u,%s,%s)", self->host, self->port, self->db, self->coll);
   return persist_name;
 }
 
@@ -274,10 +272,6 @@ afmongodb_worker_insert (MongoDBDestDriver *self)
   g_free (oid);
   bson_finish (self->bson_sel);
 
-  g_string_truncate(self->current_namespace, self->ns_prefix_len);
-  log_template_append_format(self->coll, msg, NULL, LTZ_LOCAL,
-			     self->seq_num, NULL, self->current_namespace);
-
   for (i = 0; i < self->num_fields; i++)
     {
       log_template_format(self->fields[i].value, msg, NULL, LTZ_SEND,
@@ -292,7 +286,7 @@ afmongodb_worker_insert (MongoDBDestDriver *self)
   bson_append_document (self->bson_upd, "$set", self->bson_set);
   bson_finish (self->bson_upd);
 
-  p = mongo_wire_cmd_update (1, self->current_namespace->str, 1,
+  p = mongo_wire_cmd_update (1, self->ns, 1,
 			     self->bson_sel, self->bson_upd);
 
   if (!mongo_packet_send (self->conn, p))
@@ -335,12 +329,8 @@ afmongodb_worker_thread (gpointer arg)
 	     NULL);
 
   success = afmongodb_dd_connect(self, FALSE);
-  self->current_namespace = g_string_sized_new(64);
-  self->ns_prefix_len = strlen (self->db) + 1;
 
-  self->current_namespace =
-    g_string_append_c (g_string_assign (self->current_namespace,
-					self->db), '.');
+  self->ns = g_strconcat (self->db, ".", self->coll, NULL);
 
   self->current_value = g_string_sized_new(256);
 
@@ -383,7 +373,7 @@ afmongodb_worker_thread (gpointer arg)
 
   afmongodb_dd_disconnect(self);
 
-  g_string_free (self->current_namespace, TRUE);
+  g_free (self->ns);
   g_string_free (self->current_value, TRUE);
 
   bson_free (self->bson_sel);
@@ -516,7 +506,7 @@ afmongodb_dd_free(LogPipe *d)
 
   g_free(self->fields);
   g_free(self->db);
-  log_template_unref(self->coll);
+  g_free(self->coll);
   g_free(self->user);
   g_free(self->password);
   g_free(self->host);
