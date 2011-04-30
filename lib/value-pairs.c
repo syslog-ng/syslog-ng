@@ -204,6 +204,7 @@ vp_merge_set(ValuePairs *vp, LogMessage *msg, gint32 seq_num, ValuePairSpec *set
         {
         case VPT_MACRO:
           log_macro_expand(vp->res, set[i].id, FALSE, NULL, LTZ_LOCAL, seq_num, NULL, msg);
+          break;
         case VPT_NVPAIR:
           {
             const gchar *nv;
