@@ -150,7 +150,7 @@ affile_sd_recover_state(LogPipe *s, GlobalConfig *cfg, LogProto *proto)
 {
   AFFileSourceDriver *self = (AFFileSourceDriver *) s;
 
-  if ((self->flags & AFFILE_PIPE))
+  if ((self->flags & AFFILE_PIPE) || self->reader_options.follow_freq <= 0)
     return;
 
   if (!log_proto_restart_with_state(proto, cfg->state, affile_sd_format_persist_name(self)))
@@ -171,9 +171,8 @@ affile_sd_construct_proto(AFFileSourceDriver *self, LogTransport *transport)
 
   flags =
     ((self->reader_options.follow_freq > 0)
-     ? LPBS_IGNORE_EOF
-     : LPBS_NOMREAD) |
-    ((self->flags & AFFILE_PIPE) ? 0 : LPBS_POS_TRACKING);
+     ? LPBS_IGNORE_EOF | LPBS_POS_TRACKING
+     : LPBS_NOMREAD);
 
   handler = self->reader_options.parse_options.format_handler;
   if ((handler && handler->construct_proto))
