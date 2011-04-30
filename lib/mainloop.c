@@ -484,7 +484,7 @@ main_loop_reload_config_apply(void)
 }
 
 /* initiate configuration reload */
-static void
+void
 main_loop_reload_config_initiate(void)
 {
   main_loop_old_config = current_configuration;

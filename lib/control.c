@@ -27,6 +27,8 @@
 #include "messages.h"
 #include "stats.h"
 #include "misc.h"
+#include "mainloop.h"
+
 #include <errno.h>
 #include <string.h>
 #include <stdio.h>
@@ -142,6 +144,13 @@ exit:
   g_strfreev(cmds);
 }
 
+static void
+control_connection_reload(ControlConnection *self, GString *command)
+{
+  main_loop_reload_config_initiate();
+  control_connection_send_reply(self, "OK Config reload initiated", FALSE);
+}
+
 static struct
 {
   const gchar *command;
@@ -151,6 +160,7 @@ static struct
 {
   { "STATS", NULL, control_connection_send_stats },
   { "LOG", NULL, control_connection_message_log },
+  { "RELOAD", NULL, control_connection_reload },
   { NULL, NULL, NULL },
 };
 

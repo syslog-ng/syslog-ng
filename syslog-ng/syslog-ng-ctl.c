@@ -176,10 +176,20 @@ slng_stats(int argc, char *argv[], const gchar *mode)
   return 0;
 }
 
-static GOptionEntry stats_options[] =
+static gint
+slng_reload(int argc, char *argv[], const gchar *mode)
 {
-  { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
-};
+  GString *rsp = NULL;
+
+  if (!(slng_send_cmd("RELOAD\n") && ((rsp = slng_read_response()) != NULL)))
+    return 1;
+
+  printf("%s\n", rsp->str);
+
+  g_string_free(rsp, TRUE);
+
+  return 0;
+}
 
 const gchar *
 slng_mode(int *argc, char **argv[])
@@ -215,7 +225,8 @@ static struct
   gint (*main)(gint argc, gchar *argv[], const gchar *mode);
 } modes[] =
 {
-  { "stats", stats_options, "Dump syslog-ng statistics", slng_stats },
+  { "stats", NULL, "Dump syslog-ng statistics", slng_stats },
+  { "reload", NULL, "Reload syslog-ng", slng_reload },
   { "verbose", verbose_options, "Enable/query verbose messages", slng_verbose },
   { "debug", verbose_options, "Enable/query debug messages", slng_verbose },
   { "trace", verbose_options, "Enable/query trace messages", slng_verbose },
@@ -256,7 +267,8 @@ main(int argc, char *argv[])
         {
           ctx = g_option_context_new(mode_string);
           g_option_context_set_summary(ctx, modes[mode].description);
-          g_option_context_add_main_entries(ctx, modes[mode].options, NULL);
+          if (modes[mode].options)
+            g_option_context_add_main_entries(ctx, modes[mode].options, NULL);
           g_option_context_add_main_entries(ctx, slng_options, NULL);
           break;
         }

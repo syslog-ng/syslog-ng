@@ -65,6 +65,7 @@ main_loop_io_worker_job_quit(void)
   return main_loop_io_workers_quit;
 }
 
+void main_loop_reload_config_initiate(void);
 void main_loop_io_worker_set_thread_id(gint id);
 gint main_loop_io_worker_thread_id(void);
 void main_loop_io_worker_job_init(MainLoopIOWorkerJob *self);
