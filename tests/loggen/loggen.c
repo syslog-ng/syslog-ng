@@ -12,6 +12,7 @@
 #include <netdb.h>
 #include <string.h>
 #include <glib.h>
+#include <signal.h>
 
 #include <openssl/crypto.h>
 #include <openssl/x509.h>
