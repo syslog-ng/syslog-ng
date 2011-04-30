@@ -837,6 +837,7 @@ log_reader_options_destroy(LogReaderOptions *options)
 CfgFlagHandler log_reader_flag_handlers[] =
 {
   /* LogParseOptions */
+  /* NOTE: underscores are automatically converted to dashes */
   { "no-parse",                   CFH_SET, offsetof(LogReaderOptions, parse_options.flags), LP_NOPARSE },
   { "check-hostname",             CFH_SET, offsetof(LogReaderOptions, parse_options.flags), LP_CHECK_HOSTNAME },
   { "syslog-protocol",            CFH_SET, offsetof(LogReaderOptions, parse_options.flags), LP_SYSLOG_PROTOCOL },

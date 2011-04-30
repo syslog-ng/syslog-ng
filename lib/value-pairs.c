@@ -102,14 +102,14 @@ static gboolean value_pair_sets_initialized;
 
 static CfgFlagHandler value_pair_scope[] =
 {
-  { "nv_pairs",           CFH_SET, offsetof(ValuePairs, scopes), VALUE_PAIR_SCOPE_NV_PAIRS },
+  { "nv-pairs",           CFH_SET, offsetof(ValuePairs, scopes), VALUE_PAIR_SCOPE_NV_PAIRS },
   { "rfc3164",            CFH_SET, offsetof(ValuePairs, scopes), VALUE_PAIR_SCOPE_RFC3164 },
   { "core",               CFH_SET, offsetof(ValuePairs, scopes), VALUE_PAIR_SCOPE_RFC3164 },
   { "base",               CFH_SET, offsetof(ValuePairs, scopes), VALUE_PAIR_SCOPE_RFC3164 },
   { "rfc5424",            CFH_SET, offsetof(ValuePairs, scopes), VALUE_PAIR_SCOPE_RFC5424 },
-  { "syslog_proto",       CFH_SET, offsetof(ValuePairs, scopes), VALUE_PAIR_SCOPE_RFC5424 },
-  { "all_macros",         CFH_SET, offsetof(ValuePairs, scopes), VALUE_PAIR_SCOPE_ALL_MACROS },
-  { "selected_macros",    CFH_SET, offsetof(ValuePairs, scopes), VALUE_PAIR_SCOPE_SELECTED_MACROS },
+  { "syslog-proto",       CFH_SET, offsetof(ValuePairs, scopes), VALUE_PAIR_SCOPE_RFC5424 },
+  { "all-macros",         CFH_SET, offsetof(ValuePairs, scopes), VALUE_PAIR_SCOPE_ALL_MACROS },
+  { "selected-macros",    CFH_SET, offsetof(ValuePairs, scopes), VALUE_PAIR_SCOPE_SELECTED_MACROS },
   { "everything",         CFH_SET, offsetof(ValuePairs, scopes), VALUE_PAIR_SCOPE_EVERYTHING },
 };
 

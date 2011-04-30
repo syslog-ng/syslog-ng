@@ -248,8 +248,8 @@ cfg_process_flag(CfgFlagHandler *handlers, gpointer base, const gchar *flag_)
 
   for (h = 0; flag_[h] && h < sizeof(flag); h++)
     {
-      if (flag_[h] == '-')
-        flag[h] = '_';
+      if (flag_[h] == '_')
+        flag[h] = '-';
       else
         flag[h] = flag_[h];
     }
