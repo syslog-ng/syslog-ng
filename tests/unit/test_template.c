@@ -241,6 +241,11 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase(msg, "$(if '\"$FACILITY_NUM\" >= \"19\" and \"kicsi\" == \"nagy\"' alma korte)", "korte");
   testcase(msg, "$(if '\"$FACILITY_NUM\" >= \"19\" or \"kicsi\" == \"nagy\"' alma korte)", "alma");
 
+  testcase(msg, "$(substr $HOST 1 3)", "zor");
+  testcase(msg, "$(substr $HOST 1)", "zorp");
+  testcase(msg, "$(substr $HOST -1)", "p");
+  testcase(msg, "$(substr $HOST -2 1)", "r");
+
   /* message refs */
   testcase(msg, "$(echo ${HOST}@0 ${PID}@1)", "bzorp 23323");
   testcase(msg, "$(echo $HOST $PID)@0", "bzorp 23323");
