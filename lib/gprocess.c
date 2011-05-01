@@ -140,6 +140,7 @@ static struct
   .gid = -1
 };
 
+#if ENABLE_SYSTEMD
 /**
  * Inherits systemd socket activation from parent process updating the pid
  * in LISTEN_PID to the pid of the child process.
@@ -189,6 +190,11 @@ inherit_systemd_activation(void)
 
   return -1;
 }
+#else
+
+#define inherit_systemd_activation()
+
+#endif
 
 #if ENABLE_LINUX_CAPS
 

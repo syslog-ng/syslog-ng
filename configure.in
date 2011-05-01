@@ -143,6 +143,10 @@ AC_ARG_ENABLE(gcov,
               [  --enable-gcov           Enable coverage profiling (default: no)]
               ,,enable_gcov="no")
 
+AC_ARG_ENABLE(systemd,
+              [  --enable-systemd        Enable systemd support (default: auto)]
+              ,,enable_systemd="auto")
+
 
 dnl ***************************************************************************
 dnl Checks for programs.
@@ -317,6 +321,19 @@ dnl ***************************************************************************
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_STRUCT_TM
+
+AC_CACHE_CHECK(for SO_ACCEPTCONN, blb_cv_c_so_acceptconn,
+  [AC_EGREP_CPP(SO_ACCEPTCONN,
+[
+#include <sys/types.h>
+#include <socket.h>
+SO_ACCEPTCONN
+],
+  blb_cv_c_so_acceptconn=no, blb_cv_c_so_acceptconn=yes)])
+
+if test "x$blb_cv_c_so_acceptconn" = "xyes"; then
+        AC_DEFINE(HAVE_SO_ACCEPTCONN, 1, [SO_ACCEPTCONN is present])
+fi
 
 AC_CHECK_MEMBER(struct tm.tm_gmtoff,AC_DEFINE(HAVE_STRUCT_TM_TM_GMTOFF,1,[Whether you have tm_gmtoff field in struct tm]),,[
 #if TM_IN_SYS_TIME
@@ -687,6 +704,14 @@ if test "x$enable_linux_caps" = "xauto"; then
         AC_MSG_RESULT([$enable_linux_caps])
 fi
 
+if test "x$enable_systemd" = "xauto"; then
+	if test "$ostype" = "Linux" -a "$blb_cv_c_so_acceptconn" = "yes"; then
+		enable_systemd=yes
+	else
+		enable_systemd=no
+	fi
+fi
+
 CPPFLAGS="$CPPFLAGS $GLIB_CFLAGS $EVTLOG_CFLAGS $PCRE_CFLAGS $OPENSSL_CFLAGS $LIBNET_CFLAGS $LIBDBI_CFLAGS -D_GNU_SOURCE -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64"
 
 if test "x$linking_mode" = "xdynamic"; then
@@ -777,6 +802,7 @@ AC_DEFINE_UNQUOTED(ENABLE_TCP_WRAPPER, `enable_value $enable_tcp_wrapper`, [Enab
 AC_DEFINE_UNQUOTED(ENABLE_LINUX_CAPS, `enable_value $enable_linux_caps`, [Enable Linux capability management support])
 AC_DEFINE_UNQUOTED(ENABLE_PCRE, `enable_value $enable_pcre`, [Enable PCRE support])
 AC_DEFINE_UNQUOTED(ENABLE_ENV_WRAPPER, `enable_value $enable_env_wrapper`, [Enable environment wrapper support])
+AC_DEFINE_UNQUOTED(ENABLE_SYSTEMD, `enable_value $enable_systemd`, [Enable systemd support])
 
 AC_DEFINE_UNQUOTED(ENABLE_SSL_MODULE, `enable_value $enable_ssl`, [SSL was detected and compiled in the afsocket module])
 AC_DEFINE_UNQUOTED(ENABLE_SQL_MODULE, `enable_value $enable_sql`, [SQL was compiled as a module])
@@ -784,6 +810,7 @@ AC_DEFINE_UNQUOTED(ENABLE_SUN_STREAMS_MODULE, `enable_value $enable_sun_streams`
 AC_DEFINE_UNQUOTED(ENABLE_PACCT_MODULE, `enable_value $enable_pacct`, [Process accounting format (pacct) was compiled as a module])
 
 AM_CONDITIONAL(ENABLE_ENV_WRAPPER, [test "$enable_env_wrapper" = "yes"])
+AM_CONDITIONAL(ENABLE_SYSTEMD, [test "$enable_systemd" = "yes"])
 AM_CONDITIONAL(ENABLE_SSL, [test "$enable_ssl" = "yes"])
 AM_CONDITIONAL(ENABLE_SQL, [test "$enable_sql" = "yes"])
 AM_CONDITIONAL(ENABLE_SUN_STREAMS, [test "$enable_sun_streams" = "yes"])
@@ -880,6 +907,7 @@ echo "  SQL support (module)        : ${enable_sql:=no}"
 echo "  Linux capability support    : ${enable_linux_caps:=no}"
 echo "  PCRE support                : ${enable_pcre:=no}"
 echo "  Env wrapper support         : ${enable_env_wrapper:=no}"
+echo "  systemd support             : ${enable_systemd:=no}"
 echo "  PACCT module (EXPERIMENTAL) : ${enable_pacct:=no}"
 
 

@@ -64,6 +64,7 @@ afunix_sd_set_perm(LogDriver *s, gint perm)
   self->perm = perm & 0777;
 }
 
+#if ENABLE_SYSTEMD
 static gboolean
 afunix_sd_acquire_socket(AFSocketSourceDriver *s, gint *result_fd)
 {
@@ -120,6 +121,15 @@ afunix_sd_acquire_socket(AFSocketSourceDriver *s, gint *result_fd)
     }
   return TRUE;
 }
+
+#else
+
+static gboolean
+afunix_sd_acquire_socket(AFSocketSourceDriver *s, gint *result_fd)
+{
+  return TRUE;
+}
+#endif
 
 static gboolean
 afunix_sd_init(LogPipe *s)
