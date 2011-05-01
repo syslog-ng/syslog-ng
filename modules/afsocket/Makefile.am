@@ -2,12 +2,18 @@ moduledir = @moduledir@
 AM_CPPFLAGS = -I$(top_srcdir)/lib -I../../lib
 export top_srcdir
 
+if ENABLE_SYSTEMD
+SYSTEMD_SOURCES = sd-daemon.c sd-daemon.h
+else
+SYSTEMD_SOURCES =
+endif
+
 module_LTLIBRARIES := libafsocket-notls.la
 noinst_DATA = libafsocket.la
 libafsocket_notls_la_SOURCES = \
 	afsocket.c afsocket.h afunix.c afunix.h afinet.c afinet.h \
 	afsocket-grammar.y afsocket-parser.c afsocket-parser.h afsocket-plugin.c \
-	sd-daemon.c sd-daemon.h
+	$(SYSTEMD_SOURCES)
 libafsocket_notls_la_CPPFLAGS = $(AM_CPPFLAGS)
 libafsocket_notls_la_LIBADD = ../../lib/libsyslog-ng.la $(LIBNET_LIBS) $(LIBWRAP_LIBS)
 libafsocket_notls_la_LDFLAGS = -avoid-version -module -no-undefined
@@ -17,7 +23,7 @@ module_LTLIBRARIES += libafsocket-tls.la
 libafsocket_tls_la_SOURCES = \
 	afsocket.c afsocket.h afunix.c afunix.h afinet.c afinet.h \
 	afsocket-grammar.y afsocket-parser.c afsocket-parser.h afsocket-plugin.c \
-	sd-daemon.c sd-daemon.h
+	$(SYSTEMD_SOURCES)
 libafsocket_tls_la_CPPFLAGS = $(AM_CPPFLAGS) -DENABLE_SSL=1
 libafsocket_tls_la_LIBADD = ../../lib/libsyslog-ng.la ../../lib/libsyslog-ng-crypto.la $(OPENSSL_LIBS) $(ZLIB_LIBS) $(LIBNET_LIBS) $(LIBWRAP_LIBS)
 libafsocket_tls_la_LDFLAGS = -avoid-version -module -no-undefined
