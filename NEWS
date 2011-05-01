@@ -1,3 +1,114 @@
+3.2.3
+	Sun, 01 May 2011 19:05:32 +0200
+
+	Highlights:
+
+	This is a maintenance release for the 3.2 branch, which contains
+	several important functionality fixes in the db-parser()
+	correllation code, an important security fix for FreeBSD & HP-UX
+	(CVE-2011-0343) and build fixes for cygwin and mixed mode linking.
+
+	Security fixes:
+        * Fixed a possible security issue on Debian/kFreeBSD and on
+          platforms where mode_t is an unsigned 16 bit value (FreeBSD,
+          HP-UX).  On these platforms syslog-ng may be using 0xFFFF as the
+          permission bits.  (CVE-2011-0343)
+
+	Bugfixes:
+	* Fixes an y2k38 problem that causes syslog-ng to use 100% CPU time
+	  in case mark messages are enabled and the UNIX timestamps
+	  overflows a signed 32 bit counter, which happens in 19th, January 2038
+	* Fixed file() destination to work on device nodes (e.g. files in
+	  /dev).  Without this change, syslog-ng started using 100% CPU time
+	  if given devices as destinations that couldn't always consume
+	  data.
+	* The code to restore the last file position for source files will
+	  not accept file-position past the file size, and will restart the
+	  file from the beginning instead.
+	* Don't attempt to remember the current file position for source
+	  files that are read with follow-freq(0), e.g. /dev/klog and
+	  /proc/kmsg. These are special files which do not have the notion
+	  of file position, so no need to remember them. Regular files
+	  should always be read with follow-freq() set to nonzero, which is
+	  the default.
+	* Fixed linking unit tests and other tools in mixed linking mode.
+	* Fixed compilation on cygwin, especially lot of efforts went into
+	  linker compatibility.
+	* Fixed building on platforms where PCRE is not in the standard
+	  include path.
+	* Accept catch-all flag on log statements as well as catchall, as
+	  this was incorrectly documented in the past.
+
+	db-parser() & pdbtool bugfixes:
+	* Fixed @XX style message reference parsing used in correllation
+	  rules.
+	* Fixed a segfault in the $(grep) template function when processing
+	  the parameters failed.
+	* Fixed segfault in "pdbtool match --debug-pattern" in case the
+	  pattern doesn't match.
+	* Fixed "pdbtool test" as previously all patterndb.xml files were
+	  reported to be invalid, even valid ones.
+	* Fixed correllation timer related issue that caused some timers not
+	  to expire in rare cases.
+
+	db-parser() & pdbtool changes:
+	* Added support for enclosing template function arguments in
+	  parenthesis, in which case the quotes within the parentheses are
+	  not removed. For example: $(grep ('$FACILITY' == 'syslog'))
+	  This makes writing $(grep) and $(if) arguments much easier.
+	* dbparser() the @NUMBER@ and @FLOAT@ parsers are able to parse
+	  negative numbers.
+	* Added debug messages to dbparser() correllation so that it becomes
+	  easier to diagnose db-parser() problems.
+	* Added -d (for --debug) and -v (for --verbose) options to pdbtool
+	  in order to make patterndb debugging easier.
+	* Added --no-parse option to "pdbtool patternize" in order to read
+	  files without syslog-style parsing.
+
+	Other changes:
+	* Added error messages on DBI initialization failures.
+	* Added systemd socket activation support.
+
+	Build related changes:
+	* Support for old (e.g. pre 7.1 commonly found in RHEL5) PCRE
+	  versions at the cost of an inoperating "newline" regexp flag.
+	* configure now validates flex/bison versions better, as the
+	  requirements are more strict starting with syslog-ng 3.2
+	* Drop the creation of libsyslog-ng-patterndb.so.
+	* "make clean" will properly remove libafsocket.so symlink.
+
+	Credits:
+
+	syslog-ng is developed as a community project. All changes and
+	improvements requires effort, and this effort is really appreciated.
+
+	Writing code, testing changes or simply providing use-cases and
+	information on one's setup will make syslog-ng better.
+
+	Here are the people, listed in no specific order who made this
+	release possible.
+
+          Steven Chamberlain
+          Roger
+          Paul Krizak (AMD)
+          Attila Szalay (BalaBit)
+          Matthew Hall
+          Marius Tomaschewski (SUSE)
+          Gergely Nagy (BalaBit)
+          Tom Gundersen
+          Dalibor Toman (Fortech.cz)
+          Corinna Vinschen (RedHat)
+          Balazs Scheidler (BalaBit)
+          Laszlo Boszormenyi (LSC.hu)
+          Arkadiusz Miśkiewicz (PLD Linux)
+          Valentijn Sessink
+          Hendrik Visage
+          Peter Gyongyosi (BalaBit)
+          Zoltan Pallagi (BalaBit)
+          Mishou Michael (US IRS)
+
+	Thanks for their efforts, it is appreciated.
+
 3.2.2
 	Sat, 15 Jan 2011 13:50:35 +0100
 
