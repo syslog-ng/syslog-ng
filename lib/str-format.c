@@ -5,9 +5,16 @@
 static gchar digits[] = "0123456789abcdef";
 
 static inline gint
-format_uint32_base10_rev(gchar *result, gsize result_len, guint32 value)
+format_uint32_base10_rev(gchar *result, gsize result_len, gint sign, guint32 value)
 {
   gchar *p;
+  gboolean negative = 0;
+
+  if (sign && ((gint32) value) < 0)
+    {
+      value = -((gint32) value);
+      negative = 1;
+    }
 
   p = result;
   while (result_len > 0 && value > 0)
@@ -16,6 +23,11 @@ format_uint32_base10_rev(gchar *result, gsize result_len, guint32 value)
       value /= 10;
       p++;
       result_len--;
+    }
+  if (negative && result_len > 0)
+    {
+      *p = '-';
+      p++;
     }
   return p - result;
 }
@@ -36,14 +48,14 @@ format_uint32_base16_rev(gchar *result, gsize result_len, guint32 value)
   return p - result;
 }
 
-gint
-format_uint32_padded(GString *result, gint field_len, gchar pad_char, gint base, guint32 value)
+static gint
+format_padded_integer(GString *result, gint field_len, gchar pad_char, gint sign, gint base, guint32 value)
 {
   gchar num[32];
   gint len, i, pos;
 
   if (base == 10)
-    len = format_uint32_base10_rev(num, sizeof(num), value);
+    len = format_uint32_base10_rev(num, sizeof(num), sign, value);
   else if (base == 16)
     len = format_uint32_base16_rev(num, sizeof(num), value);
   else
@@ -70,6 +82,19 @@ format_uint32_padded(GString *result, gint field_len, gchar pad_char, gint base,
     }
   return field_len;
 }
+
+gint
+format_uint32_padded(GString *result, gint field_len, gchar pad_char, gint base, guint32 value)
+{
+  return format_padded_integer(result, field_len, pad_char, 0, base, value);
+}
+
+gint
+format_int32_padded(GString *result, gint field_len, gchar pad_char, gint base, gint32 value)
+{
+  return format_padded_integer(result, field_len, pad_char, 1, base, value);
+}
+
 
 gboolean
 scan_uint32(const gchar **buf, gint *left, gint field_width, guint32 *num)

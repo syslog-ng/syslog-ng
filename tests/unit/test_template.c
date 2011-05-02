@@ -246,6 +246,17 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase(msg, "$(substr $HOST -1)", "p");
   testcase(msg, "$(substr $HOST -2 1)", "r");
 
+  testcase(msg, "$(+ $FACILITY_NUM 1)", "20");
+  testcase(msg, "$(+ -1 -1)", "-2");
+  testcase(msg, "$(- $FACILITY_NUM 1)", "18");
+  testcase(msg, "$(- $FACILITY_NUM 20)", "-1");
+  testcase(msg, "$(* $FACILITY_NUM 2)", "38");
+  testcase(msg, "$(/ $FACILITY_NUM 2)", "9");
+  testcase(msg, "$(% $FACILITY_NUM 3)", "1");
+  testcase(msg, "$(/ $FACILITY_NUM 0)", "NaN");
+  testcase(msg, "$(% $FACILITY_NUM 0)", "NaN");
+  testcase(msg, "$(+ foo bar)", "NaN");
+
   /* message refs */
   testcase(msg, "$(echo ${HOST}@0 ${PID}@1)", "bzorp 23323");
   testcase(msg, "$(echo $HOST $PID)@0", "bzorp 23323");
