@@ -467,7 +467,12 @@ gen_messages(send_data_t send_func, void *send_func_ud, int thread_id, FILE *rea
     printf("%d;%lu.%06lu;%.2lf;%lu\n", thread_id, (long) diff_tv.tv_sec, (long) diff_tv.tv_usec, (((double) (count - last_count) * USEC_PER_SEC) / diff_usec), count);
 
   if (readfrom)
-    raw_message_length = sum_linelen/count;
+    {
+      if (count)
+	raw_message_length = sum_linelen/count;
+      else
+	raw_message_length = 0;
+    }
   free(testsdata);
   return count;
 }
