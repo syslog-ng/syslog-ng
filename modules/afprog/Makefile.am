@@ -11,7 +11,7 @@ BUILT_SOURCES = afprog-grammar.y afprog-grammar.c afprog-grammar.h
 EXTRA_DIST = $(BUILT_SOURCES) afprog-grammar.ym
 
 libafprog_la_CPPFLAGS = $(AM_CPPFLAGS)
-libafprog_la_LIBADD = ../../lib/libsyslog-ng.la
-libafprog_la_LDFLAGS = -avoid-version -module -no-undefined
+libafprog_la_LIBADD = $(MODULE_DEPS_LIBS)
+libafprog_la_LDFLAGS = $(MODULE_LDFLAGS)
 
 include $(top_srcdir)/build/lex-rules.am

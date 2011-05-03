@@ -8,8 +8,8 @@ libcsvparser_la_SOURCES = \
 	csvparser-grammar.y csvparser-parser.c csvparser-parser.h csvparser-plugin.c
 
 libcsvparser_la_CPPFLAGS = $(AM_CPPFLAGS)
-libcsvparser_la_LIBADD = ../../lib/libsyslog-ng.la
-libcsvparser_la_LDFLAGS = -avoid-version -module -no-undefined
+libcsvparser_la_LIBADD = $(MODULE_DEPS_LIBS)
+libcsvparser_la_LDFLAGS = $(MODULE_LDFLAGS)
 
 BUILT_SOURCES = csvparser-grammar.y csvparser-grammar.c csvparser-grammar.h
 EXTRA_DIST = $(BUILT_SOURCES) csvparser-grammar.ym
