@@ -82,7 +82,7 @@ struct _LogColumnParser
 };
 
 void log_column_parser_set_columns(LogColumnParser *s, GList *fields);
-void log_column_parser_free(LogParser *s);
+void log_column_parser_free_method(LogParser *s);
 
 LogProcessRule *log_parser_rule_new(const gchar *name, GList *parser_list);
 
