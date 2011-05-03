@@ -505,7 +505,6 @@ typedef struct _LogMatcherPcreRe
   pcre *pattern;
   pcre_extra *extra;
   gint match_options;
-  int start_offset;
 } LogMatcherPcreRe;
 
 static gboolean
@@ -629,29 +628,37 @@ static gboolean
 log_matcher_pcre_re_match(LogMatcher *s, LogMessage *msg, gint value_handle, const gchar *value, gssize value_len)
 {
   LogMatcherPcreRe *self = (LogMatcherPcreRe *) s; 
-  int matches[RE_MAX_MATCHES * 3];
+  gint *matches;
+  gsize matches_size;
+  gint num_matches;
   gint rc;
 
-  if(value_len == -1)
+  if (value_len == -1)
     value_len = strlen(value);
 
-  self->start_offset = 0;   
-  rc = pcre_exec(self->pattern, self->extra,  value, value_len, self->start_offset, self->match_options, matches, (RE_MAX_MATCHES * 3));
+  if (pcre_fullinfo(self->pattern, self->extra, PCRE_INFO_CAPTURECOUNT, &num_matches) < 0)
+    g_assert_not_reached();
+  if (num_matches > RE_MAX_MATCHES)
+    num_matches = RE_MAX_MATCHES;
+
+  matches_size = 3 * (num_matches + 1);
+  matches = g_alloca(matches_size * sizeof(gint));
+
+  rc = pcre_exec(self->pattern, self->extra,
+                 value, value_len, 0, self->match_options, matches, matches_size);
   if (rc < 0)
     {
       switch (rc)
         {
-          case PCRE_ERROR_NOMATCH: 
-                /*
-                    msg_debug("No match", NULL); 
-                  */
+        case PCRE_ERROR_NOMATCH:
           break;
+
+        default:
           /* Handle other special cases */
-          default: 
-            msg_error("Error while matching regexp",
-                      evt_tag_int("error_code",rc),
-                      NULL);
-            break;
+          msg_error("Error while matching regexp",
+                    evt_tag_int("error_code", rc),
+                    NULL);
+          break;
         }
       return FALSE;
     }
@@ -674,78 +681,120 @@ static gchar *
 log_matcher_pcre_re_replace(LogMatcher *s, LogMessage *msg, gint value_handle, const gchar *value, gssize value_len, LogTemplate *replacement, gssize *new_length)
 {
   LogMatcherPcreRe *self = (LogMatcherPcreRe *) s; 
-  int matches[RE_MAX_MATCHES * 3];
-  gint rc;
-  gboolean first_round = TRUE;
   GString *new_value = NULL;
-  gssize last_offset = 0;
-  gint options = 0;
+  gint *matches;
+  gsize matches_size;
+  gint num_matches;
+  gint rc;
+  gint start_offset, last_offset;
+  gint options;
+  gboolean last_match_was_empty;
 
-  memset(matches, 0, sizeof(matches));
+  if (pcre_fullinfo(self->pattern, self->extra, PCRE_INFO_CAPTURECOUNT, &num_matches) < 0)
+    g_assert_not_reached();
+  if (num_matches > RE_MAX_MATCHES)
+    num_matches = RE_MAX_MATCHES;
+
+  matches_size = 3 * (num_matches + 1);
+  matches = g_alloca(matches_size * sizeof(gint));
+
+  /* we need zero initialized offsets for the last match as the
+   * algorithm tries uses that as the base position */
+
+  matches[0] = matches[1] = matches[2] = 0;
 
   if (value_len == -1)
     value_len = strlen(value);
 
+  last_offset = start_offset = 0;
+  last_match_was_empty = FALSE;
   do
     {
-      options = 0;
-      self->start_offset = matches[1];   /* Start at end of previous match 0 on the first iteration*/
+      /* loop over the string, replacing one occurence at a time. */
 
-      /* If the previous match was for an empty string, we are finished if we are
-         at the end of the subject. Otherwise, arrange to run another match at the
-         same point to see if a non-empty match can be found. 
+      /* NOTE: zero length matches need special care, as we could spin
+       * forever otherwise (since the current position wouldn't be
+       * advanced).
+       *
+       * A zero-length match can be as simple as "a*" which will be
+       * returned unless PCRE_NOTEMPTY is specified.
+       *
+       * By supporting zero-length matches, we basically make it
+       * possible to insert replacement between each incoming
+       * character.
+       *
+       * For example:
+       *     pattern: a*
+       *     replacement: #
+       *     input: message
+       *     result: #m#e#s#s#a#g#e#
+       *
+       * This mimics Perl behaviour.
        */
 
-      if (matches[0] == matches[1] && !first_round)
+      if (last_match_was_empty)
         {
-          if (matches[0] == value_len) 
-            break;
-          options = PCRE_NOTEMPTY | PCRE_ANCHORED;
-        }
+          /* Otherwise, arrange to run another match at the same point
+           * to see if a non-empty match can be found.
+           */
 
-      rc = pcre_exec(self->pattern, self->extra,  value, value_len, self->start_offset/*start offset*/, (self->match_options | options) , matches, (RE_MAX_MATCHES * 3) );
-      if (rc < 0)
-        {
-          if(rc == PCRE_ERROR_NOMATCH)
-            {
-             /* msg_debug("No match", NULL); */
-              if(!first_round)
-                {
-                  if (options == 0) 
-                    break;
-                  else
-                    matches[1] = self->start_offset + 1;
-                  continue;    /* Go round the loop again */
-                }
-             }
-           else
-             {
-               /* Handle other special cases */
-               msg_error("Error while matching regexp",
-                         evt_tag_int("error_code",rc),
-                         NULL);
-             }
-        }
-      else if (rc == 0)
-        {
-          msg_error("Error while storing matching substrings", NULL);
+          options = PCRE_NOTEMPTY | PCRE_ANCHORED;
         }
       else
         {
+          options = 0;
+        }
+
+      rc = pcre_exec(self->pattern, self->extra,
+                     value, value_len,
+                     start_offset, (self->match_options | options), matches, matches_size);
+      if (rc < 0 && rc != PCRE_ERROR_NOMATCH)
+        {
+          msg_error("Error while matching regexp",
+                    evt_tag_int("error_code", rc),
+                    NULL);
+          break;
+        }
+      else if (rc < 0)
+        {
+          if ((options & PCRE_NOTEMPTY) == 0)
+            {
+              /* we didn't match, even when we permitted to match the
+               * empty string. Nothing to find here, bail out */
+              break;
+            }
+
+          /* we didn't match, quite possibly because the empty match
+           * was not permitted. Skip one character in order to avoid
+           * infinite loop over the same zero-length match. */
+
+          start_offset = start_offset + 1;
+          /* FIXME: handle complex sequences like utf8 and newline characters */
+          last_match_was_empty = FALSE;
+          continue;
+        }
+      else
+        {
+          /* if the output array was too small, truncate the number of
+             captures to RE_MAX_MATCHES */
+
+          if (rc == 0)
+            rc = matches_size / 3;
+
           log_matcher_pcre_re_feed_backrefs(s, msg, value_handle, matches, rc, value);
           log_matcher_pcre_re_feed_named_substrings(s, msg, matches, value);
 
           if (!new_value)
             new_value = g_string_sized_new(value_len); 
-          /* literal */
+          /* append non-matching portion */
           g_string_append_len(new_value, &value[last_offset], matches[0] - last_offset);
           /* replacement */
           log_template_append_format(replacement, msg, NULL, LTZ_LOCAL, 0, new_value);
-          last_offset = matches[1];
+          last_match_was_empty = (matches[0] == matches[1]);
+          start_offset = last_offset = matches[1];
         }
-      first_round = FALSE;
     }
-  while (TRUE && (self->super.flags & LMF_GLOBAL));
+  while (self->super.flags & LMF_GLOBAL && start_offset < value_len);
 
   if (new_value)
     { 
