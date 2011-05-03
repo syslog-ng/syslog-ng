@@ -7,8 +7,8 @@ libsyslogformat_la_SOURCES = \
 	syslog-format.c syslog-format.h syslog-format-plugin.c
 
 libsyslogformat_la_CPPFLAGS = $(AM_CPPFLAGS)
-libsyslogformat_la_LIBADD = ../../lib/libsyslog-ng.la
-libsyslogformat_la_LDFLAGS = -avoid-version -module -no-undefined
+libsyslogformat_la_LIBADD = $(MODULE_DEPS_LIBS)
+libsyslogformat_la_LDFLAGS = $(MODULE_LDFLAGS)
 
 
 include $(top_srcdir)/build/lex-rules.am

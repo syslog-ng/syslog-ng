@@ -25,8 +25,8 @@ libdbparser_la_SOURCES = \
 	dbparser-plugin.c $(libsyslog_ng_patterndb_a_SOURCES)
 
 libdbparser_la_CPPFLAGS = $(AM_CPPFLAGS)
-libdbparser_la_LIBADD = ../../lib/libsyslog-ng.la @OPENSSL_LIBS@
-libdbparser_la_LDFLAGS = -avoid-version -module -no-undefined
+libdbparser_la_LIBADD = $(MODULE_DEPS_LIBS) @OPENSSL_LIBS@
+libdbparser_la_LDFLAGS = $(MODULE_LDFLAGS)
 
 bin_PROGRAMS = pdbtool
 pdbtool_SOURCES = pdbtool.c

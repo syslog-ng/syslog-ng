@@ -16,6 +16,7 @@ testcase_match(const gchar *log, const gchar *pattern, gint matcher_flags, gbool
   gchar buf[1024];
   NVHandle nonasciiz = log_msg_get_value_handle("NON-ASCIIZ");
   gssize msglen;
+  const gchar *value;
 
   msg = log_msg_new(log, strlen(log), g_sockaddr_inet_new("10.10.10.10", 1010), &parse_options);
 
@@ -28,7 +29,8 @@ testcase_match(const gchar *log, const gchar *pattern, gint matcher_flags, gbool
 
   log_matcher_compile(m, pattern);
 
-  result = log_matcher_match(m, msg, nonasciiz, log_msg_get_value(msg, nonasciiz, &msglen), msglen);
+  value = log_msg_get_value(msg, nonasciiz, &msglen);
+  result = log_matcher_match(m, msg, nonasciiz, value, msglen);
 
   if (result != expected_result)
     {
@@ -51,7 +53,7 @@ testcase_replace(const gchar *log, const gchar *re, gchar *replacement, const gc
   gchar buf[1024];
   gssize msglen;
   NVHandle nonasciiz = log_msg_get_value_handle("NON-ASCIIZ");
-  const gchar *msgbuf;
+  const gchar *value;
 
   msg = log_msg_new(log, strlen(log), g_sockaddr_inet_new("10.10.10.10", 1010), &parse_options);
 
@@ -69,12 +71,13 @@ testcase_replace(const gchar *log, const gchar *re, gchar *replacement, const gc
 
   r = log_template_new(configuration, NULL, replacement);
 
-  result = log_matcher_replace(m, msg, nonasciiz, log_msg_get_value(msg, nonasciiz, &msglen), msglen, r, &length);
-  msgbuf = log_msg_get_value(msg, nonasciiz, &msglen);
+  value = log_msg_get_value(msg, nonasciiz, &msglen);
+  result = log_matcher_replace(m, msg, nonasciiz, value, msglen, r, &length);
+  value = log_msg_get_value(msg, nonasciiz, &msglen);
 
-  if (strncmp(result ? result : msgbuf, expected_result, result ? length : msglen) != 0)
+  if (strncmp(result ? result : value, expected_result, result ? length : msglen) != 0)
     {
-      fprintf(stderr, "Testcase failure. pattern=%s, result=%.*s, expected=%s\n", re, (gint) length, result ? result : msgbuf, expected_result);
+      fprintf(stderr, "Testcase failure. pattern=%s, result=%.*s, expected=%s\n", re, (gint) length, result ? result : value, expected_result);
       exit(1);
     }
 
@@ -153,9 +156,17 @@ main()
   /* empty match with global flag*/
   testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: aa bb", "c*", "#", "#a#a# #b#b#", LMF_GLOBAL, log_matcher_pcre_re_new());
   testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: aa bb", "a*", "?", "?? ?b?b?", LMF_GLOBAL, log_matcher_pcre_re_new());
+  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: aa", "aa|b*", "@", "@@", LMF_GLOBAL, log_matcher_pcre_re_new());
+  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: aa", "aa|b*", "@", "@", 0, log_matcher_pcre_re_new());
+  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: aa", "b*|aa", "@", "@@@", LMF_GLOBAL, log_matcher_pcre_re_new());
+  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: aa", "b*|aa", "@", "@aa", 0, log_matcher_pcre_re_new());
 
   testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: wikiwiki", "wi", "", "kiki", LMF_GLOBAL, log_matcher_pcre_re_new());
   testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: wikiwiki", "wi", "kuku", "kukukikukuki", LMF_GLOBAL, log_matcher_pcre_re_new());
+
+  /* this tests a pcre 8.12 incompatibility */
+
+  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: wikiwiki", "([[:digit:]]{1,3}\\.){3}[[:digit:]]{1,3}", "foo", "wikiwiki", LMF_GLOBAL, log_matcher_pcre_re_new());
 #endif
 
   return 0;
