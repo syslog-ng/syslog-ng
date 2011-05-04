@@ -661,7 +661,6 @@ log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, guint flag
   gchar sd_id_name[33];
   gsize sd_id_len;
   gchar sd_param_name[33];
-  gsize sd_param_len;
 
   /* UTF-8 string */
   gchar sd_param_value[256];
@@ -752,7 +751,6 @@ log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, guint flag
                   sd_step_and_store(self, &src, &left);
                 }
               sd_param_name[pos] = 0;
-              sd_param_len = pos;
               strncpy(&sd_value_name[logmsg_sd_prefix_len + 1 + sd_id_len], sd_param_name, sizeof(sd_value_name) - logmsg_sd_prefix_len - 1 - sd_id_len);
 
               if (left && *src == '=')
