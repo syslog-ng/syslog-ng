@@ -12,5 +12,5 @@ install-data-local:
 			$(install_sh_DATA) $(srcdir)/$${cfg}  $(DESTDIR)/$(sysconfdir)/$${cfg}; \
 		fi; \
 	done
-	mkdir -p $(DESTDIR)/$(scldir) || true
+	$(mkinstalldirs) $(DESTDIR)/$(scldir)
 	(cd $(srcdir); tar cf - $(SCL_SUBDIRS)) | (cd $(DESTDIR)/$(scldir) && tar xf -)
