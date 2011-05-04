@@ -831,6 +831,9 @@ afsocket_dd_stats_source(AFSocketDestDriver *self)
           source = !!(self->flags & AFSOCKET_STREAM) ? SCS_TCP6 : SCS_UDP6;
           break;
 #endif
+        default:
+          g_assert_not_reached();
+          break;
         }
     }
   else
