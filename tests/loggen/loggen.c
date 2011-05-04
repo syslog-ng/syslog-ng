@@ -174,19 +174,17 @@ gen_next_message(FILE *source, char *buf, int buflen)
   int tslen;
 
   char host[128], program[128], pid[16];
-  char *msg;
+  char *msg = NULL;
 
-  while (1)
+  while (fgets(line, sizeof(line), source))
     {
-      if (feof(source))
-        return -1;
-      fgets(line, sizeof(line), source);
-
       if (parse_line(line, host, program, pid, &msg) > 0)
         break;
 
       fprintf(stderr, "\rInvalid line %d                  \n", ++lineno);
     }
+  if (!msg)
+    return -1;
 
   gettimeofday(&now, NULL);
   tm = localtime(&now.tv_sec);
@@ -218,14 +216,14 @@ gen_messages(send_data_t send_func, void *send_func_ud)
   char linebuf[MAX_MESSAGE_LENGTH + 1];
   char stamp[32];
   char intbuf[16];
-  int linelen;
+  int linelen = 0;
   int i, run_id;
   unsigned long count = 0, last_count = 0;
   char padding[] = "PADD";
   long buckets = rate - (rate / 10);
   double diff_usec;
   struct timeval diff_tv;
-  int pos_timestamp1, pos_timestamp2, pos_seq;
+  int pos_timestamp1 = 0, pos_timestamp2 = 0, pos_seq = 0;
   int rc, hdr_len = 0;
   uint64_t sum_len = 0;
   
