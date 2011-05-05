@@ -43,7 +43,9 @@
 #include <stdio.h>
 #include <signal.h>
 
+static gsize local_hostname_fqdn_len;
 static gchar local_hostname_fqdn[256];
+static gsize local_hostname_short_len;
 static gchar local_hostname_short[256];
 
 GString *
@@ -70,6 +72,7 @@ reset_cached_hostname(void)
   
   gethostname(local_hostname_fqdn, sizeof(local_hostname_fqdn) - 1);
   local_hostname_fqdn[sizeof(local_hostname_fqdn) - 1] = '\0';
+  local_hostname_fqdn_len = strlen(local_hostname_fqdn);
   if (strchr(local_hostname_fqdn, '.') == NULL)
     {
       /* not fully qualified, resolve it using DNS or /etc/hosts */
@@ -85,13 +88,18 @@ reset_cached_hostname(void)
   s = strchr(local_hostname_short, '.');
   if (s != NULL)
     *s = '\0';
+  local_hostname_short_len = strlen(local_hostname_short);
 }
 
-void
-getlonghostname(gchar *buf, gsize buflen)
+const gchar *
+get_local_hostname(gsize *len)
 {
-  strncpy(buf, local_hostname_fqdn, buflen);
-  buf[buflen - 1] = 0;
+  if (!local_hostname_fqdn[0])
+    reset_cached_hostname();
+
+  if (len)
+    *len = local_hostname_fqdn_len;
+  return local_hostname_fqdn;
 }
 
 gboolean

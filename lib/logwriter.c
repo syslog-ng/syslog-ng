@@ -475,7 +475,6 @@ log_writer_last_msg_flush(LogWriter *self)
 {
   LogMessage *m;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
-  gchar hostname[256];
   gchar buf[1024];
   gssize len;
   const gchar *p;
@@ -483,7 +482,6 @@ log_writer_last_msg_flush(LogWriter *self)
   msg_debug("Suppress timer elapsed, emitting suppression summary", 
             NULL);
 
-  getlonghostname(hostname, sizeof(hostname));
   m = log_msg_new_empty();
   m->timestamps[LM_TS_STAMP] = m->timestamps[LM_TS_RECVD];
   m->pri = self->last_msg->pri;
@@ -497,7 +495,7 @@ log_writer_last_msg_flush(LogWriter *self)
   len = g_snprintf(buf, sizeof(buf), "Last message '%.20s' repeated %d times, suppressed by syslog-ng on %s",
                    log_msg_get_value(self->last_msg, LM_V_MESSAGE, NULL),
                    self->last_msg_count,
-                   hostname);
+                   get_local_hostname(NULL));
   log_msg_set_value(m, LM_V_MESSAGE, buf, len);
 
   path_options.flow_control = FALSE;
