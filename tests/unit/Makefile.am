@@ -14,7 +14,7 @@ check_PROGRAMS = test_value_pairs \
 
 test_msgparse_SOURCES = test_msgparse.c libtest.c
 test_template_SOURCES = test_template.c libtest.c
-test_template_LDADD = $(LDADD) $(top_builddir)/modules/basicfuncs/libbasicfuncs.la $(top_builddir)/modules/convertfuncs/libconvertfuncs.la
+test_template_LDADD = $(LDADD) $(top_builddir)/modules/basicfuncs/libbasicfuncs.la
 test_template_speed_SOURCES = test_template_speed.c libtest.c
 test_zone_SOURCES = test_zone.c  libtest.c
 test_dnscache_SOURCES = test_dnscache.c  libtest.c

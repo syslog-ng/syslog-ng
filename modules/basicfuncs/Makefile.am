@@ -7,3 +7,9 @@ libbasicfuncs_la_SOURCES = basic-funcs.c
 libbasicfuncs_la_CPPFLAGS = $(AM_CPPFLAGS)
 libbasicfuncs_la_LIBADD = ../../lib/libsyslog-ng.la
 libbasicfuncs_la_LDFLAGS = -avoid-version -module -no-undefined
+
+EXTRA_DIST = \
+	cond-funcs.c 	\
+	numeric-funcs.c \
+	str-funcs.c	\
+	ip-funcs.c
