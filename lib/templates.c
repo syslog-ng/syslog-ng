@@ -229,7 +229,7 @@ result_append_value(GString *result, LogMessage *lm, NVHandle handle, gboolean e
 gboolean
 log_macro_expand(GString *result, gint id, gboolean escape, LogTemplateOptions *opts, gint tz, gint32 seq_num, const gchar *context_id, LogMessage *msg)
 {
-  static LogTemplateOptions default_opts = { TS_FMT_BSD, { NULL, NULL }, { NULL, NULL }, 0 };
+  static LogTemplateOptions default_opts = { TS_FMT_BSD, 0, { NULL, NULL }, { NULL, NULL } };
 
   if (!opts)
     opts = &default_opts;
@@ -582,80 +582,74 @@ typedef struct _LogTemplateElem
     {
       LogTemplateFunction *ops;
       gpointer state;
-      GDestroyNotify state_destroy;
     } func;
   };
 } LogTemplateElem;
 
 
 /* simple template functions which take templates as arguments */
-void
-tf_simple_func_free_state(gpointer state)
-{
-  TFSimpleFuncState *args = (TFSimpleFuncState *) state;
-  gint i;
-
-  for (i = 0; i < args->argc; i++)
-    {
-      if (args->argv[i])
-        log_template_unref(args->argv[i]);
-    }
-  g_free(args);
-}
 
 gboolean
-tf_simple_func_prepare(LogTemplateFunction *self, LogTemplate *parent, gint argc, gchar *argv[], gpointer *state, GDestroyNotify *state_destroy, GError **error)
+tf_simple_func_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint argc, gchar *argv[], GError **error)
 {
-  TFSimpleFuncState *args;
+  TFSimpleFuncState *state = (TFSimpleFuncState *) s;
   gint i;
 
   g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
-
-  args = g_malloc0(sizeof(TFSimpleFuncState) + argc * sizeof(LogTemplate *));
+  state->argv = g_malloc(sizeof(LogTemplate *) * argc);
   for (i = 0; i < argc; i++)
     {
-      args->argv[i] = log_template_new(parent->cfg, NULL, argv[i]);
-      if (!log_template_compile(args->argv[i], error))
+      state->argv[i] = log_template_new(parent->cfg, NULL, argv[i]);
+      if (!log_template_compile(state->argv[i], error))
         goto error;
     }
-  args->argc = argc;
-  *state = args;
-  *state_destroy = tf_simple_func_free_state;
+  state->argc = argc;
   return TRUE;
  error:
-  tf_simple_func_free_state(args);
   return FALSE;
 }
 
 void
-tf_simple_func_eval(LogTemplateFunction *self, gpointer state, GPtrArray *arg_bufs, LogMessage **messages, gint num_messages,
-                    LogTemplateOptions *opts, gint tz, gint32 seq_num, const gchar *context_id)
+tf_simple_func_eval(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *args)
 {
-  TFSimpleFuncState *args = (TFSimpleFuncState *) state;
+  TFSimpleFuncState *state = (TFSimpleFuncState *) s;
   gint i;
 
-  for (i = 0; i < args->argc; i++)
+  for (i = 0; i < state->argc; i++)
     {
       GString **arg;
 
-      if (arg_bufs->len <= i)
-        g_ptr_array_add(arg_bufs, g_string_sized_new(256));
+      if (args->bufs->len <= i)
+        g_ptr_array_add(args->bufs, g_string_sized_new(256));
 
-      arg = (GString **) &g_ptr_array_index(arg_bufs, i);
+      arg = (GString **) &g_ptr_array_index(args->bufs, i);
       g_string_truncate(*arg, 0);
 
-      log_template_append_format_with_context(args->argv[i], messages, num_messages, opts, tz, seq_num, context_id, *arg);
+      log_template_append_format_recursive(state->argv[i], args, *arg);
     }
 }
 
 void
-tf_simple_func_call(LogTemplateFunction *self, gpointer state, GPtrArray *arg_bufs, LogMessage **messages, gint num_messages,
-                    LogTemplateOptions *opts, gint tz, gint32 seq_num, const gchar *context_id, GString *result)
+tf_simple_func_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *args, GString *result)
 {
   TFSimpleFunc simple_func = (TFSimpleFunc) self->arg;
-  TFSimpleFuncState *args = (TFSimpleFuncState *) state;
+  TFSimpleFuncState *state = (TFSimpleFuncState *) s;
 
-  simple_func(messages[num_messages-1], args->argc, (GString **) arg_bufs->pdata, result);
+  simple_func(args->messages[args->num_messages-1], state->argc, (GString **) args->bufs->pdata, result);
+}
+
+void
+tf_simple_func_free_state(gpointer s)
+{
+  TFSimpleFuncState *state = (TFSimpleFuncState *) s;
+  gint i;
+
+  for (i = 0; i < state->argc; i++)
+    {
+      if (state->argv[i])
+        log_template_unref(state->argv[i]);
+    }
+  g_free(state->argv);
 }
 
 void
@@ -676,8 +670,11 @@ log_template_reset_compiled(LogTemplate *self)
       switch (e->type)
         {
         case LTE_FUNC:
-          if (e->func.state_destroy)
-            e->func.state_destroy(e->func.state);
+          if (e->func.state)
+            {
+              e->func.ops->free_state(e->func.state);
+              g_free(e->func.state);
+            }
           break;
         }
       if (e->default_value)
@@ -753,8 +750,13 @@ log_template_add_func_elem(LogTemplate *self, GString *text, gint argc, gchar *a
       e->func.ops = plugin_construct(p, self->cfg, LL_CONTEXT_TEMPLATE_FUNC, argv[0]);
     }
 
-  if (!e->func.ops->prepare(e->func.ops, self, argc - 1, &argv[1], &e->func.state, &e->func.state_destroy, error))
-    goto error;
+  e->func.state = g_malloc0(e->func.ops->size_of_state);
+  if (!e->func.ops->prepare(e->func.ops, e->func.state, self, argc - 1, &argv[1], error))
+    {
+      e->func.ops->free_state(e->func.state);
+      g_free(e->func.state);
+      goto error;
+    }
   g_strfreev(argv);
   self->compiled_template = g_list_prepend(self->compiled_template, e);
   return TRUE;
@@ -1106,23 +1108,40 @@ log_template_append_format_with_context(LogTemplate *self, LogMessage **messages
             if (!self->arg_bufs)
               self->arg_bufs = g_ptr_array_sized_new(0);
 
+            {
+              LogTemplateInvokeArgs args =
+                {
+                  self->arg_bufs,
+                  e->msg_ref ? &messages[msg_ndx] : messages,
+                  e->msg_ref ? 1 : num_messages,
+                  opts,
+                  tz,
+                  seq_num,
+                  context_id
+                };
+
+
               /* if a function call is called with an msg_ref, we only
                * pass that given logmsg to argument resolution, otherwise
                * we pass the whole set so the arguments can individually
                * specify which message they want to resolve from
                */
-            e->func.ops->eval(e->func.ops, e->func.state, self->arg_bufs,
-                              e->msg_ref ? &messages[msg_ndx] : messages,
-                              e->msg_ref ? 1 : num_messages,
-                              opts, tz, seq_num, context_id);
-            e->func.ops->call(e->func.ops, e->func.state, self->arg_bufs,
-                              e->msg_ref ? &messages[msg_ndx] : messages,
-                              e->msg_ref ? 1 : num_messages,
-                              opts, tz, seq_num, context_id, result);
-            break;
+              if (e->func.ops->eval)
+                e->func.ops->eval(e->func.ops, e->func.state, &args);
+              e->func.ops->call(e->func.ops, e->func.state, &args, result);
+              break;
+            }
           }
         }
     }
+}
+
+void
+log_template_append_format_recursive(LogTemplate *self, const LogTemplateInvokeArgs *args, GString *result)
+{
+  log_template_append_format_with_context(self,
+                                          args->messages, args->num_messages,
+                                          args->opts, args->tz, args->seq_num, args->context_id, result);
 }
 
 void
