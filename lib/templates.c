@@ -59,6 +59,8 @@ enum
   M_SEQNUM,
   M_CONTEXT_ID,
 
+  M_LOGHOST,
+
   M_DATE,
   M_FULLDATE,
   M_ISODATE,
@@ -181,6 +183,9 @@ LogMacroDef macros[] =
         { "MSG", M_MESSAGE },
         { "MESSAGE", M_MESSAGE },
         { "HOST", M_HOST },
+
+        /* message independent macros */
+        { "LOGHOST", M_LOGHOST },
         { NULL, 0 }
 };
 
@@ -412,6 +417,14 @@ log_macro_expand(GString *result, gint id, gboolean escape, LogTemplateOptions *
           {
             result_append(result, context_id, strlen(context_id), escape);
           }
+        break;
+      }
+    case M_LOGHOST:
+      {
+        gsize hname_len;
+        const gchar *hname = get_local_hostname(&hname_len);
+
+        result_append(result, hname, hname_len, escape);
         break;
       }
     default:
