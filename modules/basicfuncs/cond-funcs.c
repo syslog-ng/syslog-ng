@@ -12,14 +12,14 @@ tf_cond_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint
 
   g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
 
-  lexer = cfg_lexer_new_buffer(argv[0], strlen(argv[0]));
+  lexer = cfg_lexer_new_buffer(argv[1], strlen(argv[1]));
   if (!cfg_run_parser(parent->cfg, lexer, &filter_expr_parser, (gpointer *) &state->filter, NULL))
     {
       g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE, "Error parsing conditional filter expression");
       return FALSE;
     }
-
-  if (!tf_simple_func_prepare(self, s, parent, argc - 1, &argv[1], error))
+  memmove(&argv[1], &argv[2], sizeof(argv[0]) * (argc - 2));
+  if (!tf_simple_func_prepare(self, s, parent, argc - 1, argv, error))
     return FALSE;
 
   return TRUE;
@@ -40,7 +40,7 @@ gboolean
 tf_grep_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint argc, gchar *argv[], GError **error)
 {
   g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
-  if (argc < 2)
+  if (argc < 3)
     {
       g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE, "$(grep) requires at least two arguments");
       return FALSE;
@@ -81,7 +81,7 @@ tf_if_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint a
 {
   g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
 
-  if (argc != 3)
+  if (argc != 4)
     {
       g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE, "$(if) requires three arguments");
       return FALSE;

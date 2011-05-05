@@ -596,14 +596,18 @@ tf_simple_func_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *paren
   gint i;
 
   g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
-  state->argv = g_malloc(sizeof(LogTemplate *) * argc);
-  for (i = 0; i < argc; i++)
+  state->argv = g_malloc(sizeof(LogTemplate *) * (argc - 1));
+
+  /* NOTE: the argv argument con tains the function name as argv[0],
+   * but the LogTemplate array doesn't. Thus the index is shifted by
+   * one. */
+  for (i = 0; i < argc - 1; i++)
     {
-      state->argv[i] = log_template_new(parent->cfg, NULL, argv[i]);
+      state->argv[i] = log_template_new(parent->cfg, NULL, argv[i + 1]);
       if (!log_template_compile(state->argv[i], error))
         goto error;
     }
-  state->argc = argc;
+  state->argc = argc - 1;
   return TRUE;
  error:
   return FALSE;
@@ -727,6 +731,7 @@ log_template_add_func_elem(LogTemplate *self, GString *text, gint argc, gchar *a
 {
   LogTemplateElem *e;
   Plugin *p;
+  gchar *argv_copy[argc + 1];
 
   g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
 
@@ -751,7 +756,10 @@ log_template_add_func_elem(LogTemplate *self, GString *text, gint argc, gchar *a
     }
 
   e->func.state = g_malloc0(e->func.ops->size_of_state);
-  if (!e->func.ops->prepare(e->func.ops, e->func.state, self, argc - 1, &argv[1], error))
+
+  /* prepare may modify the argv array: remove and rearrange elements */
+  memcpy(argv_copy, argv, (argc + 1) * sizeof(argv[0]));
+  if (!e->func.ops->prepare(e->func.ops, e->func.state, self, argc, argv_copy, error))
     {
       e->func.ops->free_state(e->func.state);
       g_free(e->func.state);
