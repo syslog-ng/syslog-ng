@@ -960,6 +960,7 @@ log_template_compile(LogTemplate *self, GError **error)
               if (*p != ')')
                 {
                   g_string_free(arg_buf, TRUE);
+                  g_ptr_array_foreach(strv, (GFunc) g_free, NULL);
                   g_ptr_array_free(strv, TRUE);
 
                   error_pos = p - self->template;
@@ -970,6 +971,7 @@ log_template_compile(LogTemplate *self, GError **error)
               parse_msg_ref(&p, &msg_ref);
               if (!log_template_add_func_elem(self, last_text, strv->len - 1, (gchar **) strv->pdata, msg_ref, error))
                 {
+                  g_ptr_array_foreach(strv, (GFunc) g_free, NULL);
                   g_ptr_array_free(strv, TRUE);
                   g_string_free(arg_buf, TRUE);
                   goto error_set;
