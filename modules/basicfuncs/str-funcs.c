@@ -13,7 +13,9 @@ tf_echo(LogMessage *msg, gint argc, GString *argv[], GString *result)
 
 TEMPLATE_FUNCTION_SIMPLE(tf_echo);
 
-
+/*
+ * $(substr $arg START [LEN])
+ */
 static void
 tf_substr(LogMessage *msg, gint argc, GString *argv[], GString *result)
 {
@@ -113,3 +115,95 @@ tf_substr(LogMessage *msg, gint argc, GString *argv[], GString *result)
 }
 
 TEMPLATE_FUNCTION_SIMPLE(tf_substr);
+
+/*
+ * $(sanitize [opts] $arg1 $arg2 ...)
+ *
+ * Options:
+ *  --ctrl-chars or -c             Filter control characters (default)
+ *  --no-ctrl-chars or -C          Don't filter control characters
+ *  --invalid-chars <set> or -i    Set of characters to be translated, default "/"
+ *  --replacement <replace> or -r  Single character replacement for invalid chars.
+ */
+typedef struct _TFSanitizeState
+{
+  TFSimpleFuncState super;
+  gint ctrl_chars:1, replacement:8;
+  gchar *invalid_chars;
+} TFSanitizeState;
+
+static gboolean
+tf_sanitize_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint argc, gchar *argv[], GError **error)
+{
+  TFSanitizeState *state = (TFSanitizeState *) s;
+  gboolean ctrl_chars = TRUE;
+  gchar *invalid_chars = "/";
+  gchar *replacement = "_";
+  GOptionContext *ctx;
+  GOptionEntry stize_options[] = {
+    { "ctrl-chars", 'c', 0, G_OPTION_ARG_NONE, &ctrl_chars, NULL, NULL },
+    { "no-ctrl-chars", 'C', G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &ctrl_chars, NULL, NULL },
+    { "invalid-chars", 'i', 0, G_OPTION_ARG_STRING, &invalid_chars, NULL, NULL },
+    { "replacement", 'r', 0, G_OPTION_ARG_STRING, &replacement, NULL, NULL },
+    { NULL }
+  };
+
+  ctx = g_option_context_new("sanitize-file");
+  g_option_context_add_main_entries(ctx, stize_options, NULL);
+
+  if (!g_option_context_parse(ctx, &argc, &argv, error))
+    {
+      g_option_context_free(ctx);
+      g_free(argv);
+      return FALSE;
+    }
+  g_option_context_free(ctx);
+
+  if (!tf_simple_func_prepare(self, state, parent, argc, argv, error))
+    {
+      g_free(state);
+      return FALSE;
+    }
+  state->ctrl_chars = ctrl_chars;
+  state->invalid_chars = g_strdup(invalid_chars);
+  state->replacement = replacement[0];
+  return TRUE;
+}
+
+static void
+tf_sanitize_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *args, GString *result)
+{
+  TFSanitizeState *state = (TFSanitizeState *) s;
+  GString **argv;
+  gint argc;
+  gint i, pos;
+
+  argv = (GString **) args->bufs->pdata;
+  argc = args->bufs->len;
+  for (i = 0; i < argc; i++)
+    {
+      for (pos = 0; pos < argv[i]->len; pos++)
+        {
+          guchar last_char = argv[i]->str[pos];
+
+          if ((state->ctrl_chars && last_char < 32) ||
+              (strchr(state->invalid_chars, (gchar) last_char) != NULL))
+            g_string_append_c(result, state->replacement);
+          else
+            g_string_append_c(result, last_char);
+        }
+      if (i < argc - 1)
+        g_string_append_c(result, '/');
+    }
+}
+
+static void
+tf_sanitize_free_state(gpointer s)
+{
+  TFSanitizeState *state = (TFSanitizeState *) s;
+
+  g_free(state->invalid_chars);
+  tf_simple_func_free_state(&state->super);
+}
+
+TEMPLATE_FUNCTION(TFSanitizeState, tf_sanitize, tf_sanitize_prepare, tf_simple_func_eval, tf_sanitize_call, tf_sanitize_free_state, NULL);

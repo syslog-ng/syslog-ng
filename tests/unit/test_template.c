@@ -248,6 +248,15 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase(msg, "$(substr $HOST -1)", "p");
   testcase(msg, "$(substr $HOST -2 1)", "r");
 
+  testcase(msg, "$(sanitize alma/bela)", "alma_bela");
+  testcase(msg, "$(sanitize -r @ alma/bela)", "alma@bela");
+  testcase(msg, "$(sanitize -i @ alma@bela)", "alma_bela");
+  testcase(msg, "$(sanitize -i '@/l ' alma@/bela)", "a_ma__be_a");
+  testcase(msg, "$(sanitize alma\x1b_bela)", "alma__bela");
+  testcase(msg, "$(sanitize -C alma\x1b_bela)", "alma\x1b_bela");
+
+  testcase(msg, "$(sanitize $HOST $PROGRAM)", "bzorp/syslog-ng");
+
   testcase(msg, "$(+ $FACILITY_NUM 1)", "20");
   testcase(msg, "$(+ -1 -1)", "-2");
   testcase(msg, "$(- $FACILITY_NUM 1)", "18");
