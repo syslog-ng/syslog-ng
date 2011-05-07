@@ -74,10 +74,12 @@ pkginclude_HEADERS = 		\
 	templates.h		\
 	timeutils.h		\
 	tls-support.h		\
+	tlscontext.h  		\
+	tlstransport.h		\
 	utils.h			\
 	value-pairs.h
 
-
+# this is intentionally formatted so conflicts are less likely to arise. one name in every line.
 libsyslog_ng_la_SOURCES = \
 	afinter.c		\
 	alarms.c		\
@@ -144,19 +146,28 @@ libsyslog_ng_la_SOURCES = \
 	parser-expr-grammar.y	\
 	rewrite-expr-grammar.y
 
+# this is intentionally formatted so conflicts are less likely to arise. one name in every line.
 libsyslog_ng_crypto_la_SOURCES = \
-	crypto.c tlscontext.c tlstransport.c
+	crypto.c		\
+	tlscontext.c		\
+	tlstransport.c
 
-BUILT_SOURCES = cfg-lex.c cfg-lex.h cfg-grammar.c cfg-grammar.h \
-	filter-expr-grammar.y filter-expr-grammar.c filter-expr-grammar.h \
-	block-ref-grammar.y block-ref-grammar.c block-ref-grammar.h \
-	pragma-grammar.y pragma-grammar.h pragma-grammar.c \
-	parser-expr-grammar.y parser-expr-grammar.c parser-expr-grammar.h \
+# each line with closely related files (e.g. the ones generated from the same source)
+BUILT_SOURCES = cfg-lex.c cfg-lex.h						\
+	cfg-grammar.c cfg-grammar.h						\
+	filter-expr-grammar.y filter-expr-grammar.c filter-expr-grammar.h	\
+	block-ref-grammar.y block-ref-grammar.c block-ref-grammar.h		\
+	pragma-grammar.y pragma-grammar.h pragma-grammar.c			\
+	parser-expr-grammar.y parser-expr-grammar.c parser-expr-grammar.h	\
 	rewrite-expr-grammar.y rewrite-expr-grammar.c rewrite-expr-grammar.h
 
 EXTRA_DIST = $(BUILT_SOURCES) \
-	filter-expr-grammar.ym block-ref-grammar.ym pragma-grammar.ym parser-expr-grammar.ym rewrite-expr-grammar.ym \
-	syslog-ng.h merge-grammar.pl
+	filter-expr-grammar.ym		\
+	block-ref-grammar.ym		\
+	pragma-grammar.ym		\
+	parser-expr-grammar.ym		\
+	rewrite-expr-grammar.ym		\
+	merge-grammar.pl
 
 CLEAN_FILES = $(BUILT_SOURCES)
 
