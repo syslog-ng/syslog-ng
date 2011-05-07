@@ -869,8 +869,8 @@ g_process_change_dir(void)
       if (!cwd)
         cwd = PATH_PIDFILEDIR;
         
-      if (cwd)
-        chdir(cwd);
+      if (cwd && chdir(cwd) < 0)
+        ;
     }
     
   /* this check is here to avoid having to change directory early in the startup process */
@@ -878,7 +878,8 @@ g_process_change_dir(void)
     {
       gchar buf[256];
       
-      getcwd(buf, sizeof(buf));
+      if (!getcwd(buf, sizeof(buf)))
+        strncpy(buf, "unable-to-query", sizeof(buf));
       g_process_message("Unable to write to current directory, core dumps will not be generated; dir='%s', error='%s'", buf, g_strerror(errno));
     }
   
@@ -917,7 +918,8 @@ g_process_send_result(guint ret_num)
   if (*fd != -1)
     {
       buf_len = g_snprintf(buf, sizeof(buf), "%d\n", ret_num);
-      write(*fd, buf, buf_len);
+      if (write(*fd, buf, buf_len) < buf_len)
+        g_assert_not_reached();
       close(*fd);
       *fd = -1;
     }  

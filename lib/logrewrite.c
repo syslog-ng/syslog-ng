@@ -102,10 +102,8 @@ void
 log_rewrite_subst_process(LogRewrite *s, LogMessage *msg)
 {
   LogRewriteSubst *self = (LogRewriteSubst *) s;
-  GError *regexp_error;
   const gchar *value;
   gchar *new_value;
-  regexp_error = NULL;
   gssize length;
   gssize new_length = -1;
 

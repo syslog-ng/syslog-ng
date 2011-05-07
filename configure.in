@@ -21,7 +21,7 @@ dnl ***************************************************************************
 dnl dependencies
 
 GLIB_MIN_VERSION="2.10.1"
-EVTLOG_MIN_VERSION="0.2.10"
+EVTLOG_MIN_VERSION="0.2.12"
 OPENSSL_MIN_VERSION="0.9.8"
 LIBDBI_MIN_VERSION="0.8.0"
 IVYKIS_MIN_VERSION="0.18"

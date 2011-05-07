@@ -417,6 +417,7 @@ afinet_dd_construct_ipv6_packet(AFInetDestDriver *self, LogMessage *msg, GString
   libnet_ptag_t ip, udp;
   struct sockaddr_in *src4;
   struct sockaddr_in6 src, *dst;
+  struct libnet_in6_addr ln_src, ln_dst;
 
   switch (msg->saddr->sa.sa_family)
     {
@@ -458,12 +459,13 @@ afinet_dd_construct_ipv6_packet(AFInetDestDriver *self, LogMessage *msg, GString
 
   libnet_toggle_checksum(self->lnet_ctx, udp, LIBNET_OFF);
 
+  memcpy(&ln_src, &src.sin6_addr, sizeof(ln_src));
+  memcpy(&ln_dst, &dst->sin6_addr, sizeof(ln_dst));
   ip = libnet_build_ipv6(0, 0,
                          LIBNET_UDP_H + msg_line->len,
                          IPPROTO_UDP,            /* IPv6 next header */
                          64,                     /* hop limit */
-                         *((struct libnet_in6_addr *) &src.sin6_addr.s6_addr),  /* source IP */
-                         *((struct libnet_in6_addr *) &dst->sin6_addr.s6_addr),  /* destination IP */
+                         ln_src, ln_dst,
                          NULL, 0,                /* payload and its length */
                          self->lnet_ctx,
                          0);

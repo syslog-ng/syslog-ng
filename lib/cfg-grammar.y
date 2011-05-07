@@ -53,9 +53,9 @@
 
 # define YYLLOC_DEFAULT(Current, Rhs, N)                                \
   do {                                                                  \
-    (Current).level = YYRHSLOC(Rhs, 0).level;                           \
     if (YYID (N))                                                       \
       {                                                                 \
+        (Current).level = YYRHSLOC(Rhs, 1).level;                       \
         (Current).first_line   = YYRHSLOC (Rhs, 1).first_line;          \
         (Current).first_column = YYRHSLOC (Rhs, 1).first_column;        \
         (Current).last_line    = YYRHSLOC (Rhs, N).last_line;           \
@@ -63,6 +63,7 @@
       }                                                                 \
     else                                                                \
       {                                                                 \
+        (Current).level = YYRHSLOC(Rhs, 0).level;                       \
         (Current).first_line   = (Current).last_line   =                \
           YYRHSLOC (Rhs, 0).last_line;                                  \
         (Current).first_column = (Current).last_column =                \
