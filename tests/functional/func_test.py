@@ -77,6 +77,10 @@ if len(sys.argv) > 1:
     verbose = True
 try:
     for test_module in tests:
+        if hasattr(test_module, "check_env") and not test_module.check_env():
+            continue
+
+
         contents = dir(test_module)
         contents.sort()
         for obj in contents:
@@ -85,6 +89,7 @@ try:
             test_case = getattr(test_module, obj)
             test_name = test_module.__name__ + '.' + obj
             print_start(test_name)
+
 
             if not start_syslogng(test_module.config, verbose):
                 sys.exit(1)
