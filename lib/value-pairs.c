@@ -76,7 +76,7 @@ static ValuePairSpec rfc3164[] =
   { "HOST"     },
   { "PROGRAM"  },
   { "PID"      },
-  { "MSG"      },
+  { "MESSAGE"  },
   { "DATE", "R_DATE" },
   { 0 },
 };
