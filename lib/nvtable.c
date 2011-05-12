@@ -27,6 +27,8 @@
 #include <string.h>
 #include <stdlib.h>
 
+GStaticMutex nv_registry_lock = G_STATIC_MUTEX_INIT;
+
 const gchar *null_string = "";
 
 NVHandle
@@ -78,8 +80,10 @@ nv_registry_alloc_handle(NVRegistry *self, const gchar *name)
   stored.flags = 0;
   stored.name_len = len;
   stored.name = g_strdup(name);
+  g_static_mutex_lock(&nv_registry_lock);
   g_array_append_val(self->names, stored);
   g_hash_table_insert(self->name_map, stored.name, GUINT_TO_POINTER(self->names->len));
+  g_static_mutex_unlock(&nv_registry_lock);
   return self->names->len;
 }
 
@@ -91,7 +95,9 @@ nv_registry_alloc_handle(NVRegistry *self, const gchar *name)
 void
 nv_registry_add_alias(NVRegistry *self, NVHandle handle, const gchar *alias)
 {
+  g_static_mutex_lock(&nv_registry_lock);
   g_hash_table_insert(self->name_map, (gchar *) alias, GUINT_TO_POINTER((glong) handle));
+  g_static_mutex_unlock(&nv_registry_lock);
 }
 
 void
