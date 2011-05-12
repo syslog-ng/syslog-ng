@@ -59,7 +59,7 @@ affile_open_file(gchar *name, gint flags,
   if (privileged)
     {
       g_process_cap_modify(CAP_DAC_READ_SEARCH, TRUE);
-      g_process_cap_modify(CAP_SYS_ADMIN, TRUE);
+      g_process_cap_modify(CAP_SYSLOG, TRUE);
     }
   else
     {

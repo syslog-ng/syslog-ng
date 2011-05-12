@@ -98,6 +98,7 @@ static gint startup_result_pipe[2] = { -1, -1 };
 static gint init_result_pipe[2] = { -1, -1 };
 static GProcessKind process_kind = G_PK_STARTUP;
 static gboolean stderr_present = TRUE;
+static int have_capsyslog = FALSE;
 
 /* global variables */
 static struct
@@ -216,6 +217,13 @@ g_process_cap_modify(int capability, int onoff)
   if (!process_opts.caps)
     return TRUE;
 
+  /*
+   * if libcap or kernel doesn't support cap_syslog, then resort to
+   * cap_sys_admin
+   */
+  if (capability == CAP_SYSLOG && (!have_capsyslog || CAP_SYSLOG == -1))
+    capability = CAP_SYS_ADMIN;
+
   caps = cap_get_proc();
   if (!caps)
     return FALSE;
@@ -295,6 +303,25 @@ g_process_cap_restore(cap_t r)
     }
   
   return;
+}
+
+gboolean
+g_process_check_cap_syslog(void)
+{
+  int ret;
+
+  if (have_capsyslog)
+    return TRUE;
+
+  if (CAP_SYSLOG == -1)
+    return FALSE;
+
+  ret = prctl(PR_CAPBSET_READ, CAP_SYSLOG);
+  if (ret == -1)
+    return FALSE;
+
+  have_capsyslog = TRUE;
+  return TRUE;
 }
 
 #endif

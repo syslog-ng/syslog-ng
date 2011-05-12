@@ -155,6 +155,32 @@ version(void)
 
 }
 
+#if ENABLE_LINUX_CAPS
+#define BASE_CAPS "cap_net_bind_service,cap_net_broadcast,cap_net_raw," \
+  "cap_dac_read_search,cap_dac_override,cap_chown,cap_fowner=p "
+
+static void
+setup_caps (void)
+{
+  static gchar *capsstr_syslog = BASE_CAPS "cap_syslog=ep";
+  static gchar *capsstr_sys_admin = BASE_CAPS "cap_sys_admin=ep";
+
+  /* Set up the minimal privilege we'll need
+   *
+   * NOTE: polling /proc/kmsg requires cap_sys_admin, otherwise it'll always
+   * indicate readability. Enabling/disabling cap_sys_admin on every poll
+   * invocation seems to be too expensive. So I enable it for now.
+   */
+  if (g_process_check_cap_syslog())
+    g_process_set_caps(capsstr_syslog);
+  else
+    g_process_set_caps(capsstr_sys_admin);
+}
+#else
+
+#define setup_caps()
+
+#endif
 
 int 
 main(int argc, char *argv[])
@@ -166,14 +192,9 @@ main(int argc, char *argv[])
   z_mem_trace_init("syslog-ng.trace");
 
   g_process_set_argv_space(argc, (gchar **) argv);
-  
-  /* NOTE: polling /proc/kmsg requires cap_sys_admin, otherwise it'll always
-   * indicate readability. Enabling/disabling cap_sys_admin on every poll
-   * invocation seems to be too expensive. So I enable it for now. */
-  
-  g_process_set_caps("cap_net_bind_service,cap_net_broadcast,cap_net_raw,"
-                     "cap_dac_read_search,cap_dac_override,cap_chown,cap_fowner=p "
-                     "cap_sys_admin=ep");
+
+  setup_caps();
+
   ctx = g_option_context_new("syslog-ng");
   g_process_add_option_group(ctx);
   msg_add_option_group(ctx);
