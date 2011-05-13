@@ -2,10 +2,10 @@ moduledir = @moduledir@
 export top_srcdir
 
 if ENABLE_JSON
-AM_CPPFLAGS = -I$(top_srcdir)/lib -I../../lib @JSON_CFLAGS@
+AM_CPPFLAGS = -I$(top_srcdir)/lib -I../../lib $(JSON_CFLAGS)
 module_LTLIBRARIES = libtfjson.la
 
 libtfjson_la_SOURCES = tfjson.c
-libtfjson_la_LIBADD = ../../lib/libsyslog-ng.la @JSON_LIBS@
-libtfjson_la_LDFLAGS = -avoid-version
+libtfjson_la_LIBADD = $(MODULE_DEPS_LIBS) $(JSON_LIBS)
+libtfjson_la_LDFLAGS = $(MODULE_LDFLAGS)
 endif

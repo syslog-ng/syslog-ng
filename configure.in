@@ -25,7 +25,8 @@ EVTLOG_MIN_VERSION="0.2.12"
 OPENSSL_MIN_VERSION="0.9.8"
 LIBDBI_MIN_VERSION="0.8.0"
 IVYKIS_MIN_VERSION="0.18"
-JSON_MIN_VERSION="0.7"
+JSON_C_MIN_VERSION="0.7"
+JSON_GLIB_MIN_VERSION="0.12"
 PCRE_MIN_VERSION="6.1"
 
 dnl ***************************************************************************
@@ -162,6 +163,11 @@ AC_ARG_WITH(ivykis,
               [  --with-ivykis=[system/internal]
                                          Link against the system supplied or the builting ivykis library.]
               ,,with_ivykis="internal")
+
+AC_ARG_WITH(json,
+              [  --with-json=[json-c/json-glib/auto]
+                                         Use the JSON implementation specified]
+              ,,with_json="auto")
 
 AC_ARG_ENABLE(json,
               [  --enable-json           Enable support for JSON template formatting (default: auto)]
@@ -563,7 +569,8 @@ fi
 dnl ***************************************************************************
 dnl json headers/libraries
 dnl ***************************************************************************
-PKG_CHECK_MODULES(JSON, json >= $JSON_MIN_VERSION,, JSON_LIBS="")
+PKG_CHECK_MODULES(JSON_C, json >= $JSON_C_MIN_VERSION,, JSON_C_LIBS="")
+PKG_CHECK_MODULES(JSON_GLIB, json-glib-1.0 >= $JSON_GLIB_MIN_VERSION,, JSON_GLIB_LIBS="")
 
 dnl ***************************************************************************
 dnl pcre headers/libraries
@@ -806,14 +813,45 @@ if test "x$enable_mongodb" = "xauto"; then
 	AC_MSG_RESULT([$enable_mongodb])
 fi
 
+if test "x$with_json" != "xjson-glib" -a "x$with_json" != "xjson-c" -a "x$with_json" != "xauto"; then
+        # unknown --with-json argument
+
+        AC_MSG_ERROR([Unknown JSON implementation ($with_json) specified, only json-glib, json-c and auto is known])
+elif test \( "x$with_json" = "xauto" -o "x$with_json" = "xjson-c" \) -a -n "$JSON_C_LIBS" ;  then
+        # json-c found and user requested json-c or auto
+
+        JSON_LIBS=$JSON_C_LIBS
+        JSON_CFLAGS=$JSON_C_CFLAGS
+        AC_DEFINE_UNQUOTED(HAVE_JSON_C, 1, [Have json-c])
+        with_json="json-c"
+elif test \( "x$with_json" = "xauto" -o "x$with_json" = "xjson-glib" \) -a -n "$JSON_GLIB_LIBS"; then
+        # json-glib found and user requested json-glib or auto
+
+        JSON_LIBS=$JSON_GLIB_LIBS
+        JSON_CFLAGS=$JSON_GLIB_CFLAGS
+        AC_DEFINE_UNQUOTED(HAVE_JSON_GLIB, 1, [Have json-glib])
+        with_json="json-glib"
+
+elif test "x$with_json" = "xauto"; then
+        # nothing found, but autodetect was selected
+
+        JSON_LIBS=""
+        JSON_CFLAGS=""
+        with_json="no"
+elif test "x$with_json" = "xjson-glib"; then
+        AC_MSG_ERROR([Cannot find json-glib-1.0 >= $JSON_GLIB_MIN_VERSION: is pkg-config in path?])
+elif test "x$with_json" = "xjson-c"; then
+        AC_MSG_ERROR([Cannot find json-c version >= $JSON_C_MIN_VERSION: is pkg-config in path?])
+fi
+
 if test "x$enable_json" = "xauto"; then
-        if test -z "$JSON_LIBS"; then
+        if test "x$with_json" = "xno"; then
                 enable_json="no"
         else
                 enable_json="yes"
         fi
-elif test "x$enable_json" = "xyes" -a -z "$JSON_LIBS"; then
-        AC_MSG_ERROR(Cannot find json-c version >= $JSON_MIN_VERSION: is pkg-config in path?)
+elif test "x$enable_json" = "xyes" -a "x$with_json" = "xno"; then
+        AC_MSG_ERROR([Cannot find json-c version >= $JSON_C_MIN_VERSION or json-glib-1.0 >= $JSON_GLIB_MIN_VERSION: is pkg-config in path?])
 fi
 
 if test "x$enable_systemd" = "xauto"; then
@@ -999,6 +1037,8 @@ AC_SUBST(LIBDBI_CFLAGS)
 AC_SUBST(LIBMONGO_LIBS)
 AC_SUBST(LIBMONGO_CFLAGS)
 AC_SUBST(LIBMONGO_SUBDIRS)
+AC_SUBST(JSON_LIBS)
+AC_SUBST(JSON_CFLAGS)
 AC_SUBST(IVYKIS_SUBDIRS)
 AC_SUBST(RESOLV_LIBS)
 AC_SUBST(CFLAGS_NOWARN_POINTER_SIGN)
@@ -1081,6 +1121,6 @@ echo "  SSL support (module)        : ${enable_ssl:=no}"
 echo "  SQL support (module)        : ${enable_sql:=no}"
 echo "  PACCT module (EXPERIMENTAL) : ${enable_pacct:=no}"
 echo "  MongoDB destination (module): ${enable_mongodb:=no}"
-echo "  JSON support (module)       : ${enable_json:=no}"
+echo "  JSON support (module)       : ${enable_json:=no} (using ${with_json})"
 
 

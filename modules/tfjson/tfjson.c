@@ -25,7 +25,15 @@
 #include "cfg.h"
 #include "value-pairs.h"
 
+#include "config.h"
+
+#ifdef HAVE_JSON_C
 #include <json.h>
+#endif
+
+#ifdef HAVE_JSON_GLIB
+#include <json-glib/json-glib.h>
+#endif
 
 static gboolean
 tf_json_prepare(LogTemplateFunction *self, LogTemplate *parent,
@@ -45,6 +53,7 @@ tf_json_prepare(LogTemplateFunction *self, LogTemplate *parent,
   return TRUE;
 }
 
+#if HAVE_JSON_C
 static gboolean
 tf_json_foreach (const gchar *name, const gchar *value, gpointer user_data)
 {
@@ -57,16 +66,57 @@ tf_json_foreach (const gchar *name, const gchar *value, gpointer user_data)
   return FALSE;
 }
 
-static struct json_object *
-tf_json_format_message(ValuePairs *vp, LogMessage *msg)
+static void
+tf_json_append(GString *result, ValuePairs *vp, LogMessage *msg)
 {
-  struct json_object *root;
+  struct json_object *json;
 
-  root = json_object_new_object();
-  value_pairs_foreach (vp, tf_json_foreach, msg, 0, root);
+  json = json_object_new_object();
 
-  return root;
+  value_pairs_foreach(vp, tf_json_foreach, msg, 0, json);
+
+  g_string_append(result, json_object_to_json_string (json));
+  json_object_put(json);
 }
+#endif
+
+#if HAVE_JSON_GLIB
+static gboolean
+tf_json_foreach (const gchar *name, const gchar *value, gpointer user_data)
+{
+  JsonBuilder *builder = (JsonBuilder *)user_data;
+
+  json_builder_set_member_name(builder, name);
+  json_builder_add_string_value(builder, value);
+
+  return FALSE;
+}
+
+static void
+tf_json_append(GString *result, ValuePairs *vp, LogMessage *msg)
+{
+  JsonBuilder *builder;
+  JsonGenerator *gen;
+  gchar *str;
+
+  builder = json_builder_new();
+  json_builder_begin_object(builder);
+
+  value_pairs_foreach(vp, tf_json_foreach, msg, 0, builder);
+
+  json_builder_end_object(builder);
+
+  gen = json_generator_new();
+  json_generator_set_root(gen, json_builder_get_root(builder));
+  str = json_generator_to_data(gen, NULL);
+
+  g_object_unref(gen);
+  g_object_unref(builder);
+
+  g_string_append(result, str);
+  g_free(str);
+}
+#endif
 
 static void
 tf_json_call(LogTemplateFunction *self, gpointer state, GPtrArray *arg_bufs,
@@ -77,14 +127,7 @@ tf_json_call(LogTemplateFunction *self, gpointer state, GPtrArray *arg_bufs,
   ValuePairs *vp = (ValuePairs *)state;
 
   for (i = 0; i < num_messages; i++)
-    {
-      LogMessage *msg = messages[i];
-      struct json_object *json;
-
-      json = tf_json_format_message(vp, msg);
-      g_string_append(result, json_object_to_json_string (json));
-      json_object_put(json);
-    }
+    tf_json_append(result, vp, messages[i]);
 }
 
 static void
@@ -105,6 +148,10 @@ static Plugin builtin_tmpl_func_plugins[] =
 gboolean
 tfjson_module_init(GlobalConfig *cfg, CfgArgs *args)
 {
+#ifdef HAVE_JSON_GLIB
+  g_type_init ();
+#endif
+
   plugin_register(cfg, builtin_tmpl_func_plugins, G_N_ELEMENTS(builtin_tmpl_func_plugins));
   return TRUE;
 }
