@@ -6,15 +6,30 @@
 
 #include <stdlib.h>
 
+gboolean success = TRUE;
+
 gboolean
-cat_vp_keys_foreach(const gchar  *name, const gchar *value, gpointer user_data)
+vp_keys_foreach(const gchar  *name, const gchar *value, gpointer user_data)
+{
+  gpointer *args = (gpointer *) user_data;
+  GList **keys = (GList **) args[0];
+  gboolean *test_key_found = (gboolean *) args[1];
+
+  if (strcmp(name, "test.key") != 0)
+    *keys = g_list_insert_sorted(*keys, g_strdup(name), (GCompareFunc) strcmp);
+  else
+    *test_key_found = TRUE;
+  return FALSE;
+}
+
+void
+cat_keys_foreach(const gchar *name, gpointer user_data)
 {
   GString *res = (GString *) user_data;
 
   if (res->len > 0)
     g_string_append_c(res, ',');
   g_string_append(res, name);
-  return FALSE;
 }
 
 MsgFormatOptions parse_options;
@@ -22,33 +37,51 @@ MsgFormatOptions parse_options;
 LogMessage *
 create_message(void)
 {
+  LogMessage *msg;
   const gchar *text = "<134>1 2009-10-16T11:51:56+02:00 exchange.macartney.esbjerg MSExchange_ADAccess 20208 _MSGID_ [origin ip=\"exchange.macartney.esbjerg\"][meta sequenceId=\"191732\" sysUpTime=\"68807696\"][EventData@18372.4 Data=\"MSEXCHANGEOWAAPPPOOL.CONFIG\\\" -W \\\"\\\" -M 1 -AP \\\"MSEXCHANGEOWAAPPPOOL5244fileserver.macartney.esbjerg CDG 1 7 7 1 0 1 1 7 1 mail.macartney.esbjerg CDG 1 7 7 1 0 1 1 7 1 maindc.macartney.esbjerg CD- 1 6 6 0 0 1 1 6 1 \"][Keywords@18372.4 Keyword=\"Classic\"] ApplicationMSExchangeADAccess: message";
-  return log_msg_new(text, strlen(text), NULL, &parse_options);
+
+  msg = log_msg_new(text, strlen(text), NULL, &parse_options);
+  log_msg_set_tag_by_name(msg, "almafa");
+  return msg;
 }
 
 void
 testcase(const gchar *scope, const gchar *exclude, const gchar *expected)
 {
   ValuePairs *vp;
-  GString *vp_keys, *arg_keys;
+  GList *vp_keys_list = NULL;
+  GString *vp_keys;
   LogMessage *msg = create_message();
+  gpointer args[2];
+  gboolean test_key_found = FALSE;
 
   vp_keys = g_string_sized_new(0);
-  arg_keys = g_string_sized_new(0);
 
   vp = value_pairs_new();
   value_pairs_add_scope(vp, scope);
   if (exclude)
     value_pairs_add_exclude_glob(vp, exclude);
-  value_pairs_foreach(vp, cat_vp_keys_foreach, msg, 0, vp_keys);
+  value_pairs_add_pair(vp, configuration, "test.key", "$MESSAGE");
+
+  args[0] = &vp_keys_list;
+  args[1] = &test_key_found;
+  value_pairs_foreach(vp, vp_keys_foreach, msg, 11, args);
+  g_list_foreach(vp_keys_list, (GFunc) cat_keys_foreach, vp_keys);
 
   if (strcmp(vp_keys->str, expected) != 0)
     {
       fprintf(stderr, "Scope keys mismatch, scope=[%s], exclude=[%s], value=[%s], expected=[%s]\n", scope, exclude ? exclude : "(none)", vp_keys->str, expected);
-      exit(1);
+      success = FALSE;
     }
+
+  if (!test_key_found)
+    {
+      fprintf(stderr, "test.key is not found in the result set\n");
+      success = FALSE;
+    }
+  g_list_foreach(vp_keys_list, (GFunc) g_free, NULL);
+  g_list_free(vp_keys_list);
   g_string_free(vp_keys, TRUE);
-  g_string_free(arg_keys, TRUE);
   log_msg_unref(msg);
 }
 
@@ -65,14 +98,23 @@ main(int argc, char *argv[])
   msg_format_options_init(&parse_options, configuration);
   parse_options.flags |= LP_SYSLOG_PROTOCOL;
 
-  /* FIXME: we should probably sort the key names for better reliablity */
-  testcase("rfc3164", NULL, "FACILITY,PROGRAM,PID,PRIORITY,DATE,MSG,HOST");
-  testcase("rfc5424", NULL, "FACILITY,PROGRAM,PID,PRIORITY,DATE,MSG,MSGID,SDATA,HOST");
-  testcase("selected-macros", NULL, "FACILITY,PROGRAM,PID,PRIORITY,DATE,TAGS,MSG,SDATA,HOST,SOURCEIP,SEQNUM");
-  testcase("nv-pairs", NULL, "PROGRAM,PID,.SDATA.meta.sysUpTime,MSGID,.SDATA.EventData@18372.4.Data,.SDATA.origin.ip,.SDATA.Keywords@18372.4.Keyword,MESSAGE,.SDATA.meta.sequenceId,HOST");
-  testcase("everything", NULL, "MESSAGE,MONTH_WEEK,R_SEC,DAY,S_SEC,S_TZOFFSET,PRIORITY,WEEK,TZOFFSET,R_WEEK_DAY,S_HOUR,S_UNIXTIME,LEVEL_NUM,MONTH,TAG,WEEKDAY,UNIXTIME,S_FULLDATE,FULLDATE,R_WEEK_DAY_ABBREV,YEAR_DAY,FACILITY_NUM,MONTH_NAME,MIN,S_WEEK,R_ISODATE,R_MONTH_WEEK,S_WEEK_DAY_NAME,YEAR,R_HOUR,S_MONTH,R_MONTH,S_WEEK_DAY,PROGRAM,WEEK_DAY,WEEK_DAY_NAME,S_WEEKDAY,HOST,R_WEEK,S_YEAR,S_MONTH_WEEK,ISODATE,MSG,SEC,SOURCEIP,R_MONTH_NAME,MONTH_ABBREV,FACILITY,.SDATA.meta.sequenceId,R_MONTH_ABBREV,PRI,.SDATA.origin.ip,DATE,.SDATA.meta.sysUpTime,R_YEAR,MSGHDR,R_TZ,S_MONTH_NAME,.SDATA.Keywords@18372.4.Keyword,TAGS,S_ISODATE,MSGID,S_DATE,SDATA,R_DAY,BSDTAG,.SDATA.EventData@18372.4.Data,S_DAY,S_TZ,SEQNUM,R_WEEK_DAY_NAME,STAMP,LEVEL,R_DATE,R_YEAR_DAY,TZ,R_MIN,PID,S_MIN,R_TZOFFSET,S_MONTH_ABBREV,R_UNIXTIME,S_WEEK_DAY_ABBREV,WEEK_DAY_ABBREV,R_FULLDATE,S_STAMP,R_STAMP,R_WEEKDAY,HOUR,S_YEAR_DAY");
+  testcase("rfc3164", NULL, "DATE,FACILITY,HOST,MESSAGE,PID,PRIORITY,PROGRAM");
+  testcase("rfc5424", NULL, "DATE,FACILITY,HOST,MESSAGE,MSGID,PID,PRIORITY,PROGRAM,SDATA");
+  testcase("selected-macros", NULL, "DATE,FACILITY,HOST,MESSAGE,PID,PRIORITY,PROGRAM,SDATA,SEQNUM,SOURCEIP,TAGS");
+  testcase("nv-pairs", NULL, ".SDATA.EventData@18372.4.Data,.SDATA.Keywords@18372.4.Keyword,.SDATA.meta.sequenceId,.SDATA.meta.sysUpTime,.SDATA.origin.ip,HOST,MESSAGE,MSGID,PID,PROGRAM");
 
-  testcase("nv-pairs", ".SDATA.*", "PROGRAM,PID,MSGID,MESSAGE,HOST");
+  testcase("everything", NULL, ".SDATA.EventData@18372.4.Data,.SDATA.Keywords@18372.4.Keyword,.SDATA.meta.sequenceId,.SDATA.meta.sysUpTime,.SDATA.origin.ip,BSDTAG,DATE,DAY,FACILITY,FACILITY_NUM,FULLDATE,HOST,HOUR,ISODATE,LEVEL,LEVEL_NUM,MESSAGE,MIN,MONTH,MONTH_ABBREV,MONTH_NAME,MONTH_WEEK,MSG,MSGHDR,MSGID,PID,PRI,PRIORITY,PROGRAM,R_DATE,R_DAY,R_FULLDATE,R_HOUR,R_ISODATE,R_MIN,R_MONTH,R_MONTH_ABBREV,R_MONTH_NAME,R_MONTH_WEEK,R_SEC,R_STAMP,R_TZ,R_TZOFFSET,R_UNIXTIME,R_WEEK,R_WEEKDAY,R_WEEK_DAY,R_WEEK_DAY_ABBREV,R_WEEK_DAY_NAME,R_YEAR,R_YEAR_DAY,SDATA,SEC,SEQNUM,SOURCEIP,STAMP,S_DATE,S_DAY,S_FULLDATE,S_HOUR,S_ISODATE,S_MIN,S_MONTH,S_MONTH_ABBREV,S_MONTH_NAME,S_MONTH_WEEK,S_SEC,S_STAMP,S_TZ,S_TZOFFSET,S_UNIXTIME,S_WEEK,S_WEEKDAY,S_WEEK_DAY,S_WEEK_DAY_ABBREV,S_WEEK_DAY_NAME,S_YEAR,S_YEAR_DAY,TAG,TAGS,TZ,TZOFFSET,UNIXTIME,WEEK,WEEKDAY,WEEK_DAY,WEEK_DAY_ABBREV,WEEK_DAY_NAME,YEAR,YEAR_DAY");
+
+  testcase("nv-pairs", ".SDATA.*", "HOST,MESSAGE,MSGID,PID,PROGRAM");
+
+  /* tests that the exclude patterns do not affect explicitly added
+   * keys. The testcase function adds a "test.key" and then checks if
+   * it is indeed present. Even if it would be excluded it still has
+   * to be in the result set. */
+  testcase("rfc3164", "test.*", "DATE,FACILITY,HOST,MESSAGE,PID,PRIORITY,PROGRAM");
 
   app_shutdown();
+  if (success)
+    return 0;
+  return 1;
 }
