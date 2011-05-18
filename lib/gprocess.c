@@ -305,6 +305,14 @@ g_process_cap_restore(cap_t r)
   return;
 }
 
+#ifndef PR_CAPBSET_READ
+
+/* old glibc versions don't have PR_CAPBSET_READ, we define it to the
+ * value as defined in newer versions. */
+
+#define PR_CAPBSET_READ 23
+#endif
+
 gboolean
 g_process_check_cap_syslog(void)
 {
