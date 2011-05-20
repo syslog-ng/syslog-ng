@@ -84,14 +84,12 @@ static ValuePairSpec rfc3164[] =
 static ValuePairSpec rfc5424[] =
 {
   { "MSGID", },
-  { "SDATA", },
   { 0 },
 };
 
 static ValuePairSpec selected_macros[] =
 {
   { "TAGS" },
-  { "SDATA" },
   { "SOURCEIP" },
   { "SEQNUM" },
   { 0 },
