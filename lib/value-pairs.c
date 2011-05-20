@@ -46,12 +46,14 @@ struct _ValuePairs
 
 typedef enum
 {
-  VALUE_PAIR_SCOPE_NV_PAIRS        = 0x01,
-  VALUE_PAIR_SCOPE_RFC3164         = 0x02,
-  VALUE_PAIR_SCOPE_RFC5424         = 0x04,
-  VALUE_PAIR_SCOPE_ALL_MACROS      = 0x08,
-  VALUE_PAIR_SCOPE_SELECTED_MACROS = 0x10,
-  VALUE_PAIR_SCOPE_EVERYTHING      = 0x1f,
+  VPS_NV_PAIRS        = 0x01,
+  VPS_DOT_NV_PAIRS    = 0x02,
+  VPS_RFC3164         = 0x04,
+  VPS_RFC5424         = 0x08,
+  VPS_ALL_MACROS      = 0x10,
+  VPS_SELECTED_MACROS = 0x20,
+  VPS_SDATA           = 0x40,
+  VPS_EVERYTHING      = 0x7f,
 } ValuePairScope;
 
 enum
@@ -100,15 +102,18 @@ static gboolean value_pair_sets_initialized;
 
 static CfgFlagHandler value_pair_scope[] =
 {
-  { "nv-pairs",           CFH_SET, offsetof(ValuePairs, scopes), VALUE_PAIR_SCOPE_NV_PAIRS },
-  { "rfc3164",            CFH_SET, offsetof(ValuePairs, scopes), VALUE_PAIR_SCOPE_RFC3164 },
-  { "core",               CFH_SET, offsetof(ValuePairs, scopes), VALUE_PAIR_SCOPE_RFC3164 },
-  { "base",               CFH_SET, offsetof(ValuePairs, scopes), VALUE_PAIR_SCOPE_RFC3164 },
-  { "rfc5424",            CFH_SET, offsetof(ValuePairs, scopes), VALUE_PAIR_SCOPE_RFC5424 },
-  { "syslog-proto",       CFH_SET, offsetof(ValuePairs, scopes), VALUE_PAIR_SCOPE_RFC5424 },
-  { "all-macros",         CFH_SET, offsetof(ValuePairs, scopes), VALUE_PAIR_SCOPE_ALL_MACROS },
-  { "selected-macros",    CFH_SET, offsetof(ValuePairs, scopes), VALUE_PAIR_SCOPE_SELECTED_MACROS },
-  { "everything",         CFH_SET, offsetof(ValuePairs, scopes), VALUE_PAIR_SCOPE_EVERYTHING },
+  { "nv-pairs",           CFH_SET, offsetof(ValuePairs, scopes), VPS_NV_PAIRS },
+  { "dot-nv-pairs",       CFH_SET, offsetof(ValuePairs, scopes), VPS_DOT_NV_PAIRS},
+  { "all-nv-pairs",       CFH_SET, offsetof(ValuePairs, scopes), VPS_NV_PAIRS | VPS_DOT_NV_PAIRS },
+  { "rfc3164",            CFH_SET, offsetof(ValuePairs, scopes), VPS_RFC3164 },
+  { "core",               CFH_SET, offsetof(ValuePairs, scopes), VPS_RFC3164 },
+  { "base",               CFH_SET, offsetof(ValuePairs, scopes), VPS_RFC3164 },
+  { "rfc5424",            CFH_SET, offsetof(ValuePairs, scopes), VPS_RFC5424 },
+  { "syslog-proto",       CFH_SET, offsetof(ValuePairs, scopes), VPS_RFC5424 },
+  { "all-macros",         CFH_SET, offsetof(ValuePairs, scopes), VPS_ALL_MACROS },
+  { "selected-macros",    CFH_SET, offsetof(ValuePairs, scopes), VPS_SELECTED_MACROS },
+  { "sdata",              CFH_SET, offsetof(ValuePairs, scopes), VPS_SDATA },
+  { "everything",         CFH_SET, offsetof(ValuePairs, scopes), VPS_EVERYTHING },
 };
 
 gboolean
@@ -159,21 +164,28 @@ vp_pairs_foreach(gpointer key, gpointer value, gpointer user_data)
 /* runs over the LogMessage nv-pairs, and inserts them unless excluded */
 static gboolean
 vp_msg_nvpairs_foreach(NVHandle handle, gchar *name,
-                   const gchar *value, gssize value_len,
-                   gpointer user_data)
+                       const gchar *value, gssize value_len,
+                       gpointer user_data)
 {
   ValuePairs *vp = ((gpointer *)user_data)[0];
   GHashTable *scope_set = ((gpointer *)user_data)[5];
   gint j;
 
-  for (j = 0; j < vp->exclude_size; j++)
+  /* NOTE: dot-nv-pairs include SDATA too */
+  if (((name[0] == '.' && (vp->scopes & VPS_DOT_NV_PAIRS)) ||
+       (name[0] != '.' && (vp->scopes & VPS_NV_PAIRS)) ||
+       (log_msg_is_handle_sdata(handle) && (vp->scopes & VPS_SDATA))))
     {
-      if (g_pattern_match_string(vp->excludes[j], name))
-        return FALSE;
+      for (j = 0; j < vp->exclude_size; j++)
+        {
+          if (g_pattern_match_string(vp->excludes[j], name))
+            return FALSE;
+        }
+
+      /* NOTE: the key is a borrowed reference in the hash, and value is freed */
+      g_hash_table_insert(scope_set, name, g_strndup(value, value_len));
     }
 
-  /* NOTE: the key is a borrowed reference in the hash, and value is freed */
-  g_hash_table_insert(scope_set, name, g_strndup(value, value_len));
   return FALSE;
 }
 
@@ -239,31 +251,21 @@ value_pairs_foreach (ValuePairs *vp, VPForeachFunc func,
   /*
    * Build up the base set
    */
-  if (vp->scopes & VALUE_PAIR_SCOPE_NV_PAIRS)
-    {
-      nv_table_foreach(msg->payload, logmsg_registry,
-		       (NVTableForeachFunc) vp_msg_nvpairs_foreach, args);
-    }
+  if (vp->scopes & (VPS_NV_PAIRS + VPS_DOT_NV_PAIRS + VPS_SDATA))
+    nv_table_foreach(msg->payload, logmsg_registry,
+                     (NVTableForeachFunc) vp_msg_nvpairs_foreach, args);
 
-  if (vp->scopes & VALUE_PAIR_SCOPE_RFC3164 ||
-      vp->scopes & VALUE_PAIR_SCOPE_RFC5424 ||
-      vp->scopes & VALUE_PAIR_SCOPE_SELECTED_MACROS)
-    {
-      vp_merge_set(vp, msg, seq_num, rfc3164,
-                   scope_set);
-    }
+  if (vp->scopes & (VPS_RFC3164 + VPS_RFC5424 + VPS_SELECTED_MACROS))
+    vp_merge_set(vp, msg, seq_num, rfc3164, scope_set);
 
-  if (vp->scopes & VALUE_PAIR_SCOPE_RFC5424)
-    vp_merge_set(vp, msg, seq_num, rfc5424,
-			       scope_set);
+  if (vp->scopes & VPS_RFC5424)
+    vp_merge_set(vp, msg, seq_num, rfc5424, scope_set);
 
-  if (vp->scopes & VALUE_PAIR_SCOPE_SELECTED_MACROS)
-    vp_merge_set(vp, msg, seq_num, selected_macros,
-			       scope_set);
+  if (vp->scopes & VPS_SELECTED_MACROS)
+    vp_merge_set(vp, msg, seq_num, selected_macros, scope_set);
 
-  if (vp->scopes & VALUE_PAIR_SCOPE_ALL_MACROS)
-    vp_merge_set(vp, msg, seq_num, all_macros,
-			       scope_set);
+  if (vp->scopes & VPS_ALL_MACROS)
+    vp_merge_set(vp, msg, seq_num, all_macros, scope_set);
 
   /* Merge the explicit key-value pairs too */
   g_hash_table_foreach(vp->vpairs, (GHFunc) vp_pairs_foreach, args);
