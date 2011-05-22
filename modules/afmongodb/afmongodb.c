@@ -148,7 +148,8 @@ afmongodb_dd_set_value_pairs(LogDriver *d, ValuePairs *vp)
 {
   MongoDBDestDriver *self = (MongoDBDestDriver *)d;
 
-  value_pairs_free (self->vp);
+  if (self->vp)
+    value_pairs_free (self->vp);
   self->vp = vp;
 }
 
