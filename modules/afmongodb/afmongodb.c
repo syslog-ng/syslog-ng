@@ -237,7 +237,14 @@ afmongodb_vp_foreach (const gchar *name, const gchar *value,
   bson *bson_set = (bson *)user_data;
 
   if (name[0] == '.')
-    bson_append_string (bson_set, name + 1, value, -1);
+    {
+      gchar tx_name[256];
+
+      tx_name[0] = '_';
+      strncpy(&tx_name[1], name + 1, sizeof(tx_name) - 1);
+      tx_name[sizeof(tx_name) - 1] = 0;
+      bson_append_string (bson_set, tx_name, value, -1);
+    }
   else
     bson_append_string (bson_set, name, value, -1);
 
