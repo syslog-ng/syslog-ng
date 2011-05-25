@@ -28,6 +28,7 @@ IVYKIS_MIN_VERSION="0.18"
 JSON_C_MIN_VERSION="0.7"
 JSON_GLIB_MIN_VERSION="0.12"
 PCRE_MIN_VERSION="6.1"
+LMC_MIN_VERSION="0.1.0"
 
 dnl ***************************************************************************
 dnl Initial setup
@@ -763,12 +764,13 @@ if test "x$with_libmongo_client" = "xinternal"; then
 		AC_MSG_WARN([Internal libmongo-client sources not found in modules/afmongodb/libmongo-client])
 		with_libmongo_client="no"
 	fi
-else
-	AC_MSG_WARN([Don't know how to locate system installed libmongo-client.])
-	with_libmongo_client="no"
+elif test "x$with_libmongo_client" = "xsystem"; then
+	PKG_CHECK_MODULES(LIBMONGO, libmongo-client >= $LMC_MIN_VERSION,,with_libmongo_client="no")
 fi
 
-
+if test "x$with_libmongo_client" = "xno"; then
+	enable_mongodb="no"
+fi
 
 dnl ***************************************************************************
 dnl misc features to be enabled
