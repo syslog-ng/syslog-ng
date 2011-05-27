@@ -289,6 +289,9 @@ extern struct _LogDriver *last_driver;
 %token KW_PAIR                        10503
 %token KW_KEY                         10504
 %token KW_SCOPE                       10505
+%token KW_SHIFT                       10506
+%token KW_REKEY                       10507
+%token KW_ADD_PREFIX                  10508
 
 /* END_DECLS */
 
@@ -925,11 +928,23 @@ vp_option
 	  }
 	| KW_EXCLUDE '(' string ')'	         { value_pairs_add_exclude_glob(last_value_pairs, $3); free($3); }
 	| KW_SCOPE '(' vp_scope_list ')'
+	| KW_REKEY '(' vp_rekey_options ')'
 	;
 
 vp_scope_list
 	: string vp_scope_list              { value_pairs_add_scope(last_value_pairs, $1); free($1); }
 	|
+	;
+
+vp_rekey_options
+	: vp_rekey_option vp_rekey_options
+	|
+	;
+
+vp_rekey_option
+	: KW_SHIFT '(' string LL_NUMBER ')' { value_pairs_add_key_transform(last_value_pairs, VP_TRANSFORM_SHIFT, $3, GINT_TO_POINTER($4)); free($3); }
+	| KW_SHIFT '(' string ':' LL_NUMBER ')' { value_pairs_add_key_transform(last_value_pairs, VP_TRANSFORM_SHIFT, $3, GINT_TO_POINTER($5)); free($3); }
+	| KW_ADD_PREFIX '(' string string ')' { value_pairs_add_key_transform(last_value_pairs, VP_TRANSFORM_ADD_PREFIX, $3, $4); free($3); }
 	;
 
 /* END_RULES */

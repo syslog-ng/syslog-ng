@@ -30,10 +30,17 @@
 
 typedef struct _ValuePairs ValuePairs;
 typedef gboolean (*VPForeachFunc)(const gchar *name, const gchar *value, gpointer user_data);
+typedef enum 
+{
+  VP_TRANSFORM_NONE,
+  VP_TRANSFORM_SHIFT,
+  VP_TRANSFORM_ADD_PREFIX
+} ValuePairsTransformType;
 
 gboolean value_pairs_add_scope(ValuePairs *vp, const gchar *scope);
 void value_pairs_add_exclude_glob(ValuePairs *vp, const gchar *pattern);
 void value_pairs_add_pair(ValuePairs *vp, GlobalConfig *cfg, const gchar *key, const gchar *value);
+void value_pairs_add_key_transform(ValuePairs *vp, ValuePairsTransformType trans_type, const gchar *glob, gpointer user_data);
 
 void value_pairs_foreach(ValuePairs *vp, VPForeachFunc func,
                          LogMessage *msg, gint32 seq_num,

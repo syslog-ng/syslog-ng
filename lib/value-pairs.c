@@ -30,11 +30,22 @@
 
 #include <string.h>
 
+typedef gchar *(*VPTransFunc)(const gchar *name, gpointer user_data);
+typedef void (*VPTransFreeFunc)(gchar *data);
+
+typedef struct _ValuePairsTransformer
+{
+  GPatternSpec *glob;
+  VPTransFunc transform;
+  gpointer user_data;
+  VPTransFreeFunc value_free;
+} ValuePairsTransformer;
 
 struct _ValuePairs
 {
   GPatternSpec **excludes;
   GHashTable *vpairs;
+  GList *transforms;
 
   /* guint32 as CfgFlagHandler only supports 32 bit integers */
   guint32 scopes;
@@ -142,6 +153,82 @@ value_pairs_add_pair(ValuePairs *vp, GlobalConfig *cfg, const gchar *key, const 
   g_hash_table_insert(vp->vpairs, g_strdup(key), t);
 }
 
+static gchar *
+vp_trans_add_prefix(const gchar *name, gpointer user_data)
+{
+  gchar *prefix = (gchar *)user_data;
+
+  return g_strconcat (prefix, name, NULL);
+}
+
+static gchar *
+vp_trans_shift(const gchar *name, gpointer user_data)
+{
+  gint shift = GPOINTER_TO_INT (user_data);
+
+  if (shift < 0)
+    return g_strdup(name);
+  return g_strdup(name + shift);
+}
+
+void
+value_pairs_add_key_transform(ValuePairs *vp, ValuePairsTransformType trans_type,
+			      const gchar *glob, gpointer user_data)
+{
+  ValuePairsTransformer *vpt;
+
+  vpt = g_new(ValuePairsTransformer, 1);
+  vpt->glob = g_pattern_spec_new(glob);
+  vpt->user_data = user_data;
+  
+  switch (trans_type)
+    {
+    case VP_TRANSFORM_SHIFT:
+      vpt->value_free = NULL;
+      vpt->transform = vp_trans_shift;
+
+      vp->transforms = g_list_append(vp->transforms, vpt);
+      break;
+    case VP_TRANSFORM_ADD_PREFIX:
+      vpt->value_free = (VPTransFreeFunc)g_free;
+      vpt->transform = vp_trans_add_prefix;
+      
+      vp->transforms = g_list_append(vp->transforms, vpt);
+      break;
+    default:
+      g_pattern_spec_free(vpt->glob);
+      g_free(vpt);
+      break;
+    }
+}
+
+static gchar *
+vp_transform_apply (ValuePairs *vp, const gchar *key)
+{
+  GList *l;
+  gchar *ckey = g_strdup(key);
+
+  if (!vp->transforms)
+    return ckey;
+
+  l = vp->transforms;
+  while (l)
+    {
+      ValuePairsTransformer *t = (ValuePairsTransformer *)l->data;
+
+      if (g_pattern_match_string(t->glob, ckey))
+	{
+	  gchar *nkey = t->transform (ckey, t->user_data);
+	  g_free (ckey);
+	  ckey = nkey;
+	}
+      
+      l = g_list_next (l);
+    }
+
+  return ckey;
+}
+
 /* runs over the name-value pairs requested by the user (e.g. with value_pairs_add_pair) */
 static void
 vp_pairs_foreach(gpointer key, gpointer value, gpointer user_data)
@@ -158,7 +245,7 @@ vp_pairs_foreach(gpointer key, gpointer value, gpointer user_data)
   if (!vp->res->str[0])
     return;
 
-  g_hash_table_insert(scope_set, key, vp->res->str);
+  g_hash_table_insert(scope_set, vp_transform_apply (vp, key), vp->res->str);
   g_string_steal(vp->res);
 }
 
@@ -184,7 +271,7 @@ vp_msg_nvpairs_foreach(NVHandle handle, gchar *name,
         }
 
       /* NOTE: the key is a borrowed reference in the hash, and value is freed */
-      g_hash_table_insert(scope_set, name, g_strndup(value, value_len));
+      g_hash_table_insert(scope_set, vp_transform_apply(vp, name), g_strndup(value, value_len));
     }
 
   return FALSE;
@@ -232,7 +319,7 @@ vp_merge_set(ValuePairs *vp, LogMessage *msg, gint32 seq_num, ValuePairSpec *set
       if (!vp->res->str[0])
 	continue;
 
-      g_hash_table_insert(dest, set[i].name, vp->res->str);
+      g_hash_table_insert(dest, vp_transform_apply(vp, set[i].name), vp->res->str);
       g_string_steal(vp->res);
     }
 }
@@ -244,7 +331,7 @@ value_pairs_foreach (ValuePairs *vp, VPForeachFunc func,
   gpointer args[] = { vp, func, msg, GINT_TO_POINTER (seq_num), user_data, NULL };
   GHashTable *scope_set;
 
-  scope_set = g_hash_table_new_full(g_str_hash, g_str_equal, NULL,
+  scope_set = g_hash_table_new_full(g_str_hash, g_str_equal, (GDestroyNotify) g_free,
 				    (GDestroyNotify) g_free);
 
   args[5] = scope_set;
@@ -350,6 +437,7 @@ void
 value_pairs_free (ValuePairs *vp)
 {
   gint i;
+  GList *l;
 
   g_hash_table_destroy(vp->vpairs);
 
@@ -357,6 +445,20 @@ value_pairs_free (ValuePairs *vp)
     g_pattern_spec_free(vp->excludes[i]);
   g_free(vp->excludes);
   g_string_free(vp->res, TRUE);
+
+  l = vp->transforms;
+  while (l)
+    {
+      ValuePairsTransformer *t = (ValuePairsTransformer *)l->data;
+
+      g_pattern_spec_free(t->glob);
+      if (t->value_free)
+	t->value_free(t->user_data);
+
+      g_free(l->data);
+      l = g_list_delete_link (l, l);
+    }
+  
   g_free(vp);
 }
 
