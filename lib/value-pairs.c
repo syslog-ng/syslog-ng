@@ -30,16 +30,21 @@
 
 #include <string.h>
 
-typedef gchar *(*VPTransFunc)(const gchar *name, gpointer user_data);
+typedef struct _ValuePairsTransformer ValuePairsTransformer;
+typedef gchar *(*VPTransFunc)(ValuePairsTransformer *self, gchar *name, gpointer user_data);
 typedef void (*VPTransFreeFunc)(gchar *data);
+typedef void (*VPTransDestroyFunc)(ValuePairsTransformer *self);
 
-typedef struct _ValuePairsTransformer
+struct _ValuePairsTransformer
 {
   GPatternSpec *glob;
   VPTransFunc transform;
   gpointer user_data;
   VPTransFreeFunc value_free;
-} ValuePairsTransformer;
+
+  gpointer transform_data;
+  VPTransDestroyFunc destroy;
+};
 
 struct _ValuePairs
 {
@@ -154,21 +159,41 @@ value_pairs_add_pair(ValuePairs *vp, GlobalConfig *cfg, const gchar *key, const 
 }
 
 static gchar *
-vp_trans_add_prefix(const gchar *name, gpointer user_data)
+vp_trans_add_prefix(ValuePairsTransformer *self, gchar *name, gpointer user_data)
 {
   gchar *prefix = (gchar *)user_data;
+  GHashTable *cache;
+  gpointer r;
 
-  return g_strconcat (prefix, name, NULL);
+  if (self->transform_data)
+    cache = (GHashTable *)self->transform_data;
+  else
+    cache = self->transform_data = g_hash_table_new_full(g_str_hash, g_str_equal,
+							 g_free, g_free);
+  r = g_hash_table_lookup (cache, name);
+  if (!r)
+    {
+      r = (gpointer)g_strconcat (prefix, name, NULL);
+      g_hash_table_insert (cache, g_strdup(name), r);
+    }
+  return r;
+}
+
+static void
+vp_trans_add_prefix_destroy(ValuePairsTransformer *self)
+{
+  if (self->transform_data)
+    g_hash_table_destroy ((GHashTable *)self->transform_data);
 }
 
 static gchar *
-vp_trans_shift(const gchar *name, gpointer user_data)
+vp_trans_shift(ValuePairsTransformer *self, gchar *name, gpointer user_data)
 {
   gint shift = GPOINTER_TO_INT (user_data);
 
   if (shift < 0)
-    return g_strdup(name);
-  return g_strdup(name + shift);
+    return name;
+  return name + shift;
 }
 
 void
@@ -180,6 +205,8 @@ value_pairs_add_key_transform(ValuePairs *vp, ValuePairsTransformType trans_type
   vpt = g_new(ValuePairsTransformer, 1);
   vpt->glob = g_pattern_spec_new(glob);
   vpt->user_data = user_data;
+  vpt->transform_data = NULL;
+  vpt->destroy = NULL;
   
   switch (trans_type)
     {
@@ -192,6 +219,7 @@ value_pairs_add_key_transform(ValuePairs *vp, ValuePairsTransformType trans_type
     case VP_TRANSFORM_ADD_PREFIX:
       vpt->value_free = (VPTransFreeFunc)g_free;
       vpt->transform = vp_trans_add_prefix;
+      vpt->destroy = vp_trans_add_prefix_destroy;
       
       vp->transforms = g_list_append(vp->transforms, vpt);
       break;
@@ -203,10 +231,10 @@ value_pairs_add_key_transform(ValuePairs *vp, ValuePairsTransformType trans_type
 }
 
 static gchar *
-vp_transform_apply (ValuePairs *vp, const gchar *key)
+vp_transform_apply (ValuePairs *vp, gchar *key)
 {
   GList *l;
-  gchar *ckey = g_strdup(key);
+  gchar *ckey = key;
 
   if (!vp->transforms)
     return ckey;
@@ -217,11 +245,7 @@ vp_transform_apply (ValuePairs *vp, const gchar *key)
       ValuePairsTransformer *t = (ValuePairsTransformer *)l->data;
 
       if (g_pattern_match_string(t->glob, ckey))
-	{
-	  gchar *nkey = t->transform (ckey, t->user_data);
-	  g_free (ckey);
-	  ckey = nkey;
-	}
+	ckey = t->transform (t, ckey, t->user_data);
       
       l = g_list_next (l);
     }
@@ -331,7 +355,7 @@ value_pairs_foreach (ValuePairs *vp, VPForeachFunc func,
   gpointer args[] = { vp, func, msg, GINT_TO_POINTER (seq_num), user_data, NULL };
   GHashTable *scope_set;
 
-  scope_set = g_hash_table_new_full(g_str_hash, g_str_equal, (GDestroyNotify) g_free,
+  scope_set = g_hash_table_new_full(g_str_hash, g_str_equal, NULL,
 				    (GDestroyNotify) g_free);
 
   args[5] = scope_set;
@@ -454,6 +478,8 @@ value_pairs_free (ValuePairs *vp)
       g_pattern_spec_free(t->glob);
       if (t->value_free)
 	t->value_free(t->user_data);
+      if (t->destroy)
+	t->destroy (t);
 
       g_free(l->data);
       l = g_list_delete_link (l, l);
