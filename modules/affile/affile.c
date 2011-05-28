@@ -471,7 +471,7 @@ struct _AFFileDestWriter
   LogPipe super;
   GStaticMutex lock;
   AFFileDestDriver *owner;
-  GString *filename;
+  gchar *filename;
   LogPipe *writer;
   time_t last_msg_stamp;
   time_t last_open_stamp;
@@ -507,7 +507,7 @@ affile_dw_reap(gpointer s)
       g_static_mutex_unlock(&self->lock);
       msg_verbose("Destination timed out, reaping",
                   evt_tag_str("template", self->owner->filename_template->template),
-                  evt_tag_str("filename", self->filename->str),
+                  evt_tag_str("filename", self->filename),
                   NULL);
       affile_dd_reap_writer(self->owner, self);
     }
@@ -526,14 +526,14 @@ affile_dw_reopen(AFFileDestWriter *self)
 
   self->last_open_stamp = self->last_msg_stamp;
   if (self->owner->overwrite_if_older > 0 && 
-      stat(self->filename->str, &st) == 0 && 
+      stat(self->filename, &st) == 0 &&
       st.st_mtime < time(NULL) - self->owner->overwrite_if_older)
     {
       msg_info("Destination file is older than overwrite_if_older(), overwriting",
-                 evt_tag_str("filename", self->filename->str),
+                 evt_tag_str("filename", self->filename),
                  evt_tag_int("overwrite_if_older", self->owner->overwrite_if_older),
                  NULL);
-      unlink(self->filename->str);
+      unlink(self->filename);
     }
 
   if (self->owner->flags & AFFILE_PIPE)
@@ -542,7 +542,7 @@ affile_dw_reopen(AFFileDestWriter *self)
     flags = O_WRONLY | O_CREAT | O_NOCTTY | O_NONBLOCK | O_LARGEFILE;
 
 
-  if (affile_open_file(self->filename->str, flags, 
+  if (affile_open_file(self->filename, flags,
                        self->owner->file_uid, self->owner->file_gid, self->owner->file_perm, 
                        self->owner->dir_uid, self->owner->dir_gid, self->owner->dir_perm, 
                        !!(self->owner->flags & AFFILE_CREATE_DIRS), FALSE, !!(self->owner->flags & AFFILE_PIPE), &fd))
@@ -557,7 +557,7 @@ affile_dw_reopen(AFFileDestWriter *self)
   else
     {
       msg_error("Error opening file for writing",
-                evt_tag_str("filename", self->filename->str),
+                evt_tag_str("filename", self->filename),
                 evt_tag_errno(EVT_TAG_OSERROR, errno),
                 NULL);
       return self->owner->super.super.optional;
@@ -576,7 +576,7 @@ affile_dw_init(LogPipe *s)
 
   msg_verbose("Initializing destination file writer",
               evt_tag_str("template", self->owner->filename_template->template),
-              evt_tag_str("filename", self->filename->str),
+              evt_tag_str("filename", self->filename),
               NULL);
 
   if (!self->writer)
@@ -584,7 +584,7 @@ affile_dw_init(LogPipe *s)
       self->writer = log_writer_new(LW_FORMAT_FILE, log_dest_driver_acquire_queue(&self->owner->super, NULL));
       log_writer_set_options((LogWriter *) self->writer, s, &self->owner->writer_options, 1,
                              self->owner->flags & AFFILE_PIPE ? SCS_PIPE : SCS_FILE,
-                             self->owner->super.super.id, self->filename->str);
+                             self->owner->super.super.id, self->filename);
 
       if (!log_pipe_init(self->writer, NULL))
         {
@@ -653,7 +653,7 @@ affile_dw_set_owner(AFFileDestWriter *self, AFFileDestDriver *owner)
   log_pipe_ref(&owner->super.super.super);
   self->owner = owner;
   if (self->writer)
-    log_writer_set_options((LogWriter *) self->writer, &self->super, &owner->writer_options, 1, SCS_FILE, self->owner->super.super.id, self->filename->str);
+    log_writer_set_options((LogWriter *) self->writer, &self->super, &owner->writer_options, 1, SCS_FILE, self->owner->super.super.id, self->filename);
   
 }
 
@@ -664,13 +664,13 @@ affile_dw_free(LogPipe *s)
   
   log_pipe_unref(self->writer);
   self->writer = NULL;
-  g_string_free(self->filename, TRUE);
+  g_free(self->filename);
   log_pipe_unref(&self->owner->super.super.super);
   log_pipe_free_method(s);
 }
 
 static AFFileDestWriter *
-affile_dw_new(AFFileDestDriver *owner, GString *filename)
+affile_dw_new(AFFileDestDriver *owner, const gchar *filename)
 {
   AFFileDestWriter *self = g_new0(AFFileDestWriter, 1);
   
@@ -690,7 +690,7 @@ affile_dw_new(AFFileDestDriver *owner, GString *filename)
 
   /* we have to take care about freeing filename later. 
      This avoids a move of the filename. */
-  self->filename = filename;
+  self->filename = g_strdup(filename);
   g_static_mutex_init(&self->lock);
   return self;
 }
@@ -822,7 +822,7 @@ affile_dd_reap_writer(AFFileDestDriver *self, AFFileDestWriter *dw)
     {
       g_static_mutex_lock(&self->lock);
       /* remove from hash table */
-      g_hash_table_remove(self->writer_hash, dw->filename->str);
+      g_hash_table_remove(self->writer_hash, dw->filename);
       g_static_mutex_unlock(&self->lock);
     }
   else
@@ -1001,7 +1001,7 @@ affile_dd_open_writer(gpointer args[])
     {
       if (!self->single_writer)
 	{
-	  next = affile_dw_new(self, g_string_new(self->filename_template->template));
+	  next = affile_dw_new(self, self->filename_template->template);
           if (next && log_pipe_init(&next->super, cfg))
 	    {
 	      log_pipe_ref(&next->super);
@@ -1029,15 +1029,15 @@ affile_dd_open_writer(gpointer args[])
       if (!self->writer_hash)
 	self->writer_hash = g_hash_table_new(g_str_hash, g_str_equal);
 
-      /* we don't need to lock the hashtable as it is only written in the
-       * main thread, which we're running right now.  lookups in other
-       * threads must be locked. writers must be locked.  */
+      /* we don't need to lock the hashtable as it is only written in
+       * the main thread, which we're running right now.  lookups in
+       * other threads must be locked. writers must be locked even in
+       * this thread to exclude lookups in other threads.  */
 
       next = g_hash_table_lookup(self->writer_hash, filename->str);
       if (!next)
 	{
-	  next = affile_dw_new(self, filename);
-	  args[1] = NULL;
+	  next = affile_dw_new(self, filename->str);
           if (!log_pipe_init(&next->super, cfg))
 	    {
 	      log_pipe_unref(&next->super);
@@ -1051,8 +1051,6 @@ affile_dd_open_writer(gpointer args[])
               g_static_mutex_unlock(&self->lock);
             }
 	}
-      else
-        g_string_free(filename, TRUE);
     }
   next->queue_pending = TRUE;
   /* we're returning a reference */
@@ -1114,9 +1112,7 @@ affile_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
 	  args[1] = filename;
 	  next = main_loop_call((void *(*)(void *)) affile_dd_open_writer, args, TRUE);
 	}
-      /* args[1] is set to NULL whenever the affile_dd_open_writer uses it for the newly constructed AFFileDestWriter instance */
-      if (args[1])
-        g_string_free(filename, TRUE);
+      g_string_free(filename, TRUE);
     }
   if (next)
     {
