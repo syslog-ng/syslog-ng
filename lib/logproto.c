@@ -720,6 +720,12 @@ log_proto_buffered_server_apply_state(LogProtoBufferedServer *self, PersistEntry
 
  error:
   ofs = 0;
+  state->buffer_pos = 0;
+  state->pending_buffer_end = 0;
+  state->buffer_cached_eol = 0;
+  state->raw_stream_pos = 0;
+  state->raw_buffer_size = 0;
+  state->raw_buffer_leftover_size = 0;
   lseek(fd, 0, SEEK_SET);
 
  exit:
