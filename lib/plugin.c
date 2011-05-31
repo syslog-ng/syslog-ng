@@ -268,20 +268,24 @@ plugin_list_modules(FILE *out, gboolean verbose)
           if (g_str_has_suffix(fname, G_MODULE_SUFFIX))
             {
               gchar *module_name;
+              ModuleInfo *module_info;
+              gboolean success;
 
               if (g_str_has_prefix(fname, "lib"))
                 fname += 3;
               module_name = g_strndup(fname, (gint) (strlen(fname) - strlen(G_MODULE_SUFFIX) - 1));
 
+              mod = plugin_dlopen_module(module_name, module_path);
+              if (mod)
+                success = g_module_symbol(mod, "module_info", (gpointer *) &module_info);
+              else
+                success = FALSE;
               if (verbose)
                 {
                   fprintf(out, "Module: %s\n", module_name);
-                  mod = plugin_dlopen_module(module_name, module_path);
                   if (mod)
                     {
-                      ModuleInfo *module_info;
-
-                      if (!g_module_symbol(mod, "module_info", (gpointer *) &module_info))
+                      if (!success || !module_info)
                         {
                           fprintf(out, "Status: Unable to resolve module_info variable, probably not a syslog-ng module\n");
                         }
@@ -322,7 +326,7 @@ plugin_list_modules(FILE *out, gboolean verbose)
                     }
                   fprintf(out, "\n");
                 }
-              else
+              else if (success && module_info)
                 {
                   fprintf(out, "%s%s", first ? "" : ",", module_name);
                   first = FALSE;
