@@ -292,6 +292,7 @@ extern struct _LogDriver *last_driver;
 %token KW_SHIFT                       10506
 %token KW_REKEY                       10507
 %token KW_ADD_PREFIX                  10508
+%token KW_REPLACE                     10509
 
 /* END_DECLS */
 
@@ -945,6 +946,7 @@ vp_rekey_option
 	: KW_SHIFT '(' string LL_NUMBER ')' { value_pairs_add_transform(last_value_pairs, value_pairs_new_transform_shift($3, $4)); free($3); }
 	| KW_SHIFT '(' string ':' LL_NUMBER ')' { value_pairs_add_transform(last_value_pairs, value_pairs_new_transform_shift($3, $5)); free($3); }
 	| KW_ADD_PREFIX '(' string string ')' { value_pairs_add_transform(last_value_pairs, value_pairs_new_transform_add_prefix($3, $4)); free($3); free($4); }
+	| KW_REPLACE '(' string string ')' { value_pairs_add_transform(last_value_pairs, value_pairs_new_transform_replace($3, $4)); free($3); free($4); }
 	;
 
 /* END_RULES */

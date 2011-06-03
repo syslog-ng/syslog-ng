@@ -61,6 +61,17 @@ typedef struct
   GHashTable *cache;
 } VPTransAddPrefix;
 
+typedef struct
+{
+  ValuePairsTransform super;
+  
+  gchar *new_prefix;
+  gint old_prefix_len;
+  gint new_prefix_len;
+
+  GHashTable *cache;
+} VPTransReplace;
+
 static void
 vp_trans_init(ValuePairsTransform *t, const gchar *match_str,
 	      VPTransFunc trans, VPTransDestroyFunc dest,
@@ -184,6 +195,63 @@ value_pairs_new_transform_shift (const gchar *glob, gint amount)
 
   vpt->pattern = g_pattern_spec_new(glob);
   vpt->amount = amount;
+
+  return (ValuePairsTransform *)vpt;
+}
+
+/* replace() */
+static const gchar *
+vp_trans_replace(ValuePairsTransform *t, const gchar *name)
+{
+  VPTransReplace *self = (VPTransReplace *)t;
+  gpointer r;
+
+  r = g_hash_table_lookup(self->cache, name);
+  if (!r)
+    {
+      r = g_malloc(strlen(name) - self->old_prefix_len + self->new_prefix_len + 1);
+      
+      memcpy (r, self->new_prefix, self->new_prefix_len);
+      memcpy (r + self->new_prefix_len, name + self->old_prefix_len,
+	      strlen(name) - self->old_prefix_len + 1);
+      g_hash_table_insert(self->cache, g_strdup(name), r);
+    }
+  return r;
+}
+
+static void
+vp_trans_replace_destroy(ValuePairsTransform *t)
+{
+  VPTransReplace *self = (VPTransReplace *)t;
+
+  g_hash_table_destroy(self->cache);
+  g_free(self->new_prefix);
+}
+
+static gboolean
+vp_trans_replace_match(ValuePairsTransform *t, const gchar *key)
+{
+  VPTransReplace *self = (VPTransReplace *)t;
+  size_t clen = self->old_prefix_len;
+
+  if (strncmp (self->super.match_str, key, self->old_prefix_len) == 0)
+    return TRUE;
+  return FALSE;
+}
+
+ValuePairsTransform *
+value_pairs_new_transform_replace(const gchar *prefix, const gchar *new_prefix)
+{
+  VPTransReplace *vpt;
+
+  vpt = g_new(VPTransReplace, 1);
+  vp_trans_init((ValuePairsTransform *)vpt, prefix, vp_trans_replace, vp_trans_replace_destroy,
+		vp_trans_replace_match);
+
+  vpt->cache = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
+  vpt->old_prefix_len = strlen(prefix);
+  vpt->new_prefix = g_strdup(new_prefix);
+  vpt->new_prefix_len = strlen(vpt->new_prefix);
 
   return (ValuePairsTransform *)vpt;
 }

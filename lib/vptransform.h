@@ -23,7 +23,7 @@
  */
 
 #ifndef VPTRANSFORM_INCLUDED
-#define VPTRANSFORM_INCLUDED
+#define VPTRANSFORM_INCLUDED 1
 
 #include "value-pairs.h"
 
@@ -31,6 +31,7 @@ typedef struct _ValuePairsTransform ValuePairsTransform;
 
 ValuePairsTransform *value_pairs_new_transform_add_prefix (const gchar *glob, const gchar *prefix);
 ValuePairsTransform *value_pairs_new_transform_shift (const gchar *glob, gint amount);
+ValuePairsTransform *value_pairs_new_transform_replace(const gchar *prefix, const gchar *new_prefix);
 
 void value_pairs_transform_free(ValuePairsTransform *t);
 const gchar *value_pairs_transform_apply(ValuePairsTransform *t, const gchar *key);
