@@ -22,30 +22,17 @@
  *
  */
 
-#ifndef VALUE_PAIRS_H_INCLUDED
-#define VALUE_PAIRS_H_INCLUDED 1
+#ifndef VPTRANSFORM_INCLUDED
+#define VPTRANSFORM_INCLUDED
 
-#include "syslog-ng.h"
-#include "nvtable.h"
+#include "value-pairs.h"
 
-typedef struct _ValuePairs ValuePairs;
-typedef gboolean (*VPForeachFunc)(const gchar *name, const gchar *value, gpointer user_data);
+typedef struct _ValuePairsTransform ValuePairsTransform;
 
-gboolean value_pairs_add_scope(ValuePairs *vp, const gchar *scope);
-void value_pairs_add_exclude_glob(ValuePairs *vp, const gchar *pattern);
-void value_pairs_add_pair(ValuePairs *vp, GlobalConfig *cfg, const gchar *key, const gchar *value);
+ValuePairsTransform *value_pairs_new_transform_add_prefix (const gchar *glob, const gchar *prefix);
+ValuePairsTransform *value_pairs_new_transform_shift (const gchar *glob, gint amount);
 
-void value_pairs_add_transform(ValuePairs *vp, gpointer *vpt);
-
-void value_pairs_foreach(ValuePairs *vp, VPForeachFunc func,
-                         LogMessage *msg, gint32 seq_num,
-                         gpointer user_data);
-
-ValuePairs *value_pairs_new(void);
-void value_pairs_free(ValuePairs *vp);
-
-ValuePairs *value_pairs_new_from_cmdline(GlobalConfig *cfg,
-					 gint argc, gchar **argv,
-					 GError **error);
+void value_pairs_transform_free(ValuePairsTransform *t);
+const gchar *value_pairs_transform_apply(ValuePairsTransform *t, const gchar *key);
 
 #endif

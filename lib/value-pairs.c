@@ -23,28 +23,13 @@
  */
 
 #include "value-pairs.h"
+#include "vptransform.h"
 #include "logmsg.h"
 #include "templates.h"
 #include "cfg-parser.h"
 #include "misc.h"
 
 #include <string.h>
-
-typedef struct _ValuePairsTransformer ValuePairsTransformer;
-typedef gchar *(*VPTransFunc)(ValuePairsTransformer *self, gchar *name, gpointer user_data);
-typedef void (*VPTransFreeFunc)(gchar *data);
-typedef void (*VPTransDestroyFunc)(ValuePairsTransformer *self);
-
-struct _ValuePairsTransformer
-{
-  GPatternSpec *glob;
-  VPTransFunc transform;
-  gpointer user_data;
-  VPTransFreeFunc value_free;
-
-  gpointer transform_data;
-  VPTransDestroyFunc destroy;
-};
 
 struct _ValuePairs
 {
@@ -159,78 +144,6 @@ value_pairs_add_pair(ValuePairs *vp, GlobalConfig *cfg, const gchar *key, const 
 }
 
 static gchar *
-vp_trans_add_prefix(ValuePairsTransformer *self, gchar *name, gpointer user_data)
-{
-  gchar *prefix = (gchar *)user_data;
-  GHashTable *cache;
-  gpointer r;
-
-  if (self->transform_data)
-    cache = (GHashTable *)self->transform_data;
-  else
-    cache = self->transform_data = g_hash_table_new_full(g_str_hash, g_str_equal,
-							 g_free, g_free);
-  r = g_hash_table_lookup (cache, name);
-  if (!r)
-    {
-      r = (gpointer)g_strconcat (prefix, name, NULL);
-      g_hash_table_insert (cache, g_strdup(name), r);
-    }
-  return r;
-}
-
-static void
-vp_trans_add_prefix_destroy(ValuePairsTransformer *self)
-{
-  if (self->transform_data)
-    g_hash_table_destroy ((GHashTable *)self->transform_data);
-}
-
-static gchar *
-vp_trans_shift(ValuePairsTransformer *self, gchar *name, gpointer user_data)
-{
-  gint shift = GPOINTER_TO_INT (user_data);
-
-  if (shift < 0)
-    return name;
-  return name + shift;
-}
-
-void
-value_pairs_add_key_transform(ValuePairs *vp, ValuePairsTransformType trans_type,
-			      const gchar *glob, gpointer user_data)
-{
-  ValuePairsTransformer *vpt;
-
-  vpt = g_new(ValuePairsTransformer, 1);
-  vpt->glob = g_pattern_spec_new(glob);
-  vpt->user_data = user_data;
-  vpt->transform_data = NULL;
-  vpt->destroy = NULL;
-  
-  switch (trans_type)
-    {
-    case VP_TRANSFORM_SHIFT:
-      vpt->value_free = NULL;
-      vpt->transform = vp_trans_shift;
-
-      vp->transforms = g_list_append(vp->transforms, vpt);
-      break;
-    case VP_TRANSFORM_ADD_PREFIX:
-      vpt->value_free = (VPTransFreeFunc)g_free;
-      vpt->transform = vp_trans_add_prefix;
-      vpt->destroy = vp_trans_add_prefix_destroy;
-      
-      vp->transforms = g_list_append(vp->transforms, vpt);
-      break;
-    default:
-      g_pattern_spec_free(vpt->glob);
-      g_free(vpt);
-      break;
-    }
-}
-
-static gchar *
 vp_transform_apply (ValuePairs *vp, gchar *key)
 {
   GList *l;
@@ -242,10 +155,9 @@ vp_transform_apply (ValuePairs *vp, gchar *key)
   l = vp->transforms;
   while (l)
     {
-      ValuePairsTransformer *t = (ValuePairsTransformer *)l->data;
+      ValuePairsTransform *t = (ValuePairsTransform *)l->data;
 
-      if (g_pattern_match_string(t->glob, ckey))
-	ckey = t->transform (t, ckey, t->user_data);
+      ckey = value_pairs_transform_apply(t, ckey);
       
       l = g_list_next (l);
     }
@@ -473,19 +385,18 @@ value_pairs_free (ValuePairs *vp)
   l = vp->transforms;
   while (l)
     {
-      ValuePairsTransformer *t = (ValuePairsTransformer *)l->data;
+      value_pairs_transform_free((ValuePairsTransform *)l->data);
 
-      g_pattern_spec_free(t->glob);
-      if (t->value_free)
-	t->value_free(t->user_data);
-      if (t->destroy)
-	t->destroy (t);
-
-      g_free(l->data);
       l = g_list_delete_link (l, l);
     }
   
   g_free(vp);
+}
+
+void
+value_pairs_add_transform(ValuePairs *vp, gpointer *vpt)
+{
+  vp->transforms = g_list_append(vp->transforms, vpt);
 }
 
 /* parse a value-pair specification from a command-line like environment */

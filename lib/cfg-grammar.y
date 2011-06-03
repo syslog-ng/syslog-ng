@@ -942,9 +942,9 @@ vp_rekey_options
 	;
 
 vp_rekey_option
-	: KW_SHIFT '(' string LL_NUMBER ')' { value_pairs_add_key_transform(last_value_pairs, VP_TRANSFORM_SHIFT, $3, GINT_TO_POINTER($4)); free($3); }
-	| KW_SHIFT '(' string ':' LL_NUMBER ')' { value_pairs_add_key_transform(last_value_pairs, VP_TRANSFORM_SHIFT, $3, GINT_TO_POINTER($5)); free($3); }
-	| KW_ADD_PREFIX '(' string string ')' { value_pairs_add_key_transform(last_value_pairs, VP_TRANSFORM_ADD_PREFIX, $3, $4); free($3); }
+	: KW_SHIFT '(' string LL_NUMBER ')' { value_pairs_add_transform(last_value_pairs, value_pairs_new_transform_shift($3, $4)); free($3); }
+	| KW_SHIFT '(' string ':' LL_NUMBER ')' { value_pairs_add_transform(last_value_pairs, value_pairs_new_transform_shift($3, $5)); free($3); }
+	| KW_ADD_PREFIX '(' string string ')' { value_pairs_add_transform(last_value_pairs, value_pairs_new_transform_add_prefix($3, $4)); free($3); free($4); }
 	;
 
 /* END_RULES */
