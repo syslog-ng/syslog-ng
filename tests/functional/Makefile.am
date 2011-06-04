@@ -1,6 +1,8 @@
 
 export top_srcdir
 export top_builddir
+dbd_dir = $(shell echo $(exec_prefix)/lib/dbd)
+export dbd_dir
 
 EXTRA_DIST = func_test.py control.py globals.py log.py messagecheck.py messagegen.py \
 	ssl.crt ssl.key rnd.in \

@@ -6,6 +6,12 @@ def is_premium():
         return True
     return False
 
+def has_module(module):
+    avail_mods = os.popen('../../syslog-ng/syslog-ng -V | grep ^Available-Modules: ', 'r').read()
+    if avail_mods.find(module) != -1:
+        return True
+    return False
+
 
 is_premium_edition = is_premium()
 if is_premium_edition:
