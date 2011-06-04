@@ -1,6 +1,7 @@
 #include "str-format.h"
 
 #include <string.h>
+#include <ctype.h>
 
 static gchar digits[] = "0123456789abcdef";
 
@@ -107,7 +108,7 @@ scan_uint32(const gchar **buf, gint *left, gint field_width, guint32 *num)
     {
       if ((**buf) >= '0' && (**buf) <= '9')
         result = result * 10 + ((**buf) - '0');
-      else
+      else if (!isspace(**buf))
         return FALSE;
       (*buf)++;
       (*left)--;

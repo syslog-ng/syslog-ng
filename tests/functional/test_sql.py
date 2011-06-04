@@ -24,18 +24,23 @@ log { source(s_tcp); destination(d_sql); };
 
 """ % locals()
 
-def test_sql():
+def check_env():
 
     if not os.path.isfile("/usr/bin/sqlite3") and not os.path.isfile("/usr/local/bin/sqlite3"):
         print_user("no sqlite3 tool, skipping SQL test")
-        return True
+        return False
 
     soext='.so'
     if re.match('hp-ux', sys.platform) and not re.match('ia64', os.uname()[4]):
         soext='.sl'
     if not os.path.isfile('/opt/syslog-ng/lib/dbd/libdbdsqlite3%s' % soext):
         print_user('No sqlite3 backend for libdbi. Skipping SQL test')
-        return True
+        return False
+    print 'sqlite3 found, proceeding to SQL tests'
+    return True
+
+
+def test_sql():
 
     messages = (
         'sql1',

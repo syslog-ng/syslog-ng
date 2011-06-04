@@ -47,7 +47,7 @@ typedef struct
   /* Shared between main/writer; only read by the writer, never
      written */
   gchar *db;
-  LogTemplate *coll;
+  gchar *coll;
 
   gchar *host;
   gint port;
@@ -55,18 +55,14 @@ typedef struct
   gchar *user;
   gchar *password;
 
-  GList *keys;
-  GList *values;
-
-  gint num_fields;
-  MongoDBField *fields;
-
   time_t time_reopen;
 
   guint32 *dropped_messages;
   guint32 *stored_messages;
 
   time_t last_msg_stamp;
+
+  ValuePairs *vp;
 
   /* Thread related stuff; shared */
   GThread *writer_thread;
@@ -84,11 +80,9 @@ typedef struct
   mongo_connection *conn;
   gint32 seq_num;
 
-  GString *current_namespace;
-  gint ns_prefix_len;
+  gchar *ns;
 
   GString *current_value;
-
   bson *bson_sel, *bson_upd, *bson_set;
 } MongoDBDestDriver;
 
@@ -145,26 +139,18 @@ afmongodb_dd_set_collection(LogDriver *d, const gchar *collection)
 {
   MongoDBDestDriver *self = (MongoDBDestDriver *)d;
 
-  log_template_unref(self->coll);
-  self->coll = log_template_new(log_pipe_get_config(&d->super), NULL, collection);
+  g_free(self->coll);
+  self->coll = g_strdup(collection);
 }
 
 void
-afmongodb_dd_set_keys(LogDriver *d, GList *keys)
+afmongodb_dd_set_value_pairs(LogDriver *d, ValuePairs *vp)
 {
   MongoDBDestDriver *self = (MongoDBDestDriver *)d;
 
-  string_list_free(self->keys);
-  self->keys = keys;
-}
-
-void
-afmongodb_dd_set_values(LogDriver *d, GList *values)
-{
-  MongoDBDestDriver *self = (MongoDBDestDriver *)d;
-
-  string_list_free(self->values);
-  self->values = values;
+  if (self->vp)
+    value_pairs_free (self->vp);
+  self->vp = vp;
 }
 
 /*
@@ -177,7 +163,7 @@ afmongodb_dd_format_stats_instance(MongoDBDestDriver *self)
   static gchar persist_name[1024];
 
   g_snprintf(persist_name, sizeof(persist_name),
-	     "mongodb,%s,%u,%s,%s", self->host, self->port, self->db, self->coll->template);
+	     "mongodb,%s,%u,%s,%s", self->host, self->port, self->db, self->coll);
   return persist_name;
 }
 
@@ -187,7 +173,7 @@ afmongodb_dd_format_persist_name(MongoDBDestDriver *self)
   static gchar persist_name[1024];
 
   g_snprintf(persist_name, sizeof(persist_name),
-	     "afmongodb(%s,%u,%s,%s)", self->host, self->port, self->db, self->coll->template);
+	     "afmongodb(%s,%u,%s,%s)", self->host, self->port, self->db, self->coll);
   return persist_name;
 }
 
@@ -244,11 +230,30 @@ afmongodb_dd_connect(MongoDBDestDriver *self, gboolean reconnect)
 /*
  * Worker thread
  */
+static gboolean
+afmongodb_vp_foreach (const gchar *name, const gchar *value,
+		      gpointer user_data)
+{
+  bson *bson_set = (bson *)user_data;
+
+  if (name[0] == '.')
+    {
+      gchar tx_name[256];
+
+      tx_name[0] = '_';
+      strncpy(&tx_name[1], name + 1, sizeof(tx_name) - 1);
+      tx_name[sizeof(tx_name) - 1] = 0;
+      bson_append_string (bson_set, tx_name, value, -1);
+    }
+  else
+    bson_append_string (bson_set, name, value, -1);
+
+  return FALSE;
+}
 
 static gboolean
 afmongodb_worker_insert (MongoDBDestDriver *self)
 {
-  gint i;
   gboolean success;
   mongo_packet *p;
   guint8 *oid;
@@ -274,25 +279,15 @@ afmongodb_worker_insert (MongoDBDestDriver *self)
   g_free (oid);
   bson_finish (self->bson_sel);
 
-  g_string_truncate(self->current_namespace, self->ns_prefix_len);
-  log_template_append_format(self->coll, msg, NULL, LTZ_LOCAL,
-			     self->seq_num, NULL, self->current_namespace);
-
-  for (i = 0; i < self->num_fields; i++)
-    {
-      log_template_format(self->fields[i].value, msg, NULL, LTZ_SEND,
-			  self->seq_num, NULL, self->current_value);
-      if (self->current_value->len)
-	bson_append_string(self->bson_set, self->fields[i].name,
-			   self->current_value->str, -1);
-    }
+  value_pairs_foreach (self->vp, afmongodb_vp_foreach,
+		       msg, self->seq_num, self->bson_set);
 
   bson_finish (self->bson_set);
 
   bson_append_document (self->bson_upd, "$set", self->bson_set);
   bson_finish (self->bson_upd);
 
-  p = mongo_wire_cmd_update (1, self->current_namespace->str, 1,
+  p = mongo_wire_cmd_update (1, self->ns, 1,
 			     self->bson_sel, self->bson_upd);
 
   if (!mongo_packet_send (self->conn, p))
@@ -335,12 +330,8 @@ afmongodb_worker_thread (gpointer arg)
 	     NULL);
 
   success = afmongodb_dd_connect(self, FALSE);
-  self->current_namespace = g_string_sized_new(64);
-  self->ns_prefix_len = strlen (self->db) + 1;
 
-  self->current_namespace =
-    g_string_append_c (g_string_assign (self->current_namespace,
-					self->db), '.');
+  self->ns = g_strconcat (self->db, ".", self->coll, NULL);
 
   self->current_value = g_string_sized_new(256);
 
@@ -383,7 +374,7 @@ afmongodb_worker_thread (gpointer arg)
 
   afmongodb_dd_disconnect(self);
 
-  g_string_free (self->current_namespace, TRUE);
+  g_free (self->ns);
   g_string_free (self->current_value, TRUE);
 
   bson_free (self->bson_sel);
@@ -421,14 +412,24 @@ afmongodb_dd_init(LogPipe *s)
   MongoDBDestDriver *self = (MongoDBDestDriver *)s;
   GlobalConfig *cfg = log_pipe_get_config(s);
 
-  gint num_keys, num_values, i;
-  GList *key, *value;
-
   if (!log_dest_driver_init_method(s))
     return FALSE;
 
   if (cfg)
     self->time_reopen = cfg->time_reopen;
+
+  if (!self->vp)
+    {
+      self->vp = value_pairs_new();
+      value_pairs_add_scope(self->vp, "selected-macros");
+      value_pairs_add_scope(self->vp, "nv-pairs");
+      value_pairs_add_exclude_glob(self->vp, "R_*");
+      value_pairs_add_exclude_glob(self->vp, "S_*");
+      value_pairs_add_exclude_glob(self->vp, "HOST_FROM");
+      value_pairs_add_exclude_glob(self->vp, "LEGACY_MSGHDR");
+      value_pairs_add_exclude_glob(self->vp, "MSG");
+      value_pairs_add_exclude_glob(self->vp, "SDATA");
+    }
 
   msg_verbose("Initializing MongoDB destination",
 	      evt_tag_str("host", self->host),
@@ -437,29 +438,6 @@ afmongodb_dd_init(LogPipe *s)
 	      NULL);
 
   self->queue = log_dest_driver_acquire_queue(&self->super, afmongodb_dd_format_persist_name(self));
-
-  if (!self->fields)
-    {
-      num_keys = g_list_length(self->keys);
-      num_values = g_list_length(self->values);
-
-      if (num_keys != num_values)
-	{
-	  msg_error("The number of keys and values do not match",
-		    evt_tag_int("num_keys", num_keys),
-		    evt_tag_int("num_values", num_values),
-		    NULL);
-	  return FALSE;
-	}
-      self->num_fields = num_keys;
-      self->fields = g_new0(MongoDBField, num_keys);
-
-      for (i = 0, key = self->keys, value = self->values; key && value; i++, key = key->next, value = value->next)
-	{
-	  self->fields[i].name = g_strdup(key->data);
-	  self->fields[i].value = log_template_new(cfg, NULL, (gchar *)value->data);
-	}
-    }
 
   stats_register_counter(0, SCS_MONGODB | SCS_DESTINATION, self->super.super.id,
 			 afmongodb_dd_format_stats_instance(self),
@@ -499,7 +477,6 @@ static void
 afmongodb_dd_free(LogPipe *d)
 {
   MongoDBDestDriver *self = (MongoDBDestDriver *)d;
-  gint i;
 
   g_mutex_free(self->suspend_mutex);
   g_mutex_free(self->queue_mutex);
@@ -508,21 +485,12 @@ afmongodb_dd_free(LogPipe *d)
   if (self->queue)
     log_queue_unref(self->queue);
 
-  for (i = 0; i < self->num_fields; i++)
-    {
-      g_free(self->fields[i].name);
-      log_template_unref(self->fields[i].value);
-    }
-
-  g_free(self->fields);
   g_free(self->db);
-  log_template_unref(self->coll);
+  g_free(self->coll);
   g_free(self->user);
   g_free(self->password);
   g_free(self->host);
-  string_list_free(self->keys);
-  string_list_free(self->values);
-
+  value_pairs_free(self->vp);
   log_dest_driver_free(d);
 }
 
@@ -548,30 +516,6 @@ afmongodb_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_optio
  * Plugin glue.
  */
 
-const gchar *default_keys[] =
-{
-  "date",
-  "facility",
-  "level",
-  "host",
-  "program",
-  "pid",
-  "message",
-  NULL
-};
-
-const gchar *default_values[] =
-{
-  "${R_YEAR}-${R_MONTH}-${R_DAY} ${R_HOUR}:${R_MIN}:${R_SEC}",
-  "$FACILITY",
-  "$LEVEL",
-  "$HOST",
-  "$PROGRAM",
-  "$PID",
-  "$MSGONLY",
-  NULL
-};
-
 LogDriver *
 afmongodb_dd_new(void)
 {
@@ -589,8 +533,6 @@ afmongodb_dd_new(void)
   afmongodb_dd_set_port((LogDriver *)self, 27017);
   afmongodb_dd_set_database((LogDriver *)self, "syslog");
   afmongodb_dd_set_collection((LogDriver *)self, "messages");
-  afmongodb_dd_set_keys((LogDriver *)self, string_array_to_list(default_keys));
-  afmongodb_dd_set_values((LogDriver *)self, string_array_to_list(default_values));
 
   init_sequence_number(&self->seq_num);
 

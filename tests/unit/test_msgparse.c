@@ -59,6 +59,33 @@ check_value(gchar *msg, LogMessage *logmsg, NVHandle handle, const gchar *expect
   TEST_ASSERT(strcmp(p, expected) == 0, "%s", p, expected);
 }
 
+/* This function determines the year that syslog-ng would find out
+ * given the timestamp has no year information. Then returns the UTC
+ * representation of "January 1st 00:00:00" of that year. This is to
+ * be used for testcases that lack year information. ts_month is the 0
+ * based month in the timestamp being parsed.
+ */
+time_t
+get_bsd_year_utc(int ts_month)
+{
+  struct tm *tm;
+  time_t t;
+
+  time(&t);
+  tm = localtime(&t);
+
+  if (tm->tm_mon > ts_month + 1)
+    tm->tm_year++;
+
+  tm->tm_hour = 0;
+  tm->tm_min = 0;
+  tm->tm_sec = 0;
+  tm->tm_mday = 1;
+  tm->tm_mon = 0;
+  tm->tm_isdst = -1;
+  return mktime(tm);
+}
+
 int
 testcase(gchar *msg,
          gint parse_flags,
@@ -181,6 +208,33 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            "PTHREAD support initialized", // msg
            NULL, "2499", NULL, NULL
            );
+
+  testcase("<15>Jan  1 01:00:00 bzorp openvpn[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, NULL,
+           15, 			// pri
+           get_bsd_year_utc(0) + 3600, 0, 3600,		// timestamp (sec/usec/zone)
+           "bzorp",		// host
+           "openvpn",		// openvpn
+           "PTHREAD support initialized", // msg
+           NULL, "2499", NULL, NULL
+           );
+
+  testcase("<15>Jan 10 01:00:00 bzorp openvpn[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, NULL,
+           15, 			// pri
+           get_bsd_year_utc(0) + 3600 + 9 * 24 * 3600, 0, 3600,		// timestamp (sec/usec/zone)
+           "bzorp",		// host
+           "openvpn",		// openvpn
+           "PTHREAD support initialized", // msg
+           NULL, "2499", NULL, NULL
+           );
+
+  testcase("<13>Jan  1 14:40:51 alma korte: message", 0, NULL,
+	   13,
+	   get_bsd_year_utc(0) + 60 * 60 * 14 + 40 * 60 + 51, 0, 3600,
+	   "",
+	   "alma",
+	   "korte: message",
+	   NULL, NULL, NULL, NULL
+	   );
 
   testcase("<7>2006-11-10T10:43:21.156+02:00 bzorp openvpn[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, NULL,
            7, 			// pri

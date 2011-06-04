@@ -927,6 +927,7 @@ log_writer_init_watches(LogWriter *self)
   self->suppress_timer.cookie = self;
   self->suppress_timer.handler = (void (*)(void *)) log_writer_last_msg_timer;
 
+  IV_EVENT_INIT(&self->queue_filled);
   self->queue_filled.cookie = self;
   self->queue_filled.handler = log_writer_queue_filled;
 
@@ -940,6 +941,8 @@ static gboolean
 log_writer_init(LogPipe *s)
 {
   LogWriter *self = (LogWriter *) s;
+
+  iv_event_register(&self->queue_filled);
 
   if ((self->options->options & LWO_NO_STATS) == 0 && !self->dropped_messages)
     {
@@ -1033,7 +1036,6 @@ log_writer_reopen_deferred(gpointer s)
   if (proto)
     log_writer_start_watches(self);
 
-  iv_event_register(&self->queue_filled);
   init_sequence_number(&self->seq_num);
 }
 

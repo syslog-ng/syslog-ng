@@ -34,6 +34,7 @@
 #include "plugin.h"
 
 extern LogDriver *last_driver;
+extern ValuePairs *last_value_pairs;
 
 }
 
@@ -48,7 +49,6 @@ extern LogDriver *last_driver;
 
 %token KW_MONGODB
 %token KW_COLLECTION
-%token KW_KEYS
 
 %%
 
@@ -70,10 +70,9 @@ afmongodb_option
         | KW_PORT '(' LL_NUMBER ')'		{ afmongodb_dd_set_port(last_driver, $3); }
 	| KW_DATABASE '(' string ')'		{ afmongodb_dd_set_database(last_driver, $3); free($3); }
 	| KW_COLLECTION '(' string ')'		{ afmongodb_dd_set_collection(last_driver, $3); free($3); }
-	| KW_VALUES '(' string_list ')'		{ afmongodb_dd_set_values(last_driver, $3); }
-	| KW_KEYS '(' string_list ')'		{ afmongodb_dd_set_keys(last_driver, $3); }
 	| KW_USERNAME '(' string ')'		{ afmongodb_dd_set_user(last_driver, $3); free($3); }
 	| KW_PASSWORD '(' string ')'		{ afmongodb_dd_set_password(last_driver, $3); free($3); }
+	| value_pair_option			{ afmongodb_dd_set_value_pairs(last_driver, $1); }
 	| dest_driver_option
         ;
 

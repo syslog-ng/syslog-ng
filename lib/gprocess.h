@@ -46,13 +46,17 @@ gboolean g_process_cap_modify(int capability, int onoff);
 cap_t g_process_cap_save(void);
 void g_process_cap_restore(cap_t r);
 
+#ifndef CAP_SYSLOG
+#define CAP_SYSLOG -1
+#endif
+
 #else
 
 typedef gpointer cap_t;
 
 #define g_process_cap_modify(cap, onoff)
 #define g_process_cap_save() NULL
-#define g_process_cap_restore(cap)
+#define g_process_cap_restore(cap) cap = cap
 
 #endif
 
@@ -70,6 +74,8 @@ void g_process_set_caps(const gchar *caps);
 void g_process_set_argv_space(gint argc, gchar **argv);
 void g_process_set_use_fdlimit(gboolean use);
 void g_process_set_check(gint check_period, gboolean (*check_fn)(void));
+
+gboolean g_process_check_cap_syslog(void);
 
 void g_process_start(void);
 void g_process_startup_failed(guint ret_num, gboolean may_exit);

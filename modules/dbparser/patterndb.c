@@ -418,7 +418,6 @@ pdb_action_free(PDBAction *self)
 void
 pdb_rule_set_class(PDBRule *self, const gchar *class)
 {
-  LogTagId class_tag;
   gchar class_tag_text[32];
 
   if (self->class)
@@ -428,7 +427,6 @@ pdb_rule_set_class(PDBRule *self, const gchar *class)
   else
     {
       g_snprintf(class_tag_text, sizeof(class_tag_text), ".classifier.%s", class);
-      class_tag = log_tags_get_by_name(class_tag_text);
       pdb_message_add_tag(&self->msg, class_tag_text);
     }
   self->class = class ? g_strdup(class) : NULL;

@@ -98,6 +98,7 @@ static gint startup_result_pipe[2] = { -1, -1 };
 static gint init_result_pipe[2] = { -1, -1 };
 static GProcessKind process_kind = G_PK_STARTUP;
 static gboolean stderr_present = TRUE;
+static int have_capsyslog = FALSE;
 
 /* global variables */
 static struct
@@ -140,6 +141,7 @@ static struct
   .gid = -1
 };
 
+#if ENABLE_SYSTEMD
 /**
  * Inherits systemd socket activation from parent process updating the pid
  * in LISTEN_PID to the pid of the child process.
@@ -189,6 +191,11 @@ inherit_systemd_activation(void)
 
   return -1;
 }
+#else
+
+#define inherit_systemd_activation()
+
+#endif
 
 #if ENABLE_LINUX_CAPS
 
@@ -209,6 +216,13 @@ g_process_cap_modify(int capability, int onoff)
 
   if (!process_opts.caps)
     return TRUE;
+
+  /*
+   * if libcap or kernel doesn't support cap_syslog, then resort to
+   * cap_sys_admin
+   */
+  if (capability == CAP_SYSLOG && (!have_capsyslog || CAP_SYSLOG == -1))
+    capability = CAP_SYS_ADMIN;
 
   caps = cap_get_proc();
   if (!caps)
@@ -289,6 +303,33 @@ g_process_cap_restore(cap_t r)
     }
   
   return;
+}
+
+#ifndef PR_CAPBSET_READ
+
+/* old glibc versions don't have PR_CAPBSET_READ, we define it to the
+ * value as defined in newer versions. */
+
+#define PR_CAPBSET_READ 23
+#endif
+
+gboolean
+g_process_check_cap_syslog(void)
+{
+  int ret;
+
+  if (have_capsyslog)
+    return TRUE;
+
+  if (CAP_SYSLOG == -1)
+    return FALSE;
+
+  ret = prctl(PR_CAPBSET_READ, CAP_SYSLOG);
+  if (ret == -1)
+    return FALSE;
+
+  have_capsyslog = TRUE;
+  return TRUE;
 }
 
 #endif
@@ -863,8 +904,8 @@ g_process_change_dir(void)
       if (!cwd)
         cwd = PATH_PIDFILEDIR;
         
-      if (cwd)
-        chdir(cwd);
+      if (cwd && chdir(cwd) < 0)
+        ;
     }
     
   /* this check is here to avoid having to change directory early in the startup process */
@@ -872,7 +913,8 @@ g_process_change_dir(void)
     {
       gchar buf[256];
       
-      getcwd(buf, sizeof(buf));
+      if (!getcwd(buf, sizeof(buf)))
+        strncpy(buf, "unable-to-query", sizeof(buf));
       g_process_message("Unable to write to current directory, core dumps will not be generated; dir='%s', error='%s'", buf, g_strerror(errno));
     }
   
@@ -911,7 +953,8 @@ g_process_send_result(guint ret_num)
   if (*fd != -1)
     {
       buf_len = g_snprintf(buf, sizeof(buf), "%d\n", ret_num);
-      write(*fd, buf, buf_len);
+      if (write(*fd, buf, buf_len) < buf_len)
+        g_assert_not_reached();
       close(*fd);
       *fd = -1;
     }  

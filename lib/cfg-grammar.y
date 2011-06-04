@@ -53,9 +53,9 @@
 
 # define YYLLOC_DEFAULT(Current, Rhs, N)                                \
   do {                                                                  \
-    (Current).level = YYRHSLOC(Rhs, 0).level;                           \
     if (YYID (N))                                                       \
       {                                                                 \
+        (Current).level = YYRHSLOC(Rhs, 1).level;                       \
         (Current).first_line   = YYRHSLOC (Rhs, 1).first_line;          \
         (Current).first_column = YYRHSLOC (Rhs, 1).first_column;        \
         (Current).last_line    = YYRHSLOC (Rhs, N).last_line;           \
@@ -63,6 +63,7 @@
       }                                                                 \
     else                                                                \
       {                                                                 \
+        (Current).level = YYRHSLOC(Rhs, 0).level;                       \
         (Current).first_line   = (Current).last_line   =                \
           YYRHSLOC (Rhs, 0).last_line;                                  \
         (Current).first_column = (Current).last_column =                \
@@ -829,7 +830,7 @@ dest_writer_options_flags
 
 value_pair_option
 	: KW_VALUE_PAIRS
-          { last_value_pairs = value_pairs_new(configuration); }
+          { last_value_pairs = value_pairs_new(); }
           '(' vp_options ')'
           { $$ = last_value_pairs; }
 	;
@@ -840,15 +841,15 @@ vp_options
 	;
 
 vp_option
-	: KW_PAIR '(' string ':' string ')'      { value_pairs_add_pair(last_value_pairs, $3, $5); free($3); free($5); }
-	| KW_PAIR '(' string string ')'          { value_pairs_add_pair(last_value_pairs, $3, $4); free($3); free($4); }
+        : KW_PAIR '(' string ':' string ')'      { value_pairs_add_pair(last_value_pairs, configuration, $3, $5); free($3); free($5); }
+        | KW_PAIR '(' string string ')'          { value_pairs_add_pair(last_value_pairs, configuration, $3, $4); free($3); free($4); }
 	| KW_KEY '(' string ')'		    {
                 gchar *k = g_strconcat("$", $3, NULL);
-                value_pairs_add_pair(last_value_pairs, $3, k);
+                value_pairs_add_pair(last_value_pairs, configuration, $3, k);
                 g_free(k);
                 free($3);
 	  }
-	| KW_EXCLUDE '(' string ')'	         { value_pairs_exclude_glob_pattern(last_value_pairs, $3); free($3); }
+	| KW_EXCLUDE '(' string ')'	         { value_pairs_add_exclude_glob(last_value_pairs, $3); free($3); }
 	| KW_SCOPE '(' vp_scope_list ')'
 	;
 

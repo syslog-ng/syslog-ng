@@ -651,20 +651,32 @@ log_proto_buffered_server_apply_state(LogProtoBufferedServer *self, PersistEntry
       gssize rc;
       guchar *raw_buffer;
 
-      if (state->raw_buffer_size > state->buffer_size)
-        {
-          msg_notice("Invalid raw_buffer_size member in LogProtoBufferedServer state, restarting from the beginning",
-                     evt_tag_str("state", persist_name),
-                     NULL);
-          goto error;
-        }
       if (!self->super.encoding)
         {
           /* no conversion, we read directly into our buffer */
+          if (state->raw_buffer_size > state->buffer_size)
+            {
+              msg_notice("Invalid LogProtoBufferedServerState.raw_buffer_size, larger than buffer_size and no encoding is set, restarting from the beginning",
+                         evt_tag_str("state", persist_name),
+                         evt_tag_int("raw_buffer_size", state->raw_buffer_size),
+                         evt_tag_int("buffer_size", state->buffer_size),
+                         evt_tag_int("init_buffer_size", self->init_buffer_size),
+                         NULL);
+              goto error;
+            }
           raw_buffer = self->buffer;
         }
       else
         {
+          if (state->raw_buffer_size > self->init_buffer_size)
+            {
+              msg_notice("Invalid LogProtoBufferedServerState.raw_buffer_size, larger than init_buffer_size, restarting from the beginning",
+                         evt_tag_str("state", persist_name),
+                         evt_tag_int("raw_buffer_size", state->raw_buffer_size),
+                         evt_tag_int("init_buffer_size", self->init_buffer_size),
+                         NULL);
+              goto error;
+            }
           raw_buffer = g_alloca(state->raw_buffer_size);
         }
 
@@ -720,6 +732,12 @@ log_proto_buffered_server_apply_state(LogProtoBufferedServer *self, PersistEntry
 
  error:
   ofs = 0;
+  state->buffer_pos = 0;
+  state->pending_buffer_end = 0;
+  state->buffer_cached_eol = 0;
+  state->raw_stream_pos = 0;
+  state->raw_buffer_size = 0;
+  state->raw_buffer_leftover_size = 0;
   lseek(fd, 0, SEEK_SET);
 
  exit:
