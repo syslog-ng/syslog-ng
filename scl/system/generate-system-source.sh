@@ -23,6 +23,22 @@
 #
 #############################################################################
 
+# NOTE: the reason to set PATH and LD_LIBRARY_PATH/LIBPATH explicitly
+# is that some OSes (notably AIX) can have multiple uname binaries,
+# and the one on the PATH used by syslog-ng may depend on libraries
+# that syslog-ng itself is distributing. However the one distributed
+# by the syslog-ng binary is binary incompatible with the one required
+# by the alternative uname, causing uname execution to fail.
+#
+# The alternative, better solution would be to patch syslog-ng to
+# remove its own changes from LD_LIBRARY_PATH before executing user
+# supplied scripts, but that was more involved than this simple change
+# here.
+
+PATH=/bin:/usr/bin:$PATH
+LIBPATH=
+LD_LIBRARY_PATH=
+export PATH LIBPATH LD_LIBRARY_PATH
 
 os=${UNAME_S:-`uname -s`}
 osversion=${UNAME_R:-`uname -r`}
@@ -68,5 +84,19 @@ EOF
 		cat <<EOF
 unix-dgram("/dev/log");
 EOF
+		;;
+	*)
+		# need to notify the user that something went terribly wrong...
+	        (echo "system(): Error detecting platform, unable to define the system() source.";
+                 echo "";
+                 echo "The script generating the syslog-ng configuration for the system() source failed.";
+                 echo "It is caused either by an unsupported OS or the fact that the script could not";
+                 echo "execute uname(1).";
+                 echo "";
+                 echo "    OS=${os}";
+                 echo "    OS_VERSION=${osversion}";
+                 echo "    SCRIPT=$0") >&2
+
+		exit 1
 		;;
 esac
