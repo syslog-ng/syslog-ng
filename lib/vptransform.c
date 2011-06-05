@@ -30,17 +30,19 @@
 
 #include <string.h>
 
-typedef const gchar *(*VPTransFunc)(ValuePairsTransform *t, const gchar *name);
-typedef void (*VPTransDestroyFunc)(ValuePairsTransform *t);
 typedef gboolean (*VPTransMatchFunc)(ValuePairsTransform *t, const gchar *name);
+typedef const gchar *(*VPTransFunc)(ValuePairsTransform *t, const gchar *name);
+typedef void (*VPTransResetFunc)(ValuePairsTransform *t);
+typedef void (*VPTransDestroyFunc)(ValuePairsTransform *t);
 
 struct _ValuePairsTransform
 {
   gchar *match_str;
 
-  VPTransFunc transform;
-  VPTransDestroyFunc destroy;
   VPTransMatchFunc match;
+  VPTransFunc transform;
+  VPTransResetFunc reset;
+  VPTransDestroyFunc destroy;
 };
 
 typedef struct
@@ -64,7 +66,7 @@ typedef struct
 typedef struct
 {
   ValuePairsTransform super;
-  
+
   gchar *new_prefix;
   gint old_prefix_len;
   gint new_prefix_len;
@@ -74,16 +76,25 @@ typedef struct
 
 static void
 vp_trans_init(ValuePairsTransform *t, const gchar *match_str,
-	      VPTransFunc trans, VPTransDestroyFunc dest,
-	      VPTransMatchFunc match)
+	      VPTransMatchFunc match, VPTransFunc trans,
+	      VPTransResetFunc reset, VPTransDestroyFunc dest)
 {
   if (!t)
     return;
 
   t->match_str = g_strdup(match_str);
-  t->transform = trans;
-  t->destroy = dest;
+
   t->match = match;
+  t->transform = trans;
+  t->reset = reset;
+  t->destroy = dest;
+}
+
+void
+value_pairs_transform_reset(ValuePairsTransform *t)
+{
+  if (t->reset)
+    t->reset(t);
 }
 
 void
@@ -126,8 +137,7 @@ vp_trans_add_prefix_destroy(ValuePairsTransform *t)
   VPTransAddPrefix *self = (VPTransAddPrefix *)t;
 
   g_pattern_spec_free(self->pattern);
-  if (self->cache)
-    g_hash_table_destroy(self->cache);
+  g_hash_table_destroy(self->cache);
   g_free(self->prefix);
 }
 
@@ -139,19 +149,32 @@ vp_trans_add_prefix_match(ValuePairsTransform *t, const gchar *key)
   return g_pattern_match_string(self->pattern, key);
 }
 
+static void
+vp_trans_add_prefix_reset(ValuePairsTransform *t)
+{
+  VPTransAddPrefix *self = (VPTransAddPrefix *)t;
+
+  if (self->cache)
+    g_hash_table_destroy(self->cache);
+
+  self->cache = g_hash_table_new_full(g_str_hash, g_str_equal,
+				      g_free, g_free);
+}
+
 ValuePairsTransform *
 value_pairs_new_transform_add_prefix (const gchar *glob, const gchar *prefix)
 {
   VPTransAddPrefix *vpt;
 
   vpt = g_new(VPTransAddPrefix, 1);
-  vp_trans_init((ValuePairsTransform *)vpt, glob, vp_trans_add_prefix, vp_trans_add_prefix_destroy,
-		vp_trans_add_prefix_match);
-
-  vpt->cache = g_hash_table_new_full(g_str_hash, g_str_equal,
-				     g_free, g_free);
+  vp_trans_init((ValuePairsTransform *)vpt, glob,
+		vp_trans_add_prefix_match, vp_trans_add_prefix,
+		vp_trans_add_prefix_reset, vp_trans_add_prefix_destroy);
   vpt->pattern = g_pattern_spec_new(glob);
   vpt->prefix = g_strdup(prefix);
+  vpt->cache = NULL;
+
+  vp_trans_add_prefix_reset((ValuePairsTransform *)vpt);
 
   return (ValuePairsTransform *)vpt;
 }
@@ -190,8 +213,9 @@ value_pairs_new_transform_shift (const gchar *glob, gint amount)
   VPTransShift *vpt;
 
   vpt = g_new(VPTransShift, 1);
-  vp_trans_init((ValuePairsTransform *)vpt, glob, vp_trans_shift, vp_trans_shift_destroy,
-		vp_trans_shift_match);
+  vp_trans_init((ValuePairsTransform *)vpt, glob,
+		vp_trans_shift_match, vp_trans_shift,
+		NULL, vp_trans_shift_destroy);
 
   vpt->pattern = g_pattern_spec_new(glob);
   vpt->amount = amount;
@@ -200,6 +224,7 @@ value_pairs_new_transform_shift (const gchar *glob, gint amount)
 }
 
 /* replace() */
+
 static const gchar *
 vp_trans_replace(ValuePairsTransform *t, const gchar *name)
 {
@@ -210,7 +235,7 @@ vp_trans_replace(ValuePairsTransform *t, const gchar *name)
   if (!r)
     {
       r = g_malloc(strlen(name) - self->old_prefix_len + self->new_prefix_len + 1);
-      
+
       memcpy (r, self->new_prefix, self->new_prefix_len);
       memcpy (r + self->new_prefix_len, name + self->old_prefix_len,
 	      strlen(name) - self->old_prefix_len + 1);
@@ -226,6 +251,16 @@ vp_trans_replace_destroy(ValuePairsTransform *t)
 
   g_hash_table_destroy(self->cache);
   g_free(self->new_prefix);
+}
+
+static void
+vp_trans_replace_reset(ValuePairsTransform *t)
+{
+  VPTransReplace *self = (VPTransReplace *)t;
+
+  if (self->cache)
+    g_hash_table_destroy(self->cache);
+  self->cache = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
 }
 
 static gboolean
@@ -245,13 +280,16 @@ value_pairs_new_transform_replace(const gchar *prefix, const gchar *new_prefix)
   VPTransReplace *vpt;
 
   vpt = g_new(VPTransReplace, 1);
-  vp_trans_init((ValuePairsTransform *)vpt, prefix, vp_trans_replace, vp_trans_replace_destroy,
-		vp_trans_replace_match);
+  vp_trans_init((ValuePairsTransform *)vpt, prefix,
+		vp_trans_replace_match, vp_trans_replace,
+		vp_trans_replace_reset, vp_trans_replace_destroy);
 
-  vpt->cache = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
   vpt->old_prefix_len = strlen(prefix);
   vpt->new_prefix = g_strdup(new_prefix);
   vpt->new_prefix_len = strlen(vpt->new_prefix);
+  vpt->cache = NULL;
+
+  vp_trans_replace_reset ((ValuePairsTransform *)vpt);
 
   return (ValuePairsTransform *)vpt;
 }

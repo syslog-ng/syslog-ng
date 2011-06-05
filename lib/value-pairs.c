@@ -266,6 +266,7 @@ value_pairs_foreach (ValuePairs *vp, VPForeachFunc func,
 {
   gpointer args[] = { vp, func, msg, GINT_TO_POINTER (seq_num), user_data, NULL };
   GHashTable *scope_set;
+  GList *l;
 
   scope_set = g_hash_table_new_full(g_str_hash, g_str_equal, NULL,
 				    (GDestroyNotify) g_free);
@@ -298,6 +299,13 @@ value_pairs_foreach (ValuePairs *vp, VPForeachFunc func,
   g_hash_table_foreach(scope_set, (GHFunc)func, user_data);
 
   g_hash_table_destroy(scope_set);
+
+  l = vp->transforms;
+  do
+    {
+      value_pairs_transform_reset((ValuePairsTransform *)l->data);
+    }
+  while ((l = g_list_next (l)) != NULL);
 }
 
 
