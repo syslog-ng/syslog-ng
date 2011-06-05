@@ -430,7 +430,7 @@ vp_cmdline_parse_pair (const gchar *option_name, const gchar *value,
 
 ValuePairs *
 value_pairs_new_from_cmdline (GlobalConfig *cfg,
-			      gint cargc, gchar **cargv,
+			      gint argc, gchar **argv,
 			      GError **error)
 {
   ValuePairs *vp;
@@ -448,8 +448,6 @@ value_pairs_new_from_cmdline (GlobalConfig *cfg,
       NULL, NULL },
     { NULL }
   };
-  gchar **argv;
-  gint argc = cargc + 1;
   gint i;
   GOptionGroup *og;
   gpointer user_data_args[2];
@@ -457,12 +455,6 @@ value_pairs_new_from_cmdline (GlobalConfig *cfg,
   vp = value_pairs_new();
   user_data_args[0] = cfg;
   user_data_args[1] = vp;
-
-  argv = g_new (gchar *, argc + 1);
-  for (i = 0; i < argc; i++)
-    argv[i + 1] = cargv[i];
-  argv[0] = "value-pairs";
-  argv[argc] = NULL;
 
   ctx = g_option_context_new ("value-pairs");
   og = g_option_group_new (NULL, NULL, NULL, user_data_args, NULL);
