@@ -35,20 +35,22 @@
 #include <json-glib/json-glib.h>
 #endif
 
+typedef struct _TFJsonState
+{
+  TFSimpleFuncState super;
+  ValuePairs *vp;
+} TFJsonState;
+
 static gboolean
-tf_json_prepare(LogTemplateFunction *self, LogTemplate *parent,
+tf_json_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent,
 		gint argc, gchar *argv[],
-		gpointer *state, GDestroyNotify *state_destroy,
 		GError **error)
 {
-  ValuePairs *vp;
+  TFJsonState *state = (TFJsonState *)s;
 
-  vp = value_pairs_new_from_cmdline (parent->cfg, argc, argv, error);
-  if (!vp)
+  state->vp = value_pairs_new_from_cmdline (parent->cfg, argc, argv, error);
+  if (!state->vp)
     return FALSE;
-
-  *state = vp;
-  *state_destroy = (GDestroyNotify) value_pairs_free;
 
   return TRUE;
 }
@@ -119,26 +121,28 @@ tf_json_append(GString *result, ValuePairs *vp, LogMessage *msg)
 #endif
 
 static void
-tf_json_call(LogTemplateFunction *self, gpointer state, GPtrArray *arg_bufs,
-	     LogMessage **messages, gint num_messages, LogTemplateOptions *opts,
-	     gint tz, gint seq_num, const gchar *context_id, GString *result)
+tf_json_call(LogTemplateFunction *self, gpointer s,
+	     const LogTemplateInvokeArgs *args, GString *result)
 {
+  TFJsonState *state = (TFJsonState *)s;
   gint i;
-  ValuePairs *vp = (ValuePairs *)state;
 
-  for (i = 0; i < num_messages; i++)
-    tf_json_append(result, vp, messages[i]);
+  for (i = 0; i < args->num_messages; i++)
+    tf_json_append(result, state->vp, args->messages[i]);
 }
 
 static void
-tf_json_eval (LogTemplateFunction *self, gpointer state, GPtrArray *arg_bufs,
-	      LogMessage **messages, gint num_messages, LogTemplateOptions *opts,
-	      gint tz, gint seq_num, const gchar *context_id)
+tf_json_free_state(gpointer s)
 {
-  return;
+  TFJsonState *state = (TFJsonState *)s;
+
+  if (state->vp)
+    value_pairs_free(state->vp);
+  tf_simple_func_free_state(&state->super);
 }
 
-TEMPLATE_FUNCTION(tf_json, tf_json_prepare, tf_json_eval, tf_json_call, NULL);
+TEMPLATE_FUNCTION(TFJsonState, tf_json, tf_json_prepare, NULL, tf_json_call,
+		  tf_json_free_state, NULL);
 
 static Plugin builtin_tmpl_func_plugins[] =
   {
