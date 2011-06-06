@@ -30,8 +30,8 @@
 
 #include <string.h>
 
-typedef gboolean (*VPTransMatchFunc)(ValuePairsTransform *t, const gchar *name);
-typedef const gchar *(*VPTransFunc)(ValuePairsTransform *t, const gchar *name);
+typedef gboolean (*VPTransMatchFunc)(ValuePairsTransform *t, gchar *name);
+typedef gchar *(*VPTransFunc)(ValuePairsTransform *t, gchar *name);
 typedef void (*VPTransResetFunc)(ValuePairsTransform *t);
 typedef void (*VPTransDestroyFunc)(ValuePairsTransform *t);
 
@@ -102,8 +102,8 @@ value_pairs_transform_free(ValuePairsTransform *t)
   g_free(t);
 }
 
-const gchar *
-value_pairs_transform_apply(ValuePairsTransform *t, const gchar *key)
+gchar *
+value_pairs_transform_apply(ValuePairsTransform *t, gchar *key)
 {
   if (t->match(t, key))
     return t->transform(t, key);
@@ -112,8 +112,8 @@ value_pairs_transform_apply(ValuePairsTransform *t, const gchar *key)
 
 /* add_prefix() */
 
-static const gchar *
-vp_trans_add_prefix(ValuePairsTransform *t, const gchar *name)
+static gchar *
+vp_trans_add_prefix(ValuePairsTransform *t, gchar *name)
 {
   VPTransAddPrefix *self = (VPTransAddPrefix *)t;
   gpointer r;
@@ -138,7 +138,7 @@ vp_trans_add_prefix_destroy(ValuePairsTransform *t)
 }
 
 static gboolean
-vp_trans_add_prefix_match(ValuePairsTransform *t, const gchar *key)
+vp_trans_add_prefix_match(ValuePairsTransform *t, gchar *key)
 {
   VPTransAddPrefix *self = (VPTransAddPrefix *)t;
 
@@ -177,8 +177,8 @@ value_pairs_new_transform_add_prefix (const gchar *glob, const gchar *prefix)
 
 /* shift() */
 
-static const gchar *
-vp_trans_shift(ValuePairsTransform *t, const gchar* name)
+static gchar *
+vp_trans_shift(ValuePairsTransform *t, gchar* name)
 {
   VPTransShift *self = (VPTransShift *)t;
 
@@ -196,7 +196,7 @@ vp_trans_shift_destroy(ValuePairsTransform *t)
 }
 
 static gboolean
-vp_trans_shift_match(ValuePairsTransform *t, const gchar *key)
+vp_trans_shift_match(ValuePairsTransform *t, gchar *key)
 {
   VPTransShift *self = (VPTransShift *)t;
 
@@ -221,8 +221,8 @@ value_pairs_new_transform_shift (const gchar *glob, gint amount)
 
 /* replace() */
 
-static const gchar *
-vp_trans_replace(ValuePairsTransform *t, const gchar *name)
+static gchar *
+vp_trans_replace(ValuePairsTransform *t, gchar *name)
 {
   VPTransReplace *self = (VPTransReplace *)t;
   gpointer r;
@@ -261,7 +261,7 @@ vp_trans_replace_reset(ValuePairsTransform *t)
 }
 
 static gboolean
-vp_trans_replace_match(ValuePairsTransform *t, const gchar *key)
+vp_trans_replace_match(ValuePairsTransform *t, gchar *key)
 {
   VPTransReplace *self = (VPTransReplace *)t;
 

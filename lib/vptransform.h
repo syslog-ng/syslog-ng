@@ -34,7 +34,7 @@ ValuePairsTransform *value_pairs_new_transform_shift (const gchar *glob, gint am
 ValuePairsTransform *value_pairs_new_transform_replace(const gchar *prefix, const gchar *new_prefix);
 
 void value_pairs_transform_free(ValuePairsTransform *t);
-const gchar *value_pairs_transform_apply(ValuePairsTransform *t, const gchar *key);
+gchar *value_pairs_transform_apply(ValuePairsTransform *t, gchar *key);
 void value_pairs_transform_reset(ValuePairsTransform *t);
 
 #endif

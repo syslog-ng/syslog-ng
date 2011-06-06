@@ -156,9 +156,7 @@ vp_transform_apply (ValuePairs *vp, gchar *key)
   while (l)
     {
       ValuePairsTransform *t = (ValuePairsTransform *)l->data;
-
       ckey = value_pairs_transform_apply(t, ckey);
-      
       l = g_list_next (l);
     }
 
