@@ -1,4 +1,5 @@
 #include "value-pairs.h"
+#include "vptransform.h"
 #include "logmsg.h"
 #include "apphook.h"
 #include "cfg.h"
@@ -46,7 +47,7 @@ create_message(void)
 }
 
 void
-testcase(const gchar *scope, const gchar *exclude, const gchar *expected)
+testcase(const gchar *scope, const gchar *exclude, const gchar *expected, GPtrArray *transformers)
 {
   ValuePairs *vp;
   GList *vp_keys_list = NULL;
@@ -62,6 +63,14 @@ testcase(const gchar *scope, const gchar *exclude, const gchar *expected)
   if (exclude)
     value_pairs_add_exclude_glob(vp, exclude);
   value_pairs_add_pair(vp, configuration, "test.key", "$MESSAGE");
+
+  if (transformers)
+    {
+      gint i;
+
+      for (i = 0; i < transformers->len; i++)
+	value_pairs_add_transform(vp, g_ptr_array_index(transformers, i));
+    }
 
   args[0] = &vp_keys_list;
   args[1] = &test_key_found;
@@ -88,6 +97,8 @@ testcase(const gchar *scope, const gchar *exclude, const gchar *expected)
 int
 main(int argc, char *argv[])
 {
+  GPtrArray *transformers;
+
   app_startup();
   putenv("TZ=MET-1METDST");
   tzset();
@@ -98,26 +109,37 @@ main(int argc, char *argv[])
   msg_format_options_init(&parse_options, configuration);
   parse_options.flags |= LP_SYSLOG_PROTOCOL;
 
-  testcase("rfc3164", NULL, "DATE,FACILITY,HOST,MESSAGE,PID,PRIORITY,PROGRAM");
-  testcase("rfc5424", NULL, "DATE,FACILITY,HOST,MESSAGE,MSGID,PID,PRIORITY,PROGRAM");
-  testcase("selected-macros", NULL, "DATE,FACILITY,HOST,MESSAGE,PID,PRIORITY,PROGRAM,SEQNUM,SOURCEIP,TAGS");
+  testcase("rfc3164", NULL, "DATE,FACILITY,HOST,MESSAGE,PID,PRIORITY,PROGRAM", NULL);
+  testcase("rfc5424", NULL, "DATE,FACILITY,HOST,MESSAGE,MSGID,PID,PRIORITY,PROGRAM", NULL);
+  testcase("selected-macros", NULL, "DATE,FACILITY,HOST,MESSAGE,PID,PRIORITY,PROGRAM,SEQNUM,SOURCEIP,TAGS", NULL);
 
-  testcase("nv-pairs", NULL, "HOST,MESSAGE,MSGID,PID,PROGRAM");
-  testcase("dot-nv-pairs", NULL, ".SDATA.EventData@18372.4.Data,.SDATA.Keywords@18372.4.Keyword,.SDATA.meta.sequenceId,.SDATA.meta.sysUpTime,.SDATA.origin.ip,.SDATA.timeQuality.isSynced,.SDATA.timeQuality.tzKnown");
+  testcase("nv-pairs", NULL, "HOST,MESSAGE,MSGID,PID,PROGRAM", NULL);
+  testcase("dot-nv-pairs", NULL, ".SDATA.EventData@18372.4.Data,.SDATA.Keywords@18372.4.Keyword,.SDATA.meta.sequenceId,.SDATA.meta.sysUpTime,.SDATA.origin.ip,.SDATA.timeQuality.isSynced,.SDATA.timeQuality.tzKnown", NULL);
 
-  testcase("sdata", NULL, ".SDATA.EventData@18372.4.Data,.SDATA.Keywords@18372.4.Keyword,.SDATA.meta.sequenceId,.SDATA.meta.sysUpTime,.SDATA.origin.ip,.SDATA.timeQuality.isSynced,.SDATA.timeQuality.tzKnown");
+  testcase("sdata", NULL, ".SDATA.EventData@18372.4.Data,.SDATA.Keywords@18372.4.Keyword,.SDATA.meta.sequenceId,.SDATA.meta.sysUpTime,.SDATA.origin.ip,.SDATA.timeQuality.isSynced,.SDATA.timeQuality.tzKnown", NULL);
 
-  testcase("all-nv-pairs", NULL, ".SDATA.EventData@18372.4.Data,.SDATA.Keywords@18372.4.Keyword,.SDATA.meta.sequenceId,.SDATA.meta.sysUpTime,.SDATA.origin.ip,.SDATA.timeQuality.isSynced,.SDATA.timeQuality.tzKnown,HOST,MESSAGE,MSGID,PID,PROGRAM");
+  testcase("all-nv-pairs", NULL, ".SDATA.EventData@18372.4.Data,.SDATA.Keywords@18372.4.Keyword,.SDATA.meta.sequenceId,.SDATA.meta.sysUpTime,.SDATA.origin.ip,.SDATA.timeQuality.isSynced,.SDATA.timeQuality.tzKnown,HOST,MESSAGE,MSGID,PID,PROGRAM", NULL);
 
   testcase("everything", NULL, ".SDATA.EventData@18372.4.Data,.SDATA.Keywords@18372.4.Keyword,.SDATA.meta.sequenceId,.SDATA.meta.sysUpTime,.SDATA.origin.ip,.SDATA.timeQuality.isSynced,.SDATA.timeQuality.tzKnown,AMPM,BSDTAG,DATE,DAY,FACILITY,FACILITY_NUM,FULLDATE,HOST,HOUR,HOUR12,ISODATE,LEVEL,LEVEL_NUM,MESSAGE,MIN,MONTH,MONTH_ABBREV,MONTH_NAME,MONTH_WEEK,MSEC,MSG,MSGHDR,MSGID,PID,PRI,PRIORITY,PROGRAM,R_AMPM,R_DATE,R_DAY,R_FULLDATE,R_HOUR,R_HOUR12,R_ISODATE,R_MIN,R_MONTH,R_MONTH_ABBREV,R_MONTH_NAME,R_MONTH_WEEK,R_MSEC,R_SEC,R_STAMP,R_TZ,R_TZOFFSET,R_UNIXTIME,R_USEC,R_WEEK,R_WEEKDAY,R_WEEK_DAY,R_WEEK_DAY_ABBREV,R_WEEK_DAY_NAME,R_YEAR,R_YEAR_DAY,SDATA,SEC,SEQNUM,SOURCEIP,STAMP,SYSUPTIME,S_AMPM,S_DATE,S_DAY,S_FULLDATE,S_HOUR,S_HOUR12,S_ISODATE,S_MIN,S_MONTH,S_MONTH_ABBREV,S_MONTH_NAME,S_MONTH_WEEK,S_MSEC,S_SEC,S_STAMP,S_TZ,S_TZOFFSET,S_UNIXTIME,S_USEC,S_WEEK,S_WEEKDAY,S_WEEK_DAY,S_WEEK_DAY_ABBREV,S_WEEK_DAY_NAME,S_YEAR,S_YEAR_DAY,TAG,TAGS,TZ,TZOFFSET,UNIXTIME,USEC,WEEK,WEEKDAY,WEEK_DAY,WEEK_DAY_ABBREV,WEEK_DAY_NAME,YEAR,YEAR_DAY");
 
-  testcase("nv-pairs", ".SDATA.*", "HOST,MESSAGE,MSGID,PID,PROGRAM");
+  testcase("nv-pairs", ".SDATA.*", "HOST,MESSAGE,MSGID,PID,PROGRAM", NULL);
 
   /* tests that the exclude patterns do not affect explicitly added
    * keys. The testcase function adds a "test.key" and then checks if
    * it is indeed present. Even if it would be excluded it still has
    * to be in the result set. */
-  testcase("rfc3164", "test.*", "DATE,FACILITY,HOST,MESSAGE,PID,PRIORITY,PROGRAM");
+  testcase("rfc3164", "test.*", "DATE,FACILITY,HOST,MESSAGE,PID,PRIORITY,PROGRAM", NULL);
+
+  /* test the value-pair transformators */
+  transformers = g_ptr_array_new();
+  g_ptr_array_add(transformers, value_pairs_new_transform_add_prefix("S_*", "__"));
+  g_ptr_array_add(transformers, value_pairs_new_transform_shift("__*", 2));
+  g_ptr_array_add(transformers, value_pairs_new_transform_replace("S_", "_PRIV_SOURCE_"));
+  g_ptr_array_add(transformers, value_pairs_new_transform_replace("R_", "_PRIV_REMOTE_"));
+
+  testcase("everything", NULL, ".SDATA.EventData@18372.4.Data,.SDATA.Keywords@18372.4.Keyword,.SDATA.meta.sequenceId,.SDATA.meta.sysUpTime,.SDATA.origin.ip,BSDTAG,DATE,DAY,FACILITY,FACILITY_NUM,FULLDATE,HOST,HOUR,ISODATE,LEVEL,LEVEL_NUM,LOGHOST,MESSAGE,MIN,MONTH,MONTH_ABBREV,MONTH_NAME,MONTH_WEEK,MSG,MSGHDR,MSGID,PID,PRI,PRIORITY,PROGRAM,SDATA,SEC,SEQNUM,SOURCEIP,STAMP,TAG,TAGS,TZ,TZOFFSET,UNIXTIME,WEEK,WEEKDAY,WEEK_DAY,WEEK_DAY_ABBREV,WEEK_DAY_NAME,YEAR,YEAR_DAY,_PRIV_REMOTE_DATE,_PRIV_REMOTE_DAY,_PRIV_REMOTE_FULLDATE,_PRIV_REMOTE_HOUR,_PRIV_REMOTE_ISODATE,_PRIV_REMOTE_MIN,_PRIV_REMOTE_MONTH,_PRIV_REMOTE_MONTH_ABBREV,_PRIV_REMOTE_MONTH_NAME,_PRIV_REMOTE_MONTH_WEEK,_PRIV_REMOTE_SEC,_PRIV_REMOTE_STAMP,_PRIV_REMOTE_TZ,_PRIV_REMOTE_TZOFFSET,_PRIV_REMOTE_UNIXTIME,_PRIV_REMOTE_WEEK,_PRIV_REMOTE_WEEKDAY,_PRIV_REMOTE_WEEK_DAY,_PRIV_REMOTE_WEEK_DAY_ABBREV,_PRIV_REMOTE_WEEK_DAY_NAME,_PRIV_REMOTE_YEAR,_PRIV_REMOTE_YEAR_DAY,_PRIV_SOURCE_DATE,_PRIV_SOURCE_DAY,_PRIV_SOURCE_FULLDATE,_PRIV_SOURCE_HOUR,_PRIV_SOURCE_ISODATE,_PRIV_SOURCE_MIN,_PRIV_SOURCE_MONTH,_PRIV_SOURCE_MONTH_ABBREV,_PRIV_SOURCE_MONTH_NAME,_PRIV_SOURCE_MONTH_WEEK,_PRIV_SOURCE_SEC,_PRIV_SOURCE_STAMP,_PRIV_SOURCE_TZ,_PRIV_SOURCE_TZOFFSET,_PRIV_SOURCE_UNIXTIME,_PRIV_SOURCE_WEEK,_PRIV_SOURCE_WEEKDAY,_PRIV_SOURCE_WEEK_DAY,_PRIV_SOURCE_WEEK_DAY_ABBREV,_PRIV_SOURCE_WEEK_DAY_NAME,_PRIV_SOURCE_YEAR,_PRIV_SOURCE_YEAR_DAY", transformers);
+
+  g_ptr_array_free(transformers, FALSE);
 
   app_shutdown();
   if (success)
