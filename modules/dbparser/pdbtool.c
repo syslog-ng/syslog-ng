@@ -918,7 +918,7 @@ static GOptionEntry pdbtool_options[] =
   { "module", 0, 0, G_OPTION_ARG_CALLBACK, pdbtool_load_module,
     "Load the module specified as parameter", "<module>" },
   { "module-path",         0,         0, G_OPTION_ARG_STRING, &module_path,
-    "Set the list of colon separated directories to search for modules, default=" PATH_MODULEDIR, "<path>" },
+    "Set the list of colon separated directories to search for modules, default=" MODULE_PATH, "<path>" },
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
 };
 

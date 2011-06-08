@@ -76,7 +76,7 @@ extern int cfg_parser_debug;
 static GOptionEntry syslogng_options[] = 
 {
   { "version",           'V',         0, G_OPTION_ARG_NONE, &display_version, "Display version number (" PACKAGE " " VERSION ")", NULL },
-  { "module-path",         0,         0, G_OPTION_ARG_STRING, &module_path, "Set the list of colon separated directories to search for modules, default=" PATH_MODULEDIR, "<path>" },
+  { "module-path",         0,         0, G_OPTION_ARG_STRING, &module_path, "Set the list of colon separated directories to search for modules, default=" MODULE_PATH, "<path>" },
   { "module-registry",     0,         0, G_OPTION_ARG_NONE, &display_module_registry, "Display module information", NULL },
   { "default-modules",     0,         0, G_OPTION_ARG_STRING, &default_modules, "Set the set of auto-loaded modules, default=" DEFAULT_MODULES, "<module-list>" },
   { "seed",              'S',         0, G_OPTION_ARG_NONE, &seed_rng, "Seed the RNG using ~/.rnd or $RANDFILE", NULL},
