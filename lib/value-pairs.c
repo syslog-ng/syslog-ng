@@ -448,7 +448,6 @@ value_pairs_new_from_cmdline (GlobalConfig *cfg,
       NULL, NULL },
     { NULL }
   };
-  gint i;
   GOptionGroup *og;
   gpointer user_data_args[2];
 
