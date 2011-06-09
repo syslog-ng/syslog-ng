@@ -155,7 +155,20 @@ log_reader_wakeup(LogSource *s)
 {
   LogReader *self = (LogReader *) s;
 
-  iv_event_post(&self->schedule_wakeup);
+  /*
+   * We might get called even after this LogReader has been
+   * deinitialized, in which case we must not do anything (since the
+   * iv_event triggered here is not registered).
+   *
+   * This happens when log_writer_deinit() flushes its output queue
+   * after the reader which produced the message has already been
+   * deinited. Since init/deinit calls are made in the main thread, no
+   * locking is needed.
+   *
+   */
+
+  if (self->super.super.flags & PIF_INITIALIZED)
+    iv_event_post(&self->schedule_wakeup);
 }
 
 static void
