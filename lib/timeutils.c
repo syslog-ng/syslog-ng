@@ -232,19 +232,20 @@ cached_gmtime(time_t *when, struct tm *tm)
 long
 get_local_timezone_ofs(time_t when)
 {
+#ifdef HAVE_STRUCT_TM_TM_GMTOFF
+  struct tm ltm;
+
+  cached_localtime(&when, &ltm);
+  return ltm.tm_gmtoff;
+
+#else
+
+  struct tm gtm;
   struct tm ltm;
   long tzoff;
   
-#if HAVE_STRUCT_TM_TM_GMTOFF
   cached_localtime(&when, &ltm);
-  tzoff = ltm.tm_gmtoff;
-#else
-  struct tm gtm;
-  
-  cached_localtime(&when, &ltm_store);
-  cached_gmtime(&when, &gtm_stroe);
-  ltm = &ltm_store;
-  gtm = &gtm_store
+  cached_gmtime(&when, &gtm);
 
   tzoff = (ltm.tm_hour - gtm.tm_hour) * 3600;
   tzoff += (ltm.tm_min - gtm.tm_min) * 60;
@@ -255,8 +256,8 @@ get_local_timezone_ofs(time_t when)
   else if (tzoff < 0 && (ltm.tm_year > gtm.tm_year || ltm.tm_mon > gtm.tm_mon || ltm.tm_mday > gtm.tm_mday))
     tzoff += 86400;
   
-#endif /* HAVE_STRUCT_TM_TM_GMTOFF */
   return tzoff;
+#endif /* HAVE_STRUCT_TM_TM_GMTOFF */
 }
 
 
