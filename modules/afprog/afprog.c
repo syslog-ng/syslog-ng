@@ -146,6 +146,7 @@ afprogram_sd_init(LogPipe *s)
   child_manager_register(self->pid, afprogram_sd_exit, log_pipe_ref(&self->super.super.super), (GDestroyNotify) log_pipe_unref);
   
   g_fd_set_nonblock(fd, TRUE);
+  g_fd_set_cloexec(fd, TRUE);
   if (!self->reader)
     {
       LogTransport *transport;
