@@ -104,6 +104,10 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   char *expected_msg_bsd_to_syslog_str = "<155>1 2006-02-11T10:34:56+01:00 bzorp syslog-ng 23323 - - árvíztűrőtükörfúrógép\n";
   char *expected_msg_bsd_to_proto_str = "<155>Feb 11 10:34:56 bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép\n";
 
+  char *msg_zero_pri = "<0>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép";
+  char *expected_msg_zero_pri_str = "<0>Feb 11 10:34:56 bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép\n";
+  char *expected_msg_zero_pri_str_t = "0";
+
   char *msg_bsd_empty_str = "<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]:";
   char *expected_msg_bsd_empty_str = "<155>Feb 11 10:34:56 bzorp syslog-ng[23323]:\n";
   char *expected_msg_bsd_empty_str_t = "23323";
@@ -137,6 +141,8 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase(msg_bsd_empty_str, FALSE, NULL,   LW_FORMAT_PROTO, expected_msg_bsd_empty_str);
   testcase(msg_bsd_empty_str, FALSE, "$PID", LW_FORMAT_PROTO, expected_msg_bsd_empty_str_t);
 
+  testcase(msg_zero_pri, FALSE, NULL,   LW_FORMAT_PROTO, expected_msg_zero_pri_str);
+  testcase(msg_zero_pri, FALSE, "$PRI", LW_FORMAT_PROTO, expected_msg_zero_pri_str_t);
 
   app_shutdown();
   return 0;
