@@ -736,7 +736,15 @@ log_msg_append_format_sdata(LogMessage *self, GString *result)
       if (sd_id_len)
         {
           dot = sdata_elem + sd_id_len;
-          g_assert((dot - sdata_name < sdata_name_len) && *dot == '.');
+          if (dot - sdata_name != sdata_name_len)
+            {
+              g_assert((dot - sdata_name < sdata_name_len) && *dot == '.');
+            }
+          else
+            {
+              /* Standalone sdata e.g. [[UserData.updatelist@18372.4]] */
+              dot = NULL;
+            }
         }
       else
         {
@@ -758,8 +766,8 @@ log_msg_append_format_sdata(LogMessage *self, GString *result)
               sdata_elem = "none";
               sdata_elem_len = 4;
             }
-          sdata_param = "none";
-          sdata_param_len = 4;
+          sdata_param = "";
+          sdata_param_len = 0;
         }
       if (!cur_elem || sdata_elem_len != cur_elem_len || strncmp(cur_elem, sdata_elem, sdata_elem_len) != 0)
         {
@@ -777,13 +785,15 @@ log_msg_append_format_sdata(LogMessage *self, GString *result)
           cur_elem = sdata_elem;
           cur_elem_len = sdata_elem_len;
         }
-      g_string_append_c(result, ' ');
-      g_string_append_len(result, sdata_param, sdata_param_len);
-      g_string_append(result, "=\"");
-
-      value = log_msg_get_value(self, handle, &len);
-      log_msg_sdata_append_escaped(result, value, len);
-      g_string_append_c(result, '"');
+      if (sdata_param_len)
+        {
+          g_string_append_c(result, ' ');
+          g_string_append_len(result, sdata_param, sdata_param_len);
+          g_string_append(result, "=\"");
+          value = log_msg_get_value(self, handle, &len);
+          log_msg_sdata_append_escaped(result, value, len);
+          g_string_append_c(result, '"');
+        }
     }
   if (cur_elem)
     {

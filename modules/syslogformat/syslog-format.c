@@ -625,7 +625,7 @@ log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, guint flag
             goto error;
           /* read sd_id */
           pos = 0;
-          while (left && *src != ' ')
+          while (left && *src != ' ' && *src != ']')
             {
               /* the sd_id_name is max 32, the other chars are only stored in the self->sd_str*/
               if (pos < sizeof(sd_id_name) - 1)
@@ -655,7 +655,18 @@ log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, guint flag
           strcpy(sd_value_name, logmsg_sd_prefix);
           /* this strcat is safe, as sd_id_name is at most 32 chars */
           strncpy(sd_value_name + logmsg_sd_prefix_len, sd_id_name, sizeof(sd_value_name) - logmsg_sd_prefix_len);
-          sd_value_name[logmsg_sd_prefix_len + pos] = '.';
+          if (*src == ']')
+            {
+              /* Standalone sdata */
+              handle = log_msg_get_value_handle(sd_value_name);
+              nv_registry_set_handle_flags(logmsg_registry, handle, (sd_id_len << 8) + LM_VF_SDATA);
+
+              log_msg_set_value(self, handle, "", 0);
+            }
+          else
+            {
+              sd_value_name[logmsg_sd_prefix_len + pos] = '.';
+            }
 
           /* read sd-element */
           while (left && *src != ']')
