@@ -44,7 +44,7 @@ init_msg(gchar *msg_string, gboolean use_syslog_protocol)
 }
 
 void
-testcase(gchar *msg_string, gchar *template, gboolean use_syslog_protocol,gchar *expected_value)
+testcase(gchar *msg_string, gboolean input_is_rfc5424, gchar *template, guint writer_flags, gchar *expected_value)
 {
   LogTemplate *templ = NULL;
   LogWriter *writer = NULL;
@@ -52,7 +52,6 @@ testcase(gchar *msg_string, gchar *template, gboolean use_syslog_protocol,gchar 
   GError *error = NULL;
   LogMessage *msg = NULL;
   LogWriterOptions opt = {0};
-  guint writer_flags = 0;
   LogQueue *queue;
 
   static TimeZoneInfo *tzinfo = NULL;
@@ -62,18 +61,13 @@ testcase(gchar *msg_string, gchar *template, gboolean use_syslog_protocol,gchar 
   opt.options = LWO_NO_MULTI_LINE | LWO_NO_STATS | LWO_SHARE_STATS;
   opt.template_options.time_zone_info[LTZ_SEND]=tzinfo;
 
-  if (use_syslog_protocol)
-    {
-      opt.options |= LWO_SYSLOG_PROTOCOL;
-      writer_flags = LW_SYSLOG_PROTOCOL;
-    }
   if (template)
     {
       templ = log_template_new(configuration, "dummy", template);
       log_template_compile(templ,&error);
     }
   opt.template = templ;
-  msg = init_msg(msg_string, use_syslog_protocol);
+  msg = init_msg(msg_string, input_is_rfc5424);
   queue = log_queue_fifo_new(1000, NULL);
   writer = (LogWriter*)log_writer_new(writer_flags, queue);
 
@@ -95,19 +89,23 @@ int
 main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 {
   char *msg_syslog_str = "<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog 3535 ID47 [exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] BOMAn application event log entry...";
-  char *expeted_msg_syslog_str = "<132>1 2006-10-29T01:59:59+01:00 mymachine evntslog 3535 ID47 [exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] BOMAn application event log entry...\n";
-  char *expeted_msg_syslog_str_t = "<132>1 2006-10-29T01:59:59+01:00 mymachine evntslog 3535 ID47 [exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] ID47 BOMAn application event log entry...\n";
+  char *expected_msg_syslog_str = "<132>1 2006-10-29T01:59:59+01:00 mymachine evntslog 3535 ID47 [exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] BOMAn application event log entry...\n";
+  char *expected_msg_syslog_str_t = "<132>1 2006-10-29T01:59:59+01:00 mymachine evntslog 3535 ID47 [exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] ID47 BOMAn application event log entry...\n";
+  char *expected_msg_syslog_to_bsd_str = "<132>Oct 29 01:59:59 mymachine evntslog[3535]: BOMAn application event log entry...\n";
+  char *expected_msg_syslog_to_file_str = "Oct 29 01:59:59 mymachine evntslog[3535]: BOMAn application event log entry...\n";
 
   char *msg_syslog_empty_str ="<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog 3535 ID47 [exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"]";
   char *expected_msg_syslog_empty_str ="<132>1 2006-10-29T01:59:59+01:00 mymachine evntslog 3535 ID47 [exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] \n";
   char *expected_msg_syslog_empty_str_t ="<132>1 2006-10-29T01:59:59+01:00 mymachine evntslog 3535 ID47 [exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] ID47\n";
 
   char *msg_bsd_str = "<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép";
-  char *expected_msg_bsd_str = " bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép\n";
-  char *expected_msg_bsd_str_t = "23323 árvíztűrőtükörfúrógép";
+  char *expected_msg_bsd_str = "Feb 11 10:34:56 bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép\n";
+  char *expected_msg_bsd_str_t = "155 23323 árvíztűrőtükörfúrógép";
+  char *expected_msg_bsd_to_syslog_str = "<155>1 2006-02-11T10:34:56+01:00 bzorp syslog-ng 23323 - - árvíztűrőtükörfúrógép\n";
+  char *expected_msg_bsd_to_proto_str = "<155>Feb 11 10:34:56 bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép\n";
 
   char *msg_bsd_empty_str = "<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]:";
-  char *expected_msg_bsd_empty_str = " bzorp syslog-ng[23323]:\n";
+  char *expected_msg_bsd_empty_str = "<155>Feb 11 10:34:56 bzorp syslog-ng[23323]:\n";
   char *expected_msg_bsd_empty_str_t = "23323";
 
   if (argc > 1)
@@ -122,15 +120,23 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   msg_format_options_defaults(&parse_options);
   msg_format_options_init(&parse_options, configuration);
 
-  testcase(msg_syslog_str,NULL,TRUE,expeted_msg_syslog_str);
-  testcase(msg_syslog_str,"$MSGID $MSG",TRUE,expeted_msg_syslog_str_t);
-  testcase(msg_syslog_empty_str,NULL,TRUE,expected_msg_syslog_empty_str);
-  testcase(msg_syslog_empty_str,"$MSGID",TRUE,expected_msg_syslog_empty_str_t);
+  testcase(msg_syslog_str,       TRUE, NULL,          LW_SYSLOG_PROTOCOL, expected_msg_syslog_str);
+  testcase(msg_syslog_str,       TRUE, "$MSGID $MSG", LW_SYSLOG_PROTOCOL, expected_msg_syslog_str_t);
+  testcase(msg_syslog_empty_str, TRUE, NULL,          LW_SYSLOG_PROTOCOL, expected_msg_syslog_empty_str);
+  testcase(msg_syslog_empty_str, TRUE, "$MSGID",      LW_SYSLOG_PROTOCOL, expected_msg_syslog_empty_str_t);
 
-  testcase(msg_bsd_str,NULL,FALSE,expected_msg_bsd_str);
-  testcase(msg_bsd_str,"$PID $MSG",FALSE,expected_msg_bsd_str_t);
-  testcase(msg_bsd_empty_str,NULL,FALSE,expected_msg_bsd_empty_str);
-  testcase(msg_bsd_empty_str,"$PID",FALSE,expected_msg_bsd_empty_str_t);
+  testcase(msg_syslog_str,       TRUE, NULL,          LW_FORMAT_PROTO, expected_msg_syslog_to_bsd_str);
+  testcase(msg_syslog_str,       TRUE, NULL,          LW_FORMAT_FILE,  expected_msg_syslog_to_file_str);
+
+  testcase(msg_bsd_str, FALSE, NULL,                  LW_FORMAT_FILE, expected_msg_bsd_str);
+  testcase(msg_bsd_str, FALSE, "$PRI $PID $MSG",      LW_FORMAT_FILE, expected_msg_bsd_str_t);
+
+  testcase(msg_bsd_str, FALSE, NULL,                  LW_FORMAT_PROTO, expected_msg_bsd_to_proto_str);
+  testcase(msg_bsd_str, FALSE, NULL,                  LW_SYSLOG_PROTOCOL, expected_msg_bsd_to_syslog_str);
+
+  testcase(msg_bsd_empty_str, FALSE, NULL,   LW_FORMAT_PROTO, expected_msg_bsd_empty_str);
+  testcase(msg_bsd_empty_str, FALSE, "$PID", LW_FORMAT_PROTO, expected_msg_bsd_empty_str_t);
+
 
   app_shutdown();
   return 0;
