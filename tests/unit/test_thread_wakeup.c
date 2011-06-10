@@ -98,13 +98,13 @@ accept_thread_func(gpointer args)
 int
 test_accept_wakeup()
 {
-  struct sockaddr_un sun;
+  struct sockaddr_un s;
 
   unlink("almafa");
   sock = socket(PF_UNIX, SOCK_STREAM, 0);
-  sun.sun_family = AF_UNIX;
-  strcpy(sun.sun_path, "almafa");
-  if (bind(sock, (struct sockaddr *) &sun, sizeof(sun)) < 0)
+  s.sun_family = AF_UNIX;
+  strcpy(s.sun_path, "almafa");
+  if (bind(sock, (struct sockaddr *) &s, sizeof(s)) < 0)
     {
       perror("error binding socket");
       return 1;
