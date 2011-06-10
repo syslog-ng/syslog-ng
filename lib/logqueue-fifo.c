@@ -426,6 +426,7 @@ log_queue_fifo_free(LogQueue *s)
   log_queue_fifo_free_queue(&self->qoverflow_wait);
   log_queue_fifo_free_queue(&self->qoverflow_output);
   log_queue_fifo_free_queue(&self->qbacklog);
+  log_queue_free_method(s);
 }
 
 LogQueue *
