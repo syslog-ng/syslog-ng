@@ -22,12 +22,15 @@ LogMessage *
 init_msg(gchar *msg_string, gboolean use_syslog_protocol)
 {
   LogMessage *msg;
+  GSockAddr *sa;
 
   if (use_syslog_protocol)
     parse_options.flags |= LP_SYSLOG_PROTOCOL;
   else
     parse_options.flags &= ~LP_SYSLOG_PROTOCOL;
-  msg = log_msg_new(msg_string, strlen(msg_string), g_sockaddr_inet_new("10.10.10.10", 1010), &parse_options);
+  sa = g_sockaddr_inet_new("10.10.10.10", 1010);
+  msg = log_msg_new(msg_string, strlen(msg_string), sa, &parse_options);
+  g_sockaddr_unref(sa);
   log_msg_set_value(msg, log_msg_get_value_handle("APP.VALUE"), "value", 5);
   log_msg_set_match(msg, 0, "whole-match", 11);
   log_msg_set_match(msg, 1, "first-match", 11);
@@ -50,6 +53,7 @@ testcase(gchar *msg_string, gchar *template, gboolean use_syslog_protocol,gchar 
   LogMessage *msg = NULL;
   LogWriterOptions opt = {0};
   guint writer_flags = 0;
+  LogQueue *queue;
 
   static TimeZoneInfo *tzinfo = NULL;
 
@@ -70,28 +74,20 @@ testcase(gchar *msg_string, gchar *template, gboolean use_syslog_protocol,gchar 
     }
   opt.template = templ;
   msg = init_msg(msg_string, use_syslog_protocol);
-  writer = (LogWriter*)log_writer_new(writer_flags, log_queue_fifo_new(1000, NULL));
-  if (writer)
+  queue = log_queue_fifo_new(1000, NULL);
+  writer = (LogWriter*)log_writer_new(writer_flags, queue);
+
+  log_writer_set_options(writer, NULL, &opt, 0, 0, NULL, NULL);
+  log_writer_format_log(writer,msg,res);
+  if(strcmp(res->str,expected_value)!=0)
     {
-      log_writer_set_options(writer, NULL, &opt, 0, 0, NULL, NULL);
-      log_writer_format_log(writer,msg,res);
-      if(strcmp(res->str,expected_value)!=0)
-        {
-          fprintf(stderr,"Testcase failed; result: %s, expected: %s\n",res->str,expected_value);
-          exit(1);
-        }
-    }
-  else
-    {
-      fprintf(stderr,"Error: Can't create log_writer\n");
+      fprintf(stderr,"Testcase failed; result: %s, expected: %s\n",res->str,expected_value);
       exit(1);
     }
   if (templ)
     log_template_unref(templ);
-  if (writer)
-    free(writer);
-  if (msg)
-    g_slice_free(LogMessage, msg);
+  log_pipe_unref((LogPipe *) writer);
+  log_msg_unref(msg);
   g_string_free(res, TRUE);
 }
 
@@ -126,8 +122,6 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   msg_format_options_defaults(&parse_options);
   msg_format_options_init(&parse_options, configuration);
 
-
-  msg_format_options_defaults(&parse_options);
   testcase(msg_syslog_str,NULL,TRUE,expeted_msg_syslog_str);
   testcase(msg_syslog_str,"$MSGID $MSG",TRUE,expeted_msg_syslog_str_t);
   testcase(msg_syslog_empty_str,NULL,TRUE,expected_msg_syslog_empty_str);
