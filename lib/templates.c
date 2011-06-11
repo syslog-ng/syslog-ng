@@ -535,17 +535,8 @@ log_macro_lookup(gchar *macro, gint len)
   gchar buf[256];
   gint macro_id;
   
+  g_assert(macro_hash);
   g_strlcpy(buf, macro, MIN(sizeof(buf), len+1));
-  if (!macro_hash)
-    {
-      int i;
-      macro_hash = g_hash_table_new(g_str_hash, g_str_equal);
-      for (i = 0; macros[i].name; i++)
-        {
-          g_hash_table_insert(macro_hash, macros[i].name,
-                              GINT_TO_POINTER(macros[i].id));
-        }
-    }
   macro_id = GPOINTER_TO_INT(g_hash_table_lookup(macro_hash, buf));
   if (configuration && configuration->version < 0x0300 && (macro_id == M_MESSAGE))
     {
@@ -1253,4 +1244,18 @@ GQuark
 log_template_error_quark()
 {
   return g_quark_from_static_string("log-template-error-quark");
+}
+
+void
+log_template_global_init(void)
+{
+  gint i;
+
+  macro_hash = g_hash_table_new(g_str_hash, g_str_equal);
+  for (i = 0; macros[i].name; i++)
+    {
+      g_hash_table_insert(macro_hash, macros[i].name,
+                          GINT_TO_POINTER(macros[i].id));
+    }
+  return;
 }

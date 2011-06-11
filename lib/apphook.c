@@ -35,7 +35,7 @@
 #include "logsource.h"
 #include "logwriter.h"
 #include "afinter.h"
-#include "crypto.h"
+#include "templates.h"
 
 #include <iv.h>
 #include <iv_work.h>
@@ -116,6 +116,7 @@ app_startup(void)
   log_msg_global_init();
   log_tags_init();
   log_source_global_init();
+  log_template_global_init();
   afinter_global_init();
 }
 
