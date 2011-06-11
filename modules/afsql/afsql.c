@@ -184,8 +184,7 @@ afsql_dd_set_table(LogDriver *s, const gchar *table)
 {
   AFSqlDestDriver *self = (AFSqlDestDriver *) s;
 
-  log_template_unref(self->table);
-  self->table = log_template_new(log_pipe_get_config(&s->super), NULL, table);
+  log_template_compile(self->table, table, NULL);
 }
 
 void
@@ -1009,7 +1008,8 @@ afsql_dd_init(LogPipe *s)
 
           if (GPOINTER_TO_UINT(value->data) > 4096)
             {
-              self->fields[i].value = log_template_new(cfg, NULL, (gchar *) value->data);
+              self->fields[i].value = log_template_new(cfg, NULL);
+              log_template_compile(self->fields[i].value, (gchar *) value->data, NULL);
             }
           else
             {
@@ -1163,7 +1163,8 @@ afsql_dd_new(void)
   self->database = g_strdup("logs");
   self->encoding = g_strdup("UTF-8");
 
-  self->table = log_template_new(configuration, NULL, "messages");
+  self->table = log_template_new(configuration, NULL);
+  log_template_compile(self->table, "messages", NULL);
   self->failed_message_counter = 0;
 
   self->flush_lines = -1;

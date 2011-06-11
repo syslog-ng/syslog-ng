@@ -294,7 +294,8 @@ cfg_check_inline_template(GlobalConfig *cfg, const gchar *template_or_name)
   struct _LogTemplate *template = cfg_lookup_template(configuration, template_or_name);
   if (template == NULL)
     {
-      template = log_template_new(cfg, NULL, template_or_name);
+      template = log_template_new(cfg, NULL);
+      log_template_compile(template, template_or_name, NULL);
       template->def_inline = TRUE;
     }
   return template;

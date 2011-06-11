@@ -422,7 +422,8 @@ pdbtool_match(int argc, char *argv[])
       gchar *t;
 
       t = g_strcompress(template_string);
-      template = log_template_new(configuration, NULL, t);
+      template = log_template_new(configuration, NULL);
+      log_template_compile(template, t, NULL);
       g_free(t);
 
       output = g_string_sized_new(512);

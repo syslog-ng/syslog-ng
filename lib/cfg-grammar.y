@@ -514,7 +514,7 @@ options_stmt
 template_stmt
 	: string
 	  {
-	    last_template = log_template_new(configuration, $1, NULL);
+	    last_template = log_template_new(configuration, $1);
 	    free($1);
 	  }
 	  '{' template_items '}'		{ $$ = last_template;  }
@@ -529,8 +529,8 @@ template_item
 	: KW_TEMPLATE '(' string ')'		{
                                                   GError *error = NULL;
 
-                                                  last_template->template = g_strdup($3); free($3);
-                                                  CHECK_ERROR(log_template_compile(last_template, &error), @3, "Error compiling template (%s)", error->message);
+                                                  CHECK_ERROR(log_template_compile(last_template, $3, &error), @3, "Error compiling template (%s)", error->message);
+                                                  free($3);
                                                 }
 	| KW_TEMPLATE_ESCAPE '(' yesno ')'	{ log_template_set_escape(last_template, $3); }
 	;
@@ -804,8 +804,7 @@ dest_writer_option
 	| KW_TEMPLATE '(' string ')'       	{
                                                   GError *error = NULL;
 
-	                                          last_writer_options->template = cfg_check_inline_template(configuration, $3);
-                                                  CHECK_ERROR(log_template_compile(last_writer_options->template, &error), @3, "Error compiling template (%s)", error->message);
+                                                  CHECK_ERROR(log_template_compile(last_writer_options->template, $3, &error), @3, "Error compiling template (%s)", error->message);
 	                                          free($3);
 	                                        }
 	| KW_TEMPLATE_ESCAPE '(' yesno ')'	{ log_writer_options_set_template_escape(last_writer_options, $3); }

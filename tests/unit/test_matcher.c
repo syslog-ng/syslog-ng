@@ -69,7 +69,8 @@ testcase_replace(const gchar *log, const gchar *re, gchar *replacement, const gc
 
   log_matcher_compile(m, re);
 
-  r = log_template_new(configuration, NULL, replacement);
+  r = log_template_new(configuration, NULL);
+  log_template_compile(r, replacement, NULL);
 
   value = log_msg_get_value(msg, nonasciiz, &msglen);
   result = log_matcher_replace(m, msg, nonasciiz, value, msglen, r, &length);

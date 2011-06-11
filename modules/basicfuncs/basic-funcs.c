@@ -60,9 +60,9 @@ tf_cond_prepare(LogTemplateFunction *self, LogTemplate *parent, gint argc, gchar
     }
   for (i = 1; i < argc; i++)
     {
-      args->argv[i - 1] = log_template_new(parent->cfg, NULL, argv[i]);
+      args->argv[i - 1] = log_template_new(parent->cfg, NULL);
       log_template_set_escape(args->argv[i - 1], TRUE);
-      if (!log_template_compile(args->argv[i - 1], error))
+      if (!log_template_compile(args->argv[i - 1], argv[i], error))
         goto error;
     }
   *state = args;

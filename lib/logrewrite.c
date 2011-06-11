@@ -188,7 +188,8 @@ log_rewrite_subst_new(const gchar *replacement)
   self->super.super.clone = log_rewrite_subst_clone;
   self->super.process = log_rewrite_subst_process;
   
-  self->replacement = log_template_new(configuration, NULL, replacement);
+  self->replacement = log_template_new(configuration, NULL);
+  log_template_compile(self->replacement, replacement, NULL);
   return &self->super;
 }
 
@@ -246,7 +247,7 @@ log_rewrite_set_new(const gchar *new_value)
   self->super.super.clone = log_rewrite_set_clone;
   self->super.process = log_rewrite_set_process;
 
-  self->value_template = log_template_new(configuration, NULL, new_value);
-  
+  self->value_template = log_template_new(configuration, NULL);
+  log_template_compile(self->value_template, new_value, NULL);
   return &self->super;
 }

@@ -25,8 +25,8 @@ testcase(LogMessage *msg, gchar *template, gchar *expected)
   LogMessage *context[2] = { msg, msg };
   const gchar *context_id = "test-context-id";
 
-  templ = log_template_new(configuration, "dummy", template);
-  if (!log_template_compile(templ, &error))
+  templ = log_template_new(configuration, "dummy");
+  if (!log_template_compile(templ, template, &error))
     {
       fprintf(stderr, "FAIL: error compiling template, template=%s, error=%s\n", template, error->message);
       g_clear_error(&error);
@@ -55,8 +55,8 @@ testcase_failure(gchar *template, const gchar *expected_error)
   LogTemplate *templ;
   GError *error = NULL;
 
-  templ = log_template_new(configuration, NULL, template);
-  if (log_template_compile(templ, &error))
+  templ = log_template_new(configuration, NULL);
+  if (log_template_compile(templ, template, &error))
     {
       fprintf(stderr, "FAIL: compilation failure expected to template, but success was returned, template=%s, expected_error=%s\n", template, expected_error);
       success = FALSE;

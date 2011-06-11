@@ -1150,7 +1150,8 @@ affile_dd_new(gchar *filename, guint32 flags)
   self->super.super.super.deinit = affile_dd_deinit;
   self->super.super.super.queue = affile_dd_queue;
   self->super.super.super.free_fn = affile_dd_free;
-  self->filename_template = log_template_new(configuration, NULL, filename);
+  self->filename_template = log_template_new(configuration, NULL);
+  log_template_compile(self->filename_template, filename, NULL);
   self->flags = flags;
   self->file_uid = self->file_gid = -1;
   self->file_perm = -1;

@@ -63,8 +63,8 @@ testcase(gchar *msg_string, gboolean input_is_rfc5424, gchar *template, guint wr
 
   if (template)
     {
-      templ = log_template_new(configuration, "dummy", template);
-      log_template_compile(templ,&error);
+      templ = log_template_new(configuration, "dummy");
+      log_template_compile(templ, template, &error);
     }
   opt.template = templ;
   msg = init_msg(msg_string, input_is_rfc5424);

@@ -605,8 +605,8 @@ tf_simple_func_prepare(LogTemplateFunction *self, LogTemplate *parent, gint argc
   args = g_malloc0(sizeof(TFSimpleFuncState) + argc * sizeof(LogTemplate *));
   for (i = 0; i < argc; i++)
     {
-      args->argv[i] = log_template_new(parent->cfg, NULL, argv[i]);
-      if (!log_template_compile(args->argv[i], error))
+      args->argv[i] = log_template_new(parent->cfg, NULL);
+      if (!log_template_compile(args->argv[i], argv[i], error))
         goto error;
     }
   args->argc = argc;
@@ -775,7 +775,7 @@ parse_msg_ref(gchar **p, gint *msg_ref)
 }
 
 gboolean
-log_template_compile(LogTemplate *self, GError **error)
+log_template_compile(LogTemplate *self, const gchar *template, GError **error)
 {
   gchar *start, *p;
   guint last_macro = M_NONE;
@@ -784,10 +784,11 @@ log_template_compile(LogTemplate *self, GError **error)
   gint error_pos = 0;
   
   g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
-  
-  if (self->compiled_template)
-    return TRUE;
 
+  log_template_reset_compiled(self);
+  if (self->template)
+    g_free(self->template);
+  self->template = g_strdup(template);
   p = self->template;
   
   while (*p)
@@ -1039,9 +1040,6 @@ log_template_append_format_with_context(LogTemplate *self, LogMessage **messages
   GList *p;
   LogTemplateElem *e;
   
-  if (!log_template_compile(self, NULL))
-    return;
-
   for (p = self->compiled_template; p; p = g_list_next(p))
     {
       gint msg_ndx;
@@ -1137,12 +1135,11 @@ log_template_format(LogTemplate *self, LogMessage *lm, LogTemplateOptions *opts,
 }
 
 LogTemplate *
-log_template_new(GlobalConfig *cfg, gchar *name, const gchar *template)
+log_template_new(GlobalConfig *cfg, gchar *name)
 {
   LogTemplate *self = g_new0(LogTemplate, 1);
   
   self->name = g_strdup(name);
-  self->template = template ? g_strdup(template) : NULL;
   self->ref_cnt = 1;
   self->cfg = cfg;
   if (configuration && configuration->version < 0x0300)

@@ -83,7 +83,7 @@ parser_opt
                                                   LogTemplate *template = cfg_check_inline_template(configuration, $3);
                                                   GError *error = NULL;
 
-                                                  CHECK_ERROR(log_template_compile(template, &error), @3, "Error compiling template (%s)", error->message);
+                                                  CHECK_ERROR(log_template_compile(template, $3, &error), @3, "Error compiling template (%s)", error->message);
                                                   log_parser_set_template(last_parser, template);
                                                   free($3);
                                                 }

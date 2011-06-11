@@ -59,7 +59,8 @@ testcase(const gchar *msg_str, gboolean syslog_proto, gchar *template)
   msg->timestamps[LM_TS_RECVD].tv_usec = 639000;
   msg->timestamps[LM_TS_RECVD].zone_offset = get_local_timezone_ofs(1139684315);
 
-  templ = log_template_new(configuration, "dummy", template);
+  templ = log_template_new(configuration, "dummy");
+  log_template_compile(templ, template, NULL);
   g_get_current_time(&start);
 
   for (i = 0; i < BENCHMARK_COUNT; i++)

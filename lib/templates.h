@@ -129,7 +129,7 @@ void tf_simple_func_free_state(gpointer state);
 /* appends the formatted output into result */
 
 void log_template_set_escape(LogTemplate *self, gboolean enable);
-gboolean log_template_compile(LogTemplate *self, GError **error);
+gboolean log_template_compile(LogTemplate *self, const gchar *template, GError **error);
 void log_template_format(LogTemplate *self, LogMessage *lm, LogTemplateOptions *opts, gint tz, gint32 seq_num, const gchar *context_id, GString *result);
 void log_template_append_format(LogTemplate *self, LogMessage *lm, LogTemplateOptions *opts, gint tz, gint32 seq_num, const gchar *context_id, GString *result);
 void log_template_append_format_with_context(LogTemplate *self, LogMessage **messages, gint num_messages, LogTemplateOptions *opts, gint tz, gint32 seq_num, const gchar *context_id, GString *result);
@@ -139,7 +139,7 @@ void log_template_format_with_context(LogTemplate *self, LogMessage **messages, 
 guint log_macro_lookup(gchar *macro, gint len);
 gboolean log_macro_expand(GString *result, gint id, gboolean escape, LogTemplateOptions *opts, gint tz, gint32 seq_num, const gchar *context_id, LogMessage *msg);
 
-LogTemplate *log_template_new(GlobalConfig *cfg, gchar *name, const gchar *template);
+LogTemplate *log_template_new(GlobalConfig *cfg, gchar *name);
 LogTemplate *log_template_ref(LogTemplate *s);
 void log_template_unref(LogTemplate *s);
 
