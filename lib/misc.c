@@ -622,3 +622,31 @@ create_worker_thread(GThreadFunc func, gpointer data, gboolean joinable, GError 
     }
   return h;
 }
+
+gint
+set_permissions(gchar *name, gint uid, gint gid, gint mode)
+{
+#ifndef _MSC_VER
+  if (uid >= 0)
+    if (chown(name, (uid_t) uid, -1)) return -1;
+  if (gid >= 0)
+    if (chown(name, -1, (gid_t) gid)) return -1;
+  if (mode >= 0)
+    if (chmod(name, (mode_t) mode)) return -1;
+  return 0;
+#endif
+}
+
+gint
+set_permissions_fd(gint fd, gint uid, gint gid, gint mode)
+{
+#ifndef _MSC_VER
+  if (uid >= 0)
+    if (fchown(fd, (uid_t) uid, -1)) return -1;
+  if (gid >= 0)
+    if (fchown(fd, -1, (gid_t) gid)) return -1;
+  if (mode >= 0)
+    if (fchmod(fd, (mode_t) mode)) return -1;
+  return 0;
+#endif
+}
