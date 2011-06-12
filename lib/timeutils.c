@@ -542,6 +542,9 @@ zone_info_parser(unsigned char **input, gboolean is64bitData, gint *version)
   gint64 *transition_times = NULL;
   guint8 *transition_types = NULL;
   gint32 *gmt_offsets = NULL;
+  gint64 isgmtcnt, isdstcnt, leapcnt, timecnt, typecnt, charcnt;
+  gboolean insertInitial = FALSE;
+
   buf = *input;
   *input += 4;
 
@@ -580,12 +583,12 @@ zone_info_parser(unsigned char **input, gboolean is64bitData, gint *version)
   *input += 15;
 
   /* Read array sizes */
-  gint64 isgmtcnt = readcoded32(input, 0, G_MAXINT64);
-  gint64 isdstcnt = readcoded32(input, 0, G_MAXINT64);
-  gint64 leapcnt  = readcoded32(input, 0, G_MAXINT64);
-  gint64 timecnt  = readcoded32(input, 0, G_MAXINT64);
-  gint64 typecnt  = readcoded32(input, 0, G_MAXINT64);
-  gint64 charcnt  = readcoded32(input, 0, G_MAXINT64);
+  isgmtcnt = readcoded32(input, 0, G_MAXINT64);
+  isdstcnt = readcoded32(input, 0, G_MAXINT64);
+  leapcnt  = readcoded32(input, 0, G_MAXINT64);
+  timecnt  = readcoded32(input, 0, G_MAXINT64);
+  typecnt  = readcoded32(input, 0, G_MAXINT64);
+  charcnt  = readcoded32(input, 0, G_MAXINT64);
 
   /* 
    * Confirm sizes that we assume to be equal.  These assumptions
@@ -672,7 +675,7 @@ zone_info_parser(unsigned char **input, gboolean is64bitData, gint *version)
     }
  
   /* Build transitions vector out of corresponding times and types. */
-  gboolean insertInitial = FALSE;
+  insertInitial = FALSE;
   if (is64bitData)
     {
       if (timecnt > 0)
