@@ -161,6 +161,11 @@ tls_session_verify(TLSSession *self, int ok, X509_STORE_CTX *ctx)
       return 1;
     }
 
+  if (!ok && ctx->error == X509_V_ERR_INVALID_PURPOSE)
+    {
+      msg_warning("Certificate valid, but purpose is invalid", NULL);
+      return 1;
+    }
   return ok;
 }
 
@@ -169,13 +174,39 @@ tls_session_verify_callback(int ok, X509_STORE_CTX *ctx)
 {
   SSL *ssl = X509_STORE_CTX_get_app_data(ctx);
   TLSSession *self = SSL_get_app_data(ssl);
+  /* NOTE: Sometimes libssl calls this function
+     with no current_cert. This happens when
+     some global error is happen. At this situation
+     we do not need to call any other check and callback
+   */
+  if (X509_STORE_CTX_get_current_cert(ctx) == NULL)
+    {
+    switch (ctx->error)
+      {
+      case X509_V_ERR_NO_EXPLICIT_POLICY:
+        /* NOTE: Because we set the CHECK_POLICY_FLAG if the
+           certificate contains ExplicitPolicy constraint
+           we would get this error. But this error is because
+           we do not set the policy what we want to check for.
+         */
+        ok = 1;
+        break;
+      default:
+        msg_notice("Error occured during certificate validation",
+                    evt_tag_int("error", ctx->error),
+                    NULL);
+        break;
+      }
+    }
+  else
+    {
+      ok = tls_session_verify(self, ok, ctx);
 
-  ok = tls_session_verify(self, ok, ctx);
+      tls_log_certificate_validation_progress(ok, ctx);
 
-  tls_log_certificate_validation_progress(ok, ctx);
-
-  if (self->verify_func)
-    return self->verify_func(ok, ctx, self->verify_data);
+      if (self->verify_func)
+        return self->verify_func(ok, ctx, self->verify_data);
+    }
   return ok;
 }
 
