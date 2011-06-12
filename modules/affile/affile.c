@@ -101,12 +101,7 @@ affile_open_file(gchar *name, gint flags,
       
       g_process_cap_modify(CAP_CHOWN, TRUE);
       g_process_cap_modify(CAP_FOWNER, TRUE);
-      if (uid >= 0)
-        fchown(*fd, (uid_t) uid, -1);
-      if (gid >= 0)
-        fchown(*fd, -1, (gid_t) gid);
-      if (mode >= 0)
-        fchmod(*fd, (mode_t) mode);
+      set_permissions_fd(*fd, uid, gid, mode);
     }
   g_process_cap_restore(saved_caps);
   msg_trace("affile_open_file",
