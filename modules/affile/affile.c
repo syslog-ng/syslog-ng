@@ -1027,7 +1027,7 @@ affile_dd_open_writer(gpointer args[])
 
       /* hash table construction is serialized, as we only do that in the main thread. */
       if (!self->writer_hash)
-	self->writer_hash = g_hash_table_new(g_str_hash, g_str_equal);
+        self->writer_hash = g_hash_table_new(g_str_hash, g_str_equal);
 
       /* we don't need to lock the hashtable as it is only written in
        * the main thread, which we're running right now.  lookups in
@@ -1050,12 +1050,20 @@ affile_dd_open_writer(gpointer args[])
               g_hash_table_insert(self->writer_hash, filename->str, next);
               g_static_mutex_unlock(&self->lock);
             }
-	}
+        }
+      else
+        {
+          log_pipe_ref(&next->super);
+        }
     }
-  next->queue_pending = TRUE;
-  /* we're returning a reference */
-  return &next->super;
 
+  if (next)
+    {
+      next->queue_pending = TRUE;
+      /* we're returning a reference */
+      return &next->super;
+    }
+  return NULL;
 }
 
 static void
