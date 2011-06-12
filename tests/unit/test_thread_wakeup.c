@@ -53,8 +53,10 @@ create_test_thread(GThreadFunc thread_func, gpointer data)
   thread_exit = FALSE;
   thread_started = FALSE;
   t = g_thread_create(thread_func, data, TRUE, NULL);
+  g_mutex_lock(thread_lock);
   while (!thread_started)
     g_cond_wait(thread_startup, thread_lock);
+  g_mutex_unlock(thread_lock);
   nsleep.tv_sec = 0;
   nsleep.tv_nsec = 1e6;
   nanosleep(&nsleep, NULL);
