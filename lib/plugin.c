@@ -157,6 +157,21 @@ plugin_dlopen_module(const gchar *module_name, const gchar *module_path)
         }
       if (g_file_test(plugin_module_name, G_FILE_TEST_EXISTS))
         break;
+
+      /* On AIX the modules in .a files */
+#ifdef _AIX
+      dot = strrchr(plugin_module_name, '.');
+      if (dot)
+        {
+          *dot = 0;
+          p = g_strdup_printf("%s.a", plugin_module_name);
+          g_free(plugin_module_name);
+          plugin_module_name = p;
+        }
+      if (g_file_test(plugin_module_name, G_FILE_TEST_EXISTS))
+        break;
+#endif
+
       g_free(plugin_module_name);
       plugin_module_name = NULL;
       i++;
