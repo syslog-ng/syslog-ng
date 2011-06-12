@@ -144,7 +144,7 @@ main_loop_io_worker_invoke_finish_callbacks(void)
     }
 }
 
-GStaticMutex time_lock;
+GStaticMutex sum_lock;
 glong sum_time;
 
 gpointer
@@ -184,9 +184,9 @@ threaded_feed(gpointer args)
   main_loop_io_worker_invoke_finish_callbacks();
   g_get_current_time(&end);
   diff = g_time_val_diff(&end, &start);
-  g_static_mutex_lock(&time_lock);
+  g_static_mutex_lock(&sum_lock);
   sum_time += diff;
-  g_static_mutex_unlock(&time_lock);
+  g_static_mutex_unlock(&sum_lock);
   log_msg_unref(tmpl);
   return NULL;
 }
