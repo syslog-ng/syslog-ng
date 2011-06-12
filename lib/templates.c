@@ -1092,6 +1092,7 @@ log_template_append_format_with_context(LogTemplate *self, LogMessage **messages
           }
         case LTE_FUNC:
           {
+            g_static_mutex_lock(&self->arg_lock);
             if (!self->arg_bufs)
               self->arg_bufs = g_ptr_array_sized_new(0);
 
@@ -1108,6 +1109,7 @@ log_template_append_format_with_context(LogTemplate *self, LogMessage **messages
                               e->msg_ref ? &messages[msg_ndx] : messages,
                               e->msg_ref ? 1 : num_messages,
                               opts, tz, seq_num, context_id, result);
+            g_static_mutex_unlock(&self->arg_lock);
             break;
           }
         }

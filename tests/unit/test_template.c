@@ -72,6 +72,82 @@ testcase_failure(gchar *template, const gchar *expected_error)
   log_template_unref(templ);
 }
 
+GCond *thread_ping;
+GMutex *thread_lock;
+gboolean thread_start;
+
+static gpointer
+format_template_thread(gpointer s)
+{
+  gpointer *args = (gpointer *) s;
+  LogMessage *msg = args[0];
+  LogTemplate *templ = args[1];
+  const gchar *expected = args[2];
+  GString *result;
+  gint i;
+
+  g_mutex_lock(thread_lock);
+  while (!thread_start)
+    g_cond_wait(thread_ping, thread_lock);
+  g_mutex_unlock(thread_lock);
+
+  result = g_string_sized_new(0);
+  for (i = 0; i < 10000; i++)
+    {
+      log_template_format(templ, msg, NULL, LTZ_SEND, 5555, NULL, result);
+      if (strcmp(result->str, expected) != 0)
+        {
+          fprintf(stderr, "FAIL: multi-threaded formatting yielded invalid result (iteration: %d): %s, expected=%s\n", i, result->str, expected);
+          success = FALSE;
+          break;
+        }
+    }
+  g_string_free(result, TRUE);
+  return NULL;
+}
+
+void
+testcase_multi_thread(LogMessage *msg, gchar *template, const gchar *expected)
+{
+  LogTemplate *templ;
+  gpointer args[] = { msg, NULL, (gpointer) expected };
+  GError *error = NULL;
+  GThread *threads[16];
+  gint i;
+
+  templ = log_template_new(configuration, NULL);
+  if (!log_template_compile(templ, template, &error))
+    {
+      fprintf(stderr, "FAIL: error compiling template, template=%s, error=%s\n", template, error->message);
+      success = FALSE;
+      g_clear_error(&error);
+      goto error;
+    }
+
+  thread_start = FALSE;
+  thread_ping = g_cond_new();
+  thread_lock = g_mutex_new();
+  args[1] = templ;
+  for (i = 0; i < 16; i++)
+    {
+      threads[i] = g_thread_create(format_template_thread, args, TRUE, NULL);
+    }
+
+  thread_start = TRUE;
+  g_mutex_lock(thread_lock);
+  g_cond_broadcast(thread_ping);
+  g_mutex_unlock(thread_lock);
+  for (i = 0; i < 16; i++)
+    {
+      g_thread_join(threads[i]);
+    }
+  g_cond_free(thread_ping);
+  g_mutex_free(thread_lock);
+
+ error:
+  ;
+}
+
 int
 main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 {
@@ -248,6 +324,14 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase(msg, "$(grep 'facility(local3)' $PID)@0", "23323");
   testcase(msg, "$(grep 'facility(local3)' $PID)@1", "23323");
   testcase(msg, "$(grep 'facility(local3)' $PID)@2", "");
+
+  /* multi-threaded expansion */
+
+  /* name-value pair */
+  testcase_multi_thread(msg, "alma $HOST bela", "alma bzorp bela");
+  testcase_multi_thread(msg, "kukac $DATE mukac", "kukac Feb 11 10:34:56.000 mukac");
+  testcase_multi_thread(msg, "dani $(echo $HOST $DATE $(echo huha)) balint", "dani bzorp Feb 11 10:34:56.000 huha balint");
+
 
   /* template syntax errors */
   testcase_failure("${unbalanced_brace", "'}' is missing");

@@ -52,6 +52,7 @@ typedef struct _LogTemplate
   gboolean escape;
   gboolean def_inline;
   GlobalConfig *cfg;
+  GStaticMutex arg_lock;
   GPtrArray *arg_bufs;
 } LogTemplate;
 
