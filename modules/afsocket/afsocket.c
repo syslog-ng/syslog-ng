@@ -535,7 +535,8 @@ afsocket_sd_start_watches(AFSocketSourceDriver *self)
 static void
 afsocket_sd_stop_watches(AFSocketSourceDriver *self)
 {
-  iv_fd_unregister(&self->listen_fd);
+  if (iv_fd_registered (&self->listen_fd))
+    iv_fd_unregister(&self->listen_fd);
 }
 
 gboolean
