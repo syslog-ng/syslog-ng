@@ -953,8 +953,20 @@ MODULE_DEPS_LIBS="\$(top_builddir)/lib/libsyslog-ng.la"
 
 if test "x$linking_mode" = "xdynamic"; then
 	SYSLOGNG_DEPS_LIBS="$LIBS $BASE_LIBS $GLIB_LIBS $EVTLOG_LIBS $RESOLV_LIBS $LIBCAP_LIBS $PCRE_LIBS $REGEX_LIBS $DL_LIBS"
-	TOOL_DEPS_LIBS="$SYSLOGNG_DEPS_LIBS"
-	CORE_DEPS_LIBS="$SYSLOGNG_DEPS_LIBS $IVYKIS_LIBS"
+
+	if test "x$with_ivykis" = "xinternal"; then
+		# when using the internal ivykis, we're linking it statically into libsyslog-ng.so
+
+		TOOL_DEPS_LIBS="$SYSLOGNG_DEPS_LIBS"
+		CORE_DEPS_LIBS="$SYSLOGNG_DEPS_LIBS $IVYKIS_LIBS"
+	else
+		# otherwise everything needs to link against libivykis.so
+
+		SYSLOGNG_DEPS_LIBS="$SYSLOGNG_DEPS_LIBS $IVYKIS_LIBS"
+
+		TOOL_DEPS_LIBS="$SYSLOGNG_DEPS_LIBS"
+		CORE_DEPS_LIBS="$SYSLOGNG_DEPS_LIBS"
+	fi
 
 	# syslog-ng binary is linked with the default link command (e.g. libtool)
 	SYSLOGNG_LINK='$(LINK)'
