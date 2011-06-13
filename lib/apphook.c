@@ -105,9 +105,9 @@ run_application_hook(gint type)
 void 
 app_startup(void)
 {
+  msg_init(FALSE);
   iv_init();
   g_thread_init(NULL);
-  msg_init(FALSE);
   child_manager_init();
   dns_cache_init();
   alarm_init();
@@ -145,9 +145,8 @@ app_shutdown(void)
   stats_destroy();
   dns_cache_destroy();
   child_manager_deinit();
-  msg_deinit();
   log_tags_deinit();
   g_list_foreach(application_hooks, (GFunc) g_free, NULL);
   g_list_free(application_hooks);
+  msg_deinit();
 }
-
