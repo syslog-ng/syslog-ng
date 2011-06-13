@@ -895,7 +895,7 @@ if test "x$default_modules" = "xauto"; then
 	if test "x$enable_sql" = "xyes"; then
 		default_modules="$default_modules,afsql"
 	fi
-	if test "x$enable_afstreams" = "xyes"; then
+	if test "x$enable_sun_streams" = "xyes"; then
 		default_modules="$default_modules,afstreams"
 	fi
 fi
