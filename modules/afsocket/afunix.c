@@ -143,14 +143,7 @@ afunix_sd_init(LogPipe *s)
       g_process_cap_modify(CAP_CHOWN, TRUE);
       g_process_cap_modify(CAP_FOWNER, TRUE);
       g_process_cap_modify(CAP_DAC_OVERRIDE, TRUE);
-
-      /* change ownership separately, as chgrp may succeed while chown may not */
-      if (self->owner >= 0)
-        chown(self->filename, (uid_t) self->owner, -1);
-      if (self->group >= 0)
-        chown(self->filename, -1, (gid_t) self->group);
-      if (self->perm >= 0)
-        chmod(self->filename, (mode_t) self->perm);
+      set_permissions(self->filename, self->owner, self->group, self->perm);
       g_process_cap_restore(saved_caps);
 
       return TRUE;
