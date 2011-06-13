@@ -179,6 +179,7 @@ const gchar *builtin_value_names[] =
   NULL,
 };
 
+static NVHandle match_handles[256];
 NVRegistry *logmsg_registry;
 const char logmsg_sd_prefix[] = ".SDATA.";
 const gint logmsg_sd_prefix_len = sizeof(logmsg_sd_prefix) - 1;
@@ -347,6 +348,16 @@ log_msg_is_handle_sdata(NVHandle handle)
   return !!(flags & LM_VF_SDATA);
 }
 
+gboolean
+log_msg_is_handle_match(NVHandle handle)
+{
+  g_assert(match_handles[0] && match_handles[255] && match_handles[0] < match_handles[255]);
+
+  /* NOTE: match_handles are allocated sequentially in log_msg_registry_init(),
+   * so this simple & fast check is enough */
+  return (match_handles[0] <= handle && handle <= match_handles[255]);
+}
+
 static void
 log_msg_init_queue_node(LogMessage *msg, LogMessageQueueNode *node, const LogPathOptions *path_options)
 {
@@ -491,7 +502,7 @@ log_msg_set_value_indirect(LogMessage *self, NVHandle handle, NVHandle ref_handl
     log_msg_update_sdata(self, handle, name, name_len);
 }
 
-NVHandle match_handles[256];
+
 
 void
 log_msg_set_match(LogMessage *self, gint index, const gchar *value, gssize value_len)
