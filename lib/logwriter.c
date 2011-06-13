@@ -667,12 +667,18 @@ log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
   /* no template was specified, use default */
   stamp = &lm->timestamps[LM_TS_STAMP];
 
+  g_string_truncate(result, 0);
+
   if ((self->flags & LW_SYSLOG_PROTOCOL) || (self->options->options & LWO_SYSLOG_PROTOCOL))
     {
       gint len;
        
       /* we currently hard-wire version 1 */
-      g_string_sprintf(result, "<%d>%d ", lm->pri, 1);
+      g_string_append_c(result, '<');
+      format_uint32_padded(result, 0, 0, 10, lm->pri);
+      g_string_append_c(result, '>');
+      g_string_append_c(result, '1');
+      g_string_append_c(result, ' ');
  
       log_stamp_append_format(stamp, result, TS_FMT_ISO, 
                               time_zone_info_get_offset(self->options->template_options.time_zone_info[LTZ_SEND], stamp->tv_sec),
@@ -767,7 +773,9 @@ log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
             }
           else if (self->flags & LW_FORMAT_PROTO)
             {
-              g_string_sprintf(result, "<%d>", lm->pri);
+	      g_string_append_c(result, '<');
+	      format_uint32_padded(result, 0, 0, 10, lm->pri);
+	      g_string_append_c(result, '>');
 
               /* always use BSD timestamp by default, the use can override this using a custom template */
               log_stamp_append_format(stamp, result, TS_FMT_BSD,
