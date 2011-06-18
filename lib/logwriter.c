@@ -27,6 +27,7 @@
 #include "stats.h"
 #include "misc.h"
 #include "mainloop.h"
+#include "str-format.h"
 
 #include <unistd.h>
 #include <assert.h>
