@@ -64,7 +64,7 @@
 
 struct _StatsCounter
 {
-  guint32 counters[SC_TYPE_MAX];
+  StatsCounterItem counters[SC_TYPE_MAX];
   guint16 ref_cnt;
   guint16 source;
   gchar *id;
@@ -160,7 +160,7 @@ stats_add_counter(gint stats_level, gint source, const gchar *id, const gchar *i
  * freed when all of these uses are unregistered.
  **/
 void
-stats_register_counter(gint stats_level, gint source, const gchar *id, const gchar *instance, StatsCounterType type, guint32 **counter)
+stats_register_counter(gint stats_level, gint source, const gchar *id, const gchar *instance, StatsCounterType type, StatsCounterItem **counter)
 {
   StatsCounter *sc;
   gboolean new;
@@ -177,7 +177,7 @@ stats_register_counter(gint stats_level, gint source, const gchar *id, const gch
 }
 
 StatsCounter *
-stats_register_dynamic_counter(gint stats_level, gint source, const gchar *id, const gchar *instance, StatsCounterType type, guint32 **counter, gboolean *new)
+stats_register_dynamic_counter(gint stats_level, gint source, const gchar *id, const gchar *instance, StatsCounterType type, StatsCounterItem **counter, gboolean *new)
 {
   StatsCounter *sc;
   gboolean local_new;
@@ -211,7 +211,7 @@ stats_register_dynamic_counter(gint stats_level, gint source, const gchar *id, c
  * instance in order to avoid an unnecessary lookup.
  **/
 void
-stats_register_associated_counter(StatsCounter *sc, StatsCounterType type, guint32 **counter)
+stats_register_associated_counter(StatsCounter *sc, StatsCounterType type, StatsCounterItem **counter)
 {
   *counter = NULL;
   if (!sc)
@@ -222,9 +222,8 @@ stats_register_associated_counter(StatsCounter *sc, StatsCounterType type, guint
   sc->live_mask |= 1 << type;
 }
 
-
 void
-stats_unregister_counter(gint source, const gchar *id, const gchar *instance, StatsCounterType type, guint32 **counter)
+stats_unregister_counter(gint source, const gchar *id, const gchar *instance, StatsCounterType type, StatsCounterItem **counter)
 {
   StatsCounter *sc;
   StatsCounter key;
@@ -250,7 +249,7 @@ stats_unregister_counter(gint source, const gchar *id, const gchar *instance, St
 }
 
 void
-stats_unregister_dynamic_counter(StatsCounter *sc, StatsCounterType type, guint32 **counter)
+stats_unregister_dynamic_counter(StatsCounter *sc, StatsCounterType type, StatsCounterItem **counter)
 {
   if (!sc)
     return;
@@ -337,7 +336,7 @@ stats_format_log_counter(gpointer key, gpointer value, gpointer user_data)
                 source_name = "destination";
               else
                 g_assert_not_reached();
-              tag = evt_tag_printf(tag_names[type], "%s(%s%s%s)=%u", source_name, sc->id, (sc->id[0] && sc->instance[0]) ? "," : "", sc->instance, sc->counters[type]);
+              tag = evt_tag_printf(tag_names[type], "%s(%s%s%s)=%u", source_name, sc->id, (sc->id[0] && sc->instance[0]) ? "," : "", sc->instance, stats_counter_get(&sc->counters[type]));
             }
           else
             {
@@ -345,7 +344,7 @@ stats_format_log_counter(gpointer key, gpointer value, gpointer user_data)
                                    (sc->source & SCS_SOURCE ? "src." : (sc->source & SCS_DESTINATION ? "dst." : "")),
                                    source_names[sc->source & SCS_SOURCE_MASK],
                                    sc->id, (sc->id[0] && sc->instance[0]) ? "," : "", sc->instance,
-                                   sc->counters[type]);
+                                   stats_counter_get(&sc->counters[type]));
             }
           evt_rec_add_tag(e, tag);
         }
@@ -452,7 +451,7 @@ stats_format_csv(gpointer key, gpointer value, gpointer user_data)
                          source_names[sc->source & SCS_SOURCE_MASK]);
             }
           tag_name = stats_format_csv_escapevar(tag_names[type]);
-          g_string_append_printf(csv, "%s;%s;%s;%c;%s;%u\n", source_name, s_id, s_instance, state, tag_name, sc->counters[type]);
+          g_string_append_printf(csv, "%s;%s;%s;%c;%s;%u\n", source_name, s_id, s_instance, state, tag_name, stats_counter_get(&sc->counters[type]));
           g_free(tag_name);
         }
     }

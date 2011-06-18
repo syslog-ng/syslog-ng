@@ -193,7 +193,7 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
 {
   LogSource *self = (LogSource *) s;
   LogPathOptions local_options = *path_options;
-  guint32 *processed_counter, *stamp;
+  StatsCounterItem *processed_counter, *stamp;
   gboolean new;
   StatsCounter *handle;
   gint old_window_size;

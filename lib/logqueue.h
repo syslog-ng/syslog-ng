@@ -26,6 +26,7 @@
 #define LOGQUEUE_H_INCLUDED
 
 #include "logmsg.h"
+#include "stats.h"
 
 extern gint log_queue_max_threads;
 
@@ -43,8 +44,8 @@ struct _LogQueue
   GTimeVal last_throttle_check;
 
   gchar *persist_name;
-  guint32 *stored_messages;
-  guint32 *dropped_messages;
+  StatsCounterItem *stored_messages;
+  StatsCounterItem *dropped_messages;
 
   GStaticMutex lock;
   gint parallel_push_notify_limit;
@@ -139,7 +140,7 @@ log_queue_set_throttle(LogQueue *self, gint throttle)
 void log_queue_push_notify(LogQueue *self);
 void log_queue_reset_parallel_push(LogQueue *self);
 gboolean log_queue_check_items(LogQueue *self, gint batch_items, gboolean *partial_batch, gint *timeout, LogQueuePushNotifyFunc parallel_push_notify, gpointer user_data, GDestroyNotify user_data_destroy);
-void log_queue_set_counters(LogQueue *self, guint32 *stored_messages, guint32 *dropped_messages);
+void log_queue_set_counters(LogQueue *self, StatsCounterItem *stored_messages, StatsCounterItem *dropped_messages);
 void log_queue_init_instance(LogQueue *self, const gchar *persist_name);
 void log_queue_free_method(LogQueue *self);
 

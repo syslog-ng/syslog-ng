@@ -44,10 +44,10 @@ struct _LogWriter
   LogQueue *queue;
   guint32 flags:31;
   gint32 seq_num;
-  guint32 *dropped_messages;
-  guint32 *suppressed_messages;
-  guint32 *processed_messages;
-  guint32 *stored_messages;
+  StatsCounterItem *dropped_messages;
+  StatsCounterItem *suppressed_messages;
+  StatsCounterItem *processed_messages;
+  StatsCounterItem *stored_messages;
   LogPipe *control;
   LogWriterOptions *options;
   GStaticMutex suppress_lock;

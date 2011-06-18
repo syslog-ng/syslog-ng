@@ -97,8 +97,8 @@ typedef struct _AFSqlDestDriver
 
   LogTemplateOptions template_options;
 
-  guint32 *dropped_messages;
-  guint32 *stored_messages;
+  StatsCounterItem *dropped_messages;
+  StatsCounterItem *stored_messages;
 
   /* shared by the main/db thread */
   GThread *db_thread;

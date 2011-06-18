@@ -161,7 +161,7 @@ log_queue_check_items(LogQueue *self, gint batch_items, gboolean *partial_batch,
 }
 
 void
-log_queue_set_counters(LogQueue *self, guint32 *stored_messages, guint32 *dropped_messages)
+log_queue_set_counters(LogQueue *self, StatsCounterItem *stored_messages, StatsCounterItem *dropped_messages)
 {
   self->stored_messages = stored_messages;
   self->dropped_messages = dropped_messages;

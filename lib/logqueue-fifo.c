@@ -266,9 +266,7 @@ log_queue_fifo_push_head(LogQueue *s, LogMessage *msg, const LogPathOptions *pat
   list_add(&node->list, &self->qoverflow_output);
   self->qoverflow_output_len++;
 
-  g_static_mutex_lock(&self->super.lock);
   stats_counter_inc(self->super.stored_messages);
-  g_static_mutex_unlock(&self->super.lock);
 }
 
 /*

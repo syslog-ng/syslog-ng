@@ -57,8 +57,8 @@ typedef struct
 
   time_t time_reopen;
 
-  guint32 *dropped_messages;
-  guint32 *stored_messages;
+  StatsCounterItem *dropped_messages;
+  StatsCounterItem *stored_messages;
 
   time_t last_msg_stamp;
 

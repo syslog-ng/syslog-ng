@@ -28,6 +28,7 @@
 #include "syslog-ng.h"
 
 #include "logpipe.h"
+#include "stats.h"
 
 #define EP_SOURCE      1
 #define EP_FILTER      2
@@ -80,8 +81,8 @@ typedef struct _LogCenter
 {
   GPtrArray *initialized_pipes;
   gint state;
-  guint32 *received_messages;
-  guint32 *queued_messages;
+  StatsCounterItem *received_messages;
+  StatsCounterItem *queued_messages;
 } LogCenter;
 
 gboolean log_center_init(LogCenter *self, GlobalConfig *cfg);

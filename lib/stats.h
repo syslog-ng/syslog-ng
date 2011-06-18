@@ -67,16 +67,19 @@ enum
 };
 
 typedef struct _StatsCounter StatsCounter;
-
+typedef struct _StatsCounterItem
+{
+  gint value;
+} StatsCounterItem;
 
 void stats_generate_log(void);
 gchar *stats_generate_csv(void);
-void stats_register_counter(gint level, gint source, const gchar *id, const gchar *instance, StatsCounterType type, guint32 **counter);
+void stats_register_counter(gint level, gint source, const gchar *id, const gchar *instance, StatsCounterType type, StatsCounterItem **counter);
 StatsCounter *
-stats_register_dynamic_counter(gint stats_level, gint source, const gchar *id, const gchar *instance, StatsCounterType type, guint32 **counter, gboolean *new);
-void stats_register_associated_counter(StatsCounter *handle, StatsCounterType type, guint32 **counter);
-void stats_unregister_counter(gint source, const gchar *id, const gchar *instance, StatsCounterType type, guint32 **counter);
-void stats_unregister_dynamic_counter(StatsCounter *handle, StatsCounterType type, guint32 **counter);
+stats_register_dynamic_counter(gint stats_level, gint source, const gchar *id, const gchar *instance, StatsCounterType type, StatsCounterItem **counter, gboolean *new);
+void stats_register_associated_counter(StatsCounter *handle, StatsCounterType type, StatsCounterItem **counter);
+void stats_unregister_counter(gint source, const gchar *id, const gchar *instance, StatsCounterType type, StatsCounterItem **counter);
+void stats_unregister_dynamic_counter(StatsCounter *handle, StatsCounterType type, StatsCounterItem **counter);
 void stats_cleanup_orphans(void);
 
 void stats_set_current_level(gint stats_level);
@@ -84,32 +87,43 @@ void stats_init(void);
 void stats_destroy(void);
 
 static inline void
-stats_counter_add(guint32 *counter, gint add)
+stats_counter_add(StatsCounterItem *counter, gint add)
 {
   if (counter)
-    (*counter) += add;
+    g_atomic_int_add(&counter->value, add);
 }
 
 static inline void
-stats_counter_inc(guint32 *counter)
+stats_counter_inc(StatsCounterItem *counter)
 {
   if (counter)
-    (*counter)++;
-
-}
-static inline void
-stats_counter_dec(guint32 *counter)
-{
-  if (counter)
-    (*counter)--;
+    g_atomic_int_inc(&counter->value);
 }
 
 static inline void
-stats_counter_set(guint32 *counter, guint32 value)
+stats_counter_dec(StatsCounterItem *counter)
 {
   if (counter)
-    *counter = value;
+    g_atomic_int_add(&counter->value, -1);
 }
 
+/* NOTE: this is _not_ atomic and doesn't have to be as sets would race anyway */
+static inline void
+stats_counter_set(StatsCounterItem *counter, guint32 value)
+{
+  if (counter)
+    counter->value = value;
+}
+
+/* NOTE: this is _not_ atomic and doesn't have to be as sets would race anyway */
+static inline guint32
+stats_counter_get(StatsCounterItem *counter)
+{
+  guint32 result = 0;
+
+  if (counter)
+    result = counter->value;
+  return result;
+}
 #endif
 

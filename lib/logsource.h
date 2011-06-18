@@ -26,6 +26,7 @@
 #define LOGSOURCE_H_INCLUDED
 
 #include "logpipe.h"
+#include "stats.h"
 #include <iv_event.h>
 
 typedef struct _LogSourceOptions
@@ -67,8 +68,8 @@ struct _LogSource
   gchar *stats_id;
   gchar *stats_instance;
   GAtomicCounter window_size;
-  guint32 *last_message_seen;
-  guint32 *recvd_messages;
+  StatsCounterItem *last_message_seen;
+  StatsCounterItem *recvd_messages;
   guint32 last_ack_count;
   guint32 ack_count;
   glong window_full_sleep_nsec;

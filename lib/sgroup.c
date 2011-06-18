@@ -96,7 +96,7 @@ log_source_group_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_o
   if (msg->flags & LF_LOCAL)
     afinter_postpone_mark(cfg->mark_freq);
   log_pipe_forward_msg(s, msg, path_options);
-  (*self->processed_messages)++;
+  stats_counter_inc(self->processed_messages);
 }
 
 static void
