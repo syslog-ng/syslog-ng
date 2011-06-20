@@ -595,8 +595,6 @@ setup_signals(void)
 int
 main_loop_init(void)
 {
-  main_thread_handle = g_thread_self();
-
   app_startup();
   setup_signals();
   main_loop_io_workers.thread_start = main_loop_io_worker_thread_start;

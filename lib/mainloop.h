@@ -80,6 +80,12 @@ main_loop_assert_main_thread(void)
 #endif
 }
 
+static inline gboolean
+main_loop_is_main_thread(void)
+{
+  return main_thread_handle == g_thread_self();
+}
+
 gpointer main_loop_call(MainLoopTaskFunc func, gpointer user_data, gboolean wait);
 int main_loop_init(void);
 int  main_loop_run(void);

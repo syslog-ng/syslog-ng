@@ -105,6 +105,8 @@ run_application_hook(gint type)
 void 
 app_startup(void)
 {
+  main_thread_handle = g_thread_self();
+
   msg_init(FALSE);
   iv_init();
   g_thread_init(NULL);
