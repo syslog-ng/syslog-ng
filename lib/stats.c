@@ -60,6 +60,15 @@
  *     counter is in use or in orphaned state
  *
  *   * type: counter type (processed, dropped, stored, etc)
+ *
+ * Threading
+ *
+ * Once registered, changing the counters is thread safe (but see the
+ * note on set/get), inc/dec is generally safe. To register counters,
+ * the stats code must run in the main thread (assuming init/deinit is
+ * running) or the stats lock must be acquired using stats_lock() and
+ * stats_unlock(). This API is used to allow batching multiple stats
+ * operations under the protection of the same lock acquiral.
  */
 
 struct _StatsCounter
@@ -74,7 +83,9 @@ struct _StatsCounter
 };
 
 static GHashTable *counter_hash;
+GStaticMutex stats_mutex;
 static gint current_stats_level;
+gboolean stats_locked;
 
 static gboolean
 stats_counter_equal(gconstpointer p1, gconstpointer p2)
@@ -109,7 +120,9 @@ stats_add_counter(gint stats_level, gint source, const gchar *id, const gchar *i
   StatsCounter key;
   StatsCounter *sc;
 
-  if (stats_level != 0 && (current_stats_level < stats_level))
+  g_assert(main_loop_is_main_thread() || stats_locked);
+
+  if (!stats_check_level(stats_level))
     return NULL;
   
   if (!id)
@@ -474,6 +487,7 @@ void
 stats_init(void)
 {
   counter_hash = g_hash_table_new_full(stats_counter_hash, stats_counter_equal, NULL, stats_counter_free);
+  g_static_mutex_init(&stats_mutex);
 }
 
 void
@@ -481,4 +495,5 @@ stats_destroy(void)
 {
   g_hash_table_destroy(counter_hash);
   counter_hash = NULL;
+  g_static_mutex_free(&stats_mutex);
 }

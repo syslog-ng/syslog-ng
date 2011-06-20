@@ -72,6 +72,9 @@ typedef struct _StatsCounterItem
   gint value;
 } StatsCounterItem;
 
+extern GStaticMutex stats_mutex;
+extern gboolean stats_locked;
+
 void stats_generate_log(void);
 gchar *stats_generate_csv(void);
 void stats_register_counter(gint level, gint source, const gchar *id, const gchar *instance, StatsCounterType type, StatsCounterItem **counter);
@@ -85,6 +88,20 @@ void stats_cleanup_orphans(void);
 void stats_set_current_level(gint stats_level);
 void stats_init(void);
 void stats_destroy(void);
+
+static inline void
+stats_lock(void)
+{
+  g_static_mutex_lock(&stats_mutex);
+  stats_locked = TRUE;
+}
+
+static inline void
+stats_unlock(void)
+{
+  stats_locked = FALSE;
+  g_static_mutex_unlock(&stats_mutex);
+}
 
 static inline void
 stats_counter_add(StatsCounterItem *counter, gint add)
