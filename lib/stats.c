@@ -159,8 +159,13 @@ stats_add_counter(gint stats_level, gint source, const gchar *id, const gchar *i
     }
   else
     {
+      if (sc->ref_cnt == 0)
+        /* it just haven't been cleaned up */
+        *new = TRUE;
+      else
+        *new = FALSE;
+
       sc->ref_cnt++;
-      *new = FALSE;
     }
 
   return sc;
