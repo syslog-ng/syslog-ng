@@ -231,6 +231,12 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
       stats_unregister_dynamic_counter(handle, SC_TYPE_PROCESSED, &processed_counter);
       stats_unregister_dynamic_counter(handle, SC_TYPE_STAMP, &stamp);
 
+      if (stats_check_level(3))
+        {
+          stats_instant_inc_dynamic_counter(3, SCS_SENDER | SCS_SOURCE, NULL, log_msg_get_value(msg, LM_V_HOST_FROM, NULL), msg->timestamps[LM_TS_RECVD].tv_sec);
+          stats_instant_inc_dynamic_counter(3, SCS_PROGRAM | SCS_SOURCE, NULL, log_msg_get_value(msg, LM_V_PROGRAM, NULL), -1);
+        }
+
       stats_unlock();
     }
   stats_counter_inc_pri(msg->pri);

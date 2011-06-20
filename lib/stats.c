@@ -229,6 +229,30 @@ stats_register_dynamic_counter(gint stats_level, gint source, const gchar *id, c
   return sc;
 }
 
+/*
+ * stats_instant_inc_dynamic_counter
+ * @timestamp: if non-negative, an associated timestamp will be created and set
+ *
+ * Instantly create (if not exists) and increment a dynamic counter.
+ */
+void
+stats_instant_inc_dynamic_counter(gint stats_level, gint source_mask, const gchar *id, const gchar *instance, time_t timestamp)
+{
+  StatsCounterItem *counter, *stamp;
+  gboolean new;
+  StatsCounter *handle;
+
+  handle = stats_register_dynamic_counter(stats_level, source_mask, id, instance, SC_TYPE_PROCESSED, &counter, &new);
+  stats_counter_inc(counter);
+  if (timestamp >= 0)
+    {
+      stats_register_associated_counter(handle, SC_TYPE_STAMP, &stamp);
+      stats_counter_set(stamp, timestamp);
+      stats_unregister_dynamic_counter(handle, SC_TYPE_STAMP, &stamp);
+    }
+  stats_unregister_dynamic_counter(handle, SC_TYPE_PROCESSED, &counter);
+}
+
 /**
  * stats_register_associated_counter:
  * @sc: the dynamic counter that was registered with stats_register_dynamic_counter
