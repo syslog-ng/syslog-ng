@@ -408,13 +408,13 @@ stats_generate_log(void)
 static gboolean
 has_csv_special_character(const gchar *var)
 {
-  gchar *p1 = strchr(var,';');
-  if(p1)
+  gchar *p1 = strchr(var, ';');
+  if (p1)
     return TRUE;
-  p1 = strchr(var,'\n');
-  if(p1)
+  p1 = strchr(var, '\n');
+  if (p1)
     return TRUE;
-  if(var[0] == '"')
+  if (var[0] == '"')
     return TRUE;
   return FALSE;
 }
@@ -425,31 +425,35 @@ stats_format_csv_escapevar(const gchar *var)
   guint32 index;
   guint32 e_index;
   guint32 varlen = strlen(var);
-  gchar *result;
+  gchar *result, *escaped_result;
 
   if (varlen != 0 && has_csv_special_character(var))
     {
       result = g_malloc(varlen*2);
+
       result[0] = '"';
       e_index = 1;
       for (index = 0; index < varlen; index++)
         {
           if (var[index] == '"')
             {
-              result[e_index]='\\';
+              result[e_index] = '\\';
               e_index++;
             }
           result[e_index] = var[index];
           e_index++;
         }
-      result[e_index]='"';
-      result[e_index+1] = 0;
+      result[e_index] = '"';
+      result[e_index + 1] = 0;
+
+      escaped_result = utf8_escape_string(result, e_index + 2);
+      g_free(result);
     }
   else
     {
-      result = g_strdup(var);
+      escaped_result = utf8_escape_string(var, strlen(var));
     }
-  return result;
+  return escaped_result;
 }
 
 static void

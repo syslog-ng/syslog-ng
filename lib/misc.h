@@ -96,5 +96,6 @@ void string_list_free(GList *l);
       } \
   __buf; })
 
+gchar *utf8_escape_string(const gchar *str, gssize len);
 
 #endif

@@ -623,6 +623,36 @@ create_worker_thread(GThreadFunc func, gpointer data, gboolean joinable, GError 
   return h;
 }
 
+gchar *
+utf8_escape_string(const gchar *str, gssize len)
+{
+  int i;
+  gchar *res, *res_pos;
+
+  /* Check if string is a valid UTF-8 string */
+  if (g_utf8_validate(str, -1, NULL))
+      return g_strndup(str, len);
+
+  /* It contains invalid UTF-8 sequences --> treat input as a
+   * string containing binary data; escape those chars that have
+   * no ASCII representation */
+  res = g_new(gchar, 4 * len + 1);
+  res_pos = res;
+
+  for (i = 0; (i < len) && str[i]; i++)
+    {
+      if (g_ascii_isprint(str[i]))
+        *(res_pos++) = str[i];
+      else
+        res_pos += sprintf(res_pos, "\\x%02x", ((guint8)str[i]));
+    }
+
+  *(res_pos++) = '\0';
+
+  return res;
+}
+
+
 gint
 set_permissions(gchar *name, gint uid, gint gid, gint mode)
 {
