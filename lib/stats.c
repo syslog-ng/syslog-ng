@@ -84,7 +84,7 @@ struct _StatsCounter
 
 static GHashTable *counter_hash;
 GStaticMutex stats_mutex;
-static gint current_stats_level;
+gint current_stats_level;
 gboolean stats_locked;
 
 static gboolean

@@ -72,6 +72,7 @@ typedef struct _StatsCounterItem
   gint value;
 } StatsCounterItem;
 
+extern gint current_stats_level;
 extern GStaticMutex stats_mutex;
 extern gboolean stats_locked;
 
@@ -88,6 +89,12 @@ void stats_cleanup_orphans(void);
 void stats_set_current_level(gint stats_level);
 void stats_init(void);
 void stats_destroy(void);
+
+static inline gboolean
+stats_check_level(gint level)
+{
+  return (current_stats_level >= level);
+}
 
 static inline void
 stats_lock(void)
