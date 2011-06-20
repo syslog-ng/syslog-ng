@@ -219,13 +219,20 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
         self->options->host_override_len = strlen(self->options->host_override);
       log_msg_set_value(msg, LM_V_HOST, self->options->host_override, self->options->host_override_len);
     }
-    
-  handle = stats_register_dynamic_counter(2, SCS_HOST | SCS_SOURCE, NULL, log_msg_get_value(msg, LM_V_HOST, NULL), SC_TYPE_PROCESSED, &processed_counter, &new);
-  stats_register_associated_counter(handle, SC_TYPE_STAMP, &stamp);
-  stats_counter_inc(processed_counter);
-  stats_counter_set(stamp, msg->timestamps[LM_TS_RECVD].tv_sec);
-  stats_unregister_dynamic_counter(handle, SC_TYPE_PROCESSED, &processed_counter);
-  stats_unregister_dynamic_counter(handle, SC_TYPE_STAMP, &stamp);
+
+  if (stats_check_level(2))
+    {
+      stats_lock();
+
+      handle = stats_register_dynamic_counter(2, SCS_HOST | SCS_SOURCE, NULL, log_msg_get_value(msg, LM_V_HOST, NULL), SC_TYPE_PROCESSED, &processed_counter, &new);
+      stats_register_associated_counter(handle, SC_TYPE_STAMP, &stamp);
+      stats_counter_inc(processed_counter);
+      stats_counter_set(stamp, msg->timestamps[LM_TS_RECVD].tv_sec);
+      stats_unregister_dynamic_counter(handle, SC_TYPE_PROCESSED, &processed_counter);
+      stats_unregister_dynamic_counter(handle, SC_TYPE_STAMP, &stamp);
+
+      stats_unlock();
+    }
 
   /* NOTE: we start by enabling flow-control, thus we need an acknowledgement */
   local_options.flow_control = TRUE;
