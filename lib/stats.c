@@ -24,7 +24,8 @@
   
 #include "stats.h"
 #include "messages.h"
-#include "cfg.h"
+#include "misc.h"
+#include "syslog-names.h"
 
 #include <string.h>
 
@@ -81,6 +82,15 @@ struct _StatsCounter
   guint16 live_mask;
   guint16 dynamic:1;
 };
+
+/* Static counters for severities and facilities */
+/* LOG_DEBUG 0x7 */
+#define SEVERITY_MAX   (0x7 + 1)
+/* LOG_LOCAL7 23<<3, one additional slot for "everything-else" counter */
+#define FACILITY_MAX   (23 + 1 + 1)
+
+static StatsCounterItem *severity_counters[SEVERITY_MAX];
+static StatsCounterItem *facility_counters[FACILITY_MAX];
 
 static GHashTable *counter_hash;
 GStaticMutex stats_mutex;
@@ -287,9 +297,17 @@ stats_cleanup_orphans(void)
 }
 
 void
-stats_set_current_level(gint stats_level)
+stats_counter_inc_pri(guint16 pri)
 {
-  current_stats_level = stats_level;
+  int lpri = LOG_FAC(pri);
+
+  stats_counter_inc(severity_counters[LOG_PRI(pri)]);
+  if (lpri > (FACILITY_MAX - 1))
+    {
+      /* the large facilities (=facility.other) are collected in the last array item */
+      lpri = FACILITY_MAX - 1;
+    }
+  stats_counter_inc(facility_counters[lpri]);
 }
 
 const gchar *tag_names[SC_TYPE_MAX] =
@@ -300,6 +318,7 @@ const gchar *tag_names[SC_TYPE_MAX] =
   /* [SC_TYPE_SUPPRESSED] = */ "suppressed",
   /* [SC_TYPE_STAMP] = */ "stamp",
 };
+
 const gchar *source_names[SCS_MAX] =
 {
   "none",
@@ -323,6 +342,12 @@ const gchar *source_names[SCS_MAX] =
   "host",
   "global",
   "mongodb",
+  "class",
+  "rule_id",
+  "tag",
+  "severity",
+  "facility",
+  "sender",
 };
 
 
@@ -481,6 +506,48 @@ stats_generate_csv(void)
   g_string_append_printf(csv, "%s;%s;%s;%s;%s;%s\n", "SourceName", "SourceId", "SourceInstance", "State", "Type", "Number");
   g_hash_table_foreach(counter_hash, stats_format_csv, csv);
   return g_string_free(csv, FALSE);
+}
+
+void
+stats_reinit(GlobalConfig *cfg)
+{
+  gint i;
+  gchar name[11] = "";
+
+  current_stats_level = cfg->stats_level;
+
+  if (stats_check_level(3))
+    {
+      /* we need these counters, register them */
+      for (i = 0; i < SEVERITY_MAX; i++)
+        {
+          g_snprintf(name, sizeof(name), "%" G_GUINT16_FORMAT, i);
+          stats_register_counter(3, SCS_SEVERITY | SCS_SOURCE, NULL, name, SC_TYPE_PROCESSED, &severity_counters[i]);
+        }
+
+      for (i = 0; i < FACILITY_MAX - 1; i++)
+        {
+          g_snprintf(name, sizeof(name), "%" G_GUINT16_FORMAT, i);
+          stats_register_counter(3, SCS_FACILITY | SCS_SOURCE, NULL, name, SC_TYPE_PROCESSED, &facility_counters[i]);
+        }
+      stats_register_counter(3, SCS_FACILITY | SCS_SOURCE, NULL, "other", SC_TYPE_PROCESSED, &facility_counters[FACILITY_MAX - 1]);
+    }
+  else
+    {
+      /* no need for facility/severity counters, unregister them */
+      for (i = 0; i < SEVERITY_MAX; i++)
+        {
+          g_snprintf(name, sizeof(name), "%" G_GUINT16_FORMAT, i);
+          stats_unregister_counter(SCS_SEVERITY | SCS_SOURCE, NULL, name, SC_TYPE_PROCESSED, &severity_counters[i]);
+        }
+
+      for (i = 0; i < FACILITY_MAX - 1; i++)
+        {
+          g_snprintf(name, sizeof(name), "%" G_GUINT16_FORMAT, i);
+          stats_unregister_counter(SCS_FACILITY | SCS_SOURCE, NULL, "other", SC_TYPE_PROCESSED, &facility_counters[i]);
+        }
+      stats_unregister_counter(SCS_FACILITY | SCS_SOURCE, NULL, "other", SC_TYPE_PROCESSED, &facility_counters[FACILITY_MAX - 1]);
+    }
 }
 
 void

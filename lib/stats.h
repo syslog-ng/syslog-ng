@@ -26,6 +26,8 @@
 #define STATS_H_INCLUDED
 
 #include "syslog-ng.h"
+#include "cfg.h"
+#include "mainloop.h"
 
 typedef enum
 {
@@ -62,6 +64,12 @@ enum
   SCS_HOST           = 18,
   SCS_GLOBAL         = 19,
   SCS_MONGODB        = 20,
+  SCS_CLASS          = 21,
+  SCS_RULE_ID        = 22,
+  SCS_TAG            = 23,
+  SCS_SEVERITY       = 24,
+  SCS_FACILITY       = 25,
+  SCS_SENDER         = 26,
   SCS_MAX,
   SCS_SOURCE_MASK    = 0xff
 };
@@ -86,7 +94,9 @@ void stats_unregister_counter(gint source, const gchar *id, const gchar *instanc
 void stats_unregister_dynamic_counter(StatsCounter *handle, StatsCounterType type, StatsCounterItem **counter);
 void stats_cleanup_orphans(void);
 
-void stats_set_current_level(gint stats_level);
+void stats_counter_inc_pri(guint16 pri);
+
+void stats_reinit(GlobalConfig *cfg);
 void stats_init(void);
 void stats_destroy(void);
 

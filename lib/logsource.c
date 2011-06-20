@@ -233,6 +233,7 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
 
       stats_unlock();
     }
+  stats_counter_inc_pri(msg->pri);
 
   /* NOTE: we start by enabling flow-control, thus we need an acknowledgement */
   local_options.flow_control = TRUE;

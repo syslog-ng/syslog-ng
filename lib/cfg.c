@@ -223,7 +223,7 @@ cfg_init(GlobalConfig *cfg)
     msg_error("Error resolving protocol template",
                evt_tag_str("name", cfg->proto_template_name),
                NULL);
-  stats_set_current_level(cfg->stats_level);
+  stats_reinit(cfg);
 
   if (cfg->bad_hostname_re)
     {
