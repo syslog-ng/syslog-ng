@@ -322,6 +322,16 @@ afsocket_sc_new(AFSocketSourceDriver *owner, GSockAddr *peer_addr, int fd)
 }
 
 void
+afsocket_sd_set_transport(LogDriver *s, const gchar *transport)
+{
+  AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
+
+  if (self->transport)
+    g_free(self->transport);
+  self->transport = g_strdup(transport);
+}
+
+void
 afsocket_sd_set_keep_alive(LogDriver *s, gint enable)
 {
   AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
@@ -550,18 +560,12 @@ afsocket_sd_init(LogPipe *s)
   if (!log_src_driver_init_method(s))
     return FALSE;
 
-#if ENABLE_SSL
-  if (self->flags & AFSOCKET_REQUIRE_TLS && !self->tls_context)
-    {
-      msg_error("Transport TLS was specified, but TLS related parameters missing", NULL);
-      return FALSE;
-    }
-#endif
+  if (!afsocket_sd_apply_transport(self))
+    return FALSE;
 
-  if (!self->bind_addr)
-    {
-      msg_error("No bind address set;", NULL);
-    }
+  g_assert(self->transport);
+  g_assert(self->bind_addr);
+
   if ((self->flags & (AFSOCKET_STREAM + AFSOCKET_WNDSIZE_INITED)) == AFSOCKET_STREAM)
     {
       /* distribute the window evenly between each of our possible
@@ -761,7 +765,7 @@ afsocket_sd_free(LogPipe *s)
 }
 
 void
-afsocket_sd_init_instance(AFSocketSourceDriver *self, SocketOptions *sock_options, guint32 flags)
+afsocket_sd_init_instance(AFSocketSourceDriver *self, SocketOptions *sock_options, gint family, guint32 flags)
 {
   log_src_driver_init_instance(&self->super);
 
@@ -773,6 +777,7 @@ afsocket_sd_init_instance(AFSocketSourceDriver *self, SocketOptions *sock_option
   self->super.super.super.notify = afsocket_sd_notify;
   self->sock_options_ptr = sock_options;
   self->setup_socket = afsocket_sd_setup_socket;
+  self->address_family = family;
   self->max_connections = 10;
   self->listen_backlog = 255;
   self->flags = flags | AFSOCKET_KEEP_ALIVE;
@@ -809,6 +814,15 @@ afsocket_sd_init_instance(AFSocketSourceDriver *self, SocketOptions *sock_option
 
 /* socket destinations */
 
+void
+afsocket_dd_set_transport(LogDriver *s, const gchar *transport)
+{
+  AFSocketDestDriver *self = (AFSocketDestDriver *) s;
+
+  if (self->transport)
+    g_free(self->transport);
+  self->transport = g_strdup(transport);
+}
 
 #if ENABLE_SSL
 void
@@ -1118,13 +1132,15 @@ afsocket_dd_init(LogPipe *s)
   if (!log_dest_driver_init_method(s))
     return FALSE;
 
-#if ENABLE_SSL
-  if (self->flags & AFSOCKET_REQUIRE_TLS && !self->tls_context)
-    {
-      msg_error("Transport TLS was specified, but TLS related parameters missing", NULL);
-      return FALSE;
-    }
-#endif
+  if (!afsocket_dd_apply_transport(self))
+    return FALSE;
+
+  /* these fields must be set up by apply_transport, so let's check if it indeed did */
+  g_assert(self->transport);
+  g_assert(self->bind_addr);
+  g_assert(self->dest_addr);
+  g_assert(self->hostname);
+  g_assert(self->dest_name);
 
   if (cfg)
     {
@@ -1215,18 +1231,18 @@ afsocket_dd_free(LogPipe *s)
 {
   AFSocketDestDriver *self = (AFSocketDestDriver *) s;
 
+  log_writer_options_destroy(&self->writer_options);
   g_sockaddr_unref(self->bind_addr);
   g_sockaddr_unref(self->dest_addr);
   log_pipe_unref(self->writer);
   g_free(self->hostname);
-  log_writer_options_destroy(&self->writer_options);
   g_free(self->dest_name);
   g_free(self->transport);
   log_dest_driver_free(s);
 }
 
 void
-afsocket_dd_init_instance(AFSocketDestDriver *self, SocketOptions *sock_options, guint32 flags, gchar *hostname, gchar *dest_name)
+afsocket_dd_init_instance(AFSocketDestDriver *self, SocketOptions *sock_options, gint family, const gchar *hostname, guint32 flags)
 {
   log_dest_driver_init_instance(&self->super);
 
@@ -1239,8 +1255,10 @@ afsocket_dd_init_instance(AFSocketDestDriver *self, SocketOptions *sock_options,
   self->super.super.super.notify = afsocket_dd_notify;
   self->setup_socket = afsocket_dd_setup_socket;
   self->sock_options_ptr = sock_options;
+  self->address_family = family;
   self->flags = flags  | AFSOCKET_KEEP_ALIVE;
-  self->hostname = hostname;
-  self->dest_name = dest_name;
+
+  self->hostname = g_strdup(hostname);
+
   afsocket_dd_init_watches(self);
 }

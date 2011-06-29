@@ -72,7 +72,7 @@ struct _AFSocketSourceDriver
 #if ENABLE_SSL
   TLSContext *tls_context;
 #endif
-
+  gint address_family;
   GSockAddr *bind_addr;
   gchar *transport;
   gint max_connections;
@@ -80,10 +80,30 @@ struct _AFSocketSourceDriver
   gint listen_backlog;
   GList *connections;
   SocketOptions *sock_options_ptr;
-  gboolean (*setup_socket)(AFSocketSourceDriver *s, gint fd);
+
+
+  /*
+   * Apply transport options, set up bind_addr based on the
+   * information processed during parse time. This used to be
+   * constructed during the parser, however that made the ordering of
+   * various options matter and behave incorrectly when the port() was
+   * specified _after_ transport(). Now, it collects the information,
+   * and then applies them with a separate call to apply_transport()
+   * during init().
+   */
+
+  gboolean (*apply_transport)(AFSocketSourceDriver *s);
+
+  /* optionally acquire a socket from the runtime environment (e.g. systemd) */
   gboolean (*acquire_socket)(AFSocketSourceDriver *s, gint *fd);
+
+  /* once the socket is opened, set up socket related options (IP_TTL,
+     IP_TOS, SO_RCVBUF etc) */
+
+  gboolean (*setup_socket)(AFSocketSourceDriver *s, gint fd);
 };
 
+void afsocket_sd_set_transport(LogDriver *s, const gchar *transport);
 void afsocket_sd_set_keep_alive(LogDriver *self, gint enable);
 void afsocket_sd_set_max_connections(LogDriver *self, gint max_connections);
 #if ENABLE_SSL
@@ -101,10 +121,16 @@ afsocket_sd_acquire_socket(AFSocketSourceDriver *s, gint *fd)
   return TRUE;
 }
 
+static inline gboolean
+afsocket_sd_apply_transport(AFSocketSourceDriver *s)
+{
+  return s->apply_transport(s);
+}
+
 gboolean afsocket_sd_init(LogPipe *s);
 gboolean afsocket_sd_deinit(LogPipe *s);
 
-void afsocket_sd_init_instance(AFSocketSourceDriver *self, SocketOptions *sock_options, guint32 flags);
+void afsocket_sd_init_instance(AFSocketSourceDriver *self, SocketOptions *sock_options, gint family, guint32 flags);
 void afsocket_sd_free(LogPipe *self);
 
 struct _AFSocketDestDriver
@@ -117,7 +143,7 @@ struct _AFSocketDestDriver
 #if ENABLE_SSL
   TLSContext *tls_context;
 #endif
-
+  gint address_family;
   gchar *hostname;
   gchar *transport;
   GSockAddr *bind_addr;
@@ -127,6 +153,22 @@ struct _AFSocketDestDriver
   struct iv_fd connect_fd;
   struct iv_timer reconnect_timer;
   SocketOptions *sock_options_ptr;
+
+  /*
+   * Apply transport options, set up bind_addr/dest_addr based on the
+   * information processed during parse time. This used to be
+   * constructed during the parser, however that made the ordering of
+   * various options matter and behave incorrectly when the port() was
+   * specified _after_ transport(). Now, it collects the information,
+   * and then applies them with a separate call to apply_transport()
+   * during init().
+   */
+
+  gboolean (*apply_transport)(AFSocketDestDriver *s);
+
+  /* once the socket is opened, set up socket related options (IP_TTL,
+     IP_TOS, SO_RCVBUF etc) */
+
   gboolean (*setup_socket)(AFSocketDestDriver *s, gint fd);
 };
 
@@ -137,8 +179,15 @@ void afsocket_dd_set_tls_context(LogDriver *s, TLSContext *tls_context);
 #define afsocket_dd_set_tls_context(s, t)
 #endif
 
+static inline gboolean
+afsocket_dd_apply_transport(AFSocketDestDriver *s)
+{
+  return s->apply_transport(s);
+}
+
+void afsocket_dd_set_transport(LogDriver *s, const gchar *transport);
 void afsocket_dd_set_keep_alive(LogDriver *self, gint enable);
-void afsocket_dd_init_instance(AFSocketDestDriver *self, SocketOptions *sock_options, guint32 flags, gchar *hostname, gchar *dest_name);
+void afsocket_dd_init_instance(AFSocketDestDriver *self, SocketOptions *sock_options, gint family, const gchar *hostname, guint32 flags);
 gboolean afsocket_dd_init(LogPipe *s);
 void afsocket_dd_free(LogPipe *s);
 
