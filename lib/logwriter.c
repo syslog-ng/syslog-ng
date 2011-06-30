@@ -134,8 +134,11 @@ log_writer_work_finished(gpointer s)
         }
       goto exit;
     }
-  /* reenable polling the source */
-  log_writer_start_watches(self);
+  if (self->super.flags & PIF_INITIALIZED)
+    {
+      /* reenable polling the source, but only if we're still initialized */
+      log_writer_start_watches(self);
+    }
 
 exit:
   log_pipe_unref(&self->super);

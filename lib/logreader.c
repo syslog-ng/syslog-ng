@@ -123,8 +123,13 @@ log_reader_work_finished(void *s)
 
   if (self->notify_code == 0)
     {
-      /* reenable polling the source */
-      log_reader_start_watches(self);
+      if (self->super.super.flags & PIF_INITIALIZED)
+        {
+          /* reenable polling the source assuming that we're still in
+           * business (e.g. the reader hasn't been uninitialized) */
+
+          log_reader_start_watches(self);
+        }
     }
   else
     {
