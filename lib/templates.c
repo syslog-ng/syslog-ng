@@ -1144,6 +1144,7 @@ log_template_new(GlobalConfig *cfg, gchar *name)
   self->name = g_strdup(name);
   self->ref_cnt = 1;
   self->cfg = cfg;
+  g_static_mutex_init(&self->arg_lock);
   if (configuration && configuration->version < 0x0300)
     {
       static gboolean warn_written = FALSE;
@@ -1173,6 +1174,7 @@ log_template_free(LogTemplate *self)
   log_template_reset_compiled(self);
   g_free(self->name);
   g_free(self->template);
+  g_static_mutex_free(&self->arg_lock);
   g_free(self);
 }
 
