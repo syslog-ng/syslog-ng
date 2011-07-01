@@ -99,6 +99,9 @@ AC_ARG_WITH(ld-library-path,
    [  --with-ld-library-path=path  Set LD_LIBRARY_PATH during runtime to the value given],
    env_ld_library_path=$with_ld_library_path)
 
+AC_ARG_WITH([systemdsystemunitdir],
+   AS_HELP_STRING([--with-systemdsystemunitdir=DIR], [Directory for systemd service files]))
+
 AC_ARG_ENABLE(debug, 
               [  --enable-debug      Enable debugging code.],, enable_debug="no")
 
@@ -877,6 +880,22 @@ if test "x$enable_systemd" = "xauto"; then
 	else
 		enable_systemd=no
 	fi
+
+fi
+
+if test "x$enable_systemd" = "xyes"; then
+	if test "x$with_systemdsystemunitdir" = "xyes"; then
+		# no arguments, just --with-systemdsystemunitdir
+		systemdsystemunitdir=$($PKG_CONFIG --variable=systemdsystemunitdir systemd);
+		if test "$systemdsystemunitdir" = ""; then
+			AC_MSG_ERROR([Error autodetecting systemdsystemunitdir, systemd pkg-config file not found?])
+		fi
+	elif test "$systemdsystemunitdir" = "no"; then
+		# --without-systemdsystemunitdir was specified
+		systemdsystemunitdir=""
+	else
+		systemdsystemunitdir="$with_systemdsystemunitdir"
+	fi
 fi
 
 dnl ***************************************************************************
@@ -1026,6 +1045,7 @@ AC_DEFINE_UNQUOTED(ENABLE_SYSTEMD, `enable_value $enable_systemd`, [Enable syste
 
 AM_CONDITIONAL(ENABLE_ENV_WRAPPER, [test "$enable_env_wrapper" = "yes"])
 AM_CONDITIONAL(ENABLE_SYSTEMD, [test "$enable_systemd" = "yes"])
+AM_CONDITIONAL(ENABLE_SYSTEMD_UNIT_INSTALL, [test "$systemdsystemunitdir" != ""])
 AM_CONDITIONAL(ENABLE_SSL, [test "$enable_ssl" = "yes"])
 AM_CONDITIONAL(ENABLE_SQL, [test "$enable_sql" = "yes"])
 AM_CONDITIONAL(ENABLE_SUN_STREAMS, [test "$enable_sun_streams" = "yes"])
@@ -1040,6 +1060,7 @@ AC_SUBST(timezonedir)
 AC_SUBST(pidfiledir)
 AC_SUBST(moduledir)
 AC_SUBST(expanded_sysconfdir)
+AC_SUBST(systemdsystemunitdir)
 AC_SUBST(SYSLOGNG_LINK)
 AC_SUBST(SYSLOGNG_DEPS_LIBS)
 AC_SUBST(TOOL_DEPS_LIBS)
@@ -1135,7 +1156,7 @@ echo "  tcp-wrapper support         : ${enable_tcp_wrapper:=no}"
 echo "  Linux capability support    : ${enable_linux_caps:=no}"
 echo "  PCRE support                : ${enable_pcre:=no}"
 echo "  Env wrapper support         : ${enable_env_wrapper:=no}"
-echo "  systemd support             : ${enable_systemd:=no}"
+echo "  systemd support             : ${enable_systemd:=no} (unit dir: ${systemdsystemunitdir:=none})"
 echo " Modules:"
 echo "  Module search path          : ${module_path}"
 echo "  Default module list         : ${default_modules}"
