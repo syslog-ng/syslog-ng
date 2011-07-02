@@ -166,7 +166,7 @@ persist_state_grow_store(PersistState *self, guint32 new_size)
 {
   int pgsize = getpagesize();
 
-  g_assert(self->mapped_counter == 0);
+  g_assert(g_atomic_int_get(&self->mapped_counter) == 0);
 
   if ((new_size & (pgsize-1)) != 0)
     {
@@ -638,14 +638,14 @@ persist_state_map_entry(PersistState *self, PersistEntryHandle handle)
   /* we count the number of mapped entries in order to know if we're
    * safe to remap the file region */
 
-  self->mapped_counter++;
+  g_atomic_int_add(&self->mapped_counter, 1);
   return (gpointer) (((gchar *) self->current_map) + (guint32) handle);
 }
 
 void
 persist_state_unmap_entry(PersistState *self, PersistEntryHandle handle)
 {
-  self->mapped_counter--;
+  g_atomic_int_add(&self->mapped_counter, -1);
 }
 
 PersistEntryHandle
@@ -832,7 +832,7 @@ persist_state_new(const gchar *filename)
 void
 persist_state_free(PersistState *self)
 {
-  g_assert(self->mapped_counter == 0);
+  g_assert(g_atomic_int_get(&self->mapped_counter) == 0);
   g_free(self->temp_filename);
   g_free(self->commited_filename);
   g_hash_table_destroy(self->keys);
