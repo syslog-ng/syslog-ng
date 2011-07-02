@@ -1002,7 +1002,10 @@ static void
 log_writer_free(LogPipe *s)
 {
   LogWriter *self = (LogWriter *) s;
-  
+
+  if (self->proto)
+    log_proto_free(self->proto);
+
   if (self->line_buffer)
     g_string_free(self->line_buffer, TRUE);
   if (self->queue)
