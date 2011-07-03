@@ -57,7 +57,7 @@ struct _LogQueue
   gint64 (*get_length)(LogQueue *self);
   void (*push_tail)(LogQueue *self, LogMessage *msg, const LogPathOptions *path_options);
   void (*push_head)(LogQueue *self, LogMessage *msg, const LogPathOptions *path_options);
-  gboolean (*pop_head)(LogQueue *self, LogMessage **msg, LogPathOptions *path_options, gboolean push_to_backlog);
+  gboolean (*pop_head)(LogQueue *self, LogMessage **msg, LogPathOptions *path_options, gboolean push_to_backlog, gboolean ignore_throttle);
   void (*ack_backlog)(LogQueue *self, gint n);
   void (*rewind_backlog)(LogQueue *self);
 
@@ -83,9 +83,9 @@ log_queue_push_head(LogQueue *self, LogMessage *msg, const LogPathOptions *path_
 }
 
 static inline gboolean
-log_queue_pop_head(LogQueue *self, LogMessage **msg, LogPathOptions *path_options, gboolean push_to_backlog)
+log_queue_pop_head(LogQueue *self, LogMessage **msg, LogPathOptions *path_options, gboolean push_to_backlog, gboolean ignore_throttle)
 {
-  return self->pop_head(self, msg, path_options, push_to_backlog);
+  return self->pop_head(self, msg, path_options, push_to_backlog, ignore_throttle);
 }
 
 static inline void

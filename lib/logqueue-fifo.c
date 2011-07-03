@@ -273,14 +273,14 @@ log_queue_fifo_push_head(LogQueue *s, LogMessage *msg, const LogPathOptions *pat
  * Can only run from the output thread.
  */
 static gboolean
-log_queue_fifo_pop_head(LogQueue *s, LogMessage **msg, LogPathOptions *path_options, gboolean push_to_backlog)
+log_queue_fifo_pop_head(LogQueue *s, LogMessage **msg, LogPathOptions *path_options, gboolean push_to_backlog, gboolean ignore_throttle)
 {
   LogQueueFifo *self = (LogQueueFifo *) s;
   LogMessageQueueNode *node;
 
   log_queue_assert_output_thread(s);
 
-  if (self->super.throttle && self->super.throttle_buckets == 0)
+  if (!ignore_throttle && self->super.throttle && self->super.throttle_buckets == 0)
     {
       return FALSE;
     }
@@ -334,7 +334,11 @@ log_queue_fifo_pop_head(LogQueue *s, LogMessage **msg, LogPathOptions *path_opti
       list_add_tail(&node->list, &self->qbacklog);
       self->qbacklog_len++;
     }
-  self->super.throttle_buckets--;
+  if (!ignore_throttle)
+    {
+      self->super.throttle_buckets--;
+    }
+
   return TRUE;
 }
 

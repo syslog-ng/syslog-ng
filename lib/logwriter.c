@@ -39,6 +39,18 @@
 #include <iv_event.h>
 #include <iv_work.h>
 
+typedef enum
+{
+  /* flush modes */
+
+  /* business as usual, flush when the buffer is full */
+  LW_FLUSH_NORMAL,
+  /* flush the buffer immediately please */
+  LW_FLUSH_BUFFER,
+  /* pull off any queued items, at maximum speed, even ignoring throttle, and flush the buffer too */
+  LW_FLUSH_QUEUE,
+} LogWriterFlushMode;
+
 struct _LogWriter
 {
   LogPipe super;
@@ -98,7 +110,7 @@ struct _LogWriter
  *
  **/
 
-static gboolean log_writer_flush(LogWriter *self, gboolean flush_all);
+static gboolean log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode);
 static void log_writer_broken(LogWriter *self, gint notify_code);
 static void log_writer_start_watches(LogWriter *self);
 static void log_writer_stop_watches(LogWriter *self);
@@ -111,7 +123,7 @@ log_writer_work_perform(gpointer s)
   LogWriter *self = (LogWriter *) s;
 
   log_pipe_ref(&self->super);
-  self->work_result = log_writer_flush(self, self->flush_waiting_for_timeout);
+  self->work_result = log_writer_flush(self, self->flush_waiting_for_timeout ? LW_FLUSH_BUFFER : LW_FLUSH_NORMAL);
 }
 
 static void
@@ -841,11 +853,32 @@ log_writer_broken(LogWriter *self, gint notify_code)
   log_pipe_notify(self->control, &self->super, notify_code, self);
 }
 
+/*
+ * Write messages to the underlying file descriptor using the installed
+ * LogProto instance.  This is called whenever the output is ready to accept
+ * further messages, and once during config deinitialization, in order to
+ * flush messages still in the queue, in the hope that most of them can be
+ * written out.
+ *
+ * In threaded mode, this function is invoked as part of the "output" task
+ * (in essence, this is the function that performs the output task).
+ *
+ * @flush_mode specifies how hard LogWriter is trying to send messages to
+ * the actual destination:
+ *
+ *
+ * LW_FLUSH_NORMAL    - business as usual, flush when the buffer is full
+ * LW_FLUSH_BUFFER    - flush the buffer immediately please
+ * LW_FLUSH_QUEUE     - pull off any queued items, at maximum speed, even
+ *                      ignoring throttle, and flush the buffer too
+ *
+ */
 gboolean
-log_writer_flush(LogWriter *self, gboolean flush_all)
+log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
 {
   LogProto *proto = self->proto;
   gint count = 0;
+  gboolean ignore_throttle = (flush_mode >= LW_FLUSH_QUEUE);
   
   if (!proto)
     return FALSE;
@@ -856,7 +889,7 @@ log_writer_flush(LogWriter *self, gboolean flush_all)
       LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
       gboolean consumed = FALSE;
       
-      if (!log_queue_pop_head(self->queue, &lm, &path_options, FALSE))
+      if (!log_queue_pop_head(self->queue, &lm, &path_options, FALSE, ignore_throttle))
         {
           /* no more items are available */
           break;
@@ -915,7 +948,7 @@ log_writer_flush(LogWriter *self, gboolean flush_all)
       count++;
     }
 
-  if (flush_all || count == 0)
+  if (flush_mode >= LW_FLUSH_BUFFER || count == 0)
     {
       if (log_proto_flush(proto) == LPS_ERROR)
         return FALSE;
@@ -980,7 +1013,7 @@ log_writer_deinit(LogPipe *s)
   main_loop_assert_main_thread();
 
   log_queue_reset_parallel_push(self->queue);
-  log_writer_flush(self, TRUE);
+  log_writer_flush(self, LW_FLUSH_QUEUE);
   /* FIXME: by the time we arrive here, it must be guaranteed that no
    * _queue() call is running in a different thread, otherwise we'd need
    * some kind of locking. */

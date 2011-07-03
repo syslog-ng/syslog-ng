@@ -682,7 +682,7 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
   else
     {
       g_mutex_lock(self->db_thread_mutex);
-      success = log_queue_pop_head(self->queue, &msg, &path_options, (self->flags & AFSQL_DDF_EXPLICIT_COMMITS));
+      success = log_queue_pop_head(self->queue, &msg, &path_options, (self->flags & AFSQL_DDF_EXPLICIT_COMMITS), FALSE);
       g_mutex_unlock(self->db_thread_mutex);
       if (!success)
         return TRUE;
