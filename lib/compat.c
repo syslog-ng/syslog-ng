@@ -27,6 +27,7 @@
 #include <fcntl.h>
 #include <ctype.h>
 #include <string.h>
+#include <stdlib.h>
 
 #if !HAVE_PREAD || HAVE_BROKEN_PREAD
 

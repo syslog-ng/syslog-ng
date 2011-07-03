@@ -34,6 +34,7 @@
 
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <string.h>
 #include <iv.h>
 #include <iv_signal.h>
 #include <iv_work.h>
