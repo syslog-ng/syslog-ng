@@ -466,7 +466,7 @@ block_args
 
 block_arg
         : LL_IDENTIFIER '(' string_or_number ')'          { cfg_args_set(last_block_args, $1, $3); free($1); free($3); }
-        | LL_IDENTIFIER '(' ')'                           {}
+        | LL_IDENTIFIER '(' ')'                           { cfg_args_set(last_block_args, $1, ""); free($1); }
         ;
 
 log_items
