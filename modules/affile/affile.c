@@ -1042,7 +1042,7 @@ affile_dd_open_writer(gpointer args[])
 	    {
 	      log_pipe_ref(&next->super);
 	      g_static_mutex_lock(&self->lock);
-              g_hash_table_insert(self->writer_hash, filename->str, next);
+              g_hash_table_insert(self->writer_hash, next->filename, next);
               g_static_mutex_unlock(&self->lock);
             }
         }
