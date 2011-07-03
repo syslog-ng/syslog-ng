@@ -93,7 +93,7 @@ AC_ARG_WITH(timezone-dir,
 
 AC_ARG_WITH(default-modules,
    [  --with-default-modules="mod1,mod2,mod3"   Use these as the list of automatically loaded modules],
-   default_modules=$default_modules, default_modules="auto")
+   default_modules=$with_default_modules, default_modules="auto")
 
 AC_ARG_WITH(ld-library-path,
    [  --with-ld-library-path=path  Set LD_LIBRARY_PATH during runtime to the value given],
