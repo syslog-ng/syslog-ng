@@ -909,7 +909,7 @@ log_msg_alloc(gsize payload_size)
 {
   LogMessage *msg;
   gsize payload_space = payload_size ? nv_table_get_alloc_size(LM_V_MAX, 16, payload_size) : 0;
-  gsize alloc_size, payload_ofs;
+  gsize alloc_size, payload_ofs = 0;
 
   /* NOTE: logmsg_node_max is updated from parallel threads without locking. */
   gint nodes = (volatile gint) logmsg_queue_node_max;

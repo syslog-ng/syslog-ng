@@ -1090,7 +1090,7 @@ affile_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
           g_static_mutex_unlock(&self->lock);
         }
     }
-  else if ((self->flags & AFFILE_NO_EXPAND) == 0)
+  else
     {
       GString *filename;
 

@@ -366,7 +366,7 @@ log_proto_file_writer_post(LogProto *s, guchar *msg, gsize msg_len, gboolean *co
     }
 
   /* register the new message */
-  self->buffer[self->buf_count].iov_base = msg;
+  self->buffer[self->buf_count].iov_base = (void *) msg;
   self->buffer[self->buf_count].iov_len = msg_len;
   ++self->buf_count;
   self->sum_len += msg_len;

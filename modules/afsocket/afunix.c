@@ -146,10 +146,11 @@ static gboolean
 afunix_sd_init(LogPipe *s)
 {
   AFUnixSourceDriver *self = (AFUnixSourceDriver *) s;
-  cap_t saved_caps;
 
   if (afsocket_sd_init(s))
     {
+      cap_t saved_caps;
+
       saved_caps = g_process_cap_save();
       g_process_cap_modify(CAP_CHOWN, TRUE);
       g_process_cap_modify(CAP_FOWNER, TRUE);
