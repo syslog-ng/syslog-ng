@@ -443,7 +443,7 @@ gchar *
 find_file_in_path(const gchar *path, const gchar *filename, GFileTest test)
 {
   gchar **dirs;
-  gchar *fullname;
+  gchar *fullname = NULL;
   gint i;
 
   if (filename[0] == '/' || !path)
