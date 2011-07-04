@@ -544,8 +544,13 @@ affile_dw_reopen(AFFileDestWriter *self)
     {
       guint write_flags;
       
-      write_flags = ((self->owner->flags & AFFILE_FSYNC) ? LTF_FSYNC : 0) | LTF_APPEND;
-      log_writer_reopen(self->writer, log_proto_file_writer_new(log_transport_plain_new(fd, write_flags), self->owner->writer_options.flush_lines));
+      write_flags =
+        ((self->owner->flags & AFFILE_PIPE) ? LTF_PIPE : LTF_APPEND) |
+        ((self->owner->flags & AFFILE_FSYNC) ? LTF_FSYNC : 0);
+      log_writer_reopen(self->writer,
+                        self->owner->flags & AFFILE_PIPE
+                        ? log_proto_text_client_new(log_transport_plain_new(fd, write_flags))
+                        : log_proto_file_writer_new(log_transport_plain_new(fd, write_flags), self->owner->writer_options.flush_lines));
 
       main_loop_call((void * (*)(void *)) affile_dw_arm_reaper, self, TRUE);
     }

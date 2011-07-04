@@ -106,9 +106,15 @@ log_proto_text_client_flush(LogProto *s)
       rc = log_transport_write(self->super.transport, &self->partial[self->partial_pos], len);
       if (rc < 0)
         {
-	  if (errno != EAGAIN && errno != EINTR)
-	    return LPS_ERROR;
-	  return LPS_SUCCESS;
+          if (errno != EAGAIN && errno != EINTR)
+            {
+              msg_error("I/O error occurred while writing",
+                        evt_tag_int("fd", self->super.transport->fd),
+                        evt_tag_errno(EVT_TAG_OSERROR, errno),
+                        NULL);
+              return LPS_ERROR;
+            }
+          return LPS_SUCCESS;
         }
       else if (rc != len)
         {
