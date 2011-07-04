@@ -571,12 +571,21 @@ string_array_to_list(const gchar *strlist[])
   return g_list_reverse(l);
 }
 
+/*
+ * NOTE: pointer values below 0x1000 (4096) are taken as special
+ * values used by the application code and are not freed. Since this
+ * is the NULL page, this should not cause memory leaks.
+ */
 void
 string_list_free(GList *l)
 {
   while (l)
     {
-      g_free(l->data);
+      /* some of the string lists use invalid pointer values as special
+       * items, see SQL "default" item */
+
+      if (GPOINTER_TO_UINT(l->data) > 4096)
+        g_free(l->data);
       l = g_list_delete_link(l, l);
     }
 }
