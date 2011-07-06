@@ -285,15 +285,39 @@ log_writer_arm_suspend_timer(LogWriter *self, void (*handler)(void *), gint time
 static void
 log_writer_queue_filled(gpointer s)
 {
-  log_writer_update_watches((LogWriter *) s);
+  LogWriter *self = (LogWriter *) s;
+
+  main_loop_assert_main_thread();
+
+  /*
+   * NOTE: This theory is somewhat questionable, e.g. I'm not 100% sure it
+   * is the right scenario, but the race was closed.  So take this with a
+   * grain of salt.
+   *
+   * The queue_filled callback is running in the main thread. Because of the
+   * possible delay caused by iv_event_post() the callback might be
+   * delivered event after stop_watches() has been called.
+   *
+   *   - log_writer_schedule_update_watches() is called by the reader
+   *     thread, which calls iv_event_post()
+   *   - the main thread calls stop_watches() in work_perform
+   *   - the event is delivered in the main thread
+   *
+   * But since stop/start watches always run in the main thread and we do
+   * too, we can check if this is the case.  A LogWriter without watches
+   * running is busy writing out data to the destination, e.g.  a
+   * start_watches is to be expected once log_writer_work_finished() is run
+   * at the end of the deferred work, executed by the I/O threads.
+   */
+  if (self->watches_running)
+    log_writer_update_watches((LogWriter *) s);
 }
 
 /* NOTE: runs in the source thread */
 static void
 log_writer_schedule_update_watches(LogWriter *self)
 {
-  if (!self->working)
-    iv_event_post(&self->queue_filled);
+  iv_event_post(&self->queue_filled);
 }
 
 static void
