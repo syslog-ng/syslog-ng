@@ -131,6 +131,7 @@ log_writer_work_finished(gpointer s)
 {
   LogWriter *self = (LogWriter *) s;
 
+  main_loop_assert_main_thread();
   self->flush_waiting_for_timeout = FALSE;
 
   if (!self->work_result)
@@ -160,6 +161,8 @@ static void
 log_writer_io_flush_output(gpointer s)
 {
   LogWriter *self = (LogWriter *) s;
+
+  main_loop_assert_main_thread();
 
   log_writer_stop_watches(self);
   if ((self->options->options & LWO_THREADED))
@@ -221,6 +224,7 @@ log_writer_error_suspend_elapsed(gpointer s)
 static void
 log_writer_update_fd_callbacks(LogWriter *self, GIOCondition cond)
 {
+  main_loop_assert_main_thread();
   if (self->pollable_state > 0)
     {
       if (self->flags & LW_DETECT_EOF && (cond & G_IO_IN) == 0 && (cond & G_IO_OUT))
