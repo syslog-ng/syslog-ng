@@ -180,7 +180,7 @@ log_writer_io_error(gpointer s)
 
   if (self->fd_watch.handler_out == NULL && self->fd_watch.handler_in == NULL)
     {
-      msg_error("POLLERR occurred while idle",
+      msg_debug("POLLERR occurred while idle",
                 evt_tag_int("fd", log_proto_get_fd(self->proto)),
                 NULL);
       log_writer_broken(self, NC_WRITE_ERROR);
