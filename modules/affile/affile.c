@@ -581,7 +581,13 @@ affile_dw_init(LogPipe *s)
 
   if (!self->writer)
     {
-      self->writer = log_writer_new(LW_FORMAT_FILE, log_dest_driver_acquire_queue(&self->owner->super, NULL));
+      guint32 flags;
+
+      flags = LW_FORMAT_FILE |
+        ((self->owner->flags & AFFILE_PIPE) ? LW_SOFT_FLOW_CONTROL : 0);
+
+      self->writer = log_writer_new(flags,
+                                    log_dest_driver_acquire_queue(&self->owner->super, NULL));
       log_writer_set_options((LogWriter *) self->writer, s, &self->owner->writer_options, 1,
                              self->owner->flags & AFFILE_PIPE ? SCS_PIPE : SCS_FILE,
                              self->owner->super.super.id, self->filename);
@@ -1152,8 +1158,6 @@ affile_dd_new(gchar *filename, guint32 flags)
   AFFileDestDriver *self = g_new0(AFFileDestDriver, 1);
 
   log_dest_driver_init_instance(&self->super);
-  if ((flags & AFFILE_PIPE) == 0)
-    self->super.super.super.flags |= PIF_SOFT_FLOW_CONTROL;
   self->super.super.super.init = affile_dd_init;
   self->super.super.super.deinit = affile_dd_deinit;
   self->super.super.super.queue = affile_dd_queue;

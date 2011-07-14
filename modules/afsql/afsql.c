@@ -111,7 +111,7 @@ typedef struct _AFSqlDestDriver
   /* used exclusively by the db thread */
   gint32 seq_num;
   LogMessage *pending_msg;
-  gboolean pending_msg_flow_control;
+  gboolean pending_msg_ack_needed;
   dbi_conn dbi_ctx;
   GHashTable *validated_tables;
   guint32 failed_message_counter;
@@ -676,7 +676,7 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
   if (self->pending_msg)
     {
       msg = self->pending_msg;
-      path_options.flow_control = self->pending_msg_flow_control;
+      path_options.ack_needed = self->pending_msg_ack_needed;
       self->pending_msg = NULL;
     }
   else
@@ -792,7 +792,7 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
       if (self->failed_message_counter < self->num_retries - 1)
         {
           self->pending_msg = msg;
-          self->pending_msg_flow_control = path_options.flow_control;
+          self->pending_msg_ack_needed = path_options.ack_needed;
           self->failed_message_counter++;
         }
       else
@@ -1097,6 +1097,10 @@ afsql_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, 
 {
   AFSqlDestDriver *self = (AFSqlDestDriver *) s;
   gboolean queue_was_empty;
+  LogPathOptions local_options;
+
+  if (!path_options->flow_control_requested)
+    path_options = log_msg_break_ack(msg, path_options, &local_options);
 
   g_mutex_lock(self->db_thread_mutex);
   queue_was_empty = log_queue_get_length(self->queue) == 0;

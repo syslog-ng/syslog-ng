@@ -60,7 +60,7 @@ log_db_parser_emit(LogMessage *msg, gboolean synthetic, gpointer user_data)
         {
           LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
 
-          path_options.flow_control = FALSE;
+          path_options.ack_needed = FALSE;
           log_pipe_forward_msg(&self->super.super.super, log_msg_ref(msg), &path_options);
         }
       else

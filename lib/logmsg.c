@@ -114,7 +114,7 @@ TLS_BLOCK_START
   /* message that is being processed by the current thread. Its ack/ref changes are cached */
   LogMessage *logmsg_current;
   /* whether the consumer is flow-controlled, (the producer always is) */
-  gboolean logmsg_cached_flow_control;
+  gboolean logmsg_cached_ack_needed;
 
   /* has to be signed as these can become negative */
   /* number of cached refs by the current thread */
@@ -127,7 +127,7 @@ TLS_BLOCK_END;
 #define logmsg_current              __tls_deref(logmsg_current)
 #define logmsg_cached_refs          __tls_deref(logmsg_cached_refs)
 #define logmsg_cached_acks          __tls_deref(logmsg_cached_acks)
-#define logmsg_cached_flow_control  __tls_deref(logmsg_cached_flow_control)
+#define logmsg_cached_ack_needed    __tls_deref(logmsg_cached_ack_needed)
 
 #define LOGMSG_REFCACHE_BIAS                  0x00004000 /* the BIAS we add to the ref counter in refcache_start */
 #define LOGMSG_REFCACHE_ACK_SHIFT                     16 /* number of bits to shift to get the ACK counter */
@@ -362,7 +362,7 @@ static void
 log_msg_init_queue_node(LogMessage *msg, LogMessageQueueNode *node, const LogPathOptions *path_options)
 {
   INIT_LIST_HEAD(&node->list);
-  node->flow_controlled = path_options->flow_control;
+  node->ack_needed = path_options->ack_needed;
   node->msg = log_msg_ref(msg);
   msg->flags |= LF_STATE_REFERENCED;
 }
@@ -978,7 +978,7 @@ log_msg_clone_ack(LogMessage *msg, gpointer user_data)
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
 
   g_assert(msg->original);
-  path_options.flow_control = TRUE;
+  path_options.ack_needed = TRUE;
   log_msg_ack(msg->original, &path_options);
 }
 
@@ -1014,7 +1014,7 @@ log_msg_clone_cow(LogMessage *msg, const LogPathOptions *path_options)
   self->cur_node = 0;
 
   log_msg_add_ack(self, path_options);
-  if (!path_options->flow_control)
+  if (!path_options->ack_needed)
     {
       self->ack_func  = NULL;
       self->ack_userdata = NULL;
@@ -1201,7 +1201,7 @@ log_msg_unref(LogMessage *self)
 void
 log_msg_add_ack(LogMessage *self, const LogPathOptions *path_options)
 {
-  if (path_options->flow_control)
+  if (path_options->ack_needed)
     {
       if (G_LIKELY(logmsg_current == self))
         {
@@ -1228,7 +1228,7 @@ log_msg_ack(LogMessage *self, const LogPathOptions *path_options)
 {
   gint old_value;
 
-  if (path_options->flow_control)
+  if (path_options->ack_needed)
     {
       if (G_LIKELY(logmsg_current == self))
         {
@@ -1246,6 +1246,29 @@ log_msg_ack(LogMessage *self, const LogPathOptions *path_options)
         }
     }
 }
+
+/*
+ * Break out of an acknowledgement chain. The incoming message is
+ * ACKed and a new path options structure is returned that can be used
+ * to send to further consuming pipes.
+ */
+const LogPathOptions *
+log_msg_break_ack(LogMessage *msg, const LogPathOptions *path_options, LogPathOptions *local_options)
+{
+  /* NOTE: in case the user requested flow control, we can't break the
+   * ACK chain, as that would lead to early acks, that would cause
+   * message loss */
+
+  g_assert(!path_options->flow_control_requested);
+
+  log_msg_ack(msg, path_options);
+
+  *local_options = *path_options;
+  local_options->ack_needed = FALSE;
+
+  return local_options;
+}
+
 
 /*
  * Start caching ref/unref/ack/add-ack operations in the current thread for
@@ -1276,7 +1299,7 @@ log_msg_refcache_start_producer(LogMessage *self)
   self->ack_and_ref = (self->ack_and_ref & ~LOGMSG_REFCACHE_ACK_MASK) + LOGMSG_REFCACHE_ACK_TO_VALUE((LOGMSG_REFCACHE_VALUE_TO_ACK(self->ack_and_ref) + LOGMSG_REFCACHE_BIAS));
   logmsg_cached_refs = -LOGMSG_REFCACHE_BIAS;
   logmsg_cached_acks = -LOGMSG_REFCACHE_BIAS;
-  logmsg_cached_flow_control = TRUE;
+  logmsg_cached_ack_needed = TRUE;
 }
 
 /*
@@ -1297,7 +1320,7 @@ log_msg_refcache_start_consumer(LogMessage *self, const LogPathOptions *path_opt
   g_assert(logmsg_current == NULL);
 
   logmsg_current = self;
-  logmsg_cached_flow_control = path_options->flow_control;
+  logmsg_cached_ack_needed = path_options->ack_needed;
   logmsg_cached_refs = 0;
   logmsg_cached_acks = 0;
 }
@@ -1340,7 +1363,7 @@ log_msg_refcache_stop(void)
 
   old_value = log_msg_update_ack_and_ref(logmsg_current, logmsg_cached_refs, logmsg_cached_acks);
 
-  if ((LOGMSG_REFCACHE_VALUE_TO_ACK(old_value) == -logmsg_cached_acks) && logmsg_cached_flow_control)
+  if ((LOGMSG_REFCACHE_VALUE_TO_ACK(old_value) == -logmsg_cached_acks) && logmsg_cached_ack_needed)
     {
       /* ack processing */
       logmsg_current->ack_func(logmsg_current, logmsg_current->ack_userdata);

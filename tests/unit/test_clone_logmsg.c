@@ -111,7 +111,7 @@ testcase(gchar *msg,
   /* check if the sockaddr matches */
   g_sockaddr_format(logmsg->saddr, logmsg_addr, sizeof(logmsg_addr), GSA_FULL);
 
-  path_options.flow_control = FALSE;
+  path_options.ack_needed = FALSE;
   cloned = log_msg_clone_cow(logmsg, &path_options);
 
   g_sockaddr_format(cloned->saddr, cloned_addr, sizeof(cloned_addr), GSA_FULL);

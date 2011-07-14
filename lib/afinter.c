@@ -135,7 +135,7 @@ afinter_source_mark(gpointer s)
   if (log_source_free_to_send(&self->super))
     {
       msg = log_msg_new_mark();
-      path_options.flow_control = FALSE;
+      path_options.ack_needed = FALSE;
 
       log_pipe_queue(&self->super.super, msg, &path_options);
 

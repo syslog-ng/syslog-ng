@@ -121,7 +121,7 @@ log_queue_fifo_move_input_unlocked(LogQueueFifo *self, gint thread_id)
 
           list_del(&node->list);
           self->qoverflow_input[thread_id].len--;
-          path_options.flow_control = node->flow_controlled;
+          path_options.ack_needed = node->ack_needed;
           stats_counter_inc(self->super.dropped_messages);
           log_msg_free_queue_node(node);
           log_msg_drop(msg, &path_options);
@@ -300,7 +300,7 @@ log_queue_fifo_pop_head(LogQueue *s, LogMessage **msg, LogPathOptions *path_opti
       node = list_entry(self->qoverflow_output.next, LogMessageQueueNode, list);
 
       *msg = node->msg;
-      path_options->flow_control = node->flow_controlled;
+      path_options->ack_needed = node->ack_needed;
       self->qoverflow_output_len--;
       if (!push_to_backlog)
         {
@@ -361,7 +361,7 @@ log_queue_fifo_ack_backlog(LogQueue *s, gint n)
 
       node = list_entry(self->qbacklog.next, LogMessageQueueNode, list);
       msg = node->msg;
-      path_options.flow_control = node->flow_controlled;
+      path_options.ack_needed = node->ack_needed;
 
       list_del(&node->list);
       log_msg_free_queue_node(node);
@@ -408,7 +408,7 @@ log_queue_fifo_free_queue(struct list_head *q)
       node = list_entry(q->next, LogMessageQueueNode, list);
       list_del(&node->list);
 
-      path_options.flow_control = node->flow_controlled;
+      path_options.ack_needed = node->ack_needed;
       msg = node->msg;
       log_msg_free_queue_node(node);
       log_msg_ack(msg, &path_options);

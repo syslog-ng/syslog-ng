@@ -47,19 +47,11 @@
 #define PIF_BRANCH_FINAL      0x0004
 #define PIF_BRANCH_FALLBACK   0x0008
 
-/* set of flags propagated towards the log center from destinations (not properly implemented everywhere! only in LogDestGroup and LogMultiplexer) */
-#define PIF_PROPAGATED_MASK   0x00F0
-
 /* branch starting with this pipe wants hard flow control */
 #define PIF_HARD_FLOW_CONTROL 0x0010
-/* branch starting with this pipe wants slow flow control */
-#define PIF_SOFT_FLOW_CONTROL 0x0020
 
 /* branch starting with this pipe needs a cloned message because it modifies it */
 #define PIF_CLONE             0x0040
-
-/* the given multiplexer is a barrier in flow control */
-#define PIF_FLOW_CTRL_BARRIER 0x0080
 
 /* private flags range, to be used by other LogPipe instances for their own purposes */
 
@@ -176,13 +168,31 @@
 
 struct _LogPathOptions
 {
-  /* this path has flow control enabled, e.g. the destination must ACK messages it receives */
-  gboolean flow_control:1,
+   /* an acknowledgement is "passed" to this path, an ACK is still
+    * needed to close the window slot. This was called "flow-control"
+    * and meant both of these things: the user requested
+    * flags(flow-control), _AND_ an acknowledgement was needed. With
+    * the latest change, the one below specifies the user option,
+    * while the "ack is still needed" condition is stored in
+    * ack_needed.
+    */
 
-  /* the flow control on this path is soft (only enabled if flow_control is
-   * TRUE), which means that the destination is allowed to ACK early, e.g.
-   * when an error occurs. */
-           soft_flow_control:1;
+  gboolean ack_needed:1,
+
+  /* The user has requested flow-control on this processing path,
+   * which means that the destination should invoke log_msg_ack()
+   * after it has completed processing it (e.g. after sending to the
+   * actual destination, possibly after confirmation if the transport
+   * supports that). If flow-control is not requested, destinations
+   * are permitted to call log_msg_ack() early (e.g. at queue time).
+   *
+   * This is initially FALSE and can be set to TRUE anywhere _before_
+   * the destination driver, which will actually carry out the
+   * required action.
+   */
+
+    flow_control_requested:1;
+
   gboolean *matched;
 };
 

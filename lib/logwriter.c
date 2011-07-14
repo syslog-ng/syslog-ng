@@ -516,7 +516,7 @@ log_writer_last_msg_flush(LogWriter *self)
                    hostname);
   log_msg_set_value(m, LM_V_MESSAGE, buf, len);
 
-  path_options.flow_control = FALSE;
+  path_options.ack_needed = FALSE;
 
   log_queue_push_tail(self->queue, m, &path_options);
   log_writer_last_msg_release(self);
@@ -610,16 +610,13 @@ log_writer_queue(LogPipe *s, LogMessage *lm, const LogPathOptions *path_options,
   LogWriter *self = (LogWriter *) s;
   LogPathOptions local_options;
 
-  if (self->suspended && path_options->flow_control && path_options->soft_flow_control)
+  if (!path_options->flow_control_requested &&
+      (self->suspended || !(self->flags & LW_SOFT_FLOW_CONTROL)))
     {
       /* NOTE: this code ACKs the message back if there's a write error in
        * order not to hang the client in case of a disk full */
 
-      local_options = *path_options;
-      log_msg_ack(lm, path_options);
-
-      local_options.flow_control = FALSE;
-      path_options = &local_options;
+      path_options = log_msg_break_ack(lm, path_options, &local_options);
     }
   if (self->options->suppress > 0 && log_writer_last_msg_check(self, lm, path_options))
     return;

@@ -23,13 +23,13 @@ test_ack(LogMessage *msg, gpointer user_data)
 }
 
 void
-feed_some_messages(LogQueue **q, int n, gboolean flow_control)
+feed_some_messages(LogQueue **q, int n, gboolean ack_needed)
 {
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
   LogMessage *msg;
   gint i;
 
-  path_options.flow_control = flow_control;
+  path_options.ack_needed = ack_needed;
   for (i = 0; i < n; i++)
     {
       char *msg_str = "<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép";

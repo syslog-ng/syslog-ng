@@ -29,7 +29,6 @@ void
 log_multiplexer_add_next_hop(LogMultiplexer *self, LogPipe *next_hop)
 {
   g_ptr_array_add(self->next_hops, next_hop);
-  self->super.flags |= next_hop->flags & PIF_PROPAGATED_MASK;
 }
 
 static gboolean
@@ -61,7 +60,7 @@ log_multiplexer_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_op
 {
   LogMultiplexer *self = (LogMultiplexer *) s;
   gint i;
-  LogPathOptions local_options = LOG_PATH_OPTIONS_INIT;
+  LogPathOptions local_options = *path_options;
   gboolean matched;
   gboolean delivered = FALSE;
   gboolean last_delivery;
@@ -84,18 +83,12 @@ log_multiplexer_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_op
             {
               continue;
             }
-          
-          if (self->super.flags & PIF_FLOW_CTRL_BARRIER)
+
+          if (next_hop->flags & (PIF_HARD_FLOW_CONTROL))
             {
-              local_options.flow_control = !!(next_hop->flags & (PIF_HARD_FLOW_CONTROL + PIF_SOFT_FLOW_CONTROL));
-              local_options.soft_flow_control = !!(next_hop->flags & PIF_SOFT_FLOW_CONTROL);
+              local_options.flow_control_requested = 1;
             }
-          else
-            {
-              local_options.flow_control = path_options->flow_control;
-              local_options.soft_flow_control = path_options->soft_flow_control;
-            }
-            
+
           matched = TRUE;
           log_msg_add_ack(msg, &local_options);
           

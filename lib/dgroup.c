@@ -110,7 +110,6 @@ LogDestGroup *
 log_dest_group_new(gchar *name, LogDriver *drivers)
 {
   LogDestGroup *self = g_new0(LogDestGroup, 1);
-  LogDriver *p;
 
   log_pipe_init_instance(&self->super);
   self->name = g_strdup(name);
@@ -119,11 +118,6 @@ log_dest_group_new(gchar *name, LogDriver *drivers)
   self->super.deinit = log_dest_group_deinit;
   self->super.queue = log_dest_group_queue;
   self->super.free_fn = log_dest_group_free;
-
-  for (p = self->drivers; p; p = p->drv_next)
-    {
-      self->super.flags |= p->super.flags & PIF_PROPAGATED_MASK;
-    }
 
   return self;
 }

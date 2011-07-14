@@ -242,7 +242,7 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
   stats_counter_inc_pri(msg->pri);
 
   /* NOTE: we start by enabling flow-control, thus we need an acknowledgement */
-  local_options.flow_control = TRUE;
+  local_options.ack_needed = TRUE;
   log_msg_ref(msg);
   log_msg_add_ack(msg, &local_options);
   msg->ack_func = log_source_msg_ack;
