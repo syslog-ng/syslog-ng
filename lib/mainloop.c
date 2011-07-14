@@ -670,9 +670,6 @@ main_loop_run(void)
   iv_main();
 
   control_destroy();
-  msg_notice("syslog-ng shutting down",
-             evt_tag_str("version", VERSION),
-             NULL);
 
   cfg_deinit(current_configuration);
   cfg_free(current_configuration);
