@@ -804,6 +804,7 @@ dest_writer_option
 	| KW_TEMPLATE '(' string ')'       	{
                                                   GError *error = NULL;
 
+                                                  last_writer_options->template = cfg_check_inline_template(configuration, $3);
                                                   CHECK_ERROR(log_template_compile(last_writer_options->template, $3, &error), @3, "Error compiling template (%s)", error->message);
 	                                          free($3);
 	                                        }
