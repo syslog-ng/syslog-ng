@@ -697,6 +697,8 @@ main_loop_add_options(GOptionContext *ctx)
 {
 #ifdef _SC_NPROCESSORS_ONLN
   main_loop_io_workers.max_threads = MIN(MAX(2, sysconf(_SC_NPROCESSORS_ONLN)), 64);
+#else
+  main_loop_io_workers.max_threads = 2;
 #endif
 
   g_option_context_add_main_entries(ctx, main_loop_options, NULL);
