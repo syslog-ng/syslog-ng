@@ -552,23 +552,28 @@ pdb_rule_run_actions(PDBRule *self, gint trigger, PatternDB *db, PDBContext *con
                   genmsg = log_msg_new_empty();
                   genmsg->flags |= LF_LOCAL;
                   genmsg->timestamps[LM_TS_STAMP] = msg->timestamps[LM_TS_STAMP];
-                  switch (context->key.scope)
+                  if (context)
                     {
-                    case RCS_PROCESS:
-                      log_msg_set_value(genmsg, LM_V_PID, context->key.pid, -1);
-                    case RCS_PROGRAM:
-                      log_msg_set_value(genmsg, LM_V_PROGRAM, context->key.program, -1);
-                    case RCS_HOST:
-                      log_msg_set_value(genmsg, LM_V_HOST, context->key.host, -1);
-                    case RCS_GLOBAL:
-                      break;
-                    default:
-                      g_assert_not_reached();
-                      break;
+                      switch (context->key.scope)
+                        {
+                          case RCS_PROCESS:
+                            log_msg_set_value(genmsg, LM_V_PID, context->key.pid, -1);
+                          case RCS_PROGRAM:
+                            log_msg_set_value(genmsg, LM_V_PROGRAM, context->key.program, -1);
+                          case RCS_HOST:
+                            log_msg_set_value(genmsg, LM_V_HOST, context->key.host, -1);
+                          case RCS_GLOBAL:
+                            break;
+                          default:
+                            g_assert_not_reached();
+                          break;
+                        }
                     }
-                  g_ptr_array_add(context->messages, genmsg);
+                  if (context)
+                    g_ptr_array_add(context->messages, genmsg);
                   pdb_message_apply(&action->content.message, context, genmsg, buffer);
-                  g_ptr_array_remove_index_fast(context->messages, context->messages->len - 1);
+                  if (context)
+                    g_ptr_array_remove_index_fast(context->messages, context->messages->len - 1);
                   emit(genmsg, TRUE, emit_data);
                   log_msg_unref(genmsg);
                   break;
