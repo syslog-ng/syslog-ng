@@ -295,13 +295,14 @@ cfg_set_version(GlobalConfig *self, gint version)
 }
 
 struct _LogTemplate *
-cfg_check_inline_template(GlobalConfig *cfg, const gchar *template_or_name)
+cfg_check_inline_template(GlobalConfig *cfg, const gchar *template_or_name, GError **error)
 {
-  struct _LogTemplate *template = cfg_lookup_template(configuration, template_or_name);
+  LogTemplate *template = cfg_lookup_template(configuration, template_or_name);
+
   if (template == NULL)
     {
       template = log_template_new(cfg, NULL);
-      log_template_compile(template, template_or_name, NULL);
+      log_template_compile(template, template_or_name, error);
       template->def_inline = TRUE;
     }
   return template;
