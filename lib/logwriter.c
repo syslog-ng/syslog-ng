@@ -1108,7 +1108,7 @@ log_writer_set_options(LogWriter *self, LogPipe *control, LogWriterOptions *opti
 }
 
 LogPipe *
-log_writer_new(guint32 flags, LogQueue *queue)
+log_writer_new(guint32 flags)
 {
   LogWriter *self = g_new0(LogWriter, 1);
   
@@ -1119,12 +1119,21 @@ log_writer_new(guint32 flags, LogQueue *queue)
   self->super.free_fn = log_writer_free;
   self->flags = flags;
   self->line_buffer = g_string_sized_new(128);
-  self->queue = queue;
   self->pollable_state = -1;
 
   log_writer_init_watches(self);
   g_static_mutex_init(&self->suppress_lock);
   return &self->super;
+}
+
+void
+log_writer_set_queue(LogPipe *s, LogQueue *queue)
+{
+  LogWriter *self = (LogWriter *)s;
+
+  if (self->queue)
+    log_queue_unref(self->queue);
+  self->queue = queue;
 }
 
 void 

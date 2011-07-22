@@ -297,9 +297,10 @@ afprogram_dd_init(LogPipe *s)
   g_fd_set_nonblock(fd, TRUE);
   if (!self->writer)
     {
-      self->writer = log_writer_new(LW_FORMAT_FILE, log_dest_driver_acquire_queue(&self->super, afprogram_dd_format_persist_name(self)));
-      log_writer_set_options((LogWriter *) self->writer, s, &self->writer_options, 0, SCS_PROGRAM, self->super.super.id, self->cmdline->str);
+      self->writer = log_writer_new(LW_FORMAT_FILE);
     }
+  log_writer_set_options((LogWriter *) self->writer, s, &self->writer_options, 0, SCS_PROGRAM, self->super.super.id, self->cmdline->str);
+  log_writer_set_queue(self->writer, log_dest_driver_acquire_queue(&self->super, afprogram_dd_format_persist_name(self)));
   log_pipe_init(self->writer, NULL);
   log_pipe_append(&self->super.super.super, self->writer);
   log_writer_reopen(self->writer, log_proto_text_client_new(log_transport_plain_new(fd, 0)));

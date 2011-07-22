@@ -586,21 +586,21 @@ affile_dw_init(LogPipe *s)
       flags = LW_FORMAT_FILE |
         ((self->owner->flags & AFFILE_PIPE) ? LW_SOFT_FLOW_CONTROL : 0);
 
-      self->writer = log_writer_new(flags,
-                                    log_dest_driver_acquire_queue(&self->owner->super, NULL));
-      log_writer_set_options((LogWriter *) self->writer, s, &self->owner->writer_options, 1,
-                             self->owner->flags & AFFILE_PIPE ? SCS_PIPE : SCS_FILE,
-                             self->owner->super.super.id, self->filename);
-
-      if (!log_pipe_init(self->writer, NULL))
-        {
-          msg_error("Error initializing log writer", NULL);
-          log_pipe_unref(self->writer);
-          self->writer = NULL;
-          return FALSE;
-        }
-      log_pipe_append(&self->super, self->writer);
+      self->writer = log_writer_new(flags);
     }
+  log_writer_set_options((LogWriter *) self->writer, s, &self->owner->writer_options, 1,
+                         self->owner->flags & AFFILE_PIPE ? SCS_PIPE : SCS_FILE,
+                         self->owner->super.super.id, self->filename);
+  log_writer_set_queue(self->writer, log_dest_driver_acquire_queue(&self->owner->super, NULL));
+
+  if (!log_pipe_init(self->writer, NULL))
+    {
+      msg_error("Error initializing log writer", NULL);
+      log_pipe_unref(self->writer);
+      self->writer = NULL;
+      return FALSE;
+    }
+  log_pipe_append(&self->super, self->writer);
 
   return affile_dw_reopen(self);
 }

@@ -76,7 +76,8 @@ void log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result);
 gboolean log_writer_has_pending_writes(LogWriter *self);
 gboolean log_writer_opened(LogWriter *self);
 void log_writer_reopen(LogPipe *s, LogProto *proto);
-LogPipe *log_writer_new(guint32 flags, LogQueue *queue);
+LogPipe *log_writer_new(guint32 flags);
+void log_writer_set_queue(LogPipe *s, LogQueue *queue);
 
 void log_writer_options_set_template_escape(LogWriterOptions *options, gboolean enable);
 void log_writer_options_defaults(LogWriterOptions *options);
