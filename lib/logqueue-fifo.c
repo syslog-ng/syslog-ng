@@ -324,9 +324,7 @@ log_queue_fifo_pop_head(LogQueue *s, LogMessage **msg, LogPathOptions *path_opti
        */
       return FALSE;
     }
-  g_static_mutex_lock(&self->super.lock);
   stats_counter_dec(self->super.stored_messages);
-  g_static_mutex_unlock(&self->super.lock);
 
   if (push_to_backlog)
     {
