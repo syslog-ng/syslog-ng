@@ -880,7 +880,12 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
   if (!proto)
     return FALSE;
 
-  while (!main_loop_io_worker_job_quit())
+  /* NOTE: in case we're reloading or exiting we flush all queued items as
+   * long as the destination can consume it.  This is not going to be an
+   * infinite loop, since the reader will cease to produce new messages when
+   * main_loop_io_worker_job_quit() is set. */
+
+  while (!main_loop_io_worker_job_quit() || flush_mode >= LW_FLUSH_QUEUE)
     {
       LogMessage *lm;
       LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
