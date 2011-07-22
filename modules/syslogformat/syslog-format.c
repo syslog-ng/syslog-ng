@@ -659,7 +659,6 @@ log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, guint flag
             {
               /* Standalone sdata */
               handle = log_msg_get_value_handle(sd_value_name);
-              nv_registry_set_handle_flags(logmsg_registry, handle, (sd_id_len << 8) + LM_VF_SDATA);
 
               log_msg_set_value(self, handle, "", 0);
             }
@@ -756,7 +755,6 @@ log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, guint flag
                 }
 
               handle = log_msg_get_value_handle(sd_value_name);
-              nv_registry_set_handle_flags(logmsg_registry, handle, (sd_id_len << 8) + LM_VF_SDATA);
 
               log_msg_set_value(self, handle, sd_param_value, sd_param_value_len);
             }
