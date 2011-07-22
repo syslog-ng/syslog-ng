@@ -80,10 +80,11 @@ parser_column_opt
 
 parser_opt
         : KW_TEMPLATE '(' string ')'            {
-                                                  LogTemplate *template = cfg_check_inline_template(configuration, $3);
+                                                  LogTemplate *template;
                                                   GError *error = NULL;
 
-                                                  CHECK_ERROR(log_template_compile(template, $3, &error), @3, "Error compiling template (%s)", error->message);
+						  template = cfg_check_inline_template(configuration, $3, &error);
+                                                  CHECK_ERROR(template != NULL, @3, "Error compiling template (%s)", error->message);
                                                   log_parser_set_template(last_parser, template);
                                                   free($3);
                                                 }
