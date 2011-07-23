@@ -25,6 +25,7 @@
 #include "dnscache.h"
 #include "messages.h"
 #include "timeutils.h"
+#include "tls-support.h"
 
 #include <sys/types.h>
 #include <netinet/in.h>
@@ -62,8 +63,22 @@ struct _DNSCacheEntry
 };
 
 
-static GHashTable *cache;
-static DNSCacheEntry cache_first, cache_last, persist_first, persist_last;
+TLS_BLOCK_START
+{
+  GHashTable *cache;
+  DNSCacheEntry cache_first;
+  DNSCacheEntry cache_last;
+  DNSCacheEntry persist_first;
+  DNSCacheEntry persist_last;
+}
+TLS_BLOCK_END;
+
+#define cache  __tls_deref(cache)
+#define cache_first __tls_deref(cache_first)
+#define cache_last __tls_deref(cache_last)
+#define persist_first __tls_deref(persist_first)
+#define persist_last __tls_deref(persist_last)
+
 static gint dns_cache_size = 1007;
 static gint dns_cache_expire = 3600;
 static gint dns_cache_expire_failed = 60;
