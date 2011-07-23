@@ -57,6 +57,8 @@ struct _DNSCacheEntry
   DNSCacheKey key;
   time_t resolved;
   gchar *hostname;
+  /* whether this entry is a positive (successful DNS lookup) or negative (failed DNS lookup, contains an IP address) match */
+  gboolean positive;
 };
 
 
@@ -218,7 +220,7 @@ dns_cache_check_hosts(glong t)
               if (!p)
                 continue;
               inet_pton(family, ip, &ia);
-              dns_cache_store(TRUE, family, &ia, p);
+              dns_cache_store(TRUE, family, &ia, p, TRUE);
             }
           fclose(hosts);
         }
@@ -233,8 +235,15 @@ dns_cache_check_hosts(glong t)
     }
 }
 
+/*
+ * @hostname        is set to the stored hostname,
+ * @positive        is set whether the match was a DNS match or failure
+ *
+ * Returns TRUE if the cache was able to serve the request (e.g. had a
+ * matching entry at all).
+ */
 gboolean
-dns_cache_lookup(gint family, void *addr, const gchar **hostname)
+dns_cache_lookup(gint family, void *addr, const gchar **hostname, gboolean *positive)
 {
   DNSCacheKey key;
   DNSCacheEntry *entry;
@@ -248,22 +257,25 @@ dns_cache_lookup(gint family, void *addr, const gchar **hostname)
   if (entry)
     {
       if (entry->resolved && 
-          ((entry->hostname && entry->resolved < now - dns_cache_expire) ||
-           (!entry->hostname && entry->resolved < now - dns_cache_expire_failed)))
+          ((entry->positive && entry->resolved < now - dns_cache_expire) ||
+           (!entry->positive && entry->resolved < now - dns_cache_expire_failed)))
         {
           /* the entry is not persistent and is too old */
         }
       else
         {
           *hostname = entry->hostname;
+          *positive = entry->positive;
           return TRUE;
         }
     }
+  *hostname = NULL;
+  *positive = FALSE;
   return FALSE;
 }
 
 void
-dns_cache_store(gboolean persistent, gint family, void *addr, const gchar *hostname)
+dns_cache_store(gboolean persistent, gint family, void *addr, const gchar *hostname, gboolean positive)
 {
   DNSCacheEntry *entry;
   guint hash_size;
@@ -272,6 +284,7 @@ dns_cache_store(gboolean persistent, gint family, void *addr, const gchar *hostn
 
   dns_cache_fill_key(&entry->key, family, addr);
   entry->hostname = hostname ? g_strdup(hostname) : NULL;
+  entry->positive = positive;
   if (!persistent)
     {
       entry->resolved = cached_g_current_time_sec();

@@ -173,6 +173,7 @@ void
 resolve_sockaddr(gchar *result, gsize *result_len, GSockAddr *saddr, gboolean usedns, gboolean usefqdn, gboolean use_dns_cache, gboolean normalize_hostnames)
 {
   gchar *hname;
+  gboolean positive;
   gchar *p, buf[256];
  
   if (saddr && saddr->sa.sa_family != AF_UNIX)
@@ -202,15 +203,18 @@ resolve_sockaddr(gchar *result, gsize *result_len, GSockAddr *saddr, gboolean us
           hname = NULL;
           if (usedns)
             {
-              if ((!use_dns_cache || !dns_cache_lookup(saddr->sa.sa_family, addr, (const gchar **) &hname)) && usedns != 2) 
+              if ((!use_dns_cache || !dns_cache_lookup(saddr->sa.sa_family, addr, (const gchar **) &hname, &positive)) && usedns != 2)
                 {
                   struct hostent *hp;
                       
                   hp = gethostbyaddr(addr, addr_len, saddr->sa.sa_family);
                   hname = (hp && hp->h_name) ? hp->h_name : NULL;
                   
-                  if (use_dns_cache)
-                    dns_cache_store(FALSE, saddr->sa.sa_family, addr, hname);
+                  if (use_dns_cache && hname)
+                    {
+                      /* resolution success, store this as a positive match in the cache */
+                      dns_cache_store(FALSE, saddr->sa.sa_family, addr, hname, TRUE);
+                    }
                 } 
             }
             
@@ -218,11 +222,17 @@ resolve_sockaddr(gchar *result, gsize *result_len, GSockAddr *saddr, gboolean us
             {
               inet_ntop(saddr->sa.sa_family, addr, buf, sizeof(buf));
               hname = buf;
+              if (use_dns_cache)
+                dns_cache_store(FALSE, saddr->sa.sa_family, addr, hname, FALSE);
             }
           else 
             {
-              if (!usefqdn) 
+              if (!usefqdn && positive)
                 {
+                  /* we only truncate hostnames if they were positive
+                   * matches (e.g. real hostnames and not IP
+                   * addresses) */
+
                   p = strchr(hname, '.');
 
                   if (p)
