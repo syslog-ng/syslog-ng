@@ -29,7 +29,8 @@ check_PROGRAMS = test_thread_wakeup	\
 	test_multiline			\
 	test_msgserialize_benchmark	\
 	test_msgserialize_tags		\
-	test_msgformat_upgrade
+	test_msgformat_upgrade \
+  test_file_reader
 
 if IS_HPUX
 check_PROGRAMS += test_zone

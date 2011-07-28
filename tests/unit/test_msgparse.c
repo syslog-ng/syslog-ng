@@ -137,7 +137,7 @@ testcase(gchar *msg,
   else
     {
       time(&now);
-      TEST_ASSERT(absolute_value(logmsg->timestamps[LM_TS_STAMP].tv_sec - now) < 1, "%d", 0, 0);
+      TEST_ASSERT(absolute_value(logmsg->timestamps[LM_TS_STAMP].tv_sec - now) <= 5, "%d", 0, 0);
     }
   check_value(msg, logmsg, LM_V_HOST, expected_host);
   check_value(msg, logmsg, LM_V_PROGRAM, expected_program);
