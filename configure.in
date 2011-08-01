@@ -268,7 +268,7 @@ if test "x$ac_compiler_gnu" = "xyes"; then
                 CFLAGS="${CFLAGS} -fprofile-arcs -ftest-coverage"
         fi
 fi
-CFLAGS = "${CFLAGS} -pthread"
+CFLAGS="${CFLAGS} -pthread"
 
 AX_CFLAGS_GCC_OPTION(-Wno-pointer-sign, CFLAGS_NOWARN_POINTER_SIGN)
 
