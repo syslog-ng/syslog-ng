@@ -1126,6 +1126,7 @@ static inline gint
 log_msg_update_ack_and_ref(LogMessage *self, gint add_ref, gint add_ack)
 {
   gint old_value, new_value;
+
   do
     {
       new_value = old_value = (volatile gint) self->ack_and_ref;
@@ -1336,6 +1337,7 @@ void
 log_msg_refcache_stop(void)
 {
   gint old_value;
+  gint current_cached_refs, current_cached_acks;
 
   g_assert(logmsg_current != NULL);
 
@@ -1361,17 +1363,42 @@ log_msg_refcache_stop(void)
   g_assert((logmsg_cached_acks < LOGMSG_REFCACHE_BIAS - 1) && (logmsg_cached_acks >= -LOGMSG_REFCACHE_BIAS));
   g_assert((logmsg_cached_refs < LOGMSG_REFCACHE_BIAS - 1) && (logmsg_cached_refs >= -LOGMSG_REFCACHE_BIAS));
 
-  old_value = log_msg_update_ack_and_ref(logmsg_current, logmsg_cached_refs, logmsg_cached_acks);
 
-  if ((LOGMSG_REFCACHE_VALUE_TO_ACK(old_value) == -logmsg_cached_acks) && logmsg_cached_ack_needed)
+  /* save the differences in local variables to make it possible to know
+   * that the ACK handler recursively changed them */
+
+  current_cached_refs = logmsg_cached_refs;
+  logmsg_cached_refs = 0;
+  current_cached_acks = logmsg_cached_acks;
+  logmsg_cached_acks = 0;
+  old_value = log_msg_update_ack_and_ref(logmsg_current, current_cached_refs, current_cached_acks);
+
+  if ((LOGMSG_REFCACHE_VALUE_TO_ACK(old_value) == -current_cached_acks) && logmsg_cached_ack_needed)
     {
       /* ack processing */
       logmsg_current->ack_func(logmsg_current, logmsg_current->ack_userdata);
     }
-  if (LOGMSG_REFCACHE_VALUE_TO_REF(old_value) == -logmsg_cached_refs)
+
+  /* we need to process the ref count difference in two steps:
+   *   1) we add in the difference that was present when entering the function,
+   *   2) we add in the difference that was created by the ACK callback
+   */
+
+  if (LOGMSG_REFCACHE_VALUE_TO_REF(old_value) == -current_cached_refs)
     {
-      /* ref processing */
+      /* NOTE: if we already decided that this message is to be freed, then
+       * the ACK handler may not have done additional ref/unref operations (above)
+       */
+      g_assert(logmsg_cached_refs == 0);
       log_msg_free(logmsg_current);
+    }
+  else if (logmsg_cached_refs != 0)
+    {
+      /* process ref count offset that the ack func changed, atomically */
+      old_value = log_msg_update_ack_and_ref(logmsg_current, logmsg_cached_refs, 0);
+
+      if (LOGMSG_REFCACHE_VALUE_TO_REF(old_value) == -logmsg_cached_refs)
+        log_msg_free(logmsg_current);
     }
   logmsg_current = NULL;
 }
