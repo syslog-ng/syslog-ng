@@ -310,6 +310,7 @@ log_center_init_pipe_line(LogCenter *self, LogConnection *conn, GlobalConfig *cf
   LogPipeItem *ep;
   LogPipe *first_pipe, *pipe, *last_pipe, *sub_pipe;
   LogMultiplexer *mpx, *fork_mpx = NULL;
+  gboolean  path_changes_the_message = FALSE, flow_controlled_child = FALSE;
 
   /* resolve pipe references, find first pipe */
   
@@ -404,6 +405,8 @@ log_center_init_pipe_line(LogCenter *self, LogConnection *conn, GlobalConfig *cf
                 goto error;
               }
             log_process_rule_ref(ep->ref);
+            if ((ep->type != EP_FILTER) || (pipe->flags & PIF_CLONE))
+              path_changes_the_message = TRUE;
             break;
           }
 
@@ -438,6 +441,8 @@ log_center_init_pipe_line(LogCenter *self, LogConnection *conn, GlobalConfig *cf
               /* error initializing subpipe */
               goto error;
             }
+          if (sub_pipe->flags & PIF_HARD_FLOW_CONTROL)
+            flow_controlled_child = TRUE;
           log_multiplexer_add_next_hop(fork_mpx, sub_pipe);
           break;
         default:
@@ -480,13 +485,15 @@ log_center_init_pipe_line(LogCenter *self, LogConnection *conn, GlobalConfig *cf
   
   if (conn->flags & LC_FALLBACK)
     first_pipe->flags |= PIF_BRANCH_FALLBACK;
+
   if (conn->flags & LC_FINAL)
     first_pipe->flags |= PIF_BRANCH_FINAL;
-  if (conn->flags & LC_FLOW_CONTROL)
-    {
-      /* hard flow control is enabled by the user. set it in the flags & override soft flow control in this case */
-      first_pipe->flags |= PIF_HARD_FLOW_CONTROL;
-    }
+
+  if (path_changes_the_message)
+    first_pipe->flags |= PIF_CLONE;
+
+  if ((conn->flags & LC_FLOW_CONTROL) || flow_controlled_child || flow_controlled_parent)
+    first_pipe->flags |= PIF_HARD_FLOW_CONTROL;
     
   if ((conn->flags & LC_CATCHALL) == 0)
     {
