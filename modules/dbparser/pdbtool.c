@@ -998,6 +998,7 @@ main(int argc, char *argv[])
   msg_init(TRUE);
   stats_init();
   log_msg_global_init();
+  log_template_global_init();
   log_tags_init();
   pattern_db_global_init();
 
