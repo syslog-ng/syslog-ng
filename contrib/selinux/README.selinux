@@ -1,14 +1,14 @@
-"syslog_ng.te" is the necessary selinux module to allow syslog-ng
-running on RHEL5 (with selinux in default enforcing mode). It's
-necessary for up for letting the syslogd_t domain access /proc/kmsg,
-listen on 514/tcp and write /var/lib/syslog-ng/syslog-ng.persist.
+This module only works on RHEL 6 and 6.1. Earlier versions not
+supported.
 
-To build and load it, execute:
-
-	checkmodule -M -m -o syslog_ng.mod syslog_ng.te
-	semodule_package -o syslog_ng.pp -m syslog_ng.mod
-	semodule -i ./syslog_ng.pp
-
-The module can be removed from the system by executing:
+To compile and load it, you only have to run the 'syslog_ng.sh' script.
+It compiles and loads the syslog_ng module. No other action are
+needed, the module will be active, until removed by running the command:
 
 	semodule --remove=syslog_ng
+
+In permissive mode, SELinux logs all file acces by syslog-ng into
+/var/log/audit/audit.log. If you don't want to fill the audit.log with
+syslog-ng clutter, generate some dontaudit rule with audit2allow:
+
+# grep syslogd /var/log/audit/audit.log | audit2allow -D -M syslogddontaudit

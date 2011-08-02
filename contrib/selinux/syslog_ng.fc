@@ -1,2 +1,3 @@
-# syslog-ng labeling rule:
-/opt/syslog-ng/var(/.*)?          gen_context(system_u:object_r:syslogd_var_lib_t, s0)
+
+/opt/syslog-ng/sbin/syslog-ng		--	gen_context(system_u:object_r:syslog_ng_exec_t,s0)
+/dev/log				--	gen_context(unconfined_u:object_r:devlog_t,s0)
