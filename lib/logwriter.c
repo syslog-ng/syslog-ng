@@ -90,6 +90,8 @@ struct _LogWriter
   gboolean pending_proto_present;
   GCond *pending_proto_cond;
   GStaticMutex pending_proto_lock;
+  /* messages posted, and we're not certain were properly sent out on the wire */
+  gint pending_message_count;
 };
 
 /**
@@ -224,6 +226,11 @@ log_writer_io_error(gpointer s)
       msg_debug("POLLERR occurred while idle",
                 evt_tag_int("fd", log_proto_get_fd(self->proto)),
                 NULL);
+      /*
+        POLLERR occured, has to rewind the qbacklog
+      */
+      log_queue_rewind_backlog(self->queue);
+      self->pending_message_count = 0;
       log_writer_broken(self, NC_WRITE_ERROR);
       return;
     }
@@ -812,6 +819,9 @@ log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
   guint32 seq_num;
   static NVHandle meta_seqid = 0;
 
+  /* First truncate the result string */
+  result->str[0] = 0;
+  result->len = 0;
   if (!meta_seqid)
     meta_seqid = log_msg_get_value_handle(".SDATA.meta.sequenceId");
 
@@ -1046,10 +1056,12 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
       LogMessage *lm;
       LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
       gboolean consumed = FALSE;
-      
-      if (!log_queue_pop_head(self->queue, &lm, &path_options, FALSE, ignore_throttle))
+
+      if (!log_queue_pop_head(self->queue, &lm, &path_options, (self->flags & LW_KEEP_ONE_PENDING) ? TRUE : FALSE, ignore_throttle))
         {
           /* no more items are available */
+          if (self->pending_message_count >= 1)
+            log_queue_ack_backlog(self->queue, 1);
           break;
         }
 
@@ -1065,6 +1077,8 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
           status = log_proto_post(proto, lm, (guchar *)self->line_buffer->str, self->line_buffer->len, &consumed);
           if (status == LPS_ERROR)
             {
+              log_queue_rewind_backlog(self->queue);
+              self->pending_message_count = 0;
               if ((self->options->options & LWO_IGNORE_ERRORS) == 0)
                 {
                   msg_set_context(NULL);
@@ -1073,16 +1087,16 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
                 }
               else
                 {
-		  if (!consumed)
-	            g_free(self->line_buffer->str);
+                  if (!consumed)
+                    g_free(self->line_buffer->str);
                   consumed = TRUE;
                 }
             }
           if (consumed)
             {
               self->line_buffer->str = g_malloc(self->line_buffer->allocated_len);
-              self->line_buffer->str[0] = 0;
               self->line_buffer->len = 0;
+              self->line_buffer->str[0] = 0;
             }
         }
       if (consumed)
@@ -1095,13 +1109,19 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
       else
         {
           /* push back to the queue */
+          //log_queue_rewind_backlog(self->queue);
           log_queue_push_head(self->queue, lm, &path_options);
-
           msg_set_context(NULL);
           log_msg_refcache_stop();
           break;
         }
-        
+      if (self->flags & LW_KEEP_ONE_PENDING)
+        {
+          if (self->pending_message_count >= 1)
+            log_queue_ack_backlog(self->queue, 1);
+          else
+            self->pending_message_count++;
+        }
       msg_set_context(NULL);
       log_msg_refcache_stop();
       count++;
@@ -1259,6 +1279,15 @@ log_writer_reopen_deferred(gpointer s)
   gpointer *args = (gpointer *) s;
   LogWriter *self = args[0];
   LogProto *proto = args[1];
+
+  /* we close the old connection, so any pending messages are to be
+   * acked, assuming the connection was closed successfully. If it
+   * wasn't, that's already handled in log_writer_flush() in the
+   * LPS_ERROR branch. */
+  log_queue_ack_backlog(self->queue, self->pending_message_count);
+  self->pending_message_count = 0;
+
+
 
   init_sequence_number(&self->seq_num);
 

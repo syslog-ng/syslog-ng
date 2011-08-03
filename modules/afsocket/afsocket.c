@@ -1246,7 +1246,7 @@ afsocket_dd_init(LogPipe *s)
       /* NOTE: we open our writer with no fd, so we can send messages down there
        * even while the connection is not established */
 
-      self->writer = log_writer_new(LW_FORMAT_PROTO |
+        self->writer = log_writer_new(LW_FORMAT_PROTO | LW_KEEP_ONE_PENDING |
 #if ENABLE_SSL
                                     (((self->flags & AFSOCKET_STREAM) && !self->tls_context) ? LW_DETECT_EOF : 0) |
 #else

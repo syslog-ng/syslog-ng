@@ -37,6 +37,7 @@
 #define LW_FORMAT_PROTO      0x0004
 #define LW_SYSLOG_PROTOCOL   0x0008
 #define LW_SOFT_FLOW_CONTROL 0x0010
+#define LW_KEEP_ONE_PENDING  0x0020
 
 /* writer options (set by the user) */
 #define LWO_SYSLOG_PROTOCOL   0x0001
