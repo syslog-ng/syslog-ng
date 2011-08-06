@@ -1004,6 +1004,14 @@ log_writer_init(LogPipe *s)
     }
   self->suppress_timer_updated = TRUE;
   log_queue_set_counters(self->queue, self->stored_messages, self->dropped_messages);
+  if (self->proto)
+    {
+      LogProto *proto;
+
+      proto = self->proto;
+      self->proto = NULL;
+      log_writer_reopen(self, proto);
+    }
   return TRUE;
 }
 
