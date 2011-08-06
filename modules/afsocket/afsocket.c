@@ -1155,17 +1155,13 @@ afsocket_dd_init(LogPipe *s)
       /* NOTE: we open our writer with no fd, so we can send messages down there
        * even while the connection is not established */
 
-      if ((self->flags & AFSOCKET_KEEP_ALIVE))
-        self->writer = cfg_persist_config_fetch(cfg, afsocket_dd_format_persist_name(self, FALSE));
-
-      if (!self->writer)
-        self->writer = log_writer_new(LW_FORMAT_PROTO |
+      self->writer = log_writer_new(LW_FORMAT_PROTO |
 #if ENABLE_SSL
-                                      (((self->flags & AFSOCKET_STREAM) && !self->tls_context) ? LW_DETECT_EOF : 0) |
+                                    (((self->flags & AFSOCKET_STREAM) && !self->tls_context) ? LW_DETECT_EOF : 0) |
 #else
-                                      ((self->flags & AFSOCKET_STREAM) ? LW_DETECT_EOF : 0) |
+                                    ((self->flags & AFSOCKET_STREAM) ? LW_DETECT_EOF : 0) |
 #endif
-                                      (self->flags & AFSOCKET_SYSLOG_PROTOCOL ? LW_SYSLOG_PROTOCOL : 0));
+                                    (self->flags & AFSOCKET_SYSLOG_PROTOCOL ? LW_SYSLOG_PROTOCOL : 0));
 
     }
   log_writer_set_options((LogWriter *) self->writer, &self->super.super.super, &self->writer_options, 0, afsocket_dd_stats_source(self), self->super.super.id, afsocket_dd_stats_instance(self));
@@ -1174,7 +1170,8 @@ afsocket_dd_init(LogPipe *s)
   log_pipe_init(self->writer, NULL);
   log_pipe_append(&self->super.super.super, self->writer);
 
-  afsocket_dd_reconnect(self);
+  if (!log_writer_opened((LogWriter *) self->writer))
+    afsocket_dd_reconnect(self);
   return TRUE;
 }
 
