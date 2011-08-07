@@ -711,7 +711,7 @@ cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
       /* no version selected yet, and we have a non-pragma token, this
       * means that the configuration is meant for syslog-ng 2.1 */
 
-      msg_warning("Configuration file has no version number, assuming syslog-ng 2.1 format. Please add @version: maj.min to the beginning of the file",
+      msg_warning("WARNING: Configuration file has no version number, assuming syslog-ng 2.1 format. Please add @version: maj.min to the beginning of the file",
                   NULL);
       cfg_set_version(configuration, 0x0201);
     }
