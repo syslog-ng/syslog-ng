@@ -130,7 +130,7 @@ stats_add_counter(gint stats_level, gint source, const gchar *id, const gchar *i
   StatsCounter key;
   StatsCounter *sc;
 
-  g_assert(main_loop_is_main_thread() || stats_locked);
+  g_assert(stats_locked);
 
   if (!stats_check_level(stats_level))
     return NULL;
@@ -555,13 +555,17 @@ stats_reinit(GlobalConfig *cfg)
       for (i = 0; i < SEVERITY_MAX; i++)
         {
           g_snprintf(name, sizeof(name), "%" G_GUINT16_FORMAT, i);
+          stats_lock();
           stats_register_counter(3, SCS_SEVERITY | SCS_SOURCE, NULL, name, SC_TYPE_PROCESSED, &severity_counters[i]);
+          stats_unlock();
         }
 
       for (i = 0; i < FACILITY_MAX - 1; i++)
         {
           g_snprintf(name, sizeof(name), "%" G_GUINT16_FORMAT, i);
+          stats_lock();
           stats_register_counter(3, SCS_FACILITY | SCS_SOURCE, NULL, name, SC_TYPE_PROCESSED, &facility_counters[i]);
+          stats_unlock();
         }
       stats_register_counter(3, SCS_FACILITY | SCS_SOURCE, NULL, "other", SC_TYPE_PROCESSED, &facility_counters[FACILITY_MAX - 1]);
     }

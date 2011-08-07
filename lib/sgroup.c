@@ -54,7 +54,9 @@ log_source_group_init(LogPipe *s)
 	}
       log_pipe_append(&p->super, s);
     }
+  stats_lock();
   stats_register_counter(0, SCS_SOURCE | SCS_GROUP, self->name, NULL, SC_TYPE_PROCESSED, &self->processed_messages);
+  stats_unlock();
   return TRUE;
   
  deinit_all:

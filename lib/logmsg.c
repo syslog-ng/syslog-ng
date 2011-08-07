@@ -1446,9 +1446,11 @@ void
 log_msg_global_init(void)
 {
   log_msg_registry_init();
+  stats_lock();
   stats_register_counter(0, SCS_GLOBAL, "msg_clones", NULL, SC_TYPE_PROCESSED, &count_msg_clones);
   stats_register_counter(0, SCS_GLOBAL, "payload_reallocs", NULL, SC_TYPE_PROCESSED, &count_payload_reallocs);
   stats_register_counter(0, SCS_GLOBAL, "sdata_updates", NULL, SC_TYPE_PROCESSED, &count_sdata_updates);
+  stats_unlock();
 }
 
 void

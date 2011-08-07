@@ -172,8 +172,10 @@ log_source_init(LogPipe *s)
 {
   LogSource *self = (LogSource *) s;
 
+  stats_lock();
   stats_register_counter(self->stats_level, self->stats_source | SCS_SOURCE, self->stats_id, self->stats_instance, SC_TYPE_PROCESSED, &self->recvd_messages);
   stats_register_counter(self->stats_level, self->stats_source | SCS_SOURCE, self->stats_id, self->stats_instance, SC_TYPE_STAMP, &self->last_message_seen);
+  stats_unlock();
   return TRUE;
 }
 

@@ -50,7 +50,9 @@ log_dest_group_init(LogPipe *s)
           goto deinit_all;
         }
     }
+  stats_lock();
   stats_register_counter(0, SCS_DESTINATION | SCS_GROUP, self->name, NULL, SC_TYPE_PROCESSED, &self->processed_messages);
+  stats_unlock();
   return TRUE;
 
  deinit_all:

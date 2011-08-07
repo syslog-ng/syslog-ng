@@ -995,12 +995,14 @@ log_writer_init(LogPipe *s)
 
   if ((self->options->options & LWO_NO_STATS) == 0 && !self->dropped_messages)
     {
+      stats_lock();
       stats_register_counter(self->stats_level, self->stats_source | SCS_DESTINATION, self->stats_id, self->stats_instance, SC_TYPE_DROPPED, &self->dropped_messages);
       if (self->options->suppress > 0)
         stats_register_counter(self->stats_level, self->stats_source | SCS_DESTINATION, self->stats_id, self->stats_instance, SC_TYPE_SUPPRESSED, &self->suppressed_messages);
       stats_register_counter(self->stats_level, self->stats_source | SCS_DESTINATION, self->stats_id, self->stats_instance, SC_TYPE_PROCESSED, &self->processed_messages);
       
       stats_register_counter(self->stats_level, self->stats_source | SCS_DESTINATION, self->stats_id, self->stats_instance, SC_TYPE_STORED, &self->stored_messages);
+      stats_unlock();
     }
   self->suppress_timer_updated = TRUE;
   log_queue_set_counters(self->queue, self->stored_messages, self->dropped_messages);
