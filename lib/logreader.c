@@ -112,7 +112,6 @@ log_reader_work_perform(void *s)
 {
   LogReader *self = (LogReader *) s;
 
-  log_pipe_ref(&self->super.super);
   self->notify_code = log_reader_fetch_log(self);
 }
 
@@ -182,6 +181,7 @@ log_reader_io_process_input(gpointer s)
   LogReader *self = (LogReader *) s;
 
   log_reader_stop_watches(self);
+  log_pipe_ref(&self->super.super);
   if ((self->options->flags & LR_THREADED))
     {
       main_loop_io_worker_job_submit(&self->io_job);

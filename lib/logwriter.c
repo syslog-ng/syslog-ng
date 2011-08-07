@@ -122,7 +122,6 @@ log_writer_work_perform(gpointer s)
 {
   LogWriter *self = (LogWriter *) s;
 
-  log_pipe_ref(&self->super);
   self->work_result = log_writer_flush(self, self->flush_waiting_for_timeout ? LW_FLUSH_BUFFER : LW_FLUSH_NORMAL);
 }
 
@@ -165,6 +164,7 @@ log_writer_io_flush_output(gpointer s)
   main_loop_assert_main_thread();
 
   log_writer_stop_watches(self);
+  log_pipe_ref(&self->super);
   if ((self->options->options & LWO_THREADED))
     {
       main_loop_io_worker_job_submit(&self->io_job);
