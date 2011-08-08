@@ -1085,16 +1085,16 @@ affile_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
        * that we go to the mainloop to return the same information, but this
        * is not fast path anyway */
 
+      g_static_mutex_lock(&self->lock);
       if (!self->single_writer)
         {
+          g_static_mutex_unlock(&self->lock);
           next = main_loop_call((void *(*)(void *)) affile_dd_open_writer, args, TRUE);
         }
       else
         {
           /* we need to lock single_writer in order to get a reference and
            * make sure it is not a stale pointer by the time we ref it */
-
-          g_static_mutex_lock(&self->lock);
           next = self->single_writer;
           next->queue_pending = TRUE;
           log_pipe_ref(&next->super);
