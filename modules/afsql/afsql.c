@@ -955,8 +955,10 @@ afsql_dd_init(LogPipe *s)
       return FALSE;
     }
 
+  stats_lock();
   stats_register_counter(0, SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self), SC_TYPE_STORED, &self->stored_messages);
   stats_register_counter(0, SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self), SC_TYPE_DROPPED, &self->dropped_messages);
+  stats_unlock();
 
   self->queue = log_dest_driver_acquire_queue(&self->super, afsql_dd_format_persist_name(self));
   log_queue_set_counters(self->queue, self->stored_messages, self->dropped_messages);
