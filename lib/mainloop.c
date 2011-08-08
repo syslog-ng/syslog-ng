@@ -95,7 +95,13 @@ static struct iv_signal sigint_poll;
 static struct iv_signal sigchild_poll;
 
 
-/* current running configuration */
+/* Currently running configuration, should not be used outside the mainloop
+ * logic. If anything needs access to the GlobalConfig instance at runtime,
+ * it needs to save that during initialization.  If anything needs the
+ * config being parsed (e.g.  in the bison generated code), it should
+ * consult the value of "configuration", which is NULL after the parsing is
+ * finished.
+ */
 static GlobalConfig *current_configuration;
 
 /************************************************************************************
