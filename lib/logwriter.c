@@ -1040,7 +1040,7 @@ log_writer_init(LogPipe *s)
 
       proto = self->proto;
       self->proto = NULL;
-      log_writer_reopen(self, proto);
+      log_writer_reopen(&self->super, proto);
     }
   return TRUE;
 }
