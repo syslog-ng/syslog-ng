@@ -34,8 +34,57 @@
 
 extern gboolean seed_rng; /* defined in main.c */
 
+static gint ssl_lock_count;
+static GStaticMutex *ssl_locks;
+
 static void
-crypto_deinit(void *c)
+ssl_locking_callback(int mode, int type, char *file, int line)
+{
+  if (mode & CRYPTO_LOCK)
+    {
+      g_static_mutex_lock(&ssl_locks[type]);
+    }
+  else
+    {
+      g_static_mutex_unlock(&ssl_locks[type]);
+    }
+}
+
+static unsigned long
+ssl_thread_id(void)
+{
+  return (unsigned long) g_thread_self();
+}
+
+static void
+crypto_init_threading(void)
+{
+  gint i;
+
+  ssl_lock_count = CRYPTO_num_locks();
+  ssl_locks = g_new(GStaticMutex, ssl_lock_count);
+  for (i = 0; i < ssl_lock_count; i++)
+    {
+      g_static_mutex_init(&ssl_locks[i]);
+    }
+  CRYPTO_set_id_callback((unsigned long (*)()) ssl_thread_id);
+  CRYPTO_set_locking_callback((void (*)()) ssl_locking_callback);
+}
+
+static void
+crypto_deinit_threading(void)
+{
+  gint i;
+
+  for (i = 0; i < ssl_lock_count; i++)
+    {
+      g_static_mutex_free(&ssl_locks[i]);
+    }
+  g_free(ssl_locks);
+}
+
+void
+crypto_deinit(void)
 {
   char rnd_file[256];
 
@@ -45,6 +94,7 @@ crypto_deinit(void *c)
       if (rnd_file[0])
         RAND_write_file(rnd_file);
     }
+  crypto_deinit_threading();
 }
 
 static void __attribute__((constructor))
@@ -61,6 +111,7 @@ crypto_init(void)
   SSL_library_init();
   SSL_load_error_strings();
   OpenSSL_add_all_algorithms();
+  crypto_init_threading();
   register_application_hook(AH_SHUTDOWN, (ApplicationHookFunc) crypto_deinit, NULL);
 }
 
