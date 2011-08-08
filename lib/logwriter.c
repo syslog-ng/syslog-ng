@@ -83,8 +83,11 @@ struct _LogWriter
   gboolean suppress_timer_updated;
   gboolean work_result;
   gint pollable_state;
-  LogProto *proto;
+  LogProto *proto, *pending_proto;
   gboolean watches_running:1, suspended:1, working:1, flush_waiting_for_timeout:1;
+  gboolean pending_proto_present;
+  GCond *pending_proto_cond;
+  GStaticMutex pending_proto_lock;
 };
 
 /**
@@ -133,6 +136,25 @@ log_writer_work_finished(gpointer s)
   main_loop_assert_main_thread();
   self->flush_waiting_for_timeout = FALSE;
 
+  if (self->pending_proto_present)
+    {
+      /* pending proto is only set in the main thread, so no need to
+       * lock it before coming here. After we're syncing with the
+       * log_writer_reopen() call, quite possibly coming from a
+       * non-main thread. */
+
+      g_static_mutex_lock(&self->pending_proto_lock);
+      if (self->proto)
+        log_proto_free(self->proto);
+
+      self->proto = self->pending_proto;
+      self->pending_proto = NULL;
+      self->pending_proto_present = FALSE;
+
+      g_cond_signal(self->pending_proto_cond);
+      g_static_mutex_unlock(&self->pending_proto_lock);
+    }
+
   if (!self->work_result)
     {
       log_writer_broken(self, NC_WRITE_ERROR);
@@ -146,7 +168,8 @@ log_writer_work_finished(gpointer s)
         }
       goto exit;
     }
-  if (self->super.flags & PIF_INITIALIZED)
+
+  if ((self->super.flags & PIF_INITIALIZED) && self->proto)
     {
       /* reenable polling the source, but only if we're still initialized */
       log_writer_start_watches(self);
@@ -1090,6 +1113,10 @@ log_writer_free(LogPipe *s)
     log_msg_unref(self->last_msg);
   g_free(self->stats_id);
   g_free(self->stats_instance);
+  g_static_mutex_free(&self->suppress_lock);
+  g_static_mutex_free(&self->pending_proto_lock);
+  g_cond_free(self->pending_proto_cond);
+
   log_pipe_free_method(s);
 }
 
@@ -1117,7 +1144,18 @@ log_writer_reopen_deferred(gpointer s)
   LogWriter *self = args[0];
   LogProto *proto = args[1];
 
+  init_sequence_number(&self->seq_num);
+
+  if (self->io_job.working)
+    {
+      /* NOTE: proto can be NULL */
+      self->pending_proto = proto;
+      self->pending_proto_present = TRUE;
+      return;
+    }
+
   log_writer_stop_watches(self);
+
   if (self->proto)
     log_proto_free(self->proto);
 
@@ -1125,16 +1163,51 @@ log_writer_reopen_deferred(gpointer s)
 
   if (proto)
     log_writer_start_watches(self);
-
-  init_sequence_number(&self->seq_num);
 }
 
+/*
+ * This function can be called from any threads, from the main thread
+ * as well as I/O worker threads. It takes care about going to the
+ * main thread to actually switch LogProto under this writer.
+ *
+ * The writer may still be operating, (e.g. log_pipe_deinit/init is
+ * not needed).
+ *
+ * In case we're running in a non-main thread, then by the time this
+ * function returns, the reopen has finished. In case it is called
+ * from the main thread, this function may defer updating self->proto
+ * until the worker thread has finished. The reason for this
+ * difference is:
+ *
+ *   - if LogWriter is busy, then updating the LogProto instance is
+ *     deferred to log_writer_work_finished(), but that runs in the
+ *     main thread.
+ *
+ *   - normally, even this deferred update is waited for, but in case
+ *     we're in the main thread, we can't block.
+ *
+ * This situation could probably be improved, maybe the synchonous
+ * return of log_writer_reopen() is not needed by call sites, but I
+ * was not sure, and right before release I didn't want to take the
+ * risky approach.
+ */
 void
 log_writer_reopen(LogPipe *s, LogProto *proto)
 {
+  LogWriter *self = (LogWriter *) s;
   gpointer args[] = { s, proto };
 
   main_loop_call((MainLoopTaskFunc) log_writer_reopen_deferred, args, TRUE);
+
+  if (!main_loop_is_main_thread())
+    {
+      g_static_mutex_lock(&self->pending_proto_lock);
+      while (self->pending_proto_present)
+        {
+          g_cond_wait(self->pending_proto_cond, g_static_mutex_get_mutex(&self->pending_proto_lock));
+        }
+      g_static_mutex_unlock(&self->pending_proto_lock);
+    }
 }
 
 void
@@ -1166,6 +1239,9 @@ log_writer_new(guint32 flags)
 
   log_writer_init_watches(self);
   g_static_mutex_init(&self->suppress_lock);
+  g_static_mutex_init(&self->pending_proto_lock);
+  self->pending_proto_cond = g_cond_new();
+
   return &self->super;
 }
 
