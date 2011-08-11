@@ -549,23 +549,20 @@ stats_reinit(GlobalConfig *cfg)
 
   current_stats_level = cfg->stats_level;
 
+  stats_lock();
   if (stats_check_level(3))
     {
       /* we need these counters, register them */
       for (i = 0; i < SEVERITY_MAX; i++)
         {
           g_snprintf(name, sizeof(name), "%" G_GUINT16_FORMAT, i);
-          stats_lock();
           stats_register_counter(3, SCS_SEVERITY | SCS_SOURCE, NULL, name, SC_TYPE_PROCESSED, &severity_counters[i]);
-          stats_unlock();
         }
 
       for (i = 0; i < FACILITY_MAX - 1; i++)
         {
           g_snprintf(name, sizeof(name), "%" G_GUINT16_FORMAT, i);
-          stats_lock();
           stats_register_counter(3, SCS_FACILITY | SCS_SOURCE, NULL, name, SC_TYPE_PROCESSED, &facility_counters[i]);
-          stats_unlock();
         }
       stats_register_counter(3, SCS_FACILITY | SCS_SOURCE, NULL, "other", SC_TYPE_PROCESSED, &facility_counters[FACILITY_MAX - 1]);
     }
@@ -585,6 +582,7 @@ stats_reinit(GlobalConfig *cfg)
         }
       stats_unregister_counter(SCS_FACILITY | SCS_SOURCE, NULL, "other", SC_TYPE_PROCESSED, &facility_counters[FACILITY_MAX - 1]);
     }
+  stats_unlock();
 }
 
 void
