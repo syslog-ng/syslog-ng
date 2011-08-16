@@ -1046,8 +1046,7 @@ cfg_block_generate(CfgLexer *lexer, gint context, const gchar *name, CfgArgs *ar
       return FALSE;
     }
 
-  cfg_lexer_include_buffer(lexer, buf, value, length);
-  return TRUE;
+  return cfg_lexer_include_buffer(lexer, buf, value, length);
 }
 
 /*
