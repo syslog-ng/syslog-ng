@@ -642,6 +642,7 @@ static GOptionEntry match_options[] =
 };
 
 static gboolean test_validate = FALSE;
+static gchar *test_ruleid = NULL;
 
 static gboolean
 pdbtool_test_value(LogMessage *msg, const gchar *name, const gchar *test_value)
@@ -677,6 +678,7 @@ pdbtool_test(int argc, char *argv[])
   gboolean failed_to_load = FALSE;
   gboolean failed_to_match = FALSE;
   gboolean failed_to_validate = FALSE;
+  gboolean failed_to_find_id = TRUE;
 
   for (arg_pos = 1; arg_pos < argc; arg_pos++)
     {
@@ -712,6 +714,18 @@ pdbtool_test(int argc, char *argv[])
 
           if (example->message && example->program)
             {
+
+              if (test_ruleid)
+                {
+                  if (strcmp(example->rule->rule_id, test_ruleid) != 0)
+                    {
+                      examples = g_list_delete_link(examples, examples);
+                      continue;
+                    }
+                  else
+                    failed_to_find_id = FALSE;
+                }
+
               msg = log_msg_new_empty();
               log_msg_set_value(msg, LM_V_MESSAGE, example->message, strlen(example->message));
               if (example->program && example->program[0])
@@ -720,7 +734,13 @@ pdbtool_test(int argc, char *argv[])
               printf("Testing message program='%s' message='%s'\n", example->program, example->message);
               pattern_db_process(patterndb, msg);
 
-              pdbtool_test_value(msg, ".classifier.rule_id", example->rule->rule_id);
+              if (!pdbtool_test_value(msg, ".classifier.rule_id", example->rule->rule_id) && debug_pattern)
+                {
+                  match_message = example->message;
+                  match_program = example->program;
+                  patterndb_file = argv[arg_pos];
+                  pdbtool_match(0, NULL);
+                }
 
               for (i = 0; example->values && i < example->values->len; i++)
                 {
@@ -740,6 +760,11 @@ pdbtool_test(int argc, char *argv[])
     return 1;
   if (failed_to_match)
     return 2;
+  if (failed_to_find_id)
+    {
+      printf("Could not find the specified ID, or the defined rule doesn't have an example message.\n");
+      return 3;
+    }
   return 0;
 }
 
@@ -747,6 +772,12 @@ static GOptionEntry test_options[] =
 {
   { "validate", 0, 0, G_OPTION_ARG_NONE, &test_validate,
     "Validate the pdb file against the xsd (requires xmllint from libxml2)", NULL },
+  { "rule-id", 'r', 0, G_OPTION_ARG_STRING, &test_ruleid,
+    "Rule ID of the patterndb rule to be tested against its example", NULL },
+  { "debug", 'D', 0, G_OPTION_ARG_NONE, &debug_pattern,
+    "Print debuging information on non-matching patterns", NULL },
+  { "color-out", 'c', 0, G_OPTION_ARG_NONE, &color_out,
+    "Color terminal output", NULL },
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
 };
 
