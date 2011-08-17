@@ -439,12 +439,14 @@ afmongodb_dd_init(LogPipe *s)
 
   self->queue = log_dest_driver_acquire_queue(&self->super, afmongodb_dd_format_persist_name(self));
 
+  stats_lock();
   stats_register_counter(0, SCS_MONGODB | SCS_DESTINATION, self->super.super.id,
 			 afmongodb_dd_format_stats_instance(self),
 			 SC_TYPE_STORED, &self->stored_messages);
   stats_register_counter(0, SCS_MONGODB | SCS_DESTINATION, self->super.super.id,
 			 afmongodb_dd_format_stats_instance(self),
 			 SC_TYPE_DROPPED, &self->dropped_messages);
+  stats_unlock();
 
   log_queue_set_counters(self->queue, self->stored_messages, self->dropped_messages);
   afmongodb_dd_start_thread(self);
