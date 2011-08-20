@@ -1,19 +1,155 @@
 Source: syslog-ng
 Section: admin
 Priority: extra
-Maintainer: SZALAY Attila <sasa@debian.org>
-Build-depends: debhelper (>=3.0.0), libevtlog-dev
-Standards-Version: 3.6.1
+Maintainer: Gergely Nagy <algernon@madhouse-project.org>
+Build-Depends: debhelper (>= 8),
+	       dh-autoreconf,
+	       pkg-config, flex, bison,
+	       libevtlog-dev (>= 0.2.12),
+	       libnet1-dev,
+	       libglib2.0-dev (>= 2.4),
+	       libdbi0-dev | libdbi-dev,
+	       libssl-dev,
+	       libmongo-client-dev,
+	       libjson0-dev,
+	       libwrap0-dev,
+	       libpcre3-dev,
+	       libcap-dev [linux-any]
+Standards-Version: 3.9.2
+Homepage: http://www.balabit.com/network-security/syslog-ng/opensource-logging-system
+Vcs-Git: git://git.madhouse-project.org/debian/syslog-ng.git
+Vcs-Browser: http://git.madhouse-project.org/debian/syslog-ng/
 
 Package: syslog-ng
+Architecture: all
+Depends: ${misc:Depends}, syslog-ng-core,
+ syslog-ng-module-sql,
+ syslog-ng-module-mongodb,
+ syslog-ng-module-json
+Description: Next generation system logging daemon (metapackage)
+ syslog-ng is an enhanced syslog daemon, supporting, amongst others:
+  * Powerful configurability, while still being readable
+  * Filtering on any part of the syslog message
+  * Support for both legacy BSD and the new syslog protocol
+  * Wide range of source and destination drivers, including TCP
+    (plain, or over SSL/TLS), UDP, SQL, MongoDB
+  * Also supports fine-grained output format control
+  * Multi-threaded operation
+ .
+ The wide range of plugins make syslog-ng able to perform well in
+ every situation, ranging from enterprise-class centralised
+ deployments, through personal computers to ad-hoc connected networks.
+ .
+ This package is a metapackage, depending on the rest of syslog-ng,
+ including all available plugins. It can be safely removed, if only
+ parts of syslog-ng need to be installed.
+
+Package: syslog-ng-core
 Architecture: any
-Depends: ${shlibs:Depends}, util-linux (>= 2.12-10)
+Depends: ${shlibs:Depends}, ${misc:Depends}, util-linux (>= 2.12-10)
 Recommends: logrotate
+Suggests: syslog-ng-module-sql, syslog-ng-module-mongodb, syslog-ng-module-json
 Provides: system-log-daemon, linux-kernel-log-daemon
+Replaces: syslog-ng (<< 3.3.0~)
 Conflicts: system-log-daemon, linux-kernel-log-daemon
-Description: Next generation logging daemon
- Syslog-ng tries to fill the gaps original syslogd's were lacking:
-   * powerful configurability
-   * filtering based on message content
-   * portability
-   * better network forwarding
+Breaks: syslog-ng (<< 3.3.0~)
+Description: Next generation system logging daemon (core)
+ syslog-ng is an enhanced syslog daemon, supporting, amongst others:
+  * Powerful configurability, while still being readable
+  * Filtering on any part of the syslog message
+  * Support for both legacy BSD and the new syslog protocol
+  * Wide range of source and destination drivers, including TCP
+    (plain, or over SSL/TLS), UDP, SQL, MongoDB
+  * Also supports fine-grained output format control
+  * Multi-threaded operation
+ .
+ The wide range of plugins make syslog-ng able to perform well in
+ every situation, ranging from enterprise-class centralised
+ deployments, through personal computers to ad-hoc connected networks.
+ .
+ This package provides the core syslog-ng, with all the plugins
+ required for a standard installation.
+
+Package: syslog-ng-module-json
+Architecture: any
+Depends: syslog-ng-core (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
+Description: Next generation system logging daemon (json plugin)
+ syslog-ng is an enhanced syslog daemon, supporting, amongst others:
+  * Powerful configurability, while still being readable
+  * Filtering on any part of the syslog message
+  * Support for both legacy BSD and the new syslog protocol
+  * Wide range of source and destination drivers, including TCP
+    (plain, or over SSL/TLS), UDP, SQL, MongoDB
+  * Also supports fine-grained output format control
+  * Multi-threaded operation
+ .
+ The wide range of plugins make syslog-ng able to perform well in
+ every situation, ranging from enterprise-class centralised
+ deployments, through personal computers to ad-hoc connected networks.
+ .
+ This package provides the $(format-json) template function plugin,
+ which makes it possible to conveniently serialize system log messages
+ to JSON.
+
+Package: syslog-ng-module-mongodb
+Architecture: any
+Depends: syslog-ng-core (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
+Suggests: mongodb-server
+Description: Next generation system logging daemon (mongodb plugin)
+ syslog-ng is an enhanced syslog daemon, supporting, amongst others:
+  * Powerful configurability, while still being readable
+  * Filtering on any part of the syslog message
+  * Support for both legacy BSD and the new syslog protocol
+  * Wide range of source and destination drivers, including TCP
+    (plain, or over SSL/TLS), UDP, SQL, MongoDB
+  * Also supports fine-grained output format control
+  * Multi-threaded operation
+ .
+ The wide range of plugins make syslog-ng able to perform well in
+ every situation, ranging from enterprise-class centralised
+ deployments, through personal computers to ad-hoc connected networks.
+ .
+ This package provides the mongodb destination plugin, which allows
+ one to log system messages to MongoDB.
+
+Package: syslog-ng-module-sql
+Architecture: any
+Depends: syslog-ng-core (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
+Suggests: libdbd-mysql, libdbd-pgsql, libdbd-sqlite3
+Description: Next generation system logging daemon (sql plugin)
+ syslog-ng is an enhanced syslog daemon, supporting, amongst others:
+  * Powerful configurability, while still being readable
+  * Filtering on any part of the syslog message
+  * Support for both legacy BSD and the new syslog protocol
+  * Wide range of source and destination drivers, including TCP
+    (plain, or over SSL/TLS), UDP, SQL, MongoDB
+  * Also supports fine-grained output format control
+  * Multi-threaded operation
+ .
+ The wide range of plugins make syslog-ng able to perform well in
+ every situation, ranging from enterprise-class centralised
+ deployments, through personal computers to ad-hoc connected networks.
+ .
+ This package provides the sql destination plugin, which allows one to
+ log system messages to a multitude of SQL databases (including, but
+ not limited to MySQL, PostgreSQL and SQLite).
+
+Package: syslog-ng-dev
+Architecture: any
+Depends: syslog-ng-core (= ${binary:Version}), ${misc:Depends}, ${perl:Depends}, pkg-config
+Description: Next generation system logging daemon development files
+ syslog-ng is an enhanced syslog daemon, supporting, amongst others:
+  * Powerful configurability, while still being readable
+  * Filtering on any part of the syslog message
+  * Support for both legacy BSD and the new syslog protocol
+  * Wide range of source and destination drivers, including TCP
+    (plain, or over SSL/TLS), UDP, SQL, MongoDB
+  * Also supports fine-grained output format control
+  * Multi-threaded operation
+ .
+ The wide range of plugins make syslog-ng able to perform well in
+ every situation, ranging from enterprise-class centralised
+ deployments, through personal computers to ad-hoc connected networks.
+ .
+ This package provides the development headers and other tools needed
+ to compile syslog-ng plugins.

@@ -4,6 +4,7 @@
    notifempty
    weekly
    compress
+   delaycompress
 }
 
 /var/log/cron.log {
@@ -12,6 +13,7 @@
    missingok
    notifempty
    compress
+   delaycompress
 }
 
 /var/log/daemon.log {
@@ -20,6 +22,7 @@
    missingok
    notifempty
    compress
+   delaycompress
 }
 
 /var/log/debug {
@@ -28,6 +31,7 @@
    missingok
    notifempty
    compress
+   delaycompress
 }
 
 /var/log/kern.log {
@@ -36,6 +40,7 @@
    missingok
    notifempty
    compress
+   delaycompress
 }
 
 /var/log/lpr.log {
@@ -44,6 +49,7 @@
    missingok
    notifempty
    compress
+   delaycompress
 }
 
 /var/log/mail.err {
@@ -52,6 +58,7 @@
    missingok
    notifempty
    compress
+   delaycompress
 }
 
 /var/log/mail.info {
@@ -60,6 +67,7 @@
    missingok
    notifempty
    compress
+   delaycompress
 }
 
 /var/log/mail.log {
@@ -68,6 +76,7 @@
    missingok
    notifempty
    compress
+   delaycompress
 }
 
 /var/log/mail.warn {
@@ -76,6 +85,16 @@
    missingok
    notifempty
    compress
+   delaycompress
+}
+
+/var/log/error {
+   rotate 4
+   weekly
+   missingok
+   notifempty
+   compress
+   delaycompress
 }
 
 /var/log/messages {
@@ -84,6 +103,7 @@
    missingok
    notifempty
    compress
+   delaycompress
 }
 
 
@@ -93,6 +113,7 @@
    missingok
    notifempty
    compress
+   delaycompress
 }
 
 /var/log/uucp.log {
@@ -101,13 +122,15 @@
    notifempty
    weekly
    compress
+   delaycompress
 }
 
 /var/log/syslog {
    rotate 7
    daily
    compress
+   delaycompress
    postrotate
-      /etc/init.d/syslog-ng reload >/dev/null
+      /usr/sbin/invoke-rc.d syslog-ng reload >/dev/null || true
    endscript
 }

@@ -1,0 +1,5 @@
+syslog-ng-core: package-name-doesnt-match-sonames libsyslog-ng0
+syslog-ng-core: no-symbols-control-file usr/lib/libsyslog-ng.so.0.0.0
+syslog-ng-core: unused-shlib-entry-in-control-file libafsocket tls
+syslog-ng-core: unused-shlib-entry-in-control-file libafsocket notls
+syslog-ng-core: unused-shlib-entry-in-control-file libsyslog-ng crypto

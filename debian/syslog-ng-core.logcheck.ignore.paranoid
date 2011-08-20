@@ -1,0 +1,2 @@
+^\w{3} [ :[:digit:]]{11} [._[:alnum:]-]+ syslog-ng\[[[:digit:]]{1,5}\]: Log statistics;( (processed='(source|destination|center)\([-_[:alnum:]]+\)=[[:digit:]]+'|dropped='pipe\([-/_[:alnum:]]+\)=[[:digit:]]+'|dropped='(ud|tc)p\(AF_INET\([.[:digit:]]{7,15}:[[:digit:]]{1,5}\)\)=[[:digit:]]+'),)+[^,]*$
+^\w{3} [ :[:digit:]]{11} [._[:alnum:]-]+ syslog-ng\[[[:digit:]]{1,5}\]: STATS: dropped 0$

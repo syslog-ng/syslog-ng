@@ -1,110 +1,86 @@
-#!/usr/bin/make -f
-#-*- makefile -*-
-# Made with the aid of dh_make, by Craig Small
-# Sample debian/rules that uses debhelper. GNU copyright 1997 by Joey Hess.
-# Some lines taken from debmake, by Christoph Lameter.
+#! /usr/bin/make -f
 
-# Uncomment this to turn on verbose mode.
-#export DH_VERBOSE=1
-export DH_COMPAT=3
+ifneq (,$(filter debug,$(DEB_BUILD_OPTIONS)))
+	EXTRA_CONFIGURE_OPTS += --enable-debug
+endif
 
-DDEBUG=`if (echo $(DEB_BUILD_OPTIONS) | grep -q debug) then \
-			echo "--enable-debug"; \
-		else \
-			echo ""; \
-		fi`
+export DH_OPTIONS += -O-Bdebian/build-tree
 
+default: build
+
+override_dh_autoreconf:
+	install -d lib/ivykis/m4 modules/afmongodb/libmongo-client/m4
+	skip_git=1 dh_autoreconf sh ./autogen.sh
+
+override_dh_auto_configure:
+	dh_auto_configure -- \
+		--prefix=/usr \
+		--mandir=/usr/share/man \
+		--sysconfdir=/etc/syslog-ng \
+		--localstatedir=/var/lib/syslog-ng \
+		--datadir=/usr/share/syslog-ng \
+		\
+		--enable-dynamic-linking \
+		--enable-ssl \
+		--enable-spoof-source \
+		--enable-tcp-wrapper \
+		--enable-sql \
+		--enable-mongodb \
+		--enable-json \
+		--disable-systemd \
+		\
+		--with-libmongo-client=system \
+		--with-ivykis=internal \
+		--with-json=json-c \
+		\
+		${EXTRA_CONFIGURE_OPTS}
+
+override_dh_auto_test:
+
+override_dh_auto_clean:
+	dh_auto_clean
+	find . \( -name 'Makefile.in' -or \
+		  -name 'aclocal.m4' -or \
+		  -name 'configure' -or \
+		  -name 'depcomp' -or -name 'missing' -or \
+		  -name 'install-sh' -or -name 'ltmain.sh' -or \
+		  -name 'ylwrap' -or \
+		  -regex '.*/config\.\(sub\|guess\|h\.in\)' \) \
+	     -exec rm '{}' \;
+	rm -f m4/lt*.m4 m4/libtool.m4 m4/pkg.m4
+	rm -rf lib/ivykis/m4 modules/afmongodb/libmongo-client/m4
+
+override_dh_install:
+	dh_install
+	chmod +x debian/syslog-ng-dev/usr/share/syslog-ng/tools/merge-grammar.pl
+
+override_dh_installdocs:
+	dh_installdocs --link-doc=syslog-ng-core
+
+# Install the NEWS file as upstream changelog.
+# Rationale: the ChangeLog file is an old artifact from the Arch
+# times. It is not updated, and is obsolete.
+override_dh_installchangelogs:
+	dh_installchangelogs NEWS
+
+# Init files and whatnot were moved to syslog-ng-core, but we want to
+# retain the old filenames.
+override_dh_installinit:
+	dh_installinit --name syslog-ng -- defaults 10 90
+
+# Dummy build thingy, to work around upstream build/ dir.
 build: build-stamp
 build-stamp:
-	dh_testdir
+.PHONY: build-stamp
 
-	./configure --prefix=/ \
-               $(DDEBUG) \
-               --mandir=/usr/share/man \
-               --sysconfdir=/etc/syslog-ng
-	# Add here commands to compile the package.
+get-orig-source: UPSTREAMVERSION=$(shell dpkg-parsechangelog | sed -n '/\(Version:\)/{s/^Version:[[:space:]]\+\([0-9]\+:\)\?\(.*\)/\2/p}' | rev | cut -d- -f 2- | rev)
+get-orig-source:
+	install -d debian/orig-source
+	git archive patched --format tar --prefix=syslog-ng/ | tar -C debian/orig-source -xf -
+	(cd lib/ivykis; git archive HEAD --format tar --prefix=syslog-ng/lib/ivykis/) | tar -C debian/orig-source -xf -
+	(cd modules/afmongodb/libmongo-client; git archive HEAD --format tar --prefix=syslog-ng/modules/afmongodb/libmongo-client/) | tar -C debian/orig-source -xf -
+	tar -C debian/orig-source -cf - syslog-ng | xz -9 >../syslog-ng_${UPSTREAMVERSION}.orig.tar.xz
+	rm -rf debian/orig-source
 
-	$(MAKE) 
-
-#	(cd doc/sgml; $(MAKE) syslog-ng.html.tar.gz)
-
-	touch build-stamp
-clean:
-	dh_testdir
-	dh_testroot
-	rm -f build-stamp
-
-	# Add here commands to clean up after the build process.
-	-$(MAKE) distclean
-#	rm -f doc/sgml/syslog-ng.dvi doc/sgml/syslog-ng.html.tar.gz doc/sgml/syslog-ng.ps 
-#	rm -rf doc/sgml/syslog-ng.html doc/sgml/syslog-ng.txt
-#	rm -rf src/cfg-grammar.c
-
-	dh_clean
-
-install: build
-	dh_testdir
-	dh_testroot
-	dh_clean -k
-	dh_installdirs
-
-	# Add here commands to install the package into debian/tmp.
-	$(MAKE) install DESTDIR=`pwd`/debian/tmp
-
-	dh_movefiles
-
-#	install -d -m 755 debian/syslog-ng/etc/default
-#	install -m 644 debian/syslog-ng.default debian/syslog-ng/etc/default/syslog-ng
-#	install -d -m 700 debian/syslog-ng/etc/syslog-ng
-#	install -m 644 debian/syslog-ng.conf debian/syslog-ng/etc/syslog-ng
-
-#	install -d -m 700 debian/syslog-ng/etc/logcheck/ignore.d.paranoid
-#	install -m 644 debian/syslog-ng.logcheck.ignore debian/syslog-ng/etc/logcheck/ignore.d.paranoid/syslog-ng
-#	install -d -m 700 debian/syslog-ng/etc/logcheck/ignore.d.server
-#	install -m 644 debian/syslog-ng.logcheck.ignore debian/syslog-ng/etc/logcheck/ignore.d.server/syslog-ng
-#	install -d -m 700 debian/syslog-ng/etc/logcheck/ignore.d.workstation
-#	install -m 644 debian/syslog-ng.logcheck.ignore debian/syslog-ng/etc/logcheck/ignore.d.workstation/syslog-ng
-
-# Build architecture-independent files here.
-binary-indep: build install
-# We have nothing to do by default.
-
-# Build architecture-dependent files here.
-binary-arch: build install
-#	dh_testversion
-	dh_testdir
-	dh_testroot
-	dh_installdocs
-#	rm debian/syslog-ng/usr/share/doc/syslog-ng/sgml/Makefile*
-#	(cd debian/syslog-ng/usr/share/doc/syslog-ng/sgml; mv syslog-ng.html ../html; ls)
-#	rm debian/syslog-ng/usr/share/doc/syslog-ng/sgml/syslog-ng.html.tar.gz
-#	(cd debian/syslog-ng/usr/share/doc/syslog-ng/sgml; mv syslog-ng.* ..)
-#	rm -rf  debian/syslog-ng/usr/share/doc/syslog-ng/sgml
-#	rm -f debian/syslog-ng/usr/share/doc/syslog-ng/INSTALL
-#	rm -f debian/syslog-ng/usr/share/doc/syslog-ng/syslog-ng.conf.demo
-#	rm -f debian/syslog-ng/usr/share/doc/syslog-ng/syslog-ng.conf.sample
-#	rm -f debian/syslog-ng/usr/share/doc/syslog-ng/syslog-ng.conf.solaris
-	dh_installexamples
-#	dh_installmenu
-#	dh_installemacsen
-	dh_installinit -r --no-start -- defaults 10 90
-	dh_installcron
-	dh_installlogrotate
-#	dh_installmanpages
-#	dh_undocumented
-	dh_installchangelogs ChangeLog
-#	dh_link
-	dh_strip
-	dh_compress
-	dh_fixperms
-	# You may want to make some executables suid here
-#	dh_suidregister
-#	dh_makeshlibs
-	dh_installdeb
-	dh_shlibdeps
-	dh_gencontrol
-	dh_md5sums
-	dh_builddeb
-
-binary: binary-indep binary-arch
-.PHONY: build clean binary-indep binary-arch binary
+%:
+	dh $@ --with autoreconf

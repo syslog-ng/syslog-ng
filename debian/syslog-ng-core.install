@@ -1,0 +1,22 @@
+etc/syslog-ng/*
+usr/bin/*
+usr/sbin/*
+usr/share/man/*
+usr/lib/libsyslog-ng.so.*
+usr/lib/syslog-ng/libsyslog-ng-crypto.so
+usr/lib/syslog-ng/libaffile.so
+usr/lib/syslog-ng/libafprog.so
+usr/lib/syslog-ng/libafsocket-tls.so
+usr/lib/syslog-ng/libafsocket-notls.so
+usr/lib/syslog-ng/libafsocket.so
+usr/lib/syslog-ng/libafuser.so
+usr/lib/syslog-ng/libbasicfuncs.so
+usr/lib/syslog-ng/libconfgen.so
+usr/lib/syslog-ng/libconvertfuncs.so
+usr/lib/syslog-ng/libcsvparser.so
+usr/lib/syslog-ng/libdbparser.so
+usr/lib/syslog-ng/libsyslogformat.so
+usr/share/syslog-ng/include/scl/*
+usr/share/syslog-ng/xsd/*
+
+debian/syslog-ng.conf	/etc/syslog-ng/

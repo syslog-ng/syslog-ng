@@ -1,0 +1,119 @@
+#! /bin/sh
+### BEGIN INIT INFO
+# Provides:          syslog-ng
+# Required-Start:    $local_fs $network $time $remote_fs
+# Required-Stop:     $local_fs $network $time $remote_fs
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Starting system logging daemon
+# Description:       Starting syslog-NG, the next generation
+#  syslog daemon.
+### END INIT INFO#
+
+SYSLOGNG_OPTS=""
+
+#we source /etc/default/syslog-ng if exists
+[ -r /etc/default/syslog-ng ] && . /etc/default/syslog-ng
+
+# stop syslog-ng before changing its PID file!
+PIDFILE="/var/run/syslog-ng.pid"
+
+SYSLOGNG="/usr/sbin/syslog-ng"
+NAME="syslog-ng"
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+test -f $SYSLOGNG || exit 0
+
+# Define LSB log_* functions.
+# Depend on lsb-base (>= 3.0-6) to ensure that this file is present.
+. /lib/lsb/init-functions
+
+case "x$CONSOLE_LOG_LEVEL" in
+  x[1-8])
+    dmesg -n $CONSOLE_LOG_LEVEL
+    ;;
+  x)
+    ;;
+  *)
+    log_warning_msg "CONSOLE_LOG_LEVEL is of unaccepted value."
+    ;;
+esac
+
+create_xconsole() {
+  if [ ! -e /dev/xconsole ]
+  then
+    mknod -m 640 /dev/xconsole p
+  fi
+}
+
+create_pidfiledir() {
+  if [ ! -d /var/run/syslog-ng ]
+  then
+    mkdir -p /var/run/syslog-ng
+  fi
+}
+                                
+syslogng_start() {
+    log_daemon_msg "Starting system logging" "$NAME"
+    create_xconsole
+    [ -f "$PIDFILE" ] && echo ' seems to be running' && return 0
+    install -d /var/lib/syslog-ng
+    start-stop-daemon --start --quiet --exec "$SYSLOGNG" \
+                      --pidfile "$PIDFILE" -- -p "$PIDFILE"  $SYSLOGNG_OPTS
+    RET="$?"
+    log_end_msg $RET
+    return $RET
+    
+}
+
+syslogng_stop() {
+    log_daemon_msg "Stopping system logging" "$NAME"
+    [ ! -f "$PIDFILE" ] && echo ' seems to be stopped already' && return 0
+    start-stop-daemon --stop --quiet --name "$NAME" --retry 3 \
+                      --pidfile "$PIDFILE"
+    RET="$?"
+    log_end_msg $RET
+    rm -f "$PIDFILE"
+    return $RET
+}
+
+syslogng_reload() {
+    log_daemon_msg "Reload system logging" "$NAME"
+    if $SYSLOGNG -s $SYSLOGNG_OPTS
+    then
+      start-stop-daemon --stop --signal 1 --quiet --exec "$SYSLOGNG" \
+                        --pidfile "$PIDFILE"
+      RET="$?"
+      log_end_msg $RET
+      return $RET
+    else
+      log_end_msg 1
+      return 1
+    fi
+}
+
+
+case "$1" in
+  start)
+    create_pidfiledir
+    syslogng_start || exit 1
+    ;;
+  stop)
+    syslogng_stop || exit 1
+    ;;
+  reload|force-reload)
+    syslogng_reload || exit 1
+    ;;
+  restart)
+    syslogng_stop
+    sleep 1
+    syslogng_start || exit 1
+    ;;
+  *)
+    echo "Usage: /etc/init.d/$NAME {start|stop|restart|reload|force-reload}" >&2
+    exit 1
+    ;;
+esac
+
+exit 0
+

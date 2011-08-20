@@ -1,0 +1,5 @@
+syslog-ng (3.3.0beta2-1~preview0) unstable; urgency=low
+
+  * New upstream beta release.
+
+ -- Gergely Nagy <algernon@madhouse-project.org>  Sat, 20 Aug 2011 13:02:01 +0200
