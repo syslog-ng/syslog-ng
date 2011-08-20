@@ -617,6 +617,7 @@ persist_state_load(PersistState *self)
         }
     close_and_exit:
       fclose(persist_file);
+      serialize_archive_free(sa);
     }
   else
     {
