@@ -617,7 +617,7 @@ cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
         }
       else
         {
-          self->token_blocks = g_list_remove_link(self->token_blocks, self->token_blocks);
+          self->token_blocks = g_list_delete_link(self->token_blocks, self->token_blocks);
           cfg_token_block_free(block);
         }
     }
