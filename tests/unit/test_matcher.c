@@ -17,8 +17,11 @@ testcase_match(const gchar *log, const gchar *pattern, gint matcher_flags, gbool
   NVHandle nonasciiz = log_msg_get_value_handle("NON-ASCIIZ");
   gssize msglen;
   const gchar *value;
+  GSockAddr *sa;
 
-  msg = log_msg_new(log, strlen(log), g_sockaddr_inet_new("10.10.10.10", 1010), &parse_options);
+  sa = g_sockaddr_inet_new("10.10.10.10", 1010);
+  msg = log_msg_new(log, strlen(log), sa, &parse_options);
+  g_sockaddr_unref(sa);
 
   g_snprintf(buf, sizeof(buf), "%sAAAAAAAAAAAA", log_msg_get_value(msg, LM_V_MESSAGE, &msglen));
   log_msg_set_value(msg, log_msg_get_value_handle("MESSAGE2"), buf, -1);
@@ -54,8 +57,11 @@ testcase_replace(const gchar *log, const gchar *re, gchar *replacement, const gc
   gssize msglen;
   NVHandle nonasciiz = log_msg_get_value_handle("NON-ASCIIZ");
   const gchar *value;
+  GSockAddr *sa;
 
-  msg = log_msg_new(log, strlen(log), g_sockaddr_inet_new("10.10.10.10", 1010), &parse_options);
+  sa = g_sockaddr_inet_new("10.10.10.10", 1010);
+  msg = log_msg_new(log, strlen(log), sa, &parse_options);
+  g_sockaddr_unref(sa);
 
   /* NOTE: we test how our matchers cope with non-zero terminated values. We don't change message_len, only the value */
 
