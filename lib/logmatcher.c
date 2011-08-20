@@ -812,8 +812,8 @@ static void
 log_matcher_pcre_re_free(LogMatcher *s)
 {
   LogMatcherPcreRe *self = (LogMatcherPcreRe *) s;
+  pcre_free(self->extra);
   pcre_free(self->pattern);
-
 }
 
 LogMatcher *
