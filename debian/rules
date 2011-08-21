@@ -13,6 +13,7 @@ override_dh_autoreconf:
 	skip_git=1 dh_autoreconf sh ./autogen.sh
 
 override_dh_auto_configure:
+	SOURCE_REVISION=$(shell dpkg-parsechangelog | sed -n "/^Version:/s/^Version: /debian\//p") \
 	dh_auto_configure -- \
 		--prefix=/usr \
 		--mandir=/usr/share/man \
