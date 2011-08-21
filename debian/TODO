@@ -23,13 +23,6 @@ the moment.
 I've seen this on a few systems, not sure why this happens, but it
 needs to be investigated.
 
-*** Upgrading does not restart syslog-ng
-
-This happens because the prerm of the old one will only stop syslog-ng
-on remove, and will restart it in postinst.
-
-This would probably be fixable by using dh_installinit -R.
-
 *** Config file is not always preserved between upgrades.
 
 Need to test this extensively. I had cases where the config file was

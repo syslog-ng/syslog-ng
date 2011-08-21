@@ -5,8 +5,9 @@ syslog-ng (3.3.0beta2-1~preview1) unstable; urgency=low
   * Fixed the logrotate config file installation, so that upgrades from
     non-split syslog-ng becomes smooth. (This breaks upgrades from split
     ones, but that's ok)
+  * Do restart syslog-ng properly upon upgrade from non-split version.
 
- -- Gergely Nagy <algernon@madhouse-project.org>  Sun, 21 Aug 2011 18:45:05 +0200
+ -- Gergely Nagy <algernon@madhouse-project.org>  Sun, 21 Aug 2011 19:17:15 +0200
 
 syslog-ng (3.3.0beta2-1~preview0) unstable; urgency=low
 

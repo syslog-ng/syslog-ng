@@ -66,8 +66,11 @@ override_dh_installchangelogs:
 
 # Init files and whatnot were moved to syslog-ng-core, but we want to
 # retain the old filenames. Same goes for logrotate stuff.
-override_dh_installlogrotate override_dh_installinit: override_%:
-	$* --name syslog-ng -- defaults 10 90
+override_dh_installlogrotate:
+	dh_installlogrotate --name syslog-ng
+
+override_dh_installinit:
+	dh_installinit -R --name syslog-ng -- defaults 10 90
 
 # Dummy build thingy, to work around upstream build/ dir.
 build: build-stamp
