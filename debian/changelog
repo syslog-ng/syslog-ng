@@ -9,8 +9,9 @@ syslog-ng (3.3.0beta2-1~preview1) unstable; urgency=low
   * Simplified the logrotate file by merging identical entries.
   * Include local configuration files from /etc/syslog-ng/conf.d/ (Closes:
     #609050).
+  * Update debian/copyright to DEP-5 format.
 
- -- Gergely Nagy <algernon@madhouse-project.org>  Sun, 21 Aug 2011 21:05:11 +0200
+ -- Gergely Nagy <algernon@madhouse-project.org>  Mon, 22 Aug 2011 00:02:53 +0200
 
 syslog-ng (3.3.0beta2-1~preview0) unstable; urgency=low
 

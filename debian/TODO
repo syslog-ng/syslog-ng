@@ -47,12 +47,16 @@ while the SONAME issues aren't solved, as we'll only have to rename
 the package then, and everything else will be fine already.
 
 ** DEP-5 debian/copyright
+- Note taken on [2011-08-22 Mon 00:02] \\
+  Partially done
 
 There's quite a lot of work to do with regards to documenting the
 copyright and licenses of various parts of syslog-ng. So this task
 will be a bit of a pain.
 
-Needs to be done, nevertheless.
+*** License stuff
+
+Sort out the documentation licenses.
 
 * Bug triaging
 
