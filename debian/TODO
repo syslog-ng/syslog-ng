@@ -1,0 +1,62 @@
+#+STARTUP: indent showall                       -*- org -*-
+
+* Upgrade issues
+
+Issues that arise when upgrading from the unsplit Debian syslog-ng
+from Squeeze (direct upgrades from earlier are not supported, and will
+not be).
+
+** Logrotate
+
+When upgrading from non-split to split, the logrotate files are not
+replaced, because the new ones are installed as syslog-ng-core,
+instead of syslog-ng.
+
+debian/rules should be updated to - if necessary - skip
+dh_installlogrotate, and do it on our own.
+
+This is fairly important, because otherwise logrotate will complain
+that two services try to rotate the same files.
+
+** Logcheck
+
+A similar problem exists with logcheck, but I do not know the
+consequences of having both syslog-ng and syslog-ng-core logchecks at
+the moment.
+
+** Upgrading from non-split to split does not restart syslog-ng
+
+I've seen this on a few systems, not sure why this happens, but it
+needs to be investigated.
+
+* Packaging improvements
+
+** Split libsyslog-ng0 out of syslog-ng-core
+
+The reason for this is that when building third party modules, one
+does not need syslog-ng itself, it does not need to run. Thus,
+build-depending on the full syslog-ng-core, which replaces the syslogd
+would be a silly idea.
+
+This split will also make lintian happier.
+
+TODO: Talk to upstream about it (mail sent to syslog-ng@ list
+already), and figure out the SONAME issues.
+
+** Fix syslog-ng-dev (and possibly rename it to libsyslog-ng-dev)
+
+We need the ivykis headers installed too, and proper dependencies
+added. That involves going through the headers and seeing what we
+expose.
+
+The devel package, whatever the name will be, can be worked on even
+while the SONAME issues aren't solved, as we'll only have to rename
+the package then, and everything else will be fine already.
+
+** DEP-5 debian/copyright
+
+There's quite a lot of work to do with regards to documenting the
+copyright and licenses of various parts of syslog-ng. So this task
+will be a bit of a pain.
+
+Needs to be done, nevertheless.
