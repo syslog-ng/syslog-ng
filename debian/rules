@@ -1,17 +1,51 @@
 #! /usr/bin/make -f
+## debian/rules file for syslog-ng 3.3+
+## (C) 2011 Gergely Nagy <algernon@madhouse-project.org>
+##
+## Released under the GPLv3+, see /usr/share/common-licenses/GPL-3 on
+## Debian systems.
 
+##
+#* Environment setup
+#
+# If DEB_BUILD_OPTIONS has "debug" in it, we want to pass
+# --enable-debug to configure.
+#
+# We also want to build in a separate build directory:
+# debian/build-tree, because it's just so much easier to ignore files
+# in there.
+#
+# By the way, if one wants to pass extra flags to configure, that can
+# be done with EXTRA_CONFIGURE_OPTS, we don't override it, only append
+# to it.
+##
 ifneq (,$(filter debug,$(DEB_BUILD_OPTIONS)))
 	EXTRA_CONFIGURE_OPTS += --enable-debug
 endif
 
 export DH_OPTIONS += -O-Bdebian/build-tree
 
-default: build
+# For my own sanity, when debian/rules is ran without any argument,
+# display something meaningful, instead of just running the first
+# override.
+help:
+	dh $@
 
+##
+#* Overrides for dh_auto*
+##
+
+# Autoreconf needs two things:
+# - m4 directories for the submodules, because otherwise it can
+#   randomly fail.
+# - We need to call autogen.sh instead of autoreconf.
 override_dh_autoreconf:
 	install -d lib/ivykis/m4 modules/afmongodb/libmongo-client/m4
 	skip_git=1 dh_autoreconf sh ./autogen.sh
 
+# Oh, the joys of configure!
+# We pass down all appropriate options, along with EXTRA_CONFIGURE_OPTS.
+# This also sets SOURCE_REVISION to the debian package version.
 override_dh_auto_configure:
 	SOURCE_REVISION=$(shell dpkg-parsechangelog | sed -n "/^Version:/s/^Version: /debian\//p") \
 	dh_auto_configure -- \
@@ -36,8 +70,16 @@ override_dh_auto_configure:
 		\
 		${EXTRA_CONFIGURE_OPTS}
 
+# Tests. While tests are good, they're quite costy, and I'm not
+# convinced they'd run on the buildds at all. Therefore, they're
+# disabled.
 override_dh_auto_test:
 
+# Cleaning is another fun thing: make distclean will not remove
+# everything we want to remove (ie, everything generated, no
+# exceptions). So we do a bit of finding and remove a few things it
+# missed. We also remove the m4 directories we created for autoreconf
+# earlier.
 override_dh_auto_clean:
 	dh_auto_clean
 	find . \( -name 'Makefile.in' -or \
@@ -51,10 +93,24 @@ override_dh_auto_clean:
 	rm -f m4/lt*.m4 m4/libtool.m4 m4/pkg.m4
 	rm -rf lib/ivykis/m4 modules/afmongodb/libmongo-client/m4
 
+##
+#* Overrides for other debhelper commands
+#
+# Below are overrides for individual debhelper commands.
+##
+
+# Upstream installs the merge-grammar.pl as data, thus not
+# executable. Yet, it needs to be, since the Makefiles that upstream
+# also installs expect it so.
+#
+# So we simply flip a few bits after dh_install, and we're good to go!
 override_dh_install:
 	dh_install
 	chmod +x debian/syslog-ng-dev/usr/share/syslog-ng/tools/merge-grammar.pl
 
+# Since every binary package other than itself will depend on
+# syslog-ng-core, and the docs are exactly the same for all, instruct
+# dh_installdocs to symlink every other doc dir to this one.
 override_dh_installdocs:
 	dh_installdocs --link-doc=syslog-ng-core
 
@@ -66,17 +122,23 @@ override_dh_installchangelogs:
 
 # Init files and whatnot were moved to syslog-ng-core, but we want to
 # retain the old filenames. Same goes for logrotate stuff.
+override_dh_installinit:
+	dh_installinit -R --name syslog-ng -- defaults 10 90
+
 override_dh_installlogrotate:
 	dh_installlogrotate --name syslog-ng
 
-override_dh_installinit:
-	dh_installinit -R --name syslog-ng -- defaults 10 90
+##
+#* Other, non-override targets
+##
 
 # Dummy build thingy, to work around upstream build/ dir.
 build: build-stamp
 build-stamp:
 .PHONY: build-stamp
 
+# We get the original source by git archiving syslog-ng and all
+# submodules, then tarring up the result, and compressing it.
 get-orig-source: UPSTREAMVERSION=$(shell dpkg-parsechangelog | sed -n '/\(Version:\)/{s/^Version:[[:space:]]\+\([0-9]\+:\)\?\(.*\)/\2/p}' | rev | cut -d- -f 2- | rev)
 get-orig-source:
 	git submodule update --init
@@ -87,5 +149,6 @@ get-orig-source:
 	tar -C debian/orig-source -cf - syslog-ng | xz -9 >../syslog-ng_${UPSTREAMVERSION}.orig.tar.xz
 	rm -rf debian/orig-source
 
+# And for the rest, there is debhelper!
 %:
 	dh $@ --with autoreconf
