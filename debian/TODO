@@ -6,18 +6,41 @@ Issues that arise when upgrading from the unsplit Debian syslog-ng
 from Squeeze (direct upgrades from earlier are not supported, and will
 not be).
 
+** Logrotate
+
+There's some logrotate stuff left in the maintainer scripts. Revisit
+what they do, and why. Also compare it to the Debian original to see
+if I need to borrow anything.
+
 ** Logcheck
 
 A similar problem exists with logcheck, but I do not know the
 consequences of having both syslog-ng and syslog-ng-core logchecks at
 the moment.
 
-** Upgrading from non-split to split does not restart syslog-ng
+** Upgrading from non-split to split, various issues
 
 I've seen this on a few systems, not sure why this happens, but it
 needs to be investigated.
 
+*** Upgrading does not restart syslog-ng
+
+This happens because the prerm of the old one will only stop syslog-ng
+on remove, and will restart it in postinst.
+
+This would probably be fixable by using dh_installinit -R.
+
+*** Config file is not always preserved between upgrades.
+
+Need to test this extensively. I had cases where the config file was
+preserved, and others were it was silently overwritten.
+
 * Packaging improvements
+
+** Simplify the maintainer scripts.
+
+Some of the maintainer scripts still contain old cruft, review them
+and remove things that are not necessary anymore.
 
 ** Split libsyslog-ng0 out of syslog-ng-core
 
