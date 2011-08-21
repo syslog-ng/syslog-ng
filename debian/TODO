@@ -53,3 +53,8 @@ copyright and licenses of various parts of syslog-ng. So this task
 will be a bit of a pain.
 
 Needs to be done, nevertheless.
+
+* Bug triaging
+
+Go over the open bugs against syslog-ng, and see which are fixed with
+the repackaging, and which still remain open.
