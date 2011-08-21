@@ -2,8 +2,11 @@ syslog-ng (3.3.0beta2-1~preview1) unstable; urgency=low
 
   * Update syslog-ng.conf to be fully 3.3 compliant.
   * Add support for GNU/kFreeBSD in the SCL system() generator.
+  * Fixed the logrotate config file installation, so that upgrades from
+    non-split syslog-ng becomes smooth. (This breaks upgrades from split
+    ones, but that's ok)
 
- -- Gergely Nagy <algernon@madhouse-project.org>  Sun, 21 Aug 2011 01:59:34 +0200
+ -- Gergely Nagy <algernon@madhouse-project.org>  Sun, 21 Aug 2011 18:45:05 +0200
 
 syslog-ng (3.3.0beta2-1~preview0) unstable; urgency=low
 
