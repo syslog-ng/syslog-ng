@@ -6,8 +6,9 @@ syslog-ng (3.3.0beta2-1~preview1) unstable; urgency=low
     non-split syslog-ng becomes smooth. (This breaks upgrades from split
     ones, but that's ok)
   * Do restart syslog-ng properly upon upgrade from non-split version.
+  * Simplified the logrotate file by merging identical entries.
 
- -- Gergely Nagy <algernon@madhouse-project.org>  Sun, 21 Aug 2011 19:17:15 +0200
+ -- Gergely Nagy <algernon@madhouse-project.org>  Sun, 21 Aug 2011 20:38:24 +0200
 
 syslog-ng (3.3.0beta2-1~preview0) unstable; urgency=low
 
