@@ -1,3 +1,10 @@
+syslog-ng (3.3.0beta2-1~preview1) unstable; urgency=low
+
+  * Update syslog-ng.conf to be fully 3.3 compliant.
+  * Add support for GNU/kFreeBSD in the SCL system() generator.
+
+ -- Gergely Nagy <algernon@madhouse-project.org>  Sun, 21 Aug 2011 01:59:34 +0200
+
 syslog-ng (3.3.0beta2-1~preview0) unstable; urgency=low
 
   * New upstream beta release.
