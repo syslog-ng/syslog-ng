@@ -1,21 +1,18 @@
-#!/bin/sh
+#! /bin/sh
 
 set -e
 
 if [ "$1" = "remove" ]; then
-    ldconfig
-
-    # disable log rotation on removal
-    # main file
     [ -f /etc/logrotate.d/syslog-ng ] && mv -f /etc/logrotate.d/syslog-ng /etc/logrotate.d/syslog-ng.disabled
+
     rm -f /var/lib/syslog-ng/syslog-ng.ctl /var/lib/syslog-ng/syslog-ng.persist
     [ -d /var/lib/syslog-ng/ ] && rmdir --ignore-fail-on-non-empty /var/lib/syslog-ng/
 fi
 
 # remove disabled files on purge or complete overwrite.
 if [ "$1" = "purge" -o "$1" = "disappear" ]; then
-    # main file
     [ -f /etc/logrotate.d/syslog-ng.disabled ] && rm -f /etc/logrotate.d/syslog-ng.disabled
+
     rm -f /var/lib/syslog-ng/syslog-ng.ctl /var/lib/syslog-ng/syslog-ng.persist
     [ -d /var/lib/syslog-ng/ ] && rmdir --ignore-fail-on-non-empty /var/lib/syslog-ng/
 fi

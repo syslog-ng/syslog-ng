@@ -6,12 +6,6 @@ Issues that arise when upgrading from the unsplit Debian syslog-ng
 from Squeeze (direct upgrades from earlier are not supported, and will
 not be).
 
-** Logrotate
-
-There's some logrotate stuff left in the maintainer scripts. Revisit
-what they do, and why. Also compare it to the Debian original to see
-if I need to borrow anything.
-
 ** Logcheck
 
 A similar problem exists with logcheck, but I do not know the
@@ -29,11 +23,6 @@ Need to test this extensively. I had cases where the config file was
 preserved, and others were it was silently overwritten.
 
 * Packaging improvements
-
-** Simplify the maintainer scripts.
-
-Some of the maintainer scripts still contain old cruft, review them
-and remove things that are not necessary anymore.
 
 ** Split libsyslog-ng0 out of syslog-ng-core
 
