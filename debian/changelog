@@ -7,8 +7,10 @@ syslog-ng (3.3.0beta2-1~preview1) unstable; urgency=low
     ones, but that's ok)
   * Do restart syslog-ng properly upon upgrade from non-split version.
   * Simplified the logrotate file by merging identical entries.
+  * Include local configuration files from /etc/syslog-ng/conf.d/ (Closes:
+    #609050).
 
- -- Gergely Nagy <algernon@madhouse-project.org>  Sun, 21 Aug 2011 20:38:24 +0200
+ -- Gergely Nagy <algernon@madhouse-project.org>  Sun, 21 Aug 2011 21:05:11 +0200
 
 syslog-ng (3.3.0beta2-1~preview0) unstable; urgency=low
 
