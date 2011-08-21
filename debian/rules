@@ -75,6 +75,7 @@ build-stamp:
 
 get-orig-source: UPSTREAMVERSION=$(shell dpkg-parsechangelog | sed -n '/\(Version:\)/{s/^Version:[[:space:]]\+\([0-9]\+:\)\?\(.*\)/\2/p}' | rev | cut -d- -f 2- | rev)
 get-orig-source:
+	git submodule update --init
 	install -d debian/orig-source
 	git archive patched --format tar --prefix=syslog-ng/ | tar -C debian/orig-source -xf -
 	(cd lib/ivykis; git archive HEAD --format tar --prefix=syslog-ng/lib/ivykis/) | tar -C debian/orig-source -xf -
