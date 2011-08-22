@@ -106,9 +106,11 @@ override_dh_auto_clean:
 # also installs expect it so.
 #
 # So we simply flip a few bits after dh_install, and we're good to go!
+#
+# Also, make that part optional, for binary-indep builds.
 override_dh_install:
 	dh_install
-	chmod +x debian/libsyslog-ng-dev/usr/share/syslog-ng/tools/merge-grammar.pl
+	-chmod +x debian/libsyslog-ng-dev/usr/share/syslog-ng/tools/merge-grammar.pl
 
 # Install the NEWS file as upstream changelog.
 # Rationale: the ChangeLog file is an old artifact from the Arch
