@@ -26,7 +26,7 @@ preserved, and others were it was silently overwritten.
 Upstream will add a -release tag to libtool, so the package will end
 up being libsyslog-ng3.3.0beta2-0 (and libsyslog-ng-dev).
 
-Will do the packaging accordingly.
+Packaging is done, but -release is not patched in yet.
 
 *** Ivykis
 
