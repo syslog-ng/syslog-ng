@@ -117,7 +117,7 @@ License: GPL-3+
  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  .
  On Debian systems, the complete text of the GNU General Public
- License can be found in the file `/usr/share/common-licenses/GPL'.
+ License can be found in the file `/usr/share/common-licenses/GPL-3'.
 
 License: LGPL-2.1+ with OpenSSL exception
  This library is free software; you can redistribute it and/or
