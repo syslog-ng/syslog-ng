@@ -14,9 +14,6 @@ the moment.
 
 ** Upgrading from non-split to split, various issues
 
-I've seen this on a few systems, not sure why this happens, but it
-needs to be investigated.
-
 *** Config file is not always preserved between upgrades.
 
 Need to test this extensively. I had cases where the config file was
@@ -24,27 +21,18 @@ preserved, and others were it was silently overwritten.
 
 * Packaging improvements
 
-** Split libsyslog-ng0 out of syslog-ng-core
+** libsyslog-ng
 
-The reason for this is that when building third party modules, one
-does not need syslog-ng itself, it does not need to run. Thus,
-build-depending on the full syslog-ng-core, which replaces the syslogd
-would be a silly idea.
+Upstream will add a -release tag to libtool, so the package will end
+up being libsyslog-ng3.3.0beta2-0 (and libsyslog-ng-dev).
 
-This split will also make lintian happier.
+Will do the packaging accordingly.
 
-TODO: Talk to upstream about it (mail sent to syslog-ng@ list
-already), and figure out the SONAME issues.
-
-** Fix syslog-ng-dev (and possibly rename it to libsyslog-ng-dev)
+*** Ivykis
 
 We need the ivykis headers installed too, and proper dependencies
 added. That involves going through the headers and seeing what we
 expose.
-
-The devel package, whatever the name will be, can be worked on even
-while the SONAME issues aren't solved, as we'll only have to rename
-the package then, and everything else will be fine already.
 
 * Bug triaging
 
