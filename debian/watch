@@ -1,0 +1,3 @@
+# The package is built from git sources, the tarball is generated that
+# way too. Therefore, a watch file is unsuitable. Please consult the
+# Vcs-* headers and debian/README.source for more information.

@@ -108,7 +108,7 @@ override_dh_auto_clean:
 # So we simply flip a few bits after dh_install, and we're good to go!
 override_dh_install:
 	dh_install
-	chmod +x debian/syslog-ng-dev/usr/share/syslog-ng/tools/merge-grammar.pl
+	chmod +x debian/libsyslog-ng-dev/usr/share/syslog-ng/tools/merge-grammar.pl
 
 # Since every binary package other than itself will depend on
 # syslog-ng-core, and the docs are exactly the same for all, instruct
@@ -129,6 +129,11 @@ override_dh_installinit:
 
 override_dh_installlogrotate:
 	dh_installlogrotate --name syslog-ng
+
+# dh_makeshlibs wants to be clever and treat plugins as shared libs.
+# Slap it in the face, and tell it not to.
+override_dh_makeshlibs:
+	dh_makeshlibs -Xusr/lib/syslog-ng
 
 ##
 #* Other, non-override targets
