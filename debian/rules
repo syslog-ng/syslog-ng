@@ -110,12 +110,6 @@ override_dh_install:
 	dh_install
 	chmod +x debian/libsyslog-ng-dev/usr/share/syslog-ng/tools/merge-grammar.pl
 
-# Since every binary package other than itself will depend on
-# syslog-ng-core, and the docs are exactly the same for all, instruct
-# dh_installdocs to symlink every other doc dir to this one.
-override_dh_installdocs:
-	dh_installdocs --link-doc=syslog-ng-core
-
 # Install the NEWS file as upstream changelog.
 # Rationale: the ChangeLog file is an old artifact from the Arch
 # times. It is not updated, and is obsolete.
