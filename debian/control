@@ -57,7 +57,7 @@ Description: Next generation system logging daemon (private library)
 Package: libsyslog-ng-dev
 Section: libdevel
 Architecture: any
-Depends: libsyslog-ng3.3.0beta2-0 (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends},
+Depends: libsyslog-ng3.3.0beta2-0 (= ${binary:Version}), ${misc:Depends},
  ${perl:Depends}, pkg-config, perl, flex, bison
 Description: Next generation system logging daemon (development files)
  This package contains the headers and tools needed to build
