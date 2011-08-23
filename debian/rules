@@ -126,6 +126,9 @@ override_dh_installinit:
 override_dh_installlogrotate:
 	dh_installlogrotate --name syslog-ng
 
+override_dh_installlogcheck:
+	dh_installlogcheck --name syslog-ng
+
 # dh_makeshlibs wants to be clever and treat plugins as shared libs.
 # Slap it in the face, and tell it not to.
 override_dh_makeshlibs:
