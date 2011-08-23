@@ -128,6 +128,9 @@ override_dh_installlogrotate:
 
 override_dh_installlogcheck:
 	dh_installlogcheck --name syslog-ng
+	for f in $$(find debian/syslog-ng-core/etc/logcheck -type f -name 'syslog-ng-core'); do \
+		mv $$f $$(dirname $$f)/syslog-ng; \
+	done
 
 # dh_makeshlibs wants to be clever and treat plugins as shared libs.
 # Slap it in the face, and tell it not to.

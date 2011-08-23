@@ -1,3 +1,9 @@
+syslog-ng (3.3.0beta2-1~preview2) unstable; urgency=low
+
+  * Ship the logcheck files as syslog-ng, not as syslog-ng-core.
+
+ -- Gergely Nagy <algernon@madhouse-project.org>  Wed, 24 Aug 2011 00:09:49 +0200
+
 syslog-ng (3.3.0beta2-1~preview1) unstable; urgency=low
 
   * Update syslog-ng.conf to be fully 3.3 compliant.
