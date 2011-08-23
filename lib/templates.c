@@ -88,6 +88,7 @@ enum
   
   M_RECVD_OFS = M_TIME_MACROS_MAX,
   M_STAMP_OFS = 2 * M_TIME_MACROS_MAX,
+  M_CSTAMP_OFS = 3 * M_TIME_MACROS_MAX,
 };
 
 #define M_TIME_MACROS 15
@@ -172,6 +173,29 @@ LogMacroDef macros[] =
         { "S_TZOFFSET",       M_STAMP_OFS + M_TZOFFSET },
         { "S_TZ",             M_STAMP_OFS + M_TZ },
         { "S_UNIXTIME",       M_STAMP_OFS + M_UNIXTIME },
+
+	{ "C_DATE",           M_CSTAMP_OFS + M_DATE },
+        { "C_FULLDATE",       M_CSTAMP_OFS + M_FULLDATE },
+        { "C_ISODATE",        M_CSTAMP_OFS + M_ISODATE },
+        { "C_STAMP",          M_CSTAMP_OFS + M_STAMP },
+        { "C_YEAR",           M_CSTAMP_OFS + M_YEAR },
+        { "C_YEAR_DAY",       M_CSTAMP_OFS + M_YEAR_DAY },
+        { "C_MONTH",          M_CSTAMP_OFS + M_MONTH },
+        { "C_MONTH_WEEK",     M_CSTAMP_OFS + M_MONTH_WEEK },
+        { "C_MONTH_ABBREV",   M_CSTAMP_OFS + M_MONTH_ABBREV },
+        { "C_MONTH_NAME",     M_CSTAMP_OFS + M_MONTH_NAME },
+        { "C_DAY",            M_CSTAMP_OFS + M_DAY },
+        { "C_HOUR",           M_CSTAMP_OFS + M_HOUR },
+        { "C_MIN",            M_CSTAMP_OFS + M_MIN },
+        { "C_SEC",            M_CSTAMP_OFS + M_SEC },
+        { "C_WEEKDAY",        M_CSTAMP_OFS + M_WEEK_DAY_ABBREV }, /* deprecated */
+        { "C_WEEK_DAY",       M_CSTAMP_OFS + M_WEEK_DAY },
+        { "C_WEEK_DAY_ABBREV",M_CSTAMP_OFS + M_WEEK_DAY_ABBREV },
+        { "C_WEEK_DAY_NAME",  M_CSTAMP_OFS + M_WEEK_DAY_NAME },
+        { "C_WEEK",           M_CSTAMP_OFS + M_WEEK },
+        { "C_TZOFFSET",       M_CSTAMP_OFS + M_TZOFFSET },
+        { "C_TZ",             M_CSTAMP_OFS + M_TZ },
+        { "C_UNIXTIME",       M_CSTAMP_OFS + M_UNIXTIME },
 
         { "SDATA", M_SDATA },
         { "MSGHDR", M_MSGHDR },
@@ -434,7 +458,7 @@ log_macro_expand(GString *result, gint id, gboolean escape, LogTemplateOptions *
         gchar buf[64];
         gint length;
         time_t t;
-        LogStamp *stamp;
+        LogStamp *stamp, sstamp;
         glong zone_ofs;
 
         if (id >= M_TIME_FIRST && id <= M_TIME_LAST)
@@ -451,7 +475,18 @@ log_macro_expand(GString *result, gint id, gboolean escape, LogTemplateOptions *
             id -= M_STAMP_OFS;
             stamp = &msg->timestamps[LM_TS_STAMP];
           }
-        else
+	else if (id >= M_TIME_FIRST + M_CSTAMP_OFS && id <= M_TIME_LAST + M_CSTAMP_OFS)
+	  {
+	    GTimeVal tv;
+	    
+	    id -= M_CSTAMP_OFS;
+	    cached_g_current_time(&tv);
+	    sstamp.tv_sec = tv.tv_sec;
+	    sstamp.tv_usec = tv.tv_usec;
+	    sstamp.zone_offset = -1;
+	    stamp = &sstamp;
+	  }
+	else
           {
             g_assert_not_reached();
             break;
