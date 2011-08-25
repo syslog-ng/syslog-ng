@@ -689,20 +689,22 @@ afinet_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
   if (self->spoof_source && self->lnet_ctx && msg->saddr && (msg->saddr->sa.sa_family == AF_INET || msg->saddr->sa.sa_family == AF_INET6))
     {
       gboolean success = FALSE;
-      GString *msg_line = g_string_sized_new(256);
 
       g_assert((self->super.flags & AFSOCKET_DGRAM) != 0);
 
-      log_writer_format_log((LogWriter *) self->super.writer, msg, msg_line);
+      g_static_mutex_lock(&self->lnet_lock);
+      if (!self->lnet_buffer)
+        self->lnet_buffer = g_string_sized_new(256);
+      log_writer_format_log((LogWriter *) self->super.writer, msg, self->lnet_buffer);
 
       switch (self->super.dest_addr->sa.sa_family)
         {
         case AF_INET:
-          success = afinet_dd_construct_ipv4_packet(self, msg, msg_line);
+          success = afinet_dd_construct_ipv4_packet(self, msg, self->lnet_buffer);
           break;
 #if ENABLE_IPV6
         case AF_INET6:
-          success = afinet_dd_construct_ipv6_packet(self, msg, msg_line);
+          success = afinet_dd_construct_ipv6_packet(self, msg, self->lnet_buffer);
           break;
 #endif
         default:
@@ -715,8 +717,8 @@ afinet_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
               /* we have finished processing msg */
               log_msg_ack(msg, path_options);
               log_msg_unref(msg);
-              g_string_free(msg_line, TRUE);
 
+              g_static_mutex_unlock(&self->lnet_lock);
               return;
             }
           else
@@ -726,7 +728,7 @@ afinet_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
                         NULL);
             }
         }
-      g_string_free(msg_line, TRUE);
+      g_static_mutex_unlock(&self->lnet_lock);
     }
 #endif
   log_pipe_forward_msg(s, msg, path_options);
@@ -740,6 +742,10 @@ afinet_dd_free(LogPipe *s)
   g_free(self->bind_ip);
   g_free(self->bind_port);
   g_free(self->dest_port);
+#if ENABLE_SPOOF_SOURCE
+  g_string_free(self->lnet_buffer, TRUE);
+  g_static_mutex_free(&self->lnet_lock);
+#endif
   afsocket_dd_free(s);
 }
 
@@ -761,5 +767,8 @@ afinet_dd_new(gint af, gchar *host, gint port, guint flags)
   self->super.setup_socket = afinet_dd_setup_socket;
   self->super.apply_transport = afinet_dd_apply_transport;
 
+#if ENABLE_SPOOF_SOURCE
+  g_static_mutex_init(&self->lnet_lock);
+#endif
   return &self->super.super.super;
 }

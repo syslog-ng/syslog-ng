@@ -68,6 +68,8 @@ typedef struct _AFInetDestDriver
 #if ENABLE_SPOOF_SOURCE
   gboolean spoof_source;
   libnet_t *lnet_ctx;
+  GStaticMutex lnet_lock;
+  GString *lnet_buffer;
 #endif
   /* character as it can contain a service name from /etc/services */
   gchar *bind_port;
