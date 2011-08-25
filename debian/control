@@ -44,7 +44,7 @@ Description: Next generation system logging daemon (metapackage)
  including all available plugins. It can be safely removed, if only
  parts of syslog-ng need to be installed.
 
-Package: libsyslog-ng3.3.0beta2-0
+Package: libsyslog-ng-3.3.0beta2
 Section: libs
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
@@ -57,7 +57,7 @@ Description: Next generation system logging daemon (private library)
 Package: libsyslog-ng-dev
 Section: libdevel
 Architecture: any
-Depends: libsyslog-ng3.3.0beta2-0 (= ${binary:Version}), ${misc:Depends},
+Depends: libsyslog-ng-3.3.0beta2 (= ${binary:Version}), ${misc:Depends},
  ${perl:Depends}, pkg-config, perl, flex, bison
 Description: Next generation system logging daemon (development files)
  This package contains the headers and tools needed to build
