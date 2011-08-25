@@ -13,11 +13,6 @@ not be).
 Need to test this extensively. I had cases where the config file was
 preserved, and others were it was silently overwritten.
 
-*** syslog-ng is not always restarted when upgrading from squeeze
-
-When upgrading from squeeze, syslog-ng is not restarted. This will
-need some trickery to do properly.
-
 * Packaging improvements
 
 ** libsyslog-ng
