@@ -2,8 +2,11 @@ syslog-ng (3.3.0beta2-1~preview2) unstable; urgency=low
 
   * Ship the logcheck files as syslog-ng, not as syslog-ng-core.
   * Properly restart syslog-ng when upgrading from stable.
+  * Rename libsyslog-ng3.3.0beta2-0 to libsyslog-ng-3.3.0beta2.
+  * Ship the ivykis headers with libsyslog-ng-dev.
+  * Compress both source and binaries with xz, instead of gzip.
 
- -- Gergely Nagy <algernon@madhouse-project.org>  Thu, 25 Aug 2011 13:10:08 +0200
+ -- Gergely Nagy <algernon@madhouse-project.org>  Thu, 25 Aug 2011 16:15:25 +0200
 
 syslog-ng (3.3.0beta2-1~preview1) unstable; urgency=low
 
