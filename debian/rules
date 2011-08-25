@@ -95,6 +95,14 @@ override_dh_auto_clean:
 	rm -f m4/lt*.m4 m4/libtool.m4 m4/pkg.m4
 	rm -rf lib/ivykis/m4 modules/afmongodb/libmongo-client/m4
 
+# We also want to install ivykis headers and whatnot, so override
+# _auto_install, and do it too.
+# However, we do not want iv_examples.3 installed..
+override_dh_auto_install:
+	dh_auto_install
+	${MAKE} -C debian/build-tree/lib/ivykis install DESTDIR=$(CURDIR)/debian/tmp
+	rm -f debian/tmp/usr/share/man/man3/iv_examples.*
+
 ##
 #* Overrides for other debhelper commands
 #

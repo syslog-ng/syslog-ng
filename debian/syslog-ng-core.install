@@ -1,7 +1,9 @@
 etc/syslog-ng/*
 usr/bin/*
 usr/sbin/*
-usr/share/man/*
+usr/share/man/man1/*
+usr/share/man/man5/*
+usr/share/man/man8/*
 usr/lib/syslog-ng/libsyslog-ng-crypto.so
 usr/lib/syslog-ng/libaffile.so
 usr/lib/syslog-ng/libafprog.so

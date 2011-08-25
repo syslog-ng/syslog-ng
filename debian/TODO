@@ -22,12 +22,6 @@ up being libsyslog-ng3.3.0beta2-0 (and libsyslog-ng-dev).
 
 Packaging is done, but -release is not patched in yet.
 
-*** Ivykis
-
-We need the ivykis headers installed too, and proper dependencies
-added. That involves going through the headers and seeing what we
-expose.
-
 * Bug triaging
 
 Go over the open bugs against syslog-ng, and see which are fixed with
