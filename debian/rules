@@ -145,6 +145,11 @@ override_dh_installlogcheck:
 override_dh_makeshlibs:
 	dh_makeshlibs -Xusr/lib/syslog-ng
 
+# Compress the .debs with xz, it reduces the size of syslog-ng-core by
+# about 40%.
+override_dh_builddeb:
+	dh_builddeb -- -Zxz
+
 ##
 #* Other, non-override targets
 ##
