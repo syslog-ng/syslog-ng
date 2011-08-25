@@ -75,7 +75,6 @@ License: GPL-2+ with OpenSSL exception
 Files: scl/*
 Copyright: Copyright (C) 2010 BalaBit IT Security Ltd.
 License: GPL-2+ with OpenSSL exception
- # Pending upstream change
 
 Files: debian/*
 Copyright: Copyright (C) 2011 Gergely Nagy <algernon@madhouse-project.org>
