@@ -24,6 +24,7 @@ pkginclude_HEADERS = 		\
 	block-ref-parser.h	\
 	center.h		\
 	cfg.h                   \
+	cfg-grammar.h           \
 	cfg-lexer.h		\
 	cfg-parser.h		\
 	children.h		\
