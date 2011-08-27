@@ -548,17 +548,8 @@ log_macro_lookup(gchar *macro, gint len)
   gchar buf[256];
   gint macro_id;
   
+  g_assert(macro_hash);
   g_strlcpy(buf, macro, MIN(sizeof(buf), len+1));
-  if (!macro_hash)
-    {
-      int i;
-      macro_hash = g_hash_table_new(g_str_hash, g_str_equal);
-      for (i = 0; macros[i].name; i++)
-        {
-          g_hash_table_insert(macro_hash, macros[i].name,
-                              GINT_TO_POINTER(macros[i].id));
-        }
-    }
   macro_id = GPOINTER_TO_INT(g_hash_table_lookup(macro_hash, buf));
   if (configuration && configuration->version < 0x0300 && (macro_id == M_MESSAGE))
     {
@@ -616,8 +607,8 @@ tf_simple_func_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *paren
    * one. */
   for (i = 0; i < argc - 1; i++)
     {
-      state->argv[i] = log_template_new(parent->cfg, NULL, argv[i + 1]);
-      if (!log_template_compile(state->argv[i], error))
+      state->argv[i] = log_template_new(parent->cfg, NULL);
+      if (!log_template_compile(state->argv[i], argv[i + 1], error))
         goto error;
     }
   state->argc = argc - 1;
@@ -807,7 +798,7 @@ parse_msg_ref(gchar **p, gint *msg_ref)
 }
 
 gboolean
-log_template_compile(LogTemplate *self, GError **error)
+log_template_compile(LogTemplate *self, const gchar *template, GError **error)
 {
   gchar *start, *p;
   guint last_macro = M_NONE;
@@ -816,10 +807,11 @@ log_template_compile(LogTemplate *self, GError **error)
   gint error_pos = 0;
   
   g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
-  
-  if (self->compiled_template)
-    return TRUE;
 
+  log_template_reset_compiled(self);
+  if (self->template)
+    g_free(self->template);
+  self->template = g_strdup(template);
   p = self->template;
   
   while (*p)
@@ -1073,9 +1065,6 @@ log_template_append_format_with_context(LogTemplate *self, LogMessage **messages
   GList *p;
   LogTemplateElem *e;
   
-  if (!log_template_compile(self, NULL))
-    return;
-
   for (p = self->compiled_template; p; p = g_list_next(p))
     {
       gint msg_ndx;
@@ -1128,32 +1117,35 @@ log_template_append_format_with_context(LogTemplate *self, LogMessage **messages
           }
         case LTE_FUNC:
           {
+            g_static_mutex_lock(&self->arg_lock);
             if (!self->arg_bufs)
               self->arg_bufs = g_ptr_array_sized_new(0);
 
-            {
-              LogTemplateInvokeArgs args =
-                {
-                  self->arg_bufs,
-                  e->msg_ref ? &messages[msg_ndx] : messages,
-                  e->msg_ref ? 1 : num_messages,
-                  opts,
-                  tz,
-                  seq_num,
-                  context_id
-                };
+            if (1)
+              {
+                LogTemplateInvokeArgs args =
+                  {
+                    self->arg_bufs,
+                    e->msg_ref ? &messages[msg_ndx] : messages,
+                    e->msg_ref ? 1 : num_messages,
+                    opts,
+                    tz,
+                    seq_num,
+                    context_id
+                  };
 
 
-              /* if a function call is called with an msg_ref, we only
-               * pass that given logmsg to argument resolution, otherwise
-               * we pass the whole set so the arguments can individually
-               * specify which message they want to resolve from
-               */
-              if (e->func.ops->eval)
-                e->func.ops->eval(e->func.ops, e->func.state, &args);
-              e->func.ops->call(e->func.ops, e->func.state, &args, result);
-              break;
-            }
+                /* if a function call is called with an msg_ref, we only
+                 * pass that given logmsg to argument resolution, otherwise
+                 * we pass the whole set so the arguments can individually
+                 * specify which message they want to resolve from
+                 */
+                if (e->func.ops->eval)
+                  e->func.ops->eval(e->func.ops, e->func.state, &args);
+                e->func.ops->call(e->func.ops, e->func.state, &args, result);
+              }
+            g_static_mutex_unlock(&self->arg_lock);
+            break;
           }
         }
     }
@@ -1188,14 +1180,14 @@ log_template_format(LogTemplate *self, LogMessage *lm, LogTemplateOptions *opts,
 }
 
 LogTemplate *
-log_template_new(GlobalConfig *cfg, gchar *name, const gchar *template)
+log_template_new(GlobalConfig *cfg, gchar *name)
 {
   LogTemplate *self = g_new0(LogTemplate, 1);
   
   self->name = g_strdup(name);
-  self->template = template ? g_strdup(template) : NULL;
   self->ref_cnt = 1;
   self->cfg = cfg;
+  g_static_mutex_init(&self->arg_lock);
   if (configuration && configuration->version < 0x0300)
     {
       static gboolean warn_written = FALSE;
@@ -1225,6 +1217,7 @@ log_template_free(LogTemplate *self)
   log_template_reset_compiled(self);
   g_free(self->name);
   g_free(self->template);
+  g_static_mutex_free(&self->arg_lock);
   g_free(self);
 }
 
@@ -1295,4 +1288,18 @@ GQuark
 log_template_error_quark()
 {
   return g_quark_from_static_string("log-template-error-quark");
+}
+
+void
+log_template_global_init(void)
+{
+  gint i;
+
+  macro_hash = g_hash_table_new(g_str_hash, g_str_equal);
+  for (i = 0; macros[i].name; i++)
+    {
+      g_hash_table_insert(macro_hash, macros[i].name,
+                          GINT_TO_POINTER(macros[i].id));
+    }
+  return;
 }

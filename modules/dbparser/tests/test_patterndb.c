@@ -336,7 +336,10 @@ test_pattern(const gchar *pattern, const gchar *rule, gboolean match)
   if (!tzinfo)
     tzinfo = time_zone_info_new(NULL);
   if (!templ)
-    templ = log_template_new(configuration, "dummy", "$TEST");
+    {
+      templ = log_template_new(configuration, "dummy");
+      log_template_compile(templ, "$TEST", NULL);
+    }
 
   log_msg_set_value(msg, LM_V_HOST, MYHOST, strlen(MYHOST));
   log_msg_set_value(msg, LM_V_PROGRAM, "test", strlen(MYHOST));

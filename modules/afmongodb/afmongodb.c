@@ -57,8 +57,8 @@ typedef struct
 
   time_t time_reopen;
 
-  guint32 *dropped_messages;
-  guint32 *stored_messages;
+  StatsCounterItem *dropped_messages;
+  StatsCounterItem *stored_messages;
 
   time_t last_msg_stamp;
 
@@ -263,7 +263,7 @@ afmongodb_worker_insert (MongoDBDestDriver *self)
   afmongodb_dd_connect(self, TRUE);
 
   g_mutex_lock(self->queue_mutex);
-  success = log_queue_pop_head(self->queue, &msg, &path_options, 0);
+  success = log_queue_pop_head(self->queue, &msg, &path_options, FALSE, FALSE);
   g_mutex_unlock(self->queue_mutex);
   if (!success)
     return TRUE;
@@ -439,12 +439,14 @@ afmongodb_dd_init(LogPipe *s)
 
   self->queue = log_dest_driver_acquire_queue(&self->super, afmongodb_dd_format_persist_name(self));
 
+  stats_lock();
   stats_register_counter(0, SCS_MONGODB | SCS_DESTINATION, self->super.super.id,
 			 afmongodb_dd_format_stats_instance(self),
 			 SC_TYPE_STORED, &self->stored_messages);
   stats_register_counter(0, SCS_MONGODB | SCS_DESTINATION, self->super.super.id,
 			 afmongodb_dd_format_stats_instance(self),
 			 SC_TYPE_DROPPED, &self->dropped_messages);
+  stats_unlock();
 
   log_queue_set_counters(self->queue, self->stored_messages, self->dropped_messages);
   afmongodb_dd_start_thread(self);
@@ -499,6 +501,10 @@ afmongodb_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_optio
 {
   MongoDBDestDriver *self = (MongoDBDestDriver *)s;
   gboolean queue_was_empty;
+  LogPathOptions local_options;
+
+  if (!path_options->flow_control_requested)
+    path_options = log_msg_break_ack(msg, path_options, &local_options);
 
   g_mutex_lock(self->queue_mutex);
   self->last_msg_stamp = cached_g_current_time_sec ();

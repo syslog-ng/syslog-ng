@@ -2,9 +2,6 @@
 EXTRA_DIST =  man/syslog-ng.8.in man/syslog-ng.conf.5.in man/pdbtool.1.in man/loggen.1.in man/syslog-ng-ctl.1.in \
 	security/bof-2002-09-27.txt \
 	security/dos-2000-11-22.txt \
-	examples/syslog-ng.conf.sample \
-	examples/syslog-ng.conf.solaris \
-	examples/syslog-ng.service \
 	xsd/patterndb-1.xsd \
 	xsd/patterndb-2.xsd \
 	xsd/patterndb-3.xsd

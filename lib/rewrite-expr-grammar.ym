@@ -41,6 +41,27 @@
 
 LogRewrite *last_rewrite;
 
+static gboolean
+is_sdata_valid(const gchar *buffer)
+{
+  gboolean result = FALSE;
+  const gchar *dot;
+  int dot_found = 0;
+  if (strlen(buffer)>6 && strncmp(buffer,".SDATA.",7)==0)
+    {
+      dot = memchr(buffer,'.',strlen(buffer));
+      while (dot && strlen(dot)>1)
+        {
+          dot_found++;
+          dot++;
+          dot = memchr(dot, '.',strlen(dot));
+        }
+      if (dot_found >= 3)
+        result = TRUE;
+    }
+  return result;
+}
+
 }
 
 %name-prefix "rewrite_expr_"
@@ -148,6 +169,16 @@ rewrite_expr_opt
                             evt_tag_str("macro", p),
                             NULL);
                 last_rewrite->value_handle = LM_V_MESSAGE;
+              }
+
+            /* SDATA validation */
+            if (strlen($3)>6 && strncmp($3,".SDATA.",7)==0)
+              {
+                if (!is_sdata_valid($3))
+                  {
+                    msg_error("Invalid structured data format",evt_tag_str("SDATA",$3), NULL);
+                    YYERROR;
+                  }
               }
             free($3);
           }

@@ -27,6 +27,8 @@
 #include <string.h>
 #include <stdlib.h>
 
+GStaticMutex nv_registry_lock = G_STATIC_MUTEX_INIT;
+
 const gchar *null_string = "";
 
 NVHandle
@@ -46,10 +48,15 @@ nv_registry_alloc_handle(NVRegistry *self, const gchar *name)
   gpointer p;
   NVHandleDesc stored;
   gsize len;
+  NVHandle res = 0;
 
+  g_static_mutex_lock(&nv_registry_lock);
   p = g_hash_table_lookup(self->name_map, name);
   if (p)
-    return GPOINTER_TO_UINT(p);
+    {
+      res = GPOINTER_TO_UINT(p);
+      goto exit;
+    }
 
   len = strlen(name);
   if (len == 0)
@@ -57,21 +64,21 @@ nv_registry_alloc_handle(NVRegistry *self, const gchar *name)
       msg_error("Name-value pairs cannot have a zero-length name",
                 evt_tag_str("value", name),
                 NULL);
-      return 0;
+      goto exit;
     }
   else if (len > 255)
     {
       msg_error("Value names cannot be longer than 255 characters, this value will always expand to the emptry string",
                 evt_tag_str("value", name),
                 NULL);
-      return 0;
+      goto exit;
     }
   else if (self->names->len >= 65535)
     {
       msg_error("Hard wired limit of 65535 name-value pairs have been reached, all further name-value pair will expand to nothing",
                 evt_tag_str("value", name),
                 NULL);
-      return 0;
+      goto exit;
     }
   /* flags (2 bytes) || length (1 byte) || name (len bytes) || NUL */
   /* memory layout: flags || length || name (NUL terminated) */
@@ -80,7 +87,10 @@ nv_registry_alloc_handle(NVRegistry *self, const gchar *name)
   stored.name = g_strdup(name);
   g_array_append_val(self->names, stored);
   g_hash_table_insert(self->name_map, stored.name, GUINT_TO_POINTER(self->names->len));
-  return self->names->len;
+  res = self->names->len;
+ exit:
+  g_static_mutex_unlock(&nv_registry_lock);
+  return res;
 }
 
 /**
@@ -91,7 +101,9 @@ nv_registry_alloc_handle(NVRegistry *self, const gchar *name)
 void
 nv_registry_add_alias(NVRegistry *self, NVHandle handle, const gchar *alias)
 {
+  g_static_mutex_lock(&nv_registry_lock);
   g_hash_table_insert(self->name_map, (gchar *) alias, GUINT_TO_POINTER((glong) handle));
+  g_static_mutex_unlock(&nv_registry_lock);
 }
 
 void

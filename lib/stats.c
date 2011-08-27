@@ -24,7 +24,8 @@
   
 #include "stats.h"
 #include "messages.h"
-#include "cfg.h"
+#include "misc.h"
+#include "syslog-names.h"
 
 #include <string.h>
 
@@ -60,11 +61,20 @@
  *     counter is in use or in orphaned state
  *
  *   * type: counter type (processed, dropped, stored, etc)
+ *
+ * Threading
+ *
+ * Once registered, changing the counters is thread safe (but see the
+ * note on set/get), inc/dec is generally safe. To register counters,
+ * the stats code must run in the main thread (assuming init/deinit is
+ * running) or the stats lock must be acquired using stats_lock() and
+ * stats_unlock(). This API is used to allow batching multiple stats
+ * operations under the protection of the same lock acquiral.
  */
 
 struct _StatsCounter
 {
-  guint32 counters[SC_TYPE_MAX];
+  StatsCounterItem counters[SC_TYPE_MAX];
   guint16 ref_cnt;
   guint16 source;
   gchar *id;
@@ -73,8 +83,19 @@ struct _StatsCounter
   guint16 dynamic:1;
 };
 
+/* Static counters for severities and facilities */
+/* LOG_DEBUG 0x7 */
+#define SEVERITY_MAX   (0x7 + 1)
+/* LOG_LOCAL7 23<<3, one additional slot for "everything-else" counter */
+#define FACILITY_MAX   (23 + 1 + 1)
+
+static StatsCounterItem *severity_counters[SEVERITY_MAX];
+static StatsCounterItem *facility_counters[FACILITY_MAX];
+
 static GHashTable *counter_hash;
-static gint current_stats_level;
+GStaticMutex stats_mutex;
+gint current_stats_level;
+gboolean stats_locked;
 
 static gboolean
 stats_counter_equal(gconstpointer p1, gconstpointer p2)
@@ -109,7 +130,9 @@ stats_add_counter(gint stats_level, gint source, const gchar *id, const gchar *i
   StatsCounter key;
   StatsCounter *sc;
 
-  if (stats_level != 0 && (current_stats_level < stats_level))
+  g_assert(stats_locked);
+
+  if (!stats_check_level(stats_level))
     return NULL;
   
   if (!id)
@@ -136,8 +159,13 @@ stats_add_counter(gint stats_level, gint source, const gchar *id, const gchar *i
     }
   else
     {
+      if (sc->ref_cnt == 0)
+        /* it just haven't been cleaned up */
+        *new = TRUE;
+      else
+        *new = FALSE;
+
       sc->ref_cnt++;
-      *new = FALSE;
     }
 
   return sc;
@@ -160,7 +188,7 @@ stats_add_counter(gint stats_level, gint source, const gchar *id, const gchar *i
  * freed when all of these uses are unregistered.
  **/
 void
-stats_register_counter(gint stats_level, gint source, const gchar *id, const gchar *instance, StatsCounterType type, guint32 **counter)
+stats_register_counter(gint stats_level, gint source, const gchar *id, const gchar *instance, StatsCounterType type, StatsCounterItem **counter)
 {
   StatsCounter *sc;
   gboolean new;
@@ -177,7 +205,7 @@ stats_register_counter(gint stats_level, gint source, const gchar *id, const gch
 }
 
 StatsCounter *
-stats_register_dynamic_counter(gint stats_level, gint source, const gchar *id, const gchar *instance, StatsCounterType type, guint32 **counter, gboolean *new)
+stats_register_dynamic_counter(gint stats_level, gint source, const gchar *id, const gchar *instance, StatsCounterType type, StatsCounterItem **counter, gboolean *new)
 {
   StatsCounter *sc;
   gboolean local_new;
@@ -201,6 +229,30 @@ stats_register_dynamic_counter(gint stats_level, gint source, const gchar *id, c
   return sc;
 }
 
+/*
+ * stats_instant_inc_dynamic_counter
+ * @timestamp: if non-negative, an associated timestamp will be created and set
+ *
+ * Instantly create (if not exists) and increment a dynamic counter.
+ */
+void
+stats_instant_inc_dynamic_counter(gint stats_level, gint source_mask, const gchar *id, const gchar *instance, time_t timestamp)
+{
+  StatsCounterItem *counter, *stamp;
+  gboolean new;
+  StatsCounter *handle;
+
+  handle = stats_register_dynamic_counter(stats_level, source_mask, id, instance, SC_TYPE_PROCESSED, &counter, &new);
+  stats_counter_inc(counter);
+  if (timestamp >= 0)
+    {
+      stats_register_associated_counter(handle, SC_TYPE_STAMP, &stamp);
+      stats_counter_set(stamp, timestamp);
+      stats_unregister_dynamic_counter(handle, SC_TYPE_STAMP, &stamp);
+    }
+  stats_unregister_dynamic_counter(handle, SC_TYPE_PROCESSED, &counter);
+}
+
 /**
  * stats_register_associated_counter:
  * @sc: the dynamic counter that was registered with stats_register_dynamic_counter
@@ -211,7 +263,7 @@ stats_register_dynamic_counter(gint stats_level, gint source, const gchar *id, c
  * instance in order to avoid an unnecessary lookup.
  **/
 void
-stats_register_associated_counter(StatsCounter *sc, StatsCounterType type, guint32 **counter)
+stats_register_associated_counter(StatsCounter *sc, StatsCounterType type, StatsCounterItem **counter)
 {
   *counter = NULL;
   if (!sc)
@@ -222,9 +274,8 @@ stats_register_associated_counter(StatsCounter *sc, StatsCounterType type, guint
   sc->live_mask |= 1 << type;
 }
 
-
 void
-stats_unregister_counter(gint source, const gchar *id, const gchar *instance, StatsCounterType type, guint32 **counter)
+stats_unregister_counter(gint source, const gchar *id, const gchar *instance, StatsCounterType type, StatsCounterItem **counter)
 {
   StatsCounter *sc;
   StatsCounter key;
@@ -250,7 +301,7 @@ stats_unregister_counter(gint source, const gchar *id, const gchar *instance, St
 }
 
 void
-stats_unregister_dynamic_counter(StatsCounter *sc, StatsCounterType type, guint32 **counter)
+stats_unregister_dynamic_counter(StatsCounter *sc, StatsCounterType type, StatsCounterItem **counter)
 {
   if (!sc)
     return;
@@ -275,9 +326,17 @@ stats_cleanup_orphans(void)
 }
 
 void
-stats_set_current_level(gint stats_level)
+stats_counter_inc_pri(guint16 pri)
 {
-  current_stats_level = stats_level;
+  int lpri = LOG_FAC(pri);
+
+  stats_counter_inc(severity_counters[LOG_PRI(pri)]);
+  if (lpri > (FACILITY_MAX - 1))
+    {
+      /* the large facilities (=facility.other) are collected in the last array item */
+      lpri = FACILITY_MAX - 1;
+    }
+  stats_counter_inc(facility_counters[lpri]);
 }
 
 const gchar *tag_names[SC_TYPE_MAX] =
@@ -288,6 +347,7 @@ const gchar *tag_names[SC_TYPE_MAX] =
   /* [SC_TYPE_SUPPRESSED] = */ "suppressed",
   /* [SC_TYPE_STAMP] = */ "stamp",
 };
+
 const gchar *source_names[SCS_MAX] =
 {
   "none",
@@ -311,6 +371,12 @@ const gchar *source_names[SCS_MAX] =
   "host",
   "global",
   "mongodb",
+  "class",
+  "rule_id",
+  "tag",
+  "severity",
+  "facility",
+  "sender",
 };
 
 
@@ -337,7 +403,7 @@ stats_format_log_counter(gpointer key, gpointer value, gpointer user_data)
                 source_name = "destination";
               else
                 g_assert_not_reached();
-              tag = evt_tag_printf(tag_names[type], "%s(%s%s%s)=%u", source_name, sc->id, (sc->id[0] && sc->instance[0]) ? "," : "", sc->instance, sc->counters[type]);
+              tag = evt_tag_printf(tag_names[type], "%s(%s%s%s)=%u", source_name, sc->id, (sc->id[0] && sc->instance[0]) ? "," : "", sc->instance, stats_counter_get(&sc->counters[type]));
             }
           else
             {
@@ -345,7 +411,7 @@ stats_format_log_counter(gpointer key, gpointer value, gpointer user_data)
                                    (sc->source & SCS_SOURCE ? "src." : (sc->source & SCS_DESTINATION ? "dst." : "")),
                                    source_names[sc->source & SCS_SOURCE_MASK],
                                    sc->id, (sc->id[0] && sc->instance[0]) ? "," : "", sc->instance,
-                                   sc->counters[type]);
+                                   stats_counter_get(&sc->counters[type]));
             }
           evt_rec_add_tag(e, tag);
         }
@@ -366,13 +432,13 @@ stats_generate_log(void)
 static gboolean
 has_csv_special_character(const gchar *var)
 {
-  gchar *p1 = strchr(var,';');
-  if(p1)
+  gchar *p1 = strchr(var, ';');
+  if (p1)
     return TRUE;
-  p1 = strchr(var,'\n');
-  if(p1)
+  p1 = strchr(var, '\n');
+  if (p1)
     return TRUE;
-  if(var[0] == '"')
+  if (var[0] == '"')
     return TRUE;
   return FALSE;
 }
@@ -383,31 +449,35 @@ stats_format_csv_escapevar(const gchar *var)
   guint32 index;
   guint32 e_index;
   guint32 varlen = strlen(var);
-  gchar *result;
+  gchar *result, *escaped_result;
 
   if (varlen != 0 && has_csv_special_character(var))
     {
       result = g_malloc(varlen*2);
+
       result[0] = '"';
       e_index = 1;
       for (index = 0; index < varlen; index++)
         {
           if (var[index] == '"')
             {
-              result[e_index]='\\';
+              result[e_index] = '\\';
               e_index++;
             }
           result[e_index] = var[index];
           e_index++;
         }
-      result[e_index]='"';
-      result[e_index+1] = 0;
+      result[e_index] = '"';
+      result[e_index + 1] = 0;
+
+      escaped_result = utf8_escape_string(result, e_index + 2);
+      g_free(result);
     }
   else
     {
-      result = g_strdup(var);
+      escaped_result = utf8_escape_string(var, strlen(var));
     }
-  return result;
+  return escaped_result;
 }
 
 static void
@@ -452,7 +522,7 @@ stats_format_csv(gpointer key, gpointer value, gpointer user_data)
                          source_names[sc->source & SCS_SOURCE_MASK]);
             }
           tag_name = stats_format_csv_escapevar(tag_names[type]);
-          g_string_append_printf(csv, "%s;%s;%s;%c;%s;%u\n", source_name, s_id, s_instance, state, tag_name, sc->counters[type]);
+          g_string_append_printf(csv, "%s;%s;%s;%c;%s;%u\n", source_name, s_id, s_instance, state, tag_name, stats_counter_get(&sc->counters[type]));
           g_free(tag_name);
         }
     }
@@ -472,9 +542,54 @@ stats_generate_csv(void)
 }
 
 void
+stats_reinit(GlobalConfig *cfg)
+{
+  gint i;
+  gchar name[11] = "";
+
+  current_stats_level = cfg->stats_level;
+
+  stats_lock();
+  if (stats_check_level(3))
+    {
+      /* we need these counters, register them */
+      for (i = 0; i < SEVERITY_MAX; i++)
+        {
+          g_snprintf(name, sizeof(name), "%" G_GUINT16_FORMAT, i);
+          stats_register_counter(3, SCS_SEVERITY | SCS_SOURCE, NULL, name, SC_TYPE_PROCESSED, &severity_counters[i]);
+        }
+
+      for (i = 0; i < FACILITY_MAX - 1; i++)
+        {
+          g_snprintf(name, sizeof(name), "%" G_GUINT16_FORMAT, i);
+          stats_register_counter(3, SCS_FACILITY | SCS_SOURCE, NULL, name, SC_TYPE_PROCESSED, &facility_counters[i]);
+        }
+      stats_register_counter(3, SCS_FACILITY | SCS_SOURCE, NULL, "other", SC_TYPE_PROCESSED, &facility_counters[FACILITY_MAX - 1]);
+    }
+  else
+    {
+      /* no need for facility/severity counters, unregister them */
+      for (i = 0; i < SEVERITY_MAX; i++)
+        {
+          g_snprintf(name, sizeof(name), "%" G_GUINT16_FORMAT, i);
+          stats_unregister_counter(SCS_SEVERITY | SCS_SOURCE, NULL, name, SC_TYPE_PROCESSED, &severity_counters[i]);
+        }
+
+      for (i = 0; i < FACILITY_MAX - 1; i++)
+        {
+          g_snprintf(name, sizeof(name), "%" G_GUINT16_FORMAT, i);
+          stats_unregister_counter(SCS_FACILITY | SCS_SOURCE, NULL, "other", SC_TYPE_PROCESSED, &facility_counters[i]);
+        }
+      stats_unregister_counter(SCS_FACILITY | SCS_SOURCE, NULL, "other", SC_TYPE_PROCESSED, &facility_counters[FACILITY_MAX - 1]);
+    }
+  stats_unlock();
+}
+
+void
 stats_init(void)
 {
   counter_hash = g_hash_table_new_full(stats_counter_hash, stats_counter_equal, NULL, stats_counter_free);
+  g_static_mutex_init(&stats_mutex);
 }
 
 void
@@ -482,4 +597,5 @@ stats_destroy(void)
 {
   g_hash_table_destroy(counter_hash);
   counter_hash = NULL;
+  g_static_mutex_free(&stats_mutex);
 }

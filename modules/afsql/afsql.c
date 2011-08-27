@@ -97,8 +97,8 @@ typedef struct _AFSqlDestDriver
 
   LogTemplateOptions template_options;
 
-  guint32 *dropped_messages;
-  guint32 *stored_messages;
+  StatsCounterItem *dropped_messages;
+  StatsCounterItem *stored_messages;
 
   /* shared by the main/db thread */
   GThread *db_thread;
@@ -111,7 +111,7 @@ typedef struct _AFSqlDestDriver
   /* used exclusively by the db thread */
   gint32 seq_num;
   LogMessage *pending_msg;
-  gboolean pending_msg_flow_control;
+  gboolean pending_msg_ack_needed;
   dbi_conn dbi_ctx;
   GHashTable *validated_tables;
   guint32 failed_message_counter;
@@ -184,8 +184,7 @@ afsql_dd_set_table(LogDriver *s, const gchar *table)
 {
   AFSqlDestDriver *self = (AFSqlDestDriver *) s;
 
-  log_template_unref(self->table);
-  self->table = log_template_new(log_pipe_get_config(&s->super), NULL, table);
+  log_template_compile(self->table, table, NULL);
 }
 
 void
@@ -370,8 +369,6 @@ afsql_dd_create_index(AFSqlDestDriver *self, gchar *table, gchar *column)
 {
   GString *query_string;
   gboolean success = TRUE;
-  guchar hash[MD5_DIGEST_LENGTH];
-  gchar hash_str[31];
 
   query_string = g_string_sized_new(64);
 
@@ -381,7 +378,12 @@ afsql_dd_create_index(AFSqlDestDriver *self, gchar *table, gchar *column)
        * so we use the first 30 characters of the table_column md5 hash */
       if ((strlen(table) + strlen(column)) > 25)
         {
+
+#if ENABLE_SSL
+          guchar hash[MD5_DIGEST_LENGTH];
+          gchar hash_str[31];
           gchar *cat = g_strjoin("_", table, column, NULL);
+
           MD5((guchar *)cat, strlen(cat), hash);
           g_free(cat);
 
@@ -389,6 +391,12 @@ afsql_dd_create_index(AFSqlDestDriver *self, gchar *table, gchar *column)
           hash_str[0] = 'i';
           g_string_printf(query_string, "CREATE INDEX %s ON %s ('%s')",
               hash_str, table, column);
+#else
+          msg_warning("The name of the index would be too long for Oracle to handle and OpenSSL was not detected which would be used to generate a shorter name. Please enable SSL support in order to use this combination.",
+                      evt_tag_str("table", table),
+                      evt_tag_str("column", column),
+                      NULL);
+#endif
         }
       else
         g_string_printf(query_string, "CREATE INDEX %s_%s_idx ON %s ('%s')",
@@ -668,13 +676,13 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
   if (self->pending_msg)
     {
       msg = self->pending_msg;
-      path_options.flow_control = self->pending_msg_flow_control;
+      path_options.ack_needed = self->pending_msg_ack_needed;
       self->pending_msg = NULL;
     }
   else
     {
       g_mutex_lock(self->db_thread_mutex);
-      success = log_queue_pop_head(self->queue, &msg, &path_options, (self->flags & AFSQL_DDF_EXPLICIT_COMMITS));
+      success = log_queue_pop_head(self->queue, &msg, &path_options, (self->flags & AFSQL_DDF_EXPLICIT_COMMITS), FALSE);
       g_mutex_unlock(self->db_thread_mutex);
       if (!success)
         return TRUE;
@@ -784,7 +792,7 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
       if (self->failed_message_counter < self->num_retries - 1)
         {
           self->pending_msg = msg;
-          self->pending_msg_flow_control = path_options.flow_control;
+          self->pending_msg_ack_needed = path_options.ack_needed;
           self->failed_message_counter++;
         }
       else
@@ -947,8 +955,10 @@ afsql_dd_init(LogPipe *s)
       return FALSE;
     }
 
+  stats_lock();
   stats_register_counter(0, SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self), SC_TYPE_STORED, &self->stored_messages);
   stats_register_counter(0, SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self), SC_TYPE_DROPPED, &self->dropped_messages);
+  stats_unlock();
 
   self->queue = log_dest_driver_acquire_queue(&self->super, afsql_dd_format_persist_name(self));
   log_queue_set_counters(self->queue, self->stored_messages, self->dropped_messages);
@@ -1000,7 +1010,8 @@ afsql_dd_init(LogPipe *s)
 
           if (GPOINTER_TO_UINT(value->data) > 4096)
             {
-              self->fields[i].value = log_template_new(cfg, NULL, (gchar *) value->data);
+              self->fields[i].value = log_template_new(cfg, NULL);
+              log_template_compile(self->fields[i].value, (gchar *) value->data, NULL);
             }
           else
             {
@@ -1084,17 +1095,36 @@ afsql_dd_deinit(LogPipe *s)
 }
 
 static void
+afsql_dd_queue_notify(gpointer user_data)
+{
+  AFSqlDestDriver *self = (AFSqlDestDriver *) user_data;
+  g_mutex_lock(self->db_thread_mutex);
+  g_cond_signal(self->db_thread_wakeup_cond);
+  log_queue_reset_parallel_push(self->queue);
+  g_mutex_unlock(self->db_thread_mutex);
+}
+
+static void
 afsql_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data)
 {
   AFSqlDestDriver *self = (AFSqlDestDriver *) s;
   gboolean queue_was_empty;
+  LogPathOptions local_options;
+
+  if (!path_options->flow_control_requested)
+    path_options = log_msg_break_ack(msg, path_options, &local_options);
 
   g_mutex_lock(self->db_thread_mutex);
   queue_was_empty = log_queue_get_length(self->queue) == 0;
+  g_mutex_unlock(self->db_thread_mutex);
+
   log_queue_push_tail(self->queue, msg, path_options);
 
+  g_mutex_lock(self->db_thread_mutex);
   if (queue_was_empty && !self->db_thread_suspended)
-    g_cond_signal(self->db_thread_wakeup_cond);
+    {
+      log_queue_set_parallel_push(self->queue, 1, afsql_dd_queue_notify, self, NULL);
+    }
   g_mutex_unlock(self->db_thread_mutex);
 }
 
@@ -1154,7 +1184,8 @@ afsql_dd_new(void)
   self->database = g_strdup("logs");
   self->encoding = g_strdup("UTF-8");
 
-  self->table = log_template_new(configuration, NULL, "messages");
+  self->table = log_template_new(configuration, NULL);
+  log_template_compile(self->table, "messages", NULL);
   self->failed_message_counter = 0;
 
   self->flush_lines = -1;

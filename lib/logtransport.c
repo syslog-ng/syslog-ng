@@ -125,7 +125,36 @@ log_transport_plain_write_method(LogTransport *s, const gpointer buf, gsize bufl
         alarm_set(self->super.timeout);
       if (self->super.flags & LTF_APPEND)
         lseek(self->super.fd, 0, SEEK_END);
-      rc = write(self->super.fd, buf, buflen);
+
+      /* NOTE: this loop is needed because of the funny semantics that
+       * pipe() uses. A pipe has a buffer (sized PIPE_BUF), which
+       * determines how much data it can buffer. If the data to be
+       * written would overflow the buffer, it may reject it with
+       * rc == -1 and errno set to EAGAIN.
+       *
+       * The issue is worse as AIX may indicate in poll() that the
+       * pipe is writable, and then the pipe may flat out reject our
+       * write() operation, resulting in a busy loop.
+       *
+       * The work around is to try to write the data in
+       * ever-decreasing size, and only accept EAGAIN if a single byte
+       * write is refused as well.
+       *
+       * Most UNIX platforms behaves better than that, but the AIX
+       * implementation is still conforming, for now we only enable it
+       * on AIX.
+       */
+
+      do
+        {
+          rc = write(self->super.fd, buf, buflen);
+        }
+#ifdef __aix__
+      while ((buflen >>= 1) && (self->super.flags & LTF_PIPE) && rc < 0 && errno == EAGAIN);
+#else
+      while (0);
+#endif
+
       if (self->super.timeout > 0 && rc == -1 && errno == EINTR && alarm_has_fired())
         {
           msg_notice("Nonblocking write has blocked, returning with an error",

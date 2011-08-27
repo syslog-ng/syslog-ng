@@ -23,13 +23,13 @@ test_ack(LogMessage *msg, gpointer user_data)
 }
 
 void
-feed_some_messages(LogQueue **q, int n, gboolean flow_control)
+feed_some_messages(LogQueue **q, int n, gboolean ack_needed)
 {
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
   LogMessage *msg;
   gint i;
 
-  path_options.flow_control = flow_control;
+  path_options.ack_needed = ack_needed;
   for (i = 0; i < n; i++)
     {
       char *msg_str = "<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép";
@@ -52,7 +52,7 @@ send_some_messages(LogQueue *q, gint n, gboolean use_app_acks)
 
   for (i = 0; i < n; i++)
     {
-      log_queue_pop_head(q, &msg, &path_options, use_app_acks);
+      log_queue_pop_head(q, &msg, &path_options, use_app_acks, FALSE);
       log_msg_ack(msg, &path_options);
       log_msg_unref(msg);
     }
@@ -144,7 +144,7 @@ main_loop_io_worker_invoke_finish_callbacks(void)
     }
 }
 
-GStaticMutex time_lock;
+GStaticMutex sum_lock;
 glong sum_time;
 
 gpointer
@@ -184,9 +184,9 @@ threaded_feed(gpointer args)
   main_loop_io_worker_invoke_finish_callbacks();
   g_get_current_time(&end);
   diff = g_time_val_diff(&end, &start);
-  g_static_mutex_lock(&time_lock);
+  g_static_mutex_lock(&sum_lock);
   sum_time += diff;
-  g_static_mutex_unlock(&time_lock);
+  g_static_mutex_unlock(&sum_lock);
   log_msg_unref(tmpl);
   return NULL;
 }
@@ -210,7 +210,7 @@ threaded_consume(gpointer st)
 
       do
         {
-          success = log_queue_pop_head(q, &msg, &path_options, FALSE);
+          success = log_queue_pop_head(q, &msg, &path_options, FALSE, FALSE);
           if (!success)
             {
               struct timespec ns;

@@ -106,9 +106,15 @@ log_proto_text_client_flush(LogProto *s)
       rc = log_transport_write(self->super.transport, &self->partial[self->partial_pos], len);
       if (rc < 0)
         {
-	  if (errno != EAGAIN && errno != EINTR)
-	    return LPS_ERROR;
-	  return LPS_SUCCESS;
+          if (errno != EAGAIN && errno != EINTR)
+            {
+              msg_error("I/O error occurred while writing",
+                        evt_tag_int("fd", self->super.transport->fd),
+                        evt_tag_errno(EVT_TAG_OSERROR, errno),
+                        NULL);
+              return LPS_ERROR;
+            }
+          return LPS_SUCCESS;
         }
       else if (rc != len)
         {
@@ -366,7 +372,7 @@ log_proto_file_writer_post(LogProto *s, guchar *msg, gsize msg_len, gboolean *co
     }
 
   /* register the new message */
-  self->buffer[self->buf_count].iov_base = msg;
+  self->buffer[self->buf_count].iov_base = (void *) msg;
   self->buffer[self->buf_count].iov_len = msg_len;
   ++self->buf_count;
   self->sum_len += msg_len;
@@ -500,7 +506,7 @@ log_proto_buffered_server_get_state(LogProtoBufferedServer *self)
 }
 
 static void
-log_proto_buffered_server_put_state(LogProtoBufferedServer *self, LogProtoBufferedServerState *state)
+log_proto_buffered_server_put_state(LogProtoBufferedServer *self)
 {
   if (self->persist_state && self->persist_handle)
     persist_state_unmap_entry(self->persist_state, self->persist_handle);
@@ -595,7 +601,7 @@ log_proto_buffered_server_convert_from_raw(LogProtoBufferedServer *self, const g
  success:
   success = TRUE;
  error:
-  log_proto_buffered_server_put_state(self, state);
+  log_proto_buffered_server_put_state(self);
   return success;
 }
 
@@ -749,7 +755,7 @@ log_proto_buffered_server_apply_state(LogProtoBufferedServer *self, PersistEntry
   state->pending_raw_buffer_size = state->raw_buffer_size;
 
   state = NULL;
-  log_proto_buffered_server_put_state(self, state);
+  log_proto_buffered_server_put_state(self);
 }
 
 static PersistEntryHandle
@@ -1032,7 +1038,7 @@ log_proto_buffered_server_fetch_from_buf(LogProtoBufferedServer *self, const guc
 
   success = self->fetch_from_buf(self, buffer_start, buffer_bytes, msg, msg_len, flush_the_rest);
  exit:
-  log_proto_buffered_server_put_state(self, state);
+  log_proto_buffered_server_put_state(self);
   return success;
 }
 
@@ -1196,7 +1202,7 @@ log_proto_buffered_server_fetch(LogProto *s, const guchar **msg, gsize *msg_len,
  exit:
 
   /* result contains our result, but once an error happens, the error condition remains persistent */
-  log_proto_buffered_server_put_state(self, state);
+  log_proto_buffered_server_put_state(self);
   if (result != LPS_SUCCESS)
     self->status = result;
   return result;
@@ -1236,7 +1242,7 @@ log_proto_buffered_server_queued(LogProto *s)
             evt_tag_int("buffer_end", state->pending_buffer_end),
             evt_tag_int("buffer_cached_eol", state->buffer_cached_eol),
             NULL);
-  log_proto_buffered_server_put_state(self, state);
+  log_proto_buffered_server_put_state(self);
 }
 
 void
@@ -1294,7 +1300,7 @@ log_proto_text_server_is_preemptable(LogProtoTextServer *self)
   gboolean preemptable;
 
   preemptable = (state->buffer_cached_eol == 0);
-  log_proto_buffered_server_put_state(&self->super, state);
+  log_proto_buffered_server_put_state(&self->super);
   return preemptable;
 }
 
@@ -1306,10 +1312,13 @@ log_proto_text_server_prepare(LogProto *s, gint *fd, GIOCondition *cond)
   gboolean avail;
 
   if (log_proto_buffered_server_prepare(s, fd, cond))
-    return TRUE;
+    {
+      log_proto_buffered_server_put_state(&self->super);
+      return TRUE;
+    }
 
   avail = (state->buffer_cached_eol != 0);
-  log_proto_buffered_server_put_state(&self->super, state);
+  log_proto_buffered_server_put_state(&self->super);
   return avail;
 }
 
@@ -1599,7 +1608,7 @@ log_proto_text_server_fetch_from_buf(LogProtoBufferedServer *s, const guchar *bu
  success:
   result = TRUE;
  exit:
-  log_proto_buffered_server_put_state(&self->super, state);
+  log_proto_buffered_server_put_state(&self->super);
   return result;
 }
 
@@ -1657,7 +1666,7 @@ log_proto_record_server_fetch_from_buf(LogProtoBufferedServer *s, const guchar *
     }
   state->pending_buffer_pos = state->pending_buffer_end;
   *msg = buffer_start;
-  log_proto_buffered_server_put_state(s, state);
+  log_proto_buffered_server_put_state(s);
   return TRUE;
 }
 
@@ -1713,7 +1722,7 @@ log_proto_dgram_server_fetch_from_buf(LogProtoBufferedServer *s, const guchar *b
   *msg = buffer_start;
   *msg_len = buffer_bytes;
   state->pending_buffer_pos = state->pending_buffer_end;
-  log_proto_buffered_server_put_state(s, state);
+  log_proto_buffered_server_put_state(s);
   return TRUE;
 }
 

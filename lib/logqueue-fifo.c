@@ -121,7 +121,7 @@ log_queue_fifo_move_input_unlocked(LogQueueFifo *self, gint thread_id)
 
           list_del(&node->list);
           self->qoverflow_input[thread_id].len--;
-          path_options.flow_control = node->flow_controlled;
+          path_options.ack_needed = node->ack_needed;
           stats_counter_inc(self->super.dropped_messages);
           log_msg_free_queue_node(node);
           log_msg_drop(msg, &path_options);
@@ -266,23 +266,21 @@ log_queue_fifo_push_head(LogQueue *s, LogMessage *msg, const LogPathOptions *pat
   list_add(&node->list, &self->qoverflow_output);
   self->qoverflow_output_len++;
 
-  g_static_mutex_lock(&self->super.lock);
   stats_counter_inc(self->super.stored_messages);
-  g_static_mutex_unlock(&self->super.lock);
 }
 
 /*
  * Can only run from the output thread.
  */
 static gboolean
-log_queue_fifo_pop_head(LogQueue *s, LogMessage **msg, LogPathOptions *path_options, gboolean push_to_backlog)
+log_queue_fifo_pop_head(LogQueue *s, LogMessage **msg, LogPathOptions *path_options, gboolean push_to_backlog, gboolean ignore_throttle)
 {
   LogQueueFifo *self = (LogQueueFifo *) s;
   LogMessageQueueNode *node;
 
   log_queue_assert_output_thread(s);
 
-  if (self->super.throttle && self->super.throttle_buckets == 0)
+  if (!ignore_throttle && self->super.throttle && self->super.throttle_buckets == 0)
     {
       return FALSE;
     }
@@ -302,7 +300,7 @@ log_queue_fifo_pop_head(LogQueue *s, LogMessage **msg, LogPathOptions *path_opti
       node = list_entry(self->qoverflow_output.next, LogMessageQueueNode, list);
 
       *msg = node->msg;
-      path_options->flow_control = node->flow_controlled;
+      path_options->ack_needed = node->ack_needed;
       self->qoverflow_output_len--;
       if (!push_to_backlog)
         {
@@ -326,9 +324,7 @@ log_queue_fifo_pop_head(LogQueue *s, LogMessage **msg, LogPathOptions *path_opti
        */
       return FALSE;
     }
-  g_static_mutex_lock(&self->super.lock);
   stats_counter_dec(self->super.stored_messages);
-  g_static_mutex_unlock(&self->super.lock);
 
   if (push_to_backlog)
     {
@@ -336,7 +332,11 @@ log_queue_fifo_pop_head(LogQueue *s, LogMessage **msg, LogPathOptions *path_opti
       list_add_tail(&node->list, &self->qbacklog);
       self->qbacklog_len++;
     }
-  self->super.throttle_buckets--;
+  if (!ignore_throttle)
+    {
+      self->super.throttle_buckets--;
+    }
+
   return TRUE;
 }
 
@@ -359,7 +359,7 @@ log_queue_fifo_ack_backlog(LogQueue *s, gint n)
 
       node = list_entry(self->qbacklog.next, LogMessageQueueNode, list);
       msg = node->msg;
-      path_options.flow_control = node->flow_controlled;
+      path_options.ack_needed = node->ack_needed;
 
       list_del(&node->list);
       log_msg_free_queue_node(node);
@@ -406,7 +406,7 @@ log_queue_fifo_free_queue(struct list_head *q)
       node = list_entry(q->next, LogMessageQueueNode, list);
       list_del(&node->list);
 
-      path_options.flow_control = node->flow_controlled;
+      path_options.ack_needed = node->ack_needed;
       msg = node->msg;
       log_msg_free_queue_node(node);
       log_msg_ack(msg, &path_options);
@@ -426,6 +426,7 @@ log_queue_fifo_free(LogQueue *s)
   log_queue_fifo_free_queue(&self->qoverflow_wait);
   log_queue_fifo_free_queue(&self->qoverflow_output);
   log_queue_fifo_free_queue(&self->qbacklog);
+  log_queue_free_method(s);
 }
 
 LogQueue *

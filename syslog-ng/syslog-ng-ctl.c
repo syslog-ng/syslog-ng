@@ -266,7 +266,9 @@ main(int argc, char *argv[])
       if (strcmp(modes[mode].mode, mode_string) == 0)
         {
           ctx = g_option_context_new(mode_string);
+#if GLIB_CHECK_VERSION (2, 12, 0)
           g_option_context_set_summary(ctx, modes[mode].description);
+#endif
           if (modes[mode].options)
             g_option_context_add_main_entries(ctx, modes[mode].options, NULL);
           g_option_context_add_main_entries(ctx, slng_options, NULL);

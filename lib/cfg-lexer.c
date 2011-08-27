@@ -617,7 +617,7 @@ cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
         }
       else
         {
-          self->token_blocks = g_list_remove_link(self->token_blocks, self->token_blocks);
+          self->token_blocks = g_list_delete_link(self->token_blocks, self->token_blocks);
           cfg_token_block_free(block);
         }
     }
@@ -713,7 +713,7 @@ cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
       /* no version selected yet, and we have a non-pragma token, this
       * means that the configuration is meant for syslog-ng 2.1 */
 
-      msg_warning("Configuration file has no version number, assuming syslog-ng 2.1 format. Please add @version: maj.min to the beginning of the file",
+      msg_warning("WARNING: Configuration file has no version number, assuming syslog-ng 2.1 format. Please add @version: maj.min to the beginning of the file",
                   NULL);
       cfg_set_version(configuration, 0x0201);
     }
@@ -1048,8 +1048,7 @@ cfg_block_generate(CfgLexer *lexer, gint context, const gchar *name, CfgArgs *ar
       return FALSE;
     }
 
-  cfg_lexer_include_buffer(lexer, buf, value, length);
-  return TRUE;
+  return cfg_lexer_include_buffer(lexer, buf, value, length);
 }
 
 /*

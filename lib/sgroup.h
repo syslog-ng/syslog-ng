@@ -35,7 +35,7 @@ typedef struct _LogSourceGroup
   gchar *name;
   gint name_len;
   LogDriver *drivers;
-  guint32 *processed_messages;
+  StatsCounterItem *processed_messages;
 } LogSourceGroup;
 
 static inline LogSourceGroup *

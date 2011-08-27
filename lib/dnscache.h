@@ -28,8 +28,8 @@
 
 #include "syslog-ng.h"
 
-gboolean dns_cache_lookup(gint family, void *addr, const gchar **hostname);
-void dns_cache_store(gboolean persistent, gint family, void *addr, const gchar *hostname);
+gboolean dns_cache_lookup(gint family, void *addr, const gchar **hostname, gboolean *positive);
+void dns_cache_store(gboolean persistent, gint family, void *addr, const gchar *hostname, gboolean positive);
 
 void dns_cache_set_params(gint cache_size, gint expire, gint expire_failed, const gchar *hosts);
 void dns_cache_init(void);

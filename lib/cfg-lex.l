@@ -128,7 +128,7 @@ word	[^ \#'"\(\)\{\}\\;\n\t,|\.@:]
 %%
 
 \#                         {
-                             char ch;
+                             int ch;
 
                              ch = input(yyscanner);
                              while (ch != '\n' && ch != EOF)

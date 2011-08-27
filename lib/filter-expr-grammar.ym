@@ -178,13 +178,16 @@ filter_simple_expr
           {
             LogTemplate *left, *right;
             GError *error = NULL;
+            gboolean success_left, success_right;
 
-            left = log_template_new(configuration, NULL, $1);
-            right = log_template_new(configuration, NULL, $3);
+            left = log_template_new(configuration, NULL);
+            right = log_template_new(configuration, NULL);
+            success_left = log_template_compile(left, $1, &error);
+            success_right = log_template_compile(right, $3, &error);
             free($1);
             free($3);
-            CHECK_ERROR(log_template_compile(left, &error), @1, "error compiling template: %s", error->message);
-            CHECK_ERROR(log_template_compile(right, &error), @3, "error compiling template: %s", error->message);
+            CHECK_ERROR(success_left, @1, "error compiling template: %s", error->message);
+            CHECK_ERROR(success_right, @3, "error compiling template: %s", error->message);
 
             $$ = fop_cmp_new(left, right, $2);
           }

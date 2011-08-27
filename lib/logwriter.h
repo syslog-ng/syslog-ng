@@ -32,10 +32,11 @@
 #include "timeutils.h"
 
 /* writer constructor flags */
-#define LW_DETECT_EOF      0x0001
-#define LW_FORMAT_FILE     0x0002
-#define LW_FORMAT_PROTO    0x0004
-#define LW_SYSLOG_PROTOCOL 0x0008
+#define LW_DETECT_EOF        0x0001
+#define LW_FORMAT_FILE       0x0002
+#define LW_FORMAT_PROTO      0x0004
+#define LW_SYSLOG_PROTOCOL   0x0008
+#define LW_SOFT_FLOW_CONTROL 0x0010
 
 /* writer options (set by the user) */
 #define LWO_SYSLOG_PROTOCOL   0x0001
@@ -75,7 +76,8 @@ void log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result);
 gboolean log_writer_has_pending_writes(LogWriter *self);
 gboolean log_writer_opened(LogWriter *self);
 void log_writer_reopen(LogPipe *s, LogProto *proto);
-LogPipe *log_writer_new(guint32 flags, LogQueue *queue);
+LogPipe *log_writer_new(guint32 flags);
+void log_writer_set_queue(LogPipe *s, LogQueue *queue);
 
 void log_writer_options_set_template_escape(LogWriterOptions *options, gboolean enable);
 void log_writer_options_defaults(LogWriterOptions *options);

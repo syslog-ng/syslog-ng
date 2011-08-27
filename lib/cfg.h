@@ -126,8 +126,8 @@ void cfg_add_parser(GlobalConfig *cfg, struct _LogProcessRule *rule);
 void cfg_add_rewrite(GlobalConfig *cfg, struct _LogProcessRule *rule);
 void cfg_add_connection(GlobalConfig *configuration, struct _LogConnection *conn);
 void cfg_add_template(GlobalConfig *cfg, struct _LogTemplate *template);
-struct _LogTemplate *cfg_lookup_template(GlobalConfig *cfg, const gchar *name);
-struct _LogTemplate *cfg_check_inline_template(GlobalConfig *cfg, const gchar *template_or_name);
+LogTemplate *cfg_lookup_template(GlobalConfig *cfg, const gchar *name);
+LogTemplate *cfg_check_inline_template(GlobalConfig *cfg, const gchar *template_or_name, GError **error);
 
 void cfg_file_owner_set(GlobalConfig *self, gchar *owner);
 void cfg_file_group_set(GlobalConfig *self, gchar *group);

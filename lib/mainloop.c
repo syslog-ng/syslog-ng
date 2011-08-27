@@ -30,10 +30,15 @@
 #include "misc.h"
 #include "control.h"
 #include "logqueue.h"
+#include "dnscache.h"
 #include "tls-support.h"
 
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <string.h>
+#include <netinet/in.h>
+#include <arpa/nameser.h>
+#include <resolv.h>
 #include <iv.h>
 #include <iv_signal.h>
 #include <iv_work.h>
@@ -93,7 +98,13 @@ static struct iv_signal sigint_poll;
 static struct iv_signal sigchild_poll;
 
 
-/* current running configuration */
+/* Currently running configuration, should not be used outside the mainloop
+ * logic. If anything needs access to the GlobalConfig instance at runtime,
+ * it needs to save that during initialization.  If anything needs the
+ * config being parsed (e.g.  in the bison generated code), it should
+ * consult the value of "configuration", which is NULL after the parsing is
+ * finished.
+ */
 static GlobalConfig *current_configuration;
 
 /************************************************************************************
@@ -212,23 +223,38 @@ main_loop_call_init(void)
 
 /* stats timer */
 static struct iv_timer stats_timer;
-static gboolean stats_timer_first = TRUE;
 
-void
-stats_timer_elapsed(gpointer st)
+static void
+stats_timer_rearm(gint stats_freq)
 {
-  gint stats_freq = GPOINTER_TO_UINT(st);
-
-  if (G_LIKELY(!stats_timer_first))
-    stats_generate_log();
-
-  iv_validate_now();
-  stats_timer.expires = iv_now;
-  timespec_add_msec(&stats_timer.expires, stats_freq * 1000);
-  iv_timer_register(&stats_timer);
-  stats_timer_first = FALSE;
+  stats_timer.cookie = GINT_TO_POINTER(stats_freq);
+  if (stats_freq > 0)
+    {
+      /* arm the timer */
+      iv_validate_now();
+      stats_timer.expires = iv_now;
+      timespec_add_msec(&stats_timer.expires, stats_freq * 1000);
+      iv_timer_register(&stats_timer);
+    }
 }
 
+static void
+stats_timer_elapsed(gpointer st)
+{
+  gint stats_freq = GPOINTER_TO_INT(st);
+
+  stats_generate_log();
+  stats_timer_rearm(stats_freq);
+}
+
+static void
+stats_timer_kickoff(GlobalConfig *cfg)
+{
+  if (iv_timer_registered(&stats_timer))
+    iv_timer_unregister(&stats_timer);
+
+  stats_timer_rearm(cfg->stats_freq);
+}
 
 /************************************************************************************
  * I/O worker threads
@@ -259,7 +285,7 @@ main_loop_io_worker_thread_start(void *cookie)
   gint id;
 
   g_static_mutex_lock(&main_loop_io_workers_idmap_lock);
-
+  dns_cache_init();
   /* NOTE: this algorithm limits the number of I/O worker threads to 64,
    * since the ID map is stored in a single 64 bit integer.  If we ever need
    * more threads than that, we can generalize this algorithm further. */
@@ -282,6 +308,7 @@ void
 main_loop_io_worker_thread_stop(void *cookie)
 {
   g_static_mutex_lock(&main_loop_io_workers_idmap_lock);
+  dns_cache_destroy();
   main_loop_io_workers_idmap &= ~(1 << (main_loop_io_worker_id - 1));
   main_loop_io_worker_id = 0;
   g_static_mutex_unlock(&main_loop_io_workers_idmap_lock);
@@ -460,6 +487,7 @@ main_loop_reload_config_apply(void)
     }
 
   /* this is already running with the new config in place */
+  res_init();
   app_post_config_loaded();
   msg_notice("Configuration reload request received, reloading configuration",
                NULL);
@@ -470,15 +498,7 @@ main_loop_reload_config_apply(void)
 
   reset_cached_hostname();
 
-  /* stats: should probably be put to the stats.c module */
-  if (iv_timer_registered(&stats_timer))
-    iv_timer_unregister(&stats_timer);
-  stats_timer.cookie = GINT_TO_POINTER(current_configuration->stats_freq);
-  if (current_configuration->stats_freq > 0)
-    {
-      stats_timer_first = TRUE;
-      stats_timer_elapsed(stats_timer.cookie);
-    }
+  stats_timer_kickoff(current_configuration);
   stats_cleanup_orphans();
   return;
 }
@@ -595,8 +615,6 @@ setup_signals(void)
 int
 main_loop_init(void)
 {
-  main_thread_handle = g_thread_self();
-
   app_startup();
   setup_signals();
   main_loop_io_workers.thread_start = main_loop_io_worker_thread_start;
@@ -633,7 +651,6 @@ main_loop_run(void)
              NULL);
 
   IV_TIMER_INIT(&stats_timer);
-  stats_timer.cookie = GINT_TO_POINTER(current_configuration->stats_freq);
   stats_timer.handler = stats_timer_elapsed;
 
   control_init(ctlfilename);
@@ -663,17 +680,12 @@ main_loop_run(void)
   sigint_poll.handler = sig_term_handler;
   iv_signal_register(&sigint_poll);
 
-  /* NOTE: generate first stats message, which rearms the timer */
-  stats_timer_first = TRUE;
-  stats_timer_elapsed(stats_timer.cookie);
+  stats_timer_kickoff(current_configuration);
 
   /* main loop */
   iv_main();
 
   control_destroy();
-  msg_notice("syslog-ng shutting down",
-             evt_tag_str("version", VERSION),
-             NULL);
 
   cfg_deinit(current_configuration);
   cfg_free(current_configuration);
@@ -698,6 +710,8 @@ main_loop_add_options(GOptionContext *ctx)
 {
 #ifdef _SC_NPROCESSORS_ONLN
   main_loop_io_workers.max_threads = MIN(MAX(2, sysconf(_SC_NPROCESSORS_ONLN)), 64);
+#else
+  main_loop_io_workers.max_threads = 2;
 #endif
 
   g_option_context_add_main_entries(ctx, main_loop_options, NULL);

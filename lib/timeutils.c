@@ -76,11 +76,6 @@ typedef struct _TimeCache
   struct tm tm;
 } TimeCache;
 
-static TimeCache local_time_cache[64];
-static TimeCache gm_time_cache[64];
-GStaticMutex cache_lock = G_STATIC_MUTEX_INIT;
-
-
 static const gchar *
 get_time_zone_basedir(void)
 {
@@ -99,11 +94,23 @@ TLS_BLOCK_START
 {
   GTimeVal current_time_value;
   struct iv_task invalidate_time_task;
+  TimeCache local_time_cache[64];
+  TimeCache gm_time_cache[64];
+  struct tm mktime_prev_tm;
+  time_t mktime_prev_time;
 }
 TLS_BLOCK_END;
 
 #define current_time_value   __tls_deref(current_time_value)
 #define invalidate_time_task __tls_deref(invalidate_time_task)
+#define local_time_cache     __tls_deref(local_time_cache)
+#define gm_time_cache        __tls_deref(gm_time_cache)
+#define mktime_prev_tm       __tls_deref(mktime_prev_tm)
+#define mktime_prev_time     __tls_deref(mktime_prev_time)
+
+#if !defined(HAVE_LOCALTIME_R) || !defined(HAVE_GMTIME_R)
+static GStaticMutex localtime_lock = G_STATIC_MUTEX_INIT;
+#endif
 
 void
 invalidate_cached_time(void)
@@ -152,29 +159,21 @@ cached_g_current_time_sec()
 time_t
 cached_mktime(struct tm *tm)
 {
-  static struct tm prev_tm;
-  static time_t prev_time;
   time_t result;
 
-  g_static_mutex_lock(&cache_lock);
-
-  if (G_LIKELY(tm->tm_sec == prev_tm.tm_sec &&
-               tm->tm_min == prev_tm.tm_min &&
-               tm->tm_hour == prev_tm.tm_hour &&
-               tm->tm_mday == prev_tm.tm_mday &&
-               tm->tm_mon == prev_tm.tm_mon &&
-               tm->tm_year == prev_tm.tm_year))
+  if (G_LIKELY(tm->tm_sec == mktime_prev_tm.tm_sec &&
+               tm->tm_min == mktime_prev_tm.tm_min &&
+               tm->tm_hour == mktime_prev_tm.tm_hour &&
+               tm->tm_mday == mktime_prev_tm.tm_mday &&
+               tm->tm_mon == mktime_prev_tm.tm_mon &&
+               tm->tm_year == mktime_prev_tm.tm_year))
     {
-      result = prev_time;
-      g_static_mutex_unlock(&cache_lock);
+      result = mktime_prev_time;
       return result;
     }
-  g_static_mutex_unlock(&cache_lock);
   result = mktime(tm);
-  g_static_mutex_lock(&cache_lock);
-  prev_tm = *tm;
-  prev_time = result;
-  g_static_mutex_unlock(&cache_lock);
+  mktime_prev_tm = *tm;
+  mktime_prev_time = result;
   return result;
 }
 
@@ -182,44 +181,56 @@ void
 cached_localtime(time_t *when, struct tm *tm)
 {
   guchar i = 0;
-  g_static_mutex_lock(&cache_lock);
+
   i = *when & 0x3F;
   if (G_LIKELY(*when == local_time_cache[i].when))
     {
       *tm = local_time_cache[i].tm;
-      g_static_mutex_unlock(&cache_lock);
       return;
     }
-  g_static_mutex_unlock(&cache_lock);
-  localtime_r(when, tm);
-  g_static_mutex_lock(&cache_lock);
-  local_time_cache[i].tm = *tm;
-  local_time_cache[i].when = *when;
-  g_static_mutex_unlock(&cache_lock);
+  else
+    {
+#ifdef HAVE_LOCALTIME_R
+      localtime_r(when, tm);
+#else
+      struct tm *ltm;
+
+      g_static_mutex_lock(&localtime_lock);
+      ltm = localtime(when);
+      *tm = *ltm;
+      g_static_mutex_unlock(&localtime_lock);
+#endif
+      local_time_cache[i].tm = *tm;
+      local_time_cache[i].when = *when;
+    }
 }
 
 void
 cached_gmtime(time_t *when, struct tm *tm)
 {
   guchar i = 0;
-  g_static_mutex_lock(&cache_lock);
+
   i = *when & 0x3F;
   if (G_LIKELY(*when == gm_time_cache[i].when))
     {
       *tm = gm_time_cache[i].tm;
-      g_static_mutex_unlock(&cache_lock);
       return;
     }
-  g_static_mutex_unlock(&cache_lock);
-  #ifdef _MSC_VER
-  tm = gmtime(when);
-  #else
-  gmtime_r(when, tm);
-  #endif
-  g_static_mutex_lock(&cache_lock);
-  gm_time_cache[i].tm = *tm;
-  gm_time_cache[i].when = *when;
-  g_static_mutex_unlock(&cache_lock);
+  else
+    {
+#ifdef HAVE_GMTIME_R
+      gmtime_r(when, tm);
+#else
+      struct tm *ltm;
+
+      g_static_mutex_lock(&localtime_lock);
+      ltm = gmtime(when);
+      *tm = *ltm;
+      g_static_mutex_unlock(&localtime_lock);
+#endif
+      gm_time_cache[i].tm = *tm;
+      gm_time_cache[i].when = *when;
+    }
 }
 
 /**
@@ -232,19 +243,20 @@ cached_gmtime(time_t *when, struct tm *tm)
 long
 get_local_timezone_ofs(time_t when)
 {
+#ifdef HAVE_STRUCT_TM_TM_GMTOFF
+  struct tm ltm;
+
+  cached_localtime(&when, &ltm);
+  return ltm.tm_gmtoff;
+
+#else
+
+  struct tm gtm;
   struct tm ltm;
   long tzoff;
   
-#if HAVE_STRUCT_TM_TM_GMTOFF
   cached_localtime(&when, &ltm);
-  tzoff = ltm.tm_gmtoff;
-#else
-  struct tm gtm;
-  
-  cached_localtime(&when, &ltm_store);
-  cached_gmtime(&when, &gtm_stroe);
-  ltm = &ltm_store;
-  gtm = &gtm_store
+  cached_gmtime(&when, &gtm);
 
   tzoff = (ltm.tm_hour - gtm.tm_hour) * 3600;
   tzoff += (ltm.tm_min - gtm.tm_min) * 60;
@@ -255,18 +267,16 @@ get_local_timezone_ofs(time_t when)
   else if (tzoff < 0 && (ltm.tm_year > gtm.tm_year || ltm.tm_mon > gtm.tm_mon || ltm.tm_mday > gtm.tm_mday))
     tzoff += 86400;
   
-#endif /* HAVE_STRUCT_TM_TM_GMTOFF */
   return tzoff;
+#endif /* HAVE_STRUCT_TM_TM_GMTOFF */
 }
 
 
 void
 clean_time_cache()
 {
-  g_static_mutex_lock(&cache_lock);
-  memset(&gm_time_cache, 0, 64 * sizeof(TimeCache));
-  memset(&local_time_cache, 0, 64 * sizeof(TimeCache));
-  g_static_mutex_unlock(&cache_lock);
+  memset(&gm_time_cache, 0, sizeof(gm_time_cache));
+  memset(&local_time_cache, 0, sizeof(local_time_cache));
 }
 
 int
@@ -541,6 +551,9 @@ zone_info_parser(unsigned char **input, gboolean is64bitData, gint *version)
   gint64 *transition_times = NULL;
   guint8 *transition_types = NULL;
   gint32 *gmt_offsets = NULL;
+  gint64 isgmtcnt, isdstcnt, leapcnt, timecnt, typecnt, charcnt;
+  gboolean insertInitial = FALSE;
+
   buf = *input;
   *input += 4;
 
@@ -579,12 +592,12 @@ zone_info_parser(unsigned char **input, gboolean is64bitData, gint *version)
   *input += 15;
 
   /* Read array sizes */
-  gint64 isgmtcnt = readcoded32(input, 0, G_MAXINT64);
-  gint64 isdstcnt = readcoded32(input, 0, G_MAXINT64);
-  gint64 leapcnt  = readcoded32(input, 0, G_MAXINT64);
-  gint64 timecnt  = readcoded32(input, 0, G_MAXINT64);
-  gint64 typecnt  = readcoded32(input, 0, G_MAXINT64);
-  gint64 charcnt  = readcoded32(input, 0, G_MAXINT64);
+  isgmtcnt = readcoded32(input, 0, G_MAXINT64);
+  isdstcnt = readcoded32(input, 0, G_MAXINT64);
+  leapcnt  = readcoded32(input, 0, G_MAXINT64);
+  timecnt  = readcoded32(input, 0, G_MAXINT64);
+  typecnt  = readcoded32(input, 0, G_MAXINT64);
+  charcnt  = readcoded32(input, 0, G_MAXINT64);
 
   /* 
    * Confirm sizes that we assume to be equal.  These assumptions
@@ -671,7 +684,7 @@ zone_info_parser(unsigned char **input, gboolean is64bitData, gint *version)
     }
  
   /* Build transitions vector out of corresponding times and types. */
-  gboolean insertInitial = FALSE;
+  insertInitial = FALSE;
   if (is64bitData)
     {
       if (timecnt > 0)

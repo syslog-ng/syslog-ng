@@ -28,14 +28,14 @@
 #include "syslog-ng.h"
 #include "logpipe.h"
 #include "driver.h"
-
+#include "stats.h"
 
 typedef struct _LogDestGroup
 {
   LogPipe super;
   gchar *name;
   LogDriver *drivers;
-  guint32 *processed_messages;
+  StatsCounterItem *processed_messages;
 } LogDestGroup;
 
 static inline LogDestGroup *

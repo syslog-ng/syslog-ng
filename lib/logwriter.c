@@ -27,6 +27,7 @@
 #include "stats.h"
 #include "misc.h"
 #include "mainloop.h"
+#include "str-format.h"
 
 #include <unistd.h>
 #include <assert.h>
@@ -38,16 +39,28 @@
 #include <iv_event.h>
 #include <iv_work.h>
 
+typedef enum
+{
+  /* flush modes */
+
+  /* business as usual, flush when the buffer is full */
+  LW_FLUSH_NORMAL,
+  /* flush the buffer immediately please */
+  LW_FLUSH_BUFFER,
+  /* pull off any queued items, at maximum speed, even ignoring throttle, and flush the buffer too */
+  LW_FLUSH_QUEUE,
+} LogWriterFlushMode;
+
 struct _LogWriter
 {
   LogPipe super;
   LogQueue *queue;
   guint32 flags:31;
   gint32 seq_num;
-  guint32 *dropped_messages;
-  guint32 *suppressed_messages;
-  guint32 *processed_messages;
-  guint32 *stored_messages;
+  StatsCounterItem *dropped_messages;
+  StatsCounterItem *suppressed_messages;
+  StatsCounterItem *processed_messages;
+  StatsCounterItem *stored_messages;
   LogPipe *control;
   LogWriterOptions *options;
   GStaticMutex suppress_lock;
@@ -70,8 +83,11 @@ struct _LogWriter
   gboolean suppress_timer_updated;
   gboolean work_result;
   gint pollable_state;
-  LogProto *proto;
+  LogProto *proto, *pending_proto;
   gboolean watches_running:1, suspended:1, working:1, flush_waiting_for_timeout:1;
+  gboolean pending_proto_present;
+  GCond *pending_proto_cond;
+  GStaticMutex pending_proto_lock;
 };
 
 /**
@@ -97,7 +113,7 @@ struct _LogWriter
  *
  **/
 
-static gboolean log_writer_flush(LogWriter *self, gboolean flush_all);
+static gboolean log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode);
 static void log_writer_broken(LogWriter *self, gint notify_code);
 static void log_writer_start_watches(LogWriter *self);
 static void log_writer_stop_watches(LogWriter *self);
@@ -109,8 +125,7 @@ log_writer_work_perform(gpointer s)
 {
   LogWriter *self = (LogWriter *) s;
 
-  log_pipe_ref(&self->super);
-  self->work_result = log_writer_flush(self, self->flush_waiting_for_timeout);
+  self->work_result = log_writer_flush(self, self->flush_waiting_for_timeout ? LW_FLUSH_BUFFER : LW_FLUSH_NORMAL);
 }
 
 static void
@@ -118,7 +133,27 @@ log_writer_work_finished(gpointer s)
 {
   LogWriter *self = (LogWriter *) s;
 
+  main_loop_assert_main_thread();
   self->flush_waiting_for_timeout = FALSE;
+
+  if (self->pending_proto_present)
+    {
+      /* pending proto is only set in the main thread, so no need to
+       * lock it before coming here. After we're syncing with the
+       * log_writer_reopen() call, quite possibly coming from a
+       * non-main thread. */
+
+      g_static_mutex_lock(&self->pending_proto_lock);
+      if (self->proto)
+        log_proto_free(self->proto);
+
+      self->proto = self->pending_proto;
+      self->pending_proto = NULL;
+      self->pending_proto_present = FALSE;
+
+      g_cond_signal(self->pending_proto_cond);
+      g_static_mutex_unlock(&self->pending_proto_lock);
+    }
 
   if (!self->work_result)
     {
@@ -133,8 +168,12 @@ log_writer_work_finished(gpointer s)
         }
       goto exit;
     }
-  /* reenable polling the source */
-  log_writer_start_watches(self);
+
+  if ((self->super.flags & PIF_INITIALIZED) && self->proto)
+    {
+      /* reenable polling the source, but only if we're still initialized */
+      log_writer_start_watches(self);
+    }
 
 exit:
   log_pipe_unref(&self->super);
@@ -145,7 +184,10 @@ log_writer_io_flush_output(gpointer s)
 {
   LogWriter *self = (LogWriter *) s;
 
+  main_loop_assert_main_thread();
+
   log_writer_stop_watches(self);
+  log_pipe_ref(&self->super);
   if ((self->options->options & LWO_THREADED))
     {
       main_loop_io_worker_job_submit(&self->io_job);
@@ -164,7 +206,7 @@ log_writer_io_error(gpointer s)
 
   if (self->fd_watch.handler_out == NULL && self->fd_watch.handler_in == NULL)
     {
-      msg_error("POLLERR occurred while idle",
+      msg_debug("POLLERR occurred while idle",
                 evt_tag_int("fd", log_proto_get_fd(self->proto)),
                 NULL);
       log_writer_broken(self, NC_WRITE_ERROR);
@@ -205,6 +247,7 @@ log_writer_error_suspend_elapsed(gpointer s)
 static void
 log_writer_update_fd_callbacks(LogWriter *self, GIOCondition cond)
 {
+  main_loop_assert_main_thread();
   if (self->pollable_state > 0)
     {
       if (self->flags & LW_DETECT_EOF && (cond & G_IO_IN) == 0 && (cond & G_IO_OUT))
@@ -265,15 +308,39 @@ log_writer_arm_suspend_timer(LogWriter *self, void (*handler)(void *), gint time
 static void
 log_writer_queue_filled(gpointer s)
 {
-  log_writer_update_watches((LogWriter *) s);
+  LogWriter *self = (LogWriter *) s;
+
+  main_loop_assert_main_thread();
+
+  /*
+   * NOTE: This theory is somewhat questionable, e.g. I'm not 100% sure it
+   * is the right scenario, but the race was closed.  So take this with a
+   * grain of salt.
+   *
+   * The queue_filled callback is running in the main thread. Because of the
+   * possible delay caused by iv_event_post() the callback might be
+   * delivered event after stop_watches() has been called.
+   *
+   *   - log_writer_schedule_update_watches() is called by the reader
+   *     thread, which calls iv_event_post()
+   *   - the main thread calls stop_watches() in work_perform
+   *   - the event is delivered in the main thread
+   *
+   * But since stop/start watches always run in the main thread and we do
+   * too, we can check if this is the case.  A LogWriter without watches
+   * running is busy writing out data to the destination, e.g.  a
+   * start_watches is to be expected once log_writer_work_finished() is run
+   * at the end of the deferred work, executed by the I/O threads.
+   */
+  if (self->watches_running)
+    log_writer_update_watches((LogWriter *) s);
 }
 
 /* NOTE: runs in the source thread */
 static void
 log_writer_schedule_update_watches(LogWriter *self)
 {
-  if (!self->working)
-    iv_event_post(&self->queue_filled);
+  iv_event_post(&self->queue_filled);
 }
 
 static void
@@ -498,7 +565,7 @@ log_writer_last_msg_flush(LogWriter *self)
                    get_local_hostname(NULL));
   log_msg_set_value(m, LM_V_MESSAGE, buf, len);
 
-  path_options.flow_control = FALSE;
+  path_options.ack_needed = FALSE;
 
   log_queue_push_tail(self->queue, m, &path_options);
   log_writer_last_msg_release(self);
@@ -592,16 +659,13 @@ log_writer_queue(LogPipe *s, LogMessage *lm, const LogPathOptions *path_options,
   LogWriter *self = (LogWriter *) s;
   LogPathOptions local_options;
 
-  if (self->suspended && path_options->flow_control && path_options->soft_flow_control)
+  if (!path_options->flow_control_requested &&
+      (self->suspended || !(self->flags & LW_SOFT_FLOW_CONTROL)))
     {
       /* NOTE: this code ACKs the message back if there's a write error in
        * order not to hang the client in case of a disk full */
 
-      local_options = *path_options;
-      log_msg_ack(lm, path_options);
-
-      local_options.flow_control = FALSE;
-      path_options = &local_options;
+      path_options = log_msg_break_ack(lm, path_options, &local_options);
     }
   if (self->options->suppress > 0 && log_writer_last_msg_check(self, lm, path_options))
     return;
@@ -665,12 +729,18 @@ log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
   /* no template was specified, use default */
   stamp = &lm->timestamps[LM_TS_STAMP];
 
+  g_string_truncate(result, 0);
+
   if ((self->flags & LW_SYSLOG_PROTOCOL) || (self->options->options & LWO_SYSLOG_PROTOCOL))
     {
       gint len;
        
       /* we currently hard-wire version 1 */
-      g_string_sprintf(result, "<%d>%d ", lm->pri, 1);
+      g_string_append_c(result, '<');
+      format_uint32_padded(result, 0, 0, 10, lm->pri);
+      g_string_append_c(result, '>');
+      g_string_append_c(result, '1');
+      g_string_append_c(result, ' ');
  
       log_stamp_append_format(stamp, result, TS_FMT_ISO, 
                               time_zone_info_get_offset(self->options->template_options.time_zone_info[LTZ_SEND], stamp->tv_sec),
@@ -765,7 +835,9 @@ log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
             }
           else if (self->flags & LW_FORMAT_PROTO)
             {
-              g_string_sprintf(result, "<%d>", lm->pri);
+	      g_string_append_c(result, '<');
+	      format_uint32_padded(result, 0, 0, 10, lm->pri);
+	      g_string_append_c(result, '>');
 
               /* always use BSD timestamp by default, the use can override this using a custom template */
               log_stamp_append_format(stamp, result, TS_FMT_BSD,
@@ -827,22 +899,48 @@ log_writer_broken(LogWriter *self, gint notify_code)
   log_pipe_notify(self->control, &self->super, notify_code, self);
 }
 
+/*
+ * Write messages to the underlying file descriptor using the installed
+ * LogProto instance.  This is called whenever the output is ready to accept
+ * further messages, and once during config deinitialization, in order to
+ * flush messages still in the queue, in the hope that most of them can be
+ * written out.
+ *
+ * In threaded mode, this function is invoked as part of the "output" task
+ * (in essence, this is the function that performs the output task).
+ *
+ * @flush_mode specifies how hard LogWriter is trying to send messages to
+ * the actual destination:
+ *
+ *
+ * LW_FLUSH_NORMAL    - business as usual, flush when the buffer is full
+ * LW_FLUSH_BUFFER    - flush the buffer immediately please
+ * LW_FLUSH_QUEUE     - pull off any queued items, at maximum speed, even
+ *                      ignoring throttle, and flush the buffer too
+ *
+ */
 gboolean
-log_writer_flush(LogWriter *self, gboolean flush_all)
+log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
 {
   LogProto *proto = self->proto;
   gint count = 0;
+  gboolean ignore_throttle = (flush_mode >= LW_FLUSH_QUEUE);
   
   if (!proto)
     return FALSE;
 
-  while (!main_loop_io_worker_job_quit())
+  /* NOTE: in case we're reloading or exiting we flush all queued items as
+   * long as the destination can consume it.  This is not going to be an
+   * infinite loop, since the reader will cease to produce new messages when
+   * main_loop_io_worker_job_quit() is set. */
+
+  while (!main_loop_io_worker_job_quit() || flush_mode >= LW_FLUSH_QUEUE)
     {
       LogMessage *lm;
       LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
       gboolean consumed = FALSE;
       
-      if (!log_queue_pop_head(self->queue, &lm, &path_options, FALSE))
+      if (!log_queue_pop_head(self->queue, &lm, &path_options, FALSE, ignore_throttle))
         {
           /* no more items are available */
           break;
@@ -901,7 +999,7 @@ log_writer_flush(LogWriter *self, gboolean flush_all)
       count++;
     }
 
-  if (flush_all || count == 0)
+  if (flush_mode >= LW_FLUSH_BUFFER || count == 0)
     {
       if (log_proto_flush(proto) == LPS_ERROR)
         return FALSE;
@@ -946,15 +1044,25 @@ log_writer_init(LogPipe *s)
 
   if ((self->options->options & LWO_NO_STATS) == 0 && !self->dropped_messages)
     {
+      stats_lock();
       stats_register_counter(self->stats_level, self->stats_source | SCS_DESTINATION, self->stats_id, self->stats_instance, SC_TYPE_DROPPED, &self->dropped_messages);
       if (self->options->suppress > 0)
         stats_register_counter(self->stats_level, self->stats_source | SCS_DESTINATION, self->stats_id, self->stats_instance, SC_TYPE_SUPPRESSED, &self->suppressed_messages);
       stats_register_counter(self->stats_level, self->stats_source | SCS_DESTINATION, self->stats_id, self->stats_instance, SC_TYPE_PROCESSED, &self->processed_messages);
       
       stats_register_counter(self->stats_level, self->stats_source | SCS_DESTINATION, self->stats_id, self->stats_instance, SC_TYPE_STORED, &self->stored_messages);
+      stats_unlock();
     }
   self->suppress_timer_updated = TRUE;
   log_queue_set_counters(self->queue, self->stored_messages, self->dropped_messages);
+  if (self->proto)
+    {
+      LogProto *proto;
+
+      proto = self->proto;
+      self->proto = NULL;
+      log_writer_reopen(&self->super, proto);
+    }
   return TRUE;
 }
 
@@ -966,7 +1074,7 @@ log_writer_deinit(LogPipe *s)
   main_loop_assert_main_thread();
 
   log_queue_reset_parallel_push(self->queue);
-  log_writer_flush(self, TRUE);
+  log_writer_flush(self, LW_FLUSH_QUEUE);
   /* FIXME: by the time we arrive here, it must be guaranteed that no
    * _queue() call is running in a different thread, otherwise we'd need
    * some kind of locking. */
@@ -991,7 +1099,10 @@ static void
 log_writer_free(LogPipe *s)
 {
   LogWriter *self = (LogWriter *) s;
-  
+
+  if (self->proto)
+    log_proto_free(self->proto);
+
   if (self->line_buffer)
     g_string_free(self->line_buffer, TRUE);
   if (self->queue)
@@ -1000,6 +1111,10 @@ log_writer_free(LogPipe *s)
     log_msg_unref(self->last_msg);
   g_free(self->stats_id);
   g_free(self->stats_instance);
+  g_static_mutex_free(&self->suppress_lock);
+  g_static_mutex_free(&self->pending_proto_lock);
+  g_cond_free(self->pending_proto_cond);
+
   log_pipe_free_method(s);
 }
 
@@ -1007,7 +1122,7 @@ log_writer_free(LogPipe *s)
 gboolean
 log_writer_has_pending_writes(LogWriter *self)
 {
-  return log_queue_get_length(self->queue) > 0;
+  return log_queue_get_length(self->queue) > 0 || !self->watches_running;
 }
 
 gboolean
@@ -1027,7 +1142,18 @@ log_writer_reopen_deferred(gpointer s)
   LogWriter *self = args[0];
   LogProto *proto = args[1];
 
+  init_sequence_number(&self->seq_num);
+
+  if (self->io_job.working)
+    {
+      /* NOTE: proto can be NULL */
+      self->pending_proto = proto;
+      self->pending_proto_present = TRUE;
+      return;
+    }
+
   log_writer_stop_watches(self);
+
   if (self->proto)
     log_proto_free(self->proto);
 
@@ -1035,16 +1161,51 @@ log_writer_reopen_deferred(gpointer s)
 
   if (proto)
     log_writer_start_watches(self);
-
-  init_sequence_number(&self->seq_num);
 }
 
+/*
+ * This function can be called from any threads, from the main thread
+ * as well as I/O worker threads. It takes care about going to the
+ * main thread to actually switch LogProto under this writer.
+ *
+ * The writer may still be operating, (e.g. log_pipe_deinit/init is
+ * not needed).
+ *
+ * In case we're running in a non-main thread, then by the time this
+ * function returns, the reopen has finished. In case it is called
+ * from the main thread, this function may defer updating self->proto
+ * until the worker thread has finished. The reason for this
+ * difference is:
+ *
+ *   - if LogWriter is busy, then updating the LogProto instance is
+ *     deferred to log_writer_work_finished(), but that runs in the
+ *     main thread.
+ *
+ *   - normally, even this deferred update is waited for, but in case
+ *     we're in the main thread, we can't block.
+ *
+ * This situation could probably be improved, maybe the synchonous
+ * return of log_writer_reopen() is not needed by call sites, but I
+ * was not sure, and right before release I didn't want to take the
+ * risky approach.
+ */
 void
 log_writer_reopen(LogPipe *s, LogProto *proto)
 {
+  LogWriter *self = (LogWriter *) s;
   gpointer args[] = { s, proto };
 
   main_loop_call((MainLoopTaskFunc) log_writer_reopen_deferred, args, TRUE);
+
+  if (!main_loop_is_main_thread())
+    {
+      g_static_mutex_lock(&self->pending_proto_lock);
+      while (self->pending_proto_present)
+        {
+          g_cond_wait(self->pending_proto_cond, g_static_mutex_get_mutex(&self->pending_proto_lock));
+        }
+      g_static_mutex_unlock(&self->pending_proto_lock);
+    }
 }
 
 void
@@ -1061,7 +1222,7 @@ log_writer_set_options(LogWriter *self, LogPipe *control, LogWriterOptions *opti
 }
 
 LogPipe *
-log_writer_new(guint32 flags, LogQueue *queue)
+log_writer_new(guint32 flags)
 {
   LogWriter *self = g_new0(LogWriter, 1);
   
@@ -1072,12 +1233,24 @@ log_writer_new(guint32 flags, LogQueue *queue)
   self->super.free_fn = log_writer_free;
   self->flags = flags;
   self->line_buffer = g_string_sized_new(128);
-  self->queue = queue;
   self->pollable_state = -1;
 
   log_writer_init_watches(self);
   g_static_mutex_init(&self->suppress_lock);
+  g_static_mutex_init(&self->pending_proto_lock);
+  self->pending_proto_cond = g_cond_new();
+
   return &self->super;
+}
+
+void
+log_writer_set_queue(LogPipe *s, LogQueue *queue)
+{
+  LogWriter *self = (LogWriter *)s;
+
+  if (self->queue)
+    log_queue_unref(self->queue);
+  self->queue = queue;
 }
 
 void 

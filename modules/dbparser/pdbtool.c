@@ -422,7 +422,8 @@ pdbtool_match(int argc, char *argv[])
       gchar *t;
 
       t = g_strcompress(template_string);
-      template = log_template_new(configuration, NULL, t);
+      template = log_template_new(configuration, NULL);
+      log_template_compile(template, t, NULL);
       g_free(t);
 
       output = g_string_sized_new(512);
@@ -918,7 +919,7 @@ static GOptionEntry pdbtool_options[] =
   { "module", 0, 0, G_OPTION_ARG_CALLBACK, pdbtool_load_module,
     "Load the module specified as parameter", "<module>" },
   { "module-path",         0,         0, G_OPTION_ARG_STRING, &module_path,
-    "Set the list of colon separated directories to search for modules, default=" PATH_MODULEDIR, "<path>" },
+    "Set the list of colon separated directories to search for modules, default=" MODULE_PATH, "<path>" },
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
 };
 
@@ -997,6 +998,7 @@ main(int argc, char *argv[])
   msg_init(TRUE);
   stats_init();
   log_msg_global_init();
+  log_template_global_init();
   log_tags_init();
   pattern_db_global_init();
 

@@ -172,8 +172,10 @@ log_source_init(LogPipe *s)
 {
   LogSource *self = (LogSource *) s;
 
+  stats_lock();
   stats_register_counter(self->stats_level, self->stats_source | SCS_SOURCE, self->stats_id, self->stats_instance, SC_TYPE_PROCESSED, &self->recvd_messages);
   stats_register_counter(self->stats_level, self->stats_source | SCS_SOURCE, self->stats_id, self->stats_instance, SC_TYPE_STAMP, &self->last_message_seen);
+  stats_unlock();
   return TRUE;
 }
 
@@ -193,7 +195,7 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
 {
   LogSource *self = (LogSource *) s;
   LogPathOptions local_options = *path_options;
-  guint32 *processed_counter, *stamp;
+  StatsCounterItem *processed_counter, *stamp;
   gboolean new;
   StatsCounter *handle;
   gint old_window_size;
@@ -219,16 +221,30 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
         self->options->host_override_len = strlen(self->options->host_override);
       log_msg_set_value(msg, LM_V_HOST, self->options->host_override, self->options->host_override_len);
     }
-    
-  handle = stats_register_dynamic_counter(2, SCS_HOST | SCS_SOURCE, NULL, log_msg_get_value(msg, LM_V_HOST, NULL), SC_TYPE_PROCESSED, &processed_counter, &new);
-  stats_register_associated_counter(handle, SC_TYPE_STAMP, &stamp);
-  stats_counter_inc(processed_counter);
-  stats_counter_set(stamp, msg->timestamps[LM_TS_RECVD].tv_sec);
-  stats_unregister_dynamic_counter(handle, SC_TYPE_PROCESSED, &processed_counter);
-  stats_unregister_dynamic_counter(handle, SC_TYPE_STAMP, &stamp);
+
+  if (stats_check_level(2))
+    {
+      stats_lock();
+
+      handle = stats_register_dynamic_counter(2, SCS_HOST | SCS_SOURCE, NULL, log_msg_get_value(msg, LM_V_HOST, NULL), SC_TYPE_PROCESSED, &processed_counter, &new);
+      stats_register_associated_counter(handle, SC_TYPE_STAMP, &stamp);
+      stats_counter_inc(processed_counter);
+      stats_counter_set(stamp, msg->timestamps[LM_TS_RECVD].tv_sec);
+      stats_unregister_dynamic_counter(handle, SC_TYPE_PROCESSED, &processed_counter);
+      stats_unregister_dynamic_counter(handle, SC_TYPE_STAMP, &stamp);
+
+      if (stats_check_level(3))
+        {
+          stats_instant_inc_dynamic_counter(3, SCS_SENDER | SCS_SOURCE, NULL, log_msg_get_value(msg, LM_V_HOST_FROM, NULL), msg->timestamps[LM_TS_RECVD].tv_sec);
+          stats_instant_inc_dynamic_counter(3, SCS_PROGRAM | SCS_SOURCE, NULL, log_msg_get_value(msg, LM_V_PROGRAM, NULL), -1);
+        }
+
+      stats_unlock();
+    }
+  stats_counter_inc_pri(msg->pri);
 
   /* NOTE: we start by enabling flow-control, thus we need an acknowledgement */
-  local_options.flow_control = TRUE;
+  local_options.ack_needed = TRUE;
   log_msg_ref(msg);
   log_msg_add_ack(msg, &local_options);
   msg->ack_func = log_source_msg_ack;

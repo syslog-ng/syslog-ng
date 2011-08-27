@@ -60,7 +60,7 @@ log_db_parser_emit(LogMessage *msg, gboolean synthetic, gpointer user_data)
         {
           LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
 
-          path_options.flow_control = FALSE;
+          path_options.ack_needed = FALSE;
           log_pipe_forward_msg(&self->super.super.super, log_msg_ref(msg), &path_options);
         }
       else
@@ -146,8 +146,10 @@ log_db_parser_init(LogPipe *s)
                     evt_tag_str("error", g_strerror(errno)),
                     NULL);
         }
-      else
+      else if (self->db_file_inode != st.st_ino || self->db_file_mtime != st.st_mtime)
         {
+          self->db = pattern_db_new();
+          log_db_parser_reload_database(self);
           self->db_file_inode = st.st_ino;
           self->db_file_mtime = st.st_mtime;
         }

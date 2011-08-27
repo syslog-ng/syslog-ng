@@ -28,11 +28,25 @@
 #include "syslog-ng.h"
 #include "gsockaddr.h"
 
+/* don't close the underlying fd when LogTransport is destructed */
 #define LTF_DONTCLOSE 0x0001
+
+/* issue an fsync after every write */
 #define LTF_FSYNC     0x0002
+
+/* reseek to the end-of-file before writing */
 #define LTF_APPEND    0x0004
+
+/* use recv() instead of read() */
 #define LTF_RECV      0x0008
+
+/* issue a shutdown() when LogTransport is destructed, only works if LTF_DONTCLOSE is unset */
 #define LTF_SHUTDOWN  0x0010
+
+/* the underlying fd is a pipe, try to resize the output chunk to make
+ * sure it fits into PIPE_BUF, see then comment
+ * log_transport_plain_write() for more details. */
+#define LTF_PIPE      0x0020
 
 
 typedef struct _LogTransport LogTransport;

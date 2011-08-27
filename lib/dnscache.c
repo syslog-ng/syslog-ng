@@ -25,6 +25,7 @@
 #include "dnscache.h"
 #include "messages.h"
 #include "timeutils.h"
+#include "tls-support.h"
 
 #include <sys/types.h>
 #include <netinet/in.h>
@@ -57,11 +58,27 @@ struct _DNSCacheEntry
   DNSCacheKey key;
   time_t resolved;
   gchar *hostname;
+  /* whether this entry is a positive (successful DNS lookup) or negative (failed DNS lookup, contains an IP address) match */
+  gboolean positive;
 };
 
 
-static GHashTable *cache;
-static DNSCacheEntry cache_first, cache_last, persist_first, persist_last;
+TLS_BLOCK_START
+{
+  GHashTable *cache;
+  DNSCacheEntry cache_first;
+  DNSCacheEntry cache_last;
+  DNSCacheEntry persist_first;
+  DNSCacheEntry persist_last;
+}
+TLS_BLOCK_END;
+
+#define cache  __tls_deref(cache)
+#define cache_first __tls_deref(cache_first)
+#define cache_last __tls_deref(cache_last)
+#define persist_first __tls_deref(persist_first)
+#define persist_last __tls_deref(persist_last)
+
 static gint dns_cache_size = 1007;
 static gint dns_cache_expire = 3600;
 static gint dns_cache_expire_failed = 60;
@@ -218,7 +235,7 @@ dns_cache_check_hosts(glong t)
               if (!p)
                 continue;
               inet_pton(family, ip, &ia);
-              dns_cache_store(TRUE, family, &ia, p);
+              dns_cache_store(TRUE, family, &ia, p, TRUE);
             }
           fclose(hosts);
         }
@@ -233,8 +250,15 @@ dns_cache_check_hosts(glong t)
     }
 }
 
+/*
+ * @hostname        is set to the stored hostname,
+ * @positive        is set whether the match was a DNS match or failure
+ *
+ * Returns TRUE if the cache was able to serve the request (e.g. had a
+ * matching entry at all).
+ */
 gboolean
-dns_cache_lookup(gint family, void *addr, const gchar **hostname)
+dns_cache_lookup(gint family, void *addr, const gchar **hostname, gboolean *positive)
 {
   DNSCacheKey key;
   DNSCacheEntry *entry;
@@ -248,22 +272,25 @@ dns_cache_lookup(gint family, void *addr, const gchar **hostname)
   if (entry)
     {
       if (entry->resolved && 
-          ((entry->hostname && entry->resolved < now - dns_cache_expire) ||
-           (!entry->hostname && entry->resolved < now - dns_cache_expire_failed)))
+          ((entry->positive && entry->resolved < now - dns_cache_expire) ||
+           (!entry->positive && entry->resolved < now - dns_cache_expire_failed)))
         {
           /* the entry is not persistent and is too old */
         }
       else
         {
           *hostname = entry->hostname;
+          *positive = entry->positive;
           return TRUE;
         }
     }
+  *hostname = NULL;
+  *positive = FALSE;
   return FALSE;
 }
 
 void
-dns_cache_store(gboolean persistent, gint family, void *addr, const gchar *hostname)
+dns_cache_store(gboolean persistent, gint family, void *addr, const gchar *hostname, gboolean positive)
 {
   DNSCacheEntry *entry;
   guint hash_size;
@@ -272,6 +299,7 @@ dns_cache_store(gboolean persistent, gint family, void *addr, const gchar *hostn
 
   dns_cache_fill_key(&entry->key, family, addr);
   entry->hostname = hostname ? g_strdup(hostname) : NULL;
+  entry->positive = positive;
   if (!persistent)
     {
       entry->resolved = cached_g_current_time_sec();

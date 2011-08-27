@@ -57,6 +57,9 @@ gchar *find_file_in_path(const gchar *path, const gchar *filename, GFileTest tes
 
 GThread *create_worker_thread(GThreadFunc func, gpointer data, gboolean joinable, GError **error);
 
+gint set_permissions(gchar *name, gint uid, gint gid, gint mode);
+gint set_permissions_fd(gint fd, gint uid, gint gid, gint mode);
+
 
 static inline void
 init_sequence_number(gint32 *seqnum)
@@ -93,5 +96,6 @@ void string_list_free(GList *l);
       } \
   __buf; })
 
+gchar *utf8_escape_string(const gchar *str, gssize len);
 
 #endif

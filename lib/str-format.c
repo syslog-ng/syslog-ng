@@ -16,14 +16,16 @@ format_uint32_base10_rev(gchar *result, gsize result_len, gint sign, guint32 val
       value = -((gint32) value);
       negative = 1;
     }
+  gboolean first = TRUE;
 
   p = result;
-  while (result_len > 0 && value > 0)
+  while (first || (result_len > 0 && value > 0))
     {
       *p = digits[value % 10];
       value /= 10;
       p++;
       result_len--;
+      first = FALSE;
     }
   if (negative && result_len > 0)
     {
@@ -37,14 +39,16 @@ static inline gint
 format_uint32_base16_rev(gchar *result, gsize result_len, guint32 value)
 {
   gchar *p;
+  gboolean first = TRUE;
 
   p = result;
-  while (result_len > 0 && value > 0)
+  while (first || (result_len > 0 && value > 0))
     {
       *p = digits[value & 0x0F];
       value >>= 4;
       p++;
       result_len--;
+      first = FALSE;
     }
   return p - result;
 }
@@ -108,7 +112,7 @@ scan_uint32(const gchar **buf, gint *left, gint field_width, guint32 *num)
     {
       if ((**buf) >= '0' && (**buf) <= '9')
         result = result * 10 + ((**buf) - '0');
-      else if (!isspace(**buf))
+      else if (!isspace((int) **buf))
         return FALSE;
       (*buf)++;
       (*left)--;

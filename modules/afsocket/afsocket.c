@@ -35,6 +35,7 @@
 #include "mainloop.h"
 
 #include <stdio.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -322,6 +323,16 @@ afsocket_sc_new(AFSocketSourceDriver *owner, GSockAddr *peer_addr, int fd)
 }
 
 void
+afsocket_sd_set_transport(LogDriver *s, const gchar *transport)
+{
+  AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
+
+  if (self->transport)
+    g_free(self->transport);
+  self->transport = g_strdup(transport);
+}
+
+void
 afsocket_sd_set_keep_alive(LogDriver *s, gint enable)
 {
   AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
@@ -535,7 +546,8 @@ afsocket_sd_start_watches(AFSocketSourceDriver *self)
 static void
 afsocket_sd_stop_watches(AFSocketSourceDriver *self)
 {
-  iv_fd_unregister(&self->listen_fd);
+  if (iv_fd_registered (&self->listen_fd))
+    iv_fd_unregister(&self->listen_fd);
 }
 
 gboolean
@@ -549,18 +561,12 @@ afsocket_sd_init(LogPipe *s)
   if (!log_src_driver_init_method(s))
     return FALSE;
 
-#if ENABLE_SSL
-  if (self->flags & AFSOCKET_REQUIRE_TLS && !self->tls_context)
-    {
-      msg_error("Transport TLS was specified, but TLS related parameters missing", NULL);
-      return FALSE;
-    }
-#endif
+  if (!afsocket_sd_apply_transport(self))
+    return FALSE;
 
-  if (!self->bind_addr)
-    {
-      msg_error("No bind address set;", NULL);
-    }
+  g_assert(self->transport);
+  g_assert(self->bind_addr);
+
   if ((self->flags & (AFSOCKET_STREAM + AFSOCKET_WNDSIZE_INITED)) == AFSOCKET_STREAM)
     {
       /* distribute the window evenly between each of our possible
@@ -569,14 +575,14 @@ afsocket_sd_init(LogPipe *s)
        */
 
       self->reader_options.super.init_window_size /= self->max_connections;
-      if (self->reader_options.super.init_window_size < 10)
+      if (self->reader_options.super.init_window_size < 100)
         {
-          msg_warning("WARNING: window sizing for tcp sources were changed in syslog-ng 3.3, the configuration value was divided by the value of max-connections(). The result was too small, clamping to 10 entries. Ensure you have a proper log_fifo_size setting to avoid message loss.",
+          msg_warning("WARNING: window sizing for tcp sources were changed in syslog-ng 3.3, the configuration value was divided by the value of max-connections(). The result was too small, clamping to 100 entries. Ensure you have a proper log_fifo_size setting to avoid message loss.",
                       evt_tag_int("orig_log_iw_size", self->reader_options.super.init_window_size),
-                      evt_tag_int("new_log_iw_size", 10),
-                      evt_tag_int("min_log_fifo_size", 10 * self->max_connections),
+                      evt_tag_int("new_log_iw_size", 100),
+                      evt_tag_int("min_log_fifo_size", 100 * self->max_connections),
                       NULL);
-          self->reader_options.super.init_window_size = 10;
+          self->reader_options.super.init_window_size = 100;
         }
       self->flags |= AFSOCKET_WNDSIZE_INITED;
     }
@@ -760,7 +766,7 @@ afsocket_sd_free(LogPipe *s)
 }
 
 void
-afsocket_sd_init_instance(AFSocketSourceDriver *self, SocketOptions *sock_options, guint32 flags)
+afsocket_sd_init_instance(AFSocketSourceDriver *self, SocketOptions *sock_options, gint family, guint32 flags)
 {
   log_src_driver_init_instance(&self->super);
 
@@ -772,6 +778,7 @@ afsocket_sd_init_instance(AFSocketSourceDriver *self, SocketOptions *sock_option
   self->super.super.super.notify = afsocket_sd_notify;
   self->sock_options_ptr = sock_options;
   self->setup_socket = afsocket_sd_setup_socket;
+  self->address_family = family;
   self->max_connections = 10;
   self->listen_backlog = 255;
   self->flags = flags | AFSOCKET_KEEP_ALIVE;
@@ -808,6 +815,15 @@ afsocket_sd_init_instance(AFSocketSourceDriver *self, SocketOptions *sock_option
 
 /* socket destinations */
 
+void
+afsocket_dd_set_transport(LogDriver *s, const gchar *transport)
+{
+  AFSocketDestDriver *self = (AFSocketDestDriver *) s;
+
+  if (self->transport)
+    g_free(self->transport);
+  self->transport = g_strdup(transport);
+}
 
 #if ENABLE_SSL
 void
@@ -822,7 +838,7 @@ afsocket_dd_set_tls_context(LogDriver *s, TLSContext *tls_context)
 void
 afsocket_dd_set_keep_alive(LogDriver *s, gint enable)
 {
-  AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
+  AFSocketDestDriver *self = (AFSocketDestDriver *) s;
 
   if (enable)
     self->flags |= AFSOCKET_KEEP_ALIVE;
@@ -1117,44 +1133,45 @@ afsocket_dd_init(LogPipe *s)
   if (!log_dest_driver_init_method(s))
     return FALSE;
 
-#if ENABLE_SSL
-  if (self->flags & AFSOCKET_REQUIRE_TLS && !self->tls_context)
-    {
-      msg_error("Transport TLS was specified, but TLS related parameters missing", NULL);
-      return FALSE;
-    }
-#endif
+  if (!afsocket_dd_apply_transport(self))
+    return FALSE;
+
+  /* these fields must be set up by apply_transport, so let's check if it indeed did */
+  g_assert(self->transport);
+  g_assert(self->bind_addr);
+  g_assert(self->dest_addr);
+  g_assert(self->hostname);
+  g_assert(self->dest_name);
 
   if (cfg)
     {
       self->time_reopen = cfg->time_reopen;
     }
 
+  log_writer_options_init(&self->writer_options, cfg, 0);
+  self->writer = cfg_persist_config_fetch(cfg, afsocket_dd_format_persist_name(self, FALSE));
   if (!self->writer)
     {
-      log_writer_options_init(&self->writer_options, cfg, 0);
       /* NOTE: we open our writer with no fd, so we can send messages down there
        * even while the connection is not established */
 
-      if ((self->flags & AFSOCKET_KEEP_ALIVE))
-        self->writer = cfg_persist_config_fetch(cfg, afsocket_dd_format_persist_name(self, FALSE));
-
-      if (!self->writer)
-        self->writer = log_writer_new(LW_FORMAT_PROTO |
+      self->writer = log_writer_new(LW_FORMAT_PROTO |
 #if ENABLE_SSL
-                                      (((self->flags & AFSOCKET_STREAM) && !self->tls_context) ? LW_DETECT_EOF : 0) |
+                                    (((self->flags & AFSOCKET_STREAM) && !self->tls_context) ? LW_DETECT_EOF : 0) |
 #else
-                                      ((self->flags & AFSOCKET_STREAM) ? LW_DETECT_EOF : 0) |
+                                    ((self->flags & AFSOCKET_STREAM) ? LW_DETECT_EOF : 0) |
 #endif
-                                      (self->flags & AFSOCKET_SYSLOG_PROTOCOL ? LW_SYSLOG_PROTOCOL : 0),
-                                      /* queue */
-                                      log_dest_driver_acquire_queue(&self->super, afsocket_dd_format_persist_name(self, TRUE)));
+                                    (self->flags & AFSOCKET_SYSLOG_PROTOCOL ? LW_SYSLOG_PROTOCOL : 0));
 
-      log_writer_set_options((LogWriter *) self->writer, &self->super.super.super, &self->writer_options, 0, afsocket_dd_stats_source(self), self->super.super.id, afsocket_dd_stats_instance(self));
-      log_pipe_init(self->writer, NULL);
-      log_pipe_append(&self->super.super.super, self->writer);
     }
-  afsocket_dd_reconnect(self);
+  log_writer_set_options((LogWriter *) self->writer, &self->super.super.super, &self->writer_options, 0, afsocket_dd_stats_source(self), self->super.super.id, afsocket_dd_stats_instance(self));
+  log_writer_set_queue(self->writer, log_dest_driver_acquire_queue(&self->super, afsocket_dd_format_persist_name(self, TRUE)));
+
+  log_pipe_init(self->writer, NULL);
+  log_pipe_append(&self->super.super.super, self->writer);
+
+  if (!log_writer_opened((LogWriter *) self->writer))
+    afsocket_dd_reconnect(self);
   return TRUE;
 }
 
@@ -1214,18 +1231,18 @@ afsocket_dd_free(LogPipe *s)
 {
   AFSocketDestDriver *self = (AFSocketDestDriver *) s;
 
+  log_writer_options_destroy(&self->writer_options);
   g_sockaddr_unref(self->bind_addr);
   g_sockaddr_unref(self->dest_addr);
   log_pipe_unref(self->writer);
   g_free(self->hostname);
-  log_writer_options_destroy(&self->writer_options);
   g_free(self->dest_name);
   g_free(self->transport);
   log_dest_driver_free(s);
 }
 
 void
-afsocket_dd_init_instance(AFSocketDestDriver *self, SocketOptions *sock_options, guint32 flags, gchar *hostname, gchar *dest_name)
+afsocket_dd_init_instance(AFSocketDestDriver *self, SocketOptions *sock_options, gint family, const gchar *hostname, guint32 flags)
 {
   log_dest_driver_init_instance(&self->super);
 
@@ -1238,8 +1255,10 @@ afsocket_dd_init_instance(AFSocketDestDriver *self, SocketOptions *sock_options,
   self->super.super.super.notify = afsocket_dd_notify;
   self->setup_socket = afsocket_dd_setup_socket;
   self->sock_options_ptr = sock_options;
+  self->address_family = family;
   self->flags = flags  | AFSOCKET_KEEP_ALIVE;
-  self->hostname = hostname;
-  self->dest_name = dest_name;
+
+  self->hostname = g_strdup(hostname);
+
   afsocket_dd_init_watches(self);
 }

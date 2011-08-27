@@ -35,7 +35,7 @@
 #include "logsource.h"
 #include "logwriter.h"
 #include "afinter.h"
-#include "crypto.h"
+#include "templates.h"
 
 #include <iv.h>
 #include <iv_work.h>
@@ -61,7 +61,7 @@ register_application_hook(gint type, ApplicationHookFunc func, gpointer user_dat
       entry->func = func;
       entry->user_data = user_data;
       
-      application_hooks = g_list_prepend(application_hooks, entry);
+      application_hooks = g_list_append(application_hooks, entry);
     }
   else
     {
@@ -105,9 +105,11 @@ run_application_hook(gint type)
 void 
 app_startup(void)
 {
+  main_thread_handle = g_thread_self();
+
+  msg_init(FALSE);
   iv_init();
   g_thread_init(NULL);
-  msg_init(FALSE);
   child_manager_init();
   dns_cache_init();
   alarm_init();
@@ -116,6 +118,7 @@ app_startup(void)
   log_msg_global_init();
   log_tags_init();
   log_source_global_init();
+  log_template_global_init();
   afinter_global_init();
 }
 
@@ -144,9 +147,8 @@ app_shutdown(void)
   stats_destroy();
   dns_cache_destroy();
   child_manager_deinit();
-  msg_deinit();
   log_tags_deinit();
   g_list_foreach(application_hooks, (GFunc) g_free, NULL);
   g_list_free(application_hooks);
+  msg_deinit();
 }
-

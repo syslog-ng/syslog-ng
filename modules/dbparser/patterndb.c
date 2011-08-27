@@ -550,24 +550,30 @@ pdb_rule_run_actions(PDBRule *self, gint trigger, PatternDB *db, PDBContext *con
                   break;
                 case RAC_MESSAGE:
                   genmsg = log_msg_new_empty();
+                  genmsg->flags |= LF_LOCAL;
                   genmsg->timestamps[LM_TS_STAMP] = msg->timestamps[LM_TS_STAMP];
-                  switch (context->key.scope)
+                  if (context)
                     {
-                    case RCS_PROCESS:
-                      log_msg_set_value(genmsg, LM_V_PID, context->key.pid, -1);
-                    case RCS_PROGRAM:
-                      log_msg_set_value(genmsg, LM_V_PROGRAM, context->key.program, -1);
-                    case RCS_HOST:
-                      log_msg_set_value(genmsg, LM_V_HOST, context->key.host, -1);
-                    case RCS_GLOBAL:
-                      break;
-                    default:
-                      g_assert_not_reached();
-                      break;
+                      switch (context->key.scope)
+                        {
+                          case RCS_PROCESS:
+                            log_msg_set_value(genmsg, LM_V_PID, context->key.pid, -1);
+                          case RCS_PROGRAM:
+                            log_msg_set_value(genmsg, LM_V_PROGRAM, context->key.program, -1);
+                          case RCS_HOST:
+                            log_msg_set_value(genmsg, LM_V_HOST, context->key.host, -1);
+                          case RCS_GLOBAL:
+                            break;
+                          default:
+                            g_assert_not_reached();
+                          break;
+                        }
                     }
-                  g_ptr_array_add(context->messages, genmsg);
+                  if (context)
+                    g_ptr_array_add(context->messages, genmsg);
                   pdb_message_apply(&action->content.message, context, genmsg, buffer);
-                  g_ptr_array_remove_index_fast(context->messages, context->messages->len - 1);
+                  if (context)
+                    g_ptr_array_remove_index_fast(context->messages, context->messages->len - 1);
                   emit(genmsg, TRUE, emit_data);
                   log_msg_unref(genmsg);
                   break;
@@ -820,7 +826,13 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
           else if (strcmp(attribute_names[i], "id") == 0)
             pdb_rule_set_rule_id(state->current_rule, attribute_values[i]);
           else if (strcmp(attribute_names[i], "context-id") == 0)
-            pdb_rule_set_context_id_template(state->current_rule, log_template_new(state->cfg, NULL, attribute_values[i]));
+            {
+              LogTemplate *template;
+
+              template = log_template_new(state->cfg, NULL);
+              log_template_compile(template, attribute_values[i], NULL);
+              pdb_rule_set_context_id_template(state->current_rule, template);
+            }
           else if (strcmp(attribute_names[i], "context-timeout") == 0)
             pdb_rule_set_context_timeout(state->current_rule, strtol(attribute_values[i], NULL, 0));
           else if (strcmp(attribute_names[i], "context-scope") == 0)
@@ -1073,8 +1085,8 @@ pdb_loader_text(GMarkupParseContext *context, const gchar *text, gsize text_len,
       if (!state->current_message->values)
         state->current_message->values = g_ptr_array_new();
 
-      value = log_template_new(state->cfg, state->value_name, text);
-      if (!log_template_compile(value, &err))
+      value = log_template_new(state->cfg, state->value_name);
+      if (!log_template_compile(value, text, &err))
         {
           msg_error("Error compiling value template",
             evt_tag_str("name", state->value_name),

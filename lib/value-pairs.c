@@ -137,7 +137,8 @@ value_pairs_add_pair(ValuePairs *vp, GlobalConfig *cfg, const gchar *key, const 
 {
   LogTemplate *t = NULL;
 
-  t = log_template_new(cfg, NULL, value);
+  t = log_template_new(cfg, NULL);
+  log_template_compile(t, value, NULL);
   g_hash_table_insert(vp->vpairs, g_strdup(key), t);
 }
 

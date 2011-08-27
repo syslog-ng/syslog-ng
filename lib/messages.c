@@ -227,6 +227,7 @@ void
 msg_deinit()
 {
   evt_ctx_free(evt_context);
+  log_stderr = TRUE;
 }
 
 static GOptionEntry msg_option_entries[] =

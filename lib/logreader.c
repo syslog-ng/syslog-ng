@@ -112,7 +112,6 @@ log_reader_work_perform(void *s)
 {
   LogReader *self = (LogReader *) s;
 
-  log_pipe_ref(&self->super.super);
   self->notify_code = log_reader_fetch_log(self);
 }
 
@@ -123,8 +122,13 @@ log_reader_work_finished(void *s)
 
   if (self->notify_code == 0)
     {
-      /* reenable polling the source */
-      log_reader_start_watches(self);
+      if (self->super.super.flags & PIF_INITIALIZED)
+        {
+          /* reenable polling the source assuming that we're still in
+           * business (e.g. the reader hasn't been uninitialized) */
+
+          log_reader_start_watches(self);
+        }
     }
   else
     {
@@ -155,7 +159,20 @@ log_reader_wakeup(LogSource *s)
 {
   LogReader *self = (LogReader *) s;
 
-  iv_event_post(&self->schedule_wakeup);
+  /*
+   * We might get called even after this LogReader has been
+   * deinitialized, in which case we must not do anything (since the
+   * iv_event triggered here is not registered).
+   *
+   * This happens when log_writer_deinit() flushes its output queue
+   * after the reader which produced the message has already been
+   * deinited. Since init/deinit calls are made in the main thread, no
+   * locking is needed.
+   *
+   */
+
+  if (self->super.super.flags & PIF_INITIALIZED)
+    iv_event_post(&self->schedule_wakeup);
 }
 
 static void
@@ -164,6 +181,7 @@ log_reader_io_process_input(gpointer s)
   LogReader *self = (LogReader *) s;
 
   log_reader_stop_watches(self);
+  log_pipe_ref(&self->super.super);
   if ((self->options->flags & LR_THREADED))
     {
       main_loop_io_worker_job_submit(&self->io_job);
@@ -405,6 +423,8 @@ log_reader_update_watches(LogReader *self)
 
       if (free_to_send)
         {
+          /* we have data in our input buffer, we need to start working
+           * on it immediately, without waiting for I/O events */
           if (!iv_task_registered(&self->restart_task))
             {
               iv_task_register(&self->restart_task);
@@ -419,7 +439,11 @@ log_reader_update_watches(LogReader *self)
 
   if (iv_fd_registered(&self->fd_watch))
     {
-      /* files cannot be polled using epoll, it results in an error */
+      /* this branch is executed when our fd is connected to a non-file
+       * source (e.g. TCP, UDP socket). We set up I/O callbacks here.
+       * files cannot be polled using epoll, as it causes an I/O error
+       * (thus abort in ivykis).
+       */
       if (cond & G_IO_IN)
         iv_fd_set_handler_in(&self->fd_watch, log_reader_io_process_input);
       else
@@ -853,6 +877,7 @@ CfgFlagHandler log_reader_flag_handlers[] =
   { "kernel",                     CFH_SET, offsetof(LogReaderOptions, flags),               LR_KERNEL },
   { "empty-lines",                CFH_SET, offsetof(LogReaderOptions, flags),               LR_EMPTY_LINES },
   { "threaded",                   CFH_SET, offsetof(LogReaderOptions, flags),               LR_THREADED },
+  { NULL },
 };
 
 gboolean

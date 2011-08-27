@@ -52,12 +52,14 @@ typedef struct _AFInetSourceDriver
 {
   AFSocketSourceDriver super;
   InetSocketOptions sock_options;
+  /* character as it can contain a service name from /etc/services */
+  gchar *bind_port;
+  gchar *bind_ip;
 } AFInetSourceDriver;
 
-LogDriver *afinet_sd_new(gint af, gchar *host, gint port, guint flags);
-void afinet_sd_set_localport(LogDriver *self, gchar *service, const gchar *proto);
+LogDriver *afinet_sd_new(gint af, guint flags);
+void afinet_sd_set_localport(LogDriver *self, gchar *service);
 void afinet_sd_set_localip(LogDriver *self, gchar *ip);
-void afinet_sd_set_transport(LogDriver *s, const gchar *transport);
 
 typedef struct _AFInetDestDriver
 {
@@ -66,37 +68,22 @@ typedef struct _AFInetDestDriver
 #if ENABLE_SPOOF_SOURCE
   gboolean spoof_source;
   libnet_t *lnet_ctx;
+  GStaticMutex lnet_lock;
+  GString *lnet_buffer;
 #endif
+  /* character as it can contain a service name from /etc/services */
+  gchar *bind_port;
+  gchar *bind_ip;
+  /* character as it can contain a service name from /etc/services */
+  gchar *dest_port;
+  /* destination hostname is stored in super.hostname */
 } AFInetDestDriver;
 
 LogDriver *afinet_dd_new(gint af, gchar *host, gint port, guint flags);
-void afinet_dd_set_localport(LogDriver *self, gchar *service, const gchar *proto);
-void afinet_dd_set_destport(LogDriver *self, gchar *service, const gchar *proto);
+void afinet_dd_set_localport(LogDriver *self, gchar *service);
+void afinet_dd_set_destport(LogDriver *self, gchar *service);
 void afinet_dd_set_localip(LogDriver *self, gchar *ip);
 void afinet_dd_set_sync_freq(LogDriver *self, gint sync_freq);
 void afinet_dd_set_spoof_source(LogDriver *self, gboolean enable);
-void afinet_dd_set_transport(LogDriver *s, const gchar *transport);
-
-static inline const gchar *
-afinet_sd_get_proto_name(LogDriver *s)
-{
-  AFInetSourceDriver *self = (AFInetSourceDriver *) s;
-
-  if (self->super.flags & AFSOCKET_DGRAM)
-    return "udp";
-  else
-    return "tcp";
-}
-
-static inline const gchar *
-afinet_dd_get_proto_name(LogDriver *s)
-{
-  AFInetDestDriver *self = (AFInetDestDriver *) s;
-
-  if (self->super.flags & AFSOCKET_DGRAM)
-    return "udp";
-  else
-    return "tcp";
-}
 
 #endif

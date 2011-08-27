@@ -223,7 +223,7 @@ cfg_init(GlobalConfig *cfg)
     msg_error("Error resolving protocol template",
                evt_tag_str("name", cfg->proto_template_name),
                NULL);
-  stats_set_current_level(cfg->stats_level);
+  stats_reinit(cfg);
 
   if (cfg->bad_hostname_re)
     {
@@ -274,6 +274,12 @@ cfg_set_version(GlobalConfig *self, gint version)
       self->chain_hostnames = TRUE;
     }
 
+  if (self->version < 0x0303)
+    {
+      msg_warning("WARNING: global: the default value of log_fifo_size() has changed to 10000 in version 3.3 to reflect log_iw_size() changes for tcp()/udp() window size changes",
+                  NULL);
+    }
+
   if (self->version <= 0x0301 || atoi(cfg_args_get(self->lexer->globals, "autoload-compiled-modules")))
     {
       gint i;
@@ -289,12 +295,14 @@ cfg_set_version(GlobalConfig *self, gint version)
 }
 
 struct _LogTemplate *
-cfg_check_inline_template(GlobalConfig *cfg, const gchar *template_or_name)
+cfg_check_inline_template(GlobalConfig *cfg, const gchar *template_or_name, GError **error)
 {
-  struct _LogTemplate *template = cfg_lookup_template(configuration, template_or_name);
+  LogTemplate *template = cfg_lookup_template(configuration, template_or_name);
+
   if (template == NULL)
     {
-      template = log_template_new(cfg, NULL, template_or_name);
+      template = log_template_new(cfg, NULL);
+      log_template_compile(template, template_or_name, error);
       template->def_inline = TRUE;
     }
   return template;
@@ -324,7 +332,7 @@ cfg_new(gint version)
   self->time_reopen = 60;
   self->time_reap = 60;
 
-  self->log_fifo_size = 1000;
+  self->log_fifo_size = 10000;
   self->log_msg_size = 8192;
 
   self->follow_freq = -1;

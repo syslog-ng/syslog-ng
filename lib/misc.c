@@ -110,7 +110,6 @@ resolve_hostname(GSockAddr **addr, gchar *name)
 #if HAVE_GETADDRINFO
       struct addrinfo hints;
       struct addrinfo *res;
-      guint16 port;
 
       memset(&hints, 0, sizeof(hints));
       hints.ai_family = (*addr)->sa.sa_family;
@@ -127,15 +126,18 @@ resolve_hostname(GSockAddr **addr, gchar *name)
               break;
 #if ENABLE_IPV6
             case AF_INET6:
+              {
+                guint16 port;
 
-              /* we need to copy the whole sockaddr_in6 structure as it
-               * might contain scope and other required data */
-              port = g_sockaddr_inet6_get_port(*addr);
-              *g_sockaddr_inet6_get_sa(*addr) = *((struct sockaddr_in6 *) res->ai_addr);
+                /* we need to copy the whole sockaddr_in6 structure as it
+                 * might contain scope and other required data */
+                port = g_sockaddr_inet6_get_port(*addr);
+                *g_sockaddr_inet6_get_sa(*addr) = *((struct sockaddr_in6 *) res->ai_addr);
 
-              /* we need to restore the port number as it is zeroed out by the previous assignment */
-              g_sockaddr_inet6_set_port(*addr, port);
-              break;
+                /* we need to restore the port number as it is zeroed out by the previous assignment */
+                g_sockaddr_inet6_set_port(*addr, port);
+                break;
+              }
 #endif
             default: 
               g_assert_not_reached();
@@ -179,6 +181,7 @@ void
 resolve_sockaddr(gchar *result, gsize *result_len, GSockAddr *saddr, gboolean usedns, gboolean usefqdn, gboolean use_dns_cache, gboolean normalize_hostnames)
 {
   gchar *hname;
+  gboolean positive;
   gchar *p, buf[256];
  
   if (saddr && saddr->sa.sa_family != AF_UNIX)
@@ -208,15 +211,18 @@ resolve_sockaddr(gchar *result, gsize *result_len, GSockAddr *saddr, gboolean us
           hname = NULL;
           if (usedns)
             {
-              if ((!use_dns_cache || !dns_cache_lookup(saddr->sa.sa_family, addr, (const gchar **) &hname)) && usedns != 2) 
+              if ((!use_dns_cache || !dns_cache_lookup(saddr->sa.sa_family, addr, (const gchar **) &hname, &positive)) && usedns != 2)
                 {
                   struct hostent *hp;
                       
                   hp = gethostbyaddr(addr, addr_len, saddr->sa.sa_family);
                   hname = (hp && hp->h_name) ? hp->h_name : NULL;
                   
-                  if (use_dns_cache)
-                    dns_cache_store(FALSE, saddr->sa.sa_family, addr, hname);
+                  if (use_dns_cache && hname)
+                    {
+                      /* resolution success, store this as a positive match in the cache */
+                      dns_cache_store(FALSE, saddr->sa.sa_family, addr, hname, TRUE);
+                    }
                 } 
             }
             
@@ -224,11 +230,17 @@ resolve_sockaddr(gchar *result, gsize *result_len, GSockAddr *saddr, gboolean us
             {
               inet_ntop(saddr->sa.sa_family, addr, buf, sizeof(buf));
               hname = buf;
+              if (use_dns_cache)
+                dns_cache_store(FALSE, saddr->sa.sa_family, addr, hname, FALSE);
             }
           else 
             {
-              if (!usefqdn) 
+              if (!usefqdn && positive)
                 {
+                  /* we only truncate hostnames if they were positive
+                   * matches (e.g. real hostnames and not IP
+                   * addresses) */
+
                   p = strchr(hname, '.');
 
                   if (p)
@@ -451,7 +463,7 @@ gchar *
 find_file_in_path(const gchar *path, const gchar *filename, GFileTest test)
 {
   gchar **dirs;
-  gchar *fullname;
+  gchar *fullname = NULL;
   gint i;
 
   if (filename[0] == '/' || !path)
@@ -577,12 +589,21 @@ string_array_to_list(const gchar *strlist[])
   return g_list_reverse(l);
 }
 
+/*
+ * NOTE: pointer values below 0x1000 (4096) are taken as special
+ * values used by the application code and are not freed. Since this
+ * is the NULL page, this should not cause memory leaks.
+ */
 void
 string_list_free(GList *l)
 {
   while (l)
     {
-      g_free(l->data);
+      /* some of the string lists use invalid pointer values as special
+       * items, see SQL "default" item */
+
+      if (GPOINTER_TO_UINT(l->data) > 4096)
+        g_free(l->data);
       l = g_list_delete_link(l, l);
     }
 }
@@ -629,4 +650,62 @@ create_worker_thread(GThreadFunc func, gpointer data, gboolean joinable, GError 
       return NULL;
     }
   return h;
+}
+
+gchar *
+utf8_escape_string(const gchar *str, gssize len)
+{
+  int i;
+  gchar *res, *res_pos;
+
+  /* Check if string is a valid UTF-8 string */
+  if (g_utf8_validate(str, -1, NULL))
+      return g_strndup(str, len);
+
+  /* It contains invalid UTF-8 sequences --> treat input as a
+   * string containing binary data; escape those chars that have
+   * no ASCII representation */
+  res = g_new(gchar, 4 * len + 1);
+  res_pos = res;
+
+  for (i = 0; (i < len) && str[i]; i++)
+    {
+      if (g_ascii_isprint(str[i]))
+        *(res_pos++) = str[i];
+      else
+        res_pos += sprintf(res_pos, "\\x%02x", ((guint8)str[i]));
+    }
+
+  *(res_pos++) = '\0';
+
+  return res;
+}
+
+
+gint
+set_permissions(gchar *name, gint uid, gint gid, gint mode)
+{
+#ifndef _MSC_VER
+  if (uid >= 0)
+    if (chown(name, (uid_t) uid, -1)) return -1;
+  if (gid >= 0)
+    if (chown(name, -1, (gid_t) gid)) return -1;
+  if (mode >= 0)
+    if (chmod(name, (mode_t) mode)) return -1;
+  return 0;
+#endif
+}
+
+gint
+set_permissions_fd(gint fd, gint uid, gint gid, gint mode)
+{
+#ifndef _MSC_VER
+  if (uid >= 0)
+    if (fchown(fd, (uid_t) uid, -1)) return -1;
+  if (gid >= 0)
+    if (fchown(fd, -1, (gid_t) gid)) return -1;
+  if (mode >= 0)
+    if (fchmod(fd, (mode_t) mode)) return -1;
+  return 0;
+#endif
 }

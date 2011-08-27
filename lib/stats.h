@@ -26,6 +26,8 @@
 #define STATS_H_INCLUDED
 
 #include "syslog-ng.h"
+#include "cfg.h"
+#include "mainloop.h"
 
 typedef enum
 {
@@ -62,54 +64,101 @@ enum
   SCS_HOST           = 18,
   SCS_GLOBAL         = 19,
   SCS_MONGODB        = 20,
+  SCS_CLASS          = 21,
+  SCS_RULE_ID        = 22,
+  SCS_TAG            = 23,
+  SCS_SEVERITY       = 24,
+  SCS_FACILITY       = 25,
+  SCS_SENDER         = 26,
   SCS_MAX,
   SCS_SOURCE_MASK    = 0xff
 };
 
 typedef struct _StatsCounter StatsCounter;
+typedef struct _StatsCounterItem
+{
+  gint value;
+} StatsCounterItem;
 
+extern gint current_stats_level;
+extern GStaticMutex stats_mutex;
+extern gboolean stats_locked;
 
 void stats_generate_log(void);
 gchar *stats_generate_csv(void);
-void stats_register_counter(gint level, gint source, const gchar *id, const gchar *instance, StatsCounterType type, guint32 **counter);
+void stats_register_counter(gint level, gint source, const gchar *id, const gchar *instance, StatsCounterType type, StatsCounterItem **counter);
 StatsCounter *
-stats_register_dynamic_counter(gint stats_level, gint source, const gchar *id, const gchar *instance, StatsCounterType type, guint32 **counter, gboolean *new);
-void stats_register_associated_counter(StatsCounter *handle, StatsCounterType type, guint32 **counter);
-void stats_unregister_counter(gint source, const gchar *id, const gchar *instance, StatsCounterType type, guint32 **counter);
-void stats_unregister_dynamic_counter(StatsCounter *handle, StatsCounterType type, guint32 **counter);
+stats_register_dynamic_counter(gint stats_level, gint source, const gchar *id, const gchar *instance, StatsCounterType type, StatsCounterItem **counter, gboolean *new);
+void stats_instant_inc_dynamic_counter(gint stats_level, gint source_mask, const gchar *id, const gchar *instance, time_t timestamp);
+void stats_register_associated_counter(StatsCounter *handle, StatsCounterType type, StatsCounterItem **counter);
+void stats_unregister_counter(gint source, const gchar *id, const gchar *instance, StatsCounterType type, StatsCounterItem **counter);
+void stats_unregister_dynamic_counter(StatsCounter *handle, StatsCounterType type, StatsCounterItem **counter);
 void stats_cleanup_orphans(void);
 
-void stats_set_current_level(gint stats_level);
+void stats_counter_inc_pri(guint16 pri);
+
+void stats_reinit(GlobalConfig *cfg);
 void stats_init(void);
 void stats_destroy(void);
 
-static inline void
-stats_counter_add(guint32 *counter, gint add)
+static inline gboolean
+stats_check_level(gint level)
 {
-  if (counter)
-    (*counter) += add;
+  return (current_stats_level >= level);
 }
 
 static inline void
-stats_counter_inc(guint32 *counter)
+stats_lock(void)
 {
-  if (counter)
-    (*counter)++;
-
-}
-static inline void
-stats_counter_dec(guint32 *counter)
-{
-  if (counter)
-    (*counter)--;
+  g_static_mutex_lock(&stats_mutex);
+  stats_locked = TRUE;
 }
 
 static inline void
-stats_counter_set(guint32 *counter, guint32 value)
+stats_unlock(void)
 {
-  if (counter)
-    *counter = value;
+  stats_locked = FALSE;
+  g_static_mutex_unlock(&stats_mutex);
 }
 
+static inline void
+stats_counter_add(StatsCounterItem *counter, gint add)
+{
+  if (counter)
+    g_atomic_int_add(&counter->value, add);
+}
+
+static inline void
+stats_counter_inc(StatsCounterItem *counter)
+{
+  if (counter)
+    g_atomic_int_inc(&counter->value);
+}
+
+static inline void
+stats_counter_dec(StatsCounterItem *counter)
+{
+  if (counter)
+    g_atomic_int_add(&counter->value, -1);
+}
+
+/* NOTE: this is _not_ atomic and doesn't have to be as sets would race anyway */
+static inline void
+stats_counter_set(StatsCounterItem *counter, guint32 value)
+{
+  if (counter)
+    counter->value = value;
+}
+
+/* NOTE: this is _not_ atomic and doesn't have to be as sets would race anyway */
+static inline guint32
+stats_counter_get(StatsCounterItem *counter)
+{
+  guint32 result = 0;
+
+  if (counter)
+    result = counter->value;
+  return result;
+}
 #endif
 

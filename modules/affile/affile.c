@@ -101,12 +101,7 @@ affile_open_file(gchar *name, gint flags,
       
       g_process_cap_modify(CAP_CHOWN, TRUE);
       g_process_cap_modify(CAP_FOWNER, TRUE);
-      if (uid >= 0)
-        fchown(*fd, (uid_t) uid, -1);
-      if (gid >= 0)
-        fchown(*fd, -1, (gid_t) gid);
-      if (mode >= 0)
-        fchmod(*fd, (mode_t) mode);
+      set_permissions_fd(*fd, uid, gid, mode);
     }
   g_process_cap_restore(saved_caps);
   msg_trace("affile_open_file",
@@ -549,8 +544,13 @@ affile_dw_reopen(AFFileDestWriter *self)
     {
       guint write_flags;
       
-      write_flags = ((self->owner->flags & AFFILE_FSYNC) ? LTF_FSYNC : 0) | LTF_APPEND;
-      log_writer_reopen(self->writer, log_proto_file_writer_new(log_transport_plain_new(fd, write_flags), self->owner->writer_options.flush_lines));
+      write_flags =
+        ((self->owner->flags & AFFILE_PIPE) ? LTF_PIPE : LTF_APPEND) |
+        ((self->owner->flags & AFFILE_FSYNC) ? LTF_FSYNC : 0);
+      log_writer_reopen(self->writer,
+                        self->owner->flags & AFFILE_PIPE
+                        ? log_proto_text_client_new(log_transport_plain_new(fd, write_flags))
+                        : log_proto_file_writer_new(log_transport_plain_new(fd, write_flags), self->owner->writer_options.flush_lines));
 
       main_loop_call((void * (*)(void *)) affile_dw_arm_reaper, self, TRUE);
     }
@@ -581,20 +581,26 @@ affile_dw_init(LogPipe *s)
 
   if (!self->writer)
     {
-      self->writer = log_writer_new(LW_FORMAT_FILE, log_dest_driver_acquire_queue(&self->owner->super, NULL));
-      log_writer_set_options((LogWriter *) self->writer, s, &self->owner->writer_options, 1,
-                             self->owner->flags & AFFILE_PIPE ? SCS_PIPE : SCS_FILE,
-                             self->owner->super.super.id, self->filename);
+      guint32 flags;
 
-      if (!log_pipe_init(self->writer, NULL))
-        {
-          msg_error("Error initializing log writer", NULL);
-          log_pipe_unref(self->writer);
-          self->writer = NULL;
-          return FALSE;
-        }
-      log_pipe_append(&self->super, self->writer);
+      flags = LW_FORMAT_FILE |
+        ((self->owner->flags & AFFILE_PIPE) ? LW_SOFT_FLOW_CONTROL : 0);
+
+      self->writer = log_writer_new(flags);
     }
+  log_writer_set_options((LogWriter *) self->writer, s, &self->owner->writer_options, 1,
+                         self->owner->flags & AFFILE_PIPE ? SCS_PIPE : SCS_FILE,
+                         self->owner->super.super.id, self->filename);
+  log_writer_set_queue(self->writer, log_dest_driver_acquire_queue(&self->owner->super, NULL));
+
+  if (!log_pipe_init(self->writer, NULL))
+    {
+      msg_error("Error initializing log writer", NULL);
+      log_pipe_unref(self->writer);
+      self->writer = NULL;
+      return FALSE;
+    }
+  log_pipe_append(&self->super, self->writer);
 
   return affile_dw_reopen(self);
 }
@@ -1027,7 +1033,7 @@ affile_dd_open_writer(gpointer args[])
 
       /* hash table construction is serialized, as we only do that in the main thread. */
       if (!self->writer_hash)
-	self->writer_hash = g_hash_table_new(g_str_hash, g_str_equal);
+        self->writer_hash = g_hash_table_new(g_str_hash, g_str_equal);
 
       /* we don't need to lock the hashtable as it is only written in
        * the main thread, which we're running right now.  lookups in
@@ -1047,15 +1053,23 @@ affile_dd_open_writer(gpointer args[])
 	    {
 	      log_pipe_ref(&next->super);
 	      g_static_mutex_lock(&self->lock);
-              g_hash_table_insert(self->writer_hash, filename->str, next);
+              g_hash_table_insert(self->writer_hash, next->filename, next);
               g_static_mutex_unlock(&self->lock);
             }
-	}
+        }
+      else
+        {
+          log_pipe_ref(&next->super);
+        }
     }
-  next->queue_pending = TRUE;
-  /* we're returning a reference */
-  return &next->super;
 
+  if (next)
+    {
+      next->queue_pending = TRUE;
+      /* we're returning a reference */
+      return &next->super;
+    }
+  return NULL;
 }
 
 static void
@@ -1071,23 +1085,23 @@ affile_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
        * that we go to the mainloop to return the same information, but this
        * is not fast path anyway */
 
+      g_static_mutex_lock(&self->lock);
       if (!self->single_writer)
         {
+          g_static_mutex_unlock(&self->lock);
           next = main_loop_call((void *(*)(void *)) affile_dd_open_writer, args, TRUE);
         }
       else
         {
           /* we need to lock single_writer in order to get a reference and
            * make sure it is not a stale pointer by the time we ref it */
-
-          g_static_mutex_lock(&self->lock);
           next = self->single_writer;
           next->queue_pending = TRUE;
           log_pipe_ref(&next->super);
           g_static_mutex_unlock(&self->lock);
         }
     }
-  else if ((self->flags & AFFILE_NO_EXPAND) == 0)
+  else
     {
       GString *filename;
 
@@ -1144,13 +1158,12 @@ affile_dd_new(gchar *filename, guint32 flags)
   AFFileDestDriver *self = g_new0(AFFileDestDriver, 1);
 
   log_dest_driver_init_instance(&self->super);
-  if ((flags & AFFILE_PIPE) == 0)
-    self->super.super.super.flags |= PIF_SOFT_FLOW_CONTROL;
   self->super.super.super.init = affile_dd_init;
   self->super.super.super.deinit = affile_dd_deinit;
   self->super.super.super.queue = affile_dd_queue;
   self->super.super.super.free_fn = affile_dd_free;
-  self->filename_template = log_template_new(configuration, NULL, filename);
+  self->filename_template = log_template_new(configuration, NULL);
+  log_template_compile(self->filename_template, filename, NULL);
   self->flags = flags;
   self->file_uid = self->file_gid = -1;
   self->file_perm = -1;

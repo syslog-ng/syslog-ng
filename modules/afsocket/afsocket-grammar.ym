@@ -200,7 +200,6 @@ source_afinet_udp_params
         :
           {
 	    last_driver = *instance = afinet_sd_new(last_addr_family,
-			NULL, 514,
 			AFSOCKET_DGRAM);
 	    last_reader_options = &((AFSocketSourceDriver *) last_driver)->reader_options;
 	    last_sock_options = &((AFInetSourceDriver *) last_driver)->sock_options.super;
@@ -220,8 +219,8 @@ source_afinet_udp_option
 source_afinet_option
 	: KW_LOCALIP '(' string ')'		{ afinet_sd_set_localip(last_driver, $3); free($3); }
 	| KW_IP '(' string ')'			{ afinet_sd_set_localip(last_driver, $3); free($3); }
-	| KW_LOCALPORT '(' string_or_number ')'	{ afinet_sd_set_localport(last_driver, $3, afinet_sd_get_proto_name(last_driver)); free($3); }
-	| KW_PORT '(' string_or_number ')'	{ afinet_sd_set_localport(last_driver, $3, afinet_sd_get_proto_name(last_driver)); free($3); }
+	| KW_LOCALPORT '(' string_or_number ')'	{ afinet_sd_set_localport(last_driver, $3); free($3); }
+	| KW_PORT '(' string_or_number ')'	{ afinet_sd_set_localport(last_driver, $3); free($3); }
 	| source_reader_option
 	| inet_socket_option
 	;
@@ -230,7 +229,6 @@ source_afinet_tcp_params
 	:
 	  {
 	    last_driver = *instance = afinet_sd_new(last_addr_family,
-			NULL, 514,
 			AFSOCKET_STREAM);
 	    last_reader_options = &((AFSocketSourceDriver *) last_driver)->reader_options;
 	    last_sock_options = &((AFInetSourceDriver *) last_driver)->sock_options.super;
@@ -274,8 +272,8 @@ source_afsyslog
 source_afsyslog_params
 	:
 	  {
+            /* we use transport(tcp) transport by default */
 	    last_driver = *instance = afinet_sd_new(last_addr_family,
-			NULL, 601,
 			AFSOCKET_STREAM | AFSOCKET_SYSLOG_PROTOCOL);
 	    last_reader_options = &((AFSocketSourceDriver *) last_driver)->reader_options;
 	    last_sock_options = &((AFInetSourceDriver *) last_driver)->sock_options.super;
@@ -290,10 +288,10 @@ source_afsyslog_options
 
 source_afsyslog_option
         : source_afinet_option
-        | KW_TRANSPORT '(' string ')'           { afinet_sd_set_transport(last_driver, $3); free($3); }
-        | KW_TRANSPORT '(' KW_TCP ')'           { afinet_sd_set_transport(last_driver, "tcp"); }
-        | KW_TRANSPORT '(' KW_UDP ')'           { afinet_sd_set_transport(last_driver, "udp"); }
-        | KW_TRANSPORT '(' KW_TLS ')'           { afinet_sd_set_transport(last_driver, "tls"); }
+        | KW_TRANSPORT '(' string ')'           { afsocket_sd_set_transport(last_driver, $3); free($3); }
+        | KW_TRANSPORT '(' KW_TCP ')'           { afsocket_sd_set_transport(last_driver, "tcp"); }
+        | KW_TRANSPORT '(' KW_UDP ')'           { afsocket_sd_set_transport(last_driver, "udp"); }
+        | KW_TRANSPORT '(' KW_TLS ')'           { afsocket_sd_set_transport(last_driver, "tls"); }
 	| KW_TLS
 	  {
 #if ENABLE_SSL
@@ -373,9 +371,9 @@ dest_afinet_udp_options
 
 dest_afinet_option
 	: KW_LOCALIP '(' string ')'		{ afinet_dd_set_localip(last_driver, $3); free($3); }
-	| KW_LOCALPORT '(' string_or_number ')'	{ afinet_dd_set_localport(last_driver, $3, afinet_dd_get_proto_name(last_driver)); free($3); }
-	| KW_PORT '(' string_or_number ')'	{ afinet_dd_set_destport(last_driver, $3, afinet_dd_get_proto_name(last_driver)); free($3); }
-	| KW_DESTPORT '(' string_or_number ')'	{ afinet_dd_set_destport(last_driver, $3, afinet_dd_get_proto_name(last_driver)); free($3); }
+	| KW_LOCALPORT '(' string_or_number ')'	{ afinet_dd_set_localport(last_driver, $3); free($3); }
+	| KW_PORT '(' string_or_number ')'	{ afinet_dd_set_destport(last_driver, $3); free($3); }
+	| KW_DESTPORT '(' string_or_number ')'	{ afinet_dd_set_destport(last_driver, $3); free($3); }
 	| inet_socket_option
 	| dest_writer_option
 	| dest_afsocket_option
@@ -448,10 +446,10 @@ dest_afsyslog_options
 
 dest_afsyslog_option
 	: dest_afinet_option
-        | KW_TRANSPORT '(' string ')'           { afinet_dd_set_transport(last_driver, $3); free($3); }
-        | KW_TRANSPORT '(' KW_TCP ')'           { afinet_dd_set_transport(last_driver, "tcp"); }
-        | KW_TRANSPORT '(' KW_UDP ')'           { afinet_dd_set_transport(last_driver, "udp"); }
-        | KW_TRANSPORT '(' KW_TLS ')'           { afinet_dd_set_transport(last_driver, "tls"); }
+        | KW_TRANSPORT '(' string ')'           { afsocket_dd_set_transport(last_driver, $3); free($3); }
+        | KW_TRANSPORT '(' KW_TCP ')'           { afsocket_dd_set_transport(last_driver, "tcp"); }
+        | KW_TRANSPORT '(' KW_UDP ')'           { afsocket_dd_set_transport(last_driver, "udp"); }
+        | KW_TRANSPORT '(' KW_TLS ')'           { afsocket_dd_set_transport(last_driver, "tls"); }
 	| KW_SPOOF_SOURCE '(' yesno ')'		{ afinet_dd_set_spoof_source(last_driver, $3); }
 	| KW_TLS
 	  {

@@ -26,6 +26,7 @@
 #define LOGQUEUE_H_INCLUDED
 
 #include "logmsg.h"
+#include "stats.h"
 
 extern gint log_queue_max_threads;
 
@@ -43,8 +44,8 @@ struct _LogQueue
   GTimeVal last_throttle_check;
 
   gchar *persist_name;
-  guint32 *stored_messages;
-  guint32 *dropped_messages;
+  StatsCounterItem *stored_messages;
+  StatsCounterItem *dropped_messages;
 
   GStaticMutex lock;
   gint parallel_push_notify_limit;
@@ -56,7 +57,7 @@ struct _LogQueue
   gint64 (*get_length)(LogQueue *self);
   void (*push_tail)(LogQueue *self, LogMessage *msg, const LogPathOptions *path_options);
   void (*push_head)(LogQueue *self, LogMessage *msg, const LogPathOptions *path_options);
-  gboolean (*pop_head)(LogQueue *self, LogMessage **msg, LogPathOptions *path_options, gboolean push_to_backlog);
+  gboolean (*pop_head)(LogQueue *self, LogMessage **msg, LogPathOptions *path_options, gboolean push_to_backlog, gboolean ignore_throttle);
   void (*ack_backlog)(LogQueue *self, gint n);
   void (*rewind_backlog)(LogQueue *self);
 
@@ -82,9 +83,9 @@ log_queue_push_head(LogQueue *self, LogMessage *msg, const LogPathOptions *path_
 }
 
 static inline gboolean
-log_queue_pop_head(LogQueue *self, LogMessage **msg, LogPathOptions *path_options, gboolean push_to_backlog)
+log_queue_pop_head(LogQueue *self, LogMessage **msg, LogPathOptions *path_options, gboolean push_to_backlog, gboolean ignore_throttle)
 {
-  return self->pop_head(self, msg, path_options, push_to_backlog);
+  return self->pop_head(self, msg, path_options, push_to_backlog, ignore_throttle);
 }
 
 static inline void
@@ -138,8 +139,9 @@ log_queue_set_throttle(LogQueue *self, gint throttle)
 
 void log_queue_push_notify(LogQueue *self);
 void log_queue_reset_parallel_push(LogQueue *self);
+void log_queue_set_parallel_push(LogQueue *self, gint notify_limit, LogQueuePushNotifyFunc parallel_push_notify, gpointer user_data, GDestroyNotify user_data_destroy);
 gboolean log_queue_check_items(LogQueue *self, gint batch_items, gboolean *partial_batch, gint *timeout, LogQueuePushNotifyFunc parallel_push_notify, gpointer user_data, GDestroyNotify user_data_destroy);
-void log_queue_set_counters(LogQueue *self, guint32 *stored_messages, guint32 *dropped_messages);
+void log_queue_set_counters(LogQueue *self, StatsCounterItem *stored_messages, StatsCounterItem *dropped_messages);
 void log_queue_init_instance(LogQueue *self, const gchar *persist_name);
 void log_queue_free_method(LogQueue *self);
 

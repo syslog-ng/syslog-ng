@@ -107,7 +107,7 @@ typedef struct _LogMessageQueueNode
 {
   struct list_head list;
   LogMessage *msg;
-  gboolean flow_controlled:1, embedded:1;
+  gboolean ack_needed:1, embedded:1;
 } LogMessageQueueNode;
 
 
@@ -185,8 +185,11 @@ gboolean log_msg_read(LogMessage *self, SerializeArchive *sa);
 /* generic values that encapsulate log message fields, dynamic values and structured data */
 NVHandle log_msg_get_value_handle(const gchar *value_name);
 const gchar *log_msg_get_value_name(NVHandle handle, gssize *name_len);
+
 gboolean log_msg_is_handle_macro(NVHandle handle);
 gboolean log_msg_is_handle_sdata(NVHandle handle);
+gboolean log_msg_is_handle_match(NVHandle handle);
+
 const gchar *log_msg_get_macro_value(LogMessage *self, gint id, gssize *value_len);
 
 static inline const gchar *
@@ -236,6 +239,7 @@ LogMessage *log_msg_new_empty(void);
 void log_msg_add_ack(LogMessage *msg, const LogPathOptions *path_options);
 void log_msg_ack(LogMessage *msg, const LogPathOptions *path_options);
 void log_msg_drop(LogMessage *msg, const LogPathOptions *path_options);
+const LogPathOptions *log_msg_break_ack(LogMessage *msg, const LogPathOptions *path_options, LogPathOptions *local_options);
 
 void log_msg_refcache_start_producer(LogMessage *self);
 void log_msg_refcache_start_consumer(LogMessage *self, const LogPathOptions *path_options);

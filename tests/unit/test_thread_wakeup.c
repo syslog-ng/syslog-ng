@@ -53,8 +53,10 @@ create_test_thread(GThreadFunc thread_func, gpointer data)
   thread_exit = FALSE;
   thread_started = FALSE;
   t = g_thread_create(thread_func, data, TRUE, NULL);
+  g_mutex_lock(thread_lock);
   while (!thread_started)
     g_cond_wait(thread_startup, thread_lock);
+  g_mutex_unlock(thread_lock);
   nsleep.tv_sec = 0;
   nsleep.tv_nsec = 1e6;
   nanosleep(&nsleep, NULL);
@@ -98,13 +100,13 @@ accept_thread_func(gpointer args)
 int
 test_accept_wakeup()
 {
-  struct sockaddr_un sun;
+  struct sockaddr_un s;
 
   unlink("almafa");
   sock = socket(PF_UNIX, SOCK_STREAM, 0);
-  sun.sun_family = AF_UNIX;
-  strcpy(sun.sun_path, "almafa");
-  if (bind(sock, (struct sockaddr *) &sun, sizeof(sun)) < 0)
+  s.sun_family = AF_UNIX;
+  strcpy(s.sun_path, "almafa");
+  if (bind(sock, (struct sockaddr *) &s, sizeof(s)) < 0)
     {
       perror("error binding socket");
       return 1;

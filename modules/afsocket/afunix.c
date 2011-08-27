@@ -27,6 +27,7 @@
 #include "gprocess.h"
 #include "sd-daemon.h"
 
+#include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -132,25 +133,29 @@ afunix_sd_acquire_socket(AFSocketSourceDriver *s, gint *result_fd)
 #endif
 
 static gboolean
+afunix_sd_apply_transport(AFSocketSourceDriver *s)
+{
+  AFUnixSourceDriver *self = (AFUnixSourceDriver *) s;
+
+  if (!self->super.bind_addr)
+    self->super.bind_addr = g_sockaddr_unix_new(self->filename);
+  return TRUE;
+}
+
+static gboolean
 afunix_sd_init(LogPipe *s)
 {
   AFUnixSourceDriver *self = (AFUnixSourceDriver *) s;
-  cap_t saved_caps;
 
   if (afsocket_sd_init(s))
     {
+      cap_t saved_caps;
+
       saved_caps = g_process_cap_save();
       g_process_cap_modify(CAP_CHOWN, TRUE);
       g_process_cap_modify(CAP_FOWNER, TRUE);
       g_process_cap_modify(CAP_DAC_OVERRIDE, TRUE);
-
-      /* change ownership separately, as chgrp may succeed while chown may not */
-      if (self->owner >= 0)
-        chown(self->filename, (uid_t) self->owner, -1);
-      if (self->group >= 0)
-        chown(self->filename, -1, (gid_t) self->group);
-      if (self->perm >= 0)
-        chmod(self->filename, (mode_t) self->perm);
+      set_permissions(self->filename, self->owner, self->group, self->perm);
       g_process_cap_restore(saved_caps);
 
       return TRUE;
@@ -172,21 +177,23 @@ afunix_sd_new(gchar *filename, guint32 flags)
 {
   AFUnixSourceDriver *self = g_new0(AFUnixSourceDriver, 1);
 
-  afsocket_sd_init_instance(&self->super, &self->sock_options, flags);
-  self->super.max_connections = 256;
-  if (self->super.flags & AFSOCKET_DGRAM)
-    {
-      self->super.transport = g_strdup("unix-dgram");
-    }
-  else if (self->super.flags & AFSOCKET_STREAM)
-    {
-      self->super.transport = g_strdup("unix-stream");
-      self->super.reader_options.super.init_window_size = self->super.max_connections * 10;
-    }
-  self->super.bind_addr = g_sockaddr_unix_new(filename);
+  afsocket_sd_init_instance(&self->super, &self->sock_options, AF_UNIX, flags);
+
   self->super.super.super.super.init = afunix_sd_init;
   self->super.super.super.super.free_fn = afunix_sd_free;
   self->super.acquire_socket = afunix_sd_acquire_socket;
+  self->super.apply_transport = afunix_sd_apply_transport;
+
+  self->super.max_connections = 256;
+
+  if (self->super.flags & AFSOCKET_STREAM)
+    self->super.reader_options.super.init_window_size = self->super.max_connections * 100;
+
+  if (self->super.flags & AFSOCKET_DGRAM)
+    afsocket_sd_set_transport(&self->super.super.super, "unix-dgram");
+  else if (self->super.flags & AFSOCKET_STREAM)
+    afsocket_sd_set_transport(&self->super.super.super, "unix-stream");
+
   self->filename = g_strdup(filename);
   self->owner = -1;
   self->group = -1;
@@ -194,17 +201,46 @@ afunix_sd_new(gchar *filename, guint32 flags)
   return &self->super.super.super;
 }
 
+static gboolean
+afunix_dd_apply_transport(AFSocketDestDriver *s)
+{
+  AFUnixDestDriver *self = (AFUnixDestDriver *) s;
+
+  if (!self->super.bind_addr)
+    self->super.bind_addr = g_sockaddr_unix_new(NULL);
+
+  if (!self->super.dest_addr)
+    self->super.dest_addr = g_sockaddr_unix_new(self->filename);
+
+  if (!self->super.dest_name)
+    self->super.dest_name = g_strdup_printf("localhost.afunix:%s", self->filename);
+  return TRUE;
+}
+
+static void
+afunix_dd_free(LogPipe *s)
+{
+  AFUnixDestDriver *self = (AFUnixDestDriver *) s;
+
+  g_free(self->filename);
+  afsocket_dd_free(s);
+}
+
 LogDriver *
 afunix_dd_new(gchar *filename, guint flags)
 {
   AFUnixDestDriver *self = g_new0(AFUnixDestDriver, 1);
 
-  afsocket_dd_init_instance(&self->super, &self->sock_options, flags, g_strdup("localhost"), g_strdup_printf("localhost.afunix:%s", filename));
+  afsocket_dd_init_instance(&self->super, &self->sock_options, AF_UNIX, "localhost", flags);
+  self->super.super.super.super.free_fn = afunix_dd_free;
+  self->super.apply_transport = afunix_dd_apply_transport;
+
+  self->filename = g_strdup(filename);
+
   if (self->super.flags & AFSOCKET_DGRAM)
-    self->super.transport = g_strdup("unix-dgram");
+    afsocket_dd_set_transport(&self->super.super.super, "unix-dgram");
   else if (self->super.flags & AFSOCKET_STREAM)
-    self->super.transport = g_strdup("unix-stream");
-  self->super.bind_addr = g_sockaddr_unix_new(NULL);
-  self->super.dest_addr = g_sockaddr_unix_new(filename);
+    afsocket_dd_set_transport(&self->super.super.super, "unix-stream");
+
   return &self->super.super.super;
 }

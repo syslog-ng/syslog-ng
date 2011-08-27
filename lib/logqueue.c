@@ -55,6 +55,17 @@ log_queue_reset_parallel_push(LogQueue *self)
   g_static_mutex_unlock(&self->lock);
 }
 
+void
+log_queue_set_parallel_push(LogQueue *self, gint notify_limit, LogQueuePushNotifyFunc parallel_push_notify, gpointer user_data, GDestroyNotify user_data_destroy)
+{
+  g_static_mutex_lock(&self->lock);
+  self->parallel_push_notify = parallel_push_notify;
+  self->parallel_push_data = user_data;
+  self->parallel_push_notify_limit = notify_limit;
+  self->parallel_push_data_destroy = user_data_destroy;
+  g_static_mutex_unlock(&self->lock);
+}
+
 /*
  *
  * @batch_items: the number of items processed in a batch (e.g. the number of items the consumer is preferred to process at a single invocation)
@@ -161,7 +172,7 @@ log_queue_check_items(LogQueue *self, gint batch_items, gboolean *partial_batch,
 }
 
 void
-log_queue_set_counters(LogQueue *self, guint32 *stored_messages, guint32 *dropped_messages)
+log_queue_set_counters(LogQueue *self, StatsCounterItem *stored_messages, StatsCounterItem *dropped_messages)
 {
   self->stored_messages = stored_messages;
   self->dropped_messages = dropped_messages;

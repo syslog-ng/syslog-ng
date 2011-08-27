@@ -766,6 +766,91 @@ testcase("<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [a i=\"]ok
            expected_sd_pairs_test_7
            );
 
+/*###########################x*/
+  const gchar *expected_sd_pairs_test_7a[][2]=
+  {
+    /*{ ".SDATA.timeQuality.isSynced", "0"},
+    { ".SDATA.timeQuality.tzKnown", "0"},*/
+    {  NULL , NULL}
+  };
+
+  //Testing syslog protocol message parsing if tzKnown=0 because there is no timezone information
+  testcase("<134>1 2009-10-16T11:51:56 exchange.macartney.esbjerg MSExchange_ADAccess 20208 - - An application event log entry...",
+           LP_SYSLOG_PROTOCOL, NULL,
+           134,                         // pri
+           1255686716, 0, 7200, // timestamp (sec/usec/zone)
+           "exchange.macartney.esbjerg",                // host
+           "MSExchange_ADAccess", //app
+           "An application event log entry...", // msg
+           "",//sd_str
+           "20208",//processid
+           "",//msgid
+           expected_sd_pairs_test_7a
+           );
+
+  const gchar *expected_sd_pairs_test_8[][2]=
+  {
+/*    { ".SDATA.timeQuality.isSynced", "0"},
+    { ".SDATA.timeQuality.tzKnown", "1"},*/
+    { ".SDATA.origin.enterpriseId", "1.3.6.1.4.1"},
+    {  NULL , NULL}
+  };
+
+  //Testing syslog protocol message parsing if SDATA contains origin enterpriseID
+  testcase("<134>1 2009-10-16T11:51:56+02:00 exchange.macartney.esbjerg MSExchange_ADAccess 20208 - [origin enterpriseId=\"1.3.6.1.4.1\"] An application event log entry...",
+           LP_SYSLOG_PROTOCOL, NULL,
+           134,                         // pri
+           1255686716, 0, 7200, // timestamp (sec/usec/zone)
+           "exchange.macartney.esbjerg",                // host
+           "MSExchange_ADAccess", //app
+           "An application event log entry...", // msg
+           "[origin enterpriseId=\"1.3.6.1.4.1\"]",//sd_str
+           "20208",//processid
+           "",//msgid
+           expected_sd_pairs_test_8
+           );
+
+  //Testing syslog protocol message parsing if size of origin software and swVersion are longer than the maximum size (48 and 32)
+  //KNOWN BUG: 22045
+/*  testcase("<134>1 2009-10-16T11:51:56+02:00 exchange.macartney.esbjerg MSExchange_ADAccess 20208 - [origin software=\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\" swVersion=\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"] An application event log entry...",
+           LP_SYSLOG_PROTOCOL, NULL,
+           43,                         // pri
+           0, 0, 0, // timestamp (sec/usec/zone)
+           "",                // host
+           "syslog-ng", //app
+           "Error processing log message: <134>1 2009-10-16T11:51:56+02:00 exchange.macartney.esbjerg MSExchange_ADAccess 20208 - [origin software=\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\" swVersion=\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"] An application event log entry...", // msg
+           "",
+           "0",//processid
+           "0",//msgid
+           0
+           );*/
+
+  const gchar *expected_sd_pairs_test_9[][2]=
+  {
+/*    { ".SDATA.timeQuality.isSynced", "0"},
+    { ".SDATA.timeQuality.tzKnown", "1"},*/
+    { ".SDATA.origin.enterpriseId", "1.3.6.1.4.1"},
+    {  NULL , NULL}
+  };
+
+  //Testing syslog protocol message parsing if SDATA contains only SD-ID without SD-PARAM
+  //KNOWN BUG: 20459
+  testcase("<134>1 2009-10-16T11:51:56+02:00 exchange.macartney.esbjerg MSExchange_ADAccess 20208 - [origin enterpriseId=\"1.3.6.1.4.1\"][nosdnvpair] An application event log entry...",
+           LP_SYSLOG_PROTOCOL, NULL,
+           134,                         // pri
+           1255686716, 0, 7200, // timestamp (sec/usec/zone)
+           "exchange.macartney.esbjerg",                // host
+           "MSExchange_ADAccess", //app
+           "An application event log entry...", // msg
+           "[origin enterpriseId=\"1.3.6.1.4.1\"][nosdnvpair]",//sd_str
+           "20208",//processid
+           "",//msgid
+           expected_sd_pairs_test_9
+           );
+
+
+/*############################*/
+
 
   app_shutdown();
   return 0;

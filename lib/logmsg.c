@@ -114,7 +114,7 @@ TLS_BLOCK_START
   /* message that is being processed by the current thread. Its ack/ref changes are cached */
   LogMessage *logmsg_current;
   /* whether the consumer is flow-controlled, (the producer always is) */
-  gboolean logmsg_cached_flow_control;
+  gboolean logmsg_cached_ack_needed;
 
   /* has to be signed as these can become negative */
   /* number of cached refs by the current thread */
@@ -127,7 +127,7 @@ TLS_BLOCK_END;
 #define logmsg_current              __tls_deref(logmsg_current)
 #define logmsg_cached_refs          __tls_deref(logmsg_cached_refs)
 #define logmsg_cached_acks          __tls_deref(logmsg_cached_acks)
-#define logmsg_cached_flow_control  __tls_deref(logmsg_cached_flow_control)
+#define logmsg_cached_ack_needed    __tls_deref(logmsg_cached_ack_needed)
 
 #define LOGMSG_REFCACHE_BIAS                  0x00004000 /* the BIAS we add to the ref counter in refcache_start */
 #define LOGMSG_REFCACHE_ACK_SHIFT                     16 /* number of bits to shift to get the ACK counter */
@@ -179,14 +179,15 @@ const gchar *builtin_value_names[] =
   NULL,
 };
 
+static NVHandle match_handles[256];
 NVRegistry *logmsg_registry;
 const char logmsg_sd_prefix[] = ".SDATA.";
 const gint logmsg_sd_prefix_len = sizeof(logmsg_sd_prefix) - 1;
 gint logmsg_queue_node_max = 1;
 /* statistics */
-static guint32 *count_msg_clones;
-static guint32 *count_payload_reallocs;
-static guint32 *count_sdata_updates;
+static StatsCounterItem *count_msg_clones;
+static StatsCounterItem *count_payload_reallocs;
+static StatsCounterItem *count_sdata_updates;
 static GStaticPrivate priv_macro_value = G_STATIC_PRIVATE_INIT;
 
 static void
@@ -347,11 +348,21 @@ log_msg_is_handle_sdata(NVHandle handle)
   return !!(flags & LM_VF_SDATA);
 }
 
+gboolean
+log_msg_is_handle_match(NVHandle handle)
+{
+  g_assert(match_handles[0] && match_handles[255] && match_handles[0] < match_handles[255]);
+
+  /* NOTE: match_handles are allocated sequentially in log_msg_registry_init(),
+   * so this simple & fast check is enough */
+  return (match_handles[0] <= handle && handle <= match_handles[255]);
+}
+
 static void
 log_msg_init_queue_node(LogMessage *msg, LogMessageQueueNode *node, const LogPathOptions *path_options)
 {
   INIT_LIST_HEAD(&node->list);
-  node->flow_controlled = path_options->flow_control;
+  node->ack_needed = path_options->ack_needed;
   node->msg = log_msg_ref(msg);
   msg->flags |= LF_STATE_REFERENCED;
 }
@@ -450,6 +461,8 @@ log_msg_set_value(LogMessage *self, NVHandle handle, const gchar *value, gssize 
 
   if (new_entry)
     log_msg_update_sdata(self, handle, name, name_len);
+  if (handle == LM_V_PROGRAM)
+    log_msg_unset_flag(self, LF_LEGACY_MSGHDR);
 }
 
 void
@@ -491,7 +504,7 @@ log_msg_set_value_indirect(LogMessage *self, NVHandle handle, NVHandle ref_handl
     log_msg_update_sdata(self, handle, name, name_len);
 }
 
-NVHandle match_handles[256];
+
 
 void
 log_msg_set_match(LogMessage *self, gint index, const gchar *value, gssize value_len)
@@ -736,7 +749,15 @@ log_msg_append_format_sdata(LogMessage *self, GString *result)
       if (sd_id_len)
         {
           dot = sdata_elem + sd_id_len;
-          g_assert((dot - sdata_name < sdata_name_len) && *dot == '.');
+          if (dot - sdata_name != sdata_name_len)
+            {
+              g_assert((dot - sdata_name < sdata_name_len) && *dot == '.');
+            }
+          else
+            {
+              /* Standalone sdata e.g. [[UserData.updatelist@18372.4]] */
+              dot = NULL;
+            }
         }
       else
         {
@@ -758,8 +779,8 @@ log_msg_append_format_sdata(LogMessage *self, GString *result)
               sdata_elem = "none";
               sdata_elem_len = 4;
             }
-          sdata_param = "none";
-          sdata_param_len = 4;
+          sdata_param = "";
+          sdata_param_len = 0;
         }
       if (!cur_elem || sdata_elem_len != cur_elem_len || strncmp(cur_elem, sdata_elem, sdata_elem_len) != 0)
         {
@@ -777,13 +798,15 @@ log_msg_append_format_sdata(LogMessage *self, GString *result)
           cur_elem = sdata_elem;
           cur_elem_len = sdata_elem_len;
         }
-      g_string_append_c(result, ' ');
-      g_string_append_len(result, sdata_param, sdata_param_len);
-      g_string_append(result, "=\"");
-
-      value = log_msg_get_value(self, handle, &len);
-      log_msg_sdata_append_escaped(result, value, len);
-      g_string_append_c(result, '"');
+      if (sdata_param_len)
+        {
+          g_string_append_c(result, ' ');
+          g_string_append_len(result, sdata_param, sdata_param_len);
+          g_string_append(result, "=\"");
+          value = log_msg_get_value(self, handle, &len);
+          log_msg_sdata_append_escaped(result, value, len);
+          g_string_append_c(result, '"');
+        }
     }
   if (cur_elem)
     {
@@ -888,7 +911,7 @@ log_msg_alloc(gsize payload_size)
 {
   LogMessage *msg;
   gsize payload_space = payload_size ? nv_table_get_alloc_size(LM_V_MAX, 16, payload_size) : 0;
-  gsize alloc_size, payload_ofs;
+  gsize alloc_size, payload_ofs = 0;
 
   /* NOTE: logmsg_node_max is updated from parallel threads without locking. */
   gint nodes = (volatile gint) logmsg_queue_node_max;
@@ -957,7 +980,7 @@ log_msg_clone_ack(LogMessage *msg, gpointer user_data)
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
 
   g_assert(msg->original);
-  path_options.flow_control = TRUE;
+  path_options.ack_needed = TRUE;
   log_msg_ack(msg->original, &path_options);
 }
 
@@ -993,7 +1016,7 @@ log_msg_clone_cow(LogMessage *msg, const LogPathOptions *path_options)
   self->cur_node = 0;
 
   log_msg_add_ack(self, path_options);
-  if (!path_options->flow_control)
+  if (!path_options->ack_needed)
     {
       self->ack_func  = NULL;
       self->ack_userdata = NULL;
@@ -1105,6 +1128,7 @@ static inline gint
 log_msg_update_ack_and_ref(LogMessage *self, gint add_ref, gint add_ack)
 {
   gint old_value, new_value;
+
   do
     {
       new_value = old_value = (volatile gint) self->ack_and_ref;
@@ -1180,7 +1204,7 @@ log_msg_unref(LogMessage *self)
 void
 log_msg_add_ack(LogMessage *self, const LogPathOptions *path_options)
 {
-  if (path_options->flow_control)
+  if (path_options->ack_needed)
     {
       if (G_LIKELY(logmsg_current == self))
         {
@@ -1207,7 +1231,7 @@ log_msg_ack(LogMessage *self, const LogPathOptions *path_options)
 {
   gint old_value;
 
-  if (path_options->flow_control)
+  if (path_options->ack_needed)
     {
       if (G_LIKELY(logmsg_current == self))
         {
@@ -1225,6 +1249,29 @@ log_msg_ack(LogMessage *self, const LogPathOptions *path_options)
         }
     }
 }
+
+/*
+ * Break out of an acknowledgement chain. The incoming message is
+ * ACKed and a new path options structure is returned that can be used
+ * to send to further consuming pipes.
+ */
+const LogPathOptions *
+log_msg_break_ack(LogMessage *msg, const LogPathOptions *path_options, LogPathOptions *local_options)
+{
+  /* NOTE: in case the user requested flow control, we can't break the
+   * ACK chain, as that would lead to early acks, that would cause
+   * message loss */
+
+  g_assert(!path_options->flow_control_requested);
+
+  log_msg_ack(msg, path_options);
+
+  *local_options = *path_options;
+  local_options->ack_needed = FALSE;
+
+  return local_options;
+}
+
 
 /*
  * Start caching ref/unref/ack/add-ack operations in the current thread for
@@ -1255,7 +1302,7 @@ log_msg_refcache_start_producer(LogMessage *self)
   self->ack_and_ref = (self->ack_and_ref & ~LOGMSG_REFCACHE_ACK_MASK) + LOGMSG_REFCACHE_ACK_TO_VALUE((LOGMSG_REFCACHE_VALUE_TO_ACK(self->ack_and_ref) + LOGMSG_REFCACHE_BIAS));
   logmsg_cached_refs = -LOGMSG_REFCACHE_BIAS;
   logmsg_cached_acks = -LOGMSG_REFCACHE_BIAS;
-  logmsg_cached_flow_control = TRUE;
+  logmsg_cached_ack_needed = TRUE;
 }
 
 /*
@@ -1276,7 +1323,7 @@ log_msg_refcache_start_consumer(LogMessage *self, const LogPathOptions *path_opt
   g_assert(logmsg_current == NULL);
 
   logmsg_current = self;
-  logmsg_cached_flow_control = path_options->flow_control;
+  logmsg_cached_ack_needed = path_options->ack_needed;
   logmsg_cached_refs = 0;
   logmsg_cached_acks = 0;
 }
@@ -1292,6 +1339,7 @@ void
 log_msg_refcache_stop(void)
 {
   gint old_value;
+  gint current_cached_refs, current_cached_acks;
 
   g_assert(logmsg_current != NULL);
 
@@ -1317,17 +1365,42 @@ log_msg_refcache_stop(void)
   g_assert((logmsg_cached_acks < LOGMSG_REFCACHE_BIAS - 1) && (logmsg_cached_acks >= -LOGMSG_REFCACHE_BIAS));
   g_assert((logmsg_cached_refs < LOGMSG_REFCACHE_BIAS - 1) && (logmsg_cached_refs >= -LOGMSG_REFCACHE_BIAS));
 
-  old_value = log_msg_update_ack_and_ref(logmsg_current, logmsg_cached_refs, logmsg_cached_acks);
 
-  if ((LOGMSG_REFCACHE_VALUE_TO_ACK(old_value) == -logmsg_cached_acks) && logmsg_cached_flow_control)
+  /* save the differences in local variables to make it possible to know
+   * that the ACK handler recursively changed them */
+
+  current_cached_refs = logmsg_cached_refs;
+  logmsg_cached_refs = 0;
+  current_cached_acks = logmsg_cached_acks;
+  logmsg_cached_acks = 0;
+  old_value = log_msg_update_ack_and_ref(logmsg_current, current_cached_refs, current_cached_acks);
+
+  if ((LOGMSG_REFCACHE_VALUE_TO_ACK(old_value) == -current_cached_acks) && logmsg_cached_ack_needed)
     {
       /* ack processing */
       logmsg_current->ack_func(logmsg_current, logmsg_current->ack_userdata);
     }
-  if (LOGMSG_REFCACHE_VALUE_TO_REF(old_value) == -logmsg_cached_refs)
+
+  /* we need to process the ref count difference in two steps:
+   *   1) we add in the difference that was present when entering the function,
+   *   2) we add in the difference that was created by the ACK callback
+   */
+
+  if (LOGMSG_REFCACHE_VALUE_TO_REF(old_value) == -current_cached_refs)
     {
-      /* ref processing */
+      /* NOTE: if we already decided that this message is to be freed, then
+       * the ACK handler may not have done additional ref/unref operations (above)
+       */
+      g_assert(logmsg_cached_refs == 0);
       log_msg_free(logmsg_current);
+    }
+  else if (logmsg_cached_refs != 0)
+    {
+      /* process ref count offset that the ack func changed, atomically */
+      old_value = log_msg_update_ack_and_ref(logmsg_current, logmsg_cached_refs, 0);
+
+      if (LOGMSG_REFCACHE_VALUE_TO_REF(old_value) == -logmsg_cached_refs)
+        log_msg_free(logmsg_current);
     }
   logmsg_current = NULL;
 }
@@ -1375,9 +1448,11 @@ void
 log_msg_global_init(void)
 {
   log_msg_registry_init();
+  stats_lock();
   stats_register_counter(0, SCS_GLOBAL, "msg_clones", NULL, SC_TYPE_PROCESSED, &count_msg_clones);
   stats_register_counter(0, SCS_GLOBAL, "payload_reallocs", NULL, SC_TYPE_PROCESSED, &count_payload_reallocs);
   stats_register_counter(0, SCS_GLOBAL, "sdata_updates", NULL, SC_TYPE_PROCESSED, &count_sdata_updates);
+  stats_unlock();
 }
 
 void

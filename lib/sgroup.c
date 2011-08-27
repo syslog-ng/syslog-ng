@@ -54,7 +54,9 @@ log_source_group_init(LogPipe *s)
 	}
       log_pipe_append(&p->super, s);
     }
+  stats_lock();
   stats_register_counter(0, SCS_SOURCE | SCS_GROUP, self->name, NULL, SC_TYPE_PROCESSED, &self->processed_messages);
+  stats_unlock();
   return TRUE;
   
  deinit_all:
@@ -96,7 +98,7 @@ log_source_group_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_o
   if (msg->flags & LF_LOCAL)
     afinter_postpone_mark(cfg->mark_freq);
   log_pipe_forward_msg(s, msg, path_options);
-  (*self->processed_messages)++;
+  stats_counter_inc(self->processed_messages);
 }
 
 static void

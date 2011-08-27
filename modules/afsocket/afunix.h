@@ -48,6 +48,7 @@ typedef struct _AFUnixDestDriver
 {
   AFSocketDestDriver super;
   SocketOptions sock_options;
+  gchar *filename;
 } AFUnixDestDriver;
 
 LogDriver *afunix_dd_new(gchar *filename, guint flags);
