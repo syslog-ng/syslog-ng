@@ -1,12 +1,12 @@
 syslog-ng (3.3.0beta2-1~preview3) unstable; urgency=low
 
-  * Update to commit 51b692f from upstream.
+  * Update to commit 1497ed2 from upstream.
 
   * Move the modules to a versioned subdirectory.
   * Ease future upgrades by making libsyslog-ng-3.3.0beta2 confict with
     and provide libsyslog-ng-3.3.
 
- -- Gergely Nagy <algernon@madhouse-project.org>  Sun, 28 Aug 2011 11:25:53 +0200
+ -- Gergely Nagy <algernon@madhouse-project.org>  Sun, 28 Aug 2011 15:11:30 +0200
 
 syslog-ng (3.3.0beta2-1~preview2) unstable; urgency=low
 
