@@ -155,3 +155,13 @@ tfjson_module_init(GlobalConfig *cfg, CfgArgs *args)
   plugin_register(cfg, builtin_tmpl_func_plugins, G_N_ELEMENTS(builtin_tmpl_func_plugins));
   return TRUE;
 }
+
+const ModuleInfo module_info =
+{
+  .canonical_name = "tfjson",
+  .version = VERSION,
+  .description = "The tfjson module provides a JSON formatting template function for syslog-ng.",.
+  .core_revision = SOURCE_REVISION,
+  .plugins = builtin_tmpl_func_plugins,
+  .plugins_len = G_N_ELEMENTS(builtin_tmpl_func_plugins),
+};
