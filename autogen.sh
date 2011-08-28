@@ -6,13 +6,21 @@
 # source tree. 
 #
 SUBMODULES="lib/ivykis modules/afmongodb/libmongo-client"
+GIT=`which git`
 
 autogen_submodules()
 {
-
 	origdir=`pwd`
 
-	if [ -f .gitmodules ]; then
+	submod_initialized=0
+	for submod in $SUBMODULES; do
+		if [ -f $submod/configure.gnu ]; then
+			submod_initialized=1
+		fi
+	done
+
+	if [ -n "$GIT" ] && [ -f .gitmodules ] && [ -d .git ] && [ $submod_initialized = 0 ]; then
+		# only clone submodules if none of them present
 		git submodule update --init --recursive
 	fi
 
