@@ -22,6 +22,12 @@ up being libsyslog-ng3.3.0beta2-0 (and libsyslog-ng-dev).
 
 Packaging is done, but -release is not patched in yet.
 
+** systemd support
+
+Systemd support is currently explicitly disabled. On Linux, it should
+be enabled, and syslog-ng-core should ship with an appropriate service
+file.
+
 * Bug triaging
 
 Go over the open bugs against syslog-ng, and see which are fixed with
