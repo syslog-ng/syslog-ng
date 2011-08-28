@@ -47,6 +47,8 @@ Description: Next generation system logging daemon (metapackage)
 Package: libsyslog-ng-3.3.0beta2
 Section: libs
 Architecture: any
+Provides: libsyslog-ng-3.3
+Conflicts: libsyslog-ng-3.3
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: Next generation system logging daemon (private library)
  This package contains a semi-private library, used by both syslog-ng
