@@ -1057,11 +1057,13 @@ AM_CONDITIONAL(ENABLE_JSON, [test "$enable_json" = "yes"])
 
 # substitution into manual pages
 expanded_sysconfdir=[`patheval $sysconfdir | sed -e 's/-/\\\\-/g'`]
+expanded_moduledir=[`patheval $moduledir`]
 
 AC_SUBST(timezonedir)
 AC_SUBST(pidfiledir)
 AC_SUBST(moduledir)
 AC_SUBST(expanded_sysconfdir)
+AC_SUBST(expanded_moduledir)
 AC_SUBST(systemdsystemunitdir)
 AC_SUBST(SYSLOGNG_LINK)
 AC_SUBST(SYSLOGNG_DEPS_LIBS)
