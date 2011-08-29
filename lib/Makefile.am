@@ -9,7 +9,7 @@ export top_srcdir
 
 lib_LTLIBRARIES = libsyslog-ng.la
 libsyslog_ng_la_LIBADD = @CORE_DEPS_LIBS@
-libsyslog_ng_la_LDFLAGS = -no-undefined
+libsyslog_ng_la_LDFLAGS = -no-undefined -release @VERSION@
 
 module_LTLIBRARIES = libsyslog-ng-crypto.la
 libsyslog_ng_crypto_la_LIBADD = @CORE_DEPS_LIBS@ libsyslog-ng.la
