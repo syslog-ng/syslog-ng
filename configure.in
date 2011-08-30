@@ -53,6 +53,7 @@ else
 fi
 
 AM_INIT_AUTOMAKE($PACKAGE, $VERSION, no-define)
+_AM_PROG_TAR([ustar])
 if test -n "$SNAPSHOT_VERSION"; then
 	VERSION=$VERSION+$SNAPSHOT_VERSION
 fi
