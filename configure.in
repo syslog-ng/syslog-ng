@@ -894,6 +894,7 @@ if test "x$enable_systemd" = "xauto"; then
 fi
 
 if test "x$enable_systemd" = "xyes"; then
+	PKG_CHECK_MODULES(libsystemd_daemon, libsystemd-daemon >= 31,with_libsystemd="yes",with_libsystemd="no")
 	if test "x$with_systemdsystemunitdir" = "xyes"; then
 		# no arguments, just --with-systemdsystemunitdir
 		systemdsystemunitdir=$($PKG_CONFIG --variable=systemdsystemunitdir systemd);
@@ -1063,6 +1064,7 @@ AM_CONDITIONAL(ENABLE_SUN_STREAMS, [test "$enable_sun_streams" = "yes"])
 AM_CONDITIONAL(ENABLE_PACCT, [test "$enable_pacct" = "yes"])
 AM_CONDITIONAL(ENABLE_MONGODB, [test "$enable_mongodb" = "yes"])
 AM_CONDITIONAL(ENABLE_JSON, [test "$enable_json" = "yes"])
+AM_CONDITIONAL(WITH_LIBSYSTEMD, [test "$with_libsystemd" = "yes"])
 
 # substitution into manual pages
 expanded_sysconfdir=[`patheval $sysconfdir | sed -e 's/-/\\\\-/g'`]
