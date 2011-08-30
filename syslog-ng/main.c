@@ -128,7 +128,9 @@ version(void)
   printf(PACKAGE " " VERSION "\n"
          "Installer-Version: %s\n"
          "Revision: " SOURCE_REVISION "\n"
+#if WITH_COMPILE_DATE
          "Compile-Date: " __DATE__ " " __TIME__ "\n"
+#endif
          "Default-Modules: %s\n"
          "Available-Modules: ",
          installer_version,
