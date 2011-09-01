@@ -6,6 +6,7 @@ Sockets=syslog.socket
 ExecStartPre=/bin/systemctl stop systemd-kmsg-syslogd.service
 ExecStart=/usr/sbin/syslog-ng -F
 ExecReload=/bin/kill -HUP $MAINPID
+StandardOutput=null
 
 [Install]
 WantedBy=multi-user.target
