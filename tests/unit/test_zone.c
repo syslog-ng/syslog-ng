@@ -2,6 +2,7 @@
 #include "apphook.h"
 #include "timeutils.h"
 #include "timeutils.h"
+#include "logstamp.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -88,12 +89,11 @@ test_timezone(const time_t stamp_to_test, const char* time_zone)
 
 
 int
-main(int argc, char *argv[])
+test_zones(void)
 {
   gint rc = 0;
   time_t now;
 
-  app_startup();
   /* 2005-10-14 21:47:37 CEST, dst enabled */
   testcase("MET-1METDST", 1129319257, 7200);
   /* 2005-11-14 10:10:00 CET, dst disabled */
@@ -735,6 +735,47 @@ main(int argc, char *argv[])
   TEST_ASSERT(test_timezone(now, "Australia/Lord_Howe"));
   TEST_ASSERT(test_timezone(now, "NZ"));
 #endif
+  return rc;
+}
+
+int
+test_logstamp(void)
+{
+  LogStamp stamp;
+  GString *target = g_string_sized_new(32);
+  gint rc = 0;
+
+  stamp.tv_sec = 1129319257;
+  stamp.tv_usec = 123456;
+
+  /* formats */
+  log_stamp_format(&stamp, target, TS_FMT_BSD, 3600, 3);
+  TEST_ASSERT(strcmp(target->str, "Oct 14 20:47:37.123") == 0);
+  log_stamp_format(&stamp, target, TS_FMT_ISO, 3600, 3);
+  TEST_ASSERT(strcmp(target->str, "2005-10-14T20:47:37.123+01:00") == 0);
+  log_stamp_format(&stamp, target, TS_FMT_FULL, 3600, 3);
+  TEST_ASSERT(strcmp(target->str, "2005 Oct 14 20:47:37.123") == 0);
+  log_stamp_format(&stamp, target, TS_FMT_UNIX, 3600, 3);
+  TEST_ASSERT(strcmp(target->str, "1129319257.123") == 0);
+
+  /* timezone offsets */
+  log_stamp_format(&stamp, target, TS_FMT_ISO, 5400, 3);
+  TEST_ASSERT(strcmp(target->str, "2005-10-14T21:17:37.123+01:30") == 0);
+  log_stamp_format(&stamp, target, TS_FMT_ISO, -3600, 3);
+  TEST_ASSERT(strcmp(target->str, "2005-10-14T18:47:37.123-01:00") == 0);
+  log_stamp_format(&stamp, target, TS_FMT_ISO, -5400, 3);
+  TEST_ASSERT(strcmp(target->str, "2005-10-14T18:17:37.123-01:30") == 0);
+  g_string_free(target, TRUE);
+  return rc;
+}
+
+int
+main(int argc, char *argv[])
+{
+  gint rc;
+  app_startup();
+
+  rc = test_logstamp() | test_zones();;
   app_shutdown();
   return rc;
 }

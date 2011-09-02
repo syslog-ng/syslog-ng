@@ -285,7 +285,7 @@ format_zone_info(gchar *buf, size_t buflen, glong gmtoff)
   return g_snprintf(buf, buflen, "%c%02ld:%02ld",
                           gmtoff < 0 ? '-' : '+',
                           (gmtoff < 0 ? -gmtoff : gmtoff) / 3600,
-                          (gmtoff % 3600) / 60);
+                          ((gmtoff < 0 ? -gmtoff : gmtoff) % 3600) / 60);
 }
 
 /**
