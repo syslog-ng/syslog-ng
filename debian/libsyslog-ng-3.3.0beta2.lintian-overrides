@@ -1,0 +1,2 @@
+# The library uses -release ${UPSTREAM_VERSION}, a symbols file is pointless.
+libsyslog-ng-3.3.0beta2: no-symbols-control-file usr/lib/libsyslog-ng-3.3.0beta2.so
