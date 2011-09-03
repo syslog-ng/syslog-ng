@@ -29,13 +29,11 @@ To update the package, the following workflow should be kept:
 Upgrading to a new upstream version
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Pull in the upstream changes into the upstream branch, and merge it
-into the patched branch. Drop any obsolete commits from the patched
-branch before (or perhaps after) the merge, in a separate step.
+Pull in the upstream changes into the upstream branch, then rebase the
+patched branch on top of it, dropping or updating any patches that
+need it.
 
-Once done, merge the patched branch into master.
-
-Neither branch should ever be rebased.
+Once done, rebase the master branch on top of patched.
 
 After this, a new upstream orig.tar.xz can be created with calling
 debian/rules get-orig-source.
@@ -48,7 +46,8 @@ Selectively applying upstream fixes
 
 Again, pull in the upstream changes into the upstream branch, and
 cherry-pick the appropriate fixes to patched, and merge that into
-master afterwards.
+master afterwards. No rebase needed unless one's pulling in a new
+upstream version.
 
 Debian-specific changes
 ~~~~~~~~~~~~~~~~~~~~~~~
