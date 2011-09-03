@@ -584,7 +584,7 @@ affile_dw_init(LogPipe *s)
       guint32 flags;
 
       flags = LW_FORMAT_FILE |
-        ((self->owner->flags & AFFILE_PIPE) ? LW_SOFT_FLOW_CONTROL : 0);
+        ((self->owner->flags & AFFILE_PIPE) ? 0 : LW_SOFT_FLOW_CONTROL);
 
       self->writer = log_writer_new(flags);
     }
