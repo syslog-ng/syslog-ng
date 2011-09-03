@@ -200,19 +200,19 @@ scan_month_abbrev(const gchar **buf, gint *left, gint *mon)
         *mon = 7;
       break;
     case 'S':
-      if (strcmp(*buf, "Sep") == 0)
+      if (memcmp(*buf, "Sep", 3) == 0)
         *mon = 8;
       break;
     case 'O':
-      if (strcmp(*buf, "Oct") == 0)
+      if (memcmp(*buf, "Oct", 3) == 0)
         *mon = 9;
       break;
     case 'N':
-      if (strcmp(*buf, "Nov") == 0)
+      if (memcmp(*buf, "Nov",3 ) == 0)
         *mon = 10;
       break;
     case 'D':
-      if (strcmp(*buf, "Dec") == 0)
+      if (memcmp(*buf, "Dec", 3) == 0)
         *mon = 11;
       break;
     default:
