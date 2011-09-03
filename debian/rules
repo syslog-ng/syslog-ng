@@ -41,7 +41,9 @@ help:
 # - We need to call autogen.sh instead of autoreconf.
 override_dh_autoreconf:
 	install -d lib/ivykis/m4 modules/afmongodb/libmongo-client/m4
-	skip_git=1 dh_autoreconf sh ./autogen.sh
+	chmod +x lib/ivykis/autogen.sh modules/afmongodb/libmongo-client/autogen.sh
+	touch lib/ivykis/configure.gnu modules/afmongodb/libmongo-client/configure.gnu
+	dh_autoreconf sh ./autogen.sh
 
 # Oh, the joys of configure!
 # We pass down all appropriate options, along with EXTRA_CONFIGURE_OPTS.
