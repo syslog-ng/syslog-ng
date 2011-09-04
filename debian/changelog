@@ -1,13 +1,14 @@
 syslog-ng (3.3.0beta2-1~preview3) unstable; urgency=low
 
-  * Update to commit bb0057e from upstream.
+  * Update to commit 0a3d844 from upstream.
 
-  * Apply patch that fixes BSD timestamp parsing.
+  * Apply patch that fixes BSD timestamp parsing (also from upstream).
+  * Upstream memory leak fixes.
   * Move the modules to a versioned subdirectory.
   * Ease future upgrades by making libsyslog-ng-3.3.0beta2 confict with
     and provide libsyslog-ng-3.3.
 
- -- Gergely Nagy <algernon@madhouse-project.org>  Sat, 03 Sep 2011 15:54:12 +0200
+ -- Gergely Nagy <algernon@madhouse-project.org>  Sun, 04 Sep 2011 21:14:40 +0200
 
 syslog-ng (3.3.0beta2-1~preview2) unstable; urgency=low
 
