@@ -46,6 +46,16 @@ log_parser_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
   if (G_LIKELY(!self->template))
     {
       NVTable *payload = nv_table_ref(msg->payload);
+
+      /* NOTE: the process function may set values in the LogMessage
+       * instance, which in turn can trigger nv_table_realloc() to be
+       * called.  However in case nv_table_realloc() finds a refcounter > 1,
+       * it'll always _move_ the structure and leave the old one intact,
+       * until its refcounter drops to zero.  If that wouldn't be the case,
+       * nv_table_realloc() could make our payload pointer and the
+       * LM_V_MESSAGE pointer we pass to process() go stale.
+       */
+
       success = self->process(self, msg, log_msg_get_value(msg, LM_V_MESSAGE, NULL));
       nv_table_unref(payload);
     }
