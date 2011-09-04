@@ -189,13 +189,24 @@ gboolean nv_table_foreach(NVTable *self, NVRegistry *registry, NVTableForeachFun
 gboolean nv_table_foreach_entry(NVTable *self, NVTableForeachEntryFunc func, gpointer user_data);
 
 void nv_table_clear(NVTable *self);
-gsize nv_table_get_alloc_size(gint num_static_entries, gint num_dyn_values, gint init_length);
 NVTable *nv_table_new(gint num_static_values, gint num_dyn_values, gint init_length);
 NVTable *nv_table_init_borrowed(gpointer space, gsize space_len, gint num_static_entries);
 NVTable *nv_table_realloc(NVTable *self);
 NVTable *nv_table_clone(NVTable *self, gint additional_space);
 NVTable *nv_table_ref(NVTable *self);
 void nv_table_unref(NVTable *self);
+
+static inline gsize
+nv_table_get_alloc_size(gint num_static_entries, gint num_dyn_values, gint init_length)
+{
+  NVTable *self G_GNUC_UNUSED = NULL;
+  gsize size;
+
+  size = NV_TABLE_BOUND(init_length) + NV_TABLE_BOUND(sizeof(NVTable) + num_static_entries * sizeof(self->static_entries[0]) + num_dyn_values * sizeof(guint32));
+  if (size < 256)
+    return 256;
+  return size;
+}
 
 static inline gchar *
 nv_table_get_top(NVTable *self)

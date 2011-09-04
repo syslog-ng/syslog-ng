@@ -630,13 +630,6 @@ nv_table_clear(NVTable *self)
   memset(&self->static_entries[0], 0, self->num_static_entries * sizeof(self->static_entries[0]));
 }
 
-gsize
-nv_table_get_alloc_size(gint num_static_entries, gint num_dyn_values, gint init_length)
-{
-  NVTable *self G_GNUC_UNUSED; /* NOTE: only to calculage size */
-  return NV_TABLE_BOUND(init_length) + NV_TABLE_BOUND(sizeof(NVTable) + num_static_entries * sizeof(self->static_entries[0]) + num_dyn_values * sizeof(guint32));
-}
-
 void
 nv_table_init(NVTable *self, gsize alloc_length, gint num_static_entries)
 {
