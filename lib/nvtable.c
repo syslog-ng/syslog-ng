@@ -740,6 +740,7 @@ nv_table_clone(NVTable *self, gint additional_space)
   memcpy(new, self, sizeof(NVTable) + self->num_static_entries * sizeof(self->static_entries[0]) + self->num_dyn_entries * sizeof(guint32));
   new->size = new_size;
   new->ref_cnt = 1;
+  new->borrowed = FALSE;
 
   memcpy(NV_TABLE_ADDR(new, new->size - new->used),
           NV_TABLE_ADDR(self, self->size - self->used),
