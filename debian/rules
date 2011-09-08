@@ -111,7 +111,6 @@ override_dh_auto_clean:
 override_dh_auto_install:
 	dh_auto_install
 	${MAKE} -C debian/build-tree/lib/ivykis install DESTDIR=$(CURDIR)/debian/tmp
-	rm -f debian/tmp/usr/share/man/man3/iv_examples.*
 
 ##
 #* Overrides for other debhelper commands
