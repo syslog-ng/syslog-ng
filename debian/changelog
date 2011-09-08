@@ -1,3 +1,13 @@
+syslog-ng (3.3.0beta2-1~preview4) unstable; urgency=low
+
+  * Repackaged to be DFSG-free, by dropping the upstream man pages.
+
+  * Do not install the ivykis manual pages anymore.
+  * Update and finalize the debian/copyright file.
+  * Document the packaging workflow better in debian/README.source.
+
+ -- Gergely Nagy <algernon@madhouse-project.org>  Thu, 08 Sep 2011 13:47:56 +0200
+
 syslog-ng (3.3.0beta2-1~preview3) unstable; urgency=low
 
   * Update to commit 0a3d844 from upstream.
