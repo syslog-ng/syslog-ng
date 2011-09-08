@@ -32,9 +32,9 @@ Upgrading to a new upstream version
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Pull in the upstream changes into the upstream branch, then rebase
-upstream-dfsg onto the new upstream branch, and afterwards rebase the
-patched branch on top of it, dropping or updating any patches that
-need it.
+upstream-dfsg onto the new upstream branch, and tag it appropriately
+(dfsg/X.Y.Z), then rebase the patched branch on top of it, dropping or
+updating any patches that need it.
 
 Once done, rebase the master branch on top of patched.
 
