@@ -75,6 +75,12 @@ override_dh_auto_configure:
 		\
 		${EXTRA_CONFIGURE_OPTS}
 
+# After we've built syslog-ng itself, it's time to build the man pages
+# aswell!
+override_dh_auto_build:
+	dh_auto_build
+	${MAKE} -f debian/tools/help2man.mk all
+
 # Tests. While tests are good, they're quite costy, and I'm not
 # convinced they'd run on the buildds at all. Therefore, they're
 # disabled.
@@ -97,6 +103,7 @@ override_dh_auto_clean:
 	     -exec rm '{}' \;
 	rm -f m4/lt*.m4 m4/libtool.m4 m4/pkg.m4
 	rm -rf lib/ivykis/m4 modules/afmongodb/libmongo-client/m4
+	${MAKE} -f debian/tools/help2man.mk clean
 
 # We also want to install ivykis headers and whatnot, so override
 # _auto_install, and do it too.
