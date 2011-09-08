@@ -15,13 +15,6 @@ preserved, and others were it was silently overwritten.
 
 * Packaging improvements
 
-** libsyslog-ng
-
-Upstream will add a -release tag to libtool, so the package will end
-up being libsyslog-ng3.3.0beta2-0 (and libsyslog-ng-dev).
-
-Packaging is done, but -release is not patched in yet.
-
 ** systemd support
 
 Systemd support is currently explicitly disabled. On Linux, it should
