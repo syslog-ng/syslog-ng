@@ -162,17 +162,10 @@ build: build-stamp
 build-stamp:
 .PHONY: build-stamp
 
-# We get the original source by git archiving syslog-ng and all
-# submodules, then tarring up the result, and compressing it.
-get-orig-source: UPSTREAMVERSION=$(shell git tag -l 'dfsg/*' | sort | tail -n 1 | sed -e 's/^dfsg\///')
+# We get the original source by calling an external tool, that will do
+# the heavy lifting for us.
 get-orig-source:
-	git submodule update --init
-	install -d debian/orig-source
-	git archive "dfsg/${UPSTREAMVERSION}" --format tar --prefix=syslog-ng/ | tar -C debian/orig-source -xf -
-	(cd lib/ivykis; git archive HEAD --format tar --prefix=syslog-ng/lib/ivykis/) | tar -C debian/orig-source -xf -
-	(cd modules/afmongodb/libmongo-client; git archive HEAD --format tar --prefix=syslog-ng/modules/afmongodb/libmongo-client/) | tar -C debian/orig-source -xf -
-	tar -C debian/orig-source -cf - syslog-ng | xz -9 >../syslog-ng_${UPSTREAMVERSION}.orig.tar.xz
-	rm -rf debian/orig-source
+	debian/tools/get-orig-source.sh
 
 # And for the rest, there is debhelper!
 %:
