@@ -969,8 +969,9 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
                 }
               else
                 {
+		  if (!consumed)
+	            g_free(self->line_buffer->str);
                   consumed = TRUE;
-                  g_free(self->line_buffer->str);
                 }
             }
           if (consumed)
