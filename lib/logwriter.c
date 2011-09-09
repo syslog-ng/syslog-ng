@@ -1042,6 +1042,7 @@ log_writer_init(LogPipe *s)
 {
   LogWriter *self = (LogWriter *) s;
 
+  g_assert(self->queue != NULL);
   iv_event_register(&self->queue_filled);
 
   if ((self->options->options & LWO_NO_STATS) == 0 && !self->dropped_messages)
