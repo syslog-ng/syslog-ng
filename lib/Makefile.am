@@ -6,12 +6,8 @@ YFLAGS=@YFLAGS@
 export top_srcdir
 
 lib_LTLIBRARIES = libsyslog-ng.la
-libsyslog_ng_la_LIBADD = @CORE_DEPS_LIBS@
+libsyslog_ng_la_LIBADD = @CORE_DEPS_LIBS@ @OPENSSL_LIBS@
 libsyslog_ng_la_LDFLAGS = -no-undefined -release @VERSION@
-
-module_LTLIBRARIES = libsyslog-ng-crypto.la
-libsyslog_ng_crypto_la_LIBADD = @CORE_DEPS_LIBS@ libsyslog-ng.la
-libsyslog_ng_crypto_la_LDFLAGS = -no-undefined -avoid-version
 
 # this is intentionally formatted so conflicts are less likely to arise. one name in every line.
 pkginclude_HEADERS = 		\
@@ -149,7 +145,8 @@ libsyslog_ng_la_SOURCES = \
 	block-ref-grammar.y	\
 	pragma-grammar.y	\
 	parser-expr-grammar.y	\
-	rewrite-expr-grammar.y
+	rewrite-expr-grammar.y	\
+	$(libsyslog_ng_crypto_la_SOURCES)
 
 # each line with closely related files (e.g. the ones generated from the same source)
 BUILT_SOURCES = cfg-lex.c cfg-lex.h						\

@@ -29,7 +29,7 @@ libafsocket_tls_la_SOURCES = \
 	afsocket-grammar.y afsocket-parser.c afsocket-parser.h afsocket-plugin.c \
 	$(SYSTEMD_SOURCES)
 libafsocket_tls_la_CPPFLAGS = $(AM_CPPFLAGS) $(libsystemd_daemon_CFLAGS) -DENABLE_SSL=1
-libafsocket_tls_la_LIBADD = $(MODULE_DEPS_LIBS) ../../lib/libsyslog-ng-crypto.la $(OPENSSL_LIBS) $(ZLIB_LIBS) $(LIBNET_LIBS) $(LIBWRAP_LIBS) $(libsystemd_daemon_LIBS)
+libafsocket_tls_la_LIBADD = $(MODULE_DEPS_LIBS) $(OPENSSL_LIBS) $(ZLIB_LIBS) $(LIBNET_LIBS) $(LIBWRAP_LIBS) $(libsystemd_daemon_LIBS)
 libafsocket_tls_la_LDFLAGS = $(MODULE_LDFLAGS)
 endif
 
