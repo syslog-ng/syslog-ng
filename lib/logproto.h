@@ -29,6 +29,8 @@
 #include "serialize.h"
 #include "persist-state.h"
 
+#include <regex.h>
+
 typedef struct _LogProto LogProto;
 typedef struct _LogProtoTextServer LogProtoTextServer;
 typedef struct _LogProtoFileReader LogProtoFileReader;
@@ -50,11 +52,12 @@ struct _LogProto
   gboolean (*prepare)(LogProto *s, gint *fd, GIOCondition *cond);
   gboolean (*is_preemptable)(LogProto *s);
   gboolean (*restart_with_state)(LogProto *s, PersistState *state, const gchar *persist_name);
-  LogProtoStatus (*fetch)(LogProto *s, const guchar **msg, gsize *msg_len, GSockAddr **sa, gboolean *may_read);
+  LogProtoStatus (*fetch)(LogProto *s, const guchar **msg, gsize *msg_len, GSockAddr **sa, gboolean *may_read, regex_t *multi_line_prefix_parser, regex_t *multi_line_garbage_parser, gboolean flush);
   void (*queued)(LogProto *s);
   LogProtoStatus (*post)(LogProto *s, guchar *msg, gsize msg_len, gboolean *consumed);
   LogProtoStatus (*flush)(LogProto *s);
   void (*free_fn)(LogProto *s);
+  void (*reset_state)(LogProto *s);
   /* This function is available only the object is _LogProtoTextServer */
   void (*get_info)(LogProto *s, guint64 *pos);
 };
@@ -97,9 +100,16 @@ log_proto_post(LogProto *s, guchar *msg, gsize msg_len, gboolean *consumed)
 }
 
 static inline LogProtoStatus
-log_proto_fetch(LogProto *s, const guchar **msg, gsize *msg_len, GSockAddr **sa, gboolean *may_read)
+log_proto_fetch(LogProto *s, const guchar **msg, gsize *msg_len, GSockAddr **sa, gboolean *may_read, regex_t *multi_line_prefix_parser, regex_t *multi_line_garbage_parser, gboolean flush)
 {
-  return s->fetch(s, msg, msg_len, sa, may_read);
+  return s->fetch(s, msg, msg_len, sa, may_read, multi_line_prefix_parser, multi_line_garbage_parser, flush);
+}
+
+static inline void
+log_proto_reset_state(LogProto *s)
+{
+  if(s->reset_state)
+    s->reset_state(s);
 }
 
 static inline void

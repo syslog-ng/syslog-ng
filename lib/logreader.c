@@ -47,6 +47,7 @@
 #include <stdlib.h>
 #include <iv.h>
 #include <iv_work.h>
+#include <regex.h>
 
 /**
  * FIXME: LogReader has grown big enough that it is difficult to
@@ -75,6 +76,8 @@
  * Of course a similar change can be applied to LogWriters as well.
  **/
 
+/* In seconds */
+#define MAX_MSG_TIMEOUT 10
 #define SDATA_FILE_PREFIX ".SDATA.file@18372.4."
 #define SDATA_FILE_NAME SDATA_FILE_PREFIX "name"
 #define SDATA_FILE_SIZE SDATA_FILE_PREFIX "size"
@@ -106,6 +109,15 @@ struct _LogReader
   gboolean suspended:1;
   gint pollable_state;
   gint notify_code;
+  regex_t *prefix_matcher;
+  regex_t *garbage_matcher;
+  /* Because of multiline processing logreader has to store the last read line which should start with the prefix */
+  gchar *partial_message;
+  /* store if we have to wait for a prefix, because last event was a garbage found */
+  gboolean wait_for_prefix;
+  gboolean flush;
+  time_t last_msg_received;
+
   gboolean pending_proto_present;
   GCond *pending_proto_cond;
   GStaticMutex pending_proto_lock;
@@ -238,6 +250,16 @@ log_reader_io_process_input(gpointer s)
         }
     }
 }
+
+static void
+log_reader_flush_buffer(LogReader *reader,gboolean reset_state)
+{
+  reader->flush = TRUE;
+  log_reader_fetch_log(reader);
+  reader->flush = FALSE;
+  if(reset_state)
+    {
+      log_proto_reset_state(reader->proto);
     }
 }
 
@@ -272,6 +294,7 @@ log_reader_io_follow_file(gpointer s)
               msg_trace("log_reader_fd_check file moved ESTALE",
                         evt_tag_str("follow_filename", self->follow_filename),
                         NULL);
+              log_reader_flush_buffer(self, TRUE);
               log_pipe_notify(self->control, &self->super.super, NC_FILE_MOVED, self);
               return;
             }
@@ -299,6 +322,7 @@ log_reader_io_follow_file(gpointer s)
       else if (pos > st.st_size)
         {
           /* the last known position is larger than the current size of the file. it got truncated. Restart from the beginning. */
+          log_reader_flush_buffer(self, TRUE);
           log_pipe_notify(self->control, &self->super.super, NC_FILE_MOVED, self);
 
           /* we may be freed by the time the notification above returns */
@@ -318,6 +342,7 @@ log_reader_io_follow_file(gpointer s)
                         evt_tag_str("follow_filename", self->follow_filename),
                         NULL);
               /* file was moved and we are at EOF, follow the new file */
+              log_reader_flush_buffer(self, TRUE);
               log_pipe_notify(self->control, &self->super.super, NC_FILE_MOVED, self);
               /* we may be freed by the time the notification above returns */
               return;
@@ -579,7 +604,39 @@ log_reader_handle_line(LogReader *self, const guchar *line, gint length, GSockAd
 {
   LogMessage *m;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
+  GString *converted;
+  guint64 pos=0;
+  NVHandle handle;
+  gint i;
+  gchar *mlg = self->super.options->multi_line_garbage;
+
+  /* handle multi line garbage: if the the buffer starts with the garbage text, it means that we are flushing
+     the buffer - but the actual content is garbage and therefore we have to discard it
+     We don't have to scan the whole text (strstr would do that), only the first characters, it is always at the
+     begin of the buffer - somewhat faster */
+  if (mlg)
+    {
+      gint len = strlen(mlg);
+      if (length >= len)
+        {
+          gboolean match = TRUE;
+          for (i = 0; i < len && match; ++i)
+            if (line[i] != mlg[i])
+              match = FALSE;
+          if (match)
+            /* garbage line, discard it */
+            return TRUE;
+        }
+    }
   
+  /* skip the remaning '\n' char in case the multi line garbage is on and the garbage processing took place
+     in several steps (file writing in steps) */
+  if (self->super.options->multi_line_garbage && line[0] == '\n')
+    {
+      ++line;
+      --length;
+    }
+
   msg_debug("Incoming log entry", 
             evt_tag_printf("line", "%.*s", length, line),
             NULL);
@@ -663,7 +720,7 @@ log_reader_fetch_log(LogReader *self)
        * protocol, it resets may_read to FALSE after the first read was issued.
        */
 
-      status = log_proto_fetch(self->proto, &msg, &msg_len, &sa, &may_read);
+      status = log_proto_fetch(self->proto, &msg, &msg_len, &sa, &may_read, self->prefix_matcher, self->garbage_matcher, self->flush);
       switch (status)
         {
         case LPS_EOF:
@@ -676,7 +733,7 @@ log_reader_fetch_log(LogReader *self)
           g_assert_not_reached();
           break;
         }
-
+      self->last_msg_received = cached_g_current_time_sec();
       if (!msg)
         {
           /* no more messages for now */
@@ -750,10 +807,29 @@ log_reader_init(LogPipe *s)
                 NULL);
       return FALSE;
     }
+
+  if (self->options->super.multi_line_prefix)
+    {
+      self->prefix_matcher = g_new0(regex_t, 1);
+      if (regcomp(self->prefix_matcher, self->options->super.multi_line_prefix, REG_EXTENDED))
+        {
+          msg_error("Bad regexp",evt_tag_str("multi_line_prefix",self->options->super.multi_line_prefix), NULL);
+          return FALSE;
+        }
+    }
+  if (self->options->super.multi_line_garbage)
+    {
+      self->garbage_matcher = g_new0(regex_t, 1);
+      if (regcomp(self->garbage_matcher, self->options->super.multi_line_garbage, REG_EXTENDED))
+        {
+          msg_error("Bad regexp",evt_tag_str("multi_line_garbage",self->options->super.multi_line_garbage), NULL);
+          return FALSE;
+        }
+    }
+
   if (!log_reader_start_watches(self))
     return FALSE;
   iv_event_register(&self->schedule_wakeup);
-
   return TRUE;
 }
 
@@ -891,7 +967,12 @@ log_reader_new(LogProto *proto)
   self->proto = proto;
   self->immediate_check = FALSE;
   self->pollable_state = -1;
+  self->prefix_matcher = NULL;
+  self->garbage_matcher = NULL;
+  self->wait_for_prefix = FALSE;
+  self->flush = FALSE;
   log_reader_init_watches(self);
+  self->last_msg_received = 0;
   g_static_mutex_init(&self->pending_proto_lock);
   self->pending_proto_cond = g_cond_new();
   return &self->super.super;
@@ -958,6 +1039,8 @@ log_reader_options_init(LogReaderOptions *options, GlobalConfig *cfg, const gcha
   gchar *host_override, *program_override, *text_encoding, *format;
   MsgFormatHandler *format_handler;
   GArray *tags;
+  gchar *multi_line_prefix;
+  gchar *multi_line_garbage;
 
   recv_time_zone = options->parse_options.recv_time_zone;
   options->parse_options.recv_time_zone = NULL;
@@ -976,11 +1059,16 @@ log_reader_options_init(LogReaderOptions *options, GlobalConfig *cfg, const gcha
   options->super.host_override = NULL;
   program_override = options->super.program_override;
   options->super.program_override = NULL;
+  multi_line_prefix = options->super.multi_line_prefix;
+  multi_line_garbage = options->super.multi_line_garbage;
+  options->super.multi_line_prefix = NULL;
+  options->super.multi_line_garbage = NULL;
 
   format = options->parse_options.format;
   options->parse_options.format = NULL;
   format_handler = options->parse_options.format_handler;
   options->parse_options.format_handler = NULL;
+
 
   /***********************************************************************
    * PLEASE NOTE THIS. please read the comment at the top of the function
@@ -993,6 +1081,8 @@ log_reader_options_init(LogReaderOptions *options, GlobalConfig *cfg, const gcha
   options->super.host_override = host_override;
   options->super.program_override = program_override;
   options->super.tags = tags;
+  options->super.multi_line_prefix = multi_line_prefix;
+  options->super.multi_line_garbage = multi_line_garbage;
   
   options->parse_options.recv_time_zone = recv_time_zone;
   options->parse_options.recv_time_zone_info = recv_time_zone_info;

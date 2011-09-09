@@ -355,6 +355,8 @@ log_source_options_defaults(LogSourceOptions *options)
   options->normalize_hostnames = -1;
   options->keep_timestamp = -1;
   options->tags = NULL;
+  options->multi_line_prefix = NULL;
+  options->multi_line_garbage = NULL;
 }
 
 /*
@@ -385,6 +387,8 @@ log_source_options_init(LogSourceOptions *options, GlobalConfig *cfg, const gcha
   gchar *host_override, *program_override;
   gchar *source_group_name;
   GArray *tags;
+  gchar *multi_line_prefix = NULL;
+  gchar *multi_line_garbage = NULL;
   
   host_override = options->host_override;
   options->host_override = NULL;
@@ -393,6 +397,11 @@ log_source_options_init(LogSourceOptions *options, GlobalConfig *cfg, const gcha
 
   tags = options->tags;
   options->tags = NULL;
+
+  multi_line_prefix = options->multi_line_prefix;
+  multi_line_garbage = options->multi_line_garbage;
+  options->multi_line_prefix = NULL;
+  options->multi_line_garbage = NULL;
 
   /***********************************************************************
    * PLEASE NOTE THIS. please read the comment at the top of the function
@@ -406,6 +415,8 @@ log_source_options_init(LogSourceOptions *options, GlobalConfig *cfg, const gcha
   options->program_override = program_override;
   options->program_override_len = -1;
   
+  options->multi_line_prefix = multi_line_prefix;
+  options->multi_line_garbage = multi_line_garbage;
   if (options->keep_hostname == -1)
     options->keep_hostname = cfg->keep_hostname;
   if (options->chain_hostnames == -1)
@@ -439,6 +450,16 @@ log_source_options_destroy(LogSourceOptions *options)
       g_array_free(options->tags, TRUE);
       options->tags = NULL;
     }
+  if (options->multi_line_garbage)
+    {
+      g_free(options->multi_line_garbage);
+      options->multi_line_garbage = NULL;
+    }
+  if (options->multi_line_prefix)
+    {
+      g_free(options->multi_line_prefix);
+      options->multi_line_prefix = NULL;
+    }
 }
 
 void
@@ -467,4 +488,18 @@ log_source_global_init(void)
     {
       msg_debug("nanosleep() is not accurate enough to introduce minor stalls on the reader side, multi-threaded performance may be affected", NULL);
     }
+}
+
+void
+log_source_options_set_multi_line_prefix(LogSourceOptions *options, gchar *multi_line_prefix)
+{
+  options->multi_line_prefix = g_strdup(multi_line_prefix);
+  g_free(multi_line_prefix);
+}
+
+void
+log_source_options_set_multi_line_garbage(LogSourceOptions *options, gchar *multi_line_garbage)
+{
+  options->multi_line_garbage = g_strdup(multi_line_garbage);
+  g_free(multi_line_garbage);
 }

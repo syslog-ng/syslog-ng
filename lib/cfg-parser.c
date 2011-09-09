@@ -103,6 +103,8 @@ static CfgLexerKeyword main_keywords[] = {
   { "default_priority",   KW_DEFAULT_LEVEL, 0x0300 },
   { "default_facility",   KW_DEFAULT_FACILITY, 0x0300 },
   { "threaded",           KW_THREADED, 0x0303 },
+  { "multi_line_prefix",  KW_MULTI_LINE_PREFIX },
+  { "multi_line_garbage", KW_MULTI_LINE_GARBAGE },
 
   { "value",              KW_VALUE, 0x0300 },
 
