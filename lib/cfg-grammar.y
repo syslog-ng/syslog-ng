@@ -780,6 +780,7 @@ source_reader_option
 	| KW_PAD_SIZE '(' LL_NUMBER ')'		{ last_reader_options->padding = $3; }
         | KW_ENCODING '(' string ')'		{ last_reader_options->text_encoding = g_strdup($3); free($3); }
         | KW_FORMAT '(' string ')'              { last_reader_options->parse_options.format = g_strdup($3); free($3); }
+        | KW_TAGS '(' string_list ')'       { log_source_options_set_tags(&(last_reader_options->super), $3); }
 	| KW_DEFAULT_LEVEL '(' level_string ')'
 	  {
 	    if (last_reader_options->parse_options.default_pri == 0xFFFF)
