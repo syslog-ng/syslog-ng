@@ -159,6 +159,7 @@ extern struct _LogDriver *last_driver;
 %token KW_LOG_MSG_SIZE                10077
 %token KW_FILE_TEMPLATE               10078
 %token KW_PROTO_TEMPLATE              10079
+%token KW_MARK_MODE                   10080
 
 %token KW_CHAIN_HOSTNAMES             10090
 %token KW_NORMALIZE_HOSTNAMES         10091
@@ -307,6 +308,7 @@ extern struct _LogDriver *last_driver;
 #include "block-ref-parser.h"
 #include "parser-expr-parser.h"
 #include "plugin.h"
+#include "misc.h"
 
 #include "afinter.h"
 #include "logwriter.h"
@@ -640,6 +642,20 @@ options_item
 	| KW_STATS_FREQ '(' LL_NUMBER ')'          { configuration->stats_freq = $3; }
 	| KW_STATS_LEVEL '(' LL_NUMBER ')'         { configuration->stats_level = $3; }
 	| KW_FLUSH_LINES '(' LL_NUMBER ')'		{ configuration->flush_lines = $3; }
+        | KW_MARK_MODE '(' KW_INTERNAL ')'         { cfg_set_mark_mode(configuration, "internal"); }
+        | KW_MARK_MODE '(' string ')'
+          {
+            if (cfg_get_mark_mode($3)==-1 || cfg_get_mark_mode($3)==MM_GLOBAL)
+              {
+                fprintf(stderr, "Illegal global mark-mode: %s\n", $3);
+                YYERROR;
+              }
+            else
+              {
+                cfg_set_mark_mode(configuration, $3);
+                free($3);
+              }
+          }
 	| KW_FLUSH_TIMEOUT '(' LL_NUMBER ')'	{ configuration->flush_timeout = $3; }
 	| KW_CHAIN_HOSTNAMES '(' yesno ')'	{ configuration->chain_hostnames = $3; }
 	| KW_NORMALIZE_HOSTNAMES '(' yesno ')'	{ configuration->normalize_hostnames = $3; }
@@ -861,6 +877,21 @@ dest_writer_option
 	| KW_TS_FORMAT '(' string ')'		{ last_writer_options->template_options.ts_format = cfg_ts_format_value($3); free($3); }
 	| KW_FRAC_DIGITS '(' LL_NUMBER ')'	{ last_writer_options->template_options.frac_digits = $3; }
 	| KW_PAD_SIZE '(' LL_NUMBER ')'         { last_writer_options->padding = $3; }
+	| KW_MARK_FREQ '(' LL_NUMBER ')'        { last_writer_options->mark_freq = $3; }
+        | KW_MARK_MODE '(' KW_INTERNAL ')'      { log_writer_options_set_mark_mode(last_writer_options, "internal"); }
+	| KW_MARK_MODE '(' string ')'
+	  {
+	    if (cfg_get_mark_mode($3) == -1)
+              {
+                fprintf(stderr, "illegal mark mode: %s\n", $3);
+                YYERROR;
+              }
+            else
+              {
+                log_writer_options_set_mark_mode(last_writer_options, $3);
+                free($3);
+              }
+          }
 	;
 
 dest_writer_options_flags

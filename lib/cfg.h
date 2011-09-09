@@ -63,6 +63,7 @@ struct _GlobalConfig
   gint stats_level;
   gint mark_freq;
   gint flush_lines;
+  gint mark_mode;
   gint flush_timeout;
   gboolean threaded;
   gboolean chain_hostnames;
@@ -137,6 +138,8 @@ void cfg_file_owner_set(GlobalConfig *self, gchar *owner);
 void cfg_file_group_set(GlobalConfig *self, gchar *group);
 void cfg_file_perm_set(GlobalConfig *self, gint perm);
 void cfg_bad_hostname_set(GlobalConfig *self, gchar *bad_hostname_re);
+gint cfg_get_mark_mode(gchar *mark_mode);
+void cfg_set_mark_mode(GlobalConfig *self, gchar *mark_mode);
 
 void cfg_dir_owner_set(GlobalConfig *self, gchar *owner);
 void cfg_dir_group_set(GlobalConfig *self, gchar *group);
@@ -168,5 +171,13 @@ cfg_check_current_config_version(gint req)
     return TRUE;
   return FALSE;
 }
+
+/* destination mark modes */
+#define MM_INTERNAL 1
+#define MM_DST_IDLE 2
+#define MM_HOST_IDLE 3
+#define MM_PERIODICAL 4
+#define MM_NONE 5
+#define MM_GLOBAL 6
 
 #endif

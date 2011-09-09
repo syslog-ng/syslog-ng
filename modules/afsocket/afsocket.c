@@ -1280,5 +1280,6 @@ afsocket_dd_init_instance(AFSocketDestDriver *self, SocketOptions *sock_options,
 
   self->hostname = g_strdup(hostname);
 
+  self->writer_options.mark_mode = MM_GLOBAL;
   afsocket_dd_init_watches(self);
 }

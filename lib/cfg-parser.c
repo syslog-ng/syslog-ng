@@ -67,6 +67,7 @@ static CfgLexerKeyword main_keywords[] = {
   { "pad_size",           KW_PAD_SIZE },
   { "mark_freq",          KW_MARK_FREQ },
   { "mark",               KW_MARK_FREQ, 0, KWS_OBSOLETE, "mark_freq" },
+  { "mark_mode",          KW_MARK_MODE },
   { "stats_freq",         KW_STATS_FREQ },
   { "stats_level",        KW_STATS_LEVEL },
   { "stats",              KW_STATS_FREQ, 0, KWS_OBSOLETE, "stats_freq" },

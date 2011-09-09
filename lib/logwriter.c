@@ -79,7 +79,9 @@ struct _LogWriter
   struct iv_event queue_filled;
   MainLoopIOWorkerJob io_job;
   struct iv_timer suppress_timer;
+  struct iv_timer mark_timer;
   struct timespec suppress_timer_expires;
+  gint mark_freq;
   gboolean suppress_timer_updated;
   gboolean work_result;
   gint pollable_state;
@@ -667,12 +669,67 @@ log_writer_last_msg_check(LogWriter *self, LogMessage *lm, const LogPathOptions 
   return FALSE;
 }
 
+void
+log_writer_arm_mark_timer(LogWriter *self)
+{
+  main_loop_assert_main_thread();
+  if (iv_timer_registered(&self->mark_timer))
+    {
+      iv_timer_unregister(&self->mark_timer);
+    }
+  iv_validate_now();
+  self->mark_timer.expires = *iv_get_now();
+  self->mark_timer.expires.tv_sec += self->options->mark_freq; /* mark_freq measures in [sec] */
+  iv_timer_register(&self->mark_timer);
+}
+
+void
+log_writer_mark_timeout(void *cookie)
+{
+  LogWriter *self = (LogWriter *)cookie;
+  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
+  gchar hostname[256];
+  LogMessage *msg = log_msg_new_mark();
+
+  main_loop_assert_main_thread();
+
+  /* timeout: there was no new message on the writer or it is in periodical mode */
+  getlonghostname(hostname, sizeof(hostname));
+
+  log_msg_set_value(msg, LM_V_HOST, hostname, strlen(hostname));
+
+  /* set the current time int the message stamp */
+  cached_g_current_time((GTimeVal *)&msg->timestamps[LM_TS_STAMP]);
+  msg->timestamps[LM_TS_STAMP].zone_offset = get_local_timezone_ofs(msg->timestamps[LM_TS_STAMP].tv_sec);
+  log_queue_push_tail(self->queue, msg, &path_options);
+  /* the timer has to be continued - because the ivykis stops the current (expired) timer, we have to start a new one
+     with the previous cookie (-> new allocation is not needed) */
+  log_writer_arm_mark_timer(self);
+}
+
+/*
+ * NOTE: start the mark timer if needed (e.g. the mark-mode requires it).
+ * Schedules a function call in the main thread to do the actual setup.
+ */
+static void
+log_writer_start_mark_timer(LogWriter *self)
+{
+  gint mark_mode = self->options->mark_mode;
+  if ((mark_mode == MM_DST_IDLE || mark_mode == MM_HOST_IDLE || mark_mode == MM_PERIODICAL) && self->options->mark_freq > 0)
+    {
+      /* start the timer */
+      main_loop_call((void * (*)(void *)) log_writer_arm_mark_timer, self, FALSE);
+    }
+}
+
 /* NOTE: runs in the reader thread */
 static void
 log_writer_queue(LogPipe *s, LogMessage *lm, const LogPathOptions *path_options, gpointer user_data)
 {
   LogWriter *self = (LogWriter *) s;
   LogPathOptions local_options;
+  gint mark_mode = self->options->mark_mode;
+
 
   if (!path_options->flow_control_requested &&
       (self->suspended || !(self->flags & LW_SOFT_FLOW_CONTROL)))
@@ -684,6 +741,17 @@ log_writer_queue(LogPipe *s, LogMessage *lm, const LogPathOptions *path_options,
     }
   if (self->options->suppress > 0 && log_writer_last_msg_check(self, lm, path_options))
     return;
+
+  if (mark_mode != MM_INTERNAL && (lm->flags & LF_INTERNAL) && (lm->flags & LF_MARK))
+    /* skip the internal MARK messages */
+    return;
+
+  if (mark_mode == MM_DST_IDLE || (mark_mode == MM_HOST_IDLE && (lm->flags & LF_LOCAL)))
+    {
+      /* in case of periodical marks the timer has already been started in log_writer_init()
+         we must not start a new one in order to avoid duplicate marks */
+      log_writer_start_mark_timer(self);
+    }
 
   stats_counter_inc(self->processed_messages);
   log_queue_push_tail(self->queue, lm, path_options);
@@ -1065,6 +1133,10 @@ log_writer_init_watches(LogWriter *self)
   self->suppress_timer.cookie = self;
   self->suppress_timer.handler = (void (*)(void *)) log_writer_last_msg_timer;
 
+  IV_TIMER_INIT(&self->mark_timer);
+  self->mark_timer.cookie = self;
+  self->mark_timer.handler = (void (*)(void *)) log_writer_mark_timeout;
+
   IV_EVENT_INIT(&self->queue_filled);
   self->queue_filled.cookie = self;
   self->queue_filled.handler = log_writer_queue_filled;
@@ -1104,6 +1176,7 @@ log_writer_init(LogPipe *s)
       self->proto = NULL;
       log_writer_reopen(&self->super, proto);
     }
+  log_writer_start_mark_timer(self);
   return TRUE;
 }
 
@@ -1126,6 +1199,8 @@ log_writer_deinit(LogPipe *s)
   if (iv_timer_registered(&self->suppress_timer))
     iv_timer_unregister(&self->suppress_timer);
 
+  if (iv_timer_registered(&self->mark_timer))
+    iv_timer_unregister(&self->mark_timer);
   log_queue_set_counters(self->queue, NULL, NULL);
 
   stats_lock();
@@ -1307,6 +1382,8 @@ log_writer_options_defaults(LogWriterOptions *options)
   options->time_reopen = -1;
   options->suppress = -1;
   options->padding = 0;
+  options->mark_mode = MM_GLOBAL;
+  options->mark_freq = -1;
 }
 
 void 
@@ -1388,6 +1465,13 @@ log_writer_options_init(LogWriterOptions *options, GlobalConfig *cfg, guint32 op
   options->proto_template = log_template_ref(cfg->proto_template);
   if (cfg->threaded)
     options->options |= LWO_THREADED;
+  /* per-destination MARK messages */
+  if (options->mark_mode == MM_GLOBAL)
+    /* get the global option */
+    options->mark_mode = cfg->mark_mode;
+  if (options->mark_freq == -1)
+    /* not initialized, use the global mark freq */
+    options->mark_freq = cfg->mark_freq;
 }
 
 void
@@ -1412,4 +1496,18 @@ log_writer_options_lookup_flag(const gchar *flag)
     return LWO_IGNORE_ERRORS;
   msg_error("Unknown dest writer flag", evt_tag_str("flag", flag), NULL);
   return 0;
+}
+
+void
+log_writer_options_set_mark_mode(LogWriterOptions *options, gchar *mark_mode)
+{
+  gint mm = cfg_get_mark_mode(mark_mode);
+  if (mm == -1)
+    {
+      msg_error("Wrong destination mark mode",
+                 evt_tag_str("mark_mode", mark_mode),
+                 NULL);
+    }
+
+  options->mark_mode = mm;
 }

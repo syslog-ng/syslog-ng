@@ -242,5 +242,6 @@ afunix_dd_new(gchar *filename, guint flags)
   else if (self->super.flags & AFSOCKET_STREAM)
     afsocket_dd_set_transport(&self->super.super.super, "unix-stream");
 
+  self->super.writer_options.mark_mode = MM_NONE;
   return &self->super.super.super;
 }
