@@ -30,6 +30,13 @@
 
 typedef struct _Plugin Plugin;
 typedef struct _ModuleInfo ModuleInfo;
+typedef struct _PluginGlobalOption PluginGlobalOption;
+
+struct _PluginGlobalOption
+{
+  gboolean(*check_function)(gchar *value);
+  gpointer value;
+};
 
 struct _Plugin
 {

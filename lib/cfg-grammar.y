@@ -331,6 +331,7 @@ GList *last_rewrite_expr;
 GList *last_parser_expr;
 FilterExprNode *last_filter_expr;
 CfgArgs *last_block_args;
+PluginGlobalOption *check_option;
 ValuePairs *last_value_pairs;
 
 }
@@ -684,6 +685,13 @@ options_item
 	| KW_SEND_TIME_ZONE '(' string ')'      { configuration->template_options.time_zone[LTZ_SEND] = g_strdup($3); free($3); }
 	| KW_LOCAL_TIME_ZONE '(' string ')'     { configuration->template_options.time_zone[LTZ_LOCAL] = g_strdup($3); free($3); }
         | KW_STATS_RESET '(' yesno ')'         {}
+        | LL_IDENTIFIER '(' string_or_number ')' {
+                                            check_option = (PluginGlobalOption *)g_hash_table_lookup(configuration->global_options, normalize_option_name($1));
+                                            CHECK_ERROR(check_option,@1,"Unknown option: %s", $1);
+                                            CHECK_ERROR(check_option->check_function($3),@3,"Invalid option value: %s",$3);
+                                            check_option->value = g_strdup($3);
+                                            free($3);
+                                           }
 	;
 
 /* START_RULES */

@@ -324,6 +324,7 @@ cfg_new(gint version)
   self->parsers = g_hash_table_new(g_str_hash, g_str_equal);
   self->rewriters = g_hash_table_new(g_str_hash, g_str_equal);
   self->templates = g_hash_table_new(g_str_hash, g_str_equal);
+  self->global_options = g_hash_table_new(g_str_hash, g_str_equal);
   self->connections = g_ptr_array_new();
 
   self->flush_lines = 0;
@@ -481,6 +482,7 @@ cfg_free(GlobalConfig *self)
   g_hash_table_destroy(self->parsers);
   g_hash_table_destroy(self->rewriters);
   g_hash_table_destroy(self->templates);
+  g_hash_table_destroy(self->global_options);
   g_ptr_array_free(self->connections, TRUE);
   if (self->bad_hostname_compiled)
     regfree(&self->bad_hostname);

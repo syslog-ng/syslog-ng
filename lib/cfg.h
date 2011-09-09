@@ -112,6 +112,7 @@ struct _GlobalConfig
   GHashTable *parsers;
   GHashTable *rewriters;
   GHashTable *templates;
+  GHashTable *global_options;
   GPtrArray *connections;
   PersistConfig *persist;
   PersistState *state;
