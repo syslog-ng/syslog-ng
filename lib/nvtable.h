@@ -102,8 +102,7 @@ struct _NVEntry
   {
     struct
     {
-      guint16 value_len_lo;
-      guint8  value_len_hi;
+      guint16 value_len;
       /* variable data, first the name of this entry, then the value, both are NUL terminated */
       gchar data[0];
     } vdirect;
@@ -267,7 +266,7 @@ __nv_table_get_value(NVTable *self, NVHandle handle, guint16 num_static_entries,
   if (!entry->indirect)
     {
       if (length)
-        *length = entry->vdirect.value_len_lo + (entry->vdirect.value_len_hi << 16);
+        *length = entry->vdirect.value_len;
       return entry->vdirect.data + entry->name_len + 1;
     }
   return nv_table_resolve_indirect(self, entry, length);
