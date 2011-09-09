@@ -764,7 +764,7 @@ log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
         }
 #endif
       len = result->len;
-      log_msg_append_format_sdata(lm, result);
+      log_msg_append_format_sdata(lm, result, seq_num);
       if (len == result->len)
         {
           /* NOTE: sd_param format did not generate any output, take it as an empty SD string */

@@ -722,12 +722,28 @@ log_msg_sdata_append_escaped(GString *result, const gchar *sstr, gssize len)
 }
 
 void
-log_msg_append_format_sdata(LogMessage *self, GString *result)
+log_msg_append_format_sdata(LogMessage *self, GString *result,  guint32 seq_num)
 {
   const gchar *value;
   const gchar *sdata_name, *sdata_elem, *sdata_param, *cur_elem = NULL, *dot;
   gssize sdata_name_len, sdata_elem_len, sdata_param_len, cur_elem_len = 0, len;
   gint i;
+  static NVHandle meta_seqid = 0;
+  gssize seqid_length;
+  gboolean has_seq_num = FALSE;
+  const gchar *seqid;
+
+  if (!meta_seqid)
+    meta_seqid = log_msg_get_value_handle(".SDATA.meta.sequenceId");
+
+  seqid = log_msg_get_value(self, meta_seqid, &seqid_length);
+  APPEND_ZERO(seqid, seqid, seqid_length);
+  if (seqid[0])
+    /* Message stores sequenceId */
+    has_seq_num = TRUE;
+  else
+    /* Message hasn't sequenceId */
+    has_seq_num = FALSE;
 
   for (i = 0; i < self->num_sdata; i++)
     {
@@ -798,6 +814,18 @@ log_msg_append_format_sdata(LogMessage *self, GString *result)
           cur_elem = sdata_elem;
           cur_elem_len = sdata_elem_len;
         }
+      /* if message hasn't sequenceId and the cur_elem is the meta block Append the sequenceId for the result
+         if seq_num isn't 0 */
+      if (!has_seq_num && seq_num!=0 && strncmp(sdata_elem,"meta.",5) == 0)
+        {
+          gchar sequence_id[16];
+          g_snprintf(sequence_id, sizeof(sequence_id), "%d", seq_num);
+          g_string_append_c(result, ' ');
+          g_string_append_len(result,"sequenceId=\"",12);
+          g_string_append_len(result,sequence_id,strlen(sequence_id));
+          g_string_append_c(result, '"');
+          has_seq_num = TRUE;
+        }
       if (sdata_param_len)
         {
           g_string_append_c(result, ' ');
@@ -812,13 +840,26 @@ log_msg_append_format_sdata(LogMessage *self, GString *result)
     {
       g_string_append_c(result, ']');
     }
+  /*
+    There was no meta block and if sequenceId must be added (seq_num!=0)
+    create the whole meta block with sequenceId
+  */
+  if (!has_seq_num && seq_num!=0)
+    {
+      gchar sequence_id[16];
+      g_snprintf(sequence_id, sizeof(sequence_id), "%d", seq_num);
+      g_string_append_c(result, '[');
+      g_string_append_len(result,"meta sequenceId=\"",17);
+      g_string_append_len(result,sequence_id,strlen(sequence_id));
+      g_string_append_len(result, "\"]",2);
+    }
 }
 
 void
-log_msg_format_sdata(LogMessage *self, GString *result)
+log_msg_format_sdata(LogMessage *self, GString *result,  guint32 seq_num)
 {
   g_string_truncate(result, 0);
-  log_msg_append_format_sdata(self, result);
+  log_msg_append_format_sdata(self, result, seq_num);
 }
 
 gboolean

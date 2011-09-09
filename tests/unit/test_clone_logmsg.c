@@ -103,7 +103,7 @@ testcase(gchar *msg,
   TEST_ASSERT(strcmp(log_msg_get_value(logmsg, LM_V_MSGID, NULL), expected_message_id) == 0, "%s", log_msg_get_value(logmsg, LM_V_MSGID, NULL), expected_message_id);
 
   /* SD elements */
-  log_msg_format_sdata(logmsg, sd_str);
+  log_msg_format_sdata(logmsg, sd_str, 0);
   TEST_ASSERT(strcmp(sd_str->str, expected_sd_str) == 0, "%s", sd_str->str, expected_sd_str);
 
   log_msg_set_tag_by_name(logmsg, "almafa");
@@ -128,7 +128,7 @@ testcase(gchar *msg,
   TEST_ASSERT(strcmp(log_msg_get_value(logmsg, LM_V_MSGID, NULL), log_msg_get_value(cloned, LM_V_MSGID, NULL)) == 0, "%s", log_msg_get_value(logmsg, LM_V_MSGID, NULL), log_msg_get_value(cloned, LM_V_MSGID, NULL));
 
   /* SD elements */
-  log_msg_format_sdata(cloned, sd_str);
+  log_msg_format_sdata(cloned, sd_str, 0);
   TEST_ASSERT(strcmp(sd_str->str, expected_sd_str) == 0, "%s", sd_str->str, expected_sd_str);
 
 

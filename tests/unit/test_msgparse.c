@@ -145,7 +145,7 @@ testcase(gchar *msg,
     check_value(msg, logmsg, LM_V_MSGID, expected_msgid);
 
   /* SD elements */
-  log_msg_format_sdata(logmsg, sd_str);
+  log_msg_format_sdata(logmsg, sd_str, 0);
   TEST_ASSERT(!expected_sd_str || strcmp(sd_str->str, expected_sd_str) == 0, "%s", sd_str->str, expected_sd_str);
 
   if (expected_sd_pairs)

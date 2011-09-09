@@ -212,8 +212,8 @@ void log_msg_set_match(LogMessage *self, gint index, const gchar *value, gssize 
 void log_msg_set_match_indirect(LogMessage *self, gint index, NVHandle ref_handle, guint8 type, guint16 ofs, guint16 len);
 void log_msg_clear_matches(LogMessage *self);
 
-void log_msg_append_format_sdata(LogMessage *self, GString *result);
-void log_msg_format_sdata(LogMessage *self, GString *result);
+void log_msg_append_format_sdata(LogMessage *self, GString *result, guint32 seq_num);
+void log_msg_format_sdata(LogMessage *self, GString *result, guint32 seq_num);
 
 void log_msg_set_tag_by_id(LogMessage *self, LogTagId id);
 void log_msg_set_tag_by_name(LogMessage *self, const gchar *name);
