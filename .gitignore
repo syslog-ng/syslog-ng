@@ -14,7 +14,9 @@ missing
 mkinstalldirs
 cscope.out
 ._*
-config.*
+config.guess
+config.sub
+config.cache
 stamp-h.in
 stamp-h
 ylwrap
