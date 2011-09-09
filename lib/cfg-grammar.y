@@ -849,6 +849,7 @@ dest_writer_option
 	| KW_TIME_ZONE '(' string ')'           { last_writer_options->template_options.time_zone[LTZ_SEND] = g_strdup($3); free($3); }
 	| KW_TS_FORMAT '(' string ')'		{ last_writer_options->template_options.ts_format = cfg_ts_format_value($3); free($3); }
 	| KW_FRAC_DIGITS '(' LL_NUMBER ')'	{ last_writer_options->template_options.frac_digits = $3; }
+	| KW_PAD_SIZE '(' LL_NUMBER ')'         { last_writer_options->padding = $3; }
 	;
 
 dest_writer_options_flags

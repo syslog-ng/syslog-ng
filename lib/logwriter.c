@@ -701,6 +701,29 @@ log_writer_append_value(GString *result, LogMessage *lm, NVHandle handle, gboole
     g_string_append_c(result, ' ');
 }
 
+static void
+log_writer_do_padding(LogWriter *self, GString *result)
+{
+  if (!self->options->padding)
+    return;
+
+  if(G_UNLIKELY(self->options->padding < result->len))
+    {
+      msg_warning("Padding is too small to hold the full message",
+               evt_tag_int("padding", self->options->padding),
+               evt_tag_int("msg_size", result->len),
+               NULL);
+      g_string_set_size(result, self->options->padding);
+      return;
+    }
+  /* store the original length of the result */
+  gint len = result->len;
+  gint padd_bytes = self->options->padding - result->len;
+  /* set the size to the padded size, this will allocate the string */
+  g_string_set_size(result, self->options->padding);
+  memset(result->str + len - 1, '\0', padd_bytes);
+}
+
 void
 log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
 {
@@ -799,6 +822,7 @@ log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
             }
         }
       g_string_append_c(result, '\n');
+      log_writer_do_padding(self, result);
     }
   else
     {
@@ -877,7 +901,7 @@ log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
           p = log_msg_get_value(lm, LM_V_MESSAGE, &len);
           g_string_append_len(result, p, len);
           g_string_append_c(result, '\n');
-
+          log_writer_do_padding(self, result);
         }
     }
   if (self->options->options & LWO_NO_MULTI_LINE)
@@ -1270,6 +1294,7 @@ log_writer_options_defaults(LogWriterOptions *options)
   log_template_options_defaults(&options->template_options);
   options->time_reopen = -1;
   options->suppress = -1;
+  options->padding = 0;
 }
 
 void 
