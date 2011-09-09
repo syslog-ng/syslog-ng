@@ -311,7 +311,11 @@ log_source_set_options(LogSource *self, LogSourceOptions *options, gint stats_le
   self->options = options;
   self->stats_level = stats_level;
   self->stats_source = stats_source;
+  if (self->stats_id)
+    g_free(self->stats_id);
   self->stats_id = stats_id ? g_strdup(stats_id) : NULL;
+  if (self->stats_instance)
+    g_free(self->stats_instance);
   self->stats_instance = stats_instance ? g_strdup(stats_instance): NULL;
   self->threaded = threaded;
 }
