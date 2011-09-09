@@ -1,0 +1,147 @@
+#!/bin/sh -e
+
+ZWACONF=./.zwaconf
+
+TARGET=
+
+set -e
+
+if [ -f dist.conf ]; then
+  . dist.conf
+fi
+
+if [ -f $ZWACONF ]; then
+  . $ZWACONF
+fi
+
+if [ -z "$TARGET" ]; then
+  TARGET=$PWD/out
+fi
+
+get_version(){
+      head -1 debian/changelog | sed -e 's/.*(\([^)]*\)).*/\1/'
+}
+
+sed_file() {
+
+    while [ -n "$1" ]; do
+        in=$1.in
+        out=$1
+
+        sed \
+            -e "s,@TARGET@,${TARGET},g" \
+            -e "s,@prefix@,${TARGET},g" \
+            -e "s,@exec_prefix@,\$\{prefix]}\/bin,g" \
+            -e "s,@libdir@,\$\{prefix\}\/lib,g" \
+            -e "s,@includedir@,\$\{prefix\}\/include,g" \
+            -e "s,@datadir@,\$\{prefix\}\/share,g" \
+            -e "s/@VERSION@/${VERSION}/g" \
+            -e "s/@SLNG_WIN_VERSION@/${SLNG_WIN_VERSION}/g" \
+            -e "s/@PACKAGE@/${PACKAGE}/g" \
+            -e "s/@LICENSE_VERSION@/${LICENSE_VERSION}/g" \
+            -e "s/@PATH_LOCALSTATEDIR@//g" \
+            -e "s/@PATH_PREFIX@//g" \
+            -e "s/@GLIB_LIBS@//g" \
+            -e "s/@COMBINED_VERSION@/${COMBINED_VERSION}/g" \
+            -e "s/@BROCHURE_VERSION@/${BROCHURE_VERSION}/g" \
+            $in > $out
+        shift
+    done
+}
+
+cmd=$1
+
+shift
+case "$cmd" in
+  get-version)
+    get_version
+    ;;
+  prepare-dist)
+    VERSION=`get_version`
+    ;;
+  dist-exclude-list|build-exclude-list)
+    echo "out obj *.aqt *.ncb *.suo *.vcproj.*.user config.h"
+    ;;
+  bootstrap)
+    ;;
+  configure)
+    OPTIONS=`getopt -l help,prefix: 'p:' $*`
+    if [ $? -ne 0 ]; then
+      echo "$0: unknown flags..."
+      exit 1
+    fi
+
+    eval set -- "$OPTIONS"
+    while true ; do
+      _arg=$1
+
+      if [ -z "$_arg" ]; then
+        break
+      fi
+      case $1 in
+        --prefix|-p)
+          shift
+          TARGET=`cygpath -u "$1"`
+          ;;
+      esac
+      shift
+    done
+    echo "TARGET=$TARGET" > $ZWACONF
+    ;;
+  make)
+    # kill variables declared by unix make with contents incompatible by nmake.
+    unset MAKE
+    unset MAKEFLAGS
+    unset MAKEDIR
+
+    if [ -z "$ZBS_PREFIX" ]; then
+      ZBS_PREFIX=.
+    fi
+    OUT=$ZBS_PREFIX/out
+
+    if [ -n "$ZWA_INSTALL_DIR" ]; then
+      export COMPILE_ENV="`cygpath -m $ZWA_INSTALL_DIR`"
+      OUT=$COMPILE_ENV
+      export DEP=$COMPILE_ENV
+    fi
+    set -x
+    if [ ! -f winbuild/config.h-win32 ] || [ ! -f lib/libsyslogng.rc ]; then
+      PACKAGE=`sed -n -e 's/^PACKAGE="\(.*\)"/\1/p' configure.in`
+      LICENSE_VERSION=`sed -n -e 's/^LICENSE_VERSION="\(.*\)"/\1/p' configure.in`
+      VERSION="`head -1 VERSION` unreleased"
+      SLNG_WIN_VERSION="`echo $VERSION | sed -e 's/[a-zA-Z+\-~]\+.*//' -e 's/\./,/g'`"
+      sed_file lib/libsyslogng.rc winbuild/config.h-win32
+    fi
+    sed_file syslog-ng.pc
+
+    mkdir -p $OUT
+    set -x
+    if [ -z "$1" ]; then
+      nmake -nologo -f makefile.msc ROOT="`cygpath -m $OUT`" # DEBUG=1
+    else
+      case $1 in
+        clean)
+          nmake -nologo -f makefile.msc clean ROOT="`cygpath -m $OUT`"
+          rm -f $ZWACONF
+          ;;
+        distclean)
+          $0 clean
+          ;;
+        install)
+          mkdir -p ${TARGET}/bin ${TARGET}/lib/pkgconfig ${TARGET}/include/syslog-ng
+          install syslog-ng.pc ${TARGET}/lib/pkgconfig
+          cd lib
+          ccclibtool --mode=install install libsyslogng-logmsg.la ${TARGET}/bin
+          install *.h ${TARGET}/include/syslog-ng
+          ;;
+      esac
+    fi
+    ;;
+  *)
+    echo "Unknown command: $cmd"
+    exit 1
+    ;;
+esac
+exit 0
+
+# vim: ts=2 sw=2 expandtab

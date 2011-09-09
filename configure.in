@@ -14,7 +14,7 @@ AC_CONFIG_MACRO_DIR([m4])
 dnl ***************************************************************************
 dnl definitions
 
-PACKAGE="syslog-ng"
+PACKAGE="syslog-ng-premium-edition"
 VERSION="`cat $srcdir/VERSION`"
 
 dnl ***************************************************************************

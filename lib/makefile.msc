@@ -1,0 +1,144 @@
+## Use: nmake -f makefile.msc
+!IFNDEF COMPILE_ENV
+COMPILE_ENV=c:\build
+!ENDIF
+
+!IFNDEF ROOT
+ROOT=$(COMPILE_ENV)/out
+!ENDIF
+
+TOP = $(COMPILE_ENV)
+
+!IFNDEF DEP
+DEP = $(TOP)/dep
+!ENDIF
+
+# Debug builds shoud link with msvcrtd release build with msvcrt.
+!IFNDEF DEBUG
+# Full optimization:
+OPTIMIZE = -Ox /Zi
+CRUNTIME = -MD /WL
+# Line number debug info only
+DEBUGINFO = -Zi
+LINKDEBUG = /debug
+!ELSE
+# Debugging:
+OPTIMIZE =
+CRUNTIME = -MDd
+DEBUGINFO = -Zi -DG_ENABLE_DEBUG=1
+LINKDEBUG = /debug
+!ENDIF
+
+LDFLAGS = /machine:ix86 $(LINKDEBUG)
+
+INTL_CFLAGS = -I$(DEP)/include
+INTL_LIBS = -lintl_d
+
+LIBICONV_CFLAGS = -I$(DEP)/include
+LIBICONV_LIBS = -llibiconv_d
+
+OPENSSL_CFLAGS = -I$(DEP)/include/openssl
+OPENSSL_LIBS = -llibeay32 -lssleay32
+
+ZLIB_CFLAGS = -I$(DEP)/include
+ZLIB_LIBS = -lzlib
+
+REGEX_LIBS = -lregex
+
+GLIB_CFLAGS = -I$(DEP)/include/glib-2.0 -I$(DEP)/include/glib-2.0/glib -I$(DEP)/include/glib-2.0/gmodule -I$(DEP)/include/glib-2.0/gobject -I$(DEP)/include/glib-2.0/gthread -I$(DEP)/lib/glib-2.0/include
+GLIB_LIBS = -L$(DEP)/lib -lglib-2.0 -lgthread-2.0 -lgmodule-2.0  -lgobject-2.0 -lgthread-2.0
+
+################
+# Compiler to use.
+
+CCOMPILER = cl
+CC = $(CCOMPILER) -GF $(CRUNTIME) -W3 -nologo
+
+################
+# Linker
+
+LINK=link /nologo /MANIFEST
+
+################################################################
+
+.c.i ::
+	$(CC) $(CFLAGS) -E $<
+
+# The default target should be "all"
+
+default: all
+
+clean::
+	-del *.obj >NUL 2>&1
+	-del *.res >NUL 2>&1
+	-del *.i   >NUL 2>&1
+	-del *.exe >NUL 2>&1
+	-del *.dll >NUL 2>&1
+	-del *.lib >NUL 2>&1
+	-del *.err >NUL 2>&1
+	-del *.map >NUL 2>&1
+	-del *.sym >NUL 2>&1
+	-del *.exp >NUL 2>&1
+	-del *.lk1 >NUL 2>&1
+	-del *.mk1 >NUL 2>&1
+	-del *.pdb >NUL 2>&1
+	-del *.ilk >NUL 2>&1
+
+# Needed by hacker rule to make makefile.msc from makefile.msc.in:
+SED = e:\cygwin\bin\sed
+
+CFLAGS = -I$(TOP)\include -I$(DEP)\include\ -L$(DEP)\lib $(OPTIMIZE) $(DEBUGINFO) $(INCLUDES) $(DEFINES) $(DEPCFLAGS) -D_CRT_SECURE_NO_WARNINGS  -D_WIN32_WINNNT=0x0500 -D_WIN32_WINDOWS=0x0500 -D_WIN32 -D_WINDOWS -D_VC80_UPGRADE=0x0710
+
+INCLUDES = -FI$(TOP)\include\msvc_recommended_pragmas.h -I . -I .. -I ..\..  -I $(COMPILE_ENV)\include  -I $(DEP)\include\eventlog
+
+DEPCFLAGS = -Zm400 $(INTL_CFLAGS) $(LIBICONV_CFLAGS) $(DIRENT_CFLAGS) $(GLIB_CFLAGS) $(ZLIB_CFLAGS) $(OPENSSL_CFLAGS)
+
+TARGETROOT=libsyslogng-logmsg
+TARGET=$(TARGETROOT).la
+
+all: $(TARGET)
+
+RESFILE=libsyslogng.res
+
+OUTPUTS = 			\
+	lgstool.exe
+
+OBJECTS =			\
+	globals.obj \
+    str-format.obj \
+    compat.obj \
+	gsockaddr.obj \
+	gsocket.obj \
+	misc.obj \
+	templates.obj \
+	crypto.obj \
+	tags.obj \
+	dnscache.obj \
+	stats.obj \
+	logmsg.obj \
+	syslog-names.obj \
+	serialize.obj \
+	logpipe.obj \
+	nvtable.obj \
+	timeutils.obj \
+	logprocess.obj \
+	center.obj \
+	logmpx.obj \
+	apphook.obj \
+	children.obj \
+    messages.obj \
+    logstamp.obj \
+	tlscontext.obj \
+    cfg.obj \
+	versioning.obj
+
+
+$(TARGET): $(OBJECTS) $(RESFILE)
+	sh -c "ccclibtool --mode=link cccl -shared -g -rpath / -o $@ $(LDFLAGS) $(OBJECTS) $(RESFILE) $(GLIB_LIBS) $(OPENSSL_LIBS) $(ZLIB_LIBS) $(INTL_LIBS) $(ZLIB_LIBS) $(REGEX_LIBS) -levtlog -ldirent -luser32 -ladvapi32 -lws2_32 -lversion -lcrypt32 -lshell32 -ldbghelp -lGdi32 -Wl,/subsystem:console"
+
+install: $(TARGET)
+    if not exist $(ROOT)/lib mkdir $(ROOT)/lib
+    if not exist $(ROOT)/include mkdir $(ROOT)/include
+    if not exist $(ROOT)/include/syslog-ng mkdir $(ROOT)/include/syslog-ng
+	copy /y $(TARGET) $(ROOT)/lib
+	copy *.h $(ROOT)/include/syslog-ng

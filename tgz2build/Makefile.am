@@ -1,2 +1,1 @@
-
-EXTRA_DIST = syslog-ng.files syslog-ng-dev.files rules tgz2deps
+EXTRA_DIST = syslog-ng-premium-edition.files syslog-ng-premium-edition-dev.files rules tgz2deps use_alternative_gcc

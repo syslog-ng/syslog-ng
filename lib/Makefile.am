@@ -1,7 +1,5 @@
-SUBDIRS = @IVYKIS_SUBDIRS@
-DIST_SUBDIRS = ivykis
 moduledir = @moduledir@
-
+pkgincludedir = @includedir@/syslog-ng
 
 YFLAGS=@YFLAGS@
 
@@ -168,7 +166,13 @@ EXTRA_DIST = $(BUILT_SOURCES) \
 	pragma-grammar.ym		\
 	parser-expr-grammar.ym		\
 	rewrite-expr-grammar.ym		\
-	merge-grammar.pl
+	merge-grammar.pl		\
+	libsyslogng.rc			\
+	libsyslogng.rc.in		\
+	makefile.msc
+
+libsyslogng.rc: libsyslogng.rc.in
+	$(top_builddir)/config.status --file $@:$<
 
 CLEAN_FILES = $(BUILT_SOURCES)
 

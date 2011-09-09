@@ -6,42 +6,10 @@
 # source tree. 
 #
 SUBMODULES="lib/ivykis modules/afmongodb/libmongo-client"
-GIT=`which git`
 
-autogen_submodules()
-{
-	origdir=`pwd`
-
-	submod_initialized=0
-	for submod in $SUBMODULES; do
-		if [ -f $submod/configure.gnu ]; then
-			submod_initialized=1
-		fi
-	done
-
-	if [ -n "$GIT" ] && [ -f .gitmodules ] && [ -d .git ] && [ $submod_initialized = 0 ]; then
-		# only clone submodules if none of them present
-		git submodule update --init --recursive
-	fi
-
-	for submod in $SUBMODULES; do
-		echo "Running autogen in '$submod'..."
-		cd "$submod"
-		if [ -x autogen.sh ]; then
-			./autogen.sh
-		elif [ -f configure.in ] || [ -f configure.ac ]; then
-			autoreconf
-		else
-			echo "Don't know how to bootstrap submodule '$submod'" >&2
-			exit 1
-		fi
-		cd "$origdir"
-	done
-}
-
-if [ -z "$skip_submodules" ] || [ "$skip_modules" = 0 ]; then
-	autogen_submodules
-fi
+for d in $SUBMODULES; do
+	[ -d $d ] || mkdir $d
+done
 
 # bootstrap syslog-ng itself
 libtoolize --force

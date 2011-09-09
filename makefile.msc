@@ -1,0 +1,19 @@
+## Makefile for building the GLib dlls with Microsoft C
+## Use: nmake -f makefile.msc
+
+PARTS = lib
+
+all : \
+	config.h \
+	sub-all
+
+sub-all:
+	for %d in ($(PARTS)) do (cd %d && nmake -nologo -f makefile.msc all && cd .. || exit 2)
+
+config.h: winbuild\config.h-win32
+	copy /y winbuild\config.h-win32 .\config.h
+
+clean : sub-clean
+
+sub-clean:
+	for %d in ($(PARTS)) do @(cd %d && nmake -nologo -f makefile.msc clean && cd .. || exit 2)

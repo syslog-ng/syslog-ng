@@ -1,11 +1,11 @@
-Source: syslog-ng
+Source: syslog-ng-premium-edition
 Section: admin
 Priority: extra
 Maintainer: SZALAY Attila <sasa@debian.org>
 Build-depends: debhelper (>= 5), libevtlog-dev, libnet1-dev, libglib2.0-dev (>= 2.4), pkg-config, libdbi0-dev, libssl-dev
 Standards-Version: 3.6.1
 
-Package: syslog-ng
+Package: syslog-ng-premium-edition
 Architecture: any
 Depends: ${shlibs:Depends}, util-linux (>= 2.12-10)
 Recommends: logrotate
@@ -18,7 +18,7 @@ Description: Next generation logging daemon
    * portability
    * better network forwarding
 
-Package: syslog-ng-dev
+Package: syslog-ng-premium-edition-dev
 Architecture: any
 Depends: syslog-ng
 Section: libdevel
@@ -28,3 +28,27 @@ Description: Next generation logging daemon dev package
    * filtering based on message content
    * portability
    * better network forwarding
+
+Package: libsyslogng-logmsg
+Architecture: win32
+Description: core logmessage functions
+ Shared library to be used by lgstool on Windows.
+
+Package: libsyslogng-logmsg-dev
+Architecture: win32
+Description: core functions, dev files
+ Shared library's development files
+
+Package: syslog-ng-premium-edition-dbg
+Architecture: any
+Depends: syslog-ng
+Section: devel
+Description: syslog-ng debugging symbols
+ Next generation logging daemon's debugging symbols.
+
+Package: syslog-ng-premium-edition-dev-dbg
+Architecture: any
+Depends: syslog-ng-dev
+Section: devel
+Description: syslog-ng debugging symbols
+ Next generation logging daemon's debugging symbols.

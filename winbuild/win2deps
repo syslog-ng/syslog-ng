@@ -1,0 +1,13 @@
+msvc-compat-dev
+libssl-dev
+libssl0.9.8
+libevtlog-dev
+glib
+glib-dev
+libiconv
+libiconv-dev
+gettext
+gettext-dev
+libregex-dev
+zlib
+zlib-dev
