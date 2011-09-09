@@ -26,6 +26,10 @@
 #define PAYLOAD_H_INCLUDED
 
 #include "syslog-ng.h"
+#include "serialize.h"
+
+#define NV_TABLE_MAGIC_V2  "NVT2"
+#define NVT_SF_BE           0x1
 
 typedef struct _NVTable NVTable;
 typedef struct _NVRegistry NVRegistry;
@@ -194,6 +198,8 @@ NVTable *nv_table_realloc(NVTable *self);
 NVTable *nv_table_clone(NVTable *self, gint additional_space);
 NVTable *nv_table_ref(NVTable *self);
 void nv_table_unref(NVTable *self);
+NVTable *nv_table_unserialize(SerializeArchive *sa, guint8 log_msg_version);
+gboolean nv_table_serialize(SerializeArchive *sa, NVTable *self);
 
 static inline gsize
 nv_table_get_alloc_size(gint num_static_entries, gint num_dyn_values, gint init_length)
@@ -216,6 +222,7 @@ nv_table_get_top(NVTable *self)
 /* private declarations for inline functions */
 NVEntry *nv_table_get_entry_slow(NVTable *self, NVHandle handle, guint32 **dyn_slot);
 const gchar *nv_table_resolve_indirect(NVTable *self, NVEntry *entry, gssize *len);
+void nv_table_update_ids(NVTable *self,NVRegistry *logmsg_registry, NVHandle *handles_to_update, guint8 num_handles_to_update);
 
 
 static inline NVEntry *
