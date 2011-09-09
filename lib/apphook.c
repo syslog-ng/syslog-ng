@@ -110,6 +110,7 @@ app_startup(void)
   msg_init(FALSE);
   iv_init();
   g_thread_init(NULL);
+  afinter_global_init();
   child_manager_init();
   dns_cache_init();
   alarm_init();
@@ -119,7 +120,6 @@ app_startup(void)
   log_tags_init();
   log_source_global_init();
   log_template_global_init();
-  afinter_global_init();
 }
 
 void
