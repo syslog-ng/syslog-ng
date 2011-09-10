@@ -19,7 +19,8 @@ sed -e "s,@UPSTREAM_VERSION@,${UPSTREAM_VERSION},g" \
     > debian/control
 
 # Remove old libsyslog-ng-${VERSION}.* files
-rm -f debian/libsyslog-ng-[0-9].*
+rm -f debian/libsyslog-ng-[0-9].*.install \
+      debian/libsyslog-ng-[0-9].*.lintian-overrides
 
 # Update debian/libsyslog-ng-${UPSTREAM_VERSION}.install
 cp debian/control.d/libsyslog-ng.install \
