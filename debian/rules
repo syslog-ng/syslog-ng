@@ -25,6 +25,13 @@ endif
 
 export DH_OPTIONS += -O-Bdebian/build-tree
 
+include /usr/share/hardening-includes/hardening.make
+
+CFLAGS		?= $(shell dpkg-buildflags --get CFLAGS)
+LDFLAGS		?= $(shell dpkg-buildflags --get LDFLAGS)
+CFLAGS		+= $(HARDENING_CFLAGS)
+LDFLAGS		+= $(HARDENING_LDFLAGS)
+
 # For my own sanity, when debian/rules is ran without any argument,
 # display something meaningful, instead of just running the first
 # override.

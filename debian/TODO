@@ -26,10 +26,6 @@ Systemd support is currently explicitly disabled. On Linux, it should
 be enabled, and syslog-ng-core should ship with an appropriate service
 file.
 
-** hardening-includes support
-
-Investigate how well we can support hardening-includes.
-
 * Bug triaging
 
 Go over the open bugs against syslog-ng, and see which are fixed with

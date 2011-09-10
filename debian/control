@@ -14,7 +14,8 @@ Build-Depends: debhelper (>= 8),
 	       libjson0-dev,
 	       libwrap0-dev,
 	       libpcre3-dev,
-	       libcap-dev [linux-any]
+	       libcap-dev [linux-any],
+	       hardening-includes
 Standards-Version: 3.9.2
 Homepage: http://www.balabit.com/network-security/syslog-ng/opensource-logging-system
 Vcs-Git: git://git.madhouse-project.org/debian/syslog-ng.git

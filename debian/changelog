@@ -7,8 +7,9 @@ syslog-ng (3.3.0beta2-1~preview4) unstable; urgency=low
   * Document the packaging workflow better in debian/README.source.
   * Use dpkg triggers to restart syslog-ng when appropriate.
   * Include DFSG-free manual pages for all binaries.
+  * Build with Hardening enabled.
 
- -- Gergely Nagy <algernon@madhouse-project.org>  Sat, 10 Sep 2011 19:22:30 +0200
+ -- Gergely Nagy <algernon@madhouse-project.org>  Sat, 10 Sep 2011 19:55:15 +0200
 
 syslog-ng (3.3.0beta2-1~preview3) unstable; urgency=low
 
