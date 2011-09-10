@@ -4,7 +4,6 @@ Upstream-Contact: Syslog-ng users' and developers' mailing list <syslog-ng@lists
 Source: git://git.balabit.hu/bazsi/syslog-ng-3.3.git repacked to remove non-DFSG-free elements
 Copyright: Copyright (C) 1996-2011 Balázs Scheidler <bazsi@balabit.hu>,
  Copyright (C) 2002-2011 BalaBit IT Security Ltd.
-License: GPL-2+ with OpenSSL exception, LGPL-2.1+ with OpenSSL exception, LGPL-2.1+, Apache-2.0
 
 Files: *
 Copyright: Copyright (C) 1996-2011 Balázs Scheidler <bazsi@balabit.hu>,
