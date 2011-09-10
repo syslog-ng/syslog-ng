@@ -31,7 +31,15 @@
 
 /* YYSTYPE and YYLTYPE is defined by the lexer */
 #include "cfg-lexer.h"
-#include "driver.h"
+
+/* uses struct declarations instead of the typedefs to avoid having to
+ * include logreader/logwriter/driver.h, which defines the typedefs.  This
+ * is to avoid including unnecessary dependencies into grammars that are not
+ * themselves reader/writer based */
+
+extern struct _LogReaderOptions *last_reader_options;
+extern struct _LogWriterOptions *last_writer_options;
+extern struct _LogDriver *last_driver;
 
 }
 

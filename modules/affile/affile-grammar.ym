@@ -38,10 +38,6 @@
 
 #include <string.h>
 
-extern LogReaderOptions *last_reader_options;
-extern LogWriterOptions *last_writer_options;
-extern LogDriver *last_driver;
-
 }
 
 %name-prefix "affile_"
