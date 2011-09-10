@@ -187,7 +187,8 @@ AC_ARG_ENABLE(systemd,
 
 AC_ARG_WITH(compile-date,
 	      [  --without-compile-date  Do not include the compile date in the binary]
-	      ,, wcmp_date="1")
+	      ,wcmp_date="${withval}", wcmp_date="yes")
+
 if test "x$wcmp_date" != "xno"; then
   wcmp_date="1"
 else
