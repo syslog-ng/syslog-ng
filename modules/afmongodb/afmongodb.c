@@ -436,6 +436,7 @@ afmongodb_dd_init(LogPipe *s)
 	      evt_tag_str("host", self->host),
 	      evt_tag_int("port", self->port),
 	      evt_tag_str("database", self->db),
+	      evt_tag_str("collection", self->coll),
 	      NULL);
 
   self->queue = log_dest_driver_acquire_queue(&self->super, afmongodb_dd_format_persist_name(self));
