@@ -52,7 +52,18 @@ create_pidfiledir() {
     mkdir -p /var/run/syslog-ng
   fi
 }
-                                
+
+syslogng_wait() {
+    while true; do
+        status=0
+        syslog-ng-ctl stats >/dev/null 2>&1 || status=$?
+	if [ "$status" != "$1" ]; then
+	    break
+	fi
+	sleep 1s
+    done
+}
+
 syslogng_start() {
     log_daemon_msg "Starting system logging" "$NAME"
     create_xconsole
@@ -61,6 +72,7 @@ syslogng_start() {
     start-stop-daemon --start --quiet --exec "$SYSLOGNG" \
                       --pidfile "$PIDFILE" -- -p "$PIDFILE"  $SYSLOGNG_OPTS
     RET="$?"
+    syslogng_wait 1
     log_end_msg $RET
     return $RET
     
@@ -72,6 +84,7 @@ syslogng_stop() {
     start-stop-daemon --stop --quiet --name "$NAME" --retry 3 \
                       --pidfile "$PIDFILE"
     RET="$?"
+    syslogng_wait 0
     log_end_msg $RET
     rm -f "$PIDFILE"
     return $RET

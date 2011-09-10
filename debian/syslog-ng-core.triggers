@@ -1,0 +1,2 @@
+interest register-syslog-ng-plugin
+interest /usr/lib/syslog-ng

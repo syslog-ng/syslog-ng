@@ -1,0 +1,11 @@
+#! /bin/sh
+
+set -e
+
+if [ -x "/etc/init.d/syslog-ng" ] && [ "$1" = remove ]; then
+	invoke-rc.d syslog-ng stop || exit $?
+fi
+
+#DEBHELPER#
+
+exit 0

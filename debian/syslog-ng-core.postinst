@@ -2,9 +2,13 @@
 
 set -e
 
-if [ -x "/etc/init.d/syslog-ng" ] && [ ! -n "$2" ]; then
+if [ "$1" = "triggered" ]; then
    invoke-rc.d syslog-ng stop || exit $?
+   invoke-rc.d syslog-ng start || exit $?
+   exit 0
 fi
+
+dpkg-trigger register-syslog-ng-plugin
 
 #DEBHELPER#
 

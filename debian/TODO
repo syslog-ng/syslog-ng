@@ -13,6 +13,11 @@ not be).
 Need to test this extensively. I had cases where the config file was
 preserved, and others were it was silently overwritten.
 
+*** Verify that upgrading from squeeze syslog-ng restarts correctly.
+
+The split version is using triggers to restart, it needs to be
+verified that it behaves correctly in all cases.
+
 * Packaging improvements
 
 ** systemd support

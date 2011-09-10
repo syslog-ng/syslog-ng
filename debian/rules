@@ -136,10 +136,15 @@ override_dh_installchangelogs:
 	dh_installchangelogs NEWS
 
 # Init files and whatnot were moved to syslog-ng-core, but we want to
-# retain the old filenames. Same goes for logrotate stuff.
+# retain the old filenames. Furthermore, the init script is now
+# triggered by dpkg triggers, so the maintainer scripts should not
+# stop, start or reload syslog-ng anymore.
 override_dh_installinit:
-	dh_installinit -R --name syslog-ng -- defaults 10 90
+	dh_installinit --no-start --name syslog-ng -- defaults 10 90
 
+# Logrotate and Logcheck files were moved from syslog-ng to
+# syslog-ng-core too, and like in init's case, we want to keep the old
+# name.
 override_dh_installlogrotate:
 	dh_installlogrotate --name syslog-ng
 
