@@ -18,5 +18,3 @@ usr/share/syslog-ng/include/scl/*
 usr/share/syslog-ng/xsd/*
 
 debian/syslog-ng.conf	/etc/syslog-ng/
-debian/man/*.8		/usr/share/man/man8/
-debian/man/*.1		/usr/share/man/man1/
