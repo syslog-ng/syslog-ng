@@ -30,11 +30,6 @@ file.
 
 Investigate how well we can support hardening-includes.
 
-** Manual pages
-
-Manual pages need to be written for syslog-ng-ctl, pdbtool and
-update-patterndb.
-
 * Bug triaging
 
 Go over the open bugs against syslog-ng, and see which are fixed with

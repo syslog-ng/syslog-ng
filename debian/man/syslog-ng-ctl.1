@@ -1,0 +1,75 @@
+.TH SYSLOG\-NG\-CTL "1" "September 2011" "syslog-ng" "syslog-ng manual"
+
+.SH "NAME"
+syslog-ng-ctl \- Statistics dumper and verboseness, debug and trace mode tweaker for syslog\-ng
+
+.SH "SYNOPSIS"
+\fBsyslog\-ng\-ctl\fR \fI<command>\fR [options..]
+
+.SH "DESCRIPTION"
+.PP
+The \fBsyslog\-ng\-ctl\fR application is a utility that can be used
+to enable/disable various syslog\-ng messages for troubleshooting
+purposes, or to dump a table of statistics about processed messages.
+.SH "OPTIONS"
+.BI \-\-control = "socket"
+.br
+.BI \-c " socket"
+.RS
+.P
+Specify the socket to use to connect to syslog\-ng. Only needed when
+using a non\-standard location. On Debian systems, one usually does
+not have to use this option.
+
+Defaults to \fI/var/lib/syslog-ng/syslog-ng.ctl\fR.
+.RE
+
+.SH "COMMANDS"
+.SS "Troubleshooting commands"
+All the troubleshooting commands (\fIverbose\fR, \fIdebug\fR and
+\fItrace\fR) use the \fBsyslog\-ng\-ctl\fR \fI<command>\fR
+[\fB\-\-set\fR=\fIon\fR|\fIoff\fR] format. When the \fB\-\-set\fR
+option is not specified, the command will print the current value.
+
+All extra messages will appear either on \fBsyslog\-ng\fR's internal
+source, or on its \fBstderr\fR if it was started with either the
+\fI\-\-stderr\fR or \fI\-e\fR options.
+.TP
+.I verbose
+.RS
+Toggle verbose messages, or print the current setting.
+.RE
+.TP
+.I trace
+.RS
+Toggle message tracing messages, or print the current setting. Tracing
+will print information about how each and every message is being
+processed.
+.RE
+.TP
+.I debug
+.RS
+Toggle debug messages, or print the current setting. Do note that this
+will result in very verbose logging!
+.RE
+
+.SS "Statistics"
+The stats command can be used to dump a set of statistics about
+processed messages in a CSV\-like format.
+
+.SH "SEE ALSO"
+For the full documentation of \fBsyslog-ng\fR, see \fBThe syslog-ng
+Administrator Guide\fR, available from
+.IP
+.B http://www.balabit.com/support/documentation/
+.PP
+.SH "AUTHOR"
+.PP
+This manual page was written by Gergely Nagy
+<algernon@madhouse-project.org>.
+.SH "COPYRIGHT"
+.PP
+Copyright \(co 2011 Gergely Nagy
+<algernon@madhouse-project.org>. Published under the GNU General
+Public License version 3, or at your opinion, any later version as
+published by the FSF.

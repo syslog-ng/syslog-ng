@@ -1,0 +1,151 @@
+.TH "PDBTOOL" "1" "September 2011" "syslog-ng" "syslog-ng manual"
+.SH "NAME"
+pdbtool \- An application to test and convert syslog\-ng pattern database rules
+.SH "SYNOPSIS"
+\fBpdbtool\fR \fI<command>\fR [options..]
+.SH "DESCRIPTION"
+.PP
+The \fBpdbtool\fR program can be used to test message patterns,
+convert an old pattern database to the latest format, to merge pattern
+databases into a single file, or to dump the RADIX tree to explore how
+the pattern matching works.
+.SH "COMMANDS"
+.SS \fImatch\fR
+
+Match a pattern against the pattern database.
+
+.RS 0
+.B "Options"
+.RS
+.TP
+\fB\-p\fR, \fB\-\-pdb=\fI<patterndb_file>\fR
+Name of the patterndb file
+.TP
+\fB\-P\fR, \fB\-\-program=\fI<program>\fR
+Program name to match as $PROGRAM
+.TP
+\fB\-M\fR, \fB\-\-message=\fI<message>\fR
+Message to match as $MSG
+.TP
+\fB\-D\fR, \fB\-\-debug\-pattern\fR
+Print debuging information on pattern matching
+.TP
+\fB\-C\fR, \fB\-\-debug\-csv\fR
+Output debuging information in parseable format
+.TP
+\fB\-c\fR, \fB\-\-color\-out\fR
+Color terminal output
+.TP
+\fB\-T\fR, \fB\-\-template\fR=\fItemplate\fR
+Template string to be used to format the output
+.TP
+\fB\-f\fR, \fB\-\-file\fR
+Read the messages from the file specified
+.TP
+\fB\-F\fR, \fB\-\-filter\fR=\fIexpr\fR
+Only print messages matching the specified syslog\-ng filter
+.RE
+.RE
+.SS \fImerge\fR
+
+Merge pattern databases.
+
+.RS 0
+.B "Options"
+.RS
+.TP
+\fB\-p\fR, \fB\-\-pdb=\fI<patterndb_file>\fR
+Name of the patterndb output file
+.TP
+\fB\-r\fR, \fB\-\-recursive\fR
+Recurse into subdirectories
+.TP
+\fB\-G\fR, \fB\-\-glob=\fI<pattern>\fR
+Filenames to consider for merging
+.TP
+\fB\-D\fR, \fB\-\-directory=\fI<directory>\fR
+Directory from merge pattern databases
+.RE
+.RE
+.SS \fItest\fR
+
+Test pattern databases.
+
+.RS 0
+.B "Options"
+.RS
+.TP
+\fB\-\-validate\fR
+Validate the pdb file against the xsd (requires xmllint from libxml2)
+.TP
+\fB\-r\fR, \fB\-\-rule\-id\fR
+Rule ID of the patterndb rule to be tested against its example
+.TP
+\fB\-D\fR, \fB\-\-debug\fR
+Print debuging information on non\-matching patterns
+.TP
+\fB\-c\fR, \fB\-\-color\-out\fR
+Color terminal output
+.RE
+.RE
+.SS \fIpatternize\fR
+
+Create a pattern database from log samples.
+
+.RS 0
+.B "Options"
+.RS
+.TP
+\fB\-f\fR, \fB\-\-file=\fI<path>\fR
+Logfile to create pattern database from, use '\-' for stdin
+.TP
+\fB\-p\fR, \fB\-\-no\-parse\fR
+Do try to parse the input file, consider the whole lines as the message part of the log
+.TP
+\fB\-S\fR, \fB\-\-support=\fI<support>\fR
+Percentage of lines that have to support a pattern (default: \fI4.0\fR)
+.TP
+\fB\-o\fR, \fB\-\-iterate\-outliers\fR
+Recursively iterate on the log lines that do not make it into a cluster in the previous step
+.TP
+\fB\-n\fR, \fB\-\-named\-parsers\fR
+Give the parsers a name in the patterns, eg.: .dict.string1, .dict.string2... (default: \fIno\fR)
+.TP
+\fB\-d\fR, \fB\-\-delimiters=\fI<delimiters>\fR
+Set of characters based on which the log messages are tokenized, defaults to \fI:&~?![]=,;()'"\fR
+.TP
+\fB\-\-samples=\fR<samples>
+Number of example lines to add for the patterns (default: \fI1\fR)
+.RE
+.RE
+.SS \fIdump\fR
+
+Dump (parts of) a pattern database tree.
+
+.RS 0
+.B "Options"
+.RS
+.TP
+\fB\-P\fR, \fB\-\-program=\fI<program>\fR
+Program name ($PROGRAM) to dump
+.TP
+\fB\-T\fR, \fB\-\-program\-tree\fR
+Dump the program ($PROGRAM) tree
+.RE
+.RE
+.SH "SEE ALSO"
+For the full documentation of \fBsyslog-ng\fR, see \fBThe syslog-ng
+Administrator Guide\fR, available from
+.IP
+.B http://www.balabit.com/support/documentation/
+.PP
+.SH "AUTHOR"
+.PP
+This manual page was written by Gergely Nagy
+<algernon@madhouse-project.org>.
+.SH "COPYRIGHT"
+.PP
+Copyright \(co 2011 Gergely Nagy
+<algernon@madhouse-project.org>. Published under the GNU General
+Public License version 3, or at your opinion, any later version as
+published by the FSF.
