@@ -37,6 +37,7 @@
  * is to avoid including unnecessary dependencies into grammars that are not
  * themselves reader/writer based */
 
+extern struct _LogSourceOptions *last_source_options;
 extern struct _LogReaderOptions *last_reader_options;
 extern struct _LogWriterOptions *last_writer_options;
 extern struct _LogDriver *last_driver;
@@ -320,6 +321,7 @@ extern struct _LogDriver *last_driver;
 #include "cfg-grammar.h"
 
 LogDriver *last_driver;
+LogSourceOptions *last_source_options;
 LogReaderOptions *last_reader_options;
 LogWriterOptions *last_writer_options;
 LogTemplate *last_template;
@@ -725,31 +727,38 @@ regexp_option_flags
         ;
 
 
+/* LogSource related options */
+source_option
+        /* NOTE: plugins need to set "last_source_options" in order to incorporate this rule in their grammar */
+	: KW_LOG_IW_SIZE '(' LL_NUMBER ')'	{ last_source_options->init_window_size = $3; }
+	| KW_CHAIN_HOSTNAMES '(' yesno ')'	{ last_source_options->chain_hostnames = $3; }
+	| KW_NORMALIZE_HOSTNAMES '(' yesno ')'	{ last_source_options->normalize_hostnames = $3; }
+	| KW_KEEP_HOSTNAME '(' yesno ')'	{ last_source_options->keep_hostname = $3; }
+        | KW_USE_FQDN '(' yesno ')'             { last_source_options->use_fqdn = $3; }
+        | KW_USE_DNS '(' dnsmode ')'            { last_source_options->use_dns = $3; }
+	| KW_DNS_CACHE '(' yesno ')' 		{ last_source_options->use_dns_cache = $3; }
+	| KW_PROGRAM_OVERRIDE '(' string ')'	{ last_source_options->program_override = g_strdup($3); free($3); }
+	| KW_HOST_OVERRIDE '(' string ')'	{ last_source_options->host_override = g_strdup($3); free($3); }
+	| KW_LOG_PREFIX '(' string ')'	        { gchar *p = strrchr($3, ':'); if (p) *p = 0; last_source_options->program_override = g_strdup($3); free($3); }
+	| KW_KEEP_TIMESTAMP '(' yesno ')'	{ last_source_options->keep_timestamp = $3; }
+        ;
+
+
 source_reader_options
 	: source_reader_option source_reader_options
 	|
 	;
 
+/* LogReader related options, inherits from LogSource */
 source_reader_option
         /* NOTE: plugins need to set "last_reader_options" in order to incorporate this rule in their grammar */
 
-	: KW_LOG_IW_SIZE '(' LL_NUMBER ')'		{ last_reader_options->super.init_window_size = $3; }
-	| KW_CHAIN_HOSTNAMES '(' yesno ')'	{ last_reader_options->super.chain_hostnames = $3; }
-	| KW_NORMALIZE_HOSTNAMES '(' yesno ')'	{ last_reader_options->super.normalize_hostnames = $3; }
-	| KW_KEEP_HOSTNAME '(' yesno ')'	{ last_reader_options->super.keep_hostname = $3; }
-        | KW_USE_FQDN '(' yesno ')'             { last_reader_options->super.use_fqdn = $3; }
-        | KW_USE_DNS '(' dnsmode ')'            { last_reader_options->super.use_dns = $3; }
-	| KW_DNS_CACHE '(' yesno ')' 		{ last_reader_options->super.use_dns_cache = $3; }
-	| KW_PROGRAM_OVERRIDE '(' string ')'	{ last_reader_options->super.program_override = g_strdup($3); free($3); }
-	| KW_HOST_OVERRIDE '(' string ')'	{ last_reader_options->super.host_override = g_strdup($3); free($3); }
-	| KW_LOG_PREFIX '(' string ')'	        { gchar *p = strrchr($3, ':'); if (p) *p = 0; last_reader_options->super.program_override = g_strdup($3); free($3); }
-	| KW_TIME_ZONE '(' string ')'		{ last_reader_options->parse_options.recv_time_zone = g_strdup($3); free($3); }
+	: KW_TIME_ZONE '(' string ')'		{ last_reader_options->parse_options.recv_time_zone = g_strdup($3); free($3); }
 	| KW_CHECK_HOSTNAME '(' yesno ')'	{ last_reader_options->check_hostname = $3; }
 	| KW_FLAGS '(' source_reader_option_flags ')'
 	| KW_LOG_MSG_SIZE '(' LL_NUMBER ')'	{ last_reader_options->msg_size = $3; }
 	| KW_LOG_FETCH_LIMIT '(' LL_NUMBER ')'	{ last_reader_options->fetch_limit = $3; }
 	| KW_PAD_SIZE '(' LL_NUMBER ')'		{ last_reader_options->padding = $3; }
-	| KW_KEEP_TIMESTAMP '(' yesno ')'	{ last_reader_options->super.keep_timestamp = $3; }
         | KW_ENCODING '(' string ')'		{ last_reader_options->text_encoding = g_strdup($3); free($3); }
         | KW_TAGS '(' string_list ')'           { log_reader_options_set_tags(last_reader_options, $3); }
         | KW_FORMAT '(' string ')'              { last_reader_options->parse_options.format = g_strdup($3); free($3); }
@@ -765,6 +774,7 @@ source_reader_option
 	      last_reader_options->parse_options.default_pri = LOG_NOTICE;
 	    last_reader_options->parse_options.default_pri = (last_reader_options->parse_options.default_pri & 7) | $3;
           }
+        | { last_source_options = &last_reader_options->super; } source_option
 	;
 
 source_reader_option_flags
