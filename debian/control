@@ -72,8 +72,8 @@ Depends: ${shlibs:Depends}, ${misc:Depends}, util-linux (>= 2.12-10)
 Recommends: logrotate
 Suggests: syslog-ng-module-sql, syslog-ng-module-mongodb, syslog-ng-module-json
 Provides: system-log-daemon, linux-kernel-log-daemon
-Replaces: syslog-ng (<< 3.3.0~)
 Conflicts: system-log-daemon, linux-kernel-log-daemon
+Replaces: syslog-ng (<< 3.3.0~)
 Breaks: syslog-ng (<< 3.3.0~)
 Description: Next generation system logging daemon (core)
  syslog-ng is an enhanced syslog daemon, supporting, amongst others:
