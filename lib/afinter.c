@@ -112,14 +112,6 @@ afinter_source_post(gpointer s)
       if (!msg)
         break;
 
-      if (self->super.options->tags)
-        {
-          gint i;
-          for (i = 0; i < self->super.options->tags->len; ++i)
-            log_msg_set_tag_by_id(msg, g_array_index(self->super.options->tags, LogTagId, i));
-        }
-      log_msg_set_tag_by_id(msg, self->super.options->source_group_tag);
-
       log_pipe_queue(&self->super.super, msg, &path_options);
     }
   afinter_source_update_watches(self);
