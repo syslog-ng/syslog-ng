@@ -54,14 +54,21 @@ create_pidfiledir() {
 }
 
 syslogng_wait() {
-    while true; do
+    if [ "$2" -ne 0 ]; then
+        return 1
+    fi
+
+    RET=1
+    for i in $(seq 1 30); do
         status=0
         syslog-ng-ctl stats >/dev/null 2>&1 || status=$?
 	if [ "$status" != "$1" ]; then
+	    RET=0
 	    break
 	fi
 	sleep 1s
     done
+    return $RET
 }
 
 syslogng_start() {
@@ -71,8 +78,8 @@ syslogng_start() {
     install -d /var/lib/syslog-ng
     start-stop-daemon --start --quiet --exec "$SYSLOGNG" \
                       --pidfile "$PIDFILE" -- -p "$PIDFILE"  $SYSLOGNG_OPTS
+    syslogng_wait 1 $?
     RET="$?"
-    syslogng_wait 1
     log_end_msg $RET
     return $RET
     
@@ -83,8 +90,8 @@ syslogng_stop() {
     [ ! -f "$PIDFILE" ] && echo ' seems to be stopped already' && return 0
     start-stop-daemon --stop --quiet --name "$NAME" --retry 3 \
                       --pidfile "$PIDFILE"
+    syslogng_wait 0 $?
     RET="$?"
-    syslogng_wait 0
     log_end_msg $RET
     rm -f "$PIDFILE"
     return $RET
@@ -96,6 +103,7 @@ syslogng_reload() {
     then
       start-stop-daemon --stop --signal 1 --quiet --exec "$SYSLOGNG" \
                         --pidfile "$PIDFILE"
+      syslogng_wait 1 $?
       RET="$?"
       log_end_msg $RET
       return $RET
@@ -119,7 +127,6 @@ case "$1" in
     ;;
   restart)
     syslogng_stop
-    sleep 1
     syslogng_start || exit 1
     ;;
   *)
