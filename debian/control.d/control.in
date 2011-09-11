@@ -24,9 +24,9 @@ Vcs-Browser: http://git.madhouse-project.org/debian/syslog-ng/
 Package: syslog-ng
 Architecture: all
 Depends: ${misc:Depends}, syslog-ng-core (>= ${source:Upstream-Version}),
- syslog-ng-module-sql (>= ${source:Upstream-Version}),
- syslog-ng-module-mongodb (>= ${source:Upstream-Version}),
- syslog-ng-module-json (>= ${source:Upstream-Version})
+ syslog-ng-module-sql,
+ syslog-ng-module-mongodb,
+ syslog-ng-module-json
 Description: Next generation system logging daemon (metapackage)
  syslog-ng is an enhanced syslog daemon, supporting, amongst others:
   * Powerful configurability, while still being readable
