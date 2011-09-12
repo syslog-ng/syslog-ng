@@ -47,6 +47,10 @@ struct _AFInterSourceDriver
 
 /* the expiration timer of the next MARK message */
 static struct timespec next_mark_target = { -1, 0 };
+/* as different sources from different threads can call afinter_postpone_mark,
+   and we use the value in the init thread, we need to syncronize the value references
+*/
+static GStaticMutex internal_mark_target_lock = G_STATIC_MUTEX_INIT;
 
 
 /*
@@ -131,15 +135,24 @@ afinter_source_mark(gpointer s)
   AFInterSource *self = (AFInterSource *) s;
   LogMessage *msg;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
+  struct timespec nmt;
 
-  if (log_source_free_to_send(&self->super))
+  main_loop_assert_main_thread();
+
+  g_static_mutex_lock(&internal_mark_target_lock);
+  nmt = next_mark_target;
+  g_static_mutex_unlock(&internal_mark_target_lock);
+
+  if (log_source_free_to_send(&self->super) && nmt.tv_sec <= self->mark_timer.expires.tv_sec)
     {
+      /* the internal_mark_target has not been overwritten by an incoming message in afinter_postpone_mark
+         (there was no msg in the meantime) -> the mark msg can be sent */
       msg = log_msg_new_mark();
       path_options.ack_needed = FALSE;
 
       log_pipe_queue(&self->super.super, msg, &path_options);
 
-      next_mark_target.tv_sec += self->mark_freq;
+      /* the next_mark_target will be increased in afinter_postpone_mark */
     }
   afinter_source_update_watches(self);
 }
@@ -386,8 +399,14 @@ afinter_postpone_mark(gint mark_freq)
   if (mark_freq > 0)
     {
       iv_validate_now();
+      g_static_mutex_lock(&internal_mark_target_lock);
       next_mark_target = iv_now;
-      timespec_add_msec(&next_mark_target, mark_freq * 1000);
+      next_mark_target.tv_sec += mark_freq;
+      g_static_mutex_unlock(&internal_mark_target_lock);
+    }
+  else
+    {
+      next_mark_target.tv_sec = -1;
     }
 }
 
