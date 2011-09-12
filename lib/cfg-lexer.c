@@ -426,7 +426,13 @@ cfg_lexer_include_file(CfgLexer *self, const gchar *filename_)
       while ((entry = g_dir_read_name(dir)))
         {
           const gchar *p;
-
+          if (entry[0] == '.')
+            {
+              msg_debug("Skipping include file, it cannot begin with .",
+                        evt_tag_str("filename", entry),
+                        NULL);
+              continue;
+            }
           for (p = entry; *p; p++)
             {
               if (!((*p >= 'a' && *p <= 'z') ||
