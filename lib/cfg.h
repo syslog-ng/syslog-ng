@@ -122,6 +122,9 @@ struct _GlobalConfig
   
   gchar *cfg_fingerprint;
   gboolean stats_reset;
+  gchar *(*calculate_hash)(GlobalConfig *self);
+  void (*show_reload_message)(GlobalConfig *self);
+  void (*show_start_message)(GlobalConfig *self);
 };
 
 void cfg_add_source(GlobalConfig *configuration, struct _LogSourceGroup *group);
@@ -161,6 +164,59 @@ void persist_config_free(PersistConfig *self);
 void cfg_persist_config_move(GlobalConfig *src, GlobalConfig *dest);
 void cfg_persist_config_add(GlobalConfig *cfg, gchar *name, gpointer value, GDestroyNotify destroy, gboolean force);
 gpointer cfg_persist_config_fetch(GlobalConfig *cfg, gchar *name);
+
+/*
+  The function has to return with the calculated hash and set the cfg_fingerprint tag of the cfg
+*/
+typedef gchar* (*CALC_HASH_FUNCTION)(GlobalConfig *cfg);
+
+typedef void (*CONFIG_CALLBACK_FUNCION)(GlobalConfig *cfg);
+
+gchar *get_version();
+
+static inline
+void set_config_hash_function(GlobalConfig *cfg, CALC_HASH_FUNCTION func)
+{
+  if (func)
+    cfg->calculate_hash = func;
+}
+
+static inline
+void set_config_start_message_function(GlobalConfig *cfg, CONFIG_CALLBACK_FUNCION func)
+{
+  if (func)
+    cfg->show_start_message = func;
+}
+
+static inline
+void set_config_reload_message_function(GlobalConfig *cfg, CONFIG_CALLBACK_FUNCION func)
+{
+  if (func)
+    cfg->show_reload_message = func;
+}
+
+static inline
+gchar *get_config_hash(GlobalConfig *cfg)
+{
+  if (cfg->calculate_hash)
+    return cfg->calculate_hash(cfg);
+  else
+    return NULL;
+}
+
+static inline
+void show_config_startup_message(GlobalConfig *cfg)
+{
+  if (cfg->show_start_message)
+    cfg->show_start_message(cfg);
+}
+
+static inline
+void show_config_reload_message(GlobalConfig *cfg)
+{
+  if (cfg->show_reload_message)
+    cfg->show_reload_message(cfg);
+}
 
 static inline gboolean 
 cfg_check_current_config_version(gint req)

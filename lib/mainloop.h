@@ -86,6 +86,8 @@ main_loop_is_main_thread(void)
   return main_thread_handle == g_thread_self();
 }
 
+typedef void(*_BeforeStart)(GlobalConfig *);
+
 gpointer main_loop_call(MainLoopTaskFunc func, gpointer user_data, gboolean wait);
 int main_loop_init(void);
 int  main_loop_run(void);

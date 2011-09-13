@@ -522,9 +522,8 @@ main_loop_reload_config_apply(void)
   /* this is already running with the new config in place */
   res_init();
   app_post_config_loaded();
-  msg_notice("Configuration reload request received, reloading configuration",
-               NULL);
 
+  show_config_reload_message(current_configuration);
  finish:
   main_loop_new_config = NULL;
   main_loop_old_config = NULL;
@@ -692,9 +691,7 @@ main_loop_init(void)
 int
 main_loop_run(void)
 {
-  msg_notice("syslog-ng starting up",
-             evt_tag_str("version", VERSION),
-             NULL);
+  show_config_startup_message(current_configuration);
 
   IV_TIMER_INIT(&stats_timer);
   stats_timer.handler = stats_timer_elapsed;
