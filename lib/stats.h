@@ -70,6 +70,7 @@ enum
   SCS_SEVERITY       = 24,
   SCS_FACILITY       = 25,
   SCS_SENDER         = 26,
+  SCS_SNMP           = 27,
   SCS_MAX,
   SCS_SOURCE_MASK    = 0xff
 };
