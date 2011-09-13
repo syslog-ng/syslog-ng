@@ -358,6 +358,8 @@ cfg_new(gint version)
   self->template_options.frac_digits = 0;
   self->recv_time_zone = NULL;
   self->keep_timestamp = TRUE;
+  self->cfg_fingerprint = NULL;
+  self->stats_reset = FALSE;
   return self;
 }
 

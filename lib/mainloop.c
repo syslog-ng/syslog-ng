@@ -490,9 +490,13 @@ main_loop_reload_config_apply(void)
   if (cfg_init(main_loop_new_config))
     {
       msg_verbose("New configuration initialized", NULL);
+      if (strcmp(main_loop_new_config->cfg_fingerprint, main_loop_old_config->cfg_fingerprint)!=0)
+        {
+          main_loop_new_config->stats_reset = TRUE;
+        }
+      cfg_free(main_loop_old_config);
       persist_config_free(main_loop_new_config->persist);
       main_loop_new_config->persist = NULL;
-      cfg_free(main_loop_old_config);
       current_configuration = main_loop_new_config;
     }
   else
@@ -528,7 +532,11 @@ main_loop_reload_config_apply(void)
   reset_cached_hostname();
 
   stats_timer_kickoff(current_configuration);
-  stats_cleanup_orphans();
+  if (current_configuration->stats_reset)
+    {
+      stats_cleanup_orphans();
+      current_configuration->stats_reset = FALSE;
+    }
   return;
 }
 

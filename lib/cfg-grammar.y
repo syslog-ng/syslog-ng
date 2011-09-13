@@ -194,6 +194,8 @@ extern struct _LogDriver *last_driver;
 %token KW_THROTTLE                    10170
 %token KW_THREADED                    10171
 
+%token KW_STATS_RESET                 10172
+
 /* log statement options */
 %token KW_FLAGS                       10190
 
@@ -681,6 +683,7 @@ options_item
 	| KW_RECV_TIME_ZONE '(' string ')'      { configuration->recv_time_zone = g_strdup($3); free($3); }
 	| KW_SEND_TIME_ZONE '(' string ')'      { configuration->template_options.time_zone[LTZ_SEND] = g_strdup($3); free($3); }
 	| KW_LOCAL_TIME_ZONE '(' string ')'     { configuration->template_options.time_zone[LTZ_LOCAL] = g_strdup($3); free($3); }
+        | KW_STATS_RESET '(' yesno ')'         {}
 	;
 
 /* START_RULES */

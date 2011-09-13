@@ -130,6 +130,7 @@ static CfgLexerKeyword main_keywords[] = {
   { "dns_cache_size",     KW_DNS_CACHE_SIZE },
   { "dns_cache_expire",   KW_DNS_CACHE_EXPIRE },
   { "dns_cache_expire_failed", KW_DNS_CACHE_EXPIRE_FAILED },
+  { "stats_reset",        KW_STATS_RESET, 0, KWS_OBSOLETE, "This option has been ignored since " VERSION_PE_4_1 },
 
   /* filter items */
   { "type",               KW_TYPE, 0x0300 },

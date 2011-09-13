@@ -117,6 +117,8 @@ struct _GlobalConfig
 
   struct _LogCenter *center;
   
+  gchar *cfg_fingerprint;
+  gboolean stats_reset;
 };
 
 void cfg_add_source(GlobalConfig *configuration, struct _LogSourceGroup *group);
