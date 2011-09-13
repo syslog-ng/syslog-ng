@@ -37,6 +37,7 @@
 #include "plugin.h"
 #include "cfg-parser.h"
 #include "stats.h"
+#include "versioning.h"
 
 #include <sys/types.h>
 #include <signal.h>
@@ -259,32 +260,31 @@ void
 cfg_set_version(GlobalConfig *self, gint version)
 {
   self->version = version;
-  if (self->version < CFG_CURRENT_VERSION)
+  if (get_version_value(self->version) < CFG_CURRENT_VERSION)
     {
       msg_warning("WARNING: Configuration file format is too old, please update it to use the " CFG_CURRENT_VERSION_STRING " format as some constructs might operate inefficiently",
                   NULL);
     }
-  else if (self->version > CFG_CURRENT_VERSION)
+  else if (get_version_value(self->version) > CFG_CURRENT_VERSION)
     {
       msg_warning("WARNING: Configuration file format is newer than the current version, please specify the current version number (" CFG_CURRENT_VERSION_STRING ") in the @version directive",
                   NULL);
       self->version = CFG_CURRENT_VERSION;
     }
 
-  if (self->version < 0x0300)
+  if (get_version_value(self->version) < 0x0300)
     {
-      msg_warning("WARNING: global: the default value of chain_hostnames is changing to 'no' in version 3.0, please update your configuration accordingly",
+      msg_warning("WARNING: global: the default value of chain_hostnames is changing to 'no' in " VERSION_3_0 ", please update your configuration accordingly",
                   NULL);
       self->chain_hostnames = TRUE;
     }
-
-  if (self->version < 0x0303)
+  if (get_version_value(self->version) < 0x0401)
     {
-      msg_warning("WARNING: global: the default value of log_fifo_size() has changed to 10000 in version 3.3 to reflect log_iw_size() changes for tcp()/udp() window size changes",
+      msg_warning("WARNING: global: the default value of log_fifo_size() has changed to 10000 in " VERSION_3_3 " to reflect log_iw_size() changes for tcp()/udp() window size changes",
                   NULL);
     }
 
-  if (self->version <= 0x0301 || atoi(cfg_args_get(self->lexer->globals, "autoload-compiled-modules")))
+  if (get_version_value(self->version) <= 0x0301 || atoi(cfg_args_get(self->lexer->globals, "autoload-compiled-modules")))
     {
       gint i;
       gchar **mods;

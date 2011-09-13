@@ -32,6 +32,7 @@
 #include "timeutils.h"
 #include "compat.h"
 #include "mainloop.h"
+#include "versioning.h"
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -823,12 +824,12 @@ log_reader_options_defaults(LogReaderOptions *options)
   options->msg_size = -1;
   options->follow_freq = -1; 
   options->text_encoding = NULL;
-  if (configuration && configuration->version < 0x0300)
+  if (configuration && get_version_value(configuration->version) < 0x0300)
     {
       static gboolean warned;
       if (!warned)
         {
-          msg_warning("WARNING: input: sources do not remove new-line characters from messages by default in version 3.0, please add 'no-multi-line' flag to your configuration if you want to retain this functionality",
+          msg_warning("WARNING: input: sources do not remove new-line characters from messages by default from " VERSION_3_0 ", please add 'no-multi-line' flag to your configuration if you want to retain this functionality",
                       NULL);
           warned = TRUE;
         }

@@ -29,6 +29,7 @@
 #include "pragma-parser.h"
 #include "messages.h"
 #include "misc.h"
+#include "versioning.h"
 
 #include <string.h>
 #include <sys/stat.h>
@@ -248,7 +249,7 @@ cfg_lexer_lookup_keyword(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc, const
               if (token[j] == 0 && keywords[i].kw_name[j] == 0)
                 {
                   /* match */
-                  if (keywords[i].kw_req_version > configuration->version)
+                  if (keywords[i].kw_req_version > get_version_value(configuration->version))
                     {
                       msg_warning("WARNING: Your configuration uses a newly introduced reserved word as identifier, please use a different name or enclose it in quotes",
                                   evt_tag_str("keyword", keywords[i].kw_name),

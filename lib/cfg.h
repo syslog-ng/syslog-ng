@@ -30,6 +30,7 @@
 #include "cfg-parser.h"
 #include "persist-state.h"
 #include "templates.h"
+#include "versioning.h"
 
 #include <sys/types.h>
 #include <regex.h>
@@ -42,8 +43,8 @@ struct _LogConnection;
 struct _LogCenter;
 struct _LogTemplate;
 
-#define CFG_CURRENT_VERSION 0x0303
-#define CFG_CURRENT_VERSION_STRING "3.3"
+#define CFG_CURRENT_VERSION 0x0401
+#define CFG_CURRENT_VERSION_STRING "4.1"
 
 /* configuration data kept between configuration reloads */
 typedef struct _PersistConfig PersistConfig;
@@ -162,7 +163,7 @@ cfg_check_current_config_version(gint req)
 {
   if (!configuration)
     return TRUE;
-  else if (configuration->version >= req)
+  else if (get_version_value(configuration->version) >= req)
     return TRUE;
   return FALSE;
 }

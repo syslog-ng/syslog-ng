@@ -72,7 +72,8 @@ pkginclude_HEADERS = 		\
 	tlscontext.h  		\
 	tlstransport.h		\
 	utils.h			\
-	value-pairs.h
+	value-pairs.h		\
+	versioning.h
 
 # this is intentionally formatted so conflicts are less likely to arise. one name in every line.
 libsyslog_ng_crypto_la_SOURCES = \
@@ -138,6 +139,7 @@ libsyslog_ng_la_SOURCES = \
 	timeutils.c		\
 	utils.c			\
 	value-pairs.c		\
+	versioning.c		\
 				\
 	cfg-lex.l		\
 	cfg-grammar.y		\

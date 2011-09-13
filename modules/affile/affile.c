@@ -367,12 +367,12 @@ affile_sd_new(gchar *filename, guint32 flags)
     {
       static gboolean warned = FALSE;
 
-      if (configuration && configuration->version < 0x0302)
+      if (configuration && get_version_value(configuration->version) < 0x0302)
         {
           if (!warned)
             {
               msg_warning("WARNING: the expected message format is being changed for pipe() to improve "
-                          "syslogd compatibity with syslog-ng 3.2. If you are using custom "
+                          "syslogd compatibity with syslog-ng " VERSION_3_2 ". If you are using custom "
                           "applications which bypass the syslog() API, you might "
                           "need the 'expect-hostname' flag to get the old behaviour back", NULL);
               warned = TRUE;
@@ -384,13 +384,13 @@ affile_sd_new(gchar *filename, guint32 flags)
         }
     }
   
-  if (configuration && configuration->version < 0x0300)
+  if (configuration && get_version_value(configuration->version) < 0x0300)
     {
       static gboolean warned = FALSE;
       
       if (!warned)
         {
-          msg_warning("WARNING: file source: default value of follow_freq in file sources is changing in 3.0 to '1' for all files except /proc/kmsg",
+          msg_warning("WARNING: file source: default value of follow_freq in file sources has changed in " VERSION_3_0 " to '1' for all files except /proc/kmsg",
                       NULL);
           warned = TRUE;
         }

@@ -25,6 +25,7 @@
 #include "patterndb.h"
 #include "radix.h"
 #include "apphook.h"
+#include "versioning.h"
 
 #include <sys/stat.h>
 #include <iv.h>
@@ -288,9 +289,9 @@ log_db_parser_new(void)
   self->super.process = log_db_parser_process;
   self->db_file = g_strdup(PATH_PATTERNDB_FILE);
   g_static_mutex_init(&self->lock);
-  if (configuration && configuration->version < 0x0303)
+  if (configuration && get_version_value(configuration->version) < 0x0303)
     {
-      msg_warning("WARNING: The default behaviour for injecting messages in db-parser() has changed in version 3.3 from internal to pass-through, use an explicit inject-mode(internal) option for old behaviour", NULL);
+      msg_warning("WARNING: The default behaviour for injecting messages in db-parser() has changed in " VERSION_3_3 " from internal to pass-through, use an explicit inject-mode(internal) option for old behaviour", NULL);
       self->inject_mode = LDBP_IM_INTERNAL;
     }
   else
