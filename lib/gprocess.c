@@ -904,8 +904,9 @@ g_process_change_dir(void)
       if (!cwd)
         cwd = PATH_PIDFILEDIR;
         
-      if (cwd && chdir(cwd) < 0)
-        ;
+      if (cwd)
+        if (chdir(cwd))
+          g_process_message("Error changing to directory=%s, errcode=%d", cwd, errno);
     }
     
   /* this check is here to avoid having to change directory early in the startup process */
