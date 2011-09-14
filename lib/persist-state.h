@@ -37,6 +37,7 @@ PersistEntryHandle persist_state_alloc_entry(PersistState *self, const gchar *pe
 PersistEntryHandle persist_state_lookup_entry(PersistState *self, const gchar *persist_name, gsize *size, guint8 *version);
 
 gchar *persist_state_lookup_string(PersistState *self, const gchar *key, gsize *length, guint8 *version);
+gboolean persist_state_rename_entry(PersistState *self, const gchar *old_key, const gchar *new_key);
 void persist_state_alloc_string(PersistState *self, const gchar *persist_name, const gchar *value, gssize len);
 
 void persist_state_free_entry(PersistEntryHandle handle);

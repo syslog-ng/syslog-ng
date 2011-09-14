@@ -308,9 +308,25 @@ persist_state_lookup_key(PersistState *self, const gchar *key, PersistEntryHandl
 }
 
 gboolean
+persist_state_rename_entry(PersistState *self, const gchar *old_key, const gchar *new_key)
+{
+  PersistEntry *entry;
+
+  entry = g_hash_table_lookup(self->keys, old_key);
+  if (entry)
+    {
+      if (g_hash_table_steal(self->keys, old_key))
+        {
+          g_hash_table_insert(self->keys, g_strdup(new_key), entry);
+        }
+    }
+  return FALSE;
+}
+
 /*
  * NOTE: can only be called from the main thread (e.g. log_pipe_init/deinit).
  */
+gboolean
 persist_state_add_key(PersistState *self, const gchar *key, PersistEntryHandle handle)
 {
   PersistEntry *entry;
