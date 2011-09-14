@@ -653,6 +653,14 @@ log_msg_set_tag_by_id_onoff(LogMessage *self, LogTagId id, gboolean on)
 
       log_msg_set_bit(self->tags, id, on);
     }
+  if (on)
+    {
+      log_tags_inc_counter(id);
+    }
+  else
+    {
+      log_tags_dec_counter(id);
+    }
 }
 
 void

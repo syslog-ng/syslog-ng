@@ -24,14 +24,14 @@
 
 #include "tags.h"
 #include "messages.h"
+#include "stats.h"
 
-/* NOTE: this aligns the members in the LogTag structure */
-#define MAX_BUNCHES 14
 
 typedef struct _LogTag
 {
   LogTagId id;
   gchar *name;
+  StatsCounterItem *counter;
 } LogTag;
 
 static LogTag *log_tags_list = NULL;
@@ -83,6 +83,10 @@ log_tags_get_by_name(const gchar *name)
           log_tags_list[id].name = g_strdup(name);
           log_tags_list[id].counter = NULL;
 
+          stats_lock();
+          stats_register_counter(3, SCS_TAG, name, NULL, SC_TYPE_PROCESSED, &log_tags_list[id].counter);
+          stats_unlock();
+          g_hash_table_insert(log_tags_hash, log_tags_list[id].name, GUINT_TO_POINTER(log_tags_list[id].id + 1));
         }
       else
         id = 0;
@@ -121,6 +125,29 @@ log_tags_get_by_id(LogTagId id)
 }
 
 void
+log_tags_inc_counter(LogTagId id)
+{
+  g_static_mutex_lock(&log_tags_lock);
+
+  if (id < log_tags_num)
+    stats_counter_inc(log_tags_list[id].counter);
+
+  g_static_mutex_unlock(&log_tags_lock);
+}
+
+void
+log_tags_dec_counter(LogTagId id)
+{
+  /* Reader lock because the log_tag_list is not written */
+  g_static_mutex_lock(&log_tags_lock);
+
+  if (id < log_tags_num)
+    stats_counter_dec(log_tags_list[id].counter);
+
+  g_static_mutex_unlock(&log_tags_lock);
+}
+
+void
 log_tags_init(void)
 {
   /* Necessary only in case of reinitialized tags */
@@ -147,10 +174,14 @@ log_tags_deinit(void)
 
   g_hash_table_destroy(log_tags_hash);
 
+  stats_lock();
   for (i = 0; i < log_tags_num; i++)
     {
+      stats_unregister_counter(SCS_TAG, log_tags_list[i].name, NULL, SC_TYPE_PROCESSED, &log_tags_list[i].counter);
       g_free(log_tags_list[i].name);
     }
+  stats_unlock();
+
   log_tags_num = 0;
   g_free(log_tags_list);
   log_tags_list = NULL;
