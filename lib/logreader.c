@@ -98,6 +98,10 @@ struct _LogReader
   gboolean suspended:1;
   gint pollable_state;
   gint notify_code;
+  gboolean pending_proto_present;
+  GCond *pending_proto_cond;
+  GStaticMutex pending_proto_lock;
+  LogProto *pending_proto;
 };
 
 static gboolean log_reader_fetch_log(LogReader *self);
@@ -119,6 +123,25 @@ static void
 log_reader_work_finished(void *s)
 {
   LogReader *self = (LogReader *) s;
+
+  if (self->pending_proto_present)
+    {
+      /* pending proto is only set in the main thread, so no need to
+       * lock it before coming here. After we're syncing with the
+       * log_writer_reopen() call, quite possibly coming from a
+       * non-main thread. */
+
+      g_static_mutex_lock(&self->pending_proto_lock);
+      if (self->proto)
+        log_proto_free(self->proto);
+
+      self->proto = self->pending_proto;
+      self->pending_proto = NULL;
+      self->pending_proto_present = FALSE;
+
+      g_cond_signal(self->pending_proto_cond);
+      g_static_mutex_unlock(&self->pending_proto_lock);
+    }
 
   if (self->notify_code == 0)
     {
@@ -661,13 +684,17 @@ static void
 log_reader_free(LogPipe *s)
 {
   LogReader *self = (LogReader *) s;
-  
-  /* when this function is called the source is already removed, because it
-     holds a reference to this reader */
-  log_proto_free(self->proto);
+
+  if (self->proto)
+    {
+      log_proto_free(self->proto);
+      self->proto = NULL;
+    }
   log_pipe_unref(self->control);
   g_sockaddr_unref(self->peer_addr);
   g_free(self->follow_filename);
+  g_static_mutex_free(&self->pending_proto_lock);
+  g_cond_free(self->pending_proto_cond);
   log_source_free(s);
 }
 
@@ -683,6 +710,64 @@ log_reader_set_options(LogPipe *s, LogPipe *control, LogReaderOptions *options, 
   self->control = control;
 
   self->options = options;
+}
+
+/* run in the main thread in reaction to a log_reader_reopen to change
+ * the source LogProto instance. It needs to be ran in the main
+ * thread as it reregisters the watches associated with the main
+ * thread. */
+void
+log_reader_reopen_deferred(gpointer s)
+{
+  gpointer *args = (gpointer *) s;
+  LogReader *self = args[0];
+  LogProto *proto = args[1];
+
+  log_reader_stop_watches(self);
+  if (self->io_job.working)
+    {
+      /* NOTE: proto can be NULL */
+      self->pending_proto = proto;
+      self->pending_proto_present = TRUE;
+      return;
+    }
+
+  if (self->proto)
+    log_proto_free(self->proto);
+
+  self->proto = proto;
+
+  if(proto)
+    {
+        log_reader_start_watches(self);
+    }
+}
+
+void
+log_reader_reopen(LogPipe *s, LogProto *proto, LogPipe *control, LogReaderOptions *options, gint stats_level, gint stats_source, const gchar *stats_id, const gchar *stats_instance, gboolean immediate_check)
+{
+  LogReader *self = (LogReader *) s;
+  gpointer args[] = { s, proto };
+  log_source_deinit(s);
+
+  main_loop_call((MainLoopTaskFunc) log_reader_reopen_deferred, args, TRUE);
+
+  if (!main_loop_is_main_thread())
+    {
+      g_static_mutex_lock(&self->pending_proto_lock);
+      while (self->pending_proto_present)
+        {
+          g_cond_wait(self->pending_proto_cond, g_static_mutex_get_mutex(&self->pending_proto_lock));
+        }
+      g_static_mutex_unlock(&self->pending_proto_lock);
+    }
+  if (immediate_check)
+    {
+      log_reader_set_immediate_check(&self->super.super);
+    }
+  log_reader_set_options(s, control, options, stats_level, stats_source, stats_id, stats_instance);
+  log_reader_set_follow_filename(s, stats_instance);
+  log_source_init(s);
 }
 
 void
@@ -715,6 +800,8 @@ log_reader_new(LogProto *proto)
   self->immediate_check = FALSE;
   self->pollable_state = -1;
   log_reader_init_watches(self);
+  g_static_mutex_init(&self->pending_proto_lock);
+  self->pending_proto_cond = g_cond_new();
   return &self->super.super;
 }
 
