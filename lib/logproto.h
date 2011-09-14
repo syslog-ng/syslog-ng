@@ -54,7 +54,7 @@ struct _LogProto
   gboolean (*restart_with_state)(LogProto *s, PersistState *state, const gchar *persist_name);
   LogProtoStatus (*fetch)(LogProto *s, const guchar **msg, gsize *msg_len, GSockAddr **sa, gboolean *may_read, regex_t *multi_line_prefix_parser, regex_t *multi_line_garbage_parser, gboolean flush);
   void (*queued)(LogProto *s);
-  LogProtoStatus (*post)(LogProto *s, guchar *msg, gsize msg_len, gboolean *consumed);
+  LogProtoStatus (*post)(LogProto *s, LogMessage *logmsg, guchar *msg, gsize msg_len, gboolean *consumed);
   LogProtoStatus (*flush)(LogProto *s);
   void (*free_fn)(LogProto *s);
   void (*reset_state)(LogProto *s);
@@ -94,9 +94,9 @@ log_proto_flush(LogProto *s)
 }
 
 static inline LogProtoStatus
-log_proto_post(LogProto *s, guchar *msg, gsize msg_len, gboolean *consumed)
+log_proto_post(LogProto *s, LogMessage *logmsg, guchar *msg, gsize msg_len, gboolean *consumed)
 {
-  return s->post(s, msg, msg_len, consumed);
+  return s->post(s, logmsg, msg, msg_len, consumed);
 }
 
 static inline LogProtoStatus

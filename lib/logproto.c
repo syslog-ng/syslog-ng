@@ -146,7 +146,7 @@ log_proto_text_client_flush(LogProto *s)
  * successfully sent this message, or if it should be resent by the caller.
  **/
 static LogProtoStatus
-log_proto_text_client_post(LogProto *s, guchar *msg, gsize msg_len, gboolean *consumed)
+log_proto_text_client_post(LogProto *s, LogMessage *logmsg, guchar *msg, gsize msg_len, gboolean *consumed)
 {
   LogProtoTextClient *self = (LogProtoTextClient *) s;
   gint rc;
@@ -333,7 +333,7 @@ log_proto_file_writer_flush(LogProto *s)
  * successfully sent this message, or if it should be resent by the caller.
  **/
 static LogProtoStatus
-log_proto_file_writer_post(LogProto *s, guchar *msg, gsize msg_len, gboolean *consumed)
+log_proto_file_writer_post(LogProto *s, LogMessage *logmsg, guchar *msg, gsize msg_len, gboolean *consumed)
 {
   LogProtoFileWriter *self = (LogProtoFileWriter *)s;
   gint rc;
@@ -492,6 +492,10 @@ struct _LogProtoBufferedServer
   LogProtoStatus status;
 };
 
+/*
+ * NOTE: It is not allowed to synchronize with the main thread between
+ * get_state & put_state, see persist_state_map_entry() for more details.
+ */
 static LogProtoBufferedServerState *
 log_proto_buffered_server_get_state(LogProtoBufferedServer *self)
 {
@@ -2021,7 +2025,7 @@ typedef struct _LogProtoFramedClient
 } LogProtoFramedClient;
 
 static LogProtoStatus
-log_proto_framed_client_post(LogProto *s, guchar *msg, gsize msg_len, gboolean *consumed)
+log_proto_framed_client_post(LogProto *s, LogMessage *logmsg, guchar *msg, gsize msg_len, gboolean *consumed)
 {
   LogProtoFramedClient *self = (LogProtoFramedClient *) s;
   gint rc;
@@ -2067,7 +2071,7 @@ log_proto_framed_client_post(LogProto *s, guchar *msg, gsize msg_len, gboolean *
           self->state = LPFCS_MESSAGE_SEND;
         }
     case LPFCS_MESSAGE_SEND:
-      rc = log_proto_text_client_post(s, msg, msg_len, consumed);
+      rc = log_proto_text_client_post(s, logmsg, msg, msg_len, consumed);
       
       /* NOTE: we don't check *consumed here, as we might have a pending
        * message in self->partial before we begin, in which case *consumed

@@ -1062,7 +1062,7 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
         {
           LogProtoStatus status;
 
-          status = log_proto_post(proto, (guchar *) self->line_buffer->str, self->line_buffer->len, &consumed);
+          status = log_proto_post(proto, lm, (guchar *)self->line_buffer->str, self->line_buffer->len, &consumed);
           if (status == LPS_ERROR)
             {
               if ((self->options->options & LWO_IGNORE_ERRORS) == 0)

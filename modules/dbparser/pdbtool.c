@@ -410,6 +410,8 @@ pdbtool_match(int argc, char *argv[])
   FilterExprNode *filter = NULL;
   LogProto *proto = NULL;
   gboolean may_read = TRUE;
+  /* flush must be FALSE, otherwise log_proto_fetch() fails to read any data from the source ... - Folti */
+  gboolean flush = FALSE;
 
   memset(&parse_options, 0, sizeof(parse_options));
 
@@ -483,7 +485,7 @@ pdbtool_match(int argc, char *argv[])
         }
       transport = log_transport_plain_new(fd, 0);
       proto = log_proto_text_server_new(transport, 65536, 0);
-      eof = log_proto_fetch(proto, &buf, &buflen, NULL, &may_read) != LPS_SUCCESS;
+      eof = log_proto_fetch(proto, &buf, &buflen, NULL, &may_read, NULL, NULL, flush) != LPS_SUCCESS;
     }
 
   if (!debug_pattern)
@@ -597,7 +599,7 @@ pdbtool_match(int argc, char *argv[])
 
       if (G_LIKELY(proto))
         {
-          eof = log_proto_fetch(proto, &buf, &buflen, NULL, &may_read) != LPS_SUCCESS;
+          eof = log_proto_fetch(proto, &buf, &buflen, NULL, &may_read, NULL, NULL, flush) != LPS_SUCCESS;
         }
       else
         {
