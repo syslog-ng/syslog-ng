@@ -643,6 +643,16 @@ gchar *get_version()
   return VERSION;
 }
 
+void register_source_mangle_callback(GlobalConfig *src,mangle_callback cb)
+{
+  src->source_mangle_callback_list = g_list_append(src->source_mangle_callback_list,cb);
+}
+
+void uregister_source_mangle_callback(GlobalConfig *src,mangle_callback cb)
+{
+  src->source_mangle_callback_list = g_list_remove(src->source_mangle_callback_list,cb);
+}
+
 static
 gchar *err_getcwd = "Cannot get current directory";
 static

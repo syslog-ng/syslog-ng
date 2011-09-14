@@ -117,7 +117,7 @@ struct _GlobalConfig
   GPtrArray *connections;
   PersistConfig *persist;
   PersistState *state;
-
+  GList *source_mangle_callback_list;
   struct _LogCenter *center;
   
   gchar *cfg_fingerprint;
@@ -165,6 +165,10 @@ void cfg_persist_config_move(GlobalConfig *src, GlobalConfig *dest);
 void cfg_persist_config_add(GlobalConfig *cfg, gchar *name, gpointer value, GDestroyNotify destroy, gboolean force);
 gpointer cfg_persist_config_fetch(GlobalConfig *cfg, gchar *name);
 
+typedef gboolean(* mangle_callback)(GlobalConfig *cfg, LogMessage *msg, gpointer user_data);
+
+void register_source_mangle_callback(GlobalConfig *src,mangle_callback cb);
+void uregister_source_mangle_callback(GlobalConfig *src,mangle_callback cb);
 /*
   The function has to return with the calculated hash and set the cfg_fingerprint tag of the cfg
 */
