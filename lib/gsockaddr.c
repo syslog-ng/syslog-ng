@@ -41,6 +41,7 @@
 
 /* general GSockAddr functions */
 
+gsize g_sockaddr_len(GSockAddr *a);
 
 /**
  * g_sockaddr_new:
