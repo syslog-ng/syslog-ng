@@ -1575,6 +1575,12 @@ log_msg_get_handle_name(NVHandle handle, gssize *length)
   return nv_registry_get_handle_name(logmsg_registry, handle, length);
 }
 
+gboolean
+log_msg_nv_table_foreach(NVTable *self, NVTableForeachFunc func, gpointer user_data)
+{
+  return nv_table_foreach(self, logmsg_registry, func, user_data);
+}
+
 void
 log_msg_global_deinit(void)
 {
