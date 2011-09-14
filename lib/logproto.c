@@ -68,7 +68,8 @@ log_proto_free(LogProto *s)
     g_iconv_close(s->convert);
   if (s->encoding)
     g_free(s->encoding);
-  log_transport_free(s->transport);
+  if (s->transport)
+    log_transport_free(s->transport);
   g_free(s);
 }
 
