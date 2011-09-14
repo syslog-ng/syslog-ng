@@ -710,6 +710,7 @@ options_item
                                             check_option->value = g_strdup($3);
                                             free($3);
                                            }
+	| KW_USE_TIME_RECVD '(' yesno ')'	{ }
 	;
 
 /* START_RULES */
