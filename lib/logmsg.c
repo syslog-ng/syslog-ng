@@ -1569,6 +1569,12 @@ log_msg_global_init(void)
   stats_unlock();
 }
 
+const gchar *
+log_msg_get_handle_name(NVHandle handle, gssize *length)
+{
+  return nv_registry_get_handle_name(logmsg_registry, handle, length);
+}
+
 void
 log_msg_global_deinit(void)
 {
