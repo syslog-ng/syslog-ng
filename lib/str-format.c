@@ -6,6 +6,22 @@
 static gchar digits[] = "0123456789abcdef";
 
 static inline gint
+format_uint64_base10_rev(gchar *result, gsize result_len, guint64 value)
+{
+  gchar *p;
+
+  p = result;
+  while (result_len > 0 && value > 0)
+    {
+      *p = digits[value % 10];
+      value /= 10;
+      p++;
+      result_len--;
+    }
+  return p - result;
+}
+
+static inline gint
 format_uint32_base10_rev(gchar *result, gsize result_len, guint32 value)
 {
   gchar *p;
@@ -41,6 +57,22 @@ format_uint32_base16_rev(gchar *result, gsize result_len, guint32 value)
   return p - result;
 }
 
+static inline gint
+format_uint64_base16_rev(gchar *result, gsize result_len, guint64 value)
+{
+  gchar *p;
+
+  p = result;
+  while (result_len > 0 && value > 0)
+    {
+      *p = digits[value & 0x0F];
+      value >>= 4;
+      p++;
+      result_len--;
+    }
+  return p - result;
+}
+
 gint
 format_uint32_padded(GString *result, gint field_len, gchar pad_char, gint base, guint32 value)
 {
@@ -51,6 +83,41 @@ format_uint32_padded(GString *result, gint field_len, gchar pad_char, gint base,
     len = format_uint32_base10_rev(num, sizeof(num), value);
   else if (base == 16)
     len = format_uint32_base16_rev(num, sizeof(num), value);
+  else
+    return 0;
+
+  if (field_len == 0 || field_len < len)
+    field_len = len;
+
+  pos = result->len;
+  if (G_UNLIKELY(result->allocated_len < pos + field_len + 1))
+    {
+      g_string_set_size(result, pos + field_len);
+    }
+  else
+    {
+      result->len += field_len;
+      result->str[pos + field_len] = 0;
+    }
+
+  memset(result->str + pos, pad_char, field_len - len);
+  for (i = 0; i < len; i++)
+    {
+      result->str[pos + field_len - i - 1] = num[i];
+    }
+  return field_len;
+}
+
+gint
+format_uint64_padded(GString *result, gint field_len, gchar pad_char, gint base, guint64 value)
+{
+  gchar num[64];
+  gint len, i, pos;
+
+  if (base == 10)
+    len = format_uint64_base10_rev(num, sizeof(num), value);
+  else if (base == 16)
+    len = format_uint64_base16_rev(num, sizeof(num), value);
   else
     return 0;
 
