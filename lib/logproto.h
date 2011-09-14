@@ -55,6 +55,8 @@ struct _LogProto
   LogProtoStatus (*post)(LogProto *s, guchar *msg, gsize msg_len, gboolean *consumed);
   LogProtoStatus (*flush)(LogProto *s);
   void (*free_fn)(LogProto *s);
+  /* This function is available only the object is _LogProtoTextServer */
+  void (*get_info)(LogProto *s, guint64 *pos);
 };
 
 static inline gboolean

@@ -1614,6 +1614,17 @@ log_proto_text_server_fetch_from_buf(LogProtoBufferedServer *s, const guchar *bu
   return result;
 }
 
+static void
+log_proto_text_server_get_info(LogProto *s,guint64 *pos)
+{
+  LogProtoTextServer *self =(LogProtoTextServer *)s;
+  LogProtoBufferedServerState *state = log_proto_buffered_server_get_state(&self->super);
+
+  if (pos)
+    *pos = state->pending_raw_stream_pos + state->pending_buffer_pos;
+  log_proto_buffered_server_put_state(&self->super);
+}
+
 void
 log_proto_text_server_free(LogProtoTextServer *self)
 {
@@ -1630,6 +1641,7 @@ log_proto_text_server_init(LogProtoTextServer *self, LogTransport *transport, gi
   log_proto_buffered_server_init(&self->super, transport, max_msg_size * 6, max_msg_size, flags);
   self->super.fetch_from_buf = log_proto_text_server_fetch_from_buf;
   self->super.super.prepare = log_proto_text_server_prepare;
+  self->super.super.get_info = log_proto_text_server_get_info;
   self->reverse_convert = (GIConv) -1;
 }
 

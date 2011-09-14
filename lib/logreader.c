@@ -32,6 +32,7 @@
 #include "timeutils.h"
 #include "compat.h"
 #include "mainloop.h"
+#include "str-format.h"
 #include "versioning.h"
 
 #include <sys/types.h>
@@ -73,6 +74,11 @@
  *
  * Of course a similar change can be applied to LogWriters as well.
  **/
+
+#define SDATA_FILE_PREFIX ".SDATA.file@18372.4."
+#define SDATA_FILE_NAME SDATA_FILE_PREFIX "name"
+#define SDATA_FILE_SIZE SDATA_FILE_PREFIX "size"
+#define SDATA_FILE_POS SDATA_FILE_PREFIX "position"
 
 struct _LogReader
 {
@@ -281,6 +287,7 @@ log_reader_io_follow_file(gpointer s)
       if (pos < st.st_size)
         {
           /* we have data to read */
+          self->size = st.st_size;
           log_reader_io_process_input(s);
           return;
         }
@@ -535,6 +542,40 @@ log_reader_handle_line(LogReader *self, const guchar *line, gint length, GSockAd
   if (!m->saddr && self->peer_addr)
     {
       m->saddr = g_sockaddr_ref(self->peer_addr);
+    }
+
+  if (self->proto->get_info && self->size > 0)
+    {
+      converted = g_string_sized_new (25);
+      self->proto->get_info(self->proto, &pos);
+      handle = log_msg_get_value_handle(SDATA_FILE_NAME);
+      if(self->follow_filename)
+        log_msg_set_value(m, handle, self->follow_filename, strlen(self->follow_filename));
+
+      handle = log_msg_get_value_handle(SDATA_FILE_POS);
+      if (pos != 0)
+        {
+          format_uint64_padded(converted, 0, 0, 10, pos);
+          log_msg_set_value(m, handle, converted->str, converted->len);
+        }
+      else
+        {
+          log_msg_set_value(m, handle, "0", 1);
+        }
+
+      handle = log_msg_get_value_handle(SDATA_FILE_SIZE);
+      if (self->size != 0)
+        {
+          g_string_set_size(converted, 0);
+          format_uint64_padded(converted, 0, 0, 10, self->size);
+          log_msg_set_value(m, handle, converted->str, converted->len);
+        }
+      else
+        {
+            log_msg_set_value(m, handle, "0", 1);
+        }
+
+      g_string_free(converted, TRUE);
     }
 
   log_pipe_queue(&self->super.super, m, &path_options);
