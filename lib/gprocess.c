@@ -1331,8 +1331,11 @@ g_process_start(void)
     }
     
   /* daemon process, we should return to the caller to perform work */
-  
-  setsid();
+  /* Only call setsid() for backgrounded processes. */
+  if (process_opts.mode != G_PM_FOREGROUND)
+    {
+	  setsid();
+    }
   
   /* NOTE: we need to signal the parent in case of errors from this point. 
    * This is accomplished by writing the appropriate exit code to
