@@ -794,9 +794,7 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
 
   if (success)
     {
-      /* we only ACK if each INSERT is a separate transaction */
-      if ((self->flags & AFSQL_DDF_EXPLICIT_COMMITS) == 0)
-        log_msg_ack(msg, &path_options);
+      log_msg_ack(msg, &path_options);
       log_msg_unref(msg);
       step_sequence_number(&self->seq_num);
       self->failed_message_counter = 0;

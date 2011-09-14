@@ -329,6 +329,7 @@ log_queue_fifo_pop_head(LogQueue *s, LogMessage **msg, LogPathOptions *path_opti
   if (push_to_backlog)
     {
       log_msg_ref(*msg);
+      log_msg_add_ack(*msg, path_options);
       list_add_tail(&node->list, &self->qbacklog);
       self->qbacklog_len++;
     }
