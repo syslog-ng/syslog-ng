@@ -76,9 +76,13 @@ enum
 {
   /* these flags also matter when the message is serialized */
   LF_OLD_UNPARSED      = 0x0001,
+  /* message payload is guaranteed to be valid utf8 */
   LF_UTF8              = 0x0001,
+  /* message was generated from within syslog-ng, doesn't matter if it came from the internal() source */
   LF_INTERNAL          = 0x0002,
+  /* message was received on a local transport, e.g. it was generated on the local machine */
   LF_LOCAL             = 0x0004,
+  /* message is a MARK mode */
   LF_MARK              = 0x0008,
 
   /* state flags that only matter during syslog-ng runtime and never
