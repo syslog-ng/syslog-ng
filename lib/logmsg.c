@@ -990,8 +990,8 @@ log_msg_new(const gchar *msg, gint length,
             GSockAddr *saddr,
             MsgFormatOptions *parse_options)
 {
-  LogMessage *self = log_msg_alloc(length * 2);
-  
+  LogMessage *self = log_msg_alloc(length == 0 ? 256 : length * 2);
+
   log_msg_init(self, saddr);
 
   if (G_LIKELY(parse_options->format_handler))
