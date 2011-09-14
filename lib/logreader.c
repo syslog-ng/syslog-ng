@@ -111,8 +111,6 @@ struct _LogReader
   LogProto *pending_proto;
 };
 
-static gboolean log_reader_fetch_log(LogReader *self);
-
 static gboolean log_reader_start_watches(LogReader *self);
 static void log_reader_stop_watches(LogReader *self);
 static void log_reader_update_watches(LogReader *self);
@@ -584,7 +582,7 @@ log_reader_handle_line(LogReader *self, const guchar *line, gint length, GSockAd
 }
 
 /* returns: notify_code (NC_XXXX) or 0 for success */
-static gint
+gint
 log_reader_fetch_log(LogReader *self)
 {
   GSockAddr *sa;

@@ -64,6 +64,7 @@ void log_reader_set_follow_filename(LogPipe *self, const gchar *follow_filename)
 void log_reader_set_peer_addr(LogPipe *s, GSockAddr *peer_addr);
 void log_reader_set_immediate_check(LogPipe *s);
 void log_reader_reopen(LogPipe *s, LogProto *proto, LogPipe *control, LogReaderOptions *options, gint stats_level, gint stats_source, const gchar *stats_id, const gchar *stats_instance, gboolean immediate_check);
+gint log_reader_fetch_log(LogReader *self);
 
 LogPipe *log_reader_new(LogProto *proto);
 void log_reader_options_defaults(LogReaderOptions *options);
