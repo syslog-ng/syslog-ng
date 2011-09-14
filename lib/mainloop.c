@@ -90,6 +90,8 @@ static gchar *ctlfilename = PATH_CONTROL_SOCKET;
 static gchar *preprocess_into = NULL;
 gboolean syntax_only = FALSE;
 
+/* USED ONLY IN PREMIUM EDITION */
+gboolean server_mode = FALSE;
 
 gboolean under_termination = FALSE;
 

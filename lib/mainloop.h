@@ -28,6 +28,7 @@
 
 extern volatile gboolean main_loop_io_workers_quit;
 extern gboolean syntax_only;
+extern gboolean server_mode;
 extern GThread *main_thread_handle;
 
 #ifndef G_OS_WIN32
