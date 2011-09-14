@@ -254,5 +254,6 @@ void log_msg_registry_deinit();
 void log_msg_global_init();
 void log_msg_global_deinit(void);
 
+gboolean log_msg_nv_table_foreach(NVTable *self, NVTableForeachFunc func, gpointer user_data);
 
 #endif
