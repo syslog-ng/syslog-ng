@@ -91,6 +91,8 @@ static gchar *preprocess_into = NULL;
 gboolean syntax_only = FALSE;
 
 
+gboolean under_termination = FALSE;
+
 /* signal handling */
 static struct iv_signal sighup_poll;
 static struct iv_signal sigterm_poll;
@@ -431,9 +433,11 @@ main_loop_io_worker_job_init(MainLoopIOWorkerJob *self)
   INIT_LIST_HEAD(&self->finish_callbacks);
 }
 
-void
+static void
 main_loop_io_worker_sync_call(void (*func)(void))
 {
+  g_assert(main_loop_io_workers_sync_func == NULL || main_loop_io_workers_sync_func == func);
+
   if (main_loop_io_workers_running == 0)
     {
       func();
@@ -530,6 +534,17 @@ main_loop_reload_config_apply(void)
 static void
 main_loop_reload_config_initiate(void)
 {
+  if (main_loop_new_config)
+    {
+      /* This block is entered only if this function is reentered before
+       * main_loop_reload_config_apply() would be called.  In that case we
+       * drop the previously parsed configuration and start over again to
+       * ensure that the contents of the running configuration matches the
+       * contents of the file at the time the SIGHUP signal was received.
+       */
+      cfg_free(main_loop_new_config);
+      main_loop_new_config = NULL;
+    }
   main_loop_old_config = current_configuration;
   app_pre_config_loaded();
   main_loop_new_config = cfg_new(0);
@@ -555,6 +570,10 @@ static struct iv_timer main_loop_exit_timer;
 static void
 main_loop_exit_finish(void)
 {
+  /* deinit the current configuration, as at this point we _know_ that no
+   * threads are running.  This will unregister ivykis tasks and timers
+   * that could fire while the configuration is being destructed */
+  cfg_deinit(current_configuration);
   iv_quit();
 }
 
@@ -571,21 +590,14 @@ main_loop_exit_timer_elapsed(void *arg)
 static void
 sig_hup_handler(void *s)
 {
-  /* this may handle multiple SIGHUP signals, however it doesn't
-   * really matter if we received only a single or multiple SIGHUPs
-   * until we make sure that we handle the last one.  Since we
-   * blocked the SIGHUP signal and reset sig_hup_received to FALSE,
-   * we can be sure that if we receive an additional SIGHUP during
-   * signal processing we get the new one when we finished this, and
-   * handle that one as well. */
-
-  main_loop_reload_config_initiate();
+  if (!under_termination)
+    main_loop_reload_config_initiate();
 }
 
 static void
 sig_term_handler(void *s)
 {
-  if (main_loop_exit_timer.handler && iv_timer_registered(&main_loop_exit_timer))
+  if (under_termination)
     return;
 
   msg_notice("syslog-ng shutting down",
@@ -598,6 +610,7 @@ sig_term_handler(void *s)
   main_loop_exit_timer.handler = main_loop_exit_timer_elapsed;
   timespec_add_msec(&main_loop_exit_timer.expires, 100);
   iv_timer_register(&main_loop_exit_timer);
+  under_termination = TRUE;
 }
 
 static void
