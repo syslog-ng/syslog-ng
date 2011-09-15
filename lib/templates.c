@@ -71,8 +71,10 @@ enum
   M_MONTH_NAME,
   M_DAY,
   M_HOUR,
+  M_HOUR12,
   M_MIN,
   M_SEC,
+  M_AMPM,
   M_WEEK_DAY,
   M_WEEK_DAY_ABBREV,
   M_WEEK_DAY_NAME,
@@ -114,8 +116,10 @@ LogMacroDef macros[] =
         { "MONTH_NAME",     M_MONTH_NAME },
         { "DAY",            M_DAY },
         { "HOUR",           M_HOUR },
+        { "HOUR12",         M_HOUR12 },
         { "MIN",            M_MIN },
         { "SEC",            M_SEC },
+        { "AMPM",           M_AMPM },
         { "WEEKDAY",        M_WEEK_DAY_ABBREV }, /* deprecated */
         { "WEEK_DAY",       M_WEEK_DAY },
         { "WEEK_DAY_ABBREV",M_WEEK_DAY_ABBREV },
@@ -137,8 +141,10 @@ LogMacroDef macros[] =
         { "R_MONTH_NAME",     M_RECVD_OFS + M_MONTH_NAME },
         { "R_DAY",            M_RECVD_OFS + M_DAY },
         { "R_HOUR",           M_RECVD_OFS + M_HOUR },
+        { "R_HOUR12",         M_RECVD_OFS + M_HOUR12 },
         { "R_MIN",            M_RECVD_OFS + M_MIN },
         { "R_SEC",            M_RECVD_OFS + M_SEC },
+        { "R_AMPM",           M_RECVD_OFS + M_AMPM },
         { "R_WEEKDAY",        M_RECVD_OFS + M_WEEK_DAY_ABBREV }, /* deprecated */
         { "R_WEEK_DAY",       M_RECVD_OFS + M_WEEK_DAY },
         { "R_WEEK_DAY_ABBREV",M_RECVD_OFS + M_WEEK_DAY_ABBREV },
@@ -160,8 +166,10 @@ LogMacroDef macros[] =
         { "S_MONTH_NAME",     M_STAMP_OFS + M_MONTH_NAME },
         { "S_DAY",            M_STAMP_OFS + M_DAY },
         { "S_HOUR",           M_STAMP_OFS + M_HOUR },
+        { "S_HOUR12",         M_STAMP_OFS + M_HOUR12 },
         { "S_MIN",            M_STAMP_OFS + M_MIN },
         { "S_SEC",            M_STAMP_OFS + M_SEC },
+        { "S_AMPM",           M_STAMP_OFS + M_AMPM },
         { "S_WEEKDAY",        M_STAMP_OFS + M_WEEK_DAY_ABBREV }, /* deprecated */
         { "S_WEEK_DAY",       M_STAMP_OFS + M_WEEK_DAY },
         { "S_WEEK_DAY_ABBREV",M_STAMP_OFS + M_WEEK_DAY_ABBREV },
@@ -423,6 +431,7 @@ log_macro_expand(GString *result, gint id, gboolean escape, LogTemplateOptions *
         time_t t;
         LogStamp *stamp;
         glong zone_ofs;
+        guint tmp_hour;
 
         if (id >= M_TIME_FIRST && id <= M_TIME_LAST)
           {
@@ -496,11 +505,24 @@ log_macro_expand(GString *result, gint id, gboolean escape, LogTemplateOptions *
           case M_HOUR:
             format_uint32_padded(result, 2, '0', 10, tm->tm_hour);
             break;
+          case M_HOUR12:
+            if (tm->tm_hour < 12)
+              tmp_hour = tm->tm_hour;
+            else
+              tmp_hour = tm->tm_hour - 12;
+
+            if (tmp_hour == 0)
+              tmp_hour = 12;
+            format_uint32_padded(result, 2, '0', 10, tmp_hour);
+            break;
           case M_MIN:
             format_uint32_padded(result, 2, '0', 10, tm->tm_min);
             break;
           case M_SEC:
             format_uint32_padded(result, 2, '0', 10, tm->tm_sec);
+            break;
+          case M_AMPM:
+            g_string_append(result, tm->tm_hour < 12 ? "AM" : "PM");
             break;
           case M_DATE:
           case M_STAMP:
