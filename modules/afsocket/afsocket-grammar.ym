@@ -43,8 +43,6 @@
 #endif         /* END MARK */
 
 
-#include <syslog.h>
-
 static SocketOptions *last_sock_options;
 static gint last_addr_family = AF_INET;
 
