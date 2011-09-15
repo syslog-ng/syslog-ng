@@ -29,8 +29,19 @@
 
 typedef guint16 LogTagId;
 
+/* this is limited by the LogMessage structure, where a guint8 stores the
+ * number of 32 bit ints, used to store the tags as a bitfield.  256 * 32 =
+ * 8192.
+ */
+
+#if GLIB_SIZEOF_LONG == 4
+#define LOG_TAGS_MAX   8192
+#else
+#define LOG_TAGS_MAX   16384
+#endif
+
 LogTagId log_tags_get_by_name(const gchar *name);
-gchar *log_tags_get_by_id(LogTagId id);
+const gchar *log_tags_get_by_id(LogTagId id);
 
 void log_tags_init(void);
 void log_tags_deinit(void);

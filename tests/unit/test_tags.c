@@ -39,7 +39,8 @@ test_tags(void)
 {
   guint i, check;
   guint id;
-  gchar *name, *tag_name;
+  gchar *name;
+  const gchar *tag_name;
 
   for (check = 0; check < 2; check++)
     for (i = 0; i < NUM_TAGS; i++)

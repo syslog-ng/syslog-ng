@@ -37,6 +37,7 @@ typedef struct _LogTag
 static LogTag *log_tags_list = NULL;
 static GHashTable *log_tags_hash = NULL;
 static guint32 log_tags_num = 0;
+static guint32 log_tags_list_size = 4;
 static GStaticMutex log_tags_lock = G_STATIC_MUTEX_INIT;
 
 
@@ -54,18 +55,37 @@ static GStaticMutex log_tags_lock = G_STATIC_MUTEX_INIT;
 LogTagId
 log_tags_get_by_name(const gchar *name)
 {
-  gint id;
+  /* If log_tags_hash() is NULL, this unit is already deinitialized
+     but other thread may refer the tag structure.
+
+     If name is empty, it is an extremal element.
+
+     In both cases the return value is 0.
+   */
+  guint id;
+
+  g_assert(log_tags_hash != NULL);
 
   g_static_mutex_lock(&log_tags_lock);
 
   id = GPOINTER_TO_UINT(g_hash_table_lookup(log_tags_hash, name)) - 1;
-  if (id == -1)
+  if (id == 0xffffffff)
     {
-      id = log_tags_num;
-      log_tags_list = g_renew(LogTag, log_tags_list, ++log_tags_num);
-      log_tags_list[id].id = (LogTagId) id;
-      log_tags_list[id].name = g_strdup(name);
-      g_hash_table_insert(log_tags_hash, log_tags_list[id].name, GUINT_TO_POINTER(log_tags_list[id].id + 1));
+      if (log_tags_num < LOG_TAGS_MAX - 1)
+        {
+          id = log_tags_num++;
+          if (id == log_tags_list_size)
+            {
+              log_tags_list_size *= 2;
+              log_tags_list = g_renew(LogTag, log_tags_list, log_tags_list_size);
+            }
+          log_tags_list[id].id = id;
+          log_tags_list[id].name = g_strdup(name);
+          log_tags_list[id].counter = NULL;
+
+        }
+      else
+        id = 0;
     }
 
   g_static_mutex_unlock(&log_tags_lock);
@@ -85,7 +105,7 @@ log_tags_get_by_name(const gchar *name)
  * @id:     the tag id to lookup
  *
  */
-gchar *
+const gchar *
 log_tags_get_by_id(LogTagId id)
 {
   gchar *name = NULL;
@@ -103,7 +123,19 @@ log_tags_get_by_id(LogTagId id)
 void
 log_tags_init(void)
 {
+  /* Necessary only in case of reinitialized tags */
+  g_static_mutex_lock(&log_tags_lock);
+
   log_tags_hash = g_hash_table_new(g_str_hash, g_str_equal);
+
+  log_tags_list_size = 4;
+  log_tags_num = 0;
+
+  log_tags_list = g_new0(LogTag, log_tags_list_size);
+  log_tags_list[0].name = g_strdup("an empty tag");
+  g_hash_table_insert(log_tags_hash, log_tags_list[0].name, GUINT_TO_POINTER(log_tags_list[0].id + 1));
+
+  g_static_mutex_unlock(&log_tags_lock);
 }
 
 void
@@ -112,20 +144,18 @@ log_tags_deinit(void)
   gint i;
 
   g_static_mutex_lock(&log_tags_lock);
+
   g_hash_table_destroy(log_tags_hash);
-  log_tags_hash = NULL;
 
   for (i = 0; i < log_tags_num; i++)
-  {
-    g_free(log_tags_list[i].name);
-    log_tags_list[i].name = NULL;
-  }
-  if (log_tags_list)
     {
-      g_free(log_tags_list);
-      log_tags_list = NULL;
+      g_free(log_tags_list[i].name);
     }
   log_tags_num = 0;
+  g_free(log_tags_list);
+  log_tags_list = NULL;
+  log_tags_hash = NULL;
+
   g_static_mutex_unlock(&log_tags_lock);
 }
 
