@@ -99,7 +99,7 @@ log_transport_plain_read_method(LogTransport *s, gpointer buf, gsize buflen, GSo
         struct sockaddr __sa;
       } sas;
       
-      socklen_t salen = sizeof(sas);
+      bb_socklen_t salen = sizeof(sas);
 
       do
         {
