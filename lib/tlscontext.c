@@ -136,13 +136,13 @@ tls_session_verify(TLSSession *self, int ok, X509_STORE_CTX *ctx)
   /* accept certificate if its fingerprint matches, again regardless whether x509 certificate validation was successful */
   if (tls_session_verify_fingerprint(ctx))
     {
-      msg_debug("Certificate accepted because its fingerprint is listed", NULL);
+      msg_notice("Certificate accepted because its fingerprint is listed", NULL);
       return 1;
     }
 
   if (ok && ctx->error_depth != 0 && (ctx->current_cert->ex_flags & EXFLAG_CA) == 0)
     {
-      msg_debug("Invalid certificate found in chain, basicConstraints.ca is unset in non-leaf certificate", NULL);
+      msg_notice("Invalid certificate found in chain, basicConstraints.ca is unset in non-leaf certificate", NULL);
       ctx->error = X509_V_ERR_INVALID_CA;
       return 0;
     }
@@ -150,7 +150,7 @@ tls_session_verify(TLSSession *self, int ok, X509_STORE_CTX *ctx)
   /* reject certificate if it is valid, but its DN is not trusted */
   if (ok && ctx->error_depth == 0 && !tls_session_verify_dn(ctx))
     {
-      msg_debug("Certificate valid, but DN constraints were not met, rejecting", NULL);
+      msg_notice("Certificate valid, but DN constraints were not met, rejecting", NULL);
       ctx->error = X509_V_ERR_CERT_UNTRUSTED;
       return 0;
     }
@@ -421,7 +421,7 @@ tls_log_certificate_validation_progress(int ok, X509_STORE_CTX *ctx)
 
   if (ok)
     {
-      msg_verbose("Certificate validation progress",
+      msg_debug("Certificate validation progress",
                   evt_tag_str("subject", subject_name->str),
                   evt_tag_str("issuer", issuer_name->str),
                   NULL);
@@ -546,7 +546,7 @@ tls_verify_certificate_name(X509 *cert, const gchar *host_name)
     }
   else
     {
-      msg_notice("Certificate subject matches configured hostname",
+      msg_verbose("Certificate subject matches configured hostname",
                 evt_tag_str("hostname", host_name),
                 evt_tag_str("certificate", pattern_buf),
                 NULL);
