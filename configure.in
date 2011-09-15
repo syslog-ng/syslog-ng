@@ -1207,7 +1207,6 @@ AC_OUTPUT(dist.conf
 	  debian/Makefile
 	  tgz2build/Makefile
           tests/unit/Makefile
-          tests/functional/Makefile
 	  tests/loggen/Makefile
 	  winbuild/Makefile
           )
