@@ -83,6 +83,7 @@ enum
   M_WEEK,
   M_TZOFFSET,
   M_TZ,
+  M_SYSUPTIME,
   M_UNIXTIME,
   M_TIME_FIRST = M_DATE,
   M_TIME_LAST = M_UNIXTIME,
@@ -131,6 +132,7 @@ LogMacroDef macros[] =
         { "WEEK",           M_WEEK },
         { "TZOFFSET",       M_TZOFFSET },
         { "TZ",             M_TZ },
+        { "SYSUPTIME",      M_SYSUPTIME },
         { "UNIXTIME",       M_UNIXTIME },
 
         { "R_DATE",           M_RECVD_OFS + M_DATE },
@@ -201,6 +203,7 @@ LogMacroDef macros[] =
 };
 
 GHashTable *macro_hash;
+GTimeVal app_uptime;
 
 static void
 result_append(GString *result, const gchar *sstr, gssize len, gboolean escape)
@@ -557,6 +560,14 @@ log_macro_expand(GString *result, gint id, gboolean escape, LogTemplateOptions *
           case M_TZOFFSET:
             length = format_zone_info(buf, sizeof(buf), zone_ofs);
             g_string_append_len(result, buf, length);
+            break;
+          case M_SYSUPTIME:
+            {
+              GTimeVal ct;
+
+              g_get_current_time(&ct);
+              g_string_append_printf(result, "%ld", g_time_val_diff(&ct, &app_uptime) / 1000 / 10);
+            }
             break;
           }
         break;

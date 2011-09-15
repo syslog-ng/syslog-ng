@@ -210,10 +210,14 @@ cfg_lookup_template(GlobalConfig *cfg, const gchar *name)
   return NULL;
 }
 
+extern GTimeVal app_uptime;
 gboolean
 cfg_init(GlobalConfig *cfg)
 {
   gint regerr;
+
+  /* init the uptime (SYSUPTIME macro) */
+  g_get_current_time(&app_uptime);
   
   if (cfg->file_template_name && !(cfg->file_template = cfg_lookup_template(cfg, cfg->file_template_name)))
     msg_error("Error resolving file template",
