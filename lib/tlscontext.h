@@ -46,6 +46,12 @@ typedef enum
   TVM_REQUIRED=0x0020,
 } TLSVerifyMode;
 
+typedef enum
+{
+  CA_DIR_LAYOUT_MD5,
+  CA_DIR_LAYOUT_SHA1
+} CADirLayout;
+
 typedef gint (*TLSSessionVerifyFunc)(gint ok, X509_STORE_CTX *ctx, gpointer user_data);
 typedef struct _TLSContext TLSContext;
 
@@ -70,6 +76,7 @@ struct _TLSContext
   gchar *ca_dir;
   gchar *crl_dir;
   gchar *cipher_suite;
+  CADirLayout ca_dir_layout;
   SSL_CTX *ssl_ctx;
   GList *trusted_fingerpint_list;
   GList *trusted_dn_list;
@@ -83,6 +90,7 @@ TLSContext *tls_context_new(TLSMode mode);
 void tls_context_free(TLSContext *s);
 
 TLSVerifyMode tls_lookup_verify_mode(const gchar *mode_str);
+CADirLayout tls_lookup_ca_dir_layout(const gchar *layout_str);
 
 void tls_log_certificate_validation_progress(int ok, X509_STORE_CTX *ctx);
 gboolean tls_verify_certificate_name(X509 *cert, const gchar *hostname);

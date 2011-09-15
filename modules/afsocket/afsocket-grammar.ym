@@ -101,6 +101,7 @@ TLSContext *last_tls_context;
 %token KW_KEY_FILE
 %token KW_CERT_FILE
 %token KW_CA_DIR
+%token KW_CA_DIR_LAYOUT
 %token KW_CRL_DIR
 %token KW_TRUSTED_KEYS
 %token KW_TRUSTED_DN
@@ -490,6 +491,11 @@ tls_option
 	| KW_CA_DIR '(' string ')'
 	  {
 	    last_tls_context->ca_dir = g_strdup($3);
+            free($3);
+          }
+	| KW_CA_DIR_LAYOUT '(' string ')'
+	  {
+	    last_tls_context->ca_dir_layout = tls_lookup_ca_dir_layout($3);
             free($3);
           }
 	| KW_CRL_DIR '(' string ')'

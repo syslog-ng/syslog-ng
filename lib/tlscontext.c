@@ -301,11 +301,21 @@ tls_context_setup_session(TLSContext *self)
       if (self->key_file && self->cert_file && !SSL_CTX_check_private_key(self->ssl_ctx))
         goto error;
 
-      if (file_exists(self->ca_dir) && !SSL_CTX_load_verify_locations(self->ssl_ctx, NULL, self->ca_dir))
-        goto error;
+      if (file_exists(self->ca_dir))
+        {
+          if (self->ca_dir_layout == CA_DIR_LAYOUT_SHA1 && !SSL_CTX_load_verify_locations(self->ssl_ctx, NULL, self->ca_dir))
+            goto error;
+          else if (self->ca_dir_layout == CA_DIR_LAYOUT_MD5 && !SSL_CTX_load_verify_locations_old(self->ssl_ctx, NULL, self->ca_dir))
+            goto error;
+        }
 
-      if (file_exists(self->crl_dir) && !SSL_CTX_load_verify_locations(self->ssl_ctx, NULL, self->crl_dir))
-        goto error;
+      if (file_exists(self->crl_dir))
+        {
+          if (self->ca_dir_layout == CA_DIR_LAYOUT_SHA1 && !SSL_CTX_load_verify_locations(self->ssl_ctx, NULL, self->crl_dir))
+            goto error;
+          else if (self->ca_dir_layout == CA_DIR_LAYOUT_MD5 && !SSL_CTX_load_verify_locations_old(self->ssl_ctx, NULL, self->crl_dir))
+            goto error;
+        }
 
       if (self->crl_dir)
         verify_flags |= X509_V_FLAG_CRL_CHECK | X509_V_FLAG_CRL_CHECK_ALL;
@@ -374,6 +384,7 @@ tls_context_new(TLSMode mode)
 
   self->mode = mode;
   self->verify_mode = TVM_REQUIRED | TVM_TRUSTED;
+  self->ca_dir_layout = CA_DIR_LAYOUT_MD5;
   return self;
 }
 
@@ -406,6 +417,22 @@ tls_lookup_verify_mode(const gchar *mode_str)
     return TVM_REQUIRED | TVM_UNTRUSTED;
 
   return TVM_REQUIRED | TVM_TRUSTED;
+}
+
+CADirLayout
+tls_lookup_ca_dir_layout(const gchar *layout_str)
+{
+
+  if (strcasecmp(layout_str, "sha1-based") == 0 || strcasecmp(layout_str, "sha1_based") == 0 ||
+      strcasecmp(layout_str, "sha1") == 0)
+    return CA_DIR_LAYOUT_SHA1;
+  else if (strcasecmp(layout_str, "md5-based") == 0 || strcasecmp(layout_str, "md5_based") == 0 ||
+           strcasecmp(layout_str, "md5") == 0 || strcasecmp(layout_str, "" ) == 0)
+    return CA_DIR_LAYOUT_MD5;
+  else
+    msg_warning("CA directory layout must be either 'md5-based' (default), 'sha1-based' or empty. Falling back to md5-based.", NULL);
+
+  return CA_DIR_LAYOUT_MD5;
 }
 
 void
