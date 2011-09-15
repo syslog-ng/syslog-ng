@@ -29,6 +29,135 @@ tf_echo(LogMessage *msg, gint argc, GString *argv[], GString *result)
 
 TEMPLATE_FUNCTION_SIMPLE(tf_echo);
 
+static gboolean
+tf_parse_int(const gchar *s, long *d)
+{
+  gchar *endptr;
+  glong val;
+
+  errno = 0;
+  val = strtoll(s, &endptr, 10);
+
+  if ((errno == ERANGE && (val == LONG_MAX || val == LONG_MIN))
+      || (errno != 0 && val == 0))
+    return FALSE;
+
+  if (endptr == s || *endptr != '\0')
+    return FALSE;
+
+  *d = val;
+  return TRUE;
+}
+
+static gboolean
+tf_num_parse(gint argc, GString *argv[],
+	     const gchar *func_name, glong *n, glong *m)
+{
+  if (argc != 2)
+    {
+      msg_error("Template function requires two arguments.",
+		evt_tag_str("function", func_name), NULL);
+      return FALSE;
+    }
+
+  if (!tf_parse_int(argv[0]->str, n))
+    {
+      msg_error("Parsing failed, template function's first argument is not a number",
+		evt_tag_str("function", func_name),
+		evt_tag_str("arg1", argv[0]->str), NULL);
+      return FALSE;
+    }
+
+  if (!tf_parse_int(argv[1]->str, m))
+    {
+      msg_error("Parsing failed, template function's first argument is not a number",
+		evt_tag_str("function", func_name),
+		evt_tag_str("arg1", argv[1]->str), NULL);
+      return FALSE;
+    }
+
+  return TRUE;
+}
+
+static void
+tf_num_plus(LogMessage *msg, gint argc, GString *argv[], GString *result)
+{
+  glong n, m;
+
+  if (!tf_num_parse(argc, argv, "+", &n, &m))
+    return;
+
+  g_string_append_printf(result, "%li", n + m);
+}
+
+TEMPLATE_FUNCTION_SIMPLE(tf_num_plus);
+
+static void
+tf_num_minus(LogMessage *msg, gint argc, GString *argv[], GString *result)
+{
+  glong n, m;
+
+  if (!tf_num_parse(argc, argv, "-", &n, &m))
+    return;
+
+  g_string_append_printf(result, "%li", n - m);
+}
+
+TEMPLATE_FUNCTION_SIMPLE(tf_num_minus);
+
+static void
+tf_num_multi(LogMessage *msg, gint argc, GString *argv[], GString *result)
+{
+  glong n, m;
+
+  if (!tf_num_parse(argc, argv, "*", &n, &m))
+    return;
+
+  g_string_append_printf(result, "%li", n * m);
+}
+
+TEMPLATE_FUNCTION_SIMPLE(tf_num_multi);
+
+static void
+tf_num_div(LogMessage *msg, gint argc, GString *argv[], GString *result)
+{
+  glong n, m;
+
+  if (!tf_num_parse(argc, argv, "/", &n, &m))
+    return;
+
+  if (m == 0)
+    {
+      msg_error ("$(/): Division by zero in the template function",
+		 NULL);
+      return;
+    }
+
+  g_string_append_printf(result, "%li", (glong)(n / m));
+}
+
+TEMPLATE_FUNCTION_SIMPLE(tf_num_div);
+
+static void
+tf_num_mod(LogMessage *msg, gint argc, GString *argv[], GString *result)
+{
+  glong n, m;
+
+  if (!tf_num_parse(argc, argv, "%", &n, &m))
+    return;
+
+  if (m == 0)
+    {
+      msg_error ("$(%): Division by zero in the template function",
+		 NULL);
+      return;
+    }
+
+  g_string_append_printf(result, "%li", n % m);
+}
+
+TEMPLATE_FUNCTION_SIMPLE(tf_num_mod);
+
 typedef struct _TFCondState
 {
   FilterExprNode *filter;
@@ -192,6 +321,11 @@ static Plugin basicfuncs_plugins[] =
   TEMPLATE_FUNCTION_PLUGIN(tf_grep, "grep"),
   TEMPLATE_FUNCTION_PLUGIN(tf_if, "if"),
   TEMPLATE_FUNCTION_PLUGIN(tf_indent_multi_line, "indent-multi-line"),
+  TEMPLATE_FUNCTION_PLUGIN(tf_num_plus, "+"),
+  TEMPLATE_FUNCTION_PLUGIN(tf_num_minus, "-"),
+  TEMPLATE_FUNCTION_PLUGIN(tf_num_multi, "*"),
+  TEMPLATE_FUNCTION_PLUGIN(tf_num_div, "/"),
+  TEMPLATE_FUNCTION_PLUGIN(tf_num_mod, "%"),
 };
 
 gboolean
