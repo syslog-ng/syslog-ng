@@ -206,7 +206,7 @@ result_append(GString *result, const gchar *sstr, gssize len, gboolean escape)
             }
           else if (ustr[i] < ' ')
             {
-              g_string_sprintfa(result, "\\%03o", ustr[i]);
+              format_uint32_padded(result, 3, '0', 8, ustr[i]);
             }
           else
             g_string_append_c(result, ustr[i]);
