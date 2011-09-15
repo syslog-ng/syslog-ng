@@ -853,6 +853,13 @@ affile_dw_queue(LogPipe *s, LogMessage *lm, const LogPathOptions *path_options, 
 {
   AFFileDestWriter *self = (AFFileDestWriter *) s;
 
+  if (!server_mode && lm->saddr && lm->saddr->sa.sa_family != AF_UNIX)
+    {
+      msg_error("syslog-ng running in client/relay mode, network messages cannot be written to files", NULL);
+      log_msg_drop(lm, path_options);
+      return;
+    }
+
   g_static_mutex_lock(&self->lock);
   self->last_msg_stamp = cached_g_current_time_sec();
   if (self->last_open_stamp == 0)
