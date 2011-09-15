@@ -13,6 +13,7 @@
 #include <string.h>
 #include <glib.h>
 #include <signal.h>
+#include <pthread.h>
 
 #include <openssl/crypto.h>
 #include <openssl/x509.h>
@@ -60,6 +61,7 @@ char *sdata_value = NULL;
 guint64 sum_count;
 struct timeval sum_time;
 gint raw_message_length;
+SSL_CTX* ssl_ctx;
 
 typedef ssize_t (*send_data_t)(void *user_data, void *buf, size_t length);
 
@@ -69,7 +71,7 @@ send_plain(void *user_data, void *buf, size_t length)
   return send((long)user_data, buf, length, 0);
 }
 
-#if ENABLE_SSL
+#if ENABLE_SSL_MODULE
 static ssize_t
 send_ssl(void *user_data, void *buf, size_t length)
 {
@@ -199,7 +201,7 @@ gen_next_message(FILE *source, char *buf, int buflen)
 {
   static int lineno = 0;
   struct tm tm;
-  struct timeval now;
+  time_t now;
   char line[MAX_MESSAGE_LENGTH+1];
   char stamp[32];
   int linelen;
@@ -242,8 +244,8 @@ gen_next_message(FILE *source, char *buf, int buflen)
 
       fprintf(stderr, "\rInvalid line %d                  \n", ++lineno);
     }
-  gettimeofday(&now, NULL);
-  localtime_r(&now.tv_sec, &tm);
+  now = time(NULL);
+  localtime_r(&now, &tm);
   tslen = strftime(stamp, sizeof(stamp), "%Y-%m-%dT%H:%M:%S", &tm);
 
   if (dont_parse)
@@ -307,7 +309,6 @@ gen_messages(send_data_t send_func, void *send_func_ud, int thread_id, FILE *rea
   struct timeval diff_tv;
   int pos_timestamp1 = 0, pos_timestamp2 = 0, pos_seq = 0;
   int rc, hdr_len = 0;
-  unsigned int counter = 0;
   gint64 sum_linelen = 0;
   char *testsdata = NULL;
 
@@ -365,7 +366,6 @@ gen_messages(send_data_t send_func, void *send_func_ud, int thread_id, FILE *rea
 
   /* NOTE: all threads calculate raw_message_length. This code could use some refactorization. */
   raw_message_length = linelen = strlen(linebuf);
-  counter = 0;
   while (time_val_diff_in_usec(&now, &start) < ((int64_t)interval) * USEC_PER_SEC)
     {
       if(number_of_messages != 0 && count >= number_of_messages)
@@ -420,9 +420,11 @@ gen_messages(send_data_t send_func, void *send_func_ud, int thread_id, FILE *rea
           if (!readfrom)
             {
               int len;
+              time_t now_time_t;
               struct tm tm;
 
-              localtime_r(&now.tv_sec, &tm);
+              now_time_t = now.tv_sec;
+              localtime_r(&now_time_t, &tm);
               len = strftime(stamp, sizeof(stamp), "%Y-%m-%dT%H:%M:%S", &tm);
               memcpy(&linebuf[pos_timestamp1], stamp, len);
               memcpy(&linebuf[pos_timestamp2], stamp, len);
@@ -467,36 +469,21 @@ gen_messages(send_data_t send_func, void *send_func_ud, int thread_id, FILE *rea
     printf("%d;%lu.%06lu;%.2lf;%lu\n", thread_id, (long) diff_tv.tv_sec, (long) diff_tv.tv_usec, (((double) (count - last_count) * USEC_PER_SEC) / diff_usec), count);
 
   if (readfrom)
-    {
-      if (count)
-	raw_message_length = sum_linelen/count;
-      else
-	raw_message_length = 0;
-    }
+    raw_message_length = sum_linelen/count;
   free(testsdata);
   return count;
 }
 
-#if ENABLE_SSL
+#if ENABLE_SSL_MODULE
 static guint64
 gen_messages_ssl(int sock, int id, FILE *readfrom)
 {
   int ret = 0;
   int err;
-  SSL_CTX* ctx;
   SSL *ssl;
 
-  /* Initialize SSL library */
-  OpenSSL_add_ssl_algorithms();
-
-  if (NULL == (ctx = SSL_CTX_new(SSLv23_client_method())))
+  if (NULL == (ssl = SSL_new(ssl_ctx)))
     return 1;
-
-  if (NULL == (ssl = SSL_new(ctx)))
-    return 1;
-
-  SSL_load_error_strings();
-  ERR_load_crypto_strings();
 
   SSL_set_fd (ssl, sock);
   if (-1 == (err = SSL_connect(ssl)))
@@ -509,10 +496,8 @@ gen_messages_ssl(int sock, int id, FILE *readfrom)
   ret = gen_messages(send_ssl, ssl, id, readfrom);
 
   SSL_shutdown (ssl);
-
   /* Clean up. */
   SSL_free (ssl);
-  SSL_CTX_free (ctx);
 
   return ret;
 }
@@ -535,6 +520,45 @@ gboolean threads_stop;
 gint active_finished;
 gint connect_finished;
 guint64 sum_count;
+
+/* Multithreaded OPENSSL */
+GMutex **ssl_lock_cs;
+long *ssl_lock_count;
+
+void ssl_locking_callback(int mode, int type, char *file, int line)
+{
+  if (mode & CRYPTO_LOCK)
+    {
+      g_mutex_lock(ssl_lock_cs[type]);
+      ssl_lock_count[type]++;
+    }
+  else
+    {
+      g_mutex_unlock(ssl_lock_cs[type]);
+    }
+}
+
+unsigned long ssl_thread_id(void)
+{
+  unsigned long ret;
+
+  ret=(unsigned long)pthread_self();
+  return(ret);
+}
+
+void thread_setup(void)
+  {
+  int i;
+
+  ssl_lock_cs=OPENSSL_malloc(CRYPTO_num_locks() * sizeof(void *));
+  ssl_lock_count=OPENSSL_malloc(CRYPTO_num_locks() * sizeof(long));
+  for (i=0; i<CRYPTO_num_locks(); i++)
+    {
+      ssl_lock_cs[i]=g_mutex_new();
+    }
+  CRYPTO_set_id_callback((unsigned long (*)())ssl_thread_id);
+  CRYPTO_set_locking_callback((void (*)())ssl_locking_callback);
+}
 
 gpointer
 idle_thread(gpointer st)
@@ -650,7 +674,7 @@ static GOptionEntry loggen_options[] = {
   { "no-framing", 'F', G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &framing, "Don't use syslog-protocol style framing, even if syslog-proto is set", NULL },
   { "active-connections", 0, 0, G_OPTION_ARG_INT, &active_connections, "Number of active connections to the server (default = 1)", "<number>" },
   { "idle-connections", 0, 0, G_OPTION_ARG_INT, &idle_connections, "Number of inactive connections to the server (default = 0)", "<number>" },
-#if ENABLE_SSL
+#if ENABLE_SSL_MODULE
   { "use-ssl", 'U', 0, G_OPTION_ARG_NONE, &usessl, "Use ssl layer", NULL },
 #endif
   { "read-file", 'R', 0, G_OPTION_ARG_STRING, &read_file, "Read log messages from file", "<filename>" },
@@ -734,6 +758,18 @@ main(int argc, char *argv[])
       fprintf(stderr, "Message size too large, limiting to %d\n", MAX_MESSAGE_LENGTH);
       message_length = MAX_MESSAGE_LENGTH;
     }
+
+#if ENABLE_SSL_MODULE
+  if (usessl)
+    {
+      /* Initialize SSL library */
+      OpenSSL_add_ssl_algorithms();
+      if (NULL == (ssl_ctx = SSL_CTX_new(SSLv23_client_method())))
+        return 1;
+    }
+    SSL_load_error_strings();
+    ERR_load_crypto_strings();
+#endif
 
   if (syslog_proto)
     framing = 1;
@@ -829,7 +865,7 @@ main(int argc, char *argv[])
       fprintf(stderr, "Loggen doesn't support more than 10k threads.\n");
       return 2;
     }
-
+  thread_setup();
   /* used for startup & to signal inactive threads to exit */
   thread_cond = g_cond_new();
   /* active threads signal when they are ready */
@@ -874,12 +910,17 @@ main(int argc, char *argv[])
   sum_time.tv_usec /= active_connections;
   diff_usec = sum_time.tv_sec * USEC_PER_SEC + sum_time.tv_usec;
 
-  fprintf(stderr, "average rate = %.2lf msg/sec, count=%"G_GUINT64_FORMAT", time=%ld.%03ld, (average) msg size=%d, bandwidth=%.2lf kB/sec\n",
-
-    (double) sum_count * USEC_PER_SEC / diff_usec, sum_count, sum_time.tv_sec, sum_time.tv_usec / 1000, raw_message_length,
-    (double) sum_count * raw_message_length * (USEC_PER_SEC / 1024) / diff_usec);
+  if (diff_usec == 0)
+    {
+      diff_usec = 1;
+    }
+  fprintf(stderr, "average rate = %.2lf msg/sec, count=%"G_GUINT64_FORMAT", time=%ld.%03ld, (average) msg size=%ld, bandwidth=%.2lf kB/sec\n",
+        (double)sum_count * USEC_PER_SEC / diff_usec, sum_count,
+        (long int)sum_time.tv_sec, (long int)sum_time.tv_usec / 1000,
+        (long int)raw_message_length, (double)sum_count * raw_message_length * (USEC_PER_SEC / 1024) / diff_usec);
 
 stop_and_exit:
+  SSL_CTX_free (ssl_ctx);
   threads_start = TRUE;
   threads_stop = TRUE;
   g_mutex_lock(thread_lock);
