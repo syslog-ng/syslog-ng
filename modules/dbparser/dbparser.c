@@ -28,6 +28,7 @@
 
 #include <sys/stat.h>
 #include <iv.h>
+#include <string.h>
 
 typedef enum
 {
