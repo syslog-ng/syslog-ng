@@ -697,4 +697,16 @@ set_permissions_fd(gint fd, gint uid, gint gid, gint mode)
     if (fchmod(fd, (mode_t) mode)) return -1;
   return 0;
 #endif
+
+gchar *
+normalize_option_name(gchar *name)
+{
+  gchar *p = name;
+  while(*p != '\0')
+    {
+      if (*p == '-')
+        *p = '_';
+      p++;
+    }
+  return name;
 }

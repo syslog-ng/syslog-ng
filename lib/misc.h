@@ -99,4 +99,6 @@ void string_list_free(GList *l);
 
 gchar *utf8_escape_string(const gchar *str, gssize len);
 
+gchar *normalize_option_name(gchar *name);
+
 #endif
