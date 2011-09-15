@@ -39,12 +39,6 @@
 #include "mainloop.h"
 #include "plugin.h"
 
-#if ENABLE_SSL
-#include <openssl/ssl.h>
-#include <openssl/rand.h>
-#endif
-
-
 #include <sys/types.h>
 #include <stdio.h>
 #include <stdlib.h>
