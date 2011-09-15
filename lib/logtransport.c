@@ -71,8 +71,8 @@ log_transport_plain_read_method(LogTransport *s, gpointer buf, gsize buflen, GSo
 
       do
         {
-          if (self->super.timeout)
-            alarm_set(self->super.timeout);
+          /*if (self->super.timeout)
+            alarm_set(self->super.timeout);*/
           rc = read(self->super.fd, buf, buflen);
           
           if (self->super.timeout > 0 && rc == -1 && errno == EINTR && alarm_has_fired())

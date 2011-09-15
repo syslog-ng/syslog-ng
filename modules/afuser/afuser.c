@@ -93,7 +93,7 @@ afuser_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
           fd = open(line, O_NOCTTY | O_APPEND | O_WRONLY | O_NONBLOCK);
           if (fd != -1) 
             {
-              alarm_set(10);
+              /*alarm_set(10);*/
               if (write(fd, buf, strlen(buf)) < 0 && errno == EINTR && alarm_has_fired())
                 {
                   msg_notice("Writing to the user terminal has blocked for 10 seconds, disabling for 10 minutes",
