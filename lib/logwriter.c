@@ -229,7 +229,7 @@ log_writer_io_error(gpointer s)
       /*
         POLLERR occured, has to rewind the qbacklog
       */
-      log_queue_rewind_backlog(self->queue);
+      log_queue_rewind_backlog(self->queue, -1);
       self->pending_message_count = 0;
       log_writer_broken(self, NC_WRITE_ERROR);
       return;
@@ -1060,11 +1060,8 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
       if (!log_queue_pop_head(self->queue, &lm, &path_options, (self->flags & LW_KEEP_ONE_PENDING) ? TRUE : FALSE, ignore_throttle))
         {
           /* no more items are available */
-          if (self->pending_message_count >= 1)
-            log_queue_ack_backlog(self->queue, 1);
           break;
         }
-
       log_msg_refcache_start_consumer(lm, &path_options);
       msg_set_context(lm);
 
@@ -1077,7 +1074,7 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
           status = log_proto_post(proto, lm, (guchar *)self->line_buffer->str, self->line_buffer->len, &consumed);
           if (status == LPS_ERROR)
             {
-              log_queue_rewind_backlog(self->queue);
+              log_queue_rewind_backlog(self->queue, -1);
               self->pending_message_count = 0;
               if ((self->options->options & LWO_IGNORE_ERRORS) == 0)
                 {
@@ -1109,8 +1106,14 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
       else
         {
           /* push back to the queue */
-          //log_queue_rewind_backlog(self->queue);
-          log_queue_push_head(self->queue, lm, &path_options);
+          if (self->flags & LW_KEEP_ONE_PENDING)
+            {
+              log_queue_rewind_backlog(self->queue, 1);
+            }
+          else
+            {
+              log_queue_push_head(self->queue, lm, &path_options);
+            }
           msg_set_context(NULL);
           log_msg_refcache_stop();
           break;
@@ -1118,7 +1121,7 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
       if (self->flags & LW_KEEP_ONE_PENDING)
         {
           if (self->pending_message_count >= 1)
-            log_queue_ack_backlog(self->queue, 1);
+            log_queue_ack_backlog(self->queue, self->pending_message_count);
           else
             self->pending_message_count++;
         }

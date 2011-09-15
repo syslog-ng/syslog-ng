@@ -383,16 +383,38 @@ log_queue_fifo_ack_backlog(LogQueue *s, gint n)
  * NOTE: this is assumed to be called from the output thread.
  */
 static void
-log_queue_fifo_rewind_backlog(LogQueue *s)
+log_queue_fifo_rewind_backlog(LogQueue *s, gint n)
 {
   LogQueueFifo *self = (LogQueueFifo *) s;
-
   log_queue_assert_output_thread(s);
-  list_splice_init(&self->qbacklog, &self->qoverflow_output);
+  if (n < 0)
+    {
+      list_splice_init(&self->qbacklog, &self->qoverflow_output);
+      self->qoverflow_output_len += self->qbacklog_len;
+      stats_counter_add(self->super.stored_messages, self->qbacklog_len);
+      self->qbacklog_len = 0;
+    }
+  else
+    {
+      gint i;
+      if (n > self->qbacklog_len)
+        {
+          n = self->qbacklog_len;
+        }
+      for (i = 0; i < n; i++)
+        {
+          LogMessageQueueNode *node;
 
-  self->qoverflow_output_len += self->qbacklog_len;
-  stats_counter_add(self->super.stored_messages, self->qbacklog_len);
-  self->qbacklog_len = 0;
+          node = list_entry(self->qbacklog.prev, LogMessageQueueNode, list);
+
+          list_del_init(&node->list);
+          list_add(&node->list,&self->qoverflow_output);
+
+          self->qbacklog_len--;
+          self->qoverflow_output_len++;
+          stats_counter_inc(self->super.stored_messages);
+        }
+    }
 }
 
 static void

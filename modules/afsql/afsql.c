@@ -575,7 +575,7 @@ afsql_dd_commit_txn(AFSqlDestDriver *self, gboolean lock)
     {
       msg_notice("SQL transaction commit failed, rewinding backlog and starting again",
                  NULL);
-      log_queue_rewind_backlog(self->queue);
+      log_queue_rewind_backlog(self->queue, -1);
     }
   if (lock)
     g_mutex_unlock(self->db_thread_mutex);
