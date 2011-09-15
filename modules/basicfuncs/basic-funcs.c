@@ -4,8 +4,12 @@
 #include "filter-expr-parser.h"
 #include "cfg.h"
 
+#include <stdlib.h>
+#include <errno.h>
+#include <string.h>
+
 static void
-tf_echo(LogMessage *msg, gint argc, GString *argv[], GString *result)
+append_args(gint argc, GString *argv[], GString *result)
 {
   gint i;
 
@@ -15,6 +19,12 @@ tf_echo(LogMessage *msg, gint argc, GString *argv[], GString *result)
       if (i < argc - 1)
         g_string_append_c(result, ' ');
     }
+}
+
+static void
+tf_echo(LogMessage *msg, gint argc, GString *argv[], GString *result)
+{
+  append_args(argc, argv, result);
 }
 
 TEMPLATE_FUNCTION_SIMPLE(tf_echo);
@@ -153,11 +163,35 @@ tf_if_call(LogTemplateFunction *self, gpointer state, GPtrArray *arg_bufs, LogMe
 TEMPLATE_FUNCTION(tf_if, tf_if_prepare, tf_cond_eval, tf_if_call, NULL);
 
 
+void
+tf_indent_multi_line(LogMessage *msg, gint argc, GString *argv[], GString *text)
+{
+  gchar *p, *new_line;
+
+  /* append the message text(s) to the template string */
+  append_args(argc, argv, text);
+
+  /* look up the \n-s and insert a \t after them */
+  p = text->str;
+  new_line = memchr(p, '\n', text->len);
+  while(new_line)
+    {
+      if (*(gchar *)(new_line + 1) != '\t')
+        {
+          g_string_insert_c(text, new_line - p + 1, '\t');
+        }
+      new_line = memchr(new_line + 1, '\n', p + text->len - new_line);
+    }
+}
+
+TEMPLATE_FUNCTION_SIMPLE(tf_indent_multi_line);
+
 static Plugin basicfuncs_plugins[] =
 {
   TEMPLATE_FUNCTION_PLUGIN(tf_echo, "echo"),
   TEMPLATE_FUNCTION_PLUGIN(tf_grep, "grep"),
   TEMPLATE_FUNCTION_PLUGIN(tf_if, "if"),
+  TEMPLATE_FUNCTION_PLUGIN(tf_indent_multi_line, "indent-multi-line"),
 };
 
 gboolean
