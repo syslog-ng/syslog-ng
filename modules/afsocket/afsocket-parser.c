@@ -56,6 +56,7 @@ static CfgLexerKeyword afsocket_keywords[] = {
   { "ip",                 KW_IP },
   { "localport",          KW_LOCALPORT },
   { "port",               KW_PORT },
+  { "failover_servers",   KW_FAILOVERS },
   { "destport",           KW_DESTPORT },
   { "ip_ttl",             KW_IP_TTL },
   { "ip_tos",             KW_IP_TOS },

@@ -855,6 +855,43 @@ afsocket_dd_set_tls_context(LogDriver *s, TLSContext *tls_context)
 }
 #endif
 
+gchar *
+afsocket_dd_get_next_dest(AFSocketDestDriver *self)
+{
+  gchar *result=self->hostname;
+  if(self->server_name_list)
+  {
+    if(self->server_name_list->next)
+      {
+        self->server_name_list = self->server_name_list->next;
+      }
+    else
+      {
+        self->server_name_list = g_list_first(self->server_name_list);
+      }
+    result = (gchar *)self->server_name_list->data;
+  }
+  return result;
+}
+
+void
+afsocket_dd_add_failovers(LogDriver *s, GList *failover_list)
+{
+  AFSocketDestDriver *self = (AFSocketDestDriver *) s;
+  if(!self->server_name_list)
+    {
+      self->server_name_list = g_list_append(self->server_name_list, self->hostname);
+    }
+  while(failover_list)
+    {
+      self->server_name_list = g_list_append(self->server_name_list, g_strdup(failover_list->data));
+      g_free(failover_list->data);
+      failover_list = g_list_delete_link(failover_list,failover_list);
+    }
+  self->server_name_list = g_list_first(self->server_name_list);
+  self->hostname = self->server_name_list->data;
+}
+
 void
 afsocket_dd_set_keep_alive(LogDriver *s, gint enable)
 {
@@ -945,6 +982,7 @@ afsocket_dd_tls_verify_callback(gint ok, X509_STORE_CTX *ctx, gpointer user_data
 
 static gboolean afsocket_dd_connected(AFSocketDestDriver *self);
 static void afsocket_dd_reconnect(AFSocketDestDriver *self);
+static gboolean afsocket_dd_reconnect_timer(gpointer p);
 
 static void
 afsocket_dd_init_watches(AFSocketDestDriver *self)
@@ -955,7 +993,7 @@ afsocket_dd_init_watches(AFSocketDestDriver *self)
 
   IV_TIMER_INIT(&self->reconnect_timer);
   self->reconnect_timer.cookie = self;
-  self->reconnect_timer.handler = (void (*)(void *)) afsocket_dd_reconnect;
+  self->reconnect_timer.handler = (void (*)(void *)) afsocket_dd_reconnect_timer;
 }
 
 static void
@@ -1144,6 +1182,35 @@ afsocket_dd_reconnect(AFSocketDestDriver *self)
     }
 }
 
+static gboolean
+afsocket_dd_reconnect_timer(gpointer s)
+{
+  AFSocketDestDriver *self = (AFSocketDestDriver *)s;
+
+  if (self->dest_addr->sa.sa_family != AF_UNIX)
+    {
+      gchar *old_server = g_strdup(self->hostname);
+
+      self->hostname = afsocket_dd_get_next_dest(self);
+      resolve_hostname(&self->dest_addr, self->hostname);
+      if (strcmp(old_server, self->hostname) == 0)
+	{
+	  /* no failover server */
+	  msg_warning("The server is inaccessible, trying the old host again",
+		      evt_tag_str("host", self->hostname),
+		      NULL);
+	}
+      else
+	msg_warning("Current server is inaccessible, sending the messages to the next fail-over server",
+		    evt_tag_str("current", old_server),
+		    evt_tag_str("failover", self->hostname),
+		    NULL);
+      g_free(old_server);
+    }
+  afsocket_dd_reconnect(self);
+  return FALSE;
+}
+
 gboolean
 afsocket_dd_init(LogPipe *s)
 {
@@ -1168,6 +1235,10 @@ afsocket_dd_init(LogPipe *s)
       self->time_reopen = cfg->time_reopen;
     }
 
+  /* NOTE: we try to keep our LogWriter instance persistent as that
+   * contains a reference to our underlying connection. This way
+   * the connection is not closed when syslog-ng is reloaded.
+   */
   log_writer_options_init(&self->writer_options, cfg, 0);
   self->writer = cfg_persist_config_fetch(cfg, afsocket_dd_format_persist_name(self, FALSE));
   if (!self->writer)
@@ -1250,6 +1321,12 @@ void
 afsocket_dd_free(LogPipe *s)
 {
   AFSocketDestDriver *self = (AFSocketDestDriver *) s;
+
+  while (self->server_name_list)
+    {
+      g_free(self->server_name_list->data);
+      self->server_name_list = g_list_delete_link(self->server_name_list, self->server_name_list);
+    }
 
   log_writer_options_destroy(&self->writer_options);
   g_sockaddr_unref(self->bind_addr);

@@ -153,6 +153,7 @@ struct _AFSocketDestDriver
   struct iv_fd connect_fd;
   struct iv_timer reconnect_timer;
   SocketOptions *sock_options_ptr;
+  GList *server_name_list;
 
   /*
    * Apply transport options, set up bind_addr/dest_addr based on the
@@ -173,6 +174,7 @@ struct _AFSocketDestDriver
 };
 
 
+void afsocket_dd_add_failovers(LogDriver *s, GList *failover_list);
 #if ENABLE_SSL
 void afsocket_dd_set_tls_context(LogDriver *s, TLSContext *tls_context);
 #else
