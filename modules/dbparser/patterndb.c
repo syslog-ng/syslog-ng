@@ -764,7 +764,14 @@ typedef struct _PDBLoader
   gchar *test_value_name;
   GlobalConfig *cfg;
   gint action_id;
+  GArray *program_patterns;
 } PDBLoader;
+
+typedef struct _PDBProgramPattern
+{
+  gchar *pattern;
+  PDBRule *rule;
+} PDBProgramPattern;
 
 void
 pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name, const gchar **attribute_names,
@@ -783,6 +790,7 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
 
       state->in_ruleset = TRUE;
       state->first_program = TRUE;
+      state->program_patterns = g_array_new(0, 0, sizeof(PDBProgramPattern));
     }
   else if (strcmp(element_name, "example") == 0)
     {
@@ -946,6 +954,9 @@ void
 pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, gpointer user_data, GError **error)
 {
   PDBLoader *state = (PDBLoader *) user_data;
+  PDBProgramPattern *program_pattern;
+  PDBProgram *program;
+  int i;
 
   if (strcmp(element_name, "ruleset") == 0)
     {
@@ -955,8 +966,25 @@ pdb_loader_end_element(GMarkupParseContext *context, const gchar *element_name, 
           return;
         }
 
+      program = (state->current_program ? state->current_program : state->root_program);
+
+      /* Copy stored rules into current program */
+      for (i = 0; i < state->program_patterns->len; i++)
+        {
+          program_pattern = &g_array_index(state->program_patterns, PDBProgramPattern, i);
+
+          r_insert_node(program->rules,
+                        program_pattern->pattern,
+                        program_pattern->rule,
+                        TRUE, pdb_rule_get_name);
+          g_free(program_pattern->pattern);
+        }
+
       state->current_program = NULL;
       state->in_ruleset = FALSE;
+
+      g_array_free(state->program_patterns, TRUE);
+      state->program_patterns = NULL;
     }
   else if (strcmp(element_name, "example") == 0)
     {
@@ -1045,6 +1073,7 @@ pdb_loader_text(GMarkupParseContext *context, const gchar *text, gsize text_len,
   PDBLoader *state = (PDBLoader *) user_data;
   LogTemplate *value;
   GError *err = NULL;
+  PDBProgramPattern program_pattern;
   RNode *node = NULL;
   gchar *txt;
   gchar **nv;
@@ -1055,10 +1084,9 @@ pdb_loader_text(GMarkupParseContext *context, const gchar *text, gsize text_len,
 
       if (state->in_rule)
         {
-          r_insert_node(state->current_program ? state->current_program->rules : state->root_program->rules,
-                        txt,
-                        pdb_rule_ref(state->current_rule),
-                        TRUE, pdb_rule_get_name);
+          program_pattern.pattern = g_strdup(text);
+          program_pattern.rule = pdb_rule_ref(state->current_rule);
+          g_array_append_val(state->program_patterns, program_pattern);
         }
       else if (state->in_ruleset)
         {
@@ -1135,6 +1163,7 @@ pdb_loader_text(GMarkupParseContext *context, const gchar *text, gsize text_len,
     }
 }
 
+static
 GMarkupParser db_parser =
 {
   .start_element = pdb_loader_start_element,
@@ -1211,6 +1240,36 @@ pdb_rule_set_load(PDBRuleSet *self, GlobalConfig *cfg, const gchar *config, GLis
   return success;
 }
 
+/**
+ * log_db_add_matches:
+ *
+ * Adds the values from the given GArray of RParserMatch entries to the NVTable
+ * of the passed LogMessage.
+ *
+ * @msg: the LogMessage to add the matches to
+ * @matches: an array of RParserMatch entries
+ * @ref_handle: if the matches are indirect matches, they are referenced based on this handle (eg. LM_V_MESSAGE)
+ **/
+void
+log_db_add_matches(LogMessage *msg, GArray *matches, NVHandle ref_handle)
+{
+  gint i;
+  for (i = 0; i < matches->len; i++)
+    {
+      RParserMatch *match = &g_array_index(matches, RParserMatch, i);
+
+      if (match->match)
+        {
+          log_msg_set_value(msg, match->handle, match->match, match->len);
+          g_free(match->match);
+        }
+      else
+        {
+          log_msg_set_value_indirect(msg, match->handle, ref_handle, match->type, match->ofs, match->len);
+        }
+    }
+}
+
 /*
  * Looks up a matching rule in the ruleset.
  *
@@ -1220,7 +1279,7 @@ PDBRule *
 pdb_rule_set_lookup(PDBRuleSet *self, LogMessage *msg, GArray *dbg_list)
 {
   RNode *node;
-  GArray *matches;
+  GArray *prg_matches, *matches;
   const gchar *program;
   gssize program_len;
 
@@ -1228,10 +1287,14 @@ pdb_rule_set_lookup(PDBRuleSet *self, LogMessage *msg, GArray *dbg_list)
     return FALSE;
 
   program = log_msg_get_value(msg, LM_V_PROGRAM, &program_len);
-  node = r_find_node(self->programs, (gchar *) program, (gchar *) program, program_len, NULL);
+  prg_matches = g_array_new(FALSE, TRUE, sizeof(RParserMatch));
+  node = r_find_node(self->programs, (gchar *) program, (gchar *) program, program_len, prg_matches);
 
   if (node)
     {
+      log_db_add_matches(msg, prg_matches, LM_V_PROGRAM);
+      g_array_free(prg_matches, TRUE);
+
       PDBProgram *program = (PDBProgram *) node->value;
 
       if (program->rules)
@@ -1257,7 +1320,6 @@ pdb_rule_set_lookup(PDBRuleSet *self, LogMessage *msg, GArray *dbg_list)
             {
               PDBRule *rule = (PDBRule *) msg_node->value;
               GString *buffer = g_string_sized_new(32);
-              gint i;
 
               msg_debug("patterndb rule matches",
                         evt_tag_str("rule_id", rule->rule_id),
@@ -1265,21 +1327,7 @@ pdb_rule_set_lookup(PDBRuleSet *self, LogMessage *msg, GArray *dbg_list)
               log_msg_set_value(msg, class_handle, rule->class ? rule->class : "system", -1);
               log_msg_set_value(msg, rule_id_handle, rule->rule_id, -1);
 
-              for (i = 0; i < matches->len; i++)
-                {
-                  RParserMatch *match = &g_array_index(matches, RParserMatch, i);
-
-                  if (match->match)
-                    {
-                      log_msg_set_value(msg, match->handle, match->match, match->len);
-                      g_free(match->match);
-                    }
-                  else
-                    {
-                      log_msg_set_value_indirect(msg, match->handle, LM_V_MESSAGE, match->type, match->ofs, match->len);
-                    }
-                }
-
+              log_db_add_matches(msg, matches, LM_V_MESSAGE);
               g_array_free(matches, TRUE);
 
               if (!rule->class)
@@ -1299,6 +1347,11 @@ pdb_rule_set_lookup(PDBRuleSet *self, LogMessage *msg, GArray *dbg_list)
           g_array_free(matches, TRUE);
         }
     }
+  else
+    {
+      g_array_free(prg_matches, TRUE);
+    }
+
   return NULL;
 
 }
