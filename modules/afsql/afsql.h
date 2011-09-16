@@ -55,6 +55,7 @@ void afsql_dd_set_session_statements(LogDriver *s, GList *session_statements);
 void afsql_dd_set_flags(LogDriver *s, gint flags);
 LogDriver *afsql_dd_new();
 gint afsql_dd_lookup_flag(const gchar *flag);
+void afsql_dd_set_retries(LogDriver *s, gint num_retries);
 
 #else
 
