@@ -683,7 +683,7 @@ static GOptionEntry loggen_options[] = {
   { "csv", 'C', 0, G_OPTION_ARG_NONE, &csv, "Produce CSV output", NULL },
   { "number", 'n', 0, G_OPTION_ARG_INT, &number_of_messages, "Number of messages to generate", "<number>" },
   { "quiet", 'Q', 0, G_OPTION_ARG_NONE, &quiet, "Don't print the msg/sec data", NULL },
-  { "version",   'V', 0, G_OPTION_ARG_NONE, &display_version, "Display version number (" PACKAGE " " VERSION ")", NULL },
+  { "version",   'V', 0, G_OPTION_ARG_NONE, &display_version, "Display version number (" PACKAGE " " COMBINED_VERSION ")", NULL },
   { NULL }
 };
 
@@ -699,7 +699,7 @@ static GOptionEntry file_option_entries[] =
 void
 version(void)
 {
-  printf(PACKAGE " " VERSION "\n");
+  printf(PACKAGE " " COMBINED_VERSION "\n");
 }
 
 int

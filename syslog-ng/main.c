@@ -70,7 +70,7 @@ extern int cfg_parser_debug;
 
 static GOptionEntry syslogng_options[] = 
 {
-  { "version",           'V',         0, G_OPTION_ARG_NONE, &display_version, "Display version number (" PACKAGE " " VERSION ")", NULL },
+  { "version",           'V',         0, G_OPTION_ARG_NONE, &display_version, "Display version number (" PACKAGE " " COMBINED_VERSION ")", NULL },
   { "module-path",         0,         0, G_OPTION_ARG_STRING, &module_path, "Set the list of colon separated directories to search for modules, default=" MODULE_PATH, "<path>" },
   { "module-registry",     0,         0, G_OPTION_ARG_NONE, &display_module_registry, "Display module information", NULL },
   { "default-modules",     0,         0, G_OPTION_ARG_STRING, &default_modules, "Set the set of auto-loaded modules, default=" DEFAULT_MODULES, "<module-list>" },
@@ -120,7 +120,7 @@ version(void)
     {
       installer_version = VERSION;
     }
-  printf(PACKAGE " " VERSION "\n"
+  printf(PACKAGE " " COMBINED_VERSION "\n"
          "Installer-Version: %s\n"
          "Revision: " SOURCE_REVISION "\n"
 #if WITH_COMPILE_DATE

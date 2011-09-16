@@ -57,6 +57,40 @@ if test -n "$SNAPSHOT_VERSION"; then
 	VERSION=$VERSION+$SNAPSHOT_VERSION
 fi
 
+dnl ***************************************************************************
+dnl script snippet to generate user friendly version strings according to the
+dnl new versioning policy. All needed code are here to allow easy moving
+dnl between projects.
+if test -z "$RELEASE_TYPE"; then
+	RELEASE_TYPE=feature
+fi
+
+if test -z "$BROCHURE_VERSION"; then
+    _MAJOR=`echo $VERSION | cut -f1 -d'.'`
+    _MINOR=`echo $VERSION | cut -f2 -d'.'`
+    case "$RELEASE_TYPE" in
+        stable) BROCHURE_VERSION="$_MAJOR LTS";;
+        feature) BROCHURE_VERSION="$_MAJOR F$_MINOR";;
+        *) BROCHURE_VERSION="$VERSION dogfood edition. Please contact your syslog-ng release manager to fix the configure scritpt";;
+    esac
+fi
+
+if test -z "$COMBINED_VERSION"; then
+    COMBINED_VERSION="$BROCHURE_VERSION ($VERSION)"
+fi
+
+TECHNICAL_VERSION=$VERSION
+
+AC_DEFINE_UNQUOTED(RELEASE_TYPE, "$RELEASE_TYPE", [type of syslog-ng release. stable or feature])
+AC_DEFINE_UNQUOTED(BROCHURE_VERSION, "$BROCHURE_VERSION", [pretty version for users depends on the release type])
+AC_DEFINE_UNQUOTED(COMBINED_VERSION, "$COMBINED_VERSION", [normal and brochure version combined])
+AC_DEFINE_UNQUOTED(SOURCE_REVISION, "$SOURCE_REVISION", [source revision])
+AC_SUBST(RELEASE_TYPE)
+AC_SUBST(BROCHURE_VERSION)
+AC_SUBST(COMBINED_VERSION)
+AC_SUBST(TECHNICAL_VERSION)
+dnl ***************************************************************************
+
 if test "x$prefix" = "xNONE"; then
         prefix=$ac_default_prefix
 fi
@@ -1213,6 +1247,10 @@ AC_OUTPUT(dist.conf
 
 echo 
 echo "syslog-ng Open Source Edition $VERSION configured"
+echo " Edition settings:"
+echo "  Release type                : $RELEASE_TYPE"
+echo "  Pretty verssion             : $BROCHURE_VERSION"
+echo "  Combined vers.              : $COMBINED_VERSION"
 echo " Compiler options:"
 echo "  compiler                    : $CC"
 echo "  compiler options            : $CFLAGS $CPPFLAGS"
