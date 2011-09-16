@@ -311,7 +311,7 @@ test_patterndb_rule(void)
 gchar *pdb_parser_skeleton_prefix ="<?xml version='1.0' encoding='UTF-8'?>\
           <patterndb version='3' pub_date='2010-02-22'>\
             <ruleset name='test1_program' id='480de478-d4a6-4a7f-bea4-0c0245d361e1'>\
-                <pattern>test</pattern>\
+                <pattern>test@NUMBER@</pattern>\
                     <rule id='1' class='test1' provider='my'>\
                         <patterns>\
                          <pattern>";
@@ -342,7 +342,7 @@ test_pattern(const gchar *pattern, const gchar *rule, gboolean match)
     }
 
   log_msg_set_value(msg, LM_V_HOST, MYHOST, strlen(MYHOST));
-  log_msg_set_value(msg, LM_V_PROGRAM, "test", strlen(MYHOST));
+  log_msg_set_value(msg, LM_V_PROGRAM, "test123", strlen("test123"));
   log_msg_set_value(msg, LM_V_MESSAGE, pattern, strlen(pattern));
 
   result = pattern_db_process(patterndb, msg);
