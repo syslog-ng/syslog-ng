@@ -882,7 +882,7 @@ afsocket_dd_format_persist_name(AFSocketDestDriver *self, gboolean qfile)
 static gint
 afsocket_dd_stats_source(AFSocketDestDriver *self)
 {
-  gint source;
+  gint source = 0;
 
   if ((self->flags & AFSOCKET_SYSLOG_PROTOCOL) == 0)
     {
