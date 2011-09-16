@@ -39,7 +39,7 @@ EXTRA_DIST = $(BUILT_SOURCES) afsocket-grammar.ym
 if ENABLE_SSL
 install-exec-hook:
 	$(mkinstalldirs) $(DESTDIR)$(moduledir)
-	ln -sf libafsocket-tls.so $(DESTDIR)$(moduledir)/libafsocket.so
+	ln -sf libafsocket-tls$(BB_SHREXT) $(DESTDIR)$(moduledir)/libafsocket$(BB_SHREXT)
 
 libafsocket.la: libafsocket-tls.la
 	ln -sf libafsocket-tls.la libafsocket.la
@@ -47,7 +47,7 @@ libafsocket.la: libafsocket-tls.la
 else
 install-exec-hook:
 	$(mkinstalldirs) $(DESTDIR)$(moduledir)
-	ln -sf libafsocket-notls.so $(DESTDIR)$(moduledir)/libafsocket.so
+	ln -sf libafsocket-notls$(BB_SHREXT) $(DESTDIR)$(moduledir)/libafsocket$(BB_SHREXT)
 
 
 libafsocket.la: libafsocket-tls.la
@@ -56,7 +56,7 @@ libafsocket.la: libafsocket-tls.la
 endif
 
 uninstall-hook:
-	rm -f $(DESTDIR)$(moduledir)/libafsocket.so
+	rm -f $(DESTDIR)$(moduledir)/libafsocket$(BB_SHREXT)
 
 CLEANFILES = libafsocket.la
 

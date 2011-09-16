@@ -1109,6 +1109,17 @@ AC_SUBST(RELEASE_TAG)
 AC_SUBST(SNAPSHOT_VERSION)
 AC_SUBST(SOURCE_REVISION)
 
+# setting the platform's default shared library extension to make the proper symlink to libafsocket-[no]tls.$(BB_SHREXT)
+BB_SHREXT='.so'
+case $ostype in
+    AIX) BB_SHREXT=".a";;
+	HP-UX) case $host_cpu in
+		hppa*) BB_SHREXT='.sl';;
+		esac
+		;;
+esac
+AC_SUBST(BB_SHREXT)
+
 AC_OUTPUT(dist.conf
           Makefile 
 	  syslog-ng.spec
@@ -1183,6 +1194,7 @@ echo "  SSL support (module)        : ${enable_ssl:=no}"
 echo "  SQL support (module)        : ${enable_sql:=no}"
 echo "  PACCT module (EXPERIMENTAL) : ${enable_pacct:=no}"
 echo "  MongoDB destination (module): ${enable_mongodb:=no}"
+echo " Shared Library extension     : $BB_SHREXT"
 echo "  JSON support (module)       : ${enable_json:=no} (using ${with_json})"
 
 
