@@ -93,7 +93,12 @@ dest_afsql_option
 }
         | KW_TYPE '(' string ')'		{ afsql_dd_set_type(last_driver, $3); free($3); }
         | KW_HOST '(' string ')'		{ afsql_dd_set_host(last_driver, $3); free($3); }
-        | KW_PORT '(' string_or_number ')'	{ afsql_dd_set_port(last_driver, $3); free($3); }
+        | KW_PORT '(' string_or_number ')'
+          {
+            CHECK_ERROR(afsql_dd_check_port($3), @3, "Illegal sql port number: %s", $3);
+            afsql_dd_set_port(last_driver, $3);
+            free($3);
+          }
         | KW_USERNAME '(' string ')'		{ afsql_dd_set_user(last_driver, $3); free($3); }
         | KW_PASSWORD '(' string ')'		{ afsql_dd_set_password(last_driver, $3); free($3); }
         | KW_DATABASE '(' string ')'		{ afsql_dd_set_database(last_driver, $3); free($3); }

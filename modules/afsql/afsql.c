@@ -143,6 +143,16 @@ afsql_dd_set_host(LogDriver *s, const gchar *host)
   self->host = g_strdup(host);
 }
 
+gboolean afsql_dd_check_port(const gchar *port)
+{
+  /* only digits (->numbers) are allowed */
+  int len = strlen(port);
+  for (int i = 0; i < len; ++i)
+    if (port[i] < '0' || port[i] > '9')
+      return FALSE;
+  return TRUE;
+}
+
 void
 afsql_dd_set_port(LogDriver *s, const gchar *port)
 {
@@ -618,7 +628,10 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
       if (self->dbi_ctx)
         {
           dbi_conn_set_option(self->dbi_ctx, "host", self->host);
-          dbi_conn_set_option_numeric(self->dbi_ctx, "port", atoi(self->port));
+          if (strcmp(self->type, "mysql"))
+            dbi_conn_set_option(self->dbi_ctx, "port", self->port);
+          else
+            dbi_conn_set_option_numeric(self->dbi_ctx, "port", atoi(self->port));
           dbi_conn_set_option(self->dbi_ctx, "username", self->user);
           dbi_conn_set_option(self->dbi_ctx, "password", self->password);
           dbi_conn_set_option(self->dbi_ctx, "dbname", self->database);
