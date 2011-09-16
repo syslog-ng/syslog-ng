@@ -569,6 +569,8 @@ fi
 
 old_CPPFLAGS=$CPPFLAGS
 CPPFLAGS="$GLIB_CFLAGS"
+old_LDFLAGS=$LDFLAGS
+LDFLAGS="$LDFLAGS $GLIB_LIBS"
 
 AC_CACHE_CHECK(sanity checking Glib headers,
                blb_cv_glib_sane,
@@ -586,6 +588,7 @@ blb_cv_glib_sane=yes,
 blb_cv_glib_sane=no,
 blb_cv_glib_sane=yes)])
 CPPFLAGS=$old_CPPFLAGS
+LDFLAGS=$old_LDFLAGS
 
 if test "x$blb_cv_glib_sane" = "xno"; then
 	AC_MSG_ERROR([Glib headers inconsistent with current compiler setting. You might be using 32 bit Glib with a 64 bit compiler, check PKG_CONFIG_PATH])
