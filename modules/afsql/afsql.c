@@ -952,7 +952,6 @@ afsql_dd_format_persist_name(AFSqlDestDriver *self)
   return persist_name;
 }
 
-
 static gboolean
 afsql_dd_init(LogPipe *s)
 {
