@@ -23,8 +23,10 @@ int main(void)
   if (!resolve_group("-1", &gid) || gid != -1)
     return 1;
 
-  if (!resolve_group("sys", &gid))
+#ifndef _AIX
+  if (!resolve_group("daemon", &gid))
     return 1;
+#endif
 
   if (resolve_group("nincsily", &gid))
     return 1;

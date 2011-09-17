@@ -208,8 +208,10 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase(msg, "$MONTH_NAME", "February");
   testcase(msg, "$DAY", "11");
   testcase(msg, "$HOUR", "10");
-  testcase(msg, "$MIN", "34");
-  testcase(msg, "$SEC", "56");
+  testcase(msg, "$R_HOUR12", "07");
+  testcase(msg, "$R_MIN", "58");
+  testcase(msg, "$R_SEC", "35");
+  testcase(msg, "$R_AMPM", "PM");
   testcase(msg, "$WEEKDAY", "Sat");
   testcase(msg, "$WEEK_DAY", "7");
   testcase(msg, "$WEEK_DAY_NAME", "Saturday");
@@ -252,8 +254,10 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase(msg, "$S_MONTH_NAME", "February");
   testcase(msg, "$S_DAY", "11");
   testcase(msg, "$S_HOUR", "10");
+  testcase(msg, "$S_HOUR12", "10");
   testcase(msg, "$S_MIN", "34");
   testcase(msg, "$S_SEC", "56");
+  testcase(msg, "$S_AMPM", "AM");
   testcase(msg, "$S_WEEKDAY", "Sat");
   testcase(msg, "$S_WEEK_DAY", "7");
   testcase(msg, "$S_WEEK_DAY_NAME", "Saturday");
@@ -380,6 +384,36 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase(msg, "${.SDATA.exampleSDID@0.eventID}", "1011");
   testcase(msg, "${.SDATA.examplePriority@0.class}", "high");
 
+  /* 12 hour extrema values */
+  msg_str = "<155>2006-02-11T00:34:56+01:00 bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép";
+
+  msg = log_msg_new(msg_str, strlen(msg_str), g_sockaddr_inet_new("10.10.10.10", 1010), &parse_options);
+
+  testcase(msg, "$HOUR12", "12");
+  testcase(msg, "$AMPM", "AM");
+  log_msg_unref(msg);
+
+  msg_str = "<155>2006-02-11T12:34:56+01:00 bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép";
+
+  msg = log_msg_new(msg_str, strlen(msg_str), g_sockaddr_inet_new("10.10.10.10", 1010), &parse_options);
+
+  testcase(msg, "$HOUR12", "12");
+  testcase(msg, "$AMPM", "PM");
+  log_msg_unref(msg);
+
+  msg_str = "<155>323123: 2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép";
+  msg = log_msg_new(msg_str, strlen(msg_str), g_sockaddr_inet_new("10.10.10.10", 1010), &parse_options);
+  testcase(msg, "${.SDATA.meta.sequenceId}", "323123");
+
+  log_msg_unref(msg);
+
+  //Very lightweight test for USEC and MSEC
+  msg_str = "<155>323123: 2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép";
+  msg = log_msg_new(msg_str, strlen(msg_str), g_sockaddr_inet_new("10.10.10.10", 1010), &parse_options);
+  testcase(msg, "$S_USEC", "000000");
+  testcase(msg, "$S_MSEC", "000");
+
+  log_msg_unref(msg);
 
   app_shutdown();
 

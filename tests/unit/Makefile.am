@@ -24,9 +24,26 @@ check_PROGRAMS = test_thread_wakeup	\
 	test_tags			\
 	test_logwriter			\
 	test_serialize			\
-	test_zone			\
-	test_persist_state		\
-	test_value_pairs
+	test_value_pairs		\
+	test_filereader			\
+	test_multiline			\
+	test_msgserialize_benchmark	\
+	test_msgserialize_tags		\
+	test_msgformat_upgrade
+
+if IS_HPUX
+check_PROGRAMS += test_zone
+endif
+
+if IS_TRU64
+check_PROGRAMS += test_persist_state
+else
+if IS_FBSD61
+check_PROGRAMS += test_persist_state
+else
+check_PROGRAMS += test_persist_state test_zone
+endif
+endif
 
 test_msgparse_SOURCES = test_msgparse.c libtest.c
 test_template_SOURCES = test_template.c libtest.c
@@ -50,7 +67,12 @@ test_logwriter_SOURCES = test_logwriter.c
 test_resolve_pwgr_SOURCES = test_resolve_pwgr.c
 test_persist_state_SOURCES = test_persist_state.c
 test_value_pairs_SOURCES = test_value_pairs.c
+test_filereader_SOURCES = test_filereader.c libtest.c libtest_memreader.c libtest_memreader.h
+test_multiline_SOURCES = test_multiline.c libtest.c libtest_memreader.c libtest_memreader.h
 
+test_msgserialize_benchmark_SOURCES = test_msgserialize_benchmark.c
+test_msgserialize_tags_SOURCES = test_msgserialize_tags.c
+test_msgformat_upgrade_SOURCES = test_msgformat_upgrade.c
 
 test_thread_wakeup_SOURCES = test_thread_wakeup.c
 

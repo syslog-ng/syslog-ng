@@ -4,6 +4,7 @@
 #include "apphook.h"
 #include "gsockaddr.h"
 #include "timeutils.h"
+#include "serialize.h"
 #include "cfg.h"
 #include "plugin.h"
 
@@ -102,11 +103,13 @@ testcase(gchar *msg,
          const gchar *expected_msgid,
          const gchar *expected_sd_pairs[][2])
 {
-  LogMessage *logmsg;
+  LogMessage *logmsg, *cloned;
   time_t now;
   regex_t bad_hostname;
+  GString *serialized;
+  SerializeArchive *sa;
   GSockAddr *addr = g_sockaddr_inet_new("10.10.10.10", 1010);
-  gchar logmsg_addr[256];
+  gchar logmsg_addr[256], cloned_addr[256];
   gint i;
   GString *sd_str = g_string_sized_new(0);
 
@@ -156,6 +159,80 @@ testcase(gchar *msg,
 
   g_sockaddr_format(logmsg->saddr, logmsg_addr, sizeof(logmsg_addr), GSA_FULL);
 
+  /* serialize logmsg out */
+  serialized = g_string_sized_new(0);
+  sa = serialize_string_archive_new(serialized);
+  log_msg_write(logmsg, sa);
+  serialize_archive_free(sa);
+
+  /* read it back */
+  cloned = log_msg_new_empty();
+  sa = serialize_string_archive_new(serialized);
+  log_msg_read(cloned, sa);
+  serialize_archive_free(sa);
+  g_string_free(serialized, TRUE);
+
+  /* check, that it contains the same data */
+  g_sockaddr_format(cloned->saddr, cloned_addr, sizeof(cloned_addr), GSA_FULL);
+  TEST_ASSERT(strcmp(logmsg_addr, cloned_addr) == 0, "%s", cloned_addr, logmsg_addr);
+  TEST_ASSERT(logmsg->pri == cloned->pri, "%d", logmsg->pri, cloned->pri);
+  TEST_ASSERT(logmsg->timestamps[LM_TS_STAMP].tv_sec == cloned->timestamps[LM_TS_STAMP].tv_sec, "%d", (int) logmsg->timestamps[LM_TS_STAMP].tv_sec, (int) cloned->timestamps[LM_TS_STAMP].tv_sec);
+  TEST_ASSERT(logmsg->timestamps[LM_TS_STAMP].tv_usec == cloned->timestamps[LM_TS_STAMP].tv_usec, "%d", (int) logmsg->timestamps[LM_TS_STAMP].tv_usec, (int) cloned->timestamps[LM_TS_STAMP].tv_usec);
+  TEST_ASSERT(logmsg->timestamps[LM_TS_STAMP].zone_offset == cloned->timestamps[LM_TS_STAMP].zone_offset, "%d", (int) logmsg->timestamps[LM_TS_STAMP].zone_offset, (int) cloned->timestamps[LM_TS_STAMP].zone_offset);
+  TEST_ASSERT(strcmp(log_msg_get_value(logmsg, LM_V_HOST, NULL), log_msg_get_value(cloned, LM_V_HOST, NULL)) == 0, "%s", log_msg_get_value(logmsg, LM_V_HOST, NULL), log_msg_get_value(cloned, LM_V_HOST, NULL));
+  TEST_ASSERT(strcmp(log_msg_get_value(logmsg, LM_V_PROGRAM, NULL), log_msg_get_value(cloned, LM_V_PROGRAM, NULL)) == 0, "%s", log_msg_get_value(logmsg, LM_V_PROGRAM, NULL), log_msg_get_value(cloned, LM_V_PROGRAM, NULL));
+  TEST_ASSERT(strcmp(log_msg_get_value(logmsg, LM_V_MESSAGE, NULL), log_msg_get_value(cloned, LM_V_MESSAGE, NULL)) == 0, "%s", log_msg_get_value(logmsg, LM_V_MESSAGE, NULL), log_msg_get_value(cloned, LM_V_MESSAGE, NULL));
+  TEST_ASSERT(strcmp(log_msg_get_value(logmsg, LM_V_PID, NULL), log_msg_get_value(cloned, LM_V_PID, NULL)) == 0, "%s", log_msg_get_value(logmsg, LM_V_PID, NULL), log_msg_get_value(cloned, LM_V_PID, NULL));
+  TEST_ASSERT(strcmp(log_msg_get_value(logmsg, LM_V_MSGID, NULL), log_msg_get_value(cloned, LM_V_MSGID, NULL)) == 0, "%s", log_msg_get_value(logmsg, LM_V_MSGID, NULL), log_msg_get_value(cloned, LM_V_MSGID, NULL));
+
+  /* SD elements */
+  log_msg_format_sdata(cloned, sd_str, 0);
+  TEST_ASSERT(!expected_sd_str || strcmp(sd_str->str, expected_sd_str) == 0, "%s", sd_str->str, expected_sd_str);
+
+
+  if (expected_sd_pairs)
+    {
+      for(i = 0; expected_sd_pairs[i][0] != NULL;i++)
+        check_sd_param_in_clone(msg, logmsg, cloned, expected_sd_pairs[i]);
+    }
+
+  /* serialize cloned out */
+  serialized = g_string_sized_new(0);
+  sa = serialize_string_archive_new(serialized);
+  log_msg_write(cloned, sa);
+  serialize_archive_free(sa);
+  log_msg_unref(cloned);
+
+  /* read it back */
+  cloned = log_msg_new_empty();
+  sa = serialize_string_archive_new(serialized);
+  log_msg_read(cloned, sa);
+  serialize_archive_free(sa);
+  g_string_free(serialized, TRUE);
+
+  g_sockaddr_format(cloned->saddr, cloned_addr, sizeof(cloned_addr), GSA_FULL);
+  TEST_ASSERT(strcmp(logmsg_addr, cloned_addr) == 0, "%s", cloned_addr, logmsg_addr);
+  TEST_ASSERT(logmsg->pri == cloned->pri, "%d", logmsg->pri, cloned->pri);
+  TEST_ASSERT(logmsg->timestamps[LM_TS_STAMP].tv_sec == cloned->timestamps[LM_TS_STAMP].tv_sec, "%d", (int) logmsg->timestamps[LM_TS_STAMP].tv_sec, (int) cloned->timestamps[LM_TS_STAMP].tv_sec);
+  TEST_ASSERT(logmsg->timestamps[LM_TS_STAMP].tv_usec == cloned->timestamps[LM_TS_STAMP].tv_usec, "%d", (int) logmsg->timestamps[LM_TS_STAMP].tv_usec, (int) cloned->timestamps[LM_TS_STAMP].tv_usec);
+  TEST_ASSERT(logmsg->timestamps[LM_TS_STAMP].zone_offset == cloned->timestamps[LM_TS_STAMP].zone_offset, "%d", (int) logmsg->timestamps[LM_TS_STAMP].zone_offset, (int) cloned->timestamps[LM_TS_STAMP].zone_offset);
+  TEST_ASSERT(strcmp(log_msg_get_value(logmsg, LM_V_HOST, NULL), log_msg_get_value(cloned, LM_V_HOST, NULL)) == 0, "%s", log_msg_get_value(logmsg, LM_V_HOST, NULL), log_msg_get_value(cloned, LM_V_HOST, NULL));
+  TEST_ASSERT(strcmp(log_msg_get_value(logmsg, LM_V_PROGRAM, NULL), log_msg_get_value(cloned, LM_V_PROGRAM, NULL)) == 0, "%s", log_msg_get_value(logmsg, LM_V_PROGRAM, NULL), log_msg_get_value(cloned, LM_V_PROGRAM, NULL));
+  TEST_ASSERT(strcmp(log_msg_get_value(logmsg, LM_V_MESSAGE, NULL), log_msg_get_value(cloned, LM_V_MESSAGE, NULL)) == 0, "%s", log_msg_get_value(logmsg, LM_V_MESSAGE, NULL), log_msg_get_value(cloned, LM_V_MESSAGE, NULL));
+  TEST_ASSERT(strcmp(log_msg_get_value(logmsg, LM_V_PID, NULL), log_msg_get_value(cloned, LM_V_PID, NULL)) == 0, "%s", log_msg_get_value(logmsg, LM_V_PID, NULL), log_msg_get_value(cloned, LM_V_PID, NULL));
+  TEST_ASSERT(strcmp(log_msg_get_value(logmsg, LM_V_MSGID, NULL), log_msg_get_value(cloned, LM_V_MSGID, NULL)) == 0, "%s", log_msg_get_value(logmsg, LM_V_MSGID, NULL), log_msg_get_value(cloned, LM_V_MSGID, NULL));
+
+  /* SD elements */
+  log_msg_format_sdata(cloned, sd_str, 0);
+  TEST_ASSERT(!expected_sd_str || strcmp(sd_str->str, expected_sd_str) == 0, "%s", sd_str->str, expected_sd_str);
+
+  if (expected_sd_pairs)
+    {
+      for(i = 0; expected_sd_pairs[i][0] != NULL;i++)
+        check_sd_param_in_clone(msg, logmsg, cloned, expected_sd_pairs[i]);
+    }
+
+  log_msg_unref(cloned);
   log_msg_unref(logmsg);
   g_string_free(sd_str, TRUE);
   return 0;
@@ -463,6 +540,8 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 
   const gchar *expected_sd_pairs_test_1[][2]=
   {
+    { ".SDATA.timeQuality.isSynced", "0"},
+    { ".SDATA.timeQuality.tzKnown", "1"},
     { ".SDATA.exampleSDID@0.iut", "3"},
     { ".SDATA.exampleSDID@0.eventSource", "Application"},
     { ".SDATA.exampleSDID@0.eventID", "1011"},
@@ -476,7 +555,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            "mymachine.example.com",		// host
            "evntslog", //app
            "An application event log entry...", // msg
-           "[exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"]", //sd_str
+           "[timeQuality isSynced=\"0\" tzKnown=\"1\"][exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"]", //sd_str
            "",//processid
            "ID47",//msgid
            expected_sd_pairs_test_1
@@ -488,7 +567,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            "mymachine.example.com",		// host
            "evntslog", //app
            "An application event log entry...", // msg
-           "[exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"]", //sd_str
+           "[timeQuality isSynced=\"0\" tzKnown=\"1\"][exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"]", //sd_str
            "",//processid
            "ID47",//msgid
            expected_sd_pairs_test_1
@@ -500,7 +579,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            "mymachine.example.com",		// host
            "evntslog", //app
            "An application event log entry...", // msg
-           "[exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"]", //sd_str
+           "[timeQuality isSynced=\"0\" tzKnown=\"1\"][exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"]", //sd_str
            "",//processid
            "ID47",//msgid
            expected_sd_pairs_test_1
@@ -524,7 +603,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            "192.0.2.1",
            "myproc",
            "%% It's time to make the do-nuts.",
-           "",
+           "[timeQuality isSynced=\"0\" tzKnown=\"1\"]",
            "8710",
            "",
            NULL);
@@ -532,17 +611,19 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 
   const gchar *expected_sd_pairs_test_2[][2]=
   {
+    { ".SDATA.timeQuality.isSynced", "1"},
+    { ".SDATA.timeQuality.tzKnown", "1"},
     { ".SDATA.exampleSDID@0.iut", "3"},
     {  NULL , NULL}
   };
 
-  testcase("<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [exampleSDID@0 iut=\"3\"] [eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] An application event log entry...",  LP_SYSLOG_PROTOCOL, NULL,
+  testcase("<132>1 .2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [exampleSDID@0 iut=\"3\"] [eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] An application event log entry...",  LP_SYSLOG_PROTOCOL, NULL,
            132, 			// pri
            1162083599, 156000, 3600,	// timestamp (sec/usec/zone)
            "mymachine",		// host
            "evntslog", //app
            "[eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] An application event log entry...", // msg
-           "[exampleSDID@0 iut=\"3\"]", //sd_str
+           "[timeQuality isSynced=\"1\" tzKnown=\"1\"][exampleSDID@0 iut=\"3\"]", //sd_str
            "",//processid
            "",//msgid
            expected_sd_pairs_test_2
@@ -559,6 +640,8 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 
   const gchar *expected_sd_pairs_test_3[][2]=
   {
+    { ".SDATA.timeQuality.isSynced", "0"},
+    { ".SDATA.timeQuality.tzKnown", "1"},
     { ".SDATA.origin.ip", "exchange.macartney.esbjerg"},
     { ".SDATA.meta.sequenceId", "191732"},
     { ".SDATA.EventData@18372.4.Data", "MSEXCHANGEOWAAPPPOOL.CONFIG\" -W \"\" -M 1 -AP \"MSEXCHANGEOWAAPPPOOL5244fileserver.macartney.esbjerg CDG 1 7 7 1 0 1 1 7 1 mail.macartney.esbjerg CDG 1 7 7 1 0 1 1 7 1 maindc.macartney.esbjerg CD- 1 6 6 0 0 1 1 6 1 " },
@@ -572,7 +655,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            "exchange.macartney.esbjerg",		// host
            "MSExchange_ADAccess", //app
            "ApplicationMSExchangeADAccess: message", // msg
-           "[origin ip=\"exchange.macartney.esbjerg\"][meta sequenceId=\"191732\" sysUpTime=\"68807696\"][EventData@18372.4 Data=\"MSEXCHANGEOWAAPPPOOL.CONFIG\\\" -W \\\"\\\" -M 1 -AP \\\"MSEXCHANGEOWAAPPPOOL5244fileserver.macartney.esbjerg CDG 1 7 7 1 0 1 1 7 1 mail.macartney.esbjerg CDG 1 7 7 1 0 1 1 7 1 maindc.macartney.esbjerg CD- 1 6 6 0 0 1 1 6 1 \"][Keywords@18372.4 Keyword=\"Classic\"]", //sd_str
+           "[timeQuality isSynced=\"0\" tzKnown=\"1\"][origin ip=\"exchange.macartney.esbjerg\"][meta sequenceId=\"191732\" sysUpTime=\"68807696\"][EventData@18372.4 Data=\"MSEXCHANGEOWAAPPPOOL.CONFIG\\\" -W \\\"\\\" -M 1 -AP \\\"MSEXCHANGEOWAAPPPOOL5244fileserver.macartney.esbjerg CDG 1 7 7 1 0 1 1 7 1 mail.macartney.esbjerg CDG 1 7 7 1 0 1 1 7 1 maindc.macartney.esbjerg CD- 1 6 6 0 0 1 1 6 1 \"][Keywords@18372.4 Keyword=\"Classic\"]", //sd_str
            "20208",//processid
            "",//msgid
            expected_sd_pairs_test_3
@@ -590,7 +673,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            "mymachine",		// host
            "evntslog", //app
            "An application event log entry...", // msg
-           "[aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa i=\"ok_32\"]", //sd_str
+           "[timeQuality isSynced=\"0\" tzKnown=\"1\"][aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa i=\"ok_32\"]", //sd_str
            "",//processid
            "",//msgid
            expected_sd_pairs_test_4
@@ -620,7 +703,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            "mymachine",		// host
            "evntslog", //app
            "An application event log entry...", // msg
-           "[a i=\"\\]\\\"\\\\\"]", //sd_str
+           "[timeQuality isSynced=\"0\" tzKnown=\"1\"][a i=\"\\]\\\"\\\\\"]", //sd_str
            "",//processid
            "",//msgid
            expected_sd_pairs_test_5
@@ -653,7 +736,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            "mymachine",		// host
            "evntslog", //app
            "An application event log entry...", // msg
-           "[a i=\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"]", //sd_str
+           "[timeQuality isSynced=\"0\" tzKnown=\"1\"][a i=\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"]", //sd_str
            "",//processid
            "",//msgid
            expected_sd_pairs_test_5b
@@ -685,7 +768,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            "mymachine",		// host
            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", //app
            "An application event log entry...", // msg
-           "[a i=\"ok\"]", //sd_str
+           "[timeQuality isSynced=\"0\" tzKnown=\"1\"][a i=\"ok\"]", //sd_str
            0,//processid
            0,//msgid
            expected_sd_pairs_test_6
@@ -698,7 +781,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            "mymachine",		// host
            "evntslog", //app
            "An application event log entry...", // msg
-           "[a i=\"ok\"]", //sd_str
+           "[timeQuality isSynced=\"0\" tzKnown=\"1\"][a i=\"ok\"]", //sd_str
            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",//processid
            0,//msgid
            expected_sd_pairs_test_6
@@ -712,7 +795,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            "mymachine",		// host
            "evntslog", //app
            "An application event log entry...", // msg
-           "[a i=\"ok\"]", //sd_str
+           "[timeQuality isSynced=\"0\" tzKnown=\"1\"][a i=\"ok\"]", //sd_str
            0,//processid
            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",//msgid
            expected_sd_pairs_test_6
@@ -732,21 +815,11 @@ testcase("<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [a i=\"]ok
            );
 // unescaped '\'
 
-// bad sd data unescaped "
- testcase("<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [a i=\"\"ok\"] An application event log entry...",  LP_SYSLOG_PROTOCOL, NULL,
-           43, 			// pri
-           0, 0, 0,	// timestamp (sec/usec/zone)
-           "",		// host
-           "syslog-ng", //app
-           "Error processing log message: <132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [a i=\"\"ok\"] An application event log entry...", // msg
-           "", //sd_str
-           0,//processid
-           0,//msgid
-           0
-           );
 
   const gchar *expected_sd_pairs_test_7[][2]=
   {
+    { ".SDATA.timeQuality.isSynced", "0"},
+    { ".SDATA.timeQuality.tzKnown", "1"},
     { ".SDATA.origin.ip", "exchange.macartney.esbjerg"},
     { ".SDATA.meta.sequenceId", "191732"},
     { ".SDATA.EventData@18372.4.Data", "MSEXCHANGEOWAAPPPOOL.CONFIG\" -W \"\" -M 1 -AP \"MSEXCHANGEOWAAPPPOOL5244fileserver.macartney.esbjerg CDG 1 7 7 1 0 1 1 7 1 mail.macartney.esbjerg CDG 1 7 7 1 0 1 1 7 1 maindc.macartney.esbjerg CD- 1 6 6 0 0 1 1 6 1 " },
@@ -760,7 +833,7 @@ testcase("<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [a i=\"]ok
            "exchange.macartney.esbjerg",		// host
            "MSExchange_ADAccess", //app
            "ApplicationMSExchangeADAccess: message", // msg
-           "[origin ip=\"exchange.macartney.esbjerg\"][meta sequenceId=\"191732\" sysUpTime=\"68807696\"][EventData@18372.4 Data=\"MSEXCHANGEOWAAPPPOOL.CONFIG\\\" -W \\\"\\\" -M 1 -AP \\\"MSEXCHANGEOWAAPPPOOL5244fileserver.macartney.esbjerg CDG 1 7 7 1 0 1 1 7 1 mail.macartney.esbjerg CDG 1 7 7 1 0 1 1 7 1 maindc.macartney.esbjerg CD- 1 6 6 0 0 1 1 6 1 \"][Keywords@18372.4 Keyword=\"Classic\"]", //sd_str
+           "[timeQuality isSynced=\"0\" tzKnown=\"1\"][origin ip=\"exchange.macartney.esbjerg\"][meta sequenceId=\"191732\" sysUpTime=\"68807696\"][EventData@18372.4 Data=\"MSEXCHANGEOWAAPPPOOL.CONFIG\\\" -W \\\"\\\" -M 1 -AP \\\"MSEXCHANGEOWAAPPPOOL5244fileserver.macartney.esbjerg CDG 1 7 7 1 0 1 1 7 1 mail.macartney.esbjerg CDG 1 7 7 1 0 1 1 7 1 maindc.macartney.esbjerg CD- 1 6 6 0 0 1 1 6 1 \"][Keywords@18372.4 Keyword=\"Classic\"]", //sd_str
            "20208",//processid
            "",//msgid
            expected_sd_pairs_test_7
@@ -769,8 +842,8 @@ testcase("<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [a i=\"]ok
 /*###########################x*/
   const gchar *expected_sd_pairs_test_7a[][2]=
   {
-    /*{ ".SDATA.timeQuality.isSynced", "0"},
-    { ".SDATA.timeQuality.tzKnown", "0"},*/
+    { ".SDATA.timeQuality.isSynced", "0"},
+    { ".SDATA.timeQuality.tzKnown", "0"},
     {  NULL , NULL}
   };
 
@@ -782,7 +855,7 @@ testcase("<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [a i=\"]ok
            "exchange.macartney.esbjerg",                // host
            "MSExchange_ADAccess", //app
            "An application event log entry...", // msg
-           "",//sd_str
+           "[timeQuality isSynced=\"0\" tzKnown=\"0\"]",//sd_str
            "20208",//processid
            "",//msgid
            expected_sd_pairs_test_7a
@@ -790,8 +863,8 @@ testcase("<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [a i=\"]ok
 
   const gchar *expected_sd_pairs_test_8[][2]=
   {
-/*    { ".SDATA.timeQuality.isSynced", "0"},
-    { ".SDATA.timeQuality.tzKnown", "1"},*/
+    { ".SDATA.timeQuality.isSynced", "0"},
+    { ".SDATA.timeQuality.tzKnown", "1"},
     { ".SDATA.origin.enterpriseId", "1.3.6.1.4.1"},
     {  NULL , NULL}
   };
@@ -804,7 +877,7 @@ testcase("<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [a i=\"]ok
            "exchange.macartney.esbjerg",                // host
            "MSExchange_ADAccess", //app
            "An application event log entry...", // msg
-           "[origin enterpriseId=\"1.3.6.1.4.1\"]",//sd_str
+           "[timeQuality isSynced=\"0\" tzKnown=\"1\"][origin enterpriseId=\"1.3.6.1.4.1\"]",//sd_str
            "20208",//processid
            "",//msgid
            expected_sd_pairs_test_8
@@ -827,8 +900,8 @@ testcase("<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [a i=\"]ok
 
   const gchar *expected_sd_pairs_test_9[][2]=
   {
-/*    { ".SDATA.timeQuality.isSynced", "0"},
-    { ".SDATA.timeQuality.tzKnown", "1"},*/
+    { ".SDATA.timeQuality.isSynced", "0"},
+    { ".SDATA.timeQuality.tzKnown", "1"},
     { ".SDATA.origin.enterpriseId", "1.3.6.1.4.1"},
     {  NULL , NULL}
   };
@@ -842,7 +915,7 @@ testcase("<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [a i=\"]ok
            "exchange.macartney.esbjerg",                // host
            "MSExchange_ADAccess", //app
            "An application event log entry...", // msg
-           "[origin enterpriseId=\"1.3.6.1.4.1\"][nosdnvpair]",//sd_str
+           "[timeQuality isSynced=\"0\" tzKnown=\"1\"][origin enterpriseId=\"1.3.6.1.4.1\"][nosdnvpair]",//sd_str
            "20208",//processid
            "",//msgid
            expected_sd_pairs_test_9

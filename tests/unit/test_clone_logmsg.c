@@ -190,7 +190,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            "mymachine.example.com",		// host
            "BOMAn application event log entry...", // msg
            "evntslog", //app
-           "[exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"]", //sd_str
+           "[timeQuality isSynced=\"0\" tzKnown=\"1\"][exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"]", //sd_str
            "",//processid
            "ID47"
            );
@@ -205,7 +205,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            "mymachine",		// host
            "[eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] BOMAn application event log entry...", // msg
            "evntslog", //app
-           "[exampleSDID@0 iut=\"3\"]", //sd_str
+           "[timeQuality isSynced=\"0\" tzKnown=\"1\"][exampleSDID@0 iut=\"3\"]", //sd_str
            "",//processid
            ""//msgid
            );
