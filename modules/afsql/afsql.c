@@ -844,7 +844,8 @@ afsql_dd_database_thread(gpointer arg)
           /* we got suspended, probably because of a connection error,
            * during this time we only get wakeups if we need to be
            * terminated. */
-          g_cond_timed_wait(self->db_thread_wakeup_cond, self->db_thread_mutex, &self->db_thread_suspend_target);
+          if (!self->db_thread_terminate)
+            g_cond_timed_wait(self->db_thread_wakeup_cond, self->db_thread_mutex, &self->db_thread_suspend_target);
           self->db_thread_suspended = FALSE;
           g_mutex_unlock(self->db_thread_mutex);
 
@@ -860,7 +861,7 @@ afsql_dd_database_thread(gpointer arg)
 
               g_get_current_time(&flush_target);
               g_time_val_add(&flush_target, self->flush_timeout * 1000);
-              if (!g_cond_timed_wait(self->db_thread_wakeup_cond, self->db_thread_mutex, &flush_target))
+              if (!self->db_thread_terminate && !g_cond_timed_wait(self->db_thread_wakeup_cond, self->db_thread_mutex, &flush_target))
                 {
                   /* timeout elapsed */
                   if (!afsql_dd_commit_txn(self, FALSE))
@@ -871,7 +872,7 @@ afsql_dd_database_thread(gpointer arg)
                     }
                 }
             }
-          else
+          else if (!self->db_thread_terminate)
             {
               g_cond_wait(self->db_thread_wakeup_cond, self->db_thread_mutex);
             }
@@ -920,8 +921,10 @@ afsql_dd_start_thread(AFSqlDestDriver *self)
 static void
 afsql_dd_stop_thread(AFSqlDestDriver *self)
 {
+  g_mutex_lock(self->db_thread_mutex);
   self->db_thread_terminate = TRUE;
   g_cond_signal(self->db_thread_wakeup_cond);
+  g_mutex_unlock(self->db_thread_mutex);
   g_thread_join(self->db_thread);
   g_mutex_free(self->db_thread_mutex);
   g_cond_free(self->db_thread_wakeup_cond);
