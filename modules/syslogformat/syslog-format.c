@@ -180,17 +180,74 @@ log_msg_parse_column(LogMessage *self, NVHandle handle, const guchar **data, gin
   *length = left;
 }
 
+static gboolean
+log_msg_parse_seq(LogMessage *self, const guchar **data, gint *length)
+{
+  const guchar *src = *data;
+  gint left = *length;
+  static NVHandle cisco_seqid = 0;
+
+  if (!cisco_seqid)
+    cisco_seqid = log_msg_get_value_handle(".SDATA.meta.sequenceId");
+
+  while (left && *src != ':')
+    {
+      if (!isdigit(*src))
+          return FALSE;
+      src++;
+      left--;
+    }
+  src++;
+  left--;
+
+  /* if the next char is not space, then we may try to read a date */
+
+  if (*src != ' ')
+    return FALSE;
+
+  log_msg_set_value(self, cisco_seqid, (gchar *) *data, *length - left - 1);
+
+  *data = src;
+  *length = left;
+  return TRUE;
+}
 
 static gboolean
 log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint parse_flags, glong assume_timezone)
 {
   const guchar *src = *data;
   gint left = *length;
+  static NVHandle is_synced = 0;
+  static NVHandle tz_known = 0;
   GTimeVal now;
   struct tm tm;
   gint unnormalized_hour;
 
+  if (!is_synced)
+    is_synced = log_msg_get_value_handle(".SDATA.timeQuality.isSynced");
+  if (!tz_known)
+    tz_known = log_msg_get_value_handle(".SDATA.timeQuality.tzKnown");
+
+
   cached_g_current_time(&now);
+
+  if (G_UNLIKELY(src[0] == '*'))
+    {
+      log_msg_set_value(self, is_synced, "0", 1);
+      src++;
+      left--;
+    }
+  else if (G_UNLIKELY(src[0] == '.'))
+    {
+      log_msg_set_value(self, is_synced, "1", 1);
+      src++;
+      left--;
+    }
+  else
+    {
+      log_msg_set_value(self, is_synced, "0", 1);
+    }
+
 
   /* If the next chars look like a date, then read them as a date. */
   if (left >= 19 && src[4] == '-' && src[7] == '-' && src[10] == 'T' && src[13] == ':' && src[16] == ':')
@@ -241,6 +298,7 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint pa
           self->timestamps[LM_TS_STAMP].zone_offset = 0;
           src++;
           left--;
+          log_msg_set_value(self, tz_known, "1", 1);
         }
       else if (left >= 5 && (*src == '+' || *src == '-') &&
           isdigit(*(src+1)) && isdigit(*(src+2)) && *(src+3) == ':' && isdigit(*(src+4)) && isdigit(*(src+5)) && !isdigit(*(src+6)))
@@ -253,6 +311,12 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint pa
           self->timestamps[LM_TS_STAMP].zone_offset = sign * (hours * 3600 + mins * 60);
           src += 6;
           left -= 6;
+          log_msg_set_value(self, tz_known, "1", 1);
+        }
+      else
+        {
+          /* no time zone information found */
+          log_msg_set_value(self, tz_known, "0", 1);
         }
       /* we convert it to UTC */
 
@@ -819,6 +883,7 @@ log_msg_parse_legacy(MsgFormatOptions *parse_options,
       return FALSE;
     }
 
+  log_msg_parse_seq(self, &src, &left);
   log_msg_parse_skip_chars(self, &src, &left, " ", -1);
   cached_g_current_time(&now);
   if (log_msg_parse_date(self, &src, &left, parse_options->flags & ~LP_SYSLOG_PROTOCOL, time_zone_info_get_offset(parse_options->recv_time_zone_info, now.tv_sec)))
