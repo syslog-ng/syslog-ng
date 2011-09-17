@@ -953,6 +953,10 @@ pdbtool_mode(int *argc, char **argv[])
 
 static GOptionEntry pdbtool_options[] =
 {
+  { "debug",     'd', 0, G_OPTION_ARG_NONE, &debug_flag,
+    "Enable debug/diagnostic messages on stderr", NULL },
+  { "verbose",   'v', 0, G_OPTION_ARG_NONE, &verbose_flag,
+    "Enable verbose messages on stderr", NULL },
   { "module", 0, 0, G_OPTION_ARG_CALLBACK, pdbtool_load_module,
     "Load the module specified as parameter", "<module>" },
   { "module-path",         0,         0, G_OPTION_ARG_STRING, &module_path,
