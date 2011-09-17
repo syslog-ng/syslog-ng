@@ -984,6 +984,12 @@ afsql_dd_init(LogPipe *s)
   GlobalConfig *cfg = log_pipe_get_config(s);
   gint len_cols, len_values;
 
+  if (!server_mode)
+    {
+      msg_error("syslog-ng running in client/relay mode, SQL destination is unavailable", NULL);
+      return FALSE;
+    }
+
   if (!log_dest_driver_init_method(s))
     return FALSE;
 
