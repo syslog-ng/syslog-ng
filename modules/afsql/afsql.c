@@ -941,15 +941,30 @@ afsql_dd_format_stats_instance(AFSqlDestDriver *self)
   return persist_name;
 }
 
-static inline gchar *
-afsql_dd_format_persist_name(AFSqlDestDriver *self)
+/* file param is true then its the queue name else its a pending message */
+static gchar *
+afsql_dd_format_persist_name(AFSqlDestDriver *self, gboolean queue)
 {
-  static gchar persist_name[256];
+  static gchar persist_name_old[256];
+  static gchar persist_name_new[256];
 
-  g_snprintf(persist_name, sizeof(persist_name),
-             "afsql_dd(%s,%s,%s,%s,%s)",
-             self->type, self->host, self->port, self->database, self->table->template);
-  return persist_name;
+  g_snprintf(persist_name_old, sizeof(persist_name_old),
+             "afsql_dd_%s(%s,%s,%s,%s)",
+             queue ? "qfile" : "pending_message", self->type, self->host, self->port, self->database);
+
+  g_snprintf(persist_name_new, sizeof(persist_name_new),
+             "afsql_dd_%s(%s,%s,%s,%s,%s)",
+             queue ? "qfile" : "pending_message", self->type, self->host, self->port, self->database, self->table->template);
+
+  /*
+    Lookup for old style persist name because of regression
+  */
+  if (persist_state_lookup_string (log_pipe_get_config((LogPipe *)self)->state,persist_name_old, NULL, NULL))
+    {
+      persist_state_rename_entry(log_pipe_get_config((LogPipe *)self)->state,persist_name_old,persist_name_new);
+    }
+
+  return persist_name_new;
 }
 
 static gboolean
@@ -969,13 +984,13 @@ afsql_dd_init(LogPipe *s)
                 NULL);
       return FALSE;
     }
-
   stats_lock();
   stats_register_counter(0, SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self), SC_TYPE_STORED, &self->stored_messages);
   stats_register_counter(0, SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self), SC_TYPE_DROPPED, &self->dropped_messages);
   stats_unlock();
 
-  self->queue = log_dest_driver_acquire_queue(&self->super, afsql_dd_format_persist_name(self));
+  self->pending_msg = cfg_persist_config_fetch(cfg, afsql_dd_format_persist_name(self, FALSE));
+  self->queue = log_dest_driver_acquire_queue(&self->super, afsql_dd_format_persist_name(self, TRUE));
   log_queue_set_counters(self->queue, self->stored_messages, self->dropped_messages);
   if (!self->fields)
     {
@@ -1106,6 +1121,11 @@ afsql_dd_deinit(LogPipe *s)
   stats_unregister_counter(SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self), SC_TYPE_STORED, &self->stored_messages);
   stats_unregister_counter(SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self), SC_TYPE_DROPPED, &self->dropped_messages);
   stats_unlock();
+  if (self->pending_msg)
+    {
+      cfg_persist_config_add(log_pipe_get_config(s), afsql_dd_format_persist_name(self, FALSE), self->pending_msg, (GDestroyNotify)log_msg_unref, FALSE);
+      self->pending_msg = NULL;
+    }
 
   if (!log_dest_driver_deinit_method(s))
     return FALSE;
