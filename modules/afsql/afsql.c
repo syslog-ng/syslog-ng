@@ -893,6 +893,15 @@ afsql_dd_database_thread(gpointer arg)
           afsql_dd_suspend(self);
         }
     }
+
+  while (self->pending_msg || log_queue_get_length(self->queue) > 0)
+    {
+      if(!afsql_dd_insert_db(self))
+        {
+          goto exit;
+        }
+    }
+
   if (self->flush_lines_queued > 0)
     {
       /* we can't do anything with the return value here. if commit isn't
@@ -902,7 +911,7 @@ afsql_dd_database_thread(gpointer arg)
 
       afsql_dd_commit_txn(self, TRUE);
     }
-
+exit:
   afsql_dd_disconnect(self);
 
   msg_verbose("Database thread finished",
