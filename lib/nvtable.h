@@ -203,8 +203,8 @@ nv_table_get_alloc_size(gint num_static_entries, gint num_dyn_values, gint init_
   gsize size;
 
   size = NV_TABLE_BOUND(init_length) + NV_TABLE_BOUND(sizeof(NVTable) + num_static_entries * sizeof(self->static_entries[0]) + num_dyn_values * sizeof(guint32));
-  if (size < 256)
-    return 256;
+  if (size < 128)
+    return 128;
   return size;
 }
 
