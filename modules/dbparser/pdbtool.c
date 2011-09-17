@@ -829,7 +829,11 @@ pdbtool_dump(int argc, char *argv[])
     {
       RNode *ruleset = r_find_node(patterndb->ruleset->programs, g_strdup(match_program), g_strdup(match_program), strlen(match_program), NULL);
       if (ruleset && ruleset->value)
-        pdbtool_walk_tree(((PDBProgram *) ruleset->value)->rules, 0, FALSE);
+        {
+          RNode *root = ((PDBProgram *) ruleset->value)->rules;
+          if (root)
+            pdbtool_walk_tree(root, 0, FALSE);
+        }
     }
 
   pattern_db_free(patterndb);
