@@ -356,6 +356,8 @@ pdbtool_match_values(NVHandle handle, const gchar *name, const gchar *value, gss
   printf("%s=%.*s\n", name, (gint) length, value);
   if (g_str_equal(name, ".classifier.rule_id") && ret)
     *ret = 0;
+  if (ret && (g_str_equal(name, ".classifier.class") && g_str_equal(value, "unknown")))
+    *ret = 1;
   return FALSE;
 }
 
@@ -395,9 +397,9 @@ pdbtool_match(int argc, char *argv[])
   GArray *dbg_list = NULL;
   RDebugInfo *dbg_info;
   gint i = 0, pos = 0;
-  gint ret = 1;
-  const gchar *name;
-  gssize name_len;
+  gint ret = 0;
+  const gchar *name = NULL;
+  gssize name_len = 0;
   MsgFormatOptions parse_options;
   gboolean eof = FALSE;
   const guchar *buf = NULL;
@@ -584,7 +586,7 @@ pdbtool_match(int argc, char *argv[])
           g_array_set_size(dbg_list, 0);
           dbg_info = NULL;
           {
-            gpointer nulls[] = { NULL, NULL, NULL, output };
+            gpointer nulls[] = { NULL, NULL, &ret, output };
             pdbtool_pdb_emit(msg, FALSE, nulls);
           }
         }
