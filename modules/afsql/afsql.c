@@ -118,6 +118,7 @@ typedef struct _AFSqlDestDriver
 } AFSqlDestDriver;
 
 static gboolean dbi_initialized = FALSE;
+static dbi_inst dbi_instance;
 static const char *s_oracle = "oracle";
 static const char *s_freetds = "freetds";
 
@@ -624,7 +625,7 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
 
   if (!self->dbi_ctx)
     {
-      self->dbi_ctx = dbi_conn_new(self->type);
+      self->dbi_ctx = dbi_conn_new_r(self->type, dbi_instance);
       if (self->dbi_ctx)
         {
           dbi_conn_set_option(self->dbi_ctx, "host", self->host);
@@ -1072,7 +1073,7 @@ afsql_dd_init(LogPipe *s)
 
   if (!dbi_initialized)
     {
-      gint rc = dbi_initialize(NULL);
+      gint rc = dbi_initialize_r(NULL, &dbi_instance);
 
       if (rc < 0)
         {
