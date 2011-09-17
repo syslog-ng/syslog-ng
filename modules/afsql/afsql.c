@@ -1132,16 +1132,13 @@ afsql_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, 
 
   g_mutex_lock(self->db_thread_mutex);
   queue_was_empty = log_queue_get_length(self->queue) == 0;
-  g_mutex_unlock(self->db_thread_mutex);
-
-  log_queue_push_tail(self->queue, msg, path_options);
-
-  g_mutex_lock(self->db_thread_mutex);
   if (queue_was_empty && !self->db_thread_suspended)
     {
       log_queue_set_parallel_push(self->queue, 1, afsql_dd_queue_notify, self, NULL);
     }
   g_mutex_unlock(self->db_thread_mutex);
+  log_queue_push_tail(self->queue, msg, path_options);
+
 }
 
 static void
