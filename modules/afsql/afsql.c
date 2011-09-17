@@ -594,7 +594,7 @@ afsql_dd_suspend(AFSqlDestDriver *self)
 {
   self->db_thread_suspended = TRUE;
   g_get_current_time(&self->db_thread_suspend_target);
-  g_time_val_add(&self->db_thread_suspend_target, self->time_reopen * 1000000);
+  g_time_val_add(&self->db_thread_suspend_target, self->time_reopen * 1000 * 1000); /* the timeout expects microseconds */
 }
 
 static void
