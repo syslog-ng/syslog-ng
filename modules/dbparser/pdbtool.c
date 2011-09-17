@@ -1126,7 +1126,7 @@ main(int argc, char *argv[])
   log_tags_init();
   pattern_db_global_init();
 
-  configuration = cfg_new(0x0302);
+  configuration = cfg_new(CFG_CURRENT_VERSION);
 
   plugin_load_module("syslogformat", configuration, NULL);
   plugin_load_module("basicfuncs", configuration, NULL);
