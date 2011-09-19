@@ -773,14 +773,23 @@ nv_table_update_ids(NVTable *self,NVRegistry *logmsg_registry, NVHandle *handles
         {
           NVHandle oh = entry->vindirect.handle;
           const gchar *name = nv_entry_get_name(entry);
-          if(oh > self->num_static_entries)
+          if (oh > self->num_static_entries)
             {
               /* Only do this refresh on non-static entries */
               guint32 *dyn_slot;
               NVEntry *oe = nv_table_get_entry(self,oh,&dyn_slot);
               const gchar *oname = nv_entry_get_name(oe);
-              oh = nv_registry_alloc_handle(logmsg_registry,oname);
-              entry->vindirect.handle = oh;
+              if (G_UNLIKELY(oname[0] == '\0'))
+                 msg_debug ("nvtable: entry->indirect => name is zero length",
+                            evt_tag_str("entry.name", name),
+                            evt_tag_int("i", i),
+                            NULL);
+              else
+                {
+                  oh = nv_registry_alloc_handle(logmsg_registry,oname);
+                  if (oh != 0)
+                    entry->vindirect.handle = oh;
+                }
             }
           nv_registry_alloc_handle(logmsg_registry, name);
         }
