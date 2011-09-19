@@ -620,7 +620,7 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
   GString *table, *query_string, *value;
   LogMessage *msg;
   gboolean success;
-  gint i;
+  gint i, j;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
 
   if (!self->dbi_ctx)
@@ -723,9 +723,17 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
   g_string_printf(query_string, "INSERT INTO %s (", table->str);
   for (i = 0; i < self->fields_len; i++)
     {
-      g_string_append(query_string, self->fields[i].name);
-      if (i != self->fields_len - 1)
-        g_string_append(query_string, ", ");
+      if ((self->fields[i].flags & AFSQL_FF_DEFAULT) == 0 && self->fields[i].value != NULL)
+        {
+           g_string_append(query_string, self->fields[i].name);
+
+           j = i + 1;
+           while (j < self->fields_len && (self->fields[j].flags & AFSQL_FF_DEFAULT) == AFSQL_FF_DEFAULT)
+             j++;
+
+           if (j < self->fields_len)
+             g_string_append(query_string, ", ");
+        }
     }
   g_string_append(query_string, ") VALUES (");
 
@@ -733,15 +741,9 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
     {
       gchar *quoted;
 
-      if (self->fields[i].value == NULL)
-        {
-          /* the config used the 'default' value for this column -> the fields[i].value is NULL, use SQL default */
-          g_string_append(query_string, "DEFAULT");
-        }
-      else
+      if ((self->fields[i].flags & AFSQL_FF_DEFAULT) == 0 && self->fields[i].value != NULL)
         {
           log_template_format(self->fields[i].value, msg, &self->template_options, LTZ_SEND, self->seq_num, NULL, value);
-
           if (self->null_value && strcmp(self->null_value, value->str) == 0)
             {
               g_string_append(query_string, "NULL");
@@ -756,13 +758,16 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
                 }
               else
                 {
-                  g_string_append(query_string, "''");
+                 g_string_append(query_string, "''");
                 }
             }
-        }
 
-      if (i != self->fields_len - 1)
-        g_string_append(query_string, ", ");
+          j = i + 1;
+          while (j < self->fields_len && (self->fields[j].flags & AFSQL_FF_DEFAULT) == AFSQL_FF_DEFAULT)
+            j++;
+          if (j < self->fields_len)
+            g_string_append(query_string, ", ");
+        }
     }
   g_string_append(query_string, ")");
 
