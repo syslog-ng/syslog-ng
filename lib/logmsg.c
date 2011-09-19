@@ -2232,7 +2232,8 @@ log_msg_read_version_2x(LogMessage *self, SerializeArchive *sa, guint8 version)
   //First upgrade the indirect entries and their handles
   nv_table_update_ids(self->payload,logmsg_registry, self->sdata, self->num_sdata);
   //upgrade sd_data
-  nv_table_foreach(self->payload, logmsg_registry, upgrade_sd_entries, self);
+  if (self->sdata)
+    nv_table_foreach(self->payload, logmsg_registry, upgrade_sd_entries, self);
   return TRUE;
 }
 
