@@ -991,7 +991,9 @@ nv_table_unserialize(SerializeArchive *sa, guint8 log_msg_version)
     {
       if (!serialize_read_uint32(sa, &header_len))
         return NULL;
-      res = (NVTable *)g_malloc(header_len);
+      res = (NVTable *)g_try_malloc(header_len);
+      if (!res)
+        return NULL;
       if (!serialize_read_blob(sa, res, header_len))
         {
           g_free(res);
@@ -1010,7 +1012,7 @@ nv_table_unserialize(SerializeArchive *sa, guint8 log_msg_version)
       if (swap_bytes)
         nv_table_struct_swap_bytes(res);
 
-      res = (NVTable *)g_realloc(res,res->size << NV_TABLE_SCALE);
+      res = (NVTable *)g_try_realloc(res,res->size << NV_TABLE_SCALE);
       if (!res)
         return NULL;
       res->ref_cnt = 1;
