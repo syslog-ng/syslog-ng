@@ -92,6 +92,7 @@ struct _LogWriter
   GStaticMutex pending_proto_lock;
   /* messages posted, and we're not certain were properly sent out on the wire */
   gint pending_message_count;
+  gint last_notify_code;
 };
 
 /**
@@ -226,11 +227,6 @@ log_writer_io_error(gpointer s)
       msg_debug("POLLERR occurred while idle",
                 evt_tag_int("fd", log_proto_get_fd(self->proto)),
                 NULL);
-      /*
-        POLLERR occured, has to rewind the qbacklog
-      */
-      log_queue_rewind_backlog(self->queue, -1);
-      self->pending_message_count = 0;
       log_writer_broken(self, NC_WRITE_ERROR);
       return;
     }
@@ -1013,6 +1009,7 @@ static void
 log_writer_broken(LogWriter *self, gint notify_code)
 {
   log_writer_stop_watches(self);
+  self->last_notify_code = notify_code;
   log_pipe_notify(self->control, &self->super, notify_code, self);
 }
 
@@ -1283,15 +1280,6 @@ log_writer_reopen_deferred(gpointer s)
   LogWriter *self = args[0];
   LogProto *proto = args[1];
 
-  /* we close the old connection, so any pending messages are to be
-   * acked, assuming the connection was closed successfully. If it
-   * wasn't, that's already handled in log_writer_flush() in the
-   * LPS_ERROR branch. */
-  log_queue_ack_backlog(self->queue, self->pending_message_count);
-  self->pending_message_count = 0;
-
-
-
   init_sequence_number(&self->seq_num);
 
   if (self->io_job.working)
@@ -1304,6 +1292,15 @@ log_writer_reopen_deferred(gpointer s)
 
   log_writer_stop_watches(self);
 
+  if (self->proto == NULL && self->last_notify_code == NC_WRITE_ERROR)
+    {
+      /* proto is null in case of log_writer_broken so,
+       * the backlog items must be rewind to the queue
+       * this can be occured in case of POLLERR
+       */
+      log_queue_rewind_backlog(self->queue, -1);
+      self->pending_message_count = 0;
+    }
   if (self->proto)
     log_proto_free(self->proto);
 
