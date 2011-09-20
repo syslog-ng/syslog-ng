@@ -31,12 +31,13 @@
 #include "atomic.h"
 
 /* notify code values */
-#define NC_CLOSE       1
-#define NC_READ_ERROR  2
-#define NC_WRITE_ERROR 3
-#define NC_FILE_MOVED  4
-#define NC_FILE_EOF    5
-#define NC_FILE_SKIP   6
+#define NC_CLOSE            1
+#define NC_READ_ERROR       2
+#define NC_WRITE_ERROR      3
+#define NC_FILE_MOVED       4
+#define NC_FILE_EOF         5
+#define NC_FILE_SKIP        6
+#define NC_REOPEN_REQUIRED  7
 
 /* indicates that the LogPipe was initialized */
 #define PIF_INITIALIZED       0x0001

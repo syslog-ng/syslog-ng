@@ -80,6 +80,7 @@ struct _LogWriter
   MainLoopIOWorkerJob io_job;
   struct iv_timer suppress_timer;
   struct iv_timer mark_timer;
+  struct iv_timer reopen_timer;
   struct timespec suppress_timer_expires;
   gint mark_freq;
   gboolean suppress_timer_updated;
@@ -1136,6 +1137,9 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
   return TRUE;
 }
 
+gboolean
+log_writer_reopen_elapsed(gpointer user_data);
+
 static void
 log_writer_init_watches(LogWriter *self)
 {
@@ -1156,6 +1160,10 @@ log_writer_init_watches(LogWriter *self)
   IV_TIMER_INIT(&self->mark_timer);
   self->mark_timer.cookie = self;
   self->mark_timer.handler = (void (*)(void *)) log_writer_mark_timeout;
+
+  IV_TIMER_INIT(&self->reopen_timer);
+  self->reopen_timer.cookie = self;
+  self->reopen_timer.handler = (void (*)(void *)) log_writer_reopen_elapsed;
 
   IV_EVENT_INIT(&self->queue_filled);
   self->queue_filled.cookie = self;
@@ -1221,6 +1229,10 @@ log_writer_deinit(LogPipe *s)
 
   if (iv_timer_registered(&self->mark_timer))
     iv_timer_unregister(&self->mark_timer);
+
+  if (iv_timer_registered(&self->reopen_timer))
+    iv_timer_unregister(&self->reopen_timer);
+
   log_queue_set_counters(self->queue, NULL, NULL);
 
   stats_lock();
@@ -1256,6 +1268,14 @@ log_writer_free(LogPipe *s)
   log_pipe_free_method(s);
 }
 
+gboolean
+log_writer_reopen_elapsed(gpointer user_data)
+{
+  LogWriter *self = (LogWriter *)user_data;
+  log_pipe_notify(self->control, &self->super, NC_REOPEN_REQUIRED, self);
+  return FALSE;
+}
+
 /* FIXME: this is inherently racy */
 gboolean
 log_writer_has_pending_writes(LogWriter *self)
@@ -1280,6 +1300,13 @@ log_writer_reopen_deferred(gpointer s)
   LogWriter *self = args[0];
   LogProto *proto = args[1];
 
+  if (!proto)
+    {
+		  iv_validate_now();
+		  self->reopen_timer.expires = *iv_get_now();
+		  self->reopen_timer.expires.tv_sec += self->options->time_reopen;
+		  iv_timer_register(&self->reopen_timer);
+    }
   init_sequence_number(&self->seq_num);
 
   if (self->io_job.working)

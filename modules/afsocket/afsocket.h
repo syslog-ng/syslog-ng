@@ -151,7 +151,6 @@ struct _AFSocketDestDriver
   gchar *dest_name;
   gint time_reopen;
   struct iv_fd connect_fd;
-  struct iv_timer reconnect_timer;
   SocketOptions *sock_options_ptr;
   GList *server_name_list;
 

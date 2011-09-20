@@ -985,7 +985,6 @@ afsocket_dd_tls_verify_callback(gint ok, X509_STORE_CTX *ctx, gpointer user_data
 
 static gboolean afsocket_dd_connected(AFSocketDestDriver *self);
 static void afsocket_dd_reconnect(AFSocketDestDriver *self);
-static gboolean afsocket_dd_reconnect_timer(gpointer p);
 
 static void
 afsocket_dd_init_watches(AFSocketDestDriver *self)
@@ -993,10 +992,6 @@ afsocket_dd_init_watches(AFSocketDestDriver *self)
   IV_FD_INIT(&self->connect_fd);
   self->connect_fd.cookie = self;
   self->connect_fd.handler_out = (void (*)(void *)) afsocket_dd_connected;
-
-  IV_TIMER_INIT(&self->reconnect_timer);
-  self->reconnect_timer.cookie = self;
-  self->reconnect_timer.handler = (void (*)(void *)) afsocket_dd_reconnect_timer;
 }
 
 static void
@@ -1023,22 +1018,6 @@ afsocket_dd_stop_watches(AFSocketDestDriver *self)
                   NULL);
       close(self->fd);
     }
-  if (iv_timer_registered(&self->reconnect_timer))
-    iv_timer_unregister(&self->reconnect_timer);
-}
-
-static void
-afsocket_dd_start_reconnect_timer(AFSocketDestDriver *self)
-{
-  main_loop_assert_main_thread();
-
-  if (iv_timer_registered(&self->reconnect_timer))
-    iv_timer_unregister(&self->reconnect_timer);
-  iv_validate_now();
-
-  self->reconnect_timer.expires = iv_now;
-  timespec_add_msec(&self->reconnect_timer.expires, self->time_reopen * 1000);
-  iv_timer_register(&self->reconnect_timer);
 }
 
 static gboolean
@@ -1122,7 +1101,7 @@ afsocket_dd_connected(AFSocketDestDriver *self)
  error_reconnect:
   close(self->fd);
   self->fd = -1;
-  afsocket_dd_start_reconnect_timer(self);
+  log_writer_reopen(self->writer, NULL);
   return FALSE;
 }
 
@@ -1181,37 +1160,8 @@ afsocket_dd_reconnect(AFSocketDestDriver *self)
       msg_error("Initiating connection failed, reconnecting",
                 evt_tag_int("time_reopen", self->time_reopen),
                 NULL);
-      afsocket_dd_start_reconnect_timer(self);
+      log_writer_reopen(self->writer, NULL);
     }
-}
-
-static gboolean
-afsocket_dd_reconnect_timer(gpointer s)
-{
-  AFSocketDestDriver *self = (AFSocketDestDriver *)s;
-
-  if (self->dest_addr->sa.sa_family != AF_UNIX)
-    {
-      gchar *old_server = g_strdup(self->hostname);
-
-      self->hostname = afsocket_dd_get_next_dest(self);
-      resolve_hostname(&self->dest_addr, self->hostname);
-      if (strcmp(old_server, self->hostname) == 0)
-	{
-	  /* no failover server */
-	  msg_warning("The server is inaccessible, trying the old host again",
-		      evt_tag_str("host", self->hostname),
-		      NULL);
-	}
-      else
-	msg_warning("Current server is inaccessible, sending the messages to the next fail-over server",
-		    evt_tag_str("current", old_server),
-		    evt_tag_str("failover", self->hostname),
-		    NULL);
-      g_free(old_server);
-    }
-  afsocket_dd_reconnect(self);
-  return FALSE;
 }
 
 gboolean
@@ -1302,14 +1252,39 @@ afsocket_dd_notify(LogPipe *s, LogPipe *sender, gint notify_code, gpointer user_
     {
     case NC_CLOSE:
     case NC_WRITE_ERROR:
-      log_writer_reopen(self->writer, NULL);
-
       msg_notice("Syslog connection broken",
                  evt_tag_int("fd", self->fd),
                  evt_tag_str("server", g_sockaddr_format(self->dest_addr, buf, sizeof(buf), GSA_FULL)),
                  evt_tag_int("time_reopen", self->time_reopen),
                  NULL);
-      afsocket_dd_start_reconnect_timer(self);
+      log_writer_reopen(self->writer, NULL);
+      break;
+
+    case NC_REOPEN_REQUIRED:
+      msg_notice("Syslog try to reconnect",
+                evt_tag_int("fd", self->fd),
+                evt_tag_str("server", g_sockaddr_format(self->dest_addr, buf, sizeof(buf), GSA_FULL)),
+                evt_tag_int("time_reopen", self->time_reopen),
+                NULL);
+      if (self->dest_addr->sa.sa_family != AF_UNIX)
+        {
+          // Try to connect to the next server
+          gchar *old_server = g_strdup(self->hostname);
+          self->hostname = afsocket_dd_get_next_dest(self);
+          resolve_hostname(&self->dest_addr, self->hostname);
+          if (strcmp(old_server, self->hostname) == 0)
+            /* no failover server */
+            msg_warning("The server is unaccessible, trying again the host",
+                        evt_tag_str("host", self->hostname),
+                        NULL);
+          else
+            msg_warning("Current server is unaccessible, switching to a failover host",
+                      evt_tag_str("current", old_server),
+                      evt_tag_str("failover", self->hostname),
+                      NULL);
+          g_free(old_server);
+        }
+      afsocket_dd_reconnect(self);
       break;
     }
 }
