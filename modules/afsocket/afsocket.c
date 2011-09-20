@@ -551,6 +551,9 @@ afsocket_sd_close_connection(AFSocketSourceDriver *self, AFSocketSourceConnectio
                evt_tag_str("client", g_sockaddr_format(sc->peer_addr, buf1, sizeof(buf1), GSA_FULL)),
                evt_tag_str("local", g_sockaddr_format(self->bind_addr, buf2, sizeof(buf2), GSA_FULL)),
                NULL);
+
+  /* Close the fd of the reader */
+  log_reader_reopen(sc->reader, NULL, sc, &self->reader_options, 1,  afsocket_sc_stats_source(sc), self->super.super.id, afsocket_sc_stats_instance(sc), FALSE);
   log_pipe_deinit(&sc->super);
   afsocket_sd_remove_and_kill_connection(self, sc);
   self->num_connections--;
