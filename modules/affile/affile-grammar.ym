@@ -57,6 +57,7 @@
 %token KW_FSYNC
 %token KW_FOLLOW_FREQ
 %token KW_OVERWRITE_IF_OLDER
+%token KW_RECURSIVE
 
 %type	<ptr> source_affile
 %type	<ptr> source_affile_params
@@ -96,6 +97,7 @@ source_affile_options
 source_affile_option
 	: KW_FOLLOW_FREQ '(' LL_FLOAT ')'		{ last_reader_options->follow_freq = (long) ($3 * 1000); }
 	| KW_FOLLOW_FREQ '(' LL_NUMBER ')'		{ last_reader_options->follow_freq = ($3 * 1000); }
+  | KW_RECURSIVE '(' yesno ')'    { affile_sd_set_recursion(last_driver, $3); }
         | source_reader_option
         ;
 

@@ -27,6 +27,7 @@
 #include "driver.h"
 #include "logreader.h"
 #include "logwriter.h"
+#include "filemonitor.h"
 
 #define AFFILE_PIPE        0x00000001
 #define AFFILE_NO_EXPAND   0x00000002
@@ -44,6 +45,8 @@ typedef struct _AFFileSourceDriver
   LogReaderOptions reader_options;
   guint32 flags;
   /* state information to follow a set of files using a wildcard expression */
+  FileMonitor *file_monitor;
+  GQueue *file_list;
 } AFFileSourceDriver;
 
 LogDriver *affile_sd_new(gchar *filename, guint32 flags);

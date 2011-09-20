@@ -1249,7 +1249,6 @@ void
 log_proto_buffered_server_free(LogProto *s)
 {
   LogProtoBufferedServer *self = (LogProtoBufferedServer *) s;
-
   g_sockaddr_unref(self->prev_saddr);
 
   g_free(self->buffer);
@@ -1260,12 +1259,28 @@ log_proto_buffered_server_free(LogProto *s)
 }
 
 void
+log_proto_buffered_server_reset_state(LogProto *self)
+{
+  LogProtoBufferedServerState *state = log_proto_buffered_server_get_state((LogProtoBufferedServer *)self);
+  if (state)
+    {
+      gsize buffer_size = state->buffer_size;
+      memset(state, 0, sizeof(LogProtoBufferedServerState));
+
+      state->big_endian = (G_BYTE_ORDER == G_BIG_ENDIAN);
+      state->buffer_size = buffer_size;
+      log_proto_buffered_server_put_state((LogProtoBufferedServer *)self);
+    }
+}
+
+void
 log_proto_buffered_server_init(LogProtoBufferedServer *self, LogTransport *transport, gint max_buffer_size, gint init_buffer_size, guint flags)
 {
   self->super.prepare = log_proto_buffered_server_prepare;
   self->super.fetch = log_proto_buffered_server_fetch;
   self->super.queued = log_proto_buffered_server_queued;
   self->super.free_fn = log_proto_buffered_server_free;
+  self->super.reset_state = log_proto_buffered_server_reset_state;
   self->super.transport = transport;
   self->super.convert = (GIConv) -1;
   self->super.restart_with_state = log_proto_buffered_server_restart_with_state;

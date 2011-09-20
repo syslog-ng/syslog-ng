@@ -100,6 +100,7 @@ struct _LogReader
   struct iv_fd fd_watch;
   struct iv_timer follow_timer;
   struct iv_task restart_task;
+  struct iv_task immediate_check_task;
   struct iv_event schedule_wakeup;
   MainLoopIOWorkerJob io_job;
   gboolean suspended:1;
@@ -163,6 +164,12 @@ log_reader_work_finished(void *s)
       log_pipe_notify(self->control, &self->super.super, self->notify_code, self);
     }
   log_pipe_unref(&self->super.super);
+}
+
+void log_reader_restart(LogPipe *s)
+{
+  LogReader *self = (LogReader *)s;
+  log_reader_update_watches(self);
 }
 
 static void
@@ -289,11 +296,6 @@ log_reader_io_follow_file(gpointer s)
           log_reader_io_process_input(s);
           return;
         }
-      else if (pos == st.st_size)
-        {
-          /* we are at EOF */
-          log_pipe_notify(self->control, &self->super.super, NC_FILE_EOF, self);
-        }
       else if (pos > st.st_size)
         {
           /* the last known position is larger than the current size of the file. it got truncated. Restart from the beginning. */
@@ -333,6 +335,41 @@ log_reader_io_follow_file(gpointer s)
 }
 
 static void
+log_reader_check_file(gpointer s)
+{
+  LogReader *self = (LogReader *) s;
+  struct stat st;
+  off_t pos = -1;
+  gint fd = log_proto_get_fd(self->proto);
+
+  if (fd >= 0)
+    {
+      pos = lseek(fd, 0, SEEK_CUR);
+      if (pos == (off_t) -1)
+        {
+          return;
+        }
+
+      if (fstat(fd, &st) >= 0 && pos == st.st_size)
+        {
+          /* we are at EOF */
+          /* We are the end of the file, so let's see the timeout */
+          if((self->prefix_matcher) &&
+             (self->last_msg_received != 0) &&
+             (self->last_msg_received + MAX_MSG_TIMEOUT < cached_g_current_time_sec()))
+            {
+              self->last_msg_received = 0;
+              log_reader_flush_buffer(self, FALSE);
+            }
+          gboolean is_valid = TRUE;
+          self->size = st.st_size;
+          log_pipe_notify(self->control, &self->super.super, NC_FILE_EOF, &is_valid);
+        }
+    }
+  return;
+}
+
+static void
 log_reader_init_watches(LogReader *self)
 {
   gint fd;
@@ -350,6 +387,10 @@ log_reader_init_watches(LogReader *self)
   IV_TASK_INIT(&self->restart_task);
   self->restart_task.cookie = self;
   self->restart_task.handler = log_reader_io_process_input;
+
+  IV_TASK_INIT(&self->immediate_check_task);
+  self->immediate_check_task.cookie = self;
+  self->immediate_check_task.handler = log_reader_check_file;
 
   IV_EVENT_INIT(&self->schedule_wakeup);
   self->schedule_wakeup.cookie = self;
@@ -415,6 +456,8 @@ log_reader_stop_watches(LogReader *self)
     iv_timer_unregister(&self->follow_timer);
   if (iv_task_registered(&self->restart_task))
     iv_task_unregister(&self->restart_task);
+  if (iv_task_registered(&self->immediate_check_task))
+    iv_task_unregister(&self->immediate_check_task);
 }
 
 static void
@@ -512,6 +555,15 @@ log_reader_update_watches(LogReader *self)
           self->follow_timer.expires = iv_now;
           timespec_add_msec(&self->follow_timer.expires, self->options->follow_freq);
           iv_timer_register(&self->follow_timer);
+
+          /*
+           * we should detect the end of file as soon as possible
+           * to change to the next file in case of wildcard file sources
+          */
+          if (!iv_task_registered(&self->immediate_check_task))
+            {
+              iv_task_register(&self->immediate_check_task);
+            }
         }
       else
         {
@@ -645,20 +697,20 @@ log_reader_fetch_log(LogReader *self)
       log_proto_queued(self->proto);
       g_sockaddr_unref(sa);
     }
-  if (self->options->flags & LR_PREEMPT)
+  if (msg_count == self->options->fetch_limit)
+    self->immediate_check = TRUE;
+  if (self->options->flags & LR_PREEMPT && msg_count>0)
     {
       if (log_proto_is_preemptable(self->proto))
         {
           self->waiting_for_preemption = FALSE;
-          log_pipe_notify(self->control, &self->super.super, NC_FILE_SKIP, self);
+          return NC_FILE_SKIP;
         }
       else
         {
           self->waiting_for_preemption = TRUE;
         }
     }
-  if (msg_count == self->options->fetch_limit)
-    self->immediate_check = TRUE;
   return 0;
 }
 
