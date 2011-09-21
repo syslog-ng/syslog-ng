@@ -286,6 +286,10 @@ testcase_with_threads()
 int
 main()
 {
+#if _AIX
+  fprintf(stderr,"On AIX this testcase can't executed, because the overriding of main_loop_io_worker_register_finish_callback does not work\n");
+  return 0;
+#endif
   app_startup();
   putenv("TZ=MET-1METDST");
   tzset();
