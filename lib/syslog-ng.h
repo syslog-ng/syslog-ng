@@ -64,7 +64,6 @@ typedef struct _GlobalConfig GlobalConfig;
 
 /* configuration being parsed, used by the bison generated code, NULL whenever parsing is finished. */
 extern GlobalConfig *configuration;
-extern gboolean seed_rng;
 extern gchar *module_path;
 extern gchar *default_modules;
 

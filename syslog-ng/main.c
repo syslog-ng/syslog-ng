@@ -68,6 +68,7 @@ static gchar *install_dat_filename = PATH_INSTALL_DAT;
 static gchar *installer_version = NULL;
 static gboolean display_version = FALSE;
 static gboolean display_module_registry = FALSE;
+static gboolean dummy = FALSE;
 
 #ifdef YYDEBUG
 extern int cfg_parser_debug;
@@ -79,7 +80,7 @@ static GOptionEntry syslogng_options[] =
   { "module-path",         0,         0, G_OPTION_ARG_STRING, &module_path, "Set the list of colon separated directories to search for modules, default=" MODULE_PATH, "<path>" },
   { "module-registry",     0,         0, G_OPTION_ARG_NONE, &display_module_registry, "Display module information", NULL },
   { "default-modules",     0,         0, G_OPTION_ARG_STRING, &default_modules, "Set the set of auto-loaded modules, default=" DEFAULT_MODULES, "<module-list>" },
-  { "seed",              'S',         0, G_OPTION_ARG_NONE, &seed_rng, "Seed the RNG using ~/.rnd or $RANDFILE", NULL},
+  { "seed",              'S',         0, G_OPTION_ARG_NONE, &dummy, "Does nothing, the need to seed the random generator is autodetected", NULL},
 #ifdef YYDEBUG
   { "yydebug",           'y',         0, G_OPTION_ARG_NONE, &cfg_parser_debug, "Enable configuration parser debugging", NULL },
 #endif
