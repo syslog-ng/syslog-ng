@@ -4,6 +4,7 @@
 #include "apphook.h"
 #include "plugin.h"
 #include "mainloop.h"
+#include "tls-support.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -122,7 +123,13 @@ testcase_zero_diskbuf_alternating_send_acks()
 #define MESSAGES_SUM (FEEDERS * MESSAGES_PER_FEEDER)
 #define TEST_RUNS 10
 
-static __thread struct list_head finish_callbacks;
+TLS_BLOCK_START
+{
+  struct list_head finish_callbacks;
+}
+TLS_BLOCK_END;
+
+#define finish_callbacks  __tls_deref(finish_callbacks)
 
 void
 main_loop_io_worker_register_finish_callback(MainLoopIOWorkerFinishCallback *cb)
