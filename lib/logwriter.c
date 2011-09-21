@@ -721,7 +721,7 @@ log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
       gssize seqid_length;
 
       seqid = log_msg_get_value(lm, meta_seqid, &seqid_length);
-      seqid = APPEND_ZERO(seqid, seqid_length);
+      APPEND_ZERO(seqid, seqid, seqid_length);
       if (seqid[0])
         seq_num = strtol(seqid, NULL, 10);
       else

@@ -78,8 +78,8 @@ step_sequence_number(gint32 *seqnum)
 GList *string_array_to_list(const gchar *strlist[]);
 void string_list_free(GList *l);
 
-#define APPEND_ZERO(value, value_len) \
-  ({ \
+#define APPEND_ZERO(dest, value, value_len)	\
+  do { \
     gchar *__buf; \
     if (G_UNLIKELY(value[value_len] != 0)) \
       { \
@@ -94,7 +94,8 @@ void string_list_free(GList *l);
         /* value is zero terminated */ \
         __buf = (gchar *) value; \
       } \
-  __buf; })
+    dest = __buf; \
+  } while (0)
 
 gchar *utf8_escape_string(const gchar *str, gssize len);
 
