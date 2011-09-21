@@ -440,11 +440,8 @@ log_msg_set_value(LogMessage *self, NVHandle handle, const gchar *value, gssize 
 
   if (!log_msg_chk_flag(self, LF_STATE_OWN_PAYLOAD))
     {
-      NVTable *payload = self->payload;
-
-      self->payload = nv_table_clone(payload, name_len + value_len + 2);
+      self->payload = nv_table_clone(self->payload, name_len + value_len + 2);
       log_msg_set_flag(self, LF_STATE_OWN_PAYLOAD);
-      nv_table_unref(payload);
     }
 
   do
