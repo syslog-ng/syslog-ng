@@ -263,19 +263,24 @@ testcase_with_threads()
   log_queue_set_max_threads(FEEDERS);
   for (i = 0; i < TEST_RUNS; i++)
     {
+      fprintf(stderr,"starting testrun: %d\n",i);
       q = log_queue_fifo_new(MESSAGES_SUM, NULL);
 
       for (j = 0; j < FEEDERS; j++)
         {
           args[j][0] = q;
           args[j][1] = GINT_TO_POINTER(j);
+          fprintf(stderr,"starting feed thread %d\n",j);
           thread_feed[j] = g_thread_create(threaded_feed, args[j], TRUE, NULL);
         }
 
       thread_consume = g_thread_create(threaded_consume, q, TRUE, NULL);
 
       for (j = 0; j < FEEDERS; j++)
+      {
+        fprintf(stderr,"waiting for feed thread %d\n",j);
         g_thread_join(thread_feed[j]);
+      }
       g_thread_join(thread_consume);
 
       log_queue_unref(q);
@@ -299,10 +304,13 @@ main()
   msg_format_options_defaults(&parse_options);
   msg_format_options_init(&parse_options, configuration);
 
+  fprintf(stderr,"Start testcase_with_threads\n");
   testcase_with_threads();
 
 #if 1
+  fprintf(stderr,"Start testcase_zero_diskbuf_alternating_send_acks\n");
   testcase_zero_diskbuf_alternating_send_acks();
+  fprintf(stderr,"Start testcase_zero_diskbuf_and_normal_acks\n");
   testcase_zero_diskbuf_and_normal_acks();
 #endif
   return 0;
