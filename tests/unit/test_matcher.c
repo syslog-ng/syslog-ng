@@ -78,9 +78,11 @@ testcase_replace(const gchar *log, const gchar *re, gchar *replacement, const gc
   r = log_template_new(configuration, NULL);
   log_template_compile(r, replacement, NULL);
 
+  NVTable *nv_table = nv_table_ref(msg->payload);
   value = log_msg_get_value(msg, nonasciiz, &msglen);
   result = log_matcher_replace(m, msg, nonasciiz, value, msglen, r, &length);
   value = log_msg_get_value(msg, nonasciiz, &msglen);
+  nv_table_unref(nv_table);
 
   if (strncmp(result ? result : value, expected_result, result ? length : msglen) != 0)
     {

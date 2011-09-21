@@ -143,6 +143,7 @@ testcase_with_backref_chk(gchar *msg,
 {
   LogMessage *logmsg;
   const gchar *value_msg;
+  NVTable *nv_table;
   gboolean res;
   static gint testno = 0;
   gssize length;
@@ -161,15 +162,17 @@ testcase_with_backref_chk(gchar *msg,
   /* add a non-zero terminated indirect value which contains the whole message */
   log_msg_set_value_indirect(logmsg, nonasciiz, log_msg_get_value_handle("MESSAGE2"), 0, 0, msglen);
 
-
+  nv_table = nv_table_ref(logmsg->payload);
   res = filter_expr_eval(f, logmsg);
   if (res != expected_result)
     {
       fprintf(stderr, "Filter test failed; num='%d', msg='%s'\n", testno, msg);
       exit(1);
     }
-
+  nv_table_unref(nv_table);
   f->comp = 1;
+
+  nv_table = nv_table_ref(logmsg->payload);
   res = filter_expr_eval(f, logmsg);
   if (res != !expected_result)
     {
@@ -177,7 +180,7 @@ testcase_with_backref_chk(gchar *msg,
       exit(1);
     }
   value_msg = log_msg_get_value(logmsg, log_msg_get_value_handle(name), &length);
-
+  nv_table_unref(nv_table);
   if(value == NULL || value[0] == 0)
      {
        if (value_msg != NULL && value_msg[0] != 0)
