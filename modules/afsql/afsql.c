@@ -1086,8 +1086,10 @@ afsql_dd_init(LogPipe *s)
 
  error:
 
+  stats_lock();
   stats_unregister_counter(SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self), SC_TYPE_STORED, &self->stored_messages);
   stats_unregister_counter(SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self), SC_TYPE_DROPPED, &self->dropped_messages);
+  stats_unlock();
 
   return FALSE;
 }
@@ -1101,8 +1103,10 @@ afsql_dd_deinit(LogPipe *s)
 
   log_queue_set_counters(self->queue, NULL, NULL);
 
+  stats_lock();
   stats_unregister_counter(SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self), SC_TYPE_STORED, &self->stored_messages);
   stats_unregister_counter(SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self), SC_TYPE_DROPPED, &self->dropped_messages);
+  stats_unlock();
 
   if (!log_dest_driver_deinit_method(s))
     return FALSE;
