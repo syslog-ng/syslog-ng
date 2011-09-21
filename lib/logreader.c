@@ -485,7 +485,6 @@ log_reader_handle_line(LogReader *self, const guchar *line, gint length, GSockAd
 {
   LogMessage *m;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
-  gint i;
   
   msg_debug("Incoming log entry", 
             evt_tag_printf("line", "%.*s", length, line),
@@ -500,16 +499,6 @@ log_reader_handle_line(LogReader *self, const guchar *line, gint length, GSockAd
     {
       m->saddr = g_sockaddr_ref(self->peer_addr);
     }
-
-  if (self->options->tags)
-    {
-      for (i = 0; i < self->options->tags->len; i++)
-        {
-          log_msg_set_tag_by_id(m, g_array_index(self->options->tags, LogTagId, i));
-        }
-    }
-
-  log_msg_set_tag_by_id(m, self->super.options->source_group_tag);
 
   log_pipe_queue(&self->super.super, m, &path_options);
   log_msg_refcache_stop();
@@ -784,13 +773,13 @@ log_reader_options_init(LogReaderOptions *options, GlobalConfig *cfg, const gcha
   options->parse_options.recv_time_zone_info = NULL;
   text_encoding = options->text_encoding;
   options->text_encoding = NULL;
-  tags = options->tags;
-  options->tags = NULL;
 
   /* NOTE: having to save super's variables is a crude hack, but I know of
    * no other way to do it in the scheme described above. Be sure that you
    * know what you are doing when you modify this code. */
   
+  tags = options->super.tags;
+  options->super.tags = NULL;
   host_override = options->super.host_override;
   options->super.host_override = NULL;
   program_override = options->super.program_override;
@@ -801,6 +790,9 @@ log_reader_options_init(LogReaderOptions *options, GlobalConfig *cfg, const gcha
   format_handler = options->parse_options.format_handler;
   options->parse_options.format_handler = NULL;
 
+  /***********************************************************************
+   * PLEASE NOTE THIS. please read the comment at the top of the function
+   ***********************************************************************/
   log_reader_options_destroy(options);
 
   options->parse_options.format = format;
@@ -808,11 +800,11 @@ log_reader_options_init(LogReaderOptions *options, GlobalConfig *cfg, const gcha
 
   options->super.host_override = host_override;
   options->super.program_override = program_override;
+  options->super.tags = tags;
   
   options->parse_options.recv_time_zone = recv_time_zone;
   options->parse_options.recv_time_zone_info = recv_time_zone_info;
   options->text_encoding = text_encoding;
-  options->tags = tags;
   options->parse_options.format = format;
 
   log_source_options_init(&options->super, cfg, group_name);
@@ -851,11 +843,6 @@ log_reader_options_destroy(LogReaderOptions *options)
       g_free(options->text_encoding);
       options->text_encoding = NULL;
     }
-  if (options->tags)
-    {
-      g_array_free(options->tags, TRUE);
-      options->tags = NULL;
-    }
 }
 
 CfgFlagHandler log_reader_flag_handlers[] =
@@ -884,22 +871,4 @@ gboolean
 log_reader_options_process_flag(LogReaderOptions *options, gchar *flag)
 {
   return cfg_process_flag(log_reader_flag_handlers, options, flag);
-}
-
-void
-log_reader_options_set_tags(LogReaderOptions *options, GList *tags)
-{
-  LogTagId id;
-
-  if (!options->tags)
-    options->tags = g_array_new(FALSE, FALSE, sizeof(LogTagId));
-
-  while (tags)
-    {
-      id = log_tags_get_by_name((gchar *) tags->data);
-      g_array_append_val(options->tags, id);
-
-      g_free(tags->data);
-      tags = g_list_delete_link(tags, tags);
-    }
 }

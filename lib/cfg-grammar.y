@@ -347,6 +347,7 @@ ValuePairs *last_value_pairs;
 %type	<ptr> source_item
 %type   <ptr> source_afinter
 %type   <ptr> source_plugin
+%type   <ptr> source_afinter_params
 
 %type	<ptr> dest_items
 %type	<ptr> dest_item
@@ -577,8 +578,25 @@ source_plugin
         ;
 
 source_afinter
-	: KW_INTERNAL '(' ')'			{ $$ = afinter_sd_new(); }
+	: KW_INTERNAL '(' source_afinter_params ')'			{ $$ = $3; }
 	;
+
+source_afinter_params
+        : {
+            last_driver = afinter_sd_new();
+            last_source_options = &((AFInterSourceDriver *) last_driver)->source_options;
+          }
+          source_afinter_options { $$ = last_driver; }
+        ;
+
+source_afinter_options
+        : source_afinter_option source_afinter_options
+        |
+        ;
+
+source_afinter_option
+        : source_option
+        ;
 
 dest_items
 	: dest_item ';' dest_items		{ log_driver_append($1, $3); log_pipe_unref($3); $$ = $1; }
@@ -741,6 +759,7 @@ source_option
 	| KW_HOST_OVERRIDE '(' string ')'	{ last_source_options->host_override = g_strdup($3); free($3); }
 	| KW_LOG_PREFIX '(' string ')'	        { gchar *p = strrchr($3, ':'); if (p) *p = 0; last_source_options->program_override = g_strdup($3); free($3); }
 	| KW_KEEP_TIMESTAMP '(' yesno ')'	{ last_source_options->keep_timestamp = $3; }
+        | KW_TAGS '(' string_list ')'		{ log_source_options_set_tags(last_source_options, $3); }
         ;
 
 
@@ -760,7 +779,6 @@ source_reader_option
 	| KW_LOG_FETCH_LIMIT '(' LL_NUMBER ')'	{ last_reader_options->fetch_limit = $3; }
 	| KW_PAD_SIZE '(' LL_NUMBER ')'		{ last_reader_options->padding = $3; }
         | KW_ENCODING '(' string ')'		{ last_reader_options->text_encoding = g_strdup($3); free($3); }
-        | KW_TAGS '(' string_list ')'           { log_reader_options_set_tags(last_reader_options, $3); }
         | KW_FORMAT '(' string ')'              { last_reader_options->parse_options.format = g_strdup($3); free($3); }
 	| KW_DEFAULT_LEVEL '(' level_string ')'
 	  {

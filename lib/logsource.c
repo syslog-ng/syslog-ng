@@ -199,6 +199,7 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
   gboolean new;
   StatsCounter *handle;
   gint old_window_size;
+  gint i;
   
   msg_set_context(msg);
 
@@ -207,14 +208,18 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
     
   g_assert(msg->timestamps[LM_TS_STAMP].zone_offset != -1);
 
+  /* $HOST setup */
   log_source_mangle_hostname(self, msg);
 
+  /* $PROGRAM override */
   if (self->options->program_override)
     {
       if (self->options->program_override_len < 0)
         self->options->program_override_len = strlen(self->options->program_override);
       log_msg_set_value(msg, LM_V_PROGRAM, self->options->program_override, self->options->program_override_len);
     }
+
+  /* $HOST override */
   if (self->options->host_override)
     {
       if (self->options->host_override_len < 0)
@@ -222,6 +227,18 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
       log_msg_set_value(msg, LM_V_HOST, self->options->host_override, self->options->host_override_len);
     }
 
+  /* source specific tags */
+  if (self->options->tags)
+    {
+      for (i = 0; i < self->options->tags->len; i++)
+        {
+          log_msg_set_tag_by_id(msg, g_array_index(self->options->tags, LogTagId, i));
+        }
+    }
+
+  log_msg_set_tag_by_id(msg, self->options->source_group_tag);
+
+  /* stats counters */
   if (stats_check_level(2))
     {
       stats_lock();
@@ -242,6 +259,8 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
       stats_unlock();
     }
   stats_counter_inc_pri(msg->pri);
+
+  /* message setup finished, send it out */
 
   /* NOTE: we start by enabling flow-control, thus we need an acknowledgement */
   local_options.ack_needed = TRUE;
@@ -329,6 +348,7 @@ log_source_options_defaults(LogSourceOptions *options)
   options->use_dns_cache = -1;
   options->normalize_hostnames = -1;
   options->keep_timestamp = -1;
+  options->tags = NULL;
 }
 
 /*
@@ -358,12 +378,22 @@ log_source_options_init(LogSourceOptions *options, GlobalConfig *cfg, const gcha
 {
   gchar *host_override, *program_override;
   gchar *source_group_name;
+  GArray *tags;
   
   host_override = options->host_override;
   options->host_override = NULL;
   program_override = options->program_override;
   options->program_override = NULL;
+
+  tags = options->tags;
+  options->tags = NULL;
+
+  /***********************************************************************
+   * PLEASE NOTE THIS. please read the comment at the top of the function
+   ***********************************************************************/
   log_source_options_destroy(options);
+
+  options->tags = tags;
   
   options->host_override = host_override;
   options->host_override_len = -1;
@@ -398,6 +428,29 @@ log_source_options_destroy(LogSourceOptions *options)
     g_free(options->program_override);
   if (options->host_override)
     g_free(options->host_override);
+  if (options->tags)
+    {
+      g_array_free(options->tags, TRUE);
+      options->tags = NULL;
+    }
+}
+
+void
+log_source_options_set_tags(LogSourceOptions *options, GList *tags)
+{
+  LogTagId id;
+
+  if (!options->tags)
+    options->tags = g_array_new(FALSE, FALSE, sizeof(LogTagId));
+
+  while (tags)
+    {
+      id = log_tags_get_by_name((gchar *) tags->data);
+      g_array_append_val(options->tags, id);
+
+      g_free(tags->data);
+      tags = g_list_delete_link(tags, tags);
+    }
 }
 
 void
