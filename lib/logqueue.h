@@ -110,6 +110,7 @@ log_queue_ref(LogQueue *self)
 static inline void
 log_queue_unref(LogQueue *self)
 {
+  g_assert(self->ref_cnt > 0);
   if (--self->ref_cnt == 0)
     self->free_fn(self);
 }
