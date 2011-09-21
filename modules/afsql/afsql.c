@@ -936,8 +936,8 @@ afsql_dd_format_stats_instance(AFSqlDestDriver *self)
   static gchar persist_name[64];
 
   g_snprintf(persist_name, sizeof(persist_name),
-             "%s,%s,%s,%s",
-             self->type, self->host, self->port, self->database);
+             "%s,%s,%s,%s,%s",
+             self->type, self->host, self->port, self->database, self->table->template);
   return persist_name;
 }
 
@@ -947,8 +947,8 @@ afsql_dd_format_persist_name(AFSqlDestDriver *self)
   static gchar persist_name[256];
 
   g_snprintf(persist_name, sizeof(persist_name),
-             "afsql_dd(%s,%s,%s,%s)",
-             self->type, self->host, self->port, self->database);
+             "afsql_dd(%s,%s,%s,%s,%s)",
+             self->type, self->host, self->port, self->database, self->table->template);
   return persist_name;
 }
 
