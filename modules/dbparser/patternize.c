@@ -44,7 +44,7 @@
 static LogTagId cluster_tag_id;
 
 
-#if ENABLE_SSL_MODULE
+#if ENABLE_SSL
 
 #include <openssl/rand.h>
 
