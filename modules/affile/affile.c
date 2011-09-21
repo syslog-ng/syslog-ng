@@ -361,7 +361,7 @@ affile_sd_new(gchar *filename, guint32 flags)
   self->super.super.super.notify = affile_sd_notify;
   self->super.super.super.free_fn = affile_sd_free;
   log_reader_options_defaults(&self->reader_options);
-  self->reader_options.flags |= LR_LOCAL;
+  self->reader_options.parse_options.flags |= LP_LOCAL;
 
   if ((self->flags & AFFILE_PIPE))
     {

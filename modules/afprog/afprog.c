@@ -233,7 +233,7 @@ afprogram_sd_new(gchar *cmdline)
   self->super.super.super.notify = afprogram_sd_notify;
   self->cmdline = g_string_new(cmdline);
   log_reader_options_defaults(&self->reader_options);
-  self->reader_options.flags |= LR_LOCAL;
+  self->reader_options.parse_options.flags |= LP_LOCAL;
   return &self->super.super;
 }
 

@@ -809,7 +809,7 @@ afsocket_sd_init_instance(AFSocketSourceDriver *self, SocketOptions *sock_option
     {
       static gboolean warned = FALSE;
 
-      self->reader_options.flags |= LR_LOCAL;
+      self->reader_options.parse_options.flags |= LP_LOCAL;
       if (configuration && configuration->version < 0x0302)
         {
           if (!warned)

@@ -30,7 +30,6 @@
 #include "timeutils.h"
 
 /* flags */
-#define LR_LOCAL           0x0001
 #define LR_KERNEL          0x0002
 #define LR_EMPTY_LINES     0x0004
 #define LR_IGNORE_TIMEOUT  0x0008
