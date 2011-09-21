@@ -105,6 +105,9 @@ test_values(void)
 int
 main(int argc, char *argv[])
 {
+#if __hpux__
+  return 0;
+#endif
   app_startup();
   test_values();
   return 0;
