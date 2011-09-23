@@ -1241,6 +1241,7 @@ log_writer_new(guint32 flags)
   self->flags = flags;
   self->line_buffer = g_string_sized_new(128);
   self->pollable_state = -1;
+  init_sequence_number(&self->seq_num);
 
   log_writer_init_watches(self);
   g_static_mutex_init(&self->suppress_lock);
