@@ -23,7 +23,12 @@
  */
 
 #include "gsocket.h"
+#include "compat.h"
+#ifndef G_OS_WIN32
 #include <arpa/inet.h>
+#else
+#include <winsock2.h>
+#endif
 
 /**
  * g_inet_ntoa:
@@ -98,7 +103,7 @@ GIOStatus
 g_accept(int fd, int *newfd, GSockAddr **addr)
 {
   char sabuf[1024];
-  socklen_t salen = sizeof(sabuf);
+  bb_socklen_t salen = sizeof(sabuf);
   
   do
     {

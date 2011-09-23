@@ -29,7 +29,13 @@
 #include "gsockaddr.h"
 
 #include <sys/types.h>
+
+#ifdef G_OS_WIN32
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#else
 #include <sys/socket.h>
+#endif
 
 /* functions that should be implemented by GLib but they aren't */
 GString *g_string_assign_len(GString *s, const gchar *val, gint len);

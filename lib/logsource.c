@@ -28,6 +28,8 @@
 #include "timeutils.h"
 #include "stats.h"
 #include "tags.h"
+#include "compat.h"
+#include "cfg.h"
 
 #include <string.h>
 
@@ -197,6 +199,7 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
 {
   LogSource *self = (LogSource *) s;
   LogPathOptions local_options = *path_options;
+  GList *next_item = NULL;
   StatsCounterItem *processed_counter, *stamp;
   gboolean new;
   StatsCounter *handle;
@@ -239,6 +242,22 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
     }
 
   log_msg_set_tag_by_id(msg, self->options->source_group_tag);
+
+  /* mangle callbacks */
+  next_item = g_list_first(self->options->source_queue_callbacks);
+  while(next_item)
+  {
+    if(next_item->data)
+      {
+        if(!((mangle_callback) (next_item->data))(log_pipe_get_config(s),msg,self))
+          {
+            msg->ack_func = log_source_msg_ack;
+            msg->ack_userdata = log_pipe_ref(s);
+            return;
+          }
+      }
+    next_item = next_item->next;
+  }
 
   /* stats counters */
   if (stats_check_level(2))
@@ -417,6 +436,9 @@ log_source_options_init(LogSourceOptions *options, GlobalConfig *cfg, const gcha
   
   options->multi_line_prefix = multi_line_prefix;
   options->multi_line_garbage = multi_line_garbage;
+
+  options->source_queue_callbacks = cfg->source_mangle_callback_list;
+
   if (options->keep_hostname == -1)
     options->keep_hostname = cfg->keep_hostname;
   if (options->chain_hostnames == -1)

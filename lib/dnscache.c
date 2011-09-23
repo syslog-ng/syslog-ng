@@ -29,8 +29,10 @@
 
 #include <sys/types.h>
 #include <netinet/in.h>
+#ifndef G_OS_WIN32
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#endif
 #include <sys/stat.h>
 #include <stdio.h>
 #include <errno.h>

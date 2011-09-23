@@ -21,7 +21,7 @@
  * COPYING for details.
  *
  */
-  
+
 #ifndef MESSAGES_H_INCLUDED
 #define MESSAGES_H_INCLUDED
 
@@ -49,15 +49,15 @@ void msg_add_option_group(GOptionContext *ctx);
 
 /* fatal->warning goes out to the console during startup, notice and below
  * comes goes to the log even during startup */
-#define msg_fatal(desc, tag1, tags...) do { if (msg_limit_internal_message()) { msg_event_send(msg_event_create(EVT_PRI_CRIT, desc, tag1, ##tags )); } } while (0)
-#define msg_error(desc, tag1, tags...) do { if (msg_limit_internal_message()) { msg_event_send(msg_event_create(EVT_PRI_ERR, desc, tag1, ##tags )); } } while (0)
-#define msg_warning(desc, tag1, tags...) do { if (msg_limit_internal_message()) { msg_event_send(msg_event_create(EVT_PRI_WARNING, desc, tag1, ##tags )); } } while (0)
-#define msg_notice(desc, tag1, tags...) do { if (msg_limit_internal_message()) { msg_event_send(msg_event_create(EVT_PRI_NOTICE, desc, tag1, ##tags )); } } while (0)
-#define msg_info(desc, tag1, tags...) do { if (msg_limit_internal_message()) { msg_event_send(msg_event_create(EVT_PRI_INFO, desc, tag1, ##tags )); } } while (0)
-
+#define msg_fatal(desc, tag1, ...) do { if (msg_limit_internal_message()) { msg_event_send(msg_event_create(EVT_PRI_CRIT, desc, tag1, ##__VA_ARGS__ )); } } while (0)
+#define msg_error(desc, tag1, ...) do { if (msg_limit_internal_message()) { msg_event_send(msg_event_create(EVT_PRI_ERR, desc, tag1, ##__VA_ARGS__ )); } } while (0)
+#define msg_warning(desc, tag1, ...) do { if (msg_limit_internal_message()) { msg_event_send(msg_event_create(EVT_PRI_WARNING, desc, tag1, ##__VA_ARGS__ )); } } while (0)
+#define msg_notice(desc, tag1, ...) do { if (msg_limit_internal_message()) { msg_event_send(msg_event_create(EVT_PRI_NOTICE, desc, tag1, ##__VA_ARGS__ )); } } while (0)
+#define msg_info(desc, tag1, ...) do { if (msg_limit_internal_message()) { msg_event_send(msg_event_create(EVT_PRI_INFO, desc, tag1, ##__VA_ARGS__ )); } } while (0)
 /* just like msg_info, but prepends the message with a timestamp -- useful in interactive
  * tools with long running time to provide some feedback */
-#define msg_progress(desc, tag1, tags...) \
+
+#define msg_progress(desc, tag1, ...) \
         do { \
           if (msg_limit_internal_message()) { \
             time_t t; \
@@ -66,31 +66,31 @@ void msg_add_option_group(GOptionContext *ctx);
             timestamp = ctime(&t); \
             timestamp[strlen(timestamp) - 1] = 0; \
             newdesc = g_strdup_printf("[%s] %s", timestamp, desc); \
-            msg_event_send(msg_event_create(EVT_PRI_INFO, newdesc, tag1, ##tags )); \
+            msg_event_send(msg_event_create(EVT_PRI_INFO, newdesc, tag1, ##__VA_ARGS__ )); \
             g_free(newdesc); \
            }\
         } while (0)
 
-#define msg_verbose(desc, tag1, tags...) \
+#define msg_verbose(desc, tag1, ...) \
 	do { \
 	  if (G_UNLIKELY(verbose_flag))    \
-	    msg_info(desc, tag1, ##tags ); \
+	    msg_info(desc, tag1, ##__VA_ARGS__ ); \
 	} while (0)
 
-#define msg_debug(desc, tag1, tags...) \
+#define msg_debug(desc, tag1, ...) \
 	do { \
 	  if (G_UNLIKELY(debug_flag))                                   \
-	    msg_event_send(msg_event_create(EVT_PRI_DEBUG, desc, tag1, ##tags )); \
+	    msg_event_send(msg_event_create(EVT_PRI_DEBUG, desc, tag1, ##__VA_ARGS__ )); \
 	} while (0)
 
 #if ENABLE_DEBUG
-#define msg_trace(desc, tag1, tags...) \
+#define msg_trace(desc, tag1, ...) \
 	do { \
 	  if (G_UNLIKELY(trace_flag))                                   \
-            msg_event_send(msg_event_create(EVT_PRI_DEBUG, desc, tag1, ##tags )); \
+            msg_event_send(msg_event_create(EVT_PRI_DEBUG, desc, tag1, ##__VA_ARGS__ )); \
 	} while (0)
 #else
-#define msg_trace(desc, tag1, tags...)
+#define msg_trace(desc, tag1, ...)
 #endif
 
 void msg_post_message(LogMessage *msg);

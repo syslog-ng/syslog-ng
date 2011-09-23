@@ -29,12 +29,17 @@
 #include "atomic.h"
 
 #include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/un.h>
 #include <unistd.h>
 #include <errno.h>
 #include <sys/types.h>
+#ifndef G_OS_WIN32
+#include <sys/socket.h>
+#include <sys/un.h>
 #include <netinet/in.h>
+#else
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#endif
 
 /* sockaddr public interface */
 

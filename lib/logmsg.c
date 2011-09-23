@@ -142,11 +142,14 @@ TLS_BLOCK_END;
 #define LOGMSG_REFCACHE_VALUE_TO_REF(x)    (((x) & LOGMSG_REFCACHE_REF_MASK) >> LOGMSG_REFCACHE_REF_SHIFT)
 #define LOGMSG_REFCACHE_VALUE_TO_ACK(x)    (((x) & LOGMSG_REFCACHE_ACK_MASK) >> LOGMSG_REFCACHE_ACK_SHIFT)
 
+#ifdef G_OS_WIN32
+#define getpid GetCurrentProcessId
+#endif
+
 
 /**********************************************************************
  * LogMessage
  **********************************************************************/
-
 static inline gboolean
 log_msg_chk_flag(LogMessage *self, gint32 flag)
 {

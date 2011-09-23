@@ -26,11 +26,12 @@
 
 #include "syslog-ng.h"
 
-#include <iv_work.h>
-
 extern volatile gboolean main_loop_io_workers_quit;
 extern gboolean syntax_only;
 extern GThread *main_thread_handle;
+
+#ifndef G_OS_WIN32
+#include <iv_work.h>
 
 typedef gpointer (*MainLoopTaskFunc)(gpointer user_data);
 
@@ -93,5 +94,11 @@ int main_loop_init(void);
 int  main_loop_run(void);
 
 void main_loop_add_options(GOptionContext *ctx);
-
+#else /* G_OS_WIN32 */
+static inline gboolean
+main_loop_is_main_thread(void)
+{
+  return TRUE;
+}
+#endif /* G_OS_WIN32 */
 #endif

@@ -39,6 +39,12 @@
 #include <glib.h>
 #include "compat.h"
 
+#ifdef G_OS_WIN32
+#define STRICT
+#include <windows.h>
+#define STRICT
+#endif
+
 #define PATH_SYSLOG_NG_CONF     PATH_SYSCONFDIR "/syslog-ng.conf"
 #define PATH_INSTALL_DAT	PATH_SYSCONFDIR "/install.dat"
 #define PATH_PIDFILE            PATH_PIDFILEDIR "/syslog-ng.pid"

@@ -762,7 +762,7 @@ log_template_add_value_elem(LogTemplate *self, gchar *value_name, gsize value_na
   self->compiled_template = g_list_prepend(self->compiled_template, e);
 }
 
-
+#ifndef G_OS_WIN32
 /* NOTE: this steals argv if successful */
 static gboolean
 log_template_add_func_elem(LogTemplate *self, GString *text, gint argc, gchar *argv[], gint msg_ref, GError **error)
@@ -804,6 +804,7 @@ log_template_add_func_elem(LogTemplate *self, GString *text, gint argc, gchar *a
   g_free(e);
   return FALSE;
 }
+#endif /* G_OS_WIN32 */
 
 static void
 parse_msg_ref(gchar **p, gint *msg_ref)
@@ -916,6 +917,7 @@ log_template_compile(LogTemplate *self, const gchar *template, GError **error)
                 }
               finished = TRUE;
             }
+#ifndef G_OS_WIN32
           /* template function */
           else if (*p == '(')
             {
@@ -1016,6 +1018,7 @@ log_template_compile(LogTemplate *self, const gchar *template, GError **error)
               g_string_free(arg_buf, TRUE);
               finished = TRUE;
             }
+#endif /* G_OS_WIN32 */
           else if ((*p >= 'A' && *p <= 'Z') || (*p >= 'a' && *p <= 'z') || (*p == '_') || (*p >= '0' && *p <= '9'))
             {
               start = p;

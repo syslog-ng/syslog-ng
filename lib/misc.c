@@ -28,20 +28,27 @@
 #include "gprocess.h"
 
 #include <sys/types.h>
-#include <sys/socket.h>
 #include <sys/stat.h>
 #include <netinet/in.h>
+
+#ifdef G_OS_WIN32
+#include <winsock2.h>
+#else
+#include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <pwd.h>
+#include <grp.h>
+#endif /* G_OS_WIN32 */
+
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <pwd.h>
-#include <grp.h>
+
+#include <signal.h>
 #include <stdlib.h>
 #include <time.h>
 #include <stdio.h>
-#include <signal.h>
 
 static gchar local_hostname_fqdn[256];
 static gchar local_hostname_short[256];
@@ -290,6 +297,7 @@ resolve_sockaddr(gchar *result, gsize *result_len, GSockAddr *saddr, gboolean us
     }
 }
 
+#ifndef G_OS_WIN32
 gboolean
 g_fd_set_nonblock(int fd, gboolean enable)
 {
@@ -387,6 +395,7 @@ resolve_user_group(char *arg, gint *uid, gint *gid)
     return FALSE;
   return TRUE;
 }
+#endif /* G_OS_WIN32 */
 
 /**
  *
@@ -608,6 +617,7 @@ worker_thread_func(gpointer st)
 {
   WorkerThreadParams *p = st;
   gpointer res;
+  #ifndef G_OS_WIN32
   sigset_t mask;
   
   sigemptyset(&mask);
@@ -616,7 +626,7 @@ worker_thread_func(gpointer st)
   sigaddset(&mask, SIGTERM);
   sigaddset(&mask, SIGINT);
   sigprocmask(SIG_BLOCK, &mask, NULL);
-  
+  #endif
   res = p->func(p->data);
   g_free(st);
   return res;
@@ -674,29 +684,30 @@ utf8_escape_string(const gchar *str, gssize len)
 gint
 set_permissions(gchar *name, gint uid, gint gid, gint mode)
 {
-#ifndef _MSC_VER
+#ifndef G_OS_WIN32
   if (uid >= 0)
     if (chown(name, (uid_t) uid, -1)) return -1;
   if (gid >= 0)
     if (chown(name, -1, (gid_t) gid)) return -1;
   if (mode >= 0)
     if (chmod(name, (mode_t) mode)) return -1;
-  return 0;
 #endif
+  return 0;
 }
 
 gint
 set_permissions_fd(gint fd, gint uid, gint gid, gint mode)
 {
-#ifndef _MSC_VER
+#ifndef G_OS_WIN32
   if (uid >= 0)
     if (fchown(fd, (uid_t) uid, -1)) return -1;
   if (gid >= 0)
     if (fchown(fd, -1, (gid_t) gid)) return -1;
   if (mode >= 0)
     if (fchmod(fd, (mode_t) mode)) return -1;
-  return 0;
 #endif
+  return 0;
+}
 
 gchar *
 normalize_option_name(gchar *name)

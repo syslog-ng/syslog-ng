@@ -21,23 +21,40 @@
  * COPYING for details.
  *
  */
-   
+
 #include "gsockaddr.h"
 #include "gsocket.h"
 
 #include <sys/types.h>
+#ifndef G_OS_WIN32
 #include <sys/socket.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <errno.h>
 #include <netinet/in.h>
 #include <sys/un.h>
 #include <arpa/inet.h>
+#include <netdb.h>
+#else /* G_OS_WIN32 */
+#define S_IFMT  00170000
+#define S_IFSOCK 0140000
+
+#define S_ISSOCK(m)     (((m) & S_IFMT) == S_IFSOCK)
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#include "compat.h"
+#define UNIX_MAX_PATH 108
+
+struct sockaddr_un
+  {
+    unsigned int sun_family; /**< AF_UNIX*/
+    char sun_path[UNIX_MAX_PATH];   /**< socket pathname*/
+  };
+
+#endif /* G_OS_WIN32 */
+#include <sys/stat.h>
+#include <unistd.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <netdb.h>
-
 
 /* general GSockAddr functions */
 

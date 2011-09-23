@@ -26,8 +26,11 @@
 #include "messages.h"
 
 #if ENABLE_SSL
-
+#ifdef G_OS_WIN32
+#include <winsock.h>
+#else
 #include <arpa/inet.h>
+#endif
 #include <openssl/x509_vfy.h>
 #include <openssl/x509v3.h>
 #include <openssl/err.h>

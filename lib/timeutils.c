@@ -24,12 +24,14 @@
 
 #include "timeutils.h"
 #include "messages.h"
-#include "syslog-ng.h"
 #include "tls-support.h"
 
 #include <ctype.h>
 #include <string.h>
+
+#ifndef G_OS_WIN32
 #include <iv.h>
+#endif
 
 const char *month_names_abbrev[] =
 {
@@ -131,6 +133,7 @@ cached_g_current_time(GTimeVal *result)
     }
   *result = current_time_value;
 
+#ifndef G_OS_WIN32
   if (iv_inited())
     {
       if (invalidate_time_task.handler == NULL)
@@ -145,6 +148,9 @@ cached_g_current_time(GTimeVal *result)
     {
       invalidate_cached_time();
     }
+#else
+  invalidate_cached_time();
+#endif
 }
 
 time_t
@@ -288,6 +294,7 @@ format_zone_info(gchar *buf, size_t buflen, glong gmtoff)
                           ((gmtoff < 0 ? -gmtoff : gmtoff) % 3600) / 60);
 }
 
+#ifndef G_OS_WIN32
 /**
  * check_nanosleep:
  *
@@ -320,6 +327,7 @@ check_nanosleep(void)
     }
   return FALSE;
 }
+#endif /* !G_OS_WIN32 */
 
 /**
  * g_time_val_diff:

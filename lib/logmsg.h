@@ -33,12 +33,17 @@
 #include "nvtable.h"
 #include "msg-format.h"
 #include "tags.h"
+#include "compat.h"
 
 #include <sys/types.h>
+#ifndef G_OS_WIN32
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <sys/time.h>
 #include <iv_list.h>
+#else
+#include <winsock2.h>
+#endif
+#include <sys/time.h>
 
 typedef struct _LogPathOptions LogPathOptions;
 

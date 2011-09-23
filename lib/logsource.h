@@ -27,7 +27,9 @@
 
 #include "logpipe.h"
 #include "stats.h"
+#ifndef G_OS_WIN32
 #include <iv_event.h>
+#endif
 
 typedef struct _LogSourceOptions
 {

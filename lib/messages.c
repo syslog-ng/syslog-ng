@@ -170,14 +170,18 @@ msg_event_send(EVTREC *e)
   gchar *msg;
   
   msg = evt_format(e);
+#ifndef G_OS_WIN32
   if (log_syslog)
     {
       syslog(evt_rec_get_syslog_pri(e), "%s", msg);
     }
   else
     {
+#endif
       msg_send_internal_message(evt_rec_get_syslog_pri(e) | EVT_FAC_SYSLOG, msg); 
+#ifndef G_OS_WIN32
     }
+#endif
   free(msg);
   g_static_mutex_lock(&evtlog_lock);
   evt_rec_free(e);
@@ -203,8 +207,10 @@ msg_log_func(const gchar *log_domain, GLogLevelFlags log_flags, const gchar *msg
 void
 msg_redirect_to_syslog(const gchar *program_name)
 {
+#ifndef G_OS_WIN32
   log_syslog = TRUE;
   openlog(program_name, LOG_NDELAY | LOG_PID, LOG_SYSLOG);
+#endif
 }
 
 void
