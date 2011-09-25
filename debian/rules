@@ -114,7 +114,6 @@ override_dh_auto_clean:
 
 # We also want to install ivykis headers and whatnot, so override
 # _auto_install, and do it too.
-# However, we do not want iv_examples.3 installed..
 override_dh_auto_install:
 	dh_auto_install
 	${MAKE} -C debian/build-tree/lib/ivykis install DESTDIR=$(CURDIR)/debian/tmp
