@@ -328,6 +328,14 @@ g_process_check_cap_syslog(void)
   if (ret == -1)
     return FALSE;
 
+  ret = cap_from_name("cap_syslog", NULL);
+  if (ret == -1)
+    {
+      fprintf (stderr, "CAP_SYSLOG seems to be supported by the system, but "
+	       "libcap can't parse it. Falling back to CAP_SYS_ADMIN!\n");
+      return FALSE;
+    }
+
   have_capsyslog = TRUE;
   return TRUE;
 }
