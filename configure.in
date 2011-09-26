@@ -976,7 +976,7 @@ if test "x$enable_systemd" = "xyes"; then
 	PKG_CHECK_MODULES(libsystemd_daemon, libsystemd-daemon >= 31,with_libsystemd="yes",with_libsystemd="no")
 	if test "x$with_systemdsystemunitdir" = "xyes"; then
 		# no arguments, just --with-systemdsystemunitdir
-		systemdsystemunitdir=$($PKG_CONFIG --variable=systemdsystemunitdir systemd);
+		systemdsystemunitdir=`$PKG_CONFIG --variable=systemdsystemunitdir systemd`
 		if test "$systemdsystemunitdir" = ""; then
 			AC_MSG_ERROR([Error autodetecting systemdsystemunitdir, systemd pkg-config file not found?])
 		fi
