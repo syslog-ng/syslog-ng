@@ -263,6 +263,7 @@ afmongodb_worker_insert (MongoDBDestDriver *self)
   afmongodb_dd_connect(self, TRUE);
 
   g_mutex_lock(self->queue_mutex);
+  log_queue_reset_parallel_push(self->queue);
   success = log_queue_pop_head(self->queue, &msg, &path_options, FALSE, FALSE);
   g_mutex_unlock(self->queue_mutex);
   if (!success)
