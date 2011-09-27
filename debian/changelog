@@ -1,8 +1,8 @@
 syslog-ng (3.3.0beta2-1~preview5) unstable; urgency=low
 
-  * Update to commit 4ccdb8c from upstream.
+  * Update to commit 5afe42a from upstream.
 
- -- Gergely Nagy <algernon@madhouse-project.org>  Sun, 25 Sep 2011 14:26:30 +0200
+ -- Gergely Nagy <algernon@madhouse-project.org>  Wed, 28 Sep 2011 00:27:29 +0200
 
 syslog-ng (3.3.0beta2-1~preview4) unstable; urgency=low
 
