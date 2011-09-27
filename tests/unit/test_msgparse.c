@@ -461,6 +461,15 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            NULL, NULL, NULL, NULL
            );
 
+  testcase("<38>Sep 22 10:11:56 Message forwarded from cdaix66: sshd[679960]: Accepted publickey for nagios from 1.9.1.1 port 42096 ssh2", LP_EXPECT_HOSTNAME, NULL,
+           38,
+           1, 0, 7200,
+           "cdaix66",
+           "sshd",
+           "Accepted publickey for nagios from 1.9.1.1 port 42096 ssh2",
+           NULL, NULL, NULL, NULL
+           );
+
   const gchar *expected_sd_pairs_test_1[][2]=
   {
     { ".SDATA.exampleSDID@0.iut", "3"},

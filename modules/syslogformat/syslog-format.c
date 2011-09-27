@@ -849,8 +849,7 @@ log_msg_parse_legacy(MsgFormatOptions *parse_options,
         }
       else
         {
-
-          if ((parse_options->flags & LP_EXPECT_HOSTNAME))
+          if (!hostname_start && (parse_options->flags & LP_EXPECT_HOSTNAME))
             {
               /* Don't parse a hostname if it is local */
               /* It's a regular ol' message. */
