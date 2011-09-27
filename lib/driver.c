@@ -163,6 +163,8 @@ log_dest_driver_release_queue_method(LogDestDriver *self, LogQueue *q, gpointer 
 
   if (q->persist_name)
     cfg_persist_config_add(cfg, q->persist_name, q, (GDestroyNotify) log_queue_unref, FALSE);
+  else
+    log_queue_unref(q);
 }
 
 gboolean
