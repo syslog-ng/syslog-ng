@@ -235,11 +235,11 @@ afinet_sd_apply_transport(AFSocketSourceDriver *s)
            * confusing is that syslog() driver was seldom used.
            *
            */
-          if ((self->super.flags & AFSOCKET_SYSLOG_PROTOCOL) && cfg->version < 0x0303)
+          if ((self->super.flags & AFSOCKET_SYSLOG_PROTOCOL) && get_version_value(cfg->version) < 0x0303)
             {
               if (!msg_udp_source_port_warning)
                 {
-                  msg_warning("WARNING: Default port for syslog(transport(udp)) has changed from 601 to 514 in syslog-ng 3.3, please update your configuration",
+                  msg_warning("WARNING: Default port for syslog(transport(udp)) has changed from 601 to 514 in syslog-ng-premium-edition 3.2, please update your configuration",
                               evt_tag_str("id", self->super.super.super.id),
                               NULL);
                   msg_udp_source_port_warning = TRUE;
@@ -276,11 +276,11 @@ afinet_sd_apply_transport(AFSocketSourceDriver *s)
            *
            */
 
-          if (cfg->version < 0x0303)
+          if (get_version_value(cfg->version) < 0x0303)
             {
               if (!msg_tls_source_port_warning)
                 {
-                  msg_warning("WARNING: Default port for syslog(transport(tls))  has changed from 601 to 6514 in syslog-ng 3.3, please update your configuration",
+                  msg_warning("WARNING: Default port for syslog(transport(tls))  has changed from 601 to 6514 in syslog-ng-ng-premium-edition 3.2, please update your configuration",
                               evt_tag_str("id", self->super.super.super.id),
                               NULL);
                   msg_tls_source_port_warning = TRUE;
@@ -431,11 +431,11 @@ afinet_dd_apply_transport(AFSocketDestDriver *s)
            * confusing is that syslog() driver was seldom used.
            *
            */
-          if ((self->super.flags & AFSOCKET_SYSLOG_PROTOCOL) && cfg->version < 0x0303)
+          if ((self->super.flags & AFSOCKET_SYSLOG_PROTOCOL) && get_version_value(cfg->version) < 0x0303)
             {
               if (!msg_udp_source_port_warning)
                 {
-                  msg_warning("WARNING: Default port for syslog(transport(udp)) has changed from 601 to 514 in syslog-ng 3.3, please update your configuration",
+                  msg_warning("WARNING: Default port for syslog(transport(udp)) has changed from 601 to 514 in syslog-ng-premium-edition 3.2, please update your configuration",
                               evt_tag_str("id", self->super.super.super.id),
                               NULL);
                   msg_udp_source_port_warning = TRUE;
@@ -472,7 +472,7 @@ afinet_dd_apply_transport(AFSocketDestDriver *s)
            *
            */
 
-          if (cfg->version < 0x0303)
+          if (get_version_value(cfg->version) < 0x0303)
             {
               if (!msg_tls_source_port_warning)
                 {
