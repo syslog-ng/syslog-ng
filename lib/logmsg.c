@@ -1559,11 +1559,7 @@ log_msg_write_sockaddr(SerializeArchive *sa, GSockAddr *addr)
         break;
       }
 #endif
-    case AF_UNIX:
-      /* nothing is stored in this case */
-      break;
     default:
-      g_assert_not_reached();
       break;
     }
   return TRUE;
@@ -1610,7 +1606,7 @@ log_msg_read_sockaddr(SerializeArchive *sa, GSockAddr **addr)
       *addr = g_sockaddr_unix_new(NULL);
       break;
     default:
-      g_assert_not_reached();
+      return FALSE;
       break;
     }
   return TRUE;
@@ -1899,7 +1895,7 @@ upgrade_sd_entries(NVHandle handle, const gchar *name, const gchar *value, gssiz
   LogMessage *lm = (LogMessage *)user_data;
   if (G_LIKELY(lm->sdata))
   {
-    if (strncmp(name, logmsg_sd_prefix, sizeof(logmsg_sd_prefix) - 1) == 0 && name[6])
+    if (strncmp(name, logmsg_sd_prefix, sizeof(logmsg_sd_prefix) - 1) == 0 && name[6] && lm->sdata)
       {
         guint16 flag;
         gchar *dot;
