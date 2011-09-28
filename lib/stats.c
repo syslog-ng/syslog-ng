@@ -549,12 +549,19 @@ stats_generate_csv(void)
 }
 
 void
+stats_set_stats_level(gint stats_level)
+{
+  stats_lock();
+  current_stats_level = stats_level;
+  stats_unlock();
+  return;
+}
+
+void
 stats_reinit(GlobalConfig *cfg)
 {
   gint i;
   gchar name[11] = "";
-
-  current_stats_level = cfg->stats_level;
 
   stats_lock();
   if (stats_check_level(3))

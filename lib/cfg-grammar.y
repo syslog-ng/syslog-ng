@@ -642,7 +642,7 @@ options_items
 options_item
 	: KW_MARK_FREQ '(' LL_NUMBER ')'		{ configuration->mark_freq = $3; }
 	| KW_STATS_FREQ '(' LL_NUMBER ')'          { configuration->stats_freq = $3; }
-	| KW_STATS_LEVEL '(' LL_NUMBER ')'         { configuration->stats_level = $3; }
+	| KW_STATS_LEVEL '(' LL_NUMBER ')'         { configuration->stats_level = $3; stats_set_stats_level($3); }
 	| KW_FLUSH_LINES '(' LL_NUMBER ')'		{ configuration->flush_lines = $3; }
         | KW_MARK_MODE '(' KW_INTERNAL ')'         { cfg_set_mark_mode(configuration, "internal"); }
         | KW_MARK_MODE '(' string ')'

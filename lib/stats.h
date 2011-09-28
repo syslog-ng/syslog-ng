@@ -98,6 +98,7 @@ void stats_cleanup_orphans(void);
 
 void stats_counter_inc_pri(guint16 pri);
 
+void stats_set_stats_level(gint stats_level);
 void stats_reinit(GlobalConfig *cfg);
 void stats_init(void);
 void stats_destroy(void);
