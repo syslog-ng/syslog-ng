@@ -300,8 +300,16 @@ afinet_sd_apply_transport(AFSocketSourceDriver *s)
                 NULL);
     }
   afinet_set_port(self->super.bind_addr, self->bind_port ? : default_bind_port, self->super.flags & AFSOCKET_DGRAM ? "udp" : "tcp");
+#if 0
+  /*
+   * THIS CAN BE THE CORRECT BEHAVIOUR, BUT THE PREVIOUS VERSION DID NOT DO THAT CHECK
+   * BAZSI! WHICH IS THE BETTER BEHAVIOUR???
+   */
   if (!resolve_hostname(&self->super.bind_addr, self->bind_ip ? : default_bind_ip))
-    return FALSE;
+    return FALSE
+#endif
+  resolve_hostname(&self->super.bind_addr, self->bind_ip ? : default_bind_ip);
+
 
 #if ENABLE_SSL
   if (self->super.flags & AFSOCKET_REQUIRE_TLS && !self->super.tls_context)
@@ -497,8 +505,15 @@ afinet_dd_apply_transport(AFSocketDestDriver *s)
     }
 
 
+#if 0
+  /*
+   * THIS CAN BE THE CORRECT BEHAVIOUR, BUT THE PREVIOUS VERSION DID NOT DO THAT CHECK
+   * BAZSI! WHICH IS THE BETTER BEHAVIOUR???
+   */
   if ((self->bind_ip && !resolve_hostname(&self->super.bind_addr, self->bind_ip)) ||
       !resolve_hostname(&self->super.dest_addr, self->super.hostname))
+#endif
+  if ((self->bind_ip && !resolve_hostname(&self->super.bind_addr, self->bind_ip)))
     return FALSE;
 
   afinet_set_port(self->super.dest_addr, self->dest_port ? : default_dest_port, self->super.flags & AFSOCKET_DGRAM ? "udp" : "tcp");
