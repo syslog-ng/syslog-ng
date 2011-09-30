@@ -4,7 +4,7 @@ Priority: extra
 Maintainer: Gergely Nagy <algernon@madhouse-project.org>
 Build-Depends: debhelper (>= 8),
 	       dh-autoreconf,
-	       pkg-config, flex, bison,
+	       pkg-config, flex, bison, help2man,
 	       libevtlog-dev (>= 0.2.12),
 	       libnet1-dev,
 	       libglib2.0-dev,
