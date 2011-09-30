@@ -847,6 +847,8 @@ static GOptionEntry dump_options[] =
 {
   { "program", 'P', 0, G_OPTION_ARG_STRING, &match_program,
     "Program name ($PROGRAM) to dump", "<program>" },
+  {"pdb", 'p', 0, G_OPTION_ARG_STRING, &patterndb_file,
+    "Name of the patterndb file", "<patterndb_file>" },
   { "program-tree", 'T', 0, G_OPTION_ARG_NONE, &dump_program_tree,
     "Dump the program ($PROGRAM) tree", NULL },
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
