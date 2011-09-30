@@ -1307,7 +1307,6 @@ log_writer_reopen_deferred(gpointer s)
 		  self->reopen_timer.expires.tv_sec += self->options->time_reopen;
 		  iv_timer_register(&self->reopen_timer);
     }
-  init_sequence_number(&self->seq_num);
 
   if (self->io_job.working)
     {
@@ -1392,7 +1391,6 @@ log_writer_set_options(LogWriter *self, LogPipe *control, LogWriterOptions *opti
   self->stats_source = stats_source;
   self->stats_id = stats_id ? g_strdup(stats_id) : NULL;
   self->stats_instance = stats_instance ? g_strdup(stats_instance) : NULL;
-  init_sequence_number(&self->seq_num);
 }
 
 LogPipe *
