@@ -1,8 +1,8 @@
 syslog-ng (3.3.0beta2-1~preview5) unstable; urgency=low
 
-  * Update to commit 5afe42a from upstream.
+  * Update to commit e51862b from upstream.
 
- -- Gergely Nagy <algernon@madhouse-project.org>  Wed, 28 Sep 2011 00:27:29 +0200
+ -- Gergely Nagy <algernon@madhouse-project.org>  Fri, 30 Sep 2011 10:40:27 +0200
 
 syslog-ng (3.3.0beta2-1~preview4) unstable; urgency=low
 
