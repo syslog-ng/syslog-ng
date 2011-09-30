@@ -212,6 +212,8 @@ afsocket_sc_init(LogPipe *s)
 
           if (self->owner->flags & AFSOCKET_DGRAM)
             proto = log_proto_dgram_server_new(transport, self->owner->reader_options.msg_size, 0);
+          else if (self->owner->prefix_matcher)
+            proto = log_proto_multi_line_text_server_new(transport, self->owner->reader_options.msg_size, 0, self->owner->prefix_matcher, self->owner->garbage_matcher);
           else if (self->owner->reader_options.padding)
             proto = log_proto_record_server_new(transport, self->owner->reader_options.padding, 0);
           else
@@ -698,6 +700,16 @@ afsocket_sd_close_fd(gpointer value)
   close(fd);
 }
 
+static void
+afsocket_sd_regex_free(regex_t *regex)
+{
+  if (regex)
+    {
+      regfree(regex);
+      g_free(regex);
+    }
+}
+
 gboolean
 afsocket_sd_deinit(LogPipe *s)
 {
@@ -751,6 +763,9 @@ afsocket_sd_deinit(LogPipe *s)
 
   if (!log_src_driver_deinit_method(s))
     return FALSE;
+
+  afsocket_sd_regex_free(self->prefix_matcher);
+  afsocket_sd_regex_free(self->garbage_matcher);
 
   return TRUE;
 }
@@ -1337,4 +1352,34 @@ afsocket_dd_init_instance(AFSocketDestDriver *self, SocketOptions *sock_options,
 
   self->writer_options.mark_mode = MM_GLOBAL;
   afsocket_dd_init_watches(self);
+}
+
+gboolean
+afsocket_sd_set_multi_line_prefix(LogDriver *s, gchar *prefix)
+{
+  AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
+
+  self->prefix_matcher = g_new0(regex_t, 1);
+  if (regcomp(self->prefix_matcher, prefix, REG_EXTENDED))
+    {
+      msg_error("Bad regexp",evt_tag_str("multi_line_prefix", prefix), NULL);
+      return FALSE;
+    }
+
+  return TRUE;
+}
+
+gboolean
+afsocket_sd_set_multi_line_garbage(LogDriver *s, gchar *garbage)
+{
+  AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
+
+  self->garbage_matcher = g_new0(regex_t, 1);
+  if (regcomp(self->garbage_matcher, garbage, REG_EXTENDED))
+    {
+      msg_error("Bad regexp",evt_tag_str("multi_line_garbage", garbage), NULL);
+      return FALSE;
+    }
+
+  return TRUE;
 }

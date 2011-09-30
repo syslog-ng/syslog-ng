@@ -170,6 +170,8 @@ affile_sd_construct_proto(AFFileSourceDriver *self, LogTransport *transport)
   handler = self->reader_options.parse_options.format_handler;
   if ((handler && handler->construct_proto))
     proto = self->reader_options.parse_options.format_handler->construct_proto(&self->reader_options.parse_options, transport, flags);
+  else if (self->prefix_matcher)
+    proto = log_proto_multi_line_text_server_new(transport, self->reader_options.msg_size, flags, self->prefix_matcher, self->garbage_matcher);
   else if (self->reader_options.padding)
     proto = log_proto_record_server_new(transport, self->reader_options.padding, flags);
   else
@@ -502,6 +504,16 @@ affile_sd_init(LogPipe *s)
     }
 }
 
+static void
+affile_sd_regex_free(regex_t *regex)
+{
+  if (regex)
+    {
+      regfree(regex);
+      g_free(regex);
+    }
+}
+
 static gboolean
 affile_sd_deinit(LogPipe *s)
 {
@@ -518,6 +530,9 @@ affile_sd_deinit(LogPipe *s)
     {
       file_monitor_deinit(self->file_monitor);
     }
+
+  affile_sd_regex_free(self->prefix_matcher);
+  affile_sd_regex_free(self->garbage_matcher);
 
   if (!log_src_driver_deinit_method(s))
     return FALSE;
@@ -696,6 +711,8 @@ struct _AFFileDestWriter
   time_t time_reopen;
   struct iv_timer reap_timer;
   gboolean reopen_pending, queue_pending;
+  regex_t *prefix_matcher;
+  regex_t *garbage_matcher;
 };
 
 static void affile_dd_reap_writer(AFFileDestDriver *self, AFFileDestWriter *dw);
@@ -1422,4 +1439,34 @@ affile_dd_new(gchar *filename, guint32 flags)
   log_template_options_defaults(&self->template_fname_options);
   g_static_mutex_init(&self->lock);
   return &self->super.super;
+}
+
+gboolean
+affile_sd_set_multi_line_prefix(LogDriver *s, gchar *prefix)
+{
+  AFFileSourceDriver *self = (AFFileSourceDriver *) s;
+
+  self->prefix_matcher = g_new0(regex_t, 1);
+  if (regcomp(self->prefix_matcher, prefix, REG_EXTENDED))
+    {
+      msg_error("Bad regexp",evt_tag_str("multi_line_prefix", prefix), NULL);
+      return FALSE;
+    }
+
+  return TRUE;
+}
+
+gboolean
+affile_sd_set_multi_line_garbage(LogDriver *s, gchar *garbage)
+{
+  AFFileSourceDriver *self = (AFFileSourceDriver *) s;
+
+  self->garbage_matcher = g_new0(regex_t, 1);
+  if (regcomp(self->garbage_matcher, garbage, REG_EXTENDED))
+    {
+      msg_error("Bad regexp",evt_tag_str("multi_line_garbage", garbage), NULL);
+      return FALSE;
+    }
+
+  return TRUE;
 }

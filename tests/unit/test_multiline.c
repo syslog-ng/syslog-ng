@@ -47,17 +47,9 @@ log_test_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_opti
 }
 
 void
-init_option(LogReaderOptions *options, const gchar *prefix, const gchar *garbage)
+init_option(LogReaderOptions *options)
 {
   log_reader_options_defaults(options);
-  if (prefix)
-    {
-      options->super.multi_line_prefix = g_strdup(prefix);
-      if (garbage)
-        {
-          options->super.multi_line_garbage = g_strdup(garbage);
-        }
-    }
   options->fetch_limit = 100;
   options->follow_freq = 100;
   options->parse_options = parse_options;
@@ -84,8 +76,8 @@ int test_case(const gchar *message, const gchar *expected, const gchar *prefix, 
       result_msg = NULL;
     }
   memset(&reader_options, 0, sizeof(LogReaderOptions));
-  init_option(&reader_options, prefix, garbage);
-  reader = log_reader_new_memory_source(&reader_options, read_buffer_length, log_reader_notify, log_test_pipe_queue, &tr);
+  init_option(&reader_options);
+  reader = log_reader_new_memory_source(&reader_options, read_buffer_length, log_reader_notify, log_test_pipe_queue, &tr, prefix, garbage);
   if(send_by_line)
     {
       next_line = message;

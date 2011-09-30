@@ -52,7 +52,7 @@ struct _LogProto
   gboolean (*prepare)(LogProto *s, gint *fd, GIOCondition *cond);
   gboolean (*is_preemptable)(LogProto *s);
   gboolean (*restart_with_state)(LogProto *s, PersistState *state, const gchar *persist_name);
-  LogProtoStatus (*fetch)(LogProto *s, const guchar **msg, gsize *msg_len, GSockAddr **sa, gboolean *may_read, regex_t *multi_line_prefix_parser, regex_t *multi_line_garbage_parser, gboolean flush);
+  LogProtoStatus (*fetch)(LogProto *s, const guchar **msg, gsize *msg_len, GSockAddr **sa, gboolean *may_read, gboolean flush);
   void (*queued)(LogProto *s);
   LogProtoStatus (*post)(LogProto *s, LogMessage *logmsg, guchar *msg, gsize msg_len, gboolean *consumed);
   LogProtoStatus (*flush)(LogProto *s);
@@ -60,6 +60,7 @@ struct _LogProto
   void (*reset_state)(LogProto *s);
   /* This function is available only the object is _LogProtoTextServer */
   void (*get_info)(LogProto *s, guint64 *pos);
+  gboolean is_multi_line;
 };
 
 static inline gboolean
@@ -100,9 +101,9 @@ log_proto_post(LogProto *s, LogMessage *logmsg, guchar *msg, gsize msg_len, gboo
 }
 
 static inline LogProtoStatus
-log_proto_fetch(LogProto *s, const guchar **msg, gsize *msg_len, GSockAddr **sa, gboolean *may_read, regex_t *multi_line_prefix_parser, regex_t *multi_line_garbage_parser, gboolean flush)
+log_proto_fetch(LogProto *s, const guchar **msg, gsize *msg_len, GSockAddr **sa, gboolean *may_read, gboolean flush)
 {
-  return s->fetch(s, msg, msg_len, sa, may_read, multi_line_prefix_parser, multi_line_garbage_parser, flush);
+  return s->fetch(s, msg, msg_len, sa, may_read, flush);
 }
 
 static inline void
@@ -163,6 +164,7 @@ LogProto *log_proto_dgram_server_new(LogTransport *transport, gint max_msg_size,
  * This class processes text files/streams. Each record is terminated via an EOL character.
  */
 LogProto *log_proto_text_server_new(LogTransport *transport, gint max_msg_size, guint flags);
+LogProto *log_proto_multi_line_text_server_new(LogTransport *transport, gint max_msg_size, guint flags, regex_t *prefix_matcher, regex_t *garbage_matcher);
 
 LogProto *log_proto_file_writer_new(LogTransport *transport, gint flush_lines);
 

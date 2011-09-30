@@ -479,7 +479,7 @@ typedef struct _LogProtoBufferedServer LogProtoBufferedServer;
 struct _LogProtoBufferedServer
 {
   LogProto super;
-  gboolean (*fetch_from_buf)(LogProtoBufferedServer *self, const guchar *buffer_start, gsize buffer_bytes, const guchar **msg, gsize *msg_len, gboolean flush_the_rest, regex_t *multi_line_prefix_parser, regex_t *multi_line_garbage_parser);
+  gboolean (*fetch_from_buf)(LogProtoBufferedServer *self, const guchar *buffer_start, gsize buffer_bytes, const guchar **msg, gsize *msg_len, gboolean flush_the_rest);
   gint (*read_data)(LogProtoBufferedServer *self, guchar *buf, gsize len, GSockAddr **sa);
 
   LogProtoBufferedServerState *state1;
@@ -1014,7 +1014,7 @@ log_proto_buffered_server_read_data(LogProtoBufferedServer *self, guchar *buf, g
 }
 
 static LogProtoStatus
-log_proto_buffered_server_fetch_from_buf(LogProtoBufferedServer *self, const guchar **msg, gsize *msg_len, gboolean flush_the_rest, regex_t *multi_line_prefix_parser, regex_t *multi_line_garbage_parser)
+log_proto_buffered_server_fetch_from_buf(LogProtoBufferedServer *self, const guchar **msg, gsize *msg_len, gboolean flush_the_rest)
 {
   gsize buffer_bytes;
   const guchar *buffer_start;
@@ -1043,7 +1043,7 @@ log_proto_buffered_server_fetch_from_buf(LogProtoBufferedServer *self, const guc
       goto exit;
     }
 
-  success = self->fetch_from_buf(self, buffer_start, buffer_bytes, msg, msg_len, flush_the_rest, multi_line_prefix_parser, multi_line_garbage_parser);
+  success = self->fetch_from_buf(self, buffer_start, buffer_bytes, msg, msg_len, flush_the_rest);
  exit:
   log_proto_buffered_server_put_state(self);
   return success;
@@ -1054,7 +1054,7 @@ log_proto_buffered_server_fetch_from_buf(LogProtoBufferedServer *self, const guc
  * msg can be NULL even if no failure occurred.
  **/
 static LogProtoStatus
-log_proto_buffered_server_fetch(LogProto *s, const guchar **msg, gsize *msg_len, GSockAddr **sa, gboolean *may_read, regex_t *multi_line_prefix_parser, regex_t *multi_line_garbage_parser, gboolean flush)
+log_proto_buffered_server_fetch(LogProto *s, const guchar **msg, gsize *msg_len, GSockAddr **sa, gboolean *may_read, gboolean flush)
 {
   LogProtoBufferedServer *self = (LogProtoBufferedServer *) s;
   gint rc;
@@ -1101,7 +1101,7 @@ log_proto_buffered_server_fetch(LogProto *s, const guchar **msg, gsize *msg_len,
       goto exit;
     }
 
-  if (log_proto_buffered_server_fetch_from_buf(self, msg, msg_len, FALSE, multi_line_prefix_parser, multi_line_garbage_parser))
+  if (log_proto_buffered_server_fetch_from_buf(self, msg, msg_len, FALSE))
     {
       if (sa && self->prev_saddr)
         *sa = g_sockaddr_ref(self->prev_saddr);
@@ -1162,7 +1162,7 @@ log_proto_buffered_server_fetch(LogProto *s, const guchar **msg, gsize *msg_len,
               /* we set self->status explicitly as we want to return
                * LPS_ERROR on the _next_ invocation, not now */
               self->status = LPS_ERROR;
-              if (log_proto_buffered_server_fetch_from_buf(self, msg, msg_len, TRUE, multi_line_prefix_parser, multi_line_garbage_parser))
+              if (log_proto_buffered_server_fetch_from_buf(self, msg, msg_len, TRUE))
                 {
                   if (sa && self->prev_saddr)
                     *sa = g_sockaddr_ref(self->prev_saddr);
@@ -1188,7 +1188,7 @@ log_proto_buffered_server_fetch(LogProto *s, const guchar **msg, gsize *msg_len,
                   goto exit;
                 }
               self->status = LPS_EOF;
-              if (log_proto_buffered_server_fetch_from_buf(self, msg, msg_len, TRUE, multi_line_prefix_parser, multi_line_garbage_parser))
+              if (log_proto_buffered_server_fetch_from_buf(self, msg, msg_len, TRUE))
                 {
                   if (sa && self->prev_saddr)
                     *sa = g_sockaddr_ref(self->prev_saddr);
@@ -1223,7 +1223,7 @@ log_proto_buffered_server_fetch(LogProto *s, const guchar **msg, gsize *msg_len,
               state->pending_buffer_end += rc;
             }
 
-          if (log_proto_buffered_server_fetch_from_buf(self, msg, msg_len, FALSE, multi_line_prefix_parser, multi_line_garbage_parser))
+          if (log_proto_buffered_server_fetch_from_buf(self, msg, msg_len, FALSE))
             {
               if (sa && self->prev_saddr)
                 *sa = g_sockaddr_ref(self->prev_saddr);
@@ -1333,6 +1333,8 @@ struct _LogProtoTextServer
   gint convert_scale;
   gboolean wait_for_prefix; /* This boolean tell to us that we are waiting for prefix or garbage (used only in case multi line messages */
   gboolean has_to_update; /* This boolean indicate, that we has to drop the read message (between garbage and prefix) */
+  regex_t *prefix_matcher;
+  regex_t *garbage_matcher;
 };
 
 /**
@@ -1682,7 +1684,7 @@ find_multi_line_eom(LogProtoTextServer *self, const guchar *buffer_start, gsize 
  * Returns TRUE if a message was found in the buffer, FALSE if we need to read again.
  **/
 static gboolean
-log_proto_text_server_fetch_from_buf(LogProtoBufferedServer *s, const guchar *buffer_start, gsize buffer_bytes, const guchar **msg, gsize *msg_len, gboolean flush_the_rest, regex_t *multi_line_prefix_parser, regex_t *multi_line_garbage_parser)
+log_proto_text_server_fetch_from_buf(LogProtoBufferedServer *s, const guchar *buffer_start, gsize buffer_bytes, const guchar **msg, gsize *msg_len, gboolean flush_the_rest)
 {
   LogProtoTextServer *self = (LogProtoTextServer *) s;
   const guchar *eol;
@@ -1697,7 +1699,7 @@ log_proto_text_server_fetch_from_buf(LogProtoBufferedServer *s, const guchar *bu
        * we are set to packet terminating mode or the connection is to
        * be teared down and we have partial data in our buffer.
        */
-      if (multi_line_prefix_parser && self->wait_for_prefix)
+      if (self->prefix_matcher && self->wait_for_prefix)
         {
           *msg = NULL;
           *msg_len = 0;
@@ -1721,7 +1723,7 @@ log_proto_text_server_fetch_from_buf(LogProtoBufferedServer *s, const guchar *bu
     }
   else
     {
-      if (!multi_line_prefix_parser)
+      if (!self->prefix_matcher)
         {
           eol = find_eom(buffer_start, buffer_bytes);
         }
@@ -1731,8 +1733,8 @@ log_proto_text_server_fetch_from_buf(LogProtoBufferedServer *s, const guchar *bu
           eol = find_multi_line_eom(self,
                                     buffer_start,
                                     buffer_bytes,
-                                    multi_line_prefix_parser,
-                                    multi_line_garbage_parser,
+                                    self->prefix_matcher,
+                                    self->garbage_matcher,
                                     &new_pos);
           state->pending_buffer_pos += new_pos;
           /* Found Garbage and not update the pending buffer pos later */
@@ -1748,9 +1750,7 @@ log_proto_text_server_fetch_from_buf(LogProtoBufferedServer *s, const guchar *bu
                                                            buffer_bytes,
                                                            msg,
                                                            msg_len,
-                                                           flush_the_rest,
-                                                           multi_line_prefix_parser,
-                                                           multi_line_garbage_parser);
+                                                           flush_the_rest);
             }
         }
     }
@@ -1809,7 +1809,7 @@ log_proto_text_server_fetch_from_buf(LogProtoBufferedServer *s, const guchar *bu
 
       *msg_len = msg_end - buffer_start;
       *msg = buffer_start;
-      if (!multi_line_prefix_parser)
+      if (!self->prefix_matcher)
         {
           state->pending_buffer_pos = eol - self->super.buffer;
           state->pending_buffer_pos +=1;
@@ -1825,7 +1825,7 @@ log_proto_text_server_fetch_from_buf(LogProtoBufferedServer *s, const guchar *bu
           /* store the end of the next line, it indicates whether we need
            * to read further data, or the buffer already contains a
            * complete line */
-          if (!multi_line_prefix_parser)
+          if (!self->prefix_matcher)
             {
               eom = find_eom(self->super.buffer + state->pending_buffer_pos, state->pending_buffer_end - state->pending_buffer_pos);
             }
@@ -1835,8 +1835,8 @@ log_proto_text_server_fetch_from_buf(LogProtoBufferedServer *s, const guchar *bu
               eom = find_multi_line_eom(self,
                                         self->super.buffer + state->pending_buffer_pos,
                                         state->pending_buffer_end - state->pending_buffer_pos,
-                                        multi_line_prefix_parser,
-                                        multi_line_garbage_parser,
+                                        self->prefix_matcher,
+                                        self->garbage_matcher,
                                         &new_pos);
               state->pending_buffer_pos += new_pos;
               /* found garbage don't upgrade the pending buffer pos */
@@ -1851,8 +1851,8 @@ log_proto_text_server_fetch_from_buf(LogProtoBufferedServer *s, const guchar *bu
                   eom = find_multi_line_eom(self,
                                             self->super.buffer + state->pending_buffer_pos,
                                             state->pending_buffer_end - state->pending_buffer_pos,
-                                            multi_line_prefix_parser,
-                                            multi_line_garbage_parser,
+                                            self->prefix_matcher,
+                                            self->garbage_matcher,
                                             &new_pos);
                   self->has_to_update = TRUE;
                 }
@@ -1917,6 +1917,18 @@ log_proto_text_server_new(LogTransport *transport, gint max_msg_size, guint flag
   return &self->super.super;
 }
 
+LogProto *
+log_proto_multi_line_text_server_new(LogTransport *transport, gint max_msg_size, guint flags, regex_t *prefix_matcher, regex_t *garbage_matcher)
+{
+  LogProtoTextServer *self = g_new0(LogProtoTextServer, 1);
+
+  log_proto_text_server_init(self, transport, max_msg_size, flags);
+  self->prefix_matcher = prefix_matcher;
+  self->garbage_matcher = garbage_matcher;
+  self->super.super.is_multi_line = TRUE;
+  return &self->super.super;
+}
+
 /* proto that reads the stream in even sized chunks */
 typedef struct _LogProtoRecordServer LogProtoRecordServer;
 struct _LogProtoRecordServer
@@ -1926,7 +1938,7 @@ struct _LogProtoRecordServer
 };
 
 static gboolean
-log_proto_record_server_fetch_from_buf(LogProtoBufferedServer *s, const guchar *buffer_start, gsize buffer_bytes, const guchar **msg, gsize *msg_len, gboolean flush_the_rest, regex_t *multi_line_prefix_parser, regex_t *multi_line_garbage_parser)
+log_proto_record_server_fetch_from_buf(LogProtoBufferedServer *s, const guchar *buffer_start, gsize buffer_bytes, const guchar **msg, gsize *msg_len, gboolean flush_the_rest)
 {
   LogProtoRecordServer *self = (LogProtoRecordServer *) s;
   LogProtoBufferedServerState *state = log_proto_buffered_server_get_state(s);
@@ -1989,7 +2001,7 @@ struct _LogProtoDGramServer
 };
 
 static gboolean
-log_proto_dgram_server_fetch_from_buf(LogProtoBufferedServer *s, const guchar *buffer_start, gsize buffer_bytes, const guchar **msg, gsize *msg_len, gboolean flush_the_rest, regex_t *multi_line_prefix_parser, regex_t *multi_line_garbage_parser)
+log_proto_dgram_server_fetch_from_buf(LogProtoBufferedServer *s, const guchar *buffer_start, gsize buffer_bytes, const guchar **msg, gsize *msg_len, gboolean flush_the_rest)
 {
   LogProtoBufferedServerState *state = log_proto_buffered_server_get_state(s);
 
@@ -2233,7 +2245,7 @@ log_proto_framed_server_extract_frame_length(LogProtoFramedServer *self, gboolea
 }
 
 static LogProtoStatus
-log_proto_framed_server_fetch(LogProto *s, const guchar **msg, gsize *msg_len, GSockAddr **sa, gboolean *may_read, regex_t *multi_line_prefix_parser, regex_t *multi_line_garbage_parser, gboolean flush)
+log_proto_framed_server_fetch(LogProto *s, const guchar **msg, gsize *msg_len, GSockAddr **sa, gboolean *may_read, gboolean flush)
 {
   LogProtoFramedServer *self = (LogProtoFramedServer *) s;
   LogProtoStatus status;

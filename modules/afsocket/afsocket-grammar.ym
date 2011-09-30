@@ -260,6 +260,12 @@ source_afinet_tcp_option
 source_afsocket_stream_params
 	: KW_KEEP_ALIVE '(' yesno ')'		{ afsocket_sd_set_keep_alive(last_driver, $3); }
 	| KW_MAX_CONNECTIONS '(' LL_NUMBER ')'	{ afsocket_sd_set_max_connections(last_driver, $3); }
+  | KW_MULTI_LINE_PREFIX '(' string ')' { if (!afsocket_sd_set_multi_line_prefix(last_driver, $3))
+                                            YYERROR;
+                                        }
+  | KW_MULTI_LINE_GARBAGE '(' string ')' { if (!afsocket_sd_set_multi_line_garbage(last_driver, $3))
+                                             YYERROR;
+                                         }
 	;
 
 source_afsyslog

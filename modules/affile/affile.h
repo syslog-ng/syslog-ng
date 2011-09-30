@@ -47,12 +47,16 @@ typedef struct _AFFileSourceDriver
   /* state information to follow a set of files using a wildcard expression */
   FileMonitor *file_monitor;
   GQueue *file_list;
+  regex_t *prefix_matcher;
+  regex_t *garbage_matcher;
 } AFFileSourceDriver;
 
 LogDriver *affile_sd_new(gchar *filename, guint32 flags);
 void affile_sd_set_recursion(LogDriver *s, const gint recursion);
 void affile_sd_set_pri_level(LogDriver *s, const gint16 severity);
 void affile_sd_set_pri_facility(LogDriver *s, const gint16 facility);
+gboolean affile_sd_set_multi_line_prefix(LogDriver *s, gchar *prefix);
+gboolean affile_sd_set_multi_line_garbage(LogDriver *s, gchar *garbage);
 
 typedef struct _AFFileDestWriter AFFileDestWriter;
 
@@ -74,6 +78,8 @@ typedef struct _AFFileDestDriver
   TimeZoneInfo *local_time_zone_info;
   LogWriterOptions writer_options;
   GHashTable *writer_hash;
+  regex_t *prefix_matcher;
+  regex_t *garbage_matcher;
     
   gint overwrite_if_older;
   gboolean use_time_recvd;

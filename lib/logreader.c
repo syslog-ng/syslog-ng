@@ -109,8 +109,6 @@ struct _LogReader
   gboolean suspended:1;
   gint pollable_state;
   gint notify_code;
-  regex_t *prefix_matcher;
-  regex_t *garbage_matcher;
   /* Because of multiline processing logreader has to store the last read line which should start with the prefix */
   gchar *partial_message;
   /* store if we have to wait for a prefix, because last event was a garbage found */
@@ -379,7 +377,7 @@ log_reader_check_file(gpointer s)
         {
           /* we are at EOF */
           /* We are the end of the file, so let's see the timeout */
-          if((self->prefix_matcher) &&
+          if((self->proto->is_multi_line) &&
              (self->last_msg_received != 0) &&
              (self->last_msg_received + MAX_MSG_TIMEOUT < cached_g_current_time_sec()))
             {
@@ -608,34 +606,6 @@ log_reader_handle_line(LogReader *self, const guchar *line, gint length, GSockAd
   guint64 pos=0;
   NVHandle handle;
   gint i;
-  gchar *mlg = self->super.options->multi_line_garbage;
-
-  /* handle multi line garbage: if the the buffer starts with the garbage text, it means that we are flushing
-     the buffer - but the actual content is garbage and therefore we have to discard it
-     We don't have to scan the whole text (strstr would do that), only the first characters, it is always at the
-     begin of the buffer - somewhat faster */
-  if (mlg)
-    {
-      gint len = strlen(mlg);
-      if (length >= len)
-        {
-          gboolean match = TRUE;
-          for (i = 0; i < len && match; ++i)
-            if (line[i] != mlg[i])
-              match = FALSE;
-          if (match)
-            /* garbage line, discard it */
-            return TRUE;
-        }
-    }
-  
-  /* skip the remaning '\n' char in case the multi line garbage is on and the garbage processing took place
-     in several steps (file writing in steps) */
-  if (self->super.options->multi_line_garbage && line[0] == '\n')
-    {
-      ++line;
-      --length;
-    }
 
   msg_debug("Incoming log entry", 
             evt_tag_printf("line", "%.*s", length, line),
@@ -720,7 +690,7 @@ log_reader_fetch_log(LogReader *self)
        * protocol, it resets may_read to FALSE after the first read was issued.
        */
 
-      status = log_proto_fetch(self->proto, &msg, &msg_len, &sa, &may_read, self->prefix_matcher, self->garbage_matcher, self->flush);
+      status = log_proto_fetch(self->proto, &msg, &msg_len, &sa, &may_read, self->flush);
       switch (status)
         {
         case LPS_EOF:
@@ -806,25 +776,6 @@ log_reader_init(LogPipe *s)
                 evt_tag_str("format", self->options->parse_options.format),
                 NULL);
       return FALSE;
-    }
-
-  if (self->options->super.multi_line_prefix)
-    {
-      self->prefix_matcher = g_new0(regex_t, 1);
-      if (regcomp(self->prefix_matcher, self->options->super.multi_line_prefix, REG_EXTENDED))
-        {
-          msg_error("Bad regexp",evt_tag_str("multi_line_prefix",self->options->super.multi_line_prefix), NULL);
-          return FALSE;
-        }
-    }
-  if (self->options->super.multi_line_garbage)
-    {
-      self->garbage_matcher = g_new0(regex_t, 1);
-      if (regcomp(self->garbage_matcher, self->options->super.multi_line_garbage, REG_EXTENDED))
-        {
-          msg_error("Bad regexp",evt_tag_str("multi_line_garbage",self->options->super.multi_line_garbage), NULL);
-          return FALSE;
-        }
     }
 
   if (!log_reader_start_watches(self))
@@ -967,8 +918,6 @@ log_reader_new(LogProto *proto)
   self->proto = proto;
   self->immediate_check = FALSE;
   self->pollable_state = -1;
-  self->prefix_matcher = NULL;
-  self->garbage_matcher = NULL;
   self->wait_for_prefix = FALSE;
   self->flush = FALSE;
   log_reader_init_watches(self);
@@ -1039,8 +988,6 @@ log_reader_options_init(LogReaderOptions *options, GlobalConfig *cfg, const gcha
   gchar *host_override, *program_override, *text_encoding, *format;
   MsgFormatHandler *format_handler;
   GArray *tags;
-  gchar *multi_line_prefix;
-  gchar *multi_line_garbage;
 
   recv_time_zone = options->parse_options.recv_time_zone;
   options->parse_options.recv_time_zone = NULL;
@@ -1059,10 +1006,6 @@ log_reader_options_init(LogReaderOptions *options, GlobalConfig *cfg, const gcha
   options->super.host_override = NULL;
   program_override = options->super.program_override;
   options->super.program_override = NULL;
-  multi_line_prefix = options->super.multi_line_prefix;
-  multi_line_garbage = options->super.multi_line_garbage;
-  options->super.multi_line_prefix = NULL;
-  options->super.multi_line_garbage = NULL;
 
   format = options->parse_options.format;
   options->parse_options.format = NULL;
@@ -1081,8 +1024,6 @@ log_reader_options_init(LogReaderOptions *options, GlobalConfig *cfg, const gcha
   options->super.host_override = host_override;
   options->super.program_override = program_override;
   options->super.tags = tags;
-  options->super.multi_line_prefix = multi_line_prefix;
-  options->super.multi_line_garbage = multi_line_garbage;
   
   options->parse_options.recv_time_zone = recv_time_zone;
   options->parse_options.recv_time_zone_info = recv_time_zone_info;

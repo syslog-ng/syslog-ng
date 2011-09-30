@@ -43,11 +43,35 @@ LogTransport *log_transport_memory_new(gchar *read_buffer, guint32 read_buffer_l
   return &self->super;
 }
 
-LogReader *log_reader_new_memory_source(LogReaderOptions *options, guint32 read_buffer_length, LogReaderNotifyMethod notif, LogReaderQueueMethod queue, LogTransport **new_transport)
+LogReader *log_reader_new_memory_source(LogReaderOptions *options, guint32 read_buffer_length, LogReaderNotifyMethod notif, LogReaderQueueMethod queue, LogTransport **new_transport, gchar *prefix, gchar *garbage)
 {
   gchar *read_buffer = g_malloc0(read_buffer_length);
+  LogProto *proto = NULL;
   *new_transport = log_transport_memory_new(read_buffer, read_buffer_length, NULL, 0, 0);
-  LogProto *proto = log_proto_text_server_new(*new_transport, 8192, LPBS_IGNORE_EOF);
+  regex_t *prefix_matcher = NULL;
+  regex_t *garbage_matcher = NULL;
+
+  if (prefix)
+    {
+      prefix_matcher = g_new0(regex_t,1);
+      if (regcomp(prefix_matcher, prefix, REG_EXTENDED))
+        {
+          fprintf(stderr,"Bad regexp %s\n", prefix);
+          return FALSE;
+        }
+      if (garbage)
+        {
+          garbage_matcher = g_new(regex_t,1);
+          if(regcomp(garbage_matcher, garbage, REG_EXTENDED))
+            {
+              fprintf(stderr,"Bad regexp %s\n", garbage);
+              return FALSE;
+            }
+        }
+      proto = log_proto_multi_line_text_server_new(*new_transport, 8192, LPBS_IGNORE_EOF, prefix_matcher, garbage_matcher);
+    }
+  else
+    proto = log_proto_text_server_new(*new_transport, 8192, LPBS_IGNORE_EOF);
   LogReader *reader = (LogReader*)log_reader_new(proto);
   log_reader_set_options((LogPipe *)reader, (LogPipe *)reader, options, 0, SCS_FILE, "test","test_mem_queue");
   ((LogPipe *)reader)->queue = queue;

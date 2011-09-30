@@ -49,8 +49,6 @@ typedef struct _LogSourceOptions
   LogTagId source_group_tag;
   GArray *tags;
   GList *source_queue_callbacks;
-  gchar *multi_line_prefix;
-  gchar *multi_line_garbage;
 } LogSourceOptions;
 
 typedef struct _LogSource LogSource;
@@ -99,8 +97,6 @@ void log_source_options_defaults(LogSourceOptions *options);
 void log_source_options_init(LogSourceOptions *options, GlobalConfig *cfg, const gchar *group_name);
 void log_source_options_destroy(LogSourceOptions *options);
 void log_source_options_set_tags(LogSourceOptions *options, GList *tags);
-void log_source_options_set_multi_line_prefix(LogSourceOptions *options, gchar *multi_line_prefix);
-void log_source_options_set_multi_line_garbage(LogSourceOptions *options, gchar *multi_line_garbage);
 void log_source_free(LogPipe *s);
 
 void log_source_global_init(void);

@@ -823,8 +823,6 @@ source_reader_option
 	    last_reader_options->parse_options.default_pri = (last_reader_options->parse_options.default_pri & 7) | $3;
           }
         | { last_source_options = &last_reader_options->super; } source_option
-        | KW_MULTI_LINE_PREFIX '(' string ')' { log_source_options_set_multi_line_prefix(&(last_reader_options->super), $3); }
-        | KW_MULTI_LINE_GARBAGE '(' string ')' { log_source_options_set_multi_line_garbage(&(last_reader_options->super), $3); }
 	;
 
 source_reader_option_flags

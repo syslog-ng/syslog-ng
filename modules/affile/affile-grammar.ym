@@ -98,6 +98,12 @@ source_affile_option
 	: KW_FOLLOW_FREQ '(' LL_FLOAT ')'		{ last_reader_options->follow_freq = (long) ($3 * 1000); }
 	| KW_FOLLOW_FREQ '(' LL_NUMBER ')'		{ last_reader_options->follow_freq = ($3 * 1000); }
   | KW_RECURSIVE '(' yesno ')'    { affile_sd_set_recursion(last_driver, $3); }
+  | KW_MULTI_LINE_PREFIX '(' string ')' { if (!affile_sd_set_multi_line_prefix(last_driver, $3))
+                                            YYERROR;
+                                        }
+  | KW_MULTI_LINE_GARBAGE '(' string ')' { if (!affile_sd_set_multi_line_garbage(last_driver, $3))
+                                             YYERROR;
+                                         }
         | source_reader_option
         ;
 
