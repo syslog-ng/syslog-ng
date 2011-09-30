@@ -449,7 +449,15 @@ log_msg_set_value(LogMessage *self, NVHandle handle, const gchar *value, gssize 
       if (!nv_table_add_value(self->payload, handle, name, name_len, value, value_len, &new_entry))
         {
           /* error allocating string in payload, reallocate */
-          self->payload = nv_table_realloc(self->payload);
+          if (!nv_table_realloc(self->payload, &self->payload))
+            {
+              /* can't grow the payload, it has reached the maximum size */
+              msg_info("Cannot store value for this log message, maximum size has been reached",
+                       evt_tag_str("name", name),
+                       evt_tag_printf("value", "%.32s%s", value, value_len > 32 ? "..." : ""),
+                       NULL);
+              break;
+            }
           stats_counter_inc(count_payload_reallocs);
         }
       else
@@ -490,7 +498,15 @@ log_msg_set_value_indirect(LogMessage *self, NVHandle handle, NVHandle ref_handl
       if (!nv_table_add_value_indirect(self->payload, handle, name, name_len, ref_handle, type, ofs, len, &new_entry))
         {
           /* error allocating string in payload, reallocate */
-          self->payload = nv_table_realloc(self->payload);
+          if (!nv_table_realloc(self->payload, &self->payload))
+            {
+              /* error growing the payload, skip without storing the value */
+              msg_info("Cannot store referenced value for this log message, maximum size has been reached",
+                       evt_tag_str("name", name),
+                       evt_tag_str("ref-name", log_msg_get_value_name(ref_handle, NULL)),
+                       NULL);
+              break;
+            }
           stats_counter_inc(count_payload_reallocs);
         }
       else
