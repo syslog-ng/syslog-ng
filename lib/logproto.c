@@ -493,6 +493,28 @@ struct _LogProtoBufferedServer
   LogProtoStatus status;
 };
 
+struct
+{
+  const gchar *prefix;
+  gint scale;
+} fixed_encodings[] = {
+  { "ascii", 1 },
+  { "us-ascii", 1 },
+  { "iso-8859", 1 },
+  { "iso8859", 1 },
+  { "latin", 1 },
+  { "ucs2", 2 },
+  { "ucs-2", 2 },
+  { "ucs4", 4 },
+  { "ucs-4", 4 },
+  { "koi", 1 },
+  { "unicode", 2 },
+  { "windows", 1 },
+  { "wchar_t", sizeof(wchar_t) },
+  { NULL, 0 }
+};
+
+
 /*
  * NOTE: It is not allowed to synchronize with the main thread between
  * get_state & put_state, see persist_state_map_entry() for more details.
@@ -681,7 +703,17 @@ log_proto_buffered_server_apply_state(LogProtoBufferedServer *self, PersistEntry
         }
       else
         {
-          if (state->raw_buffer_size > self->init_buffer_size)
+           gint i;
+           gint scale = 0;
+           for (i = 0; fixed_encodings[i].prefix; i++)
+            {
+              if (strncasecmp(self->super.encoding, fixed_encodings[i].prefix, strlen(fixed_encodings[i].prefix) == 0))
+                {
+                  scale = fixed_encodings[i].scale;
+                  break;
+                }
+            }
+          if (scale && state->raw_buffer_size > (scale *state->buffer_size))
             {
               msg_notice("Invalid LogProtoBufferedServerState.raw_buffer_size, larger than init_buffer_size, restarting from the beginning",
                          evt_tag_str("state", persist_name),
@@ -1446,27 +1478,6 @@ find_eom(const guchar *s, gsize n)
 
   return NULL;
 }
-
-struct
-{
-  const gchar *prefix;
-  gint scale;
-} fixed_encodings[] = {
-  { "ascii", 1 },
-  { "us-ascii", 1 },
-  { "iso-8859", 1 },
-  { "iso8859", 1 },
-  { "latin", 1 },
-  { "ucs2", 2 },
-  { "ucs-2", 2 },
-  { "ucs4", 4 },
-  { "ucs-4", 4 },
-  { "koi", 1 },
-  { "unicode", 2 },
-  { "windows", 1 },
-  { "wchar_t", sizeof(wchar_t) },
-  { NULL, 0 }
-};
 
 /*
  * returns the number of bytes that represent the UTF8 encoding buffer
