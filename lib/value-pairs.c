@@ -479,8 +479,5 @@ value_pairs_new_from_cmdline (GlobalConfig *cfg,
     }
   g_option_context_free (ctx);
 
-  if (vp->scopes == 0)
-    value_pairs_add_scope (vp, "rfc3164");
-
   return vp;
 }
