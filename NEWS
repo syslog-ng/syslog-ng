@@ -1,3 +1,237 @@
+3.3.1
+	Sat, 01 Oct 2011 13:17:56 +0200
+
+	This is the first stable release in the 3.3 series adding a number
+	of features compared to 3.2:
+
+	  - multi-core/CPU scaling: the new multi-threaded architecture allows
+	    syslog-ng to scale into the 800k msg/sec region.
+
+	  - MongoDB support: using MongoDB instead of SQL is faster and
+	    allows better representation of log data.
+
+	  - JSON support: using the $(format-json) template function it is
+	    now possible to construct JSON (JavaScript Object Notation)
+	    output for log messages. JSON is a commonly used format for
+	    exchanging information between information systems, providing a
+	    rich and extensible format for structured information.
+
+	  - A number of enhancements all over the place: SQL, patterndb.
+
+	The most important changes in this release:
+
+	  - The default ports have changed. syslog-ng is using the standard
+	    RFC allocated ports in the syslog() driver.
+
+	  - The meaning for log-iw-size() was changed for tcp() and
+	    unix-stream() drivers. That value is _evenly_ allocated to all
+	    possible connections starting with this release, whereas
+	    previously that window was shared between actual connections.
+
+	Changes since 3.3.0beta2:
+
+	system() source:
+	================
+	* Added support for Debian/kFreeBSD
+
+	internal() source:
+	==================
+	* Added support for the tags() option
+
+	pdbtool test:
+	=============
+	* Added support for testing a specific rule, instead of the complete
+	  patterndb file.
+
+	* Added support for match debugging with the --debug and --color-out
+	  command line options.
+
+	pdbtool dictionary:
+	===================
+	* New pdbtool command that displays the name-value pairs that are
+	  set by any of the rules in a patterndb XML file.
+
+	$(indent-multi-line):
+	=====================
+	* This template function was added to make it possible to write
+	  multi-line log messages into a file. The first line is written
+	  like a regular message, subsequent lines are indented with a tab,
+	  just like RFC822.
+
+	Other features & changes:
+	=========================
+	* At stats-level(3) syslog-ng keeps track how much messages get
+	  tagged with individual tags.
+
+	* Added support for pad_size() option for destinations, effectively
+	  padding the output string to a fixed size. This can be used on
+	  HP-UX to send messages to the local syslogd daemon, as that
+	  expects messages to be padded to 2048 bytes.
+
+	* The command-line parser of the value-pairs functionality (used by
+	  $(format-json) for instance, was changed to use an empty scope by
+	  default.
+
+	Bugfixes:
+	=========
+	* Fixed spoof-source support as it didn't have proper thread
+	  synchronization in the previous beta versions, causing memory
+	  leaks and crashes if spoof-source was enabled on a destination and
+	  threading is used.
+
+	* Fixed a MongoDB and SQL race conditions causing stalls
+	  and failed assertions.
+
+	* Fixed a possible stall of syslog-ng caused by pipe() destinations
+	  without readers (e.g. /dev/xconsole). The root cause was a flipped
+	  flow-control state: pipes have become flow-controlled even if the
+	  user didn't request it. On the other hand files have become
+	  non-flow-controlled, even though they always should be.
+
+	* Fixed possible crashes during reload or shutdown.
+
+	* Fixes for several, significant memory leaks:
+	  - Fixed a major memory leak, effectively causing all messages to
+	    be leaked when message contents are changed on some of the log
+	    statements (with a rewrite rule or a parser).
+
+	  - Fixed a memory leak in file destinations caused by the leakage
+	    of the associated queue when the given file is closed (by
+	    time-reap or otherwise).
+
+	  - Fixed a memory leak in the server protocol handling code,
+	    leaking a small amount of memory every time a connection is
+	    closed.
+
+	  - Fixed a memory leak in the log source code causing some memory
+	    to be leaked for each connection when processing a reload.
+
+	  - PCRE matcher has leaked its state, causing a small leak on
+	    reloads.
+
+	  - The configuration parser contained leaks also causing leaks when
+	    parsing the configuration file (e.g. on reloads).
+
+	  - The persist state handling code has leaked some memory each time
+	    the persist state file was processed (startup + reloads).
+
+	* Fixed thread synchronization when registering/deregistering stats
+	  counters. Previously these were performed without caring about
+	  threads, effectively the root cause for various ill effects from
+	  invalid counters to crashes.
+
+	* Fixed a timestamp parsing problems affecting timestamps with month
+	  values between and including September .. December.
+
+	* Fixed a timezone representation issue for zones that have half an
+	  hour offsets from GMT in the negative direction.
+
+	* Fixed pdbtool patternize to generate proper UUIDs if openssl was
+	  detected. Previously it worked as if openssl was never detected.
+
+	* Fixed a possible race on MARK message timing, which could cause
+	  MARK messages to appear somewhat inconsistently.
+
+	* Fixed the generation of [meta sequenceId] SDATA field.
+
+	* Fixed handling of zero-sized messages which have caused a crash
+	  due to NULL deref.
+
+	* The processing of included directories was changed not to include
+	  hidden files.
+
+	* Reloading syslog-ng didn't reinitialize the name resolver
+	  causing etc/resolv.conf changes not to be recognized even if
+	  syslog-ng was reloaded. A res_init() call was added to match
+	  earlier behaviour and UNIX best practice.
+
+	* Fixed program-override() clash with the 'store-legacy-msghdr'
+	  reader flag, which has become default in syslog-ng 3.1. If
+	  storing the legacy msghdr is enabled, overwriting the value for
+	  $PROGRAM was not reflected in the output, since instead of
+	  reconstructing it from the parsed values, syslog-ng always used
+	  what was originally in the input. If the value for $PROGRAM
+	  changes, that automatically disables the use of the
+	  'store-legacy-msghdr' flag.
+
+	* Fixed CAP_SYSLOG detection to also detect if either the kernel, or
+	  libcap is lacking some required functionality.
+
+	* Fixed the handling of messages generated by AIX, which include a
+	  "message forwarded for" header that syslog-ng failed to parse
+	  properly.
+
+	* Fixed proper size limitation for the data structure used to hold
+	  name-value pairs of a log message. Previously, if this structure
+	  would go over 262140 bytes syslog-ng crashed because of an
+	  unhandled integer overflow.
+
+	Build changes:
+	==============
+
+	* It is possible to request the use of the system-installed
+	  libmongo-client instead of the bundled one. At least 0.1.3 is
+	  required.
+
+	* The bundled libmongo-client was updated to 0.1.4, plus some minor
+	  patches (tagged in the git.balabit.hu git repo with
+	  syslog-ng-3.3-ref2)
+
+	* autogen.sh: automatically check the availability of git before
+	  trying to pull the bundled libraries from git.balabit.hu
+
+	* systemd unit file redirects syslog-ng startup messages to
+	  /dev/null without a better place.
+
+	* Introduced a pkg-config file for syslog-ng.pc to make it easier to
+	  build 3rd party modules for syslog-ng.
+
+	* The syslog-ng version number is added to libsyslog-ng.so, which
+	  goes to $prefix/lib to indicate that binary compatibility is not
+	  guaranteed between syslog-ng versions.
+
+	* Added --without-compile-date option to remove the compilation date
+	  from the binary, as SUSE Linux checks if recompilation changes the
+	  binary to detect if dependent packages need to be rebuilt or not.
+
+	* It is now possible to build against libsystemd-daemon instead of
+	  using the bundled sources.
+
+	Other changes:
+	==============
+	* The --seed command line option has become a no-op, syslog-ng tries
+	  to detect the availability of the random seed automatically. The
+	  command line option of the syslog-ng binary is present without
+	  doing anything, but it was removed from other utilities.
+
+	Credits:
+	========
+	syslog-ng is developed as a community project, and as such it relies
+        on volunteers to do the work necessarily to produce syslog-ng.
+
+        Reporting bugs, testing changes, writing code or simply providing
+        feedback are all important contributions, so please if you are a
+        user of syslog-ng, contribute.
+
+        These people have helped in this release:
+
+          * Balázs Németh (BalaBit)
+          * Sándor Gellér (Morgan Stanley)
+          * Péter Czanik (BalaBit)
+          * Owen Mann (Interactive Data)
+          * Zhengxiang Pan (Alcatel Lucent)
+          * Corinna Vinschen (RedHat)
+          * Eric Berggren (Apple)
+          * Gergely Nagy (BalaBit)
+          * Matthew Hall
+          * LEBRETON Philippe
+          * Craig Bell
+          * Steven Chamberlain
+          * Balázs Scheidler (BalaBit)
+	  * Roger (Verizon)
+	  * Paul Crizak (AMD)
+
+
 3.3.0beta2
 	Fri, 12 Aug 2011 09:00:17 +0200
 
