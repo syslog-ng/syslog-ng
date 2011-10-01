@@ -74,7 +74,6 @@ $(STAMPDIR)/stamp-install: $(STAMPDIR)/stamp-build
 		| grep 'Enable' > $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/share/doc/buildopts
 
 	$(INSTALL) -d -m 755 $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/lib
-	$(INSTALL) -m 644 -c README $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/share/doc 
 	$(INSTALL) -m 644 -c COPYING $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/share/doc
 	$(INSTALL) -m 644 -c AUTHORS $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/share/doc
 	$(INSTALL) -m 644 -c NEWS $(ZBS_STAGE_DIR)/$(ZBS_PREFIX)/share/doc
