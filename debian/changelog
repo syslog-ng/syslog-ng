@@ -1,3 +1,10 @@
+syslog-ng (3.3.1-1~mhp1) unstable; urgency=low
+
+  * New upstream, final version, from the 3.3.1 release tag (f6e075c).
+  * Build-Depend on help2man, so that manual pages get built.
+
+ -- Gergely Nagy <algernon@madhouse-project.org>  Sun, 02 Oct 2011 21:37:23 +0200
+
 syslog-ng (3.3.0beta2-1~preview5) unstable; urgency=low
 
   * Update to commit e51862b from upstream.
