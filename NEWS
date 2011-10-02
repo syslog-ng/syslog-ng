@@ -215,22 +215,23 @@
 
         These people have helped in this release:
 
-          * Balázs Németh (BalaBit)
-          * Sándor Gellér (Morgan Stanley)
-          * Péter Czanik (BalaBit)
-          * Owen Mann (Interactive Data)
-          * Zhengxiang Pan (Alcatel Lucent)
-          * Corinna Vinschen (RedHat)
-          * Eric Berggren (Apple)
-          * Gergely Nagy (BalaBit)
-          * Matthew Hall
-          * LEBRETON Philippe
-          * Craig Bell
-          * Steven Chamberlain
-          * Balázs Scheidler (BalaBit)
-	  * Roger (Verizon)
-	  * Paul Crizak (AMD)
-
+           * Attila Nagy (BalaBit)
+           * Balazs Scheidler (BalaBit)
+           * Balint Kovacs (BalaBit)
+           * Costa Farber (wix.com)
+           * Eric Duda
+           * Gergely Nagy (BalaBit)
+           * Jakub Jankowski (ToxCorp)
+           * Kevin Guthrie (itron)
+           * Lennart Poettering (RedHat)
+           * Martin Holste
+           * Marton Illes (BalaBit)
+           * Peter Czanik (BalaBit)
+           * Peter Eisenlohr
+           * Peter Gyorko (BalaBit)
+           * Sandor Geller (Morgan Stanley)
+           * Tamas Pal (BalaBit)
+           * Viktor Juhasz (BalaBit)
 
 3.3.0beta2
 	Fri, 12 Aug 2011 09:00:17 +0200
