@@ -115,6 +115,7 @@ typedef struct _AFSqlDestDriver
   dbi_conn dbi_ctx;
   GHashTable *validated_tables;
   guint32 failed_message_counter;
+  gboolean enable_indexes;
 } AFSqlDestDriver;
 
 static gboolean dbi_initialized = FALSE;
@@ -213,7 +214,16 @@ afsql_dd_set_indexes(LogDriver *s, GList *indexes)
   AFSqlDestDriver *self = (AFSqlDestDriver *) s;
 
   string_list_free(self->indexes);
-  self->indexes = indexes;
+  if (indexes)
+    {
+      self->enable_indexes = TRUE;
+      self->indexes = indexes;
+    }
+  else
+    {
+      self->enable_indexes = FALSE;
+      self->indexes = g_list_append(NULL,"");
+    }
 }
 
 void
@@ -476,12 +486,15 @@ afsql_dd_validate_table(AFSqlDestDriver *self, gchar *table)
                   success = FALSE;
                   break;
                 }
-              for (l = self->indexes; l; l = l->next)
+              if (self->enable_indexes)
                 {
-                  if (strcmp((gchar *) l->data, self->fields[i].name) == 0)
+                  for (l = self->indexes; l; l = l->next)
                     {
-                      /* this is an indexed column, create index */
-                      afsql_dd_create_index(self, table, self->fields[i].name);
+                      if (strcmp((gchar *) l->data, self->fields[i].name) == 0)
+                        {
+                          /* this is an indexed column, create index */
+                          afsql_dd_create_index(self, table, self->fields[i].name);
+                        }
                     }
                 }
             }
@@ -505,9 +518,12 @@ afsql_dd_validate_table(AFSqlDestDriver *self, gchar *table)
           GList *l;
 
           success = TRUE;
-          for (l = self->indexes; l; l = l->next)
+          if (self->enable_indexes)
             {
-              afsql_dd_create_index(self, table, (gchar *) l->data);
+              for (l = self->indexes; l; l = l->next)
+                {
+                  afsql_dd_create_index(self, table, (gchar *) l->data);
+                }
             }
         }
       else
