@@ -605,7 +605,17 @@ log_reader_handle_line(LogReader *self, const guchar *line, gint length, GSockAd
   GString *converted;
   guint64 pos=0;
   NVHandle handle;
-  gint i;
+
+  /*
+   * skip the remaning '\n' char in case the multi line garbage is on
+   * and the garbage processing took place
+   * in several steps (file writing in steps)
+   */
+  if (length > 1 && line[0] == '\n')
+    {
+      ++line;
+      --length;
+    }
 
   msg_debug("Incoming log entry", 
             evt_tag_printf("line", "%.*s", length, line),
