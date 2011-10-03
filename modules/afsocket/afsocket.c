@@ -1325,7 +1325,6 @@ afsocket_dd_free(LogPipe *s)
   g_sockaddr_unref(self->bind_addr);
   g_sockaddr_unref(self->dest_addr);
   log_pipe_unref(self->writer);
-  g_free(self->hostname);
   g_free(self->dest_name);
   g_free(self->transport);
   log_dest_driver_free(s);
