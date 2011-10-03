@@ -513,6 +513,7 @@ afinet_dd_apply_transport(AFSocketDestDriver *s)
   if ((self->bind_ip && !resolve_hostname(&self->super.bind_addr, self->bind_ip)) ||
       !resolve_hostname(&self->super.dest_addr, self->super.hostname))
 #endif
+  resolve_hostname(&self->super.dest_addr, self->super.hostname);
   if ((self->bind_ip && !resolve_hostname(&self->super.bind_addr, self->bind_ip)))
     return FALSE;
 
