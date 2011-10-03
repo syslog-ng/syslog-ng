@@ -110,8 +110,6 @@ typedef struct _AFSqlDestDriver
   LogQueue *queue;
   /* used exclusively by the db thread */
   gint32 seq_num;
-  LogMessage *pending_msg;
-  gboolean pending_msg_ack_needed;
   dbi_conn dbi_ctx;
   GHashTable *validated_tables;
   guint32 failed_message_counter;
@@ -702,21 +700,11 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
     }
 
   /* connection established, try to insert a message */
-
-  if (self->pending_msg)
-    {
-      msg = self->pending_msg;
-      path_options.ack_needed = self->pending_msg_ack_needed;
-      self->pending_msg = NULL;
-    }
-  else
-    {
-      g_mutex_lock(self->db_thread_mutex);
-      success = log_queue_pop_head(self->queue, &msg, &path_options, (self->flags & AFSQL_DDF_EXPLICIT_COMMITS), FALSE);
-      g_mutex_unlock(self->db_thread_mutex);
-      if (!success)
-        return TRUE;
-    }
+  g_mutex_lock(self->db_thread_mutex);
+  success = log_queue_pop_head(self->queue, &msg, &path_options, (self->flags & AFSQL_DDF_EXPLICIT_COMMITS), FALSE);
+  g_mutex_unlock(self->db_thread_mutex);
+  if (!success)
+    return TRUE;
 
   msg_set_context(msg);
 
@@ -824,8 +812,7 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
     {
       if (self->failed_message_counter < self->num_retries - 1)
         {
-          self->pending_msg = msg;
-          self->pending_msg_ack_needed = path_options.ack_needed;
+          log_queue_push_head(self->queue,msg,&path_options);
           self->failed_message_counter++;
         }
       else
@@ -871,7 +858,7 @@ afsql_dd_database_thread(gpointer arg)
 
           /* we loop back to check if the thread was requested to terminate */
         }
-      else if (!self->pending_msg && log_queue_get_length(self->queue) == 0)
+      else if (log_queue_get_length(self->queue) == 0)
         {
           /* we have nothing to INSERT into the database, let's wait we get some new stuff */
 
@@ -913,7 +900,7 @@ afsql_dd_database_thread(gpointer arg)
         }
     }
 
-  while (self->pending_msg || log_queue_get_length(self->queue) > 0)
+  while (log_queue_get_length(self->queue) > 0)
     {
       if(!afsql_dd_insert_db(self))
         {
@@ -970,20 +957,19 @@ afsql_dd_format_stats_instance(AFSqlDestDriver *self)
   return persist_name;
 }
 
-/* file param is true then its the queue name else its a pending message */
 static gchar *
-afsql_dd_format_persist_name(AFSqlDestDriver *self, gboolean queue)
+afsql_dd_format_persist_name(AFSqlDestDriver *self)
 {
   static gchar persist_name_old[256];
   static gchar persist_name_new[256];
 
   g_snprintf(persist_name_old, sizeof(persist_name_old),
-             "afsql_dd_%s(%s,%s,%s,%s)",
-             queue ? "qfile" : "pending_message", self->type, self->host, self->port, self->database);
+             "afsql_dd_qfile(%s,%s,%s,%s)",
+             self->type, self->host, self->port, self->database);
 
   g_snprintf(persist_name_new, sizeof(persist_name_new),
-             "afsql_dd_%s(%s,%s,%s,%s,%s)",
-             queue ? "qfile" : "pending_message", self->type, self->host, self->port, self->database, self->table->template);
+             "afsql_dd_qfile(%s,%s,%s,%s,%s)",
+             self->type, self->host, self->port, self->database, self->table->template);
 
   /*
     Lookup for old style persist name because of regression
@@ -1024,8 +1010,7 @@ afsql_dd_init(LogPipe *s)
   stats_register_counter(0, SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self), SC_TYPE_DROPPED, &self->dropped_messages);
   stats_unlock();
 
-  self->pending_msg = cfg_persist_config_fetch(cfg, afsql_dd_format_persist_name(self, FALSE));
-  self->queue = log_dest_driver_acquire_queue(&self->super, afsql_dd_format_persist_name(self, TRUE));
+  self->queue = log_dest_driver_acquire_queue(&self->super, afsql_dd_format_persist_name(self));
   log_queue_set_counters(self->queue, self->stored_messages, self->dropped_messages);
   if (!self->fields)
     {
@@ -1156,12 +1141,6 @@ afsql_dd_deinit(LogPipe *s)
   stats_unregister_counter(SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self), SC_TYPE_STORED, &self->stored_messages);
   stats_unregister_counter(SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self), SC_TYPE_DROPPED, &self->dropped_messages);
   stats_unlock();
-  if (self->pending_msg)
-    {
-      cfg_persist_config_add(log_pipe_get_config(s), afsql_dd_format_persist_name(self, FALSE), self->pending_msg, (GDestroyNotify)log_msg_unref, FALSE);
-      self->pending_msg = NULL;
-    }
-
   if (!log_dest_driver_deinit_method(s))
     return FALSE;
 
@@ -1206,8 +1185,6 @@ afsql_dd_free(LogPipe *s)
   gint i;
 
   log_template_options_destroy(&self->template_options);
-  if (self->pending_msg)
-    log_msg_unref(self->pending_msg);
   if (self->queue)
     log_queue_unref(self->queue);
   for (i = 0; i < self->fields_len; i++)
