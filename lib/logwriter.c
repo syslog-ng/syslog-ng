@@ -691,7 +691,7 @@ void
 log_writer_mark_timeout(void *cookie)
 {
   LogWriter *self = (LogWriter *)cookie;
-  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
+  LogPathOptions path_options = {FALSE,FALSE, NULL};
   gchar hostname[256];
   LogMessage *msg = log_msg_new_mark();
 
