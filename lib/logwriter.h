@@ -71,6 +71,12 @@ typedef struct _LogWriterOptions
   gint padding;
   gint mark_mode;
   gint mark_freq;
+
+  // options for resolve_sockaddr()
+  gboolean use_dns;
+  gboolean use_fqdn;
+  gboolean use_dns_cache;
+  gboolean normalize_hostnames;
 } LogWriterOptions;
 
 typedef struct _LogWriter LogWriter;

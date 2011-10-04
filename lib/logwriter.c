@@ -693,12 +693,13 @@ log_writer_mark_timeout(void *cookie)
   LogWriter *self = (LogWriter *)cookie;
   LogPathOptions path_options = {FALSE,FALSE, NULL};
   gchar hostname[256];
+  gsize hostname_len = sizeof(hostname);
   LogMessage *msg = log_msg_new_mark();
 
   main_loop_assert_main_thread();
 
   /* timeout: there was no new message on the writer or it is in periodical mode */
-  getlonghostname(hostname, sizeof(hostname));
+  resolve_sockaddr(hostname, &hostname_len, msg->saddr, self->options->use_dns, self->options->use_fqdn, self->options->use_dns_cache, self->options->normalize_hostnames);
 
   log_msg_set_value(msg, LM_V_HOST, hostname, strlen(hostname));
 
@@ -1526,6 +1527,11 @@ log_writer_options_init(LogWriterOptions *options, GlobalConfig *cfg, guint32 op
   if (options->mark_freq == -1)
     /* not initialized, use the global mark freq */
     options->mark_freq = cfg->mark_freq;
+
+   options->use_dns = cfg->use_dns;
+   options->use_fqdn = cfg->use_fqdn;
+   options->use_dns_cache = cfg->use_dns_cache;
+   options->normalize_hostnames = cfg->normalize_hostnames;
 }
 
 void
