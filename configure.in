@@ -1101,6 +1101,9 @@ enable_value()
 
 SLNG_WIN_VERSION="`echo $VERSION | sed -e 's/[[a-zA-Z+\-~]]\+.*//' -e 's/\./,/g'`"
 
+# stripped down version to attach to libsyslogng.so
+LIBSYSLOGNG_VERSION="`echo $VERSION | sed -e 's/[[a-zA-Z+\-~]]\+.*//' | cut -f1-3 -d'.'`"
+
 AC_DEFINE_UNQUOTED(PACKAGE, "$PACKAGE", [package name])
 AC_DEFINE_UNQUOTED(VERSION, "$VERSION", [version number])
 AC_DEFINE_UNQUOTED(SOURCE_REVISION, "$SOURCE_REVISION", [source revision])
@@ -1190,6 +1193,7 @@ AC_SUBST(RELEASE_TAG)
 AC_SUBST(SNAPSHOT_VERSION)
 AC_SUBST(SOURCE_REVISION)
 AC_SUBST(SLNG_WIN_VERSION)
+AC_SUBST(LIBSYSLOGNG_VERSION)
 
 # setting the platform's default shared library extension to make the proper symlink to libafsocket-[no]tls.$(BB_SHREXT)
 BB_SHREXT='.so'
