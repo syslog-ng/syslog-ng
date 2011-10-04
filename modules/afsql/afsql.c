@@ -810,6 +810,24 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
         {
           self->pending_msg = msg;
           self->pending_msg_ack_needed = path_options.ack_needed;
+
+          /* database connection status sanity check after failed query */
+          if (dbi_conn_ping(self->dbi_ctx) != 1)
+            {
+              const gchar *dbi_error;
+
+              dbi_conn_error(self->dbi_ctx, &dbi_error);
+              msg_error("Error, no SQL connection after failed query attempt",
+                        evt_tag_str("type", self->type),
+                        evt_tag_str("host", self->host),
+                        evt_tag_str("port", self->port),
+                        evt_tag_str("username", self->user),
+                        evt_tag_str("database", self->database),
+                        evt_tag_str("error", dbi_error),
+                        NULL);
+              return FALSE;
+            }
+
           self->failed_message_counter++;
         }
       else
