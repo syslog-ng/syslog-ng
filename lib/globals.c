@@ -26,5 +26,7 @@
 
 GlobalConfig *configuration;
 int cfg_parser_debug;
+#ifndef _MSC_VER
 gchar *module_path = MODULE_PATH;
+#endif
 gchar *default_modules = DEFAULT_MODULES;

@@ -757,6 +757,7 @@ intmax_t __strtollmax(const char *__nptr, char **__endptr, int __base)
 #ifdef __APPLE__
 #include <sys/time.h>
 #endif
+#ifndef _MSC_VER
 int clock_gettime(clockid_t clk_id, struct timespec *tp)
 {
   struct timeval tv;
@@ -768,4 +769,5 @@ int clock_gettime(clockid_t clk_id, struct timespec *tp)
 
   return ret;
 }
+#endif
 #endif

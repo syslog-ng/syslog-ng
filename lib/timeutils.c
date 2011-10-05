@@ -95,7 +95,9 @@ get_time_zone_basedir(void)
 TLS_BLOCK_START
 {
   GTimeVal current_time_value;
+#ifndef G_OS_WIN32
   struct iv_task invalidate_time_task;
+#endif
   TimeCache local_time_cache[64];
   TimeCache gm_time_cache[64];
   struct tm mktime_prev_tm;

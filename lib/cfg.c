@@ -435,9 +435,9 @@ cfg_new(gint version)
   /* No OpenSSL no hash calculation. see below - folti */
   self->calculate_hash = NULL;
 #endif
-#endif
   self->show_reload_message = config_show_reload_message;
   self->show_start_message = config_show_start_message;
+#endif
   return self;
 }
 

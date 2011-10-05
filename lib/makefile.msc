@@ -124,7 +124,6 @@ OBJECTS =			\
 	logprocess.obj \
 	center.obj \
 	logmpx.obj \
-	apphook.obj \
 	children.obj \
     messages.obj \
     logstamp.obj \

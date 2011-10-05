@@ -97,8 +97,7 @@ crypto_deinit(void)
   crypto_deinit_threading();
 }
 
-static void __attribute__((constructor))
-crypto_init(void)
+INITIALIZER(crypto_init)
 {
   SSL_library_init();
   SSL_load_error_strings();
@@ -119,8 +118,9 @@ crypto_init(void)
       if (RAND_status() < 0)
         fprintf(stderr, "WARNING: a trusted random number source is not available, crypto operations will probably fail. Please set the RANDFILE environment variable.");
     }
-
+#ifndef G_OS_WIN32
   register_application_hook(AH_SHUTDOWN, (ApplicationHookFunc) crypto_deinit, NULL);
+#endif
 }
 
 /* the crypto options (seed) are handled in main.c */
