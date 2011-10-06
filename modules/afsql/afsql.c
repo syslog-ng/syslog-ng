@@ -35,7 +35,10 @@
 
 #include <dbi/dbi.h>
 #include <string.h>
+
+#if ENABLE_SSL
 #include <openssl/md5.h>
+#endif
 
 /* field flags */
 enum

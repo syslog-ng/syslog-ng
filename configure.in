@@ -679,6 +679,10 @@ else
         enable_ssl="no"
 fi
 
+if test "x$enable_ssl" = "xno"; then
+	OPENSSL_LIBS=""
+fi
+
 dnl
 dnl Right now, openssl is never linked statically as it is only used by the
 dnl TLS build of the afsocket plugin which is loaded dynamically anyway.

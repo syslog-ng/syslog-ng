@@ -14,11 +14,14 @@
 #include <glib.h>
 #include <signal.h>
 
+#if ENABLE_SSL
 #include <openssl/crypto.h>
 #include <openssl/x509.h>
 #include <openssl/pem.h>
 #include <openssl/ssl.h>
 #include <openssl/err.h>
+#endif
+
 #include <unistd.h>
 
 #define MAX_MESSAGE_LENGTH 8192
