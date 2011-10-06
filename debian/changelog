@@ -1,3 +1,10 @@
+syslog-ng (3.3.1-1~mhp2) unstable; urgency=low
+
+  * Rename module packages to syslog-ng-mod-*. The new modules conflict &
+    break with the old ones, hopefully leading to a straight upgrade path.
+
+ --
+
 syslog-ng (3.3.1-1~mhp1) unstable; urgency=low
 
   * New upstream, final version, from the 3.3.1 release tag (f6e075c).

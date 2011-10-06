@@ -24,9 +24,9 @@ Vcs-Browser: http://git.madhouse-project.org/debian/syslog-ng/
 Package: syslog-ng
 Architecture: all
 Depends: ${misc:Depends}, syslog-ng-core (>= ${source:Upstream-Version}),
- syslog-ng-module-sql,
- syslog-ng-module-mongodb,
- syslog-ng-module-json
+ syslog-ng-mod-sql,
+ syslog-ng-mod-mongodb,
+ syslog-ng-mod-json
 Description: Next generation system logging daemon (metapackage)
  syslog-ng is an enhanced syslog daemon, supporting, amongst others:
   * Powerful configurability, while still being readable
@@ -49,7 +49,7 @@ Package: libsyslog-ng-@UPSTREAM_VERSION@
 Section: libs
 Architecture: any
 Provides: libsyslog-ng-@UPSTREAM_VERSION_MAJOR@
-Conflicts: libsyslog-ng-@UPSTREAM_VERSION_MAJOR@
+Breaks: libsyslog-ng-@UPSTREAM_VERSION_MAJOR@
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: Next generation system logging daemon (private library)
  This package contains a semi-private library, used by both syslog-ng
@@ -73,7 +73,7 @@ Package: syslog-ng-core
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, util-linux (>= 2.12-10)
 Recommends: logrotate
-Suggests: syslog-ng-module-sql, syslog-ng-module-mongodb, syslog-ng-module-json
+Suggests: syslog-ng-mod-sql, syslog-ng-mod-mongodb, syslog-ng-mod-json
 Provides: system-log-daemon, linux-kernel-log-daemon
 Conflicts: system-log-daemon, linux-kernel-log-daemon
 Replaces: syslog-ng (<< 3.3.0~)
@@ -95,9 +95,11 @@ Description: Next generation system logging daemon (core)
  This package provides the core syslog-ng, with all the plugins
  required for a standard installation.
 
-Package: syslog-ng-module-json
+Package: syslog-ng-mod-json
 Architecture: any
 Depends: syslog-ng-core (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
+Breaks: syslog-ng-module-json
+Replaces: syslog-ng-module-json
 Description: Next generation system logging daemon (json plugin)
  syslog-ng is an enhanced syslog daemon, supporting, amongst others:
   * Powerful configurability, while still being readable
@@ -116,10 +118,12 @@ Description: Next generation system logging daemon (json plugin)
  which makes it possible to conveniently serialize system log messages
  to JSON.
 
-Package: syslog-ng-module-mongodb
+Package: syslog-ng-mod-mongodb
 Architecture: any
 Depends: syslog-ng-core (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
 Suggests: mongodb-server
+Breaks: syslog-ng-module-mongodb
+Replaces: syslog-ng-module-mongodb
 Description: Next generation system logging daemon (mongodb plugin)
  syslog-ng is an enhanced syslog daemon, supporting, amongst others:
   * Powerful configurability, while still being readable
@@ -137,10 +141,12 @@ Description: Next generation system logging daemon (mongodb plugin)
  This package provides the mongodb destination plugin, which allows
  one to log system messages to MongoDB.
 
-Package: syslog-ng-module-sql
+Package: syslog-ng-mod-sql
 Architecture: any
 Depends: syslog-ng-core (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
 Suggests: libdbd-mysql, libdbd-pgsql, libdbd-sqlite3
+Breaks: syslog-ng-module-sql
+Replaces: syslog-ng-module-sql
 Description: Next generation system logging daemon (sql plugin)
  syslog-ng is an enhanced syslog daemon, supporting, amongst others:
   * Powerful configurability, while still being readable
