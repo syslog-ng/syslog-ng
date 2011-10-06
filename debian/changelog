@@ -2,6 +2,8 @@ syslog-ng (3.3.1-1~mhp2) unstable; urgency=low
 
   * Rename module packages to syslog-ng-mod-*. The new modules conflict &
     break with the old ones, hopefully leading to a straight upgrade path.
+  * Support 'status' in the init script.
+    Patch from Peter Eisentraut <petere@debian.org> (Closes: #644458)
 
  --
 
