@@ -300,14 +300,6 @@ afinet_sd_apply_transport(AFSocketSourceDriver *s)
                 NULL);
     }
   afinet_set_port(self->super.bind_addr, self->bind_port ? : default_bind_port, self->super.flags & AFSOCKET_DGRAM ? "udp" : "tcp");
-#if 0
-  /*
-   * THIS CAN BE THE CORRECT BEHAVIOUR, BUT THE PREVIOUS VERSION DID NOT DO THAT CHECK
-   * BAZSI! WHICH IS THE BETTER BEHAVIOUR???
-   */
-  if (!resolve_hostname(&self->super.bind_addr, self->bind_ip ? : default_bind_ip))
-    return FALSE
-#endif
   resolve_hostname(&self->super.bind_addr, self->bind_ip ? : default_bind_ip);
 
 
@@ -505,19 +497,12 @@ afinet_dd_apply_transport(AFSocketDestDriver *s)
     }
 
 
-#if 0
-  /*
-   * THIS CAN BE THE CORRECT BEHAVIOUR, BUT THE PREVIOUS VERSION DID NOT DO THAT CHECK
-   * BAZSI! WHICH IS THE BETTER BEHAVIOUR???
-   */
-  if ((self->bind_ip && !resolve_hostname(&self->super.bind_addr, self->bind_ip)) ||
-      !resolve_hostname(&self->super.dest_addr, self->super.hostname))
-#endif
   resolve_hostname(&self->super.dest_addr, self->super.hostname);
   if ((self->bind_ip && !resolve_hostname(&self->super.bind_addr, self->bind_ip)))
     return FALSE;
 
   afinet_set_port(self->super.dest_addr, self->dest_port ? : default_dest_port, self->super.flags & AFSOCKET_DGRAM ? "udp" : "tcp");
+  afinet_set_port(self->super.bind_addr, self->bind_port ? self->bind_port : "0", self->super.flags & AFSOCKET_DGRAM ? "udp" : "tcp");
 
   if (!self->super.dest_name)
     self->super.dest_name = g_strdup_printf("%s:%d", self->super.hostname,
