@@ -168,7 +168,11 @@ override_dh_makeshlibs:
 # Compress the .debs with xz, it reduces the size of syslog-ng-core by
 # about 40%.
 override_dh_builddeb:
+ifeq (lucid,$(shell lsb_release -cs))
+	dh_builddeb
+else
 	dh_builddeb -- -Zxz
+endif
 
 ##
 #* Other, non-override targets
