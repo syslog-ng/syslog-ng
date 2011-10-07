@@ -8,7 +8,7 @@ syslog-ng (3.3.1-1~mhp2) unstable; urgency=low
   * Build-Depend on lsb-release, and use it to disable xz compression on
     Ubuntu Lucid.
 
- --
+ -- Gergely Nagy <algernon@madhouse-project.org>  Fri, 07 Oct 2011 12:00:37 +0200
 
 syslog-ng (3.3.1-1~mhp1) unstable; urgency=low
 
