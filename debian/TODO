@@ -4,21 +4,30 @@
 
 Issues that arise when upgrading from the unsplit Debian syslog-ng
 from Squeeze (direct upgrades from earlier are not supported, and will
-not be).
+not be), and between split versions.
 
-** Upgrading from non-split to split, various issues
+** Upgrading from syslog-ng-module-* to syslog-ng-mod-*
 
-*** Config file is not always preserved between upgrades.
+*** lintian warns on the unversioned Breaks
 
-Need to test this extensively. I had cases where the config file was
-preserved, and others were it was silently overwritten.
+The unversioned Breaks: is probably not needed. Will need to test with
+plain Conflicts.
 
-*** Verify that upgrading from squeeze syslog-ng restarts correctly.
+** Test upgrades from one major version to the other
 
-The split version is using triggers to restart, it needs to be
-verified that it behaves correctly in all cases.
+Test what happens when we move from libsyslog-ng-3.3.1 to -3.3.2 or
+even to -3.4. The expected scenario is that the old library gets
+removed automatically.
 
 * Packaging improvements
+
+** Proper Ubuntu Lucid support
+
+Lucid doesn't like data.tar.xz at all, and since I use the same meta
+package on all distributions, that one should be a data.tar.gz.
+
+That is, when building the syslog-ng package, use dh_builddeb, without
+extra arguments.
 
 ** systemd support
 
