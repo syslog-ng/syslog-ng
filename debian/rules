@@ -56,7 +56,7 @@ override_dh_autoreconf:
 # We pass down all appropriate options, along with EXTRA_CONFIGURE_OPTS.
 # This also sets SOURCE_REVISION to the debian package version.
 override_dh_auto_configure:
-	SOURCE_REVISION=$(shell dpkg-parsechangelog | sed -n "/^Version:/s/^Version: /debian\//p") \
+	SOURCE_REVISION=$(shell dpkg-parsechangelog | sed -n "/^Version:/s/^Version: /$(shell lsb_release -is)\//p") \
 	dh_auto_configure -- \
 		--prefix=/usr \
 		--mandir=/usr/share/man \
