@@ -25,8 +25,3 @@ verified that it behaves correctly in all cases.
 Systemd support is currently explicitly disabled. On Linux, it should
 be enabled, and syslog-ng-core should ship with an appropriate service
 file.
-
-* Bug triaging
-
-Go over the open bugs against syslog-ng, and see which are fixed with
-the repackaging, and which still remain open.
