@@ -21,14 +21,6 @@ removed automatically.
 
 * Packaging improvements
 
-** Proper Ubuntu Lucid support
-
-Lucid doesn't like data.tar.xz at all, and since I use the same meta
-package on all distributions, that one should be a data.tar.gz.
-
-That is, when building the syslog-ng package, use dh_builddeb, without
-extra arguments.
-
 ** systemd support
 
 Systemd support is currently explicitly disabled. On Linux, it should

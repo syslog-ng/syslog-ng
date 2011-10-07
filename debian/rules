@@ -166,12 +166,18 @@ override_dh_makeshlibs:
 	dh_makeshlibs -Xusr/lib/syslog-ng
 
 # Compress the .debs with xz, it reduces the size of syslog-ng-core by
-# about 40%.
+# about 40%. Except, we don't compress the arch: all packages with it,
+# because I want to reuse those even on systems that do not support
+# data.tar.xz (lucid, I'm looking at you).
+#
+# Oh, and lucid doesn't like -Zxz anyway, so do a plain dh_builddeb
+# there.
 override_dh_builddeb:
+	dh_builddeb -i
 ifeq (lucid,$(shell lsb_release -cs))
-	dh_builddeb
+	dh_builddeb -a
 else
-	dh_builddeb -- -Zxz
+	dh_builddeb -a -- -Zxz
 endif
 
 ##
