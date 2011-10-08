@@ -19,3 +19,7 @@ removed automatically.
 Systemd support is currently explicitly disabled. On Linux, it should
 be enabled, and syslog-ng-core should ship with an appropriate service
 file.
+
+For this to work, syslog-ng will need to be fixed to compile with
+libsystemd-daemon: it needs to #include <systemd/sd-daemon.h> instead
+of the local version in this case.
