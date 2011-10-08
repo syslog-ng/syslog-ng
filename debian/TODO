@@ -6,13 +6,6 @@ Issues that arise when upgrading from the unsplit Debian syslog-ng
 from Squeeze (direct upgrades from earlier are not supported, and will
 not be), and between split versions.
 
-** Upgrading from syslog-ng-module-* to syslog-ng-mod-*
-
-*** lintian warns on the unversioned Breaks
-
-The unversioned Breaks: is probably not needed. Will need to test with
-plain Conflicts.
-
 ** Test upgrades from one major version to the other
 
 Test what happens when we move from libsyslog-ng-3.3.1 to -3.3.2 or

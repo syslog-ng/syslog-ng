@@ -98,8 +98,9 @@ Description: Next generation system logging daemon (core)
 Package: syslog-ng-mod-json
 Architecture: any
 Depends: syslog-ng-core (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
-Breaks: syslog-ng-module-json
+Conflicts: syslog-ng-module-json
 Replaces: syslog-ng-module-json
+Provides: syslog-ng-module-json
 Description: Next generation system logging daemon (json plugin)
  syslog-ng is an enhanced syslog daemon, supporting, amongst others:
   * Powerful configurability, while still being readable
@@ -122,8 +123,9 @@ Package: syslog-ng-mod-mongodb
 Architecture: any
 Depends: syslog-ng-core (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
 Suggests: mongodb-server
-Breaks: syslog-ng-module-mongodb
 Replaces: syslog-ng-module-mongodb
+Conflicts: syslog-ng-module-mongodb
+Provides: syslog-ng-module-mongodb
 Description: Next generation system logging daemon (mongodb plugin)
  syslog-ng is an enhanced syslog daemon, supporting, amongst others:
   * Powerful configurability, while still being readable
@@ -145,8 +147,9 @@ Package: syslog-ng-mod-sql
 Architecture: any
 Depends: syslog-ng-core (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
 Suggests: libdbd-mysql, libdbd-pgsql, libdbd-sqlite3
-Breaks: syslog-ng-module-sql
 Replaces: syslog-ng-module-sql
+Conflicts: syslog-ng-module-sql
+Provides: syslog-ng-module-sql
 Description: Next generation system logging daemon (sql plugin)
  syslog-ng is an enhanced syslog daemon, supporting, amongst others:
   * Powerful configurability, while still being readable

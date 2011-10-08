@@ -3,6 +3,8 @@ syslog-ng (3.3.1-1~mhp3) unstable; urgency=low
   * Build the arch:all package with gzip compression inside (as opposed to
     xz), so that it can be installed on systems that do not support
     data.tar.xz (such as Ubuntu Lucid).
+  * The syslog-ng-mod-* packages now Replace/Conflict/Provide the old
+    syslog-ng-module-* packages, instead of Replace/Breaking them
 
  --
 
