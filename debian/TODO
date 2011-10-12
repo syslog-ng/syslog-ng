@@ -23,3 +23,19 @@ file.
 For this to work, syslog-ng will need to be fixed to compile with
 libsystemd-daemon: it needs to #include <systemd/sd-daemon.h> instead
 of the local version in this case.
+
+** Load all modules by default
+
+Users who customised their syslog-ng config, will not get the @include
+support, thus, if they use any of the modules that were formerly in
+the core package (sql), their setup will break.
+
+To remedy this, syslog-ng should attempt to load all modules by
+default, but should not warn when one module is not found. This way
+simply updating to the new syslog-ng setup will not break existing
+configs.
+
+It does require patching upstream a bit. But on the flipside, this
+gets rid of the 00load-* config files.
+
+Reported by Imre Lazar <imre@balabit.hu>
