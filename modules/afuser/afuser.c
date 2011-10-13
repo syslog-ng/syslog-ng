@@ -112,6 +112,15 @@ finish:
   log_msg_unref(msg);
 }
 
+void
+afuser_dd_free(LogPipe *s)
+{
+  AFUserDestDriver *self = (AFUserDestDriver *) s;
+
+  g_string_free(self->username, TRUE);
+  log_dest_driver_free(s);
+}
+
 LogDriver *
 afuser_dd_new(gchar *user)
 {
@@ -119,6 +128,7 @@ afuser_dd_new(gchar *user)
   
   log_dest_driver_init_instance(&self->super);
   self->super.super.super.queue = afuser_dd_queue;
+  self->super.super.super.free_fn = afuser_dd_free;
   self->username = g_string_new(user);
   return &self->super.super;
 }
