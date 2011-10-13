@@ -964,9 +964,9 @@ afsql_dd_init(LogPipe *s)
   if (!log_dest_driver_init_method(s))
     return FALSE;
 
-  if (!self->columns || !self->indexes || !self->values)
+  if (!self->columns || !self->values)
     {
-      msg_error("Default columns, values and indexes must be specified for database destinations",
+      msg_error("Default columns and values must be specified for database destinations",
                 evt_tag_str("database type", self->type),
                 NULL);
       return FALSE;
