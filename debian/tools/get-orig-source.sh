@@ -2,19 +2,21 @@
 
 set -e
 
+WD=$(pwd)
+TDIR=$(mktemp -d --tmpdir sng-upstream.XXXXXXXX)
+cd "${TDIR}"
+
+echo "* Building syslog-ng in ${TDIR}"
+
 ##
-# Find out where the top of the tree is, and do some sanity checking.
+# Check out the git sources
 ##
 
-SELF="$(readlink -e "$0")"
-TOP="$(readlink -e "$(dirname "${SELF}")/../../")"
+echo "** Cloning..."
 
-cd "${TOP}"
-
-if [ ! -d .git ]; then
-	echo "get-orig-source: This script must be somewhere under a git repository!" >&2
-	exit 1
-fi
+git clone -q git://git.madhouse-project.org/debian/syslog-ng.git
+cd syslog-ng
+git submodule --quiet update --init
 
 UPSTREAM_VERSION=$(git tag -l 'dfsg/*' 2>/dev/null | sort | tail -n 1 | sed -e 's,^dfsg/,,')
 
@@ -23,12 +25,13 @@ if [ -z "${UPSTREAM_VERSION}" ]; then
 	exit 1
 fi
 
-git submodule update --init
 install -d debian/orig-source
 
 ##
 # Assemble the full source
 ##
+
+echo "** Exporting..."
 
 # syslog-ng
 git archive "dfsg/${UPSTREAM_VERSION}" --format tar --prefix=syslog-ng/ | \
@@ -49,7 +52,18 @@ git archive "dfsg/${UPSTREAM_VERSION}" --format tar --prefix=syslog-ng/ | \
 ##
 # Create the orig.tar.xz from the assembled sources
 ##
-tar -C debian/orig-source -cf - syslog-ng | \
-	xz -9 >syslog-ng_${UPSTREAM_VERSION}.orig.tar.xz
 
-rm -rf debian/orig-source
+echo "** Creating the upstream tarball..."
+
+tar -C debian/orig-source -cf - syslog-ng | \
+	xz -9 >"${WD}"/syslog-ng_${UPSTREAM_VERSION}.orig.tar.xz
+
+##
+# Cleanup
+##
+echo "** Cleaning up."
+
+cd "${WD}"
+rm -rf "${TDIR}"
+
+echo "* Upstream tarball available in ${WD}/syslog-ng_${UPSTREAM_VERSION}.orig.tar.xz"
