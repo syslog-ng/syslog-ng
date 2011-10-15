@@ -64,6 +64,7 @@ log_source_msg_ack(LogMessage *msg, gpointer user_data)
    * threads. I don't want to lock, all we need is an approximate value of
    * the ACK rate of the last couple of seconds.  */
 
+#ifdef HAVE_CLOCK_GETTIME
   if (accurate_nanosleep && self->threaded)
     {
       cur_ack_count = ++self->ack_count;
@@ -115,6 +116,7 @@ log_source_msg_ack(LogMessage *msg, gpointer user_data)
             }
         }
     }
+#endif
   log_pipe_unref(&self->super);
 }
 
