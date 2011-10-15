@@ -78,7 +78,7 @@ override_dh_auto_configure:
 		--with-json=json-c \
 		\
 		--with-module-dir='$${exec_prefix}/lib/syslog-ng/$${VERSION}' \
-		--with-default-modules="affile,afprog,afsocket,afuser,basicfuncs,csvparser,dbparser,syslogformat" \
+		--with-default-modules="affile,afprog,afsocket,afuser,afsql,basicfuncs,csvparser,dbparser,syslogformat" \
 		\
 		${EXTRA_CONFIGURE_OPTS}
 

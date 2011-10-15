@@ -77,7 +77,7 @@ syslogng_start() {
     [ -f "$PIDFILE" ] && echo ' seems to be running' && return 0
     install -d /var/lib/syslog-ng
     start-stop-daemon --start --quiet --exec "$SYSLOGNG" \
-                      --pidfile "$PIDFILE" -- -p "$PIDFILE"  $SYSLOGNG_OPTS
+                      --pidfile "$PIDFILE" -- -p "$PIDFILE" -q $SYSLOGNG_OPTS
     syslogng_wait 1 $?
     RET="$?"
     log_end_msg $RET
