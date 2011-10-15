@@ -12,7 +12,7 @@ syslog-ng (3.3.1-1~mhp3) unstable; urgency=low
   * Use the --silent-module-load option in the init script to silence
     warnings about modules not found.
 
- --
+ -- Gergely Nagy <algernon@madhouse-project.org>  Sat, 15 Oct 2011 11:20:55 +0200
 
 syslog-ng (3.3.1-1~mhp2) unstable; urgency=low
 
