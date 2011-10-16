@@ -1067,6 +1067,7 @@ AC_DEFINE_UNQUOTED(ENABLE_LINUX_CAPS, `enable_value $enable_linux_caps`, [Enable
 AC_DEFINE_UNQUOTED(ENABLE_PCRE, `enable_value $enable_pcre`, [Enable PCRE support])
 AC_DEFINE_UNQUOTED(ENABLE_ENV_WRAPPER, `enable_value $enable_env_wrapper`, [Enable environment wrapper support])
 AC_DEFINE_UNQUOTED(ENABLE_SYSTEMD, `enable_value $enable_systemd`, [Enable systemd support])
+AC_DEFINE_UNQUOTED(WITH_LIBSYSTEMD, `enable_value $with_libsystemd`, [Compile with libsystemd-daemon])
 
 AM_CONDITIONAL(ENABLE_ENV_WRAPPER, [test "$enable_env_wrapper" = "yes"])
 AM_CONDITIONAL(ENABLE_SYSTEMD, [test "$enable_systemd" = "yes"])

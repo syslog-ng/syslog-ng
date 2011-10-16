@@ -25,7 +25,12 @@
 #include "misc.h"
 #include "messages.h"
 #include "gprocess.h"
+
+#if WITH_LIBSYSTEMD
+#include <systemd/sd-daemon.h>
+#else
 #include "sd-daemon.h"
+#endif
 
 #include <string.h>
 #include <sys/types.h>
