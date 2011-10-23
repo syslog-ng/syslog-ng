@@ -36,6 +36,7 @@ static void
 log_matcher_init(LogMatcher *self, gint type)
 {
   self->type = type;
+  self->ref_cnt = 1;
 }
 
 gint 
@@ -872,7 +873,7 @@ log_matcher_ref(LogMatcher *s)
 void
 log_matcher_unref(LogMatcher *s)
 {
-  if (--s->ref_cnt)
+  if (--s->ref_cnt == 0)
     {
       if (s->free_fn)
         s->free_fn(s);
