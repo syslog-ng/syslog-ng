@@ -84,12 +84,31 @@ typedef struct _FilterOp
 } FilterOp;
 
 static void
+fop_init(FilterExprNode *s, GlobalConfig *cfg)
+{
+  FilterOp *self = (FilterOp *) s;
+
+  if (self->left && self->left->init)
+    self->left->init(self->left, cfg);
+  if (self->right && self->right->init)
+    self->right->init(self->right, cfg);
+}
+
+static void
 fop_free(FilterExprNode *s)
 {
   FilterOp *self = (FilterOp *) s;
   
   filter_expr_unref(self->left);
   filter_expr_unref(self->right);
+}
+
+static void
+fop_init_instance(FilterOp *self)
+{
+  filter_expr_node_init(&self->super);
+  self->super.init = fop_init;
+  self->super.free_fn = fop_free;
 }
 
 static gboolean
@@ -105,9 +124,8 @@ fop_or_new(FilterExprNode *e1, FilterExprNode *e2)
 {
   FilterOp *self = g_new0(FilterOp, 1);
   
-  filter_expr_node_init(&self->super);
+  fop_init_instance(self);
   self->super.eval = fop_or_eval;
-  self->super.free_fn = fop_free;
   self->super.modify = e1->modify || e2->modify;
   self->left = e1;
   self->right = e2;
@@ -128,9 +146,8 @@ fop_and_new(FilterExprNode *e1, FilterExprNode *e2)
 {
   FilterOp *self = g_new0(FilterOp, 1);
   
-  filter_expr_node_init(&self->super);
+  fop_init_instance(self);
   self->super.eval = fop_and_eval;
-  self->super.free_fn = fop_free;
   self->super.modify = e1->modify || e2->modify;
   self->left = e1;
   self->right = e2;
