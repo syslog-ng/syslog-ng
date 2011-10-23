@@ -114,6 +114,8 @@ afunix_sd_acquire_socket(AFSocketSourceDriver *s, gint *result_fd)
 
   if (*result_fd != -1)
     {
+      g_fd_set_nonblock(*result_fd, TRUE);
+      g_fd_set_cloexec(*result_fd, TRUE);
       msg_verbose("Acquired systemd socket",
 		  evt_tag_str("filename", self->filename),
 		  evt_tag_int("systemd-sock-fd", *result_fd),
