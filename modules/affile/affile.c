@@ -361,7 +361,7 @@ affile_sd_new(gchar *filename, guint32 flags)
   self->super.super.super.notify = affile_sd_notify;
   self->super.super.super.free_fn = affile_sd_free;
   log_reader_options_defaults(&self->reader_options);
-  self->reader_options.flags |= LR_LOCAL;
+  self->reader_options.parse_options.flags |= LP_LOCAL;
 
   if ((self->flags & AFFILE_PIPE))
     {
@@ -584,7 +584,7 @@ affile_dw_init(LogPipe *s)
       guint32 flags;
 
       flags = LW_FORMAT_FILE |
-        ((self->owner->flags & AFFILE_PIPE) ? LW_SOFT_FLOW_CONTROL : 0);
+        ((self->owner->flags & AFFILE_PIPE) ? 0 : LW_SOFT_FLOW_CONTROL);
 
       self->writer = log_writer_new(flags);
     }

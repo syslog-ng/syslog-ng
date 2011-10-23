@@ -35,7 +35,10 @@
 
 #include <dbi/dbi.h>
 #include <string.h>
+
+#if ENABLE_SSL
 #include <openssl/md5.h>
+#endif
 
 /* field flags */
 enum
@@ -141,6 +144,16 @@ afsql_dd_set_host(LogDriver *s, const gchar *host)
 
   g_free(self->host);
   self->host = g_strdup(host);
+}
+
+gboolean afsql_dd_check_port(const gchar *port)
+{
+  /* only digits (->numbers) are allowed */
+  int len = strlen(port);
+  for (int i = 0; i < len; ++i)
+    if (port[i] < '0' || port[i] > '9')
+      return FALSE;
+  return TRUE;
 }
 
 void
@@ -584,7 +597,7 @@ afsql_dd_suspend(AFSqlDestDriver *self)
 {
   self->db_thread_suspended = TRUE;
   g_get_current_time(&self->db_thread_suspend_target);
-  g_time_val_add(&self->db_thread_suspend_target, self->time_reopen * 1000000);
+  g_time_val_add(&self->db_thread_suspend_target, self->time_reopen * 1000 * 1000); /* the timeout expects microseconds */
 }
 
 static void
@@ -618,7 +631,10 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
       if (self->dbi_ctx)
         {
           dbi_conn_set_option(self->dbi_ctx, "host", self->host);
-          dbi_conn_set_option_numeric(self->dbi_ctx, "port", atoi(self->port));
+          if (strcmp(self->type, "mysql"))
+            dbi_conn_set_option(self->dbi_ctx, "port", self->port);
+          else
+            dbi_conn_set_option_numeric(self->dbi_ctx, "port", atoi(self->port));
           dbi_conn_set_option(self->dbi_ctx, "username", self->user);
           dbi_conn_set_option(self->dbi_ctx, "password", self->password);
           dbi_conn_set_option(self->dbi_ctx, "dbname", self->database);
@@ -682,6 +698,7 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
   else
     {
       g_mutex_lock(self->db_thread_mutex);
+      log_queue_reset_parallel_push(self->queue);
       success = log_queue_pop_head(self->queue, &msg, &path_options, (self->flags & AFSQL_DDF_EXPLICIT_COMMITS), FALSE);
       g_mutex_unlock(self->db_thread_mutex);
       if (!success)
@@ -831,7 +848,8 @@ afsql_dd_database_thread(gpointer arg)
           /* we got suspended, probably because of a connection error,
            * during this time we only get wakeups if we need to be
            * terminated. */
-          g_cond_timed_wait(self->db_thread_wakeup_cond, self->db_thread_mutex, &self->db_thread_suspend_target);
+          if (!self->db_thread_terminate)
+            g_cond_timed_wait(self->db_thread_wakeup_cond, self->db_thread_mutex, &self->db_thread_suspend_target);
           self->db_thread_suspended = FALSE;
           g_mutex_unlock(self->db_thread_mutex);
 
@@ -847,7 +865,7 @@ afsql_dd_database_thread(gpointer arg)
 
               g_get_current_time(&flush_target);
               g_time_val_add(&flush_target, self->flush_timeout * 1000);
-              if (!g_cond_timed_wait(self->db_thread_wakeup_cond, self->db_thread_mutex, &flush_target))
+              if (!self->db_thread_terminate && !g_cond_timed_wait(self->db_thread_wakeup_cond, self->db_thread_mutex, &flush_target))
                 {
                   /* timeout elapsed */
                   if (!afsql_dd_commit_txn(self, FALSE))
@@ -858,7 +876,7 @@ afsql_dd_database_thread(gpointer arg)
                     }
                 }
             }
-          else
+          else if (!self->db_thread_terminate)
             {
               g_cond_wait(self->db_thread_wakeup_cond, self->db_thread_mutex);
             }
@@ -907,8 +925,10 @@ afsql_dd_start_thread(AFSqlDestDriver *self)
 static void
 afsql_dd_stop_thread(AFSqlDestDriver *self)
 {
+  g_mutex_lock(self->db_thread_mutex);
   self->db_thread_terminate = TRUE;
   g_cond_signal(self->db_thread_wakeup_cond);
+  g_mutex_unlock(self->db_thread_mutex);
   g_thread_join(self->db_thread);
   g_mutex_free(self->db_thread_mutex);
   g_cond_free(self->db_thread_wakeup_cond);
@@ -920,8 +940,8 @@ afsql_dd_format_stats_instance(AFSqlDestDriver *self)
   static gchar persist_name[64];
 
   g_snprintf(persist_name, sizeof(persist_name),
-             "%s,%s,%s,%s",
-             self->type, self->host, self->port, self->database);
+             "%s,%s,%s,%s,%s",
+             self->type, self->host, self->port, self->database, self->table->template);
   return persist_name;
 }
 
@@ -931,8 +951,8 @@ afsql_dd_format_persist_name(AFSqlDestDriver *self)
   static gchar persist_name[256];
 
   g_snprintf(persist_name, sizeof(persist_name),
-             "afsql_dd(%s,%s,%s,%s)",
-             self->type, self->host, self->port, self->database);
+             "afsql_dd(%s,%s,%s,%s,%s)",
+             self->type, self->host, self->port, self->database, self->table->template);
   return persist_name;
 }
 
@@ -947,9 +967,9 @@ afsql_dd_init(LogPipe *s)
   if (!log_dest_driver_init_method(s))
     return FALSE;
 
-  if (!self->columns || !self->indexes || !self->values)
+  if (!self->columns || !self->values)
     {
-      msg_error("Default columns, values and indexes must be specified for database destinations",
+      msg_error("Default columns and values must be specified for database destinations",
                 evt_tag_str("database type", self->type),
                 NULL);
       return FALSE;
@@ -1070,8 +1090,10 @@ afsql_dd_init(LogPipe *s)
 
  error:
 
+  stats_lock();
   stats_unregister_counter(SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self), SC_TYPE_STORED, &self->stored_messages);
   stats_unregister_counter(SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self), SC_TYPE_DROPPED, &self->dropped_messages);
+  stats_unlock();
 
   return FALSE;
 }
@@ -1085,8 +1107,10 @@ afsql_dd_deinit(LogPipe *s)
 
   log_queue_set_counters(self->queue, NULL, NULL);
 
+  stats_lock();
   stats_unregister_counter(SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self), SC_TYPE_STORED, &self->stored_messages);
   stats_unregister_counter(SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self), SC_TYPE_DROPPED, &self->dropped_messages);
+  stats_unlock();
 
   if (!log_dest_driver_deinit_method(s))
     return FALSE;
@@ -1116,16 +1140,13 @@ afsql_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, 
 
   g_mutex_lock(self->db_thread_mutex);
   queue_was_empty = log_queue_get_length(self->queue) == 0;
-  g_mutex_unlock(self->db_thread_mutex);
-
-  log_queue_push_tail(self->queue, msg, path_options);
-
-  g_mutex_lock(self->db_thread_mutex);
   if (queue_was_empty && !self->db_thread_suspended)
     {
       log_queue_set_parallel_push(self->queue, 1, afsql_dd_queue_notify, self, NULL);
     }
   g_mutex_unlock(self->db_thread_mutex);
+  log_queue_push_tail(self->queue, msg, path_options);
+
 }
 
 static void
@@ -1157,6 +1178,7 @@ afsql_dd_free(LogPipe *s)
   if (self->null_value)
     g_free(self->null_value);
   string_list_free(self->columns);
+  string_list_free(self->indexes);
   string_list_free(self->values);
   log_template_unref(self->table);
   g_hash_table_destroy(self->validated_tables);

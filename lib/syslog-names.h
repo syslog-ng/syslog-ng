@@ -27,6 +27,15 @@
 
 #include "syslog-ng.h"
 
+#define	LOG_FACMASK	0x03f8	/* mask to extract facility part */
+				/* facility of pri */
+#define	LOG_FAC(p)	(((p) & LOG_FACMASK) >> 3)
+#ifndef LOG_PRIMASK
+#define	LOG_PRIMASK	0x07	/* mask to extract priority part (internal) */
+#endif
+				/* extract priority */
+#define	LOG_PRI(p)	((p) & LOG_PRIMASK)
+
 struct sl_name
 {
   char *name;

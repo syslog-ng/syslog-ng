@@ -46,11 +46,12 @@ static CfgLexerKeyword afsql_keywords[] = {
   { "port",               KW_PORT },
   { "type",               KW_TYPE },
   { "default",            KW_DEFAULT },
-  { "retry_sql_inserts",  KW_RETRY_SQL_INSERTS, 0x0302 },
 
   { "time_zone",          KW_TIME_ZONE },
   { "local_time_zone",    KW_LOCAL_TIME_ZONE },
   { "null",               KW_NULL },
+  { "retry_sql_inserts",  KW_RETRIES, 0x0303 },
+  { "retries",            KW_RETRIES, 0x0303 },
   { "flush_lines",        KW_FLUSH_LINES },
   { "flush_timeout",      KW_FLUSH_TIMEOUT },
   { "flags",              KW_FLAGS },

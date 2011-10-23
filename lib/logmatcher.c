@@ -36,6 +36,7 @@ static void
 log_matcher_init(LogMatcher *self, gint type)
 {
   self->type = type;
+  self->ref_cnt = 1;
 }
 
 gint 
@@ -157,7 +158,7 @@ log_matcher_posix_re_match(LogMatcher *s, LogMessage *msg, gint value_handle, co
   gboolean rc;
   const gchar *buf;
   
-  buf = APPEND_ZERO(value, value_len);
+  APPEND_ZERO(buf, value, value_len);
   rc = !regexec(&self->pattern, buf, RE_MAX_MATCHES, matches, 0);
   if (rc && (s->flags & LMF_STORE_MATCHES))
     {
@@ -177,7 +178,7 @@ log_matcher_posix_re_replace(LogMatcher *s, LogMessage *msg, gint value_handle, 
   gboolean first_round = TRUE;
   gchar *buf;
   
-  buf = APPEND_ZERO(value, value_len);
+  APPEND_ZERO(buf, value, value_len);
 
   do
     {
@@ -313,7 +314,7 @@ log_matcher_string_match_string(LogMatcherString *self, const gchar *value, gsiz
           gchar *buf;
           gchar *res;
 
-          buf = APPEND_ZERO(value, value_len);
+          APPEND_ZERO(buf, value, value_len);
           res = strcasestr(buf, self->pattern);
           if (res)
             result = value + (res - buf);
@@ -462,7 +463,7 @@ log_matcher_glob_match(LogMatcher *s, LogMessage *msg, gint value_handle, const 
                       NULL);
           warned = TRUE;
         }
-      buf = APPEND_ZERO(value, value_len);
+      APPEND_ZERO(buf, value, value_len);
       return g_pattern_match(self->pattern, value_len, buf, NULL);
     }
   else
@@ -872,7 +873,7 @@ log_matcher_ref(LogMatcher *s)
 void
 log_matcher_unref(LogMatcher *s)
 {
-  if (--s->ref_cnt)
+  if (--s->ref_cnt == 0)
     {
       if (s->free_fn)
         s->free_fn(s);

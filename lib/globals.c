@@ -26,6 +26,5 @@
 
 GlobalConfig *configuration;
 int cfg_parser_debug;
-gboolean seed_rng;
 gchar *module_path = MODULE_PATH;
 gchar *default_modules = DEFAULT_MODULES;

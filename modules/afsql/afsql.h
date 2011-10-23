@@ -35,7 +35,8 @@ enum
 
 void afsql_dd_set_type(LogDriver *s, const gchar *type);
 void afsql_dd_set_host(LogDriver *s, const gchar *host);
-void afsql_dd_set_port(LogDriver *s, const gchar *host);
+gboolean afsql_dd_check_port(const gchar *port);
+void afsql_dd_set_port(LogDriver *s, const gchar *port);
 void afsql_dd_set_user(LogDriver *s, const gchar *user);
 void afsql_dd_set_password(LogDriver *s, const gchar *password);
 void afsql_dd_set_database(LogDriver *s, const gchar *database);
@@ -54,6 +55,7 @@ void afsql_dd_set_session_statements(LogDriver *s, GList *session_statements);
 void afsql_dd_set_flags(LogDriver *s, gint flags);
 LogDriver *afsql_dd_new();
 gint afsql_dd_lookup_flag(const gchar *flag);
+void afsql_dd_set_retries(LogDriver *s, gint num_retries);
 
 #else
 

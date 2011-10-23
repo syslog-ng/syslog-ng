@@ -353,34 +353,55 @@ r_new_pnode(guint8 *key)
     }
   else if (strcmp(params[0], "ESTRING") == 0)
     {
-      parser_node->parse = r_parser_estring_c;
-      parser_node->type = RPT_ESTRING;
-
-      if (params[2] && (strlen(params[2]) > 1))
+      if (params_len == 3)
         {
-          gint len = strlen(params[2]);
-          parser_node->state = GINT_TO_POINTER(len);
-          parser_node->parse = r_parser_estring;
+          parser_node->parse = r_parser_estring_c;
+          parser_node->type = RPT_ESTRING;
+
+          if (params[2] && (strlen(params[2]) > 1))
+            {
+              gint len = strlen(params[2]);
+              parser_node->state = GINT_TO_POINTER(len);
+              parser_node->parse = r_parser_estring;
+            }
         }
+      else
+        {
+          g_free(parser_node);
+          msg_error("Missing ESTRING parser parameters",
+                     evt_tag_str("type", params[0]), NULL);
+          parser_node = NULL;
+        }
+
     }
   else if (strcmp(params[0], "ANYSTRING") == 0)
     {
       parser_node->parse = r_parser_anystring;
       parser_node->type = RPT_ANYSTRING;
     }
-  else if (strcmp(params[0], "QSTRING") == 0 && params_len == 3)
+  else if (g_str_has_prefix(params[0], "QSTRING"))
     {
-      gchar *state = (gchar *) &(parser_node->state);
+      if (params_len == 3)
+        {
+          gchar *state = (gchar *) &(parser_node->state);
 
-      parser_node->parse = r_parser_qstring;
-      parser_node->type = RPT_QSTRING;
-      parser_node->first = params[2][0];
-      parser_node->last = params[2][0];
+          parser_node->parse = r_parser_qstring;
+          parser_node->type = RPT_QSTRING;
+          parser_node->first = params[2][0];
+          parser_node->last = params[2][0];
 
-      if (strlen(params[2]) == 2)
-        state[0] = params[2][1];
+          if (params_len >= 2 && params[2] && strlen(params[2]) == 2)
+            state[0] = params[2][1];
+          else
+            state[0] = params[2][0];
+        }
       else
-        state[0] = params[2][0];
+        {
+          g_free(parser_node);
+          msg_error("Missing QSTRING parser parameters",
+                     evt_tag_str("type", params[0]), NULL);
+          parser_node = NULL;
+        }
     }
   else
     {

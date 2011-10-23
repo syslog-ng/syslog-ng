@@ -449,7 +449,15 @@ log_msg_set_value(LogMessage *self, NVHandle handle, const gchar *value, gssize 
       if (!nv_table_add_value(self->payload, handle, name, name_len, value, value_len, &new_entry))
         {
           /* error allocating string in payload, reallocate */
-          self->payload = nv_table_realloc(self->payload);
+          if (!nv_table_realloc(self->payload, &self->payload))
+            {
+              /* can't grow the payload, it has reached the maximum size */
+              msg_info("Cannot store value for this log message, maximum size has been reached",
+                       evt_tag_str("name", name),
+                       evt_tag_printf("value", "%.32s%s", value, value_len > 32 ? "..." : ""),
+                       NULL);
+              break;
+            }
           stats_counter_inc(count_payload_reallocs);
         }
       else
@@ -490,7 +498,15 @@ log_msg_set_value_indirect(LogMessage *self, NVHandle handle, NVHandle ref_handl
       if (!nv_table_add_value_indirect(self->payload, handle, name, name_len, ref_handle, type, ofs, len, &new_entry))
         {
           /* error allocating string in payload, reallocate */
-          self->payload = nv_table_realloc(self->payload);
+          if (!nv_table_realloc(self->payload, &self->payload))
+            {
+              /* error growing the payload, skip without storing the value */
+              msg_info("Cannot store referenced value for this log message, maximum size has been reached",
+                       evt_tag_str("name", name),
+                       evt_tag_str("ref-name", log_msg_get_value_name(ref_handle, NULL)),
+                       NULL);
+              break;
+            }
           stats_counter_inc(count_payload_reallocs);
         }
       else
@@ -653,6 +669,14 @@ log_msg_set_tag_by_id_onoff(LogMessage *self, LogTagId id, gboolean on)
 
       log_msg_set_bit(self->tags, id, on);
     }
+  if (on)
+    {
+      log_tags_inc_counter(id);
+    }
+  else
+    {
+      log_tags_dec_counter(id);
+    }
 }
 
 void
@@ -722,12 +746,28 @@ log_msg_sdata_append_escaped(GString *result, const gchar *sstr, gssize len)
 }
 
 void
-log_msg_append_format_sdata(LogMessage *self, GString *result)
+log_msg_append_format_sdata(LogMessage *self, GString *result,  guint32 seq_num)
 {
   const gchar *value;
   const gchar *sdata_name, *sdata_elem, *sdata_param, *cur_elem = NULL, *dot;
   gssize sdata_name_len, sdata_elem_len, sdata_param_len, cur_elem_len = 0, len;
   gint i;
+  static NVHandle meta_seqid = 0;
+  gssize seqid_length;
+  gboolean has_seq_num = FALSE;
+  const gchar *seqid;
+
+  if (!meta_seqid)
+    meta_seqid = log_msg_get_value_handle(".SDATA.meta.sequenceId");
+
+  seqid = log_msg_get_value(self, meta_seqid, &seqid_length);
+  APPEND_ZERO(seqid, seqid, seqid_length);
+  if (seqid[0])
+    /* Message stores sequenceId */
+    has_seq_num = TRUE;
+  else
+    /* Message hasn't sequenceId */
+    has_seq_num = FALSE;
 
   for (i = 0; i < self->num_sdata; i++)
     {
@@ -798,6 +838,18 @@ log_msg_append_format_sdata(LogMessage *self, GString *result)
           cur_elem = sdata_elem;
           cur_elem_len = sdata_elem_len;
         }
+      /* if message hasn't sequenceId and the cur_elem is the meta block Append the sequenceId for the result
+         if seq_num isn't 0 */
+      if (!has_seq_num && seq_num!=0 && strncmp(sdata_elem,"meta.",5) == 0)
+        {
+          gchar sequence_id[16];
+          g_snprintf(sequence_id, sizeof(sequence_id), "%d", seq_num);
+          g_string_append_c(result, ' ');
+          g_string_append_len(result,"sequenceId=\"",12);
+          g_string_append_len(result,sequence_id,strlen(sequence_id));
+          g_string_append_c(result, '"');
+          has_seq_num = TRUE;
+        }
       if (sdata_param_len)
         {
           g_string_append_c(result, ' ');
@@ -812,13 +864,26 @@ log_msg_append_format_sdata(LogMessage *self, GString *result)
     {
       g_string_append_c(result, ']');
     }
+  /*
+    There was no meta block and if sequenceId must be added (seq_num!=0)
+    create the whole meta block with sequenceId
+  */
+  if (!has_seq_num && seq_num!=0)
+    {
+      gchar sequence_id[16];
+      g_snprintf(sequence_id, sizeof(sequence_id), "%d", seq_num);
+      g_string_append_c(result, '[');
+      g_string_append_len(result,"meta sequenceId=\"",17);
+      g_string_append_len(result,sequence_id,strlen(sequence_id));
+      g_string_append_len(result, "\"]",2);
+    }
 }
 
 void
-log_msg_format_sdata(LogMessage *self, GString *result)
+log_msg_format_sdata(LogMessage *self, GString *result,  guint32 seq_num)
 {
   g_string_truncate(result, 0);
-  log_msg_append_format_sdata(self, result);
+  log_msg_append_format_sdata(self, result, seq_num);
 }
 
 gboolean
@@ -949,8 +1014,8 @@ log_msg_new(const gchar *msg, gint length,
             GSockAddr *saddr,
             MsgFormatOptions *parse_options)
 {
-  LogMessage *self = log_msg_alloc(length * 2);
-  
+  LogMessage *self = log_msg_alloc(length == 0 ? 256 : length * 2);
+
   log_msg_init(self, saddr);
 
   if (G_LIKELY(parse_options->format_handler))
@@ -1428,7 +1493,7 @@ log_msg_registry_init(void)
     }
 
   /* register $0 - $255 in order */
-  for (i = 0; i < 255; i++)
+  for (i = 0; i < 256; i++)
     {
       gchar buf[8];
 

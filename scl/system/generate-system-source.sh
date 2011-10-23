@@ -73,6 +73,12 @@ unix-dgram("/var/run/logpriv" perm(0600));
 file("/dev/klog" follow-freq(0) program-override("kernel") flags(no-parse));
 EOF
 		;;
+	GNU/kFreeBSD)
+		cat <<EOF
+unix-dgram("/var/run/log");
+file("/dev/klog" follow-freq(0) program-override("kernel"));
+EOF
+		;;
 	HP-UX)
 		cat <<EOF
 pipe("/dev/log" pad_size(2048));

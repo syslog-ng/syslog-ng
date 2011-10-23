@@ -31,7 +31,16 @@
 
 /* YYSTYPE and YYLTYPE is defined by the lexer */
 #include "cfg-lexer.h"
-#include "driver.h"
+
+/* uses struct declarations instead of the typedefs to avoid having to
+ * include logreader/logwriter/driver.h, which defines the typedefs.  This
+ * is to avoid including unnecessary dependencies into grammars that are not
+ * themselves reader/writer based */
+
+extern struct _LogSourceOptions *last_source_options;
+extern struct _LogReaderOptions *last_reader_options;
+extern struct _LogWriterOptions *last_writer_options;
+extern struct _LogDriver *last_driver;
 
 }
 
@@ -313,6 +322,7 @@
 #include "cfg-grammar.h"
 
 LogDriver *last_driver;
+LogSourceOptions *last_source_options;
 LogReaderOptions *last_reader_options;
 LogWriterOptions *last_writer_options;
 LogTemplate *last_template;
@@ -338,6 +348,7 @@ ValuePairs *last_value_pairs;
 %type	<ptr> source_item
 %type   <ptr> source_afinter
 %type   <ptr> source_plugin
+%type   <ptr> source_afinter_params
 
 %type	<ptr> dest_items
 %type	<ptr> dest_item
@@ -576,8 +587,25 @@ source_plugin
         ;
 
 source_afinter
-	: KW_INTERNAL '(' ')'			{ $$ = afinter_sd_new(); }
+	: KW_INTERNAL '(' source_afinter_params ')'			{ $$ = $3; }
 	;
+
+source_afinter_params
+        : {
+            last_driver = afinter_sd_new();
+            last_source_options = &((AFInterSourceDriver *) last_driver)->source_options;
+          }
+          source_afinter_options { $$ = last_driver; }
+        ;
+
+source_afinter_options
+        : source_afinter_option source_afinter_options
+        |
+        ;
+
+source_afinter_option
+        : source_option
+        ;
 
 dest_items
 	: dest_item ';' dest_items		{ log_driver_append($1, $3); log_pipe_unref($3); $$ = $1; }
@@ -726,33 +754,40 @@ regexp_option_flags
         ;
 
 
+/* LogSource related options */
+source_option
+        /* NOTE: plugins need to set "last_source_options" in order to incorporate this rule in their grammar */
+	: KW_LOG_IW_SIZE '(' LL_NUMBER ')'	{ last_source_options->init_window_size = $3; }
+	| KW_CHAIN_HOSTNAMES '(' yesno ')'	{ last_source_options->chain_hostnames = $3; }
+	| KW_NORMALIZE_HOSTNAMES '(' yesno ')'	{ last_source_options->normalize_hostnames = $3; }
+	| KW_KEEP_HOSTNAME '(' yesno ')'	{ last_source_options->keep_hostname = $3; }
+        | KW_USE_FQDN '(' yesno ')'             { last_source_options->use_fqdn = $3; }
+        | KW_USE_DNS '(' dnsmode ')'            { last_source_options->use_dns = $3; }
+	| KW_DNS_CACHE '(' yesno ')' 		{ last_source_options->use_dns_cache = $3; }
+	| KW_PROGRAM_OVERRIDE '(' string ')'	{ last_source_options->program_override = g_strdup($3); free($3); }
+	| KW_HOST_OVERRIDE '(' string ')'	{ last_source_options->host_override = g_strdup($3); free($3); }
+	| KW_LOG_PREFIX '(' string ')'	        { gchar *p = strrchr($3, ':'); if (p) *p = 0; last_source_options->program_override = g_strdup($3); free($3); }
+	| KW_KEEP_TIMESTAMP '(' yesno ')'	{ last_source_options->keep_timestamp = $3; }
+        | KW_TAGS '(' string_list ')'		{ log_source_options_set_tags(last_source_options, $3); }
+        ;
+
+
 source_reader_options
 	: source_reader_option source_reader_options
 	|
 	;
 
+/* LogReader related options, inherits from LogSource */
 source_reader_option
         /* NOTE: plugins need to set "last_reader_options" in order to incorporate this rule in their grammar */
 
-	: KW_LOG_IW_SIZE '(' LL_NUMBER ')'		{ last_reader_options->super.init_window_size = $3; }
-	| KW_CHAIN_HOSTNAMES '(' yesno ')'	{ last_reader_options->super.chain_hostnames = $3; }
-	| KW_NORMALIZE_HOSTNAMES '(' yesno ')'	{ last_reader_options->super.normalize_hostnames = $3; }
-	| KW_KEEP_HOSTNAME '(' yesno ')'	{ last_reader_options->super.keep_hostname = $3; }
-        | KW_USE_FQDN '(' yesno ')'             { last_reader_options->super.use_fqdn = $3; }
-        | KW_USE_DNS '(' dnsmode ')'            { last_reader_options->super.use_dns = $3; }
-	| KW_DNS_CACHE '(' yesno ')' 		{ last_reader_options->super.use_dns_cache = $3; }
-	| KW_PROGRAM_OVERRIDE '(' string ')'	{ last_reader_options->super.program_override = g_strdup($3); free($3); }
-	| KW_HOST_OVERRIDE '(' string ')'	{ last_reader_options->super.host_override = g_strdup($3); free($3); }
-	| KW_LOG_PREFIX '(' string ')'	        { gchar *p = strrchr($3, ':'); if (p) *p = 0; last_reader_options->super.program_override = g_strdup($3); free($3); }
-	| KW_TIME_ZONE '(' string ')'		{ last_reader_options->parse_options.recv_time_zone = g_strdup($3); free($3); }
+	: KW_TIME_ZONE '(' string ')'		{ last_reader_options->parse_options.recv_time_zone = g_strdup($3); free($3); }
 	| KW_CHECK_HOSTNAME '(' yesno ')'	{ last_reader_options->check_hostname = $3; }
 	| KW_FLAGS '(' source_reader_option_flags ')'
 	| KW_LOG_MSG_SIZE '(' LL_NUMBER ')'	{ last_reader_options->msg_size = $3; }
 	| KW_LOG_FETCH_LIMIT '(' LL_NUMBER ')'	{ last_reader_options->fetch_limit = $3; }
 	| KW_PAD_SIZE '(' LL_NUMBER ')'		{ last_reader_options->padding = $3; }
-	| KW_KEEP_TIMESTAMP '(' yesno ')'	{ last_reader_options->super.keep_timestamp = $3; }
         | KW_ENCODING '(' string ')'		{ last_reader_options->text_encoding = g_strdup($3); free($3); }
-        | KW_TAGS '(' string_list ')'           { log_reader_options_set_tags(last_reader_options, $3); }
         | KW_FORMAT '(' string ')'              { last_reader_options->parse_options.format = g_strdup($3); free($3); }
 	| KW_DEFAULT_LEVEL '(' level_string ')'
 	  {
@@ -766,6 +801,7 @@ source_reader_option
 	      last_reader_options->parse_options.default_pri = LOG_NOTICE;
 	    last_reader_options->parse_options.default_pri = (last_reader_options->parse_options.default_pri & 7) | $3;
           }
+        | { last_source_options = &last_reader_options->super; } source_option
 	;
 
 source_reader_option_flags
@@ -822,6 +858,7 @@ dest_writer_option
 	| KW_TIME_ZONE '(' string ')'           { last_writer_options->template_options.time_zone[LTZ_SEND] = g_strdup($3); free($3); }
 	| KW_TS_FORMAT '(' string ')'		{ last_writer_options->template_options.ts_format = cfg_ts_format_value($3); free($3); }
 	| KW_FRAC_DIGITS '(' LL_NUMBER ')'	{ last_writer_options->template_options.frac_digits = $3; }
+	| KW_PAD_SIZE '(' LL_NUMBER ')'         { last_writer_options->padding = $3; }
 	;
 
 dest_writer_options_flags

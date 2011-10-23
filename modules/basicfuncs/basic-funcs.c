@@ -7,6 +7,7 @@
 
 #include <stdlib.h>
 #include <errno.h>
+#include <string.h>
 
 static gboolean
 tf_parse_int(const gchar *s, long *d)
@@ -37,6 +38,7 @@ tf_parse_int(const gchar *s, long *d)
 #include "cond-funcs.c"
 #include "ip-funcs.c"
 
+
 static Plugin basicfuncs_plugins[] =
 {
   /* cond-funcs */
@@ -57,6 +59,7 @@ static Plugin basicfuncs_plugins[] =
 
   /* ip-funcs */
   TEMPLATE_FUNCTION_PLUGIN(tf_ipv4_to_int, "ipv4-to-int"),
+  TEMPLATE_FUNCTION_PLUGIN(tf_indent_multi_line, "indent-multi-line"),
 };
 
 gboolean

@@ -34,7 +34,7 @@
 #include "dbparser-grammar.h"
 #include "syslog-names.h"
 #include "messages.h"
-
+#include <string.h>
 extern LogParser *last_parser;
 
 }

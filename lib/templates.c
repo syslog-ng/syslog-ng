@@ -235,7 +235,7 @@ result_append(GString *result, const gchar *sstr, gssize len, gboolean escape)
             }
           else if (ustr[i] < ' ')
             {
-              g_string_sprintfa(result, "\\%03o", ustr[i]);
+              format_uint32_padded(result, 3, '0', 8, ustr[i]);
             }
           else
             g_string_append_c(result, ustr[i]);
@@ -362,13 +362,13 @@ log_macro_expand(GString *result, gint id, gboolean escape, LogTemplateOptions *
         {
           GString *sdstr = g_string_sized_new(0);
           
-          log_msg_append_format_sdata(msg, sdstr);
+          log_msg_append_format_sdata(msg, sdstr, seq_num);
           result_append(result, sdstr->str, sdstr->len, TRUE);
           g_string_free(sdstr, TRUE);
         }
       else
         {
-          log_msg_append_format_sdata(msg, result);
+          log_msg_append_format_sdata(msg, result, seq_num);
         }
       break;
     case M_MSGHDR:

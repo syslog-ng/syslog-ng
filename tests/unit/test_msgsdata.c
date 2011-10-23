@@ -36,7 +36,7 @@ testcase_update(const gchar *msg, const gchar *expected_sd_str, gchar *elem_name
       value = va_arg(va, char *);
     }
 
-  log_msg_format_sdata(logmsg, sd_str);
+  log_msg_format_sdata(logmsg, sd_str, 0);
 
   if (strcmp(sd_str->str, expected_sd_str) != 0)
     {

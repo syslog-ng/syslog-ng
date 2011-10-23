@@ -328,6 +328,14 @@ g_process_check_cap_syslog(void)
   if (ret == -1)
     return FALSE;
 
+  ret = cap_from_name("cap_syslog", NULL);
+  if (ret == -1)
+    {
+      fprintf (stderr, "CAP_SYSLOG seems to be supported by the system, but "
+	       "libcap can't parse it. Falling back to CAP_SYS_ADMIN!\n");
+      return FALSE;
+    }
+
   have_capsyslog = TRUE;
   return TRUE;
 }
@@ -904,8 +912,9 @@ g_process_change_dir(void)
       if (!cwd)
         cwd = PATH_PIDFILEDIR;
         
-      if (cwd && chdir(cwd) < 0)
-        ;
+      if (cwd)
+        if (chdir(cwd))
+          g_process_message("Error changing to directory=%s, errcode=%d", cwd, errno);
     }
     
   /* this check is here to avoid having to change directory early in the startup process */
@@ -1330,8 +1339,11 @@ g_process_start(void)
     }
     
   /* daemon process, we should return to the caller to perform work */
-  
-  setsid();
+  /* Only call setsid() for backgrounded processes. */
+  if (process_opts.mode != G_PM_FOREGROUND)
+    {
+	  setsid();
+    }
   
   /* NOTE: we need to signal the parent in case of errors from this point. 
    * This is accomplished by writing the appropriate exit code to

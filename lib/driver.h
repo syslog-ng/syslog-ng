@@ -174,6 +174,13 @@ static inline LogQueue *
 log_dest_driver_acquire_queue(LogDestDriver *self, gchar *persist_name)
 {
   LogQueue *q;
+  gchar buf[256];
+
+  if (!persist_name)
+    {
+      g_snprintf(buf, sizeof(buf), "dd_queue(%s,%s)", self->super.group, self->super.id);
+      persist_name = buf;
+    }
 
   q = self->acquire_queue(self, persist_name, self->acquire_queue_data);
   log_dest_driver_add_queue(self, q);

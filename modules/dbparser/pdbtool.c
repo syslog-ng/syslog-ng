@@ -356,6 +356,8 @@ pdbtool_match_values(NVHandle handle, const gchar *name, const gchar *value, gss
   printf("%s=%.*s\n", name, (gint) length, value);
   if (g_str_equal(name, ".classifier.rule_id") && ret)
     *ret = 0;
+  if (ret && (g_str_equal(name, ".classifier.class") && g_str_equal(value, "unknown")))
+    *ret = 1;
   return FALSE;
 }
 
@@ -395,9 +397,9 @@ pdbtool_match(int argc, char *argv[])
   GArray *dbg_list = NULL;
   RDebugInfo *dbg_info;
   gint i = 0, pos = 0;
-  gint ret = 1;
-  const gchar *name;
-  gssize name_len;
+  gint ret = 0;
+  const gchar *name = NULL;
+  gssize name_len = 0;
   MsgFormatOptions parse_options;
   gboolean eof = FALSE;
   const guchar *buf = NULL;
@@ -584,7 +586,7 @@ pdbtool_match(int argc, char *argv[])
           g_array_set_size(dbg_list, 0);
           dbg_info = NULL;
           {
-            gpointer nulls[] = { NULL, NULL, NULL, output };
+            gpointer nulls[] = { NULL, NULL, &ret, output };
             pdbtool_pdb_emit(msg, FALSE, nulls);
           }
         }
@@ -827,7 +829,11 @@ pdbtool_dump(int argc, char *argv[])
     {
       RNode *ruleset = r_find_node(patterndb->ruleset->programs, g_strdup(match_program), g_strdup(match_program), strlen(match_program), NULL);
       if (ruleset && ruleset->value)
-        pdbtool_walk_tree(((PDBProgram *) ruleset->value)->rules, 0, FALSE);
+        {
+          RNode *root = ((PDBProgram *) ruleset->value)->rules;
+          if (root)
+            pdbtool_walk_tree(root, 0, FALSE);
+        }
     }
 
   pattern_db_free(patterndb);
@@ -843,6 +849,88 @@ static GOptionEntry dump_options[] =
     "Dump the program ($PROGRAM) tree", NULL },
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
 };
+
+static gboolean dictionary_tags = FALSE;
+
+static void
+pdbtool_dictionary_walk(RNode *root, const gchar *progname)
+{
+  gint i;
+
+  if (root->parser && root->parser->handle && !dictionary_tags)
+    printf("%s\n", log_msg_get_value_name(root->parser->handle, NULL));
+
+  if (root->value)
+    {
+      if (!progname)
+        {
+          pdbtool_dictionary_walk(((PDBProgram *)root->value)->rules, (gchar *)root->key);
+        }
+      else
+        {
+          PDBRule *rule = (PDBRule *)root->value;
+          LogTemplate *template;
+          guint tag_id;
+
+          if (!dictionary_tags && rule->msg.values)
+            {
+              for (i = 0; i < rule->msg.values->len; i++)
+                {
+                  template = (LogTemplate *)g_ptr_array_index(rule->msg.values, i);
+                  printf("%s\n", template->name);
+                }
+            }
+
+          if (dictionary_tags && rule->msg.tags)
+            {
+              for (i = 0; i < rule->msg.tags->len; i++)
+                {
+                  tag_id = g_array_index(rule->msg.tags, guint, i);
+                  printf("%s\n", log_tags_get_by_id(tag_id));
+                }
+            }
+        }
+    }
+
+  for (i = 0; i < root->num_children; i++)
+    pdbtool_dictionary_walk(root->children[i], progname);
+
+  for (i = 0; i < root->num_pchildren; i++)
+    pdbtool_dictionary_walk(root->pchildren[i], progname);
+}
+
+static GOptionEntry dictionary_options[] =
+{
+  { "pdb",       'p', 0, G_OPTION_ARG_STRING, &patterndb_file,
+    "Name of the patterndb file", "<patterndb_file>" },
+  { "program", 'P', 0, G_OPTION_ARG_STRING, &match_program,
+    "Program name ($PROGRAM) to dump", "<program>" },
+  { "dump-tags", 'T', 0, G_OPTION_ARG_NONE, &dictionary_tags,
+    "Dump the tags in the rules instead of the value names", NULL },
+  { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
+};
+
+static gint
+pdbtool_dictionary(int argc, char *argv[])
+{
+  PDBRuleSet rule_set;
+
+  memset(&rule_set, 0x0, sizeof(PDBRuleSet));
+
+  if (!pdb_rule_set_load(&rule_set, configuration, patterndb_file, NULL))
+    return 1;
+
+  if (match_program)
+    {
+      RNode *ruleset = r_find_node(rule_set.programs, g_strdup(match_program), g_strdup(match_program), strlen(match_program), NULL);
+      if (ruleset && ruleset->value)
+        pdbtool_dictionary_walk(((PDBProgram *)ruleset->value)->rules, (gchar *)ruleset->key);
+    }
+  else
+    pdbtool_dictionary_walk(rule_set.programs, NULL);
+
+  return 0;
+}
 
 static gboolean
 pdbtool_load_module(const gchar *option_name, const gchar *value, gpointer data, GError **error)
@@ -947,6 +1035,10 @@ pdbtool_mode(int *argc, char **argv[])
 
 static GOptionEntry pdbtool_options[] =
 {
+  { "debug",     'd', 0, G_OPTION_ARG_NONE, &debug_flag,
+    "Enable debug/diagnostic messages on stderr", NULL },
+  { "verbose",   'v', 0, G_OPTION_ARG_NONE, &verbose_flag,
+    "Enable verbose messages on stderr", NULL },
   { "module", 0, 0, G_OPTION_ARG_CALLBACK, pdbtool_load_module,
     "Load the module specified as parameter", "<module>" },
   { "module-path",         0,         0, G_OPTION_ARG_STRING, &module_path,
@@ -967,6 +1059,7 @@ static struct
   { "merge", merge_options, "Merge pattern databases", pdbtool_merge },
   { "test", test_options, "Test pattern databases", pdbtool_test },
   { "patternize", patternize_options, "Create a pattern database from logs", pdbtool_patternize },
+  { "dictionary", dictionary_options, "Dump pattern dictionary", pdbtool_dictionary },
   { NULL, NULL },
 };
 
@@ -1033,7 +1126,7 @@ main(int argc, char *argv[])
   log_tags_init();
   pattern_db_global_init();
 
-  configuration = cfg_new(0x0302);
+  configuration = cfg_new(CFG_CURRENT_VERSION);
 
   plugin_load_module("syslogformat", configuration, NULL);
   plugin_load_module("basicfuncs", configuration, NULL);

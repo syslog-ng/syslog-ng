@@ -53,7 +53,7 @@ extern LogDriver *last_driver;
 /* INCLUDE_DECLS */
 
 %token KW_DEFAULT
-%token KW_RETRY_SQL_INSERTS
+%token KW_RETRIES
 
 %type   <ptr> dest_afsql
 %type   <ptr> dest_afsql_params
@@ -93,7 +93,12 @@ dest_afsql_option
 }
         | KW_TYPE '(' string ')'		{ afsql_dd_set_type(last_driver, $3); free($3); }
         | KW_HOST '(' string ')'		{ afsql_dd_set_host(last_driver, $3); free($3); }
-        | KW_PORT '(' string_or_number ')'	{ afsql_dd_set_port(last_driver, $3); free($3); }
+        | KW_PORT '(' string_or_number ')'
+          {
+            CHECK_ERROR(afsql_dd_check_port($3), @3, "Illegal sql port number: %s", $3);
+            afsql_dd_set_port(last_driver, $3);
+            free($3);
+          }
         | KW_USERNAME '(' string ')'		{ afsql_dd_set_user(last_driver, $3); free($3); }
         | KW_PASSWORD '(' string ')'		{ afsql_dd_set_password(last_driver, $3); free($3); }
         | KW_DATABASE '(' string ')'		{ afsql_dd_set_database(last_driver, $3); free($3); }
@@ -105,11 +110,11 @@ dest_afsql_option
 	| KW_TIME_ZONE '(' string ')'           { afsql_dd_set_send_time_zone(last_driver,$3); free($3); }
 	| KW_LOCAL_TIME_ZONE '(' string ')'     { afsql_dd_set_local_time_zone(last_driver,$3); free($3); }
         | KW_NULL '(' string ')'                { afsql_dd_set_null_value(last_driver, $3); free($3); }
+        | KW_RETRIES '(' LL_NUMBER ')'          { afsql_dd_set_retries(last_driver, $3); }
         | KW_FLUSH_LINES '(' LL_NUMBER ')'      { afsql_dd_set_flush_lines(last_driver, $3); }
         | KW_FLUSH_TIMEOUT '(' LL_NUMBER ')'    { afsql_dd_set_flush_timeout(last_driver, $3); }
         | KW_SESSION_STATEMENTS '(' string_list ')' { afsql_dd_set_session_statements(last_driver, $3); }
         | KW_FLAGS '(' dest_afsql_flags ')'     { afsql_dd_set_flags(last_driver, $3); }
-	| KW_RETRY_SQL_INSERTS '(' LL_NUMBER ')'{ afsql_dd_set_retries(last_driver, $3); }
 	| dest_driver_option
         | KW_ENDIF {
 #endif /* ENABLE_SQL */

@@ -495,8 +495,8 @@ cfg_persist_config_move(GlobalConfig *src, GlobalConfig *dest)
   src->state = NULL;
 }
 
-static PersistConfigEntry *
-cfg_persist_config_add_entry(GlobalConfig *cfg, gchar *name, gpointer value, GDestroyNotify destroy, gboolean force)
+void
+cfg_persist_config_add(GlobalConfig *cfg, gchar *name, gpointer value, GDestroyNotify destroy, gboolean force)
 { 
   PersistConfigEntry *p;
   
@@ -510,7 +510,7 @@ cfg_persist_config_add_entry(GlobalConfig *cfg, gchar *name, gpointer value, GDe
                         evt_tag_str("name", name),
                         NULL);
               destroy(value);
-              return NULL;
+              return;
             }
         }
   
@@ -519,15 +519,13 @@ cfg_persist_config_add_entry(GlobalConfig *cfg, gchar *name, gpointer value, GDe
       p->value = value;
       p->destroy = destroy;
       g_hash_table_insert(cfg->persist->keys, g_strdup(name), p);
-      return p;
+      return;
     }
-  return NULL;
-}
-
-void
-cfg_persist_config_add(GlobalConfig *cfg, gchar *name, gpointer value,  GDestroyNotify destroy, gboolean force)
-{ 
-  cfg_persist_config_add_entry(cfg, name, value, destroy, force);
+  else if (destroy && value)
+    {
+      destroy(value);
+    }
+  return;
 }
 
 gpointer

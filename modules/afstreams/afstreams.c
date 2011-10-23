@@ -270,7 +270,7 @@ afstreams_sd_new(gchar *filename)
   self->super.super.super.deinit = afstreams_sd_deinit;
   self->super.super.super.free_fn = afstreams_sd_free;
   log_reader_options_defaults(&self->reader_options);
-  self->reader_options.flags |= LR_LOCAL;
+  self->reader_options.parse_options.flags |= LP_LOCAL;
   self->reader_options.parse_options.flags &= ~LP_EXPECT_HOSTNAME;
   return &self->super.super;
 }

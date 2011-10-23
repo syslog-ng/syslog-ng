@@ -26,6 +26,17 @@
 #define SDINTER_H_INCLUDED
 
 #include "driver.h"
+#include "logsource.h"
+
+/*
+ * This is the actual source driver, linked into the configuration tree.
+ */
+typedef struct _AFInterSourceDriver
+{
+  LogDriver super;
+  LogSource *source;
+  LogSourceOptions source_options;
+} AFInterSourceDriver;
 
 void afinter_postpone_mark(gint mark_freq);
 LogDriver *afinter_sd_new(void);

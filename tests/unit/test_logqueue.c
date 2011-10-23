@@ -4,6 +4,7 @@
 #include "apphook.h"
 #include "plugin.h"
 #include "mainloop.h"
+#include "tls-support.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -122,7 +123,13 @@ testcase_zero_diskbuf_alternating_send_acks()
 #define MESSAGES_SUM (FEEDERS * MESSAGES_PER_FEEDER)
 #define TEST_RUNS 10
 
-static __thread struct list_head finish_callbacks;
+TLS_BLOCK_START
+{
+  struct list_head finish_callbacks;
+}
+TLS_BLOCK_END;
+
+#define finish_callbacks  __tls_deref(finish_callbacks)
 
 void
 main_loop_io_worker_register_finish_callback(MainLoopIOWorkerFinishCallback *cb)
@@ -144,7 +151,7 @@ main_loop_io_worker_invoke_finish_callbacks(void)
     }
 }
 
-GStaticMutex sum_lock;
+GStaticMutex tlock;
 glong sum_time;
 
 gpointer
@@ -184,9 +191,9 @@ threaded_feed(gpointer args)
   main_loop_io_worker_invoke_finish_callbacks();
   g_get_current_time(&end);
   diff = g_time_val_diff(&end, &start);
-  g_static_mutex_lock(&sum_lock);
+  g_static_mutex_lock(&tlock);
   sum_time += diff;
-  g_static_mutex_unlock(&sum_lock);
+  g_static_mutex_unlock(&tlock);
   log_msg_unref(tmpl);
   return NULL;
 }
@@ -256,19 +263,24 @@ testcase_with_threads()
   log_queue_set_max_threads(FEEDERS);
   for (i = 0; i < TEST_RUNS; i++)
     {
+      fprintf(stderr,"starting testrun: %d\n",i);
       q = log_queue_fifo_new(MESSAGES_SUM, NULL);
 
       for (j = 0; j < FEEDERS; j++)
         {
           args[j][0] = q;
           args[j][1] = GINT_TO_POINTER(j);
+          fprintf(stderr,"starting feed thread %d\n",j);
           thread_feed[j] = g_thread_create(threaded_feed, args[j], TRUE, NULL);
         }
 
       thread_consume = g_thread_create(threaded_consume, q, TRUE, NULL);
 
       for (j = 0; j < FEEDERS; j++)
+      {
+        fprintf(stderr,"waiting for feed thread %d\n",j);
         g_thread_join(thread_feed[j]);
+      }
       g_thread_join(thread_consume);
 
       log_queue_unref(q);
@@ -279,6 +291,10 @@ testcase_with_threads()
 int
 main()
 {
+#if _AIX
+  fprintf(stderr,"On AIX this testcase can't executed, because the overriding of main_loop_io_worker_register_finish_callback does not work\n");
+  return 0;
+#endif
   app_startup();
   putenv("TZ=MET-1METDST");
   tzset();
@@ -288,10 +304,13 @@ main()
   msg_format_options_defaults(&parse_options);
   msg_format_options_init(&parse_options, configuration);
 
+  fprintf(stderr,"Start testcase_with_threads\n");
   testcase_with_threads();
 
 #if 1
+  fprintf(stderr,"Start testcase_zero_diskbuf_alternating_send_acks\n");
   testcase_zero_diskbuf_alternating_send_acks();
+  fprintf(stderr,"Start testcase_zero_diskbuf_and_normal_acks\n");
   testcase_zero_diskbuf_and_normal_acks();
 #endif
   return 0;

@@ -125,6 +125,7 @@ log_writer_work_perform(gpointer s)
 {
   LogWriter *self = (LogWriter *) s;
 
+  g_assert((self->super.flags & PIF_INITIALIZED) != 0);
   self->work_result = log_writer_flush(self, self->flush_waiting_for_timeout ? LW_FLUSH_BUFFER : LW_FLUSH_NORMAL);
 }
 
@@ -357,7 +358,7 @@ static void
 log_writer_update_watches(LogWriter *self)
 {
   gint fd;
-  GIOCondition cond;
+  GIOCondition cond = 0;
   gboolean partial_batch;
   gint timeout_msec = 0;
 
@@ -698,6 +699,29 @@ log_writer_append_value(GString *result, LogMessage *lm, NVHandle handle, gboole
     g_string_append_c(result, ' ');
 }
 
+static void
+log_writer_do_padding(LogWriter *self, GString *result)
+{
+  if (!self->options->padding)
+    return;
+
+  if(G_UNLIKELY(self->options->padding < result->len))
+    {
+      msg_warning("Padding is too small to hold the full message",
+               evt_tag_int("padding", self->options->padding),
+               evt_tag_int("msg_size", result->len),
+               NULL);
+      g_string_set_size(result, self->options->padding);
+      return;
+    }
+  /* store the original length of the result */
+  gint len = result->len;
+  gint padd_bytes = self->options->padding - result->len;
+  /* set the size to the padded size, this will allocate the string */
+  g_string_set_size(result, self->options->padding);
+  memset(result->str + len - 1, '\0', padd_bytes);
+}
+
 void
 log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
 {
@@ -719,7 +743,7 @@ log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
       gssize seqid_length;
 
       seqid = log_msg_get_value(lm, meta_seqid, &seqid_length);
-      seqid = APPEND_ZERO(seqid, seqid_length);
+      APPEND_ZERO(seqid, seqid, seqid_length);
       if (seqid[0])
         seq_num = strtol(seqid, NULL, 10);
       else
@@ -762,7 +786,7 @@ log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
         }
 #endif
       len = result->len;
-      log_msg_append_format_sdata(lm, result);
+      log_msg_append_format_sdata(lm, result, seq_num);
       if (len == result->len)
         {
           /* NOTE: sd_param format did not generate any output, take it as an empty SD string */
@@ -796,6 +820,7 @@ log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
             }
         }
       g_string_append_c(result, '\n');
+      log_writer_do_padding(self, result);
     }
   else
     {
@@ -874,7 +899,7 @@ log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
           p = log_msg_get_value(lm, LM_V_MESSAGE, &len);
           g_string_append_len(result, p, len);
           g_string_append_c(result, '\n');
-
+          log_writer_do_padding(self, result);
         }
     }
   if (self->options->options & LWO_NO_MULTI_LINE)
@@ -966,8 +991,9 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
                 }
               else
                 {
+		  if (!consumed)
+	            g_free(self->line_buffer->str);
                   consumed = TRUE;
-                  g_free(self->line_buffer->str);
                 }
             }
           if (consumed)
@@ -1040,6 +1066,7 @@ log_writer_init(LogPipe *s)
 {
   LogWriter *self = (LogWriter *) s;
 
+  g_assert(self->queue != NULL);
   iv_event_register(&self->queue_filled);
 
   if ((self->options->options & LWO_NO_STATS) == 0 && !self->dropped_messages)
@@ -1087,10 +1114,12 @@ log_writer_deinit(LogPipe *s)
 
   log_queue_set_counters(self->queue, NULL, NULL);
 
+  stats_lock();
   stats_unregister_counter(self->stats_source | SCS_DESTINATION, self->stats_id, self->stats_instance, SC_TYPE_DROPPED, &self->dropped_messages);
   stats_unregister_counter(self->stats_source | SCS_DESTINATION, self->stats_id, self->stats_instance, SC_TYPE_SUPPRESSED, &self->suppressed_messages);
   stats_unregister_counter(self->stats_source | SCS_DESTINATION, self->stats_id, self->stats_instance, SC_TYPE_PROCESSED, &self->processed_messages);
   stats_unregister_counter(self->stats_source | SCS_DESTINATION, self->stats_id, self->stats_instance, SC_TYPE_STORED, &self->stored_messages);
+  stats_unlock();
   
   return TRUE;
 }
@@ -1234,6 +1263,7 @@ log_writer_new(guint32 flags)
   self->flags = flags;
   self->line_buffer = g_string_sized_new(128);
   self->pollable_state = -1;
+  init_sequence_number(&self->seq_num);
 
   log_writer_init_watches(self);
   g_static_mutex_init(&self->suppress_lock);
@@ -1262,6 +1292,7 @@ log_writer_options_defaults(LogWriterOptions *options)
   log_template_options_defaults(&options->template_options);
   options->time_reopen = -1;
   options->suppress = -1;
+  options->padding = 0;
 }
 
 void 

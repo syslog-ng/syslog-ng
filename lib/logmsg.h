@@ -76,9 +76,13 @@ enum
 {
   /* these flags also matter when the message is serialized */
   LF_OLD_UNPARSED      = 0x0001,
+  /* message payload is guaranteed to be valid utf8 */
   LF_UTF8              = 0x0001,
+  /* message was generated from within syslog-ng, doesn't matter if it came from the internal() source */
   LF_INTERNAL          = 0x0002,
+  /* message was received on a local transport, e.g. it was generated on the local machine */
   LF_LOCAL             = 0x0004,
+  /* message is a MARK mode */
   LF_MARK              = 0x0008,
 
   /* state flags that only matter during syslog-ng runtime and never
@@ -212,8 +216,8 @@ void log_msg_set_match(LogMessage *self, gint index, const gchar *value, gssize 
 void log_msg_set_match_indirect(LogMessage *self, gint index, NVHandle ref_handle, guint8 type, guint16 ofs, guint16 len);
 void log_msg_clear_matches(LogMessage *self);
 
-void log_msg_append_format_sdata(LogMessage *self, GString *result);
-void log_msg_format_sdata(LogMessage *self, GString *result);
+void log_msg_append_format_sdata(LogMessage *self, GString *result, guint32 seq_num);
+void log_msg_format_sdata(LogMessage *self, GString *result, guint32 seq_num);
 
 void log_msg_set_tag_by_id(LogMessage *self, LogTagId id);
 void log_msg_set_tag_by_name(LogMessage *self, const gchar *name);

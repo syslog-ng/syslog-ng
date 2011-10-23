@@ -8,6 +8,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <glib.h>
 
@@ -131,7 +132,7 @@ read_thread_func(gpointer args)
     {
       gint err;
       gchar buf[1024];
-      gint count;
+      gint count = 0;
 
       count = read(pair[1], buf, sizeof(buf));
       err = errno;

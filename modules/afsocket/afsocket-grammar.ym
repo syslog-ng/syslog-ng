@@ -43,13 +43,8 @@
 #endif         /* END MARK */
 
 
-#include <syslog.h>
-
 static SocketOptions *last_sock_options;
 static gint last_addr_family = AF_INET;
-extern LogReaderOptions *last_reader_options;
-extern LogWriterOptions *last_writer_options;
-extern LogDriver *last_driver;
 
 #if ENABLE_SSL
 TLSContext *last_tls_context;

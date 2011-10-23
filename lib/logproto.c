@@ -1253,8 +1253,10 @@ log_proto_buffered_server_free(LogProto *s)
   g_sockaddr_unref(self->prev_saddr);
 
   g_free(self->buffer);
-  if (!self->persist_handle)
-    g_free(self->state1);
+  if (self->state1)
+    {
+      g_free(self->state1);
+    }
 }
 
 void

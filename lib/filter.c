@@ -338,7 +338,7 @@ filter_re_eval(FilterExprNode *s, LogMessage *msg)
   
   value = log_msg_get_value(msg, self->value_handle, &len);
   
-  value = APPEND_ZERO(value, len);
+  APPEND_ZERO(value, value, len);
   return filter_re_eval_string(s, msg, self->value_handle, value, len);
 }
 

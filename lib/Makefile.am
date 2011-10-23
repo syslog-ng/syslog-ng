@@ -9,7 +9,7 @@ export top_srcdir
 
 lib_LTLIBRARIES = libsyslog-ng.la
 libsyslog_ng_la_LIBADD = @CORE_DEPS_LIBS@
-libsyslog_ng_la_LDFLAGS = -no-undefined
+libsyslog_ng_la_LDFLAGS = -no-undefined -release @VERSION@
 
 module_LTLIBRARIES = libsyslog-ng-crypto.la
 libsyslog_ng_crypto_la_LIBADD = @CORE_DEPS_LIBS@ libsyslog-ng.la
@@ -24,6 +24,7 @@ pkginclude_HEADERS = 		\
 	block-ref-parser.h	\
 	center.h		\
 	cfg.h                   \
+	cfg-grammar.h           \
 	cfg-lexer.h		\
 	cfg-parser.h		\
 	children.h		\
@@ -78,6 +79,12 @@ pkginclude_HEADERS = 		\
 	tlstransport.h		\
 	utils.h			\
 	value-pairs.h
+
+# this is intentionally formatted so conflicts are less likely to arise. one name in every line.
+libsyslog_ng_crypto_la_SOURCES = \
+	crypto.c		\
+	tlscontext.c		\
+	tlstransport.c
 
 # this is intentionally formatted so conflicts are less likely to arise. one name in every line.
 libsyslog_ng_la_SOURCES = \
@@ -145,12 +152,6 @@ libsyslog_ng_la_SOURCES = \
 	pragma-grammar.y	\
 	parser-expr-grammar.y	\
 	rewrite-expr-grammar.y
-
-# this is intentionally formatted so conflicts are less likely to arise. one name in every line.
-libsyslog_ng_crypto_la_SOURCES = \
-	crypto.c		\
-	tlscontext.c		\
-	tlstransport.c
 
 # each line with closely related files (e.g. the ones generated from the same source)
 BUILT_SOURCES = cfg-lex.c cfg-lex.h						\

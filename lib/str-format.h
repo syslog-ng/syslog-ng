@@ -3,10 +3,11 @@
 
 #include "syslog-ng.h"
 
-gint
-format_uint32_padded(GString *result, gint field_len, gchar pad_char, gint base, guint32 value);
-gint
-format_int32_padded(GString *result, gint field_len, gchar pad_char, gint base, gint32 value);
+gint format_uint32_padded(GString *result, gint field_len, gchar pad_char, gint base, guint32 value);
+gint format_int32_padded(GString *result, gint field_len, gchar pad_char, gint base, gint32 value);
+
+gint format_uint64_padded(GString *result, gint field_len, gchar pad_char, gint base, guint64 value);
+gint format_int64_padded(GString *result, gint field_len, gchar pad_char, gint base, gint64 value);
 
 gboolean
 scan_iso_timestamp(const gchar **buf, gint *left, struct tm *tm);

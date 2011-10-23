@@ -145,7 +145,7 @@ testcase(gchar *msg,
     check_value(msg, logmsg, LM_V_MSGID, expected_msgid);
 
   /* SD elements */
-  log_msg_format_sdata(logmsg, sd_str);
+  log_msg_format_sdata(logmsg, sd_str, 0);
   TEST_ASSERT(!expected_sd_str || strcmp(sd_str->str, expected_sd_str) == 0, "%s", sd_str->str, expected_sd_str);
 
   if (expected_sd_pairs)
@@ -458,6 +458,15 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            "linksys",
            "app",
            "msg",
+           NULL, NULL, NULL, NULL
+           );
+
+  testcase("<38>Sep 22 10:11:56 Message forwarded from cdaix66: sshd[679960]: Accepted publickey for nagios from 1.9.1.1 port 42096 ssh2", LP_EXPECT_HOSTNAME, NULL,
+           38,
+           1, 0, 7200,
+           "cdaix66",
+           "sshd",
+           "Accepted publickey for nagios from 1.9.1.1 port 42096 ssh2",
            NULL, NULL, NULL, NULL
            );
 

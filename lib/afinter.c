@@ -28,26 +28,18 @@
 #include "messages.h"
 #include "apphook.h"
 
-typedef struct _AFInterSourceDriver AFInterSourceDriver;
 typedef struct _AFInterSource AFInterSource;
 
 static GStaticMutex internal_msg_lock = G_STATIC_MUTEX_INIT;
 static GQueue *internal_msg_queue;
 static AFInterSource *current_internal_source;
 
-/*
- * This is the actual source driver, linked into the configuration tree.
- */
-struct _AFInterSourceDriver
-{
-  LogSrcDriver super;
-  LogSource *source;
-  LogSourceOptions source_options;
-};
-
 /* the expiration timer of the next MARK message */
 static struct timespec next_mark_target = { -1, 0 };
-
+/* as different sources from different threads can call afinter_postpone_mark,
+   and we use the value in the init thread, we need to syncronize the value references
+*/
+static GStaticMutex internal_mark_target_lock = G_STATIC_MUTEX_INIT;
 
 /*
  * This class is parallel to LogReader, e.g. it hangs on the
@@ -131,15 +123,24 @@ afinter_source_mark(gpointer s)
   AFInterSource *self = (AFInterSource *) s;
   LogMessage *msg;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
+  struct timespec nmt;
 
-  if (log_source_free_to_send(&self->super))
+  main_loop_assert_main_thread();
+
+  g_static_mutex_lock(&internal_mark_target_lock);
+  nmt = next_mark_target;
+  g_static_mutex_unlock(&internal_mark_target_lock);
+
+  if (log_source_free_to_send(&self->super) && nmt.tv_sec <= self->mark_timer.expires.tv_sec)
     {
+      /* the internal_mark_target has not been overwritten by an incoming message in afinter_postpone_mark
+         (there was no msg in the meantime) -> the mark msg can be sent */
       msg = log_msg_new_mark();
       path_options.ack_needed = FALSE;
 
       log_pipe_queue(&self->super.super, msg, &path_options);
 
-      next_mark_target.tv_sec += self->mark_freq;
+      /* the next_mark_target will be increased in afinter_postpone_mark */
     }
   afinter_source_update_watches(self);
 }
@@ -303,7 +304,7 @@ afinter_source_new(AFInterSourceDriver *owner, LogSourceOptions *options)
   AFInterSource *self = g_new0(AFInterSource, 1);
   
   log_source_init_instance(&self->super);
-  log_source_set_options(&self->super, options, 0, SCS_INTERNAL, owner->super.super.id, NULL, FALSE);
+  log_source_set_options(&self->super, options, 0, SCS_INTERNAL, owner->super.id, NULL, FALSE);
   afinter_source_init_watches(self);
   self->super.super.init = afinter_source_init;
   self->super.super.deinit = afinter_source_deinit;
@@ -327,7 +328,7 @@ afinter_sd_init(LogPipe *s)
       return FALSE;
     }
 
-  log_source_options_init(&self->source_options, cfg, self->super.super.group);
+  log_source_options_init(&self->source_options, cfg, self->super.group);
   self->source = afinter_source_new(self, &self->source_options);
   log_pipe_append(&self->source->super, s);
   log_pipe_init(&self->source->super, cfg);
@@ -368,12 +369,12 @@ afinter_sd_new(void)
 {
   AFInterSourceDriver *self = g_new0(AFInterSourceDriver, 1);
 
-  log_src_driver_init_instance(&self->super);
-  self->super.super.super.init = afinter_sd_init;
-  self->super.super.super.deinit = afinter_sd_deinit;
-  self->super.super.super.free_fn = afinter_sd_free;
+  log_src_driver_init_instance((LogSrcDriver *)&self->super);
+  self->super.super.init = afinter_sd_init;
+  self->super.super.deinit = afinter_sd_deinit;
+  self->super.super.free_fn = afinter_sd_free;
   log_source_options_defaults(&self->source_options);
-  return &self->super.super;
+  return (LogDriver *)&self->super.super;
 }
 
 /****************************************************************************
@@ -386,8 +387,14 @@ afinter_postpone_mark(gint mark_freq)
   if (mark_freq > 0)
     {
       iv_validate_now();
+      g_static_mutex_lock(&internal_mark_target_lock);
       next_mark_target = iv_now;
-      timespec_add_msec(&next_mark_target, mark_freq * 1000);
+      next_mark_target.tv_sec += mark_freq;
+      g_static_mutex_unlock(&internal_mark_target_lock);
+    }
+  else
+    {
+      next_mark_target.tv_sec = -1;
     }
 }
 

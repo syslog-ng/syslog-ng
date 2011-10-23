@@ -49,6 +49,8 @@ enum
   LP_STORE_LEGACY_MSGHDR = 0x0040,
   /* expect a hostname field in the message */
   LP_EXPECT_HOSTNAME = 0x0080,
+  /* message is locally generated and should be marked with LF_LOCAL */
+  LP_LOCAL = 0x0100,
 };
 
 typedef struct _MsgFormatHandler MsgFormatHandler;

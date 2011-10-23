@@ -25,6 +25,7 @@
 #include "persist-state.h"
 #include "serialize.h"
 #include "messages.h"
+#include "mainloop.h"
 
 #include <sys/types.h>
 #include <unistd.h>
@@ -133,6 +134,8 @@ struct _PersistState
   gchar *temp_filename;
   gint fd;
   gint mapped_counter;
+  GMutex *mapped_lock;
+  GCond *mapped_release_cond;
   guint32 current_size;
   guint32 current_ofs;
   gpointer current_map;
@@ -165,8 +168,12 @@ static gboolean
 persist_state_grow_store(PersistState *self, guint32 new_size)
 {
   int pgsize = getpagesize();
+  gboolean result = FALSE;
 
-  g_assert(g_atomic_int_get(&self->mapped_counter) == 0);
+  g_mutex_lock(self->mapped_lock);
+  if (self->mapped_counter != 0)
+    g_cond_wait(self->mapped_release_cond, self->mapped_lock);
+  g_assert(self->mapped_counter == 0);
 
   if ((new_size & (pgsize-1)) != 0)
     {
@@ -178,9 +185,9 @@ persist_state_grow_store(PersistState *self, guint32 new_size)
       gchar zero = 0;
 
       if (lseek(self->fd, new_size - 1, SEEK_SET) < 0)
-        return FALSE;
+        goto exit;
       if (write(self->fd, &zero, 1) != 1)
-        return FALSE;
+        goto exit;
       if (self->current_map)
         munmap(self->current_map, self->current_size);
       self->current_size = new_size;
@@ -188,12 +195,15 @@ persist_state_grow_store(PersistState *self, guint32 new_size)
       if (self->current_map == MAP_FAILED)
         {
           self->current_map = NULL;
-          return FALSE;
+          goto exit;
         }
       self->header = (PersistFileHeader *) self->current_map;
       memcpy(&self->header->magic, "SLP4", 4);
     }
-  return TRUE;
+  result = TRUE;
+exit:
+  g_mutex_unlock(self->mapped_lock);
+  return result;
 }
 
 static gboolean
@@ -298,6 +308,9 @@ persist_state_lookup_key(PersistState *self, const gchar *key, PersistEntryHandl
 }
 
 gboolean
+/*
+ * NOTE: can only be called from the main thread (e.g. log_pipe_init/deinit).
+ */
 persist_state_add_key(PersistState *self, const gchar *key, PersistEntryHandle handle)
 {
   PersistEntry *entry;
@@ -305,6 +318,7 @@ persist_state_add_key(PersistState *self, const gchar *key, PersistEntryHandle h
   gboolean new_block_created = FALSE;
   SerializeArchive *sa;
 
+  main_loop_assert_main_thread();
   g_assert(key[0] != 0);
 
   entry = g_new(PersistEntry, 1);
@@ -632,21 +646,37 @@ persist_state_load(PersistState *self)
  * call in order to get a dereferencable pointer. It is not safe to
  * save this pointer for longer terms as the underlying mapping may
  * change when the file grows.
+ *
+ * Threading NOTE: this can be called from any kind of threads.
+ *
+ * NOTE: it is not safe to keep an entry mapped while synchronizing with the
+ * main thread (e.g.  mutexes, condvars, main_loop_call()), because
+ * map_entry() may block the main thread in persist_state_grow_store().
  **/
 gpointer
 persist_state_map_entry(PersistState *self, PersistEntryHandle handle)
 {
   /* we count the number of mapped entries in order to know if we're
    * safe to remap the file region */
-
-  g_atomic_int_add(&self->mapped_counter, 1);
+  g_mutex_lock(self->mapped_lock);
+  self->mapped_counter++;
+  g_mutex_unlock(self->mapped_lock);
   return (gpointer) (((gchar *) self->current_map) + (guint32) handle);
 }
 
+/*
+ * Threading NOTE: this can be called from any kind of threads.
+ */
 void
 persist_state_unmap_entry(PersistState *self, PersistEntryHandle handle)
 {
-  g_atomic_int_add(&self->mapped_counter, -1);
+  g_mutex_lock(self->mapped_lock);
+  self->mapped_counter--;
+  if (self->mapped_counter == 0)
+    {
+      g_cond_signal(self->mapped_release_cond);
+    }
+  g_mutex_unlock(self->mapped_lock);
 }
 
 PersistEntryHandle
@@ -826,6 +856,8 @@ persist_state_new(const gchar *filename)
   self->temp_filename = g_strdup_printf("%s-", self->commited_filename);
   self->keys = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
   self->current_ofs = sizeof(PersistFileHeader);
+  self->mapped_lock = g_mutex_new();
+  self->mapped_release_cond = g_cond_new();
   self->version = 4;
   return self;
 }
@@ -833,7 +865,11 @@ persist_state_new(const gchar *filename)
 void
 persist_state_free(PersistState *self)
 {
-  g_assert(g_atomic_int_get(&self->mapped_counter) == 0);
+  g_mutex_lock(self->mapped_lock);
+  g_assert(self->mapped_counter == 0);
+  g_mutex_unlock(self->mapped_lock);
+  g_mutex_free(self->mapped_lock);
+  g_cond_free(self->mapped_release_cond);
   g_free(self->temp_filename);
   g_free(self->commited_filename);
   g_hash_table_destroy(self->keys);

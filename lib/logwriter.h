@@ -67,6 +67,7 @@ typedef struct _LogWriterOptions
 
   gint time_reopen;
   gint suppress;
+  gint padding;
 } LogWriterOptions;
 
 typedef struct _LogWriter LogWriter;

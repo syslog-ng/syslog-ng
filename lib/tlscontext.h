@@ -87,15 +87,12 @@ TLSVerifyMode tls_lookup_verify_mode(const gchar *mode_str);
 void tls_log_certificate_validation_progress(int ok, X509_STORE_CTX *ctx);
 gboolean tls_verify_certificate_name(X509 *cert, const gchar *hostname);
 
-void tls_init(void);
-
 #else
 
 typedef struct _TLSContext TLSContext;
 typedef struct _TLSSession TLSSession;
 
 #define tls_context_new(m)
-#define tls_init()
 
 #endif
 

@@ -130,8 +130,6 @@ stats_add_counter(gint stats_level, gint source, const gchar *id, const gchar *i
   StatsCounter key;
   StatsCounter *sc;
 
-  g_assert(stats_locked);
-
   if (!stats_check_level(stats_level))
     return NULL;
   
@@ -193,6 +191,7 @@ stats_register_counter(gint stats_level, gint source, const gchar *id, const gch
   StatsCounter *sc;
   gboolean new;
 
+  g_assert(stats_locked);
   g_assert(type < SC_TYPE_MAX);
   
   *counter = NULL;
@@ -210,6 +209,7 @@ stats_register_dynamic_counter(gint stats_level, gint source, const gchar *id, c
   StatsCounter *sc;
   gboolean local_new;
 
+  g_assert(stats_locked);
   g_assert(type < SC_TYPE_MAX);
   
   *counter = NULL;
@@ -242,6 +242,7 @@ stats_instant_inc_dynamic_counter(gint stats_level, gint source_mask, const gcha
   gboolean new;
   StatsCounter *handle;
 
+  g_assert(stats_locked);
   handle = stats_register_dynamic_counter(stats_level, source_mask, id, instance, SC_TYPE_PROCESSED, &counter, &new);
   stats_counter_inc(counter);
   if (timestamp >= 0)
@@ -265,6 +266,8 @@ stats_instant_inc_dynamic_counter(gint stats_level, gint source_mask, const gcha
 void
 stats_register_associated_counter(StatsCounter *sc, StatsCounterType type, StatsCounterItem **counter)
 {
+  g_assert(stats_locked);
+
   *counter = NULL;
   if (!sc)
     return;
@@ -280,6 +283,8 @@ stats_unregister_counter(gint source, const gchar *id, const gchar *instance, St
   StatsCounter *sc;
   StatsCounter key;
   
+  g_assert(stats_locked);
+
   if (*counter == NULL)
     return;
 
@@ -303,6 +308,7 @@ stats_unregister_counter(gint source, const gchar *id, const gchar *instance, St
 void
 stats_unregister_dynamic_counter(StatsCounter *sc, StatsCounterType type, StatsCounterItem **counter)
 {
+  g_assert(stats_locked);
   if (!sc)
     return;
   g_assert(sc && (sc->live_mask & (1 << type)) && &sc->counters[type] == (*counter));

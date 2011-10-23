@@ -29,13 +29,15 @@
 #include "crypto.h"
 #include "apphook.h"
 
+#if ENABLE_SSL
+
 #include <openssl/rand.h>
 #include <openssl/ssl.h>
-
-extern gboolean seed_rng; /* defined in main.c */
+#include <stdio.h>
 
 static gint ssl_lock_count;
 static GStaticMutex *ssl_locks;
+static gboolean randfile_loaded;
 
 static void
 ssl_locking_callback(int mode, int type, char *file, int line)
@@ -88,7 +90,7 @@ crypto_deinit(void)
 {
   char rnd_file[256];
 
-  if (seed_rng)
+  if (randfile_loaded)
     {
       RAND_file_name(rnd_file, sizeof(rnd_file));
       if (rnd_file[0])
@@ -100,19 +102,29 @@ crypto_deinit(void)
 static void __attribute__((constructor))
 crypto_init(void)
 {
-  char rnd_file[256];
-
-  if (seed_rng)
-    {
-      RAND_file_name(rnd_file, sizeof(rnd_file));
-      if (rnd_file[0])
-        RAND_load_file(rnd_file, -1);
-    }
   SSL_library_init();
   SSL_load_error_strings();
   OpenSSL_add_all_algorithms();
   crypto_init_threading();
+
+  if (RAND_status() < 0 || getenv("RANDFILE"))
+    {
+      char rnd_file[256];
+
+      RAND_file_name(rnd_file, sizeof(rnd_file));
+      if (rnd_file[0])
+        {
+          RAND_load_file(rnd_file, -1);
+          randfile_loaded = TRUE;
+        }
+
+      if (RAND_status() < 0)
+        fprintf(stderr, "WARNING: a trusted random number source is not available, crypto operations will probably fail. Please set the RANDFILE environment variable.");
+    }
+
   register_application_hook(AH_SHUTDOWN, (ApplicationHookFunc) crypto_deinit, NULL);
 }
 
 /* the crypto options (seed) are handled in main.c */
+
+#endif
