@@ -48,8 +48,6 @@ Description: Next generation system logging daemon (metapackage)
 Package: libsyslog-ng-@UPSTREAM_VERSION@
 Section: libs
 Architecture: any
-Provides: libsyslog-ng-@UPSTREAM_VERSION_MAJOR@
-Breaks: libsyslog-ng-@UPSTREAM_VERSION_MAJOR@
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: Next generation system logging daemon (private library)
  This package contains a semi-private library, used by both syslog-ng
