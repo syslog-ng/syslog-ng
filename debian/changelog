@@ -3,7 +3,10 @@ syslog-ng (3.3.1-1~mhp4) unstable; urgency=low
   * Update to commit 4b43811 from upstream.
     + Drop the silent-load patch, rejected by upstream.
 
- --
+  * Build with systemd support enabled, and the service file
+    included. (Closes: #640015)
+
+ -- Gergely Nagy <algernon@madhouse-project.org>  Tue, 25 Oct 2011 21:36:02 +0200
 
 syslog-ng (3.3.1-1~mhp3) unstable; urgency=low
 

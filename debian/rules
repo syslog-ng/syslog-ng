@@ -71,7 +71,7 @@ override_dh_auto_configure:
 		--enable-sql \
 		--enable-mongodb \
 		--enable-json \
-		--disable-systemd \
+		--enable-systemd \
 		\
 		--with-libmongo-client=system \
 		--with-ivykis=internal \
@@ -79,6 +79,7 @@ override_dh_auto_configure:
 		\
 		--with-module-dir='$${exec_prefix}/lib/syslog-ng/$${VERSION}' \
 		--with-default-modules="affile,afprog,afsocket,afuser,afsql,basicfuncs,csvparser,dbparser,syslogformat" \
+		--with-systemdsystemunitdir
 		\
 		${EXTRA_CONFIGURE_OPTS}
 
@@ -117,6 +118,9 @@ override_dh_auto_clean:
 override_dh_auto_install:
 	dh_auto_install
 	${MAKE} -C debian/build-tree/lib/ivykis install DESTDIR=$(CURDIR)/debian/tmp
+ifeq (linux,$(shell dpkg-architecture -qDEB_BUILD_ARCH_OS))
+	cp -r debian/tmp/lib debian/syslog-ng-core/
+endif
 
 ##
 #* Overrides for other debhelper commands
