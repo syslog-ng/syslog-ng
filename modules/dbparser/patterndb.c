@@ -552,6 +552,8 @@ pdb_rule_run_actions(PDBRule *self, gint trigger, PatternDB *db, PDBContext *con
                   genmsg = log_msg_new_empty();
                   genmsg->flags |= LF_LOCAL;
                   genmsg->timestamps[LM_TS_STAMP] = msg->timestamps[LM_TS_STAMP];
+                  /* $RCPTID create*/
+                  log_msg_create_rcptid(genmsg);
                   if (context)
                     {
                       switch (context->key.scope)

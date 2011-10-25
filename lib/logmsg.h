@@ -160,6 +160,7 @@ struct _LogMessage
   GSockAddr *saddr;
   NVTable *payload;
 
+  guint64 rcptid;
   guint32 flags;
   guint16 pri;
   guint8 initial_parse:1,
@@ -260,5 +261,7 @@ void log_msg_global_init();
 void log_msg_global_deinit(void);
 
 gboolean log_msg_nv_table_foreach(NVTable *self, NVTableForeachFunc func, gpointer user_data);
+
+void log_msg_create_rcptid(LogMessage *msg);
 
 #endif

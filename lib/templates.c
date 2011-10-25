@@ -59,6 +59,7 @@ enum
   M_SOURCE_IP,
   M_SEQNUM,
   M_CONTEXT_ID,
+  M_RCPTID,
 
   M_DATE,
   M_FULLDATE,
@@ -195,6 +196,7 @@ LogMacroDef macros[] =
         { "SOURCEIP", M_SOURCE_IP },
         { "SEQNUM", M_SEQNUM },
         { "CONTEXT_ID", M_CONTEXT_ID },
+        { "RCPTID", M_RCPTID},
 
         /* values that have specific behaviour with older syslog-ng config versions */
         { "MSG", M_MESSAGE },
@@ -431,6 +433,14 @@ log_macro_expand(GString *result, gint id, gboolean escape, LogTemplateOptions *
         if (context_id)
           {
             result_append(result, context_id, strlen(context_id), escape);
+          }
+        break;
+      }
+    case M_RCPTID:
+      {
+        if (msg->rcptid)
+          {
+            format_uint64_padded(result,0,0,10,msg->rcptid);
           }
         break;
       }

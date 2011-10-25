@@ -213,6 +213,9 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
     
   g_assert(msg->timestamps[LM_TS_STAMP].zone_offset != -1);
 
+  /* $RCPTID create*/
+  log_msg_create_rcptid(msg);
+
   /* $HOST setup */
   log_source_mangle_hostname(self, msg);
 

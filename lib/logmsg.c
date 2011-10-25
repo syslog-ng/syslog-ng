@@ -146,7 +146,6 @@ TLS_BLOCK_END;
 #define getpid GetCurrentProcessId
 #endif
 
-
 /**********************************************************************
  * LogMessage
  **********************************************************************/
@@ -181,7 +180,8 @@ const gchar *builtin_value_names[] =
   "LEGACY_MSGHDR",
   NULL,
 };
-
+static GStaticMutex g_mutex1 = G_STATIC_MUTEX_INIT;
+static guint64 g_rcptid = 1;
 static NVHandle match_handles[256];
 NVRegistry *logmsg_registry;
 const char logmsg_sd_prefix[] = ".SDATA.";
@@ -908,7 +908,6 @@ static void
 log_msg_init(LogMessage *self, GSockAddr *saddr)
 {
   GTimeVal tv;
-
   /* ref is set to 1, ack is set to 0 */
   self->ack_and_ref = LOGMSG_REFCACHE_REF_TO_VALUE(1);
   cached_g_current_time(&tv);
@@ -1852,7 +1851,7 @@ log_msg_write_tags(LogMessage *self, SerializeArchive *sa)
 gboolean
 log_msg_write(LogMessage *self, SerializeArchive *sa)
 {
-  guint8 version = 22;
+  guint8 version = 23;
   gint i = 0;
   /*
    * version   info
@@ -1869,9 +1868,11 @@ log_msg_write(LogMessage *self, SerializeArchive *sa)
    *   20      usage of the nvtable
    *   21      sdata serialization
    *   22      corrected nvtable serialization
+   *   23      new RCTPID field (64 bits)
    */
 
   serialize_write_uint8(sa, version);
+  serialize_write_uint64(sa, self->rcptid);
   g_assert(sizeof(self->flags) == 4);
   serialize_write_uint32(sa, self->flags & ~LF_STATE_MASK);
   serialize_write_uint16(sa, self->pri);
@@ -2184,6 +2185,9 @@ log_msg_read_version_2x(LogMessage *self, SerializeArchive *sa, guint8 version)
   guint8 bf = 0;
   gint i = 0;
 
+  /*read $RCTPID from version 23 or latter*/
+  if ((version > 22) && (!serialize_read_uint64(sa, &self->rcptid)))
+     return FALSE;
   if (!serialize_read_uint32(sa, &self->flags))
      return FALSE;
   self->flags |= LF_STATE_MASK;
@@ -2244,7 +2248,7 @@ log_msg_read(LogMessage *self, SerializeArchive *sa)
 
   if (!serialize_read_uint8(sa, &version))
     return FALSE;
-  if ((version > 1 && version < 10) || version > 22)
+  if ((version > 1 && version < 10) || version > 23)
     {
       msg_error("Error deserializing log message, unsupported version",
                 evt_tag_int("version", version),
@@ -2255,10 +2259,21 @@ log_msg_read(LogMessage *self, SerializeArchive *sa)
     return log_msg_read_version_0_1(self, sa, version);
   else if (version < 20)
     return log_msg_read_version_1x(self, sa, version);
-  else if (version <= 22)
+  else if (version <= 23)
     return log_msg_read_version_2x(self, sa, version);
   /****************************************************
    * Should never reach THIS!!!!
    ****************************************************/
   return FALSE;
+}
+
+/****************************************************
+* Generate a unique receipt ID ($RCPTID)
+****************************************************/
+void
+log_msg_create_rcptid(LogMessage *msg)
+{
+  g_static_mutex_lock(&g_mutex1);
+  msg->rcptid = g_rcptid++;
+  g_static_mutex_unlock(&g_mutex1);
 }

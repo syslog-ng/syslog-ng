@@ -575,6 +575,9 @@ log_writer_last_msg_flush(LogWriter *self)
   m->pri = self->last_msg->pri;
   m->flags = LF_INTERNAL | LF_LOCAL;
 
+  /* $RCPTID create*/
+  log_msg_create_rcptid(m);
+
   p = log_msg_get_value(self->last_msg, LM_V_HOST, &len);
   log_msg_set_value(m, LM_V_HOST, p, len);
   p = log_msg_get_value(self->last_msg, LM_V_PROGRAM, &len);
@@ -706,6 +709,10 @@ log_writer_mark_timeout(void *cookie)
   /* set the current time int the message stamp */
   cached_g_current_time((GTimeVal *)&msg->timestamps[LM_TS_STAMP]);
   msg->timestamps[LM_TS_STAMP].zone_offset = get_local_timezone_ofs(msg->timestamps[LM_TS_STAMP].tv_sec);
+
+  /* $RCPTID create*/
+  log_msg_create_rcptid(msg);
+
   log_queue_push_tail(self->queue, msg, &path_options);
   /* the timer has to be continued - because the ivykis stops the current (expired) timer, we have to start a new one
      with the previous cookie (-> new allocation is not needed) */
