@@ -93,7 +93,14 @@ typedef struct _LogQueueFifo
   } qoverflow_input[0];
 } LogQueueFifo;
 
-/* NOTE: this is inherently racy, unless protected by LogQueue->lock */
+/* NOTE: this is inherently racy. If the LogQueue->lock is taken, then the
+ * race is limited to the changes in qoverflow_output queue changes.
+ *
+ * In the output thread, this means that this can get race-free. In the
+ * input thread, the qoverflow_output can change because of a
+ * log_queue_fifo_push_head() or log_queue_fifo_rewind_backlog().
+ *
+ */
 static gint64
 log_queue_fifo_get_length(LogQueue *s)
 {
@@ -106,13 +113,33 @@ log_queue_fifo_get_length(LogQueue *s)
 static void
 log_queue_fifo_move_input_unlocked(LogQueueFifo *self, gint thread_id)
 {
-  if (log_queue_fifo_get_length(&self->super) + self->qoverflow_input[thread_id].len > self->qoverflow_size)
+  gint queue_len;
+
+  /* since we're in the input thread, queue_len will be racy. It can
+   * increase due to log_queue_fifo_push_head() and can also decrease as
+   * items are removed from the output queue using log_queue_pop_head().
+   *
+   * The only reason we're using it here is to check for qoverflow
+   * overflows, however the only side-effect of the race (if lost) is that
+   * we would lose a couple of message too many or add some more messages to
+   * qoverflow than permitted by the user.  Since if flow-control is used,
+   * the fifo size should be sized larger than the potential window sizes,
+   * otherwise we can lose messages anyway, this is not deemed a cost to
+   * justify proper locking in this case.
+   */
+
+  queue_len = log_queue_fifo_get_length(&self->super);
+  if (queue_len + self->qoverflow_input[thread_id].len > self->qoverflow_size)
     {
       /* slow path, the input thread's queue would overflow the queue, let's drop some messages */
 
       LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
-      gint n = self->qoverflow_input[thread_id].len - (self->qoverflow_size - log_queue_fifo_get_length(&self->super));
       gint i;
+      gint n;
+
+      /* NOTE: MAX is needed here to ensure that the lost race on queue_len
+       * doesn't result in n < 0 */
+      n = self->qoverflow_input[thread_id].len - MAX(0, (self->qoverflow_size - queue_len));
 
       for (i = 0; i < n; i++)
         {
@@ -127,7 +154,7 @@ log_queue_fifo_move_input_unlocked(LogQueueFifo *self, gint thread_id)
           log_msg_drop(msg, &path_options);
         }
       msg_debug("Destination queue full, dropping messages",
-                evt_tag_int("queue_len", log_queue_fifo_get_length(&self->super)),
+                evt_tag_int("queue_len", queue_len),
                 evt_tag_int("log_fifo_size", self->qoverflow_size),
                 evt_tag_int("count", n),
                 NULL);
