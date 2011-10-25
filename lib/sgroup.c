@@ -72,9 +72,6 @@ log_source_group_deinit(LogPipe *s)
   LogDriver *p;
   gboolean success = TRUE;
 
-  stats_lock();
-  stats_unregister_counter(SCS_SOURCE | SCS_GROUP, self->name, NULL, SC_TYPE_PROCESSED, &self->processed_messages);
-  stats_unlock();
   for (p = self->drivers; p; p = p->drv_next)
     {
       if (!log_pipe_deinit(&p->super))
@@ -84,8 +81,11 @@ log_source_group_deinit(LogPipe *s)
                     evt_tag_str("id", p->id),
                     NULL);
           success = FALSE;
-	}
+	      }
     }
+  stats_lock();
+  stats_unregister_counter(SCS_SOURCE | SCS_GROUP, self->name, NULL, SC_TYPE_PROCESSED, &self->processed_messages);
+  stats_unlock();
   return success;
 }
 
