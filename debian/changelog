@@ -1,3 +1,10 @@
+syslog-ng (3.3.1-1~mhp4) unstable; urgency=low
+
+  * Update to commit 4b43811 from upstream.
+    + Drop the silent-load patch, rejected by upstream.
+
+ --
+
 syslog-ng (3.3.1-1~mhp3) unstable; urgency=low
 
   * Update to commit 0bae72c from upstream.
