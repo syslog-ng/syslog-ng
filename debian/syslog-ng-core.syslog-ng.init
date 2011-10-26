@@ -47,10 +47,10 @@ create_xconsole() {
 }
 
 create_pidfiledir() {
-  if [ ! -d /var/run/syslog-ng ]
-  then
-    mkdir -p /var/run/syslog-ng
-  fi
+    if [ ! -d /var/run/syslog-ng ]
+    then
+        mkdir -p /var/run/syslog-ng
+    fi
 }
 
 syslogng_wait() {
@@ -62,11 +62,11 @@ syslogng_wait() {
     for i in $(seq 1 30); do
         status=0
         syslog-ng-ctl stats >/dev/null 2>&1 || status=$?
-	if [ "$status" != "$1" ]; then
-	    RET=0
-	    break
-	fi
-	sleep 1s
+        if [ "$status" != "$1" ]; then
+            RET=0
+            break
+        fi
+        sleep 1s
     done
     return $RET
 }
@@ -82,7 +82,6 @@ syslogng_start() {
     RET="$?"
     log_end_msg $RET
     return $RET
-    
 }
 
 syslogng_stop() {

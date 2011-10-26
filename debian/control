@@ -17,6 +17,7 @@ Build-Depends: debhelper (>= 8),
 	       libcap-dev [linux-any],
 	       libsystemd-daemon-dev [linux-any],
 	       hardening-includes
+Build-Conflicts: autoconf2.13
 Standards-Version: 3.9.2
 Homepage: http://www.balabit.com/network-security/syslog-ng/opensource-logging-system
 Vcs-Git: git://git.madhouse-project.org/debian/syslog-ng.git
@@ -100,7 +101,7 @@ Depends: syslog-ng-core (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends
 Conflicts: syslog-ng-module-json
 Replaces: syslog-ng-module-json
 Provides: syslog-ng-module-json
-Description: Next generation system logging daemon (json plugin)
+Description: Next generation system logging daemon (JSON plugin)
  syslog-ng is an enhanced syslog daemon, supporting, amongst others:
   * Powerful configurability, while still being readable
   * Filtering on any part of the syslog message
@@ -125,7 +126,7 @@ Suggests: mongodb-server
 Replaces: syslog-ng-module-mongodb
 Conflicts: syslog-ng-module-mongodb
 Provides: syslog-ng-module-mongodb
-Description: Next generation system logging daemon (mongodb plugin)
+Description: Next generation system logging daemon (MongoDB plugin)
  syslog-ng is an enhanced syslog daemon, supporting, amongst others:
   * Powerful configurability, while still being readable
   * Filtering on any part of the syslog message
@@ -139,7 +140,7 @@ Description: Next generation system logging daemon (mongodb plugin)
  every situation, ranging from enterprise-class centralised
  deployments, through personal computers to ad-hoc connected networks.
  .
- This package provides the mongodb destination plugin, which allows
+ This package provides the MongoDB destination plugin, which allows
  one to log system messages to MongoDB.
 
 Package: syslog-ng-mod-sql
@@ -149,7 +150,7 @@ Suggests: libdbd-mysql, libdbd-pgsql, libdbd-sqlite3
 Replaces: syslog-ng-module-sql
 Conflicts: syslog-ng-module-sql
 Provides: syslog-ng-module-sql
-Description: Next generation system logging daemon (sql plugin)
+Description: Next generation system logging daemon (SQL plugin)
  syslog-ng is an enhanced syslog daemon, supporting, amongst others:
   * Powerful configurability, while still being readable
   * Filtering on any part of the syslog message
@@ -163,6 +164,6 @@ Description: Next generation system logging daemon (sql plugin)
  every situation, ranging from enterprise-class centralised
  deployments, through personal computers to ad-hoc connected networks.
  .
- This package provides the sql destination plugin, which allows one to
+ This package provides the SQL destination plugin, which allows one to
  log system messages to a multitude of SQL databases (including, but
  not limited to MySQL, PostgreSQL and SQLite).

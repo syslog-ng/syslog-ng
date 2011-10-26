@@ -87,7 +87,8 @@ Copyright: Copyright (C) 2010 BalaBit IT Security Ltd.
 License: GPL-2+ with OpenSSL exception
 
 Files: debian/*
-Copyright: Copyright (C) 2011 Gergely Nagy <algernon@madhouse-project.org>
+Copyright: Copyright (C) 2011 Gergely Nagy <algernon@madhouse-project.org>,
+ Copyright (C) 2010-2011 Laszlo Boszormenyi (GCS) <gcs@debian.hu>
 License: GPL-3+
 
 License: GPL-2+ with OpenSSL exception
