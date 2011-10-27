@@ -337,11 +337,9 @@ afsocket_sd_add_connection(AFSocketSourceDriver *self, AFSocketSourceConnection 
   self->connections = g_list_prepend(self->connections,connection);
 }
 
-void
-afsocket_sd_remove_and_kill_connection(AFSocketSourceDriver *self, AFSocketSourceConnection *connection)
+static void
+afsocket_sd_kill_connection(AFSocketSourceConnection *connection)
 {
-  self->connections = g_list_remove(self->connections, connection);
-
   log_pipe_deinit(&connection->super);
 
   /* Remove the circular reference between the connection and its
@@ -359,12 +357,20 @@ afsocket_sd_kill_connection_list(GList *list)
 {
   GList *l, *next;
 
+  /* NOTE: the list may contain a list of
+   *   - deinitialized AFSocketSourceConnection instances (in case the persist-config list is
+   *     freed), or
+   *    - initialized AFSocketSourceConnection instances (in case keep-alive is turned off)
+   */
   for (l = list; l; l = next)
     {
       AFSocketSourceConnection *connection = (AFSocketSourceConnection *) l->data;
 
       next = l->next;
-      afsocket_sd_remove_and_kill_connection(connection->owner, connection);
+
+      if (connection->owner)
+        connection->owner->connections = g_list_remove(connection->owner->connections, connection);
+      afsocket_sd_kill_connection(connection);
     }
 }
 
@@ -551,7 +557,8 @@ afsocket_sd_close_connection(AFSocketSourceDriver *self, AFSocketSourceConnectio
                evt_tag_str("local", g_sockaddr_format(self->bind_addr, buf2, sizeof(buf2), GSA_FULL)),
                NULL);
   log_pipe_deinit(&sc->super);
-  afsocket_sd_remove_and_kill_connection(self, sc);
+  self->connections = g_list_remove(self->connections, sc);
+  afsocket_sd_kill_connection(sc);
   self->num_connections--;
 }
 
