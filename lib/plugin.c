@@ -241,7 +241,15 @@ plugin_load_module(const gchar *module_name, GlobalConfig *cfg, CfgArgs *args)
   if (!mp)
     mp = module_path;
 
+  gchar *prefix = getenv("SYSLOGNG_PREFIX");
+  if (prefix)
+    mp = g_strdup_printf("%s/lib/syslog-ng", prefix);
+
   mod = plugin_dlopen_module(module_name, mp);
+
+  if (prefix)
+    g_free(mp);
+
   if (!mod)
     {
       g_free(module_init_func);
