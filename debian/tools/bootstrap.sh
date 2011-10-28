@@ -3,7 +3,7 @@
 set -e
 
 # Figure out the current version..
-UPSTREAM_VERSION="$(dpkg-parsechangelog | sed -n '/Version:/s/Version: \(.*\)\.dfsg.*/\1/p')"
+UPSTREAM_VERSION="$(dpkg-parsechangelog | sed -n '/Version:/s/Version: \(.*\)\.dfsg.*/\1/p' | sed -e 's,~\(.*\),,')"
 UPSTREAM_MAJOR="$(echo ${UPSTREAM_VERSION} | cut -d . -f 1,2)"
 
 git submodule --quiet update --init
