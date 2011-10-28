@@ -23,12 +23,12 @@ Homepage: http://www.balabit.com/network-security/syslog-ng/opensource-logging-s
 Vcs-Git: git://git.madhouse-project.org/debian/syslog-ng.git
 Vcs-Browser: http://git.madhouse-project.org/debian/syslog-ng/
 
-Package: syslog-ng
+Package: syslog-ng@EXTRA_VERSION@
 Architecture: all
-Depends: ${misc:Depends}, syslog-ng-core (>= ${source:Upstream-Version}),
- syslog-ng-mod-sql,
- syslog-ng-mod-mongodb,
- syslog-ng-mod-json
+Depends: ${misc:Depends}, syslog-ng-core@EXTRA_VERSION@ (>= ${source:Upstream-Version}),
+ syslog-ng-mod-sql@EXTRA_VERSION@,
+ syslog-ng-mod-mongodb@EXTRA_VERSION@,
+ syslog-ng-mod-json@EXTRA_VERSION@
 Description: Next generation system logging daemon (metapackage)
  syslog-ng is an enhanced syslog daemon, supporting, amongst others:
   * Powerful configurability, while still being readable
@@ -57,7 +57,7 @@ Description: Next generation system logging daemon (private library)
  .
  It should not be used by anything else but syslog-ng and its plugins.
 
-Package: libsyslog-ng-dev
+Package: libsyslog-ng@EXTRA_VERSION@-dev
 Section: libdevel
 Architecture: any
 Depends: libsyslog-ng-@UPSTREAM_VERSION@ (= ${binary:Version}),
@@ -69,11 +69,13 @@ Description: Next generation system logging daemon (development files)
  third-party plugins against syslog-ng, the next generation system
  logging daemon.
 
-Package: syslog-ng-core
+Package: syslog-ng-core@EXTRA_VERSION@
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, util-linux (>= 2.12-10)
 Recommends: logrotate
-Suggests: syslog-ng-mod-sql, syslog-ng-mod-mongodb, syslog-ng-mod-json
+Suggests: syslog-ng-mod-sql@EXTRA_VERSION@,
+          syslog-ng-mod-mongodb@EXTRA_VERSION@,
+	  syslog-ng-mod-json@EXTRA_VERSION@
 Provides: system-log-daemon, linux-kernel-log-daemon
 Conflicts: system-log-daemon, linux-kernel-log-daemon
 Replaces: syslog-ng (<< 3.3.0~)
@@ -95,12 +97,9 @@ Description: Next generation system logging daemon (core)
  This package provides the core syslog-ng, with all the plugins
  required for a standard installation.
 
-Package: syslog-ng-mod-json
+Package: syslog-ng-mod-json@EXTRA_VERSION@
 Architecture: any
-Depends: syslog-ng-core (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
-Conflicts: syslog-ng-module-json
-Replaces: syslog-ng-module-json
-Provides: syslog-ng-module-json
+Depends: syslog-ng-core@EXTRA_VERSION@ (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
 Description: Next generation system logging daemon (JSON plugin)
  syslog-ng is an enhanced syslog daemon, supporting, amongst others:
   * Powerful configurability, while still being readable
@@ -119,13 +118,10 @@ Description: Next generation system logging daemon (JSON plugin)
  which makes it possible to conveniently serialize system log messages
  to JSON.
 
-Package: syslog-ng-mod-mongodb
+Package: syslog-ng-mod-mongodb@EXTRA_VERSION@
 Architecture: any
-Depends: syslog-ng-core (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
+Depends: syslog-ng-core@EXTRA_VERSION@ (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
 Suggests: mongodb-server
-Replaces: syslog-ng-module-mongodb
-Conflicts: syslog-ng-module-mongodb
-Provides: syslog-ng-module-mongodb
 Description: Next generation system logging daemon (MongoDB plugin)
  syslog-ng is an enhanced syslog daemon, supporting, amongst others:
   * Powerful configurability, while still being readable
@@ -143,13 +139,10 @@ Description: Next generation system logging daemon (MongoDB plugin)
  This package provides the MongoDB destination plugin, which allows
  one to log system messages to MongoDB.
 
-Package: syslog-ng-mod-sql
+Package: syslog-ng-mod-sql@EXTRA_VERSION@
 Architecture: any
-Depends: syslog-ng-core (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
+Depends: syslog-ng-core@EXTRA_VERSION@ (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
 Suggests: libdbd-mysql, libdbd-pgsql, libdbd-sqlite3
-Replaces: syslog-ng-module-sql
-Conflicts: syslog-ng-module-sql
-Provides: syslog-ng-module-sql
 Description: Next generation system logging daemon (SQL plugin)
  syslog-ng is an enhanced syslog daemon, supporting, amongst others:
   * Powerful configurability, while still being readable
