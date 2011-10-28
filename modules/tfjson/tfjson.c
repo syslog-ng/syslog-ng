@@ -28,7 +28,9 @@
 #include "config.h"
 
 #ifdef HAVE_JSON_C
+#include <printbuf.h>
 #include <json.h>
+#include <json_object_private.h>
 #endif
 
 #ifdef HAVE_JSON_GLIB
@@ -56,6 +58,35 @@ tf_json_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent,
 }
 
 #if HAVE_JSON_C
+static int
+tf_json_object_to_string (struct json_object *jso,
+			  struct printbuf *pb)
+{
+  int i = 0;
+  struct json_object_iter iter;
+  sprintbuf (pb, "{");
+
+  json_object_object_foreachC (jso, iter)
+    {
+      gchar *esc;
+      
+      if (i)
+	sprintbuf (pb, ",");
+      sprintbuf (pb, "\"");
+      esc = g_strescape (iter.key, NULL);
+      sprintbuf (pb, esc);
+      g_free (esc);
+      sprintbuf (pb, "\":");
+      if (iter.val == NULL)
+	sprintbuf (pb, "null");
+      else
+	iter.val->_to_json_string (iter.val, pb);
+      i++;
+    }
+
+  return sprintbuf(pb, "}");
+}
+
 static gboolean
 tf_json_foreach (const gchar *name, const gchar *value, gpointer user_data)
 {
@@ -74,6 +105,7 @@ tf_json_append(GString *result, ValuePairs *vp, LogMessage *msg)
   struct json_object *json;
 
   json = json_object_new_object();
+  json->_to_json_string = tf_json_object_to_string;
 
   value_pairs_foreach(vp, tf_json_foreach, msg, 0, json);
 
