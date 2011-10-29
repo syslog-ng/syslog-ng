@@ -1,7 +1,7 @@
-syslog-ng (3.3.1.dfsg-1~mhp4) unstable; urgency=low
+syslog-ng (3.3.2.dfsg~0-1~mhp1) unstable; urgency=low
 
-  * New upstream release, based on commit 16427b9, with non-free manpages
-    removed.
+  * New upstream snapshot release, based on commit 3bd4fd7, with non-free
+    manpages removed.
     * Drop syslog-ng.conf(5). (Closes: #496521)
     * syslog-ng(8) is generated, and does not mention -Q anymore.
       (Closes: #616069)
@@ -29,7 +29,7 @@ syslog-ng (3.3.1.dfsg-1~mhp4) unstable; urgency=low
   * Use $SYSLOGNG_OPTS in the init script when reloading syslog-ng.
     (Closes: #589081)
 
- -- Gergely Nagy <algernon@madhouse-project.org>  Thu, 27 Oct 2011 19:47:51 +0200
+ -- Gergely Nagy <algernon@madhouse-project.org>  Sat, 29 Oct 2011 19:41:21 +0200
 
 syslog-ng (3.2.4-1) unstable; urgency=high
 
