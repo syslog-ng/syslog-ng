@@ -1,3 +1,45 @@
+3.3.2
+	Sat, 29 Oct 2011 17:37:40 +0200
+
+	Bugfixes:
+	=========
+
+	* Fixed a segmentation fault on reload when using the same rewrite
+	  rule from multiple log paths.
+
+	* Fixed a segmentation fault when processing a reload request in
+	  case an existing tcp() source is removed from the config and there
+          are open connections.
+
+	* Fixed a possible segmentation fault in the scalable queue
+	  implementation, which happens in case a destination is slower to
+          process messages than syslog-ng would like to send them.
+
+	* Fixed a possible file() destination issue that could cause
+	  syslog-ng to omit data or to write garbage to the log file in case
+	  the kernel reports that only a smaller portion of the actual write
+	  request could be accomplished.
+
+	* Fixed support for systemd socket activation. Previously such
+	  sockets were not set to non-blocking mode, causing syslog-ng to
+          hang.
+
+	* Fixed the filter() function in the filter expression to work also
+	  when used as a part of an AND or OR construct.
+
+	* Allow the sql() destination to operate even without an indexes()
+	  option. That parameter was meant to be optional, but it wasn't.
+
+	* Fixed compilation issues if no OpenSSL is present.
+
+	* Fixed a minor memory leak in the usertty() driver that can increase
+	  memory usage on every reload. (The username() parameter wasn't
+	  properly freed on reload).
+
+	* Fixed a minor memory leak in the sql() driver that can increase
+	  the memory usage on every reload (indexes() parameter wasn't
+	  properly freed on reload).
+
 3.3.1
 	Sat, 01 Oct 2011 13:17:56 +0200
 
