@@ -25,7 +25,7 @@ EVTLOG_MIN_VERSION="0.2.12"
 OPENSSL_MIN_VERSION="0.9.8"
 LIBDBI_MIN_VERSION="0.8.0"
 IVYKIS_MIN_VERSION="0.18"
-JSON_C_MIN_VERSION="0.7"
+JSON_C_MIN_VERSION="0.9"
 JSON_GLIB_MIN_VERSION="0.12"
 PCRE_MIN_VERSION="6.1"
 LMC_MIN_VERSION="0.1.0"
@@ -177,10 +177,6 @@ AC_ARG_WITH(json,
               [  --with-json=[json-c/json-glib/auto]
                                          Use the JSON implementation specified]
               ,,with_json="auto")
-
-AC_ARG_ENABLE(json,
-              [  --enable-json           Enable support for JSON template formatting (default: auto)]
-              ,,enable_json="auto")
 
 AC_ARG_ENABLE(systemd,
               [  --enable-systemd        Enable systemd support (default: auto)]
@@ -607,8 +603,12 @@ fi
 dnl ***************************************************************************
 dnl json headers/libraries
 dnl ***************************************************************************
-PKG_CHECK_MODULES(JSON_C, json >= $JSON_C_MIN_VERSION,, JSON_C_LIBS="")
-PKG_CHECK_MODULES(JSON_GLIB, json-glib-1.0 >= $JSON_GLIB_MIN_VERSION,, JSON_GLIB_LIBS="")
+if test "x$with_json" = "xauto" || test "x$with_json" = "json-c"; then
+   PKG_CHECK_MODULES(JSON_C, json >= $JSON_C_MIN_VERSION,, JSON_C_LIBS="")
+fi
+if test "x$with_json" = "xauto" || test "x$with_json" = "json-glib"; then
+   PKG_CHECK_MODULES(JSON_GLIB, json-glib-1.0 >= $JSON_GLIB_MIN_VERSION,, JSON_GLIB_LIBS="")
+fi
 
 dnl ***************************************************************************
 dnl pcre headers/libraries
@@ -887,14 +887,14 @@ elif test "x$with_json" = "xjson-c"; then
         AC_MSG_ERROR([Cannot find json-c version >= $JSON_C_MIN_VERSION: is pkg-config in path?])
 fi
 
-if test "x$enable_json" = "xauto"; then
-        if test "x$with_json" = "xno"; then
-                enable_json="no"
-        else
-                enable_json="yes"
-        fi
-elif test "x$enable_json" = "xyes" -a "x$with_json" = "xno"; then
-        AC_MSG_ERROR([Cannot find json-c version >= $JSON_C_MIN_VERSION or json-glib-1.0 >= $JSON_GLIB_MIN_VERSION: is pkg-config in path?])
+if test "x$with_json" = "xjson-c"; then
+   enable_json_parse="yes"
+   enable_json_format="yes"
+fi
+
+if test "x$with_json" = "xjson-glib"; then
+   enable_json_parse="no"
+   enable_json_format="yes"
 fi
 
 if test "x$enable_systemd" = "xauto"; then
@@ -1077,7 +1077,8 @@ AM_CONDITIONAL(ENABLE_SQL, [test "$enable_sql" = "yes"])
 AM_CONDITIONAL(ENABLE_SUN_STREAMS, [test "$enable_sun_streams" = "yes"])
 AM_CONDITIONAL(ENABLE_PACCT, [test "$enable_pacct" = "yes"])
 AM_CONDITIONAL(ENABLE_MONGODB, [test "$enable_mongodb" = "yes"])
-AM_CONDITIONAL(ENABLE_JSON, [test "$enable_json" = "yes"])
+AM_CONDITIONAL(ENABLE_JSON_FORMAT, [test "$enable_json_format" = "yes"])
+AM_CONDITIONAL(ENABLE_JSON_PARSE, [test "$enable_json_parse" = "yes"])
 AM_CONDITIONAL(WITH_LIBSYSTEMD, [test "$with_libsystemd" = "yes"])
 
 # substitution into manual pages
@@ -1144,6 +1145,7 @@ AC_OUTPUT(dist.conf
           modules/pacctformat/Makefile
           modules/basicfuncs/Makefile
 	  modules/tfjson/Makefile
+	  modules/jsonparser/Makefile
 	  scripts/Makefile
 	  scripts/update-patterndb
 	  doc/Makefile
@@ -1193,6 +1195,6 @@ echo "  SSL support (module)        : ${enable_ssl:=no}"
 echo "  SQL support (module)        : ${enable_sql:=no}"
 echo "  PACCT module (EXPERIMENTAL) : ${enable_pacct:=no}"
 echo "  MongoDB destination (module): ${enable_mongodb:=no}"
-echo "  JSON support (module)       : ${enable_json:=no} (using ${with_json})"
+echo "  JSON support (module)       : parser=${enable_json_parse:=no}, formatter=${enable_json_format:=no} (using ${with_json})"
 
 
