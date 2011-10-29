@@ -496,8 +496,7 @@ afinet_dd_apply_transport(AFSocketDestDriver *s)
     }
 
 
-  if ((self->bind_ip && !resolve_hostname(&self->super.bind_addr, self->bind_ip)) ||
-      !resolve_hostname(&self->super.dest_addr, self->super.hostname))
+  if ((self->bind_ip && !resolve_hostname(&self->super.bind_addr, self->bind_ip)))
     return FALSE;
 
   afinet_set_port(self->super.dest_addr, self->dest_port ? : default_dest_port, self->super.flags & AFSOCKET_DGRAM ? "udp" : "tcp");
@@ -531,6 +530,9 @@ afinet_dd_setup_socket(AFSocketDestDriver *s, gint fd)
 {
   AFInetDestDriver *self = (AFInetDestDriver *) s;
 
+  if (!resolve_hostname(&self->super.dest_addr, self->super.hostname))
+    return FALSE;
+
   return afinet_setup_socket(fd, self->super.dest_addr, (InetSocketOptions *) s->sock_options_ptr, AFSOCKET_DIR_SEND);
 }
 
@@ -551,7 +553,7 @@ afinet_dd_init(LogPipe *s)
 
           saved_caps = g_process_cap_save();
           g_process_cap_modify(CAP_NET_RAW, TRUE);
-          self->lnet_ctx = libnet_init(self->super.dest_addr->sa.sa_family == AF_INET ? LIBNET_RAW4 : LIBNET_RAW6, NULL, error);
+          self->lnet_ctx = libnet_init(self->super.bind_addr->sa.sa_family == AF_INET ? LIBNET_RAW4 : LIBNET_RAW6, NULL, error);
           g_process_cap_restore(saved_caps);
           if (!self->lnet_ctx)
             {
@@ -686,7 +688,10 @@ afinet_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
 #if ENABLE_SPOOF_SOURCE
   AFInetDestDriver *self = (AFInetDestDriver *) s;
 
-  if (self->spoof_source && self->lnet_ctx && msg->saddr && (msg->saddr->sa.sa_family == AF_INET || msg->saddr->sa.sa_family == AF_INET6))
+  /* NOTE: this code should probably become a LogTransport instance so that
+   * spoofed packets are also going through the LogWriter queue */
+
+  if (self->spoof_source && self->lnet_ctx && msg->saddr && (msg->saddr->sa.sa_family == AF_INET || msg->saddr->sa.sa_family == AF_INET6) && log_writer_opened((LogWriter *) self->super.writer))
     {
       gboolean success = FALSE;
 
