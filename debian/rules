@@ -79,7 +79,7 @@ override_dh_auto_configure:
 		\
 		--with-module-dir='$${exec_prefix}/lib/syslog-ng/$${VERSION}' \
 		--with-default-modules="affile,afprog,afsocket,afuser,afsql,basicfuncs,csvparser,dbparser,syslogformat" \
-		--with-systemdsystemunitdir="/lib/systemd/system"
+		--with-systemdsystemunitdir="/lib/systemd/system" \
 		\
 		${EXTRA_CONFIGURE_OPTS}
 
