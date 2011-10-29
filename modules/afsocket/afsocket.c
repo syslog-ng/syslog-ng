@@ -898,7 +898,7 @@ afsocket_dd_stats_source(AFSocketDestDriver *self)
 
   if ((self->flags & AFSOCKET_SYSLOG_PROTOCOL) == 0)
     {
-      switch (self->dest_addr->sa.sa_family)
+      switch (self->bind_addr->sa.sa_family)
         {
         case AF_UNIX:
           source = !!(self->flags & AFSOCKET_STREAM) ? SCS_UNIX_STREAM : SCS_UNIX_DGRAM;
@@ -1114,6 +1114,8 @@ afsocket_dd_start_connect(AFSocketDestDriver *self)
       return FALSE;
     }
 
+  g_assert(self->dest_addr);
+
   rc = g_connect(sock, self->dest_addr);
   if (rc == G_IO_STATUS_NORMAL)
     {
@@ -1170,7 +1172,6 @@ afsocket_dd_init(LogPipe *s)
   /* these fields must be set up by apply_transport, so let's check if it indeed did */
   g_assert(self->transport);
   g_assert(self->bind_addr);
-  g_assert(self->dest_addr);
   g_assert(self->hostname);
   g_assert(self->dest_name);
 
