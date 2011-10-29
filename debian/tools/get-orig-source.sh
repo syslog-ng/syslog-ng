@@ -18,7 +18,8 @@ git clone -q git://git.madhouse-project.org/debian/syslog-ng.git
 cd syslog-ng
 git submodule --quiet update --init
 
-UPSTREAM_VERSION=$(git tag -l 'dfsg/*' 2>/dev/null | sort | tail -n 1 | sed -e 's,^dfsg/,,')
+UPSTREAM_TAG=$(git tag -l 'dfsg/*' 2>/dev/null | sort | tail -n 1)
+UPSTREAM_VERSION=$(echo "${UPSTREAM_TAG}" | sed -e 's,^dfsg/,,' -e "s,\.release,," | tr '_' '~')
 
 if [ -z "${UPSTREAM_VERSION}" ]; then
 	echo "get-orig-source: Cannot determine the upstream version!" >&2
@@ -34,7 +35,7 @@ install -d debian/orig-source
 echo "** Exporting..."
 
 # syslog-ng
-git archive "dfsg/${UPSTREAM_VERSION}" --format tar --prefix=syslog-ng/ | \
+git archive "${UPSTREAM_TAG}" --format tar --prefix=syslog-ng/ | \
 	tar -C debian/orig-source -xf -
 
 # embedded ivykis
