@@ -771,7 +771,7 @@ pdbtool_test(int argc, char *argv[])
     return 1;
   if (failed_to_match)
     return 2;
-  if (failed_to_find_id)
+  if (failed_to_find_id && test_ruleid)
     {
       printf("Could not find the specified ID, or the defined rule doesn't have an example message.\n");
       return 3;
