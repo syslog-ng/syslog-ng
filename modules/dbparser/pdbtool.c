@@ -684,6 +684,13 @@ pdbtool_test(int argc, char *argv[])
 
   for (arg_pos = 1; arg_pos < argc; arg_pos++)
     {
+      if (access(argv[arg_pos], R_OK) == -1)
+	{
+	  fprintf(stderr, "%s: Unable to access the patterndb file\n", argv[arg_pos]);
+	  failed_to_validate = TRUE;
+	  continue;
+	}
+
       if (test_validate)
         {
           gchar cmd[1024];
