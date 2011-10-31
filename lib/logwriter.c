@@ -1275,6 +1275,16 @@ log_writer_new(guint32 flags)
   return &self->super;
 }
 
+/* returns a reference */
+LogQueue *
+log_writer_get_queue(LogPipe *s)
+{
+  LogWriter *self = (LogWriter *) s;
+
+  return log_queue_ref(self->queue);
+}
+
+/* consumes the reference */
 void
 log_writer_set_queue(LogPipe *s, LogQueue *queue)
 {
