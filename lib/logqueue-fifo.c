@@ -109,6 +109,13 @@ log_queue_fifo_get_length(LogQueue *s)
   return self->qoverflow_wait_len + self->qoverflow_output_len;
 }
 
+/* NOTE: this is inherently racy, can only be called if log processing is suspended (e.g. reload time) */
+static gboolean
+log_queue_fifo_keep_on_reload(LogQueue *s)
+{
+  return log_queue_fifo_get_length(s) > 0;
+}
+
 /* move items from the per-thread input queue to the lock-protected "wait" queue */
 static void
 log_queue_fifo_move_input_unlocked(LogQueueFifo *self, gint thread_id)
@@ -466,6 +473,7 @@ log_queue_fifo_new(gint qoverflow_size, const gchar *persist_name)
 
   log_queue_init_instance(&self->super, persist_name);
   self->super.get_length = log_queue_fifo_get_length;
+  self->super.keep_on_reload = log_queue_fifo_keep_on_reload;
   self->super.push_tail = log_queue_fifo_push_tail;
   self->super.push_head = log_queue_fifo_push_head;
   self->super.pop_head = log_queue_fifo_pop_head;
