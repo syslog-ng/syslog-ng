@@ -150,12 +150,14 @@ log_dest_driver_acquire_queue_method(LogDestDriver *self, gchar *persist_name, g
   return queue;
 }
 
+/* consumes the reference in @q */
 static void
 log_dest_driver_release_queue_method(LogDestDriver *self, LogQueue *q, gpointer user_data)
 {
   GlobalConfig *cfg = log_pipe_get_config(&self->super.super);
 
-  if (q->persist_name)
+  /* we only save the LogQueue instance if it contains data */
+  if (q->persist_name && log_queue_keep_on_reload(q) > 0)
     cfg_persist_config_add(cfg, q->persist_name, q, (GDestroyNotify) log_queue_unref, FALSE);
 }
 
