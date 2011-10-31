@@ -483,6 +483,7 @@ g_process_set_caps(const gchar *caps)
 void
 g_process_set_argv_space(gint argc, gchar **argv)
 {
+#ifdef HAVE_ENVIRON
   extern char **environ;
   gchar *lastargv = NULL;
   gchar **envp    = environ;
@@ -526,6 +527,7 @@ g_process_set_argv_space(gint argc, gchar **argv)
   for (i = 0; envp[i] != NULL; i++)
     environ[i] = g_strdup(envp[i]);
   environ[i] = NULL;
+#endif
 }
 
 /**
@@ -1027,6 +1029,7 @@ g_process_perform_startup(void)
 static void
 g_process_setproctitle(const gchar* proc_title)
 {
+#ifdef HAVE_ENVIRON
   size_t len;
 
   g_assert(process_opts.argv_start != NULL);
@@ -1034,6 +1037,7 @@ g_process_setproctitle(const gchar* proc_title)
   len = g_strlcpy(process_opts.argv_start, proc_title, process_opts.argv_env_len);
   for (; len < process_opts.argv_env_len; ++len)
       process_opts.argv_start[len] = SPT_PADCHAR;
+#endif
 }
 
 
