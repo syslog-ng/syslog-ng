@@ -273,6 +273,9 @@ static gint main_loop_io_workers_running;
 volatile gboolean main_loop_io_workers_quit;
 #define main_loop_current_job  __tls_deref(main_loop_current_job)
 
+
+#define MAIN_LOOP_MAX_WORKER_THREADS 64
+
 static GStaticMutex main_loop_io_workers_idmap_lock = G_STATIC_MUTEX_INIT;
 static guint64 main_loop_io_workers_idmap;
 
@@ -292,7 +295,8 @@ main_loop_io_worker_thread_start(void *cookie)
    * since the ID map is stored in a single 64 bit integer.  If we ever need
    * more threads than that, we can generalize this algorithm further. */
 
-  for (id = 0; id < main_loop_io_workers.max_threads; id++)
+  main_loop_io_worker_id = 0;
+  for (id = 0; id < main_loop_io_workers.max_threads && id < MAIN_LOOP_MAX_WORKER_THREADS; id++)
     {
       if ((main_loop_io_workers_idmap & (1 << id)) == 0)
         {
@@ -311,8 +315,11 @@ main_loop_io_worker_thread_stop(void *cookie)
 {
   g_static_mutex_lock(&main_loop_io_workers_idmap_lock);
   dns_cache_destroy();
-  main_loop_io_workers_idmap &= ~(1 << (main_loop_io_worker_id - 1));
-  main_loop_io_worker_id = 0;
+  if (main_loop_io_worker_id)
+    {
+      main_loop_io_workers_idmap &= ~(1 << (main_loop_io_worker_id - 1));
+      main_loop_io_worker_id = 0;
+    }
   g_static_mutex_unlock(&main_loop_io_workers_idmap_lock);
 }
 
@@ -658,7 +665,7 @@ main_loop_init(void)
   iv_work_pool_create(&main_loop_io_workers);
   IV_TASK_INIT(&main_loop_io_workers_reenable_jobs_task);
   main_loop_io_workers_reenable_jobs_task.handler = main_loop_io_worker_reenable_jobs;
-  log_queue_set_max_threads(main_loop_io_workers.max_threads);
+  log_queue_set_max_threads(MIN(main_loop_io_workers.max_threads, MAIN_LOOP_MAX_WORKER_THREADS));
   main_loop_call_init();
 
   current_configuration = cfg_new(0);
@@ -745,7 +752,7 @@ void
 main_loop_add_options(GOptionContext *ctx)
 {
 #ifdef _SC_NPROCESSORS_ONLN
-  main_loop_io_workers.max_threads = MIN(MAX(2, sysconf(_SC_NPROCESSORS_ONLN)), 64);
+  main_loop_io_workers.max_threads = MIN(MAX(2, sysconf(_SC_NPROCESSORS_ONLN)), MAIN_LOOP_MAX_WORKER_THREADS);
 #else
   main_loop_io_workers.max_threads = 2;
 #endif
