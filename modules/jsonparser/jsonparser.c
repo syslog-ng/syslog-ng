@@ -22,6 +22,7 @@
 
 #include "jsonparser.h"
 #include "logparser.h"
+#include "scratch-buffers.h"
 
 #include <string.h>
 
@@ -32,13 +33,6 @@ struct _LogJSONParser
 {
   LogParser super;
   gchar *prefix;
-
-  json_tokener *tokener;
-  struct
-  {
-    GString *key;
-    GString *value;
-  } serialized;
 };
 
 void
@@ -56,9 +50,12 @@ log_json_parser_process (LogParser *s, LogMessage *msg, const gchar *input)
   LogJSONParser *self = (LogJSONParser *) s;
   struct json_object *jso;
   struct json_object_iter itr;
+  ScratchBuffer *key, *value;
 
-  json_tokener_reset (self->tokener);
-  jso = json_tokener_parse_ex (self->tokener, input, strlen (input));
+  jso = json_tokener_parse (input);
+
+  key = scratch_buffer_acquire ();
+  value = scratch_buffer_acquire ();
 
   json_object_object_foreachC (jso, itr)
     {
@@ -72,18 +69,18 @@ log_json_parser_process (LogParser *s, LogMessage *msg, const gchar *input)
 	  break;
 	case json_type_double:
 	  parsed = TRUE;
-	  g_string_printf (self->serialized.value, "%f",
-			   json_object_get_double (itr.val));
+          g_string_printf (sb_string (value), "%f",
+                           json_object_get_double (itr.val));
 	  break;
 	case json_type_int:
 	  parsed = TRUE;
-	  g_string_printf (self->serialized.value, "%i",
-			   json_object_get_int (itr.val));
+          g_string_printf (sb_string (value), "%i",
+                           json_object_get_int (itr.val));
 	  break;
 	case json_type_string:
 	  parsed = TRUE;
-	  g_string_assign (self->serialized.value,
-			   json_object_get_string (itr.val));
+          g_string_assign (sb_string (value),
+                           json_object_get_string (itr.val));
 	  break;
 	case json_type_object:
 	case json_type_array:
@@ -100,16 +97,21 @@ log_json_parser_process (LogParser *s, LogMessage *msg, const gchar *input)
       if (parsed)
 	{
 	  if (self->prefix)
-	    g_string_printf (self->serialized.key, "%s%s",
-			     self->prefix, itr.key);
+	    {
+              g_string_assign (sb_string (key), self->prefix);
+              g_string_append (sb_string (key), itr.key);
+	      log_msg_set_value (msg,
+                                 log_msg_get_value_handle (sb_string (key)->str),
+                                 sb_string (value)->str, sb_string (value)->len);
+	    }
 	  else
-	    g_string_assign (self->serialized.key, itr.key);
-	  log_msg_set_value (msg,
-			     log_msg_get_value_handle (self->serialized.key->str),
-			     self->serialized.value->str,
-			     self->serialized.value->len);
+	    log_msg_set_value (msg,
+			       log_msg_get_value_handle (itr.key),
+			       sb_string (value)->str, sb_string (value)->len);
 	}
     }
+  scratch_buffer_release (key);
+  scratch_buffer_release (value);
   json_object_put (jso);
 
   return TRUE;
@@ -133,10 +135,6 @@ log_json_parser_free (LogPipe *s)
   LogJSONParser *self = (LogJSONParser *)s;
 
   g_free (self->prefix);
-  g_string_free (self->serialized.key, TRUE);
-  g_string_free (self->serialized.value, TRUE);
-
-  json_tokener_free (self->tokener);
   log_parser_free_method (s);
 }
 
@@ -149,10 +147,6 @@ log_json_parser_new (void)
   self->super.super.super.free_fn = log_json_parser_free;
   self->super.super.clone = log_json_parser_clone;
   self->super.process = log_json_parser_process;
-
-  self->tokener = json_tokener_new ();
-  self->serialized.key = g_string_new (NULL);
-  self->serialized.value = g_string_new (NULL);
 
   return self;
 }
