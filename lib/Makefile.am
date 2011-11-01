@@ -59,6 +59,7 @@ pkginclude_HEADERS = 		\
 	plugin.h		\
 	pragma-parser.h		\
 	rewrite-expr-parser.h	\
+	scratch-buffers.h	\
 	serialize.h		\
 	sgroup.h		\
 	stats.h			\
@@ -130,6 +131,7 @@ libsyslog_ng_la_SOURCES = \
 	plugin.c		\
 	pragma-parser.c		\
 	rewrite-expr-parser.c	\
+	scratch-buffers.c	\
 	serialize.c		\
 	sgroup.c		\
 	stats.c			\

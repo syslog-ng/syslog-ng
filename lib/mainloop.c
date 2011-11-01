@@ -32,6 +32,7 @@
 #include "logqueue.h"
 #include "dnscache.h"
 #include "tls-support.h"
+#include "scratch-buffers.h"
 
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -315,8 +316,12 @@ main_loop_io_worker_thread_stop(void *cookie)
 {
   g_static_mutex_lock(&main_loop_io_workers_idmap_lock);
   dns_cache_destroy();
-  main_loop_io_workers_idmap &= ~(1 << (main_loop_io_worker_id - 1));
-  main_loop_io_worker_id = 0;
+  if (main_loop_io_worker_id)
+    {
+      main_loop_io_workers_idmap &= ~(1 << (main_loop_io_worker_id - 1));
+      main_loop_io_worker_id = 0;
+    }
+  scratch_buffers_free ();
   g_static_mutex_unlock(&main_loop_io_workers_idmap_lock);
 }
 
