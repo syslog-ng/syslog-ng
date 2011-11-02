@@ -1,3 +1,9 @@
+syslog-ng (3.3.2.dfsg~0-1~mhp2) unstable; urgency=low
+
+  * New upstream snapshot, based on commit 9e7f925.
+
+ -- Gergely Nagy <algernon@madhouse-project.org>  Tue, 01 Nov 2011 13:38:19 +0100
+
 syslog-ng (3.3.2.dfsg~0-1~mhp1) unstable; urgency=low
 
   * New upstream snapshot release, based on commit 3bd4fd7, with non-free
