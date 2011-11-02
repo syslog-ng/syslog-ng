@@ -211,7 +211,10 @@ resolve_sockaddr(gchar *result, gsize *result_len, GSockAddr *saddr, gboolean us
                       
                   hp = gethostbyaddr(addr, addr_len, saddr->sa.sa_family);
                   hname = (hp && hp->h_name) ? hp->h_name : NULL;
-                  
+
+                  if (hname)
+                    positive = TRUE;
+
                   if (use_dns_cache && hname)
                     {
                       /* resolution success, store this as a positive match in the cache */
