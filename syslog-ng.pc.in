@@ -10,5 +10,5 @@ Name: syslog-ng-dev
 Description: Dev package for syslog-ng module
 Version: @VERSION@
 Requires: glib-2.0
-Libs: -L${libdir} @GLIB_LIBS@
+Libs: -L${libdir} -lsyslog-ng @GLIB_LIBS@
 Cflags: -I${includedir}/syslog-ng
