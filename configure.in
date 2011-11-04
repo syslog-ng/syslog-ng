@@ -1003,7 +1003,7 @@ dnl ***************************************************************************
 ### configuration file, that's the preferred form.
 
 if test "x$default_modules" = "xauto"; then
-	default_modules="affile,afprog,afsocket,afuser,basicfuncs,csvparser,dbparser,syslogformat"
+	default_modules="affile,afprog,afsocket,afuser,basicfuncs,csvparser,dbparser,syslogformat,aflogstore,disk-buffer,confighash"
 	if test "x$enable_sql" = "xyes"; then
 		default_modules="$default_modules,afsql"
 	fi
