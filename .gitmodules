@@ -4,3 +4,6 @@
 [submodule "lib/ivykis"]
 	path = lib/ivykis
 	url = git://git.balabit.hu/bazsi/ivykis.git
+[submodule "pe-modules"]
+	path = pe-modules
+	url = ssh+git://git.balabit//var/scm/git/syslog-ng/syslog-ng-pe-modules--mainline--4.2.git

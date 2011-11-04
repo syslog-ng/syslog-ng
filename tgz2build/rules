@@ -72,7 +72,7 @@ $(STAMPDIR)/stamp-build: $(STAMPDIR)/stamp-configure
 	# dynamic linker on HPUX B.11.11 doesn't support uninstalled libs, because
 	# rpath overrides LD_LIBRARY_PATH. To allow the tests, we have to install
 	# the various libs to /opt/syslog-ng/lib.
-	if [ "$(ZBS_DIST)" = "hpux-11" ]; then \
+	if [ "$(ZBS_DIST)" = "hpux-11" ] || [ "$(ZBS_DIST)" = "aix-5.2" ]; then \
 		$(MAKE) install; \
 	fi
 	if [ "$(ZBS_DIST)" != "hpux-11v2" ] && [ "$(MACHTYPE)" != "i386-pc-solaris2.9" ]; then \

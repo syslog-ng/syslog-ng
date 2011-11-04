@@ -1,6 +1,6 @@
 
 SUBDIRS = @LIBMONGO_SUBDIRS@
-DIST_SUBDIRS = libmongo-client
+#DIST_SUBDIRS = libmongo-client
 
 moduledir = @moduledir@
 AM_CPPFLAGS = -I$(top_srcdir)/lib -I../../lib

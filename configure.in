@@ -86,9 +86,11 @@ AC_DEFINE_UNQUOTED(BROCHURE_VERSION, "$BROCHURE_VERSION", [pretty version for us
 AC_DEFINE_UNQUOTED(COMBINED_VERSION, "$COMBINED_VERSION", [normal and brochure version combined])
 AC_DEFINE_UNQUOTED(SOURCE_REVISION, "$SOURCE_REVISION", [source revision])
 AC_SUBST(RELEASE_TYPE)
+AC_SUBST(SNAPSHOT_VERSION)
 AC_SUBST(BROCHURE_VERSION)
 AC_SUBST(COMBINED_VERSION)
 AC_SUBST(TECHNICAL_VERSION)
+AC_SUBST(SOURCE_REVISION)
 dnl ***************************************************************************
 
 if test "x$prefix" = "xNONE"; then
@@ -862,6 +864,7 @@ fi
 dnl ***************************************************************************
 dnl misc features to be enabled
 dnl ***************************************************************************
+AC_C_INLINE
 
 if test "x$ac_cv_lib_door_door_create" = "xyes"; then
         AC_CHECK_HEADERS(pthread.h)
@@ -1013,6 +1016,8 @@ if test "x$module_path" = "x"; then
 	module_path="`patheval $moduledir`"
 fi
 
+
+
 CPPFLAGS="$CPPFLAGS $GLIB_CFLAGS $EVTLOG_CFLAGS $PCRE_CFLAGS $OPENSSL_CFLAGS $LIBNET_CFLAGS $LIBDBI_CFLAGS $IVYKIS_CFLAGS -D_GNU_SOURCE -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64"
 
 ########################################################
@@ -1098,6 +1103,62 @@ enable_value()
                 echo 0
         fi
 }
+
+########################################################
+# TESTS for PE
+########################################################
+
+LIBZLICENSE_MIN_VERSION="3.3"
+AC_ARG_ENABLE(indexer,
+	[  --enable-indexer   Enable support for indexer (default: no)]
+		,,enable_indexer="no")
+
+AC_ARG_ENABLE(timestamping,
+		[  --enable-timestamping   Enable support for communicating with Timestamping Authorities (default: auto)]
+		,,enable_timestamping="auto")
+
+AC_CHECK_FUNCS(mremap futimes)
+PKG_CHECK_MODULES(LIBZLICENSE, libzlicense >= $LIBZLICENSE_MIN_VERSION,,
+				AC_MSG_ERROR(Cannot find libzlicense version >= $LIBZLICENSE_MIN_VERSION: is pkg-config in path?))
+
+if test "x$OPENSSL_LIBS" != "x"; then
+		if test "x$enable_ssl" = "xauto"; then
+		  enable_ssl="yes"
+		fi
+		if test "x$enable_timestamping" = "xauto"; then
+				if test "x$ac_cv_header_openssl_ts_h" = "xyes"; then
+						enable_timestamping="yes"
+				else
+						enable_timestamping="no"
+				fi
+		fi
+else
+	AC_MSG_ERROR([OpenSSL libraries required to build Premium Edition modules.])
+fi
+
+AC_CHECK_LIB(z, inflate, ZLIB_LIBS="-lz")
+
+SYSLOG_NG_INCLUDE="-I\$(top_srcdir)/lib -I\$(top_builddir)/lib"
+SYSLOG_NG_LIBS="-L\$(top_srcdir)/lib -L\$(top_builddir)/lib -lsyslog-ng \$(SYSLOGNG_DEPS_LIBS)"
+case $ostype in
+	HP-UX)
+		SYSLOG_NG_LIBS="-L\$(top_srcdir)/lib/.libs -L\$(top_builddir)/lib/.libs $SYSLOG_NG_LIBS"
+	;;
+esac
+
+CPPFLAGS="$SYSLOG_NG_INCLUDE $CPPFLAGS"
+syslog_ng_tools="\$(top_srcdir)/lib"
+
+AM_CONDITIONAL(ENABLE_EMBEDDED_PE_MODULES,true)
+AC_SUBST(SYSLOG_NG_INCLUDE)
+AC_SUBST(SYSLOG_NG_LIBS)
+AC_SUBST(syslog_ng_tools)
+AC_DEFINE_UNQUOTED(ENABLE_INDEXER, `enable_value $enable_indexer`, [Enable indexer support])
+AM_CONDITIONAL([ENABLE_INDEXER], [test "$enable_indexer" = "yes"])
+
+########################################################
+# TESTS for PE End
+########################################################
 
 SLNG_WIN_VERSION="`echo $VERSION | sed -e 's/[[a-zA-Z+\-~]]\+.*//' -e 's/\./,/g'`"
 
@@ -1190,8 +1251,7 @@ AC_SUBST(CFLAGS_NOWARN_POINTER_SIGN)
 
 AC_SUBST(CURRDATE)
 AC_SUBST(RELEASE_TAG)
-AC_SUBST(SNAPSHOT_VERSION)
-AC_SUBST(SOURCE_REVISION)
+AC_SUBST(PATH_LOCALSTATEDIR)
 AC_SUBST(SLNG_WIN_VERSION)
 AC_SUBST(LIBSYSLOGNG_VERSION)
 
@@ -1231,6 +1291,19 @@ AC_OUTPUT(dist.conf
           modules/basicfuncs/Makefile
           modules/convertfuncs/Makefile
 	  modules/tfjson/Makefile
+dnl PE modules
+	modules/license/Makefile
+	modules/logstore/Makefile
+	modules/diskq/Makefile
+	modules/confighash/Makefile
+	modules/snmp/Makefile
+	modules/afsqlsource/Makefile
+	pe-tests/Makefile
+	pe-tests/unit/Makefile
+	pe-tests/tools/Makefile
+	pe-tests/functional/Makefile
+dnl PE modules
+
 	  scripts/Makefile
 	  scripts/update-patterndb
 	  doc/Makefile

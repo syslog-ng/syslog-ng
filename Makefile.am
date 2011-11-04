@@ -1,5 +1,8 @@
 SUBDIRS = lib modules syslog-ng scripts tests doc contrib scl debian tgz2build build winbuild
 
+# tests from pe
+SUBDIRS += pe-tests
+
 ACLOCAL_AMFLAGS = -I m4 --install
 
 EXTRA_DIST = VERSION \

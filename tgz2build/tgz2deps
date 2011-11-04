@@ -2,3 +2,7 @@ libpcre3-dev
 libpcre3
 libivykis
 libivykis-dev
+# for pe-modules
+libsnmp-dev
+libsqlite3
+libsqlite3-dev

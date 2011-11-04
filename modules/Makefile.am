@@ -3,3 +3,6 @@ SUBDIRS = afsocket afsql afstreams affile afprog afuser csvparser confgen syslog
 if ENABLE_MONGODB
 SUBDIRS += afmongodb
 endif
+
+# pe-modules
+SUBDIRS += license logstore confighash diskq snmp afsqlsource
