@@ -298,6 +298,7 @@ afinet_sd_apply_transport(AFSocketSourceDriver *s)
                 evt_tag_str("transport", self->super.transport),
                 evt_tag_str("id", self->super.super.super.id),
                 NULL);
+      return FALSE;
     }
   afinet_set_port(self->super.bind_addr, self->bind_port ? : default_bind_port, self->super.flags & AFSOCKET_DGRAM ? "udp" : "tcp");
   resolve_hostname(&self->super.bind_addr, self->bind_ip ? : default_bind_ip);
