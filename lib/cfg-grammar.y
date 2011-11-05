@@ -945,7 +945,6 @@ vp_rekey_def
         { last_vp_transset = value_pairs_transform_set_new($1); free($1); }
         vp_rekey_options
         { $$ = last_vp_transset; }
-	|
 	;
 
 vp_rekey_options
