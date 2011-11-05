@@ -199,5 +199,13 @@ get-orig-source:
 	debian/tools/get-orig-source.sh
 
 # And for the rest, there is debhelper!
+debian/control:
+	@echo "There is no debian/control, so this is probably a git checkout." >&2
+	@echo "Please run debian/tools/bootstrap.sh!" >&2
+	@exit 1
+
+binary binary-arch binary-indep build build-arch build-indep clean \
+install install-arch install-indep: debian/control
+
 %:
 	dh $@ --with autoreconf
