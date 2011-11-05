@@ -28,13 +28,16 @@
 #include "value-pairs.h"
 
 typedef struct _ValuePairsTransform ValuePairsTransform;
+typedef struct _ValuePairsTransformSet ValuePairsTransformSet;
 
-ValuePairsTransform *value_pairs_new_transform_add_prefix (const gchar *glob, const gchar *prefix);
-ValuePairsTransform *value_pairs_new_transform_shift (const gchar *glob, gint amount);
+ValuePairsTransform *value_pairs_new_transform_add_prefix (const gchar *prefix);
+ValuePairsTransform *value_pairs_new_transform_shift (gint amount);
 ValuePairsTransform *value_pairs_new_transform_replace(const gchar *prefix, const gchar *new_prefix);
 
-void value_pairs_transform_free(ValuePairsTransform *t);
-gchar *value_pairs_transform_apply(ValuePairsTransform *t, gchar *key);
-void value_pairs_transform_reset(ValuePairsTransform *t);
+ValuePairsTransformSet *value_pairs_transform_set_new(const gchar *glob);
+void value_pairs_transform_set_add_func(ValuePairsTransformSet *vpts, ValuePairsTransform *vpt);
+void value_pairs_transform_set_reset(ValuePairsTransformSet *t);
+void value_pairs_transform_set_free(ValuePairsTransformSet *vpts);
+gchar *value_pairs_transform_set_apply(ValuePairsTransformSet *vpts, gchar *key);
 
 #endif

@@ -155,8 +155,8 @@ vp_transform_apply (ValuePairs *vp, gchar *key)
   l = vp->transforms;
   while (l)
     {
-      ValuePairsTransform *t = (ValuePairsTransform *)l->data;
-      ckey = value_pairs_transform_apply(t, ckey);
+      ValuePairsTransformSet *t = (ValuePairsTransformSet *)l->data;
+      ckey = value_pairs_transform_set_apply(t, ckey);
       l = g_list_next (l);
     }
 
@@ -303,7 +303,7 @@ value_pairs_foreach (ValuePairs *vp, VPForeachFunc func,
 
       do
 	{
-	  value_pairs_transform_reset((ValuePairsTransform *)l->data);
+	  value_pairs_transform_set_reset((ValuePairsTransformSet *)l->data);
 	}
       while ((l = g_list_next (l)) != NULL);
     }
@@ -394,7 +394,7 @@ value_pairs_free (ValuePairs *vp)
   l = vp->transforms;
   while (l)
     {
-      value_pairs_transform_free((ValuePairsTransform *)l->data);
+      value_pairs_transform_set_free((ValuePairsTransformSet *)l->data);
 
       l = g_list_delete_link (l, l);
     }
@@ -403,9 +403,9 @@ value_pairs_free (ValuePairs *vp)
 }
 
 void
-value_pairs_add_transform(ValuePairs *vp, gpointer *vpt)
+value_pairs_add_transforms(ValuePairs *vp, gpointer *vpts)
 {
-  vp->transforms = g_list_append(vp->transforms, vpt);
+  vp->transforms = g_list_append(vp->transforms, vpts);
 }
 
 /* parse a value-pair specification from a command-line like environment */

@@ -35,7 +35,7 @@ gboolean value_pairs_add_scope(ValuePairs *vp, const gchar *scope);
 void value_pairs_add_exclude_glob(ValuePairs *vp, const gchar *pattern);
 void value_pairs_add_pair(ValuePairs *vp, GlobalConfig *cfg, const gchar *key, const gchar *value);
 
-void value_pairs_add_transform(ValuePairs *vp, gpointer *vpt);
+void value_pairs_add_transforms(ValuePairs *vp, gpointer *vpts);
 
 void value_pairs_foreach(ValuePairs *vp, VPForeachFunc func,
                          LogMessage *msg, gint32 seq_num,

@@ -309,6 +309,7 @@ extern struct _LogDriver *last_driver;
 #include "logparser.h"
 #include "logrewrite.h"
 #include "value-pairs.h"
+#include "vptransform.h"
 #include "filter-expr-parser.h"
 #include "rewrite-expr-parser.h"
 #include "block-ref-parser.h"
@@ -341,6 +342,7 @@ FilterExprNode *last_filter_expr;
 CfgArgs *last_block_args;
 PluginGlobalOption *check_option;
 ValuePairs *last_value_pairs;
+ValuePairsTransformSet *last_vp_transset;
 
 }
 
@@ -379,6 +381,7 @@ ValuePairs *last_value_pairs;
 /* START_DECLS */
 
 %type   <ptr> value_pair_option
+%type   <ptr> vp_rekey_def
 
 %type	<num> yesno
 %type   <num> dnsmode
@@ -929,7 +932,7 @@ vp_option
 	  }
 	| KW_EXCLUDE '(' string ')'	         { value_pairs_add_exclude_glob(last_value_pairs, $3); free($3); }
 	| KW_SCOPE '(' vp_scope_list ')'
-	| KW_REKEY '(' vp_rekey_options ')'
+        | KW_REKEY '(' vp_rekey_def ')' { value_pairs_add_transforms(last_value_pairs, $3); }
 	;
 
 vp_scope_list
@@ -937,16 +940,23 @@ vp_scope_list
 	|
 	;
 
-vp_rekey_options
-	: vp_rekey_option vp_rekey_options
+vp_rekey_def
+	: string
+        { last_vp_transset = value_pairs_transform_set_new($1); free($1); }
+        vp_rekey_options
+        { $$ = last_vp_transset; }
 	|
 	;
 
+vp_rekey_options
+	: vp_rekey_option vp_rekey_options
+        |
+	;
+
 vp_rekey_option
-	: KW_SHIFT '(' string LL_NUMBER ')' { value_pairs_add_transform(last_value_pairs, value_pairs_new_transform_shift($3, $4)); free($3); }
-	| KW_SHIFT '(' string ':' LL_NUMBER ')' { value_pairs_add_transform(last_value_pairs, value_pairs_new_transform_shift($3, $5)); free($3); }
-	| KW_ADD_PREFIX '(' string string ')' { value_pairs_add_transform(last_value_pairs, value_pairs_new_transform_add_prefix($3, $4)); free($3); free($4); }
-	| KW_REPLACE '(' string string ')' { value_pairs_add_transform(last_value_pairs, value_pairs_new_transform_replace($3, $4)); free($3); free($4); }
+	: KW_SHIFT '(' LL_NUMBER ')' { value_pairs_transform_set_add_func(last_vp_transset, value_pairs_new_transform_shift($3)); }
+	| KW_ADD_PREFIX '(' string ')' { value_pairs_transform_set_add_func(last_vp_transset, value_pairs_new_transform_add_prefix($3)); free($3); }
+	| KW_REPLACE '(' string string ')' { value_pairs_transform_set_add_func(last_vp_transset, value_pairs_new_transform_replace($3, $4)); free($3); free($4); }
 	;
 
 /* END_RULES */
