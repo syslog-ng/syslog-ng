@@ -427,6 +427,18 @@ value_pairs_add_transforms(ValuePairs *vp, gpointer *vpts)
   vp->transforms = g_list_append(vp->transforms, vpts);
 }
 
+static void
+vp_cmdline_parse_rekey_finish (gpointer data)
+{
+  gpointer *args = (gpointer *) data;
+  ValuePairs *vp = (ValuePairs *) args[1];
+  ValuePairsTransformSet *vpts = (ValuePairsTransformSet *) args[2];
+
+  if (vpts)
+    value_pairs_add_transforms (vp, args[2]);
+  args[2] = NULL;
+}
+
 /* parse a value-pair specification from a command-line like environment */
 static gboolean
 vp_cmdline_parse_scope(const gchar *option_name, const gchar *value,
@@ -434,6 +446,8 @@ vp_cmdline_parse_scope(const gchar *option_name, const gchar *value,
 {
   gpointer *args = (gpointer *) data;
   ValuePairs *vp = (ValuePairs *) args[1];
+
+  vp_cmdline_parse_rekey_finish (data);
 
   if (!value_pairs_add_scope (vp, value))
     {
@@ -451,6 +465,7 @@ vp_cmdline_parse_exclude(const gchar *option_name, const gchar *value,
   gpointer *args = (gpointer *) data;
   ValuePairs *vp = (ValuePairs *) args[1];
 
+  vp_cmdline_parse_rekey_finish (data);
   value_pairs_add_glob_pattern(vp, value, FALSE);
   return TRUE;
 }
@@ -462,8 +477,8 @@ vp_cmdline_parse_key(const gchar *option_name, const gchar *value,
   gpointer *args = (gpointer *) data;
   ValuePairs *vp = (ValuePairs *) args[1];
 
+  vp_cmdline_parse_rekey_finish (data);
   value_pairs_add_glob_pattern(vp, value, TRUE);
-
   return TRUE;
 }
 
@@ -476,6 +491,7 @@ vp_cmdline_parse_pair (const gchar *option_name, const gchar *value,
   GlobalConfig *cfg = (GlobalConfig *) args[0];
   gchar **kv;
 
+  vp_cmdline_parse_rekey_finish (data);
   if (!g_strstr_len (value, strlen (value), "="))
     {
       g_set_error (error, G_OPTION_ERROR, G_OPTION_ERROR_BAD_VALUE,
@@ -498,11 +514,9 @@ vp_cmdline_parse_rekey (const gchar *option_name, const gchar *value,
                         gpointer data, GError **error)
 {
   gpointer *args = (gpointer *) data;
-  ValuePairs *vp = (ValuePairs *) args[1];
   ValuePairsTransformSet *vpts = (ValuePairsTransformSet *) args[2];
 
-  if (vpts)
-    value_pairs_add_transforms (vp, (gpointer *)vpts);
+  vp_cmdline_parse_rekey_finish (data);
 
   vpts = value_pairs_transform_set_new (value);
   args[2] = vpts;
@@ -638,6 +652,7 @@ value_pairs_new_from_cmdline (GlobalConfig *cfg,
       return NULL;
     }
   g_option_context_free (ctx);
+  vp_cmdline_parse_rekey_finish (user_data_args);
 
   if (vp->scopes == 0)
     value_pairs_add_scope (vp, "rfc3164");
