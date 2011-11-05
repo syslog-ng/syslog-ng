@@ -29,6 +29,7 @@
 #include "cfg-parser.h"
 #include "misc.h"
 
+#include <stdlib.h>
 #include <string.h>
 
 typedef struct
@@ -460,11 +461,8 @@ vp_cmdline_parse_key(const gchar *option_name, const gchar *value,
 {
   gpointer *args = (gpointer *) data;
   ValuePairs *vp = (ValuePairs *) args[1];
-  GlobalConfig *cfg = (GlobalConfig *) args[0];
-  gchar *k = g_strconcat ("$", value, NULL);
 
-  value_pairs_add_pair(vp, cfg, value, k);
-  g_free (k);
+  value_pairs_add_glob_pattern(vp, value, TRUE);
 
   return TRUE;
 }
@@ -495,6 +493,93 @@ vp_cmdline_parse_pair (const gchar *option_name, const gchar *value,
   return TRUE;
 }
 
+static gboolean
+vp_cmdline_parse_rekey (const gchar *option_name, const gchar *value,
+                        gpointer data, GError **error)
+{
+  gpointer *args = (gpointer *) data;
+  ValuePairs *vp = (ValuePairs *) args[1];
+  ValuePairsTransformSet *vpts = (ValuePairsTransformSet *) args[2];
+
+  if (vpts)
+    value_pairs_add_transforms (vp, (gpointer *)vpts);
+
+  vpts = value_pairs_transform_set_new (value);
+  args[2] = vpts;
+  return TRUE;
+}
+
+static gboolean
+vp_cmdline_parse_rekey_replace (const gchar *option_name, const gchar *value,
+                                gpointer data, GError **error)
+{
+  gpointer *args = (gpointer *) data;
+  ValuePairsTransformSet *vpts = (ValuePairsTransformSet *) args[2];
+  gchar **kv;
+
+  if (!vpts)
+    {
+      g_set_error (error, G_OPTION_ERROR, G_OPTION_ERROR_FAILED,
+                   "Error parsing value-pairs: --replace used without --rekey");
+      return FALSE;
+    }
+
+  if (!g_strstr_len (value, strlen (value), "="))
+    {
+      g_set_error (error, G_OPTION_ERROR, G_OPTION_ERROR_BAD_VALUE,
+                   "Error parsing value-pairs' rekey replace construct");
+      return FALSE;
+    }
+
+  kv = g_strsplit(value, "=", 2);
+  value_pairs_transform_set_add_func
+    (vpts, value_pairs_new_transform_replace (kv[0], kv[1]));
+
+  g_free (kv[0]);
+  g_free (kv[1]);
+  g_free (kv);
+
+  return TRUE;
+}
+
+static gboolean
+vp_cmdline_parse_rekey_add_prefix (const gchar *option_name, const gchar *value,
+                                   gpointer data, GError **error)
+{
+  gpointer *args = (gpointer *) data;
+  ValuePairsTransformSet *vpts = (ValuePairsTransformSet *) args[2];
+
+  if (!vpts)
+    {
+      g_set_error (error, G_OPTION_ERROR, G_OPTION_ERROR_FAILED,
+                   "Error parsing value-pairs: --add-prefix used without --rekey");
+      return FALSE;
+    }
+
+  value_pairs_transform_set_add_func
+    (vpts, value_pairs_new_transform_add_prefix (value));
+  return TRUE;
+}
+
+static gboolean
+vp_cmdline_parse_rekey_shift (const gchar *option_name, const gchar *value,
+                              gpointer data, GError **error)
+{
+  gpointer *args = (gpointer *) data;
+  ValuePairsTransformSet *vpts = (ValuePairsTransformSet *) args[2];
+
+  if (!vpts)
+    {
+      g_set_error (error, G_OPTION_ERROR, G_OPTION_ERROR_FAILED,
+                   "Error parsing value-pairs: --shift used without --rekey");
+      return FALSE;
+    }
+
+  value_pairs_transform_set_add_func
+    (vpts, value_pairs_new_transform_shift (atoi (value)));
+  return TRUE;
+}
+
 ValuePairs *
 value_pairs_new_from_cmdline (GlobalConfig *cfg,
 			      gint cargc, gchar **cargv,
@@ -502,6 +587,7 @@ value_pairs_new_from_cmdline (GlobalConfig *cfg,
 {
   ValuePairs *vp;
   GOptionContext *ctx;
+
   GOptionEntry vp_options[] = {
     { "scope", 's', 0, G_OPTION_ARG_CALLBACK, vp_cmdline_parse_scope,
       NULL, NULL },
@@ -511,6 +597,14 @@ value_pairs_new_from_cmdline (GlobalConfig *cfg,
       NULL, NULL },
     { "pair", 'p', 0, G_OPTION_ARG_CALLBACK, vp_cmdline_parse_pair,
       NULL, NULL },
+    { "rekey", 'r', 0, G_OPTION_ARG_CALLBACK, vp_cmdline_parse_rekey,
+      NULL, NULL },
+    { "shift", 'S', 0, G_OPTION_ARG_CALLBACK, vp_cmdline_parse_rekey_shift,
+      NULL, NULL },
+    { "add-prefix", 'A', 0, G_OPTION_ARG_CALLBACK, vp_cmdline_parse_rekey_add_prefix,
+      NULL, NULL },
+    { "replace", 'R', 0, G_OPTION_ARG_CALLBACK, vp_cmdline_parse_rekey_replace,
+      NULL, NULL },
     { G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_CALLBACK, vp_cmdline_parse_pair,
       NULL, NULL },
     { NULL }
@@ -519,11 +613,12 @@ value_pairs_new_from_cmdline (GlobalConfig *cfg,
   gint argc = cargc + 1;
   gint i;
   GOptionGroup *og;
-  gpointer user_data_args[2];
+  gpointer user_data_args[3];
 
   vp = value_pairs_new();
   user_data_args[0] = cfg;
   user_data_args[1] = vp;
+  user_data_args[2] = NULL;
 
   argv = g_new (gchar *, argc + 1);
   for (i = 0; i < argc; i++)
