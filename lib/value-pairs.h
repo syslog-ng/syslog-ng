@@ -32,7 +32,7 @@ typedef struct _ValuePairs ValuePairs;
 typedef gboolean (*VPForeachFunc)(const gchar *name, const gchar *value, gpointer user_data);
 
 gboolean value_pairs_add_scope(ValuePairs *vp, const gchar *scope);
-void value_pairs_add_exclude_glob(ValuePairs *vp, const gchar *pattern);
+void value_pairs_add_glob_pattern(ValuePairs *vp, const gchar *pattern, gboolean include);
 void value_pairs_add_pair(ValuePairs *vp, GlobalConfig *cfg, const gchar *key, const gchar *value);
 
 void value_pairs_add_transforms(ValuePairs *vp, gpointer *vpts);

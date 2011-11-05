@@ -924,13 +924,8 @@ vp_options
 vp_option
         : KW_PAIR '(' string ':' string ')'      { value_pairs_add_pair(last_value_pairs, configuration, $3, $5); free($3); free($5); }
         | KW_PAIR '(' string string ')'          { value_pairs_add_pair(last_value_pairs, configuration, $3, $4); free($3); free($4); }
-	| KW_KEY '(' string ')'		    {
-                gchar *k = g_strconcat("$", $3, NULL);
-                value_pairs_add_pair(last_value_pairs, configuration, $3, k);
-                g_free(k);
-                free($3);
-	  }
-	| KW_EXCLUDE '(' string ')'	         { value_pairs_add_exclude_glob(last_value_pairs, $3); free($3); }
+	| KW_KEY '(' string ')'		         { value_pairs_add_glob_pattern(last_value_pairs, $3, TRUE); free($3);  }
+	| KW_EXCLUDE '(' string ')'	         { value_pairs_add_glob_pattern(last_value_pairs, $3, FALSE); free($3); }
 	| KW_SCOPE '(' vp_scope_list ')'
         | KW_REKEY '(' vp_rekey_def ')' { value_pairs_add_transforms(last_value_pairs, $3); }
 	;

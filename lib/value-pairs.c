@@ -31,15 +31,21 @@
 
 #include <string.h>
 
+typedef struct
+{
+  GPatternSpec *pattern;
+  gboolean include;
+} VPPatternSpec;
+
 struct _ValuePairs
 {
-  GPatternSpec **excludes;
+  VPPatternSpec **patterns;
   GHashTable *vpairs;
   GList *transforms;
 
   /* guint32 as CfgFlagHandler only supports 32 bit integers */
   guint32 scopes;
-  guint32 exclude_size;
+  guint32 patterns_size;
 
   /* Temporary */
   GString *res;
@@ -124,13 +130,20 @@ value_pairs_add_scope(ValuePairs *vp, const gchar *scope)
 }
 
 void
-value_pairs_add_exclude_glob(ValuePairs *vp, const gchar *pattern)
+value_pairs_add_glob_pattern(ValuePairs *vp, const gchar *pattern,
+                             gboolean include)
 {
   gint i;
+  VPPatternSpec *p;
 
-  i = vp->exclude_size++;
-  vp->excludes = g_renew(GPatternSpec *, vp->excludes, vp->exclude_size);
-  vp->excludes[i] = g_pattern_spec_new(pattern);
+  i = vp->patterns_size++;
+  vp->patterns = g_renew(VPPatternSpec *, vp->patterns, vp->patterns_size);
+
+  p = g_new(VPPatternSpec, 1);
+  p->pattern = g_pattern_spec_new(pattern);
+  p->include = include;
+
+  vp->patterns[i] = p;
 }
 
 void
@@ -192,18 +205,20 @@ vp_msg_nvpairs_foreach(NVHandle handle, gchar *name,
   ValuePairs *vp = ((gpointer *)user_data)[0];
   GHashTable *scope_set = ((gpointer *)user_data)[5];
   gint j;
+  gboolean inc = FALSE;
+
+  for (j = 0; j < vp->patterns_size; j++)
+    {
+      if (g_pattern_match_string(vp->patterns[j]->pattern, name))
+        inc = vp->patterns[j]->include;
+    }
 
   /* NOTE: dot-nv-pairs include SDATA too */
   if (((name[0] == '.' && (vp->scopes & VPS_DOT_NV_PAIRS)) ||
        (name[0] != '.' && (vp->scopes & VPS_NV_PAIRS)) ||
-       (log_msg_is_handle_sdata(handle) && (vp->scopes & VPS_SDATA))))
+       (log_msg_is_handle_sdata(handle) && (vp->scopes & VPS_SDATA))) ||
+      inc)
     {
-      for (j = 0; j < vp->exclude_size; j++)
-        {
-          if (g_pattern_match_string(vp->excludes[j], name))
-            return FALSE;
-        }
-
       /* NOTE: the key is a borrowed reference in the hash, and value is freed */
       g_hash_table_insert(scope_set, vp_transform_apply(vp, name), g_strndup(value, value_len));
     }
@@ -222,10 +237,10 @@ vp_merge_set(ValuePairs *vp, LogMessage *msg, gint32 seq_num, ValuePairSpec *set
       gint j;
       gboolean exclude = FALSE;
 
-      for (j = 0; j < vp->exclude_size; j++)
+      for (j = 0; j < vp->patterns_size; j++)
         {
-          if (g_pattern_match_string(vp->excludes[j], set[i].name))
-            exclude = TRUE;
+          if (g_pattern_match_string(vp->patterns[j]->pattern, set[i].name))
+            exclude = !vp->patterns[j]->include;
         }
 
       if (exclude)
@@ -386,9 +401,12 @@ value_pairs_free (ValuePairs *vp)
 
   g_hash_table_destroy(vp->vpairs);
 
-  for (i = 0; i < vp->exclude_size; i++)
-    g_pattern_spec_free(vp->excludes[i]);
-  g_free(vp->excludes);
+  for (i = 0; i < vp->patterns_size; i++)
+    {
+      g_pattern_spec_free(vp->patterns[i]->pattern);
+      g_free(vp->patterns[i]);
+    }
+  g_free(vp->patterns);
   g_string_free(vp->res, TRUE);
 
   l = vp->transforms;
@@ -432,7 +450,7 @@ vp_cmdline_parse_exclude(const gchar *option_name, const gchar *value,
   gpointer *args = (gpointer *) data;
   ValuePairs *vp = (ValuePairs *) args[1];
 
-  value_pairs_add_exclude_glob(vp, value);
+  value_pairs_add_glob_pattern(vp, value, FALSE);
   return TRUE;
 }
 
