@@ -40,6 +40,9 @@ void value_pairs_add_transforms(ValuePairs *vp, gpointer *vpts);
 void value_pairs_foreach(ValuePairs *vp, VPForeachFunc func,
                          LogMessage *msg, gint32 seq_num,
                          gpointer user_data);
+void value_pairs_foreach_sorted(ValuePairs *vp, GCompareFunc cmpf, VPForeachFunc func,
+                                LogMessage *msg, gint32 seq_num,
+                                gpointer user_data);
 
 ValuePairs *value_pairs_new(void);
 void value_pairs_free(ValuePairs *vp);

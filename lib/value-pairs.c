@@ -277,11 +277,10 @@ vp_merge_set(ValuePairs *vp, LogMessage *msg, gint32 seq_num, ValuePairSpec *set
   scratch_buffer_release(sb);
 }
 
-void
-value_pairs_foreach (ValuePairs *vp, VPForeachFunc func,
-		     LogMessage *msg, gint32 seq_num, gpointer user_data)
+static GHashTable *
+value_pairs_foreach_prepare (ValuePairs *vp, LogMessage *msg, gint32 seq_num)
 {
-  gpointer args[] = { vp, func, msg, GINT_TO_POINTER (seq_num), user_data, NULL };
+  gpointer args[] = { vp, NULL, msg, GINT_TO_POINTER (seq_num), NULL, NULL };
   GHashTable *scope_set;
 
   scope_set = g_hash_table_new_full(g_str_hash, g_str_equal, NULL,
@@ -312,9 +311,12 @@ value_pairs_foreach (ValuePairs *vp, VPForeachFunc func,
   /* Merge the explicit key-value pairs too */
   g_hash_table_foreach(vp->vpairs, (GHFunc) vp_pairs_foreach, args);
 
-  /* Aaand we run it through the callback! */
-  g_hash_table_foreach(scope_set, (GHFunc)func, user_data);
+  return scope_set;
+}
 
+static void
+value_pairs_foreach_teardown (ValuePairs *vp, GHashTable *scope_set)
+{
   g_hash_table_destroy(scope_set);
 
   if (vp->transforms)
@@ -329,6 +331,40 @@ value_pairs_foreach (ValuePairs *vp, VPForeachFunc func,
     }
 }
 
+void
+value_pairs_foreach (ValuePairs *vp, VPForeachFunc func,
+		     LogMessage *msg, gint32 seq_num, gpointer user_data)
+{
+  GHashTable *scope_set = value_pairs_foreach_prepare (vp, msg, seq_num);
+
+  g_hash_table_foreach(scope_set, (GHFunc)func, user_data);
+
+  value_pairs_foreach_teardown (vp, scope_set);
+}
+
+void
+value_pairs_foreach_sorted(ValuePairs *vp, GCompareFunc cmpf, VPForeachFunc func,
+                           LogMessage *msg, gint32 seq_num,
+                           gpointer user_data)
+{
+  GHashTable *scope_set = value_pairs_foreach_prepare (vp, msg, seq_num);
+  GList *keys, *sorted_keys;
+  gint i;
+
+  keys = g_hash_table_get_keys (scope_set);
+  sorted_keys = g_list_sort (keys, cmpf);
+
+  for (i = 0; i < g_list_length (sorted_keys); i++)
+    {
+      const gchar *k = (const gchar *)(g_list_nth (sorted_keys, i)->data);
+
+      func (k, (const gchar *)g_hash_table_lookup (scope_set, k), user_data);
+    }
+  g_list_free (keys);
+  g_list_free (sorted_keys);
+
+  value_pairs_foreach_teardown (vp, scope_set);
+}
 
 static void
 value_pairs_init_set(ValuePairSpec *set)
