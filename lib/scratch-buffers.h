@@ -30,13 +30,13 @@
 typedef struct
 {
   GTrashStack stackp;
-  GString *s;
+  GString s;
 } ScratchBuffer;
 
 ScratchBuffer *scratch_buffer_acquire(void);
 void scratch_buffer_release(ScratchBuffer *sb);
 
-#define sb_string(buffer) (buffer->s)
+#define sb_string(buffer) (&buffer->s)
 
 void scratch_buffers_free(void);
 
