@@ -42,10 +42,10 @@ scratch_buffer_acquire(void)
   if (!sb)
     {
       sb = g_new(ScratchBuffer, 1);
-      sb->s = g_string_new(NULL);
+      g_string_steal(sb_string(sb));
     }
   else
-    g_string_set_size(sb->s, 0);
+    g_string_set_size(sb_string(sb), 0);
   return sb;
 }
 
@@ -62,7 +62,7 @@ scratch_buffers_free(void)
 
   while ((sb = g_trash_stack_pop(&local_scratch_buffers)) != NULL)
     {
-      g_string_free(sb->s, TRUE);
+      g_free(sb_string(sb)->str);
       g_free(sb);
     }
 }
