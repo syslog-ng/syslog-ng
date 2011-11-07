@@ -43,7 +43,7 @@ for submod in $DUMMY_SUBMODULES; do
 done
 
 if [ -z "$skip_submodules" ] || [ "$skip_modules" = 0 ]; then
-	#autogen_submodules
+	autogen_submodules
 	:
 else
 	if [ -f .gitmodules ];then
