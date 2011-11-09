@@ -49,9 +49,11 @@ log_rewrite_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_option
       msg_debug("Rewrite condition unmatched, skipping rewrite",
                 evt_tag_str("value", log_msg_get_value_name(self->value_handle, NULL)),
                 NULL);
-      return;
     }
-  self->process(self, msg);
+  else
+    {
+      self->process(self, msg);
+    }
   if (G_UNLIKELY(debug_flag))
     {
       value = log_msg_get_value(msg, self->value_handle, &length);
