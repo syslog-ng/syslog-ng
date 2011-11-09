@@ -1,19 +1,20 @@
-syslog-ng (3.3.2.dfsg~0-1~mhp2) unstable; urgency=low
+syslog-ng (3.3.2.dfsg~0-1~mhp3) unstable; urgency=low
 
   * New upstream snapshot, based on commit 9e7f925.
+  * Packaging synced with GCS.
 
  -- Gergely Nagy <algernon@madhouse-project.org>  Tue, 01 Nov 2011 13:38:19 +0100
 
-syslog-ng (3.3.2.dfsg~0-1~mhp1) unstable; urgency=low
+syslog-ng (3.3.1.dfsg-1) unstable; urgency=low
 
-  * New upstream snapshot release, based on commit 3bd4fd7, with non-free
-    manpages removed.
-    * Drop syslog-ng.conf(5). (Closes: #496521)
-    * syslog-ng(8) is generated, and does not mention -Q anymore.
-      (Closes: #616069)
-    * Supports CAP_SYSLOG on recent kernels. (Closes: #630172)
-    * Does not use g_timeout_add_seconds anymore. (Closes: #609154)
-  
+  * New upstream release with important fixes from upstream git tree with
+    non-free manpages removed.
+  * Drop syslog-ng.conf(5) (closes: #496521).
+  * syslog-ng(8) is generated, and does not mention -Q anymore
+    (closes: #616069).
+  * Supports CAP_SYSLOG on recent kernels (closes: #630172).
+  * Does not use g_timeout_add_seconds anymore (closes: #609154).
+
   [ Gergely Nagy <algernon@madhouse-project.org> ]
   * Update debian/copyright to DEP-5 format.
   * Simplified the logrotate file by merging identical entries.
@@ -35,7 +36,7 @@ syslog-ng (3.3.2.dfsg~0-1~mhp1) unstable; urgency=low
   * Use $SYSLOGNG_OPTS in the init script when reloading syslog-ng.
     (Closes: #589081)
 
- -- Gergely Nagy <algernon@madhouse-project.org>  Sat, 29 Oct 2011 19:41:21 +0200
+ -- Laszlo Boszormenyi (GCS) <gcs@debian.hu>  Tue, 11 Oct 2011 14:30:48 +0200
 
 syslog-ng (3.2.4-1) unstable; urgency=high
 
