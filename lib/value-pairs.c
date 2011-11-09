@@ -27,6 +27,7 @@
 #include "templates.h"
 #include "cfg-parser.h"
 #include "misc.h"
+#include "scratch-buffers.h"
 
 #include <string.h>
 
@@ -39,9 +40,6 @@ struct _ValuePairs
   /* guint32 as CfgFlagHandler only supports 32 bit integers */
   guint32 scopes;
   guint32 exclude_size;
-
-  /* Temporary */
-  GString *res;
 };
 
 typedef enum
@@ -146,20 +144,23 @@ value_pairs_add_pair(ValuePairs *vp, GlobalConfig *cfg, const gchar *key, const 
 static void
 vp_pairs_foreach(gpointer key, gpointer value, gpointer user_data)
 {
-  ValuePairs *vp = ((gpointer *)user_data)[0];
   LogMessage *msg = ((gpointer *)user_data)[2];
   gint32 seq_num = GPOINTER_TO_INT (((gpointer *)user_data)[3]);
   GHashTable *scope_set = ((gpointer *)user_data)[5];
+  ScratchBuffer *sb = scratch_buffer_acquire();
 
-  g_string_truncate(vp->res, 0);
   log_template_format((LogTemplate *)value, msg, NULL, LTZ_LOCAL,
-		      seq_num, NULL, vp->res);
+                      seq_num, NULL, sb_string(sb));
 
-  if (!vp->res->str[0])
-    return;
+  if (!sb_string(sb)->str[0])
+    {
+      scratch_buffer_release(sb);
+      return;
+    }
 
-  g_hash_table_insert(scope_set, key, vp->res->str);
-  g_string_steal(vp->res);
+  g_hash_table_insert(scope_set, key, sb_string(sb)->str);
+  g_string_steal(sb_string(sb));
+  scratch_buffer_release(sb);
 }
 
 /* runs over the LogMessage nv-pairs, and inserts them unless excluded */
@@ -195,6 +196,7 @@ static void
 vp_merge_set(ValuePairs *vp, LogMessage *msg, gint32 seq_num, ValuePairSpec *set, GHashTable *dest)
 {
   gint i;
+  ScratchBuffer *sb = scratch_buffer_acquire();
 
   for (i = 0; set[i].name; i++)
     {
@@ -210,11 +212,10 @@ vp_merge_set(ValuePairs *vp, LogMessage *msg, gint32 seq_num, ValuePairSpec *set
       if (exclude)
 	continue;
 
-      g_string_truncate(vp->res, 0);
       switch (set[i].type)
         {
         case VPT_MACRO:
-          log_macro_expand(vp->res, set[i].id, FALSE, NULL, LTZ_LOCAL, seq_num, NULL, msg);
+          log_macro_expand(sb_string(sb), set[i].id, FALSE, NULL, LTZ_LOCAL, seq_num, NULL, msg);
           break;
         case VPT_NVPAIR:
           {
@@ -222,19 +223,20 @@ vp_merge_set(ValuePairs *vp, LogMessage *msg, gint32 seq_num, ValuePairSpec *set
             gssize len;
 
             nv = log_msg_get_value(msg, (NVHandle) set[i].id, &len);
-            g_string_append_len(vp->res, nv, len);
+            g_string_append_len(sb_string(sb), nv, len);
             break;
           }
         default:
           g_assert_not_reached();
         }
 
-      if (!vp->res->str[0])
+      if (!sb_string(sb)->str[0])
 	continue;
 
-      g_hash_table_insert(dest, set[i].name, vp->res->str);
-      g_string_steal(vp->res);
+      g_hash_table_insert(dest, set[i].name, sb_string(sb)->str);
+      g_string_steal(sb_string(sb));
     }
+  scratch_buffer_release(sb);
 }
 
 void
@@ -311,7 +313,6 @@ value_pairs_new(void)
   GArray *a;
 
   vp = g_new0(ValuePairs, 1);
-  vp->res = g_string_sized_new(256);
   vp->vpairs = g_hash_table_new_full(g_str_hash, g_str_equal, g_free,
 				     (GDestroyNotify) log_template_unref);
 
@@ -356,7 +357,6 @@ value_pairs_free (ValuePairs *vp)
   for (i = 0; i < vp->exclude_size; i++)
     g_pattern_spec_free(vp->excludes[i]);
   g_free(vp->excludes);
-  g_string_free(vp->res, TRUE);
   g_free(vp);
 }
 
