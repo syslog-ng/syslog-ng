@@ -280,7 +280,7 @@ afinet_sd_apply_transport(AFSocketSourceDriver *s)
             {
               if (!msg_tls_source_port_warning)
                 {
-                  msg_warning("WARNING: Default port for syslog(transport(tls))  has changed from 601 to 6514 in syslog-ng PE 3.2, please update your configuration",
+                  msg_warning("WARNING: Default port for syslog(transport(tls)) has changed from 601 to 6514 in syslog-ng PE 3.2, please update your configuration",
                               evt_tag_str("id", self->super.super.super.id),
                               NULL);
                   msg_tls_source_port_warning = TRUE;
@@ -477,7 +477,7 @@ afinet_dd_apply_transport(AFSocketDestDriver *s)
             {
               if (!msg_tls_source_port_warning)
                 {
-                  msg_warning("WARNING: Default port for syslog(transport(tls)) is modified from 601 to 6514",
+                  msg_warning("WARNING: Default port for syslog(transport(tls)) has changed from 601 to 6514",
                               evt_tag_str("id", self->super.super.super.id),
                               NULL);
                   msg_tls_source_port_warning = TRUE;
