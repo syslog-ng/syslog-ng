@@ -1,9 +1,9 @@
 syslog-ng (3.3.2.dfsg~0-1~mhp3) unstable; urgency=low
 
-  * New upstream snapshot, based on commit 9e7f925.
+  * New upstream snapshot, based on commit 8239b58.
   * Packaging synced with GCS.
 
- -- Gergely Nagy <algernon@madhouse-project.org>  Tue, 01 Nov 2011 13:38:19 +0100
+ -- Gergely Nagy <algernon@madhouse-project.org>  Wed, 09 Nov 2011 23:41:12 +0100
 
 syslog-ng (3.3.1.dfsg-1) unstable; urgency=low
 
