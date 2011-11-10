@@ -28,6 +28,7 @@
 #include "templates.h"
 #include "cfg-parser.h"
 #include "misc.h"
+#include "scratch-buffers.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -47,9 +48,6 @@ struct _ValuePairs
   /* guint32 as CfgFlagHandler only supports 32 bit integers */
   guint32 scopes;
   guint32 patterns_size;
-
-  /* Temporary */
-  GString *res;
 };
 
 typedef enum
@@ -181,20 +179,24 @@ vp_transform_apply (ValuePairs *vp, gchar *key)
 static void
 vp_pairs_foreach(gpointer key, gpointer value, gpointer user_data)
 {
-  ValuePairs *vp = ((gpointer *)user_data)[0];
   LogMessage *msg = ((gpointer *)user_data)[2];
   gint32 seq_num = GPOINTER_TO_INT (((gpointer *)user_data)[3]);
   GHashTable *scope_set = ((gpointer *)user_data)[5];
+  ScratchBuffer *sb = scratch_buffer_acquire();
+  ValuePairs *vp = ((gpointer *)user_data)[0];
 
-  g_string_truncate(vp->res, 0);
   log_template_format((LogTemplate *)value, msg, NULL, LTZ_LOCAL,
-		      seq_num, NULL, vp->res);
+                      seq_num, NULL, sb_string(sb));
 
-  if (!vp->res->str[0])
-    return;
+  if (!sb_string(sb)->str[0])
+    {
+      scratch_buffer_release(sb);
+      return;
+    }
 
-  g_hash_table_insert(scope_set, vp_transform_apply (vp, key), vp->res->str);
-  g_string_steal(vp->res);
+  g_hash_table_insert(scope_set, vp_transform_apply(vp, key), sb_string(sb)->str);
+  g_string_steal(sb_string(sb));
+  scratch_buffer_release(sb);
 }
 
 /* runs over the LogMessage nv-pairs, and inserts them unless excluded */
@@ -232,6 +234,7 @@ static void
 vp_merge_set(ValuePairs *vp, LogMessage *msg, gint32 seq_num, ValuePairSpec *set, GHashTable *dest)
 {
   gint i;
+  ScratchBuffer *sb = scratch_buffer_acquire();
 
   for (i = 0; set[i].name; i++)
     {
@@ -247,11 +250,10 @@ vp_merge_set(ValuePairs *vp, LogMessage *msg, gint32 seq_num, ValuePairSpec *set
       if (exclude)
 	continue;
 
-      g_string_truncate(vp->res, 0);
       switch (set[i].type)
         {
         case VPT_MACRO:
-          log_macro_expand(vp->res, set[i].id, FALSE, NULL, LTZ_LOCAL, seq_num, NULL, msg);
+          log_macro_expand(sb_string(sb), set[i].id, FALSE, NULL, LTZ_LOCAL, seq_num, NULL, msg);
           break;
         case VPT_NVPAIR:
           {
@@ -259,19 +261,20 @@ vp_merge_set(ValuePairs *vp, LogMessage *msg, gint32 seq_num, ValuePairSpec *set
             gssize len;
 
             nv = log_msg_get_value(msg, (NVHandle) set[i].id, &len);
-            g_string_append_len(vp->res, nv, len);
+            g_string_append_len(sb_string(sb), nv, len);
             break;
           }
         default:
           g_assert_not_reached();
         }
 
-      if (!vp->res->str[0])
+      if (!sb_string(sb)->str[0])
 	continue;
 
-      g_hash_table_insert(dest, vp_transform_apply(vp, set[i].name), vp->res->str);
-      g_string_steal(vp->res);
+      g_hash_table_insert(dest, vp_transform_apply(vp, set[i].name), sb_string(sb)->str);
+      g_string_steal(sb_string(sb));
     }
+  scratch_buffer_release(sb);
 }
 
 void
@@ -289,7 +292,8 @@ value_pairs_foreach (ValuePairs *vp, VPForeachFunc func,
   /*
    * Build up the base set
    */
-  if (vp->scopes & (VPS_NV_PAIRS + VPS_DOT_NV_PAIRS + VPS_SDATA))
+  if (vp->scopes & (VPS_NV_PAIRS + VPS_DOT_NV_PAIRS + VPS_SDATA) ||
+      vp->patterns_size > 0)
     nv_table_foreach(msg->payload, logmsg_registry,
                      (NVTableForeachFunc) vp_msg_nvpairs_foreach, args);
 
@@ -359,7 +363,6 @@ value_pairs_new(void)
   GArray *a;
 
   vp = g_new0(ValuePairs, 1);
-  vp->res = g_string_sized_new(256);
   vp->vpairs = g_hash_table_new_full(g_str_hash, g_str_equal, g_free,
 				     (GDestroyNotify) log_template_unref);
 
@@ -408,7 +411,6 @@ value_pairs_free (ValuePairs *vp)
       g_free(vp->patterns[i]);
     }
   g_free(vp->patterns);
-  g_string_free(vp->res, TRUE);
 
   l = vp->transforms;
   while (l)
@@ -417,7 +419,7 @@ value_pairs_free (ValuePairs *vp)
 
       l = g_list_delete_link (l, l);
     }
-  
+
   g_free(vp);
 }
 
@@ -596,7 +598,7 @@ vp_cmdline_parse_rekey_shift (const gchar *option_name, const gchar *value,
 
 ValuePairs *
 value_pairs_new_from_cmdline (GlobalConfig *cfg,
-			      gint cargc, gchar **cargv,
+			      gint argc, gchar **argv,
 			      GError **error)
 {
   ValuePairs *vp;
@@ -623,9 +625,6 @@ value_pairs_new_from_cmdline (GlobalConfig *cfg,
       NULL, NULL },
     { NULL }
   };
-  gchar **argv;
-  gint argc = cargc + 1;
-  gint i;
   GOptionGroup *og;
   gpointer user_data_args[3];
 
@@ -633,12 +632,6 @@ value_pairs_new_from_cmdline (GlobalConfig *cfg,
   user_data_args[0] = cfg;
   user_data_args[1] = vp;
   user_data_args[2] = NULL;
-
-  argv = g_new (gchar *, argc + 1);
-  for (i = 0; i < argc; i++)
-    argv[i + 1] = cargv[i];
-  argv[0] = "value-pairs";
-  argv[argc] = NULL;
 
   ctx = g_option_context_new ("value-pairs");
   og = g_option_group_new (NULL, NULL, NULL, user_data_args, NULL);
@@ -653,9 +646,6 @@ value_pairs_new_from_cmdline (GlobalConfig *cfg,
     }
   g_option_context_free (ctx);
   vp_cmdline_parse_rekey_finish (user_data_args);
-
-  if (vp->scopes == 0)
-    value_pairs_add_scope (vp, "rfc3164");
 
   return vp;
 }
