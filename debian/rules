@@ -23,7 +23,7 @@ ifneq (,$(filter debug,$(DEB_BUILD_OPTIONS)))
 	EXTRA_CONFIGURE_OPTS += --enable-debug
 endif
 
-export DH_OPTIONS += -O-Bdebian/build-tree
+export DH_OPTIONS += -O-Bdebian/build-tree --dbg-package=syslog-ng-dbg
 
 include /usr/share/hardening-includes/hardening.make
 

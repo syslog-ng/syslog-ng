@@ -47,6 +47,27 @@ Description: Next generation system logging daemon (metapackage)
  including all available plugins. It can be safely removed, if only
  parts of syslog-ng need to be installed.
 
+Package: syslog-ng-dbg
+Architecture: any
+Section: debug
+Depends: syslog-ng-core (= ${binary:Version}), ${misc:Depends}
+Description: Next generation system logging daemon (metapackage)
+ syslog-ng is an enhanced syslog daemon, supporting, amongst others:
+  * Powerful configurability, while still being readable
+  * Filtering on any part of the syslog message
+  * Support for both legacy BSD and the new syslog protocol
+  * Wide range of source and destination drivers, including TCP
+    (plain, or over SSL/TLS), UDP, SQL, MongoDB
+  * Also supports fine-grained output format control
+  * Multi-threaded operation
+ .
+ The wide range of plugins make syslog-ng able to perform well in
+ every situation, ranging from enterprise-class centralised
+ deployments, through personal computers to ad-hoc connected networks.
+ .
+ This package contains debug symbols for the whole of syslog-ng,
+ including the modules.
+
 Package: libsyslog-ng-@UPSTREAM_VERSION@
 Section: libs
 Architecture: any
