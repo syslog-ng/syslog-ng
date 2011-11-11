@@ -598,7 +598,7 @@ vp_cmdline_parse_rekey_shift (const gchar *option_name, const gchar *value,
 
 ValuePairs *
 value_pairs_new_from_cmdline (GlobalConfig *cfg,
-			      gint argc, gchar **argv,
+			      gint cargc, gchar **cargv,
 			      GError **error)
 {
   ValuePairs *vp;
@@ -627,11 +627,19 @@ value_pairs_new_from_cmdline (GlobalConfig *cfg,
   };
   GOptionGroup *og;
   gpointer user_data_args[3];
+  gchar **argv;
+  gint argc = cargc + 1, i;
 
   vp = value_pairs_new();
   user_data_args[0] = cfg;
   user_data_args[1] = vp;
   user_data_args[2] = NULL;
+
+  argv = g_new0 (gchar *, argc + 1);
+  for (i = 0; i < argc; i++)
+    argv[i+1] = cargv[i];
+  argv[0] = "value-pairs";
+  argv[argc] = NULL;
 
   ctx = g_option_context_new ("value-pairs");
   og = g_option_group_new (NULL, NULL, NULL, user_data_args, NULL);
@@ -642,10 +650,13 @@ value_pairs_new_from_cmdline (GlobalConfig *cfg,
     {
       value_pairs_free (vp);
       g_option_context_free (ctx);
+      g_free(argv);
       return NULL;
     }
   g_option_context_free (ctx);
   vp_cmdline_parse_rekey_finish (user_data_args);
+
+  g_free(argv);
 
   return vp;
 }

@@ -1,6 +1,8 @@
 #include "plugin.h"
 #include "cfg.h"
 #include "gsocket.h"
+#include "value-pairs.h"
+#include "value-pairs.h"
 
 static void
 tf_ipv4_to_int(LogMessage *msg, gint argc, GString *argv[], GString *result)
@@ -20,9 +22,73 @@ tf_ipv4_to_int(LogMessage *msg, gint argc, GString *argv[], GString *result)
 
 TEMPLATE_FUNCTION_SIMPLE(tf_ipv4_to_int);
 
+static gboolean
+tf_format_welf_prepare(LogTemplateFunction *self, LogTemplate *parent,
+                gint argc, gchar *argv[],
+                gpointer *state, GDestroyNotify *state_destroy,
+                GError **error)
+{
+  ValuePairs *vp;
+
+  vp = value_pairs_new_from_cmdline (parent->cfg, argc, argv, error);
+  if (!vp)
+    return FALSE;
+
+  *state = vp;
+  *state_destroy = (GDestroyNotify) value_pairs_free;
+
+  return TRUE;
+}
+
+static gboolean
+tf_format_welf_foreach(const gchar *name, const gchar *value, gpointer user_data)
+{
+
+  GString *result=(GString *) user_data;
+
+  if (result->len > 0)
+    g_string_append(result," ");
+  g_string_append_printf(result,"%s=\"%s\"",name,value);
+
+  return FALSE;
+}
+
+static void
+tf_format_welf_append(GString *result, ValuePairs *vp, LogMessage *msg)
+{
+
+  value_pairs_foreach(vp, tf_format_welf_foreach, msg, 0, result);
+
+}
+
+static void
+tf_format_welf_call(LogTemplateFunction *self, gpointer state, GPtrArray *arg_bufs,
+             LogMessage **messages, gint num_messages, LogTemplateOptions *opts,
+             gint tz, gint seq_num, const gchar *context_id, GString *result)
+{
+  gint i;
+  ValuePairs *vp = (ValuePairs *)state;
+
+  for (i = 0; i < num_messages; i++)
+    tf_format_welf_append(result, vp, messages[i]);
+
+  //g_string_append_printf(result,"HMMM: %d, %s, %s juppi!!" ,argc,argv[0]->str,argv[1]->str);
+}
+
+static void
+tf_format_welf_eval (LogTemplateFunction *self, gpointer state, GPtrArray *arg_bufs,
+              LogMessage **messages, gint num_messages, LogTemplateOptions *opts,
+              gint tz, gint seq_num, const gchar *context_id)
+{
+  return;
+}
+
+TEMPLATE_FUNCTION(tf_format_welf,tf_format_welf_prepare,tf_format_welf_eval,tf_format_welf_call,NULL);
+
 static Plugin convert_func_plugins[] =
 {
   TEMPLATE_FUNCTION_PLUGIN(tf_ipv4_to_int, "ipv4-to-int"),
+  TEMPLATE_FUNCTION_PLUGIN(tf_format_welf, "format-welf"),
 };
 
 gboolean
