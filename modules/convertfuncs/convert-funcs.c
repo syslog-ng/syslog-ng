@@ -2,7 +2,6 @@
 #include "cfg.h"
 #include "gsocket.h"
 #include "value-pairs.h"
-#include "value-pairs.h"
 
 static void
 tf_ipv4_to_int(LogMessage *msg, gint argc, GString *argv[], GString *result)
@@ -54,14 +53,6 @@ tf_format_welf_foreach(const gchar *name, const gchar *value, gpointer user_data
 }
 
 static void
-tf_format_welf_append(GString *result, ValuePairs *vp, LogMessage *msg)
-{
-
-  value_pairs_foreach(vp, tf_format_welf_foreach, msg, 0, result);
-
-}
-
-static void
 tf_format_welf_call(LogTemplateFunction *self, gpointer state, GPtrArray *arg_bufs,
              LogMessage **messages, gint num_messages, LogTemplateOptions *opts,
              gint tz, gint seq_num, const gchar *context_id, GString *result)
@@ -70,9 +61,7 @@ tf_format_welf_call(LogTemplateFunction *self, gpointer state, GPtrArray *arg_bu
   ValuePairs *vp = (ValuePairs *)state;
 
   for (i = 0; i < num_messages; i++)
-    tf_format_welf_append(result, vp, messages[i]);
-
-  //g_string_append_printf(result,"HMMM: %d, %s, %s juppi!!" ,argc,argv[0]->str,argv[1]->str);
+    value_pairs_foreach(vp, tf_format_welf_foreach, messages[i], 0, result);
 }
 
 static void
