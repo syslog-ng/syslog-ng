@@ -10,6 +10,8 @@
 #  syslog daemon.
 ### END INIT INFO#
 
+set -e
+
 SYSLOGNG_OPTS=""
 
 #we source /etc/default/syslog-ng if exists
