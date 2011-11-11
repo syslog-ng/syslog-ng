@@ -75,10 +75,10 @@ syslogng_wait() {
 
 syslogng_start() {
     log_daemon_msg "Starting system logging" "$NAME"
+    create_pidfiledir
     create_xconsole
-    [ -f "$PIDFILE" ] && echo ' seems to be running' && return 0
     install -d /var/lib/syslog-ng
-    start-stop-daemon --start --quiet --exec "$SYSLOGNG" \
+    start-stop-daemon --start --oknodo --quiet --exec "$SYSLOGNG" \
                       --pidfile "$PIDFILE" -- -p "$PIDFILE" $SYSLOGNG_OPTS
     syslogng_wait 1 $?
     RET="$?"
@@ -88,8 +88,7 @@ syslogng_start() {
 
 syslogng_stop() {
     log_daemon_msg "Stopping system logging" "$NAME"
-    [ ! -f "$PIDFILE" ] && echo ' seems to be stopped already' && return 0
-    start-stop-daemon --stop --quiet --name "$NAME" --retry 3 \
+    start-stop-daemon --stop --oknodo --quiet --name "$NAME" --retry 3 \
                       --pidfile "$PIDFILE"
     syslogng_wait 0 $?
     RET="$?"
@@ -117,7 +116,6 @@ syslogng_reload() {
 
 case "$1" in
   start)
-    create_pidfiledir
     syslogng_start || exit 1
     ;;
   stop)
