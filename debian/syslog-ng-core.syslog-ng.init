@@ -93,7 +93,6 @@ syslogng_stop() {
     syslogng_wait 0 $?
     RET="$?"
     log_end_msg $RET
-    rm -f "$PIDFILE"
     return $RET
 }
 
