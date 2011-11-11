@@ -321,6 +321,17 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase(msg, "$(if '\"$FACILITY_NUM\" >= \"19\" and \"kicsi\" == \"nagy\"' alma korte)", "korte");
   testcase(msg, "$(if '\"$FACILITY_NUM\" >= \"19\" or \"kicsi\" == \"nagy\"' alma korte)", "alma");
 
+  /*template functions: format-welf*/
+  log_msg_set_value(msg, log_msg_get_value_handle(".almafa"), "hello", -1);
+  log_msg_set_value(msg, log_msg_get_value_handle(".almafak"), "this is good work", -1);
+  log_msg_set_value(msg, log_msg_get_value_handle(".korteerdo"), "THIS MUST BE HIDDEN", -1) ;
+  log_msg_set_value(msg, log_msg_get_value_handle(".narancs"), "hmmm", -1);
+  log_msg_set_value(msg, log_msg_get_value_handle(".mline"), "line1\nline2", -1);
+  testcase(msg, "$(format-welf --key .almafa*)", ".almafa=\"hello\" .almafak=\"this is good work\" .almafa=\"hello\" .almafak=\"this is good work\""); /*duplicated message by testcase*/
+  testcase(msg, "$(format-welf --key .tamtatammtatatatatam*)", "");
+  testcase(msg, "$(format-welf --key .na*)", ".narancs=\"hmmm\" .narancs=\"hmmm\"");
+  testcase(msg, "$(format-welf --key .mline*)", ".mline=\"line1\nline2\" .mline=\"line1\nline2\"");
+
   /* message refs */
   testcase(msg, "$(echo ${HOST}@0 ${PID}@1)", "bzorp 23323");
   testcase(msg, "$(echo $HOST $PID)@0", "bzorp 23323");
