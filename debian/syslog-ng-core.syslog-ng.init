@@ -42,7 +42,7 @@ esac
 create_xconsole() {
   if [ ! -e /dev/xconsole ]
   then
-    mknod -m 640 /dev/xconsole p
+    mknod -m 640 /dev/xconsole p 2>/dev/null || true
   fi
 }
 
