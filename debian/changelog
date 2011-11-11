@@ -1,6 +1,6 @@
 syslog-ng (3.3.2.dfsg~0-1~mhp4) unstable; urgency=low
 
-  [ Gergely Nagy]
+  [ Gergely Nagy <algernon@madhouse-project.org> ]
   * Introduced a syslog-ng-dbg package.
   * Init script updates:
     + Silence mknod errors, they're not interesting, and adds noise on
