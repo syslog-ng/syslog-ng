@@ -1,3 +1,16 @@
+syslog-ng (3.3.2.dfsg~0-1~mhp4) unstable; urgency=low
+
+  [ Gergely Nagy]
+  * Introduced a syslog-ng-dbg package.
+  * Init script updates:
+    + Silence mknod errors, they're not interesting, and adds noise on
+    kFreeBSD.
+    + Use set -e.
+    + Use s-s-d's --oknodo options instead of checking the existence of a
+    pidfile ourselves.
+
+ -- Gergely Nagy <algernon@madhouse-project.org>  Fri, 11 Nov 2011 11:28:28 +0100
+
 syslog-ng (3.3.2.dfsg~0-1~mhp3) unstable; urgency=low
 
   * New upstream snapshot, based on commit 8239b58.
