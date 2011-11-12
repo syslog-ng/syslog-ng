@@ -42,11 +42,12 @@ struct _FilterExprNode
           modify:1; /* this filter changes the log message */
   const gchar *type;
   void (*init)(FilterExprNode *self, GlobalConfig *cfg);
-  gboolean (*eval)(FilterExprNode *self, LogMessage *msg);
+  gboolean (*eval)(FilterExprNode *self, LogMessage **msg, gint num_msg);
   void (*free_fn)(FilterExprNode *self);
 };
 
 gboolean filter_expr_eval(FilterExprNode *self, LogMessage *msg);
+gboolean filter_expr_eval_with_context(FilterExprNode *self, LogMessage **msgs, gint num_msg);
 void filter_expr_unref(FilterExprNode *self);
 
 typedef struct _FilterRE
