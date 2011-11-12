@@ -275,17 +275,14 @@ void
 tf_if_call(LogTemplateFunction *self, gpointer state, GPtrArray *arg_bufs, LogMessage **messages, gint num_messages, LogTemplateOptions *opts, gint tz, gint seq_num, const gchar *context_id, GString *result)
 {
   TFCondState *args = (TFCondState *) state;
-  LogMessage *msg;
 
-  /* always apply to the last message */
-  msg = messages[num_messages - 1];
-  if (filter_expr_eval(args->filter, msg))
+  if (filter_expr_eval_with_context(args->filter, messages, num_messages))
     {
-      log_template_append_format(args->argv[0], msg, opts, tz, seq_num, context_id, result);
+      log_template_append_format_with_context(args->argv[0], messages, num_messages, opts, tz, seq_num, context_id, result);
     }
   else
     {
-      log_template_append_format(args->argv[1], msg, opts, tz, seq_num, context_id, result);
+      log_template_append_format_with_context(args->argv[1], messages, num_messages, opts, tz, seq_num, context_id, result);
     }
 }
 
