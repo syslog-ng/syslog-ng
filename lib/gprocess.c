@@ -1440,6 +1440,14 @@ g_process_process_mode_arg(const gchar *option_name G_GNUC_UNUSED, const gchar *
   return TRUE;
 }
 
+static gboolean
+g_process_process_no_caps(const gchar *option_name G_GNUC_UNUSED, const gchar *value G_GNUC_UNUSED,
+                          gpointer data G_GNUC_UNUSED, GError *error)
+{
+  process_opts.caps = NULL;
+  return TRUE;
+}
+
 static GOptionEntry g_process_option_entries[] =
 {
   { "foreground",   'F', G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE,     &process_opts.mode,              "Do not go into the background after initialization", NULL },
@@ -1450,7 +1458,7 @@ static GOptionEntry g_process_option_entries[] =
   { "gid",            0,  G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_STRING,   &process_opts.group,             NULL, NULL },
   { "chroot",       'C',                     0, G_OPTION_ARG_STRING,   &process_opts.chroot_dir,        "Chroot to this directory", "<dir>" },
   { "caps",           0,                     0, G_OPTION_ARG_STRING,   &process_opts.caps,              "Set default capability set", "<capspec>" },
-  { "no-caps",        0, G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE,     &process_opts.caps,              "Disable managing Linux capabilities", NULL },
+  { "no-caps",        0,  G_OPTION_FLAG_NO_ARG, G_OPTION_ARG_CALLBACK, g_process_process_no_caps,       "Disable managing Linux capabilities", NULL },
   { "pidfile",      'p',                     0, G_OPTION_ARG_STRING,   &process_opts.pidfile,           "Set path to pid file", "<pidfile>" },
   { "enable-core",    0,                     0, G_OPTION_ARG_NONE,     &process_opts.core,              "Enable dumping core files", NULL },
   { "fd-limit",       0,                  0, G_OPTION_ARG_INT,      &process_opts.fd_limit_min,         "The minimum required number of fds", NULL },
