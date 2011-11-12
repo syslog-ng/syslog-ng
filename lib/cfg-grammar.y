@@ -404,7 +404,7 @@ source_stmt
           { cfg_lexer_pop_context(lexer); }
           {
             LogSourceGroup *sgroup = log_source_group_new($2, $5); free($2);
-            CHECK_ERROR(cfg_add_source(configuration, sgroup), @2, "duplicate source definition");
+            CHECK_ERROR(cfg_add_source(configuration, sgroup) || cfg_allow_config_dups(configuration), @2, "duplicate source definition");
           }
 	;
 
@@ -418,7 +418,7 @@ filter_stmt
           {
             LogProcessRule *rule = log_process_rule_new($2, g_list_prepend(NULL, log_filter_pipe_new(last_filter_expr, $2)));
             free($2);
-            CHECK_ERROR(cfg_add_filter(configuration, rule), @2, "duplicate filter rule");
+            CHECK_ERROR(cfg_add_filter(configuration, rule) || cfg_allow_config_dups(configuration), @2, "duplicate filter rule");
           }
 	;
 	
@@ -430,7 +430,7 @@ parser_stmt
           {
             LogProcessRule *rule = log_process_rule_new($2, last_parser_expr);
             free($2);
-            CHECK_ERROR(cfg_add_parser(configuration, rule), @2, "duplicate parser rule");
+            CHECK_ERROR(cfg_add_parser(configuration, rule) || cfg_allow_config_dups(configuration), @2, "duplicate parser rule");
           }
 
 rewrite_stmt
@@ -441,7 +441,7 @@ rewrite_stmt
           {
             LogProcessRule *rule = log_process_rule_new($2, last_rewrite_expr);
             free($2);
-            CHECK_ERROR(cfg_add_rewrite(configuration, rule), @2, "duplicate rewrite rule");
+            CHECK_ERROR(cfg_add_rewrite(configuration, rule) || cfg_allow_config_dups(configuration), @2, "duplicate rewrite rule");
           }
 
 dest_stmt
@@ -452,7 +452,7 @@ dest_stmt
           {
             LogDestGroup *dgroup = log_dest_group_new($2, $5);
             free($2);
-            CHECK_ERROR(cfg_add_dest(configuration, dgroup), @2, "duplicate destination");
+            CHECK_ERROR(cfg_add_dest(configuration, dgroup) || cfg_allow_config_dups(configuration), @2, "duplicate destination");
           }
 	;
 
@@ -478,19 +478,19 @@ block_stmt
           '(' { last_block_args = cfg_args_new(); } block_args ')'
           { cfg_lexer_push_context(lexer, LL_CONTEXT_BLOCK_CONTENT, NULL, "block content"); }
           LL_BLOCK
-                                                          {
-                                                            CfgBlock *block;
+          {
+            CfgBlock *block;
 
-                                                            /* block content */
-                                                            cfg_lexer_pop_context(lexer);
-                                                            /* block definition */
-                                                            cfg_lexer_pop_context(lexer);
+            /* block content */
+            cfg_lexer_pop_context(lexer);
+            /* block definition */
+            cfg_lexer_pop_context(lexer);
 
-                                                            block = cfg_block_new($10, last_block_args);
-                                                            cfg_lexer_register_block_generator(lexer, cfg_lexer_lookup_context_type_by_name($3), $4, cfg_block_generate, block, (GDestroyNotify) cfg_block_free);
-                                                            free($10);
-                                                            last_block_args = NULL;
-                                                          }
+            block = cfg_block_new($10, last_block_args);
+            CHECK_ERROR(cfg_lexer_register_block_generator(lexer, cfg_lexer_lookup_context_type_by_name($3), $4, cfg_block_generate, block, (GDestroyNotify) cfg_block_free) || cfg_allow_config_dups(configuration), @4, "duplicate block definition");
+            free($10);
+            last_block_args = NULL;
+          }
         ;
 
 block_args
@@ -553,7 +553,7 @@ template_stmt
 	  }
 	  '{' template_items '}'
           {
-            CHECK_ERROR(cfg_add_template(configuration, last_template), @2, "duplicate template");
+            CHECK_ERROR(cfg_add_template(configuration, last_template) || cfg_allow_config_dups(configuration), @2, "duplicate template");
           }
 	;
 	

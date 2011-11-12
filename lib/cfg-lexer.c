@@ -545,30 +545,31 @@ cfg_lexer_find_generator(CfgLexer *self, gint context, const gchar *name)
   return NULL;
 }
 
-void
+gboolean
 cfg_lexer_register_block_generator(CfgLexer *self, gint context, const gchar *name, CfgBlockGeneratorFunc generator, gpointer generator_data, GDestroyNotify generator_data_free)
 {
   CfgBlockGenerator *gen;
+  gboolean res = FALSE;
 
-  if (cfg_lexer_find_generator(self, context, name))
+  gen = cfg_lexer_find_generator(self, context, name);
+  if (gen)
     {
-      msg_debug("Attempted to register the same generator multiple times, ignoring",
-                evt_tag_str("context", cfg_lexer_lookup_context_name_by_type(context)),
-                evt_tag_str("name", name),
-                NULL);
-      generator_data_free(generator_data);
-      return;
+      gen->generator_data_free(gen->generator_data);
+      g_free(gen->name);
     }
-
-  gen = g_new0(CfgBlockGenerator, 1);
+  else
+    {
+      gen = g_new0(CfgBlockGenerator, 1);
+      self->generators = g_list_append(self->generators, gen);
+      res = TRUE;
+    }
 
   gen->context = context;
   gen->name = g_strdup(name);
   gen->generator = generator;
   gen->generator_data = generator_data;
   gen->generator_data_free = generator_data_free;
-
-  self->generators = g_list_append(self->generators, gen);
+  return res;
 }
 
 static gboolean

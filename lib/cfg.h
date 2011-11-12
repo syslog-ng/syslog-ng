@@ -128,6 +128,7 @@ void cfg_add_connection(GlobalConfig *configuration, struct _LogConnection *conn
 gboolean cfg_add_template(GlobalConfig *cfg, struct _LogTemplate *template);
 LogTemplate *cfg_lookup_template(GlobalConfig *cfg, const gchar *name);
 LogTemplate *cfg_check_inline_template(GlobalConfig *cfg, const gchar *template_or_name, GError **error);
+gboolean cfg_allow_config_dups(GlobalConfig *self);
 
 void cfg_file_owner_set(GlobalConfig *self, gchar *owner);
 void cfg_file_group_set(GlobalConfig *self, gchar *group);
