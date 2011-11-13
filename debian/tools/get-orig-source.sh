@@ -2,11 +2,14 @@
 
 set -e
 
+UPSTREAM_VERSION="$(dpkg-parsechangelog | sed -n '/^Version:/{s,^Version: ,,p}' | cut -d- -f1 | sed -e "s,\.dfsg,,")"
+UPSTREAM_TAG="dfsg/$(echo "${UPSTREAM_VERSION}" | tr '~' '_')"
+
 WD=$(pwd)
 TDIR=$(mktemp -d --tmpdir sng-upstream.XXXXXXXX)
 cd "${TDIR}"
 
-echo "* Building syslog-ng in ${TDIR}"
+echo "* Building syslog-ng ${UPSTREAM_VERSION} from ${UPSTREAM_TAG} in ${TDIR}"
 
 ##
 # Check out the git sources
@@ -17,14 +20,6 @@ echo "** Cloning..."
 git clone -q git://git.madhouse-project.org/debian/syslog-ng.git
 cd syslog-ng
 git submodule --quiet update --init
-
-UPSTREAM_TAG=$(git tag -l 'dfsg/*' 2>/dev/null | sort | tail -n 1)
-UPSTREAM_VERSION=$(echo "${UPSTREAM_TAG}" | sed -e 's,^dfsg/,,' -e "s,\.release,," | tr '_' '~')
-
-if [ -z "${UPSTREAM_VERSION}" ]; then
-	echo "get-orig-source: Cannot determine the upstream version!" >&2
-	exit 1
-fi
 
 install -d debian/orig-source
 
