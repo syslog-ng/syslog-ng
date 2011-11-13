@@ -1,4 +1,6 @@
-syslog-ng (3.3.2.dfsg~0-1~mhp4) unstable; urgency=low
+syslog-ng (3.3.2.dfsg-1~mhp0) unstable; urgency=low
+
+  * New upstream release.
 
   [ Gergely Nagy <algernon@madhouse-project.org> ]
   * Introduced a syslog-ng-dbg package.
@@ -9,7 +11,7 @@ syslog-ng (3.3.2.dfsg~0-1~mhp4) unstable; urgency=low
     + Use s-s-d's --oknodo options instead of checking the existence of a
     pidfile ourselves.
 
- -- Gergely Nagy <algernon@madhouse-project.org>  Fri, 11 Nov 2011 11:28:28 +0100
+ -- Gergely Nagy <algernon@madhouse-project.org>  Sun, 13 Nov 2011 19:49:36 +0100
 
 syslog-ng (3.3.2.dfsg~0-1~mhp3) unstable; urgency=low
 
