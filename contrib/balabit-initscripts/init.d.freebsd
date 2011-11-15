@@ -26,6 +26,14 @@
 # FreeBSD rc specific variables. Please do not modify. 
 name="syslogng"
 rcvar=`set_rcvar`
+load_rc_config "$name"
+
+SYSLOGNG_PREFIX=${SYSLOGNG_PE_PREFIX:-/opt/syslog-ng}
+export SYSLOGNG_PREFIX
+pidfile="$SYSLOGNG_PREFIX/var/run/syslog-ng.pid"
+command="$SYSLOGNG_PREFIX/sbin/syslog-ng"
+required_files="$SYSLOGNG_PREFIX/etc/syslog-ng.conf"
+
 start_precmd="syslog_ng_start_precmd"
 start_postcmd="syslog_ng_start_postcmd"
 stop_postcmd="syslog_ng_stop_postcmd"
