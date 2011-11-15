@@ -20,14 +20,16 @@
 #   their value, change the value of the conf_file and pidfile variables below
 
 # BalaBit's platform independent variables. Please do not modify. 
-SYSLOGNG_PREFIX=/opt/syslog-ng
 
 . "/etc/rc.subr"
 
+load_rc_config "$name"
 
 # FreeBSD rc specific variables. Please do not modify. 
 name="syslogng"
 rcvar=`set_rcvar`
+SYSLOGNG_PREFIX=${SYSLOGNG_PE_PREFIX:-/opt/syslog-ng}
+export SYSLOGNG_PREFIX
 pidfile="$SYSLOGNG_PREFIX/var/run/syslog-ng.pid"
 command="$SYSLOGNG_PREFIX/sbin/syslog-ng"
 required_files="$SYSLOGNG_PREFIX/etc/syslog-ng.conf"
@@ -73,8 +75,6 @@ syslog_ng_stop_postcmd() {
 		fi
 	fi
 }
-
-load_rc_config "$name"
 
 case $1 in
 	start)

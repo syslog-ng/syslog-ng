@@ -9,7 +9,10 @@
 # Modified for BalaBit Ltd's syslog-ng package by Tamas Pal Mar, 1st 2006
 #
 
-SYSLOGNG_PREFIX=/opt/syslog-ng
+DEFAULTFILE=/etc/default/syslog-ng
+[ -f ${DEFAULTFILE} ] && . ${DEFAULTFILE}
+
+SYSLOGNG_PREFIX=${SYSLOGNG_PE_PREFIX:-/opt/syslog-ng}
 SYSLOGNG="$SYSLOGNG_PREFIX/sbin/syslog-ng"
 CONFFILE=$SYSLOGNG_PREFIX/etc/syslog-ng.conf
 PIDFILE=$SYSLOGNG_PREFIX/var/run/syslog-ng.pid
@@ -17,6 +20,8 @@ SYSLOGPIDFILE=/var/run/syslog.pid
 
 OPTIONS=
 MAXWAIT=30
+
+export SYSLOGNG_PREFIX
 
 . /lib/svc/share/smf_include.sh
 

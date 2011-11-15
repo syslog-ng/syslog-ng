@@ -21,7 +21,12 @@
 ### END INIT INFO
 
 OS=`uname -s`
-SYSLOGNG_PREFIX=/opt/syslog-ng
+
+DEFAULTFILE=/etc/default/syslog-ng
+[ -f ${DEFAULTFILE} ] && . ${DEFAULTFILE}
+
+SYSLOGNG_PREFIX=${SYSLOGNG_PE_PREFIX:-/opt/syslog-ng}
+export SYSLOGNG_PREFIX
 SYSLOGNG="$SYSLOGNG_PREFIX/sbin/syslog-ng"
 CONFFILE=$SYSLOGNG_PREFIX/etc/syslog-ng.conf
 PIDFILE=$SYSLOGNG_PREFIX/var/run/syslog-ng.pid
