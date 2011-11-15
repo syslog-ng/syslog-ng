@@ -30,6 +30,10 @@
 #include <gmodule.h>
 #include <string.h>
 
+#ifdef _AIX
+#define G_MODULE_SUFFIX "a"
+#endif
+
 void
 plugin_register(GlobalConfig *cfg, Plugin *p, gint number)
 {
@@ -147,6 +151,7 @@ plugin_dlopen_module(const gchar *module_name, const gchar *module_path)
         break;
 
       /* also check if a libtool archive exists (for example in the build directory) */
+#ifndef _AIX
       dot = strrchr(plugin_module_name, '.');
       if (dot)
         {
@@ -159,7 +164,7 @@ plugin_dlopen_module(const gchar *module_name, const gchar *module_path)
         break;
 
       /* On AIX the modules in .a files */
-#ifdef _AIX
+#else
       dot = strrchr(plugin_module_name, '.');
       if (dot)
         {
