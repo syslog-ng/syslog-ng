@@ -158,8 +158,11 @@ AC_ARG_ENABLE(ssl,
               [  --enable-ssl        Enable SSL support.],,enable_ssl="auto")
 
 AC_ARG_ENABLE(timestamping,
-        [  --enable-timestamping   Enable support for communicating with Timestamping Authorities (default: auto)]
-        ,,enable_timestamping="auto")
+              [  --enable-timestamping   Enable support for communicating with Timestamping Authorities (default: auto)]
+                ,,enable_timestamping="auto")
+AC_ARG_ENABLE(indexer,
+              [  --enable-indexer   Enable support for indexer (default: no)]
+                ,,enable_indexer="no")
 
 AC_ARG_ENABLE(dynamic-linking,
               [  --enable-dynamic-linking        Link everything dynamically.],,enable_dynamic_linking="auto")
@@ -1229,6 +1232,7 @@ AM_CONDITIONAL(IS_TRU64, [test "$ostype" = "OSF1"])
 AM_CONDITIONAL(IS_FBSD61, [test "$ZBS_DIST" = "freebsd-6.1"])
 AM_CONDITIONAL(ENABLE_JSON, [test "$enable_json" = "yes"])
 AM_CONDITIONAL(WITH_LIBSYSTEMD, [test "$with_libsystemd" = "yes"])
+AM_CONDITIONAL([ENABLE_INDEXER], [test "$enable_indexer" = "yes"])
 
 # substitution into manual pages
 expanded_sysconfdir=[`patheval $sysconfdir | sed -e 's/-/\\\\-/g'`]
@@ -1375,6 +1379,7 @@ echo "  Timestamping                : ${enable_timestamping:=no}"
 echo "  SQL support (module)        : ${enable_sql:=no}"
 echo "  PACCT module (EXPERIMENTAL) : ${enable_pacct:=no}"
 echo "  MongoDB destination (module): ${enable_mongodb:=no}"
+echo "  Indexer                     : ${enable_indexer: no}"
 echo " Shared Library extension     : $BB_SHREXT"
 echo "  JSON support (module)       : ${enable_json:=no} (using ${with_json})"
 
