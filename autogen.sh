@@ -5,7 +5,6 @@
 # This script is needed to setup build environment from checked out
 # source tree. 
 #
-SUBMODULES="pe-modules"
 DUMMY_SUBMODULES="lib/ivykis modules/afmongodb/libmongo-client"
 
 set -e
@@ -42,30 +41,19 @@ for submod in $DUMMY_SUBMODULES; do
 	mkdir -p $submod
 done
 
-if [ -z "$skip_submodules" ] || [ "$skip_modules" = 0 ]; then
-	autogen_submodules
-	:
-else
-	if [ -f .gitmodules ];then
-		for d in `grep 'path =' .gitmodules | sed -e 's/.*= *//'`; do
-			mkdir -p $d
-		done
-	fi
-fi
-
 (
- pemodpath="pe-modules/modules/"
+ pemodpath="$ZWA_ROOT/git/syslog-ng/syslog-ng-pe-modules--mainline--4.2/modules"
  for pemod in license logstore diskq confighash snmp afsqlsource; do
     if [ -d $pemodpath/$pemod ]; then
-        if [ -h $pemod ] || [ -d $pemod ]; then rm -rf $pemod; fi
-        cp -a $pemodpath/$pemod modules/$pemod
+        if [ -h modules/$pemod ] || [ -d modules/$pemod ]; then rm -rf modules/$pemod; fi
+        ln -s $pemodpath/$pemod modules/$pemod
     fi
  done
  petests_orig="pe-modules/tests"
  petests="pe-tests"
  if [ -d $petests_orig ]; then
      if [ -h $petests ] || [ -d $petests ]; then rm -rf $petests; fi
-     cp -a $petests_orig $petests
+     ln -s $petests_orig $petests
  fi
 )
 # bootstrap syslog-ng itself
