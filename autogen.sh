@@ -49,7 +49,7 @@ done
         ln -s $pemodpath/$pemod modules/$pemod
     fi
  done
- petests_orig="pe-modules/tests"
+ petests_orig="$ZWA_ROOT/git/syslog-ng/syslog-ng-pe-modules--mainline--4.2/tests"
  petests="pe-tests"
  if [ -d $petests_orig ]; then
      if [ -h $petests ] || [ -d $petests ]; then rm -rf $petests; fi
