@@ -34,6 +34,10 @@ ifneq (,$(findstring tru64,$(ZBS_DIST)))
   RPATH=-Wl,-rpath,/opt/syslog-ng/lib
 endif
 
+ifneq (,$(findstring linux-glibc,$(ZBS_DIST)))
+  CONFIGURE_OPTS+= --enable-indexer
+endif
+
 ifneq (,$(findstring linux-glibc2.1.3,$(ZBS_DIST)))
   CONFIGURE_OPTS+=--disable-ipv6
   # syslog-ng needs a C99 standtard compliant C compiler. GCC 2.95 is not compliant so we have to use a home built GCC 3.3 for this.
