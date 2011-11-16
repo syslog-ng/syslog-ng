@@ -757,8 +757,8 @@ fi
 if test "x$OPENSSL_LIBS" != "x"; then
         if test "x$enable_ssl" = "xauto"; then
 	        enable_ssl="yes"
-          AC_CHECK_HEADERS(openssl/ts.h)
         fi
+        AC_CHECK_HEADERS(openssl/ts.h)
         if test "x$enable_timestamping" = "xauto"; then
                 if test "x$ac_cv_header_openssl_ts_h" = "xyes"; then
                         echo "ENABLE TIMESTAMPING"
