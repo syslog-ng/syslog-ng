@@ -181,7 +181,9 @@ const gchar *builtin_value_names[] =
   NULL,
 };
 static GStaticMutex g_mutex1 = G_STATIC_MUTEX_INIT;
-static guint64 g_rcptid = 1;
+
+RcptidState g_rcptidstate;
+
 static NVHandle match_handles[256];
 NVRegistry *logmsg_registry;
 const char logmsg_sd_prefix[] = ".SDATA.";
@@ -922,6 +924,8 @@ log_msg_init(LogMessage *self, GSockAddr *saddr)
 
   self->original = NULL;
   self->flags |= LF_STATE_OWN_MASK;
+
+  self->rcptid=0;
 }
 
 void
@@ -2270,10 +2274,73 @@ log_msg_read(LogMessage *self, SerializeArchive *sa)
 /****************************************************
 * Generate a unique receipt ID ($RCPTID)
 ****************************************************/
+/*restore RCTPID from persist file, if possible, else
+create new enrty point with "next.rcptid" name*/
+gboolean
+log_msg_init_rctpid(PersistState *state)
+{
+  RcptidState *data;
+  gsize size;
+  guint8 version;
+
+  persist_state_set_rcptcfg_state(state);
+
+  persist_state_set_rcptcfg_handle(persist_state_lookup_entry(state, "next.rcptid", &size, &version));
+  if (persist_state_get_rcptcfg_handle())
+  {
+    data = persist_state_map_entry(persist_state_get_rcptcfg_state(),persist_state_get_rcptcfg_handle());
+    if (data->version > 0)
+    {
+       msg_error("Internal error restoring log reader state, stored data is too new",
+                evt_tag_int("version", data->version));
+       return FALSE;
+    }
+    else
+    {
+      g_rcptidstate.version = 0;
+      if ((data->big_endian && G_BYTE_ORDER == G_LITTLE_ENDIAN) ||
+          (!data->big_endian && G_BYTE_ORDER == G_BIG_ENDIAN))
+      {
+        data->big_endian = !data->big_endian;
+        data->g_rcptid = GUINT64_SWAP_LE_BE(data->g_rcptid);
+      }
+      g_rcptidstate.big_endian = data->big_endian;
+      g_rcptidstate.g_rcptid = data->g_rcptid;
+    }
+    persist_state_unmap_entry(persist_state_get_rcptcfg_state(),persist_state_get_rcptcfg_handle());
+  }
+  else
+  {
+    persist_state_set_rcptcfg_handle(persist_state_alloc_entry(state, "next.rcptid", sizeof(RcptidState)));
+    data = persist_state_map_entry(persist_state_get_rcptcfg_state(),persist_state_get_rcptcfg_handle());
+    data->version = g_rcptidstate.version = 0;
+    data->big_endian = g_rcptidstate.big_endian = (G_BYTE_ORDER == G_BIG_ENDIAN);
+    data->g_rcptid = g_rcptidstate.g_rcptid = 1;
+    persist_state_unmap_entry(persist_state_get_rcptcfg_state(),persist_state_get_rcptcfg_handle());
+  }
+
+  return TRUE;
+}
+
 void
 log_msg_create_rcptid(LogMessage *msg)
 {
-  g_static_mutex_lock(&g_mutex1);
-  msg->rcptid = g_rcptid++;
-  g_static_mutex_unlock(&g_mutex1);
+  if (persist_state_get_rcptcfg_state())
+  {
+    g_static_mutex_lock(&g_mutex1);
+
+    RcptidState *data;
+
+    msg->rcptid = g_rcptidstate.g_rcptid++;
+
+    if (!(g_rcptidstate.g_rcptid&=0xFFFFFFFFFFFF))
+      ++g_rcptidstate.g_rcptid;
+
+    data = persist_state_map_entry(persist_state_get_rcptcfg_state(),persist_state_get_rcptcfg_handle());
+    data->g_rcptid = g_rcptidstate.g_rcptid;
+    persist_state_unmap_entry(persist_state_get_rcptcfg_state(),persist_state_get_rcptcfg_handle());
+    persist_state_commit(persist_state_get_rcptcfg_state());
+
+    g_static_mutex_unlock(&g_mutex1);
+  }
 }

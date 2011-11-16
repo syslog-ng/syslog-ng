@@ -47,6 +47,13 @@
 
 typedef struct _LogPathOptions LogPathOptions;
 
+typedef struct _RcptidState
+{
+  guint8 version;
+  guint8 big_endian:1;
+  guint64 g_rcptid;
+} RcptidState;
+
 typedef void (*LMAckFunc)(LogMessage *lm, gpointer user_data);
 
 #define RE_MAX_MATCHES 256
@@ -261,6 +268,8 @@ void log_msg_global_init();
 void log_msg_global_deinit(void);
 
 gboolean log_msg_nv_table_foreach(NVTable *self, NVTableForeachFunc func, gpointer user_data);
+
+gboolean log_msg_init_rctpid(PersistState *state);
 
 void log_msg_create_rcptid(LogMessage *msg);
 

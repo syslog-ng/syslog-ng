@@ -29,6 +29,7 @@
 
 typedef struct _PersistState PersistState;
 typedef guint32 PersistEntryHandle;
+typedef struct _rcptcfg rcptcfg;
 
 gpointer persist_state_map_entry(PersistState *self, PersistEntryHandle handle);
 void persist_state_unmap_entry(PersistState *self, PersistEntryHandle handle);
@@ -48,5 +49,11 @@ void persist_state_cancel(PersistState *self);
 
 PersistState *persist_state_new(const gchar *filename);
 void persist_state_free(PersistState *self);
+
+PersistState *persist_state_get_rcptcfg_state(void);
+PersistEntryHandle persist_state_get_rcptcfg_handle(void);
+
+void persist_state_set_rcptcfg_state(PersistState *state);
+void persist_state_set_rcptcfg_handle(PersistEntryHandle handle);
 
 #endif

@@ -148,6 +148,11 @@ struct _PersistState
   gint current_key_size;
 };
 
+struct _rcptcfg{
+  PersistState *state;
+  PersistEntryHandle handle;
+};
+
 typedef struct _PersistEntry
 {
   PersistEntryHandle ofs;
@@ -161,6 +166,8 @@ typedef struct _PersistValueHeader
   guint8 version;
   guint16 __padding;
 } PersistValueHeader;
+
+static rcptcfg g_rcptcfg;
 
 /* lowest layer, "store" functions manage the file on disk */
 
@@ -890,4 +897,28 @@ persist_state_free(PersistState *self)
   g_free(self->commited_filename);
   g_hash_table_destroy(self->keys);
   g_free(self);
+}
+
+PersistState *
+persist_state_get_rcptcfg_state(void)
+{
+  return g_rcptcfg.state;
+}
+
+PersistEntryHandle
+persist_state_get_rcptcfg_handle(void)
+{
+  return g_rcptcfg.handle;
+}
+
+void
+persist_state_set_rcptcfg_state(PersistState *state)
+{
+  g_rcptcfg.state = state;
+}
+
+void
+persist_state_set_rcptcfg_handle(PersistEntryHandle handle)
+{
+  g_rcptcfg.handle = handle;
 }

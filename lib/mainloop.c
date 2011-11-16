@@ -467,8 +467,8 @@ static GlobalConfig *main_loop_old_config;
 /* the pending configuration we wish to switch to */
 static GlobalConfig *main_loop_new_config;
 
-
 /* called when syslog-ng first starts up */
+
 static gboolean
 main_loop_initialize_state(GlobalConfig *cfg, const gchar *persist_filename)
 {
@@ -477,6 +477,8 @@ main_loop_initialize_state(GlobalConfig *cfg, const gchar *persist_filename)
   cfg->state = persist_state_new(persist_filename);
   if (!persist_state_start(cfg->state))
     return FALSE;
+
+  log_msg_init_rctpid(cfg->state);
 
   success = cfg_init(cfg);
   if (success)
