@@ -188,7 +188,6 @@ log_dest_driver_release_queue(LogDestDriver *self, LogQueue *q)
   if (q)
     {
       self->queues = g_list_remove(self->queues, q);
-      log_queue_unref(q);
 
       self->release_queue(self, q, self->release_queue_data);
     }
