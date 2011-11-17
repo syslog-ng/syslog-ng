@@ -1,3 +1,36 @@
+3.3.3
+	Thu, 17 Nov 2011 21:23:05 +0100
+
+	Highlights:
+	===========
+
+	This release comes with a quick succession to 3.3.2, as one of the
+	last minute fixes contained a double-unref issue, causing
+	segmentation faults at reload time.  This release is dedicated to
+	that single fix alone and has been running stable for days in production
+	environment. The use of 3.3.2 in production environments is not recommended.
+
+	Bugfixes:
+	=========
+
+	* Fixed a crash problem in the tcp() destination, that occurred at
+	  or after a reload happens.
+
+	Credits:
+	========
+	syslog-ng is developed as a community project, and as such it relies
+        on volunteers to do the work necessarily to produce syslog-ng.
+
+        Reporting bugs, testing changes, writing code or simply providing
+        feedback are all important contributions, so please if you are a
+        user of syslog-ng, contribute.
+
+        These people have helped in this release:
+
+          Patrick H.
+          Balazs Scheidler (BalaBit)
+
+
 3.3.2
 	Sat, 12 Nov 2011 20:48:53 +0100
 
