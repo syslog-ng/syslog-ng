@@ -23,22 +23,22 @@
 
 . "/etc/rc.subr"
 
-load_rc_config "$name"
-
 # FreeBSD rc specific variables. Please do not modify. 
 name="syslogng"
 rcvar=`set_rcvar`
-SYSLOGNG_PREFIX=${SYSLOGNG_PE_PREFIX:-/opt/syslog-ng}
-export SYSLOGNG_PREFIX
-pidfile="$SYSLOGNG_PREFIX/var/run/syslog-ng.pid"
-command="$SYSLOGNG_PREFIX/sbin/syslog-ng"
-required_files="$SYSLOGNG_PREFIX/etc/syslog-ng.conf"
-
 start_precmd="syslog_ng_start_precmd"
 start_postcmd="syslog_ng_start_postcmd"
 stop_postcmd="syslog_ng_stop_postcmd"
 reload_precmd="syslog_ng_reload_precmd"
 extra_commands="reload"
+
+load_rc_config "$name"
+
+SYSLOGNG_PREFIX=${SYSLOGNG_PE_PREFIX:-/opt/syslog-ng}
+export SYSLOGNG_PREFIX
+pidfile="$SYSLOGNG_PREFIX/var/run/syslog-ng.pid"
+command="$SYSLOGNG_PREFIX/sbin/syslog-ng"
+required_files="$SYSLOGNG_PREFIX/etc/syslog-ng.conf"
 
 # get original syslog pidfile from initscript.
 _syslogd_pidfile=`sed -n -e 's/^pidfile="\([^"]*\)"/\1/p' /etc/rc.d/syslogd 2> /dev/null`
