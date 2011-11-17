@@ -33,6 +33,7 @@
 #include "dnscache.h"
 #include "tls-support.h"
 #include "scratch-buffers.h"
+#include "reloc.h"
 
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -85,12 +86,9 @@
  */
 
 /* parsed command line arguments */
-static gchar *cfgfilename = PATH_SYSLOG_NG_CONF;
-static gchar *cfgfilename_reloc = NULL;
-static const gchar *persist_file = PATH_PERSIST_CONFIG;
-static const gchar *persist_file_reloc = NULL;
-static gchar *ctlfilename = PATH_CONTROL_SOCKET;
-static gchar *ctlfilename_reloc = NULL;
+gchar *cfgfilename;
+gchar *persist_file;
+gchar *ctlfilename;
 static gchar *preprocess_into = NULL;
 gboolean syntax_only = FALSE;
 
@@ -682,20 +680,6 @@ main_loop_init(void)
   log_queue_set_max_threads(main_loop_io_workers.max_threads);
   main_loop_call_init();
 
-  /* prepare the relocated settings */
-  gchar *prefix = getenv("SYSLOGNG_PREFIX");
-  if (prefix)
-    {
-      cfgfilename_reloc = g_strdup_printf("%s/etc/syslog-ng.conf", prefix);
-      cfgfilename = cfgfilename_reloc;
-
-      persist_file_reloc = g_strdup_printf("%s/var/syslog-ng.persist", prefix);
-      persist_file = persist_file_reloc;
-
-      ctlfilename_reloc = g_strdup_printf("%s/var/syslog-ng.ctl", prefix);
-      ctlfilename = ctlfilename_reloc;
-    }
-
   current_configuration = cfg_new(0);
   if (!cfg_read_config(current_configuration, cfgfilename, syntax_only, preprocess_into))
     {
@@ -759,18 +743,6 @@ main_loop_run(void)
   cfg_deinit(current_configuration);
   cfg_free(current_configuration);
   current_configuration = NULL;
-
-  /* reset the relocated values */
-  if (cfgfilename_reloc)
-    {
-      g_free(cfgfilename_reloc);
-      g_free(persist_file_reloc);
-      g_free(ctlfilename);
-
-      cfgfilename = PATH_SYSLOG_NG_CONF;
-      persist_file = PATH_PERSIST_CONFIG;
-      ctlfilename = PATH_CONTROL_SOCKET;
-    }
 
   return 0;
 }

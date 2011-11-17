@@ -276,6 +276,8 @@ log_db_parser_free(LogPipe *s)
   log_parser_free_method(s);
 }
 
+extern gchar *path_patterndb_file;
+
 LogParser *
 log_db_parser_new(void)
 {
@@ -287,7 +289,7 @@ log_db_parser_new(void)
   self->super.super.super.deinit = log_db_parser_deinit;
   self->super.super.clone = log_db_parser_clone;
   self->super.process = log_db_parser_process;
-  self->db_file = g_strdup(PATH_PATTERNDB_FILE);
+  self->db_file = g_strdup(path_patterndb_file);
   g_static_mutex_init(&self->lock);
   if (configuration && get_version_value(configuration->version) < 0x0303)
     {

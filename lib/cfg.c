@@ -64,6 +64,12 @@ typedef struct _PersistConfigEntry
 } PersistConfigEntry;
 
 
+gchar *path_prefix;
+gchar *path_datadir;
+gchar *path_sysconfdir;
+gchar *path_pidfiledir;
+gchar *path_patterndb_file;
+
 #ifndef G_OS_WIN32
 
 static void
@@ -454,10 +460,10 @@ cfg_run_parser(GlobalConfig *self, CfgLexer *lexer, CfgParser *parser, gpointer 
   configuration = self;
   old_lexer = self->lexer;
   self->lexer = lexer;
-  cfg_args_set(self->lexer->globals, "syslog-ng-root", PATH_PREFIX);
-  cfg_args_set(self->lexer->globals, "syslog-ng-data", PATH_DATADIR);
+  cfg_args_set(self->lexer->globals, "syslog-ng-root", path_prefix);
+  cfg_args_set(self->lexer->globals, "syslog-ng-data", path_datadir);
   cfg_args_set(self->lexer->globals, "module-path", module_path);
-  cfg_args_set(self->lexer->globals, "include-path", PATH_SYSCONFDIR);
+  cfg_args_set(self->lexer->globals, "include-path", path_sysconfdir);
   cfg_args_set(self->lexer->globals, "autoload-compiled-modules", "1");
 
   res = cfg_parser_parse(parser, lexer, result, arg);
@@ -912,5 +918,6 @@ cfg_calculate_hash(GlobalConfig *cfg)
     }
   return cfg->cfg_fingerprint;
 }
+
 #endif /* ENABLE_SSL */
 #endif /* !G_OS_WIN32 */

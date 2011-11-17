@@ -24,6 +24,8 @@
 
 #include "syslog-ng.h"
 #include "gsocket.h"
+#include "cfg.h"
+#include "reloc.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -235,6 +237,8 @@ usage(const gchar *bin_name)
   exit(1);
 }
 
+#include "reloc.c"
+
 int
 main(int argc, char *argv[])
 {
@@ -242,6 +246,8 @@ main(int argc, char *argv[])
   GOptionContext *ctx;
   gint mode;
   GError *error = NULL;
+
+  control_name = get_reloc_string(PATH_CONTROL_SOCKET);
 
   mode_string = slng_mode(&argc, &argv);
   if (!mode_string)

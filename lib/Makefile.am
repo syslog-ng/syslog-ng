@@ -75,7 +75,8 @@ pkginclude_HEADERS = 		\
 	utils.h			\
 	value-pairs.h		\
 	versioning.h	\
-	vptransform.h
+	vptransform.h           \
+	reloc.h
 
 # this is intentionally formatted so conflicts are less likely to arise. one name in every line.
 libsyslog_ng_crypto_la_SOURCES = \
@@ -151,6 +152,7 @@ libsyslog_ng_la_SOURCES = \
 	pragma-grammar.y	\
 	parser-expr-grammar.y	\
 	rewrite-expr-grammar.y	\
+	reloc.c                 \
 	$(libsyslog_ng_crypto_la_SOURCES)
 
 # each line with closely related files (e.g. the ones generated from the same source)

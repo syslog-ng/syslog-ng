@@ -35,6 +35,7 @@
 #include "patternize.h"
 #include "patterndb-int.h"
 #include "apphook.h"
+#include "reloc.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -68,7 +69,7 @@ static gchar *no_color = "\33[01;0m";
 static gchar **colors = empty_colors;
 
 
-static gchar *patterndb_file = PATH_PATTERNDB_FILE;
+static gchar *patterndb_file;
 static gboolean color_out = FALSE;
 
 static gint
@@ -671,6 +672,8 @@ pdbtool_test_value(LogMessage *msg, const gchar *name, const gchar *test_value)
   return ret;
 }
 
+gchar *path_xsddir;
+
 static gint
 pdbtool_test(int argc, char *argv[])
 {
@@ -697,7 +700,7 @@ pdbtool_test(int argc, char *argv[])
               fprintf(stderr, "%s: Unable to detect patterndb version, please write the <patterndb> tag on a single line\n", argv[arg_pos]);
               failed_to_validate = TRUE;
             }
-          g_snprintf(cmd, sizeof(cmd), "xmllint --noout --nonet --schema %s/patterndb-%d.xsd %s", PATH_XSDDIR, version, argv[arg_pos]);
+          g_snprintf(cmd, sizeof(cmd), "xmllint --noout --nonet --schema %s/patterndb-%d.xsd %s", path_xsddir, version, argv[arg_pos]);
           if (system(cmd) != 0)
             {
               fprintf(stderr, "%s: xmllint returned an error, the executed command was: %s", argv[arg_pos], cmd);
@@ -1080,6 +1083,8 @@ usage(void)
   exit(1);
 }
 
+#include "reloc.c"
+
 int
 main(int argc, char *argv[])
 {
@@ -1087,6 +1092,9 @@ main(int argc, char *argv[])
   GOptionContext *ctx;
   gint mode, ret = 0;
   GError *error = NULL;
+
+  patterndb_file = get_reloc_string(PATH_PATTERNDB_FILE);
+  path_xsddir = get_reloc_string(PATH_XSDDIR);
 
   mode_string = pdbtool_mode(&argc, &argv);
   if (!mode_string)

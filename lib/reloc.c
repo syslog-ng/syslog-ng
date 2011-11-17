@@ -22,33 +22,38 @@
  *
  */
 
-#include "syslog-ng.h"
 #include <stdlib.h>
-#include <unistd.h>
-#include <stdio.h>
 #include <string.h>
-#include <errno.h>
-include "reloc.h"
+#include <glib.h>
+#include "misc.h"
+#include "reloc.h"
 
-int 
-main(int argc, char *argv[])
+/* return the configuration variable
+   use this function instead of PATH_... constants for relocatable binaries
+   if the replacement must be applied, a new string is allocated -> don't use
+   this for local variables, _only_ instead of global variables (assignment
+   in initialization)
+*/
+char *get_reloc_string(const char *orig)
 {
-#ifdef ENV_LD_LIBRARY_PATH
-  {
-    gchar *cur_ldlibpath;
-    gchar ldlibpath[512];
-#if _AIX
-    const gchar *ldlibpath_name = "LIBPATH";
-#else    
-    const gchar *ldlibpath_name = "LD_LIBRARY_PATH";
-#endif
+  gchar *sysprefix = getenv("SYSLOGNG_PREFIX");
+  if (sysprefix == NULL)
+    sysprefix = PATH_PREFIX;
+  gchar *prefix = "${prefix}";
+  gchar *ppos = strstr(orig, prefix);
+  gchar *res = orig;
+  if (ppos != NULL)
+    {
+      gint len1 = ppos - orig;
+      gint len2 = strlen(sysprefix);
+      gint len3 = strlen(orig) - (len1 + strlen(prefix));
+      gint len = len1 + len2 + len3;
+      res = (gchar *)g_malloc(len + 1);
+      memcpy(res, orig, len1);
+      memcpy(res + len1, sysprefix, len2);
+      memcpy(res + len1 + len2, ppos + strlen(prefix), len3);
+      res[len] = '\0';
+    }
 
-    cur_ldlibpath = getenv(ldlibpath_name);
-    snprintf(ldlibpath, sizeof(ldlibpath), "%s=%s%s%s", ldlibpath_name, ENV_LD_LIBRARY_PATH, cur_ldlibpath ? ":" : "", cur_ldlibpath ? cur_ldlibpath : "");
-    putenv(ldlibpath);
-  }
-#endif
-  execv(get_reloc_string(PATH_SYSLOGNG), argv);
-  fprintf(stderr, "Unable to execute main syslog-ng binary from env-wrapper, path=%s, error=%s\n", PATH_SYSLOGNG, strerror(errno));
-  return 127;
+  return res;
 }
