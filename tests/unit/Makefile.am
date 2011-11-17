@@ -30,7 +30,9 @@ check_PROGRAMS = test_thread_wakeup	\
 	test_msgserialize_benchmark	\
 	test_msgserialize_tags		\
 	test_msgformat_upgrade \
-  test_filereader
+  test_filereader	\
+	test_rcptid
+
 
 if IS_HPUX
 check_PROGRAMS += test_zone
@@ -76,6 +78,7 @@ test_msgserialize_tags_SOURCES = test_msgserialize_tags.c
 test_msgformat_upgrade_SOURCES = test_msgformat_upgrade.c
 
 test_thread_wakeup_SOURCES = test_thread_wakeup.c
+test_rcptid_SOURCES = test_rcptid.c
 
 TESTS = $(check_PROGRAMS)
 
