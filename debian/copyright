@@ -15,6 +15,11 @@ Copyright: Copyright (C) 1996-2011 Balázs Scheidler <bazsi@balabit.hu>,
  Copyright (C) 2002-2011 BalaBit IT Security Ltd.
 License: LGPL-2.1+ with OpenSSL exception
 
+Files: lib/scratch-buffers.*
+Copyright: Copyright (C) 2011 BalaBit IT Security Ltd.
+ Copyright (C) 2011 Gergely Nagy <algernon@balabit.hu>
+License: LGPL-2.1+ with OpenSSL exception
+
 Files: lib/value-pairs.*
 Copyright: Copyright (C) 2002-2011 BalaBit IT Security Ltd.
  Copyright (C) 2011 Gergely Nagy <algernon@balabit.hu>

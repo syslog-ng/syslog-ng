@@ -1,3 +1,14 @@
+syslog-ng (3.3.3.dfsg-1~mhp0) unstable; urgency=low
+
+  * New upstream release.
+
+  [ Gergely Nagy <algernon@madhouse-project.org> ]
+  * Refresh debian/copyright.
+  * Fix reusable rewrite rules, patch from Zoltan Fried
+    <deirf@balabit.hu>.
+
+ -- Gergely Nagy <algernon@madhouse-project.org>  Fri, 18 Nov 2011 15:02:14 +0100
+
 syslog-ng (3.3.2.dfsg-1~mhp0) unstable; urgency=low
 
   * New upstream release.
