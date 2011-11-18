@@ -465,7 +465,6 @@ value_pairs_new_from_cmdline (GlobalConfig *cfg,
     {
       value_pairs_free (vp);
       g_option_context_free (ctx);
-      g_free (argv);
       return NULL;
     }
   g_option_context_free (ctx);
