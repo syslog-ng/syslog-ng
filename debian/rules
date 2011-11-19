@@ -174,14 +174,13 @@ override_dh_makeshlibs:
 # because I want to reuse those even on systems that do not support
 # data.tar.xz (lucid, I'm looking at you).
 #
-# Oh, and lucid doesn't like -Zxz anyway, so do a plain dh_builddeb
-# there.
+# Oh, and for compatibility with Ubuntu, don't don't use -Zxz at all.
 override_dh_builddeb:
 	dh_builddeb -i
-ifeq (lucid,$(shell lsb_release -cs))
-	dh_builddeb -a
-else
+ifneq (Ubuntu,$(shell dpkg-vendor --is Ubuntu && echo Ubuntu))
 	dh_builddeb -a -- -Zxz
+else
+	dh_builddeb -a
 endif
 
 ##
