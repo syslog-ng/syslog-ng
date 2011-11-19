@@ -51,7 +51,7 @@ Package: syslog-ng-dbg
 Architecture: any
 Section: debug
 Depends: syslog-ng-core (= ${binary:Version}), ${misc:Depends}
-Description: Next generation system logging daemon (metapackage)
+Description: Next generation system logging daemon (debug symbols)
  syslog-ng is an enhanced syslog daemon, supporting, amongst others:
   * Powerful configurability, while still being readable
   * Filtering on any part of the syslog message
