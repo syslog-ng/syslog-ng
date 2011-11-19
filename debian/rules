@@ -177,7 +177,7 @@ override_dh_makeshlibs:
 # Oh, and for compatibility with Ubuntu, don't don't use -Zxz at all.
 override_dh_builddeb:
 	dh_builddeb -i
-ifneq (Ubuntu,$(shell dpkg-vendor --is Ubuntu && echo Ubuntu))
+ifneq (Ubuntu,$(shell lsb_release -is))
 	dh_builddeb -a -- -Zxz
 else
 	dh_builddeb -a
