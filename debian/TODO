@@ -2,7 +2,13 @@
 
 * Packaging improvements
 
+** xconsole
+
+Figure out what to do on GNU/kFreeBSD: where's xconsole there, and how
+should our config support that? Or in other words, do we need to
+create /dev/xconsole, or symlink it from somewhere else, or..?
+
 ** systemd support
 
-Test it, and figure out what else we need, apart from the service
-file.
+Apart from the service file, we don't need anything else, so this can
+probably go in. Not into the autobuilt packages, though.
