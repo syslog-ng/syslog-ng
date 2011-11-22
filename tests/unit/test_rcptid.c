@@ -111,6 +111,9 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   LogMessage *msg;
   PersistState *state;
   GError *error = NULL;
+#if __hpux__
+  return 0;
+#endif
   char *msg_str = "<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]:This is a test message";
 
   if (argc > 1)
