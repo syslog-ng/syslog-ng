@@ -71,6 +71,7 @@ testcase(gchar *message)
   /* Test the persist handling */
   TEST_ASSERT(msg->rcptid == 0x0000FFFFFFFFFFFE,"%"G_GUINT64_FORMAT,msg->rcptid,0x0000FFFFFFFFFFFE);
 
+  persist_state_commit(state);
   persist_state_free(state);
   g_rcptidstate.g_rcptid=0;
   state = persist_state_new("test_values.persist");

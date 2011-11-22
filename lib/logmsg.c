@@ -2339,7 +2339,6 @@ log_msg_create_rcptid(LogMessage *msg)
     data = persist_state_map_entry(persist_state_get_rcptcfg_state(),persist_state_get_rcptcfg_handle());
     data->g_rcptid = g_rcptidstate.g_rcptid;
     persist_state_unmap_entry(persist_state_get_rcptcfg_state(),persist_state_get_rcptcfg_handle());
-    persist_state_commit(persist_state_get_rcptcfg_state());
 
     g_static_mutex_unlock(&g_mutex1);
   }
