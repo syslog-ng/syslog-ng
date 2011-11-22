@@ -135,10 +135,6 @@ AC_ARG_WITH(default-modules,
    [  --with-default-modules="mod1,mod2,mod3"   Use these as the list of automatically loaded modules],
    default_modules=$with_default_modules, default_modules="auto")
 
-AC_ARG_WITH(ld-library-path,
-   [  --with-ld-library-path=path  Set LD_LIBRARY_PATH during runtime to the value given],
-   env_ld_library_path=$with_ld_library_path)
-
 AC_ARG_WITH([systemdsystemunitdir],
    AS_HELP_STRING([--with-systemdsystemunitdir=DIR], [Directory for systemd service files]))
 
@@ -902,15 +898,6 @@ else
         AC_MSG_RESULT(no)
 fi
 
-
-if test "x$enable_env_wrapper" = "xauto"; then
-	if test "x$env_ld_library_path" != "x"; then
-		enable_env_wrapper="yes"
-	else
-		enable_env_wrapper="no"
-	fi
-fi
-
 if test "x$enable_ipv6" = "xauto"; then
 	AC_MSG_CHECKING(whether to enable IPv6 support)
         if test "x$blb_cv_c_struct_sockaddr_in6" = "xyes"; then
@@ -1197,9 +1184,6 @@ AC_DEFINE_UNQUOTED(PATH_DATADIR, "`patheval $datadir`", [data directory])
 AC_DEFINE_UNQUOTED(PATH_LIBEXECDIR, "`patheval $libexecdir`", [libexec directory])
 if test -n "$timezonedir"; then
         AC_DEFINE_UNQUOTED(PATH_TIMEZONEDIR, "`patheval $timezonedir`", [timezone base directory])
-fi
-if test -n "$env_ld_library_path"; then
-        AC_DEFINE_UNQUOTED(ENV_LD_LIBRARY_PATH, "$env_ld_library_path", [set LD_LIBRARY_PATH to this value])
 fi
 AC_DEFINE_UNQUOTED(ENABLE_MONITOR_INOTIFY, `enable_value $enable_monitor_inotify`, [Enable inotify support])
 AC_DEFINE_UNQUOTED(MODULE_PATH, "$module_path", [module search path])
