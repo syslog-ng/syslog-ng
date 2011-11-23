@@ -58,6 +58,16 @@ tf_format_welf_foreach(const gchar *name, const gchar *value, gpointer user_data
   return FALSE;
 }
 
+static gint
+tf_format_welf_strcmp(gconstpointer a, gconstpointer b)
+{
+  gchar *sa = (gchar *)a, *sb = (gchar *)b;
+
+  if (strcmp (sa, "id") == 0)
+    return -1;
+  return strcmp(sa, sb);
+}
+
 static void
 tf_format_welf_call(LogTemplateFunction *self, gpointer state, GPtrArray *arg_bufs,
              LogMessage **messages, gint num_messages, LogTemplateOptions *opts,
@@ -67,7 +77,7 @@ tf_format_welf_call(LogTemplateFunction *self, gpointer state, GPtrArray *arg_bu
   ValuePairs *vp = (ValuePairs *)state;
 
   for (i = 0; i < num_messages; i++)
-    value_pairs_foreach_sorted(vp, strcmp,
+    value_pairs_foreach_sorted(vp, tf_format_welf_strcmp,
                                tf_format_welf_foreach, messages[i], 0, result);
 }
 
