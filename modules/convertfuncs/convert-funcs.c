@@ -67,7 +67,8 @@ tf_format_welf_call(LogTemplateFunction *self, gpointer state, GPtrArray *arg_bu
   ValuePairs *vp = (ValuePairs *)state;
 
   for (i = 0; i < num_messages; i++)
-    value_pairs_foreach(vp, tf_format_welf_foreach, messages[i], 0, result);
+    value_pairs_foreach_sorted(vp, strcmp,
+                               tf_format_welf_foreach, messages[i], 0, result);
 }
 
 static void
