@@ -42,7 +42,8 @@ for submod in $DUMMY_SUBMODULES; do
 done
 
 (
- pemodpath="$ZWA_ROOT/git/syslog-ng/syslog-ng-pe-modules--mainline--4.2/modules"
+ peroot="$ZWA_ROOT/git/syslog-ng/syslog-ng-pe-modules--mainline--4.2/"
+ pemodpath="$peroot/modules"
  for pemod in license logstore diskq confighash snmp afsqlsource; do
     if [ -d $pemodpath/$pemod ]; then
         if [ -h modules/$pemod ] || [ -d modules/$pemod ]; then rm -rf modules/$pemod; fi
