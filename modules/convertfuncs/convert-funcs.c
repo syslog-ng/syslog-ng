@@ -44,11 +44,17 @@ tf_format_welf_foreach(const gchar *name, const gchar *value, gpointer user_data
 {
 
   GString *result=(GString *) user_data;
+  gchar *escaped_value = g_strescape(value, NULL);
 
   if (result->len > 0)
     g_string_append(result," ");
-  g_string_append_printf(result,"%s=\"%s\"",name,value);
 
+  if (strchr(value, ' ') == NULL)
+    g_string_append_printf(result, "%s=%s", name, escaped_value);
+  else
+    g_string_append_printf(result, "%s=\"%s\"", name, escaped_value);
+
+  g_free(escaped_value);
   return FALSE;
 }
 
