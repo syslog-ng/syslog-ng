@@ -252,13 +252,13 @@ log_matcher_posix_re_new(void)
   self->super.replace = log_matcher_posix_re_replace;
   self->super.free_fn = log_matcher_posix_re_free;
 
-  if (configuration && configuration->version < 0x0300)
+  if (configuration && get_version_value(configuration->version) < 0x0300)
     {
       static gboolean warn_written = FALSE;
 
       if (!warn_written)
         {
-          msg_warning("WARNING: filters do not store matches in macros by default in 3.0, please update your configuration by using an explicit 'store-matches' flag to achieve that",
+          msg_warning("WARNING: filters do not store matches in macros by default from " VERSION_3_0 ", please update your configuration by using an explicit 'store-matches' flag to achieve that",
                       NULL);
           warn_written = TRUE;
         }
