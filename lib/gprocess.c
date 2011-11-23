@@ -672,8 +672,6 @@ g_process_enable_core(void)
     }
 }
 
-extern gchar *path_pidfiledir;
-
 /**
  * g_process_format_pidfile_name:
  * @buf: buffer to store the pidfile name

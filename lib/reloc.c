@@ -22,38 +22,94 @@
  *
  */
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <glib.h>
 #include "misc.h"
 #include "reloc.h"
 
-/* return the configuration variable
-   use this function instead of PATH_... constants for relocatable binaries
-   if the replacement must be applied, a new string is allocated -> don't use
-   this for local variables, _only_ instead of global variables (assignment
-   in initialization)
-*/
+
+GHashTable *configure_variables=NULL;
+gchar *sysprefix = NULL;
+/* Recursively expand the configure variables from the string orig.
+ * We need this to allow proper relocation support of syslog-ng when the suite
+ * doesn't installed under PATH_PREFIX, but into a path declared in the
+ * SYSLOGNG_PREFIX environment variable.
+ *
+ * Returns a newly allocated string, which must be g_free'd after use.
+ */
+
 char *get_reloc_string(const char *orig)
 {
-  gchar *sysprefix = getenv("SYSLOGNG_PREFIX");
+  gchar *ppos = NULL;
+  gchar *epos = NULL;
+  gchar *res2, *prefix, *suffix, *replace, *res;
+  gchar *confvar;
+  gint prefixlen, suffixlen, confvarlen;
+
   if (sysprefix == NULL)
-    sysprefix = PATH_PREFIX;
-  gchar *prefix = "${prefix}";
-  gchar *ppos = strstr(orig, prefix);
-  gchar *res = orig;
-  if (ppos != NULL)
+    if ((sysprefix = getenv("SYSLOGNG_PREFIX")) == NULL )
+      sysprefix = PATH_PREFIX;
+
+  if (!configure_variables)
     {
-      gint len1 = ppos - orig;
-      gint len2 = strlen(sysprefix);
-      gint len3 = strlen(orig) - (len1 + strlen(prefix));
-      gint len = len1 + len2 + len3;
-      res = (gchar *)g_malloc(len + 1);
-      memcpy(res, orig, len1);
-      memcpy(res + len1, sysprefix, len2);
-      memcpy(res + len1 + len2, ppos + strlen(prefix), len3);
-      res[len] = '\0';
+      configure_variables = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
+      g_hash_table_insert(configure_variables, "${prefix}", sysprefix);
+      g_hash_table_insert(configure_variables, "${exec_prefix}", PATH_EXECPREFIX);
+      g_hash_table_insert(configure_variables, "${libexecdir}", PATH_LIBEXECDIR);
+      g_hash_table_insert(configure_variables, "${datarootdir}", PATH_DATAROOTDIR);
+      g_hash_table_insert(configure_variables, "${datadir}", PATH_DATADIR);
+      g_hash_table_insert(configure_variables, "${localstatedir}", PATH_LOCALSTATEDIR);
+#ifdef PATH_TIMEZONEDIR
+      g_hash_table_insert(configure_variables, "${timezonedir}", PATH_TIMEZONEDIR);
+#endif
     }
 
+  res = g_strdup(orig);
+  ppos = strstr(res, "${");
+  while ( ppos != NULL )
+    {
+      prefix=NULL;
+      suffix=NULL;
+      suffixlen=0;
+      prefixlen=0;
+
+      epos = strchr(ppos, '}');
+
+      if ( epos == NULL ) {
+        fprintf(stderr, "%s: Token error, missing '}' in string '%s'. Please re-compile syslog-ng with proper path variables.\n", __FILE__, res);
+        exit(1);
+      }
+      confvarlen = (epos + 1) - ppos;
+      confvar = g_strndup(res, confvarlen);
+
+      replace = g_hash_table_lookup(configure_variables, (gconstpointer)confvar);
+
+      if ( replace == NULL ){
+        fprintf(stderr, "%s: Unknown configure variable: '%s' in string '%s'.\nPlease update %s or configure\n.", __FILE__, confvar, res, __FILE__);
+        exit(1);
+      }
+      g_free(confvar);
+
+      if ( strlen(epos + 1) > 0 ){
+        suffixlen = strlen(epos + 2 );
+        suffix = (epos + 2);
+      }
+
+      prefixlen = ppos - res;
+      if ( prefixlen > 0 ) {
+        prefix = g_strndup(res, prefixlen);
+        res2 = g_strconcat(prefix, replace, "/", suffix, NULL);
+        g_free(prefix);
+      } else {
+        res2 = g_strconcat(replace, "/", suffix, NULL);
+      }
+
+      g_free(res);
+      res = res2;
+
+      ppos = strstr(res, "${");
+    }
   return res;
 }

@@ -129,6 +129,7 @@ OBJECTS =			\
     logstamp.obj \
 	tlscontext.obj \
     cfg.obj \
+	reloc.obj \
 	versioning.obj
 
 

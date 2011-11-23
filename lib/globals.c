@@ -23,10 +23,36 @@
  */
 
 #include "syslog-ng.h"
+#include "reloc.h"
 
 GlobalConfig *configuration;
 int cfg_parser_debug;
 #ifndef _MSC_VER
-gchar *module_path = MODULE_PATH;
+gchar *module_path;
 #endif
 gchar *default_modules = DEFAULT_MODULES;
+
+gchar *path_prefix;
+gchar *path_datadir;
+gchar *path_sysconfdir;
+gchar *path_pidfiledir;
+gchar *path_patterndb_file;
+gchar *cfgfilename;
+gchar *persist_file;
+gchar *ctlfilename;
+
+INITIALIZER(init_paths)
+{
+  /* initialize the SYSLOGNG_PREFIX-related variables */
+  path_prefix = get_reloc_string(PATH_PREFIX);
+  path_datadir = get_reloc_string(PATH_DATADIR);
+  path_sysconfdir = get_reloc_string(PATH_SYSCONFDIR);
+  path_pidfiledir = get_reloc_string(PATH_PIDFILEDIR);
+  path_patterndb_file = get_reloc_string(PATH_PATTERNDB_FILE);
+  cfgfilename = get_reloc_string(PATH_SYSLOG_NG_CONF);
+  persist_file = get_reloc_string(PATH_PERSIST_CONFIG);
+  ctlfilename = get_reloc_string(PATH_CONTROL_SOCKET);
+#ifndef _MSC_VER
+  module_path = get_reloc_string(MODULE_PATH);
+#endif
+}

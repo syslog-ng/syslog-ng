@@ -63,13 +63,6 @@ typedef struct _PersistConfigEntry
   GDestroyNotify destroy;
 } PersistConfigEntry;
 
-
-gchar *path_prefix;
-gchar *path_datadir;
-gchar *path_sysconfdir;
-gchar *path_pidfiledir;
-gchar *path_patterndb_file;
-
 #ifndef G_OS_WIN32
 
 static void

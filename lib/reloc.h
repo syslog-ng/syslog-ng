@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef SYSLOG_NG_H_INCLUDED
-#define SYSLOG_NG_H_INCLUDED
+#ifndef RELOC_H_INCLUDED
+#define RELOC_H_INCLUDED
 
 gchar *get_reloc_string(const gchar *);
 #endif

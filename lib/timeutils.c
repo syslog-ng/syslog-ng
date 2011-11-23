@@ -25,6 +25,7 @@
 #include "timeutils.h"
 #include "messages.h"
 #include "tls-support.h"
+#include "reloc.h"
 
 #include <ctype.h>
 #include <string.h>
@@ -59,17 +60,7 @@ const char *weekday_names[] =
 #define TZ_MAGIC "TZif"
 
 const gint64 LOWEST_TIME32    = (gint64)((gint32)0x80000000);
-static const gchar *time_zone_path_list[] = 
-{ 
-#ifdef PATH_TIMEZONEDIR
-  PATH_TIMEZONEDIR,               /* search the user specified dir */
-#endif
-  PATH_PREFIX "/share/zoneinfo/", /* then local installation first */
-  "/usr/share/zoneinfo/",         /* linux */
-  "/usr/share/lib/zoneinfo/",     /* solaris, AIX */
-  NULL,
-};
-
+static const gchar **time_zone_path_list = NULL;
 static const gchar *time_zone_basedir = NULL;
 
 typedef struct _TimeCache
@@ -83,6 +74,27 @@ get_time_zone_basedir(void)
 {
   int i = 0;
 
+  if ( time_zone_path_list == NULL )
+    {
+      time_zone_path_list=(const char **)calloc(16, sizeof(char**));
+#ifdef PATH_TIMEZONEDIR
+      /* search the user specified dir */
+      time_zone_path_list[i] = get_reloc_string(PATH_TIMEZONEDIR);
+      i++;
+#endif
+      /* then local installation first */
+      time_zone_path_list[i] = get_reloc_string(PATH_PREFIX"/share/zoneinfo");
+      i++;
+
+      /* linux */
+      time_zone_path_list[i] = "/usr/share/zoneinfo";
+      i++;
+      /* solaris, AIX */
+      time_zone_path_list[i] = "/usr/share/lib/zoneinfo";
+      i++;
+    }
+
+  i = 0;
   if (!time_zone_basedir)
     {
       for (i = 0; time_zone_path_list[i] != NULL && !g_file_test(time_zone_path_list[i], G_FILE_TEST_IS_DIR); i++)

@@ -86,9 +86,6 @@
  */
 
 /* parsed command line arguments */
-gchar *cfgfilename;
-gchar *persist_file;
-gchar *ctlfilename;
 static gchar *preprocess_into = NULL;
 gboolean syntax_only = FALSE;
 

@@ -70,7 +70,19 @@ typedef struct _GlobalConfig GlobalConfig;
 
 /* configuration being parsed, used by the bison generated code, NULL whenever parsing is finished. */
 extern GlobalConfig *configuration;
-extern gchar *module_path;
 extern gchar *default_modules;
+
+/* Global path variables. They are filled when the libsyslog-ng.so is loaded.
+ * We have to do it this way to support binary relocation using
+ * SYSLOGNG_PREFIX. */
+extern gchar *module_path;
+extern gchar *path_prefix;
+extern gchar *path_datadir;
+extern gchar *path_sysconfdir;
+extern gchar *path_pidfiledir;
+extern gchar *path_patterndb_file;
+extern gchar *cfgfilename;
+extern gchar *persist_file;
+extern gchar *ctlfilename;
 
 #endif

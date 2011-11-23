@@ -112,7 +112,6 @@ get_installer_version(gchar **inst_version)
 
 #define ON_OFF_STR(x) (x ? "on" : "off")
 
-
 void
 version(void)
 {
@@ -179,15 +178,6 @@ setup_caps (void)
 
 #endif
 
-extern gchar *path_prefix;
-extern gchar *path_datadir;
-extern gchar *path_sysconfdir;
-extern gchar *path_pidfiledir;
-extern gchar *path_patterndb_file;
-extern gchar *cfgfilename;
-extern gchar *persist_file;
-extern gchar *ctlfilename;
-
 int 
 main(int argc, char *argv[])
 {
@@ -201,15 +191,6 @@ main(int argc, char *argv[])
 
   setup_caps();
 
-  /* initialize the SYSLOGNG_PREFIX-related variables */
-  path_prefix = get_reloc_string(PATH_PREFIX);
-  path_datadir = get_reloc_string(PATH_DATADIR);
-  path_sysconfdir = get_reloc_string(PATH_SYSCONFDIR);
-  path_pidfiledir = get_reloc_string(PATH_PIDFILEDIR);
-  path_patterndb_file = get_reloc_string(PATH_PATTERNDB_FILE);
-  cfgfilename = get_reloc_string(PATH_SYSLOG_NG_CONF);
-  persist_file = get_reloc_string(PATH_PERSIST_CONFIG);
-  ctlfilename = get_reloc_string(PATH_CONTROL_SOCKET);
   install_dat_filename = get_reloc_string(PATH_INSTALL_DAT);
 
   ctx = g_option_context_new("syslog-ng");
