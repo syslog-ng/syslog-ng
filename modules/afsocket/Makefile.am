@@ -43,6 +43,7 @@ install-exec-hook:
 
 libafsocket.la: libafsocket-tls.la
 	ln -sf libafsocket-tls.la libafsocket.la
+	(cd .libs && rm -f libafsocket.a && ln -s libafsocket-tls.a libafsocket.a)
 
 else
 install-exec-hook:
@@ -52,6 +53,7 @@ install-exec-hook:
 
 libafsocket.la: libafsocket-tls.la
 	ln -sf libafsocket-notls.la libafsocket.la
+	(cd .libs && rm -f libafsocket.a && ln -s libafsocket-notls.a libafsocket.a)
 
 endif
 
