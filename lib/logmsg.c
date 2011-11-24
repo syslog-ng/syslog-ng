@@ -2271,6 +2271,7 @@ log_msg_read(LogMessage *self, SerializeArchive *sa)
   return FALSE;
 }
 
+#ifndef G_OS_WIN32
 /****************************************************
 * Generate a unique receipt ID ($RCPTID)
 ****************************************************/
@@ -2343,3 +2344,4 @@ log_msg_create_rcptid(LogMessage *msg)
     g_static_mutex_unlock(&g_mutex1);
   }
 }
+#endif

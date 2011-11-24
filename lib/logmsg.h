@@ -269,8 +269,10 @@ void log_msg_global_deinit(void);
 
 gboolean log_msg_nv_table_foreach(NVTable *self, NVTableForeachFunc func, gpointer user_data);
 
+#ifndef G_OS_WIN32
 gboolean log_msg_init_rctpid(PersistState *state);
 
 void log_msg_create_rcptid(LogMessage *msg);
+#endif
 
 #endif
