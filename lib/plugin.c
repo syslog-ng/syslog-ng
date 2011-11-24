@@ -236,19 +236,9 @@ plugin_load_module(const gchar *module_name, GlobalConfig *cfg, CfgArgs *args)
   if (cfg->lexer)
     mp = cfg_args_get(cfg->lexer->globals, "module-path");
   else
-    mp = NULL;
-
-  if (!mp)
     mp = module_path;
 
-  gchar *prefix = getenv("SYSLOGNG_PREFIX");
-  if (prefix)
-    mp = g_strdup_printf("%s/lib/syslog-ng", prefix);
-
   mod = plugin_dlopen_module(module_name, mp);
-
-  if (prefix)
-    g_free(mp);
 
   if (!mod)
     {
