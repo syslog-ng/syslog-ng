@@ -93,17 +93,14 @@ void
 tf_if_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *args, GString *result)
 {
   TFCondState *state = (TFCondState *) s;
-  LogMessage *msg;
 
-  /* always apply to the last message */
-  msg = args->messages[args->num_messages - 1];
-  if (filter_expr_eval(state->filter, msg))
+  if (filter_expr_eval_with_context(state->filter, args->messages, args->num_messages))
     {
-      log_template_append_format(state->super.argv[0], msg, args->opts, args->tz, args->seq_num, args->context_id, result);
+      log_template_append_format_with_context(state->super.argv[0], args->messages, args->num_messages, args->opts, args->tz, args->seq_num, args->context_id, result);
     }
   else
     {
-      log_template_append_format(state->super.argv[1], msg, args->opts, args->tz, args->seq_num, args->context_id, result);
+      log_template_append_format_with_context(state->super.argv[1], args->messages, args->num_messages, args->opts, args->tz, args->seq_num, args->context_id, result);
     }
 }
 

@@ -168,29 +168,29 @@ struct _LogDestDriver
   gint throttle;
 };
 
-void log_dest_driver_add_queue(LogDestDriver *s, LogQueue *q);
-
 static inline LogQueue *
 log_dest_driver_acquire_queue(LogDestDriver *self, gchar *persist_name)
 {
   LogQueue *q;
-  gchar buf[256];
-
-  if (!persist_name)
-    {
-      g_snprintf(buf, sizeof(buf), "dd_queue(%s,%s)", self->super.group, self->super.id);
-      persist_name = buf;
-    }
 
   q = self->acquire_queue(self, persist_name, self->acquire_queue_data);
-  log_dest_driver_add_queue(self, q);
+  if (q)
+    {
+      log_queue_ref(q);
+      self->queues = g_list_prepend(self->queues, q);
+    }
   return q;
 }
 
 static inline void
 log_dest_driver_release_queue(LogDestDriver *self, LogQueue *q)
 {
-  self->release_queue(self, q, self->release_queue_data);
+  if (q)
+    {
+      self->queues = g_list_remove(self->queues, q);
+
+      self->release_queue(self, q, self->release_queue_data);
+    }
 }
 
 static inline gboolean

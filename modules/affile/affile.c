@@ -475,6 +475,17 @@ struct _AFFileDestWriter
   gboolean reopen_pending, queue_pending;
 };
 
+static gchar *
+affile_dw_format_persist_name(AFFileDestWriter *self)
+{
+  static gchar persist_name[1024];
+
+  g_snprintf(persist_name, sizeof(persist_name),
+             "affile_dw_queue(%s)",
+             self->filename);
+  return persist_name;
+}
+
 static void affile_dd_reap_writer(AFFileDestDriver *self, AFFileDestWriter *dw);
 
 static void
@@ -591,7 +602,7 @@ affile_dw_init(LogPipe *s)
   log_writer_set_options((LogWriter *) self->writer, s, &self->owner->writer_options, 1,
                          self->owner->flags & AFFILE_PIPE ? SCS_PIPE : SCS_FILE,
                          self->owner->super.super.id, self->filename);
-  log_writer_set_queue(self->writer, log_dest_driver_acquire_queue(&self->owner->super, NULL));
+  log_writer_set_queue(self->writer, log_dest_driver_acquire_queue(&self->owner->super, affile_dw_format_persist_name(self)));
 
   if (!log_pipe_init(self->writer, NULL))
     {
@@ -615,6 +626,9 @@ affile_dw_deinit(LogPipe *s)
     {
       log_pipe_deinit(self->writer);
     }
+  log_dest_driver_release_queue(&self->owner->super, log_writer_get_queue(self->writer));
+  log_writer_set_queue(self->writer, NULL);
+
   if (iv_timer_registered(&self->reap_timer))
     iv_timer_unregister(&self->reap_timer);
   return TRUE;

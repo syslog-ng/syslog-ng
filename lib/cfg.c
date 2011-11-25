@@ -160,34 +160,44 @@ cfg_bad_hostname_set(GlobalConfig *self, gchar *bad_hostname_re)
   self->bad_hostname_re = g_strdup(bad_hostname_re);  
 }
 
-void
+static gboolean
+cfg_insert_check_dups(GHashTable *hash, const gchar *kind, const gchar *key, void *value)
+{
+  gboolean res = TRUE;
+
+  res = (g_hash_table_lookup(hash, key) == NULL);
+  g_hash_table_replace(hash, (gpointer) key, value);
+  return res;
+}
+
+gboolean
 cfg_add_source(GlobalConfig *cfg, LogSourceGroup *group)
 {
-  g_hash_table_insert(cfg->sources, group->name, group);
+  return cfg_insert_check_dups(cfg->sources, "source", group->name, group);
 }
 
-void
+gboolean
 cfg_add_dest(GlobalConfig *cfg, LogDestGroup *group)
 {
-  g_hash_table_insert(cfg->destinations, group->name, group);
+  return cfg_insert_check_dups(cfg->destinations, "destination", group->name, group);
 }
 
-void
+gboolean
 cfg_add_filter(GlobalConfig *cfg, LogProcessRule *rule)
 {
-  g_hash_table_insert(cfg->filters, rule->name, rule);
+  return cfg_insert_check_dups(cfg->filters, "filter", rule->name, rule);
 }
 
-void
+gboolean
 cfg_add_parser(GlobalConfig *cfg, LogProcessRule *rule)
 {
-  g_hash_table_insert(cfg->parsers, rule->name, rule);
+  return cfg_insert_check_dups(cfg->parsers, "parser", rule->name, rule);
 }
 
-void
+gboolean
 cfg_add_rewrite(GlobalConfig *cfg, LogProcessRule *rule)
 {
-  g_hash_table_insert(cfg->rewriters, rule->name, rule);
+  return cfg_insert_check_dups(cfg->rewriters, "rewrite", rule->name, rule);
 }
 
 void
@@ -196,10 +206,10 @@ cfg_add_connection(GlobalConfig *cfg, LogConnection *conn)
   g_ptr_array_add(cfg->connections, conn);
 }
 
-void
+gboolean
 cfg_add_template(GlobalConfig *cfg, LogTemplate *template)
 {
-  g_hash_table_insert(cfg->templates, template->name, template);
+  return cfg_insert_check_dups(cfg->templates, "template", template->name, template);
 }
 
 LogTemplate *
@@ -308,18 +318,39 @@ cfg_check_inline_template(GlobalConfig *cfg, const gchar *template_or_name, GErr
   return template;
 }
 
+gboolean
+cfg_allow_config_dups(GlobalConfig *self)
+{
+  const gchar *s;
+
+  if (self->version < 0x0303)
+    return TRUE;
+
+  s = cfg_args_get(self->lexer->globals, "allow-config-dups");
+  if (s && atoi(s))
+    {
+      return TRUE;
+    }
+  else
+    {
+      /* duplicate found, but allow-config-dups is not enabled, hint the user that he might want to use allow-config-dups */
+      msg_notice("WARNING: Duplicate configuration objects (sources, destinations, ...) are not allowed by default starting with syslog-ng 3.3, add \"@define allow-config-dups 1\" to your configuration to reenable", NULL);
+      return FALSE;
+    }
+}
+
 GlobalConfig *
 cfg_new(gint version)
 {
   GlobalConfig *self = g_new0(GlobalConfig, 1);
 
   self->version = version;
-  self->sources = g_hash_table_new(g_str_hash, g_str_equal);
-  self->destinations = g_hash_table_new(g_str_hash, g_str_equal);
-  self->filters = g_hash_table_new(g_str_hash, g_str_equal);
-  self->parsers = g_hash_table_new(g_str_hash, g_str_equal);
-  self->rewriters = g_hash_table_new(g_str_hash, g_str_equal);
-  self->templates = g_hash_table_new(g_str_hash, g_str_equal);
+  self->sources = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, (GDestroyNotify) log_pipe_unref);
+  self->destinations = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, (GDestroyNotify) log_pipe_unref);
+  self->filters = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, (GDestroyNotify) log_process_rule_unref);
+  self->parsers = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, (GDestroyNotify) log_process_rule_unref);
+  self->rewriters = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, (GDestroyNotify) log_process_rule_unref);
+  self->templates = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, (GDestroyNotify) log_template_unref);
   self->connections = g_ptr_array_new();
 
   self->flush_lines = 0;
@@ -416,31 +447,6 @@ cfg_read_config(GlobalConfig *self, gchar *fname, gboolean syntax_only, gchar *p
   return FALSE;
 }
 
-static gboolean
-cfg_remove_pipe(gpointer key, gpointer value, gpointer user_data)
-{
-  LogPipe *self = (LogPipe *) value;
-  
-  log_pipe_unref(self);
-  return TRUE;
-}
-
-static gboolean
-cfg_remove_process(gpointer key, gpointer value, gpointer user_data)
-{
-  LogProcessRule *s = (LogProcessRule *) value;
-  
-  log_process_rule_unref(s);
-  return TRUE;
-}
-
-static gboolean
-cfg_remove_template(gpointer key, gpointer value, gpointer user_data)
-{
-  log_template_unref(value);
-  return TRUE;
-}
-
 void
 cfg_free(GlobalConfig *self)
 {
@@ -457,13 +463,6 @@ cfg_free(GlobalConfig *self)
   
   if (self->center)
     log_center_free(self->center);
-  
-  g_hash_table_foreach_remove(self->sources, cfg_remove_pipe, NULL);
-  g_hash_table_foreach_remove(self->destinations, cfg_remove_pipe, NULL);
-  g_hash_table_foreach_remove(self->filters, cfg_remove_process, NULL);
-  g_hash_table_foreach_remove(self->parsers, cfg_remove_process, NULL);
-  g_hash_table_foreach_remove(self->rewriters, cfg_remove_process, NULL);
-  g_hash_table_foreach_remove(self->templates, cfg_remove_template, NULL);
   
   for (i = 0; i < self->connections->len; i++)
     {

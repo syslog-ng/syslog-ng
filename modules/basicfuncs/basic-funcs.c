@@ -38,7 +38,6 @@ tf_parse_int(const gchar *s, long *d)
 #include "cond-funcs.c"
 #include "ip-funcs.c"
 
-
 static Plugin basicfuncs_plugins[] =
 {
   /* cond-funcs */

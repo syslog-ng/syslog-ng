@@ -684,6 +684,13 @@ pdbtool_test(int argc, char *argv[])
 
   for (arg_pos = 1; arg_pos < argc; arg_pos++)
     {
+      if (access(argv[arg_pos], R_OK) == -1)
+	{
+	  fprintf(stderr, "%s: Unable to access the patterndb file\n", argv[arg_pos]);
+	  failed_to_validate = TRUE;
+	  continue;
+	}
+
       if (test_validate)
         {
           gchar cmd[1024];
@@ -694,12 +701,14 @@ pdbtool_test(int argc, char *argv[])
             {
               fprintf(stderr, "%s: Unable to detect patterndb version, please write the <patterndb> tag on a single line\n", argv[arg_pos]);
               failed_to_validate = TRUE;
+	      continue;
             }
           g_snprintf(cmd, sizeof(cmd), "xmllint --noout --nonet --schema %s/patterndb-%d.xsd %s", PATH_XSDDIR, version, argv[arg_pos]);
           if (system(cmd) != 0)
             {
               fprintf(stderr, "%s: xmllint returned an error, the executed command was: %s", argv[arg_pos], cmd);
               failed_to_validate = TRUE;
+	      continue;
             }
         }
 
@@ -762,7 +771,7 @@ pdbtool_test(int argc, char *argv[])
     return 1;
   if (failed_to_match)
     return 2;
-  if (failed_to_find_id)
+  if (failed_to_find_id && test_ruleid)
     {
       printf("Could not find the specified ID, or the defined rule doesn't have an example message.\n");
       return 3;

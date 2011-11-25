@@ -49,9 +49,11 @@ log_rewrite_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_option
       msg_debug("Rewrite condition unmatched, skipping rewrite",
                 evt_tag_str("value", log_msg_get_value_name(self->value_handle, NULL)),
                 NULL);
-      return;
     }
-  self->process(self, msg);
+  else
+    {
+      self->process(self, msg);
+    }
   if (G_UNLIKELY(debug_flag))
     {
       value = log_msg_get_value(msg, self->value_handle, &length);
@@ -163,6 +165,8 @@ log_rewrite_subst_clone(LogProcessPipe *s)
 
   cloned = (LogRewriteSubst *) log_rewrite_subst_new(self->replacement->template);
   cloned->matcher = log_matcher_ref(self->matcher);
+  cloned->super.value_handle = self->super.value_handle;
+  cloned->super.condition = self->super.condition;
   return &cloned->super.super.super;
 }
 
@@ -225,6 +229,8 @@ log_rewrite_set_clone(LogProcessPipe *s)
   LogRewriteSet *cloned;
 
   cloned = (LogRewriteSet *) log_rewrite_set_new(self->value_template->template);
+  cloned->super.value_handle = self->super.value_handle;
+  cloned->super.condition = self->super.condition;
   return &cloned->super.super.super;
 }
 

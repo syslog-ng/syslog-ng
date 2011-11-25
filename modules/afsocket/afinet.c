@@ -748,7 +748,8 @@ afinet_dd_free(LogPipe *s)
   g_free(self->bind_port);
   g_free(self->dest_port);
 #if ENABLE_SPOOF_SOURCE
-  g_string_free(self->lnet_buffer, TRUE);
+  if (self->lnet_buffer)
+    g_string_free(self->lnet_buffer, TRUE);
   g_static_mutex_free(&self->lnet_lock);
 #endif
   afsocket_dd_free(s);

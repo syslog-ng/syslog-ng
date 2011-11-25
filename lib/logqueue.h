@@ -54,6 +54,7 @@ struct _LogQueue
   GDestroyNotify parallel_push_data_destroy;
 
   /* queue management */
+  gboolean (*keep_on_reload)(LogQueue *self);
   gint64 (*get_length)(LogQueue *self);
   void (*push_tail)(LogQueue *self, LogMessage *msg, const LogPathOptions *path_options);
   void (*push_head)(LogQueue *self, LogMessage *msg, const LogPathOptions *path_options);
@@ -63,6 +64,14 @@ struct _LogQueue
 
   void (*free_fn)(LogQueue *self);
 };
+
+static inline gboolean
+log_queue_keep_on_reload(LogQueue *self)
+{
+  if (self->keep_on_reload)
+    return self->keep_on_reload(self);
+  return TRUE;
+}
 
 static inline gint64
 log_queue_get_length(LogQueue *self)
