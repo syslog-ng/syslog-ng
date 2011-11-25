@@ -144,6 +144,7 @@ nv_entry_get_name(NVEntry *self)
  * writev() operation.
  *
  * Memory layout:
+ * =============
  *
  *  || struct || static value offsets || dynamic value (id, offset) pairs || <free space> || stored (name, value)  ||
  *
@@ -160,6 +161,24 @@ nv_entry_get_name(NVEntry *self)
  *   - a dynamically sized guint32 array, the two high order bytes specify the global ID of the given value,
  *   - the low order 16 bits is the offset in this payload where
  *   - dynamic values are sorted by the global ID
+ *
+ * Memory allocation
+ * =================
+ *   - the memory used by NVTable is managed by the caller, sometimes it is
+ *     allocated inside an existing data structure (we preallocate space
+ *     with LogMessage)
+ *
+ *   - when the structure needs to grow the instance pointer itself needs to
+ *     be changed. In order to avoid doing that in all the API calls, a
+ *     separate nv_table_realloc() call is provided.
+ *
+ *   - NVTable instances are reference counted, but the reference counts are
+ *     not thread safe (and accessing NVTable itself isn't either). When
+ *     reallocation is needed and multiple references exist, NVTable clones
+ *     itself and leaves the old copy be.
+ *
+ *   - It is possible to clone an NVTable, which basically copies the
+ *     underlying memory contents.
  */
 struct _NVTable
 {
