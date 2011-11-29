@@ -38,6 +38,7 @@
 static NVHandle class_handle = 0;
 static NVHandle rule_id_handle = 0;
 static LogTagId system_tag;
+static LogTagId unknown_tag;
 
 /*
  * Timing
@@ -1267,6 +1268,7 @@ pdb_rule_set_lookup(PDBRuleSet *self, LogMessage *msg, GArray *dbg_list)
                 {
                   log_msg_set_tag_by_id(msg, system_tag);
                 }
+              log_msg_clear_tag_by_id(msg, unknown_tag);
               g_string_free(buffer, TRUE);
               pdb_rule_ref(rule);
               return rule;
@@ -1274,6 +1276,7 @@ pdb_rule_set_lookup(PDBRuleSet *self, LogMessage *msg, GArray *dbg_list)
           else
             {
               log_msg_set_value(msg, class_handle, "unknown", 7);
+              log_msg_set_tag_by_id(msg, unknown_tag);
             }
           g_array_free(matches, TRUE);
         }
@@ -1579,4 +1582,5 @@ pattern_db_global_init(void)
   class_handle = log_msg_get_value_handle(".classifier.class");
   rule_id_handle = log_msg_get_value_handle(".classifier.rule_id");
   system_tag = log_tags_get_by_name(".classifier.system");
+  unknown_tag = log_tags_get_by_name(".classifier.unknown");
 }

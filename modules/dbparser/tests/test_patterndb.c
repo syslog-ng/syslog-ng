@@ -277,6 +277,7 @@ test_patterndb_rule(void)
   test_rule_tag("pattern1xa", "tag1x-1", FALSE);
   test_rule_tag("pattern1xa", "tag1x-2", FALSE);
   test_rule_tag("pattern1xa", "tag1x-3", FALSE);
+  test_rule_tag("foobar", ".classifier.unknown", TRUE);
 
   test_rule_value("pattern11", "n11-1", "v11-1");
   test_rule_value("pattern11", ".classifier.class", "system");
