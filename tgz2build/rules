@@ -4,8 +4,8 @@ DOCDIR=$(PREFIX)/doc
 
 CC:=gcc
 CONFIGURE_OPTS := --prefix $(ZBS_PREFIX) --enable-ssl --enable-dynamic-linking --enable-sql \
-	--enable-spoof-source --enable-pcre --disable-tcp-wrapper --with-ld-library-path=$(ZBS_PREFIX)/lib \
-	--with-pidfile-dir=$(ZBS_PREFIX)/var/run \
+	--enable-spoof-source --enable-pcre --disable-tcp-wrapper \
+	--with-pidfile-dir='$${prefix}/var/run' \
 	--with-module-dir='$${prefix}/lib' \
 	--with-ivykis=system \
 	--disable-mongodb
