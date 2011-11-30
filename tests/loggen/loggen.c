@@ -392,7 +392,7 @@ gen_messages(send_data_t send_func, void *send_func_ud, int thread_id, FILE *rea
         }
       else
         {
-          if (sock_type == SOCK_STREAM && framing)
+          if (sock_type == SOCK_STREAM && rltp)
             hdr_len = snprintf(linebuf, sizeof(linebuf), "%d ", message_length);
           else
             hdr_len = 0;
@@ -680,6 +680,7 @@ active_thread(gpointer st)
   guint64 count;
   struct timeval start, end, diff_tv;
   FILE *readfrom = NULL;
+  GString *ehlo = g_string_sized_new(64);
 
 
   sock = connect_server();
@@ -701,10 +702,10 @@ active_thread(gpointer st)
   if (rltp)
     {
       char cbuf[256];
-
+      g_string_sprintf(ehlo,"EHLO TID=loggen_%06d\n",id);
       /* session id */
       read_sock(sock, cbuf ,256);
-      send(sock, "EHLO TID=01234567890123456789012345678901\n", strlen("EHLO TID=01234567890123456789012345678901\n"), 0);
+      send(sock, ehlo->str, ehlo->len, 0);
       read_rltp_options(sock,&compression_level,&require_tls,&serialization);
       send(sock, "DATA\n", 5, 0);
       read_sock(sock, cbuf ,256);
