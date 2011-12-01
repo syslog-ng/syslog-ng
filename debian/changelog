@@ -1,3 +1,12 @@
+syslog-ng (3.3.3.dfsg-1~mhp1) unstable; urgency=low
+
+  * New snapshot release, based on upstream commit cd059ea.
+
+  [ Gergely Nagy <algernon@madhouse-project.org> ]
+  * Dropped the previous two patches, they're applied upstream.
+
+ -- Gergely Nagy <algernon@madhouse-project.org>  Thu, 01 Dec 2011 11:46:17 +0100
+
 syslog-ng (3.3.3.dfsg-1~mhp0) unstable; urgency=low
 
   * New upstream release.
