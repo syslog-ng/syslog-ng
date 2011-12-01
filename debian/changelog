@@ -1,4 +1,4 @@
-syslog-ng (3.3.3.dfsg-1~mhp1) unstable; urgency=low
+syslog-ng (3.3.3.dfsg-1~mhp1+gcd059ea) unstable; urgency=low
 
   * New snapshot release, based on upstream commit cd059ea.
 
