@@ -75,6 +75,17 @@ log_rewrite_free_method(LogPipe *s)
   log_process_pipe_free_method(s);
 }
 
+static gboolean
+log_rewrite_init_method(LogPipe *s)
+{
+  LogRewrite *self = (LogRewrite *) s;
+
+  if (self->condition && self->condition->init)
+    self->condition->init(self->condition, log_pipe_get_config(s));
+
+  return TRUE;
+}
+
 static void
 log_rewrite_init(LogRewrite *self)
 {
@@ -83,6 +94,7 @@ log_rewrite_init(LogRewrite *self)
   self->super.super.flags |= PIF_CLONE;
   self->super.super.free_fn = log_rewrite_free_method;
   self->super.super.queue = log_rewrite_queue;
+  self->super.super.init = log_rewrite_init_method;
   self->value_handle = LM_V_MESSAGE;
 }
 
