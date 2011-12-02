@@ -28,25 +28,24 @@ name="syslogng"
 rcvar=`set_rcvar`
 load_rc_config "$name"
 
-SYSLOGNG_PREFIX=${SYSLOGNG_PE_PREFIX:-/opt/syslog-ng}
-export SYSLOGNG_PREFIX
-pidfile="$SYSLOGNG_PREFIX/var/run/syslog-ng.pid"
-command="$SYSLOGNG_PREFIX/sbin/syslog-ng"
-required_files="$SYSLOGNG_PREFIX/etc/syslog-ng.conf"
-
 start_precmd="syslog_ng_start_precmd"
 start_postcmd="syslog_ng_start_postcmd"
 stop_postcmd="syslog_ng_stop_postcmd"
 reload_precmd="syslog_ng_reload_precmd"
 extra_commands="reload"
 
-load_rc_config "$name"
-
+# on FreeBSD we don't use the wrapper script and call the daemon directly. But
+# we have to provide the same functionality by declaring the needed variables.
 SYSLOGNG_PREFIX=${SYSLOGNG_PE_PREFIX:-/opt/syslog-ng}
-export SYSLOGNG_PREFIX
+LD_LIBRARY_PATH=${SYSLOGNG_PREFIX}/lib:$LD_LIBRARY_PATH
+MIBDIRS=$SYSLOGNG_PREFIX/share/snmp/mibs
 pidfile="$SYSLOGNG_PREFIX/var/run/syslog-ng.pid"
-command="$SYSLOGNG_PREFIX/sbin/syslog-ng"
+command="$SYSLOGNG_PREFIX/libexec/syslog-ng"
 required_files="$SYSLOGNG_PREFIX/etc/syslog-ng.conf"
+
+export SYSLOGNG_PREFIX
+export LD_LIBRARY_PATH
+export MIBDIRS
 
 # get original syslog pidfile from initscript.
 _syslogd_pidfile=`sed -n -e 's/^pidfile="\([^"]*\)"/\1/p' /etc/rc.d/syslogd 2> /dev/null`
