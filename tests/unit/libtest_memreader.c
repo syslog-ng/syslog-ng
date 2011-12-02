@@ -43,7 +43,7 @@ LogTransport *log_transport_memory_new(gchar *read_buffer, guint32 read_buffer_l
   return &self->super;
 }
 
-LogReader *log_reader_new_memory_source(LogReaderOptions *options, guint32 read_buffer_length, LogReaderNotifyMethod notif, LogReaderQueueMethod queue, LogTransport **new_transport, gchar *prefix, gchar *garbage)
+LogReader *log_reader_new_memory_source(LogReaderOptions *options, guint32 read_buffer_length, LogReaderNotifyMethod notif, LogReaderQueueMethod queue, LogTransport **new_transport, gchar *prefix, gchar *garbage, GlobalConfig *cfg)
 {
   gchar *read_buffer = g_malloc0(read_buffer_length);
   LogProto *proto = NULL;
@@ -76,11 +76,11 @@ LogReader *log_reader_new_memory_source(LogReaderOptions *options, guint32 read_
   log_reader_set_options((LogPipe *)reader, (LogPipe *)reader, options, 0, SCS_FILE, "test","test_mem_queue");
   ((LogPipe *)reader)->queue = queue;
   ((LogPipe *)reader)->notify = notif;
-  log_pipe_init((LogPipe *)reader, NULL);
+  log_pipe_init((LogPipe *)reader, cfg);
   return reader;
 }
 
-LogReader *log_reader_new_file_source(LogReaderOptions *options, guint32 read_buffer_length, LogReaderNotifyMethod notif, LogReaderQueueMethod queue, LogTransport **new_transport)
+LogReader *log_reader_new_file_source(LogReaderOptions *options, guint32 read_buffer_length, LogReaderNotifyMethod notif, LogReaderQueueMethod queue, LogTransport **new_transport, GlobalConfig *cfg)
 {
   gchar *read_buffer = g_malloc0(read_buffer_length);
   *new_transport = log_transport_memory_new(read_buffer, read_buffer_length, NULL, 0, 0);
@@ -92,7 +92,7 @@ LogReader *log_reader_new_file_source(LogReaderOptions *options, guint32 read_bu
   log_reader_set_options((LogPipe *)reader, (LogPipe *)reader, options, 0, SCS_FILE, "test","test_file_queue");
   ((LogPipe *)reader)->queue = queue;
   ((LogPipe *)reader)->notify = notif;
-  log_pipe_init((LogPipe *)reader, NULL);
+  log_pipe_init((LogPipe *)reader, cfg);
   reader->size = 1;
   return reader;
 }

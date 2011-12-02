@@ -54,7 +54,7 @@ typedef struct _RcptidState
   guint64 g_rcptid;
 } RcptidState;
 
-typedef void (*LMAckFunc)(LogMessage *lm, gpointer user_data);
+typedef void (*LMAckFunc)(LogMessage *lm, gpointer user_data, gboolean need_pos_tracking);
 
 #define RE_MAX_MATCHES 256
 
@@ -148,6 +148,7 @@ struct _LogMessage
 
   gint ack_and_ref;
 
+  guint32 ack_id;
   LMAckFunc ack_func;
   gpointer ack_userdata;
   LogMessage *original;
@@ -254,13 +255,13 @@ LogMessage *log_msg_new_internal(gint prio, const gchar *msg);
 LogMessage *log_msg_new_empty(void);
 
 void log_msg_add_ack(LogMessage *msg, const LogPathOptions *path_options);
-void log_msg_ack(LogMessage *msg, const LogPathOptions *path_options);
+void log_msg_ack(LogMessage *msg, const LogPathOptions *path_options, gboolean need_pos_tracking);
 void log_msg_drop(LogMessage *msg, const LogPathOptions *path_options);
 const LogPathOptions *log_msg_break_ack(LogMessage *msg, const LogPathOptions *path_options, LogPathOptions *local_options);
 
 void log_msg_refcache_start_producer(LogMessage *self);
 void log_msg_refcache_start_consumer(LogMessage *self, const LogPathOptions *path_options);
-void log_msg_refcache_stop(void);
+void log_msg_refcache_stop(gboolean need_pos_tracking);
 
 void log_msg_registry_init();
 void log_msg_registry_deinit();

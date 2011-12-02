@@ -201,7 +201,7 @@ afstreams_sd_init(LogPipe *s)
 
           register_application_hook(AH_POST_DAEMONIZED, afstreams_init_door, self);
         }
-      if (!log_pipe_init(self->reader, NULL))
+      if (!log_pipe_init(self->reader, cfg))
         {
           msg_error("Error initializing log_reader, closing fd",
                     evt_tag_int("fd", fd),

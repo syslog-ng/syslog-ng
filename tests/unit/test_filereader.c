@@ -35,7 +35,7 @@
 LogMessage *result_msg = NULL;
 MsgFormatOptions parse_options;
 
-void log_test_msg_ack(LogMessage *msg, gpointer user_data)
+void log_test_msg_ack(LogMessage *msg, gpointer user_data, gboolean need_pos_tracking)
 {
 
 }
@@ -62,7 +62,7 @@ init_option(LogReaderOptions *options)
   options->super.source_group_tag = log_tags_get_by_name("test_tag");
 }
 
-int test_case(const gchar *message, const gchar *expected_sdata, const gchar *expected_filename, guint64 expected_pos, guint64 expected_size)
+int test_case(const gchar *message, const gchar *expected_sdata, const gchar *expected_filename, guint64 expected_pos, guint64 expected_size, GlobalConfig *cfg)
 {
   LogReaderOptions reader_options;
   guint32 read_buffer_length = 100000;
@@ -84,7 +84,7 @@ int test_case(const gchar *message, const gchar *expected_sdata, const gchar *ex
   init_option(&reader_options);
   reader_options.follow_freq = 100;
   reader_options.parse_options = parse_options;
-  reader = log_reader_new_file_source(&reader_options, read_buffer_length, log_reader_notify, log_test_pipe_queue, &tr);
+  reader = log_reader_new_file_source(&reader_options, read_buffer_length, log_reader_notify, log_test_pipe_queue, &tr, cfg);
   log_reader_set_follow_filename((LogPipe *)reader, "test_filereader.txt");
   log_test_reader_add_message(tr, message, strlen(message));
   log_reader_fetch_log(reader);
@@ -119,7 +119,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   plugin_load_module("syslogformat", configuration, NULL);
   msg_format_options_defaults(&parse_options);
   msg_format_options_init(&parse_options, configuration);
-  test_case(test_msg,"[timeQuality isSynced=\"0\" tzKnown=\"1\"][file@18372.4 position=\"203\" size=\"1\" name=\"test_filereader.txt\"]","test_filereader.txt", strlen(test_msg),1);
+  test_case(test_msg,"[timeQuality isSynced=\"0\" tzKnown=\"1\"][file@18372.4 position=\"203\" size=\"1\" name=\"test_filereader.txt\"]","test_filereader.txt", strlen(test_msg),1, configuration);
   app_shutdown();
   return 0;
 }

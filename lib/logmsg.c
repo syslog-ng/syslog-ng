@@ -1030,13 +1030,13 @@ log_msg_new_empty(void)
 
 
 void
-log_msg_clone_ack(LogMessage *msg, gpointer user_data)
+log_msg_clone_ack(LogMessage *msg, gpointer user_data, gboolean need_pos_tracking)
 {
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
 
   g_assert(msg->original);
   path_options.ack_needed = TRUE;
-  log_msg_ack(msg->original, &path_options);
+  log_msg_ack(msg->original, &path_options, need_pos_tracking);
 }
 
 /*
@@ -1168,7 +1168,7 @@ log_msg_free(LogMessage *self)
 void
 log_msg_drop(LogMessage *msg, const LogPathOptions *path_options)
 {
-  log_msg_ack(msg, path_options);
+  log_msg_ack(msg, path_options, TRUE);
   log_msg_unref(msg);
 }
 
@@ -1282,7 +1282,7 @@ log_msg_add_ack(LogMessage *self, const LogPathOptions *path_options)
  * queue further messages.
  **/
 void
-log_msg_ack(LogMessage *self, const LogPathOptions *path_options)
+log_msg_ack(LogMessage *self, const LogPathOptions *path_options, gboolean need_pos_tracking)
 {
   gint old_value;
 
@@ -1300,7 +1300,7 @@ log_msg_ack(LogMessage *self, const LogPathOptions *path_options)
       old_value = log_msg_update_ack_and_ref(self, 0, -1);
       if (LOGMSG_REFCACHE_VALUE_TO_ACK(old_value) == 1)
         {
-          self->ack_func(self, self->ack_userdata);
+          self->ack_func(self, self->ack_userdata, need_pos_tracking);
         }
     }
 }
@@ -1319,7 +1319,7 @@ log_msg_break_ack(LogMessage *msg, const LogPathOptions *path_options, LogPathOp
 
   g_assert(!path_options->flow_control_requested);
 
-  log_msg_ack(msg, path_options);
+  log_msg_ack(msg, path_options, TRUE);
 
   *local_options = *path_options;
   local_options->ack_needed = FALSE;
@@ -1391,7 +1391,7 @@ log_msg_refcache_start_consumer(LogMessage *self, const LogPathOptions *path_opt
  * See the comment at the top of this file for more information.
  */
 void
-log_msg_refcache_stop(void)
+log_msg_refcache_stop(gboolean need_pos_tracking)
 {
   gint old_value;
   gint current_cached_refs, current_cached_acks;
@@ -1433,7 +1433,7 @@ log_msg_refcache_stop(void)
   if ((LOGMSG_REFCACHE_VALUE_TO_ACK(old_value) == -current_cached_acks) && logmsg_cached_ack_needed)
     {
       /* ack processing */
-      logmsg_current->ack_func(logmsg_current, logmsg_current->ack_userdata);
+      logmsg_current->ack_func(logmsg_current, logmsg_current->ack_userdata, need_pos_tracking);
     }
 
   /* we need to process the ref count difference in two steps:

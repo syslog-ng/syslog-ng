@@ -88,6 +88,7 @@
 /* parsed command line arguments */
 static gchar *preprocess_into = NULL;
 gboolean syntax_only = FALSE;
+guint32 g_run_id;
 
 /* USED ONLY IN PREMIUM EDITION */
 gboolean server_mode = FALSE;
@@ -465,6 +466,37 @@ static GlobalConfig *main_loop_old_config;
 /* the pending configuration we wish to switch to */
 static GlobalConfig *main_loop_new_config;
 
+static guint32
+main_loop_inc_and_set_run_id(guint32 run_id)
+{
+  g_run_id = run_id;
+  return ++g_run_id;
+}
+
+static void
+main_loop_init_run_id(PersistState *persist_state)
+{
+  gsize size;
+  guint8 version;
+  PersistEntryHandle handle;
+  guint32 *run_id;
+
+  handle = persist_state_lookup_entry(persist_state, "run_id", &size, &version);
+  if (handle)
+  {
+    run_id = persist_state_map_entry(persist_state,handle);
+    *run_id = main_loop_inc_and_set_run_id(*run_id);
+    persist_state_unmap_entry(persist_state,handle);
+  }
+  else
+  {
+    handle = persist_state_alloc_entry(persist_state, "run_id", sizeof(guint));
+    run_id = persist_state_map_entry(persist_state,handle);
+    *run_id = main_loop_inc_and_set_run_id(0);
+    persist_state_unmap_entry(persist_state,handle);
+  }
+}
+
 /* called when syslog-ng first starts up */
 
 static gboolean
@@ -475,6 +507,8 @@ main_loop_initialize_state(GlobalConfig *cfg, const gchar *persist_filename)
   cfg->state = persist_state_new(persist_filename);
   if (!persist_state_start(cfg->state))
     return FALSE;
+
+  main_loop_init_run_id(cfg->state);
 
   log_msg_init_rctpid(cfg->state);
 

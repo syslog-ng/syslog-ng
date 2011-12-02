@@ -31,9 +31,28 @@
 
 #include <regex.h>
 
+#define MAX_STATE_DATA_LENGTH 128
+
 typedef struct _LogProto LogProto;
 typedef struct _LogProtoTextServer LogProtoTextServer;
 typedef struct _LogProtoFileReader LogProtoFileReader;
+typedef struct _AckData AckData;
+
+struct _AckData
+{
+  gboolean not_acked;
+  gboolean not_sent;
+  guint64 id;
+  PersistEntryHandle persist_handle;
+  union{
+    struct{
+      gint32 pending_buffer_pos;
+      gint64 pending_raw_stream_pos;
+      gint32 pending_raw_buffer_size;
+    }file_state;
+    char other_state[MAX_STATE_DATA_LENGTH];
+  };
+};
 
 typedef enum
 {
@@ -60,6 +79,8 @@ struct _LogProto
   void (*reset_state)(LogProto *s);
   /* This function is available only the object is _LogProtoTextServer */
   void (*get_info)(LogProto *s, guint64 *pos);
+  void (*get_state)(LogProto *s, gpointer user_data);
+  gboolean (*ack)(PersistState *state, gpointer user_data);
   gboolean is_multi_line;
 };
 
@@ -67,6 +88,15 @@ static inline gboolean
 log_proto_prepare(LogProto *s, gint *fd, GIOCondition *cond)
 {
   return s->prepare(s, fd, cond);
+}
+
+static inline void
+log_proto_get_state(LogProto *s, gpointer user_data)
+{
+  if (s->get_state)
+    {
+      s->get_state(s, user_data);
+    }
 }
 
 static inline gboolean

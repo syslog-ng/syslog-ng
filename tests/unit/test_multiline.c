@@ -30,7 +30,7 @@
 LogMessage *result_msg = NULL;
 MsgFormatOptions parse_options;
 
-void log_test_msg_ack(LogMessage *msg, gpointer user_data)
+void log_test_msg_ack(LogMessage *msg, gpointer user_data, gboolean need_pos_tracking)
 {
 
 }
@@ -61,7 +61,7 @@ log_reader_notify(LogPipe *s, LogPipe *sender, gint notify_code, gpointer user_d
 {
 }
 
-int test_case(const gchar *message, const gchar *expected, const gchar *prefix, const gchar *garbage, gboolean send_by_line)
+int test_case(const gchar *message, const gchar *expected, const gchar *prefix, const gchar *garbage, gboolean send_by_line, GlobalConfig *cfg)
 {
   LogReaderOptions reader_options;
   LogTransport *tr = NULL;
@@ -77,7 +77,7 @@ int test_case(const gchar *message, const gchar *expected, const gchar *prefix, 
     }
   memset(&reader_options, 0, sizeof(LogReaderOptions));
   init_option(&reader_options);
-  reader = log_reader_new_memory_source(&reader_options, read_buffer_length, log_reader_notify, log_test_pipe_queue, &tr, prefix, garbage);
+  reader = log_reader_new_memory_source(&reader_options, read_buffer_length, log_reader_notify, log_test_pipe_queue, &tr, prefix, garbage, cfg);
   if(send_by_line)
     {
       next_line = message;
@@ -120,20 +120,20 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   msg_format_options_defaults(&parse_options);
   parse_options.flags &= ~LP_SYSLOG_PROTOCOL;
   msg_format_options_init(&parse_options, configuration);
-  test_case(msg_without_prefix, "ID47 [exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] BOMAn application event log entry...", NULL, NULL, FALSE);
-  test_case(msg_without_prefix, "ID47 [exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] BOMAn application event log entry...", NULL, NULL, TRUE);
+  test_case(msg_without_prefix, "ID47 [exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] BOMAn application event log entry...", NULL, NULL, FALSE, configuration);
+  test_case(msg_without_prefix, "ID47 [exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] BOMAn application event log entry...", NULL, NULL, TRUE, configuration);
 
-  test_case(msg_with_prefix_and_garbage,"ID47 [exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] START_MESSAGE BOMAn application event log entry...\nThis is a new line of a multi line message\nThis is an other line of the message\nAnd this is a ", ".*START_MESSAGE.*", "GARBAGE", FALSE);
-  test_case(msg_with_prefix_and_garbage,"ID47 [exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] START_MESSAGE BOMAn application event log entry...\nThis is a new line of a multi line message\nThis is an other line of the message\nAnd this is a ", ".*START_MESSAGE.*", "GARBAGE", TRUE);
+  test_case(msg_with_prefix_and_garbage,"ID47 [exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] START_MESSAGE BOMAn application event log entry...\nThis is a new line of a multi line message\nThis is an other line of the message\nAnd this is a ", ".*START_MESSAGE.*", "GARBAGE", FALSE, configuration);
+  test_case(msg_with_prefix_and_garbage,"ID47 [exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] START_MESSAGE BOMAn application event log entry...\nThis is a new line of a multi line message\nThis is an other line of the message\nAnd this is a ", ".*START_MESSAGE.*", "GARBAGE", TRUE, configuration);
 
-  test_case(msg_with_prefix_and_garbage,"ID47 [exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] START_MESSAGE BOMAn application event log entry...\nThis is a new line of a multi line message\nThis is an other line of the message\nAnd this is a ", ".*START_MESSAGE.*", "GARBAGE", FALSE);
-  test_case(msg_with_prefix_and_garbage,"ID47 [exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] START_MESSAGE BOMAn application event log entry...\nThis is a new line of a multi line message\nThis is an other line of the message\nAnd this is a ", ".*START_MESSAGE.*", "GARBAGE", TRUE);
+  test_case(msg_with_prefix_and_garbage,"ID47 [exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] START_MESSAGE BOMAn application event log entry...\nThis is a new line of a multi line message\nThis is an other line of the message\nAnd this is a ", ".*START_MESSAGE.*", "GARBAGE", FALSE, configuration);
+  test_case(msg_with_prefix_and_garbage,"ID47 [exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] START_MESSAGE BOMAn application event log entry...\nThis is a new line of a multi line message\nThis is an other line of the message\nAnd this is a ", ".*START_MESSAGE.*", "GARBAGE", TRUE, configuration);
 
-  test_case(msg_with_prefix_and_new_prefix, "ID47 [exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] START_MESSAGE BOMAn application event log entry...\nThis is a new line of a multi line message\nThis is an other line of the message",".*START_MESSAGE.*", NULL, FALSE);
-  test_case(msg_with_prefix_and_new_prefix, "ID47 [exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] START_MESSAGE BOMAn application event log entry...\nThis is a new line of a multi line message\nThis is an other line of the message",".*START_MESSAGE.*", NULL, TRUE);
+  test_case(msg_with_prefix_and_new_prefix, "ID47 [exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] START_MESSAGE BOMAn application event log entry...\nThis is a new line of a multi line message\nThis is an other line of the message",".*START_MESSAGE.*", NULL, FALSE, configuration);
+  test_case(msg_with_prefix_and_new_prefix, "ID47 [exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] START_MESSAGE BOMAn application event log entry...\nThis is a new line of a multi line message\nThis is an other line of the message",".*START_MESSAGE.*", NULL, TRUE, configuration);
 
-  test_case(msg_with_prefix_continue, "is a new line of the message\nThis is the 3rd line of the message", ".*START_MESSAGE.*", ".*GARBAGE.*", FALSE);
-  test_case(msg_with_prefix_continue, "is a new line of the message\nThis is the 3rd line of the message", ".*START_MESSAGE.*", ".*GARBAGE.*", TRUE);
+  test_case(msg_with_prefix_continue, "is a new line of the message\nThis is the 3rd line of the message", ".*START_MESSAGE.*", ".*GARBAGE.*", FALSE, configuration);
+  test_case(msg_with_prefix_continue, "is a new line of the message\nThis is the 3rd line of the message", ".*START_MESSAGE.*", ".*GARBAGE.*", TRUE, configuration);
   app_shutdown();
   return 0;
 }

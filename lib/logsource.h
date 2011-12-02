@@ -31,8 +31,11 @@
 #include <iv_event.h>
 #endif
 
+#define LOF_POS_TRACKING 0x00000001
+
 typedef struct _LogSourceOptions
 {
+  guint32 flags;
   gint init_window_size;
   const gchar *group_name;
   gboolean keep_timestamp;
@@ -77,14 +80,27 @@ struct _LogSource
   guint32 ack_count;
   glong window_full_sleep_nsec;
   struct timespec last_ack_rate_time;
+  AckData *ack_list;
+  guint32 msg_id;
+  guint64 last_sent;
+  GStaticMutex g_mutex_ack;
 
   void (*wakeup)(LogSource *s);
+  gboolean (*ack)(LogSource *s,gpointer user_data);
+  void (*get_state)(LogSource *s,gpointer user_data);
 };
 
 static inline gboolean
 log_source_free_to_send(LogSource *self)
 {
   return g_atomic_counter_get(&self->window_size) > 0;
+}
+
+static inline void
+log_source_get_state(LogSource *self, guint64 pos)
+{
+  if (self->get_state)
+    self->get_state(self,(gpointer)&(self->ack_list[pos]));
 }
 
 gboolean log_source_init(LogPipe *s);

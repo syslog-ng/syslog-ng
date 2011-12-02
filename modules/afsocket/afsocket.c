@@ -190,6 +190,7 @@ afsocket_sc_init(LogPipe *s)
   gint read_flags;
   LogTransport *transport;
   LogProto *proto;
+  GlobalConfig *cfg = log_pipe_get_config(&self->owner->super.super.super);
 
   read_flags = ((self->owner->flags & AFSOCKET_DGRAM) ? LTF_RECV : 0);
   if (!self->reader)
@@ -238,7 +239,7 @@ afsocket_sc_init(LogPipe *s)
   log_reader_set_options(self->reader, s, &self->owner->reader_options, 1, afsocket_sc_stats_source(self), self->owner->super.super.id, afsocket_sc_stats_instance(self));
   log_reader_set_peer_addr(self->reader, self->peer_addr);
   log_pipe_append(self->reader, s);
-  if (log_pipe_init(self->reader, NULL))
+  if (log_pipe_init(self->reader, cfg))
     {
       return TRUE;
     }

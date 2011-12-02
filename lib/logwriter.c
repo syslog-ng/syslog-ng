@@ -1085,7 +1085,7 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
               if ((self->options->options & LWO_IGNORE_ERRORS) == 0)
                 {
                   msg_set_context(NULL);
-                  log_msg_refcache_stop();
+                  log_msg_refcache_stop(FALSE);
                   return FALSE;
                 }
               else
@@ -1106,7 +1106,7 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
         {
           if (lm->flags & LF_LOCAL)
             step_sequence_number(&self->seq_num);
-          log_msg_ack(lm, &path_options);
+          log_msg_ack(lm, &path_options,TRUE);
           log_msg_unref(lm);
         }
       else
@@ -1121,7 +1121,7 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
               log_queue_push_head(self->queue, lm, &path_options);
             }
           msg_set_context(NULL);
-          log_msg_refcache_stop();
+          log_msg_refcache_stop(FALSE);
           break;
         }
       if (self->flags & LW_KEEP_ONE_PENDING)
@@ -1132,7 +1132,7 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
             self->pending_message_count++;
         }
       msg_set_context(NULL);
-      log_msg_refcache_stop();
+      log_msg_refcache_stop(TRUE);
       count++;
     }
 

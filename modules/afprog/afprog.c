@@ -157,7 +157,7 @@ afprogram_sd_init(LogPipe *s)
       log_reader_set_options(self->reader, s, &self->reader_options, 0, SCS_PROGRAM, self->super.super.id, self->cmdline->str);
     }
   log_pipe_append(self->reader, &self->super.super.super);
-  if (!log_pipe_init(self->reader, NULL))
+  if (!log_pipe_init(self->reader, cfg))
     { 
       msg_error("Error initializing program source, closing fd",
                 evt_tag_int("fd", fd),

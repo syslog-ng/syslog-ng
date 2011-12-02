@@ -108,7 +108,7 @@ afuser_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
     }
   endutent();
 finish:
-  log_msg_ack(msg, path_options);
+  log_msg_ack(msg, path_options, TRUE);
   log_msg_unref(msg);
 }
 

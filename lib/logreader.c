@@ -120,11 +120,29 @@ struct _LogReader
   GCond *pending_proto_cond;
   GStaticMutex pending_proto_lock;
   LogProto *pending_proto;
+  gboolean (*ack_callback)(PersistState *state, gpointer user_data);
+  PersistState *state;
 };
 
 static gboolean log_reader_start_watches(LogReader *self);
 static void log_reader_stop_watches(LogReader *self);
 static void log_reader_update_watches(LogReader *self);
+
+static gboolean log_reader_ack(LogSource *s,gpointer user_data)
+{
+  LogReader *self = (LogReader *)s;
+  if (self->ack_callback && self->state)
+    {
+      return self->ack_callback(self->state,user_data);
+    }
+  return FALSE;
+}
+
+static void log_reader_get_state(LogSource *s,gpointer user_data)
+{
+  LogReader *self = (LogReader *)s;
+  log_proto_get_state(self->proto,user_data);
+}
 
 
 static void
@@ -664,9 +682,11 @@ log_reader_handle_line(LogReader *self, const guchar *line, gint length, GSockAd
 
       g_string_free(converted, TRUE);
     }
-
+  /* Proto elmenti a state-et */
+//  log_proto_set_state(self->proto,m)
+  /* Itt a reader meg kiosztja az id-t */
   log_pipe_queue(&self->super.super, m, &path_options);
-  log_msg_refcache_stop();
+  log_msg_refcache_stop(TRUE);
   return log_source_free_to_send(&self->super);
 }
 
@@ -755,9 +775,12 @@ static gboolean
 log_reader_init(LogPipe *s)
 {
   LogReader *self = (LogReader *) s;
-
+  GlobalConfig *cfg;
   if (!log_source_init(s))
     return FALSE;
+  cfg = log_pipe_get_config(s);
+  g_assert(cfg);
+  self->state = cfg->state;
   /* check for new data */
   if (self->options->padding)
     {
@@ -869,6 +892,7 @@ log_reader_reopen_deferred(gpointer s)
   if(proto)
     {
         log_reader_start_watches(self);
+        self->ack_callback = proto->ack;
     }
 }
 
@@ -925,6 +949,10 @@ log_reader_new(LogProto *proto)
   self->super.super.deinit = log_reader_deinit;
   self->super.super.free_fn = log_reader_free;
   self->super.wakeup = log_reader_wakeup;
+  self->super.ack = log_reader_ack;
+  self->super.get_state = log_reader_get_state;
+  self->super.msg_id = 0;
+  self->super.last_sent = 0;
   self->proto = proto;
   self->immediate_check = FALSE;
   self->pollable_state = -1;
@@ -932,6 +960,7 @@ log_reader_new(LogProto *proto)
   self->flush = FALSE;
   log_reader_init_watches(self);
   self->last_msg_received = 0;
+  self->ack_callback = self->proto ? self->proto->ack : NULL;
   g_static_mutex_init(&self->pending_proto_lock);
   self->pending_proto_cond = g_cond_new();
   return &self->super.super;

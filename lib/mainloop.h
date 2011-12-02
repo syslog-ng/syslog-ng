@@ -30,6 +30,7 @@ extern volatile gboolean main_loop_io_workers_quit;
 extern gboolean syntax_only;
 extern gboolean server_mode;
 extern GThread *main_thread_handle;
+extern guint32 g_run_id;
 
 #ifndef G_OS_WIN32
 #include <iv_work.h>

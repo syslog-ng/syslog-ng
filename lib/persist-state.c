@@ -325,6 +325,7 @@ persist_state_rename_entry(PersistState *self, const gchar *old_key, const gchar
       if (g_hash_table_steal(self->keys, old_key))
         {
           g_hash_table_insert(self->keys, g_strdup(new_key), entry);
+          return TRUE;
         }
     }
   return FALSE;

@@ -42,6 +42,39 @@ log_source_wakeup(LogSource *self)
     self->wakeup(self);
 }
 
+gboolean
+log_source_ack(LogSource *self, gpointer user_data)
+{
+  if (self->ack)
+    return self->ack(self,user_data);
+  return FALSE;
+}
+
+static gboolean
+log_source_checking_ack_data_list(LogSource *s, gpointer *d,guint64 *cont)
+{
+  guint64 last=s->last_sent;
+  if (last>=s->options->init_window_size)
+    last=0;
+
+  while((!s->ack_list[last].not_acked)&&(s->ack_list[last].not_sent))
+  {
+    *d = &(s->ack_list[last]);
+    s->ack_list[last].not_sent = FALSE;
+    (*cont)++;
+    last++;
+    if (last==s->options->init_window_size)
+      last=0;
+  }
+
+  if(!cont)
+    return FALSE;
+
+  s->last_sent=last;
+
+  return TRUE;
+}
+
 /**
  * log_source_msg_ack:
  *
@@ -49,17 +82,44 @@ log_source_wakeup(LogSource *self)
  * be taken when manipulating the LogSource data structure.
  **/
 static void
-log_source_msg_ack(LogMessage *msg, gpointer user_data)
+log_source_msg_ack(LogMessage *msg, gpointer user_data, gboolean need_pos_tracking)
 {
+
   LogSource *self = (LogSource *) user_data;
   guint32 old_window_size;
   guint32 cur_ack_count, last_ack_count;
-  
-  old_window_size = g_atomic_counter_exchange_and_add(&self->window_size, 1);
-  if (old_window_size == 0)
+
+  if ((self->options->flags & LOF_POS_TRACKING) && need_pos_tracking)
     {
-      log_source_wakeup(self);
+      AckData *data;
+      guint64 continual = 0;
+      guint32 msg_list_pos;
+
+      g_static_mutex_lock(&(self->g_mutex_ack));
+      msg_list_pos = msg->ack_id;
+      self->ack_list[msg_list_pos].not_acked = FALSE;
+
+      if (log_source_checking_ack_data_list(self,(gpointer)&data,&continual))
+        {
+          log_source_ack(self,(gpointer)data);
+
+          old_window_size = g_atomic_counter_exchange_and_add(&self->window_size, continual);
+          if (old_window_size == 0)
+            {
+              log_source_wakeup(self);
+            }
+        }
+      g_static_mutex_unlock(&(self->g_mutex_ack));
     }
+  else
+    {
+      old_window_size = g_atomic_counter_exchange_and_add(&self->window_size, 1);
+      if (old_window_size == 0)
+        {
+          log_source_wakeup(self);
+        }
+    }
+
   log_msg_unref(msg);
 
   /* NOTE: this is racy. msg_ack may be executing in different writer
@@ -193,7 +253,6 @@ log_source_deinit(LogPipe *s)
   return TRUE;
 }
 
-
 static void
 log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data)
 {
@@ -210,8 +269,21 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
 
   if (msg->timestamps[LM_TS_STAMP].tv_sec == -1 || !self->options->keep_timestamp)
     msg->timestamps[LM_TS_STAMP] = msg->timestamps[LM_TS_RECVD];
-    
+
   g_assert(msg->timestamps[LM_TS_STAMP].zone_offset != -1);
+  if (self->options->flags & LOF_POS_TRACKING)
+    {
+      guint32 msg_list_pos=self->msg_id;
+      if (!(self->ack_list))
+        self->ack_list = g_new0(AckData,self->options->init_window_size);
+
+      self->ack_list[msg_list_pos].not_acked = TRUE;
+      self->ack_list[msg_list_pos].not_sent = TRUE;
+      self->ack_list[msg_list_pos].id = self->msg_id;
+      log_source_get_state(self, msg_list_pos);
+      msg->ack_id = msg_list_pos;
+      self->msg_id = (self->msg_id+1) % self->options->init_window_size;
+    }
 
   /* $RCPTID create*/
   log_msg_create_rcptid(msg);
@@ -352,6 +424,8 @@ log_source_init_instance(LogSource *self)
   self->super.free_fn = log_source_free;
   self->super.init = log_source_init;
   self->super.deinit = log_source_deinit;
+  self->ack_list = NULL;
+  g_static_mutex_init(&(self->g_mutex_ack));
   g_atomic_counter_set(&self->window_size, -1);
 }
 
@@ -359,7 +433,9 @@ void
 log_source_free(LogPipe *s)
 {
   LogSource *self = (LogSource *) s;
-  
+
+  if (self->ack_list)
+    g_free(self->ack_list);
   g_free(self->stats_id);
   g_free(self->stats_instance);
   log_pipe_free_method(s);
