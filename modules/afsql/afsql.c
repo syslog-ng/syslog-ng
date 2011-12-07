@@ -103,6 +103,9 @@ typedef struct _AFSqlDestDriver
   StatsCounterItem *dropped_messages;
   StatsCounterItem *stored_messages;
 
+  GHashTable *dbd_options;
+  GHashTable *dbd_options_numeric;
+
   /* shared by the main/db thread */
   GThread *db_thread;
   GMutex *db_thread_mutex;
@@ -125,6 +128,22 @@ static const char *s_oracle = "oracle";
 static const char *s_freetds = "freetds";
 
 #define MAX_FAILED_ATTEMPTS 3
+
+void
+afsql_dd_add_dbd_option(LogDriver *s, const gchar *name, const gchar *value)
+{
+  AFSqlDestDriver *self = (AFSqlDestDriver *) s;
+
+  g_hash_table_insert(self->dbd_options, g_strdup(name), g_strdup(value));
+}
+
+void
+afsql_dd_add_dbd_option_numeric(LogDriver *s, const gchar *name, gint value)
+{
+  AFSqlDestDriver *self = (AFSqlDestDriver *) s;
+
+  g_hash_table_insert(self->dbd_options_numeric, g_strdup(name), GINT_TO_POINTER(value));
+}
 
 void
 afsql_dd_set_type(LogDriver *s, const gchar *type)
@@ -608,6 +627,19 @@ afsql_dd_disconnect(AFSqlDestDriver *self)
   g_hash_table_remove_all(self->validated_tables);
 }
 
+static void
+afsql_dd_set_dbd_opt(gpointer key, gpointer value, gpointer user_data)
+{
+  dbi_conn_set_option((dbi_conn)user_data, (gchar *)key, (gchar *)value);
+}
+
+static void
+afsql_dd_set_dbd_opt_numeric(gpointer key, gpointer value, gpointer user_data)
+{
+  dbi_conn_set_option_numeric((dbi_conn)user_data, (gchar *)key,
+                              GPOINTER_TO_INT(value));
+}
+
 /**
  * afsql_dd_insert_db:
  *
@@ -644,6 +676,10 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
           /* database specific hacks */
           dbi_conn_set_option(self->dbi_ctx, "sqlite_dbdir", "");
           dbi_conn_set_option(self->dbi_ctx, "sqlite3_dbdir", "");
+
+          /* Set user-specified options */
+          g_hash_table_foreach(self->dbd_options, afsql_dd_set_dbd_opt, self->dbi_ctx);
+          g_hash_table_foreach(self->dbd_options_numeric, afsql_dd_set_dbd_opt_numeric, self->dbi_ctx);
 
           if (dbi_conn_connect(self->dbi_ctx) < 0)
             {
@@ -1200,6 +1236,8 @@ afsql_dd_free(LogPipe *s)
   string_list_free(self->values);
   log_template_unref(self->table);
   g_hash_table_destroy(self->validated_tables);
+  g_hash_table_destroy(self->dbd_options);
+  g_hash_table_destroy(self->dbd_options_numeric);
   if(self->session_statements)
     string_list_free(self->session_statements);
   log_dest_driver_free(s);
@@ -1235,6 +1273,8 @@ afsql_dd_new(void)
   self->num_retries = MAX_FAILED_ATTEMPTS;
 
   self->validated_tables = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
+  self->dbd_options = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
+  self->dbd_options_numeric = g_hash_table_new_full(g_str_hash, g_int_equal, g_free, NULL);
 
   log_template_options_defaults(&self->template_options);
   init_sequence_number(&self->seq_num);

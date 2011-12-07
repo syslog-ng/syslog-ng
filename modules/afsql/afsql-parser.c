@@ -55,6 +55,8 @@ static CfgLexerKeyword afsql_keywords[] = {
   { "flush_lines",        KW_FLUSH_LINES },
   { "flush_timeout",      KW_FLUSH_TIMEOUT },
   { "flags",              KW_FLAGS },
+
+  { "dbd_option",         KW_DBD_OPTION },
   { NULL }
 };
 

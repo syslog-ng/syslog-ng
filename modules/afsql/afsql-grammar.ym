@@ -54,6 +54,7 @@ extern LogDriver *last_driver;
 
 %token KW_DEFAULT
 %token KW_RETRIES
+%token KW_DBD_OPTION
 
 %type   <ptr> dest_afsql
 %type   <ptr> dest_afsql_params
@@ -100,6 +101,8 @@ dest_afsql_option
             free($3);
           }
         | KW_USERNAME '(' string ')'		{ afsql_dd_set_user(last_driver, $3); free($3); }
+        | KW_DBD_OPTION '(' string LL_NUMBER ')' { afsql_dd_add_dbd_option_numeric(last_driver, $3, $4); free($3); }
+        | KW_DBD_OPTION '(' string string ')'    { afsql_dd_add_dbd_option(last_driver, $3, $4); free($3); free($4); }
         | KW_PASSWORD '(' string ')'		{ afsql_dd_set_password(last_driver, $3); free($3); }
         | KW_DATABASE '(' string ')'		{ afsql_dd_set_database(last_driver, $3); free($3); }
         | KW_TABLE '(' string ')'		{ afsql_dd_set_table(last_driver, $3); free($3); }
