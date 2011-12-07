@@ -27,7 +27,7 @@ ifneq (,$(findstring aix,$(ZBS_DIST)))
 endif
 
 ifneq (,$(findstring hpux,$(ZBS_DIST)))
-  RPATH=-Wl,+b/opt/syslog-ng/lib
+  RPATH=-Wl,+s,+b/opt/syslog-ng/lib
 endif
 
 ifneq (,$(findstring tru64,$(ZBS_DIST)))
