@@ -1313,6 +1313,10 @@ log_writer_reopen_deferred(gpointer s)
 		  iv_validate_now();
 		  self->reopen_timer.expires = *iv_get_now();
 		  self->reopen_timer.expires.tv_sec += self->options->time_reopen;
+      if (iv_timer_registered(&self->reopen_timer))
+        {
+          iv_timer_unregister(&self->reopen_timer);
+        }
 		  iv_timer_register(&self->reopen_timer);
     }
 
