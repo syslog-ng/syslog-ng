@@ -75,7 +75,7 @@ static gboolean
 afunix_sd_acquire_socket(AFSocketSourceDriver *s, gint *result_fd)
 {
   AFUnixSourceDriver *self = (AFUnixSourceDriver *) s;
-  gint fd, fds, t, r;
+  gint fd, fds;
 
   *result_fd = -1;
   fd = -1;
@@ -100,13 +100,40 @@ afunix_sd_acquire_socket(AFSocketSourceDriver *s, gint *result_fd)
     {
       for (fd = SD_LISTEN_FDS_START; fd < SD_LISTEN_FDS_START + fds; fd++)
 	{
-	  t = (self->super.flags & AFSOCKET_STREAM) ? SOCK_STREAM : SOCK_DGRAM;
-	  r = sd_is_socket_unix(fd, t, -1, self->filename, 0);
-	  if (r == 1)
+	  /* check if any type is available */
+	  if (sd_is_socket_unix(fd, 0, -1, self->filename, 0))
 	    {
-	      *result_fd = fd;
-	      break;
-	    }
+              int type = (self->super.flags & AFSOCKET_STREAM) ? SOCK_STREAM : SOCK_DGRAM;
+
+	      /* check if it matches our idea of the socket type */
+              if (sd_is_socket_unix(fd, type, -1, self->filename, 0))
+                {
+                  *result_fd = fd;
+                  break;
+                }
+              else
+                {
+                  msg_error("The systemd supplied UNIX domain socket is of a different type, check the configured driver and the matching systemd unit file",
+		            evt_tag_str("filename", self->filename),
+		            evt_tag_int("systemd-sock-fd", fd),
+                            evt_tag_str("expecting", type == SOCK_STREAM ? "unix-stream()" : "unix-dgram()"),
+                            NULL);
+                  return FALSE;
+                }
+            }
+          else
+            {
+
+              /* systemd passed an fd we didn't really care about. This is
+               * not an error, but might be worth mentioning it at the debug
+               * level.
+               */
+
+              msg_debug("Ignoring systemd supplied fd as it is not a UNIX domain socket",
+		        evt_tag_str("filename", self->filename),
+		        evt_tag_int("systemd-sock-fd", fd),
+		        NULL);
+            }
 	}
     }
   else
@@ -123,7 +150,7 @@ afunix_sd_acquire_socket(AFSocketSourceDriver *s, gint *result_fd)
     }
   else
     {
-      msg_debug("Failed to acquire systemd socket, opening nevertheless",
+      msg_debug("Failed to acquire systemd socket, trying to open ourselves",
 		evt_tag_str("filename", self->filename),
 		NULL);
     }
