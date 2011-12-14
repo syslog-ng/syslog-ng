@@ -99,7 +99,7 @@ send_plain(void *user_data, void *buf, size_t length)
           char cbuf[256];
           send(fd, ".\n",2,0);
           read_sock(fd, cbuf, 256);
-          len = g_snprintf(expected,100,"220 RECEIVED=%d\n",rltp_chunk_counters[id]);
+          len = g_snprintf(expected,100,"220 RECEIVED %d\n",rltp_chunk_counters[id]);
           if (strncmp(cbuf,expected,len)!=0)
             {
               fprintf(stderr,"EXIT BAD SERVER REPLY: %s EXPECTED: %s",cbuf,expected);
