@@ -424,12 +424,12 @@ afmongodb_dd_init(LogPipe *s)
       self->vp = value_pairs_new();
       value_pairs_add_scope(self->vp, "selected-macros");
       value_pairs_add_scope(self->vp, "nv-pairs");
-      value_pairs_add_exclude_glob(self->vp, "R_*");
-      value_pairs_add_exclude_glob(self->vp, "S_*");
-      value_pairs_add_exclude_glob(self->vp, "HOST_FROM");
-      value_pairs_add_exclude_glob(self->vp, "LEGACY_MSGHDR");
-      value_pairs_add_exclude_glob(self->vp, "MSG");
-      value_pairs_add_exclude_glob(self->vp, "SDATA");
+      value_pairs_add_glob_pattern(self->vp, "R_*", FALSE);
+      value_pairs_add_glob_pattern(self->vp, "S_*", FALSE);
+      value_pairs_add_glob_pattern(self->vp, "HOST_FROM", FALSE);
+      value_pairs_add_glob_pattern(self->vp, "LEGACY_MSGHDR", FALSE);
+      value_pairs_add_glob_pattern(self->vp, "MSG", FALSE);
+      value_pairs_add_glob_pattern(self->vp, "SDATA", FALSE);
     }
 
   msg_verbose("Initializing MongoDB destination",

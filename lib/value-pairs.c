@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2011 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2011 BalaBit IT Ltd, Budapest, Hungary
  * Copyright (c) 2011 Gergely Nagy <algernon@balabit.hu>
  *
  * This library is free software; you can redistribute it and/or
@@ -23,23 +23,31 @@
  */
 
 #include "value-pairs.h"
+#include "vptransform.h"
 #include "logmsg.h"
 #include "templates.h"
 #include "cfg-parser.h"
 #include "misc.h"
 #include "scratch-buffers.h"
 
+#include <stdlib.h>
 #include <string.h>
 
+typedef struct
+{
+  GPatternSpec *pattern;
+  gboolean include;
+} VPPatternSpec;
 
 struct _ValuePairs
 {
-  GPatternSpec **excludes;
+  VPPatternSpec **patterns;
   GHashTable *vpairs;
+  GList *transforms;
 
   /* guint32 as CfgFlagHandler only supports 32 bit integers */
   guint32 scopes;
-  guint32 exclude_size;
+  guint32 patterns_size;
 };
 
 typedef enum
@@ -121,13 +129,20 @@ value_pairs_add_scope(ValuePairs *vp, const gchar *scope)
 }
 
 void
-value_pairs_add_exclude_glob(ValuePairs *vp, const gchar *pattern)
+value_pairs_add_glob_pattern(ValuePairs *vp, const gchar *pattern,
+                             gboolean include)
 {
   gint i;
+  VPPatternSpec *p;
 
-  i = vp->exclude_size++;
-  vp->excludes = g_renew(GPatternSpec *, vp->excludes, vp->exclude_size);
-  vp->excludes[i] = g_pattern_spec_new(pattern);
+  i = vp->patterns_size++;
+  vp->patterns = g_renew(VPPatternSpec *, vp->patterns, vp->patterns_size);
+
+  p = g_new(VPPatternSpec, 1);
+  p->pattern = g_pattern_spec_new(pattern);
+  p->include = include;
+
+  vp->patterns[i] = p;
 }
 
 void
@@ -140,10 +155,33 @@ value_pairs_add_pair(ValuePairs *vp, GlobalConfig *cfg, const gchar *key, const 
   g_hash_table_insert(vp->vpairs, g_strdup(key), t);
 }
 
+static gchar *
+vp_transform_apply (ValuePairs *vp, gchar *key)
+{
+  GList *l;
+  gchar *ckey, *okey = g_strdup(key);
+
+  if (!vp->transforms)
+    return okey;
+
+  l = vp->transforms;
+  while (l)
+    {
+      ValuePairsTransformSet *t = (ValuePairsTransformSet *)l->data;
+      ckey = value_pairs_transform_set_apply(t, okey);
+      g_free(okey);
+      okey = ckey;
+      l = g_list_next (l);
+    }
+
+  return ckey;
+}
+
 /* runs over the name-value pairs requested by the user (e.g. with value_pairs_add_pair) */
 static void
 vp_pairs_foreach(gpointer key, gpointer value, gpointer user_data)
 {
+  ValuePairs *vp = ((gpointer *)user_data)[0];
   LogMessage *msg = ((gpointer *)user_data)[2];
   gint32 seq_num = GPOINTER_TO_INT (((gpointer *)user_data)[3]);
   GHashTable *scope_set = ((gpointer *)user_data)[5];
@@ -158,7 +196,7 @@ vp_pairs_foreach(gpointer key, gpointer value, gpointer user_data)
       return;
     }
 
-  g_hash_table_insert(scope_set, key, sb_string(sb)->str);
+  g_hash_table_insert(scope_set, vp_transform_apply (vp, key), sb_string(sb)->str);
   g_string_steal(sb_string(sb));
   scratch_buffer_release(sb);
 }
@@ -172,20 +210,22 @@ vp_msg_nvpairs_foreach(NVHandle handle, gchar *name,
   ValuePairs *vp = ((gpointer *)user_data)[0];
   GHashTable *scope_set = ((gpointer *)user_data)[5];
   gint j;
+  gboolean inc = FALSE;
+
+  for (j = 0; j < vp->patterns_size; j++)
+    {
+      if (g_pattern_match_string(vp->patterns[j]->pattern, name))
+        inc = vp->patterns[j]->include;
+    }
 
   /* NOTE: dot-nv-pairs include SDATA too */
   if (((name[0] == '.' && (vp->scopes & VPS_DOT_NV_PAIRS)) ||
        (name[0] != '.' && (vp->scopes & VPS_NV_PAIRS)) ||
-       (log_msg_is_handle_sdata(handle) && (vp->scopes & VPS_SDATA))))
+       (log_msg_is_handle_sdata(handle) && (vp->scopes & VPS_SDATA))) ||
+      inc)
     {
-      for (j = 0; j < vp->exclude_size; j++)
-        {
-          if (g_pattern_match_string(vp->excludes[j], name))
-            return FALSE;
-        }
-
       /* NOTE: the key is a borrowed reference in the hash, and value is freed */
-      g_hash_table_insert(scope_set, name, g_strndup(value, value_len));
+      g_hash_table_insert(scope_set, vp_transform_apply(vp, name), g_strndup(value, value_len));
     }
 
   return FALSE;
@@ -203,10 +243,10 @@ vp_merge_set(ValuePairs *vp, LogMessage *msg, gint32 seq_num, ValuePairSpec *set
       gint j;
       gboolean exclude = FALSE;
 
-      for (j = 0; j < vp->exclude_size; j++)
+      for (j = 0; j < vp->patterns_size; j++)
         {
-          if (g_pattern_match_string(vp->excludes[j], set[i].name))
-            exclude = TRUE;
+          if (g_pattern_match_string(vp->patterns[j]->pattern, set[i].name))
+            exclude = !vp->patterns[j]->include;
         }
 
       if (exclude)
@@ -233,7 +273,7 @@ vp_merge_set(ValuePairs *vp, LogMessage *msg, gint32 seq_num, ValuePairSpec *set
       if (!sb_string(sb)->str[0])
 	continue;
 
-      g_hash_table_insert(dest, set[i].name, sb_string(sb)->str);
+      g_hash_table_insert(dest, vp_transform_apply(vp, set[i].name), sb_string(sb)->str);
       g_string_steal(sb_string(sb));
     }
   scratch_buffer_release(sb);
@@ -246,7 +286,8 @@ value_pairs_foreach (ValuePairs *vp, VPForeachFunc func,
   gpointer args[] = { vp, func, msg, GINT_TO_POINTER (seq_num), user_data, NULL };
   GHashTable *scope_set;
 
-  scope_set = g_hash_table_new_full(g_str_hash, g_str_equal, NULL,
+  scope_set = g_hash_table_new_full(g_str_hash, g_str_equal,
+                                    (GDestroyNotify) g_free,
 				    (GDestroyNotify) g_free);
 
   args[5] = scope_set;
@@ -254,7 +295,8 @@ value_pairs_foreach (ValuePairs *vp, VPForeachFunc func,
   /*
    * Build up the base set
    */
-  if (vp->scopes & (VPS_NV_PAIRS + VPS_DOT_NV_PAIRS + VPS_SDATA))
+  if (vp->scopes & (VPS_NV_PAIRS + VPS_DOT_NV_PAIRS + VPS_SDATA) ||
+      vp->patterns_size > 0)
     nv_table_foreach(msg->payload, logmsg_registry,
                      (NVTableForeachFunc) vp_msg_nvpairs_foreach, args);
 
@@ -351,13 +393,46 @@ void
 value_pairs_free (ValuePairs *vp)
 {
   gint i;
+  GList *l;
 
   g_hash_table_destroy(vp->vpairs);
 
-  for (i = 0; i < vp->exclude_size; i++)
-    g_pattern_spec_free(vp->excludes[i]);
-  g_free(vp->excludes);
+  for (i = 0; i < vp->patterns_size; i++)
+    {
+      g_pattern_spec_free(vp->patterns[i]->pattern);
+      g_free(vp->patterns[i]);
+    }
+  g_free(vp->patterns);
+
+  l = vp->transforms;
+  while (l)
+    {
+      value_pairs_transform_set_free((ValuePairsTransformSet *)l->data);
+
+      l = g_list_delete_link (l, l);
+    }
+
   g_free(vp);
+}
+
+void
+value_pairs_add_transforms(ValuePairs *vp, gpointer *vpts)
+{
+  vp->transforms = g_list_append(vp->transforms, vpts);
+}
+
+static void
+vp_cmdline_parse_rekey_finish (gpointer data)
+{
+  gpointer *args = (gpointer *) data;
+  ValuePairs *vp = (ValuePairs *) args[1];
+  ValuePairsTransformSet *vpts = (ValuePairsTransformSet *) args[2];
+
+  if (vpts)
+    value_pairs_add_transforms (vp, args[2]);
+  args[2] = NULL;
+  g_free(args[3]);
+  args[3] = NULL;
 }
 
 /* parse a value-pair specification from a command-line like environment */
@@ -367,6 +442,8 @@ vp_cmdline_parse_scope(const gchar *option_name, const gchar *value,
 {
   gpointer *args = (gpointer *) data;
   ValuePairs *vp = (ValuePairs *) args[1];
+
+  vp_cmdline_parse_rekey_finish (data);
 
   if (!value_pairs_add_scope (vp, value))
     {
@@ -384,7 +461,8 @@ vp_cmdline_parse_exclude(const gchar *option_name, const gchar *value,
   gpointer *args = (gpointer *) data;
   ValuePairs *vp = (ValuePairs *) args[1];
 
-  value_pairs_add_exclude_glob(vp, value);
+  vp_cmdline_parse_rekey_finish (data);
+  value_pairs_add_glob_pattern(vp, value, FALSE);
   return TRUE;
 }
 
@@ -394,12 +472,10 @@ vp_cmdline_parse_key(const gchar *option_name, const gchar *value,
 {
   gpointer *args = (gpointer *) data;
   ValuePairs *vp = (ValuePairs *) args[1];
-  GlobalConfig *cfg = (GlobalConfig *) args[0];
-  gchar *k = g_strconcat ("$", value, NULL);
 
-  value_pairs_add_pair(vp, cfg, value, k);
-  g_free (k);
-
+  vp_cmdline_parse_rekey_finish (data);
+  value_pairs_add_glob_pattern(vp, value, TRUE);
+  args[3] = g_strdup(value);
   return TRUE;
 }
 
@@ -412,6 +488,7 @@ vp_cmdline_parse_pair (const gchar *option_name, const gchar *value,
   GlobalConfig *cfg = (GlobalConfig *) args[0];
   gchar **kv;
 
+  vp_cmdline_parse_rekey_finish (data);
   if (!g_strstr_len (value, strlen (value), "="))
     {
       g_set_error (error, G_OPTION_ERROR, G_OPTION_ERROR_BAD_VALUE,
@@ -429,6 +506,92 @@ vp_cmdline_parse_pair (const gchar *option_name, const gchar *value,
   return TRUE;
 }
 
+static gboolean
+vp_cmdline_parse_rekey (const gchar *option_name, const gchar *value,
+                        gpointer data, GError **error)
+{
+  gpointer *args = (gpointer *) data;
+  ValuePairsTransformSet *vpts = (ValuePairsTransformSet *) args[2];
+  gchar *key = (gchar *) args[3];
+
+  vpts = value_pairs_transform_set_new (key);
+  vp_cmdline_parse_rekey_finish (data);
+
+  args[2] = vpts;
+  return TRUE;
+}
+
+static gboolean
+vp_cmdline_parse_rekey_replace (const gchar *option_name, const gchar *value,
+                                gpointer data, GError **error)
+{
+  gpointer *args = (gpointer *) data;
+  ValuePairsTransformSet *vpts = (ValuePairsTransformSet *) args[2];
+  gchar **kv;
+
+  if (!vpts)
+    {
+      g_set_error (error, G_OPTION_ERROR, G_OPTION_ERROR_FAILED,
+                   "Error parsing value-pairs: --replace used without --rekey");
+      return FALSE;
+    }
+
+  if (!g_strstr_len (value, strlen (value), "="))
+    {
+      g_set_error (error, G_OPTION_ERROR, G_OPTION_ERROR_BAD_VALUE,
+                   "Error parsing value-pairs' rekey replace construct");
+      return FALSE;
+    }
+
+  kv = g_strsplit(value, "=", 2);
+  value_pairs_transform_set_add_func
+    (vpts, value_pairs_new_transform_replace (kv[0], kv[1]));
+
+  g_free (kv[0]);
+  g_free (kv[1]);
+  g_free (kv);
+
+  return TRUE;
+}
+
+static gboolean
+vp_cmdline_parse_rekey_add_prefix (const gchar *option_name, const gchar *value,
+                                   gpointer data, GError **error)
+{
+  gpointer *args = (gpointer *) data;
+  ValuePairsTransformSet *vpts = (ValuePairsTransformSet *) args[2];
+
+  if (!vpts)
+    {
+      g_set_error (error, G_OPTION_ERROR, G_OPTION_ERROR_FAILED,
+                   "Error parsing value-pairs: --add-prefix used without --rekey");
+      return FALSE;
+    }
+
+  value_pairs_transform_set_add_func
+    (vpts, value_pairs_new_transform_add_prefix (value));
+  return TRUE;
+}
+
+static gboolean
+vp_cmdline_parse_rekey_shift (const gchar *option_name, const gchar *value,
+                              gpointer data, GError **error)
+{
+  gpointer *args = (gpointer *) data;
+  ValuePairsTransformSet *vpts = (ValuePairsTransformSet *) args[2];
+
+  if (!vpts)
+    {
+      g_set_error (error, G_OPTION_ERROR, G_OPTION_ERROR_FAILED,
+                   "Error parsing value-pairs: --shift used without --rekey");
+      return FALSE;
+    }
+
+  value_pairs_transform_set_add_func
+    (vpts, value_pairs_new_transform_shift (atoi (value)));
+  return TRUE;
+}
+
 ValuePairs *
 value_pairs_new_from_cmdline (GlobalConfig *cfg,
 			      gint argc, gchar **argv,
@@ -436,6 +599,7 @@ value_pairs_new_from_cmdline (GlobalConfig *cfg,
 {
   ValuePairs *vp;
   GOptionContext *ctx;
+
   GOptionEntry vp_options[] = {
     { "scope", 's', 0, G_OPTION_ARG_CALLBACK, vp_cmdline_parse_scope,
       NULL, NULL },
@@ -445,16 +609,26 @@ value_pairs_new_from_cmdline (GlobalConfig *cfg,
       NULL, NULL },
     { "pair", 'p', 0, G_OPTION_ARG_CALLBACK, vp_cmdline_parse_pair,
       NULL, NULL },
+    { "rekey", 'r', G_OPTION_FLAG_NO_ARG, G_OPTION_ARG_CALLBACK,
+      vp_cmdline_parse_rekey, NULL, NULL },
+    { "shift", 'S', 0, G_OPTION_ARG_CALLBACK, vp_cmdline_parse_rekey_shift,
+      NULL, NULL },
+    { "add-prefix", 'A', 0, G_OPTION_ARG_CALLBACK, vp_cmdline_parse_rekey_add_prefix,
+      NULL, NULL },
+    { "replace", 'R', 0, G_OPTION_ARG_CALLBACK, vp_cmdline_parse_rekey_replace,
+      NULL, NULL },
     { G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_CALLBACK, vp_cmdline_parse_pair,
       NULL, NULL },
     { NULL }
   };
   GOptionGroup *og;
-  gpointer user_data_args[2];
+  gpointer user_data_args[4];
 
   vp = value_pairs_new();
   user_data_args[0] = cfg;
   user_data_args[1] = vp;
+  user_data_args[2] = NULL;
+  user_data_args[3] = NULL;
 
   ctx = g_option_context_new ("value-pairs");
   og = g_option_group_new (NULL, NULL, NULL, user_data_args, NULL);
@@ -463,11 +637,13 @@ value_pairs_new_from_cmdline (GlobalConfig *cfg,
 
   if (!g_option_context_parse (ctx, &argc, &argv, error))
     {
+      g_free(user_data_args[3]);
       value_pairs_free (vp);
       g_option_context_free (ctx);
       return NULL;
     }
   g_option_context_free (ctx);
+  vp_cmdline_parse_rekey_finish (user_data_args);
 
   return vp;
 }

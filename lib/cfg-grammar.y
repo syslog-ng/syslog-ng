@@ -285,6 +285,10 @@ extern struct _LogDriver *last_driver;
 %token KW_PAIR                        10503
 %token KW_KEY                         10504
 %token KW_SCOPE                       10505
+%token KW_SHIFT                       10506
+%token KW_REKEY                       10507
+%token KW_ADD_PREFIX                  10508
+%token KW_REPLACE                     10509
 
 /* END_DECLS */
 
@@ -301,6 +305,7 @@ extern struct _LogDriver *last_driver;
 #include "logparser.h"
 #include "logrewrite.h"
 #include "value-pairs.h"
+#include "vptransform.h"
 #include "filter-expr-parser.h"
 #include "rewrite-expr-parser.h"
 #include "block-ref-parser.h"
@@ -331,6 +336,7 @@ GList *last_parser_expr;
 FilterExprNode *last_filter_expr;
 CfgArgs *last_block_args;
 ValuePairs *last_value_pairs;
+ValuePairsTransformSet *last_vp_transset;
 
 }
 
@@ -881,19 +887,33 @@ vp_options
 vp_option
         : KW_PAIR '(' string ':' string ')'      { value_pairs_add_pair(last_value_pairs, configuration, $3, $5); free($3); free($5); }
         | KW_PAIR '(' string string ')'          { value_pairs_add_pair(last_value_pairs, configuration, $3, $4); free($3); free($4); }
-	| KW_KEY '(' string ')'		    {
-                gchar *k = g_strconcat("$", $3, NULL);
-                value_pairs_add_pair(last_value_pairs, configuration, $3, k);
-                g_free(k);
-                free($3);
-	  }
-	| KW_EXCLUDE '(' string ')'	         { value_pairs_add_exclude_glob(last_value_pairs, $3); free($3); }
+        | KW_KEY '(' string KW_REKEY '('
+        {
+          last_vp_transset = value_pairs_transform_set_new($3);
+          value_pairs_add_glob_pattern(last_value_pairs, $3, TRUE);
+          free($3);
+        }
+        vp_rekey_options
+        ')' { value_pairs_add_transforms(last_value_pairs, last_vp_transset); } ')'
+	| KW_KEY '(' string ')'		         { value_pairs_add_glob_pattern(last_value_pairs, $3, TRUE); free($3);  }
+	| KW_EXCLUDE '(' string ')'	         { value_pairs_add_glob_pattern(last_value_pairs, $3, FALSE); free($3); }
 	| KW_SCOPE '(' vp_scope_list ')'
 	;
 
 vp_scope_list
 	: string vp_scope_list              { value_pairs_add_scope(last_value_pairs, $1); free($1); }
 	|
+	;
+
+vp_rekey_options
+	: vp_rekey_option vp_rekey_options
+        |
+	;
+
+vp_rekey_option
+	: KW_SHIFT '(' LL_NUMBER ')' { value_pairs_transform_set_add_func(last_vp_transset, value_pairs_new_transform_shift($3)); }
+	| KW_ADD_PREFIX '(' string ')' { value_pairs_transform_set_add_func(last_vp_transset, value_pairs_new_transform_add_prefix($3)); free($3); }
+	| KW_REPLACE '(' string string ')' { value_pairs_transform_set_add_func(last_vp_transset, value_pairs_new_transform_replace($3, $4)); free($3); free($4); }
 	;
 
 /* END_RULES */

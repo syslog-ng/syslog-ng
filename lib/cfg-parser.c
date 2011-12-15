@@ -60,6 +60,10 @@ static CfgLexerKeyword main_keywords[] = {
   { "pair",               KW_PAIR, 0x0303 },
   { "key",                KW_KEY, 0x0303 },
   { "scope",              KW_SCOPE, 0x0303 },
+  { "rekey",              KW_REKEY, 0x0303 },
+  { "shift",              KW_SHIFT, 0x0303 },
+  { "add_prefix",         KW_ADD_PREFIX, 0x0303 },
+  { "replace",            KW_REPLACE, 0x0303 },
 
   /* option items */
   { "flags",              KW_FLAGS },
