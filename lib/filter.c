@@ -47,16 +47,22 @@ filter_expr_node_init(FilterExprNode *self)
 }
 
 gboolean
-filter_expr_eval(FilterExprNode *self, LogMessage *msg)
+filter_expr_eval_with_context(FilterExprNode *self, LogMessage **msg, gint num_msg)
 {
   gboolean res;
 
-  res = self->eval(self, msg);
+  res = self->eval(self, msg, num_msg);
   msg_debug("Filter node evaluation result",
             evt_tag_str("filter_result", res ? "match" : "not-match"),
             evt_tag_str("filter_type", self->type),
             NULL);
   return res;
+}
+
+gboolean
+filter_expr_eval(FilterExprNode *self, LogMessage *msg)
+{
+  return filter_expr_eval_with_context(self, &msg, 1);
 }
 
 FilterExprNode *
@@ -84,6 +90,17 @@ typedef struct _FilterOp
 } FilterOp;
 
 static void
+fop_init(FilterExprNode *s, GlobalConfig *cfg)
+{
+  FilterOp *self = (FilterOp *) s;
+
+  if (self->left && self->left->init)
+    self->left->init(self->left, cfg);
+  if (self->right && self->right->init)
+    self->right->init(self->right, cfg);
+}
+
+static void
 fop_free(FilterExprNode *s)
 {
   FilterOp *self = (FilterOp *) s;
@@ -92,12 +109,20 @@ fop_free(FilterExprNode *s)
   filter_expr_unref(self->right);
 }
 
+static void
+fop_init_instance(FilterOp *self)
+{
+  filter_expr_node_init(&self->super);
+  self->super.init = fop_init;
+  self->super.free_fn = fop_free;
+}
+
 static gboolean
-fop_or_eval(FilterExprNode *s, LogMessage *msg)
+fop_or_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
 {
   FilterOp *self = (FilterOp *) s;
   
-  return (filter_expr_eval(self->left, msg) || filter_expr_eval(self->right, msg)) ^ s->comp;
+  return (filter_expr_eval_with_context(self->left, msgs, num_msg) || filter_expr_eval_with_context(self->right, msgs, num_msg)) ^ s->comp;
 }
 
 FilterExprNode *
@@ -105,9 +130,8 @@ fop_or_new(FilterExprNode *e1, FilterExprNode *e2)
 {
   FilterOp *self = g_new0(FilterOp, 1);
   
-  filter_expr_node_init(&self->super);
+  fop_init_instance(self);
   self->super.eval = fop_or_eval;
-  self->super.free_fn = fop_free;
   self->super.modify = e1->modify || e2->modify;
   self->left = e1;
   self->right = e2;
@@ -116,11 +140,11 @@ fop_or_new(FilterExprNode *e1, FilterExprNode *e2)
 }
 
 static gboolean
-fop_and_eval(FilterExprNode *s, LogMessage *msg)
+fop_and_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
 {
   FilterOp *self = (FilterOp *) s;
   
-  return (filter_expr_eval(self->left, msg) && filter_expr_eval(self->right, msg)) ^ s->comp;
+  return (filter_expr_eval_with_context(self->left, msgs, num_msg) && filter_expr_eval_with_context(self->right, msgs, num_msg)) ^ s->comp;
 }
 
 FilterExprNode *
@@ -128,9 +152,8 @@ fop_and_new(FilterExprNode *e1, FilterExprNode *e2)
 {
   FilterOp *self = g_new0(FilterOp, 1);
   
-  filter_expr_node_init(&self->super);
+  fop_init_instance(self);
   self->super.eval = fop_and_eval;
-  self->super.free_fn = fop_free;
   self->super.modify = e1->modify || e2->modify;
   self->left = e1;
   self->right = e2;
@@ -152,14 +175,14 @@ typedef struct _FilterCmp
 } FilterCmp;
 
 gboolean
-fop_cmp_eval(FilterExprNode *s, LogMessage *msg)
+fop_cmp_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
 {
   FilterCmp *self = (FilterCmp *) s;
   gboolean result = FALSE;
   gint cmp;
 
-  log_template_format(self->left, msg, NULL, LTZ_LOCAL, 0, NULL, self->left_buf);
-  log_template_format(self->right, msg, NULL, LTZ_LOCAL, 0, NULL, self->right_buf);
+  log_template_format_with_context(self->left, msgs, num_msg, NULL, LTZ_LOCAL, 0, NULL, self->left_buf);
+  log_template_format_with_context(self->right, msgs, num_msg, NULL, LTZ_LOCAL, 0, NULL, self->right_buf);
 
   if (self->cmp_op & FCMP_NUM)
     {
@@ -268,9 +291,10 @@ typedef struct _FilterPri
 } FilterPri;
 
 static gboolean
-filter_facility_eval(FilterExprNode *s, LogMessage *msg)
+filter_facility_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
 {
   FilterPri *self = (FilterPri *) s;
+  LogMessage *msg = msgs[0];
   guint32 fac_num = (msg->pri & LOG_FACMASK) >> 3;
   
   if (G_UNLIKELY(self->valid & 0x80000000))
@@ -298,10 +322,12 @@ filter_facility_new(guint32 facilities)
 }
 
 static gboolean
-filter_level_eval(FilterExprNode *s, LogMessage *msg)
+filter_level_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
 {
   FilterPri *self = (FilterPri *) s;
+  LogMessage *msg = msgs[0];
   guint32 pri = msg->pri & LOG_PRIMASK;
+
   
   return !!((1 << pri) & self->valid) ^ self->super.comp;
 }
@@ -330,10 +356,11 @@ filter_re_eval_string(FilterExprNode *s, LogMessage *msg, gint value_handle, con
 }
 
 static gboolean
-filter_re_eval(FilterExprNode *s, LogMessage *msg)
+filter_re_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
 {
   FilterRE *self = (FilterRE *) s;
   const gchar *value;
+  LogMessage *msg = msgs[0];
   gssize len = 0;
   
   value = log_msg_get_value(msg, self->value_handle, &len);
@@ -399,11 +426,12 @@ filter_re_new(NVHandle value_handle)
 }
 
 static gboolean
-filter_match_eval(FilterExprNode *s, LogMessage *msg)
+filter_match_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
 {
   FilterRE *self = (FilterRE *) s;
   gchar *str;
   gboolean res;
+  LogMessage *msg = msgs[0];
 
   if (G_UNLIKELY(!self->value_handle))
     {
@@ -424,7 +452,7 @@ filter_match_eval(FilterExprNode *s, LogMessage *msg)
     }
   else
     {
-      res = filter_re_eval(s, msg);
+      res = filter_re_eval(s, msgs, num_msg);
     }
   return res;
 }
@@ -448,7 +476,7 @@ typedef struct _FilterCall
 } FilterCall;
 
 static gboolean
-filter_call_eval(FilterExprNode *s, LogMessage *msg)
+filter_call_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
 {
   FilterCall *self = (FilterCall *) s;
   
@@ -456,7 +484,7 @@ filter_call_eval(FilterExprNode *s, LogMessage *msg)
     {
       /* rule is assumed to contain a single filter pipe */
 
-      return filter_expr_eval(self->filter_expr, msg) ^ s->comp;
+      return filter_expr_eval_with_context(self->filter_expr, msgs, num_msg) ^ s->comp;
     }
   else
     {
@@ -516,10 +544,11 @@ typedef struct _FilterNetmask
 } FilterNetmask;
 
 static gboolean
-filter_netmask_eval(FilterExprNode *s, LogMessage *msg)
+filter_netmask_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
 {
   FilterNetmask *self = (FilterNetmask *) s;
   struct in_addr addr;
+  LogMessage *msg = msgs[0];
   
   if (msg->saddr && g_sockaddr_inet_check(msg->saddr))
     {
@@ -582,9 +611,10 @@ typedef struct _FilterTags
 } FilterTags;
 
 static gboolean
-filter_tags_eval(FilterExprNode *s, LogMessage *msg)
+filter_tags_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
 {
   FilterTags *self = (FilterTags *)s;
+  LogMessage *msg = msgs[0];
   gint i;
 
   for (i = 0; i < self->tags->len; i++)

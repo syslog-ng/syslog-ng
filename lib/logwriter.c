@@ -1245,9 +1245,14 @@ log_writer_set_options(LogWriter *self, LogPipe *control, LogWriterOptions *opti
 
   self->stats_level = stats_level;
   self->stats_source = stats_source;
-  self->stats_id = stats_id ? g_strdup(stats_id) : NULL;
-  self->stats_instance = stats_instance ? g_strdup(stats_instance) : NULL;
 
+  if (self->stats_id)
+    g_free(self->stats_id);
+  self->stats_id = stats_id ? g_strdup(stats_id) : NULL;
+
+  if (self->stats_instance)
+    g_free(self->stats_instance);
+  self->stats_instance = stats_instance ? g_strdup(stats_instance) : NULL;
 }
 
 LogPipe *
@@ -1273,6 +1278,16 @@ log_writer_new(guint32 flags)
   return &self->super;
 }
 
+/* returns a reference */
+LogQueue *
+log_writer_get_queue(LogPipe *s)
+{
+  LogWriter *self = (LogWriter *) s;
+
+  return log_queue_ref(self->queue);
+}
+
+/* consumes the reference */
 void
 log_writer_set_queue(LogPipe *s, LogQueue *queue)
 {

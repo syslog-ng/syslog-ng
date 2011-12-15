@@ -256,7 +256,7 @@ static LogProtoStatus
 log_proto_file_writer_flush(LogProto *s)
 {
   LogProtoFileWriter *self = (LogProtoFileWriter *)s;
-  gint rc, i, i0, sum, ofs;
+  gint rc, i, i0, sum, ofs, pos;
 
   /* we might be called from log_writer_deinit() without having a buffer at all */
 
@@ -299,7 +299,8 @@ log_proto_file_writer_flush(LogProto *s)
       /* allocate and copy the remaning data */
       self->partial = (guchar *)g_malloc(self->partial_len);
       ofs = sum - rc; /* the length of the remaning (not processed) chunk in the first message */
-        memcpy(self->partial, self->buffer[i0].iov_base + rc - (i0 > 0 ? (sum - self->buffer[i0 - 1].iov_len) : 0), ofs);
+      pos = self->buffer[i0].iov_len - ofs;
+      memcpy(self->partial, self->buffer[i0].iov_base + pos, ofs);
       i = i0 + 1;
       while (i < self->buf_count)
         {

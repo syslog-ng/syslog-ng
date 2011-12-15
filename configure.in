@@ -224,7 +224,7 @@ dnl Validate yacc
 yacc_ok=1
 if echo "$YACC" | grep bison > /dev/null; then
 	# NOTE: m4 removes [], that's why it needs to be escaped
-	bison_version=[`$YACC --version | head -1 | sed -e 's/[^0-9.]*\([0-9.]\+\)$/\1/'`]
+	bison_version=[`$YACC --version | head -n 1 | sed -e 's/[^0-9.]*\([0-9.]\+\)$/\1/'`]
 	bison_version_major=`echo $bison_version | cut -d. -f1`
 	bison_version_minor=`echo $bison_version | cut -d. -f2`
 	if test "$bison_version_major" -lt 2 -o "$bison_version_minor" -lt 4; then
@@ -354,7 +354,7 @@ dnl How to do static linking?
 dnl ***************************************************************************
 
 AC_MSG_CHECKING(how to enable static linking for certain libraries)
-ldversion=`ld -V 2>&1 | head -1`
+ldversion=`ld -V 2>&1 | head -n 1`
 if echo $ldversion | egrep "GNU|Solaris" > /dev/null; then
         LD_START_STATIC="-Wl,-Bstatic"
         LD_END_STATIC="-Wl,-Bdynamic"
@@ -456,6 +456,14 @@ PR_SET_KEEPCAPS
 if test "x$blb_cv_keepcaps" = "xyes"; then
 	AC_DEFINE(HAVE_PR_SET_KEEPCAPS, 1, [have PR_SET_KEEPCAPS])
 fi
+
+dnl Check for the "environ" global variable
+AC_TRY_LINK([], [
+extern char **environ;
+char *p;
+
+p = environ[0];
+],AC_DEFINE(HAVE_ENVIRON, [1], [Specifies whether the environ global variable exists]))
 
 
 dnl ***************************************************************************

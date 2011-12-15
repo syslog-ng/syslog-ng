@@ -340,16 +340,6 @@ ValuePairsTransformSet *last_vp_transset;
 
 }
 
-
-%type	<ptr> source_stmt
-%type	<ptr> filter_stmt
-%type   <ptr> parser_stmt
-%type   <ptr> rewrite_stmt
-%type	<ptr> dest_stmt
-%type	<ptr> log_stmt
-%type	<ptr> options_stmt
-%type	<ptr> template_stmt
-
 %type	<ptr> source_items
 %type	<ptr> source_item
 %type   <ptr> source_afinter
@@ -403,78 +393,111 @@ stmts
 	;
 
 stmt
-        : KW_SOURCE source_stmt			{ cfg_add_source(configuration, $2); }
-	| KW_DESTINATION dest_stmt		{ cfg_add_dest(configuration, $2); }
-	| KW_LOG log_stmt			{ cfg_add_connection(configuration, $2); }
-	| KW_FILTER filter_stmt			{ cfg_add_filter(configuration, $2); }
-	| KW_PARSER parser_stmt                 { cfg_add_parser(configuration, $2); }
-        | KW_REWRITE rewrite_stmt               { cfg_add_rewrite(configuration, $2); }
-	| KW_TEMPLATE template_stmt		{ cfg_add_template(configuration, $2); }
-	| KW_OPTIONS options_stmt		{  }
-	| KW_BLOCK block_stmt                   {  }
+        : source_stmt
+	| dest_stmt
+	| log_stmt
+	| filter_stmt
+	| parser_stmt
+        | rewrite_stmt
+	| template_stmt
+	| options_stmt
+	| block_stmt
 	;
 
 source_stmt
-	: string
+	: KW_SOURCE string
           { cfg_lexer_push_context(lexer, LL_CONTEXT_SOURCE, NULL, "source"); }
           '{' source_items '}'
-          { cfg_lexer_pop_context(lexer); }     { $$ = log_source_group_new($1, $4); free($1); }
+          { cfg_lexer_pop_context(lexer); }
+          {
+            LogSourceGroup *sgroup = log_source_group_new($2, $5); free($2);
+            CHECK_ERROR(cfg_add_source(configuration, sgroup) || cfg_allow_config_dups(configuration), @2, "duplicate source definition");
+          }
 	;
 
 filter_stmt
-	: string '{'
+	: KW_FILTER string '{'
 	  {
 	    last_filter_expr = NULL;
-	    CHECK_ERROR(cfg_parser_parse(&filter_expr_parser, lexer, (gpointer *) &last_filter_expr, NULL), @1, NULL);
+	    CHECK_ERROR(cfg_parser_parse(&filter_expr_parser, lexer, (gpointer *) &last_filter_expr, NULL), @2, NULL);
 	  }
-          '}'                               { $$ = log_process_rule_new($1, g_list_prepend(NULL, log_filter_pipe_new(last_filter_expr, $1))); free($1); }
+          '}'
+          {
+            LogProcessRule *rule = log_process_rule_new($2, g_list_prepend(NULL, log_filter_pipe_new(last_filter_expr, $2)));
+            free($2);
+            CHECK_ERROR(cfg_add_filter(configuration, rule) || cfg_allow_config_dups(configuration), @2, "duplicate filter rule");
+          }
 	;
 	
 parser_stmt
-        : string '{'
+        : KW_PARSER string '{'
           {
-            CHECK_ERROR(cfg_parser_parse(&parser_expr_parser, lexer, (gpointer *) &last_parser_expr, NULL), @1, NULL);
-          } '}'	                                { $$ = log_process_rule_new($1, last_parser_expr); free($1); }
+            CHECK_ERROR(cfg_parser_parse(&parser_expr_parser, lexer, (gpointer *) &last_parser_expr, NULL), @2, NULL);
+          } '}'
+          {
+            LogProcessRule *rule = log_process_rule_new($2, last_parser_expr);
+            free($2);
+            CHECK_ERROR(cfg_add_parser(configuration, rule) || cfg_allow_config_dups(configuration), @2, "duplicate parser rule");
+          }
 
 rewrite_stmt
-        : string '{'
+        : KW_REWRITE string '{'
           {
-            CHECK_ERROR(cfg_parser_parse(&rewrite_expr_parser, lexer, (gpointer *) &last_rewrite_expr, NULL), @1, NULL);
-          } '}'                                 { $$ = log_process_rule_new($1, last_rewrite_expr); free($1); }
+            CHECK_ERROR(cfg_parser_parse(&rewrite_expr_parser, lexer, (gpointer *) &last_rewrite_expr, NULL), @2, NULL);
+          } '}'
+          {
+            LogProcessRule *rule = log_process_rule_new($2, last_rewrite_expr);
+            free($2);
+            CHECK_ERROR(cfg_add_rewrite(configuration, rule) || cfg_allow_config_dups(configuration), @2, "duplicate rewrite rule");
+          }
 
 dest_stmt
-        : string
+        : KW_DESTINATION string
           { cfg_lexer_push_context(lexer, LL_CONTEXT_DESTINATION, NULL, "destination"); }
           '{' dest_items '}'
-          { cfg_lexer_pop_context(lexer); }         { $$ = log_dest_group_new($1, $4); free($1); }
+          { cfg_lexer_pop_context(lexer); }
+          {
+            LogDestGroup *dgroup = log_dest_group_new($2, $5);
+            free($2);
+            CHECK_ERROR(cfg_add_dest(configuration, dgroup) || cfg_allow_config_dups(configuration), @2, "duplicate destination");
+          }
 	;
 
 log_stmt
-        : { cfg_lexer_push_context(lexer, LL_CONTEXT_LOG, NULL, "log"); }
+        : KW_LOG
+          { cfg_lexer_push_context(lexer, LL_CONTEXT_LOG, NULL, "log"); }
           '{' log_items log_forks log_flags '}'
-           { cfg_lexer_pop_context(lexer); }	{ LogPipeItem *pi = log_pipe_item_append_tail($3, $4); $$ = log_connection_new(pi, $5); }
+          { cfg_lexer_pop_context(lexer); }
+
+          {
+            LogPipeItem *pi = log_pipe_item_append_tail($4, $5);
+            LogConnection *c = log_connection_new(pi, $6);
+
+            cfg_add_connection(configuration, c);
+          }
 
 	;
 	
 block_stmt
-        : { cfg_lexer_push_context(lexer, LL_CONTEXT_BLOCK_DEF, block_def_keywords, "block definition"); }
+        : KW_BLOCK
+          { cfg_lexer_push_context(lexer, LL_CONTEXT_BLOCK_DEF, block_def_keywords, "block definition"); }
           LL_IDENTIFIER LL_IDENTIFIER
           '(' { last_block_args = cfg_args_new(); } block_args ')'
           { cfg_lexer_push_context(lexer, LL_CONTEXT_BLOCK_CONTENT, NULL, "block content"); }
           LL_BLOCK
-                                                          {
-                                                            CfgBlock *block;
+          {
+            CfgBlock *block;
 
-                                                            /* block content */
-                                                            cfg_lexer_pop_context(lexer);
-                                                            /* block definition */
-                                                            cfg_lexer_pop_context(lexer);
+            /* block content */
+            cfg_lexer_pop_context(lexer);
+            /* block definition */
+            cfg_lexer_pop_context(lexer);
 
-                                                            block = cfg_block_new($9, last_block_args);
-                                                            cfg_lexer_register_block_generator(lexer, cfg_lexer_lookup_context_type_by_name($2), $3, cfg_block_generate, block, (GDestroyNotify) cfg_block_free);
-                                                            free($9);
-                                                            last_block_args = NULL;
-                                                          }
+            block = cfg_block_new($10, last_block_args);
+            CHECK_ERROR(cfg_lexer_register_block_generator(lexer, cfg_lexer_lookup_context_type_by_name($3), $4, cfg_block_generate, block, (GDestroyNotify) cfg_block_free) || cfg_allow_config_dups(configuration), @4, "duplicate block definition");
+            free($10);
+            last_block_args = NULL;
+          }
         ;
 
 block_args
@@ -534,16 +557,19 @@ log_flags_items
 
 
 options_stmt
-        : '{' options_items '}'			{ $$ = NULL; }
+        : KW_OPTIONS '{' options_items '}'
 	;
 	
 template_stmt
-	: string
+	: KW_TEMPLATE string
 	  {
-	    last_template = log_template_new(configuration, $1);
-	    free($1);
+	    last_template = log_template_new(configuration, $2);
+	    free($2);
 	  }
-	  '{' template_items '}'		{ $$ = last_template;  }
+	  '{' template_items '}'
+          {
+            CHECK_ERROR(cfg_add_template(configuration, last_template) || cfg_allow_config_dups(configuration), @2, "duplicate template");
+          }
 	;
 	
 template_items

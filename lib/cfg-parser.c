@@ -153,7 +153,7 @@ CfgParser main_parser =
 #if ENABLE_DEBUG
   .debug_flag = &main_debug,
 #endif
-  .name = "main",
+  .name = "config",
   .context = LL_CONTEXT_ROOT,
   .keywords = main_keywords,
   .parse = main_parse,

@@ -639,8 +639,7 @@ value_pairs_new_from_cmdline (GlobalConfig *cfg,
     {
       g_free(user_data_args[3]);
       value_pairs_free (vp);
-      g_option_context_free (ctx);
-      return NULL;
+      vp = NULL;
     }
   g_option_context_free (ctx);
   vp_cmdline_parse_rekey_finish (user_data_args);

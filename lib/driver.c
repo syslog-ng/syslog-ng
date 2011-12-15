@@ -130,13 +130,7 @@ log_src_driver_free(LogPipe *s)
 
 /* LogDestDriver */
 
-void
-log_dest_driver_add_queue(LogDestDriver *self, LogQueue *q)
-{
-  log_queue_ref(q);
-  self->queues = g_list_prepend(self->queues, q);
-}
-
+/* returns a reference */
 static LogQueue *
 log_dest_driver_acquire_queue_method(LogDestDriver *self, gchar *persist_name, gpointer user_data)
 {
@@ -156,12 +150,14 @@ log_dest_driver_acquire_queue_method(LogDestDriver *self, gchar *persist_name, g
   return queue;
 }
 
+/* consumes the reference in @q */
 static void
 log_dest_driver_release_queue_method(LogDestDriver *self, LogQueue *q, gpointer user_data)
 {
   GlobalConfig *cfg = log_pipe_get_config(&self->super.super);
 
-  if (q->persist_name)
+  /* we only save the LogQueue instance if it contains data */
+  if (q->persist_name && log_queue_keep_on_reload(q) > 0)
     cfg_persist_config_add(cfg, q->persist_name, q, (GDestroyNotify) log_queue_unref, FALSE);
   else
     log_queue_unref(q);
@@ -179,8 +175,7 @@ log_dest_driver_deinit_method(LogPipe *s)
 
       log_dest_driver_release_queue(self, q);
     }
-  g_list_free(self->queues);
-  self->queues = NULL;
+  g_assert(self->queues == NULL);
 
   if (!log_driver_deinit_method(s))
     return FALSE;
