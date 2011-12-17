@@ -571,10 +571,28 @@ pdb_rule_run_actions(PDBRule *self, gint trigger, PatternDB *db, PDBContext *con
                         }
                     }
                   if (context)
-                    g_ptr_array_add(context->messages, genmsg);
-                  pdb_message_apply(&action->content.message, context, genmsg, buffer);
-                  if (context)
-                    g_ptr_array_remove_index_fast(context->messages, context->messages->len - 1);
+                    {
+                      g_ptr_array_add(context->messages, genmsg);
+                      pdb_message_apply(&action->content.message, context, genmsg, buffer);
+                      g_ptr_array_remove_index_fast(context->messages, context->messages->len - 1);
+                    }
+                  else
+                    {
+                      /* no context, which means no correllation. The action
+                       * rule contains the generated message at @0 and the one
+                       * which triggered the rule in @1.
+                       *
+                       * We emulate a context having only these two
+                       * messages, but without allocating a full-blown
+                       * structure.
+                       */
+                      LogMessage *dummy_msgs[] = { msg, genmsg, NULL };
+                      GPtrArray dummy_ptr_array = { .pdata = (void **) dummy_msgs, .len = 2 };
+                      PDBContext dummy_context = { .messages = &dummy_ptr_array, 0 };
+
+                      pdb_message_apply(&action->content.message, &dummy_context, genmsg, buffer);
+                    }
+
                   emit(genmsg, TRUE, emit_data);
                   log_msg_unref(genmsg);
                   break;
