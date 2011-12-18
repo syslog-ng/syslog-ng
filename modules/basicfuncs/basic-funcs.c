@@ -47,6 +47,7 @@ static Plugin basicfuncs_plugins[] =
   /* str-funcs */
   TEMPLATE_FUNCTION_PLUGIN(tf_echo, "echo"),
   TEMPLATE_FUNCTION_PLUGIN(tf_substr, "substr"),
+  TEMPLATE_FUNCTION_PLUGIN(tf_strip, "strip"),
   TEMPLATE_FUNCTION_PLUGIN(tf_sanitize, "sanitize"),
 
   /* numeric-funcs */

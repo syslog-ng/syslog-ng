@@ -175,6 +175,11 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   saddr = g_sockaddr_inet_new("10.11.12.13", 1010);
   msg = log_msg_new(msg_str, strlen(msg_str), saddr, &parse_options);
   log_msg_set_value(msg, log_msg_get_value_handle("APP.VALUE"), "value", -1);
+  log_msg_set_value(msg, log_msg_get_value_handle("APP.STRIP1"), "     value", -1);
+  log_msg_set_value(msg, log_msg_get_value_handle("APP.STRIP2"), "value     ", -1);
+  log_msg_set_value(msg, log_msg_get_value_handle("APP.STRIP3"), "     value     ", -1);
+  log_msg_set_value(msg, log_msg_get_value_handle("APP.STRIP4"), "value", -1);
+  log_msg_set_value(msg, log_msg_get_value_handle("APP.STRIP5"), "", -1);
   log_msg_set_match(msg, 0, "whole-match", -1);
   log_msg_set_match(msg, 1, "first-match", -1);
   log_msg_set_tag_by_name(msg, "alma");
@@ -323,6 +328,14 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase(msg, "$(substr $HOST 1)", "zorp");
   testcase(msg, "$(substr $HOST -1)", "p");
   testcase(msg, "$(substr $HOST -2 1)", "r");
+
+  testcase(msg, "$(strip ${APP.STRIP1})", "value");
+  testcase(msg, "$(strip ${APP.STRIP2})", "value");
+  testcase(msg, "$(strip ${APP.STRIP3})", "value");
+  testcase(msg, "$(strip ${APP.STRIP4})", "value");
+  testcase(msg, "$(strip ${APP.STRIP5})", "");
+
+  testcase(msg, "$(strip ${APP.STRIP1} ${APP.STRIP2} ${APP.STRIP3} ${APP.STRIP4} ${APP.STRIP5})", "value value value value ");
 
   testcase(msg, "$(sanitize alma/bela)", "alma_bela");
   testcase(msg, "$(sanitize -r @ alma/bela)", "alma@bela");

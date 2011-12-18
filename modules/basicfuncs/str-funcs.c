@@ -1,3 +1,8 @@
+
+#include <string.h>
+#include <ctype.h>
+
+
 static void
 tf_echo(LogMessage *msg, gint argc, GString *argv[], GString *result)
 {
@@ -117,6 +122,43 @@ tf_substr(LogMessage *msg, gint argc, GString *argv[], GString *result)
 TEMPLATE_FUNCTION_SIMPLE(tf_substr);
 
 /*
+ * $(strip $arg1 $arg2 ...)
+ */
+static void
+tf_strip(LogMessage *msg, gint argc, GString *argv[], GString *result)
+{
+  gint i;
+
+  for (i = 0; i < argc; i++)
+    {
+      gint spaces_end, spaces_start;
+
+      if (argv[i]->len == 0)
+        continue;
+
+      spaces_end = 0;
+      while (isspace(argv[i]->str[argv[i]->len - spaces_end - 1]))
+        spaces_end++;
+
+      if (argv[i]->len == spaces_end)
+        continue;
+
+      spaces_start = 0;
+      while (isspace(argv[i]->str[spaces_start]))
+        spaces_start++;
+
+      if (argv[i]->len == spaces_start)
+        continue;
+
+      g_string_append_len(result, &argv[i]->str[spaces_start], argv[i]->len - spaces_end - spaces_start);
+      if (i < argc - 1)
+        g_string_append_c(result, ' ');
+    }
+}
+
+TEMPLATE_FUNCTION_SIMPLE(tf_strip);
+
+/*
  * $(sanitize [opts] $arg1 $arg2 ...)
  *
  * Options:
@@ -208,7 +250,6 @@ tf_sanitize_free_state(gpointer s)
 
 TEMPLATE_FUNCTION(TFSanitizeState, tf_sanitize, tf_sanitize_prepare, tf_simple_func_eval, tf_sanitize_call, tf_sanitize_free_state, NULL);
 
-#include <string.h>
 
 static void
 append_args(gint argc, GString *argv[], GString *result)
