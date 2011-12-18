@@ -435,6 +435,16 @@ NULL, // not match
 };
 
 gchar * test6 [] = {
+"@SET:TEST: 	@",
+" a ",
+"  a ",
+" 	a ",
+" 	 a ",
+NULL, // not match
+"ab1234",NULL
+};
+
+gchar * test7 [] = {
 "@IPv4:TEST@",
 "1.2.3.4",
 "0.0.0.0",
@@ -448,7 +458,7 @@ NULL,
 "1,2,3,4",NULL
 };
 
-gchar * test7 [] = {
+gchar * test8 [] = {
 "@IPv6:TEST@",
 "2001:0db8:0000:0000:0000:0000:1428:57ab",
 "2001:0db8:0000:0000:0000::1428:57ab",
@@ -460,7 +470,7 @@ NULL,
 "2001:0db8::34d2::1428:57ab",NULL
 };
 
-gchar * test8 [] = {
+gchar * test9 [] = {
 "@IPvANY:TEST@",
 "1.2.3.4",
 "0.0.0.0",
@@ -481,7 +491,7 @@ NULL,
 "2001:0db8::34d2::1428:57ab",NULL
 };
 
-gchar * test9 [] = {
+gchar * test10 [] = {
 "@NUMBER:TEST@",
 "1234",
 "1.2",
@@ -492,7 +502,7 @@ NULL,
 "1,2",NULL
 };
 
-gchar * test10 [] = {
+gchar * test11 [] = {
 "@QSTRING:TEST:&lt;&gt;@",
 "<aa bb>",
 "< aabb >",
@@ -501,7 +511,7 @@ NULL,
 "<aabb",NULL
 };
 
-gchar * test11 [] = {
+gchar * test12 [] = {
 "@STRING:TEST@",
 "aabb",
 "aa bb",
@@ -513,7 +523,7 @@ NULL,
 "aa bb",NULL
 };
 
-gchar **parsers[] = {test1, test2, test3, test4, test5, test6, test7, test8, test9, test10, test11, NULL};
+gchar **parsers[] = {test1, test2, test3, test4, test5, test6, test7, test8, test9, test10, test11, test12, NULL};
 
 void
 test_patterndb_parsers()

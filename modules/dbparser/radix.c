@@ -116,6 +116,24 @@ r_parser_anystring(guint8 *str, gint *len, const gchar *param, gpointer state, R
 }
 
 gboolean
+r_parser_set(guint8 *str, gint *len, const gchar *param, gpointer state, RParserMatch *match)
+{
+  *len = 0;
+
+  if (!param)
+    return FALSE;
+
+  while (strchr(param, str[*len]))
+    (*len)++;
+
+  if (*len > 0)
+    {
+      return TRUE;
+    }
+  return FALSE;
+}
+
+gboolean
 r_parser_ipv4(guint8 *str, gint *len, const gchar *param, gpointer state, RParserMatch *match)
 {
   gint dots = 0;
@@ -378,6 +396,21 @@ r_new_pnode(guint8 *key)
     {
       parser_node->parse = r_parser_anystring;
       parser_node->type = RPT_ANYSTRING;
+    }
+  else if (strcmp(params[0], "SET") == 0)
+    {
+      if (params_len == 3)
+        {
+          parser_node->parse = r_parser_set;
+          parser_node->type = RPT_SET;
+        }
+      else
+        {
+          g_free(parser_node);
+          msg_error("Missing SET parser parameters",
+                     evt_tag_str("type", params[0]), NULL);
+          parser_node = NULL;
+        }
     }
   else if (g_str_has_prefix(params[0], "QSTRING"))
     {
