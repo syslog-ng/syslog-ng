@@ -32,10 +32,7 @@
 
 #define MAX_STATE_DATA_LENGTH 128
 
-typedef struct _LogProto LogProto;
-typedef struct _AckData AckData;
-
-struct _AckData
+typedef struct _AckData
 {
   gboolean not_acked;
   gboolean not_sent;
@@ -49,7 +46,7 @@ struct _AckData
     }file_state;
     char other_state[MAX_STATE_DATA_LENGTH];
   };
-};
+}AckData;
 #define LOG_PROTO_OPTIONS_SIZE 256
 
 typedef enum

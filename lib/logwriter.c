@@ -138,8 +138,12 @@ log_writer_msg_acked(guint num_msg_acked, gpointer user_data)
           log_queue_ack_backlog(self->queue, num_msg_acked);
           self->pending_message_count -= num_msg_acked;
           fprintf(stderr,"pending message count: %d acked_messages: %d\n",self->pending_message_count, num_msg_acked);
+          if (self->pending_message_count > 1)
+            {
+              log_queue_rewind_backlog(self->queue, self->pending_message_count,FALSE);
+              self->pending_message_count = 0;
+            }
         }
-     log_queue_rewind_backlog(self->queue, self->pending_message_count - 1);
     }
 }
 
@@ -1106,7 +1110,7 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
           status = log_proto_post(proto, lm, (guchar *)self->line_buffer->str, self->line_buffer->len, &consumed);
           if (status == LPS_ERROR)
             {
-              log_queue_rewind_backlog(self->queue, -1);
+              log_queue_rewind_backlog(self->queue, -1, FALSE);
               self->pending_message_count = 0;
               if ((self->options->options & LWO_IGNORE_ERRORS) == 0)
                 {
@@ -1140,8 +1144,12 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
           /* push back to the queue */
           if (self->flags & LW_KEEP_ONE_PENDING)
             {
-              log_queue_rewind_backlog(self->queue, 1);
-              self->pending_message_count--;
+              if (self->pending_message_count > 0)
+                {
+                  log_queue_rewind_backlog(self->queue, 1, TRUE);
+                  g_assert(self->pending_message_count > 0);
+                  self->pending_message_count--;
+                }
             }
           else
             {
@@ -1350,13 +1358,13 @@ log_writer_reopen_deferred(gpointer s)
 
   log_writer_stop_watches(self);
 
-  if (self->proto == NULL && self->last_notify_code == NC_WRITE_ERROR)
+  if (proto == NULL && self->last_notify_code == NC_WRITE_ERROR)
     {
       /* proto is null in case of log_writer_broken so,
        * the backlog items must be rewind to the queue
        * this can be occured in case of POLLERR
        */
-      log_queue_rewind_backlog(self->queue, -1);
+      log_queue_rewind_backlog(self->queue, -1, FALSE);
       self->pending_message_count = 0;
     }
   if (self->proto)

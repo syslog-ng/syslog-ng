@@ -422,7 +422,7 @@ log_queue_fifo_ack_backlog(LogQueue *s, gint n)
  * NOTE: this is assumed to be called from the output thread.
  */
 static void
-log_queue_fifo_rewind_backlog(LogQueue *s, gint n)
+log_queue_fifo_rewind_backlog(LogQueue *s, gint n,gboolean ack_and_ref)
 {
   LogQueueFifo *self = (LogQueueFifo *) s;
   LogMessage *msg;
@@ -446,8 +446,11 @@ log_queue_fifo_rewind_backlog(LogQueue *s, gint n)
        */
       msg = node->msg;
       path_options.ack_needed = node->ack_needed;
-      log_msg_ack(msg,&path_options);
-      log_msg_unref(msg);
+      if (ack_and_ref)
+        {
+          log_msg_ack(msg,&path_options, TRUE);
+          log_msg_unref(msg);
+        }
       g_assert(msg->rcptid);
 
       list_del_init(&node->list);

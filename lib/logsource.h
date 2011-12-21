@@ -27,6 +27,7 @@
 
 #include "logpipe.h"
 #include "stats.h"
+#include "logproto.h"
 #ifndef G_OS_WIN32
 #include <iv_event.h>
 #endif
