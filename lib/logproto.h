@@ -65,6 +65,8 @@ typedef enum
   LPT_CLIENT,
 } LogProtoType;
 
+typedef void (*LogProtoAckMessages)(guint num_msg_acked,gpointer user_data);
+
 typedef struct _LogProto LogProto;
 
 struct _LogProto
@@ -87,9 +89,18 @@ struct _LogProto
   void (*get_info)(LogProto *s, guint64 *pos);
   void (*get_state)(LogProto *s, gpointer user_data);
   gboolean (*ack)(PersistState *state, gpointer user_data);
+  LogProtoAckMessages ack_callback;
+  gpointer ack_user_data;
   gboolean is_multi_line;
   GlobalConfig *cfg;
 };
+
+static inline void
+log_proto_set_msg_acked_callback(LogProto *s, LogProtoAckMessages callback,gpointer user_data)
+{
+  s->ack_callback = callback;
+  s->ack_user_data = user_data;
+}
 
 static inline gboolean
 log_proto_prepare(LogProto *s, gint *fd, GIOCondition *cond)

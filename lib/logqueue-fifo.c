@@ -69,6 +69,19 @@
  *
  */
 
+gint
+count_list(struct list_head *head)
+{
+  gint result = 0;
+  struct list_head *item = head->next;
+  while(item != head)
+    {
+      item = item->next;
+      result++;
+    }
+  return result;
+}
+
 
 typedef struct _LogQueueFifo
 {
@@ -153,7 +166,7 @@ log_queue_fifo_move_input_unlocked(LogQueueFifo *self, gint thread_id)
           log_msg_free_queue_node(node);
           log_msg_drop(msg, &path_options);
         }
-      msg_debug("Destination queue full, dropping messages",
+      msg_error("Destination queue full, dropping messages",
                 evt_tag_int("queue_len", queue_len),
                 evt_tag_int("log_fifo_size", self->qoverflow_size),
                 evt_tag_int("count", n),
@@ -282,7 +295,6 @@ log_queue_fifo_push_head(LogQueue *s, LogMessage *msg, const LogPathOptions *pat
 {
   LogQueueFifo *self = (LogQueueFifo *) s;
   LogMessageQueueNode *node;
-
   /* we don't check limits when putting items "in-front", as it
    * normally happens when we start processing an item, but at the end
    * can't deliver it. No checks, no drops either. */
@@ -359,6 +371,7 @@ log_queue_fifo_pop_head(LogQueue *s, LogMessage **msg, LogPathOptions *path_opti
       log_msg_add_ack(*msg, path_options);
       list_add_tail(&node->list, &self->qbacklog);
       self->qbacklog_len++;
+      g_assert(self->qbacklog_len == count_list(&self->qbacklog));
     }
   if (!ignore_throttle)
     {
@@ -380,11 +393,9 @@ log_queue_fifo_ack_backlog(LogQueue *s, gint n)
   gint i;
 
   log_queue_assert_output_thread(s);
-
   for (i = 0; i < n && self->qbacklog_len > 0; i++)
     {
       LogMessageQueueNode *node;
-
       node = list_entry(self->qbacklog.next, LogMessageQueueNode, list);
       msg = node->msg;
       path_options.ack_needed = node->ack_needed;
@@ -392,6 +403,7 @@ log_queue_fifo_ack_backlog(LogQueue *s, gint n)
       list_del(&node->list);
       log_msg_free_queue_node(node);
       self->qbacklog_len--;
+      g_assert(self->qbacklog_len == count_list(&self->qbacklog));
 
       log_msg_ack(msg, &path_options, TRUE);
       log_msg_unref(msg);
@@ -413,34 +425,38 @@ static void
 log_queue_fifo_rewind_backlog(LogQueue *s, gint n)
 {
   LogQueueFifo *self = (LogQueueFifo *) s;
+  LogMessage *msg;
+  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
+
   log_queue_assert_output_thread(s);
-  if (n < 0)
+  gint i;
+  if (n > self->qbacklog_len || n < 0)
     {
-      list_splice_init(&self->qbacklog, &self->qoverflow_output);
-      self->qoverflow_output_len += self->qbacklog_len;
-      stats_counter_add(self->super.stored_messages, self->qbacklog_len);
-      self->qbacklog_len = 0;
+      n = self->qbacklog_len;
     }
-  else
+  for (i = 0; i < n; i++)
     {
-      gint i;
-      if (n > self->qbacklog_len)
-        {
-          n = self->qbacklog_len;
-        }
-      for (i = 0; i < n; i++)
-        {
-          LogMessageQueueNode *node;
+      LogMessageQueueNode *node;
 
-          node = list_entry(self->qbacklog.prev, LogMessageQueueNode, list);
+      node = list_entry(self->qbacklog.prev, LogMessageQueueNode, list);
+      /*
+       * Because the message go to the backlog only in case of pop_head
+       * and pop_head add ack and ref when it pushes the message into the backlog
+       * The rewind must decrease the ack and ref too
+       */
+      msg = node->msg;
+      path_options.ack_needed = node->ack_needed;
+      log_msg_ack(msg,&path_options);
+      log_msg_unref(msg);
+      g_assert(msg->rcptid);
 
-          list_del_init(&node->list);
-          list_add(&node->list,&self->qoverflow_output);
+      list_del_init(&node->list);
+      list_add(&node->list,&self->qoverflow_output);
 
-          self->qbacklog_len--;
-          self->qoverflow_output_len++;
-          stats_counter_inc(self->super.stored_messages);
-        }
+      self->qbacklog_len--;
+      g_assert(self->qbacklog_len == count_list(&self->qbacklog));
+      self->qoverflow_output_len++;
+      stats_counter_inc(self->super.stored_messages);
     }
 }
 

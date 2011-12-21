@@ -126,6 +126,23 @@ static void log_writer_stop_watches(LogWriter *self);
 static void log_writer_update_watches(LogWriter *self);
 static void log_writer_suspend(LogWriter *self);
 
+
+static void
+log_writer_msg_acked(guint num_msg_acked, gpointer user_data)
+{
+  LogWriter *self = (LogWriter *)user_data;
+  if (self->flags & LW_KEEP_ONE_PENDING)
+    {
+      if (self->pending_message_count > 1)
+        {
+          log_queue_ack_backlog(self->queue, num_msg_acked);
+          self->pending_message_count -= num_msg_acked;
+          fprintf(stderr,"pending message count: %d acked_messages: %d\n",self->pending_message_count, num_msg_acked);
+        }
+     log_queue_rewind_backlog(self->queue, self->pending_message_count - 1);
+    }
+}
+
 static void
 log_writer_work_perform(gpointer s)
 {
@@ -236,6 +253,14 @@ log_writer_io_error(gpointer s)
       /* in case we have an error state but we also asked for read/write
        * polling, the error should be handled by the I/O callback.  But we
        * need not call that explicitly as ivykis does that for us.  */
+      if (self->fd_watch.handler_in)
+        {
+          msg_debug("POLLERR occurred while read fd",
+                evt_tag_int("fd", log_proto_get_fd(self->proto)),
+                NULL);
+          log_writer_broken(self, NC_WRITE_ERROR);
+          return;
+        }
     }
   log_writer_update_watches(self);
 }
@@ -1072,6 +1097,7 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
       msg_set_context(lm);
 
       log_writer_format_log(self, lm, self->line_buffer);
+      self->pending_message_count++;
       
       if (self->line_buffer->len)
         {
@@ -1115,6 +1141,7 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
           if (self->flags & LW_KEEP_ONE_PENDING)
             {
               log_queue_rewind_backlog(self->queue, 1);
+              self->pending_message_count--;
             }
           else
             {
@@ -1123,13 +1150,6 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
           msg_set_context(NULL);
           log_msg_refcache_stop(FALSE);
           break;
-        }
-      if (self->flags & LW_KEEP_ONE_PENDING)
-        {
-          if (self->pending_message_count >= 1)
-            log_queue_ack_backlog(self->queue, self->pending_message_count);
-          else
-            self->pending_message_count++;
         }
       msg_set_context(NULL);
       log_msg_refcache_stop(TRUE);
@@ -1345,7 +1365,13 @@ log_writer_reopen_deferred(gpointer s)
   self->proto = proto;
 
   if (proto)
-    log_writer_start_watches(self);
+    {
+      if (self->flags & LW_KEEP_ONE_PENDING)
+        {
+          log_proto_set_msg_acked_callback(self->proto,log_writer_msg_acked,self);
+        }
+      log_writer_start_watches(self);
+    }
 }
 
 /*

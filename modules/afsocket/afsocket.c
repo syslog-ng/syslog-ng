@@ -945,6 +945,20 @@ afsocket_dd_format_persist_name(AFSocketDestDriver *self, gboolean qfile)
   return persist_name;
 }
 
+static gchar *
+afsocket_dd_format_state_name(AFSocketDestDriver *self)
+{
+  static gchar persist_name[1024];
+  static gchar buf[256];
+  getlonghostname(buf,sizeof(buf));
+  g_snprintf(persist_name, sizeof(persist_name),
+             "afsocket_dd_connection(%s,%s,%s)",
+             !!(self->flags & AFSOCKET_STREAM) ? "stream" : "dgram",
+             self->dest_name,
+             buf);
+  return persist_name;
+}
+
 
 static gint
 afsocket_dd_stats_source(AFSocketDestDriver *self)
@@ -1055,6 +1069,7 @@ afsocket_dd_connected(AFSocketDestDriver *self)
   LogTransport *transport;
   LogProto *proto;
   guint32 transport_flags = 0;
+  GlobalConfig *cfg = log_pipe_get_config((LogPipe *)self);
 
   main_loop_assert_main_thread();
 
@@ -1110,11 +1125,14 @@ afsocket_dd_connected(AFSocketDestDriver *self)
 #endif
     transport = log_transport_plain_new(self->fd, transport_flags);
 
+  self->proto_options.super.size = self->writer_options.flush_lines;
+
   proto = self->proto_factory->create(transport,&self->proto_options, log_pipe_get_config(&self->super.super));
   if (!proto)
     {
       goto error_reconnect;
     }
+  log_proto_restart_with_state(proto,cfg->state,afsocket_dd_format_state_name(self));
   log_writer_reopen(self->writer, proto);
   return TRUE;
  error_reconnect:
@@ -1145,7 +1163,6 @@ afsocket_dd_start_connect(AFSocketDestDriver *self)
   rc = g_connect(sock, self->dest_addr);
   if (rc == G_IO_STATUS_NORMAL)
     {
-      self->fd = sock;
       afsocket_dd_connected(self);
     }
   else if (rc == G_IO_STATUS_ERROR && errno == EINPROGRESS)
