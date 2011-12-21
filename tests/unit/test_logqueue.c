@@ -68,7 +68,7 @@ app_ack_some_messages(LogQueue *q, gint n)
 void
 rewind_messages(LogQueue *q)
 {
-  log_queue_rewind_backlog(q, -1);
+  log_queue_rewind_backlog(q, -1, TRUE);
 }
 
 void
