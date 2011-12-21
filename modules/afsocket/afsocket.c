@@ -133,7 +133,7 @@ afsocket_sc_stats_source(AFSocketSourceConnection *self)
 {
   gint source;
 
-  if ((self->owner->flags & AFSOCKET_SYSLOG_PROTOCOL) == 0)
+  if ((self->owner->flags & AFSOCKET_SYSLOG_DRIVER) == 0)
     {
       switch (self->owner->bind_addr->sa.sa_family)
         {
@@ -169,7 +169,7 @@ afsocket_sc_stats_instance(AFSocketSourceConnection *self)
     {
       return NULL;
     }
-  if ((self->owner->flags & AFSOCKET_SYSLOG_PROTOCOL) == 0)
+  if ((self->owner->flags & AFSOCKET_SYSLOG_DRIVER) == 0)
     {
       g_sockaddr_format(self->peer_addr, buf, sizeof(buf), GSA_ADDRESS_ONLY);
     }
@@ -191,6 +191,7 @@ afsocket_sc_init(LogPipe *s)
   LogTransport *transport;
   LogProto *proto;
   GlobalConfig *cfg = log_pipe_get_config(&self->owner->super.super.super);
+  LogProtoServerOptions *options = (LogProtoServerOptions *)&self->owner->proto_options;
 
   read_flags = ((self->owner->flags & AFSOCKET_DGRAM) ? LTF_RECV : 0);
   if (!self->reader)
@@ -207,33 +208,26 @@ afsocket_sc_init(LogPipe *s)
 #endif
         transport = log_transport_plain_new(self->sock, read_flags);
 
-      if ((self->owner->flags & AFSOCKET_SYSLOG_PROTOCOL) == 0)
+      if (self->owner->reader_options.padding)
         {
-          /* plain protocol */
-
-          if (self->owner->flags & AFSOCKET_DGRAM)
-            proto = log_proto_dgram_server_new(transport, self->owner->reader_options.msg_size, 0);
-          else if (self->owner->prefix_matcher)
-            proto = log_proto_multi_line_text_server_new(transport, self->owner->reader_options.msg_size, 0, self->owner->prefix_matcher, self->owner->garbage_matcher);
-          else if (self->owner->reader_options.padding)
-            proto = log_proto_record_server_new(transport, self->owner->reader_options.padding, 0);
-          else
-            proto = log_proto_text_server_new(transport, self->owner->reader_options.msg_size, 0);
+          options->super.size = self->owner->reader_options.padding;
         }
       else
         {
-          if (self->owner->flags & AFSOCKET_DGRAM)
-            {
-              /* plain protocol */
-              proto = log_proto_dgram_server_new(transport, self->owner->reader_options.msg_size, 0);
-            }
-          else
-            {
-              /* framed protocol */
-              proto = log_proto_framed_server_new(transport, self->owner->reader_options.msg_size);
-            }
+          options->super.size = self->owner->reader_options.msg_size;
         }
 
+      if (self->owner->prefix_matcher)
+        {
+          options->opts.prefix_matcher = self->owner->prefix_matcher;
+          options->opts.garbage_matcher = self->owner->garbage_matcher;
+        }
+
+      proto = self->owner->proto_factory->create(transport,(LogProtoOptions *)options, log_pipe_get_config(&self->owner->super.super.super));
+      if (!proto)
+        {
+          return FALSE;
+        }
       self->reader = log_reader_new(proto);
     }
   log_reader_set_options(self->reader, s, &self->owner->reader_options, 1, afsocket_sc_stats_source(self), self->owner->super.super.id, afsocket_sc_stats_instance(self));
@@ -333,6 +327,14 @@ afsocket_sd_set_transport(LogDriver *s, const gchar *transport)
   if (self->transport)
     g_free(self->transport);
   self->transport = g_strdup(transport);
+  if ((strlen(transport) >= 3 && strncasecmp(transport,"udp",3)==0) || (strlen(transport) >= 5 && strncasecmp(transport,"dgram",5)==0))
+    {
+      self->flags = (self->flags & ~0x0003) | AFSOCKET_DGRAM;
+    }
+  else
+    {
+      self->flags = (self->flags & ~0x0003) | AFSOCKET_STREAM;
+    }
 }
 
 void
@@ -846,7 +848,7 @@ afsocket_sd_init_instance(AFSocketSourceDriver *self, SocketOptions *sock_option
           self->reader_options.parse_options.flags &= ~LP_EXPECT_HOSTNAME;
         }
     }
-  if ((self->flags & AFSOCKET_SYSLOG_PROTOCOL))
+  if ((self->flags & AFSOCKET_SYSLOG_DRIVER))
     {
       self->reader_options.parse_options.flags |= LP_SYSLOG_PROTOCOL;
     }
@@ -862,6 +864,14 @@ afsocket_dd_set_transport(LogDriver *s, const gchar *transport)
   if (self->transport)
     g_free(self->transport);
   self->transport = g_strdup(transport);
+  if ((strlen(transport) >= 3 && strncasecmp(transport,"udp",3)==0) || (strlen(transport) >= 5 && strncasecmp(transport,"dgram",5)==0))
+    {
+      self->flags = (self->flags & ~0x0003) | AFSOCKET_DGRAM;
+    }
+  else
+    {
+      self->flags = (self->flags & ~0x0003) | AFSOCKET_STREAM;
+    }
 }
 
 #if ENABLE_SSL
@@ -941,7 +951,7 @@ afsocket_dd_stats_source(AFSocketDestDriver *self)
 {
   gint source = 0;
 
-  if ((self->flags & AFSOCKET_SYSLOG_PROTOCOL) == 0)
+  if ((self->flags & AFSOCKET_SYSLOG_DRIVER) == 0)
     {
       switch (self->dest_addr->sa.sa_family)
         {
@@ -971,7 +981,7 @@ afsocket_dd_stats_source(AFSocketDestDriver *self)
 static gchar *
 afsocket_dd_stats_instance(AFSocketDestDriver *self)
 {
-  if ((self->flags & AFSOCKET_SYSLOG_PROTOCOL) == 0)
+  if ((self->flags & AFSOCKET_SYSLOG_DRIVER) == 0)
     {
       return self->dest_name;
     }
@@ -1100,18 +1110,11 @@ afsocket_dd_connected(AFSocketDestDriver *self)
 #endif
     transport = log_transport_plain_new(self->fd, transport_flags);
 
-  if (self->flags & AFSOCKET_SYSLOG_PROTOCOL)
+  proto = self->proto_factory->create(transport,&self->proto_options, log_pipe_get_config(&self->super.super));
+  if (!proto)
     {
-      if (self->flags & AFSOCKET_STREAM)
-        proto = log_proto_framed_client_new(transport);
-      else
-        proto = log_proto_text_client_new(transport);
+      goto error_reconnect;
     }
-  else
-    {
-      proto = log_proto_text_client_new(transport);
-    }
-
   log_writer_reopen(self->writer, proto);
   return TRUE;
  error_reconnect:
@@ -1221,7 +1224,7 @@ afsocket_dd_init(LogPipe *s)
 #else
                                     ((self->flags & AFSOCKET_STREAM) ? LW_DETECT_EOF : 0) |
 #endif
-                                    (self->flags & AFSOCKET_SYSLOG_PROTOCOL ? LW_SYSLOG_PROTOCOL : 0));
+                                    (self->flags & AFSOCKET_SYSLOG_DRIVER ? LW_SYSLOG_PROTOCOL : 0));
 
     }
   log_writer_set_options((LogWriter *) self->writer, &self->super.super.super, &self->writer_options, 0, afsocket_dd_stats_source(self), self->super.super.id, afsocket_dd_stats_instance(self));

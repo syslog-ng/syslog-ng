@@ -40,6 +40,7 @@
 extern struct _LogSourceOptions *last_source_options;
 extern struct _LogReaderOptions *last_reader_options;
 extern struct _LogWriterOptions *last_writer_options;
+extern struct _LogProtoOptions  *last_proto_options;
 extern struct _LogDriver *last_driver;
 
 }
@@ -115,6 +116,8 @@ extern struct _LogDriver *last_driver;
 %token LL_CONTEXT_TEMPLATE_FUNC       13
 %token LL_CONTEXT_INNER_DEST          14
 %token LL_CONTEXT_INNER_SRC           15
+%token LL_CONTEXT_CLIENT_PROTO        16
+%token LL_CONTEXT_SERVER_PROTO        17
 
 /* statements */
 %token KW_SOURCE                      10000
@@ -335,6 +338,7 @@ LogDriver *last_driver;
 LogSourceOptions *last_source_options;
 LogReaderOptions *last_reader_options;
 LogWriterOptions *last_writer_options;
+LogProtoOptions *last_proto_options;
 LogTemplate *last_template;
 GList *last_rewrite_expr;
 GList *last_parser_expr;

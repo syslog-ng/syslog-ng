@@ -1,5 +1,22 @@
 #include "libtest_memreader.h"
 #include "persist-state.h"
+#include "plugin.h"
+
+LogProto *
+create_logproto(gchar *name,LogTransport *transport,LogProtoOptions *options)
+{
+  GlobalConfig *configuration;
+  LogProto *proto = NULL;
+  LogProtoFactory *factory;
+  configuration = cfg_new(0x0302);
+  plugin_load_module("basic-proto", configuration, NULL);
+  factory = log_proto_get_factory(configuration, LPT_SERVER, name);
+  if (factory)
+    {
+      proto = factory->create(transport,options,configuration);
+    }
+  return proto;
+}
 
 gssize
 log_transport_memory_read_method(LogTransport *s, gpointer buf, gsize count, GSockAddr **sa)
@@ -50,6 +67,7 @@ LogReader *log_reader_new_memory_source(LogReaderOptions *options, guint32 read_
   *new_transport = log_transport_memory_new(read_buffer, read_buffer_length, NULL, 0, 0);
   regex_t *prefix_matcher = NULL;
   regex_t *garbage_matcher = NULL;
+  LogProtoServerOptions proto_options = {0};
 
   if (prefix)
     {
@@ -68,10 +86,12 @@ LogReader *log_reader_new_memory_source(LogReaderOptions *options, guint32 read_
               return FALSE;
             }
         }
-      proto = log_proto_multi_line_text_server_new(*new_transport, 8192, LPBS_IGNORE_EOF, prefix_matcher, garbage_matcher);
+      proto_options.opts.prefix_matcher = prefix_matcher;
+      proto_options.opts.garbage_matcher = garbage_matcher;
     }
-  else
-    proto = log_proto_text_server_new(*new_transport, 8192, LPBS_IGNORE_EOF);
+  proto_options.super.size = 8192;
+  proto_options.super.flags = LPBS_IGNORE_EOF;
+  proto = create_logproto("stream-newline",*new_transport,(LogProtoOptions *)&proto_options);
   LogReader *reader = (LogReader*)log_reader_new(proto);
   log_reader_set_options((LogPipe *)reader, (LogPipe *)reader, options, 0, SCS_FILE, "test","test_mem_queue");
   ((LogPipe *)reader)->queue = queue;
@@ -82,9 +102,12 @@ LogReader *log_reader_new_memory_source(LogReaderOptions *options, guint32 read_
 
 LogReader *log_reader_new_file_source(LogReaderOptions *options, guint32 read_buffer_length, LogReaderNotifyMethod notif, LogReaderQueueMethod queue, LogTransport **new_transport, GlobalConfig *cfg)
 {
+  LogProtoOptions proto_options = {0};
   gchar *read_buffer = g_malloc0(read_buffer_length);
   *new_transport = log_transport_memory_new(read_buffer, read_buffer_length, NULL, 0, 0);
-  LogProto *proto = log_proto_text_server_new(*new_transport, 8192, LPBS_NOMREAD);
+  proto_options.super.size = 8192;
+  proto_options.super.flags = LPBS_NOMREAD;
+  LogProto *proto = create_logproto("stream-newline",*new_transport,&proto_options);
   PersistState *state = persist_state_new("test.persist");
   persist_state_start(state);
   log_proto_restart_with_state(proto,state,"test_state");

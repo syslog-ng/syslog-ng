@@ -43,6 +43,8 @@ typedef struct _AFFileSourceDriver
   /* FIXME: the code assumes that reader is a LogReader at a lot of places, so this should be changed to LogReader */
   LogPipe *reader;
   LogReaderOptions reader_options;
+  LogProtoOptions proto_options;
+  LogProtoFactory *proto_factory;
   guint32 flags;
   /* state information to follow a set of files using a wildcard expression */
   FileMonitor *file_monitor;
@@ -77,6 +79,8 @@ typedef struct _AFFileDestDriver
   gchar *local_time_zone;
   TimeZoneInfo *local_time_zone_info;
   LogWriterOptions writer_options;
+  LogProtoOptions proto_options;
+  LogProtoFactory *proto_factory;
   GHashTable *writer_hash;
   regex_t *prefix_matcher;
   regex_t *garbage_matcher;

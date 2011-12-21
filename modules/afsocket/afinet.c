@@ -43,6 +43,27 @@
 #define SOL_IPV6 IPPROTO_IPV6
 #endif
 
+static void
+afinet_set_port_numeric(GSockAddr *addr, gint port)
+{
+  if (addr)
+    {
+      switch (addr->sa.sa_family)
+        {
+        case AF_INET:
+          g_sockaddr_inet_set_port(addr, port);
+          break;
+#if ENABLE_IPV6
+        case AF_INET6:
+          g_sockaddr_inet6_set_port(addr, port);
+          break;
+#endif
+        default:
+          g_assert_not_reached();
+          break;
+        }
+    }
+}
 
 static void
 afinet_set_port(GSockAddr *addr, gchar *service, const gchar *proto)
@@ -72,24 +93,9 @@ afinet_set_port(GSockAddr *addr, gchar *service, const gchar *proto)
               return;
             }
         }
-
-      switch (addr->sa.sa_family)
-        {
-        case AF_INET:
-          g_sockaddr_inet_set_port(addr, port);
-          break;
-#if ENABLE_IPV6
-        case AF_INET6:
-          g_sockaddr_inet6_set_port(addr, port);
-          break;
-#endif
-        default:
-          g_assert_not_reached();
-          break;
-        }
+      afinet_set_port_numeric(addr,port);
     }
 }
-
 
 static gboolean
 afinet_setup_socket(gint fd, GSockAddr *addr, InetSocketOptions *sock_options, AFSocketDirection dir)
@@ -235,7 +241,7 @@ afinet_sd_apply_transport(AFSocketSourceDriver *s)
            * confusing is that syslog() driver was seldom used.
            *
            */
-          if ((self->super.flags & AFSOCKET_SYSLOG_PROTOCOL) && get_version_value(cfg->version) < 0x0303)
+          if ((self->super.flags & AFSOCKET_SYSLOG_DRIVER) && get_version_value(cfg->version) < 0x0303)
             {
               if (!msg_udp_source_port_warning)
                 {
@@ -247,23 +253,32 @@ afinet_sd_apply_transport(AFSocketSourceDriver *s)
               default_bind_port = "601";
             }
           else
-            default_bind_port = "514";
+            {
+              default_bind_port = "514";
+            }
         }
       self->super.flags = (self->super.flags & ~0x0003) | AFSOCKET_DGRAM;
+      self->super.proto_factory = log_proto_get_factory(log_pipe_get_config((LogPipe *)self),LPT_SERVER, "dgram");
     }
   else if (strcasecmp(self->super.transport, "tcp") == 0)
     {
-      if (self->super.flags & AFSOCKET_SYSLOG_PROTOCOL)
-        default_bind_port = "601";
+      if (self->super.flags & AFSOCKET_SYSLOG_DRIVER)
+        {
+          default_bind_port = "601";
+          self->super.proto_factory = log_proto_get_factory(log_pipe_get_config((LogPipe *)self),LPT_SERVER, "stream-framed");
+        }
       else
-        default_bind_port = "514";
+        {
+          default_bind_port = "514";
+          self->super.proto_factory = log_proto_get_factory(log_pipe_get_config((LogPipe *)self),LPT_SERVER, "stream-newline");
+        }
       self->super.flags = (self->super.flags & ~0x0003) | AFSOCKET_STREAM;
     }
   else if (strcasecmp(self->super.transport, "tls") == 0)
     {
       static gboolean msg_tls_source_port_warning = FALSE;
 
-      g_assert(self->super.flags & AFSOCKET_SYSLOG_PROTOCOL);
+      g_assert(self->super.flags & AFSOCKET_SYSLOG_DRIVER || self->super.flags & AFSOCKET_NETWORK_DRIVER);
       if (!self->bind_port)
         {
           /* NOTE: this version number change has happened in a different
@@ -276,7 +291,7 @@ afinet_sd_apply_transport(AFSocketSourceDriver *s)
            *
            */
 
-          if (get_version_value(cfg->version) < 0x0303)
+          if (self->super.flags & AFSOCKET_SYSLOG_DRIVER && get_version_value(cfg->version) < 0x0303)
             {
               if (!msg_tls_source_port_warning)
                 {
@@ -290,20 +305,42 @@ afinet_sd_apply_transport(AFSocketSourceDriver *s)
           else
             default_bind_port = "6514";
         }
-      self->super.flags = (self->super.flags & ~0x0003) | AFSOCKET_STREAM | AFSOCKET_REQUIRE_TLS;
+      if (self->super.flags & AFSOCKET_SYSLOG_DRIVER)
+        {
+          self->super.proto_factory = log_proto_get_factory(log_pipe_get_config((LogPipe *)self),LPT_SERVER, "tls-framed");
+        }
+      else
+        {
+          self->super.proto_factory = log_proto_get_factory(log_pipe_get_config((LogPipe *)self),LPT_SERVER, "tls-newline");
+        }
     }
-  else
+
+  if (strncasecmp(self->super.transport, "tls", 3) == 0)
     {
-      msg_error("Unknown syslog transport specified, please use one of udp, tcp, or tls",
-                evt_tag_str("transport", self->super.transport),
+      self->super.flags |= AFSOCKET_REQUIRE_TLS;
+    }
+
+  if (!self->super.proto_factory)
+    {
+      self->super.proto_factory = log_proto_get_factory(log_pipe_get_config((LogPipe *)self),LPT_SERVER, self->super.transport);
+    }
+  if (!self->super.proto_factory)
+    {
+      msg_error("Error finding plugin for transport",
                 evt_tag_str("id", self->super.super.super.id),
+                evt_tag_str("transport", self->super.transport),
                 NULL);
       return FALSE;
     }
-  afinet_set_port(self->super.bind_addr, self->bind_port ? : default_bind_port, self->super.flags & AFSOCKET_DGRAM ? "udp" : "tcp");
+  if (self->super.proto_factory->default_port != 0 && self->bind_port == 0)
+    {
+      afinet_set_port_numeric(self->super.bind_addr, self->super.proto_factory->default_port);
+    }
+  else
+    {
+      afinet_set_port(self->super.bind_addr, self->bind_port ? : default_bind_port, self->super.flags & AFSOCKET_DGRAM ? "udp" : "tcp");
+    }
   resolve_hostname(&self->super.bind_addr, self->bind_ip ? : default_bind_ip);
-
-
 #if ENABLE_SSL
   if (self->super.flags & AFSOCKET_REQUIRE_TLS && !self->super.tls_context)
     {
@@ -432,7 +469,7 @@ afinet_dd_apply_transport(AFSocketDestDriver *s)
            * confusing is that syslog() driver was seldom used.
            *
            */
-          if ((self->super.flags & AFSOCKET_SYSLOG_PROTOCOL) && get_version_value(cfg->version) < 0x0303)
+          if ((self->super.flags & AFSOCKET_SYSLOG_DRIVER) && get_version_value(cfg->version) < 0x0303)
             {
               if (!msg_udp_source_port_warning)
                 {
@@ -446,21 +483,27 @@ afinet_dd_apply_transport(AFSocketDestDriver *s)
           else
             default_dest_port = "514";
         }
+      self->super.proto_factory = log_proto_get_factory(log_pipe_get_config((LogPipe *)self),LPT_CLIENT, "dgram");
       self->super.flags = (self->super.flags & ~0x0003) | AFSOCKET_DGRAM;
     }
   else if (strcasecmp(self->super.transport, "tcp") == 0)
     {
-      if ((self->super.flags & AFSOCKET_SYSLOG_PROTOCOL))
-        default_dest_port = "601";
+      if ((self->super.flags & AFSOCKET_SYSLOG_DRIVER))
+        {
+          default_dest_port = "601";
+          self->super.proto_factory = log_proto_get_factory(log_pipe_get_config((LogPipe *)self),LPT_CLIENT, "stream-framed");
+        }
       else
-        default_dest_port = "514";
+        {
+          default_dest_port = "514";
+          self->super.proto_factory = log_proto_get_factory(log_pipe_get_config((LogPipe *)self),LPT_CLIENT, "stream-newline");
+        }
       self->super.flags = (self->super.flags & ~0x0003) | AFSOCKET_STREAM;
     }
   else if (strcasecmp(self->super.transport, "tls") == 0)
     {
       static gboolean msg_tls_source_port_warning = FALSE;
-
-      g_assert((self->super.flags & AFSOCKET_SYSLOG_PROTOCOL) != 0);
+      g_assert(self->super.flags & AFSOCKET_SYSLOG_DRIVER || self->super.flags & AFSOCKET_NETWORK_DRIVER);
       if (!self->dest_port)
         {
           /* NOTE: this version number change has happened in a different
@@ -487,14 +530,20 @@ afinet_dd_apply_transport(AFSocketDestDriver *s)
           else
             default_dest_port = "6514";
         }
-      self->super.flags = (self->super.flags & ~0x0003) | AFSOCKET_STREAM | AFSOCKET_REQUIRE_TLS;
+
+      if (self->super.flags & AFSOCKET_SYSLOG_DRIVER)
+        {
+          self->super.proto_factory = log_proto_get_factory(log_pipe_get_config((LogPipe *)self),LPT_CLIENT, "tls-framed");
+        }
+      else
+        {
+          self->super.proto_factory = log_proto_get_factory(log_pipe_get_config((LogPipe *)self),LPT_CLIENT, "tls-newline");
+        }
+      self->super.flags = (self->super.flags & ~0x0003) | AFSOCKET_STREAM;
     }
-  else
+  if (strncasecmp(self->super.transport, "tls", 3) == 0)
     {
-      msg_error("Unknown syslog transport specified, please use one of udp, tcp, or tls",
-                evt_tag_str("transport", self->super.transport),
-                evt_tag_str("id", self->super.super.super.id),
-                NULL);
+      self->super.flags |= AFSOCKET_REQUIRE_TLS;
     }
 
 
@@ -502,7 +551,27 @@ afinet_dd_apply_transport(AFSocketDestDriver *s)
   if ((self->bind_ip && !resolve_hostname(&self->super.bind_addr, self->bind_ip)))
     return FALSE;
 
-  afinet_set_port(self->super.dest_addr, self->dest_port ? : default_dest_port, self->super.flags & AFSOCKET_DGRAM ? "udp" : "tcp");
+
+  if (!self->super.proto_factory)
+    {
+      self->super.proto_factory = log_proto_get_factory(log_pipe_get_config((LogPipe *)self),LPT_CLIENT, self->super.transport);
+    }
+  if (!self->super.proto_factory)
+    {
+      msg_error("Error finding plugin for transport",
+                evt_tag_str("id", self->super.super.super.id),
+                evt_tag_str("transport", self->super.transport),
+                NULL);
+      return FALSE;
+    }
+  if (self->super.proto_factory->default_port != 0 && self->dest_port == 0)
+    {
+      afinet_set_port_numeric(self->super.dest_addr, self->super.proto_factory->default_port);
+    }
+  else
+    {
+      afinet_set_port(self->super.dest_addr, self->dest_port ? : default_dest_port, self->super.flags & AFSOCKET_DGRAM ? "udp" : "tcp");
+    }
   afinet_set_port(self->super.bind_addr, self->bind_port ? self->bind_port : "0", self->super.flags & AFSOCKET_DGRAM ? "udp" : "tcp");
 
   if (!self->super.dest_name)

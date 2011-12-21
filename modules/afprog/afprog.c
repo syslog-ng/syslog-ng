@@ -150,10 +150,25 @@ afprogram_sd_init(LogPipe *s)
   if (!self->reader)
     {
       LogTransport *transport;
+      LogProto *proto = NULL;
 
       transport = log_transport_plain_new(fd, 0);
       transport->timeout = 10;
-      self->reader = log_reader_new(log_proto_text_server_new(transport, self->reader_options.msg_size, 0));
+      self->proto_options.super.size = self->reader_options.msg_size;
+      if (!self->proto_factory)
+        {
+          self->proto_factory = log_proto_get_factory(cfg,LPT_SERVER,"stream-newline");
+        }
+      if (self->proto_factory)
+        {
+          proto = self->proto_factory->create(transport,&self->proto_options, cfg);
+        }
+      if (!proto)
+        {
+          close(fd);
+          return FALSE;
+        }
+      self->reader = log_reader_new(proto);
       log_reader_set_options(self->reader, s, &self->reader_options, 0, SCS_PROGRAM, self->super.super.id, self->cmdline->str);
     }
   log_pipe_append(self->reader, &self->super.super.super);
@@ -256,6 +271,7 @@ static gboolean
 afprogram_dd_reopen(AFProgramDestDriver *self)
 {
   int fd;
+  LogProto *proto;
 
   if (self->pid != -1)
     {
@@ -277,7 +293,19 @@ afprogram_dd_reopen(AFProgramDestDriver *self)
   child_manager_register(self->pid, afprogram_dd_exit, log_pipe_ref(&self->super.super.super), (GDestroyNotify) log_pipe_unref);
 
   g_fd_set_nonblock(fd, TRUE);
-  log_writer_reopen(self->writer, log_proto_text_client_new(log_transport_plain_new(fd, 0)));
+  if (!self->proto_factory)
+    {
+      self->proto_factory = log_proto_get_factory(log_pipe_get_config((LogPipe *)self),LPT_CLIENT,"stream-newline");
+    }
+  if (self->proto_factory)
+    {
+      proto = self->proto_factory->create(log_transport_plain_new(fd, 0),&self->proto_options, log_pipe_get_config((LogPipe *)self));
+      if (!proto)
+        {
+          return FALSE;
+        }
+    }
+  log_writer_reopen(self->writer, proto);
   return TRUE;
 }
 

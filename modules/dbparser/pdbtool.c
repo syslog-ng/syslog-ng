@@ -72,6 +72,8 @@ static gchar **colors = empty_colors;
 static gchar *patterndb_file;
 static gboolean color_out = FALSE;
 
+static LogProtoFactory *proto_factory = NULL;
+
 static gint
 pdbfile_detect_version(const gchar *pdbfile)
 {
@@ -402,6 +404,7 @@ pdbtool_match(int argc, char *argv[])
   const gchar *name = NULL;
   gssize name_len = 0;
   MsgFormatOptions parse_options;
+  LogProtoOptions proto_options;
   gboolean eof = FALSE;
   const guchar *buf = NULL;
   gsize buflen;
@@ -485,7 +488,17 @@ pdbtool_match(int argc, char *argv[])
             }
         }
       transport = log_transport_plain_new(fd, 0);
-      proto = log_proto_text_server_new(transport, 65536, 0);
+      proto_options.super.size = 65536;
+      proto_options.super.flags = 0;
+      if (proto_factory)
+        {
+          proto = proto_factory->create(transport,&proto_options,NULL);
+        }
+      else
+        {
+          fprintf(stderr,"Can't find any basic proto\n");
+          goto error;
+        }
       eof = log_proto_fetch(proto, &buf, &buflen, NULL, &may_read, flush) != LPS_SUCCESS;
     }
 
@@ -1143,6 +1156,7 @@ main(int argc, char *argv[])
   plugin_load_module("syslogformat", configuration, NULL);
   plugin_load_module("basicfuncs", configuration, NULL);
 
+  proto_factory = log_proto_get_factory(configuration,LPT_SERVER,"stream-newline");
   if (color_out)
     colors = full_colors;
 

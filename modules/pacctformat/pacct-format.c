@@ -152,9 +152,17 @@ pacct_format_handler(MsgFormatOptions *options, const guchar *data, gsize length
 }
 
 LogProto *
-pacct_construct_proto(MsgFormatOptions *options, LogTransport *transport, guint flags)
+pacct_construct_proto(GlobalConfig *cfg,MsgFormatOptions *options, LogTransport *transport, guint flags)
 {
-  return log_proto_record_server_new(transport, sizeof(acct_t), flags | LPRS_BINARY);
+  LogProtoOptions proto_options;
+  LogProtoFactory *proto_factory = log_proto_get_factory(cfg,LPT_SERVER,"record");
+  proto_options.super.flags = flags | LPRS_BINARY;
+  proto_options.super.size = sizeof(acct_t);
+  if (proto_factory)
+    {
+      return proto_factory->create(transport,&proto_options,cfg);
+    }
+  return NULL
 }
 
 MsgFormatHandler pacct_handler =

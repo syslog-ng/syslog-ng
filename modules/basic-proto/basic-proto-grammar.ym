@@ -20,37 +20,54 @@
  * COPYING for details.
  *
  */
-  
-#ifndef AFPROG_H_INCLUDED
-#define AFPROG_H_INCLUDED
 
-#include "driver.h"
-#include "logwriter.h"
-#include "logreader.h"
+%code top {
+#include "basic-proto-parser.h"
 
-typedef struct _AFProgramSourceDriver
-{
-  LogSrcDriver super;
-  GString *cmdline;
-  LogPipe *reader;
-  pid_t pid;
-  LogReaderOptions reader_options;
-  LogProtoOptions proto_options;
-  LogProtoFactory *proto_factory;
-} AFProgramSourceDriver;
+}
 
-typedef struct _AFProgramDestDriver
-{
-  LogDestDriver super;
-  GString *cmdline;
-  LogPipe *writer;
-  pid_t pid;
-  LogWriterOptions writer_options;
-  LogProtoOptions proto_options;
-  LogProtoFactory *proto_factory;
-} AFProgramDestDriver;
 
-LogDriver *afprogram_sd_new(gchar *cmdline);
-LogDriver *afprogram_dd_new(gchar *cmdline);
+%code {
 
-#endif
+#include "basic-proto.h"
+#include "logproto.h"
+#include "cfg-parser.h"
+#include "basic-proto-grammar.h"
+#include "syslog-names.h"
+#include "plugin.h"
+
+}
+
+%name-prefix "basic_proto_"
+
+/* this parameter is needed in order to instruct bison to use a complete
+ * argument list for yylex/yyerror */
+
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {LogDriver **instance}
+%parse-param {gpointer arg}
+
+/* INCLUDE_DECLS */
+
+%type   <ptr> dst_proto
+%type   <ptr> src_proto
+
+%%
+
+start
+        : LL_CONTEXT_CLIENT_PROTO dst_proto                   { YYACCEPT; }
+        | LL_CONTEXT_SERVER_PROTO src_proto                   { YYACCEPT; }
+        ;
+
+dst_proto
+        : { fprintf(stderr,"Hello World from destination protocol\n"); }
+        ;
+
+src_proto
+        : { fprintf(stderr,"Hello World from source protocol\n"); }
+        ;
+
+/* INCLUDE_RULES */
+
+%%

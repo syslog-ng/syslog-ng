@@ -45,6 +45,8 @@
 
 static SocketOptions *last_sock_options;
 static gint last_addr_family = AF_INET;
+static gint def_tcp = 0;
+static guint32 proto_mask = 0xFFFFF0FF;
 
 #if ENABLE_SSL
 TLSContext *last_tls_context;
@@ -76,6 +78,12 @@ TLSContext *last_tls_context;
 %token KW_TCP6
 %token KW_UDP6
 %token KW_TRANSPORT
+%token KW_NETWORK
+%token KW_TCP_NEWLINE
+%token KW_TCP_FRAMED
+%token KW_IP_PROTOCOL
+%token KW_TLS_NEWLINE
+%token KW_TLS_FRAMED
 
 %token KW_IP_TTL
 %token KW_SO_BROADCAST
@@ -114,9 +122,12 @@ TLSContext *last_tls_context;
 %type	<ptr> source_afunix_stream_params
 %type	<ptr> source_afinet_udp_params
 %type	<ptr> source_afinet_tcp_params
-%type   <ptr> source_afsyslog
-%type   <ptr> source_afsyslog_params
-%type   <ptr> source_afsocket_stream_params
+%type <ptr> source_afsyslog
+%type <ptr> source_afsyslog_params
+%type <ptr> source_afnetwork
+%type <ptr> source_afnetwork_params
+%type <ptr> source_afsocket_stream_params
+%type <cptr> transport
 
 %type	<ptr> dest_afsocket
 %type	<ptr> dest_afunix_dgram_params
@@ -125,34 +136,43 @@ TLSContext *last_tls_context;
 %type	<ptr> dest_afinet_tcp_params
 %type   <ptr> dest_afsyslog
 %type   <ptr> dest_afsyslog_params
+%type   <ptr> dest_afnetwork
+%type   <ptr> dest_afnetwork_params
 
 %%
 
 start
         : LL_CONTEXT_SOURCE source_afsocket                   { YYACCEPT; }
         | LL_CONTEXT_SOURCE source_afsyslog                   { YYACCEPT; }
-        | LL_CONTEXT_DESTINATION dest_afsocket                    { YYACCEPT; }
-        | LL_CONTEXT_DESTINATION dest_afsyslog                    { YYACCEPT; }
+        | LL_CONTEXT_SOURCE source_afnetwork                  { YYACCEPT; }
+        | LL_CONTEXT_DESTINATION dest_afsocket                { YYACCEPT; }
+        | LL_CONTEXT_DESTINATION dest_afsyslog                { YYACCEPT; }
+        | LL_CONTEXT_DESTINATION dest_afnetwork               { YYACCEPT; }
         ;
 
-
 source_afsocket
-        : KW_UNIX_DGRAM '(' source_afunix_dgram_params ')'	                                { $$ = $3; }
+  : KW_UNIX_DGRAM '(' source_afunix_dgram_params ')'	                                { $$ = $3; }
 	| KW_UNIX_STREAM '(' source_afunix_stream_params ')' 	                                { $$ = $3; }
 	| KW_UDP { last_addr_family = AF_INET; } '(' source_afinet_udp_params ')'		{ $$ = $4; }
 	| KW_TCP { last_addr_family = AF_INET; } '(' source_afinet_tcp_params ')'		{ $$ = $4; }
 	| KW_UDP6 { last_addr_family = AF_INET6; } '(' source_afinet_udp_params ')'		{ $$ = $4; }
 	| KW_TCP6 { last_addr_family = AF_INET6; } '(' source_afinet_tcp_params ')'		{ $$ = $4; }
-        ;
+  ;
+
+transport
+  : string
+  | KW_TCP  { $$ = strdup(lexer->token_text->str); }
+  | KW_UDP  { $$ = strdup(lexer->token_text->str); }
+  | KW_TLS  { $$ = strdup(lexer->token_text->str); }
+  ;
 
 
 source_afunix_dgram_params
 	: string
 	  {
-	    last_driver = *instance = afunix_sd_new(
-		$1,
-		AFSOCKET_DGRAM | AFSOCKET_LOCAL);
+	    last_driver = *instance = afunix_sd_new($1,AFSOCKET_LOCAL | AFSOCKET_DGRAM);
 	    free($1);
+      afsocket_sd_set_transport(last_driver,"dgram");
 	    last_reader_options = &((AFSocketSourceDriver *) last_driver)->reader_options;
 	    last_sock_options = &((AFUnixSourceDriver *) last_driver)->sock_options;
 	  }
@@ -162,10 +182,9 @@ source_afunix_dgram_params
 source_afunix_stream_params
 	: string
 	  {
-	    last_driver = *instance = afunix_sd_new(
-		$1,
-		AFSOCKET_STREAM | AFSOCKET_KEEP_ALIVE | AFSOCKET_LOCAL);
+	    last_driver = *instance = afunix_sd_new($1, AFSOCKET_KEEP_ALIVE | AFSOCKET_LOCAL | AFSOCKET_STREAM);
 	    free($1);
+      afsocket_sd_set_transport(last_driver,"stream-newline");
 	    last_reader_options = &((AFSocketSourceDriver *) last_driver)->reader_options;
 	    last_sock_options = &((AFUnixSourceDriver *) last_driver)->sock_options;
 	  }
@@ -194,10 +213,10 @@ source_afunix_option
 
 
 source_afinet_udp_params
-        :
-          {
-	    last_driver = *instance = afinet_sd_new(last_addr_family,
-			AFSOCKET_DGRAM);
+  :
+   {
+	    last_driver = *instance = afinet_sd_new(last_addr_family,AFSOCKET_DGRAM);
+      afsocket_sd_set_transport(last_driver,"dgram");
 	    last_reader_options = &((AFSocketSourceDriver *) last_driver)->reader_options;
 	    last_sock_options = &((AFInetSourceDriver *) last_driver)->sock_options.super;
 	  }
@@ -225,8 +244,8 @@ source_afinet_option
 source_afinet_tcp_params
 	:
 	  {
-	    last_driver = *instance = afinet_sd_new(last_addr_family,
-			AFSOCKET_STREAM);
+	    last_driver = *instance = afinet_sd_new(last_addr_family,AFSOCKET_STREAM );
+      afsocket_sd_set_transport(last_driver,"stream-newline");
 	    last_reader_options = &((AFSocketSourceDriver *) last_driver)->reader_options;
 	    last_sock_options = &((AFInetSourceDriver *) last_driver)->sock_options.super;
 	  }
@@ -275,9 +294,9 @@ source_afsyslog
 source_afsyslog_params
 	:
 	  {
-            /* we use transport(tcp) transport by default */
-	    last_driver = *instance = afinet_sd_new(last_addr_family,
-			AFSOCKET_STREAM | AFSOCKET_SYSLOG_PROTOCOL);
+      /* we use transport(tcp) transport by default */
+	    last_driver = *instance = afinet_sd_new(last_addr_family,	AFSOCKET_STREAM | AFSOCKET_SYSLOG_DRIVER);
+      afsocket_sd_set_transport(last_driver,"stream-framed");
 	    last_reader_options = &((AFSocketSourceDriver *) last_driver)->reader_options;
 	    last_sock_options = &((AFInetSourceDriver *) last_driver)->sock_options.super;
 	  }
@@ -291,24 +310,77 @@ source_afsyslog_options
 
 source_afsyslog_option
         : source_afinet_option
-        | KW_TRANSPORT '(' string ')'           { afsocket_sd_set_transport(last_driver, $3); free($3); }
-        | KW_TRANSPORT '(' KW_TCP ')'           { afsocket_sd_set_transport(last_driver, "tcp"); }
-        | KW_TRANSPORT '(' KW_UDP ')'           { afsocket_sd_set_transport(last_driver, "udp"); }
-        | KW_TRANSPORT '(' KW_TLS ')'           { afsocket_sd_set_transport(last_driver, "tls"); }
-	| KW_TLS
-	  {
-#if ENABLE_SSL
-	    last_tls_context = tls_context_new(TM_SERVER);
-#endif
-	  }
-	  '(' tls_options ')'
-	  {
-#if ENABLE_SSL
-	    afsocket_sd_set_tls_context(last_driver, last_tls_context);
-#endif
+        | KW_IP_PROTOCOL '(' LL_NUMBER ')'
+            {
+              if ($3 != 4 && $3 != 6)
+                {
+                  fprintf(stderr,"ip-protocol option can only be 4 or 6!\n");
+                  YYERROR;
+                }
+              else if ($3 == 4)
+                {
+                  ((AFSocketSourceDriver *) last_driver)->address_family = AF_INET;
+                }
+              else
+                {
+                  ((AFSocketSourceDriver *) last_driver)->address_family = AF_INET6;
+                }
+            }
+        | KW_TRANSPORT '(' transport
+          {
+            Plugin *p;
+            gint context = LL_CONTEXT_SERVER_PROTO;
+            gpointer value;
+
+            p = plugin_find(configuration, context, $3);
+            if (p)
+              {
+                if (p->parser)
+                  {
+                    value = plugin_parse_config(p, configuration, &@3, &((AFSocketSourceDriver *) last_driver)->proto_options);
+                  }
+                else
+                  {
+                    value = plugin_construct(p, configuration, context, $3);
+                  }
+                if (!value)
+                  {
+                    YYERROR;
+                  }
+                ((AFSocketSourceDriver *) last_driver)->proto_factory = (LogProtoFactory *)value;
+              }
+            afsocket_sd_set_transport(last_driver, $3);
+          } ')'
+      | KW_TLS
+          {
+            #if ENABLE_SSL
+            last_tls_context = tls_context_new(TM_SERVER);
+            #endif
+          }
+        '(' tls_options ')'
+          {
+            #if ENABLE_SSL
+              afsocket_sd_set_tls_context(last_driver, last_tls_context);
+            #endif
           }
 	| source_afsocket_stream_params		{}
 	;
+
+source_afnetwork
+  : KW_NETWORK { last_addr_family = AF_INET; } '(' source_afnetwork_params ')'    { $$ = $4; }
+  ;
+
+source_afnetwork_params
+  :
+    {
+      /* we use transport(tcp) transport by default */
+      last_driver = *instance = afinet_sd_new(last_addr_family,AFSOCKET_STREAM | AFSOCKET_NETWORK_DRIVER);
+      afsocket_sd_set_transport(last_driver,"stream-newline");
+      last_reader_options = &((AFSocketSourceDriver *) last_driver)->reader_options;
+      last_sock_options = &((AFInetSourceDriver *) last_driver)->sock_options.super;
+    }
+    source_afsyslog_options { $$ = last_driver; }
+  ;
 
 dest_afsocket
 	: KW_UNIX_DGRAM '(' dest_afunix_dgram_params ')'	{ $$ = $3; }
@@ -322,8 +394,9 @@ dest_afsocket
 dest_afunix_dgram_params
 	: string
 	  {
-	    last_driver = *instance = afunix_dd_new($1, AFSOCKET_DGRAM);
+	    last_driver = *instance = afunix_dd_new($1,AFSOCKET_DGRAM);
 	    free($1);
+      afsocket_dd_set_transport(last_driver,"dgram");
 	    last_writer_options = &((AFSocketDestDriver *) last_driver)->writer_options;
 	    last_sock_options = &((AFUnixDestDriver *) last_driver)->sock_options;
 	  }
@@ -333,8 +406,9 @@ dest_afunix_dgram_params
 dest_afunix_stream_params
 	: string
 	  {
-	    last_driver = *instance = afunix_dd_new($1, AFSOCKET_STREAM);
+	    last_driver = *instance = afunix_dd_new($1,AFSOCKET_STREAM);
 	    free($1);
+      afsocket_dd_set_transport(last_driver,"stream-newline");
 	    last_writer_options = &((AFSocketDestDriver *) last_driver)->writer_options;
 	    last_sock_options = &((AFUnixDestDriver *) last_driver)->sock_options;
 	  }
@@ -356,10 +430,9 @@ dest_afunix_option
 dest_afinet_udp_params
 	: string
 	  {
-	    last_driver = *instance = afinet_dd_new(last_addr_family,
-			$1, 514,
-			AFSOCKET_DGRAM);
+	    last_driver = *instance = afinet_dd_new(last_addr_family,$1, 514,AFSOCKET_DGRAM);
 	    free($1);
+      afsocket_dd_set_transport(last_driver,"dgram");
 	    last_writer_options = &((AFSocketDestDriver *) last_driver)->writer_options;
 	    last_sock_options = &((AFInetDestDriver *) last_driver)->sock_options.super;
 	  }
@@ -392,10 +465,9 @@ dest_afinet_udp_option
 dest_afinet_tcp_params
 	: string
 	  {
-	    last_driver = *instance = afinet_dd_new(last_addr_family,
-			$1, 514,
-			AFSOCKET_STREAM);
+	    last_driver = *instance = afinet_dd_new(last_addr_family,$1, 514,AFSOCKET_STREAM);
 	    free($1);
+      afsocket_dd_set_transport(last_driver,"stream-newline");
 	    last_writer_options = &((AFSocketDestDriver *) last_driver)->writer_options;
 	    last_sock_options = &((AFInetDestDriver *) last_driver)->sock_options.super;
 	  }
@@ -434,7 +506,8 @@ dest_afsyslog
 dest_afsyslog_params
         : string
           {
-            last_driver = *instance = afinet_dd_new(last_addr_family, $1, 601, AFSOCKET_STREAM | AFSOCKET_SYSLOG_PROTOCOL);
+            last_driver = *instance = afinet_dd_new(last_addr_family, $1, 601, AFSOCKET_STREAM | AFSOCKET_SYSLOG_DRIVER);
+            afsocket_dd_set_transport(last_driver,"stream-framed");
 	    last_writer_options = &((AFSocketDestDriver *) last_driver)->writer_options;
 	    last_sock_options = &((AFInetDestDriver *) last_driver)->sock_options.super;
 	    free($1);
@@ -450,10 +523,46 @@ dest_afsyslog_options
 
 dest_afsyslog_option
 	: dest_afinet_option
-        | KW_TRANSPORT '(' string ')'           { afsocket_dd_set_transport(last_driver, $3); free($3); }
-        | KW_TRANSPORT '(' KW_TCP ')'           { afsocket_dd_set_transport(last_driver, "tcp"); }
-        | KW_TRANSPORT '(' KW_UDP ')'           { afsocket_dd_set_transport(last_driver, "udp"); }
-        | KW_TRANSPORT '(' KW_TLS ')'           { afsocket_dd_set_transport(last_driver, "tls"); }
+  | KW_IP_PROTOCOL '(' LL_NUMBER ')'         {
+                                                  if ($3 != 4 && $3 != 6)
+                                                    {
+                                                      fprintf(stderr,"ip-protocol option can only be 4 or 6!\n");
+                                                      YYERROR;
+                                                    }
+                                                  else if ($3 == 4)
+                                                    {
+                                                      ((AFSocketDestDriver *) last_driver)->address_family = AF_INET;
+                                                    }
+                                                  else
+                                                    {
+                                                      ((AFSocketDestDriver *) last_driver)->address_family = AF_INET6;
+                                                    }
+                                                }
+  | KW_TRANSPORT '(' transport
+          {
+            Plugin *p;
+            gint context = LL_CONTEXT_CLIENT_PROTO;
+            gpointer value;
+
+            p = plugin_find(configuration, context, $3);
+            if (p)
+              {
+                if (p->parser)
+                  {
+                    value = plugin_parse_config(p, configuration, &@3, &((AFSocketSourceDriver *) last_driver)->proto_options);
+                  }
+                else
+                  {
+                    value = plugin_construct(p, configuration, context, $3);
+                  }
+                if (!value)
+                  {
+                    YYERROR;
+                  }
+                ((AFSocketDestDriver *) last_driver)->proto_factory = (LogProtoFactory *)value;
+              }
+            afsocket_dd_set_transport(last_driver, $3);
+          } ')'
 	| KW_SPOOF_SOURCE '(' yesno ')'		{ afinet_dd_set_spoof_source(last_driver, $3); }
 	| KW_TLS
 	  {
@@ -468,6 +577,27 @@ dest_afsyslog_option
 #endif
           }
 	;
+
+dest_afsocket_option
+  : KW_KEEP_ALIVE '(' yesno ')'        { afsocket_dd_set_keep_alive(last_driver, $3); }
+  ;
+
+
+dest_afnetwork
+  : KW_NETWORK '(' dest_afnetwork_params ')'   { $$ = $3; }
+
+dest_afnetwork_params
+  : string
+    {
+      last_driver = *instance = afinet_dd_new(last_addr_family, $1, 601, AFSOCKET_STREAM | AFSOCKET_NETWORK_DRIVER);
+      afsocket_dd_set_transport(last_driver,"stream-newline");
+      last_writer_options = &((AFSocketDestDriver *) last_driver)->writer_options;
+      last_sock_options = &((AFInetDestDriver *) last_driver)->sock_options.super;
+      free($1);
+    }
+    dest_afsyslog_options     { $$ = last_driver; }
+  ;
+
 
 tls_options
 	: tls_option tls_options

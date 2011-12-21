@@ -37,7 +37,9 @@
 #define AFSOCKET_STREAM              0x0002
 #define AFSOCKET_LOCAL               0x0004
 
-#define AFSOCKET_SYSLOG_PROTOCOL     0x0008
+#define AFSOCKET_SYSLOG_DRIVER        0x0010
+#define AFSOCKET_NETWORK_DRIVER       0x0020
+
 #define AFSOCKET_KEEP_ALIVE          0x0100
 #define AFSOCKET_REQUIRE_TLS         0x0200
 
@@ -69,12 +71,14 @@ struct _AFSocketSourceDriver
   struct iv_fd listen_fd;
   gint fd;
   LogReaderOptions reader_options;
+  LogProtoOptions proto_options;
 #if ENABLE_SSL
   TLSContext *tls_context;
 #endif
   gint address_family;
   GSockAddr *bind_addr;
   gchar *transport;
+  LogProtoFactory *proto_factory;
   gint max_connections;
   gint num_connections;
   gint listen_backlog;
@@ -141,9 +145,11 @@ struct _AFSocketDestDriver
   gint fd;
   LogPipe *writer;
   LogWriterOptions writer_options;
+  LogProtoOptions  proto_options;
 #if ENABLE_SSL
   TLSContext *tls_context;
 #endif
+  LogProtoFactory *proto_factory;
   gint address_family;
   gchar *hostname;
   gchar *transport;

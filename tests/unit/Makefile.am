@@ -1,7 +1,7 @@
 
 
 AM_CFLAGS = -I$(top_srcdir)/lib -I$(top_srcdir)/modules -I../../lib -I../../modules
-AM_LDFLAGS = -dlpreopen $(top_builddir)/modules/syslogformat/libsyslogformat.la
+AM_LDFLAGS = -dlpreopen $(top_builddir)/modules/syslogformat/libsyslogformat.la  $(top_builddir)/modules/basic-proto/libbasic-proto.la
 LIBS = @TOOL_DEPS_LIBS@
 LDADD = $(top_builddir)/lib/libsyslog-ng.la
 
@@ -30,7 +30,6 @@ check_PROGRAMS = test_thread_wakeup	\
 	test_msgserialize_benchmark	\
 	test_msgserialize_tags		\
 	test_msgformat_upgrade \
-  test_filereader	\
 	test_rcptid
 
 

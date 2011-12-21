@@ -136,7 +136,15 @@ static gboolean
 afunix_sd_apply_transport(AFSocketSourceDriver *s)
 {
   AFUnixSourceDriver *self = (AFUnixSourceDriver *) s;
-
+  GlobalConfig *cfg = log_pipe_get_config((LogPipe *)self);
+  if (self->super.proto_factory == NULL)
+    {
+      self->super.proto_factory = log_proto_get_factory(cfg,LPT_SERVER,self->super.transport);
+    }
+  if (self->super.proto_factory == NULL)
+    {
+      return FALSE;
+    }
   if (!self->super.bind_addr)
     self->super.bind_addr = g_sockaddr_unix_new(self->filename);
   return TRUE;
@@ -190,9 +198,9 @@ afunix_sd_new(gchar *filename, guint32 flags)
     self->super.reader_options.super.init_window_size = self->super.max_connections * 100;
 
   if (self->super.flags & AFSOCKET_DGRAM)
-    afsocket_sd_set_transport(&self->super.super.super, "unix-dgram");
+    afsocket_sd_set_transport(&self->super.super.super, "dgram");
   else if (self->super.flags & AFSOCKET_STREAM)
-    afsocket_sd_set_transport(&self->super.super.super, "unix-stream");
+    afsocket_sd_set_transport(&self->super.super.super, "stream");
 
   self->filename = g_strdup(filename);
   self->owner = -1;
@@ -205,7 +213,15 @@ static gboolean
 afunix_dd_apply_transport(AFSocketDestDriver *s)
 {
   AFUnixDestDriver *self = (AFUnixDestDriver *) s;
-
+  GlobalConfig *cfg = log_pipe_get_config((LogPipe *)self);
+  if (self->super.proto_factory == NULL)
+    {
+      self->super.proto_factory = log_proto_get_factory(cfg,LPT_CLIENT,self->super.transport);
+    }
+  if (self->super.proto_factory == NULL)
+    {
+      return FALSE;
+    }
   if (!self->super.bind_addr)
     self->super.bind_addr = g_sockaddr_unix_new(NULL);
 

@@ -20,37 +20,16 @@
  * COPYING for details.
  *
  */
-  
-#ifndef AFPROG_H_INCLUDED
-#define AFPROG_H_INCLUDED
 
+#ifndef BASEPROTO_PARSER_H_INCLUDED
+#define BASEPROTO_PARSER_H_INCLUDED
+
+#include "cfg-parser.h"
+#include "cfg-lexer.h"
 #include "driver.h"
-#include "logwriter.h"
-#include "logreader.h"
 
-typedef struct _AFProgramSourceDriver
-{
-  LogSrcDriver super;
-  GString *cmdline;
-  LogPipe *reader;
-  pid_t pid;
-  LogReaderOptions reader_options;
-  LogProtoOptions proto_options;
-  LogProtoFactory *proto_factory;
-} AFProgramSourceDriver;
+extern CfgParser basic_proto_parser;
 
-typedef struct _AFProgramDestDriver
-{
-  LogDestDriver super;
-  GString *cmdline;
-  LogPipe *writer;
-  pid_t pid;
-  LogWriterOptions writer_options;
-  LogProtoOptions proto_options;
-  LogProtoFactory *proto_factory;
-} AFProgramDestDriver;
-
-LogDriver *afprogram_sd_new(gchar *cmdline);
-LogDriver *afprogram_dd_new(gchar *cmdline);
+CFG_PARSER_DECLARE_LEXER_BINDING(basic_proto_, LogDriver **)
 
 #endif

@@ -1008,7 +1008,7 @@ dnl ***************************************************************************
 ### configuration file, that's the preferred form.
 
 if test "x$default_modules" = "xauto"; then
-	default_modules="affile,afprog,afsocket,afuser,basicfuncs,csvparser,dbparser,syslogformat,aflogstore,disk-buffer,confighash,convertfuncs"
+	default_modules="affile,afprog,afsocket,afuser,basicfuncs,csvparser,dbparser,syslogformat,aflogstore,disk-buffer,confighash,convertfuncs,basic-proto"
 	if test "x$enable_sql" = "xyes"; then
 		default_modules="$default_modules,afsql,afsqlsource"
 	fi
@@ -1281,6 +1281,7 @@ AC_OUTPUT(dist.conf
 	  syslog-ng/Makefile 
 	  modules/Makefile 
           modules/dummy/Makefile
+          modules/basic-proto/Makefile
           modules/afsocket/Makefile
           modules/afsql/Makefile
           modules/afstreams/Makefile
@@ -1304,6 +1305,7 @@ dnl PE modules
 	modules/confighash/Makefile
 	modules/snmp/Makefile
 	modules/afsqlsource/Makefile
+  modules/rltp-proto/Makefile
 	pe-tests/Makefile
 	pe-tests/unit/Makefile
 	pe-tests/tools/Makefile

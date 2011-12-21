@@ -30,11 +30,15 @@ extern int afsocket_debug;
 int afsocket_parse(CfgLexer *lexer, LogDriver **instance, gpointer arg);
 
 static CfgLexerKeyword afsocket_keywords[] = {
-  { "unix_dgram",	KW_UNIX_DGRAM },
-  { "unix_stream",	KW_UNIX_STREAM },
+  { "unix_dgram",	        KW_UNIX_DGRAM },
+  { "unix_stream",	      KW_UNIX_STREAM },
   { "udp",                KW_UDP },
   { "tcp",                KW_TCP },
+  { "tcp_newline",        KW_TCP_NEWLINE },
+  { "tcp_framed",         KW_TCP_FRAMED },
   { "syslog",             KW_SYSLOG },
+  { "network",            KW_NETWORK },
+  { "ip_protocol",        KW_IP_PROTOCOL },
 #if ENABLE_IPV6
   { "udp6",               KW_UDP6 },
   { "tcp6",               KW_TCP6 },

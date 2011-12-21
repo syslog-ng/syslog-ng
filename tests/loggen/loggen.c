@@ -56,6 +56,7 @@ int loop_reading = 0;
 int dont_parse = 0;
 static gint display_version;
 char *sdata_value = NULL;
+int rltp = 0;
 
 /* results */
 guint64 sum_count;
@@ -65,10 +66,56 @@ SSL_CTX* ssl_ctx;
 
 typedef ssize_t (*send_data_t)(void *user_data, void *buf, size_t length);
 
+int rltp_batch_size = 100;
+
+int *rltp_chunk_counters;
+
+void
+read_sock(int sock, char *buf, int bufsize)
+{
+  int rb = 0;
+  int n;
+  do {
+    n = recv(sock, buf + rb, bufsize - 1 - rb, 0);
+    if (n != -1)
+      rb += n;
+  } while (n == -1 && (errno == EAGAIN || errno == EWOULDBLOCK));
+  buf[rb] = '\0';
+}
+
 static ssize_t
 send_plain(void *user_data, void *buf, size_t length)
 {
-  return send((long)user_data, buf, length, 0);
+  long fd = (long)user_data;
+  int id = GPOINTER_TO_INT(g_thread_self()->data);
+  gsize len = 0;
+  static gchar expected[100] = {0};
+  int res = send(fd, buf, length, 0);
+  if (rltp)
+    {
+      rltp_chunk_counters[id] += 1;
+      if (rltp_chunk_counters[id] == rltp_batch_size)
+        {
+          char cbuf[256];
+          send(fd, ".\n",2,0);
+          read_sock(fd, cbuf, 256);
+          len = g_snprintf(expected,100,"220 RECEIVED=%d\n",rltp_chunk_counters[id]);
+          if (strncmp(cbuf,expected,len)!=0)
+            {
+              fprintf(stderr,"EXIT BAD SERVER REPLY: %s EXPECTED: %s",cbuf,expected);
+              return -1;
+            }
+          send(fd, "DATA\n", 5, 0);
+          read_sock(fd, cbuf, 256);
+          if (strncmp(cbuf,"220 READY\n",strlen("220 READY\n"))!=0)
+            {
+              fprintf(stderr,"EXIT BAD SERVER REPLY: %s\n",cbuf);
+              return -1;
+            }
+          rltp_chunk_counters[id] = 0;
+        }
+    }
+  return res;
 }
 
 #if ENABLE_SSL
@@ -345,10 +392,14 @@ gen_messages(send_data_t send_func, void *send_func_ud, int thread_id, FILE *rea
         }
       else
         {
-          linelen = snprintf(linebuf, sizeof(linebuf), "<38>2007-12-24T12:28:51 localhost prg%05d[1234]: seq: %010d, thread: %04d, runid: %-10d, stamp: %-19s ", thread_id, 0, thread_id, run_id, "");
-          pos_timestamp1 = 4;
-          pos_seq = 55;
-          pos_timestamp2 = 107;
+          if (sock_type == SOCK_STREAM && framing)
+            hdr_len = snprintf(linebuf, sizeof(linebuf), "%d ", message_length);
+          else
+            hdr_len = 0;
+          linelen = snprintf(linebuf + hdr_len, sizeof(linebuf) - hdr_len, "<38>2007-12-24T12:28:51 localhost prg%05d[1234]: seq: %010d, thread: %04d, runid: %-10d, stamp: %-19s ", thread_id, 0, thread_id, run_id, "");
+          pos_timestamp1 = 4 + hdr_len;
+          pos_seq = 55 + hdr_len;
+          pos_timestamp2 = 107 + hdr_len;
         }
 
       if (linelen > message_length)
@@ -591,6 +642,35 @@ error:
   return NULL;
 }
 
+void
+read_rltp_options(int sock,gint *compression_level,gint *require_tls,gint *serialization)
+{
+  char cbuf[256];
+  char *options = NULL;
+  read_sock(sock, cbuf, 256);
+  options = strstr(cbuf,"250");
+  while(options)
+    {
+      options+=4;
+      if (strncmp(options,"compress_level",strlen("compress_level")) == 0)
+        {
+          options+=strlen("compress_level") + 1;
+          *compression_level = strtod(options,NULL);
+        }
+      else if (strncmp(options,"tls_required",strlen("tls_required")) == 0)
+        {
+          options+=strlen("tls_required") + 1;
+          *require_tls = strtod(options,NULL);
+        }
+      else if (strncmp(options,"serialized",strlen("serialized")) == 0)
+        {
+          options+=strlen("serialized") + 1;
+          *serialization = strtod(options,NULL);
+        }
+      options = strstr(options,"250");
+    }
+}
+
 gpointer
 active_thread(gpointer st)
 {
@@ -600,6 +680,7 @@ active_thread(gpointer st)
   guint64 count;
   struct timeval start, end, diff_tv;
   FILE *readfrom = NULL;
+
 
   sock = connect_server();
   if (sock < 0)
@@ -612,6 +693,26 @@ active_thread(gpointer st)
   while (!threads_start)
     g_cond_wait(thread_cond, thread_lock);
   g_mutex_unlock(thread_lock);
+
+  int compression_level = 0,
+      require_tls = 0,
+      serialization = 0;
+
+  if (rltp)
+    {
+      char cbuf[256];
+
+      /* session id */
+      read_sock(sock, cbuf ,256);
+      send(sock, "EHLO TID=01234567890123456789012345678901\n", strlen("EHLO TID=01234567890123456789012345678901\n"), 0);
+      read_rltp_options(sock,&compression_level,&require_tls,&serialization);
+      send(sock, "DATA\n", 5, 0);
+      read_sock(sock, cbuf ,256);
+      if (strncmp(cbuf,"220 READY\n",strlen("220 READY\n"))!=0)
+        {
+          fprintf(stderr,"EXIT BAD SERVER REPLY: %s\n",cbuf);
+        }
+    }
 
   if (read_file != NULL)
     {
@@ -635,6 +736,13 @@ active_thread(gpointer st)
 
   gettimeofday(&start, NULL);
   count = (usessl ? gen_messages_ssl : gen_messages_plain)(sock, id, readfrom);
+  if (rltp && rltp_chunk_counters[id])
+    {
+      char cbuf[256];
+      send(sock, ".\n", 2, 0);
+      read_sock(sock, cbuf, 256);
+      rltp_chunk_counters[id] = 0;
+    }
   shutdown(sock, SHUT_RDWR);
   gettimeofday(&end, NULL);
   time_val_diff_in_timeval(&diff_tv, &end, &start);
@@ -684,6 +792,8 @@ static GOptionEntry loggen_options[] = {
   { "number", 'n', 0, G_OPTION_ARG_INT, &number_of_messages, "Number of messages to generate", "<number>" },
   { "quiet", 'Q', 0, G_OPTION_ARG_NONE, &quiet, "Don't print the msg/sec data", NULL },
   { "version",   'V', 0, G_OPTION_ARG_NONE, &display_version, "Display version number (" PACKAGE " " COMBINED_VERSION ")", NULL },
+  { "rltp",   'L', 0, G_OPTION_ARG_NONE, &rltp, "RLTP transport", NULL },
+  { "rltp-batch-size", 'b', 0, G_OPTION_ARG_INT, &rltp_batch_size, "Number of messages send in one rltp package (default value: 100)", NULL },
   { NULL }
 };
 
@@ -770,8 +880,7 @@ main(int argc, char *argv[])
     SSL_load_error_strings();
     ERR_load_crypto_strings();
 #endif
-
-  if (syslog_proto)
+  if (syslog_proto || rltp)
     framing = 1;
 
   if (read_file != NULL)
@@ -883,6 +992,7 @@ main(int argc, char *argv[])
       if (!g_thread_create_full(idle_thread, NULL, 1024 * 64, FALSE, FALSE, G_THREAD_PRIORITY_NORMAL, NULL))
         goto stop_and_exit;
     }
+  rltp_chunk_counters = g_malloc0(active_connections * sizeof(int));
   for (i = 0; i < active_connections; i++)
     {
       if (!g_thread_create_full(active_thread, GINT_TO_POINTER(i), 1024 * 64, FALSE, FALSE, G_THREAD_PRIORITY_NORMAL, NULL))

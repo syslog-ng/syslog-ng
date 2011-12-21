@@ -20,37 +20,38 @@
  * COPYING for details.
  *
  */
-  
-#ifndef AFPROG_H_INCLUDED
-#define AFPROG_H_INCLUDED
 
+#include "basic-proto.h"
+#include "cfg-parser.h"
 #include "driver.h"
-#include "logwriter.h"
-#include "logreader.h"
+#include "basic-proto-grammar.h"
 
-typedef struct _AFProgramSourceDriver
-{
-  LogSrcDriver super;
-  GString *cmdline;
-  LogPipe *reader;
-  pid_t pid;
-  LogReaderOptions reader_options;
-  LogProtoOptions proto_options;
-  LogProtoFactory *proto_factory;
-} AFProgramSourceDriver;
+extern int basic_proto_debug;
 
-typedef struct _AFProgramDestDriver
-{
-  LogDestDriver super;
-  GString *cmdline;
-  LogPipe *writer;
-  pid_t pid;
-  LogWriterOptions writer_options;
-  LogProtoOptions proto_options;
-  LogProtoFactory *proto_factory;
-} AFProgramDestDriver;
+int basic_proto_parse(CfgLexer *lexer, LogDriver **instance, gpointer arg);
 
-LogDriver *afprogram_sd_new(gchar *cmdline);
-LogDriver *afprogram_dd_new(gchar *cmdline);
-
+static CfgLexerKeyword basic_proto_keywords[] = {
+/*  { "unix_dgram",	KW_UNIX_DGRAM },
+  { "unix_stream",	KW_UNIX_STREAM },
+  { "udp",                KW_UDP },
+  { "tcp",                KW_TCP },
+  { "syslog",             KW_SYSLOG },
+#if ENABLE_IPV6
+  { "udp6",               KW_UDP6 },
+  { "tcp6",               KW_TCP6 },
 #endif
+*/
+};
+
+CfgParser basic_proto_parser =
+{
+#if ENABLE_DEBUG
+  .debug_flag = &basic_proto_debug,
+#endif
+  .name = "basic-proto",
+  .keywords = basic_proto_keywords,
+  .parse = (gint (*)(CfgLexer *, gpointer *, gpointer)) basic_proto_parse,
+  .cleanup = (void (*)(gpointer)) log_proto_free,
+};
+
+CFG_PARSER_IMPLEMENT_LEXER_BINDING(basic_proto_, LogDriver **)

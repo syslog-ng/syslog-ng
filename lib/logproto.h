@@ -26,7 +26,6 @@
 #define LOGPROTO_H_INCLUDED
 
 #include "logtransport.h"
-#include "serialize.h"
 #include "persist-state.h"
 
 #include <regex.h>
@@ -34,8 +33,6 @@
 #define MAX_STATE_DATA_LENGTH 128
 
 typedef struct _LogProto LogProto;
-typedef struct _LogProtoTextServer LogProtoTextServer;
-typedef struct _LogProtoFileReader LogProtoFileReader;
 typedef struct _AckData AckData;
 
 struct _AckData
@@ -53,6 +50,7 @@ struct _AckData
     char other_state[MAX_STATE_DATA_LENGTH];
   };
 };
+#define LOG_PROTO_OPTIONS_SIZE 256
 
 typedef enum
 {
@@ -60,6 +58,14 @@ typedef enum
   LPS_ERROR,
   LPS_EOF,
 } LogProtoStatus;
+
+typedef enum
+{
+  LPT_SERVER,
+  LPT_CLIENT,
+} LogProtoType;
+
+typedef struct _LogProto LogProto;
 
 struct _LogProto
 {
@@ -82,6 +88,7 @@ struct _LogProto
   void (*get_state)(LogProto *s, gpointer user_data);
   gboolean (*ack)(PersistState *state, gpointer user_data);
   gboolean is_multi_line;
+  GlobalConfig *cfg;
 };
 
 static inline gboolean
@@ -172,39 +179,40 @@ void log_proto_free(LogProto *s);
 
 #define LPRS_BINARY         0x0008
 
-/*
- * LogProtoRecordServer
- *
- * This class reads input in equally sized chunks. If LPRS_BINARY is
- * specified the record is returned as a whole, if it is not, then the
- * message lasts until the first EOL/NUL character.
- */
-LogProto *log_proto_record_server_new(LogTransport *transport, gint record_size, guint flags);
+typedef struct _LogProtoFactory LogProtoFactory;
 
-/*
- * LogProtoDGramServer
- *
- * This class reads input as datagrams, each datagram is a separate
- * message, regardless of embedded EOL/NUL characters.
- */
-LogProto *log_proto_dgram_server_new(LogTransport *transport, gint max_msg_size, guint flags);
+typedef struct _LogProtoOptionsBase
+{
+  guint flags;
+  gint  size;
+} LogProtoOptionsBase;
 
-/* LogProtoTextServer
- *
- * This class processes text files/streams. Each record is terminated via an EOL character.
- */
-LogProto *log_proto_text_server_new(LogTransport *transport, gint max_msg_size, guint flags);
-LogProto *log_proto_multi_line_text_server_new(LogTransport *transport, gint max_msg_size, guint flags, regex_t *prefix_matcher, regex_t *garbage_matcher);
+typedef struct _LogProtoOptions
+{
+  LogProtoOptionsBase super;
+  char __padding[LOG_PROTO_OPTIONS_SIZE];
+} LogProtoOptions;
 
-LogProto *log_proto_file_writer_new(LogTransport *transport, gint flush_lines);
+typedef struct _LogProtoServerOptions
+{
+  LogProtoOptionsBase super;
+          union
+          {
+    struct
+    {
+      regex_t *prefix_matcher;
+      regex_t *garbage_matcher;
+    } opts;
+    char __padding[LOG_PROTO_OPTIONS_SIZE];
+  };
+} LogProtoServerOptions;
 
-/*
- * LogProtoTextClient
- */
-LogProto *log_proto_text_client_new(LogTransport *transport);
+struct _LogProtoFactory
+{
+  LogProto *(*create)(LogTransport *transport, LogProtoOptions *options, GlobalConfig *cfg);
+  guint default_port;
+};
 
-/* framed */
-LogProto *log_proto_framed_client_new(LogTransport *transport);
-LogProto *log_proto_framed_server_new(LogTransport *transport, gint max_msg_size);
+LogProtoFactory *log_proto_get_factory(GlobalConfig *cfg,LogProtoType type,const gchar *name);
 
 #endif

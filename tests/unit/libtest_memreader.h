@@ -77,5 +77,4 @@ LogReader *log_reader_new_file_source(LogReaderOptions *options, guint32 read_bu
 void log_test_reader_add_message(LogTransport *transport, const gchar *msg, guint32 msg_size);
 
 void log_reader_read_log(LogReader *self);
-
 #endif

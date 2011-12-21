@@ -98,6 +98,16 @@ static Plugin afsocket_plugins[] =
     .name = "syslog",
     .parser = &afsocket_parser,
   },
+  {
+    .type = LL_CONTEXT_SOURCE,
+    .name = "network",
+    .parser = &afsocket_parser,
+  },
+  {
+    .type = LL_CONTEXT_DESTINATION,
+    .name = "network",
+    .parser = &afsocket_parser,
+  },
 };
 
 gboolean

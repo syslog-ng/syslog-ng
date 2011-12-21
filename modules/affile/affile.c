@@ -159,7 +159,11 @@ static LogProto *
 affile_sd_construct_proto(AFFileSourceDriver *self, LogTransport *transport)
 {
   guint flags;
-  LogProto *proto;
+  LogProto *proto = NULL;
+  LogProtoServerOptions *options = (LogProtoServerOptions *)&self->proto_options;
+  GlobalConfig *cfg = log_pipe_get_config((LogPipe *)self);
+  gchar *name;
+
   MsgFormatHandler *handler;
 
   flags =
@@ -167,16 +171,34 @@ affile_sd_construct_proto(AFFileSourceDriver *self, LogTransport *transport)
      ? LPBS_IGNORE_EOF | LPBS_POS_TRACKING
      : LPBS_NOMREAD);
 
-  handler = self->reader_options.parse_options.format_handler;
-  if ((handler && handler->construct_proto))
-    proto = self->reader_options.parse_options.format_handler->construct_proto(&self->reader_options.parse_options, transport, flags);
-  else if (self->prefix_matcher)
-    proto = log_proto_multi_line_text_server_new(transport, self->reader_options.msg_size, flags, self->prefix_matcher, self->garbage_matcher);
-  else if (self->reader_options.padding)
-    proto = log_proto_record_server_new(transport, self->reader_options.padding, flags);
-  else
-    proto = log_proto_text_server_new(transport, self->reader_options.msg_size, flags);
+  if (self->prefix_matcher)
+    {
+      options->opts.prefix_matcher = self->prefix_matcher;
+      options->opts.garbage_matcher = self->garbage_matcher;
+    }
 
+  handler = self->reader_options.parse_options.format_handler;
+  self->proto_options.super.flags = flags;
+  if ((handler && handler->construct_proto))
+    proto = self->reader_options.parse_options.format_handler->construct_proto(log_pipe_get_config((LogPipe *)self),&self->reader_options.parse_options, transport, flags);
+  else if (!self->proto_factory)
+    {
+      if (self->reader_options.padding)
+        {
+          self->proto_options.super.size = self->reader_options.padding;
+          name = "record";
+        }
+      else
+        {
+          self->proto_options.super.size = self->reader_options.msg_size;
+          name = "stream-newline";
+        }
+      self->proto_factory = log_proto_get_factory(cfg,LPT_SERVER,name);
+    }
+  if (self->proto_factory)
+    {
+          proto = self->proto_factory->create(transport, &self->proto_options, log_pipe_get_config((LogPipe *)self));
+    }
   return proto;
 }
 
@@ -767,7 +789,7 @@ affile_dw_reopen(AFFileDestWriter *self)
   int fd, flags;
   struct stat st;
   LogPipe *s = (LogPipe *)self;
-  GlobalConfig *cfg = log_pipe_get_config(s);
+  GlobalConfig *cfg = log_pipe_get_config(&self->owner->super.super.super);
   LogProto *proto = NULL;
 
   if (cfg)
@@ -806,7 +828,15 @@ affile_dw_reopen(AFFileDestWriter *self)
       write_flags =
         ((self->owner->flags & AFFILE_PIPE) ? LTF_PIPE : LTF_APPEND) |
         ((self->owner->flags & AFFILE_FSYNC) ? LTF_FSYNC : 0);
-      proto = log_proto_file_writer_new(log_transport_plain_new(fd, write_flags), self->owner->writer_options.flush_lines);
+      self->owner->proto_options.super.size = self->owner->writer_options.flush_lines;
+      if (!self->owner->proto_factory)
+        {
+          self->owner->proto_factory = log_proto_get_factory(cfg,LPT_CLIENT,"file-writer");
+        }
+      if (self->owner->proto_factory)
+        {
+          proto = self->owner->proto_factory->create(log_transport_plain_new(fd, write_flags), &self->owner->proto_options, cfg);
+        }
 
       main_loop_call((void * (*)(void *)) affile_dw_arm_reaper, self, TRUE);
     }
