@@ -199,6 +199,10 @@ affile_sd_construct_proto(AFFileSourceDriver *self, LogTransport *transport)
     {
           proto = self->proto_factory->create(transport, &self->proto_options, log_pipe_get_config((LogPipe *)self));
     }
+  else if (proto == NULL)
+    {
+      msg_error("Can't find proto plugin",evt_tag_str("proto_name",name),NULL);
+    }
   return proto;
 }
 
@@ -233,6 +237,11 @@ affile_sd_open(LogPipe *s, gboolean immediate_check)
       transport->timeout = 10;
 
       proto = affile_sd_construct_proto(self, transport);
+      if (proto == NULL)
+        {
+          close(fd);
+          return FALSE;
+        }
       /* FIXME: we shouldn't use reader_options to store log protocol parameters */
       self->reader = log_reader_new(proto);
 
@@ -836,6 +845,12 @@ affile_dw_reopen(AFFileDestWriter *self)
       if (self->owner->proto_factory)
         {
           proto = self->owner->proto_factory->create(log_transport_plain_new(fd, write_flags), &self->owner->proto_options, cfg);
+        }
+      else
+        {
+          msg_error("Can't find proto",evt_tag_str("proto_name","file-writer"),NULL);
+          close(fd);
+          return FALSE;
         }
 
       main_loop_call((void * (*)(void *)) affile_dw_arm_reaper, self, TRUE);
