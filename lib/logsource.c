@@ -56,7 +56,7 @@ log_source_checking_ack_data_list(LogSource *s, gpointer *d,guint64 *cont)
   guint64 last=s->last_sent;
   if (last>=s->options->init_window_size)
     last=0;
-
+  *cont = 0;
   while((!s->ack_list[last].not_acked)&&(s->ack_list[last].not_sent))
   {
     *d = &(s->ack_list[last]);
@@ -67,7 +67,7 @@ log_source_checking_ack_data_list(LogSource *s, gpointer *d,guint64 *cont)
       last=0;
   }
 
-  if(!cont)
+  if(*cont == 0)
     return FALSE;
 
   s->last_sent=last;
