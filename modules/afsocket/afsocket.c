@@ -1163,6 +1163,7 @@ afsocket_dd_start_connect(AFSocketDestDriver *self)
   rc = g_connect(sock, self->dest_addr);
   if (rc == G_IO_STATUS_NORMAL)
     {
+      self->fd = sock;
       afsocket_dd_connected(self);
     }
   else if (rc == G_IO_STATUS_ERROR && errno == EINPROGRESS)
