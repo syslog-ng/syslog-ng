@@ -89,7 +89,7 @@ struct _LogProto
   LogProtoAckMessages ack_callback;
   gpointer ack_user_data;
   gboolean is_multi_line;
-  GlobalConfig *cfg;
+  PersistState *state;
 };
 
 static inline void
