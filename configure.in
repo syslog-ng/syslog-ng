@@ -454,6 +454,10 @@ AC_CHECK_MEMBER(struct tm.tm_gmtoff,AC_DEFINE(HAVE_STRUCT_TM_TM_GMTOFF,1,[Whethe
 #include <time.h>
 #endif])
 
+AC_CHECK_MEMBER(struct sockaddr_storage.ss_family,
+                AC_DEFINE(HAVE_STRUCT_SS_FAMILY,1,[Whether you have ss_family in struct sockaddr_storage]),
+                ,[#include <sys/socket.h>])
+
 AC_CACHE_CHECK(for I_CONSLOG, blb_cv_c_i_conslog,
   [AC_EGREP_CPP(I_CONSLOG,
 [
