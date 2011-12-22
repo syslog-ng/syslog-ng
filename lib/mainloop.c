@@ -509,8 +509,10 @@ main_loop_initialize_state(GlobalConfig *cfg, const gchar *persist_filename)
     return FALSE;
 
   main_loop_init_run_id(cfg->state);
-
-  log_msg_init_rctpid(cfg->state);
+  if (cfg->use_rcptid)
+    {
+      log_msg_init_rcptid(cfg->state);
+    }
 
   success = cfg_init(cfg);
   if (success)

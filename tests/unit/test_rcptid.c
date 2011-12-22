@@ -45,7 +45,7 @@ testcase(gchar *message)
       fprintf(stderr, "Error starting persist_state object\n");
       exit(1);
     }
-  log_msg_init_rctpid(state);
+  log_msg_init_rcptid(state);
   msg = log_msg_new(message,strlen(message),NULL,&parse_options);
   log_msg_create_rcptid(msg);
 
@@ -80,7 +80,7 @@ testcase(gchar *message)
       fprintf(stderr, "Error starting persist_state object\n");
       exit(1);
     }
-  log_msg_init_rctpid(state);
+  log_msg_init_rcptid(state);
 
   log_msg_create_rcptid(msg);
   TEST_ASSERT(msg->rcptid == 0x0000FFFFFFFFFFFF,"%"G_GUINT64_FORMAT,msg->rcptid,0x0000FFFFFFFFFFFF);

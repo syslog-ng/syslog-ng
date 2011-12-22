@@ -143,6 +143,7 @@ static CfgLexerKeyword main_keywords[] = {
   /* filter items */
   { "type",               KW_TYPE, 0x0300 },
   { "tags",               KW_TAGS, 0x0300 },
+  { "use_rcptid",         KW_USE_RCPTID },
 
   /* on/off switches */
   { "yes",                KW_YES },

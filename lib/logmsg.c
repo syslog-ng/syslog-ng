@@ -2278,7 +2278,7 @@ log_msg_read(LogMessage *self, SerializeArchive *sa)
 /*restore RCTPID from persist file, if possible, else
 create new enrty point with "next.rcptid" name*/
 gboolean
-log_msg_init_rctpid(PersistState *state)
+log_msg_init_rcptid(PersistState *state)
 {
   RcptidState *data;
   gsize size;

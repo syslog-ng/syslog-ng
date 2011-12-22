@@ -119,6 +119,7 @@ struct _GlobalConfig
   PersistState *state;
   GList *source_mangle_callback_list;
   struct _LogCenter *center;
+  gboolean use_rcptid;
   
   gchar *cfg_fingerprint;
   gboolean stats_reset;

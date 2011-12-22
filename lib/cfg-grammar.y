@@ -183,6 +183,7 @@ extern struct _LogDriver *last_driver;
 %token KW_DNS_CACHE_HOSTS             10132
 
 %token KW_PERSIST_ONLY                10140
+%token KW_USE_RCPTID                  10141
 
 %token KW_TZ_CONVERT                  10150
 %token KW_TS_FORMAT                   10151
@@ -713,6 +714,7 @@ options_item
 	| KW_RECV_TIME_ZONE '(' string ')'      { configuration->recv_time_zone = g_strdup($3); free($3); }
 	| KW_SEND_TIME_ZONE '(' string ')'      { configuration->template_options.time_zone[LTZ_SEND] = g_strdup($3); free($3); }
 	| KW_LOCAL_TIME_ZONE '(' string ')'     { configuration->template_options.time_zone[LTZ_LOCAL] = g_strdup($3); free($3); }
+  | KW_USE_RCPTID '(' yesno ')'           { configuration->use_rcptid = $3; }
         | KW_STATS_RESET '(' yesno ')'         {}
         | LL_IDENTIFIER '(' string_or_number ')' {
                                             check_option = (PluginGlobalOption *)g_hash_table_lookup(configuration->global_options, normalize_option_name($1));
