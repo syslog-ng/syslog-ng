@@ -361,7 +361,6 @@ value_pairs_foreach_sorted(ValuePairs *vp, GCompareFunc cmpf, VPForeachFunc func
       func (k, (const gchar *)g_hash_table_lookup (scope_set, k), user_data);
     }
   g_list_free (keys);
-  g_list_free (sorted_keys);
 
   value_pairs_foreach_teardown (vp, scope_set);
 }

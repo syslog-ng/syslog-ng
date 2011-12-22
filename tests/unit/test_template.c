@@ -161,6 +161,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   plugin_load_module("syslogformat", configuration, NULL);
   plugin_load_module("basicfuncs", configuration, NULL);
   plugin_load_module("convertfuncs", configuration, NULL);
+  plugin_load_module("tfjson", configuration, NULL);
   msg_format_options_defaults(&parse_options);
   msg_format_options_init(&parse_options, configuration);
   configuration->template_options.frac_digits = 3;
@@ -327,10 +328,10 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   log_msg_set_value(msg, log_msg_get_value_handle(".korteerdo"), "THIS MUST BE HIDDEN", -1) ;
   log_msg_set_value(msg, log_msg_get_value_handle(".narancs"), "hmmm", -1);
   log_msg_set_value(msg, log_msg_get_value_handle(".mline"), "line1\nline2", -1);
-  testcase(msg, "$(format-welf --key .almafa*)", ".almafa=\"hello\" .almafak=\"this is good work\" .almafa=\"hello\" .almafak=\"this is good work\""); /*duplicated message by testcase*/
+  testcase(msg, "$(format-welf --key .almafa*)", ".almafa=hello .almafak=\"this is good work\" .almafa=hello .almafak=\"this is good work\""); /*duplicated message by testcase*/
   testcase(msg, "$(format-welf --key .tamtatammtatatatatam*)", "");
-  testcase(msg, "$(format-welf --key .na*)", ".narancs=\"hmmm\" .narancs=\"hmmm\"");
-  testcase(msg, "$(format-welf --key .mline*)", ".mline=\"line1\nline2\" .mline=\"line1\nline2\"");
+  testcase(msg, "$(format-welf --key .na*)", ".narancs=hmmm .narancs=hmmm");
+  testcase(msg, "$(format-welf --key .mline*)", ".mline=line1\\nline2 .mline=line1\\nline2");
 
   /* message refs */
   testcase(msg, "$(echo ${HOST}@0 ${PID}@1)", "bzorp 23323");
