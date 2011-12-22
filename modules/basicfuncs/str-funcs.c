@@ -18,6 +18,21 @@ tf_echo(LogMessage *msg, gint argc, GString *argv[], GString *result)
 
 TEMPLATE_FUNCTION_SIMPLE(tf_echo);
 
+static void
+tf_length(LogMessage *msg, gint argc, GString *argv[], GString *result)
+{
+  gint i;
+
+  for (i = 0; i < argc; i++)
+    {
+      format_uint32_padded(result, 0, 0, 10, argv[i]->len);
+      if (i < argc - 1)
+        g_string_append_c(result, ' ');
+    }
+}
+
+TEMPLATE_FUNCTION_SIMPLE(tf_length);
+
 /*
  * $(substr $arg START [LEN])
  */

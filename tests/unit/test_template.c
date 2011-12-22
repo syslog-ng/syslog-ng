@@ -298,6 +298,10 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase(msg, "$(echo '\"$(echo $(echo $HOST))\"' $PID)", "\"bzorp\" 23323");
   testcase(msg, "$(ipv4-to-int $SOURCEIP)", "168496141");
 
+  testcase(msg, "$(length $HOST $PID)", "5 5");
+  testcase(msg, "$(length $HOST)", "5");
+  testcase(msg, "$(length)", "");
+
   testcase(msg, "$(grep 'facility(local3)' $PID)", "23323,23323");
   testcase(msg, "$(grep 'facility(local3)' $PID $PROGRAM)", "23323,syslog-ng,23323,syslog-ng");
   testcase(msg, "$(grep 'facility(local4)' $PID)", "");
