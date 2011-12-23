@@ -451,7 +451,6 @@ log_queue_fifo_rewind_backlog(LogQueue *s, gint n,gboolean ack_and_ref)
           log_msg_ack(msg,&path_options, TRUE);
           log_msg_unref(msg);
         }
-      g_assert(msg->rcptid);
 
       list_del_init(&node->list);
       list_add(&node->list,&self->qoverflow_output);
