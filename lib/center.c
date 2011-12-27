@@ -304,12 +304,28 @@ log_center_instantiate_process_pipe_line(LogCenter *self, LogProcessRule *rule)
 
 
 /* NOTE: returns a borrowed reference! */
+/**
+ * log_center_init_pipe_line:
+ *
+ * Construct a LogPipe pipeline as specified by the user. The
+ * configuration is parsed into a series of LogPipeItem elements, each
+ * giving a reference to a source, filter, parser, rewrite and
+ * destination. This function connects these so that their
+ * log_pipe_queue() method will dispatch the message correctly (which
+ * in turn boils down to setting the LogPipe->next member).
+ *
+ * The tree like structure is created using LogMultiplexer instances,
+ * pipes are connected back with a simple LogPipe instance that only
+ * forwards messages.
+ *
+ * The next member pointer is not holding a reference, but can be
+ * assumed to be kept alive as long as the configuration is running.
 LogPipe *
 log_center_init_pipe_line(LogCenter *self, LogConnection *conn, GlobalConfig *cfg, gboolean toplevel, gboolean flow_controlled_parent)
 {
   LogPipeItem *ep;
-  LogPipe *first_pipe, *pipe, *last_pipe, *sub_pipe;
-  LogMultiplexer *mpx, *fork_mpx = NULL;
+  LogPipe *first_pipe, *pipe, *last_pipe;
+  LogMultiplexer *fork_mpx = NULL;
   gboolean  path_changes_the_message = FALSE, flow_controlled_child = FALSE;
 
   /* resolve pipe references, find first pipe */
@@ -332,42 +348,45 @@ log_center_init_pipe_line(LogCenter *self, LogConnection *conn, GlobalConfig *cf
       switch (ep->type)
         {
         case EP_SOURCE:
-          if (toplevel && (conn->flags & LC_CATCHALL) == 0)
-            {
-              ep->ref = g_hash_table_lookup(cfg->sources, ep->name->str);
-              if (!ep->ref)
-                {
-                  msg_error("Error in configuration, unresolved source reference",
-                            evt_tag_str("source", ep->name->str),
-                            NULL);
-                  goto error;
-                }
-              log_source_group_ref((LogSourceGroup *) ep->ref);
-              pipe = (LogPipe *) ep->ref;
-              g_ptr_array_add(self->initialized_pipes, log_pipe_ref(pipe));
+          {
+            if (toplevel && (conn->flags & LC_CATCHALL) == 0)
+              {
+                ep->ref = g_hash_table_lookup(cfg->sources, ep->name->str);
+                if (!ep->ref)
+                  {
+                    msg_error("Error in configuration, unresolved source reference",
+                              evt_tag_str("source", ep->name->str),
+                              NULL);
+                    goto error;
+                  }
+                log_source_group_ref((LogSourceGroup *) ep->ref);
+                pipe = (LogPipe *) ep->ref;
+                g_ptr_array_add(self->initialized_pipes, log_pipe_ref(pipe));
 
-              if (!pipe->pipe_next)
-                {
-                  mpx = log_multiplexer_new(0);
-                  g_ptr_array_add(self->initialized_pipes, mpx);
-                  log_pipe_append(pipe, &mpx->super);
-                }
-              pipe = NULL;
-            }
-          else if (!toplevel)
-            {
-              msg_error("Error in configuration, no source reference is permitted in non-toplevel log statements",
-                        NULL);
-              goto error;
-            }
-          else
-            {
-              msg_error("Error in configuration, catch-all log statements may not specify sources",
-                        NULL);
-              goto error;
-            }
-          break;
+                if (!pipe->pipe_next)
+                  {
+                    LogMultiplexer *mpx;
 
+                    mpx = log_multiplexer_new(0);
+                    g_ptr_array_add(self->initialized_pipes, mpx);
+                    log_pipe_append(pipe, &mpx->super);
+                  }
+                pipe = NULL;
+              }
+            else if (!toplevel)
+              {
+                msg_error("Error in configuration, no source reference is permitted in non-toplevel log statements",
+                          NULL);
+                goto error;
+              }
+            else
+              {
+                msg_error("Error in configuration, catch-all log statements may not specify sources",
+                          NULL);
+                goto error;
+              }
+            break;
+          }
         case EP_FILTER:
         case EP_PARSER:
         case EP_REWRITE:
@@ -411,43 +430,50 @@ log_center_init_pipe_line(LogCenter *self, LogConnection *conn, GlobalConfig *cf
           }
 
         case EP_DESTINATION:
-          ep->ref = g_hash_table_lookup(cfg->destinations, ep->name->str);
-          if (!ep->ref)
-            {
-              msg_error("Error in configuration, unresolved destination reference",
-                        evt_tag_str("destination", ep->name->str),
-                        NULL);
-              return FALSE;
-            }
-          log_dest_group_ref((LogDestGroup *) ep->ref);
-          g_ptr_array_add(self->initialized_pipes, log_pipe_ref((LogPipe *) ep->ref));
-          
-          pipe = (LogPipe *) log_multiplexer_new(0);
-          log_multiplexer_add_next_hop((LogMultiplexer *) pipe, ep->ref);
-          g_ptr_array_add(self->initialized_pipes, pipe);
-          break;
+          {
+            ep->ref = g_hash_table_lookup(cfg->destinations, ep->name->str);
+            if (!ep->ref)
+              {
+                msg_error("Error in configuration, unresolved destination reference",
+                          evt_tag_str("destination", ep->name->str),
+                          NULL);
+                return FALSE;
+              }
+            log_dest_group_ref((LogDestGroup *) ep->ref);
+            g_ptr_array_add(self->initialized_pipes, log_pipe_ref((LogPipe *) ep->ref));
 
+            pipe = (LogPipe *) log_multiplexer_new(0);
+            log_multiplexer_add_next_hop((LogMultiplexer *) pipe, ep->ref);
+            g_ptr_array_add(self->initialized_pipes, pipe);
+            break;
+          }
         case EP_PIPE:
-        
-          if (!fork_mpx)
-            {
-              fork_mpx = log_multiplexer_new(0);
-              pipe = &fork_mpx->super;
-              g_ptr_array_add(self->initialized_pipes, pipe);
-            }
-          sub_pipe = log_center_init_pipe_line(self, (LogConnection *) ep->ref, cfg, FALSE, (conn->flags & LC_FLOW_CONTROL));
-          if (!sub_pipe)
-            {
-              /* error initializing subpipe */
-              goto error;
-            }
-          if (sub_pipe->flags & PIF_HARD_FLOW_CONTROL)
-            flow_controlled_child = TRUE;
-          log_multiplexer_add_next_hop(fork_mpx, sub_pipe);
-          break;
+          {
+            LogPipe *sub_pipe;
+
+            if (!fork_mpx)
+              {
+                fork_mpx = log_multiplexer_new(0);
+                pipe = &fork_mpx->super;
+                g_ptr_array_add(self->initialized_pipes, pipe);
+              }
+            sub_pipe = log_center_init_pipe_line(self, (LogConnection *) ep->ref, cfg, FALSE, (conn->flags & LC_FLOW_CONTROL));
+            if (!sub_pipe)
+              {
+                /* error initializing subpipe */
+                goto error;
+              }
+            if (sub_pipe->flags & PIF_HARD_FLOW_CONTROL)
+              flow_controlled_child = TRUE;
+            log_multiplexer_add_next_hop(fork_mpx, sub_pipe);
+            break;
+          }
+          }
         default:
-          g_assert_not_reached();
-          break;
+          {
+            g_assert_not_reached();
+            break;
+          }
         }
         
       /* pipe is only a borrowed reference */
@@ -501,6 +527,8 @@ log_center_init_pipe_line(LogCenter *self, LogConnection *conn, GlobalConfig *cf
         {
           if (ep->type == EP_SOURCE)
             {
+              LogMultiplexer *mpx;
+
               pipe = (LogPipe *) ep->ref;
               mpx = (LogMultiplexer *) pipe->pipe_next;
               log_multiplexer_add_next_hop(mpx, first_pipe);
