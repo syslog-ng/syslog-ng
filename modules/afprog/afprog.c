@@ -328,6 +328,16 @@ afprogram_dd_deinit(LogPipe *s)
 {
   AFProgramDestDriver *self = (AFProgramDestDriver *) s;
 
+  if (self->pid != -1)
+    {
+      msg_verbose("Sending destination program a TERM signal",
+                  evt_tag_str("cmdline", self->cmdline->str),
+                  evt_tag_int("child_pid", self->pid),
+                  NULL);
+      kill(self->pid, SIGTERM);
+      self->pid = -1;
+    }
+
   if (self->writer)
     log_pipe_deinit(self->writer);
 

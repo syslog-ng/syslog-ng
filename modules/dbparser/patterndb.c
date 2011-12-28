@@ -38,6 +38,7 @@
 static NVHandle class_handle = 0;
 static NVHandle rule_id_handle = 0;
 static LogTagId system_tag;
+static LogTagId unknown_tag;
 
 /*
  * Timing
@@ -570,10 +571,28 @@ pdb_rule_run_actions(PDBRule *self, gint trigger, PatternDB *db, PDBContext *con
                         }
                     }
                   if (context)
-                    g_ptr_array_add(context->messages, genmsg);
-                  pdb_message_apply(&action->content.message, context, genmsg, buffer);
-                  if (context)
-                    g_ptr_array_remove_index_fast(context->messages, context->messages->len - 1);
+                    {
+                      g_ptr_array_add(context->messages, genmsg);
+                      pdb_message_apply(&action->content.message, context, genmsg, buffer);
+                      g_ptr_array_remove_index_fast(context->messages, context->messages->len - 1);
+                    }
+                  else
+                    {
+                      /* no context, which means no correllation. The action
+                       * rule contains the generated message at @0 and the one
+                       * which triggered the rule in @1.
+                       *
+                       * We emulate a context having only these two
+                       * messages, but without allocating a full-blown
+                       * structure.
+                       */
+                      LogMessage *dummy_msgs[] = { msg, genmsg, NULL };
+                      GPtrArray dummy_ptr_array = { .pdata = (void **) dummy_msgs, .len = 2 };
+                      PDBContext dummy_context = { .messages = &dummy_ptr_array, 0 };
+
+                      pdb_message_apply(&action->content.message, &dummy_context, genmsg, buffer);
+                    }
+
                   emit(genmsg, TRUE, emit_data);
                   log_msg_unref(genmsg);
                   break;
@@ -1267,6 +1286,7 @@ pdb_rule_set_lookup(PDBRuleSet *self, LogMessage *msg, GArray *dbg_list)
                 {
                   log_msg_set_tag_by_id(msg, system_tag);
                 }
+              log_msg_clear_tag_by_id(msg, unknown_tag);
               g_string_free(buffer, TRUE);
               pdb_rule_ref(rule);
               return rule;
@@ -1274,6 +1294,7 @@ pdb_rule_set_lookup(PDBRuleSet *self, LogMessage *msg, GArray *dbg_list)
           else
             {
               log_msg_set_value(msg, class_handle, "unknown", 7);
+              log_msg_set_tag_by_id(msg, unknown_tag);
             }
           g_array_free(matches, TRUE);
         }
@@ -1579,4 +1600,5 @@ pattern_db_global_init(void)
   class_handle = log_msg_get_value_handle(".classifier.class");
   rule_id_handle = log_msg_get_value_handle(".classifier.rule_id");
   system_tag = log_tags_get_by_name(".classifier.system");
+  unknown_tag = log_tags_get_by_name(".classifier.unknown");
 }

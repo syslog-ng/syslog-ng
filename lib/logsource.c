@@ -97,7 +97,7 @@ log_source_msg_ack(LogMessage *msg, gpointer user_data)
                    * in case the window gets full */
 
                   diff = timespec_diff_nsec(&now, &self->last_ack_rate_time);
-                  self->window_full_sleep_nsec = (diff / (cur_ack_count - self->last_ack_count));
+                  self->window_full_sleep_nsec = (diff / (cur_ack_count - last_ack_count));
                   if (self->window_full_sleep_nsec > 1e6)
                     {
                       /* in case we'd be waiting for 1msec for another free slot in the window, let's go to background instead */

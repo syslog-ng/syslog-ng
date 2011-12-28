@@ -380,6 +380,9 @@ pdbtool_pdb_emit(LogMessage *msg, gboolean synthetic, gpointer user_data)
             printf("\nValues:\n");
 
           nv_table_foreach(msg->payload, logmsg_registry, pdbtool_match_values, ret);
+          g_string_truncate(output, 0);
+          log_msg_print_tags(msg, output);
+          printf("TAGS=%s\n", output->str);
           printf("\n");
         }
       else
@@ -428,8 +431,8 @@ pdbtool_match(int argc, char *argv[])
       log_template_compile(template, t, NULL);
       g_free(t);
 
-      output = g_string_sized_new(512);
     }
+  output = g_string_sized_new(512);
 
   if (filter_string)
     {
