@@ -2,7 +2,13 @@ syslog-ng (3.3.3.dfsg-1~mhp2+g511e939) unstable; urgency=low
 
   * New snapshost release, based on upstream commit 511e939.
 
- -- Gergely Nagy <algernon@madhouse-project.org>  Thu, 29 Dec 2011 10:07:53 +0100
+  [ Gergely Nagy <algernon@madhouse-project.org> ]
+  * Change the package versioning scheme and the way Revision is
+    assembled: the version now includes the git commit id it is based on,
+    and so does the revision (which now also includes the distribution
+    version it was built for, not only in the version).
+
+ -- Gergely Nagy <algernon@madhouse-project.org>  Thu, 29 Dec 2011 10:23:55 +0100
 
 syslog-ng (3.3.3.dfsg-1~mhp1) unstable; urgency=low
 
