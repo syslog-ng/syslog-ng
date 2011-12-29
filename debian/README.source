@@ -8,7 +8,7 @@ with the following branch layout:
  * upstream/mirror/${MAJOR_VERSION}: This is a mirror of the upstream
    master branch of the appropriate major version of syslog-ng. No
    changes are applied to it, ever.
- * upstream/dfsg/${MAJOR_VERSION}: Same as the upstream branch, bit
+ * upstream/dfsg/${MAJOR_VERSION}: Same as the upstream branch, but
    with non-DFSG-free manual pages removed. The orig.tar.xz is based
    off of this branch.
  * patched/${MAJOR_VERSION}: Non-debian specific patches, that are
