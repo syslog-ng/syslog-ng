@@ -1,4 +1,10 @@
-syslog-ng (3.3.3.dfsg-1~mhp1+gcd059ea) unstable; urgency=low
+syslog-ng (3.3.3.dfsg-1~mhp2+g511e939) unstable; urgency=low
+
+  * New snapshost release, based on upstream commit 511e939.
+
+ -- Gergely Nagy <algernon@madhouse-project.org>  Thu, 29 Dec 2011 10:07:53 +0100
+
+syslog-ng (3.3.3.dfsg-1~mhp1) unstable; urgency=low
 
   * New snapshot release, based on upstream commit cd059ea.
 
