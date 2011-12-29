@@ -530,7 +530,9 @@ afmongodb_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_optio
   g_mutex_lock(self->suspend_mutex);
   if (queue_was_empty && !self->writer_thread_suspended)
     {
+      g_mutex_lock(self->queue_mutex);
       log_queue_set_parallel_push(self->queue, 1, afmongodb_dd_queue_notify, self, NULL);
+      g_mutex_unlock(self->queue_mutex);
     }
   g_mutex_unlock(self->suspend_mutex);
 }
