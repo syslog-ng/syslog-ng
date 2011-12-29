@@ -495,7 +495,8 @@ afmongodb_dd_free(LogPipe *d)
   g_free(self->user);
   g_free(self->password);
   g_free(self->host);
-  value_pairs_free(self->vp);
+  if (self->vp)
+    value_pairs_free(self->vp);
   log_dest_driver_free(d);
 }
 
