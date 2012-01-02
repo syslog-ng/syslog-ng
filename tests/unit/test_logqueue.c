@@ -18,7 +18,7 @@ MsgFormatOptions parse_options;
 #define OVERFLOW_SIZE 10000
 
 void
-test_ack(LogMessage *msg, gpointer user_data)
+test_ack(LogMessage *msg, gpointer user_data, gboolean pos_tracking)
 {
   acked_messages++;
 }
@@ -33,7 +33,7 @@ feed_some_messages(LogQueue **q, int n, gboolean ack_needed)
   path_options.ack_needed = ack_needed;
   for (i = 0; i < n; i++)
     {
-      char *msg_str = "<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép";
+      gchar *msg_str = g_strdup_printf("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép ID: %08d",i);
 
       msg = log_msg_new(msg_str, strlen(msg_str), g_sockaddr_inet_new("10.10.10.10", 1010), &parse_options);
       log_msg_add_ack(msg, &path_options);
@@ -57,6 +57,12 @@ send_some_messages(LogQueue *q, gint n, gboolean use_app_acks)
       log_msg_ack(msg, &path_options, TRUE);
       log_msg_unref(msg);
     }
+}
+
+void
+app_rewind_some_messages(LogQueue *q, gint n, gboolean need_ack)
+{
+  log_queue_rewind_backlog(q,n,need_ack);
 }
 
 void
@@ -115,6 +121,29 @@ testcase_zero_diskbuf_alternating_send_acks()
       exit(1);
     }
 
+  log_queue_unref(q);
+}
+
+void
+testcase_ack_and_rewind_messages()
+{
+  LogQueue *q;
+  gint i;
+  q = log_queue_fifo_new(OVERFLOW_SIZE, NULL);
+
+  fed_messages = 0;
+  acked_messages = 0;
+  feed_some_messages(&q, 1000, TRUE);
+  for(i = 0; i < 10; i++)
+    {
+      send_some_messages(q,1,TRUE);
+      app_rewind_some_messages(q,1,FALSE);
+    }
+  send_some_messages(q,1000,TRUE);
+  app_ack_some_messages(q,500);
+  app_rewind_some_messages(q,500,TRUE);
+  send_some_messages(q,500,TRUE);
+  app_ack_some_messages(q,500);
   log_queue_unref(q);
 }
 
@@ -303,6 +332,9 @@ main()
   plugin_load_module("syslogformat", configuration, NULL);
   msg_format_options_defaults(&parse_options);
   msg_format_options_init(&parse_options, configuration);
+
+  fprintf(stderr,"Start ack and rewind tests\n");
+  testcase_ack_and_rewind_messages();
 
   fprintf(stderr,"Start testcase_with_threads\n");
   testcase_with_threads();
