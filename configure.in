@@ -1313,6 +1313,7 @@ dnl PE modules
 	modules/license/Makefile
 	modules/logstore/Makefile
 	modules/diskq/Makefile
+  modules/diskq/tests/Makefile
 	modules/confighash/Makefile
 	modules/snmp/Makefile
 	modules/afsqlsource/Makefile
