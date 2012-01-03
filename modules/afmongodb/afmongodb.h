@@ -35,5 +35,6 @@ void afmongodb_dd_set_collection(LogDriver *d, const gchar *collection);
 void afmongodb_dd_set_user(LogDriver *d, const gchar *user);
 void afmongodb_dd_set_password(LogDriver *d, const gchar *password);
 void afmongodb_dd_set_value_pairs(LogDriver *d, ValuePairs *vp);
+void afmongodb_dd_set_safe_mode(LogDriver *d, gboolean state);
 
 #endif

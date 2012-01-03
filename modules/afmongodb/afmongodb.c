@@ -53,6 +53,8 @@ typedef struct
   gchar *host;
   gint port;
 
+  gboolean safe_mode;
+
   gchar *user;
   gchar *password;
 
@@ -146,6 +148,14 @@ afmongodb_dd_set_value_pairs(LogDriver *d, ValuePairs *vp)
   self->vp = vp;
 }
 
+void
+afmongodb_dd_set_safe_mode(LogDriver *d, gboolean state)
+{
+  MongoDBDestDriver *self = (MongoDBDestDriver *)d;
+
+  self->safe_mode = state;
+}
+
 /*
  * Utilities
  */
@@ -195,12 +205,13 @@ afmongodb_dd_connect(MongoDBDestDriver *self, gboolean reconnect)
     return TRUE;
 
   self->conn = mongo_sync_connect(self->host, self->port, FALSE);
-
   if (!self->conn)
     {
       msg_error ("Error connecting to MongoDB", NULL);
       return FALSE;
     }
+
+  mongo_sync_conn_set_safe_mode(self->conn, self->safe_mode);
 
   l = self->servers;
   while ((l = g_list_next(l)) != NULL)
@@ -574,6 +585,7 @@ afmongodb_dd_new(void)
   afmongodb_dd_set_servers((LogDriver *)self, g_list_append (NULL, g_strdup ("127.0.0.1:27017")));
   afmongodb_dd_set_database((LogDriver *)self, "syslog");
   afmongodb_dd_set_collection((LogDriver *)self, "messages");
+  afmongodb_dd_set_safe_mode((LogDriver *)self, FALSE);
 
   init_sequence_number(&self->seq_num);
 
