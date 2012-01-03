@@ -77,7 +77,7 @@ typedef struct
   LogQueue *queue;
 
   /* Writer-only stuff */
-  mongo_connection *conn;
+  mongo_sync_connection *conn;
   gint32 seq_num;
 
   gchar *ns;
@@ -189,7 +189,7 @@ afmongodb_dd_suspend(MongoDBDestDriver *self)
 static void
 afmongodb_dd_disconnect(MongoDBDestDriver *self)
 {
-  mongo_disconnect(self->conn);
+  mongo_sync_disconnect(self->conn);
   self->conn = NULL;
 }
 
@@ -199,7 +199,7 @@ afmongodb_dd_connect(MongoDBDestDriver *self, gboolean reconnect)
   if (reconnect && self->conn)
     return TRUE;
 
-  self->conn = mongo_connect(self->host, self->port);
+  self->conn = mongo_sync_connect(self->host, self->port, FALSE);
 
   if (!self->conn)
     {
@@ -255,7 +255,6 @@ static gboolean
 afmongodb_worker_insert (MongoDBDestDriver *self)
 {
   gboolean success;
-  mongo_packet *p;
   guint8 *oid;
   LogMessage *msg;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
@@ -288,18 +287,14 @@ afmongodb_worker_insert (MongoDBDestDriver *self)
   bson_append_document (self->bson_upd, "$set", self->bson_set);
   bson_finish (self->bson_upd);
 
-  p = mongo_wire_cmd_update (1, self->ns, 1,
-			     self->bson_sel, self->bson_upd);
-
-  if (!mongo_packet_send (self->conn, p))
+  if (!mongo_sync_cmd_update (self->conn, self->ns, MONGO_WIRE_FLAG_UPDATE_UPSERT,
+			      self->bson_sel, self->bson_upd))
     {
       msg_error ("Network error while inserting into MongoDB",
 		 evt_tag_int("time_reopen", self->time_reopen),
 		 NULL);
       success = FALSE;
     }
-
-  mongo_wire_packet_free (p);
 
   msg_set_context(NULL);
 
