@@ -30,13 +30,11 @@ int afmongodb_parse(CfgLexer *lexer, LogDriver **instance, gpointer arg);
 
 static CfgLexerKeyword afmongodb_keywords[] = {
   { "mongodb",			KW_MONGODB },
-  { "host",			KW_HOST },
-  { "port",			KW_PORT },
+  { "servers",                  KW_SERVERS },
   { "database",			KW_DATABASE },
   { "collection",		KW_COLLECTION },
   { "username",			KW_USERNAME },
   { "password",			KW_PASSWORD },
-  { "log_fifo_size",		KW_LOG_FIFO_SIZE  },
   { NULL }
 };
 

@@ -49,6 +49,7 @@ typedef struct
   gchar *db;
   gchar *coll;
 
+  GList *servers;
   gchar *host;
   gint port;
 
@@ -109,20 +110,12 @@ afmongodb_dd_set_password(LogDriver *d, const gchar *password)
 }
 
 void
-afmongodb_dd_set_host(LogDriver *d, const gchar *host)
+afmongodb_dd_set_servers(LogDriver *d, GList *servers)
 {
   MongoDBDestDriver *self = (MongoDBDestDriver *)d;
 
-  g_free(self->host);
-  self->host = g_strdup (host);
-}
-
-void
-afmongodb_dd_set_port(LogDriver *d, gint port)
-{
-  MongoDBDestDriver *self = (MongoDBDestDriver *)d;
-
-  self->port = (int)port;
+  string_list_free(self->servers);
+  self->servers = servers;
 }
 
 void
@@ -196,6 +189,8 @@ afmongodb_dd_disconnect(MongoDBDestDriver *self)
 static gboolean
 afmongodb_dd_connect(MongoDBDestDriver *self, gboolean reconnect)
 {
+  GList *l;
+
   if (reconnect && self->conn)
     return TRUE;
 
@@ -205,6 +200,27 @@ afmongodb_dd_connect(MongoDBDestDriver *self, gboolean reconnect)
     {
       msg_error ("Error connecting to MongoDB", NULL);
       return FALSE;
+    }
+
+  l = self->servers;
+  while ((l = g_list_next(l)) != NULL)
+    {
+      gchar *host = NULL;
+      gint port = 27017;
+
+      if (!mongo_util_parse_addr(l->data, &host, &port))
+	{
+	  msg_warning("Cannot parse MongoDB server address, ignoring",
+		      evt_tag_str("address", l->data),
+		      NULL);
+	  continue;
+	}
+      mongo_sync_conn_seed_add (self->conn, host, port);
+      msg_verbose("Added MongoDB server seed",
+		  evt_tag_str("host", host),
+		  evt_tag_int("port", port),
+		  NULL);
+      g_free(host);
     }
 
   /*
@@ -421,6 +437,17 @@ afmongodb_dd_init(LogPipe *s)
       value_pairs_add_scope(self->vp, "nv-pairs");
     }
 
+  self->host = NULL;
+  self->port = 27017;
+  if (!mongo_util_parse_addr(g_list_nth_data(self->servers, 0), &self->host,
+			     &self->port))
+    {
+      msg_error("Cannot parse the primary host",
+		evt_tag_str("primary", g_list_nth_data(self->servers, 0)),
+		NULL);
+      return FALSE;
+    }
+
   msg_verbose("Initializing MongoDB destination",
 	      evt_tag_str("host", self->host),
 	      evt_tag_int("port", self->port),
@@ -484,6 +511,7 @@ afmongodb_dd_free(LogPipe *d)
   g_free(self->user);
   g_free(self->password);
   g_free(self->host);
+  string_list_free(self->servers);
   value_pairs_free(self->vp);
   log_dest_driver_free(d);
 }
@@ -543,8 +571,7 @@ afmongodb_dd_new(void)
   self->super.super.super.queue = afmongodb_dd_queue;
   self->super.super.super.free_fn = afmongodb_dd_free;
 
-  afmongodb_dd_set_host((LogDriver *)self, "127.0.0.1");
-  afmongodb_dd_set_port((LogDriver *)self, 27017);
+  afmongodb_dd_set_servers((LogDriver *)self, g_list_append (NULL, g_strdup ("127.0.0.1:27017")));
   afmongodb_dd_set_database((LogDriver *)self, "syslog");
   afmongodb_dd_set_collection((LogDriver *)self, "messages");
 

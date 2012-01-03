@@ -50,6 +50,7 @@ extern ValuePairsTransformSet *last_vp_transset;
 
 %token KW_MONGODB
 %token KW_COLLECTION
+%token KW_SERVERS
 
 %%
 
@@ -67,8 +68,7 @@ afmongodb_options
 	;
 
 afmongodb_option
-        : KW_HOST '(' string ')'		{ afmongodb_dd_set_host(last_driver, $3); free($3); }
-        | KW_PORT '(' LL_NUMBER ')'		{ afmongodb_dd_set_port(last_driver, $3); }
+	: KW_SERVERS '(' string_list ')'	{ afmongodb_dd_set_servers(last_driver, $3); }
 	| KW_DATABASE '(' string ')'		{ afmongodb_dd_set_database(last_driver, $3); free($3); }
 	| KW_COLLECTION '(' string ')'		{ afmongodb_dd_set_collection(last_driver, $3); free($3); }
 	| KW_USERNAME '(' string ')'		{ afmongodb_dd_set_user(last_driver, $3); free($3); }
