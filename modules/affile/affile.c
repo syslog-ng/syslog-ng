@@ -619,10 +619,6 @@ affile_sd_new(gchar *filename, guint32 flags)
   self->super.super.super.free_fn = affile_sd_free;
   log_reader_options_defaults(&self->reader_options);
   self->reader_options.parse_options.flags |= LP_LOCAL;
-  if ((self->flags & AFFILE_PIPE) == 0)
-    {
-      self->reader_options.super.flags |= LOF_POS_TRACKING;
-    }
 
   if (is_wildcard_filename(filename))
     {
