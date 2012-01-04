@@ -27,6 +27,7 @@
 
 #include "logtransport.h"
 #include "persist-state.h"
+#include "tlscontext.h"
 
 #include <regex.h>
 
@@ -218,6 +219,7 @@ typedef struct _LogProtoServerOptions
 struct _LogProtoFactory
 {
   LogProto *(*create)(LogTransport *transport, LogProtoOptions *options, GlobalConfig *cfg);
+  LogTransport *(*construct_transport)(LogProtoOptions *options, int fd, int flags, TLSContext *tlscontext);
   guint default_port;
 };
 

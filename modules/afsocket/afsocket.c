@@ -196,17 +196,28 @@ afsocket_sc_init(LogPipe *s)
   read_flags = ((self->owner->flags & AFSOCKET_DGRAM) ? LTF_RECV : 0);
   if (!self->reader)
     {
-#if ENABLE_SSL
-      if (self->owner->tls_context)
+      if (self->owner->proto_factory->construct_transport == NULL)
         {
-          TLSSession *tls_session = tls_context_setup_session(self->owner->tls_context);
-          if (!tls_session)
-            return FALSE;
-          transport = log_transport_tls_new(tls_session, self->sock, read_flags);
+#if ENABLE_SSL
+          if (self->owner->tls_context)
+            {
+              TLSSession *tls_session = tls_context_setup_session(self->owner->tls_context);
+              if (!tls_session)
+                return FALSE;
+              transport = log_transport_tls_new(tls_session, self->sock, read_flags);
+            }
+          else
+#endif
+            transport = log_transport_plain_new(self->sock, read_flags);
         }
       else
-#endif
-        transport = log_transport_plain_new(self->sock, read_flags);
+        {
+          transport = self->owner->proto_factory->construct_transport((LogProtoOptions *)options,self->sock, read_flags, self->owner->tls_context);
+        }
+      if (!transport)
+        {
+          return FALSE;
+        }
 
       if (self->owner->reader_options.padding)
         {
@@ -222,7 +233,6 @@ afsocket_sc_init(LogPipe *s)
           options->opts.prefix_matcher = self->owner->prefix_matcher;
           options->opts.garbage_matcher = self->owner->garbage_matcher;
         }
-
       proto = self->owner->proto_factory->create(transport,(LogProtoOptions *)options, log_pipe_get_config(&self->owner->super.super.super));
       if (!proto)
         {
@@ -1107,23 +1117,34 @@ afsocket_dd_connected(AFSocketDestDriver *self)
               NULL);
 
 
-#if ENABLE_SSL
-  if (self->tls_context)
+  if (self->proto_factory->construct_transport)
     {
-      TLSSession *tls_session;
-
-      tls_session = tls_context_setup_session(self->tls_context);
-      if (!tls_session)
-        {
-          goto error_reconnect;
-        }
-
-      tls_session_set_verify(tls_session, afsocket_dd_tls_verify_callback, self, NULL);
-      transport = log_transport_tls_new(tls_session, self->fd, transport_flags);
+      transport = self->proto_factory->construct_transport(&self->proto_options,self->fd,transport_flags, self->tls_context);
     }
   else
+    {
+#if ENABLE_SSL
+      if (self->tls_context)
+        {
+          TLSSession *tls_session;
+
+          tls_session = tls_context_setup_session(self->tls_context);
+          if (!tls_session)
+            {
+              goto error_reconnect;
+            }
+
+          tls_session_set_verify(tls_session, afsocket_dd_tls_verify_callback, self, NULL);
+          transport = log_transport_tls_new(tls_session, self->fd, transport_flags);
+        }
+      else
 #endif
-    transport = log_transport_plain_new(self->fd, transport_flags);
+        transport = log_transport_plain_new(self->fd, transport_flags);
+    }
+  if (!transport)
+    {
+      goto error_reconnect;
+    }
 
   self->proto_options.super.size = self->writer_options.flush_lines;
 
