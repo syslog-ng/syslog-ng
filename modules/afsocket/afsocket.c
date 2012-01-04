@@ -236,6 +236,7 @@ afsocket_sc_init(LogPipe *s)
       proto = self->owner->proto_factory->create(transport,(LogProtoOptions *)options, log_pipe_get_config(&self->owner->super.super.super));
       if (!proto)
         {
+          log_transport_free(transport);
           return FALSE;
         }
       self->reader = log_reader_new(proto);
@@ -568,7 +569,7 @@ afsocket_sd_close_connection(AFSocketSourceDriver *self, AFSocketSourceConnectio
                NULL);
 
   /* Close the fd of the reader */
-  log_reader_reopen(sc->reader, NULL, sc, &self->reader_options, 1,  afsocket_sc_stats_source(sc), self->super.super.id, afsocket_sc_stats_instance(sc), FALSE);
+  log_reader_reopen(sc->reader, NULL, &sc->super, &self->reader_options, 1,  afsocket_sc_stats_source(sc), self->super.super.id, afsocket_sc_stats_instance(sc), FALSE);
   log_pipe_deinit(&sc->super);
   afsocket_sd_remove_and_kill_connection(self, sc);
   self->num_connections--;
@@ -1148,7 +1149,7 @@ afsocket_dd_connected(AFSocketDestDriver *self)
 
   self->proto_options.super.size = self->writer_options.flush_lines;
 
-  proto = self->proto_factory->create(transport,&self->proto_options, log_pipe_get_config(&self->super.super));
+  proto = self->proto_factory->create(transport,&self->proto_options, log_pipe_get_config(&self->super.super.super));
   if (!proto)
     {
       goto error_reconnect;
