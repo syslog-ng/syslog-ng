@@ -549,7 +549,7 @@ dest_afsyslog_option
               {
                 if (p->parser)
                   {
-                    value = plugin_parse_config(p, configuration, &@3, &((AFSocketSourceDriver *) last_driver)->proto_options);
+                    value = plugin_parse_config(p, configuration, &@3, &((AFSocketDestDriver *) last_driver)->proto_options);
                   }
                 else
                   {
