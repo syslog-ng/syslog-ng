@@ -122,7 +122,36 @@ send_plain(void *user_data, void *buf, size_t length)
 static ssize_t
 send_ssl(void *user_data, void *buf, size_t length)
 {
-  return SSL_write((SSL *)user_data, buf, length);
+  SSL *fd = (SSL *)user_data;
+  int id = GPOINTER_TO_INT(g_thread_self()->data);
+  gsize len = 0;
+  static gchar expected[100] = {0};
+  int res = SSL_write(fd, buf, length);
+  if (rltp)
+    {
+      rltp_chunk_counters[id] += 1;
+      if (rltp_chunk_counters[id] == rltp_batch_size)
+        {
+          char cbuf[256];
+          SSL_write(fd, ".\n",2);
+          SSL_read(fd, cbuf, 256);
+          len = g_snprintf(expected,100,"220 RECEIVED %d\n",rltp_chunk_counters[id]);
+          if (strncmp(cbuf,expected,len)!=0)
+            {
+              fprintf(stderr,"EXIT BAD SERVER REPLY: %s EXPECTED: %s",cbuf,expected);
+              return -1;
+            }
+          SSL_write(fd, "DATA\n", 5);
+          SSL_read(fd, cbuf, 256);
+          if (strncmp(cbuf,"220 READY\n",strlen("220 READY\n"))!=0)
+            {
+              fprintf(stderr,"EXIT BAD SERVER REPLY: %s\n",cbuf);
+              return -1;
+            }
+          rltp_chunk_counters[id] = 0;
+        }
+    }
+  return res;
 }
 #endif
 
@@ -526,6 +555,41 @@ gen_messages(send_data_t send_func, void *send_func_ud, int thread_id, FILE *rea
 }
 
 #if ENABLE_SSL
+static void
+release_ssl_transport(void *ssl_connect)
+{
+  SSL *ssl = (SSL *)ssl_connect;
+  if (ssl)
+    {
+      SSL_shutdown (ssl);
+      /* Clean up. */
+      SSL_free (ssl);
+    }
+}
+
+static void*
+set_ssl_transport(int sock)
+{
+  int ret = 0;
+  int err;
+  SSL *ssl;
+  if (NULL == (ssl = SSL_new(ssl_ctx)))
+    {
+      fprintf(stderr,"Can't create ssl object!\n");
+      return NULL;
+    }
+
+  SSL_set_fd (ssl, sock);
+  if (-1 == (err = SSL_connect(ssl)))
+    {
+      fprintf(stderr, "SSL connect failed\n");
+      ERR_print_errors_fp(stderr);
+      release_ssl_transport(ssl);
+      return NULL;
+    }
+  return ssl;
+}
+
 static guint64
 gen_messages_ssl(int sock, int id, FILE *readfrom)
 {
@@ -554,6 +618,17 @@ gen_messages_ssl(int sock, int id, FILE *readfrom)
 }
 #else
 #define gen_messages_ssl gen_messages_plain
+static void*
+set_ssl_transport(int sock)
+{
+  return NULL;
+}
+
+static void
+release_ssl_transport(void *ssl_connect)
+{
+  return;
+}
 #endif
 
 static guint64
@@ -657,10 +732,10 @@ read_rltp_options(int sock,gint *compression_level,gint *require_tls,gint *seria
           options+=strlen("compress_level") + 1;
           *compression_level = strtod(options,NULL);
         }
-      else if (strncmp(options,"tls_required",strlen("tls_required")) == 0)
+      else if (strncmp(options,"STARTTLS",strlen("STARTTLS")) == 0)
         {
-          options+=strlen("tls_required") + 1;
-          *require_tls = strtod(options,NULL);
+          options+=strlen("STARTTLS") + 1;
+          *require_tls = 1;
         }
       else if (strncmp(options,"serialized",strlen("serialized")) == 0)
         {
@@ -681,6 +756,7 @@ active_thread(gpointer st)
   struct timeval start, end, diff_tv;
   FILE *readfrom = NULL;
   GString *ehlo = g_string_sized_new(64);
+  void *ssl_transport = NULL;
 
 
   sock = connect_server();
@@ -707,11 +783,36 @@ active_thread(gpointer st)
       read_sock(sock, cbuf ,256);
       send(sock, ehlo->str, ehlo->len, 0);
       read_rltp_options(sock,&compression_level,&require_tls,&serialization);
-      send(sock, "DATA\n", 5, 0);
-      read_sock(sock, cbuf ,256);
-      if (strncmp(cbuf,"220 READY\n",strlen("220 READY\n"))!=0)
+      if (require_tls && usessl)
         {
-          fprintf(stderr,"EXIT BAD SERVER REPLY: %s\n",cbuf);
+          send(sock, "STARTTLS\n",9,0);
+          read_sock(sock, cbuf ,256);
+          ssl_transport = set_ssl_transport(sock);
+          if (!ssl_transport)
+            {
+              fprintf(stderr,"Can't create ssl connection\n");
+              usessl = FALSE;
+              exit(1);
+              goto use_plain_transport;
+            }
+#if ENABLE_SSL
+          SSL_write(ssl_transport, "DATA\n", 5);
+          SSL_read(ssl_transport, cbuf ,256);
+          if (strncmp(cbuf,"220 READY\n",strlen("220 READY\n"))!=0)
+            {
+              fprintf(stderr,"EXIT BAD SERVER REPLY: %s\n",cbuf);
+            }
+#endif
+        }
+      else
+        {
+use_plain_transport:
+          send(sock, "DATA\n", 5, 0);
+          read_sock(sock, cbuf ,256);
+          if (strncmp(cbuf,"220 READY\n",strlen("220 READY\n"))!=0)
+            {
+              fprintf(stderr,"EXIT BAD SERVER REPLY: %s\n",cbuf);
+            }
         }
     }
 
@@ -736,7 +837,18 @@ active_thread(gpointer st)
     }
 
   gettimeofday(&start, NULL);
-  count = (usessl ? gen_messages_ssl : gen_messages_plain)(sock, id, readfrom);
+  if (!rltp)
+    {
+      count = (usessl ? gen_messages_ssl : gen_messages_plain)(sock, id, readfrom);
+    }
+  else if (usessl)
+    {
+      count = gen_messages(send_ssl, ssl_transport, id, readfrom);
+    }
+  else
+    {
+      count = gen_messages_plain(sock, id, readfrom);
+    }
   if (rltp && rltp_chunk_counters[id])
     {
       char cbuf[256];
