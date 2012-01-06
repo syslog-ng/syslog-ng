@@ -461,14 +461,9 @@ if test "x$blb_cv_keepcaps" = "xyes"; then
 	AC_DEFINE(HAVE_PR_SET_KEEPCAPS, 1, [have PR_SET_KEEPCAPS])
 fi
 
-dnl Check for the "environ" global variable
-AC_TRY_LINK([], [
-extern char **environ;
-char *p;
-
-p = environ[0];
-],AC_DEFINE(HAVE_ENVIRON, [1], [Specifies whether the environ global variable exists]))
-
+if test "$ostype" != "Darwin" ; then
+	AC_DEFINE(HAVE_ENVIRON, [1], [Specifies whether the environ global variable exists])
+fi
 
 dnl ***************************************************************************
 dnl Checks for libraries
