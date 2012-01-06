@@ -451,7 +451,18 @@ log_proto_file_writer_new(LogTransport *transport, gint flush_lines)
   return &self->super;
 }
 
-
+typedef struct _AckDataFileState
+{
+  AckDataBase super;
+  union{
+    struct{
+      gint32 pending_buffer_pos;
+      gint64 pending_raw_stream_pos;
+      gint32 pending_raw_buffer_size;
+    }file_state;
+    char other_state[MAX_STATE_DATA_LENGTH];
+  };
+} AckDataFileState;
 
 typedef struct _LogProtoBufferedServerState
 {
@@ -1352,12 +1363,12 @@ log_proto_buffered_server_get_state_info(LogProto *s,gpointer user_data)
   LogProtoBufferedServer *self = (LogProtoBufferedServer *) s;
   LogProtoBufferedServerState *state = log_proto_buffered_server_get_state(self);
 
-  AckData *data_state=  (AckData*) user_data;
+  AckDataFileState *data_state=  (AckDataFileState*) user_data;
 
   data_state->file_state.pending_buffer_pos = state->pending_buffer_pos;
   data_state->file_state.pending_raw_stream_pos = state->pending_raw_stream_pos;
   data_state->file_state.pending_raw_buffer_size = state->pending_raw_buffer_size;
-  data_state->persist_handle = self->persist_handle;
+  data_state->super.persist_handle = self->persist_handle;
   log_proto_buffered_server_put_state(self);
 }
 
@@ -1383,9 +1394,9 @@ log_proto_buffered_server_queued(LogProto *s)
 gboolean
 log_proto_buffered_server_ack(PersistState *persist_state,gpointer user_data)
 {
-  AckData *data_state = (AckData*) user_data;
+  AckDataFileState *data_state = (AckDataFileState*) user_data;
 
-  LogProtoBufferedServerState *state = persist_state_map_entry(persist_state, data_state->persist_handle);
+  LogProtoBufferedServerState *state = persist_state_map_entry(persist_state, data_state->super.persist_handle);
 
   state->buffer_pos = data_state->file_state.pending_buffer_pos;
   state->raw_stream_pos = data_state->file_state.pending_raw_stream_pos;
@@ -1398,7 +1409,7 @@ log_proto_buffered_server_ack(PersistState *persist_state,gpointer user_data)
             evt_tag_int("buffer_end", state->pending_buffer_end),
             evt_tag_int("buffer_cached_eol", state->buffer_cached_eol),
             NULL);
-  persist_state_unmap_entry(persist_state, data_state->persist_handle);
+  persist_state_unmap_entry(persist_state, data_state->super.persist_handle);
   return TRUE;
 }
 

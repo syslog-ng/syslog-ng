@@ -57,10 +57,10 @@ log_source_checking_ack_data_list(LogSource *s, gpointer *d,guint64 *cont)
   if (last>=s->options->init_window_size)
     last=0;
   *cont = 0;
-  while((!s->ack_list[last].not_acked)&&(s->ack_list[last].not_sent))
+  while((!s->ack_list[last].super.not_acked)&&(s->ack_list[last].super.not_sent))
   {
     *d = &(s->ack_list[last]);
-    s->ack_list[last].not_sent = FALSE;
+    s->ack_list[last].super.not_sent = FALSE;
     (*cont)++;
     last++;
     if (last==s->options->init_window_size)
@@ -97,7 +97,7 @@ log_source_msg_ack(LogMessage *msg, gpointer user_data, gboolean need_pos_tracki
 
       g_static_mutex_lock(&(self->g_mutex_ack));
       msg_list_pos = msg->ack_id;
-      self->ack_list[msg_list_pos].not_acked = FALSE;
+      self->ack_list[msg_list_pos].super.not_acked = FALSE;
 
       if (log_source_checking_ack_data_list(self,(gpointer)&data,&continual))
         {
@@ -277,9 +277,9 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
       if (!(self->ack_list))
         self->ack_list = g_new0(AckData,self->options->init_window_size);
 
-      self->ack_list[msg_list_pos].not_acked = TRUE;
-      self->ack_list[msg_list_pos].not_sent = TRUE;
-      self->ack_list[msg_list_pos].id = self->msg_id;
+      self->ack_list[msg_list_pos].super.not_acked = TRUE;
+      self->ack_list[msg_list_pos].super.not_sent = TRUE;
+      self->ack_list[msg_list_pos].super.id = self->msg_id;
       log_source_get_state(self, msg_list_pos);
       msg->ack_id = msg_list_pos;
       self->msg_id = (self->msg_id+1) % self->options->init_window_size;

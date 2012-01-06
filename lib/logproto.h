@@ -33,21 +33,20 @@
 
 #define MAX_STATE_DATA_LENGTH 128
 
-typedef struct _AckData
+typedef struct _AckDataBase
 {
   gboolean not_acked;
   gboolean not_sent;
   guint64 id;
   PersistEntryHandle persist_handle;
-  union{
-    struct{
-      gint32 pending_buffer_pos;
-      gint64 pending_raw_stream_pos;
-      gint32 pending_raw_buffer_size;
-    }file_state;
-    char other_state[MAX_STATE_DATA_LENGTH];
-  };
+}AckDataBase;
+
+typedef struct _AckData
+{
+  AckDataBase super;
+  char other_state[MAX_STATE_DATA_LENGTH];
 }AckData;
+
 #define LOG_PROTO_OPTIONS_SIZE 256
 
 typedef enum
