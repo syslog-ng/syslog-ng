@@ -212,6 +212,10 @@ log_proto_text_client_post(LogProto *s, LogMessage *logmsg, guchar *msg, gsize m
       g_free(msg);
       *consumed = TRUE;
     }
+  if (self->super.ack_callback)
+    {
+      self->super.ack_callback(1,self->super.ack_user_data);
+    }
   return LPS_SUCCESS;
 
  write_error:
@@ -391,7 +395,10 @@ log_proto_file_writer_post(LogProto *s, LogMessage *logmsg, guchar *msg, gsize m
       /* we have reached the max buffer size -> we need to write the messages */
       return log_proto_file_writer_flush(s);
     }
-
+  if (self->super.ack_callback)
+    {
+      self->super.ack_callback(1,self->super.ack_user_data);
+    }
   return LPS_SUCCESS;
 
 write_error:
