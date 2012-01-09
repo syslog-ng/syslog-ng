@@ -758,7 +758,14 @@ if test "x$OPENSSL_LIBS" != "x"; then
         if test "x$enable_ssl" = "xauto"; then
 	        enable_ssl="yes"
         fi
+		_old_CFLAGS="$CFLAGS"
+        CFLAGS="$CFLAGS $OPENSSL_CFLAGS"
+        _old_CPPFLAGS="$CPPFLAGS"
+        # FIXME: this might backfire with non-GCC cpp's ... - Folti
+        CPPFLAGS="$CPPFLAGS $OPENSSL_CFLAGS"
         AC_CHECK_HEADERS(openssl/ts.h)
+        CFLAGS="$_old_CFLAGS"
+        CPPFLAGS="$_old_CPPFLAGS"
         if test "x$enable_timestamping" = "xauto"; then
                 if test "x$ac_cv_header_openssl_ts_h" = "xyes"; then
                         echo "ENABLE TIMESTAMPING"
