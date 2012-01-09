@@ -800,6 +800,18 @@ main_loop_add_options(GOptionContext *ctx)
 #else
   main_loop_io_workers.max_threads = 2;
 #endif
-
   g_option_context_add_main_entries(ctx, main_loop_options, NULL);
+}
+
+void
+main_loop_maximalize_worker_threads(int max_threads)
+{
+  if (max_threads == -1)
+    return;
+  if (max_threads == 0)
+    main_loop_io_workers.max_threads = 2;
+  else if (max_threads < main_loop_io_workers.max_threads)
+    main_loop_io_workers.max_threads = max_threads;
+
+  log_queue_set_max_threads(main_loop_io_workers.max_threads);
 }
