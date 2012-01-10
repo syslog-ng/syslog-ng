@@ -57,6 +57,12 @@ log_json_parser_process (LogParser *s, LogMessage *msg, const gchar *input)
   key = scratch_buffer_acquire ();
   value = scratch_buffer_acquire ();
 
+  if (!jso)
+    {
+      msg_error ("Unparsable JSON stream encountered", NULL);
+      return FALSE;
+    }
+
   json_object_object_foreachC (jso, itr)
     {
       gboolean parsed = FALSE;
