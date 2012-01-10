@@ -1188,6 +1188,9 @@ log_proto_buffered_server_fetch(LogProto *s, const guchar **msg, gsize *msg_len,
   if (sa)
     *sa = NULL;
 
+  if (state->buffer_cached_eol == (guint32) -1)
+    state->buffer_cached_eol = 0;
+
   if (flush)
   {
     /* in multiline, the fill has been restarted: return the remaining message content */
@@ -1809,9 +1812,6 @@ log_proto_text_server_fetch_from_buf(LogProtoBufferedServer *s, const guchar *bu
   gboolean result = FALSE;
   gboolean waited_for_prefix;
   guint32 new_pos = 0;
-
-  if (state->buffer_cached_eol == (guint32) -1)
-    state->buffer_cached_eol = 0;
 
   if (flush_the_rest)
     {
