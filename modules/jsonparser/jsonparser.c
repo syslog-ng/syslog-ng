@@ -47,77 +47,106 @@ log_json_parser_set_prefix (LogParser *p, const gchar *prefix)
 static void
 log_json_parser_process_object (struct json_object *jso,
                                 const gchar *prefix,
+                                LogMessage *msg);
+
+static void
+log_json_parser_process_single (struct json_object *jso,
+                                const gchar *prefix,
+                                const gchar *obj_key,
                                 LogMessage *msg)
 {
-  struct json_object_iter itr;
   ScratchBuffer *key, *value;
+  gboolean parsed = FALSE;
 
   key = scratch_buffer_acquire ();
   value = scratch_buffer_acquire ();
 
-  json_object_object_foreachC (jso, itr)
+  switch (json_object_get_type (jso))
     {
-      gboolean parsed = FALSE;
+    case json_type_boolean:
+      parsed = TRUE;
+      if (json_object_get_boolean (jso))
+        g_string_assign (sb_string (value), "true");
+      else
+        g_string_assign (sb_string (value), "false");
+      break;
+    case json_type_double:
+      parsed = TRUE;
+      g_string_printf (sb_string (value), "%f",
+                       json_object_get_double (jso));
+      break;
+    case json_type_int:
+      parsed = TRUE;
+      g_string_printf (sb_string (value), "%i",
+                       json_object_get_int (jso));
+      break;
+    case json_type_string:
+      parsed = TRUE;
+      g_string_assign (sb_string (value),
+                       json_object_get_string (jso));
+      break;
+    case json_type_object:
+      g_string_assign (sb_string (key), prefix);
+      g_string_append (sb_string (key), obj_key);
+      g_string_append_c (sb_string (key), '.');
+      log_json_parser_process_object (jso, sb_string (key)->str, msg);
+      break;
+    case json_type_array:
+      {
+        gint i, plen;
 
-      switch (json_object_get_type (itr.val))
-        {
-        case json_type_boolean:
-          parsed = TRUE;
-          if (json_object_get_boolean (itr.val))
-            g_string_assign (sb_string (value), "true");
-          else
-            g_string_assign (sb_string (value), "false");
-          break;
-        case json_type_double:
-          parsed = TRUE;
-          g_string_printf (sb_string (value), "%f",
-                           json_object_get_double (itr.val));
-          break;
-        case json_type_int:
-          parsed = TRUE;
-          g_string_printf (sb_string (value), "%i",
-                           json_object_get_int (itr.val));
-          break;
-        case json_type_string:
-          parsed = TRUE;
-          g_string_assign (sb_string (value),
-                           json_object_get_string (itr.val));
-          break;
-        case json_type_object:
-          g_string_assign (sb_string (key), prefix);
-          g_string_append (sb_string (key), itr.key);
-          g_string_append_c (sb_string (key), '.');
-          log_json_parser_process_object (itr.val, sb_string (key)->str, msg);
-          break;
-        case json_type_array:
-          msg_error ("JSON parser does not support arrays yet, "
-                     "skipping",
-                     evt_tag_str ("key", itr.key), NULL);
-          break;
-        default:
-          msg_error ("JSON parser encountered an unknown type, skipping",
-                     evt_tag_str ("key", itr.key), NULL);
-          break;
-        }
+        g_string_assign (sb_string (key), obj_key);
+        g_string_append_c (sb_string (key), '.');
 
-      if (parsed)
-        {
-          if (prefix)
-            {
-              g_string_assign (sb_string (key), prefix);
-              g_string_append (sb_string (key), itr.key);
-              log_msg_set_value (msg,
-                                 log_msg_get_value_handle (sb_string (key)->str),
-                                 sb_string (value)->str, sb_string (value)->len);
-            }
-          else
-            log_msg_set_value (msg,
-                               log_msg_get_value_handle (itr.key),
-                               sb_string (value)->str, sb_string (value)->len);
-        }
+        plen = sb_string (key)->len;
+
+        for (i = 0; i < json_object_array_length (jso); i++)
+          {
+            g_string_truncate (sb_string (key), plen);
+            g_string_append_printf (sb_string (key), "%d", i);
+            log_json_parser_process_single (json_object_array_get_idx (jso, i),
+                                            prefix,
+                                            sb_string (key)->str, msg);
+          }
+        break;
+      }
+    default:
+      msg_error ("JSON parser encountered an unknown type, skipping",
+                 evt_tag_str ("key", obj_key), NULL);
+      break;
     }
+
+  if (parsed)
+    {
+      if (prefix)
+        {
+          g_string_assign (sb_string (key), prefix);
+          g_string_append (sb_string (key), obj_key);
+          log_msg_set_value (msg,
+                             log_msg_get_value_handle (sb_string (key)->str),
+                             sb_string (value)->str, sb_string (value)->len);
+        }
+      else
+        log_msg_set_value (msg,
+                           log_msg_get_value_handle (obj_key),
+                           sb_string (value)->str, sb_string (value)->len);
+    }
+
   scratch_buffer_release (key);
   scratch_buffer_release (value);
+}
+
+static void
+log_json_parser_process_object (struct json_object *jso,
+                                const gchar *prefix,
+                                LogMessage *msg)
+{
+  struct json_object_iter itr;
+
+  json_object_object_foreachC (jso, itr)
+    {
+      log_json_parser_process_single (itr.val, prefix, itr.key, msg);
+    }
 }
 
 static gboolean
@@ -125,7 +154,6 @@ log_json_parser_process (LogParser *s, LogMessage *msg, const gchar *input)
 {
   LogJSONParser *self = (LogJSONParser *) s;
   struct json_object *jso;
-  struct json_object_iter itr;
 
   jso = json_tokener_parse (input);
 
