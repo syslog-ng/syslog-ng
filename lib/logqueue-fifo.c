@@ -374,11 +374,10 @@ log_queue_fifo_pop_head(LogQueue *s, LogMessage **msg, LogPathOptions *path_opti
 
   if (push_to_backlog)
     {
+      node->ack_needed = FALSE;
       log_msg_ref(*msg);
-      log_msg_add_ack(*msg, path_options);
       list_add_tail(&node->list, &self->qbacklog);
       self->qbacklog_len++;
-      g_assert(self->qbacklog_len == count_list(&self->qbacklog));
     }
   if (!ignore_throttle)
     {
@@ -396,7 +395,6 @@ log_queue_fifo_ack_backlog(LogQueue *s, gint n)
 {
   LogQueueFifo *self = (LogQueueFifo *) s;
   LogMessage *msg;
-  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
   gint i;
 
   log_queue_assert_output_thread(s);
@@ -405,14 +403,11 @@ log_queue_fifo_ack_backlog(LogQueue *s, gint n)
       LogMessageQueueNode *node;
       node = list_entry(self->qbacklog.next, LogMessageQueueNode, list);
       msg = node->msg;
-      path_options.ack_needed = node->ack_needed;
 
       list_del(&node->list);
       log_msg_free_queue_node(node);
       self->qbacklog_len--;
-      g_assert(self->qbacklog_len == count_list(&self->qbacklog));
 
-      log_msg_ack(msg, &path_options, TRUE);
       log_msg_unref(msg);
     }
 }
@@ -451,19 +446,10 @@ log_queue_fifo_rewind_backlog(LogQueue *s, gint n,gboolean ack_and_ref)
        * and pop_head add ack and ref when it pushes the message into the backlog
        * The rewind must decrease the ack and ref too
        */
-      msg = node->msg;
-      path_options.ack_needed = node->ack_needed;
-      if (ack_and_ref)
-        {
-          log_msg_ack(msg,&path_options, TRUE);
-          log_msg_unref(msg);
-        }
-
       list_del_init(&node->list);
       list_add(&node->list,&self->qoverflow_output);
 
       self->qbacklog_len--;
-      g_assert(self->qbacklog_len == count_list(&self->qbacklog));
       self->qoverflow_output_len++;
       stats_counter_inc(self->super.stored_messages);
     }

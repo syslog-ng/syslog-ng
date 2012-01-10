@@ -1114,6 +1114,11 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
               if ((self->options->options & LWO_IGNORE_ERRORS) == 0)
                 {
                   msg_set_context(NULL);
+                  if (self->flags & LW_KEEP_ONE_PENDING)
+                    {
+                      log_msg_ack(lm, &path_options,TRUE);
+                      log_msg_unref(lm);
+                    }
                   log_msg_refcache_stop(FALSE);
                   return FALSE;
                 }
@@ -1145,17 +1150,24 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
             {
               if (self->pending_message_count > 0)
                 {
+                  log_msg_ack(lm, &path_options,TRUE);
+                  log_msg_unref(lm);
                   log_queue_rewind_backlog(self->queue, 1, TRUE);
                   g_assert(self->pending_message_count > 0);
                   self->pending_message_count--;
+                  log_msg_refcache_stop(TRUE);
+                }
+              else
+                {
+                  g_assert_not_reached();
                 }
             }
           else
             {
               log_queue_push_head(self->queue, lm, &path_options);
+              log_msg_refcache_stop(FALSE);
             }
           msg_set_context(NULL);
-          log_msg_refcache_stop(FALSE);
           break;
         }
       msg_set_context(NULL);
