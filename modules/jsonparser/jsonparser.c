@@ -44,18 +44,87 @@ log_json_parser_set_prefix (LogParser *p, const gchar *prefix)
   self->prefix = g_strdup (prefix);
 }
 
+static void
+log_json_parser_process_object (struct json_object *jso,
+                                const gchar *prefix,
+                                LogMessage *msg)
+{
+  struct json_object_iter itr;
+  ScratchBuffer *key, *value;
+
+  key = scratch_buffer_acquire ();
+  value = scratch_buffer_acquire ();
+
+  json_object_object_foreachC (jso, itr)
+    {
+      gboolean parsed = FALSE;
+
+      switch (json_object_get_type (itr.val))
+        {
+        case json_type_boolean:
+          msg_info ("JSON parser does not support boolean types yet, skipping",
+                    evt_tag_str ("key", itr.key), NULL);
+          break;
+        case json_type_double:
+          parsed = TRUE;
+          g_string_printf (sb_string (value), "%f",
+                           json_object_get_double (itr.val));
+          break;
+        case json_type_int:
+          parsed = TRUE;
+          g_string_printf (sb_string (value), "%i",
+                           json_object_get_int (itr.val));
+          break;
+        case json_type_string:
+          parsed = TRUE;
+          g_string_assign (sb_string (value),
+                           json_object_get_string (itr.val));
+          break;
+        case json_type_object:
+          g_string_assign (sb_string (key), prefix);
+          g_string_append (sb_string (key), itr.key);
+          g_string_append_c (sb_string (key), '.');
+          log_json_parser_process_object (itr.val, sb_string (key)->str, msg);
+          break;
+        case json_type_array:
+          msg_error ("JSON parser does not support arrays yet, "
+                     "skipping",
+                     evt_tag_str ("key", itr.key), NULL);
+          break;
+        default:
+          msg_error ("JSON parser encountered an unknown type, skipping",
+                     evt_tag_str ("key", itr.key), NULL);
+          break;
+        }
+
+      if (parsed)
+        {
+          if (prefix)
+            {
+              g_string_assign (sb_string (key), prefix);
+              g_string_append (sb_string (key), itr.key);
+              log_msg_set_value (msg,
+                                 log_msg_get_value_handle (sb_string (key)->str),
+                                 sb_string (value)->str, sb_string (value)->len);
+            }
+          else
+            log_msg_set_value (msg,
+                               log_msg_get_value_handle (itr.key),
+                               sb_string (value)->str, sb_string (value)->len);
+        }
+    }
+  scratch_buffer_release (key);
+  scratch_buffer_release (value);
+}
+
 static gboolean
 log_json_parser_process (LogParser *s, LogMessage *msg, const gchar *input)
 {
   LogJSONParser *self = (LogJSONParser *) s;
   struct json_object *jso;
   struct json_object_iter itr;
-  ScratchBuffer *key, *value;
 
   jso = json_tokener_parse (input);
-
-  key = scratch_buffer_acquire ();
-  value = scratch_buffer_acquire ();
 
   if (!jso)
     {
@@ -63,61 +132,8 @@ log_json_parser_process (LogParser *s, LogMessage *msg, const gchar *input)
       return FALSE;
     }
 
-  json_object_object_foreachC (jso, itr)
-    {
-      gboolean parsed = FALSE;
+  log_json_parser_process_object (jso, self->prefix, msg);
 
-      switch (json_object_get_type (itr.val))
-	{
-	case json_type_boolean:
-	  msg_info ("JSON parser does not support boolean types yet, skipping",
-		    evt_tag_str ("key", itr.key), NULL);
-	  break;
-	case json_type_double:
-	  parsed = TRUE;
-          g_string_printf (sb_string (value), "%f",
-                           json_object_get_double (itr.val));
-	  break;
-	case json_type_int:
-	  parsed = TRUE;
-          g_string_printf (sb_string (value), "%i",
-                           json_object_get_int (itr.val));
-	  break;
-	case json_type_string:
-	  parsed = TRUE;
-          g_string_assign (sb_string (value),
-                           json_object_get_string (itr.val));
-	  break;
-	case json_type_object:
-	case json_type_array:
-	  msg_error ("JSON parser does not support objects and arrays yet, "
-		     "skipping",
-		     evt_tag_str ("key", itr.key), NULL);
-	  break;
-	default:
-	  msg_error ("JSON parser encountered an unknown type, skipping",
-		     evt_tag_str ("key", itr.key), NULL);
-	  break;
-	}
-
-      if (parsed)
-	{
-	  if (self->prefix)
-	    {
-              g_string_assign (sb_string (key), self->prefix);
-              g_string_append (sb_string (key), itr.key);
-	      log_msg_set_value (msg,
-                                 log_msg_get_value_handle (sb_string (key)->str),
-                                 sb_string (value)->str, sb_string (value)->len);
-	    }
-	  else
-	    log_msg_set_value (msg,
-			       log_msg_get_value_handle (itr.key),
-			       sb_string (value)->str, sb_string (value)->len);
-	}
-    }
-  scratch_buffer_release (key);
-  scratch_buffer_release (value);
   json_object_put (jso);
 
   return TRUE;
