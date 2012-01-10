@@ -811,7 +811,12 @@ main_loop_maximalize_worker_threads(int max_threads)
   if (max_threads == 0)
     main_loop_io_workers.max_threads = 2;
   else if (max_threads < main_loop_io_workers.max_threads)
-    main_loop_io_workers.max_threads = max_threads;
+    {
+      main_loop_io_workers.max_threads = max_threads;
+      msg_warning("WARNING: Maximum number of worker threads limited by license",
+                    evt_tag_int("Max-Processors", max_threads),
+                    NULL);
+    }
 
   log_queue_set_max_threads(main_loop_io_workers.max_threads);
 }
