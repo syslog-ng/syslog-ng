@@ -62,8 +62,11 @@ log_json_parser_process_object (struct json_object *jso,
       switch (json_object_get_type (itr.val))
         {
         case json_type_boolean:
-          msg_info ("JSON parser does not support boolean types yet, skipping",
-                    evt_tag_str ("key", itr.key), NULL);
+          parsed = TRUE;
+          if (json_object_get_boolean (itr.val))
+            g_string_assign (sb_string (value), "true");
+          else
+            g_string_assign (sb_string (value), "false");
           break;
         case json_type_double:
           parsed = TRUE;
