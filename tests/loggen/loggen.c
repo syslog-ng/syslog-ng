@@ -99,7 +99,7 @@ send_plain(void *user_data, void *buf, size_t length)
           char cbuf[256];
           send(fd, ".\n",2,0);
           read_sock(fd, cbuf, 256);
-          len = g_snprintf(expected,100,"220 RECEIVED %d\n",rltp_chunk_counters[id]);
+          len = g_snprintf(expected,100,"250 Received %d\n",rltp_chunk_counters[id]);
           if (strncmp(cbuf,expected,len)!=0)
             {
               fprintf(stderr,"EXIT BAD SERVER REPLY: %s EXPECTED: %s",cbuf,expected);
@@ -107,7 +107,7 @@ send_plain(void *user_data, void *buf, size_t length)
             }
           send(fd, "DATA\n", 5, 0);
           read_sock(fd, cbuf, 256);
-          if (strncmp(cbuf,"220 READY\n",strlen("220 READY\n"))!=0)
+          if (strncmp(cbuf,"250 Ready\n",strlen("250 Ready\n"))!=0)
             {
               fprintf(stderr,"EXIT BAD SERVER REPLY: %s\n",cbuf);
               return -1;
@@ -135,7 +135,7 @@ send_ssl(void *user_data, void *buf, size_t length)
           char cbuf[256];
           SSL_write(fd, ".\n",2);
           SSL_read(fd, cbuf, 256);
-          len = g_snprintf(expected,100,"220 RECEIVED %d\n",rltp_chunk_counters[id]);
+          len = g_snprintf(expected,100,"250 Received %d\n",rltp_chunk_counters[id]);
           if (strncmp(cbuf,expected,len)!=0)
             {
               fprintf(stderr,"EXIT BAD SERVER REPLY: %s EXPECTED: %s",cbuf,expected);
@@ -143,7 +143,7 @@ send_ssl(void *user_data, void *buf, size_t length)
             }
           SSL_write(fd, "DATA\n", 5);
           SSL_read(fd, cbuf, 256);
-          if (strncmp(cbuf,"220 READY\n",strlen("220 READY\n"))!=0)
+          if (strncmp(cbuf,"250 Ready\n",strlen("250 Ready\n"))!=0)
             {
               fprintf(stderr,"EXIT BAD SERVER REPLY: %s\n",cbuf);
               return -1;
@@ -756,6 +756,7 @@ active_thread(gpointer st)
   struct timeval start, end, diff_tv;
   FILE *readfrom = NULL;
   GString *ehlo = g_string_sized_new(64);
+  GString *sync = g_string_sized_new(64);
   void *ssl_transport = NULL;
 
 
@@ -778,7 +779,7 @@ active_thread(gpointer st)
   if (rltp)
     {
       char cbuf[256];
-      g_string_sprintf(ehlo,"EHLO TID=loggen_%06d\n",id);
+      g_string_sprintf(ehlo,"EHLO\n",id);
       /* session id */
       read_sock(sock, cbuf ,256);
       send(sock, ehlo->str, ehlo->len, 0);
@@ -796,9 +797,23 @@ active_thread(gpointer st)
               goto use_plain_transport;
             }
 #if ENABLE_SSL
+          g_string_sprintf(ehlo,"EHLO\n",id);
+          SSL_write(ssl_transport, ehlo->str, ehlo->len);
+          SSL_read(ssl_transport, cbuf, 256);
+          if (strncmp(cbuf,"250",3) !=0 )
+            {
+              fprintf(stderr,"EXIT BAD SERVER REPLY: %s\n",cbuf);
+            }
+          g_string_sprintf(sync,"SYNC loggen_%d\n",id);
+          SSL_write(ssl_transport, sync->str, sync->len);
+          SSL_read(ssl_transport, cbuf, 256);
+          if (strncmp(cbuf,"250 ",4) !=0 )
+            {
+              fprintf(stderr,"EXIT BAD SERVER REPLY: %s\n",cbuf);
+            }
           SSL_write(ssl_transport, "DATA\n", 5);
           SSL_read(ssl_transport, cbuf ,256);
-          if (strncmp(cbuf,"220 READY\n",strlen("220 READY\n"))!=0)
+          if (strncmp(cbuf,"250 ",4)!=0)
             {
               fprintf(stderr,"EXIT BAD SERVER REPLY: %s\n",cbuf);
             }
@@ -807,11 +822,20 @@ active_thread(gpointer st)
       else
         {
 use_plain_transport:
-          send(sock, "DATA\n", 5, 0);
-          read_sock(sock, cbuf ,256);
-          if (strncmp(cbuf,"220 READY\n",strlen("220 READY\n"))!=0)
+          g_string_sprintf(sync,"SYNC loggen_%d\n",id);
+          send(sock, sync->str, sync->len, 0);
+          read_sock(sock, cbuf, 256);
+          if (strncmp(cbuf,"250 ",4) != 0)
             {
               fprintf(stderr,"EXIT BAD SERVER REPLY: %s\n",cbuf);
+              return NULL;
+            }
+          send(sock, "DATA\n", 5, 0);
+          read_sock(sock, cbuf ,256);
+          if (strncmp(cbuf,"250 ",4)!=0)
+            {
+              fprintf(stderr,"EXIT BAD SERVER REPLY: %s\n",cbuf);
+              return NULL;
             }
         }
     }
