@@ -1109,8 +1109,6 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
           status = log_proto_post(proto, lm, (guchar *)self->line_buffer->str, self->line_buffer->len, &consumed);
           if (status == LPS_ERROR)
             {
-              log_queue_rewind_backlog(self->queue, -1, FALSE);
-              self->pending_message_count = 0;
               if ((self->options->options & LWO_IGNORE_ERRORS) == 0)
                 {
                   msg_set_context(NULL);
@@ -1155,12 +1153,8 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
                   log_queue_rewind_backlog(self->queue, 1, TRUE);
                   g_assert(self->pending_message_count > 0);
                   self->pending_message_count--;
-                  log_msg_refcache_stop(TRUE);
                 }
-              else
-                {
-                  g_assert_not_reached();
-                }
+              log_msg_refcache_stop(TRUE);
             }
           else
             {
@@ -1372,15 +1366,6 @@ log_writer_reopen_deferred(gpointer s)
 
   log_writer_stop_watches(self);
 
-  if (proto == NULL && self->last_notify_code == NC_WRITE_ERROR)
-    {
-      /* proto is null in case of log_writer_broken so,
-       * the backlog items must be rewind to the queue
-       * this can be occured in case of POLLERR
-       */
-      log_queue_rewind_backlog(self->queue, -1, FALSE);
-      self->pending_message_count = 0;
-    }
   if (self->proto)
     log_proto_free(self->proto);
 
