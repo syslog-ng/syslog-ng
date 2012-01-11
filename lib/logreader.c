@@ -524,7 +524,6 @@ log_reader_update_watches(LogReader *self)
   self->suspended = FALSE;
   free_to_send = log_source_free_to_send(&self->super);
   prepare_result = log_proto_prepare(self->proto, &fd, &cond);
-  fprintf(stderr,"LogProtoPrepareReturns with: %d\n",prepare_result);
   if (!free_to_send ||
       self->immediate_check ||
       prepare_result)
