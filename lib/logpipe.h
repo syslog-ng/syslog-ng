@@ -211,6 +211,7 @@ struct _LogPipe
   GAtomicCounter ref_cnt;
   gint32 flags;
   GlobalConfig *cfg;
+  LogExprNode *expr_node;
   LogPipe *pipe_next;
 
   /* user_data pointer of the "queue" method in case it is overridden
@@ -219,6 +220,13 @@ struct _LogPipe
   void (*queue)(LogPipe *self, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data);
   gboolean (*init)(LogPipe *self);
   gboolean (*deinit)(LogPipe *self);
+
+  /* clone this pipe when used in multiple locations in the processing
+   * pipe-line. If it contains state, it should behave as if it was
+   * the same instance, otherwise it can be a copy.
+   */
+  LogPipe *(*clone)(LogPipe *self);
+
   void (*free_fn)(LogPipe *self);
   void (*notify)(LogPipe *self, LogPipe *sender, gint notify_code, gpointer user_data);
 };
@@ -298,6 +306,14 @@ log_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
     {
       log_pipe_forward_msg(s, msg, path_options);
     }
+}
+
+static inline LogPipe *
+log_pipe_clone(LogPipe *self)
+{
+  if (self->clone)
+    return self->clone(self);
+  return NULL;
 }
 
 static inline void
