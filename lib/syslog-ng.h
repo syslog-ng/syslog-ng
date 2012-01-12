@@ -59,6 +59,7 @@
 
 #define SAFE_STRING(x) ((x) ? (x) : "NULL")
 
+typedef struct _LogPipe LogPipe;
 typedef struct _LogMessage LogMessage;
 typedef struct _GlobalConfig GlobalConfig;
 

@@ -206,8 +206,6 @@ struct _LogPathOptions
 
 #define LOG_PATH_OPTIONS_INIT { TRUE, FALSE, NULL }
 
-typedef struct _LogPipe LogPipe;
-
 struct _LogPipe
 {
   GAtomicCounter ref_cnt;
@@ -222,7 +220,7 @@ struct _LogPipe
   gboolean (*init)(LogPipe *self);
   gboolean (*deinit)(LogPipe *self);
   void (*free_fn)(LogPipe *self);
-  void (*notify)(LogPipe *self, struct _LogPipe *sender, gint notify_code, gpointer user_data);
+  void (*notify)(LogPipe *self, LogPipe *sender, gint notify_code, gpointer user_data);
 };
 
 
