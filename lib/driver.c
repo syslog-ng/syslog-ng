@@ -120,6 +120,7 @@ void
 log_src_driver_init_instance(LogSrcDriver *self)
 {
   log_driver_init_instance(&self->super);
+  self->super.super.flags |= PIF_SOURCE;
 }
 
 void
