@@ -298,6 +298,7 @@ log_pipe_forward_msg(LogPipe *self, LogMessage *msg, const LogPathOptions *path_
 static inline void
 log_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 {
+  g_assert((s->flags & PIF_INITIALIZED) != 0);
   if (s->queue)
     {
       s->queue(s, msg, path_options, s->queue_data);
