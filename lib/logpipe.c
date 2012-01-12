@@ -39,6 +39,15 @@ log_pipe_init_instance(LogPipe *self)
   self->free_fn = log_pipe_free_method;
 }
 
+LogPipe *
+log_pipe_new(void)
+{
+  LogPipe *self = g_new0(LogPipe, 1);
+
+  log_pipe_init_instance(self);
+  return self;
+}
+
 void
 log_pipe_free_method(LogPipe *self)
 {
