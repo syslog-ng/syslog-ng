@@ -226,6 +226,7 @@ struct _LogPipe
 
 LogPipe *log_pipe_ref(LogPipe *self);
 void log_pipe_unref(LogPipe *self);
+LogPipe *log_pipe_new(void);
 void log_pipe_init_instance(LogPipe *self);
 void log_pipe_forward_notify(LogPipe *self, LogPipe *sender, gint notify_code, gpointer user_data);
 
