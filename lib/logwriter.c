@@ -137,7 +137,6 @@ log_writer_msg_acked(guint num_msg_acked, gpointer user_data)
         {
           log_queue_ack_backlog(self->queue, num_msg_acked);
           self->pending_message_count -= num_msg_acked;
-          fprintf(stderr,"pending message count: %d acked_messages: %d\n",self->pending_message_count, num_msg_acked);
           if (self->pending_message_count > 1)
             {
               log_queue_rewind_backlog(self->queue, self->pending_message_count,FALSE);
