@@ -81,4 +81,6 @@ extern gchar *cfgfilename;
 extern gchar *persist_file;
 extern gchar *ctlfilename;
 
+extern gchar *qdisk_dir;
+
 #endif

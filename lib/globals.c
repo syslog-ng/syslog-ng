@@ -41,6 +41,8 @@ gchar *cfgfilename;
 gchar *persist_file;
 gchar *ctlfilename;
 
+gchar *qdisk_dir = NULL;
+
 INITIALIZER(init_paths)
 {
   /* initialize the SYSLOGNG_PREFIX-related variables */

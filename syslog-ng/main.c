@@ -78,6 +78,7 @@ static GOptionEntry syslogng_options[] =
 #ifdef YYDEBUG
   { "yydebug",           'y',         0, G_OPTION_ARG_NONE, &cfg_parser_debug, "Enable configuration parser debugging", NULL },
 #endif
+  { "qdisk-dir",         'Q',         0, G_OPTION_ARG_STRING, &qdisk_dir, "Set the name of the disk buffer directory", "<dir>" },
   { NULL },
 };
 
