@@ -87,7 +87,7 @@ typedef struct _LogProtoTextClient
 } LogProtoTextClient;
 
 static gboolean
-log_proto_text_client_prepare(LogProto *s, gint *fd, GIOCondition *cond)
+log_proto_text_client_prepare(LogProto *s, gint *fd, GIOCondition *cond, gint *timeout)
 {
   LogProtoTextClient *self = (LogProtoTextClient *) s;
 
@@ -416,7 +416,7 @@ write_error:
 }
 
 static gboolean
-log_proto_file_writer_prepare(LogProto *s, gint *fd, GIOCondition *cond)
+log_proto_file_writer_prepare(LogProto *s, gint *fd, GIOCondition *cond, gint *timeout)
 {
   LogProtoFileWriter *self = (LogProtoFileWriter *) s;
 
@@ -1112,7 +1112,7 @@ log_proto_buffered_server_restart_with_state(LogProto *s, PersistState *persist_
 }
 
 static gboolean
-log_proto_buffered_server_prepare(LogProto *s, gint *fd, GIOCondition *cond)
+log_proto_buffered_server_prepare(LogProto *s, gint *fd, GIOCondition *cond, gint *timeout)
 {
   LogProtoBufferedServer *self = (LogProtoBufferedServer *) s;
 
@@ -1502,13 +1502,13 @@ log_proto_text_server_is_preemptable(LogProtoTextServer *self)
 }
 
 static gboolean
-log_proto_text_server_prepare(LogProto *s, gint *fd, GIOCondition *cond)
+log_proto_text_server_prepare(LogProto *s, gint *fd, GIOCondition *cond, gint *timeout)
 {
   LogProtoTextServer *self = (LogProtoTextServer *) s;
   LogProtoBufferedServerState *state = log_proto_buffered_server_get_state(&self->super);
   gboolean avail;
 
-  if (log_proto_buffered_server_prepare(s, fd, cond))
+  if (log_proto_buffered_server_prepare(s, fd, cond, timeout))
     {
       log_proto_buffered_server_put_state(&self->super);
       return TRUE;
@@ -2257,7 +2257,7 @@ typedef struct _LogProtoFramedServer
 } LogProtoFramedServer;
 
 static gboolean
-log_proto_framed_server_prepare(LogProto *s, gint *fd, GIOCondition *cond)
+log_proto_framed_server_prepare(LogProto *s, gint *fd, GIOCondition *cond, gint *timeout)
 {
   LogProtoFramedServer *self = (LogProtoFramedServer *) s;
 

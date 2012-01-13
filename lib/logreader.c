@@ -103,6 +103,7 @@ struct _LogReader
   struct iv_fd fd_watch;
   struct iv_timer follow_timer;
   struct iv_timer update_timer;
+  struct iv_timer idle_timer;
   struct iv_task restart_task;
   struct iv_task immediate_check_task;
   struct iv_event schedule_wakeup;
@@ -137,7 +138,7 @@ static gboolean log_reader_ack(LogSource *s,gpointer user_data)
       gboolean result = self->ack_callback(self->state,user_data);
       if (result && (self->super.super.flags & PIF_INITIALIZED) && !self->io_job.working)
         {
-          main_loop_call(log_reader_update_watches,self,FALSE);
+          main_loop_call((void (*)(void *))log_reader_update_watches,self,FALSE);
         }
       return result;
     }
@@ -417,12 +418,19 @@ log_reader_check_file(gpointer s)
 }
 
 static void
+log_reader_idle_timeout(LogReader *self)
+{
+  log_pipe_notify(self->control, &self->super.super, NC_CLOSE, self);
+}
+
+static void
 log_reader_init_watches(LogReader *self)
 {
   gint fd;
   GIOCondition cond;
+  gint idle_timeout = -1;
 
-  log_proto_prepare(self->proto, &fd, &cond);
+  log_proto_prepare(self->proto, &fd, &cond, &idle_timeout);
 
   IV_FD_INIT(&self->fd_watch);
   self->fd_watch.cookie = self;
@@ -433,7 +441,11 @@ log_reader_init_watches(LogReader *self)
 
   IV_TIMER_INIT(&self->update_timer);
   self->update_timer.cookie = self;
-  self->update_timer.handler = log_reader_update_watches;
+  self->update_timer.handler = (void (*)(void *))log_reader_update_watches;
+
+  IV_TIMER_INIT(&self->idle_timer);
+  self->idle_timer.cookie = self;
+  self->idle_timer.handler = (void (*)(void *))log_reader_idle_timeout;
 
   IV_TASK_INIT(&self->restart_task);
   self->restart_task.cookie = self;
@@ -460,8 +472,9 @@ log_reader_start_watches(LogReader *self)
 {
   gint fd;
   GIOCondition cond;
+  gint idle_timeout = -1;
 
-  log_proto_prepare(self->proto, &fd, &cond);
+  log_proto_prepare(self->proto, &fd, &cond, &idle_timeout);
 
   if (self->pollable_state < 0 && fd >= 0)
     self->pollable_state = iv_fd_pollable(fd);
@@ -509,6 +522,10 @@ log_reader_stop_watches(LogReader *self)
     iv_task_unregister(&self->restart_task);
   if (iv_task_registered(&self->immediate_check_task))
     iv_task_unregister(&self->immediate_check_task);
+  if (iv_timer_registered(&self->idle_timer))
+    iv_timer_unregister(&self->idle_timer);
+  if (iv_timer_registered(&self->update_timer))
+    iv_timer_unregister(&self->update_timer);
 }
 
 static void
@@ -518,12 +535,13 @@ log_reader_update_watches(LogReader *self)
   GIOCondition cond;
   gboolean free_to_send;
   gboolean prepare_result;
+  gint idle_timeout = -1;
 
   main_loop_assert_main_thread();
   
   self->suspended = FALSE;
   free_to_send = log_source_free_to_send(&self->super);
-  prepare_result = log_proto_prepare(self->proto, &fd, &cond);
+  prepare_result = log_proto_prepare(self->proto, &fd, &cond, &idle_timeout);
   if (!free_to_send ||
       self->immediate_check ||
       prepare_result)
@@ -561,7 +579,7 @@ log_reader_update_watches(LogReader *self)
 
         /*
          * This means, that reader has to wait for an event what is observed by the proto
-         * In this case the reader wait 1sec and than run the update_watches will be run again
+         * In this case the reader wait 1 sec and than run the update_watches will be run again
          */
       if (prepare_result && cond == G_IO_OUT)
         {
@@ -569,7 +587,7 @@ log_reader_update_watches(LogReader *self)
             iv_timer_unregister(&self->update_timer);
           iv_validate_now();
           self->update_timer.expires = iv_now;
-          timespec_add_msec(&self->update_timer.expires, 1000);
+          self->update_timer.expires.tv_sec += 1;
           iv_timer_register(&self->update_timer);
           return;
         }
@@ -639,6 +657,15 @@ log_reader_update_watches(LogReader *self)
            * never changes during runtime, thus if ever it was registered that
            * also means that we go into the if branch above. */
         }
+    }
+  if (idle_timeout != -1)
+    {
+      if (iv_timer_registered(&self->idle_timer))
+            iv_timer_unregister(&self->idle_timer);
+      iv_validate_now();
+      self->idle_timer.expires = iv_now;
+      self->idle_timer.expires.tv_sec += idle_timeout;
+      iv_timer_register(&self->idle_timer);
     }
 }
 

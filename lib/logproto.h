@@ -63,6 +63,7 @@ typedef enum
 } LogProtoType;
 
 typedef void (*LogProtoAckMessages)(guint num_msg_acked,gpointer user_data);
+typedef void (*LogProtoTimeoutCallback)(gpointer user_data);
 
 typedef struct _LogProto LogProto;
 
@@ -73,7 +74,7 @@ struct _LogProto
   gchar *encoding;
   guint16 flags;
   /* FIXME: rename to something else */
-  gboolean (*prepare)(LogProto *s, gint *fd, GIOCondition *cond);
+  gboolean (*prepare)(LogProto *s, gint *fd, GIOCondition *cond, gint *timeout);
   gboolean (*is_preemptable)(LogProto *s);
   gboolean (*restart_with_state)(LogProto *s, PersistState *state, const gchar *persist_name);
   LogProtoStatus (*fetch)(LogProto *s, const guchar **msg, gsize *msg_len, GSockAddr **sa, gboolean *may_read, gboolean flush);
@@ -100,9 +101,9 @@ log_proto_set_msg_acked_callback(LogProto *s, LogProtoAckMessages callback,gpoin
 }
 
 static inline gboolean
-log_proto_prepare(LogProto *s, gint *fd, GIOCondition *cond)
+log_proto_prepare(LogProto *s, gint *fd, GIOCondition *cond, gint *timeout)
 {
-  return s->prepare(s, fd, cond);
+  return s->prepare(s, fd, cond, timeout);
 }
 
 static inline void

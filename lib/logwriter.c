@@ -82,6 +82,7 @@ struct _LogWriter
   struct iv_timer mark_timer;
   struct iv_timer reopen_timer;
   struct timespec suppress_timer_expires;
+  struct iv_timer idle_timer;
   gint mark_freq;
   gboolean suppress_timer_updated;
   gboolean work_result;
@@ -407,12 +408,19 @@ log_writer_update_watches(LogWriter *self)
   GIOCondition cond = 0;
   gboolean partial_batch;
   gint timeout_msec = 0;
+  gboolean prepare_result;
+  gint idle_timeout = -1;
 
   main_loop_assert_main_thread();
 
-  /* NOTE: we either start the suspend_timer or enable the fd_watch. The two MUST not happen at the same time. */
+  if (iv_timer_registered(&self->idle_timer))
+    {
+      iv_timer_unregister(&self->idle_timer);
+    }
 
-  if (log_proto_prepare(self->proto, &fd, &cond) ||
+  /* NOTE: we either start the suspend_timer or enable the fd_watch. The two MUST not happen at the same time. */
+  prepare_result = log_proto_prepare(self->proto, &fd, &cond, &idle_timeout);
+  if (prepare_result ||
       self->flush_waiting_for_timeout ||
       log_queue_check_items(self->queue, self->options->flush_lines, &partial_batch, &timeout_msec,
                             (LogQueuePushNotifyFunc) log_writer_schedule_update_watches, self, NULL))
@@ -435,6 +443,12 @@ log_writer_update_watches(LogWriter *self)
        * log_queue_check_items and its parallel_push argument above
        */
       log_writer_update_fd_callbacks(self, 0);
+    }
+  if (idle_timeout > 0)
+    {
+      iv_validate_now();
+      self->idle_timer.expires.tv_sec = iv_now.tv_sec + idle_timeout;
+      iv_timer_register(&self->idle_timer);
     }
 }
 
@@ -459,10 +473,11 @@ log_writer_start_watches(LogWriter *self)
 {
   gint fd;
   GIOCondition cond;
+  gint idle_timeout = -1;
 
   if (!self->watches_running)
     {
-      log_proto_prepare(self->proto, &fd, &cond);
+      log_proto_prepare(self->proto, &fd, &cond, &idle_timeout);
 
       if (self->pollable_state < 0)
         {
@@ -1105,7 +1120,6 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
       if (self->line_buffer->len)
         {
           LogProtoStatus status;
-
           status = log_proto_post(proto, lm, (guchar *)self->line_buffer->str, self->line_buffer->len, &consumed);
           if (status == LPS_ERROR)
             {
@@ -1181,6 +1195,9 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
 gboolean
 log_writer_reopen_elapsed(gpointer user_data);
 
+void
+log_writer_idle_time_elapsed(gpointer user_data);
+
 static void
 log_writer_init_watches(LogWriter *self)
 {
@@ -1205,6 +1222,10 @@ log_writer_init_watches(LogWriter *self)
   IV_TIMER_INIT(&self->reopen_timer);
   self->reopen_timer.cookie = self;
   self->reopen_timer.handler = (void (*)(void *)) log_writer_reopen_elapsed;
+
+  IV_TIMER_INIT(&self->idle_timer);
+  self->idle_timer.cookie = self;
+  self->idle_timer.handler = (void (*)(void *)) log_writer_idle_time_elapsed;
 
   IV_EVENT_INIT(&self->queue_filled);
   self->queue_filled.cookie = self;
@@ -1318,6 +1339,13 @@ log_writer_reopen_elapsed(gpointer user_data)
   LogWriter *self = (LogWriter *)user_data;
   log_pipe_notify(self->control, &self->super, NC_REOPEN_REQUIRED, self);
   return FALSE;
+}
+
+void
+log_writer_idle_time_elapsed(gpointer user_data)
+{
+  LogWriter *self = (LogWriter *)user_data;
+  log_pipe_notify(self->control, &self->super, NC_CLOSE, self);
 }
 
 /* FIXME: this is inherently racy */
