@@ -478,7 +478,6 @@ afsocket_sd_process_connection(AFSocketSourceDriver *self, GSockAddr *client_add
       else
         {
           afsocket_sd_remove_and_kill_connection(self, conn);
-          log_pipe_unref(&conn->super);
           return FALSE;
         }
     }
