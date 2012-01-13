@@ -791,7 +791,7 @@ log_proto_buffered_server_apply_state(LogProtoBufferedServer *self, PersistEntry
           state->pending_buffer_end += rc;
         }
 
-      if (buffer_pos > state->pending_buffer_end || state->buffer_cached_eol > state->pending_buffer_end)
+      if (buffer_pos > state->pending_buffer_end || (gint32) state->buffer_cached_eol > (gint32) state->pending_buffer_end)
         {
           msg_notice("Converted buffer contents is smaller than the current buffer position, starting from the beginning of the buffer, some lines may be duplicated",
                      evt_tag_str("state", persist_name),
