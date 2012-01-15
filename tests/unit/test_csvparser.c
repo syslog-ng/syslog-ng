@@ -105,7 +105,7 @@ testcase(gchar *msg, guint parse_flags, gint max_columns, guint32 flags, gchar *
       fprintf(stderr, "unexpected non-match; msg=%s\n", msg);
       exit(1);
     }
-  log_pipe_unref(&p->super.super.super);
+  log_pipe_unref(&p->super.super);
 
   va_start(va, first_value);
   expected_value = first_value;

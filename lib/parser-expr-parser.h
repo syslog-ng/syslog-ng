@@ -28,9 +28,10 @@
 #include "cfg-parser.h"
 #include "cfg-lexer.h"
 #include "logparser.h"
+#include "cfg-tree.h"
 
 extern CfgParser parser_expr_parser;
 
-CFG_PARSER_DECLARE_LEXER_BINDING(parser_expr_, GList **)
+CFG_PARSER_DECLARE_LEXER_BINDING(parser_expr_, LogExprNode **)
 
 #endif

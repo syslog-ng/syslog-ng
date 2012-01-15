@@ -26,6 +26,7 @@
 #define CFG_H_INCLUDED
 
 #include "syslog-ng.h"
+#include "cfg-tree.h"
 #include "cfg-lexer.h"
 #include "cfg-parser.h"
 #include "persist-state.h"
@@ -34,13 +35,6 @@
 #include <sys/types.h>
 #include <regex.h>
 #include <stdio.h>
-
-struct _LogSourceGroup;
-struct _LogDestGroup;
-struct _LogProcessRule;
-struct _LogConnection;
-struct _LogCenter;
-struct _LogTemplate;
 
 #define CFG_CURRENT_VERSION 0x0303
 #define CFG_CURRENT_VERSION_STRING "3.3"
@@ -101,33 +95,16 @@ struct _GlobalConfig
   gchar *file_template_name;
   gchar *proto_template_name;
   
-  struct _LogTemplate *file_template;
-  struct _LogTemplate *proto_template;
+  LogTemplate *file_template;
+  LogTemplate *proto_template;
   
-  /* */
-  GHashTable *sources;
-  GHashTable *destinations;
-  GHashTable *filters;
-  GHashTable *parsers;
-  GHashTable *rewriters;
-  GHashTable *templates;
-  GPtrArray *connections;
   PersistConfig *persist;
   PersistState *state;
-
-  struct _LogCenter *center;
   
+  CfgTree tree;
+
 };
 
-gboolean cfg_add_source(GlobalConfig *configuration, struct _LogSourceGroup *group);
-gboolean cfg_add_dest(GlobalConfig *configuration, struct _LogDestGroup *group);
-gboolean cfg_add_filter(GlobalConfig *configuration, struct _LogProcessRule *rule);
-gboolean cfg_add_parser(GlobalConfig *cfg, struct _LogProcessRule *rule);
-gboolean cfg_add_rewrite(GlobalConfig *cfg, struct _LogProcessRule *rule);
-void cfg_add_connection(GlobalConfig *configuration, struct _LogConnection *conn);
-gboolean cfg_add_template(GlobalConfig *cfg, struct _LogTemplate *template);
-LogTemplate *cfg_lookup_template(GlobalConfig *cfg, const gchar *name);
-LogTemplate *cfg_check_inline_template(GlobalConfig *cfg, const gchar *template_or_name, GError **error);
 gboolean cfg_allow_config_dups(GlobalConfig *self);
 
 void cfg_file_owner_set(GlobalConfig *self, gchar *owner);

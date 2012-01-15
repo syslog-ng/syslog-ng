@@ -27,7 +27,7 @@
 
 #include "logmsg.h"
 #include "messages.h"
-#include "logprocess.h"
+#include "logpipe.h"
 #include "templates.h"
 
 typedef struct _LogParser LogParser;
@@ -35,9 +35,10 @@ typedef struct _LogColumnParser LogColumnParser;
 
 struct _LogParser
 {
-  LogProcessPipe super;
+  LogPipe super;
   LogTemplate *template;
   gboolean (*process)(LogParser *s, LogMessage *msg, const gchar *input);
+  gchar *name;
 };
 
 void log_parser_set_template(LogParser *self, LogTemplate *template);

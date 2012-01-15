@@ -67,12 +67,11 @@ is_sdata_valid(const gchar *buffer)
 %name-prefix "rewrite_expr_"
 %lex-param {CfgLexer *lexer}
 %parse-param {CfgLexer *lexer}
-%parse-param {GList **result}
+%parse-param {LogExprNode **result}
 %parse-param {gpointer arg}
 
 %type   <ptr> rewrite_expr
 %type   <ptr> rewrite_expr_list
-%type   <ptr> rewrite_expr_list_build
 
 /* INCLUDE_DECLS */
 
@@ -81,16 +80,12 @@ is_sdata_valid(const gchar *buffer)
 %%
 
 start
-        : rewrite_expr_list                       { *result = $1; if (yychar != YYEMPTY) { cfg_lexer_unput_token(lexer, &yylval); } YYACCEPT; }
+        : rewrite_expr_list log_last_junction        { *result = log_expr_node_append_tail($1, $2); if (yychar != YYEMPTY) { cfg_lexer_unput_token(lexer, &yylval); } YYACCEPT; }
 	;
 
 rewrite_expr_list
-        : rewrite_expr_list_build               { $$ = g_list_reverse($1); }
-        ;
-
-rewrite_expr_list_build
-        : rewrite_expr ';' rewrite_expr_list_build  { $$ = g_list_append($3, $1); }
-        | ';' rewrite_expr_list_build               { $$ = $2; }
+        : rewrite_expr semicolons rewrite_expr_list  { $$ = log_expr_node_append_tail(log_expr_node_new_pipe($1, &@1), $3); }
+        | log_junction semicolons rewrite_expr_list      { $$ = log_expr_node_append_tail($1,  $3); }
         |                                           { $$ = NULL; }
         ;
 

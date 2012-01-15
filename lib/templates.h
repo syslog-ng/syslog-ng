@@ -27,7 +27,6 @@
 
 #include "syslog-ng.h"
 #include "timeutils.h"
-#include "logmsg.h"
 
 #define LTZ_LOCAL 0
 #define LTZ_SEND  1

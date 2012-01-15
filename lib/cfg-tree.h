@@ -21,74 +21,157 @@
  * COPYING for details.
  *
  */
-  
-#ifndef CENTER_H_INCLUDED
-#define CENTER_H_INCLUDED
+
+#ifndef CFGTREE_H_INCLUDED
+#define CFGTREE_H_INCLUDED
 
 #include "syslog-ng.h"
+#include "templates.h"
+#include "cfg-lexer.h"
 
-#include "logpipe.h"
-#include "stats.h"
-
-#define EP_SOURCE      1
-#define EP_FILTER      2
-#define EP_PARSER      3
-#define EP_DESTINATION 4
-#define EP_PIPE        5
-#define EP_REWRITE      6
-
-typedef struct _LogPipeItem LogPipeItem;
-
-LogPipeItem *log_pipe_item_new(gint type, gchar *name);
-LogPipeItem *log_pipe_item_new_ref(gint type, gpointer ref);
-void log_pipe_item_append(LogPipeItem *a, LogPipeItem *b);
-LogPipeItem *log_pipe_item_append_tail(LogPipeItem *a, LogPipeItem *b);
-void log_pipe_item_free(LogPipeItem *self);
-
+const gchar *log_expr_node_get_content_name(gint content);
 
 #define LC_CATCHALL 1
 #define LC_FALLBACK 2
 #define LC_FINAL    4
 #define LC_FLOW_CONTROL 8
 
-/**
- * This structure is used to hold the log statements as specified by the
- * user. Endpoints contain references to source/filter/parser/destination,
- * during initialization this is turned into a message processing pipeline.
- **/
-typedef struct _LogConnection
+enum
 {
-  LogPipeItem *endpoints;
+  /* expr node content type */
+  ENC_SOURCE,
+  ENC_DESTINATION,
+  ENC_FILTER,
+  ENC_PARSER,
+  ENC_REWRITE,
+  ENC_MAX,
+  /* */
+  ENC_PIPE,
+
+  /* expr node layouts type */
+  ENL_SINGLE,
+  ENL_REFERENCE,
+  ENL_SEQUENCE,
+  ENL_JUNCTION,
+};
+
+
+typedef struct _LogExprNode LogExprNode;
+
+/**
+ * Log Expressions
+ * ===============
+ *
+ * Everything except a few things are parsed from the configuration as
+ * a log expression. The few exceptions are: templates, global options and blocks.
+ *
+ * Sources, destinations, filters, parsers, rewrite rules and global
+ * log statements are log expressions.
+ *
+ * Log expressions describe a graph, which is then traversed by
+ * messages received by syslog-ng. The graph used to be a tree
+ * (e.g. no cycles), but this limitation was lifted in syslog-ng 3.4,
+ * when the concept of log expression was introduced.
+ *
+ * Log expression is a part of the graph, the larger graph is created
+ * by connecting these parts as dictated by the configuration.
+ *
+ * Each log expression is represented using a tree of LogExprNode
+ * elements. Each node in this tree defines the layout how its children
+ * are to be connected:
+ *   - simple element: holds a single LogPipe, no children
+ *   - reference:      used to reference log expressions defined elsewhere, no children
+ *   - sequence:       holds a sequence of LogExprNodes
+ *   - junction:       holds a junction
+ *
+ * Sometimes syslog-ng needs to know what kind of object the user
+ * originally defined, this is stored in the "content" member.
+ *
+ *   ENC_PIPE: content is a single LogPipe instance (in the "object" member)
+ *   ENC_SOURCE: content is a source log expression node (source statement or one defined inline)
+ *   ENC_DESTINATION: content is a destination node
+ *   ENC_FILTER: content is a filter node
+ *   ENC_PARSER: content is a parser node
+ *   ENC_REWRITE: content is a rewrite node
+ */
+struct _LogExprNode
+{
+  gint16 layout;
+  gint16 content;
+
   guint32 flags;
-} LogConnection;
 
-LogConnection *log_connection_new(LogPipeItem *endpoints, guint32 flags);
-void log_connection_free(LogConnection *self);
-gint log_connection_lookup_flag(const gchar *flag);
+  /* name of the rule for named rules and name of the named rule for references */
+  gchar *name;
+  /* parent node */
+  LogExprNode *parent;
+  /* list of children */
+  LogExprNode *children;
+  /* next sibling */
+  LogExprNode *next;
 
-#define LC_STATE_INIT_SOURCES 1
-#define LC_STATE_INIT_DESTS 2
-#define LC_STATE_WORKING 3
+  gpointer object;
+  GDestroyNotify object_destroy;
 
-/**
- * LogCenter used to be the central processing element of syslog-ng, now it
- * is degraded to construct the message processing pipelines the user
- * specifies in its configuration file using log statements. There's no
- * coherent reason for its existence, apart from the fact that it'd bloat
- * the cfg.c file.
- **/
-typedef struct _LogCenter 
+  /* used during construction in case a rule specific object needs to be created. */
+  gpointer aux;
+  GDestroyNotify aux_destroy;
+  gchar *filename;
+  gint line, column;
+  gint child_id;
+};
+
+gint log_expr_node_lookup_flag(const gchar *flag);
+
+LogExprNode *log_expr_node_append_tail(LogExprNode *a, LogExprNode *b);
+void log_expr_node_set_object(LogExprNode *self, gpointer object, GDestroyNotify destroy);
+const gchar *log_expr_node_format_location(LogExprNode *self, gchar *buf, gsize buf_len);
+
+LogExprNode *log_expr_node_new(gint layout, gint content, const gchar *name, LogExprNode *children, guint32 flags, YYLTYPE *yylloc);
+void log_expr_node_free(LogExprNode *self);
+
+LogExprNode *log_expr_node_new_pipe(LogPipe *pipe, YYLTYPE *yylloc);
+LogExprNode *log_expr_node_new_source(const gchar *name, LogExprNode *children, YYLTYPE *yylloc);
+LogExprNode *log_expr_node_new_source_reference(const gchar *name, YYLTYPE *yylloc);
+LogExprNode *log_expr_node_new_destination(const gchar *name, LogExprNode *children, YYLTYPE *yylloc);
+LogExprNode *log_expr_node_new_destination_reference(const gchar *name, YYLTYPE *yylloc);
+LogExprNode *log_expr_node_new_filter(const gchar *name, LogExprNode *node, YYLTYPE *yylloc);
+LogExprNode *log_expr_node_new_filter_reference(const gchar *name, YYLTYPE *yylloc);
+LogExprNode *log_expr_node_new_parser(const gchar *name, LogExprNode *children, YYLTYPE *yylloc);
+LogExprNode *log_expr_node_new_parser_reference(const gchar *name, YYLTYPE *yylloc);
+LogExprNode *log_expr_node_new_rewrite(const gchar *name, LogExprNode *children, YYLTYPE *yylloc);
+LogExprNode *log_expr_node_new_rewrite_reference(const gchar *name, YYLTYPE *yylloc);
+LogExprNode *log_expr_node_new_log(LogExprNode *children, guint32 flags, YYLTYPE *yylloc);
+LogExprNode *log_expr_node_new_sequence(LogExprNode *children, YYLTYPE *yylloc);
+LogExprNode *log_expr_node_new_junction(LogExprNode *children, YYLTYPE *yylloc);
+
+typedef struct _CfgTree
 {
+  GlobalConfig *cfg;
   GPtrArray *initialized_pipes;
-  gint state;
-  StatsCounterItem *received_messages;
-  StatsCounterItem *queued_messages;
-} LogCenter;
+  gint anon_counters[ENC_MAX];
+  /* hash of predefined source/filter/rewrite/parser/destination objects */
+  GHashTable *objects;
+  /* list of top-level rules */
+  GPtrArray *rules;
+  GHashTable *templates;
+} CfgTree;
 
-gboolean log_center_init(LogCenter *self, GlobalConfig *cfg);
-gboolean log_center_deinit(LogCenter *self);
+gboolean cfg_tree_add_object(CfgTree *self, LogExprNode *rule);
+LogExprNode *cfg_tree_get_object(CfgTree *self, gint type, const gchar *name);
 
-LogCenter *log_center_new(void);
-void log_center_free(LogCenter *s);
+gboolean cfg_tree_add_template(CfgTree *self, LogTemplate *template);
+LogTemplate *cfg_tree_lookup_template(CfgTree *self, const gchar *name);
+LogTemplate *cfg_tree_check_inline_template(CfgTree *self, const gchar *template_or_name, GError **error);
+
+gchar *cfg_tree_get_rule_name(CfgTree *self, gint content, LogExprNode *node);
+gchar *cfg_tree_get_child_id(CfgTree *self, gint content, LogExprNode *node);
+
+gboolean cfg_tree_start(CfgTree *self);
+gboolean cfg_tree_stop(CfgTree *self);
+
+void cfg_tree_init_instance(CfgTree *self, GlobalConfig *cfg);
+void cfg_tree_free_instance(CfgTree *self);
+
 
 #endif

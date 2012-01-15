@@ -41,6 +41,7 @@ static void
 log_parser_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data)
 {
   LogParser *self = (LogParser *) s;
+  gchar buf[128];
   gboolean success;
 
   if (G_LIKELY(!self->template))
@@ -67,6 +68,11 @@ log_parser_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
       success = self->process(self, msg, input->str);
       g_string_free(input, TRUE);
     }
+  msg_debug("Message parsing complete",
+            evt_tag_int("result", success),
+            evt_tag_str("rule", self->name),
+            evt_tag_str("location", log_expr_node_format_location(s->expr_node, buf, sizeof(buf))),
+            NULL);
   if (success)
     {
       log_pipe_forward_msg(s, msg, path_options);
@@ -79,22 +85,35 @@ log_parser_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
     }
 }
 
+static gboolean
+log_parser_init(LogPipe *s)
+{
+  LogParser *self = (LogParser *) s;
+  GlobalConfig *cfg = log_pipe_get_config(s);
+
+  if (!self->name)
+    self->name = cfg_tree_get_rule_name(&cfg->tree, ENC_PARSER, s->expr_node);
+  return TRUE;
+}
+
 void
 log_parser_free_method(LogPipe *s)
 {
   LogParser *self = (LogParser *) s;
 
+  g_free(self->name);
   log_template_unref(self->template);
-  log_process_pipe_free_method(s);
+  log_pipe_free_method(s);
 }
 
 void
 log_parser_init_instance(LogParser *self)
 {
-  log_process_pipe_init_instance(&self->super);
-  self->super.super.flags |= PIF_CLONE;
-  self->super.super.free_fn = log_parser_free_method;
-  self->super.super.queue = log_parser_queue;
+  log_pipe_init_instance(&self->super);
+  self->super.init = log_parser_init;
+  self->super.flags |= PIF_CLONE;
+  self->super.free_fn = log_parser_free_method;
+  self->super.queue = log_parser_queue;
 }
 
 /*
@@ -123,5 +142,5 @@ void
 log_column_parser_init_instance(LogColumnParser *self)
 {
   log_parser_init_instance(&self->super);
-  self->super.super.super.free_fn = log_column_parser_free_method;
+  self->super.super.free_fn = log_column_parser_free_method;
 }

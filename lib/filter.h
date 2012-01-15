@@ -27,8 +27,8 @@
 
 #include "syslog-ng.h"
 #include "logmsg.h"
+#include "logpipe.h"
 #include "messages.h"
-#include "logprocess.h"
 #include "logmatcher.h"
 #include "cfg-parser.h"
 
@@ -86,12 +86,12 @@ FilterExprNode *filter_tags_new(GList *tags);
  */
 typedef struct _LogFilterPipe
 {
-  LogProcessPipe super;
+  LogPipe super;
   FilterExprNode *expr;
   gchar *name;
 } LogFilterPipe;
 
 
-LogPipe *log_filter_pipe_new(FilterExprNode *expr, const gchar *name);
+LogPipe *log_filter_pipe_new(FilterExprNode *expr);
 
 #endif

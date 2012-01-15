@@ -22,16 +22,15 @@ pkginclude_HEADERS = 		\
 	apphook.h		\
 	atomic.h		\
 	block-ref-parser.h	\
-	center.h		\
 	cfg.h                   \
 	cfg-grammar.h           \
 	cfg-lexer.h		\
 	cfg-parser.h		\
+	cfg-tree.h		\
 	children.h		\
 	compat.h		\
 	control.h		\
 	crypto.h		\
-	dgroup.h		\
 	dnscache.h		\
 	driver.h		\
 	filter-expr-parser.h	\
@@ -44,7 +43,6 @@ pkginclude_HEADERS = 		\
 	logmsg.h		\
 	logparser.h		\
 	logpipe.h		\
-	logprocess.h		\
 	logproto.h		\
 	logqueue-fifo.h		\
 	logqueue.h		\
@@ -67,7 +65,6 @@ pkginclude_HEADERS = 		\
 	rewrite-expr-parser.h	\
 	scratch-buffers.h	\
 	serialize.h		\
-	sgroup.h		\
 	stats.h			\
 	str-format.h		\
 	syslog-names.h		\
@@ -94,14 +91,13 @@ libsyslog_ng_la_SOURCES = \
 	alarms.c		\
 	apphook.c		\
 	block-ref-parser.c	\
-	center.c		\
 	cfg.c			\
 	cfg-lexer.c		\
 	cfg-parser.c		\
+	cfg-tree.c		\
 	children.c		\
 	compat.c		\
 	control.c		\
-	dgroup.c		\
 	dnscache.c		\
 	driver.c		\
 	filter.c		\
@@ -115,7 +111,6 @@ libsyslog_ng_la_SOURCES = \
 	logmsg.c		\
 	logparser.c		\
 	logpipe.c		\
-	logprocess.c		\
 	logproto.c		\
 	logqueue.c		\
 	logqueue-fifo.c		\
@@ -138,7 +133,6 @@ libsyslog_ng_la_SOURCES = \
 	rewrite-expr-parser.c	\
 	scratch-buffers.c	\
 	serialize.c		\
-	sgroup.c		\
 	stats.c			\
 	str-format.c		\
 	syslog-names.c		\

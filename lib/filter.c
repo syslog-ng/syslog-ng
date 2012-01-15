@@ -26,10 +26,10 @@
 #include "syslog-names.h"
 #include "messages.h"
 #include "cfg.h"
-#include "logprocess.h"
 #include "gsocket.h"
 #include "misc.h"
 #include "tags.h"
+#include "cfg-tree.h"
 #include "filter-expr-grammar.h"
 
 #include <regex.h>
@@ -53,8 +53,8 @@ filter_expr_eval_with_context(FilterExprNode *self, LogMessage **msg, gint num_m
 
   res = self->eval(self, msg, num_msg);
   msg_debug("Filter node evaluation result",
-            evt_tag_str("filter_result", res ? "match" : "not-match"),
-            evt_tag_str("filter_type", self->type),
+            evt_tag_str("result", res ? "match" : "not-match"),
+            evt_tag_str("type", self->type),
             NULL);
   return res;
 }
@@ -497,12 +497,18 @@ static void
 filter_call_init(FilterExprNode *s, GlobalConfig *cfg)
 {
   FilterCall *self = (FilterCall *) s;
-  LogProcessRule *rule;
+  LogExprNode *rule;
 
-  rule = g_hash_table_lookup(cfg->filters, self->rule);
+  rule = cfg_tree_get_object(&cfg->tree, ENC_FILTER, self->rule);
   if (rule)
     {
-      self->filter_expr = ((LogFilterPipe *) rule->head->data)->expr;
+      /* this is quite fragile and would break whenever the parsing code in
+       * cfg-grammar.y changes to parse a filter rule.  We assume that a
+       * filter rule has a single child, which contains a LogFilterPipe
+       * instance as its object. */
+
+
+      self->filter_expr = ((LogFilterPipe *) rule->children->object)->expr;
     }
   else
     {
@@ -673,9 +679,12 @@ static gboolean
 log_filter_pipe_init(LogPipe *s)
 {
   LogFilterPipe *self = (LogFilterPipe *) s;
+  GlobalConfig *cfg = log_pipe_get_config(s);
 
   if (self->expr->init)
     self->expr->init(self->expr, log_pipe_get_config(s));
+  if (!self->name)
+    self->name = cfg_tree_get_rule_name(&cfg->tree, ENC_FILTER, s->expr_node);
   return TRUE;
 }
 
@@ -683,15 +692,18 @@ static void
 log_filter_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data)
 {
   LogFilterPipe *self = (LogFilterPipe *) s;
+  gchar buf[128];
   gboolean res;
   
   msg_debug("Filter rule evaluation begins",
-            evt_tag_str("filter_rule", self->name ? self->name : "unnamed"),
+            evt_tag_str("rule", self->name),
+            evt_tag_str("location", log_expr_node_format_location(s->expr_node, buf, sizeof(buf))),
             NULL);
   res = filter_expr_eval(self->expr, msg);
   msg_debug("Filter rule evaluation result",
-            evt_tag_str("filter_result", res ? "match" : "not-match"),
-            evt_tag_str("filter_rule", self->name ? self->name : "unnamed"),
+            evt_tag_str("result", res ? "match" : "not-match"),
+            evt_tag_str("rule", self->name),
+            evt_tag_str("location", log_expr_node_format_location(s->expr_node, buf, sizeof(buf))),
             NULL);
   if (res)
     {
@@ -706,11 +718,11 @@ log_filter_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_op
 }
 
 static LogPipe *
-log_filter_pipe_clone(LogProcessPipe *s)
+log_filter_pipe_clone(LogPipe *s)
 {
   LogFilterPipe *self = (LogFilterPipe *) s;
 
-  return log_filter_pipe_new(filter_expr_ref(self->expr), self->name);
+  return log_filter_pipe_new(filter_expr_ref(self->expr));
 }
 
 static void
@@ -720,21 +732,20 @@ log_filter_pipe_free(LogPipe *s)
 
   g_free(self->name);
   filter_expr_unref(self->expr);
-  log_process_pipe_free_method(s);
+  log_pipe_free_method(s);
 }
 
 LogPipe *
-log_filter_pipe_new(FilterExprNode *expr, const gchar *name)
+log_filter_pipe_new(FilterExprNode *expr)
 {
   LogFilterPipe *self = g_new0(LogFilterPipe, 1);
 
-  log_process_pipe_init_instance(&self->super);
-  self->super.super.init = log_filter_pipe_init;
-  self->super.super.queue = log_filter_pipe_queue;
-  self->super.super.free_fn = log_filter_pipe_free;
-  self->super.super.flags |= expr->modify ? PIF_CLONE : 0;
+  log_pipe_init_instance(&self->super);
+  self->super.init = log_filter_pipe_init;
+  self->super.queue = log_filter_pipe_queue;
+  self->super.free_fn = log_filter_pipe_free;
+  self->super.flags |= expr->modify ? PIF_CLONE : 0;
   self->super.clone = log_filter_pipe_clone;
   self->expr = expr;
-  self->name = g_strdup(name);
-  return &self->super.super;
+  return &self->super;
 }

@@ -23,10 +23,8 @@
  */
   
 #include "cfg.h"
-#include "sgroup.h"
-#include "dgroup.h"
 #include "filter.h"
-#include "center.h"
+#include "cfg-tree.h"
 #include "messages.h"
 #include "templates.h"
 #include "misc.h"
@@ -160,76 +158,17 @@ cfg_bad_hostname_set(GlobalConfig *self, gchar *bad_hostname_re)
   self->bad_hostname_re = g_strdup(bad_hostname_re);  
 }
 
-static gboolean
-cfg_insert_check_dups(GHashTable *hash, const gchar *kind, const gchar *key, void *value)
-{
-  gboolean res = TRUE;
-
-  res = (g_hash_table_lookup(hash, key) == NULL);
-  g_hash_table_replace(hash, (gpointer) key, value);
-  return res;
-}
-
-gboolean
-cfg_add_source(GlobalConfig *cfg, LogSourceGroup *group)
-{
-  return cfg_insert_check_dups(cfg->sources, "source", group->name, group);
-}
-
-gboolean
-cfg_add_dest(GlobalConfig *cfg, LogDestGroup *group)
-{
-  return cfg_insert_check_dups(cfg->destinations, "destination", group->name, group);
-}
-
-gboolean
-cfg_add_filter(GlobalConfig *cfg, LogProcessRule *rule)
-{
-  return cfg_insert_check_dups(cfg->filters, "filter", rule->name, rule);
-}
-
-gboolean
-cfg_add_parser(GlobalConfig *cfg, LogProcessRule *rule)
-{
-  return cfg_insert_check_dups(cfg->parsers, "parser", rule->name, rule);
-}
-
-gboolean
-cfg_add_rewrite(GlobalConfig *cfg, LogProcessRule *rule)
-{
-  return cfg_insert_check_dups(cfg->rewriters, "rewrite", rule->name, rule);
-}
-
-void
-cfg_add_connection(GlobalConfig *cfg, LogConnection *conn)
-{
-  g_ptr_array_add(cfg->connections, conn);
-}
-
-gboolean
-cfg_add_template(GlobalConfig *cfg, LogTemplate *template)
-{
-  return cfg_insert_check_dups(cfg->templates, "template", template->name, template);
-}
-
-LogTemplate *
-cfg_lookup_template(GlobalConfig *cfg, const gchar *name)
-{
-  if (name)
-    return log_template_ref(g_hash_table_lookup(cfg->templates, name));
-  return NULL;
-}
 
 gboolean
 cfg_init(GlobalConfig *cfg)
 {
   gint regerr;
   
-  if (cfg->file_template_name && !(cfg->file_template = cfg_lookup_template(cfg, cfg->file_template_name)))
+  if (cfg->file_template_name && !(cfg->file_template = cfg_tree_lookup_template(&cfg->tree, cfg->file_template_name)))
     msg_error("Error resolving file template",
                evt_tag_str("name", cfg->file_template_name),
                NULL);
-  if (cfg->proto_template_name && !(cfg->proto_template = cfg_lookup_template(cfg, cfg->proto_template_name)))
+  if (cfg->proto_template_name && !(cfg->proto_template = cfg_tree_lookup_template(&cfg->tree, cfg->proto_template_name)))
     msg_error("Error resolving protocol template",
                evt_tag_str("name", cfg->proto_template_name),
                NULL);
@@ -252,13 +191,13 @@ cfg_init(GlobalConfig *cfg)
         }
     }
   dns_cache_set_params(cfg->dns_cache_size, cfg->dns_cache_expire, cfg->dns_cache_expire_failed, cfg->dns_cache_hosts);
-  return log_center_init(cfg->center, cfg);
+  return cfg_tree_start(&cfg->tree);
 }
 
 gboolean
 cfg_deinit(GlobalConfig *cfg)
 {
-  return log_center_deinit(cfg->center);
+  return cfg_tree_stop(&cfg->tree);
 }
 
 void
@@ -304,20 +243,6 @@ cfg_set_version(GlobalConfig *self, gint version)
     }
 }
 
-struct _LogTemplate *
-cfg_check_inline_template(GlobalConfig *cfg, const gchar *template_or_name, GError **error)
-{
-  LogTemplate *template = cfg_lookup_template(configuration, template_or_name);
-
-  if (template == NULL)
-    {
-      template = log_template_new(cfg, NULL);
-      log_template_compile(template, template_or_name, error);
-      template->def_inline = TRUE;
-    }
-  return template;
-}
-
 gboolean
 cfg_allow_config_dups(GlobalConfig *self)
 {
@@ -345,13 +270,6 @@ cfg_new(gint version)
   GlobalConfig *self = g_new0(GlobalConfig, 1);
 
   self->version = version;
-  self->sources = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, (GDestroyNotify) log_pipe_unref);
-  self->destinations = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, (GDestroyNotify) log_pipe_unref);
-  self->filters = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, (GDestroyNotify) log_process_rule_unref);
-  self->parsers = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, (GDestroyNotify) log_process_rule_unref);
-  self->rewriters = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, (GDestroyNotify) log_process_rule_unref);
-  self->templates = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, (GDestroyNotify) log_template_unref);
-  self->connections = g_ptr_array_new();
 
   self->flush_lines = 0;
   self->flush_timeout = 10000;  /* 10 seconds */
@@ -385,6 +303,8 @@ cfg_new(gint version)
   self->template_options.frac_digits = 0;
   self->recv_time_zone = NULL;
   self->keep_timestamp = TRUE;
+
+  cfg_tree_init_instance(&self->tree, self);
   return self;
 }
 
@@ -432,7 +352,6 @@ cfg_read_config(GlobalConfig *self, gchar *fname, gboolean syntax_only, gchar *p
       if (res)
 	{
 	  /* successfully parsed */
-	  self->center = log_center_new();
 	  return TRUE;
 	}
     }
@@ -450,8 +369,6 @@ cfg_read_config(GlobalConfig *self, gchar *fname, gboolean syntax_only, gchar *p
 void
 cfg_free(GlobalConfig *self)
 {
-  int i;
-
   g_assert(self->persist == NULL);
   if (self->state)
     persist_state_free(self->state);
@@ -460,26 +377,13 @@ cfg_free(GlobalConfig *self)
   g_free(self->proto_template_name);  
   log_template_unref(self->file_template);
   log_template_unref(self->proto_template);
-  
-  if (self->center)
-    log_center_free(self->center);
-  
-  for (i = 0; i < self->connections->len; i++)
-    {
-      log_connection_free(g_ptr_array_index(self->connections, i));
-    }
-  g_hash_table_destroy(self->sources);
-  g_hash_table_destroy(self->destinations);
-  g_hash_table_destroy(self->filters);
-  g_hash_table_destroy(self->parsers);
-  g_hash_table_destroy(self->rewriters);
-  g_hash_table_destroy(self->templates);
-  g_ptr_array_free(self->connections, TRUE);
+
   if (self->bad_hostname_compiled)
     regfree(&self->bad_hostname);
   g_free(self->bad_hostname_re);
   g_free(self->dns_cache_hosts);
   g_list_free(self->plugins);
+  cfg_tree_free_instance(&self->tree);
   g_free(self);
 }
 

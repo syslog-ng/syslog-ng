@@ -62,7 +62,7 @@ log_db_parser_emit(LogMessage *msg, gboolean synthetic, gpointer user_data)
           LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
 
           path_options.ack_needed = FALSE;
-          log_pipe_forward_msg(&self->super.super.super, log_msg_ref(msg), &path_options);
+          log_pipe_forward_msg(&self->super.super, log_msg_ref(msg), &path_options);
         }
       else
         {
@@ -78,7 +78,7 @@ static void
 log_db_parser_reload_database(LogDBParser *self)
 {
   struct stat st;
-  GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
+  GlobalConfig *cfg = log_pipe_get_config(&self->super.super);
 
   if (stat(self->db_file, &st) < 0)
     {
@@ -252,14 +252,14 @@ log_db_parser_set_inject_mode(LogDBParser *self, const gchar *inject_mode)
  * NOTE: we could be smarter than this by sharing the radix tree in this case.
  */
 static LogPipe *
-log_db_parser_clone(LogProcessPipe *s)
+log_db_parser_clone(LogPipe *s)
 {
   LogDBParser *clone;
   LogDBParser *self = (LogDBParser *) s;
 
   clone = (LogDBParser *) log_db_parser_new();
   log_db_parser_set_db_file(clone, self->db_file);
-  return &clone->super.super.super;
+  return &clone->super.super;
 }
 
 static void
@@ -281,9 +281,9 @@ log_db_parser_new(void)
   LogDBParser *self = g_new0(LogDBParser, 1);
 
   log_parser_init_instance(&self->super);
-  self->super.super.super.free_fn = log_db_parser_free;
-  self->super.super.super.init = log_db_parser_init;
-  self->super.super.super.deinit = log_db_parser_deinit;
+  self->super.super.free_fn = log_db_parser_free;
+  self->super.super.init = log_db_parser_init;
+  self->super.super.deinit = log_db_parser_deinit;
   self->super.super.clone = log_db_parser_clone;
   self->super.process = log_db_parser_process;
   self->db_file = g_strdup(PATH_PATTERNDB_FILE);

@@ -27,9 +27,10 @@
 
 #include "cfg-parser.h"
 #include "cfg-lexer.h"
+#include "cfg-tree.h"
 
 extern CfgParser rewrite_expr_parser;
 
-CFG_PARSER_DECLARE_LEXER_BINDING(rewrite_expr_, GList **)
+CFG_PARSER_DECLARE_LEXER_BINDING(rewrite_expr_, LogExprNode **)
 
 #endif

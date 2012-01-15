@@ -334,7 +334,7 @@ log_csv_parser_process(LogParser *s, LogMessage *msg, const gchar *input)
 }
 
 static LogPipe *
-log_csv_parser_clone(LogProcessPipe *s)
+log_csv_parser_clone(LogPipe *s)
 {
   LogCSVParser *self = (LogCSVParser *) s;
   LogCSVParser *cloned;
@@ -354,7 +354,7 @@ log_csv_parser_clone(LogProcessPipe *s)
     {
       cloned->super.columns = g_list_append(cloned->super.columns, g_strdup(l->data));
     }
-  return &cloned->super.super.super.super;
+  return &cloned->super.super.super;
 }
 
 static void
@@ -382,7 +382,7 @@ log_csv_parser_new(void)
   LogCSVParser *self = g_new0(LogCSVParser, 1);
 
   log_column_parser_init_instance(&self->super);
-  self->super.super.super.super.free_fn = log_csv_parser_free;
+  self->super.super.super.free_fn = log_csv_parser_free;
   self->super.super.super.clone = log_csv_parser_clone;
   self->super.super.process = log_csv_parser_process;
   log_csv_parser_set_delimiters(&self->super, " ");

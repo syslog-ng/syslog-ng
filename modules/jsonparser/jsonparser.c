@@ -118,7 +118,7 @@ log_json_parser_process (LogParser *s, LogMessage *msg, const gchar *input)
 }
 
 static LogPipe *
-log_json_parser_clone (LogProcessPipe *s)
+log_json_parser_clone (LogPipe *s)
 {
   LogJSONParser *self = (LogJSONParser *) s;
   LogJSONParser *cloned;
@@ -126,7 +126,7 @@ log_json_parser_clone (LogProcessPipe *s)
   cloned = (LogJSONParser *) log_json_parser_new ();
   log_json_parser_set_prefix ((LogParser *)cloned, self->prefix);
 
-  return &cloned->super.super.super;
+  return &cloned->super.super;
 }
 
 static void
@@ -144,7 +144,7 @@ log_json_parser_new (void)
   LogJSONParser *self = g_new0 (LogJSONParser, 1);
 
   log_parser_init_instance (&self->super);
-  self->super.super.super.free_fn = log_json_parser_free;
+  self->super.super.free_fn = log_json_parser_free;
   self->super.super.clone = log_json_parser_clone;
   self->super.process = log_json_parser_process;
 

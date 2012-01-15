@@ -21,178 +21,342 @@
  * COPYING for details.
  *
  */
-  
-#include "center.h"
-#include "sgroup.h"
-#include "dgroup.h"
+
+#include "cfg-tree.h"
 #include "filter.h"
 #include "messages.h"
 #include "afinter.h"
-#include "stats.h"
 #include "logparser.h"
 #include "logmpx.h"
 
 #include <string.h>
 
-
-struct _LogPipeItem
+/*
+ * Return the textual representation of a node content type.
+ */
+const gchar *
+log_expr_node_get_content_name(gint content)
 {
-  struct _LogPipeItem *ep_next;
-  GString *name;
-  gint type;
-  gpointer ref;
-};
-
-
-/**
- * log_pipe_item_append:
- * @a: first LogPipeItem
- * @b: second LogPipeItem
- *
- * This function appends @b to @a in a linked list using the ep_next field
- * in LogPipeItem.
- **/
-void
-log_pipe_item_append(LogPipeItem *a, LogPipeItem *b)
-{
-  a->ep_next = b;
+  switch (content)
+    {
+    case ENC_PIPE:
+      return "log";
+    case ENC_SOURCE:
+      return "source";
+    case ENC_FILTER:
+      return "filter";
+    case ENC_PARSER:
+      return "parser";
+    case ENC_REWRITE:
+      return "rewrite";
+    case ENC_DESTINATION:
+      return "destination";
+    default:
+      g_assert_not_reached();
+      break;
+    }
 }
 
-LogPipeItem *
-log_pipe_item_append_tail(LogPipeItem *a, LogPipeItem *b)
+/*
+ * Return the textual representation of a node layout.
+ */
+const gchar *
+log_expr_node_get_layout_name(gint layout)
+{
+  switch (layout)
+    {
+    case ENL_SINGLE:
+      return "single";
+    case ENL_REFERENCE:
+      return "reference";
+    case ENL_SEQUENCE:
+      return "sequence";
+    case ENL_JUNCTION:
+      return "junction";
+    default:
+      g_assert_not_reached();
+      break;
+    }
+}
+
+/* return the top-most rule that matches content. This is used to
+ * query the enclosing rule for a given LogExprNode. It is looking up
+ * the top-most node, so that we use the name of the enclosing block
+ * that the user specified. In-line defined, and thus anonymous
+ * expressions are automatically named. In that case this function
+ * will return a node matching @content but without an actual name.
+ */
+LogExprNode *
+log_expr_node_get_container_rule(LogExprNode *self, gint content)
+{
+  LogExprNode *node, *result = NULL;
+
+  node = self->parent;
+  while (node)
+    {
+      if (node->content == content)
+        {
+          result = node;
+        }
+      node = node->parent;
+    }
+  return result;
+}
+
+/**
+ * log_expr_node_append:
+ * @a: first LogExprNode
+ * @b: second LogExprNode
+ *
+ * This function appends @b to @a in a linked list using the ep_next field
+ * in LogExprNode.
+ **/
+void
+log_expr_node_append(LogExprNode *a, LogExprNode *b)
+{
+  a->next = b;
+}
+
+LogExprNode *
+log_expr_node_append_tail(LogExprNode *a, LogExprNode *b)
 {
   if (a)
     {
-      LogPipeItem *p = a;
-      while (p->ep_next)
-        p = p->ep_next;
-      log_pipe_item_append(p, b);
+      LogExprNode *p = a;
+      while (p->next)
+        p = p->next;
+      log_expr_node_append(p, b);
       return a;
     }
   return b;
 }
 
-/**
- * log_pipe_item_new:
- * @type: specifies endpoint type one of EP_* 
- * @name: name of the endpoint which is used in the configuration as an identifier
- * 
- * This function constructs a LogPipeItem object encapsulating a
- * source/filter/destination node in a log statement.
- **/
-LogPipeItem *
-log_pipe_item_new(gint type, gchar *name)
+/*
+ * Format the location information for a LogExprNode. For nodes that
+ * have no location information, the parent is considered, this way
+ * always returning something close to the location that defined the
+ * node.
+ */
+const gchar *
+log_expr_node_format_location(LogExprNode *self, gchar *buf, gsize buf_len)
 {
-  LogPipeItem *self = g_new0(LogPipeItem, 1);
-  
-  self->type = type;
-  self->name = g_string_new(name);
-  return self;
-}
+  LogExprNode *node = self;
 
-/**
- * log_pipe_item_new_ref:
- * @type: specifies endpoint type one of EP_* 
- * @ref: reference to the endpoint (used for unnamed PIPE items)
- * 
- * This function constructs a LogPipeItem object encapsulating a
- * source/filter/destination node in a log statement.
- **/
-LogPipeItem *
-log_pipe_item_new_ref(gint type, gpointer ref)
-{
-  LogPipeItem *self = g_new0(LogPipeItem, 1);
-  
-  self->type = type;
-  self->name = NULL;
-  self->ref = ref;
-  return self;
-}
-
-/**
- * log_pipe_item_free:
- * @self: LogPipeItem instance
- * 
- * This function frees a LogPipeItem instance, first by freeing the
- * referenced object stored in the @ref attribute then freeing @self.
- * NOTE: @ref is set when the given configuration is initialized.
- **/
-void
-log_pipe_item_free(LogPipeItem *self)
-{
-  if (self->name)
-    g_string_free(self->name, TRUE);
-  if (self->ref)
+  while (node)
     {
-      switch (self->type)
+      if (node->line || node->column)
         {
-        case EP_SOURCE:
-          log_source_group_unref((LogSourceGroup *) self->ref);
-          break;
-        case EP_FILTER:
-          log_process_rule_unref((LogProcessRule *) self->ref);
-          break;
-        case EP_PARSER:
-          log_process_rule_unref((LogProcessRule *) self->ref);
-          break;
-        case EP_DESTINATION:
-          log_dest_group_unref((LogDestGroup *) self->ref);
-          break;
-        case EP_PIPE:
-          log_connection_free((LogConnection *) self->ref);
-          break;
-        case EP_REWRITE:
-          log_process_rule_unref((LogProcessRule *) self->ref);
-          break;
-        default:
-          g_assert_not_reached();
+          g_snprintf(buf, buf_len, "%s:%d:%d", self->filename ? : "#buffer", self->line, self->column);
           break;
         }
+      node = node->parent;
     }
-  g_free(self);
+  if (!node)
+    strncpy(buf, "#unknown", sizeof(buf));
+  return buf;
+}
+
+/*
+ * Set the list of children of a LogExprNode. It automatically updates
+ * the children's "parent" pointers so that the tree can be traversed
+ * upwards too.
+ */
+void
+log_expr_node_set_children(LogExprNode *self, LogExprNode *children)
+{
+  LogExprNode *ep;
+
+  /* we don't currently support setting the children list multiple
+   * times. no inherent reason, just the proper free function would
+   * need to be written, until then this assert would reveal the case
+   * quite fast.
+   */
+
+  g_assert(self->children == NULL);
+
+  for (ep = children; ep; ep = ep->next)
+    ep->parent = self;
+
+  self->children = children;
+}
+
+/*
+ * Set the object associated with a node. The "object" member is used
+ * to store the LogPipe instance associated with ENL_SINGLE/ENC_PIPE
+ * nodes.
+ */
+void
+log_expr_node_set_object(LogExprNode *self, gpointer object, GDestroyNotify destroy)
+{
+  self->object = object;
+  self->object_destroy = destroy;
+}
+
+/*
+ * The aux object is the secondary object associated with a node, it
+ * is mostly unused, except for nodes storing source and destination
+ * statements, in which case this contains a reference to the last
+ * item of the compiled sequence (for sources) or the first item of
+ * the compiled sequence (destinations).
+ *
+ * This mechanism is used to avoid having to clone source/destination
+ * pipes, which operation they don't support.
+ */
+void
+log_expr_node_set_aux(LogExprNode *self, gpointer aux, GDestroyNotify destroy)
+{
+  self->aux = aux;
+  self->aux_destroy = destroy;
 }
 
 /**
- * log_connection_new:
- * @endpoints: list of endpoints in this log statement
+ * log_expr_node_new:
+ * @layout: layout of the children (ENL_*)
+ * @content: what kind of expression this node stores (ENC_*)
+ * @name: name of this rule (optional)
+ * @children: child nodes
  * @flags: a combination of LC_* flags as specified by the administrator
+ * @yylloc: the lexer location in the configuration file.
  *
- * This function constructs a LogConnection object which encapsulates a log
- * statement in the configuration, e.g. it has one or more sources, filters
- * and destinations each represented by a LogPipeItem object.
+ * This function constructs a LogExprNode object which encapsulates a
+ * log expression in the configuration. See the note in cfg-tree.h for
+ * more information about LogExprNode objects and log expressions.
  **/
-LogConnection *
-log_connection_new(LogPipeItem *endpoints, guint32 flags)
+LogExprNode *
+log_expr_node_new(gint layout, gint content, const gchar *name, LogExprNode *children, guint32 flags, YYLTYPE *yylloc)
 {
-  LogConnection *self = g_new0(LogConnection, 1);
-  
+  LogExprNode *self = g_new0(LogExprNode, 1);
+
+  self->layout = layout;
+  self->content = content;
+  self->name = g_strdup(name);
+  log_expr_node_set_children(self, children);
   self->flags = flags;
-  self->endpoints = endpoints;
+  if (yylloc)
+    {
+      self->filename = g_strdup(yylloc->level->name);
+      self->line = yylloc->first_line;
+      self->column = yylloc->first_column;
+    }
   return self;
 }
 
 /**
- * log_connection_free:
- * @self: LogConnection instance
+ * log_expr_node_free:
+ * @self: LogExprNode instance
  *
- * This function frees the LogConnection object encapsulating a log
- * statement pointed to by @self.
+ * This function frees the LogExprNode object encapsulating a log
+ * expression node pointed to by @self.
  **/
 void
-log_connection_free(LogConnection *self)
+log_expr_node_free(LogExprNode *self)
 {
-  LogPipeItem *ep, *ep_next;
-  
-  for (ep = self->endpoints; ep; ep = ep_next)
+  LogExprNode *next, *p;
+
+  for (p = self->children ; p; p = next)
     {
-      ep_next = ep->ep_next;
-      log_pipe_item_free(ep);
+      next = p->next;
+      log_expr_node_free(p);
     }
+  if (self->object && self->object_destroy)
+    self->object_destroy(self->object);
+  if (self->aux && self->aux_destroy)
+    self->aux_destroy(self->aux);
+  g_free(self->name);
+  g_free(self->filename);
   g_free(self);
+}
+
+LogExprNode *
+log_expr_node_new_pipe(LogPipe *pipe, YYLTYPE *yylloc)
+{
+  LogExprNode *node = log_expr_node_new(ENL_SINGLE, ENC_PIPE, NULL, NULL, 0, yylloc);
+
+  log_expr_node_set_object(node, pipe, (GDestroyNotify) log_pipe_unref);
+  return node;
+}
+
+
+LogExprNode *
+log_expr_node_new_source(const gchar *name, LogExprNode *children, YYLTYPE *yylloc)
+{
+  return log_expr_node_new(ENL_SEQUENCE, ENC_SOURCE, name, children, 0, yylloc);
+}
+
+LogExprNode *
+log_expr_node_new_source_reference(const gchar *name, YYLTYPE *yylloc)
+{
+  return log_expr_node_new(ENL_REFERENCE, ENC_SOURCE, name, NULL, 0, yylloc);
+}
+
+LogExprNode *
+log_expr_node_new_destination(const gchar *name, LogExprNode *children, YYLTYPE *yylloc)
+{
+  return log_expr_node_new(ENL_SEQUENCE, ENC_DESTINATION, name, children, 0, yylloc);
+}
+
+LogExprNode *
+log_expr_node_new_destination_reference(const gchar *name, YYLTYPE *yylloc)
+{
+  return log_expr_node_new(ENL_REFERENCE, ENC_DESTINATION, name, NULL, 0, yylloc);
+}
+
+LogExprNode *
+log_expr_node_new_filter(const gchar *name, LogExprNode *child, YYLTYPE *yylloc)
+{
+  return log_expr_node_new(ENL_SEQUENCE, ENC_FILTER, name, child, 0, yylloc);
+}
+
+LogExprNode *
+log_expr_node_new_filter_reference(const gchar *name, YYLTYPE *yylloc)
+{
+  return log_expr_node_new(ENL_REFERENCE, ENC_FILTER, name, NULL, 0, yylloc);
+}
+
+LogExprNode *
+log_expr_node_new_parser(const gchar *name, LogExprNode *children, YYLTYPE *yylloc)
+{
+  return log_expr_node_new(ENL_SEQUENCE, ENC_PARSER, name, children, 0, yylloc);
+}
+
+LogExprNode *
+log_expr_node_new_parser_reference(const gchar *name, YYLTYPE *yylloc)
+{
+  return log_expr_node_new(ENL_REFERENCE, ENC_PARSER, name, NULL, 0, yylloc);
+}
+
+LogExprNode *
+log_expr_node_new_rewrite(const gchar *name, LogExprNode *children, YYLTYPE *yylloc)
+{
+  return log_expr_node_new(ENL_SEQUENCE, ENC_REWRITE, name, children, 0, yylloc);
+}
+
+LogExprNode *
+log_expr_node_new_rewrite_reference(const gchar *name, YYLTYPE *yylloc)
+{
+  return log_expr_node_new(ENL_REFERENCE, ENC_REWRITE, name, NULL, 0, yylloc);
+}
+
+LogExprNode *
+log_expr_node_new_log(LogExprNode *children, guint32 flags, YYLTYPE *yylloc)
+{
+  return log_expr_node_new(ENL_SEQUENCE, ENC_PIPE, NULL, children, flags, yylloc);
+}
+
+LogExprNode *
+log_expr_node_new_sequence(LogExprNode *children, YYLTYPE *yylloc)
+{
+  return log_expr_node_new(ENL_SEQUENCE, ENC_PIPE, NULL, children, 0, yylloc);
+}
+
+LogExprNode *
+log_expr_node_new_junction(LogExprNode *children, YYLTYPE *yylloc)
+{
+  return log_expr_node_new(ENL_JUNCTION, ENC_PIPE, NULL, children, 0, yylloc);
 }
 
 gint
-log_connection_lookup_flag(const gchar *flag)
+log_expr_node_lookup_flag(const gchar *flag)
 {
   if (strcmp(flag, "catch-all") == 0 || strcmp(flag, "catchall") == 0 || strcmp(flag, "catch_all") == 0)
     return LC_CATCHALL;
@@ -206,111 +370,217 @@ log_connection_lookup_flag(const gchar *flag)
   return 0;
 }
 
-static void
-log_center_connect_source(gpointer key, gpointer value, gpointer user_data)
+/*
+ * Return the name of the rule that contains a LogExprNode. Generates
+ * one automatically for anonymous log expressions.
+ *
+ * NOTE: this returns an allocated string, the caller must free that.
+ */
+gchar *
+cfg_tree_get_rule_name(CfgTree *self, gint content, LogExprNode *node)
 {
-  LogPipe *pipe = (LogPipe *) value;
-  LogCenter *self = ((gpointer *) user_data)[0];
-  LogPipe *first_pipe = ((gpointer *) user_data)[1];
-  LogMultiplexer *mpx;
+  LogExprNode *rule = log_expr_node_get_container_rule(node, content);
 
-  if (!pipe->pipe_next)
-    {
-      mpx = log_multiplexer_new(0);
-      /* NOTE: initialized_pipes holds a ref */
-      g_ptr_array_add(self->initialized_pipes, mpx);
-      log_pipe_append(pipe, &mpx->super);
-    }
-  
-  mpx = (LogMultiplexer *) pipe->pipe_next;
-  log_multiplexer_add_next_hop(mpx, first_pipe);
-  g_ptr_array_add(self->initialized_pipes, log_pipe_ref(pipe));
+  if (!rule->name)
+    rule->name = g_strdup_printf("#anon-%s%d", log_expr_node_get_content_name(content), self->anon_counters[content]++);
+  return g_strdup(rule->name);
 }
 
 /*
- * This function basically pastes a LogProcessRule (e.g. filter, parser,
- * rewrite) into to log processing pipeline at the place of the reference.
- * Upon the first reference the LogPipe instances created during config
- * parsing are used.  If the same rule is referenced multiple times, then we
- * clone the rule to get distinct LogPipe instances.
+ * Return a unique the name associated with a LogExprNode. It is of
+ * the format <rule>#<seqid>.
  *
- * The reasons for this are that I want to allow processing elements to emit
- * messages and if they are not duplicated like this, it is very difficult
- * to know where they need to send their "output".  Since we duplicate the
- * LogPipe instances for each reference, each of these instances have a
- * proper pipe_next pointer, thus each knows in which path it got the
- * message and where to send it on, plus where to send synthetic messages.
+ * NOTE: this returns an allocated string, the caller must free that.
  */
-static LogPipe *
-log_center_instantiate_process_pipe_line(LogCenter *self, LogProcessRule *rule)
+gchar *
+cfg_tree_get_child_id(CfgTree *self, gint content, LogExprNode *node)
 {
-  GList *p;
-  LogPipe *first = NULL;
-  LogPipe *last = NULL;
-  LogPipe *pipe, *next;
+  LogExprNode *rule = log_expr_node_get_container_rule(node, content);
+  const gchar *rule_name = cfg_tree_get_rule_name(self, content, node);
 
-  p = rule->head;
-  if ((((LogPipe *) p->data)->flags & PIF_INLINED) == 0)
+  return g_strdup_printf("%s#%d", rule_name, rule->child_id++);
+}
+
+/* hash foreach function to add all source objects to catch-all rules */
+static void
+cfg_tree_add_all_sources(gpointer key, gpointer value, gpointer user_data)
+{
+  gpointer *args = (gpointer *) user_data;
+  LogExprNode *referring_rule = args[1];
+  LogExprNode *rule = (LogExprNode *) value;
+
+  if (rule->content != ENC_SOURCE)
+    return;
+
+  /* prepend a source reference */
+  referring_rule->children = log_expr_node_append_tail(log_expr_node_new_source_reference(rule->name, NULL), referring_rule->children);
+}
+
+static gboolean
+cfg_tree_compile_node(CfgTree *self, LogExprNode *node,
+                      LogPipe **outer_pipe_head, LogPipe **outer_pipe_tail,
+                      gboolean flow_controlled_parent);
+
+static gboolean
+cfg_tree_compile_single(CfgTree *self, LogExprNode *node,
+                        LogPipe **outer_pipe_head, LogPipe **outer_pipe_tail)
+{
+  LogPipe *pipe;
+
+  g_assert(node->content == ENC_PIPE);
+
+  pipe = node->object;
+
+  if ((pipe->flags & PIF_INLINED) == 0)
     {
-      /* This is the first reference of this process rule, thus we can use it directly */
-
-      for (p = rule->head; p; p = p->next)
-        {
-          pipe = (LogPipe *) p->data;
-          pipe->flags |= PIF_INLINED;
-          if (last)
-            log_pipe_append(last, pipe);
-          g_ptr_array_add(self->initialized_pipes, log_pipe_ref(pipe));
-          last = pipe;
-        }
-      return rule->head->data;
+      /* first reference to the pipe uses the same instance, further ones will get cloned */
+      pipe->flags |= PIF_INLINED;
     }
   else
     {
-      /* This rule has already been referenced once, we need to duplicate it for further references */
-
-      for (p = rule->head; p; p = p->next)
+      /* ok, we are using this pipe again, it needs to be cloned */
+      pipe = log_pipe_clone(pipe);
+      if (!pipe)
         {
-          pipe = log_process_pipe_clone(p->data);
+          gchar buf[128];
 
-          if (!pipe)
-            goto exit_error;
-
-          pipe->flags |= PIF_INLINED;
-          if (!first)
-            first = pipe;
-          if (last)
-            {
-              log_pipe_append(last, pipe);
-              last->pipe_next = pipe;
-            }
-          last = pipe;
+          msg_error("Error cloning pipe into its reference point, probably the element in question is not meant to be used in this situation",
+                    evt_tag_str("location", log_expr_node_format_location(node, buf, sizeof(buf))),
+                    NULL);
+          goto error;
         }
-      for (pipe = first; pipe; pipe = pipe->pipe_next)
-        {
-          g_ptr_array_add(self->initialized_pipes, pipe);
-        }
-      return first;
-    exit_error:
-      for (pipe = first; pipe; pipe = next)
-        {
-          next = pipe->pipe_next;
-          log_pipe_unref(pipe);
-        }
-
-      return NULL;
+      pipe->flags |= PIF_INLINED;
     }
+  g_ptr_array_add(self->initialized_pipes, log_pipe_ref(pipe));
+  pipe->expr_node = node;
+
+  if ((pipe->flags & PIF_SOURCE) == 0)
+    *outer_pipe_head = pipe;
+  *outer_pipe_tail = pipe;
+  return TRUE;
+
+ error:
+  return FALSE;
 }
 
+static gboolean
+cfg_tree_compile_reference(CfgTree *self, LogExprNode *node,
+                           LogPipe **outer_pipe_head, LogPipe **outer_pipe_tail, gboolean flow_controlled_parent)
+{
+  LogExprNode *referenced_node;
 
-/* NOTE: returns a borrowed reference! */
+  if (!node->object)
+    {
+      referenced_node = cfg_tree_get_object(self, node->content, node->name);
+    }
+  else
+    referenced_node = node->object;
+
+  if (!referenced_node)
+    {
+      gchar buf[128];
+
+      msg_error("Error resolving reference",
+                evt_tag_str("content", log_expr_node_get_content_name(node->content)),
+                evt_tag_str("name", node->name),
+                evt_tag_str("location", log_expr_node_format_location(node, buf, sizeof(buf))),
+                NULL);
+      goto error;
+    }
+
+  switch (referenced_node->content)
+    {
+    case ENC_SOURCE:
+      {
+        LogMultiplexer *mpx;
+        LogPipe *sub_pipe_head = NULL, *sub_pipe_tail = NULL;
+        LogPipe *attach_pipe = NULL;
+
+        if (!referenced_node->aux)
+          {
+            if (!cfg_tree_compile_node(self, referenced_node, &sub_pipe_head, &sub_pipe_tail, flow_controlled_parent))
+              goto error;
+            log_expr_node_set_aux(referenced_node, log_pipe_ref(sub_pipe_tail), (GDestroyNotify) log_pipe_unref);
+          }
+        else
+          {
+            sub_pipe_tail = referenced_node->aux;
+          }
+
+        if (!sub_pipe_tail->pipe_next)
+          {
+            mpx = log_multiplexer_new(0);
+            g_ptr_array_add(self->initialized_pipes, &mpx->super);
+            log_pipe_append(sub_pipe_tail, &mpx->super);
+          }
+        else
+          {
+            mpx = (LogMultiplexer *) sub_pipe_tail->pipe_next;
+          }
+
+        attach_pipe = log_pipe_new();
+        g_ptr_array_add(self->initialized_pipes, attach_pipe);
+
+        log_multiplexer_add_next_hop(mpx, attach_pipe);
+        *outer_pipe_head = NULL;
+        *outer_pipe_tail = attach_pipe;
+        break;
+      }
+    case ENC_DESTINATION:
+      {
+        LogMultiplexer *mpx;
+        LogPipe *sub_pipe_head = NULL, *sub_pipe_tail = NULL;
+
+        if (!referenced_node->aux)
+          {
+            if (!cfg_tree_compile_node(self, referenced_node, &sub_pipe_head, &sub_pipe_tail, flow_controlled_parent))
+              goto error;
+            log_expr_node_set_aux(referenced_node, log_pipe_ref(sub_pipe_head), (GDestroyNotify) log_pipe_unref);
+          }
+        else
+          {
+            sub_pipe_head = referenced_node->aux;
+          }
+
+        /* We need a new LogMultiplexer instance for two reasons:
+
+           1) we need to link something into the sequence, all
+           reference based destination invocations need a separate
+           LogPipe
+
+           2) we have to fork downwards to the destination, it may
+           change the message but we need the original one towards
+           our next chain
+        */
+
+        mpx = log_multiplexer_new(0);
+        g_ptr_array_add(self->initialized_pipes, &mpx->super);
+        log_multiplexer_add_next_hop(mpx, sub_pipe_head);
+        *outer_pipe_head = &mpx->super;
+        *outer_pipe_tail = NULL;
+        break;
+      }
+    default:
+      return cfg_tree_compile_node(self, referenced_node, outer_pipe_head, outer_pipe_tail, flow_controlled_parent);
+    }
+  return TRUE;
+
+ error:
+  return FALSE;
+}
+
 /**
- * log_center_init_pipe_line:
+ * cfg_tree_compile_sequence:
  *
- * Construct a LogPipe pipeline as specified by the user. The
- * configuration is parsed into a series of LogPipeItem elements, each
- * giving a reference to a source, filter, parser, rewrite and
- * destination. This function connects these so that their
+ * Construct the sequential part of LogPipe pipeline as specified by
+ * the user. The sequential part is where no branches exist, pipes are
+ * merely linked to each other. This is in contrast with a "junction"
+ * where the processing is forked into different branches. Junctions
+ * are built using cfg_tree_compile_junction() above.
+ *
+ * The configuration is parsed into a series of LogExprNode
+ * elements, each giving a reference to a source, filter, parser,
+ * rewrite and destination. This function connects these so that their
  * log_pipe_queue() method will dispatch the message correctly (which
  * in turn boils down to setting the LogPipe->next member).
  *
@@ -320,254 +590,426 @@ log_center_instantiate_process_pipe_line(LogCenter *self, LogProcessRule *rule)
  *
  * The next member pointer is not holding a reference, but can be
  * assumed to be kept alive as long as the configuration is running.
-LogPipe *
-log_center_init_pipe_line(LogCenter *self, LogConnection *conn, GlobalConfig *cfg, gboolean toplevel, gboolean flow_controlled_parent)
+ *
+ * Parameters:
+ * @self: the CfgTree instance
+ * @rule: the series of LogExprNode instances encapsulates as a LogExprNode
+ * @outer_pipe_tail: the last LogPipe to be used to chain further elements to this sequence
+ * @cfg: GlobalConfig instance
+ * @toplevel: whether this rule is a top-level one.
+ * @flow_controlled_parent: specifies whether the parent log statement has flags(flow-controlled)
+ **/
+static gboolean
+cfg_tree_compile_sequence(CfgTree *self, LogExprNode *node,
+                          LogPipe **outer_pipe_head, LogPipe **outer_pipe_tail,
+                          gboolean flow_controlled_parent)
 {
-  LogPipeItem *ep;
-  LogPipe *first_pipe, *pipe, *last_pipe;
-  LogMultiplexer *fork_mpx = NULL;
+  LogExprNode *ep;
+  LogPipe
+    *first_pipe,   /* the head of the constructed pipeline */
+    *last_pipe;    /* the current tail of the constructed pipeline */
+  LogPipe *source_join_pipe = NULL;
   gboolean  path_changes_the_message = FALSE, flow_controlled_child = FALSE;
 
-  /* resolve pipe references, find first pipe */
-  
-  if (!toplevel && (conn->flags & LC_CATCHALL) != 0)
+  if ((node->flags & LC_CATCHALL) != 0)
     {
+      /* the catch-all resolution code clears this flag */
+
       msg_error("Error in configuration, catch-all flag can only be specified for top-level log statements",
                 NULL);
       goto error;
     }
-  
+
+  /* the loop below creates a sequence of LogPipe instances which
+   * essentially execute the user configuration once it is
+   * started.
+   *
+   * The input of this is a log expression, denoted by a tree of
+   * LogExprNode structures, built by the parser. We are storing the
+   * sequence as a linked list, pipes are linked with their "next"
+   * field.
+   *
+   * The head of this list is pointed to by @first_pipe, the current
+   * end is known as @last_pipe.
+   *
+   * In case the sequence starts with a source LogPipe (PIF_SOURCE
+   * flag), the head of the list is _not_ tracked, in that case
+   * first_pipe is NULL.
+   *
+   */
+
   first_pipe = last_pipe = NULL;
-  
-  pipe = NULL;
-  for (ep = conn->endpoints; ep; ep = ep->ep_next)
+
+  for (ep = node->children; ep; ep = ep->next)
     {
-      g_assert(pipe == NULL);
+      LogPipe *sub_pipe_head = NULL, *sub_pipe_tail = NULL;
 
-      /* this switch results in a borrowed reference to be stored in @pipe */
-      switch (ep->type)
+      if (!cfg_tree_compile_node(self, ep, &sub_pipe_head, &sub_pipe_tail, flow_controlled_parent || (ep->flags & LC_FLOW_CONTROL)))
+        goto error;
+
+      /* add pipe to the current pipe_line, e.g. after last_pipe, update last_pipe & first_pipe */
+      if (sub_pipe_head)
         {
-        case EP_SOURCE:
-          {
-            if (toplevel && (conn->flags & LC_CATCHALL) == 0)
-              {
-                ep->ref = g_hash_table_lookup(cfg->sources, ep->name->str);
-                if (!ep->ref)
-                  {
-                    msg_error("Error in configuration, unresolved source reference",
-                              evt_tag_str("source", ep->name->str),
-                              NULL);
-                    goto error;
-                  }
-                log_source_group_ref((LogSourceGroup *) ep->ref);
-                pipe = (LogPipe *) ep->ref;
-                g_ptr_array_add(self->initialized_pipes, log_pipe_ref(pipe));
+          if (sub_pipe_head->flags & PIF_CLONE)
+            path_changes_the_message = TRUE;
 
-                if (!pipe->pipe_next)
-                  {
-                    LogMultiplexer *mpx;
+          if (sub_pipe_head->flags & PIF_HARD_FLOW_CONTROL)
+            flow_controlled_child = TRUE;
 
-                    mpx = log_multiplexer_new(0);
-                    g_ptr_array_add(self->initialized_pipes, mpx);
-                    log_pipe_append(pipe, &mpx->super);
-                  }
-                pipe = NULL;
-              }
-            else if (!toplevel)
-              {
-                msg_error("Error in configuration, no source reference is permitted in non-toplevel log statements",
-                          NULL);
-                goto error;
-              }
-            else
-              {
-                msg_error("Error in configuration, catch-all log statements may not specify sources",
-                          NULL);
-                goto error;
-              }
-            break;
-          }
-        case EP_FILTER:
-        case EP_PARSER:
-        case EP_REWRITE:
-          {
-            GHashTable *t;
+          if (!first_pipe && !last_pipe)
+            {
+              /* we only remember the first pipe in case we're not in
+               * source mode. In source mode, only last_pipe is set */
 
-            switch (ep->type)
-              {
-              case EP_FILTER:
-                t = cfg->filters;
-                break;
-              case EP_PARSER:
-                t = cfg->parsers;
-                break;
-              case EP_REWRITE:
-                t = cfg->rewriters;
-                break;
-              default:
-                g_assert_not_reached();
-              }
-            ep->ref = g_hash_table_lookup(t, ep->name->str);
-            if (!ep->ref)
-              {
-                msg_error("Error in configuration, unresolved processing element reference",
-                          evt_tag_str("pipeline", ep->name->str),
-                          NULL);
-                goto error;
-              }
-            pipe = log_center_instantiate_process_pipe_line(self, ep->ref);
-            if (!pipe)
-              {
-                msg_error("Error referencing processing element",
-                          evt_tag_str("pipeline", ep->name->str),
-                          NULL);
-                goto error;
-              }
-            log_process_rule_ref(ep->ref);
-            if ((ep->type != EP_FILTER) || (pipe->flags & PIF_CLONE))
-              path_changes_the_message = TRUE;
-            break;
-          }
-
-        case EP_DESTINATION:
-          {
-            ep->ref = g_hash_table_lookup(cfg->destinations, ep->name->str);
-            if (!ep->ref)
-              {
-                msg_error("Error in configuration, unresolved destination reference",
-                          evt_tag_str("destination", ep->name->str),
-                          NULL);
-                return FALSE;
-              }
-            log_dest_group_ref((LogDestGroup *) ep->ref);
-            g_ptr_array_add(self->initialized_pipes, log_pipe_ref((LogPipe *) ep->ref));
-
-            pipe = (LogPipe *) log_multiplexer_new(0);
-            log_multiplexer_add_next_hop((LogMultiplexer *) pipe, ep->ref);
-            g_ptr_array_add(self->initialized_pipes, pipe);
-            break;
-          }
-        case EP_PIPE:
-          {
-            LogPipe *sub_pipe;
-
-            if (!fork_mpx)
-              {
-                fork_mpx = log_multiplexer_new(0);
-                pipe = &fork_mpx->super;
-                g_ptr_array_add(self->initialized_pipes, pipe);
-              }
-            sub_pipe = log_center_init_pipe_line(self, (LogConnection *) ep->ref, cfg, FALSE, (conn->flags & LC_FLOW_CONTROL));
-            if (!sub_pipe)
-              {
-                /* error initializing subpipe */
-                goto error;
-              }
-            if (sub_pipe->flags & PIF_HARD_FLOW_CONTROL)
-              flow_controlled_child = TRUE;
-            log_multiplexer_add_next_hop(fork_mpx, sub_pipe);
-            break;
-          }
-          }
-        default:
-          {
-            g_assert_not_reached();
-            break;
-          }
-        }
-        
-      /* pipe is only a borrowed reference */
-      if (pipe)
-        {
-          if (!first_pipe)
-            first_pipe = pipe;
+              first_pipe = sub_pipe_head;
+            }
 
           if (last_pipe)
             {
-              log_pipe_append(last_pipe, pipe);
-              last_pipe = pipe;
-              pipe = NULL;
+              g_assert(last_pipe->pipe_next == NULL);
+              log_pipe_append(last_pipe, sub_pipe_head);
+            }
+
+          if (sub_pipe_tail)
+            {
+              last_pipe = sub_pipe_tail;
             }
           else
             {
-              last_pipe = pipe;
-              pipe = NULL;
+              last_pipe = sub_pipe_head;
+              /* look for the final pipe */
+              while (last_pipe->pipe_next)
+                {
+                  last_pipe = last_pipe->pipe_next;
+                }
             }
-
-          /* look for the final pipe */
-          while (last_pipe->pipe_next)
-            {
-              last_pipe = last_pipe->pipe_next;
-            }
+          sub_pipe_head = NULL;
         }
-    }
-  
-  if (!first_pipe)
-    {
-      /* FIXME: more accurate description of the error */
-      msg_error("Pipeline has no processing elements, only sources", NULL);
-      goto error;
-    }
-  
-  if (conn->flags & LC_FALLBACK)
-    first_pipe->flags |= PIF_BRANCH_FALLBACK;
-
-  if (conn->flags & LC_FINAL)
-    first_pipe->flags |= PIF_BRANCH_FINAL;
-
-  if (path_changes_the_message)
-    first_pipe->flags |= PIF_CLONE;
-
-  if ((conn->flags & LC_FLOW_CONTROL) || flow_controlled_child || flow_controlled_parent)
-    first_pipe->flags |= PIF_HARD_FLOW_CONTROL;
-    
-  if ((conn->flags & LC_CATCHALL) == 0)
-    {
-      for (ep = conn->endpoints; ep; ep = ep->ep_next)
+      else if (sub_pipe_tail)
         {
-          if (ep->type == EP_SOURCE)
-            {
-              LogMultiplexer *mpx;
+          /* source pipe */
 
-              pipe = (LogPipe *) ep->ref;
-              mpx = (LogMultiplexer *) pipe->pipe_next;
-              log_multiplexer_add_next_hop(mpx, first_pipe);
-              pipe = NULL;
+          if (first_pipe)
+            {
+              gchar buf[128];
+
+              msg_error("Error compiling sequence, source-pipe follows a non-source one, please list source references/definitions first",
+                        evt_tag_str("location", log_expr_node_format_location(ep, buf, sizeof(buf))),
+                        NULL);
+              goto error;
             }
+
+          if (!source_join_pipe)
+            {
+              source_join_pipe = last_pipe = log_pipe_new();
+              g_ptr_array_add(self->initialized_pipes, source_join_pipe);
+            }
+          log_pipe_append(sub_pipe_tail, source_join_pipe);
         }
     }
-  else
+
+  if (first_pipe)
     {
-      gpointer args[] = { self, first_pipe };
-      g_hash_table_foreach(cfg->sources, log_center_connect_source, args);
+      if (node->flags & LC_FALLBACK)
+        first_pipe->flags |= PIF_BRANCH_FALLBACK;
+
+      if (node->flags & LC_FINAL)
+        first_pipe->flags |= PIF_BRANCH_FINAL;
+
+      if (path_changes_the_message)
+        first_pipe->flags |= PIF_CLONE;
+
+      if ((node->flags & LC_FLOW_CONTROL) || flow_controlled_child || flow_controlled_parent)
+        first_pipe->flags |= PIF_HARD_FLOW_CONTROL;
     }
-  return first_pipe;
+
+  *outer_pipe_tail = last_pipe;
+  *outer_pipe_head = first_pipe;
+  return TRUE;
  error:
-  
+
   /* we don't need to free anything, everything we allocated is recorded in
-   * @self, thus will be freed whenever log_center_free is called */
-  
-  return NULL;
+   * @self, thus will be freed whenever cfg_tree_free is called */
+
+  return FALSE;
+}
+
+/**
+ * cfg_tree_compile_junction():
+ *
+ * This function builds a junction within the configuration. A
+ * junction is where processing is forked into several branches, each
+ * doing its own business, and then the end of each branch is
+ * collected at the end so that further processing can be done on the
+ * combined output of each log branch.
+ *
+ *       /-- branch --\
+ *      /              \
+ *  ---+---- branch ----+---
+ *      \              /
+ *       \-- branch --/
+ **/
+static gboolean
+cfg_tree_compile_junction(CfgTree *self,
+                          LogExprNode *node,
+                          LogPipe **outer_pipe_head, LogPipe **outer_pipe_tail,
+                          gboolean flow_controlled_parent)
+{
+  LogExprNode *ep;
+  LogPipe *join_pipe = NULL;    /* the pipe where parallel branches are joined in a junction */
+  LogMultiplexer *fork_mpx = NULL;
+  gboolean flow_controlled_child = FALSE;
+
+  for (ep = node->children; ep; ep = ep->next)
+    {
+      LogPipe *sub_pipe_head = NULL, *sub_pipe_tail = NULL;
+      gboolean is_first_branch = (ep == node->children);
+
+      if (!cfg_tree_compile_node(self, ep, &sub_pipe_head, &sub_pipe_tail, flow_controlled_parent || (ep->flags & LC_FLOW_CONTROL)))
+        goto error;
+
+      if (sub_pipe_head)
+        {
+          /* ep is an intermediate LogPipe or a destination, we have to fork */
+
+          if (!is_first_branch && !fork_mpx)
+            {
+              gchar buf[128];
+
+              msg_error("Error compiling junction, source and non-source branches are mixed",
+                        evt_tag_str("location", log_expr_node_format_location(ep, buf, sizeof(buf))),
+                        NULL);
+              goto error;
+            }
+          if (!fork_mpx)
+            {
+              fork_mpx = log_multiplexer_new(0);
+              g_ptr_array_add(self->initialized_pipes, &fork_mpx->super);
+            }
+          log_multiplexer_add_next_hop(fork_mpx, sub_pipe_head);
+          if (sub_pipe_head->flags & PIF_HARD_FLOW_CONTROL)
+            flow_controlled_child = TRUE;
+        }
+      else
+        {
+          /* ep is a "source" LogPipe (cause no sub_pipe_head returned by compile_node). */
+
+          if (fork_mpx)
+            {
+              gchar buf[128];
+
+              msg_error("Error compiling junction, source and non-source branches are mixed",
+                        evt_tag_str("location", log_expr_node_format_location(ep, buf, sizeof(buf))),
+                        NULL);
+              goto error;
+            }
+        }
+
+      if (sub_pipe_tail && outer_pipe_tail)
+        {
+          if (!join_pipe)
+            {
+              join_pipe = log_pipe_new();
+              g_ptr_array_add(self->initialized_pipes, join_pipe);
+            }
+          log_pipe_append(sub_pipe_tail, join_pipe);
+
+        }
+    }
+
+  if (fork_mpx && (flow_controlled_child || flow_controlled_parent))
+    fork_mpx->super.flags |= PIF_HARD_FLOW_CONTROL;
+
+  *outer_pipe_head = &fork_mpx->super;
+  if (outer_pipe_tail)
+    *outer_pipe_tail = join_pipe;
+  return TRUE;
+ error:
+
+  /* we don't need to free anything, everything we allocated is recorded in
+   * @self, thus will be freed whenever cfg_tree_free is called */
+
+  return FALSE;
+}
+
+/*
+ * cfg_tree_compile_node:
+ *
+ * This function takes care of compiling a LogExprNode.
+ */
+gboolean
+cfg_tree_compile_node(CfgTree *self, LogExprNode *node,
+                      LogPipe **outer_pipe_head, LogPipe **outer_pipe_tail,
+                      gboolean flow_controlled_parent)
+{
+  gboolean result = FALSE;
+  static gint indent = -1;
+
+  if (debug_flag)
+    {
+      indent++;
+      fprintf(stderr, "%.*sCompiling %s %s [%s]\n",
+              indent * 2, "                   ",
+              node->name ? : "#unnamed",
+              log_expr_node_get_layout_name(node->layout),
+              log_expr_node_get_content_name(node->content));
+    }
+
+  switch (node->layout)
+    {
+    case ENL_SINGLE:
+      result = cfg_tree_compile_single(self, node, outer_pipe_head, outer_pipe_tail);
+      break;
+    case ENL_REFERENCE:
+      result = cfg_tree_compile_reference(self, node, outer_pipe_head, outer_pipe_tail, flow_controlled_parent);
+      break;
+    case ENL_SEQUENCE:
+      result = cfg_tree_compile_sequence(self, node, outer_pipe_head, outer_pipe_tail, flow_controlled_parent);
+      break;
+    case ENL_JUNCTION:
+      result = cfg_tree_compile_junction(self, node, outer_pipe_head, outer_pipe_tail, flow_controlled_parent);
+      break;
+    default:
+      g_assert_not_reached();
+    }
+
+  indent--;
+  return result;
 }
 
 gboolean
-log_center_init(LogCenter *self, GlobalConfig *cfg)
+cfg_tree_compile_rule(CfgTree *self, LogExprNode *rule)
+{
+  LogPipe *sub_pipe_head = NULL, *sub_pipe_tail = NULL;
+
+  return cfg_tree_compile_node(self, rule, &sub_pipe_head, &sub_pipe_tail, FALSE);
+}
+
+static gboolean
+cfg_tree_objects_equal(gconstpointer v1, gconstpointer v2)
+{
+  LogExprNode *r1 = (LogExprNode *) v1;
+  LogExprNode *r2 = (LogExprNode *) v2;
+
+  if (r1->content != r2->content)
+    return FALSE;
+
+  /* we assume that only rules with a name are hashed */
+
+  return strcmp(r1->name, r2->name) == 0;
+}
+
+static guint
+cfg_tree_objects_hash(gconstpointer v)
+{
+  LogExprNode *r = (LogExprNode *) v;
+
+  /* we assume that only rules with a name are hashed */
+  return r->content + g_str_hash(r->name);
+}
+
+gboolean
+cfg_tree_add_object(CfgTree *self, LogExprNode *rule)
+{
+  gboolean res = TRUE;
+
+  if (rule->name)
+    {
+      /* only named rules can be stored as objects to be referenced later */
+
+      /* check if already present */
+      res = (g_hash_table_lookup(self->objects, rule) == NULL);
+
+      /* key is the same as the object */
+      g_hash_table_replace(self->objects, rule, rule);
+    }
+  else
+    {
+      /* unnamed rules are simply put in the rules array */
+      g_ptr_array_add(self->rules, rule);
+    }
+
+  return res;
+}
+
+LogExprNode *
+cfg_tree_get_object(CfgTree *self, gint content, const gchar *name)
+{
+  LogExprNode lookup_node;
+
+  memset(&lookup_node, 0, sizeof(lookup_node));
+  lookup_node.content = content;
+  lookup_node.name = (gchar *) name;
+
+  return g_hash_table_lookup(self->objects, &lookup_node);
+}
+
+gboolean
+cfg_tree_add_template(CfgTree *self, LogTemplate *template)
+{
+  gboolean res = TRUE;
+
+  res = (g_hash_table_lookup(self->templates, template->name) == NULL);
+  g_hash_table_replace(self->templates, template->name, template);
+  return res;
+}
+
+LogTemplate *
+cfg_tree_lookup_template(CfgTree *self, const gchar *name)
+{
+  if (name)
+    return log_template_ref(g_hash_table_lookup(self->templates, name));
+  return NULL;
+}
+
+LogTemplate *
+cfg_tree_check_inline_template(CfgTree *self, const gchar *template_or_name, GError **error)
+{
+  LogTemplate *template = cfg_tree_lookup_template(self, template_or_name);
+
+  if (template == NULL)
+    {
+      template = log_template_new(self->cfg, NULL);
+      log_template_compile(template, template_or_name, error);
+      template->def_inline = TRUE;
+    }
+  return template;
+}
+
+gboolean
+cfg_tree_compile(CfgTree *self)
 {
   gint i;
-  
+
   /* resolve references within the configuration */
-  
-  for (i = 0; i < cfg->connections->len; i++)
+
+  for (i = 0; i < self->rules->len; i++)
     {
-      LogConnection *conn = (LogConnection *) g_ptr_array_index(cfg->connections, i);
-      LogPipe *pipe_line;
-      
-      pipe_line = log_center_init_pipe_line(self, conn, cfg, TRUE, FALSE);
-      if (!pipe_line)
+      LogExprNode *rule = (LogExprNode *) g_ptr_array_index(self->rules, i);
+
+      if ((rule->flags & LC_CATCHALL))
+        {
+          gpointer args[] = { self, rule };
+
+          g_hash_table_foreach(self->objects, cfg_tree_add_all_sources, args);
+          rule->flags &= ~LC_CATCHALL;
+        }
+
+      if (!cfg_tree_compile_rule(self, rule))
         {
           return FALSE;
         }
     }
+  return TRUE;
+}
+
+gboolean
+cfg_tree_start(CfgTree *self)
+{
+  gint i;
+
+  if (!cfg_tree_compile(self))
+    return FALSE;
 
   /*
    *   As there are pipes that are dynamically created during init, these
@@ -577,24 +1019,18 @@ log_center_init(LogCenter *self, GlobalConfig *cfg)
    */
   for (i = 0; i < self->initialized_pipes->len; i++)
     {
-      if (!log_pipe_init(g_ptr_array_index(self->initialized_pipes, i), cfg))
+      if (!log_pipe_init(g_ptr_array_index(self->initialized_pipes, i), self->cfg))
         {
           msg_error("Error initializing message pipeline",
                     NULL);
           return FALSE;
         }
     }
-  stats_lock();
-  stats_register_counter(0, SCS_CENTER, NULL, "received", SC_TYPE_PROCESSED, &self->received_messages);
-  stats_register_counter(0, SCS_CENTER, NULL, "queued", SC_TYPE_PROCESSED, &self->queued_messages);
-  stats_unlock();
-  
-  self->state = LC_STATE_WORKING;
   return TRUE;
 }
 
 gboolean
-log_center_deinit(LogCenter *self)
+cfg_tree_stop(CfgTree *self)
 {
   gboolean success = TRUE;
   gint i;
@@ -604,31 +1040,29 @@ log_center_deinit(LogCenter *self)
       if (!log_pipe_deinit(g_ptr_array_index(self->initialized_pipes, i)))
         success = FALSE;
     }
-  
-  stats_lock();
-  stats_unregister_counter(SCS_CENTER, NULL, "received", SC_TYPE_PROCESSED, &self->received_messages);
-  stats_unregister_counter(SCS_CENTER, NULL, "queued", SC_TYPE_PROCESSED, &self->queued_messages);
-  stats_unlock();
+
   return success;
 }
 
 void
-log_center_free(LogCenter *self)
+cfg_tree_init_instance(CfgTree *self, GlobalConfig *cfg)
 {
-  gint i;
-  for (i = 0; i < self->initialized_pipes->len; i++)
-    {
-      log_pipe_unref(g_ptr_array_index(self->initialized_pipes, i));
-    }
-  g_ptr_array_free(self->initialized_pipes, TRUE);
-  g_free(self);
+  self->initialized_pipes = g_ptr_array_new();
+  self->objects = g_hash_table_new_full(cfg_tree_objects_hash, cfg_tree_objects_equal, NULL, (GDestroyNotify) log_expr_node_free);
+  self->templates = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, (GDestroyNotify) log_template_unref);
+  self->rules = g_ptr_array_new();
+  self->cfg = cfg;
 }
 
-LogCenter *
-log_center_new()
+void
+cfg_tree_free_instance(CfgTree *self)
 {
-  LogCenter *self = g_new0(LogCenter, 1);
+  g_ptr_array_foreach(self->initialized_pipes, (GFunc) log_pipe_unref, NULL);
+  g_ptr_array_free(self->initialized_pipes, TRUE);
 
-  self->initialized_pipes = g_ptr_array_new();
-  return self;
+  g_ptr_array_foreach(self->rules, (GFunc) log_expr_node_free, NULL);
+  g_ptr_array_free(self->rules, TRUE);
+
+  g_hash_table_destroy(self->templates);
+  self->cfg = NULL;
 }

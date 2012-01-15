@@ -26,7 +26,7 @@
 #include "parser-expr-grammar.h"
 
 extern int parser_expr_debug;
-int parser_expr_parse(CfgLexer *lexer, GList **node);
+int parser_expr_parse(CfgLexer *lexer, LogExprNode **node);
 
 static CfgLexerKeyword parser_expr_keywords[] = {
   { "file",               KW_FILE },
@@ -44,4 +44,4 @@ CfgParser parser_expr_parser =
   .parse = (gint (*)(CfgLexer *, gpointer *, gpointer)) parser_expr_parse,
 };
 
-CFG_PARSER_IMPLEMENT_LEXER_BINDING(parser_expr_, GList **)
+CFG_PARSER_IMPLEMENT_LEXER_BINDING(parser_expr_, LogExprNode **)

@@ -41,6 +41,7 @@ static CfgLexerKeyword main_keywords[] = {
   { "rewrite",            KW_REWRITE, 0x0300, },
   { "destination",        KW_DESTINATION },
   { "log",                KW_LOG },
+  { "junction",           KW_JUNCTION },
   { "options",            KW_OPTIONS },
   { "include",            KW_INCLUDE, 0x0300, },
   { "block",              KW_BLOCK, 0x0302 },
