@@ -736,7 +736,7 @@ afinet_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
       g_static_mutex_unlock(&self->lnet_lock);
     }
 #endif
-  log_pipe_forward_msg(s, msg, path_options);
+  log_dest_driver_queue_method(s, msg, path_options, user_data);
 }
 
 void

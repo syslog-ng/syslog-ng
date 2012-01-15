@@ -1144,12 +1144,13 @@ affile_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
     }
   if (next)
     {
-      log_pipe_queue(&next->super, msg, path_options);
+      log_msg_add_ack(msg, path_options);
+      log_pipe_queue(&next->super, log_msg_ref(msg), path_options);
       next->queue_pending = FALSE;
       log_pipe_unref(&next->super);
     }
-  else
-    log_msg_drop(msg, path_options);
+
+  log_dest_driver_queue_method(s, msg, path_options, user_data);
 }
 
 static void

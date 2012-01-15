@@ -525,7 +525,8 @@ afmongodb_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_optio
   queue_was_empty = log_queue_get_length(self->queue) == 0;
   g_mutex_unlock(self->queue_mutex);
 
-  log_queue_push_tail(self->queue, msg, path_options);
+  log_msg_add_ack(msg, path_options);
+  log_queue_push_tail(self->queue, log_msg_ref(msg), path_options);
 
   g_mutex_lock(self->suspend_mutex);
   if (queue_was_empty && !self->writer_thread_suspended)
@@ -533,6 +534,7 @@ afmongodb_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_optio
       log_queue_set_parallel_push(self->queue, 1, afmongodb_dd_queue_notify, self, NULL);
     }
   g_mutex_unlock(self->suspend_mutex);
+  log_dest_driver_queue_method(s, msg, path_options, user_data);
 }
 
 /*

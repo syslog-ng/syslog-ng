@@ -164,6 +164,14 @@ log_dest_driver_release_queue_method(LogDestDriver *self, LogQueue *q, gpointer 
     log_queue_unref(q);
 }
 
+void
+log_dest_driver_queue_method(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data)
+{
+  LogDestDriver *self = (LogDestDriver *) s;
+
+  log_pipe_forward_msg(s, msg, path_options);
+}
+
 gboolean
 log_dest_driver_deinit_method(LogPipe *s)
 {

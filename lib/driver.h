@@ -200,6 +200,7 @@ log_dest_driver_init_method(LogPipe *s)
 }
 
 gboolean log_dest_driver_deinit_method(LogPipe *s);
+void log_dest_driver_queue_method(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data);
 
 void log_dest_driver_init_instance(LogDestDriver *self);
 void log_dest_driver_free(LogPipe *s);

@@ -108,8 +108,7 @@ afuser_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
     }
   endutent();
 finish:
-  log_msg_ack(msg, path_options);
-  log_msg_unref(msg);
+  log_dest_driver_queue_method(s, msg, path_options, user_data);
 }
 
 void
