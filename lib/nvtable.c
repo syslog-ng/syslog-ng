@@ -665,14 +665,13 @@ nv_table_init_borrowed(gpointer space, gsize space_len, gint num_static_entries)
 }
 
 NVTable *
-nv_table_realloc(NVTable *self)
+nv_table_realloc(NVTable *self, NVTable **new)
 {
   gint old_size = self->size;
-  NVTable *new = NULL;
 
   if (self->ref_cnt == 1 && !self->borrowed)
     {
-      self = g_realloc(self, old_size << (NV_TABLE_SCALE + 1));
+      *new = self = g_realloc(self, old_size << (NV_TABLE_SCALE + 1));
 
       self->size <<= 1;
       memmove(NV_TABLE_ADDR(self, self->size - self->used),
@@ -681,20 +680,20 @@ nv_table_realloc(NVTable *self)
     }
   else
     {
-      new = g_malloc(old_size << (NV_TABLE_SCALE + 1));
+      *new = g_malloc(old_size << (NV_TABLE_SCALE + 1));
 
       /* we only copy the header in this case */
       memcpy(new, self, sizeof(NVTable) + self->num_static_entries * sizeof(self->static_entries[0]) + self->num_dyn_entries * sizeof(guint32));
       self->size <<= 1;
-      new->ref_cnt = 1;
-      new->borrowed = FALSE;
+      (*new)->ref_cnt = 1;
+      (*new)->borrowed = FALSE;
 
-      memmove(NV_TABLE_ADDR(new, new->size - new->used),
+      memmove(NV_TABLE_ADDR((*new), (*new)->size - (*new)->used),
               NV_TABLE_ADDR(self, old_size - self->used),
               self->used << NV_TABLE_SCALE);
 
       nv_table_unref(self);
-      self = new;
+      self = *new;
     }
   return self;
 }
