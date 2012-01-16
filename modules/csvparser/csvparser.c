@@ -350,6 +350,8 @@ log_csv_parser_clone(LogProcessPipe *s)
   cloned->quotes_end = g_strdup(self->quotes_end);
   cloned->null_value = self->null_value ? g_strdup(self->null_value) : NULL;
   cloned->flags = self->flags;
+
+  cloned->super.super.template = log_template_ref(self->super.super.template);
   for (l = self->super.columns; l; l = l->next)
     {
       cloned->super.columns = g_list_append(cloned->super.columns, g_strdup(l->data));
