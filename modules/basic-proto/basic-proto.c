@@ -435,9 +435,11 @@ log_proto_file_writer_new(LogTransport *transport, gint flush_lines)
   if (flush_lines == 0)
     /* the flush-lines option has not been specified, use a default value */
     flush_lines = 1;
+#ifdef IOV_MAX
   if (flush_lines > IOV_MAX)
     /* limit the flush_lines according to the current platform */
     flush_lines = IOV_MAX;
+#endif
 
   /* allocate the structure with the proper number of items at the end */
   LogProtoFileWriter *self = (LogProtoFileWriter *)g_malloc0(sizeof(LogProtoFileWriter) + sizeof(struct iovec)*flush_lines);
