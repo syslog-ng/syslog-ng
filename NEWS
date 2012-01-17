@@ -1,3 +1,90 @@
+3.3.4
+	Mon, 16 Jan 2012 23:07:46 +0100
+
+	Highlights
+	==========
+	This release is aimed fixing bugs in the 3.3.x series, with one more
+	important change: there's an incompatible change in the processing
+	of <action> tags in the db-parser() database format (aka patterndb),
+	see below for more details.
+
+	Bugfixes:
+	=========
+
+	* Fixed set() and subst() rewrite operations to work properly on the
+	  value() parameter specified in the configuration even if they are
+	  referenced at multiple spots in the configuration file.  Earlier
+	  the 2nd and subsequent invocation of the rewrite rule changed
+	  $MESSAGE.
+
+	* Fixed csv-parser() to work even if it is invoked at multiple spots
+	  in the configuration file. Earlier, the 2nd and subsequent
+	  references of the parser rule forgot the list of column names and
+	  the input template.
+
+	* Fixed the processing of condition() parameter in rewrite rules,
+	  which was broken if it contained a filter() function call.
+
+	* Fixed program() destination to properly kill the child process on
+	  reload and shutdown.
+
+	* Fixed a potential division by zero error which could happen for
+	  large data rates due to a race in an unlocked region.
+
+	* Fixed an assertion failure in mongodb destination that happened
+	  due to a race condition at high data rates.
+
+	* Fixed an fd leak in the control socket code, that caused the
+	  control connection file descriptors to be leaked.
+
+	Other changes
+	=============
+	* db-parser() automatically sets a tag named '.classifier.unknown'
+	  if the message doesn't match.
+
+	* The use of actions in db-parser() for messages without a
+	  correllation context was inconsistently indexing messages. For
+	  actions in rules that had correllation @0 was the new message
+	  being generated, and @1 was the message that triggered the rule.
+	  Without correllation @0 was used for the triggering message, which
+	  is greatly inconsistent and unintuitive.  This was fixed by
+	  changing the behaviour for rules without correllation, now both
+	  correllation and non-correllation rules use @0 for the new
+	  message, and @1 for the triggering message.  This is an
+	  incompatible change in the db-parser() format.
+
+	* The value of the $TAGS macro is added to pdbtool match output.
+
+	* unix-dgram() and unix-stream() error logging on systemd failures
+	  became more detailed for easier troubleshooting.
+
+	Credits:
+	========
+	syslog-ng is developed as a community project, and as such it relies
+        on volunteers to do the work necessarily to produce syslog-ng.
+
+        Reporting bugs, testing changes, writing code or simply providing
+        feedback are all important contributions, so please if you are a
+        user of syslog-ng, contribute.
+
+        These people have helped in this release:
+
+	  Attila M. Magyar (BalaBit)
+	  Balazs Scheidler (BalaBit)
+	  Costa Farber
+	  Dmitry Gilev
+	  Evan Rempel (University of Victoria)
+	  Fried Zoltan (BalaBit)
+	  Gergely Nagy (BalaBit)
+	  Jakub Jankowski (SuperHost.pl)
+	  John Morrissey (Horde.net)
+	  Michael Hocke (New York University)
+	  Michal Schmidt (RedHat)
+	  Peter Eisenlohr (Inform Software)
+	  Svante Signell (Telia.se)
+	  Thomas Wollner
+
+
 3.3.3
 	Thu, 17 Nov 2011 21:23:05 +0100
 
