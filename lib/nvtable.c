@@ -683,7 +683,7 @@ nv_table_realloc(NVTable *self, NVTable **new)
       *new = g_malloc(old_size << (NV_TABLE_SCALE + 1));
 
       /* we only copy the header in this case */
-      memcpy(new, self, sizeof(NVTable) + self->num_static_entries * sizeof(self->static_entries[0]) + self->num_dyn_entries * sizeof(guint32));
+      memcpy(*new, self, sizeof(NVTable) + self->num_static_entries * sizeof(self->static_entries[0]) + self->num_dyn_entries * sizeof(guint32));
       self->size <<= 1;
       (*new)->ref_cnt = 1;
       (*new)->borrowed = FALSE;
