@@ -165,12 +165,12 @@ gboolean
 log_dest_driver_deinit_method(LogPipe *s)
 {
   LogDestDriver *self = (LogDestDriver *) s;
-  GList *l;
+  GList *l, *next;
 
-  for (l = self->queues; l; l = l->next)
+  for (l = self->queues; l; l = next)
     {
       LogQueue *q = (LogQueue *) l->data;
-
+      next = l->next;
       log_dest_driver_release_queue(self, q);
     }
   g_assert(self->queues == NULL);
