@@ -345,7 +345,11 @@ afprogram_dd_init(LogPipe *s)
   log_writer_set_options((LogWriter *) self->writer, s, &self->writer_options, 0, SCS_PROGRAM, self->super.super.id, self->cmdline->str);
   log_writer_set_queue(self->writer, log_dest_driver_acquire_queue(&self->super, afprogram_dd_format_persist_name(self)));
 
-  log_pipe_init(self->writer, NULL);
+  if (!log_pipe_init(self->writer, NULL))
+    {
+      log_pipe_unref(self->writer);
+      return FALSE;
+    }
   log_pipe_append(&self->super.super.super, self->writer);
 
   return afprogram_dd_reopen(self);

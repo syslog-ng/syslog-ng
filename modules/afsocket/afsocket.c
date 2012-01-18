@@ -1270,7 +1270,11 @@ afsocket_dd_init(LogPipe *s)
   log_writer_set_options((LogWriter *) self->writer, &self->super.super.super, &self->writer_options, 0, afsocket_dd_stats_source(self), self->super.super.id, afsocket_dd_stats_instance(self));
   log_writer_set_queue(self->writer, log_dest_driver_acquire_queue(&self->super, afsocket_dd_format_persist_name(self, TRUE)));
 
-  log_pipe_init(self->writer, NULL);
+  if (!log_pipe_init(self->writer, NULL))
+    {
+      log_pipe_unref(self->writer);
+      return FALSE;
+    }
   log_pipe_append(&self->super.super.super, self->writer);
 
   if (!log_writer_opened((LogWriter *) self->writer))
