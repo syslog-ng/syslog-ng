@@ -438,7 +438,10 @@ afmongodb_dd_init(LogPipe *s)
 	      NULL);
 
   self->queue = log_dest_driver_acquire_queue(&self->super, afmongodb_dd_format_persist_name(self));
-
+  if (self->queue == NULL)
+    {
+      return FALSE;
+    }
   stats_lock();
   stats_register_counter(0, SCS_MONGODB | SCS_DESTINATION, self->super.super.id,
 			 afmongodb_dd_format_stats_instance(self),
