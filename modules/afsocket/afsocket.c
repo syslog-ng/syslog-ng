@@ -787,7 +787,12 @@ afsocket_sd_free(LogPipe *s)
   g_sockaddr_unref(self->bind_addr);
   self->bind_addr = NULL;
   g_free(self->transport);
-
+#if ENABLE_SSL
+  if(self->tls_context)
+    {
+      tls_context_free(self->tls_context);
+    }
+#endif
   log_src_driver_free(s);
 }
 
@@ -1264,6 +1269,12 @@ afsocket_dd_free(LogPipe *s)
   g_free(self->hostname);
   g_free(self->dest_name);
   g_free(self->transport);
+#if ENABLE_SSL
+  if(self->tls_context)
+    {
+      tls_context_free(self->tls_context);
+    }
+#endif
   log_dest_driver_free(s);
 }
 
