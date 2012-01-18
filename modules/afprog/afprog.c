@@ -181,7 +181,7 @@ afprogram_sd_deinit(LogPipe *s)
                   evt_tag_str("cmdline", self->cmdline->str),
                   evt_tag_int("child_pid", self->pid),
                   NULL);
-      kill(self->pid, SIGTERM);
+      kill(-self->pid, SIGTERM);
       self->pid = -1;
     }
 
@@ -263,7 +263,7 @@ afprogram_dd_reopen(AFProgramDestDriver *self)
                   evt_tag_str("cmdline", self->cmdline->str),
                   evt_tag_int("child_pid", self->pid),
                   NULL);
-      kill(self->pid, SIGTERM);
+      kill(-self->pid, SIGTERM);
       self->pid = -1;
     }
 
@@ -334,7 +334,7 @@ afprogram_dd_deinit(LogPipe *s)
                   evt_tag_str("cmdline", self->cmdline->str),
                   evt_tag_int("child_pid", self->pid),
                   NULL);
-      kill(self->pid, SIGTERM);
+      kill(-self->pid, SIGTERM);
       self->pid = -1;
     }
 
