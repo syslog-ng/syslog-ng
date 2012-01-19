@@ -43,10 +43,10 @@ log_source_wakeup(LogSource *self)
 }
 
 gboolean
-log_source_ack(LogSource *self, gpointer user_data)
+log_source_ack(LogSource *self, gpointer user_data, gboolean need_to_save)
 {
   if (self->ack)
-    return self->ack(self,user_data);
+    return self->ack(self,user_data, need_to_save);
   return FALSE;
 }
 
@@ -100,7 +100,7 @@ log_source_msg_ack(LogMessage *msg, gpointer user_data, gboolean need_pos_tracki
 
       if (log_source_checking_ack_data_list(self,(gpointer)&data,&continual))
         {
-          log_source_ack(self,(gpointer)data);
+          log_source_ack(self,(gpointer)data, need_pos_tracking);
 
           old_window_size = g_atomic_counter_exchange_and_add(&self->window_size, continual);
           if (old_window_size == 0)

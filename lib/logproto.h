@@ -86,7 +86,7 @@ struct _LogProto
   /* This function is available only the object is _LogProtoTextServer */
   void (*get_info)(LogProto *s, guint64 *pos);
   void (*get_state)(LogProto *s, gpointer user_data);
-  gboolean (*ack)(PersistState *state, gpointer user_data);
+  gboolean (*ack)(PersistState *state, gpointer user_data, gboolean need_to_save);
   LogProtoAckMessages ack_callback;
   gpointer ack_user_data;
   gboolean is_multi_line;

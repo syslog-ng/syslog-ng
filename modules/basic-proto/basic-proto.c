@@ -1398,11 +1398,16 @@ log_proto_buffered_server_queued(LogProto *s)
 }
 
 gboolean
-log_proto_buffered_server_ack(PersistState *persist_state,gpointer user_data)
+log_proto_buffered_server_ack(PersistState *persist_state,gpointer user_data, gboolean need_to_save)
 {
   AckDataFileState *data_state = (AckDataFileState*) user_data;
+  LogProtoBufferedServerState *state = NULL;
+  if (!need_to_save)
+    {
+      return FALSE;
+    }
 
-  LogProtoBufferedServerState *state = persist_state_map_entry(persist_state, data_state->super.persist_handle);
+  state = persist_state_map_entry(persist_state, data_state->super.persist_handle);
 
   state->buffer_pos = data_state->file_state.pending_buffer_pos;
   state->raw_stream_pos = data_state->file_state.pending_raw_stream_pos;

@@ -122,7 +122,7 @@ struct _LogReader
   GCond *pending_proto_cond;
   GStaticMutex pending_proto_lock;
   LogProto *pending_proto;
-  gboolean (*ack_callback)(PersistState *state, gpointer user_data);
+  gboolean (*ack_callback)(PersistState *state, gpointer user_data, gboolean need_to_save);
   PersistState *state;
 };
 
@@ -130,12 +130,12 @@ static gboolean log_reader_start_watches(LogReader *self);
 static void log_reader_stop_watches(LogReader *self);
 static void log_reader_update_watches(LogReader *self);
 
-static gboolean log_reader_ack(LogSource *s,gpointer user_data)
+static gboolean log_reader_ack(LogSource *s,gpointer user_data, gboolean need_to_save)
 {
   LogReader *self = (LogReader *)s;
   if (self->ack_callback && self->state)
     {
-      gboolean result = self->ack_callback(self->state,user_data);
+      gboolean result = self->ack_callback(self->state,user_data, need_to_save);
       if (result && (self->super.super.flags & PIF_INITIALIZED) && !self->io_job.working)
         {
           main_loop_call((void (*)(void *))log_reader_update_watches,self,FALSE);

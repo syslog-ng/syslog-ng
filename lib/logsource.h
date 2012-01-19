@@ -87,7 +87,7 @@ struct _LogSource
   GStaticMutex g_mutex_ack;
 
   void (*wakeup)(LogSource *s);
-  gboolean (*ack)(LogSource *s,gpointer user_data);
+  gboolean (*ack)(LogSource *s,gpointer user_data, gboolean need_to_save);
   void (*get_state)(LogSource *s,gpointer user_data);
 };
 
