@@ -95,6 +95,7 @@ struct _LogWriter
   gint last_notify_code;
 
   gint io_cond;
+  gboolean ack_is_reliable;
 };
 
 /**
@@ -134,7 +135,14 @@ log_writer_msg_acked(guint num_msg_acked, gpointer user_data)
   LogWriter *self = (LogWriter *)user_data;
   if (self->flags & LW_KEEP_ONE_PENDING)
     {
-      if (self->pending_message_count > 1)
+      if (self->ack_is_reliable)
+        {
+          log_queue_ack_backlog(self->queue, num_msg_acked);
+          self->pending_message_count -= num_msg_acked;
+          log_queue_rewind_backlog(self->queue, self->pending_message_count,FALSE);
+          self->pending_message_count = 0;
+        }
+      else if (self->pending_message_count > 1)
         {
           log_queue_ack_backlog(self->queue, num_msg_acked);
           self->pending_message_count -= num_msg_acked;
@@ -1125,7 +1133,7 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
 
       log_writer_format_log(self, lm, self->line_buffer);
       self->pending_message_count++;
-      
+
       if (self->line_buffer->len)
         {
           LogProtoStatus status;
@@ -1137,8 +1145,13 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
                   msg_set_context(NULL);
                   if (self->flags & LW_KEEP_ONE_PENDING)
                     {
-                      log_msg_ack(lm, &path_options,TRUE);
+                      log_msg_ack(lm, &path_options,FALSE);
                       log_msg_unref(lm);
+                      log_queue_rewind_backlog(self->queue, 1, TRUE);
+                    }
+                  else
+                    {
+                      log_queue_push_head(self->queue, lm, &path_options);
                     }
                   log_msg_refcache_stop(FALSE);
                   return FALSE;
@@ -1171,19 +1184,18 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
             {
               if (self->pending_message_count > 0)
                 {
-                  log_msg_ack(lm, &path_options,TRUE);
+                  log_msg_ack(lm, &path_options,FALSE);
                   log_msg_unref(lm);
                   log_queue_rewind_backlog(self->queue, 1, TRUE);
                   g_assert(self->pending_message_count > 0);
                   self->pending_message_count--;
                 }
-              log_msg_refcache_stop(TRUE);
             }
           else
             {
               log_queue_push_head(self->queue, lm, &path_options);
-              log_msg_refcache_stop(FALSE);
             }
+          log_msg_refcache_stop(FALSE);
           msg_set_context(NULL);
           break;
         }
@@ -1411,6 +1423,7 @@ log_writer_reopen_deferred(gpointer s)
       if (self->flags & LW_KEEP_ONE_PENDING)
         {
           log_proto_set_msg_acked_callback(self->proto,log_writer_msg_acked,self);
+          self->ack_is_reliable = log_proto_is_reliable(self->proto);
         }
       log_writer_start_watches(self);
     }

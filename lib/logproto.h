@@ -88,10 +88,21 @@ struct _LogProto
   void (*get_state)(LogProto *s, gpointer user_data);
   gboolean (*ack)(PersistState *state, gpointer user_data, gboolean need_to_save);
   LogProtoAckMessages ack_callback;
+  gboolean (*is_reliable)(LogProto *s);
   gpointer ack_user_data;
   gboolean is_multi_line;
   PersistState *state;
 };
+
+static gboolean
+log_proto_is_reliable(LogProto *s)
+{
+  if (s->is_reliable)
+    {
+      return s->is_reliable(s);
+    }
+  return FALSE;
+}
 
 static inline void
 log_proto_set_msg_acked_callback(LogProto *s, LogProtoAckMessages callback,gpointer user_data)
