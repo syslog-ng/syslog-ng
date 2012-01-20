@@ -102,6 +102,7 @@ struct _LogReader
 
   struct iv_fd fd_watch;
   struct iv_timer follow_timer;
+  struct iv_timer update_timer;
   struct iv_task restart_task;
   struct iv_task immediate_check_task;
   struct iv_event schedule_wakeup;
@@ -133,7 +134,12 @@ static gboolean log_reader_ack(LogSource *s,gpointer user_data)
   LogReader *self = (LogReader *)s;
   if (self->ack_callback && self->state)
     {
-      return self->ack_callback(self->state,user_data);
+      gboolean result = self->ack_callback(self->state,user_data);
+      if (result && (self->super.super.flags & PIF_INITIALIZED) && !self->io_job.working)
+        {
+          main_loop_call(log_reader_update_watches,self,FALSE);
+        }
+      return result;
     }
   return FALSE;
 }
@@ -425,6 +431,10 @@ log_reader_init_watches(LogReader *self)
   self->follow_timer.cookie = self;
   self->follow_timer.handler = log_reader_io_follow_file;
 
+  IV_TIMER_INIT(&self->update_timer);
+  self->update_timer.cookie = self;
+  self->update_timer.handler = log_reader_update_watches;
+
   IV_TASK_INIT(&self->restart_task);
   self->restart_task.cookie = self;
   self->restart_task.handler = log_reader_io_process_input;
@@ -507,14 +517,17 @@ log_reader_update_watches(LogReader *self)
   gint fd;
   GIOCondition cond;
   gboolean free_to_send;
+  gboolean prepare_result;
 
   main_loop_assert_main_thread();
   
   self->suspended = FALSE;
   free_to_send = log_source_free_to_send(&self->super);
+  prepare_result = log_proto_prepare(self->proto, &fd, &cond);
+  fprintf(stderr,"LogProtoPrepareReturns with: %d\n",prepare_result);
   if (!free_to_send ||
       self->immediate_check ||
-      log_proto_prepare(self->proto, &fd, &cond))
+      prepare_result)
     {
       /* we disable all I/O related callbacks here because we either know
        * that we can continue (e.g.  immediate_check == TRUE) or we know
@@ -546,6 +559,21 @@ log_reader_update_watches(LogReader *self)
 
       if (iv_timer_registered(&self->follow_timer))
         iv_timer_unregister(&self->follow_timer);
+
+        /*
+         * This means, that reader has to wait for an event what is observed by the proto
+         * In this case the reader wait 1sec and than run the update_watches will be run again
+         */
+      if (prepare_result && cond == G_IO_OUT)
+        {
+          if (iv_timer_registered(&self->update_timer))
+            iv_timer_unregister(&self->update_timer);
+          iv_validate_now();
+          self->update_timer.expires = iv_now;
+          timespec_add_msec(&self->update_timer.expires, 1000);
+          iv_timer_register(&self->update_timer);
+          return;
+        }
 
       if (free_to_send)
         {
@@ -785,13 +813,13 @@ log_reader_init(LogPipe *s)
   if (self->options->padding)
     {
       if (self->options->msg_size < self->options->padding)
-	{
-	  msg_error("Buffer is too small to hold padding number of bytes",
-	            evt_tag_int("padding", self->options->padding),
+        {
+          msg_error("Buffer is too small to hold padding number of bytes",
+                    evt_tag_int("padding", self->options->padding),
                     evt_tag_int("msg_size", self->options->msg_size),
                     NULL);
-	  return FALSE;
-	}
+          return FALSE;
+        }
     }
   if (self->options->text_encoding)
     {
@@ -862,10 +890,6 @@ log_reader_set_options(LogPipe *s, LogPipe *control, LogReaderOptions *options, 
   self->control = control;
 
   self->options = options;
-  if (self->proto && self->proto->ack && self->proto->get_state)
-    {
-      self->options->super.flags |= LOF_POS_TRACKING;
-    }
 }
 
 /* run in the main thread in reaction to a log_reader_reopen to change

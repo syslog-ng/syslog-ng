@@ -1416,7 +1416,7 @@ log_proto_buffered_server_ack(PersistState *persist_state,gpointer user_data)
             evt_tag_int("buffer_cached_eol", state->buffer_cached_eol),
             NULL);
   persist_state_unmap_entry(persist_state, data_state->super.persist_handle);
-  return TRUE;
+  return FALSE;
 }
 
 void

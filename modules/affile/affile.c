@@ -651,6 +651,10 @@ affile_sd_new(gchar *filename, guint32 flags)
           self->reader_options.parse_options.flags &= ~LP_EXPECT_HOSTNAME;
         }
     }
+  else
+    {
+      self->reader_options.super.flags |= LOF_POS_TRACKING;
+    }
   
   if (configuration && get_version_value(configuration->version) < 0x0300)
     {

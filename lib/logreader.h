@@ -55,6 +55,7 @@ typedef struct _LogReaderOptions
 
   /* source time zone if one is not specified in the message */
   gboolean check_hostname;
+  gboolean pos_tracking;
 } LogReaderOptions;
 
 typedef struct _LogReader LogReader;
