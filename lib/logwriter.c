@@ -43,8 +43,6 @@ typedef enum
 {
   /* flush modes */
 
-  /* business as usual, flush when the buffer is full */
-  LW_FLUSH_NORMAL,
   /* flush the buffer immediately please */
   LW_FLUSH_BUFFER,
   /* pull off any queued items, at maximum speed, even ignoring throttle, and flush the buffer too */
@@ -95,6 +93,8 @@ struct _LogWriter
   /* messages posted, and we're not certain were properly sent out on the wire */
   gint pending_message_count;
   gint last_notify_code;
+
+  gint io_cond;
 };
 
 /**
@@ -153,7 +153,7 @@ log_writer_work_perform(gpointer s)
   LogWriter *self = (LogWriter *) s;
 
   g_assert((self->super.flags & PIF_INITIALIZED) != 0);
-  self->work_result = log_writer_flush(self, self->flush_waiting_for_timeout ? LW_FLUSH_BUFFER : LW_FLUSH_NORMAL);
+  self->work_result = log_writer_flush(self, LW_FLUSH_BUFFER);
 }
 
 static void
@@ -420,6 +420,7 @@ log_writer_update_watches(LogWriter *self)
 
   /* NOTE: we either start the suspend_timer or enable the fd_watch. The two MUST not happen at the same time. */
   prepare_result = log_proto_prepare(self->proto, &fd, &cond, &idle_timeout);
+  self->io_cond = cond;
   if (prepare_result ||
       self->flush_waiting_for_timeout ||
       log_queue_check_items(self->queue, self->options->flush_lines, &partial_batch, &timeout_msec,
@@ -1079,7 +1080,6 @@ log_writer_broken(LogWriter *self, gint notify_code)
  * the actual destination:
  *
  *
- * LW_FLUSH_NORMAL    - business as usual, flush when the buffer is full
  * LW_FLUSH_BUFFER    - flush the buffer immediately please
  * LW_FLUSH_QUEUE     - pull off any queued items, at maximum speed, even
  *                      ignoring throttle, and flush the buffer too
@@ -1099,6 +1099,15 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
    * long as the destination can consume it.  This is not going to be an
    * infinite loop, since the reader will cease to produce new messages when
    * main_loop_io_worker_job_quit() is set. */
+
+  /*
+   * If the writer has to read it means that it must not send messages from the queue,
+   * just only call the log_proto_flush and handle its return value
+   */
+  if (!(self->io_cond & G_IO_OUT))
+    {
+      goto flush_the_proto;
+    }
 
   while (!main_loop_io_worker_job_quit() || flush_mode >= LW_FLUSH_QUEUE)
     {
@@ -1183,11 +1192,9 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
       count++;
     }
 
-  if (flush_mode >= LW_FLUSH_BUFFER || count == 0)
-    {
-      if (log_proto_flush(proto) == LPS_ERROR)
-        return FALSE;
-    }
+flush_the_proto:
+  if (log_proto_flush(proto) != LPS_SUCCESS)
+   return FALSE;
 
   return TRUE;
 }
