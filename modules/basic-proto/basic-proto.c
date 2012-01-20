@@ -137,6 +137,10 @@ log_proto_text_client_flush(LogProto *s)
           return LPS_SUCCESS;
         }
     }
+  else
+    {
+      rc = log_transport_write(self->super.transport, "", 0);
+    }
   return LPS_SUCCESS;
 }
 
