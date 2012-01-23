@@ -905,7 +905,7 @@ log_reader_free(LogPipe *s)
 }
 
 void
-log_reader_set_options(LogPipe *s, LogPipe *control, LogReaderOptions *options, gint stats_level, gint stats_source, const gchar *stats_id, const gchar *stats_instance)
+log_reader_set_options(LogPipe *s, LogPipe *control, LogReaderOptions *options, gint stats_level, gint stats_source, const gchar *stats_id, const gchar *stats_instance, LogProtoOptions *proto_options)
 {
   LogReader *self = (LogReader *) s;
 
@@ -919,6 +919,10 @@ log_reader_set_options(LogPipe *s, LogPipe *control, LogReaderOptions *options, 
   if (self->proto && self->proto->ack && self->proto->get_state)
     {
       self->options->super.flags |= LOF_POS_TRACKING;
+    }
+  if (self->proto)
+    {
+      log_proto_set_options(self->proto,proto_options);
     }
 }
 
@@ -959,7 +963,7 @@ log_reader_reopen_deferred(gpointer s)
 }
 
 void
-log_reader_reopen(LogPipe *s, LogProto *proto, LogPipe *control, LogReaderOptions *options, gint stats_level, gint stats_source, const gchar *stats_id, const gchar *stats_instance, gboolean immediate_check)
+log_reader_reopen(LogPipe *s, LogProto *proto, LogPipe *control, LogReaderOptions *options, gint stats_level, gint stats_source, const gchar *stats_id, const gchar *stats_instance, gboolean immediate_check, LogProtoOptions *proto_options)
 {
   LogReader *self = (LogReader *) s;
   gpointer args[] = { s, proto };
@@ -980,7 +984,7 @@ log_reader_reopen(LogPipe *s, LogProto *proto, LogPipe *control, LogReaderOption
     {
       log_reader_set_immediate_check(&self->super.super);
     }
-  log_reader_set_options(s, control, options, stats_level, stats_source, stats_id, stats_instance);
+  log_reader_set_options(s, control, options, stats_level, stats_source, stats_id, stats_instance, proto_options);
   log_reader_set_follow_filename(s, stats_instance);
   log_source_init(s);
 }

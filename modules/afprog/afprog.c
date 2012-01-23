@@ -169,7 +169,7 @@ afprogram_sd_init(LogPipe *s)
           return FALSE;
         }
       self->reader = log_reader_new(proto);
-      log_reader_set_options(self->reader, s, &self->reader_options, 0, SCS_PROGRAM, self->super.super.id, self->cmdline->str);
+      log_reader_set_options(self->reader, s, &self->reader_options, 0, SCS_PROGRAM, self->super.super.id, self->cmdline->str, NULL);
     }
   log_pipe_append(self->reader, &self->super.super.super);
   if (!log_pipe_init(self->reader, cfg))
@@ -305,7 +305,7 @@ afprogram_dd_reopen(AFProgramDestDriver *self)
           return FALSE;
         }
     }
-  log_writer_reopen(self->writer, proto);
+  log_writer_reopen(self->writer, proto, NULL);
   return TRUE;
 }
 
@@ -342,7 +342,7 @@ afprogram_dd_init(LogPipe *s)
   if (!self->writer)
     self->writer = log_writer_new(LW_FORMAT_FILE);
 
-  log_writer_set_options((LogWriter *) self->writer, s, &self->writer_options, 0, SCS_PROGRAM, self->super.super.id, self->cmdline->str);
+  log_writer_set_options((LogWriter *) self->writer, s, &self->writer_options, 0, SCS_PROGRAM, self->super.super.id, self->cmdline->str, NULL);
   log_writer_set_queue(self->writer, log_dest_driver_acquire_queue(&self->super, afprogram_dd_format_persist_name(self)));
 
   if (!log_pipe_init(self->writer, NULL))

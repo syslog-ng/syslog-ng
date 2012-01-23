@@ -241,7 +241,7 @@ afsocket_sc_init(LogPipe *s)
         }
       self->reader = log_reader_new(proto);
     }
-  log_reader_set_options(self->reader, s, &self->owner->reader_options, 1, afsocket_sc_stats_source(self), self->owner->super.super.id, afsocket_sc_stats_instance(self));
+  log_reader_set_options(self->reader, s, &self->owner->reader_options, 1, afsocket_sc_stats_source(self), self->owner->super.super.id, afsocket_sc_stats_instance(self), &self->owner->proto_options);
   log_reader_set_peer_addr(self->reader, self->peer_addr);
   log_pipe_append(self->reader, s);
   if (log_pipe_init(self->reader, cfg))
@@ -569,7 +569,7 @@ afsocket_sd_close_connection(AFSocketSourceDriver *self, AFSocketSourceConnectio
                NULL);
 
   /* Close the fd of the reader */
-  log_reader_reopen(sc->reader, NULL, &sc->super, &self->reader_options, 1,  afsocket_sc_stats_source(sc), self->super.super.id, afsocket_sc_stats_instance(sc), FALSE);
+  log_reader_reopen(sc->reader, NULL, &sc->super, &self->reader_options, 1,  afsocket_sc_stats_source(sc), self->super.super.id, afsocket_sc_stats_instance(sc), FALSE, &self->proto_options);
   log_pipe_deinit(&sc->super);
   afsocket_sd_remove_and_kill_connection(self, sc);
   self->num_connections--;
@@ -1155,12 +1155,12 @@ afsocket_dd_connected(AFSocketDestDriver *self)
       goto error_reconnect;
     }
   log_proto_restart_with_state(proto,cfg->state,afsocket_dd_format_state_name(self));
-  log_writer_reopen(self->writer, proto);
+  log_writer_reopen(self->writer, proto, &self->proto_options);
   return TRUE;
  error_reconnect:
   close(self->fd);
   self->fd = -1;
-  log_writer_reopen(self->writer, NULL);
+  log_writer_reopen(self->writer, NULL, NULL);
   return FALSE;
 }
 
@@ -1219,7 +1219,7 @@ afsocket_dd_reconnect(AFSocketDestDriver *self)
       msg_error("Initiating connection failed, reconnecting",
                 evt_tag_int("time_reopen", self->time_reopen),
                 NULL);
-      log_writer_reopen(self->writer, NULL);
+      log_writer_reopen(self->writer, NULL, NULL);
     }
 }
 
@@ -1267,7 +1267,7 @@ afsocket_dd_init(LogPipe *s)
                                     (self->flags & AFSOCKET_SYSLOG_DRIVER ? LW_SYSLOG_PROTOCOL : 0));
 
     }
-  log_writer_set_options((LogWriter *) self->writer, &self->super.super.super, &self->writer_options, 0, afsocket_dd_stats_source(self), self->super.super.id, afsocket_dd_stats_instance(self));
+  log_writer_set_options((LogWriter *) self->writer, &self->super.super.super, &self->writer_options, 0, afsocket_dd_stats_source(self), self->super.super.id, afsocket_dd_stats_instance(self), &self->proto_options);
   log_writer_set_queue(self->writer, log_dest_driver_acquire_queue(&self->super, afsocket_dd_format_persist_name(self, TRUE)));
 
   if (!log_pipe_init(self->writer, NULL))
@@ -1320,7 +1320,7 @@ afsocket_dd_notify(LogPipe *s, LogPipe *sender, gint notify_code, gpointer user_
                  evt_tag_str("server", g_sockaddr_format(self->dest_addr, buf, sizeof(buf), GSA_FULL)),
                  evt_tag_int("time_reopen", self->time_reopen),
                  NULL);
-      log_writer_reopen(self->writer, NULL);
+      log_writer_reopen(self->writer, NULL, NULL);
       break;
 
     case NC_REOPEN_REQUIRED:

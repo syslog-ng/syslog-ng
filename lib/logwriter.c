@@ -1286,7 +1286,7 @@ log_writer_init(LogPipe *s)
 
       proto = self->proto;
       self->proto = NULL;
-      log_writer_reopen(&self->super, proto);
+      log_writer_reopen(&self->super, proto, NULL);
     }
   log_writer_start_mark_timer(self);
   return TRUE;
@@ -1390,6 +1390,7 @@ log_writer_reopen_deferred(gpointer s)
   gpointer *args = (gpointer *) s;
   LogWriter *self = args[0];
   LogProto *proto = args[1];
+  LogProtoOptions *proto_options = args[2];
 
   if (!proto)
     {
@@ -1420,6 +1421,7 @@ log_writer_reopen_deferred(gpointer s)
 
   if (proto)
     {
+      log_proto_set_options(proto,proto_options);
       if (self->flags & LW_KEEP_ONE_PENDING)
         {
           log_proto_set_msg_acked_callback(self->proto,log_writer_msg_acked,self);
@@ -1456,10 +1458,10 @@ log_writer_reopen_deferred(gpointer s)
  * risky approach.
  */
 void
-log_writer_reopen(LogPipe *s, LogProto *proto)
+log_writer_reopen(LogPipe *s, LogProto *proto, LogProtoOptions *proto_options)
 {
   LogWriter *self = (LogWriter *) s;
-  gpointer args[] = { s, proto };
+  gpointer args[] = { s, proto, proto_options };
 
   main_loop_call((MainLoopTaskFunc) log_writer_reopen_deferred, args, TRUE);
 
@@ -1475,7 +1477,7 @@ log_writer_reopen(LogPipe *s, LogProto *proto)
 }
 
 void
-log_writer_set_options(LogWriter *self, LogPipe *control, LogWriterOptions *options, gint stats_level, gint stats_source, const gchar *stats_id, const gchar *stats_instance)
+log_writer_set_options(LogWriter *self, LogPipe *control, LogWriterOptions *options, gint stats_level, gint stats_source, const gchar *stats_id, const gchar *stats_instance,LogProtoOptions *proto_options)
 {
   self->control = control;
   self->options = options;
@@ -1489,6 +1491,10 @@ log_writer_set_options(LogWriter *self, LogPipe *control, LogWriterOptions *opti
   if (self->stats_instance)
     g_free(self->stats_instance);
   self->stats_instance = stats_instance ? g_strdup(stats_instance) : NULL;
+  if (self->proto)
+    {
+      log_proto_set_options(self->proto,proto_options);
+    }
 }
 
 LogPipe *

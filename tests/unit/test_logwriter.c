@@ -83,7 +83,7 @@ testcase(gchar *msg_string, gchar *template, gint padding, gboolean use_syslog_p
   log_writer_set_queue(writer, log_queue_fifo_new(1000, NULL));
   if (writer)
     {
-      log_writer_set_options(writer, NULL, &opt, 0, 0, NULL, NULL);
+      log_writer_set_options(writer, NULL, &opt, 0, 0, NULL, NULL, NULL);
       log_writer_format_log(writer,msg,res);
       if(strcmp(res->str,expected_value)!=0)
         {

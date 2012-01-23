@@ -60,11 +60,11 @@ typedef struct _LogReaderOptions
 
 typedef struct _LogReader LogReader;
 
-void log_reader_set_options(LogPipe *s, LogPipe *control, LogReaderOptions *options, gint stats_level, gint stats_source, const gchar *stats_id, const gchar *stats_instance);
+void log_reader_set_options(LogPipe *s, LogPipe *control, LogReaderOptions *options, gint stats_level, gint stats_source, const gchar *stats_id, const gchar *stats_instance, LogProtoOptions *proto_options);
 void log_reader_set_follow_filename(LogPipe *self, const gchar *follow_filename);
 void log_reader_set_peer_addr(LogPipe *s, GSockAddr *peer_addr);
 void log_reader_set_immediate_check(LogPipe *s);
-void log_reader_reopen(LogPipe *s, LogProto *proto, LogPipe *control, LogReaderOptions *options, gint stats_level, gint stats_source, const gchar *stats_id, const gchar *stats_instance, gboolean immediate_check);
+void log_reader_reopen(LogPipe *s, LogProto *proto, LogPipe *control, LogReaderOptions *options, gint stats_level, gint stats_source, const gchar *stats_id, const gchar *stats_instance, gboolean immediate_check, LogProtoOptions *proto_options);
 gint log_reader_fetch_log(LogReader *self);
 void log_reader_restart(LogPipe *s);
 

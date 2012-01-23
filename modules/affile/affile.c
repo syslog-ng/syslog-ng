@@ -245,7 +245,7 @@ affile_sd_open(LogPipe *s, gboolean immediate_check)
       /* FIXME: we shouldn't use reader_options to store log protocol parameters */
       self->reader = log_reader_new(proto);
 
-      log_reader_set_options(self->reader, s, &self->reader_options, 1, SCS_FILE, self->super.super.id, self->filename->str);
+      log_reader_set_options(self->reader, s, &self->reader_options, 1, SCS_FILE, self->super.super.id, self->filename->str, NULL);
       log_reader_set_follow_filename(self->reader, self->filename->str);
 
       if (immediate_check)
@@ -388,7 +388,7 @@ affile_sd_notify(LogPipe *s, LogPipe *sender, gint notify_code, gpointer user_da
 
             affile_sd_recover_state(s, cfg, proto);
 
-            log_reader_reopen(self->reader, proto, s, &self->reader_options, 1, SCS_FILE, self->super.super.id, self->filename->str, TRUE);
+            log_reader_reopen(self->reader, proto, s, &self->reader_options, 1, SCS_FILE, self->super.super.id, self->filename->str, TRUE, NULL);
           }
         else
           {
@@ -458,7 +458,7 @@ affile_sd_notify(LogPipe *s, LogPipe *sender, gint notify_code, gpointer user_da
               }
 
             affile_sd_recover_state(s, cfg, proto);
-            log_reader_reopen(self->reader, proto, s, &self->reader_options, 1, SCS_FILE, self->super.super.id, self->filename->str, immediate_check);
+            log_reader_reopen(self->reader, proto, s, &self->reader_options, 1, SCS_FILE, self->super.super.id, self->filename->str, immediate_check, NULL);
           }
         break;
       }
@@ -880,7 +880,7 @@ affile_dw_reopen(AFFileDestWriter *self)
     }
   log_writer_set_options((LogWriter *) self->writer, s, &self->owner->writer_options, 1,
                          self->owner->flags & AFFILE_PIPE ? SCS_PIPE : SCS_FILE,
-                         self->owner->super.super.id, self->filename);
+                         self->owner->super.super.id, self->filename, NULL);
   log_writer_set_queue(self->writer, log_dest_driver_acquire_queue(&self->owner->super, affile_dw_format_persist_name(self)));
 
   if (!log_pipe_init(self->writer, NULL))
@@ -892,7 +892,7 @@ affile_dw_reopen(AFFileDestWriter *self)
       return FALSE;
     }
 
-  log_writer_reopen(self->writer, proto);
+  log_writer_reopen(self->writer, proto, NULL);
   log_pipe_append(&self->super, self->writer);
 
   return TRUE;
@@ -968,7 +968,7 @@ affile_dw_set_owner(AFFileDestWriter *self, AFFileDestDriver *owner)
   log_pipe_ref(&owner->super.super.super);
   self->owner = owner;
   if (self->writer)
-    log_writer_set_options((LogWriter *) self->writer, &self->super, &owner->writer_options, 1, SCS_FILE, self->owner->super.super.id, self->filename);
+    log_writer_set_options((LogWriter *) self->writer, &self->super, &owner->writer_options, 1, SCS_FILE, self->owner->super.super.id, self->filename, NULL);
   
 }
 
