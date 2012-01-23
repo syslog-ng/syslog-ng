@@ -420,6 +420,7 @@ log_reader_check_file(gpointer s)
 static void
 log_reader_idle_timeout(LogReader *self)
 {
+  msg_error("Client response time elapsed, close the connection",NULL);
   log_pipe_notify(self->control, &self->super.super, NC_CLOSE, self);
 }
 

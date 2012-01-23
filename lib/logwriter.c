@@ -1364,6 +1364,7 @@ void
 log_writer_idle_time_elapsed(gpointer user_data)
 {
   LogWriter *self = (LogWriter *)user_data;
+  msg_error("Server response time elapsed, close the connection", NULL);
   log_pipe_notify(self->control, &self->super, NC_CLOSE, self);
 }
 
