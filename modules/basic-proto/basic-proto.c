@@ -1465,7 +1465,7 @@ log_proto_buffered_server_init(LogProtoBufferedServer *self, LogTransport *trans
   self->super.free_fn = log_proto_buffered_server_free;
   self->super.reset_state = log_proto_buffered_server_reset_state;
   self->super.get_state = log_proto_buffered_server_get_state_info;
-  self->super.ack = log_proto_buffered_server_ack;
+  //self->super.ack = log_proto_buffered_server_ack;
   self->super.transport = transport;
   self->super.convert = (GIConv) -1;
   self->super.restart_with_state = log_proto_buffered_server_restart_with_state;
@@ -1489,6 +1489,19 @@ typedef struct _LogProtoTextServer
   regex_t *prefix_matcher;
   regex_t *garbage_matcher;
 } LogProtoTextServer;
+
+typedef struct _LogProtoFileReader
+{
+  LogProtoBufferedServer super;
+  GIConv reverse_convert;
+  gchar *reverse_buffer;
+  gsize reverse_buffer_len;
+  gint convert_scale;
+  gboolean wait_for_prefix; /* This boolean tell to us that we are waiting for prefix or garbage (used only in case multi line messages */
+  gboolean has_to_update; /* This boolean indicate, that we has to drop the read message (between garbage and prefix) */
+  regex_t *prefix_matcher;
+  regex_t *garbage_matcher;
+} LogProtoFileReader;
 
 /**
  * This function is called in cases when several files are continously
@@ -2049,12 +2062,45 @@ log_proto_text_server_new(LogTransport *transport, gint max_msg_size, guint flag
   return &self->super.super;
 }
 
+static void
+log_proto_file_reader_init(LogProtoTextServer *self, LogTransport *transport, gint max_msg_size, guint flags)
+{
+  log_proto_buffered_server_init(&self->super, transport, max_msg_size * 6, max_msg_size, flags);
+  self->super.fetch_from_buf = log_proto_text_server_fetch_from_buf;
+  self->super.super.prepare = log_proto_text_server_prepare;
+  self->super.super.get_info = log_proto_text_server_get_info;
+  self->super.super.ack = log_proto_buffered_server_ack;
+  self->reverse_convert = (GIConv) -1;
+  self->wait_for_prefix = FALSE;
+  self->has_to_update = TRUE;
+}
+
+LogProto *
+log_proto_file_reader_new(LogTransport *transport, gint max_msg_size, guint flags)
+{
+  LogProtoFileReader *self = g_new0(LogProtoFileReader, 1);
+  log_proto_file_reader_init(self, transport, max_msg_size, flags);
+  return &self->super.super;
+}
+
 LogProto *
 log_proto_multi_line_text_server_new(LogTransport *transport, gint max_msg_size, guint flags, regex_t *prefix_matcher, regex_t *garbage_matcher)
 {
   LogProtoTextServer *self = g_new0(LogProtoTextServer, 1);
 
   log_proto_text_server_init(self, transport, max_msg_size, flags);
+  self->prefix_matcher = prefix_matcher;
+  self->garbage_matcher = garbage_matcher;
+  self->super.super.is_multi_line = TRUE;
+  return &self->super.super;
+}
+
+LogProto *
+log_proto_multi_line_file_reader_new(LogTransport *transport, gint max_msg_size, guint flags, regex_t *prefix_matcher, regex_t *garbage_matcher)
+{
+  LogProtoFileReader *self = g_new0(LogProtoFileReader, 1);
+
+  log_proto_file_reader_init(self, transport, max_msg_size, flags);
   self->prefix_matcher = prefix_matcher;
   self->garbage_matcher = garbage_matcher;
   self->super.super.is_multi_line = TRUE;
@@ -2538,6 +2584,20 @@ log_proto_text_server_new_plugin(LogTransport *transport,LogProtoOptions *option
   else
     {
       return log_proto_text_server_new(transport,options->super.size,options->super.flags);
+    }
+}
+
+LogProto *
+log_proto_file_reader_new_plugin(LogTransport *transport,LogProtoOptions *options,GlobalConfig *cfg)
+{
+  LogProtoServerOptions *soptions = (LogProtoServerOptions *)options;
+  if (soptions->opts.prefix_matcher)
+    {
+      return log_proto_multi_line_file_reader_new(transport,options->super.size,options->super.flags,soptions->opts.prefix_matcher,soptions->opts.garbage_matcher);
+    }
+  else
+    {
+      return log_proto_file_reader_new(transport,options->super.size,options->super.flags);
     }
 }
 

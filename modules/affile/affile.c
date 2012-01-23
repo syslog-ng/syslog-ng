@@ -191,7 +191,7 @@ affile_sd_construct_proto(AFFileSourceDriver *self, LogTransport *transport)
       else
         {
           self->proto_options.super.size = self->reader_options.msg_size;
-          name = "stream-newline";
+          name = "file-reader";
         }
       self->proto_factory = log_proto_get_factory(cfg,LPT_SERVER,name);
     }
@@ -650,10 +650,6 @@ affile_sd_new(gchar *filename, guint32 flags)
         {
           self->reader_options.parse_options.flags &= ~LP_EXPECT_HOSTNAME;
         }
-    }
-  else
-    {
-      self->reader_options.super.flags |= LOF_POS_TRACKING;
     }
   
   if (configuration && get_version_value(configuration->version) < 0x0300)

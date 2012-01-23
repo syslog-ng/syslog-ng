@@ -916,6 +916,10 @@ log_reader_set_options(LogPipe *s, LogPipe *control, LogReaderOptions *options, 
   self->control = control;
 
   self->options = options;
+  if (self->proto && self->proto->ack && self->proto->get_state)
+    {
+      self->options->super.flags |= LOF_POS_TRACKING;
+    }
 }
 
 /* run in the main thread in reaction to a log_reader_reopen to change

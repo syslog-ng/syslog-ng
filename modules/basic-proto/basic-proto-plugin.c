@@ -119,10 +119,21 @@ static LogProtoFactory stream_newline_server_proto =
   .default_port = 514
 };
 
+static LogProtoFactory file_reader_proto =
+{
+  .create = &log_proto_file_reader_new_plugin
+};
+
 static LogProtoFactory *
 stream_newline_server_proto_construct(Plugin *self, GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name)
 {
   return &stream_newline_server_proto;
+}
+
+static LogProtoFactory *
+file_reader_proto_construct(Plugin *self, GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name)
+{
+  return &file_reader_proto;
 }
 
 /*
@@ -243,6 +254,11 @@ static Plugin proto_plugins[] =
   .type = LL_CONTEXT_SERVER_PROTO,
   .name = "stream-newline",
   .construct = (gpointer (*)(Plugin *self, GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name)) stream_newline_server_proto_construct,
+  },
+  {
+  .type = LL_CONTEXT_SERVER_PROTO,
+  .name = "file-reader",
+  .construct = (gpointer (*)(Plugin *self, GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name)) file_reader_proto_construct,
   },
   {
   .type = LL_CONTEXT_CLIENT_PROTO,

@@ -50,6 +50,6 @@ LogProto *log_proto_framed_server_new_plugin(LogTransport *transport,LogProtoOpt
 LogProto *log_proto_text_server_new_plugin(LogTransport *transport,LogProtoOptions *options,GlobalConfig *cfg);
 LogProto *log_proto_record_server_new_plugin(LogTransport *transport,LogProtoOptions *options,GlobalConfig *cfg);
 LogProto *log_proto_dgram_server_new_plugin(LogTransport *transport,LogProtoOptions *options,GlobalConfig *cfg);
-LogProto *log_proto_file_writer_new_plugin(LogTransport *transport,LogProtoOptions *options,GlobalConfig *cfg);
+LogProto *log_proto_file_reader_new_plugin(LogTransport *transport,LogProtoOptions *options,GlobalConfig *cfg);
 
 #endif
