@@ -41,13 +41,41 @@ typedef struct _AckDataBase
   PersistEntryHandle persist_handle;
 }AckDataBase;
 
+#define LOG_PROTO_OPTIONS_SIZE 256
+
 typedef struct _AckData
 {
   AckDataBase super;
   char other_state[MAX_STATE_DATA_LENGTH];
 }AckData;
 
-#define LOG_PROTO_OPTIONS_SIZE 256
+typedef struct _LogProtoFactory LogProtoFactory;
+
+typedef struct _LogProtoOptionsBase
+{
+  guint flags;
+  gint  size;
+} LogProtoOptionsBase;
+
+typedef struct _LogProtoOptions
+{
+  LogProtoOptionsBase super;
+  char __padding[LOG_PROTO_OPTIONS_SIZE];
+} LogProtoOptions;
+
+typedef struct _LogProtoServerOptions
+{
+  LogProtoOptionsBase super;
+          union
+          {
+    struct
+    {
+      regex_t *prefix_matcher;
+      regex_t *garbage_matcher;
+    } opts;
+    char __padding[LOG_PROTO_OPTIONS_SIZE];
+  };
+} LogProtoServerOptions;
 
 typedef enum
 {
@@ -92,7 +120,17 @@ struct _LogProto
   gpointer ack_user_data;
   gboolean is_multi_line;
   PersistState *state;
+  LogProtoOptions *options;
 };
+
+static inline void
+log_proto_set_options(LogProto *s,LogProtoOptions *options)
+{
+  if (options)
+    {
+      s->options = options;
+    }
+}
 
 static inline gboolean
 log_proto_is_reliable(LogProto *s)
@@ -199,33 +237,6 @@ void log_proto_free(LogProto *s);
 
 #define LPRS_BINARY         0x0008
 
-typedef struct _LogProtoFactory LogProtoFactory;
-
-typedef struct _LogProtoOptionsBase
-{
-  guint flags;
-  gint  size;
-} LogProtoOptionsBase;
-
-typedef struct _LogProtoOptions
-{
-  LogProtoOptionsBase super;
-  char __padding[LOG_PROTO_OPTIONS_SIZE];
-} LogProtoOptions;
-
-typedef struct _LogProtoServerOptions
-{
-  LogProtoOptionsBase super;
-          union
-          {
-    struct
-    {
-      regex_t *prefix_matcher;
-      regex_t *garbage_matcher;
-    } opts;
-    char __padding[LOG_PROTO_OPTIONS_SIZE];
-  };
-} LogProtoServerOptions;
 
 struct _LogProtoFactory
 {
