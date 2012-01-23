@@ -39,6 +39,25 @@
 #include <limits.h>
 #include <regex.h>
 
+typedef struct _LogProtoTextClient
+{
+  LogProto super;
+  guchar *partial;
+  gsize partial_len, partial_pos;
+} LogProtoTextClient;
+
+#define LPFCS_FRAME_INIT    0
+#define LPFCS_FRAME_SEND    1
+#define LPFCS_MESSAGE_SEND  2
+
+typedef struct _LogProtoFramedClient
+{
+  LogProtoTextClient super;
+  gint state;
+  gchar frame_hdr_buf[9];
+  gint frame_hdr_len, frame_hdr_pos;
+} LogProtoFramedClient;
+
 extern guint32 g_run_id;
 const guchar *find_eom(const guchar *s, gsize n);
 
@@ -77,14 +96,6 @@ log_proto_free(LogProto *s)
     log_transport_free(s->transport);
   g_free(s);
 }
-
-
-typedef struct _LogProtoTextClient
-{
-  LogProto super;
-  guchar *partial;
-  gsize partial_len, partial_pos;
-} LogProtoTextClient;
 
 static gboolean
 log_proto_text_client_prepare(LogProto *s, gint *fd, GIOCondition *cond, gint *timeout)
@@ -156,7 +167,7 @@ log_proto_text_client_flush(LogProto *s)
  * successfully sent this message, or if it should be resent by the caller.
  **/
 static LogProtoStatus
-log_proto_text_client_post(LogProto *s, LogMessage *logmsg, guchar *msg, gsize msg_len, gboolean *consumed)
+log_proto_client_post_writer(LogProto *s, LogMessage *logmsg, guchar *msg, gsize msg_len, gboolean *consumed, gboolean syslog_proto)
 {
   LogProtoTextClient *self = (LogProtoTextClient *) s;
   gint rc;
@@ -183,6 +194,14 @@ log_proto_text_client_post(LogProto *s, LogMessage *logmsg, guchar *msg, gsize m
        * This obviously would cause the framing to break. Also libssl
        * returns an error in this case, which is how this was discovered.
        */
+      return rc;
+    }
+  else if (self->partial_len != 0 && !self->partial && syslog_proto)
+    {
+      LogProtoFramedClient *framed_self = (LogProtoFramedClient *) s;
+      self->partial_pos =0;
+      self->partial_len =0;
+      framed_self->state = LPFCS_FRAME_INIT;
       return rc;
     }
 
@@ -233,6 +252,20 @@ log_proto_text_client_post(LogProto *s, LogMessage *logmsg, guchar *msg, gsize m
     }
 
   return LPS_SUCCESS;
+}
+
+static LogProtoStatus
+log_proto_text_client_post(LogProto *s, LogMessage *logmsg, guchar *msg, gsize msg_len, gboolean *consumed)
+{
+  // Non syslog protocol
+  return log_proto_client_post_writer(s, logmsg, msg, msg_len, consumed, FALSE);
+}
+
+static LogProtoStatus
+log_proto_framed_client_post_writer(LogProto *s, LogMessage *logmsg, guchar *msg, gsize msg_len, gboolean *consumed)
+{
+  // Syslog protocol
+  return log_proto_client_post_writer(s, logmsg, msg, msg_len, consumed, TRUE);
 }
 
 LogProto *
@@ -2203,18 +2236,6 @@ log_proto_dgram_server_new(LogTransport *transport, gint max_msg_size, guint fla
   return &self->super.super;
 }
 
-#define LPFCS_FRAME_INIT    0
-#define LPFCS_FRAME_SEND    1
-#define LPFCS_MESSAGE_SEND  2
-
-typedef struct _LogProtoFramedClient
-{
-  LogProtoTextClient super;
-  gint state;
-  gchar frame_hdr_buf[9];
-  gint frame_hdr_len, frame_hdr_pos;
-} LogProtoFramedClient;
-
 static LogProtoStatus
 log_proto_framed_client_post(LogProto *s, LogMessage *logmsg, guchar *msg, gsize msg_len, gboolean *consumed)
 {
@@ -2262,7 +2283,7 @@ log_proto_framed_client_post(LogProto *s, LogMessage *logmsg, guchar *msg, gsize
           self->state = LPFCS_MESSAGE_SEND;
         }
     case LPFCS_MESSAGE_SEND:
-      rc = log_proto_text_client_post(s, logmsg, msg, msg_len, consumed);
+      rc = log_proto_framed_client_post_writer(s, logmsg, msg, msg_len, consumed);
 
       /* NOTE: we don't check *consumed here, as we might have a pending
        * message in self->partial before we begin, in which case *consumed
