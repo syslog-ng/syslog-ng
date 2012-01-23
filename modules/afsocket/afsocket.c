@@ -212,7 +212,14 @@ afsocket_sc_init(LogPipe *s)
         }
       else
         {
-          transport = self->owner->proto_factory->construct_transport((LogProtoOptions *)options,self->sock, read_flags, self->owner->tls_context);
+          TLSSession *tls_session = NULL;
+          if (self->owner->tls_context)
+            {
+              tls_session = tls_context_setup_session(self->owner->tls_context);
+              if (!tls_session)
+                return FALSE;
+            }
+          transport = self->owner->proto_factory->construct_transport((LogProtoOptions *)options,self->sock, read_flags, tls_session);
         }
       if (!transport)
         {
@@ -1120,7 +1127,19 @@ afsocket_dd_connected(AFSocketDestDriver *self)
 
   if (self->proto_factory->construct_transport)
     {
-      transport = self->proto_factory->construct_transport(&self->proto_options,self->fd,transport_flags, self->tls_context);
+       TLSSession *tls_session = NULL;
+#if ENABLE_SSL
+      if (self->tls_context)
+        {
+          tls_session = tls_context_setup_session(self->tls_context);
+          if (!tls_session)
+            {
+              goto error_reconnect;
+            }
+          tls_session_set_verify(tls_session, afsocket_dd_tls_verify_callback, self, NULL);
+        }
+#endif
+      transport = self->proto_factory->construct_transport(&self->proto_options,self->fd,transport_flags, tls_session);
     }
   else
     {

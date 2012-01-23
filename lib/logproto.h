@@ -241,7 +241,7 @@ void log_proto_free(LogProto *s);
 struct _LogProtoFactory
 {
   LogProto *(*create)(LogTransport *transport, LogProtoOptions *options, GlobalConfig *cfg);
-  LogTransport *(*construct_transport)(LogProtoOptions *options, int fd, int flags, TLSContext *tlscontext);
+  LogTransport *(*construct_transport)(LogProtoOptions *options, int fd, int flags, TLSSession *tlssession);
   guint default_port;
 };
 
