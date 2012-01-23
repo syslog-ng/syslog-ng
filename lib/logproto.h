@@ -94,7 +94,7 @@ struct _LogProto
   PersistState *state;
 };
 
-static gboolean
+static inline gboolean
 log_proto_is_reliable(LogProto *s)
 {
   if (s->is_reliable)
