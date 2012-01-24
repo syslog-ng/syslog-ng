@@ -1195,7 +1195,7 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
             {
               log_queue_push_head(self->queue, lm, &path_options);
             }
-          log_msg_refcache_stop(FALSE);
+          log_msg_refcache_stop(self->ack_is_reliable);
           msg_set_context(NULL);
           break;
         }
