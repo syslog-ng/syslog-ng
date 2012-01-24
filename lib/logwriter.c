@@ -1317,6 +1317,9 @@ log_writer_deinit(LogPipe *s)
   if (iv_timer_registered(&self->reopen_timer))
     iv_timer_unregister(&self->reopen_timer);
 
+  if (iv_timer_registered(&self->idle_timer))
+    iv_timer_unregister(&self->idle_timer);
+
   log_queue_set_counters(self->queue, NULL, NULL);
 
   stats_lock();
