@@ -136,9 +136,9 @@ static gboolean log_reader_ack(LogSource *s,gpointer user_data, gboolean need_to
   if (self->ack_callback && self->state)
     {
       gboolean result = self->ack_callback(self->state,user_data, need_to_save);
-      if (result && (self->super.super.flags & PIF_INITIALIZED) && !self->io_job.working)
+      if (result)
         {
-          main_loop_call((void (*)(void *))log_reader_update_watches,self,FALSE);
+          log_source_wakeup(s);
         }
       return result;
     }
@@ -212,7 +212,7 @@ log_reader_wakeup_triggered(gpointer s)
 {
   LogReader *self = (LogReader *) s;
 
-  if (!self->io_job.working && self->suspended)
+  if (!self->io_job.working)
     {
       /* NOTE: by the time working is set to FALSE we're over an
        * update_watches call.  So it is called either here (when
