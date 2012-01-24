@@ -448,7 +448,7 @@ main_loop_io_worker_job_init(MainLoopIOWorkerJob *self)
 static void
 main_loop_io_worker_sync_call(void (*func)(void))
 {
-  g_assert(main_loop_io_workers_sync_func == NULL || main_loop_io_workers_sync_func == func);
+  g_assert(main_loop_io_workers_sync_func == NULL || main_loop_io_workers_sync_func == func || under_termination);
 
   if (main_loop_io_workers_running == 0)
     {
