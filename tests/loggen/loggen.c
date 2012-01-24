@@ -89,14 +89,14 @@ send_plain(void *user_data, void *buf, size_t length)
   long fd = (long)user_data;
   int id = GPOINTER_TO_INT(g_thread_self()->data);
   gsize len = 0;
-  static gchar expected[100] = {0};
+  gchar expected[100] = {0};
   int res = send(fd, buf, length, 0);
   if (rltp)
     {
       rltp_chunk_counters[id] += 1;
       if (rltp_chunk_counters[id] == rltp_batch_size)
         {
-          char cbuf[256];
+          char cbuf[256] = {0};
           send(fd, ".\n",2,0);
           read_sock(fd, cbuf, 256);
           len = g_snprintf(expected,100,"250 Received %d\n",rltp_chunk_counters[id]);
