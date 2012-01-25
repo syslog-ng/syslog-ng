@@ -206,7 +206,7 @@ afstreams_sd_init(LogPipe *s)
           return FALSE;
         }
       self->reader = log_reader_new(proto);
-      log_reader_set_options(self->reader, s, &self->reader_options, 1, SCS_SUN_STREAMS, self->super.super.id, self->dev_filename->str);
+      log_reader_set_options(self->reader, s, &self->reader_options, 1, SCS_SUN_STREAMS, self->super.super.id, self->dev_filename->str, NULL);
       log_pipe_append(self->reader, s);
 
       if (self->door_filename)
