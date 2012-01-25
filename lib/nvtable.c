@@ -828,6 +828,7 @@ nv_table_update_ids(NVTable *self,NVRegistry *logmsg_registry, NVHandle *handles
     {
       handles_to_update[i] =  new_updated_handles[i];
     }
+  g_free(new_updated_handles);
   return;
 }
 
