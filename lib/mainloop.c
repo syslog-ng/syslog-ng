@@ -127,6 +127,16 @@ struct _MainLoopTaskCallSite
   GStaticMutex lock;
 };
 
+typedef void (*Quit_Func)(gpointer user_data);
+typedef struct _Quit_Callback_Func Quit_Callback_Func;
+struct _Quit_Callback_Func
+{
+  Quit_Func func;
+  gpointer user_data;
+};
+
+GList *quit_callback_list = NULL;
+
 TLS_BLOCK_START
 {
   MainLoopIOWorkerJob *main_loop_current_job;
@@ -379,6 +389,24 @@ main_loop_io_worker_job_start(MainLoopIOWorkerJob *self)
   g_assert(list_empty(&self->finish_callbacks));
   main_loop_current_job = NULL;
 }
+
+void
+main_loop_external_thread_quit(void)
+{
+  main_loop_io_workers_running--;
+  if (main_loop_io_workers_quit && main_loop_io_workers_running == 0)
+    {
+      iv_task_register(&main_loop_io_workers_reenable_jobs_task);
+      main_loop_io_workers_sync_func();
+    }
+}
+
+void
+main_loop_external_thread_started(void)
+{
+  main_loop_io_workers_running++;
+}
+
 
 static void
 main_loop_io_worker_job_complete(MainLoopIOWorkerJob *self)
@@ -639,6 +667,42 @@ main_loop_exit_timer_elapsed(void *arg)
   main_loop_io_worker_sync_call(main_loop_exit_finish);
 }
 
+void
+main_loop_add_quit_callback_list_element(gpointer func, gpointer user_data)
+{
+  Quit_Callback_Func *cfunc = g_new(Quit_Callback_Func,1);
+
+  cfunc->func = (Quit_Func*) func;
+  cfunc->user_data = user_data;
+
+  quit_callback_list = g_list_append(quit_callback_list, cfunc);
+
+  return;
+}
+
+
+static void
+main_loop_call_quit_callback_list_element(Quit_Callback_Func *func)
+{
+
+  func->func(func->user_data);
+
+  return;
+}
+
+static void
+main_loop_call_thread_quit_callback()
+{
+
+  g_list_foreach(quit_callback_list,(GFunc) main_loop_call_quit_callback_list_element,NULL);
+  g_list_foreach(quit_callback_list,(GFunc) g_free ,NULL);
+  g_list_free(quit_callback_list);
+  quit_callback_list = NULL;
+
+  return;
+}
+
+
 /************************************************************************************
  * signal handlers
  ************************************************************************************/
@@ -647,7 +711,10 @@ static void
 sig_hup_handler(void *s)
 {
   if (!under_termination)
-    main_loop_reload_config_initiate();
+    {
+      main_loop_call_thread_quit_callback();
+      main_loop_reload_config_initiate();
+    }
 }
 
 static void
@@ -659,6 +726,8 @@ sig_term_handler(void *s)
   msg_notice("syslog-ng shutting down",
              evt_tag_str("version", VERSION),
              NULL);
+
+  main_loop_call_thread_quit_callback();
 
   IV_TIMER_INIT(&main_loop_exit_timer);
   iv_validate_now();
