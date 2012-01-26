@@ -142,6 +142,12 @@ log_dest_driver_acquire_queue_method(LogDestDriver *self, gchar *persist_name, g
   if (persist_name)
     queue = cfg_persist_config_fetch(cfg, persist_name);
 
+  if (queue && queue->type != 0)
+    {
+      log_queue_unref(queue);
+      queue = NULL;
+    }
+
   if (!queue)
     {
       queue = log_queue_fifo_new(self->log_fifo_size < 0 ? cfg->log_fifo_size : self->log_fifo_size, persist_name);

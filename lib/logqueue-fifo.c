@@ -499,6 +499,7 @@ log_queue_fifo_new(gint qoverflow_size, const gchar *persist_name)
   self = g_malloc0(sizeof(LogQueueFifo) + log_queue_max_threads * sizeof(self->qoverflow_input[0]));
 
   log_queue_init_instance(&self->super, persist_name);
+  self->super.type = 0;
   self->super.get_length = log_queue_fifo_get_length;
   self->super.keep_on_reload = log_queue_fifo_keep_on_reload;
   self->super.push_tail = log_queue_fifo_push_tail;

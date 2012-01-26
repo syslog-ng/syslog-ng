@@ -38,6 +38,7 @@ struct _LogQueue
 {
   /* this object is reference counted, but it is _not_ thread safe to
      acquire/release references in code executing in parallel */
+  guint8 type;
   gint ref_cnt;
   gint throttle;
   gint throttle_buckets;
