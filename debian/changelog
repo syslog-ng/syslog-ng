@@ -1,3 +1,13 @@
+syslog-ng (3.3.4.dfsg-1~mhp1) unstable; urgency=low
+
+  * New upstream release.
+
+  [ Gergely Nagy <algernon@balabit.hu> ]
+  * Applied a patch to fix framing issues with the syslog protocol, based
+    on a patch by Zoltan Fried <deirf@balabit.hu>.
+
+ -- Gergely Nagy <algernon@madhouse-project.org>  Fri, 27 Jan 2012 14:47:07 +0100
+
 syslog-ng (3.3.3.dfsg-1~mhp2+g511e939) unstable; urgency=low
 
   * New snapshost release, based on upstream commit 511e939.
