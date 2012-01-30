@@ -40,8 +40,7 @@
 
 static gboolean
 affile_open_file(gchar *name, gint flags,
-                 gint uid, gint gid, gint mode,
-                 gint dir_uid, gint dir_gid, gint dir_mode,
+                 const FilePermOptions *perm_options,
                  gboolean create_dirs, gboolean privileged, gboolean is_pipe, gint *fd)
 {
   cap_t saved_caps;
@@ -66,7 +65,7 @@ affile_open_file(gchar *name, gint flags,
       g_process_cap_modify(CAP_DAC_OVERRIDE, TRUE);
     }
 
-  if (create_dirs && !create_containing_directory(name, dir_uid, dir_gid, dir_mode))
+  if (create_dirs && perm_options && !file_perm_options_create_containing_directory(perm_options, name))
     {
       g_process_cap_restore(saved_caps);
       return FALSE;
@@ -88,7 +87,7 @@ affile_open_file(gchar *name, gint flags,
                       NULL);
         }
     }
-  *fd = open(name, flags, mode < 0 ? 0600 : mode);
+  *fd = open(name, flags, perm_options->file_perm < 0 ? 0600 : perm_options->file_perm);
   if (is_pipe && *fd < 0 && errno == ENOENT)
     {
       if (mkfifo(name, 0666) >= 0)
@@ -101,7 +100,8 @@ affile_open_file(gchar *name, gint flags,
       
       g_process_cap_modify(CAP_CHOWN, TRUE);
       g_process_cap_modify(CAP_FOWNER, TRUE);
-      set_permissions_fd(*fd, uid, gid, mode);
+      if (perm_options)
+        file_perm_options_apply_fd(perm_options, *fd);
     }
   g_process_cap_restore(saved_caps);
   msg_trace("affile_open_file",
@@ -122,7 +122,9 @@ affile_sd_open_file(AFFileSourceDriver *self, gchar *name, gint *fd)
   else
     flags = O_RDONLY | O_NOCTTY | O_NONBLOCK | O_LARGEFILE;
 
-  if (affile_open_file(name, flags, -1, -1, -1, 0, 0, 0, 0, !!(self->flags & AFFILE_PRIVILEGED), !!(self->flags & AFFILE_PIPE), fd))
+  if (affile_open_file(name, flags,
+                       NULL,
+                       0, !!(self->flags & AFFILE_PRIVILEGED), !!(self->flags & AFFILE_PIPE), fd))
     return TRUE;
   return FALSE;
 }
@@ -548,9 +550,7 @@ affile_dw_reopen(AFFileDestWriter *self)
     flags = O_WRONLY | O_CREAT | O_NOCTTY | O_NONBLOCK | O_LARGEFILE;
 
 
-  if (affile_open_file(self->filename, flags,
-                       self->owner->file_uid, self->owner->file_gid, self->owner->file_perm, 
-                       self->owner->dir_uid, self->owner->dir_gid, self->owner->dir_perm, 
+  if (affile_open_file(self->filename, flags, &self->owner->file_perm_options,
                        !!(self->owner->flags & AFFILE_CREATE_DIRS), FALSE, !!(self->owner->flags & AFFILE_PIPE), &fd))
     {
       guint write_flags;
@@ -716,78 +716,6 @@ affile_dw_new(AFFileDestDriver *owner, const gchar *filename)
 }
 
 void 
-affile_dd_set_file_uid(LogDriver *s, const gchar *file_uid)
-{
-  AFFileDestDriver *self = (AFFileDestDriver *) s;
-  
-  self->file_uid = 0;
-  if (!resolve_user(file_uid, &self->file_uid))
-    {
-      msg_error("Error resolving user",
-                 evt_tag_str("user", file_uid),
-                 NULL);
-    }
-}
-
-void 
-affile_dd_set_file_gid(LogDriver *s, const gchar *file_gid)
-{
-  AFFileDestDriver *self = (AFFileDestDriver *) s;
-  
-  self->file_gid = 0;
-  if (!resolve_group(file_gid, &self->file_gid))
-    {
-      msg_error("Error resolving group",
-                 evt_tag_str("group", file_gid),
-                 NULL);
-    }
-}
-
-void 
-affile_dd_set_file_perm(LogDriver *s, gint file_perm)
-{
-  AFFileDestDriver *self = (AFFileDestDriver *) s;
-  
-  self->file_perm = file_perm;
-}
-
-void 
-affile_dd_set_dir_uid(LogDriver *s, const gchar *dir_uid)
-{
-  AFFileDestDriver *self = (AFFileDestDriver *) s;
-  
-  self->dir_uid = 0;
-  if (!resolve_user(dir_uid, &self->dir_uid))
-    {
-      msg_error("Error resolving user",
-                 evt_tag_str("user", dir_uid),
-                 NULL);
-    }
-}
-
-void 
-affile_dd_set_dir_gid(LogDriver *s, const gchar *dir_gid)
-{
-  AFFileDestDriver *self = (AFFileDestDriver *) s;
-  
-  self->dir_gid = 0;
-  if (!resolve_group(dir_gid, &self->dir_gid))
-    {
-      msg_error("Error resolving group",
-                 evt_tag_str("group", dir_gid),
-                 NULL);
-    }
-}
-
-void 
-affile_dd_set_dir_perm(LogDriver *s, gint dir_perm)
-{
-  AFFileDestDriver *self = (AFFileDestDriver *) s;
-  
-  self->dir_perm = dir_perm;
-}
-
-void 
 affile_dd_set_create_dirs(LogDriver *s, gboolean create_dirs)
 {
   AFFileDestDriver *self = (AFFileDestDriver *) s;
@@ -889,21 +817,10 @@ affile_dd_init(LogPipe *s)
 
   if (cfg->create_dirs)
     self->flags |= AFFILE_CREATE_DIRS;
-  if (self->file_uid == -1)
-    self->file_uid = cfg->file_uid;
-  if (self->file_gid == -1)
-    self->file_gid = cfg->file_gid;
-  if (self->file_perm == -1)
-    self->file_perm = cfg->file_perm;
-  if (self->dir_uid == -1)
-    self->dir_uid = cfg->dir_uid;
-  if (self->dir_gid == -1)
-    self->dir_gid = cfg->dir_gid;
-  if (self->dir_perm == -1)
-    self->dir_perm = cfg->dir_perm;
   if (self->time_reap == -1)
     self->time_reap = cfg->time_reap;
   
+  file_perm_options_init(&self->file_perm_options, cfg);
   log_writer_options_init(&self->writer_options, cfg, 0);
   log_template_options_init(&self->template_fname_options, cfg);
               
@@ -1179,11 +1096,8 @@ affile_dd_new(gchar *filename, guint32 flags)
   self->filename_template = log_template_new(configuration, NULL);
   log_template_compile(self->filename_template, filename, NULL);
   self->flags = flags;
-  self->file_uid = self->file_gid = -1;
-  self->file_perm = -1;
-  self->dir_uid = self->dir_gid = -1;
-  self->dir_perm = -1;
   log_writer_options_defaults(&self->writer_options);
+  file_perm_options_defaults(&self->file_perm_options);
   if (strchr(filename, '$') == NULL)
     {
       self->flags |= AFFILE_NO_EXPAND;

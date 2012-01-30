@@ -26,21 +26,16 @@
 
 #include "driver.h"
 #include "afsocket.h"
+#include "file-perms.h"
 
 typedef struct _AFUnixSourceDriver
 {
   AFSocketSourceDriver super;
   gchar *filename;
   /* deliberately using int type here, as we may not fit into 16 bits (e.g. when using -1) */
-  gint owner;
-  gint group;
-  gint perm;
+  FilePermOptions file_perm_options;
   SocketOptions sock_options;
 } AFUnixSourceDriver;
-
-void afunix_sd_set_uid(LogDriver *self, gchar *owner);
-void afunix_sd_set_gid(LogDriver *self, gchar *group);
-void afunix_sd_set_perm(LogDriver *self, gint perm);
 
 LogDriver *afunix_sd_new(gchar *filename, guint32 flags);
 

@@ -40,36 +40,6 @@
 #include <unistd.h>
 #include <stdlib.h>
 
-void
-afunix_sd_set_uid(LogDriver *s, gchar *owner)
-{
-  AFUnixSourceDriver *self = (AFUnixSourceDriver *) s;
-
-  if (!resolve_user(owner, &self->owner))
-    msg_error("Error resolving username",
-              evt_tag_str("owner", owner),
-              NULL);
-}
-
-void
-afunix_sd_set_gid(LogDriver *s, gchar *group)
-{
-  AFUnixSourceDriver *self = (AFUnixSourceDriver *) s;
-
-  if (!resolve_group(group, &self->group))
-    msg_error("Error resolving group",
-              evt_tag_str("group", group),
-              NULL);
-}
-
-void
-afunix_sd_set_perm(LogDriver *s, gint perm)
-{
-  AFUnixSourceDriver *self = (AFUnixSourceDriver *) s;
-
-  self->perm = perm & 0777;
-}
-
 #if ENABLE_SYSTEMD
 static gboolean
 afunix_sd_acquire_socket(AFSocketSourceDriver *s, gint *result_fd)
@@ -189,7 +159,7 @@ afunix_sd_init(LogPipe *s)
       g_process_cap_modify(CAP_CHOWN, TRUE);
       g_process_cap_modify(CAP_FOWNER, TRUE);
       g_process_cap_modify(CAP_DAC_OVERRIDE, TRUE);
-      set_permissions(self->filename, self->owner, self->group, self->perm);
+      file_perm_options_apply_file(&self->file_perm_options, self->filename);
       g_process_cap_restore(saved_caps);
 
       return TRUE;
@@ -229,9 +199,8 @@ afunix_sd_new(gchar *filename, guint32 flags)
     afsocket_sd_set_transport(&self->super.super.super, "unix-stream");
 
   self->filename = g_strdup(filename);
-  self->owner = -1;
-  self->group = -1;
-  self->perm = 0666;
+  file_perm_options_defaults(&self->file_perm_options);
+  self->file_perm_options.file_perm = 0666;
   return &self->super.super.super;
 }
 

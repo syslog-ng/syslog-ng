@@ -27,6 +27,7 @@
 #include "driver.h"
 #include "logreader.h"
 #include "logwriter.h"
+#include "file-perms.h"
 
 #define AFFILE_PIPE        0x00000001
 #define AFFILE_NO_EXPAND   0x00000002
@@ -61,12 +62,7 @@ typedef struct _AFFileDestDriver
   LogTemplate *filename_template;
   AFFileDestWriter *single_writer;
   guint32 flags;
-  gint file_uid;
-  gint file_gid;
-  gint file_perm;
-  gint dir_uid;
-  gint dir_gid;
-  gint dir_perm;
+  FilePermOptions file_perm_options;
   gchar *local_time_zone;
   TimeZoneInfo *local_time_zone_info;
   LogWriterOptions writer_options;
@@ -79,14 +75,6 @@ typedef struct _AFFileDestDriver
 
 LogDriver *affile_dd_new(gchar *filename, guint32 flags);
 
-void affile_dd_set_compress(LogDriver *s, gboolean compress);
-void affile_dd_set_encrypt(LogDriver *s, gboolean enable);
-void affile_dd_set_file_uid(LogDriver *s, const gchar *file_uid);
-void affile_dd_set_file_gid(LogDriver *s, const gchar *file_gid);
-void affile_dd_set_file_perm(LogDriver *s, gint file_perm);
-void affile_dd_set_dir_uid(LogDriver *s, const gchar *dir_uid);
-void affile_dd_set_dir_gid(LogDriver *s, const gchar *dir_gid);
-void affile_dd_set_dir_perm(LogDriver *s, gint dir_perm);
 void affile_dd_set_create_dirs(LogDriver *s, gboolean create_dirs);
 void affile_dd_set_fsync(LogDriver *s, gboolean enable);
 void affile_dd_set_overwrite_if_older(LogDriver *s, gint overwrite_if_older);
