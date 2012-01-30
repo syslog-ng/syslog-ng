@@ -123,7 +123,7 @@ affile_sd_open_file(AFFileSourceDriver *self, gchar *name, gint *fd)
     flags = O_RDONLY | O_NOCTTY | O_NONBLOCK | O_LARGEFILE;
 
   if (affile_open_file(name, flags,
-                       NULL,
+                       &self->file_perm_options,
                        0, !!(self->flags & AFFILE_PRIVILEGED), !!(self->flags & AFFILE_PIPE), fd))
     return TRUE;
   return FALSE;
@@ -363,6 +363,7 @@ affile_sd_new(gchar *filename, guint32 flags)
   self->super.super.super.notify = affile_sd_notify;
   self->super.super.super.free_fn = affile_sd_free;
   log_reader_options_defaults(&self->reader_options);
+  file_perm_options_defaults(&self->file_perm_options);
   self->reader_options.parse_options.flags |= LP_LOCAL;
 
   if ((self->flags & AFFILE_PIPE))

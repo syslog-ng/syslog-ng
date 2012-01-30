@@ -84,6 +84,7 @@ source_affile_params
             last_driver = *instance = affile_sd_new($1, 0);
 	    free($1);
 	    last_reader_options = &((AFFileSourceDriver *) last_driver)->reader_options;
+	    last_file_perm_options = &((AFFileSourceDriver *) last_driver)->file_perm_options;
 	  }
           source_affile_options                 { $$ = last_driver; }
         ;
@@ -106,6 +107,7 @@ source_afpipe_params
 	    last_driver = *instance = affile_sd_new($1, AFFILE_PIPE);
 	    free($1);
 	    last_reader_options = &((AFFileSourceDriver *) last_driver)->reader_options;
+	    last_file_perm_options = &((AFFileSourceDriver *) last_driver)->file_perm_options;
 	  }
 	  source_afpipe_options				{ $$ = last_driver; }
 	;
@@ -117,6 +119,7 @@ source_afpipe_options
 
 source_afpipe_option
 	: KW_OPTIONAL '(' yesno ')'			{ last_driver->optional = $3; }
+	| file_perm_option
 	| source_reader_option
 	;
 

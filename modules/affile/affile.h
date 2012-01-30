@@ -44,6 +44,7 @@ typedef struct _AFFileSourceDriver
   LogPipe *reader;
   LogReaderOptions reader_options;
   guint32 flags;
+  FilePermOptions file_perm_options;
   /* state information to follow a set of files using a wildcard expression */
 } AFFileSourceDriver;
 
