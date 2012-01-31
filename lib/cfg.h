@@ -36,8 +36,8 @@
 #include <regex.h>
 #include <stdio.h>
 
-#define CFG_CURRENT_VERSION 0x0303
-#define CFG_CURRENT_VERSION_STRING "3.3"
+#define CFG_CURRENT_VERSION 0x0304
+#define CFG_CURRENT_VERSION_STRING "3.4"
 
 /* configuration data kept between configuration reloads */
 typedef struct _PersistConfig PersistConfig;
