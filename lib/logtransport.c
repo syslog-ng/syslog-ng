@@ -118,7 +118,10 @@ log_transport_plain_write_method(LogTransport *s, const gpointer buf, gsize bufl
 {
   LogTransportPlain *self = (LogTransportPlain *) s;
   gint rc;
-  
+
+  if (!buflen)
+    return 0;
+
   do
     {
       if (self->super.timeout)
