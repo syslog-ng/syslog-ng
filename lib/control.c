@@ -305,6 +305,7 @@ control_connection_new(gint sock)
 void
 control_connection_free(ControlConnection *self)
 {
+  close(self->control_io.fd);
   g_string_free(self->output_buffer, TRUE);
   g_string_free(self->input_buffer, TRUE);
   g_free(self);

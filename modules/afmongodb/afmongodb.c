@@ -523,7 +523,8 @@ afmongodb_dd_free(LogPipe *d)
   g_free(self->password);
   g_free(self->host);
   string_list_free(self->servers);
-  value_pairs_free(self->vp);
+  if (self->vp)
+    value_pairs_free(self->vp);
   log_dest_driver_free(d);
 }
 
@@ -559,7 +560,9 @@ afmongodb_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_optio
   g_mutex_lock(self->suspend_mutex);
   if (queue_was_empty && !self->writer_thread_suspended)
     {
+      g_mutex_lock(self->queue_mutex);
       log_queue_set_parallel_push(self->queue, 1, afmongodb_dd_queue_notify, self, NULL);
+      g_mutex_unlock(self->queue_mutex);
     }
   g_mutex_unlock(self->suspend_mutex);
   log_dest_driver_queue_method(s, msg, path_options, user_data);
