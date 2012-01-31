@@ -44,6 +44,7 @@
 extern struct _LogSourceOptions *last_source_options;
 extern struct _LogReaderOptions *last_reader_options;
 extern struct _LogWriterOptions *last_writer_options;
+extern struct _FilePermOptions *last_file_perm_options;
 extern struct _LogDriver *last_driver;
 
 }
@@ -308,6 +309,9 @@ extern struct _LogDriver *last_driver;
 #include "logrewrite.h"
 #include "value-pairs.h"
 #include "vptransform.h"
+#include "file-perms.h"
+#include "filter-expr-parser.h"
+#include "rewrite-expr-parser.h"
 #include "block-ref-parser.h"
 #include "plugin.h"
 #include "logwriter.h"
@@ -326,6 +330,7 @@ LogDriver *last_driver;
 LogSourceOptions *last_source_options;
 LogReaderOptions *last_reader_options;
 LogWriterOptions *last_writer_options;
+FilePermOptions *last_file_perm_options;
 LogTemplate *last_template;
 CfgArgs *last_block_args;
 ValuePairs *last_value_pairs;
@@ -978,6 +983,25 @@ dest_writer_options_flags
 	: string dest_writer_options_flags      { $$ = log_writer_options_lookup_flag($1) | $2; free($1); }
 	|					{ $$ = 0; }
 	;
+
+file_perm_option
+	: KW_OWNER '(' string_or_number ')'	{ file_perm_options_set_file_uid(last_file_perm_options, $3); free($3); }
+	| KW_OWNER '(' ')'	                { file_perm_options_set_file_uid(last_file_perm_options, "-2"); }
+	| KW_GROUP '(' string_or_number ')'	{ file_perm_options_set_file_gid(last_file_perm_options, $3); free($3); }
+	| KW_GROUP '(' ')'	                { file_perm_options_set_file_gid(last_file_perm_options, "-2"); }
+	| KW_PERM '(' LL_NUMBER ')'		{ file_perm_options_set_file_perm(last_file_perm_options, $3); }
+	| KW_PERM '(' ')'		        { file_perm_options_set_file_perm(last_file_perm_options, -2); }
+        ;
+
+file_dir_perm_option
+        : file_perm_option
+        | KW_DIR_OWNER '(' string_or_number ')'	{ file_perm_options_set_dir_uid(last_file_perm_options, $3); free($3); }
+	| KW_DIR_OWNER '(' ')'	                { file_perm_options_set_dir_uid(last_file_perm_options, "-2"); }
+	| KW_DIR_GROUP '(' string_or_number ')'	{ file_perm_options_set_dir_gid(last_file_perm_options, $3); free($3); }
+	| KW_DIR_GROUP '(' ')'	                { file_perm_options_set_dir_gid(last_file_perm_options, "-2"); }
+	| KW_DIR_PERM '(' LL_NUMBER ')'		{ file_perm_options_set_dir_perm(last_file_perm_options, $3); }
+	| KW_DIR_PERM '(' ')'		        { file_perm_options_set_dir_perm(last_file_perm_options, -2); }
+        ;
 
 value_pair_option
 	: KW_VALUE_PAIRS

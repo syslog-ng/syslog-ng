@@ -33,6 +33,7 @@ pkginclude_HEADERS = 		\
 	crypto.h		\
 	dnscache.h		\
 	driver.h		\
+	file-perms.h		\
 	filter-expr-parser.h	\
 	filter.h		\
 	gprocess.h		\
@@ -100,6 +101,7 @@ libsyslog_ng_la_SOURCES = \
 	control.c		\
 	dnscache.c		\
 	driver.c		\
+	file-perms.c		\
 	filter.c		\
 	filter-expr-parser.c	\
 	globals.c		\

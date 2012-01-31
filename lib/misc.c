@@ -34,7 +34,6 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <string.h>
-#include <unistd.h>
 #include <fcntl.h>
 #include <pwd.h>
 #include <grp.h>
@@ -397,66 +396,6 @@ resolve_user_group(char *arg, gint *uid, gint *gid)
   return TRUE;
 }
 
-/**
- *
- * This function receives a complete path (directory + filename) and creates
- * the directory portion if it does not exist. The point is that the caller
- * wants to ensure that the given filename can be opened after this function
- * returns. (at least it won't fail because of missing directories).
- **/
-gboolean
-create_containing_directory(gchar *name, gint dir_uid, gint dir_gid, gint dir_mode)
-{
-  gchar *dirname;
-  struct stat st;
-  gint rc;
-  gchar *p;
-  cap_t saved_caps;
-  
-  /* check that the directory exists */
-  dirname = g_path_get_dirname(name);
-  rc = stat(dirname, &st);
-  g_free(dirname);
-  
-  if (rc == 0)
-    {
-      /* directory already exists */
-      return TRUE;
-    }
-  else if (rc < 0 && errno != ENOENT)
-    {
-      /* some real error occurred */
-      return FALSE;
-    }
-    
-  /* directory does not exist */
-  p = name + 1;
-  
-  p = strchr(p, '/');
-  while (p) 
-    {
-      *p = 0;
-      if (stat(name, &st) == 0) 
-        {
-          if (!S_ISDIR(st.st_mode))
-            return FALSE;
-        }
-      else if (errno == ENOENT) 
-        {
-          if (mkdir(name, dir_mode < 0 ? 0700 : (mode_t) dir_mode) == -1)
-            return FALSE;
-          saved_caps = g_process_cap_save();
-          g_process_cap_modify(CAP_CHOWN, TRUE);
-          g_process_cap_modify(CAP_FOWNER, TRUE);
-          set_permissions(name, dir_uid, dir_gid, dir_mode);
-          g_process_cap_restore(saved_caps);
-        }
-      *p = '/';
-      p = strchr(p + 1, '/');
-    }
-  return TRUE;
-}
-
 gchar *
 find_file_in_path(const gchar *path, const gchar *filename, GFileTest test)
 {
@@ -677,33 +616,4 @@ utf8_escape_string(const gchar *str, gssize len)
   *(res_pos++) = '\0';
 
   return res;
-}
-
-
-gint
-set_permissions(gchar *name, gint uid, gint gid, gint mode)
-{
-#ifndef _MSC_VER
-  if (uid >= 0)
-    if (chown(name, (uid_t) uid, -1)) return -1;
-  if (gid >= 0)
-    if (chown(name, -1, (gid_t) gid)) return -1;
-  if (mode >= 0)
-    if (chmod(name, (mode_t) mode)) return -1;
-  return 0;
-#endif
-}
-
-gint
-set_permissions_fd(gint fd, gint uid, gint gid, gint mode)
-{
-#ifndef _MSC_VER
-  if (uid >= 0)
-    if (fchown(fd, (uid_t) uid, -1)) return -1;
-  if (gid >= 0)
-    if (fchown(fd, -1, (gid_t) gid)) return -1;
-  if (mode >= 0)
-    if (fchmod(fd, (mode_t) mode)) return -1;
-  return 0;
-#endif
 }
