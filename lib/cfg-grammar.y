@@ -132,6 +132,7 @@ extern struct _LogDriver *last_driver;
 %token KW_INCLUDE                     10006
 %token KW_BLOCK                       10007
 %token KW_JUNCTION                    10008
+%token KW_CHANNEL                     10009
 
 /* source & destination items */
 %token KW_INTERNAL                    10010
@@ -659,6 +660,7 @@ log_forks
 
 log_fork
         : KW_LOG '{' log_content '}'            { $$ = $3; }
+        | KW_CHANNEL '{' log_content '}'        { $$ = $3; }
         ;
 
 log_content
