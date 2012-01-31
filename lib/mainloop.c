@@ -404,6 +404,8 @@ main_loop_external_thread_quit(void)
 void
 main_loop_external_thread_started(void)
 {
+  if (main_loop_io_workers_quit)
+    return;
   main_loop_io_workers_running++;
 }
 
@@ -558,6 +560,15 @@ main_loop_initialize_state(GlobalConfig *cfg, const gchar *persist_filename)
 static void
 main_loop_reload_config_apply(void)
 {
+  if (under_termination)
+    {
+      if (main_loop_new_config)
+        {
+          cfg_free(main_loop_new_config);
+          main_loop_new_config = NULL;
+        }
+      return;
+    }
   main_loop_old_config->persist = persist_config_new();
   cfg_deinit(main_loop_old_config);
   cfg_persist_config_move(main_loop_old_config, main_loop_new_config);
