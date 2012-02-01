@@ -58,7 +58,8 @@ override_dh_autoreconf:
 override_dh_auto_configure:
 	SOURCE_REVISION="$(shell dpkg-parsechangelog | \
 			  sed -n "/^Version:/s/^Version: //p" | \
-			  sed -e "s,+g\([0-9a-f]*\).*,[@\1] ($(shell lsb_release -is)/$(shell lsb_release -rs)),")"; \
+			  sed -e "s,+g\([0-9a-f]*\).*,[@\1]," | \
+			  sed -e "s,$$, ($(shell lsb_release -is)/$(shell lsb_release -rs)),")"; \
 	dh_auto_configure -- \
 		--prefix=/usr \
 		--mandir=/usr/share/man \
