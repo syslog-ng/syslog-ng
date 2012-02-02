@@ -26,7 +26,7 @@
 #include "driver.h"
 #include "misc.h"
 #include "logwriter.h"
-#if ENABLE_SSL
+#if BUILD_WITH_SSL
 #include "tlstransport.h"
 #endif
 #include "gprocess.h"
@@ -193,7 +193,7 @@ afsocket_sc_init(LogPipe *s)
   read_flags = ((self->owner->flags & AFSOCKET_DGRAM) ? LTF_RECV : 0);
   if (!self->reader)
     {
-#if ENABLE_SSL
+#if BUILD_WITH_SSL
       if (self->owner->tls_context)
         {
           TLSSession *tls_session = tls_context_setup_session(self->owner->tls_context);
@@ -393,7 +393,7 @@ afsocket_sd_set_max_connections(LogDriver *s, gint max_connections)
   self->max_connections = max_connections;
 }
 
-#if ENABLE_SSL
+#if BUILD_WITH_SSL
 void
 afsocket_sd_set_tls_context(LogDriver *s, TLSContext *tls_context)
 {
@@ -789,7 +789,7 @@ afsocket_sd_free(LogPipe *s)
   g_sockaddr_unref(self->bind_addr);
   self->bind_addr = NULL;
   g_free(self->transport);
-#if ENABLE_SSL
+#if BUILD_WITH_SSL
   if(self->tls_context)
     {
       tls_context_free(self->tls_context);
@@ -858,7 +858,7 @@ afsocket_dd_set_transport(LogDriver *s, const gchar *transport)
   self->transport = g_strdup(transport);
 }
 
-#if ENABLE_SSL
+#if BUILD_WITH_SSL
 void
 afsocket_dd_set_tls_context(LogDriver *s, TLSContext *tls_context)
 {
@@ -941,7 +941,7 @@ afsocket_dd_stats_instance(AFSocketDestDriver *self)
     }
 }
 
-#if ENABLE_SSL
+#if BUILD_WITH_SSL
 static gint
 afsocket_dd_tls_verify_callback(gint ok, X509_STORE_CTX *ctx, gpointer user_data)
 {
@@ -1059,7 +1059,7 @@ afsocket_dd_connected(AFSocketDestDriver *self)
               NULL);
 
 
-#if ENABLE_SSL
+#if BUILD_WITH_SSL
   if (self->tls_context)
     {
       TLSSession *tls_session;
@@ -1190,7 +1190,7 @@ afsocket_dd_init(LogPipe *s)
        * even while the connection is not established */
 
       self->writer = log_writer_new(LW_FORMAT_PROTO |
-#if ENABLE_SSL
+#if BUILD_WITH_SSL
                                     (((self->flags & AFSOCKET_STREAM) && !self->tls_context) ? LW_DETECT_EOF : 0) |
 #else
                                     ((self->flags & AFSOCKET_STREAM) ? LW_DETECT_EOF : 0) |
@@ -1272,7 +1272,7 @@ afsocket_dd_free(LogPipe *s)
   g_free(self->hostname);
   g_free(self->dest_name);
   g_free(self->transport);
-#if ENABLE_SSL
+#if BUILD_WITH_SSL
   if(self->tls_context)
     {
       tls_context_free(self->tls_context);
