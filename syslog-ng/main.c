@@ -217,6 +217,9 @@ main(int argc, char *argv[])
     }
   if (display_module_registry)
     {
+      debug_flag = FALSE;
+      verbose_flag = FALSE;
+      msg_init(TRUE);
       plugin_list_modules(stdout, TRUE);
       return 0;
     }
