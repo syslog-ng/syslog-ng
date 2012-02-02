@@ -39,7 +39,7 @@ static CfgLexerKeyword afsocket_keywords[] = {
   { "udp6",               KW_UDP6 },
   { "tcp6",               KW_TCP6 },
 #endif
-#if ENABLE_SSL
+#if BUILD_WITH_SSL
   /* ssl */
   { "tls",                KW_TLS },
   { "peer_verify",        KW_PEER_VERIFY },

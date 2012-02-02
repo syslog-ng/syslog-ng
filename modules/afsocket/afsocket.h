@@ -27,7 +27,7 @@
 #include "driver.h"
 #include "logreader.h"
 #include "logwriter.h"
-#if ENABLE_SSL
+#if BUILD_WITH_SSL
 #include "tlscontext.h"
 #endif
 
@@ -69,7 +69,7 @@ struct _AFSocketSourceDriver
   struct iv_fd listen_fd;
   gint fd;
   LogReaderOptions reader_options;
-#if ENABLE_SSL
+#if BUILD_WITH_SSL
   TLSContext *tls_context;
 #endif
   gint address_family;
@@ -106,7 +106,7 @@ struct _AFSocketSourceDriver
 void afsocket_sd_set_transport(LogDriver *s, const gchar *transport);
 void afsocket_sd_set_keep_alive(LogDriver *self, gint enable);
 void afsocket_sd_set_max_connections(LogDriver *self, gint max_connections);
-#if ENABLE_SSL
+#if BUILD_WITH_SSL
 void afsocket_sd_set_tls_context(LogDriver *s, TLSContext *tls_context);
 #else
 #define afsocket_sd_set_tls_context(s, t)
@@ -140,7 +140,7 @@ struct _AFSocketDestDriver
   gint fd;
   LogPipe *writer;
   LogWriterOptions writer_options;
-#if ENABLE_SSL
+#if BUILD_WITH_SSL
   TLSContext *tls_context;
 #endif
   gint address_family;
@@ -173,7 +173,7 @@ struct _AFSocketDestDriver
 };
 
 
-#if ENABLE_SSL
+#if BUILD_WITH_SSL
 void afsocket_dd_set_tls_context(LogDriver *s, TLSContext *tls_context);
 #else
 #define afsocket_dd_set_tls_context(s, t)

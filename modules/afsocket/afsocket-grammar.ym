@@ -38,15 +38,15 @@
 #include "syslog-names.h"
 #include "plugin.h"
 
-#if ENABLE_SSL /* BEGIN MARK: tls */
+#if BUILD_WITH_SSL
 #include "tlscontext.h"
-#endif         /* END MARK */
+#endif
 
 
 static SocketOptions *last_sock_options;
 static gint last_addr_family = AF_INET;
 
-#if ENABLE_SSL
+#if BUILD_WITH_SSL
 TLSContext *last_tls_context;
 #endif
 
@@ -234,20 +234,18 @@ source_afinet_tcp_options
 
 source_afinet_tcp_option
         : source_afinet_option
-/* BEGIN MARK: tls */
 	| KW_TLS
 	  {
-#if ENABLE_SSL
+#if BUILD_WITH_SSL
 	    last_tls_context = tls_context_new(TM_SERVER);
 #endif
 	  }
 	  '(' tls_options ')'
 	  {
-#if ENABLE_SSL
+#if BUILD_WITH_SSL
 	    afsocket_sd_set_tls_context(last_driver, last_tls_context);
 #endif
           }
-/* END MARK */
 	| source_afsocket_stream_params		{}
 	;
 
@@ -285,13 +283,13 @@ source_afsyslog_option
         | KW_TRANSPORT '(' KW_TLS ')'           { afsocket_sd_set_transport(last_driver, "tls"); }
 	| KW_TLS
 	  {
-#if ENABLE_SSL
+#if BUILD_WITH_SSL
 	    last_tls_context = tls_context_new(TM_SERVER);
 #endif
 	  }
 	  '(' tls_options ')'
 	  {
-#if ENABLE_SSL
+#if BUILD_WITH_SSL
 	    afsocket_sd_set_tls_context(last_driver, last_tls_context);
 #endif
           }
@@ -398,13 +396,13 @@ dest_afinet_tcp_option
 	: dest_afinet_option
 	| KW_TLS
 	  {
-#if ENABLE_SSL
+#if BUILD_WITH_SSL
 	    last_tls_context = tls_context_new(TM_CLIENT);
 #endif
 	  }
 	  '(' tls_options ')'
 	  {
-#if ENABLE_SSL
+#if BUILD_WITH_SSL
 	    afsocket_dd_set_tls_context(last_driver, last_tls_context);
 #endif
           }
@@ -444,13 +442,13 @@ dest_afsyslog_option
 	| KW_SPOOF_SOURCE '(' yesno ')'		{ afinet_dd_set_spoof_source(last_driver, $3); }
 	| KW_TLS
 	  {
-#if ENABLE_SSL
+#if BUILD_WITH_SSL
 	    last_tls_context = tls_context_new(TM_CLIENT);
 #endif
 	  }
 	  '(' tls_options ')'
 	  {
-#if ENABLE_SSL
+#if BUILD_WITH_SSL
 	    afsocket_dd_set_tls_context(last_driver, last_tls_context);
 #endif
           }
@@ -463,7 +461,7 @@ tls_options
 
 tls_option
         : KW_IFDEF {
-#if ENABLE_SSL
+#if BUILD_WITH_SSL
 }
 
 	| KW_PEER_VERIFY '(' string ')'

@@ -302,7 +302,7 @@ afinet_sd_apply_transport(AFSocketSourceDriver *s)
   if (!resolve_hostname(&self->super.bind_addr, self->bind_ip ? : default_bind_ip))
     return FALSE;
 
-#if ENABLE_SSL
+#if BUILD_WITH_SSL
   if (self->super.flags & AFSOCKET_REQUIRE_TLS && !self->super.tls_context)
     {
       msg_error("transport(tls) was specified, but tls() options missing",
@@ -512,7 +512,7 @@ afinet_dd_apply_transport(AFSocketDestDriver *s)
                                             );
 
 
-#if ENABLE_SSL
+#if BUILD_WITH_SSL
   if (self->super.flags & AFSOCKET_REQUIRE_TLS && !self->super.tls_context)
     {
       msg_error("transport(tls) was specified, but tls() options missing",
