@@ -229,18 +229,6 @@ cfg_set_version(GlobalConfig *self, gint version)
                   NULL);
     }
 
-  if (self->version <= 0x0301 || atoi(cfg_args_get(self->lexer->globals, "autoload-compiled-modules")))
-    {
-      gint i;
-      gchar **mods;
-
-      mods = g_strsplit(default_modules, ",", 0);
-      for (i = 0; mods[i]; i++)
-        {
-          plugin_load_module(mods[i], self, NULL);
-        }
-      g_strfreev(mods);
-    }
 }
 
 gboolean
@@ -334,6 +322,15 @@ cfg_run_parser(GlobalConfig *self, CfgLexer *lexer, CfgParser *parser, gpointer 
   return res;
 }
 
+void
+cfg_load_candidate_modules(GlobalConfig *self)
+{
+  if ((self->version <= 0x0301 || atoi(cfg_args_get(self->lexer->globals, "autoload-compiled-modules"))) && !self->candidate_plugins)
+    {
+      plugin_load_candidate_modules(self);
+    }
+}
+
 gboolean
 cfg_read_config(GlobalConfig *self, gchar *fname, gboolean syntax_only, gchar *preprocess_into)
 {
@@ -383,6 +380,7 @@ cfg_free(GlobalConfig *self)
   g_free(self->bad_hostname_re);
   g_free(self->dns_cache_hosts);
   g_list_free(self->plugins);
+  plugin_free_candidate_modules(self);
   cfg_tree_free_instance(&self->tree);
   g_free(self);
 }

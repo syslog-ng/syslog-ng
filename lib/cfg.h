@@ -50,6 +50,8 @@ struct _GlobalConfig
   gint parsed_version;
   gchar *filename;
   GList *plugins;
+  GList *candidate_plugins;
+  gboolean autoload_compiled_modules;
   CfgLexer *lexer;
 
   gint stats_freq;
@@ -119,6 +121,8 @@ gint cfg_tz_convert_value(gchar *convert);
 gint cfg_ts_format_value(gchar *format);
 
 void cfg_set_version(GlobalConfig *self, gint version);
+void cfg_load_candidate_modules(GlobalConfig *self);
+
 GlobalConfig *cfg_new(gint version);
 gboolean cfg_run_parser(GlobalConfig *self, CfgLexer *lexer, CfgParser *parser, gpointer *result, gpointer arg);
 gboolean cfg_read_config(GlobalConfig *cfg, gchar *fname, gboolean syntax_only, gchar *preprocess_into);

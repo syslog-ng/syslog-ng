@@ -715,14 +715,20 @@ cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
     {
       cfg_set_version(configuration, configuration->parsed_version);
     }
-  else if (configuration->version == 0 && configuration->parsed_version == 0 && cfg_lexer_get_context_type(self) != LL_CONTEXT_PRAGMA)
+  else if (cfg_lexer_get_context_type(self) != LL_CONTEXT_PRAGMA && !self->non_pragma_seen)
     {
-      /* no version selected yet, and we have a non-pragma token, this
-      * means that the configuration is meant for syslog-ng 2.1 */
+      /* first non-pragma token */
 
-      msg_warning("WARNING: Configuration file has no version number, assuming syslog-ng 2.1 format. Please add @version: maj.min to the beginning of the file",
-                  NULL);
-      cfg_set_version(configuration, 0x0201);
+      if (configuration->version == 0 && configuration->parsed_version == 0)
+        {
+          /* no version selected yet, and we have a non-pragma token, this
+           * means that the configuration is meant for syslog-ng 2.1 */
+          msg_warning("WARNING: Configuration file has no version number, assuming syslog-ng 2.1 format. Please add @version: maj.min to the beginning of the file",
+                      NULL);
+          cfg_set_version(configuration, 0x0201);
+        }
+      cfg_load_candidate_modules(configuration);
+      self->non_pragma_seen = TRUE;
     }
 
   if (!injected)

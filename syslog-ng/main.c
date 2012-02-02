@@ -73,7 +73,6 @@ static GOptionEntry syslogng_options[] =
   { "version",           'V',         0, G_OPTION_ARG_NONE, &display_version, "Display version number (" PACKAGE " " VERSION ")", NULL },
   { "module-path",         0,         0, G_OPTION_ARG_STRING, &module_path, "Set the list of colon separated directories to search for modules, default=" MODULE_PATH, "<path>" },
   { "module-registry",     0,         0, G_OPTION_ARG_NONE, &display_module_registry, "Display module information", NULL },
-  { "default-modules",     0,         0, G_OPTION_ARG_STRING, &default_modules, "Set the set of auto-loaded modules, default=" DEFAULT_MODULES, "<module-list>" },
   { "seed",              'S',         0, G_OPTION_ARG_NONE, &dummy, "Does nothing, the need to seed the random generator is autodetected", NULL},
 #ifdef YYDEBUG
   { "yydebug",           'y',         0, G_OPTION_ARG_NONE, &cfg_parser_debug, "Enable configuration parser debugging", NULL },
@@ -126,10 +125,8 @@ version(void)
 #if WITH_COMPILE_DATE
          "Compile-Date: " __DATE__ " " __TIME__ "\n"
 #endif
-         "Default-Modules: %s\n"
          "Available-Modules: ",
-         installer_version,
-         default_modules);
+         installer_version);
 
   plugin_list_modules(stdout, FALSE);
 

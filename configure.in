@@ -93,10 +93,6 @@ AC_ARG_WITH(timezone-dir,
    [  --with-timezone-dir=path   Use path as the directory to get the timezone files],
    timezonedir=$with_timezone_dir)
 
-AC_ARG_WITH(default-modules,
-   [  --with-default-modules="mod1,mod2,mod3"   Use these as the list of automatically loaded modules],
-   default_modules=$with_default_modules, default_modules="auto")
-
 AC_ARG_WITH(ld-library-path,
    [  --with-ld-library-path=path  Set LD_LIBRARY_PATH during runtime to the value given],
    env_ld_library_path=$with_ld_library_path)
@@ -934,17 +930,7 @@ dnl ***************************************************************************
 ### by the user.
 ###
 ### New plugins can be loaded by explicit "@module foo" lines in the
-### configuration file, that's the preferred form.
-
-if test "x$default_modules" = "xauto"; then
-	default_modules="affile,afprog,afsocket,afuser,basicfuncs,csvparser,dbparser,syslogformat"
-	if test "x$enable_sql" = "xyes"; then
-		default_modules="$default_modules,afsql"
-	fi
-	if test "x$enable_sun_streams" = "xyes"; then
-		default_modules="$default_modules,afstreams"
-	fi
-fi
+### configuration file, or by the autoloading mechanism.
 
 if test "x$module_path" = "x"; then
 	module_path="`patheval $moduledir`"
@@ -1056,7 +1042,6 @@ if test -n "$env_ld_library_path"; then
         AC_DEFINE_UNQUOTED(ENV_LD_LIBRARY_PATH, "$env_ld_library_path", [set LD_LIBRARY_PATH to this value])
 fi
 AC_DEFINE_UNQUOTED(MODULE_PATH, "$module_path", [module search path])
-AC_DEFINE_UNQUOTED(DEFAULT_MODULES, "$default_modules", [The default set of modules loaded if an old config version is used or autoload-compiled-modules is 1])
 
 AC_DEFINE_UNQUOTED(WITH_COMPILE_DATE, $wcmp_date, [Include the compile date in the binary])
 AC_DEFINE_UNQUOTED(ENABLE_DEBUG, `enable_value $enable_debug`, [Enable debugging])
@@ -1192,7 +1177,6 @@ echo "  Env wrapper support         : ${enable_env_wrapper:=no}"
 echo "  systemd support             : ${enable_systemd:=no} (unit dir: ${systemdsystemunitdir:=none})"
 echo " Modules:"
 echo "  Module search path          : ${module_path}"
-echo "  Default module list         : ${default_modules}"
 echo "  Sun STREAMS support (module): ${enable_sun_streams:=no}"
 echo "  SSL support (module)        : ${enable_ssl:=no}"
 echo "  SQL support (module)        : ${enable_sql:=no}"

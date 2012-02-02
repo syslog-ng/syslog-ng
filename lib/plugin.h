@@ -31,8 +31,18 @@
 typedef struct _Plugin Plugin;
 typedef struct _ModuleInfo ModuleInfo;
 
+/* A plugin actually registered by a module. See PluginCandidate in
+ * the implementation module, which encapsulates a demand-loadable
+ * plugin, not yet loaded.
+ *
+ * A plugin serves as the factory for an extension point (=plugin). In
+ * contrast with the "module" which is the shared object itself which
+ * registers plugins.  Each module can register a number of plugins,
+ * not just one.  */
 struct _Plugin
 {
+  /* NOTE: the first two fields must match PluginCandidate struct defined in
+     the plugin.c module, please modify them both at the same time! */
   gint type;
   const gchar *name;
   CfgParser *parser;
@@ -52,6 +62,8 @@ struct _ModuleInfo
   const gchar *core_revision;
   Plugin *plugins;
   gint plugins_len;
+  /* the higher the better */
+  gint preference;
 };
 
 /* instantiate a new plugin */
@@ -67,5 +79,7 @@ gboolean plugin_load_module(const gchar *module_name, GlobalConfig *cfg, CfgArgs
 
 void plugin_list_modules(FILE *out, gboolean verbose);
 
+void plugin_load_candidate_modules(GlobalConfig *cfg);
+void plugin_free_candidate_modules(GlobalConfig *cfg);
 
 #endif

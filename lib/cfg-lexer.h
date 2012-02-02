@@ -142,6 +142,7 @@ struct _CfgLexer
   GString *token_pretext;
   GString *token_text;
   CfgArgs *globals;
+  gboolean non_pragma_seen;
 };
 
 /* preprocessor help */
