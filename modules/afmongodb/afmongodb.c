@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2011 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 2010-2011 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2010-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2010-2012 Gergely Nagy <algernon@balabit.hu>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -403,7 +403,9 @@ static void
 afmongodb_dd_stop_thread (MongoDBDestDriver *self)
 {
   self->writer_thread_terminate = TRUE;
+  g_mutex_lock(self->queue_mutex);
   g_cond_signal(self->writer_thread_wakeup_cond);
+  g_mutex_unlock(self->queue_mutex);
   g_thread_join(self->writer_thread);
 }
 
