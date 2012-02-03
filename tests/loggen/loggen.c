@@ -69,7 +69,35 @@ typedef ssize_t (*send_data_t)(void *user_data, void *buf, size_t length);
 static ssize_t
 send_plain(void *user_data, void *buf, size_t length)
 {
-  return send((long)user_data, buf, length, 0);
+  int fd = (int) ((long) user_data);
+  int cc;
+
+  for (;;)
+    {
+      cc = send(fd, buf, length, 0);
+      if (cc > 0)
+          break;
+      if (cc < 0 && errno == ENOBUFS)
+        {
+          /*
+           * SendQ for the network interface is full.  Give it a chance to
+           * drain.  This is most likely for non-TCP transmissions.  NOTE
+           * that we're using blocking mode here, however BSDs seem to
+           * return ENOBUFS even in this case if we're overflowing the
+           * sendq without blocking.
+           */
+          struct timespec tspec;
+
+          /* wait 1 msec */
+          tspec.tv_sec = 0;
+          tspec.tv_nsec = 1e6;
+          while (nanosleep(&tspec, &tspec) < 0 && errno == EINTR)
+            ;
+        }
+      else
+        return -1;
+    }
+  return (cc);
 }
 
 #if ENABLE_SSL
@@ -393,15 +421,13 @@ gen_messages(send_data_t send_func, void *send_func_ud, int thread_id, FILE *rea
 
       if (buckets == 0)
         {
-          struct timespec tspec, trem;
+          struct timespec tspec;
           long msec = (1000 / rate) + 1;
 
           tspec.tv_sec = msec / 1000;
           tspec.tv_nsec = (msec % 1000) * 1e6;
-          while (nanosleep(&tspec, &trem) < 0 && errno == EINTR)
-            {
-              tspec = trem;
-            }
+          while (nanosleep(&tspec, &tspec) < 0 && errno == EINTR)
+            ;
           continue;
         }
 
