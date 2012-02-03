@@ -24,6 +24,7 @@
 #include "logmsg.h"
 #include "messages.h"
 #include "tags.h"
+#include "uuid.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -42,56 +43,6 @@
 #define PTZ_WORDLIST_CACHE 3 /* FIXME: make this a commandline parameter? */
 
 static LogTagId cluster_tag_id;
-
-
-#if ENABLE_SSL
-
-#include <openssl/rand.h>
-
-static void
-uuid_gen_random(gchar *buf, gsize buflen)
-{
-  union
-  {
-    struct
-    {
-      guint32 time_low;
-      guint16 time_mid;
-      guint16 time_hi_and_version;
-      guint8  clk_seq_hi_res;
-      guint8  clk_seq_low;
-      guint8  node[6];
-      guint16 node_low;
-      guint32 node_hi;
-    };
-    guchar __rnd[16];
-  } uuid;
-
-  RAND_bytes(uuid.__rnd, sizeof(uuid));
-
-  uuid.clk_seq_hi_res = (uuid.clk_seq_hi_res & ~0xC0) | 0x80;
-  uuid.time_hi_and_version = htons((uuid.time_hi_and_version & ~0xF000) | 0x4000);
-
-  g_snprintf(buf, buflen, "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",
-                  uuid.time_low, uuid.time_mid, uuid.time_hi_and_version,
-                  uuid.clk_seq_hi_res, uuid.clk_seq_low,
-                  uuid.node[0], uuid.node[1], uuid.node[2],
-                  uuid.node[3], uuid.node[4], uuid.node[5]);
-
-}
-
-#else
-
-#warning "openssl seems to be missing on your system, UUID generation will be disabled in pdbtool patternize"
-
-static void
-uuid_gen_random(gchar *buf, gsize buflen)
-{
-  static int counter = 1;
-
-  g_snprintf(buf, buflen, "unable-to-generate-uuid-without-random-source-%d", counter++);
-}
-#endif
 
 #if 0
 static void _ptz_debug_print_word(gpointer key, gpointer value, gpointer dummy)

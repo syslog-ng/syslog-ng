@@ -1,6 +1,6 @@
 AM_CFLAGS = -I$(top_srcdir)/lib -I../../../lib -I$(top_srcdir)/modules/dbparser -I.. @CFLAGS_NOWARN_POINTER_SIGN@
 AM_LDFLAGS = -dlpreopen ../../syslogformat/libsyslogformat.la
-LDADD = ../libsyslog-ng-patterndb.a $(top_builddir)/lib/libsyslog-ng.la @TOOL_DEPS_LIBS@ @OPENSSL_LIBS@
+LDADD = ../libsyslog-ng-patterndb.a $(top_builddir)/lib/libsyslog-ng.la $(top_builddir)/lib/libsyslog-ng-crypto.la @TOOL_DEPS_LIBS@
 
 check_PROGRAMS = test_timer_wheel test_patternize test_patterndb test_radix
 
