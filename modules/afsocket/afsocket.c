@@ -235,11 +235,6 @@ afsocket_sc_init(LogPipe *s)
           options->super.size = self->owner->reader_options.msg_size;
         }
 
-      if (self->owner->prefix_matcher)
-        {
-          options->opts.prefix_matcher = self->owner->prefix_matcher;
-          options->opts.garbage_matcher = self->owner->garbage_matcher;
-        }
       proto = self->owner->proto_factory->create(transport,(LogProtoOptions *)options, log_pipe_get_config(&self->owner->super.super.super));
       if (!proto)
         {
@@ -736,6 +731,7 @@ afsocket_sd_deinit(LogPipe *s)
 {
   AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
   GlobalConfig *cfg = log_pipe_get_config(s);
+  LogProtoServerOptions *options = (LogProtoServerOptions *)&self->proto_options;
 
   if ((self->flags & AFSOCKET_KEEP_ALIVE) == 0 || !cfg->persist)
     {
@@ -785,8 +781,8 @@ afsocket_sd_deinit(LogPipe *s)
   if (!log_src_driver_deinit_method(s))
     return FALSE;
 
-  afsocket_sd_regex_free(self->prefix_matcher);
-  afsocket_sd_regex_free(self->garbage_matcher);
+  afsocket_sd_regex_free(options->opts.prefix_matcher);
+  afsocket_sd_regex_free(options->opts.garbage_matcher);
 
   return TRUE;
 }
@@ -1424,9 +1420,10 @@ gboolean
 afsocket_sd_set_multi_line_prefix(LogDriver *s, gchar *prefix)
 {
   AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
+  LogProtoServerOptions *options = (LogProtoServerOptions *)&self->proto_options;
 
-  self->prefix_matcher = g_new0(regex_t, 1);
-  if (regcomp(self->prefix_matcher, prefix, REG_EXTENDED))
+  options->opts.prefix_matcher = g_new0(regex_t, 1);
+  if (regcomp(options->opts.prefix_matcher, prefix, REG_EXTENDED))
     {
       msg_error("Bad regexp",evt_tag_str("multi_line_prefix", prefix), NULL);
       return FALSE;
@@ -1439,9 +1436,10 @@ gboolean
 afsocket_sd_set_multi_line_garbage(LogDriver *s, gchar *garbage)
 {
   AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
+  LogProtoServerOptions *options = (LogProtoServerOptions *)&self->proto_options;
 
-  self->garbage_matcher = g_new0(regex_t, 1);
-  if (regcomp(self->garbage_matcher, garbage, REG_EXTENDED))
+  options->opts.garbage_matcher = g_new0(regex_t, 1);
+  if (regcomp(options->opts.garbage_matcher, garbage, REG_EXTENDED))
     {
       msg_error("Bad regexp",evt_tag_str("multi_line_garbage", garbage), NULL);
       return FALSE;

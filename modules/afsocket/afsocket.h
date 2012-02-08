@@ -84,8 +84,6 @@ struct _AFSocketSourceDriver
   gint listen_backlog;
   GList *connections;
   SocketOptions *sock_options_ptr;
-  regex_t *prefix_matcher;
-  regex_t *garbage_matcher;
 
   /*
    * Apply transport options, set up bind_addr based on the

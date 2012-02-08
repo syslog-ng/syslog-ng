@@ -49,8 +49,6 @@ typedef struct _AFFileSourceDriver
   /* state information to follow a set of files using a wildcard expression */
   FileMonitor *file_monitor;
   GQueue *file_list;
-  regex_t *prefix_matcher;
-  regex_t *garbage_matcher;
 } AFFileSourceDriver;
 
 LogDriver *affile_sd_new(gchar *filename, guint32 flags);

@@ -1519,8 +1519,6 @@ typedef struct _LogProtoTextServer
   gint convert_scale;
   gboolean wait_for_prefix; /* This boolean tell to us that we are waiting for prefix or garbage (used only in case multi line messages */
   gboolean has_to_update; /* This boolean indicate, that we has to drop the read message (between garbage and prefix) */
-  regex_t *prefix_matcher;
-  regex_t *garbage_matcher;
 } LogProtoTextServer;
 
 typedef struct _LogProtoFileReader
@@ -1532,8 +1530,6 @@ typedef struct _LogProtoFileReader
   gint convert_scale;
   gboolean wait_for_prefix; /* This boolean tell to us that we are waiting for prefix or garbage (used only in case multi line messages */
   gboolean has_to_update; /* This boolean indicate, that we has to drop the read message (between garbage and prefix) */
-  regex_t *prefix_matcher;
-  regex_t *garbage_matcher;
 } LogProtoFileReader;
 
 /**
@@ -1870,6 +1866,7 @@ log_proto_text_server_fetch_from_buf(LogProtoBufferedServer *s, const guchar *bu
   gboolean result = FALSE;
   gboolean waited_for_prefix;
   guint32 new_pos = 0;
+  LogProtoServerOptions *options = (LogProtoServerOptions *)self->super.super.options;
 
   if (flush_the_rest)
     {
@@ -1877,7 +1874,7 @@ log_proto_text_server_fetch_from_buf(LogProtoBufferedServer *s, const guchar *bu
        * we are set to packet terminating mode or the connection is to
        * be teared down and we have partial data in our buffer.
        */
-      if (self->prefix_matcher && self->wait_for_prefix)
+      if (options->opts.prefix_matcher && self->wait_for_prefix)
         {
           *msg = NULL;
           *msg_len = 0;
@@ -1901,7 +1898,7 @@ log_proto_text_server_fetch_from_buf(LogProtoBufferedServer *s, const guchar *bu
     }
   else
     {
-      if (!self->prefix_matcher)
+      if (!options->opts.prefix_matcher)
         {
           eol = find_eom(buffer_start, buffer_bytes);
         }
@@ -1911,8 +1908,8 @@ log_proto_text_server_fetch_from_buf(LogProtoBufferedServer *s, const guchar *bu
           eol = find_multi_line_eom(self,
                                     buffer_start,
                                     buffer_bytes,
-                                    self->prefix_matcher,
-                                    self->garbage_matcher,
+                                    options->opts.prefix_matcher,
+                                    options->opts.garbage_matcher,
                                     &new_pos);
           state->pending_buffer_pos += new_pos;
           /* Found Garbage and not update the pending buffer pos later */
@@ -1987,7 +1984,7 @@ log_proto_text_server_fetch_from_buf(LogProtoBufferedServer *s, const guchar *bu
 
       *msg_len = msg_end - buffer_start;
       *msg = buffer_start;
-      if (!self->prefix_matcher)
+      if (!options->opts.prefix_matcher)
         {
           state->pending_buffer_pos = eol - self->super.buffer;
           state->pending_buffer_pos +=1;
@@ -2003,7 +2000,7 @@ log_proto_text_server_fetch_from_buf(LogProtoBufferedServer *s, const guchar *bu
           /* store the end of the next line, it indicates whether we need
            * to read further data, or the buffer already contains a
            * complete line */
-          if (!self->prefix_matcher)
+          if (!options->opts.prefix_matcher)
             {
               eom = find_eom(self->super.buffer + state->pending_buffer_pos, state->pending_buffer_end - state->pending_buffer_pos);
             }
@@ -2013,8 +2010,8 @@ log_proto_text_server_fetch_from_buf(LogProtoBufferedServer *s, const guchar *bu
               eom = find_multi_line_eom(self,
                                         self->super.buffer + state->pending_buffer_pos,
                                         state->pending_buffer_end - state->pending_buffer_pos,
-                                        self->prefix_matcher,
-                                        self->garbage_matcher,
+                                        options->opts.prefix_matcher,
+                                        options->opts.garbage_matcher,
                                         &new_pos);
               state->pending_buffer_pos += new_pos;
               /* found garbage don't upgrade the pending buffer pos */
@@ -2029,8 +2026,8 @@ log_proto_text_server_fetch_from_buf(LogProtoBufferedServer *s, const guchar *bu
                   eom = find_multi_line_eom(self,
                                             self->super.buffer + state->pending_buffer_pos,
                                             state->pending_buffer_end - state->pending_buffer_pos,
-                                            self->prefix_matcher,
-                                            self->garbage_matcher,
+                                            options->opts.prefix_matcher,
+                                            options->opts.garbage_matcher,
                                             &new_pos);
                   self->has_to_update = TRUE;
                 }
@@ -2087,11 +2084,14 @@ log_proto_text_server_init(LogProtoTextServer *self, LogTransport *transport, gi
 }
 
 LogProto *
-log_proto_text_server_new(LogTransport *transport, gint max_msg_size, guint flags)
+log_proto_text_server_new(LogTransport *transport, LogProtoServerOptions *soptions)
 {
   LogProtoTextServer *self = g_new0(LogProtoTextServer, 1);
-
-  log_proto_text_server_init(self, transport, max_msg_size, flags);
+  if (soptions->opts.prefix_matcher)
+    {
+      self->super.super.is_multi_line = TRUE;
+    }
+  log_proto_text_server_init(self, transport, soptions->super.size,soptions->super.flags);
   return &self->super.super;
 }
 
@@ -2109,34 +2109,14 @@ log_proto_file_reader_init(LogProtoTextServer *self, LogTransport *transport, gi
 }
 
 LogProto *
-log_proto_file_reader_new(LogTransport *transport, gint max_msg_size, guint flags)
+log_proto_file_reader_new(LogTransport *transport, LogProtoServerOptions *soptions)
 {
   LogProtoFileReader *self = g_new0(LogProtoFileReader, 1);
-  log_proto_file_reader_init(self, transport, max_msg_size, flags);
-  return &self->super.super;
-}
-
-LogProto *
-log_proto_multi_line_text_server_new(LogTransport *transport, gint max_msg_size, guint flags, regex_t *prefix_matcher, regex_t *garbage_matcher)
-{
-  LogProtoTextServer *self = g_new0(LogProtoTextServer, 1);
-
-  log_proto_text_server_init(self, transport, max_msg_size, flags);
-  self->prefix_matcher = prefix_matcher;
-  self->garbage_matcher = garbage_matcher;
-  self->super.super.is_multi_line = TRUE;
-  return &self->super.super;
-}
-
-LogProto *
-log_proto_multi_line_file_reader_new(LogTransport *transport, gint max_msg_size, guint flags, regex_t *prefix_matcher, regex_t *garbage_matcher)
-{
-  LogProtoFileReader *self = g_new0(LogProtoFileReader, 1);
-
-  log_proto_file_reader_init(self, transport, max_msg_size, flags);
-  self->prefix_matcher = prefix_matcher;
-  self->garbage_matcher = garbage_matcher;
-  self->super.super.is_multi_line = TRUE;
+  if (soptions->opts.prefix_matcher)
+    {
+      self->super.super.is_multi_line = TRUE;
+    }
+  log_proto_file_reader_init(self, transport, soptions->super.size,soptions->super.flags);
   return &self->super.super;
 }
 
@@ -2598,28 +2578,14 @@ LogProto *
 log_proto_text_server_new_plugin(LogTransport *transport,LogProtoOptions *options,GlobalConfig *cfg)
 {
   LogProtoServerOptions *soptions = (LogProtoServerOptions *)options;
-  if (soptions->opts.prefix_matcher)
-    {
-      return log_proto_multi_line_text_server_new(transport,options->super.size,options->super.flags,soptions->opts.prefix_matcher,soptions->opts.garbage_matcher);
-    }
-  else
-    {
-      return log_proto_text_server_new(transport,options->super.size,options->super.flags);
-    }
+  return log_proto_text_server_new(transport,soptions);
 }
 
 LogProto *
 log_proto_file_reader_new_plugin(LogTransport *transport,LogProtoOptions *options,GlobalConfig *cfg)
 {
   LogProtoServerOptions *soptions = (LogProtoServerOptions *)options;
-  if (soptions->opts.prefix_matcher)
-    {
-      return log_proto_multi_line_file_reader_new(transport,options->super.size,options->super.flags,soptions->opts.prefix_matcher,soptions->opts.garbage_matcher);
-    }
-  else
-    {
-      return log_proto_file_reader_new(transport,options->super.size,options->super.flags);
-    }
+  return log_proto_file_reader_new(transport,soptions);
 }
 
 LogProto *

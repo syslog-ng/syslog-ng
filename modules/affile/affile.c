@@ -171,12 +171,6 @@ affile_sd_construct_proto(AFFileSourceDriver *self, LogTransport *transport)
      ? LPBS_IGNORE_EOF | LPBS_POS_TRACKING
      : LPBS_NOMREAD);
 
-  if (self->prefix_matcher)
-    {
-      options->opts.prefix_matcher = self->prefix_matcher;
-      options->opts.garbage_matcher = self->garbage_matcher;
-    }
-
   handler = self->reader_options.parse_options.format_handler;
   self->proto_options.super.flags = flags;
   if ((handler && handler->construct_proto))
@@ -213,6 +207,7 @@ affile_sd_open(LogPipe *s, gboolean immediate_check)
   gboolean file_opened, open_deferred = FALSE;
   GlobalConfig *cfg = log_pipe_get_config(s);
   AFFileSourceDriver *self = (AFFileSourceDriver *) s;
+  LogProtoServerOptions *options = (LogProtoServerOptions *)&self->proto_options;
 
   if (!log_src_driver_init_method(s))
     return FALSE;
@@ -245,7 +240,7 @@ affile_sd_open(LogPipe *s, gboolean immediate_check)
       /* FIXME: we shouldn't use reader_options to store log protocol parameters */
       self->reader = log_reader_new(proto);
 
-      log_reader_set_options(self->reader, s, &self->reader_options, 1, SCS_FILE, self->super.super.id, self->filename->str, NULL);
+      log_reader_set_options(self->reader, s, &self->reader_options, 1, SCS_FILE, self->super.super.id, self->filename->str, options);
       log_reader_set_follow_filename(self->reader, self->filename->str);
 
       if (immediate_check)
@@ -365,6 +360,7 @@ affile_sd_notify(LogPipe *s, LogPipe *sender, gint notify_code, gpointer user_da
 {
   AFFileSourceDriver *self = (AFFileSourceDriver *) s;
   GlobalConfig *cfg = log_pipe_get_config(s);
+  LogProtoServerOptions *options = (LogProtoServerOptions *)&self->proto_options;
   gchar *filename = NULL;
   gint fd;
   
@@ -388,7 +384,7 @@ affile_sd_notify(LogPipe *s, LogPipe *sender, gint notify_code, gpointer user_da
 
             affile_sd_recover_state(s, cfg, proto);
 
-            log_reader_reopen(self->reader, proto, s, &self->reader_options, 1, SCS_FILE, self->super.super.id, self->filename->str, TRUE, NULL);
+            log_reader_reopen(self->reader, proto, s, &self->reader_options, 1, SCS_FILE, self->super.super.id, self->filename->str, TRUE, options);
           }
         else
           {
@@ -549,6 +545,7 @@ static gboolean
 affile_sd_deinit(LogPipe *s)
 {
   AFFileSourceDriver *self = (AFFileSourceDriver *) s;
+  LogProtoServerOptions *options = (LogProtoServerOptions *)&self->proto_options;
 
   if (self->reader)
     {
@@ -562,8 +559,8 @@ affile_sd_deinit(LogPipe *s)
       file_monitor_deinit(self->file_monitor);
     }
 
-  affile_sd_regex_free(self->prefix_matcher);
-  affile_sd_regex_free(self->garbage_matcher);
+  affile_sd_regex_free(options->opts.prefix_matcher);
+  affile_sd_regex_free(options->opts.garbage_matcher);
 
   if (!log_src_driver_deinit_method(s))
     return FALSE;
@@ -742,8 +739,6 @@ struct _AFFileDestWriter
   time_t time_reopen;
   struct iv_timer reap_timer;
   gboolean reopen_pending, queue_pending;
-  regex_t *prefix_matcher;
-  regex_t *garbage_matcher;
 };
 
 static gchar *
@@ -1508,9 +1503,10 @@ gboolean
 affile_sd_set_multi_line_prefix(LogDriver *s, gchar *prefix)
 {
   AFFileSourceDriver *self = (AFFileSourceDriver *) s;
+  LogProtoServerOptions *options = (LogProtoServerOptions *)&self->proto_options;
 
-  self->prefix_matcher = g_new0(regex_t, 1);
-  if (regcomp(self->prefix_matcher, prefix, REG_EXTENDED))
+  options->opts.prefix_matcher = g_new0(regex_t, 1);
+  if (regcomp(options->opts.prefix_matcher, prefix, REG_EXTENDED))
     {
       msg_error("Bad regexp",evt_tag_str("multi_line_prefix", prefix), NULL);
       return FALSE;
@@ -1523,9 +1519,10 @@ gboolean
 affile_sd_set_multi_line_garbage(LogDriver *s, gchar *garbage)
 {
   AFFileSourceDriver *self = (AFFileSourceDriver *) s;
+  LogProtoServerOptions *options = (LogProtoServerOptions *)&self->proto_options;
 
-  self->garbage_matcher = g_new0(regex_t, 1);
-  if (regcomp(self->garbage_matcher, garbage, REG_EXTENDED))
+  options->opts.garbage_matcher = g_new0(regex_t, 1);
+  if (regcomp(options->opts.garbage_matcher, garbage, REG_EXTENDED))
     {
       msg_error("Bad regexp",evt_tag_str("multi_line_garbage", garbage), NULL);
       return FALSE;
