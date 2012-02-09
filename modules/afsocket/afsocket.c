@@ -383,7 +383,10 @@ afsocket_sd_kill_connection_list(GList *list)
       AFSocketSourceConnection *connection = (AFSocketSourceConnection *) l->data;
 
       next = l->next;
-      afsocket_sd_remove_and_kill_connection(connection->owner, connection);
+      if (connection->owner)
+        {
+          afsocket_sd_remove_and_kill_connection(connection->owner, connection);
+        }
     }
 }
 
