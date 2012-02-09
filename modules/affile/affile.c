@@ -799,7 +799,6 @@ affile_dw_reopen(AFFileDestWriter *self)
 {
   int fd, flags;
   struct stat st;
-  LogPipe *s = (LogPipe *)self;
   GlobalConfig *cfg = log_pipe_get_config(&self->owner->super.super.super);
   LogProto *proto = NULL;
 
@@ -865,6 +864,15 @@ affile_dw_reopen(AFFileDestWriter *self)
                 NULL);
     }
 
+  log_writer_reopen(self->writer, proto, NULL);
+
+  return TRUE;
+}
+
+static gboolean
+affile_dw_init(LogPipe *s)
+{
+  AFFileDestWriter *self = (AFFileDestWriter *)s;
   if (!self->writer)
     {
       guint32 flags;
@@ -876,26 +884,18 @@ affile_dw_reopen(AFFileDestWriter *self)
   log_writer_set_options((LogWriter *) self->writer, s, &self->owner->writer_options, 1,
                          self->owner->flags & AFFILE_PIPE ? SCS_PIPE : SCS_FILE,
                          self->owner->super.super.id, self->filename, NULL);
-  log_writer_set_queue(self->writer, log_dest_driver_acquire_queue(&self->owner->super, affile_dw_format_persist_name(self)));
 
+  log_writer_set_queue(self->writer, log_dest_driver_acquire_queue(&self->owner->super, affile_dw_format_persist_name(self)));
   if (!log_pipe_init(self->writer, NULL))
     {
       msg_error("Error initializing log writer", NULL);
       log_pipe_unref(self->writer);
       self->writer = NULL;
-      close(fd);
       return FALSE;
     }
 
-  log_writer_reopen(self->writer, proto, NULL);
   log_pipe_append(&self->super, self->writer);
 
-  return TRUE;
-}
-
-static gboolean
-affile_dw_init(LogPipe *s)
-{
 	return affile_dw_reopen((AFFileDestWriter *)s);
 }
 
