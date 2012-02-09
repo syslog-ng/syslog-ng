@@ -589,7 +589,7 @@ afsql_dd_commit_txn(AFSqlDestDriver *self, gboolean lock)
     {
       msg_notice("SQL transaction commit failed, rewinding backlog and starting again",
                  NULL);
-      log_queue_rewind_backlog(self->queue, -1, TRUE);
+      log_queue_rewind_backlog(self->queue, -1);
     }
   if (lock)
     g_mutex_unlock(self->db_thread_mutex);
@@ -701,7 +701,7 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
 
   /* connection established, try to insert a message */
   g_mutex_lock(self->db_thread_mutex);
-  success = log_queue_pop_head(self->queue, &msg, &path_options, (self->flags & AFSQL_DDF_EXPLICIT_COMMITS), FALSE);
+  success = log_queue_pop_head(self->queue, &msg, &path_options, FALSE, self->flags & AFSQL_DDF_EXPLICIT_COMMITS);
   g_mutex_unlock(self->db_thread_mutex);
   if (!success)
     return TRUE;
@@ -1194,7 +1194,7 @@ afsql_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, 
   queue_was_empty = log_queue_get_length(self->queue) == 0;
   if (queue_was_empty && !self->db_thread_suspended)
     {
-      log_queue_set_parallel_push(self->queue, 1, afsql_dd_queue_notify, self, NULL);
+      log_queue_set_parallel_push(self->queue, afsql_dd_queue_notify, self, NULL);
     }
   g_mutex_unlock(self->db_thread_mutex);
   log_queue_push_tail(self->queue, msg, path_options);

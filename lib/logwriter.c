@@ -431,19 +431,20 @@ log_writer_update_watches(LogWriter *self)
   self->io_cond = cond;
   if (prepare_result ||
       self->flush_waiting_for_timeout ||
-      log_queue_check_items(self->queue, self->options->flush_lines, &partial_batch, &timeout_msec,
-                            (LogQueuePushNotifyFunc) log_writer_schedule_update_watches, self, NULL))
+      log_queue_check_items(self->queue, &timeout_msec,
+                            (LogQueuePushNotifyFunc) log_writer_schedule_update_watches, self, NULL)
+      )
     {
       /* flush_lines number of element is already available and throttle would permit us to send. */
       log_writer_update_fd_callbacks(self, cond);
     }
-  else if (partial_batch || timeout_msec)
+  else if (timeout_msec)
     {
       /* few elements are available, but less than flush_lines, we need to start a timer to initiate a flush */
 
       log_writer_update_fd_callbacks(self, 0);
       self->flush_waiting_for_timeout = TRUE;
-      log_writer_arm_suspend_timer(self, (void (*)(void *)) log_writer_update_watches, timeout_msec ? timeout_msec : self->options->flush_timeout);
+      log_writer_arm_suspend_timer(self, (void (*)(void *)) log_writer_update_watches, timeout_msec);
     }
   else
     {

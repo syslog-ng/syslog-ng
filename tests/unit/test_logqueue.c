@@ -53,16 +53,19 @@ send_some_messages(LogQueue *q, gint n, gboolean use_app_acks)
 
   for (i = 0; i < n; i++)
     {
-      log_queue_pop_head(q, &msg, &path_options, use_app_acks, FALSE);
-      log_msg_ack(msg, &path_options, TRUE);
-      log_msg_unref(msg);
+      log_queue_pop_head(q, &msg, &path_options, FALSE, use_app_acks);
+      if (!use_app_acks)
+        {
+          log_msg_ack(msg, &path_options, TRUE);
+          log_msg_unref(msg);
+        }
     }
 }
 
 void
-app_rewind_some_messages(LogQueue *q, gint n, gboolean need_ack)
+app_rewind_some_messages(LogQueue *q, gint n)
 {
-  log_queue_rewind_backlog(q,n,need_ack);
+  log_queue_rewind_backlog(q,n);
 }
 
 void
@@ -74,7 +77,7 @@ app_ack_some_messages(LogQueue *q, gint n)
 void
 rewind_messages(LogQueue *q)
 {
-  log_queue_rewind_backlog(q, -1, TRUE);
+  log_queue_rewind_backlog(q, -1);
 }
 
 void
@@ -137,11 +140,11 @@ testcase_ack_and_rewind_messages()
   for(i = 0; i < 10; i++)
     {
       send_some_messages(q,1,TRUE);
-      app_rewind_some_messages(q,1,FALSE);
+      app_rewind_some_messages(q,1);
     }
   send_some_messages(q,1000,TRUE);
   app_ack_some_messages(q,500);
-  app_rewind_some_messages(q,500,TRUE);
+  app_rewind_some_messages(q,500);
   send_some_messages(q,500,TRUE);
   app_ack_some_messages(q,500);
   log_queue_unref(q);

@@ -319,7 +319,7 @@ log_queue_fifo_push_head(LogQueue *s, LogMessage *msg, const LogPathOptions *pat
  * Can only run from the output thread.
  */
 static gboolean
-log_queue_fifo_pop_head(LogQueue *s, LogMessage **msg, LogPathOptions *path_options, gboolean push_to_backlog, gboolean ignore_throttle)
+log_queue_fifo_pop_head(LogQueue *s, LogMessage **msg, LogPathOptions *path_options, gboolean ignore_throttle, gboolean push_to_backlog)
 {
   LogQueueFifo *self = (LogQueueFifo *) s;
   LogMessageQueueNode *node;
@@ -424,12 +424,10 @@ log_queue_fifo_ack_backlog(LogQueue *s, gint n)
  * NOTE: this is assumed to be called from the output thread.
  */
 static void
-log_queue_fifo_rewind_backlog(LogQueue *s, gint n,gboolean ack_and_ref)
+log_queue_fifo_rewind_backlog(LogQueue *s, gint n)
 {
   LogQueueFifo *self = (LogQueueFifo *) s;
   LogMessage *msg;
-  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
-
   log_queue_assert_output_thread(s);
   gint i;
   if (n > self->qbacklog_len || n < 0)

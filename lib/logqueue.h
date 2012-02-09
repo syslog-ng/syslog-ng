@@ -49,7 +49,6 @@ struct _LogQueue
   StatsCounterItem *dropped_messages;
 
   GStaticMutex lock;
-  gint parallel_push_notify_limit;
   LogQueuePushNotifyFunc parallel_push_notify;
   gpointer parallel_push_data;
   GDestroyNotify parallel_push_data_destroy;
@@ -59,9 +58,9 @@ struct _LogQueue
   gint64 (*get_length)(LogQueue *self);
   void (*push_tail)(LogQueue *self, LogMessage *msg, const LogPathOptions *path_options);
   void (*push_head)(LogQueue *self, LogMessage *msg, const LogPathOptions *path_options);
-  gboolean (*pop_head)(LogQueue *self, LogMessage **msg, LogPathOptions *path_options, gboolean push_to_backlog, gboolean ignore_throttle);
+  gboolean (*pop_head)(LogQueue *self, LogMessage **msg, LogPathOptions *path_options, gboolean ignore_throttle, gboolean push_to_backlog);
   void (*ack_backlog)(LogQueue *self, gint n);
-  void (*rewind_backlog)(LogQueue *self, gint n, gboolean ack_and_ref);
+  void (*rewind_backlog)(LogQueue *self, gint n);
 
   void (*free_fn)(LogQueue *self);
 };
@@ -93,15 +92,15 @@ log_queue_push_head(LogQueue *self, LogMessage *msg, const LogPathOptions *path_
 }
 
 static inline gboolean
-log_queue_pop_head(LogQueue *self, LogMessage **msg, LogPathOptions *path_options, gboolean push_to_backlog, gboolean ignore_throttle)
+log_queue_pop_head(LogQueue *self, LogMessage **msg, LogPathOptions *path_options, gboolean ignore_throttle, gboolean push_to_backlog)
 {
-  return self->pop_head(self, msg, path_options, push_to_backlog, ignore_throttle);
+  return self->pop_head(self, msg, path_options, ignore_throttle, push_to_backlog);
 }
 
 static inline void
-log_queue_rewind_backlog(LogQueue *self, gint n,gboolean ack_and_ref)
+log_queue_rewind_backlog(LogQueue *self, gint n)
 {
-  return self->rewind_backlog(self, n, ack_and_ref);
+  return self->rewind_backlog(self, n);
 }
 
 static inline void
@@ -150,8 +149,8 @@ log_queue_set_throttle(LogQueue *self, gint throttle)
 
 void log_queue_push_notify(LogQueue *self);
 void log_queue_reset_parallel_push(LogQueue *self);
-void log_queue_set_parallel_push(LogQueue *self, gint notify_limit, LogQueuePushNotifyFunc parallel_push_notify, gpointer user_data, GDestroyNotify user_data_destroy);
-gboolean log_queue_check_items(LogQueue *self, gint batch_items, gboolean *partial_batch, gint *timeout, LogQueuePushNotifyFunc parallel_push_notify, gpointer user_data, GDestroyNotify user_data_destroy);
+void log_queue_set_parallel_push(LogQueue *self, LogQueuePushNotifyFunc parallel_push_notify, gpointer user_data, GDestroyNotify user_data_destroy);
+gboolean log_queue_check_items(LogQueue *self, gint *timeout, LogQueuePushNotifyFunc parallel_push_notify, gpointer user_data, GDestroyNotify user_data_destroy);
 void log_queue_set_counters(LogQueue *self, StatsCounterItem *stored_messages, StatsCounterItem *dropped_messages);
 void log_queue_init_instance(LogQueue *self, const gchar *persist_name);
 void log_queue_free_method(LogQueue *self);
