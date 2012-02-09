@@ -65,35 +65,31 @@ LogReader *log_reader_new_memory_source(LogReaderOptions *options, guint32 read_
   gchar *read_buffer = g_malloc0(read_buffer_length);
   LogProto *proto = NULL;
   *new_transport = log_transport_memory_new(read_buffer, read_buffer_length, NULL, 0, 0);
-  regex_t *prefix_matcher = NULL;
-  regex_t *garbage_matcher = NULL;
-  LogProtoServerOptions proto_options = {0};
+  LogProtoServerOptions *proto_options = g_malloc0(sizeof(LogProtoServerOptions));
 
   if (prefix)
     {
-      prefix_matcher = g_new0(regex_t,1);
-      if (regcomp(prefix_matcher, prefix, REG_EXTENDED))
+      proto_options->opts.prefix_matcher = g_new0(regex_t,1);
+      if (regcomp(proto_options->opts.prefix_matcher, prefix, REG_EXTENDED))
         {
           fprintf(stderr,"Bad regexp %s\n", prefix);
           return FALSE;
         }
       if (garbage)
         {
-          garbage_matcher = g_new(regex_t,1);
-          if(regcomp(garbage_matcher, garbage, REG_EXTENDED))
+          proto_options->opts.garbage_matcher = g_new(regex_t,1);
+          if(regcomp(proto_options->opts.garbage_matcher, garbage, REG_EXTENDED))
             {
               fprintf(stderr,"Bad regexp %s\n", garbage);
               return FALSE;
             }
         }
-      proto_options.opts.prefix_matcher = prefix_matcher;
-      proto_options.opts.garbage_matcher = garbage_matcher;
     }
-  proto_options.super.size = 8192;
-  proto_options.super.flags = LPBS_IGNORE_EOF;
-  proto = create_logproto("stream-newline",*new_transport,(LogProtoOptions *)&proto_options);
+  proto_options->super.size = 8192;
+  proto_options->super.flags = LPBS_IGNORE_EOF;
+  proto = create_logproto("stream-newline",*new_transport,(LogProtoOptions *)proto_options);
   LogReader *reader = (LogReader*)log_reader_new(proto);
-  log_reader_set_options((LogPipe *)reader, (LogPipe *)reader, options, 0, SCS_FILE, "test","test_mem_queue", NULL);
+  log_reader_set_options((LogPipe *)reader, (LogPipe *)reader, options, 0, SCS_FILE, "test","test_mem_queue", proto_options);
   ((LogPipe *)reader)->queue = queue;
   ((LogPipe *)reader)->notify = notif;
   log_pipe_init((LogPipe *)reader, cfg);
@@ -102,17 +98,18 @@ LogReader *log_reader_new_memory_source(LogReaderOptions *options, guint32 read_
 
 LogReader *log_reader_new_file_source(LogReaderOptions *options, guint32 read_buffer_length, LogReaderNotifyMethod notif, LogReaderQueueMethod queue, LogTransport **new_transport, GlobalConfig *cfg)
 {
-  LogProtoOptions proto_options = {0};
+  LogProtoOptions *proto_options = g_malloc0(sizeof(LogProtoOptions));
   gchar *read_buffer = g_malloc0(read_buffer_length);
   *new_transport = log_transport_memory_new(read_buffer, read_buffer_length, NULL, 0, 0);
-  proto_options.super.size = 8192;
-  proto_options.super.flags = LPBS_NOMREAD;
-  LogProto *proto = create_logproto("stream-newline",*new_transport,&proto_options);
+  memset(proto_options,0,sizeof(LogProtoOptions));
+  proto_options->super.size = 8192;
+  proto_options->super.flags = LPBS_NOMREAD;
+  LogProto *proto = create_logproto("stream-newline",*new_transport,proto_options);
   PersistState *state = persist_state_new("test.persist");
   persist_state_start(state);
   log_proto_restart_with_state(proto,state,"test_state");
   LogReader *reader = (LogReader*)log_reader_new(proto);
-  log_reader_set_options((LogPipe *)reader, (LogPipe *)reader, options, 0, SCS_FILE, "test","test_file_queue", NULL);
+  log_reader_set_options((LogPipe *)reader, (LogPipe *)reader, options, 0, SCS_FILE, "test","test_file_queue", proto_options);
   ((LogPipe *)reader)->queue = queue;
   ((LogPipe *)reader)->notify = notif;
   log_pipe_init((LogPipe *)reader, cfg);

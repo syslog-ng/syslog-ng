@@ -117,7 +117,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   //Testing syslog protocol file@ SD-ID generating if file source is used
   configuration = cfg_new(0x0302);
   plugin_load_module("syslogformat", configuration, NULL);
-  plugin_load_module("baseproto", configuration, NULL);
+  plugin_load_module("basic-proto", configuration, NULL);
   msg_format_options_defaults(&parse_options);
   msg_format_options_init(&parse_options, configuration);
   test_case(test_msg,"[timeQuality isSynced=\"0\" tzKnown=\"1\"][file@18372.4 position=\"203\" size=\"1\" name=\"test_filereader.txt\"]","test_filereader.txt", strlen(test_msg),1, configuration);

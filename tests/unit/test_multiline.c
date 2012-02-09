@@ -117,7 +117,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   app_startup();
   configuration = cfg_new(0x0302);
   plugin_load_module("syslogformat", configuration, NULL);
-  plugin_load_module("baseproto", configuration, NULL);
+  plugin_load_module("basic-proto", configuration, NULL);
   msg_format_options_defaults(&parse_options);
   parse_options.flags &= ~LP_SYSLOG_PROTOCOL;
   msg_format_options_init(&parse_options, configuration);
