@@ -177,7 +177,7 @@ log_proto_client_post_writer(LogProto *s, LogMessage *logmsg, guchar *msg, gsize
   g_assert(self->super.convert == (GIConv) -1);
 
   *consumed = FALSE;
-  rc = log_proto_flush(s);
+  rc = log_proto_text_client_flush_buffer(s);
   if (rc == LPS_ERROR)
     {
       goto write_error;
@@ -1894,7 +1894,7 @@ log_proto_text_server_fetch_from_buf(LogProtoBufferedServer *s, const guchar *bu
        * we are set to packet terminating mode or the connection is to
        * be teared down and we have partial data in our buffer.
        */
-      if (options->opts.prefix_matcher && self->wait_for_prefix)
+      if (options && options->opts.prefix_matcher && self->wait_for_prefix)
         {
           *msg = NULL;
           *msg_len = 0;
@@ -1918,7 +1918,7 @@ log_proto_text_server_fetch_from_buf(LogProtoBufferedServer *s, const guchar *bu
     }
   else
     {
-      if (!options->opts.prefix_matcher)
+      if (!options || !options->opts.prefix_matcher)
         {
           eol = find_eom(buffer_start, buffer_bytes);
         }
@@ -2004,7 +2004,7 @@ log_proto_text_server_fetch_from_buf(LogProtoBufferedServer *s, const guchar *bu
 
       *msg_len = msg_end - buffer_start;
       *msg = buffer_start;
-      if (!options->opts.prefix_matcher)
+      if (!options || !options->opts.prefix_matcher)
         {
           state->pending_buffer_pos = eol - self->super.buffer;
           state->pending_buffer_pos +=1;
@@ -2020,7 +2020,7 @@ log_proto_text_server_fetch_from_buf(LogProtoBufferedServer *s, const guchar *bu
           /* store the end of the next line, it indicates whether we need
            * to read further data, or the buffer already contains a
            * complete line */
-          if (!options->opts.prefix_matcher)
+          if (!options || !options->opts.prefix_matcher)
             {
               eom = find_eom(self->super.buffer + state->pending_buffer_pos, state->pending_buffer_end - state->pending_buffer_pos);
             }
@@ -2107,7 +2107,7 @@ LogProto *
 log_proto_text_server_new(LogTransport *transport, LogProtoServerOptions *soptions)
 {
   LogProtoTextServer *self = g_new0(LogProtoTextServer, 1);
-  if (soptions->opts.prefix_matcher)
+  if (soptions && soptions->opts.prefix_matcher)
     {
       self->super.super.is_multi_line = TRUE;
     }
@@ -2132,7 +2132,7 @@ LogProto *
 log_proto_file_reader_new(LogTransport *transport, LogProtoServerOptions *soptions)
 {
   LogProtoFileReader *self = g_new0(LogProtoFileReader, 1);
-  if (soptions->opts.prefix_matcher)
+  if (soptions && soptions->opts.prefix_matcher)
     {
       self->super.super.is_multi_line = TRUE;
     }
