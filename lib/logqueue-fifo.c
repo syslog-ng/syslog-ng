@@ -126,7 +126,8 @@ log_queue_fifo_get_length(LogQueue *s)
 static gboolean
 log_queue_fifo_keep_on_reload(LogQueue *s)
 {
-  return log_queue_fifo_get_length(s) > 0;
+  LogQueueFifo *self = (LogQueueFifo *) s;
+  return log_queue_fifo_get_length(s) > 0 || self->qbacklog_len > 0;
 }
 
 /* move items from the per-thread input queue to the lock-protected "wait" queue */
@@ -444,6 +445,7 @@ log_queue_fifo_rewind_backlog(LogQueue *s, gint n)
        * and pop_head add ack and ref when it pushes the message into the backlog
        * The rewind must decrease the ack and ref too
        */
+      msg = node->msg;
       list_del_init(&node->list);
       list_add(&node->list,&self->qoverflow_output);
 
