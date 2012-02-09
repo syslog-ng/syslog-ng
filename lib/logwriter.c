@@ -44,7 +44,7 @@ typedef enum
   /* flush modes */
 
   /* flush the buffer immediately please */
-  LW_FLUSH_BUFFER,
+  LW_FLUSH_BUFFER = 0,
   /* pull off any queued items, at maximum speed, even ignoring throttle, and flush the buffer too */
   LW_FLUSH_QUEUE,
 } LogWriterFlushMode;
@@ -91,7 +91,6 @@ struct _LogWriter
   GCond *pending_proto_cond;
   GStaticMutex pending_proto_lock;
   /* messages posted, and we're not certain were properly sent out on the wire */
-  gint pending_message_count;
   gint last_notify_code;
 
   gint io_cond;
@@ -133,25 +132,10 @@ static void
 log_writer_msg_acked(guint num_msg_acked, gpointer user_data)
 {
   LogWriter *self = (LogWriter *)user_data;
-  if (self->flags & LW_KEEP_ONE_PENDING)
+  log_queue_ack_backlog(self->queue,num_msg_acked);
+  if (self->ack_is_reliable)
     {
-      if (self->ack_is_reliable)
-        {
-          log_queue_ack_backlog(self->queue, num_msg_acked);
-          self->pending_message_count -= num_msg_acked;
-          log_queue_rewind_backlog(self->queue, self->pending_message_count,FALSE);
-          self->pending_message_count = 0;
-        }
-      else if (self->pending_message_count > 1)
-        {
-          log_queue_ack_backlog(self->queue, num_msg_acked);
-          self->pending_message_count -= num_msg_acked;
-          if (self->pending_message_count > 1)
-            {
-              log_queue_rewind_backlog(self->queue, self->pending_message_count,FALSE);
-              self->pending_message_count = 0;
-            }
-        }
+      log_queue_rewind_backlog(self->queue,-1);
     }
 }
 
@@ -1123,8 +1107,7 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
       LogMessage *lm;
       LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
       gboolean consumed = FALSE;
-
-      if (!log_queue_pop_head(self->queue, &lm, &path_options, (self->flags & LW_KEEP_ONE_PENDING) ? TRUE : FALSE, ignore_throttle))
+      if (!log_queue_pop_head(self->queue, &lm, &path_options, ignore_throttle,TRUE))
         {
           /* no more items are available */
           break;
@@ -1133,7 +1116,10 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
       msg_set_context(lm);
 
       log_writer_format_log(self, lm, self->line_buffer);
-      self->pending_message_count++;
+      msg_debug("Outgoing message",
+                evt_tag_str("message",self->line_buffer->str),
+                evt_tag_int("flush_mode",flush_mode),
+                NULL);
 
       if (self->line_buffer->len)
         {
@@ -1144,16 +1130,8 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
               if ((self->options->options & LWO_IGNORE_ERRORS) == 0)
                 {
                   msg_set_context(NULL);
-                  if (self->flags & LW_KEEP_ONE_PENDING)
-                    {
-                      log_msg_ack(lm, &path_options,FALSE);
-                      log_msg_unref(lm);
-                      log_queue_rewind_backlog(self->queue, 1, TRUE);
-                    }
-                  else
-                    {
-                      log_queue_push_head(self->queue, lm, &path_options);
-                    }
+                  log_msg_unref(lm);
+                  log_queue_rewind_backlog(self->queue, 1);
                   log_msg_refcache_stop(FALSE);
                   return FALSE;
                 }
@@ -1175,28 +1153,16 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
         {
           if (lm->flags & LF_LOCAL)
             step_sequence_number(&self->seq_num);
-          log_msg_ack(lm, &path_options,TRUE);
           log_msg_unref(lm);
         }
       else
         {
-          /* push back to the queue */
-          if (self->flags & LW_KEEP_ONE_PENDING)
-            {
-              if (self->pending_message_count > 0)
-                {
-                  log_msg_ack(lm, &path_options,FALSE);
-                  log_msg_unref(lm);
-                  log_queue_rewind_backlog(self->queue, 1, TRUE);
-                  g_assert(self->pending_message_count > 0);
-                  self->pending_message_count--;
-                }
-            }
-          else
-            {
-              log_queue_push_head(self->queue, lm, &path_options);
-            }
-          log_msg_refcache_stop(self->ack_is_reliable);
+          msg_debug("Can't send the message rewind backlog",
+                    evt_tag_str("message",self->line_buffer->str),
+                    NULL);
+          log_msg_unref(lm);
+          log_queue_rewind_backlog(self->queue, 1);
+          log_msg_refcache_stop(FALSE);
           msg_set_context(NULL);
           break;
         }
@@ -1427,11 +1393,8 @@ log_writer_reopen_deferred(gpointer s)
   if (proto)
     {
       log_proto_set_options(proto,proto_options);
-      if (self->flags & LW_KEEP_ONE_PENDING)
-        {
-          log_proto_set_msg_acked_callback(self->proto,log_writer_msg_acked,self);
-          self->ack_is_reliable = log_proto_is_reliable(self->proto);
-        }
+      log_proto_set_msg_acked_callback(self->proto,log_writer_msg_acked,self);
+      self->ack_is_reliable = log_proto_is_reliable(self->proto);
       log_writer_start_watches(self);
     }
 }

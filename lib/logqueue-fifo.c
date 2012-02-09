@@ -371,10 +371,8 @@ log_queue_fifo_pop_head(LogQueue *s, LogMessage **msg, LogPathOptions *path_opti
       return FALSE;
     }
   stats_counter_dec(self->super.stored_messages);
-
   if (push_to_backlog)
     {
-      node->ack_needed = FALSE;
       log_msg_ref(*msg);
       list_add_tail(&node->list, &self->qbacklog);
       self->qbacklog_len++;
@@ -394,6 +392,7 @@ static void
 log_queue_fifo_ack_backlog(LogQueue *s, gint n)
 {
   LogQueueFifo *self = (LogQueueFifo *) s;
+  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
   LogMessage *msg;
   gint i;
 
@@ -407,7 +406,8 @@ log_queue_fifo_ack_backlog(LogQueue *s, gint n)
       list_del(&node->list);
       log_msg_free_queue_node(node);
       self->qbacklog_len--;
-
+      path_options.ack_needed = node->ack_needed;
+      log_msg_ack(msg,&path_options,TRUE);
       log_msg_unref(msg);
     }
 }

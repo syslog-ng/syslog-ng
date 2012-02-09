@@ -237,6 +237,8 @@ void log_proto_free(LogProto *s);
 
 #define LPRS_BINARY         0x0008
 
+#define LPBS_KEEP_ONE       0x0010
+
 
 struct _LogProtoFactory
 {

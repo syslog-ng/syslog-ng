@@ -1163,12 +1163,12 @@ afsocket_dd_connected(AFSocketDestDriver *self)
     }
 
   self->proto_options.super.size = self->writer_options.flush_lines;
-
   proto = self->proto_factory->create(transport,&self->proto_options, log_pipe_get_config(&self->super.super.super));
   if (!proto)
     {
       goto error_reconnect;
     }
+  proto->flags |= LPBS_KEEP_ONE;
   log_proto_restart_with_state(proto,cfg->state,afsocket_dd_format_state_name(self));
   log_writer_reopen(self->writer, proto, &self->proto_options);
   return TRUE;

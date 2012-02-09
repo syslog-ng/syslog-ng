@@ -44,6 +44,7 @@ typedef struct _LogProtoTextClient
   LogProto super;
   guchar *partial;
   gsize partial_len, partial_pos;
+  guint8  acked;
 } LogProtoTextClient;
 
 #define LPFCS_FRAME_INIT    0
@@ -235,7 +236,16 @@ log_proto_client_post_writer(LogProto *s, LogMessage *logmsg, guchar *msg, gsize
       g_free(msg);
       *consumed = TRUE;
     }
-  if (self->super.ack_callback)
+  if (self->super.flags & LPBS_KEEP_ONE)
+    {
+      self->acked++;
+      if (self->acked > 1)
+        {
+          self->super.ack_callback(1,self->super.ack_user_data);
+          self->acked--;
+        }
+    }
+  else
     {
       self->super.ack_callback(1,self->super.ack_user_data);
     }
@@ -268,6 +278,16 @@ log_proto_framed_client_post_writer(LogProto *s, LogMessage *logmsg, guchar *msg
   return log_proto_client_post_writer(s, logmsg, msg, msg_len, consumed, TRUE);
 }
 
+static void
+log_proto_text_client_free(LogProto *s)
+{
+  LogProtoTextClient *self = (LogProtoTextClient *)s;
+  if (self->partial == NULL)
+    {
+      self->super.ack_callback(1,self->super.ack_user_data);
+    }
+}
+
 LogProto *
 log_proto_text_client_new(LogTransport *transport)
 {
@@ -276,8 +296,10 @@ log_proto_text_client_new(LogTransport *transport)
   self->super.prepare = log_proto_text_client_prepare;
   self->super.flush = log_proto_text_client_flush;
   self->super.post = log_proto_text_client_post;
+  self->super.free_fn = log_proto_text_client_free;
   self->super.transport = transport;
   self->super.convert = (GIConv) -1;
+  self->acked = 0;
   return &self->super;
 }
 
@@ -385,6 +407,7 @@ log_proto_file_writer_post(LogProto *s, LogMessage *logmsg, guchar *msg, gsize m
 {
   LogProtoFileWriter *self = (LogProtoFileWriter *)s;
   gint rc;
+  LogProtoStatus result;
 
   *consumed = FALSE;
   if (self->buf_count >= self->buf_size)
@@ -427,15 +450,12 @@ log_proto_file_writer_post(LogProto *s, LogMessage *logmsg, guchar *msg, gsize m
   ++self->buf_count;
   self->sum_len += msg_len;
   *consumed = TRUE;
-
+  result = LPS_SUCCESS;
+  self->super.ack_callback(1,self->super.ack_user_data);
   if (self->buf_count == self->buf_size)
     {
       /* we have reached the max buffer size -> we need to write the messages */
-      return log_proto_file_writer_flush(s);
-    }
-  if (self->super.ack_callback)
-    {
-      self->super.ack_callback(1,self->super.ack_user_data);
+      result = log_proto_file_writer_flush(s);
     }
   return LPS_SUCCESS;
 
