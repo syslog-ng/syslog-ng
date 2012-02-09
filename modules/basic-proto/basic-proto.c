@@ -113,11 +113,10 @@ log_proto_text_client_prepare(LogProto *s, gint *fd, GIOCondition *cond, gint *t
 }
 
 static LogProtoStatus
-log_proto_text_client_flush(LogProto *s)
+log_proto_text_client_flush_buffer(LogProto *s)
 {
   LogProtoTextClient *self = (LogProtoTextClient *) s;
   gint rc;
-
   /* attempt to flush previously buffered data */
   if (self->partial)
     {
@@ -149,9 +148,29 @@ log_proto_text_client_flush(LogProto *s)
           return LPS_SUCCESS;
         }
     }
+  return LPS_SUCCESS;
+}
+
+static LogProtoStatus
+log_proto_text_client_flush(LogProto *s)
+{
+  LogProtoTextClient *self = (LogProtoTextClient *) s;
+  gint rc;
+  LogProtoStatus status;
+
+  /* attempt to flush previously buffered data */
+  if (self->partial)
+    {
+      status = log_proto_text_client_flush_buffer(s);
+    }
   else
     {
       rc = log_transport_write(self->super.transport, "", 0);
+    }
+  if (!self->partial && self->acked)
+    {
+      self->super.ack_callback(1,self->super.ack_user_data);
+      self->acked = 0;
     }
   return LPS_SUCCESS;
 }
