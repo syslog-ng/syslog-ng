@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2011 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 2011 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2011-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2011-2012 Gergely Nagy <algernon@balabit.hu>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -37,6 +37,10 @@ void value_pairs_add_pair(ValuePairs *vp, GlobalConfig *cfg, const gchar *key, c
 
 void value_pairs_add_transforms(ValuePairs *vp, gpointer *vpts);
 
+void value_pairs_foreach_sorted(ValuePairs *vp, VPForeachFunc func,
+                                GCompareDataFunc compare_func,
+                                LogMessage *msg, gint32 seq_num,
+                                gpointer user_data);
 void value_pairs_foreach(ValuePairs *vp, VPForeachFunc func,
                          LogMessage *msg, gint32 seq_num,
                          gpointer user_data);

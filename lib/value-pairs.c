@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2011 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 2011 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2011-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2011-2012 Gergely Nagy <algernon@balabit.hu>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -280,13 +280,14 @@ vp_merge_set(ValuePairs *vp, LogMessage *msg, gint32 seq_num, ValuePairSpec *set
 }
 
 void
-value_pairs_foreach (ValuePairs *vp, VPForeachFunc func,
-		     LogMessage *msg, gint32 seq_num, gpointer user_data)
+value_pairs_foreach_sorted (ValuePairs *vp, VPForeachFunc func,
+                            GCompareDataFunc compare_func,
+                            LogMessage *msg, gint32 seq_num, gpointer user_data)
 {
   gpointer args[] = { vp, func, msg, GINT_TO_POINTER (seq_num), user_data, NULL };
   GTree *scope_set;
 
-  scope_set = g_tree_new_full((GCompareDataFunc)g_strcmp0, NULL,
+  scope_set = g_tree_new_full((GCompareDataFunc)compare_func, NULL,
                               (GDestroyNotify)g_free,
                               (GDestroyNotify)g_free);
   args[5] = scope_set;
@@ -320,6 +321,14 @@ value_pairs_foreach (ValuePairs *vp, VPForeachFunc func,
   g_tree_destroy(scope_set);
 }
 
+void
+value_pairs_foreach(ValuePairs *vp, VPForeachFunc func,
+                    LogMessage *msg, gint32 seq_num,
+                    gpointer user_data)
+{
+  value_pairs_foreach_sorted(vp, func, (GCompareDataFunc)g_strcmp0,
+                             msg, seq_num, user_data);
+}
 
 static void
 value_pairs_init_set(ValuePairSpec *set)
