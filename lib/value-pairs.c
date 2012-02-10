@@ -184,7 +184,7 @@ vp_pairs_foreach(gpointer key, gpointer value, gpointer user_data)
   ValuePairs *vp = ((gpointer *)user_data)[0];
   LogMessage *msg = ((gpointer *)user_data)[2];
   gint32 seq_num = GPOINTER_TO_INT (((gpointer *)user_data)[3]);
-  GHashTable *scope_set = ((gpointer *)user_data)[5];
+  GTree *scope_set = ((gpointer *)user_data)[5];
   ScratchBuffer *sb = scratch_buffer_acquire();
 
   log_template_format((LogTemplate *)value, msg, NULL, LTZ_LOCAL,
@@ -196,7 +196,7 @@ vp_pairs_foreach(gpointer key, gpointer value, gpointer user_data)
       return;
     }
 
-  g_hash_table_insert(scope_set, vp_transform_apply (vp, key), sb_string(sb)->str);
+  g_tree_insert(scope_set, vp_transform_apply(vp, key), sb_string(sb)->str);
   g_string_steal(sb_string(sb));
   scratch_buffer_release(sb);
 }
@@ -208,7 +208,7 @@ vp_msg_nvpairs_foreach(NVHandle handle, gchar *name,
                        gpointer user_data)
 {
   ValuePairs *vp = ((gpointer *)user_data)[0];
-  GHashTable *scope_set = ((gpointer *)user_data)[5];
+  GTree *scope_set = ((gpointer *)user_data)[5];
   gint j;
   gboolean inc = FALSE;
 
@@ -225,7 +225,7 @@ vp_msg_nvpairs_foreach(NVHandle handle, gchar *name,
       inc)
     {
       /* NOTE: the key is a borrowed reference in the hash, and value is freed */
-      g_hash_table_insert(scope_set, vp_transform_apply(vp, name), g_strndup(value, value_len));
+      g_tree_insert(scope_set, vp_transform_apply(vp, name), g_strndup(value, value_len));
     }
 
   return FALSE;
@@ -233,7 +233,7 @@ vp_msg_nvpairs_foreach(NVHandle handle, gchar *name,
 
 /* runs over a set of ValuePairSpec structs and merges them into the value-pair set */
 static void
-vp_merge_set(ValuePairs *vp, LogMessage *msg, gint32 seq_num, ValuePairSpec *set, GHashTable *dest)
+vp_merge_set(ValuePairs *vp, LogMessage *msg, gint32 seq_num, ValuePairSpec *set, GTree *dest)
 {
   gint i;
   ScratchBuffer *sb = scratch_buffer_acquire();
@@ -273,7 +273,7 @@ vp_merge_set(ValuePairs *vp, LogMessage *msg, gint32 seq_num, ValuePairSpec *set
       if (!sb_string(sb)->str[0])
 	continue;
 
-      g_hash_table_insert(dest, vp_transform_apply(vp, set[i].name), sb_string(sb)->str);
+      g_tree_insert(dest, vp_transform_apply(vp, set[i].name), sb_string(sb)->str);
       g_string_steal(sb_string(sb));
     }
   scratch_buffer_release(sb);
@@ -284,12 +284,11 @@ value_pairs_foreach (ValuePairs *vp, VPForeachFunc func,
 		     LogMessage *msg, gint32 seq_num, gpointer user_data)
 {
   gpointer args[] = { vp, func, msg, GINT_TO_POINTER (seq_num), user_data, NULL };
-  GHashTable *scope_set;
+  GTree *scope_set;
 
-  scope_set = g_hash_table_new_full(g_str_hash, g_str_equal,
-                                    (GDestroyNotify) g_free,
-				    (GDestroyNotify) g_free);
-
+  scope_set = g_tree_new_full((GCompareDataFunc)g_strcmp0, NULL,
+                              (GDestroyNotify)g_free,
+                              (GDestroyNotify)g_free);
   args[5] = scope_set;
 
   /*
@@ -316,9 +315,9 @@ value_pairs_foreach (ValuePairs *vp, VPForeachFunc func,
   g_hash_table_foreach(vp->vpairs, (GHFunc) vp_pairs_foreach, args);
 
   /* Aaand we run it through the callback! */
-  g_hash_table_foreach(scope_set, (GHFunc)func, user_data);
+  g_tree_foreach(scope_set, (GTraverseFunc)func, user_data);
 
-  g_hash_table_destroy(scope_set);
+  g_tree_destroy(scope_set);
 }
 
 
