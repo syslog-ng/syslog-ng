@@ -890,6 +890,7 @@ afsql_dd_database_thread(gpointer arg)
                     {
                       afsql_dd_disconnect(self);
                       afsql_dd_suspend(self);
+                      g_mutex_unlock(self->db_thread_mutex);
                       continue;
                     }
                 }
