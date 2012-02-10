@@ -50,7 +50,6 @@ Description: Next generation system logging daemon (metapackage)
 
 Package: syslog-ng-dbg
 Architecture: any
-Pre-Depends: ${misc:Pre-Depends}
 Multi-Arch: same
 Section: debug
 Depends: syslog-ng-core (= ${binary:Version}), ${misc:Depends}
@@ -98,7 +97,6 @@ Description: Next generation system logging daemon (development files)
 Package: syslog-ng-core
 Architecture: any
 Multi-Arch: foreign
-Pre-Depends: ${misc:Pre-Depends}
 Depends: ${shlibs:Depends}, ${misc:Depends}, util-linux (>= 2.12-10)
 Recommends: logrotate
 Suggests: syslog-ng-mod-sql, syslog-ng-mod-mongodb, syslog-ng-mod-json
@@ -126,7 +124,6 @@ Description: Next generation system logging daemon (core)
 Package: syslog-ng-mod-json
 Architecture: any
 Multi-Arch: foreign
-Pre-Depends: ${misc:Pre-Depends}
 Depends: syslog-ng-core (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
 Description: Next generation system logging daemon (JSON plugin)
  syslog-ng is an enhanced syslog daemon, supporting, amongst others:
@@ -149,7 +146,6 @@ Description: Next generation system logging daemon (JSON plugin)
 Package: syslog-ng-mod-mongodb
 Architecture: any
 Multi-Arch: foreign
-Pre-Depends: ${misc:Pre-Depends}
 Depends: syslog-ng-core (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
 Suggests: mongodb-server
 Description: Next generation system logging daemon (MongoDB plugin)
@@ -172,7 +168,6 @@ Description: Next generation system logging daemon (MongoDB plugin)
 Package: syslog-ng-mod-sql
 Architecture: any
 Multi-Arch: foreign
-Pre-Depends: ${misc:Pre-Depends}
 Depends: syslog-ng-core (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
 Suggests: libdbd-mysql, libdbd-pgsql, libdbd-sqlite3
 Description: Next generation system logging daemon (SQL plugin)
