@@ -1,3 +1,36 @@
+syslog-ng (3.3.4.dfsg-2~mhp1) unstable; urgency=low
+
+  [ Gergely Nagy <algernon@madhouse-project.org> ]
+  * Packaging synced with GCS.
+  * Patches applied:
+    + Fix framing issues with the syslog protocol, based on a patch by
+      Zoltan Fried <deirf@balabit.hu>.
+      
+ -- Gergely Nagy <algernon@madhouse-project.org>  Fri, 10 Feb 2012 10:59:34 +0100
+
+syslog-ng (3.3.4.dfsg-1) unstable; urgency=low
+
+  * New upstream release:
+    - remove backported patches as this release contains them,
+    - fix FTBFS on Hurd, patch from Svante Signell <svante.signell@telia.com>
+      (closes: #648987).
+  * Add dfsg target to make the source DFSG compliant.
+  * Use debhelper compatibility level 9 for hardening flags to be effective
+    (closes: #655163).
+  * Make the package multiarch.
+
+  [ Gergely Nagy <algernon@madhouse-project.org> ]
+  * Introduced a syslog-ng-dbg package.
+  * Init script updates:
+    + Silence mknod errors, they're not interesting, and adds noise on
+    kFreeBSD.
+    + Use set -e.
+    + Use s-s-d's --oknodo options instead of checking the existence of a
+    pidfile ourselves.
+  * Refresh debian/copyright.
+
+ -- Laszlo Boszormenyi (GCS) <gcs@debian.hu>  Wed, 01 Feb 2012 14:21:11 +0000
+
 syslog-ng (3.3.4.dfsg-1~mhp1) unstable; urgency=low
 
   * New upstream release.

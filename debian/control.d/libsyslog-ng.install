@@ -1,1 +1,1 @@
-usr/lib/libsyslog-ng-*.so
+usr/lib/*/libsyslog-ng-*.so

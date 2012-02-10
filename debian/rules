@@ -116,6 +116,7 @@ override_dh_auto_clean:
 	rm -f m4/lt*.m4 m4/libtool.m4 m4/pkg.m4
 	rm -rf lib/ivykis/m4 modules/afmongodb/libmongo-client/m4
 	${MAKE} -f debian/tools/help2man.mk clean
+	rm -rf debian/build-tree/
 
 # We also want to install ivykis headers and whatnot, so override
 # _auto_install, and do it too.
@@ -164,9 +165,6 @@ override_dh_installlogrotate:
 
 override_dh_installlogcheck:
 	dh_installlogcheck --name syslog-ng
-	for f in $$(find debian/syslog-ng-core/etc/logcheck -type f -name 'syslog-ng-core'); do \
-		mv $$f $$(dirname $$f)/syslog-ng; \
-	done
 
 # dh_makeshlibs wants to be clever and treat plugins as shared libs.
 # Slap it in the face, and tell it not to.
@@ -201,7 +199,8 @@ build-stamp:
 get-orig-source:
 	debian/tools/get-orig-source.sh
 
-# And for the rest, there is debhelper!
+# Without control, we are useless, politely tell the user to be our
+# good master.
 debian/control:
 	@echo "There is no debian/control, so this is probably a git checkout." >&2
 	@echo "Please run debian/tools/bootstrap.sh!" >&2
@@ -210,5 +209,6 @@ debian/control:
 binary binary-arch binary-indep build build-arch build-indep clean \
 install install-arch install-indep: debian/control
 
+# And for the rest, there is debhelper!
 %:
 	dh $@ --with autoreconf
