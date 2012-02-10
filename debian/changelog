@@ -5,8 +5,10 @@ syslog-ng (3.3.4.dfsg-2~mhp1) unstable; urgency=low
   * Patches applied:
     + Fix framing issues with the syslog protocol, based on a patch by
       Zoltan Fried <deirf@balabit.hu>.
-      
- -- Gergely Nagy <algernon@madhouse-project.org>  Fri, 10 Feb 2012 10:59:34 +0100
+    + afsql: Fix a deadlock when using explicit commits.
+    + afmongodb: Fix a deadlock at deinit time.
+
+ -- Gergely Nagy <algernon@madhouse-project.org>  Fri, 10 Feb 2012 13:38:13 +0100
 
 syslog-ng (3.3.4.dfsg-1) unstable; urgency=low
 
