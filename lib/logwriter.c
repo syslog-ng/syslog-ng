@@ -1632,7 +1632,12 @@ log_writer_options_lookup_flag(const gchar *flag)
   if (strcmp(flag, "no-multi-line") == 0 || strcmp(flag, "no_multi_line") == 0)
     return LWO_NO_MULTI_LINE;
   if (strcmp(flag, "threaded") == 0)
+#if ENABLE_THREADED
     return LWO_THREADED;
+#else
+    msg_warning("Threaded not supported on this platform",NULL);
+    return 0;
+#endif
   if (strcmp(flag, "ignore-errors") == 0 || strcmp(flag, "ignore_errors") == 0)
     return LWO_IGNORE_ERRORS;
   msg_error("Unknown dest writer flag", evt_tag_str("flag", flag), NULL);

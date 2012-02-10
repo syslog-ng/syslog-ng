@@ -223,6 +223,10 @@ AC_ARG_ENABLE(json,
               [  --enable-json           Enable support for JSON template formatting (default: auto)]
               ,,enable_json="auto")
 
+AC_ARG_ENABLE(threaded,
+              [ --enable-threaded        Enable multithreading  working mode (default: yes)]
+              ,,enable_threaded="yes")
+
 AC_ARG_ENABLE(systemd,
               [  --enable-systemd        Enable systemd support (default: auto)]
               ,,enable_systemd="auto")
@@ -1215,6 +1219,7 @@ AC_DEFINE_UNQUOTED(ENABLE_PCRE, `enable_value $enable_pcre`, [Enable PCRE suppor
 AC_DEFINE_UNQUOTED(ENABLE_ENV_WRAPPER, `enable_value $enable_env_wrapper`, [Enable environment wrapper support])
 AC_DEFINE_UNQUOTED(ENABLE_SYSTEMD, `enable_value $enable_systemd`, [Enable systemd support])
 AC_DEFINE_UNQUOTED(ENABLE_TIMESTAMPING, `enable_value $enable_timestamping`, [Enable RFC3161 timestamping support])
+AC_DEFINE_UNQUOTED(ENABLE_THREADED, `enable_value $enable_threaded`, [Enable multithreaded support])
 
 AM_CONDITIONAL(ENABLE_ENV_WRAPPER, [test "$enable_env_wrapper" = "yes"])
 AM_CONDITIONAL(ENABLE_SYSTEMD, [test "$enable_systemd" = "yes"])
@@ -1228,6 +1233,7 @@ AM_CONDITIONAL(IS_HPUX, [test "$ostype" = "HP-UX"])
 AM_CONDITIONAL(IS_TRU64, [test "$ostype" = "OSF1"])
 AM_CONDITIONAL(IS_FBSD61, [test "$ZBS_DIST" = "freebsd-6.1"])
 AM_CONDITIONAL(ENABLE_JSON, [test "$enable_json" = "yes"])
+AM_CONDITIONAL(ENABLE_THREADED, [test "$enable_threaded" = "yes"])
 AM_CONDITIONAL(WITH_LIBSYSTEMD, [test "$with_libsystemd" = "yes"])
 AM_CONDITIONAL([ENABLE_INDEXER], [test "$enable_indexer" = "yes"])
 
@@ -1370,6 +1376,7 @@ echo "  PCRE support                : ${enable_pcre:=no}"
 echo "  Env wrapper support         : ${enable_env_wrapper:=no}"
 echo "  Monitor-Inotify support     : ${enable_monitor_inotify:=no}"
 echo "  systemd support             : ${enable_systemd:=no} (unit dir: ${systemdsystemunitdir:=none})"
+echo "  MultiThread support         : ${enable_threaded:=no}"
 echo " Modules:"
 echo "  Module search path          : ${module_path}"
 echo "  Default module list         : ${default_modules}"

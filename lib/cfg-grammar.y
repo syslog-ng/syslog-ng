@@ -682,7 +682,18 @@ options_item
 	| KW_TIME_REAP '(' LL_NUMBER ')'		{ configuration->time_reap = $3; }
 	| KW_TIME_SLEEP '(' LL_NUMBER ')'	{}
 	| KW_SUPPRESS '(' LL_NUMBER ')'		{ configuration->suppress = $3; }
-	| KW_THREADED '(' yesno ')'		{ configuration->threaded = $3; }
+	| KW_THREADED '(' yesno ')'
+      {
+#if ENABLE_THREADED
+        configuration->threaded = $3;
+#else
+        if ($3 == 1)
+          {
+            msg_warning("Using threaded isn't available on this platform",NULL);
+          }
+        configuration->threaded = 0;
+#endif
+      }
 	| KW_LOG_FIFO_SIZE '(' LL_NUMBER ')'	{ configuration->log_fifo_size = $3; }
 	| KW_LOG_IW_SIZE '(' LL_NUMBER ')'	{ msg_error("Using a global log-iw-size() option was removed, please use a per-source log-iw-size()", NULL); }
 	| KW_LOG_FETCH_LIMIT '(' LL_NUMBER ')'	{ msg_error("Using a global log-fetch-limit() option was removed, please use a per-source log-fetch-limit()", NULL); }

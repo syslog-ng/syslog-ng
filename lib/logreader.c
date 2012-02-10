@@ -1192,7 +1192,11 @@ CfgFlagHandler log_reader_flag_handlers[] =
   /* LogReaderOptions */
   { "kernel",                     CFH_SET, offsetof(LogReaderOptions, flags),               LR_KERNEL },
   { "empty-lines",                CFH_SET, offsetof(LogReaderOptions, flags),               LR_EMPTY_LINES },
+#if ENABLE_THREADED
   { "threaded",                   CFH_SET, offsetof(LogReaderOptions, flags),               LR_THREADED },
+#else
+  { "threaded",                   CFH_CLEAR, offsetof(LogReaderOptions, flags),               LR_THREADED },
+#endif
   { NULL },
 };
 
