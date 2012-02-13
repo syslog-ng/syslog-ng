@@ -1178,7 +1178,14 @@ affile_dd_reuse_writer(gpointer key, gpointer value, gpointer user_data)
   AFFileDestWriter *writer = (AFFileDestWriter *) value;
   
   affile_dw_set_owner(writer, self);
-  log_pipe_init(&writer->super, NULL);
+  if (!log_pipe_init(&writer->super, NULL))
+    {
+      msg_error("Can't reinitialize the writer",
+                NULL);
+      writer->owner = NULL;
+      log_pipe_unref(&self->super.super.super);
+      g_hash_table_remove(self->writer_hash,key);
+    }
 }
 
 
@@ -1223,7 +1230,15 @@ affile_dd_init(LogPipe *s)
       if (self->single_writer)
         {
           affile_dw_set_owner(self->single_writer, self);
-          log_pipe_init(&self->single_writer->super, cfg);
+          if (!log_pipe_init(&self->single_writer->super, cfg))
+            {
+              msg_error("Can't reinitialize the writer",
+                NULL);
+              self->single_writer->owner = NULL;
+              log_pipe_unref(&self->super.super.super);
+              log_pipe_unref(&self->single_writer->super);
+              self->single_writer = NULL;
+            }
         }
     }
   
