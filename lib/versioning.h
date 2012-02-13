@@ -44,6 +44,7 @@
  * version the change was introduced in.
  */
 #define VERSION_PE_4_1 "syslog-ng PE 4.1"
+#define VERSION_PE_4_2 "syslog-ng PE 4.2"
 
 gint get_version_value(gint version);
 

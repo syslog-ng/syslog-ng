@@ -53,7 +53,7 @@ static CfgLexerKeyword afsql_keywords[] = {
   { "retry_sql_inserts",  KW_RETRIES, 0x0303 },
   { "retries",            KW_RETRIES, 0x0303 },
   { "flush_lines",        KW_FLUSH_LINES },
-  { "flush_timeout",      KW_FLUSH_TIMEOUT },
+  { "flush_timeout",      KW_FLUSH_TIMEOUT, 0, KWS_OBSOLETE, "flush_timeout has been ignored since " VERSION_PE_4_2},
   { "flags",              KW_FLAGS },
   { NULL }
 };

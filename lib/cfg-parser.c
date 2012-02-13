@@ -76,7 +76,7 @@ static CfgLexerKeyword main_keywords[] = {
   { "stats_level",        KW_STATS_LEVEL },
   { "stats",              KW_STATS_FREQ, 0, KWS_OBSOLETE, "stats_freq" },
   { "flush_lines",        KW_FLUSH_LINES },
-  { "flush_timeout",      KW_FLUSH_TIMEOUT },
+  { "flush_timeout",      KW_FLUSH_TIMEOUT, 0, KWS_OBSOLETE, "flush_timeout has been ignored since " VERSION_PE_4_2},
   { "suppress",           KW_SUPPRESS },
   { "sync_freq",          KW_FLUSH_LINES, 0, KWS_OBSOLETE, "flush_lines" },
   { "sync",               KW_FLUSH_LINES, 0, KWS_OBSOLETE, "flush_lines" },

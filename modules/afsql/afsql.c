@@ -90,7 +90,6 @@ typedef struct _AFSqlDestDriver
   gint time_reopen;
   gint num_retries;
   gint flush_lines;
-  gint flush_timeout;
   gint flush_lines_queued;
   gint flags;
   GList *session_statements;
@@ -288,14 +287,6 @@ afsql_dd_set_flush_lines(LogDriver *s, gint flush_lines)
   AFSqlDestDriver *self = (AFSqlDestDriver *) s;
 
   self->flush_lines = flush_lines;
-}
-
-void
-afsql_dd_set_flush_timeout(LogDriver *s, gint flush_timeout)
-{
-  AFSqlDestDriver *self = (AFSqlDestDriver *) s;
-
-  self->flush_timeout = flush_timeout;
 }
 
 void
@@ -880,22 +871,14 @@ afsql_dd_database_thread(gpointer arg)
         {
           /* we have nothing to INSERT into the database, let's wait we get some new stuff */
 
-          if (self->flush_lines_queued > 0 && self->flush_timeout > 0)
+          if (self->flush_lines_queued > 0)
             {
-              GTimeVal flush_target;
-
-              g_get_current_time(&flush_target);
-              g_time_val_add(&flush_target, self->flush_timeout * 1000);
-              if (!self->db_thread_terminate && !g_cond_timed_wait(self->db_thread_wakeup_cond, self->db_thread_mutex, &flush_target))
+              if (!afsql_dd_commit_txn(self, FALSE))
                 {
-                  /* timeout elapsed */
-                  if (!afsql_dd_commit_txn(self, FALSE))
-                    {
-                      afsql_dd_disconnect(self);
-                      afsql_dd_suspend(self);
-                      g_mutex_unlock(self->db_thread_mutex);
-                      continue;
-                    }
+                  afsql_dd_disconnect(self);
+                  afsql_dd_suspend(self);
+                  g_mutex_unlock(self->db_thread_mutex);
+                  continue;
                 }
             }
           else if (!self->db_thread_terminate)
@@ -1107,10 +1090,8 @@ afsql_dd_init(LogPipe *s)
 
   if (self->flush_lines == -1)
     self->flush_lines = cfg->flush_lines;
-  if (self->flush_timeout == -1)
-    self->flush_timeout = cfg->flush_timeout;
 
-  if ((self->flags & AFSQL_DDF_EXPLICIT_COMMITS) && (self->flush_lines > 0 || self->flush_timeout > 0))
+  if ((self->flags & AFSQL_DDF_EXPLICIT_COMMITS) && (self->flush_lines > 0))
     self->flush_lines_queued = 0;
 
   if (!dbi_initialized)
@@ -1261,7 +1242,6 @@ afsql_dd_new(void)
   self->failed_message_counter = 0;
 
   self->flush_lines = -1;
-  self->flush_timeout = -1;
   self->flush_lines_queued = -1;
   self->session_statements = NULL;
   self->num_retries = MAX_FAILED_ATTEMPTS;
