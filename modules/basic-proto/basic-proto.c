@@ -594,6 +594,7 @@ struct _LogProtoBufferedServer
   guchar *buffer;
   GSockAddr *prev_saddr;
   LogProtoStatus status;
+  gboolean wait_for_prefix; /* This boolean tell to us that we are waiting for prefix or garbage (used only in case multi line messages */
 };
 
 struct
@@ -1257,6 +1258,7 @@ log_proto_buffered_server_fetch(LogProto *s, const guchar **msg, gsize *msg_len,
   guchar *raw_buffer = NULL;
   LogProtoBufferedServerState *state = log_proto_buffered_server_get_state(self);
   LogProtoStatus result = self->status;
+  LogProtoServerOptions *options = (LogProtoServerOptions *)self->super.options;
 
   if (G_UNLIKELY(!self->buffer))
     {
@@ -1273,22 +1275,30 @@ log_proto_buffered_server_fetch(LogProto *s, const guchar **msg, gsize *msg_len,
   if (flush)
   {
     /* in multiline, the fill has been restarted: return the remaining message content */
-    *msg = self->buffer + state->pending_buffer_pos;
-    *msg_len = state->pending_buffer_end - state->pending_buffer_pos;
-    state->pending_buffer_pos = state->pending_buffer_end;
-    if (sa && self->prev_saddr)
-        *sa = g_sockaddr_ref(self->prev_saddr);
-    if(*msg_len == 0)
+    if (options && options->opts.garbage_matcher && self->wait_for_prefix)
       {
         *msg = NULL;
+        *msg_len = 0;
       }
     else
       {
-        /* eliminate the current content's closing LF */
-        if((*msg)[(*msg_len)-1]=='\n')
-        {
-          *msg_len -= 1;
-        }
+        *msg = self->buffer + state->pending_buffer_pos;
+        *msg_len = state->pending_buffer_end - state->pending_buffer_pos;
+        state->pending_buffer_pos = state->pending_buffer_end;
+        if (sa && self->prev_saddr)
+          *sa = g_sockaddr_ref(self->prev_saddr);
+        if(*msg_len == 0)
+          {
+            *msg = NULL;
+          }
+        else
+          {
+            /* eliminate the current content's closing LF */
+            if((*msg)[(*msg_len)-1]=='\n')
+              {
+                *msg_len -= 1;
+              }
+          }
       }
     result = LPS_SUCCESS;
     /* goto exit and do the free methods */
@@ -1556,7 +1566,6 @@ typedef struct _LogProtoTextServer
   gchar *reverse_buffer;
   gsize reverse_buffer_len;
   gint convert_scale;
-  gboolean wait_for_prefix; /* This boolean tell to us that we are waiting for prefix or garbage (used only in case multi line messages */
   gboolean has_to_update; /* This boolean indicate, that we has to drop the read message (between garbage and prefix) */
 } LogProtoTextServer;
 
@@ -1567,7 +1576,6 @@ typedef struct _LogProtoFileReader
   gchar *reverse_buffer;
   gsize reverse_buffer_len;
   gint convert_scale;
-  gboolean wait_for_prefix; /* This boolean tell to us that we are waiting for prefix or garbage (used only in case multi line messages */
   gboolean has_to_update; /* This boolean indicate, that we has to drop the read message (between garbage and prefix) */
 } LogProtoFileReader;
 
@@ -1783,7 +1791,7 @@ find_multi_line_eom(LogProtoTextServer *self, const guchar *buffer_start, gsize 
   gint32 end_pos = 0;
   if (new_buffer_pos)
     *new_buffer_pos = 0;
-  if (!self->wait_for_prefix)
+  if (!self->super.wait_for_prefix)
     {
       /* If garbage is defined we are searching it */
       if (multi_line_garbage_parser)
@@ -1795,7 +1803,7 @@ find_multi_line_eom(LogProtoTextServer *self, const guchar *buffer_start, gsize 
               next_line++;
               if (log_proto_regexec(multi_line_garbage_parser, (gchar*)line, line_len, &found_pos, &end_pos))
                 {
-                  self->wait_for_prefix = TRUE;
+                  self->super.wait_for_prefix = TRUE;
                   if (new_buffer_pos)
                     *new_buffer_pos = end_pos + line - buffer_start;
                   line += found_pos;
@@ -1813,7 +1821,7 @@ find_multi_line_eom(LogProtoTextServer *self, const guchar *buffer_start, gsize 
                 }
               else
                 {
-                  self->wait_for_prefix = TRUE;
+                  self->super.wait_for_prefix = TRUE;
                   if (new_buffer_pos)
                     *new_buffer_pos = end_pos + line - buffer_start;
                   line+= found_pos;
@@ -1865,7 +1873,7 @@ find_multi_line_eom(LogProtoTextServer *self, const guchar *buffer_start, gsize 
           next_line++;
           if (log_proto_regexec(multi_line_prefix_parser, (gchar*)line, line_len, NULL, NULL))
             {
-              self->wait_for_prefix = FALSE;
+              self->super.wait_for_prefix = FALSE;
               break;
             }
           line = next_line;
@@ -1880,7 +1888,7 @@ find_multi_line_eom(LogProtoTextServer *self, const guchar *buffer_start, gsize 
             }
           else
             {
-              self->wait_for_prefix = FALSE;
+              self->super.wait_for_prefix = FALSE;
             }
         }
     }
@@ -1913,7 +1921,7 @@ log_proto_text_server_fetch_from_buf(LogProtoBufferedServer *s, const guchar *bu
        * we are set to packet terminating mode or the connection is to
        * be teared down and we have partial data in our buffer.
        */
-      if (options && options->opts.prefix_matcher && self->wait_for_prefix)
+      if (options && options->opts.prefix_matcher && self->super.wait_for_prefix)
         {
           *msg = NULL;
           *msg_len = 0;
@@ -1943,7 +1951,7 @@ log_proto_text_server_fetch_from_buf(LogProtoBufferedServer *s, const guchar *bu
         }
       else
         {
-          waited_for_prefix = self->wait_for_prefix;
+          waited_for_prefix = self->super.wait_for_prefix;
           eol = find_multi_line_eom(self,
                                     buffer_start,
                                     buffer_bytes,
@@ -1954,7 +1962,7 @@ log_proto_text_server_fetch_from_buf(LogProtoBufferedServer *s, const guchar *bu
           /* Found Garbage and not update the pending buffer pos later */
           if (new_pos)
             self->has_to_update = FALSE;
-          if (waited_for_prefix && !self->wait_for_prefix)
+          if (waited_for_prefix && !self->super.wait_for_prefix)
             {
               /* this buffer part has to be dropped */
               state->pending_buffer_pos = eol - self->super.buffer;
@@ -2045,7 +2053,7 @@ log_proto_text_server_fetch_from_buf(LogProtoBufferedServer *s, const guchar *bu
             }
           else
             {
-              waited_for_prefix = self->wait_for_prefix;
+              waited_for_prefix = self->super.wait_for_prefix;
               eom = find_multi_line_eom(self,
                                         self->super.buffer + state->pending_buffer_pos,
                                         state->pending_buffer_end - state->pending_buffer_pos,
@@ -2056,7 +2064,7 @@ log_proto_text_server_fetch_from_buf(LogProtoBufferedServer *s, const guchar *bu
               /* found garbage don't upgrade the pending buffer pos */
               if (new_pos)
                 self->has_to_update = FALSE;
-              if (eom && waited_for_prefix && !self->wait_for_prefix)
+              if (eom && waited_for_prefix && !self->super.wait_for_prefix)
                 {
                   /* this buffer part has to be dropped */
                   /* prefix found at eom */
@@ -2118,7 +2126,7 @@ log_proto_text_server_init(LogProtoTextServer *self, LogTransport *transport, gi
   self->super.super.prepare = log_proto_text_server_prepare;
   self->super.super.get_info = log_proto_text_server_get_info;
   self->reverse_convert = (GIConv) -1;
-  self->wait_for_prefix = FALSE;
+  self->super.wait_for_prefix = FALSE;
   self->has_to_update = TRUE;
 }
 
@@ -2143,7 +2151,7 @@ log_proto_file_reader_init(LogProtoTextServer *self, LogTransport *transport, gi
   self->super.super.get_info = log_proto_text_server_get_info;
   self->super.super.ack = log_proto_buffered_server_ack;
   self->reverse_convert = (GIConv) -1;
-  self->wait_for_prefix = FALSE;
+  self->super.wait_for_prefix = FALSE;
   self->has_to_update = TRUE;
 }
 
