@@ -39,10 +39,16 @@ typedef struct
   gboolean include;
 } VPPatternSpec;
 
+typedef struct
+{
+  gchar *name;
+  gchar *template;
+} VPPairConf;
+
 struct _ValuePairs
 {
   VPPatternSpec **patterns;
-  GHashTable *vpairs;
+  GPtrArray *vpairs;
   GList *transforms;
 
   /* guint32 as CfgFlagHandler only supports 32 bit integers */
@@ -148,11 +154,13 @@ value_pairs_add_glob_pattern(ValuePairs *vp, const gchar *pattern,
 void
 value_pairs_add_pair(ValuePairs *vp, GlobalConfig *cfg, const gchar *key, const gchar *value)
 {
-  LogTemplate *t = NULL;
+  VPPairConf *p = g_new(VPPairConf, 1);
 
-  t = log_template_new(cfg, NULL);
-  log_template_compile(t, value, NULL);
-  g_hash_table_insert(vp->vpairs, g_strdup(key), t);
+  p->name = g_strdup(key);
+  p->template = log_template_new(cfg, NULL);
+  log_template_compile(p->template, value, NULL);
+
+  g_ptr_array_add(vp->vpairs, p);
 }
 
 static gchar *
@@ -179,15 +187,16 @@ vp_transform_apply (ValuePairs *vp, gchar *key)
 
 /* runs over the name-value pairs requested by the user (e.g. with value_pairs_add_pair) */
 static void
-vp_pairs_foreach(gpointer key, gpointer value, gpointer user_data)
+vp_pairs_foreach(gpointer data, gpointer user_data)
 {
   ValuePairs *vp = ((gpointer *)user_data)[0];
   LogMessage *msg = ((gpointer *)user_data)[2];
   gint32 seq_num = GPOINTER_TO_INT (((gpointer *)user_data)[3]);
   GTree *scope_set = ((gpointer *)user_data)[5];
   ScratchBuffer *sb = scratch_buffer_acquire();
+  VPPairConf *vpc = (VPPairConf *)data;
 
-  log_template_format((LogTemplate *)value, msg, NULL, LTZ_LOCAL,
+  log_template_format((LogTemplate *)vpc->template, msg, NULL, LTZ_LOCAL,
                       seq_num, NULL, sb_string(sb));
 
   if (!sb_string(sb)->str[0])
@@ -196,7 +205,8 @@ vp_pairs_foreach(gpointer key, gpointer value, gpointer user_data)
       return;
     }
 
-  g_tree_insert(scope_set, vp_transform_apply(vp, key), sb_string(sb)->str);
+  g_tree_insert(scope_set, vp_transform_apply(vp, vpc->name),
+                sb_string(sb)->str);
   g_string_steal(sb_string(sb));
   scratch_buffer_release(sb);
 }
@@ -313,7 +323,7 @@ value_pairs_foreach_sorted (ValuePairs *vp, VPForeachFunc func,
     vp_merge_set(vp, msg, seq_num, all_macros, scope_set);
 
   /* Merge the explicit key-value pairs too */
-  g_hash_table_foreach(vp->vpairs, (GHFunc) vp_pairs_foreach, args);
+  g_ptr_array_foreach(vp->vpairs, (GFunc)vp_pairs_foreach, args);
 
   /* Aaand we run it through the callback! */
   g_tree_foreach(scope_set, (GTraverseFunc)func, user_data);
@@ -355,6 +365,16 @@ value_pairs_init_set(ValuePairSpec *set)
     }
 }
 
+static void
+vp_free_pair(gpointer data)
+{
+  VPPairConf *vpc = (VPPairConf *)data;
+
+  log_template_unref(vpc->template);
+  g_free(vpc->name);
+  g_free(vpc);
+}
+
 ValuePairs *
 value_pairs_new(void)
 {
@@ -363,8 +383,8 @@ value_pairs_new(void)
   GArray *a;
 
   vp = g_new0(ValuePairs, 1);
-  vp->vpairs = g_hash_table_new_full(g_str_hash, g_str_equal, g_free,
-				     (GDestroyNotify) log_template_unref);
+  vp->vpairs = g_ptr_array_sized_new(8);
+  g_ptr_array_set_free_func(vp->vpairs, vp_free_pair);
 
   if (!value_pair_sets_initialized)
     {
@@ -403,7 +423,7 @@ value_pairs_free (ValuePairs *vp)
   gint i;
   GList *l;
 
-  g_hash_table_destroy(vp->vpairs);
+  g_ptr_array_free(vp->vpairs, TRUE);
 
   for (i = 0; i < vp->patterns_size; i++)
     {
