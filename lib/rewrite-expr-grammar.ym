@@ -165,10 +165,10 @@ rewrite_expr_opt
             last_rewrite->value_handle = log_msg_get_value_handle(p);
             if (log_msg_is_handle_macro(last_rewrite->value_handle))
               {
-                msg_warning("Macros are read-only, they cannot be changed in rewrite rules, falling back to MESSAGE instead",
+                msg_error("Macros are read-only, they cannot be changed in rewrite rules",
                             evt_tag_str("macro", p),
                             NULL);
-                last_rewrite->value_handle = LM_V_MESSAGE;
+                YYERROR;
               }
 
             /* SDATA validation */
