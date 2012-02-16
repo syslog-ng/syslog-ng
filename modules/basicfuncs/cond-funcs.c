@@ -2,6 +2,7 @@ typedef struct _TFCondState
 {
   TFSimpleFuncState super;
   FilterExprNode *filter;
+  gint grep_max_count;
 } TFCondState;
 
 gboolean
@@ -39,21 +40,49 @@ tf_cond_free_state(gpointer s)
 gboolean
 tf_grep_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint argc, gchar *argv[], GError **error)
 {
+  TFCondState *state = (TFCondState *) s;
+  GOptionContext *ctx;
+  gint max_count = 0;
+  GOptionEntry grep_options[] = {
+    { "max-count", 'm', 0, G_OPTION_ARG_INT, &max_count, NULL, NULL },
+    { NULL }
+  };
+
   g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
+
+  ctx = g_option_context_new("grep");
+  g_option_context_add_main_entries(ctx, grep_options, NULL);
+
+  if (!g_option_context_parse(ctx, &argc, &argv, error))
+    {
+      g_option_context_free(ctx);
+      g_free(argv);
+      return FALSE;
+    }
+  g_option_context_free(ctx);
+
   if (argc < 3)
     {
       g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE, "$(grep) requires at least two arguments");
       return FALSE;
     }
+  state->grep_max_count = max_count;
   return tf_cond_prepare(self, s, parent, argc, argv, error);
 }
 
+/*
+ * $(grep [opts] filter $nv1 $n2 ...)
+ *
+ * Options:
+ *  --max-count or -m          The maximum number of matches, 0 for unlimited
+ */
 void
 tf_grep_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *args, GString *result)
 {
   gint i, msg_ndx;
   gboolean first = TRUE;
   TFCondState *state = (TFCondState *) s;
+  gint count = 0;
 
   for (msg_ndx = 0; msg_ndx < args->num_messages; msg_ndx++)
     {
@@ -61,6 +90,7 @@ tf_grep_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs 
 
       if (filter_expr_eval(state->filter, msg))
         {
+          count++;
           for (i = 0; i < state->super.argc; i++)
             {
               if (!first)
@@ -70,6 +100,8 @@ tf_grep_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs 
               log_template_append_format(state->super.argv[i], msg, args->opts, args->tz, args->seq_num, args->context_id, result);
               first = FALSE;
             }
+          if (state->grep_max_count && count >= state->grep_max_count)
+            break;
         }
     }
 }
