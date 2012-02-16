@@ -1164,6 +1164,7 @@ main(int argc, char *argv[])
 
   plugin_load_module("syslogformat", configuration, NULL);
   plugin_load_module("basicfuncs", configuration, NULL);
+  plugin_load_module("basic-proto", configuration, NULL);
 
   proto_factory = log_proto_get_factory(configuration,LPT_SERVER,"stream-newline");
   if (color_out)
