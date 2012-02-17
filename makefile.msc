@@ -1,7 +1,7 @@
 ## Makefile for building the GLib dlls with Microsoft C
 ## Use: nmake -f makefile.msc
 
-PARTS = lib
+PARTS = lib modules/logstore
 
 all : \
 	config.h \

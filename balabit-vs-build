@@ -128,11 +128,15 @@ case "$cmd" in
           $0 clean
           ;;
         install)
-          mkdir -p ${TARGET}/bin ${TARGET}/lib/pkgconfig ${TARGET}/include/syslog-ng
-          install syslog-ng.pc ${TARGET}/lib/pkgconfig
-          cd lib
-          ccclibtool --mode=install install libsyslogng-logmsg.la ${TARGET}/bin
-          install *.h ${TARGET}/include/syslog-ng
+        #  mkdir -p ${TARGET}/bin ${TARGET}/lib/pkgconfig ${TARGET}/include/syslog-ng
+        #  install syslog-ng.pc ${TARGET}/lib/pkgconfig
+        #  cd lib
+        #  ccclibtool --mode=install install libsyslogng-logmsg.la ${TARGET}/bin
+        #  install *.h ${TARGET}/include/syslog-ng
+          mkdir -p ${TARGET} ${TARGET}/bin
+          cd modules/logstore
+          install -m 755 lgstool.exe ${TARGET}/bin
+          install -m 755 lgstool.pdb ${TARGET}/bin
           ;;
       esac
     fi

@@ -135,10 +135,3 @@ OBJECTS =			\
 
 $(TARGET): $(OBJECTS) $(RESFILE)
 	sh -c "ccclibtool --mode=link cccl -shared -g -rpath / -o $@ $(LDFLAGS) $(OBJECTS) $(RESFILE) $(GLIB_LIBS) $(OPENSSL_LIBS) $(ZLIB_LIBS) $(INTL_LIBS) $(ZLIB_LIBS) $(REGEX_LIBS) -levtlog -ldirent -luser32 -ladvapi32 -lws2_32 -lversion -lcrypt32 -lshell32 -ldbghelp -lGdi32 -Wl,/subsystem:console"
-
-install: $(TARGET)
-    if not exist $(ROOT)/lib mkdir $(ROOT)/lib
-    if not exist $(ROOT)/include mkdir $(ROOT)/include
-    if not exist $(ROOT)/include/syslog-ng mkdir $(ROOT)/include/syslog-ng
-	copy /y $(TARGET) $(ROOT)/lib
-	copy *.h $(ROOT)/include/syslog-ng

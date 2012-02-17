@@ -1,6 +1,6 @@
 msvc-compat-dev
 libssl-dev
-libssl0.9.8
+libssl1.0.0
 libevtlog-dev
 glib
 glib-dev
