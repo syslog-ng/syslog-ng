@@ -94,7 +94,7 @@ INCLUDES = -FI$(TOP)\include\msvc_recommended_pragmas.h -I . -I .. -I ..\..  -I 
 DEPCFLAGS = -Zm400 $(INTL_CFLAGS) $(LIBICONV_CFLAGS) $(DIRENT_CFLAGS) $(GLIB_CFLAGS) $(ZLIB_CFLAGS) $(OPENSSL_CFLAGS)
 
 TARGETROOT=libsyslogng-logmsg
-TARGET=$(TARGETROOT).la
+TARGET=$(TARGETROOT).lib
 
 all: $(TARGET)
 
@@ -134,4 +134,4 @@ OBJECTS =			\
 
 
 $(TARGET): $(OBJECTS) $(RESFILE)
-	sh -c "ccclibtool --mode=link cccl -shared -g -rpath / -o $@ $(LDFLAGS) $(OBJECTS) $(RESFILE) $(GLIB_LIBS) $(OPENSSL_LIBS) $(ZLIB_LIBS) $(INTL_LIBS) $(ZLIB_LIBS) $(REGEX_LIBS) -levtlog -ldirent -luser32 -ladvapi32 -lws2_32 -lversion -lcrypt32 -lshell32 -ldbghelp -lGdi32 -Wl,/subsystem:console"
+	lib /nologo /out:$@ $(OBJECTS)
