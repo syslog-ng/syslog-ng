@@ -52,3 +52,8 @@ Package: lgstool
 Architecture: win32
 Description: logstore analyzer
  Standalone logstore analyzer on windows
+
+Package: lgstool-dbg
+Architecture: win32
+Description: logstore analyzer, debugging
+ Standalone logstore analyzer on windows
