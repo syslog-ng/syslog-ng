@@ -37,6 +37,8 @@ static gint ssl_lock_count;
 static GStaticMutex *ssl_locks;
 static gboolean randfile_loaded;
 
+BB_CRYPTO_EXPORT;
+
 static void
 ssl_locking_callback(int mode, int type, char *file, int line)
 {
@@ -67,8 +69,8 @@ crypto_init_threading(void)
     {
       g_static_mutex_init(&ssl_locks[i]);
     }
-  CRYPTO_set_id_callback((unsigned long (*)()) ssl_thread_id);
-  CRYPTO_set_locking_callback((void (*)()) ssl_locking_callback);
+  CRYPTO_set_id_callback((unsigned long (*)(void)) ssl_thread_id);
+  CRYPTO_set_locking_callback((void (*)(int, int, char *, int)) ssl_locking_callback);
 }
 
 static void
@@ -97,6 +99,9 @@ crypto_deinit(void)
   crypto_deinit_threading();
 }
 
+#ifdef _MSC_VER
+#pragma section(".CRT$XCU",read)
+#endif
 INITIALIZER(crypto_init)
 {
   SSL_library_init();

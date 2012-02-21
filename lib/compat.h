@@ -223,4 +223,15 @@ typedef socklen_t bb_socklen_t;
 
 #endif
 
+/* FIXME: Ugly hack to force loading and linking crypto.c on Windows. Without it, the linker skips the module... */
+#ifdef _MSC_VER
+#define BB_CRYPTO_EXPORT void crypto_init_vs(void) { return; }
+#define BB_CRYPTO_IMPORT crypto_init_vs();
+void crypto_init_vs(void);
+
+#else
+#define BB_CRYPTO_EXPORT
+#define BB_CRYPTO_IMPORT
+#endif
+
 #endif
