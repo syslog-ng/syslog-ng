@@ -1,7 +1,7 @@
 man_MANS = man/syslog-ng.8 man/syslog-ng.conf.5 man/pdbtool.1 man/loggen.1 man/syslog-ng-ctl.1
 
 EXTRA_DIST =  man/syslog-ng.8.xml man/syslog-ng.conf.5.xml man/pdbtool.1.xml man/loggen.1.xml man/syslog-ng-ctl.1.xml \
-	$(man_MANS)
+	$(man_MANS) \
 	security/bof-2002-09-27.txt \
 	security/dos-2000-11-22.txt \
 	xsd/patterndb-1.xsd \
