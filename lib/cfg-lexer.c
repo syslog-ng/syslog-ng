@@ -646,7 +646,13 @@ cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
   if (self->preprocess_output)
     fprintf(self->preprocess_output, "%s", self->token_pretext->str);
  exit:
-  if (tok == LL_PRAGMA)
+
+  if (self->ignore_pragma)
+    {
+      /* only process @pragma/@include tokens in case pragma allowed is set */
+      ;
+    }
+  else if (tok == LL_PRAGMA)
     {
       gpointer dummy;
 
@@ -790,6 +796,7 @@ cfg_lexer_new_buffer(const gchar *buffer, gsize length)
 
   self = g_new0(CfgLexer, 1);
   cfg_lexer_init(self);
+  self->ignore_pragma = TRUE;
 
   level = &self->include_stack[0];
   level->include_type = CFGI_BUFFER;
