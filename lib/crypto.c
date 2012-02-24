@@ -97,9 +97,10 @@ crypto_deinit(void)
         RAND_write_file(rnd_file);
     }
   crypto_deinit_threading();
+  unregister_application_hook(AH_SHUTDOWN, (ApplicationHookFunc) crypto_deinit, NULL);
 }
 
-static void __attribute__((constructor))
+static void
 crypto_init(void)
 {
   SSL_library_init();
@@ -123,6 +124,18 @@ crypto_init(void)
     }
 
   register_application_hook(AH_SHUTDOWN, (ApplicationHookFunc) crypto_deinit, NULL);
+}
+
+static void __attribute__((constructor))
+crypto_load(void)
+{
+  crypto_init();
+}
+
+static void __attribute__((destructor))
+crypto_unload(void)
+{
+  crypto_deinit();
 }
 
 /* the crypto options (seed) are handled in main.c */

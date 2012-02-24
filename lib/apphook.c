@@ -73,6 +73,29 @@ register_application_hook(gint type, ApplicationHookFunc func, gpointer user_dat
     }
 }
 
+void
+unregister_application_hook(gint type, ApplicationHookFunc func, gpointer user_data)
+{
+  GList *l, *l_next;
+
+  for (l = application_hooks; l; l = l_next)
+    {
+      ApplicationHookEntry *e = l->data;
+
+      if (e->type == type && e->func == func && e->user_data == user_data)
+        {
+          l_next = l->next;
+          application_hooks = g_list_remove_link(application_hooks, l);
+          g_free(e);
+          g_list_free_1(l);
+        }
+      else
+        {
+          l_next = l->next;
+        }
+    }
+}
+
 static void
 run_application_hook(gint type)
 {

@@ -40,6 +40,7 @@ enum
 typedef void (*ApplicationHookFunc)(gint type, gpointer user_data);
 
 void register_application_hook(gint type, ApplicationHookFunc func, gpointer user_data);
+void unregister_application_hook(gint type, ApplicationHookFunc func, gpointer user_data);
 void app_startup();
 void app_post_daemonized();
 void app_pre_config_loaded();
