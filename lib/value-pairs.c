@@ -42,7 +42,7 @@ typedef struct
 typedef struct
 {
   gchar *name;
-  gchar *template;
+  LogTemplate *template;
 } VPPairConf;
 
 struct _ValuePairs
@@ -336,7 +336,7 @@ value_pairs_foreach(ValuePairs *vp, VPForeachFunc func,
                     LogMessage *msg, gint32 seq_num,
                     gpointer user_data)
 {
-  value_pairs_foreach_sorted(vp, func, (GCompareDataFunc)g_strcmp0,
+  value_pairs_foreach_sorted(vp, func, (GCompareDataFunc) strcmp,
                              msg, seq_num, user_data);
 }
 
@@ -366,10 +366,8 @@ value_pairs_init_set(ValuePairSpec *set)
 }
 
 static void
-vp_free_pair(gpointer data)
+vp_free_pair(VPPairConf *vpc)
 {
-  VPPairConf *vpc = (VPPairConf *)data;
-
   log_template_unref(vpc->template);
   g_free(vpc->name);
   g_free(vpc);
@@ -384,7 +382,6 @@ value_pairs_new(void)
 
   vp = g_new0(ValuePairs, 1);
   vp->vpairs = g_ptr_array_sized_new(8);
-  g_ptr_array_set_free_func(vp->vpairs, vp_free_pair);
 
   if (!value_pair_sets_initialized)
     {
@@ -422,6 +419,9 @@ value_pairs_free (ValuePairs *vp)
 {
   gint i;
   GList *l;
+
+  for (i = 0; i < vp->vpairs->len; i++)
+    vp_free_pair(g_ptr_array_index(vp->vpairs, i));
 
   g_ptr_array_free(vp->vpairs, TRUE);
 
