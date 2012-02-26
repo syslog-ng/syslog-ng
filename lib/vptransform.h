@@ -33,6 +33,7 @@ typedef struct _ValuePairsTransformSet ValuePairsTransformSet;
 ValuePairsTransform *value_pairs_new_transform_add_prefix (const gchar *prefix);
 ValuePairsTransform *value_pairs_new_transform_shift (gint amount);
 ValuePairsTransform *value_pairs_new_transform_replace(const gchar *prefix, const gchar *new_prefix);
+void value_pairs_transform_free(ValuePairsTransform *t);
 
 ValuePairsTransformSet *value_pairs_transform_set_new(const gchar *glob);
 void value_pairs_transform_set_add_func(ValuePairsTransformSet *vpts, ValuePairsTransform *vpt);

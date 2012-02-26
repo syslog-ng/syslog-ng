@@ -83,7 +83,7 @@ vp_trans_init(ValuePairsTransform *t,
   t->destroy = dest;
 }
 
-static inline void
+void
 value_pairs_transform_free(ValuePairsTransform *t)
 {
   if (t->destroy)
