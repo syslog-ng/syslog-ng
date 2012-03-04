@@ -33,7 +33,7 @@ def start_syslogng(conf, keep_persist=False, verbose=False):
         os.putenv("RANDFILE", "rnd")
         module_path = ''
         for (root, dirs, files) in os.walk(os.path.abspath(os.path.join(os.environ['top_builddir'], 'modules'))):
-            module_path = ':'.join(map(lambda x: root + '/' + x, dirs))
+            module_path = ':'.join(map(lambda x: root + '/' + x + '/.libs', dirs))
             break
         rc = os.execl('../../syslog-ng/syslog-ng', '../../syslog-ng/syslog-ng', '-f', 'test.conf', '--fd-limit', '1024', '-F', verbose_opt, '-p', 'syslog-ng.pid', '-R', 'syslog-ng.persist', '--no-caps', '--enable-core', '--seed', '--module-path', module_path)
         sys.exit(rc)
