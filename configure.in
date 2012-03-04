@@ -777,7 +777,7 @@ if test "x$with_libmongo_client" = "xinternal"; then
 		# these can only be used in modules/mongodb as it assumes
 		# the current directory just one below libmongo-client
 
-		LIBMONGO_LIBS="-L\$(builddir)/libmongo-client/src -lmongo-client"
+		LIBMONGO_LIBS="-L\$(builddir)/libmongo-client/src -lmongo-client $OPENSSL_LIBS"
 		LIBMONGO_CFLAGS="-I\$(srcdir)/libmongo-client/src"
 		LIBMONGO_SUBDIRS="libmongo-client"
 	else
