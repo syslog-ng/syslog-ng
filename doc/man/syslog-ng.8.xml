@@ -1,0 +1,259 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE reference PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN" "../xml-stylesheet/pdf/dtd/docbookx.dtd">
+<reference xmlns:xi="http://www.w3.org/2001/XInclude">
+  <title>The syslog-ng manual page</title>
+  <info>
+    <productname class="trade">syslog-ng Open Source Edition</productname>
+  </info>
+  <refentry id="syslog-ng.8">
+    <refmeta>
+      <refentrytitle>syslog-ng</refentrytitle>
+      <manvolnum>8</manvolnum>
+      <refmiscinfo class="version">3.3</refmiscinfo>
+      <refmiscinfo class="source">syslog-ng Open Source Edition</refmiscinfo>
+    </refmeta>
+    <refnamediv>
+      <refname>syslog-ng</refname>
+      <refpurpose>syslog-ng system logger application</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+      <cmdsynopsis sepchar=" ">
+        <command moreinfo="none">syslog-ng</command>
+        <arg choice="opt" rep="norepeat">options</arg>
+      </cmdsynopsis>
+    </refsynopsisdiv>
+    <refsect1 id="syslog-ng_mandescription">
+      <title>Description</title>
+      <para>This manual page is only an abstract; for the complete documentation of syslog-ng, see <ulink url="http://www.balabit.com/support/documentation/"><command moreinfo="none">The syslog-ng Open Source Edition Administrator Guide</command></ulink> or <ulink url="http://www.balabit.com/network-security/syslog-ng/">the official syslog-ng website</ulink>.</para>
+      <para>The syslog-ng OSE application is a flexible and highly scalable system logging application.
+        Typically, syslog-ng is used to manage log messages and implement centralized logging, where
+        the aim is to collect the log messages of several devices on a single, central log server.
+        The different devices - called syslog-ng clients - all run syslog-ng, and collect the log
+        messages from the various applications, files, and other <emphasis>sources</emphasis>. The
+        clients send all important log messages to the remote syslog-ng server, where the server
+        sorts and stores them.</para>
+    </refsect1>
+    <refsect1>
+      <title>Options</title>
+      <variablelist>
+        <varlistentry>
+          <term>
+            <command moreinfo="none">--cfgfile &lt;file&gt;</command> or <command moreinfo="none">-f
+            &lt;file&gt;</command>
+          </term>
+          <listitem>
+            <para>Use the specified configuration file.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>
+            <command moreinfo="none">--chroot &lt;dir&gt;</command> or <command moreinfo="none">-C
+            &lt;dir&gt;</command>
+          </term>
+          <listitem>
+            <para>Change root to the specified directory. The configuration file is read after chrooting so, the configuration file must be available within the chroot. That way it is also possible to reload the syslog-ng configuration after chrooting. However, note that the <parameter moreinfo="none">--user</parameter> and <parameter moreinfo="none">--group</parameter> options are resolved before chrooting.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>
+            <command moreinfo="none">--debug</command> or <command moreinfo="none">-d</command>
+          </term>
+          <listitem>
+            <para>Start syslog-ng in debug mode.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>
+            <command moreinfo="none">--default-modules</command>
+          </term>
+          <listitem>
+            <para>A comma-separated list of the modules that are loaded automatically. Modules not loaded automatically can be loaded by including the <parameter moreinfo="none">@module &lt;modulename&gt;</parameter> statement in the syslog-ng OSE configuration file. The following modules are loaded by default: <parameter condition="ose" moreinfo="none">affile,afprog,afsocket,afuser,basicfuncs,csvparser,dbparser,syslogformat,afsql</parameter>. Available only in <phrase condition="ose">syslog-ng Open Source Edition 3.3</phrase> and later.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>
+            <command moreinfo="none">--enable-core</command>
+          </term>
+          <listitem>
+            <para>Enable syslog-ng to write core files in case of a crash to help support and
+              debugging.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>
+            <command moreinfo="none">--fd-limit &lt;number&gt;</command>
+          </term>
+          <listitem>
+            <para>Set the minimal number of required file descriptors (fd-s); this sets how many
+              files syslog-ng can keep open simultaneously. Default value:
+              <parameter moreinfo="none">4096</parameter>. Note that this does not override the global ulimit
+              setting of the host.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>
+            <command moreinfo="none">--foreground</command> or <command moreinfo="none">-F</command>
+          </term>
+          <listitem>
+            <para>Do not daemonize, run in the foreground.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>
+            <command moreinfo="none">--group &lt;group&gt;</command> or <command moreinfo="none">-g
+            &lt;group&gt;</command>
+          </term>
+          <listitem>
+            <para>Switch to the specified group after initializing the configuration file.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>
+            <command moreinfo="none">--help</command> or <command moreinfo="none">-h</command>
+          </term>
+          <listitem>
+            <para>Display a brief help message.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>
+            <command moreinfo="none">--module-registry</command>
+          </term>
+          <listitem>
+            <para>Display the list and description of the available modules. Note that not all of these modules are loaded automatically, only the ones specified in the <command moreinfo="none">--default-modules</command> option. Available only in <phrase condition="ose">syslog-ng Open Source Edition 3.3</phrase> and later.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>
+            <command moreinfo="none">--no-caps</command>
+            <!-- or <command>-h</command>-->
+          </term>
+          <listitem>
+            <para>Run syslog-ng as root, without capability-support. This is the default behavior.
+              On Linux, it is possible to run syslog-ng as non-root with capability-support if
+              syslog-ng was compiled with the <parameter moreinfo="none">--enable-linux-caps</parameter> option
+              enabled. (Execute <command moreinfo="none">syslog-ng --version</command> to display the list of
+              enabled build parameters.)</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>
+            <command moreinfo="none">--persist-file &lt;persist-file&gt;</command> or <command moreinfo="none">-R
+              &lt;persist-file&gt;</command>
+          </term>
+          <listitem>
+            <para>Set the path and name of the <filename moreinfo="none">syslog-ng.persist</filename> file where the
+              persistent options and data are stored.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>
+            <command moreinfo="none">--pidfile &lt;pidfile&gt;</command> or <command moreinfo="none">-p
+              &lt;pidfile&gt;</command>
+          </term>
+          <listitem>
+            <para>Set path to the PID file where the pid of the main process is stored.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>
+            <command moreinfo="none">--preprocess-into &lt;output-file&gt;</command>
+          </term>
+          <listitem>
+            <para>After processing the configuration file and resolving included files and variables, write the resulting configuration into the specified output file. Available only in <phrase condition="ose">syslog-ng Open Source Edition 3.3</phrase> and later.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>
+            <command moreinfo="none">--process-mode &lt;mode&gt;</command>
+            <!-- or <command>-P
+              &lt;pidfile&gt;</command>-->
+          </term>
+          <listitem>
+            <para>Sets how to run syslog-ng: in the <parameter moreinfo="none">foreground</parameter> (mainly used
+              for debugging), in the <parameter moreinfo="none">background</parameter> as a daemon, or in
+                <parameter moreinfo="none">safe-background</parameter> mode. By default, syslog-ng runs in <parameter moreinfo="none">safe-background</parameter>
+            mode. This mode creates a supervisor process called <parameter moreinfo="none">supervising syslog-ng</parameter> , that restarts syslog-ng if it
+              crashes.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>
+            <command moreinfo="none">--stderr</command> or <command moreinfo="none">-e</command>
+          </term>
+          <listitem>
+            <para>Log internal messages of syslog-ng to stderr. Mainly used for debugging purposes
+              in conjunction with the <parameter moreinfo="none">--foreground</parameter> option. If not specified, syslog-ng will log such messages to its internal source.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>
+            <command moreinfo="none">--syntax-only</command> or <command moreinfo="none">-s</command>
+          </term>
+          <listitem>
+            <para>Verify that the configuration file is syntactically correct and exit.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>
+            <command moreinfo="none">--user &lt;user&gt;</command> or <command moreinfo="none">-u
+            &lt;user&gt;</command>
+          </term>
+          <listitem>
+            <para>Switch to the specified user after initializing the configuration file (and
+              optionally chrooting). Note that it is not possible to reload the syslog-ng
+              configuration if the specified user has no privilege to create the
+              <filename moreinfo="none">/dev/log</filename> file.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>
+            <command moreinfo="none">--verbose</command> or <command moreinfo="none">-v</command>
+          </term>
+          <listitem>
+            <!-- FIXME nincs argumentuma, mit csinal pontosan? -->
+            <para>Enable verbose logging used to troubleshoot syslog-ng.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>
+            <command moreinfo="none">--version</command> or <command moreinfo="none">-V</command>
+          </term>
+          <listitem>
+            <para>Display version number and compilation information, and also the list and short description of the available modules. For detailed description of the available modules, see the <command moreinfo="none">--module-registry</command> option. Note that not all of these modules are loaded automatically, only the ones specified in the <command moreinfo="none">--default-modules</command> option.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>
+            <command moreinfo="none">--worker-threads</command>
+          </term>
+          <listitem>
+            <para>Sets the number of worker threads syslog-ng OSE can use, including the main syslog-ng OSE thread. Note that certain operations in syslog-ng OSE can use threads that are not limited by this option. This setting has effect only when syslog-ng OSE is running in multithreaded mode. Available only in <phrase condition="ose">syslog-ng Open Source Edition 3.3</phrase> and later. See <command moreinfo="none">The syslog-ng Open Source Edition 3.3 Administrator Guide</command> for details.</para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+    </refsect1>
+    <refsect1>
+      <title>Files</title>
+      <para>
+        <filename moreinfo="none">/opt/syslog-ng/</filename>
+      </para>
+      <para>
+        <filename moreinfo="none">/opt/syslog-ng/etc/syslog-ng.conf</filename>
+      </para>
+    </refsect1>
+    <refsect1>
+      <title>See also</title>
+      <para><link linkend="syslog-ng.conf.5"><command moreinfo="none">syslog-ng.conf</command>(5)</link></para>
+      <para><ulink url="http://www.balabit.com/support/documentation/"><command moreinfo="none">The syslog-ng OSE 3.3 Administrator Guide</command></ulink></para><para>If you experience any problems or need help with syslog-ng, visit <ulink url="http://www.balabit.com/wiki/syslog-ng-faq">visit the syslog-ng wiki</ulink> or the <ulink url="https://lists.balabit.hu/mailman/listinfo/syslog-ng"><command moreinfo="none">syslog-ng mailing list</command></ulink>.</para><para>For news and notifications about of syslog-ng, visit the <ulink url="http://insider.blogs.balabit.com"><command moreinfo="none">syslog-ng Insider Blog</command></ulink>.</para>
+    </refsect1>
+    <refsect1>
+        <title>Author</title><para>This manual page was written by the BalaBit Documentation Team &lt;documentation@balabit.com&gt;.</para>
+    </refsect1>
+    <refsect1>
+        <title>Copyright</title><refsect2 condition="ose">
+              <para>The authors grant permission to copy, distribute and/or modify this manual page under the terms of the GNU General Public License Version 2 or newer (GPL v2+).</para>
+          </refsect2>
+    </refsect1>
+  </refentry>
+</reference>
