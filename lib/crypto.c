@@ -97,7 +97,6 @@ crypto_deinit(void)
         RAND_write_file(rnd_file);
     }
   crypto_deinit_threading();
-  unregister_application_hook(AH_SHUTDOWN, (ApplicationHookFunc) crypto_deinit, NULL);
 }
 
 static void
@@ -122,8 +121,6 @@ crypto_init(void)
       if (RAND_status() < 0)
         fprintf(stderr, "WARNING: a trusted random number source is not available, crypto operations will probably fail. Please set the RANDFILE environment variable.");
     }
-
-  register_application_hook(AH_SHUTDOWN, (ApplicationHookFunc) crypto_deinit, NULL);
 }
 
 static void __attribute__((constructor))
