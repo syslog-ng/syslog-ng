@@ -217,6 +217,31 @@ plugin_parse_config(Plugin *self, GlobalConfig *cfg, YYLTYPE *yylloc, gpointer a
   return instance;
 }
 
+static ModuleInfo *
+plugin_get_module_info(GModule *mod)
+{
+  ModuleInfo *module_info = NULL;
+
+  if (mod && g_module_symbol(mod, "module_info", (gpointer *) &module_info))
+    return module_info;
+  return NULL;
+}
+
+static gchar *
+plugin_get_module_init_name(const gchar *module_name)
+{
+  gchar *module_init_func;
+  gchar *p;
+
+  module_init_func = g_strdup_printf("%s_module_init", module_name);
+  for (p = module_init_func; *p; p++)
+    {
+      if ((*p) == '-')
+        *p = '_';
+    }
+  return module_init_func;
+}
+
 static GModule *
 plugin_dlopen_module(const gchar *module_name, const gchar *module_path)
 {
@@ -298,17 +323,13 @@ plugin_load_module(const gchar *module_name, GlobalConfig *cfg, CfgArgs *args)
   gboolean (*init_func)(GlobalConfig *cfg, CfgArgs *args);
   gchar *module_init_func;
   const gchar *mp;
-  gchar *p;
   gboolean result;
+  ModuleInfo *module_info;
 
+  /* lookup in the main executable */
   if (!main_module_handle)
     main_module_handle = g_module_open(NULL, 0);
-  module_init_func = g_strdup_printf("%s_module_init", module_name);
-  for (p = module_init_func; *p; p++)
-    {
-      if ((*p) == '-')
-        *p = '_';
-    }
+  module_init_func = plugin_get_module_init_name(module_name);
 
   if (g_module_symbol(main_module_handle, module_init_func, (gpointer *) &init_func))
     {
@@ -316,6 +337,7 @@ plugin_load_module(const gchar *module_name, GlobalConfig *cfg, CfgArgs *args)
       goto call_init;
     }
 
+  /* try to load it from external .so */
   if (cfg->lexer)
     mp = cfg_args_get(cfg->lexer->globals, "module-path");
   else
@@ -331,6 +353,13 @@ plugin_load_module(const gchar *module_name, GlobalConfig *cfg, CfgArgs *args)
       return FALSE;
     }
   g_module_make_resident(mod);
+  module_info = plugin_get_module_info(mod);
+
+  if (module_info->canonical_name)
+    {
+      g_free(module_init_func);
+      module_init_func = plugin_get_module_init_name(module_info->canonical_name ? : module_name);
+    }
 
   if (!g_module_symbol(mod, module_init_func, (gpointer *) &init_func))
     {
@@ -342,6 +371,7 @@ plugin_load_module(const gchar *module_name, GlobalConfig *cfg, CfgArgs *args)
       g_free(module_init_func);
       return FALSE;
     }
+
  call_init:
   g_free(module_init_func);
   result = (*init_func)(cfg, args);
@@ -369,6 +399,9 @@ plugin_load_candidate_modules(GlobalConfig *cfg)
       GDir *dir;
       const gchar *fname;
 
+      msg_debug("Reading path for candidate modules",
+                evt_tag_str("path", mod_paths[i]),
+                NULL);
       dir = g_dir_open(mod_paths[i], 0, NULL);
       if (!dir)
         continue;
@@ -378,19 +411,20 @@ plugin_load_candidate_modules(GlobalConfig *cfg)
             {
               gchar *module_name;
               ModuleInfo *module_info;
-              gboolean success;
 
               if (g_str_has_prefix(fname, "lib"))
                 fname += 3;
               module_name = g_strndup(fname, (gint) (strlen(fname) - strlen(G_MODULE_SUFFIX) - 1));
 
+              msg_debug("Reading shared object for a candidate module",
+                        evt_tag_str("path", mod_paths[i]),
+                        evt_tag_str("fname", fname),
+                        evt_tag_str("module", module_name),
+                        NULL);
               mod = plugin_dlopen_module(module_name, module_path);
-              if (mod)
-                success = g_module_symbol(mod, "module_info", (gpointer *) &module_info);
-              else
-                success = FALSE;
+              module_info = plugin_get_module_info(mod);
 
-              if (success && module_info)
+              if (module_info)
                 {
                   for (j = 0; j < module_info->plugins_len; j++)
                     {
@@ -398,17 +432,24 @@ plugin_load_candidate_modules(GlobalConfig *cfg)
                       PluginCandidate *candidate_plugin;
 
                       candidate_plugin = (PluginCandidate *) plugin_find_in_list(cfg, cfg->candidate_plugins, plugin->type, plugin->name);
+
+                      msg_debug("Registering candidate plugin",
+                                evt_tag_str("module", module_name),
+                                evt_tag_str("context", cfg_lexer_lookup_context_name_by_type(plugin->type)),
+                                evt_tag_str("name", plugin->name),
+                                evt_tag_int("preference", module_info->preference),
+                                NULL);
                       if (candidate_plugin)
                         {
                           if (candidate_plugin->preference < module_info->preference)
                             {
-                              plugin_candidate_set_module_name(candidate_plugin, module_info->canonical_name);
+                              plugin_candidate_set_module_name(candidate_plugin, module_name);
                               plugin_candidate_set_preference(candidate_plugin, module_info->preference);
                             }
                         }
                       else
                         {
-                          cfg->candidate_plugins = g_list_prepend(cfg->candidate_plugins, plugin_candidate_new(plugin->type, plugin->name, module_info->canonical_name, module_info->preference));
+                          cfg->candidate_plugins = g_list_prepend(cfg->candidate_plugins, plugin_candidate_new(plugin->type, plugin->name, module_name, module_info->preference));
                         }
                     }
                 }
@@ -457,53 +498,42 @@ plugin_list_modules(FILE *out, gboolean verbose)
             {
               gchar *module_name;
               ModuleInfo *module_info;
-              gboolean success;
 
               if (g_str_has_prefix(fname, "lib"))
                 fname += 3;
               module_name = g_strndup(fname, (gint) (strlen(fname) - strlen(G_MODULE_SUFFIX) - 1));
 
               mod = plugin_dlopen_module(module_name, module_path);
-              if (mod)
-                success = g_module_symbol(mod, "module_info", (gpointer *) &module_info);
-              else
-                success = FALSE;
+              module_info = plugin_get_module_info(mod);
               if (verbose)
                 {
                   fprintf(out, "Module: %s\n", module_name);
                   if (mod)
                     {
-                      if (!success || !module_info)
+                      if (!module_info)
                         {
                           fprintf(out, "Status: Unable to resolve module_info variable, probably not a syslog-ng module\n");
                         }
                       else
                         {
-                          if (strcmp(module_info->canonical_name, module_name) != 0)
+                          gchar **lines;
+
+                          fprintf(out, "Status: ok\n"
+                                       "Version: %s\n"
+                                       "Core-Revision: %s\n"
+                                       "Description:\n", module_info->version, module_info->core_revision);
+
+                          lines = g_strsplit(module_info->description, "\n", 0);
+                          for (k = 0; lines[k]; k++)
+                            fprintf(out, "  %s\n", lines[k][0] ? lines[k] : ".");
+                          g_strfreev(lines);
+
+                          fprintf(out, "Plugins:\n");
+                          for (j = 0; j < module_info->plugins_len; j++)
                             {
-                              fprintf(out, "Status: This module is to be loaded under the name %s instead of %s\n", module_info->canonical_name, module_name);
-                            }
-                          else
-                            {
-                              gchar **lines;
+                              Plugin *plugin = &module_info->plugins[j];
 
-                              fprintf(out, "Status: ok\n"
-                                           "Version: %s\n"
-                                           "Core-Revision: %s\n"
-                                           "Description:\n", module_info->version, module_info->core_revision);
-
-                              lines = g_strsplit(module_info->description, "\n", 0);
-                              for (k = 0; lines[k]; k++)
-                                fprintf(out, "  %s\n", lines[k][0] ? lines[k] : ".");
-                              g_strfreev(lines);
-
-                              fprintf(out, "Plugins:\n");
-                              for (j = 0; j < module_info->plugins_len; j++)
-                                {
-                                  Plugin *plugin = &module_info->plugins[j];
-
-                                  fprintf(out, "  %-15s %s\n", cfg_lexer_lookup_context_name_by_type(plugin->type), plugin->name);
-                                }
+                              fprintf(out, "  %-15s %s\n", cfg_lexer_lookup_context_name_by_type(plugin->type), plugin->name);
                             }
                         }
                     }
@@ -513,7 +543,7 @@ plugin_list_modules(FILE *out, gboolean verbose)
                     }
                   fprintf(out, "\n");
                 }
-              else if (success && module_info)
+              else if (module_info)
                 {
                   fprintf(out, "%s%s", first ? "" : ",", module_name);
                   first = FALSE;
