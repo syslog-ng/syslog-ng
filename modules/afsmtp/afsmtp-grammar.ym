@@ -1,0 +1,101 @@
+/*
+ * Copyright (c) 2011-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2011-2012 Gergely Nagy <algernon@balabit.hu>
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
+%code requires {
+
+#include "afsmtp-parser.h"
+
+}
+
+%code {
+
+#include "cfg-parser.h"
+#include "afsmtp-grammar.h"
+#include "plugin.h"
+
+extern LogDriver *last_driver;
+
+}
+
+%name-prefix "afsmtp_"
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {LogDriver **instance}
+%parse-param {gpointer arg}
+
+/* INCLUDE_DECLS */
+
+%token KW_SMTP
+%token KW_SUBJECT
+%token KW_FROM
+%token KW_TO
+%token KW_BODY
+%token KW_HEADER
+%token KW_CC
+%token KW_BCC
+%token KW_SENDER
+%token KW_REPLY_TO
+
+%%
+
+start
+        : LL_CONTEXT_DESTINATION KW_SMTP
+          {
+            last_driver = *instance = afsmtp_dd_new();
+          }
+          '(' afsmtp_options ')'         { YYACCEPT; }
+	;
+
+afsmtp_options
+        : afsmtp_option afsmtp_options
+	|
+	;
+
+afsmtp_option
+        : KW_HOST '(' string ')'		{ afsmtp_dd_set_host(last_driver, $3); free($3); }
+        | KW_PORT '(' LL_NUMBER ')'		{ afsmtp_dd_set_port(last_driver, $3); }
+	| KW_SUBJECT '(' string ')'	 	{ afsmtp_dd_set_subject(last_driver, $3); free($3); }
+	| KW_BODY '(' string ')'		{ afsmtp_dd_set_body(last_driver, $3); free($3); }
+	| KW_HEADER '(' string string ')'	{
+		afsmtp_dd_add_header(last_driver, $3, $4);
+		free($3); free($4);
+	}
+
+	| KW_FROM '(' string ')'		{ afsmtp_dd_set_from(last_driver, $3, $3); free($3); }
+	| KW_FROM '(' string string ')'		{ afsmtp_dd_set_from(last_driver, $3, $4); free($3); free($4); }
+	| KW_SENDER '(' string ')'		{ afsmtp_dd_set_from(last_driver, $3, $3); free($3); }
+	| KW_SENDER '(' string string ')'	{ afsmtp_dd_set_from(last_driver, $3, $4); free($3); free($4); }
+	| KW_TO '(' string ')'			{ afsmtp_dd_add_rcpt(last_driver, AFSMTP_RCPT_TYPE_TO, $3, $3); free($3); }
+	| KW_TO '(' string string ')'		{ afsmtp_dd_add_rcpt(last_driver, AFSMTP_RCPT_TYPE_TO, $3, $4); free($3); free($4); }
+	| KW_CC '(' string ')'			{ afsmtp_dd_add_rcpt(last_driver, AFSMTP_RCPT_TYPE_CC, $3, $3); free($3); }
+	| KW_CC '(' string string ')'		{ afsmtp_dd_add_rcpt(last_driver, AFSMTP_RCPT_TYPE_CC, $3, $4); free($3); free($4); }
+	| KW_BCC '(' string ')'			{ afsmtp_dd_add_rcpt(last_driver, AFSMTP_RCPT_TYPE_BCC, $3, $3); free($3); }
+	| KW_BCC '(' string string ')'		{ afsmtp_dd_add_rcpt(last_driver, AFSMTP_RCPT_TYPE_BCC, $3, $4); free($3); free($4); }
+	| KW_REPLY_TO '(' string ')'		{ afsmtp_dd_add_rcpt(last_driver, AFSMTP_RCPT_TYPE_REPLY_TO, $3, $3); free($3); }
+	| KW_REPLY_TO '(' string string ')'	{ afsmtp_dd_add_rcpt(last_driver, AFSMTP_RCPT_TYPE_REPLY_TO, $3, $4); free($3); free($4); }
+        | dest_driver_option
+        ;
+
+/* INCLUDE_RULES */
+
+%%
