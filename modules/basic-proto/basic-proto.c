@@ -301,7 +301,7 @@ static void
 log_proto_text_client_free(LogProto *s)
 {
   LogProtoTextClient *self = (LogProtoTextClient *)s;
-  if (self->partial == NULL)
+  if (self->partial == NULL && self->super.flags & LPBS_KEEP_ONE && self->acked == 1)
     {
       self->super.ack_callback(1,self->super.ack_user_data);
     }
