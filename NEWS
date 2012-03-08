@@ -1,1 +1,129 @@
 3.4.0alpha1
+
+	Features:
+	=========
+
+	* Support for junctions & channels were added, which improve the
+	  flexibility of the syslog-ng configuration language. This allows
+	  combining sources with their closely tied processing functionality
+	  (like parser, rewrite and filter statements). Read this blog post
+	  for more information:
+
+	    http://bazsi.blogs.balabit.com/2012/01/syslog-ng-flexibility-improvements/
+
+	  In the final form of the functionality the "log" keyword as
+	  described in the blog post above was replaced with "channel".
+
+	* The functionality to query and manipulate sets of name-value pairs
+	  (often referenced as value-pairs and used in the mongodb()
+          destination driver and the $(format-json) template function).
+	  got significantly improved. It is now possible to change the name
+          of the keys when creating the output. See this commit for more
+          information:
+
+	    https://github.com/bazsi/syslog-ng-3.4/commit/ddc7c2539bd66fa35e8df441e4baf58e87b6708d
+
+	* Plugins & modules are now demand-loaded automatically if the
+	  "autoload-compiled-modules" global variable is set to 1, which is
+	  the default. Any shared libraries found on the module search path
+	  is considered for loading if the configuration file contains a
+	  reference to a functionality it provides.
+
+	  To disable this functionality simply set the referenced variable
+	  to 0 with a "@define" statement and load modules explicitly via
+	  "@module" statements.
+
+	  To list the available plugins & modules, use the --module-registry
+	  command line option for syslog-ng, which results in a detailed
+	  listing.
+
+	* Added a new parser named json-parser() to parse incoming JSON
+	  formatted messages. See this commit for more information:
+
+	    https://github.com/bazsi/syslog-ng-3.4/commit/e5569687bba2551c89a78faee55bcf8b4944066f
+
+	* Added a number of template functions:
+
+	   $(length ARG)               - length of a template expression
+	   $(substr ARG START [LEN])   - substring of a string
+	   $(strip ARG)                - remove white space from the start and end
+           $(sanitize ARG1 ARG2)       - join args to form a filename while
+	                                 removing special characters like '/'
+	   $(+), $(-), $(*), $(/), $(%) - perform numeric operations
+
+	* Added support for replicasets to the mongodb() destination driver.
+
+            https://github.com/bazsi/syslog-ng-3.4/commit/a980b9d268efa54879d3deeb4a53fa5a281629ba
+
+	* Added support for safe-mode() to the mongodb() destination driver
+	  that ensures inserts were properly executed at the cost of some
+	  performance penalties.
+
+            https://github.com/bazsi/syslog-ng-3.4/commit/768f0c6ec8eba2ad51531f2331fb5635fe12c063
+
+	* Added support for SMTP destination to send out emails triggered by
+	  log messages.
+
+            https://github.com/bazsi/syslog-ng-3.4/commit/404ceb959efe9715ce7437d7dcdc28ababbac590
+
+	* Added support for generating UUIDs via the $(uuid) template
+	  function.
+
+            https://github.com/bazsi/syslog-ng-3.4/commit/a16798c653c057239236945034114d8abf320e44
+
+	* Added the @SET@ parser to db-parser().
+
+            https://github.com/bazsi/syslog-ng-3.4/commit/ab08c84abbeda5a200b8150a6af7b02c64d84994
+
+	* Added support for dbd-option() in the sql() destination driver
+	  that makes it possible to supply driver specific options to the
+	  DBI driver.
+
+            https://github.com/bazsi/syslog-ng-3.4/commit/9254fe9e6236746bf1f955f0cac1274634b1beda
+
+	* Reload of the configuration can now be triggered using 
+          "syslog-ng-ctl reload".
+
+	* A new macro named $LOGHOST was added, which expands to the local
+	  hostname running syslog-ng.
+
+	* A set of time macros were added prefixed with "C_" that use the
+	  current time instead of the reception time (prefixed R_) and and
+	  the time that was included in the message (prefixed S_).  This
+	  means that C_DATE expands to the current date, whereas R_DATE
+	  would expand to the date the current message was received at.
+
+            https://github.com/bazsi/syslog-ng-3.4/commit/c2d17009e2ce14960acb519750fe2537b05e6f46
+
+	* Improved error reporting by including the configuration-file
+	  location of the object associated with the error. This makes it
+	  easier to diagnose errors even in the case of otherwise unnamed
+	  objects.
+
+	* This release also includes all fixes of the 3.3 branch, which are
+	  not listed here for brevity's sake. The merged commit ID is:
+	  bf742b0, which is a couple of patches ahead of "3.3.4".
+
+        Credits:
+        ========
+        syslog-ng is developed as a community project, and as such it relies
+        on volunteers to do the work necessarily to produce syslog-ng.
+
+        Reporting bugs, testing changes, writing code or simply providing
+        feedback are all important contributions, so please if you are a
+        user of syslog-ng, contribute.
+
+        These people have helped in this release:
+
+          Andreas Piesk
+          Balazs Scheidler (BalaBit)
+          Balint Kovacs (BalaBit)
+          Evan Rempel (University of Victoria)
+          Gergely Nagy (BalaBit)
+          Heiko Gerstung
+          Hendrik Völker (Verizon)
+          Jakub Jankowski (superhost.pl)
+          Martin Grauel (BalaBit)
+          Matthias Runge (Fedora)
+          Patrick Hemmer
+          Russ Milne (Seccuris)
