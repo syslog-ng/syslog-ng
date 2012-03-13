@@ -235,6 +235,7 @@ monitor_inotify_init_watches(MonitorInotify *self)
 static gboolean
 monitor_inotify_init(MonitorInotify *self, const gchar *base_dir)
 {
+  main_loop_assert_main_thread();
   gint watchd = -1;
   /* Init inotify interface */
   gint ifd = inotify_init();
@@ -422,6 +423,10 @@ void
 file_monitor_inotify_destroy(gpointer source,gpointer monitor)
 {
   MonitorInotify *self = (MonitorInotify *)source;
+  if (iv_fd_registered(&self->fd_watch))
+    {
+      iv_fd_unregister(&self->fd_watch);
+    }
   if (self->fd_watch.fd != -1)
     {
       /* release watchd */
