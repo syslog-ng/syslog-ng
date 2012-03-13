@@ -367,9 +367,14 @@ log_proto_file_writer_flush(LogProto *s)
                     evt_tag_int("fd", self->super.transport->fd),
                     evt_tag_errno(EVT_TAG_OSERROR, errno),
                     NULL);
+          /*
+           * EAGAIN is the only possible value
+           * if we want to try to write the messages again the writer has to be woken up
+           * so the last message won't be consumed and writer will try to send it again
+           */
+          self->buf_count--;
           return LPS_ERROR;
         }
-
       return LPS_SUCCESS;
     }
   else if (rc != self->sum_len)
@@ -475,8 +480,12 @@ log_proto_file_writer_post(LogProto *s, LogMessage *logmsg, guchar *msg, gsize m
     {
       /* we have reached the max buffer size -> we need to write the messages */
       result = log_proto_file_writer_flush(s);
+      if (result != LPS_SUCCESS)
+        {
+          *consumed = FALSE;
+        }
     }
-  return LPS_SUCCESS;
+  return result;
 
 write_error:
   if (errno != EAGAIN && errno != EINTR)
