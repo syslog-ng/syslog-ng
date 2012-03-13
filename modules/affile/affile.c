@@ -841,7 +841,7 @@ affile_dw_reopen(AFFileDestWriter *self)
       self->owner->proto_options.super.size = self->owner->writer_options.flush_lines;
       if (!self->owner->proto_factory)
         {
-          self->owner->proto_factory = log_proto_get_factory(cfg,LPT_CLIENT,"file-writer");
+          self->owner->proto_factory = log_proto_get_factory(cfg,LPT_CLIENT,(self->owner->flags & AFFILE_PIPE) ? "stream-newline" : "file-writer" );
         }
       if (self->owner->proto_factory)
         {

@@ -281,7 +281,7 @@ log_writer_error_suspend_elapsed(gpointer s)
   msg_notice("Error suspend timeout has elapsed, attempting to write again",
              evt_tag_int("fd", log_proto_get_fd(self->proto)),
              NULL);
-  log_writer_update_watches(self);
+  log_writer_start_watches(self);
 }
 
 static void
