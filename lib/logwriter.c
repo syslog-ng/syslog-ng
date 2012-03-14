@@ -229,6 +229,10 @@ log_writer_io_flush_output(gpointer s)
           log_writer_work_finished(s);
         }
     }
+  if (main_loop_io_worker_job_quit())
+    {
+      log_pipe_unref(&self->super);
+    }
 }
 
 static void
