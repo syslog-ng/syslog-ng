@@ -981,7 +981,11 @@ cfg_tree_check_inline_template(CfgTree *self, const gchar *template_or_name, GEr
   if (template == NULL)
     {
       template = log_template_new(self->cfg, NULL);
-      log_template_compile(template, template_or_name, error);
+      if (!log_template_compile(template, template_or_name, error))
+        {
+          log_template_unref(template);
+          return NULL;
+        }
       template->def_inline = TRUE;
     }
   return template;
