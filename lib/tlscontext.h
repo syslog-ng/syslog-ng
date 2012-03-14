@@ -80,6 +80,7 @@ struct _TLSContext
   SSL_CTX *ssl_ctx;
   GList *trusted_fingerpint_list;
   GList *trusted_dn_list;
+  gboolean allow_compress;
 };
 
 
