@@ -153,6 +153,7 @@ source_afunix_dgram_params
 	    free($1);
 	    last_reader_options = &((AFSocketSourceDriver *) last_driver)->reader_options;
 	    last_sock_options = &((AFUnixSourceDriver *) last_driver)->sock_options;
+            last_file_perm_options = &((AFUnixSourceDriver *) last_driver)->file_perm_options;
 	  }
 	  source_afunix_options			{ $$ = last_driver; }
 	;
