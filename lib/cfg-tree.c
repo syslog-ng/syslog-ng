@@ -507,21 +507,27 @@ cfg_tree_compile_reference(CfgTree *self, LogExprNode *node,
             sub_pipe_tail = referenced_node->aux;
           }
 
-        if (!sub_pipe_tail->pipe_next)
-          {
-            mpx = log_multiplexer_new(0);
-            g_ptr_array_add(self->initialized_pipes, &mpx->super);
-            log_pipe_append(sub_pipe_tail, &mpx->super);
-          }
-        else
-          {
-            mpx = (LogMultiplexer *) sub_pipe_tail->pipe_next;
-          }
-
         attach_pipe = log_pipe_new();
         g_ptr_array_add(self->initialized_pipes, attach_pipe);
 
-        log_multiplexer_add_next_hop(mpx, attach_pipe);
+        if (sub_pipe_tail)
+          {
+            /* when the source is empty, we'll get a NULL tail in
+             * sub_pipe_tail.  We handle that by simply not connecting
+             * anything to the attachment point */
+
+            if (!sub_pipe_tail->pipe_next)
+              {
+                mpx = log_multiplexer_new(0);
+                g_ptr_array_add(self->initialized_pipes, &mpx->super);
+                log_pipe_append(sub_pipe_tail, &mpx->super);
+              }
+            else
+              {
+                mpx = (LogMultiplexer *) sub_pipe_tail->pipe_next;
+              }
+            log_multiplexer_add_next_hop(mpx, attach_pipe);
+          }
         *outer_pipe_head = NULL;
         *outer_pipe_tail = attach_pipe;
         break;
@@ -555,7 +561,12 @@ cfg_tree_compile_reference(CfgTree *self, LogExprNode *node,
 
         mpx = log_multiplexer_new(0);
         g_ptr_array_add(self->initialized_pipes, &mpx->super);
-        log_multiplexer_add_next_hop(mpx, sub_pipe_head);
+
+        if (sub_pipe_head)
+          {
+            /* when the destination is empty */
+            log_multiplexer_add_next_hop(mpx, sub_pipe_head);
+          }
         *outer_pipe_head = &mpx->super;
         *outer_pipe_tail = NULL;
         break;
