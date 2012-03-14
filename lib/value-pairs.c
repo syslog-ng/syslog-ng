@@ -659,6 +659,7 @@ value_pairs_new_from_cmdline (GlobalConfig *cfg,
   };
   GOptionGroup *og;
   gpointer user_data_args[4];
+  gboolean success;
 
   vp = value_pairs_new();
   user_data_args[0] = cfg;
@@ -671,14 +672,15 @@ value_pairs_new_from_cmdline (GlobalConfig *cfg,
   g_option_group_add_entries (og, vp_options);
   g_option_context_set_main_group (ctx, og);
 
-  if (!g_option_context_parse (ctx, &argc, &argv, error))
+  success = g_option_context_parse (ctx, &argc, &argv, error);
+  vp_cmdline_parse_rekey_finish (user_data_args);
+  g_option_context_free (ctx);
+
+  if (!success)
     {
-      g_free(user_data_args[3]);
       value_pairs_free (vp);
       vp = NULL;
     }
-  g_option_context_free (ctx);
-  vp_cmdline_parse_rekey_finish (user_data_args);
 
   return vp;
 }
