@@ -1209,7 +1209,8 @@ afsql_dd_free(LogPipe *s)
   if (self->null_value)
     g_free(self->null_value);
   string_list_free(self->columns);
-  string_list_free(self->indexes);
+  if (self->enable_indexes)
+    string_list_free(self->indexes);
   string_list_free(self->values);
   log_template_unref(self->table);
   g_hash_table_destroy(self->validated_tables);
