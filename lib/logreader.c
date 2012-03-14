@@ -272,6 +272,15 @@ log_reader_io_process_input(gpointer s)
           log_reader_work_finished(s);
         }
     }
+  if (main_loop_io_worker_job_quit())
+    {
+      /*
+       * We add a reference to the reader, which is released in the log_reader_work_finished method
+       * but if we are under termination/reload then the log_reader_work_finished won't be called and we leak,
+       * the log_reader. Here we are in main thread so, we don't need to worry about race conditions
+       */
+      log_pipe_unref(&self->super.super);
+    }
 }
 
 static void
