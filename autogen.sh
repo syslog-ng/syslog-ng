@@ -5,7 +5,6 @@
 # This script is needed to setup build environment from checked out
 # source tree. 
 #
-DUMMY_SUBMODULES="lib/ivykis modules/afmongodb/libmongo-client"
 
 set -e
 autogen_submodules()
@@ -36,10 +35,6 @@ autogen_submodules()
 if [ "$USER" = "testbot" ];then
 	skip_submodules=1
 fi
-
-for submod in $DUMMY_SUBMODULES; do
-	mkdir -p $submod
-done
 
 (
  pemodpath="$ZWA_ROOT/git/syslog-ng/syslog-ng-pe-modules--mainline--4.2/modules"
