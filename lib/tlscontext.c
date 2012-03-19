@@ -242,7 +242,7 @@ tls_session_new(SSL *ssl, TLSContext *ctx)
   TLSSession *self = g_new0(TLSSession, 1);
 
   self->ssl = ssl;
-  self->ctx = ctx;
+  self->ctx = tls_context_ref(ctx);
 
   /* to set verify callback */
   tls_session_set_verify(self, NULL, NULL, NULL);
@@ -255,6 +255,7 @@ tls_session_free(TLSSession *self)
   if (self->verify_data && self->verify_data_destroy)
     self->verify_data_destroy(self->verify_data);
   SSL_free(self->ssl);
+  tls_context_unref(self->ctx);
   g_free(self);
 }
 
@@ -399,6 +400,7 @@ tls_context_new(TLSMode mode)
 {
   TLSContext *self = g_new0(TLSContext, 1);
 
+  g_atomic_counter_set(&self->ref_cnt, 1);
   self->mode = mode;
   self->verify_mode = TVM_REQUIRED | TVM_TRUSTED;
   self->ca_dir_layout = CA_DIR_LAYOUT_MD5;
@@ -406,7 +408,7 @@ tls_context_new(TLSMode mode)
   return self;
 }
 
-void
+static void
 tls_context_free(TLSContext *self)
 {
   SSL_CTX_free(self->ssl_ctx);
@@ -418,6 +420,27 @@ tls_context_free(TLSContext *self)
   g_free(self->crl_dir);
   g_free(self->cipher_suite);
   g_free(self);
+}
+
+void
+tls_context_unref(TLSContext *self)
+{
+  g_assert(!self || g_atomic_counter_get(&self->ref_cnt));
+  if (self && (g_atomic_counter_dec_and_test(&self->ref_cnt)))
+    {
+      tls_context_free(self);
+    }
+}
+
+TLSContext *
+tls_context_ref(TLSContext *self)
+{
+  g_assert(!self || g_atomic_counter_get(&self->ref_cnt) > 0);
+  if (self)
+    {
+      g_atomic_counter_inc(&self->ref_cnt);
+    }
+  return self;
 }
 
 TLSVerifyMode

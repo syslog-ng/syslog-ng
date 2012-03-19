@@ -822,7 +822,7 @@ afsocket_sd_free(LogPipe *s)
 #if ENABLE_SSL
   if(self->tls_context)
     {
-      tls_context_free(self->tls_context);
+      tls_context_unref(self->tls_context);
     }
 #endif
 
@@ -1402,7 +1402,7 @@ afsocket_dd_free(LogPipe *s)
 #if ENABLE_SSL
   if(self->tls_context)
     {
-      tls_context_free(self->tls_context);
+      tls_context_unref(self->tls_context);
     }
 #endif
   log_dest_driver_free(s);

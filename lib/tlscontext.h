@@ -29,6 +29,7 @@
 #if ENABLE_SSL
 
 #include <openssl/ssl.h>
+#include "atomic.h"
 
 typedef enum
 {
@@ -69,6 +70,7 @@ void tls_session_free(TLSSession *self);
 
 struct _TLSContext
 {
+  GAtomicCounter ref_cnt;
   TLSMode mode;
   TLSVerifyMode verify_mode;
   gchar *key_file;
@@ -88,7 +90,8 @@ TLSSession *tls_context_setup_session(TLSContext *self);
 void tls_session_set_trusted_fingerprints(TLSContext *self, GList *fingerprints);
 void tls_session_set_trusted_dn(TLSContext *self, GList *dns);
 TLSContext *tls_context_new(TLSMode mode);
-void tls_context_free(TLSContext *s);
+void tls_context_unref(TLSContext *s);
+TLSContext *tls_context_ref(TLSContext *s);
 
 TLSVerifyMode tls_lookup_verify_mode(const gchar *mode_str);
 CADirLayout tls_lookup_ca_dir_layout(const gchar *layout_str);
