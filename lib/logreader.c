@@ -251,35 +251,26 @@ log_reader_io_process_input(gpointer s)
   LogReader *self = (LogReader *) s;
 
   log_reader_stop_watches(self);
-  log_pipe_ref(&self->super.super);
-  if ((self->options->flags & LR_THREADED))
+  if (!main_loop_io_worker_job_quit())
     {
-      main_loop_io_worker_job_submit(&self->io_job);
-    }
-  else
-    {
-      /* Checking main_loop_io_worker_job_quit() helps to speed up the
-       * reload process.  If reload/shutdown is requested we shouldn't do
-       * anything here, outstanding messages will be processed by the new
-       * configuration.
-       *
-       * Our current understanding is that it doesn't prevent race
-       * conditions of any kind.
-       */
-      if (!main_loop_io_worker_job_quit())
+      log_pipe_ref(&self->super.super);
+      if ((self->options->flags & LR_THREADED))
         {
+          main_loop_io_worker_job_submit(&self->io_job);
+        }
+      else
+        {
+          /* Checking main_loop_io_worker_job_quit() helps to speed up the
+           * reload process.  If reload/shutdown is requested we shouldn't do
+           * anything here, outstanding messages will be processed by the new
+           * configuration.
+           *
+           * Our current understanding is that it doesn't prevent race
+           * conditions of any kind.
+           */
           log_reader_work_perform(s);
           log_reader_work_finished(s);
         }
-    }
-  if (main_loop_io_worker_job_quit())
-    {
-      /*
-       * We add a reference to the reader, which is released in the log_reader_work_finished method
-       * but if we are under termination/reload then the log_reader_work_finished won't be called and we leak,
-       * the log_reader. Here we are in main thread so, we don't need to worry about race conditions
-       */
-      log_pipe_unref(&self->super.super);
     }
 }
 
