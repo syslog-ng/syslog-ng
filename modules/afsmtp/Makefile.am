@@ -1,10 +1,10 @@
 moduledir = @moduledir@
 AM_CPPFLAGS = -I$(top_srcdir)/lib -I../../lib
-module_LTLIBRARIES = libafsmtp.la
 
 export top_srcdir
 
 if ENABLE_SMTP
+module_LTLIBRARIES = libafsmtp.la
 
 libafsmtp_la_CFLAGS = $(LIBESMTP_CFLAGS) $(IVYKIS_CFLAGS) $(EVENTLOG_CFLAGS) $(SYSLOG_NG_CFLAGS)
 libafsmtp_la_SOURCES = afsmtp-grammar.y afsmtp.c afsmtp.h afsmtp-parser.c afsmtp-parser.h

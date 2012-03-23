@@ -1,14 +1,13 @@
-
 SUBDIRS = @LIBMONGO_SUBDIRS@
 DIST_SUBDIRS = libmongo-client
 
 moduledir = @moduledir@
 AM_CPPFLAGS = -I$(top_srcdir)/lib -I../../lib
-module_LTLIBRARIES = libafmongodb.la
 
 export top_srcdir
 
 if ENABLE_MONGODB
+module_LTLIBRARIES = libafmongodb.la
 
 libafmongodb_la_CFLAGS = $(LIBMONGO_CFLAGS)
 libafmongodb_la_SOURCES = afmongodb-grammar.y afmongodb.c afmongodb.h afmongodb-parser.c afmongodb-parser.h
