@@ -1164,7 +1164,6 @@ AC_OUTPUT(dist.conf
 	  lib/Makefile 
 	  syslog-ng/Makefile 
 	  modules/Makefile 
-          modules/dummy/Makefile
           modules/afsocket/Makefile
           modules/afsql/Makefile
           modules/afstreams/Makefile
