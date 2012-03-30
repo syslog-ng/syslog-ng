@@ -31,6 +31,7 @@
 #include "misc.h"
 
 #include <string.h>
+#include <glob.h>
 #include <sys/stat.h>
 
 struct _CfgArgs
@@ -474,6 +475,56 @@ cfg_lexer_include_file_simple(CfgLexer *self, const gchar *filename)
   return FALSE;
 }
 
+static gboolean
+cfg_lexer_include_file_glob_at(CfgLexer *self, const gchar *pattern)
+{
+  glob_t globbuf;
+  size_t i;
+  gboolean status = FALSE;
+  int r;
+
+  r = glob(pattern, 0, NULL, &globbuf);
+
+  if (r == GLOB_NOMATCH)
+    return TRUE;
+  if (r != 0)
+    return FALSE;
+
+  for (i = 0; i < globbuf.gl_pathc; i++)
+    status |= cfg_lexer_include_file(self, globbuf.gl_pathv[i]);
+
+  globfree(&globbuf);
+
+  return status;
+}
+
+static gboolean
+cfg_lexer_include_file_glob(CfgLexer *self, const gchar *filename_)
+{
+  const gchar *path = cfg_args_get(self->globals, "include-path");
+
+  if (filename_[0] == '/' || !path)
+    return cfg_lexer_include_file_glob_at(self, filename_);
+  else
+    {
+      gchar **dirs;
+      gchar *cf;
+      gint i = 0;
+      gboolean status = FALSE;
+
+      dirs = g_strsplit(path, G_SEARCHPATH_SEPARATOR_S, 0);
+      while (dirs && dirs[i])
+        {
+          cf = g_build_filename(dirs[i], filename_, NULL);
+          status |= cfg_lexer_include_file_glob_at(self, cf);
+          g_free(cf);
+          i++;
+        }
+      g_strfreev(dirs);
+      return status;
+    }
+}
+
 gboolean
 cfg_lexer_include_file(CfgLexer *self, const gchar *filename_)
 {
@@ -492,6 +543,9 @@ cfg_lexer_include_file(CfgLexer *self, const gchar *filename_)
   filename = find_file_in_path(cfg_args_get(self->globals, "include-path"), filename_, G_FILE_TEST_EXISTS);
   if (!filename || stat(filename, &st) < 0)
     {
+      if (cfg_lexer_include_file_glob(self, filename_))
+        return TRUE;
+
       msg_error("Include file/directory not found",
                 evt_tag_str("filename", filename_),
                 evt_tag_str("include-path", cfg_args_get(self->globals, "include-path")),
