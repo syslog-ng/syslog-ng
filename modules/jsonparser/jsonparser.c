@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2011 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 2011 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2011-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2011-2012 Gergely Nagy <algernon@balabit.hu>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -96,14 +96,13 @@ log_json_parser_process_single (struct json_object *jso,
         gint i, plen;
 
         g_string_assign (sb_string (key), obj_key);
-        g_string_append_c (sb_string (key), '.');
 
         plen = sb_string (key)->len;
 
         for (i = 0; i < json_object_array_length (jso); i++)
           {
             g_string_truncate (sb_string (key), plen);
-            g_string_append_printf (sb_string (key), "%d", i);
+            g_string_append_printf (sb_string (key), "[%d]", i);
             log_json_parser_process_single (json_object_array_get_idx (jso, i),
                                             prefix,
                                             sb_string (key)->str, msg);
