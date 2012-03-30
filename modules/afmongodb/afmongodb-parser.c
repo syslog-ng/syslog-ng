@@ -36,6 +36,8 @@ static CfgLexerKeyword afmongodb_keywords[] = {
   { "username",			KW_USERNAME },
   { "password",			KW_PASSWORD },
   { "safe_mode",		KW_SAFE_MODE },
+  { "host",                     KW_HOST },
+  { "port",                     KW_PORT },
   { NULL }
 };
 

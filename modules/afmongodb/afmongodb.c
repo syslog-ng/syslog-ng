@@ -112,6 +112,23 @@ afmongodb_dd_set_password(LogDriver *d, const gchar *password)
 }
 
 void
+afmongodb_dd_set_host(LogDriver *d, const gchar *host)
+{
+  MongoDBDestDriver *self = (MongoDBDestDriver *)d;
+
+  g_free(self->host);
+  self->host = g_strdup(host);
+}
+
+void
+afmongodb_dd_set_port(LogDriver *d, gint port)
+{
+  MongoDBDestDriver *self = (MongoDBDestDriver *)d;
+
+  self->port = port;
+}
+
+void
 afmongodb_dd_set_servers(LogDriver *d, GList *servers)
 {
   MongoDBDestDriver *self = (MongoDBDestDriver *)d;
@@ -448,6 +465,14 @@ afmongodb_dd_init(LogPipe *s)
       self->vp = value_pairs_new();
       value_pairs_add_scope(self->vp, "selected-macros");
       value_pairs_add_scope(self->vp, "nv-pairs");
+    }
+
+  if (self->host)
+    {
+      gchar *srv = g_strdup_printf ("%s:%d", self->host,
+                                    (self->port) ? self->port : 27017);
+      self->servers = g_list_prepend (self->servers, srv);
+      g_free (self->host);
     }
 
   self->host = NULL;

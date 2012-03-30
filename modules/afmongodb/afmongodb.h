@@ -30,6 +30,8 @@
 LogDriver *afmongodb_dd_new(void);
 
 void afmongodb_dd_set_servers(LogDriver *d, GList *servers);
+void afmongodb_dd_set_host(LogDriver *d, const gchar *host);
+void afmongodb_dd_set_port(LogDriver *d, gint port);
 void afmongodb_dd_set_database(LogDriver *d, const gchar *database);
 void afmongodb_dd_set_collection(LogDriver *d, const gchar *collection);
 void afmongodb_dd_set_user(LogDriver *d, const gchar *user);
