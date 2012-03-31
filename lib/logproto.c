@@ -1996,10 +1996,18 @@ log_proto_framed_server_fetch(LogProto *s, const guchar **msg, gsize *msg_len, G
           if (self->frame_len > self->max_msg_size)
             {
               msg_error("Incoming frame larger than log_msg_size()",
-                        evt_tag_int("log_msg_size", self->buffer_size - LPFS_FRAME_BUFFER),
+                        evt_tag_int("log_msg_size", self->max_msg_size),
                         evt_tag_int("frame_length", self->frame_len),
                         NULL);
               return LPS_ERROR;
+            }
+          if (self->frame_len > self->buffer_size - LPFS_FRAME_BUFFER)
+            {
+              self->buffer_size = self->frame_len + LPFS_FRAME_BUFFER;
+              self->buffer = g_realloc(self->buffer, self->buffer_size);
+              msg_debug("Resizing input buffer",
+                        evt_tag_int("new_size", self->buffer_size),
+                        NULL);
             }
           if (self->buffer_pos + self->frame_len > self->buffer_size)
             {
@@ -2069,9 +2077,8 @@ log_proto_framed_server_new(LogTransport *transport, gint max_msg_size)
   self->super.convert = (GIConv) -1;
   /* max message + frame header */
   self->max_msg_size = max_msg_size;
-  self->buffer_size = max_msg_size + LPFS_FRAME_BUFFER;
+  self->buffer_size = 1024 + LPFS_FRAME_BUFFER;
   self->buffer = g_malloc(self->buffer_size);
   self->half_message_in_buffer = FALSE;
   return &self->super;
 }
-
