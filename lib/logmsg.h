@@ -62,6 +62,13 @@ enum
   LM_V_MSGID,
   LM_V_SOURCE,
   LM_V_LEGACY_MSGHDR,
+
+  /* NOTE: this is used as the number of "statically" allocated elements in
+   * an NVTable.  NVTable may impose restrictions on this value (for
+   * instance had to be an even number earlier).  So be sure to validate
+   * whether LM_V_MAX would fit NVTable if you add further enums here.
+   */
+
   LM_V_MAX,
 };
 
@@ -203,7 +210,7 @@ log_msg_get_value(LogMessage *self, NVHandle handle, gssize *value_len)
 
   flags = nv_registry_get_handle_flags(logmsg_registry, handle);
   if ((flags & LM_VF_MACRO) == 0)
-    return __nv_table_get_value(self->payload, handle, NV_TABLE_BOUND_NUM_STATIC(LM_V_MAX), value_len);
+    return __nv_table_get_value(self->payload, handle, LM_V_MAX, value_len);
   else
     return log_msg_get_macro_value(self, flags >> 8, value_len);
 }
