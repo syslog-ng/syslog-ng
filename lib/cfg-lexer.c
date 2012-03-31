@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2010 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 1998-2010 Balázs Scheidler
+ * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -382,32 +382,17 @@ cfg_lexer_start_next_include(CfgLexer *self)
   return TRUE;
 }
 
-gboolean
-cfg_lexer_include_file(CfgLexer *self, const gchar *filename_)
+static gboolean
+cfg_lexer_include_file_simple(CfgLexer *self, const gchar *filename)
 {
-  struct stat st;
   CfgIncludeLevel *level;
-  gchar *filename;
+  struct stat st;
 
-  if (self->include_depth >= MAX_INCLUDE_DEPTH - 1)
+  if (stat(filename, &st) < 0)
     {
-      msg_error("Include file depth is too deep, increase MAX_INCLUDE_DEPTH and recompile",
-                evt_tag_str("filename", filename_),
-                evt_tag_int("depth", self->include_depth),
-                NULL);
       return FALSE;
     }
 
-  filename = find_file_in_path(cfg_args_get(self->globals, "include-path"), filename_, G_FILE_TEST_EXISTS);
-  if (!filename || stat(filename, &st) < 0)
-    {
-      msg_error("Include file/directory not found",
-                evt_tag_str("filename", filename_),
-                evt_tag_str("include-path", cfg_args_get(self->globals, "include-path")),
-                evt_tag_errno("error", errno),
-                NULL);
-      return FALSE;
-    }
   self->include_depth++;
   level = &self->include_stack[self->include_depth];
   level->include_type = CFGI_FILE;
@@ -475,7 +460,6 @@ cfg_lexer_include_file(CfgLexer *self, const gchar *filename_)
                     evt_tag_str("dir", filename),
                     NULL);
           self->include_depth--;
-          g_free(filename);
           return TRUE;
         }
     }
@@ -484,14 +468,48 @@ cfg_lexer_include_file(CfgLexer *self, const gchar *filename_)
       g_assert(level->file.files == NULL);
       level->file.files = g_slist_prepend(level->file.files, g_strdup(filename));
     }
-  g_free(filename);
   return cfg_lexer_start_next_include(self);
  drop_level:
-  g_free(filename);
   g_slist_foreach(level->file.files, (GFunc) g_free, NULL);
   g_slist_free(level->file.files);
   level->file.files = NULL;
+
   return FALSE;
+}
+
+gboolean
+cfg_lexer_include_file(CfgLexer *self, const gchar *filename_)
+{
+  struct stat st;
+  gchar *filename;
+
+  if (self->include_depth >= MAX_INCLUDE_DEPTH - 1)
+    {
+      msg_error("Include file depth is too deep, increase MAX_INCLUDE_DEPTH and recompile",
+                evt_tag_str("filename", filename_),
+                evt_tag_int("depth", self->include_depth),
+                NULL);
+      return FALSE;
+    }
+
+  filename = find_file_in_path(cfg_args_get(self->globals, "include-path"), filename_, G_FILE_TEST_EXISTS);
+  if (!filename || stat(filename, &st) < 0)
+    {
+      msg_error("Include file/directory not found",
+                evt_tag_str("filename", filename_),
+                evt_tag_str("include-path", cfg_args_get(self->globals, "include-path")),
+                evt_tag_errno("error", errno),
+                NULL);
+      return FALSE;
+    }
+  else
+    {
+      gboolean result;
+
+      result = cfg_lexer_include_file_simple(self, filename);
+      g_free(filename);
+      return result;
+    }
 }
 
 gboolean
