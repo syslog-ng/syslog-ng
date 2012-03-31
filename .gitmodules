@@ -4,3 +4,6 @@
 [submodule "lib/ivykis"]
 	path = lib/ivykis
 	url = git://git.balabit.hu/bazsi/ivykis.git
+[submodule "lib/eventlog"]
+	path = lib/eventlog
+	url = git://git.balabit.hu/bazsi/eventlog-1.0.git

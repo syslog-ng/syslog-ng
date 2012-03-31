@@ -569,6 +569,17 @@ afsql_dd_commit_txn(AFSqlDestDriver *self, gboolean lock)
   success = afsql_dd_run_query(self, "COMMIT", FALSE, NULL);
   if (lock)
     g_mutex_lock(self->db_thread_mutex);
+
+  /* FIXME: this is a workaround because of the non-proper locking semantics
+   * of the LogQueue.  It might happen that the _queue() method sees 0
+   * elements in the queue, while the thread is still busy processing the
+   * previous message.  In that case arming the parallel push callback is
+   * not needed and will cause assertions to fail.  This is ugly and should
+   * be fixed by properly defining the "blocking" semantics of the LogQueue
+   * object w/o having to rely on user-code messing with parallel push
+   * callbacks. */
+
+  log_queue_reset_parallel_push(self->queue);
   if (success)
     {
       log_queue_ack_backlog(self->queue, self->flush_lines_queued);
@@ -698,6 +709,15 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
   else
     {
       g_mutex_lock(self->db_thread_mutex);
+
+      /* FIXME: this is a workaround because of the non-proper locking semantics
+       * of the LogQueue.  It might happen that the _queue() method sees 0
+       * elements in the queue, while the thread is still busy processing the
+       * previous message.  In that case arming the parallel push callback is
+       * not needed and will cause assertions to fail.  This is ugly and should
+       * be fixed by properly defining the "blocking" semantics of the LogQueue
+       * object w/o having to rely on user-code messing with parallel push
+       * callbacks. */
       log_queue_reset_parallel_push(self->queue);
       success = log_queue_pop_head(self->queue, &msg, &path_options, (self->flags & AFSQL_DDF_EXPLICIT_COMMITS), FALSE);
       g_mutex_unlock(self->db_thread_mutex);
