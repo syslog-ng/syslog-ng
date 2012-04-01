@@ -167,13 +167,18 @@ gboolean
 log_dest_driver_deinit_method(LogPipe *s)
 {
   LogDestDriver *self = (LogDestDriver *) s;
-  GList *l;
+  GList *l, *l_next;
 
-  for (l = self->queues; l; l = l->next)
+  for (l = self->queues; l; l = l_next)
     {
       LogQueue *q = (LogQueue *) l->data;
 
-      log_dest_driver_release_queue(self, q);
+      /* the GList struct will be freed by log_dest_driver_release_queue */
+      l_next = l->next;
+
+      /* we have to pass a reference to log_dest_driver_release_queue(),
+       * which automatically frees the ref on the list too */
+      log_dest_driver_release_queue(self, log_queue_ref(q));
     }
   g_assert(self->queues == NULL);
 
