@@ -58,7 +58,7 @@
 #include <iv.h>
 #include <iv_signal.h>
 
-#ifdef ENABLE_STATIC_MODULES
+#if ENABLE_STATIC_MODULES
 #include "cfg.h"
 extern void init_statics(GlobalConfig *cfg);
 #include "statics.c"
@@ -243,7 +243,7 @@ main(int argc, char *argv[])
     }
   g_process_set_name("syslog-ng");
   
-#ifdef ENABLE_STATIC_MODULES
+#if ENABLE_STATIC_MODULES
     cfg_static_init_cb=init_statics;
 #endif
   /* in this case we switch users early while retaining a limited set of

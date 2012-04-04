@@ -50,7 +50,7 @@
 #include <openssl/sha.h>
 #endif
 
-#ifdef ENABLE_STATIC_MODULES
+#if ENABLE_STATIC_MODULES
 StaticInitCallback cfg_static_init_cb=NULL;
 #endif
 /* PersistentConfig */
@@ -313,7 +313,7 @@ cfg_init(GlobalConfig *cfg)
           cfg->bad_hostname_compiled = TRUE;
         }
     }
-#ifdef ENABLE_STATIC_MODULES
+#if ENABLE_STATIC_MODULES
     if (cfg_static_init_cb != NULL)
       {
         cfg_static_init_cb(cfg);

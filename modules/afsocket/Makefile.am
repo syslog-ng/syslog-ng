@@ -71,6 +71,6 @@ libafsocket-static.la: libafsocket$(TLSSUFF)-static.la
 uninstall-hook:
 	rm -f $(DESTDIR)$(moduledir)/libafsocket$(BB_SHREXT)
 
-CLEANFILES = libafsocket.la
+CLEANFILES = libafsocket.la libafsocket-static.la
 
 include $(top_srcdir)/build/lex-rules.am

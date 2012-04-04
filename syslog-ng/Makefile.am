@@ -15,3 +15,5 @@ syslog_ng_LDFLAGS= @syslog_ng_LDFLAGS@
 
 syslog_ng_ctl_SOURCES = syslog-ng-ctl.c ../lib/gsocket.c ../lib/gsockaddr.c
 syslog_ng_ctl_LDADD =  @BASE_LIBS@ @GLIB_LIBS@ @RESOLV_LIBS@
+
+CLEANFILES = static.c
