@@ -13,7 +13,13 @@ libafstreams_la_CPPFLAGS = $(AM_CPPFLAGS) -DENABLE_SUN_STREAMS=1
 libafstreams_la_LIBADD = $(MODULE_DEPS_LIBS)
 libafstreams_la_LDFLAGS = $(MODULE_LDFLAGS)
 
-
+if ENABLE_STATIC_MODULES
+noinst_LTLIBRARIES := libafstreams-static.la
+libafstreams_static_la_SOURCES = $(libafstreams_la_SOURCES)
+libafstreams_static_la_CPPFLAGS = $(libafstreams_la_CPPFLAGS) -DSTATIC
+libafstreams_static_la_LIBADD = $(libafstreams_la_LIBADD)
+libafstreams_static_la_LDFLAGS = $(STATIC_MODULE_LDFLAGS)
+endif
 endif
 
 BUILT_SOURCES = afstreams-grammar.y afstreams-grammar.c afstreams-grammar.h

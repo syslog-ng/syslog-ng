@@ -14,6 +14,13 @@ libafmongodb_la_CFLAGS = $(LIBMONGO_CFLAGS)
 libafmongodb_la_SOURCES = afmongodb-grammar.y afmongodb.c afmongodb.h afmongodb-parser.c afmongodb-parser.h
 libafmongodb_la_LIBADD = $(MODULE_DEPS_LIBS) $(LIBMONGO_LIBS)
 libafmongodb_la_LDFLAGS = $(MODULE_LDFLAGS)
+if ENABLE_STATIC_MODULES
+noinst_LTLIBRARIES := libafmongodb-static.la
+libafmongodb_static_la_SOURCES = $(libafmongodb_la_SOURCES)
+libafmongodb_static_la_CFLAGS = $(libafmongodb_la_CFLAGS) -DSTATIC
+libafmongodb_static_la_LIBADD = $(MODULE_DEPS_LIBS) $(LIBMONGO_LIBS)
+libafmongodb_static_la_LDFLAGS = $(STATIC_MODULE_LDFLAGS)
+endif
 
 endif
 

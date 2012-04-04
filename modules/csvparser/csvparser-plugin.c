@@ -43,6 +43,7 @@ csvparser_module_init(GlobalConfig *cfg, CfgArgs *args)
   return TRUE;
 }
 
+#ifndef STATIC
 const ModuleInfo module_info =
 {
   .canonical_name = "csvparser",
@@ -52,3 +53,4 @@ const ModuleInfo module_info =
   .plugins = csvparser_plugins,
   .plugins_len = G_N_ELEMENTS(csvparser_plugins),
 };
+#endif

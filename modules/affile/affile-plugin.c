@@ -57,6 +57,12 @@ affile_module_init(GlobalConfig *cfg, CfgArgs *args)
   return TRUE;
 }
 
+INITIALIZER(affile_init)
+{
+	return;
+}
+
+#ifndef STATIC
 const ModuleInfo module_info =
 {
   .canonical_name = "affile",
@@ -66,3 +72,4 @@ const ModuleInfo module_info =
   .plugins = affile_plugins,
   .plugins_len = G_N_ELEMENTS(affile_plugins),
 };
+#endif

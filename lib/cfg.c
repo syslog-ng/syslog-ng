@@ -50,6 +50,9 @@
 #include <openssl/sha.h>
 #endif
 
+#ifdef ENABLE_STATIC_MODULES
+StaticInitCallback cfg_static_init_cb=NULL;
+#endif
 /* PersistentConfig */
 
 struct _PersistConfig
@@ -310,6 +313,12 @@ cfg_init(GlobalConfig *cfg)
           cfg->bad_hostname_compiled = TRUE;
         }
     }
+#ifdef ENABLE_STATIC_MODULES
+    if (cfg_static_init_cb != NULL)
+      {
+        cfg_static_init_cb(cfg);
+      }
+#endif
   dns_cache_set_params(cfg->dns_cache_size, cfg->dns_cache_expire, cfg->dns_cache_expire_failed, cfg->dns_cache_hosts);
   return log_center_init(cfg->center, cfg);
 }

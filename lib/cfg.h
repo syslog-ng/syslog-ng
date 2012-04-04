@@ -241,4 +241,8 @@ cfg_check_current_config_version(gint req)
 #define MM_NONE 5
 #define MM_GLOBAL 6
 
+#ifdef ENABLE_STATIC_MODULES
+typedef void (*StaticInitCallback)(GlobalConfig *cfg);
+extern StaticInitCallback cfg_static_init_cb;
+#endif
 #endif

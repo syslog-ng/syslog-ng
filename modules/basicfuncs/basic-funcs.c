@@ -332,6 +332,7 @@ basicfuncs_module_init(GlobalConfig *cfg, CfgArgs *args)
   return TRUE;
 }
 
+#ifndef STATIC
 const ModuleInfo module_info =
 {
   .canonical_name = "basicfuncs",
@@ -341,3 +342,4 @@ const ModuleInfo module_info =
   .plugins = basicfuncs_plugins,
   .plugins_len = G_N_ELEMENTS(basicfuncs_plugins),
 };
+#endif

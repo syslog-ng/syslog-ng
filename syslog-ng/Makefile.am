@@ -9,9 +9,9 @@ syslog_ng_SOURCES = main.c
 # libtool, because in mixed mode libtool is not used for the final linking
 # phase.  See the comment in the configure script for details.
 
-syslog_ng_LDADD = -L../lib/.libs -lsyslog-ng @SYSLOGNG_DEPS_LIBS@
+syslog_ng_LDADD = -L../lib/.libs -lsyslog-ng @SYSLOGNG_DEPS_LIBS@ @SYSLOGNG_STATIC_MODULES@
 syslog_ng_LINK =  @SYSLOGNG_LINK@
-syslog_ng_wrapper_SOURCES = wrapper.c
+syslog_ng_LDFLAGS= @syslog_ng_LDFLAGS@
 
-syslog_ng_ctl_SOURCES = syslog-ng-ctl.c
-syslog_ng_ctl_LDADD = ../lib/gsocket.lo ../lib/gsockaddr.lo @BASE_LIBS@ @GLIB_LIBS@ @RESOLV_LIBS@
+syslog_ng_ctl_SOURCES = syslog-ng-ctl.c ../lib/gsocket.c ../lib/gsockaddr.c
+syslog_ng_ctl_LDADD =  @BASE_LIBS@ @GLIB_LIBS@ @RESOLV_LIBS@

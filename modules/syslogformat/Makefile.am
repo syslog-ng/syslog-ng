@@ -10,5 +10,12 @@ libsyslogformat_la_CPPFLAGS = $(AM_CPPFLAGS)
 libsyslogformat_la_LIBADD = $(MODULE_DEPS_LIBS)
 libsyslogformat_la_LDFLAGS = $(MODULE_LDFLAGS)
 
+if ENABLE_STATIC_MODULES
+noinst_LTLIBRARIES := libsyslogformat-static.la
+libsyslogformat_static_la_SOURCES = $(libsyslogformat_la_SOURCES)
+libsyslogformat_static_la_CPPFLAGS = $(libsyslogformat_la_CPPFLAGS) -DSTATIC
+libsyslogformat_static_la_LIBADD = $(libsyslogformat_la_LIBADD)
+libsyslogformat_static_la_LDFLAGS = $(STATIC_MODULE_LDFLAGS)
+endif
 
 include $(top_srcdir)/build/lex-rules.am

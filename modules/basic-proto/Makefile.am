@@ -14,4 +14,12 @@ libbasic_proto_la_CPPFLAGS = $(AM_CPPFLAGS)
 libbasic_proto_la_LIBADD = $(MODULE_DEPS_LIBS)
 libbasic_proto_la_LDFLAGS = $(MODULE_LDFLAGS)
 
+if ENABLE_STATIC_MODULES
+noinst_LTLIBRARIES := libbasic-proto-static.la
+libbasic_proto_static_la_SOURCES = $(libbasic_proto_la_SOURCES)
+libbasic_proto_static_la_CPPFLAGS = $(libbasic_proto_la_CPPFLAGS) -DSTATIC
+libbasic_proto_static_la_LIBADD = $(libbasic_proto_la_LIBADD)
+libbasic_proto_static_la_LDFLAGS = $(STATIC_MODULE_LDFLAGS)
+endif
+
 include $(top_srcdir)/build/lex-rules.am

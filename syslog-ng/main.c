@@ -58,6 +58,12 @@
 #include <iv.h>
 #include <iv_signal.h>
 
+#ifdef ENABLE_STATIC_MODULES
+#include "cfg.h"
+extern void init_statics(GlobalConfig *cfg);
+#include "statics.c"
+#endif
+
 static gchar *install_dat_filename;
 static gchar *installer_version = NULL;
 static gboolean display_version = FALSE;
@@ -130,6 +136,9 @@ version(void)
          "Available-Modules: ",
          installer_version,
          default_modules);
+#if ENABLE_STATIC_MODULES
+  printf("Builtin modules: %s\n", STATIC_MODULES);
+#endif
 
   plugin_list_modules(stdout, FALSE);
 
@@ -234,6 +243,9 @@ main(int argc, char *argv[])
     }
   g_process_set_name("syslog-ng");
   
+#ifdef ENABLE_STATIC_MODULES
+    cfg_static_init_cb=init_statics;
+#endif
   /* in this case we switch users early while retaining a limited set of
    * credentials in order to initialize/reinitialize the configuration.
    */

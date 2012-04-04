@@ -11,6 +11,13 @@ libafuser_la_CPPFLAGS = $(AM_CPPFLAGS)
 libafuser_la_LIBADD = $(MODULE_DEPS_LIBS)
 libafuser_la_LDFLAGS = $(MODULE_LDFLAGS)
 
+if ENABLE_STATIC_MODULES
+noinst_LTLIBRARIES := libafuser-static.la
+libafuser_static_la_SOURCES = $(libafuser_la_SOURCES)
+libafuser_static_la_CPPFLAGS = $(libafuser_la_CPPFLAGS) -DSTATIC
+libafuser_static_la_LIBADD = $(libafuser_la_LIBADD)
+libafuser_static_la_LDFLAGS = $(STATIC_MODULE_LDFLAGS)
+endif
 
 BUILT_SOURCES = afuser-grammar.y afuser-grammar.c afuser-grammar.h
 EXTRA_DIST = $(BUILT_SOURCES) afuser-grammar.ym
