@@ -1,1 +1,6 @@
 debian/man/*.1
+debian/tmp/usr/share/man/man1/loggen.1
+debian/tmp/usr/share/man/man1/pdbtool.1
+debian/tmp/usr/share/man/man1/syslog-ng-ctl.1
+debian/tmp/usr/share/man/man5/syslog-ng.conf.5
+debian/tmp/usr/share/man/man8/syslog-ng.8
