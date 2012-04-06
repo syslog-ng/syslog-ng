@@ -18,7 +18,7 @@ Build-Depends: debhelper (>= 9~),
 	       libsystemd-daemon-dev [linux-any],
 	       hardening-includes
 Build-Conflicts: autoconf2.13
-Standards-Version: 3.9.2
+Standards-Version: 3.9.3
 Homepage: http://www.balabit.com/network-security/syslog-ng/opensource-logging-system
 Vcs-Git: git://git.madhouse-project.org/debian/syslog-ng.git
 Vcs-Browser: http://git.madhouse-project.org/debian/syslog-ng/
