@@ -23,6 +23,8 @@ ifneq (,$(filter debug,$(DEB_BUILD_OPTIONS)))
 	EXTRA_CONFIGURE_OPTS += --enable-debug
 endif
 
+DEFAULT_MODULES	   = affile,afprog,afsocket,afuser,afsql,basicfuncs,csvparser,dbparser,syslogformat
+
 export DH_OPTIONS += -O-Bdebian/build-tree --dbg-package=syslog-ng-dbg
 
 include /usr/share/hardening-includes/hardening.make
@@ -81,11 +83,23 @@ override_dh_auto_configure:
 		--with-json=json-c \
 		\
 		--with-module-dir='$${exec_prefix}/lib/syslog-ng/$${VERSION}' \
-		--with-default-modules="affile,afprog,afsocket,afuser,afsql,basicfuncs,csvparser,dbparser,syslogformat" \
+		--with-default-modules="${DEFAULT_MODULES}" \
 		--with-systemdsystemunitdir="/lib/systemd/system" \
 		\
 		SOURCE_REVISION="$${SOURCE_REVISION}" \
 		${EXTRA_CONFIGURE_OPTS}
+
+# Building is fine, but the manpages need some sed work, to replace
+# /opt/syslog-ng with something sensible.
+override_dh_auto_build:
+	dh_auto_build
+	for f in debian/build-tree/doc/man/*; do \
+		sed -e "s#/opt/syslog\\\-ng/etc#/etc/syslog-ng#g" \
+		    -e "s#/opt/syslog\\\-ng##g" \
+		    -e "/affile/{s#,#, #g}" \
+		    -e 's#^/$$##' <$$f >$$f.new && \
+		rm $$f && mv $$f.new $$f; \
+	done
 
 # Tests. While tests are good, they're quite costy, and I'm not
 # convinced they'd run on the buildds at all. Therefore, they're
