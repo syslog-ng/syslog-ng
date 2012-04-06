@@ -136,12 +136,12 @@ version(void)
          "Available-Modules: ",
          installer_version,
          default_modules);
-#if ENABLE_STATIC_MODULES
-  printf("Builtin modules: %s\n", STATIC_MODULES);
-#endif
 
   plugin_list_modules(stdout, FALSE);
 
+#if ENABLE_STATIC_MODULES
+  printf("Builtin modules: %s\n", STATIC_MODULES);
+#endif
   printf("Enable-Debug: %s\n"
          "Enable-GProf: %s\n"
          "Enable-Memtrace: %s\n"
