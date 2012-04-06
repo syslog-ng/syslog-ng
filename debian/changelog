@@ -10,6 +10,8 @@ syslog-ng (3.3.4.original-1~mhp1+g9064e90) unstable; urgency=low
   * Include upstream man pages, as they're DFSG-free now.
   * Bump Standards-Version to 3.9.3 (no changes required)
   * Update debian/copyright for 1.0 of the spec.
+  * Fix squeeze->wheezy install-remove-install upgrade path.
+    (Closes: #665905)
 
  -- Gergely Nagy <algernon@madhouse-project.org>  Fri, 06 Apr 2012 15:05:43 +0200
 

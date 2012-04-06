@@ -2,8 +2,14 @@
 
 set -e
 
-if [ "$1" = "install" -a -n "$2" ] ; then
-  [ -f /etc/logrotate.d/syslog-ng.disabled ] && mv -f /etc/logrotate.d/syslog-ng.disabled /etc/logrotate.d/syslog-ng
+if [ "$1" = "install" ]; then
+        if [ -f /etc/logrotate.d/syslog-ng.disabled ]; then
+                if [ -n "$2" ]; then
+                        mv -f /etc/logrotate.d/syslog-ng.disabled /etc/logrotate.d/syslog-ng
+                elif [ ! -f /etc/logrotate.d/syslog-ng ]; then
+                        mv -f /etc/logrotate.d/syslog-ng.disabled /etc/logrotate.d/syslog-ng
+                fi
+        fi
 fi
 
 #DEBHELPER#
