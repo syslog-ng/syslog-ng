@@ -3,7 +3,17 @@
 set -e
 
 UPSTREAM_VERSION="$(dpkg-parsechangelog | sed -n '/^Version:/{s,^Version: ,,p}' | cut -d- -f1 | sed -e "s,\.dfsg,,")"
-UPSTREAM_TAG="dfsg/$(echo "${UPSTREAM_VERSION}" | tr '~' '_')"
+case "${UPSTREAM_VERSION}" in
+        *dfsg*)
+                UPSTREAM_TAG="dfsg/$(echo "${UPSTREAM_VERSION}" | tr '~' '_')"
+                ;;
+        *original*)
+                UPSTREAM_TAG="v$(echo "${UPSTREAM_VERSION}" | tr '~' '_' | sed -e 's,\.original,,')"
+                ;;
+        *)
+                UPSTREAM_TAG="v$(echo "${UPSTREAM_VERSION}" | tr '~' '_')"
+                ;;
+esac
 
 WD=$(pwd)
 TDIR=$(mktemp -d --tmpdir sng-upstream.XXXXXXXX)
