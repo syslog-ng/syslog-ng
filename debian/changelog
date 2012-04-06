@@ -12,8 +12,9 @@ syslog-ng (3.3.4.original-1~mhp1+g9064e90) unstable; urgency=low
   * Update debian/copyright for 1.0 of the spec.
   * Fix squeeze->wheezy install-remove-install upgrade path.
     (Closes: #665905)
+  * Fix the init script to create /dev/xconsole properly on GNU/kFreeBSD.
 
- -- Gergely Nagy <algernon@madhouse-project.org>  Fri, 06 Apr 2012 15:05:43 +0200
+ -- Gergely Nagy <algernon@madhouse-project.org>  Fri, 06 Apr 2012 21:10:51 +0200
 
 syslog-ng (3.3.4.dfsg-2~mhp1) unstable; urgency=low
 

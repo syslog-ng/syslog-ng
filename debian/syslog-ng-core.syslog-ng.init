@@ -42,10 +42,16 @@ case "x$CONSOLE_LOG_LEVEL" in
 esac
 
 create_xconsole() {
-  if [ ! -e /dev/xconsole ]
-  then
-    mknod -m 640 /dev/xconsole p 2>/dev/null || true
-  fi
+    XCONSOLE=/dev/xconsole
+    if [ "$(uname -s)" = "GNU/kFreeBSD" ]; then
+        XCONSOLE=/var/run/xconsole
+        ln -sf $XCONSOLE /dev/xconsole
+    fi
+    if [ ! -e $XCONSOLE ]; then
+        mknod -m 640 $XCONSOLE p
+        chown root:adm $XCONSOLE
+        [ -x /sbin/restorecon ] && /sbin/restorecon $XCONSOLE
+    fi
 }
 
 create_pidfiledir() {

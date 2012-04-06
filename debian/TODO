@@ -1,9 +1,0 @@
-#+STARTUP: indent showall                       -*- org -*-
-
-* Packaging improvements
-
-** xconsole
-
-Figure out what to do on GNU/kFreeBSD: where's xconsole there, and how
-should our config support that? Or in other words, do we need to
-create /dev/xconsole, or symlink it from somewhere else, or..?
