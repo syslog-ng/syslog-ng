@@ -1,3 +1,15 @@
+syslog-ng (3.3.4.original-1~mhp1+g9064e90) unstable; urgency=low
+
+  [ Gergely Nagy <algernon@madhouse-project.org> ]
+  * New snapshot release, based on upstream commit 9064e90.
+  * Drop all previous patches, save for the afmongodb deinit deadlock fix:
+    they're applied upstream.
+  * Include upstream man pages, as they're DFSG-free now.
+  * Bump Standards-Version to 3.9.3 (no changes required)
+  * Update debian/copyright for 1.0 of the spec.
+
+ -- Gergely Nagy <algernon@madhouse-project.org>  Fri, 06 Apr 2012 14:54:26 +0200
+
 syslog-ng (3.3.4.dfsg-2~mhp1) unstable; urgency=low
 
   [ Gergely Nagy <algernon@madhouse-project.org> ]
