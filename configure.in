@@ -178,6 +178,10 @@ AC_ARG_ENABLE(json,
               [  --disable-json          Disable JSON support (default: auto)],
               [case "${enableval}" in yes) with_json="auto";; *) with_json="${enableval}";; esac],with_json="auto")
 
+AC_ARG_ENABLE(smtp,
+              [  --disable-smtp          Disable SMTP support (default: auto)],
+              ,,enable_smtp="auto")
+              
 AC_ARG_WITH(libesmtp,
              AC_HELP_STRING([--with-libesmtp=DIR],
                             [use libesmtp library from (prefix) directory DIR]),,)
