@@ -1,4 +1,4 @@
-Format: http://anonscm.debian.org/viewvc/dep/web/deps/dep5.mdwn?revision=174&view=co&pathrev=174
+Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: syslog-ng
 Upstream-Contact: Syslog-ng users' and developers' mailing list <syslog-ng@lists.balabit.hu>
 Source: git://git.balabit.hu/bazsi/syslog-ng-3.3.git repacked to remove non-DFSG-free elements
@@ -31,7 +31,7 @@ License: LGPL-2.1+
 
 Files: lib/ivykis/lib/man3/* lib/ivykis/modules/man3/*
 Copyright: Copyright (C) 2002-2011 Lennert Buytenhek <buytenh@wantstofly.org>
-License:
+License: ivykis-man
  Permission is granted to distribute possibly modified copies
  of this page provided the header is included verbatim,
  and in case of nontrivial modification author and date
