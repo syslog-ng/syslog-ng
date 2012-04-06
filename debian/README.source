@@ -8,11 +8,8 @@ with the following branch layout:
  * upstream/mirror/${MAJOR_VERSION}: This is a mirror of the upstream
    master branch of the appropriate major version of syslog-ng. No
    changes are applied to it, ever.
- * upstream/dfsg/${MAJOR_VERSION}: Same as the upstream branch, but
-   with non-DFSG-free manual pages removed. The orig.tar.xz is based
-   off of this branch.
  * patched/${MAJOR_VERSION}: Non-debian specific patches, that are
-   also sent upstream. Based on the upstream/dfsg/${MAJOR_VERSION}
+   also sent upstream. Based on the upstream/mirror/${MAJOR_VERSION}
    branch, but no patches are applied directly, they're merged from
    the various feature/${MAJOR_VERSION}/${NAME} branches (see below),
    or cherry-picked from upstream.
@@ -33,7 +30,7 @@ from git.
 All of the patches on the patched branch get flattened during build
 into a single debian/patches/debian-changes patch. If one wants to
 make modifications, that should be done on the appropriate feature
-branch, or on the debian brahc, if it is Debian specific.
+branch, or on the debian branch, if it is Debian specific.
 
 To build the package from git, one will first need to initialize it,
 and set up the branches needed by the system. Running the
@@ -49,9 +46,7 @@ Upgrading to a new upstream version
 
 * Pull the upstream changes as-is onto the appropriate upstream
   branch. (such as upstream/mirror/3.3)
-* Merge the upstream mirror branch into the dfsg branch
-  (upstream/dfsg/3.3).
-* Merge the dfsg branch into the patched branch (patched/3.3).
+* Merge the mirror branch into the patched branch (patched/3.3).
 * Fix any conflicts caused by patches that made it upstream in a
   different way, or by conflicting upstream changes.
 * Merge patched into the debian branch (debian/3.3).
@@ -73,7 +68,6 @@ Selectively applying upstream fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * Pull the upstream changes as-is onto the upstream/mirror branch.
-* Merge (merge, not rebase!) the upstream branch into upstream/dfsg.
 * cherry-pick the appropriate fixes to patched, or - if that is more
   appropriate - merge the dfsg branch into patched as-is.
 * Merge the patched branch into the debian branch.

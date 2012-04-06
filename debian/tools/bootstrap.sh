@@ -8,7 +8,7 @@ UPSTREAM_MAJOR="$(echo ${UPSTREAM_VERSION} | cut -d . -f 1,2)"
 
 git submodule --quiet update --init
 
-for branch in upstream/mirror upstream/dfsg patched debian; do
+for branch in upstream/mirror patched debian; do
 	if ! git branch | grep -q "\s${branch}/${UPSTREAM_MAJOR}\$"; then
 		git branch --track ${branch}/${UPSTREAM_MAJOR} origin/${branch}/${UPSTREAM_MAJOR}
 	fi

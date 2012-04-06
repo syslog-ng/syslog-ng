@@ -52,7 +52,7 @@ git archive "${UPSTREAM_TAG}" --format tar --prefix=syslog-ng/ | \
 echo "** Creating the upstream tarball..."
 
 tar -C debian/orig-source -cf - syslog-ng | \
-	xz -9 >"${WD}"/syslog-ng_${UPSTREAM_VERSION}.dfsg.orig.tar.xz
+	xz -9 >"${WD}"/syslog-ng_${UPSTREAM_VERSION}.orig.tar.xz
 
 ##
 # Cleanup
@@ -62,4 +62,4 @@ echo "** Cleaning up."
 cd "${WD}"
 rm -rf "${TDIR}"
 
-echo "* Upstream tarball available in ${WD}/syslog-ng_${UPSTREAM_VERSION}.dfsg.orig.tar.xz"
+echo "* Upstream tarball available in ${WD}/syslog-ng_${UPSTREAM_VERSION}.orig.tar.xz"

@@ -2,17 +2,17 @@ Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: syslog-ng
 Upstream-Contact: Syslog-ng users' and developers' mailing list <syslog-ng@lists.balabit.hu>
 Source: git://git.balabit.hu/bazsi/syslog-ng-3.3.git repacked to remove non-DFSG-free elements
-Copyright: Copyright (C) 1996-2011 Balázs Scheidler <bazsi@balabit.hu>,
- Copyright (C) 2002-2011 BalaBit IT Security Ltd.
+Copyright: Copyright (C) 1996-2012 Balázs Scheidler <bazsi@balabit.hu>,
+ Copyright (C) 2002-2012 BalaBit IT Security Ltd.
 
 Files: *
-Copyright: Copyright (C) 1996-2011 Balázs Scheidler <bazsi@balabit.hu>,
- Copyright (C) 2002-2011 BalaBit IT Security Ltd.
+Copyright: Copyright (C) 1996-2012 Balázs Scheidler <bazsi@balabit.hu>,
+ Copyright (C) 2002-2012 BalaBit IT Security Ltd.
 License: GPL-2+ with OpenSSL exception
 
 Files: lib/*
-Copyright: Copyright (C) 1996-2011 Balázs Scheidler <bazsi@balabit.hu>,
- Copyright (C) 2002-2011 BalaBit IT Security Ltd.
+Copyright: Copyright (C) 1996-2012 Balázs Scheidler <bazsi@balabit.hu>,
+ Copyright (C) 2002-2012 BalaBit IT Security Ltd.
 License: LGPL-2.1+ with OpenSSL exception
 
 Files: lib/scratch-buffers.*
@@ -38,8 +38,8 @@ License: ivykis-man
  of the modification is added to the header.
 
 Files: modules/*
-Copyright: Copyright (C) 1996-2011 Balázs Scheidler <bazsi@balabit.hu>,
- Copyright (C) 2002-2011 BalaBit IT Security Ltd.
+Copyright: Copyright (C) 1996-2012 Balázs Scheidler <bazsi@balabit.hu>,
+ Copyright (C) 2002-2012 BalaBit IT Security Ltd.
 License: GPL-2+ with OpenSSL exception
 
 Files: modules/afsocket/sd-daemon.*
@@ -68,8 +68,8 @@ License: Expat
  SOFTWARE.
 
 Files: modules/afmongodb/*
-Copyright: Copyright (c) 2002-2011 BalaBit IT Ltd.
- Copyright (C) 2010-2011 Gergely Nagy <algernon@balabit.hu>
+Copyright: Copyright (c) 2010-2012 BalaBit IT Ltd.
+ Copyright (C) 2010-2012 Gergely Nagy <algernon@balabit.hu>
 License: GPL-2+ with OpenSSL exception
 
 Files: modules/afmongodb/libmongo-client/*
@@ -92,8 +92,8 @@ Copyright: Copyright (C) 2010 BalaBit IT Security Ltd.
 License: GPL-2+ with OpenSSL exception
 
 Files: debian/*
-Copyright: Copyright (C) 2011 Gergely Nagy <algernon@madhouse-project.org>,
- Copyright (C) 2010-2011 Laszlo Boszormenyi (GCS) <gcs@debian.hu>
+Copyright: Copyright (C) 2011-2012 Gergely Nagy <algernon@madhouse-project.org>,
+ Copyright (C) 2010-2012 Laszlo Boszormenyi (GCS) <gcs@debian.hu>
 License: GPL-3+
 
 License: GPL-2+ with OpenSSL exception
