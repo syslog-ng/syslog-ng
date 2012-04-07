@@ -418,8 +418,7 @@ cfg_tree_add_all_sources(gpointer key, gpointer value, gpointer user_data)
 
 static gboolean
 cfg_tree_compile_node(CfgTree *self, LogExprNode *node,
-                      LogPipe **outer_pipe_head, LogPipe **outer_pipe_tail,
-                      gboolean flow_controlled_parent);
+                      LogPipe **outer_pipe_head, LogPipe **outer_pipe_tail);
 
 static gboolean
 cfg_tree_compile_single(CfgTree *self, LogExprNode *node,
@@ -428,6 +427,9 @@ cfg_tree_compile_single(CfgTree *self, LogExprNode *node,
   LogPipe *pipe;
 
   g_assert(node->content == ENC_PIPE);
+
+  /* LC_XXX flags are currently only implemented for sequences, ensure that the grammar enforces this. */
+  g_assert(node->flags == 0);
 
   pipe = node->object;
 
@@ -465,9 +467,12 @@ cfg_tree_compile_single(CfgTree *self, LogExprNode *node,
 
 static gboolean
 cfg_tree_compile_reference(CfgTree *self, LogExprNode *node,
-                           LogPipe **outer_pipe_head, LogPipe **outer_pipe_tail, gboolean flow_controlled_parent)
+                           LogPipe **outer_pipe_head, LogPipe **outer_pipe_tail)
 {
   LogExprNode *referenced_node;
+
+  /* LC_XXX flags are currently only implemented for sequences, ensure that the grammar enforces this. */
+  g_assert(node->flags == 0);
 
   if (!node->object)
     {
@@ -498,7 +503,7 @@ cfg_tree_compile_reference(CfgTree *self, LogExprNode *node,
 
         if (!referenced_node->aux)
           {
-            if (!cfg_tree_compile_node(self, referenced_node, &sub_pipe_head, &sub_pipe_tail, flow_controlled_parent))
+            if (!cfg_tree_compile_node(self, referenced_node, &sub_pipe_head, &sub_pipe_tail))
               goto error;
             log_expr_node_set_aux(referenced_node, log_pipe_ref(sub_pipe_tail), (GDestroyNotify) log_pipe_unref);
           }
@@ -539,7 +544,7 @@ cfg_tree_compile_reference(CfgTree *self, LogExprNode *node,
 
         if (!referenced_node->aux)
           {
-            if (!cfg_tree_compile_node(self, referenced_node, &sub_pipe_head, &sub_pipe_tail, flow_controlled_parent))
+            if (!cfg_tree_compile_node(self, referenced_node, &sub_pipe_head, &sub_pipe_tail))
               goto error;
             log_expr_node_set_aux(referenced_node, log_pipe_ref(sub_pipe_head), (GDestroyNotify) log_pipe_unref);
           }
@@ -572,7 +577,7 @@ cfg_tree_compile_reference(CfgTree *self, LogExprNode *node,
         break;
       }
     default:
-      return cfg_tree_compile_node(self, referenced_node, outer_pipe_head, outer_pipe_tail, flow_controlled_parent);
+      return cfg_tree_compile_node(self, referenced_node, outer_pipe_head, outer_pipe_tail);
     }
   return TRUE;
 
@@ -608,19 +613,17 @@ cfg_tree_compile_reference(CfgTree *self, LogExprNode *node,
  * @outer_pipe_tail: the last LogPipe to be used to chain further elements to this sequence
  * @cfg: GlobalConfig instance
  * @toplevel: whether this rule is a top-level one.
- * @flow_controlled_parent: specifies whether the parent log statement has flags(flow-controlled)
  **/
 static gboolean
 cfg_tree_compile_sequence(CfgTree *self, LogExprNode *node,
-                          LogPipe **outer_pipe_head, LogPipe **outer_pipe_tail,
-                          gboolean flow_controlled_parent)
+                          LogPipe **outer_pipe_head, LogPipe **outer_pipe_tail)
 {
   LogExprNode *ep;
   LogPipe
     *first_pipe,   /* the head of the constructed pipeline */
     *last_pipe;    /* the current tail of the constructed pipeline */
   LogPipe *source_join_pipe = NULL;
-  gboolean  path_changes_the_message = FALSE, flow_controlled_child = FALSE;
+  gboolean  path_changes_the_message = FALSE;
 
   if ((node->flags & LC_CATCHALL) != 0)
     {
@@ -655,7 +658,7 @@ cfg_tree_compile_sequence(CfgTree *self, LogExprNode *node,
     {
       LogPipe *sub_pipe_head = NULL, *sub_pipe_tail = NULL;
 
-      if (!cfg_tree_compile_node(self, ep, &sub_pipe_head, &sub_pipe_tail, flow_controlled_parent || (ep->flags & LC_FLOW_CONTROL)))
+      if (!cfg_tree_compile_node(self, ep, &sub_pipe_head, &sub_pipe_tail))
         goto error;
 
       /* add pipe to the current pipe_line, e.g. after last_pipe, update last_pipe & first_pipe */
@@ -663,9 +666,6 @@ cfg_tree_compile_sequence(CfgTree *self, LogExprNode *node,
         {
           if (sub_pipe_head->flags & PIF_CLONE)
             path_changes_the_message = TRUE;
-
-          if (sub_pipe_head->flags & PIF_HARD_FLOW_CONTROL)
-            flow_controlled_child = TRUE;
 
           if (!first_pipe && !last_pipe)
             {
@@ -714,6 +714,10 @@ cfg_tree_compile_sequence(CfgTree *self, LogExprNode *node,
             {
               source_join_pipe = last_pipe = log_pipe_new();
               g_ptr_array_add(self->initialized_pipes, source_join_pipe);
+
+              source_join_pipe->expr_node = node;
+              if (node->flags & LC_FLOW_CONTROL)
+                source_join_pipe->flags |= PIF_HARD_FLOW_CONTROL;
             }
           log_pipe_append(sub_pipe_tail, source_join_pipe);
         }
@@ -730,9 +734,21 @@ cfg_tree_compile_sequence(CfgTree *self, LogExprNode *node,
       if (path_changes_the_message)
         first_pipe->flags |= PIF_CLONE;
 
-      if ((node->flags & LC_FLOW_CONTROL) || flow_controlled_child || flow_controlled_parent)
+      if (node->flags & LC_FLOW_CONTROL)
         first_pipe->flags |= PIF_HARD_FLOW_CONTROL;
+      if (!first_pipe->expr_node)
+        first_pipe->expr_node = node;
     }
+
+
+  /* NOTE: if flow control is enabled, then we either need to have an
+   * embedded log statement (in which case first_pipe is set, as we're not
+   * starting with sources), OR we created a source_join_pipe already.
+   *
+   */
+
+  g_assert(((node->flags & LC_FLOW_CONTROL) && (first_pipe || source_join_pipe)) ||
+            !(node->flags & LC_FLOW_CONTROL));
 
   *outer_pipe_tail = last_pipe;
   *outer_pipe_head = first_pipe;
@@ -763,20 +779,21 @@ cfg_tree_compile_sequence(CfgTree *self, LogExprNode *node,
 static gboolean
 cfg_tree_compile_junction(CfgTree *self,
                           LogExprNode *node,
-                          LogPipe **outer_pipe_head, LogPipe **outer_pipe_tail,
-                          gboolean flow_controlled_parent)
+                          LogPipe **outer_pipe_head, LogPipe **outer_pipe_tail)
 {
   LogExprNode *ep;
   LogPipe *join_pipe = NULL;    /* the pipe where parallel branches are joined in a junction */
   LogMultiplexer *fork_mpx = NULL;
-  gboolean flow_controlled_child = FALSE;
+
+  /* LC_XXX flags are currently only implemented for sequences, ensure that the grammar enforces this. */
+  g_assert(node->flags == 0);
 
   for (ep = node->children; ep; ep = ep->next)
     {
       LogPipe *sub_pipe_head = NULL, *sub_pipe_tail = NULL;
       gboolean is_first_branch = (ep == node->children);
 
-      if (!cfg_tree_compile_node(self, ep, &sub_pipe_head, &sub_pipe_tail, flow_controlled_parent || (ep->flags & LC_FLOW_CONTROL)))
+      if (!cfg_tree_compile_node(self, ep, &sub_pipe_head, &sub_pipe_tail))
         goto error;
 
       if (sub_pipe_head)
@@ -798,8 +815,6 @@ cfg_tree_compile_junction(CfgTree *self,
               g_ptr_array_add(self->initialized_pipes, &fork_mpx->super);
             }
           log_multiplexer_add_next_hop(fork_mpx, sub_pipe_head);
-          if (sub_pipe_head->flags & PIF_HARD_FLOW_CONTROL)
-            flow_controlled_child = TRUE;
         }
       else
         {
@@ -828,9 +843,6 @@ cfg_tree_compile_junction(CfgTree *self,
         }
     }
 
-  if (fork_mpx && (flow_controlled_child || flow_controlled_parent))
-    fork_mpx->super.flags |= PIF_HARD_FLOW_CONTROL;
-
   *outer_pipe_head = &fork_mpx->super;
   if (outer_pipe_tail)
     *outer_pipe_tail = join_pipe;
@@ -847,23 +859,26 @@ cfg_tree_compile_junction(CfgTree *self,
  * cfg_tree_compile_node:
  *
  * This function takes care of compiling a LogExprNode.
+ *
  */
 gboolean
 cfg_tree_compile_node(CfgTree *self, LogExprNode *node,
-                      LogPipe **outer_pipe_head, LogPipe **outer_pipe_tail,
-                      gboolean flow_controlled_parent)
+                      LogPipe **outer_pipe_head, LogPipe **outer_pipe_tail)
 {
   gboolean result = FALSE;
   static gint indent = -1;
 
   if (debug_flag)
     {
+      gchar buf[32];
+
       indent++;
-      fprintf(stderr, "%.*sCompiling %s %s [%s]\n",
+      fprintf(stderr, "%.*sCompiling %s %s [%s] at [%s]\n",
               indent * 2, "                   ",
               node->name ? : "#unnamed",
               log_expr_node_get_layout_name(node->layout),
-              log_expr_node_get_content_name(node->content));
+              log_expr_node_get_content_name(node->content),
+              log_expr_node_format_location(node, buf, sizeof(buf)));
     }
 
   switch (node->layout)
@@ -872,13 +887,13 @@ cfg_tree_compile_node(CfgTree *self, LogExprNode *node,
       result = cfg_tree_compile_single(self, node, outer_pipe_head, outer_pipe_tail);
       break;
     case ENL_REFERENCE:
-      result = cfg_tree_compile_reference(self, node, outer_pipe_head, outer_pipe_tail, flow_controlled_parent);
+      result = cfg_tree_compile_reference(self, node, outer_pipe_head, outer_pipe_tail);
       break;
     case ENL_SEQUENCE:
-      result = cfg_tree_compile_sequence(self, node, outer_pipe_head, outer_pipe_tail, flow_controlled_parent);
+      result = cfg_tree_compile_sequence(self, node, outer_pipe_head, outer_pipe_tail);
       break;
     case ENL_JUNCTION:
-      result = cfg_tree_compile_junction(self, node, outer_pipe_head, outer_pipe_tail, flow_controlled_parent);
+      result = cfg_tree_compile_junction(self, node, outer_pipe_head, outer_pipe_tail);
       break;
     default:
       g_assert_not_reached();
@@ -893,7 +908,7 @@ cfg_tree_compile_rule(CfgTree *self, LogExprNode *rule)
 {
   LogPipe *sub_pipe_head = NULL, *sub_pipe_tail = NULL;
 
-  return cfg_tree_compile_node(self, rule, &sub_pipe_head, &sub_pipe_tail, FALSE);
+  return cfg_tree_compile_node(self, rule, &sub_pipe_head, &sub_pipe_tail);
 }
 
 static gboolean

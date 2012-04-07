@@ -84,11 +84,6 @@ log_multiplexer_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_op
               continue;
             }
 
-          if (next_hop->flags & (PIF_HARD_FLOW_CONTROL))
-            {
-              local_options.flow_control_requested = 1;
-            }
-
           matched = TRUE;
           log_msg_add_ack(msg, &local_options);
           

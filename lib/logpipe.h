@@ -29,6 +29,7 @@
 #include "logmsg.h"
 #include "cfg.h"
 #include "atomic.h"
+#include "messages.h"
 
 /* notify code values */
 #define NC_CLOSE       1
@@ -299,6 +300,23 @@ static inline void
 log_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 {
   g_assert((s->flags & PIF_INITIALIZED) != 0);
+
+  if (G_UNLIKELY(s->flags & (PIF_HARD_FLOW_CONTROL)))
+    {
+      LogPathOptions local_path_options = *path_options;
+
+      local_path_options.flow_control_requested = 1;
+      path_options = &local_path_options;
+      if (G_UNLIKELY(debug_flag))
+        {
+          gchar buf[32];
+
+          msg_debug("Requesting flow control",
+                    evt_tag_str("location", log_expr_node_format_location(s->expr_node, buf, sizeof(buf))),
+                    NULL);
+        }
+    }
+
   if (s->queue)
     {
       s->queue(s, msg, path_options, s->queue_data);
