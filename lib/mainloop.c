@@ -323,6 +323,9 @@ main_loop_io_worker_thread_stop(void *cookie)
   g_static_mutex_unlock(&main_loop_io_workers_idmap_lock);
   dns_cache_destroy();
   scratch_buffers_free();
+
+  if (call_info.cond)
+    g_cond_free(call_info.cond);
 }
 
 /* NOTE: only used by the unit test program to emulate worker threads with LogQueue */
