@@ -152,7 +152,7 @@ log_expr_node_format_location(LogExprNode *self, gchar *buf, gsize buf_len)
       node = node->parent;
     }
   if (!node)
-    strncpy(buf, "#unknown", sizeof(buf));
+    strncpy(buf, "#unknown", buf_len);
   return buf;
 }
 
