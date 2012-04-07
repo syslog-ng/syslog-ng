@@ -291,7 +291,7 @@ log_msg_get_value_handle(const gchar *value_name)
   handle = nv_registry_alloc_handle(logmsg_registry, value_name);
 
   /* check if name starts with sd_prefix and has at least one additional character */
-  if (strncmp(value_name, logmsg_sd_prefix, sizeof(logmsg_sd_prefix) - 1) == 0 && value_name[6])
+  if (strncmp(value_name, logmsg_sd_prefix, logmsg_sd_prefix_len) == 0 && value_name[6])
     {
       nv_registry_set_handle_flags(logmsg_registry, handle, LM_VF_SDATA);
     }
@@ -304,6 +304,28 @@ log_msg_get_value_name(NVHandle handle, gssize *name_len)
 {
   return nv_registry_get_handle_name(logmsg_registry, handle, name_len);
 }
+
+gboolean
+log_msg_is_value_name_valid(const gchar *value)
+{
+  if (strncmp(value, logmsg_sd_prefix, logmsg_sd_prefix_len) == 0)
+    {
+      const gchar *dot;
+      int dot_found = 0;
+
+      dot = strchr(value, '.');
+      while (dot && strlen(dot) > 1)
+        {
+          dot_found++;
+          dot++;
+          dot = strchr(dot, '.');
+        }
+      return (dot_found >= 3);
+    }
+  else
+    return TRUE;
+}
+
 
 static void
 __free_macro_value(void *val)
