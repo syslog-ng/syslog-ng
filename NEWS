@@ -1,3 +1,87 @@
+3.3.5
+	Sat, 07 Apr 2012 10:35:25 +0200
+
+
+	Bugfixes:
+	=========
+	* Fixed a significant memory leak that occurred when the receiver
+	  side of a syslog connection is slower than syslog-ng. The message
+	  which we got EAGAIN for got leaked.
+
+	* Fixed another memory leak that caused the complete queue for
+	  socket based destination drivers to be leaked at reload time.
+
+	* Fixed a memory leak related to handling TLS enabled connections.
+	  As connections come and go the TLS context wasn't freed.
+
+	* Fixed a small memory leak that occurred when worker threads exit
+	  (and later start again).
+
+	* Fixed a deadlock in the SQL destination that occurred when a
+	  COMMIT TRANSACTION command failed.
+
+	* Fixed an abort() which occurred when the retry timer of a
+	  suspended destination fired.
+
+	* Fixed a framing error in RFC5424 destinations.
+
+	* MongoDB & SQL: fixed a race condition that caused mongodb/sql
+	  destinations to hang.
+
+	* Fixed handling the ENOBUFS error in udp() destinations on FreeBSD
+	  and related/derived platforms. Previously ENOBUFS caused syslog-ng
+	  to suspend the destination for time_reopen() (which defaults to 60
+	  seconds), but that's excessive.  Reading the literature suggests
+	  that there are three ways to handle an ENOBUFS: wait for some
+	  undetermined amount of time until the interface buffers are
+	  presumably emptied, or let the packet be dropped or go back to the
+	  poll loop and hope that by the next time the event is dispatched
+	  ENOBUFS will be gone. Right now, syslog-ng will drop the affected
+	  packet, as the other two could cause other tasks to starve (wait
+	  some time) OR syslog-ng to use 100% CPU.
+
+	Other changes:
+	==============
+
+	* The XML sources for manual pages are now included in the source
+	  tarball, along with a set of already built man pages to avoid
+	  having to install XML related toolings to compile syslog-ng.  The
+	  path to the stylesheets and the path to xsltproc is hard-coded in
+	  the Makefiles right now (to the paths used by Ubuntu 11.10) In
+	  case you want to change and rebuild manpages these need to be
+	  adjusted.  Patches to autodetect the proper paths on any system
+	  would be welcome.
+
+	* Rewrite expressions report an error during the configuration
+	  parsing phase instead of silently (ok with a warning :) falling
+	  back to changing the MESSAGE macro.
+
+	Credits:
+	========
+	syslog-ng is developed as a community project, and as such it relies
+        on volunteers to do the work necessarily to produce syslog-ng.
+
+        Reporting bugs, testing changes, writing code or simply providing
+        feedback are all important contributions, so please if you are a
+        user of syslog-ng, contribute.
+
+        These people have helped in this release:
+
+          Balazs Scheidler (BalaBit)
+          Eric Lindvall (SevenScale)
+          Evan Rempel (University of Victoria)
+          Fried Zoltan (BalaBit)
+          Gergely Nagy (BalaBit)
+          Jakub Jankowski (SuperHost.pl)
+          Juhasz Viktor (BalaBit)
+          Marvin Nipper (Stream Global Services)
+          Patrick Hemmer
+          Robert Fekete (BalaBit)
+          Traiano Welcome
+          whille
+          Yuri Arabadji (Fused)
+
+
 3.3.4
 	Mon, 16 Jan 2012 23:07:46 +0100
 
