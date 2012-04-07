@@ -290,8 +290,8 @@ main_loop_io_worker_thread_start(void *cookie)
 {
   gint id;
 
-  g_static_mutex_lock(&main_loop_io_workers_idmap_lock);
   dns_cache_init();
+  g_static_mutex_lock(&main_loop_io_workers_idmap_lock);
   /* NOTE: this algorithm limits the number of I/O worker threads to 64,
    * since the ID map is stored in a single 64 bit integer.  If we ever need
    * more threads than that, we can generalize this algorithm further. */
@@ -315,14 +315,17 @@ void
 main_loop_io_worker_thread_stop(void *cookie)
 {
   g_static_mutex_lock(&main_loop_io_workers_idmap_lock);
-  dns_cache_destroy();
   if (main_loop_io_worker_id)
     {
       main_loop_io_workers_idmap &= ~(1 << (main_loop_io_worker_id - 1));
       main_loop_io_worker_id = 0;
     }
-  scratch_buffers_free ();
   g_static_mutex_unlock(&main_loop_io_workers_idmap_lock);
+  dns_cache_destroy();
+  scratch_buffers_free();
+
+  if (call_info.cond)
+    g_cond_free(call_info.cond);
 }
 
 /* NOTE: only used by the unit test program to emulate worker threads with LogQueue */

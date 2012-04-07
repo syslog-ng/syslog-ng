@@ -366,7 +366,7 @@ log_queue_fifo_pop_head(LogQueue *s, LogMessage **msg, LogPathOptions *path_opti
       list_add_tail(&node->list, &self->qbacklog);
       self->qbacklog_len++;
     }
-  if (!ignore_throttle)
+  if (!ignore_throttle && self->super.throttle_buckets > 0)
     {
       self->super.throttle_buckets--;
     }

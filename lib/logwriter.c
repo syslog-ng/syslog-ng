@@ -242,7 +242,7 @@ log_writer_error_suspend_elapsed(gpointer s)
   msg_notice("Error suspend timeout has elapsed, attempting to write again",
              evt_tag_int("fd", log_proto_get_fd(self->proto)),
              NULL);
-  log_writer_update_watches(self);
+  log_writer_start_watches(self);
 }
 
 static void
@@ -1014,7 +1014,7 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
         {
           /* push back to the queue */
           log_queue_push_head(self->queue, lm, &path_options);
-
+          log_msg_unref(lm);
           msg_set_context(NULL);
           log_msg_refcache_stop();
           break;

@@ -170,6 +170,18 @@ log_transport_plain_write_method(LogTransport *s, const gpointer buf, gsize bufl
         fsync(self->super.fd);
     }
   while (rc == -1 && errno == EINTR);
+
+  /* NOTE: FreeBSD returns ENOBUFS on send() failure instead of indicating
+   * this conditions via poll().  The return of ENOBUFS actually is a send
+   * error and is calulated in IP statistics, so the best is to handle it as
+   * a success.  The only alternative would be to return EAGAIN, which could
+   * cause syslog-ng to spin as long as buffer space is unavailable.  Since
+   * I'm not sure how much time that would take and I think spinning the CPU
+   * is not a good idea in general, I just drop the packet in this case.
+   * UDP is lossy anyway */
+
+  if (rc < 0 && errno == ENOBUFS)
+    return buflen;
   return rc;
 }
 
