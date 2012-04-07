@@ -41,27 +41,6 @@
 
 LogRewrite *last_rewrite;
 
-static gboolean
-is_sdata_valid(const gchar *buffer)
-{
-  gboolean result = FALSE;
-  const gchar *dot;
-  int dot_found = 0;
-  if (strlen(buffer)>6 && strncmp(buffer,".SDATA.",7)==0)
-    {
-      dot = memchr(buffer,'.',strlen(buffer));
-      while (dot && strlen(dot)>1)
-        {
-          dot_found++;
-          dot++;
-          dot = memchr(dot, '.',strlen(dot));
-        }
-      if (dot_found >= 3)
-        result = TRUE;
-    }
-  return result;
-}
-
 }
 
 %name-prefix "rewrite_expr_"
@@ -163,23 +142,8 @@ rewrite_expr_opt
                 p++;
               }
             last_rewrite->value_handle = log_msg_get_value_handle(p);
-            if (log_msg_is_handle_macro(last_rewrite->value_handle))
-              {
-                msg_warning("Macros are read-only, they cannot be changed in rewrite rules, falling back to MESSAGE instead",
-                            evt_tag_str("macro", p),
-                            NULL);
-                last_rewrite->value_handle = LM_V_MESSAGE;
-              }
-
-            /* SDATA validation */
-            if (strlen($3)>6 && strncmp($3,".SDATA.",7)==0)
-              {
-                if (!is_sdata_valid($3))
-                  {
-                    msg_error("Invalid structured data format",evt_tag_str("SDATA",$3), NULL);
-                    YYERROR;
-                  }
-              }
+            CHECK_ERROR(!log_msg_is_handle_macro(last_rewrite->value_handle), @3, "%s is read-only, it cannot be changed in rewrite rules", p);
+	    CHECK_ERROR(log_msg_is_value_name_valid(p), @3, "%s is not a valid name for a name-value pair, perhaps a misspelled .SDATA reference?", p);
             free($3);
           }
         | KW_CONDITION '('
