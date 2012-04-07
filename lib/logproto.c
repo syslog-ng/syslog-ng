@@ -74,7 +74,9 @@ log_proto_free(LogProto *s)
 typedef struct _LogProtoTextClient
 {
   LogProto super;
+  gint state, next_state;
   guchar *partial;
+  GDestroyNotify partial_free;
   gsize partial_len, partial_pos;
 } LogProtoTextClient;
 
@@ -89,7 +91,7 @@ log_proto_text_client_prepare(LogProto *s, gint *fd, GIOCondition *cond)
   /* if there's no pending I/O in the transport layer, then we want to do a write */
   if (*cond == 0)
     *cond = G_IO_OUT;
-  return !!self->partial;
+  return self->partial != NULL;
 }
 
 static LogProtoStatus
@@ -123,14 +125,35 @@ log_proto_text_client_flush(LogProto *s)
         }
       else
         {
-          g_free(self->partial);
+          if (self->partial_free)
+            self->partial_free(self->partial);
           self->partial = NULL;
+          if (self->next_state >= 0)
+            {
+              self->state = self->next_state;
+              self->next_state = -1;
+            }
           /* NOTE: we return here to give a chance to the framed protocol to send the frame header. */
           return LPS_SUCCESS;
         }
     }
   return LPS_SUCCESS;
 }
+
+static LogProtoStatus
+log_proto_text_client_submit_write(LogProto *s, guchar *msg, gsize msg_len, GDestroyNotify msg_free, gint next_state)
+{
+  LogProtoTextClient *self = (LogProtoTextClient *) s;
+
+  g_assert(self->partial == NULL);
+  self->partial = msg;
+  self->partial_len = msg_len;
+  self->partial_pos = 0;
+  self->partial_free = msg_free;
+  self->next_state = next_state;
+  return log_proto_text_client_flush(s);
+}
+
 
 /*
  * log_proto_text_client_post:
@@ -152,13 +175,16 @@ log_proto_text_client_post(LogProto *s, guchar *msg, gsize msg_len, gboolean *co
   /* NOTE: the client does not support charset conversion for now */
   g_assert(self->super.convert == (GIConv) -1);
 
+  /* try to flush already buffered data */
   *consumed = FALSE;
-  rc = log_proto_flush(s);
+  rc = log_proto_text_client_flush(s);
   if (rc == LPS_ERROR)
     {
-      goto write_error;
+      /* log_proto_flush() already logs in the case of an error */
+      return rc;
     }
-  else if (self->partial)
+
+  if (self->partial)
     {
       /* NOTE: the partial buffer has not been emptied yet even with the
        * flush above, we shouldn't attempt to write again.
@@ -174,49 +200,8 @@ log_proto_text_client_post(LogProto *s, guchar *msg, gsize msg_len, gboolean *co
       return rc;
     }
 
-  /* OK, partial buffer empty, now flush msg that we just got */
-  
-  rc = log_transport_write(self->super.transport, msg, msg_len);
-  
-  if (rc < 0 || rc != msg_len)
-    {
-      /* error OR partial flush, we sent _some_ of the message that we got, save it to self->partial and tell the caller that we consumed it */
-      if (rc < 0 && errno != EAGAIN && errno != EINTR)
-        goto write_error;
-      
-      /* NOTE: log_proto_framed_client_post depends on our current
-       * behaviour, that we consume every message that we can, even if we
-       * couldn't write a single byte out.
-       *
-       * If we return LPS_SUCCESS and self->partial == NULL, it assumes that
-       * the message was sent.
-       */
-      
-        
-      self->partial = msg;
-      self->partial_len = msg_len;
-      self->partial_pos = rc > 0 ? rc : 0;
-      *consumed = TRUE;
-    }
-  else
-    {
-      /* all data was nicely sent */
-      g_free(msg);
-      *consumed = TRUE;
-    }
-  return LPS_SUCCESS;
-
- write_error:
-  if (errno != EAGAIN && errno != EINTR)
-    {
-      msg_error("I/O error occurred while writing",
-                evt_tag_int("fd", self->super.transport->fd),
-                evt_tag_errno(EVT_TAG_OSERROR, errno),
-                NULL);
-      return LPS_ERROR;
-    }
-
-  return LPS_SUCCESS;
+  *consumed = TRUE;
+  return log_proto_text_client_submit_write(s, msg, msg_len, (GDestroyNotify) g_free, -1);
 }
 
 LogProto *
@@ -229,6 +214,7 @@ log_proto_text_client_new(LogTransport *transport)
   self->super.post = log_proto_text_client_post;
   self->super.transport = transport;
   self->super.convert = (GIConv) -1;
+  self->next_state = -1;
   return &self->super;
 }
 
@@ -1741,22 +1727,20 @@ log_proto_dgram_server_new(LogTransport *transport, gint max_msg_size, guint fla
   return &self->super.super;
 }
 
-#define LPFCS_FRAME_INIT    0
-#define LPFCS_FRAME_SEND    1
-#define LPFCS_MESSAGE_SEND  2
+#define LPFCS_FRAME_SEND    0
+#define LPFCS_MESSAGE_SEND  1
 
 typedef struct _LogProtoFramedClient
 {
   LogProtoTextClient super;
-  gint state;
-  gchar frame_hdr_buf[9];
-  gint frame_hdr_len, frame_hdr_pos;
+  guchar frame_hdr_buf[9];
 } LogProtoFramedClient;
 
 static LogProtoStatus
 log_proto_framed_client_post(LogProto *s, guchar *msg, gsize msg_len, gboolean *consumed)
 {
   LogProtoFramedClient *self = (LogProtoFramedClient *) s;
+  gint frame_hdr_len;
   gint rc;
 
   if (msg_len > 9999999)
@@ -1772,49 +1756,26 @@ log_proto_framed_client_post(LogProto *s, guchar *msg, gsize msg_len, gboolean *
         }
       msg_len = 9999999;
     }
-  switch (self->state)
+
+  rc = LPS_SUCCESS;
+  while (rc == LPS_SUCCESS && !(*consumed) && self->super.partial == NULL)
     {
-    case LPFCS_FRAME_INIT:
-      self->frame_hdr_len = g_snprintf(self->frame_hdr_buf, sizeof(self->frame_hdr_buf), "%" G_GSIZE_FORMAT" ", msg_len);
-      self->frame_hdr_pos = 0;
-      self->state = LPFCS_FRAME_SEND;
-    case LPFCS_FRAME_SEND:
-      rc = log_transport_write(s->transport, &self->frame_hdr_buf[self->frame_hdr_pos], self->frame_hdr_len - self->frame_hdr_pos);
-      if (rc < 0)
+      switch (self->super.state)
         {
-          if (errno != EAGAIN)
-            {
-              msg_error("I/O error occurred while writing",
-                        evt_tag_int("fd", self->super.super.transport->fd),
-                        evt_tag_errno(EVT_TAG_OSERROR, errno),
-                        NULL);
-              return LPS_ERROR;
-            }
+        case LPFCS_FRAME_SEND:
+          frame_hdr_len = g_snprintf((gchar *) self->frame_hdr_buf, sizeof(self->frame_hdr_buf), "%" G_GSIZE_FORMAT" ", msg_len);
+          rc = log_proto_text_client_submit_write(s, self->frame_hdr_buf, frame_hdr_len, NULL, LPFCS_MESSAGE_SEND);
           break;
+        case LPFCS_MESSAGE_SEND:
+          *consumed = TRUE;
+          rc = log_proto_text_client_submit_write(s, msg, msg_len, (GDestroyNotify) g_free, LPFCS_FRAME_SEND);
+          break;
+        default:
+          g_assert_not_reached();
         }
-      else
-        {
-          self->frame_hdr_pos += rc;
-          if (self->frame_hdr_pos != self->frame_hdr_len)
-            break;
-          self->state = LPFCS_MESSAGE_SEND;
-        }
-    case LPFCS_MESSAGE_SEND:
-      rc = log_proto_text_client_post(s, msg, msg_len, consumed);
-      
-      /* NOTE: we don't check *consumed here, as we might have a pending
-       * message in self->partial before we begin, in which case *consumed
-       * will be FALSE. */
-      
-      if (rc == LPS_SUCCESS && self->super.partial == NULL)
-        {
-          self->state = LPFCS_FRAME_INIT;
-        }
-      return rc;
-    default:
-      g_assert_not_reached();
     }
-  return LPS_SUCCESS;
+
+  return rc;
 }
 
 LogProto *
@@ -1823,10 +1784,11 @@ log_proto_framed_client_new(LogTransport *transport)
   LogProtoFramedClient *self = g_new0(LogProtoFramedClient, 1);
 
   self->super.super.prepare = log_proto_text_client_prepare;
-  self->super.super.post = log_proto_framed_client_post;
   self->super.super.flush = log_proto_text_client_flush;
+  self->super.super.post = log_proto_framed_client_post;
   self->super.super.transport = transport;
   self->super.super.convert = (GIConv) -1;
+  self->super.state = LPFCS_FRAME_SEND;
   return &self->super.super;  
 }
 

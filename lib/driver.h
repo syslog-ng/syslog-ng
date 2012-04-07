@@ -163,6 +163,7 @@ struct _LogDestDriver
   StatsCounterItem *queued_global_messages;
 };
 
+/* returns a reference */
 static inline LogQueue *
 log_dest_driver_acquire_queue(LogDestDriver *self, gchar *persist_name)
 {
@@ -177,6 +178,7 @@ log_dest_driver_acquire_queue(LogDestDriver *self, gchar *persist_name)
   return q;
 }
 
+/* consumes the reference in @q */
 static inline void
 log_dest_driver_release_queue(LogDestDriver *self, LogQueue *q)
 {
@@ -184,7 +186,10 @@ log_dest_driver_release_queue(LogDestDriver *self, LogQueue *q)
     {
       self->queues = g_list_remove(self->queues, q);
 
+      /* this drops the reference passed by the caller */
       self->release_queue(self, q, self->release_queue_data);
+      /* this drops the reference stored on the list */
+      log_queue_unref(q);
     }
 }
 
