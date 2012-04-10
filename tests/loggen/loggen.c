@@ -57,6 +57,7 @@ int dont_parse = 0;
 static gint display_version;
 char *sdata_value = NULL;
 int rltp = 0;
+int use_port_range = 0;
 
 /* results */
 guint64 sum_count;
@@ -350,17 +351,22 @@ gen_next_message(FILE *source, char *buf, int buflen)
 }
 
 static int
-connect_server(void)
+connect_server(gint id)
 {
   int sock;
-
+  struct sockaddr_in s_in;
+  memcpy(&s_in,dest_addr,dest_addr_len);
   sock = socket(dest_addr->sa_family, sock_type, 0);
   if (sock < 0)
     {
       fprintf(stderr, "Error creating socket: %s\n", g_strerror(errno));
       return -1;
     }
-  if (connect(sock, dest_addr, dest_addr_len) < 0)
+  if (use_port_range)
+    {
+      s_in.sin_port = htons(ntohs(s_in.sin_port) + id);
+    }
+  if (connect(sock, &s_in, dest_addr_len) < 0)
     {
       fprintf(stderr, "Error connecting socket: %s\n", g_strerror(errno));
       close(sock);
@@ -690,8 +696,7 @@ gpointer
 idle_thread(gpointer st)
 {
   int sock;
-
-  sock = connect_server();
+  sock = connect_server(0);
   if (sock < 0)
     goto error;
   g_mutex_lock(thread_lock);
@@ -760,7 +765,7 @@ active_thread(gpointer st)
   void *ssl_transport = NULL;
 
 
-  sock = connect_server();
+  sock = connect_server(id);
   if (sock < 0)
     goto error;
   g_mutex_lock(thread_lock);
@@ -779,7 +784,7 @@ active_thread(gpointer st)
   if (rltp)
     {
       char cbuf[256];
-      g_string_sprintf(ehlo,"EHLO\n",id);
+      g_string_sprintf(ehlo,"EHLO\n");
       /* session id */
       read_sock(sock, cbuf ,256);
       send(sock, ehlo->str, ehlo->len, 0);
@@ -797,7 +802,7 @@ active_thread(gpointer st)
               goto use_plain_transport;
             }
 #if ENABLE_SSL
-          g_string_sprintf(ehlo,"EHLO\n",id);
+          g_string_sprintf(ehlo,"EHLO\n");
           SSL_write(ssl_transport, ehlo->str, ehlo->len);
           SSL_read(ssl_transport, cbuf, 256);
           if (strncmp(cbuf,"250",3) !=0 )
@@ -931,6 +936,7 @@ static GOptionEntry loggen_options[] = {
   { "version",   'V', 0, G_OPTION_ARG_NONE, &display_version, "Display version number (" PACKAGE " " COMBINED_VERSION ")", NULL },
   { "rltp",   'L', 0, G_OPTION_ARG_NONE, &rltp, "RLTP transport", NULL },
   { "rltp-batch-size", 'b', 0, G_OPTION_ARG_INT, &rltp_batch_size, "Number of messages send in one rltp package (default value: 100)", NULL },
+  { "use-port-range", 'e', 0, G_OPTION_ARG_NONE, &use_port_range, "Use custom port for each connections from the specified port to the number of active connections (e.g. from 500-509 if the specifed port is 500 and active-connection=10", NULL },
   { NULL }
 };
 
