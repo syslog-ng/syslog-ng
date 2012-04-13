@@ -223,11 +223,13 @@ main(int argc, char *argv[])
 
   if (display_version)
     {
+      msg_init(TRUE);
       version();
       return 0;
     }
   if (display_module_registry)
     {
+      msg_init(TRUE);
       plugin_list_modules(stdout, TRUE);
       return 0;
     }
