@@ -33,7 +33,7 @@
  */
 typedef struct _AFInterSourceDriver
 {
-  LogDriver super;
+  LogSrcDriver super;
   LogSource *source;
   LogSourceOptions source_options;
 } AFInterSourceDriver;
