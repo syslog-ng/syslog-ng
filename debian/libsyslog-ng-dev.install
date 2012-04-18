@@ -1,4 +1,4 @@
 usr/include/iv*.h
 usr/include/syslog-ng/*
-usr/lib/*/pkgconfig/syslog-ng.pc
+usr/lib/pkgconfig/syslog-ng.pc
 usr/share/syslog-ng/tools

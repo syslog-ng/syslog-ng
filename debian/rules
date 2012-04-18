@@ -69,13 +69,17 @@ override_dh_autoreconf:
 # We pass down all appropriate options, along with EXTRA_CONFIGURE_OPTS.
 # This also sets SOURCE_REVISION to the debian package version.
 override_dh_auto_configure:
+	install -d debian/build-tree
 	SOURCE_REVISION="$(shell dpkg-parsechangelog | \
 			  sed -n "/^Version:/s/^Version: //p" | \
 			  sed -e "s,+g\([0-9a-f]*\).*,[@\1]," | \
 			  sed -e "s,$$, ($(shell lsb_release -is)/$(shell lsb_release -rs)),")"; \
-	dh_auto_configure -- \
+	cd debian/build-tree && ../../configure \
+		--build=$(dpkg-architecture -qDEB_BUILD_GNU_TYPE) \
 		--prefix=/usr \
+		--includedir=/usr/include \
 		--mandir=/usr/share/man \
+		--libdir=/usr/lib \
 		--sysconfdir=/etc/syslog-ng \
 		--localstatedir=/var/lib/syslog-ng \
 		--datadir=/usr/share/syslog-ng \
@@ -87,7 +91,7 @@ override_dh_auto_configure:
 		--enable-sql \
 		--enable-mongodb \
 		--enable-json \
-		--enable-systemd \
+		--disable-systemd \
 		\
 		--with-libmongo-client=system \
 		--with-ivykis=internal \
@@ -95,7 +99,6 @@ override_dh_auto_configure:
 		\
 		--with-module-dir='$${exec_prefix}/lib/syslog-ng/$${VERSION}' \
 		--with-default-modules="${DEFAULT_MODULES}" \
-		--with-systemdsystemunitdir="/lib/systemd/system" \
 		\
 		SOURCE_REVISION="$${SOURCE_REVISION}" \
 		${EXTRA_CONFIGURE_OPTS}
@@ -143,14 +146,6 @@ override_dh_auto_clean:
 override_dh_auto_install:
 	dh_auto_install
 	${MAKE} -C debian/build-tree/lib/ivykis install DESTDIR=$(CURDIR)/debian/tmp
-ifeq (linux,$(shell dpkg-architecture -qDEB_BUILD_ARCH_OS))
-	install -d debian/syslog-ng-core/etc/systemd/system/multi-user.target.wants
-	ln -sf /lib/systemd/system/syslog-ng.service \
-	       debian/syslog-ng-core/etc/systemd/system/syslog.service
-	ln -sf /lib/systemd/system/syslog-ng.service \
-	       debian/syslog-ng-core/etc/systemd/system/multi-user.target.wants/
-	cp -r debian/tmp/lib debian/syslog-ng-core/
-endif
 
 ##
 #* Overrides for other debhelper commands
