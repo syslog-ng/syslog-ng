@@ -131,6 +131,11 @@ override_dh_auto_install:
 	dh_auto_install
 	${MAKE} -C debian/build-tree/lib/ivykis install DESTDIR=$(CURDIR)/debian/tmp
 ifeq (linux,$(shell dpkg-architecture -qDEB_BUILD_ARCH_OS))
+	install -d debian/syslog-ng-core/etc/systemd/system/multi-user.target.wants
+	ln -sf /lib/systemd/system/syslog-ng.service \
+	       debian/syslog-ng-core/etc/systemd/system/syslog.service
+	ln -sf /lib/systemd/system/syslog-ng.service \
+	       debian/syslog-ng-core/etc/systemd/system/multi-user.target.wants/
 	cp -r debian/tmp/lib debian/syslog-ng-core/
 endif
 
