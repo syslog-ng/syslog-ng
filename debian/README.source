@@ -123,3 +123,7 @@ With the above workflow, the patches on the patched branch will get
 flattened during build into a single debian/patches/debian-changes
 patch. If one wants to make modifications, that should be done in git,
 not with the exported sources.
+
+The debian/tools/export-source.sh tool automates the bulk of the
+above: it sets up a directory, where the debian/ dir is merged into
+the patched sources.
