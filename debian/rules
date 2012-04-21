@@ -5,6 +5,12 @@
 ## Released under the GPLv3+, see /usr/share/common-licenses/GPL-3 on
 ## Debian systems.
 
+# For my own sanity, when debian/rules is ran without any argument,
+# display something meaningful, instead of just running the first
+# override.
+help:
+	sensible-pager debian/README.source
+
 ##
 #* Environment setup
 #
@@ -22,7 +28,6 @@
 ifneq (,$(filter debug,$(DEB_BUILD_OPTIONS)))
 	EXTRA_CONFIGURE_OPTS += --enable-debug
 endif
-
 
 # We want to support building from a git tree, where the syslog-ng
 # sources are in a submodule, in syslog-ng-*. Since we do not wish to
@@ -45,12 +50,6 @@ CFLAGS		?= $(shell dpkg-buildflags --get CFLAGS)
 LDFLAGS		?= $(shell dpkg-buildflags --get LDFLAGS)
 CFLAGS		+= $(HARDENING_CFLAGS)
 LDFLAGS		+= $(HARDENING_LDFLAGS)
-
-# For my own sanity, when debian/rules is ran without any argument,
-# display something meaningful, instead of just running the first
-# override.
-help:
-	dh $@
 
 ##
 #* Overrides for dh_auto*
