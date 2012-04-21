@@ -23,9 +23,21 @@ ifneq (,$(filter debug,$(DEB_BUILD_OPTIONS)))
 	EXTRA_CONFIGURE_OPTS += --enable-debug
 endif
 
+
+# We want to support building from a git tree, where the syslog-ng
+# sources are in a submodule, in syslog-ng-*. Since we do not wish to
+# update the rules for every major version if it can be helped, figure
+# it out from the changelog instead.
+UMAJOR		   = $(shell dpkg-parsechangelog | sed -n '/^Version:/s/^Version: //p' | cut -d. -f1,2)
+# Furthermore, if the directory does not exist, lets suppose we're not
+# building from a git checkout, but some kind of tarball-thing, where
+# debian/ was laid out on top of the upstream sources. So in this
+# case, use the current directory as the source dir.
+SRCDIR	   	   = $(shell test -d syslog-ng-${UMAJOR} && echo syslog-ng-${UMAJOR} || echo .)
+
 DEFAULT_MODULES	   = affile,afprog,afsocket,afuser,afsql,basicfuncs,csvparser,dbparser,syslogformat
 
-export DH_OPTIONS += -O-Bdebian/build-tree --dbg-package=syslog-ng-dbg
+export DH_OPTIONS += -O-Bdebian/build-tree --dbg-package=syslog-ng-dbg -O-D${SRCDIR}
 
 include /usr/share/hardening-includes/hardening.make
 
@@ -49,10 +61,10 @@ help:
 #   randomly fail.
 # - We need to call autogen.sh instead of autoreconf.
 override_dh_autoreconf:
-	install -d lib/ivykis/m4 modules/afmongodb/libmongo-client/m4
-	chmod +x lib/ivykis/autogen.sh modules/afmongodb/libmongo-client/autogen.sh
-	touch lib/ivykis/configure.gnu modules/afmongodb/libmongo-client/configure.gnu
-	test -e debian/autoreconf.after || dh_autoreconf sh ./autogen.sh
+	install -d ${SRCDIR}/lib/ivykis/m4 ${SRCDIR}/modules/afmongodb/libmongo-client/m4
+	chmod +x ${SRCDIR}/lib/ivykis/autogen.sh ${SRCDIR}/modules/afmongodb/libmongo-client/autogen.sh
+	touch ${SRCDIR}/lib/ivykis/configure.gnu ${SRCDIR}/modules/afmongodb/libmongo-client/configure.gnu
+	test -e debian/autoreconf.after || (cd ${SRCDIR} && dh_autoreconf sh ./autogen.sh)
 
 # Oh, the joys of configure!
 # We pass down all appropriate options, along with EXTRA_CONFIGURE_OPTS.
@@ -121,12 +133,14 @@ override_dh_auto_clean:
 		  -name 'ylwrap' -or \
 		  -regex '.*/config\.\(sub\|guess\|h\.in\)' \) \
 	     -exec rm '{}' \;
-	rm -f m4/lt*.m4 m4/libtool.m4 m4/pkg.m4
-	rm -rf lib/ivykis/m4 modules/afmongodb/libmongo-client/m4
+	rm -f ${SRCDIR}/m4/lt*.m4 ${SRCDIR}/m4/libtool.m4 ${SRCDIR}/m4/pkg.m4
+	rm -rf ${SRCDIR}/lib/ivykis/m4 ${SRCDIR}/modules/afmongodb/libmongo-client/m4
 	rm -rf debian/build-tree/
 
 # We also want to install ivykis headers and whatnot, so override
 # _auto_install, and do it too.
+#
+# This also installs the systemd files on Linux platforms.
 override_dh_auto_install:
 	dh_auto_install
 	${MAKE} -C debian/build-tree/lib/ivykis install DESTDIR=$(CURDIR)/debian/tmp
@@ -160,7 +174,7 @@ endif
 # Rationale: the ChangeLog file is an old artifact from the Arch
 # times. It is not updated, and is obsolete.
 override_dh_installchangelogs:
-	dh_installchangelogs NEWS
+	dh_installchangelogs ${SRCDIR}/NEWS
 
 # Init files and whatnot were moved to syslog-ng-core, but we want to
 # retain the old filenames. Furthermore, the init script is now
@@ -214,8 +228,10 @@ get-orig-source:
 # Without control, we are useless, politely tell the user to be our
 # good master.
 debian/control:
+	@echo "===============================================================" >&2
 	@echo "There is no debian/control, so this is probably a git checkout." >&2
 	@echo "Please run debian/tools/bootstrap.sh!" >&2
+	@echo "===============================================================" >&2
 	@exit 1
 
 binary binary-arch binary-indep build build-arch build-indep clean \
