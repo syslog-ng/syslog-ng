@@ -29,6 +29,7 @@ echo "** Cloning..."
 
 git clone -q git://git.madhouse-project.org/debian/syslog-ng.git
 cd syslog-ng
+git checkout "${UPSTREAM_TAG}"
 git submodule --quiet update --init
 
 install -d debian/orig-source
