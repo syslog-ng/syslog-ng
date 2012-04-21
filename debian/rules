@@ -224,6 +224,10 @@ build-stamp:
 get-orig-source:
 	debian/tools/get-orig-source.sh
 
+# Provide a short interface to export-source.sh
+export-source:
+	debian/tools/export-source.sh
+
 # Without control, we are useless, politely tell the user to be our
 # good master.
 debian/control:
