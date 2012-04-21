@@ -1,0 +1,14 @@
+*~
+/debian/build-tree/
+/debian/control
+/debian/files
+/debian/*debhelper*
+/debian/*substvars
+/debian/tmp/
+/debian/libsyslog-ng-*.install
+/debian/libsyslog-ng-*.lintian-overrides
+/debian/libsyslog-ng-*/
+/debian/syslog-ng-core/
+/debian/syslog-ng-dbg/
+/debian/syslog-ng/
+/debian/syslog-ng-mod-*/
