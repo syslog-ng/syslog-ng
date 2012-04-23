@@ -62,42 +62,6 @@ typedef struct _LogProtoFramedClient
 extern guint32 g_run_id;
 const guchar *find_eom(const guchar *s, gsize n);
 
-gboolean
-log_proto_set_encoding(LogProto *self, const gchar *encoding)
-{
-  if (self->convert != (GIConv) -1)
-    {
-      g_iconv_close(self->convert);
-      self->convert = (GIConv) -1;
-    }
-  if (self->encoding)
-    {
-      g_free(self->encoding);
-      self->encoding = NULL;
-    }
-
-  self->convert = g_iconv_open("utf-8", encoding);
-  if (self->convert == (GIConv) -1)
-    return FALSE;
-
-  self->encoding = g_strdup(encoding);
-  return TRUE;
-}
-
-void
-log_proto_free(LogProto *s)
-{
-  if (s->free_fn)
-    s->free_fn(s);
-  if (s->convert != (GIConv) -1)
-    g_iconv_close(s->convert);
-  if (s->encoding)
-    g_free(s->encoding);
-  if (s->transport)
-    log_transport_free(s->transport);
-  g_free(s);
-}
-
 static gboolean
 log_proto_text_client_prepare(LogProto *s, gint *fd, GIOCondition *cond, gint *timeout)
 {
