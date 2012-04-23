@@ -38,6 +38,7 @@
 #include "logsource.h"
 #include "mainloop.h"
 #include "plugin.h"
+#include "reloc.h"
 
 #include <sys/types.h>
 #include <stdio.h>
@@ -140,7 +141,7 @@ version(void)
   plugin_list_modules(stdout, FALSE);
 
 #if ENABLE_STATIC_MODULES
-  printf("Builtin modules: %s\n", STATIC_MODULES);
+  printf("Builtin-modules: %s\n", STATIC_MODULES);
 #endif
   printf("Enable-Debug: %s\n"
          "Enable-GProf: %s\n"
