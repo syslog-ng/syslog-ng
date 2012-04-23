@@ -13,7 +13,7 @@ if ENABLE_STATIC_MODULES
 noinst_LTLIBRARIES := libtfjson-static.la
 libtfjson_static_la_SOURCES = $(libtfjson_la_SOURCES)
 libtfjson_static_la_CPPFLAGS = $(AM_CPPFLAGS) -DSTATIC
-libtfjson_static_la_LIBADD = $(libtfjson_la_LIBADD)
+libtfjson_static_la_LIBADD = $(JSON_LIBS)
 libtfjson_static_la_LDFLAGS = $(STATIC_MODULE_LDFLAGS)
 endif
 endif

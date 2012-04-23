@@ -18,7 +18,7 @@ if ENABLE_STATIC_MODULES
 noinst_LTLIBRARIES := libafprog-static.la
 libafprog_static_la_SOURCES = $(libafprog_la_SOURCES)
 libafprog_static_la_CPPFLAGS = $(AM_CPPFLAGS) -DSTATIC
-libafprog_static_la_LIBADD = $(MODULE_DEPS_LIBS)
+libafprog_static_la_LIBADD =
 libafprog_static_la_LDFLAGS = $(STATIC_MODULE_LDFLAGS)
 endif
 

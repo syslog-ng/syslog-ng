@@ -13,7 +13,7 @@ if ENABLE_STATIC_MODULES
 noinst_LTLIBRARIES := libconfgen-static.la
 libconfgen_static_la_SOURCES = $(libconfgen_la_SOURCES)
 libconfgen_static_la_CPPFLAGS = $(libconfgen_la_CPPFLAGS) -DSTATIC
-libconfgen_static_la_LIBADD = $(libconfgen_la_LIBADD)
+libconfgen_static_la_LIBADD =
 libconfgen_static_la_LDFLAGS = $(STATIC_MODULE_LDFLAGS)
 endif
 

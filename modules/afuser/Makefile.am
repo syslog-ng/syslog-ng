@@ -15,7 +15,7 @@ if ENABLE_STATIC_MODULES
 noinst_LTLIBRARIES := libafuser-static.la
 libafuser_static_la_SOURCES = $(libafuser_la_SOURCES)
 libafuser_static_la_CPPFLAGS = $(libafuser_la_CPPFLAGS) -DSTATIC
-libafuser_static_la_LIBADD = $(libafuser_la_LIBADD)
+libafuser_static_la_LIBADD =
 libafuser_static_la_LDFLAGS = $(STATIC_MODULE_LDFLAGS)
 endif
 

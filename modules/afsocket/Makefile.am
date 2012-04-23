@@ -25,7 +25,7 @@ if ENABLE_STATIC_MODULES
 noinst_LTLIBRARIES := libafsocket-notls-static.la
 libafsocket_notls_static_la_SOURCES = $(libafsocket_notls_la_SOURCES)
 libafsocket_notls_static_la_CPPFLAGS = $(libafsocket_notls_la_CPPFLAGS) -DSTATIC
-libafsocket_notls_static_la_LIBADD = $(libafsocket_notls_la_LIBADD)
+libafsocket_notls_static_la_LIBADD = $(MODULE_DEPS_LIBS) $(LIBNET_LIBS) $(LIBWRAP_LIBS) $(libsystemd_daemon_LIBS)
 libafsocket_notls_static_la_LDFLAGS = $(STATIC_MODULE_LDFLAGS)
 endif
 
@@ -42,7 +42,7 @@ if ENABLE_STATIC_MODULES
 noinst_LTLIBRARIES += libafsocket-tls-static.la
 libafsocket_tls_static_la_SOURCES = $(libafsocket_tls_la_SOURCES)
 libafsocket_tls_static_la_CPPFLAGS = $(libafsocket_tls_la_CPPFLAGS) -DSTATIC
-libafsocket_tls_static_la_LIBADD = $(libafsocket_tls_la_LIBADD)
+libafsocket_tls_static_la_LIBADD =$(MODULE_DEPS_LIBS) $(ZLIB_LIBS) $(LIBNET_LIBS) $(LIBWRAP_LIBS) $(libsystemd_daemon_LIBS)
 libafsocket_tls_static_la_LDFLAGS = $(STATIC_MODULE_LDFLAGS)
 endif
 endif

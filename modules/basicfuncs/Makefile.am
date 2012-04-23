@@ -12,6 +12,6 @@ if ENABLE_STATIC_MODULES
 noinst_LTLIBRARIES := libbasicfuncs-static.la
 libbasicfuncs_static_la_SOURCES = $(libbasicfuncs_la_SOURCES)
 libbasicfuncs_static_la_CPPFLAGS = $(libbasicfuncs_la_CPPFLAGS) -DSTATIC
-libbasicfuncs_static_la_LIBADD = $(libbasicfuncs_la_LIBADD)
+libbasicfuncs_static_la_LIBADD =
 libbasicfuncs_static_la_LDFLAGS = $(STATIC_MODULE_LDFLAGS)
 endif
