@@ -33,10 +33,6 @@
 
 #include <libesmtp.h>
 
-#ifndef SCS_SMTP
-#define SCS_SMTP 0
-#endif
-
 typedef struct
 {
   gchar *name;
