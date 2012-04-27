@@ -769,63 +769,13 @@ afsql_dd_insert_fail_handler(AFSqlDestDriver *self, LogMessage *msg,
   return TRUE;
 }
 
-/**
- * afsql_dd_insert_db:
- *
- * This function is running in the database thread
- *
- * Returns: FALSE to indicate that the connection should be closed and
- * this destination suspended for time_reopen() time.
- **/
-static gboolean
-afsql_dd_insert_db(AFSqlDestDriver *self)
+static GString *
+afsql_dd_construct_query(AFSqlDestDriver *self, GString *table,
+                         LogMessage *msg)
 {
-  GString *table, *query_string, *value;
-  LogMessage *msg;
-  gboolean success;
+  GString *value;
+  GString *query_string;
   gint i;
-  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
-
-  afsql_dd_connect(self);
-
-  if (self->pending_msg)
-    {
-      msg = self->pending_msg;
-      path_options.ack_needed = self->pending_msg_ack_needed;
-      self->pending_msg = NULL;
-    }
-  else
-    {
-      g_mutex_lock(self->db_thread_mutex);
-
-      /* FIXME: this is a workaround because of the non-proper locking semantics
-       * of the LogQueue.  It might happen that the _queue() method sees 0
-       * elements in the queue, while the thread is still busy processing the
-       * previous message.  In that case arming the parallel push callback is
-       * not needed and will cause assertions to fail.  This is ugly and should
-       * be fixed by properly defining the "blocking" semantics of the LogQueue
-       * object w/o having to rely on user-code messing with parallel push
-       * callbacks. */
-      log_queue_reset_parallel_push(self->queue);
-      success = log_queue_pop_head(self->queue, &msg, &path_options, (self->flags & AFSQL_DDF_EXPLICIT_COMMITS), FALSE);
-      g_mutex_unlock(self->db_thread_mutex);
-      if (!success)
-        return TRUE;
-    }
-
-  msg_set_context(msg);
-
-  table = afsql_dd_validate_table(self, msg);
-  if (!table)
-    {
-      /* If validate table is FALSE then close the connection and wait time_reopen time (next call) */
-      msg_error("Error checking table, disconnecting from database, trying again shortly",
-                evt_tag_int("time_reopen", self->time_reopen),
-                NULL);
-      msg_set_context(NULL);
-      g_string_free(table, TRUE);
-      return afsql_dd_insert_fail_handler(self, msg, &path_options);
-    }
 
   value = g_string_sized_new(256);
   query_string = g_string_sized_new(512);
@@ -876,18 +826,74 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
     }
   g_string_append(query_string, ")");
 
-  /* we have the INSERT statement ready in query_string */
+  g_string_free(value, TRUE);
+
+  return query_string;
+}
+
+/**
+ * afsql_dd_insert_db:
+ *
+ * This function is running in the database thread
+ *
+ * Returns: FALSE to indicate that the connection should be closed and
+ * this destination suspended for time_reopen() time.
+ **/
+static gboolean
+afsql_dd_insert_db(AFSqlDestDriver *self)
+{
+  GString *table, *query_string;
+  LogMessage *msg;
+  gboolean success;
+  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
+
+  afsql_dd_connect(self);
+
+  if (self->pending_msg)
+    {
+      msg = self->pending_msg;
+      path_options.ack_needed = self->pending_msg_ack_needed;
+      self->pending_msg = NULL;
+    }
+  else
+    {
+      g_mutex_lock(self->db_thread_mutex);
+
+      /* FIXME: this is a workaround because of the non-proper locking semantics
+       * of the LogQueue.  It might happen that the _queue() method sees 0
+       * elements in the queue, while the thread is still busy processing the
+       * previous message.  In that case arming the parallel push callback is
+       * not needed and will cause assertions to fail.  This is ugly and should
+       * be fixed by properly defining the "blocking" semantics of the LogQueue
+       * object w/o having to rely on user-code messing with parallel push
+       * callbacks. */
+      log_queue_reset_parallel_push(self->queue);
+      success = log_queue_pop_head(self->queue, &msg, &path_options, (self->flags & AFSQL_DDF_EXPLICIT_COMMITS), FALSE);
+      g_mutex_unlock(self->db_thread_mutex);
+      if (!success)
+        return TRUE;
+    }
+
+  msg_set_context(msg);
+
+  table = afsql_dd_validate_table(self, msg);
+  if (!table)
+    {
+      /* If validate table is FALSE then close the connection and wait time_reopen time (next call) */
+      msg_error("Error checking table, disconnecting from database, trying again shortly",
+                evt_tag_int("time_reopen", self->time_reopen),
+                NULL);
+      msg_set_context(NULL);
+      g_string_free(table, TRUE);
+      return afsql_dd_insert_fail_handler(self, msg, &path_options);
+    }
+
+  query_string = afsql_dd_construct_query(self, table, msg);
 
   if (self->flush_lines_queued == 0 && !afsql_dd_begin_txn(self))
     return FALSE;
 
-  success = TRUE;
-  if (!afsql_dd_run_query(self, query_string->str, FALSE, NULL))
-    {
-      /* error running INSERT on an already validated table, too bad. Try to reconnect. Maybe that helps. */
-      success = FALSE;
-    }
-
+  success = afsql_dd_run_query(self, query_string->str, FALSE, NULL);
   if (success && self->flush_lines_queued != -1)
     {
       self->flush_lines_queued++;
@@ -897,7 +903,6 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
     }
 
   g_string_free(table, TRUE);
-  g_string_free(value, TRUE);
   g_string_free(query_string, TRUE);
 
   msg_set_context(NULL);
