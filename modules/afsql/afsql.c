@@ -651,6 +651,76 @@ afsql_dd_set_dbd_opt_numeric(gpointer key, gpointer value, gpointer user_data)
                               GPOINTER_TO_INT(value));
 }
 
+static gboolean
+afsql_dd_connect(AFSqlDestDriver *self)
+{
+  if (self->dbi_ctx)
+    return TRUE;
+
+  self->dbi_ctx = dbi_conn_new(self->type);
+  if (!self->dbi_ctx)
+    {
+      msg_error("No such DBI driver",
+                evt_tag_str("type", self->type),
+                NULL);
+      return FALSE;
+    }
+
+  dbi_conn_set_option(self->dbi_ctx, "host", self->host);
+  if (strcmp(self->type, "mysql"))
+    dbi_conn_set_option(self->dbi_ctx, "port", self->port);
+  else
+    dbi_conn_set_option_numeric(self->dbi_ctx, "port", atoi(self->port));
+  dbi_conn_set_option(self->dbi_ctx, "username", self->user);
+  dbi_conn_set_option(self->dbi_ctx, "password", self->password);
+  dbi_conn_set_option(self->dbi_ctx, "dbname", self->database);
+  dbi_conn_set_option(self->dbi_ctx, "encoding", self->encoding);
+  dbi_conn_set_option(self->dbi_ctx, "auto-commit", self->flags & AFSQL_DDF_EXPLICIT_COMMITS ? "false" : "true");
+
+  /* database specific hacks */
+  dbi_conn_set_option(self->dbi_ctx, "sqlite_dbdir", "");
+  dbi_conn_set_option(self->dbi_ctx, "sqlite3_dbdir", "");
+
+  /* Set user-specified options */
+  g_hash_table_foreach(self->dbd_options, afsql_dd_set_dbd_opt, self->dbi_ctx);
+  g_hash_table_foreach(self->dbd_options_numeric, afsql_dd_set_dbd_opt_numeric, self->dbi_ctx);
+
+  if (dbi_conn_connect(self->dbi_ctx) < 0)
+    {
+      const gchar *dbi_error;
+
+      dbi_conn_error(self->dbi_ctx, &dbi_error);
+
+      msg_error("Error establishing SQL connection",
+                evt_tag_str("type", self->type),
+                evt_tag_str("host", self->host),
+                evt_tag_str("port", self->port),
+                evt_tag_str("username", self->user),
+                evt_tag_str("database", self->database),
+                evt_tag_str("error", dbi_error),
+                NULL);
+      return FALSE;
+    }
+
+  if (self->session_statements != NULL)
+    {
+      GList *l;
+
+      for (l = self->session_statements; l; l = l->next)
+        {
+          if (!afsql_dd_run_query(self, (gchar *) l->data, FALSE, NULL))
+            {
+              msg_error("Error executing SQL connection statement",
+                        evt_tag_str("statement", (gchar *) l->data),
+                        NULL);
+              return FALSE;
+            }
+        }
+    }
+
+  return TRUE;
+}
+
 /**
  * afsql_dd_insert_db:
  *
@@ -668,73 +738,7 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
   gint i;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
 
-  if (!self->dbi_ctx)
-    {
-      self->dbi_ctx = dbi_conn_new(self->type);
-      if (self->dbi_ctx)
-        {
-          dbi_conn_set_option(self->dbi_ctx, "host", self->host);
-          if (strcmp(self->type, "mysql"))
-            dbi_conn_set_option(self->dbi_ctx, "port", self->port);
-          else
-            dbi_conn_set_option_numeric(self->dbi_ctx, "port", atoi(self->port));
-          dbi_conn_set_option(self->dbi_ctx, "username", self->user);
-          dbi_conn_set_option(self->dbi_ctx, "password", self->password);
-          dbi_conn_set_option(self->dbi_ctx, "dbname", self->database);
-          dbi_conn_set_option(self->dbi_ctx, "encoding", self->encoding);
-          dbi_conn_set_option(self->dbi_ctx, "auto-commit", self->flags & AFSQL_DDF_EXPLICIT_COMMITS ? "false" : "true");
-
-          /* database specific hacks */
-          dbi_conn_set_option(self->dbi_ctx, "sqlite_dbdir", "");
-          dbi_conn_set_option(self->dbi_ctx, "sqlite3_dbdir", "");
-
-          /* Set user-specified options */
-          g_hash_table_foreach(self->dbd_options, afsql_dd_set_dbd_opt, self->dbi_ctx);
-          g_hash_table_foreach(self->dbd_options_numeric, afsql_dd_set_dbd_opt_numeric, self->dbi_ctx);
-
-          if (dbi_conn_connect(self->dbi_ctx) < 0)
-            {
-              const gchar *dbi_error;
-
-              dbi_conn_error(self->dbi_ctx, &dbi_error);
-
-              msg_error("Error establishing SQL connection",
-                        evt_tag_str("type", self->type),
-                        evt_tag_str("host", self->host),
-                        evt_tag_str("port", self->port),
-                        evt_tag_str("username", self->user),
-                        evt_tag_str("database", self->database),
-                        evt_tag_str("error", dbi_error),
-                        NULL);
-              return FALSE;
-            }
-        }
-      else
-        {
-          msg_error("No such DBI driver",
-                    evt_tag_str("type", self->type),
-                    NULL);
-          return FALSE;
-        }
-
-      if (self->session_statements != NULL)
-        {
-          GList *l;
-
-          for (l = self->session_statements; l; l = l->next)
-            {
-              if (!afsql_dd_run_query(self, (gchar *) l->data, FALSE, NULL))
-                {
-                  msg_error("Error executing SQL connection statement",
-                            evt_tag_str("statement", (gchar *) l->data),
-                            NULL);
-                  return FALSE;
-                }
-            }
-        }
-    }
-
-  /* connection established, try to insert a message */
+  afsql_dd_connect(self);
 
   if (self->pending_msg)
     {
