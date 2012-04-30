@@ -728,6 +728,8 @@ block_stmt
 
             block = cfg_block_new($10, last_block_args);
             CHECK_ERROR(cfg_lexer_register_block_generator(lexer, cfg_lexer_lookup_context_type_by_name($3), $4, cfg_block_generate, block, (GDestroyNotify) cfg_block_free) || cfg_allow_config_dups(configuration), @4, "duplicate block definition");
+            free($3);
+            free($4);
             free($10);
             last_block_args = NULL;
           }
