@@ -396,9 +396,12 @@ gchar *
 cfg_tree_get_child_id(CfgTree *self, gint content, LogExprNode *node)
 {
   LogExprNode *rule = log_expr_node_get_container_rule(node, content);
-  const gchar *rule_name = cfg_tree_get_rule_name(self, content, node);
+  gchar *rule_name = cfg_tree_get_rule_name(self, content, node);
+  gchar *res;
 
-  return g_strdup_printf("%s#%d", rule_name, rule->child_id++);
+  res = g_strdup_printf("%s#%d", rule_name, rule->child_id++);
+  g_free(rule_name);
+  return res;
 }
 
 /* hash foreach function to add all source objects to catch-all rules */
@@ -1093,6 +1096,7 @@ cfg_tree_free_instance(CfgTree *self)
   g_ptr_array_foreach(self->rules, (GFunc) log_expr_node_free, NULL);
   g_ptr_array_free(self->rules, TRUE);
 
+  g_hash_table_destroy(self->objects);
   g_hash_table_destroy(self->templates);
   self->cfg = NULL;
 }
