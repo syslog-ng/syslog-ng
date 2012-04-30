@@ -929,7 +929,7 @@ cfg_lexer_free(CfgLexer *self)
         gen->generator_data_free(gen->generator_data);
       g_free(gen->name);
       g_free(gen);
-      self->generators = g_list_remove_link(self->generators, self->generators);
+      self->generators = g_list_delete_link(self->generators, self->generators);
     }
   cfg_args_free(self->globals);
   g_list_foreach(self->token_blocks, (GFunc) cfg_token_block_free, NULL);
