@@ -101,9 +101,6 @@ enum
   LF_STATE_OWN_SDATA   = 0x0080,
   LF_STATE_OWN_MASK    = 0x00F0,
 
-  /* mark messages whose payload is referenced by a clone */
-  LF_STATE_REFERENCED  = 0x0100,
-
   LF_CHAINED_HOSTNAME  = 0x00010000,
 
   /* originally parsed from RFC 3164 format and the legacy message header
@@ -174,6 +171,7 @@ struct _LogMessage
 
   guint8 num_nodes;
   guint8 cur_node;
+  guint8 protect_cnt;
 
   /* preallocated LogQueueNodes used to insert this message into a LogQueue */
   LogMessageQueueNode nodes[0];
@@ -188,7 +186,10 @@ extern gint logmsg_node_max;
 
 LogMessage *log_msg_ref(LogMessage *m);
 void log_msg_unref(LogMessage *m);
-LogMessage *log_msg_clone_cow(LogMessage *m, const LogPathOptions *path_options);
+void log_msg_write_protect(LogMessage *m);
+void log_msg_write_unprotect(LogMessage *m);
+LogMessage *log_msg_clone_cow(LogMessage *msg, const LogPathOptions *path_options);
+LogMessage *log_msg_make_writable(LogMessage **pmsg, const LogPathOptions *path_options);
 
 gboolean log_msg_write(LogMessage *self, SerializeArchive *sa);
 gboolean log_msg_read(LogMessage *self, SerializeArchive *sa);

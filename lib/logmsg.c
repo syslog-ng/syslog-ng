@@ -190,6 +190,39 @@ static StatsCounterItem *count_payload_reallocs;
 static StatsCounterItem *count_sdata_updates;
 static GStaticPrivate priv_macro_value = G_STATIC_PRIVATE_INIT;
 
+static inline gboolean
+log_msg_is_write_protected(LogMessage *self)
+{
+  return self->protect_cnt > 0;
+}
+
+void
+log_msg_write_protect(LogMessage *self)
+{
+  self->protect_cnt++;
+}
+
+void
+log_msg_write_unprotect(LogMessage *self)
+{
+  self->protect_cnt--;
+}
+
+LogMessage *
+log_msg_make_writable(LogMessage **pself, const LogPathOptions *path_options)
+{
+  if (log_msg_is_write_protected(*pself))
+    {
+      LogMessage *new;
+
+      new = log_msg_clone_cow(*pself, path_options);
+      log_msg_unref(*pself);
+      *pself = new;
+    }
+  return *pself;
+}
+
+
 static void
 log_msg_update_sdata_slow(LogMessage *self, NVHandle handle, const gchar *name, gssize name_len)
 {
@@ -386,7 +419,7 @@ log_msg_init_queue_node(LogMessage *msg, LogMessageQueueNode *node, const LogPat
   INIT_LIST_HEAD(&node->list);
   node->ack_needed = path_options->ack_needed;
   node->msg = log_msg_ref(msg);
-  msg->flags |= LF_STATE_REFERENCED;
+  log_msg_write_protect(msg);
 }
 
 /*
@@ -451,6 +484,8 @@ log_msg_set_value(LogMessage *self, NVHandle handle, const gchar *value, gssize 
   const gchar *name;
   gssize name_len;
   gboolean new_entry = FALSE;
+  
+  g_assert(!log_msg_is_write_protected(self));
 
   if (handle == LM_V_NONE)
     return;
@@ -496,6 +531,8 @@ log_msg_set_value_indirect(LogMessage *self, NVHandle handle, NVHandle ref_handl
   const gchar *name;
   gssize name_len;
   gboolean new_entry = FALSE;
+
+  g_assert(!log_msg_is_write_protected(self));
 
   if (handle == LM_V_NONE)
     return;
@@ -638,6 +675,7 @@ log_msg_set_tag_by_id_onoff(LogMessage *self, LogTagId id, gboolean on)
   gint old_num_tags;
   gboolean inline_tags;
 
+  g_assert(!log_msg_is_write_protected(self));
   if (!log_msg_chk_flag(self, LF_STATE_OWN_TAGS) && self->num_tags)
     {
       self->tags = g_memdup(self->tags, sizeof(self->tags[0]) * self->num_tags);
@@ -918,6 +956,8 @@ log_msg_print_tags(LogMessage *self, GString *result)
   log_msg_tags_foreach(self, log_msg_append_tags_callback, args);
 }
 
+
+
 /**
  * log_msg_init:
  * @self: LogMessage instance
@@ -1047,7 +1087,6 @@ log_msg_new_empty(void)
   return self;
 }
 
-
 void
 log_msg_clone_ack(LogMessage *msg, gpointer user_data)
 {
@@ -1077,7 +1116,7 @@ log_msg_clone_cow(LogMessage *msg, const LogPathOptions *path_options)
        * clone. */
       msg = msg->original;
     }
-  msg->flags |= LF_STATE_REFERENCED;
+  log_msg_write_protect(msg);
 
   memcpy(self, msg, sizeof(*msg));
 
@@ -1088,6 +1127,7 @@ log_msg_clone_cow(LogMessage *msg, const LogPathOptions *path_options)
   self->original = log_msg_ref(msg);
   self->ack_and_ref = LOGMSG_REFCACHE_REF_TO_VALUE(1) + LOGMSG_REFCACHE_ACK_TO_VALUE(0);
   self->cur_node = 0;
+  self->protect_cnt = 0;
 
   log_msg_add_ack(self, path_options);
   if (!path_options->ack_needed)

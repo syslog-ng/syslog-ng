@@ -149,7 +149,7 @@ log_json_parser_process_object (struct json_object *jso,
 }
 
 static gboolean
-log_json_parser_process (LogParser *s, LogMessage *msg, const gchar *input)
+log_json_parser_process (LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, const gchar *input)
 {
   LogJSONParser *self = (LogJSONParser *) s;
   struct json_object *jso;
@@ -162,7 +162,8 @@ log_json_parser_process (LogParser *s, LogMessage *msg, const gchar *input)
       return FALSE;
     }
 
-  log_json_parser_process_object (jso, self->prefix, msg);
+  log_msg_make_writable(pmsg, path_options);
+  log_json_parser_process_object (jso, self->prefix, *pmsg);
 
   json_object_put (jso);
 

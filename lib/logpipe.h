@@ -51,16 +51,13 @@
 /* branch starting with this pipe wants hard flow control */
 #define PIF_HARD_FLOW_CONTROL 0x0010
 
-/* branch starting with this pipe needs a cloned message because it modifies it */
-#define PIF_CLONE             0x0040
-
 /* this pipe is a source for messages, it is not meant to be used to
  * forward messages, syslog-ng will only use these pipes for the
  * left-hand side of the processing graph, e.g. no other pipes may be
  * sending messages to these pipes and these are expected to generate
  * messages "automatically". */
 
-#define PIF_SOURCE            0x0080
+#define PIF_SOURCE            0x0020
 
 /* private flags range, to be used by other LogPipe instances for their own purposes */
 

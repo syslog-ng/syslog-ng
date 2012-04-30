@@ -53,7 +53,7 @@ log_rewrite_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_option
     }
   else
     {
-      self->process(self, msg);
+      self->process(self, &msg, path_options);
     }
   if (G_UNLIKELY(debug_flag))
     {
@@ -99,7 +99,6 @@ log_rewrite_init(LogRewrite *self)
 {
   log_pipe_init_instance(&self->super);
   /* indicate that the rewrite rule is changing the message */
-  self->super.flags |= PIF_CLONE;
   self->super.free_fn = log_rewrite_free_method;
   self->super.queue = log_rewrite_queue;
   self->super.init = log_rewrite_init_method;
@@ -121,7 +120,7 @@ struct _LogRewriteSubst
 };
 
 void 
-log_rewrite_subst_process(LogRewrite *s, LogMessage *msg)
+log_rewrite_subst_process(LogRewrite *s, LogMessage **pmsg, const LogPathOptions *path_options)
 {
   LogRewriteSubst *self = (LogRewriteSubst *) s;
   const gchar *value;
@@ -129,12 +128,13 @@ log_rewrite_subst_process(LogRewrite *s, LogMessage *msg)
   gssize length;
   gssize new_length = -1;
 
-  value = log_msg_get_value(msg, self->super.value_handle, &length);
+  value = log_msg_get_value(*pmsg, self->super.value_handle, &length);
 
-  new_value = log_matcher_replace(self->matcher, msg, self->super.value_handle, value, length, self->replacement, &new_length);
+  new_value = log_matcher_replace(self->matcher, *pmsg, self->super.value_handle, value, length, self->replacement, &new_length);
   if (new_value)
     {
-      log_msg_set_value(msg, self->super.value_handle, new_value, new_length);
+      log_msg_make_writable(pmsg, path_options);
+      log_msg_set_value(*pmsg, self->super.value_handle, new_value, new_length);
     }
   g_free(new_value);
 }
@@ -230,15 +230,16 @@ struct _LogRewriteSet
 };
 
 static void
-log_rewrite_set_process(LogRewrite *s, LogMessage *msg)
+log_rewrite_set_process(LogRewrite *s, LogMessage **pmsg, const LogPathOptions *path_options)
 {
   LogRewriteSet *self = (LogRewriteSet *) s;
   GString *result;
 
   result = g_string_sized_new(64);
-  log_template_format(self->value_template, msg, NULL, LTZ_LOCAL, 0, NULL, result);
+  log_template_format(self->value_template, *pmsg, NULL, LTZ_LOCAL, 0, NULL, result);
 
-  log_msg_set_value(msg, self->super.value_handle, result->str, result->len);
+  log_msg_make_writable(pmsg, path_options);
+  log_msg_set_value(*pmsg, self->super.value_handle, result->str, result->len);
   g_string_free(result, TRUE);
 }
 

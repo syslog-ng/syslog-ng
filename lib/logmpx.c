@@ -67,13 +67,11 @@ log_multiplexer_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_op
   gint fallback;
   
   local_options.matched = &matched;
-  
   for (fallback = 0; (fallback == 0) || (fallback == 1 && self->fallback_exists && !delivered); fallback++)
     {
       for (i = 0; i < self->next_hops->len; i++)
         {
           LogPipe *next_hop = g_ptr_array_index(self->next_hops, i);
-          LogMessage *next_msg = NULL;
 
           if (G_UNLIKELY(fallback == 0 && (next_hop->flags & PIF_BRANCH_FALLBACK) != 0))
             {
@@ -87,37 +85,21 @@ log_multiplexer_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_op
           matched = TRUE;
           log_msg_add_ack(msg, &local_options);
           
-          if (G_UNLIKELY(next_hop->flags & PIF_CLONE))
-            {
-              if (msg->flags & LF_STATE_REFERENCED)
-                {
-                  /* if the message is referenced by other clones, we
-                   * always have to clone in case a given path
-                   * modifies it */
-                  next_msg = log_msg_clone_cow(msg, &local_options);
-                }
-              else
-                {
-                  /* NOTE: this variable indicates that the upcoming message
-                   * delivery is the last one, thus we don't need to clone the
-                   * message, a simple ref is enough, provided the message was
-                   * not yet cloned. */
-                  last_delivery = (self->super.pipe_next == NULL) && (i == self->next_hops->len - 1) && (!self->fallback_exists || delivered || fallback == 1);
-
-                  if (last_delivery)
-                    {
-                      next_msg = log_msg_ref(msg);
-                    }
-                  else
-                    {
-                      next_msg = log_msg_clone_cow(msg, &local_options);
-                    }
-                }
-            }
-          else
-            next_msg = log_msg_ref(msg);
-
-          log_pipe_queue(next_hop, next_msg, &local_options);
+          /* NOTE: this variable indicates that the upcoming message
+           * delivery is the last one, thus we don't need to retain an an
+           * unmodified copy to be sent to further paths.  The current
+           * delivery may modify the message at will.
+           */
+           
+          last_delivery = (self->super.pipe_next == NULL) && 
+                          (i == self->next_hops->len - 1) && 
+                          (!self->fallback_exists || delivered || fallback == 1);
+          
+          if (!last_delivery)
+            log_msg_write_protect(msg);
+          log_pipe_queue(next_hop, log_msg_ref(msg), &local_options);
+          if (!last_delivery)
+            log_msg_write_unprotect(msg);
           
           if (matched)
             {

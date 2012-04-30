@@ -38,7 +38,7 @@ struct _LogRewrite
   LogPipe super;
   NVHandle value_handle;
   FilterExprNode *condition;
-  void (*process)(LogRewrite *s, LogMessage *msg);
+  void (*process)(LogRewrite *s, LogMessage **pmsg, const LogPathOptions *path_options);
   gchar *name;
 };
 

@@ -57,7 +57,7 @@ log_parser_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
        * LM_V_MESSAGE pointer we pass to process() go stale.
        */
 
-      success = self->process(self, msg, log_msg_get_value(msg, LM_V_MESSAGE, NULL));
+      success = self->process(self, &msg, path_options, log_msg_get_value(msg, LM_V_MESSAGE, NULL));
       nv_table_unref(payload);
     }
   else
@@ -65,7 +65,7 @@ log_parser_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
       GString *input = g_string_sized_new(256);
       
       log_template_format(self->template, msg, NULL, LTZ_LOCAL, 0, NULL, input);
-      success = self->process(self, msg, input->str);
+      success = self->process(self, &msg, path_options, input->str);
       g_string_free(input, TRUE);
     }
   msg_debug("Message parsing complete",
@@ -111,7 +111,6 @@ log_parser_init_instance(LogParser *self)
 {
   log_pipe_init_instance(&self->super);
   self->super.init = log_parser_init;
-  self->super.flags |= PIF_CLONE;
   self->super.free_fn = log_parser_free_method;
   self->super.queue = log_parser_queue;
 }

@@ -626,7 +626,6 @@ cfg_tree_compile_sequence(CfgTree *self, LogExprNode *node,
     *first_pipe,   /* the head of the constructed pipeline */
     *last_pipe;    /* the current tail of the constructed pipeline */
   LogPipe *source_join_pipe = NULL;
-  gboolean  path_changes_the_message = FALSE;
 
   if ((node->flags & LC_CATCHALL) != 0)
     {
@@ -667,9 +666,6 @@ cfg_tree_compile_sequence(CfgTree *self, LogExprNode *node,
       /* add pipe to the current pipe_line, e.g. after last_pipe, update last_pipe & first_pipe */
       if (sub_pipe_head)
         {
-          if (sub_pipe_head->flags & PIF_CLONE)
-            path_changes_the_message = TRUE;
-
           if (!first_pipe && !last_pipe)
             {
               /* we only remember the first pipe in case we're not in
@@ -733,9 +729,6 @@ cfg_tree_compile_sequence(CfgTree *self, LogExprNode *node,
 
       if (node->flags & LC_FINAL)
         first_pipe->flags |= PIF_BRANCH_FINAL;
-
-      if (path_changes_the_message)
-        first_pipe->flags |= PIF_CLONE;
 
       if (node->flags & LC_FLOW_CONTROL)
         first_pipe->flags |= PIF_HARD_FLOW_CONTROL;

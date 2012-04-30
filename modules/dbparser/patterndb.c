@@ -1522,7 +1522,6 @@ pattern_db_process(PatternDB *self, LogMessage *msg)
                         NULL);
             }
 
-          msg->flags |= LF_STATE_REFERENCED;
           g_ptr_array_add(context->messages, log_msg_ref(msg));
 
           if (context->timer)
@@ -1553,6 +1552,9 @@ pattern_db_process(PatternDB *self, LogMessage *msg)
         }
       pdb_rule_unref(rule);
       g_static_rw_lock_writer_unlock(&self->lock);
+
+      if (context)
+        log_msg_write_protect(msg);
 
       g_string_free(buffer, TRUE);
     }
