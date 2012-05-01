@@ -1,3 +1,120 @@
+3.4.0alpha2
+	Tue, 01 May 2012 08:59:21 +0200
+
+	Features:
+	=========
+	* Added support for globbing when including files. Now you can use
+	  UNIX shell style wildcards in the names of include files and
+	  syslog-ng will properly source all matching files.
+
+	* Allow huge messages. Earlier log messages were limited to 256k in
+	  size, with each name-value pair limited at 64k. These limitations
+          were lifted, syslog-ng now uses a 32 bit integer field to hold the
+	  size information for both the whole data structure and individual
+          fields. An artificial limit of 256MB is still applied though, but
+          it is trivial to change that in the future, and until then this
+          should suffice.
+
+	Other changes:
+	==============
+
+	* Flow-control logic was changed, instead of enabling flow-control
+	  for all branches of a log statement when a single
+	  flags(flow-control) was present, only enable it downwards.
+
+	* Changed json-parser() to encode JSON array members as ${array[0]},
+	  ${array[1]} and so on, instead of using ".index" suffixes.
+
+	* Fixed Makefile.am files to avoid attempting to compile mongodb and
+	  smtp destination drivers when they are disabled.
+
+	* Fixed --with-json configure option parsing and added
+	  --disable-json for consistency with other optional features.
+
+	* Removed the "dummy" module, which only served as a placeholder
+	  when the original "pluginization" happened in 3.2.
+
+        Bugfixes:
+        =========
+
+        * Fixed a segmentation fault, which happened when source or
+          destination objects were defined without any actual drivers.
+
+	* Fixed a possible crash in config file parsing that happens when
+	  parsing a unix-dgram() source driver and file permissions (owner,
+	  group, perm) specified.
+
+	* Fixed a possible crash (double-free) in the value-pairs command
+	  line parser used in $(format-json), in case the command line
+	  options have syntax errors.
+
+	* Handle and print template compilation errors properly during
+	  configuration parsing.
+
+	* Fixed some memory leaks in the configuration compilation code
+	  introduced in 3.4.
+
+	Bugfixes backported from 3.3 (matching 3.3.5):
+	==============================================
+
+        * Fixed a significant memory leak that occurred when the receiver
+          side of a syslog connection is slower than syslog-ng. The message
+          which we got EAGAIN for got leaked.
+
+        * Fixed another memory leak that caused the complete queue for
+          socket based destination drivers to be leaked at reload time.
+
+        * Fixed a memory leak related to handling TLS enabled connections.
+          As connections come and go the TLS context wasn't freed.
+
+        * Fixed a small memory leak that occurred when worker threads exit
+          (and later start again).
+
+        * Fixed a deadlock in the SQL destination that occurred when a
+          COMMIT TRANSACTION command failed.
+
+        * Fixed an abort() which occurred when the retry timer of a
+          suspended destination fired.
+
+        * Fixed a framing error in RFC5424 destinations.
+
+        * MongoDB & SQL: fixed a race condition that caused mongodb/sql
+          destinations to hang.
+
+        * Fixed handling the ENOBUFS error in udp() destinations on FreeBSD
+          and related/derived platforms. Previously ENOBUFS caused syslog-ng
+          to suspend the destination for time_reopen() (which defaults to 60
+          seconds), but that's excessive.  Reading the literature suggests
+          that there are three ways to handle an ENOBUFS: wait for some
+          undetermined amount of time until the interface buffers are
+          presumably emptied, or let the packet be dropped or go back to the
+          poll loop and hope that by the next time the event is dispatched
+          ENOBUFS will be gone. Right now, syslog-ng will drop the affected
+          packet, as the other two could cause other tasks to starve (wait
+          some time) OR syslog-ng to use 100% CPU.
+
+
+        Credits:
+        ========
+        syslog-ng is developed as a community project, and as such it relies
+        on volunteers to do the work necessarily to produce syslog-ng.
+
+        Reporting bugs, testing changes, writing code or simply providing
+        feedback are all important contributions, so please if you are a
+        user of syslog-ng, contribute.
+
+        These people have helped in this release:
+          Peter Czanik (BalaBit)
+          Martin Grauel (BalaBit)
+          Patrick Hemmer
+          Hendrik Völker (Verizon)
+          Gergely Nagy (BalaBit)
+          Evan Rempel (University of Victoria)
+          Balint Kovacs (BalaBit)
+          Heiko Gerstung
+          Andreas Piesk
+          Matthias Runge (Fedora)
+
 3.4.0alpha1
 
 	Features:
