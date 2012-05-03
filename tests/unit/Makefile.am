@@ -28,20 +28,22 @@ check_PROGRAMS = test_thread_wakeup	\
 	test_persist_state		\
 	test_value_pairs
 
-test_msgparse_SOURCES = test_msgparse.c libtest.c
-test_template_SOURCES = test_template.c libtest.c
-test_template_LDADD = $(LDADD) $(top_builddir)/modules/basicfuncs/libbasicfuncs.la
-test_template_speed_SOURCES = test_template_speed.c libtest.c
-test_zone_SOURCES = test_zone.c  libtest.c
-test_dnscache_SOURCES = test_dnscache.c  libtest.c
-test_serialize_SOURCES = test_serialize.c  libtest.c
-test_findeom_SOURCES = test_findeom.c  libtest.c
-test_findcrlf_SOURCES = test_findcrlf.c  libtest.c
-test_csvparser_SOURCES = test_csvparser.c  libtest.c
+TEST_DEPENDENCIES = libtest.c testutils.c testutils.h
+
+test_msgparse_SOURCES = test_msgparse.c $(TEST_DEPENDENCIES)
+test_template_SOURCES = test_template.c $(TEST_DEPENDENCIES)
+test_template_LDADD = $(LDADD) $(top_builddir)/modules/basicfuncs/libbasicfuncs.la $(top_builddir)/modules/tfjson/libtfjson.la
+test_template_speed_SOURCES = test_template_speed.c $(TEST_DEPENDENCIES)
+test_zone_SOURCES = test_zone.c  $(TEST_DEPENDENCIES)
+test_dnscache_SOURCES = test_dnscache.c  $(TEST_DEPENDENCIES)
+test_serialize_SOURCES = test_serialize.c  $(TEST_DEPENDENCIES)
+test_findeom_SOURCES = test_findeom.c  $(TEST_DEPENDENCIES)
+test_findcrlf_SOURCES = test_findcrlf.c  $(TEST_DEPENDENCIES)
+test_csvparser_SOURCES = test_csvparser.c  $(TEST_DEPENDENCIES)
 test_csvparser_LDADD = $(LDADD) $(top_builddir)/modules/csvparser/libcsvparser.la
-test_clone_logmsg_SOURCES = test_clone_logmsg.c libtest.c
-test_matcher_SOURCES = test_matcher.c libtest.c
-test_filters_SOURCES = test_filters.c libtest.c
+test_clone_logmsg_SOURCES = test_clone_logmsg.c $(TEST_DEPENDENCIES)
+test_matcher_SOURCES = test_matcher.c $(TEST_DEPENDENCIES)
+test_filters_SOURCES = test_filters.c $(TEST_DEPENDENCIES)
 test_logqueue_SOURCES = test_logqueue.c
 test_msgsdata_SOURCES = test_msgsdata.c
 test_tags_SOURCES = test_tags.c
@@ -50,8 +52,6 @@ test_logwriter_SOURCES = test_logwriter.c
 test_resolve_pwgr_SOURCES = test_resolve_pwgr.c
 test_persist_state_SOURCES = test_persist_state.c
 test_value_pairs_SOURCES = test_value_pairs.c
-
-
 test_thread_wakeup_SOURCES = test_thread_wakeup.c
 
 TESTS = $(check_PROGRAMS)
