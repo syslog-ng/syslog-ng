@@ -1055,10 +1055,15 @@ g_process_perform_supervise(void)
   pid_t pid;
   gboolean first = TRUE, exited = FALSE;
   gchar proc_title[PROC_TITLE_SPACE];
+  struct sigaction sa;
 
   g_snprintf(proc_title, PROC_TITLE_SPACE, "supervising %s", process_opts.name);
   g_process_setproctitle(proc_title);
   
+  memset(&sa, 0, sizeof(sa));
+  sa.sa_handler = SIG_IGN;
+  sigaction(SIGHUP, &sa, NULL);
+
   while (1)
     {
       if (pipe(init_result_pipe) != 0)
