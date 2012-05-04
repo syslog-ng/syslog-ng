@@ -3,7 +3,7 @@ syslog-ng (3.3.5-1~mhp2) unstable; urgency=low
   * [ Gergely Nagy <algernon@madhouse-project.org> ]
   * More systemd improvements (not present in the auto-built packages!)
 
- -- Gergely Nagy <algernon@madhouse-project.org>  Fri, 20 Apr 2012 10:27:29 +0200
+ -- Gergely Nagy <algernon@madhouse-project.org>  Fri, 04 May 2012 19:08:46 +0200
 
 syslog-ng (3.3.5-1~mhp1) unstable; urgency=low
 
