@@ -12,8 +12,12 @@ print_failure(const gchar *custom_template, va_list custom_args, gchar *assertio
 {
   va_list assertion_failure_args;
   fprintf(stderr, "\n  ###########################################################################\n  #\n");
-  fprintf(stderr,   "  # FAIL: ASSERTION FAILED: ");
-  vfprintf(stderr, custom_template, custom_args);
+  fprintf(stderr,   "  # FAIL: ASSERTION FAILED");
+  if (custom_template != NULL)
+    {
+      fprintf(stderr, ": ");
+      vfprintf(stderr, custom_template, custom_args);
+    }
   fprintf(stderr, "; ");
 
   va_start(assertion_failure_args, assertion_failure_template);
