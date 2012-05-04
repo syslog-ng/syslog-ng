@@ -815,7 +815,7 @@ if test "x$enable_smtp" != "xno" && test "x$with_libesmtp" != "no"; then
 		CPPFLAGS="$CPPFLAGS -I$with_libesmtp/include"
 		LDFLAGS="$LDFLAGS -L$with_libesmtp/lib"
 		AC_CHECK_HEADER(libesmtp.h, [LIBESMTP_CFLAGS="-I$with_libesmtp/include"
-					     LIBESMTP_LIBS="-L$with_libesmtp/lib"], [libesmtp=no])
+					     LIBESMTP_LIBS="-L$with_libesmtp/lib -lesmtp"], [libesmtp=no])
 		CPPFLAGS="$CPPFLAGS_SAVE"
 		LDFLAGS="$LDFLAGS_SAVE"
 	else
