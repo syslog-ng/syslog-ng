@@ -30,7 +30,7 @@ check_PROGRAMS = test_thread_wakeup	\
 
 TEST_DEPENDENCIES = libtest.c testutils.c testutils.h
 
-test_msgparse_SOURCES = test_msgparse.c $(TEST_DEPENDENCIES)
+test_msgparse_SOURCES = test_msgparse.c $(TEST_DEPENDENCIES) msg_parse_lib.c msg_parse_lib.h
 test_template_SOURCES = test_template.c $(TEST_DEPENDENCIES)
 test_template_LDADD = $(LDADD) $(top_builddir)/modules/basicfuncs/libbasicfuncs.la $(top_builddir)/modules/tfjson/libtfjson.la
 test_template_speed_SOURCES = test_template_speed.c $(TEST_DEPENDENCIES)
@@ -41,11 +41,11 @@ test_findeom_SOURCES = test_findeom.c  $(TEST_DEPENDENCIES)
 test_findcrlf_SOURCES = test_findcrlf.c  $(TEST_DEPENDENCIES)
 test_csvparser_SOURCES = test_csvparser.c  $(TEST_DEPENDENCIES)
 test_csvparser_LDADD = $(LDADD) $(top_builddir)/modules/csvparser/libcsvparser.la
-test_clone_logmsg_SOURCES = test_clone_logmsg.c $(TEST_DEPENDENCIES) msg_parse_lib.h
+test_clone_logmsg_SOURCES = test_clone_logmsg.c $(TEST_DEPENDENCIES) msg_parse_lib.c msg_parse_lib.h
 test_matcher_SOURCES = test_matcher.c $(TEST_DEPENDENCIES)
 test_filters_SOURCES = test_filters.c $(TEST_DEPENDENCIES)
 test_logqueue_SOURCES = test_logqueue.c
-test_msgsdata_SOURCES = test_msgsdata.c $(TEST_DEPENDENCIES) msg_parse_lib.h
+test_msgsdata_SOURCES = test_msgsdata.c $(TEST_DEPENDENCIES) msg_parse_lib.c msg_parse_lib.h
 test_tags_SOURCES = test_tags.c
 test_nvtable_SOURCES = test_nvtable.c
 test_logwriter_SOURCES = test_logwriter.c
