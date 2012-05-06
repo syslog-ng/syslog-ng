@@ -668,7 +668,7 @@ log_msg_get_bit(gulong *tags, gint index)
   return !!(tags[index >> LOGMSG_TAGS_NDX_SHIFT] & ((gulong) (1UL << (index & LOGMSG_TAGS_NDX_MASK))));
 }
 
-static inline void
+void
 log_msg_set_tag_by_id_onoff(LogMessage *self, LogTagId id, gboolean on)
 {
   gulong *old_tags;
