@@ -746,6 +746,13 @@ cfg_tree_compile_sequence(CfgTree *self, LogExprNode *node,
   g_assert(((node->flags & LC_FLOW_CONTROL) && (first_pipe || source_join_pipe)) ||
             !(node->flags & LC_FLOW_CONTROL));
 
+  if (!first_pipe && !last_pipe)
+    {
+      /* this is an empty sequence, insert a do-nothing LogPipe */
+      first_pipe = last_pipe = log_pipe_new();
+      g_ptr_array_add(self->initialized_pipes, first_pipe);
+    }
+
   *outer_pipe_tail = last_pipe;
   *outer_pipe_head = first_pipe;
   return TRUE;
