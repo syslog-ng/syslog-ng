@@ -32,6 +32,7 @@ static CfgLexerKeyword jsonparser_keywords[] =
 {
   { "json_parser",          KW_JSON_PARSER,  },
   { "prefix",               KW_PREFIX,  },
+  { "marker",               KW_MARKER,  },
   { NULL }
 };
 

@@ -25,6 +25,7 @@
 #include "scratch-buffers.h"
 
 #include <string.h>
+#include <ctype.h>
 
 #include <json.h>
 #include <json_object_private.h>
@@ -33,6 +34,8 @@ struct _LogJSONParser
 {
   LogParser super;
   gchar *prefix;
+  gchar *marker;
+  gint marker_len;
 };
 
 void
@@ -42,6 +45,16 @@ log_json_parser_set_prefix (LogParser *p, const gchar *prefix)
 
   g_free (self->prefix);
   self->prefix = g_strdup (prefix);
+}
+
+void
+log_json_parser_set_marker (LogParser *p, const gchar *marker)
+{
+  LogJSONParser *self = (LogJSONParser *)p;
+
+  g_free (self->marker);
+  self->marker = g_strdup (marker);
+  self->marker_len = strlen(marker);
 }
 
 static void
@@ -154,6 +167,16 @@ log_json_parser_process (LogParser *s, LogMessage **pmsg, const LogPathOptions *
   LogJSONParser *self = (LogJSONParser *) s;
   struct json_object *jso;
 
+  if (self->marker)
+    {
+      if (strncmp(input, self->marker, self->marker_len) != 0)
+        return FALSE;
+      input += self->marker_len;
+
+      while (isspace(*input))
+        input++;
+    }
+
   jso = json_tokener_parse (input);
 
   if (!jso)
@@ -188,6 +211,7 @@ log_json_parser_free (LogPipe *s)
   LogJSONParser *self = (LogJSONParser *)s;
 
   g_free (self->prefix);
+  g_free (self->marker);
   log_parser_free_method (s);
 }
 

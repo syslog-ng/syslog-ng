@@ -52,6 +52,7 @@ extern LogParser *last_parser;
 
 %token KW_JSON_PARSER
 %token KW_PREFIX
+%token KW_MARKER
 
 %type	<ptr> parser_expr_json
 
@@ -77,7 +78,8 @@ parser_json_opts
 	;
 
 parser_json_opt
-	: KW_PREFIX '(' string ')'		{ log_json_parser_set_prefix(last_parser, $3); free ($3); }
+	: KW_PREFIX '(' string ')'		{ log_json_parser_set_prefix(last_parser, $3); free($3); }
+	| KW_MARKER '(' string ')'		{ log_json_parser_set_marker(last_parser, $3); free($3); }
 	|
 	;
 
