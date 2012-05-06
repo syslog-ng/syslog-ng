@@ -55,6 +55,8 @@ LogRewrite *last_rewrite;
 /* INCLUDE_DECLS */
 
 %token KW_CONDITION
+%token KW_SET_TAG
+%token KW_CLEAR_TAG
 
 %%
 
@@ -86,6 +88,8 @@ rewrite_expr
             free($3);
           }
           rewrite_expr_opts ')'                 { $$ = last_rewrite; }
+	| KW_SET_TAG '(' string ')'             { $$ = log_rewrite_set_tag_new($3, TRUE); free($3); }
+	| KW_CLEAR_TAG '(' string ')'           { $$ = log_rewrite_set_tag_new($3, FALSE); free($3); }
         | LL_IDENTIFIER
           {
             Plugin *p;

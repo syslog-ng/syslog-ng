@@ -56,5 +56,9 @@ void log_rewrite_subst_set_flags(LogRewrite *s, gint flags);
 
 LogRewrite *log_rewrite_subst_new(const gchar *replacement);
 
+/* LogRewriteSetTag */
+LogRewrite *log_rewrite_set_tag_new(const gchar *tag_name, gboolean onoff);
+
+
 #endif
 
