@@ -22,6 +22,7 @@
  *
  */
 
+#include "compat.h"
 #include "timeutils.h"
 #include "messages.h"
 #include "syslog-ng.h"
@@ -844,7 +845,7 @@ zone_info_read(const gchar *zonename, ZoneInfo **zone, ZoneInfo **zone64)
   if (byte_read == -1)
     {
       msg_error("Failed to read the time zone file", evt_tag_str("filename", filename), NULL);
-      g_mapped_file_free(file_map);
+      g_mapped_file_unref(file_map);
       g_free(filename);
       return FALSE;
     }
@@ -857,7 +858,7 @@ zone_info_read(const gchar *zonename, ZoneInfo **zone, ZoneInfo **zone64)
       *zone64 = zone_info_parser(&buff, TRUE, &version);
     }
 
-  g_mapped_file_free(file_map);
+  g_mapped_file_unref(file_map);
     g_free(filename);
   return TRUE;
 }

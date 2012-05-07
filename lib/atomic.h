@@ -52,7 +52,11 @@ g_atomic_counter_get(GAtomicCounter *c)
 static inline gint
 g_atomic_counter_exchange_and_add(GAtomicCounter *c, gint val)
 {
+#if GLIB_CHECK_VERSION(2, 30, 0)
+  return g_atomic_int_add(&c->counter, val);
+#else
   return g_atomic_int_exchange_and_add(&c->counter, val);
+#endif
 }
 
 static inline gint
