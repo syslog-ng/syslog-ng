@@ -7,6 +7,10 @@
 
 struct timeval start_time_val;
 
+GString *current_testcase_description = NULL;
+gchar *current_testcase_function = NULL;
+gchar *current_testcase_file = NULL;
+
 static void
 print_failure(const gchar *custom_template, va_list custom_args, gchar *assertion_failure_template, ...)
 {
@@ -24,7 +28,17 @@ print_failure(const gchar *custom_template, va_list custom_args, gchar *assertio
   vfprintf(stderr, assertion_failure_template, assertion_failure_args);
   va_end(assertion_failure_args);
 
-  fprintf(stderr, "\n  #\n  ###########################################################################\n\n");
+  fprintf(stderr, "\n");
+
+  if (current_testcase_description != NULL)
+    {
+      fprintf(stderr, "  #\n");
+      fprintf(stderr, "  # Test case: %s/%s()\n", current_testcase_file, current_testcase_function);
+      fprintf(stderr, "  #\n");
+      fprintf(stderr, "  #     %s\n", current_testcase_description->str);
+    }
+
+  fprintf(stderr, "  #\n  ###########################################################################\n\n");
 }
 
 void
@@ -73,14 +87,14 @@ assert_guint16_non_fatal(guint16 actual, guint16 expected, const gchar *error_me
 {
   va_list args;
 
-    if (actual == expected)
-      return TRUE;
+  if (actual == expected)
+    return TRUE;
 
-    va_start(args, error_message);
-    print_failure(error_message, args, "actual=%d, expected=%d", actual, expected);
-    va_end(args);
+  va_start(args, error_message);
+  print_failure(error_message, args, "actual=%d, expected=%d", actual, expected);
+  va_end(args);
 
-    return FALSE;
+  return FALSE;
 }
 
 gboolean

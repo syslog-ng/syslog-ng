@@ -118,6 +118,9 @@ testcase(gchar *msg,
   time_t now;
   GString *sd_str;
 
+  testcase_begin("Testing log message parsing; parse_flags='%x', bad_hostname_re='%s', msg='%s'",
+                 parse_flags, bad_hostname_re ? : "(null)", msg);
+
   parsed_message = parse_log_message(msg, parse_flags, bad_hostname_re);
   parsed_timestamp = &(parsed_message->timestamps[LM_TS_STAMP]);
 
@@ -154,6 +157,8 @@ testcase(gchar *msg,
   assert_log_message_sdata_pairs(parsed_message, expected_sd_pairs);
 
   log_msg_unref(parsed_message);
+
+  testcase_end();
 }
 
 void

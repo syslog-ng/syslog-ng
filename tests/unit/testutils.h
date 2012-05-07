@@ -68,4 +68,30 @@ gboolean assert_gpointer_non_fatal(gpointer actual, gpointer expected, const gch
 
 #define assert_gpointer(actual, expected, error_message, ...) (assert_gpointer_non_fatal(actual, expected, error_message, ##__VA_ARGS__) ? 1 : (exit(1),0))
 
+extern GString *current_testcase_description;
+extern gchar *current_testcase_function;
+extern gchar *current_testcase_file;
+
+#define testcase_begin(description_template, ...) \
+    do { \
+      if (current_testcase_description != NULL) \
+        { \
+          fprintf(stderr, "\nERROR: testcase_begin() called without testcase_end(); file='%s', function='%s'\n", \
+                          current_testcase_file, current_testcase_function); \
+          exit(1); \
+        } \
+      current_testcase_description = g_string_sized_new(0); \
+      g_string_printf(current_testcase_description, description_template, ##__VA_ARGS__); \
+      current_testcase_function = (gchar *)(__FUNCTION__); \
+      current_testcase_file = basename(__FILE__); \
+    } while (0)
+
+#define testcase_end() \
+    do { \
+      g_string_free(current_testcase_description, TRUE); \
+      current_testcase_description = NULL; \
+      current_testcase_function = NULL; \
+      current_testcase_file = NULL; \
+    } while (0)
+
 #endif
