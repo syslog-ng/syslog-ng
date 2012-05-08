@@ -30,11 +30,29 @@ autogen_submodules()
 		if [ -x autogen.sh ]; then
 			./autogen.sh
 		elif [ -f configure.in ] || [ -f configure.ac ]; then
-			autoreconf
+			autoreconf -i
 		else
 			echo "Don't know how to bootstrap submodule '$submod'" >&2
 			exit 1
 		fi
+
+                CONFIGURE_OPTS="--disable-shared --enable-static --with-pic"
+
+                if [ "${submod}" = "lib/ivykis" ]; then
+                        CONFIGURE_OPTS="${CONFIGURE_OPTS} --disable-kqueue --disable-dev-poll"
+                fi
+                
+                cat >configure.gnu <<EOF
+#!/bin/sh
+
+CONFIGURE_OPTS="${CONFIGURE_OPTS}"
+
+echo \$0
+
+configure="\`dirname \$0\`/\`basename \$0 .gnu\`"
+echo "Running: " \$configure \$@ \$CONFIGURE_OPTS
+\$SHELL \$configure "\$@" \$CONFIGURE_OPTS
+EOF
 		cd "$origdir"
 	done
 }
