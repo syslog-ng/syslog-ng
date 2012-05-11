@@ -1,10 +1,26 @@
-syslog-ng (3.3.5-1~mhp2) unstable; urgency=low
+syslog-ng (3.3.5-1+mhp1) unstable; urgency=low
 
   * [ Gergely Nagy <algernon@madhouse-project.org> ]
-  * More systemd improvements (not present in the auto-built packages!)
+  * Packaging synced with GCS.
 
- -- Gergely Nagy <algernon@madhouse-project.org>  Fri, 04 May 2012 19:08:46 +0200
+ -- Gergely Nagy <algernon@madhouse-project.org>  Fri, 11 May 2012 11:36:53 +0200
 
+syslog-ng (3.3.5-1) unstable; urgency=low
+
+  [ Gergely Nagy <algernon@madhouse-project.org> ]
+  * New upstream release.
+    + afsocket: handle DNS failures as if it was a connection failure
+      (Closes: #660897)
+  * All patches dropped, they're applied upstream.
+  * Include upstream man pages, as they're DFSG-free now.
+  * Update debian/copyright for 1.0 of the spec.
+  * Bump Standards-Version to 3.9.3 (no changes required)
+  * Fix squeeze->wheezy install-remove-install upgrade path.
+    (Closes: #665905)
+  * Fix the init script to create /dev/xconsole properly on GNU/kFreeBSD.
+
+ -- Laszlo Boszormenyi (GCS) <gcs@debian.hu>  Thu, 03 May 2012 08:23:46 +0000
+ 
 syslog-ng (3.3.5-1~mhp1) unstable; urgency=low
 
   [ Gergely Nagy <algernon@madhouse-project.org> ]
