@@ -152,7 +152,7 @@ LogProto *log_proto_dgram_server_new(LogTransport *transport, gint max_msg_size,
  */
 LogProto *log_proto_text_server_new(LogTransport *transport, gint max_msg_size, guint flags);
 
-LogProto *log_proto_file_writer_new(LogTransport *transport, gint flush_lines);
+LogProto *log_proto_file_writer_new(LogTransport *transport, gint flush_lines, gboolean fsync);
 
 /*
  * LogProtoTextClient

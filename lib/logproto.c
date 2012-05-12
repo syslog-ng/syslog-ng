@@ -227,6 +227,7 @@ typedef struct _LogProtoFileWriter
   gint buf_count;
   gint fd;
   gint sum_len;
+  gboolean fsync;
   struct iovec buffer[0];
 } LogProtoFileWriter;
 
@@ -254,6 +255,8 @@ log_proto_file_writer_flush(LogProto *s)
 
   lseek(self->fd, 0, SEEK_END);
   rc = writev(self->fd, self->buffer, self->buf_count);
+  if (rc > 0 && self->fsync)
+    fsync(self->fd);
 
   if (rc < 0)
     {
@@ -340,6 +343,8 @@ log_proto_file_writer_post(LogProto *s, guchar *msg, gsize msg_len, gboolean *co
       gint len = self->partial_len - self->partial_pos;
 
       rc = write(self->fd, self->partial + self->partial_pos, len);
+      if (rc > 0 && self->fsync)
+        fsync(self->fd);
       if (rc < 0)
         {
           goto write_error;
@@ -401,7 +406,7 @@ log_proto_file_writer_prepare(LogProto *s, gint *fd, GIOCondition *cond)
 }
 
 LogProto *
-log_proto_file_writer_new(LogTransport *transport, gint flush_lines)
+log_proto_file_writer_new(LogTransport *transport, gint flush_lines, gboolean fsync)
 {
   if (flush_lines == 0)
     /* the flush-lines option has not been specified, use a default value */
@@ -417,6 +422,7 @@ log_proto_file_writer_new(LogTransport *transport, gint flush_lines)
 
   self->fd = transport->fd;
   self->buf_size = flush_lines;
+  self->fsync = fsync;
   self->super.prepare = log_proto_file_writer_prepare;
   self->super.post = log_proto_file_writer_post;
   self->super.flush = log_proto_file_writer_flush;

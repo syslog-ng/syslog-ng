@@ -166,8 +166,6 @@ log_transport_plain_write_method(LogTransport *s, const gpointer buf, gsize bufl
         }
       if (self->super.timeout)
         alarm_cancel();
-      if (self->super.flags & LTF_FSYNC)
-        fsync(self->super.fd);
     }
   while (rc == -1 && errno == EINTR);
 
