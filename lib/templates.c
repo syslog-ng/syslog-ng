@@ -60,6 +60,11 @@ enum
   M_CONTEXT_ID,
 
   M_LOGHOST,
+  M_SYSUPTIME,
+
+  /* only touch this section if you want to add three macros, one w/o
+   * prefix, and a R_ and S_ prefixed macro that relates one of the
+   * timestamps of the log message. */
 
   M_DATE,
   M_FULLDATE,
@@ -134,6 +139,7 @@ LogMacroDef macros[] =
         { "WEEK",           M_WEEK },
         { "TZOFFSET",       M_TZOFFSET },
         { "TZ",             M_TZ },
+        { "SYSUPTIME",      M_SYSUPTIME },
         { "UNIXTIME",       M_UNIXTIME },
 
         { "R_DATE",           M_RECVD_OFS + M_DATE },
@@ -230,6 +236,7 @@ LogMacroDef macros[] =
 };
 
 GHashTable *macro_hash;
+GTimeVal app_uptime;
 
 static void
 result_append(GString *result, const gchar *sstr, gssize len, gboolean escape)
@@ -467,6 +474,15 @@ log_macro_expand(GString *result, gint id, gboolean escape, LogTemplateOptions *
         result_append(result, hname, hname_len, escape);
         break;
       }
+    case M_SYSUPTIME:
+      {
+        GTimeVal ct;
+
+        g_get_current_time(&ct);
+        format_uint64_padded(result, 0, 0, 10, g_time_val_diff(&ct, &app_uptime) / 1000 / 10);
+        break;
+      }
+
     default:
       {
         /* year, month, day */
@@ -1365,6 +1381,9 @@ void
 log_template_global_init(void)
 {
   gint i;
+
+  /* init the uptime (SYSUPTIME macro) */
+  g_get_current_time(&app_uptime);
 
   macro_hash = g_hash_table_new(g_str_hash, g_str_equal);
   for (i = 0; macros[i].name; i++)
