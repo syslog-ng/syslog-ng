@@ -22,7 +22,7 @@ Build-Conflicts: autoconf2.13
 Standards-Version: 3.9.3
 Homepage: http://www.balabit.com/network-security/syslog-ng/opensource-logging-system
 Vcs-Git: git://git.madhouse-project.org/debian/syslog-ng.git
-Vcs-Browser: http://git.madhouse-project.org/debian/syslog-ng/
+Vcs-Browser: http://git.madhouse-project.org/debian/syslog-ng/log/?h=packaging/debian/3.3
 
 Package: syslog-ng
 Architecture: all
