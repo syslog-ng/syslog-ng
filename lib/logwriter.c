@@ -195,8 +195,20 @@ log_writer_io_flush_output(gpointer s)
     }
   else
     {
-      log_writer_work_perform(s);
-      log_writer_work_finished(s);
+      /* Checking main_loop_io_worker_job_quit() helps to speed up the
+       * reload process.  If reload/shutdown is requested we shouldn't do
+       * anything here, a final flush will be attempted in
+       * log_writer_deinit().
+       *
+       * Our current understanding is that it doesn't prevent race
+       * conditions of any kind.
+       */
+
+      if (!main_loop_io_worker_job_quit())
+        {
+          log_writer_work_perform(s);
+          log_writer_work_finished(s);
+        }
     }
 }
 
