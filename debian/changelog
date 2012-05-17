@@ -1,12 +1,18 @@
-syslog-ng (3.3.5-1+mhp1) unstable; urgency=low
+syslog-ng (3.3.5-2+mhp1~gf575361) unstable; urgency=low
 
   * [ Gergely Nagy <algernon@madhouse-project.org> ]
   * Packaging synced with GCS.
-  * Include the systemd control files on every architecture. Fixes the
-    FTBFS on non-linux platforms. (Closes: #672457)
+  * Based on upstream git snapshot, based on commit f575361.
 
- -- Gergely Nagy <algernon@madhouse-project.org>  Fri, 11 May 2012 11:51:52 +0200
+ -- Gergely Nagy <algernon@madhouse-project.org>  Thu, 17 May 2012 11:17:38 +0200
 
+syslog-ng (3.3.5-2) unstable; urgency=low
+
+  [ Gergely Nagy <algernon@madhouse-project.org> ]
+  * Fix FTBFS on non-Linux architectures (closes: #672457).
+
+ -- Laszlo Boszormenyi (GCS) <gcs@debian.hu>  Sun, 13 May 2012 00:42:42 +0200
+ 
 syslog-ng (3.3.5-1) unstable; urgency=low
 
   [ Gergely Nagy <algernon@madhouse-project.org> ]
