@@ -55,7 +55,7 @@ LDFLAGS		+= $(HARDENING_LDFLAGS)
 #* Overrides for dh_auto*
 ##
 
-# Autoreconf needs two things:
+# Autoreconf needs a few things:
 # - m4 directories for the submodules, because otherwise it can
 #   randomly fail.
 # - We need to call autogen.sh instead of autoreconf.
@@ -63,7 +63,7 @@ override_dh_autoreconf:
 	install -d ${SRCDIR}/lib/ivykis/m4 ${SRCDIR}/modules/afmongodb/libmongo-client/m4
 	chmod +x ${SRCDIR}/lib/ivykis/autogen.sh ${SRCDIR}/modules/afmongodb/libmongo-client/autogen.sh
 	touch ${SRCDIR}/lib/ivykis/configure.gnu ${SRCDIR}/modules/afmongodb/libmongo-client/configure.gnu
-	test -e debian/autoreconf.after || (cd ${SRCDIR} && dh_autoreconf sh ./autogen.sh)
+	dh_autoreconf -- sh -c "cd ${SRCDIR} && ./autogen.sh"
 
 # Oh, the joys of configure!
 # We pass down all appropriate options, along with EXTRA_CONFIGURE_OPTS.
@@ -217,6 +217,13 @@ endif
 build: build-stamp
 build-stamp:
 .PHONY: build-stamp
+
+# By default, the arch:all syslog-ng package does not need anything
+# built, so build-indep shall be empty. This avoids triggering another
+# build attempt, which would fail due to autoreconf being run
+# twice. It would also fail if no build-deps were installed (since the
+# package has no build-dep-indeps, rightly so).
+build-indep: ;
 
 # We get the original source by calling an external tool, that will do
 # the heavy lifting for us.
