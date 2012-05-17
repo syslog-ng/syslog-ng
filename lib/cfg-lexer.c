@@ -249,11 +249,11 @@ cfg_lexer_lookup_keyword(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc, const
               if (token[j] == 0 && keywords[i].kw_name[j] == 0)
                 {
                   /* match */
-                  if (keywords[i].kw_req_version > configuration->version)
+                  if (cfg_is_config_version_older(configuration, keywords[i].kw_req_version))
                     {
-                      msg_warning("WARNING: Your configuration uses a newly introduced reserved word as identifier, please use a different name or enclose it in quotes",
+                      msg_warning("WARNING: Your configuration uses a newly introduced reserved word as identifier, please use a different name or enclose it in quotes before upgrading",
                                   evt_tag_str("keyword", keywords[i].kw_name),
-                                  evt_tag_printf("config-version", "%d.%d", configuration->version >> 8, configuration->version & 0xFF),
+                                  evt_tag_printf("config-version", "%d.%d", (configuration->user_version >> 8), configuration->user_version & 0xFF),
                                   evt_tag_printf("version", "%d.%d", (keywords[i].kw_req_version >> 8), keywords[i].kw_req_version & 0xFF),
                                   yylloc ? evt_tag_str("filename", yylloc->level->name) : NULL,
                                   yylloc ? evt_tag_printf("line", "%d:%d", yylloc->first_line, yylloc->first_column) : NULL,
@@ -263,7 +263,7 @@ cfg_lexer_lookup_keyword(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc, const
                   switch (keywords[i].kw_status)
                     {
                     case KWS_OBSOLETE:
-                      msg_warning("Your configuration file uses an obsoleted keyword, please update your configuration",
+                      msg_warning("WARNING: Your configuration file uses an obsoleted keyword, please update your configuration",
                                   evt_tag_str("keyword", keywords[i].kw_name),
                                   evt_tag_str("change", keywords[i].kw_explain),
                                   NULL);
@@ -789,7 +789,7 @@ cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
         }
       return LL_ERROR;
     }
-  else if (configuration->version == 0 && configuration->parsed_version != 0)
+  else if (configuration->user_version == 0 && configuration->parsed_version != 0)
     {
       cfg_set_version(configuration, configuration->parsed_version);
     }
@@ -797,11 +797,11 @@ cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
     {
       /* first non-pragma token */
 
-      if (configuration->version == 0 && configuration->parsed_version == 0)
+      if (configuration->user_version == 0 && configuration->parsed_version == 0)
         {
           /* no version selected yet, and we have a non-pragma token, this
            * means that the configuration is meant for syslog-ng 2.1 */
-          msg_warning("WARNING: Configuration file has no version number, assuming syslog-ng 2.1 format. Please add @version: maj.min to the beginning of the file",
+          msg_warning("WARNING: Configuration file has no version number, assuming syslog-ng 2.1 format. Please add @version: maj.min to the beginning of the file to indicate this explicitly",
                       NULL);
           cfg_set_version(configuration, 0x0201);
         }

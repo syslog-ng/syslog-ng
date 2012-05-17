@@ -482,7 +482,7 @@ plugin_list_modules(FILE *out, gboolean verbose)
   gint i, j, k;
   gboolean first = TRUE;
 
-  cfg = cfg_new(CFG_CURRENT_VERSION);
+  cfg = cfg_new(0);
   mod_paths = g_strsplit(module_path, ":", 0);
   for (i = 0; mod_paths[i]; i++)
     {

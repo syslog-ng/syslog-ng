@@ -203,29 +203,35 @@ cfg_deinit(GlobalConfig *cfg)
 void
 cfg_set_version(GlobalConfig *self, gint version)
 {
-  self->version = version;
-  if (self->version < CFG_CURRENT_VERSION)
+  self->user_version = version;
+  if (cfg_is_config_version_older(self, VERSION_VALUE))
     {
-      msg_warning("WARNING: Configuration file format is too old, please update it to use the " CFG_CURRENT_VERSION_STRING " format as some constructs might operate inefficiently",
+      msg_warning("WARNING: Configuration file format is too old, syslog-ng is running in compatibility mode "
+                  "Please update it to use the " VERSION_CURRENT " format at your time of convinience, "
+                  "compatibility mode can operate less efficiently in some cases. "
+                  "To upgrade the configuration, please review the warnings about incompatible changes printed "
+                  "by syslog-ng, and once completed change the @version header at the top of the configuration "
+                  "file.",
                   NULL);
     }
-  else if (self->version > CFG_CURRENT_VERSION)
+  else if (version_convert_from_user(self->user_version) > VERSION_VALUE)
     {
-      msg_warning("WARNING: Configuration file format is newer than the current version, please specify the current version number (" CFG_CURRENT_VERSION_STRING ") in the @version directive",
+      msg_warning("WARNING: Configuration file format is newer than the current version, please specify the "
+                  "current version number ("  VERSION_CURRENT_VER_ONLY ") in the @version directive. "
+                  "syslog-ng will operate at its highest supported version in this mode",
                   NULL);
-      self->version = CFG_CURRENT_VERSION;
+      self->user_version = VERSION_VALUE;
     }
 
-  if (self->version < 0x0300)
+  if (cfg_is_config_version_older(self, 0x0300))
     {
-      msg_warning("WARNING: global: the default value of chain_hostnames is changing to 'no' in version 3.0, please update your configuration accordingly",
+      msg_warning("WARNING: global: the default value of chain_hostnames is changing to 'no' in " VERSION_3_0 ", please update your configuration accordingly",
                   NULL);
       self->chain_hostnames = TRUE;
     }
-
-  if (self->version < 0x0303)
+  if (cfg_is_config_version_older(self, 0x0303))
     {
-      msg_warning("WARNING: global: the default value of log_fifo_size() has changed to 10000 in version 3.3 to reflect log_iw_size() changes for tcp()/udp() window size changes",
+      msg_warning("WARNING: global: the default value of log_fifo_size() has changed to 10000 in " VERSION_3_3 " to reflect log_iw_size() changes for tcp()/udp() window size changes",
                   NULL);
     }
 
@@ -236,7 +242,7 @@ cfg_allow_config_dups(GlobalConfig *self)
 {
   const gchar *s;
 
-  if (self->version < 0x0303)
+  if (cfg_is_config_version_older(self, 0x0303))
     return TRUE;
 
   s = cfg_args_get(self->lexer->globals, "allow-config-dups");
@@ -257,7 +263,7 @@ cfg_new(gint version)
 {
   GlobalConfig *self = g_new0(GlobalConfig, 1);
 
-  self->version = version;
+  self->user_version = version;
 
   self->flush_lines = 0;
   self->flush_timeout = 10000;  /* 10 seconds */
@@ -325,7 +331,11 @@ cfg_run_parser(GlobalConfig *self, CfgLexer *lexer, CfgParser *parser, gpointer 
 void
 cfg_load_candidate_modules(GlobalConfig *self)
 {
-  if ((self->version <= 0x0301 || atoi(cfg_args_get(self->lexer->globals, "autoload-compiled-modules"))) && !self->candidate_plugins)
+  /* we enable autoload for pre-3.1 configs or when the user requested
+   * auto-load (the default) */
+
+  if ((cfg_is_config_version_older(self, 0x0302) ||
+      atoi(cfg_args_get(self->lexer->globals, "autoload-compiled-modules"))) && !self->candidate_plugins)
     {
       plugin_load_candidate_modules(self);
     }

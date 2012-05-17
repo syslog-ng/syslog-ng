@@ -606,7 +606,7 @@ afsocket_sd_init(LogPipe *s)
       self->reader_options.super.init_window_size /= self->max_connections;
       if (self->reader_options.super.init_window_size < 100)
         {
-          msg_warning("WARNING: window sizing for tcp sources were changed in syslog-ng 3.3, the configuration value was divided by the value of max-connections(). The result was too small, clamping to 100 entries. Ensure you have a proper log_fifo_size setting to avoid message loss.",
+          msg_warning("WARNING: window sizing for tcp sources were changed in " VERSION_3_3 ", the configuration value was divided by the value of max-connections(). The result was too small, clamping to 100 entries. Ensure you have a proper log_fifo_size setting to avoid message loss.",
                       evt_tag_int("orig_log_iw_size", self->reader_options.super.init_window_size),
                       evt_tag_int("new_log_iw_size", 100),
                       evt_tag_int("min_log_fifo_size", 100 * self->max_connections),
@@ -822,12 +822,12 @@ afsocket_sd_init_instance(AFSocketSourceDriver *self, SocketOptions *sock_option
       static gboolean warned = FALSE;
 
       self->reader_options.parse_options.flags |= LP_LOCAL;
-      if (configuration && configuration->version < 0x0302)
+      if (cfg_is_config_version_older(configuration, 0x0302))
         {
           if (!warned)
             {
               msg_warning("WARNING: the expected message format is being changed for unix-domain transports to improve "
-                          "syslogd compatibity with syslog-ng 3.2. If you are using custom "
+                          "syslogd compatibity with " VERSION_3_2 ". If you are using custom "
                           "applications which bypass the syslog() API, you might "
                           "need the 'expect-hostname' flag to get the old behaviour back", NULL);
               warned = TRUE;

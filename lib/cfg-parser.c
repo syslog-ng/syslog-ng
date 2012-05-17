@@ -100,7 +100,7 @@ static CfgLexerKeyword main_keywords[] = {
   { "use_dns",            KW_USE_DNS },
   { "time_reopen",        KW_TIME_REOPEN },
   { "time_reap",          KW_TIME_REAP },
-  { "time_sleep",         KW_TIME_SLEEP, 0, KWS_OBSOLETE, "time_sleep() has been deprecated since OSE 3.3" },
+  { "time_sleep",         KW_TIME_SLEEP, 0, KWS_OBSOLETE, "time_sleep() has been deprecated since " VERSION_3_3 },
   { "file_template",      KW_FILE_TEMPLATE },
   { "proto_template",     KW_PROTO_TEMPLATE },
   { "default_level",      KW_DEFAULT_LEVEL, 0x0300 },

@@ -80,7 +80,8 @@ pkginclude_HEADERS = 		\
 	utils.h			\
 	uuid.h			\
 	value-pairs.h		\
-	vptransform.h
+	vptransform.h		\
+	versioning.h
 
 # this is intentionally formatted so conflicts are less likely to arise. one name in every line.
 libsyslog_ng_crypto_la_SOURCES = \

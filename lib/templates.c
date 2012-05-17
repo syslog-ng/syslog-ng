@@ -422,7 +422,7 @@ log_macro_expand(GString *result, gint id, gboolean escape, LogTemplateOptions *
         }
       break;
     case M_MESSAGE:
-      if (!cfg_check_current_config_version(0x0300))
+      if (cfg_is_config_version_older(configuration, 0x0300))
         log_macro_expand(result, M_MSGHDR, escape, opts, tz, seq_num, context_id, msg);
       result_append_value(result, msg, LM_V_MESSAGE, escape);
       break;
@@ -638,13 +638,14 @@ log_macro_lookup(gchar *macro, gint len)
   g_assert(macro_hash);
   g_strlcpy(buf, macro, MIN(sizeof(buf), len+1));
   macro_id = GPOINTER_TO_INT(g_hash_table_lookup(macro_hash, buf));
-  if (configuration && configuration->version < 0x0300 && (macro_id == M_MESSAGE))
+
+  if (cfg_is_config_version_older(configuration, 0x0300) && (macro_id == M_MESSAGE))
     {
       static gboolean msg_macro_warning = FALSE;
       
       if (!msg_macro_warning)
         {
-          msg_warning("WARNING: template: the meaning of the $MSG/$MESSAGE macros is changing in version 3.0, please prepend a $MSGHDR when upgrading to 3.0 config format", NULL);
+          msg_warning("WARNING: template: the meaning of the $MSG/$MESSAGE macros has changed from " VERSION_3_0 ", please prepend a $MSGHDR when upgrading to " VERSION_3_0 " config format", NULL);
           msg_macro_warning = TRUE;
         }
     }
@@ -1275,13 +1276,13 @@ log_template_new(GlobalConfig *cfg, gchar *name)
   self->ref_cnt = 1;
   self->cfg = cfg;
   g_static_mutex_init(&self->arg_lock);
-  if (configuration && configuration->version < 0x0300)
+  if (cfg_is_config_version_older(configuration, 0x0300))
     {
       static gboolean warn_written = FALSE;
       
       if (!warn_written)
         {
-          msg_warning("WARNING: template: the default value for template-escape is changing to 'no' in version 3.0, please update your configuration file accordingly",
+          msg_warning("WARNING: template: the default value for template-escape has changed to 'no' from " VERSION_3_0 ", please update your configuration file accordingly",
                       NULL);
           warn_written = TRUE;
         }

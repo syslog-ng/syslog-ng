@@ -36,8 +36,6 @@
 #include <regex.h>
 #include <stdio.h>
 
-#define CFG_CURRENT_VERSION 0x0304
-#define CFG_CURRENT_VERSION_STRING "3.4"
 
 /* configuration data kept between configuration reloads */
 typedef struct _PersistConfig PersistConfig;
@@ -46,7 +44,8 @@ typedef struct _PersistConfig PersistConfig;
 struct _GlobalConfig
 {
   /* version number of the configuration file, hex-encoded syslog-ng major/minor, e.g. 0x0201 is syslog-ng 2.1 format */
-  gint version;
+  gint user_version;
+  /* version parsed from the config file, to be applied in _version */
   gint parsed_version;
   gchar *filename;
   GList *plugins;
@@ -137,14 +136,14 @@ void cfg_persist_config_move(GlobalConfig *src, GlobalConfig *dest);
 void cfg_persist_config_add(GlobalConfig *cfg, gchar *name, gpointer value, GDestroyNotify destroy, gboolean force);
 gpointer cfg_persist_config_fetch(GlobalConfig *cfg, gchar *name);
 
-static inline gboolean 
-cfg_check_current_config_version(gint req)
+static inline gboolean
+cfg_is_config_version_older(GlobalConfig *cfg, gint req)
 {
-  if (!configuration)
-    return TRUE;
-  else if (configuration->version >= req)
-    return TRUE;
-  return FALSE;
+  if (!cfg)
+    return FALSE;
+  if (version_convert_from_user(configuration->user_version) >= req)
+    return FALSE;
+  return TRUE;
 }
 
 #endif

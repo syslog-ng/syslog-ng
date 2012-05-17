@@ -159,6 +159,8 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   if (argc > 1)
     verbose = TRUE;
 
+  app_startup();
+
   configuration = cfg_new(0x0302);
   plugin_load_module("syslogformat", configuration, NULL);
   plugin_load_module("basicfuncs", configuration, NULL);
@@ -167,7 +169,6 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   configuration->template_options.frac_digits = 3;
   configuration->template_options.time_zone_info[LTZ_LOCAL] = time_zone_info_new(NULL);
 
-  app_startup();
 
   putenv("TZ=MET-1METDST");
   tzset();
@@ -386,7 +387,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase(msg, "$unbalanced_paren)", ")");
 
 
-  configuration->version = 0x0201;
+  configuration->user_version = 0x0201;
   testcase(msg, "$MSGHDR", "syslog-ng[23323]:");
   testcase(msg, "$MSG", "syslog-ng[23323]:árvíztűrőtükörfúrógép");
   testcase(msg, "$MSGONLY", "árvíztűrőtükörfúrógép");
@@ -394,7 +395,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 
   log_msg_unref(msg);
 
-  configuration->version = 0x0302;
+  configuration->user_version = 0x0302;
 
   msg_str = "syslog-ng: árvíztűrőtükörfúrógép [pid test]";
   msg = log_msg_new(msg_str, strlen(msg_str), saddr, &parse_options);

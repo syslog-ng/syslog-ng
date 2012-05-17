@@ -234,7 +234,7 @@ afinet_sd_apply_transport(AFSocketSourceDriver *s)
            * confusing is that syslog() driver was seldom used.
            *
            */
-          if ((self->super.flags & AFSOCKET_SYSLOG_PROTOCOL) && cfg->version < 0x0303)
+          if ((self->super.flags & AFSOCKET_SYSLOG_PROTOCOL) && cfg_is_config_version_older(cfg, 0x0303))
             {
               if (!msg_udp_source_port_warning)
                 {
@@ -275,7 +275,7 @@ afinet_sd_apply_transport(AFSocketSourceDriver *s)
            *
            */
 
-          if (cfg->version < 0x0303)
+          if (cfg_is_config_version_older(cfg, 0x0303))
             {
               if (!msg_tls_source_port_warning)
                 {
@@ -430,7 +430,7 @@ afinet_dd_apply_transport(AFSocketDestDriver *s)
            * confusing is that syslog() driver was seldom used.
            *
            */
-          if ((self->super.flags & AFSOCKET_SYSLOG_PROTOCOL) && cfg->version < 0x0303)
+          if ((self->super.flags & AFSOCKET_SYSLOG_PROTOCOL) && cfg_is_config_version_older(cfg, 0x0303))
             {
               if (!msg_udp_source_port_warning)
                 {
@@ -471,7 +471,7 @@ afinet_dd_apply_transport(AFSocketDestDriver *s)
            *
            */
 
-          if (cfg->version < 0x0303)
+          if (cfg_is_config_version_older(cfg, 0x0303))
             {
               if (!msg_tls_source_port_warning)
                 {
