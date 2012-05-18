@@ -166,6 +166,7 @@ log_json_parser_process (LogParser *s, LogMessage **pmsg, const LogPathOptions *
 {
   LogJSONParser *self = (LogJSONParser *) s;
   struct json_object *jso;
+  struct json_tokener *tok;
 
   if (self->marker)
     {
@@ -177,7 +178,16 @@ log_json_parser_process (LogParser *s, LogMessage **pmsg, const LogPathOptions *
         input++;
     }
 
-  jso = json_tokener_parse (input);
+  tok = json_tokener_new ();
+  jso = json_tokener_parse_ex (tok, input, -1);
+  if (tok->err != json_tokener_success)
+    {
+      msg_error ("Unparsable JSON stream encountered",
+                 evt_tag_str ("error", json_tokener_errors[tok->err]), NULL);
+      json_tokener_free (tok);
+      return FALSE;
+    }
+  json_tokener_free (tok);
 
   if (!jso)
     {
