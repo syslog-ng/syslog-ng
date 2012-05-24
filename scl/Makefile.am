@@ -6,17 +6,17 @@ scldir = $(datadir)/include/scl
 
 install-data-local:
 	for cfg in $(SCL_CONFIGS); do \
-		if [ -f $(DESTDIR)/$(sysconfdir)/$${cfg} ]; then \
+		if [ -f $(DESTDIR)$(sysconfdir)/$${cfg} ]; then \
 			echo "Not overwriting existing configuration file, you might want to upgrade manually: $${cfg}"; \
 		else \
-			$(install_sh_DATA) $(srcdir)/$${cfg}  $(DESTDIR)/$(sysconfdir)/$${cfg}; \
+			$(install_sh_DATA) $(srcdir)/$${cfg}  $(DESTDIR)$(sysconfdir)/$${cfg}; \
 		fi; \
 	done
-	$(mkinstalldirs) $(DESTDIR)/$(scldir)
-	(cd $(srcdir); tar cf - $(SCL_SUBDIRS)) | (cd $(DESTDIR)/$(scldir) && tar xf -)
+	$(mkinstalldirs) $(DESTDIR)$(scldir)
+	(cd $(srcdir); tar cf - $(SCL_SUBDIRS)) | (cd $(DESTDIR)$(scldir) && tar xf -)
 
 uninstall-local:
 	for cfg in $(SCL_CONFIGS); do \
-		rm -f $(DESTDIR)/$(sysconfdir)/$${cfg}; \
+		rm -f $(DESTDIR)$(sysconfdir)/$${cfg}; \
 	done
-	rm -rf $(DESTDIR)/$(scldir)
+	rm -rf $(DESTDIR)$(scldir)
