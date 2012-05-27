@@ -30,4 +30,6 @@ void syslog_format_handler(MsgFormatOptions *parse_options,
                            const guchar *data, gsize length,
                            LogMessage *self);
 
+void syslog_format_init(void);
+
 #endif

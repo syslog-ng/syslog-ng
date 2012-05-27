@@ -45,6 +45,8 @@
 
 static const char aix_fwd_string[] = "Message forwarded from ";
 static const char repeat_msg_string[] = "last message repeated";
+static NVHandle is_synced;
+static NVHandle cisco_seqid;
 
 static gboolean
 log_msg_parse_pri(LogMessage *self, const guchar **data, gint *length, guint flags, guint16 default_pri)
@@ -180,7 +182,36 @@ log_msg_parse_column(LogMessage *self, NVHandle handle, const guchar **data, gin
   *length = left;
 }
 
+static gboolean
+log_msg_parse_seq(LogMessage *self, const guchar **data, gint *length)
+{
+  const guchar *src = *data;
+  gint left = *length;
 
+
+  while (left && *src != ':')
+    {
+      if (!isdigit(*src))
+          return FALSE;
+      src++;
+      left--;
+    }
+  src++;
+  left--;
+
+  /* if the next char is not space, then we may try to read a date */
+
+  if (*src != ' ')
+    return FALSE;
+
+  log_msg_set_value(self, cisco_seqid, (gchar *) *data, *length - left - 1);
+
+  *data = src;
+  *length = left;
+  return TRUE;
+}
+
+/* FIXME: this function should really be exploded to a lot of smaller functions... (Bazsi) */
 static gboolean
 log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint parse_flags, glong assume_timezone)
 {
@@ -192,6 +223,23 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint pa
 
   cached_g_current_time(&now);
 
+  if ((parse_flags & LP_SYSLOG_PROTOCOL) == 0)
+    {
+      /* Cisco timestamp extensions, the first '*' indicates that the clock is
+       * unsynced, '.' if it is known to be synced */
+      if (G_UNLIKELY(src[0] == '*'))
+        {
+          log_msg_set_value(self, is_synced, "0", 1);
+          src++;
+          left--;
+        }
+      else if (G_UNLIKELY(src[0] == '.'))
+        {
+          log_msg_set_value(self, is_synced, "1", 1);
+          src++;
+          left--;
+        }
+    }
   /* If the next chars look like a date, then read them as a date. */
   if (left >= 19 && src[4] == '-' && src[7] == '-' && src[10] == 'T' && src[13] == ':' && src[16] == ':')
     {
@@ -819,6 +867,7 @@ log_msg_parse_legacy(MsgFormatOptions *parse_options,
       return FALSE;
     }
 
+  log_msg_parse_seq(self, &src, &left);
   log_msg_parse_skip_chars(self, &src, &left, " ", -1);
   cached_g_current_time(&now);
   if (log_msg_parse_date(self, &src, &left, parse_options->flags & ~LP_SYSLOG_PROTOCOL, time_zone_info_get_offset(parse_options->recv_time_zone_info, now.tv_sec)))
@@ -1069,5 +1118,18 @@ syslog_format_handler(MsgFormatOptions *parse_options,
           p++;
         }
 
+    }
+}
+
+void
+syslog_format_init(void)
+{
+  static gboolean handles_initialized = FALSE;
+
+  if (!handles_initialized)
+    {
+      is_synced = log_msg_get_value_handle(".SDATA.timeQuality.isSynced");
+      cisco_seqid = log_msg_get_value_handle(".SDATA.meta.sequenceId");
+      handles_initialized = TRUE;
     }
 }

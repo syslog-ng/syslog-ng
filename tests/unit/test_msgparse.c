@@ -437,6 +437,21 @@ test_log_messages_can_be_parsed()
            NULL, NULL, NULL, ignore_sdata_pairs
            );
 
+  const gchar *expected_sd_pairs_test_0[][2]=
+  {
+    { ".SDATA.timeQuality.isSynced", "1"},
+    { NULL, NULL },
+  };
+
+  testcase("<190>.Apr 15 2007 21:28:13: %PIX-6-302014: Teardown TCP connection 1688438 for bloomberg-net:1.2.3.4/8294 to inside:5.6.7.8/3639 duration 0:07:01 bytes 16975 TCP FINs", LP_EXPECT_HOSTNAME, "^%",
+           190,
+           1176665293, 0, 7200,
+           "",
+           "%PIX-6-302014",
+           "Teardown TCP connection 1688438 for bloomberg-net:1.2.3.4/8294 to inside:5.6.7.8/3639 duration 0:07:01 bytes 16975 TCP FINs",
+           NULL, NULL, NULL, expected_sd_pairs_test_0
+           );
+
   testcase("<190>Apr 15 2007 21:28:13 %ASA: this is a Cisco ASA timestamp", LP_EXPECT_HOSTNAME, "^%",
            190,
            1176665293, 0, 7200,

@@ -46,6 +46,7 @@ static Plugin syslog_format_plugin =
 gboolean
 syslogformat_module_init(GlobalConfig *cfg, CfgArgs *args)
 {
+  syslog_format_init();
   plugin_register(cfg, &syslog_format_plugin, 1);
   return TRUE;
 }
