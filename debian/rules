@@ -137,10 +137,9 @@ override_dh_auto_clean:
 	rm -rf debian/build-tree/
 
 # We also want to install ivykis headers and whatnot, so override
-# _auto_install, and do it too.
-#
-# This also installs the systemd files on Linux platforms.
-override_dh_auto_install:
+# _auto_install, and do it too. Only do this for the arch-dependent
+# packages, no need to override for the arch-indep case.
+override_dh_auto_install-arch:
 	dh_auto_install
 	${MAKE} -C debian/build-tree/lib/ivykis install DESTDIR=$(CURDIR)/debian/tmp
 
