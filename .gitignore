@@ -1,4 +1,5 @@
 *~
+/debian/autoreconf.*
 /debian/build-tree/
 /debian/control
 /debian/files
