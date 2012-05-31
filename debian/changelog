@@ -1,10 +1,10 @@
 syslog-ng (3.3.5-2+mhp1+gf575361) unstable; urgency=low
 
-  * [ Gergely Nagy <algernon@madhouse-project.org> ]
+  [ Gergely Nagy <algernon@madhouse-project.org> ]
   * Packaging synced with GCS.
   * Based on upstream git snapshot, based on commit f575361.
 
- -- Gergely Nagy <algernon@madhouse-project.org>  Thu, 17 May 2012 11:17:38 +0200
+ -- Gergely Nagy <algernon@madhouse-project.org>  Thu, 31 May 2012 12:11:48 +0200
 
 syslog-ng (3.3.5-2) unstable; urgency=low
 
