@@ -519,7 +519,8 @@ log_writer_update_suppress_timer(LogWriter *self, glong sec)
       next_expires.tv_nsec = 0;
     }
   /* last update was finished, we need to invoke the updater again */
-  invoke = ((next_expires.tv_sec != self->suppress_timer_expires.tv_sec) || (next_expires.tv_nsec != self->suppress_timer_expires.tv_nsec)) && self->suppress_timer_updated;
+  invoke = ((next_expires.tv_sec != self->suppress_timer_expires.tv_sec) ||
+            (next_expires.tv_nsec != self->suppress_timer_expires.tv_nsec)) && self->suppress_timer_updated;
   self->suppress_timer_updated = FALSE;
 
   if (invoke)
@@ -533,11 +534,27 @@ log_writer_update_suppress_timer(LogWriter *self, glong sec)
 
 }
 
+/**
+ * Remember the last message for dup detection.
+ *
+ * NOTE: suppress_lock must be held.
+ **/
+static void
+log_writer_record_last_message(LogWriter *self, LogMessage *lm)
+{
+  if (self->last_msg)
+    log_msg_unref(self->last_msg);
+
+  log_msg_ref(lm);
+  self->last_msg = lm;
+  self->last_msg_count = 0;
+}
+
 /*
  * NOTE: suppress_lock must be held.
  */
 static void
-log_writer_last_msg_release(LogWriter *self)
+log_writer_release_last_message(LogWriter *self)
 {
   log_writer_update_suppress_timer(self, 0);
   if (self->last_msg)
@@ -551,7 +568,7 @@ log_writer_last_msg_release(LogWriter *self)
  * NOTE: suppress_lock must be held.
  */
 static void
-log_writer_last_msg_flush(LogWriter *self)
+log_writer_emit_suppress_summary(LogWriter *self)
 {
   LogMessage *m;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
@@ -581,50 +598,36 @@ log_writer_last_msg_flush(LogWriter *self)
   path_options.ack_needed = FALSE;
 
   log_queue_push_tail(self->queue, m, &path_options);
-  log_writer_last_msg_release(self);
-}
-
-
-/**
- * Remember the last message for dup detection.
- *
- * NOTE: suppress_lock must be held.
- **/
-static void
-log_writer_last_msg_record(LogWriter *self, LogMessage *lm)
-{
-  if (self->last_msg)
-    log_msg_unref(self->last_msg);
-
-  log_msg_ref(lm);
-  self->last_msg = lm;
-  self->last_msg_count = 0;
+  log_writer_release_last_message(self);
 }
 
 static gboolean
-log_writer_last_msg_timer(gpointer pt)
+log_writer_suppress_timer(gpointer pt)
 {
   LogWriter *self = (LogWriter *) pt;
 
   main_loop_assert_main_thread();
 
   g_static_mutex_lock(&self->suppress_lock);
-  log_writer_last_msg_flush(self);
+  log_writer_emit_suppress_summary(self);
   g_static_mutex_unlock(&self->suppress_lock);
 
   return FALSE;
 }
 
 /**
- * log_writer_last_msg_check:
+ * log_writer_is_msg_suppressed:
  *
  * This function is called to suppress duplicate messages from a given host.
  *
- * Returns TRUE to indicate that the message was consumed.
+ * Returns TRUE to indicate that the message is to be suppressed.
  **/
 static gboolean
-log_writer_last_msg_check(LogWriter *self, LogMessage *lm, const LogPathOptions *path_options)
+log_writer_is_msg_suppressed(LogWriter *self, LogMessage *lm)
 {
+  if (self->options->suppress <= 0)
+    return FALSE;
+
   g_static_mutex_lock(&self->suppress_lock);
   if (self->last_msg)
     {
@@ -650,17 +653,16 @@ log_writer_last_msg_check(LogWriter *self, LogMessage *lm, const LogPathOptions 
                     evt_tag_str("host", log_msg_get_value(lm, LM_V_HOST, NULL)),
                     evt_tag_str("msg", log_msg_get_value(lm, LM_V_MESSAGE, NULL)),
                     NULL);
-          log_msg_drop(lm, path_options);
           return TRUE;
         }
 
       if (self->last_msg_count)
-        log_writer_last_msg_flush(self);
+        log_writer_emit_suppress_summary(self);
       else
-        log_writer_last_msg_release(self);
+        log_writer_release_last_message(self);
     }
 
-  log_writer_last_msg_record(self, lm);
+  log_writer_record_last_message(self, lm);
   g_static_mutex_unlock(&self->suppress_lock);
   return FALSE;
 }
@@ -680,8 +682,12 @@ log_writer_queue(LogPipe *s, LogMessage *lm, const LogPathOptions *path_options,
 
       path_options = log_msg_break_ack(lm, path_options, &local_options);
     }
-  if (self->options->suppress > 0 && log_writer_last_msg_check(self, lm, path_options))
-    return;
+
+  if (log_writer_is_msg_suppressed(self, lm))
+    {
+      log_msg_drop(lm, path_options);
+      return;
+    }
 
   stats_counter_inc(self->processed_messages);
   log_queue_push_tail(self->queue, lm, path_options);
@@ -1061,7 +1067,7 @@ log_writer_init_watches(LogWriter *self)
 
   IV_TIMER_INIT(&self->suppress_timer);
   self->suppress_timer.cookie = self;
-  self->suppress_timer.handler = (void (*)(void *)) log_writer_last_msg_timer;
+  self->suppress_timer.handler = (void (*)(void *)) log_writer_suppress_timer;
 
   IV_EVENT_INIT(&self->queue_filled);
   self->queue_filled.cookie = self;
