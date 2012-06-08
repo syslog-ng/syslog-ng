@@ -25,7 +25,13 @@
 #include "alarms.h"
 #include "messages.h"
 
+#ifdef HAVE_UTMPX_H
+#include <utmpx.h>
+#define ut_name ut_user
+#else
 #include <utmp.h>
+#endif
+
 #include <string.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -46,7 +52,11 @@ afuser_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
 {
   AFUserDestDriver *self = (AFUserDestDriver *) s;
   gchar buf[8192];
+#ifdef HAVE_UTMPX_H
+  struct utmpx *ut;
+#else
   struct utmp *ut;
+#endif
   GString *timestamp;
   time_t now;
   
@@ -63,7 +73,11 @@ afuser_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
   g_string_free(timestamp, TRUE);
   
   /* NOTE: there's a private implementations of getutent in utils.c on Systems which do not provide one. */
-  while ((ut = getutent())) 
+#ifdef HAVE_GETUTXENT
+  while ((ut = getutxent()))
+#else
+  while ((ut = getutent()))
+#endif
     {
 #if HAVE_MODERN_UTMP
       if (ut->ut_type == USER_PROCESS &&
@@ -106,7 +120,11 @@ afuser_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
             }
         }
     }
+#if HAVE_UTMPX_H
+  endutxent();
+#else
   endutent();
+#endif
 finish:
   log_msg_ack(msg, path_options);
   log_msg_unref(msg);
