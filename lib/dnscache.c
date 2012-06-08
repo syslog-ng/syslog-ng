@@ -361,6 +361,12 @@ dns_cache_destroy(void)
   cache_last.prev = NULL;
   persist_first.next = NULL;
   persist_last.prev = NULL;
+}
+
+void
+dns_cache_deinit(void)
+{
   if (dns_cache_hosts)
     g_free(dns_cache_hosts);
+  dns_cache_hosts = NULL;
 }
