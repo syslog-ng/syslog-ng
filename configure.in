@@ -1524,7 +1524,7 @@ echo
 echo "syslog-ng Open Source Edition $VERSION configured"
 echo " Edition settings:"
 echo "  Release type                : $RELEASE_TYPE"
-echo "  Pretty verssion             : $BROCHURE_VERSION"
+echo "  Pretty version             : $BROCHURE_VERSION"
 echo "  Combined vers.              : $COMBINED_VERSION"
 echo " Compiler options:"
 echo "  compiler                    : $CC"
