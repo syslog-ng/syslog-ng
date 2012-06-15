@@ -16,7 +16,7 @@ EXTRA_DIST =  man/syslog-ng.8.xml man/syslog-ng.conf.5.xml man/pdbtool.1.xml man
 XSLTPROC_MANPAGE=xsltproc --xinclude --output $@  /usr/share/xml/docbook/stylesheet/docbook-xsl/manpages/docbook.xsl $< | sed -e 's,/opt/syslog-ng/etc,$(sysconfdir),g' -e 's,/opt/syslog-ng/,$(prefix),g'
 
 xsddir = $(datadir)/xsd
-xsd_DATA = xsd/patterndb-1.xsd xsd/patterndb-2.xsd xsd/patterndb-3.xsd
+xsd_DATA = xsd/patterndb-1.xsd xsd/patterndb-2.xsd xsd/patterndb-3.xsd xsd/patterndb-4.xsd
 
 man/%.1: man/%.1.xml
 	$(XSLTPROC_MANPAGE)
