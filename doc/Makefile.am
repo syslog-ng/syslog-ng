@@ -17,6 +17,9 @@ xsd_DATA = xsd/patterndb-1.xsd xsd/patterndb-2.xsd xsd/patterndb-3.xsd xsd/patte
 # be overridden from the make command line or via the environment.
 XSL_STYLESHEET = /usr/share/xml/docbook/stylesheet/docbook-xsl/manpages/docbook.xsl
 
+sysconfdir_e = $(shell echo "${sysconfdir}" | sed -e "s,-,\\\\\\\\-,g")
+prefix_e = $(shell echo "${prefix}" | sed -e "s,-,\\\\\\\\-,g")
+
 man/%: man/%.xml
 	xsltproc --xinclude --output $@ ${XSL_STYLESHEET} $<
-	sed -e 's,/opt/syslog\\*-ng/etc,$(sysconfdir),g' -e 's,/opt/syslog\\*-ng/,$(prefix),g' <$@ >$@.tmp && mv $@.tmp $@
+	sed -e 's,/opt/syslog\\*-ng/etc,$(sysconfdir_e),g' -e 's,/opt/syslog\\*-ng/,$(prefix_e)/,g' <$@ >$@.tmp && mv $@.tmp $@
