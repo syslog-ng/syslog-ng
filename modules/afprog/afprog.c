@@ -364,7 +364,11 @@ afprogram_dd_deinit(LogPipe *s)
       child_manager_unregister(self->pid);
     }
   if (self->writer)
-    log_pipe_deinit(self->writer);
+    {
+      log_pipe_deinit(self->writer);
+      log_pipe_unref(self->writer);
+      self->writer = NULL;
+    }
 
   if (!log_dest_driver_deinit_method(s))
     return FALSE;
