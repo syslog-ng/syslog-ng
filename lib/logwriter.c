@@ -27,6 +27,7 @@
 #include "stats.h"
 #include "misc.h"
 #include "mainloop.h"
+#include "ml-batched-timer.h"
 #include "str-format.h"
 
 #include <unistd.h>
@@ -63,7 +64,6 @@ struct _LogWriter
   StatsCounterItem *stored_messages;
   LogPipe *control;
   LogWriterOptions *options;
-  GStaticMutex suppress_lock;
   LogMessage *last_msg;
   guint32 last_msg_count;
   GString *line_buffer;
@@ -78,9 +78,8 @@ struct _LogWriter
   struct iv_task immed_io_task;
   struct iv_event queue_filled;
   MainLoopIOWorkerJob io_job;
-  struct iv_timer suppress_timer;
-  struct timespec suppress_timer_expires;
-  gboolean suppress_timer_updated;
+  GStaticMutex suppress_lock;
+  MlBatchedTimer suppress_timer;
   gboolean work_result;
   gint pollable_state;
   LogProto *proto, *pending_proto;
@@ -467,73 +466,6 @@ log_writer_stop_watches(LogWriter *self)
     }
 }
 
-/* function called using main_loop_call() in case the suppress timer needs
- * to be updated */
-static void
-log_writer_perform_suppress_timer_update(LogWriter *self)
-{
-  main_loop_assert_main_thread();
-
-  if (iv_timer_registered(&self->suppress_timer))
-    iv_timer_unregister(&self->suppress_timer);
-  g_static_mutex_lock(&self->suppress_lock);
-  self->suppress_timer.expires = self->suppress_timer_expires;
-  self->suppress_timer_updated = TRUE;
-  g_static_mutex_unlock(&self->suppress_lock);
-  if (self->suppress_timer.expires.tv_sec > 0)
-    iv_timer_register(&self->suppress_timer);
-  log_pipe_unref(&self->super);
-}
-
-/*
- * Update the suppress timer in a deferred manner, possibly batching the
- * results of multiple updates to the suppress timer.  This is necessary as
- * suppress timer updates must run in the main thread, and updating it every
- * time a new message comes in would cause enormous latency in the fast
- * path. By collecting multiple updates
- *
- * msec == 0 means to turn off the suppress timer
- * msec >  0 to enable the timer with the specified timeout
- *
- * NOTE: suppress_lock must be held.
- */
-static void
-log_writer_update_suppress_timer(LogWriter *self, glong sec)
-{
-  gboolean invoke;
-  struct timespec next_expires;
-
-  iv_validate_now();
-
-  /* we deliberately use nsec == 0 in order to increase the likelyhood that
-   * we target the same second, in case only a fraction of a second has
-   * passed between two updates.  */
-  if (sec)
-    {
-      next_expires.tv_nsec = 0;
-      next_expires.tv_sec = iv_now.tv_sec + sec;
-    }
-  else
-    {
-      next_expires.tv_sec = 0;
-      next_expires.tv_nsec = 0;
-    }
-  /* last update was finished, we need to invoke the updater again */
-  invoke = ((next_expires.tv_sec != self->suppress_timer_expires.tv_sec) ||
-            (next_expires.tv_nsec != self->suppress_timer_expires.tv_nsec)) && self->suppress_timer_updated;
-  self->suppress_timer_updated = FALSE;
-
-  if (invoke)
-    {
-      self->suppress_timer_expires = next_expires;
-      g_static_mutex_unlock(&self->suppress_lock);
-      log_pipe_ref(&self->super);
-      main_loop_call((void *(*)(void *)) log_writer_perform_suppress_timer_update, self, FALSE);
-      g_static_mutex_lock(&self->suppress_lock);
-    }
-
-}
-
 /**
  * Remember the last message for dup detection.
  *
@@ -556,7 +488,7 @@ log_writer_record_last_message(LogWriter *self, LogMessage *lm)
 static void
 log_writer_release_last_message(LogWriter *self)
 {
-  log_writer_update_suppress_timer(self, 0);
+  ml_batched_timer_cancel(&self->suppress_timer);
   if (self->last_msg)
     log_msg_unref(self->last_msg);
 
@@ -645,7 +577,7 @@ log_writer_is_msg_suppressed(LogWriter *self, LogMessage *lm)
             {
               /* we only create the timer if this is the first suppressed message, otherwise it is already running. */
 
-              log_writer_update_suppress_timer(self, self->options->suppress);
+              ml_batched_timer_update(&self->suppress_timer, self->options->suppress);
             }
           g_static_mutex_unlock(&self->suppress_lock);
 
@@ -1065,9 +997,11 @@ log_writer_init_watches(LogWriter *self)
   IV_TIMER_INIT(&self->suspend_timer);
   self->suspend_timer.cookie = self;
 
-  IV_TIMER_INIT(&self->suppress_timer);
+  ml_batched_timer_init(&self->suppress_timer);
   self->suppress_timer.cookie = self;
   self->suppress_timer.handler = (void (*)(void *)) log_writer_suppress_timer;
+  self->suppress_timer.ref_cookie = (gpointer (*)(gpointer)) log_pipe_ref;
+  self->suppress_timer.unref_cookie = (void (*)(gpointer)) log_pipe_unref;
 
   IV_EVENT_INIT(&self->queue_filled);
   self->queue_filled.cookie = self;
@@ -1098,7 +1032,6 @@ log_writer_init(LogPipe *s)
       stats_register_counter(self->stats_level, self->stats_source | SCS_DESTINATION, self->stats_id, self->stats_instance, SC_TYPE_STORED, &self->stored_messages);
       stats_unlock();
     }
-  self->suppress_timer_updated = TRUE;
   log_queue_set_counters(self->queue, self->stored_messages, self->dropped_messages);
   if (self->proto)
     {
@@ -1127,8 +1060,7 @@ log_writer_deinit(LogPipe *s)
   log_writer_stop_watches(self);
   iv_event_unregister(&self->queue_filled);
 
-  if (iv_timer_registered(&self->suppress_timer))
-    iv_timer_unregister(&self->suppress_timer);
+  ml_batched_timer_unregister(&self->suppress_timer);
 
   log_queue_set_counters(self->queue, NULL, NULL);
 
@@ -1158,6 +1090,7 @@ log_writer_free(LogPipe *s)
     log_msg_unref(self->last_msg);
   g_free(self->stats_id);
   g_free(self->stats_instance);
+  ml_batched_timer_free(&self->suppress_timer);
   g_static_mutex_free(&self->suppress_lock);
   g_static_mutex_free(&self->pending_proto_lock);
   g_cond_free(self->pending_proto_cond);

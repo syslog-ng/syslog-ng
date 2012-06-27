@@ -58,6 +58,7 @@ pkginclude_HEADERS = 		\
 	memtrace.h		\
 	messages.h		\
 	misc.h			\
+	ml-batched-timer.h	\
 	msg-format.h		\
 	nvtable.h		\
 	parser-expr-parser.h	\
@@ -130,6 +131,7 @@ libsyslog_ng_la_SOURCES = \
 	memtrace.c		\
 	messages.c		\
 	misc.c			\
+	ml-batched-timer.c	\
 	msg-format.c		\
 	nvtable.c		\
 	parser-expr-parser.c	\
