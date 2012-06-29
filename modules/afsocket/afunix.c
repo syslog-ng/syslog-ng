@@ -42,7 +42,8 @@
 
 #if ENABLE_SYSTEMD
 static gboolean
-afunix_sd_acquire_socket(AFSocketSourceDriver *s, gint *result_fd)
+afunix_sd_acquire_named_socket(AFSocketSourceDriver *s, gint *result_fd,
+                               const gchar *filename)
 {
   AFUnixSourceDriver *self = (AFUnixSourceDriver *) s;
   gint fd, fds;
@@ -71,12 +72,12 @@ afunix_sd_acquire_socket(AFSocketSourceDriver *s, gint *result_fd)
       for (fd = SD_LISTEN_FDS_START; fd < SD_LISTEN_FDS_START + fds; fd++)
 	{
 	  /* check if any type is available */
-	  if (sd_is_socket_unix(fd, 0, -1, self->filename, 0))
+	  if (sd_is_socket_unix(fd, 0, -1, filename, 0))
 	    {
               int type = (self->super.flags & AFSOCKET_STREAM) ? SOCK_STREAM : SOCK_DGRAM;
 
 	      /* check if it matches our idea of the socket type */
-              if (sd_is_socket_unix(fd, type, -1, self->filename, 0))
+              if (sd_is_socket_unix(fd, type, -1, filename, 0))
                 {
                   *result_fd = fd;
                   break;
@@ -84,7 +85,7 @@ afunix_sd_acquire_socket(AFSocketSourceDriver *s, gint *result_fd)
               else
                 {
                   msg_error("The systemd supplied UNIX domain socket is of a different type, check the configured driver and the matching systemd unit file",
-		            evt_tag_str("filename", self->filename),
+		            evt_tag_str("filename", filename),
 		            evt_tag_int("systemd-sock-fd", fd),
                             evt_tag_str("expecting", type == SOCK_STREAM ? "unix-stream()" : "unix-dgram()"),
                             NULL);
@@ -100,31 +101,60 @@ afunix_sd_acquire_socket(AFSocketSourceDriver *s, gint *result_fd)
                */
 
               msg_debug("Ignoring systemd supplied fd as it is not a UNIX domain socket",
-		        evt_tag_str("filename", self->filename),
+		        evt_tag_str("filename", filename),
 		        evt_tag_int("systemd-sock-fd", fd),
 		        NULL);
             }
 	}
     }
-  else
-    return TRUE;
 
   if (*result_fd != -1)
     {
       g_fd_set_nonblock(*result_fd, TRUE);
       g_fd_set_cloexec(*result_fd, TRUE);
       msg_verbose("Acquired systemd socket",
-		  evt_tag_str("filename", self->filename),
+		  evt_tag_str("filename", filename),
 		  evt_tag_int("systemd-sock-fd", *result_fd),
 		  NULL);
-    }
-  else
-    {
-      msg_debug("Failed to acquire systemd socket, trying to open ourselves",
-		evt_tag_str("filename", self->filename),
-		NULL);
+      return TRUE;
     }
   return TRUE;
+}
+
+static gboolean
+afunix_sd_acquire_socket(AFSocketSourceDriver *s, gint *result_fd)
+{
+  AFUnixSourceDriver *self = (AFUnixSourceDriver *) s;
+  gboolean fd_ok;
+  GlobalConfig *cfg = log_pipe_get_config(&s->super.super.super);
+
+  fd_ok = afunix_sd_acquire_named_socket(s, result_fd, self->filename);
+
+  if (fd_ok && (*result_fd == -1) && (strcmp(self->filename, "/dev/log") == 0))
+    {
+      fd_ok = afunix_sd_acquire_named_socket(s, result_fd, "/run/systemd/journal/syslog");
+
+      if (fd_ok && *result_fd > -1)
+        {
+          if (cfg_is_config_version_older(cfg, 0x0304))
+            {
+              msg_warning("WARNING: systemd detected while using /dev/log; migrating automatically to /run/systemd/journal/syslog. Please update your configuration to use the system() source.",
+                          evt_tag_str("id", self->super.super.super.id),
+                          NULL);
+
+              g_free(self->filename);
+              self->filename = g_strdup("/run/systemd/journal/syslog");
+              return TRUE;
+            }
+        }
+    }
+
+  if (!fd_ok)
+    msg_debug("Failed to acquire systemd socket, trying to open ourselves",
+              evt_tag_str("filename", self->filename),
+              NULL);
+
+  return fd_ok;
 }
 
 #else

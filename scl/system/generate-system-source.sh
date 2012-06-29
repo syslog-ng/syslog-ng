@@ -43,8 +43,12 @@ osversion=${UNAME_R:-`uname -r`}
 
 case $os in
 	Linux)
+		DEVLOG="/dev/log"
+		if [ ! -z "$LISTEN_FDS" ] && [ -S "/run/systemd/journal/syslog" ]; then
+			DEVLOG="/run/systemd/journal/syslog"
+		fi
 		cat <<EOF
-unix-dgram("/dev/log");
+unix-dgram("${DEVLOG}");
 file("/proc/kmsg" program-override("kernel") flags(kernel));
 EOF
 		;;

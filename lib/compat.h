@@ -69,5 +69,8 @@ char *strcasestr(const char *s, const char *find);
 const void *memrchr(const void *s, int c, size_t n);
 #endif
 
+#if !HAVE_G_MAPPED_FILE_UNREF
+#define g_mapped_file_unref g_mapped_file_free
+#endif
 
 #endif

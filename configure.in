@@ -161,12 +161,12 @@ AC_ARG_ENABLE(mongodb,
 
 AC_ARG_WITH(libmongo-client,
               [  --with-libmongo-client=[system/internal]
-                                         Link against the system supplied or the builting libmongo-client library.]
+                                         Link against the system supplied or the built-in libmongo-client library.]
               ,,with_libmongo_client="internal")
 
 AC_ARG_WITH(ivykis,
               [  --with-ivykis=[system/internal]
-                                         Link against the system supplied or the builting ivykis library.]
+                                         Link against the system supplied or the built-in ivykis library.]
               ,,with_ivykis="internal")
 
 AC_ARG_WITH(json,
@@ -387,7 +387,7 @@ dnl ***************************************************************************
 
 AC_HEADER_STDC
 AC_CHECK_HEADER(dmalloc.h)
-AC_CHECK_HEADERS(strings.h getopt.h stropts.h sys/strlog.h door.h sys/capability.h sys/prctl.h)
+AC_CHECK_HEADERS(strings.h getopt.h stropts.h sys/strlog.h door.h sys/capability.h sys/prctl.h utmpx.h)
 AC_CHECK_HEADERS(tcpd.h)
 
 
@@ -483,7 +483,7 @@ if test "x$enable_linux_caps" = "xyes" -o "x$enable_linux_caps" = "xauto"; then
 	AC_CHECK_LIB(cap, cap_set_proc, LIBCAP_LIBS="-lcap")
 fi
 
-AC_CHECK_FUNCS(strdup strtol strtoll strtoimax inet_aton inet_ntoa getopt_long getaddrinfo getutent pread pwrite strcasestr memrchr localtime_r gmtime_r)
+AC_CHECK_FUNCS(strdup strtol strtoll strtoimax inet_aton inet_ntoa getopt_long getaddrinfo getutent getutxent pread pwrite strcasestr memrchr localtime_r gmtime_r)
 old_LIBS=$LIBS
 LIBS=$BASE_LIBS
 AC_CHECK_FUNCS(clock_gettime)
@@ -584,6 +584,8 @@ old_CPPFLAGS=$CPPFLAGS
 CPPFLAGS="$GLIB_CFLAGS"
 old_LDFLAGS=$LDFLAGS
 LDFLAGS="$LDFLAGS $GLIB_LIBS"
+
+AC_CHECK_FUNCS(g_mapped_file_unref)
 
 AC_CACHE_CHECK(sanity checking Glib headers,
                blb_cv_glib_sane,

@@ -31,9 +31,6 @@
 /* don't close the underlying fd when LogTransport is destructed */
 #define LTF_DONTCLOSE 0x0001
 
-/* issue an fsync after every write */
-#define LTF_FSYNC     0x0002
-
 /* reseek to the end-of-file before writing */
 #define LTF_APPEND    0x0004
 

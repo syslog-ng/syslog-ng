@@ -34,5 +34,6 @@ void dns_cache_store(gboolean persistent, gint family, void *addr, const gchar *
 void dns_cache_set_params(gint cache_size, gint expire, gint expire_failed, const gchar *hosts);
 void dns_cache_init(void);
 void dns_cache_destroy(void);
+void dns_cache_deinit(void);
 
 #endif

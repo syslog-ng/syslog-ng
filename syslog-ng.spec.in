@@ -99,8 +99,6 @@ fi
   ${RPM_BUILD_ROOT}/%{_prefix}/share/doc/syslog-ng-@VERSION@/ChangeLog
 ./install-sh -o root -g root -m 0644 NEWS \
   ${RPM_BUILD_ROOT}/%{_prefix}/share/doc/syslog-ng-@VERSION@/NEWS
-./install-sh -o root -g root -m 0644 README \
-  ${RPM_BUILD_ROOT}/%{_prefix}/share/doc/syslog-ng-@VERSION@/README
 ./install-sh -o root -g root -m 0644 AUTHORS \
   ${RPM_BUILD_ROOT}/%{_prefix}/share/doc/syslog-ng-@VERSION@/AUTHORS
 ./install-sh -o root -g root -m 0644 COPYING \

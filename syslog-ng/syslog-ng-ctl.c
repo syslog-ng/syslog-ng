@@ -131,7 +131,7 @@ slng_verbose(int argc, char *argv[], const gchar *mode)
 {
   gint ret = 0;
   GString *rsp = NULL;
-  gchar buff[256];
+  gchar buff[256], *ubuff;
 
   if (!verbose_set)
     snprintf(buff, 255, "LOG %s\n", mode);
@@ -139,10 +139,14 @@ slng_verbose(int argc, char *argv[], const gchar *mode)
     snprintf(buff, 255, "LOG %s %s\n", mode,
         strncasecmp(verbose_set, "on", 2) == 0 || verbose_set[0] == '1' ? "ON" : "OFF");
 
-  g_strup(buff);
+  ubuff = g_ascii_strup(buff, -1);
 
-  if (!(slng_send_cmd(buff) && ((rsp = slng_read_response()) != NULL)))
-    return 1;
+  if (!(slng_send_cmd(ubuff) && ((rsp = slng_read_response()) != NULL)))
+    {
+      g_free(ubuff);
+      return 1;
+    }
+  g_free(ubuff);
 
   if (!verbose_set)
     printf("%s\n", rsp->str);

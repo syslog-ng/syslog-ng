@@ -143,19 +143,20 @@ log_reader_work_finished(void *s)
       g_static_mutex_unlock(&self->pending_proto_lock);
     }
 
-  if (self->notify_code == 0)
+  if (self->notify_code)
     {
-      if (self->super.super.flags & PIF_INITIALIZED)
-        {
-          /* reenable polling the source assuming that we're still in
-           * business (e.g. the reader hasn't been uninitialized) */
+      gint notify_code = self->notify_code;
 
-          log_reader_start_watches(self);
-        }
+      self->notify_code = 0;
+      log_pipe_notify(self->control, &self->super.super, notify_code, self);
     }
-  else
+  if (self->super.super.flags & PIF_INITIALIZED)
     {
-      log_pipe_notify(self->control, &self->super.super, self->notify_code, self);
+      /* reenable polling the source assuming that we're still in
+       * business (e.g. the reader hasn't been uninitialized) */
+
+      log_proto_reset_error(self->proto);
+      log_reader_start_watches(self);
     }
   log_pipe_unref(&self->super.super);
 }

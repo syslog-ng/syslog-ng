@@ -339,7 +339,11 @@ afprogram_dd_deinit(LogPipe *s)
     }
 
   if (self->writer)
-    log_pipe_deinit(self->writer);
+    {
+      log_pipe_deinit(self->writer);
+      log_pipe_unref(self->writer);
+      self->writer = NULL;
+    }
 
   if (!log_dest_driver_deinit_method(s))
     return FALSE;

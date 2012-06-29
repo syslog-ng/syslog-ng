@@ -45,6 +45,7 @@ struct _LogProto
   LogTransport *transport;
   GIConv convert;
   gchar *encoding;
+  LogProtoStatus status;
   guint16 flags;
   /* FIXME: rename to something else */
   gboolean (*prepare)(LogProto *s, gint *fd, GIOCondition *cond);
@@ -97,7 +98,9 @@ log_proto_post(LogProto *s, guchar *msg, gsize msg_len, gboolean *consumed)
 static inline LogProtoStatus
 log_proto_fetch(LogProto *s, const guchar **msg, gsize *msg_len, GSockAddr **sa, gboolean *may_read)
 {
-  return s->fetch(s, msg, msg_len, sa, may_read);
+  if (s->status == LPS_SUCCESS)
+    return s->fetch(s, msg, msg_len, sa, may_read);
+  return s->status;
 }
 
 static inline void
@@ -112,6 +115,12 @@ log_proto_get_fd(LogProto *s)
 {
   /* FIXME: Layering violation */
   return s->transport->fd;
+}
+
+static inline void
+log_proto_reset_error(LogProto *s)
+{
+  s->status = LPS_SUCCESS;
 }
 
 gboolean log_proto_set_encoding(LogProto *s, const gchar *encoding);
@@ -152,7 +161,7 @@ LogProto *log_proto_dgram_server_new(LogTransport *transport, gint max_msg_size,
  */
 LogProto *log_proto_text_server_new(LogTransport *transport, gint max_msg_size, guint flags);
 
-LogProto *log_proto_file_writer_new(LogTransport *transport, gint flush_lines);
+LogProto *log_proto_file_writer_new(LogTransport *transport, gint flush_lines, gboolean fsync);
 
 /*
  * LogProtoTextClient
