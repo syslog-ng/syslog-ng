@@ -1,3 +1,76 @@
+3.4.0alpha3
+	Fri, 29 Jun 2012 15:32:54 +0200
+
+	Features:
+	=========
+	* Added set-tag() and clear-tag() rewrite rules.
+
+	* Added a marker() option to the json-parser(), which indicates that
+	  a message is indeed has a json payload. Used to implement a
+	  cee-style payload parser.
+
+	  http://bazsi.blogs.balabit.com/2012/05/cee-prototype-and-a-show-case-for-the-new-3-4-features/
+
+	Featured ported from the Premium Edition
+	========================================
+
+	* Added 12 hour time related macros $AMPM and $HOUR12
+
+	* Added $USEC and $MSEC macros for micro and milliseconds
+          respectively.
+
+	* Added $SYSUPTIME that expands to the time since syslog-ng started
+	  in the number of 1/100th of a second (just like in the SNMP
+	  sysUptime value).
+
+	* db-parser(): added field extraction to the matching or program
+	  names
+
+	* Added support for Cisco extended timestamp format, one that
+	  includes time synchronity information and sequence numbers.
+
+	  https://github.com/bazsi/syslog-ng-3.4/commit/046f90e76137f31e61412d24b9920914ad75edc5
+
+	* Added support for mark-mode() that allows the customization how
+	  MARK messages are generated.
+
+	  https://github.com/bazsi/syslog-ng-3.4/commit/c38d7ad9a2d40650e243ec29c6b3ee07233d31a8
+
+	Bugfixes:
+	=========
+	* Accept empty source and destination object in the configuration
+	  file.
+
+	* Fixed a linking issue when using the SMTP destination.
+
+	Other changes:
+	==============
+	* Added a --disable-smtp configure option.
+
+	* Integrated unit test refactorization changes from the BalaBit
+	  syslog-ng and SSB teams.
+
+        Credits:
+        ========
+        syslog-ng is developed as a community project, and as such it relies
+        on volunteers to do the work necessarily to produce syslog-ng.
+
+        Reporting bugs, testing changes, writing code or simply providing
+        feedback are all important contributions, so please if you are a
+        user of syslog-ng, contribute.
+
+        These people have helped in this release:
+
+          Attila Magyar <athos@balabit.hu>
+          Attila Nagy <naat@balabit.hu>
+          Balazs Scheidler <bazsi@balabit.hu>
+          Gergely Nagy <algernon@balabit.hu>
+          Juhasz Viktor <jviktor@balabit.hu>
+          Peter Czanik <czanik@balabit.hu>
+          Peter Gyorko <gyorkop@balabit.hu>
+          Viktor Juhasz <jviktor@balabit.hu>
+
+
 3.4.0alpha2
 	Tue, 01 May 2012 08:59:21 +0200
 
