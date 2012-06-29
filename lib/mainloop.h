@@ -36,7 +36,7 @@ typedef gpointer (*MainLoopTaskFunc)(gpointer user_data);
 
 typedef struct _MainLoopIOWorkerFinishCallback
 {
-  struct list_head list;
+  struct iv_list_head list;
   MainLoopTaskFunc func;
   gpointer user_data;
 } MainLoopIOWorkerFinishCallback;
@@ -44,7 +44,7 @@ typedef struct _MainLoopIOWorkerFinishCallback
 static inline void
 main_loop_io_worker_finish_callback_init(MainLoopIOWorkerFinishCallback *self)
 {
-  INIT_LIST_HEAD(&self->list);
+  INIT_IV_LIST_HEAD(&self->list);
 }
 
 typedef struct _MainLoopIOWorkerJob
@@ -56,7 +56,7 @@ typedef struct _MainLoopIOWorkerJob
   struct iv_work_item work_item;
 
   /* function to be called back when the current job is finished. */
-  struct list_head finish_callbacks;
+  struct iv_list_head finish_callbacks;
 } MainLoopIOWorkerJob;
 
 static inline gboolean

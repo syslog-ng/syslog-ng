@@ -24,7 +24,7 @@ GLIB_MIN_VERSION="2.10.1"
 EVTLOG_MIN_VERSION="0.2.12"
 OPENSSL_MIN_VERSION="0.9.8"
 LIBDBI_MIN_VERSION="0.8.0"
-IVYKIS_MIN_VERSION="0.18"
+IVYKIS_MIN_VERSION="0.30"
 JSON_C_MIN_VERSION="0.7"
 JSON_GLIB_MIN_VERSION="0.12"
 PCRE_MIN_VERSION="6.1"
@@ -752,18 +752,18 @@ if test "x$with_ivykis" = "xinternal"; then
 		# these can only be used in lib as it assumes
 		# the current directory just one below ivykis
 
-		IVYKIS_LIBS="-Wl,--whole-archive -L\$(top_builddir)/lib/ivykis/lib -livykis -L\$(top_builddir)/lib/ivykis/modules -livykis-modules -Wl,--no-whole-archive"
+		IVYKIS_LIBS="-Wl,--whole-archive -L\$(top_builddir)/lib/ivykis -livykis -Wl,--no-whole-archive"
 		IVYKIS_CFLAGS="-I\$(top_srcdir)/lib/ivykis/lib/include -I\$(top_builddir)/lib/ivykis/lib/include -I\$(top_srcdir)/lib/ivykis/modules/include"
 		IVYKIS_SUBDIRS=ivykis
 
 		# LIBS to use when libtool is not applicable (when linking the main syslog-ng executable in mixed linking mode)
-		IVYKIS_NO_LIBTOOL_LIBS="-Wl,--whole-archive -L\$(top_builddir)/lib/ivykis/lib/.libs -livykis -L\$(top_builddir)/lib/ivykis/modules/.libs -livykis-modules -Wl,--no-whole-archive"
+		IVYKIS_NO_LIBTOOL_LIBS="-Wl,--whole-archive -L\$(top_builddir)/lib/ivykis/.libs -livykis -Wl,--no-whole-archive"
 	else
 		AC_MSG_ERROR([Internal ivykis sources not found in lib/ivykis. This is a hard dependency, unable to build syslog-ng without them.])
 	fi
 else
 	with_ivykis="system"
-	PKG_CHECK_MODULES(IVYKIS, ivykis >= $IVYKIS_MIN_VERSION ivykis-modules,,)
+	PKG_CHECK_MODULES(IVYKIS, ivykis >= $IVYKIS_MIN_VERSION,,)
 
 	# in case we're using a system installed ivykis, we can link against
 	# it even without libtool and without extra linker arguments (as

@@ -170,7 +170,8 @@ EXTRA_DIST = $(BUILT_SOURCES) \
 	pragma-grammar.ym		\
 	parser-expr-grammar.ym		\
 	rewrite-expr-grammar.ym		\
-	merge-grammar.pl
+	merge-grammar.pl		\
+	ivykis/configure.gnu
 
 CLEAN_FILES = $(BUILT_SOURCES)
 

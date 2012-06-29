@@ -254,7 +254,7 @@ control_connection_start_watches(ControlConnection *self, gint sock)
   IV_FD_INIT(&self->control_io);
   self->control_io.cookie = self;
   self->control_io.fd = sock;
-  iv_fd_register(&self->control_io);
+  iv_fd_register_try(&self->control_io);
 
   control_connection_update_watches(self);
 }

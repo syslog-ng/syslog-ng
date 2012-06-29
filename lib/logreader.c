@@ -330,9 +330,6 @@ log_reader_start_watches(LogReader *self)
 
   log_proto_prepare(self->proto, &fd, &cond);
 
-  if (self->pollable_state < 0 && fd >= 0)
-    self->pollable_state = iv_fd_pollable(fd);
-
   if (self->options->follow_freq > 0)
     {
       /* follow freq specified (only the file source does that, go into timed polling */
@@ -346,18 +343,28 @@ log_reader_start_watches(LogReader *self)
                 NULL);
       return FALSE;
     }
-  else if (self->pollable_state > 0)
+  else
     {
       /* we have an FD, it is possible to poll it, register it  */
       self->fd_watch.fd = fd;
-      iv_fd_register(&self->fd_watch);
-    }
-  else
-    {
-      msg_error("Unable to determine how to monitor this fd, follow_freq() not set and it is not possible to poll it with the current ivykis polling method, try changing IV_EXCLUDE_POLL_METHOD environment variable",
-                evt_tag_int("fd", fd),
-                NULL);
-      return FALSE;
+      if (self->pollable_state < 0)
+        {
+          if (iv_fd_register_try(&self->fd_watch) == 0)
+            self->pollable_state = 1;
+          else
+            self->pollable_state = 0;
+        }
+      else if (self->pollable_state > 0)
+        {
+          iv_fd_register(&self->fd_watch);
+        }
+      else
+        {
+          msg_error("Unable to determine how to monitor this fd, follow_freq() not set and it is not possible to poll it with the current ivykis polling method, try changing IV_EXCLUDE_POLL_METHOD environment variable",
+                    evt_tag_int("fd", fd),
+                    NULL);
+          return FALSE;
+        }
     }
 
   log_reader_update_watches(self);
