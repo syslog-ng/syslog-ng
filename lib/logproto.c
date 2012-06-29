@@ -482,7 +482,6 @@ struct _LogProtoBufferedServer
   gint init_buffer_size;
   guchar *buffer;
   GSockAddr *prev_saddr;
-  LogProtoStatus status;
 };
 
 static LogProtoBufferedServerState *
@@ -1048,7 +1047,7 @@ log_proto_buffered_server_fetch(LogProto *s, const guchar **msg, gsize *msg_len,
   gint rc;
   guchar *raw_buffer = NULL;
   LogProtoBufferedServerState *state = log_proto_buffered_server_get_state(self);
-  LogProtoStatus result = self->status;
+  LogProtoStatus result = self->super.status;
 
   if (G_UNLIKELY(!self->buffer))
     {
@@ -1058,11 +1057,6 @@ log_proto_buffered_server_fetch(LogProto *s, const guchar **msg, gsize *msg_len,
 
   if (sa)
     *sa = NULL;
-
-  if (self->status != LPS_SUCCESS)
-    {
-      goto exit;
-    }
 
   if (log_proto_buffered_server_fetch_from_buf(self, msg, msg_len, FALSE))
     {
@@ -1124,14 +1118,14 @@ log_proto_buffered_server_fetch(LogProto *s, const guchar **msg, gsize *msg_len,
 
               /* we set self->status explicitly as we want to return
                * LPS_ERROR on the _next_ invocation, not now */
-              self->status = LPS_ERROR;
+              self->super.status = LPS_ERROR;
               if (log_proto_buffered_server_fetch_from_buf(self, msg, msg_len, TRUE))
                 {
                   if (sa && self->prev_saddr)
                     *sa = g_sockaddr_ref(self->prev_saddr);
                   goto exit;
                 }
-              result = self->status;
+              result = self->super.status;
               goto exit;
             }
         }
@@ -1150,14 +1144,14 @@ log_proto_buffered_server_fetch(LogProto *s, const guchar **msg, gsize *msg_len,
                   result = LPS_EOF;
                   goto exit;
                 }
-              self->status = LPS_EOF;
+              self->super.status = LPS_EOF;
               if (log_proto_buffered_server_fetch_from_buf(self, msg, msg_len, TRUE))
                 {
                   if (sa && self->prev_saddr)
                     *sa = g_sockaddr_ref(self->prev_saddr);
                   goto exit;
                 }
-              result = self->status;
+              result = self->super.status;
               goto exit;
             }
           else
@@ -1199,7 +1193,7 @@ log_proto_buffered_server_fetch(LogProto *s, const guchar **msg, gsize *msg_len,
   /* result contains our result, but once an error happens, the error condition remains persistent */
   log_proto_buffered_server_put_state(self);
   if (result != LPS_SUCCESS)
-    self->status = result;
+    self->super.status = result;
   return result;
 }
 
