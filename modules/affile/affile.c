@@ -1100,6 +1100,7 @@ affile_dd_new(gchar *filename, guint32 flags)
   self->flags = flags;
   log_writer_options_defaults(&self->writer_options);
   file_perm_options_defaults(&self->file_perm_options);
+  self->writer_options.mark_mode = MM_NONE;
   if (strchr(filename, '$') == NULL)
     {
       self->flags |= AFFILE_NO_EXPAND;

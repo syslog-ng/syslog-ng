@@ -158,6 +158,30 @@ cfg_bad_hostname_set(GlobalConfig *self, gchar *bad_hostname_re)
   self->bad_hostname_re = g_strdup(bad_hostname_re);  
 }
 
+gint
+cfg_lookup_mark_mode(gchar *mark_mode)
+{
+  if (!strcmp(mark_mode, "internal"))
+    return MM_INTERNAL;
+  if (!strcmp(mark_mode, "dst_idle") || !strcmp(mark_mode, "dst-idle"))
+    return MM_DST_IDLE;
+  if (!strcmp(mark_mode, "host_idle") || !strcmp(mark_mode, "host-idle"))
+    return MM_HOST_IDLE;
+  if (!strcmp(mark_mode, "periodical"))
+    return MM_PERIODICAL;
+  if (!strcmp(mark_mode, "none"))
+    return MM_NONE;
+  if (!strcmp(mark_mode, "global"))
+    return MM_GLOBAL;
+
+  return -1;
+}
+
+void
+cfg_set_mark_mode(GlobalConfig *self, gchar *mark_mode)
+{
+  self->mark_mode = cfg_lookup_mark_mode(mark_mode);
+}
 
 gboolean
 cfg_init(GlobalConfig *cfg)
@@ -268,6 +292,7 @@ cfg_new(gint version)
   self->flush_lines = 0;
   self->flush_timeout = 10000;  /* 10 seconds */
   self->mark_freq = 1200;	/* 20 minutes */
+  self->mark_mode = MM_HOST_IDLE;
   self->stats_freq = 600;
   self->chain_hostnames = 0;
   self->use_fqdn = 0;

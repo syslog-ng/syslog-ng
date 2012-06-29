@@ -167,6 +167,7 @@ extern struct _LogDriver *last_driver;
 %token KW_LOG_MSG_SIZE                10077
 %token KW_FILE_TEMPLATE               10078
 %token KW_PROTO_TEMPLATE              10079
+%token KW_MARK_MODE                   10080
 
 %token KW_CHAIN_HOSTNAMES             10090
 %token KW_NORMALIZE_HOSTNAMES         10091
@@ -763,6 +764,12 @@ options_item
 	| KW_STATS_FREQ '(' LL_NUMBER ')'          { configuration->stats_freq = $3; }
 	| KW_STATS_LEVEL '(' LL_NUMBER ')'         { configuration->stats_level = $3; }
 	| KW_FLUSH_LINES '(' LL_NUMBER ')'		{ configuration->flush_lines = $3; }
+        | KW_MARK_MODE '(' KW_INTERNAL ')'         { cfg_set_mark_mode(configuration, "internal"); }
+        | KW_MARK_MODE '(' string ')'
+          {
+            CHECK_ERROR(cfg_lookup_mark_mode($3) > 0 && cfg_lookup_mark_mode($3) != MM_GLOBAL, @3, "illegal global mark-mode");
+            free($3);
+          }
 	| KW_FLUSH_TIMEOUT '(' LL_NUMBER ')'	{ configuration->flush_timeout = $3; }
 	| KW_CHAIN_HOSTNAMES '(' yesno ')'	{ configuration->chain_hostnames = $3; }
 	| KW_NORMALIZE_HOSTNAMES '(' yesno ')'	{ configuration->normalize_hostnames = $3; }
@@ -981,6 +988,14 @@ dest_writer_option
 	| KW_TS_FORMAT '(' string ')'		{ last_writer_options->template_options.ts_format = cfg_ts_format_value($3); free($3); }
 	| KW_FRAC_DIGITS '(' LL_NUMBER ')'	{ last_writer_options->template_options.frac_digits = $3; }
 	| KW_PAD_SIZE '(' LL_NUMBER ')'         { last_writer_options->padding = $3; }
+	| KW_MARK_FREQ '(' LL_NUMBER ')'        { last_writer_options->mark_freq = $3; }
+        | KW_MARK_MODE '(' KW_INTERNAL ')'      { log_writer_options_set_mark_mode(last_writer_options, "internal"); }
+	| KW_MARK_MODE '(' string ')'
+	  {
+	    CHECK_ERROR(cfg_lookup_mark_mode($3) != -1, @3, "illegal mark mode: %s", $3);
+            log_writer_options_set_mark_mode(last_writer_options, $3);
+            free($3);
+          }
 	;
 
 dest_writer_options_flags

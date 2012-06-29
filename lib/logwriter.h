@@ -68,6 +68,14 @@ typedef struct _LogWriterOptions
   gint time_reopen;
   gint suppress;
   gint padding;
+  gint mark_mode;
+  gint mark_freq;
+
+  /* options for resolve_sockaddr() */
+  gboolean use_dns;
+  gboolean use_fqdn;
+  gboolean use_dns_cache;
+  gboolean normalize_hostnames;
 } LogWriterOptions;
 
 typedef struct _LogWriter LogWriter;
@@ -85,6 +93,7 @@ void log_writer_options_set_template_escape(LogWriterOptions *options, gboolean 
 void log_writer_options_defaults(LogWriterOptions *options);
 void log_writer_options_init(LogWriterOptions *options, GlobalConfig *cfg, guint32 option_flags);
 void log_writer_options_destroy(LogWriterOptions *options);
+void log_writer_options_set_mark_mode(LogWriterOptions *options, gchar *mark_mode);
 gint log_writer_options_lookup_flag(const gchar *flag);
 
 #endif

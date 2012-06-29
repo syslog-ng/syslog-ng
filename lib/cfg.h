@@ -34,8 +34,17 @@
 
 #include <sys/types.h>
 #include <regex.h>
-#include <stdio.h>
 
+/* destination mark modes */
+enum
+{
+  MM_INTERNAL = 1,
+  MM_DST_IDLE,
+  MM_HOST_IDLE,
+  MM_PERIODICAL,
+  MM_NONE,
+  MM_GLOBAL,
+};
 
 /* configuration data kept between configuration reloads */
 typedef struct _PersistConfig PersistConfig;
@@ -57,6 +66,7 @@ struct _GlobalConfig
   gint stats_level;
   gint mark_freq;
   gint flush_lines;
+  gint mark_mode;
   gint flush_timeout;
   gboolean threaded;
   gboolean chain_hostnames;
@@ -112,6 +122,8 @@ void cfg_file_owner_set(GlobalConfig *self, gchar *owner);
 void cfg_file_group_set(GlobalConfig *self, gchar *group);
 void cfg_file_perm_set(GlobalConfig *self, gint perm);
 void cfg_bad_hostname_set(GlobalConfig *self, gchar *bad_hostname_re);
+gint cfg_lookup_mark_mode(gchar *mark_mode);
+void cfg_set_mark_mode(GlobalConfig *self, gchar *mark_mode);
 
 void cfg_dir_owner_set(GlobalConfig *self, gchar *owner);
 void cfg_dir_group_set(GlobalConfig *self, gchar *group);
