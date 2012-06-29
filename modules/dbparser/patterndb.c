@@ -543,7 +543,9 @@ pdb_rule_run_actions(PDBRule *self, gint trigger, PatternDB *db, PDBContext *con
         {
           LogMessage *genmsg;
 
-          if ((!action->condition || filter_expr_eval_with_context(action->condition, (LogMessage **) context->messages->pdata, context->messages->len)) && pdb_rule_check_rate_limit(self, db, action, msg, buffer))
+          if ((!action->condition ||
+               (!context || filter_expr_eval_with_context(action->condition, (LogMessage **) context->messages->pdata, context->messages->len))) &&
+              pdb_rule_check_rate_limit(self, db, action, msg, buffer))
             {
               switch (action->content_type)
                 {
