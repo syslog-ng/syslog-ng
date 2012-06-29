@@ -32,7 +32,7 @@ TEST_DEPENDENCIES = libtest.c testutils.c testutils.h
 
 test_msgparse_SOURCES = test_msgparse.c $(TEST_DEPENDENCIES) msg_parse_lib.c msg_parse_lib.h
 test_template_SOURCES = test_template.c $(TEST_DEPENDENCIES)
-test_template_LDADD = $(LDADD) $(top_builddir)/modules/basicfuncs/libbasicfuncs.la $(top_builddir)/modules/tfjson/libtfjson.la
+test_template_LDADD = $(LDADD) $(top_builddir)/modules/basicfuncs/libbasicfuncs.la
 test_template_speed_SOURCES = test_template_speed.c $(TEST_DEPENDENCIES)
 test_zone_SOURCES = test_zone.c  $(TEST_DEPENDENCIES)
 test_dnscache_SOURCES = test_dnscache.c  $(TEST_DEPENDENCIES)
