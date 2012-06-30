@@ -15,6 +15,17 @@ if [ "$1" = "purge" -o "$1" = "disappear" ]; then
 
     rm -f /var/lib/syslog-ng/syslog-ng.ctl /var/lib/syslog-ng/syslog-ng.persist
     [ -d /var/lib/syslog-ng/ ] && rmdir --ignore-fail-on-non-empty /var/lib/syslog-ng/
+
+    # Clean up the systemd files & dirs too. Because the files are
+    # symlinks, dpkg does not remove them, even if they're marked
+    # conffiles, so we do it ourselves.
+    rm -f /etc/systemd/system/multi-user.target.wants/syslog-ng.service \
+          /etc/systemd/system/syslog.service \
+          /etc/systemd/system/multi-user.target.wants/syslog-ng.service.dpkg-new \
+          /etc/systemd/system/syslog.service.dpkg-new
+    rmdir --ignore-fail-on-non-empty /etc/systemd/system/multi-user.target.wants
+    rmdir --ignore-fail-on-non-empty /etc/systemd/system
+    rmdir --ignore-fail-on-non-empty /etc/systemd
 fi
 
 #DEBHELPER#

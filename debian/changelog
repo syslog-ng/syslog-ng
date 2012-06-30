@@ -1,4 +1,4 @@
-syslog-ng (3.3.5-2+mhp1+gb67ee8a) unstable; urgency=low
+syslog-ng (3.3.5-2+mhp2+gb67ee8a) unstable; urgency=low
 
   [ Gergely Nagy <algernon@madhouse-project.org> ]
   * Packaging synced with GCS.
@@ -6,8 +6,10 @@ syslog-ng (3.3.5-2+mhp1+gb67ee8a) unstable; urgency=low
 
   * Fix build-indep and multiple builds in a row
   * Fix arch-indep-only build
+  * Explicitly remove systemd unit and service files from /etc upon purge
+    (Closes: #674020)
 
- -- Gergely Nagy <algernon@madhouse-project.org>  Sat, 30 Jun 2012 15:40:49 +0200
+ -- Gergely Nagy <algernon@madhouse-project.org>  Sat, 30 Jun 2012 16:02:28 +0200
 
 syslog-ng (3.3.5-2) unstable; urgency=low
 
