@@ -11,6 +11,14 @@
 
 	  http://bazsi.blogs.balabit.com/2012/05/cee-prototype-and-a-show-case-for-the-new-3-4-features/
 
+	* The system source automatically detectd systemd and defines the
+	  proper log socket accordingly. Also, if the system() source is not
+	  used, a workaround to use the systemd supplied log socket instead
+	  of /dev/log was applied. This kicks in if syslog-ng is running
+	  under systemd and its config version is 3.3 or less.
+
+	* Support for FreeBSD's utmpx database.
+
 	Featured ported from the Premium Edition
 	========================================
 
@@ -38,10 +46,27 @@
 
 	Bugfixes:
 	=========
+	* Fixed a possible segmentation fault in threaded mode when
+	  dns-cache-hosts() is used.
+
+	* Incorrect encoding of data caused UDP and unix-dgram() receives to
+	  be erroneously closed, so no further data would be received. This
+	  has been fixed.  Incorrect encoding of incoming data causes the
+	  connection for connection oriented transports (like tcp() and
+	  unix-stream()) to be closed, but the same condition is ignored for
+	  datagram oriented transports (like udp() or unix-dgram()).
+
 	* Accept empty source and destination object in the configuration
 	  file.
 
 	* Fixed a linking issue when using the SMTP destination.
+
+	* Ignore SIGHUP in the supervisor process.
+
+	* Fixed fsync() behaviour for destination files.
+
+	* Fixed a possible NULL deref in db-parser() correllation when
+	  context-scope is not defined.
 
 	Other changes:
 	==============
@@ -49,6 +74,8 @@
 
 	* Integrated unit test refactorization changes from the BalaBit
 	  syslog-ng and SSB teams.
+
+	* Added systemd alias "syslog" to the unit file.
 
         Credits:
         ========
@@ -61,14 +88,21 @@
 
         These people have helped in this release:
 
-          Attila Magyar <athos@balabit.hu>
-          Attila Nagy <naat@balabit.hu>
-          Balazs Scheidler <bazsi@balabit.hu>
-          Gergely Nagy <algernon@balabit.hu>
-          Juhasz Viktor <jviktor@balabit.hu>
-          Peter Czanik <czanik@balabit.hu>
-          Peter Gyorko <gyorkop@balabit.hu>
-          Viktor Juhasz <jviktor@balabit.hu>
+           Alexander Komyagin <komyagin@altell.ru>
+           EgonB <egon@local.ee>
+           Evan Rempel <erempel@uvic.ca>
+           Imre Lazar <imre@balabit.hu>
+           Jose Pedro Oliveira <jpo@di.uminho.pt>
+           Mark Ulmer <mark.ulmer@apollogrp.edu>
+           Patrick Hemmer
+           Peter Czanik <czanik@balabit.hu>
+           Attila Magyar <athos@balabit.hu>
+           Attila Nagy <naat@balabit.hu>
+           Balazs Scheidler <bazsi@balabit.hu>
+           Gergely Nagy <algernon@balabit.hu>
+           Juhasz Viktor <jviktor@balabit.hu>
+           Peter Gyorko <gyorkop@balabit.hu>
+           Viktor Juhasz <jviktor@balabit.hu>
 
 
 3.4.0alpha2
