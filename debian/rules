@@ -134,19 +134,6 @@ override_dh_auto_clean:
 	rm -rf ${SRCDIR}/lib/ivykis/m4 ${SRCDIR}/modules/afmongodb/libmongo-client/m4
 	rm -rf debian/build-tree/
 
-# We also want to install ivykis headers and whatnot, so override
-# _auto_install, and do it too. Only do this for the arch-dependent
-# packages, no need to override for the arch-indep case.
-override_dh_auto_install-arch:
-	dh_auto_install
-
-	ln -sf /lib/systemd/system/syslog-ng.service \
-	       debian/syslog-ng-core/etc/systemd/system/syslog.service
-	ln -sf /lib/systemd/system/syslog-ng.service \
-	       debian/syslog-ng-core/etc/systemd/system/multi-user.target.wants/
-	install -m 0644 ${SRCDIR}/contrib/systemd/syslog-ng.service \
-			debian/syslog-ng-core/lib/systemd/system/
-
 ##
 #* Overrides for other debhelper commands
 #
@@ -158,10 +145,17 @@ override_dh_auto_install-arch:
 # also installs expect it so.
 #
 # So we simply flip a few bits after dh_install, and we're good to go!
+#
+# We also want to install the systemd unit file into syslog-ng-core,
+# so do that here too.
 override_dh_install:
 	dh_install
 ifneq (,$(filter libsyslog-ng-dev,$(shell dh_listpackages)))
 	chmod +x debian/libsyslog-ng-dev/usr/share/syslog-ng/tools/merge-grammar.pl
+endif
+ifneq (,$(filter syslog-ng-core,$(shell dh_listpackages)))
+	install -m 0644 ${SRCDIR}/contrib/systemd/syslog-ng.service \
+			debian/syslog-ng-core/lib/systemd/system/
 endif
 
 # Install the NEWS file as upstream changelog.
