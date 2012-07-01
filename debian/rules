@@ -61,8 +61,6 @@ LDFLAGS		+= $(HARDENING_LDFLAGS)
 # - We need to call autogen.sh instead of autoreconf.
 override_dh_autoreconf:
 	install -d ${SRCDIR}/lib/ivykis/m4 ${SRCDIR}/modules/afmongodb/libmongo-client/m4
-	chmod +x ${SRCDIR}/lib/ivykis/autogen.sh ${SRCDIR}/modules/afmongodb/libmongo-client/autogen.sh
-	touch ${SRCDIR}/lib/ivykis/configure.gnu ${SRCDIR}/modules/afmongodb/libmongo-client/configure.gnu
 	dh_autoreconf -- sh -c "cd ${SRCDIR} && ./autogen.sh"
 
 # Oh, the joys of configure!
@@ -90,7 +88,7 @@ override_dh_auto_configure:
 		--enable-systemd \
 		\
 		--with-libmongo-client=system \
-		--with-ivykis=internal \
+		--with-ivykis=system \
 		--with-json=json-c \
 		\
 		--with-module-dir='$${exec_prefix}/lib/syslog-ng/$${VERSION}' \
@@ -141,7 +139,6 @@ override_dh_auto_clean:
 # packages, no need to override for the arch-indep case.
 override_dh_auto_install-arch:
 	dh_auto_install
-	${MAKE} -C debian/build-tree/lib/ivykis install DESTDIR=$(CURDIR)/debian/tmp
 
 	ln -sf /lib/systemd/system/syslog-ng.service \
 	       debian/syslog-ng-core/etc/systemd/system/syslog.service
