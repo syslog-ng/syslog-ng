@@ -7,6 +7,7 @@ Build-Depends: debhelper (>= 9~),
 	       pkg-config, flex, bison, lsb-release,
 	       xsltproc, docbook-xsl,
 	       libevtlog-dev (>= 0.2.12-5~),
+	       libivykis-dev (>= 0.30),
 	       libnet1-dev,
 	       libglib2.0-dev,
 	       libdbi0-dev | libdbi-dev,
@@ -84,7 +85,7 @@ Architecture: any
 Depends: libsyslog-ng-@UPSTREAM_VERSION@ (= ${binary:Version}),
  ${misc:Depends}, ${perl:Depends},
  pkg-config, perl, flex, bison,
- libevtlog-dev (>= 0.2.12), libglib2.0-dev
+ libevtlog-dev (>= 0.2.12), libglib2.0-dev, libivykis-dev (>= 0.30)
 Description: Next generation system logging daemon (development files)
  This package contains the headers and tools needed to build
  third-party plugins against syslog-ng, the next generation system

@@ -61,8 +61,6 @@ LDFLAGS		+= $(HARDENING_LDFLAGS)
 # - We need to call autogen.sh instead of autoreconf.
 override_dh_autoreconf:
 	install -d ${SRCDIR}/lib/ivykis/m4 ${SRCDIR}/modules/afmongodb/libmongo-client/m4
-	chmod +x ${SRCDIR}/lib/ivykis/autogen.sh ${SRCDIR}/modules/afmongodb/libmongo-client/autogen.sh
-	touch ${SRCDIR}/lib/ivykis/configure.gnu ${SRCDIR}/modules/afmongodb/libmongo-client/configure.gnu
 	dh_autoreconf -- sh -c "cd ${SRCDIR} && ./autogen.sh"
 
 # Oh, the joys of configure!
@@ -94,7 +92,7 @@ override_dh_auto_configure:
 		--disable-systemd \
 		\
 		--with-libmongo-client=system \
-		--with-ivykis=internal \
+		--with-ivykis=system \
 		--with-json=json-c \
 		\
 		--with-module-dir='$${exec_prefix}/lib/syslog-ng/$${VERSION}' \
@@ -138,13 +136,6 @@ override_dh_auto_clean:
 	rm -f ${SRCDIR}/m4/lt*.m4 ${SRCDIR}/m4/libtool.m4 ${SRCDIR}/m4/pkg.m4
 	rm -rf ${SRCDIR}/lib/ivykis/m4 ${SRCDIR}/modules/afmongodb/libmongo-client/m4
 	rm -rf debian/build-tree/
-
-# We also want to install ivykis headers and whatnot, so override
-# _auto_install, and do it too. Only do this for the arch-dependent
-# packages, no need to override for the arch-indep case.
-override_dh_auto_install-arch:
-	dh_auto_install
-	${MAKE} -C debian/build-tree/lib/ivykis install DESTDIR=$(CURDIR)/debian/tmp
 
 ##
 #* Overrides for other debhelper commands

@@ -86,7 +86,7 @@ Selectively applying upstream fixes
 
 * Pull the upstream changes as-is onto the upstream/mirror branch.
 * cherry-pick the appropriate fixes to patched, or - if that is more
-  appropriate - merge the dfsg branch into patched as-is.
+  appropriate - merge the upstream/mirror branch into patched as-is.
 * Update the syslog-ng submodule of the debian packaging branch.
 
 Debian-specific changes

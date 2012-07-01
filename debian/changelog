@@ -1,10 +1,16 @@
-syslog-ng (3.3.5-2+mhp1+gf575361) unstable; urgency=low
+syslog-ng (3.3.5-2+mhp3+g9020718) unstable; urgency=low
 
   [ Gergely Nagy <algernon@madhouse-project.org> ]
   * Packaging synced with GCS.
-  * Based on upstream git snapshot, based on commit f575361.
+  * Based on upstream git snapshot, based on commit 9020718.
 
- -- Gergely Nagy <algernon@madhouse-project.org>  Thu, 31 May 2012 12:11:48 +0200
+  * Fix build-indep and multiple builds in a row
+  * Fix arch-indep-only build
+  * Explicitly remove systemd unit and service files from /etc upon purge
+    (Closes: #674020)
+  * Use upstream, packaged ivykis.
+
+ -- Gergely Nagy <algernon@madhouse-project.org>  Sun, 01 Jul 2012 12:05:33 +0200
 
 syslog-ng (3.3.5-2) unstable; urgency=low
 
