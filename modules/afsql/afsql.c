@@ -402,7 +402,7 @@ afsql_dd_create_index(AFSqlDestDriver *self, gchar *table, gchar *column)
 
           format_hex_string(hash, sizeof(hash), hash_str, sizeof(hash_str));
           hash_str[0] = 'i';
-          g_string_printf(query_string, "CREATE INDEX %s ON %s ('%s')",
+          g_string_printf(query_string, "CREATE INDEX %s ON %s (%s)",
               hash_str, table, column);
 #else
           msg_warning("The name of the index would be too long for Oracle to handle and OpenSSL was not detected which would be used to generate a shorter name. Please enable SSL support in order to use this combination.",
@@ -412,7 +412,7 @@ afsql_dd_create_index(AFSqlDestDriver *self, gchar *table, gchar *column)
 #endif
         }
       else
-        g_string_printf(query_string, "CREATE INDEX %s_%s_idx ON %s ('%s')",
+        g_string_printf(query_string, "CREATE INDEX %s_%s_idx ON %s (%s)",
             table, column, table, column);
     }
   else
