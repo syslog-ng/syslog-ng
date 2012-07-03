@@ -1,3 +1,98 @@
+3.3.5.90 (3.3.6 Release Candidate)
+        Tue, 03 Jul 2012 18:00:00 +0200
+
+        Highlights
+        ==========
+
+        This release is a bug-fix release mostly, with a few minor -
+        yet useful - feature enhancements. The most important one is
+        that the patched ivykis syslog-ng 3.3 shipped with until now
+        is no more. We build against upstream ivykis now (still
+        included for convenience, though).
+
+        Other highlights include much improved systemd support, and an
+        enhancement to the @include feature, and many bugfixes. See
+        below for more information!
+
+        Features
+        ========
+
+        * The system() source automatically detects systemd, and
+          defines the proper log socket accordingly. If the system()
+          source is not used, a workaround to use the systemd supplied
+          log socket instead of /dev/log was applied. This kicks in if
+          syslog-ng is running under systemd, and its config version
+          is 3.4 or less.
+        
+        * The @include statement now accepts globs, allowing one to
+          limit what gets included, and limit it to files matching
+          "*.conf", for example.
+
+        Bugfixes
+        ========
+
+        * When the supervisor receives a SIGHUP, it will not terminate
+          anymore, but ignore it.
+
+        * The fsync(yes) functionality was restored, and will now do
+          what it is supposed to do.
+
+        * A memory corruption was fixed in the DNS cache when used in
+          threaded mode and dns-cache-hosts() is used.
+
+        * The program() destination now correctly closes the standard
+          input of the running program when syslog-ng is being
+          reloaded (as opposed to only sending a signal).
+
+        * Incorrect encoding of data caused UDP and unix-dgram()
+          receives to be erroneously closed, so no further data would
+          be received. This has been fixed.  Incorrect encoding of
+          incoming data causes the connection for connection oriented
+          transports (like tcp() and unix-stream()) to be closed, but
+          the same condition is ignored for datagram oriented
+          transports (like udp() or unix-dgram()).
+
+        * Fixed a possible NULL dereference in patterndb, when an
+          action was used without a context-scope.
+
+        Other changes
+        =============
+
+        * On systems that have utmpx(5), syslog-ng will prefer and use
+          that over the older utmp(5). This means that there is no
+          more patching needed for systems like FreeBSD 9, which only
+          support utmpx.
+
+        Credits
+        =======
+
+        syslog-ng is developed as a community project, and as such it
+        relies on volunteers to do the work necessarily to produce
+        syslog-ng.
+
+        Reporting bugs, testing changes, writing code or simply
+        providing feedback are all important contributions, so please
+        if you are a user of syslog-ng, contribute.
+
+        These people have helped in this release:
+        
+        Alex Zimnitsky <avz@dagotel.ru>
+        Alexander Komyagin <komyagin@altell.ru>
+        Balazs Scheidler <bazsi@balabit.hu>
+        Cary Taylor <ctaylor@ptgi.com>
+        EgonB <egon@local.ee>
+        Evan Rempel <erempel@uvic.ca>
+        Gergely Nagy <algernon@balabit.hu>
+        Imre Lazar <imre@balabit.hu>
+        Jose Pedro Oliveira <jpo@di.uminho.pt>
+        Lennert Buytenhek <buytenh@wantstofly.org>
+        Mads <mads@ab3.no>
+        Mark Ulmer <mark.ulmer@apollogrp.edu>
+        Mark Wooding <mdw@distorted.org.uk>
+        Patrick Hemmer
+        Peter Czanik <czanik@balabit.hu>
+
+
 3.3.5
 	Sat, 07 Apr 2012 10:35:25 +0200
 
