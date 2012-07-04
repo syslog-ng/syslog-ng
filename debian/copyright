@@ -26,11 +26,11 @@ Copyright: Copyright (C) 2002-2011 BalaBit IT Security Ltd.
 License: LGPL-2.1+ with OpenSSL exception
 
 Files: lib/ivykis/*
-Copyright: Copyright (C) 2002-2011 Lennert Buytenhek <buytenh@wantstofly.org>
+Copyright: Copyright (C) 2002-2012 Lennert Buytenhek <buytenh@wantstofly.org>
 License: LGPL-2.1+
 
 Files: lib/ivykis/lib/man3/* lib/ivykis/modules/man3/*
-Copyright: Copyright (C) 2002-2011 Lennert Buytenhek <buytenh@wantstofly.org>
+Copyright: Copyright (C) 2002-2012 Lennert Buytenhek <buytenh@wantstofly.org>
 License: ivykis-man
  Permission is granted to distribute possibly modified copies
  of this page provided the header is included verbatim,
