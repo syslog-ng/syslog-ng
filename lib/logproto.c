@@ -484,6 +484,62 @@ struct _LogProtoBufferedServer
   GSockAddr *prev_saddr;
 };
 
+
+/*
+ * log_proto_get_fixed_encoding_scale:
+ *
+ * This function returns the number of bytes of a single character in the
+ * encoding specified by the @encoding parameter, provided it is listed in
+ * the limited set hard-wired in the fixed_encodings array above.
+ *
+ * syslog-ng sometimes needs to calculate the size of the original, raw data
+ * that relates to its already utf8 converted input buffer.  For that the
+ * slow solution is to actually perform the utf8 -> raw conversion, however
+ * since we don't really need the actual conversion, just the size of the
+ * data in bytes we can be faster than that by multiplying the number of
+ * input characters with the size of the character in the known
+ * fixed-length-encodings in the list above.
+ *
+ * This function returns 0 if the encoding is not known, in which case the
+ * slow path is to be executed.
+ */
+static gint
+log_proto_get_char_size_for_fixed_encoding(const gchar *encoding)
+{
+  static struct
+  {
+    const gchar *prefix;
+    gint scale;
+  } fixed_encodings[] = {
+    { "ascii", 1 },
+    { "us-ascii", 1 },
+    { "iso-8859", 1 },
+    { "iso8859", 1 },
+    { "latin", 1 },
+    { "ucs2", 2 },
+    { "ucs-2", 2 },
+    { "ucs4", 4 },
+    { "ucs-4", 4 },
+    { "koi", 1 },
+    { "unicode", 2 },
+    { "windows", 1 },
+    { "wchar_t", sizeof(wchar_t) },
+    { NULL, 0 }
+  };
+  gint scale = 0;
+  gint i;
+
+  for (i = 0; fixed_encodings[i].prefix; i++)
+   {
+     if (strncasecmp(encoding, fixed_encodings[i].prefix, strlen(fixed_encodings[i].prefix) == 0))
+       {
+         scale = fixed_encodings[i].scale;
+         break;
+       }
+   }
+  return scale;
+}
+
 static LogProtoBufferedServerState *
 log_proto_buffered_server_get_state(LogProtoBufferedServer *self)
 {
@@ -556,7 +612,7 @@ log_proto_buffered_server_convert_from_raw(LogProtoBufferedServer *self, const g
               state->pending_buffer_end = state->buffer_size - avail_out;
               /* extend the buffer */
 
-              if ((state->buffer_size < self->max_buffer_size))
+              if (state->buffer_size < self->max_buffer_size)
                 {
                   state->buffer_size *= 2;
                   if (state->buffer_size > self->max_buffer_size)
@@ -1386,27 +1442,6 @@ find_eom(const guchar *s, gsize n)
   return NULL;
 }
 
-struct
-{
-  const gchar *prefix;
-  gint scale;
-} fixed_encodings[] = {
-  { "ascii", 1 },
-  { "us-ascii", 1 },
-  { "iso-8859", 1 },
-  { "iso8859", 1 },
-  { "latin", 1 },
-  { "ucs2", 2 },
-  { "ucs-2", 2 },
-  { "ucs4", 4 },
-  { "ucs-4", 4 },
-  { "koi", 1 },
-  { "unicode", 2 },
-  { "windows", 1 },
-  { "wchar_t", sizeof(wchar_t) },
-  { NULL, 0 }
-};
-
 /*
  * returns the number of bytes that represent the UTF8 encoding buffer
  * in the original encoding that the user specified.
@@ -1425,24 +1460,16 @@ log_proto_text_server_get_raw_size_of_buffer(LogProtoTextServer *self, const guc
 
   if (self->reverse_convert == ((GIConv) -1) && !self->convert_scale)
     {
-      gint i;
-
       /* try to speed up raw size calculation by recognizing the most
        * prominent character encodings and in the case the encoding
        * uses fixed size characters set that in self->convert_scale,
        * which in turn will speed up the reversal of the UTF8 buffer
        * size to raw buffer sizes.
        */
-      for (i = 0; fixed_encodings[i].prefix; i++)
+      self->convert_scale = log_proto_get_char_size_for_fixed_encoding(self->super.super.encoding);
+      if (self->convert_scale == 0)
         {
-          if (strncasecmp(self->super.super.encoding, fixed_encodings[i].prefix, strlen(fixed_encodings[i].prefix) == 0))
-            {
-              self->convert_scale = fixed_encodings[i].scale;
-              break;
-            }
-        }
-      if (!fixed_encodings[i].prefix)
-        {
+          /* this encoding is not known, do the conversion for real :( */
           self->reverse_convert = g_iconv_open(self->super.super.encoding, "utf-8");
         }
     }
