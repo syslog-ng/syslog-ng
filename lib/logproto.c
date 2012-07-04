@@ -668,12 +668,13 @@ log_proto_buffered_server_apply_state(LogProtoBufferedServer *self, PersistEntry
         }
       else
         {
-          if (state->raw_buffer_size > self->init_buffer_size)
+          if (state->raw_buffer_size > self->max_buffer_size)
             {
-              msg_notice("Invalid LogProtoBufferedServerState.raw_buffer_size, larger than init_buffer_size, restarting from the beginning",
+              msg_notice("Invalid LogProtoBufferedServerState.raw_buffer_size, larger than max_buffer_size, restarting from the beginning",
                          evt_tag_str("state", persist_name),
                          evt_tag_int("raw_buffer_size", state->raw_buffer_size),
                          evt_tag_int("init_buffer_size", self->init_buffer_size),
+                         evt_tag_int("max_buffer_size", self->max_buffer_size),
                          NULL);
               goto error;
             }
