@@ -767,16 +767,6 @@ sig_child_handler(void *s)
   while (pid > 0);
 }
 
-static void
-setup_signals(void)
-{
-  struct sigaction sa;
-
-  memset(&sa, 0, sizeof(sa));
-  sa.sa_handler = SIG_IGN;
-  sigaction(SIGPIPE, &sa, NULL);
-}
-
 /************************************************************************************
  * syslog-ng main loop
  ************************************************************************************/
@@ -785,7 +775,7 @@ setup_signals(void)
  * Returns: exit code to be returned to the calling process.
  */
 int
-main_loop_init(void)
+main_loop_init(gchar *config_string)
 {
   app_startup();
   setup_signals();
@@ -798,9 +788,23 @@ main_loop_init(void)
   main_loop_call_init();
 
   current_configuration = cfg_new(0);
-  if (!cfg_read_config(current_configuration, cfgfilename, syntax_only, preprocess_into))
+  if (cfgfilename)
     {
-      return 1;
+      if (!cfg_read_config(current_configuration, cfgfilename, syntax_only, preprocess_into))
+        {
+          return 1;
+        }
+    }
+  else if (config_string)
+    {
+      if (!cfg_load_config(current_configuration, config_string, syntax_only, preprocess_into))
+        {
+          return 1;
+        }
+    }
+  else
+    {
+      return 0;
     }
 
   if (syntax_only || preprocess_into)

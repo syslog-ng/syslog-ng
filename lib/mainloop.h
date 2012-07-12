@@ -96,7 +96,7 @@ main_loop_is_main_thread(void)
 typedef void(*_BeforeStart)(GlobalConfig *);
 
 gpointer main_loop_call(MainLoopTaskFunc func, gpointer user_data, gboolean wait);
-int main_loop_init(void);
+int main_loop_init(gchar *config_string);
 int  main_loop_run(void);
 
 void main_loop_add_options(GOptionContext *ctx);
