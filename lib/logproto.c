@@ -35,9 +35,27 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <stdlib.h>
-#include <sys/uio.h>
 #include <limits.h>
 #include <regex.h>
+
+void
+log_proto_check_server_options(LogProtoServerOptions *options)
+{
+  if (options->opts.garbage_pattern &&
+      options->opts.prefix_pattern &&
+      (strcmp(options->opts.garbage_pattern,options->opts.prefix_pattern) == 0))
+    {
+      msg_warning("The multi_line_garbage can't be the same as the multi_line_prefix. multi_line_garbage option is ignored",
+                  evt_tag_str("multi_line_prefix",options->opts.prefix_pattern),
+                  evt_tag_str("multi_line_garbage",options->opts.garbage_pattern),
+                  NULL);
+      regfree(options->opts.garbage_matcher);
+      g_free(options->opts.garbage_matcher);
+      g_free(options->opts.garbage_pattern);
+      options->opts.garbage_matcher = NULL;
+      options->opts.garbage_pattern = NULL;
+    }
+}
 
 gboolean
 log_proto_set_encoding(LogProto *self, const gchar *encoding)

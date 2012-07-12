@@ -66,12 +66,14 @@ typedef struct _LogProtoOptions
 typedef struct _LogProtoServerOptions
 {
   LogProtoOptionsBase super;
-          union
-          {
+  union
+  {
     struct
     {
       regex_t *prefix_matcher;
       regex_t *garbage_matcher;
+      gchar *prefix_pattern;
+      gchar *garbage_pattern;
     } opts;
     char __padding[LOG_PROTO_OPTIONS_SIZE];
   };
@@ -82,6 +84,7 @@ typedef enum
   LPS_SUCCESS,
   LPS_ERROR,
   LPS_EOF,
+  LPS_AGAIN,
 } LogProtoStatus;
 
 typedef enum
@@ -248,5 +251,6 @@ struct _LogProtoFactory
 };
 
 LogProtoFactory *log_proto_get_factory(GlobalConfig *cfg,LogProtoType type,const gchar *name);
+void log_proto_check_server_options(LogProtoServerOptions *options);
 
 #endif

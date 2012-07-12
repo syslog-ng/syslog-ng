@@ -497,6 +497,7 @@ affile_sd_init(LogPipe *s)
   AFFileSourceDriver *self = (AFFileSourceDriver *) s;
   GlobalConfig *cfg = log_pipe_get_config(s);
 
+  log_proto_check_server_options((LogProtoServerOptions *)&self->proto_options);
   log_reader_options_init(&self->reader_options, cfg, self->super.super.group);
 
   if (self->file_monitor)
@@ -561,6 +562,10 @@ affile_sd_deinit(LogPipe *s)
 
   affile_sd_regex_free(options->opts.prefix_matcher);
   affile_sd_regex_free(options->opts.garbage_matcher);
+  if (options->opts.prefix_pattern)
+    g_free(options->opts.prefix_pattern);
+  if (options->opts.garbage_pattern)
+    g_free(options->opts.garbage_pattern);
 
   if (!log_src_driver_deinit_method(s))
     return FALSE;
@@ -1521,6 +1526,9 @@ affile_sd_set_multi_line_prefix(LogDriver *s, gchar *prefix)
   LogProtoServerOptions *options = (LogProtoServerOptions *)&self->proto_options;
 
   options->opts.prefix_matcher = g_new0(regex_t, 1);
+  if (options->opts.prefix_pattern)
+    g_free(options->opts.prefix_pattern);
+  options->opts.prefix_pattern = g_strdup(prefix);
   if (regcomp(options->opts.prefix_matcher, prefix, REG_EXTENDED))
     {
       msg_error("Bad regexp",evt_tag_str("multi_line_prefix", prefix), NULL);
@@ -1536,6 +1544,9 @@ affile_sd_set_multi_line_garbage(LogDriver *s, gchar *garbage)
   AFFileSourceDriver *self = (AFFileSourceDriver *) s;
   LogProtoServerOptions *options = (LogProtoServerOptions *)&self->proto_options;
 
+  if (options->opts.garbage_pattern)
+    g_free(options->opts.garbage_pattern);
+  options->opts.garbage_pattern = g_strdup(garbage);
   options->opts.garbage_matcher = g_new0(regex_t, 1);
   if (regcomp(options->opts.garbage_matcher, garbage, REG_EXTENDED))
     {
