@@ -502,6 +502,7 @@ filter_call_init(FilterExprNode *s, GlobalConfig *cfg)
   rule = g_hash_table_lookup(cfg->filters, self->rule);
   if (rule)
     {
+      log_pipe_init((LogPipe *)(LogFilterPipe *) rule->head->data, cfg);
       self->filter_expr = ((LogFilterPipe *) rule->head->data)->expr;
     }
   else
