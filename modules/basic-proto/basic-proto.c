@@ -136,7 +136,7 @@ log_proto_text_client_flush(LogProto *s)
       self->super.ack_callback(1,self->super.ack_user_data);
       self->acked = 0;
     }
-  return LPS_SUCCESS;
+  return self->partial ? LPS_AGAIN : LPS_SUCCESS;
 }
 
 /*

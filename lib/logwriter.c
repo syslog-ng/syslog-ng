@@ -95,6 +95,8 @@ struct _LogWriter
 
   gint io_cond;
   gboolean ack_is_reliable;
+
+  gboolean immediate_io;
 };
 
 /**
@@ -287,8 +289,22 @@ static void
 log_writer_update_fd_callbacks(LogWriter *self, GIOCondition cond)
 {
   main_loop_assert_main_thread();
-  if (self->pollable_state > 0)
+  if (self->immediate_io)
     {
+      if (iv_fd_registered(&self->fd_watch))
+        {
+          iv_fd_unregister(&self->fd_watch);
+        }
+      self->immediate_io = FALSE;
+      if (!iv_task_registered(&self->immed_io_task))
+        iv_task_register(&self->immed_io_task);
+    }
+  else if (self->pollable_state > 0)
+    {
+      if (!iv_fd_registered(&self->fd_watch))
+      {
+        iv_fd_register(&self->fd_watch);
+      }
       if (self->flags & LW_DETECT_EOF && (cond & G_IO_IN) == 0 && (cond & G_IO_OUT))
         {
           /* if output is enabled, and we're in DETECT_EOF mode, and input is
@@ -311,11 +327,15 @@ log_writer_update_fd_callbacks(LogWriter *self, GIOCondition cond)
           iv_fd_set_handler_in(&self->fd_watch, NULL);
         }
       if (cond & G_IO_OUT)
+      {
         iv_fd_set_handler_out(&self->fd_watch, log_writer_io_flush_output);
+      }
       else
+      {
         iv_fd_set_handler_out(&self->fd_watch, NULL);
-
-      iv_fd_set_handler_err(&self->fd_watch, log_writer_io_error);
+      }
+      if (iv_fd_registered(&self->fd_watch))
+        iv_fd_set_handler_err(&self->fd_watch, log_writer_io_error);
     }
   else
     {
@@ -1083,6 +1103,7 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
   LogProto *proto = self->proto;
   gint count = 0;
   gboolean ignore_throttle = (flush_mode >= LW_FLUSH_QUEUE);
+  LogProtoStatus status;
   
   if (!proto)
     return FALSE;
@@ -1115,14 +1136,16 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
       msg_set_context(lm);
 
       log_writer_format_log(self, lm, self->line_buffer);
-      msg_debug("Outgoing message",
+      if (!(lm->flags & LF_INTERNAL))
+        {
+          msg_debug("Outgoing message",
                 evt_tag_str("message",self->line_buffer->str),
                 evt_tag_int("flush_mode",flush_mode),
                 NULL);
+        }
 
       if (self->line_buffer->len)
         {
-          LogProtoStatus status;
           status = log_proto_post(proto, lm, (guchar *)self->line_buffer->str, self->line_buffer->len, &consumed);
           if (status == LPS_ERROR)
             {
@@ -1171,9 +1194,13 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
     }
 
 flush_the_proto:
-  if (log_proto_flush(proto) != LPS_SUCCESS)
-   return FALSE;
-
+  status = log_proto_flush(proto);
+  if (status != LPS_SUCCESS && status != LPS_AGAIN)
+    return FALSE;
+  if (status == LPS_SUCCESS && count > 0)
+    {
+      self->immediate_io = TRUE;
+    }
   return TRUE;
 }
 
@@ -1245,6 +1272,7 @@ log_writer_init(LogPipe *s)
       stats_unlock();
     }
   self->suppress_timer_updated = TRUE;
+  self->immediate_io = FALSE;
   log_queue_set_counters(self->queue, self->stored_messages, self->dropped_messages);
   if (self->proto)
     {
