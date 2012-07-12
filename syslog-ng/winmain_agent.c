@@ -85,7 +85,7 @@ install_service_callback(const gchar *option_name, const gchar *value, gpointer 
   install_service(AGENT_SERVICE_NAME,
                          AGENT_SERVICE_DISPLAY_NAME,
                          AGENT_SERVICE_DESCRIPTION,
-                         SERVICE_DEMAND_START,
+                         SERVICE_AUTO_START,
                          service_args,
                          NULL,
                          NULL,
