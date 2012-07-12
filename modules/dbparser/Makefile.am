@@ -25,16 +25,9 @@ libdbparser_la_SOURCES = \
 	dbparser-plugin.c $(libsyslog_ng_patterndb_a_SOURCES)
 
 libdbparser_la_CPPFLAGS = $(AM_CPPFLAGS)
-libdbparser_la_LIBADD = $(MODULE_DEPS_LIBS) $(OPENSSL_LIBS)
+libdbparser_la_LIBADD = $(MODULE_DEPS_LIBS) @OPENSSL_LIBS@
 libdbparser_la_LDFLAGS = $(MODULE_LDFLAGS)
 
-if ENABLE_STATIC_MODULES
-noinst_LTLIBRARIES := libdbparser-static.la
-libdbparser_static_la_SOURCES = $(libdbparser_la_SOURCES)
-libdbparser_static_la_CPPFLAGS = $(libdbparser_la_CPPFLAGS) -DSTATIC
-libdbparser_static_la_LIBADD = $(MODULE_DEPS_LIBS)
-libdbparser_static_la_LDFLAGS = $(STATIC_MODULE_LDFLAGS)
-endif
 bin_PROGRAMS = pdbtool
 pdbtool_SOURCES = pdbtool.c
 pdbtool_CPPFLAGS = $(AM_CPPFLAGS) @OPENSSL_CFLAGS@

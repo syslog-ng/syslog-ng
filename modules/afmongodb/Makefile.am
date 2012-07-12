@@ -4,33 +4,25 @@ SUBDIRS = @LIBMONGO_SUBDIRS@
 
 moduledir = @moduledir@
 AM_CPPFLAGS = -I$(top_srcdir)/lib -I../../lib
-module_LTLIBRARIES = libafmongodb.la
-
 export top_srcdir
 
+BUILT_SOURCES = afmongodb-grammar.y afmongodb-grammar.c afmongodb-grammar.h
+EXTRA_DIST = $(BUILT_SOURCES) afmongodb-grammar.ym
+
+if !IS_WINDOWS
 if ENABLE_MONGODB
+module_LTLIBRARIES = libafmongodb.la
 
 libafmongodb_la_CFLAGS = $(LIBMONGO_CFLAGS)
 libafmongodb_la_SOURCES = afmongodb-grammar.y afmongodb.c afmongodb.h afmongodb-parser.c afmongodb-parser.h
 libafmongodb_la_LIBADD = $(MODULE_DEPS_LIBS) $(LIBMONGO_LIBS)
 libafmongodb_la_LDFLAGS = $(MODULE_LDFLAGS)
-if ENABLE_STATIC_MODULES
-noinst_LTLIBRARIES := libafmongodb-static.la
-libafmongodb_static_la_SOURCES = $(libafmongodb_la_SOURCES)
-libafmongodb_static_la_CFLAGS = $(libafmongodb_la_CFLAGS) -DSTATIC
-libafmongodb_static_la_LIBADD = $(MODULE_DEPS_LIBS) $(LIBMONGO_LIBS)
-libafmongodb_static_la_LDFLAGS = $(STATIC_MODULE_LDFLAGS)
 endif
-
 endif
-
-BUILT_SOURCES = afmongodb-grammar.y afmongodb-grammar.c afmongodb-grammar.h
-EXTRA_DIST = $(BUILT_SOURCES) afmongodb-grammar.ym
 
 include $(top_srcdir)/build/lex-rules.am
 
 # divert install/uninstall targets to avoid recursing into $(SUBDIRS)
-
 install:
 	$(MAKE) $(AM_MAKEFLAGS) all
 	$(MAKE) $(AM_MAKEFLAGS) install-am

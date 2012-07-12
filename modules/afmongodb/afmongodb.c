@@ -583,7 +583,6 @@ afmongodb_module_init(GlobalConfig *cfg, CfgArgs *args)
   return TRUE;
 }
 
-#ifndef STATIC
 const ModuleInfo module_info =
 {
   .canonical_name = "afmongodb",
@@ -593,4 +592,3 @@ const ModuleInfo module_info =
   .plugins = &afmongodb_plugin,
   .plugins_len = 1,
 };
-#endif

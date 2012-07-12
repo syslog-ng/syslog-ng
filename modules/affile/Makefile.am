@@ -17,12 +17,4 @@ libaffile_la_CPPFLAGS = $(AM_CPPFLAGS)
 libaffile_la_LIBADD = $(MODULE_DEPS_LIBS)
 libaffile_la_LDFLAGS = $(MODULE_LDFLAGS)
 
-if ENABLE_STATIC_MODULES
-noinst_LTLIBRARIES := libaffile-static.la
-libaffile_static_la_SOURCES = $(libaffile_la_SOURCES)
-libaffile_static_la_CPPFLAGS = $(libaffile_la_CPPFLAGS) -DSTATIC
-libaffile_static_la_LIBADD =
-libaffile_static_la_LDFLAGS = $(STATIC_MODULE_LDFLAGS)
-endif
-
 include $(top_srcdir)/build/lex-rules.am

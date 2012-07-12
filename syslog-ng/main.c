@@ -38,7 +38,6 @@
 #include "logsource.h"
 #include "mainloop.h"
 #include "plugin.h"
-#include "reloc.h"
 
 #include <sys/types.h>
 #include <stdio.h>
@@ -58,12 +57,6 @@
 
 #include <iv.h>
 #include <iv_signal.h>
-
-#if ENABLE_STATIC_MODULES
-#include "cfg.h"
-extern void init_statics(GlobalConfig *cfg);
-#include "statics.c"
-#endif
 
 static gchar *install_dat_filename;
 static gchar *installer_version = NULL;
@@ -140,9 +133,6 @@ version(void)
 
   plugin_list_modules(stdout, FALSE);
 
-#if ENABLE_STATIC_MODULES
-  printf("Builtin-modules: %s\n", STATIC_MODULES);
-#endif
   printf("Enable-Debug: %s\n"
          "Enable-GProf: %s\n"
          "Enable-Memtrace: %s\n"
@@ -246,9 +236,6 @@ main(int argc, char *argv[])
     }
   g_process_set_name("syslog-ng");
   
-#if ENABLE_STATIC_MODULES
-    cfg_static_init_cb=init_statics;
-#endif
   /* in this case we switch users early while retaining a limited set of
    * credentials in order to initialize/reinitialize the configuration.
    */

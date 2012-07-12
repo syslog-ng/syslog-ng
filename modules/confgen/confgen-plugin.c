@@ -117,7 +117,6 @@ confgen_module_init(GlobalConfig *cfg, CfgArgs *args)
   return TRUE;
 }
 
-#ifndef STATIC
 const ModuleInfo module_info =
 {
   .canonical_name = "confgen",
@@ -127,4 +126,3 @@ const ModuleInfo module_info =
   .plugins = NULL,
   .plugins_len = 0,
 };
-#endif

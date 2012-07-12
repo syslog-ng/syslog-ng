@@ -42,7 +42,6 @@ afsql_module_init(GlobalConfig *cfg, CfgArgs *args)
   return TRUE;
 }
 
-#ifndef STATIC
 const ModuleInfo module_info =
 {
   .canonical_name = "afsql",
@@ -52,4 +51,3 @@ const ModuleInfo module_info =
   .plugins = afsql_plugins,
   .plugins_len = G_N_ELEMENTS(afsql_plugins),
 };
-#endif

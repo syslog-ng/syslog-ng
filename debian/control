@@ -29,11 +29,6 @@ Description: Next generation logging daemon dev package
    * portability
    * better network forwarding
 
-Package: libsyslogng-logmsg
-Architecture: win32
-Description: core logmessage functions
- Shared library to be used by lgstool on Windows.
-
 Package: syslog-ng-premium-edition-dbg
 Architecture: any
 Depends: syslog-ng
@@ -47,13 +42,3 @@ Depends: syslog-ng-dev
 Section: devel
 Description: syslog-ng debugging symbols
  Next generation logging daemon's debugging symbols.
-
-Package: lgstool
-Architecture: win32
-Description: logstore analyzer
- Standalone logstore analyzer on windows
-
-Package: lgstool-dbg
-Architecture: win32
-Description: logstore analyzer, debugging
- Standalone logstore analyzer on windows

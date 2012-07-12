@@ -66,7 +66,6 @@ dummy_module_init(GlobalConfig *cfg, CfgArgs *args)
   return TRUE;
 }
 
-#ifndef STATIC
 const ModuleInfo module_info =
 {
   .canonical_name = "dummy",
@@ -76,4 +75,3 @@ const ModuleInfo module_info =
   .plugins = &dummy_plugin,
   .plugins_len = 1,
 };
-#endif

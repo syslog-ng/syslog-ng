@@ -42,7 +42,6 @@ afuser_module_init(GlobalConfig *cfg, CfgArgs *args)
   return TRUE;
 }
 
-#ifndef STATIC
 const ModuleInfo module_info =
 {
   .canonical_name = "afuser",
@@ -52,4 +51,3 @@ const ModuleInfo module_info =
   .plugins = afuser_plugins,
   .plugins_len = G_N_ELEMENTS(afuser_plugins),
 };
-#endif
