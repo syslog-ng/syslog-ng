@@ -37,6 +37,11 @@
 #define LR_PREEMPT         0x0020
 #define LR_THREADED        0x0040
 
+#define SDATA_FILE_PREFIX ".SDATA.file@18372.4."
+#define SDATA_FILE_NAME SDATA_FILE_PREFIX "name"
+#define SDATA_FILE_SIZE SDATA_FILE_PREFIX "size"
+#define SDATA_FILE_POS SDATA_FILE_PREFIX "position"
+
 /* options */
 
 typedef struct _LogReaderWatch LogReaderWatch;

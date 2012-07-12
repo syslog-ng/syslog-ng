@@ -36,7 +36,7 @@
 #include "versioning.h"
 
 #include <sys/types.h>
-#include <sys/socket.h>
+//#include <sys/socket.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <string.h>
@@ -78,10 +78,6 @@
 
 /* In seconds */
 #define MAX_MSG_TIMEOUT 10
-#define SDATA_FILE_PREFIX ".SDATA.file@18372.4."
-#define SDATA_FILE_NAME SDATA_FILE_PREFIX "name"
-#define SDATA_FILE_SIZE SDATA_FILE_PREFIX "size"
-#define SDATA_FILE_POS SDATA_FILE_PREFIX "position"
 
 struct _LogReader
 {
@@ -249,7 +245,6 @@ static void
 log_reader_io_process_input(gpointer s)
 {
   LogReader *self = (LogReader *) s;
-
   log_reader_stop_watches(self);
   if (!main_loop_io_worker_job_quit())
     {
@@ -357,7 +352,14 @@ log_reader_io_follow_file(gpointer s)
     {
       if (stat(self->follow_filename, &followed_st) != -1)
         {
-          if (fd < 0 || (st.st_ino != followed_st.st_ino && followed_st.st_size > 0))
+         gboolean has_eof_moved = FALSE;
+#ifdef _WIN32
+         DWORD attributes = GetFileAttributes(self->follow_filename);
+         has_eof_moved = (fd < 0 || (attributes == INVALID_FILE_ATTRIBUTES && GetLastError() == ERROR_ACCESS_DENIED));
+#else
+         has_eof_moved = (fd < 0 || (st.st_ino != followed_st.st_ino && followed_st.st_size > 0));
+#endif
+          if (has_eof_moved)
             {
               msg_trace("log_reader_fd_check file moved eof",
                         evt_tag_int("pos", pos),
@@ -622,7 +624,16 @@ log_reader_update_watches(LogReader *self)
         iv_fd_set_handler_in(&self->fd_watch, NULL);
 
       if (cond & G_IO_OUT)
+      {
+#ifdef _WIN32
+       if (!iv_task_registered(&self->restart_task))
+       {
+         iv_task_register(&self->restart_task);
+       }
+#else
         iv_fd_set_handler_out(&self->fd_watch, log_reader_io_process_input);
+#endif
+      }
       else
         iv_fd_set_handler_out(&self->fd_watch, NULL);
 
