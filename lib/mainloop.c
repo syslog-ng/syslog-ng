@@ -101,6 +101,8 @@ static struct iv_signal sigterm_poll;
 static struct iv_signal sigint_poll;
 static struct iv_signal sigchild_poll;
 
+static struct iv_event stop_signal;
+
 
 /* Currently running configuration, should not be used outside the mainloop
  * logic. If anything needs access to the GlobalConfig instance at runtime,
@@ -829,6 +831,10 @@ main_loop_run(void)
 
   control_init(ctlfilename);
 
+  IV_EVENT_INIT(&stop_signal);
+  stop_signal.handler = sig_term_handler;
+  iv_event_register(&stop_signal);
+
   IV_SIGNAL_INIT(&sighup_poll);
   sighup_poll.signum = SIGHUP;
   sighup_poll.exclusive = 1;
@@ -915,4 +921,11 @@ main_loop_maximalize_worker_threads(int max_threads)
     }
 
   log_queue_set_max_threads(main_loop_io_workers.max_threads);
+}
+
+void
+main_loop_terminate()
+{
+  iv_event_post(&stop_signal);
+  return;
 }
