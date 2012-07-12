@@ -469,6 +469,29 @@ cfg_run_parser(GlobalConfig *self, CfgLexer *lexer, CfgParser *parser, gpointer 
 }
 
 gboolean
+cfg_load_config(GlobalConfig *self, gchar *config_string, gboolean syntax_only, gchar *preprocess_into)
+{
+  gint res;
+  CfgLexer *lexer;
+
+  lexer = cfg_lexer_new_buffer(config_string, strlen(config_string));
+  if (preprocess_into)
+    {
+      lexer->preprocess_output = fopen(preprocess_into, "w");
+    }
+
+  res = cfg_run_parser(self, lexer, &main_parser, (gpointer *) &self, NULL);
+  if (res)
+    {
+      /* successfully parsed */
+      self->center = log_center_new();
+      //(void) get_config_hash(self);
+      return TRUE;
+    }
+  return FALSE;
+}
+
+gboolean
 cfg_read_config(GlobalConfig *self, gchar *fname, gboolean syntax_only, gchar *preprocess_into)
 {
   FILE *cfg_file;
