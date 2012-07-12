@@ -36,14 +36,19 @@
 #include "compat.h"
 
 #include <sys/types.h>
+#include <iv_list.h>
 #ifndef G_OS_WIN32
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <iv_list.h>
 #else
 #include <winsock2.h>
 #endif
 #include <sys/time.h>
+#ifdef __MINGW64__
+typedef unsigned long long int tag_ulong;
+#else
+typedef gulong tag_ulong;
+#endif
 
 typedef struct _LogPathOptions LogPathOptions;
 
@@ -162,7 +167,7 @@ struct _LogMessage
    */
   /* ==== start of directly copied part ==== */
   LogStamp timestamps[LM_TS_MAX];
-  gulong *tags;
+  tag_ulong *tags;
   NVHandle *sdata;
 
   GSockAddr *saddr;
@@ -270,10 +275,8 @@ void log_msg_global_deinit(void);
 
 gboolean log_msg_nv_table_foreach(NVTable *self, NVTableForeachFunc func, gpointer user_data);
 
-#ifndef G_OS_WIN32
 gboolean log_msg_init_rcptid(PersistState *state);
 
 void log_msg_create_rcptid(LogMessage *msg);
-#endif
 
 #endif

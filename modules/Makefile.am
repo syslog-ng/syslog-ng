@@ -1,8 +1,6 @@
-SUBDIRS = afsocket afsql afstreams affile afprog afuser csvparser confgen syslogformat pacctformat basicfuncs convertfuncs dbparser tfjson dummy basic-proto
+SUBDIRS = affile afsocket basicfuncs basic-proto syslogformat confgen convertfuncs csvparser dbparser dummy afprog afsql afstreams afuser pacctformat tfjson
 
-if ENABLE_MONGODB
 SUBDIRS += afmongodb
-endif
 
-# pe-modules
-SUBDIRS += license logstore confighash diskq snmp afsqlsource rltp-proto
+# pe modules
+SUBDIRS += license afsqlsource confighash diskq logstore rltp-proto snmp

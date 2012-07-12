@@ -28,23 +28,11 @@
 
 #include "syslog-ng.h"
 
-#ifdef G_OS_WIN32
-
 /* We don't have thread-local-storage support on Win32 and the code that
  * compiles on Win32 is not threaded at all.  If that changes, this code
  * certainly needs to change too. */
 
-#define TLS_BLOCK_START                         \
-  struct __tls_variables
-
-#define TLS_BLOCK_END                           \
-  ;                                             \
-  static struct __tls_variables __tls
-
-#define __tls_deref(var)   (__tls.var)
-
-
-#elif !HAVE_TLS
+#if !HAVE_THREAD_KEYWORD
 
 #include <stdlib.h>
 #include <pthread.h>

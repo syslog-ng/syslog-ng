@@ -32,7 +32,9 @@
 #include "afsocket.h"
 #include "cfg-parser.h"
 #include "afsocket-grammar.h"
+#ifndef G_OS_WIN32
 #include "afunix.h"
+#endif
 #include "afinet.h"
 #include "messages.h"
 #include "syslog-names.h"
@@ -115,6 +117,7 @@ TLSContext *last_tls_context;
 %token KW_TRUSTED_DN
 %token KW_CIPHER_SUITE
 %token KW_ALLOW_COMPRESS
+%token KW_CERT_SUBJECT
 
 /* INCLUDE_DECLS */
 
@@ -152,7 +155,7 @@ start
         ;
 
 source_afsocket
-  : KW_UNIX_DGRAM '(' source_afunix_dgram_params ')'	                                { $$ = $3; }
+        : KW_UNIX_DGRAM '(' source_afunix_dgram_params ')'	                                { $$ = $3; }
 	| KW_UNIX_STREAM '(' source_afunix_stream_params ')' 	                                { $$ = $3; }
 	| KW_UDP { last_addr_family = AF_INET; } '(' source_afinet_udp_params ')'		{ $$ = $4; }
 	| KW_TCP { last_addr_family = AF_INET; } '(' source_afinet_tcp_params ')'		{ $$ = $4; }
@@ -167,21 +170,29 @@ transport
   | KW_TLS  { $$ = strdup(lexer->token_text->str); }
   ;
 
-
 source_afunix_dgram_params
-	: string
+        : KW_IFDEF {
+#ifndef G_OS_WIN32
+}
+	| string
 	  {
 	    last_driver = *instance = afunix_sd_new($1,AFSOCKET_LOCAL | AFSOCKET_DGRAM);
 	    free($1);
-      afsocket_sd_set_transport(last_driver,"dgram");
+            afsocket_sd_set_transport(last_driver,"dgram");
 	    last_reader_options = &((AFSocketSourceDriver *) last_driver)->reader_options;
 	    last_sock_options = &((AFUnixSourceDriver *) last_driver)->sock_options;
 	  }
 	  source_afunix_options			{ $$ = last_driver; }
+        | KW_ENDIF {
+#endif
+}
 	;
 
 source_afunix_stream_params
-	: string
+        : KW_IFDEF {
+#ifndef G_OS_WIN32
+}
+	| string
 	  {
 	    last_driver = *instance = afunix_sd_new($1, AFSOCKET_KEEP_ALIVE | AFSOCKET_LOCAL | AFSOCKET_STREAM);
 	    free($1);
@@ -190,6 +201,9 @@ source_afunix_stream_params
 	    last_sock_options = &((AFUnixSourceDriver *) last_driver)->sock_options;
 	  }
 	  source_afunix_options			{ $$ = last_driver; }
+        | KW_ENDIF {
+#endif
+}
 	;
 
 /* options are common between dgram & stream */
@@ -199,7 +213,10 @@ source_afunix_options
 	;
 
 source_afunix_option
-	: KW_OWNER '(' string_or_number ')'	{ afunix_sd_set_uid(last_driver, $3); free($3); }
+        : KW_IFDEF {
+#ifndef G_OS_WIN32
+}
+	| KW_OWNER '(' string_or_number ')'	{ afunix_sd_set_uid(last_driver, $3); free($3); }
 	| KW_OWNER '(' ')'	                { afunix_sd_set_uid(last_driver, "-2"); }
 	| KW_GROUP '(' string_or_number ')'	{ afunix_sd_set_gid(last_driver, $3); free($3); }
 	| KW_GROUP '(' ')'	                { afunix_sd_set_gid(last_driver, "-2"); }
@@ -209,9 +226,10 @@ source_afunix_option
 	| source_afsocket_stream_params		{}
 	| source_reader_option			{}
 	| socket_option				{}
+        | KW_ENDIF  {
+#endif
+}
 	;
-
-
 
 source_afinet_udp_params
   :
@@ -384,16 +402,19 @@ source_afnetwork_params
   ;
 
 dest_afsocket
-	: KW_UNIX_DGRAM '(' dest_afunix_dgram_params ')'	{ $$ = $3; }
+        : KW_UNIX_DGRAM '(' dest_afunix_dgram_params ')'	{ $$ = $3; }
 	| KW_UNIX_STREAM '(' dest_afunix_stream_params ')'	{ $$ = $3; }
-	| KW_UDP { last_addr_family = AF_INET; } '(' dest_afinet_udp_params ')'			{ $$ = $4; }
+        | KW_UDP { last_addr_family = AF_INET; } '(' dest_afinet_udp_params ')'			{ $$ = $4; }
 	| KW_TCP { last_addr_family = AF_INET; } '(' dest_afinet_tcp_params ')'			{ $$ = $4; }
 	| KW_UDP6 { last_addr_family = AF_INET6; } '(' dest_afinet_udp_params ')'			{ $$ = $4; }
 	| KW_TCP6 { last_addr_family = AF_INET6; } '(' dest_afinet_tcp_params ')'			{ $$ = $4; }
 	;
 
 dest_afunix_dgram_params
-	: string
+        : KW_IFDEF {
+#ifndef G_OS_WIN32
+}
+	| string
 	  {
 	    last_driver = *instance = afunix_dd_new($1,AFSOCKET_DGRAM);
 	    free($1);
@@ -402,10 +423,16 @@ dest_afunix_dgram_params
 	    last_sock_options = &((AFUnixDestDriver *) last_driver)->sock_options;
 	  }
 	  dest_afunix_options			{ $$ = last_driver; }
+        | KW_ENDIF {
+#endif
+}
 	;
 
 dest_afunix_stream_params
-	: string
+        : KW_IFDEF {
+#ifndef G_OS_WIN32
+}
+	| string
 	  {
 	    last_driver = *instance = afunix_dd_new($1,AFSOCKET_STREAM);
 	    free($1);
@@ -414,6 +441,9 @@ dest_afunix_stream_params
 	    last_sock_options = &((AFUnixDestDriver *) last_driver)->sock_options;
 	  }
 	  dest_afunix_options			{ $$ = last_driver; }
+        | KW_ENDIF {
+#endif
+}
 	;
 
 dest_afunix_options
@@ -653,10 +683,15 @@ tls_option
             last_tls_context->cipher_suite = g_strdup($3);
             free($3);
 	  }
-  | KW_ALLOW_COMPRESS '(' yesno ')'
-    {
-      last_tls_context->allow_compress = $3;
-    }
+	| KW_ALLOW_COMPRESS '(' yesno ')'
+	  {
+            last_tls_context->allow_compress = $3;
+	  }
+	| KW_CERT_SUBJECT '(' string ')'
+	  {
+	    last_tls_context->cert_subject = g_strdup($3);
+	    free($3);
+	  }
         | KW_ENDIF {
 #endif
 }

@@ -30,7 +30,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <sys/mman.h>
 #include <errno.h>
 #include <string.h>
 
@@ -235,7 +234,29 @@ static gboolean
 persist_state_commit_store(PersistState *self)
 {
   /* NOTE: we don't need to remap the file in case it is renamed */
-  return rename(self->temp_filename, self->commited_filename) >= 0;
+  gboolean result;
+#ifdef _WIN32
+  guint32 temp_size = self->current_size;
+  munmap(self->current_map,self->current_size);
+  close(self->fd);
+  self->current_map = NULL;
+  self->current_size = 0;
+  unlink(self->commited_filename);
+#endif
+  result = rename(self->temp_filename, self->commited_filename) >= 0;
+#ifdef _WIN32
+  self->fd = open(self->commited_filename, O_RDWR, 0600);
+  if (self->fd < 0)
+    {
+      msg_error("Error creating persistent state file",
+                evt_tag_str("filename", self->commited_filename),
+                evt_tag_errno("error", errno),
+                NULL);
+      return FALSE;
+    }
+  result &= persist_state_grow_store(self, temp_size);
+#endif
+  return result;
 }
 
 /* "value" layer that handles memory block allocation in the file, without working with keys */
@@ -843,7 +864,10 @@ gboolean
 persist_state_commit(PersistState *self)
 {
   if (!persist_state_commit_store(self))
+  {
+    msg_error("Can't rename files",evt_tag_str("source",self->temp_filename),evt_tag_str("destination",self->commited_filename),evt_tag_errno("Error",errno),NULL);
     return FALSE;
+  }
   return TRUE;
 }
 

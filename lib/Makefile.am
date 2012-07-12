@@ -13,9 +13,9 @@ libsyslog_ng_la_CFLAGS = -DLIBSYSLOG_NG
 # this is intentionally formatted so conflicts are less likely to arise. one name in every line.
 pkginclude_HEADERS = 		\
 	afinter.h		\
-	alarms.h		\
 	apphook.h		\
 	atomic.h		\
+	alarms.h		\
 	block-ref-parser.h	\
 	center.h		\
 	cfg.h                   \
@@ -31,9 +31,8 @@ pkginclude_HEADERS = 		\
 	driver.h		\
 	filter-expr-parser.h	\
 	filter.h		\
-	gprocess.h		\
-	gsockaddr.h		\
 	gsocket.h		\
+	gsockaddr.h		\
 	logmatcher.h		\
 	logmpx.h		\
 	logmsg.h		\
@@ -79,6 +78,10 @@ pkginclude_HEADERS = 		\
 	vptransform.h           \
 	reloc.h
 
+if !IS_WINDOWS
+pkginclude_HEADERS += gprocess.h
+endif
+
 # this is intentionally formatted so conflicts are less likely to arise. one name in every line.
 libsyslog_ng_crypto_la_SOURCES = \
 	crypto.c		\
@@ -88,8 +91,8 @@ libsyslog_ng_crypto_la_SOURCES = \
 # this is intentionally formatted so conflicts are less likely to arise. one name in every line.
 libsyslog_ng_la_SOURCES = \
 	afinter.c		\
-	alarms.c		\
 	apphook.c		\
+	alarms.c		\
 	block-ref-parser.c	\
 	center.c		\
 	cfg.c			\
@@ -104,9 +107,8 @@ libsyslog_ng_la_SOURCES = \
 	filter.c		\
 	filter-expr-parser.c	\
 	globals.c		\
-	gprocess.c		\
-	gsockaddr.c		\
 	gsocket.c		\
+	gsockaddr.c		\
 	logmatcher.c		\
 	logmpx.c		\
 	logmsg.c		\
@@ -155,6 +157,10 @@ libsyslog_ng_la_SOURCES = \
 	rewrite-expr-grammar.y	\
 	reloc.c                 \
 	$(libsyslog_ng_crypto_la_SOURCES)
+
+if !IS_WINDOWS
+libsyslog_ng_la_SOURCES += gprocess.c
+endif
 
 
 

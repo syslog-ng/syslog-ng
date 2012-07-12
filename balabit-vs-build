@@ -1,145 +1,66 @@
 #!/bin/sh -e
 
-ZWACONF=./.zwaconf
-
-TARGET=
-
-set -e
-
-if [ -f dist.conf ]; then
-  . dist.conf
-fi
-
-if [ -f $ZWACONF ]; then
-  . $ZWACONF
-fi
-
-if [ -z "$TARGET" ]; then
-  TARGET=$PWD/out
-fi
-
-get_version(){
-      head -1 debian/changelog | sed -e 's/.*(\([^)]*\)).*/\1/'
-}
-
-sed_file() {
-
-    while [ -n "$1" ]; do
-        in=$1.in
-        out=$1
-
-        sed \
-            -e "s,@TARGET@,${TARGET},g" \
-            -e "s,@prefix@,${TARGET},g" \
-            -e "s,@exec_prefix@,\$\{prefix]}\/bin,g" \
-            -e "s,@libdir@,\$\{prefix\}\/lib,g" \
-            -e "s,@includedir@,\$\{prefix\}\/include,g" \
-            -e "s,@datadir@,\$\{prefix\}\/share,g" \
-            -e "s/@VERSION@/${VERSION}/g" \
-            -e "s/@SLNG_WIN_VERSION@/${SLNG_WIN_VERSION}/g" \
-            -e "s/@PACKAGE@/${PACKAGE}/g" \
-            -e "s/@LICENSE_VERSION@/${LICENSE_VERSION}/g" \
-            -e "s/@PATH_LOCALSTATEDIR@//g" \
-            -e "s/@PATH_PREFIX@//g" \
-            -e "s/@GLIB_LIBS@//g" \
-            -e "s/@COMBINED_VERSION@/${COMBINED_VERSION}/g" \
-            -e "s/@BROCHURE_VERSION@/${BROCHURE_VERSION}/g" \
-            $in > $out
-        shift
-    done
-}
-
 cmd=$1
-
 shift
+
+AM_VERSION=-1.7
+INSTALL=${INSTALL:-install}
 case "$cmd" in
   get-version)
-    get_version
+        head -1 debian/changelog | sed -e 's/.*(\([^)]*\)).*/\1/'
     ;;
-  prepare-dist)
-    VERSION=`get_version`
-    ;;
-  dist-exclude-list|build-exclude-list)
-    echo "out obj *.aqt *.ncb *.suo *.vcproj.*.user config.h"
+  build-exclude-list|dist-exclude-list|prepare-dist)
+    ## These lists can be used to delegate build-time and dist-time exclude lists
+    ## For example (syslog-ng-agent):
+    ##
+    echo "out autom4te.cache"
+    ##
     ;;
   bootstrap)
+    sh autogen.sh
     ;;
   configure)
-    OPTIONS=`getopt -l help,prefix: 'p:' $*`
-    if [ $? -ne 0 ]; then
-      echo "$0: unknown flags..."
-      exit 1
-    fi
-
-    eval set -- "$OPTIONS"
-    while true ; do
-      _arg=$1
-
-      if [ -z "$_arg" ]; then
-        break
-      fi
-      case $1 in
-        --prefix|-p)
-          shift
-          TARGET=`cygpath -u "$1"`
-          ;;
-      esac
-      shift
-    done
-    echo "TARGET=$TARGET" > $ZWACONF
+    ./configure $@
     ;;
   make)
-    # kill variables declared by unix make with contents incompatible by nmake.
-    unset MAKE
-    unset MAKEFLAGS
-    unset MAKEDIR
-
-    if [ -z "$ZBS_PREFIX" ]; then
-      ZBS_PREFIX=.
-    fi
-    OUT=$ZBS_PREFIX/out
-
-    if [ -n "$ZWA_INSTALL_DIR" ]; then
-      export COMPILE_ENV="`cygpath -m $ZWA_INSTALL_DIR`"
-      OUT=$COMPILE_ENV
-      export DEP=$COMPILE_ENV
-    fi
-    set -x
-    if [ ! -f winbuild/config.h-win32 ] || [ ! -f lib/libsyslogng.rc ]; then
-      PACKAGE=`sed -n -e 's/^PACKAGE="\(.*\)"/\1/p' configure.in`
-      LICENSE_VERSION=`sed -n -e 's/^LICENSE_VERSION="\(.*\)"/\1/p' configure.in`
-      VERSION="`head -1 VERSION` unreleased"
-      SLNG_WIN_VERSION="`echo $VERSION | sed -e 's/[a-zA-Z+\-~]\+.*//' -e 's/\./,/g'`"
-      sed_file lib/libsyslogng.rc winbuild/config.h-win32
-    fi
-    sed_file syslog-ng.pc
-
-    mkdir -p $OUT
-    set -x
-    if [ -z "$1" ]; then
-      nmake -nologo -f makefile.msc ROOT="`cygpath -m $OUT`" # DEBUG=1
-    else
       case $1 in
-        clean)
-          nmake -nologo -f makefile.msc clean ROOT="`cygpath -m $OUT`"
-          rm -f $ZWACONF
-          ;;
-        distclean)
-          $0 clean
-          ;;
         install)
-        #  mkdir -p ${TARGET}/bin ${TARGET}/lib/pkgconfig ${TARGET}/include/syslog-ng
-        #  install syslog-ng.pc ${TARGET}/lib/pkgconfig
-        #  cd lib
-        #  ccclibtool --mode=install install libsyslogng-logmsg.la ${TARGET}/bin
-        #  install *.h ${TARGET}/include/syslog-ng
-          mkdir -p ${TARGET} ${TARGET}/bin
-          cd modules/logstore
-          install -m 755 lgstool.exe ${TARGET}/bin
-          install -m 755 lgstool.pdb ${TARGET}/bin
-          ;;
-      esac
-    fi
+            make $@
+
+            . ./dist.conf;
+            (echo "VERSION=\"$TECHNICAL_VERSION\""; echo "BROCHURE_VERSION=\"$BROCHURE_VERSION\""; echo "EDITION=pe"; echo "BUILD_ARCH=$ZBS_ARCH"; echo "BUILD_DIST=$ZBS_DIST") > $ZBS_STAGE_DIR/etc/install.dat
+
+            $INSTALL -d -m 755 $ZBS_STAGE_DIR/share/doc
+            #Store syslog-ng build options. Has to declare the modulepaths, because
+            # syslog-ng doesn't look for them in non-default paths.
+            set -e ;
+            export PATH=$PWD/lib/.libs:$PATH
+            MODULEPATH=
+            for mp in `find $PWD/modules -type d -name .libs`; do
+                MODULEPATH="$MODULEPATH:$mp:`echo $mp | sed -e 's,^/cygdrive,,'`"
+            done
+            MODULEPATH=$ZBS_PREFIX_LIB:$ZBS_STAGING_DIR/$ZBS_PREFIX/lib:`echo $MODULEPATH | sed -e 's/ /:/g'`;
+            BUILDOPTS="$ZBS_STAGE_DIR/share/doc/buildopts";
+            echo syslog-ng/syslog-ng -V --module-path "$MODULEPATH";
+            syslog-ng/syslog-ng -V --module-path "$MODULEPATH"
+            syslog-ng/syslog-ng -V --module-path "$MODULEPATH" | sed -n -e '/^Enable/p' -e '/^Available/p' > $BUILDOPTS;
+            if test ! -s $BUILDOPTS; then
+                echo "Build options file '$BUILDOPTS' has zero size. Please check your filter expression in tgz2build/rules.";
+                exit 1;
+            fi;
+
+            $INSTALL -d -m 755 $ZBS_STAGE_DIR/share/man
+            $INSTALL -d -m 755 $ZBS_STAGE_DIR/share/man/man1
+            $INSTALL -d -m 755 $ZBS_STAGE_DIR/share/man/man5
+            $INSTALL -d -m 755 $ZBS_STAGE_DIR/share/man/man8
+            $INSTALL -m 644 -c AUTHORS $ZBS_STAGE_DIR/share/doc
+            $INSTALL -m 644 -c doc/man/pdbtool.1 $ZBS_STAGE_DIR/share/man/man1
+            $INSTALL -m 644 -c doc/man/syslog-ng.8 $ZBS_STAGE_DIR/share/man/man8
+            $INSTALL -m 644 -c doc/man/syslog-ng.conf.5 $ZBS_STAGE_DIR/share/man/man5
+
+            ;;
+        *) make $@ ;;
+    esac
     ;;
   *)
     echo "Unknown command: $cmd"
@@ -147,5 +68,3 @@ case "$cmd" in
     ;;
 esac
 exit 0
-
-# vim: ts=2 sw=2 expandtab

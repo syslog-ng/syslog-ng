@@ -1,0 +1,4 @@
+include/*
+lib/pkgconfig/*
+lib/*.a
+lib/*.la*

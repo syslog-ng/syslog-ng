@@ -30,17 +30,22 @@
 #include <errno.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <signal.h>
 
 #ifndef SSIZE_MAX
 #define SSIZE_MAX SHRT_MAX
 #endif
 
-#ifdef _MSC_VER
-
+#ifdef _WIN32
 #include <windows.h>
 #include <stdio.h>
 #include <time.h>
 #include <locale.h>
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#include <stdint.h>
+#define _malloca malloc
+#define _freea free
 
 #define _ctloc(x)       (_CurrentTimeLocale->x)
 /*
@@ -237,18 +242,17 @@ mmap(void *addr, size_t len, int prot, int flags,
      break;
      case PROT_EXEC:
       flProtect = PAGE_EXECUTE;
-      dwDesiredAccess = FILE_MAP_EXECUTE;
      break;
      case PROT_EXEC | PROT_READ:
-      flProtect = PAGE_EXECUTE_READ | FILE_MAP_EXECUTE;
+      flProtect = PAGE_EXECUTE_READ;
      break;
      case PROT_EXEC | PROT_READ | PROT_WRITE:
       flProtect = PAGE_EXECUTE_READWRITE;
-      dwDesiredAccess = FILE_MAP_ALL_ACCESS | FILE_MAP_EXECUTE;
+      dwDesiredAccess = FILE_MAP_ALL_ACCESS;
      break;
    };
 
-  file_mapping = CreateFileMapping(_get_osfhandle(fildes), NULL, flProtect, 0, 0, NULL);
+  file_mapping = CreateFileMapping((HANDLE)_get_osfhandle(fildes), NULL, flProtect, 0, 0, NULL);
 
   if (file_mapping == NULL)
     return MAP_FAILED;
@@ -280,6 +284,133 @@ int
 madvise(void *addr, size_t len, int advice)
 {
   return TRUE;
+}
+
+int
+fsync (int fd)
+{
+  HANDLE h = (HANDLE) _get_osfhandle (fd);
+  DWORD err;
+
+  if (h == INVALID_HANDLE_VALUE)
+    {
+      errno = EBADF;
+      return -1;
+    }
+
+  if (!FlushFileBuffers (h))
+    {
+      /* Translate some Windows errors into rough approximations of Unix
+       * errors.  MSDN is useless as usual - in this case it doesn't
+       * document the full range of errors.
+       */
+      err = GetLastError ();
+      switch (err)
+       {
+         /* eg. Trying to fsync a tty. */
+       case ERROR_INVALID_HANDLE:
+         errno = EINVAL;
+         break;
+
+       default:
+         errno = EIO;
+       }
+      return -1;
+    }
+
+  return 0;
+}
+
+int chown(const char *path, uid_t owner, gid_t group)
+{
+  return 0;
+}
+
+int fchown(int fd, uid_t owner, gid_t group)
+{
+  return 0;
+}
+
+int fchmod(int fd, mode_t mode)
+{
+  return 0;
+}
+
+int sigaction(int signum, const struct sigaction *act, struct sigaction *oldact)
+{
+  return 0;
+}
+
+int sigemptyset(sigset_t *set)
+{
+  return 0;
+}
+
+int sigaddset(sigset_t *set, int signum)
+{
+  return 0;
+}
+
+
+int sigprocmask(int how, const sigset_t *set, sigset_t *oldset)
+{
+  return 0;
+}
+
+
+#define MAX_SLEEP_IN_MS         4294967294UL
+
+#define POW10_2     INT64_C(100)
+#define POW10_3     INT64_C(1000)
+#define POW10_4     INT64_C(10000)
+#define POW10_6     INT64_C(1000000)
+#define POW10_7     INT64_C(10000000)
+#define POW10_9     INT64_C(1000000000)
+
+
+int nanosleep(const struct timespec *request, struct timespec *remain)
+{
+    unsigned long ms, rc = 0;
+    unsigned __int64 u64, want, real;
+
+    union {
+        unsigned __int64 ns100;
+        FILETIME ft;
+    }  _start, _end;
+
+    if (request->tv_sec < 0 || request->tv_nsec < 0 || request->tv_nsec >= POW10_9) {
+        errno = EINVAL;
+        return -1;
+    }
+
+    if (remain != NULL) GetSystemTimeAsFileTime(&_start.ft);
+
+    want = u64 = request->tv_sec * POW10_3 + request->tv_nsec / POW10_6;
+    while (u64 > 0 && rc == 0) {
+        if (u64 >= MAX_SLEEP_IN_MS) ms = MAX_SLEEP_IN_MS;
+        else ms = (unsigned long) u64;
+
+        u64 -= ms;
+        rc = SleepEx(ms, TRUE);
+    }
+
+    if (rc != 0) { /* WAIT_IO_COMPLETION */
+        if (remain != NULL) {
+            GetSystemTimeAsFileTime(&_end.ft);
+            real = (_end.ns100 - _start.ns100) / POW10_4;
+
+            if (real >= want) u64 = 0;
+            else u64 = want - real;
+
+            remain->tv_sec = u64 / POW10_3;
+            remain->tv_nsec = (long) (u64 % POW10_3) * POW10_6;
+        }
+
+        errno = EINTR;
+        return -1;
+    }
+
+    return 0;
 }
 
 /* getpagesize for windows */
@@ -652,7 +783,104 @@ literal:
     }
     return bp;
 }
-#endif /* _MSC_VER */
+
+int clock_gettime(int clock_id, struct timespec *res)
+{
+  struct timeval tv;
+  int result = gettimeofday(&tv, NULL);
+  if (result == 0)
+  {
+    res->tv_sec = tv.tv_sec;
+    res->tv_nsec = (long int)(tv.tv_usec * 1000);
+  }
+  return result;
+}
+
+int getsockerror()
+{
+  int res = WSAGetLastError();
+  if (res == WSAEWOULDBLOCK)
+  {
+    return EAGAIN;
+  }
+  else if (res == WSAEINTR)
+  {
+    return EINTR;
+  }
+  else
+  {
+    return res;
+  }
+}
+
+void setup_signals()
+{
+  return;
+}
+
+int kill(pid_t pid, int sig)
+{
+       return 0;
+}
+
+int res_init()
+{
+       return 0;
+}
+
+pid_t waitpid(pid_t pid, int *status, int options)
+{
+       return pid;
+}
+
+int alarm(unsigned int seconds)
+{
+       return 0;
+}
+
+void IV_SIGNAL_INIT(struct iv_signal *this)
+{
+       return;
+}
+
+int iv_signal_register(struct iv_signal *this)
+{
+       return 0;
+}
+
+void iv_signal_unregister(struct iv_signal *this)
+{
+       return;
+}
+
+int syslog(int type, char *bufp, int len)
+{
+       return 0;
+}
+
+void openlog(const char *ident, int option, int facility)
+{
+       return;
+}
+
+#else
+int getsockerror()
+{
+  return errno;
+}
+
+void
+setup_signals(void)
+{
+  struct sigaction sa;
+
+  memset(&sa, 0, sizeof(sa));
+  sa.sa_handler = SIG_IGN;
+  sigaction(SIGPIPE, &sa, NULL);
+}
+
+
+#endif /* _WIN32 */
 
 #if !HAVE_PREAD || HAVE_BROKEN_PREAD
 
@@ -752,12 +980,7 @@ intmax_t __strtollmax(const char *__nptr, char **__endptr, int __base)
 #endif
 
 #ifndef HAVE_CLOCK_GETTIME
-
-#include <time.h>
-#ifdef __APPLE__
-#include <sys/time.h>
-#endif
-#ifndef _MSC_VER
+#ifndef _WIN32
 int clock_gettime(clockid_t clk_id, struct timespec *tp)
 {
   struct timeval tv;
@@ -770,4 +993,18 @@ int clock_gettime(clockid_t clk_id, struct timespec *tp)
   return ret;
 }
 #endif
+#endif
+
+#ifndef HAVE_LOCALTIME_R
+struct tm *
+localtime_r(const time_t *timer, struct tm *result)
+{
+    struct tm *tmp = localtime(timer);
+
+    if (tmp) {
+        *result = *tmp;
+        return result;
+    }
+    return tmp;
+}
 #endif

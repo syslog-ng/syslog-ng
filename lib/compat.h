@@ -26,22 +26,34 @@
 #define COMPAT_H_INCLUDED
 
 #include <config.h>
+#ifdef _WIN32
+/* windows includes above all ... */
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#include <windows.h>
+#endif
+
 #include <sys/types.h>
 #include <unistd.h>
+#include <iv_list.h>
+#include <iv_event_raw.h>
+#ifdef HAVE_TIME_H
 #include <time.h>
+#endif
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
 
 #ifndef CLOCK_MONOTONIC
 #define CLOCK_MONOTONIC CLOCK_REALTIME
 #endif
 
-#ifdef _MSC_VER
+int getsockerror();
+
+#ifdef _WIN32
 
 /* ivykis internal stuff, needed by logmsg. Can't include the iv_list.h because
  * VS 2k5 croaks on it... */
-struct list_head {
-	struct list_head	*next;
-	struct list_head	*prev;
-};
 
 #define LIST_HEAD_INIT(name) { &(name), &(name) }
 
@@ -50,14 +62,13 @@ struct list_head {
     (lh)->prev = (lh); \
 } while (0)
 
-#define STRICT
-#include <windows.h>
-#undef STRICT
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#ifndef ssize_t
-typedef signed int ssize_t;
-#endif
+#define S_IFMT  00170000
+#define S_IFSOCK 0140000
+
+#define S_ISSOCK(m)     (((m) & S_IFMT) == S_IFSOCK)
+
+#define SHUT_RDWR SD_BOTH
+#define getpid GetCurrentProcessId
 
 #ifndef strncasecmp
 #define strncasecmp _strnicmp
@@ -70,11 +81,6 @@ typedef signed int ssize_t;
 #ifndef sleep
 #define sleep(x) Sleep(x * 1000)
 #endif
-
-typedef unsigned int uid_t;
-typedef unsigned int gid_t;
-typedef unsigned int mode_t;
-typedef unsigned int pid_t;
 
 #define SIGQUIT 3
 
@@ -111,7 +117,6 @@ char *strptime(const char *buf, const char *fmt, struct tm *tm);
 ssize_t writev(int fd, const struct iovec *vector, int count);
 ssize_t readv(int fd, const struct iovec *vector, int count);
 
-long getpagesize(void);
 /*
  * Protections are chosen from these bits, or-ed together
  */
@@ -141,14 +146,12 @@ const char *inet_ntop(int af, const void *src, char *dst, socklen_t cnt);
 int inet_pton(int af, const char *src, void *dst);
 int inet_aton(const char *cp, struct in_addr *dst);
 
-/* Timespec declaration for systems lacking one. */
-struct timespec {
-    time_t   tv_sec;        /* seconds */
-    long int    tv_nsec;       /* nanoseconds */
-};
-#else /* _MSC_VER */
+#include "pthread.h"
+#else /* _WIN32 */
+#include <arpa/inet.h>
 #include <sys/socket.h>
-#endif /* _MSC_VER */
+#include <sys/mman.h>
+#endif /* _WIN32 */
 
 #ifndef O_BINARY
 #define O_BINARY 0
@@ -205,33 +208,129 @@ typedef int bb_socklen_t;
 typedef socklen_t bb_socklen_t;
 #endif
 
-#ifdef _MSC_VER
+#ifdef _WIN32
+#ifdef __MINGW32__
+#include <sys/types.h>
+#endif
 
-#define CCALL __cdecl
-#pragma section(".CRT$XCU",read)
+#ifndef ESTALE
+#define ESTALE WSAESTALE
+#endif
+
+#ifndef ECONNRESET
+#define ECONNRESET WSAECONNRESET
+#endif
+
+#ifndef EWOULDBLOCK
+#define EWOULDBLOCK  WSAEWOULDBLOCK
+#endif
+
+#ifndef ECONNABORTED
+#define ECONNABORTED WSAECONNABORTED
+#endif
+
+#ifndef EINPROGRESS
+#define EINPROGRESS WSAEINPROGRESS
+#endif
+
+int fsync (int fd);
+int nanosleep(const struct timespec *request, struct timespec *remain);
+
+int kill(pid_t pid, int sig);
+
+int res_init();
+
+#define WNOHANG 1
+#define SIGHUP 1
+#define SIGCHLD 1
+#ifndef SIGTERM
+#define SIGTERM 1
+#endif
+#ifndef SIGINT
+#define SIGINT 1
+#endif
+#define SIGALRM         14      /* Alarm clock (POSIX).  */
+
+typedef unsigned int uid_t;
+typedef unsigned int gid_t;
+
+pid_t waitpid(pid_t pid, int *status, int options);
+
+
+
+int alarm(unsigned int seconds);
+
+struct sigaction{
+	int dummy;
+	void (*sa_handler) (int signo);
+};
+
+void setup_signals();
+
+struct iv_signal {
+	int			signum;
+	unsigned		exclusive:1;
+	void			*cookie;
+	void			(*handler)(void *);
+
+	struct list_head	list;
+	struct iv_event_raw	ev;
+	int			active;
+};
+
+void IV_SIGNAL_INIT(struct iv_signal *this);
+
+int iv_signal_register(struct iv_signal *this);
+void iv_signal_unregister(struct iv_signal *this);
+
+int syslog(int type, char *bufp, int len);
+void openlog(const char *ident, int option, int facility);
+
+int chown(const char *path, uid_t owner, gid_t group);
+int fchown(int fd, uid_t owner, gid_t group);
+int fchmod(int fd, mode_t mode);
+int sigaction(int signum, const struct sigaction *act, struct sigaction *oldact);
+int sigemptyset(sigset_t *set);
+int sigaddset(sigset_t *set, int signum);
+int sigprocmask(int how, const sigset_t *set, sigset_t *oldset);
+
+#define LOG_PID         0x01    /* log the pid with each message */
+#define LOG_CONS        0x02    /* log on the console if errors in sending */
+#define LOG_ODELAY      0x04    /* delay open until first syslog() (default) */
+#define LOG_NDELAY      0x08    /* don't delay open */
+#define LOG_NOWAIT      0x10    /* don't wait for console forks: DEPRECATED */
+#define LOG_PERROR      0x20    /* log to stderr as well */
+
+
 #define INITIALIZER(f) \
-   static void __cdecl f(void); \
-   __declspec(allocate(".CRT$XCU")) void (__cdecl*f##_)(void) = f; \
-   static void __cdecl f(void)
+   static void f(void) __attribute__((constructor));\
+   static void f(void)
 
-#elif defined(__GNUC__)
+#define CLOCK_REALTIME 1
+int clock_gettime(int clock_id, struct timespec *res);
+
+#elif defined(__GNUC__) /* _WIN32 */
 
 #define CCALL
 #define INITIALIZER(f) \
    static void f(void) __attribute__((constructor));\
    static void f(void)
 
-#endif
 
 /* FIXME: Ugly hack to force loading and linking crypto.c on Windows. Without it, the linker skips the module... */
-#ifdef _MSC_VER
 #define BB_CRYPTO_EXPORT void crypto_init_vs(void) { return; }
 #define BB_CRYPTO_IMPORT crypto_init_vs();
 void crypto_init_vs(void);
 
-#else
+#define WSAEINPROGRESS EINPROGRESS
+
+#else /* _WIN32 */
 #define BB_CRYPTO_EXPORT
 #define BB_CRYPTO_IMPORT
-#endif
 
+#endif /* _WIN32 */
+
+#ifndef HAVE_LOCALTIME_R
+struct tm * localtime_r(const time_t *timer, struct tm *result);
 #endif
+#endif /* COMPAT_H_INCLUDED */

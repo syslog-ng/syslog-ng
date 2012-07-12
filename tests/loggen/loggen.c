@@ -1,15 +1,23 @@
 #include <config.h>
 #include <stdio.h>
+#ifndef _WIN32
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <sys/un.h>
+#include <netdb.h>
+#else
+#include "../../lib/compat.h"
+#include <winsock2.h>
+#ifdef __MINGW32__
+#include <stdint.h>
+#endif
+#endif
 #include <stdlib.h>
 #include <errno.h>
 #include <sys/time.h>
 #include <time.h>
 #include <unistd.h>
-#include <netdb.h>
 #include <string.h>
 #include <glib.h>
 #include <signal.h>
@@ -39,7 +47,11 @@ int sock_type_s = 0;
 int sock_type_d = 0;
 int sock_type = SOCK_STREAM;
 struct sockaddr *dest_addr;
+#ifndef _WIN32
 socklen_t dest_addr_len;
+#else
+size_t dest_addr_len;
+#endif
 int message_length = 256;
 int interval = 10;
 int number_of_messages = 0;
@@ -525,7 +537,7 @@ gen_messages(send_data_t send_func, void *send_func_ud, int thread_id, FILE *rea
             }
           else if (!quiet)
             {
-              fprintf(stderr, "count=%ld, rate = %.2lf msg/sec                 \r", count, ((double) (count - last_count) * USEC_PER_SEC) / diff_usec);
+              fprintf(stderr, "count=%ld, rate = %.2f msg/sec                 \r", count, ((double) (count - last_count) * USEC_PER_SEC) / diff_usec);
             }
           last_ts_format = now;
           last_count = count;
@@ -673,8 +685,11 @@ void ssl_locking_callback(int mode, int type, char *file, int line)
 unsigned long ssl_thread_id(void)
 {
   unsigned long ret;
-
+#ifndef _WIN32
   ret=(unsigned long)pthread_self();
+#else
+  ret=GetCurrentThreadId();
+#endif
   return(ret);
 }
 
@@ -870,6 +885,7 @@ use_plain_transport:
     {
       count = (usessl ? gen_messages_ssl : gen_messages_plain)(sock, id, readfrom);
     }
+#if ENABLE_SSL
   else if (usessl)
     {
       count = gen_messages(send_ssl, ssl_transport, id, readfrom);
@@ -878,6 +894,7 @@ use_plain_transport:
     {
       count = gen_messages_plain(sock, id, readfrom);
     }
+#endif
   if (rltp && rltp_chunk_counters[id])
     {
       char cbuf[256];
@@ -964,11 +981,16 @@ main(int argc, char *argv[])
   int i;
   guint64 diff_usec;
   GOptionGroup *group;
+  double rate;
 
   g_thread_init(NULL);
   tzset();
-
+#ifndef _WIN32
   signal(SIGPIPE, SIG_IGN);
+#else
+  WSADATA wa;
+  WSAStartup(0x0202,&wa);
+#endif
 
   ctx = g_option_context_new(" target port");
   g_option_context_add_main_entries(ctx, loggen_options, 0);
@@ -1104,6 +1126,7 @@ main(int argc, char *argv[])
     }
   else
     {
+#ifndef _WIN32
       static struct sockaddr_un saun;
 
       saun.sun_family = AF_UNIX;
@@ -1111,13 +1134,16 @@ main(int argc, char *argv[])
 
       dest_addr = (struct sockaddr *) &saun;
       dest_addr_len = sizeof(saun);
+#endif
     }
   if (active_connections + idle_connections > 10000)
     {
       fprintf(stderr, "Loggen doesn't support more than 10k threads.\n");
       return 2;
     }
+#if ENABLE_SSL
   thread_setup();
+#endif
   /* used for startup & to signal inactive threads to exit */
   thread_cond = g_cond_new();
   /* active threads signal when they are ready */
@@ -1167,7 +1193,8 @@ main(int argc, char *argv[])
     {
       diff_usec = 1;
     }
-  fprintf(stderr, "average rate = %.2lf msg/sec, count=%"G_GUINT64_FORMAT", time=%ld.%03ld, (average) msg size=%ld, bandwidth=%.2lf kB/sec\n",
+  rate = (double)sum_count * USEC_PER_SEC / diff_usec;
+  fprintf(stderr, "average rate = %.2f msg/sec, count=%"G_GUINT64_FORMAT", time=%ld.%03ld, (average) msg size=%ld, bandwidth=%.2f kB/sec\n",
         (double)sum_count * USEC_PER_SEC / diff_usec, sum_count,
         (long int)sum_time.tv_sec, (long int)sum_time.tv_usec / 1000,
         (long int)raw_message_length, (double)sum_count * raw_message_length * (USEC_PER_SEC / 1024) / diff_usec);

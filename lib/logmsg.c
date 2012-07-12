@@ -142,9 +142,6 @@ TLS_BLOCK_END;
 #define LOGMSG_REFCACHE_VALUE_TO_REF(x)    (((x) & LOGMSG_REFCACHE_REF_MASK) >> LOGMSG_REFCACHE_REF_SHIFT)
 #define LOGMSG_REFCACHE_VALUE_TO_ACK(x)    (((x) & LOGMSG_REFCACHE_ACK_MASK) >> LOGMSG_REFCACHE_ACK_SHIFT)
 
-#ifdef G_OS_WIN32
-#define getpid GetCurrentProcessId
-#endif
 
 /**********************************************************************
  * LogMessage
@@ -544,11 +541,16 @@ log_msg_clear_matches(LogMessage *self)
   self->num_matches = 0;
 }
 
+#ifndef __MINGW64__
+/* sizeof(long) is 32 bit for 64 bit windows ...
+ * http://software.intel.com/en-us/articles/size-of-long-integer-type-on-different-architecture-and-os/
+ */
 #if GLIB_SIZEOF_LONG != GLIB_SIZEOF_VOID_P
 #error "The tags bit array assumes that long is the same size as the pointer"
 #endif
+#endif
 
-#if GLIB_SIZEOF_LONG == 8
+#if GLIB_SIZEOF_LONG == 8 || defined(__MINGW64__)
 #define LOGMSG_TAGS_NDX_SHIFT 6
 #define LOGMSG_TAGS_NDX_MASK  0x3F
 #define LOGMSG_TAGS_BITS      64
@@ -561,7 +563,7 @@ log_msg_clear_matches(LogMessage *self)
 #endif
 
 static inline void
-log_msg_tags_foreach_item(LogMessage *self, gint base, gulong item, LogMessageTagsForeachFunc callback, gpointer user_data)
+log_msg_tags_foreach_item(LogMessage *self, gint base, tag_ulong item, LogMessageTagsForeachFunc callback, gpointer user_data)
 {
   gint i;
 
@@ -587,7 +589,7 @@ log_msg_tags_foreach(LogMessage *self, LogMessageTagsForeachFunc callback, gpoin
 
   if (self->num_tags == 0)
     {
-      log_msg_tags_foreach_item(self, 0, (gulong) self->tags, callback, user_data);
+      log_msg_tags_foreach_item(self, 0, (tag_ulong) self->tags, callback, user_data);
     }
   else
     {
@@ -600,24 +602,24 @@ log_msg_tags_foreach(LogMessage *self, LogMessageTagsForeachFunc callback, gpoin
 
 
 static inline void
-log_msg_set_bit(gulong *tags, gint index, gboolean value)
+log_msg_set_bit(tag_ulong *tags, gint index, gboolean value)
 {
   if (value)
-    tags[index >> LOGMSG_TAGS_NDX_SHIFT] |= ((gulong) (1UL << (index & LOGMSG_TAGS_NDX_MASK)));
+    tags[index >> LOGMSG_TAGS_NDX_SHIFT] |= ((tag_ulong) (1UL << (index & LOGMSG_TAGS_NDX_MASK)));
   else
-    tags[index >> LOGMSG_TAGS_NDX_SHIFT] &= ~((gulong) (1UL << (index & LOGMSG_TAGS_NDX_MASK)));
+    tags[index >> LOGMSG_TAGS_NDX_SHIFT] &= ~((tag_ulong) (1UL << (index & LOGMSG_TAGS_NDX_MASK)));
 }
 
 static inline gboolean
-log_msg_get_bit(gulong *tags, gint index)
+log_msg_get_bit(tag_ulong *tags, gint index)
 {
-  return !!(tags[index >> LOGMSG_TAGS_NDX_SHIFT] & ((gulong) (1UL << (index & LOGMSG_TAGS_NDX_MASK))));
+  return !!(tags[index >> LOGMSG_TAGS_NDX_SHIFT] & ((tag_ulong) (1UL << (index & LOGMSG_TAGS_NDX_MASK))));
 }
 
 static inline void
 log_msg_set_tag_by_id_onoff(LogMessage *self, LogTagId id, gboolean on)
 {
-  gulong *old_tags;
+  tag_ulong *old_tags;
   gint old_num_tags;
   gboolean inline_tags;
 
@@ -632,7 +634,7 @@ log_msg_set_tag_by_id_onoff(LogMessage *self, LogTagId id, gboolean on)
   if (inline_tags && id < LOGMSG_TAGS_BITS)
     {
       /* store this tag inline */
-      log_msg_set_bit((gulong *) &self->tags, id, on);
+      log_msg_set_bit((tag_ulong *) &self->tags, id, on);
     }
   else
     {
@@ -656,7 +658,7 @@ log_msg_set_tag_by_id_onoff(LogMessage *self, LogTagId id, gboolean on)
           memset(&self->tags[old_num_tags], 0, (self->num_tags - old_num_tags) * sizeof(self->tags[0]));
 
           if (inline_tags)
-            self->tags[0] = (gulong) old_tags;
+            self->tags[0] = (tag_ulong) old_tags;
         }
 
       log_msg_set_bit(self->tags, id, on);
@@ -704,7 +706,7 @@ log_msg_is_tag_by_id(LogMessage *self, LogTagId id)
       return FALSE;
     }
   if (self->num_tags == 0 && id < LOGMSG_TAGS_BITS)
-    return log_msg_get_bit((gulong *) &self->tags, id);
+    return log_msg_get_bit((tag_ulong *) &self->tags, id);
   else if (id < self->num_tags * LOGMSG_TAGS_BITS)
     return log_msg_get_bit(self->tags, id);
   else
@@ -2274,7 +2276,6 @@ log_msg_read(LogMessage *self, SerializeArchive *sa)
   return FALSE;
 }
 
-#ifndef G_OS_WIN32
 /****************************************************
 * Generate a unique receipt ID ($RCPTID)
 ****************************************************/
@@ -2347,4 +2348,3 @@ log_msg_create_rcptid(LogMessage *msg)
     g_static_mutex_unlock(&g_mutex1);
   }
 }
-#endif

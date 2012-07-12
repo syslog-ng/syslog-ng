@@ -53,6 +53,8 @@ enum
 
   M_HOST,
   M_SDATA,
+  M_PROGRAM,
+  M_PID,
 
   M_MSGHDR,
   M_MESSAGE,
@@ -60,7 +62,10 @@ enum
   M_SEQNUM,
   M_CONTEXT_ID,
   M_RCPTID,
-
+/* WARNING: Do NOT insert new IDs below this line, because they can break any
+ * code using the last 3 entries (M_TIME_MACROS_MAX, M_RECVD_OFS and
+ * M_STAMP_OFS)...
+ */
   M_DATE,
   M_FULLDATE,
   M_ISODATE,
@@ -94,8 +99,6 @@ enum
   M_RECVD_OFS = M_TIME_MACROS_MAX,
   M_STAMP_OFS = 2 * M_TIME_MACROS_MAX,
 };
-
-#define M_TIME_MACROS 15
 
 LogMacroDef macros[] =
 {
@@ -202,6 +205,23 @@ LogMacroDef macros[] =
         { "MSG", M_MESSAGE },
         { "MESSAGE", M_MESSAGE },
         { "HOST", M_HOST },
+
+       /* Agent specific macros */
+       { "FILE_FACILITY", M_FACILITY_NUM },
+       { "FILE_LEVEL", M_LEVEL_NUM },
+       { "FILE_MESSAGE", M_MESSAGE },
+       { "FILE_MSG", M_MESSAGE },
+       { "BSDDATE", M_DATE},
+       { "STRUCTURED_DATA" , M_SDATA},
+
+       { "APP_NAME", M_PROGRAM},
+       { "APPLICATION_NAME", M_PROGRAM},
+       { "PROCESS_ID", M_PID},
+       { "R_BSDDATE", M_RECVD_OFS + M_DATE},
+       { "S_BSDDATE", M_STAMP_OFS + M_DATE},
+       { "MONTHNAME", M_MONTH_ABBREV},
+       { "R_MONTHNAME", M_RECVD_OFS + M_MONTH_ABBREV },
+       { "S_MONTHNAME", M_STAMP_OFS + M_MONTH_ABBREV },
         { NULL, 0 }
 };
 
@@ -444,6 +464,23 @@ log_macro_expand(GString *result, gint id, gboolean escape, LogTemplateOptions *
           }
         break;
       }
+   case M_PROGRAM:
+      {
+       result_append_value(result, msg, LM_V_PROGRAM, escape);
+       break;
+      }
+    case M_PID:
+      {
+        result_append_value(result, msg, LM_V_PID, escape);
+        break;
+      }
+    case M_SYSUPTIME:
+      {
+        GTimeVal ct;
+        g_get_current_time(&ct);
+        g_string_append_printf(result, "%ld", g_time_val_diff(&ct, &app_uptime) / 1000 / 10);
+        break;
+      }
     default:
       {
         /* year, month, day */
@@ -563,7 +600,7 @@ log_macro_expand(GString *result, gint id, gboolean escape, LogTemplateOptions *
                             id == M_FULLDATE ? TS_FMT_FULL :
                             id == M_UNIXTIME ? TS_FMT_UNIX :
                             opts->ts_format;
-              
+
               log_stamp_append_format(stamp, result, format, zone_ofs, opts->frac_digits);
               break;
             }
@@ -572,16 +609,8 @@ log_macro_expand(GString *result, gint id, gboolean escape, LogTemplateOptions *
             length = format_zone_info(buf, sizeof(buf), zone_ofs);
             g_string_append_len(result, buf, length);
             break;
-          case M_SYSUPTIME:
-            {
-              GTimeVal ct;
 
-              g_get_current_time(&ct);
-              g_string_append_printf(result, "%ld", g_time_val_diff(&ct, &app_uptime) / 1000 / 10);
-            }
-            break;
           }
-        break;
       }
     }
   return TRUE;
@@ -772,7 +801,6 @@ log_template_add_value_elem(LogTemplate *self, gchar *value_name, gsize value_na
   self->compiled_template = g_list_prepend(self->compiled_template, e);
 }
 
-#ifndef G_OS_WIN32
 /* NOTE: this steals argv if successful */
 static gboolean
 log_template_add_func_elem(LogTemplate *self, GString *text, gint argc, gchar *argv[], gint msg_ref, GError **error)
@@ -814,7 +842,6 @@ log_template_add_func_elem(LogTemplate *self, GString *text, gint argc, gchar *a
   g_free(e);
   return FALSE;
 }
-#endif /* G_OS_WIN32 */
 
 static void
 parse_msg_ref(gchar **p, gint *msg_ref)
@@ -927,7 +954,6 @@ log_template_compile(LogTemplate *self, const gchar *template, GError **error)
                 }
               finished = TRUE;
             }
-#ifndef G_OS_WIN32
           /* template function */
           else if (*p == '(')
             {
@@ -1028,7 +1054,6 @@ log_template_compile(LogTemplate *self, const gchar *template, GError **error)
               g_string_free(arg_buf, TRUE);
               finished = TRUE;
             }
-#endif /* G_OS_WIN32 */
           else if ((*p >= 'A' && *p <= 'Z') || (*p >= 'a' && *p <= 'z') || (*p == '_') || (*p >= '0' && *p <= '9'))
             {
               start = p;

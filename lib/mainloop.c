@@ -36,13 +36,17 @@
 #include "reloc.h"
 
 #include <sys/types.h>
+
+#ifndef _WIN32
 #include <sys/wait.h>
-#include <string.h>
 #include <netinet/in.h>
 #include <arpa/nameser.h>
 #include <resolv.h>
-#include <iv.h>
 #include <iv_signal.h>
+#endif
+
+#include <string.h>
+#include <iv.h>
 #include <iv_work.h>
 
 /**
@@ -86,12 +90,12 @@
  */
 
 /* parsed command line arguments */
-static gchar *preprocess_into = NULL;
+gchar *preprocess_into = NULL;
 gboolean syntax_only = FALSE;
 guint32 g_run_id;
 
 /* USED ONLY IN PREMIUM EDITION */
-gboolean server_mode = FALSE;
+gboolean server_mode = TRUE;
 
 gboolean under_termination = FALSE;
 
@@ -606,7 +610,6 @@ main_loop_reload_config_apply(void)
       current_configuration = main_loop_old_config;
       goto finish;
     }
-
   /* this is already running with the new config in place */
   res_init();
   app_post_config_loaded();
@@ -714,7 +717,6 @@ main_loop_call_thread_quit_callback()
 
   return;
 }
-
 
 /************************************************************************************
  * signal handlers
@@ -870,7 +872,6 @@ main_loop_run(void)
   cfg_deinit(current_configuration);
   cfg_free(current_configuration);
   current_configuration = NULL;
-
   return 0;
 }
 

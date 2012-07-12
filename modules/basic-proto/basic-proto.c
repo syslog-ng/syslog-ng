@@ -35,7 +35,9 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <stdlib.h>
+#ifndef G_OS_WIN32
 #include <sys/uio.h>
+#endif
 #include <limits.h>
 #include <regex.h>
 
@@ -61,6 +63,42 @@ typedef struct _LogProtoFramedClient
 
 extern guint32 g_run_id;
 const guchar *find_eom(const guchar *s, gsize n);
+
+gboolean
+log_proto_set_encoding(LogProto *self, const gchar *encoding)
+{
+  if (self->convert != (GIConv) -1)
+    {
+      g_iconv_close(self->convert);
+      self->convert = (GIConv) -1;
+    }
+  if (self->encoding)
+    {
+      g_free(self->encoding);
+      self->encoding = NULL;
+    }
+
+  self->convert = g_iconv_open("utf-8", encoding);
+  if (self->convert == (GIConv) -1)
+    return FALSE;
+
+  self->encoding = g_strdup(encoding);
+  return TRUE;
+}
+
+void
+log_proto_free(LogProto *s)
+{
+  if (s->free_fn)
+    s->free_fn(s);
+  if (s->convert != (GIConv) -1)
+    g_iconv_close(s->convert);
+  if (s->encoding)
+    g_free(s->encoding);
+  if (s->transport)
+    log_transport_free(s->transport);
+  g_free(s);
+}
 
 static gboolean
 log_proto_text_client_prepare(LogProto *s, gint *fd, GIOCondition *cond, gint *timeout)
@@ -748,6 +786,10 @@ log_proto_buffered_server_apply_state(LogProtoBufferedServer *self, PersistEntry
   buffer_pos = state->pending_buffer_pos;
 
   state->pending_buffer_end = 0;
+#ifdef _WIN32
+  state->file_inode = 1;
+  st.st_ino = 1;
+#endif
 
   if (state->file_inode &&
       state->file_inode == st.st_ino &&
@@ -820,12 +862,23 @@ log_proto_buffered_server_apply_state(LogProtoBufferedServer *self, PersistEntry
         }
 
       rc = log_transport_read(self->super.transport, pending_raw_buffer, raw_buffer_size, NULL);
+
       if (rc != raw_buffer_size)
         {
+         if (rc != -1 && rc > buffer_pos)
+         {
+               raw_buffer_size = rc;
+         }
+         else
+         {
           msg_notice("Error re-reading buffer contents of the file to be continued, restarting from the beginning",
                      evt_tag_str("state", persist_name),
+                    evt_tag_int("read",rc),
+                    evt_tag_int("had to read",raw_buffer_size),
+                    evt_tag_errno("Error",errno),
                      NULL);
           goto error;
+         }
         }
 
       state->pending_buffer_end = 0;

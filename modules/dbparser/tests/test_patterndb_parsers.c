@@ -189,6 +189,8 @@ void
 create_pattern_db(PDBRuleSet *patterndb, gchar *program_pattern, gchar *rule_pattern, gchar ** filename)
 {
   GString *str = g_string_new(pdb_part_1);
+  GError *err = NULL;
+  int retval;
   memset(patterndb, 0x0, sizeof(PDBRuleSet));
 
   g_string_append(str,program_pattern);
@@ -196,8 +198,18 @@ create_pattern_db(PDBRuleSet *patterndb, gchar *program_pattern, gchar *rule_pat
   g_string_append(str,rule_pattern);
   g_string_append(str,pdb_part_3);
 
-  g_file_open_tmp("patterndbXXXXXX.xml", filename, NULL);
-  g_file_set_contents(*filename, str->str, str->len, NULL);
+#ifndef _WIN32
+  g_file_open_tmp("patterndbXXXXXX.xml", filename, &err);
+#else
+  *filename = g_strdup("patterndbXXXXXX.xml");
+  retval = g_mkstemp(*filename);
+  if (retval != -1)
+         close(retval);
+#endif
+  if (!g_file_set_contents(*filename, str->str, str->len, &err))
+  {
+       fprintf(stderr,"ERROR OCCURED!\n");
+  }
 
   pdb_rule_set_load(patterndb, configuration, *filename, NULL);
 

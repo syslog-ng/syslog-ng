@@ -27,9 +27,7 @@
 
 GlobalConfig *configuration;
 int cfg_parser_debug;
-#ifndef _MSC_VER
 gchar *module_path;
-#endif
 gchar *default_modules = DEFAULT_MODULES;
 
 gchar *path_prefix;
@@ -46,6 +44,21 @@ gchar *qdisk_dir = NULL;
 INITIALIZER(init_paths)
 {
   /* initialize the SYSLOGNG_PREFIX-related variables */
+#ifdef G_OS_WIN32
+  char currDirectory[_MAX_PATH];
+  char *pIdx;
+  GetModuleFileName(NULL, currDirectory, _MAX_PATH);
+  pIdx = strrchr(currDirectory, '\\');
+  if (pIdx)
+    *pIdx = '\0';
+  pIdx = strrchr(currDirectory, '\\');
+  if (pIdx)
+    if ((strcmp((pIdx + 1),"bin")==0) || (strcmp((pIdx + 1),"lib")==0))
+      {
+        *pIdx = '\0';
+      }
+  SetEnvironmentVariable("SYSLOGNG_PREFIX", currDirectory);
+#endif
   path_prefix = get_reloc_string(PATH_PREFIX);
   path_datadir = get_reloc_string(PATH_DATADIR);
   path_sysconfdir = get_reloc_string(PATH_SYSCONFDIR);
@@ -54,7 +67,5 @@ INITIALIZER(init_paths)
   cfgfilename = get_reloc_string(PATH_SYSLOG_NG_CONF);
   persist_file = get_reloc_string(PATH_PERSIST_CONFIG);
   ctlfilename = get_reloc_string(PATH_CONTROL_SOCKET);
-#ifndef _MSC_VER
   module_path = get_reloc_string(MODULE_PATH);
-#endif
 }

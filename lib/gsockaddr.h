@@ -28,10 +28,6 @@
 #include "syslog-ng.h"
 #include "atomic.h"
 
-#include <sys/types.h>
-#include <unistd.h>
-#include <errno.h>
-#include <sys/types.h>
 #ifndef G_OS_WIN32
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -40,6 +36,10 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #endif
+#include <sys/types.h>
+#include <unistd.h>
+#include <errno.h>
+#include <sys/types.h>
 
 /* sockaddr public interface */
 
@@ -223,8 +223,10 @@ g_sockaddr_inet6_set_port(GSockAddr *s, guint16 port)
 }
 #endif
 
+#ifndef G_OS_WIN32
 GSockAddr *g_sockaddr_unix_new(const gchar *name);
 GSockAddr *g_sockaddr_unix_new2(struct sockaddr_un *s_un, int sunlen);
+#endif
 
 
 #endif

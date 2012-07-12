@@ -126,7 +126,7 @@ test_msg_tags()
           if (set ^ log_msg_is_tag_by_id(msg, i))
             test_fail("Tag is %sset now (by id) %d\n", set ? "not " : "", i);
 
-          if (set && i < sizeof(gulong) * 8 && msg->num_tags != 0)
+          if (set && i < sizeof(tag_ulong) * 8 && msg->num_tags != 0)
             test_fail("Small IDs are set which should be stored in-line but num_tags is non-zero");
           
           g_free(name);

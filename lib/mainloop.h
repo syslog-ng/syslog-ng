@@ -32,7 +32,6 @@ extern gboolean server_mode;
 extern GThread *main_thread_handle;
 extern guint32 g_run_id;
 
-#ifndef G_OS_WIN32
 #include <iv_work.h>
 
 typedef gpointer (*MainLoopTaskFunc)(gpointer user_data);
@@ -101,11 +100,5 @@ int  main_loop_run(void);
 void main_loop_terminate();
 
 void main_loop_add_options(GOptionContext *ctx);
-#else /* G_OS_WIN32 */
-static inline gboolean
-main_loop_is_main_thread(void)
-{
-  return TRUE;
-}
-#endif /* G_OS_WIN32 */
+
 #endif

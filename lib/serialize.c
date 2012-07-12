@@ -28,11 +28,6 @@
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
-#ifdef G_OS_WIN32
-#include <winsock2.h>
-#else
-#include <arpa/inet.h>
-#endif
 
 typedef struct _SerializeFileArchive
 {

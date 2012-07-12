@@ -71,9 +71,22 @@ log_transport_plain_read_method(LogTransport *s, gpointer buf, gsize buflen, GSo
 
       do
         {
+#ifndef _WIN32
           /*if (self->super.timeout)
             alarm_set(self->super.timeout);*/
           rc = read(self->super.fd, buf, buflen);
+#else
+	  if ((self->super.flags & LTF_SOCKET) != 0)
+	  {
+	    rc = recv(self->super.fd, buf, buflen, 0);
+	    if (rc == -1)
+              errno = getsockerror();
+	  }
+	  else
+	  {
+            rc = read(self->super.fd, buf, buflen);
+	  }
+#endif
           
           if (self->super.timeout > 0 && rc == -1 && errno == EINTR && alarm_has_fired())
             {
@@ -150,7 +163,20 @@ log_transport_plain_write_method(LogTransport *s, const gpointer buf, gsize bufl
 
       do
         {
+#ifndef _WIN32
           rc = write(self->super.fd, buf, buflen);
+#else
+	  if ((self->super.flags & LTF_SOCKET) != 0)
+	  {
+	    rc = send(self->super.fd, buf, buflen, 0);
+	    if (rc == -1)
+              errno = getsockerror();
+	  }
+	  else
+	  {
+            rc = write(self->super.fd, buf, buflen);
+	  }
+#endif
         }
 #ifdef __aix__
       while ((buflen >>= 1) && (self->super.flags & LTF_PIPE) && rc < 0 && errno == EAGAIN);

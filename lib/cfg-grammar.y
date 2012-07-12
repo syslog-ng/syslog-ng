@@ -328,7 +328,11 @@ extern struct _LogDriver *last_driver;
 
 #include "syslog-names.h"
 
+#ifndef _WIN32
 #include <netinet/in.h>
+#else
+#include <winsock2.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

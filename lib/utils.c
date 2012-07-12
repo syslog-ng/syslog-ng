@@ -23,6 +23,7 @@
  */
   
 #include "config.h"
+#ifndef _WIN32
 
 #include <stdlib.h>
 #include <unistd.h>
@@ -83,5 +84,5 @@ void endutent(void)
 		utent_fd = -1;
 	}
 }
-
+#endif
 #endif

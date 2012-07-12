@@ -27,6 +27,7 @@
 
 #include "syslog-ng.h"
 #include "gsockaddr.h"
+#include "compat.h"
 
 /* don't close the underlying fd when LogTransport is destructed */
 #define LTF_DONTCLOSE 0x0001
@@ -47,6 +48,8 @@
  * sure it fits into PIPE_BUF, see then comment
  * log_transport_plain_write() for more details. */
 #define LTF_PIPE      0x0020
+
+#define LTF_SOCKET    0x0040
 
 
 typedef struct _LogTransport LogTransport;

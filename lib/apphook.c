@@ -26,6 +26,7 @@
 #include "messages.h"
 #include "children.h"
 #include "dnscache.h"
+#include "compat.h"
 #include "alarms.h"
 #include "stats.h"
 #include "tags.h"
@@ -105,6 +106,10 @@ run_application_hook(gint type)
 void 
 app_startup(void)
 {
+#ifdef _WIN32
+  WSADATA wa = {0};
+  WSAStartup(0x0202,&wa);
+#endif
   main_thread_handle = g_thread_self();
 
   msg_init(FALSE);

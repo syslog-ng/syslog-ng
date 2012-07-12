@@ -10,7 +10,7 @@
 
 typedef gboolean (*FileMonitorCallbackFunc)(const gchar *filename, gpointer user_data);
 
-typedef enum { MONITOR_NONE, MONITOR_POLL, MONITOR_INOTIFY } MonitorType;
+typedef enum { MONITOR_NONE, MONITOR_POLL, MONITOR_INOTIFY, MONITOR_WINDOWS } MonitorType;
 
 typedef struct  _FileMonitor
 {

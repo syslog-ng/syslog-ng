@@ -44,11 +44,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#ifndef G_OS_WIN32
 #include <iv_work.h>
 #include <dirent.h>
 #include <openssl/sha.h>
-#endif
 
 /* PersistentConfig */
 
@@ -62,8 +60,6 @@ typedef struct _PersistConfigEntry
   gpointer value;
   GDestroyNotify destroy;
 } PersistConfigEntry;
-
-#ifndef G_OS_WIN32
 
 static void
 persist_config_entry_free(PersistConfigEntry *self)
@@ -111,10 +107,8 @@ static void config_show_start_message(GlobalConfig *self)
 #if ENABLE_SSL
 static gchar *cfg_calculate_hash(GlobalConfig *self);
 #endif
-#endif
 
 
-#ifndef G_OS_WIN32
 
 gint
 cfg_ts_format_value(gchar *format)
@@ -375,7 +369,6 @@ cfg_check_inline_template(GlobalConfig *cfg, const gchar *template_or_name, GErr
     }
   return template;
 }
-#endif
 
 GlobalConfig *
 cfg_new(gint version)
@@ -427,7 +420,6 @@ cfg_new(gint version)
   self->keep_timestamp = TRUE;
   self->cfg_fingerprint = NULL;
   self->stats_reset = FALSE;
-#ifndef G_OS_WIN32
 #if ENABLE_SSL
   self->calculate_hash = cfg_calculate_hash;
 #else
@@ -436,12 +428,10 @@ cfg_new(gint version)
 #endif
   self->show_reload_message = config_show_reload_message;
   self->show_start_message = config_show_start_message;
-#endif
   return self;
 }
 
 
-#ifndef G_OS_WIN32
 gboolean
 cfg_run_parser(GlobalConfig *self, CfgLexer *lexer, CfgParser *parser, gpointer *result, gpointer arg)
 {
@@ -512,7 +502,7 @@ cfg_read_config(GlobalConfig *self, gchar *fname, gboolean syntax_only, gchar *p
           self->center = log_center_new();
           (void) get_config_hash(self);
           return TRUE;
-	      }
+        }
     }
   else
     {
@@ -521,7 +511,6 @@ cfg_read_config(GlobalConfig *self, gchar *fname, gboolean syntax_only, gchar *p
                 evt_tag_errno(EVT_TAG_OSERROR, errno),
                 NULL);
     }
-  
   return FALSE;
 }
 
@@ -554,7 +543,6 @@ void
 cfg_free(GlobalConfig *self)
 {
   int i;
-
   g_assert(self->persist == NULL);
   if (self->state)
     persist_state_free(self->state);
@@ -936,4 +924,3 @@ cfg_calculate_hash(GlobalConfig *cfg)
 }
 
 #endif /* ENABLE_SSL */
-#endif /* !G_OS_WIN32 */

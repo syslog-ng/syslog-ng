@@ -28,10 +28,14 @@
 #include "versioning.h"
 
 #include <sys/types.h>
+#ifndef G_OS_WIN32
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <netinet/in.h>
+#else
+#include <winsock2.h>
+#endif
 #include <stdlib.h>
 #include <string.h>
 

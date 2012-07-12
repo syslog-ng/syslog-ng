@@ -1,0 +1,7 @@
+bin/*.exe
+bin/*.dll
+etc/*
+lib/init-functions
+libexec/*
+sbin/*
+share/*

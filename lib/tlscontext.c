@@ -26,15 +26,18 @@
 #include "messages.h"
 
 #if ENABLE_SSL
-#ifdef G_OS_WIN32
-#include <winsock.h>
-#else
-#include <arpa/inet.h>
-#endif
 #include <openssl/x509_vfy.h>
 #include <openssl/x509v3.h>
 #include <openssl/err.h>
 #include <openssl/rand.h>
+#include <openssl/engine.h>
+
+typedef struct _load_cert_param
+{
+  char *subject;
+  X509 *cert;
+} LOAD_CERT_PARAM;
+
 
 gboolean
 tls_get_x509_digest(X509 *x, GString *hash_string)
@@ -294,6 +297,40 @@ tls_context_setup_session(TLSContext *self)
 
       if (!self->ssl_ctx)
         goto error;
+
+      if (self->cert_subject)
+      {
+        ENGINE *d = NULL;
+        EVP_PKEY *priv_key = NULL;
+        LOAD_CERT_PARAM param;
+        int result = 0;
+        ENGINE_load_dynamic();
+        d = ENGINE_by_id("dynamic");
+        result = ENGINE_ctrl_cmd_string(d, "SO_PATH", "./capieay32.dll", 0);
+        if (result <= 0)
+          goto error;
+        result = ENGINE_ctrl_cmd_string(d, "LOAD", NULL, 0);
+        if (result <= 0)
+          goto error;
+        result = ENGINE_init(d);
+        if (result <= 0)
+          goto error;
+
+        ENGINE_ctrl_cmd_string(d,"store_flags","1",0);
+        param.subject = self->cert_subject;
+        param.cert = NULL;
+        result = ENGINE_ctrl_cmd_string(d,"load_cert",(const char *)&param,0);
+        if (result <= 0 || param.cert == NULL)
+          goto error;
+
+        priv_key = ENGINE_load_private_key(d,self->cert_subject,NULL,NULL);
+        if (priv_key == NULL)
+          goto error;
+
+        result = SSL_CTX_use_PrivateKey(self->ssl_ctx,priv_key);
+        result = SSL_CTX_use_certificate(self->ssl_ctx,param.cert);
+
+      }
       if (file_exists(self->key_file) && !SSL_CTX_use_PrivateKey_file(self->ssl_ctx, self->key_file, SSL_FILETYPE_PEM))
         goto error;
 

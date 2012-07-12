@@ -34,14 +34,19 @@
 #include "stats.h"
 #include "mainloop.h"
 #include "versioning.h"
+#include "compat.h"
 
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
+#ifndef G_OS_WIN32
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <sys/un.h>
 #include <arpa/inet.h>
+#else
+#include <winsock2.h>
+#endif
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -96,9 +101,10 @@ afsocket_open_socket(GSockAddr *bind_addr, int stream_or_dgram, int *fd)
   if (sock != -1)
     {
       cap_t saved_caps;
-
+#ifndef G_OS_WIN32
       g_fd_set_nonblock(sock, TRUE);
       g_fd_set_cloexec(sock, TRUE);
+#endif
       saved_caps = g_process_cap_save();
       g_process_cap_modify(CAP_NET_BIND_SERVICE, TRUE);
       g_process_cap_modify(CAP_DAC_OVERRIDE, TRUE);
@@ -194,6 +200,7 @@ afsocket_sc_init(LogPipe *s)
   LogProtoServerOptions *options = (LogProtoServerOptions *)&self->owner->proto_options;
 
   read_flags = ((self->owner->flags & AFSOCKET_DGRAM) ? LTF_RECV : 0);
+  read_flags |= LTF_SOCKET;
   if (!self->reader)
     {
       if (self->owner->proto_factory->construct_transport == NULL)
@@ -213,12 +220,14 @@ afsocket_sc_init(LogPipe *s)
       else
         {
           TLSSession *tls_session = NULL;
+#if ENABLE_SSL
           if (self->owner->tls_context)
             {
               tls_session = tls_context_setup_session(self->owner->tls_context);
               if (!tls_session)
                 return FALSE;
             }
+#endif
           transport = self->owner->proto_factory->construct_transport((LogProtoOptions *)options,self->sock, read_flags, tls_session);
         }
       if (!transport)
@@ -523,9 +532,10 @@ afsocket_sd_accept(gpointer s)
           close(new_fd);
           return;
         }
-
+#ifndef G_OS_WIN32
       g_fd_set_nonblock(new_fd, TRUE);
       g_fd_set_cloexec(new_fd, TRUE);
+#endif
 
       res = afsocket_sd_process_connection(self, peer_addr, self->bind_addr, new_fd);
 
@@ -1103,7 +1113,7 @@ afsocket_dd_connected(AFSocketDestDriver *self)
 
   if (iv_fd_registered(&self->connect_fd))
     iv_fd_unregister(&self->connect_fd);
-
+  transport_flags |= LTF_SOCKET;
   if (self->flags & AFSOCKET_STREAM)
     {
       transport_flags |= LTF_SHUTDOWN;

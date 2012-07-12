@@ -26,29 +26,16 @@
 #include "gsocket.h"
 
 #include <sys/types.h>
-#ifndef G_OS_WIN32
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <sys/un.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-#else /* G_OS_WIN32 */
-#define S_IFMT  00170000
-#define S_IFSOCK 0140000
-
-#define S_ISSOCK(m)     (((m) & S_IFMT) == S_IFSOCK)
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#include "compat.h"
 #define UNIX_MAX_PATH 108
 
+#ifndef HAVE_STRUCT_SOCKADDR_UN
 struct sockaddr_un
   {
     unsigned int sun_family; /**< AF_UNIX*/
     char sun_path[UNIX_MAX_PATH];   /**< socket pathname*/
   };
+#endif
 
-#endif /* G_OS_WIN32 */
 #include <sys/stat.h>
 #include <unistd.h>
 #include <errno.h>
@@ -88,9 +75,11 @@ g_sockaddr_new(struct sockaddr *sa, int salen)
       if (salen == sizeof(struct sockaddr_in))
         addr = g_sockaddr_inet_new2((struct sockaddr_in *) sa);
       break;
+#ifndef _WIN32
     case AF_UNIX:
       addr = g_sockaddr_unix_new2((struct sockaddr_un *) sa, salen);
       break;
+#endif
     default:
       /*LOG
         This message indicates an internal error, Zorp tries to use an

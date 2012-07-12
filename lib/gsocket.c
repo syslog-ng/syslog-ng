@@ -24,11 +24,6 @@
 
 #include "gsocket.h"
 #include "compat.h"
-#ifndef G_OS_WIN32
-#include <arpa/inet.h>
-#else
-#include <winsock2.h>
-#endif
 
 /**
  * g_inet_ntoa:

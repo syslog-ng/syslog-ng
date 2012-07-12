@@ -135,14 +135,14 @@ plugin_parse_config(Plugin *self, GlobalConfig *cfg, YYLTYPE *yylloc, gpointer a
 }
 
 static GModule *
-plugin_dlopen_module(const gchar *module_name, const gchar *module_paths)
+plugin_dlopen_module(const gchar *module_name, const gchar *module_path)
 {
   gchar *plugin_module_name = NULL;
   gchar **module_path_dirs, *p, *dot;
   GModule *mod;
   gint i;
 
-  module_path_dirs = g_strsplit(module_paths, G_SEARCHPATH_SEPARATOR_S, 0);
+  module_path_dirs = g_strsplit(module_path, G_SEARCHPATH_SEPARATOR_S, 0);
   i = 0;
   while (module_path_dirs && module_path_dirs[i])
     {
@@ -185,7 +185,7 @@ plugin_dlopen_module(const gchar *module_name, const gchar *module_paths)
   if (!plugin_module_name)
     {
       msg_error("Plugin module not found in 'module-path'",
-                evt_tag_str("module-path", module_paths),
+                evt_tag_str("module-path", module_path),
                 evt_tag_str("module", module_name),
                 NULL);
       return NULL;
@@ -293,7 +293,7 @@ plugin_list_modules(FILE *out, gboolean verbose)
                 fname += 3;
               module_name = g_strndup(fname, (gint) (strlen(fname) - strlen(G_MODULE_SUFFIX) - 1));
 
-              mod = plugin_dlopen_module(module_name, mod_paths[i]);
+              mod = plugin_dlopen_module(module_name, module_path);
               if (mod)
                 success = g_module_symbol(mod, "module_info", (gpointer *) &module_info);
               else

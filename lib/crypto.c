@@ -99,7 +99,7 @@ crypto_deinit(void)
   crypto_deinit_threading();
 }
 
-#ifdef _MSC_VER
+#ifdef _WIN32
 #pragma section(".CRT$XCU",read)
 #endif
 INITIALIZER(crypto_init)
@@ -123,7 +123,7 @@ INITIALIZER(crypto_init)
       if (RAND_status() < 0)
         fprintf(stderr, "WARNING: a trusted random number source is not available, crypto operations will probably fail. Please set the RANDFILE environment variable.");
     }
-#ifndef G_OS_WIN32
+#ifndef _WIN32
   register_application_hook(AH_SHUTDOWN, (ApplicationHookFunc) crypto_deinit, NULL);
 #endif
 }

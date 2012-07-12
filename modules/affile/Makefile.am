@@ -4,10 +4,16 @@ export top_srcdir
 
 module_LTLIBRARIES := libaffile.la
 
-libaffile_la_SOURCES = \
-	affile.c affile.h \
-	affile-grammar.y affile-parser.c affile-parser.h affile-plugin.c \
-	filemonitor.c filemonitor.h
+libaffile_la_SOURCES = affile-grammar.y affile-parser.c affile-parser.h affile-plugin.c
+
+if IS_WINDOWS
+libaffile_la_SOURCES += \
+	affile_win.c affile_win.h filemonitor.h filemonitor_win.c
+else
+libaffile_la_SOURCES += \
+	affile.c affile.h filemonitor.c filemonitor.h
+endif
+
 
 
 BUILT_SOURCES = affile-grammar.y affile-grammar.c affile-grammar.h

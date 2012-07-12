@@ -1,6 +1,11 @@
 #include <sys/types.h>
+#ifndef _WIN32
 #include <sys/socket.h>
 #include <sys/un.h>
+#else
+#include "compat.h"
+#include <winsock2.h>
+#endif
 #include <fcntl.h>
 #include <signal.h>
 #include <pthread.h>
@@ -18,6 +23,8 @@ GCond *thread_startup;
 GMutex *thread_lock;
 pthread_t thread_handle;
 
+
+#ifndef _WIN32
 void
 sigusr1_handler(int signo)
 {
@@ -34,6 +41,7 @@ setup_sigusr1(void)
   sa.sa_flags = 0;
   sigaction(SIGUSR1, &sa, NULL);
 }
+#endif
 
 static void
 signal_startup(void)
@@ -44,6 +52,7 @@ signal_startup(void)
   g_cond_signal(thread_startup);
   g_mutex_unlock(thread_lock);
 }
+
 
 static gboolean
 create_test_thread(GThreadFunc thread_func, gpointer data)

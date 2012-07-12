@@ -49,8 +49,25 @@ char *get_reloc_string(const char *orig)
   gint prefixlen, suffixlen, confvarlen;
 
   if (sysprefix == NULL)
-    if ((sysprefix = getenv("SYSLOGNG_PREFIX")) == NULL )
-      sysprefix = PATH_PREFIX;
+    {
+#ifndef G_OS_WIN32
+      if ((sysprefix = getenv("SYSLOGNG_PREFIX")) == NULL )
+        {
+          sysprefix = PATH_PREFIX;
+        }
+#else
+      char current_environment[_MAX_PATH];
+      if (GetEnvironmentVariable("SYSLOGNG_PREFIX",current_environment,_MAX_PATH) != 0)
+        {
+          sysprefix = current_environment;
+        }
+      else
+        {
+          sysprefix = PATH_PREFIX;
+        }
+
+#endif
+    }
 
   if (!configure_variables)
     {
