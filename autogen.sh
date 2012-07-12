@@ -38,7 +38,7 @@ fi
 
 (
  pemodpath="$ZWA_ROOT/git/syslog-ng/syslog-ng-pe-modules--mainline--5.0/modules"
- for pemod in license logstore diskq confighash snmp afsqlsource rltp-proto; do
+ for pemod in license logstore diskq confighash snmp afsqlsource rltp-proto eventlog agent-config; do
     if [ -d $pemodpath/$pemod ]; then
         if [ -h modules/$pemod ] || [ -d modules/$pemod ]; then rm -rf modules/$pemod; fi
         ln -s $pemodpath/$pemod modules/$pemod

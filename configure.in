@@ -1461,6 +1461,13 @@ AC_OUTPUT(dist.conf
           modules/convertfuncs/Makefile
           modules/convertfuncs/tests/Makefile
           modules/tfjson/Makefile
+          modules/agent-config/Makefile
+          modules/agent-config/tests/Makefile
+          modules/agent-config/tests/unit/Makefile
+          modules/agent-config/tests/func/Makefile
+          modules/eventlog/Makefile
+          modules/eventlog/tests/Makefile
+          modules/eventlog/tests/unit/Makefile
 
 dnl PE modules
 	modules/license/Makefile
