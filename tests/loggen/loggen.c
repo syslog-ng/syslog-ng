@@ -366,9 +366,9 @@ static int
 connect_server(gint id)
 {
   int sock;
-  struct sockaddr_in s_in;
-  memcpy(&s_in,dest_addr,dest_addr_len);
-  sock = socket(dest_addr->sa_family, sock_type, 0);
+  struct sockaddr * s_in = g_malloc0(dest_addr_len);
+  memcpy(s_in,dest_addr,dest_addr_len);
+  sock = socket(s_in->sa_family, sock_type, 0);
   if (sock < 0)
     {
       fprintf(stderr, "Error creating socket: %s\n", g_strerror(errno));
@@ -376,14 +376,23 @@ connect_server(gint id)
     }
   if (use_port_range)
     {
-      s_in.sin_port = htons(ntohs(s_in.sin_port) + id);
+      if (s_in->sa_family == AF_INET6)
+        {
+          ((struct sockaddr_in6 *)s_in)->sin6_port = htons(ntohs(((struct sockaddr_in6*)s_in)->sin6_port) + id);
+        }
+      else if (s_in->sa_family == AF_INET)
+        {
+          ((struct sockaddr_in *)s_in)->sin_port = htons(ntohs(((struct sockaddr_in*)s_in)->sin_port) + id);
+        }
     }
-  if (connect(sock, &s_in, dest_addr_len) < 0)
+  if (connect(sock, s_in, dest_addr_len) < 0)
     {
       fprintf(stderr, "Error connecting socket: %s\n", g_strerror(errno));
+      g_free(s_in);
       close(sock);
       return -1;
     }
+  g_free(s_in);
   return sock;
 }
 
