@@ -95,19 +95,27 @@ assert_guint64_non_fatal(guint64 actual, guint64 expected, const gchar *error_me
 }
 
 gboolean
-assert_string_non_fatal(const gchar *actual, const gchar *expected, const gchar *error_message, ...)
+assert_nstring_non_fatal(const gchar *actual, gint actual_len, const gchar *expected, gint expected_len, const gchar *error_message, ...)
 {
   va_list args;
 
   if (expected == NULL && actual == NULL)
     return TRUE;
 
-  if (actual != NULL && expected != NULL && strcmp(actual, expected) == 0)
+  if (actual && actual_len < 0)
+    actual_len = strlen(actual);
+
+  if (expected && expected_len < 0)
+    expected_len = strlen(expected);
+
+  if (actual_len == expected_len &&
+      actual != NULL && expected != NULL &&
+      memcmp(actual, expected, actual_len) == 0)
     return TRUE;
 
   va_start(args, error_message);
-  print_failure(error_message, args, "actual=" PRETTY_STRING_FORMAT ", expected=" PRETTY_STRING_FORMAT "",
-                                     PRETTY_STRING(actual), PRETTY_STRING(expected));
+  print_failure(error_message, args, "actual=" PRETTY_NSTRING_FORMAT ", expected=" PRETTY_NSTRING_FORMAT "",
+                                     PRETTY_NSTRING(actual, actual_len), PRETTY_NSTRING(expected, expected_len));
   va_end(args);
 
   return FALSE;
