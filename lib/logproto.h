@@ -123,6 +123,7 @@ log_proto_reset_error(LogProto *s)
   s->status = LPS_SUCCESS;
 }
 
+gint log_proto_get_char_size_for_fixed_encoding(const gchar *encoding);
 gboolean log_proto_set_encoding(LogProto *s, const gchar *encoding);
 void log_proto_free(LogProto *s);
 
