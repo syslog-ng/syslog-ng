@@ -1631,9 +1631,10 @@ log_proto_text_server_fetch_from_buf(LogProtoBufferedServer *s, const guchar *bu
   return result;
 }
 
-void
-log_proto_text_server_free(LogProtoTextServer *self)
+static void
+log_proto_text_server_free(LogProto *s)
 {
+  LogProtoTextServer *self = (LogProtoTextServer *) s;
   if (self->reverse_convert != (GIConv) -1)
     g_iconv_close(self->reverse_convert);
 
@@ -1647,6 +1648,7 @@ log_proto_text_server_init(LogProtoTextServer *self, LogTransport *transport, gi
   log_proto_buffered_server_init(&self->super, transport, max_msg_size * 6, max_msg_size, flags);
   self->super.fetch_from_buf = log_proto_text_server_fetch_from_buf;
   self->super.super.prepare = log_proto_text_server_prepare;
+  self->super.super.free_fn = log_proto_text_server_free;
   self->reverse_convert = (GIConv) -1;
 }
 
