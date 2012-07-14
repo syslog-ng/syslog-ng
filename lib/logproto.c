@@ -584,28 +584,39 @@ log_proto_buffered_server_convert_from_raw(LogProtoBufferedServer *self, const g
           switch (errno)
             {
             case EINVAL:
-              /* Incomplete text, do not report an error, rather try to read again */
-              state->pending_buffer_end = state->buffer_size - avail_out;
-
-              if (avail_in > 0)
+              if ((self->super.flags & LPBS_RECORD) == 0)
                 {
-                  if (avail_in > sizeof(state->raw_buffer_leftover))
+                  /* Incomplete text, do not report an error, rather try to read again */
+                  state->pending_buffer_end = state->buffer_size - avail_out;
+
+                  if (avail_in > 0)
                     {
-                      msg_error("Invalid byte sequence, the remaining raw buffer is larger than the supported leftover size",
+                      if (avail_in > sizeof(state->raw_buffer_leftover))
+                        {
+                          msg_error("Invalid byte sequence, the remaining raw buffer is larger than the supported leftover size",
+                                    evt_tag_str("encoding", self->super.encoding),
+                                    evt_tag_int("avail_in", avail_in),
+                                    evt_tag_int("leftover_size", sizeof(state->raw_buffer_leftover)),
+                                    NULL);
+                          goto error;
+                        }
+                      memcpy(state->raw_buffer_leftover, raw_buffer, avail_in);
+                      state->raw_buffer_leftover_size = avail_in;
+                      state->raw_buffer_size -= avail_in;
+                      msg_trace("Leftover characters remained after conversion, delaying message until another chunk arrives",
                                 evt_tag_str("encoding", self->super.encoding),
                                 evt_tag_int("avail_in", avail_in),
-                                evt_tag_int("leftover_size", sizeof(state->raw_buffer_leftover)),
                                 NULL);
-                      goto error;
+                      goto success;
                     }
-                  memcpy(state->raw_buffer_leftover, raw_buffer, avail_in);
-                  state->raw_buffer_leftover_size = avail_in;
-                  state->raw_buffer_size -= avail_in;
-                  msg_trace("Leftover characters remained after conversion, delaying message until another chunk arrives",
+                }
+              else
+                {
+                  msg_error("Byte sequence too short, cannot convert an individual frame in its entirety",
                             evt_tag_str("encoding", self->super.encoding),
                             evt_tag_int("avail_in", avail_in),
                             NULL);
-                  goto success;
+                  goto error;
                 }
               break;
             case E2BIG:
@@ -1717,7 +1728,7 @@ log_proto_record_server_new(LogTransport *transport, gint record_size, guint fla
 {
   LogProtoRecordServer *self = g_new0(LogProtoRecordServer, 1);
 
-  log_proto_buffered_server_init(&self->super, transport, record_size * 6, record_size, flags);
+  log_proto_buffered_server_init(&self->super, transport, record_size * 6, record_size, flags | LPBS_RECORD);
   self->super.fetch_from_buf = log_proto_record_server_fetch_from_buf;
   self->super.read_data = log_proto_record_server_read_data;
   self->record_size = record_size;
@@ -1751,7 +1762,7 @@ log_proto_dgram_server_new(LogTransport *transport, gint max_msg_size, guint fla
 {
   LogProtoRecordServer *self = g_new0(LogProtoRecordServer, 1);
 
-  log_proto_buffered_server_init(&self->super, transport, max_msg_size * 6, max_msg_size, flags | LPBS_IGNORE_EOF);
+  log_proto_buffered_server_init(&self->super, transport, max_msg_size * 6, max_msg_size, flags | LPBS_IGNORE_EOF | LPBS_RECORD);
   self->super.fetch_from_buf = log_proto_dgram_server_fetch_from_buf;
   return &self->super.super;
 }
