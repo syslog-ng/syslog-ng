@@ -202,5 +202,6 @@ void log_template_options_destroy(LogTemplateOptions *options);
 void log_template_options_defaults(LogTemplateOptions *options);
 
 void log_template_global_init(void);
+void log_template_global_deinit(void);
 
 #endif

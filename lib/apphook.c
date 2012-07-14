@@ -167,11 +167,15 @@ void
 app_shutdown(void)
 {
   run_application_hook(AH_SHUTDOWN);
+  log_template_global_deinit();
   log_tags_deinit();
+  log_msg_global_deinit();
+
   stats_destroy();
   dns_cache_destroy();
   child_manager_deinit();
   g_list_foreach(application_hooks, (GFunc) g_free, NULL);
   g_list_free(application_hooks);
   msg_deinit();
+  iv_deinit();
 }

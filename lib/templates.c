@@ -1394,3 +1394,10 @@ log_template_global_init(void)
     }
   return;
 }
+
+void
+log_template_global_deinit(void)
+{
+  g_hash_table_destroy(macro_hash);
+  macro_hash = NULL;
+}
