@@ -1,7 +1,8 @@
+#include "csvparser.h"
+
 #include "syslog-ng.h"
 #include "logmsg.h"
 #include "apphook.h"
-#include "csvparser/csvparser.h"
 #include "misc.h"
 #include "cfg.h"
 #include "plugin.h"
@@ -285,5 +286,3 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   app_shutdown();
   return 0;
 }
-
-
