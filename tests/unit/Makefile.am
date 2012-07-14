@@ -23,6 +23,7 @@ check_PROGRAMS = test_thread_wakeup	\
 	test_findcrlf			\
 	test_tags			\
 	test_logwriter			\
+	test_logproto			\
 	test_serialize			\
 	test_value_pairs		\
 	test_filereader			\
@@ -80,6 +81,7 @@ test_msgformat_upgrade_SOURCES = test_msgformat_upgrade.c
 
 test_thread_wakeup_SOURCES = test_thread_wakeup.c
 test_rcptid_SOURCES = test_rcptid.c
+test_logproto_SOURCES = test_logproto.c $(TEST_DEPENDENCIES) msg_parse_lib.c msg_parse_lib.h mock_transport.c mock_transport.h
 
 TESTS = $(check_PROGRAMS)
 
