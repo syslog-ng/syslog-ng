@@ -1132,12 +1132,6 @@ log_proto_buffered_server_fetch(LogProto *s, const guchar **msg, gsize *msg_len,
 
       /* read the next chunk to be processed */
 
-      if (self->prev_saddr)
-        {
-          /* new chunk of data, potentially new sockaddr, forget the previous value */
-          g_sockaddr_unref(self->prev_saddr);
-          self->prev_saddr = NULL;
-        }
 
       if (!self->super.encoding)
         {
@@ -1157,7 +1151,12 @@ log_proto_buffered_server_fetch(LogProto *s, const guchar **msg, gsize *msg_len,
 
       rc = self->read_data(self, raw_buffer + state->raw_buffer_leftover_size, avail, sa);
       if (sa && *sa)
-        self->prev_saddr = *sa;
+        {
+          /* new chunk of data, potentially new sockaddr, forget the previous value */
+          g_sockaddr_unref(self->prev_saddr);
+          self->prev_saddr = *sa;
+          *sa = NULL;
+        }
       if (rc < 0)
         {
           if (errno == EAGAIN)
