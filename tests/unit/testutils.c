@@ -1,9 +1,9 @@
 #include "testutils.h"
 
-#include <glib.h>
+#include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include <sys/time.h>
+#include <stdarg.h>
 
 struct timeval start_time_val;
 
@@ -42,7 +42,7 @@ print_failure(const gchar *custom_template, va_list custom_args, gchar *assertio
 }
 
 void
-start_stopwatch()
+start_stopwatch(void)
 {
   gettimeofday(&start_time_val, NULL);
 }

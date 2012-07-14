@@ -2,11 +2,8 @@
 #define LIBTEST_H_INCLUDED
 
 #include <glib.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
 #include <sys/time.h>
-#include <stdarg.h>
+#include <stdlib.h>
 
 #define PRETTY_STRING_FORMAT "%s%s%s"
 #define PRETTY_STRING(str) ((str) ? "'" : "<"), ((str) ? (str) : "NULL"), ((str) ? "'" : ">")
