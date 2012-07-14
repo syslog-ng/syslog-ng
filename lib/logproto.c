@@ -503,7 +503,7 @@ struct _LogProtoBufferedServer
  * This function returns 0 if the encoding is not known, in which case the
  * slow path is to be executed.
  */
-static gint
+gint
 log_proto_get_char_size_for_fixed_encoding(const gchar *encoding)
 {
   static struct
@@ -531,7 +531,7 @@ log_proto_get_char_size_for_fixed_encoding(const gchar *encoding)
 
   for (i = 0; fixed_encodings[i].prefix; i++)
    {
-     if (strncasecmp(encoding, fixed_encodings[i].prefix, strlen(fixed_encodings[i].prefix) == 0))
+     if (strncasecmp(encoding, fixed_encodings[i].prefix, strlen(fixed_encodings[i].prefix)) == 0)
        {
          scale = fixed_encodings[i].scale;
          break;
