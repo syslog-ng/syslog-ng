@@ -23,6 +23,7 @@ check_PROGRAMS = test_thread_wakeup	\
 	test_findcrlf			\
 	test_tags			\
 	test_logwriter			\
+	test_logproto			\
 	test_serialize			\
 	test_zone			\
 	test_persist_state		\
@@ -53,6 +54,7 @@ test_resolve_pwgr_SOURCES = test_resolve_pwgr.c
 test_persist_state_SOURCES = test_persist_state.c
 test_value_pairs_SOURCES = test_value_pairs.c
 test_thread_wakeup_SOURCES = test_thread_wakeup.c
+test_logproto_SOURCES = test_logproto.c $(TEST_DEPENDENCIES) msg_parse_lib.c msg_parse_lib.h mock_transport.c mock_transport.h
 
 TESTS = $(check_PROGRAMS)
 
