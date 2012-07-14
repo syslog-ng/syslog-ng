@@ -1832,9 +1832,9 @@ typedef struct _LogProtoFramedServer
   gint state;
 
   guchar *buffer;
-  gsize buffer_size, buffer_pos, buffer_end;
-  gsize frame_len;
-  gsize max_msg_size;
+  guint32 max_buffer_size, buffer_size, buffer_pos, buffer_end;
+  guint32 frame_len;
+  guint32 max_msg_size;
   gboolean half_message_in_buffer;
   GSockAddr *prev_saddr;
   LogProtoStatus status;
@@ -1992,9 +1992,16 @@ log_proto_framed_server_fetch(LogProto *s, const guchar **msg, gsize *msg_len, G
                         NULL);
               return LPS_ERROR;
             }
-          if (self->frame_len > self->buffer_size - LPFS_FRAME_BUFFER)
+          if (self->buffer_size < self->max_buffer_size &&
+              self->frame_len > self->buffer_size - self->buffer_pos)
             {
-              self->buffer_size = self->frame_len + LPFS_FRAME_BUFFER;
+              /* a larger buffer would have prevented moving of data, grow
+               * the buffer up to max_buffer_size */
+
+              self->buffer_size = 16 * (self->frame_len + LPFS_FRAME_BUFFER);
+
+              if (self->buffer_size > self->max_buffer_size)
+                self->buffer_size = self->max_buffer_size;
               self->buffer = g_realloc(self->buffer, self->buffer_size);
               msg_debug("Resizing input buffer",
                         evt_tag_int("new_size", self->buffer_size),
@@ -2049,6 +2056,15 @@ log_proto_framed_server_fetch(LogProto *s, const guchar **msg, gsize *msg_len, G
   return LPS_SUCCESS;
 }
 
+void
+log_proto_framed_server_set_buffer_sizes(LogProto *s, guint32 buffer_size, guint32 max_buffer_size)
+{
+  LogProtoFramedServer *self = (LogProtoFramedServer *) s;
+
+  self->buffer_size = MAX(buffer_size, LPFS_FRAME_BUFFER);
+  self->max_buffer_size = MAX(self->buffer_size, max_buffer_size);
+}
+
 static void
 log_proto_framed_server_free(LogProto *s)
 {
@@ -2068,7 +2084,8 @@ log_proto_framed_server_new(LogTransport *transport, gint max_msg_size)
   self->super.convert = (GIConv) -1;
   /* max message + frame header */
   self->max_msg_size = max_msg_size;
-  self->buffer_size = 1024 + LPFS_FRAME_BUFFER;
+  self->max_buffer_size = max_msg_size * 6;
+  self->buffer_size = LPFS_FRAME_BUFFER;
   self->buffer = g_malloc(self->buffer_size);
   self->half_message_in_buffer = FALSE;
   return &self->super;

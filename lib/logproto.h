@@ -171,6 +171,8 @@ LogProto *log_proto_text_client_new(LogTransport *transport);
 
 /* framed */
 LogProto *log_proto_framed_client_new(LogTransport *transport);
+
+void log_proto_framed_server_set_buffer_sizes(LogProto *s, guint32 buffer_size, guint32 max_buffer_size);
 LogProto *log_proto_framed_server_new(LogTransport *transport, gint max_msg_size);
 
 #endif
