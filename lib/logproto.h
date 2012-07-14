@@ -136,8 +136,11 @@ void log_proto_free(LogProto *s);
 #define LPBS_IGNORE_EOF     0x0002
 /* track the current file position */
 #define LPBS_POS_TRACKING   0x0004
+/* data is coming in individual records, encodings shouldn't be span message boundaries */
+#define LPBS_RECORD         0x0008
 
-#define LPRS_BINARY         0x0008
+/* don't treat NL and NUL characters as message terminators, they should be left alone */
+#define LPRS_BINARY         0x0010
 
 /*
  * LogProtoRecordServer
