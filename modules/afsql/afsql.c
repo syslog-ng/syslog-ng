@@ -116,8 +116,6 @@ typedef struct _AFSqlDestDriver
   LogQueue *queue;
   /* used exclusively by the db thread */
   gint32 seq_num;
-  LogMessage *pending_msg;
-  gboolean pending_msg_ack_needed;
   dbi_conn dbi_ctx;
   GHashTable *validated_tables;
   guint32 failed_message_counter;
@@ -736,8 +734,7 @@ afsql_dd_insert_fail_handler(AFSqlDestDriver *self, LogMessage *msg,
 {
   if (self->failed_message_counter < self->num_retries - 1)
     {
-      self->pending_msg = msg;
-      self->pending_msg_ack_needed = path_options->ack_needed;
+      log_queue_push_head(self->queue, msg, &path_options);
 
       /* database connection status sanity check after failed query */
       if (dbi_conn_ping(self->dbi_ctx) != 1)
@@ -849,30 +846,21 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
 
   afsql_dd_connect(self);
 
-  if (self->pending_msg)
-    {
-      msg = self->pending_msg;
-      path_options.ack_needed = self->pending_msg_ack_needed;
-      self->pending_msg = NULL;
-    }
-  else
-    {
-      g_mutex_lock(self->db_thread_mutex);
+  g_mutex_lock(self->db_thread_mutex);
 
-      /* FIXME: this is a workaround because of the non-proper locking semantics
-       * of the LogQueue.  It might happen that the _queue() method sees 0
-       * elements in the queue, while the thread is still busy processing the
-       * previous message.  In that case arming the parallel push callback is
-       * not needed and will cause assertions to fail.  This is ugly and should
-       * be fixed by properly defining the "blocking" semantics of the LogQueue
-       * object w/o having to rely on user-code messing with parallel push
-       * callbacks. */
-      log_queue_reset_parallel_push(self->queue);
-      success = log_queue_pop_head(self->queue, &msg, &path_options, (self->flags & AFSQL_DDF_EXPLICIT_COMMITS), FALSE);
-      g_mutex_unlock(self->db_thread_mutex);
-      if (!success)
-        return TRUE;
-    }
+  /* FIXME: this is a workaround because of the non-proper locking semantics
+   * of the LogQueue.  It might happen that the _queue() method sees 0
+   * elements in the queue, while the thread is still busy processing the
+   * previous message.  In that case arming the parallel push callback is
+   * not needed and will cause assertions to fail.  This is ugly and should
+   * be fixed by properly defining the "blocking" semantics of the LogQueue
+   * object w/o having to rely on user-code messing with parallel push
+   * callbacks. */
+  log_queue_reset_parallel_push(self->queue);
+  success = log_queue_pop_head(self->queue, &msg, &path_options, (self->flags & AFSQL_DDF_EXPLICIT_COMMITS), FALSE);
+  g_mutex_unlock(self->db_thread_mutex);
+  if (!success)
+    return TRUE;
 
   msg_set_context(msg);
 
@@ -948,7 +936,7 @@ afsql_dd_database_thread(gpointer arg)
 
           /* we loop back to check if the thread was requested to terminate */
         }
-      else if (!self->pending_msg && log_queue_get_length(self->queue) == 0)
+      else if (log_queue_get_length(self->queue) == 0)
         {
           /* we have nothing to INSERT into the database, let's wait we get some new stuff */
 
@@ -1251,8 +1239,6 @@ afsql_dd_free(LogPipe *s)
   gint i;
 
   log_template_options_destroy(&self->template_options);
-  if (self->pending_msg)
-    log_msg_unref(self->pending_msg);
   if (self->queue)
     log_queue_unref(self->queue);
   for (i = 0; i < self->fields_len; i++)
