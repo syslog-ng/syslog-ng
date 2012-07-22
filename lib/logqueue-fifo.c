@@ -203,6 +203,8 @@ log_queue_fifo_move_input(gpointer user_data)
  * queue to be full.
  *
  * It attempts to put the item to the per-thread input queue.
+ *
+ * NOTE: It consumes the reference passed by the caller.
  **/
 static void
 log_queue_fifo_push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
@@ -283,6 +285,8 @@ log_queue_fifo_push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *pat
  * Put an item back to the front of the queue.
  *
  * This is assumed to be called only from the output thread.
+ *
+ * NOTE: It consumes the reference passed by the caller.
  */
 static void
 log_queue_fifo_push_head(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
@@ -299,12 +303,15 @@ log_queue_fifo_push_head(LogQueue *s, LogMessage *msg, const LogPathOptions *pat
   node = log_msg_alloc_dynamic_queue_node(msg, path_options);
   list_add(&node->list, &self->qoverflow_output);
   self->qoverflow_output_len++;
+  log_msg_unref(msg);
 
   stats_counter_inc(self->super.stored_messages);
 }
 
 /*
  * Can only run from the output thread.
+ *
+ * NOTE: this returns a reference which the caller must take care to free.
  */
 static gboolean
 log_queue_fifo_pop_head(LogQueue *s, LogMessage **msg, LogPathOptions *path_options, gboolean push_to_backlog, gboolean ignore_throttle)

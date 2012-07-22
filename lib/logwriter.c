@@ -1036,7 +1036,6 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
         {
           /* push back to the queue */
           log_queue_push_head(self->queue, lm, &path_options);
-          log_msg_unref(lm);
           msg_set_context(NULL);
           log_msg_refcache_stop();
           break;
