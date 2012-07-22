@@ -211,12 +211,13 @@ threaded_consume(gpointer st)
   LogMessage *msg;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
   gboolean success;
-  gint i;
+  gint loops = 0;
+  gint msg_count = 0;
 
   /* just to make sure time is properly cached */
   iv_init();
 
-  for (i = 0; i < MESSAGES_SUM; i++)
+  while (msg_count < MESSAGES_SUM)
     {
       gint slept = 0;
       msg = NULL;
@@ -236,7 +237,7 @@ threaded_consume(gpointer st)
               if (slept > 10000)
                 {
                   /* slept for more than 10 seconds */
-                  fprintf(stderr, "The wait for messages took too much time, i=%d\n", i);
+                  fprintf(stderr, "The wait for messages took too much time, loops=%d, msg_count=%d\n", loops, msg_count);
                   return GUINT_TO_POINTER(1);
                 }
             }
@@ -246,12 +247,21 @@ threaded_consume(gpointer st)
       g_assert(!success || (success && msg != NULL));
       if (!success)
         {
-          fprintf(stderr, "Queue didn't return enough messages: i=%d\n", i);
+          fprintf(stderr, "Queue didn't return enough messages: loops=%d, msg_count=%d\n", loops, msg_count);
           return GUINT_TO_POINTER(1);
         }
-
-      log_msg_ack(msg, &path_options);
-      log_msg_unref(msg);
+      if ((loops % 10) == 0)
+        {
+          /* push the message back to the queue */
+          log_queue_push_head(q, msg, &path_options);
+        }
+      else
+        {
+          log_msg_ack(msg, &path_options);
+          log_msg_unref(msg);
+          msg_count++;
+        }
+      loops++;
     }
 
   iv_deinit();
