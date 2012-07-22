@@ -82,6 +82,14 @@ static GOptionEntry syslogng_options[] =
 
 #define INSTALL_DAT_INSTALLER_VERSION "INSTALLER_VERSION"
 
+static void
+interactive_mode(void)
+{
+  debug_flag = FALSE;
+  verbose_flag = FALSE;
+  msg_init(TRUE);
+}
+
 gboolean
 get_installer_version(gchar **inst_version)
 {
@@ -207,18 +215,15 @@ main(int argc, char *argv[])
       return 1;
     }
 
-  msg_init(FALSE);
-
   if (display_version)
     {
+      interactive_mode();
       version();
       return 0;
     }
   if (display_module_registry)
     {
-      debug_flag = FALSE;
-      verbose_flag = FALSE;
-      msg_init(TRUE);
+      interactive_mode();
       plugin_list_modules(stdout, TRUE);
       return 0;
     }
