@@ -125,12 +125,19 @@ run_application_hook(gint type)
 
 }
 
+static void
+app_fatal(const char *msg)
+{
+  fprintf(stderr, "%s\n", msg);
+}
+
 void 
 app_startup(void)
 {
   main_thread_handle = g_thread_self();
 
   msg_init(FALSE);
+  iv_set_fatal_msg_handler(app_fatal);
   iv_init();
   g_thread_init(NULL);
   afinter_global_init();

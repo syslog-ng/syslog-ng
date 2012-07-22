@@ -210,6 +210,9 @@ msg_redirect_to_syslog(const gchar *program_name)
 void
 msg_init(gboolean interactive)
 {
+  if (evt_context)
+    return;
+
   if (!interactive)
     {
       g_log_set_handler(G_LOG_DOMAIN, 0xff, msg_log_func, NULL);

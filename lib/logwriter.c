@@ -432,19 +432,20 @@ log_writer_start_watches(LogWriter *self)
     {
       log_proto_prepare(self->proto, &fd, &cond);
 
+      self->fd_watch.fd = fd;
+
       if (self->pollable_state < 0)
         {
+          /* auto-detect if the fd can be polled using ivykis */
           if (is_file_regular(fd))
             self->pollable_state = 0;
+          else if (iv_fd_register_try(&self->fd_watch) == 0)
+            self->pollable_state = 1;
           else
-            self->pollable_state = iv_fd_pollable(fd);
+            self->pollable_state = 0;
         }
-
-      if (self->pollable_state)
-        {
-          self->fd_watch.fd = fd;
-          iv_fd_register(&self->fd_watch);
-        }
+      else if (self->pollable_state > 0)
+        iv_fd_register(&self->fd_watch);
 
       log_writer_update_watches(self);
       self->watches_running = TRUE;

@@ -207,6 +207,8 @@ main(int argc, char *argv[])
       return 1;
     }
 
+  msg_init(FALSE);
+
   if (display_version)
     {
       version();

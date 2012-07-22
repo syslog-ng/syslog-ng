@@ -3,4 +3,4 @@
 	url = git://git.balabit.hu/bazsi/libmongo-client.git
 [submodule "lib/ivykis"]
 	path = lib/ivykis
-	url = git://git.balabit.hu/bazsi/ivykis.git
+	url = git://github.com/buytenh/ivykis.git

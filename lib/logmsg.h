@@ -113,7 +113,7 @@ enum
 
 typedef struct _LogMessageQueueNode
 {
-  struct list_head list;
+  struct iv_list_head list;
   LogMessage *msg;
   gboolean ack_needed:1, embedded:1;
 } LogMessageQueueNode;

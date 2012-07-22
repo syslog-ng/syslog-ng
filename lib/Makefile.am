@@ -13,7 +13,7 @@ libsyslog_ng_la_LDFLAGS = -no-undefined -release @VERSION@
 
 module_LTLIBRARIES = libsyslog-ng-crypto.la
 libsyslog_ng_crypto_la_CFLAGS = @UUID_CFLAGS@
-libsyslog_ng_crypto_la_LIBADD = @CORE_DEPS_LIBS@ @OPENSSL_LIBS@ @UUID_LIBS@ libsyslog-ng.la
+libsyslog_ng_crypto_la_LIBADD = @MODULE_DEPS_LIBS@ @OPENSSL_LIBS@ @UUID_LIBS@
 libsyslog_ng_crypto_la_LDFLAGS = -no-undefined -avoid-version
 
 # this is intentionally formatted so conflicts are less likely to arise. one name in every line.
@@ -174,7 +174,8 @@ EXTRA_DIST = $(BUILT_SOURCES) \
 	pragma-grammar.ym		\
 	parser-expr-grammar.ym		\
 	rewrite-expr-grammar.ym		\
-	merge-grammar.pl
+	merge-grammar.pl		\
+	ivykis/configure.gnu
 
 CLEAN_FILES = $(BUILT_SOURCES)
 
