@@ -677,10 +677,12 @@ afsocket_sd_init(LogPipe *s)
 
       self->connections = cfg_persist_config_fetch(cfg, afsocket_sd_format_persist_name(self, FALSE));
 
+      self->num_connections = 0;
       for (p = self->connections; p; p = p->next)
         {
           afsocket_sc_set_owner((AFSocketSourceConnection *) p->data, self);
           log_pipe_init((LogPipe *) p->data, NULL);
+          self->num_connections++;
         }
     }
 
