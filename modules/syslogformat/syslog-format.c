@@ -649,7 +649,7 @@ log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, guint flag
   gchar sd_param_name[33];
 
   /* UTF-8 string */
-  gchar sd_param_value[256];
+  gchar sd_param_value[65536];
   gsize sd_param_value_len;
   gchar sd_value_name[66];
   NVHandle handle;
