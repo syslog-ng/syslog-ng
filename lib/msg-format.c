@@ -34,6 +34,7 @@ msg_format_options_defaults(MsgFormatOptions *options)
   options->recv_time_zone_info = NULL;
   options->bad_hostname = NULL;
   options->default_pri = 0xFFFF;
+  options->sdata_param_value_max = 65535;
 }
 
 /*

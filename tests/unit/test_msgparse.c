@@ -77,6 +77,7 @@ parse_log_message(gchar *raw_message_str, gint parse_flags, gchar *bad_hostname_
   regex_t bad_hostname;
 
   parse_options.flags = parse_flags;
+  parse_options.sdata_param_value_max = 255;
 
   if (bad_hostname_re)
     {

@@ -64,12 +64,13 @@ typedef struct _MsgFormatOptions
   gchar *recv_time_zone;
   TimeZoneInfo *recv_time_zone_info;
   regex_t *bad_hostname;
+  gint sdata_param_value_max;
 } MsgFormatOptions;
 
 struct _MsgFormatHandler
 {
   LogProto *(*construct_proto)(MsgFormatOptions *options, LogTransport *transport, guint flags);
-  void (*parse)(MsgFormatOptions *options, const guchar *data, gsize length, LogMessage *msg);
+  void (*parse)(const MsgFormatOptions *options, const guchar *data, gsize length, LogMessage *msg);
 };
 
 void msg_format_options_defaults(MsgFormatOptions *options);
