@@ -33,9 +33,12 @@ feed_some_messages(LogQueue **q, int n, gboolean ack_needed)
   path_options.ack_needed = ack_needed;
   for (i = 0; i < n; i++)
     {
-      gchar *msg_str = g_strdup_printf("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép ID: %08d",i);
+      char *msg_str = "<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép";
+      GSockAddr *sa;
 
-      msg = log_msg_new(msg_str, strlen(msg_str), g_sockaddr_inet_new("10.10.10.10", 1010), &parse_options);
+      sa = g_sockaddr_inet_new("10.10.10.10", 1010);
+      msg = log_msg_new(msg_str, strlen(msg_str), sa, &parse_options);
+      g_sockaddr_unref(sa);
       log_msg_add_ack(msg, &path_options);
       msg->ack_func = test_ack;
       log_queue_push_tail((*q), msg, &path_options);
@@ -207,7 +210,9 @@ threaded_feed(gpointer args)
   INIT_LIST_HEAD(&finish_callbacks);
 
   sa = g_sockaddr_inet_new("10.10.10.10", 1010);
-  tmpl = log_msg_new(msg_str, msg_len, g_sockaddr_ref(sa), &parse_options);
+  tmpl = log_msg_new(msg_str, msg_len, sa, &parse_options);
+  g_sockaddr_unref(sa);
+
   g_get_current_time(&start);
   for (i = 0; i < MESSAGES_PER_FEEDER; i++)
     {
@@ -227,6 +232,7 @@ threaded_feed(gpointer args)
   sum_time += diff;
   g_static_mutex_unlock(&tlock);
   log_msg_unref(tmpl);
+  iv_deinit();
   return NULL;
 }
 
@@ -280,6 +286,7 @@ threaded_consume(gpointer st)
       log_msg_unref(msg);
     }
 
+  iv_deinit();
   return NULL;
 }
 
