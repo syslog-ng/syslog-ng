@@ -60,10 +60,16 @@ fi
 
 _enable_ssl_default="auto"
 IS_WINDOWS=0
+IS_I386=0
 case "$ostype" in
     *CYGWIN*|*MINGW*)
         IS_WINDOWS=1
         _enable_ssl_default="yes"
+        case "$build" in
+          i?86-*)
+            IS_I386=1
+          ;;
+        esac
         ;;
 esac
 dnl ***************************************************************************
@@ -1373,6 +1379,7 @@ AM_CONDITIONAL(ENABLE_THREADED, [test "$enable_threaded" = "yes"])
 AM_CONDITIONAL(WITH_LIBSYSTEMD, [test "$with_libsystemd" = "yes"])
 AM_CONDITIONAL([ENABLE_INDEXER], [test "$enable_indexer" = "yes"])
 AM_CONDITIONAL([IS_WINDOWS], [test $IS_WINDOWS -eq 1])
+AM_CONDITIONAL([IS_I386], [test $IS_I386 -eq 1])
 
 # substitution into manual pages
 expanded_sysconfdir=[`patheval $sysconfdir | sed -e 's/-/\\\\-/g'`]

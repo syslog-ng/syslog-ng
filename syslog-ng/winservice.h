@@ -20,3 +20,5 @@ int start_service_by_name(char * szName);
 int stop_service_by_name(char * szName);
 
 int start_service(char *szName,SERVICE_MAIN service_main,SERVICE_STOP_FUNCTION service_stop);
+
+void set_minidump_hook();
