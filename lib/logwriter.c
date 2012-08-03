@@ -391,6 +391,7 @@ log_writer_queue_filled(gpointer s)
    * start_watches is to be expected once log_writer_work_finished() is run
    * at the end of the deferred work, executed by the I/O threads.
    */
+  self->immediate_io = TRUE;
   if (self->watches_running)
     log_writer_update_watches((LogWriter *) s);
 }
