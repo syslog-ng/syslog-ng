@@ -207,6 +207,7 @@ main(int argc, char *argv[])
   msg_add_option_group(ctx);
   g_option_context_add_main_entries(ctx, syslogng_options, NULL);
   main_loop_add_options(ctx);
+  setvbuf(stderr, NULL, _IONBF, 0);
   if (!g_option_context_parse(ctx, &argc, &argv, &error))
     {
       fprintf(stderr, "Error parsing command line arguments: %s\n", error ? error->message : "Invalid arguments");

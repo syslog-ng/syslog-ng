@@ -5,8 +5,8 @@ AM_CPPFLAGS = -I$(top_srcdir)/lib -I../lib
 sbin_PROGRAMS = syslog-ng syslog-ng-ctl syslog-ng-agent
 
 if IS_WINDOWS
-syslog_ng_agent_SOURCES = winmain_agent.c winservice.h winservice.c dbghelp.h
-syslog_ng_SOURCES = winmain.c winservice.h winservice.c dbghelp.h
+syslog_ng_agent_SOURCES = winmain_agent.c winservice.h winservice.c dbghelp.h minidump.c minidump.h
+syslog_ng_SOURCES = winmain.c winservice.h winservice.c dbghelp.h minidump.c minidump.h
 else
 syslog_ng_SOURCES = main.c
 endif
