@@ -294,6 +294,8 @@ int sigemptyset(sigset_t *set);
 int sigaddset(sigset_t *set, int signum);
 int sigprocmask(int how, const sigset_t *set, sigset_t *oldset);
 
+char *escape_windows_path(char *input);
+
 #define LOG_PID         0x01    /* log the pid with each message */
 #define LOG_CONS        0x02    /* log on the console if errors in sending */
 #define LOG_ODELAY      0x04    /* delay open until first syslog() (default) */

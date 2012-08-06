@@ -114,7 +114,7 @@ static GOptionEntry application_options[] =
 {
   {"help",            'h', G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_NONE, &help, NULL, NULL},
   {"help",            '?', G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_NONE, &help, NULL, NULL},
-  {"Config",          'C', 0, G_OPTION_ARG_STRING, &xml_config_file_name, "Start the syslog-ng Agent using the specified XML configuration file.",NULL},
+  {"Config",          'C', 0, G_OPTION_ARG_FILENAME, &xml_config_file_name, "Start the syslog-ng Agent using the specified XML configuration file.",NULL},
   {"Version",         'V', 0, G_OPTION_ARG_NONE, &show_version, "Display version information.",NULL},
   {"cfgfile",         'f', G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_STRING, &cfgfilename, "Set config file name, default=" PATH_SYSLOG_NG_CONF, "<config>" },
   {"preprocess-into",  0,  G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_STRING, &preprocess_into, "Write the preprocessed configuration file to the file specified", "output" },
@@ -177,7 +177,9 @@ agent_service_main()
   gint rc = 0;
   if (xml_config_file_name)
     {
-      config_string = g_strdup_printf(agent_xml_config_format,xml_config_file_name);
+      gchar *correct_path_name = escape_windows_path(xml_config_file_name);
+      config_string = g_strdup_printf(agent_xml_config_format,correct_path_name);
+      g_free(correct_path_name);
     }
   else
     {
@@ -218,6 +220,8 @@ main(int argc, char *argv[])
   ctx = g_option_context_new(NULL);
   gint i = 0;
   install_dat_filename = get_reloc_string(PATH_INSTALL_DAT);
+  setvbuf(stderr, NULL, _IONBF, 0);
+
 
   debug_group = g_option_group_new("debug","Debug options:","debug",NULL,NULL);
   g_option_group_add_entries(debug_group,debug_options);
