@@ -864,27 +864,6 @@ void openlog(const char *ident, int option, int facility)
        return;
 }
 
-char *
-escape_windows_path(char *input)
-{
-  gchar *source_pointer = input;
-  GString *result_string = g_string_sized_new(512);
-  gchar *return_value;
-  while(*source_pointer)
-    {
-      if (*source_pointer == '\\' ||
-          *source_pointer == '"')
-        {
-          g_string_append_c(result_string,'\\');
-        }
-      g_string_append_c(result_string,*source_pointer);
-      source_pointer++;
-    }
-  return_value = result_string->str;
-  g_string_free(result_string,FALSE);
-  return return_value;
-}
-
 #else
 int getsockerror()
 {

@@ -66,6 +66,7 @@ GThread *create_worker_thread(GThreadFunc func, gpointer data, gboolean joinable
 gint set_permissions(gchar *name, gint uid, gint gid, gint mode);
 gint set_permissions_fd(gint fd, gint uid, gint gid, gint mode);
 
+char *escape_windows_path(char *input);
 
 static inline void
 init_sequence_number(gint32 *seqnum)
