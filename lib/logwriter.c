@@ -305,7 +305,7 @@ log_writer_update_fd_callbacks(LogWriter *self, GIOCondition cond)
       {
         iv_fd_register(&self->fd_watch);
       }
-      if (self->flags & LW_DETECT_EOF && (cond & G_IO_IN) == 0 && (cond & G_IO_OUT))
+      if (self->flags & LW_DETECT_EOF && (cond & G_IO_IN) == 0)
         {
           /* if output is enabled, and we're in DETECT_EOF mode, and input is
            * not needed by the log protocol, install the eof check callback to
