@@ -26,6 +26,7 @@ gboolean assert_gint64_non_fatal(gint64 actual, gint64 expected, const gchar *er
 gboolean assert_guint64_non_fatal(guint64 actual, guint64 expected, const gchar *error_message, ...);
 gboolean assert_string_non_fatal(const gchar *actual, const gchar *expected, const gchar *error_message, ...);
 gboolean assert_guint32_array_non_fatal(guint32 *actual, guint32 actual_length, guint32 *expected, guint32 expected_length, const gchar *error_message, ...);
+gboolean assert_gchar_array_non_fatal(gchar *actual, guint32 actual_length, gchar *expected, guint32 expected_length, const gchar *error_message, ...);
 gboolean assert_string_array_non_fatal(gchar **actual, guint32 actual_length, gchar **expected, guint32 expected_length, const gchar *error_message, ...);
 gboolean assert_gboolean_non_fatal(gboolean actual, gboolean expected, const gchar *error_message, ...);
 gboolean assert_null_non_fatal(void *pointer, const gchar *error_message, ...);
@@ -47,6 +48,10 @@ gboolean assert_gpointer_non_fatal(gpointer actual, gpointer expected, const gch
 
 #define assert_guint32_array(actual, actual_length, expected, expected_length, error_message, ...) ( \
     assert_guint32_array_non_fatal(actual, actual_length, expected, expected_length, error_message, ##__VA_ARGS__)\
+ ? 1 : (exit(1),0))
+
+#define assert_gchar_array(actual, actual_length, expected, expected_length, error_message, ...) ( \
+    assert_gchar_array_non_fatal(actual, actual_length, expected, expected_length, error_message, ##__VA_ARGS__)\
  ? 1 : (exit(1),0))
 
 #define assert_string_array(actual, actual_length, expected, expected_length, error_message, ...) ( \
