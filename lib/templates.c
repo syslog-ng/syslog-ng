@@ -212,6 +212,7 @@ LogMacroDef macros[] =
        { "FILE_MESSAGE", M_MESSAGE },
        { "FILE_MSG", M_MESSAGE },
        { "BSDDATE", M_DATE},
+       { "EVENT_GLOBAL_COUNTER", M_RCPTID},
        { "STRUCTURED_DATA" , M_SDATA},
 
        { "APP_NAME", M_PROGRAM},
