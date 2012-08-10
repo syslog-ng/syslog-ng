@@ -42,6 +42,7 @@ test_snare_template_function()
   gint i = 0;
 
   msg = log_msg_new_empty();
+  msg->rcptid = 27;
 
   while(event_pairs[i])
     {
