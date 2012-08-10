@@ -1117,18 +1117,18 @@ syslog_format_handler(MsgFormatOptions *parse_options,
   while (length > 0 && (data[length - 1] == '\n' || data[length - 1] == '\0'))
     length--;
 
+  if (parse_options->flags & LP_ASSUME_UTF8)
+    self->flags |= LF_UTF8;
+
+  if (parse_options->flags & LP_LOCAL)
+    self->flags |= LF_LOCAL;
+
   if (parse_options->flags & LP_NOPARSE)
     {
       log_msg_set_value(self, LM_V_MESSAGE, (gchar *) data, length);
       self->pri = parse_options->default_pri;
       return;
     }
-
-  if (parse_options->flags & LP_ASSUME_UTF8)
-    self->flags |= LF_UTF8;
-
-  if (parse_options->flags & LP_LOCAL)
-    self->flags |= LF_LOCAL;
 
   self->initial_parse = TRUE;
   if (parse_options->flags & LP_SYSLOG_PROTOCOL)
