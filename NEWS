@@ -1,5 +1,5 @@
-3.3.5.90 (3.3.6 Release Candidate)
-        Tue, 03 Jul 2012 18:00:00 +0200
+3.3.6
+        Fri, 10 Aug 2012 11:00:00 +0200
 
         Highlights
         ==========
@@ -23,13 +23,16 @@
           log socket instead of /dev/log was applied. This kicks in if
           syslog-ng is running under systemd, and its config version
           is 3.4 or less.
-        
+
         * The @include statement now accepts globs, allowing one to
           limit what gets included, and limit it to files matching
           "*.conf", for example.
 
         Bugfixes
         ========
+
+        * When using spoof-source, the destination address is now
+          correctly resolved again after a SIGHUP.
 
         * When the supervisor receives a SIGHUP, it will not terminate
           anymore, but ignore it.
@@ -55,6 +58,9 @@
         * Fixed a possible NULL dereference in patterndb, when an
           action was used without a context-scope.
 
+        * The max-connections() setting now works correctly accross
+          reloads, and does not reset the counter.
+
         Other changes
         =============
 
@@ -75,7 +81,7 @@
         if you are a user of syslog-ng, contribute.
 
         These people have helped in this release:
-        
+
         Alex Zimnitsky <avz@dagotel.ru>
         Alexander Komyagin <komyagin@altell.ru>
         Balazs Scheidler <bazsi@balabit.hu>
@@ -89,8 +95,11 @@
         Mads <mads@ab3.no>
         Mark Ulmer <mark.ulmer@apollogrp.edu>
         Mark Wooding <mdw@distorted.org.uk>
+        Marvin Nipper <marvin.nipper@stream.com>
         Patrick Hemmer
         Peter Czanik <czanik@balabit.hu>
+        Sandor Geller <wildy@muhelybt.hu>
+        Viktor Juhasz <jviktor@balabit.hu>
 
 
 3.3.5
