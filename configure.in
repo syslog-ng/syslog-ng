@@ -1188,6 +1188,7 @@ AC_OUTPUT(dist.conf
           modules/pacctformat/Makefile
           modules/basicfuncs/Makefile
           modules/cryptofuncs/Makefile
+          modules/cryptofuncs/tests/Makefile
 	  modules/tfjson/Makefile
 	  modules/jsonparser/Makefile
 	  scripts/Makefile
