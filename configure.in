@@ -1187,8 +1187,8 @@ AC_OUTPUT(dist.conf
           modules/syslogformat/Makefile
           modules/pacctformat/Makefile
           modules/basicfuncs/Makefile
+          modules/cryptofuncs/Makefile
 	  modules/tfjson/Makefile
-	  modules/tfuuid/Makefile
 	  modules/jsonparser/Makefile
 	  scripts/Makefile
 	  scripts/update-patterndb

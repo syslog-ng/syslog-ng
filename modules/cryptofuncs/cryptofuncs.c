@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2012 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 2012 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2012 Gergely Nagy <algernon@balabit.hu>,
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -20,7 +20,7 @@
 #include "templates.h"
 #include "cfg.h"
 #include "uuid.h"
-
+#include "misc.h"
 #include "config.h"
 
 static void
@@ -34,24 +34,25 @@ tf_uuid(LogMessage *msg, gint argc, GString *argv[], GString *result)
 
 TEMPLATE_FUNCTION_SIMPLE(tf_uuid);
 
-static Plugin tfuuid_plugins[] =
-  {
-    TEMPLATE_FUNCTION_PLUGIN(tf_uuid, "uuid"),
-  };
+
+static Plugin cryptofuncs_plugins[] =
+{
+  TEMPLATE_FUNCTION_PLUGIN(tf_uuid, "uuid"),
+};
 
 gboolean
-tfuuid_module_init(GlobalConfig *cfg, CfgArgs *args)
+cryptofuncs_module_init(GlobalConfig *cfg, CfgArgs *args)
 {
-  plugin_register(cfg, tfuuid_plugins, G_N_ELEMENTS(tfuuid_plugins));
+  plugin_register(cfg, cryptofuncs_plugins, G_N_ELEMENTS(cryptofuncs_plugins));
   return TRUE;
 }
 
 const ModuleInfo module_info =
 {
-  .canonical_name = "tfuuid",
+  .canonical_name = "cryptofuncs",
   .version = VERSION,
-  .description = "The tfuuid module provides a template function to generate UUIDs.",
+  .description = "The cryptofuncs module provides cryptographic template functions.",
   .core_revision = SOURCE_REVISION,
-  .plugins = tfuuid_plugins,
-  .plugins_len = G_N_ELEMENTS(tfuuid_plugins),
+  .plugins = cryptofuncs_plugins,
+  .plugins_len = G_N_ELEMENTS(cryptofuncs_plugins),
 };
