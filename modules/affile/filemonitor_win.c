@@ -55,8 +55,10 @@ file_monitor_chk_file(FileMonitorWindows * monitor, const gchar *base_dir, const
 {
   gboolean ret = FALSE;
   gchar *path = g_build_filename(base_dir, filename, NULL);
+  gchar *base_name = g_path_get_basename(filename);
   gboolean exists = g_file_test(path, G_FILE_TEST_EXISTS);
-  gboolean match = g_pattern_match_string(monitor->super.compiled_pattern, filename);
+  gboolean match = g_pattern_match_string(monitor->super.compiled_pattern, base_name);
+  g_free(base_name);
 
 
   if (exists &&
