@@ -282,7 +282,7 @@ affile_sd_monitor_pushback_filename(AFFileSourceDriver *self, const gchar *filen
 }
 
 static gboolean
-affile_sd_monitor_callback(const gchar *filename, gpointer s)
+affile_sd_monitor_callback(const gchar *filename, gpointer s, FileActionType action_type)
 {
   AFFileSourceDriver *self = (AFFileSourceDriver*) s;
 

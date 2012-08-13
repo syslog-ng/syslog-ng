@@ -51,7 +51,7 @@ resolve_to_absolute_path(const gchar *path, const gchar *basedir)
  * This function checks if the given filename matches the filters.
  **/
 static gboolean
-file_monitor_chk_file(FileMonitorWindows * monitor, const gchar *base_dir, const gchar *filename)
+file_monitor_chk_file(FileMonitorWindows * monitor, const gchar *base_dir, const gchar *filename, FileActionType action_type)
 {
   gboolean ret = FALSE;
   gchar *path = g_build_filename(base_dir, filename, NULL);
@@ -66,7 +66,7 @@ file_monitor_chk_file(FileMonitorWindows * monitor, const gchar *base_dir, const
       /* FIXME: resolve symlink */
       /* callback to affile */
       msg_debug("file_monitor_chk_file filter passed", evt_tag_str("file",path),NULL);
-      monitor->super.file_callback(path, monitor->super.user_data);
+      monitor->super.file_callback(path, monitor->super.user_data, action_type);
       ret = TRUE;
     }
   g_free(path);
@@ -99,13 +99,13 @@ file_monitor_list_directory(FileMonitorWindows *self, const gchar *basedir)
       else
         {
           /* if file or symlink, match with the filter pattern */
-          file_monitor_chk_file(self, basedir, file_name);
+          file_monitor_chk_file(self, basedir, file_name, ACTION_NONE);
         }
       g_free(path);
     }
   g_dir_close(dir);
   if (self->super.file_callback != NULL)
-    self->super.file_callback(END_OF_LIST, self->super.user_data);
+    self->super.file_callback(END_OF_LIST, self->super.user_data,ACTION_NONE);
   return TRUE;
 }
 
@@ -118,14 +118,21 @@ completition_routine(FileMonitorWindows *self, DWORD dwErrorCode, DWORD dwNumber
   int count = 0;
   PFILE_NOTIFY_INFORMATION pNotify;
   do
-  {
-       pNotify = (PFILE_NOTIFY_INFORMATION) &self->buffer[offset];
-       offset += pNotify->NextEntryOffset;
-       count = WideCharToMultiByte(CP_ACP, 0, pNotify->FileName, pNotify->FileNameLength / sizeof(WCHAR), szFile,  MAX_PATH - 1, NULL, NULL);
-       szFile[count] = 0;
-
-        file_monitor_chk_file(self, self->base_dir, szFile);
-  }while(pNotify->NextEntryOffset != 0);
+    {
+      FileActionType action_type = ACTION_NONE;
+      pNotify = (PFILE_NOTIFY_INFORMATION) &self->buffer[offset];
+      offset += pNotify->NextEntryOffset;
+      count = WideCharToMultiByte(CP_ACP, 0, pNotify->FileName, pNotify->FileNameLength / sizeof(WCHAR), szFile,  MAX_PATH - 1, NULL, NULL);
+      szFile[count] = 0;
+      if (pNotify->Action == FILE_ACTION_ADDED || pNotify->Action == FILE_ACTION_RENAMED_NEW_NAME)
+        action_type = ACTION_CREATED;
+      else if (pNotify->Action == FILE_ACTION_REMOVED || pNotify->Action == FILE_ACTION_RENAMED_OLD_NAME)
+        action_type = ACTION_DELETED;
+      else if (pNotify->Action == FILE_ACTION_MODIFIED)
+        action_type = ACTION_MODIFIED;
+      file_monitor_chk_file(self, self->base_dir, szFile, action_type);
+    }
+  while(pNotify->NextEntryOffset != 0);
   if (ReadDirectoryChangesW(self->hDir, self->buffer, FILE_MONITOR_BUFFER_SIZE, self->super.recursion, self->notify_flags, NULL, &self->ol, NULL) == 0)
   {
     fprintf(stderr,"FAILED TO READ NEXT CHANGES OF DIRECTORY!\n");

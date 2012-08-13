@@ -324,7 +324,7 @@ file_monitor_chk_file(FileMonitor * monitor, MonitorBase *source, const gchar *f
       /* FIXME: resolve symlink */
       /* callback to affile */
       msg_debug("file_monitor_chk_file filter passed", evt_tag_str("file",path),NULL);
-      monitor->file_callback(path, monitor->user_data);
+      monitor->file_callback(path, monitor->user_data, ACTION_NONE);
       ret = TRUE;
     }
   g_free(path);
@@ -369,7 +369,7 @@ file_monitor_list_directory(FileMonitor *self, MonitorBase *source, const gchar 
     }
   g_dir_close(dir);
   if (self->file_callback != NULL)
-    self->file_callback(END_OF_LIST, self->user_data);
+    self->file_callback(END_OF_LIST, self->user_data, ACTION_NONE);
   return TRUE;
 }
 
@@ -505,7 +505,7 @@ file_monitor_process_poll_event(FileMonitor *monitor, MonitorPoll *source)
       /* The next poll event will reopen the directory and check the files again */
       g_dir_close(source->dir);
       if (monitor->file_callback != NULL)
-          monitor->file_callback(END_OF_LIST, monitor->user_data);
+          monitor->file_callback(END_OF_LIST, monitor->user_data, ACTION_NONE);
       source->dir = NULL;
       return TRUE;
     }

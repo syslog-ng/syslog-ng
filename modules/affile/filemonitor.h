@@ -8,7 +8,9 @@
 
 #define END_OF_LIST (gchar*)file_monitor_set_file_callback
 
-typedef gboolean (*FileMonitorCallbackFunc)(const gchar *filename, gpointer user_data);
+typedef enum { ACTION_NONE, ACTION_CREATED, ACTION_MODIFIED, ACTION_DELETED} FileActionType;
+
+typedef gboolean (*FileMonitorCallbackFunc)(const gchar *filename, gpointer user_data, FileActionType action_type);
 
 typedef enum { MONITOR_NONE, MONITOR_POLL, MONITOR_INOTIFY, MONITOR_WINDOWS } MonitorType;
 
