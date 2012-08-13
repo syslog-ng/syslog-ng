@@ -164,7 +164,6 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   configuration = cfg_new(0x0302);
   plugin_load_module("syslogformat", configuration, NULL);
   plugin_load_module("basicfuncs", configuration, NULL);
-  plugin_load_module("cryptofuncs", configuration, NULL);
   msg_format_options_defaults(&parse_options);
   msg_format_options_init(&parse_options, configuration);
   configuration->template_options.frac_digits = 3;
@@ -298,79 +297,10 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase(msg, "$(echo \"$(echo '$(echo $HOST)')\" $PID)", "bzorp 23323");
   testcase(msg, "$(echo \"$(echo '$(echo $HOST)')\" $PID)", "bzorp 23323");
   testcase(msg, "$(echo '\"$(echo $(echo $HOST))\"' $PID)", "\"bzorp\" 23323");
-  testcase(msg, "$(ipv4-to-int $SOURCEIP)", "168496141");
-
-  testcase(msg, "$(length $HOST $PID)", "5 5");
-  testcase(msg, "$(length $HOST)", "5");
-  testcase(msg, "$(length)", "");
-
-  testcase(msg, "$(grep 'facility(local3)' $PID)", "23323,23323");
-  testcase(msg, "$(grep -m 1 'facility(local3)' $PID)", "23323");
-  testcase(msg, "$(grep 'facility(local3)' $PID $PROGRAM)", "23323,syslog-ng,23323,syslog-ng");
-  testcase(msg, "$(grep 'facility(local4)' $PID)", "");
-  testcase(msg, "$(grep ('$FACILITY' == 'local4') $PID)", "");
-  testcase(msg, "$(grep ('$FACILITY(' == 'local3(') $PID)", "23323,23323");
-  testcase(msg, "$(grep ('$FACILITY(' == 'local4)') $PID)", "");
-  testcase(msg, "$(grep \\'$FACILITY\\'\\ ==\\ \\'local4\\' $PID)", "");
-  testcase(msg, "$(if 'facility(local4)' alma korte)", "korte");
-  testcase(msg, "$(if 'facility(local3)' alma korte)", "alma");
-
-  testcase(msg, "$(if '\"$FACILITY\" lt \"local3\"' alma korte)", "korte");
-  testcase(msg, "$(if '\"$FACILITY\" le \"local3\"' alma korte)", "alma");
-  testcase(msg, "$(if '\"$FACILITY\" eq \"local3\"' alma korte)", "alma");
-  testcase(msg, "$(if '\"$FACILITY\" ne \"local3\"' alma korte)", "korte");
-  testcase(msg, "$(if '\"$FACILITY\" gt \"local3\"' alma korte)", "korte");
-  testcase(msg, "$(if '\"$FACILITY\" ge \"local3\"' alma korte)", "alma");
-
-  testcase(msg, "$(if '\"$FACILITY_NUM\" < \"19\"' alma korte)", "korte");
-  testcase(msg, "$(if '\"$FACILITY_NUM\" <= \"19\"' alma korte)", "alma");
-  testcase(msg, "$(if '\"$FACILITY_NUM\" == \"19\"' alma korte)", "alma");
-  testcase(msg, "$(if '\"$FACILITY_NUM\" != \"19\"' alma korte)", "korte");
-  testcase(msg, "$(if '\"$FACILITY_NUM\" > \"19\"' alma korte)", "korte");
-  testcase(msg, "$(if '\"$FACILITY_NUM\" >= \"19\"' alma korte)", "alma");
-  testcase(msg, "$(if '\"$FACILITY_NUM\" >= \"19\" and \"kicsi\" == \"nagy\"' alma korte)", "korte");
-  testcase(msg, "$(if '\"$FACILITY_NUM\" >= \"19\" or \"kicsi\" == \"nagy\"' alma korte)", "alma");
-
-  testcase(msg, "$(substr $HOST 1 3)", "zor");
-  testcase(msg, "$(substr $HOST 1)", "zorp");
-  testcase(msg, "$(substr $HOST -1)", "p");
-  testcase(msg, "$(substr $HOST -2 1)", "r");
-
-  testcase(msg, "$(strip ${APP.STRIP1})", "value");
-  testcase(msg, "$(strip ${APP.STRIP2})", "value");
-  testcase(msg, "$(strip ${APP.STRIP3})", "value");
-  testcase(msg, "$(strip ${APP.STRIP4})", "value");
-  testcase(msg, "$(strip ${APP.STRIP5})", "");
-
-  testcase(msg, "$(strip ${APP.STRIP1} ${APP.STRIP2} ${APP.STRIP3} ${APP.STRIP4} ${APP.STRIP5})", "value value value value ");
-
-  testcase(msg, "$(sanitize alma/bela)", "alma_bela");
-  testcase(msg, "$(sanitize -r @ alma/bela)", "alma@bela");
-  testcase(msg, "$(sanitize -i @ alma@bela)", "alma_bela");
-  testcase(msg, "$(sanitize -i '@/l ' alma@/bela)", "a_ma__be_a");
-  testcase(msg, "$(sanitize alma\x1b_bela)", "alma__bela");
-  testcase(msg, "$(sanitize -C alma\x1b_bela)", "alma\x1b_bela");
-
-  testcase(msg, "$(sanitize $HOST $PROGRAM)", "bzorp/syslog-ng");
-
-  testcase(msg, "$(+ $FACILITY_NUM 1)", "20");
-  testcase(msg, "$(+ -1 -1)", "-2");
-  testcase(msg, "$(- $FACILITY_NUM 1)", "18");
-  testcase(msg, "$(- $FACILITY_NUM 20)", "-1");
-  testcase(msg, "$(* $FACILITY_NUM 2)", "38");
-  testcase(msg, "$(/ $FACILITY_NUM 2)", "9");
-  testcase(msg, "$(% $FACILITY_NUM 3)", "1");
-  testcase(msg, "$(/ $FACILITY_NUM 0)", "NaN");
-  testcase(msg, "$(% $FACILITY_NUM 0)", "NaN");
-  testcase(msg, "$(+ foo bar)", "NaN");
 
   /* message refs */
   testcase(msg, "$(echo ${HOST}@0 ${PID}@1)", "bzorp 23323");
   testcase(msg, "$(echo $HOST $PID)@0", "bzorp 23323");
-
-  testcase(msg, "$(grep 'facility(local3)' $PID)@0", "23323");
-  testcase(msg, "$(grep 'facility(local3)' $PID)@1", "23323");
-  testcase(msg, "$(grep 'facility(local3)' $PID)@2", "");
 
   /* multi-threaded expansion */
 
@@ -387,7 +317,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase_failure("$(unbalanced_paren", "missing function name or inbalanced '('");
   testcase(msg, "$unbalanced_paren)", ")");
 
-
+  /* old version for various macros */
   configuration->user_version = 0x0201;
   testcase(msg, "$MSGHDR", "syslog-ng[23323]:");
   testcase(msg, "$MSG", "syslog-ng[23323]:árvíztűrőtükörfúrógép");

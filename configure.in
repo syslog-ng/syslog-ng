@@ -1187,6 +1187,7 @@ AC_OUTPUT(dist.conf
           modules/syslogformat/Makefile
           modules/pacctformat/Makefile
           modules/basicfuncs/Makefile
+          modules/basicfuncs/tests/Makefile
           modules/cryptofuncs/Makefile
           modules/cryptofuncs/tests/Makefile
 	  modules/tfjson/Makefile
