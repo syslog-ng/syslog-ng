@@ -1190,6 +1190,7 @@ AC_OUTPUT(dist.conf
           modules/cryptofuncs/Makefile
           modules/cryptofuncs/tests/Makefile
 	  modules/tfjson/Makefile
+	  modules/tfjson/tests/Makefile
 	  modules/jsonparser/Makefile
 	  scripts/Makefile
 	  scripts/update-patterndb
