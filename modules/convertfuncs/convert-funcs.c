@@ -160,7 +160,7 @@ tf_format_snare_prepare(LogTemplateFunction *self, LogTemplate *parent,
   g_string_append_printf(event_template_str,"%s$(replace $EVENT_TYPE %s \" \")",options->delimiter,options->delimiter);
   g_string_append_printf(event_template_str,"%s$(replace $EVENT_HOST %s \" \")",options->delimiter,options->delimiter);
   g_string_append_printf(event_template_str,"%s$(replace $EVENT_CATEGORY %s \" \")",options->delimiter,options->delimiter);
-  g_string_append_printf(event_template_str,"%s$(replace $EVENT_MESSAGE %s \" \")",options->delimiter,options->delimiter);
+  g_string_append_printf(event_template_str,"%s%s$(replace $EVENT_MESSAGE %s \" \")",options->delimiter,options->delimiter,options->delimiter);
   g_string_append_printf(event_template_str,"%s$(replace $EVENT_CONTAINER_COUNTER %s \" \")",options->delimiter,options->delimiter);
   g_string_append(event_template_str,"\n");
 

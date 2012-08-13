@@ -55,19 +55,19 @@ test_snare_template_function()
   msg->timestamps[1] = stamp;
   msg->timestamps[0] = msg->timestamps[1];
 
-  expected = "<0>May 21 11:22:12  MSWinEventLog\t1\tApplication\t27\tMon May 21 11:22:12 2012\t1000\tapplication\tUnknown User\tN/A\tWarning\tZTS-WIN014\tNone\ttest message from windows#XP\t3\n";
+  expected = "<0>May 21 11:22:12  MSWinEventLog\t1\tApplication\t27\tMon May 21 11:22:12 2012\t1000\tapplication\tUnknown User\tN/A\tWarning\tZTS-WIN014\tNone\t\ttest message from windows#XP\t3\n";
   template_string = "$(format-snare)";
   assert_true(log_template_compile(template,template_string,&err),"CAN't COMPILE!");
   log_template_format(template, msg, NULL, 0, 0, "TEST", result);
   assert_string(result->str,expected,"Bad formatting");
 
-  expected = "<0>May 21 11:22:12  MSWinEventLog#1#Application#27#Mon May 21 11:22:12 2012#1000#application#Unknown User#N/A#Warning#ZTS-WIN014#None#test message from windows XP#3\n";
+  expected = "<0>May 21 11:22:12  MSWinEventLog#1#Application#27#Mon May 21 11:22:12 2012#1000#application#Unknown User#N/A#Warning#ZTS-WIN014#None##test message from windows XP#3\n";
   template_string = "$(format-snare -d #)";
   assert_true(log_template_compile(template,template_string,&err),"CAN't COMPILE!");
   log_template_format(template, msg, NULL, 0, 0, "TEST", result);
   assert_string(result->str,expected,"Bad delimiter handling");
 
-  expected = "<0>May 21 11:22:12  MSWinEventLog\t2\tApplication\t27\tMon May 21 11:22:12 2012\t1000\tapplication\tUnknown User\tN/A\tWarning\tZTS-WIN014\tNone\ttest message from windows#XP\t3\n";
+  expected = "<0>May 21 11:22:12  MSWinEventLog\t2\tApplication\t27\tMon May 21 11:22:12 2012\t1000\tapplication\tUnknown User\tN/A\tWarning\tZTS-WIN014\tNone\t\ttest message from windows#XP\t3\n";
   template_string = "$(format-snare -c 2)";
   assert_true(log_template_compile(template,template_string,&err),"CAN't COMPILE!");
   log_template_format(template, msg, NULL, 0, 0, "TEST", result);
