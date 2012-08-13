@@ -15,3 +15,5 @@ libevtlog0
 libevtlog-dev
 libivykis
 libivykis-dev
+libpcre3-dev
+libpcre3

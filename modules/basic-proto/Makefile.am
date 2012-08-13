@@ -12,6 +12,6 @@ EXTRA_DIST = $(BUILT_SOURCES) basic-proto-grammar.ym
 
 libbasic_proto_la_CPPFLAGS = $(AM_CPPFLAGS)
 libbasic_proto_la_LIBADD = $(MODULE_DEPS_LIBS)
-libbasic_proto_la_LDFLAGS = $(MODULE_LDFLAGS)
+libbasic_proto_la_LDFLAGS = $(MODULE_LDFLAGS) -lpcre
 
 include $(top_srcdir)/build/lex-rules.am

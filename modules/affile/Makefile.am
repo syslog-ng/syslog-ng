@@ -21,6 +21,6 @@ EXTRA_DIST = $(BUILT_SOURCES) affile-grammar.ym
 
 libaffile_la_CPPFLAGS = $(AM_CPPFLAGS)
 libaffile_la_LIBADD = $(MODULE_DEPS_LIBS)
-libaffile_la_LDFLAGS = $(MODULE_LDFLAGS)
+libaffile_la_LDFLAGS = $(MODULE_LDFLAGS) -lpcre
 
 include $(top_srcdir)/build/lex-rules.am
