@@ -29,7 +29,7 @@
 #include "persist-state.h"
 #include "tlscontext.h"
 
-#include <regex.h>
+#include <pcre.h>
 
 #define MAX_STATE_DATA_LENGTH 128
 
@@ -70,8 +70,8 @@ typedef struct _LogProtoServerOptions
   {
     struct
     {
-      regex_t *prefix_matcher;
-      regex_t *garbage_matcher;
+      pcre *prefix_matcher;
+      pcre *garbage_matcher;
       gchar *prefix_pattern;
       gchar *garbage_pattern;
     } opts;

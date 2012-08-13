@@ -731,11 +731,11 @@ afsocket_sd_close_fd(gpointer value)
 }
 
 static void
-afsocket_sd_regex_free(regex_t *regex)
+afsocket_sd_regex_free(pcre *regex)
 {
   if (regex)
     {
-      regfree(regex);
+      pcre_free(regex);
       g_free(regex);
     }
 }
@@ -1451,12 +1451,16 @@ afsocket_sd_set_multi_line_prefix(LogDriver *s, gchar *prefix)
 {
   AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
   LogProtoServerOptions *options = (LogProtoServerOptions *)&self->proto_options;
+  const gchar *error;
+  gint erroroffset;
+  /*Are we need any options?*/
+  int pcreoptions = PCRE_EXTENDED;
 
-  options->opts.prefix_matcher = g_new0(regex_t, 1);
   if (options->opts.prefix_pattern)
     g_free(options->opts.prefix_pattern);
   options->opts.prefix_pattern = g_strdup(prefix);
-  if (regcomp(options->opts.prefix_matcher, prefix, REG_EXTENDED))
+  options->opts.prefix_matcher = pcre_compile(prefix, pcreoptions, &error, &erroroffset, NULL);
+  if (!options->opts.prefix_matcher)
     {
       msg_error("Bad regexp",evt_tag_str("multi_line_prefix", prefix), NULL);
       return FALSE;
@@ -1470,12 +1474,16 @@ afsocket_sd_set_multi_line_garbage(LogDriver *s, gchar *garbage)
 {
   AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
   LogProtoServerOptions *options = (LogProtoServerOptions *)&self->proto_options;
+  const gchar *error;
+  gint erroroffset;
+  /*Are we need any options?*/
+  int pcreoptions = PCRE_EXTENDED;
 
-  options->opts.garbage_matcher = g_new0(regex_t, 1);
   if (options->opts.garbage_pattern)
     g_free(options->opts.garbage_pattern);
   options->opts.garbage_pattern = g_strdup(garbage);
-  if (regcomp(options->opts.garbage_matcher, garbage, REG_EXTENDED))
+  options->opts.garbage_matcher = pcre_compile(garbage, pcreoptions, &error, &erroroffset, NULL);
+  if (!options->opts.garbage_matcher)
     {
       msg_error("Bad regexp",evt_tag_str("multi_line_garbage", garbage), NULL);
       return FALSE;

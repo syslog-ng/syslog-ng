@@ -36,7 +36,7 @@
 #include <sys/stat.h>
 #include <stdlib.h>
 #include <limits.h>
-#include <regex.h>
+#include <pcre.h>
 
 void
 log_proto_check_server_options(LogProtoServerOptions *options)
@@ -49,7 +49,7 @@ log_proto_check_server_options(LogProtoServerOptions *options)
                   evt_tag_str("multi_line_prefix",options->opts.prefix_pattern),
                   evt_tag_str("multi_line_garbage",options->opts.garbage_pattern),
                   NULL);
-      regfree(options->opts.garbage_matcher);
+      pcre_free(options->opts.garbage_matcher);
       g_free(options->opts.garbage_matcher);
       g_free(options->opts.garbage_pattern);
       options->opts.garbage_matcher = NULL;

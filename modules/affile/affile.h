@@ -80,8 +80,6 @@ typedef struct _AFFileDestDriver
   LogProtoOptions proto_options;
   LogProtoFactory *proto_factory;
   GHashTable *writer_hash;
-  regex_t *prefix_matcher;
-  regex_t *garbage_matcher;
     
   gint overwrite_if_older;
   gboolean use_time_recvd;

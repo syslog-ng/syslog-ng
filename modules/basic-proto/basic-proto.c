@@ -39,7 +39,7 @@
 #include <sys/uio.h>
 #endif
 #include <limits.h>
-#include <regex.h>
+#include <pcre.h>
 
 typedef struct _LogProtoTextClient
 {
@@ -1789,26 +1789,26 @@ log_proto_text_server_get_raw_size_of_buffer(LogProtoTextServer *self, const guc
 }
 
 static inline gboolean
-log_proto_regexec(regex_t *regex, const gchar *line, gint line_len, gint32 *first_offset, gint32 *end_offset)
+log_proto_regexec(pcre *regex, const gchar *line, gint line_len, gint32 *first_offset, gint32 *end_offset)
 {
-  gboolean rc;
+  gint rc;
   const gchar *buf;
-  regmatch_t matches[1];
+  int ovector[30] ={0};
 
   APPEND_ZERO(buf, line, line_len);
-  rc = !regexec(regex, buf, 1, matches, 0);
-  if (rc)
+  rc = pcre_exec(regex, NULL, buf, line_len, 0, 0, ovector, 10);
+  if (rc >= 0)
     {
       if (first_offset)
-        *first_offset = matches[0].rm_so;
+        *first_offset = ovector[0];
       if (end_offset)
-        *end_offset = matches[0].rm_eo;
+        *end_offset = ovector[1];
     }
-  return rc;
+  return (rc >= 0);
 }
 
 const guchar *
-find_multi_line_eom(LogProtoTextServer *self, const guchar *buffer_start, gsize buffer_bytes, regex_t *multi_line_prefix_parser, regex_t *multi_line_garbage_parser, guint32 *new_buffer_pos)
+find_multi_line_eom(LogProtoTextServer *self, const guchar *buffer_start, gsize buffer_bytes, pcre *multi_line_prefix_parser, pcre *multi_line_garbage_parser, guint32 *new_buffer_pos)
 {
   const guchar *line = buffer_start;
   const guchar *next_line = buffer_start;
