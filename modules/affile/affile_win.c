@@ -286,7 +286,7 @@ affile_sd_monitor_callback(const gchar *filename, gpointer s, FileActionType act
 {
   AFFileSourceDriver *self = (AFFileSourceDriver*) s;
 
-  if (strcmp(self->filename->str, filename) != 0)
+  if ((strcmp(self->filename->str, filename) != 0) || (action_type == ACTION_CREATED && self->reader == NULL))
     {
       /* FIXME: use something else than a linear search */
       if (g_queue_find_custom(self->file_list, filename, (GCompareFunc)strcmp) == NULL)
@@ -491,6 +491,8 @@ affile_sd_init(LogPipe *s)
 {
   AFFileSourceDriver *self = (AFFileSourceDriver *) s;
   GlobalConfig *cfg = log_pipe_get_config(s);
+  GString *filename = self->filename;
+  self->filename = g_string_sized_new(512);
 
   log_proto_check_server_options((LogProtoServerOptions *)&self->proto_options);
   log_reader_options_init(&self->reader_options, cfg, self->super.super.group);
@@ -501,10 +503,10 @@ affile_sd_init(LogPipe *s)
       file_monitor_set_file_callback(self->file_monitor, affile_sd_monitor_callback, self);
       //file_monitor_set_poll_freq(self->file_monitor, self->reader_options.follow_freq);
 
-      if (!file_monitor_watch_directory(self->file_monitor, self->filename->str))
+      if (!file_monitor_watch_directory(self->file_monitor, filename->str))
         {
           msg_error("Error starting filemonitor",
-                    evt_tag_str("filemonitor", self->filename->str),
+                    evt_tag_str("filemonitor", filename->str),
                     NULL);
           return FALSE;
         }
@@ -622,16 +624,8 @@ affile_sd_new(gchar *filename, guint32 flags)
       pid_string = g_strdup_printf("%d",GetCurrentProcessId());
     }
 
-  if (is_wildcard_filename(filename))
-    {
-      self->file_monitor = file_monitor_new();
-      self->file_list = g_queue_new();
-    }
-  else
-    {
-      self->file_monitor = NULL;
-      self->file_list = NULL;
-    }
+  self->file_monitor = file_monitor_new();
+  self->file_list = g_queue_new();
 
   if ((self->flags & AFFILE_PIPE))
     {
