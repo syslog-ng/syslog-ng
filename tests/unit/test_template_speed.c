@@ -68,7 +68,7 @@ testcase(const gchar *msg_str, gboolean syslog_proto, gchar *template)
       log_template_format(templ, msg, NULL, LTZ_LOCAL, 0, NULL, res);
     }
   g_get_current_time(&end);
-  printf("%-90.*s speed: %12.3f msg/sec\n", (int) strlen(template) - 1, template, i * 1e6 / g_time_val_diff(&end, &start));
+  printf("      %-90.*s speed: %12.3f msg/sec\n", (int) strlen(template) - 1, template, i * 1e6 / g_time_val_diff(&end, &start));
 
   log_template_unref(templ);
   g_string_free(res, TRUE);
