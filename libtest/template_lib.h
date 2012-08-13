@@ -4,6 +4,7 @@
 #include "testutils.h"
 
 void assert_template_format(const gchar *template, const gchar *expected);
+void assert_template_format_with_context(const gchar *template, const gchar *expected);
 void assert_template_failure(const gchar *template, const gchar *expected_failure);
 
 void init_template_tests(void);
