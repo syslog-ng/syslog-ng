@@ -69,16 +69,20 @@ LogReader *log_reader_new_memory_source(LogReaderOptions *options, guint32 read_
 
   if (prefix)
     {
-      proto_options->opts.prefix_matcher = g_new0(regex_t,1);
-      if (regcomp(proto_options->opts.prefix_matcher, prefix, REG_EXTENDED))
+      const gchar *error;
+      gint erroroffset;
+      /*Are we need any options?*/
+      int pcreoptions = PCRE_EXTENDED;
+      proto_options->opts.prefix_matcher = pcre_compile(prefix, pcreoptions, &error, &erroroffset, NULL);
+      if (!proto_options->opts.prefix_matcher)
         {
           fprintf(stderr,"Bad regexp %s\n", prefix);
           return FALSE;
         }
       if (garbage)
         {
-          proto_options->opts.garbage_matcher = g_new(regex_t,1);
-          if(regcomp(proto_options->opts.garbage_matcher, garbage, REG_EXTENDED))
+          proto_options->opts.garbage_matcher = pcre_compile(garbage, pcreoptions, &error, &erroroffset, NULL);
+          if (!proto_options->opts.garbage_matcher)
             {
               fprintf(stderr,"Bad regexp %s\n", garbage);
               return FALSE;
