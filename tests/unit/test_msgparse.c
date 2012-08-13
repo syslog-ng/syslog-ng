@@ -56,7 +56,7 @@ void
 assert_log_message_sdata_pairs(LogMessage *message, const gchar *expected_sd_pairs[][2])
 {
   gint i;
-  for (i = 0; expected_sd_pairs[i][0] != NULL;i++)
+  for (i = 0; expected_sd_pairs && expected_sd_pairs[i][0] != NULL;i++)
     {
       const gchar *actual_value = log_msg_get_value(message, log_msg_get_value_handle(expected_sd_pairs[i][0]), NULL);
       assert_string(actual_value, expected_sd_pairs[i][1], NULL);
