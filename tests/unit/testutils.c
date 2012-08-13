@@ -69,6 +69,21 @@ fill_string_array(gint number_of_elements, ...)
 }
 
 gboolean
+assert_guint16_non_fatal(guint16 actual, guint16 expected, const gchar *error_message, ...)
+{
+  va_list args;
+
+    if (actual == expected)
+      return TRUE;
+
+    va_start(args, error_message);
+    print_failure(error_message, args, "actual=%d, expected=%d", actual, expected);
+    va_end(args);
+
+    return FALSE;
+}
+
+gboolean
 assert_gint64_non_fatal(gint64 actual, gint64 expected, const gchar *error_message, ...)
 {
   va_list args;
