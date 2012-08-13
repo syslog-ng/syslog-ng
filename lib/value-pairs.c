@@ -476,7 +476,7 @@ vp_cmdline_parse_scope(const gchar *option_name, const gchar *value,
   if (!value_pairs_add_scope (vp, value))
     {
       g_set_error (error, G_OPTION_ERROR, G_OPTION_ERROR_BAD_VALUE,
-		   "Unknon value-pairs scope, scope=%s", value);
+		   "Error parsing value-pairs: unknown scope %s", value);
       return FALSE;
     }
   return TRUE;
@@ -520,7 +520,7 @@ vp_cmdline_parse_pair (const gchar *option_name, const gchar *value,
   if (!g_strstr_len (value, strlen (value), "="))
     {
       g_set_error (error, G_OPTION_ERROR, G_OPTION_ERROR_BAD_VALUE,
-		   "Error parsing value-pairs' key=value pair");
+		   "Error parsing value-pairs: expected an equal sign in key=value pair");
       return FALSE;
     }
 
@@ -573,7 +573,7 @@ vp_cmdline_parse_rekey_replace (const gchar *option_name, const gchar *value,
   if (!g_strstr_len (value, strlen (value), "="))
     {
       g_set_error (error, G_OPTION_ERROR, G_OPTION_ERROR_BAD_VALUE,
-                   "Error parsing value-pairs' rekey replace construct");
+                   "Error parsing value-pairs: rekey replace construct should be in the format string=replacement");
       return FALSE;
     }
 
