@@ -145,53 +145,32 @@ compare_arrays_trivially(void *actual, guint32 actual_length,
   return TRUE;
 }
 
-#define assert_array_non_fatal(actual, actual_length, expected, expected_length, error_message, item_printf_format) \
-  do { \
-    va_list args; \
-    gboolean assertion_ok = TRUE; \
-    guint32 i; \
-\
-    va_start(args, error_message); \
-\
-    assertion_ok = compare_arrays_trivially((void *)actual, actual_length, \
-                                            (void *)expected, expected_length, \
-                                            error_message, \
-                                            args); \
-    if (assertion_ok) \
-      { \
-        for (i = 0; i < expected_length; ++i) \
-          { \
-            if (expected[i] != actual[i]) \
-              { \
-                print_failure(error_message, \
-                              args, \
-                              "actual=" item_printf_format ", " \
-                              "expected=" item_printf_format ", " \
-                              "index=%u", \
-                              actual[i], \
-                              expected[i], \
-                              i); \
-                assertion_ok = FALSE; \
-                break; \
-              } \
-          } \
-      } \
-\
-    va_end(args); \
-\
-    return assertion_ok; \
-  } while (0)
-
 gboolean
 assert_guint32_array_non_fatal(guint32 *actual, guint32 actual_length, guint32 *expected, guint32 expected_length, const gchar *error_message, ...)
 {
-  assert_array_non_fatal(actual, actual_length, expected, expected_length, error_message, "%u");
-}
+  va_list args;
+  gboolean assertion_ok = TRUE;
+  guint32 i;
 
-gboolean
-assert_gchar_array_non_fatal(gchar *actual, guint32 actual_length, gchar *expected, guint32 expected_length, const gchar *error_message, ...)
-{
-  assert_array_non_fatal(actual, actual_length, expected, expected_length, error_message, "0x%hhx");
+  va_start(args, error_message);
+
+  assertion_ok = compare_arrays_trivially((void *)actual, actual_length, (void *)expected, expected_length, error_message, args);
+  if (assertion_ok)
+    {
+      for (i = 0; i < expected_length; ++i)
+        {
+          if (expected[i] != actual[i])
+            {
+              print_failure(error_message, args, "actual=%u, expected=%u, index=%u", actual[i], expected[i], i);
+              assertion_ok = FALSE;
+              break;
+            }
+        }
+    }
+
+  va_end(args);
+
+  return assertion_ok;
 }
 
 /* NOTE: this does the same as g_strcmp0(), but we use an older glib, which lacks this function */
