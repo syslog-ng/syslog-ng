@@ -48,6 +48,8 @@ test_cloning_with_log_message(gchar *msg)
   GSockAddr *addr = g_sockaddr_inet_new("10.10.10.10", 1010);
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
 
+  testcase_begin("Testing log message cloning; msg='%s'", msg);
+
   parse_options.flags = LP_SYSLOG_PROTOCOL;
   parse_options.bad_hostname = &bad_hostname;
 
@@ -69,6 +71,8 @@ test_cloning_with_log_message(gchar *msg)
   log_msg_unref(cloned_log_message);
   log_msg_unref(log_message);
   log_msg_unref(original_log_message);
+
+  testcase_end();
 }
 
 int
