@@ -20,6 +20,14 @@
 
 void start_stopwatch();
 void stop_stopwatch_and_display_result(gchar *message_template, ...);
+
+void reset_grabbed_messages(void);
+void start_grabbing_messages(void);
+void stop_grabbing_messages(void);
+gboolean assert_grabbed_messages_contain_non_fatal(const gchar *pattern, const gchar *error_message, ...);
+
+#define assert_grabbed_messages_contain(pattern, error_message, ...) (assert_grabbed_messages_contain_non_fatal(pattern, error_message, ##__VA_ARGS__) ? 1 : (exit(1),0))
+
 gchar **fill_string_array(gint number_of_elements, ...);
 
 gboolean assert_guint16_non_fatal(guint16 actual, guint16 expected, const gchar *error_message, ...);

@@ -1,4 +1,6 @@
 #include "testutils.h"
+#include "messages.h"
+#include "logmsg.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -10,6 +12,7 @@ struct timeval start_time_val;
 GString *current_testcase_description = NULL;
 gchar *current_testcase_function = NULL;
 gchar *current_testcase_file = NULL;
+GList *internal_messages = NULL;
 
 static void
 print_failure(const gchar *custom_template, va_list custom_args, gchar *assertion_failure_template, ...)
@@ -61,6 +64,66 @@ stop_stopwatch_and_display_result(gchar *message_template, ...)
 
   diff = (end_time_val.tv_sec - start_time_val.tv_sec) * 1000000 + end_time_val.tv_usec - start_time_val.tv_usec;
   printf("; runtime=%lu.%06lu s\n", diff / 1000000, diff % 1000000);
+}
+
+static void
+grab_message(LogMessage *msg)
+{
+  internal_messages = g_list_append(internal_messages, msg);
+}
+
+void
+reset_grabbed_messages(void)
+{
+  g_list_foreach(internal_messages, (GFunc) log_msg_unref, NULL);
+  g_list_free(internal_messages);
+  internal_messages = NULL;
+}
+
+void
+start_grabbing_messages(void)
+{
+  reset_grabbed_messages();
+  msg_set_post_func(grab_message);
+}
+
+void
+stop_grabbing_messages(void)
+{
+  msg_set_post_func(NULL);
+}
+
+gboolean
+assert_grabbed_messages_contain_non_fatal(const gchar *pattern, const gchar *error_message, ...)
+{
+  GList *l;
+  va_list args;
+
+  for (l = internal_messages; l; l = l->next)
+    {
+      LogMessage *msg = (LogMessage *) l->data;
+      const gchar *msg_text = log_msg_get_value(msg, LM_V_MESSAGE, NULL);
+
+      if (strstr(msg_text, pattern))
+        {
+          return TRUE;
+        }
+    }
+
+  va_start(args, error_message);
+  print_failure(error_message, args, "no grabbed message contains the pattern=%s", pattern);
+  va_end(args);
+
+  fprintf(stderr, "  # Grabbed internal messages follow:\n");
+  for (l = internal_messages; l; l = l->next)
+    {
+      LogMessage *msg = (LogMessage *) l->data;
+      const gchar *msg_text = log_msg_get_value(msg, LM_V_MESSAGE, NULL);
+
+      fprintf(stderr, "  #\t%s\n", msg_text);
+    }
+
+  return FALSE;
 }
 
 gchar **
