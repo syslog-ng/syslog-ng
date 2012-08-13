@@ -45,27 +45,55 @@ create_sample_message(void)
   return msg;
 }
 
+LogTemplate *
+compile_template(const gchar *template)
+{
+  LogTemplate *templ = log_template_new(configuration, NULL);
+  gboolean success;
+  GError *error = NULL;
+
+  success = log_template_compile(templ, template, &error);
+  assert_true(success, "template expected to compile cleanly, but it didn't, template=%s, error=%s", template, error ? error->message : "(none)");
+  g_clear_error(&error);
+
+  return templ;
+}
+
 void
 assert_template_format(const gchar *template, const gchar *expected)
 {
   LogMessage *msg;
   LogTemplate *templ;
   GString *res = g_string_sized_new(128);
-  GError *error = NULL;
+  const gchar *context_id = "test-context-id";
+
+  msg = create_sample_message();
+
+  templ = compile_template(template);
+  log_template_format(templ, msg, NULL, LTZ_LOCAL, 999, context_id, res);
+  assert_string(res->str, expected, "template test failed, template=%s", template);
+  log_template_unref(templ);
+  g_string_free(res, TRUE);
+  log_msg_unref(msg);
+}
+
+void
+assert_template_format_with_context(const gchar *template, const gchar *expected)
+{
+  LogMessage *msg;
+  LogTemplate *templ;
+  GString *res = g_string_sized_new(128);
   const gchar *context_id = "test-context-id";
   LogMessage *context[2];
 
   msg = create_sample_message();
   context[0] = context[1] = msg;
 
-  templ = log_template_new(configuration, NULL);
-
-  assert_true(log_template_compile(templ, template, &error), "template expected to compile cleanly, but it didn't, template=%s, error=%s", template, error ? error->message : "(none)");
+  templ = compile_template(template);
 
   log_template_format_with_context(templ, context, 2, NULL, LTZ_LOCAL, 999, context_id, res);
-  assert_string(res->str, expected, "template test failed, template=%s, [%s] <=> [%s]\n", template, res->str, expected);
+  assert_string(res->str, expected, "context template test failed, template=%s", template);
   log_template_unref(templ);
-  g_clear_error(&error);
   g_string_free(res, TRUE);
   log_msg_unref(msg);
 }
