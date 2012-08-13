@@ -20,7 +20,7 @@
  * COPYING for details.
  *
  */
-#include "affile.h"
+#include "affile_win.h"
 #include "driver.h"
 #include "messages.h"
 #include "misc.h"
@@ -436,12 +436,6 @@ get_next_file:
     }
 }
 
-static gboolean
-is_wildcard_filename(const gchar *filename)
-{
-  return strchr(filename, '*') != NULL || strchr(filename, '?') != NULL;
-}
-
 void
 affile_sd_set_recursion(LogDriver *s, const gint recursion)
 {
@@ -491,8 +485,6 @@ affile_sd_init(LogPipe *s)
 {
   AFFileSourceDriver *self = (AFFileSourceDriver *) s;
   GlobalConfig *cfg = log_pipe_get_config(s);
-  GString *filename = self->filename;
-  self->filename = g_string_sized_new(512);
 
   log_proto_check_server_options((LogProtoServerOptions *)&self->proto_options);
   log_reader_options_init(&self->reader_options, cfg, self->super.super.group);
@@ -503,10 +495,10 @@ affile_sd_init(LogPipe *s)
       file_monitor_set_file_callback(self->file_monitor, affile_sd_monitor_callback, self);
       //file_monitor_set_poll_freq(self->file_monitor, self->reader_options.follow_freq);
 
-      if (!file_monitor_watch_directory(self->file_monitor, filename->str))
+      if (!file_monitor_watch_directory(self->file_monitor, self->filename_pattern->str))
         {
           msg_error("Error starting filemonitor",
-                    evt_tag_str("filemonitor", filename->str),
+                    evt_tag_str("filemonitor", self->filename_pattern->str),
                     NULL);
           return FALSE;
         }
@@ -596,6 +588,11 @@ affile_sd_free(LogPipe *s)
       g_string_free(self->filename, TRUE);
       self->filename = NULL;
     }
+  if (self->filename_pattern)
+    {
+      g_string_free(self->filename_pattern, TRUE);
+      self->filename_pattern = NULL;
+    }
   g_assert(!self->reader);
 
   log_reader_options_destroy(&self->reader_options);
@@ -609,7 +606,8 @@ affile_sd_new(gchar *filename, guint32 flags)
   AFFileSourceDriver *self = g_new0(AFFileSourceDriver, 1);
 
   log_src_driver_init_instance(&self->super);
-  self->filename = g_string_new(filename);
+  self->filename_pattern = g_string_new(filename);
+  self->filename = g_string_sized_new(512);
   self->flags = flags;
   self->super.super.super.init = affile_sd_init;
   self->super.super.super.queue = affile_sd_queue;
