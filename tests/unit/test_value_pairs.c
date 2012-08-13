@@ -101,7 +101,6 @@ int
 main(int argc, char *argv[])
 {
   GPtrArray *transformers;
-  gint i;
 
   app_startup();
   putenv("TZ=MET-1METDST");
