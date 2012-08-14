@@ -27,7 +27,7 @@
 #include "filter-expr-grammar.h"
 
 extern int filter_expr_debug;
-int filter_expr_parse(CfgLexer *lexer, FilterExprNode **node);
+int filter_expr_parse(CfgLexer *lexer, FilterExprNode **node, gpointer arg);
 
 static CfgLexerKeyword filter_expr_keywords[] = {
   { "or",                 KW_OR },

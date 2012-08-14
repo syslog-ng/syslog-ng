@@ -26,7 +26,7 @@
 #include "afsmtp-grammar.h"
 
 extern int afsmtp_debug;
-int afsmtp_parse(CfgLexer *lexer, LogDriver **instance);
+int afsmtp_parse(CfgLexer *lexer, LogDriver **instance, gpointer arg);
 
 static CfgLexerKeyword afsmtp_keywords[] = {
   { "smtp",			KW_SMTP },

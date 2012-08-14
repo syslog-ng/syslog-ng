@@ -27,7 +27,7 @@
 #include "rewrite-expr-grammar.h"
 
 extern int rewrite_expr_debug;
-int rewrite_expr_parse(CfgLexer *lexer, LogExprNode **node);
+int rewrite_expr_parse(CfgLexer *lexer, LogExprNode **node, gpointer arg);
 
 static CfgLexerKeyword rewrite_expr_keywords[] = {
   { "set",                KW_SET, 0x0300 },
