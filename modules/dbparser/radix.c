@@ -254,6 +254,34 @@ r_parser_ip(guint8 *str, gint *len, const gchar *param, gpointer state, RParserM
 }
 
 gboolean
+r_parser_macaddr(guint8 *str, gint *len, const gchar *param, gpointer state, RParserMatch *match)
+{
+  gint i;
+  *len = 0;
+
+  for (i = 1; i <= 6; i++)
+    {
+      if (!g_ascii_isxdigit(str[*len]) && !g_ascii_isxdigit(str[*len+1]))
+        {
+          return FALSE;
+        }
+      if (i<6)
+        {
+          if (str[*len+2] != ':')
+            return FALSE;
+          (*len)+=3;
+        }
+      else
+        (*len)+=2;
+    }
+
+  if (G_UNLIKELY(*len == 16))
+    return FALSE;
+
+  return TRUE;
+}
+
+gboolean
 r_parser_float(guint8 *str, gint *len, const gchar *param, gpointer state, RParserMatch *match)
 {
   gboolean dot = FALSE;
@@ -348,6 +376,11 @@ r_new_pnode(guint8 *key)
     {
       parser_node->parse = r_parser_ip;
       parser_node->type = RPT_IP;
+    }
+  else if (strcmp(params[0], "MACADDR") == 0)
+    {
+      parser_node->parse = r_parser_macaddr;
+      parser_node->type = RPT_MACADDR;
     }
   else if (strcmp(params[0], "NUMBER") == 0)
     {

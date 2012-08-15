@@ -41,7 +41,8 @@ enum
   RPT_IPV6,
   RPT_IP,
   RPT_FLOAT,
-  RPT_SET
+  RPT_SET,
+  RPT_MACADDR
 };
 
 typedef struct _RParserMatch
@@ -127,6 +128,8 @@ r_parser_type_name(guint8 type)
         return "FLOAT";
       case RPT_SET:
         return "SET";
+      case RPT_MACADDR:
+        return "MACADDR";
       default:
         return "UNKNOWN";
     }

@@ -302,6 +302,7 @@ test_parsers(void)
   insert_node(root, "AAA@SET@AAA");
   printf("We excpect an error message\n");
   insert_node(root, "AAA@SET:set@AAA");
+  insert_node(root, "AAA@MACADDR@AAA");
 
   test_search_value(root, "a@", NULL);
   test_search_value(root, "a@NUMBER@aa@@", "a@@NUMBER@@aa@@@@");
@@ -343,6 +344,7 @@ test_matches(void)
   insert_node(root, "fff @FLOAT:float@");
   insert_node(root, "zzz @ESTRING:test:gép@");
   insert_node(root, "ggg @SET:set: 	@");
+  insert_node(root, "iii @MACADDR:macaddr@");
 
   test_search_matches(root, "aaa 12345 hihihi",
                       "number", "12345",
@@ -613,6 +615,8 @@ test_matches(void)
   test_search_matches(root, "ggg  aaa", "set", " ", NULL);
   test_search_matches(root, "ggg   aaa", "set", "  ", NULL);
   test_search_matches(root, "ggg 	aaa", "set", "	", NULL);
+  test_search_matches(root, "iii 82:63:25:93:eb:51.iii", "macaddr", "82:63:25:93:eb:51", NULL);
+  test_search_matches(root, "iii 82:63:25:93:EB:51.iii", "macaddr", "82:63:25:93:EB:51", NULL);
   test_search_matches(root, "zzz árvíztűrőtükörfúrógép", "test", "árvíztűrőtükörfúró", NULL);
 
   r_free_node(root, NULL);
