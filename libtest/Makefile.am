@@ -10,5 +10,7 @@ libsyslog_ng_test_a_SOURCES = \
 	testutils.h		\
 	msg_parse_lib.c		\
 	msg_parse_lib.h		\
+	template_lib.c		\
+	template_lib.h		\
 	mock-transport.c	\
 	mock-transport.h
