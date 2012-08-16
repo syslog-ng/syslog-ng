@@ -1447,6 +1447,7 @@ AC_OUTPUT(dist.conf
           syslog-ng.pc
           build/Makefile
           lib/Makefile
+	        libtest/Makefile
           syslog-ng/Makefile
           modules/Makefile
           modules/dummy/Makefile
@@ -1461,6 +1462,7 @@ AC_OUTPUT(dist.conf
           modules/dbparser/Makefile
           modules/dbparser/tests/Makefile
           modules/csvparser/Makefile
+          modules/csvparser/tests/Makefile
           modules/confgen/Makefile
           modules/syslogformat/Makefile
           modules/pacctformat/Makefile
