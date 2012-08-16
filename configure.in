@@ -1458,7 +1458,7 @@ AC_OUTPUT(dist.conf
           modules/affile/Makefile
           modules/afprog/Makefile
           modules/afuser/Makefile
-		  modules/afmongodb/Makefile
+          modules/afmongodb/Makefile
           modules/dbparser/Makefile
           modules/dbparser/tests/Makefile
           modules/csvparser/Makefile
@@ -1467,6 +1467,7 @@ AC_OUTPUT(dist.conf
           modules/syslogformat/Makefile
           modules/pacctformat/Makefile
           modules/basicfuncs/Makefile
+          modules/basicfuncs/tests/Makefile
           modules/convertfuncs/Makefile
           modules/convertfuncs/tests/Makefile
           modules/tfjson/Makefile

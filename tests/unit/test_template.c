@@ -297,33 +297,6 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase(msg, "$(echo \"$(echo '$(echo $HOST)')\" $PID)", "bzorp 23323");
   testcase(msg, "$(echo \"$(echo '$(echo $HOST)')\" $PID)", "bzorp 23323");
   testcase(msg, "$(echo '\"$(echo $(echo $HOST))\"' $PID)", "\"bzorp\" 23323");
-  testcase(msg, "$(ipv4-to-int $SOURCEIP)", "168496141");
-
-  testcase(msg, "$(grep 'facility(local3)' $PID)", "23323,23323");
-  testcase(msg, "$(grep 'facility(local3)' $PID $PROGRAM)", "23323,syslog-ng,23323,syslog-ng");
-  testcase(msg, "$(grep 'facility(local4)' $PID)", "");
-  testcase(msg, "$(grep ('$FACILITY' == 'local4') $PID)", "");
-  testcase(msg, "$(grep ('$FACILITY(' == 'local3(') $PID)", "23323,23323");
-  testcase(msg, "$(grep ('$FACILITY(' == 'local4)') $PID)", "");
-  testcase(msg, "$(grep \\'$FACILITY\\'\\ ==\\ \\'local4\\' $PID)", "");
-  testcase(msg, "$(if 'facility(local4)' alma korte)", "korte");
-  testcase(msg, "$(if 'facility(local3)' alma korte)", "alma");
-
-  testcase(msg, "$(if '\"$FACILITY\" lt \"local3\"' alma korte)", "korte");
-  testcase(msg, "$(if '\"$FACILITY\" le \"local3\"' alma korte)", "alma");
-  testcase(msg, "$(if '\"$FACILITY\" eq \"local3\"' alma korte)", "alma");
-  testcase(msg, "$(if '\"$FACILITY\" ne \"local3\"' alma korte)", "korte");
-  testcase(msg, "$(if '\"$FACILITY\" gt \"local3\"' alma korte)", "korte");
-  testcase(msg, "$(if '\"$FACILITY\" ge \"local3\"' alma korte)", "alma");
-
-  testcase(msg, "$(if '\"$FACILITY_NUM\" < \"19\"' alma korte)", "korte");
-  testcase(msg, "$(if '\"$FACILITY_NUM\" <= \"19\"' alma korte)", "alma");
-  testcase(msg, "$(if '\"$FACILITY_NUM\" == \"19\"' alma korte)", "alma");
-  testcase(msg, "$(if '\"$FACILITY_NUM\" != \"19\"' alma korte)", "korte");
-  testcase(msg, "$(if '\"$FACILITY_NUM\" > \"19\"' alma korte)", "korte");
-  testcase(msg, "$(if '\"$FACILITY_NUM\" >= \"19\"' alma korte)", "alma");
-  testcase(msg, "$(if '\"$FACILITY_NUM\" >= \"19\" and \"kicsi\" == \"nagy\"' alma korte)", "korte");
-  testcase(msg, "$(if '\"$FACILITY_NUM\" >= \"19\" or \"kicsi\" == \"nagy\"' alma korte)", "alma");
 
   /*template functions: format-welf*/
   log_msg_set_value(msg, log_msg_get_value_handle(".almafa"), "hello", -1);
