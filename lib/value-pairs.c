@@ -340,6 +340,203 @@ value_pairs_foreach(ValuePairs *vp, VPForeachFunc func,
                              msg, seq_num, user_data);
 }
 
+typedef struct
+{
+  GTrashStack stackp;
+  gchar *key;
+  gchar *prefix;
+  gint prefix_len;
+
+  gpointer data;
+} vp_walk_stack_t;
+
+typedef struct
+{
+  VPWalkCallbackFunc obj_start;
+  VPWalkCallbackFunc obj_end;
+  VPWalkValueCallbackFunc process_value;
+
+  gpointer user_data;
+  vp_walk_stack_t *stack;
+} vp_walk_state_t;
+
+static vp_walk_stack_t *
+vp_walker_stack_unwind_until (vp_walk_stack_t **stack, vp_walk_state_t *state,
+                              const gchar *name)
+{
+  vp_walk_stack_t *t;
+
+  if (!stack)
+    return NULL;
+  if (!*stack)
+    return NULL;
+  if (strncmp(name, (*stack)->prefix, (*stack)->prefix_len) == 0)
+    return *stack;
+
+  while ((t = g_trash_stack_pop((GTrashStack **)stack)) != NULL)
+    {
+      if (strncmp(name, t->prefix, t->prefix_len) != 0)
+        {
+          vp_walk_stack_t *p = g_trash_stack_peek((GTrashStack **)stack);
+
+          if (p)
+            state->obj_end(t->key, t->prefix, &t->data,
+                           p->prefix, &p->data,
+                           state->user_data);
+          else
+            state->obj_end(t->key, t->prefix, &t->data,
+                           NULL, NULL,
+                           state->user_data);
+          g_free(t->key);
+          g_free(t->prefix);
+          g_free(t);
+        }
+      else
+        {
+          /* This one matched, put it back, PUT IT BACK! */
+          g_trash_stack_push((GTrashStack **)stack, t);
+          break;
+        }
+    }
+
+  return *stack;
+}
+
+static void
+vp_walker_stack_unwind_all(vp_walk_stack_t **stack,
+                           vp_walk_state_t *state)
+{
+  vp_walk_stack_t *t;
+
+  while ((t = g_trash_stack_pop((GTrashStack **)stack)) != NULL)
+    {
+      vp_walk_stack_t *p = g_trash_stack_peek((GTrashStack **)stack);
+
+      if (p)
+        state->obj_end(t->key, t->prefix, &t->data,
+                       p->prefix, &p->data,
+                       state->user_data);
+      else
+        state->obj_end(t->key, t->prefix, &t->data,
+                       NULL, NULL,
+                       state->user_data);
+
+      g_free(t->key);
+      g_free(t->prefix);
+      g_free(t);
+    }
+}
+
+static vp_walk_stack_t *
+vp_walker_stack_push (vp_walk_stack_t **stack,
+                      gchar *key, gchar *prefix)
+{
+  vp_walk_stack_t *nt = g_new(vp_walk_stack_t, 1);
+
+  nt->key = key;
+  nt->prefix = prefix;
+  nt->prefix_len = strlen(nt->prefix);
+  nt->data = NULL;
+
+  g_trash_stack_push((GTrashStack **)stack, nt);
+  return nt;
+}
+
+static gchar *
+vp_walker_name_split(vp_walk_stack_t **stack, vp_walk_state_t *state,
+                     const gchar *name)
+{
+  gchar **tokens, *key = NULL;
+  guint token_cnt, i, start;
+
+  tokens = g_strsplit(name, ".", 0);
+  token_cnt = g_strv_length(tokens);
+
+  start = g_trash_stack_height((GTrashStack **)stack);
+  for (i = start; i < token_cnt - 1; i++)
+    {
+      gchar *next = tokens[i + 1];
+      vp_walk_stack_t *nt, *p = g_trash_stack_peek((GTrashStack **)stack);
+
+      tokens[i + 1] = NULL;
+      nt = vp_walker_stack_push(stack, g_strdup(tokens[i]),
+                                g_strjoinv(".", tokens));
+      tokens[i + 1] = next;
+
+      if (p)
+        state->obj_start(nt->key, nt->prefix, &nt->data,
+                         p->prefix, &p->data,
+                         state->user_data);
+      else
+        state->obj_start(nt->key, nt->prefix, &nt->data,
+                         NULL, NULL, state->user_data);
+    }
+
+  /* The last token is the key (well, second to last, last being
+     NULL), so treat that normally. */
+  key = g_strdup(tokens[token_cnt - 1]);
+  g_strfreev(tokens);
+
+  return key;
+}
+
+static gboolean
+value_pairs_walker(const gchar *name, const gchar *value,
+                   gpointer user_data)
+{
+  vp_walk_state_t *state = (vp_walk_state_t *)user_data;
+  vp_walk_stack_t *st = g_trash_stack_peek((GTrashStack **)&state->stack);
+  gchar *key;
+  gboolean result;
+
+  st = vp_walker_stack_unwind_until (&st, state, name);
+
+  key = vp_walker_name_split (&st, state, name);
+
+  if (st)
+    result = state->process_value(key, st->prefix, value, &st->data,
+                                  state->user_data);
+  else
+    result = state->process_value(key, NULL, value, NULL,
+                                  state->user_data);
+
+  g_free(key);
+
+  /* And the new stack becomes whatever we have in st now. */
+  state->stack = st;
+
+  return result;
+}
+
+static gint
+vp_walk_cmp(const gchar *s1, const gchar *s2)
+{
+  return strcmp(s2, s1);
+}
+
+void
+value_pairs_walk(ValuePairs *vp,
+                 VPWalkCallbackFunc obj_start_func,
+                 VPWalkValueCallbackFunc process_value_func,
+                 VPWalkCallbackFunc obj_end_func,
+                 LogMessage *msg, gint32 seq_num,
+                 gpointer user_data)
+{
+  vp_walk_state_t state;
+
+  state.user_data = user_data;
+  state.obj_start = obj_start_func;
+  state.obj_end = obj_end_func;
+  state.process_value = process_value_func;
+  state.stack = NULL;
+
+  state.obj_start(NULL, NULL, NULL, NULL, NULL, user_data);
+  value_pairs_foreach_sorted(vp, value_pairs_walker,
+                             (GCompareDataFunc)vp_walk_cmp, msg, seq_num, &state);
+  vp_walker_stack_unwind_all(&state.stack, &state);
+  state.obj_end(NULL, NULL, NULL, NULL, NULL, user_data);
+}
+
 static void
 value_pairs_init_set(ValuePairSpec *set)
 {
