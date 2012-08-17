@@ -52,6 +52,7 @@ extern ValuePairsTransformSet *last_vp_transset;
 %token KW_COLLECTION
 %token KW_SERVERS
 %token KW_SAFE_MODE
+%token KW_PATH
 
 %%
 
@@ -69,14 +70,33 @@ afmongodb_options
 	;
 
 afmongodb_option
-	: KW_SERVERS '(' string_list ')'	{ afmongodb_dd_set_servers(last_driver, $3); }
+	: KW_SERVERS '(' string_list ')'
+          {
+            CHECK_ERROR(afmongodb_dd_check_address(last_driver, FALSE), @3, "Can't mix path() & servers()");
+            afmongodb_dd_set_servers(last_driver, $3);
+          }
+        | KW_HOST '(' string ')'
+          {
+            CHECK_ERROR(afmongodb_dd_check_address(last_driver, FALSE), @3, "Can't mix path() & host()");
+            afmongodb_dd_set_host(last_driver, $3);
+            free($3);
+          }
+        | KW_PORT '(' LL_NUMBER ')'
+          {
+            CHECK_ERROR(afmongodb_dd_check_address(last_driver, FALSE), @3, "Can't mix path() & port()");
+            afmongodb_dd_set_port(last_driver, $3);
+          }
+        | KW_PATH '(' string ')'
+          {
+            CHECK_ERROR(afmongodb_dd_check_address(last_driver, TRUE), @3, "Can't mix path() with host() or server()");
+            afmongodb_dd_set_path(last_driver, $3);
+            free($3);
+          }
 	| KW_DATABASE '(' string ')'		{ afmongodb_dd_set_database(last_driver, $3); free($3); }
 	| KW_COLLECTION '(' string ')'		{ afmongodb_dd_set_collection(last_driver, $3); free($3); }
 	| KW_USERNAME '(' string ')'		{ afmongodb_dd_set_user(last_driver, $3); free($3); }
 	| KW_PASSWORD '(' string ')'		{ afmongodb_dd_set_password(last_driver, $3); free($3); }
 	| KW_SAFE_MODE '(' yesno ')'		{ afmongodb_dd_set_safe_mode(last_driver, $3); }
-        | KW_HOST '(' string ')'                { afmongodb_dd_set_host(last_driver, $3); free($3); }
-        | KW_PORT '(' LL_NUMBER ')'             { afmongodb_dd_set_port(last_driver, $3); }
 	| value_pair_option			{ afmongodb_dd_set_value_pairs(last_driver, $1); }
 	| dest_driver_option
         ;

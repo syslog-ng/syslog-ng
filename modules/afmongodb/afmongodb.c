@@ -50,7 +50,7 @@ typedef struct
   gchar *coll;
 
   GList *servers;
-  gchar *host;
+  gchar *address;
   gint port;
 
   gboolean safe_mode;
@@ -116,8 +116,8 @@ afmongodb_dd_set_host(LogDriver *d, const gchar *host)
 {
   MongoDBDestDriver *self = (MongoDBDestDriver *)d;
 
-  g_free(self->host);
-  self->host = g_strdup(host);
+  g_free(self->address);
+  self->address = g_strdup(host);
 }
 
 void
@@ -135,6 +135,39 @@ afmongodb_dd_set_servers(LogDriver *d, GList *servers)
 
   string_list_free(self->servers);
   self->servers = servers;
+}
+
+void
+afmongodb_dd_set_path(LogDriver *d, const gchar *path)
+{
+  MongoDBDestDriver *self = (MongoDBDestDriver *)d;
+
+  g_free(self->address);
+  self->address = g_strdup(path);
+  self->port = MONGO_CONN_LOCAL;
+}
+
+gboolean
+afmongodb_dd_check_address(LogDriver *d, gboolean local)
+{
+  MongoDBDestDriver *self = (MongoDBDestDriver *)d;
+
+  if (local)
+    {
+      if ((self->port != 0 ||
+           self->port != MONGO_CONN_LOCAL) &&
+          self->address != NULL)
+        return FALSE;
+      if (self->servers)
+        return FALSE;
+    }
+  else
+    {
+      if (self->port == MONGO_CONN_LOCAL &&
+          self->address != NULL)
+        return FALSE;
+    }
+  return TRUE;
 }
 
 void
@@ -182,8 +215,12 @@ afmongodb_dd_format_stats_instance(MongoDBDestDriver *self)
 {
   static gchar persist_name[1024];
 
-  g_snprintf(persist_name, sizeof(persist_name),
-	     "mongodb,%s,%u,%s,%s", self->host, self->port, self->db, self->coll);
+  if (self->port == MONGO_CONN_LOCAL)
+    g_snprintf(persist_name, sizeof(persist_name),
+               "mongodb,%s,%s,%s", self->address, self->db, self->coll);
+  else
+    g_snprintf(persist_name, sizeof(persist_name),
+               "mongodb,%s,%u,%s,%s", self->address, self->port, self->db, self->coll);
   return persist_name;
 }
 
@@ -192,8 +229,12 @@ afmongodb_dd_format_persist_name(MongoDBDestDriver *self)
 {
   static gchar persist_name[1024];
 
-  g_snprintf(persist_name, sizeof(persist_name),
-	     "afmongodb(%s,%u,%s,%s)", self->host, self->port, self->db, self->coll);
+  if (self->port == MONGO_CONN_LOCAL)
+    g_snprintf(persist_name, sizeof(persist_name),
+               "afmongodb(%s,%s,%s)", self->address, self->db, self->coll);
+  else
+    g_snprintf(persist_name, sizeof(persist_name),
+               "afmongodb(%s,%u,%s,%s)", self->address, self->port, self->db, self->coll);
   return persist_name;
 }
 
@@ -221,7 +262,7 @@ afmongodb_dd_connect(MongoDBDestDriver *self, gboolean reconnect)
   if (reconnect && self->conn)
     return TRUE;
 
-  self->conn = mongo_sync_connect(self->host, self->port, FALSE);
+  self->conn = mongo_sync_connect(self->address, self->port, FALSE);
   if (!self->conn)
     {
       msg_error ("Error connecting to MongoDB", NULL);
@@ -467,31 +508,45 @@ afmongodb_dd_init(LogPipe *s)
       value_pairs_add_scope(self->vp, "nv-pairs");
     }
 
-  if (self->host)
+  if (self->port != MONGO_CONN_LOCAL)
     {
-      gchar *srv = g_strdup_printf ("%s:%d", self->host,
-                                    (self->port) ? self->port : 27017);
-      self->servers = g_list_prepend (self->servers, srv);
-      g_free (self->host);
+      if (self->address)
+        {
+          gchar *srv = g_strdup_printf ("%s:%d", self->address,
+                                        (self->port) ? self->port : 27017);
+          self->servers = g_list_prepend (self->servers, srv);
+          g_free (self->address);
+        }
+
+      if (!self->servers)
+        afmongodb_dd_set_servers((LogDriver *)self, g_list_append (NULL, g_strdup ("127.0.0.1:27017")));
+
+      self->address = NULL;
+      self->port = 27017;
+      if (!mongo_util_parse_addr(g_list_nth_data(self->servers, 0),
+                                 &self->address,
+                                 &self->port))
+        {
+          msg_error("Cannot parse the primary host",
+                    evt_tag_str("primary", g_list_nth_data(self->servers, 0)),
+                    NULL);
+          return FALSE;
+        }
     }
 
-  self->host = NULL;
-  self->port = 27017;
-  if (!mongo_util_parse_addr(g_list_nth_data(self->servers, 0), &self->host,
-			     &self->port))
-    {
-      msg_error("Cannot parse the primary host",
-		evt_tag_str("primary", g_list_nth_data(self->servers, 0)),
-		NULL);
-      return FALSE;
-    }
-
-  msg_verbose("Initializing MongoDB destination",
-	      evt_tag_str("host", self->host),
-	      evt_tag_int("port", self->port),
-	      evt_tag_str("database", self->db),
-	      evt_tag_str("collection", self->coll),
-	      NULL);
+  if (self->port == MONGO_CONN_LOCAL)
+    msg_verbose("Initializing MongoDB destination",
+                evt_tag_str("address", self->address),
+                evt_tag_str("database", self->db),
+                evt_tag_str("collection", self->coll),
+                NULL);
+  else
+    msg_verbose("Initializing MongoDB destination",
+                evt_tag_str("address", self->address),
+                evt_tag_int("port", self->port),
+                evt_tag_str("database", self->db),
+                evt_tag_str("collection", self->coll),
+                NULL);
 
   self->queue = log_dest_driver_acquire_queue(&self->super, afmongodb_dd_format_persist_name(self));
 
@@ -548,7 +603,7 @@ afmongodb_dd_free(LogPipe *d)
   g_free(self->coll);
   g_free(self->user);
   g_free(self->password);
-  g_free(self->host);
+  g_free(self->address);
   string_list_free(self->servers);
   if (self->vp)
     value_pairs_free(self->vp);
@@ -609,7 +664,6 @@ afmongodb_dd_new(void)
   self->super.super.super.queue = afmongodb_dd_queue;
   self->super.super.super.free_fn = afmongodb_dd_free;
 
-  afmongodb_dd_set_servers((LogDriver *)self, g_list_append (NULL, g_strdup ("127.0.0.1:27017")));
   afmongodb_dd_set_database((LogDriver *)self, "syslog");
   afmongodb_dd_set_collection((LogDriver *)self, "messages");
   afmongodb_dd_set_safe_mode((LogDriver *)self, FALSE);

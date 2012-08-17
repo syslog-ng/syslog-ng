@@ -28,7 +28,7 @@ IVYKIS_MIN_VERSION="0.30.1"
 JSON_C_MIN_VERSION="0.9"
 JSON_GLIB_MIN_VERSION="0.12"
 PCRE_MIN_VERSION="6.1"
-LMC_MIN_VERSION="0.1.0"
+LMC_MIN_VERSION="0.1.6"
 
 dnl ***************************************************************************
 dnl Initial setup

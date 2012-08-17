@@ -38,5 +38,8 @@ void afmongodb_dd_set_user(LogDriver *d, const gchar *user);
 void afmongodb_dd_set_password(LogDriver *d, const gchar *password);
 void afmongodb_dd_set_value_pairs(LogDriver *d, ValuePairs *vp);
 void afmongodb_dd_set_safe_mode(LogDriver *d, gboolean state);
+void afmongodb_dd_set_path(LogDriver *d, const gchar *path);
+
+gboolean afmongodb_dd_check_address(LogDriver *d, gboolean local);
 
 #endif
