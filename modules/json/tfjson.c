@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2002-2011 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2011-2012 BalaBit IT Ltd, Budapest, Hungary
  * Copyright (c) 2011 Balint Kovacs <blint@balabit.hu>
- * Copyright (c) 2011 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2011-2012 Gergely Nagy <algernon@balabit.hu>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -79,10 +79,51 @@ tf_json_object_to_string (struct json_object *jso,
 }
 
 static gboolean
-tf_json_foreach (const gchar *name, const gchar *value, gpointer user_data)
+tf_json_obj_start(const gchar *name,
+                  const gchar *prefix, gpointer *prefix_data,
+                  const gchar *prev, gpointer *prev_data,
+                  gpointer user_data)
 {
-  struct json_object *root = (struct json_object *)user_data;
+  struct json_object *o;
+
+  if (prefix_data)
+    {
+      o = json_object_new_object();
+      *prefix_data = o;
+      o->_to_json_string = tf_json_object_to_string;
+    }
+  return FALSE;
+}
+
+static gboolean
+tf_json_obj_end(const gchar *name,
+                const gchar *prefix, gpointer *prefix_data,
+                const gchar *prev, gpointer *prev_data,
+                gpointer user_data)
+{
+  struct json_object *root;
+
+  if (prev_data)
+    root = (struct json_object *)*prev_data;
+  else
+    root = (struct json_object *)user_data;
+
+  if (prefix_data)
+    json_object_object_add (root, (gchar *) name, (struct json_object *)*prefix_data);
+  return FALSE;
+}
+
+static gboolean
+tf_json_value(const gchar *name, const gchar *prefix, const gchar *value,
+              gpointer *prefix_data, gpointer user_data)
+{
+  struct json_object *root;
   struct json_object *this;
+
+  if (prefix_data)
+    root = (struct json_object *)*prefix_data;
+  else
+    root = (struct json_object *)user_data;
 
   this = json_object_new_string ((gchar *) value);
   json_object_object_add (root, (gchar *) name, this);
@@ -98,7 +139,9 @@ tf_json_append(GString *result, ValuePairs *vp, LogMessage *msg)
   json = json_object_new_object();
   json->_to_json_string = tf_json_object_to_string;
 
-  value_pairs_foreach(vp, tf_json_foreach, msg, 0, json);
+  value_pairs_walk(vp,
+                   tf_json_obj_start, tf_json_value, tf_json_obj_end,
+                   msg, 0, json);
 
   g_string_append(result, json_object_to_json_string (json));
   json_object_put(json);
