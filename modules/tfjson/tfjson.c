@@ -25,17 +25,9 @@
 #include "cfg.h"
 #include "value-pairs.h"
 
-#include "config.h"
-
-#ifdef HAVE_JSON_C
 #include <printbuf.h>
 #include <json.h>
 #include <json_object_private.h>
-#endif
-
-#ifdef HAVE_JSON_GLIB
-#include <json-glib/json-glib.h>
-#endif
 
 typedef struct _TFJsonState
 {
@@ -57,7 +49,6 @@ tf_json_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent,
   return TRUE;
 }
 
-#if HAVE_JSON_C
 static int
 tf_json_object_to_string (struct json_object *jso,
 			  struct printbuf *pb)
@@ -112,45 +103,6 @@ tf_json_append(GString *result, ValuePairs *vp, LogMessage *msg)
   g_string_append(result, json_object_to_json_string (json));
   json_object_put(json);
 }
-#endif
-
-#if HAVE_JSON_GLIB
-static gboolean
-tf_json_foreach (const gchar *name, const gchar *value, gpointer user_data)
-{
-  JsonBuilder *builder = (JsonBuilder *)user_data;
-
-  json_builder_set_member_name(builder, name);
-  json_builder_add_string_value(builder, value);
-
-  return FALSE;
-}
-
-static void
-tf_json_append(GString *result, ValuePairs *vp, LogMessage *msg)
-{
-  JsonBuilder *builder;
-  JsonGenerator *gen;
-  gchar *str;
-
-  builder = json_builder_new();
-  json_builder_begin_object(builder);
-
-  value_pairs_foreach(vp, tf_json_foreach, msg, 0, builder);
-
-  json_builder_end_object(builder);
-
-  gen = json_generator_new();
-  json_generator_set_root(gen, json_builder_get_root(builder));
-  str = json_generator_to_data(gen, NULL);
-
-  g_object_unref(gen);
-  g_object_unref(builder);
-
-  g_string_append(result, str);
-  g_free(str);
-}
-#endif
 
 static void
 tf_json_call(LogTemplateFunction *self, gpointer s,
@@ -184,10 +136,6 @@ static Plugin builtin_tmpl_func_plugins[] =
 gboolean
 tfjson_module_init(GlobalConfig *cfg, CfgArgs *args)
 {
-#ifdef HAVE_JSON_GLIB
-  g_type_init ();
-#endif
-
   plugin_register(cfg, builtin_tmpl_func_plugins, G_N_ELEMENTS(builtin_tmpl_func_plugins));
   return TRUE;
 }
