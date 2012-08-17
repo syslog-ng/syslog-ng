@@ -15,7 +15,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 {
   app_startup();
   init_template_tests();
-  plugin_load_module("tfjson", configuration, NULL);
+  plugin_load_module("json-plugin", configuration, NULL);
 
   test_format_json();
 

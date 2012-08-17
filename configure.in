@@ -892,9 +892,7 @@ fi
 if test "x$enable_json" != "xno"; then
         JSON_LIBS=$JSON_C_LIBS
         JSON_CFLAGS=$JSON_C_CFLAGS
-
-        enable_json_parse="yes"
-        enable_json_format="yes"
+        enable_json="yes"
 fi
 
 if test "x$enable_systemd" = "xauto"; then
@@ -1070,8 +1068,7 @@ AM_CONDITIONAL(ENABLE_SUN_STREAMS, [test "$enable_sun_streams" = "yes"])
 AM_CONDITIONAL(ENABLE_PACCT, [test "$enable_pacct" = "yes"])
 AM_CONDITIONAL(ENABLE_MONGODB, [test "$enable_mongodb" = "yes"])
 AM_CONDITIONAL(ENABLE_SMTP, [test "$enable_smtp" = "yes"])
-AM_CONDITIONAL(ENABLE_JSON_FORMAT, [test "$enable_json_format" = "yes"])
-AM_CONDITIONAL(ENABLE_JSON_PARSE, [test "$enable_json_parse" = "yes"])
+AM_CONDITIONAL(ENABLE_JSON, [test "$enable_json" = "yes"])
 AM_CONDITIONAL(WITH_LIBSYSTEMD, [test "$with_libsystemd" = "yes"])
 
 # substitution into manual pages
@@ -1147,9 +1144,8 @@ AC_OUTPUT(dist.conf
           modules/basicfuncs/tests/Makefile
           modules/cryptofuncs/Makefile
           modules/cryptofuncs/tests/Makefile
-	  modules/tfjson/Makefile
-	  modules/tfjson/tests/Makefile
-	  modules/jsonparser/Makefile
+	  modules/json/Makefile
+	  modules/json/tests/Makefile
 	  scripts/Makefile
 	  scripts/update-patterndb
 	  doc/Makefile
@@ -1193,6 +1189,6 @@ echo "  SSL support (module)        : ${enable_ssl:=no}"
 echo "  SQL support (module)        : ${enable_sql:=no}"
 echo "  PACCT module (EXPERIMENTAL) : ${enable_pacct:=no}"
 echo "  MongoDB destination (module): ${enable_mongodb:=no}"
-echo "  JSON support (module)       : parser=${enable_json_parse:=no}, formatter=${enable_json_format:=no}"
+echo "  JSON support (module)       : ${enable_json:=no}"
 echo "  SMTP support (module)       : ${enable_smtp:=no}"
 

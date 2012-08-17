@@ -128,24 +128,31 @@ tf_json_free_state(gpointer s)
 TEMPLATE_FUNCTION(TFJsonState, tf_json, tf_json_prepare, NULL, tf_json_call,
 		  tf_json_free_state, NULL);
 
-static Plugin builtin_tmpl_func_plugins[] =
+extern CfgParser jsonparser_parser;
+
+static Plugin json_plugins[] =
   {
+    {
+      .type = LL_CONTEXT_PARSER,
+      .name = "json-parser",
+      .parser = &jsonparser_parser,
+    },
     TEMPLATE_FUNCTION_PLUGIN(tf_json, "format_json"),
   };
 
 gboolean
-tfjson_module_init(GlobalConfig *cfg, CfgArgs *args)
+json_module_init(GlobalConfig *cfg, CfgArgs *args)
 {
-  plugin_register(cfg, builtin_tmpl_func_plugins, G_N_ELEMENTS(builtin_tmpl_func_plugins));
+  plugin_register(cfg, json_plugins, G_N_ELEMENTS(json_plugins));
   return TRUE;
 }
 
 const ModuleInfo module_info =
 {
-  .canonical_name = "tfjson",
+  .canonical_name = "json",
   .version = VERSION,
-  .description = "The tfjson module provides a JSON formatting template function for syslog-ng.",
+  .description = "The json module provides JSON parsing & formatting support for syslog-ng.",
   .core_revision = SOURCE_REVISION,
-  .plugins = builtin_tmpl_func_plugins,
-  .plugins_len = G_N_ELEMENTS(builtin_tmpl_func_plugins),
+  .plugins = json_plugins,
+  .plugins_len = G_N_ELEMENTS(json_plugins),
 };

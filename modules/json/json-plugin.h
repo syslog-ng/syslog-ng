@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2011 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 2011 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2011-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2011-2012 Gergely Nagy <algernon@balabit.hu>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -20,34 +20,17 @@
  * COPYING for details.
  */
 
-#include "cfg-parser.h"
-#include "plugin.h"
-#include "jsonparser.h"
+#ifndef JSON_PLUGIN_H_INCLUDED
+#define JSON_PLUGIN_H_INCLUDED
 
-extern CfgParser jsonparser_parser;
+#include "logparser.h"
 
-static Plugin jsonparser_plugins[] =
-{
-  {
-    .type = LL_CONTEXT_PARSER,
-    .name = "json-parser",
-    .parser = &jsonparser_parser,
-  },
-};
+typedef struct _LogJSONParser LogJSONParser;
 
-gboolean
-jsonparser_module_init(GlobalConfig *cfg, CfgArgs *args)
-{
-  plugin_register(cfg, jsonparser_plugins, G_N_ELEMENTS(jsonparser_plugins));
-  return TRUE;
-}
+void log_json_parser_set_prefix(LogParser *p, const gchar *prefix);
+void log_json_parser_set_marker(LogParser *p, const gchar *marker);
+LogJSONParser *log_json_parser_new(void);
 
-const ModuleInfo module_info =
-{
-  .canonical_name = "jsonparser",
-  .version = VERSION,
-  .description = "The jsonparser module provides JSON parsing support for syslog-ng.",
-  .core_revision = SOURCE_REVISION,
-  .plugins = jsonparser_plugins,
-  .plugins_len = G_N_ELEMENTS(jsonparser_plugins),
-};
+gboolean tfjson_module_init(GlobalConfig *cfg);
+
+#endif

@@ -20,15 +20,31 @@
  * COPYING for details.
  */
 
-#ifndef JSONPARSER_H_INCLUDED
-#define JSONPARSER_H_INCLUDED
+#include "json-plugin.h"
+#include "cfg-parser.h"
+#include "jsonparser-grammar.h"
 
-#include "logparser.h"
+extern int jsonparser_debug;
 
-typedef struct _LogJSONParser LogJSONParser;
+int jsonparser_parse(CfgLexer *lexer, LogParser **instance, gpointer arg);
 
-void log_json_parser_set_prefix(LogParser *p, const gchar *prefix);
-void log_json_parser_set_marker(LogParser *p, const gchar *marker);
-LogJSONParser *log_json_parser_new(void);
+static CfgLexerKeyword jsonparser_keywords[] =
+{
+  { "json_parser",          KW_JSON_PARSER,  },
+  { "prefix",               KW_PREFIX,  },
+  { "marker",               KW_MARKER,  },
+  { NULL }
+};
 
+CfgParser jsonparser_parser =
+{
+#if ENABLE_DEBUG
+  .debug_flag = &jsonparser_debug,
 #endif
+  .name = "jsonparser",
+  .keywords = jsonparser_keywords,
+  .parse = (gint (*)(CfgLexer *, gpointer *, gpointer)) jsonparser_parse,
+  .cleanup = (void (*)(gpointer)) log_pipe_unref,
+};
+
+CFG_PARSER_IMPLEMENT_LEXER_BINDING(jsonparser_, LogParser **)

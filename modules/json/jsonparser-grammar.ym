@@ -28,7 +28,7 @@
 
 %code {
 
-#include "jsonparser.h"
+#include "json-plugin.h"
 #include "cfg-parser.h"
 #include "jsonparser-grammar.h"
 #include "syslog-names.h"
