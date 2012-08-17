@@ -6,10 +6,10 @@ export top_srcdir
 if ENABLE_SMTP
 module_LTLIBRARIES = libafsmtp.la
 
-libafsmtp_la_CFLAGS = $(LIBESMTP_CFLAGS) $(IVYKIS_CFLAGS) $(EVENTLOG_CFLAGS) $(SYSLOG_NG_CFLAGS)
+libafsmtp_la_CFLAGS = $(LIBESMTP_CFLAGS)
 libafsmtp_la_SOURCES = afsmtp-grammar.y afsmtp.c afsmtp.h afsmtp-parser.c afsmtp-parser.h
-libafsmtp_la_LIBADD = $(LIBESMTP_LIBS) $(IVYKIS_LIBS) $(EVENTLOG_LIBS) $(SYSLOG_NG_LIBS)
-libafsmtp_la_LDFLAGS = -avoid-version
+libafsmtp_la_LIBADD = $(LIBESMTP_LIBS) $(MODULE_DEPS_LIBS)
+libafsmtp_la_LDFLAGS = $(MODULE_LDFLAGS)
 
 endif
 
