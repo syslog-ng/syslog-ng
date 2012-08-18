@@ -800,6 +800,15 @@ afinet_dd_new(gint af, gchar *host, gint port, guint flags)
   self->super.super.super.super.free_fn = afinet_dd_free;
   self->super.setup_socket = afinet_dd_setup_socket;
   self->super.apply_transport = afinet_dd_apply_transport;
+  if (self->super.flags & AFSOCKET_STREAM)
+    {
+      self->sock_options.super.so_keepalive = TRUE;
+#if defined(TCP_KEEPTIME) && defined(TCP_KEEPIDLE) && defined(TCP_KEEPCNT)
+      self->sock_options.tcp_keepalive_time = 60;
+      self->sock_options.tcp_keepalive_intvl = 10;
+      self->sock_options.tcp_keepalive_probes = 6;
+#endif
+    }
 
 #if ENABLE_SPOOF_SOURCE
   g_static_mutex_init(&self->lnet_lock);
