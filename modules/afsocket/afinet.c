@@ -116,18 +116,18 @@ afinet_setup_socket(gint fd, GSockAddr *addr, InetSocketOptions *sock_options, A
               }
             if (dir & AFSOCKET_DIR_SEND)
               {
-                if (sock_options->ttl)
-                  setsockopt(fd, SOL_IP, IP_MULTICAST_TTL, &sock_options->ttl, sizeof(sock_options->ttl));
+                if (sock_options->ip_ttl)
+                  setsockopt(fd, SOL_IP, IP_MULTICAST_TTL, &sock_options->ip_ttl, sizeof(sock_options->ip_ttl));
               }
 
           }
         else
           {
-            if (sock_options->ttl && (dir & AFSOCKET_DIR_SEND))
-              setsockopt(fd, SOL_IP, IP_TTL, &sock_options->ttl, sizeof(sock_options->ttl));
+            if (sock_options->ip_ttl && (dir & AFSOCKET_DIR_SEND))
+              setsockopt(fd, SOL_IP, IP_TTL, &sock_options->ip_ttl, sizeof(sock_options->ip_ttl));
           }
-        if (sock_options->tos && (dir & AFSOCKET_DIR_SEND))
-          setsockopt(fd, SOL_IP, IP_TOS, &sock_options->tos, sizeof(sock_options->tos));
+        if (sock_options->ip_tos && (dir & AFSOCKET_DIR_SEND))
+          setsockopt(fd, SOL_IP, IP_TOS, &sock_options->ip_tos, sizeof(sock_options->ip_tos));
 
         break;
       }
@@ -148,14 +148,14 @@ afinet_setup_socket(gint fd, GSockAddr *addr, InetSocketOptions *sock_options, A
               }
             if (dir & AFSOCKET_DIR_SEND)
               {
-                if (sock_options->ttl)
-                  setsockopt(fd, SOL_IPV6, IPV6_MULTICAST_HOPS, &sock_options->ttl, sizeof(sock_options->ttl));
+                if (sock_options->ip_ttl)
+                  setsockopt(fd, SOL_IPV6, IPV6_MULTICAST_HOPS, &sock_options->ip_ttl, sizeof(sock_options->ip_ttl));
               }
           }
         else
           {
-            if (sock_options->ttl && (dir & AFSOCKET_DIR_SEND))
-              setsockopt(fd, SOL_IPV6, IPV6_UNICAST_HOPS, &sock_options->ttl, sizeof(sock_options->ttl));
+            if (sock_options->ip_ttl && (dir & AFSOCKET_DIR_SEND))
+              setsockopt(fd, SOL_IPV6, IPV6_UNICAST_HOPS, &sock_options->ip_ttl, sizeof(sock_options->ip_ttl));
           }
         break;
       }

@@ -54,10 +54,10 @@ typedef struct _AFSocketDestDriver AFSocketDestDriver;
 
 typedef struct _SocketOptions
 {
-  gint sndbuf;
-  gint rcvbuf;
-  gint broadcast;
-  gint keepalive;
+  gint so_sndbuf;
+  gint so_rcvbuf;
+  gint so_broadcast;
+  gint so_keepalive;
 } SocketOptions;
 
 gboolean afsocket_setup_socket(gint fd, SocketOptions *sock_options, AFSocketDirection dir);

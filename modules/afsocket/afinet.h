@@ -44,8 +44,8 @@
 typedef struct _InetSocketOptions
 {
   SocketOptions super;
-  gint ttl;
-  gint tos;
+  gint ip_ttl;
+  gint ip_tos;
 } InetSocketOptions;
 
 typedef struct _AFInetSourceDriver

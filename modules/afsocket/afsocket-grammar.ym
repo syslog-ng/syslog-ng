@@ -510,16 +510,16 @@ tls_option
 
 
 socket_option
-	: KW_SO_SNDBUF '(' LL_NUMBER ')'           { last_sock_options->sndbuf = $3; }
-	| KW_SO_RCVBUF '(' LL_NUMBER ')'           { last_sock_options->rcvbuf = $3; }
-	| KW_SO_BROADCAST '(' yesno ')'         { last_sock_options->broadcast = $3; }
-	| KW_SO_KEEPALIVE '(' yesno ')'         { last_sock_options->keepalive = $3; }
+	: KW_SO_SNDBUF '(' LL_NUMBER ')'            { last_sock_options->so_sndbuf = $3; }
+	| KW_SO_RCVBUF '(' LL_NUMBER ')'            { last_sock_options->so_rcvbuf = $3; }
+	| KW_SO_BROADCAST '(' yesno ')'             { last_sock_options->so_broadcast = $3; }
+	| KW_SO_KEEPALIVE '(' yesno ')'             { last_sock_options->so_keepalive = $3; }
 	;
 
 inet_socket_option
 	: socket_option
-	| KW_IP_TTL '(' LL_NUMBER ')'              { ((InetSocketOptions *) last_sock_options)->ttl = $3; }
-	| KW_IP_TOS '(' LL_NUMBER ')'              { ((InetSocketOptions *) last_sock_options)->tos = $3; }
+	| KW_IP_TTL '(' LL_NUMBER ')'               { ((InetSocketOptions *) last_sock_options)->ip_ttl = $3; }
+	| KW_IP_TOS '(' LL_NUMBER ')'               { ((InetSocketOptions *) last_sock_options)->ip_tos = $3; }
 	;
 
 /* INCLUDE_RULES */

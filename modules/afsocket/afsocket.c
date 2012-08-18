@@ -66,19 +66,51 @@ static void afsocket_sd_close_connection(AFSocketSourceDriver *self, AFSocketSou
 gboolean
 afsocket_setup_socket(gint fd, SocketOptions *sock_options, AFSocketDirection dir)
 {
+  gint rc;
   if (dir & AFSOCKET_DIR_RECV)
     {
-      if (sock_options->rcvbuf)
-        setsockopt(fd, SOL_SOCKET, SO_RCVBUF, &sock_options->rcvbuf, sizeof(sock_options->rcvbuf));
+      if (sock_options->so_rcvbuf)
+        {
+          gint so_rcvbuf_set = 0;
+          socklen_t sz = sizeof(so_rcvbuf_set);
+
+          rc = setsockopt(fd, SOL_SOCKET, SO_RCVBUF, &sock_options->so_rcvbuf, sizeof(sock_options->so_rcvbuf));
+          if (rc < 0 ||
+              getsockopt(fd, SOL_SOCKET, SO_RCVBUF, &so_rcvbuf_set, &sz) < 0 ||
+              sz != sizeof(so_rcvbuf_set) ||
+              so_rcvbuf_set < sock_options->so_rcvbuf)
+            {
+              msg_warning("The kernel refused to set the receive buffer (SO_RCVBUF) to the requested size, you probably need to adjust buffer related kernel parameters",
+                          evt_tag_int("so_rcvbuf", sock_options->so_rcvbuf),
+                          evt_tag_int("so_rcvbuf_set", so_rcvbuf_set),
+                          NULL);
+            }
+        }
     }
   if (dir & AFSOCKET_DIR_SEND)
     {
-      if (sock_options->sndbuf)
-        setsockopt(fd, SOL_SOCKET, SO_SNDBUF, &sock_options->sndbuf, sizeof(sock_options->sndbuf));
-      if (sock_options->broadcast)
-        setsockopt(fd, SOL_SOCKET, SO_BROADCAST, &sock_options->broadcast, sizeof(sock_options->broadcast));
+      if (sock_options->so_sndbuf)
+        {
+          gint so_sndbuf_set = 0;
+          socklen_t sz = sizeof(so_sndbuf_set);
+
+          rc = setsockopt(fd, SOL_SOCKET, SO_SNDBUF, &sock_options->so_sndbuf, sizeof(sock_options->so_sndbuf));
+
+          if (rc < 0 ||
+              getsockopt(fd, SOL_SOCKET, SO_SNDBUF, &so_sndbuf_set, &sz) < 0 ||
+              sz != sizeof(so_sndbuf_set) ||
+              so_sndbuf_set < sock_options->so_sndbuf)
+            {
+              msg_warning("The kernel refused to set the send buffer (SO_SNDBUF) to the requested size, you probably need to adjust buffer related kernel parameters",
+                          evt_tag_int("so_sndbuf", sock_options->so_sndbuf),
+                          evt_tag_int("so_sndbuf_set", so_sndbuf_set),
+                          NULL);
+            }
+        }
+      if (sock_options->so_broadcast)
+        setsockopt(fd, SOL_SOCKET, SO_BROADCAST, &sock_options->so_broadcast, sizeof(sock_options->so_broadcast));
     }
-  setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &sock_options->keepalive, sizeof(sock_options->keepalive));
+  setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &sock_options->so_keepalive, sizeof(sock_options->so_keepalive));
   return TRUE;
 }
 
