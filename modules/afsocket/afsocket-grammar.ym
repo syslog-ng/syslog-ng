@@ -83,6 +83,9 @@ TLSContext *last_tls_context;
 %token KW_SO_SNDBUF
 %token KW_SO_RCVBUF
 %token KW_SO_KEEPALIVE
+%token KW_TCP_KEEPALIVE_TIME
+%token KW_TCP_KEEPALIVE_PROBES
+%token KW_TCP_KEEPALIVE_INTVL
 %token KW_SPOOF_SOURCE
 
 %token KW_KEEP_ALIVE
@@ -520,6 +523,9 @@ inet_socket_option
 	: socket_option
 	| KW_IP_TTL '(' LL_NUMBER ')'               { ((InetSocketOptions *) last_sock_options)->ip_ttl = $3; }
 	| KW_IP_TOS '(' LL_NUMBER ')'               { ((InetSocketOptions *) last_sock_options)->ip_tos = $3; }
+	| KW_TCP_KEEPALIVE_TIME '(' LL_NUMBER ')'   { ((InetSocketOptions *) last_sock_options)->tcp_keepalive_time = $3; }
+	| KW_TCP_KEEPALIVE_INTVL '(' LL_NUMBER ')'  { ((InetSocketOptions *) last_sock_options)->tcp_keepalive_intvl = $3; }
+	| KW_TCP_KEEPALIVE_PROBES '(' LL_NUMBER ')' { ((InetSocketOptions *) last_sock_options)->tcp_keepalive_probes = $3; }
 	;
 
 /* INCLUDE_RULES */

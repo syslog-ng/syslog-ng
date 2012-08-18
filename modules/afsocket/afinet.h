@@ -46,6 +46,9 @@ typedef struct _InetSocketOptions
   SocketOptions super;
   gint ip_ttl;
   gint ip_tos;
+  gint tcp_keepalive_time;
+  gint tcp_keepalive_intvl;
+  gint tcp_keepalive_probes;
 } InetSocketOptions;
 
 typedef struct _AFInetSourceDriver

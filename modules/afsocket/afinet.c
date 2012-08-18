@@ -98,6 +98,34 @@ afinet_setup_socket(gint fd, GSockAddr *addr, InetSocketOptions *sock_options, A
   if (!afsocket_setup_socket(fd, &sock_options->super, dir))
     return FALSE;
 
+  if (sock_options->tcp_keepalive_time > 0)
+    {
+#ifdef TCP_KEEPIDLE
+      setsockopt(fd, SOL_TCP, TCP_KEEPIDLE, &sock_options->tcp_keepalive_time, sizeof(sock_options->tcp_keepalive_time));
+#else
+      msg_error("tcp-keepalive-time() is set but no TCP_KEEPIDLE setsockopt on this platform", NULL);
+      return FALSE;
+#endif
+    }
+  if (sock_options->tcp_keepalive_probes > 0)
+    {
+#ifdef TCP_KEEPCNT
+      setsockopt(fd, SOL_TCP, TCP_KEEPCNT, &sock_options->tcp_keepalive_probes, sizeof(sock_options->tcp_keepalive_probes));
+#else
+      msg_error("tcp-keepalive-probes() is set but no TCP_KEEPCNT setsockopt on this platform", NULL);
+      return FALSE;
+#endif
+    }
+  if (sock_options->tcp_keepalive_intvl > 0)
+    {
+#ifdef TCP_KEEPINTVL
+      setsockopt(fd, SOL_TCP, TCP_KEEPINTVL, &sock_options->tcp_keepalive_intvl, sizeof(sock_options->tcp_keepalive_intvl));
+#else
+      msg_error("tcp-keepalive-intvl() is set but no TCP_KEEPINTVL setsockopt on this platform", NULL);
+      return FALSE;
+#endif
+    }
+
   switch (addr->sa.sa_family)
     {
     case AF_INET:

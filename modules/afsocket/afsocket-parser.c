@@ -63,7 +63,11 @@ static CfgLexerKeyword afsocket_keywords[] = {
   { "so_rcvbuf",          KW_SO_RCVBUF },
   { "so_sndbuf",          KW_SO_SNDBUF },
   { "so_keepalive",       KW_SO_KEEPALIVE },
-  { "tcp_keep_alive",     KW_SO_KEEPALIVE, 0, KWS_OBSOLETE, "so_keepalive" },
+  { "tcp_keep_alive",     KW_SO_KEEPALIVE }, /* old, once deprecated form, but revived in 3.4 */
+  { "tcp_keepalive",      KW_SO_KEEPALIVE, 0x0304 }, /* alias for so-keepalive, as tcp is the only option actually using it */
+  { "tcp_keepalive_time", KW_TCP_KEEPALIVE_TIME, 0x0304 },
+  { "tcp_keepalive_probes", KW_TCP_KEEPALIVE_PROBES, 0x0304 },
+  { "tcp_keepalive_intvl", KW_TCP_KEEPALIVE_INTVL, 0x0304 },
   { "spoof_source",       KW_SPOOF_SOURCE },
   { "transport",          KW_TRANSPORT },
   { "max_connections",    KW_MAX_CONNECTIONS },
