@@ -132,9 +132,12 @@ IntelStackWalk (PCONTEXT context, FILE *outfile)
     {
       moduleName[0] = '\0';
       DWORD section = 0, offset = 0;
-      if (IsBadReadPtr(eip, sizeof(eip)) || !GetLogicalAddress((VOID*) eip, moduleName, MAX_FILE_NAME_LENGTH, &section, &offset))
+      if (!IsBadReadPtr(eip, sizeof(eip)))
         {
-          break;
+          if (!GetLogicalAddress((VOID*) eip, moduleName, MAX_FILE_NAME_LENGTH, &section, &offset))
+            {
+              break;
+            }
         }
       fprintf(outfile, "%p  %p  %04lx:%08lx %s\n", eip, framePointer, section, offset, moduleName);
       eip = ((void **)framePointer)[1];
