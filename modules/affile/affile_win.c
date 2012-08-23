@@ -107,6 +107,9 @@ affile_sd_recover_state(LogPipe *s, GlobalConfig *cfg, LogProto *proto)
   if ((self->flags & AFFILE_PIPE) || self->reader_options.follow_freq <= 0)
     return;
 
+  if (self->reader_options.text_encoding)
+    log_proto_set_encoding(proto, self->reader_options.text_encoding);
+
   if (!log_proto_restart_with_state(proto, cfg->state, affile_sd_format_persist_name(self)))
     {
       msg_error("Error converting persistent state from on-disk format, losing file position information",
