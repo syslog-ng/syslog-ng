@@ -45,11 +45,11 @@ install_service(char * szName, char * szDisplayName, char * szDescription,
 
   if (szServiceArg)
     {
-      szPath = g_strdup_printf("%s %s",m_name,szServiceArg);
+      szPath = g_strdup_printf("\"%s\" %s",m_name,szServiceArg);
     }
   else
     {
-      szPath = g_strdup(m_name);
+      szPath = g_strdup_printf("\"%s\"",m_name);
     }
 
   hService = CreateService(hSCManager, szName, szDisplayName, SERVICE_ALL_ACCESS,
