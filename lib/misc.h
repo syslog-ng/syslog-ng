@@ -31,6 +31,7 @@
 #include <sys/types.h>
 
 #ifdef G_OS_WIN32
+#include <windows.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #else
@@ -107,5 +108,11 @@ void string_list_free(GList *l);
 gchar *utf8_escape_string(const gchar *str, gssize len);
 
 gchar *normalize_option_name(gchar *name);
+
+/*only windows function. sry for the ifdef*/
+#ifdef _WIN32
+gchar *wide_to_utf8(LPCWSTR str);
+LPWSTR utf8_to_wide(const gchar *str);
+#endif
 
 #endif
