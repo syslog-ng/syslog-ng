@@ -539,7 +539,6 @@ affile_sd_regex_free(pcre *regex)
   if (regex)
     {
       pcre_free(regex);
-      g_free(regex);
     }
 }
 
