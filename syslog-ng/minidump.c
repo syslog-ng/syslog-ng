@@ -119,10 +119,10 @@ IntelStackWalk (PCONTEXT context, FILE *outfile)
   void *eip = NULL;
   void *prevFrame = NULL;
   char *moduleName = malloc(MAX_FILE_NAME_LENGTH);
-#ifdef _M_IX86
+#ifdef _X86_
   eip = (void *)context->Eip;
   framePointer = (void *)context->Ebp;
-#elif defined(_M_X64)
+#elif defined(_x86_64_)
   eip = (void *)context->Rip;
   framePointer = (void *)context->Rbp;
 #endif
@@ -142,7 +142,7 @@ IntelStackWalk (PCONTEXT context, FILE *outfile)
       fprintf(outfile, "%p  %p  %04lx:%08lx %s\n", eip, framePointer, section, offset, moduleName);
       eip = ((void **)framePointer)[1];
       prevFrame = framePointer;
-      /* precede to next higher frame on stack */
+      // precede to next higher frame on stack
       framePointer = ((void **) framePointer)[0];
       if (framePointer == NULL)
         {
