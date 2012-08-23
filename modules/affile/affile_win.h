@@ -39,7 +39,6 @@
 typedef struct _AFFileSourceDriver
 {
   LogSrcDriver super;
-  GString *filename;
   GString *filename_pattern;
   /* FIXME: the code assumes that reader is a LogReader at a lot of places, so this should be changed to LogReader */
   LogPipe *reader;
@@ -50,6 +49,7 @@ typedef struct _AFFileSourceDriver
   /* state information to follow a set of files using a wildcard expression */
   FileMonitor *file_monitor;
   GQueue *file_list;
+  GString *filename;
 } AFFileSourceDriver;
 
 LogDriver *affile_sd_new(gchar *filename, guint32 flags);
