@@ -2112,7 +2112,12 @@ log_proto_text_server_fetch_from_buf(LogProtoBufferedServer *s, const guchar *bu
                   self->has_to_update = TRUE;
                 }
             }
-          if (eom)
+          /*
+           * If the wait_for_prefix is reset (e.g.: wildcard filesource file switch)
+           * the buffer_cached eol won't move, but the pending_buffer_pos is moved over
+           * the cached eol, and it cause buffer overread
+           */
+          if (eom && (eom > (self->super.buffer + state->pending_buffer_pos)))
             state->buffer_cached_eol = eom - self->super.buffer;
           else
             state->buffer_cached_eol = 0;
