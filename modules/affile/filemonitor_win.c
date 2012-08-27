@@ -61,8 +61,7 @@ file_monitor_chk_file(FileMonitorWindows * monitor, const gchar *base_dir, const
   g_free(base_name);
 
 
-  if (exists &&
-      match &&
+  if (match &&
       monitor->super.file_callback != NULL)
     {
       /* FIXME: resolve symlink */

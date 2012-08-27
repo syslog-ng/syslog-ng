@@ -66,7 +66,7 @@ affile_open_file(gchar *name, DWORD flags, DWORD mode, DWORD create_flag, gboole
   {
          return FALSE;
   }
-  *fd = _open_osfhandle(hFile,O_BINARY);
+  *fd = _open_osfhandle((intptr_t)hFile,O_BINARY);
   msg_trace("affile_open_file",
             evt_tag_str("path", name),
             evt_tag_int("fd",*fd),
@@ -91,11 +91,11 @@ affile_sd_open_file(AFFileSourceDriver *self, gchar *name, gint *fd)
 }
 
 static inline gchar *
-affile_sd_format_persist_name(AFFileSourceDriver *self)
+affile_sd_format_persist_name(const gchar *filename)
 {
   static gchar persist_name[1024];
 
-  g_snprintf(persist_name, sizeof(persist_name), "affile_sd_curpos(%s)", self->filename->str);
+  g_snprintf(persist_name, sizeof(persist_name), "affile_sd_curpos(%s)", filename);
   return persist_name;
 }
 
@@ -104,13 +104,10 @@ affile_sd_recover_state(LogPipe *s, GlobalConfig *cfg, LogProto *proto)
 {
   AFFileSourceDriver *self = (AFFileSourceDriver *) s;
 
-  if ((self->flags & AFFILE_PIPE) || self->reader_options.follow_freq <= 0)
-    return;
-
   if (self->reader_options.text_encoding)
     log_proto_set_encoding(proto, self->reader_options.text_encoding);
 
-  if (!log_proto_restart_with_state(proto, cfg->state, affile_sd_format_persist_name(self)))
+  if (!log_proto_restart_with_state(proto, cfg->state, affile_sd_format_persist_name(self->filename->str)))
     {
       msg_error("Error converting persistent state from on-disk format, losing file position information",
                 evt_tag_str("filename", self->filename->str),
@@ -163,6 +160,16 @@ affile_sd_construct_proto(AFFileSourceDriver *self, LogTransport *transport)
   return proto;
 }
 
+static void
+affile_sd_reset_file_state(AFFileSourceDriver *self, const gchar *filename)
+{
+  GlobalConfig *cfg = log_pipe_get_config((LogPipe *)self);
+  gchar *old_persist_name = affile_sd_format_persist_name(filename);
+  gchar *new_persist_name = g_strdup_printf("%s_DELETED",old_persist_name);
+  persist_state_rename_entry(cfg->state,old_persist_name,new_persist_name);
+  g_free(new_persist_name);
+}
+
 static gboolean
 affile_sd_open(LogPipe *s, gboolean immediate_check)
 {
@@ -203,7 +210,7 @@ affile_sd_open(LogPipe *s, gboolean immediate_check)
       /* FIXME: we shouldn't use reader_options to store log protocol parameters */
       self->reader = log_reader_new(proto);
 
-      log_reader_set_options(self->reader, s, &self->reader_options, 1, SCS_FILE, self->super.super.id, self->filename->str, options);
+      log_reader_set_options(self->reader, s, &self->reader_options, 1, SCS_FILE, self->super.super.id, self->filename->str, (LogProtoOptions *)options);
       log_reader_set_follow_filename(self->reader, self->filename->str);
 
       if (immediate_check)
@@ -284,22 +291,43 @@ affile_sd_monitor_pushback_filename(AFFileSourceDriver *self, const gchar *filen
     g_queue_push_tail(self->file_list, strdup(filename));
 }
 
+static void
+affile_sd_add_file_to_the_queue(AFFileSourceDriver *self, const gchar *filename)
+{
+  /* FIXME: use something else than a linear search */
+  if (g_queue_find_custom(self->file_list, filename, (GCompareFunc)strcmp) == NULL)
+    {
+      affile_sd_monitor_pushback_filename(self, filename);
+      if (filename != END_OF_LIST)
+        {
+          msg_debug("affile_sd_monitor_callback append", evt_tag_str("file",filename),NULL);
+        }
+    }
+}
+
 static gboolean
 affile_sd_monitor_callback(const gchar *filename, gpointer s, FileActionType action_type)
 {
   AFFileSourceDriver *self = (AFFileSourceDriver*) s;
 
-  if ((strcmp(self->filename->str, filename) != 0) || (action_type == ACTION_CREATED && self->reader == NULL))
+  if (strcmp(self->filename->str, filename) != 0)
     {
-      /* FIXME: use something else than a linear search */
-      if (g_queue_find_custom(self->file_list, filename, (GCompareFunc)strcmp) == NULL)
+      if (action_type == ACTION_DELETED)
         {
-          affile_sd_monitor_pushback_filename(self, filename);
-          if (filename != END_OF_LIST)
-            {
-              msg_debug("affile_sd_monitor_callback append", evt_tag_str("file",filename),NULL);
-            }
+          affile_sd_reset_file_state(self,filename);
         }
+      else
+        {
+          affile_sd_add_file_to_the_queue(self,filename);
+        }
+    }
+  else if (action_type == ACTION_DELETED && self->reader)
+    {
+      log_pipe_notify(&self->super.super.super,&self->super.super.super, NC_FILE_MOVED, self->reader);
+    }
+  else if (action_type == ACTION_CREATED && self->reader == NULL)
+    {
+      affile_sd_add_file_to_the_queue(self,filename);
     }
   if (self->reader == NULL)
     {
@@ -334,7 +362,6 @@ affile_sd_notify(LogPipe *s, LogPipe *sender, gint notify_code, gpointer user_da
         msg_verbose("Follow-mode file source moved, tracking of the new file is started",
                     evt_tag_str("filename", self->filename->str),
                     NULL);
-
         if (affile_sd_open_file(self, self->filename->str, &fd))
           {
             LogTransport *transport;
@@ -347,13 +374,14 @@ affile_sd_notify(LogPipe *s, LogPipe *sender, gint notify_code, gpointer user_da
 
             affile_sd_recover_state(s, cfg, proto);
 
-            log_reader_reopen(self->reader, proto, s, &self->reader_options, 1, SCS_FILE, self->super.super.id, self->filename->str, TRUE, options);
+            log_reader_reopen(self->reader, proto, s, &self->reader_options, 1, SCS_FILE, self->super.super.id, self->filename->str, TRUE, (LogProtoOptions *)options);
           }
         else
           {
             log_pipe_deinit(self->reader);
             log_pipe_unref(self->reader);
             self->reader = NULL;
+            affile_sd_reset_file_state(self,self->filename->str);
           }
         break;
       }
@@ -418,7 +446,7 @@ get_next_file:
               }
 
             affile_sd_recover_state(s, cfg, proto);
-            log_reader_reopen(self->reader, proto, s, &self->reader_options, 1, SCS_FILE, self->super.super.id, self->filename->str, immediate_check, options);
+            log_reader_reopen(self->reader, proto, s, &self->reader_options, 1, SCS_FILE, self->super.super.id, self->filename->str, immediate_check, (LogProtoOptions *)options);
           }
          else
           {
@@ -620,7 +648,7 @@ affile_sd_new(gchar *filename, guint32 flags)
 
   if (pid_string == NULL);
     {
-      pid_string = g_strdup_printf("%d",GetCurrentProcessId());
+      pid_string = g_strdup_printf("%lu",GetCurrentProcessId());
     }
 
   self->file_monitor = file_monitor_new();
