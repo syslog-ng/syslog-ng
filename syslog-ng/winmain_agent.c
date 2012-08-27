@@ -40,6 +40,7 @@
 #include "plugin.h"
 #include "reloc.h"
 #include "winservice.h"
+#include "minidump.h"
 
 #include <sys/types.h>
 #include <stdio.h>
@@ -199,7 +200,7 @@ agent_service_main()
         }
     }
   /* we are running as a non-root user from this point */
-
+  register_minidump_writer();
   app_post_daemonized();
   app_post_config_loaded();
   /* from now on internal messages are written to the system log as well */
