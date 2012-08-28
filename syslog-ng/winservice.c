@@ -268,9 +268,11 @@ VOID WINAPI main_service_main(DWORD dwArgc, LPTSTR *lpszArgv)
 
   if (hStatus == (SERVICE_STATUS_HANDLE) 0)
     {
+      fclose(global_service_logfile);
       ServiceStatus.dwWin32ExitCode = -1;
       ServiceStatus.dwCurrentState = SERVICE_STOPPED;
-      return -1;
+      SetServiceStatus(hStatus,&ServiceStatus);
+      return;
     }
 
   ServiceStatus.dwCurrentState = SERVICE_RUNNING;
