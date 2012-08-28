@@ -1566,8 +1566,7 @@ affile_sd_set_multi_line_garbage(LogDriver *s, gchar *garbage)
   LogProtoServerOptions *options = (LogProtoServerOptions *)&self->proto_options;
   const gchar *error;
   gint erroroffset;
-  /*Are we need any options?*/
-  int pcreoptions = PCRE_EXTENDED;
+  int pcreoptions = 0;
 
   if (options->opts.garbage_pattern)
     g_free(options->opts.garbage_pattern);
