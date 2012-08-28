@@ -238,7 +238,7 @@ main_control_handler(DWORD request)
 
 
 static
-int main_service_main(int argc, char *argv[])
+VOID WINAPI main_service_main(DWORD dwArgc, LPTSTR *lpszArgv)
 {
   int result = 0;
   char currDirectory[_MAX_PATH];
@@ -280,10 +280,10 @@ int main_service_main(int argc, char *argv[])
 
   fclose(global_service_logfile);
 
-  ServiceStatus.dwWin32ExitCode = 0;
+  ServiceStatus.dwWin32ExitCode = (DWORD)result;
   ServiceStatus.dwCurrentState = SERVICE_STOPPED;
   SetServiceStatus(hStatus,&ServiceStatus);
-  return 0;
+  return;
 }
 
 int
