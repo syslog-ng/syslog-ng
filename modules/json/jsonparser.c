@@ -99,7 +99,8 @@ log_json_parser_process_single (struct json_object *jso,
                        json_object_get_string (jso));
       break;
     case json_type_object:
-      g_string_assign (sb_string (key), prefix);
+      if (prefix)
+        g_string_assign (sb_string (key), prefix);
       g_string_append (sb_string (key), obj_key);
       g_string_append_c (sb_string (key), '.');
       log_json_parser_process_object (jso, sb_string (key)->str, msg);
