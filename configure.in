@@ -1184,6 +1184,7 @@ AC_OUTPUT(dist.conf
           modules/csvparser/Makefile
           modules/csvparser/tests/Makefile
           modules/confgen/Makefile
+          modules/system-source/Makefile
           modules/syslogformat/Makefile
           modules/pacctformat/Makefile
           modules/basicfuncs/Makefile
