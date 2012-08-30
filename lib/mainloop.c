@@ -156,6 +156,8 @@ static struct list_head main_task_queue = LIST_HEAD_INIT(main_task_queue);
 static struct iv_event main_task_posted;
 GThread *main_thread_handle;
 
+static void sig_term_handler(void *s);
+
 #define call_info  __tls_deref(call_info)
 
 gpointer
@@ -237,6 +239,14 @@ main_loop_call_init(void)
   main_task_posted.cookie = NULL;
   main_task_posted.handler = main_loop_call_handler;
   iv_event_register(&main_task_posted);
+}
+
+void
+main_loop_stop_signal_init(void)
+{
+  IV_EVENT_INIT(&stop_signal);
+  stop_signal.handler = sig_term_handler;
+  iv_event_register(&stop_signal);
 }
 
 /************************************************************************************
@@ -789,6 +799,7 @@ main_loop_init(gchar *config_string)
   IV_TASK_INIT(&main_loop_io_workers_reenable_jobs_task);
   main_loop_io_workers_reenable_jobs_task.handler = main_loop_io_worker_reenable_jobs;
   log_queue_set_max_threads(MIN(main_loop_io_workers.max_threads, MAIN_LOOP_MAX_WORKER_THREADS));
+  main_loop_stop_signal_init();
   main_loop_call_init();
 
   current_configuration = cfg_new(0);
@@ -832,10 +843,6 @@ main_loop_run(void)
   stats_timer.handler = stats_timer_elapsed;
 
   control_init(ctlfilename);
-
-  IV_EVENT_INIT(&stop_signal);
-  stop_signal.handler = sig_term_handler;
-  iv_event_register(&stop_signal);
 
   IV_SIGNAL_INIT(&sighup_poll);
   sighup_poll.signum = SIGHUP;
