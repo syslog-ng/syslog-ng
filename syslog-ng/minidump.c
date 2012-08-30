@@ -14,11 +14,6 @@ typedef BOOL (WINAPI *MINIDUMPWRITEDUMP)(HANDLE hProcess, DWORD dwPid, HANDLE hF
 
 #define MAX_FILE_NAME_LENGTH 65535
 
-static void
-AbortHandler(int signal)
-{
-  RaiseException(0, 0, 0, NULL);
-}
 
 BOOL
 SplitCurrentModulePath(char **dir, char **fileName)
@@ -91,7 +86,7 @@ DropMinidump(struct _EXCEPTION_POINTERS *pExceptionInfo, char *dumpFileName, cha
   ExInfo.ExceptionPointers = pExceptionInfo;
   ExInfo.ClientPointers = TRUE;
 
-  bOK = _MiniDumpWriteDump( GetCurrentProcess(), GetCurrentProcessId(), hFile, MiniDumpWithFullMemory, &ExInfo, NULL, NULL );
+  bOK = _MiniDumpWriteDump( GetCurrentProcess(), GetCurrentProcessId(), hFile, MiniDumpWithFullMemory, pExceptionInfo ? &ExInfo : NULL, NULL, NULL );
   if (bOK)
     {
       fprintf(stderr, "Saved dump file to '%s'\n", dumpFileName );
@@ -136,9 +131,29 @@ exit:
   return retval;
 }
 
+static void
+AbortHandler(int signal)
+{
+  RaiseException(0, 0, 0, NULL);
+}
+
+static void
+SignalHandler(int signal)
+{
+  MinidumpWriter(NULL);
+  exit(1);
+}
+
 void
 register_minidump_writer()
 {
+#ifndef WIN64
   SetUnhandledExceptionFilter(MinidumpWriter);
   signal(SIGABRT, AbortHandler);
+#else
+  signal(SIGABRT, SignalHandler);
+  signal(SIGFPE, SignalHandler);
+  signal(SIGILL, SignalHandler);
+  signal(SIGSEGV, SignalHandler);
+#endif
 }
