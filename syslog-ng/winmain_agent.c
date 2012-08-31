@@ -67,6 +67,7 @@ gchar *xml_config_file_name = NULL;
 gchar **other_options = NULL;
 gboolean show_version = FALSE;
 gboolean help = FALSE;
+gboolean quiet = FALSE;
 static gchar *install_dat_filename;
 static gchar *installer_version = NULL;
 static gboolean service_manipulation = FALSE;
@@ -118,6 +119,7 @@ static GOptionEntry application_options[] =
   {"Config",          'C', 0, G_OPTION_ARG_FILENAME, &xml_config_file_name, "Start the syslog-ng Agent using the specified XML configuration file.",NULL},
   {"Version",         'V', 0, G_OPTION_ARG_NONE, &show_version, "Display version information.",NULL},
   {"cfgfile",         'f', G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_STRING, &cfgfilename, "Set config file name, default=" PATH_SYSLOG_NG_CONF, "<config>" },
+  {"quiet",           'Q', G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_NONE, &quiet , NULL, NULL},
   {"preprocess-into",  0,  G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_STRING, &preprocess_into, "Write the preprocessed configuration file to the file specified", "output" },
   {NULL},
 };
@@ -296,8 +298,15 @@ main(int argc, char *argv[])
     }
   if (debug_flag)
     {
-      log_stderr = TRUE;
-      verbose_flag = TRUE;
+      if (!quiet)
+        {
+          log_stderr = TRUE;
+          verbose_flag = TRUE;
+        }
+      else
+        {
+          debug_flag = FALSE;
+        }
       return agent_service_main();
     }
   else
