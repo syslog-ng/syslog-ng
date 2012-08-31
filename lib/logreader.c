@@ -948,6 +948,7 @@ log_reader_reopen_deferred(gpointer s)
   gpointer *args = (gpointer *) s;
   LogReader *self = args[0];
   LogProto *proto = args[1];
+  gboolean *immediate_check = args[2];
 
   log_reader_stop_watches(self);
   if (self->io_job.working)
@@ -965,12 +966,16 @@ log_reader_reopen_deferred(gpointer s)
 
   if(proto)
     {
-        log_reader_start_watches(self);
-        self->ack_callback = proto->ack;
-        if (proto->ack && proto->get_state)
-          {
-            self->options->super.flags |= LOF_POS_TRACKING;
-          }
+      if (*immediate_check)
+        {
+          log_reader_set_immediate_check(&self->super.super);
+        }
+      log_reader_start_watches(self);
+      self->ack_callback = proto->ack;
+      if (proto->ack && proto->get_state)
+        {
+          self->options->super.flags |= LOF_POS_TRACKING;
+        }
     }
 }
 
@@ -978,7 +983,7 @@ void
 log_reader_reopen(LogPipe *s, LogProto *proto, LogPipe *control, LogReaderOptions *options, gint stats_level, gint stats_source, const gchar *stats_id, const gchar *stats_instance, gboolean immediate_check, LogProtoOptions *proto_options)
 {
   LogReader *self = (LogReader *) s;
-  gpointer args[] = { s, proto };
+  gpointer args[] = { s, proto, &immediate_check };
   log_source_deinit(s);
 
   main_loop_call((MainLoopTaskFunc) log_reader_reopen_deferred, args, TRUE);
@@ -991,10 +996,6 @@ log_reader_reopen(LogPipe *s, LogProto *proto, LogPipe *control, LogReaderOption
           g_cond_wait(self->pending_proto_cond, g_static_mutex_get_mutex(&self->pending_proto_lock));
         }
       g_static_mutex_unlock(&self->pending_proto_lock);
-    }
-  if (immediate_check)
-    {
-      log_reader_set_immediate_check(&self->super.super);
     }
   log_reader_set_options(s, control, options, stats_level, stats_source, stats_id, stats_instance, proto_options);
   log_reader_set_follow_filename(s, stats_instance);
