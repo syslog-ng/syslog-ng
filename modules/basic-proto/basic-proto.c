@@ -2188,6 +2188,7 @@ log_proto_file_reader_init(LogProtoTextServer *self, LogTransport *transport, gi
   self->super.super.prepare = log_proto_text_server_prepare;
   self->super.super.get_info = log_proto_text_server_get_info;
   self->super.super.ack = log_proto_buffered_server_ack;
+  self->super.super.is_preemptable = log_proto_text_server_is_preemptable;
   self->reverse_convert = (GIConv) -1;
   self->super.wait_for_prefix = FALSE;
   self->has_to_update = TRUE;
