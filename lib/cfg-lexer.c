@@ -483,49 +483,62 @@ cfg_lexer_include_file_glob_at(CfgLexer *self, const gchar *pattern)
 {
   glob_t globbuf;
   size_t i;
-  gboolean status = FALSE;
   int r;
+  CfgIncludeLevel *level;
 
   r = glob(pattern, 0, NULL, &globbuf);
 
   if (r == GLOB_NOMATCH)
-    return TRUE;
-  if (r != 0)
     return FALSE;
+  if (r != 0)
+    return TRUE;
 
+  self->include_depth++;
+  level = &self->include_stack[self->include_depth];
+  level->include_type = CFGI_FILE;
   for (i = 0; i < globbuf.gl_pathc; i++)
-    status |= cfg_lexer_include_file(self, globbuf.gl_pathv[i]);
+    {
+      level->file.files = g_slist_insert_sorted(level->file.files,
+                                                strdup(globbuf.gl_pathv[i]),
+                                                (GCompareFunc) strcmp);
+      msg_debug("Adding include file",
+                evt_tag_str("filename", globbuf.gl_pathv[i]),
+                NULL);
+    }
 
   globfree(&globbuf);
 
-  return status;
+  return TRUE;
 }
 
 static gboolean
 cfg_lexer_include_file_glob(CfgLexer *self, const gchar *filename_)
 {
   const gchar *path = cfg_args_get(self->globals, "include-path");
+  gboolean process = FALSE;
 
   if (filename_[0] == '/' || !path)
-    return cfg_lexer_include_file_glob_at(self, filename_);
+    process = cfg_lexer_include_file_glob_at(self, filename_);
   else
     {
       gchar **dirs;
       gchar *cf;
       gint i = 0;
-      gboolean status = FALSE;
 
       dirs = g_strsplit(path, G_SEARCHPATH_SEPARATOR_S, 0);
       while (dirs && dirs[i])
         {
           cf = g_build_filename(dirs[i], filename_, NULL);
-          status |= cfg_lexer_include_file_glob_at(self, cf);
+          process |= cfg_lexer_include_file_glob_at(self, cf);
           g_free(cf);
           i++;
         }
       g_strfreev(dirs);
-      return status;
     }
+  if (process)
+    return cfg_lexer_start_next_include(self);
+  else
+    return TRUE;
 }
 
 gboolean
