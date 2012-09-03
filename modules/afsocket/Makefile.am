@@ -52,15 +52,19 @@ else
 TLSSUFF=-notls
 endif
 
-install-exec-hook:
+install-data-hook:
 	$(mkinstalldirs) $(DESTDIR)$(moduledir)
+if IS_WINDOWS
+	cp $(DESTDIR)$(moduledir)/libafsocket$(TLSSUFF)$(BB_SHREXT) $(DESTDIR)$(moduledir)/libafsocket$(BB_SHREXT)
+else
 	ln -sf libafsocket$(TLSSUFF)$(BB_SHREXT) $(DESTDIR)$(moduledir)/libafsocket$(BB_SHREXT)
+endif
 
 libafsocket.la: libafsocket$(TLSSUFF).la
 	ln -sf libafsocket$(TLSSUFF).la libafsocket.la
 if IS_WINDOWS
-	(cd .libs && rm -f libafsocket.dll.a && ln -s libafsocket$(TLSSUFF).dll.a libafsocket.dll.a)
-	(cd .libs && rm -f libafsocket.dll && ln -s libafsocket$(TLSSUFF).dll libafsocket.dll)
+	(cd .libs && rm -f libafsocket.dll.a && cp libafsocket$(TLSSUFF).dll.a libafsocket.dll.a)
+	(cd .libs && rm -f libafsocket.dll && cp libafsocket$(TLSSUFF).dll libafsocket.dll)
 else
 	(cd .libs && rm -f libafsocket.a && ln -s libafsocket$(TLSSUFF).a libafsocket.a)
 endif
