@@ -157,17 +157,15 @@ static LogProtoStatus
 log_proto_text_client_flush(LogProto *s)
 {
   LogProtoTextClient *self = (LogProtoTextClient *) s;
-  gint rc;
-  LogProtoStatus status;
 
   /* attempt to flush previously buffered data */
   if (self->partial)
     {
-      status = log_proto_text_client_flush_buffer(s);
+      log_proto_text_client_flush_buffer(s);
     }
   else
     {
-      rc = log_transport_write(self->super.transport, "", 0);
+      log_transport_write(self->super.transport, "", 0);
     }
   if (!self->partial && self->acked)
     {
@@ -1630,8 +1628,9 @@ typedef struct _LogProtoTextServer
  * discarded.
  **/
 gboolean
-log_proto_text_server_is_preemptable(LogProtoTextServer *self)
+log_proto_text_server_is_preemptable(LogProto *s)
 {
+  LogProtoTextServer *self = (LogProtoTextServer *) s;
   LogProtoBufferedServerState *state = log_proto_buffered_server_get_state(&self->super);
   gboolean preemptable;
 
@@ -2147,8 +2146,9 @@ log_proto_text_server_get_info(LogProto *s,guint64 *pos)
 }
 
 void
-log_proto_text_server_free(LogProtoTextServer *self)
+log_proto_text_server_free(LogProto *p)
 {
+  LogProtoTextServer *self = (LogProtoTextServer *)p;
   if (self->reverse_convert != (GIConv) -1)
     g_iconv_close(self->reverse_convert);
 
