@@ -2163,6 +2163,7 @@ log_proto_text_server_init(LogProtoTextServer *self, LogTransport *transport, gi
   self->super.fetch_from_buf = log_proto_text_server_fetch_from_buf;
   self->super.super.prepare = log_proto_text_server_prepare;
   self->super.super.get_info = log_proto_text_server_get_info;
+  self->super.super.free_fn = log_proto_text_server_free;
   self->reverse_convert = (GIConv) -1;
   self->super.wait_for_prefix = FALSE;
   self->has_to_update = TRUE;
@@ -2183,15 +2184,9 @@ log_proto_text_server_new(LogTransport *transport, LogProtoServerOptions *soptio
 static void
 log_proto_file_reader_init(LogProtoTextServer *self, LogTransport *transport, gint max_msg_size, guint flags)
 {
-  log_proto_buffered_server_init(&self->super, transport, max_msg_size * 6, max_msg_size, flags);
-  self->super.fetch_from_buf = log_proto_text_server_fetch_from_buf;
-  self->super.super.prepare = log_proto_text_server_prepare;
-  self->super.super.get_info = log_proto_text_server_get_info;
+  log_proto_text_server_init(self, transport, max_msg_size, flags);
   self->super.super.ack = log_proto_buffered_server_ack;
   self->super.super.is_preemptable = log_proto_text_server_is_preemptable;
-  self->reverse_convert = (GIConv) -1;
-  self->super.wait_for_prefix = FALSE;
-  self->has_to_update = TRUE;
 }
 
 LogProto *
