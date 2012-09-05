@@ -43,6 +43,8 @@
 #include <arpa/nameser.h>
 #include <resolv.h>
 #include <iv_signal.h>
+#else
+#include <signal.h>
 #endif
 
 #include <string.h>
@@ -394,11 +396,11 @@ main_loop_io_worker_job_start(MainLoopIOWorkerJob *self)
 
   main_loop_current_job = self;
   self->work(self->user_data);
-  
+
   list_for_each_safe(lh, lh2, &self->finish_callbacks)
     {
       MainLoopIOWorkerFinishCallback *cb = list_entry(lh, MainLoopIOWorkerFinishCallback, list);
-      
+
       cb->func(cb->user_data);
       list_del_init(&cb->list);
     }
@@ -477,7 +479,7 @@ void
 main_loop_io_worker_register_finish_callback(MainLoopIOWorkerFinishCallback *cb)
 {
   g_assert(main_loop_current_job != NULL);
-  
+
   list_add(&cb->list, &main_loop_current_job->finish_callbacks);
 }
 
@@ -784,7 +786,13 @@ sig_child_handler(void *s)
 /************************************************************************************
  * syslog-ng main loop
  ************************************************************************************/
-
+#ifdef _WIN32
+void
+term_signal(int signal)
+{
+  main_loop_terminate();
+}
+#endif
 /*
  * Returns: exit code to be returned to the calling process.
  */
@@ -799,6 +807,10 @@ main_loop_init(gchar *config_string)
   IV_TASK_INIT(&main_loop_io_workers_reenable_jobs_task);
   main_loop_io_workers_reenable_jobs_task.handler = main_loop_io_worker_reenable_jobs;
   log_queue_set_max_threads(MIN(main_loop_io_workers.max_threads, MAIN_LOOP_MAX_WORKER_THREADS));
+#ifdef _WIN32
+  signal(SIGTERM,term_signal);
+  signal(SIGINT,term_signal);
+#endif
   main_loop_stop_signal_init();
   main_loop_call_init();
 
