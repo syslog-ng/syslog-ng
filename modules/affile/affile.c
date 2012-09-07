@@ -402,6 +402,7 @@ affile_sd_notify(LogPipe *s, LogPipe *sender, gint notify_code, gpointer user_da
       {
         if (!self->file_monitor)
           {
+            log_reader_set_immediate_check(self->reader);
             log_reader_restart(self->reader);
             break;
           }
