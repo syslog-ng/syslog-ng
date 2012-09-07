@@ -606,6 +606,25 @@ struct _LogProtoBufferedServer
   gboolean wait_for_prefix; /* This boolean tell to us that we are waiting for prefix or garbage (used only in case multi line messages */
 };
 
+static inline gboolean
+log_proto_regexec(pcre *regex, const gchar *line, gint line_len, gint32 *first_offset, gint32 *end_offset)
+{
+  gint rc;
+  const gchar *buf;
+  int ovector[30] ={0};
+
+  APPEND_ZERO(buf, line, line_len);
+  rc = pcre_exec(regex, NULL, buf, line_len, 0, 0, ovector, 10);
+  if (rc >= 0)
+    {
+      if (first_offset)
+        *first_offset = ovector[0];
+      if (end_offset)
+        *end_offset = ovector[1];
+    }
+  return (rc >= 0);
+}
+
 /*
  * log_proto_get_fixed_encoding_scale:
  *
@@ -1336,9 +1355,17 @@ log_proto_buffered_server_fetch(LogProto *s, const guchar **msg, gsize *msg_len,
         state->pending_buffer_pos = state->pending_buffer_end;
         if (sa && self->prev_saddr)
           *sa = g_sockaddr_ref(self->prev_saddr);
-        if(*msg_len == 0)
+        if (*msg_len == 0)
           {
             *msg = NULL;
+          }
+        else if (options && options->opts.garbage_matcher)
+          {
+            if (log_proto_regexec(options->opts.garbage_matcher, *msg, *msg_len, NULL, NULL))
+              {
+                *msg = NULL;
+                *msg_len = 0;
+              }
           }
         else
           {
@@ -1792,25 +1819,6 @@ log_proto_text_server_get_raw_size_of_buffer(LogProtoTextServer *self, const guc
     {
       return self->reverse_buffer_len - avail_out;
     }
-}
-
-static inline gboolean
-log_proto_regexec(pcre *regex, const gchar *line, gint line_len, gint32 *first_offset, gint32 *end_offset)
-{
-  gint rc;
-  const gchar *buf;
-  int ovector[30] ={0};
-
-  APPEND_ZERO(buf, line, line_len);
-  rc = pcre_exec(regex, NULL, buf, line_len, 0, 0, ovector, 10);
-  if (rc >= 0)
-    {
-      if (first_offset)
-        *first_offset = ovector[0];
-      if (end_offset)
-        *end_offset = ovector[1];
-    }
-  return (rc >= 0);
 }
 
 const guchar *
