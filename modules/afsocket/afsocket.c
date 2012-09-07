@@ -195,7 +195,13 @@ afsocket_sc_stats_instance(AFSocketSourceConnection *self)
 
   if (!self->peer_addr)
     {
-      return NULL;
+      if (self->owner->bind_addr)
+        {
+          g_sockaddr_format(self->owner->bind_addr, buf, sizeof(buf), GSA_ADDRESS_ONLY);
+          return buf;
+        }
+      else
+        return NULL;
     }
   if ((self->owner->flags & AFSOCKET_SYSLOG_DRIVER) == 0)
     {
