@@ -296,11 +296,11 @@ main(int argc, char *argv[])
     {
       return 0;
     }
+  log_stderr = TRUE;
   if (debug_flag)
     {
       if (!quiet)
         {
-          log_stderr = TRUE;
           verbose_flag = TRUE;
         }
       else
@@ -311,7 +311,6 @@ main(int argc, char *argv[])
     }
   else
     {
-      log_stderr = FALSE;
       start_service(AGENT_SERVICE_NAME,agent_service_main,main_loop_terminate);
       return 0;
     }
