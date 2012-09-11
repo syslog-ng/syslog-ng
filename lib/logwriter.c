@@ -496,8 +496,10 @@ log_writer_start_watches(LogWriter *self)
         {
           if (is_file_regular(fd))
             self->pollable_state = 0;
+          else if (iv_fd_register_try(&self->fd_watch) == 0)
+            self->pollable_state = 1;
           else
-            self->pollable_state = iv_fd_pollable(fd);
+            self->pollable_state = 0;
         }
 
       else if (self->pollable_state)
@@ -740,7 +742,7 @@ log_writer_arm_mark_timer(LogWriter *self)
       iv_timer_unregister(&self->mark_timer);
     }
   iv_validate_now();
-  self->mark_timer.expires = *iv_get_now();
+  self->mark_timer.expires = iv_now;
   self->mark_timer.expires.tv_sec += self->options->mark_freq; /* mark_freq measures in [sec] */
   iv_timer_register(&self->mark_timer);
 }
@@ -1206,6 +1208,7 @@ flush_the_proto:
     {
       self->has_to_poll = TRUE;
     }
+  /*msg_error("Writer sent messages",evt_tag_int("count",count), evt_tag_str("status",status == LPS_AGAIN ? "LPS_AGAIN" : "LPS_SUCCESS"),NULL);*/
   return TRUE;
 }
 
@@ -1397,7 +1400,7 @@ log_writer_reopen_deferred(gpointer s)
   if (!proto)
     {
 		  iv_validate_now();
-		  self->reopen_timer.expires = *iv_get_now();
+		  self->reopen_timer.expires = iv_now;
 		  self->reopen_timer.expires.tv_sec += self->options->time_reopen;
       if (iv_timer_registered(&self->reopen_timer))
         {

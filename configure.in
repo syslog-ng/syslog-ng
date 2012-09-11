@@ -25,7 +25,7 @@ GLIB_MIN_VERSION="2.10.1"
 EVTLOG_MIN_VERSION="0.2.12"
 OPENSSL_MIN_VERSION="0.9.8"
 LIBDBI_MIN_VERSION="0.8.0"
-IVYKIS_MIN_VERSION="0.18"
+IVYKIS_MIN_VERSION="0.36"
 JSON_C_MIN_VERSION="0.7"
 JSON_GLIB_MIN_VERSION="0.12"
 PCRE_MIN_VERSION="6.1"
@@ -946,7 +946,7 @@ if test "x$with_ivykis" = "xinternal"; then
     fi
 else
     with_ivykis="system"
-    PKG_CHECK_MODULES(IVYKIS, ivykis >= $IVYKIS_MIN_VERSION ivykis-modules,,)
+    PKG_CHECK_MODULES(IVYKIS, ivykis >= $IVYKIS_MIN_VERSION,,)
 
     # in case we're using a system installed ivykis, we can link against
     # it even without libtool and without extra linker arguments (as

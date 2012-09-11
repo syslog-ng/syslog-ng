@@ -27,6 +27,7 @@
 #include "stats.h"
 #include "messages.h"
 #include "apphook.h"
+#include <iv_event.h>
 
 typedef struct _AFInterSource AFInterSource;
 

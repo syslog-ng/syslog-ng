@@ -539,7 +539,7 @@ file_monitor_poll_timer_callback(gpointer s)
   if(iv_timer_registered(&self->poll_timer))
     iv_timer_unregister(&self->poll_timer);
   iv_validate_now();
-  self->poll_timer.expires = *iv_get_now();
+  self->poll_timer.expires = iv_now;
   timespec_add_msec(&self->poll_timer.expires, self->poll_freq);
   iv_timer_register(&self->poll_timer);
 }
@@ -582,7 +582,7 @@ file_monitor_start_poll(FileMonitor *self, MonitorBase *source, const gchar *bas
   if(iv_timer_registered(&p_source->poll_timer))
     iv_timer_unregister(&p_source->poll_timer);
   iv_validate_now();
-  p_source->poll_timer.expires = *iv_get_now();
+  p_source->poll_timer.expires = iv_now;
   timespec_add_msec(&p_source->poll_timer.expires, p_source->poll_freq);
   iv_timer_register(&p_source->poll_timer);
 }

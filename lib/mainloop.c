@@ -52,6 +52,7 @@
 #include <string.h>
 #include <iv.h>
 #include <iv_work.h>
+#include <iv_event.h>
 
 /**
  * Processing model
@@ -127,7 +128,7 @@ static GlobalConfig *current_configuration;
 typedef struct _MainLoopTaskCallSite MainLoopTaskCallSite;
 struct _MainLoopTaskCallSite
 {
-  struct list_head list;
+  struct iv_list_head list;
   MainLoopTaskFunc func;
   gpointer user_data;
   gpointer result;
@@ -156,7 +157,7 @@ TLS_BLOCK_START
 TLS_BLOCK_END;
 
 static GStaticMutex main_task_lock = G_STATIC_MUTEX_INIT;
-static struct list_head main_task_queue = LIST_HEAD_INIT(main_task_queue);
+static struct iv_list_head main_task_queue = IV_LIST_HEAD_INIT(main_task_queue);
 static struct iv_event main_task_posted;
 GThread *main_thread_handle;
 
@@ -191,14 +192,14 @@ main_loop_call(MainLoopTaskFunc func, gpointer user_data, gboolean wait)
     }
 
   /* call_info.lock is no longer needed, since we're the only ones using call_info now */
-  INIT_LIST_HEAD(&call_info.list);
+  INIT_IV_LIST_HEAD(&call_info.list);
   call_info.pending = TRUE;
   call_info.func = func;
   call_info.user_data = user_data;
   call_info.wait = wait;
   if (!call_info.cond)
     call_info.cond = g_cond_new();
-  list_add(&call_info.list, &main_task_queue);
+  iv_list_add(&call_info.list, &main_task_queue);
   iv_event_post(&main_task_posted);
   if (wait)
     {
@@ -213,13 +214,13 @@ static void
 main_loop_call_handler(gpointer user_data)
 {
   g_static_mutex_lock(&main_task_lock);
-  while (!list_empty(&main_task_queue))
+  while (!iv_list_empty(&main_task_queue))
     {
       MainLoopTaskCallSite *site;
       gpointer result;
 
-      site = list_entry(main_task_queue.next, MainLoopTaskCallSite, list);
-      list_del_init(&site->list);
+      site = iv_list_entry(main_task_queue.next, MainLoopTaskCallSite, list);
+      iv_list_del_init(&site->list);
       g_static_mutex_unlock(&main_task_lock);
 
       result = site->func(site->user_data);
@@ -392,21 +393,21 @@ main_loop_io_worker_job_submit(MainLoopIOWorkerJob *self)
 static void
 main_loop_io_worker_job_start(MainLoopIOWorkerJob *self)
 {
-  struct list_head *lh, *lh2;
+  struct iv_list_head *lh, *lh2;
 
   g_assert(main_loop_current_job == NULL);
 
   main_loop_current_job = self;
   self->work(self->user_data);
 
-  list_for_each_safe(lh, lh2, &self->finish_callbacks)
+  iv_list_for_each_safe(lh, lh2, &self->finish_callbacks)
     {
-      MainLoopIOWorkerFinishCallback *cb = list_entry(lh, MainLoopIOWorkerFinishCallback, list);
+      MainLoopIOWorkerFinishCallback *cb = iv_list_entry(lh, MainLoopIOWorkerFinishCallback, list);
 
       cb->func(cb->user_data);
-      list_del_init(&cb->list);
+      iv_list_del_init(&cb->list);
     }
-  g_assert(list_empty(&self->finish_callbacks));
+  g_assert(iv_list_empty(&self->finish_callbacks));
   main_loop_current_job = NULL;
 }
 
@@ -483,7 +484,7 @@ main_loop_io_worker_register_finish_callback(MainLoopIOWorkerFinishCallback *cb)
 {
   g_assert(main_loop_current_job != NULL);
 
-  list_add(&cb->list, &main_loop_current_job->finish_callbacks);
+  iv_list_add(&cb->list, &main_loop_current_job->finish_callbacks);
 }
 
 void
@@ -493,7 +494,7 @@ main_loop_io_worker_job_init(MainLoopIOWorkerJob *self)
   self->work_item.cookie = self;
   self->work_item.work = (void (*)(void *)) main_loop_io_worker_job_start;
   self->work_item.completion = (void (*)(void *)) main_loop_io_worker_job_complete;
-  INIT_LIST_HEAD(&self->finish_callbacks);
+  INIT_IV_LIST_HEAD(&self->finish_callbacks);
 }
 
 static void
@@ -861,26 +862,26 @@ main_loop_run(void)
 
   IV_SIGNAL_INIT(&sighup_poll);
   sighup_poll.signum = SIGHUP;
-  sighup_poll.exclusive = 1;
+  sighup_poll.flags = IV_SIGNAL_FLAG_EXCLUSIVE;
   sighup_poll.cookie = NULL;
   sighup_poll.handler = sig_hup_handler;
   iv_signal_register(&sighup_poll);
 
   IV_SIGNAL_INIT(&sigchild_poll);
   sigchild_poll.signum = SIGCHLD;
-  sigchild_poll.exclusive = 1;
+  sigchild_poll.flags = IV_SIGNAL_FLAG_EXCLUSIVE;
   sigchild_poll.handler = sig_child_handler;
   iv_signal_register(&sigchild_poll);
 
   IV_SIGNAL_INIT(&sigterm_poll);
   sigterm_poll.signum = SIGTERM;
-  sigterm_poll.exclusive = 1;
+  sigterm_poll.flags = IV_SIGNAL_FLAG_EXCLUSIVE;
   sigterm_poll.handler = sig_term_handler;
   iv_signal_register(&sigterm_poll);
 
   IV_SIGNAL_INIT(&sigint_poll);
   sigint_poll.signum = SIGINT;
-  sigint_poll.exclusive = 1;
+  sigint_poll.flags = IV_SIGNAL_FLAG_EXCLUSIVE;
   sigint_poll.handler = sig_term_handler;
   iv_signal_register(&sigint_poll);
 

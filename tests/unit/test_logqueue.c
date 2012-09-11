@@ -160,7 +160,7 @@ testcase_ack_and_rewind_messages()
 
 TLS_BLOCK_START
 {
-  struct list_head finish_callbacks;
+  struct iv_list_head finish_callbacks;
 }
 TLS_BLOCK_END;
 
@@ -169,20 +169,20 @@ TLS_BLOCK_END;
 void
 main_loop_io_worker_register_finish_callback(MainLoopIOWorkerFinishCallback *cb)
 {
-  list_add(&cb->list, &finish_callbacks);
+  iv_list_add(&cb->list, &finish_callbacks);
 }
 
 void
 main_loop_io_worker_invoke_finish_callbacks(void)
 {
-  struct list_head *lh, *lh2;
+  struct iv_list_head *lh, *lh2;
 
-  list_for_each_safe(lh, lh2, &finish_callbacks)
+  iv_list_for_each_safe(lh, lh2, &finish_callbacks)
     {
-      MainLoopIOWorkerFinishCallback *cb = list_entry(lh, MainLoopIOWorkerFinishCallback, list);
+      MainLoopIOWorkerFinishCallback *cb = iv_list_entry(lh, MainLoopIOWorkerFinishCallback, list);
                             
       cb->func(cb->user_data);
-      list_del_init(&cb->list);
+      iv_list_del_init(&cb->list);
     }
 }
 
@@ -207,7 +207,7 @@ threaded_feed(gpointer args)
   
   /* emulate main loop for LogQueue */
   main_loop_io_worker_set_thread_id(id);
-  INIT_LIST_HEAD(&finish_callbacks);
+  INIT_IV_LIST_HEAD(&finish_callbacks);
 
   sa = g_sockaddr_inet_new("10.10.10.10", 1010);
   tmpl = log_msg_new(msg_str, msg_len, sa, &parse_options);

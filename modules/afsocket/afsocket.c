@@ -597,8 +597,8 @@ afsocket_sd_start_watches(AFSocketSourceDriver *self)
   IV_FD_INIT(&self->listen_fd);
   self->listen_fd.fd = self->fd;
   self->listen_fd.cookie = self;
-  self->listen_fd.handler_in = afsocket_sd_accept;
   iv_fd_register(&self->listen_fd);
+  iv_fd_set_handler_in(&self->listen_fd,afsocket_sd_accept);
 }
 
 static void
@@ -1069,7 +1069,7 @@ afsocket_dd_init_watches(AFSocketDestDriver *self)
 {
   IV_FD_INIT(&self->connect_fd);
   self->connect_fd.cookie = self;
-  self->connect_fd.handler_out = (void (*)(void *)) afsocket_dd_connected;
+  iv_fd_set_handler_out(&self->connect_fd,afsocket_dd_connected);
 }
 
 static void

@@ -363,7 +363,7 @@ log_msg_is_handle_match(NVHandle handle)
 static void
 log_msg_init_queue_node(LogMessage *msg, LogMessageQueueNode *node, const LogPathOptions *path_options)
 {
-  INIT_LIST_HEAD(&node->list);
+  INIT_IV_LIST_HEAD(&node->list);
   node->ack_needed = path_options->ack_needed;
   node->msg = log_msg_ref(msg);
   msg->flags |= LF_STATE_REFERENCED;

@@ -360,8 +360,8 @@ control_init(const gchar *control_name)
 
   IV_FD_INIT(&control_listen);
   control_listen.fd = control_socket;
-  control_listen.handler_in = control_socket_accept;
   iv_fd_register(&control_listen);
+  iv_fd_set_handler_in(&control_listen, control_socket_accept);
 
   g_sockaddr_unref(saddr);
   return;

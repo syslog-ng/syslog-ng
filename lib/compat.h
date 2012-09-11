@@ -267,14 +267,16 @@ struct sigaction{
 
 struct iv_signal {
 	int			signum;
-	unsigned		exclusive:1;
+	unsigned int flags;
 	void			*cookie;
 	void			(*handler)(void *);
 
-	struct list_head	list;
+	struct iv_list_head	list;
 	struct iv_event_raw	ev;
 	int			active;
 };
+
+#define IV_SIGNAL_FLAG_EXCLUSIVE  1
 
 void IV_SIGNAL_INIT(struct iv_signal *this);
 
@@ -334,4 +336,28 @@ void init_signals();
 #ifndef HAVE_LOCALTIME_R
 struct tm * localtime_r(const time_t *timer, struct tm *result);
 #endif
+
+#ifdef _WIN32
+struct iv_fd {
+  SOCKET  fd;
+  void    *cookie;
+  void    (*handler[FD_MAX_EVENTS])(void *, int, int);
+  struct iv_handle handle;
+  void    (*handler_in)(void *cookie);
+  void    (*handler_out)(void *cookie);
+  void    (*handler_err)(void *cookie);
+  long    event_mask;
+};
+
+void IV_FD_INIT(struct iv_fd *);
+void iv_fd_register(struct iv_fd *);
+int iv_fd_register_try(struct iv_fd *);
+void iv_fd_unregister(struct iv_fd *);
+int iv_fd_registered(struct iv_fd *);
+void iv_fd_set_handler_in(struct iv_fd *, void (*)(void *));
+void iv_fd_set_handler_out(struct iv_fd *, void (*)(void *));
+void iv_fd_set_handler_err(struct iv_fd *, void (*)(void *));
+
+#endif
+
 #endif /* COMPAT_H_INCLUDED */

@@ -18,7 +18,7 @@ typedef struct  _FileMonitorWindows
   BYTE *buffer;
   DWORD buffer_size;
   DWORD notify_flags;
-  struct iv_fd monitor_fd;
+  struct iv_handle monitor_handler;
 } FileMonitorWindows;
 
 /*
@@ -160,10 +160,10 @@ file_monitor_new()
   self->buffer = (BYTE *)g_malloc0( FILE_MONITOR_BUFFER_SIZE);
   self->buffer_size =  FILE_MONITOR_BUFFER_SIZE;
   self->notify_flags = FILE_NOTIFY_CHANGE_SIZE|FILE_NOTIFY_CHANGE_LAST_ACCESS|FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_CREATION;
-  IV_FD_INIT(&self->monitor_fd);
-  self->monitor_fd.hEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
-  self->monitor_fd.handler_in = fd_handler;
-  self->monitor_fd.cookie = self;
+  IV_HANDLE_INIT(&self->monitor_handler);
+  self->monitor_handler.handle = CreateEvent(NULL, FALSE, FALSE, NULL);
+  self->monitor_handler.handler = fd_handler;
+  self->monitor_handler.cookie = self;
   return &self->super;
 }
 
@@ -217,13 +217,13 @@ file_monitor_watch_directory(FileMonitor *s, const gchar *filename)
 
   // The hEvent member is not used when there is a completion
   // function, so it's ok to use it to point to the object.
-  self->ol.hEvent = self->monitor_fd.hEvent;
+  self->ol.hEvent = self->monitor_handler.handle;
   if (ReadDirectoryChangesW(self->hDir, self->buffer, FILE_MONITOR_BUFFER_SIZE, self->super.recursion, self->notify_flags, NULL, &self->ol, NULL) == 0)
   {
     msg_error("Can't monitor directory",evt_tag_errno("error",GetLastError()),NULL);
     return FALSE;
   }
-  iv_fd_register(&self->monitor_fd);
+  iv_handle_register(&self->monitor_handler);
   return TRUE;
 }
 
