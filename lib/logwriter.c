@@ -96,7 +96,7 @@ struct _LogWriter
   gint io_cond;
   gboolean ack_is_reliable;
 
-  gboolean immediate_io;
+  gboolean has_to_poll;
 };
 
 /**
@@ -289,17 +289,7 @@ static void
 log_writer_update_fd_callbacks(LogWriter *self, GIOCondition cond)
 {
   main_loop_assert_main_thread();
-  if (self->immediate_io)
-    {
-      if (iv_fd_registered(&self->fd_watch))
-        {
-          iv_fd_unregister(&self->fd_watch);
-        }
-      self->immediate_io = FALSE;
-      if (!iv_task_registered(&self->immed_io_task))
-        iv_task_register(&self->immed_io_task);
-    }
-  else if (self->pollable_state > 0)
+  if (self->pollable_state > 0)
     {
       if (!iv_fd_registered(&self->fd_watch))
       {
@@ -328,7 +318,16 @@ log_writer_update_fd_callbacks(LogWriter *self, GIOCondition cond)
         }
       if (cond & G_IO_OUT)
       {
-        iv_fd_set_handler_out(&self->fd_watch, log_writer_io_flush_output);
+        if (self->has_to_poll)
+          {
+            iv_fd_set_handler_out(&self->fd_watch, log_writer_io_flush_output);
+            self->has_to_poll = FALSE;
+          }
+        else
+          {
+            if (!iv_task_registered(&self->immed_io_task))
+              iv_task_register(&self->immed_io_task);
+          }
       }
       else
       {
@@ -391,7 +390,6 @@ log_writer_queue_filled(gpointer s)
    * start_watches is to be expected once log_writer_work_finished() is run
    * at the end of the deferred work, executed by the I/O threads.
    */
-  self->immediate_io = TRUE;
   if (self->watches_running)
     log_writer_update_watches((LogWriter *) s);
 }
@@ -493,6 +491,7 @@ log_writer_start_watches(LogWriter *self)
     {
       log_proto_prepare(self->proto, &fd, &cond, &idle_timeout);
 
+      self->fd_watch.fd = fd;
       if (self->pollable_state < 0)
         {
           if (is_file_regular(fd))
@@ -501,9 +500,8 @@ log_writer_start_watches(LogWriter *self)
             self->pollable_state = iv_fd_pollable(fd);
         }
 
-      if (self->pollable_state)
+      else if (self->pollable_state)
         {
-          self->fd_watch.fd = fd;
           iv_fd_register(&self->fd_watch);
         }
 
@@ -1198,9 +1196,9 @@ flush_the_proto:
   status = log_proto_flush(proto);
   if (status != LPS_SUCCESS && status != LPS_AGAIN)
     return FALSE;
-  if (status == LPS_SUCCESS && count > 0)
+  if (status == LPS_AGAIN)
     {
-      self->immediate_io = TRUE;
+      self->has_to_poll = TRUE;
     }
   return TRUE;
 }
@@ -1273,7 +1271,6 @@ log_writer_init(LogPipe *s)
       stats_unlock();
     }
   self->suppress_timer_updated = TRUE;
-  self->immediate_io = FALSE;
   log_queue_set_counters(self->queue, self->stored_messages, self->dropped_messages);
   if (self->proto)
     {
