@@ -25,10 +25,6 @@
 #include "cfg.h"
 #include "value-pairs.h"
 
-#include <printbuf.h>
-#include <json.h>
-#include <json_object_private.h>
-
 typedef struct _TFJsonState
 {
   TFSimpleFuncState super;
@@ -49,33 +45,70 @@ tf_json_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent,
   return TRUE;
 }
 
-static int
-tf_json_object_to_string (struct json_object *jso,
-			  struct printbuf *pb)
+typedef struct
 {
-  int i = 0;
-  struct json_object_iter iter;
-  sprintbuf (pb, "{");
+  gboolean need_comma;
+  GString *buffer;
+} json_state_t;
 
-  json_object_object_foreachC (jso, iter)
+static inline void
+g_string_append_escaped(GString *dest, const char *str)
+{
+  /* Assumes ASCII!  Keep in sync with the switch! */
+  static const unsigned char json_exceptions[UCHAR_MAX + 1] =
     {
-      gchar *esc;
-      
-      if (i)
-	sprintbuf (pb, ",");
-      sprintbuf (pb, "\"");
-      esc = g_strescape (iter.key, NULL);
-      sprintbuf (pb, esc);
-      g_free (esc);
-      sprintbuf (pb, "\":");
-      if (iter.val == NULL)
-	sprintbuf (pb, "null");
-      else
-	iter.val->_to_json_string (iter.val, pb);
-      i++;
-    }
+      [0x01] = 1, [0x02] = 1, [0x03] = 1, [0x04] = 1, [0x05] = 1, [0x06] = 1,
+      [0x07] = 1, [0x08] = 1, [0x09] = 1, [0x0a] = 1, [0x0b] = 1, [0x0c] = 1,
+      [0x0d] = 1, [0x0e] = 1, [0x0f] = 1, [0x10] = 1, [0x11] = 1, [0x12] = 1,
+      [0x13] = 1, [0x14] = 1, [0x15] = 1, [0x16] = 1, [0x17] = 1, [0x18] = 1,
+      [0x19] = 1, [0x1a] = 1, [0x1b] = 1, [0x1c] = 1, [0x1d] = 1, [0x1e] = 1,
+      [0x1f] = 1, ['\\'] = 1, ['"'] = 1
+    };
 
-  return sprintbuf(pb, "}");
+  const unsigned char *p;
+
+  p = (unsigned char *)str;
+
+  while (*p)
+    {
+      if (json_exceptions[*p] == 0)
+        g_string_append_c(dest, *p);
+      else
+        {
+          /* Keep in sync with json_exceptions! */
+          switch (*p)
+            {
+            case '\b':
+              g_string_append(dest, "\\b");
+              break;
+            case '\n':
+              g_string_append(dest, "\\n");
+              break;
+            case '\r':
+              g_string_append(dest, "\\r");
+              break;
+            case '\t':
+              g_string_append(dest, "\\t");
+              break;
+            case '\\':
+              g_string_append(dest, "\\\\");
+              break;
+            case '"':
+              g_string_append(dest, "\\\"");
+              break;
+            default:
+              {
+                static const char json_hex_chars[16] = "0123456789abcdef";
+
+                g_string_append(dest, "\\u00");
+                g_string_append_c(dest, json_hex_chars[(*p) >> 4]);
+                g_string_append_c(dest, json_hex_chars[(*p) & 0xf]);
+                break;
+              }
+            }
+        }
+      p++;
+    }
 }
 
 static gboolean
@@ -84,14 +117,30 @@ tf_json_obj_start(const gchar *name,
                   const gchar *prev, gpointer *prev_data,
                   gpointer user_data)
 {
-  struct json_object *o;
+  json_state_t *state = (json_state_t *)user_data;
+  gboolean need_comma = FALSE;
 
   if (prefix_data)
+    need_comma = GPOINTER_TO_INT(*prefix_data);
+  else
+    need_comma = state->need_comma;
+
+  if (need_comma)
+    g_string_append_c(state->buffer, ',');
+
+  if (name)
     {
-      o = json_object_new_object();
-      *prefix_data = o;
-      o->_to_json_string = tf_json_object_to_string;
+      g_string_append_c(state->buffer, '"');
+      g_string_append_escaped(state->buffer, name);
+      g_string_append(state->buffer, "\":{");
+      state->need_comma = TRUE;
     }
+  else
+    g_string_append_c(state->buffer, '{');
+
+  if (prefix_data)
+    *prefix_data=GINT_TO_POINTER(0);
+
   return FALSE;
 }
 
@@ -101,15 +150,13 @@ tf_json_obj_end(const gchar *name,
                 const gchar *prev, gpointer *prev_data,
                 gpointer user_data)
 {
-  struct json_object *root;
+  json_state_t *state = (json_state_t *)user_data;
 
   if (prev_data)
-    root = (struct json_object *)*prev_data;
-  else
-    root = (struct json_object *)user_data;
+    *prev_data = GINT_TO_POINTER(1);
 
-  if (prefix_data)
-    json_object_object_add (root, (gchar *) name, (struct json_object *)*prefix_data);
+  g_string_append_c(state->buffer, '}');
+
   return FALSE;
 }
 
@@ -117,16 +164,26 @@ static gboolean
 tf_json_value(const gchar *name, const gchar *prefix, const gchar *value,
               gpointer *prefix_data, gpointer user_data)
 {
-  struct json_object *root;
-  struct json_object *this;
+  gboolean need_comma = FALSE;
+  json_state_t *state = (json_state_t *)user_data;
 
   if (prefix_data)
-    root = (struct json_object *)*prefix_data;
+    need_comma = GPOINTER_TO_INT(*prefix_data);
   else
-    root = (struct json_object *)user_data;
+    need_comma = state->need_comma;
 
-  this = json_object_new_string ((gchar *) value);
-  json_object_object_add (root, (gchar *) name, this);
+  if (need_comma)
+    g_string_append_c(state->buffer, ',');
+  else if (prefix_data)
+    *prefix_data = GINT_TO_POINTER(1);
+
+  g_string_append_c(state->buffer, '"');
+  g_string_append_escaped(state->buffer, name);
+  g_string_append(state->buffer, "\":\"");
+  g_string_append_escaped(state->buffer, value);
+  g_string_append_c(state->buffer, '"');
+
+  state->need_comma = TRUE;
 
   return FALSE;
 }
@@ -134,17 +191,14 @@ tf_json_value(const gchar *name, const gchar *prefix, const gchar *value,
 static void
 tf_json_append(GString *result, ValuePairs *vp, LogMessage *msg)
 {
-  struct json_object *json;
+  json_state_t state;
 
-  json = json_object_new_object();
-  json->_to_json_string = tf_json_object_to_string;
+  state.need_comma = FALSE;
+  state.buffer = result;
 
   value_pairs_walk(vp,
                    tf_json_obj_start, tf_json_value, tf_json_obj_end,
-                   msg, 0, json);
-
-  g_string_append(result, json_object_to_json_string (json));
-  json_object_put(json);
+                   msg, 0, &state);
 }
 
 static void
