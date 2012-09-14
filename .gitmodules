@@ -1,6 +1,6 @@
 [submodule "modules/afmongodb/libmongo-client"]
 	path = modules/afmongodb/libmongo-client
-	url = git://git.balabit.hu/bazsi/libmongo-client.git
+        url = https://github.com/algernon/libmongo-client.git
 [submodule "lib/ivykis"]
 	path = lib/ivykis
-	url = git://github.com/buytenh/ivykis.git
+        url = https://github.com/buytenh/ivykis.git
