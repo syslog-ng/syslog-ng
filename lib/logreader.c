@@ -843,16 +843,17 @@ log_reader_options_defaults(LogReaderOptions *options)
 }
 
 /*
- * NOTE: options_init and options_destroy are a bit weird, because their
- * invocation is not completely symmetric:
+ * NOTE: _init needs to be idempotent when called multiple times w/o invoking _destroy
  *
+ * Rationale:
  *   - init is called from driver init (e.g. affile_sd_init), 
  *   - destroy is called from driver free method (e.g. affile_sd_free, NOT affile_sd_deinit)
  *
  * The reason:
  *   - when initializing the reloaded configuration fails for some reason,
  *     we have to fall back to the old configuration, thus we cannot dump
- *     the information stored in the Options structure.
+ *     the information stored in the Options structure at deinit time, but
+ *     have to recover it when the old configuration is initialized.
  *
  * For the reasons above, init and destroy behave the following way:
  *
@@ -860,58 +861,16 @@ log_reader_options_defaults(LogReaderOptions *options)
  *     memory, and without loss of information
  *   - destroy is only called once, when the options are indeed to be destroyed
  *
- * As init allocates memory, it has to take care about freeing memory
- * allocated by the previous init call (or it has to reuse those).
- *   
+ * Also important to note is that when init is called multiple times, the
+ * GlobalConfig reference is the same, this means that it is enough to
+ * remember whether init was called already and return w/o doing anything in
+ * that case, which is actually how idempotency is implemented here.
  */
 void
 log_reader_options_init(LogReaderOptions *options, GlobalConfig *cfg, const gchar *group_name)
 {
-  gchar *recv_time_zone;
-  TimeZoneInfo *recv_time_zone_info;
-  gchar *host_override, *program_override, *text_encoding, *format;
-  MsgFormatHandler *format_handler;
-  GArray *tags;
-
-  recv_time_zone = options->parse_options.recv_time_zone;
-  options->parse_options.recv_time_zone = NULL;
-  recv_time_zone_info = options->parse_options.recv_time_zone_info;
-  options->parse_options.recv_time_zone_info = NULL;
-  text_encoding = options->text_encoding;
-  options->text_encoding = NULL;
-
-  /* NOTE: having to save super's variables is a crude hack, but I know of
-   * no other way to do it in the scheme described above. Be sure that you
-   * know what you are doing when you modify this code. */
-  
-  tags = options->super.tags;
-  options->super.tags = NULL;
-  host_override = options->super.host_override;
-  options->super.host_override = NULL;
-  program_override = options->super.program_override;
-  options->super.program_override = NULL;
-
-  format = options->parse_options.format;
-  options->parse_options.format = NULL;
-  format_handler = options->parse_options.format_handler;
-  options->parse_options.format_handler = NULL;
-
-  /***********************************************************************
-   * PLEASE NOTE THIS. please read the comment at the top of the function
-   ***********************************************************************/
-  log_reader_options_destroy(options);
-
-  options->parse_options.format = format;
-  options->parse_options.format_handler = format_handler;
-
-  options->super.host_override = host_override;
-  options->super.program_override = program_override;
-  options->super.tags = tags;
-  
-  options->parse_options.recv_time_zone = recv_time_zone;
-  options->parse_options.recv_time_zone_info = recv_time_zone_info;
-  options->text_encoding = text_encoding;
-  options->parse_options.format = format;
+  if (options->initialized)
+    return;
 
   log_source_options_init(&options->super, cfg, group_name);
   msg_format_options_init(&options->parse_options, cfg);
@@ -937,6 +896,7 @@ log_reader_options_init(LogReaderOptions *options, GlobalConfig *cfg, const gcha
     options->parse_options.flags |= LP_ASSUME_UTF8;
   if (cfg->threaded)
     options->flags |= LR_THREADED;
+  options->initialized = TRUE;
 }
 
 void
@@ -944,6 +904,7 @@ log_reader_options_destroy(LogReaderOptions *options)
 {
   log_source_options_destroy(&options->super);
   msg_format_options_destroy(&options->parse_options);
+  options->initialized = FALSE;
   if (options->text_encoding)
     {
       g_free(options->text_encoding);

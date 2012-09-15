@@ -57,6 +57,7 @@ typedef struct _MsgFormatHandler MsgFormatHandler;
 
 typedef struct _MsgFormatOptions
 {
+  gboolean initialized;
   gchar *format;
   MsgFormatHandler *format_handler;
   guint32 flags;

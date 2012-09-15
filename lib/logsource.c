@@ -359,55 +359,12 @@ log_source_options_defaults(LogSourceOptions *options)
   options->tags = NULL;
 }
 
-/*
- * NOTE: options_init and options_destroy are a bit weird, because their
- * invocation is not completely symmetric:
- *
- *   - init is called from driver init (e.g. affile_sd_init), 
- *   - destroy is called from driver free method (e.g. affile_sd_free, NOT affile_sd_deinit)
- *
- * The reason:
- *   - when initializing the reloaded configuration fails for some reason,
- *     we have to fall back to the old configuration, thus we cannot dump
- *     the information stored in the Options structure.
- *
- * For the reasons above, init and destroy behave the following way:
- *
- *   - init is idempotent, it can be called multiple times without leaking
- *     memory, and without loss of information
- *   - destroy is only called once, when the options are indeed to be destroyed
- *
- * As init allocates memory, it has to take care about freeing memory
- * allocated by the previous init call (or it has to reuse those).
- *   
- */
+/* NOTE: _init needs to be idempotent when called multiple times w/o invoking _destroy */
 void
 log_source_options_init(LogSourceOptions *options, GlobalConfig *cfg, const gchar *group_name)
 {
-  gchar *host_override, *program_override;
   gchar *source_group_name;
-  GArray *tags;
-  
-  host_override = options->host_override;
-  options->host_override = NULL;
-  program_override = options->program_override;
-  options->program_override = NULL;
 
-  tags = options->tags;
-  options->tags = NULL;
-
-  /***********************************************************************
-   * PLEASE NOTE THIS. please read the comment at the top of the function
-   ***********************************************************************/
-  log_source_options_destroy(options);
-
-  options->tags = tags;
-  
-  options->host_override = host_override;
-  options->host_override_len = -1;
-  options->program_override = program_override;
-  options->program_override_len = -1;
-  
   if (options->keep_hostname == -1)
     options->keep_hostname = cfg->keep_hostname;
   if (options->chain_hostnames == -1)

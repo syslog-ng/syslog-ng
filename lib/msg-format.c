@@ -37,51 +37,14 @@ msg_format_options_defaults(MsgFormatOptions *options)
   options->sdata_param_value_max = 65535;
 }
 
-/*
- * NOTE: options_init and options_destroy are a bit weird, because their
- * invocation is not completely symmetric:
- *
- *   - init is called from driver init (e.g. affile_sd_init),
- *   - destroy is called from driver free method (e.g. affile_sd_free, NOT affile_sd_deinit)
- *
- * The reason:
- *   - when initializing the reloaded configuration fails for some reason,
- *     we have to fall back to the old configuration, thus we cannot dump
- *     the information stored in the Options structure.
- *
- * For the reasons above, init and destroy behave the following way:
- *
- *   - init is idempotent, it can be called multiple times without leaking
- *     memory, and without loss of information
- *   - destroy is only called once, when the options are indeed to be destroyed
- *
- * As init allocates memory, it has to take care about freeing memory
- * allocated by the previous init call (or it has to reuse those).
- *
- */
+/* NOTE: _init needs to be idempotent when called multiple times w/o invoking _destroy */
 void
 msg_format_options_init(MsgFormatOptions *options, GlobalConfig *cfg)
 {
-  gchar *recv_time_zone, *format;
-  TimeZoneInfo *recv_time_zone_info;
-  MsgFormatHandler *format_handler;
   Plugin *p;
 
-  recv_time_zone = options->recv_time_zone;
-  options->recv_time_zone = NULL;
-  recv_time_zone_info = options->recv_time_zone_info;
-  options->recv_time_zone_info = NULL;
-  format = options->format;
-  options->format = NULL;
-  format_handler = options->format_handler;
-  options->format_handler = NULL;
-
-  msg_format_options_destroy(options);
-
-  options->format = format;
-  options->format_handler = format_handler;
-  options->recv_time_zone = recv_time_zone;
-  options->recv_time_zone_info = recv_time_zone_info;
+  if (options->initialized)
+    return;
 
   if (cfg->bad_hostname_compiled)
     options->bad_hostname = &cfg->bad_hostname;
@@ -96,6 +59,7 @@ msg_format_options_init(MsgFormatOptions *options, GlobalConfig *cfg)
   p = plugin_find(cfg, LL_CONTEXT_FORMAT, options->format);
   if (p)
     options->format_handler = plugin_construct(p, cfg, LL_CONTEXT_FORMAT, options->format);
+  options->initialized = TRUE;
 }
 
 void
@@ -116,4 +80,5 @@ msg_format_options_destroy(MsgFormatOptions *options)
       time_zone_info_free(options->recv_time_zone_info);
       options->recv_time_zone_info = NULL;
     }
+  options->initialized = FALSE;
 }

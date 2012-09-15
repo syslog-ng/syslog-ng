@@ -62,6 +62,7 @@ typedef struct _LogTemplate
  * arguments to log_template_format() */
 typedef struct _LogTemplateOptions
 {
+  gboolean initialized;
   /* timestamp format as specified by ts_format() */
   gint ts_format;
   /* number of digits in the fraction of a second part, specified using frac_digits() */

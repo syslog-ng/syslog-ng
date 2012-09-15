@@ -281,7 +281,7 @@ result_append_value(GString *result, LogMessage *lm, NVHandle handle, gboolean e
 gboolean
 log_macro_expand(GString *result, gint id, gboolean escape, LogTemplateOptions *opts, gint tz, gint32 seq_num, const gchar *context_id, LogMessage *msg)
 {
-  static LogTemplateOptions default_opts = { TS_FMT_BSD, 0, { NULL, NULL }, { NULL, NULL } };
+  static LogTemplateOptions default_opts = { TRUE, TS_FMT_BSD, 0, { NULL, NULL }, { NULL, NULL } };
 
   if (!opts)
     opts = &default_opts;
@@ -1331,11 +1331,14 @@ log_template_unref(LogTemplate *s)
     }
 }
 
+/* NOTE: _init needs to be idempotent when called multiple times w/o invoking _destroy */
 void
 log_template_options_init(LogTemplateOptions *options, GlobalConfig *cfg)
 {
   gint i;
 
+  if (options->initialized)
+    return;
   if (options->ts_format == -1)
     options->ts_format = cfg->template_options.ts_format;
   for (i = 0; i < LTZ_MAX; i++)
@@ -1348,6 +1351,7 @@ log_template_options_init(LogTemplateOptions *options, GlobalConfig *cfg)
 
   if (options->frac_digits == -1)
     options->frac_digits = cfg->template_options.frac_digits;
+  options->initialized = TRUE;
 }
 
 void
@@ -1362,6 +1366,7 @@ log_template_options_destroy(LogTemplateOptions *options)
       if (options->time_zone_info[i])
         time_zone_info_free(options->time_zone_info[i]);
     }
+  options->initialized = FALSE;
 }
 
 void

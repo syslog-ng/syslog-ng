@@ -1223,7 +1223,7 @@ log_writer_reopen_deferred(gpointer s)
   log_writer_stop_watches(self);
 
   if (self->proto)
-    log_proto_free(self->proto);
+    log_proto_client_free(self->proto);
 
   self->proto = proto;
 
@@ -1234,7 +1234,7 @@ log_writer_reopen_deferred(gpointer s)
 /*
  * This function can be called from any threads, from the main thread
  * as well as I/O worker threads. It takes care about going to the
- * main thread to actually switch LogProto under this writer.
+ * main thread to actually switch LogProtoClient under this writer.
  *
  * The writer may still be operating, (e.g. log_pipe_deinit/init is
  * not needed).
@@ -1245,7 +1245,7 @@ log_writer_reopen_deferred(gpointer s)
  * until the worker thread has finished. The reason for this
  * difference is:
  *
- *   - if LogWriter is busy, then updating the LogProto instance is
+ *   - if LogWriter is busy, then updating the LogProtoClient instance is
  *     deferred to log_writer_work_finished(), but that runs in the
  *     main thread.
  *
@@ -1371,16 +1371,17 @@ log_writer_options_set_mark_mode(LogWriterOptions *options, gchar *mark_mode)
 }
 
 /*
- * NOTE: options_init and options_destroy are a bit weird, because their
- * invocation is not completely symmetric:
+ * NOTE: _init needs to be idempotent when called multiple times w/o invoking _destroy
  *
- *   - init is called from driver init (e.g. affile_dd_init), 
- *   - destroy is called from driver free method (e.g. affile_sd_free, NOT affile_dd_deinit)
+ * Rationale:
+ *   - init is called from driver init (e.g. affile_sd_init),
+ *   - destroy is called from driver free method (e.g. affile_sd_free, NOT affile_sd_deinit)
  *
  * The reason:
  *   - when initializing the reloaded configuration fails for some reason,
  *     we have to fall back to the old configuration, thus we cannot dump
- *     the information stored in the Options structure.
+ *     the information stored in the Options structure at deinit time, but
+ *     have to recover it when the old configuration is initialized.
  *
  * For the reasons above, init and destroy behave the following way:
  *
@@ -1388,38 +1389,17 @@ log_writer_options_set_mark_mode(LogWriterOptions *options, gchar *mark_mode)
  *     memory, and without loss of information
  *   - destroy is only called once, when the options are indeed to be destroyed
  *
- * As init allocates memory, it has to take care about freeing memory
- * allocated by the previous init call (or it has to reuse those).
- *   
+ * Also important to note is that when init is called multiple times, the
+ * GlobalConfig reference is the same, this means that it is enough to
+ * remember whether init was called already and return w/o doing anything in
+ * that case, which is actually how idempotency is implemented here.
  */
 void
 log_writer_options_init(LogWriterOptions *options, GlobalConfig *cfg, guint32 option_flags)
 {
-  LogTemplate *template;
-  gchar *time_zone[2];
-  TimeZoneInfo *time_zone_info[2];
-  gint i;
+  if (options->initialized)
+    return;
 
-  template = log_template_ref(options->template);
-
-  for (i = 0; i < LTZ_MAX; i++)
-    {
-      time_zone[i] = options->template_options.time_zone[i];
-      time_zone_info[i] = options->template_options.time_zone_info[i];
-      options->template_options.time_zone[i] = NULL;
-      options->template_options.time_zone_info[i] = NULL;
-    }
-
-  log_writer_options_destroy(options);
-  log_template_options_destroy(&options->template_options);
-  
-  /* restroe the config */
-  options->template = template;
-  for (i = 0; i < LTZ_MAX; i++)
-    {
-      options->template_options.time_zone[i] = time_zone[i];
-      options->template_options.time_zone_info[i] = time_zone_info[i];
-    }
   log_template_options_init(&options->template_options, cfg);
   options->options |= option_flags;
     
@@ -1451,6 +1431,7 @@ log_writer_options_init(LogWriterOptions *options, GlobalConfig *cfg, guint32 op
   options->use_fqdn = cfg->use_fqdn;
   options->use_dns_cache = cfg->use_dns_cache;
   options->normalize_hostnames = cfg->normalize_hostnames;
+  options->initialized = TRUE;
 }
 
 void
@@ -1460,6 +1441,7 @@ log_writer_options_destroy(LogWriterOptions *options)
   log_template_unref(options->template);
   log_template_unref(options->file_template);
   log_template_unref(options->proto_template);
+  options->initialized = FALSE;
 }
 
 gint
