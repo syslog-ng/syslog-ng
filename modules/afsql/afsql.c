@@ -734,7 +734,7 @@ afsql_dd_insert_fail_handler(AFSqlDestDriver *self, LogMessage *msg,
 {
   if (self->failed_message_counter < self->num_retries - 1)
     {
-      log_queue_push_head(self->queue, msg, &path_options);
+      log_queue_push_head(self->queue, msg, path_options);
 
       /* database connection status sanity check after failed query */
       if (dbi_conn_ping(self->dbi_ctx) != 1)
