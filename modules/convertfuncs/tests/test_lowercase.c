@@ -31,6 +31,11 @@ int test_lowercase_template_function()
   log_template_format(template, msg, NULL, 0, 0, "TEST", result);
   assert_string(result->str,"almafa árvíztűrő tükörfúrógép","Bad formatting");
 
+  template_string = "$(lowercase ${HOST}.ÁRVÍZTŰRŐ.TÜKÖRFÚRÓGÉP)";
+  assert_true(log_template_compile(template,template_string,&err),"CAN't COMPILE!");
+  log_template_format(template, msg, NULL, 0, 0, "TEST", result);
+  assert_string(result->str,"almafa.árvíztűrő.tükörfúrógép","Bad formatting");
+
   log_msg_unref(msg);
   log_template_unref(template);
   g_string_free(result, TRUE);

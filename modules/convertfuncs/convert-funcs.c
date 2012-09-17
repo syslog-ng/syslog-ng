@@ -223,8 +223,8 @@ typedef struct _SplitOptions {
   guint        length;
 } SplitOptions;
 
-#define MAX_START_FROM 0x00FF
-#define MAX_LENGTH     0x00FF
+#define MAX_START_FROM 0x00FF /* It is expandable, but at first we thought that 255 is far enough */
+#define MAX_LENGTH     0x00FF /* It is expandable, but at first we thought that 255 is far enough */
 
 static gboolean
 tf_strcut_prepare(LogTemplateFunction *self, LogTemplate *parent,
@@ -272,7 +272,7 @@ tf_strcut_prepare(LogTemplateFunction *self, LogTemplate *parent,
     {
       return FALSE;
     }
-  if (options->start_from > MAX_START_FROM)
+  if ((options->start_from > MAX_START_FROM) || (options->start_from < -MAX_START_FROM))
     {
       return FALSE;
     }
@@ -332,11 +332,11 @@ TEMPLATE_FUNCTION_SIMPLE(tf_replace);
 static void
 tf_lowercase(LogMessage *msg, int argc, GString *argv[], GString *result)
 {
-  int i = 0;
+  int i;
   for(i = 0; i < argc; i++)
     {
-      gchar *value = argv[0]->str;
-      gchar *converted = g_utf8_strdown(value, -1);
+      gchar *value = argv[i]->str;
+      gchar *converted = g_utf8_strdown(value, argv[i]->len);
       g_string_append(result,converted);
       g_free(converted);
     }

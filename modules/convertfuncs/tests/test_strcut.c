@@ -7,13 +7,20 @@
 void test_strcut_template_function_invalid_syntax()
 {
   gchar *invalid_syntax[] = { "$(strcut $HOST)", /* without any parameters */
+                              "$(strcut)", /* without any parameters */
                               "$(strcut --asdasd=asdasd --delimiters=.; --start_from=1 --length=0 $HOST)", /* with unknown option name */
                               "$(strcut --delimiters=.; --start_from=1 --length=0)", /* subject missing */
                               "$(strcut --start_from=1 --length=0 $HOST)",           /* delimiters missing */
                               "$(strcut --delimiters=.; --length=0 $HOST)",          /* start_from missing */
                               "$(strcut --delimiters=.; --start_from=1 $HOST)",      /* length missing */
                               "$(strcut --delimiters=.; --start_from=65535 --length=0 $HOST)", /*invalid start_from */
+                              "$(strcut --delimiters=.; --start_from=-65535 --length=0 $HOST)", /*invalid start_from */
+                              "$(strcut --delimiters=.; --start_from=256 --length=0 $HOST)", /*invalid start_from */
+                              "$(strcut --delimiters=.; --start_from=-256 --length=0 $HOST)", /*invalid start_from */
                               "$(strcut --delimiters=.; --start_from=0 --length=-2 $HOST)",    /*invalid length */
+                              "$(strcut --delimiters=.; --start_from=0 --length=-1 $HOST)",    /*invalid length */
+                              "$(strcut --delimiters=.; --start_from=0 --length=256 $HOST)",    /*invalid length */
+                              "$(strcut --delimiters=.; --start_from=0 --length=asb $HOST)",    /*invalid length */
                               NULL};
 
   int i = 0;
@@ -46,6 +53,7 @@ void test_strcut_template_function()
           {"$(strcut --delimiters=. --start_from=4 --length=0 a.b.c.d)","d"},
           {"$(strcut --delimiters=. --start_from=5 --length=0 a.b.c.d)","d"},
           {"$(strcut --delimiters=. --start_from=255 --length=0 a.b.c.d)","d"},
+          {"$(strcut --delimiters=1 --start_from=0 --length=1 a.b1c.d)","a.b"},
 
           {"$(strcut --delimiters=. --start_from=-1 --length=0 a.b.c.d)","d"},
           {"$(strcut --delimiters=. --start_from=-2 --length=0 a.b.c.d)","c.d"},
@@ -62,12 +70,24 @@ void test_strcut_template_function()
           {"$(strcut --delimiters=. --start_from=0 --length=5 a.b.c.d)","a.b.c.d"},
           {"$(strcut --delimiters=. --start_from=0 --length=255 a.b.c.d)","a.b.c.d"},
 
-          {"$(strcut --delimiters=.;zn --start_from=0 --length=1 a.b;czd)","a"},
-          {"$(strcut --delimiters=.;zn --start_from=0 --length=2 a.b;czd)","a.b"},
-          {"$(strcut --delimiters=.;zn --start_from=0 --length=3 a.b;czd)","a.b;c"},
-          {"$(strcut --delimiters=.;zn --start_from=0 --length=4 a.b;czd)","a.b;czd"},
-          {"$(strcut --delimiters=.;zn --start_from=0 --length=5 a.b;czd)","a.b;czd"},
-          {"$(strcut --delimiters=.;zn --start_from=0 --length=255 a.b;czd)","a.b;czd"},
+          {"$(strcut --delimiters=.;zn --start_from=0 --length=1 a.b;czdne)","a"},
+          {"$(strcut --delimiters=.;zn --start_from=0 --length=2 a.b;czdne)","a.b"},
+          {"$(strcut --delimiters=.;zn --start_from=0 --length=3 a.b;czdne)","a.b;c"},
+          {"$(strcut --delimiters=.;zn --start_from=0 --length=4 a.b;czdne)","a.b;czd"},
+          {"$(strcut --delimiters=.;zn --start_from=0 --length=5 a.b;czdne)","a.b;czdne"},
+          {"$(strcut --delimiters=.;zn --start_from=0 --length=255 a.b;czdne)","a.b;czdne"},
+
+          {"$(strcut --delimiters=.;zn --start_from=1 --length=1 a.b;czdne)","b"},
+          {"$(strcut --delimiters=.;zn --start_from=-2 --length=2 \"a.b;czd ne\")","d ne"},
+          {"$(strcut --delimiters=.;zn --start_from=-3 --length=5 \"a.b;cz ne\")","czd ne"},
+          {"$(strcut --delimiters=.;zn --start_from=-4 --length=3 \"a.b;czd ne\")","b;czd "},
+          {"$(strcut --delimiters=.;zn --start_from=-3 --length=3 \"a.b;czd ne\")","czd ne"},
+
+          {"$(strcut --delimiters=@ --start_from=1 --length=1 a.b;czdne)","a.b;czdne"},
+          {"$(strcut --delimiters=@ --start_from=1 --length=1 a@@.b;czdne)",""},
+          {"$(strcut --delimiters=@ --start_from=0 --length=1 somebody@balabit.hu)","somebody"},
+          {"$(strcut --delimiters=@. --start_from=1 --length=3 somebody@balabit.hu)","balabit.hu"},
+          {"$(strcut --delimiters=. --start_from=0 --length=1 $(strcut --delimiters=@ --start_from=1 --length=0 somebody.xyz@balabit.hu))","balabit"},
           {NULL},
        };
   int i = 0;
