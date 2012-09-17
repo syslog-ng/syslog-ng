@@ -1047,7 +1047,8 @@ log_template_compile(LogTemplate *self, const gchar *template, GError **error)
               parse_msg_ref(&p, &msg_ref);
               if (!log_template_add_func_elem(self, last_text, strv->len - 1, (gchar **) strv->pdata, msg_ref, error))
                 {
-                  g_ptr_array_free(strv, TRUE);
+                  g_strfreev((gchar **)strv->pdata);
+                  g_ptr_array_free(strv, FALSE);
                   g_string_free(arg_buf, TRUE);
                   goto error_set;
                 }
