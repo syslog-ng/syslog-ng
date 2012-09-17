@@ -216,6 +216,94 @@ tf_format_snare_eval (LogTemplateFunction *self, gpointer state, GPtrArray *arg_
 
 TEMPLATE_FUNCTION(tf_format_snare,tf_format_snare_prepare,tf_format_snare_eval,tf_format_snare_call,NULL);
 
+typedef struct _SplitOptions {
+  GlobalConfig *cfg;
+  gchar        *delimiters;
+  gint         start_from;
+  guint        length;
+} SplitOptions;
+
+#define MAX_START_FROM 0x00FF
+#define MAX_LENGTH     0x00FF
+
+static gboolean
+tf_strcut_prepare(LogTemplateFunction *self, LogTemplate *parent,
+                gint argc, gchar *argv[],
+                gpointer *state, GDestroyNotify *state_destroy,
+                GError **error)
+{
+  GError *err = NULL;
+  gchar **cargv;
+  gint cargc = argc + 1;
+  SplitOptions *options = g_new0(SplitOptions,1);
+  gint i;
+  GOptionContext *ctx;
+  GOptionGroup *og;
+
+  GOptionEntry strcut_options[] = {
+    { "delimiters", 'd', 0, G_OPTION_ARG_STRING, &options->delimiters, NULL, NULL },
+    { "start_from", 's', 0, G_OPTION_ARG_INT, &options->start_from, NULL, NULL },
+    { "length", 'l', 0, G_OPTION_ARG_INT, &options->length, NULL, NULL },
+    { NULL }
+  };
+
+  options->start_from = 0x0100;
+  options->length = 0x0100;
+
+  cargv = g_new0 (gchar *, cargc + 1);
+  for (i = 0; i < cargc; i++)
+    cargv[i+1] = argv[i];
+  cargv[0] = "strcut";
+  cargv[cargc] = NULL;
+
+  ctx = g_option_context_new ("strcut");
+  og = g_option_group_new (NULL, NULL, NULL, NULL, NULL);
+  g_option_group_add_entries (og, strcut_options);
+  g_option_context_set_main_group (ctx, og);
+
+  if (!g_option_context_parse (ctx, &cargc, &cargv, error))
+    {
+      g_option_context_free (ctx);
+      g_free(cargv);
+      return FALSE;
+    }
+  g_option_context_free (ctx);
+  if (options->delimiters == NULL)
+    {
+      return FALSE;
+    }
+  if (options->start_from > MAX_START_FROM)
+    {
+      return FALSE;
+    }
+  if (options->length > MAX_LENGTH)
+    {
+      return FALSE;
+    }
+  if (cargc == 1)
+    {
+      return FALSE;
+    }
+  return TRUE;
+}
+
+static void
+tf_strcut_call(LogTemplateFunction *self, gpointer state, GPtrArray *arg_bufs,
+             LogMessage **messages, gint num_messages, LogTemplateOptions *opts,
+             gint tz, gint seq_num, const gchar *context_id, GString *result)
+{
+}
+
+static void
+tf_strcut_eval (LogTemplateFunction *self, gpointer state, GPtrArray *arg_bufs,
+              LogMessage **messages, gint num_messages, LogTemplateOptions *opts,
+              gint tz, gint seq_num, const gchar *context_id)
+{
+  return;
+}
+
+TEMPLATE_FUNCTION(tf_strcut,tf_strcut_prepare,tf_strcut_eval,tf_strcut_call, NULL);
+
 static void
 tf_replace(LogMessage *msg, gint argc, GString *argv[], GString *result)
 {
@@ -241,12 +329,30 @@ tf_replace(LogMessage *msg, gint argc, GString *argv[], GString *result)
 
 TEMPLATE_FUNCTION_SIMPLE(tf_replace);
 
+static void
+tf_lowercase(LogMessage *msg, int argc, GString *argv[], GString *result)
+{
+  int i = 0;
+  for(i = 0; i < argc; i++)
+    {
+      gchar *value = argv[0]->str;
+      gchar *converted = g_utf8_strdown(value, -1);
+      g_string_append(result,converted);
+      g_free(converted);
+    }
+  return;
+}
+
+TEMPLATE_FUNCTION_SIMPLE(tf_lowercase);
+
 static Plugin convert_func_plugins[] =
 {
   TEMPLATE_FUNCTION_PLUGIN(tf_ipv4_to_int, "ipv4-to-int"),
   TEMPLATE_FUNCTION_PLUGIN(tf_format_welf, "format-welf"),
   TEMPLATE_FUNCTION_PLUGIN(tf_format_snare, "format-snare"),
   TEMPLATE_FUNCTION_PLUGIN(tf_replace,"replace"),
+  TEMPLATE_FUNCTION_PLUGIN(tf_lowercase,"lowercase"),
+  TEMPLATE_FUNCTION_PLUGIN(tf_strcut,"strcut")
 };
 
 gboolean
