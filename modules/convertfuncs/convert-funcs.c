@@ -101,6 +101,16 @@ typedef struct _SnareFormatOptions {
   guint        criticality;
 } SnareFormatOptions;
 
+static void
+snare_format_options_destroy(SnareFormatOptions *options)
+{
+  log_template_unref(options->protocol_template);
+  log_template_unref(options->event_template);
+  log_template_unref(options->file_template);
+  g_free(options->delimiter);
+  g_free(options);
+}
+
 static gboolean
 tf_format_snare_prepare(LogTemplateFunction *self, LogTemplate *parent,
                 gint argc, gchar *argv[],
@@ -124,7 +134,6 @@ tf_format_snare_prepare(LogTemplateFunction *self, LogTemplate *parent,
     { NULL }
   };
 
-  options->delimiter = g_strdup("\\\t");
   options->criticality = 1;
   options->cfg = parent->cfg;
 
@@ -146,7 +155,10 @@ tf_format_snare_prepare(LogTemplateFunction *self, LogTemplate *parent,
       return FALSE;
     }
   g_option_context_free (ctx);
-
+  if (!options->delimiter)
+    {
+      options->delimiter = g_strdup("\\\t");
+    }
   g_string_append(event_template_str,"MSWinEventLog");
   g_string_append(event_template_str,options->delimiter);
   format_uint32_padded(event_template_str, 1, '0', 10, options->criticality);
@@ -172,8 +184,10 @@ tf_format_snare_prepare(LogTemplateFunction *self, LogTemplate *parent,
 
   options->file_template = log_template_new(options->cfg,"snare_file_template");
   log_template_compile(options->file_template,"${FILE_NAME}: ${FILE_MESSAGE}\n",&err);
-  self->arg = options;
+  *state = options;
+  *state_destroy = (GDestroyNotify)snare_format_options_destroy;
   g_string_free(event_template_str,TRUE);
+  g_free(cargv);
   return err == NULL;
 }
 
@@ -185,7 +199,7 @@ tf_format_snare_call(LogTemplateFunction *self, gpointer state, GPtrArray *arg_b
   gint i;
   gssize len;
   static NVHandle hEventId = 0;
-  SnareFormatOptions *options = self->arg;
+  SnareFormatOptions *options = state;
 
   if (!hEventId)
     hEventId = log_msg_get_value_handle("EVENT_ID");
@@ -216,15 +230,22 @@ tf_format_snare_eval (LogTemplateFunction *self, gpointer state, GPtrArray *arg_
 
 TEMPLATE_FUNCTION(tf_format_snare,tf_format_snare_prepare,tf_format_snare_eval,tf_format_snare_call,NULL);
 
-typedef struct _SplitOptions {
+typedef struct _StrcutOptions {
   GlobalConfig *cfg;
   gchar        *delimiters;
   gint         start_from;
   guint        length;
-} SplitOptions;
+} StrcutOptions;
 
 #define MAX_START_FROM 0x00FF /* It is expandable, but at first we thought that 255 is far enough */
 #define MAX_LENGTH     0x00FF /* It is expandable, but at first we thought that 255 is far enough */
+
+static void
+strcut_options_destroy(StrcutOptions *options)
+{
+  g_free(options->delimiters);
+  g_free(options);
+}
 
 static gboolean
 tf_strcut_prepare(LogTemplateFunction *self, LogTemplate *parent,
@@ -232,13 +253,13 @@ tf_strcut_prepare(LogTemplateFunction *self, LogTemplate *parent,
                 gpointer *state, GDestroyNotify *state_destroy,
                 GError **error)
 {
-  GError *err = NULL;
   gchar **cargv;
   gint cargc = argc + 1;
-  SplitOptions *options = g_new0(SplitOptions,1);
+  StrcutOptions *options = g_new0(StrcutOptions,1);
   gint i;
   GOptionContext *ctx;
   GOptionGroup *og;
+  gboolean result = TRUE;
 
   GOptionEntry strcut_options[] = {
     { "delimiters", 'd', 0, G_OPTION_ARG_STRING, &options->delimiters, NULL, NULL },
@@ -263,28 +284,40 @@ tf_strcut_prepare(LogTemplateFunction *self, LogTemplate *parent,
 
   if (!g_option_context_parse (ctx, &cargc, &cargv, error))
     {
-      g_option_context_free (ctx);
-      g_free(cargv);
-      return FALSE;
+      result = FALSE;
+      goto exit;
     }
-  g_option_context_free (ctx);
   if (options->delimiters == NULL)
     {
-      return FALSE;
+      result = FALSE;
+      goto exit;
     }
   if ((options->start_from > MAX_START_FROM) || (options->start_from < -MAX_START_FROM))
     {
-      return FALSE;
+      result = FALSE;
+      goto exit;
     }
   if (options->length > MAX_LENGTH)
     {
-      return FALSE;
+      result = FALSE;
+      goto exit;
     }
   if (cargc == 1)
     {
-      return FALSE;
+      result = FALSE;
+      goto exit;
     }
-  return TRUE;
+  *state = options;
+  *state_destroy = (GDestroyNotify)strcut_options_destroy;
+exit:
+  if (!result)
+    {
+      g_free(options->delimiters);
+      g_free(options);
+    }
+  g_option_context_free(ctx);
+  g_free(cargv);
+  return result;
 }
 
 static void
@@ -292,6 +325,7 @@ tf_strcut_call(LogTemplateFunction *self, gpointer state, GPtrArray *arg_bufs,
              LogMessage **messages, gint num_messages, LogTemplateOptions *opts,
              gint tz, gint seq_num, const gchar *context_id, GString *result)
 {
+  return;
 }
 
 static void
