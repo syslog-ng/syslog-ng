@@ -72,6 +72,10 @@ test_snare_template_function()
   assert_true(log_template_compile(template,template_string,&err),"CAN't COMPILE!");
   log_template_format(template, msg, NULL, 0, 0, "TEST", result);
   assert_string(result->str,expected,"Bad criticality handling");
+
+  log_template_unref(template);
+  log_msg_unref(msg);
+  g_string_free(result,TRUE);
 }
 
 

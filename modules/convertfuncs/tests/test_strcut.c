@@ -29,6 +29,7 @@ void test_strcut_template_function_invalid_syntax()
     {
       GError *err = NULL;
       assert_false(log_template_compile(template,invalid_syntax[i],&err),"Compile invalid template %s",invalid_syntax[i]);
+      g_clear_error(&err);
       i++;
     }
   log_template_unref(template);

@@ -38,6 +38,8 @@ test_replace_template_function()
 
       log_msg_unref(msg);
     }
+  g_string_free(result,TRUE);
+  log_template_unref(template);
 }
 
 
