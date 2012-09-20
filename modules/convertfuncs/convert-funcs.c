@@ -235,20 +235,23 @@ typedef struct _StrcutOptions {
   gchar        *delimiters;
   gint         start_from;
   guint        length;
+  LogTemplate  *compiled_template;
 } StrcutOptions;
 
 #define MAX_START_FROM 0x00FF /* It is expandable, but at first we thought that 255 is far enough */
 #define MAX_LENGTH     0x00FF /* It is expandable, but at first we thought that 255 is far enough */
 
 static void
-strcut_options_destroy(StrcutOptions *options)
+cut_options_destroy(StrcutOptions *options)
 {
+  if (options->compiled_template)
+    log_template_unref(options->compiled_template);
   g_free(options->delimiters);
   g_free(options);
 }
 
 static gboolean
-tf_strcut_prepare(LogTemplateFunction *self, LogTemplate *parent,
+tf_cut_prepare(LogTemplateFunction *self, LogTemplate *parent,
                 gint argc, gchar *argv[],
                 gpointer *state, GDestroyNotify *state_destroy,
                 GError **error)
@@ -261,7 +264,7 @@ tf_strcut_prepare(LogTemplateFunction *self, LogTemplate *parent,
   GOptionGroup *og;
   gboolean result = TRUE;
 
-  GOptionEntry strcut_options[] = {
+  GOptionEntry cut_options[] = {
     { "delimiters", 'd', 0, G_OPTION_ARG_STRING, &options->delimiters, NULL, NULL },
     { "start_from", 's', 0, G_OPTION_ARG_INT, &options->start_from, NULL, NULL },
     { "length", 'l', 0, G_OPTION_ARG_INT, &options->length, NULL, NULL },
@@ -274,12 +277,12 @@ tf_strcut_prepare(LogTemplateFunction *self, LogTemplate *parent,
   cargv = g_new0 (gchar *, cargc + 1);
   for (i = 0; i < cargc; i++)
     cargv[i+1] = argv[i];
-  cargv[0] = "strcut";
+  cargv[0] = "cut";
   cargv[cargc] = NULL;
 
-  ctx = g_option_context_new ("strcut");
+  ctx = g_option_context_new ("cut");
   og = g_option_group_new (NULL, NULL, NULL, NULL, NULL);
-  g_option_group_add_entries (og, strcut_options);
+  g_option_group_add_entries (og, cut_options);
   g_option_context_set_main_group (ctx, og);
 
   if (!g_option_context_parse (ctx, &cargc, &cargv, error))
@@ -302,13 +305,19 @@ tf_strcut_prepare(LogTemplateFunction *self, LogTemplate *parent,
       result = FALSE;
       goto exit;
     }
-  if (cargc == 1)
+  if (cargc != 2)
+    {
+      result = FALSE;
+      goto exit;
+    }
+  options->compiled_template = log_template_new(parent->cfg,NULL);
+  if (!log_template_compile(options->compiled_template,cargv[1],error))
     {
       result = FALSE;
       goto exit;
     }
   *state = options;
-  *state_destroy = (GDestroyNotify)strcut_options_destroy;
+  *state_destroy = (GDestroyNotify)cut_options_destroy;
 exit:
   if (!result)
     {
@@ -320,23 +329,88 @@ exit:
   return result;
 }
 
+static GPtrArray *
+tf_cut_get_tokens(gchar *subject,gchar *delimiters)
+{
+  GPtrArray *result = g_ptr_array_new();
+  gchar *p = subject;
+  g_ptr_array_add(result,subject);
+  while(*p)
+    {
+      if(strchr(delimiters,*p))
+        {
+          g_ptr_array_add(result,p + 1);
+        }
+      p++;
+    }
+  return result;
+}
+
 static void
-tf_strcut_call(LogTemplateFunction *self, gpointer state, GPtrArray *arg_bufs,
+tf_cut_call(LogTemplateFunction *self, gpointer state, GPtrArray *arg_bufs,
              LogMessage **messages, gint num_messages, LogTemplateOptions *opts,
              gint tz, gint seq_num, const gchar *context_id, GString *result)
 {
+  StrcutOptions *options = (StrcutOptions *)state;
+  int i;
+  for(i = 0; i < num_messages; i++)
+    {
+      LogMessage *msg = messages[i];
+      GString *template = g_string_sized_new(256);
+      GPtrArray *tokens = NULL;
+      int start_from = options->start_from;
+      int length = options->length;
+      gchar *end = NULL;
+      gchar *start = NULL;
+
+      log_template_format(options->compiled_template,msg,opts,tz,seq_num,context_id,template);
+      tokens = tf_cut_get_tokens(template->str,options->delimiters);
+      if (start_from >= 0)
+        {
+          if (start_from > tokens->len - 1)
+            {
+              start_from = tokens->len - 1;
+            }
+          start = g_ptr_array_index(tokens,start_from);
+        }
+      else
+        {
+          start_from = tokens->len + start_from;
+          if (start_from < 0)
+            {
+              start_from = 0;
+            }
+          start = g_ptr_array_index(tokens,start_from);
+        }
+      if (length == 0)
+        {
+          g_string_append(result,start);
+        }
+      else if (length + start_from  < tokens->len)
+        {
+          end = g_ptr_array_index(tokens,length + start_from);
+          end--;
+          g_string_append_len(result,start,end - start);
+        }
+      else
+        {
+          g_string_append(result,start);
+        }
+      g_string_free(template,TRUE);
+      g_ptr_array_free(tokens,TRUE);
+    }
   return;
 }
 
 static void
-tf_strcut_eval (LogTemplateFunction *self, gpointer state, GPtrArray *arg_bufs,
+tf_cut_eval (LogTemplateFunction *self, gpointer state, GPtrArray *arg_bufs,
               LogMessage **messages, gint num_messages, LogTemplateOptions *opts,
               gint tz, gint seq_num, const gchar *context_id)
 {
   return;
 }
 
-TEMPLATE_FUNCTION(tf_strcut,tf_strcut_prepare,tf_strcut_eval,tf_strcut_call, NULL);
+TEMPLATE_FUNCTION(tf_cut,tf_cut_prepare,tf_cut_eval,tf_cut_call, NULL);
 
 static void
 tf_replace(LogMessage *msg, gint argc, GString *argv[], GString *result)
@@ -386,7 +460,7 @@ static Plugin convert_func_plugins[] =
   TEMPLATE_FUNCTION_PLUGIN(tf_format_snare, "format-snare"),
   TEMPLATE_FUNCTION_PLUGIN(tf_replace,"replace"),
   TEMPLATE_FUNCTION_PLUGIN(tf_lowercase,"lowercase"),
-  TEMPLATE_FUNCTION_PLUGIN(tf_strcut,"strcut")
+  TEMPLATE_FUNCTION_PLUGIN(tf_cut,"cut")
 };
 
 gboolean
