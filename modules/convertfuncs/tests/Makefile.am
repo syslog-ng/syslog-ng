@@ -2,7 +2,7 @@ AM_CFLAGS = -I$(top_srcdir)/lib -I../../../lib -I$(top_srcdir)/modules/convertfu
 if IS_WINDOWS
 AM_LDFLAGS = -dlpreopen ../../syslogformat/libsyslogformat.la
 else
-AM_LDFLAGS = ../../syslogformat/libsyslogformat.la -lsyslog-ng
+AM_LDFLAGS = ../../syslogformat/libsyslogformat.la
 endif
 LDADD = ../libconvertfuncs.la @TOOL_DEPS_LIBS@ @OPENSSL_LIBS@ $(top_builddir)/libtest/libsyslog-ng-test.a $(top_builddir)/lib/libsyslog-ng.la
 

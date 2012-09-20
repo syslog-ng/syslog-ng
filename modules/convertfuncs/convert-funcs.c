@@ -346,6 +346,21 @@ tf_cut_get_tokens(gchar *subject,gchar *delimiters)
   return result;
 }
 
+static int
+tf_cut_get_valid_index(int max,int index)
+{
+  int result = 0;
+  if (index >= 0)
+    {
+      result = MIN(max,index);
+    }
+  else
+    {
+      result = MAX(0, max + index + 1);
+    }
+  return result;
+}
+
 static void
 tf_cut_call(LogTemplateFunction *self, gpointer state, GPtrArray *arg_bufs,
              LogMessage **messages, gint num_messages, LogTemplateOptions *opts,
@@ -358,44 +373,32 @@ tf_cut_call(LogTemplateFunction *self, gpointer state, GPtrArray *arg_bufs,
       LogMessage *msg = messages[i];
       GString *template = g_string_sized_new(256);
       GPtrArray *tokens = NULL;
-      int start_from = options->start_from;
-      int length = options->length;
+      int start_index = options->start_from;
+      int end_index = 0;
       gchar *end = NULL;
       gchar *start = NULL;
 
       log_template_format(options->compiled_template,msg,opts,tz,seq_num,context_id,template);
       tokens = tf_cut_get_tokens(template->str,options->delimiters);
-      if (start_from >= 0)
-        {
-          if (start_from > tokens->len - 1)
-            {
-              start_from = tokens->len - 1;
-            }
-          start = g_ptr_array_index(tokens,start_from);
-        }
+
+      start_index = tf_cut_get_valid_index(tokens->len - 1,options->start_from);
+      start = g_ptr_array_index(tokens,start_index);
+
+      end_index = tf_cut_get_valid_index(tokens->len, start_index + options->length);
+      if (end_index < tokens->len)
+        end = g_ptr_array_index(tokens,end_index);
       else
-        {
-          start_from = tokens->len + start_from;
-          if (start_from < 0)
-            {
-              start_from = 0;
-            }
-          start = g_ptr_array_index(tokens,start_from);
-        }
-      if (length == 0)
+        end = start;
+
+      if (start == end)
         {
           g_string_append(result,start);
         }
-      else if (length + start_from  < tokens->len)
-        {
-          end = g_ptr_array_index(tokens,length + start_from);
-          end--;
-          g_string_append_len(result,start,end - start);
-        }
       else
         {
-          g_string_append(result,start);
+          g_string_append_len(result,start,end - start - 1);
         }
+
       g_string_free(template,TRUE);
       g_ptr_array_free(tokens,TRUE);
     }
