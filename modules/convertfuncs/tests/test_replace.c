@@ -48,6 +48,11 @@ int main(void)
   log_template_global_init();
   log_msg_registry_init();
   configuration = cfg_new(0x0302);
+#ifdef _WIN32
+  g_free(module_path);
+  module_path = g_strdup("../");
+#endif
+  assert_true(plugin_load_module("convertfuncs", configuration, NULL),"Can't find convertfuncs plugin in: %s",module_path);
   plugin_load_module("convertfuncs", configuration, NULL);
   test_replace_template_function();
   return 0;

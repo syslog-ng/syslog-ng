@@ -2,7 +2,11 @@
 #include "cfg.h"
 #include "plugin.h"
 #include "testutils.h"
+#include "config.h"
 #include <stdio.h>
+
+extern gchar *module_path;
+extern gchar *path_prefix;
 
 int test_lowercase_template_function()
 {
@@ -47,7 +51,11 @@ int main(void)
   log_template_global_init();
   log_msg_registry_init();
   configuration = cfg_new(0x0302);
-  plugin_load_module("convertfuncs", configuration, NULL);
+#ifdef _WIN32
+  g_free(module_path);
+  module_path = g_strdup("../");
+#endif
+  assert_true(plugin_load_module("convertfuncs", configuration, NULL),"Can't find convertfuncs plugin in: %s",module_path);
   test_lowercase_template_function();
   return 0;
 }

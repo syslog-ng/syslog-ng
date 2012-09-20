@@ -2,15 +2,15 @@ AM_CFLAGS = -I$(top_srcdir)/lib -I../../../lib -I$(top_srcdir)/modules/convertfu
 if IS_WINDOWS
 AM_LDFLAGS = -dlpreopen ../../syslogformat/libsyslogformat.la
 else
-AM_LDFLAGS = ../../syslogformat/libsyslogformat.la
+AM_LDFLAGS = ../../syslogformat/libsyslogformat.la -lsyslog-ng
 endif
-LDADD = ../libconvertfuncs.la $(top_builddir)/lib/libsyslog-ng.la @TOOL_DEPS_LIBS@ @OPENSSL_LIBS@ $(top_builddir)/libtest/libsyslog-ng-test.a
+LDADD = ../libconvertfuncs.la @TOOL_DEPS_LIBS@ @OPENSSL_LIBS@ $(top_builddir)/libtest/libsyslog-ng-test.a $(top_builddir)/lib/libsyslog-ng.la
 
-check_PROGRAMS = test_replace test_format_snare test_lowercase test_strcut
+check_PROGRAMS = test_replace test_format_snare test_lowercase test_cut
 
 test_replace_SOURCES = test_replace.c
 test_format_snare_SOURCES = test_format_snare.c
 test_lowercase_SOURCES = test_lowercase.c
-test_strcut_SOURCES = test_strcut.c
+test_cut_SOURCES = test_cut.c
 
 TESTS = $(check_PROGRAMS)
