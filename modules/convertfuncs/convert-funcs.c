@@ -63,7 +63,6 @@ static gint
 tf_format_welf_strcmp(gconstpointer a, gconstpointer b)
 {
   gchar *sa = (gchar *)a, *sb = (gchar *)b;
-
   if (strcmp (sa, "id") == 0)
     return -1;
   return strcmp(sa, sb);
@@ -152,6 +151,8 @@ tf_format_snare_prepare(LogTemplateFunction *self, LogTemplate *parent,
     {
       g_option_context_free (ctx);
       g_free(cargv);
+      g_free(options);
+      g_string_free(event_template_str,TRUE);
       return FALSE;
     }
   g_option_context_free (ctx);
@@ -314,6 +315,7 @@ tf_cut_prepare(LogTemplateFunction *self, LogTemplate *parent,
   if (!log_template_compile(options->compiled_template,cargv[1],error))
     {
       result = FALSE;
+      log_template_unref(options->compiled_template);
       goto exit;
     }
   *state = options;
@@ -375,28 +377,29 @@ tf_cut_call(LogTemplateFunction *self, gpointer state, GPtrArray *arg_bufs,
       GPtrArray *tokens = NULL;
       int start_index = options->start_from;
       int end_index = 0;
+      int max_start_index = 0;
+      int max_end_index = 0;
       gchar *end = NULL;
       gchar *start = NULL;
 
       log_template_format(options->compiled_template,msg,opts,tz,seq_num,context_id,template);
       tokens = tf_cut_get_tokens(template->str,options->delimiters);
 
-      start_index = tf_cut_get_valid_index(tokens->len - 1,options->start_from);
+      max_start_index = tokens->len - 1;
+      max_end_index = tokens->len;
+
+      start_index = tf_cut_get_valid_index(max_start_index,options->start_from);
       start = g_ptr_array_index(tokens,start_index);
 
-      end_index = tf_cut_get_valid_index(tokens->len, start_index + options->length);
-      if (end_index < tokens->len)
-        end = g_ptr_array_index(tokens,end_index);
-      else
-        end = start;
-
-      if (start == end)
+      end_index = tf_cut_get_valid_index(max_end_index, start_index + options->length);
+      if (end_index < max_end_index)
         {
-          g_string_append(result,start);
+          end = g_ptr_array_index(tokens,end_index);
+          g_string_append_len(result,start,end - start - 1);
         }
       else
         {
-          g_string_append_len(result,start,end - start - 1);
+          g_string_append(result,start);
         }
 
       g_string_free(template,TRUE);

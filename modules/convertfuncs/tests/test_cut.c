@@ -21,6 +21,7 @@ void test_cut_template_function_invalid_syntax()
                               "$(cut --delimiters=.; --start_from=0 --length=-1 $HOST)",    /*invalid length */
                               "$(cut --delimiters=.; --start_from=0 --length=256 $HOST)",    /*invalid length */
                               "$(cut --delimiters=.; --start_from=0 --length=asb $HOST)",    /*invalid length */
+                              "$(cut --delimiters=. --start_from=0 --length=1 $(cut --delimiters=@ --start_from=1 --length=0))", /* invalid template */
                               NULL};
 
   int i = 0;

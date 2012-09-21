@@ -24,6 +24,12 @@ gchar *event_pairs[] = {"EVENT_NAME","Application",
                         "EVENT_CONTAINER_COUNTER","3",
                         NULL,NULL};
 
+gchar *file_pairs[] = {"FILE_NAME","test.txt",
+                       "FILE_SIZE","127",
+                       "FILE_POS","0",
+                       "FILE_MESSAGE","test message from windows XP",
+                       NULL,NULL};
+
 void
 test_snare_template_function()
 {
@@ -72,6 +78,34 @@ test_snare_template_function()
   assert_true(log_template_compile(template,template_string,&err),"CAN't COMPILE!");
   log_template_format(template, msg, NULL, 0, 0, "TEST", result);
   assert_string(result->str,expected,"Bad criticality handling");
+
+  log_template_unref(template);
+  log_msg_unref(msg);
+
+  msg = log_msg_new_empty();
+  template = log_template_new(configuration,NULL);
+  i = 0;
+  while(file_pairs[i])
+    {
+      gchar *handle_name = file_pairs[i++];
+      NVHandle handle_value = log_msg_get_value_handle(handle_name);
+      gchar *value = file_pairs[i++];
+      log_msg_set_value(msg,handle_value,value,-1);
+    }
+
+  msg->timestamps[1] = stamp;
+  msg->timestamps[0] = msg->timestamps[1];
+  log_msg_set_value(msg,LM_V_MESSAGE,"test message form windows XP",-1);
+
+  template_string = "$(format-snare)";
+  expected = "<0>May 21 11:22:12  test.txt: test message form windows XP\n";
+  assert_true(log_template_compile(template,template_string,&err),"CAN't COMPILE!");
+  log_template_format(template, msg, NULL, 0, 0, "TEST", result);
+  assert_string(result->str,expected,"Bad formatting");
+
+  template_string = "$(format-snare -a 1)";
+  assert_false(log_template_compile(template,template_string,&err),"Invalid template compiled %s",template_string);
+  g_clear_error(&err);
 
   log_template_unref(template);
   log_msg_unref(msg);
