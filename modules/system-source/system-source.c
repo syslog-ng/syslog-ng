@@ -41,7 +41,7 @@ system_sysblock_add_unix_dgram(GString *sysblock, const gchar *path,
 {
   g_string_append_printf(sysblock, "unix-dgram(\"%s\"", path);
   if (perms)
-    g_string_append_printf(sysblock, " perms(%s)", perms);
+    g_string_append_printf(sysblock, " perm(%s)", perms);
   g_string_append(sysblock, ");\n");
 }
 
