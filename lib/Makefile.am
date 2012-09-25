@@ -15,6 +15,7 @@ module_LTLIBRARIES = libsyslog-ng-crypto.la
 libsyslog_ng_crypto_la_CFLAGS = @UUID_CFLAGS@
 libsyslog_ng_crypto_la_LIBADD = @MODULE_DEPS_LIBS@ @OPENSSL_LIBS@ @UUID_LIBS@
 libsyslog_ng_crypto_la_LDFLAGS = -no-undefined -avoid-version
+libsyslog_ng_crypto_la_DEPENDENCIES = libsyslog-ng.la
 
 # this is intentionally formatted so conflicts are less likely to arise. one name in every line.
 pkginclude_HEADERS = 		\
