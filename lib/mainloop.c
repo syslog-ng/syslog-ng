@@ -28,6 +28,7 @@
 #include "messages.h"
 #include "children.h"
 #include "misc.h"
+#include "hostname.h"
 #include "control.h"
 #include "logqueue.h"
 #include "dnscache.h"

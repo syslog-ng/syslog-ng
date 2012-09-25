@@ -26,6 +26,7 @@
 #include "messages.h"
 #include "stats.h"
 #include "misc.h"
+#include "hostname.h"
 #include "mainloop.h"
 #include "str-format.h"
 

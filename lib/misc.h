@@ -51,8 +51,6 @@ gboolean resolve_group(const char *group, gint *gid);
 gboolean resolve_user_group(char *arg, gint *uid, gint *gid);
 
 /* name resolution */
-void reset_cached_hostname(void);
-void getlonghostname(gchar *buf, gsize buflen);
 void resolve_sockaddr(gchar *result, gsize *result_len, GSockAddr *saddr, gboolean usedns, gboolean usefqdn, gboolean use_dns_cache, gboolean normalize_hostnames);
 gboolean resolve_hostname(GSockAddr **addr, gchar *name);
 

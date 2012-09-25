@@ -33,6 +33,7 @@ pkginclude_HEADERS = 		\
 	filter.h		\
 	gsocket.h		\
 	gsockaddr.h		\
+  hostname.h  \
 	logmatcher.h		\
 	logmpx.h		\
 	logmsg.h		\
@@ -159,7 +160,10 @@ libsyslog_ng_la_SOURCES = \
 	$(libsyslog_ng_crypto_la_SOURCES)
 
 if !IS_WINDOWS
-libsyslog_ng_la_SOURCES += gprocess.c
+libsyslog_ng_la_SOURCES += gprocess.c \
+                           hostname_unix.c
+else
+libsyslog_ng_la_SOURCES += hostname_win.c
 endif
 
 

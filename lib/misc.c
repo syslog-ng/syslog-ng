@@ -23,6 +23,7 @@
  */
   
 #include "misc.h"
+#include "hostname.h"
 #include "dnscache.h"
 #include "messages.h"
 #include "gprocess.h"
@@ -48,9 +49,6 @@
 #include <time.h>
 #include <stdio.h>
 
-static gchar local_hostname_fqdn[256];
-static gchar local_hostname_short[256];
-
 GString *
 g_string_assign_len(GString *s, const gchar *val, gint len)
 {
@@ -66,39 +64,6 @@ g_string_steal(GString *s)
   s->str = g_malloc0(1);
   s->allocated_len = 1;
   s->len = 0;
-}
-
-void
-reset_cached_hostname(void)
-{
-  gchar *s;
-  
-  gethostname(local_hostname_fqdn, sizeof(local_hostname_fqdn) - 1);
-  local_hostname_fqdn[sizeof(local_hostname_fqdn) - 1] = '\0';
-  if (strchr(local_hostname_fqdn, '.') == NULL)
-    {
-      /* not fully qualified, resolve it using DNS or /etc/hosts */
-      struct hostent *result = gethostbyname(local_hostname_fqdn);
-      if (result)
-        {
-          strncpy(local_hostname_fqdn, result->h_name, sizeof(local_hostname_fqdn) - 1);
-          local_hostname_fqdn[sizeof(local_hostname_fqdn) - 1] = '\0';
-        }
-    }
-  /* NOTE: they are the same size, they'll fit */
-  strcpy(local_hostname_short, local_hostname_fqdn);
-  s = strchr(local_hostname_short, '.');
-  if (s != NULL)
-    *s = '\0';
-}
-
-void
-getlonghostname(gchar *buf, gsize buflen)
-{
-  if (!local_hostname_fqdn[0])
-    reset_cached_hostname();
-  strncpy(buf, local_hostname_fqdn, buflen);
-  buf[buflen - 1] = 0;
 }
 
 gboolean
@@ -179,7 +144,7 @@ resolve_hostname(GSockAddr **addr, gchar *name)
 void
 resolve_sockaddr(gchar *result, gsize *result_len, GSockAddr *saddr, gboolean usedns, gboolean usefqdn, gboolean use_dns_cache, gboolean normalize_hostnames)
 {
-  gchar *hname;
+  const gchar *hname;
   gboolean positive;
   gchar *p, buf[256];
  
@@ -263,16 +228,17 @@ resolve_sockaddr(gchar *result, gsize *result_len, GSockAddr *saddr, gboolean us
     }
   else 
     {
-      if (!local_hostname_fqdn[0])
+      const char *hostname_fqdn = get_cached_longhostname();
+      if (!hostname_fqdn[0])
         reset_cached_hostname();
       if (usefqdn)
         {
           /* avoid copy */
-          hname = local_hostname_fqdn;
+          hname = get_cached_longhostname();
         }
       else
         {
-          hname = local_hostname_short;
+          hname = get_cached_shorthostname();
         }
     }
   if (normalize_hostnames)
