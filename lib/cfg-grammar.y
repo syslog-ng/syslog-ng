@@ -31,6 +31,7 @@
 
 /* YYSTYPE and YYLTYPE is defined by the lexer */
 #include "cfg-lexer.h"
+#include "hostname.h"
 
 /* uses struct declarations instead of the typedefs to avoid having to
  * include logreader/logwriter/driver.h, which defines the typedefs.  This
@@ -174,6 +175,7 @@ extern struct _LogDriver *last_driver;
 
 %token KW_USE_DNS                     10110
 %token KW_USE_FQDN                    10111
+%token KW_CUSTOM_DOMAIN               10112
 
 %token KW_DNS_CACHE                   10120
 %token KW_DNS_CACHE_SIZE              10121
@@ -681,6 +683,7 @@ options_item
 	| KW_CHECK_HOSTNAME '(' yesno ')'	{ configuration->check_hostname = $3; }
 	| KW_BAD_HOSTNAME '(' string ')'	{ cfg_bad_hostname_set(configuration, $3); free($3); }
 	| KW_USE_FQDN '(' yesno ')'		{ configuration->use_fqdn = $3; }
+  | KW_CUSTOM_DOMAIN '(' LL_STRING ')' { configuration->custom_domain = g_strdup($3); free($3); }
 	| KW_USE_DNS '(' dnsmode ')'		{ configuration->use_dns = $3; }
 	| KW_TIME_REOPEN '(' LL_NUMBER ')'		{ configuration->time_reopen = $3; }
 	| KW_TIME_REAP '(' LL_NUMBER ')'		{ configuration->time_reap = $3; }

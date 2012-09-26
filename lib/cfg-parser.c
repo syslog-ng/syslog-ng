@@ -98,6 +98,7 @@ static CfgLexerKeyword main_keywords[] = {
   { "use_time_recvd",     KW_USE_TIME_RECVD, 0, KWS_OBSOLETE, "Use R_ or S_ prefixed macros in templates or keep_timestamp(no)" },
   { "use_fqdn",           KW_USE_FQDN },
   { "use_dns",            KW_USE_DNS },
+  { "custom_domain",      KW_CUSTOM_DOMAIN },
   { "time_reopen",        KW_TIME_REOPEN },
   { "time_reap",          KW_TIME_REAP },
   { "time_sleep",         KW_TIME_SLEEP, 0, KWS_OBSOLETE, "time_sleep() has been deprecated since " VERSION_3_3 },

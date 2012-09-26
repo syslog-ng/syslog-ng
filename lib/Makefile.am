@@ -110,6 +110,7 @@ libsyslog_ng_la_SOURCES = \
 	globals.c		\
 	gsocket.c		\
 	gsockaddr.c		\
+	hostname_common.c		\
 	logmatcher.c		\
 	logmpx.c		\
 	logmsg.c		\

@@ -305,6 +305,7 @@ cfg_init(GlobalConfig *cfg)
         }
     }
   dns_cache_set_params(cfg->dns_cache_size, cfg->dns_cache_expire, cfg->dns_cache_expire_failed, cfg->dns_cache_hosts);
+  set_custom_domain(cfg->custom_domain);
   return log_center_init(cfg->center, cfg);
 }
 
@@ -579,6 +580,7 @@ cfg_free(GlobalConfig *self)
   g_free(self->bad_hostname_re);
   g_free(self->dns_cache_hosts);
   g_list_free(self->plugins);
+  g_free(self->custom_domain);
   g_free(self);
 }
 

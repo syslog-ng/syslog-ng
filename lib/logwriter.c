@@ -754,6 +754,7 @@ log_writer_mark_timeout(void *cookie)
   gchar hostname[256];
   gsize hostname_len = sizeof(hostname);
   LogMessage *msg = log_msg_new_mark();
+  GTimeVal current_time;
 
   main_loop_assert_main_thread();
 
@@ -763,9 +764,14 @@ log_writer_mark_timeout(void *cookie)
   log_msg_set_value(msg, LM_V_HOST, hostname, strlen(hostname));
 
   /* set the current time int the message stamp */
-  cached_g_current_time((GTimeVal *)&msg->timestamps[LM_TS_STAMP]);
+  cached_g_current_time(&current_time);
+  msg->timestamps[LM_TS_STAMP].tv_sec = current_time.tv_sec;
+  msg->timestamps[LM_TS_STAMP].tv_usec = current_time.tv_usec;
   msg->timestamps[LM_TS_STAMP].zone_offset = get_local_timezone_ofs(msg->timestamps[LM_TS_STAMP].tv_sec);
 
+  msg->timestamps[LM_TS_RECVD].tv_sec = current_time.tv_sec;
+  msg->timestamps[LM_TS_RECVD].tv_usec = current_time.tv_usec;
+  msg->timestamps[LM_TS_RECVD].zone_offset = msg->timestamps[LM_TS_STAMP].zone_offset;
   /* $RCPTID create*/
   log_msg_create_rcptid(msg);
 
