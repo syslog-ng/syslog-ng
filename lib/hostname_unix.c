@@ -9,7 +9,7 @@ get_dnsname()
   gchar *result = NULL;
   if (host)
     {
-       result = strdup(result->h_name);
+       result = strdup(host->h_name);
     }
   return result;
 }
