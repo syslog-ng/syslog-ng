@@ -1,4 +1,5 @@
 #include "hostname.h"
+#include "cfg.h"
 
 static gchar local_hostname_fqdn[256];
 static gchar local_hostname_short[256];
@@ -66,6 +67,19 @@ void reset_cached_hostname(void)
 }
 
 
+void normalize_hostname(gchar *result,int *result_len, const gchar *hostname)
+{
+  gint i;
+
+  for (i = 0; hostname[i] && i < ((*result_len) - 1); i++)
+    {
+      result[i] = g_ascii_tolower(hostname[i]);
+    }
+  result[i] = '\0'; /* the closing \0 is not copied by the previous loop */
+  *result_len = i;
+}
+
+
 const char *
 get_cached_longhostname()
 {
@@ -78,14 +92,43 @@ get_cached_shorthostname()
   return local_hostname_short;
 }
 
-void set_custom_domain(const gchar *new_custom_domain)
+void
+set_custom_domain(const gchar *new_custom_domain)
 {
   g_free(custom_domain);
   custom_domain = g_strdup(new_custom_domain);
   return;
 }
 
-const gchar *get_custom_domain()
+const gchar *
+get_custom_domain()
 {
   return custom_domain;
+}
+
+gchar *
+format_hostname(const gchar *hostname,gchar *domain,GlobalConfig *cfg)
+{
+  int length = 256;
+  gchar *result = g_malloc(length);
+  strncpy(result,hostname,length - 1);
+  if (cfg->use_fqdn)
+    {
+      apply_custom_domain(result,length,domain);
+    }
+  else
+    {
+      gchar *p;
+      result[length - 1] = '\0';
+      p = strchr(result,'.');
+      if (p)
+       {
+         *p = '\0';
+       }
+    }
+  if (cfg->normalize_hostnames)
+    {
+      normalize_hostname(result,&length,result);
+    }
+  return result;
 }

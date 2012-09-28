@@ -44,6 +44,55 @@ void test_apply_custom_domain()
   assert_nstring(&orig_hostname[250],6,"ttxyz",6,"Bad custom domain working");
 }
 
+void reset_configuration()
+{
+  configuration->use_fqdn = FALSE;
+  configuration->normalize_hostnames = FALSE;
+  g_free(configuration->custom_domain);
+  configuration->custom_domain = NULL;
+}
+
+void test_format_hostname()
+{
+  gchar *hostname = NULL;
+  gchar *result = NULL;
+
+  reset_configuration();
+  hostname = "TestHost";
+  result = format_hostname(hostname,NULL,configuration);
+  assert_string(result,hostname,"%s:%d(%s)",__FILE__,__LINE__,__FUNCTION__);
+  g_free(result);
+
+  reset_configuration();
+  hostname = "testhost.domain_name.hu";
+  result = format_hostname(hostname,NULL,configuration);
+  assert_string(result,"testhost","%s:%d(%s)",__FILE__,__LINE__,__FUNCTION__);
+  g_free(result);
+
+  reset_configuration();
+  hostname = "testhost";
+  configuration->use_fqdn = TRUE;
+  result = format_hostname(hostname,"Test.Hu",configuration);
+  assert_string(result,"testhost.Test.Hu","%s:%d(%s)",__FILE__,__LINE__,__FUNCTION__);
+  g_free(result);
+
+  reset_configuration();
+  hostname = "testhost.domain_name.hu";
+  configuration->use_fqdn = TRUE;
+  configuration->normalize_hostnames = TRUE;
+  result = format_hostname(hostname,"Test.Hu",configuration);
+  assert_string(result,"testhost.test.hu","%s:%d(%s)",__FILE__,__LINE__,__FUNCTION__);
+  g_free(result);
+
+  reset_configuration();
+  hostname = "TestHOst.domain_name.hu";
+  configuration->use_fqdn = TRUE;
+  configuration->normalize_hostnames = TRUE;
+  result = format_hostname(hostname,"Test.Hu",configuration);
+  assert_string(result,"testhost.test.hu","%s:%d(%s)",__FILE__,__LINE__,__FUNCTION__);
+  g_free(result);
+}
+
 int
 main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 {
@@ -51,5 +100,6 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   log_msg_registry_init();
   configuration = cfg_new(0x0302);
   test_apply_custom_domain();
+  test_format_hostname();
   return 0;
 }

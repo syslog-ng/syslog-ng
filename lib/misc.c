@@ -243,14 +243,7 @@ resolve_sockaddr(gchar *result, gsize *result_len, GSockAddr *saddr, gboolean us
     }
   if (normalize_hostnames)
     {
-      gint i;
-
-      for (i = 0; hname[i] && i < ((*result_len) - 1); i++)
-        {
-          result[i] = g_ascii_tolower(hname[i]);
-        }
-      result[i] = '\0'; /* the closing \0 is not copied by the previous loop */
-      *result_len = i;
+      normalize_hostname(result,result_len,hname);
     }
   else
     {
