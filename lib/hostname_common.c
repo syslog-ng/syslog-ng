@@ -13,6 +13,33 @@ getlonghostname(gchar *buf, gsize buflen)
   buf[buflen - 1] = 0;
 }
 
+void
+apply_custom_domain(gchar *fqdn, int length, gchar *domain)
+{
+  if (domain)
+    {
+      gchar *p = strchr(fqdn,'.');
+      int index;
+      int rest_length;
+      if (p)
+        {
+          p++;
+          index = (p - fqdn);
+        }
+      else
+        {
+          index = strlen(fqdn);
+          p = fqdn + index;
+          p[0] = '.';
+          p++;
+          index++;
+        }
+      rest_length = MIN(strlen(domain),length - index - 1);
+      strncpy(p, domain,  rest_length);
+      p[rest_length] = '\0';
+    }
+}
+
 void reset_cached_hostname(void)
 {
   gchar *s;
@@ -30,28 +57,7 @@ void reset_cached_hostname(void)
           free(result);
         }
     }
-  if (custom_domain)
-    {
-      gchar *p = strchr(local_hostname_fqdn,'.');
-      int index;
-      int rest_length;
-      if (p)
-        {
-          p++;
-          index = (p - local_hostname_fqdn);
-        }
-      else
-        {
-          index = strlen(local_hostname_fqdn);
-          p = local_hostname_fqdn + index;
-          p[0] = '.';
-          p++;
-          index++;
-        }
-      rest_length = MIN(strlen(custom_domain),sizeof(local_hostname_fqdn) - index - 1);
-      strncpy(p, custom_domain,  rest_length);
-      p[rest_length + 1] = '\0';
-    }
+  apply_custom_domain(local_hostname_fqdn,sizeof(local_hostname_fqdn),custom_domain);
   /* NOTE: they are the same size, they'll fit */
   strcpy(local_hostname_short, local_hostname_fqdn);
   s = strchr(local_hostname_short, '.');

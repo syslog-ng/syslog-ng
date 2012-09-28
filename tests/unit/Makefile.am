@@ -29,6 +29,7 @@ check_PROGRAMS =			\
 	test_msgserialize_tags		\
 	test_msgformat_upgrade \
 	test_thread_wakeup	\
+	test_hostname	\
 	test_rcptid
 
 if IS_HPUX
@@ -75,6 +76,8 @@ test_msgformat_upgrade_SOURCES = test_msgformat_upgrade.c
 
 test_thread_wakeup_SOURCES = test_thread_wakeup.c
 test_rcptid_SOURCES = test_rcptid.c
+
+test_hostname_SOURCES = test_hostname.c
 
 TESTS = $(check_PROGRAMS)
 
