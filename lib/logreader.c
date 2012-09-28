@@ -84,7 +84,6 @@ struct _LogReader
 {
   LogSource super;
   LogProto *proto;
-  LogReaderWatch *source;
   gboolean immediate_check;
   gboolean waiting_for_preemption;
   LogPipe *control;
@@ -93,9 +92,6 @@ struct _LogReader
   gchar *follow_filename;
   ino_t inode;
   gint64 size;
-
-  /* NOTE: these used to be LogReaderWatch members, which were merged into
-   * LogReader with the multi-thread refactorization */
 
   struct iv_fd fd_watch;
   struct iv_timer follow_timer;
