@@ -115,14 +115,11 @@ afsocket_setup_socket(gint fd, SocketOptions *sock_options, AFSocketDirection di
 }
 
 static gboolean
-afsocket_open_socket(GSockAddr *bind_addr, int stream_or_dgram, int *fd)
+afsocket_open_socket(GSockAddr *bind_addr, gint sock_type, gint sock_protocol, int *fd)
 {
   gint sock;
 
-  if (stream_or_dgram)
-    sock = socket(bind_addr->sa.sa_family, SOCK_STREAM, 0);
-  else
-    sock = socket(bind_addr->sa.sa_family, SOCK_DGRAM, 0);
+  sock = socket(bind_addr->sa.sa_family, sock_type, sock_protocol);
 
   if (sock != -1)
     {
@@ -169,14 +166,14 @@ afsocket_sc_stats_source(AFSocketSourceConnection *self)
       switch (self->owner->bind_addr->sa.sa_family)
         {
         case AF_UNIX:
-          source = !!(self->owner->flags & AFSOCKET_STREAM) ? SCS_UNIX_STREAM : SCS_UNIX_DGRAM;
+          source = (self->owner->sock_type == SOCK_STREAM) ? SCS_UNIX_STREAM : SCS_UNIX_DGRAM;
           break;
         case AF_INET:
-          source = !!(self->owner->flags & AFSOCKET_STREAM) ? SCS_TCP : SCS_UDP;
+          source = (self->owner->sock_type == SOCK_STREAM) ? SCS_TCP : SCS_UDP;
           break;
 #if ENABLE_IPV6
         case AF_INET6:
-          source = !!(self->owner->flags & AFSOCKET_STREAM) ? SCS_TCP6 : SCS_UDP6;
+          source = (self->owner->sock_type == SOCK_STREAM) ? SCS_TCP6 : SCS_UDP6;
           break;
 #endif
         default:
@@ -219,7 +216,9 @@ afsocket_sc_init(LogPipe *s)
 {
   AFSocketSourceConnection *self = (AFSocketSourceConnection *) s;
   LogTransport *transport;
-  LogProto *proto;
+  LogProtoServer *proto;
+  LogProtoServerFactory *proto_factory;
+  GlobalConfig *cfg = log_pipe_get_config(&self->owner->super.super.super);
 
   if (!self->reader)
     {
@@ -238,30 +237,8 @@ afsocket_sc_init(LogPipe *s)
       else
         transport = log_transport_stream_socket_new(self->sock);
 
-      if ((self->owner->flags & AFSOCKET_SYSLOG_PROTOCOL) == 0)
-        {
-          /* plain protocol */
-
-          if (self->owner->flags & AFSOCKET_DGRAM)
-            proto = log_proto_dgram_server_new(transport, self->owner->reader_options.msg_size, 0);
-          else if (self->owner->reader_options.padding)
-            proto = log_proto_record_server_new(transport, self->owner->reader_options.padding, 0);
-          else
-            proto = log_proto_text_server_new(transport, self->owner->reader_options.msg_size, 0);
-        }
-      else
-        {
-          if (self->owner->flags & AFSOCKET_DGRAM)
-            {
-              /* plain protocol */
-              proto = log_proto_dgram_server_new(transport, self->owner->reader_options.msg_size, 0);
-            }
-          else
-            {
-              /* framed protocol */
-              proto = log_proto_framed_server_new(transport, self->owner->reader_options.msg_size);
-            }
-        }
+      proto_factory = log_proto_server_get_factory(cfg, self->owner->logproto_name);
+      proto = log_proto_server_factory_construct(proto_factory, transport, &self->owner->reader_options.proto_options.super);
 
       self->reader = log_reader_new(proto);
     }
@@ -302,7 +279,7 @@ afsocket_sc_notify(LogPipe *s, LogPipe *sender, gint notify_code, gpointer user_
     case NC_CLOSE:
     case NC_READ_ERROR:
       {
-        if (self->owner->flags & AFSOCKET_STREAM)
+        if (self->owner->sock_type == SOCK_STREAM)
           afsocket_sd_close_connection(self->owner, self);
         break;
       }
@@ -444,7 +421,7 @@ afsocket_sd_format_persist_name(AFSocketSourceDriver *self, gboolean listener_na
 
   g_snprintf(persist_name, sizeof(persist_name),
              listener_name ? "afsocket_sd_listen_fd(%s,%s)" : "afsocket_sd_connections(%s,%s)",
-             !!(self->flags & AFSOCKET_STREAM) ? "stream" : "dgram",
+             (self->sock_type == SOCK_STREAM) ? "stream" : "dgram",
              g_sockaddr_format(self->bind_addr, buf, sizeof(buf), GSA_FULL));
   return persist_name;
 }
@@ -629,7 +606,7 @@ afsocket_sd_init(LogPipe *s)
   g_assert(self->transport);
   g_assert(self->bind_addr);
 
-  if ((self->flags & (AFSOCKET_STREAM + AFSOCKET_WNDSIZE_INITED)) == AFSOCKET_STREAM)
+  if (self->sock_type == SOCK_STREAM && (self->flags & (AFSOCKET_WNDSIZE_INITED)) == 0)
     {
       /* distribute the window evenly between each of our possible
        * connections.  This is quite pessimistic and can result in very low
@@ -668,7 +645,7 @@ afsocket_sd_init(LogPipe *s)
 
   /* ok, we have connection list, check if we need to open a listener */
   sock = -1;
-  if (self->flags & AFSOCKET_STREAM)
+  if (self->sock_type == SOCK_STREAM)
     {
       if (self->flags & AFSOCKET_KEEP_ALIVE)
         {
@@ -681,7 +658,7 @@ afsocket_sd_init(LogPipe *s)
         {
           if (!afsocket_sd_acquire_socket(self, &sock))
             return self->super.super.optional;
-          if (sock == -1 && !afsocket_open_socket(self->bind_addr, !!(self->flags & AFSOCKET_STREAM), &sock))
+          if (sock == -1 && !afsocket_open_socket(self->bind_addr, self->sock_type, self->sock_protocol, &sock))
             return self->super.super.optional;
         }
 
@@ -711,16 +688,16 @@ afsocket_sd_init(LogPipe *s)
         {
           if (!afsocket_sd_acquire_socket(self, &sock))
             return self->super.super.optional;
-          if (sock == -1 && !afsocket_open_socket(self->bind_addr, !!(self->flags & AFSOCKET_STREAM), &sock))
+          if (sock == -1 && !afsocket_open_socket(self->bind_addr, self->sock_type, self->sock_protocol, &sock))
             return self->super.super.optional;
+
+          if (!self->setup_socket(self, sock))
+            {
+              close(sock);
+              return FALSE;
+            }
         }
       self->fd = -1;
-
-      if (!self->setup_socket(self, sock))
-        {
-          close(sock);
-          return FALSE;
-        }
 
       /* we either have self->connections != NULL, or sock contains a new fd */
       if (self->connections || afsocket_sd_process_connection(self, NULL, self->bind_addr, sock))
@@ -750,8 +727,8 @@ afsocket_sd_deinit(LogPipe *s)
     {
       GList *p;
 
-      /* for AFSOCKET_STREAM source drivers this is a list, for
-       * AFSOCKET_DGRAM this is a single connection */
+      /* for SOCK_STREAM source drivers this is a list, for
+       * SOCK_DGRAM this is a single connection */
 
       for (p = self->connections; p; p = p->next)
         {
@@ -761,7 +738,7 @@ afsocket_sd_deinit(LogPipe *s)
     }
   self->connections = NULL;
 
-  if (self->flags & AFSOCKET_STREAM)
+  if (self->sock_type == SOCK_STREAM)
     {
       afsocket_sd_stop_watches(self);
       if ((self->flags & AFSOCKET_KEEP_ALIVE) == 0)
@@ -779,7 +756,7 @@ afsocket_sd_deinit(LogPipe *s)
           cfg_persist_config_add(cfg, afsocket_sd_format_persist_name(self, TRUE), GUINT_TO_POINTER(self->fd + 1), afsocket_sd_close_fd, FALSE);
         }
     }
-  else if (self->flags & AFSOCKET_DGRAM)
+  else if (self->sock_type == SOCK_DGRAM)
     {
       /* we don't need to close the listening fd here as we have a
        * single connection which will close it */
@@ -832,7 +809,7 @@ afsocket_sd_free(LogPipe *s)
 }
 
 void
-afsocket_sd_init_instance(AFSocketSourceDriver *self, SocketOptions *sock_options, gint family, guint32 flags)
+afsocket_sd_init_instance(AFSocketSourceDriver *self, SocketOptions *sock_options, gint family, gint sock_type, guint32 flags)
 {
   log_src_driver_init_instance(&self->super);
 
@@ -847,9 +824,10 @@ afsocket_sd_init_instance(AFSocketSourceDriver *self, SocketOptions *sock_option
   self->address_family = family;
   self->max_connections = 10;
   self->listen_backlog = 255;
+  self->sock_type = sock_type;
   self->flags = flags | AFSOCKET_KEEP_ALIVE;
   log_reader_options_defaults(&self->reader_options);
-  if (self->flags & AFSOCKET_STREAM)
+  if (self->sock_type == SOCK_STREAM)
     self->reader_options.super.init_window_size = 1000;
 
   if (self->flags & AFSOCKET_LOCAL)
@@ -920,7 +898,7 @@ afsocket_dd_format_persist_name(AFSocketDestDriver *self, gboolean qfile)
 
   g_snprintf(persist_name, sizeof(persist_name),
              qfile ? "afsocket_dd_qfile(%s,%s)" : "afsocket_dd_connection(%s,%s)",
-             !!(self->flags & AFSOCKET_STREAM) ? "stream" : "dgram",
+             (self->sock_type == SOCK_STREAM) ? "stream" : "dgram",
              self->dest_name);
   return persist_name;
 }
@@ -936,14 +914,14 @@ afsocket_dd_stats_source(AFSocketDestDriver *self)
       switch (self->bind_addr->sa.sa_family)
         {
         case AF_UNIX:
-          source = !!(self->flags & AFSOCKET_STREAM) ? SCS_UNIX_STREAM : SCS_UNIX_DGRAM;
+          source = (self->sock_type == SOCK_STREAM) ? SCS_UNIX_STREAM : SCS_UNIX_DGRAM;
           break;
         case AF_INET:
-          source = !!(self->flags & AFSOCKET_STREAM) ? SCS_TCP : SCS_UDP;
+          source = (self->sock_type == SOCK_STREAM) ? SCS_TCP : SCS_UDP;
           break;
 #if ENABLE_IPV6
         case AF_INET6:
-          source = !!(self->flags & AFSOCKET_STREAM) ? SCS_TCP6 : SCS_UDP6;
+          source = (self->sock_type == SOCK_STREAM) ? SCS_TCP6 : SCS_UDP6;
           break;
 #endif
         default:
@@ -1053,15 +1031,16 @@ afsocket_dd_connected(AFSocketDestDriver *self)
   int error = 0;
   socklen_t errorlen = sizeof(error);
   LogTransport *transport;
-  LogProto *proto;
-  guint32 transport_flags = 0;
+  LogProtoClient *proto;
+  LogProtoClientFactory *proto_factory;
+  GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
 
   main_loop_assert_main_thread();
 
   if (iv_fd_registered(&self->connect_fd))
     iv_fd_unregister(&self->connect_fd);
 
-  if (self->flags & AFSOCKET_STREAM)
+  if (self->sock_type == SOCK_STREAM)
     {
       if (getsockopt(self->fd, SOL_SOCKET, SO_ERROR, &error, &errorlen) == -1)
         {
@@ -1108,20 +1087,13 @@ afsocket_dd_connected(AFSocketDestDriver *self)
   else
 #endif
 
-  if (self->flags & AFSOCKET_SYSLOG_PROTOCOL)
-    {
-      if (self->flags & AFSOCKET_STREAM)
-        proto = log_proto_framed_client_new(transport);
-      else
-        proto = log_proto_text_client_new(transport);
-    }
-  if (self->flags & AFSOCKET_STREAM)
+  if (self->sock_type == SOCK_STREAM)
     transport = log_transport_stream_socket_new(self->fd);
   else
     transport = log_transport_dgram_socket_new(self->fd);
-    {
-      proto = log_proto_text_client_new(transport);
-    }
+
+  proto_factory = log_proto_client_get_factory(cfg, self->logproto_name);
+  proto = log_proto_client_factory_construct(proto_factory, transport, &self->writer_options.proto_options.super);
 
   log_writer_reopen(self->writer, proto);
   return TRUE;
@@ -1139,7 +1111,7 @@ afsocket_dd_start_connect(AFSocketDestDriver *self)
   gchar buf1[MAX_SOCKADDR_STRING], buf2[MAX_SOCKADDR_STRING];
 
   main_loop_assert_main_thread();
-  if (!afsocket_open_socket(self->bind_addr, !!(self->flags & AFSOCKET_STREAM), &sock))
+  if (!afsocket_open_socket(self->bind_addr, self->sock_type, self->sock_protocol, &sock))
     {
       return FALSE;
     }
@@ -1225,9 +1197,9 @@ afsocket_dd_init(LogPipe *s)
 
       self->writer = log_writer_new(LW_FORMAT_PROTO |
 #if BUILD_WITH_SSL
-                                    (((self->flags & AFSOCKET_STREAM) && !self->tls_context) ? LW_DETECT_EOF : 0) |
+                                    (((self->sock_type == SOCK_STREAM) && !self->tls_context) ? LW_DETECT_EOF : 0) |
 #else
-                                    ((self->flags & AFSOCKET_STREAM) ? LW_DETECT_EOF : 0) |
+                                    ((self->sock_type == SOCK_STREAM) ? LW_DETECT_EOF : 0) |
 #endif
                                     (self->flags & AFSOCKET_SYSLOG_PROTOCOL ? LW_SYSLOG_PROTOCOL : 0));
 
@@ -1316,7 +1288,7 @@ afsocket_dd_free(LogPipe *s)
 }
 
 void
-afsocket_dd_init_instance(AFSocketDestDriver *self, SocketOptions *sock_options, gint family, const gchar *hostname, guint32 flags)
+afsocket_dd_init_instance(AFSocketDestDriver *self, SocketOptions *sock_options, gint family, gint sock_type, const gchar *hostname, guint32 flags)
 {
   log_dest_driver_init_instance(&self->super);
 
@@ -1329,6 +1301,7 @@ afsocket_dd_init_instance(AFSocketDestDriver *self, SocketOptions *sock_options,
   self->super.super.super.notify = afsocket_dd_notify;
   self->setup_socket = afsocket_dd_setup_socket;
   self->sock_options_ptr = sock_options;
+  self->sock_type = sock_type;
   self->address_family = family;
   self->flags = flags  | AFSOCKET_KEEP_ALIVE;
 

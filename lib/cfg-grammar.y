@@ -43,6 +43,7 @@
 
 extern struct _LogSourceOptions *last_source_options;
 extern struct _LogReaderOptions *last_reader_options;
+extern struct _LogProtoServerOptions *last_proto_server_options;
 extern struct _LogWriterOptions *last_writer_options;
 extern struct _FilePermOptions *last_file_perm_options;
 extern struct _LogDriver *last_driver;
@@ -121,6 +122,8 @@ extern struct _LogDriver *last_driver;
 %token LL_CONTEXT_TEMPLATE_FUNC       14
 %token LL_CONTEXT_INNER_DEST          15
 %token LL_CONTEXT_INNER_SRC           16
+%token LL_CONTEXT_CLIENT_PROTO        17
+%token LL_CONTEXT_SERVER_PROTO        18
 
 /* statements */
 %token KW_SOURCE                      10000
@@ -330,6 +333,7 @@ extern struct _LogDriver *last_driver;
 
 LogDriver *last_driver;
 LogSourceOptions *last_source_options;
+LogProtoServerOptions *last_proto_server_options;
 LogReaderOptions *last_reader_options;
 LogWriterOptions *last_writer_options;
 FilePermOptions *last_file_perm_options;
@@ -900,10 +904,13 @@ source_option
         | KW_TAGS '(' string_list ')'		{ log_source_options_set_tags(last_source_options, $3); }
         ;
 
+source_proto_option
+        : KW_ENCODING '(' string ')'		{ last_proto_server_options->encoding = g_strdup($3); free($3); }
+	| KW_LOG_MSG_SIZE '(' LL_NUMBER ')'	{ last_proto_server_options->max_msg_size = $3; }
+        ;
 
 source_reader_options
 	: source_reader_option source_reader_options
-	|
 	;
 
 /* LogReader related options, inherits from LogSource */
@@ -913,10 +920,7 @@ source_reader_option
 	: KW_TIME_ZONE '(' string ')'		{ last_reader_options->parse_options.recv_time_zone = g_strdup($3); free($3); }
 	| KW_CHECK_HOSTNAME '(' yesno ')'	{ last_reader_options->check_hostname = $3; }
 	| KW_FLAGS '(' source_reader_option_flags ')'
-	| KW_LOG_MSG_SIZE '(' LL_NUMBER ')'	{ last_reader_options->msg_size = $3; }
 	| KW_LOG_FETCH_LIMIT '(' LL_NUMBER ')'	{ last_reader_options->fetch_limit = $3; }
-	| KW_PAD_SIZE '(' LL_NUMBER ')'		{ last_reader_options->padding = $3; }
-        | KW_ENCODING '(' string ')'		{ last_reader_options->text_encoding = g_strdup($3); free($3); }
         | KW_FORMAT '(' string ')'              { last_reader_options->parse_options.format = g_strdup($3); free($3); }
 	| KW_DEFAULT_LEVEL '(' level_string ')'
 	  {
@@ -931,6 +935,7 @@ source_reader_option
 	    last_reader_options->parse_options.default_pri = (last_reader_options->parse_options.default_pri & 7) | $3;
           }
         | { last_source_options = &last_reader_options->super; } source_option
+        | { last_proto_server_options = &last_reader_options->proto_options; } source_proto_option
 	;
 
 source_reader_option_flags

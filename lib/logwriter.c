@@ -83,7 +83,7 @@ struct _LogWriter
   MlBatchedTimer mark_timer;
   gboolean work_result;
   gint pollable_state;
-  LogProto *proto, *pending_proto;
+  LogProtoClient *proto, *pending_proto;
   gboolean watches_running:1, suspended:1, working:1, flush_waiting_for_timeout:1;
   gboolean pending_proto_present;
   GCond *pending_proto_cond;
@@ -146,7 +146,7 @@ log_writer_work_finished(gpointer s)
 
       g_static_mutex_lock(&self->pending_proto_lock);
       if (self->proto)
-        log_proto_free(self->proto);
+        log_proto_client_free(self->proto);
 
       self->proto = self->pending_proto;
       self->pending_proto = NULL;
@@ -163,7 +163,7 @@ log_writer_work_finished(gpointer s)
         {
           log_writer_suspend(self);
           msg_notice("Suspending write operation because of an I/O error",
-                     evt_tag_int("fd", log_proto_get_fd(self->proto)),
+                     evt_tag_int("fd", log_proto_client_get_fd(self->proto)),
                      evt_tag_int("time_reopen", self->options->time_reopen),
                      NULL);
         }
@@ -220,7 +220,7 @@ log_writer_io_error(gpointer s)
   if (self->fd_watch.handler_out == NULL && self->fd_watch.handler_in == NULL)
     {
       msg_debug("POLLERR occurred while idle",
-                evt_tag_int("fd", log_proto_get_fd(self->proto)),
+                evt_tag_int("fd", log_proto_client_get_fd(self->proto)),
                 NULL);
       log_writer_broken(self, NC_WRITE_ERROR);
       return;
@@ -240,7 +240,7 @@ log_writer_io_check_eof(gpointer s)
   LogWriter *self = (LogWriter *) s;
 
   msg_error("EOF occurred while idle",
-            evt_tag_int("fd", log_proto_get_fd(self->proto)),
+            evt_tag_int("fd", log_proto_client_get_fd(self->proto)),
             NULL);
   log_writer_broken(self, NC_CLOSE);
 }
@@ -252,7 +252,7 @@ log_writer_error_suspend_elapsed(gpointer s)
 
   self->suspended = FALSE;
   msg_notice("Error suspend timeout has elapsed, attempting to write again",
-             evt_tag_int("fd", log_proto_get_fd(self->proto)),
+             evt_tag_int("fd", log_proto_client_get_fd(self->proto)),
              NULL);
   log_writer_start_watches(self);
 }
@@ -380,7 +380,7 @@ log_writer_update_watches(LogWriter *self)
 
   /* NOTE: we either start the suspend_timer or enable the fd_watch. The two MUST not happen at the same time. */
 
-  if (log_proto_prepare(self->proto, &fd, &cond) ||
+  if (log_proto_client_prepare(self->proto, &fd, &cond) ||
       self->flush_waiting_for_timeout ||
       log_queue_check_items(self->queue, self->options->flush_lines, &partial_batch, &timeout_msec,
                             (LogQueuePushNotifyFunc) log_writer_schedule_update_watches, self, NULL))
@@ -430,7 +430,7 @@ log_writer_start_watches(LogWriter *self)
 
   if (!self->watches_running)
     {
-      log_proto_prepare(self->proto, &fd, &cond);
+      log_proto_client_prepare(self->proto, &fd, &cond);
 
       self->fd_watch.fd = fd;
 
@@ -949,7 +949,7 @@ log_writer_broken(LogWriter *self, gint notify_code)
 
 /*
  * Write messages to the underlying file descriptor using the installed
- * LogProto instance.  This is called whenever the output is ready to accept
+ * LogProtoClient instance.  This is called whenever the output is ready to accept
  * further messages, and once during config deinitialization, in order to
  * flush messages still in the queue, in the hope that most of them can be
  * written out.
@@ -970,7 +970,7 @@ log_writer_broken(LogWriter *self, gint notify_code)
 gboolean
 log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
 {
-  LogProto *proto = self->proto;
+  LogProtoClient *proto = self->proto;
   gint count = 0;
   gboolean ignore_throttle = (flush_mode >= LW_FLUSH_QUEUE);
   
@@ -1003,7 +1003,7 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
         {
           LogProtoStatus status;
 
-          status = log_proto_post(proto, (guchar *) self->line_buffer->str, self->line_buffer->len, &consumed);
+          status = log_proto_client_post(proto, (guchar *) self->line_buffer->str, self->line_buffer->len, &consumed);
           if (status == LPS_ERROR)
             {
               if ((self->options->options & LWO_IGNORE_ERRORS) == 0)
@@ -1049,7 +1049,7 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
 
   if (flush_mode >= LW_FLUSH_BUFFER || count == 0)
     {
-      if (log_proto_flush(proto) == LPS_ERROR)
+      if (log_proto_client_flush(proto) == LPS_ERROR)
         return FALSE;
     }
 
@@ -1113,7 +1113,7 @@ log_writer_init(LogPipe *s)
   log_queue_set_counters(self->queue, self->stored_messages, self->dropped_messages);
   if (self->proto)
     {
-      LogProto *proto;
+      LogProtoClient *proto;
 
       proto = self->proto;
       self->proto = NULL;
@@ -1167,7 +1167,7 @@ log_writer_free(LogPipe *s)
   LogWriter *self = (LogWriter *) s;
 
   if (self->proto)
-    log_proto_free(self->proto);
+    log_proto_client_free(self->proto);
 
   if (self->line_buffer)
     g_string_free(self->line_buffer, TRUE);
@@ -1200,7 +1200,7 @@ log_writer_opened(LogWriter *self)
 }
 
 /* run in the main thread in reaction to a log_writer_reopen to change
- * the destination LogProto instance. It needs to be ran in the main
+ * the destination LogProtoClient instance. It needs to be ran in the main
  * thread as it reregisters the watches associated with the main
  * thread. */
 void
@@ -1208,7 +1208,7 @@ log_writer_reopen_deferred(gpointer s)
 {
   gpointer *args = (gpointer *) s;
   LogWriter *self = args[0];
-  LogProto *proto = args[1];
+  LogProtoClient *proto = args[1];
 
   init_sequence_number(&self->seq_num);
 
@@ -1258,7 +1258,7 @@ log_writer_reopen_deferred(gpointer s)
  * risky approach.
  */
 void
-log_writer_reopen(LogPipe *s, LogProto *proto)
+log_writer_reopen(LogPipe *s, LogProtoClient *proto)
 {
   LogWriter *self = (LogWriter *) s;
   gpointer args[] = { s, proto };
@@ -1401,6 +1401,7 @@ log_writer_options_init(LogWriterOptions *options, GlobalConfig *cfg, guint32 op
     return;
 
   log_template_options_init(&options->template_options, cfg);
+  log_proto_client_options_init(&options->proto_options.super, cfg);
   options->options |= option_flags;
     
   if (options->flush_lines == -1)
@@ -1438,6 +1439,7 @@ void
 log_writer_options_destroy(LogWriterOptions *options)
 {
   log_template_options_destroy(&options->template_options);
+  log_proto_client_options_destroy(&options->proto_options.super);
   log_template_unref(options->template);
   log_template_unref(options->file_template);
   log_template_unref(options->proto_template);

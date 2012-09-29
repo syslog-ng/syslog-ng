@@ -43,8 +43,9 @@ typedef struct _AFFileSourceDriver
   /* FIXME: the code assumes that reader is a LogReader at a lot of places, so this should be changed to LogReader */
   LogPipe *reader;
   LogReaderOptions reader_options;
-  guint32 flags;
   FilePermOptions file_perm_options;
+  gint pad_size;
+  guint32 flags;
   /* state information to follow a set of files using a wildcard expression */
 } AFFileSourceDriver;
 

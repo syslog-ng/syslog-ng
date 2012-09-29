@@ -3,9 +3,13 @@ AM_CPPFLAGS = -I$(top_srcdir)/lib -I../../lib
 export top_srcdir
 
 module_LTLIBRARIES := libaffile.la
-libaffile_la_SOURCES = \
-	affile.c affile.h \
-	affile-grammar.y affile-parser.c affile-parser.h affile-plugin.c
+libaffile_la_SOURCES =					\
+	logproto-linux-proc-kmsg-reader.h		\
+	logproto-file-writer.c logproto-file-writer.h	\
+	affile.c affile.h				\
+	affile-grammar.y				\
+	affile-parser.c affile-parser.h			\
+	affile-plugin.c
 
 BUILT_SOURCES = affile-grammar.y affile-grammar.c affile-grammar.h
 EXTRA_DIST = $(BUILT_SOURCES) affile-grammar.ym

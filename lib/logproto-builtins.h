@@ -21,18 +21,11 @@
  * COPYING for details.
  *
  */
+#ifndef LOGPROTO_PLUGINS_H_INCLUDED
+#define LOGPROTO_PLUGINS_H_INCLUDED
 
-#ifndef LOGPROTO_H_INCLUDED
-#define LOGPROTO_H_INCLUDED
+#include "cfg.h"
 
-#include "logtransport.h"
-
-typedef enum
-{
-  LPS_SUCCESS,
-  LPS_ERROR,
-  LPS_EOF,
-} LogProtoStatus;
-
+void log_proto_register_builtin_plugins(GlobalConfig *cfg);
 
 #endif

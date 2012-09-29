@@ -21,18 +21,11 @@
  * COPYING for details.
  *
  */
+#ifndef LOGPROTO_FRAMED_SERVER_H_INCLUDED
+#define LOGPROTO_FRAMED_SERVER_H_INCLUDED
 
-#ifndef LOGPROTO_H_INCLUDED
-#define LOGPROTO_H_INCLUDED
+#include "logproto-server.h"
 
-#include "logtransport.h"
-
-typedef enum
-{
-  LPS_SUCCESS,
-  LPS_ERROR,
-  LPS_EOF,
-} LogProtoStatus;
-
+LogProtoServer *log_proto_framed_server_new(LogTransport *transport, const LogProtoServerOptions *options);
 
 #endif

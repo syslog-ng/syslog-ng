@@ -1,8 +1,6 @@
-#include "logreader.h"
+#include "logproto-server.h"
 #include "logmsg.h"
 #include <stdlib.h>
-
-const gchar *find_eom(const gchar *s, gsize n);
 
 static void
 testcase(gchar *msg, gsize msg_len, gint eom_ofs)

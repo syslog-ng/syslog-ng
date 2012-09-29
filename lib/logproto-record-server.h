@@ -21,18 +21,26 @@
  * COPYING for details.
  *
  */
+#ifndef LOGPROTO_RECORD_SERVER_H_INCLUDED
+#define LOGPROTO_RECORD_SERVER_H_INCLUDED
 
-#ifndef LOGPROTO_H_INCLUDED
-#define LOGPROTO_H_INCLUDED
+#include "logproto-server.h"
 
-#include "logtransport.h"
+/*
+ * LogProtoBinaryRecordServer
+ *
+ * This class reads input in equally sized chunks. The message is the
+ * whole record, regardless of embedded NUL/NL characters.
+ */
+LogProtoServer *log_proto_binary_record_server_new(LogTransport *transport, const LogProtoServerOptions *options, gint record_size);
 
-typedef enum
-{
-  LPS_SUCCESS,
-  LPS_ERROR,
-  LPS_EOF,
-} LogProtoStatus;
+/*
+ * LogProtoPaddedRecordServer
+ *
+ * This class reads input in equally sized chunks. The message lasts
+ * until the first EOL/NUL character within the chunk.
+ */
+LogProtoServer *log_proto_padded_record_server_new(LogTransport *transport, const LogProtoServerOptions *options, gint record_size);
 
 
 #endif

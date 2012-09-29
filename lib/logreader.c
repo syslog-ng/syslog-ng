@@ -24,7 +24,7 @@
 
 #include "logreader.h"
 #include "messages.h"
-#include "logproto.h"
+#include "logproto-server.h"
 #include "misc.h"
 #include "stats.h"
 #include "tags.h"
@@ -76,7 +76,7 @@
 struct _LogReader
 {
   LogSource super;
-  LogProto *proto;
+  LogProtoServer *proto;
   LogReaderWatch *source;
   gboolean immediate_check;
   gboolean waiting_for_preemption;
@@ -101,7 +101,7 @@ struct _LogReader
   gboolean pending_proto_present;
   GCond *pending_proto_cond;
   GStaticMutex pending_proto_lock;
-  LogProto *pending_proto;
+  LogProtoServer *pending_proto;
 };
 
 static gboolean log_reader_fetch_log(LogReader *self);
@@ -133,7 +133,7 @@ log_reader_work_finished(void *s)
 
       g_static_mutex_lock(&self->pending_proto_lock);
       if (self->proto)
-        log_proto_free(self->proto);
+        log_proto_server_free(self->proto);
 
       self->proto = self->pending_proto;
       self->pending_proto = NULL;
@@ -155,7 +155,7 @@ log_reader_work_finished(void *s)
       /* reenable polling the source assuming that we're still in
        * business (e.g. the reader hasn't been uninitialized) */
 
-      log_proto_reset_error(self->proto);
+      log_proto_server_reset_error(self->proto);
       log_reader_start_watches(self);
     }
   log_pipe_unref(&self->super.super);
@@ -236,7 +236,7 @@ log_reader_io_follow_file(gpointer s)
   LogReader *self = (LogReader *) s;
   struct stat st, followed_st;
   off_t pos = -1;
-  gint fd = log_proto_get_fd(self->proto);
+  gint fd = log_proto_server_get_fd(self->proto);
 
   msg_trace("Checking if the followed file has new lines",
             evt_tag_str("follow_filename", self->follow_filename),
@@ -331,7 +331,7 @@ log_reader_init_watches(LogReader *self)
   gint fd;
   GIOCondition cond;
 
-  log_proto_prepare(self->proto, &fd, &cond);
+  log_proto_server_prepare(self->proto, &fd, &cond);
 
   IV_FD_INIT(&self->fd_watch);
   self->fd_watch.cookie = self;
@@ -362,7 +362,7 @@ log_reader_start_watches(LogReader *self)
   gint fd;
   GIOCondition cond;
 
-  log_proto_prepare(self->proto, &fd, &cond);
+  log_proto_server_prepare(self->proto, &fd, &cond);
 
   if (self->options->follow_freq > 0)
     {
@@ -430,7 +430,7 @@ log_reader_update_watches(LogReader *self)
   free_to_send = log_source_free_to_send(&self->super);
   if (!free_to_send ||
       self->immediate_check ||
-      log_proto_prepare(self->proto, &fd, &cond))
+      log_proto_server_prepare(self->proto, &fd, &cond))
     {
       /* we disable all I/O related callbacks here because we either know
        * that we can continue (e.g.  immediate_check == TRUE) or we know
@@ -577,7 +577,7 @@ log_reader_fetch_log(LogReader *self)
        * protocol, it resets may_read to FALSE after the first read was issued.
        */
 
-      status = log_proto_fetch(self->proto, &msg, &msg_len, &sa, &may_read);
+      status = log_proto_server_fetch(self->proto, &msg, &msg_len, &sa, &may_read);
       switch (status)
         {
         case LPS_EOF:
@@ -603,17 +603,17 @@ log_reader_fetch_log(LogReader *self)
           if (!log_reader_handle_line(self, msg, msg_len, sa))
             {
               /* window is full, don't generate further messages */
-              log_proto_queued(self->proto);
+              log_proto_server_queued(self->proto);
               g_sockaddr_unref(sa);
               break;
             }
         }
-      log_proto_queued(self->proto);
+      log_proto_server_queued(self->proto);
       g_sockaddr_unref(sa);
     }
   if (self->options->flags & LR_PREEMPT)
     {
-      if (log_proto_is_preemptable(self->proto))
+      if (log_proto_server_is_preemptable(self->proto))
         {
           self->waiting_for_preemption = FALSE;
           log_pipe_notify(self->control, &self->super.super, NC_FILE_SKIP, self);
@@ -635,28 +635,10 @@ log_reader_init(LogPipe *s)
 
   if (!log_source_init(s))
     return FALSE;
-  /* check for new data */
-  if (self->options->padding)
-    {
-      if (self->options->msg_size < self->options->padding)
-	{
-	  msg_error("Buffer is too small to hold padding number of bytes",
-	            evt_tag_int("padding", self->options->padding),
-                    evt_tag_int("msg_size", self->options->msg_size),
-                    NULL);
-	  return FALSE;
-	}
-    }
-  if (self->options->text_encoding)
-    {
-      if (!log_proto_set_encoding(self->proto, self->options->text_encoding))
-        {
-          msg_error("Unknown character set name specified",
-                    evt_tag_str("encoding", self->options->text_encoding),
-                    NULL);
-          return FALSE;
-        }
-    }
+
+  if (!log_proto_server_validate_options(self->proto))
+    return FALSE;
+
   if (!self->options->parse_options.format_handler)
     {
       msg_error("Unknown format plugin specified",
@@ -693,7 +675,7 @@ log_reader_free(LogPipe *s)
 
   if (self->proto)
     {
-      log_proto_free(self->proto);
+      log_proto_server_free(self->proto);
       self->proto = NULL;
     }
   log_pipe_unref(self->control);
@@ -719,7 +701,7 @@ log_reader_set_options(LogPipe *s, LogPipe *control, LogReaderOptions *options, 
 }
 
 /* run in the main thread in reaction to a log_reader_reopen to change
- * the source LogProto instance. It needs to be ran in the main
+ * the source LogProtoServer instance. It needs to be ran in the main
  * thread as it reregisters the watches associated with the main
  * thread. */
 void
@@ -727,7 +709,7 @@ log_reader_reopen_deferred(gpointer s)
 {
   gpointer *args = (gpointer *) s;
   LogReader *self = args[0];
-  LogProto *proto = args[1];
+  LogProtoServer *proto = args[1];
 
   log_reader_stop_watches(self);
   if (self->io_job.working)
@@ -739,7 +721,7 @@ log_reader_reopen_deferred(gpointer s)
     }
 
   if (self->proto)
-    log_proto_free(self->proto);
+    log_proto_server_free(self->proto);
 
   self->proto = proto;
 
@@ -750,7 +732,7 @@ log_reader_reopen_deferred(gpointer s)
 }
 
 void
-log_reader_reopen(LogPipe *s, LogProto *proto, LogPipe *control, LogReaderOptions *options, gint stats_level, gint stats_source, const gchar *stats_id, const gchar *stats_instance, gboolean immediate_check)
+log_reader_reopen(LogPipe *s, LogProtoServer *proto, LogPipe *control, LogReaderOptions *options, gint stats_level, gint stats_source, const gchar *stats_id, const gchar *stats_instance, gboolean immediate_check)
 {
   LogReader *self = (LogReader *) s;
   gpointer args[] = { s, proto };
@@ -793,7 +775,7 @@ log_reader_set_peer_addr(LogPipe *s, GSockAddr *peer_addr)
 }
 
 LogPipe *
-log_reader_new(LogProto *proto)
+log_reader_new(LogProtoServer *proto)
 {
   LogReader *self = g_new0(LogReader, 1);
 
@@ -823,12 +805,10 @@ void
 log_reader_options_defaults(LogReaderOptions *options)
 {
   log_source_options_defaults(&options->super);
+  log_proto_server_options_defaults(&options->proto_options.super);
   msg_format_options_defaults(&options->parse_options);
-  options->padding = 0;
   options->fetch_limit = 10;
-  options->msg_size = -1;
   options->follow_freq = -1; 
-  options->text_encoding = NULL;
   if (configuration && cfg_is_config_version_older(configuration, 0x0300))
     {
       static gboolean warned;
@@ -873,10 +853,9 @@ log_reader_options_init(LogReaderOptions *options, GlobalConfig *cfg, const gcha
     return;
 
   log_source_options_init(&options->super, cfg, group_name);
+  log_proto_server_options_init(&options->proto_options.super, cfg);
   msg_format_options_init(&options->parse_options, cfg);
 
-  if (options->msg_size == -1)
-    options->msg_size = cfg->log_msg_size;
   if (options->follow_freq == -1)
     options->follow_freq = cfg->follow_freq;
   if (options->check_hostname == -1)
@@ -892,7 +871,7 @@ log_reader_options_init(LogReaderOptions *options, GlobalConfig *cfg, const gcha
       else
         options->parse_options.default_pri = LOG_USER | LOG_NOTICE;
     }
-  if (options->text_encoding)
+  if (options->proto_options.super.encoding)
     options->parse_options.flags |= LP_ASSUME_UTF8;
   if (cfg->threaded)
     options->flags |= LR_THREADED;
@@ -903,13 +882,9 @@ void
 log_reader_options_destroy(LogReaderOptions *options)
 {
   log_source_options_destroy(&options->super);
+  log_proto_server_options_destroy(&options->proto_options.super);
   msg_format_options_destroy(&options->parse_options);
   options->initialized = FALSE;
-  if (options->text_encoding)
-    {
-      g_free(options->text_encoding);
-      options->text_encoding = NULL;
-    }
 }
 
 CfgFlagHandler log_reader_flag_handlers[] =

@@ -33,8 +33,6 @@
 
 #include <iv.h>
 
-#define AFSOCKET_DGRAM               0x0001
-#define AFSOCKET_STREAM              0x0002
 #define AFSOCKET_LOCAL               0x0004
 
 #define AFSOCKET_SYSLOG_PROTOCOL     0x0008
@@ -68,6 +66,10 @@ struct _AFSocketSourceDriver
   guint32 flags;
   struct iv_fd listen_fd;
   gint fd;
+  /* SOCK_DGRAM or SOCK_STREAM or other SOCK_XXX values used by the socket() call */
+  gint sock_type;
+  /* protocol parameter for the socket() call, 0 for default or IPPROTO_XXX for specific transports */
+  gint sock_protocol;
   LogReaderOptions reader_options;
 #if BUILD_WITH_SSL
   TLSContext *tls_context;
@@ -75,6 +77,7 @@ struct _AFSocketSourceDriver
   gint address_family;
   GSockAddr *bind_addr;
   gchar *transport;
+  gchar *logproto_name;
   gint max_connections;
   gint num_connections;
   gint listen_backlog;
@@ -130,7 +133,7 @@ afsocket_sd_apply_transport(AFSocketSourceDriver *s)
 gboolean afsocket_sd_init(LogPipe *s);
 gboolean afsocket_sd_deinit(LogPipe *s);
 
-void afsocket_sd_init_instance(AFSocketSourceDriver *self, SocketOptions *sock_options, gint family, guint32 flags);
+void afsocket_sd_init_instance(AFSocketSourceDriver *self, SocketOptions *sock_options, gint family, gint sock_type, guint32 flags);
 void afsocket_sd_free(LogPipe *self);
 
 struct _AFSocketDestDriver
@@ -138,6 +141,10 @@ struct _AFSocketDestDriver
   LogDestDriver super;
   guint32 flags;
   gint fd;
+  /* SOCK_DGRAM or SOCK_STREAM or other SOCK_XXX values used by the socket() call */
+  gint sock_type;
+  /* protocol parameter for the socket() call, 0 for default or IPPROTO_XXX for specific transports */
+  gint sock_protocol;
   LogPipe *writer;
   LogWriterOptions writer_options;
 #if BUILD_WITH_SSL
@@ -145,7 +152,13 @@ struct _AFSocketDestDriver
 #endif
   gint address_family;
   gchar *hostname;
+  /* transport as specified by the user */
   gchar *transport;
+
+  /* logproto plugin name, borrowed char pointer, no need to free. If
+   * allocated dynamically, a free must be added and an strdup to all
+   * initializations!  */
+  gchar *logproto_name;
   GSockAddr *bind_addr;
   GSockAddr *dest_addr;
   gchar *dest_name;
@@ -187,7 +200,7 @@ afsocket_dd_apply_transport(AFSocketDestDriver *s)
 
 void afsocket_dd_set_transport(LogDriver *s, const gchar *transport);
 void afsocket_dd_set_keep_alive(LogDriver *self, gint enable);
-void afsocket_dd_init_instance(AFSocketDestDriver *self, SocketOptions *sock_options, gint family, const gchar *hostname, guint32 flags);
+void afsocket_dd_init_instance(AFSocketDestDriver *self, SocketOptions *sock_options, gint family, gint sock_type, const gchar *hostname, guint32 flags);
 gboolean afsocket_dd_init(LogPipe *s);
 void afsocket_dd_free(LogPipe *s);
 

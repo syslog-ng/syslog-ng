@@ -21,18 +21,24 @@
  * COPYING for details.
  *
  */
+#ifndef LOGPROTO_TEXT_CLIENT_H_INCLUDED
+#define LOGPROTO_TEXT_CLIENT_H_INCLUDED
 
-#ifndef LOGPROTO_H_INCLUDED
-#define LOGPROTO_H_INCLUDED
+#include "logproto-client.h"
 
-#include "logtransport.h"
-
-typedef enum
+typedef struct _LogProtoTextClient
 {
-  LPS_SUCCESS,
-  LPS_ERROR,
-  LPS_EOF,
-} LogProtoStatus;
+  LogProtoClient super;
+  gint state, next_state;
+  guchar *partial;
+  GDestroyNotify partial_free;
+  gsize partial_len, partial_pos;
+} LogProtoTextClient;
 
+LogProtoStatus log_proto_text_client_submit_write(LogProtoClient *s, guchar *msg, gsize msg_len, GDestroyNotify msg_free, gint next_state);
+void log_proto_text_client_init(LogProtoTextClient *self, LogTransport *transport, const LogProtoClientOptions *options);
+LogProtoClient *log_proto_text_client_new(LogTransport *transport, const LogProtoClientOptions *options);
+
+#define log_proto_text_client_free_method log_proto_client_free_method
 
 #endif

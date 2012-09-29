@@ -28,7 +28,7 @@
 #include "logpipe.h"
 #include "templates.h"
 #include "logqueue.h"
-#include "logproto.h"
+#include "logproto-client.h"
 #include "timeutils.h"
 
 /* writer constructor flags */
@@ -50,6 +50,7 @@
 
 typedef struct _LogWriterOptions
 {
+  gboolean initialized;
   /* bitmask of LWO_* */
   guint32 options;
   
@@ -62,8 +63,8 @@ typedef struct _LogWriterOptions
   LogTemplate *file_template;
   LogTemplate *proto_template;
   
-  gboolean fsync;
   LogTemplateOptions template_options;
+  LogProtoClientOptionsStorage proto_options;
 
   gint time_reopen;
   gint suppress;
@@ -84,7 +85,7 @@ void log_writer_set_options(LogWriter *self, LogPipe *control, LogWriterOptions 
 void log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result);
 gboolean log_writer_has_pending_writes(LogWriter *self);
 gboolean log_writer_opened(LogWriter *self);
-void log_writer_reopen(LogPipe *s, LogProto *proto);
+void log_writer_reopen(LogPipe *s, LogProtoClient *proto);
 LogPipe *log_writer_new(guint32 flags);
 void log_writer_set_queue(LogPipe *s, LogQueue *queue);
 LogQueue *log_writer_get_queue(LogPipe *s);

@@ -58,9 +58,10 @@ typedef struct _AFInetSourceDriver
   /* character as it can contain a service name from /etc/services */
   gchar *bind_port;
   gchar *bind_ip;
+  gchar *ip_protocol;
 } AFInetSourceDriver;
 
-LogDriver *afinet_sd_new(gint af, guint flags);
+LogDriver *afinet_sd_new(gint af, gint sock_type, guint flags);
 void afinet_sd_set_localport(LogDriver *self, gchar *service);
 void afinet_sd_set_localip(LogDriver *self, gchar *ip);
 
@@ -82,7 +83,7 @@ typedef struct _AFInetDestDriver
   /* destination hostname is stored in super.hostname */
 } AFInetDestDriver;
 
-LogDriver *afinet_dd_new(gint af, gchar *host, gint port, guint flags);
+LogDriver *afinet_dd_new(gint af, gint sock_type, gchar *host, guint flags);
 void afinet_dd_set_localport(LogDriver *self, gchar *service);
 void afinet_dd_set_destport(LogDriver *self, gchar *service);
 void afinet_dd_set_localip(LogDriver *self, gchar *ip);

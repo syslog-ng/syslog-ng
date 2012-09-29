@@ -21,18 +21,28 @@
  * COPYING for details.
  *
  */
+#ifndef LOGPROTO_TEXT_SERVER_INCLUDED
+#define LOGPROTO_TEXT_SERVER_INCLUDED
 
-#ifndef LOGPROTO_H_INCLUDED
-#define LOGPROTO_H_INCLUDED
+#include "logproto-buffered-server.h"
 
-#include "logtransport.h"
-
-typedef enum
+typedef struct _LogProtoTextServer LogProtoTextServer;
+struct _LogProtoTextServer
 {
-  LPS_SUCCESS,
-  LPS_ERROR,
-  LPS_EOF,
-} LogProtoStatus;
+  LogProtoBufferedServer super;
+  GIConv reverse_convert;
+  gchar *reverse_buffer;
+  gsize reverse_buffer_len;
+  gint convert_scale;
+};
 
+/* LogProtoTextServer
+ *
+ * This class processes text files/streams. Each record is terminated via an EOL character.
+ */
+LogProtoServer *log_proto_text_server_new(LogTransport *transport, const LogProtoServerOptions *options);
+void log_proto_text_server_init(LogProtoTextServer *self, LogTransport *transport, const LogProtoServerOptions *options);
+
+gint log_proto_get_char_size_for_fixed_encoding(const gchar *encoding);
 
 #endif

@@ -28,6 +28,11 @@
 #include "gprocess.h"
 #include "stats.h"
 #include "mainloop.h"
+#include "logproto-record-server.h"
+#include "logproto-text-server.h"
+#include "logproto-text-client.h"
+#include "logproto-linux-proc-kmsg-reader.h"
+#include "logproto-file-writer.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -37,6 +42,26 @@
 #include <errno.h>
 #include <time.h>
 #include <stdlib.h>
+
+static inline gboolean
+affile_is_linux_proc_kmsg(const gchar *filename)
+{
+#ifdef __linux__
+  if (strcmp(filename, "/proc/kmsg") == 0)
+    return TRUE;
+#endif
+  return FALSE;
+}
+
+static inline gboolean
+affile_is_device_node(const gchar *filename)
+{
+  struct stat st;
+
+  if (stat(filename, &st) < 0)
+    return FALSE;
+  return !S_ISREG(st.st_mode);
+}
 
 static gboolean
 affile_open_file(gchar *name, gint flags,
@@ -139,14 +164,14 @@ affile_sd_format_persist_name(AFFileSourceDriver *self)
 }
  
 static void
-affile_sd_recover_state(LogPipe *s, GlobalConfig *cfg, LogProto *proto)
+affile_sd_recover_state(LogPipe *s, GlobalConfig *cfg, LogProtoServer *proto)
 {
   AFFileSourceDriver *self = (AFFileSourceDriver *) s;
 
   if ((self->flags & AFFILE_PIPE) || self->reader_options.follow_freq <= 0)
     return;
 
-  if (!log_proto_restart_with_state(proto, cfg->state, affile_sd_format_persist_name(self)))
+  if (!log_proto_server_restart_with_state(proto, cfg->state, affile_sd_format_persist_name(self)))
     {
       msg_error("Error converting persistent state from on-disk format, losing file position information",
                 evt_tag_str("filename", self->filename->str),
@@ -155,27 +180,38 @@ affile_sd_recover_state(LogPipe *s, GlobalConfig *cfg, LogProto *proto)
     }
 }
 
-static LogProto *
-affile_sd_construct_proto(AFFileSourceDriver *self, LogTransport *transport)
+static LogTransport *
+affile_sd_construct_transport(AFFileSourceDriver *self, gint fd)
 {
-  guint flags;
-  LogProto *proto;
-  MsgFormatHandler *handler;
-
-  flags =
-    ((self->reader_options.follow_freq > 0)
-     ? LPBS_IGNORE_EOF | LPBS_POS_TRACKING
-     : LPBS_NOMREAD);
-
-  handler = self->reader_options.parse_options.format_handler;
-  if ((handler && handler->construct_proto))
-    proto = self->reader_options.parse_options.format_handler->construct_proto(&self->reader_options.parse_options, transport, flags);
-  else if (self->reader_options.padding)
-    proto = log_proto_record_server_new(transport, self->reader_options.padding, flags);
+  if (self->flags & AFFILE_PIPE)
+    return log_transport_pipe_new(fd);
+  else if (self->reader_options.follow_freq > 0)
+    return log_transport_file_new(fd);
   else
-    proto = log_proto_text_server_new(transport, self->reader_options.msg_size, flags);
+    return log_transport_device_new(fd, 10);
+}
 
-  return proto;
+static LogProtoServer *
+affile_sd_construct_proto(AFFileSourceDriver *self, gint fd)
+{
+  LogProtoServerOptions *proto_options = &self->reader_options.proto_options.super;
+  LogTransport *transport;
+  MsgFormatHandler *format_handler;
+
+  transport = affile_sd_construct_transport(self, fd);
+
+  format_handler = self->reader_options.parse_options.format_handler;
+  if ((format_handler && format_handler->construct_proto))
+    {
+      return format_handler->construct_proto(&self->reader_options.parse_options, transport, proto_options);
+    }
+
+  if (self->pad_size)
+    return log_proto_padded_record_server_new(transport, proto_options, self->pad_size);
+  else if (affile_is_linux_proc_kmsg(self->filename->str))
+    return log_proto_linux_proc_kmsg_reader_new(transport, proto_options);
+  else
+    return log_proto_text_server_new(transport, proto_options);
 }
 
 /* NOTE: runs in the main thread */
@@ -199,13 +235,9 @@ affile_sd_notify(LogPipe *s, LogPipe *sender, gint notify_code, gpointer user_da
         
         if (affile_sd_open_file(self, self->filename->str, &fd))
           {
-            LogTransport *transport;
-            LogProto *proto;
+            LogProtoServer *proto;
             
-            transport = log_transport_plain_new(fd, 0);
-            transport->timeout = 10;
-
-            proto = affile_sd_construct_proto(self, transport);
+            proto = affile_sd_construct_proto(self, fd);
 
             self->reader = log_reader_new(proto);
 
@@ -275,13 +307,9 @@ affile_sd_init(LogPipe *s)
 
   if (file_opened || open_deferred)
     {
-      LogTransport *transport;
-      LogProto *proto;
+      LogProtoServer *proto;
 
-      transport = log_transport_plain_new(fd, 0);
-      transport->timeout = 10;
-
-      proto = affile_sd_construct_proto(self, transport);
+      proto = affile_sd_construct_proto(self, fd);
       /* FIXME: we shouldn't use reader_options to store log protocol parameters */
       self->reader = log_reader_new(proto);
 
@@ -402,28 +430,15 @@ affile_sd_new(gchar *filename, guint32 flags)
     {
       if ((self->flags & AFFILE_PIPE) == 0)
         {
-          if (0 ||
-#if __linux__
-              (strcmp(filename, "/proc/kmsg") == 0) ||
-#elif __FreeBSD__
-              (strcmp(filename, "/dev/klog") == 0) ||
-#endif
-               0)
-            {
-              self->reader_options.follow_freq = 0;
-            }
+          if (affile_is_device_node(filename) ||
+              affile_is_linux_proc_kmsg(filename))
+            self->reader_options.follow_freq = 0;
           else
-            {
-              self->reader_options.follow_freq = 1000;
-            }
+            self->reader_options.follow_freq = 1000;
         }
     }
-#if __linux__
-  if (strcmp(filename, "/proc/kmsg") == 0)
-    {
-      self->flags |= AFFILE_PRIVILEGED;
-    }
-#endif
+  if (affile_is_linux_proc_kmsg(filename))
+    self->flags |= AFFILE_PRIVILEGED;
   return &self->super.super;
 }
 
@@ -548,20 +563,16 @@ affile_dw_reopen(AFFileDestWriter *self)
   if (self->owner->flags & AFFILE_PIPE)
     flags = O_RDWR | O_NOCTTY | O_NONBLOCK | O_LARGEFILE;
   else
-    flags = O_WRONLY | O_CREAT | O_NOCTTY | O_NONBLOCK | O_LARGEFILE;
+    flags = O_WRONLY | O_CREAT | O_NOCTTY | O_NONBLOCK | O_LARGEFILE | O_APPEND;
 
 
   if (affile_open_file(self->filename, flags, &self->owner->file_perm_options,
                        !!(self->owner->flags & AFFILE_CREATE_DIRS), FALSE, !!(self->owner->flags & AFFILE_PIPE), &fd))
     {
-      guint write_flags;
-      
-      write_flags =
-        ((self->owner->flags & AFFILE_PIPE) ? LTF_PIPE : LTF_APPEND);
       log_writer_reopen(self->writer,
                         self->owner->flags & AFFILE_PIPE
-                        ? log_proto_text_client_new(log_transport_plain_new(fd, write_flags))
-                        : log_proto_file_writer_new(log_transport_plain_new(fd, write_flags),
+                        ? log_proto_text_client_new(log_transport_pipe_new(fd), &self->owner->writer_options.proto_options.super)
+                        : log_proto_file_writer_new(log_transport_file_new(fd), &self->owner->writer_options.proto_options.super,
                                                     self->owner->writer_options.flush_lines,
                                                     (self->owner->flags & AFFILE_FSYNC)));
 

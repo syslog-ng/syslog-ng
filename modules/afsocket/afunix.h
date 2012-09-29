@@ -37,7 +37,7 @@ typedef struct _AFUnixSourceDriver
   SocketOptions sock_options;
 } AFUnixSourceDriver;
 
-LogDriver *afunix_sd_new(gchar *filename, guint32 flags);
+LogDriver *afunix_sd_new(gint sock_type, gchar *filename);
 
 typedef struct _AFUnixDestDriver
 {
@@ -46,6 +46,6 @@ typedef struct _AFUnixDestDriver
   gchar *filename;
 } AFUnixDestDriver;
 
-LogDriver *afunix_dd_new(gchar *filename, guint flags);
+LogDriver *afunix_dd_new(gint sock_type, gchar *filename);
 
 #endif

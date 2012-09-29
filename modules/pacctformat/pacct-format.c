@@ -151,14 +151,14 @@ pacct_format_handler(MsgFormatOptions *options, const guchar *data, gsize length
   log_msg_set_value(msg, handle_ac_comm, rec->ac_comm, len);
 }
 
-LogProto *
-pacct_construct_proto(MsgFormatOptions *options, LogTransport *transport, guint flags)
+void
+pacct_construct_proto(MsgFormatOptions *options, LogTransport *transport, const LogProtoOptions *options)
 {
-  return log_proto_record_server_new(transport, sizeof(acct_t), flags | LPRS_BINARY);
+  return log_proto_binary_record_server_new(transport, options, sizeof(acct_t));
 }
 
 MsgFormatHandler pacct_handler =
 {
-  .construct_proto = pacct_construct_proto,
+  .alter_proto_options = pacct_alter_proto_options,
   .parse = &pacct_format_handler
 };

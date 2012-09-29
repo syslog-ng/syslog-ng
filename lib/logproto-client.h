@@ -1,0 +1,145 @@
+/*
+ * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 1998-2012 Balázs Scheidler
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
+#ifndef LOGPROTO_CLIENT_H_INCLUDED
+#define LOGPROTO_CLIENT_H_INCLUDED
+
+#include "logproto.h"
+#include "persist-state.h"
+
+typedef struct _LogProtoClient LogProtoClient;
+
+#define LOG_PROTO_CLIENT_OPTIONS_SIZE 32
+
+typedef struct _LogProtoClientOptions
+{
+} LogProtoClientOptions;
+
+typedef union _LogProtoClientOptionsStorage
+{
+  LogProtoClientOptions super;
+  gchar __padding[LOG_PROTO_CLIENT_OPTIONS_SIZE];
+} LogProtoClientOptionsStorage;
+
+gboolean log_proto_client_options_validate(const LogProtoClientOptions *options);
+void log_proto_client_options_defaults(LogProtoClientOptions *options);
+void log_proto_client_options_init(LogProtoClientOptions *options, GlobalConfig *cfg);
+void log_proto_client_options_destroy(LogProtoClientOptions *options);
+
+
+struct _LogProtoClient
+{
+  LogProtoStatus status;
+  const LogProtoClientOptions *options;
+  LogTransport *transport;
+  /* FIXME: rename to something else */
+  gboolean (*prepare)(LogProtoClient *s, gint *fd, GIOCondition *cond);
+  LogProtoStatus (*post)(LogProtoClient *s, guchar *msg, gsize msg_len, gboolean *consumed);
+  LogProtoStatus (*flush)(LogProtoClient *s);
+  gboolean (*validate_options)(LogProtoClient *s);
+  void (*free_fn)(LogProtoClient *s);
+};
+
+static inline gboolean
+log_proto_client_validate_options(LogProtoClient *self)
+{
+  if (self->validate_options)
+    return self->validate_options(self);
+  else
+    return log_proto_client_options_validate(self->options);
+}
+
+static inline gboolean
+log_proto_client_prepare(LogProtoClient *s, gint *fd, GIOCondition *cond)
+{
+  return s->prepare(s, fd, cond);
+}
+
+static inline LogProtoStatus
+log_proto_client_flush(LogProtoClient *s)
+{
+  if (s->flush)
+    return s->flush(s);
+  else
+    return LPS_SUCCESS;
+}
+
+static inline LogProtoStatus
+log_proto_client_post(LogProtoClient *s, guchar *msg, gsize msg_len, gboolean *consumed)
+{
+  return s->post(s, msg, msg_len, consumed);
+}
+
+static inline gint
+log_proto_client_get_fd(LogProtoClient *s)
+{
+  /* FIXME: Layering violation */
+  return s->transport->fd;
+}
+
+static inline void
+log_proto_client_reset_error(LogProtoClient *s)
+{
+  s->status = LPS_SUCCESS;
+}
+
+gboolean log_proto_client_validate_options(LogProtoClient *self);
+void log_proto_client_init(LogProtoClient *s, LogTransport *transport, const LogProtoClientOptions *options);
+void log_proto_client_free(LogProtoClient *s);
+
+#define DEFINE_LOG_PROTO_CLIENT(prefix) \
+  static gpointer                                                       \
+  prefix ## _client_plugin_construct(Plugin *self,                      \
+                  GlobalConfig *cfg,                                    \
+                  gint plugin_type, const gchar *plugin_name)           \
+  {                                                                     \
+    static LogProtoClientFactory proto = {                              \
+      .construct = prefix ## _client_new,                               \
+    };                                                                  \
+    return &proto;                                                      \
+  }
+
+#define LOG_PROTO_CLIENT_PLUGIN(prefix, __name) \
+  {							\
+    .type = LL_CONTEXT_CLIENT_PROTO,		        \
+    .name = __name,					\
+    .construct = prefix ## _client_plugin_construct,	\
+  }
+
+typedef struct _LogProtoClientFactory LogProtoClientFactory;
+
+struct _LogProtoClientFactory
+{
+  LogProtoClient *(*construct)(LogTransport *transport, const LogProtoClientOptions *options);
+};
+
+static inline LogProtoClient *
+log_proto_client_factory_construct(LogProtoClientFactory *self, LogTransport *transport, const LogProtoClientOptions *options)
+{
+  return self->construct(transport, options);
+}
+
+LogProtoClientFactory *log_proto_client_get_factory(GlobalConfig *cfg, const gchar *name);
+
+#endif

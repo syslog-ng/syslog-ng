@@ -21,18 +21,34 @@
  * COPYING for details.
  *
  */
+#include "logproto-dgram-server.h"
+#include "logproto-text-client.h"
+#include "logproto-text-server.h"
+#include "logproto-framed-client.h"
+#include "logproto-framed-server.h"
+#include "plugin.h"
 
-#ifndef LOGPROTO_H_INCLUDED
-#define LOGPROTO_H_INCLUDED
+/* This module defines various core-implemented LogProto implementations as
+ * plugins, so that modules may find them, dynamically based on their plugin
+ * name */
 
-#include "logtransport.h"
+DEFINE_LOG_PROTO_SERVER(log_proto_dgram);
+DEFINE_LOG_PROTO_CLIENT(log_proto_text);
+DEFINE_LOG_PROTO_SERVER(log_proto_text);
+DEFINE_LOG_PROTO_CLIENT(log_proto_framed);
+DEFINE_LOG_PROTO_SERVER(log_proto_framed);
 
-typedef enum
+static Plugin framed_server_plugins[] =
 {
-  LPS_SUCCESS,
-  LPS_ERROR,
-  LPS_EOF,
-} LogProtoStatus;
+  LOG_PROTO_SERVER_PLUGIN(log_proto_dgram, "dgram"),
+  LOG_PROTO_CLIENT_PLUGIN(log_proto_text, "text"),
+  LOG_PROTO_SERVER_PLUGIN(log_proto_text, "text"),
+  LOG_PROTO_CLIENT_PLUGIN(log_proto_framed, "framed"),
+  LOG_PROTO_SERVER_PLUGIN(log_proto_framed, "framed"),
+};
 
-
-#endif
+void
+log_proto_register_builtin_plugins(GlobalConfig *cfg)
+{
+  plugin_register(cfg, framed_server_plugins, G_N_ELEMENTS(framed_server_plugins));
+}

@@ -45,7 +45,16 @@ pkginclude_HEADERS = 		\
 	logmsg.h		\
 	logparser.h		\
 	logpipe.h		\
-	logproto.h		\
+	logproto-client.h	\
+	logproto-server.h	\
+	logproto-buffered-server.h \
+	logproto-dgram-server.h	\
+	logproto-framed-client.h	\
+	logproto-framed-server.h	\
+	logproto-text-client.h  \
+	logproto-text-server.h	\
+	logproto-record-server.h \
+	logproto-builtins.h	\
 	logqueue-fifo.h		\
 	logqueue.h		\
 	logreader.h		\
@@ -118,7 +127,16 @@ libsyslog_ng_la_SOURCES = \
 	logmsg.c		\
 	logparser.c		\
 	logpipe.c		\
-	logproto.c		\
+	logproto-client.c	\
+	logproto-server.c	\
+	logproto-buffered-server.c \
+	logproto-dgram-server.c	\
+	logproto-framed-client.c	\
+	logproto-framed-server.c	\
+	logproto-text-client.c  \
+	logproto-text-server.c	\
+	logproto-record-server.c \
+	logproto-builtins.c	\
 	logqueue.c		\
 	logqueue-fifo.c		\
 	logreader.c		\

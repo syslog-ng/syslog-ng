@@ -35,6 +35,7 @@
 #include "patternize.h"
 #include "patterndb-int.h"
 #include "apphook.h"
+#include "logproto-text-server.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -411,7 +412,8 @@ pdbtool_match(int argc, char *argv[])
   LogTemplate *template = NULL;
   GString *output = NULL;
   FilterExprNode *filter = NULL;
-  LogProto *proto = NULL;
+  LogProtoServer *proto = NULL;
+  LogProtoServerOptions proto_options;
   gboolean may_read = TRUE;
 
   memset(&parse_options, 0, sizeof(parse_options));
@@ -451,6 +453,9 @@ pdbtool_match(int argc, char *argv[])
   /* the syslog protocol parser automatically falls back to RFC3164 format */
   parse_options.flags |= LP_SYSLOG_PROTOCOL | LP_EXPECT_HOSTNAME;
   msg_format_options_init(&parse_options, configuration);
+  log_proto_server_options_defaults(&proto_options);
+  proto_options.max_msg_size = 65536;
+  log_proto_server_options_init(&proto_options, configuration);
 
   patterndb = pattern_db_new();
   if (!pattern_db_reload_ruleset(patterndb, configuration, patterndb_file))
@@ -485,8 +490,8 @@ pdbtool_match(int argc, char *argv[])
             }
         }
       transport = log_transport_file_new(fd);
-      proto = log_proto_text_server_new(transport, 65536, 0);
-      eof = log_proto_fetch(proto, &buf, &buflen, NULL, &may_read) != LPS_SUCCESS;
+      proto = log_proto_text_server_new(transport, &proto_options);
+      eof = log_proto_server_fetch(proto, &buf, &buflen, NULL, &may_read) != LPS_SUCCESS;
     }
 
   if (!debug_pattern)
@@ -498,7 +503,7 @@ pdbtool_match(int argc, char *argv[])
     {
       dbg_list = g_array_new(FALSE, FALSE, sizeof(RDebugInfo));
     }
-  while (!eof)
+  while (!eof && buf)
     {
       invalidate_cached_time();
       if (G_LIKELY(proto))
@@ -600,7 +605,8 @@ pdbtool_match(int argc, char *argv[])
 
       if (G_LIKELY(proto))
         {
-          eof = log_proto_fetch(proto, &buf, &buflen, NULL, &may_read) != LPS_SUCCESS;
+          buf = NULL;
+          eof = log_proto_server_fetch(proto, &buf, &buflen, NULL, &may_read) != LPS_SUCCESS;
         }
       else
         {
@@ -610,7 +616,7 @@ pdbtool_match(int argc, char *argv[])
   pattern_db_expire_state(patterndb);
  error:
   if (proto)
-    log_proto_free(proto);
+    log_proto_server_free(proto);
   if (template)
     log_template_unref(template);
   if (output)

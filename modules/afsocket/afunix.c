@@ -74,10 +74,8 @@ afunix_sd_acquire_named_socket(AFSocketSourceDriver *s, gint *result_fd,
 	  /* check if any type is available */
 	  if (sd_is_socket_unix(fd, 0, -1, filename, 0))
 	    {
-              int type = (self->super.flags & AFSOCKET_STREAM) ? SOCK_STREAM : SOCK_DGRAM;
-
 	      /* check if it matches our idea of the socket type */
-              if (sd_is_socket_unix(fd, type, -1, filename, 0))
+              if (sd_is_socket_unix(fd, self->super.sock_type, -1, filename, 0))
                 {
                   *result_fd = fd;
                   break;
@@ -87,7 +85,7 @@ afunix_sd_acquire_named_socket(AFSocketSourceDriver *s, gint *result_fd,
                   msg_error("The systemd supplied UNIX domain socket is of a different type, check the configured driver and the matching systemd unit file",
 		            evt_tag_str("filename", filename),
 		            evt_tag_int("systemd-sock-fd", fd),
-                            evt_tag_str("expecting", type == SOCK_STREAM ? "unix-stream()" : "unix-dgram()"),
+                            evt_tag_str("expecting", self->super.sock_type == SOCK_STREAM ? "unix-stream()" : "unix-dgram()"),
                             NULL);
                   return FALSE;
                 }
@@ -173,6 +171,13 @@ afunix_sd_apply_transport(AFSocketSourceDriver *s)
 
   if (!self->super.bind_addr)
     self->super.bind_addr = g_sockaddr_unix_new(self->filename);
+
+  if (self->super.sock_type == SOCK_DGRAM)
+    afsocket_sd_set_transport(&self->super.super.super, "unix-dgram");
+  else
+    afsocket_sd_set_transport(&self->super.super.super, "unix-stream");
+
+  self->super.logproto_name = "text";
   return TRUE;
 }
 
@@ -207,11 +212,11 @@ afunix_sd_free(LogPipe *s)
 }
 
 LogDriver *
-afunix_sd_new(gchar *filename, guint32 flags)
+afunix_sd_new(gint sock_type, gchar *filename)
 {
   AFUnixSourceDriver *self = g_new0(AFUnixSourceDriver, 1);
 
-  afsocket_sd_init_instance(&self->super, &self->sock_options, AF_UNIX, flags);
+  afsocket_sd_init_instance(&self->super, &self->sock_options, AF_UNIX, sock_type, AFSOCKET_LOCAL | AFSOCKET_KEEP_ALIVE);
 
   self->super.super.super.super.init = afunix_sd_init;
   self->super.super.super.super.free_fn = afunix_sd_free;
@@ -220,13 +225,9 @@ afunix_sd_new(gchar *filename, guint32 flags)
 
   self->super.max_connections = 256;
 
-  if (self->super.flags & AFSOCKET_STREAM)
+  if (self->super.sock_type == SOCK_STREAM)
     self->super.reader_options.super.init_window_size = self->super.max_connections * 100;
 
-  if (self->super.flags & AFSOCKET_DGRAM)
-    afsocket_sd_set_transport(&self->super.super.super, "unix-dgram");
-  else if (self->super.flags & AFSOCKET_STREAM)
-    afsocket_sd_set_transport(&self->super.super.super, "unix-stream");
 
   self->filename = g_strdup(filename);
   file_perm_options_defaults(&self->file_perm_options);
@@ -238,6 +239,11 @@ static gboolean
 afunix_dd_apply_transport(AFSocketDestDriver *s)
 {
   AFUnixDestDriver *self = (AFUnixDestDriver *) s;
+
+  if (self->super.sock_type == SOCK_DGRAM)
+    afsocket_dd_set_transport(&self->super.super.super, "unix-dgram");
+  else
+    afsocket_dd_set_transport(&self->super.super.super, "unix-stream");
 
   if (!self->super.bind_addr)
     self->super.bind_addr = g_sockaddr_unix_new(NULL);
@@ -260,21 +266,16 @@ afunix_dd_free(LogPipe *s)
 }
 
 LogDriver *
-afunix_dd_new(gchar *filename, guint flags)
+afunix_dd_new(gint sock_type, gchar *filename)
 {
   AFUnixDestDriver *self = g_new0(AFUnixDestDriver, 1);
 
-  afsocket_dd_init_instance(&self->super, &self->sock_options, AF_UNIX, "localhost", flags);
+  afsocket_dd_init_instance(&self->super, &self->sock_options, AF_UNIX, sock_type, "localhost", AFSOCKET_KEEP_ALIVE);
   self->super.super.super.super.free_fn = afunix_dd_free;
   self->super.apply_transport = afunix_dd_apply_transport;
+  self->super.writer_options.mark_mode = MM_NONE;
 
   self->filename = g_strdup(filename);
 
-  if (self->super.flags & AFSOCKET_DGRAM)
-    afsocket_dd_set_transport(&self->super.super.super, "unix-dgram");
-  else if (self->super.flags & AFSOCKET_STREAM)
-    afsocket_dd_set_transport(&self->super.super.super, "unix-stream");
-
-  self->super.writer_options.mark_mode = MM_NONE;
   return &self->super.super.super;
 }

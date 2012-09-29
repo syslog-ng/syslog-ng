@@ -21,18 +21,17 @@
  * COPYING for details.
  *
  */
+#ifndef LOGPROTO_DGRAM_SERVER_H_INCLUDED
+#define LOGPROTO_DGRAM_SERVER_H_INCLUDED
 
-#ifndef LOGPROTO_H_INCLUDED
-#define LOGPROTO_H_INCLUDED
+#include "logproto-server.h"
 
-#include "logtransport.h"
-
-typedef enum
-{
-  LPS_SUCCESS,
-  LPS_ERROR,
-  LPS_EOF,
-} LogProtoStatus;
-
+/*
+ * LogProtoDGramServer
+ *
+ * This class reads input as datagrams, each datagram is a separate
+ * message, regardless of embedded EOL/NUL characters.
+ */
+LogProtoServer *log_proto_dgram_server_new(LogTransport *transport, const LogProtoServerOptions *options);
 
 #endif

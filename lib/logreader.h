@@ -26,7 +26,7 @@
 #define LOGREADER_H_INCLUDED
 
 #include "logsource.h"
-#include "logproto.h"
+#include "logproto-server.h"
 #include "timeutils.h"
 
 /* flags */
@@ -43,17 +43,14 @@ typedef struct _LogReaderWatch LogReaderWatch;
 
 typedef struct _LogReaderOptions
 {
+  gboolean initialized;
   LogSourceOptions super;
   MsgFormatOptions parse_options;
+  LogProtoServerOptionsStorage proto_options;
   guint32 flags;
-  gint padding;
-  gint msg_size;
   gint follow_freq;
   gint fetch_limit;
-  gchar *text_encoding;
   const gchar *group_name;
-
-  /* source time zone if one is not specified in the message */
   gboolean check_hostname;
 } LogReaderOptions;
 
@@ -63,9 +60,9 @@ void log_reader_set_options(LogPipe *s, LogPipe *control, LogReaderOptions *opti
 void log_reader_set_follow_filename(LogPipe *self, const gchar *follow_filename);
 void log_reader_set_peer_addr(LogPipe *s, GSockAddr *peer_addr);
 void log_reader_set_immediate_check(LogPipe *s);
-void log_reader_reopen(LogPipe *s, LogProto *proto, LogPipe *control, LogReaderOptions *options, gint stats_level, gint stats_source, const gchar *stats_id, const gchar *stats_instance, gboolean immediate_check);
+void log_reader_reopen(LogPipe *s, LogProtoServer *proto, LogPipe *control, LogReaderOptions *options, gint stats_level, gint stats_source, const gchar *stats_id, const gchar *stats_instance, gboolean immediate_check);
 
-LogPipe *log_reader_new(LogProto *proto);
+LogPipe *log_reader_new(LogProtoServer *proto);
 void log_reader_options_defaults(LogReaderOptions *options);
 void log_reader_options_init(LogReaderOptions *options, GlobalConfig *cfg, const gchar *group_name);
 void log_reader_options_destroy(LogReaderOptions *options);

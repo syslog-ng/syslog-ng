@@ -35,6 +35,7 @@
 #include "plugin.h"
 #include "cfg-parser.h"
 #include "stats.h"
+#include "logproto-builtins.h"
 
 #include <sys/types.h>
 #include <signal.h>
@@ -215,6 +216,7 @@ cfg_init(GlobalConfig *cfg)
         }
     }
   dns_cache_set_params(cfg->dns_cache_size, cfg->dns_cache_expire, cfg->dns_cache_expire_failed, cfg->dns_cache_hosts);
+  log_proto_register_builtin_plugins(cfg);
   return cfg_tree_start(&cfg->tree);
 }
 

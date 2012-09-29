@@ -248,6 +248,12 @@ log_transport_dgram_socket_read_method(LogTransport *s, gpointer buf, gsize bufl
   while (rc == -1 && errno == EINTR);
   if (rc != -1 && salen && sa)
     (*sa) = g_sockaddr_new((struct sockaddr *) &sas, salen);
+  if (rc == 0)
+    {
+      /* DGRAM sockets should never return EOF, they just need to be read again */
+      rc = -1;
+      errno = EAGAIN;
+    }
   return rc;
 }
 
