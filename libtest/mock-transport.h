@@ -8,10 +8,16 @@
 /* macro to be used at the end of the I/O stream */
 #define LTM_EOF                 NULL, 0
 
-#define LTM_INPUT_AS_STREAM     TRUE
-#define LTM_INPUT_AS_RECORDS    FALSE
+LogTransport *
+log_transport_mock_stream_new(gchar *read_buffer1, gssize read_buffer_length1, ...);
 
 LogTransport *
-log_transport_mock_new(gboolean input_is_a_stream, gchar *read_buffer1, gssize read_buffer_length1, ...);
+log_transport_mock_endless_stream_new(gchar *read_buffer1, gssize read_buffer_length1, ...);
+
+LogTransport *
+log_transport_mock_records_new(gchar *read_buffer1, gssize read_buffer_length1, ...);
+
+LogTransport *
+log_transport_mock_endless_records_new(gchar *read_buffer1, gssize read_buffer_length1, ...);
 
 #endif

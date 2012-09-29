@@ -13,6 +13,7 @@ typedef struct
   gint current_iov_pos;
   gboolean input_is_a_stream;
   gboolean inject_eagain;
+  gboolean eof_is_eagain;
 } LogTransportMock;
 
 gssize
@@ -23,8 +24,8 @@ log_transport_mock_read_method(LogTransport *s, gpointer buf, gsize count, GSock
 
   if (self->current_iov_ndx >= self->iov_cnt)
     {
-      /* EOF */
-      return 0;
+      count = 0;
+      goto exit;
     }
 
   current_iov = &self->iov[self->current_iov_ndx];
@@ -47,6 +48,7 @@ log_transport_mock_read_method(LogTransport *s, gpointer buf, gsize count, GSock
 
   if (GPOINTER_TO_UINT(current_iov->iov_base) < 4096)
     {
+      /* error injection */
       errno = GPOINTER_TO_UINT(current_iov->iov_base);
       return -1;
     }
@@ -60,24 +62,26 @@ log_transport_mock_read_method(LogTransport *s, gpointer buf, gsize count, GSock
     }
   if (sa)
     *sa = g_sockaddr_inet_new("1.2.3.4", 5555);
+
+ exit:
+  if (count == 0 && self->eof_is_eagain)
+    {
+      errno = EAGAIN;
+      return -1;
+    }
   return count;
 }
 
-LogTransport *
-log_transport_mock_new(gboolean input_is_a_stream, gchar *read_buffer1, gssize read_buffer_length1, ...)
+static void
+log_transport_mock_init(LogTransportMock *self, gchar *read_buffer1, gssize read_buffer_length1, va_list va)
 {
-  LogTransportMock *self = g_new0(LogTransportMock, 1);
   gchar *buffer;
   gssize length;
-  va_list va;
 
   self->super.fd = 0;
   self->super.cond = 0;
   self->super.read = log_transport_mock_read_method;
   self->super.free_fn = log_transport_free_method;
-  self->input_is_a_stream = input_is_a_stream;
-
-  va_start(va, read_buffer_length1);
 
   buffer = read_buffer1;
   length = read_buffer_length1;
@@ -96,9 +100,58 @@ log_transport_mock_new(gboolean input_is_a_stream, gchar *read_buffer1, gssize r
       length = va_arg(va, gint);
     }
 
-  va_end(va);
   self->current_iov_ndx = 0;
   self->current_iov_pos = 0;
+}
 
+LogTransport *
+log_transport_mock_stream_new(gchar *read_buffer1, gssize read_buffer_length1, ...)
+{
+  LogTransportMock *self = g_new0(LogTransportMock, 1);
+  va_list va;
+
+  va_start(va, read_buffer_length1);
+  log_transport_mock_init(self, read_buffer1, read_buffer_length1, va);
+  va_end(va);
+  self->input_is_a_stream = TRUE;
+  return &self->super;
+}
+
+LogTransport *
+log_transport_mock_endless_stream_new(gchar *read_buffer1, gssize read_buffer_length1, ...)
+{
+  LogTransportMock *self = g_new0(LogTransportMock, 1);
+  va_list va;
+
+  va_start(va, read_buffer_length1);
+  log_transport_mock_init(self, read_buffer1, read_buffer_length1, va);
+  va_end(va);
+  self->input_is_a_stream = TRUE;
+  self->eof_is_eagain = TRUE;
+  return &self->super;
+}
+
+LogTransport *
+log_transport_mock_records_new(gchar *read_buffer1, gssize read_buffer_length1, ...)
+{
+  LogTransportMock *self = g_new0(LogTransportMock, 1);
+  va_list va;
+
+  va_start(va, read_buffer_length1);
+  log_transport_mock_init(self, read_buffer1, read_buffer_length1, va);
+  va_end(va);
+  return &self->super;
+}
+
+LogTransport *
+log_transport_mock_endless_records_new(gchar *read_buffer1, gssize read_buffer_length1, ...)
+{
+  LogTransportMock *self = g_new0(LogTransportMock, 1);
+  va_list va;
+
+  va_start(va, read_buffer_length1);
+  log_transport_mock_init(self, read_buffer1, read_buffer_length1, va);
+  va_end(va);
+  self->eof_is_eagain = TRUE;
   return &self->super;
 }

@@ -85,8 +85,7 @@ test_log_proto_base(void)
 
   log_proto_server_options_set_encoding(&proto_server_options, "ucs4");
   proto = log_proto_binary_record_server_new(
-            log_transport_mock_new(
-              FALSE,
+            log_transport_mock_records_new(
               /* ucs4, terminated by record size */
               "\x00\x00\x00\xe1\x00\x00\x00\x72\x00\x00\x00\x76\x00\x00\x00\xed"      /* |...á...r...v...í| */
               "\x00\x00\x00\x7a\x00\x00\x00\x74\x00\x00\x01\x71\x00\x00\x00\x72", 32, /* |...z...t...ű...r|  */
@@ -117,8 +116,7 @@ test_log_proto_binary_record_server_no_encoding(void)
 
   log_proto_testcase_begin("test_log_proto_binary_record_server_no_encoding");
   proto = log_proto_binary_record_server_new(
-            log_transport_mock_new(
-              FALSE,
+            log_transport_mock_records_new(
               "0123456789ABCDEF0123456789ABCDEF", -1,
               "01234567\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n", -1,
               "01234567\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 32,
@@ -154,8 +152,7 @@ test_log_proto_padded_record_server_no_encoding(void)
 
   log_proto_testcase_begin("test_log_proto_padded_record_server_no_encoding");
   proto = log_proto_padded_record_server_new(
-            log_transport_mock_new(
-              FALSE,
+            log_transport_mock_records_new(
               "0123456789ABCDEF0123456789ABCDEF", -1,
               "01234567\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n", -1,
               "01234567\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 32,
@@ -198,8 +195,7 @@ test_log_proto_padded_record_server_ucs4(void)
   log_proto_testcase_begin("test_log_proto_padded_record_server_ucs4");
   log_proto_server_options_set_encoding(&proto_server_options, "ucs4");
   proto = log_proto_padded_record_server_new(
-            log_transport_mock_new(
-              FALSE,
+            log_transport_mock_records_new(
               /* ucs4, terminated by record size */
               "\x00\x00\x00\xe1\x00\x00\x00\x72\x00\x00\x00\x76\x00\x00\x00\xed"      /* |...á...r...v...í| */
               "\x00\x00\x00\x7a\x00\x00\x00\x74\x00\x00\x01\x71\x00\x00\x00\x72", 32, /* |...z...t...ű...r|  */
@@ -227,8 +223,7 @@ test_log_proto_padded_record_server_invalid_ucs4(void)
   log_proto_server_options_set_encoding(&proto_server_options, "ucs4");
   proto = log_proto_padded_record_server_new(
             /* 31 bytes record size */
-            log_transport_mock_new(
-              FALSE,
+            log_transport_mock_records_new(
               /* invalid ucs4, trailing zeroes at the end */
               "\x00\x00\x00\xe1\x00\x00\x00\x72\x00\x00\x00\x76\x00\x00\x00\xed"      /* |...á...r...v...í| */
               "\x00\x00\x00\x7a\x00\x00\x00\x74\x00\x00\x01\x71\x00\x00\x00", 31, /* |...z...t...ű...r|  */
@@ -248,8 +243,7 @@ test_log_proto_padded_record_server_iso_8859_2(void)
   log_proto_server_options_set_encoding(&proto_server_options, "iso-8859-2");
   proto = log_proto_padded_record_server_new(
             /* 32 bytes record size */
-            log_transport_mock_new(
-              FALSE,
+            log_transport_mock_records_new(
 
               /* iso-8859-2, deliberately contains
                * accented chars so utf8 representation
@@ -289,8 +283,7 @@ test_log_proto_text_server_no_encoding(gboolean input_is_stream)
   proto_server_options.max_msg_size = 32;
   proto = log_proto_text_server_new(
             /* 32 bytes max line length */
-            log_transport_mock_new(
-              input_is_stream,
+            (input_is_stream ? log_transport_mock_stream_new : log_transport_mock_records_new)(
               "01234567\n"
               /* line too long */
               "0123456789ABCDEF0123456789ABCDEF01234567\n"
@@ -348,8 +341,7 @@ test_log_proto_text_server_eof_handling(void)
   log_proto_testcase_begin("test_log_proto_text_server_eof_handling(no eol before EOF)");
   proto_server_options.max_msg_size = 32;
   proto = log_proto_text_server_new(
-            log_transport_mock_new(
-              TRUE,
+            log_transport_mock_stream_new(
               /* no eol before EOF */
               "01234567", -1,
 
@@ -363,8 +355,7 @@ test_log_proto_text_server_eof_handling(void)
   log_proto_testcase_begin("test_log_proto_text_server_eof_handling(I/O error before EOF)");
   proto_server_options.max_msg_size = 32;
   proto = log_proto_text_server_new(
-            log_transport_mock_new(
-              TRUE,
+            log_transport_mock_stream_new(
               "01234567", -1,
               LTM_INJECT_ERROR(EIO),
               LTM_EOF),
@@ -378,8 +369,7 @@ test_log_proto_text_server_eof_handling(void)
   proto_server_options.max_msg_size = 32;
   log_proto_server_options_set_encoding(&proto_server_options, "utf8");
   proto = log_proto_text_server_new(
-            log_transport_mock_new(
-              TRUE,
+            log_transport_mock_stream_new(
               /* utf8 */
               "\xc3", -1,
               LTM_EOF),
@@ -399,8 +389,7 @@ test_log_proto_text_server_not_fixed_encoding(void)
   log_proto_server_options_set_encoding(&proto_server_options, "utf8");
   /* to test whether a non-easily-reversable charset works too */
   proto = log_proto_text_server_new(
-            log_transport_mock_new(
-              TRUE,
+            log_transport_mock_stream_new(
               /* utf8 */
               "árvíztűrőtükörfúrógép\n", -1,
               LTM_EOF),
@@ -420,8 +409,7 @@ test_log_proto_text_server_ucs4(void)
   proto_server_options.max_msg_size = 32;
   log_proto_server_options_set_encoding(&proto_server_options, "ucs4");
   proto = log_proto_text_server_new(
-            log_transport_mock_new(
-              TRUE,
+            log_transport_mock_stream_new(
               /* ucs4 */
               "\x00\x00\x00\xe1\x00\x00\x00\x72\x00\x00\x00\x76\x00\x00\x00\xed"      /* |...á...r...v...í| */
               "\x00\x00\x00\x7a\x00\x00\x00\x74\x00\x00\x01\x71\x00\x00\x00\x72"      /* |...z...t...ű...r| */
@@ -446,8 +434,7 @@ test_log_proto_text_server_iso8859_2(void)
   proto_server_options.max_msg_size = 32;
   log_proto_server_options_set_encoding(&proto_server_options, "iso-8859-2");
   proto = log_proto_text_server_new(
-            log_transport_mock_new(
-              TRUE,
+            log_transport_mock_stream_new(
               /* iso-8859-2 */
               "\xe1\x72\x76\xed\x7a\x74\xfb\x72\xf5\x74\xfc\x6b\xf6\x72\x66\xfa"      /*  |árvíztűrőtükörfú| */
               "\x72\xf3\x67\xe9\x70\n", -1,                                           /*  |rógép|            */
@@ -467,8 +454,7 @@ test_log_proto_text_server_multi_read(void)
   log_proto_testcase_begin("test_log_proto_text_server_multi_read(multi-read-allowed)");
   proto_server_options.max_msg_size = 32;
   proto = log_proto_text_server_new(
-            log_transport_mock_new(
-              FALSE,
+            log_transport_mock_records_new(
               "foobar\n", -1,
               /* no EOL, proto implementation would read another chunk */
               "foobaz", -1,
@@ -485,8 +471,7 @@ test_log_proto_text_server_multi_read(void)
   log_proto_testcase_begin("test_log_proto_text_server_multi_read(multi-read-not-allowed)");
   proto_server_options.max_msg_size = 32;
   proto = construct_server_proto("no-multi-read-text",
-            log_transport_mock_new(
-              FALSE,
+            log_transport_mock_records_new(
               "foobar\n", -1,
               /* no EOL, proto implementation would read another chunk */
               "foobaz", -1,
@@ -533,8 +518,7 @@ test_log_proto_dgram_server_no_encoding(void)
   log_proto_testcase_begin("test_log_proto_dgram_server_no_encoding");
   proto_server_options.max_msg_size = 32;
   proto = log_proto_dgram_server_new(
-            log_transport_mock_new(
-              FALSE,
+            log_transport_mock_endless_records_new(
               "0123456789ABCDEF0123456789ABCDEF", -1,
               "01234567\n", -1,
               "01234567\0", 9,
@@ -581,8 +565,7 @@ test_log_proto_dgram_server_ucs4(void)
   proto_server_options.max_msg_size = 32;
   log_proto_server_options_set_encoding(&proto_server_options, "ucs4");
   proto = log_proto_dgram_server_new(
-            log_transport_mock_new(
-              FALSE,
+            log_transport_mock_endless_records_new(
               /* ucs4, terminated by record size */
               "\x00\x00\x00\xe1\x00\x00\x00\x72\x00\x00\x00\x76\x00\x00\x00\xed"      /* |...á...r...v...í| */
               "\x00\x00\x00\x7a\x00\x00\x00\x74\x00\x00\x01\x71\x00\x00\x00\x72", 32, /* |...z...t...ű...r|  */
@@ -609,8 +592,7 @@ test_log_proto_dgram_server_invalid_ucs4(void)
   log_proto_server_options_set_encoding(&proto_server_options, "ucs4");
   proto = log_proto_dgram_server_new(
             /* 31 bytes record size */
-            log_transport_mock_new(
-              FALSE,
+            log_transport_mock_endless_records_new(
               /* invalid ucs4, trailing zeroes at the end */
               "\x00\x00\x00\xe1\x00\x00\x00\x72\x00\x00\x00\x76\x00\x00\x00\xed"      /* |...á...r...v...í| */
               "\x00\x00\x00\x7a\x00\x00\x00\x74\x00\x00\x01\x71\x00\x00\x00", 31, /* |...z...t...ű...r|  */
@@ -630,8 +612,7 @@ test_log_proto_dgram_server_iso_8859_2(void)
   proto_server_options.max_msg_size = 32;
   log_proto_server_options_set_encoding(&proto_server_options, "iso-8859-2");
   proto = log_proto_dgram_server_new(
-            log_transport_mock_new(
-              FALSE,
+            log_transport_mock_endless_records_new(
 
               /* iso-8859-2, deliberately contains
                * accented chars so utf8 representation
@@ -654,8 +635,7 @@ test_log_proto_dgram_server_eof_handling(void)
   log_proto_testcase_begin("test_log_proto_dgram_server_eof_handling");
   proto_server_options.max_msg_size = 32;
   proto = log_proto_dgram_server_new(
-            log_transport_mock_new(
-              FALSE,
+            log_transport_mock_endless_records_new(
               /* no eol before EOF */
               "01234567", -1,
 
@@ -690,8 +670,7 @@ test_log_proto_framed_server_simple_messages(void)
   log_proto_testcase_begin("test_log_proto_framed_server_simple_messages");
   proto_server_options.max_msg_size = 32;
   proto = log_proto_framed_server_new(
-            log_transport_mock_new(
-              TRUE,
+            log_transport_mock_stream_new(
               "32 0123456789ABCDEF0123456789ABCDEF", -1,
               "10 01234567\n\n", -1,
               "10 01234567\0\0", 13,
@@ -726,8 +705,7 @@ test_log_proto_framed_server_io_error(void)
   log_proto_testcase_begin("test_log_proto_framed_server_io_error");
   proto_server_options.max_msg_size = 32;
   proto = log_proto_framed_server_new(
-            log_transport_mock_new(
-              TRUE,
+            log_transport_mock_stream_new(
               "32 0123456789ABCDEF0123456789ABCDEF", -1,
               LTM_INJECT_ERROR(EIO),
               LTM_EOF),
@@ -747,8 +725,7 @@ test_log_proto_framed_server_invalid_header(void)
   log_proto_testcase_begin("test_log_proto_framed_server_invalid_header");
   proto_server_options.max_msg_size = 32;
   proto = log_proto_framed_server_new(
-            log_transport_mock_new(
-              TRUE,
+            log_transport_mock_stream_new(
               "1q 0123456789ABCDEF0123456789ABCDEF", -1,
               LTM_EOF),
             get_inited_proto_server_options());
@@ -765,8 +742,7 @@ test_log_proto_framed_server_too_long_line(void)
   log_proto_testcase_begin("test_log_proto_framed_server_too_long_line");
   proto_server_options.max_msg_size = 32;
   proto = log_proto_framed_server_new(
-            log_transport_mock_new(
-              TRUE,
+            log_transport_mock_stream_new(
               "48 0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF", -1,
               LTM_EOF),
             get_inited_proto_server_options());
@@ -786,8 +762,7 @@ test_log_proto_framed_server_message_exceeds_buffer(void)
   log_proto_testcase_begin("test_log_proto_framed_server_message_exceeds_buffer");
   proto_server_options.max_msg_size = 32;
   proto = log_proto_framed_server_new(
-            log_transport_mock_new(
-              FALSE,
+            log_transport_mock_records_new(
               "16 0123456789ABCDE\n16 0123456789ABCDE\n", -1,
               LTM_EOF),
             get_inited_proto_server_options());
@@ -809,8 +784,7 @@ test_log_proto_framed_server_buffer_shift_before_fetch(void)
   proto_server_options.init_buffer_size = 10;
   proto_server_options.max_buffer_size = 10;
   proto = log_proto_framed_server_new(
-            log_transport_mock_new(
-              FALSE,
+            log_transport_mock_records_new(
               "7 012345\n4", 10,
               " 123\n", -1,
               LTM_EOF),
@@ -833,8 +807,7 @@ test_log_proto_framed_server_buffer_shift_to_make_space_for_a_frame(void)
   proto_server_options.init_buffer_size = 10;
   proto_server_options.max_buffer_size = 10;
   proto = log_proto_framed_server_new(
-            log_transport_mock_new(
-              FALSE,
+            log_transport_mock_records_new(
               "6 01234\n4 ", 10,
               "123\n", -1,
               LTM_EOF),
@@ -853,8 +826,7 @@ test_log_proto_framed_server_multi_read(void)
   log_proto_testcase_begin("test_log_proto_framed_server_multi_read");
   proto_server_options.max_msg_size = 32;
   proto = log_proto_framed_server_new(
-            log_transport_mock_new(
-              FALSE,
+            log_transport_mock_records_new(
               "7 foobar\n", -1,
               /* no EOL, proto implementation would read another chunk */
               "6 fooba", -1,
