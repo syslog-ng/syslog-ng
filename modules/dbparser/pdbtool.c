@@ -484,7 +484,7 @@ pdbtool_match(int argc, char *argv[])
               goto error;
             }
         }
-      transport = log_transport_plain_new(fd, 0);
+      transport = log_transport_file_new(fd);
       proto = log_proto_text_server_new(transport, 65536, 0);
       eof = log_proto_fetch(proto, &buf, &buflen, NULL, &may_read) != LPS_SUCCESS;
     }

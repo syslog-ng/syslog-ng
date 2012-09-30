@@ -32,15 +32,21 @@
 void
 log_transport_free_method(LogTransport *s)
 {
-  if (((s->flags & LTF_DONTCLOSE) == 0) && s->fd != -1)
+  if (s->fd != -1)
     {
       msg_verbose("Closing log transport fd",
                   evt_tag_int("fd", s->fd),
                   NULL);
-      if (s->flags & LTF_SHUTDOWN)
-        shutdown(s->fd, SHUT_RDWR);
       close(s->fd);
     }
+}
+
+void
+log_transport_init_method(LogTransport *self, gint fd)
+{
+  self->fd = fd;
+  self->cond = 0;
+  self->free_fn = log_transport_free_method;
 }
 
 void
@@ -51,81 +57,58 @@ log_transport_free(LogTransport *self)
 }
 
 /* log transport that simply sends messages to an fd */
-typedef struct _LogTransportPlain LogTransportPlain;
-
-struct _LogTransportPlain
+typedef struct _LogTransportFile LogTransportFile;
+struct _LogTransportFile
 {
   LogTransport super;
 };
 
 static gssize
-log_transport_plain_read_method(LogTransport *s, gpointer buf, gsize buflen, GSockAddr **sa)
+log_transport_file_read_method(LogTransport *s, gpointer buf, gsize buflen, GSockAddr **sa)
 {
-  LogTransportPlain *self = (LogTransportPlain *) s;
+  LogTransportFile *self = (LogTransportFile *) s;
   gint rc;
   
-  if ((self->super.flags & LTF_RECV) == 0)
-    {
-      if (sa)
-        *sa = NULL;
+  if (sa)
+    *sa = NULL;
 
-      do
-        {
-          if (self->super.timeout)
-            alarm_set(self->super.timeout);
-          rc = read(self->super.fd, buf, buflen);
-          
-          if (self->super.timeout > 0 && rc == -1 && errno == EINTR && alarm_has_fired())
-            {
-              msg_notice("Nonblocking read has blocked, returning with an error",
-                         evt_tag_int("fd", self->super.fd),
-                         evt_tag_int("timeout", self->super.timeout),
-                         NULL);
-              alarm_cancel();
-              break;
-            }
-          if (self->super.timeout)
-            alarm_cancel();
-        }
-      while (rc == -1 && errno == EINTR);
+  do
+    {
+      rc = read(self->super.fd, buf, buflen);
     }
-  else 
-    {
-      union
-      {
-#if HAVE_STRUCT_SOCKADDR_STORAGE
-        struct sockaddr_storage __sas;
-#endif
-        struct sockaddr __sa;
-      } sas;
-      
-      socklen_t salen = sizeof(sas);
+  while (rc == -1 && errno == EINTR);
 
-      do
-        {
-          rc = recvfrom(self->super.fd, buf, buflen, 0, 
-                        (struct sockaddr *) &sas, &salen);
-        }
-      while (rc == -1 && errno == EINTR);
-      if (rc != -1 && salen && sa)
-        (*sa) = g_sockaddr_new((struct sockaddr *) &sas, salen);
+  if (rc == 0)
+    {
+      /* regular files should never return EOF, they just need to be read again */
+      rc = -1;
+      errno = EAGAIN;
     }
   return rc;
 }
 
 static gssize
-log_transport_plain_write_method(LogTransport *s, const gpointer buf, gsize buflen)
+log_transport_file_write_method(LogTransport *s, const gpointer buf, gsize buflen)
 {
-  LogTransportPlain *self = (LogTransportPlain *) s;
+  LogTransportFile *self = (LogTransportFile *) s;
   gint rc;
   
   do
     {
-      if (self->super.timeout)
-        alarm_set(self->super.timeout);
-      if (self->super.flags & LTF_APPEND)
-        lseek(self->super.fd, 0, SEEK_END);
+      rc = write(self->super.fd, buf, buflen);
+    }
+  while (rc == -1 && errno == EINTR);
+  return rc;
+}
 
+static gssize
+log_transport_pipe_write_method(LogTransport *s, const gpointer buf, gsize buflen)
+{
+  LogTransportFile *self = (LogTransportFile *) s;
+  gint rc;
+
+  do
+    {
       /* NOTE: this loop is needed because of the funny semantics that
        * pipe() uses. A pipe has a buffer (sized PIPE_BUF), which
        * determines how much data it can buffer. If the data to be
@@ -150,22 +133,133 @@ log_transport_plain_write_method(LogTransport *s, const gpointer buf, gsize bufl
           rc = write(self->super.fd, buf, buflen);
         }
 #ifdef __aix__
-      while ((buflen >>= 1) && (self->super.flags & LTF_PIPE) && rc < 0 && errno == EAGAIN);
+      while ((buflen >>= 1) && rc < 0 && errno == EAGAIN);
 #else
       while (0);
 #endif
+    }
+  while (rc == -1 && errno == EINTR);
+  return rc;
+}
 
-      if (self->super.timeout > 0 && rc == -1 && errno == EINTR && alarm_has_fired())
+/* regular files */
+LogTransport *
+log_transport_file_new(gint fd)
+{
+  LogTransportFile *self = g_new0(LogTransportFile, 1);
+
+  log_transport_init_method(&self->super, fd);
+  self->super.read = log_transport_file_read_method;
+  self->super.write = log_transport_file_write_method;
+  self->super.free_fn = log_transport_free_method;
+  return &self->super;
+}
+
+LogTransport *
+log_transport_pipe_new(gint fd)
+{
+  LogTransportFile *self = g_new0(LogTransportFile, 1);
+
+  log_transport_init_method(&self->super, fd);
+  self->super.read = log_transport_file_read_method;
+  self->super.write = log_transport_pipe_write_method;
+  self->super.free_fn = log_transport_free_method;
+  return &self->super;
+}
+
+typedef struct _LogTransportDevice LogTransportDevice;
+struct _LogTransportDevice
+{
+  LogTransport super;
+  gint timeout;
+};
+
+static gssize
+log_transport_device_read_method(LogTransport *s, gpointer buf, gsize buflen, GSockAddr **sa)
+{
+  LogTransportDevice *self = (LogTransportDevice *) s;
+  gint rc;
+
+  if (sa)
+    *sa = NULL;
+
+  do
+    {
+      if (self->timeout)
+        alarm_set(self->timeout);
+      rc = read(self->super.fd, buf, buflen);
+
+      if (self->timeout > 0 && rc == -1 && errno == EINTR && alarm_has_fired())
         {
-          msg_notice("Nonblocking write has blocked, returning with an error",
+          msg_notice("Nonblocking read has blocked, returning with an error",
                      evt_tag_int("fd", self->super.fd),
-                     evt_tag_int("timeout", self->super.timeout),
+                     evt_tag_int("timeout", self->timeout),
                      NULL);
           alarm_cancel();
           break;
         }
-      if (self->super.timeout)
+      if (self->timeout)
         alarm_cancel();
+    }
+  while (rc == -1 && errno == EINTR);
+  return rc;
+}
+
+LogTransport *
+log_transport_device_new(gint fd, gint timeout)
+{
+  LogTransportDevice *self = g_new0(LogTransportDevice, 1);
+
+  log_transport_init_method(&self->super, fd);
+  self->timeout = timeout;
+  self->super.read = log_transport_device_read_method;
+  self->super.write = NULL;
+  self->super.free_fn = log_transport_free_method;
+  return &self->super;
+}
+
+typedef struct _LogTransportSocket LogTransportSocket;
+struct _LogTransportSocket
+{
+  LogTransport super;
+};
+
+static gssize
+log_transport_dgram_socket_read_method(LogTransport *s, gpointer buf, gsize buflen, GSockAddr **sa)
+{
+  LogTransportSocket *self = (LogTransportSocket *) s;
+  gint rc;
+
+  union
+  {
+#if HAVE_STRUCT_SOCKADDR_STORAGE
+    struct sockaddr_storage __sas;
+#endif
+    struct sockaddr __sa;
+  } sas;
+
+  socklen_t salen = sizeof(sas);
+
+  do
+    {
+      rc = recvfrom(self->super.fd, buf, buflen, 0,
+                    (struct sockaddr *) &sas, &salen);
+    }
+  while (rc == -1 && errno == EINTR);
+  if (rc != -1 && salen && sa)
+    (*sa) = g_sockaddr_new((struct sockaddr *) &sas, salen);
+  return rc;
+}
+
+static gssize
+log_transport_dgram_socket_write_method(LogTransport *s, const gpointer buf, gsize buflen)
+{
+  LogTransportSocket *self = (LogTransportSocket *) s;
+  gint rc;
+
+  do
+    {
+      rc = send(self->super.fd, buf, buflen, 0);
     }
   while (rc == -1 && errno == EINTR);
 
@@ -185,16 +279,62 @@ log_transport_plain_write_method(LogTransport *s, const gpointer buf, gsize bufl
 
 
 LogTransport *
-log_transport_plain_new(gint fd, guint flags)
+log_transport_dgram_socket_new(gint fd)
 {
-  LogTransportPlain *self = g_new0(LogTransportPlain, 1);
+  LogTransportSocket *self = g_new0(LogTransportSocket, 1);
   
-  self->super.fd = fd;
-  self->super.cond = 0;
-  self->super.flags = flags;
-  self->super.read = log_transport_plain_read_method;
-  self->super.write = log_transport_plain_write_method;
-  self->super.free_fn = log_transport_free_method;
+  log_transport_init_method(&self->super, fd);
+  self->super.read = log_transport_dgram_socket_read_method;
+  self->super.write = log_transport_dgram_socket_write_method;
+  return &self->super;
+}
+
+static gssize
+log_transport_stream_socket_read_method(LogTransport *s, gpointer buf, gsize buflen, GSockAddr **sa)
+{
+  LogTransportSocket *self = (LogTransportSocket *) s;
+  gint rc;
+
+  if (sa)
+    *sa = NULL;
+  do
+    {
+      rc = recv(self->super.fd, buf, buflen, 0);
+    }
+  while (rc == -1 && errno == EINTR);
+  return rc;
+}
+
+static gssize
+log_transport_stream_socket_write_method(LogTransport *s, const gpointer buf, gsize buflen)
+{
+  LogTransportSocket *self = (LogTransportSocket *) s;
+  gint rc;
+
+  do
+    {
+      rc = send(self->super.fd, buf, buflen, 0);
+    }
+  while (rc == -1 && errno == EINTR);
+  return rc;
+}
+
+static void
+log_transport_stream_socket_free_method(LogTransport *s)
+{
+  shutdown(s->fd, SHUT_RDWR);
+  log_transport_free_method(s);
+}
+
+LogTransport *
+log_transport_stream_socket_new(gint fd)
+{
+  LogTransportSocket *self = g_new0(LogTransportSocket, 1);
+
+  log_transport_init_method(&self->super, fd);
+  self->super.read = log_transport_stream_socket_read_method;
+  self->super.write = log_transport_stream_socket_write_method;
+  self->super.free_fn = log_transport_stream_socket_free_method;
   return &self->super;
 }
 

@@ -218,11 +218,9 @@ static gboolean
 afsocket_sc_init(LogPipe *s)
 {
   AFSocketSourceConnection *self = (AFSocketSourceConnection *) s;
-  gint read_flags;
   LogTransport *transport;
   LogProto *proto;
 
-  read_flags = ((self->owner->flags & AFSOCKET_DGRAM) ? LTF_RECV : 0);
   if (!self->reader)
     {
 #if BUILD_WITH_SSL
@@ -231,11 +229,14 @@ afsocket_sc_init(LogPipe *s)
           TLSSession *tls_session = tls_context_setup_session(self->owner->tls_context);
           if (!tls_session)
             return FALSE;
-          transport = log_transport_tls_new(tls_session, self->sock, read_flags);
+          transport = log_transport_tls_new(tls_session, self->sock);
         }
       else
 #endif
-        transport = log_transport_plain_new(self->sock, read_flags);
+      if (self->owner->sock_type == SOCK_DGRAM)
+        transport = log_transport_dgram_socket_new(self->sock);
+      else
+        transport = log_transport_stream_socket_new(self->sock);
 
       if ((self->owner->flags & AFSOCKET_SYSLOG_PROTOCOL) == 0)
         {
@@ -1062,7 +1063,6 @@ afsocket_dd_connected(AFSocketDestDriver *self)
 
   if (self->flags & AFSOCKET_STREAM)
     {
-      transport_flags |= LTF_SHUTDOWN;
       if (getsockopt(self->fd, SOL_SOCKET, SO_ERROR, &error, &errorlen) == -1)
         {
           msg_error("getsockopt(SOL_SOCKET, SO_ERROR) failed for connecting socket",
@@ -1103,11 +1103,10 @@ afsocket_dd_connected(AFSocketDestDriver *self)
         }
 
       tls_session_set_verify(tls_session, afsocket_dd_tls_verify_callback, self, NULL);
-      transport = log_transport_tls_new(tls_session, self->fd, transport_flags);
+      transport = log_transport_tls_new(tls_session, self->fd);
     }
   else
 #endif
-    transport = log_transport_plain_new(self->fd, transport_flags);
 
   if (self->flags & AFSOCKET_SYSLOG_PROTOCOL)
     {
@@ -1116,7 +1115,10 @@ afsocket_dd_connected(AFSocketDestDriver *self)
       else
         proto = log_proto_text_client_new(transport);
     }
+  if (self->flags & AFSOCKET_STREAM)
+    transport = log_transport_stream_socket_new(self->fd);
   else
+    transport = log_transport_dgram_socket_new(self->fd);
     {
       proto = log_proto_text_client_new(transport);
     }

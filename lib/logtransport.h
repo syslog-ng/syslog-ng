@@ -28,32 +28,12 @@
 #include "syslog-ng.h"
 #include "gsockaddr.h"
 
-/* don't close the underlying fd when LogTransport is destructed */
-#define LTF_DONTCLOSE 0x0001
-
-/* reseek to the end-of-file before writing */
-#define LTF_APPEND    0x0004
-
-/* use recv() instead of read() */
-#define LTF_RECV      0x0008
-
-/* issue a shutdown() when LogTransport is destructed, only works if LTF_DONTCLOSE is unset */
-#define LTF_SHUTDOWN  0x0010
-
-/* the underlying fd is a pipe, try to resize the output chunk to make
- * sure it fits into PIPE_BUF, see then comment
- * log_transport_plain_write() for more details. */
-#define LTF_PIPE      0x0020
-
-
 typedef struct _LogTransport LogTransport;
 
 struct _LogTransport
 {
   gint fd;
   GIOCondition cond;
-  guint flags;
-  gint timeout;
   gssize (*read)(LogTransport *self, gpointer buf, gsize count, GSockAddr **sa);
   gssize (*write)(LogTransport *self, const gpointer buf, gsize count);
   void (*free_fn)(LogTransport *self);
@@ -71,9 +51,14 @@ log_transport_read(LogTransport *self, gpointer buf, gsize count, GSockAddr **sa
   return self->read(self, buf, count, sa);
 }
 
-LogTransport *log_transport_plain_new(gint fd, guint flags);
-void log_transport_free(LogTransport *s);
+void log_transport_init_method(LogTransport *s, gint fd);
 void log_transport_free_method(LogTransport *s);
+void log_transport_free(LogTransport *s);
 
+LogTransport *log_transport_file_new(gint fd);
+LogTransport *log_transport_pipe_new(gint fd);
+LogTransport *log_transport_device_new(gint fd, gint timeout);
+LogTransport *log_transport_dgram_socket_new(gint fd);
+LogTransport *log_transport_stream_socket_new(gint fd);
 
 #endif

@@ -28,6 +28,6 @@
 
 #include "tlscontext.h"
 
-LogTransport *log_transport_tls_new(TLSSession *tls_session, gint fd, guint flags);
+LogTransport *log_transport_tls_new(TLSSession *tls_session, gint fd);
 
 #endif

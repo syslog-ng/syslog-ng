@@ -147,12 +147,11 @@ log_transport_tls_write_method(LogTransport *s, const gpointer buf, gsize buflen
 static void log_transport_tls_free_method(LogTransport *s);
 
 LogTransport *
-log_transport_tls_new(TLSSession *tls_session, gint fd, guint flags)
+log_transport_tls_new(TLSSession *tls_session, gint fd)
 {
   LogTransportTLS *self = g_new0(LogTransportTLS, 1);
 
-  self->super.flags = flags;
-  self->super.fd = fd;
+  log_transport_init_method(&self->super, fd);
   self->super.cond = G_IO_IN | G_IO_OUT;
   self->super.read = log_transport_tls_read_method;
   self->super.write = log_transport_tls_write_method;
@@ -160,8 +159,6 @@ log_transport_tls_new(TLSSession *tls_session, gint fd, guint flags)
   self->tls_session = tls_session;
 
   SSL_set_fd(self->tls_session->ssl, fd);
-
-  g_assert((self->super.flags & LTF_RECV) == 0);
   return &self->super;
 }
 

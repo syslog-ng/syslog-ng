@@ -151,8 +151,7 @@ afprogram_sd_init(LogPipe *s)
     {
       LogTransport *transport;
 
-      transport = log_transport_plain_new(fd, 0);
-      transport->timeout = 10;
+      transport = log_transport_pipe_new(fd);
       self->reader = log_reader_new(log_proto_text_server_new(transport, self->reader_options.msg_size, 0));
       log_reader_set_options(self->reader, s, &self->reader_options, 0, SCS_PROGRAM, self->super.super.id, self->cmdline->str);
     }
@@ -277,7 +276,7 @@ afprogram_dd_reopen(AFProgramDestDriver *self)
   child_manager_register(self->pid, afprogram_dd_exit, log_pipe_ref(&self->super.super.super), (GDestroyNotify) log_pipe_unref);
 
   g_fd_set_nonblock(fd, TRUE);
-  log_writer_reopen(self->writer, log_proto_text_client_new(log_transport_plain_new(fd, 0)));
+  log_writer_reopen(self->writer, log_proto_text_client_new(log_transport_pipe_new(fd), 0));
   return TRUE;
 }
 
