@@ -20,8 +20,8 @@
  * COPYING for details.
  */
 
-#ifndef JSON_PLUGIN_H_INCLUDED
-#define JSON_PLUGIN_H_INCLUDED
+#ifndef JSONPARSER_H_INCLUDED
+#define JSONPARSER_H_INCLUDED
 
 #include "logparser.h"
 
@@ -30,7 +30,5 @@ typedef struct _LogJSONParser LogJSONParser;
 void log_json_parser_set_prefix(LogParser *p, const gchar *prefix);
 void log_json_parser_set_marker(LogParser *p, const gchar *marker);
 LogJSONParser *log_json_parser_new(void);
-
-gboolean tfjson_module_init(GlobalConfig *cfg);
 
 #endif

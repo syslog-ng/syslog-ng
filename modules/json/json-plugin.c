@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2011 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 2011 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2011, 2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2011, 2012 Gergely Nagy <algernon@balabit.hu>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -19,32 +19,36 @@
  * OpenSSL libraries as published by the OpenSSL project. See the file
  * COPYING for details.
  */
-
 #include "jsonparser.h"
-#include "cfg-parser.h"
-#include "jsonparser-grammar.h"
+#include "format-json.h"
+#include "jsonparser-parser.h"
+#include "plugin.h"
 
-extern int jsonparser_debug;
+extern CfgParser jsonparser_parser;
 
-int jsonparser_parse(CfgLexer *lexer, LogParser **instance, gpointer arg);
-
-static CfgLexerKeyword jsonparser_keywords[] =
+static Plugin json_plugins[] =
 {
-  { "json_parser",          KW_JSON_PARSER,  },
-  { "prefix",               KW_PREFIX,  },
-  { "marker",               KW_MARKER,  },
-  { NULL }
+  {
+    .type = LL_CONTEXT_PARSER,
+    .name = "json-parser",
+    .parser = &jsonparser_parser,
+  },
+  TEMPLATE_FUNCTION_PLUGIN(tf_json, "format_json"),
 };
 
-CfgParser jsonparser_parser =
+gboolean
+json_module_init(GlobalConfig *cfg, CfgArgs *args)
 {
-#if ENABLE_DEBUG
-  .debug_flag = &jsonparser_debug,
-#endif
-  .name = "jsonparser",
-  .keywords = jsonparser_keywords,
-  .parse = (gint (*)(CfgLexer *, gpointer *, gpointer)) jsonparser_parse,
-  .cleanup = (void (*)(gpointer)) log_pipe_unref,
-};
+  plugin_register(cfg, json_plugins, G_N_ELEMENTS(json_plugins));
+  return TRUE;
+}
 
-CFG_PARSER_IMPLEMENT_LEXER_BINDING(jsonparser_, LogParser **)
+const ModuleInfo module_info =
+{
+  .canonical_name = "json",
+  .version = VERSION,
+  .description = "The json module provides JSON parsing & formatting support for syslog-ng.",
+  .core_revision = SOURCE_REVISION,
+  .plugins = json_plugins,
+  .plugins_len = G_N_ELEMENTS(json_plugins),
+};

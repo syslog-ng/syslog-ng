@@ -224,32 +224,3 @@ tf_json_free_state(gpointer s)
 
 TEMPLATE_FUNCTION(TFJsonState, tf_json, tf_json_prepare, NULL, tf_json_call,
 		  tf_json_free_state, NULL);
-
-extern CfgParser jsonparser_parser;
-
-static Plugin json_plugins[] =
-  {
-    {
-      .type = LL_CONTEXT_PARSER,
-      .name = "json-parser",
-      .parser = &jsonparser_parser,
-    },
-    TEMPLATE_FUNCTION_PLUGIN(tf_json, "format_json"),
-  };
-
-gboolean
-json_module_init(GlobalConfig *cfg, CfgArgs *args)
-{
-  plugin_register(cfg, json_plugins, G_N_ELEMENTS(json_plugins));
-  return TRUE;
-}
-
-const ModuleInfo module_info =
-{
-  .canonical_name = "json",
-  .version = VERSION,
-  .description = "The json module provides JSON parsing & formatting support for syslog-ng.",
-  .core_revision = SOURCE_REVISION,
-  .plugins = json_plugins,
-  .plugins_len = G_N_ELEMENTS(json_plugins),
-};

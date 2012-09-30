@@ -20,8 +20,7 @@
  * COPYING for details.
  */
 
-#include "json-plugin.h"
-#include "logparser.h"
+#include "jsonparser.h"
 #include "scratch-buffers.h"
 
 #include <string.h>
