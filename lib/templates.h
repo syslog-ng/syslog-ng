@@ -150,12 +150,19 @@ void tf_simple_func_eval(LogTemplateFunction *self, gpointer state, const LogTem
 void tf_simple_func_call(LogTemplateFunction *self, gpointer state, const LogTemplateInvokeArgs *args, GString *result);
 void tf_simple_func_free_state(gpointer state);
 
-/* helper macros for template function plugins */
-#define TEMPLATE_FUNCTION(state_struct, prefix, prepare, eval, call, free_state, arg) \
-  static gpointer                                                       \
+
+#define TEMPLATE_FUNCTION_PROTOTYPE(prefix) \
+  gpointer                                                              \
   prefix ## _construct(Plugin *self,                                    \
                        GlobalConfig *cfg,                               \
-                       gint plugin_type, const gchar *plugin_name)      \
+                       gint plugin_type, const gchar *plugin_name)
+
+#define TEMPLATE_FUNCTION_DECLARE(prefix)	\
+  TEMPLATE_FUNCTION_PROTOTYPE(prefix);
+
+/* helper macros for template function plugins */
+#define TEMPLATE_FUNCTION(state_struct, prefix, prepare, eval, call, free_state, arg) \
+  TEMPLATE_FUNCTION_PROTOTYPE(prefix) 					\
   {                                                                     \
     static LogTemplateFunction func = {                                 \
       sizeof(state_struct),                                             \
