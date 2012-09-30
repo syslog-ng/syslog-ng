@@ -41,17 +41,17 @@
 	* src/afprog.c (afprogram_dd_init): call setsid before launching child,
 	(afprogram_dd_deinit): deinit & unref self->writer here instead of
 	in afprogram_dd_free,
-	
-	* src/center.c (log_center_queue): do not supply self as user_data pointer to 
+
+	* src/center.c (log_center_queue): do not supply self as user_data pointer to
 	the ack_block callback as that would require adding a reference to self
 
-	* src/dgroup.c (log_dest_group_queue): do not supply self as user_data pointer to 
+	* src/dgroup.c (log_dest_group_queue): do not supply self as user_data pointer to
 	the ack_block callback as that would require adding a reference to self
-	
+
 	* src/logreader.c: instead of using self->window_size use self->options->window_size
 	so that the window is shared between all LogReaders using the same
 	options,
-	(log_reader_handle_line): add reference to self before supplying it as an argument to 
+	(log_reader_handle_line): add reference to self before supplying it as an argument to
  	the ack_block callback function,
 	(log_reader_msg_ack): unref the supplied logreader argument
 
@@ -144,7 +144,7 @@
 
 	* src/logreader.c: support LR_STRICT flag (specifies LP_STRICT
 	when parsing messages), new per-source option time_zone which
-	specifies the sender's timezone 
+	specifies the sender's timezone
 
 	* src/macros.c: support time_zone when formatting a message
 
@@ -189,7 +189,7 @@
 	* src/misc.c: moved resolve_user & family functions here
 
 	* src/main.c: use resolve_* functions from misc.c
-	
+
 	* src/afinet.c (afinet_sd_new): set flags to AFSOCKET_KEEP_ALIVE |
 	AFSOCKET_LISTENER_KEEP_ALIVE
 
@@ -214,7 +214,7 @@
 	* src/cfg-lex.l: added two new options, file_template and
 	proto_template, they specify the ID of a template which will be
 	used by default for file/protocol outputs
-	
+
 	* src/gsockaddr.c: changed return values from G_IO_ERROR_* to
 	G_IO_STATUS_* (glib 2 style)
 
@@ -270,7 +270,7 @@
 
 2002-07-28  Balazs Scheidler  <bazsi@bzorp.balabit>
 
-	* src/syslog-ng.h: added LOG_PRIORITY_* defines 
+	* src/syslog-ng.h: added LOG_PRIORITY_* defines
 
 	* src/messages.c: initialize msg_pipe to {-1,-1} to let the
 	internal() driver know that internal message pipe has not been
@@ -422,7 +422,7 @@
 	tasks (g_hash_table_foreach requires a function pointer), and
 	source references are also resolved at init time.
 
-	* src/logreader.c, src/center.c, src/dgroup.c, src/logwriter.c, src/afuser.c: 
+	* src/logreader.c, src/center.c, src/dgroup.c, src/logwriter.c, src/afuser.c:
 	implemented flow control
 
 	* src/logpipe.h: added path_flags argument to queue() as it
@@ -458,7 +458,7 @@
 
 	* src/logpipe.h: added NC_WRITE_ERROR, renamed NC_CLOSE_ERROR to
 	NC_READ_ERROR, changed referrences appropriately,
-	(log_pipe_append): new function 
+	(log_pipe_append): new function
 
 	* src/afinet.c: implemented hostname and service lookup, implemented
 	reconnection after a timeout, implemented EOF detection when the channel is idle

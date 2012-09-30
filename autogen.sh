@@ -1,7 +1,5 @@
 #!/bin/sh
 #
-# $Id: autogen.sh,v 1.2 2004/08/20 21:22:34 bazsi Exp $
-#
 # This script is needed to setup build environment from checked out
 # source tree. 
 #
@@ -37,10 +35,6 @@ autogen_submodules()
 		fi
 
                 CONFIGURE_OPTS="--disable-shared --enable-static --with-pic"
-
-                if [ "${submod}" = "lib/ivykis" ]; then
-                        CONFIGURE_OPTS="${CONFIGURE_OPTS} --disable-kqueue --disable-dev-poll"
-                fi
 
                 cat >configure.gnu <<EOF
 #!/bin/sh
