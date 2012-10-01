@@ -3,7 +3,7 @@ STAMPDIR=winbuild/stamps
 STAGINGDIR=winbuild/staging
 
 ZBS_STAGE_DIR=$(STAGINGDIR)
-CONFIG_OPTS=--disable-json --sbindir='$${prefix}/bin' --with-module-dir='$${prefix}/bin' --with-pidfile-dir='$${prefix}/var/run'
+CONFIG_OPTS=--disable-json --sbindir='$${prefix}/bin' --with-module-dir='$${prefix}/bin' --with-pidfile-dir='$${prefix}/var/run' --enable-spoof-source
 BUILDCMD=./balabit-vs-build
 ifneq (,$(build))
 CONFIG_OPTS += --build=$(build)
@@ -21,7 +21,7 @@ $(STAMPDIR)/stamp-setup:
 
 configure: $(STAMPDIR)/stamp-configure
 $(STAMPDIR)/stamp-configure: setup
-	CFLAGS="-O2 -g $(CFLAGS)" $(BUILDCMD) configure --prefix=$(ZBS_STAGE_DIR) $(CONFIG_OPTS)
+	CFLAGS="-O2 -g -I$(ZBS_BUILDER_PATH)/dep/include/pcap $(CFLAGS)" $(BUILDCMD) configure --prefix=$(ZBS_STAGE_DIR) $(CONFIG_OPTS)
 	sleep 10
 	touch $@
 
