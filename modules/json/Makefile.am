@@ -1,13 +1,13 @@
-SUBDIRS = tests
+SUBDIRS = . tests
 
 moduledir = @moduledir@
 export top_srcdir
 
 if ENABLE_JSON
 AM_CPPFLAGS = -I$(top_srcdir)/lib -I../../lib
-module_LTLIBRARIES = libjson.la
+module_LTLIBRARIES = libjson-plugin.la
 
-libjson_la_SOURCES	= \
+libjson_plugin_la_SOURCES	= \
 				format-json.c \
 				jsonparser.c \
 				jsonparser-grammar.y \
@@ -15,10 +15,10 @@ libjson_la_SOURCES	= \
 				json-plugin.h	\
 				json-plugin.c
 
-libjson_la_CPPFLAGS	= $(AM_CPPFLAGS)
-libjson_la_CFLAGS	= $(JSON_CFLAGS)
-libjson_la_LIBADD	= $(MODULE_DEPS_LIBS) $(JSON_LIBS)
-libjson_la_LDFLAGS	= $(MODULE_LDFLAGS)
+libjson_plugin_la_CPPFLAGS	= $(AM_CPPFLAGS)
+libjson_plugin_la_CFLAGS	= $(JSON_CFLAGS)
+libjson_plugin_la_LIBADD	= $(MODULE_DEPS_LIBS) $(JSON_LIBS)
+libjson_plugin_la_LDFLAGS	= $(MODULE_LDFLAGS)
 endif
 
 BUILT_SOURCES			= jsonparser-grammar.y jsonparser-grammar.c jsonparser-grammar.h

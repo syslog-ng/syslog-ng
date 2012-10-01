@@ -37,7 +37,7 @@ static Plugin json_plugins[] =
 };
 
 gboolean
-json_module_init(GlobalConfig *cfg, CfgArgs *args)
+json_plugin_module_init(GlobalConfig *cfg, CfgArgs *args)
 {
   plugin_register(cfg, json_plugins, G_N_ELEMENTS(json_plugins));
   return TRUE;
@@ -45,7 +45,7 @@ json_module_init(GlobalConfig *cfg, CfgArgs *args)
 
 const ModuleInfo module_info =
 {
-  .canonical_name = "json",
+  .canonical_name = "json-plugin",
   .version = VERSION,
   .description = "The json module provides JSON parsing & formatting support for syslog-ng.",
   .core_revision = SOURCE_REVISION,
