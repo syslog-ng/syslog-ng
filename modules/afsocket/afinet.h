@@ -67,6 +67,7 @@ typedef struct _AFInetDestDriver
   InetSocketOptions sock_options;
 #if ENABLE_SPOOF_SOURCE
   gboolean spoof_source;
+  gchar *spoof_if;
   libnet_t *lnet_ctx;
   GStaticMutex lnet_lock;
   GString *lnet_buffer;
@@ -85,5 +86,6 @@ void afinet_dd_set_destport(LogDriver *self, gchar *service);
 void afinet_dd_set_localip(LogDriver *self, gchar *ip);
 void afinet_dd_set_sync_freq(LogDriver *self, gint sync_freq);
 void afinet_dd_set_spoof_source(LogDriver *self, gboolean enable);
+void afinet_dd_set_spoof_if(LogDriver *self, gchar *spoof_if);
 
 #endif
