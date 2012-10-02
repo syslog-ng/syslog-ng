@@ -56,6 +56,7 @@ pkginclude_HEADERS = 		\
 	logproto-text-server.h	\
 	logproto-record-server.h \
 	logproto-builtins.h	\
+	logproto.h              \
 	logqueue-fifo.h		\
 	logqueue.h		\
 	logreader.h		\
