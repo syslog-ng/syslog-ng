@@ -18,7 +18,7 @@ libafmongodb_la_LDFLAGS = $(MODULE_LDFLAGS)
 endif
 
 BUILT_SOURCES = afmongodb-grammar.y afmongodb-grammar.c afmongodb-grammar.h
-EXTRA_DIST = $(BUILT_SOURCES) afmongodb-grammar.ym
+EXTRA_DIST = $(BUILT_SOURCES) afmongodb-grammar.ym libmongo-client/configure.gnu
 
 include $(top_srcdir)/build/lex-rules.am
 
