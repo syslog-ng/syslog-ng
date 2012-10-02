@@ -9,10 +9,11 @@ module_LTLIBRARIES = libjson-plugin.la
 
 libjson_plugin_la_SOURCES	= \
 				format-json.c \
+				format-json.h \
 				jsonparser.c \
+				jsonparser.h \
 				jsonparser-grammar.y \
 				jsonparser-parser.c jsonparser-parser.h \
-				json-plugin.h	\
 				json-plugin.c
 
 libjson_plugin_la_CPPFLAGS	= $(AM_CPPFLAGS)
