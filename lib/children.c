@@ -56,6 +56,15 @@ child_manager_register(pid_t pid, void (*callback)(pid_t, int, gpointer), gpoint
 }
 
 void
+child_manager_unregister(pid_t pid)
+{
+  if (g_hash_table_lookup(child_hash, &pid))
+    {
+      g_hash_table_remove(child_hash, &pid);
+    }
+}
+
+void
 child_manager_sigchild(pid_t pid, int status)
 {
   ChildEntry *ce;

@@ -359,7 +359,10 @@ static gboolean
 afprogram_dd_deinit(LogPipe *s)
 {
   AFProgramDestDriver *self = (AFProgramDestDriver *) s;
-
+  if (self->pid != -1)
+    {
+      child_manager_unregister(self->pid);
+    }
   if (self->writer)
     log_pipe_deinit(self->writer);
 
