@@ -169,7 +169,7 @@ log_proto_text_client_flush(LogProto *s)
     }
   if (!self->partial && self->acked)
     {
-      self->super.ack_callback(1,self->super.ack_user_data);
+      log_proto_ack_msg(&self->super,1);
       self->acked = 0;
     }
   return self->partial ? LPS_AGAIN : LPS_SUCCESS;
@@ -260,13 +260,13 @@ log_proto_client_post_writer(LogProto *s, LogMessage *logmsg, guchar *msg, gsize
       self->acked++;
       if (self->acked > 1)
         {
-          self->super.ack_callback(1,self->super.ack_user_data);
+          log_proto_ack_msg(&self->super,1);
           self->acked--;
         }
     }
   else
     {
-      self->super.ack_callback(1,self->super.ack_user_data);
+      log_proto_ack_msg(&self->super,1);
     }
   return LPS_SUCCESS;
 
@@ -303,7 +303,7 @@ log_proto_text_client_free(LogProto *s)
   LogProtoTextClient *self = (LogProtoTextClient *)s;
   if (self->partial == NULL && self->super.flags & LPBS_KEEP_ONE && self->acked == 1)
     {
-      self->super.ack_callback(1,self->super.ack_user_data);
+      log_proto_ack_msg(&self->super,1);
     }
 }
 
@@ -475,7 +475,7 @@ log_proto_file_writer_post(LogProto *s, LogMessage *logmsg, guchar *msg, gsize m
   self->sum_len += msg_len;
   *consumed = TRUE;
   result = LPS_SUCCESS;
-  self->super.ack_callback(1,self->super.ack_user_data);
+  log_proto_ack_msg(&self->super,1);
   if (self->buf_count == self->buf_size)
     {
       /* we have reached the max buffer size -> we need to write the messages */

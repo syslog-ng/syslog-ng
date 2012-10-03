@@ -152,6 +152,13 @@ log_proto_set_msg_acked_callback(LogProto *s, LogProtoAckMessages callback,gpoin
   s->ack_user_data = user_data;
 }
 
+static inline void
+log_proto_ack_msg(LogProto *s,gint message_number)
+{
+  if (s->ack_callback)
+    s->ack_callback(message_number,s->ack_user_data);
+}
+
 static inline gboolean
 log_proto_prepare(LogProto *s, gint *fd, GIOCondition *cond, gint *timeout)
 {
