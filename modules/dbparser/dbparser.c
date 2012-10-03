@@ -118,6 +118,8 @@ log_db_parser_timer_tick(gpointer s)
   LogDBParser *self = (LogDBParser *) s;
 
   pattern_db_timer_tick(self->db);
+  iv_validate_now();
+  self->tick.expires = iv_now;
   self->tick.expires.tv_sec++;
   iv_timer_register(&self->tick);
 }
