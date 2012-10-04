@@ -236,17 +236,28 @@ affile_sd_open(LogPipe *s, gboolean immediate_check)
       LogTransport *transport;
       LogProto *proto;
 
-      transport = log_transport_plain_new(fd, 0);
-      transport->timeout = 10;
-
-      proto = affile_sd_construct_proto(self, transport);
-      if (proto == NULL)
+      self->reader = cfg_persist_config_fetch(cfg, affile_sd_format_persist_name(self));
+      if (self->reader == NULL)
         {
-          close(fd);
-          return FALSE;
+          transport = log_transport_plain_new(fd, 0);
+          transport->timeout = 10;
+
+          proto = affile_sd_construct_proto(self, transport);
+          if (proto == NULL)
+            {
+              close(fd);
+              return FALSE;
+            }
+          /* FIXME: we shouldn't use reader_options to store log protocol parameters */
+          self->reader = log_reader_new(proto);
         }
-      /* FIXME: we shouldn't use reader_options to store log protocol parameters */
-      self->reader = log_reader_new(proto);
+      else
+        {
+          if (fd > 0)
+            {
+              close(fd);
+            }
+        }
 
       log_reader_set_options(self->reader, s, &self->reader_options, 1, SCS_FILE, self->super.super.id, self->filename->str, (LogProtoOptions *) options);
       log_reader_set_follow_filename(self->reader, self->filename->str);
@@ -269,7 +280,9 @@ affile_sd_open(LogPipe *s, gboolean immediate_check)
           close(fd);
           return FALSE;
         }
-      affile_sd_recover_state(s, cfg, proto);
+
+      if (proto)
+        affile_sd_recover_state(s, cfg, proto);
     }
   else
     {
@@ -595,16 +608,25 @@ affile_sd_regex_free(pcre *regex)
     }
 }
 
+static void
+affile_sd_destroy_reader(gpointer user_data)
+{
+  LogPipe *reader = (LogPipe *) user_data;
+
+  log_pipe_deinit(reader);
+  log_pipe_unref(reader);
+}
+
 static gboolean
 affile_sd_deinit(LogPipe *s)
 {
   AFFileSourceDriver *self = (AFFileSourceDriver *) s;
   LogProtoServerOptions *options = (LogProtoServerOptions *)&self->proto_options;
+  GlobalConfig *cfg = log_pipe_get_config(s);
 
   if (self->reader)
     {
-      log_pipe_deinit(self->reader);
-      log_pipe_unref(self->reader);
+      cfg_persist_config_add(cfg, affile_sd_format_persist_name(self), self->reader, affile_sd_destroy_reader, FALSE);
       self->reader = NULL;
     }
 
