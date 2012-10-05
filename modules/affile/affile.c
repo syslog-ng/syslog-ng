@@ -233,8 +233,8 @@ affile_sd_open(LogPipe *s, gboolean immediate_check)
     }
   if (file_opened || open_deferred)
     {
-      LogTransport *transport;
-      LogProto *proto;
+      LogTransport *transport = NULL;
+      LogProto *proto = NULL;
 
       self->reader = cfg_persist_config_fetch(cfg, affile_sd_format_persist_name(self));
       if (self->reader == NULL)
