@@ -28,6 +28,7 @@ IVYKIS_MIN_VERSION="0.30.1"
 JSON_C_MIN_VERSION="0.9"
 PCRE_MIN_VERSION="6.1"
 LMC_MIN_VERSION="0.1.6"
+LRMQ_MIN_VERSION="0.0.1"
 
 dnl ***************************************************************************
 dnl Initial setup
@@ -162,6 +163,15 @@ AC_ARG_WITH(libmongo-client,
               [  --with-libmongo-client=[system/internal]
                                          Link against the system supplied or the built-in libmongo-client library.]
               ,,with_libmongo_client="internal")
+
+AC_ARG_ENABLE(amqp,
+          [  --enable-amqp        Enable amqp destination (default: auto)]
+              ,,enable_amqp="auto")
+
+AC_ARG_WITH(librabbitmq,
+              [  --with-librabbitmq-client=[system/internal]
+                                         Link against the system supplied or the built-in librabbitmq library.]
+              ,,with_librabbitmq_client="internal")
 
 AC_ARG_WITH(ivykis,
               [  --with-ivykis=[system/internal]
@@ -827,6 +837,31 @@ if test "x$enable_smtp" != "xno" && test "x$with_libesmtp" != "no"; then
 fi
 
 dnl ***************************************************************************
+dnl rabbitmq-c headers/libraries
+dnl ***************************************************************************
+
+if test "x$with_librabbitmq_client" = "xinternal"; then
+    if test -f "$srcdir/modules/afamqp/rabbitmq-c/librabbitmq/amqp.h"; then
+        AC_CONFIG_SUBDIRS([modules/afamqp/rabbitmq-c])
+        # these can only be used in modules/amqp as it assumes
+        # the current directory just one below rabbitmq-c
+
+        LIBRABBITMQ_LIBS="-L\$(builddir)/rabbitmq-c/librabbitmq -lrabbitmq"
+        LIBRABBITMQ_CFLAGS="-I\$(srcdir)/rabbitmq-c/librabbitmq -I\$(builddir)/rabbitmq-c/librabbitmq"
+        LIBRABBITMQ_SUBDIRS="rabbitmq-c"
+    else
+        AC_MSG_WARN([Internal librabbitmq-client sources not found in modules/afamqp/rabbitmq-c])
+        with_librabbitmq_client="no"
+    fi
+elif test "x$with_librabbitmq_client" = "xsystem"; then
+    PKG_CHECK_MODULES(LIBRABBITMQ, librabbitmq >= $LRMQ_MIN_VERSION,with_librabbitmq_client="yes",with_librabbitmq_client="no")
+fi
+
+if test "x$with_librabbitmq_client" = "xno"; then
+    enable_amqp="no"
+fi
+
+dnl ***************************************************************************
 dnl misc features to be enabled
 dnl ***************************************************************************
 
@@ -887,6 +922,16 @@ if test "x$enable_mongodb" = "xauto"; then
 		enable_mongodb="no"
 	fi
 	AC_MSG_RESULT([$enable_mongodb])
+fi
+
+if test "x$enable_amqp" = "xauto"; then
+    AC_MSG_CHECKING(whether to enable amqp destination support)
+    if test "x$with_librabbitmq_client" != "no"; then
+        enable_amqp="yes"
+    else
+        enable_amqp="no"
+    fi
+    AC_MSG_RESULT([$enable_amqp])
 fi
 
 if test "x$enable_json" != "xno"; then
@@ -1068,6 +1113,7 @@ AM_CONDITIONAL(ENABLE_SUN_STREAMS, [test "$enable_sun_streams" = "yes"])
 AM_CONDITIONAL(ENABLE_PACCT, [test "$enable_pacct" = "yes"])
 AM_CONDITIONAL(ENABLE_MONGODB, [test "$enable_mongodb" = "yes"])
 AM_CONDITIONAL(ENABLE_SMTP, [test "$enable_smtp" = "yes"])
+AM_CONDITIONAL(ENABLE_AMQP, [test "$enable_amqp" = "yes"])
 AM_CONDITIONAL(ENABLE_JSON, [test "$enable_json" = "yes"])
 AM_CONDITIONAL(WITH_LIBSYSTEMD, [test "$with_libsystemd" = "yes"])
 
@@ -1102,6 +1148,9 @@ AC_SUBST(LIBMONGO_CFLAGS)
 AC_SUBST(LIBMONGO_SUBDIRS)
 AC_SUBST(LIBESMTP_CFLAGS)
 AC_SUBST(LIBESMTP_LIBS)
+AC_SUBST(LIBRABBITMQ_LIBS)
+AC_SUBST(LIBRABBITMQ_CFLAGS)
+AC_SUBST(LIBRABBITMQ_SUBDIRS)
 AC_SUBST(JSON_LIBS)
 AC_SUBST(JSON_CFLAGS)
 AC_SUBST(IVYKIS_SUBDIRS)
@@ -1132,6 +1181,7 @@ AC_OUTPUT(dist.conf
           modules/afuser/Makefile
 	  modules/afmongodb/Makefile
           modules/afsmtp/Makefile
+	  modules/afamqp/Makefile
           modules/dbparser/Makefile
           modules/dbparser/pdbtool/Makefile
           modules/dbparser/tests/Makefile
@@ -1172,6 +1222,7 @@ echo "  __thread keyword            : ${ac_cv_have_tls:=no}"
 echo " Submodules:"
 echo "  ivykis                      : $with_ivykis"
 echo "  libmongo-client             : $with_libmongo_client"
+echo "  librabbitmq                 : $with_librabbitmq_client"
 echo " Features:"
 echo "  Debug symbols               : ${enable_debug:=no}"
 echo "  GCC profiling               : ${enable_gprof:=no}"
@@ -1192,4 +1243,5 @@ echo "  PACCT module (EXPERIMENTAL) : ${enable_pacct:=no}"
 echo "  MongoDB destination (module): ${enable_mongodb:=no}"
 echo "  JSON support (module)       : ${enable_json:=no}"
 echo "  SMTP support (module)       : ${enable_smtp:=no}"
+echo "  AMQP destination (module)   : ${enable_amqp:=no}"
 

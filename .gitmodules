@@ -4,3 +4,6 @@
 [submodule "lib/ivykis"]
 	path = lib/ivykis
         url = https://github.com/buytenh/ivykis.git
+[submodule "modules/afamqp/rabbitmq-c"]
+	path = modules/afamqp/rabbitmq-c
+	url = https://github.com/alanxz/rabbitmq-c.git
