@@ -854,7 +854,7 @@ if test "x$with_librabbitmq_client" = "xinternal"; then
         with_librabbitmq_client="no"
     fi
 elif test "x$with_librabbitmq_client" = "xsystem"; then
-    PKG_CHECK_MODULES(LIBRABBITMQ, librabbitmq >= $LRMQ_MIN_VERSION,with_librabbitmq_client="yes",with_librabbitmq_client="no")
+    AC_MSG_ERROR([Building with system librabbitmq is not supported yet.])
 fi
 
 if test "x$with_librabbitmq_client" = "xno"; then
