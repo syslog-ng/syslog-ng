@@ -17,6 +17,7 @@ pkginclude_HEADERS = 		\
 	atomic.h		\
 	alarms.h		\
 	block-ref-parser.h	\
+  cache.h      \
 	center.h		\
 	cfg.h                   \
 	cfg-grammar.h           \
@@ -95,6 +96,7 @@ libsyslog_ng_la_SOURCES = \
 	apphook.c		\
 	alarms.c		\
 	block-ref-parser.c	\
+  cache.c     \
 	center.c		\
 	cfg.c			\
 	cfg-lexer.c		\
