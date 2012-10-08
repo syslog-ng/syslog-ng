@@ -1,3 +1,49 @@
+3.3.6.91 (3.3.7 RC2)
+        Mon, 08 Oct 2012 13:00:00 +0200
+
+        Bugfixes
+        ========
+
+        * The bundled ivykis has been updated, the new version
+          contains a workaround for an issue specific to FreeBSD 9
+          only.
+
+        * The file source was corrected to properly handle character
+          devices. This, and the ivykis update fixes a CPU spinning
+          issue on FreeBSD. [#201]
+
+        * The sun-streams module had a file descriptor leak, which has
+          been corrected too. [#151]
+
+        * Various minor fixes around the build system.
+
+        Features
+        ========
+
+        * The stats will now list the filename of unix domain
+          sockets. [#195]
+
+        Credits
+        =======
+
+        syslog-ng is developed as a community project, and as such it
+        relies on volunteers to do the work necessarily to produce
+        syslog-ng.
+
+        Reporting bugs, testing changes, writing code or simply
+        providing feedback are all important contributions, so please
+        if you are a user of syslog-ng, contribute.
+
+        These people have helped in this release:
+
+        Attila Nagy <bra@fsn.hu>
+        Balazs Scheidler <bazsi@balabit.hu>
+        Evan Rempel <erempel@uvic.ca>
+        Gergely Nagy <algernon@balabit.hu>
+        Lennert Buytenhek <buytenh@wantstofly.org>
+        Michael Hocke <michael.hocke@nyu.edu>
+        Peter Czanik <czanik@balabit.hu>
+
 3.3.6.90 (3.3.7 RC1)
         Thu, 06 Sep 2012 14:00:00 +0200
 
