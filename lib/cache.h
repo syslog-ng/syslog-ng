@@ -1,3 +1,6 @@
+#ifndef __CACHE_H
+#define __CACHE_H
+
 #include <glib.h>
 
 typedef struct _Provider Provider;
@@ -32,3 +35,5 @@ provider_free(Provider *self)
 Cache *cache_new(Provider *provider, GDestroyNotify value_destroy_func);
 void *cache_lookup(Cache *self, gchar *key);
 void cache_free(Cache *self);
+
+#endif /*__CACHE_H*/
