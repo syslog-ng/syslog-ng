@@ -30,6 +30,7 @@ check_PROGRAMS =			\
 	test_msgformat_upgrade \
 	test_thread_wakeup	\
 	test_hostname	\
+  test_cache \
 	test_rcptid
 
 if IS_HPUX
@@ -78,6 +79,8 @@ test_thread_wakeup_SOURCES = test_thread_wakeup.c
 test_rcptid_SOURCES = test_rcptid.c
 
 test_hostname_SOURCES = test_hostname.c
+
+test_cache_SOURCES = test_cache.c
 
 TESTS = $(check_PROGRAMS)
 
