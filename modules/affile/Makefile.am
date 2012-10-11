@@ -20,7 +20,7 @@ BUILT_SOURCES = affile-grammar.y affile-grammar.c affile-grammar.h
 EXTRA_DIST = $(BUILT_SOURCES) affile-grammar.ym
 
 libaffile_la_CPPFLAGS = $(AM_CPPFLAGS)
-libaffile_la_LIBADD = $(MODULE_DEPS_LIBS)
-libaffile_la_LDFLAGS = $(MODULE_LDFLAGS) -lpcre
+libaffile_la_LIBADD = $(MODULE_DEPS_LIBS) $(PCRE_LIBS)
+libaffile_la_LDFLAGS = $(MODULE_LDFLAGS)
 
 include $(top_srcdir)/build/lex-rules.am

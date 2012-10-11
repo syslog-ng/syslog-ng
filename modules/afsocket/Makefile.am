@@ -24,8 +24,8 @@ libafsocket_notls_la_SOURCES += \
 	$(SYSTEMD_SOURCES)
 endif
 libafsocket_notls_la_CPPFLAGS = $(AM_CPPFLAGS) $(libsystemd_daemon_CFLAGS)
-libafsocket_notls_la_LIBADD = $(MODULE_DEPS_LIBS) $(LIBNET_LIBS) $(LIBWRAP_LIBS) $(libsystemd_daemon_LIBS)
-libafsocket_notls_la_LDFLAGS = $(MODULE_LDFLAGS) -lpcre
+libafsocket_notls_la_LIBADD = $(MODULE_DEPS_LIBS) $(LIBNET_LIBS) $(LIBWRAP_LIBS) $(PCRE_LIBS) $(libsystemd_daemon_LIBS)
+libafsocket_notls_la_LDFLAGS = $(MODULE_LDFLAGS)
 
 if ENABLE_SSL
 module_LTLIBRARIES += libafsocket-tls.la
@@ -39,8 +39,8 @@ libafsocket_tls_la_SOURCES += \
 endif
 
 libafsocket_tls_la_CPPFLAGS = $(AM_CPPFLAGS) $(libsystemd_daemon_CFLAGS) -DENABLE_SSL=1
-libafsocket_tls_la_LIBADD = $(MODULE_DEPS_LIBS) $(OPENSSL_LIBS) $(ZLIB_LIBS) $(LIBNET_LIBS) $(LIBWRAP_LIBS) $(libsystemd_daemon_LIBS)
-libafsocket_tls_la_LDFLAGS = $(MODULE_LDFLAGS) -lpcre
+libafsocket_tls_la_LIBADD = $(MODULE_DEPS_LIBS) $(OPENSSL_LIBS) $(ZLIB_LIBS) $(LIBNET_LIBS) $(LIBWRAP_LIBS) $(PCRE_LIBS) $(libsystemd_daemon_LIBS)
+libafsocket_tls_la_LDFLAGS = $(MODULE_LDFLAGS)
 endif
 
 BUILT_SOURCES = afsocket-grammar.y afsocket-grammar.c afsocket-grammar.h
