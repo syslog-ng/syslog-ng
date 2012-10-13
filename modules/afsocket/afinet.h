@@ -24,7 +24,8 @@
 #ifndef AFINET_H_INCLUDED
 #define AFINET_H_INCLUDED
 
-#include "afsocket.h"
+#include "afsocket-source.h"
+#include "afsocket-dest.h"
 
 #ifdef _GNU_SOURCE
 #  define _GNU_SOURCE_DEFINED 1

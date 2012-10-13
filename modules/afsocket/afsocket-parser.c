@@ -22,6 +22,7 @@
  */
 
 #include "afsocket.h"
+#include "driver.h"
 #include "cfg-parser.h"
 #include "afsocket-grammar.h"
 

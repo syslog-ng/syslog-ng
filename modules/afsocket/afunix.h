@@ -21,11 +21,11 @@
  *
  */
 
-#ifndef SDUNIX_H_INCLUDED
-#define SDUNIX_H_INCLUDED
+#ifndef AFUNIX_H_INCLUDED
+#define AFUNIX_H_INCLUDED
 
-#include "driver.h"
-#include "afsocket.h"
+#include "afsocket-source.h"
+#include "afsocket-dest.h"
 #include "file-perms.h"
 
 typedef struct _AFUnixSourceDriver

@@ -24,22 +24,8 @@
 #ifndef AFSOCKET_H_INCLUDED
 #define AFSOCKET_H_INCLUDED
 
-#include "driver.h"
-#include "logreader.h"
-#include "logwriter.h"
-#if BUILD_WITH_SSL
-#include "tlscontext.h"
-#endif
-
-#include <iv.h>
-
-#define AFSOCKET_LOCAL               0x0004
-
-#define AFSOCKET_SYSLOG_PROTOCOL     0x0008
-#define AFSOCKET_KEEP_ALIVE          0x0100
-#define AFSOCKET_REQUIRE_TLS         0x0200
-
-#define AFSOCKET_WNDSIZE_INITED      0x10000
+#include "syslog-ng.h"
+#include "gsockaddr.h"
 
 typedef enum
 {
@@ -47,8 +33,11 @@ typedef enum
   AFSOCKET_DIR_SEND = 0x02,
 } AFSocketDirection;
 
-typedef struct _AFSocketSourceDriver AFSocketSourceDriver;
-typedef struct _AFSocketDestDriver AFSocketDestDriver;
+#define AFSOCKET_LOCAL               0x0004
+
+#define AFSOCKET_SYSLOG_PROTOCOL     0x0008
+#define AFSOCKET_KEEP_ALIVE          0x0100
+#define AFSOCKET_REQUIRE_TLS         0x0200
 
 typedef struct _SocketOptions
 {
@@ -59,149 +48,6 @@ typedef struct _SocketOptions
 } SocketOptions;
 
 gboolean afsocket_setup_socket(gint fd, SocketOptions *sock_options, AFSocketDirection dir);
-
-struct _AFSocketSourceDriver
-{
-  LogSrcDriver super;
-  guint32 flags;
-  struct iv_fd listen_fd;
-  gint fd;
-  /* SOCK_DGRAM or SOCK_STREAM or other SOCK_XXX values used by the socket() call */
-  gint sock_type;
-  /* protocol parameter for the socket() call, 0 for default or IPPROTO_XXX for specific transports */
-  gint sock_protocol;
-  LogReaderOptions reader_options;
-#if BUILD_WITH_SSL
-  TLSContext *tls_context;
-#endif
-  gint address_family;
-  GSockAddr *bind_addr;
-  gchar *transport;
-  gchar *logproto_name;
-  gint max_connections;
-  gint num_connections;
-  gint listen_backlog;
-  GList *connections;
-  SocketOptions *sock_options_ptr;
-
-
-  /*
-   * Apply transport options, set up bind_addr based on the
-   * information processed during parse time. This used to be
-   * constructed during the parser, however that made the ordering of
-   * various options matter and behave incorrectly when the port() was
-   * specified _after_ transport(). Now, it collects the information,
-   * and then applies them with a separate call to apply_transport()
-   * during init().
-   */
-
-  gboolean (*apply_transport)(AFSocketSourceDriver *s);
-
-  /* optionally acquire a socket from the runtime environment (e.g. systemd) */
-  gboolean (*acquire_socket)(AFSocketSourceDriver *s, gint *fd);
-
-  /* once the socket is opened, set up socket related options (IP_TTL,
-     IP_TOS, SO_RCVBUF etc) */
-
-  gboolean (*setup_socket)(AFSocketSourceDriver *s, gint fd);
-};
-
-void afsocket_sd_set_transport(LogDriver *s, const gchar *transport);
-void afsocket_sd_set_keep_alive(LogDriver *self, gint enable);
-void afsocket_sd_set_max_connections(LogDriver *self, gint max_connections);
-#if BUILD_WITH_SSL
-void afsocket_sd_set_tls_context(LogDriver *s, TLSContext *tls_context);
-#else
-#define afsocket_sd_set_tls_context(s, t)
-#endif
-
-static inline gboolean
-afsocket_sd_acquire_socket(AFSocketSourceDriver *s, gint *fd)
-{
-  if (s->acquire_socket)
-    return s->acquire_socket(s, fd);
-  *fd = -1;
-  return TRUE;
-}
-
-static inline gboolean
-afsocket_sd_apply_transport(AFSocketSourceDriver *s)
-{
-  return s->apply_transport(s);
-}
-
-gboolean afsocket_sd_init(LogPipe *s);
-gboolean afsocket_sd_deinit(LogPipe *s);
-
-void afsocket_sd_init_instance(AFSocketSourceDriver *self, SocketOptions *sock_options, gint family, gint sock_type, guint32 flags);
-void afsocket_sd_free(LogPipe *self);
-
-struct _AFSocketDestDriver
-{
-  LogDestDriver super;
-  guint32 flags;
-  gint fd;
-  /* SOCK_DGRAM or SOCK_STREAM or other SOCK_XXX values used by the socket() call */
-  gint sock_type;
-  /* protocol parameter for the socket() call, 0 for default or IPPROTO_XXX for specific transports */
-  gint sock_protocol;
-  LogPipe *writer;
-  LogWriterOptions writer_options;
-#if BUILD_WITH_SSL
-  TLSContext *tls_context;
-#endif
-  gint address_family;
-  gchar *hostname;
-  /* transport as specified by the user */
-  gchar *transport;
-
-  /* logproto plugin name, borrowed char pointer, no need to free. If
-   * allocated dynamically, a free must be added and an strdup to all
-   * initializations!  */
-  gchar *logproto_name;
-  GSockAddr *bind_addr;
-  GSockAddr *dest_addr;
-  gchar *dest_name;
-  gint time_reopen;
-  struct iv_fd connect_fd;
-  struct iv_timer reconnect_timer;
-  SocketOptions *sock_options_ptr;
-
-  /*
-   * Apply transport options, set up bind_addr/dest_addr based on the
-   * information processed during parse time. This used to be
-   * constructed during the parser, however that made the ordering of
-   * various options matter and behave incorrectly when the port() was
-   * specified _after_ transport(). Now, it collects the information,
-   * and then applies them with a separate call to apply_transport()
-   * during init().
-   */
-
-  gboolean (*apply_transport)(AFSocketDestDriver *s);
-
-  /* once the socket is opened, set up socket related options (IP_TTL,
-     IP_TOS, SO_RCVBUF etc) */
-
-  gboolean (*setup_socket)(AFSocketDestDriver *s, gint fd);
-};
-
-
-#if BUILD_WITH_SSL
-void afsocket_dd_set_tls_context(LogDriver *s, TLSContext *tls_context);
-#else
-#define afsocket_dd_set_tls_context(s, t)
-#endif
-
-static inline gboolean
-afsocket_dd_apply_transport(AFSocketDestDriver *s)
-{
-  return s->apply_transport(s);
-}
-
-void afsocket_dd_set_transport(LogDriver *s, const gchar *transport);
-void afsocket_dd_set_keep_alive(LogDriver *self, gint enable);
-void afsocket_dd_init_instance(AFSocketDestDriver *self, SocketOptions *sock_options, gint family, gint sock_type, const gchar *hostname, guint32 flags);
-gboolean afsocket_dd_init(LogPipe *s);
-void afsocket_dd_free(LogPipe *s);
+gboolean afsocket_open_socket(GSockAddr *bind_addr, gint sock_type, gint sock_protocol, int *fd);
 
 #endif
