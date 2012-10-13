@@ -42,7 +42,8 @@ enum
   RPT_IP,
   RPT_FLOAT,
   RPT_SET,
-  RPT_MACADDR
+  RPT_MACADDR,
+  RPT_PCRE,
 };
 
 typedef struct _RParserMatch

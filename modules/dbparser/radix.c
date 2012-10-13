@@ -26,6 +26,9 @@
 #include <string.h>
 #include <stdlib.h>
 
+#if ENABLE_PCRE
+#include <pcre.h>
+#endif
 
 /**************************************************************
  * Parsing nodes.
@@ -107,6 +110,78 @@ r_parser_estring(guint8 *str, gint *len, const gchar *param, gpointer state, RPa
   else
     return FALSE;
 }
+
+#if ENABLE_PCRE
+
+typedef struct _RParserPCREState
+{
+  pcre *re;
+  pcre_extra *extra;
+} RParserPCREState;
+
+gboolean
+r_parser_pcre(guint8 *str, gint *len, const gchar *param, gpointer state, RParserMatch *match)
+{
+  RParserPCREState *self = (RParserPCREState *) state;
+  gint rc;
+  gint matches[2];
+
+  rc = pcre_exec(self->re, self->extra, str, strlen(str), 0, 0, matches, 2);
+  if (rc <= 0)
+    return FALSE;
+  *len = matches[1] - matches[0];
+  return TRUE;
+}
+
+gpointer
+r_parser_pcre_compile_state(const gchar *expr)
+{
+  RParserPCREState *self = g_new0(RParserPCREState, 1);
+  const gchar *errptr;
+  gint erroffset;
+  gint rc;
+
+  self->re = pcre_compile2(expr, PCRE_ANCHORED, &rc, &errptr, &erroffset, NULL);
+  if (!self->re)
+    {
+      msg_error("Error while compiling regular expression",
+                evt_tag_str("regular_expression", expr),
+                evt_tag_str("error_at", &expr[erroffset]),
+                evt_tag_int("error_offset", erroffset),
+                evt_tag_str("error_message", errptr),
+                evt_tag_int("error_code", rc),
+                NULL);
+      g_free(self);
+      return NULL;
+    }
+  self->extra = pcre_study(self->re, 0, &errptr);
+  if (errptr)
+    {
+      msg_error("Error while optimizing regular expression",
+                evt_tag_str("regular_expression", expr),
+                evt_tag_str("error_message", errptr),
+                NULL);
+      pcre_free(self->re);
+      if (self->extra)
+        pcre_free(self->extra);
+      g_free(self);
+      return NULL;
+    }
+  return (gpointer) self;
+}
+
+static void
+r_parser_pcre_free_state(gpointer s)
+{
+  RParserPCREState *self = (RParserPCREState *) s;
+
+  if (self->re)
+    pcre_free(self->re);
+  if (self->extra)
+    pcre_free(self->extra);
+  g_free(self);
+}
+#endif
 
 gboolean
 r_parser_anystring(guint8 *str, gint *len, const gchar *param, gpointer state, RParserMatch *match)
@@ -425,6 +500,26 @@ r_new_pnode(guint8 *key)
         }
 
     }
+#if ENABLE_PCRE
+  else if (strcmp(params[0], "PCRE") == 0)
+    {
+      parser_node->parse = r_parser_pcre;
+      parser_node->type = RPT_PCRE;
+
+      if (params[2])
+        {
+          parser_node->free_state = r_parser_pcre_free_state;
+          parser_node->state = r_parser_pcre_compile_state(params[2]);
+        }
+      else
+        {
+          g_free(parser_node);
+          msg_error("Missing regular expression as 3rd argument",
+                     evt_tag_str("type", params[0]), NULL);
+          parser_node = NULL;
+        }
+    }
+#endif
   else if (strcmp(params[0], "ANYSTRING") == 0)
     {
       parser_node->parse = r_parser_anystring;
