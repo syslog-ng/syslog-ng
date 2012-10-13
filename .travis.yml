@@ -3,9 +3,9 @@ install: sudo apt-get update && sudo apt-get install pkg-config flex bison xsltp
 before_script:
   - ./autogen.sh
 script:
-  - ./configure --with-ivykis=internal
+  - ./configure --with-ivykis=internal --prefix=$HOME/install/syslog-ng
   - make
-  - sudo make install
+  - make install
   - make check
 compiler:
   - gcc
