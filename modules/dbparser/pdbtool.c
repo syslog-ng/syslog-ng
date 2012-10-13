@@ -847,6 +847,10 @@ pdbtool_dump(int argc, char *argv[])
             pdbtool_walk_tree(root, 0, FALSE);
         }
     }
+  else
+    {
+      fprintf(stderr, "Neither --program-tree nor --program was specified, doing nothing\n");
+    }
 
   pattern_db_free(patterndb);
 
@@ -855,6 +859,8 @@ pdbtool_dump(int argc, char *argv[])
 
 static GOptionEntry dump_options[] =
 {
+  { "pdb",       'p', 0, G_OPTION_ARG_STRING, &patterndb_file,
+    "Name of the patterndb file", "<patterndb_file>" },
   { "program", 'P', 0, G_OPTION_ARG_STRING, &match_program,
     "Program name ($PROGRAM) to dump", "<program>" },
   { "program-tree", 'T', 0, G_OPTION_ARG_NONE, &dump_program_tree,
