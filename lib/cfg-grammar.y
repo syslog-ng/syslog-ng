@@ -935,7 +935,7 @@ source_reader_option
 	    last_reader_options->parse_options.default_pri = (last_reader_options->parse_options.default_pri & 7) | $3;
           }
         | { last_source_options = &last_reader_options->super; } source_option
-        | { last_proto_server_options = &last_reader_options->proto_options; } source_proto_option
+        | { last_proto_server_options = &last_reader_options->proto_options.super; } source_proto_option
 	;
 
 source_reader_option_flags
