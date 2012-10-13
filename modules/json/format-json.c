@@ -118,14 +118,8 @@ tf_json_obj_start(const gchar *name,
                   gpointer user_data)
 {
   json_state_t *state = (json_state_t *)user_data;
-  gboolean need_comma = FALSE;
 
-  if (prefix_data)
-    need_comma = GPOINTER_TO_INT(*prefix_data);
-  else
-    need_comma = state->need_comma;
-
-  if (need_comma)
+  if (state->need_comma)
     g_string_append_c(state->buffer, ',');
 
   if (name)
@@ -133,13 +127,11 @@ tf_json_obj_start(const gchar *name,
       g_string_append_c(state->buffer, '"');
       g_string_append_escaped(state->buffer, name);
       g_string_append(state->buffer, "\":{");
-      state->need_comma = TRUE;
     }
   else
     g_string_append_c(state->buffer, '{');
 
-  if (prefix_data)
-    *prefix_data=GINT_TO_POINTER(0);
+  state->need_comma = FALSE;
 
   return FALSE;
 }
@@ -152,10 +144,9 @@ tf_json_obj_end(const gchar *name,
 {
   json_state_t *state = (json_state_t *)user_data;
 
-  if (prev_data)
-    *prev_data = GINT_TO_POINTER(1);
-
   g_string_append_c(state->buffer, '}');
+
+  state->need_comma = TRUE;
 
   return FALSE;
 }
@@ -164,18 +155,10 @@ static gboolean
 tf_json_value(const gchar *name, const gchar *prefix, const gchar *value,
               gpointer *prefix_data, gpointer user_data)
 {
-  gboolean need_comma = FALSE;
   json_state_t *state = (json_state_t *)user_data;
 
-  if (prefix_data)
-    need_comma = GPOINTER_TO_INT(*prefix_data);
-  else
-    need_comma = state->need_comma;
-
-  if (need_comma)
+  if (state->need_comma)
     g_string_append_c(state->buffer, ',');
-  else if (prefix_data)
-    *prefix_data = GINT_TO_POINTER(1);
 
   g_string_append_c(state->buffer, '"');
   g_string_append_escaped(state->buffer, name);
