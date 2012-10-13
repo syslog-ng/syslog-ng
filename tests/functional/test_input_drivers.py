@@ -93,14 +93,16 @@ def test_input_drivers():
     message_new = 'input_drivers_new';
 
     senders = (
-        SocketSender(AF_UNIX, 'log-dgram', dgram=1),
+        SocketSender(AF_UNIX, 'log-dgram', dgram=1, terminate_seq='\n'),
         SocketSender(AF_UNIX, 'log-dgram', dgram=1, terminate_seq='\0'),
         SocketSender(AF_UNIX, 'log-dgram', dgram=1, terminate_seq='\0\n'),
+        SocketSender(AF_UNIX, 'log-dgram', dgram=1, terminate_seq=''),
         SocketSender(AF_UNIX, 'log-stream', dgram=0),
         SocketSender(AF_UNIX, 'log-stream', dgram=0, send_by_bytes=1),
-        SocketSender(AF_INET, ('localhost', port_number), dgram=1),
+        SocketSender(AF_INET, ('localhost', port_number), dgram=1, terminate_seq='\n'),
         SocketSender(AF_INET, ('localhost', port_number), dgram=1, terminate_seq='\0'),
         SocketSender(AF_INET, ('localhost', port_number), dgram=1, terminate_seq='\0\n'),
+        SocketSender(AF_INET, ('localhost', port_number), dgram=1, terminate_seq=''),
         SocketSender(AF_INET, ('localhost', port_number), dgram=0),
         SocketSender(AF_INET, ('localhost', port_number), dgram=0, send_by_bytes=1),
         SocketSender(AF_INET, ('localhost', ssl_port_number), dgram=0, ssl=1),
