@@ -1133,6 +1133,7 @@ AC_OUTPUT(dist.conf
 	  modules/afmongodb/Makefile
           modules/afsmtp/Makefile
           modules/dbparser/Makefile
+          modules/dbparser/pdbtool/Makefile
           modules/dbparser/tests/Makefile
           modules/csvparser/Makefile
           modules/csvparser/tests/Makefile

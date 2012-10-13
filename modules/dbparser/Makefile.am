@@ -1,4 +1,4 @@
-SUBDIRS = . tests
+SUBDIRS = . pdbtool tests
 moduledir = @moduledir@
 AM_CPPFLAGS = -I$(top_srcdir)/lib -I../../lib
 #
@@ -27,11 +27,6 @@ libdbparser_la_SOURCES = \
 libdbparser_la_CPPFLAGS = $(AM_CPPFLAGS)
 libdbparser_la_LIBADD = $(MODULE_DEPS_LIBS) ../../lib/libsyslog-ng-crypto.la
 libdbparser_la_LDFLAGS = $(MODULE_LDFLAGS)
-
-bin_PROGRAMS = pdbtool
-pdbtool_SOURCES = pdbtool.c
-pdbtool_CPPFLAGS = $(AM_CPPFLAGS)
-pdbtool_LDADD = libsyslog-ng-patterndb.a ../../lib/libsyslog-ng.la ../../lib/libsyslog-ng-crypto.la @TOOL_DEPS_LIBS@
 
 BUILT_SOURCES = dbparser-grammar.y dbparser-grammar.c dbparser-grammar.h
 EXTRA_DIST = $(BUILT_SOURCES) radix-find.c dbparser-grammar.ym
