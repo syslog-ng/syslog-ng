@@ -356,6 +356,8 @@ log_source_options_defaults(LogSourceOptions *options)
   options->use_dns_cache = -1;
   options->normalize_hostnames = -1;
   options->keep_timestamp = -1;
+  options->program_override_len = -1;
+  options->host_override_len = -1;
   options->tags = NULL;
 }
 
