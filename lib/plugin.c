@@ -376,7 +376,7 @@ plugin_load_module(const gchar *module_name, GlobalConfig *cfg, CfgArgs *args)
   g_free(module_init_func);
   result = (*init_func)(cfg, args);
   if (result)
-    msg_notice("Module loaded and initialized successfully",
+    msg_verbose("Module loaded and initialized successfully",
                evt_tag_str("module", module_name),
                NULL);
   else
