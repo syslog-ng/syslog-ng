@@ -21,25 +21,24 @@
  *
  */
 
-#ifndef AFINET_H_INCLUDED
-#define AFINET_H_INCLUDED
+#ifndef AFINET_SOURCE_H_INCLUDED
+#define AFINET_SOURCE_H_INCLUDED
 
+#include "afinet.h"
 #include "afsocket-source.h"
-#include "afsocket-dest.h"
 
-typedef struct _InetSocketOptions
+typedef struct _AFInetSourceDriver
 {
-  SocketOptions super;
-  gint ip_ttl;
-  gint ip_tos;
-  gint tcp_keepalive_time;
-  gint tcp_keepalive_intvl;
-  gint tcp_keepalive_probes;
-} InetSocketOptions;
+  AFSocketSourceDriver super;
+  InetSocketOptions sock_options;
+  /* character as it can contain a service name from /etc/services */
+  gchar *bind_port;
+  gchar *bind_ip;
+  gchar *ip_protocol;
+} AFInetSourceDriver;
 
-void afinet_set_port(GSockAddr *addr, gchar *service, const gchar *proto);
-gboolean afinet_setup_socket(gint fd, GSockAddr *addr, InetSocketOptions *sock_options, AFSocketDirection dir);
-
-
+LogDriver *afinet_sd_new(gint af, gint sock_type, guint flags);
+void afinet_sd_set_localport(LogDriver *self, gchar *service);
+void afinet_sd_set_localip(LogDriver *self, gchar *ip);
 
 #endif
