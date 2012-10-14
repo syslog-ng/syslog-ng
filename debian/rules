@@ -76,11 +76,13 @@ override_dh_autoreconf:
 # some other stuff that we keep in debian/source_revision (generated
 # by debian/tools/bootstrap.sh).
 override_dh_auto_configure:
+	install -d debian/build-tree
 	SOURCE_REVISION="$(shell dpkg-parsechangelog | \
 			  sed -n "/^Version:/s/^Version: //p" | \
 			  sed -e "s,$$,$(shell cat debian/source_revision 2>/dev/null || true)," | \
 			  sed -e "s,$$, ($(shell lsb_release -is)/$(shell lsb_release -rs)),")"; \
-	dh_auto_configure -- \
+	cd debian/build-tree && ../../${SRCDIR}/configure \
+		--build=$(dpkg-architecture -qDEB_BUILD_GNU_TYPE) \
 		--prefix=/usr \
 		--mandir=/usr/share/man \
 		--sysconfdir=/etc/syslog-ng \
