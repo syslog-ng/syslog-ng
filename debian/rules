@@ -40,8 +40,6 @@ UMAJOR		   = $(shell dpkg-parsechangelog | sed -n '/^Version:/s/^Version: //p' |
 # case, use the current directory as the source dir.
 SRCDIR	   	   = $(shell test -d syslog-ng-${UMAJOR} && echo syslog-ng-${UMAJOR} || echo .)
 
-DEFAULT_MODULES	   = affile,afprog,afsocket,afuser,afsql,basicfuncs,csvparser,dbparser,syslogformat
-
 export DH_OPTIONS += -O-Bdebian/build-tree --dbg-package=syslog-ng-dbg -O-D${SRCDIR}
 
 include /usr/share/hardening-includes/hardening.make
@@ -92,7 +90,6 @@ override_dh_auto_configure:
 		--with-ivykis=system \
 		\
 		--with-module-dir='$${exec_prefix}/lib/syslog-ng/$${VERSION}' \
-		--with-default-modules="${DEFAULT_MODULES}" \
 		--with-systemdsystemunitdir="/lib/systemd/system" \
 		\
 		SOURCE_REVISION="$${SOURCE_REVISION}" \
