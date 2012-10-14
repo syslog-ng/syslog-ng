@@ -101,7 +101,7 @@ override_dh_auto_configure:
 # Building is fine, but the manpages need some sed work, to replace
 # /opt/syslog-ng with something sensible.
 override_dh_auto_build:
-	dh_auto_build
+	dh_auto_build -- V=1
 	for f in debian/build-tree/doc/man/*; do \
 		sed -e "s#/opt/syslog\\\-ng/etc#/etc/syslog-ng#g" \
 		    -e "s#/opt/syslog\\\-ng##g" \
