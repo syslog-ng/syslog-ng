@@ -4,8 +4,10 @@ syslog-ng (3.3.6.91-1~mhp1) unstable; urgency=low
   * Packaging synced with GCS.
   * New upstream release candidate + patches
     (based on git commit 768073c667a04f64fdc75ec17aed62f60c12da75)
+  * Don't mark systemd symlinks in /etc as conffiles
+    (Closes: #690067)
 
- -- Gergely Nagy <algernon@madhouse-project.org>  Sun, 14 Oct 2012 12:08:37 +0200
+ -- Gergely Nagy <algernon@madhouse-project.org>  Sun, 14 Oct 2012 13:14:53 +0200
 
 syslog-ng (3.3.6-1) unstable; urgency=low
 

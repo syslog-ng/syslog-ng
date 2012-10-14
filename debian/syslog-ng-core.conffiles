@@ -1,2 +1,0 @@
-/etc/systemd/system/multi-user.target.wants/syslog-ng.service
-/etc/systemd/system/syslog.service
