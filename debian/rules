@@ -75,11 +75,13 @@ override_dh_autoreconf:
 # We pass down all appropriate options, along with EXTRA_CONFIGURE_OPTS.
 # This also sets SOURCE_REVISION to the debian package version.
 override_dh_auto_configure:
+	install -d debian/build-tree
 	SOURCE_REVISION="$(shell dpkg-parsechangelog | \
 			  sed -n "/^Version:/s/^Version: //p" | \
 			  sed -e "s,+g\([0-9a-f]*\).*,[@\1]," | \
 			  sed -e "s,$$, ($(shell lsb_release -is)/$(shell lsb_release -rs)),")"; \
-	dh_auto_configure -- \
+	cd debian/build-tree && ../../${SRCDIR}/configure \
+		--build=$(dpkg-architecture -qDEB_BUILD_GNU_TYPE) \
 		--prefix=/usr \
 		--mandir=/usr/share/man \
 		--sysconfdir=/etc/syslog-ng \
