@@ -1,3 +1,10 @@
+syslog-ng (3.3.6.91-1~mhp2) unstable; urgency=low
+
+  * Instead of installing systemd service file symlinks, install a
+    conffile, that includes the real service file. (Closes: #690067)
+
+ -- Gergely Nagy <algernon@madhouse-project.org>  Sat, 27 Oct 2012 16:53:14 +0200
+
 syslog-ng (3.3.6.91-1~mhp1) unstable; urgency=low
 
   [ Gergely Nagy <algernon@madhouse-project.org> ]
