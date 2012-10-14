@@ -27,8 +27,10 @@ libafsocket_notls_la_SOURCES = \
 	afinet-source.h		\
 	afinet-dest.c		\
 	afinet-dest.h		\
-	afunix.c		\
-	afunix.h		\
+	afunix-source.c		\
+	afunix-source.h		\
+	afunix-dest.c		\
+	afunix-dest.h		\
 	afsocket-grammar.y	\
 	afsocket-parser.c	\
 	afsocket-parser.h	\

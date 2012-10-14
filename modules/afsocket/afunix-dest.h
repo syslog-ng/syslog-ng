@@ -21,23 +21,10 @@
  *
  */
 
-#ifndef AFUNIX_H_INCLUDED
-#define AFUNIX_H_INCLUDED
+#ifndef AFUNIX_DEST_H_INCLUDED
+#define AFUNIX_DEST_H_INCLUDED
 
-#include "afsocket-source.h"
 #include "afsocket-dest.h"
-#include "file-perms.h"
-
-typedef struct _AFUnixSourceDriver
-{
-  AFSocketSourceDriver super;
-  gchar *filename;
-  /* deliberately using int type here, as we may not fit into 16 bits (e.g. when using -1) */
-  FilePermOptions file_perm_options;
-  SocketOptions sock_options;
-} AFUnixSourceDriver;
-
-LogDriver *afunix_sd_new(gint sock_type, gchar *filename);
 
 typedef struct _AFUnixDestDriver
 {
