@@ -1,28 +1,30 @@
-syslog-ng (3.3.6-1~mhp1) unstable; urgency=low
-
-  [ Gergely Nagy <algernon@madhouse-project.org> ]
-  * New upstream bugfix release.
-    + Fixes the disconnect on charset decoding error when using UDP
-      sources (Closes: #674099)
-
-  * Add NEWS.Debian, with a note about OpenSSL changing the default dir
-    hashing from MD5 to SHA1, and its effect on syslog-ng users.
-
- -- Gergely Nagy <algernon@madhouse-project.org>  Fri, 17 Aug 2012 11:10:17 +0200
-
-syslog-ng (3.3.5.90-1~mhp1) unstable; urgency=low
+syslog-ng (3.3.6.91-1~mhp1) unstable; urgency=low
 
   [ Gergely Nagy <algernon@madhouse-project.org> ]
   * Packaging synced with GCS.
-  * New upstream release candidate.
+  * New upstream release candidate + patches
+    (based on git commit 768073c667a04f64fdc75ec17aed62f60c12da75)
+  * Don't mark systemd symlinks in /etc as conffiles
+    (Closes: #690067)
 
+ -- Gergely Nagy <algernon@madhouse-project.org>  Sun, 14 Oct 2012 13:14:53 +0200
+
+syslog-ng (3.3.6-1) unstable; urgency=low
+
+  * New upstream release:
+    - fixes disconnect on charset decoding error when using UDP sources
+      (closes: #674099),
+    - use upstream, packaged ivykis.
+  * Backport upstream fix of cfg-lexer to fix glob-based include order.
+
+  [ Gergely Nagy <algernon@madhouse-project.org> ]
+  * Add NEWS.Debian, with a note about OpenSSL changing the default dir
+    hashing from MD5 to SHA1, and its effect on syslog-ng users.
   * Fix build-indep and multiple builds in a row
-  * Fix arch-indep-only build
   * Explicitly remove systemd unit and service files from /etc upon purge
-    (Closes: #674020)
-  * Use upstream, packaged ivykis.
+    (closes: #674020).
 
- -- Gergely Nagy <algernon@madhouse-project.org>  Wed, 04 Jul 2012 12:21:40 +0200
+ -- Laszlo Boszormenyi (GCS) <gcs@debian.hu>  Wed, 05 Sep 2012 01:57:50 +0200
 
 syslog-ng (3.3.5-2) unstable; urgency=low
 
