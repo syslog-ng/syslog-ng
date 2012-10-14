@@ -10,3 +10,14 @@ script:
 compiler:
   - gcc
   - clang
+branches:
+  only:
+    - master
+    - /^upstream\/mirror\/.*/
+    - /^sandbox\/.*/
+notifications:
+  irc:
+    channels:
+      - "irc.freenode.org#balabit"
+    template:
+      - "%{author} - %{repository}#%{branch} @ %{commit}: %{message} (%{build_url})"
