@@ -60,7 +60,8 @@ LDFLAGS		+= $(HARDENING_LDFLAGS)
 #   randomly fail.
 # - We need to call autogen.sh instead of autoreconf.
 override_dh_autoreconf:
-	install -d ${SRCDIR}/lib/ivykis/m4 ${SRCDIR}/modules/afmongodb/libmongo-client/m4
+	install -d ${SRCDIR}/lib/ivykis/m4 ${SRCDIR}/modules/afmongodb/libmongo-client/m4 \
+		debian/build-tree/modules/afamqp/rabbitmq-c/librabbitmq
 	dh_autoreconf -- sh -c "cd ${SRCDIR} && ./autogen.sh"
 
 # Oh, the joys of configure!
@@ -89,7 +90,6 @@ override_dh_auto_configure:
 		\
 		--with-libmongo-client=system \
 		--with-ivykis=system \
-		--with-json=json-c \
 		\
 		--with-module-dir='$${exec_prefix}/lib/syslog-ng/$${VERSION}' \
 		--with-default-modules="${DEFAULT_MODULES}" \

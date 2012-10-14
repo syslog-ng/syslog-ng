@@ -10,10 +10,12 @@ usr/lib/syslog-ng/*/libafsocket.so
 usr/lib/syslog-ng/*/libafuser.so
 usr/lib/syslog-ng/*/libbasicfuncs.so
 usr/lib/syslog-ng/*/libconfgen.so
-usr/lib/syslog-ng/*/libconvertfuncs.so
+usr/lib/syslog-ng/*/libcryptofuncs.so
 usr/lib/syslog-ng/*/libcsvparser.so
 usr/lib/syslog-ng/*/libdbparser.so
+usr/lib/syslog-ng/*/liblinux-kmsg-format.so
 usr/lib/syslog-ng/*/libsyslogformat.so
+usr/lib/syslog-ng/*/libsystem-source.so
 usr/share/syslog-ng/include/scl/*
 usr/share/syslog-ng/xsd/*
 

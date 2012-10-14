@@ -1,3 +1,3 @@
-[submodule "syslog-ng-3.3"]
-	path = syslog-ng-3.3
+[submodule "syslog-ng-3.4"]
+	path = syslog-ng-3.4
 	url = git://github.com/algernon/syslog-ng

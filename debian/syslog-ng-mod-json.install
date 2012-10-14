@@ -1,3 +1,1 @@
-usr/lib/syslog-ng/*/libtfjson.so
-
-debian/conf.d/00load-tfjson.conf /etc/syslog-ng/conf.d/
+usr/lib/syslog-ng/*/libjson-plugin.so

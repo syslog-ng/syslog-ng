@@ -1,3 +1,1 @@
 usr/lib/syslog-ng/*/libafmongodb.so
-
-debian/conf.d/00load-mongodb.conf /etc/syslog-ng/conf.d/
