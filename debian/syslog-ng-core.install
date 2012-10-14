@@ -20,4 +20,6 @@ usr/lib/syslog-ng/*/libsystem-source.so
 usr/share/syslog-ng/include/scl/*
 usr/share/syslog-ng/xsd/*
 
-debian/syslog-ng.conf	/etc/syslog-ng/
+debian/syslog-ng.conf                   /etc/syslog-ng/
+debian/systemd/syslog-ng.service        /etc/systemd/system/
+debian/systemd/syslog-ng.service        /etc/systemd/system/multi-user.target.wants/
