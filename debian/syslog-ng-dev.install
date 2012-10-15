@@ -1,0 +1,4 @@
+usr/include/syslog-ng/*
+# We need a trick here, due to libdir being /usr/lib/syslog-ng.
+usr/lib/syslog-ng/pkgconfig/syslog-ng.pc /usr/lib/pkgconfig/
+usr/share/syslog-ng/tools

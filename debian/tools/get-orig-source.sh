@@ -15,6 +15,10 @@ case "${UPSTREAM_VERSION}" in
                 ;;
 esac
 
+if [ ! -z "${1}" ]; then
+	UPSTREAM_TAG="$1"
+fi
+
 WD=$(pwd)
 TDIR=$(mktemp -d --tmpdir sng-upstream.XXXXXXXX)
 cd "${TDIR}"

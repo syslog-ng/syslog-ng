@@ -76,6 +76,7 @@ override_dh_auto_configure:
 		--sysconfdir=/etc/syslog-ng \
 		--localstatedir=/var/lib/syslog-ng \
 		--datadir=/usr/share/syslog-ng \
+		--libdir=/usr/lib/syslog-ng \
 		\
 		--enable-dynamic-linking \
 		--enable-ssl \
@@ -147,8 +148,8 @@ override_dh_auto_clean:
 # so do that here too.
 override_dh_install:
 	dh_install
-ifneq (,$(filter libsyslog-ng-dev,$(shell dh_listpackages)))
-	chmod +x debian/libsyslog-ng-dev/usr/share/syslog-ng/tools/merge-grammar.pl
+ifneq (,$(filter syslog-ng-dev,$(shell dh_listpackages)))
+	chmod +x debian/syslog-ng-dev/usr/share/syslog-ng/tools/merge-grammar.pl
 endif
 ifneq (,$(filter syslog-ng-core,$(shell dh_listpackages)))
 	install -m 0644 ${SRCDIR}/contrib/systemd/syslog-ng.service \
@@ -180,7 +181,7 @@ override_dh_installlogcheck:
 # dh_makeshlibs wants to be clever and treat plugins as shared libs.
 # Slap it in the face, and tell it not to.
 override_dh_makeshlibs:
-	dh_makeshlibs -Xusr/lib/syslog-ng
+	dh_makeshlibs -Xusr/lib/syslog-ng/$(shell cat ${SRCDIR}/VERSION)
 
 # Compress the .debs with xz, it reduces the size of syslog-ng-core by
 # about 40%. Except, we don't compress the arch: all packages with it,
