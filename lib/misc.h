@@ -113,4 +113,6 @@ gchar *wide_to_utf8(LPCWSTR str);
 LPWSTR utf8_to_wide(const gchar *str);
 #endif
 
+gchar *replace_char(gchar *buffer,gchar from,gchar to,gboolean in_place);
+gchar *data_to_hex_string(guint8 *data, guint32 length);
 #endif

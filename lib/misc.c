@@ -757,3 +757,59 @@ escape_windows_path(char *input)
   g_string_free(result_string,FALSE);
   return return_value;
 }
+
+gchar *
+replace_char(gchar *buffer,gchar from,gchar to,gboolean in_place)
+{
+  gchar *convert;
+  gchar *p;
+  if (in_place)
+    {
+      convert = buffer;
+    }
+  else
+    {
+      convert = g_strdup(buffer);
+    }
+  p = convert;
+  while (*p)
+    {
+      if (*p == from)
+        *p = to;
+      p++;
+    }
+  return convert;
+}
+
+gchar *
+data_to_hex_string(guint8 *data, guint32 length)
+{
+  gchar *string = NULL;
+  gchar *pstr = NULL;
+  guint8 *tdata = data;
+  guint32 i = 0;
+  static const gchar hex_char[] = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
+
+  if (!length)
+    return NULL;
+
+  string = (gchar *)g_malloc0(sizeof(gchar)*length*3);
+
+  pstr = string;
+
+  *pstr = hex_char[*tdata >> 4];
+  pstr++;
+  *pstr = hex_char[*tdata & 0x0F];
+
+  for (i = 1; i < length; i++)
+    {
+      pstr++;
+      *pstr = ' ';
+      pstr++;
+      *pstr = hex_char[tdata[i] >> 4];
+      pstr++;
+      *pstr = hex_char[tdata[i] & 0x0F];
+    }
+
+  return string;
+}
