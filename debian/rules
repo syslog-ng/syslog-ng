@@ -204,6 +204,14 @@ else
 	dh_builddeb -a
 endif
 
+# Since syslog-ng depends on all the modules, and syslog-ng-core
+# suggests the same set, and modules can come and go as new versions
+# of syslog-ng come out, lets make our life easy, and provide a custom
+# sng:Modules substvar, which has all the module packages listed.
+override_dh_gencontrol: SNG_MODULES := $(shell echo $(shell grep "^Package: syslog-ng-mod-" debian/control | cut -d: -f 2) | tr ' ' ',')
+override_dh_gencontrol:
+	dh_gencontrol -- -Vsng:Modules=${SNG_MODULES}
+
 ##
 #* Other, non-override targets
 ##

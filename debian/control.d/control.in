@@ -30,12 +30,7 @@ Vcs-Browser: http://git.madhouse-project.org/debian/syslog-ng/log/?h=packaging/d
 Package: syslog-ng
 Architecture: all
 Multi-Arch: foreign
-Depends: ${misc:Depends}, syslog-ng-core (>= ${source:Upstream-Version}),
- syslog-ng-mod-sql,
- syslog-ng-mod-mongodb,
- syslog-ng-mod-json,
- syslog-ng-mod-smtp,
- syslog-ng-mod-amqp
+Depends: ${misc:Depends}, syslog-ng-core (>= ${source:Upstream-Version}), ${sng:Modules}
 Description: Next generation system logging daemon (metapackage)
  syslog-ng is an enhanced syslog daemon, supporting, amongst others:
   * Powerful configurability, while still being readable
@@ -93,11 +88,7 @@ Architecture: any
 Multi-Arch: foreign
 Depends: ${shlibs:Depends}, ${misc:Depends}, util-linux (>= 2.12-10)
 Recommends: logrotate
-Suggests: syslog-ng-mod-sql,
- syslog-ng-mod-mongodb,
- syslog-ng-mod-json,
- syslog-ng-mod-smtp,
- syslog-ng-mod-amqp
+Suggests: ${sng:Modules}
 Provides: system-log-daemon, linux-kernel-log-daemon, libsyslog-ng-dev
 Conflicts: system-log-daemon, linux-kernel-log-daemon
 Replaces: syslog-ng (<< 3.3.0~), libsyslog-ng-dev
