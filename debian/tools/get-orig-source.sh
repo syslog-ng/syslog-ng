@@ -48,6 +48,8 @@ echo "** Exporting..."
 git archive "${UPSTREAM_TAG}" --format tar --prefix=syslog-ng/ | \
 	tar -C debian/orig-source -xf -
 
+# embedded all the submodules
+
 embed_submodule ()
 {
         submod="$1"
@@ -58,11 +60,13 @@ embed_submodule ()
         ) | tar -C debian/orig-source -xf -
 }
 
-# embedded ivykis
 for submod in $(git submodule status --recursive | cut -d " " -f 3); do
         echo "*** Embedding $submod..."
         embed_submodule $submod
 done
+
+# clean up unneeded files
+rm -f debian/orig-source/syslog-ng/.travis.yml
 
 ##
 # Create the orig.tar.xz from the assembled sources
