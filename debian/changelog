@@ -2,8 +2,9 @@ syslog-ng (3.4.0~alpha3+sandbox+133-1~mhp2) unstable; urgency=low
 
   * Update build-depends: added automake (>= 1.11.1) and python.
   * Tighten the dependency of the modules on syslog-ng-core.
+  * Generate the shlibs file (correctly) for syslog-ng-dev, not -core.
 
- -- Gergely Nagy <algernon@madhouse-project.org>  Tue, 16 Oct 2012 13:04:48 +0200
+ -- Gergely Nagy <algernon@madhouse-project.org>  Tue, 16 Oct 2012 13:33:10 +0200
 
 syslog-ng (3.4.0~alpha3+sandbox+133-1~mhp1) unstable; urgency=low
 
