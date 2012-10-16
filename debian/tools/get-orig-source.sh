@@ -10,14 +10,14 @@ case "${UPSTREAM_VERSION}" in
         *original*)
                 UPSTREAM_TAG="v$(echo "${UPSTREAM_VERSION}" | tr '~' '_' | sed -e 's,\.original,,')"
                 ;;
+        *sandbox*)
+                UPSTREAM_MAJOR="$(echo "${UPSTREAM_VERSION}" | cut -d . -f 1,2)"
+                UPSTREAM_TAG="sandbox/${UPSTREAM_MAJOR}"
+                ;;
         *)
                 UPSTREAM_TAG="v$(echo "${UPSTREAM_VERSION}" | tr '~' '_')"
                 ;;
 esac
-
-if [ ! -z "${1}" ]; then
-	UPSTREAM_TAG="$1"
-fi
 
 WD=$(pwd)
 TDIR=$(mktemp -d --tmpdir sng-upstream.XXXXXXXX)
