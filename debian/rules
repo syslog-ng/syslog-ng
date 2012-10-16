@@ -85,13 +85,12 @@ override_dh_auto_configure:
 		--enable-sql \
 		--enable-mongodb \
 		--enable-json \
-		--enable-systemd \
+		--disable-systemd \
 		\
 		--with-libmongo-client=system \
 		--with-ivykis=system \
 		\
 		--with-module-dir='$${exec_prefix}/lib/syslog-ng/$${VERSION}' \
-		--with-systemdsystemunitdir="/lib/systemd/system" \
 		\
 		SOURCE_REVISION="$${SOURCE_REVISION}" \
 		${EXTRA_CONFIGURE_OPTS}
@@ -150,10 +149,6 @@ override_dh_install:
 	dh_install
 ifneq (,$(filter syslog-ng-dev,$(shell dh_listpackages)))
 	chmod +x debian/syslog-ng-dev/usr/share/syslog-ng/tools/merge-grammar.pl
-endif
-ifneq (,$(filter syslog-ng-core,$(shell dh_listpackages)))
-	install -m 0644 ${SRCDIR}/contrib/systemd/syslog-ng.service \
-			debian/syslog-ng-core/lib/systemd/system/
 endif
 
 # Install the NEWS file as upstream changelog.
