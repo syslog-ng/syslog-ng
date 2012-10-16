@@ -33,7 +33,7 @@ echo "** Cloning..."
 
 git clone -q git://git.madhouse-project.org/debian/syslog-ng.git
 cd syslog-ng
-git checkout "${UPSTREAM_TAG}"
+git checkout -q "${UPSTREAM_TAG}"
 git submodule --quiet update --init --recursive
 
 install -d debian/orig-source
@@ -48,29 +48,21 @@ echo "** Exporting..."
 git archive "${UPSTREAM_TAG}" --format tar --prefix=syslog-ng/ | \
 	tar -C debian/orig-source -xf -
 
+embed_submodule ()
+{
+        submod="$1"
+        
+        (
+                cd ${submod}
+                git archive HEAD --format tar --prefix=syslog-ng/${submod}/
+        ) | tar -C debian/orig-source -xf -
+}
+
 # embedded ivykis
-(
-	cd lib/ivykis
-	git archive HEAD --format tar --prefix=syslog-ng/lib/ivykis/
-) | tar -C debian/orig-source -xf -
-
-# embedded libmongo-client
-(
-	cd modules/afmongodb/libmongo-client
-	git archive HEAD --format tar --prefix=syslog-ng/modules/afmongodb/libmongo-client/
-) | tar -C debian/orig-source -xf -
-
-# embedded rabbitmq-c
-(
-        cd modules/afamqp/rabbitmq-c
-        git archive HEAD --format tar --prefix=syslog-ng/modules/afamqp/rabbitmq-c/
-) | tar -C debian/orig-source -xf -
-
-# embedded rabbitmq-c/codegen
-(
-        cd modules/afamqp/rabbitmq-c/codegen
-        git archive HEAD --format tar --prefix=syslog-ng/modules/afamqp/rabbitmq-c/codegen/
-) | tar -C debian/orig-source -xf -
+for submod in $(git submodule status --recursive | cut -d " " -f 3); do
+        echo "*** Embedding $submod..."
+        embed_submodule $submod
+done
 
 ##
 # Create the orig.tar.xz from the assembled sources
