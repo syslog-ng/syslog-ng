@@ -56,6 +56,9 @@ git archive "${UPSTREAM_TAG}" --format tar --prefix=syslog-ng/ | \
 	git archive HEAD --format tar --prefix=syslog-ng/modules/afmongodb/libmongo-client/
 ) | tar -C debian/orig-source -xf -
 
+# clean up unneeded files
+rm -f debian/orig-source/syslog-ng/.travis.yml
+
 ##
 # Create the orig.tar.xz from the assembled sources
 ##
