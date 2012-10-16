@@ -80,7 +80,7 @@ testcase(gchar *msg_string, gchar *template, gint padding, gboolean use_syslog_p
   opt.template = templ;
   msg = init_msg(msg_string, use_syslog_protocol, local_message);
   writer = (LogWriter*)log_writer_new(writer_flags);
-  log_writer_set_queue(writer, log_queue_fifo_new(1000, NULL));
+  log_writer_set_queue((LogPipe *)writer, log_queue_fifo_new(1000, NULL));
   if (writer)
     {
       log_writer_set_options(writer, NULL, &opt, 0, 0, NULL, NULL, NULL);
@@ -125,9 +125,9 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   char *expected_msg_bsd_str = " bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép\n";
   char *expected_msg_bsd_str_t = "23323 árvíztűrőtükörfúrógép";
 
-  char *msg_zero_pri = "<0>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép";
+  /*char *msg_zero_pri = "<0>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép";
   char *expected_msg_zero_pri_str = "<0>Feb 11 10:34:56 bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép\n";
-  char *expected_msg_zero_pri_str_t = "0";
+  char *expected_msg_zero_pri_str_t = "0";*/ /*not used*/
 
   char *msg_bsd_empty_str = "<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]:";
   char *expected_msg_bsd_empty_str = " bzorp syslog-ng[23323]:\n";

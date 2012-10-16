@@ -38,6 +38,7 @@
 #include "logsource.h"
 #include "mainloop.h"
 #include "plugin.h"
+#include "reloc.h"
 
 #include <sys/types.h>
 #include <stdio.h>

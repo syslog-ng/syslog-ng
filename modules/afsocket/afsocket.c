@@ -26,6 +26,7 @@
 #include "driver.h"
 #include "misc.h"
 #include "logwriter.h"
+#include "hostname.h"
 #if ENABLE_SSL
 #include "tlstransport.h"
 #endif

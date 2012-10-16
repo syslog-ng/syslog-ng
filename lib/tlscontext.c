@@ -360,7 +360,7 @@ tls_context_setup_session(TLSContext *self)
 
       X509_VERIFY_PARAM_set_flags(self->ssl_ctx->param, verify_flags);
 
-      switch (self->verify_mode)
+      switch ((int)self->verify_mode)
         {
         case TVM_NONE:
           verify_mode = SSL_VERIFY_NONE;

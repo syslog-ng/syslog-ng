@@ -48,6 +48,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <stdio.h>
+#include <glib/gstdio.h> /*g_mkdir*/
 
 GString *
 g_string_assign_len(GString *s, const gchar *val, gint len)
@@ -146,7 +147,7 @@ resolve_sockaddr(gchar *result, gsize *result_len, GSockAddr *saddr, gboolean us
 {
   const gchar *hname;
   gboolean positive;
-  gchar *p, buf[256];
+  gchar buf[256];
  
   if (saddr && saddr->sa.sa_family != AF_UNIX)
     {
@@ -207,7 +208,7 @@ resolve_sockaddr(gchar *result, gsize *result_len, GSockAddr *saddr, gboolean us
                   /* we only truncate hostnames if they were positive
                    * matches (e.g. real hostnames and not IP
                    * addresses) */
-
+                  const gchar *p;
                   p = strchr(hname, '.');
 
                   if (p)
@@ -243,7 +244,7 @@ resolve_sockaddr(gchar *result, gsize *result_len, GSockAddr *saddr, gboolean us
     }
   if (normalize_hostnames)
     {
-      normalize_hostname(result,result_len,hname);
+      normalize_hostname(result, result_len, hname);
     }
   else
     {

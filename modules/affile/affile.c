@@ -164,9 +164,8 @@ affile_sd_construct_proto(AFFileSourceDriver *self, LogTransport *transport)
 {
   guint flags;
   LogProto *proto = NULL;
-  LogProtoServerOptions *options = (LogProtoServerOptions *)&self->proto_options;
   GlobalConfig *cfg = log_pipe_get_config((LogPipe *)self);
-  gchar *name;
+  gchar *name = NULL;
 
   MsgFormatHandler *handler;
 
@@ -244,7 +243,7 @@ affile_sd_open(LogPipe *s, gboolean immediate_check)
       /* FIXME: we shouldn't use reader_options to store log protocol parameters */
       self->reader = log_reader_new(proto);
 
-      log_reader_set_options(self->reader, s, &self->reader_options, 1, SCS_FILE, self->super.super.id, self->filename->str, options);
+      log_reader_set_options(self->reader, s, &self->reader_options, 1, SCS_FILE, self->super.super.id, self->filename->str, (LogProtoOptions *) options);
       log_reader_set_follow_filename(self->reader, self->filename->str);
 
       if (immediate_check)
@@ -388,7 +387,7 @@ affile_sd_notify(LogPipe *s, LogPipe *sender, gint notify_code, gpointer user_da
 
             affile_sd_recover_state(s, cfg, proto);
 
-            log_reader_reopen(self->reader, proto, s, &self->reader_options, 1, SCS_FILE, self->super.super.id, self->filename->str, TRUE, options);
+            log_reader_reopen(self->reader, proto, s, &self->reader_options, 1, SCS_FILE, self->super.super.id, self->filename->str, TRUE, (LogProtoOptions *)options);
           }
         else
           {
@@ -458,7 +457,7 @@ affile_sd_notify(LogPipe *s, LogPipe *sender, gint notify_code, gpointer user_da
                 immediate_check = TRUE;
               }
             affile_sd_recover_state(s, cfg, proto);
-            log_reader_reopen(self->reader, proto, s, &self->reader_options, 1, SCS_FILE, self->super.super.id, self->filename->str, immediate_check, options);
+            log_reader_reopen(self->reader, proto, s, &self->reader_options, 1, SCS_FILE, self->super.super.id, self->filename->str, immediate_check, (LogProtoOptions *)options);
           }
         break;
       }

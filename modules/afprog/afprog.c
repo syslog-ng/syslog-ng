@@ -271,7 +271,7 @@ static gboolean
 afprogram_dd_reopen(AFProgramDestDriver *self)
 {
   int fd;
-  LogProto *proto;
+  LogProto *proto = NULL;
 
   if (self->pid != -1)
     {

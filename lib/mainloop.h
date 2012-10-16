@@ -68,7 +68,7 @@ main_loop_io_worker_job_quit(void)
 }
 
 void main_loop_add_quit_callback_list_element(gpointer func, gpointer user_data);
-void main_loop_external_thread_quit(void);
+gpointer main_loop_external_thread_quit(gpointer user_data);
 void main_loop_external_thread_started(void);
 void main_loop_maximalize_worker_threads(int max_threads);
 void main_loop_io_worker_set_thread_id(gint id);

@@ -1361,7 +1361,7 @@ log_proto_buffered_server_fetch(LogProto *s, const guchar **msg, gsize *msg_len,
           }
         else if (options && options->opts.garbage_matcher)
           {
-            if (log_proto_regexec(options->opts.garbage_matcher, *msg, *msg_len, NULL, NULL))
+            if (log_proto_regexec(options->opts.garbage_matcher, (const gchar *)*msg, *msg_len, NULL, NULL))
               {
                 *msg = NULL;
                 *msg_len = 0;

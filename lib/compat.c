@@ -871,7 +871,7 @@ int getsockerror()
 }
 
 void
-setup_signals(void)
+setup_signals()
 {
   struct sigaction sa;
 

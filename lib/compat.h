@@ -265,8 +265,6 @@ struct sigaction{
 	void (*sa_handler) (int signo);
 };
 
-void setup_signals();
-
 struct iv_signal {
 	int			signum;
 	unsigned		exclusive:1;
@@ -330,6 +328,8 @@ void crypto_init_vs(void);
 #define BB_CRYPTO_IMPORT
 
 #endif /* _WIN32 */
+
+void setup_signals();
 
 #ifndef HAVE_LOCALTIME_R
 struct tm * localtime_r(const time_t *timer, struct tm *result);

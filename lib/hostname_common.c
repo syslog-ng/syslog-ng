@@ -67,9 +67,9 @@ void reset_cached_hostname(void)
 }
 
 
-void normalize_hostname(gchar *result,int *result_len, const gchar *hostname)
+void normalize_hostname(gchar *result, gsize *result_len, const gchar *hostname)
 {
-  gint i;
+  gsize i;
 
   for (i = 0; hostname[i] && i < ((*result_len) - 1); i++)
     {
@@ -109,7 +109,7 @@ get_custom_domain()
 gchar *
 format_hostname(const gchar *hostname,gchar *domain,GlobalConfig *cfg)
 {
-  int length = 256;
+  gsize length = 256;
   gchar *result = g_malloc(length);
   strncpy(result,hostname,length - 1);
   if (cfg->use_fqdn)

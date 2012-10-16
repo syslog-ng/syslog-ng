@@ -597,7 +597,6 @@ release_ssl_transport(void *ssl_connect)
 static void*
 set_ssl_transport(int sock)
 {
-  int ret = 0;
   int err;
   SSL *ssl;
   if (NULL == (ssl = SSL_new(ssl_ctx)))

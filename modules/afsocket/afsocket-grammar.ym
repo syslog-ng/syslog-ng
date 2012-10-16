@@ -47,8 +47,6 @@
 
 static SocketOptions *last_sock_options;
 static gint last_addr_family = AF_INET;
-static gint def_tcp = 0;
-static guint32 proto_mask = 0xFFFFF0FF;
 
 #if ENABLE_SSL
 TLSContext *last_tls_context;

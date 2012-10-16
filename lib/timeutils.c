@@ -27,6 +27,7 @@
 #include "tls-support.h"
 #include "reloc.h"
 
+#include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
 

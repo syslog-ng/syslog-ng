@@ -35,6 +35,7 @@
 #include "tls-support.h"
 #include "scratch-buffers.h"
 #include "reloc.h"
+#include "compat.h"
 
 #include <sys/types.h>
 
@@ -409,8 +410,8 @@ main_loop_io_worker_job_start(MainLoopIOWorkerJob *self)
   main_loop_current_job = NULL;
 }
 
-void
-main_loop_external_thread_quit(void)
+gpointer
+main_loop_external_thread_quit(gpointer user_data)
 {
   main_loop_io_workers_running--;
   if (main_loop_io_workers_quit && main_loop_io_workers_running == 0)
@@ -418,6 +419,7 @@ main_loop_external_thread_quit(void)
       iv_task_register(&main_loop_io_workers_reenable_jobs_task);
       main_loop_io_workers_sync_func();
     }
+  return user_data;
 }
 
 void
@@ -701,7 +703,7 @@ main_loop_add_quit_callback_list_element(gpointer func, gpointer user_data)
 {
   Quit_Callback_Func *cfunc = g_new(Quit_Callback_Func,1);
 
-  cfunc->func = (Quit_Func*) func;
+  cfunc->func = func;
   cfunc->user_data = user_data;
 
   quit_callback_list = g_list_append(quit_callback_list, cfunc);

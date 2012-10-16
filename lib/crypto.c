@@ -40,7 +40,7 @@ static gboolean randfile_loaded;
 BB_CRYPTO_EXPORT;
 
 static void
-ssl_locking_callback(int mode, int type, char *file, int line)
+ssl_locking_callback(int mode, int type, const char *file, int line)
 {
   if (mode & CRYPTO_LOCK)
     {
@@ -70,7 +70,7 @@ crypto_init_threading(void)
       g_static_mutex_init(&ssl_locks[i]);
     }
   CRYPTO_set_id_callback((unsigned long (*)(void)) ssl_thread_id);
-  CRYPTO_set_locking_callback((void (*)(int, int, char *, int)) ssl_locking_callback);
+  CRYPTO_set_locking_callback((void (*)(int, int, const char *, int)) ssl_locking_callback);
 }
 
 static void

@@ -35,7 +35,6 @@ testcase(gchar *message)
   LogMessage *cloned;
   LogMessage *msg;
   SerializeArchive *sa;
-  LogTemplate *template;
   PersistState *state;
 
   unlink("test_values.persist");
@@ -50,7 +49,7 @@ testcase(gchar *message)
   log_msg_create_rcptid(msg);
 
   /* Test that the counter starts from 1 */
-  TEST_ASSERT(msg->rcptid == 1,"%"G_GUINT64_FORMAT,msg->rcptid,1);
+  TEST_ASSERT(msg->rcptid == 1,"%"G_GUINT64_FORMAT, msg->rcptid, (guint64) 1);
 
   serialized = g_string_sized_new(0);
   sa = serialize_string_archive_new(serialized);
@@ -64,7 +63,7 @@ testcase(gchar *message)
   serialize_archive_free(sa);
 
   /* Test the serialization handle the rcptid */
-  TEST_ASSERT(cloned->rcptid == 1,"%"G_GUINT64_FORMAT,cloned->rcptid,1);
+  TEST_ASSERT(cloned->rcptid == 1,"%"G_GUINT64_FORMAT,cloned->rcptid, (guint64) 1);
 
   g_rcptidstate.g_rcptid=0x0000FFFFFFFFFFFE;
   log_msg_create_rcptid(msg);
@@ -89,7 +88,7 @@ testcase(gchar *message)
   log_msg_create_rcptid(msg);
 
   /* Test the counter overflow */
-  TEST_ASSERT(msg->rcptid == 1,"%"G_GUINT64_FORMAT,msg->rcptid,1);
+  TEST_ASSERT(msg->rcptid == 1,"%"G_GUINT64_FORMAT,msg->rcptid, (guint64) 1);
 
   log_template_format(rcptid_template,msg,NULL,0,0,NULL,serialized);
   /* Test the rcptid macro with valid value */
@@ -108,8 +107,6 @@ testcase(gchar *message)
 int
 main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 {
-  LogMessage *msg;
-  PersistState *state;
   GError *error = NULL;
 #if __hpux__
   return 0;

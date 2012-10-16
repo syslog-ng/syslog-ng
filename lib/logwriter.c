@@ -417,7 +417,6 @@ log_writer_update_watches(LogWriter *self)
 {
   gint fd;
   GIOCondition cond = 0;
-  gboolean partial_batch;
   gint timeout_msec = 0;
   gboolean prepare_result;
   gint idle_timeout = -1;

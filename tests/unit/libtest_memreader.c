@@ -60,7 +60,7 @@ LogTransport *log_transport_memory_new(gchar *read_buffer, guint32 read_buffer_l
   return &self->super;
 }
 
-LogReader *log_reader_new_memory_source(LogReaderOptions *options, guint32 read_buffer_length, LogReaderNotifyMethod notif, LogReaderQueueMethod queue, LogTransport **new_transport, gchar *prefix, gchar *garbage, GlobalConfig *cfg)
+LogReader *log_reader_new_memory_source(LogReaderOptions *options, guint32 read_buffer_length, LogReaderNotifyMethod notif, LogReaderQueueMethod queue, LogTransport **new_transport, const gchar *prefix, const gchar *garbage, GlobalConfig *cfg)
 {
   gchar *read_buffer = g_malloc0(read_buffer_length);
   LogProto *proto = NULL;
@@ -93,7 +93,7 @@ LogReader *log_reader_new_memory_source(LogReaderOptions *options, guint32 read_
   proto_options->super.flags = LPBS_IGNORE_EOF;
   proto = create_logproto("stream-newline",*new_transport,(LogProtoOptions *)proto_options);
   LogReader *reader = (LogReader*)log_reader_new(proto);
-  log_reader_set_options((LogPipe *)reader, (LogPipe *)reader, options, 0, SCS_FILE, "test","test_mem_queue", proto_options);
+  log_reader_set_options((LogPipe *)reader, (LogPipe *)reader, options, 0, SCS_FILE, "test","test_mem_queue", (LogProtoOptions *) proto_options);
   ((LogPipe *)reader)->queue = queue;
   ((LogPipe *)reader)->notify = notif;
   log_pipe_init((LogPipe *)reader, cfg);

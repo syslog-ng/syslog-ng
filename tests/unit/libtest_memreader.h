@@ -72,7 +72,7 @@ typedef void (*LogReaderNotifyMethod)(LogPipe *s, LogPipe *sender, gint notify_c
 typedef void (*LogReaderQueueMethod)(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data);
 
 LogTransport *log_transport_memory_new(gchar *read_buffer, guint32 read_buffer_length, gchar *write_buffer, guint32 write_buffer_length, guint flags);
-LogReader *log_reader_new_memory_source(LogReaderOptions *options, guint32 read_buffer_length, LogReaderNotifyMethod notif, LogReaderQueueMethod queue, LogTransport **new_transport, gchar *prefix, gchar *garbage, GlobalConfig *cfg);
+LogReader *log_reader_new_memory_source(LogReaderOptions *options, guint32 read_buffer_length, LogReaderNotifyMethod notif, LogReaderQueueMethod queue, LogTransport **new_transport, const gchar *prefix, const gchar *garbage, GlobalConfig *cfg);
 LogReader *log_reader_new_file_source(LogReaderOptions *options, guint32 read_buffer_length, LogReaderNotifyMethod notif, LogReaderQueueMethod queue, LogTransport **new_transport, GlobalConfig *cfg);
 void log_test_reader_add_message(LogTransport *transport, const gchar *msg, guint32 msg_size);
 
