@@ -46,12 +46,12 @@ gboolean
 log_source_ack(LogSource *self, gpointer user_data, gboolean need_to_save)
 {
   if (self->ack)
-    return self->ack(self,user_data, need_to_save);
+    return self->ack(self, user_data, need_to_save);
   return FALSE;
 }
 
 static gboolean
-log_source_checking_ack_data_list(LogSource *s, gpointer *d,guint64 *cont)
+log_source_checking_ack_data_list(LogSource *s, AckData **data,guint64 *cont)
 {
   guint64 last=s->last_sent;
   if (last>=s->options->init_window_size)
@@ -59,7 +59,7 @@ log_source_checking_ack_data_list(LogSource *s, gpointer *d,guint64 *cont)
   *cont = 0;
   while((!s->ack_list[last].super.not_acked)&&(s->ack_list[last].super.not_sent))
   {
-    *d = &(s->ack_list[last]);
+    *data = &(s->ack_list[last]);
     s->ack_list[last].super.not_sent = FALSE;
     (*cont)++;
     last++;
@@ -98,7 +98,7 @@ log_source_msg_ack(LogMessage *msg, gpointer user_data, gboolean need_pos_tracki
       msg_list_pos = msg->ack_id;
       self->ack_list[msg_list_pos].super.not_acked = FALSE;
 
-      if (log_source_checking_ack_data_list(self,(gpointer)&data,&continual))
+      if (log_source_checking_ack_data_list(self, &data, &continual))
         {
           log_source_ack(self,(gpointer)data, need_pos_tracking);
 
