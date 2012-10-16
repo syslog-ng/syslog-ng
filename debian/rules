@@ -182,8 +182,13 @@ override_dh_installlogcheck:
 # Slap it in the face, and tell it not to. We also do not need any
 # script modifications, as our single shared lib is in a private
 # directory.
+override_dh_makeshilbs: PKG_VERSION := $(shell dpkg-parsechangelog | grep '^Version:' | cut -d: -f2)
 override_dh_makeshlibs:
+ifeq (,$(filter syslog-ng-core,$(shell dh_listpackages)))
+	dh_makeshlibs -V "syslog-ng-core (= ${PKG_VERSION})" -n -Xusr/lib/syslog-ng/$(shell cat ${SRCDIR}/VERSION)
+else
 	dh_makeshlibs -n -Xusr/lib/syslog-ng/$(shell cat ${SRCDIR}/VERSION)
+endif
 
 # Compress the .debs with xz, it reduces the size of syslog-ng-core by
 # about 40%. Except, we don't compress the arch: all packages with it,
