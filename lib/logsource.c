@@ -90,7 +90,7 @@ log_source_msg_ack(LogMessage *msg, gpointer user_data, gboolean need_pos_tracki
   guint32 cur_ack_count, last_ack_count;
   if (self->options->flags & LOF_POS_TRACKING)
     {
-      AckData *data;
+      AckData *data = NULL;
       guint64 continual = 0;
       guint32 msg_list_pos;
 
