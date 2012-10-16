@@ -34,7 +34,7 @@ echo "** Cloning..."
 git clone -q git://git.madhouse-project.org/debian/syslog-ng.git
 cd syslog-ng
 git checkout "${UPSTREAM_TAG}"
-git submodule --quiet update --init
+git submodule --quiet update --init --recursive
 
 install -d debian/orig-source
 
@@ -58,6 +58,18 @@ git archive "${UPSTREAM_TAG}" --format tar --prefix=syslog-ng/ | \
 (
 	cd modules/afmongodb/libmongo-client
 	git archive HEAD --format tar --prefix=syslog-ng/modules/afmongodb/libmongo-client/
+) | tar -C debian/orig-source -xf -
+
+# embedded rabbitmq-c
+(
+        cd modules/afamqp/rabbitmq-c
+        git archive HEAD --format tar --prefix=syslog-ng/modules/afamqp/rabbitmq-c/
+) | tar -C debian/orig-source -xf -
+
+# embedded rabbitmq-c/codegen
+(
+        cd modules/afamqp/rabbitmq-c/codegen
+        git archive HEAD --format tar --prefix=syslog-ng/modules/afamqp/rabbitmq-c/codegen/
 ) | tar -C debian/orig-source -xf -
 
 ##
