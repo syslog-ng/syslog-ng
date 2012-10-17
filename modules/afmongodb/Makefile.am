@@ -30,5 +30,7 @@ install:
 uninstall:
 	$(MAKE) $(AM_MAKEFLAGS) uninstall-am
 
+if ENABLE_MONGODB
 check:
 	echo "Make check disabled, since it requires a newer glib"
+endif
