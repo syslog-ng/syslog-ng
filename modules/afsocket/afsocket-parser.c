@@ -73,7 +73,6 @@ static CfgLexerKeyword afsocket_keywords[] = {
   { "so_keepalive",       KW_SO_KEEPALIVE },
   { "tcp_keep_alive",     KW_SO_KEEPALIVE, 0, KWS_OBSOLETE, "so_keepalive" },
   { "spoof_source",       KW_SPOOF_SOURCE },
-  { "spoof_interface",    KW_SPOOF_IF },
   { "transport",          KW_TRANSPORT },
   { "max_connections",    KW_MAX_CONNECTIONS },
   { "keep_alive",         KW_KEEP_ALIVE },

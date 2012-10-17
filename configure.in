@@ -907,11 +907,11 @@ if test "x$enable_spoof_source" = "xauto"; then
         if test "x$LIBNET_LIBS" != "x"; then
                 enable_spoof_source=yes
                 AC_MSG_RESULT(yes)
-        else
-                enable_spoof_source=no
+    else
+        enable_spoof_source=no
                 LIBNET_LIBS=
-                LIBNET_CFLAGS=
-                AC_MSG_RESULT(no)
+        LIBNET_CFLAGS=
+        AC_MSG_RESULT(no)
         fi
 elif test "x$enable_spoof_source" != "xyes"; then
     LIBNET_CFLAGS=""
@@ -919,11 +919,6 @@ elif test "x$enable_spoof_source" != "xyes"; then
     enable_spoof_source=no
 fi
 
-if test "x$enable_spoof_source" = "xyes"; then
-    if test $IS_WINDOWS -ne 0; then
-        LIBNET_LIBS="$LIBNET_LIBS -lwpcap"
-    fi
-fi
 dnl ***************************************************************************
 dnl ivykis headers/libraries
 dnl ***************************************************************************
