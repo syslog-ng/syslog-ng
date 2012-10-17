@@ -17,7 +17,3 @@ libivykis
 libivykis-dev
 libpcre3-dev
 libpcre3
-libwinpcap
-libwinpcap-dev
-libnet1
-libnet1-dev
