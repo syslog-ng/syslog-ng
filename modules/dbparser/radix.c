@@ -208,6 +208,66 @@ r_parser_set(guint8 *str, gint *len, const gchar *param, gpointer state, RParser
   return FALSE;
 }
 
+
+gboolean
+r_parser_email(guint8 *str, gint *len, const gchar *param, gpointer state, RParserMatch *match)
+{
+  gint end;
+  int count = 0;
+
+  gchar *email = "!#$%&'*+-/=?^_`{|}~.";
+
+  *len = 0;
+
+  if (param)
+    while (strchr(param, str[*len]))
+      (*len)++;
+
+  match->ofs = *len;
+
+  /* first character of e-mail can not be a period */
+  if (str[*len] == '.')
+    return FALSE;
+
+  while (g_ascii_isalnum(str[*len]) || (strchr(email, str[*len])))
+    (*len)++;
+  /* last character of e-mail can not be a period */
+  if (str[*len-1] == '.')
+    return FALSE;
+
+  if (str[*len] == '@' )
+    (*len)++;
+  else
+    return FALSE;
+
+  /* Be accepting of any hostnames - if they are in the logs, they
+     probably were in the DNS */
+  while (g_ascii_isalnum(str[*len]) || (str[*len] == '-' ))
+    {
+      (*len)++;
+      count++;
+      while (g_ascii_isalnum(str[*len]) || (str[*len] == '-' ))
+        (*len)++;
+
+      if (str[*len] == '.')
+        (*len)++;
+    }
+  if (count < 2)
+    return FALSE;
+
+  end = *len;
+  if (param)
+    while (strchr(param, str[*len]))
+      (*len)++;
+
+  if (match)
+    match->len = end - *len - match->ofs;
+
+  if (*len > 0)
+    return TRUE;
+  return FALSE;
+}
+
 gboolean
 r_parser_ipv4(guint8 *str, gint *len, const gchar *param, gpointer state, RParserMatch *match)
 {
@@ -539,6 +599,11 @@ r_new_pnode(guint8 *key)
                      evt_tag_str("type", params[0]), NULL);
           parser_node = NULL;
         }
+    }
+  else if (strcmp(params[0], "EMAIL") == 0)
+    {
+      parser_node->parse = r_parser_email;
+      parser_node->type = RPT_EMAIL;
     }
   else if (g_str_has_prefix(params[0], "QSTRING"))
     {

@@ -350,6 +350,7 @@ test_matches(void)
   insert_node(root, "zzz @ESTRING:test:gép@");
   insert_node(root, "ggg @SET:set: 	@");
   insert_node(root, "iii @MACADDR:macaddr@");
+  insert_node(root, "hhh @EMAIL:email:[<]>@");
 
 #if ENABLE_PCRE
   insert_node(root, "jjj @PCRE:regexp:[abc]+@");
@@ -631,6 +632,10 @@ test_matches(void)
   test_search_matches(root, "jjj abcabcd", "regexp", "abcabc", NULL);
   test_search_matches(root, "jjjj abcabcd foobar", "regexp", "abcabc", NULL);
 #endif
+  test_search_matches(root, "hhh blint@balabit.hu","email", "blint@balabit.hu", NULL);
+  test_search_matches(root, "hhh <blint@balabit.hu>","email", "blint@balabit.hu", NULL);
+  test_search_matches(root, "hhh [blint@balabit.hu]","email", "blint@balabit.hu", NULL);
+
   test_search_matches(root, "zzz árvíztűrőtükörfúrógép", "test", "árvíztűrőtükörfúró", NULL);
 
   r_free_node(root, NULL);
