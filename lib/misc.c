@@ -793,7 +793,7 @@ data_to_hex_string(guint8 *data, guint32 length)
   if (!length)
     return NULL;
 
-  string = (gchar *)g_malloc0(sizeof(gchar)*length*3);
+  string = (gchar *)g_malloc0(sizeof(gchar)*length*3 + 1);
 
   pstr = string;
 
@@ -810,6 +810,7 @@ data_to_hex_string(guint8 *data, guint32 length)
       pstr++;
       *pstr = hex_char[tdata[i] & 0x0F];
     }
-
+  pstr++;
+  *pstr = '\0';
   return string;
 }

@@ -1481,7 +1481,6 @@ AC_OUTPUT(dist.conf
           modules/agent-config/tests/func/Makefile
           modules/eventlog/Makefile
           modules/eventlog/tests/Makefile
-          modules/eventlog/tests/unit/Makefile
 
 dnl PE modules
 	modules/license/Makefile
