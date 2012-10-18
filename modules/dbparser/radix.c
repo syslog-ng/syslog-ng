@@ -269,6 +269,30 @@ r_parser_email(guint8 *str, gint *len, const gchar *param, gpointer state, RPars
 }
 
 gboolean
+r_parser_hostname(guint8 *str, gint *len, const gchar *param, gpointer state, RParserMatch *match)
+{
+  int count = 0;
+
+  *len = 0;
+
+  while (g_ascii_isalnum(str[*len]) || (str[*len] == '-' ))
+    {
+      (*len)++;
+      count++;
+      while (g_ascii_isalnum(str[*len]) || (str[*len] == '-' ))
+        (*len)++;
+
+      if (str[*len] == '.')
+        (*len)++;
+
+    }
+  if (count < 2)
+      return FALSE;
+
+  return TRUE;
+}
+
+gboolean
 r_parser_ipv4(guint8 *str, gint *len, const gchar *param, gpointer state, RParserMatch *match)
 {
   gint dots = 0;
@@ -604,6 +628,11 @@ r_new_pnode(guint8 *key)
     {
       parser_node->parse = r_parser_email;
       parser_node->type = RPT_EMAIL;
+    }
+  else if (strcmp(params[0], "HOSTNAME") == 0)
+    {
+      parser_node->parse = r_parser_hostname;
+      parser_node->type = RPT_HOSTNAME;
     }
   else if (g_str_has_prefix(params[0], "QSTRING"))
     {
