@@ -45,6 +45,7 @@ typedef struct
   LogTemplate *routing_key_template;
   LogTemplate *body_template;
 
+  gboolean declare;
   gint persistent;
 
   gchar *vhost;
@@ -135,6 +136,14 @@ afamqp_dd_set_exchange(LogDriver *d, const gchar *exchange)
 
   g_free(self->exchange);
   self->exchange = g_strdup(exchange);
+}
+
+void
+afamqp_dd_set_exchange_declare(LogDriver *d, gboolean declare)
+{
+  AMQPDestDriver *self = (AMQPDestDriver *) d;
+
+  self->declare = declare;
 }
 
 void
@@ -343,11 +352,15 @@ afamqp_dd_connect(AMQPDestDriver *self, gboolean reconnect)
   if (!afamqp_is_ok(self, "Error during AMQP channel open", ret))
     return FALSE;
 
-  amqp_exchange_declare(self->conn, 1, amqp_cstring_bytes(self->exchange),
-                        amqp_cstring_bytes(self->exchange_type), 0, 0, amqp_empty_table);
-  ret = amqp_get_rpc_reply(self->conn);
-  if (!afamqp_is_ok(self, "Error during AMQP exchange declaration", ret))
-    return FALSE;
+  if (self->declare)
+    {
+      amqp_exchange_declare(self->conn, 1, amqp_cstring_bytes(self->exchange),
+                            amqp_cstring_bytes(self->exchange_type), 0, 0,
+                            amqp_empty_table);
+      ret = amqp_get_rpc_reply(self->conn);
+      if (!afamqp_is_ok(self, "Error during AMQP exchange declaration", ret))
+        return FALSE;
+    }
 
   msg_debug ("Connecting to AMQP succeeded",
              evt_tag_str("driver", self->super.super.id),
@@ -699,6 +712,7 @@ afamqp_dd_new(void)
   afamqp_dd_set_exchange_type((LogDriver *) self, "fanout");
   afamqp_dd_set_routing_key((LogDriver *) self, "");
   afamqp_dd_set_persistent((LogDriver *) self, TRUE);
+  afamqp_dd_set_exchange_declare((LogDriver *) self, FALSE);
 
   init_sequence_number(&self->seq_num);
 

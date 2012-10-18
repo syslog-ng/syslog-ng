@@ -33,6 +33,7 @@ LogDriver *afamqp_dd_new(void);
 void afamqp_dd_set_host(LogDriver *d, const gchar *host);
 void afamqp_dd_set_port(LogDriver *d, gint port);
 void afamqp_dd_set_exchange(LogDriver *d, const gchar *database);
+void afamqp_dd_set_exchange_declare(LogDriver *d, gboolean declare);
 void afamqp_dd_set_exchange_type(LogDriver *d, const gchar *exchange_type);
 void afamqp_dd_set_vhost(LogDriver *d, const gchar *vhost);
 void afamqp_dd_set_routing_key(LogDriver *d, const gchar *routing_key);

@@ -35,6 +35,7 @@ static CfgLexerKeyword afamqp_keywords[] = {
   { "host",			KW_HOST },
   { "port",			KW_PORT },
   { "exchange",			KW_EXCHANGE },
+  { "exchange_declare",		KW_EXCHANGE_DECLARE },
   { "exchange_type",		KW_EXCHANGE_TYPE },
   { "routing_key",		KW_ROUTING_KEY },
   { "persistent",		KW_PERSISTENT },
