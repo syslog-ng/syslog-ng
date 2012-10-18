@@ -29,7 +29,9 @@
 
 %code {
 
-#include "affile.h"
+#include "affile-common.h"
+#include "affile-source.h"
+#include "affile-dest.h"
 #include "cfg-parser.h"
 #include "affile-grammar.h"
 #include "syslog-names.h"

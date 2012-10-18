@@ -20,37 +20,30 @@
  * COPYING for details.
  *
  */
+  
+#ifndef AFFILE_SOURCE_H_INCLUDED
+#define AFFILE_SOURCE_H_INCLUDED
 
 #include "driver.h"
-#include "cfg-parser.h"
-#include "affile-grammar.h"
+#include "logreader.h"
+#include "file-perms.h"
 
-extern int affile_debug;
-
-int affile_parse(CfgLexer *lexer, LogDriver **instance, gpointer arg);
-
-static CfgLexerKeyword affile_keywords[] = {
-  { "file",               KW_FILE },
-  { "fifo",               KW_PIPE },
-  { "pipe",               KW_PIPE },
-
-  { "fsync",              KW_FSYNC },
-  { "remove_if_older",    KW_OVERWRITE_IF_OLDER, 0, KWS_OBSOLETE, "overwrite_if_older" },
-  { "overwrite_if_older", KW_OVERWRITE_IF_OLDER },
-  { "follow_freq",        KW_FOLLOW_FREQ,  },
-
-  { NULL }
-};
-
-CfgParser affile_parser =
+typedef struct _AFFileSourceDriver
 {
-#if ENABLE_DEBUG
-  .debug_flag = &affile_debug,
-#endif
-  .name = "affile",
-  .keywords = affile_keywords,
-  .parse = (gint (*)(CfgLexer *, gpointer *, gpointer)) affile_parse,
-  .cleanup = (void (*)(gpointer)) log_pipe_unref,
-};
+  LogSrcDriver super;
+  GString *filename;
+  /* FIXME: the code assumes that reader is a LogReader at a lot of places, so this should be changed to LogReader */
+  LogPipe *reader;
+  LogReaderOptions reader_options;
+  FilePermOptions file_perm_options;
+  gint pad_size;
+  guint32 flags;
+  /* state information to follow a set of files using a wildcard expression */
+} AFFileSourceDriver;
 
-CFG_PARSER_IMPLEMENT_LEXER_BINDING(affile_, LogDriver **)
+LogDriver *affile_sd_new(gchar *filename, guint32 flags);
+void affile_sd_set_recursion(LogDriver *s, const gint recursion);
+void affile_sd_set_pri_level(LogDriver *s, const gint16 severity);
+void affile_sd_set_pri_facility(LogDriver *s, const gint16 facility);
+
+#endif

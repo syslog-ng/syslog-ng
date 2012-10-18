@@ -21,38 +21,12 @@
  *
  */
   
-#ifndef SDFILE_H_INCLUDED
-#define SDFILE_H_INCLUDED
+#ifndef AFFILE_DEST_H_INCLUDED
+#define AFFILE_DEST_H_INCLUDED
 
 #include "driver.h"
-#include "logreader.h"
 #include "logwriter.h"
 #include "file-perms.h"
-
-#define AFFILE_PIPE        0x00000001
-#define AFFILE_NO_EXPAND   0x00000002
-#define AFFILE_TMPL_ESCAPE 0x00000004
-#define AFFILE_CREATE_DIRS 0x00000008
-#define AFFILE_FSYNC       0x00000010
-#define AFFILE_PRIVILEGED  0x00000020
-
-typedef struct _AFFileSourceDriver
-{
-  LogSrcDriver super;
-  GString *filename;
-  /* FIXME: the code assumes that reader is a LogReader at a lot of places, so this should be changed to LogReader */
-  LogPipe *reader;
-  LogReaderOptions reader_options;
-  FilePermOptions file_perm_options;
-  gint pad_size;
-  guint32 flags;
-  /* state information to follow a set of files using a wildcard expression */
-} AFFileSourceDriver;
-
-LogDriver *affile_sd_new(gchar *filename, guint32 flags);
-void affile_sd_set_recursion(LogDriver *s, const gint recursion);
-void affile_sd_set_pri_level(LogDriver *s, const gint16 severity);
-void affile_sd_set_pri_facility(LogDriver *s, const gint16 facility);
 
 typedef struct _AFFileDestWriter AFFileDestWriter;
 

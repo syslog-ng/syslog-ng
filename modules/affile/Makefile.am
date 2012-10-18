@@ -6,7 +6,9 @@ module_LTLIBRARIES := libaffile.la
 libaffile_la_SOURCES =					\
 	logproto-linux-proc-kmsg-reader.h		\
 	logproto-file-writer.c logproto-file-writer.h	\
-	affile.c affile.h				\
+	affile-common.c affile-common.h			\
+	affile-source.c affile-source.h			\
+	affile-dest.c affile-dest.h			\
 	affile-grammar.y				\
 	affile-parser.c affile-parser.h			\
 	affile-plugin.c
