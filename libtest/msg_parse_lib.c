@@ -27,8 +27,9 @@ void
 assert_log_message_value(LogMessage *self, NVHandle handle, const gchar *expected_value)
 {
   gssize key_name_length;
+  gssize value_len;
   const gchar *key_name = log_msg_get_value_name(handle, &key_name_length);
-  const gchar *actual_value = log_msg_get_value(self, handle, NULL);
+  const gchar *actual_value = log_msg_get_value(self, handle, &value_len);
 
   assert_string(actual_value, expected_value, "Value is not expected for key %s", key_name);
 }
