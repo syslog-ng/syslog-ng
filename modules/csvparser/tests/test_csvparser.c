@@ -93,7 +93,7 @@ testcase(gchar *msg, guint parse_flags, gint max_columns, guint32 flags, gchar *
     log_csv_parser_set_null_value(p, null_value);
 
   nvtable = nv_table_ref(logmsg->payload);
-  success = log_parser_process(&p->super, &logmsg, NULL, log_msg_get_value(logmsg, LM_V_MESSAGE, NULL));
+  success = log_parser_process(&p->super, &logmsg, NULL, log_msg_get_value(logmsg, LM_V_MESSAGE, NULL), -1);
   nv_table_unref(nvtable);
 
   if (success && !first_value)

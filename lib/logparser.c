@@ -47,6 +47,8 @@ log_parser_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
   if (G_LIKELY(!self->template))
     {
       NVTable *payload = nv_table_ref(msg->payload);
+      const gchar *value;
+      gssize value_len;
 
       /* NOTE: the process function may set values in the LogMessage
        * instance, which in turn can trigger nv_table_realloc() to be
@@ -57,7 +59,8 @@ log_parser_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
        * LM_V_MESSAGE pointer we pass to process() go stale.
        */
 
-      success = self->process(self, &msg, path_options, log_msg_get_value(msg, LM_V_MESSAGE, NULL));
+      value = log_msg_get_value(msg, LM_V_MESSAGE, &value_len);
+      success = self->process(self, &msg, path_options, value, value_len);
       nv_table_unref(payload);
     }
   else
@@ -65,7 +68,7 @@ log_parser_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
       GString *input = g_string_sized_new(256);
       
       log_template_format(self->template, msg, NULL, LTZ_LOCAL, 0, NULL, input);
-      success = self->process(self, &msg, path_options, input->str);
+      success = self->process(self, &msg, path_options, input->str, input->len);
       g_string_free(input, TRUE);
     }
   msg_debug("Message parsing complete",

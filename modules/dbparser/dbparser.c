@@ -190,7 +190,7 @@ log_db_parser_deinit(LogPipe *s)
 }
 
 static gboolean
-log_db_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, const char *input)
+log_db_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, const char *input, gsize input_len)
 {
   LogDBParser *self = (LogDBParser *) s;
 

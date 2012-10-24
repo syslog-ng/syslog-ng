@@ -107,7 +107,7 @@ log_csv_parser_set_null_value(LogColumnParser *s, const gchar *null_value)
 }
 
 static gboolean
-log_csv_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, const gchar *input)
+log_csv_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, const gchar *input, gsize input_len)
 {
   LogCSVParser *self = (LogCSVParser *) s;
   const gchar *src;
