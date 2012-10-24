@@ -31,11 +31,10 @@
 
 #include "csvparser.h"
 #include "cfg-parser.h"
+#include "cfg-grammar.h"
 #include "csvparser-grammar.h"
 #include "syslog-names.h"
 #include "messages.h"
-
-extern LogParser *last_parser;
 
 }
 
@@ -73,23 +72,6 @@ parser_expr_csv
           ')'					{ $$ = last_parser; }
         ;
 
-parser_column_opt
-        : parser_opt
-        | KW_COLUMNS '(' string_list ')'        { log_column_parser_set_columns((LogColumnParser *) last_parser, $3); }
-        ;
-
-parser_opt
-        : KW_TEMPLATE '(' string ')'            {
-                                                  LogTemplate *template;
-                                                  GError *error = NULL;
-
-						  template = cfg_tree_check_inline_template(&configuration->tree, $3, &error);
-                                                  CHECK_ERROR(template != NULL, @3, "Error compiling template (%s)", error->message);
-                                                  log_parser_set_template(last_parser, template);
-                                                  free($3);
-                                                }
-        ;
-
 
 parser_csv_opts
         : parser_csv_opt parser_csv_opts
@@ -97,12 +79,12 @@ parser_csv_opts
         ;
 
 parser_csv_opt
-        : parser_column_opt
-        | KW_FLAGS '(' parser_csv_flags ')'     { log_csv_parser_set_flags((LogColumnParser *) last_parser, $3); }
+        : KW_FLAGS '(' parser_csv_flags ')'     { log_csv_parser_set_flags((LogColumnParser *) last_parser, $3); }
         | KW_DELIMITERS '(' string ')'          { log_csv_parser_set_delimiters((LogColumnParser *) last_parser, $3); free($3); }
         | KW_QUOTES '(' string ')'              { log_csv_parser_set_quotes((LogColumnParser *) last_parser, $3); free($3); }
         | KW_QUOTE_PAIRS '(' string ')'         { log_csv_parser_set_quote_pairs((LogColumnParser *) last_parser, $3); free($3); }
         | KW_NULL '(' string ')'                { log_csv_parser_set_null_value((LogColumnParser *) last_parser, $3); free($3); }
+        | parser_column_opt
         ;
 
 parser_csv_flags

@@ -48,6 +48,7 @@ extern struct _LogWriterOptions *last_writer_options;
 extern struct _FilePermOptions *last_file_perm_options;
 extern struct _MsgFormatOptions *last_msg_format_options;
 extern struct _LogDriver *last_driver;
+extern struct _LogParser *last_parser;
 
 }
 
@@ -333,6 +334,7 @@ extern struct _LogDriver *last_driver;
 #include "cfg-grammar.h"
 
 LogDriver *last_driver;
+LogParser *last_parser;
 LogSourceOptions *last_source_options;
 LogProtoServerOptions *last_proto_server_options;
 LogReaderOptions *last_reader_options;
@@ -888,6 +890,22 @@ regexp_option_flags
         |                                       { $$ = 0; }
         ;
 
+parser_opt
+        : KW_TEMPLATE '(' string ')'            {
+                                                  LogTemplate *template;
+                                                  GError *error = NULL;
+
+                                                  template = cfg_tree_check_inline_template(&configuration->tree, $3, &error);
+                                                  CHECK_ERROR(template != NULL, @3, "Error compiling template (%s)", error->message);
+                                                  log_parser_set_template(last_parser, template);
+                                                  free($3);
+                                                }
+        ;
+
+parser_column_opt
+        : parser_opt
+        | KW_COLUMNS '(' string_list ')'        { log_column_parser_set_columns((LogColumnParser *) last_parser, $3); }
+        ;
 
 /* LogSource related options */
 source_option
