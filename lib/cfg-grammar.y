@@ -46,6 +46,7 @@ extern struct _LogReaderOptions *last_reader_options;
 extern struct _LogProtoServerOptions *last_proto_server_options;
 extern struct _LogWriterOptions *last_writer_options;
 extern struct _FilePermOptions *last_file_perm_options;
+extern struct _MsgFormatOptions *last_msg_format_options;
 extern struct _LogDriver *last_driver;
 
 }
@@ -336,6 +337,7 @@ LogSourceOptions *last_source_options;
 LogProtoServerOptions *last_proto_server_options;
 LogReaderOptions *last_reader_options;
 LogWriterOptions *last_writer_options;
+MsgFormatOptions *last_msg_format_options;
 FilePermOptions *last_file_perm_options;
 LogTemplate *last_template;
 CfgArgs *last_block_args;
@@ -913,29 +915,34 @@ source_reader_options
 	: source_reader_option source_reader_options
 	;
 
+msg_format_option
+	: KW_TIME_ZONE '(' string ')'		{ last_msg_format_options->recv_time_zone = g_strdup($3); free($3); }
+	| KW_DEFAULT_LEVEL '(' level_string ')'
+	  {
+	    if (last_msg_format_options->default_pri == 0xFFFF)
+	      last_msg_format_options->default_pri = LOG_USER;
+	    last_msg_format_options->default_pri = (last_msg_format_options->default_pri & ~7) | $3;
+          }
+	| KW_DEFAULT_FACILITY '(' facility_string ')'
+	  {
+	    if (last_msg_format_options->default_pri == 0xFFFF)
+	      last_msg_format_options->default_pri = LOG_NOTICE;
+	    last_msg_format_options->default_pri = (last_msg_format_options->default_pri & 7) | $3;
+          }
+        ;
+
+
 /* LogReader related options, inherits from LogSource */
 source_reader_option
         /* NOTE: plugins need to set "last_reader_options" in order to incorporate this rule in their grammar */
 
-	: KW_TIME_ZONE '(' string ')'		{ last_reader_options->parse_options.recv_time_zone = g_strdup($3); free($3); }
-	| KW_CHECK_HOSTNAME '(' yesno ')'	{ last_reader_options->check_hostname = $3; }
+	: KW_CHECK_HOSTNAME '(' yesno ')'	{ last_reader_options->check_hostname = $3; }
 	| KW_FLAGS '(' source_reader_option_flags ')'
 	| KW_LOG_FETCH_LIMIT '(' LL_NUMBER ')'	{ last_reader_options->fetch_limit = $3; }
         | KW_FORMAT '(' string ')'              { last_reader_options->parse_options.format = g_strdup($3); free($3); }
-	| KW_DEFAULT_LEVEL '(' level_string ')'
-	  {
-	    if (last_reader_options->parse_options.default_pri == 0xFFFF)
-	      last_reader_options->parse_options.default_pri = LOG_USER;
-	    last_reader_options->parse_options.default_pri = (last_reader_options->parse_options.default_pri & ~7) | $3;
-          }
-	| KW_DEFAULT_FACILITY '(' facility_string ')'
-	  {
-	    if (last_reader_options->parse_options.default_pri == 0xFFFF)
-	      last_reader_options->parse_options.default_pri = LOG_NOTICE;
-	    last_reader_options->parse_options.default_pri = (last_reader_options->parse_options.default_pri & 7) | $3;
-          }
         | { last_source_options = &last_reader_options->super; } source_option
         | { last_proto_server_options = &last_reader_options->proto_options.super; } source_proto_option
+        | { last_msg_format_options = &last_reader_options->parse_options; } msg_format_option
 	;
 
 source_reader_option_flags
