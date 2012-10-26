@@ -889,18 +889,7 @@ log_reader_options_destroy(LogReaderOptions *options)
 
 CfgFlagHandler log_reader_flag_handlers[] =
 {
-  /* LogParseOptions */
   /* NOTE: underscores are automatically converted to dashes */
-  { "no-parse",                   CFH_SET, offsetof(LogReaderOptions, parse_options.flags), LP_NOPARSE },
-  { "check-hostname",             CFH_SET, offsetof(LogReaderOptions, parse_options.flags), LP_CHECK_HOSTNAME },
-  { "syslog-protocol",            CFH_SET, offsetof(LogReaderOptions, parse_options.flags), LP_SYSLOG_PROTOCOL },
-  { "assume-utf8",                CFH_SET, offsetof(LogReaderOptions, parse_options.flags), LP_ASSUME_UTF8 },
-  { "validate-utf8",              CFH_SET, offsetof(LogReaderOptions, parse_options.flags), LP_VALIDATE_UTF8 },
-  { "no-multi-line",              CFH_SET, offsetof(LogReaderOptions, parse_options.flags), LP_NO_MULTI_LINE },
-  { "store-legacy-msghdr",        CFH_SET, offsetof(LogReaderOptions, parse_options.flags), LP_STORE_LEGACY_MSGHDR },
-  { "dont-store-legacy-msghdr", CFH_CLEAR, offsetof(LogReaderOptions, parse_options.flags), LP_STORE_LEGACY_MSGHDR },
-  { "expect-hostname",            CFH_SET, offsetof(LogReaderOptions, parse_options.flags), LP_EXPECT_HOSTNAME },
-  { "no-hostname",              CFH_CLEAR, offsetof(LogReaderOptions, parse_options.flags), LP_EXPECT_HOSTNAME },
 
   /* LogReaderOptions */
   { "kernel",                     CFH_SET, offsetof(LogReaderOptions, flags),               LR_KERNEL },
@@ -912,5 +901,7 @@ CfgFlagHandler log_reader_flag_handlers[] =
 gboolean
 log_reader_options_process_flag(LogReaderOptions *options, gchar *flag)
 {
-  return cfg_process_flag(log_reader_flag_handlers, options, flag);
+  if (!msg_format_options_process_flag(&options->parse_options, flag))
+    return cfg_process_flag(log_reader_flag_handlers, options, flag);
+  return TRUE;
 }
