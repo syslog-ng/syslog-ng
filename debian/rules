@@ -185,7 +185,7 @@ override_dh_installlogcheck:
 # anything that build-depends on syslog-ng-dev, so lets make a correct
 # shlibs file for that, shall we?
 override_dh_makeshlibs:
-ifeq (,$(filter syslog-ng-dev,$(shell dh_listpackages)))
+ifeq (,$(filter syslog-ng-core,$(shell dh_listpackages)))
 	dh_makeshlibs -V "syslog-ng-core (= $(shell dpkg-parsechangelog | grep '^Version:' | cut -d: -f2))" -n -Xusr/lib/syslog-ng/$(shell cat ${SRCDIR}/VERSION)
 else
 	dh_makeshlibs -n -Xusr/lib/syslog-ng/$(shell cat ${SRCDIR}/VERSION)
