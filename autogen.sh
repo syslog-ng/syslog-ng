@@ -10,10 +10,10 @@ autogen_submodules()
 {
 	origdir=`pwd`
 
-	submod_initialized=0
+	submod_initialized=1
 	for submod in $SUBMODULES; do
-		if [ -f $submod/configure.gnu ]; then
-			submod_initialized=1
+		if [ ! -f $submod/configure.gnu ]; then
+			submod_initialized=0
 		fi
 	done
 
