@@ -20,6 +20,7 @@ Build-Depends: debhelper (>= 9~),
 	       libpcre3-dev,
 	       libcap-dev [linux-any],
 	       libsystemd-daemon-dev [linux-any],
+               libgeoip-dev,
 	       hardening-includes,
                python
 Build-Conflicts: autoconf2.13
@@ -221,3 +222,26 @@ Description: Next generation system logging daemon (AMQP plugin)
  .
  This package provides the AMQP destination plugin, which allows one
  to publish log messages through the AMQP protocol.
+
+Package: syslog-ng-mod-geoip
+Architecture: any
+Multi-Arch: foreign
+Depends: syslog-ng-core (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
+Recommends: geoip-database
+Description: Next generation system logging daemon (GeoIP plugin)
+ syslog-ng is an enhanced syslog daemon, supporting, amongst others:
+  * Powerful configurability, while still being readable
+  * Filtering on any part of the syslog message
+  * Support for both legacy BSD and the new syslog protocol
+  * Wide range of source and destination drivers, including TCP
+    (plain, or over SSL/TLS), UDP, SQL, MongoDB
+  * Also supports fine-grained output format control
+  * Multi-threaded operation
+ .
+ The wide range of plugins make syslog-ng able to perform well in
+ every situation, ranging from enterprise-class centralised
+ deployments, through personal computers to ad-hoc connected networks.
+ .
+ This package provides the GeoIP template function plugin, which
+ allows one to do non-DNS IP-to-country resolving from syslog-ng
+ templates.
