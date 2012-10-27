@@ -230,7 +230,11 @@ afstreams_sd_deinit(LogPipe *s)
   AFStreamsSourceDriver *self = (AFStreamsSourceDriver *) s;
 
   if (self->reader)
-    log_pipe_deinit(self->reader);
+    {
+      log_pipe_deinit(self->reader);
+      log_pipe_unref(self->reader);
+      self->reader = NULL;
+    }
   if (self->door_fd != -1)
     {
       door_revoke(self->door_fd);
