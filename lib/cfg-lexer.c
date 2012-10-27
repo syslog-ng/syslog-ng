@@ -486,12 +486,15 @@ cfg_lexer_include_file_glob_at(CfgLexer *self, const gchar *pattern)
   int r;
   CfgIncludeLevel *level;
 
-  r = glob(pattern, 0, NULL, &globbuf);
+  r = glob(pattern, GLOB_NOMAGIC, NULL, &globbuf);
 
-  if (r == GLOB_NOMATCH)
-    return FALSE;
   if (r != 0)
-    return TRUE;
+    {
+      globfree(&globbuf);
+      if (r == GLOB_NOMATCH)
+        return FALSE;
+      return TRUE;
+    }
 
   self->include_depth++;
   level = &self->include_stack[self->include_depth];
