@@ -76,18 +76,17 @@ log_transport_plain_read_method(LogTransport *s, gpointer buf, gsize buflen, GSo
             alarm_set(self->super.timeout);*/
           rc = read(self->super.fd, buf, buflen);
 #else
-	  if ((self->super.flags & LTF_SOCKET) != 0)
-	  {
-	    rc = recv(self->super.fd, buf, buflen, 0);
-	    if (rc == -1)
-              errno = getsockerror();
-	  }
-	  else
-	  {
-            rc = read(self->super.fd, buf, buflen);
-	  }
+           if ((self->super.flags & LTF_SOCKET) != 0)
+             {
+               rc = recv(self->super.fd, buf, buflen, 0);
+               if (rc == -1)
+                 errno = getsockerror();
+            }
+          else
+            {
+              rc = read(self->super.fd, buf, buflen);
+            }
 #endif
-          
           if (self->super.timeout > 0 && rc == -1 && errno == EINTR && alarm_has_fired())
             {
               msg_notice("Nonblocking read has blocked, returning with an error",
@@ -118,6 +117,10 @@ log_transport_plain_read_method(LogTransport *s, gpointer buf, gsize buflen, GSo
         {
           rc = recvfrom(self->super.fd, buf, buflen, 0, 
                         (struct sockaddr *) &sas, &salen);
+#ifdef _WIN32
+          if (rc == -1)
+            errno = getsockerror();
+#endif
         }
       while (rc == -1 && errno == EINTR);
       if (rc != -1 && salen && sa)
@@ -166,16 +169,16 @@ log_transport_plain_write_method(LogTransport *s, const gpointer buf, gsize bufl
 #ifndef _WIN32
           rc = write(self->super.fd, buf, buflen);
 #else
-	  if ((self->super.flags & LTF_SOCKET) != 0)
-	  {
-	    rc = send(self->super.fd, buf, buflen, 0);
-	    if (rc == -1)
-              errno = getsockerror();
-	  }
-	  else
-	  {
-            rc = write(self->super.fd, buf, buflen);
-	  }
+          if ((self->super.flags & LTF_SOCKET) != 0)
+             {
+              rc = send(self->super.fd, buf, buflen, 0);
+              if (rc == -1)
+                 errno = getsockerror();
+            }
+          else
+            {
+              rc = write(self->super.fd, buf, buflen);
+            }
 #endif
         }
 #ifdef __aix__
