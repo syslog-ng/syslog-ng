@@ -478,6 +478,20 @@ cfg_lexer_include_file_simple(CfgLexer *self, const gchar *filename)
   return FALSE;
 }
 
+static int
+_cfg_lexer_glob_err (const char *p, gint e)
+{
+  if (e != ENOENT)
+    {
+      msg_debug ("Error processing path for inclusion",
+                 evt_tag_str("path", p),
+                 evt_tag_errno("errno", e),
+                 NULL);
+      return -1;
+    }
+  return 0;
+}
+
 static gboolean
 cfg_lexer_include_file_glob_at(CfgLexer *self, const gchar *pattern)
 {
@@ -486,7 +500,7 @@ cfg_lexer_include_file_glob_at(CfgLexer *self, const gchar *pattern)
   int r;
   CfgIncludeLevel *level;
 
-  r = glob(pattern, GLOB_NOMAGIC, NULL, &globbuf);
+  r = glob(pattern, GLOB_NOMAGIC, _cfg_lexer_glob_err, &globbuf);
 
   if (r != 0)
     {
