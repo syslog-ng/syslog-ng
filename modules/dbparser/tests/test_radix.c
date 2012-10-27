@@ -352,6 +352,7 @@ test_matches(void)
   insert_node(root, "iii @MACADDR:macaddr@");
   insert_node(root, "hhh @EMAIL:email:[<]>@");
   insert_node(root, "kkk @HOSTNAME:hostname@");
+  insert_node(root, "lll @LLADDR:lladdr20:20@");
 
 #if ENABLE_PCRE
   insert_node(root, "jjj @PCRE:regexp:[abc]+@");
@@ -639,6 +640,9 @@ test_matches(void)
 
   test_search_matches(root, "kkk www.example.org", "hostname", "www.example.org", NULL);
   test_search_matches(root, "kkk www.example.org. kkk", "hostname", "www.example.org.", NULL);
+
+  test_search_matches(root, "lll 83:63:25:93:eb:51:aa:bb.iii", "lladdr20", "83:63:25:93:eb:51:aa", NULL);
+  test_search_matches(root, "lll 83:63:25:93:EB:51:aa:bb.iii", "lladdr20", "83:63:25:93:EB:51:aa", NULL);
 
   test_search_matches(root, "zzz árvíztűrőtükörfúrógép", "test", "árvíztűrőtükörfúró", NULL);
 

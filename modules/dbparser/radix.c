@@ -292,6 +292,63 @@ r_parser_hostname(guint8 *str, gint *len, const gchar *param, gpointer state, RP
   return TRUE;
 }
 
+static gboolean
+_r_parser_lladdr(guint8 *str, gint *len, gint count, gint parts, gpointer state, RParserMatch *match)
+{
+  gint i;
+  *len = 0;
+
+  for (i = 1; i <= parts; i++)
+    {
+      if (!g_ascii_isxdigit(str[*len]) && !g_ascii_isxdigit(str[*len + 1]))
+        {
+          return FALSE;
+        }
+      if (i < parts)
+        {
+          if (str[*len + 2] != ':')
+            return FALSE;
+          (*len) += 3;
+        }
+      else
+        (*len) += 2;
+    }
+
+  if (G_UNLIKELY(*len != count))
+    return FALSE;
+
+  return TRUE;
+}
+
+gboolean
+r_parser_lladdr(guint8 *str, gint *len, const gchar *param, gpointer state, RParserMatch *match)
+{
+  gint count, parts;
+
+  /* get the maximum octet count from the parameter */
+  if (param)
+    {
+      *len = 0;
+      count = 0;
+      while (g_ascii_isdigit(param[*len]))
+        {
+          count = count * 10 + g_ascii_digit_value(param[*len]);
+          (*len)++;
+        }
+    }
+  else
+    count = 20;
+  parts = (count - 1) / 3 + 1;
+
+  return _r_parser_lladdr(str, len, count, parts, state, match);
+}
+
+gboolean
+r_parser_macaddr(guint8 *str, gint *len, const gchar *param, gpointer state, RParserMatch *match)
+{
+  return _r_parser_lladdr(str, len, 17, 6, state, match);
+}
+
 gboolean
 r_parser_ipv4(guint8 *str, gint *len, const gchar *param, gpointer state, RParserMatch *match)
 {
@@ -410,34 +467,6 @@ gboolean
 r_parser_ip(guint8 *str, gint *len, const gchar *param, gpointer state, RParserMatch *match)
 {
   return r_parser_ipv4(str, len, param, state, match) || r_parser_ipv6(str, len, param, state, match);
-}
-
-gboolean
-r_parser_macaddr(guint8 *str, gint *len, const gchar *param, gpointer state, RParserMatch *match)
-{
-  gint i;
-  *len = 0;
-
-  for (i = 1; i <= 6; i++)
-    {
-      if (!g_ascii_isxdigit(str[*len]) && !g_ascii_isxdigit(str[*len+1]))
-        {
-          return FALSE;
-        }
-      if (i<6)
-        {
-          if (str[*len+2] != ':')
-            return FALSE;
-          (*len)+=3;
-        }
-      else
-        (*len)+=2;
-    }
-
-  if (G_UNLIKELY(*len == 16))
-    return FALSE;
-
-  return TRUE;
 }
 
 gboolean
@@ -633,6 +662,11 @@ r_new_pnode(guint8 *key)
     {
       parser_node->parse = r_parser_hostname;
       parser_node->type = RPT_HOSTNAME;
+    }
+  else if (strcmp(params[0], "LLADDR") == 0)
+    {
+      parser_node->parse = r_parser_lladdr;
+      parser_node->type = RPT_LLADDR;
     }
   else if (g_str_has_prefix(params[0], "QSTRING"))
     {
