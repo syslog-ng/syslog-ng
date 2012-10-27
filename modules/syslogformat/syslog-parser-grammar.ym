@@ -1,0 +1,90 @@
+/*
+ * Copyright (c) 2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2012 Balázs Scheidler
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
+%code top {
+#include "syslog-parser-parser.h"
+
+}
+
+
+%code {
+
+#include "syslog-parser.h"
+#include "syslog-names.h"
+#include "cfg-grammar.h"
+
+}
+
+%name-prefix "syslog_parser_"
+
+/* this parameter is needed in order to instruct bison to use a complete
+ * argument list for yylex/yyerror */
+
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {LogParser **instance}
+%parse-param {gpointer arg}
+
+/* INCLUDE_DECLS */
+
+%token KW_SYSLOG_PARSER
+
+%type	<ptr> parser_expr_syslog
+
+
+%%
+
+start
+        : LL_CONTEXT_PARSER parser_expr_syslog                  { YYACCEPT; }
+        ;
+
+
+parser_expr_syslog
+        : KW_SYSLOG_PARSER '('
+          {
+            last_parser = *instance = syslog_parser_new();
+          }
+          parser_syslog_opts
+          ')'					{ $$ = last_parser; }
+        ;
+
+
+parser_syslog_opts
+        : parser_syslog_opt parser_syslog_opts
+        |
+        ;
+
+parser_syslog_opt
+	: parser_opt
+	| KW_FLAGS '(' parser_syslog_opt_flags ')'
+	| { last_msg_format_options = &((SyslogParser *) last_parser)->parse_options; } msg_format_option
+        ;
+
+parser_syslog_opt_flags
+        : string parser_syslog_opt_flags     { CHECK_ERROR(msg_format_options_process_flag(&((SyslogParser *) last_parser)->parse_options, $1), @1, "Unknown flag %s", $1); free($1); }
+	|
+	;
+
+/* INCLUDE_RULES */
+
+%%

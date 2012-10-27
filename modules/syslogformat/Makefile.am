@@ -4,7 +4,14 @@ export top_srcdir
 
 module_LTLIBRARIES := libsyslogformat.la
 libsyslogformat_la_SOURCES = \
-	syslog-format.c syslog-format.h syslog-format-plugin.c
+	syslog-format.c		\
+	syslog-format.h		\
+	syslog-format-plugin.c	\
+	syslog-parser-grammar.y	\
+	syslog-parser-parser.c	\
+	syslog-parser-parser.h	\
+	syslog-parser.c
+
 
 libsyslogformat_la_CPPFLAGS = $(AM_CPPFLAGS)
 libsyslogformat_la_LIBADD = $(MODULE_DEPS_LIBS)

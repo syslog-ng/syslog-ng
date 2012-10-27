@@ -22,6 +22,7 @@
  */
 
 #include "syslog-format.h"
+#include "syslog-parser-parser.h"
 #include "messages.h"
 #include "plugin.h"
 
@@ -36,18 +37,25 @@ syslog_format_construct(Plugin *self, GlobalConfig *cfg, gint plugin_type, const
   return &syslog_handler;
 }
 
-static Plugin syslog_format_plugin =
+static Plugin syslog_format_plugins[] =
 {
-  .type = LL_CONTEXT_FORMAT,
-  .name = "syslog",
-  .construct = (gpointer (*)(Plugin *self, GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name)) syslog_format_construct,
+  {
+    .type = LL_CONTEXT_FORMAT,
+    .name = "syslog",
+    .construct = (gpointer (*)(Plugin *self, GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name)) syslog_format_construct,
+  },
+  {
+    .type = LL_CONTEXT_PARSER,
+    .name = "syslog-parser",
+    .parser = &syslog_parser_parser,
+  }
 };
 
 gboolean
 syslogformat_module_init(GlobalConfig *cfg, CfgArgs *args)
 {
   syslog_format_init();
-  plugin_register(cfg, &syslog_format_plugin, 1);
+  plugin_register(cfg, syslog_format_plugins, G_N_ELEMENTS(syslog_format_plugins));
   return TRUE;
 }
 
@@ -57,6 +65,6 @@ const ModuleInfo module_info =
   .version = VERSION,
   .description = "The syslogformat module provides support for parsing RFC3164 and RFC5424 format syslog messages.",
   .core_revision = SOURCE_REVISION,
-  .plugins = &syslog_format_plugin,
-  .plugins_len = 1,
+  .plugins = syslog_format_plugins,
+  .plugins_len = G_N_ELEMENTS(syslog_format_plugins),
 };
