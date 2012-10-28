@@ -8,11 +8,8 @@ syslog-ng (3.4.0~alpha3+sandbox+20121027-1~mhp1) unstable; urgency=low
   * Tighten the dependency of the modules on syslog-ng-core.
   * Instead of installing systemd service file symlinks, install a
     conffile, that includes the real service file. (Closes: #690067)
-  * Route syslog-ng internal messages to /var/log/syslog-ng.log in the
-    default config, to avoid filters (and thus, a self-DoS when debugging
-    is enabled via syslog-ng-ctl).
 
- -- Gergely Nagy <algernon@madhouse-project.org>  Tue, 16 Oct 2012 20:40:28 +0200
+ -- Gergely Nagy <algernon@madhouse-project.org>  Sun, 28 Oct 2012 15:47:21 +0100
 
 syslog-ng (3.4.0~alpha3+sandbox+133-1~mhp1) unstable; urgency=low
 
