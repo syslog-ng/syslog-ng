@@ -1,12 +1,25 @@
-3.3.6.91 (3.3.7 RC2)
-        Mon, 08 Oct 2012 13:00:00 +0200
+3.3.7
+        Wed, 31 Oct 2012 10:00:00 +0200
+
+        Highlights
+        ==========
+
+        This release is a bug-fix release, correcting a handful of
+        issues discovered after the previous version was tagged.
 
         Bugfixes
         ========
 
-        * The bundled ivykis has been updated, the new version
-          contains a workaround for an issue specific to FreeBSD 9
-          only.
+        * The bundled ivykis has been updated, fixing the following
+        issues:
+
+          * Fixed a Solaris-specific issue relating to TCP sources
+            [#190]
+
+          * Fixed a spinlock issue, triggered on at least FreeBSD
+            [#193]
+
+          * Workaround an issue with kqueue() on /dev/klog [#201]
 
         * The file source was corrected to properly handle character
           devices. This, and the ivykis update fixes a CPU spinning
@@ -14,6 +27,26 @@
 
         * The sun-streams module had a file descriptor leak, which has
           been corrected too. [#151]
+
+        * The glob-based configuration file inclusion was fixed to
+          behave similarly to including a whole directory, to include
+          files alphabetically. [#191]
+
+          The @include mechanism was also updated to not fail
+          silently, but report an error in certain cases (such as
+          permission errors, or missing files in case of an explicit,
+          non-glob include). [#209]
+
+        * Fixed a crash when trying to display the available modules
+          in debug mode. [#189]
+
+        * Fixed the building of afsocket-notls, so that it is
+          correctly built without TLS support. [#188]
+
+        * Fix compilation without spoof-source. [#192]
+
+        * Avoid a feedback loop when emitting debug (and trace)
+          messages. [#208]
 
         * Various minor fixes around the build system.
 
@@ -36,64 +69,20 @@
 
         These people have helped in this release:
 
+        Anton Koldaev <koldaevav@gmail.com>
         Attila Nagy <bra@fsn.hu>
-        Balazs Scheidler <bazsi@balabit.hu>
-        Evan Rempel <erempel@uvic.ca>
-        Gergely Nagy <algernon@balabit.hu>
-        Lennert Buytenhek <buytenh@wantstofly.org>
-        Michael Hocke <michael.hocke@nyu.edu>
-        Peter Czanik <czanik@balabit.hu>
-
-3.3.6.90 (3.3.7 RC1)
-        Thu, 06 Sep 2012 14:00:00 +0200
-
-        Bugfixes
-        ========
-
-        * The bundled ivykis has been updated to fix two bugs found
-          after the 3.3.6 release was tagged:
-
-          * Fixed a Solaris-specific issue relating to TCP sources
-            [#190]
-
-          * Fixed a spinlock issue, triggered on at least FreeBSD
-            [#193]
-
-        * The glob-based configuration file inclusion was fixed to
-          behave similarly to including a whole directory, to include
-          files alphabetically. [#191]
-
-        * Fixed a crash when trying to display the available modules
-          in debug mode. [#189]
-
-        * Fixed the building of afsocket-notls, so that it is
-          correctly built without TLS support. [#188]
-
-        * Fix compilation without spoof-source. [#192]
-
-        Credits
-        =======
-
-        syslog-ng is developed as a community project, and as such it
-        relies on volunteers to do the work necessarily to produce
-        syslog-ng.
-
-        Reporting bugs, testing changes, writing code or simply
-        providing feedback are all important contributions, so please
-        if you are a user of syslog-ng, contribute.
-
-        These people have helped in this release:
-
         Balazs Scheidler <bazsi@balabit.hu>
         Cy Schubert <cy@FreeBSD.org>
         Dave Reisner <dreisner@archlinux.org>
+        Evan Rempel <erempel@uvic.ca>
         Gergely Nagy <algernon@balabit.hu>
         Jose Pedro Oliveira <jpo@di.uminho.pt>
         Lennert Buytenhek <buytenh@wantstofly.org>
         Marvin Nipper <marvin.nipper@stream.com>
+        Michael Hocke <michael.hocke@nyu.edu>
         Peter Czanik <czanik@balabit.hu>
         Tamas Pal <folti@balabit.hu>
-
+        Yorick Peterse
 
 3.3.6
         Fri, 10 Aug 2012 11:00:00 +0200
