@@ -71,22 +71,22 @@ void msg_add_option_group(GOptionContext *ctx);
            }\
         } while (0)
 
-#define msg_verbose(desc, tag1, tags...) \
-	do { \
-	  if (G_UNLIKELY(verbose_flag))    \
-	    msg_info(desc, tag1, ##tags ); \
+#define msg_verbose(desc, tag1, tags...)                                          \
+	do {                                                                      \
+	  if (G_UNLIKELY(verbose_flag))                                           \
+	    msg_info(desc, tag1, ##tags );                                        \
 	} while (0)
 
-#define msg_debug(desc, tag1, tags...) \
-	do { \
-	  if (G_UNLIKELY(debug_flag))                                   \
+#define msg_debug(desc, tag1, tags...) 						  \
+	do { 									  \
+	  if (G_UNLIKELY(debug_flag) && msg_limit_internal_message())             \
 	    msg_event_send(msg_event_create(EVT_PRI_DEBUG, desc, tag1, ##tags )); \
 	} while (0)
 
 #if ENABLE_DEBUG
-#define msg_trace(desc, tag1, tags...) \
-	do { \
-	  if (G_UNLIKELY(trace_flag))                                   \
+#define msg_trace(desc, tag1, tags...) 						  \
+	do { 									  \
+	  if (G_UNLIKELY(trace_flag) && msg_limit_internal_message())            \
             msg_event_send(msg_event_create(EVT_PRI_DEBUG, desc, tag1, ##tags )); \
 	} while (0)
 #else
