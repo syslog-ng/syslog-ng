@@ -44,6 +44,9 @@ enum
   RPT_SET,
   RPT_MACADDR,
   RPT_PCRE,
+  RPT_EMAIL,
+  RPT_HOSTNAME,
+  RPT_LLADDR,
 };
 
 typedef struct _RParserMatch
@@ -131,6 +134,12 @@ r_parser_type_name(guint8 type)
         return "SET";
       case RPT_MACADDR:
         return "MACADDR";
+      case RPT_EMAIL:
+        return "EMAIL";
+      case RPT_HOSTNAME:
+        return "HOSTNAME";
+      case RPT_LLADDR:
+        return "LLADDR";
       default:
         return "UNKNOWN";
     }
