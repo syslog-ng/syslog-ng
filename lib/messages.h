@@ -41,7 +41,6 @@ EVTREC *msg_event_create(gint prio, const char *desc, EVTTAG *tag1, ...);
 void msg_event_send(EVTREC *e);
 
 void msg_set_post_func(MsgPostFunc func);
-void msg_redirect_to_syslog(const gchar *program_name);
 void msg_init(gboolean interactive);
 void msg_deinit(void);
 

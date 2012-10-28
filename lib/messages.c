@@ -45,7 +45,6 @@ gboolean verbose_flag = 0;
 gboolean trace_flag = 0;
 gboolean log_stderr = FALSE;
 static MsgPostFunc msg_post_func;
-static gboolean log_syslog = FALSE;
 static EVTCONTEXT *evt_context;
 static GStaticPrivate msg_context_private = G_STATIC_PRIVATE_INIT;
 static GStaticMutex evtlog_lock = G_STATIC_MUTEX_INIT;
@@ -167,18 +166,6 @@ msg_event_create(gint prio, const gchar *desc, EVTTAG *tag1, ...)
 void
 msg_event_send(EVTREC *e)
 {
-  gchar *msg;
-  
-  msg = evt_format(e);
-  if (log_syslog)
-    {
-      syslog(evt_rec_get_syslog_pri(e), "%s", msg);
-    }
-  else
-    {
-      msg_send_internal_message(evt_rec_get_syslog_pri(e) | EVT_FAC_SYSLOG, msg); 
-    }
-  free(msg);
   g_static_mutex_lock(&evtlog_lock);
   evt_rec_free(e);
   g_static_mutex_unlock(&evtlog_lock);
@@ -201,10 +188,7 @@ msg_log_func(const gchar *log_domain, GLogLevelFlags log_flags, const gchar *msg
 }
 
 void
-msg_redirect_to_syslog(const gchar *program_name)
 {
-  log_syslog = TRUE;
-  openlog(program_name, LOG_NDELAY | LOG_PID, LOG_SYSLOG);
 }
 
 void
