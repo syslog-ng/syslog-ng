@@ -162,7 +162,7 @@ struct _LogMessage
   guint32 flags;
   guint16 pri;
   guint8 initial_parse:1,
-    recurse_count:7;
+    recursed:1;
   guint8 num_matches;
   guint8 num_tags;
   guint8 alloc_sdata;

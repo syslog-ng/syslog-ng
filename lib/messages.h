@@ -36,9 +36,11 @@ extern int log_stderr;
 typedef void (*MsgPostFunc)(LogMessage *msg);
 
 void msg_set_context(LogMessage *msg);
-gboolean msg_limit_internal_message(void);
 EVTREC *msg_event_create(gint prio, const char *desc, EVTTAG *tag1, ...);
+void msg_event_free(EVTREC *e);
 void msg_event_send(EVTREC *e);
+void msg_event_suppress_recursions_and_send(EVTREC *e);
+
 
 void msg_set_post_func(MsgPostFunc func);
 void msg_init(gboolean interactive);
@@ -48,26 +50,25 @@ void msg_add_option_group(GOptionContext *ctx);
 
 /* fatal->warning goes out to the console during startup, notice and below
  * comes goes to the log even during startup */
-#define msg_fatal(desc, tag1, tags...) do { if (msg_limit_internal_message()) { msg_event_send(msg_event_create(EVT_PRI_CRIT, desc, tag1, ##tags )); } } while (0)
-#define msg_error(desc, tag1, tags...) do { if (msg_limit_internal_message()) { msg_event_send(msg_event_create(EVT_PRI_ERR, desc, tag1, ##tags )); } } while (0)
-#define msg_warning(desc, tag1, tags...) do { if (msg_limit_internal_message()) { msg_event_send(msg_event_create(EVT_PRI_WARNING, desc, tag1, ##tags )); } } while (0)
-#define msg_notice(desc, tag1, tags...) do { if (msg_limit_internal_message()) { msg_event_send(msg_event_create(EVT_PRI_NOTICE, desc, tag1, ##tags )); } } while (0)
-#define msg_info(desc, tag1, tags...) do { if (msg_limit_internal_message()) { msg_event_send(msg_event_create(EVT_PRI_INFO, desc, tag1, ##tags )); } } while (0)
+#define msg_fatal(desc, tag1, tags...)    msg_event_suppress_recursions_and_send(msg_event_create(EVT_PRI_CRIT, desc, tag1, ##tags ))
+#define msg_error(desc, tag1, tags...)    msg_event_suppress_recursions_and_send(msg_event_create(EVT_PRI_ERR, desc, tag1, ##tags ))
+#define msg_warning(desc, tag1, tags...)  msg_event_suppress_recursions_and_send(msg_event_create(EVT_PRI_WARNING, desc, tag1, ##tags ))
+#define msg_notice(desc, tag1, tags...)   msg_event_suppress_recursions_and_send(msg_event_create(EVT_PRI_NOTICE, desc, tag1, ##tags ))
+#define msg_info(desc, tag1, tags...)     msg_event_suppress_recursions_and_send(msg_event_create(EVT_PRI_INFO, desc, tag1, ##tags ))
 
 /* just like msg_info, but prepends the message with a timestamp -- useful in interactive
  * tools with long running time to provide some feedback */
-#define msg_progress(desc, tag1, tags...) \
-        do { \
-          if (msg_limit_internal_message()) { \
-            time_t t; \
-            char *timestamp, *newdesc; \
-            t = time(0); \
-            timestamp = ctime(&t); \
-            timestamp[strlen(timestamp) - 1] = 0; \
-            newdesc = g_strdup_printf("[%s] %s", timestamp, desc); \
-            msg_event_send(msg_event_create(EVT_PRI_INFO, newdesc, tag1, ##tags )); \
-            g_free(newdesc); \
-           }\
+#define msg_progress(desc, tag1, tags...) 					  \
+        do { 									  \
+          time_t t;								  \
+          char *timestamp, *newdesc; 						  \
+                                                                                  \
+          t = time(0); 							          \
+          timestamp = ctime(&t); 						  \
+          timestamp[strlen(timestamp) - 1] = 0; 				  \
+          newdesc = g_strdup_printf("[%s] %s", timestamp, desc); 		  \
+          msg_event_send(msg_event_create(EVT_PRI_INFO, newdesc, tag1, ##tags )); \
+          g_free(newdesc); 							  \
         } while (0)
 
 #define msg_verbose(desc, tag1, tags...)                                          \
@@ -78,15 +79,17 @@ void msg_add_option_group(GOptionContext *ctx);
 
 #define msg_debug(desc, tag1, tags...) 						  \
 	do { 									  \
-	  if (G_UNLIKELY(debug_flag) && msg_limit_internal_message())             \
-	    msg_event_send(msg_event_create(EVT_PRI_DEBUG, desc, tag1, ##tags )); \
+	  if (G_UNLIKELY(debug_flag))             				  \
+	    msg_event_suppress_recursions_and_send(                               \
+	          msg_event_create(EVT_PRI_DEBUG, desc, tag1, ##tags ));          \
 	} while (0)
 
 #if ENABLE_DEBUG
 #define msg_trace(desc, tag1, tags...) 						  \
 	do { 									  \
-	  if (G_UNLIKELY(trace_flag) && msg_limit_internal_message())            \
-            msg_event_send(msg_event_create(EVT_PRI_DEBUG, desc, tag1, ##tags )); \
+	  if (G_UNLIKELY(trace_flag))            				  \
+            msg_event_suppress_recursions_and_send(                               \
+                  msg_event_create(EVT_PRI_DEBUG, desc, tag1, ##tags ));          \
 	} while (0)
 #else
 #define msg_trace(desc, tag1, tags...)
