@@ -1,7 +1,7 @@
 syslog-ng (3.4.0~alpha3+sandbox+20121027-1~mhp1) unstable; urgency=low
 
   [ Gergely Nagy <algernon@madhouse-project.org> ]
-  * New upstream snapshot from my sandbox/3.4 branch, git commit ea0cc0b.
+  * New upstream snapshot from my sandbox/3.4 branch, git commit 32bc3bd.
   * The shlibs file belongs to -core.
   * Add the syslog-ng-mod-geoip module.
   * Update build-depends: added automake (>= 1.11.1) and python.
@@ -9,7 +9,7 @@ syslog-ng (3.4.0~alpha3+sandbox+20121027-1~mhp1) unstable; urgency=low
   * Instead of installing systemd service file symlinks, install a
     conffile, that includes the real service file. (Closes: #690067)
 
- -- Gergely Nagy <algernon@madhouse-project.org>  Sun, 28 Oct 2012 15:47:21 +0100
+ -- Gergely Nagy <algernon@madhouse-project.org>  Sun, 28 Oct 2012 15:49:00 +0100
 
 syslog-ng (3.4.0~alpha3+sandbox+133-1~mhp1) unstable; urgency=low
 
