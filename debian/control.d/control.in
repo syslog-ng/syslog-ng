@@ -28,6 +28,8 @@ Standards-Version: 3.9.3
 Homepage: http://www.balabit.com/network-security/syslog-ng/opensource-logging-system
 Vcs-Git: git://git.madhouse-project.org/debian/syslog-ng.git
 Vcs-Browser: http://git.madhouse-project.org/debian/syslog-ng/log/?h=packaging/debian/3.4
+Origin: MadHouse
+Bugs: mailto:syslog-ng@lists.balabit.hu
 
 Package: syslog-ng
 Architecture: all
