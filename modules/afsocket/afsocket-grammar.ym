@@ -92,6 +92,7 @@ TLSContext *last_tls_context;
 %token KW_SO_RCVBUF
 %token KW_SO_KEEPALIVE
 %token KW_SPOOF_SOURCE
+%token KW_SPOOF_IF
 
 %token KW_KEEP_ALIVE
 %token KW_MAX_CONNECTIONS
@@ -489,6 +490,7 @@ dest_afinet_option
 dest_afinet_udp_option
 	: dest_afinet_option
 	| KW_SPOOF_SOURCE '(' yesno ')'		{ afinet_dd_set_spoof_source(last_driver, $3); }
+	| KW_SPOOF_IF '(' string ')'		{ afinet_dd_set_spoof_if(last_driver, $3); free($3); }
 	;
 
 dest_afinet_tcp_params
@@ -593,6 +595,7 @@ dest_afsyslog_option
             afsocket_dd_set_transport(last_driver, $3);
           } ')'
 	| KW_SPOOF_SOURCE '(' yesno ')'		{ afinet_dd_set_spoof_source(last_driver, $3); }
+	| KW_SPOOF_IF '(' string ')'		{ afinet_dd_set_spoof_if(last_driver, $3); free($3); }
 	| KW_TLS
 	  {
 #if ENABLE_SSL

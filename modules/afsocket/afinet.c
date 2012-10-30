@@ -430,6 +430,24 @@ afinet_dd_set_spoof_source(LogDriver *s, gboolean enable)
 #endif
 }
 
+void
+afinet_dd_set_spoof_if(LogDriver *s, gchar *spoof_if)
+{
+#if ENABLE_SPOOF_SOURCE
+  AFInetDestDriver *self = (AFInetDestDriver *) s;
+
+#ifdef _WIN32
+  if (self->spoof_if)
+    g_free(self->spoof_if);
+  self->spoof_if = g_strdup(spoof_if);
+#else
+  msg_warning("spoof_interface option is valid only on windows platforms",NULL);
+#endif
+#else
+  msg_error("Error set the inteface for spoof source, you need to compile syslog-ng with --enable-spoof-source", NULL);
+#endif
+}
+
 static gboolean
 afinet_dd_apply_transport(AFSocketDestDriver *s)
 {
@@ -623,16 +641,30 @@ afinet_dd_init(LogPipe *s)
       if (self->spoof_source && !self->lnet_ctx)
         {
           gchar error[LIBNET_ERRBUF_SIZE];
+		  char *device=NULL;
           cap_t saved_caps;
 
           saved_caps = g_process_cap_save();
+#ifdef G_OS_WIN32
+          if (self->spoof_if == NULL)
+            {
+              msg_error("Source interface has to be set for spoof-source support on Windows. Please declare it with the spoof_interface() option.",
+                    NULL);
+                return success;
+            }
+          if (device)
+            g_free(device);
+
+          device = g_strdup(self->spoof_if);
+          msg_warning("using ", evt_tag_str("device", device), NULL);
+#endif
           g_process_cap_modify(CAP_NET_RAW, TRUE);
-          self->lnet_ctx = libnet_init(self->super.dest_addr->sa.sa_family == AF_INET ? LIBNET_RAW4 : LIBNET_RAW6, NULL, error);
+          self->lnet_ctx = libnet_init(self->super.dest_addr->sa.sa_family == AF_INET ? LIBNET_RAW4 : LIBNET_RAW6, device, error);
           g_process_cap_restore(saved_caps);
           if (!self->lnet_ctx)
             {
               msg_error("Error initializing raw socket, spoof-source support disabled",
-                        evt_tag_str("error", NULL),
+                        evt_tag_str("error", error),
                         NULL);
             }
         }
@@ -818,6 +850,7 @@ afinet_dd_free(LogPipe *s)
   g_free(self->bind_ip);
   g_free(self->bind_port);
   g_free(self->dest_port);
+  g_free(self->spoof_if);
 #if ENABLE_SPOOF_SOURCE
   if (self->lnet_buffer)
     {
