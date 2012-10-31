@@ -1,0 +1,6 @@
+language: c
+branches:
+  only:
+    - master
+    - /^upstream\/mirror\/.*/
+    - /^sandbox\/.*/
