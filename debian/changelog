@@ -1,11 +1,12 @@
-syslog-ng (3.3.6.91-1~mhp2) unstable; urgency=low
+syslog-ng (3.3.7-1~mhp1) unstable; urgency=low
 
+  [ Gergely Nagy <algernon@madhouse-project.org> ]
+  * New upstream release.
   * Instead of installing systemd service file symlinks, install a
     conffile, that includes the real service file. (Closes: #690067)
-  * New git snapshot, based on git commit 6a3c11c.
   * Add Origin and Bugs fields to the control file.
 
- -- Gergely Nagy <algernon@madhouse-project.org>  Mon, 29 Oct 2012 08:13:22 +0100
+ -- Gergely Nagy <algernon@madhouse-project.org>  Wed, 31 Oct 2012 07:57:37 +0100
 
 syslog-ng (3.3.6.91-1~mhp1) unstable; urgency=low
 
