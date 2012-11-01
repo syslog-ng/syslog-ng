@@ -107,6 +107,20 @@ afprogram_popen(const gchar *cmdline, GIOCondition cond, pid_t *pid, gint *fd)
 /* source driver */
 
 static void
+afprogram_sd_kill_child(AFProgramSourceDriver *self)
+{
+  if (self->pid != -1)
+    {
+      msg_verbose("Sending source program a TERM signal",
+                  evt_tag_str("cmdline", self->cmdline->str),
+                  evt_tag_int("child_pid", self->pid),
+                  NULL);
+      kill(-self->pid, SIGTERM);
+      self->pid = -1;
+    }
+}
+
+static void
 afprogram_sd_exit(pid_t pid, int status, gpointer s)
 {
   AFProgramSourceDriver *self = (AFProgramSourceDriver *) s;
@@ -116,7 +130,7 @@ afprogram_sd_exit(pid_t pid, int status, gpointer s)
    * handling restarting the command before this handler is run. */
   if (self->pid != -1 && self->pid == pid)
     {
-      msg_verbose("Child program exited, restarting",
+      msg_verbose("Child program exited",
                   evt_tag_str("cmdline", self->cmdline->str),
                   evt_tag_int("status", status),
                   NULL);
@@ -176,16 +190,7 @@ afprogram_sd_deinit(LogPipe *s)
 {
   AFProgramSourceDriver *self = (AFProgramSourceDriver *) s;
 
-  if (self->pid != -1)
-    {
-      msg_verbose("Sending source program a TERM signal",
-                  evt_tag_str("cmdline", self->cmdline->str),
-                  evt_tag_int("child_pid", self->pid),
-                  NULL);
-      kill(-self->pid, SIGTERM);
-      self->pid = -1;
-    }
-
+  afprogram_sd_kill_child(self);
   if (self->reader)
     {
       log_pipe_deinit(self->reader);
