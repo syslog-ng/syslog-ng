@@ -1,12 +1,13 @@
-Copyright (c) 2002-2010 BalaBit IT Security Ltd.
-Copyright (c) 1996-2010 Balázs Scheidler
+Copyright (c) 2002-2012 BalaBit IT Security Ltd.
+Copyright (c) 1996-2012 Balázs Scheidler
 
 syslog-ng is licensed under the combination of the GPL and LGPL licenses.
 
-The syslog-ng core (src/ subdirectory) is licensed under the
-Lesser General Public License as described in the file LGPL.txt
+The syslog-ng core (lib/, libtest/ and syslog-ng/ subdirectories) is
+licensed under the Lesser General Public License as described in the
+file LGPL.txt
 
-The syslog-ng modules (src/xxxx/ subdirectories) are licensed under the
+The syslog-ng modules (modules/ subdirectory) are licensed under the
 General Public License as described in the file GPL.txt
 
 FAQ:
