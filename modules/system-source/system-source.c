@@ -37,11 +37,13 @@
 
 static void
 system_sysblock_add_unix_dgram(GString *sysblock, const gchar *path,
-                               const gchar *perms)
+                               const gchar *perms, const gchar *recvbuf_size)
 {
   g_string_append_printf(sysblock, "unix-dgram(\"%s\"", path);
   if (perms)
     g_string_append_printf(sysblock, " perm(%s)", perms);
+  if (recvbuf_size)
+    g_string_append_printf(sysblock, " so_rcvbuf(%s)", recvbuf_size);
   g_string_append(sysblock, ");\n");
 }
 
@@ -120,7 +122,7 @@ system_generate_system(CfgLexer *lexer, gint type, const gchar *name,
             }
         }
 
-      system_sysblock_add_unix_dgram(sysblock, log, NULL);
+      system_sysblock_add_unix_dgram(sysblock, log, NULL, "8192");
       system_sysblock_add_file(sysblock, "/proc/kmsg", -1, "kernel", "kernel");
     }
   else if (strcmp(u.sysname, "SunOS") == 0)
@@ -136,13 +138,13 @@ system_generate_system(CfgLexer *lexer, gint type, const gchar *name,
     }
   else if (strcmp(u.sysname, "FreeBSD") == 0)
     {
-      system_sysblock_add_unix_dgram(sysblock, "/var/run/log", NULL);
-      system_sysblock_add_unix_dgram(sysblock, "/var/run/logpriv", "0600");
+      system_sysblock_add_unix_dgram(sysblock, "/var/run/log", NULL, NULL);
+      system_sysblock_add_unix_dgram(sysblock, "/var/run/logpriv", "0600", NULL);
       system_sysblock_add_file(sysblock, "/dev/klog", 0, "kernel", "no-parse");
     }
   else if (strcmp(u.sysname, "GNU/kFreeBSD") == 0)
     {
-      system_sysblock_add_unix_dgram(sysblock, "/var/run/log", NULL);
+      system_sysblock_add_unix_dgram(sysblock, "/var/run/log", NULL, NULL);
       system_sysblock_add_file(sysblock, "/dev/klog", 0, "kernel", NULL);
     }
   else if (strcmp(u.sysname, "HP-UX") == 0)
@@ -153,7 +155,7 @@ system_generate_system(CfgLexer *lexer, gint type, const gchar *name,
            strcmp(u.sysname, "OSF1") == 0 ||
            strncmp(u.sysname, "CYGWIN", 6) == 0)
     {
-      system_sysblock_add_unix_dgram(sysblock, "/dev/log", NULL);
+      system_sysblock_add_unix_dgram(sysblock, "/dev/log", NULL, NULL);
     }
   else
     {
