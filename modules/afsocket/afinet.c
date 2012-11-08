@@ -434,9 +434,9 @@ void
 afinet_dd_set_spoof_if(LogDriver *s, gchar *spoof_if)
 {
 #if ENABLE_SPOOF_SOURCE
+#ifdef _WIN32
   AFInetDestDriver *self = (AFInetDestDriver *) s;
 
-#ifdef _WIN32
   if (self->spoof_if)
     g_free(self->spoof_if);
   self->spoof_if = g_strdup(spoof_if);
