@@ -476,13 +476,11 @@ plugin_free_candidate_modules(GlobalConfig *cfg)
 void
 plugin_list_modules(FILE *out, gboolean verbose)
 {
-  GlobalConfig *cfg;
   GModule *mod;
   gchar **mod_paths;
   gint i, j, k;
   gboolean first = TRUE;
 
-  cfg = cfg_new(0);
   mod_paths = g_strsplit(module_path, ":", 0);
   for (i = 0; mod_paths[i]; i++)
     {
