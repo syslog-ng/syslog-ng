@@ -851,7 +851,7 @@ log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, const MsgF
  * in @self. Parsing is affected by the bits set @flags argument.
  **/
 static gboolean
-log_msg_parse_legacy(MsgFormatOptions *parse_options,
+log_msg_parse_legacy(const MsgFormatOptions *parse_options,
                      const guchar *data, gint length,
                      LogMessage *self)
 {
@@ -950,7 +950,7 @@ log_msg_parse_legacy(MsgFormatOptions *parse_options,
  * Parse a message according to the latest syslog-protocol drafts.
  **/
 static gboolean
-log_msg_parse_syslog_proto(MsgFormatOptions *parse_options, const guchar *data, gint length, LogMessage *self)
+log_msg_parse_syslog_proto(const MsgFormatOptions *parse_options, const guchar *data, gint length, LogMessage *self)
 {
   /**
    *	SYSLOG-MSG      = HEADER SP STRUCTURED-DATA [SP MSG]
@@ -1049,7 +1049,7 @@ log_msg_parse_syslog_proto(MsgFormatOptions *parse_options, const guchar *data, 
 
 
 void
-syslog_format_handler(MsgFormatOptions *parse_options,
+syslog_format_handler(const MsgFormatOptions *parse_options,
                       const guchar *data, gsize length,
                       LogMessage *self)
 {

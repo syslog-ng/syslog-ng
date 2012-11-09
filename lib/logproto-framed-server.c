@@ -25,6 +25,7 @@
 #include "messages.h"
 
 #include <ctype.h>
+#include <string.h>
 
 #define LPFSS_FRAME_READ    0
 #define LPFSS_MESSAGE_READ  1

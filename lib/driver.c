@@ -27,6 +27,8 @@
 #include "afinter.h"
 #include "cfg-tree.h"
 
+#include <string.h>
+
 /* LogDriverPlugin */
 
 void

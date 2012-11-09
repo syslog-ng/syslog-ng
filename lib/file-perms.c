@@ -30,6 +30,8 @@
 
 #include <unistd.h>
 #include <sys/stat.h>
+#include <string.h>
+
 void
 file_perm_options_set_file_uid(FilePermOptions *self, const gchar *file_uid)
 {

@@ -25,6 +25,8 @@
 #include "mock-transport.h"
 #include "gsockaddr.h"
 
+#include <string.h>
+
 typedef struct
 {
   LogTransport super;

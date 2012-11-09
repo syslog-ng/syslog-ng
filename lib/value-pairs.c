@@ -641,7 +641,7 @@ value_pairs_free (ValuePairs *vp)
 }
 
 void
-value_pairs_add_transforms(ValuePairs *vp, gpointer *vpts)
+value_pairs_add_transforms(ValuePairs *vp, gpointer vpts)
 {
   vp->transforms = g_list_append(vp->transforms, vpts);
 }

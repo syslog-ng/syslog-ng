@@ -29,6 +29,7 @@
 #include "messages.h"
 #include "logpipe.h"
 #include "templates.h"
+#include <string.h>
 
 typedef struct _LogParser LogParser;
 typedef struct _LogColumnParser LogColumnParser;

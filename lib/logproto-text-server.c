@@ -24,6 +24,8 @@
 #include "logproto-text-server.h"
 #include "messages.h"
 
+#include <string.h>
+
 /*
  * log_proto_get_fixed_encoding_scale:
  *

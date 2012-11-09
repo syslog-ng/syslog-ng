@@ -318,7 +318,6 @@ control_socket_accept(gpointer user_data)
   gint conn_socket;
   GSockAddr *peer_addr;
   GIOStatus status;
-  ControlConnection *conn;
   
   if (control_socket == -1)
     return;
@@ -331,7 +330,7 @@ control_socket_accept(gpointer user_data)
       goto error;
     }
   /* NOTE: the connection will free itself if the peer terminates */
-  conn = control_connection_new(conn_socket);
+  control_connection_new(conn_socket);
   g_sockaddr_unref(peer_addr);
  error:
   ;

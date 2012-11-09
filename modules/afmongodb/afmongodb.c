@@ -447,13 +447,12 @@ static gpointer
 afmongodb_worker_thread (gpointer arg)
 {
   MongoDBDestDriver *self = (MongoDBDestDriver *)arg;
-  gboolean success;
 
   msg_debug ("Worker thread started",
 	     evt_tag_str("driver", self->super.super.id),
 	     NULL);
 
-  success = afmongodb_dd_connect(self, FALSE);
+  afmongodb_dd_connect(self, FALSE);
 
   self->ns = g_strconcat (self->db, ".", self->coll, NULL);
 

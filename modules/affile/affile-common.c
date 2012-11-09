@@ -23,6 +23,7 @@
 #include "affile-common.h"
 #include "messages.h"
 #include "gprocess.h"
+#include "misc.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>

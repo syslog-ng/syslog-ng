@@ -98,7 +98,9 @@ static gint startup_result_pipe[2] = { -1, -1 };
 static gint init_result_pipe[2] = { -1, -1 };
 static GProcessKind process_kind = G_PK_STARTUP;
 static gboolean stderr_present = TRUE;
+#if ENABLE_LINUX_CAPS
 static int have_capsyslog = FALSE;
+#endif
 
 /* global variables */
 static struct

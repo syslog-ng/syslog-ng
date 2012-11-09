@@ -24,6 +24,9 @@
 #include "logproto-file-writer.h"
 #include "messages.h"
 
+#include <string.h>
+#include <sys/uio.h>
+
 typedef struct _LogProtoFileWriter
 {
   LogProtoClient super;

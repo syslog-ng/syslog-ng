@@ -25,7 +25,7 @@
 #include "syslog-format.h"
 
 static gboolean
-syslog_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, const gchar *input)
+syslog_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, const gchar *input, gsize input_len G_GNUC_UNUSED)
 {
   SyslogParser *self = (SyslogParser *) s;
   LogMessage *msg;

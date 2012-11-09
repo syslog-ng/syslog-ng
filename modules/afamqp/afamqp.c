@@ -495,12 +495,11 @@ static gpointer
 afamqp_worker_thread(gpointer arg)
 {
   AMQPDestDriver *self = (AMQPDestDriver *) arg;
-  gboolean success;
 
   msg_debug("Worker thread started",
             evt_tag_str("driver", self->super.super.id), NULL);
 
-  success = afamqp_dd_connect(self, FALSE);
+  afamqp_dd_connect(self, FALSE);
 
   while (!self->writer_thread_terminate)
     {
