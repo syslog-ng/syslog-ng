@@ -126,6 +126,7 @@ typedef struct _PDBAction
   guint8 content_type;
   guint16 rate;
   guint32 id:8, rate_quantum:24;
+  gboolean inherit_properties;
   union
   {
     PDBMessage message;

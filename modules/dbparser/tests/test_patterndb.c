@@ -537,6 +537,83 @@ test_patterndb_parsers()
     }
 }
 
+gchar *pdb_inheritance_skeleton = "<patterndb version='3' pub_date='2010-02-22'>\
+ <ruleset name='testset' id='1'>\
+  <patterns>\
+   <pattern>prog2</pattern>\
+  </patterns>\
+  <rule provider='test' id='11' class='system' context-scope='program'\
+        context-id='$PID' context-timeout='60'>\
+   <patterns>\
+    <pattern>pattern11</pattern>\
+   </patterns>\
+   <tags>\
+    <tag>tag11-1</tag>\
+    <tag>tag11-2</tag>\
+   </tags>\
+   <values>\
+    <value name='n11-1'>v11-1</value>\
+    <value name='vvv'>${HOST}</value>\
+    <value name='context-id'>${CONTEXT_ID}</value>\
+   </values>\
+   <actions>\
+    <action rate='1/60' condition='\"${n11-1}\" == \"v11-1\"' trigger='match'>\
+     <message inherit-properties='TRUE'>\
+      <value name='context-id'>${CONTEXT_ID}</value>\
+      <tags>\
+       <tag>tag11-3</tag>\
+      </tags>\
+     </message>\
+    </action>\
+   </actions>\
+  </rule>\
+  <rule provider='test' id='12' class='system' context-scope='program'\
+        context-id='$PID' context-timeout='60'>\
+   <patterns>\
+    <pattern>pattern12</pattern>\
+   </patterns>\
+   <tags>\
+    <tag>tag12-1</tag>\
+    <tag>tag12-2</tag>\
+   </tags>\
+   <values>\
+    <value name='n12-1'>v12-1</value>\
+    <value name='vvv'>${HOST}</value>\
+    <value name='context-id'>${CONTEXT_ID}</value>\
+   </values>\
+   <actions>\
+    <action rate='1/60' condition='\"${n12-1}\" == \"v12-1\"' trigger='match'>\
+     <message inherit-properties='FALSE'>\
+      <value name='context-id'>${CONTEXT_ID}</value>\
+      <tags>\
+       <tag>tag12-3</tag>\
+      </tags>\
+     </message>\
+    </action>\
+   </actions>\
+  </rule>\
+ </ruleset>\
+</patterndb>";
+
+void
+test_patterndb_message_property_inheritance()
+{
+  create_pattern_db(pdb_inheritance_skeleton);
+
+  test_rule_action_message_value("pattern11", 0, 1, "MESSAGE", "pattern11");
+  test_rule_action_message_value("pattern12", 0, 1, "MESSAGE", NULL);
+
+  test_rule_action_message_tag("pattern11", 0, 1, "tag11-1", TRUE);
+  test_rule_action_message_tag("pattern11", 0, 1, "tag11-2", TRUE);
+  test_rule_action_message_tag("pattern11", 0, 1, "tag11-3", TRUE);
+
+  test_rule_action_message_tag("pattern12", 0, 1, "tag12-1", FALSE);
+  test_rule_action_message_tag("pattern12", 0, 1, "tag12-2", FALSE);
+  test_rule_action_message_tag("pattern12", 0, 1, "tag12-3", TRUE);
+
+  clean_pattern_db();
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -555,6 +632,7 @@ main(int argc, char *argv[])
 
   test_patterndb_rule();
   test_patterndb_parsers();
+  test_patterndb_message_property_inheritance();
 
   app_shutdown();
   return  (fail ? 1 : 0);

@@ -388,6 +388,19 @@ pdb_action_set_trigger(PDBAction *self, const gchar *trigger, GError **error)
     g_set_error(error, 0, 1, "Unknown trigger type: %s", trigger);
 }
 
+void
+pdb_action_set_inheritance(PDBAction *self, const gchar *inherit_properties, GError **error)
+{
+  if (inherit_properties[0] == 'T' || inherit_properties[0] == 't' ||
+      inherit_properties[0] == '1')
+    self->inherit_properties = TRUE;
+  else if (inherit_properties[0] == 'F' || inherit_properties[0] == 'f' ||
+           inherit_properties[0] == '0')
+    self->inherit_properties = FALSE;
+  else
+    g_set_error(error, 0, 1, "Unknown inheritance type: %s", inherit_properties);
+}
+
 PDBAction *
 pdb_action_new(gint id)
 {
@@ -552,9 +565,18 @@ pdb_rule_run_actions(PDBRule *self, gint trigger, PatternDB *db, PDBContext *con
                 case RAC_NONE:
                   break;
                 case RAC_MESSAGE:
-                  genmsg = log_msg_new_empty();
-                  genmsg->flags |= LF_LOCAL;
-                  genmsg->timestamps[LM_TS_STAMP] = msg->timestamps[LM_TS_STAMP];
+                  if (action->inherit_properties)
+                    {
+                      LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
+                      path_options.ack_needed = FALSE;
+                      genmsg = log_msg_clone_cow(msg, &path_options);
+                    }
+                  else
+                    {
+                      genmsg = log_msg_new_empty();
+                      genmsg->flags |= LF_LOCAL;
+                      genmsg->timestamps[LM_TS_STAMP] = msg->timestamps[LM_TS_STAMP];
+                    }
                   if (context)
                     {
                       switch (context->key.scope)
@@ -942,6 +964,11 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
     }
   else if (strcmp(element_name, "message") == 0)
     {
+      for (i = 0; attribute_names[i]; i++)
+        {
+          if (strcmp(attribute_names[i], "inherit-properties") == 0)
+            pdb_action_set_inheritance(state->current_action, attribute_values[i], error);
+        }
       if (!state->in_action)
         {
           *error = g_error_new(1, 0, "Unexpected <message> element, it must be inside an action");
