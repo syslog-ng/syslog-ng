@@ -850,8 +850,8 @@ afinet_dd_free(LogPipe *s)
   g_free(self->bind_ip);
   g_free(self->bind_port);
   g_free(self->dest_port);
-  g_free(self->spoof_if);
 #if ENABLE_SPOOF_SOURCE
+  g_free(self->spoof_if);
   if (self->lnet_buffer)
     {
       g_string_free(self->lnet_buffer, TRUE);
