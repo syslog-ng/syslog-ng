@@ -87,6 +87,20 @@ system_sysblock_add_pipe(GString *sysblock, const gchar *path, gint pad_size)
   g_string_append(sysblock, ");\n");
 }
 
+static void
+system_sysblock_add_freebsd_klog(GString *sysblock, const gchar *release)
+{
+  /* /dev/klog on FreeBSD prior to 9.1-RC-something is not
+     pollable with kqueue(), so use timers for it instead, by
+     forcing follow-freq(1). */
+  if (strncmp(release, "7.", 2) == 0 ||
+      strncmp(release, "8.", 2) == 0 ||
+      strncmp(release, "9.0", 3) == 0)
+    system_sysblock_add_file(sysblock, "/dev/klog", 1, "kernel", "no-parse");
+  else
+    system_sysblock_add_file(sysblock, "/dev/klog", 0, "kernel", "no-parse");
+}
+
 gboolean
 system_generate_system(CfgLexer *lexer, gint type, const gchar *name,
                        CfgArgs *args, gpointer user_data)
@@ -140,12 +154,13 @@ system_generate_system(CfgLexer *lexer, gint type, const gchar *name,
     {
       system_sysblock_add_unix_dgram(sysblock, "/var/run/log", NULL, NULL);
       system_sysblock_add_unix_dgram(sysblock, "/var/run/logpriv", "0600", NULL);
-      system_sysblock_add_file(sysblock, "/dev/klog", 0, "kernel", "no-parse");
+
+      system_sysblock_add_freebsd_klog(sysblock, u.release);
     }
   else if (strcmp(u.sysname, "GNU/kFreeBSD") == 0)
     {
       system_sysblock_add_unix_dgram(sysblock, "/var/run/log", NULL, NULL);
-      system_sysblock_add_file(sysblock, "/dev/klog", 0, "kernel", NULL);
+      system_sysblock_add_freebsd_klog(sysblock, u.release);
     }
   else if (strcmp(u.sysname, "HP-UX") == 0)
     {
