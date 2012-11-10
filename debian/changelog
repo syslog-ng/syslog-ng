@@ -1,3 +1,10 @@
+syslog-ng (3.4.0~alpha3+sandbox+20121110-1~mhp1) unstable; urgency=low
+
+  [ Gergely Nagy <algernon@madhouse-project.org> ]
+  * New upstream snapshot from my sandbox/3.4 branch, git commit 8581fc8.
+
+ -- Gergely Nagy <algernon@madhouse-project.org>  Sat, 10 Nov 2012 14:25:15 +0100
+
 syslog-ng (3.4.0~alpha3+sandbox+20121027-1~mhp1) unstable; urgency=low
 
   [ Gergely Nagy <algernon@madhouse-project.org> ]
