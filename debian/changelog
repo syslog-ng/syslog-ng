@@ -6,8 +6,9 @@ syslog-ng (3.4.0~alpha3+sandbox+20121110-1~mhp1) unstable; urgency=low
     various mail-related logs. (Closes: #692056)
   * Do not forcibly remove the systemd service files, that code is not
     needed anymore.
+  * Bring debian/copyright up to date.
 
- -- Gergely Nagy <algernon@madhouse-project.org>  Sat, 10 Nov 2012 14:58:28 +0100
+ -- Gergely Nagy <algernon@madhouse-project.org>  Sat, 10 Nov 2012 15:53:45 +0100
 
 syslog-ng (3.4.0~alpha3+sandbox+20121027-1~mhp1) unstable; urgency=low
 
