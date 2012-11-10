@@ -21,5 +21,5 @@ sysconfdir_e = $(shell echo "${sysconfdir}" | sed -e "s,-,\\\\\\\\-,g")
 prefix_e = $(shell echo "${prefix}" | sed -e "s,-,\\\\\\\\-,g")
 
 man/%: man/%.xml
-	xsltproc --xinclude --output $@ ${XSL_STYLESHEET} $<
-	sed -e 's,/opt/syslog\\*-ng/etc,$(sysconfdir_e),g' -e 's,/opt/syslog\\*-ng/,$(prefix_e)/,g' <$@ >$@.tmp && mv $@.tmp $@
+	$(AM_V_GEN)xsltproc --xinclude --output $@ ${XSL_STYLESHEET} $<
+	$(AM_V_at)sed -e 's,/opt/syslog\\*-ng/etc,$(sysconfdir_e),g' -e 's,/opt/syslog\\*-ng/,$(prefix_e)/,g' <$@ >$@.tmp && mv $@.tmp $@
