@@ -2,8 +2,10 @@ syslog-ng (3.3.7+git20130103-1~mhp1) unstable; urgency=low
 
   [ Gergely Nagy <algernon@madhouse-project.org> ]
   * New snapshot, based on git commit 519d211
+  * Use the standard /var/log/mail.{info,err,warn} location for the
+    various mail-related logs. (Closes: #692056)
 
- -- Gergely Nagy <algernon@madhouse-project.org>  Thu, 03 Jan 2013 14:28:17 +0100
+ -- Gergely Nagy <algernon@madhouse-project.org>  Thu, 03 Jan 2013 14:29:57 +0100
 
 syslog-ng (3.3.7-1~mhp1) unstable; urgency=low
 
