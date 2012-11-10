@@ -4,8 +4,10 @@ syslog-ng (3.3.7+git20130103-1~mhp1) unstable; urgency=low
   * New snapshot, based on git commit 519d211
   * Use the standard /var/log/mail.{info,err,warn} location for the
     various mail-related logs. (Closes: #692056)
+  * Do not forcibly remove the systemd service files, that code is not
+    needed anymore.
 
- -- Gergely Nagy <algernon@madhouse-project.org>  Thu, 03 Jan 2013 14:29:57 +0100
+ -- Gergely Nagy <algernon@madhouse-project.org>  Thu, 03 Jan 2013 14:31:57 +0100
 
 syslog-ng (3.3.7-1~mhp1) unstable; urgency=low
 
