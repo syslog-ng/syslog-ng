@@ -4,8 +4,10 @@ syslog-ng (3.4.0~alpha3+sandbox+20121110-1~mhp1) unstable; urgency=low
   * New upstream snapshot from my sandbox/3.4 branch, git commit 8581fc8.
   * Use the standard /var/log/mail.{info,err,warn} location for the
     various mail-related logs. (Closes: #692056)
+  * Do not forcibly remove the systemd service files, that code is not
+    needed anymore.
 
- -- Gergely Nagy <algernon@madhouse-project.org>  Sat, 10 Nov 2012 14:30:46 +0100
+ -- Gergely Nagy <algernon@madhouse-project.org>  Sat, 10 Nov 2012 14:58:28 +0100
 
 syslog-ng (3.4.0~alpha3+sandbox+20121027-1~mhp1) unstable; urgency=low
 
