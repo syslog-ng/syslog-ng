@@ -14,6 +14,9 @@ typedef BOOL (WINAPI *MINIDUMPWRITEDUMP)(HANDLE hProcess, DWORD dwPid, HANDLE hF
 
 #define MAX_FILE_NAME_LENGTH 65535
 
+#ifdef WIN64
+PVOID ExceptionHandler;
+#endif
 
 BOOL
 SplitCurrentModulePath(char **dir, char **fileName)
@@ -100,10 +103,22 @@ DropMinidump(struct _EXCEPTION_POINTERS *pExceptionInfo, char *dumpFileName, cha
   return retval;
 }
 
+#define IS_CRITICAL(x) ((x & 0xF0000000) == 0xC0000000)
+
 LONG WINAPI
 MinidumpWriter(struct _EXCEPTION_POINTERS *pExceptionInfo)
 {
   LONG retval = EXCEPTION_CONTINUE_SEARCH;
+#ifdef WIN64
+  if (IS_CRITICAL(pExceptionInfo->ExceptionRecord->ExceptionCode))
+    {
+      RemoveVectoredExceptionHandler(ExceptionHandler);
+    }
+  else
+    {
+      return retval;
+    }
+#endif
 
   // firstly see if dbghelp.dll is around and has the function we need
   // look next to the EXE first, as the one in System32 might be old
@@ -134,26 +149,17 @@ exit:
 static void
 AbortHandler(int signal)
 {
-  RaiseException(0, 0, 0, NULL);
-}
-
-static void
-SignalHandler(int signal)
-{
-  MinidumpWriter(NULL);
-  exit(1);
+  RaiseException(STATUS_NONCONTINUABLE_EXCEPTION, EXCEPTION_NONCONTINUABLE, 0, NULL);
 }
 
 void
 register_minidump_writer()
 {
+  signal(SIGABRT, AbortHandler);
 #ifndef WIN64
   SetUnhandledExceptionFilter(MinidumpWriter);
-  signal(SIGABRT, AbortHandler);
 #else
-  signal(SIGABRT, SignalHandler);
-  signal(SIGFPE, SignalHandler);
-  signal(SIGILL, SignalHandler);
-  signal(SIGSEGV, SignalHandler);
+  ExceptionHandler = AddVectoredExceptionHandler(1, MinidumpWriter);
+  SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOALIGNMENTFAULTEXCEPT | SEM_NOGPFAULTERRORBOX | SEM_NOOPENFILEERRORBOX);
 #endif
 }

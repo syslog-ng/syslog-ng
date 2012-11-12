@@ -178,6 +178,7 @@ agent_service_main()
 {
   gchar *config_string;
   gint rc = 0;
+  register_minidump_writer();
   if (xml_config_file_name)
     {
       gchar *correct_path_name = escape_windows_path(xml_config_file_name);
@@ -202,7 +203,6 @@ agent_service_main()
         }
     }
   /* we are running as a non-root user from this point */
-  register_minidump_writer();
   app_post_daemonized();
   app_post_config_loaded();
   /* from now on internal messages are written to the system log as well */
@@ -297,6 +297,7 @@ main(int argc, char *argv[])
       return 0;
     }
   log_stderr = TRUE;
+
   if (debug_flag)
     {
       if (!quiet)
