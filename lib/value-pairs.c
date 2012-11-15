@@ -691,6 +691,15 @@ vp_cmdline_parse_exclude(const gchar *option_name, const gchar *value,
   return TRUE;
 }
 
+static void
+vp_cmdline_start_key(gpointer data, const gchar *key)
+{
+  gpointer *args = (gpointer *) data;
+
+  vp_cmdline_parse_rekey_finish (data);
+  args[3] = g_strdup(key);
+}
+
 static gboolean
 vp_cmdline_parse_key(const gchar *option_name, const gchar *value,
 		      gpointer data, GError **error)
@@ -698,9 +707,16 @@ vp_cmdline_parse_key(const gchar *option_name, const gchar *value,
   gpointer *args = (gpointer *) data;
   ValuePairs *vp = (ValuePairs *) args[1];
 
-  vp_cmdline_parse_rekey_finish (data);
+  vp_cmdline_start_key(data, value);
   value_pairs_add_glob_pattern(vp, value, TRUE);
-  args[3] = g_strdup(value);
+  return TRUE;
+}
+
+static gboolean
+vp_cmdline_parse_rekey(const gchar *option_name, const gchar *value,
+                       gpointer data, GError **error)
+{
+  vp_cmdline_start_key(data, value);
   return TRUE;
 }
 
@@ -763,7 +779,7 @@ vp_cmdline_parse_rekey_replace (const gchar *option_name, const gchar *value,
   if (!vpts)
     {
       g_set_error (error, G_OPTION_ERROR, G_OPTION_ERROR_FAILED,
-                   "Error parsing value-pairs: --replace used without --key");
+                   "Error parsing value-pairs: --replace used without --key or --rekey");
       return FALSE;
     }
 
@@ -797,7 +813,7 @@ vp_cmdline_parse_rekey_add_prefix (const gchar *option_name, const gchar *value,
   if (!vpts)
     {
       g_set_error (error, G_OPTION_ERROR, G_OPTION_ERROR_FAILED,
-                   "Error parsing value-pairs: --add-prefix used without --key");
+                   "Error parsing value-pairs: --add-prefix used without --key or --rekey");
       return FALSE;
     }
 
@@ -818,7 +834,7 @@ vp_cmdline_parse_rekey_shift (const gchar *option_name, const gchar *value,
   if (!vpts)
     {
       g_set_error (error, G_OPTION_ERROR, G_OPTION_ERROR_FAILED,
-                   "Error parsing value-pairs: --shift used without --key");
+                   "Error parsing value-pairs: --shift used without --key or --rekey");
       return FALSE;
     }
 
@@ -841,6 +857,8 @@ value_pairs_new_from_cmdline (GlobalConfig *cfg,
     { "exclude", 'x', 0, G_OPTION_ARG_CALLBACK, vp_cmdline_parse_exclude,
       NULL, NULL },
     { "key", 'k', 0, G_OPTION_ARG_CALLBACK, vp_cmdline_parse_key,
+      NULL, NULL },
+    { "rekey", 'r', 0, G_OPTION_ARG_CALLBACK, vp_cmdline_parse_rekey,
       NULL, NULL },
     { "pair", 'p', 0, G_OPTION_ARG_CALLBACK, vp_cmdline_parse_pair,
       NULL, NULL },

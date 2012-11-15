@@ -15,6 +15,13 @@ test_format_json(void)
                          "{\"kernel\":{\"SUBSYSTEM\":\"pci\",\"DEVICE\":{\"type\":\"pci\",\"name\":\"0000:02:00.0\"}},\"MSGID\":\"801\",\"MESSAGE\":\"test\"}");
 }
 
+void
+test_format_json_rekey(void)
+{
+  assert_template_format("$(format-json .msg.text=dotted --rekey .* --shift 1 --add-prefix _)",
+                         "{\"_msg\":{\"text\":\"dotted\"}}");
+}
+
 int
 main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 {
@@ -25,6 +32,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   plugin_load_module("json-plugin", configuration, NULL);
 
   test_format_json();
+  test_format_json_rekey();
 
   deinit_template_tests();
   app_shutdown();
