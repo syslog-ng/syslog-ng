@@ -28,6 +28,7 @@
 #include "filter-expr-parser.h"
 #include "cfg.h"
 #include "value-pairs.h"
+#include "vptransform.h"
 
 typedef struct _TFJsonState
 {
@@ -41,10 +42,16 @@ tf_json_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent,
 		GError **error)
 {
   TFJsonState *state = (TFJsonState *)s;
+  ValuePairsTransformSet *vpts;
 
   state->vp = value_pairs_new_from_cmdline (parent->cfg, argc, argv, error);
   if (!state->vp)
     return FALSE;
+
+  /* Always replace a leading dot with an underscore. */
+  vpts = value_pairs_transform_set_new(".*");
+  value_pairs_transform_set_add_func(vpts, value_pairs_new_transform_replace(".", "_"));
+  value_pairs_add_transforms(state->vp, vpts);
 
   return TRUE;
 }

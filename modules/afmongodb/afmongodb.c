@@ -32,6 +32,7 @@
 #include "nvtable.h"
 #include "logqueue.h"
 #include "value-pairs.h"
+#include "vptransform.h"
 
 #include "mongo.h"
 
@@ -368,17 +369,7 @@ afmongodb_vp_process_value(const gchar *name, const gchar *prefix,
   else
     o = (bson *)user_data;
 
-  if (name[0] == '.')
-    {
-      gchar tx_name[256];
-
-      tx_name[0] = '_';
-      strncpy(&tx_name[1], name + 1, sizeof(tx_name) - 1);
-      tx_name[sizeof(tx_name) - 1] = 0;
-      bson_append_string (o, tx_name, value, -1);
-    }
-  else
-    bson_append_string (o, name, value, -1);
+  bson_append_string (o, name, value, -1);
 
   return FALSE;
 }
@@ -536,6 +527,7 @@ afmongodb_dd_init(LogPipe *s)
 {
   MongoDBDestDriver *self = (MongoDBDestDriver *)s;
   GlobalConfig *cfg = log_pipe_get_config(s);
+  ValuePairsTransformSet *vpts;
 
   if (!log_dest_driver_init_method(s))
     return FALSE;
@@ -549,6 +541,11 @@ afmongodb_dd_init(LogPipe *s)
       value_pairs_add_scope(self->vp, "selected-macros");
       value_pairs_add_scope(self->vp, "nv-pairs");
     }
+
+  /* Always replace a leading dot with an underscore. */
+  vpts = value_pairs_transform_set_new(".*");
+  value_pairs_transform_set_add_func(vpts, value_pairs_new_transform_replace(".", "_"));
+  value_pairs_add_transforms(self->vp, vpts);
 
   if (self->port != MONGO_CONN_LOCAL)
     {
