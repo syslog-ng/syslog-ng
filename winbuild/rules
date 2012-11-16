@@ -21,7 +21,7 @@ $(STAMPDIR)/stamp-setup:
 
 configure: $(STAMPDIR)/stamp-configure
 $(STAMPDIR)/stamp-configure: setup
-	CFLAGS="-O2 -g -I$(ZBS_BUILDER_PATH)/dep/include/pcap $(CFLAGS)" $(BUILDCMD) configure --prefix=$(ZBS_STAGE_DIR) $(CONFIG_OPTS)
+	CFLAGS="-O2 -g -I$(ZBS_BUILDER_PATH)/dep/include/libpcap $(CFLAGS)" $(BUILDCMD) configure --prefix=$(ZBS_STAGE_DIR) $(CONFIG_OPTS)
 	sleep 10
 	touch $@
 
