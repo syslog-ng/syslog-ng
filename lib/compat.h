@@ -329,7 +329,7 @@ void crypto_init_vs(void);
 
 #endif /* _WIN32 */
 
-void setup_signals();
+void init_signals();
 
 #ifndef HAVE_LOCALTIME_R
 struct tm * localtime_r(const time_t *timer, struct tm *result);

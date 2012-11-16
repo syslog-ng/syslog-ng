@@ -803,7 +803,7 @@ int
 main_loop_init(gchar *config_string)
 {
   app_startup();
-  setup_signals();
+  init_signals();
   main_loop_io_workers.thread_start = main_loop_io_worker_thread_start;
   main_loop_io_workers.thread_stop = main_loop_io_worker_thread_stop;
   iv_work_pool_create(&main_loop_io_workers);
