@@ -77,5 +77,7 @@ git rm -q syslog-ng-"${DUMAJOR}"
 
 EDITOR=cat git commit -q >/dev/null
 
+echo " [@$(echo $UCID | sed -e "s,^\(.\{7\}\).*,\1,")]" > debian/source_revision
+
 cd "${WD}"
 echo "* Exported tree available in ${TDIR}/syslog-ng-${DUMAJOR}"

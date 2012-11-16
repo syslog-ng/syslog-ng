@@ -4,6 +4,7 @@ Priority: extra
 Maintainer: Gergely Nagy <algernon@madhouse-project.org>
 Build-Depends: debhelper (>= 9~),
 	       dh-autoreconf,
+               automake (>= 1:1.11.1),
 	       pkg-config, flex, bison, lsb-release,
 	       xsltproc, docbook-xsl,
 	       libevtlog-dev (>= 0.2.12-5~),
@@ -18,8 +19,9 @@ Build-Depends: debhelper (>= 9~),
 	       libwrap0-dev,
 	       libpcre3-dev,
 	       libcap-dev [linux-any],
+               libgeoip-dev,
 	       hardening-includes,
-               python-minimal
+               python
 Build-Conflicts: autoconf2.13
 Standards-Version: 3.9.3
 Homepage: http://www.balabit.com/network-security/syslog-ng/opensource-logging-system
@@ -108,7 +110,7 @@ Description: Next generation system logging daemon (core)
 
 Package: syslog-ng-mod-json
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends: syslog-ng-core (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
 Description: Next generation system logging daemon (JSON plugin)
  syslog-ng is an enhanced syslog daemon, supporting, amongst others:
   * Powerful configurability, while still being readable
@@ -130,7 +132,7 @@ Description: Next generation system logging daemon (JSON plugin)
 
 Package: syslog-ng-mod-mongodb
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends: syslog-ng-core (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
 Suggests: mongodb-server
 Description: Next generation system logging daemon (MongoDB plugin)
  syslog-ng is an enhanced syslog daemon, supporting, amongst others:
@@ -151,7 +153,7 @@ Description: Next generation system logging daemon (MongoDB plugin)
 
 Package: syslog-ng-mod-sql
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends: syslog-ng-core (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
 Suggests: libdbd-mysql, libdbd-pgsql, libdbd-sqlite3
 Description: Next generation system logging daemon (SQL plugin)
  syslog-ng is an enhanced syslog daemon, supporting, amongst others:
@@ -173,7 +175,7 @@ Description: Next generation system logging daemon (SQL plugin)
 
 Package: syslog-ng-mod-smtp
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends: syslog-ng-core (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
 Description: Next generation system logging daemon (SMTP plugin)
  syslog-ng is an enhanced syslog daemon, supporting, amongst others:
   * Powerful configurability, while still being readable
@@ -193,7 +195,7 @@ Description: Next generation system logging daemon (SMTP plugin)
 
 Package: syslog-ng-mod-amqp
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends: syslog-ng-core (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
 Suggests: rabbitmq-server
 Description: Next generation system logging daemon (AMQP plugin)
  syslog-ng is an enhanced syslog daemon, supporting, amongst others:
@@ -211,3 +213,25 @@ Description: Next generation system logging daemon (AMQP plugin)
  .
  This package provides the AMQP destination plugin, which allows one
  to publish log messages through the AMQP protocol.
+
+Package: syslog-ng-mod-geoip
+Architecture: any
+Depends: syslog-ng-core (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
+Recommends: geoip-database
+Description: Next generation system logging daemon (GeoIP plugin)
+ syslog-ng is an enhanced syslog daemon, supporting, amongst others:
+  * Powerful configurability, while still being readable
+  * Filtering on any part of the syslog message
+  * Support for both legacy BSD and the new syslog protocol
+  * Wide range of source and destination drivers, including TCP
+    (plain, or over SSL/TLS), UDP, SQL, MongoDB
+  * Also supports fine-grained output format control
+  * Multi-threaded operation
+ .
+ The wide range of plugins make syslog-ng able to perform well in
+ every situation, ranging from enterprise-class centralised
+ deployments, through personal computers to ad-hoc connected networks.
+ .
+ This package provides the GeoIP template function plugin, which
+ allows one to do non-DNS IP-to-country resolving from syslog-ng
+ templates.

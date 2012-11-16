@@ -64,11 +64,13 @@ override_dh_autoreconf:
 
 # Oh, the joys of configure!
 # We pass down all appropriate options, along with EXTRA_CONFIGURE_OPTS.
-# This also sets SOURCE_REVISION to the debian package version.
+# This also sets SOURCE_REVISION to the debian package version, plus
+# some other stuff that we keep in debian/source_revision (generated
+# by debian/tools/bootstrap.sh).
 override_dh_auto_configure:
 	SOURCE_REVISION="$(shell dpkg-parsechangelog | \
 			  sed -n "/^Version:/s/^Version: //p" | \
-			  sed -e "s,+g\([0-9a-f]*\).*,[@\1]," | \
+			  sed -e "s,$$,$(shell cat debian/source_revision 2>/dev/null || true)," | \
 			  sed -e "s,$$, ($(shell lsb_release -is)/$(shell lsb_release -rs)),")"; \
 	dh_auto_configure -- \
 		--prefix=/usr \
@@ -176,11 +178,12 @@ override_dh_installlogcheck:
 # dh_makeshlibs wants to be clever and treat plugins as shared libs.
 # Slap it in the face, and tell it not to. We also do not need any
 # script modifications, as our single shared lib is in a private
-# directory.
-override_dh_makeshilbs: PKG_VERSION := $(shell dpkg-parsechangelog | grep '^Version:' | cut -d: -f2)
+# directory. On the other hand, we do want correct dependencies on
+# anything that build-depends on syslog-ng-dev, so lets make a correct
+# shlibs file for that, shall we?
 override_dh_makeshlibs:
 ifeq (,$(filter syslog-ng-core,$(shell dh_listpackages)))
-	dh_makeshlibs -V "syslog-ng-core (= ${PKG_VERSION})" -n -Xusr/lib/syslog-ng/$(shell cat ${SRCDIR}/VERSION)
+	dh_makeshlibs -V "syslog-ng-core (= $(shell dpkg-parsechangelog | grep '^Version:' | cut -d: -f2))" -n -Xusr/lib/syslog-ng/$(shell cat ${SRCDIR}/VERSION)
 else
 	dh_makeshlibs -n -Xusr/lib/syslog-ng/$(shell cat ${SRCDIR}/VERSION)
 endif

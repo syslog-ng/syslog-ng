@@ -1,3 +1,28 @@
+syslog-ng (3.4.0~alpha3+sandbox+20121116-1~mhp1) unstable; urgency=low
+
+  [ Gergely Nagy <algernon@madhouse-project.org> ]
+  * New upstream snapshot from my sandbox/3.4 branch, git commit 0c2acbb.
+  * Use the standard /var/log/mail.{info,err,warn} location for the
+    various mail-related logs. (Closes: #692056)
+  * Do not forcibly remove the systemd service files, that code is not
+    needed anymore.
+  * Bring debian/copyright up to date.
+
+ -- Gergely Nagy <algernon@madhouse-project.org>  Fri, 16 Nov 2012 12:33:34 +0100
+
+syslog-ng (3.4.0~alpha3+sandbox+20121027-1~mhp1) unstable; urgency=low
+
+  [ Gergely Nagy <algernon@madhouse-project.org> ]
+  * New upstream snapshot from my sandbox/3.4 branch, git commit 32bc3bd.
+  * The shlibs file belongs to -core.
+  * Add the syslog-ng-mod-geoip module.
+  * Update build-depends: added automake (>= 1.11.1) and python.
+  * Tighten the dependency of the modules on syslog-ng-core.
+  * Instead of installing systemd service file symlinks, install a
+    conffile, that includes the real service file. (Closes: #690067)
+
+ -- Gergely Nagy <algernon@madhouse-project.org>  Sun, 28 Oct 2012 15:49:00 +0100
+
 syslog-ng (3.4.0~alpha3+sandbox+133-1~mhp1) unstable; urgency=low
 
   [ Gergely Nagy <algernon@madhouse-project.org> ]
@@ -8,6 +33,14 @@ syslog-ng (3.4.0~alpha3+sandbox+133-1~mhp1) unstable; urgency=low
     + libsyslog-ng.so is installed into a private directory.
 
  -- Gergely Nagy <algernon@madhouse-project.org>  Mon, 15 Oct 2012 23:45:39 +0200
+
+syslog-ng (3.3.6.91-1~mhp2) unstable; urgency=low
+
+  * Instead of installing systemd service file symlinks, install a
+    conffile, that includes the real service file. (Closes: #690067)
+  * New git snapshot, based on git commit 6a3c11c.
+
+ -- Gergely Nagy <algernon@madhouse-project.org>  Sun, 28 Oct 2012 15:44:23 +0100
 
 syslog-ng (3.3.6.91-1~mhp1) unstable; urgency=low
 
