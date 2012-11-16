@@ -1,14 +1,14 @@
-syslog-ng (3.4.0~alpha3+sandbox+20121110-1~mhp1) unstable; urgency=low
+syslog-ng (3.4.0~alpha3+sandbox+20121116-1~mhp1) unstable; urgency=low
 
   [ Gergely Nagy <algernon@madhouse-project.org> ]
-  * New upstream snapshot from my sandbox/3.4 branch, git commit 8581fc8.
+  * New upstream snapshot from my sandbox/3.4 branch, git commit 0c2acbb.
   * Use the standard /var/log/mail.{info,err,warn} location for the
     various mail-related logs. (Closes: #692056)
   * Do not forcibly remove the systemd service files, that code is not
     needed anymore.
   * Bring debian/copyright up to date.
 
- -- Gergely Nagy <algernon@madhouse-project.org>  Sat, 10 Nov 2012 15:53:45 +0100
+ -- Gergely Nagy <algernon@madhouse-project.org>  Fri, 16 Nov 2012 12:33:34 +0100
 
 syslog-ng (3.4.0~alpha3+sandbox+20121027-1~mhp1) unstable; urgency=low
 
