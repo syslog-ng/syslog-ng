@@ -112,18 +112,20 @@ TLSContext *last_tls_context;
 
 /* INCLUDE_DECLS */
 
-%type	<ptr> source_afsocket
+%type	<ptr> source_afunix
 %type	<ptr> source_afunix_dgram_params
 %type	<ptr> source_afunix_stream_params
+%type	<ptr> source_afinet
 %type	<ptr> source_afinet_udp_params
 %type	<ptr> source_afinet_tcp_params
 %type   <ptr> source_afsyslog
 %type   <ptr> source_afsyslog_params
 %type   <ptr> source_afsocket_stream_params
 
-%type	<ptr> dest_afsocket
+%type	<ptr> dest_afunix
 %type	<ptr> dest_afunix_dgram_params
 %type	<ptr> dest_afunix_stream_params
+%type	<ptr> dest_afinet
 %type	<ptr> dest_afinet_udp_params
 %type	<ptr> dest_afinet_tcp_params
 %type   <ptr> dest_afsyslog
@@ -132,22 +134,18 @@ TLSContext *last_tls_context;
 %%
 
 start
-        : LL_CONTEXT_SOURCE source_afsocket                   { YYACCEPT; }
+        : LL_CONTEXT_SOURCE source_afunix                     { YYACCEPT; }
+        | LL_CONTEXT_SOURCE source_afinet                     { YYACCEPT; }
         | LL_CONTEXT_SOURCE source_afsyslog                   { YYACCEPT; }
-        | LL_CONTEXT_DESTINATION dest_afsocket                    { YYACCEPT; }
-        | LL_CONTEXT_DESTINATION dest_afsyslog                    { YYACCEPT; }
+        | LL_CONTEXT_DESTINATION dest_afunix                  { YYACCEPT; }
+        | LL_CONTEXT_DESTINATION dest_afinet                  { YYACCEPT; }
+        | LL_CONTEXT_DESTINATION dest_afsyslog                { YYACCEPT; }
         ;
 
-
-source_afsocket
+source_afunix
         : KW_UNIX_DGRAM '(' source_afunix_dgram_params ')'	                                { $$ = $3; }
 	| KW_UNIX_STREAM '(' source_afunix_stream_params ')' 	                                { $$ = $3; }
-	| KW_UDP { last_addr_family = AF_INET; } '(' source_afinet_udp_params ')'		{ $$ = $4; }
-	| KW_TCP { last_addr_family = AF_INET; } '(' source_afinet_tcp_params ')'		{ $$ = $4; }
-	| KW_UDP6 { last_addr_family = AF_INET6; } '(' source_afinet_udp_params ')'		{ $$ = $4; }
-	| KW_TCP6 { last_addr_family = AF_INET6; } '(' source_afinet_tcp_params ')'		{ $$ = $4; }
-        ;
-
+	;
 
 source_afunix_dgram_params
 	: string
@@ -187,7 +185,12 @@ source_afunix_option
 	| KW_OPTIONAL '(' yesno ')'		{ last_driver->optional = $3; }
 	;
 
-
+source_afinet
+	: KW_UDP { last_addr_family = AF_INET; } '(' source_afinet_udp_params ')'		{ $$ = $4; }
+	| KW_TCP { last_addr_family = AF_INET; } '(' source_afinet_tcp_params ')'		{ $$ = $4; }
+	| KW_UDP6 { last_addr_family = AF_INET6; } '(' source_afinet_udp_params ')'		{ $$ = $4; }
+	| KW_TCP6 { last_addr_family = AF_INET6; } '(' source_afinet_tcp_params ')'		{ $$ = $4; }
+        ;
 
 source_afinet_udp_params
         :
@@ -295,13 +298,9 @@ source_afsyslog_option
 	| source_afsocket_stream_params		{}
 	;
 
-dest_afsocket
+dest_afunix
 	: KW_UNIX_DGRAM '(' dest_afunix_dgram_params ')'	{ $$ = $3; }
 	| KW_UNIX_STREAM '(' dest_afunix_stream_params ')'	{ $$ = $3; }
-	| KW_UDP { last_addr_family = AF_INET; } '(' dest_afinet_udp_params ')'			{ $$ = $4; }
-	| KW_TCP { last_addr_family = AF_INET; } '(' dest_afinet_tcp_params ')'			{ $$ = $4; }
-	| KW_UDP6 { last_addr_family = AF_INET6; } '(' dest_afinet_udp_params ')'			{ $$ = $4; }
-	| KW_TCP6 { last_addr_family = AF_INET6; } '(' dest_afinet_tcp_params ')'			{ $$ = $4; }
 	;
 
 dest_afunix_dgram_params
@@ -336,6 +335,13 @@ dest_afunix_option
 	| dest_afsocket_option
 	| socket_option
 	| dest_driver_option
+	;
+
+dest_afinet
+	: KW_UDP { last_addr_family = AF_INET; } '(' dest_afinet_udp_params ')'			{ $$ = $4; }
+	| KW_TCP { last_addr_family = AF_INET; } '(' dest_afinet_tcp_params ')'			{ $$ = $4; }
+	| KW_UDP6 { last_addr_family = AF_INET6; } '(' dest_afinet_udp_params ')'		{ $$ = $4; }
+	| KW_TCP6 { last_addr_family = AF_INET6; } '(' dest_afinet_tcp_params ')'		{ $$ = $4; }
 	;
 
 dest_afinet_udp_params
