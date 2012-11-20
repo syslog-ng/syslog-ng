@@ -77,6 +77,7 @@ TLSContext *last_tls_context;
 %token KW_UDP
 %token KW_TCP6
 %token KW_UDP6
+%token KW_NETWORK
 %token KW_TRANSPORT
 
 %token KW_IP_TTL
@@ -120,6 +121,8 @@ TLSContext *last_tls_context;
 %type	<ptr> source_afinet_tcp_params
 %type   <ptr> source_afsyslog
 %type   <ptr> source_afsyslog_params
+%type	<ptr> source_afnetwork
+%type	<ptr> source_afnetwork_params
 %type   <ptr> source_afsocket_stream_params
 
 %type	<ptr> dest_afunix
@@ -130,6 +133,8 @@ TLSContext *last_tls_context;
 %type	<ptr> dest_afinet_tcp_params
 %type   <ptr> dest_afsyslog
 %type   <ptr> dest_afsyslog_params
+%type   <ptr> dest_afnetwork
+%type   <ptr> dest_afnetwork_params
 
 %%
 
@@ -137,9 +142,11 @@ start
         : LL_CONTEXT_SOURCE source_afunix                     { YYACCEPT; }
         | LL_CONTEXT_SOURCE source_afinet                     { YYACCEPT; }
         | LL_CONTEXT_SOURCE source_afsyslog                   { YYACCEPT; }
+        | LL_CONTEXT_SOURCE source_afnetwork                  { YYACCEPT; }
         | LL_CONTEXT_DESTINATION dest_afunix                  { YYACCEPT; }
         | LL_CONTEXT_DESTINATION dest_afinet                  { YYACCEPT; }
         | LL_CONTEXT_DESTINATION dest_afsyslog                { YYACCEPT; }
+        | LL_CONTEXT_DESTINATION dest_afnetwork               { YYACCEPT; }
         ;
 
 source_afunix
@@ -301,6 +308,15 @@ source_afsocket_transport
 #endif
           }
 
+source_afnetwork
+	: KW_NETWORK { last_addr_family = AF_INET; } '(' source_afnetwork_params ')'    { $$ = $4; }
+	;
+
+source_afnetwork_params
+	: source_afsyslog_params				{ $$ = $1; }
+        ;
+
+
 dest_afunix
 	: KW_UNIX_DGRAM '(' dest_afunix_dgram_params ')'	{ $$ = $3; }
 	| KW_UNIX_STREAM '(' dest_afunix_stream_params ')'	{ $$ = $3; }
@@ -461,6 +477,14 @@ dest_afsocket_transport
 #endif
           }
 	;
+
+dest_afnetwork
+	: KW_NETWORK { last_addr_family = AF_INET; } '(' dest_afnetwork_params ')'	{ $$ = $4; }
+	;
+
+dest_afnetwork_params
+        : dest_afsyslog_params								{ $$ = $1; }
+        ;
 
 tls_options
 	: tls_option tls_options
