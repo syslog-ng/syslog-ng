@@ -168,6 +168,10 @@ AC_ARG_ENABLE(pcre,
               [  --enable-pcre           Enable support for Perl Compatible Regular Expressions (default: auto)]
               ,,enable_pcre="auto")
 
+AC_ARG_ENABLE(threaded,
+              [ --enable-threaded        Enable multithreading  working mode (default: yes)]
+              ,,enable_threaded="yes")
+
 if test $IS_WINDOWS -eq 0; then
 AC_ARG_WITH(libnet,
    [  --with-libnet=path      use path to libnet-config script],
@@ -247,10 +251,6 @@ AC_ARG_ENABLE(json,
 AC_ARG_ENABLE(systemd,
               [  --enable-systemd        Enable systemd support (default: auto)]
               ,,enable_systemd="auto")
-
-AC_ARG_ENABLE(threaded,
-              [ --enable-threaded        Enable multithreading  working mode (default: yes)]
-              ,,enable_threaded="yes")
 
 AC_ARG_WITH(compile-date,
           [  --without-compile-date  Do not include the compile date in the binary]
