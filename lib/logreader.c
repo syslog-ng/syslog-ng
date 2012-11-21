@@ -568,6 +568,7 @@ log_reader_update_watches(LogReader *self)
        * free_to_send == FALSE)
        */
 
+      gboolean old_immediate_check = self->immediate_check;
       self->immediate_check = FALSE;
 
       if (iv_fd_registered(&self->fd_watch))
@@ -621,6 +622,7 @@ log_reader_update_watches(LogReader *self)
       else
         {
           self->suspended = TRUE;
+          self->immediate_check = old_immediate_check;
         }
       return;
     }
