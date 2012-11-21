@@ -577,9 +577,10 @@ if test "x$enable_linux_caps" = "xyes" -o "x$enable_linux_caps" = "xauto"; then
     AC_CHECK_LIB(cap, cap_set_proc, LIBCAP_LIBS="-lcap")
 fi
 
-AC_CHECK_FUNCS(strdup strtol strtoll strtoimax inet_aton inet_ntoa getopt_long getaddrinfo getutent pread pwrite strcasestr memrchr)
+dnl some of these are provided by libs declared in BASE_LIBS on non-Linux/FreeBSD systems.
 old_LIBS=$LIBS
-LIBS=$BASE_LIBS
+LIBS="$LIBS $BASE_LIBS"
+AC_CHECK_FUNCS(strdup strtol strtoll strtoimax inet_aton inet_ntoa getopt_long getaddrinfo getutent pread pwrite strcasestr memrchr)
 AC_CHECK_FUNCS(clock_gettime)
 LIBS=$old_LIBS
 AC_CHECK_TYPE([clockid_t], [AC_DEFINE([HAVE_CLOCKID_T],1, [Define to 1 if you have the clockid_t type.])])
