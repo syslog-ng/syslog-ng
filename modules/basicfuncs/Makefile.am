@@ -14,4 +14,5 @@ EXTRA_DIST = \
 	cond-funcs.c 	\
 	numeric-funcs.c \
 	str-funcs.c	\
-	ip-funcs.c
+	ip-funcs.c	\
+	misc-funcs.c

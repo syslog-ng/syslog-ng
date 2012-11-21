@@ -141,7 +141,8 @@ test_clean_state(void)
 }
 
 void
-test_rule_value(const gchar *pattern, const gchar *name, const gchar *value)
+test_rule_value_without_clean(const gchar *program, const gchar *pattern,
+                              const gchar *name, const gchar *value)
 {
   gboolean result;
   LogMessage *msg = log_msg_new_empty();
@@ -150,7 +151,7 @@ test_rule_value(const gchar *pattern, const gchar *name, const gchar *value)
   gssize len;
 
   log_msg_set_value(msg, LM_V_MESSAGE, pattern, strlen(pattern));
-  log_msg_set_value(msg, LM_V_PROGRAM, "prog1", 5);
+  log_msg_set_value(msg, LM_V_PROGRAM, program, 5);
   log_msg_set_value(msg, LM_V_HOST, MYHOST, strlen(MYHOST));
   log_msg_set_value(msg, LM_V_PID, MYPID, strlen(MYPID));
 
@@ -163,6 +164,12 @@ test_rule_value(const gchar *pattern, const gchar *name, const gchar *value)
     test_fail("Value '%s' is %smatching for pattern '%s' (%d)\n", name, found ? "" : "not ", pattern, !!result);
 
   log_msg_unref(msg);
+}
+
+void
+test_rule_value(const gchar *pattern, const gchar *name, const gchar *value)
+{
+  test_rule_value_without_clean("prog1", pattern, name, value);
   test_clean_state();
 }
 
@@ -614,6 +621,71 @@ test_patterndb_message_property_inheritance()
   clean_pattern_db();
 }
 
+gchar *pdb_msg_count_skeleton = "<patterndb version='3' pub_date='2010-02-22'>\
+ <ruleset name='testset' id='1'>\
+  <patterns>\
+   <pattern>prog1</pattern>\
+   <pattern>prog2</pattern>\
+  </patterns>\
+  <rule provider='test' id='13' class='system' context-scope='program'\
+        context-id='$PID' context-timeout='60'>\
+   <patterns>\
+    <pattern>pattern13</pattern>\
+   </patterns>\
+   <values>\
+    <value name='n13-1'>v13-1</value>\
+   </values>\
+   <actions>\
+    <action condition='\"${n13-1}\" == \"v13-1\"' trigger='match'>\
+     <message inherit-properties='TRUE'>\
+      <value name='CONTEXT_LENGTH'>$(context-length)</value>\
+     </message>\
+    </action>\
+   </actions>\
+  </rule>\
+  <rule provider='test' id='14' class='system' context-scope='program'\
+        context-id='$PID' context-timeout='60'>\
+   <patterns>\
+    <pattern>pattern14</pattern>\
+   </patterns>\
+   <actions>\
+    <action condition='\"$(context-length)\" == \"1\"' trigger='match'>\
+     <message inherit-properties='TRUE'>\
+      <value name='CONTEXT_LENGTH'>$(context-length)</value>\
+     </message>\
+    </action>\
+   </actions>\
+  </rule>\
+  <rule provider='test' id='15' class='system' context-scope='program'\
+        context-id='$PID' context-timeout='60'>\
+   <patterns>\
+    <pattern>pattern15@ANYSTRING:p15@</pattern>\
+   </patterns>\
+   <actions>\
+    <action condition='\"$(context-length)\" == \"2\"' trigger='match'>\
+     <message inherit-properties='FALSE'>\
+      <value name='fired'>true</value>\
+     </message>\
+    </action>\
+   </actions>\
+  </rule>\
+ </ruleset>\
+</patterndb>";
+
+void
+test_patterndb_context_length()
+{
+  create_pattern_db(pdb_msg_count_skeleton);
+
+  test_rule_action_message_value("pattern13", 0, 1, "CONTEXT_LENGTH", "1");
+  test_rule_action_message_value("pattern14", 0, 1, "CONTEXT_LENGTH", "1");
+
+  test_rule_value_without_clean("prog2", "pattern15-a", "p15", "-a");
+  test_rule_action_message_value("pattern15-b", 0, 2, "fired", "true");
+
+  clean_pattern_db();
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -626,6 +698,7 @@ main(int argc, char *argv[])
   msg_init(TRUE);
 
   configuration = cfg_new(0x0302);
+  plugin_load_module("basicfuncs", configuration, NULL);
   plugin_load_module("syslogformat", configuration, NULL);
 
   pattern_db_global_init();
@@ -633,6 +706,7 @@ main(int argc, char *argv[])
   test_patterndb_rule();
   test_patterndb_parsers();
   test_patterndb_message_property_inheritance();
+  test_patterndb_context_length();
 
   app_shutdown();
   return  (fail ? 1 : 0);
