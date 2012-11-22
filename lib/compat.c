@@ -1103,7 +1103,7 @@ int _iv_fd_register(struct iv_fd *this)
 
 void iv_fd_register(struct iv_fd *this)
 {
-  if (_iv_fd_register(this));
+  if (_iv_fd_register(this))
     iv_fatal("iv_fd_regiter: can't create event for socket");
   return;
 }
