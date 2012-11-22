@@ -1061,7 +1061,7 @@ afsocket_dd_tls_verify_callback(gint ok, X509_STORE_CTX *ctx, gpointer user_data
 }
 #endif
 
-static gboolean afsocket_dd_connected(AFSocketDestDriver *self);
+static void afsocket_dd_connected(AFSocketDestDriver *self);
 static void afsocket_dd_reconnect(AFSocketDestDriver *self);
 
 static void
@@ -1069,7 +1069,7 @@ afsocket_dd_init_watches(AFSocketDestDriver *self)
 {
   IV_FD_INIT(&self->connect_fd);
   self->connect_fd.cookie = self;
-  iv_fd_set_handler_out(&self->connect_fd,afsocket_dd_connected);
+  iv_fd_set_handler_out(&self->connect_fd,(void (*)(void *))afsocket_dd_connected);
 }
 
 static void
@@ -1098,7 +1098,7 @@ afsocket_dd_stop_watches(AFSocketDestDriver *self)
     }
 }
 
-static gboolean
+static void
 afsocket_dd_connected(AFSocketDestDriver *self)
 {
   gchar buf1[256], buf2[256];
@@ -1195,12 +1195,12 @@ afsocket_dd_connected(AFSocketDestDriver *self)
   proto->flags |= LPBS_KEEP_ONE;
   log_proto_restart_with_state(proto,cfg->state,afsocket_dd_format_state_name(self));
   log_writer_reopen(self->writer, proto, &self->proto_options);
-  return TRUE;
+  return;
  error_reconnect:
   close(self->fd);
   self->fd = -1;
   log_writer_reopen(self->writer, NULL, NULL);
-  return FALSE;
+  return;
 }
 
 static gboolean
