@@ -392,7 +392,8 @@ log_reader_start_watches(LogReader *self)
         {
           iv_fd_register(&self->fd_watch);
         }
-      else
+
+      if (self->pollable_state == 0)
         {
           msg_error("Unable to determine how to monitor this fd, follow_freq() not set and it is not possible to poll it with the current ivykis polling method, try changing IV_EXCLUDE_POLL_METHOD environment variable",
                     evt_tag_int("fd", fd),
