@@ -55,7 +55,11 @@ ssl_locking_callback(int mode, int type, const char *file, int line)
 static unsigned long
 ssl_thread_id(void)
 {
+#ifndef _WIN32
   return (unsigned long) g_thread_self();
+#else
+  return (unsigned long) GetCurrentThreadId();
+#endif
 }
 
 static void
