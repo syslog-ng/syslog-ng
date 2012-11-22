@@ -487,29 +487,26 @@ log_writer_start_watches(LogWriter *self)
   GIOCondition cond;
   gint idle_timeout = -1;
 
-  if (!self->watches_running)
+  if (self->watches_running)
+    return;
+
+  log_proto_prepare(self->proto, &fd, &cond, &idle_timeout);
+
+  self->fd_watch.fd = fd;
+  if (self->pollable_state < 0)
     {
-      log_proto_prepare(self->proto, &fd, &cond, &idle_timeout);
-
-      self->fd_watch.fd = fd;
-      if (self->pollable_state < 0)
-        {
-          if (is_file_regular(fd))
-            self->pollable_state = 0;
-          else if (iv_fd_register_try(&self->fd_watch) == 0)
-            self->pollable_state = 1;
-          else
-            self->pollable_state = 0;
-        }
-
-      else if (self->pollable_state)
-        {
-          iv_fd_register(&self->fd_watch);
-        }
-
-      log_writer_update_watches(self);
-      self->watches_running = TRUE;
+      if (is_file_regular(fd))
+        self->pollable_state = 0;
+      else
+        self->pollable_state = !iv_fd_register_try(&self->fd_watch);
     }
+  else if (self->pollable_state)
+    {
+      iv_fd_register(&self->fd_watch);
+    }
+
+  log_writer_update_watches(self);
+  self->watches_running = TRUE;
 }
 
 static void
