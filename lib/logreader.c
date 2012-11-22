@@ -371,22 +371,20 @@ log_reader_start_watches(LogReader *self)
       /* NOTE: the fd may not be set here, as it may not have been opened yet */
       iv_timer_register(&self->follow_timer);
     }
-  else if (fd < 0)
-    {
-      msg_error("In order to poll non-yet-existing files, follow_freq() must be set",
-                NULL);
-      return FALSE;
-    }
   else
     {
+      if (fd < 0)
+        {
+          msg_error("In order to poll non-yet-existing files, follow_freq() must be set",
+                    NULL);
+          return FALSE;
+        }
+
       /* we have an FD, it is possible to poll it, register it  */
       self->fd_watch.fd = fd;
       if (self->pollable_state < 0)
         {
-          if (iv_fd_register_try(&self->fd_watch) == 0)
-            self->pollable_state = 1;
-          else
-            self->pollable_state = 0;
+          self->pollable_state = !iv_fd_register_try(&self->fd_watch);
         }
       else if (self->pollable_state > 0)
         {
