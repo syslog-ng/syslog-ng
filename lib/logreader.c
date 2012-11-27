@@ -330,7 +330,7 @@ log_reader_io_follow_file(gpointer s)
                 evt_tag_int("size", st.st_size),
                 NULL);
 
-      if (pos < st.st_size)
+      if (pos < st.st_size || !S_ISREG(st.st_mode))
         {
           /* we have data to read */
           self->size = st.st_size;

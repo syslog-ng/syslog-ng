@@ -494,11 +494,50 @@ affile_sd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
   log_pipe_forward_msg(s, msg, path_options);
 }
 
+#if __FreeBSD__
+static gboolean
+check_os_version()
+{
+  struct utsname u;
+  if (uname(&u) != 0)
+    {
+      msg_error("file(): Cannot get information about the running kernel",
+                evt_tag_errno("error", errno),
+                NULL);
+      return FALSE;
+    }
+
+  if (strcmp(u.sysname, "FreeBSD") != 0)
+    return FALSE;
+
+  if (strncmp(u.release, "6.", 2) == 0 ||
+      strncmp(u.release, "7.", 2) == 0 ||
+      strncmp(u.release, "8.", 2) == 0 ||
+      strncmp(u.release, "9.0", 3) == 0)
+    return TRUE;
+
+  return FALSE;
+}
+#endif
+
 static gboolean
 affile_sd_init(LogPipe *s)
 {
   AFFileSourceDriver *self = (AFFileSourceDriver *) s;
   GlobalConfig *cfg = log_pipe_get_config(s);
+
+#if __FreeBSD__
+  if ((self->reader_options.follow_freq == 0) &&
+      (strcmp(self->filename->str, "/dev/klog") == 0) &&
+      (cfg->version <= 0x0500) &&
+      (check_os_version()))
+    {
+      msg_warning("Warning: syslog-ng cannot poll /dev/klog, therefore the follow_freq option has been set to 1. To avoid this warning, set follow_freq higher than 0",
+                  evt_tag_str("source", self->super.super.group),
+                  NULL);
+      self->reader_options.follow_freq = 1000;
+    }
+#endif
 
   log_proto_check_server_options((LogProtoServerOptions *)&self->proto_options);
   log_reader_options_init(&self->reader_options, cfg, self->super.super.group);
