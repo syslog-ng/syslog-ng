@@ -3,7 +3,7 @@ STAMPDIR=winbuild/stamps
 STAGINGDIR=winbuild/staging
 
 ZBS_STAGE_DIR=$(STAGINGDIR)
-CONFIG_OPTS=--disable-json --sbindir='$${prefix}/bin' --with-module-dir='$${prefix}/bin' --with-pidfile-dir='$${prefix}/var/run' --enable-spoof-source --disable-threaded
+CONFIG_OPTS=--disable-json --sbindir='$${prefix}/bin' --with-module-dir='$${prefix}/bin' --with-pidfile-dir='$${prefix}/var/run' --enable-spoof-source
 BUILDCMD=./balabit-vs-build
 ifneq (,$(build))
 CONFIG_OPTS += --build=$(build)

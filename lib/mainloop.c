@@ -810,11 +810,12 @@ main_loop_init(gchar *config_string)
   iv_work_pool_create(&main_loop_io_workers);
   IV_TASK_INIT(&main_loop_io_workers_reenable_jobs_task);
   main_loop_io_workers_reenable_jobs_task.handler = main_loop_io_worker_reenable_jobs;
-  log_queue_set_max_threads(MIN(main_loop_io_workers.max_threads, MAIN_LOOP_MAX_WORKER_THREADS));
 #ifdef _WIN32
   signal(SIGTERM,term_signal);
   signal(SIGINT,term_signal);
+  main_loop_io_workers.max_threads = 4;
 #endif
+  log_queue_set_max_threads(MIN(main_loop_io_workers.max_threads, MAIN_LOOP_MAX_WORKER_THREADS));
   main_loop_stop_signal_init();
   main_loop_call_init();
 
