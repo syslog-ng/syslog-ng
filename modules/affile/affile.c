@@ -41,6 +41,10 @@
 #include <stdlib.h>
 #include <pcre.h>
 
+#if __FreeBSD__
+#include <sys/utsname.h>
+#endif
+
 static gboolean
 affile_open_file(gchar *name, gint flags,
                  gint uid, gint gid, gint mode,
