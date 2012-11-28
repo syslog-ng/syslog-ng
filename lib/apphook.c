@@ -163,4 +163,5 @@ app_shutdown(void)
   g_list_foreach(application_hooks, (GFunc) g_free, NULL);
   g_list_free(application_hooks);
   msg_deinit();
+  iv_deinit();
 }
