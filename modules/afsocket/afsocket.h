@@ -33,12 +33,6 @@ typedef enum
   AFSOCKET_DIR_SEND = 0x02,
 } AFSocketDirection;
 
-#define AFSOCKET_LOCAL               0x0004
-
-#define AFSOCKET_SYSLOG_PROTOCOL     0x0008
-#define AFSOCKET_KEEP_ALIVE          0x0100
-#define AFSOCKET_REQUIRE_TLS         0x0200
-
 typedef struct _SocketOptions
 {
   gint so_sndbuf;

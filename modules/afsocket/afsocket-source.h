@@ -40,7 +40,11 @@ typedef struct _AFSocketSourceDriver AFSocketSourceDriver;
 struct _AFSocketSourceDriver
 {
   LogSrcDriver super;
-  guint32 flags;
+  guint32 recvd_messages_are_local:1,
+    syslog_protocol:1,
+    connections_kept_alive_accross_reloads:1,
+    require_tls:1,
+    window_size_initialized:1;
   struct iv_fd listen_fd;
   gint fd;
   /* SOCK_DGRAM or SOCK_STREAM or other SOCK_XXX values used by the socket() call */
@@ -110,7 +114,7 @@ afsocket_sd_apply_transport(AFSocketSourceDriver *s)
 gboolean afsocket_sd_init(LogPipe *s);
 gboolean afsocket_sd_deinit(LogPipe *s);
 
-void afsocket_sd_init_instance(AFSocketSourceDriver *self, SocketOptions *sock_options, gint family, gint sock_type, guint32 flags);
+void afsocket_sd_init_instance(AFSocketSourceDriver *self, SocketOptions *sock_options, gint family, gint sock_type);
 void afsocket_sd_free(LogPipe *self);
 
 #endif

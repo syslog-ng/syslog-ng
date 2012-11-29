@@ -38,7 +38,11 @@ typedef struct _AFSocketDestDriver AFSocketDestDriver;
 struct _AFSocketDestDriver
 {
   LogDestDriver super;
-  guint32 flags;
+
+  gboolean
+    connections_kept_alive_accross_reloads:1,
+    syslog_protocol:1,
+    require_tls:1;
   gint fd;
   /* SOCK_DGRAM or SOCK_STREAM or other SOCK_XXX values used by the socket() call */
   gint sock_type;
@@ -99,7 +103,7 @@ afsocket_dd_apply_transport(AFSocketDestDriver *s)
 
 void afsocket_dd_set_transport(LogDriver *s, const gchar *transport);
 void afsocket_dd_set_keep_alive(LogDriver *self, gint enable);
-void afsocket_dd_init_instance(AFSocketDestDriver *self, SocketOptions *sock_options, gint family, gint sock_type, const gchar *hostname, guint32 flags);
+void afsocket_dd_init_instance(AFSocketDestDriver *self, SocketOptions *sock_options, gint family, gint sock_type, const gchar *hostname);
 gboolean afsocket_dd_init(LogPipe *s);
 void afsocket_dd_free(LogPipe *s);
 

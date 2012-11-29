@@ -114,7 +114,7 @@ afinet_sd_apply_transport(AFSocketSourceDriver *s)
            * confusing is that syslog() driver was seldom used.
            *
            */
-          if ((self->super.flags & AFSOCKET_SYSLOG_PROTOCOL) && cfg_is_config_version_older(cfg, 0x0303))
+          if (self->super.syslog_protocol && cfg_is_config_version_older(cfg, 0x0303))
             {
               if (!msg_udp_source_port_warning)
                 {
@@ -133,7 +133,7 @@ afinet_sd_apply_transport(AFSocketSourceDriver *s)
     }
   else if (strcasecmp(self->super.transport, "tcp") == 0)
     {
-      if (self->super.flags & AFSOCKET_SYSLOG_PROTOCOL)
+      if (self->super.syslog_protocol)
         {
           default_bind_port = "601";
           self->super.logproto_name = "framed";
@@ -149,7 +149,7 @@ afinet_sd_apply_transport(AFSocketSourceDriver *s)
     {
       static gboolean msg_tls_source_port_warning = FALSE;
 
-      g_assert(self->super.flags & AFSOCKET_SYSLOG_PROTOCOL);
+      g_assert(self->super.syslog_protocol);
       if (!self->bind_port)
         {
           /* NOTE: this version number change has happened in a different
@@ -176,7 +176,7 @@ afinet_sd_apply_transport(AFSocketSourceDriver *s)
           else
             default_bind_port = "6514";
         }
-      self->super.flags |= AFSOCKET_REQUIRE_TLS;
+      self->super.require_tls = TRUE;
       self->super.sock_type = SOCK_STREAM;
       self->super.logproto_name = "framed";
     }
@@ -202,7 +202,7 @@ afinet_sd_apply_transport(AFSocketSourceDriver *s)
     return FALSE;
 
 #if BUILD_WITH_SSL
-  if (self->super.flags & AFSOCKET_REQUIRE_TLS && !self->super.tls_context)
+  if (self->super.require_tls && !self->super.tls_context)
     {
       msg_error("transport(tls) was specified, but tls() options missing",
                 evt_tag_str("id", self->super.super.super.id),
@@ -224,15 +224,31 @@ afinet_sd_free(LogPipe *s)
   afsocket_sd_free(s);
 }
 
-LogDriver *
-afinet_sd_new(gint af, gint sock_type, guint flags)
+static AFInetSourceDriver *
+afinet_sd_new_instance(gint af, gint sock_type)
 {
   AFInetSourceDriver *self = g_new0(AFInetSourceDriver, 1);
 
-  afsocket_sd_init_instance(&self->super, &self->sock_options.super, af, sock_type, flags);
+  afsocket_sd_init_instance(&self->super, &self->sock_options.super, af, sock_type);
   self->super.super.super.super.free_fn = afinet_sd_free;
 
   self->super.setup_socket = afinet_sd_setup_socket;
   self->super.apply_transport = afinet_sd_apply_transport;
+  return self;
+}
+
+LogDriver *
+afinet_sd_new(gint af, gint sock_type)
+{
+  return &afinet_sd_new_instance(af, sock_type)->super.super.super;
+}
+
+LogDriver *
+afsyslog_sd_new(void)
+{
+  AFInetSourceDriver *self = afinet_sd_new_instance(AF_INET, SOCK_STREAM);
+
+  self->super.reader_options.parse_options.flags |= LP_SYSLOG_PROTOCOL;
+  self->super.syslog_protocol = TRUE;
   return &self->super.super.super;
 }

@@ -142,7 +142,7 @@ afinet_dd_apply_transport(AFSocketDestDriver *s)
            * confusing is that syslog() driver was seldom used.
            *
            */
-          if ((self->super.flags & AFSOCKET_SYSLOG_PROTOCOL) && cfg_is_config_version_older(cfg, 0x0303))
+          if (self->super.syslog_protocol && cfg_is_config_version_older(cfg, 0x0303))
             {
               if (!msg_udp_source_port_warning)
                 {
@@ -162,7 +162,7 @@ afinet_dd_apply_transport(AFSocketDestDriver *s)
     }
   else if (strcasecmp(self->super.transport, "tcp") == 0)
     {
-      if ((self->super.flags & AFSOCKET_SYSLOG_PROTOCOL))
+      if (self->super.syslog_protocol)
         {
           self->super.logproto_name = "framed";
           default_dest_port = "601";
@@ -179,7 +179,7 @@ afinet_dd_apply_transport(AFSocketDestDriver *s)
     {
       static gboolean msg_tls_source_port_warning = FALSE;
 
-      g_assert((self->super.flags & AFSOCKET_SYSLOG_PROTOCOL) != 0);
+      g_assert(self->super.syslog_protocol);
       if (!self->dest_port)
         {
           /* NOTE: this version number change has happened in a different
@@ -206,7 +206,7 @@ afinet_dd_apply_transport(AFSocketDestDriver *s)
           else
             default_dest_port = "6514";
         }
-      self->super.flags |= AFSOCKET_REQUIRE_TLS;
+      self->super.require_tls = TRUE;
       self->super.sock_type = SOCK_STREAM;
       self->super.logproto_name = "framed";
     }
@@ -244,7 +244,7 @@ afinet_dd_apply_transport(AFSocketDestDriver *s)
 
 
 #if BUILD_WITH_SSL
-  if (self->super.flags & AFSOCKET_REQUIRE_TLS && !self->super.tls_context)
+  if (self->super.require_tls && !self->super.tls_context)
     {
       msg_error("transport(tls) was specified, but tls() options missing",
                 evt_tag_str("id", self->super.super.super.id),
@@ -275,7 +275,7 @@ afinet_dd_init(LogPipe *s)
 
 #if ENABLE_SPOOF_SOURCE
   if (self->spoof_source)
-    self->super.flags &= ~AFSOCKET_KEEP_ALIVE;
+    self->super.connections_kept_alive_accross_reloads = TRUE;
 #endif
 
   success = afsocket_dd_init(s);
@@ -492,12 +492,12 @@ afinet_dd_free(LogPipe *s)
 }
 
 
-LogDriver *
-afinet_dd_new(gint af, gint sock_type, gchar *host, guint flags)
+AFInetDestDriver *
+afinet_dd_new_instance(gint af, gint sock_type, gchar *host)
 {
   AFInetDestDriver *self = g_new0(AFInetDestDriver, 1);
 
-  afsocket_dd_init_instance(&self->super, &self->sock_options.super, af, sock_type, host, flags);
+  afsocket_dd_init_instance(&self->super, &self->sock_options.super, af, sock_type, host);
 
   self->super.super.super.super.init = afinet_dd_init;
   self->super.super.super.super.queue = afinet_dd_queue;
@@ -517,5 +517,24 @@ afinet_dd_new(gint af, gint sock_type, gchar *host, guint flags)
 #if ENABLE_SPOOF_SOURCE
   g_static_mutex_init(&self->lnet_lock);
 #endif
+  return self;
+}
+
+LogDriver *
+afinet_dd_new(gint af, gint sock_type, gchar *host)
+{
+  return &afinet_dd_new_instance(af, sock_type, host)->super.super.super;
+}
+
+LogDriver *
+afsyslog_dd_new(gchar *host)
+{
+  AFInetDestDriver *self = afinet_dd_new_instance(AF_INET, SOCK_STREAM, host);
+
+  self->super.syslog_protocol = TRUE;
+  return &self->super.super.super;
+}
+
+  self->super.syslog_protocol = TRUE;
   return &self->super.super.super;
 }

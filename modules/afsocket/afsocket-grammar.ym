@@ -195,7 +195,7 @@ source_afinet
 source_afinet_udp_params
         :
           {
-	    last_driver = *instance = afinet_sd_new(last_addr_family, SOCK_DGRAM, 0);
+	    last_driver = *instance = afinet_sd_new(last_addr_family, SOCK_DGRAM);
 	    last_reader_options = &((AFSocketSourceDriver *) last_driver)->reader_options;
 	    last_sock_options = &((AFInetSourceDriver *) last_driver)->sock_options.super;
 	  }
@@ -223,7 +223,7 @@ source_afinet_option
 source_afinet_tcp_params
 	:
 	  {
-	    last_driver = *instance = afinet_sd_new(last_addr_family, SOCK_STREAM, 0);
+	    last_driver = *instance = afinet_sd_new(last_addr_family, SOCK_STREAM);
 	    last_reader_options = &((AFSocketSourceDriver *) last_driver)->reader_options;
 	    last_sock_options = &((AFInetSourceDriver *) last_driver)->sock_options.super;
 	  }
@@ -265,7 +265,7 @@ source_afsyslog_params
 	:
 	  {
             /* we use transport(tcp) transport by default */
-	    last_driver = *instance = afinet_sd_new(last_addr_family, SOCK_STREAM, AFSOCKET_SYSLOG_PROTOCOL);
+	    last_driver = *instance = afsyslog_sd_new();
 	    last_reader_options = &((AFSocketSourceDriver *) last_driver)->reader_options;
 	    last_sock_options = &((AFInetSourceDriver *) last_driver)->sock_options.super;
 	  }
@@ -347,7 +347,7 @@ dest_afinet
 dest_afinet_udp_params
 	: string
 	  {
-	    last_driver = *instance = afinet_dd_new(last_addr_family, SOCK_DGRAM, $1, 0);
+	    last_driver = *instance = afinet_dd_new(last_addr_family, SOCK_DGRAM, $1);
 	    free($1);
 	    last_writer_options = &((AFSocketDestDriver *) last_driver)->writer_options;
 	    last_sock_options = &((AFInetDestDriver *) last_driver)->sock_options.super;
@@ -380,7 +380,7 @@ dest_afinet_udp_option
 dest_afinet_tcp_params
 	: string
 	  {
-	    last_driver = *instance = afinet_dd_new(last_addr_family, SOCK_STREAM, $1, 0);
+	    last_driver = *instance = afinet_dd_new(last_addr_family, SOCK_STREAM, $1);
 	    free($1);
 	    last_writer_options = &((AFSocketDestDriver *) last_driver)->writer_options;
 	    last_sock_options = &((AFInetDestDriver *) last_driver)->sock_options.super;
@@ -420,7 +420,7 @@ dest_afsyslog
 dest_afsyslog_params
         : string
           {
-            last_driver = *instance = afinet_dd_new(last_addr_family, SOCK_STREAM, $1, AFSOCKET_SYSLOG_PROTOCOL);
+            last_driver = *instance = afsyslog_dd_new($1);
 	    last_writer_options = &((AFSocketDestDriver *) last_driver)->writer_options;
 	    last_sock_options = &((AFInetDestDriver *) last_driver)->sock_options.super;
 	    free($1);

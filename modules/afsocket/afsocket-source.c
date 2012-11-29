@@ -59,7 +59,7 @@ afsocket_sc_stats_source(AFSocketSourceConnection *self)
 {
   gint source;
 
-  if ((self->owner->flags & AFSOCKET_SYSLOG_PROTOCOL) == 0)
+  if (!self->owner->syslog_protocol)
     {
       switch (self->owner->bind_addr->sa.sa_family)
         {
@@ -101,7 +101,7 @@ afsocket_sc_stats_instance(AFSocketSourceConnection *self)
       else
         return NULL;
     }
-  if ((self->owner->flags & AFSOCKET_SYSLOG_PROTOCOL) == 0)
+  if (!(self->owner->syslog_protocol))
     {
       g_sockaddr_format(self->peer_addr, buf, sizeof(buf), GSA_ADDRESS_ONLY);
     }
@@ -293,10 +293,7 @@ afsocket_sd_set_keep_alive(LogDriver *s, gint enable)
 {
   AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
 
-  if (enable)
-    self->flags |= AFSOCKET_KEEP_ALIVE;
-  else
-    self->flags &= ~AFSOCKET_KEEP_ALIVE;
+  self->connections_kept_alive_accross_reloads = enable;
 }
 
 void
@@ -510,7 +507,7 @@ afsocket_sd_init(LogPipe *s)
   g_assert(self->transport);
   g_assert(self->bind_addr);
 
-  if (self->sock_type == SOCK_STREAM && (self->flags & (AFSOCKET_WNDSIZE_INITED)) == 0)
+  if (self->sock_type == SOCK_STREAM && !self->window_size_initialized)
     {
       /* distribute the window evenly between each of our possible
        * connections.  This is quite pessimistic and can result in very low
@@ -527,12 +524,12 @@ afsocket_sd_init(LogPipe *s)
                       NULL);
           self->reader_options.super.init_window_size = 100;
         }
-      self->flags |= AFSOCKET_WNDSIZE_INITED;
+      self->window_size_initialized = TRUE;
     }
   log_reader_options_init(&self->reader_options, cfg, self->super.super.group);
 
   /* fetch persistent connections first */
-  if ((self->flags & AFSOCKET_KEEP_ALIVE))
+  if (self->connections_kept_alive_accross_reloads)
     {
       GList *p;
 
@@ -551,7 +548,7 @@ afsocket_sd_init(LogPipe *s)
   sock = -1;
   if (self->sock_type == SOCK_STREAM)
     {
-      if (self->flags & AFSOCKET_KEEP_ALIVE)
+      if (self->connections_kept_alive_accross_reloads)
         {
           /* NOTE: this assumes that fd 0 will never be used for listening fds,
            * main.c opens fd 0 so this assumption can hold */
@@ -623,7 +620,7 @@ afsocket_sd_deinit(LogPipe *s)
   AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
   GlobalConfig *cfg = log_pipe_get_config(s);
 
-  if ((self->flags & AFSOCKET_KEEP_ALIVE) == 0 || !cfg->persist)
+  if (!self->connections_kept_alive_accross_reloads || !cfg->persist)
     {
       afsocket_sd_kill_connection_list(self->connections);
     }
@@ -645,7 +642,7 @@ afsocket_sd_deinit(LogPipe *s)
   if (self->sock_type == SOCK_STREAM)
     {
       afsocket_sd_stop_watches(self);
-      if ((self->flags & AFSOCKET_KEEP_ALIVE) == 0)
+      if (!self->connections_kept_alive_accross_reloads)
         {
           msg_verbose("Closing listener fd",
                       evt_tag_int("fd", self->fd),
@@ -713,7 +710,7 @@ afsocket_sd_free(LogPipe *s)
 }
 
 void
-afsocket_sd_init_instance(AFSocketSourceDriver *self, SocketOptions *sock_options, gint family, gint sock_type, guint32 flags)
+afsocket_sd_init_instance(AFSocketSourceDriver *self, SocketOptions *sock_options, gint family, gint sock_type)
 {
   log_src_driver_init_instance(&self->super);
 
@@ -729,11 +726,12 @@ afsocket_sd_init_instance(AFSocketSourceDriver *self, SocketOptions *sock_option
   self->max_connections = 10;
   self->listen_backlog = 255;
   self->sock_type = sock_type;
-  self->flags = flags | AFSOCKET_KEEP_ALIVE;
+  self->connections_kept_alive_accross_reloads = TRUE;
   log_reader_options_defaults(&self->reader_options);
   if (self->sock_type == SOCK_STREAM)
     self->reader_options.super.init_window_size = 1000;
 
+#if 0
   if (self->flags & AFSOCKET_LOCAL)
     {
       static gboolean warned = FALSE;
@@ -755,8 +753,5 @@ afsocket_sd_init_instance(AFSocketSourceDriver *self, SocketOptions *sock_option
           self->reader_options.parse_options.flags &= ~LP_EXPECT_HOSTNAME;
         }
     }
-  if ((self->flags & AFSOCKET_SYSLOG_PROTOCOL))
-    {
-      self->reader_options.parse_options.flags |= LP_SYSLOG_PROTOCOL;
-    }
+#endif
 }

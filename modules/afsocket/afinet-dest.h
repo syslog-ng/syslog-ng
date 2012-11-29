@@ -53,11 +53,13 @@ typedef struct _AFInetDestDriver
   /* destination hostname is stored in super.hostname */
 } AFInetDestDriver;
 
-LogDriver *afinet_dd_new(gint af, gint sock_type, gchar *host, guint flags);
 void afinet_dd_set_localport(LogDriver *self, gchar *service);
 void afinet_dd_set_destport(LogDriver *self, gchar *service);
 void afinet_dd_set_localip(LogDriver *self, gchar *ip);
 void afinet_dd_set_sync_freq(LogDriver *self, gint sync_freq);
 void afinet_dd_set_spoof_source(LogDriver *self, gboolean enable);
+
+LogDriver *afinet_dd_new(gint af, gint sock_type, gchar *host);
+LogDriver *afsyslog_dd_new(gchar *host);
 
 #endif

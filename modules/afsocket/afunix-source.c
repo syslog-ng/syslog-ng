@@ -221,7 +221,7 @@ afunix_sd_new(gint sock_type, gchar *filename)
 {
   AFUnixSourceDriver *self = g_new0(AFUnixSourceDriver, 1);
 
-  afsocket_sd_init_instance(&self->super, &self->sock_options, AF_UNIX, sock_type, AFSOCKET_LOCAL | AFSOCKET_KEEP_ALIVE);
+  afsocket_sd_init_instance(&self->super, &self->sock_options, AF_UNIX, sock_type);
 
   self->super.super.super.super.init = afunix_sd_init;
   self->super.super.super.super.free_fn = afunix_sd_free;
@@ -229,10 +229,10 @@ afunix_sd_new(gint sock_type, gchar *filename)
   self->super.apply_transport = afunix_sd_apply_transport;
 
   self->super.max_connections = 256;
+  self->super.recvd_messages_are_local = TRUE;
 
   if (self->super.sock_type == SOCK_STREAM)
     self->super.reader_options.super.init_window_size = self->super.max_connections * 100;
-
 
   self->filename = g_strdup(filename);
   file_perm_options_defaults(&self->file_perm_options);

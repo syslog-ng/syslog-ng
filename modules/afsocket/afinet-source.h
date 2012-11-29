@@ -37,7 +37,9 @@ typedef struct _AFInetSourceDriver
   gchar *ip_protocol;
 } AFInetSourceDriver;
 
-LogDriver *afinet_sd_new(gint af, gint sock_type, guint flags);
+LogDriver *afinet_sd_new(gint af, gint sock_type);
+LogDriver *afsyslog_sd_new(void);
+
 void afinet_sd_set_localport(LogDriver *self, gchar *service);
 void afinet_sd_set_localip(LogDriver *self, gchar *ip);
 

@@ -57,14 +57,11 @@ afsocket_dd_set_tls_context(LogDriver *s, TLSContext *tls_context)
 #endif
 
 void
-afsocket_dd_set_keep_alive(LogDriver *s, gint enable)
+afsocket_dd_set_keep_alive(LogDriver *s, gboolean enable)
 {
   AFSocketDestDriver *self = (AFSocketDestDriver *) s;
 
-  if (enable)
-    self->flags |= AFSOCKET_KEEP_ALIVE;
-  else
-    self->flags &= ~AFSOCKET_KEEP_ALIVE;
+  self->connections_kept_alive_accross_reloads = enable;
 }
 
 
@@ -86,7 +83,8 @@ afsocket_dd_stats_source(AFSocketDestDriver *self)
 {
   gint source = 0;
 
-  if ((self->flags & AFSOCKET_SYSLOG_PROTOCOL) == 0)
+  /* FIXME: make this a overrideable function */
+  if (!self->syslog_protocol)
     {
       switch (self->bind_addr->sa.sa_family)
         {
@@ -116,7 +114,7 @@ afsocket_dd_stats_source(AFSocketDestDriver *self)
 static gchar *
 afsocket_dd_stats_instance(AFSocketDestDriver *self)
 {
-  if ((self->flags & AFSOCKET_SYSLOG_PROTOCOL) == 0)
+  if (!self->syslog_protocol)
     {
       return self->dest_name;
     }
@@ -378,7 +376,7 @@ afsocket_dd_init(LogPipe *s)
 #else
                                     ((self->sock_type == SOCK_STREAM) ? LW_DETECT_EOF : 0) |
 #endif
-                                    (self->flags & AFSOCKET_SYSLOG_PROTOCOL ? LW_SYSLOG_PROTOCOL : 0));
+                                    (self->syslog_protocol ? LW_SYSLOG_PROTOCOL : 0));
 
     }
   log_writer_set_options((LogWriter *) self->writer, &self->super.super.super, &self->writer_options, 0, afsocket_dd_stats_source(self), self->super.super.id, afsocket_dd_stats_instance(self));
@@ -403,7 +401,7 @@ afsocket_dd_deinit(LogPipe *s)
   if (self->writer)
     log_pipe_deinit(self->writer);
 
-  if (self->flags & AFSOCKET_KEEP_ALIVE)
+  if (self->connections_kept_alive_accross_reloads)
     {
       cfg_persist_config_add(cfg, afsocket_dd_format_persist_name(self, FALSE), self->writer, (GDestroyNotify) log_pipe_unref, FALSE);
       self->writer = NULL;
@@ -465,7 +463,7 @@ afsocket_dd_free(LogPipe *s)
 }
 
 void
-afsocket_dd_init_instance(AFSocketDestDriver *self, SocketOptions *sock_options, gint family, gint sock_type, const gchar *hostname, guint32 flags)
+afsocket_dd_init_instance(AFSocketDestDriver *self, SocketOptions *sock_options, gint family, gint sock_type, const gchar *hostname)
 {
   log_dest_driver_init_instance(&self->super);
 
@@ -480,7 +478,7 @@ afsocket_dd_init_instance(AFSocketDestDriver *self, SocketOptions *sock_options,
   self->sock_options_ptr = sock_options;
   self->sock_type = sock_type;
   self->address_family = family;
-  self->flags = flags  | AFSOCKET_KEEP_ALIVE;
+  self->connections_kept_alive_accross_reloads = TRUE;
 
   self->hostname = g_strdup(hostname);
 
