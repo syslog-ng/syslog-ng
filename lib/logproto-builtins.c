@@ -40,6 +40,8 @@ DEFINE_LOG_PROTO_SERVER(log_proto_framed);
 
 static Plugin framed_server_plugins[] =
 {
+  /* there's no separate client side for the 'dgram' transport */
+  LOG_PROTO_CLIENT_PLUGIN(log_proto_text, "dgram"),
   LOG_PROTO_SERVER_PLUGIN(log_proto_dgram, "dgram"),
   LOG_PROTO_CLIENT_PLUGIN(log_proto_text, "text"),
   LOG_PROTO_SERVER_PLUGIN(log_proto_text, "text"),
