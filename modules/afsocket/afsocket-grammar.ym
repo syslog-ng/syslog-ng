@@ -279,7 +279,12 @@ source_afsyslog_options
 
 source_afsyslog_option
         : source_afinet_option
-        | KW_TRANSPORT '(' string ')'           { afsocket_sd_set_transport(last_driver, $3); free($3); }
+        | source_afsocket_transport
+	| source_afsocket_stream_params		{}
+	;
+
+source_afsocket_transport
+        : KW_TRANSPORT '(' string ')'           { afsocket_sd_set_transport(last_driver, $3); free($3); }
         | KW_TRANSPORT '(' KW_TCP ')'           { afsocket_sd_set_transport(last_driver, "tcp"); }
         | KW_TRANSPORT '(' KW_UDP ')'           { afsocket_sd_set_transport(last_driver, "udp"); }
         | KW_TRANSPORT '(' KW_TLS ')'           { afsocket_sd_set_transport(last_driver, "tls"); }
@@ -295,8 +300,6 @@ source_afsyslog_option
 	    afsocket_sd_set_tls_context(last_driver, last_tls_context);
 #endif
           }
-	| source_afsocket_stream_params		{}
-	;
 
 dest_afunix
 	: KW_UNIX_DGRAM '(' dest_afunix_dgram_params ')'	{ $$ = $3; }
@@ -436,7 +439,11 @@ dest_afsyslog_options
 
 dest_afsyslog_option
 	: dest_afinet_option
-        | KW_TRANSPORT '(' string ')'           { afsocket_dd_set_transport(last_driver, $3); free($3); }
+	: dest_afsocket_transport
+	;
+
+dest_afsocket_transport
+        : KW_TRANSPORT '(' string ')'           { afsocket_dd_set_transport(last_driver, $3); free($3); }
         | KW_TRANSPORT '(' KW_TCP ')'           { afsocket_dd_set_transport(last_driver, "tcp"); }
         | KW_TRANSPORT '(' KW_UDP ')'           { afsocket_dd_set_transport(last_driver, "udp"); }
         | KW_TRANSPORT '(' KW_TLS ')'           { afsocket_dd_set_transport(last_driver, "tls"); }
