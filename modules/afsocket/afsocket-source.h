@@ -52,6 +52,7 @@ struct _AFSocketSourceDriver
   /* protocol parameter for the socket() call, 0 for default or IPPROTO_XXX for specific transports */
   gint sock_protocol;
   LogReaderOptions reader_options;
+  LogProtoServerFactory *proto_factory;
 #if BUILD_WITH_SSL
   TLSContext *tls_context;
 #endif

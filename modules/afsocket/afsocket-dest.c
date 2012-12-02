@@ -207,8 +207,6 @@ afsocket_dd_connected(AFSocketDestDriver *self)
   socklen_t errorlen = sizeof(error);
   LogTransport *transport;
   LogProtoClient *proto;
-  LogProtoClientFactory *proto_factory;
-  GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
 
   main_loop_assert_main_thread();
 
@@ -267,8 +265,7 @@ afsocket_dd_connected(AFSocketDestDriver *self)
   else
     transport = log_transport_dgram_socket_new(self->fd);
 
-  proto_factory = log_proto_client_get_factory(cfg, self->logproto_name);
-  proto = log_proto_client_factory_construct(proto_factory, transport, &self->writer_options.proto_options.super);
+  proto = log_proto_client_factory_construct(self->proto_factory, transport, &self->writer_options.proto_options.super);
 
   log_writer_reopen(self->writer, proto);
   return TRUE;
@@ -351,6 +348,15 @@ afsocket_dd_init(LogPipe *s)
 
   if (!afsocket_dd_apply_transport(self))
     return FALSE;
+
+  self->proto_factory = log_proto_client_get_factory(cfg, self->logproto_name);
+  if (!self->proto_factory)
+    {
+      msg_error("Unknown value specified in the transport() option, no such LogProto plugin found",
+                evt_tag_str("transport", self->logproto_name),
+                NULL);
+      return FALSE;
+    }
 
   /* these fields must be set up by apply_transport, so let's check if it indeed did */
   g_assert(self->transport);

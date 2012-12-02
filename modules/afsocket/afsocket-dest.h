@@ -50,6 +50,7 @@ struct _AFSocketDestDriver
   gint sock_protocol;
   LogPipe *writer;
   LogWriterOptions writer_options;
+  LogProtoClientFactory *proto_factory;
 #if BUILD_WITH_SSL
   TLSContext *tls_context;
 #endif

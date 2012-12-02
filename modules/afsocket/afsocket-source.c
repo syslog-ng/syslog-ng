@@ -121,8 +121,6 @@ afsocket_sc_init(LogPipe *s)
   AFSocketSourceConnection *self = (AFSocketSourceConnection *) s;
   LogTransport *transport;
   LogProtoServer *proto;
-  LogProtoServerFactory *proto_factory;
-  GlobalConfig *cfg = log_pipe_get_config(&self->owner->super.super.super);
 
   if (!self->reader)
     {
@@ -141,8 +139,7 @@ afsocket_sc_init(LogPipe *s)
       else
         transport = log_transport_stream_socket_new(self->sock);
 
-      proto_factory = log_proto_server_get_factory(cfg, self->owner->logproto_name);
-      proto = log_proto_server_factory_construct(proto_factory, transport, &self->owner->reader_options.proto_options.super);
+      proto = log_proto_server_factory_construct(self->owner->proto_factory, transport, &self->owner->reader_options.proto_options.super);
 
       self->reader = log_reader_new(proto);
     }
@@ -503,6 +500,15 @@ afsocket_sd_init(LogPipe *s)
 
   if (!afsocket_sd_apply_transport(self))
     return FALSE;
+
+  self->proto_factory = log_proto_server_get_factory(cfg, self->logproto_name);
+  if (!self->proto_factory)
+    {
+      msg_error("Unknown value specified in the transport() option, no such LogProto plugin found",
+                evt_tag_str("transport", self->logproto_name),
+                NULL);
+      return FALSE;
+    }
 
   g_assert(self->transport);
   g_assert(self->bind_addr);
