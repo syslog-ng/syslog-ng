@@ -13,6 +13,7 @@ source s_inet { tcp(port(%(port_number)d)); udp(port(%(port_number)d) so_rcvbuf(
 source s_inetssl { tcp(port(%(ssl_port_number)d) tls(peer-verify(none) cert-file("%(src_dir)s/ssl.crt") key-file("%(src_dir)s/ssl.key"))); };
 source s_pipe { pipe("log-pipe" flags(expect-hostname)); pipe("log-padded-pipe" pad_size(2048) flags(expect-hostname)); };
 source s_file { file("log-file"); };
+source s_network { network(transport(udp) port(%(port_number_network)s)); network(transport(tcp) port(%(port_number_network)s)); };
 source s_catchall { unix-stream("log-stream-catchall" flags(expect-hostname)); };
 
 source s_syslog { syslog(port(%(port_number_syslog)d) transport("tcp") so_rcvbuf(131072)); syslog(port(%(port_number_syslog)d) transport("udp") so_rcvbuf(131072)); };
@@ -22,7 +23,7 @@ filter f_input1 { message("input_drivers"); };
 destination d_input1 { file("test-input1.log"); logstore("test-input1.lgs"); };
 destination d_input1_new { file("test-input1_new.log" flags(syslog-protocol)); logstore("test-input1_new.lgs"); };
 
-log { source(s_int); source(s_unix); source(s_inet); source(s_inetssl); source(s_pipe); source(s_file);
+log { source(s_int); source(s_unix); source(s_inet); source(s_inetssl); source(s_pipe); source(s_file); source(s_network);
         log { filter(f_input1); destination(d_input1); };
 };
 
@@ -107,6 +108,8 @@ def test_input_drivers():
         SocketSender(AF_INET, ('localhost', port_number), dgram=0, send_by_bytes=1),
         SocketSender(AF_INET, ('localhost', ssl_port_number), dgram=0, ssl=1),
         SocketSender(AF_INET, ('localhost', ssl_port_number), dgram=0, send_by_bytes=1, ssl=1),
+        SocketSender(AF_INET, ('localhost', port_number_network), dgram=1, terminate_seq='\n'),
+        SocketSender(AF_INET, ('localhost', port_number_network), dgram=0),
         FileSender('log-pipe'),
         FileSender('log-pipe', send_by_bytes=1),
         FileSender('log-padded-pipe', padding=2048),
@@ -128,7 +131,8 @@ def test_input_drivers():
     for s_n in senders_new:
         expected_new.extend(s_n.sendMessages(message_new))
 
-    return check_file_expected("test-input1", expected, settle_time=6) and check_file_expected("test-input1_new", expected_new, settle_time=6, syslog_prefix=syslog_new_prefix, skip_prefix=len('<7>1 '))
+    return (check_file_expected("test-input1", expected, settle_time=6) and
+            check_file_expected("test-input1_new", expected_new, settle_time=6, syslog_prefix=syslog_new_prefix, skip_prefix=len('<7>1 ')))
 
 def test_indep():
     message = 'indep_pipes';
