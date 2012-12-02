@@ -61,5 +61,6 @@ void afinet_dd_set_spoof_source(LogDriver *self, gboolean enable);
 
 LogDriver *afinet_dd_new(gint af, gint sock_type, gchar *host);
 LogDriver *afsyslog_dd_new(gchar *host);
+LogDriver *afnetwork_dd_new(gchar *host);
 
 #endif

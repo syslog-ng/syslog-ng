@@ -290,6 +290,32 @@ source_afsyslog_option
 	| source_afsocket_stream_params		{}
 	;
 
+source_afnetwork
+	: KW_NETWORK '(' source_afnetwork_params ')'    { $$ = $3; }
+	;
+
+source_afnetwork_params
+	:
+	  {
+            /* we use transport(tcp) transport by default */
+	    last_driver = *instance = afnetwork_sd_new();
+	    last_reader_options = &((AFSocketSourceDriver *) last_driver)->reader_options;
+	    last_sock_options = &((AFInetSourceDriver *) last_driver)->sock_options.super;
+	  }
+	  source_afnetwork_options	{ $$ = last_driver; }
+        ;
+
+source_afnetwork_options
+	: source_afnetwork_option source_afnetwork_options
+	|
+	;
+
+source_afnetwork_option
+        : source_afinet_option
+        | source_afsocket_transport
+	| source_afsocket_stream_params		{}
+	;
+
 source_afsocket_transport
         : KW_TRANSPORT '(' string ')'           { afsocket_sd_set_transport(last_driver, $3); free($3); }
         | KW_TRANSPORT '(' KW_TCP ')'           { afsocket_sd_set_transport(last_driver, "tcp"); }
@@ -307,13 +333,6 @@ source_afsocket_transport
 	    afsocket_sd_set_tls_context(last_driver, last_tls_context);
 #endif
           }
-
-source_afnetwork
-	: KW_NETWORK { last_addr_family = AF_INET; } '(' source_afnetwork_params ')'    { $$ = $4; }
-	;
-
-source_afnetwork_params
-	: source_afsyslog_params				{ $$ = $1; }
         ;
 
 
@@ -455,7 +474,32 @@ dest_afsyslog_options
 
 dest_afsyslog_option
 	: dest_afinet_option
-	: dest_afsocket_transport
+	| dest_afsocket_transport
+	;
+
+dest_afnetwork
+	: KW_NETWORK '(' dest_afnetwork_params ')'	{ $$ = $3; }
+	;
+
+dest_afnetwork_params
+        : string
+          {
+            last_driver = *instance = afnetwork_dd_new($1);
+	    last_writer_options = &((AFSocketDestDriver *) last_driver)->writer_options;
+	    last_sock_options = &((AFInetDestDriver *) last_driver)->sock_options.super;
+	    free($1);
+	  }
+	  dest_afnetwork_options			{ $$ = last_driver; }
+        ;
+
+dest_afnetwork_options
+	: dest_afnetwork_options dest_afnetwork_option
+	|
+	;
+
+dest_afnetwork_option
+	: dest_afinet_option
+	| dest_afsocket_transport
 	;
 
 dest_afsocket_transport
@@ -478,13 +522,6 @@ dest_afsocket_transport
           }
 	;
 
-dest_afnetwork
-	: KW_NETWORK { last_addr_family = AF_INET; } '(' dest_afnetwork_params ')'	{ $$ = $4; }
-	;
-
-dest_afnetwork_params
-        : dest_afsyslog_params								{ $$ = $1; }
-        ;
 
 tls_options
 	: tls_option tls_options

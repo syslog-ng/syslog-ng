@@ -535,6 +535,10 @@ afsyslog_dd_new(gchar *host)
   return &self->super.super.super;
 }
 
-  self->super.syslog_protocol = TRUE;
+LogDriver *
+afnetwork_dd_new(gchar *host)
+{
+  AFInetDestDriver *self = afinet_dd_new_instance(AF_INET, SOCK_STREAM, host);
+
   return &self->super.super.super;
 }

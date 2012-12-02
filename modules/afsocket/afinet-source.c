@@ -252,3 +252,11 @@ afsyslog_sd_new(void)
   self->super.syslog_protocol = TRUE;
   return &self->super.super.super;
 }
+
+LogDriver *
+afnetwork_sd_new(void)
+{
+  AFInetSourceDriver *self = afinet_sd_new_instance(AF_INET, SOCK_STREAM);
+
+  return &self->super.super.super;
+}
