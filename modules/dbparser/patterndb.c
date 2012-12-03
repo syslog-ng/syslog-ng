@@ -1099,10 +1099,20 @@ pdb_loader_text(GMarkupParseContext *context, const gchar *text, gsize text_len,
     }
   else if (state->in_tag)
     {
+      if (!state->in_rule)
+        {
+          *error = g_error_new(1, 0, "Unexpected <tag> element, must be within a rule");
+          return;
+        }
       pdb_message_add_tag(state->current_message, text);
     }
   else if (state->value_name)
     {
+      if (!state->in_rule)
+        {
+          *error = g_error_new(1, 0, "Unexpected <value> element, must be within a rule");
+          return;
+        }
       if (!state->current_message->values)
         state->current_message->values = g_ptr_array_new();
 
