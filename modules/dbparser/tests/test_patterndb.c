@@ -686,6 +686,33 @@ test_patterndb_context_length()
   clean_pattern_db();
 }
 
+gchar *tag_outside_of_rule_skeleton = "<patterndb version='3' pub_date='2010-02-22'>\
+ <ruleset name='testset' id='1'>\
+  <patterns>\
+   <pattern>prog1</pattern>\
+  </patterns>\
+  <tags>\
+   <tag>tag1</tag>\
+  </tags>\
+ </ruleset>\
+</patterndb>";
+
+void
+test_patterndb_tags_outside_of_rule()
+{
+  patterndb = pattern_db_new();
+  messages = NULL;
+
+  g_file_open_tmp("patterndbXXXXXX.xml", &filename, NULL);
+  g_file_set_contents(filename, tag_outside_of_rule_skeleton,
+                      strlen(tag_outside_of_rule_skeleton), NULL);
+
+  if (pattern_db_reload_ruleset(patterndb, configuration, filename))
+    fail = TRUE;
+
+  clean_pattern_db();
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -707,6 +734,7 @@ main(int argc, char *argv[])
   test_patterndb_parsers();
   test_patterndb_message_property_inheritance();
   test_patterndb_context_length();
+  test_patterndb_tags_outside_of_rule();
 
   app_shutdown();
   return  (fail ? 1 : 0);
