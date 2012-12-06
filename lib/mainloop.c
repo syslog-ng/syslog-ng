@@ -690,7 +690,6 @@ main_loop_exit_finish(void)
    * threads are running.  This will unregister ivykis tasks and timers
    * that could fire while the configuration is being destructed */
   cfg_deinit(current_configuration);
-  iv_work_pool_put(&main_loop_io_workers);
   iv_quit();
 }
 
