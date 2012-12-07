@@ -18,7 +18,7 @@ libafamqp_la_LDFLAGS = $(MODULE_LDFLAGS)
 endif
 
 BUILT_SOURCES = afamqp-grammar.y afamqp-grammar.c afamqp-grammar.h
-EXTRA_DIST = $(BUILT_SOURCES) afamqp-grammar.ym
+EXTRA_DIST = $(BUILT_SOURCES) afamqp-grammar.ym rabbitmq-c/configure.gnu
 
 include $(top_srcdir)/build/lex-rules.am
 
