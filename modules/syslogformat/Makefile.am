@@ -10,8 +10,11 @@ libsyslogformat_la_SOURCES = \
 	syslog-parser-grammar.y	\
 	syslog-parser-parser.c	\
 	syslog-parser-parser.h	\
-	syslog-parser.c
+	syslog-parser.c		\
+	syslog-parser.h
 
+BUILT_SOURCES = syslog-parser-grammar.c syslog-parser-grammar.h
+EXTRA_DIST = $(BUILT_SOURCES)
 
 libsyslogformat_la_CPPFLAGS = $(AM_CPPFLAGS)
 libsyslogformat_la_LIBADD = $(MODULE_DEPS_LIBS)
