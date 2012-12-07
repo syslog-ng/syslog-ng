@@ -79,6 +79,7 @@ TLSContext *last_tls_context;
 %token KW_UDP6
 %token KW_NETWORK
 %token KW_TRANSPORT
+%token KW_IP_PROTOCOL
 
 %token KW_IP_TTL
 %token KW_SO_BROADCAST
@@ -136,6 +137,8 @@ TLSContext *last_tls_context;
 %type   <ptr> dest_afnetwork
 %type   <ptr> dest_afnetwork_params
 
+%type   <num> afinet_ip_protocol_option
+
 %%
 
 start
@@ -149,6 +152,25 @@ start
         | LL_CONTEXT_DESTINATION dest_afnetwork               { YYACCEPT; }
         ;
 
+afinet_ip_protocol_option
+        : LL_NUMBER
+        {
+          CHECK_ERROR($1 == 4 || $1 == 6, @1, "ip-protocol option can only be 4 or 6!");
+          if ($1 == 4)
+            {
+              $$ = AF_INET;
+            }
+          else
+            {
+              $$ = AF_INET6;
+            }
+        }
+        ;
+
+source_afinet_ip_protocol
+        : KW_IP_PROTOCOL '(' afinet_ip_protocol_option ')' { ((AFSocketSourceDriver *)last_driver)->address_family = $3; }
+        ;
+        
 source_afunix
         : KW_UNIX_DGRAM '(' source_afunix_dgram_params ')'	                                { $$ = $3; }
 	| KW_UNIX_STREAM '(' source_afunix_stream_params ')' 	                                { $$ = $3; }
@@ -314,6 +336,7 @@ source_afnetwork_option
         : source_afinet_option
         | source_afsocket_transport
 	| source_afsocket_stream_params		{}
+        | source_afinet_ip_protocol
 	;
 
 source_afsocket_transport
@@ -335,7 +358,10 @@ source_afsocket_transport
           }
         ;
 
-
+dest_afinet_ip_protocol
+        : KW_IP_PROTOCOL '(' afinet_ip_protocol_option ')' { ((AFSocketDestDriver *)last_driver)->address_family = $3; }
+        ;
+        
 dest_afunix
 	: KW_UNIX_DGRAM '(' dest_afunix_dgram_params ')'	{ $$ = $3; }
 	| KW_UNIX_STREAM '(' dest_afunix_stream_params ')'	{ $$ = $3; }
@@ -500,6 +526,7 @@ dest_afnetwork_options
 dest_afnetwork_option
 	: dest_afinet_option
 	| dest_afsocket_transport
+        | dest_afinet_ip_protocol
 	;
 
 dest_afsocket_transport
