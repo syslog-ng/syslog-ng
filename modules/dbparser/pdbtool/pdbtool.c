@@ -503,7 +503,7 @@ pdbtool_match(int argc, char *argv[])
     {
       dbg_list = g_array_new(FALSE, FALSE, sizeof(RDebugInfo));
     }
-  while (!eof && buf)
+  while (!eof && (buf || match_message))
     {
       invalidate_cached_time();
       if (G_LIKELY(proto))
