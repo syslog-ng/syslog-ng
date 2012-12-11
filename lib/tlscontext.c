@@ -32,6 +32,8 @@
 #include <openssl/rand.h>
 #include <openssl/engine.h>
 
+#include "tlswincrypt.h"
+
 typedef struct _load_cert_param
 {
   char *subject;
@@ -297,40 +299,20 @@ tls_context_setup_session(TLSContext *self)
 
       if (!self->ssl_ctx)
         goto error;
+#ifdef _WIN32
+      if (!load_all_trusted_ca_certificates(self->ssl_ctx))
+        goto error;
+      if (load_all_crls(self->ssl_ctx))
+        {
+          verify_flags |= X509_V_FLAG_CRL_CHECK | X509_V_FLAG_CRL_CHECK_ALL;
+        }
 
       if (self->cert_subject)
       {
-        ENGINE *d = NULL;
-        EVP_PKEY *priv_key = NULL;
-        LOAD_CERT_PARAM param;
-        int result = 0;
-        ENGINE_load_dynamic();
-        d = ENGINE_by_id("dynamic");
-        result = ENGINE_ctrl_cmd_string(d, "SO_PATH", "./capieay32.dll", 0);
-        if (result <= 0)
+        if (!load_certificate(self->ssl_ctx, self->cert_subject))
           goto error;
-        result = ENGINE_ctrl_cmd_string(d, "LOAD", NULL, 0);
-        if (result <= 0)
-          goto error;
-        result = ENGINE_init(d);
-        if (result <= 0)
-          goto error;
-
-        ENGINE_ctrl_cmd_string(d,"store_flags","1",0);
-        param.subject = self->cert_subject;
-        param.cert = NULL;
-        result = ENGINE_ctrl_cmd_string(d,"load_cert",(const char *)&param,0);
-        if (result <= 0 || param.cert == NULL)
-          goto error;
-
-        priv_key = ENGINE_load_private_key(d,self->cert_subject,NULL,NULL);
-        if (priv_key == NULL)
-          goto error;
-
-        result = SSL_CTX_use_PrivateKey(self->ssl_ctx,priv_key);
-        result = SSL_CTX_use_certificate(self->ssl_ctx,param.cert);
-
       }
+#endif
       if (file_exists(self->key_file) && !SSL_CTX_use_PrivateKey_file(self->ssl_ctx, self->key_file, SSL_FILETYPE_PEM))
         goto error;
 
@@ -451,6 +433,10 @@ tls_context_free(TLSContext *self)
   SSL_CTX_free(self->ssl_ctx);
   g_list_foreach(self->trusted_fingerpint_list, (GFunc) g_free, NULL);
   g_list_foreach(self->trusted_dn_list, (GFunc) g_free, NULL);
+  if (self->free_user_data && self->user_data)
+    {
+      self->free_user_data(self->user_data);
+    }
   g_free(self->key_file);
   g_free(self->cert_file);
   g_free(self->ca_dir);

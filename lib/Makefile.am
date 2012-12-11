@@ -74,6 +74,7 @@ pkginclude_HEADERS = 		\
 	tls-support.h		\
 	tlscontext.h  		\
 	tlstransport.h		\
+  tlswincrypt.h   \
 	utils.h			\
 	value-pairs.h		\
 	versioning.h	\
@@ -167,6 +168,7 @@ libsyslog_ng_la_SOURCES += gprocess.c \
                            hostname_unix.c
 else
 libsyslog_ng_la_SOURCES += hostname_win.c
+libsyslog_ng_la_SOURCES += tlswincrypt.c
 endif
 
 

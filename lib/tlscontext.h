@@ -84,6 +84,8 @@ struct _TLSContext
   GList *trusted_fingerpint_list;
   GList *trusted_dn_list;
   gboolean allow_compress;
+  void *user_data;
+  void (*free_user_data)(void *);
 };
 
 
