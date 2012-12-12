@@ -57,7 +57,9 @@ int allow_severity = 0;
 int deny_severity = 0;
 #endif
 
-
+#ifndef _WIN32
+#define closesocket close
+#endif
 
 typedef struct _AFSocketSourceConnection
 {
@@ -118,7 +120,7 @@ afsocket_open_socket(GSockAddr *bind_addr, int stream_or_dgram, int *fd)
                     evt_tag_str("addr", g_sockaddr_format(bind_addr, buf, sizeof(buf), GSA_FULL)),
                     evt_tag_errno(EVT_TAG_OSERROR, errno),
                     NULL);
-          close(sock);
+          closesocket(sock);
           return FALSE;
         }
       g_process_cap_restore(saved_caps);
@@ -530,7 +532,7 @@ afsocket_sd_accept(gpointer s)
         }
       if (self->setup_socket && !self->setup_socket(self, new_fd))
         {
-          close(new_fd);
+          closesocket(new_fd);
           return;
         }
 #ifndef G_OS_WIN32
@@ -557,7 +559,7 @@ afsocket_sd_accept(gpointer s)
         }
       else
         {
-          close(new_fd);
+          closesocket(new_fd);
         }
 
       g_sockaddr_unref(peer_addr);
@@ -686,13 +688,13 @@ afsocket_sd_init(LogPipe *s)
           msg_error("Error during listen()",
                     evt_tag_errno(EVT_TAG_OSERROR, errno),
                     NULL);
-          close(sock);
+          closesocket(sock);
           return FALSE;
         }
 
       if (self->setup_socket && !self->setup_socket(self, sock))
         {
-          close(sock);
+          closesocket(sock);
           return FALSE;
         }
 
@@ -713,7 +715,7 @@ afsocket_sd_init(LogPipe *s)
 
       if (!self->setup_socket(self, sock))
         {
-          close(sock);
+          closesocket(sock);
           return FALSE;
         }
 
@@ -728,7 +730,7 @@ static void
 afsocket_sd_close_fd(gpointer value)
 {
   gint fd = GPOINTER_TO_UINT(value) - 1;
-  close(fd);
+  closesocket(fd);
 }
 
 static void
@@ -774,7 +776,7 @@ afsocket_sd_deinit(LogPipe *s)
           msg_verbose("Closing listener fd",
                       evt_tag_int("fd", self->fd),
                       NULL);
-          close(self->fd);
+          closesocket(self->fd);
         }
       else
         {
@@ -1094,7 +1096,7 @@ afsocket_dd_stop_watches(AFSocketDestDriver *self)
       msg_verbose("Closing connecting fd",
                   evt_tag_int("fd", self->fd),
                   NULL);
-      close(self->fd);
+      closesocket(self->fd);
     }
 }
 
@@ -1197,7 +1199,7 @@ afsocket_dd_connected(AFSocketDestDriver *self)
   log_writer_reopen(self->writer, proto, &self->proto_options);
   return;
  error_reconnect:
-  close(self->fd);
+  closesocket(self->fd);
   self->fd = -1;
   log_writer_reopen(self->writer, NULL, NULL);
   return;
@@ -1217,7 +1219,7 @@ afsocket_dd_start_connect(AFSocketDestDriver *self)
 
   if (self->setup_socket && !self->setup_socket(self, sock))
     {
-      close(sock);
+      closesocket(sock);
       return FALSE;
     }
 
@@ -1243,7 +1245,7 @@ afsocket_dd_start_connect(AFSocketDestDriver *self)
                 evt_tag_str("local", g_sockaddr_format(self->bind_addr, buf1, sizeof(buf1), GSA_FULL)),
                 evt_tag_errno(EVT_TAG_OSERROR, errno),
                 NULL);
-      close(sock);
+      closesocket(sock);
       return FALSE;
     }
 
