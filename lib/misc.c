@@ -46,6 +46,7 @@ static gsize local_hostname_fqdn_len;
 static gchar local_hostname_fqdn[256];
 static gsize local_hostname_short_len;
 static gchar local_hostname_short[256];
+G_LOCK_DEFINE_STATIC(resolv_lock);
 
 GString *
 g_string_assign_len(GString *s, const gchar *val, gint len)
@@ -75,12 +76,14 @@ reset_cached_hostname(void)
   if (strchr(local_hostname_fqdn, '.') == NULL)
     {
       /* not fully qualified, resolve it using DNS or /etc/hosts */
+      G_LOCK(resolv_lock);
       struct hostent *result = gethostbyname(local_hostname_fqdn);
       if (result)
         {
           strncpy(local_hostname_fqdn, result->h_name, sizeof(local_hostname_fqdn) - 1);
           local_hostname_fqdn[sizeof(local_hostname_fqdn) - 1] = '\0';
         }
+      G_UNLOCK(resolv_lock);
     }
   /* NOTE: they are the same size, they'll fit */
   strcpy(local_hostname_short, local_hostname_fqdn);
@@ -152,6 +155,7 @@ resolve_hostname(GSockAddr **addr, gchar *name)
 #else
       struct hostent *he;
       
+      G_LOCK(resolv_lock);
       he = gethostbyname(name);
       if (he)
         {
@@ -164,10 +168,11 @@ resolve_hostname(GSockAddr **addr, gchar *name)
               g_assert_not_reached();
               break;
             }
-          
+          G_UNLOCK(resolv_lock);
         }
       else
         {
+          G_UNLOCK(resolv_lock);
           msg_error("Error resolving hostname", evt_tag_str("host", name), NULL);
           return FALSE;
         }
@@ -192,7 +197,7 @@ resolve_sockaddr(gchar *result, gsize *result_len, GSockAddr *saddr, gboolean us
          )
         {
           void *addr;
-          socklen_t addr_len;
+          socklen_t addr_len G_GNUC_UNUSED;
           
           if (saddr->sa.sa_family == AF_INET)
             {
@@ -212,10 +217,17 @@ resolve_sockaddr(gchar *result, gsize *result_len, GSockAddr *saddr, gboolean us
             {
               if ((!use_dns_cache || !dns_cache_lookup(saddr->sa.sa_family, addr, (const gchar **) &hname, &positive)) && usedns != 2)
                 {
+#ifdef HAVE_GETNAMEINFO
+                  if (getnameinfo(&saddr->sa, saddr->salen, buf, sizeof(buf), NULL, 0, 0) == 0)
+                    hname = buf;
+#else
                   struct hostent *hp;
-                      
+
+                  G_LOCK(resolv_lock);
                   hp = gethostbyaddr(addr, addr_len, saddr->sa.sa_family);
+                  G_UNLOCK(resolv_lock);
                   hname = (hp && hp->h_name) ? hp->h_name : NULL;
+#endif
 
                   if (hname)
                     positive = TRUE;

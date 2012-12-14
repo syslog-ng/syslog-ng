@@ -500,7 +500,7 @@ if test "x$enable_linux_caps" = "xyes" -o "x$enable_linux_caps" = "xauto"; then
 	AC_CHECK_LIB(cap, cap_set_proc, LIBCAP_LIBS="-lcap")
 fi
 
-AC_CHECK_FUNCS(strdup strtol strtoll strtoimax inet_aton inet_ntoa getopt_long getaddrinfo getutent getutxent pread pwrite strcasestr memrchr localtime_r gmtime_r)
+AC_CHECK_FUNCS(strdup strtol strtoll strtoimax inet_aton inet_ntoa getopt_long getaddrinfo getnameinfo getutent getutxent pread pwrite strcasestr memrchr localtime_r gmtime_r)
 old_LIBS=$LIBS
 LIBS=$BASE_LIBS
 AC_CHECK_FUNCS(clock_gettime)
