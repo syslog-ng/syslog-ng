@@ -1,3 +1,87 @@
+3.4.0beta1
+	Sat, 15 Dec 2012 02:21:14 +0100
+
+	Features:
+	=========
+	* Added support for the amqp() destination driver, which sends
+	  messages to an AMQP queue.
+
+	* Added support for a new parser named syslog-parser() that can
+	  invoke the RFC3164 and RFC5424 parser outside the source driver
+	  that received the message. Delaying the syslog parsing can be
+	  advantageous in case some preprocessing or filtering needs to take
+	  place before the actual syslog parsing.
+
+	* Added support for dot notation in the $(format-json) template
+	  function.
+
+	* Changed the MongoDB driver to use inserts instead of upserts.
+
+	* Added support for UNIX domain sockets in the MongoDB driver by
+	  using the new path() option.
+
+	* Added new template functions to perform various cryptographic hash
+	  functions on data, like: $(md5), $(md4), $(sha1), $(sha256),
+	  $(sha512)
+
+	* Added a couple of new parsers to db-parser() pattern format:
+
+           * @PCRE@: use this to parse using a regexp
+           * @EMAIL@: to parse email addresses
+	   * @HOSTNAME@: to parse host names
+	   * @LLADDR@: to parse link-level addresses, like ethernet MAC
+             addresses
+
+	* Added the possibility to set TCP keepalive options for TCP based
+	  transports: tcp-keepalive-time(), tcp-keepalive-probes(),
+	  tcp-keepalive-intvl(). Also added the tcp-keepalive() option as
+	  an alias to the earlier so-keepalive() parameter. TCP keepalive
+	  became enabled by default.
+
+	Bugfixes:
+	=========
+	* Updated with the bugfixes from v3.3.7
+
+	* Fixed SQL statement formatting used to create indexes on Oracle.
+	  The original query contained an apostrophe when specifying the
+	  column name.
+
+	* Fixed an incorrect validation in the file() source, which
+	  caused the entire file to be resent in case syslog-ng was
+	  restarted and an encoding() is specified.
+
+	* Increased the performance when following files with the encoding()
+	  option set. Previously, the code to check if the source encoding
+	  is fixed size was incorrect, which in turn caused syslog-ng
+	  to excercise its slow path when processing these files, instead of
+	  a faster alternative.
+
+	* Fixed a memory leak issue when encoding() is used for file
+	  sources and syslog-ng was reloaded.
+
+	* Fixed a bug in processing the encoding() option for udp() sources.
+	  syslog-ng incorrectly propagated the character decoding state from
+	  one frame to the next, which might have originated from different
+	  senders.
+
+	* Infinite feedback loops of internal messages triggering another
+	  set of internal messages are now detected and suppressed. Earlier
+	  it was not safe to enable debug/trace messages during runtime, now
+	  it is.
+
+	* Fixed a race condition in resolving IP address to hostnames, which
+	  might have caused garbage in the hostname part of messages. This
+	  is most likely mitigated by the DNS cache.
+
+	Other changes:
+	==============
+	* Added unit test coverage for various log transport
+	  implementations.
+
+	* Reorganized the LogProto code to support plugins, the transport()
+	  option for the syslog() and network() drivers can be used to
+	  specify a transport protocol plugin.
+
 3.4.0alpha3
 	Fri, 29 Jun 2012 15:32:54 +0200
 
