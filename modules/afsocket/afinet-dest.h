@@ -32,7 +32,7 @@
 /* this forward declaration avoids having to include libnet, which requires
  * ugly playing with macros, see that for yourself in the implementation
  * file */
-typedef struct libnet_context libnet_t;
+struct libnet_context;
 #endif
 
 typedef struct _AFInetDestDriver
@@ -41,7 +41,7 @@ typedef struct _AFInetDestDriver
   InetSocketOptions sock_options;
 #if ENABLE_SPOOF_SOURCE
   gboolean spoof_source;
-  libnet_t *lnet_ctx;
+  struct libnet_context *lnet_ctx;
   GStaticMutex lnet_lock;
   GString *lnet_buffer;
 #endif
