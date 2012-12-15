@@ -1,4 +1,4 @@
-SUBDIRS = tests
+SUBDIRS = . tests
 moduledir = @moduledir@
 export top_srcdir
 
