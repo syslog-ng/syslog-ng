@@ -33,11 +33,11 @@ test_log_proto_server_options_valid_encoding(void)
   log_proto_testcase_begin("test_log_proto_server_options_valid_encoding");
   log_proto_server_options_defaults(&opts);
   /* check that encoding can be set and error is properly returned */
-  log_proto_server_options_set_encoding(&opts, "utf8");
-  assert_string(opts.encoding, "utf8", "LogProtoServerOptions.encoding was not properly set");
+  log_proto_server_options_set_encoding(&opts, "utf-8");
+  assert_string(opts.encoding, "utf-8", "LogProtoServerOptions.encoding was not properly set");
 
   log_proto_server_options_init(&opts, configuration);
-  assert_true(log_proto_server_options_validate(&opts), "utf8 was not accepted as a valid LogProtoServerOptions");
+  assert_true(log_proto_server_options_validate(&opts), "utf-8 was not accepted as a valid LogProtoServerOptions");
   log_proto_server_options_destroy(&opts);
   log_proto_testcase_end();
 }
@@ -81,9 +81,9 @@ test_log_proto_base(void)
 
   log_proto_testcase_begin("test_log_proto_base");
   assert_gint(log_proto_get_char_size_for_fixed_encoding("iso-8859-2"), 1, NULL);
-  assert_gint(log_proto_get_char_size_for_fixed_encoding("ucs4"), 4, NULL);
+  assert_gint(log_proto_get_char_size_for_fixed_encoding("ucs-4"), 4, NULL);
 
-  log_proto_server_options_set_encoding(&proto_server_options, "ucs4");
+  log_proto_server_options_set_encoding(&proto_server_options, "ucs-4");
   proto = log_proto_binary_record_server_new(
             log_transport_mock_records_new(
               /* ucs4, terminated by record size */
@@ -193,7 +193,7 @@ test_log_proto_padded_record_server_ucs4(void)
   LogProtoServer *proto;
 
   log_proto_testcase_begin("test_log_proto_padded_record_server_ucs4");
-  log_proto_server_options_set_encoding(&proto_server_options, "ucs4");
+  log_proto_server_options_set_encoding(&proto_server_options, "ucs-4");
   proto = log_proto_padded_record_server_new(
             log_transport_mock_records_new(
               /* ucs4, terminated by record size */
@@ -220,7 +220,7 @@ test_log_proto_padded_record_server_invalid_ucs4(void)
   LogProtoServer *proto;
 
   log_proto_testcase_begin("test_log_proto_padded_record_server_invalid_ucs4");
-  log_proto_server_options_set_encoding(&proto_server_options, "ucs4");
+  log_proto_server_options_set_encoding(&proto_server_options, "ucs-4");
   proto = log_proto_padded_record_server_new(
             /* 31 bytes record size */
             log_transport_mock_records_new(
@@ -367,7 +367,7 @@ test_log_proto_text_server_eof_handling(void)
 
   log_proto_testcase_begin("test_log_proto_text_server_eof_handling(partial characters)");
   proto_server_options.max_msg_size = 32;
-  log_proto_server_options_set_encoding(&proto_server_options, "utf8");
+  log_proto_server_options_set_encoding(&proto_server_options, "utf-8");
   proto = log_proto_text_server_new(
             log_transport_mock_stream_new(
               /* utf8 */
@@ -386,7 +386,7 @@ test_log_proto_text_server_not_fixed_encoding(void)
 
   log_proto_testcase_begin("test_log_proto_text_server_not_fixed_encoding");
   proto_server_options.max_msg_size = 32;
-  log_proto_server_options_set_encoding(&proto_server_options, "utf8");
+  log_proto_server_options_set_encoding(&proto_server_options, "utf-8");
   /* to test whether a non-easily-reversable charset works too */
   proto = log_proto_text_server_new(
             log_transport_mock_stream_new(
@@ -407,7 +407,7 @@ test_log_proto_text_server_ucs4(void)
 
   log_proto_testcase_begin("test_log_proto_text_server_ucs4");
   proto_server_options.max_msg_size = 32;
-  log_proto_server_options_set_encoding(&proto_server_options, "ucs4");
+  log_proto_server_options_set_encoding(&proto_server_options, "ucs-4");
   proto = log_proto_text_server_new(
             log_transport_mock_stream_new(
               /* ucs4 */
@@ -563,7 +563,7 @@ test_log_proto_dgram_server_ucs4(void)
 
   log_proto_testcase_begin("test_log_proto_dgram_server_ucs4");
   proto_server_options.max_msg_size = 32;
-  log_proto_server_options_set_encoding(&proto_server_options, "ucs4");
+  log_proto_server_options_set_encoding(&proto_server_options, "ucs-4");
   proto = log_proto_dgram_server_new(
             log_transport_mock_endless_records_new(
               /* ucs4, terminated by record size */
@@ -589,7 +589,7 @@ test_log_proto_dgram_server_invalid_ucs4(void)
 
   log_proto_testcase_begin("test_log_proto_dgram_server_invalid_ucs4");
   proto_server_options.max_msg_size = 32;
-  log_proto_server_options_set_encoding(&proto_server_options, "ucs4");
+  log_proto_server_options_set_encoding(&proto_server_options, "ucs-4");
   proto = log_proto_dgram_server_new(
             /* 31 bytes record size */
             log_transport_mock_endless_records_new(
