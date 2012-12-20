@@ -418,7 +418,7 @@ dest_afsocket_option
 
 
 dest_afsyslog
-        : KW_SYSLOG '(' dest_afsyslog_params ')'   { $$ = $3; }
+        : KW_SYSLOG { last_addr_family = AF_INET; } '(' dest_afsyslog_params ')'   { $$ = $4; }
 
 dest_afsyslog_params
         : string
