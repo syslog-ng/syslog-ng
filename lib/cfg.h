@@ -153,7 +153,7 @@ cfg_is_config_version_older(GlobalConfig *cfg, gint req)
 {
   if (!cfg)
     return FALSE;
-  if (version_convert_from_user(configuration->user_version) >= req)
+  if (version_convert_from_user(cfg->user_version) >= req)
     return FALSE;
   return TRUE;
 }
