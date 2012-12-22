@@ -18,8 +18,8 @@ syslog_ng_LDADD = -L../lib/.libs -lsyslog-ng @SYSLOGNG_DEPS_LIBS@
 syslog_ng_LINK =  @SYSLOGNG_LINK@
 syslog_ng_wrapper_SOURCES = wrapper.c
 
-syslog_ng_ctl_SOURCES = syslog-ng-ctl.c
-syslog_ng_ctl_LDADD = ../lib/gsocket.lo ../lib/gsockaddr.lo @BASE_LIBS@ @GLIB_LIBS@ @RESOLV_LIBS@
+syslog_ng_ctl_SOURCES = syslog-ng-ctl.c ../lib/gsocket.c ../lib/gsockaddr.c
+syslog_ng_ctl_LDADD = @BASE_LIBS@ @GLIB_LIBS@ @RESOLV_LIBS@
 
 
 install-exec-hook:
