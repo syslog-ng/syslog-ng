@@ -11,10 +11,6 @@ lib_LTLIBRARIES = libsyslog-ng.la
 libsyslog_ng_la_LIBADD = @CORE_DEPS_LIBS@
 libsyslog_ng_la_LDFLAGS = -no-undefined -release @VERSION@
 
-module_LTLIBRARIES = libsyslog-ng-crypto.la
-libsyslog_ng_crypto_la_LIBADD = @SYSLOGNG_DEPS_LIBS@ @OPENSSL_LIBS@ libsyslog-ng.la
-libsyslog_ng_crypto_la_LDFLAGS = -no-undefined -avoid-version
-
 # this is intentionally formatted so conflicts are less likely to arise. one name in every line.
 pkginclude_HEADERS = 		\
 	afinter.h		\
@@ -82,7 +78,7 @@ pkginclude_HEADERS = 		\
 	value-pairs.h
 
 # this is intentionally formatted so conflicts are less likely to arise. one name in every line.
-libsyslog_ng_crypto_la_SOURCES = \
+libsyslog_ng_crypto_la_sources = \
 	crypto.c		\
 	tlscontext.c		\
 	tlstransport.c
@@ -154,6 +150,16 @@ libsyslog_ng_la_SOURCES = \
 	pragma-grammar.y	\
 	parser-expr-grammar.y	\
 	rewrite-expr-grammar.y
+
+if WITH_EMBEDDED_CRYPTO
+libsyslog_ng_la_LIBADD += @OPENSSL_LIBS@
+libsyslog_ng_la_SOURCES += ${libsyslog_ng_crypto_la_sources}
+else
+module_LTLIBRARIES = libsyslog-ng-crypto.la
+libsyslog_ng_crypto_la_LIBADD = @SYSLOGNG_DEPS_LIBS@ @OPENSSL_LIBS@ libsyslog-ng.la
+libsyslog_ng_crypto_la_LDFLAGS = -no-undefined -avoid-version
+libsyslog_ng_crypto_la_SOURCES = ${libsyslog_ng_crypto_la_sources}
+endif
 
 # each line with closely related files (e.g. the ones generated from the same source)
 BUILT_SOURCES = cfg-lex.c cfg-lex.h						\
