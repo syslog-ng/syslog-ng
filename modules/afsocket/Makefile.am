@@ -45,12 +45,6 @@ module_LTLIBRARIES += libafsocket-tls.la
 libafsocket_tls_la_SOURCES = $(libafsocket_notls_la_SOURCES)
 libafsocket_tls_la_CPPFLAGS = $(AM_CPPFLAGS) $(libsystemd_daemon_CFLAGS) -DBUILD_WITH_SSL=1
 
-if WITH_EMBEDDED_CRYPTO
-CRYPTO_LIBS =
-else
-CRYPTO_LIBS = ../../lib/libsyslog-ng-crypto.la
-endif
-
 libafsocket_tls_la_LIBADD = $(MODULE_DEPS_LIBS) $(CRYPTO_LIBS) $(OPENSSL_LIBS) $(ZLIB_LIBS) $(LIBNET_LIBS) $(LIBWRAP_LIBS) $(libsystemd_daemon_LIBS)
 libafsocket_tls_la_LDFLAGS = $(MODULE_LDFLAGS)
 endif

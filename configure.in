@@ -1094,6 +1094,11 @@ enable_value()
         fi
 }
 
+if test "${with_embedded_crypto}" = "yes"; then
+   CRYPTO_LIBS=""
+else
+   CRYPTO_LIBS="\${top_builddir}/lib/libsyslog-ng-crypto.la"
+fi
 
 AC_DEFINE_UNQUOTED(PACKAGE, "$PACKAGE", [package name])
 AC_DEFINE_UNQUOTED(VERSION, "$VERSION", [version number])
@@ -1186,6 +1191,7 @@ AC_SUBST(RESOLV_LIBS)
 AC_SUBST(CFLAGS_NOWARN_POINTER_SIGN)
 AC_SUBST(UUID_CFLAGS)
 AC_SUBST(UUID_LIBS)
+AC_SUBST(CRYPTO_LIBS)
 
 AC_SUBST(CURRDATE)
 AC_SUBST(RELEASE_TAG)
