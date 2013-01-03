@@ -26,7 +26,7 @@ help:
 # to it.
 ##
 ifneq (,$(filter debug,$(DEB_BUILD_OPTIONS)))
-	EXTRA_CONFIGURE_OPTS += --enable-debug
+EXTRA_CONFIGURE_OPTS += --enable-debug
 endif
 
 # We want to support building from a git tree, where the syslog-ng
@@ -151,9 +151,9 @@ override_dh_auto_clean:
 # It will be installed into the syslog-ng-core package by the
 # override_dh_install target.
 ifeq (${DEB_HOST_ARCH_OS},kfreebsd)
-	TTY10_CONF = tty10.kfreebsd.conf
+TTY10_CONF = tty10.kfreebsd.conf
 else
-	TTY10_CONF = tty10.linux.conf
+TTY10_CONF = tty10.linux.conf
 endif
 
 # Upstream installs the merge-grammar.pl as data, thus not
