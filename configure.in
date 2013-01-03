@@ -206,14 +206,6 @@ AC_ARG_WITH(compile-date,
 	      [  --without-compile-date  Do not include the compile date in the binary]
 	      ,wcmp_date="${withval}", wcmp_date="yes")
 
-if test "x$enable_geoip" = "xyes" || test "x$enable_geoip" = "xauto"; then
-	PKG_CHECK_MODULES(GEOIP, geoip, with_geoip="yes", with_geoip="no")
-        if test "x$with_geoip" = "xno" && test "x$enable_geoip" = "xyes"; then
-        	AC_MSG_ERROR([Could not find libgeoip, and geoip support was explicitly enabled.])
-        fi
-        enable_geoip="$with_geoip"
-fi
-
 if test "x$wcmp_date" != "xno"; then
   wcmp_date="1"
 else
@@ -637,6 +629,24 @@ dnl ***************************************************************************
 dnl json headers/libraries
 dnl ***************************************************************************
 PKG_CHECK_MODULES(JSON_C, json >= $JSON_C_MIN_VERSION,, [JSON_C_LIBS=""; enable_json="no"])
+
+dnl ***************************************************************************
+dnl geoip headers/libraries
+dnl ***************************************************************************
+if test "x$enable_geoip" = "xyes" || test "x$enable_geoip" = "xauto"; then
+        if test "x$GEOIP_LIBS" != "x"; then
+                AC_MSG_CHECKING([for GEOIP])
+                AC_MSG_RESULT([yes (GEOIP_LIBS set, will use that.)])
+                with_geoip="yes"
+        else
+                PKG_CHECK_MODULES(GEOIP, geoip, with_geoip="yes", with_geoip="no")
+        fi
+
+        if test "x$with_geoip" = "xno" && test "x$enable_geoip" = "xyes"; then
+        	AC_MSG_ERROR([Could not find libgeoip, and geoip support was explicitly enabled.])
+        fi
+        enable_geoip="$with_geoip"
+fi
 
 dnl ***************************************************************************
 dnl pcre headers/libraries
