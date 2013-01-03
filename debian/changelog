@@ -1,3 +1,12 @@
+syslog-ng (3.4.0~rc1-1~mhp2) unstable; urgency=low
+
+  [ Gergely Nagy <algernon@madhouse-project.org> ]
+  * New upstream release candidate.
+  * Use /dev/ttyva on kFreeBSD as the target of the d_console_all
+    destination. (Closes: #697042)
+
+ -- Gergely Nagy <algernon@madhouse-project.org>  Mon, 07 Jan 2013 11:20:11 +0100
+
 syslog-ng (3.4.0~alpha3+sandbox+20121116-1~mhp1) unstable; urgency=low
 
   [ Gergely Nagy <algernon@madhouse-project.org> ]
