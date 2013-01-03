@@ -6,8 +6,10 @@ syslog-ng (3.3.7+git20130103-1~mhp1) unstable; urgency=low
     various mail-related logs. (Closes: #692056)
   * Do not forcibly remove the systemd service files, that code is not
     needed anymore.
+  * Use /dev/ttyva on kFreeBSD as the target of the d_console_all
+    destination. (Closes: #697042)
 
- -- Gergely Nagy <algernon@madhouse-project.org>  Thu, 03 Jan 2013 14:31:57 +0100
+ -- Gergely Nagy <algernon@madhouse-project.org>  Thu, 03 Jan 2013 15:01:48 +0100
 
 syslog-ng (3.3.7-1~mhp1) unstable; urgency=low
 

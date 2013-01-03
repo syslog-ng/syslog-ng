@@ -140,6 +140,22 @@ override_dh_auto_clean:
 # Below are overrides for individual debhelper commands.
 ##
 
+# On kFreeBSD, d_console_all should log to /dev/ttyva, everywhere
+# else, to tty10. To keep the config as simple as possible, this is
+# accomplished by pulling the target device out of syslog-ng.conf,
+# into `scl-root`/system/tty10.conf.
+#
+# On kFreeBSD, this defines the `tty10` variable to /dev/ttyva,
+# everywhere else to /dev/tty10.
+#
+# It will be installed into the syslog-ng-core package by the
+# override_dh_install target.
+ifeq (${DEB_HOST_ARCH_OS},kfreebsd)
+	TTY10_CONF = tty10.kfreebsd.conf
+else
+	TTY10_CONF = tty10.linux.conf
+endif
+
 # Upstream installs the merge-grammar.pl as data, thus not
 # executable. Yet, it needs to be, since the Makefiles that upstream
 # also installs expect it so.
@@ -147,7 +163,7 @@ override_dh_auto_clean:
 # So we simply flip a few bits after dh_install, and we're good to go!
 #
 # We also want to install the systemd unit file into syslog-ng-core,
-# so do that here too.
+# so do that here too, along with installing tty10.conf.
 override_dh_install:
 	dh_install
 ifneq (,$(filter libsyslog-ng-dev,$(shell dh_listpackages)))
@@ -156,6 +172,8 @@ endif
 ifneq (,$(filter syslog-ng-core,$(shell dh_listpackages)))
 	install -m 0644 ${SRCDIR}/contrib/systemd/syslog-ng.service \
 			debian/syslog-ng-core/lib/systemd/system/
+	install -m 0644 debian/${TTY10_CONF} \
+			debian/syslog-ng-core/usr/share/syslog-ng/include/scl/system/tty10.conf
 endif
 
 # Install the NEWS file as upstream changelog.
