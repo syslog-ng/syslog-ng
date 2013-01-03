@@ -296,10 +296,10 @@ main(int argc, char *argv[])
     {
       return 0;
     }
-  log_stderr = TRUE;
-
+  register_resource_dll("syslog-ng Agent");
   if (debug_flag)
     {
+      log_stderr = TRUE;
       if (!quiet)
         {
           verbose_flag = TRUE;

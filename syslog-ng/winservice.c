@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <signal.h>
 #include "winservice.h"
+#include <Shlwapi.h>
 #include "minidump.h"
 
 SERVICE_STATUS ServiceStatus;
@@ -302,4 +303,65 @@ start_service(char *szName,SERVICE_MAIN service_main, SERVICE_STOP_FUNCTION serv
   ServiceTable[1].lpServiceProc = NULL;
   StartServiceCtrlDispatcher(ServiceTable);
   return 0;
+}
+
+void
+unregister_resource_dll(char *szName)
+{
+  LONG result;
+  HKEY  hKey;
+  gchar *reg_path = g_strdup_printf("SYSTEM\\CurrentControlSet\\services\\eventlog\\Application\\%s",szName);
+
+  result = RegOpenKey(HKEY_LOCAL_MACHINE,reg_path,&hKey);
+  if (result == ERROR_SUCCESS)
+    {
+      if (SHDeleteKey(hKey, NULL) != ERROR_SUCCESS)
+        {
+          fprintf(stderr,"Can't delete registry Key; key = '%s'; error=%d\n",reg_path, GetLastError());
+        }
+      RegCloseKey(hKey);
+    }
+  else
+    {
+      fprintf(stderr,"Can't open registry Key; key = '%s'; error=%d\n",reg_path, GetLastError());
+    }
+  g_free(reg_path);
+}
+
+gchar *
+get_resource_dll_path()
+{
+  char currDirectory[_MAX_PATH];
+  char *pIdx;
+  gchar *result = NULL;
+
+  GetModuleFileName(NULL, currDirectory, _MAX_PATH);
+  pIdx = strrchr(currDirectory, '\\');
+  if (pIdx)
+    {
+      *pIdx = '\0';
+      result = g_strdup_printf("%s\\libresources-0.dll",currDirectory);
+    }
+  return result;
+}
+
+void
+register_resource_dll(char *szName)
+{
+  LONG result;
+  HKEY hKey;
+  gchar *reg_path = g_strdup_printf("SYSTEM\\CurrentControlSet\\services\\eventlog\\Application\\%s",szName);
+  gchar *dll_name = get_resource_dll_path();
+  DWORD supported_types = 31;
+
+  unregister_resource_dll(szName);
+  result = RegCreateKey(HKEY_LOCAL_MACHINE, reg_path, &hKey);
+  if (result == ERROR_SUCCESS)
+    {
+      result = RegSetValueEx(hKey, "TypesSupported", 0, REG_DWORD,  (BYTE *)&supported_types, sizeof(DWORD));
+      if (dll_name)
+        result = RegSetValueEx(hKey, "EventMessageFile", 0, REG_SZ, (BYTE *)dll_name, strlen(dll_name));
+      g_free(dll_name);
+    }
+  g_free(reg_path);
 }

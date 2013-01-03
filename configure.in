@@ -1331,6 +1331,14 @@ enable_static_modules="no"
 
 SLNG_WIN_VERSION="`echo $VERSION | sed -e 's/[[a-zA-Z+\-~]]\+.*//' -e 's/\./,/g'`"
 
+if test $IS_WINDOWS -ne 0; then
+  WINDRES="${ac_cv_build}-windres.exe"
+  WINDMC="${ac_cv_build}-windmc.exe"
+
+  AC_SUBST(WINDRES)
+  AC_SUBST(WINDMC)
+fi
+
 # stripped down version to attach to libsyslogng.so
 LIBSYSLOGNG_VERSION="`echo $VERSION | sed -e 's/[[a-zA-Z+\-~]]\+.*//' | cut -f1-3 -d'.'`"
 
@@ -1500,6 +1508,7 @@ dnl PE modules
 	modules/snmp/Makefile
 	modules/afsqlsource/Makefile
   modules/rltp-proto/Makefile
+  modules/windows-resource/Makefile
 	pe-tests/Makefile
 	pe-tests/unit/Makefile
 	pe-tests/tools/Makefile

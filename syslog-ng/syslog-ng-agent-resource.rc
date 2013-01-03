@@ -1,0 +1,4 @@
+#include "winresrc.h"
+
+// Application icon
+101               ICON    DISCARDABLE     "bb.ico"

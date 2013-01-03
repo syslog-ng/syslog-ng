@@ -10,7 +10,7 @@ set -e
 
 (
  pemodpath="$ZWA_ROOT/git/syslog-ng/syslog-ng-pe-modules--mainline--5.0/modules"
- for pemod in license logstore diskq confighash snmp afsqlsource rltp-proto eventlog agent-config; do
+ for pemod in license logstore diskq confighash snmp afsqlsource rltp-proto eventlog agent-config windows-resource; do
     if [ -d $pemodpath/$pemod ]; then
         if [ -h modules/$pemod ] || [ -d modules/$pemod ]; then rm -rf modules/$pemod; fi
         ln -s $pemodpath/$pemod modules/$pemod
@@ -23,6 +23,7 @@ set -e
      ln -s $petests_orig $petests
  fi
 )
+
 ACLOCALPATHS=
 for pth in /opt/libtool/share/aclocal /usr/local/share/aclocal; do
 	if [ -d $pth ];then
