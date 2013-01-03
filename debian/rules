@@ -89,7 +89,7 @@ override_dh_auto_configure:
 		--enable-sql \
 		--enable-mongodb \
 		--enable-json \
-		--disable-systemd \
+		--enable-systemd \
 		\
 		--with-libmongo-client=system \
 		--with-ivykis=system \
@@ -148,10 +148,17 @@ override_dh_auto_clean:
 # also installs expect it so.
 #
 # So we simply flip a few bits after dh_install, and we're good to go!
+#
+# We also want to install the systemd unit file into syslog-ng-core,
+# so do that here too.
 override_dh_install:
 	dh_install
 ifneq (,$(filter libsyslog-ng-dev,$(shell dh_listpackages)))
 	chmod +x debian/libsyslog-ng-dev/usr/share/syslog-ng/tools/merge-grammar.pl
+endif
+ifneq (,$(filter syslog-ng-core,$(shell dh_listpackages)))
+	install -m 0644 ${SRCDIR}/contrib/systemd/syslog-ng.service \
+			debian/syslog-ng-core/lib/systemd/system/
 endif
 
 # Install the NEWS file as upstream changelog.
