@@ -848,7 +848,6 @@ cfg_update_sha1_hash(GlobalConfig *self, FILE *cfg)
   gchar *cfg_dir;
   guchar hash[SHA_DIGEST_LENGTH];
   gint hash_str_len = SHA_DIGEST_LENGTH * 2 + 1;
-  gchar *hash_str = NULL;
 
   SHA1_Init(&sha);
 
@@ -866,7 +865,6 @@ cfg_update_sha1_hash(GlobalConfig *self, FILE *cfg)
             {
               SHA1_Final(hash, &sha);
 
-              hash_str = self->cfg_fingerprint;
               format_hex_string(hash, sizeof(hash), self->cfg_fingerprint, hash_str_len);
 
             }

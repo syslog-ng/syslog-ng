@@ -7,34 +7,6 @@
 #
 
 set -e
-autogen_submodules()
-{
-
-	origdir=`pwd`
-
-	for submod in $SUBMODULES; do
-		if [ -f .gitmodules ]; then
-			git submodule update --init --recursive -- $submod || git submodule update --init -- $submod
-		fi
-
-		echo "Running autogen in '$submod'..."
-		cd "$submod"
-		git checkout master
-		git pull
-		if [ -x autogen.sh ]; then
-			./autogen.sh
-		elif [ -f configure.in ] || [ -f configure.ac ]; then
-			autoreconf
-		else
-			echo "Don't know how to bootstrap submodule '$submod'" >&2
-			exit 1
-		fi
-		cd "$origdir"
-	done
-}
-if [ "$USER" = "testbot" ];then
-	skip_submodules=1
-fi
 
 (
  pemodpath="$ZWA_ROOT/git/syslog-ng/syslog-ng-pe-modules--mainline--5.0/modules"
