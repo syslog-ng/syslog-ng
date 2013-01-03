@@ -1,8 +1,7 @@
 language: c
 install:
   - sudo apt-get update -qq
-  - sudo apt-get install -qq pkg-config flex bison xsltproc docbook-xsl libevtlog-dev libnet1-dev libglib2.0-dev libdbi0-dev libssl-dev libjson0-dev libwrap0-dev libpcre3-dev libcap-dev libesmtp-dev
-  - sudo apt-get install -qq pkg-config flex bison xsltproc docbook-xsl libevtlog-dev libnet1-dev libglib2.0-dev libdbi0-dev libssl-dev libjson0-dev libwrap0-dev libpcre3-dev libcap-dev
+  - sudo apt-get install -qq pkg-config flex bison xsltproc docbook-xsl libevtlog-dev libnet1-dev libglib2.0-dev libdbi0-dev libssl-dev libjson0-dev libwrap0-dev libpcre3-dev libcap-dev libesmtp-dev libgeoip-dev
 before_script:
   - ./autogen.sh
 script:
