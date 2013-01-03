@@ -390,15 +390,13 @@ const gchar *source_names[SCS_MAX] =
 static void
 stats_format_log_counter(gpointer key, gpointer value, gpointer user_data)
 {
-  EVTREC *e = (EVTREC *) user_data;
+  GString *message = (GString *)user_data;
   StatsCounter *sc = (StatsCounter *) value;
   StatsCounterType type;
 
 
   for (type = 0; type < SC_TYPE_MAX; type++)
     {
-      EVTTAG *tag;
-
       if (sc->live_mask & (1 << type))
         {
           const gchar *source_name;
@@ -410,17 +408,25 @@ stats_format_log_counter(gpointer key, gpointer value, gpointer user_data)
                 source_name = "destination";
               else
                 g_assert_not_reached();
-              tag = evt_tag_printf(tag_names[type], "%s(%s%s%s)=%u", source_name, sc->id, (sc->id[0] && sc->instance[0]) ? "," : "", sc->instance, stats_counter_get(&sc->counters[type]));
+              g_string_append_printf(message,"; %s='%s(%s%s%s)=%u'",
+                                              tag_names[type],
+                                              source_name,
+                                              sc->id,
+                                              (sc->id[0] && sc->instance[0]) ? "," : "",
+                                              sc->instance,
+                                              stats_counter_get(&sc->counters[type]));
             }
           else
             {
-              tag = evt_tag_printf(tag_names[type], "%s%s(%s%s%s)=%u", 
-                                   (sc->source & SCS_SOURCE ? "src." : (sc->source & SCS_DESTINATION ? "dst." : "")),
-                                   source_names[sc->source & SCS_SOURCE_MASK],
-                                   sc->id, (sc->id[0] && sc->instance[0]) ? "," : "", sc->instance,
-                                   stats_counter_get(&sc->counters[type]));
+              g_string_append_printf(message,"; %s='%s%s(%s%s%s)=%u'",
+                                      tag_names[type],
+                                      (sc->source & SCS_SOURCE ? "src." : (sc->source & SCS_DESTINATION ? "dst." : "")),
+                                      source_names[sc->source & SCS_SOURCE_MASK],
+                                      sc->id,
+                                      (sc->id[0] && sc->instance[0]) ? "," : "",
+                                      sc->instance,
+                                      stats_counter_get(&sc->counters[type]));
             }
-          evt_rec_add_tag(e, tag);
         }
     }
 
@@ -429,11 +435,13 @@ stats_format_log_counter(gpointer key, gpointer value, gpointer user_data)
 void
 stats_generate_log(void)
 {
-  EVTREC *e;
-  
-  e = msg_event_create(EVT_PRI_INFO, "Log statistics", NULL);
-  g_hash_table_foreach(counter_hash, stats_format_log_counter, e);
-  msg_event_send(e);
+  LogMessage *lm;
+  GString *message = g_string_new("Log statistics");
+
+  g_hash_table_foreach(counter_hash, stats_format_log_counter, message);
+  lm = msg_event_create(EVT_PRI_INFO, message->str, NULL);
+  g_string_free(message, TRUE);
+  msg_event_send(lm);
 }
 
 static gboolean

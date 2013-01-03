@@ -230,6 +230,7 @@ log_msg_get_value(LogMessage *self, NVHandle handle, gssize *value_len)
 typedef gboolean (*LogMessageTagsForeachFunc)(LogMessage *self, LogTagId tag_id, const gchar *name, gpointer user_data);
 
 void log_msg_set_value(LogMessage *self, NVHandle handle, const gchar *new_value, gssize length);
+void log_msg_set_value_by_name(LogMessage *self, const gchar *name, const gchar *new_value, gssize length);
 void log_msg_set_value_indirect(LogMessage *self, NVHandle handle, NVHandle ref_handle, guint8 type, guint16 ofs, guint16 len);
 void log_msg_set_match(LogMessage *self, gint index, const gchar *value, gssize value_len);
 void log_msg_set_match_indirect(LogMessage *self, gint index, NVHandle ref_handle, guint8 type, guint16 ofs, guint16 len);

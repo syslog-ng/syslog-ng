@@ -26,6 +26,7 @@
 #define MESSAGES_H_INCLUDED
 
 #include "syslog-ng.h"
+#include "message_ids.h"
 #include <evtlog.h>
 
 extern int debug_flag;
@@ -37,8 +38,8 @@ typedef void (*MsgPostFunc)(LogMessage *msg);
 
 void msg_set_context(LogMessage *msg);
 gboolean msg_limit_internal_message(void);
-EVTREC *msg_event_create(gint prio, const char *desc, EVTTAG *tag1, ...);
-void msg_event_send(EVTREC *e);
+LogMessage *msg_event_create(gint prio, const char *desc, EVTTAG *tag1, ...);
+void msg_event_send(LogMessage *lm);
 
 void msg_set_post_func(MsgPostFunc func);
 void msg_redirect_to_syslog(const gchar *program_name);
@@ -46,6 +47,11 @@ void msg_init(gboolean interactive);
 void msg_deinit(void);
 
 void msg_add_option_group(GOptionContext *ctx);
+
+static inline EVTTAG* evt_tag_id(int id)
+{
+  return evt_tag_int("MSGID",id);
+}
 
 /* fatal->warning goes out to the console during startup, notice and below
  * comes goes to the log even during startup */

@@ -471,6 +471,14 @@ log_msg_set_value(LogMessage *self, NVHandle handle, const gchar *value, gssize 
 }
 
 void
+log_msg_set_value_by_name(LogMessage *self, const gchar *name, const gchar *new_value, gssize length)
+{
+  NVHandle handle = log_msg_get_value_handle(name);
+  log_msg_set_value(self, handle, new_value, length);
+  return;
+}
+
+void
 log_msg_set_value_indirect(LogMessage *self, NVHandle handle, NVHandle ref_handle, guint8 type, guint16 ofs, guint16 len)
 {
   const gchar *name;

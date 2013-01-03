@@ -53,6 +53,7 @@ pkginclude_HEADERS = 		\
 	mainloop.h		\
 	memtrace.h		\
 	messages.h		\
+  message_ids.h \
 	misc.h			\
 	msg-format.h		\
 	nvtable.h		\
