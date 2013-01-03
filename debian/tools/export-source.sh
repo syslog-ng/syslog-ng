@@ -71,7 +71,8 @@ git rm -qf debian/control debian/changelog.in debian/README.Debian \
         debian/syslog-ng.files debian/syslog-ng.init \
         debian/syslog-ng.logrotate debian/syslog-ng.logrotate.example \
         debian/syslog-ng.postinst debian/syslog-ng.postrm \
-        debian/syslog-ng.preinst
+        debian/syslog-ng.preinst \
+        .travis.yml
 git rm -q syslog-ng-"${DUMAJOR}"
 
 EDITOR=cat git commit -q >/dev/null
