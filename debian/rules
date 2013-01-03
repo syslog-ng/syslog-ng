@@ -87,7 +87,7 @@ override_dh_auto_configure:
 		--enable-sql \
 		--enable-mongodb \
 		--enable-json \
-		--disable-systemd \
+		--enable-systemd \
 		\
 		--with-libmongo-client=system \
 		--with-ivykis=system \
@@ -169,6 +169,8 @@ ifneq (,$(filter syslog-ng-dev,$(shell dh_listpackages)))
 	chmod +x debian/syslog-ng-dev/usr/share/syslog-ng/tools/merge-grammar.pl
 endif
 ifneq (,$(filter syslog-ng-core,$(shell dh_listpackages)))
+	install -m 0644 ${SRCDIR}/contrib/systemd/syslog-ng.service \
+			debian/syslog-ng-core/lib/systemd/system/
 	install -m 0644 debian/${TTY10_CONF} \
 			debian/syslog-ng-core/usr/share/syslog-ng/include/scl/system/tty10.conf
 endif
