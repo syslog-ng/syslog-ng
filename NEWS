@@ -1,3 +1,56 @@
+3.4.0rc1
+        Mon,  7 Jan 2013 16:00:00 +0100
+
+        Features
+        ========
+        * Make it possible to link crypto stuff directly into
+        libsyslog-ng, using the new --with-embedded-crypto option to
+        configure.
+
+        Bugfixes
+        ========
+        * DNS resolving was made thread-safe, by either using
+        getnameinfo() on platforms where it is available, or
+        protecting the lookups with a mutex.
+
+        * Restored support for systems that lack GLOB_NOMAGIC.
+
+        * The syslog() destination now correctly enforces IPv4, so
+          using udp6() followed by syslog() in the same source block
+          will not result in syslog() trying to use IPv6. To use the
+          syslog protocol over IPv6, use the new network() statement.
+
+        * On AIX, load modules from "a" archives instead of "so" ones.
+
+        * The config version checking mechanism was patched, which
+          fixes a crash in certain cases when running under systemd.
+
+        * The GeoIP module can now be built even on systems that do
+          not have a pkg-config file for the geoip library, by setting
+          the GEOIP_LIBS environment variable prior to running
+          configure.
+
+        Credits:
+        ========
+        syslog-ng is developed as a community project, and as such it relies
+        on volunteers to do the work necessarily to produce syslog-ng.
+
+        Reporting bugs, testing changes, writing code or simply providing
+        feedback are all important contributions, so please if you are a
+        user of syslog-ng, contribute.
+
+        These people have helped in this release:
+
+        Balint Kovacs <blint@blint.hu>
+        Balazs Scheidler <bazsi@balabit.hu>
+        Ben Lentz <blentz@cswg.com>
+        Brian Kroth <bpkroth@gmail.com>
+        Gergely Nagy <algernon@balabit.hu>
+        Jan Schaumann <jschauma@netmeister.org>
+        Peter Czanik <czanik@balabit.hu>
+        Tamas Pal <folti@balabit.hu>
+        Viktor Juhasz <jviktor@balabit.hu>
+
 3.4.0beta1
 	Sat, 15 Dec 2012 02:21:14 +0100
 
