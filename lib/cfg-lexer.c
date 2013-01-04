@@ -489,13 +489,68 @@ _cfg_lexer_glob_err (const char *p, gint e)
   return 0;
 }
 
+#ifndef GLOB_NOMAGIC
+#define GLOB_NOMAGIC 0
+
+int
+__glob_pattern_p (const char *pattern)
+{
+  register const char *p;
+  int open = 0;
+
+  for (p = pattern; *p != '\0'; ++p)
+    switch (*p)
+      {
+      case '?':
+      case '*':
+        return 1;
+
+      case '\\':
+        if (p[1] != '\0')
+          ++p;
+        break;
+
+      case '[':
+        open = 1;
+        break;
+
+      case ']':
+        if (open)
+          return 1;
+        break;
+      }
+
+  return 0;
+}
+#else
+#define HAVE_GLOB_NOMAGIC 1
+#endif
+
+static gboolean
+cfg_lexer_include_file_add(CfgLexer *self, const gchar *fn)
+{
+  CfgIncludeLevel *level;
+
+  level = &self->include_stack[self->include_depth];
+  level->include_type = CFGI_FILE;
+
+  level->file.files = g_slist_insert_sorted(level->file.files,
+                                            strdup(fn),
+                                            (GCompareFunc) strcmp);
+
+  msg_debug("Adding include file",
+            evt_tag_str("filename", fn),
+            NULL);
+
+  return TRUE;
+}
+
 static gboolean
 cfg_lexer_include_file_glob_at(CfgLexer *self, const gchar *pattern)
 {
   glob_t globbuf;
   size_t i;
   int r;
-  CfgIncludeLevel *level;
 
   r = glob(pattern, GLOB_NOMAGIC, _cfg_lexer_glob_err, &globbuf);
 
@@ -503,21 +558,23 @@ cfg_lexer_include_file_glob_at(CfgLexer *self, const gchar *pattern)
     {
       globfree(&globbuf);
       if (r == GLOB_NOMATCH)
-        return FALSE;
+        {
+#ifndef HAVE_GLOB_NOMAGIC
+          if (!__glob_pattern_p (pattern))
+            {
+              self->include_depth++;
+              return cfg_lexer_include_file_add(self, pattern);
+            }
+#endif
+          return FALSE;
+        }
       return TRUE;
     }
 
   self->include_depth++;
-  level = &self->include_stack[self->include_depth];
-  level->include_type = CFGI_FILE;
   for (i = 0; i < globbuf.gl_pathc; i++)
     {
-      level->file.files = g_slist_insert_sorted(level->file.files,
-                                                strdup(globbuf.gl_pathv[i]),
-                                                (GCompareFunc) strcmp);
-      msg_debug("Adding include file",
-                evt_tag_str("filename", globbuf.gl_pathv[i]),
-                NULL);
+      cfg_lexer_include_file_add(self, globbuf.gl_pathv[i]);
     }
 
   globfree(&globbuf);

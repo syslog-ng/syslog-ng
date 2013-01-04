@@ -43,6 +43,7 @@
 #include <iv.h>
 #include <iv_signal.h>
 #include <iv_work.h>
+#include <iv_event.h>
 
 /**
  * Processing model
