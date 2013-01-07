@@ -123,6 +123,8 @@ struct _GlobalConfig
   gboolean use_rcptid;
   
   gchar *cfg_fingerprint;
+  guchar *cfg_hash;
+  gchar *cfg_processed_config;
   gboolean stats_reset;
   gchar *(*calculate_hash)(GlobalConfig *self);
   void (*show_reload_message)(GlobalConfig *self);

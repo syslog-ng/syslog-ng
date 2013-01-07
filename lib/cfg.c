@@ -453,12 +453,25 @@ cfg_run_parser(GlobalConfig *self, CfgLexer *lexer, CfgParser *parser, gpointer 
   cfg_args_set(self->lexer->globals, "autoload-compiled-modules", "1");
 
   res = cfg_parser_parse(parser, lexer, result, arg);
+  self->cfg_processed_config = g_strdup(lexer->preprocess_output->str);
 
   cfg_lexer_free(lexer);
   self->lexer = NULL;
   self->lexer = old_lexer;
   configuration = old_cfg;
   return res;
+}
+
+static void
+cfg_dump_processed_config(GlobalConfig *self, gchar *output_filename)
+{
+  FILE *output_file;
+  output_file = fopen(output_filename,"w+");
+  if (output_file)
+    {
+      fprintf(output_file, "%s", self->cfg_processed_config);
+      fclose(output_file);
+    }
 }
 
 gboolean
@@ -468,17 +481,17 @@ cfg_load_config(GlobalConfig *self, gchar *config_string, gboolean syntax_only, 
   CfgLexer *lexer;
 
   lexer = cfg_lexer_new_buffer(config_string, strlen(config_string));
-  if (preprocess_into)
-    {
-      lexer->preprocess_output = fopen(preprocess_into, "w");
-    }
 
   res = cfg_run_parser(self, lexer, &main_parser, (gpointer *) &self, NULL);
+  if (preprocess_into)
+    {
+      cfg_dump_processed_config(self, preprocess_into);
+    }
   if (res)
     {
       /* successfully parsed */
       self->center = log_center_new();
-      //(void) get_config_hash(self);
+      (void) get_config_hash(self);
       return TRUE;
     }
   return FALSE;
@@ -496,9 +509,13 @@ cfg_read_config(GlobalConfig *self, gchar *fname, gboolean syntax_only, gchar *p
     {
       CfgLexer *lexer;
 
-      lexer = cfg_lexer_new(cfg_file, fname, preprocess_into);
+      lexer = cfg_lexer_new(cfg_file, fname);
       res = cfg_run_parser(self, lexer, &main_parser, (gpointer *) &self, NULL);
       fclose(cfg_file);
+      if (preprocess_into)
+        {
+          cfg_dump_processed_config(self, preprocess_into);
+        }
       if (res)
         {
           /* successfully parsed */
@@ -676,252 +693,25 @@ gchar *err_chdir = "Cannot change to directory";
 /* WARNING: This code uses OpenSSL, it won't compile without it. It's not a
  * problem in PE, but OSE is a different matter. - folti */
 
-/* max depth: 16, according to INCLUDE_MAX_DEPTH in cfg-lex.l */
-#define INCLUDE_MAX_DEPTH 16
-static void
-cfg_process_file(SHA_CTX *sha, FILE *cfg, int depth)
-{
-  gchar str[256];
-  gchar *inc_str = "include";
-  gint inc_len = strlen(inc_str);
-  gint inc_pos = 0;
-  gint bx;
-  gchar bc;
-  gboolean inc_collect = FALSE;
-  gchar inc_name[256];
-  gchar *inc_name_p;
-  gint inc_name_size = 0;
-  gchar *inc_dirname;
-  gchar *inc_basename;
-  FILE *inc_cfg;
-  gint bytes_read = 0;
-  gchar cur_dir[1024];
-  gint level = 0;
-  gboolean in_string = FALSE;
-
-  if (depth > INCLUDE_MAX_DEPTH)
-    {
-      msg_error("Include nesting is too deep",
-                evt_tag_int("max", INCLUDE_MAX_DEPTH),
-                NULL);
-      return;
-    }
-
-  while ((bytes_read = fread(str, sizeof(gchar), 256, cfg)) != 0)
-    {
-      /* go through the characters in the buffer and look for the 'include' string */
-      for (bx = 0; bx < bytes_read; ++bx)
-        {
-          bc = str[bx];
-
-          /* check the level changing characters */
-          if (!in_string && (bc == '(' || bc == '{'))
-            ++level;
-          else if (!in_string && (bc == ')' || bc == '}'))
-            --level;
-          else if (bc == '"' && inc_collect == FALSE)
-            in_string = !in_string;
-
-          if (level == 0 && !in_string)
-            {
-              /* the inclusion has to be processed on the outmost level */
-              if (inc_collect)
-                {
-                  /* we reached the end of the 'include' string, collect the chars of the filename */
-                  if (bc == ';')
-                    {
-                      /* the include name is closed, process it */
-                      /* delete the trailing whitespaces */
-                      while (inc_name_size > 0 && (inc_name[inc_name_size - 1] == ' ' || inc_name[inc_name_size - 1] == '\t'))
-                        --inc_name_size;
-                      inc_name[inc_name_size] = '\0';
-                      inc_name_p = inc_name;
-                      /* trim the leading and trailing "-s and '-s in the filename */
-                      if (inc_name_size > 0 && (inc_name[inc_name_size - 1] == '"' || inc_name[inc_name_size - 1] == '\''))
-                        inc_name[--inc_name_size] = '\0';
-                      if (*inc_name_p == '"' || *inc_name_p == '\'')
-                        {
-                          ++inc_name_p;
-                          --inc_name_size;
-                        }
-                      /* trim the trailing slash that can be used for directories */
-                      if (inc_name_size > 0 && inc_name[inc_name_size - 1] == '/')
-                        inc_name[--inc_name_size] = '\0';
-                      if (inc_name_size > 0)
-                        {
-                          /* the include name is a valid string */
-
-                          if (getcwd(cur_dir, 1024) == cur_dir)
-                            {
-                              /* extrcat the dir and file name */
-                              inc_dirname = g_path_get_dirname(inc_name_p);
-                              inc_basename = g_path_get_basename(inc_name_p);
-                              if (!chdir(inc_name_p))
-                                {
-                                  /* this is a directory, process the entries in it */
-                                  GDir *dir = g_dir_open(".", 0, NULL);
-                                  const gchar *fname = g_dir_read_name(dir);
-                                  while (fname)
-                                    {
-                                      if (fname[0] != '.' && fname[0] != '~')
-                                        {
-                                          inc_cfg = fopen(fname, "rb");
-                                          if (inc_cfg)
-                                            {
-                                              /* Ok, this is valid file (not a directory) */
-                                              cfg_process_file(sha, inc_cfg, depth + 1);
-                                              fclose(inc_cfg);
-                                            }
-                                        }
-                                      fname = g_dir_read_name(dir);
-                                    }
-                                  g_dir_close(dir);
-                                  if (chdir(cur_dir))
-                                    msg_error(err_chdir,
-                                              evt_tag_str("dir", cur_dir),
-                                              NULL);
-                                }
-                              else if (!chdir(inc_dirname))
-                                {
-                                  /* this is a simple file, process it */
-                                  inc_cfg = fopen(inc_basename, "rb");
-                                  if (inc_cfg)
-                                    {
-                                      cfg_process_file(sha, inc_cfg, depth + 1);
-                                      fclose(inc_cfg);
-                                    }
-                                }
-                              else
-                                {
-                                  /* the include cannot be processed */
-                                  msg_error("The include file cannot be processed",
-                                            evt_tag_str("file", inc_name_p),
-                                            NULL);
-                                }
-
-                              /* jump back to the starting dir */
-                              if (chdir(cur_dir))
-                                msg_error(err_chdir,
-                                          evt_tag_str("dir", cur_dir),
-                                          NULL);
-                              g_free(inc_basename);
-                              g_free(inc_dirname);
-                            }
-                          else
-                            msg_error(err_getcwd,
-                                      NULL);
-                        }
-
-                      /* reset the inclusion search */
-                      inc_pos = 0;
-                      inc_name_size = 0;
-                      inc_collect = FALSE;
-                    }
-                  else if (inc_name_size != 0 || (bc != ' ' && bc != '\t'))
-                    /* collect the include name, except the whitespaces preceding the filename (between the 'include' and the filename) */
-                    inc_name[inc_name_size++] = bc;
-                }
-              else if (bc == inc_str[inc_pos])
-                {
-                  ++inc_pos;
-                  if (inc_pos == inc_len)
-                    {
-                      /* Ok, we've found the 'include' string */
-                      inc_collect = TRUE;
-                    }
-                }
-              else
-                {
-                  /* restart the string matching */
-                  inc_pos = 0;
-                }
-            }
-        }
-
-      SHA1_Update(sha, str, bytes_read);
-    }
-}
-
-static gboolean
-cfg_update_sha1_hash(GlobalConfig *self, FILE *cfg)
-{
-  SHA_CTX sha;
-  gchar cur_dir[1024];
-  gchar *cfg_dir;
-  guchar hash[SHA_DIGEST_LENGTH];
-  gint hash_str_len = SHA_DIGEST_LENGTH * 2 + 1;
-
-  SHA1_Init(&sha);
-
-  /* go to the directory of the config file and process it with the included configs */
-  if (getcwd(cur_dir, 1024) == cur_dir)
-    {
-      cfg_dir = g_path_get_dirname(self->filename);
-      if (!chdir(cfg_dir))
-        {
-          cfg_process_file(&sha, cfg, 1);
-          /* reset the previous directory */
-          g_free(cfg_dir);
-          fseek(cfg, 0, SEEK_SET);
-          if (!chdir(cur_dir))
-            {
-              SHA1_Final(hash, &sha);
-
-              format_hex_string(hash, sizeof(hash), self->cfg_fingerprint, hash_str_len);
-
-            }
-          else
-            {
-              msg_error(err_chdir,
-                        evt_tag_str("dir", cfg_dir),
-                        NULL);
-              goto error;
-            }
-        }
-      else
-        {
-          msg_error(err_chdir,
-                    evt_tag_str("dir", cfg_dir),
-                    NULL);
-          goto error;
-          }
-    }
-  else
-    msg_error(err_getcwd,
-              NULL);
-  return TRUE;
-
-error:
-    return FALSE;
-}
-
 static gchar *
 cfg_calculate_hash(GlobalConfig *cfg)
 {
-  FILE *cfg_file;
+  SHA_CTX sha;
+
   if (cfg->cfg_fingerprint)
     {
       g_free(cfg->cfg_fingerprint);
     }
+  if (cfg->cfg_hash)
+    {
+      g_free(cfg->cfg_hash);
+    }
   cfg->cfg_fingerprint = g_malloc0(SHA_DIGEST_LENGTH * 2 + 1);
-  if ((cfg_file = fopen(cfg->filename, "r")) != NULL)
-    {
-      gboolean success = cfg_update_sha1_hash(cfg, cfg_file);
-      fclose(cfg_file);
-      if (!success)
-        {
-          msg_error("Error generating configuration file fingerprint", NULL);
-          return NULL;
-        }
-    }
-  else
-    {
-      msg_error("Error opening configuration file",
-                evt_tag_str(EVT_TAG_FILENAME, cfg->filename),
-                evt_tag_errno(EVT_TAG_OSERROR, errno),
-                NULL);
-      return NULL;
-    }
+  cfg->cfg_hash = g_malloc0(SHA_DIGEST_LENGTH);
+  SHA1_Init(&sha);
+  SHA1_Update(&sha, cfg->cfg_processed_config, strlen(cfg->cfg_processed_config));
+  SHA1_Final(cfg->cfg_hash, &sha);
+  format_hex_string(cfg->cfg_hash, SHA_DIGEST_LENGTH, cfg->cfg_fingerprint, SHA_DIGEST_LENGTH * 2 + 1);
   return cfg->cfg_fingerprint;
 }
 
