@@ -68,6 +68,9 @@ done
 # clean up unneeded files
 rm -f debian/orig-source/syslog-ng/.travis.yml
 
+# clean up unneeded files
+rm -f debian/orig-source/syslog-ng/.travis.yml
+
 ##
 # Create the orig.tar.xz from the assembled sources
 ##

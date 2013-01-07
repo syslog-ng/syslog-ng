@@ -1,3 +1,12 @@
+syslog-ng (3.4.0~rc1-1~mhp2) unstable; urgency=low
+
+  [ Gergely Nagy <algernon@madhouse-project.org> ]
+  * New upstream release candidate.
+  * Use /dev/ttyva on kFreeBSD as the target of the d_console_all
+    destination. (Closes: #697042)
+
+ -- Gergely Nagy <algernon@madhouse-project.org>  Mon, 07 Jan 2013 11:20:11 +0100
+
 syslog-ng (3.4.0~alpha3+sandbox+20121116-1~mhp1) unstable; urgency=low
 
   [ Gergely Nagy <algernon@madhouse-project.org> ]
@@ -34,13 +43,28 @@ syslog-ng (3.4.0~alpha3+sandbox+133-1~mhp1) unstable; urgency=low
 
  -- Gergely Nagy <algernon@madhouse-project.org>  Mon, 15 Oct 2012 23:45:39 +0200
 
-syslog-ng (3.3.6.91-1~mhp2) unstable; urgency=low
+syslog-ng (3.3.7+snapshot20130103+gdf6d07e-1~mhp1) unstable; urgency=low
 
+  [ Gergely Nagy <algernon@madhouse-project.org> ]
+  * New snapshot, based on git commit df6d07e
+  * Use the standard /var/log/mail.{info,err,warn} location for the
+    various mail-related logs. (Closes: #692056)
+  * Do not forcibly remove the systemd service files, that code is not
+    needed anymore.
+  * Use /dev/ttyva on kFreeBSD as the target of the d_console_all
+    destination. (Closes: #697042)
+
+ -- Gergely Nagy <algernon@madhouse-project.org>  Thu, 03 Jan 2013 17:55:32 +0100
+
+syslog-ng (3.3.7-1~mhp1) unstable; urgency=low
+
+  [ Gergely Nagy <algernon@madhouse-project.org> ]
+  * New upstream release.
   * Instead of installing systemd service file symlinks, install a
     conffile, that includes the real service file. (Closes: #690067)
-  * New git snapshot, based on git commit 6a3c11c.
+  * Add Origin and Bugs fields to the control file.
 
- -- Gergely Nagy <algernon@madhouse-project.org>  Sun, 28 Oct 2012 15:44:23 +0100
+ -- Gergely Nagy <algernon@madhouse-project.org>  Wed, 31 Oct 2012 07:57:37 +0100
 
 syslog-ng (3.3.6.91-1~mhp1) unstable; urgency=low
 
