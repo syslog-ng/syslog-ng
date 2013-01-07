@@ -51,6 +51,7 @@ affile_open_file(gchar *name, DWORD flags, DWORD mode, DWORD create_flag, gboole
     {
       msg_error("Spurious path, logfile not created",
                 evt_tag_str("path", name),
+                evt_tag_id(MSG_CANT_OPEN_FILE),
                 NULL);
       return FALSE;
     }
@@ -111,6 +112,7 @@ affile_sd_recover_state(LogPipe *s, GlobalConfig *cfg, LogProto *proto)
     {
       msg_error("Error converting persistent state from on-disk format, losing file position information",
                 evt_tag_str("filename", self->filename->str),
+                evt_tag_id(MSG_CANT_RECOVER_FILE_STATE),
                 NULL);
       return;
     }
@@ -155,7 +157,7 @@ affile_sd_construct_proto(AFFileSourceDriver *self, LogTransport *transport)
     }
   else if (proto == NULL)
     {
-      msg_error("Can't find proto plugin",evt_tag_str("proto_name",name),NULL);
+      msg_error("Can't find proto plugin",evt_tag_str("proto_name",name),evt_tag_id(MSG_CANT_FIND_PROTO), NULL);
     }
   return proto;
 }
@@ -189,6 +191,7 @@ affile_sd_open(LogPipe *s, gboolean immediate_check)
     {
       msg_info("Follow-mode file source not found, deferring open",
                evt_tag_str("filename", self->filename->str),
+               evt_tag_id(MSG_FILE_SOURCE_NOT_FOUND),
                NULL);
       open_deferred = TRUE;
       fd = -1;
@@ -225,6 +228,7 @@ affile_sd_open(LogPipe *s, gboolean immediate_check)
         {
           msg_error("Error initializing log_reader, closing fd",
                     evt_tag_int("fd", fd),
+                    evt_tag_id(MSG_CANT_INITIALIZE_READER),
                     NULL);
           log_pipe_unref(self->reader);
           self->reader = NULL;
@@ -238,6 +242,7 @@ affile_sd_open(LogPipe *s, gboolean immediate_check)
       msg_error("Error opening file for reading",
                 evt_tag_str("filename", self->filename->str),
                 evt_tag_errno(EVT_TAG_OSERROR, errno),
+                evt_tag_id(MSG_CANT_OPEN_FILE),
                 NULL);
       return self->super.super.optional;
     }
@@ -529,6 +534,7 @@ affile_sd_init(LogPipe *s)
         {
           msg_error("Error starting filemonitor",
                     evt_tag_str("filemonitor", self->filename_pattern->str),
+                    evt_tag_id(MSG_CANT_START_FILEMONITOR),
                     NULL);
           return FALSE;
         }
@@ -847,6 +853,7 @@ affile_dw_reopen(AFFileDestWriter *self)
       msg_info("Destination file is older than overwrite_if_older(), overwriting",
                  evt_tag_str("filename", self->filename),
                  evt_tag_int("overwrite_if_older", self->owner->overwrite_if_older),
+                 evt_tag_id(MSG_FILE_OLDER_OVERWRITE),
                  NULL);
       unlink(self->filename);
     }

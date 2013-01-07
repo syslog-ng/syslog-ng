@@ -187,6 +187,7 @@ log_writer_work_finished(gpointer s)
           msg_notice("Suspending write operation because of an I/O error",
                      evt_tag_int("fd", log_proto_get_fd(self->proto)),
                      evt_tag_int("time_reopen", self->options->time_reopen),
+                     evt_tag_id(MSG_WRITE_SUSPENDING_IO_ERROR),
                      NULL);
         }
       goto exit;
@@ -270,6 +271,7 @@ log_writer_io_check_eof(gpointer s)
 
   msg_error("EOF occurred while idle",
             evt_tag_int("fd", log_proto_get_fd(self->proto)),
+            evt_tag_id(MSG_LOGWRITER_EOF_OCCURED),
             NULL);
   log_writer_broken(self, NC_CLOSE);
 }
@@ -282,6 +284,7 @@ log_writer_error_suspend_elapsed(gpointer s)
   self->suspended = FALSE;
   msg_notice("Error suspend timeout has elapsed, attempting to write again",
              evt_tag_int("fd", log_proto_get_fd(self->proto)),
+             evt_tag_id(MSG_WRITE_SUSPEND_TIMEOUT_ELAPSED),
              NULL);
   log_writer_start_watches(self);
 }
@@ -1205,7 +1208,6 @@ flush_the_proto:
     {
       self->has_to_poll = TRUE;
     }
-  /*msg_error("Writer sent messages",evt_tag_int("count",count), evt_tag_str("status",status == LPS_AGAIN ? "LPS_AGAIN" : "LPS_SUCCESS"),NULL);*/
   return TRUE;
 }
 
@@ -1365,7 +1367,7 @@ void
 log_writer_idle_time_elapsed(gpointer user_data)
 {
   LogWriter *self = (LogWriter *)user_data;
-  msg_error("Server response time elapsed, close the connection", NULL);
+  msg_error("Server response time elapsed, close the connection", evt_tag_id(MSG_LOGWRITER_RESPONSE_TIMEOUT), NULL);
   log_pipe_notify(self->control, &self->super, NC_CLOSE, self);
 }
 
@@ -1666,12 +1668,12 @@ log_writer_options_lookup_flag(const gchar *flag)
 #if ENABLE_THREADED
     return LWO_THREADED;
 #else
-    msg_warning("Threaded not supported on this platform",NULL);
+    msg_warning("Threaded not supported on this platform",evt_tag_id(MSG_THREADED_ISNT_AVAILABLE),NULL);
     return 0;
 #endif
   if (strcmp(flag, "ignore-errors") == 0 || strcmp(flag, "ignore_errors") == 0)
     return LWO_IGNORE_ERRORS;
-  msg_error("Unknown dest writer flag", evt_tag_str("flag", flag), NULL);
+  msg_error("Unknown dest writer flag", evt_tag_str("flag", flag), evt_tag_id(MSG_LOGWRITER_UNKNOWN_FLAG), NULL);
   return 0;
 }
 
@@ -1683,6 +1685,7 @@ log_writer_options_set_mark_mode(LogWriterOptions *options, gchar *mark_mode)
     {
       msg_error("Wrong destination mark mode",
                  evt_tag_str("mark_mode", mark_mode),
+                 evt_tag_id(MSG_LOGWRITER_WRONG_MARKMODE),
                  NULL);
     }
 

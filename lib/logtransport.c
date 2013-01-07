@@ -92,6 +92,7 @@ log_transport_plain_read_method(LogTransport *s, gpointer buf, gsize buflen, GSo
               msg_notice("Nonblocking read has blocked, returning with an error",
                          evt_tag_int("fd", self->super.fd),
                          evt_tag_int("timeout", self->super.timeout),
+                         evt_tag_id(MSG_NONBLOCKING_READ_BLOCKED),
                          NULL);
               alarm_cancel();
               break;
@@ -192,6 +193,7 @@ log_transport_plain_write_method(LogTransport *s, const gpointer buf, gsize bufl
           msg_notice("Nonblocking write has blocked, returning with an error",
                      evt_tag_int("fd", self->super.fd),
                      evt_tag_int("timeout", self->super.timeout),
+                     evt_tag_id(MSG_NONBLOCKING_WRITE_BLOCKED),
                      NULL);
           alarm_cancel();
           break;

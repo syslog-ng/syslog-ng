@@ -93,6 +93,7 @@ afinet_set_port(GSockAddr *addr, gchar *service, const gchar *proto)
             {
               msg_error("Error finding port number, falling back to default",
                         evt_tag_printf("service", "%s/%s", proto, service),
+                        evt_tag_id(MSG_CANT_FIND_PORT_NUMBER),
                         NULL);
               return;
             }
@@ -333,6 +334,7 @@ afinet_sd_apply_transport(AFSocketSourceDriver *s)
       msg_error("Error finding plugin for transport",
                 evt_tag_str("id", self->super.super.super.id),
                 evt_tag_str("transport", self->super.transport),
+                evt_tag_id(MSG_CANT_FIND_TRANSPORT_FOR_PLUGIN),
                 NULL);
       return FALSE;
     }
@@ -350,6 +352,7 @@ afinet_sd_apply_transport(AFSocketSourceDriver *s)
     {
       msg_error("transport(tls) was specified, but tls() options missing",
                 evt_tag_str("id", self->super.super.super.id),
+                evt_tag_id(MSG_TLS_OPTION_MISSING),
                 NULL);
       return FALSE;
     }
@@ -583,6 +586,7 @@ afinet_dd_apply_transport(AFSocketDestDriver *s)
       msg_error("Error finding plugin for transport",
                 evt_tag_str("id", self->super.super.super.id),
                 evt_tag_str("transport", self->super.transport),
+                evt_tag_id(MSG_CANT_FIND_TRANSPORT_FOR_PLUGIN),
                 NULL);
       return FALSE;
     }
@@ -612,6 +616,7 @@ afinet_dd_apply_transport(AFSocketDestDriver *s)
     {
       msg_error("transport(tls) was specified, but tls() options missing",
                 evt_tag_str("id", self->super.super.super.id),
+                evt_tag_id(MSG_TLS_OPTION_MISSING),
                 NULL);
       return FALSE;
     }

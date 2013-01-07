@@ -130,7 +130,10 @@ get_X509_cert_by_subject(const gchar *cert_subject, ENGINE *e)
 
   if (cert == NULL)
     {
-      msg_error("Can't find cert",evt_tag_str("Searched subject",cert_subject),NULL);
+      msg_error("Can't find cert",
+                evt_tag_str("Searched subject",cert_subject),
+                evt_tag_id(MSG_CANT_FIND_CERTIFICATE),
+                NULL);
     }
   return result;
 }
@@ -169,20 +172,20 @@ init_capi_engine()
   e = ENGINE_by_id(engine_id);
   if (!e)
     {
-      msg_error("Can't load dynamic engine",NULL);
+      msg_error("Can't load dynamic engine",evt_tag_id(MSG_CANT_LOAD_DYNAMIC_ENGINE), NULL);
       return NULL;
     }
 
   if (!ENGINE_ctrl_cmd_string(e, "SO_PATH", engine_path, 0))
     {
-      msg_error("Can't find capi engine",evt_tag_str("searched file",engine_path), NULL);
+      msg_error("Can't find capi engine",evt_tag_str("searched file",engine_path), evt_tag_id(MSG_CANT_FIND_CAPI_ENGINE), NULL);
       g_free(engine_path);
       ENGINE_free(e);
       return NULL;
     }
   if (!ENGINE_ctrl_cmd_string(e, "LOAD", NULL, 0))
     {
-      msg_error("Can't load capi engine",NULL);
+      msg_error("Can't load capi engine",evt_tag_id(MSG_CANT_LOAD_CAPI_ENGINE), NULL);
       ENGINE_free(e);
       return NULL;
     }
@@ -213,7 +216,7 @@ load_certificate(SSL_CTX *ctx,const gchar *cert_subject)
   private_key = ENGINE_load_private_key(e, cert_subject, NULL, NULL);
   if (private_key == NULL)
     {
-      msg_error("Can't find private key",NULL);
+      msg_error("Can't find private key", evt_tag_id(MSG_CANT_FIND_PRIVATE_KEY), NULL);
       return FALSE;
     }
 

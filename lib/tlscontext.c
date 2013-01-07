@@ -143,13 +143,17 @@ tls_session_verify(TLSSession *self, int ok, X509_STORE_CTX *ctx)
   /* accept certificate if its fingerprint matches, again regardless whether x509 certificate validation was successful */
   if (tls_session_verify_fingerprint(ctx))
     {
-      msg_notice("Certificate accepted because its fingerprint is listed", NULL);
+      msg_notice("Certificate accepted because its fingerprint is listed",
+                  evt_tag_id(MSG_TLS_CERT_ACCEPTED),
+                  NULL);
       return 1;
     }
 
   if (ok && ctx->error_depth != 0 && (ctx->current_cert->ex_flags & EXFLAG_CA) == 0)
     {
-      msg_notice("Invalid certificate found in chain, basicConstraints.ca is unset in non-leaf certificate", NULL);
+      msg_notice("Invalid certificate found in chain, basicConstraints.ca is unset in non-leaf certificate",
+                  evt_tag_id(MSG_TLS_CERT_INVALID),
+                  NULL);
       ctx->error = X509_V_ERR_INVALID_CA;
       return 0;
     }
@@ -157,20 +161,24 @@ tls_session_verify(TLSSession *self, int ok, X509_STORE_CTX *ctx)
   /* reject certificate if it is valid, but its DN is not trusted */
   if (ok && ctx->error_depth == 0 && !tls_session_verify_dn(ctx))
     {
-      msg_notice("Certificate valid, but DN constraints were not met, rejecting", NULL);
+      msg_notice("Certificate valid, but DN constraints were not met, rejecting",
+                  evt_tag_id(MSG_TLS_CERT_UNTRUSTED),
+                  NULL);
       ctx->error = X509_V_ERR_CERT_UNTRUSTED;
       return 0;
     }
   /* if the crl_dir is set in the configuration file but the directory is empty ignore this error */
   if (!ok && ctx->error == X509_V_ERR_UNABLE_TO_GET_CRL)
     {
-      msg_notice("CRL directory is set but no CRLs found", NULL);
+      msg_notice("CRL directory is set but no CRLs found",
+                  evt_tag_id(MSG_TLS_CLRS_NOT_FOUND),
+                  NULL);
       return 1;
     }
 
   if (!ok && ctx->error == X509_V_ERR_INVALID_PURPOSE)
     {
-      msg_warning("Certificate valid, but purpose is invalid", NULL);
+      msg_warning("Certificate valid, but purpose is invalid", evt_tag_id(MSG_CERTIFICATE_PUPOSE_INVALID),NULL);
       return 1;
     }
   return ok;
@@ -201,6 +209,7 @@ tls_session_verify_callback(int ok, X509_STORE_CTX *ctx)
       default:
         msg_notice("Error occured during certificate validation",
                     evt_tag_int("error", ctx->error),
+                    evt_tag_id(MSG_TLS_CERT_VALIDATION_ERROR),
                     NULL);
         break;
       }
@@ -377,7 +386,7 @@ tls_context_setup_session(TLSContext *self)
           n = sk_SSL_COMP_num(ssl_comp_methods);
           if (n == 0)
             {
-              msg_warning("Can't use compression, because there aren't any available methods",NULL);
+              msg_warning("Can't use compression, because there aren't any available methods",evt_tag_id(MSG_TLS_CANT_COMPRESS),NULL);
               self->allow_compress = FALSE;
               SSL_CTX_set_options(self->ssl_ctx, SSL_OP_NO_COMPRESSION);
             }
@@ -404,6 +413,7 @@ tls_context_setup_session(TLSContext *self)
   ssl_error = ERR_get_error();
   msg_error("Error setting up TLS session context",
             evt_tag_printf("tls_error", "%s:%s:%s", ERR_lib_error_string(ssl_error), ERR_func_error_string(ssl_error), ERR_reason_error_string(ssl_error)),
+            evt_tag_id(MSG_CANT_SETTING_TLS_SESSION_CONTEXT),
             NULL);
   ERR_clear_error();
   if (self->ssl_ctx)
@@ -530,6 +540,7 @@ tls_log_certificate_validation_progress(int ok, X509_STORE_CTX *ctx)
                 evt_tag_str("issuer", issuer_name->str),
                 evt_tag_str("error", X509_verify_cert_error_string(errnum)),
                 evt_tag_int("depth", errdepth),
+                evt_tag_id(MSG_CERTIFICATE_VALIDATION_FAILED),
                 NULL);
     }
   g_string_free(subject_name, TRUE);
@@ -635,6 +646,7 @@ tls_verify_certificate_name(X509 *cert, const gchar *host_name)
       msg_error("Certificate subject does not match configured hostname",
                 evt_tag_str("hostname", host_name),
                 evt_tag_str("certificate", pattern_buf),
+                evt_tag_id(MSG_CERTIFICATE_VALIDATION_FAILED),
                 NULL);
     }
   else

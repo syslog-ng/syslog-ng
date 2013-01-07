@@ -205,7 +205,7 @@ log_msg_update_sdata_slow(LogMessage *self, NVHandle handle, const gchar *name, 
   stats_counter_inc(count_sdata_updates);
   if (self->num_sdata == 255)
     {
-      msg_error("syslog-ng only supports 255 SD elements right now, just drop an email to the mailing list that it was not enough with your use-case so we can increase it", NULL);
+      msg_error("syslog-ng only supports 255 SD elements right now, just drop an email to the mailing list that it was not enough with your use-case so we can increase it", evt_tag_id(MSG_TOO_MUCH_SDATA_ITEM), NULL);
       return;
     }
 
@@ -458,6 +458,7 @@ log_msg_set_value(LogMessage *self, NVHandle handle, const gchar *value, gssize 
           msg_info("Cannot store value for this log message, maximum size has been reached",
                    evt_tag_str("name", name),
                    evt_tag_printf("value", "%.32s%s", value, value_len > 32 ? "..." : ""),
+                   evt_tag_id(MSG_MAXIMUM_SIZE_REACHED),
                    NULL);
           break;
         }
@@ -507,6 +508,7 @@ log_msg_set_value_indirect(LogMessage *self, NVHandle handle, NVHandle ref_handl
           msg_info("Cannot store referenced value for this log message, maximum size has been reached",
                    evt_tag_str("name", name),
                    evt_tag_str("ref-name", log_msg_get_value_name(ref_handle, NULL)),
+                   evt_tag_id(MSG_MAXIMUM_SIZE_REACHED),
                    NULL);
           break;
         }
@@ -652,7 +654,7 @@ log_msg_set_tag_by_id_onoff(LogMessage *self, LogTagId id, gboolean on)
         {
           if (G_UNLIKELY(8159 < id))
             {
-              msg_error("Maximum number of tags reached", NULL);
+              msg_error("Maximum number of tags reached", evt_tag_id(MSG_TOO_MUCH_TAGS), NULL);
               return;
             }
           old_num_tags = self->num_tags;
@@ -710,7 +712,7 @@ log_msg_is_tag_by_id(LogMessage *self, LogTagId id)
 {
   if (G_UNLIKELY(8159 < id))
     {
-      msg_error("Invalid tag", evt_tag_int("id", (gint) id), NULL);
+      msg_error("Invalid tag", evt_tag_int("id", (gint) id), evt_tag_id(MSG_INVALID_TAG), NULL);
       return FALSE;
     }
   if (self->num_tags == 0 && id < LOGMSG_TAGS_BITS)
@@ -2305,7 +2307,9 @@ log_msg_init_rcptid(PersistState *state)
     if (data->version > 0)
     {
        msg_error("Internal error restoring log reader state, stored data is too new",
-                evt_tag_int("version", data->version));
+                evt_tag_int("version", data->version),
+                evt_tag_id(MSG_UNKNOWN_RCPTID_STATE_VERSION),
+                NULL);
        return FALSE;
     }
     else

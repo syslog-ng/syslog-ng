@@ -91,6 +91,7 @@ static void config_show_reload_message(GlobalConfig *self)
 {
   msg_notice("Configuration reload request received, reloading configuration",
                    evt_tag_printf("cfg-fingerprint","%s",self->cfg_fingerprint),
+                   evt_tag_id(MSG_APPLICATION_RELOAD),
                    NULL);
   return;
 }
@@ -100,6 +101,7 @@ static void config_show_start_message(GlobalConfig *self)
   msg_notice("syslog-ng starting up",
              evt_tag_str("version", get_version()),
              evt_tag_printf("cfg-fingerprint","%s", self->cfg_fingerprint),
+             evt_tag_id(MSG_APPLICATION_STARTED),
              NULL);
   return;
 }

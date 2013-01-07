@@ -221,6 +221,7 @@ persist_state_create_store(PersistState *self)
       msg_error("Error creating persistent state file",
                 evt_tag_str("filename", self->temp_filename),
                 evt_tag_errno("error", errno),
+                evt_tag_id(MSG_CANT_CREATE_PERSIST_FILE),
                 NULL);
       return FALSE;
     }
@@ -251,6 +252,7 @@ persist_state_commit_store(PersistState *self)
       msg_error("Error creating persistent state file",
                 evt_tag_str("filename", self->commited_filename),
                 evt_tag_errno("error", errno),
+                evt_tag_id(MSG_CANT_CREATE_PERSIST_FILE),
                 NULL);
       return FALSE;
     }
@@ -302,6 +304,7 @@ persist_state_free_value(PersistState *self, PersistEntryHandle handle)
         {
           msg_error("Invalid persistent handle passed to persist_state_free_value",
                     evt_tag_printf("handle", "%08x", handle),
+                    evt_tag_id(MSG_INVALID_PERSIST_HANDLE),
                     NULL);
           return;
         }
@@ -311,6 +314,7 @@ persist_state_free_value(PersistState *self, PersistEntryHandle handle)
         {
           msg_error("Corrupted entry header found in persist_state_free_value, size too large",
                     evt_tag_printf("handle", "%08x", handle),
+                    evt_tag_id(MSG_CORRUPTED_PERSIST_HEADER),
                     NULL);
           return;
         }
@@ -403,6 +407,7 @@ persist_state_add_key(PersistState *self, const gchar *key, PersistEntryHandle h
               if (!new_block)
                 {
                   msg_error("Unable to allocate space in the persistent file for key store",
+                            evt_tag_id(MSG_CANT_ALLOCATE_KEY_IN_PERSIST),
                             NULL);
                   return FALSE;
                 }
@@ -431,6 +436,7 @@ persist_state_add_key(PersistState *self, const gchar *key, PersistEntryHandle h
                * block, this means that the key is too large. */
               msg_error("Persistent key too large, it cannot be larger than somewhat less than 4k",
                         evt_tag_str("key", key),
+                        evt_tag_id(MSG_PERSIST_KEY_IS_TOO_LARGE),
                         NULL);
               persist_state_unmap_entry(self, self->current_key_block);
               return FALSE;
@@ -517,6 +523,7 @@ persist_state_load_v4(PersistState *self)
       msg_error("Persistent file too large",
                 evt_tag_str("filename", self->commited_filename),
                 evt_tag_printf("size", "%" G_GINT64_FORMAT, file_size),
+                evt_tag_id(MSG_PERSIST_FILE_TOO_LARGE),
                 NULL);
       return FALSE;
     }
@@ -527,6 +534,7 @@ persist_state_load_v4(PersistState *self)
       msg_error("Error mapping persistent file into memory",
                 evt_tag_str("filename", self->commited_filename),
                 evt_tag_errno("error", errno),
+                evt_tag_id(MSG_CANT_MAPPING_PERSIST_FILE),
                 NULL);
       return FALSE;
     }
@@ -550,6 +558,7 @@ persist_state_load_v4(PersistState *self)
             {
               serialize_archive_free(sa);
               msg_error("Persistent file format error, unable to fetch key name",
+                        evt_tag_id(MSG_PERSIST_FILE_FORMAT_ERROR),
                         NULL);
               goto free_and_exit;
             }
@@ -565,6 +574,7 @@ persist_state_load_v4(PersistState *self)
                       serialize_archive_free(sa);
                       g_free(name);
                       msg_error("Persistent file format error, entry offset is out of bounds",
+                                evt_tag_id(MSG_PERSIST_FILE_FORMAT_ERROR),
                                 NULL);
                       goto free_and_exit;
                     }
@@ -590,6 +600,7 @@ persist_state_load_v4(PersistState *self)
                   serialize_archive_free(sa);
                   g_free(name);
                   msg_error("Persistent file format error, unable to fetch key name",
+                            evt_tag_id(MSG_PERSIST_FILE_FORMAT_ERROR),
                             NULL);
                   goto free_and_exit;
                 }
@@ -606,6 +617,7 @@ persist_state_load_v4(PersistState *self)
                                 evt_tag_printf("key_block", "%08lx", (gulong) ((gchar *) key_block - (gchar *) map)),
                                 evt_tag_printf("key_size", "%d", key_size),
                                 evt_tag_int("ofs", chain_ofs),
+                                evt_tag_id(MSG_PERSIST_FILE_FORMAT_ERROR),
                                 NULL);
                       serialize_archive_free(sa);
                       goto free_and_exit;
@@ -616,6 +628,7 @@ persist_state_load_v4(PersistState *self)
                     {
                       msg_error("Persistent file format error, key block size is too large",
                                 evt_tag_int("key_size", key_size),
+                                evt_tag_id(MSG_PERSIST_FILE_FORMAT_ERROR),
                                 NULL);
                       serialize_archive_free(sa);
                       goto free_and_exit;
@@ -626,6 +639,7 @@ persist_state_load_v4(PersistState *self)
                 {
                   serialize_archive_free(sa);
                   msg_error("Persistent file format error, unable to fetch chained key block offset",
+                            evt_tag_id(MSG_PERSIST_FILE_FORMAT_ERROR),
                             NULL);
                   goto free_and_exit;
                 }
@@ -654,7 +668,9 @@ persist_state_load(PersistState *self)
       serialize_read_blob(sa, magic, 4);
       if (memcmp(magic, "SLP", 3) != 0)
         {
-          msg_error("Persistent configuration file is in invalid format, ignoring", NULL);
+          msg_error("Persistent configuration file is in invalid format, ignoring",
+                    evt_tag_id(MSG_PERSIST_FILE_FORMAT_ERROR),
+                    NULL);
           success = TRUE;
           goto close_and_exit;
         }
@@ -671,6 +687,7 @@ persist_state_load(PersistState *self)
         {
           msg_error("Persistent configuration file has an unsupported major version, ignoring",
                     evt_tag_int("version", version),
+                    evt_tag_id(MSG_PERSIST_FILE_FORMAT_ERROR),
                     NULL);
           success = TRUE;
         }
@@ -767,6 +784,7 @@ persist_state_lookup_entry(PersistState *self, const gchar *key, gsize *size, gu
     {
       msg_error("Corrupted handle in persist_state_lookup_entry, handle value too large",
                 evt_tag_printf("handle", "%08x", handle),
+                evt_tag_id(MSG_CORRUPTED_PERSIST_HANDLE),
                 NULL);
       return 0;
     }
@@ -777,6 +795,7 @@ persist_state_lookup_entry(PersistState *self, const gchar *key, gsize *size, gu
                 evt_tag_printf("handle", "%08x", handle),
                 evt_tag_int("size", GUINT32_FROM_BE(header->size)),
                 evt_tag_int("file_size", self->current_size),
+                evt_tag_id(MSG_CORRUPTED_PERSIST_HANDLE),
                 NULL);
       return 0;
     }
@@ -865,7 +884,12 @@ persist_state_commit(PersistState *self)
 {
   if (!persist_state_commit_store(self))
   {
-    msg_error("Can't rename files",evt_tag_str("source",self->temp_filename),evt_tag_str("destination",self->commited_filename),evt_tag_errno("Error",errno),NULL);
+    msg_error("Can't rename files",
+              evt_tag_str("source",self->temp_filename),
+              evt_tag_str("destination",self->commited_filename),
+              evt_tag_errno("Error",errno),
+              evt_tag_id(MSG_CANT_RENAME_PERSIST_FILE),
+              NULL);
     return FALSE;
   }
   return TRUE;

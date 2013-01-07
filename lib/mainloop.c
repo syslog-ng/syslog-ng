@@ -756,6 +756,7 @@ sig_term_handler(void *s)
 
   msg_notice("syslog-ng shutting down",
              evt_tag_str("version", VERSION),
+             evt_tag_id(MSG_APPLICATION_TERMINATED),
              NULL);
 
   main_loop_call_thread_quit_callback();

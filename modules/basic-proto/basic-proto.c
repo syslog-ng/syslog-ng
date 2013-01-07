@@ -132,6 +132,7 @@ log_proto_text_client_flush_buffer(LogProto *s)
               msg_error("I/O error occurred while writing",
                         evt_tag_int("fd", self->super.transport->fd),
                         evt_tag_errno(EVT_TAG_OSERROR, errno),
+                        evt_tag_id(MSG_IO_ERROR_WRITING),
                         NULL);
               return LPS_ERROR;
             }
@@ -276,6 +277,7 @@ log_proto_client_post_writer(LogProto *s, LogMessage *logmsg, guchar *msg, gsize
       msg_error("I/O error occurred while writing",
                 evt_tag_int("fd", self->super.transport->fd),
                 evt_tag_errno(EVT_TAG_OSERROR, errno),
+                evt_tag_id(MSG_IO_ERROR_WRITING),
                 NULL);
       return LPS_ERROR;
     }
@@ -366,6 +368,7 @@ log_proto_file_writer_flush(LogProto *s)
           msg_error("I/O error occurred while writing",
                     evt_tag_int("fd", self->super.transport->fd),
                     evt_tag_errno(EVT_TAG_OSERROR, errno),
+                    evt_tag_id(MSG_IO_ERROR_WRITING),
                     NULL);
           /*
            * EAGAIN is the only possible value
@@ -493,6 +496,7 @@ write_error:
       msg_error("I/O error occurred while writing",
                 evt_tag_int("fd", self->super.transport->fd),
                 evt_tag_errno(EVT_TAG_OSERROR, errno),
+                evt_tag_id(MSG_IO_ERROR_WRITING),
                 NULL);
       return LPS_ERROR;
     }
@@ -739,6 +743,7 @@ log_proto_buffered_server_convert_from_raw(LogProtoBufferedServer *self, const g
                                 evt_tag_str("encoding", self->super.encoding),
                                 evt_tag_int("avail_in", avail_in),
                                 evt_tag_int("leftover_size", sizeof(state->raw_buffer_leftover)),
+                                evt_tag_id(MSG_CHAR_ENCODING_FAILED),
                                 NULL);
                       goto error;
                     }
@@ -772,6 +777,7 @@ log_proto_buffered_server_convert_from_raw(LogProtoBufferedServer *self, const g
                   msg_error("Incoming byte stream requires a too large conversion buffer, probably invalid character sequence",
                             evt_tag_str("encoding", self->super.encoding),
                             evt_tag_printf("buffer", "%.*s", (gint) state->pending_buffer_end, self->buffer),
+                            evt_tag_id(MSG_CHAR_ENCODING_FAILED),
                             NULL);
                   goto error;
                 }
@@ -781,6 +787,7 @@ log_proto_buffered_server_convert_from_raw(LogProtoBufferedServer *self, const g
               msg_notice("Invalid byte sequence or other error while converting input, skipping character",
                          evt_tag_str("encoding", self->super.encoding),
                          evt_tag_printf("char", "0x%02x", *(guchar *) raw_buffer),
+                         evt_tag_id(MSG_INVALID_ENCODING_SEQ),
                          NULL);
               goto error;
             }
@@ -1054,7 +1061,9 @@ log_proto_buffered_server_convert_state(LogProtoBufferedServer *self, guint8 per
       if (!serialize_read_uint16(archive, &version) || version != 0)
         {
           msg_error("Internal error restoring log reader state, stored data has incorrect version",
-                    evt_tag_int("version", version));
+                    evt_tag_int("version", version),
+                    evt_tag_id(MSG_CANT_LOAD_READER_STATE),
+                    NULL);
           goto error_converting_v3;
         }
 
@@ -1063,6 +1072,7 @@ log_proto_buffered_server_convert_state(LogProtoBufferedServer *self, guint8 per
           !serialize_read_uint64(archive, (guint64 *) &cur_size))
         {
           msg_error("Internal error restoring information about the current file position, restarting from the beginning",
+                    evt_tag_id(MSG_CANT_LOAD_READER_STATE),
                     NULL);
           goto error_converting_v3;
         }
@@ -1071,6 +1081,7 @@ log_proto_buffered_server_convert_state(LogProtoBufferedServer *self, guint8 per
         {
           msg_error("Internal error, protocol state has incorrect version",
                     evt_tag_int("version", version),
+                    evt_tag_id(MSG_CANT_LOAD_READER_STATE),
                     NULL);
           goto error_converting_v3;
         }
@@ -1079,6 +1090,7 @@ log_proto_buffered_server_convert_state(LogProtoBufferedServer *self, guint8 per
         {
           msg_error("Internal error, error reading buffer contents",
                     evt_tag_int("version", version),
+                    evt_tag_id(MSG_CANT_LOAD_READER_STATE),
                     NULL);
           goto error_converting_v3;
         }
@@ -1182,7 +1194,7 @@ log_proto_buffered_server_restart_with_state(LogProto *s, PersistState *persist_
         else
         {
           msg_error("Internal error restoring log reader state, key rename error",
-          evt_tag_str("key", persist_name),NULL);
+          evt_tag_str("key", persist_name),evt_tag_id(MSG_CANT_LOAD_READER_STATE),NULL);
           return FALSE;
         }
       }
@@ -1211,7 +1223,9 @@ log_proto_buffered_server_restart_with_state(LogProto *s, PersistState *persist_
       if (state->version > 1)
         {
           msg_error("Internal error restoring log reader state, stored data is too new",
-                    evt_tag_int("version", state->version));
+                    evt_tag_int("version", state->version),
+                    evt_tag_id(MSG_CANT_LOAD_READER_STATE),
+                    NULL);
           goto error;
         }
 
@@ -1222,7 +1236,9 @@ log_proto_buffered_server_restart_with_state(LogProto *s, PersistState *persist_
   else
     {
       msg_error("Internal error restoring log reader state, stored data is too new",
-                evt_tag_int("version", persist_version));
+                evt_tag_int("version", persist_version),
+                evt_tag_id(MSG_CANT_LOAD_READER_STATE),
+                NULL);
       goto error;
     }
   return TRUE;
@@ -1442,6 +1458,7 @@ log_proto_buffered_server_fetch(LogProto *s, const guchar **msg, gsize *msg_len,
               msg_error("I/O error occurred while reading",
                         evt_tag_int(EVT_TAG_FD, self->super.transport->fd),
                         evt_tag_errno(EVT_TAG_OSERROR, errno),
+                        evt_tag_id(MSG_IO_ERROR_READING),
                         NULL);
 
               /* we set self->status explicitly as we want to return
@@ -1468,6 +1485,7 @@ log_proto_buffered_server_fetch(LogProto *s, const guchar **msg, gsize *msg_len,
               if (state->raw_buffer_leftover_size > 0)
                 {
                   msg_error("EOF read on a channel with leftovers from previous character conversion, dropping input",
+                            evt_tag_id(MSG_EOF_OCCURED),
                             NULL);
                   result = LPS_EOF;
                   goto exit;
@@ -1812,6 +1830,7 @@ log_proto_text_server_get_raw_size_of_buffer(LogProtoTextServer *self, const guc
        * this is simply impossible, but never say never */
       msg_error("Internal error, couldn't reverse the internal UTF8 string to the original encoding",
                 evt_tag_printf("buffer", "%.*s", (gint) buffer_len, buffer),
+                evt_tag_id(MSG_REVERSE_CONVERTING_FAILED),
                 NULL);
       return 0;
     }
@@ -2339,6 +2358,7 @@ log_proto_framed_client_post(LogProto *s, LogMessage *logmsg, guchar *msg, gsize
               msg_error("I/O error occurred while writing",
                         evt_tag_int("fd", self->super.super.transport->fd),
                         evt_tag_errno(EVT_TAG_OSERROR, errno),
+                        evt_tag_id(MSG_IO_ERROR_WRITING),
                         NULL);
               return LPS_ERROR;
             }

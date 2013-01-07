@@ -696,7 +696,7 @@ options_item
 #else
         if ($3 == 1)
           {
-            msg_warning("Using threaded isn't available on this platform",NULL);
+            msg_warning("Using threaded isn't available on this platform",evt_tag_id(MSG_THREADED_ISNT_AVAILABLE), NULL);
           }
         configuration->threaded = 0;
 #endif

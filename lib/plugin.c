@@ -189,6 +189,7 @@ plugin_dlopen_module(const gchar *module_name, const gchar *module_path)
       msg_error("Plugin module not found in 'module-path'",
                 evt_tag_str("module-path", module_path),
                 evt_tag_str("module", module_name),
+                evt_tag_id(MSG_CANT_FIND_PLUGIN),
                 NULL);
       return NULL;
     }
@@ -204,6 +205,7 @@ plugin_dlopen_module(const gchar *module_name, const gchar *module_path)
       msg_error("Error opening plugin module",
                 evt_tag_str("module", module_name),
                 evt_tag_str("error", g_module_error()),
+                evt_tag_id(MSG_CANT_OPEN_PLUGIN),
                 NULL);
       return NULL;
     }
@@ -255,6 +257,7 @@ plugin_load_module(const gchar *module_name, GlobalConfig *cfg, CfgArgs *args)
                 evt_tag_str("module", module_name),
                 evt_tag_str("symbol", module_init_func),
                 evt_tag_str("error", g_module_error()),
+                evt_tag_id(MSG_CANT_FIND_PLUGIN_INIT_FUNCTION),
                 NULL);
       g_free(module_init_func);
       return FALSE;

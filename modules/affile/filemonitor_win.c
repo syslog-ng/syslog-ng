@@ -198,7 +198,7 @@ file_monitor_watch_directory(FileMonitor *s, const gchar *filename)
   base_dir = resolve_to_absolute_path(dir_part, NULL);
   if (!g_file_test(base_dir,G_FILE_TEST_IS_DIR))
     {
-      msg_error("Directory doesn't exist",evt_tag_str("directory",base_dir),NULL);
+      msg_error("Directory doesn't exist",evt_tag_str("directory",base_dir),evt_tag_id(MSG_DIRECTORY_DOESNT_EXIST), NULL);
       return FALSE;
     }
   if (!self->super.compiled_pattern)
@@ -220,7 +220,7 @@ file_monitor_watch_directory(FileMonitor *s, const gchar *filename)
   self->ol.hEvent = self->monitor_handler.handle;
   if (ReadDirectoryChangesW(self->hDir, self->buffer, FILE_MONITOR_BUFFER_SIZE, self->super.recursion, self->notify_flags, NULL, &self->ol, NULL) == 0)
   {
-    msg_error("Can't monitor directory",evt_tag_errno("error",GetLastError()),NULL);
+    msg_error("Can't monitor directory",evt_tag_errno("error",GetLastError()), evt_tag_id(MSG_CANT_MONITOR_DIRECTORY), NULL);
     return FALSE;
   }
   iv_handle_register(&self->monitor_handler);

@@ -257,6 +257,7 @@ cfg_lexer_lookup_keyword(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc, const
                                   evt_tag_printf("version", "%d.%d", (keywords[i].kw_req_version >> 8), keywords[i].kw_req_version & 0xFF),
                                   yylloc ? evt_tag_str("filename", yylloc->level->name) : NULL,
                                   yylloc ? evt_tag_printf("line", "%d:%d", yylloc->first_line, yylloc->first_column) : NULL,
+                                  evt_tag_id(MSG_RESERVED_WORD_USED),
                                   NULL);
                       break;
                     }
@@ -266,6 +267,7 @@ cfg_lexer_lookup_keyword(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc, const
                       msg_warning("Your configuration file uses an obsoleted keyword, please update your configuration",
                                   evt_tag_str("keyword", keywords[i].kw_name),
                                   evt_tag_str("change", keywords[i].kw_explain),
+                                  evt_tag_id(MSG_OBSOLATED_KEYWORD_USED),
                                   NULL);
                       break;
                     default:

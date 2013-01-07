@@ -63,6 +63,7 @@ nv_registry_alloc_handle(NVRegistry *self, const gchar *name)
     {
       msg_error("Name-value pairs cannot have a zero-length name",
                 evt_tag_str("value", name),
+                evt_tag_id(MSG_CANT_ALLOC_NV_HANDLE),
                 NULL);
       goto exit;
     }
@@ -70,6 +71,7 @@ nv_registry_alloc_handle(NVRegistry *self, const gchar *name)
     {
       msg_error("Value names cannot be longer than 255 characters, this value will always expand to the emptry string",
                 evt_tag_str("value", name),
+                evt_tag_id(MSG_CANT_ALLOC_NV_HANDLE),
                 NULL);
       goto exit;
     }
@@ -77,6 +79,7 @@ nv_registry_alloc_handle(NVRegistry *self, const gchar *name)
     {
       msg_error("Hard wired limit of 65535 name-value pairs have been reached, all further name-value pair will expand to nothing",
                 evt_tag_str("value", name),
+                evt_tag_id(MSG_CANT_ALLOC_NV_HANDLE),
                 NULL);
       goto exit;
     }

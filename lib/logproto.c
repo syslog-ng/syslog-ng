@@ -48,6 +48,7 @@ log_proto_check_server_options(LogProtoServerOptions *options)
       msg_warning("The multi_line_garbage can't be the same as the multi_line_prefix. multi_line_garbage option is ignored",
                   evt_tag_str("multi_line_prefix",options->opts.prefix_pattern),
                   evt_tag_str("multi_line_garbage",options->opts.garbage_pattern),
+                  evt_tag_id(MSG_SAME_PREFIX_GARBAGE),
                   NULL);
       pcre_free(options->opts.garbage_matcher);
       g_free(options->opts.garbage_pattern);

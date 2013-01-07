@@ -119,6 +119,7 @@ afsocket_open_socket(GSockAddr *bind_addr, int stream_or_dgram, int *fd)
           msg_error("Error binding socket",
                     evt_tag_str("addr", g_sockaddr_format(bind_addr, buf, sizeof(buf), GSA_FULL)),
                     evt_tag_errno(EVT_TAG_OSERROR, errno),
+                    evt_tag_id(MSG_ERROR_BINDING_SOCKET),
                     NULL);
           closesocket(sock);
           return FALSE;
@@ -132,6 +133,7 @@ afsocket_open_socket(GSockAddr *bind_addr, int stream_or_dgram, int *fd)
     {
       msg_error("Error creating socket",
                 evt_tag_errno(EVT_TAG_OSERROR, errno),
+                evt_tag_id(MSG_ERROR_CREATING_SOCKET),
                 NULL);
       return FALSE;
     }
@@ -465,6 +467,7 @@ afsocket_sd_process_connection(AFSocketSourceDriver *self, GSockAddr *client_add
           msg_error("Syslog connection rejected by tcpd",
                     evt_tag_str("client", g_sockaddr_format(client_addr, buf, sizeof(buf), GSA_FULL)),
                     evt_tag_str("local", g_sockaddr_format(local_addr, buf2, sizeof(buf2), GSA_FULL)),
+                    evt_tag_id(MSG_REJECT_CONNECTION),
                     NULL);
           return FALSE;
         }
@@ -478,6 +481,7 @@ afsocket_sd_process_connection(AFSocketSourceDriver *self, GSockAddr *client_add
                 evt_tag_str("client", g_sockaddr_format(client_addr, buf, sizeof(buf), GSA_FULL)),
                 evt_tag_str("local", g_sockaddr_format(local_addr, buf2, sizeof(buf2), GSA_FULL)),
                 evt_tag_int("max", self->max_connections),
+                evt_tag_id(MSG_REJECT_CONNECTION),
                 NULL);
       return FALSE;
     }
@@ -1126,6 +1130,7 @@ afsocket_dd_connected(AFSocketDestDriver *self)
                     evt_tag_str("server", g_sockaddr_format(self->dest_addr, buf2, sizeof(buf2), GSA_FULL)),
                     evt_tag_errno(EVT_TAG_OSERROR, errno),
                     evt_tag_int("time_reopen", self->time_reopen),
+                    evt_tag_id(MSG_SYSLOG_SERVER_CONNECTION_FAILED),
                     NULL);
           goto error_reconnect;
         }
@@ -1136,6 +1141,7 @@ afsocket_dd_connected(AFSocketDestDriver *self)
                     evt_tag_str("server", g_sockaddr_format(self->dest_addr, buf2, sizeof(buf2), GSA_FULL)),
                     evt_tag_errno(EVT_TAG_OSERROR, error),
                     evt_tag_int("time_reopen", self->time_reopen),
+                    evt_tag_id(MSG_SYSLOG_SERVER_CONNECTION_FAILED),
                     NULL);
           goto error_reconnect;
         }
@@ -1144,6 +1150,7 @@ afsocket_dd_connected(AFSocketDestDriver *self)
               evt_tag_int("fd", self->fd),
               evt_tag_str("server", g_sockaddr_format(self->dest_addr, buf2, sizeof(buf2), GSA_FULL)),
               evt_tag_str("local", g_sockaddr_format(self->bind_addr, buf1, sizeof(buf1), GSA_FULL)),
+              evt_tag_id(MSG_SERVER_CONNECTION_ESTABLISHED),
               NULL);
 
 
@@ -1244,6 +1251,7 @@ afsocket_dd_start_connect(AFSocketDestDriver *self)
                 evt_tag_str("server", g_sockaddr_format(self->dest_addr, buf2, sizeof(buf2), GSA_FULL)),
                 evt_tag_str("local", g_sockaddr_format(self->bind_addr, buf1, sizeof(buf1), GSA_FULL)),
                 evt_tag_errno(EVT_TAG_OSERROR, errno),
+                evt_tag_id(MSG_SYSLOG_SERVER_CONNECTION_FAILED),
                 NULL);
       closesocket(sock);
       return FALSE;
@@ -1257,9 +1265,6 @@ afsocket_dd_reconnect(AFSocketDestDriver *self)
 {
   if (!afsocket_dd_start_connect(self))
     {
-      msg_error("Initiating connection failed, reconnecting",
-                evt_tag_int("time_reopen", self->time_reopen),
-                NULL);
       log_writer_reopen(self->writer, NULL, NULL);
     }
 }
@@ -1360,6 +1365,7 @@ afsocket_dd_notify(LogPipe *s, LogPipe *sender, gint notify_code, gpointer user_
                  evt_tag_int("fd", self->fd),
                  evt_tag_str("server", g_sockaddr_format(self->dest_addr, buf, sizeof(buf), GSA_FULL)),
                  evt_tag_int("time_reopen", self->time_reopen),
+                 evt_tag_id(MSG_SERVER_CONNECTION_BROKEN),
                  NULL);
       log_writer_reopen(self->writer, NULL, NULL);
       break;
@@ -1369,6 +1375,7 @@ afsocket_dd_notify(LogPipe *s, LogPipe *sender, gint notify_code, gpointer user_
                 evt_tag_int("fd", self->fd),
                 evt_tag_str("server", g_sockaddr_format(self->dest_addr, buf, sizeof(buf), GSA_FULL)),
                 evt_tag_int("time_reopen", self->time_reopen),
+                evt_tag_id(MSG_SERVER_TRY_RECONNECT),
                 NULL);
       if (self->dest_addr->sa.sa_family != AF_UNIX)
         {
@@ -1380,11 +1387,13 @@ afsocket_dd_notify(LogPipe *s, LogPipe *sender, gint notify_code, gpointer user_
             /* no failover server */
             msg_warning("The server is unaccessible, trying again the host",
                         evt_tag_str("host", self->hostname),
+                        evt_tag_id(MSG_SERVER_UNACCESSIBLE),
                         NULL);
           else
             msg_warning("Current server is unaccessible, switching to a failover host",
                       evt_tag_str("current", old_server),
                       evt_tag_str("failover", self->hostname),
+                      evt_tag_id(MSG_SERVER_UNACCESSIBLE),
                       NULL);
           g_free(old_server);
         }
@@ -1464,7 +1473,7 @@ afsocket_sd_set_multi_line_prefix(LogDriver *s, gchar *prefix)
   options->opts.prefix_matcher = pcre_compile(prefix, pcreoptions, &error, &erroroffset, NULL);
   if (!options->opts.prefix_matcher)
     {
-      msg_error("Bad regexp",evt_tag_str("multi_line_prefix", prefix), NULL);
+      msg_error("Bad regexp",evt_tag_str("multi_line_prefix", prefix), evt_tag_id(MSG_BAD_REGEXP), NULL);
       return FALSE;
     }
 
@@ -1487,7 +1496,7 @@ afsocket_sd_set_multi_line_garbage(LogDriver *s, gchar *garbage)
   options->opts.garbage_matcher = pcre_compile(garbage, pcreoptions, &error, &erroroffset, NULL);
   if (!options->opts.garbage_matcher)
     {
-      msg_error("Bad regexp",evt_tag_str("multi_line_garbage", garbage), NULL);
+      msg_error("Bad regexp",evt_tag_str("multi_line_garbage", garbage), evt_tag_id(MSG_BAD_REGEXP), NULL);
       return FALSE;
     }
 

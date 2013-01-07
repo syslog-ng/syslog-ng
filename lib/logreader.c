@@ -301,6 +301,7 @@ log_reader_io_follow_file(gpointer s)
         {
           msg_error("Error invoking seek on followed file",
                     evt_tag_errno("error", errno),
+                    evt_tag_id(MSG_LOGREADER_SEEK_ERROR),
                     NULL);
           goto reschedule;
         }
@@ -320,6 +321,7 @@ log_reader_io_follow_file(gpointer s)
             {
               msg_error("Error invoking fstat() on followed file",
                         evt_tag_errno("error", errno),
+                        evt_tag_id(MSG_LOGREADER_FSTAT_ERROR),
                         NULL);
               goto reschedule;
             }
@@ -422,7 +424,7 @@ log_reader_check_file(gpointer s)
 static void
 log_reader_idle_timeout(LogReader *self)
 {
-  msg_error("Client response time elapsed, close the connection",NULL);
+  msg_error("Client response time elapsed, close the connection",evt_tag_id(MSG_LOGREADER_RESPONSE_TIMEOUT),NULL);
   log_pipe_notify(self->control, &self->super.super, NC_CLOSE, self);
 }
 
@@ -491,6 +493,7 @@ log_reader_start_watches(LogReader *self)
       if (fd < 0)
         {
           msg_error("In order to poll non-yet-existing files, follow_freq() must be set",
+                    evt_tag_id(MSG_READER_CANT_POLL),
                     NULL);
           return FALSE;
         }
@@ -511,6 +514,7 @@ log_reader_start_watches(LogReader *self)
         {
           msg_error("Unable to determine how to monitor this fd, follow_freq() not set and it is not possible to poll it with the current ivykis polling method, try changing IV_EXCLUDE_POLL_METHOD environment variable",
                     evt_tag_int("fd", fd),
+                    evt_tag_id(MSG_READER_CANT_POLL),
                     NULL);
           return FALSE;
         }
@@ -875,6 +879,7 @@ log_reader_init(LogPipe *s)
         {
           msg_error("Unknown character set name specified",
                     evt_tag_str("encoding", self->options->text_encoding),
+                    evt_tag_id(MSG_LOGREADER_UNKNOWN_ENCODING),
                     NULL);
           return FALSE;
         }
@@ -883,6 +888,7 @@ log_reader_init(LogPipe *s)
     {
       msg_error("Unknown format plugin specified",
                 evt_tag_str("format", self->options->parse_options.format),
+                evt_tag_id(MSG_LOGREADER_UNKNOWN_FORMAT),
                 NULL);
       return FALSE;
     }

@@ -88,6 +88,7 @@ log_transport_tls_read_method(LogTransport *s, gpointer buf, gsize buflen, GSock
   ssl_error = ERR_get_error();
   msg_error("SSL error while reading stream",
             evt_tag_printf("tls_error", "%s:%s:%s", ERR_lib_error_string(ssl_error), ERR_func_error_string(ssl_error), ERR_reason_error_string(ssl_error)),
+            evt_tag_id(MSG_SSL_READING_ERROR),
             NULL);
   ERR_clear_error();
 
@@ -143,6 +144,7 @@ log_transport_tls_write_method(LogTransport *s, const gpointer buf, gsize buflen
   ssl_error = ERR_get_error();
   msg_error("SSL error while writing stream",
             evt_tag_printf("tls_error", "%s:%s:%s", ERR_lib_error_string(ssl_error), ERR_func_error_string(ssl_error), ERR_reason_error_string(ssl_error)),
+            evt_tag_id(MSG_SSL_WRITINTG_ERROR),
             NULL);
   ERR_clear_error();
 
