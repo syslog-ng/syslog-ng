@@ -46,7 +46,7 @@ char *get_reloc_string(const char *orig)
   gchar *epos = NULL;
   gchar *res2, *prefix, *suffix, *replace, *res;
   gchar *confvar;
-  gint prefixlen, confvarlen;
+  gint prefixlen, suffixlen, confvarlen;
 
   if (sysprefix == NULL)
     {
@@ -59,7 +59,7 @@ char *get_reloc_string(const char *orig)
       char current_environment[_MAX_PATH];
       if (GetEnvironmentVariable("SYSLOGNG_PREFIX",current_environment,_MAX_PATH) != 0)
         {
-          sysprefix = current_environment;
+          sysprefix = g_strdup(current_environment);
         }
       else
         {
@@ -72,7 +72,7 @@ char *get_reloc_string(const char *orig)
   if (!configure_variables)
     {
       configure_variables = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
-      g_hash_table_insert(configure_variables, "${prefix}", sysprefix);
+      g_hash_table_insert(configure_variables, "${prefix}", g_strdup(sysprefix));
       g_hash_table_insert(configure_variables, "${exec_prefix}", PATH_EXECPREFIX);
       g_hash_table_insert(configure_variables, "${libexecdir}", PATH_LIBEXECDIR);
       g_hash_table_insert(configure_variables, "${datarootdir}", PATH_DATAROOTDIR);
@@ -89,6 +89,7 @@ char *get_reloc_string(const char *orig)
     {
       prefix=NULL;
       suffix=NULL;
+      suffixlen=0;
       prefixlen=0;
 
       epos = strchr(ppos, '}');
@@ -109,6 +110,7 @@ char *get_reloc_string(const char *orig)
       g_free(confvar);
 
       if ( strlen(epos + 1) > 0 ){
+        suffixlen = strlen(epos + 2 );
         suffix = (epos + 2);
       }
 

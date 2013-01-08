@@ -177,6 +177,7 @@ writev(int fd, const struct iovec *vector, int count)
        size_t copy = min (vector[i].iov_len, to_copy);
        ret = memcpy(ret, vector[i].iov_base, copy);
        to_copy -= copy;
+       ret += copy;
        if (to_copy == 0)
          break;
     }
