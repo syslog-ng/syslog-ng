@@ -428,7 +428,6 @@ static void
 log_queue_fifo_rewind_backlog(LogQueue *s, gint n)
 {
   LogQueueFifo *self = (LogQueueFifo *) s;
-  LogMessage *msg;
   log_queue_assert_output_thread(s);
   gint i;
   if (n > self->qbacklog_len || n < 0)
@@ -445,7 +444,6 @@ log_queue_fifo_rewind_backlog(LogQueue *s, gint n)
        * and pop_head add ack and ref when it pushes the message into the backlog
        * The rewind must decrease the ack and ref too
        */
-      msg = node->msg;
       iv_list_del_init(&node->list);
       iv_list_add(&node->list,&self->qoverflow_output);
 

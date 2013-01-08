@@ -989,7 +989,6 @@ main(int argc, char *argv[])
   int i;
   guint64 diff_usec;
   GOptionGroup *group;
-  double rate;
 
   g_thread_init(NULL);
   tzset();
@@ -1201,7 +1200,6 @@ main(int argc, char *argv[])
     {
       diff_usec = 1;
     }
-  rate = (double)sum_count * USEC_PER_SEC / diff_usec;
   fprintf(stderr, "average rate = %.2f msg/sec, count=%"G_GUINT64_FORMAT", time=%ld.%03ld, (average) msg size=%ld, bandwidth=%.2f kB/sec\n",
         (double)sum_count * USEC_PER_SEC / diff_usec, sum_count,
         (long int)sum_time.tv_sec, (long int)sum_time.tv_usec / 1000,

@@ -270,13 +270,11 @@ plugin_load_module(const gchar *module_name, GlobalConfig *cfg, CfgArgs *args)
 void
 plugin_list_modules(FILE *out, gboolean verbose)
 {
-  GlobalConfig *cfg;
   GModule *mod;
   gchar **mod_paths;
   gint i, j, k;
   gboolean first = TRUE;
 
-  cfg = cfg_new(CFG_CURRENT_VERSION);
   mod_paths = g_strsplit(module_path, ":", 0);
   for (i = 0; mod_paths[i]; i++)
     {

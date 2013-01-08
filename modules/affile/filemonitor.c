@@ -170,7 +170,6 @@ static gboolean
 file_monitor_process_inotify_event(FileMonitor *monitor, MonitorInotify *self)
 {
   struct inotify_event events[32];
-  gboolean ret = FALSE;
   gint byte_read = 0;
   gint i = 0;
   gchar *path = NULL;
@@ -205,7 +204,7 @@ file_monitor_process_inotify_event(FileMonitor *monitor, MonitorInotify *self)
           else
             {
               /* file or symlink */
-              ret = file_monitor_chk_file(monitor, &self->super, events[i].name);
+              file_monitor_chk_file(monitor, &self->super, events[i].name);
             }
           g_free(path);
         }

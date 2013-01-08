@@ -280,7 +280,7 @@ control_connection_update_watches(ControlConnection *self)
     }
 }
 
-ControlConnection *
+static void
 control_connection_new(gint sock)
 {
   ControlConnection *self = g_new0(ControlConnection, 1);
@@ -289,7 +289,6 @@ control_connection_new(gint sock)
   self->input_buffer = g_string_sized_new(128);
 
   control_connection_start_watches(self, sock);
-  return self;
 }
 
 void
@@ -308,7 +307,6 @@ control_socket_accept(gpointer user_data)
   gint conn_socket;
   GSockAddr *peer_addr;
   GIOStatus status;
-  ControlConnection *conn;
   
   if (control_socket == -1)
     return;
@@ -321,7 +319,7 @@ control_socket_accept(gpointer user_data)
       goto error;
     }
   /* NOTE: the connection will free itself if the peer terminates */
-  conn = control_connection_new(conn_socket);
+  control_connection_new(conn_socket);
   g_sockaddr_unref(peer_addr);
  error:
   ;

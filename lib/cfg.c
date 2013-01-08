@@ -684,11 +684,6 @@ void uregister_source_mangle_callback(GlobalConfig *src,mangle_callback cb)
   src->source_mangle_callback_list = g_list_remove(src->source_mangle_callback_list,cb);
 }
 
-static
-gchar *err_getcwd = "Cannot get current directory";
-static
-gchar *err_chdir = "Cannot change to directory";
-
 #if ENABLE_SSL
 /* WARNING: This code uses OpenSSL, it won't compile without it. It's not a
  * problem in PE, but OSE is a different matter. - folti */
