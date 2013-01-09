@@ -135,6 +135,39 @@
 	  option for the syslog() and network() drivers can be used to
 	  specify a transport protocol plugin.
 
+        Credits:
+        ========
+        syslog-ng is developed as a community project, and as such it relies
+        on volunteers to do the work necessarily to produce syslog-ng.
+
+        Reporting bugs, testing changes, writing code or simply providing
+        feedback are all important contributions, so please if you are a
+        user of syslog-ng, contribute.
+
+        These people have helped in this release:
+
+           Attila Nagy <bra@fsn.hu>
+           Balazs Scheidler <bazsi@balabit.hu>
+           Balint Kovacs <blint@balabit.hu>
+           Brian Kroth <bpkroth@gmail.com>
+           Conrad Hoffmann <ch@bitfehler.net>
+           Csaba Major <csaba.major@balabit.com>
+           Cy Schubert <cy@FreeBSD.org>
+           Eun Kyung <ekyung01@googlemail.com>
+           Evan Rempel <erempel@uvic.ca>
+           Gergely Nagy <algernon@balabit.hu>
+           Jose Oliveira <jpo@di.uminho.pt>
+           Juhasz Viktor <jviktor@balabit.hu>
+           Marvin Nipper <marvin.nipper@stream.com>
+           Michael Hocke <michael.hocke@nyu.edu>
+           Peter Czanik <czanik@balabit.hu>
+           Peter Gyongyosi <gyp@balabit.hu>
+           Sandor Geller <wildy@muhelybt.hu>
+           Sergey <cloun-rulez@yandex.ru>
+           shih dane <daneshih1125@gmail.com>
+           Tamas Pal <folti@balabit.hu>
+           Viktor Juhasz <jviktor@balabit.hu>
+
 3.4.0alpha3
 	Fri, 29 Jun 2012 15:32:54 +0200
 
