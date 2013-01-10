@@ -959,6 +959,7 @@ nv_table_unserialize_22(SerializeArchive *sa)
     }
   res->ref_cnt = 1;
   res = (NVTable *)g_realloc(res,res->size << NV_TABLE_SCALE);
+  res->borrowed = FALSE;
   if(!res)
     {
       return NULL;
@@ -1018,6 +1019,7 @@ nv_table_unserialize(SerializeArchive *sa, guint8 log_msg_version)
       res = (NVTable *)g_try_realloc(res,res->size << NV_TABLE_SCALE);
       if (!res)
         return NULL;
+      res->borrowed = FALSE;
       res->ref_cnt = 1;
       if (!serialize_read_blob(sa, NV_TABLE_ADDR(res, res->size - res->used), used_len))
         {
