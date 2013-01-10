@@ -1189,7 +1189,6 @@ void iv_fd_set_handler_in(struct iv_fd *this, void (*handler_in)(void *))
   iv_fd_set_handler(this, FD_READ_BIT, h);
   iv_fd_set_handler(this, FD_OOB_BIT, h);
   iv_fd_set_handler(this, FD_ACCEPT_BIT, h);
-  iv_fd_set_handler(this, FD_CLOSE_BIT, h);
 }
 
 static void iv_sock_handler_out(void *cookie, int event, int error)
@@ -1211,9 +1210,21 @@ void iv_fd_set_handler_out(struct iv_fd * this, void (*handler_out)(void *))
   iv_fd_set_handler(this, FD_CONNECT_BIT, h);
 }
 
+void iv_sock_handler_err(void *cookie, int event, int error)
+{
+  struct iv_fd *sock = cookie;
+
+  sock->handler_err(sock->cookie);
+}
+
 void iv_fd_set_handler_err(struct iv_fd *this, void (*handler_err)(void *))
 {
+  void (*h)(void *, int, int);
+
   this->handler_err = handler_err;
+
+  h = (handler_err != NULL) ? iv_sock_handler_err : NULL;
+  iv_fd_set_handler(this, FD_CLOSE_BIT, h);
 }
 
 #endif
