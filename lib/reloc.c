@@ -46,7 +46,7 @@ char *get_reloc_string(const char *orig)
   gchar *epos = NULL;
   gchar *res2, *prefix, *suffix, *replace, *res;
   gchar *confvar;
-  gint prefixlen, suffixlen, confvarlen;
+  gint prefixlen, confvarlen;
 
   if (sysprefix == NULL)
     {
@@ -89,7 +89,6 @@ char *get_reloc_string(const char *orig)
     {
       prefix=NULL;
       suffix=NULL;
-      suffixlen=0;
       prefixlen=0;
 
       epos = strchr(ppos, '}');
@@ -110,7 +109,6 @@ char *get_reloc_string(const char *orig)
       g_free(confvar);
 
       if ( strlen(epos + 1) > 0 ){
-        suffixlen = strlen(epos + 2 );
         suffix = (epos + 2);
       }
 
