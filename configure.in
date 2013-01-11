@@ -885,6 +885,12 @@ fi
 
 if test "x$with_librabbitmq_client" = "xno"; then
     enable_amqp="no"
+    LIBRABBITMQ_SUBDIRS=""
+fi
+
+if test "x$enable_amqp" = "xno"; then
+   with_librabbitmq_client="no"
+   LIBRABBITMQ_SUBDIRS=""
 fi
 
 dnl ***************************************************************************
