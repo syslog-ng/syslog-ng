@@ -779,18 +779,18 @@ dnl ivykis headers/libraries
 dnl ***************************************************************************
 
 if test "x$with_ivykis" = "xinternal"; then
-	if test -f "$srcdir/lib/ivykis/lib/iv_main.c"; then
+	if test -f "$srcdir/lib/ivykis/src/iv_main_posix.c"; then
 		AC_CONFIG_SUBDIRS([lib/ivykis])
 
 		# these can only be used in lib as it assumes
 		# the current directory just one below ivykis
 
-		IVYKIS_LIBS="-Wl,--whole-archive -L\$(top_builddir)/lib/ivykis -livykis -Wl,--no-whole-archive"
-		IVYKIS_CFLAGS="-I\$(top_srcdir)/lib/ivykis/lib/include -I\$(top_builddir)/lib/ivykis/lib/include -I\$(top_srcdir)/lib/ivykis/modules/include"
+		IVYKIS_LIBS="-Wl,--whole-archive -L\$(top_builddir)/lib/ivykis/src -livykis  -Wl,--no-whole-archive"
+		IVYKIS_CFLAGS="-I\$(top_srcdir)/lib/ivykis/src/include -I\$(top_builddir)/lib/ivykis/src/include"
 		IVYKIS_SUBDIRS=ivykis
 
 		# LIBS to use when libtool is not applicable (when linking the main syslog-ng executable in mixed linking mode)
-		IVYKIS_NO_LIBTOOL_LIBS="-Wl,--whole-archive -L\$(top_builddir)/lib/ivykis/.libs -livykis -Wl,--no-whole-archive"
+		IVYKIS_NO_LIBTOOL_LIBS="-Wl,--whole-archive -L\$(top_builddir)/lib/ivykis/src/.libs -livykis -Wl,--no-whole-archive"
 	else
 		AC_MSG_ERROR([Internal ivykis sources not found in lib/ivykis. This is a hard dependency, unable to build syslog-ng without them.])
 	fi
