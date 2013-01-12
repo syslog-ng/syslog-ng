@@ -4,11 +4,11 @@ DIST_SUBDIRS = rabbitmq-c
 
 moduledir = @moduledir@
 AM_CPPFLAGS = -I$(top_srcdir)/lib -I../../lib
-module_LTLIBRARIES = libafamqp.la
 
 export top_srcdir
 
 if ENABLE_AMQP
+module_LTLIBRARIES = libafamqp.la
 
 libafamqp_la_CFLAGS = $(LIBRABBITMQ_CFLAGS)
 libafamqp_la_SOURCES = afamqp-grammar.y afamqp.c afamqp.h afamqp-parser.c afamqp-parser.h
