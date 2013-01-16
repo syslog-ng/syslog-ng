@@ -1,3 +1,73 @@
+3.3.8
+        Thu, 17 Jan 2013 11:00:00 +0100
+
+        Highlights
+        ==========
+
+        This release is a bug-fix release, correcting a handful of
+        issues discovered since the previous one.
+
+        Bugfixes
+        ========
+
+        * The system() source now works correctly accross all
+          supported FreeBSD versions.
+
+        * The patterndb loader was improved to handle certain semantic
+          errors better: to report the error instead of crashing.
+
+        * Fixed unsafe use of non-reentrant APIs to resolve IP
+          addresses to names, which caused problems when threaded mode
+          was enabled. [#212]
+
+        * Support for systems lacking GLOB_NOMAGIC (like AIX) was
+          restored. [#213]
+
+        * The syslog() destination now forces IPv4, like all the other
+          destinations, thus using it after udp6() would not result in
+          syslog-ng trying to use IPv6 for syslog() aswell. [#61]
+
+        * The bundled ivykis has been updated, fixing the following
+          issues:
+
+           * Certain Linux kernel & glibc combinations triggered a
+             scenario that confused ivykis, leading to syslog-ng not
+             starting up at all.
+
+        Other changes
+        =============
+
+        * It is now possible to build syslog-ng with crypto routines
+          directly embedded into the main libsyslog-ng.so library,
+          making libsyslog-ng-crypto.so unnecessary. This is useful in
+          a few different cases, and can be enabled by passing the
+          --with-embedded-crypto to the configure script.
+
+        Credits
+        =======
+
+        syslog-ng is developed as a community project, and as such it
+        relies on volunteers to do the work necessarily to produce
+        syslog-ng.
+
+        Reporting bugs, testing changes, writing code or simply
+        providing feedback are all important contributions, so please
+        if you are a user of syslog-ng, contribute.
+
+        These people have helped in this release:
+
+        Balazs Scheidler <bazsi@balabit.hu>
+        Balint Kovacs <blint@blint.hu>
+        Ben Lentz <blentz@cswg.com>
+        Brian Kroth <bpkroth@gmail.com>
+        Daniel Neubacher <daniel.neubacher@xing.com>
+        "Dit"
+        Gergely Nagy <algernon@balabit.hu>
+        Lennert Buytenhek <buytenh@wantstofly.org>
+        Jan Schaumann <jschauma@netmeister.org>
+        Peter Czanik <czanik@balabit.hu>
+        Viktor Juhasz <jviktor@balabit.hu>
+
 3.3.7
         Wed, 31 Oct 2012 10:00:00 +0200
 
