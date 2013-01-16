@@ -357,7 +357,9 @@ main()
   testcase_ack_and_rewind_messages();
 
   fprintf(stderr,"Start testcase_with_threads\n");
+#ifndef _WIN32
   testcase_with_threads();
+#endif
 
 #if 1
   fprintf(stderr,"Start testcase_zero_diskbuf_alternating_send_acks\n");

@@ -4,6 +4,7 @@
 #include <glib.h>
 #include <sys/time.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define PRETTY_STRING_FORMAT "%s%s%s"
 #define PRETTY_STRING(str) ((str) ? "'" : "<"), ((str) ? (str) : "NULL"), ((str) ? "'" : ">")
@@ -80,6 +81,18 @@ gboolean assert_gpointer_non_fatal(gpointer actual, gpointer expected, const gch
 extern GString *current_testcase_description;
 extern gchar *current_testcase_function;
 extern gchar *current_testcase_file;
+
+#ifdef _WIN32
+static inline char *basename(const char *path)
+{
+  char *result = strrchr(path,'/');
+  if (result)
+    {
+      result++;
+    }
+  return result;
+}
+#endif
 
 #define testcase_begin(description_template, ...) \
     do { \

@@ -1,11 +1,10 @@
 # we need the dotdot version of the include path to find generated headers
 AM_CFLAGS = -I$(top_srcdir)/lib -I$(top_srcdir)/libtest -I../../lib
-AM_LDFLAGS = -dlpreopen $(top_builddir)/modules/syslogformat/libsyslogformat.la  $(top_builddir)/modules/basic-proto/libbasic-proto.la
+AM_LDFLAGS = -dlpreopen  $(top_builddir)/lib/libsyslog-ng.la -dlpreopen $(top_builddir)/modules/syslogformat/libsyslogformat.la  $(top_builddir)/modules/basic-proto/libbasic-proto.la
 LIBS = @TOOL_DEPS_LIBS@
-LDADD = $(top_builddir)/lib/libsyslog-ng.la $(top_builddir)/libtest/libsyslog-ng-test.a
+LDADD = $(top_builddir)/lib/libsyslog-ng.la $(top_builddir)/libtest/libsyslog-ng-test.a @TOOL_DEPS_LIBS@
 
 check_PROGRAMS =			\
-	test_resolve_pwgr		\
 	test_nvtable			\
 	test_msgsdata			\
 	test_logqueue			\
@@ -28,7 +27,6 @@ check_PROGRAMS =			\
 	test_msgserialize_benchmark	\
 	test_msgserialize_tags		\
 	test_msgformat_upgrade \
-	test_thread_wakeup	\
 	test_hostname	\
   test_cache \
   test_data_to_hex \
@@ -46,6 +44,11 @@ check_PROGRAMS += test_persist_state
 else
 check_PROGRAMS += test_persist_state test_zone
 endif
+endif
+
+if !IS_WINDOWS
+check_PROGRAMS +=	test_thread_wakeup \
+	                test_resolve_pwgr
 endif
 
 

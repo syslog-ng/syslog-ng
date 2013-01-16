@@ -16,6 +16,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <iv_event.h>
 
 typedef struct {
   LogTransport super;
