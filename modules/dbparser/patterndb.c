@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 1998-2012 Balázs Scheidler
+ * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 1998-2013 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -1290,7 +1290,7 @@ pdb_rule_set_load(PDBRuleSet *self, GlobalConfig *cfg, const gchar *config, GLis
  * @ref_handle: if the matches are indirect matches, they are referenced based on this handle (eg. LM_V_MESSAGE)
  **/
 void
-log_db_add_matches(LogMessage *msg, GArray *matches, NVHandle ref_handle)
+log_db_add_matches(LogMessage *msg, GArray *matches, NVHandle ref_handle, const gchar *input_string)
 {
   gint i;
   for (i = 0; i < matches->len; i++)
@@ -1302,9 +1302,13 @@ log_db_add_matches(LogMessage *msg, GArray *matches, NVHandle ref_handle)
           log_msg_set_value(msg, match->handle, match->match, match->len);
           g_free(match->match);
         }
-      else
+      else if (ref_handle != LM_V_NONE)
         {
           log_msg_set_value_indirect(msg, match->handle, ref_handle, match->type, match->ofs, match->len);
+        }
+      else
+        {
+          log_msg_set_value(msg, match->handle, input_string + match->ofs, match->len);
         }
     }
 }
@@ -1315,9 +1319,10 @@ log_db_add_matches(LogMessage *msg, GArray *matches, NVHandle ref_handle)
  * NOTE: it also modifies @msg to store the name-value pairs found during lookup, so
  */
 PDBRule *
-pdb_rule_set_lookup(PDBRuleSet *self, LogMessage *msg, GArray *dbg_list)
+pdb_rule_set_lookup(PDBRuleSet *self, PDBInput *input, GArray *dbg_list)
 {
   RNode *node;
+  LogMessage *msg = input->msg;
   GArray *prg_matches, *matches;
   const gchar *program;
   gssize program_len;
@@ -1325,13 +1330,13 @@ pdb_rule_set_lookup(PDBRuleSet *self, LogMessage *msg, GArray *dbg_list)
   if (G_UNLIKELY(!self->programs))
     return FALSE;
 
-  program = log_msg_get_value(msg, LM_V_PROGRAM, &program_len);
+  program = log_msg_get_value(msg, input->program_handle, &program_len);
   prg_matches = g_array_new(FALSE, TRUE, sizeof(RParserMatch));
   node = r_find_node(self->programs, (gchar *) program, (gchar *) program, program_len, prg_matches);
 
   if (node)
     {
-      log_db_add_matches(msg, prg_matches, LM_V_PROGRAM);
+      log_db_add_matches(msg, prg_matches, input->program_handle, program);
       g_array_free(prg_matches, TRUE);
 
       PDBProgram *program = (PDBProgram *) node->value;
@@ -1349,7 +1354,16 @@ pdb_rule_set_lookup(PDBRuleSet *self, LogMessage *msg, GArray *dbg_list)
           matches = g_array_new(FALSE, TRUE, sizeof(RParserMatch));
           g_array_set_size(matches, 1);
 
-          message = log_msg_get_value(msg, LM_V_MESSAGE, &message_len);
+          if (input->message_handle)
+            {
+              message = log_msg_get_value(msg, input->message_handle, &message_len);
+            }
+          else
+            {
+              message = input->message_string;
+              message_len = input->message_len;
+            }
+
           if (G_UNLIKELY(dbg_list))
             msg_node = r_find_node_dbg(program->rules, (gchar *) message, (gchar *) message, message_len, matches, dbg_list);
           else
@@ -1366,7 +1380,7 @@ pdb_rule_set_lookup(PDBRuleSet *self, LogMessage *msg, GArray *dbg_list)
               log_msg_set_value(msg, class_handle, rule->class ? rule->class : "system", -1);
               log_msg_set_value(msg, rule_id_handle, rule->rule_id, -1);
 
-              log_db_add_matches(msg, matches, LM_V_MESSAGE);
+              log_db_add_matches(msg, matches, input->message_handle, message);
               g_array_free(matches, TRUE);
 
               if (!rule->class)
@@ -1565,16 +1579,16 @@ pattern_db_get_ruleset_version(PatternDB *self)
 }
 
 gboolean
-pattern_db_process(PatternDB *self, LogMessage *msg)
+pattern_db_process(PatternDB *self, PDBInput *input)
 {
   PDBRule *rule;
+  LogMessage *msg = input->msg;
 
   if (G_UNLIKELY(!self->ruleset))
     return FALSE;
 
-
   g_static_rw_lock_reader_lock(&self->lock);
-  rule = pdb_rule_set_lookup(self->ruleset, msg, NULL);
+  rule = pdb_rule_set_lookup(self->ruleset, input, NULL);
   g_static_rw_lock_reader_unlock(&self->lock);
   if (rule)
     {

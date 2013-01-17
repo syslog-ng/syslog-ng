@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2010 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 1998-2010 Balázs Scheidler
+ * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 1998-2013 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -186,7 +186,7 @@ typedef struct _PDBRuleSet
 } PDBRuleSet;
 
 gboolean pdb_rule_set_load(PDBRuleSet *self, GlobalConfig *cfg, const gchar *config, GList **examples);
-PDBRule *pdb_rule_set_lookup(PDBRuleSet *self, LogMessage *msg, GArray *dbg_list);
+PDBRule *pdb_rule_set_lookup(PDBRuleSet *self, PDBInput *input, GArray *dbg_list);
 
 PDBRuleSet *pdb_rule_set_new(void);
 void pdb_rule_set_free(PDBRuleSet *self);

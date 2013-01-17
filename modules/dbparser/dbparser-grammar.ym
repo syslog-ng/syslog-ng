@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2011 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 1998-2011 Balázs Scheidler
+ * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 1998-2013 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -80,6 +80,7 @@ parser_db_opts
 parser_db_opt
         : KW_FILE '(' string ')'                		{ log_db_parser_set_db_file(((LogDBParser *) last_parser), $3); free($3); }
 	| KW_INJECT_MODE '(' parser_db_inject_mode ')'		{ log_db_parser_set_inject_mode(((LogDBParser *) last_parser), $3); free($3); }
+	| parser_opt
         ;
 
 parser_db_inject_mode

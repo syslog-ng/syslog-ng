@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 1998-2012 Balázs Scheidler
+ * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 1998-2013 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -518,7 +518,7 @@ pdbtool_match(int argc, char *argv[])
           const gchar *msg_string;
           PDBRule *rule;
 
-          rule = pdb_rule_set_lookup(patterndb->ruleset, msg, dbg_list);
+          rule = pdb_rule_set_lookup(patterndb->ruleset, PDB_INPUT_MESSAGE(msg), dbg_list);
           if (rule)
             pdb_rule_unref(rule);
 
@@ -600,7 +600,7 @@ pdbtool_match(int argc, char *argv[])
         }
       else
         {
-          pattern_db_process(patterndb, msg);
+          pattern_db_process(patterndb, PDB_INPUT_MESSAGE(msg));
         }
 
       if (G_LIKELY(proto))
@@ -734,7 +734,6 @@ pdbtool_test(int argc, char *argv[])
 
           if (example->message && example->program)
             {
-
               if (test_ruleid)
                 {
                   if (strcmp(example->rule->rule_id, test_ruleid) != 0)
@@ -752,7 +751,8 @@ pdbtool_test(int argc, char *argv[])
                 log_msg_set_value(msg, LM_V_PROGRAM, example->program, strlen(example->program));
 
               printf("Testing message program='%s' message='%s'\n", example->program, example->message);
-              pattern_db_process(patterndb, msg);
+
+              pattern_db_process(patterndb, PDB_INPUT_MESSAGE(msg));
 
               if (!pdbtool_test_value(msg, ".classifier.rule_id", example->rule->rule_id) && debug_pattern)
                 {

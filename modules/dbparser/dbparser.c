@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 1998-2012 Balázs Scheidler
+ * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 1998-2013 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -218,8 +218,22 @@ log_db_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *pat
     }
   if (self->db)
     {
+      PDBInput pdb_input;
+
       log_msg_make_writable(pmsg, path_options);
-      pattern_db_process(self->db, *pmsg);
+
+      pdb_input.msg = *pmsg;
+      pdb_input.program_handle = LM_V_PROGRAM;
+      pdb_input.message_handle = LM_V_MESSAGE;
+
+      if (self->super.template)
+        {
+          /* we are using a user-supplied template() in place of $MESSAGE */
+          pdb_input.message_handle = LM_V_NONE;
+          pdb_input.message_string = input;
+          pdb_input.message_len = input_len;
+        }
+      pattern_db_process(self->db, &pdb_input);
     }
   return TRUE;
 }
