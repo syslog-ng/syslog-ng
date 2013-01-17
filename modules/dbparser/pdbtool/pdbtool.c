@@ -517,8 +517,11 @@ pdbtool_match(int argc, char *argv[])
         {
           const gchar *msg_string;
           PDBRule *rule;
+          PDBInput input;
 
-          rule = pdb_rule_set_lookup(patterndb->ruleset, PDB_INPUT_MESSAGE(msg), dbg_list);
+          rule = pdb_rule_set_lookup(patterndb->ruleset,
+                                     PDB_INPUT_WRAP_MESSAGE(&input, msg),
+                                     dbg_list);
           if (rule)
             pdb_rule_unref(rule);
 
@@ -600,7 +603,9 @@ pdbtool_match(int argc, char *argv[])
         }
       else
         {
-          pattern_db_process(patterndb, PDB_INPUT_MESSAGE(msg));
+          PDBInput input;
+
+          pattern_db_process(patterndb, PDB_INPUT_WRAP_MESSAGE(&input, msg));
         }
 
       if (G_LIKELY(proto))
@@ -734,6 +739,8 @@ pdbtool_test(int argc, char *argv[])
 
           if (example->message && example->program)
             {
+              PDBInput input;
+
               if (test_ruleid)
                 {
                   if (strcmp(example->rule->rule_id, test_ruleid) != 0)
@@ -752,7 +759,7 @@ pdbtool_test(int argc, char *argv[])
 
               printf("Testing message program='%s' message='%s'\n", example->program, example->message);
 
-              pattern_db_process(patterndb, PDB_INPUT_MESSAGE(msg));
+              pattern_db_process(patterndb, PDB_INPUT_WRAP_MESSAGE(&input, msg));
 
               if (!pdbtool_test_value(msg, ".classifier.rule_id", example->rule->rule_id) && debug_pattern)
                 {

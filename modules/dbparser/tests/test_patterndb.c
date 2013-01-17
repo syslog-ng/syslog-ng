@@ -149,13 +149,14 @@ test_rule_value_without_clean(const gchar *program, const gchar *pattern,
   gboolean found = FALSE;
   const gchar *val;
   gssize len;
+  PDBInput input;
 
   log_msg_set_value(msg, LM_V_MESSAGE, pattern, strlen(pattern));
   log_msg_set_value(msg, LM_V_PROGRAM, program, 5);
   log_msg_set_value(msg, LM_V_HOST, MYHOST, strlen(MYHOST));
   log_msg_set_value(msg, LM_V_PID, MYPID, strlen(MYPID));
 
-  result = pattern_db_process(patterndb, PDB_INPUT_MESSAGE(msg));
+  result = pattern_db_process(patterndb, PDB_INPUT_WRAP_MESSAGE(&input, msg));
   val = log_msg_get_value(msg, log_msg_get_value_handle(name), &len);
   if (value)
     found = strcmp(val, value) == 0;
@@ -178,13 +179,14 @@ test_rule_tag(const gchar *pattern, const gchar *tag, gboolean set)
 {
   LogMessage *msg = log_msg_new_empty();
   gboolean found, result;
+  PDBInput input;
 
   log_msg_set_value(msg, LM_V_MESSAGE, pattern, strlen(pattern));
   log_msg_set_value(msg, LM_V_PROGRAM, "prog2", 5);
   log_msg_set_value(msg, LM_V_HOST, MYHOST, strlen(MYHOST));
   log_msg_set_value(msg, LM_V_PID, MYPID, strlen(MYPID));
 
-  result = pattern_db_process(patterndb, PDB_INPUT_MESSAGE(msg));
+  result = pattern_db_process(patterndb, PDB_INPUT_WRAP_MESSAGE(&input, msg));
   found = log_msg_is_tag_by_name(msg, tag);
 
   if (set ^ found)
@@ -201,6 +203,7 @@ test_rule_action_message_value(const gchar *pattern, gint timeout, gint ndx, con
   gboolean found = FALSE, result;
   const gchar *val;
   gssize len;
+  PDBInput input;
 
   log_msg_set_value(msg, LM_V_MESSAGE, pattern, strlen(pattern));
   log_msg_set_value(msg, LM_V_PROGRAM, "prog2", 5);
@@ -208,7 +211,7 @@ test_rule_action_message_value(const gchar *pattern, gint timeout, gint ndx, con
   log_msg_set_value(msg, LM_V_PID, MYPID, strlen(MYPID));
   msg->timestamps[LM_TS_STAMP].tv_sec = msg->timestamps[LM_TS_RECVD].tv_sec;
 
-  result = pattern_db_process(patterndb, PDB_INPUT_MESSAGE(msg));
+  result = pattern_db_process(patterndb, PDB_INPUT_WRAP_MESSAGE(&input, msg));
   if (timeout)
     timer_wheel_set_time(patterndb->timer_wheel, timer_wheel_get_time(patterndb->timer_wheel) + timeout + 1);
 
@@ -235,6 +238,7 @@ test_rule_action_message_tag(const gchar *pattern, gint timeout, gint ndx, const
 {
   LogMessage *msg = log_msg_new_empty();
   gboolean found, result;
+  PDBInput input;
 
   log_msg_set_value(msg, LM_V_MESSAGE, pattern, strlen(pattern));
   log_msg_set_value(msg, LM_V_PROGRAM, "prog2", 5);
@@ -242,7 +246,7 @@ test_rule_action_message_tag(const gchar *pattern, gint timeout, gint ndx, const
   log_msg_set_value(msg, LM_V_PID, MYPID, strlen(MYPID));
   msg->timestamps[LM_TS_STAMP].tv_sec = msg->timestamps[LM_TS_RECVD].tv_sec;
 
-  result = pattern_db_process(patterndb, PDB_INPUT_MESSAGE(msg));
+  result = pattern_db_process(patterndb, PDB_INPUT_WRAP_MESSAGE(&input, msg));
   if (timeout)
     timer_wheel_set_time(patterndb->timer_wheel, timer_wheel_get_time(patterndb->timer_wheel) + timeout + 5);
   if (ndx >= messages->len)
@@ -341,6 +345,8 @@ test_pattern(const gchar *pattern, const gchar *rule, gboolean match)
   GString *res = g_string_sized_new(128);
   static TimeZoneInfo *tzinfo = NULL;
 
+  PDBInput input;
+
   if (!tzinfo)
     tzinfo = time_zone_info_new(NULL);
   if (!templ)
@@ -353,7 +359,7 @@ test_pattern(const gchar *pattern, const gchar *rule, gboolean match)
   log_msg_set_value(msg, LM_V_PROGRAM, "test", strlen(MYHOST));
   log_msg_set_value(msg, LM_V_MESSAGE, pattern, strlen(pattern));
 
-  result = pattern_db_process(patterndb, PDB_INPUT_MESSAGE(msg));
+  result = pattern_db_process(patterndb, PDB_INPUT_WRAP_MESSAGE(&input, msg));
 
   log_template_format(templ, msg, NULL, LTZ_LOCAL, 0, NULL, res);
 

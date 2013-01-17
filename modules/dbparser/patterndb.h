@@ -41,7 +41,15 @@ typedef struct _PDBInput
 } PDBInput;
 
 #define PDB_INPUT_DEFAULT(msg) { (msg), LM_V_PROGRAM, LM_V_MESSAGE, NULL, 0 }
-#define PDB_INPUT_MESSAGE(msg) ({ PDBInput __pdb_input = { (msg), LM_V_PROGRAM, LM_V_MESSAGE, NULL, 0 }; &__pdb_input; })
+#define PDB_INPUT_WRAP_MESSAGE(input,msg)       \
+  ({                                            \
+    (input)->msg = msg;                         \
+    (input)->program_handle = LM_V_PROGRAM;     \
+    (input)->message_handle = LM_V_MESSAGE;     \
+    (input)->message_string = NULL;             \
+    (input)->message_len = 0;                   \
+    (input);                                    \
+  })
 
 typedef void (*PatternDBEmitFunc)(LogMessage *msg, gboolean synthetic, gpointer user_data);
 void pattern_db_set_emit_func(PatternDB *self, PatternDBEmitFunc emit_func, gpointer emit_data);

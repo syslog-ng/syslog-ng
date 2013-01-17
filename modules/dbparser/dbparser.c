@@ -225,6 +225,7 @@ log_db_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *pat
       pdb_input.msg = *pmsg;
       pdb_input.program_handle = LM_V_PROGRAM;
       pdb_input.message_handle = LM_V_MESSAGE;
+      pdb_input.message_len = 0;
 
       if (self->super.template)
         {
