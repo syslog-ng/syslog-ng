@@ -48,6 +48,7 @@ endif
 
 if !IS_WINDOWS
 check_PROGRAMS +=	test_thread_wakeup \
+									test_control \
 	                test_resolve_pwgr
 endif
 
@@ -86,6 +87,8 @@ test_hostname_SOURCES = test_hostname.c
 test_data_to_hex_SOURCES = test_data_to_hex.c
 
 test_cache_SOURCES = test_cache.c
+test_control_SOURCES = test_control.c
+test_control_CFLAGS = -I$(top_srcdir)/syslog-ng -I$(top_srcdir)/lib -I$(top_srcdir)/libtest -I../../lib
 
 TESTS = $(check_PROGRAMS)
 

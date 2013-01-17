@@ -24,6 +24,7 @@
 
 #include "syslog-ng.h"
 #include "gsocket.h"
+#include "control_client.h"
 #include "cfg.h"
 #include "reloc.h"
 
@@ -36,94 +37,22 @@
 #endif
 
 static gchar *control_name = PATH_CONTROL_SOCKET;
-static gint control_socket = -1;
+static ControlClient *control_client;
 
 static gboolean
 slng_send_cmd(gchar *cmd)
 {
-  GSockAddr *saddr = NULL;
-
-  if (control_socket == -1)
+  if (!control_client_connect(control_client))
     {
-      saddr = g_sockaddr_unix_new(control_name);
-      control_socket = socket(PF_UNIX, SOCK_STREAM, 0);
-
-      if (control_socket == -1)
-        {
-          fprintf(stderr, "Error opening control socket, socket='%s', error='%s'\n", control_name, strerror(errno));
-          goto error;
-        }
-
-      if (g_connect(control_socket, saddr) != G_IO_STATUS_NORMAL)
-        {
-          fprintf(stderr, "Error connecting control socket, socket='%s', error='%s'\n", control_name, strerror(errno));
-          close(control_socket);
-          control_socket = -1;
-          goto error;
-        }
+      return FALSE;
     }
 
-  if (write(control_socket, cmd, strlen(cmd)) < 0)
+  if (control_client_send_command(control_client,cmd) < 0)
     {
-      fprintf(stderr, "Error sending command on control sokcet, socket='%s', cmd='%s', error='%s'\n", control_name, cmd, strerror(errno));
-      goto error;
+      return FALSE;
     }
 
   return TRUE;
-
-error:
-  if (saddr)
-    g_sockaddr_unref(saddr);
-
-  return FALSE;
-}
-
-#define BUFF_LEN 8192
-
-static GString *
-slng_read_response(void)
-{
-  gsize len = 0;
-  gchar buff[BUFF_LEN];
-  GString *rsp = NULL;
-
-  if (control_socket == -1)
-    {
-      fprintf(stderr, "Error reading control socket, socket is not connected\n");
-      return NULL;
-    }
-
-  rsp = g_string_sized_new(256);
-
-  while (1)
-    {
-      if ((len = read(control_socket, buff, BUFF_LEN - 1)) < 0)
-        {
-          fprintf(stderr, "Error reading control socket, error='%s'\n", strerror(errno));
-          g_string_free(rsp, TRUE);
-          return NULL;
-        }
-
-      if (len == 0)
-        {
-          fprintf(stderr, "EOF occured while reading control socket\n");
-          g_string_free(rsp, TRUE);
-          return NULL;
-        }
-
-      g_string_append_len(rsp, buff, len);
-
-      if (rsp->str[rsp->len - 1] == '\n' &&
-          rsp->str[rsp->len - 2] == '.' &&
-          rsp->str[rsp->len - 3] == '\n')
-        {
-          g_string_truncate(rsp, rsp->len - 3);
-          break;
-        }
-
-    }
-
-  return rsp;
 }
 
 static gchar *verbose_set = NULL;
@@ -143,7 +72,7 @@ slng_verbose(int argc, char *argv[], const gchar *mode)
 
   g_strup(buff);
 
-  if (!(slng_send_cmd(buff) && ((rsp = slng_read_response()) != NULL)))
+  if (!(slng_send_cmd(buff) && ((rsp = control_client_read_reply(control_client)) != NULL)))
     return 1;
 
   if (!verbose_set)
@@ -168,7 +97,7 @@ slng_stats(int argc, char *argv[], const gchar *mode)
 {
   GString *rsp = NULL;
 
-  if (!(slng_send_cmd("STATS\n") && ((rsp = slng_read_response()) != NULL)))
+  if (!(slng_send_cmd("STATS\n") && ((rsp = control_client_read_reply(control_client)) != NULL)))
     return 1;
 
   printf("%s\n", rsp->str);
@@ -238,6 +167,7 @@ usage(const gchar *bin_name)
 }
 
 #include "reloc.c"
+#include "control_client_posix.c"
 
 int
 main(int argc, char *argv[])
@@ -246,8 +176,11 @@ main(int argc, char *argv[])
   GOptionContext *ctx;
   gint mode;
   GError *error = NULL;
+  int result;
 
   control_name = get_reloc_string(PATH_CONTROL_SOCKET);
+
+  control_client = control_client_new(control_name);
 
   mode_string = slng_mode(&argc, &argv);
   if (!mode_string)
@@ -284,5 +217,7 @@ main(int argc, char *argv[])
     }
   g_option_context_free(ctx);
 
-  return modes[mode].main(argc, argv, modes[mode].mode);
+  result = modes[mode].main(argc, argv, modes[mode].mode);
+  control_client_free(control_client);
+  return result;
 }

@@ -26,6 +26,7 @@ pkginclude_HEADERS = 		\
 	children.h		\
 	compat.h		\
 	control.h		\
+	control_server.h \
 	crypto.h		\
 	dgroup.h		\
 	dnscache.h		\
@@ -166,6 +167,7 @@ libsyslog_ng_la_SOURCES = \
 
 if !IS_WINDOWS
 libsyslog_ng_la_SOURCES += gprocess.c \
+													 control_server_posix.c \
                            hostname_unix.c
 else
 libsyslog_ng_la_SOURCES += hostname_win.c
