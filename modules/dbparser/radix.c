@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -300,21 +300,30 @@ _r_parser_lladdr(guint8 *str, gint *len, gint count, gint parts, gpointer state,
 
   for (i = 1; i <= parts; i++)
     {
-      if (!g_ascii_isxdigit(str[*len]) && !g_ascii_isxdigit(str[*len + 1]))
+      if (!g_ascii_isxdigit(str[*len]) || !g_ascii_isxdigit(str[*len + 1]))
         {
-          return FALSE;
+          if ( i > 1 )
+            {
+              (*len) -= 1;
+              break;
+            }
+          else
+            return FALSE;
         }
-      if (i < parts)
+      if (i == parts)
+        (*len) += 2;
+      else
         {
           if (str[*len + 2] != ':')
-            return FALSE;
-          (*len) += 3;
+            {
+              (*len) += 2;
+              break;
+            }
+          else
+            (*len) += 3;
         }
-      else
-        (*len) += 2;
     }
-
-  if (G_UNLIKELY(*len != count))
+  if (G_UNLIKELY(*len > count))
     return FALSE;
 
   return TRUE;
@@ -329,16 +338,16 @@ r_parser_lladdr(guint8 *str, gint *len, const gchar *param, gpointer state, RPar
   if (param)
     {
       *len = 0;
-      count = 0;
+      parts = 0;
       while (g_ascii_isdigit(param[*len]))
         {
-          count = count * 10 + g_ascii_digit_value(param[*len]);
+          parts = parts * 10 + g_ascii_digit_value(param[*len]);
           (*len)++;
         }
     }
   else
-    count = 20;
-  parts = (count - 1) / 3 + 1;
+    parts = 20;
+  count = (parts * 3) - 1;
 
   return _r_parser_lladdr(str, len, count, parts, state, match);
 }
