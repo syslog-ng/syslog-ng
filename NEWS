@@ -1,3 +1,44 @@
+3.4.0rc2
+        Wed, 17 Jan 2013 14:00:00 +0100
+
+        Features
+        ========
+        * The dbparser() parser gained support for the template()
+          option, which allows one to have more control (in an easy,
+          and straightforward way) over what data the parser operates
+          on.
+
+        Bugfixes
+        ========
+        * Building the AMQP destination can now be properly disabled.
+
+        * The bundled ivykis was upgraded from the 0.30 stable branch
+          to 0.36, for platform support and other improvements.
+
+        * Fix the test suite when --with-embedded-crypto is in use.
+
+        * The LLADDR parser was fixed, formerly it required the exact
+          number of components to be present, and had parts and count
+          values backwards. [#216]
+
+        Credits:
+        ========
+        syslog-ng is developed as a community project, and as such it relies
+        on volunteers to do the work necessarily to produce syslog-ng.
+
+        Reporting bugs, testing changes, writing code or simply providing
+        feedback are all important contributions, so please if you are a
+        user of syslog-ng, contribute.
+
+        These people have helped in this release:
+
+        Balazs Scheidler <bazsi@balabit.hu>
+        Ben Lentz <blentz@cswg.com>
+        Evan Rempel <erempel@uvic.ca>
+        Gergely Nagy <algernon@balabit.hu>
+        Jose Pedro Oliveira <jpo@di.uminho.pt>
+        Peter Czanik <czanik@balabit.hu>
+
 3.4.0rc1
         Mon,  7 Jan 2013 16:00:00 +0100
 
