@@ -89,7 +89,7 @@ AC_ARG_WITH(module-dir,
 AC_ARG_WITH(module-path,
    [  --with-module-path=path   Use path as the list of ':' separated directories looked up when searching for modules],
    module_path=$with_module_path)
-	
+
 AC_ARG_WITH(timezone-dir,
    [  --with-timezone-dir=path   Use path as the directory to get the timezone files],
    timezonedir=$with_timezone_dir)
@@ -101,18 +101,18 @@ AC_ARG_WITH(ld-library-path,
 AC_ARG_WITH([systemdsystemunitdir],
    AS_HELP_STRING([--with-systemdsystemunitdir=DIR], [Directory for systemd service files]))
 
-AC_ARG_ENABLE(debug, 
+AC_ARG_ENABLE(debug,
               [  --enable-debug      Enable debugging code.],, enable_debug="no")
 
 AC_ARG_ENABLE(env-wrapper,
               [  --enable-env-wrapper    Enable wrapper program to set up various environment variables],, enable_env_wrapper=auto)
 
-AC_ARG_ENABLE(gprof, 
+AC_ARG_ENABLE(gprof,
               [  --enable-gprof      Enable gcc profiling.],, enable_gprof="no")
 
-AC_ARG_ENABLE(memtrace, 
+AC_ARG_ENABLE(memtrace,
               [  --enable-memtrace   Enable alternative leak debugging code.])
-              
+
 AC_ARG_ENABLE(ssl,
               [  --enable-ssl        Enable SSL support.],,enable_ssl="auto")
 
@@ -124,7 +124,7 @@ AC_ARG_ENABLE(mixed-linking,
 
 AC_ARG_WITH([embedded-crypto],
               [  --with-embedded-crypto          Do not create a separate libsyslog-ng-crypto library])
-              
+
 AC_ARG_ENABLE(ipv6,
               [  --enable-ipv6           Enable support for IPv6.],,enable_ipv6="auto")
 
@@ -189,7 +189,7 @@ AC_ARG_ENABLE(json,
 AC_ARG_ENABLE(smtp,
               [  --disable-smtp          Disable SMTP support (default: auto)],
               ,,enable_smtp="auto")
-              
+
 AC_ARG_WITH(libesmtp,
              AC_HELP_STRING([--with-libesmtp=DIR],
                             [use libesmtp library from (prefix) directory DIR]),,)
@@ -329,7 +329,7 @@ case "$ostype" in
 	OSF1)
 		CFLAGS="${CFLAGS} -D_XOPEN_SOURCE=500 -D_XOPEN_SOURCE_EXTENDED -D_OSF_SOURCE -D_POSIX_C_SOURCE"
 		;;
-esac 
+esac
 
 if test "$enable_dynamic_linking" = "auto" -a "$enable_mixed_linking" = "auto"; then
 	enable_dynamic_linking="yes"
@@ -464,7 +464,7 @@ AC_CACHE_CHECK(for struct sockaddr_in6, blb_cv_c_struct_sockaddr_in6,
   [AC_EGREP_HEADER([sockaddr_in6], netinet/in.h, blb_cv_c_struct_sockaddr_in6=yes,blb_cv_c_struct_sockaddr_in6=no)])
 
 AC_CACHE_CHECK(for PR_SET_KEEPCAPS, blb_cv_keepcaps,
-  [AC_EGREP_CPP(PR_SET_KEEPCAPS, 
+  [AC_EGREP_CPP(PR_SET_KEEPCAPS,
 [
 #include <sys/prctl.h>
 
@@ -643,7 +643,7 @@ if test "x$enable_geoip" = "xyes" || test "x$enable_geoip" = "xauto"; then
         fi
 
         if test "x$with_geoip" = "xno" && test "x$enable_geoip" = "xyes"; then
-        	AC_MSG_ERROR([Could not find libgeoip, and geoip support was explicitly enabled.])
+                AC_MSG_ERROR([Could not find libgeoip, and geoip support was explicitly enabled.])
         fi
         enable_geoip="$with_geoip"
 fi
@@ -1205,14 +1205,14 @@ AC_SUBST(SNAPSHOT_VERSION)
 AC_SUBST(SOURCE_REVISION)
 
 AC_OUTPUT(dist.conf
-          Makefile 
+          Makefile
 	  syslog-ng.spec
 	  syslog-ng.pc
 	  build/Makefile
-	  lib/Makefile 
+	  lib/Makefile
 	  libtest/Makefile
-	  syslog-ng/Makefile 
-	  modules/Makefile 
+	  syslog-ng/Makefile
+	  modules/Makefile
           modules/afsocket/Makefile
           modules/afsql/Makefile
           modules/afstreams/Makefile
@@ -1243,7 +1243,7 @@ AC_OUTPUT(dist.conf
 	  doc/Makefile
 	  contrib/Makefile
 	  scl/Makefile
-	  tests/Makefile 
+	  tests/Makefile
 	  debian/Makefile
 	  tgz2build/Makefile
           tests/unit/Makefile
@@ -1251,7 +1251,7 @@ AC_OUTPUT(dist.conf
 	  tests/loggen/Makefile
           )
 
-echo 
+echo
 echo "syslog-ng Open Source Edition $VERSION configured"
 echo " Compiler options:"
 echo "  compiler                    : $CC"
