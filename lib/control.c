@@ -90,12 +90,16 @@ exit:
   return result;
 }
 
+Commands commands[] = {
+  { "STATS", NULL, control_connection_send_stats },
+  { "LOG", NULL, control_connection_message_log },
+  { NULL, NULL, NULL },
+};
+
 void 
 control_init(const gchar *control_name)
 {
-  control_server = control_server_new(control_name);
-  control_server_register_command_handler(control_server, "LOG", control_connection_message_log);
-  control_server_register_command_handler(control_server, "STATS", control_connection_send_stats);
+  control_server = control_server_new(control_name, commands);
   control_server_start(control_server);
 }
 

@@ -1,4 +1,6 @@
 #include "control_client.h"
+#include "gsocket.h"
+#include "stdio.h"
 
 struct _ControlClient
 {

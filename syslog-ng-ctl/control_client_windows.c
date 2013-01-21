@@ -1,4 +1,5 @@
 #include "control_client.h"
+#include <stdio.h>
 
 struct _ControlClient
 {

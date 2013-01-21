@@ -11,387 +11,396 @@
 #define BUFSIZE 65535
 #define PIPE_TIMEOUT 5000
 
-struct _ControlServer{
-  struct iv_handle hConnected;
-  struct iv_handle hInput;
-  struct iv_handle hOutput;
-  HANDLE hPipe;
-  GString *input_buffer;
-  GString *output_buffer;
-  gchar *name;
-  gboolean connected;
-  GHashTable *command_list;
-  SECURITY_ATTRIBUTES sec_attr;
-  OVERLAPPED overlapped_result;
-  gboolean set_security;
-};
-
 gboolean
 create_security_attributes(LPSECURITY_ATTRIBUTES result, GString *error_description)
 {
-  PSECURITY_DESCRIPTOR  psdSecDescr = NULL;
-  PACL pAcl = NULL;
-  EXPLICIT_ACCESS eaExplicitAccess;
-  PSID pAdminSID = NULL;
-  SID_IDENTIFIER_AUTHORITY SIDAuthNT = {SECURITY_NT_AUTHORITY};
+  PSECURITY_DESCRIPTOR  security_descriptor = NULL;
+  PACL acl = NULL;
+  EXPLICIT_ACCESS explicit_access;
+  PSID admin_sid = NULL;
+  SID_IDENTIFIER_AUTHORITY sid_auth_nt = {SECURITY_NT_AUTHORITY};
 
-  if(!AllocateAndInitializeSid(&SIDAuthNT, 2, SECURITY_BUILTIN_DOMAIN_RID, DOMAIN_ALIAS_RID_ADMINS, 0, 0, 0, 0, 0, 0, &pAdminSID))
+  if(!AllocateAndInitializeSid(&sid_auth_nt, 2, SECURITY_BUILTIN_DOMAIN_RID, DOMAIN_ALIAS_RID_ADMINS, 0, 0, 0, 0, 0, 0, &admin_sid))
     {
       if (error_description)
         {
-          g_string_assign(error_description,"Can't allocate and initialize SID");
+          g_string_assign(error_description, "Can't allocate and initialize SID");
         }
       return FALSE;
     }
 
-  ZeroMemory(&eaExplicitAccess, sizeof(EXPLICIT_ACCESS));
-  eaExplicitAccess.grfAccessPermissions = GENERIC_ALL | KEY_ALL_ACCESS | FILE_ALL_ACCESS ; // http://windowssdk.msdn.microsoft.com/en-us/library/ms717918.aspx @26.10.06
-  eaExplicitAccess.grfAccessMode = SET_ACCESS;
-  eaExplicitAccess.grfInheritance= NO_INHERITANCE;
-  eaExplicitAccess.Trustee.TrusteeForm = TRUSTEE_IS_SID;
-  eaExplicitAccess.Trustee.TrusteeType = TRUSTEE_IS_GROUP;
-  eaExplicitAccess.Trustee.ptstrName  = (LPTSTR) pAdminSID;
+  ZeroMemory(&explicit_access, sizeof(EXPLICIT_ACCESS));
+  explicit_access.grfAccessPermissions = GENERIC_WRITE | GENERIC_READ;
+  explicit_access.grfAccessMode = SET_ACCESS;
+  explicit_access.grfInheritance= NO_INHERITANCE;
+  explicit_access.Trustee.TrusteeForm = TRUSTEE_IS_SID;
+  explicit_access.Trustee.TrusteeType = TRUSTEE_IS_GROUP;
+  explicit_access.Trustee.ptstrName  = (LPTSTR) admin_sid;
 
-  if (SetEntriesInAcl(1, &eaExplicitAccess, NULL, &pAcl) != ERROR_SUCCESS)
+  if (SetEntriesInAcl(1, &explicit_access, NULL, &acl) != ERROR_SUCCESS)
     {
       if (error_description)
         {
-          g_string_assign(error_description,"Failed to set entries in ACL");
+          g_string_assign(error_description, "Failed to set entries in ACL");
         }
       return FALSE;
     }
-  psdSecDescr = (PSECURITY_DESCRIPTOR) LocalAlloc(LPTR, SECURITY_DESCRIPTOR_MIN_LENGTH);
-  if(!InitializeSecurityDescriptor(psdSecDescr, SECURITY_DESCRIPTOR_REVISION))
+  security_descriptor = (PSECURITY_DESCRIPTOR) LocalAlloc(LPTR, SECURITY_DESCRIPTOR_MIN_LENGTH);
+  if(!InitializeSecurityDescriptor(security_descriptor, SECURITY_DESCRIPTOR_REVISION))
     {
       if (error_description)
         {
-          g_string_assign(error_description,"Can't initialize security descriptor");
+          g_string_assign(error_description, "Can't initialize security descriptor");
         }
       goto cleanup;
     }
 
-  if (!SetSecurityDescriptorDacl(psdSecDescr, TRUE, pAcl, FALSE))
+  if (!SetSecurityDescriptorDacl(security_descriptor, TRUE, acl, FALSE))
     {
       if (error_description)
         {
-          g_string_assign(error_description,"Can't initialize security descriptor");
+          g_string_assign(error_description, "Can't initialize security descriptor");
         }
       goto cleanup;
     }
   result->bInheritHandle = TRUE;
-  result->lpSecurityDescriptor = psdSecDescr;
+  result->lpSecurityDescriptor = security_descriptor;
   result->nLength = sizeof(SECURITY_ATTRIBUTES);
   return TRUE;
 cleanup:
-  if( pAdminSID )        FreeSid(pAdminSID);
-  if( pAcl )            LocalFree(pAcl);
-  if( psdSecDescr )    LocalFree(psdSecDescr);
+  if (admin_sid)
+    {
+      FreeSid(admin_sid);
+    }
+  if (acl)
+    {
+      LocalFree(acl);
+    }
+  if (security_descriptor)
+    {
+      LocalFree(security_descriptor);
+    }
   return FALSE;
 }
 
 
-static void control_server_start_listening(ControlServer *self);
-static void control_server_read_command(void *cookie);
-COMMAND_HANDLER control_server_get_command_handler(ControlServer *self, gchar *cmd);
+typedef struct _ControlServerWin32
+{
+  ControlServer super;
+  SECURITY_ATTRIBUTES security_attributes;
+} ControlServerWin32;
+
+typedef struct _ControlConnectionWin32
+{
+  ControlConnection super;
+  HANDLE pipe_handle;
+  struct iv_handle input_handle;
+  struct iv_handle output_handle;
+  struct iv_handle connect_handle;
+  OVERLAPPED o_connect;
+  OVERLAPPED o_read;
+  OVERLAPPED o_write;
+  struct iv_task io_task;
+  gboolean read_pending;
+  gboolean write_pending;
+} ControlConnectionWin32;
+
+
+void control_server_win32_create_new_instance(ControlServer *s);
 
 void
-control_server_reply_sent(void *cookie)
+control_connection_client_connected(void *cookie)
 {
-  ControlServer *self = (ControlServer *)cookie;
-
-  g_string_truncate(self->output_buffer, 0);
-  g_string_truncate(self->input_buffer, 0);
-   if (iv_handle_registered(&self->hOutput))
-    {
-      iv_handle_unregister(&self->hOutput);
-    }
-  control_server_read_command(cookie);
-}
-
-void
-control_server_send_reply(ControlServer *self, GString *reply)
-{
-  g_string_assign(self->output_buffer, reply->str);
-  g_string_free(reply, TRUE);
-
-  if (iv_handle_registered(&self->hOutput))
-    {
-      iv_handle_unregister(&self->hOutput);
-    }
-
-
-  if (self->output_buffer->str[self->output_buffer->len - 1] != '\n')
-    g_string_append_c(self->output_buffer, '\n');
-  g_string_append(self->output_buffer, ".\n");
-
-  if (self->hOutput.handle == INVALID_HANDLE_VALUE)
-    {
-      self->hOutput.handle = CreateEvent(NULL, FALSE, FALSE, NULL);
-    }
-  self->overlapped_result.hEvent = self->hOutput.handle;
-  if(!WriteFile(self->hPipe, self->output_buffer->str, self->output_buffer->len, NULL, &self->overlapped_result))
-    {
-      DWORD error = GetLastError();
-      if (error == ERROR_IO_PENDING)
-        {
-          iv_handle_register(&self->hOutput);
-          iv_handle_set_handler(&self->hOutput, control_server_reply_sent);
-          return;
-        }
-      else
-        {
-          msg_error("I/O error occured while writing control pipe",evt_tag_str("pipe",self->name), evt_tag_errno("error",error), NULL);
-          control_server_start_listening(self);
-        }
-    }
-  g_string_truncate(self->input_buffer, 0);
-  control_server_read_command(self);
-}
-
-static void
-control_server_read_pipe(ControlServer *self)
-{
-  DWORD error;
-  gint orig_len;
-
-    if (self->input_buffer->len > MAX_CONTROL_LINE_LENGTH)
-    {
-      /* too much data in input, drop the connection */
-      msg_error("Too much data in the control socket input buffer",
-                NULL);
-      control_server_start_listening(self);
-      return;
-    }
-
-  orig_len = self->input_buffer->len;
-
-  /* NOTE: plus one for the terminating NUL */
-  if (self->hInput.handle == INVALID_HANDLE_VALUE)
-    {
-      self->hInput.handle = CreateEvent(NULL, FALSE, FALSE, NULL);
-    }
-  self->overlapped_result.hEvent = self->hInput.handle;
-
-  g_string_set_size(self->input_buffer, self->input_buffer->len + 128 + 1);
-
-  if (!ReadFile(self->hPipe, self->input_buffer->str + orig_len, 128, NULL, &self->overlapped_result))
-    {
-      error = GetLastError();
-      if (error == ERROR_BROKEN_PIPE)
-        {
-          control_server_start_listening(self);
-          return;
-        }
-      else if (error == ERROR_IO_PENDING)
-        {
-          iv_handle_register(&self->hInput);
-          iv_handle_set_handler(&self->hInput, control_server_read_command);
-          return;
-        }
-      else
-        {
-          msg_error("Error occured while reading control pipe",evt_tag_str("pipe",self->name), evt_tag_errno("error",error), NULL);
-          control_server_start_listening(self);
-          return;
-        }
-    }
-  control_server_read_command(self);
-}
-
-
-static void
-control_server_read_command(void *cookie)
-{
-  ControlServer *self = (ControlServer *)cookie;
-  GString *command = NULL;
-  GString *reply = NULL;
-  gchar *nl;
-  gchar *pos;
-  COMMAND_HANDLER command_handler;
-
-  nl = strchr(self->input_buffer->str,'\n');
-  if (!nl)
-    {
-      /* Start to read */
-      if (iv_handle_registered(&self->hInput))
-        {
-          iv_handle_unregister(&self->hInput);
-        }
-      control_server_read_pipe(self);
-      return;
-    }
-  command = g_string_sized_new(128);
-  g_string_assign_len(command, self->input_buffer->str, nl - self->input_buffer->str);
-  g_string_erase(self->input_buffer, 0, command->len + 1);
-  pos = strchr(command->str, ' ');
-  if (pos)
-    *pos = '\0';
-  command_handler = control_server_get_command_handler(self, command->str);
-  if (pos)
-    *pos = ' ';
-
-  if (command_handler)
-    {
-      reply = command_handler(command);
-      control_server_send_reply(self, reply);
-    }
-  else
-    {
-      msg_error("Unknown command read on control channel, closing control channel",
-                evt_tag_str("command", command->str), NULL);
-      goto destroy_connection;
-    }
-  g_string_free(command, TRUE);
-  return;
-destroy_connection:
-  g_string_free(command, TRUE);
-  control_server_start_listening(self);
-}
-
-void
-control_server_client_connected(void *cookie)
-{
-  ControlServer *self = (ControlServer *)cookie;
+  ControlConnectionWin32 *self = (ControlConnectionWin32 *)cookie;
   msg_debug("Incoming connection on the control pipe", NULL);
-  iv_handle_unregister(&self->hConnected);
-  self->connected = TRUE;
-  control_server_read_command(cookie);
+  iv_handle_unregister(&self->connect_handle);
+  control_connection_update_watches(&self->super);
+  control_server_win32_create_new_instance(self->super.server);
   return;
 }
 
-static void
-control_server_start_listening(ControlServer *self)
+static gint
+control_connection_win32_handle_io_error(DWORD error)
 {
-  if (self->hConnected.handle == INVALID_HANDLE_VALUE)
+  if (error == ERROR_IO_PENDING)
     {
-      self->hConnected.handle = CreateEvent(NULL, FALSE, FALSE, NULL);
+      errno = EAGAIN;
+      return -1;
     }
-  self->overlapped_result.hEvent = self->hConnected.handle;
-
-  if (self->connected)
+  else
     {
-      DisconnectNamedPipe(self->hPipe);
-      g_string_truncate(self->input_buffer, 0);
-      g_string_truncate(self->output_buffer, 0);
-      if (iv_handle_registered(&self->hInput))
+      errno = error;
+      return -1;
+    }
+}
+
+static gint
+control_connection_win32_handle_write_error(ControlConnectionWin32 *self)
+{
+  DWORD error = GetLastError();
+  if (error == ERROR_IO_PENDING)
+    {
+      self->write_pending = TRUE;
+    }
+  return control_connection_win32_handle_io_error(GetLastError());
+}
+
+static gint
+control_connection_win32_write(ControlConnection *s, gpointer buffer, gsize size)
+{
+  ControlConnectionWin32 *self = (ControlConnectionWin32 *)s;
+  DWORD bytes_written;
+
+  if (iv_handle_registered(&self->output_handle))
+    {
+      if (!GetOverlappedResult(self->pipe_handle, &self->o_write, &bytes_written, FALSE))
         {
-          iv_handle_unregister(&self->hInput);
+          return control_connection_win32_handle_write_error(self);
         }
-      if (iv_handle_registered(&self->hOutput))
-        {
-          iv_handle_unregister(&self->hOutput);
-        }
-      self->connected = FALSE;
+      iv_handle_unregister(&self->output_handle);
+      self->write_pending = FALSE;
     }
 
-  if (!ConnectNamedPipe(self->hPipe, &self->overlapped_result))
+  else if (!WriteFile(self->pipe_handle, buffer, size, &bytes_written, &self->o_write))
+    {
+      return control_connection_win32_handle_write_error(self);
+    }
+  return bytes_written;
+}
+
+static gint
+control_connection_win32_handle_read_error(ControlConnectionWin32 *self)
+{
+  DWORD error = GetLastError();
+  if (error == ERROR_BROKEN_PIPE)
+    {
+      return 0;
+    }
+  else
+    {
+      if (error == ERROR_IO_PENDING)
+        {
+          self->read_pending = TRUE;
+        }
+      return control_connection_win32_handle_io_error(error);
+    }
+}
+
+static gint
+control_connection_win32_read(ControlConnection *s, gpointer buffer, gsize size)
+{
+  ControlConnectionWin32 *self = (ControlConnectionWin32 *)s;
+  DWORD bytes_read;
+
+  if (iv_handle_registered(&self->input_handle))
+    {
+
+      if (!GetOverlappedResult(self->pipe_handle, &self->o_read, &bytes_read, FALSE))
+        {
+          return control_connection_win32_handle_read_error(self);
+        }
+      iv_handle_unregister(&self->input_handle);
+      self->read_pending = FALSE;
+    }
+
+  else if (!ReadFile(self->pipe_handle, buffer, size, &bytes_read, &self->o_read))
+    {
+      return control_connection_win32_handle_read_error(self);
+    }
+  return bytes_read;
+}
+
+void
+control_connection_update_watches(ControlConnection *s)
+{
+  ControlConnectionWin32 *self = (ControlConnectionWin32 *)s;
+  if (iv_task_registered(&self->io_task))
+    {
+      iv_task_unregister(&self->io_task);
+    }
+  if (s->output_buffer->len > s->pos)
+    {
+      if (self->write_pending)
+        {
+          if (!iv_handle_registered(&self->output_handle))
+            {
+              iv_handle_register(&self->output_handle);
+              iv_handle_set_handler(&self->output_handle, s->handle_output);
+            }
+        }
+      else
+        {
+          self->io_task.handler = s->handle_output;
+          iv_task_register(&self->io_task);
+        }
+    }
+  else
+    {
+      if (self->read_pending)
+        {
+          if (!iv_handle_registered(&self->input_handle))
+            {
+              iv_handle_register(&self->input_handle);
+              iv_handle_set_handler(&self->input_handle, s->handle_input);
+            }
+        }
+      else
+        {
+          self->io_task.handler = s->handle_input;
+          iv_task_register(&self->io_task);
+        }
+    }
+}
+
+void
+control_connection_start_watches(ControlConnection *s)
+{
+  ControlConnectionWin32 *self = (ControlConnectionWin32 *)s;
+
+  IV_HANDLE_INIT(&self->input_handle);
+  self->input_handle.handle = CreateEvent(NULL, FALSE, FALSE, NULL);
+  self->input_handle.cookie = self;
+  self->o_read.hEvent = self->input_handle.handle;
+
+  IV_HANDLE_INIT(&self->output_handle);
+  self->output_handle.handle = CreateEvent(NULL, FALSE, FALSE, NULL);
+  self->input_handle.cookie = self;
+  self->o_write.hEvent = self->output_handle.handle;
+
+  IV_HANDLE_INIT(&self->connect_handle);
+  self->connect_handle.handle = CreateEvent(NULL, FALSE, FALSE, NULL);
+  self->connect_handle.cookie = self;
+  self->o_connect.hEvent = self->connect_handle.handle;
+
+  IV_TASK_INIT(&self->io_task);
+  self->io_task.cookie = self;
+
+  if (!ConnectNamedPipe(self->pipe_handle, &self->o_connect))
     {
       DWORD error = GetLastError();
       if (error == ERROR_IO_PENDING)
         {
-          iv_handle_register(&self->hConnected);
-          iv_handle_set_handler(&self->hConnected, control_server_client_connected);
+          iv_handle_register(&self->connect_handle);
+          iv_handle_set_handler(&self->connect_handle, control_connection_client_connected);
           return;
         }
-      msg_error("Can't listen named pipe",evt_tag_str("pipe",self->name),evt_tag_errno("error",error),NULL);
+      if (error == ERROR_PIPE_CONNECTED)
+        {
+          control_server_win32_create_new_instance(s->server);
+          control_connection_update_watches(s);
+          return;
+        }
+    }
+  else
+    {
+      msg_error("Connect named pipe failed",
+                evt_tag_str("pipe", s->server->control_socket_name),
+                evt_tag_errno("error", GetLastError()),
+                NULL);
     }
   return;
 }
 
 void
-control_server_start(ControlServer *self)
+control_connection_stop_watches(ControlConnection *s)
 {
-  GString *error_description = g_string_sized_new(128);
-  if (!create_security_attributes(&self->sec_attr, error_description))
+  ControlConnectionWin32 *self = (ControlConnectionWin32 *)s;
+
+  if (iv_handle_registered(&self->input_handle))
     {
-      msg_error("Can't create security descriptor for the control pipe",evt_tag_str("message",error_description->str), evt_tag_errno("error",GetLastError()), NULL);
+      iv_handle_unregister(&self->input_handle);
     }
-  else
+  if (iv_handle_registered(&self->output_handle))
     {
-      self->hPipe = CreateNamedPipe(self->name,
+      iv_handle_unregister(&self->output_handle);
+    }
+  if (iv_handle_registered(&self->connect_handle))
+    {
+      iv_handle_unregister(&self->connect_handle);
+    }
+}
+
+void
+control_connection_win32_free(ControlConnection *s)
+{
+  ControlConnectionWin32 *self = (ControlConnectionWin32 *)s;
+
+  DisconnectNamedPipe(self->pipe_handle);
+  CloseHandle(self->pipe_handle);
+  CloseHandle(self->input_handle.handle);
+  CloseHandle(self->output_handle.handle);
+  CloseHandle(self->connect_handle.handle);
+  return;
+}
+
+ControlConnection *
+control_connection_new(ControlServer *server, HANDLE pipe_handle)
+{
+  ControlConnectionWin32 *self = g_new0(ControlConnectionWin32,1);
+
+  control_connection_init_instance(&self->super, server);
+
+  self->super.free_fn = control_connection_win32_free;
+  self->super.read = control_connection_win32_read;
+  self->super.write = control_connection_win32_write;
+
+  self->pipe_handle = pipe_handle;
+  control_connection_start_watches(&self->super);
+
+  return &self->super;
+}
+
+void
+control_server_win32_create_new_instance(ControlServer *s)
+{
+  ControlServerWin32 *self = (ControlServerWin32 *)s;
+  HANDLE pipe_handle = CreateNamedPipe(s->control_socket_name,
                           PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED,
                           PIPE_WAIT,
                           PIPE_UNLIMITED_INSTANCES,
                           BUFSIZE,
                           BUFSIZE,
                           PIPE_TIMEOUT,
-                          &self->sec_attr);
-      if (self->hPipe != INVALID_HANDLE_VALUE)
-        {
-          control_server_start_listening(self);
-        }
-      else
-        {
-          msg_error("Can't create named pipe", evt_tag_errno("error",GetLastError()), NULL);
-        }
+                          &self->security_attributes);
+   if (pipe_handle != INVALID_HANDLE_VALUE)
+     {
+       control_connection_new(s, pipe_handle);
+     }
+   else
+     {
+       msg_error("Can't create named pipe",
+                 evt_tag_errno("error", GetLastError()),
+                 NULL);
+     }
+  return;
+}
+
+void
+control_server_start(ControlServer *s)
+{
+  ControlServerWin32 *self = (ControlServerWin32 *)s;
+  GString *error_description = g_string_sized_new(128);
+  if (!create_security_attributes(&self->security_attributes, error_description))
+    {
+      msg_error("Can't create security descriptor for the control pipe",
+                evt_tag_str("message", error_description->str),
+                evt_tag_errno("error", GetLastError()),
+                NULL);
+    }
+  else
+    {
+      control_server_win32_create_new_instance(s);
     }
   g_string_free(error_description, TRUE);
   return;
 }
 
 ControlServer *
-control_server_new(const gchar *name)
+control_server_new(const gchar *name, Commands *commands)
 {
-  ControlServer *self = g_new0(ControlServer, 1);
+  ControlServerWin32 *self = g_new0(ControlServerWin32, 1);
 
-  self->name = g_strdup(name);
-  self->connected = FALSE;
-  self->hPipe = INVALID_HANDLE_VALUE;
+  control_server_init_instance(&self->super, name, commands);
 
-  IV_HANDLE_INIT(&self->hConnected);
-  self->hConnected.cookie = self;
-  self->hConnected.handle = INVALID_HANDLE_VALUE;
-
-  IV_HANDLE_INIT(&self->hInput);
-  self->hInput.cookie = self;
-  self->hInput.handle = INVALID_HANDLE_VALUE;
-
-  IV_HANDLE_INIT(&self->hOutput);
-  self->hOutput.cookie = self;
-  self->hOutput.handle = INVALID_HANDLE_VALUE;
-
-  self->output_buffer = g_string_sized_new(256);
-  self->input_buffer = g_string_sized_new(128);
-
-  self->command_list = g_hash_table_new_full(g_str_hash,g_str_equal,g_free,NULL);
-  return self;
-}
-
-void
-control_server_free(ControlServer *self)
-{
-  if (self->hPipe != INVALID_HANDLE_VALUE)
-    {
-      DisconnectNamedPipe(self->hPipe);
-      CloseHandle(self->hPipe);
-    }
-
-  if (iv_handle_registered(&self->hConnected))
-    iv_handle_unregister(&self->hConnected);
-
-  if (iv_handle_registered(&self->hInput))
-    iv_handle_unregister(&self->hInput);
-
-  if (iv_handle_registered(&self->hOutput))
-    iv_handle_unregister(&self->hOutput);
-
-  g_hash_table_destroy(self->command_list);
-  CloseHandle(self->hInput.handle);
-  CloseHandle(self->hOutput.handle);
-  CloseHandle(self->hConnected.handle);
-
-  free(self);
-  return;
-}
-
-void
-control_server_register_command_handler(ControlServer *self,const gchar *cmd, COMMAND_HANDLER handler)
-{
-  g_hash_table_insert(self->command_list, g_strdup(cmd), handler);
-}
-
-COMMAND_HANDLER
-control_server_get_command_handler(ControlServer *self, gchar *cmd)
-{
-  return (COMMAND_HANDLER)g_hash_table_lookup(self->command_list, cmd);
+  return &self->super;
 }

@@ -1470,6 +1470,7 @@ AC_OUTPUT(dist.conf
           lib/Makefile
 	        libtest/Makefile
           syslog-ng/Makefile
+          syslog-ng-ctl/Makefile
           modules/Makefile
           modules/dummy/Makefile
           modules/basic-proto/Makefile

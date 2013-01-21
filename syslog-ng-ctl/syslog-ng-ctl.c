@@ -168,12 +168,6 @@ usage(const gchar *bin_name)
 
 #include "reloc.c"
 
-#ifndef _WIN32
-#include "control_client_posix.c"
-#else
-#include "control_client_windows.c"
-#endif
-
 int
 main(int argc, char *argv[])
 {
@@ -184,7 +178,6 @@ main(int argc, char *argv[])
   int result;
 
   control_name = get_reloc_string(PATH_CONTROL_SOCKET);
-
 
   mode_string = slng_mode(&argc, &argv);
   if (!mode_string)

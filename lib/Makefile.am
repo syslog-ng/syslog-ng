@@ -107,6 +107,7 @@ libsyslog_ng_la_SOURCES = \
 	children.c		\
 	compat.c		\
 	control.c		\
+	control_server.c \
 	dgroup.c		\
 	dnscache.c		\
 	driver.c		\

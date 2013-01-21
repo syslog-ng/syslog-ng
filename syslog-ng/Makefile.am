@@ -2,7 +2,7 @@ export top_srcdir
 moduledir = @moduledir@
 AM_CPPFLAGS = -I$(top_srcdir)/lib -I../lib
 
-sbin_PROGRAMS = syslog-ng syslog-ng-ctl syslog-ng-agent
+sbin_PROGRAMS = syslog-ng syslog-ng-agent
 
 if IS_WINDOWS
 syslog_ng_agent_SOURCES = winmain_agent.c winservice.h winservice.c dbghelp.h minidump.c minidump.h syslog-ng-agent-resource.rc
@@ -32,9 +32,6 @@ endif
 syslog_ng_LINK =  @SYSLOGNG_LINK@
 syslog_ng_LDFLAGS= @syslog_ng_LDFLAGS@
 
-
-syslog_ng_ctl_SOURCES = syslog-ng-ctl.c ../lib/gsocket.c ../lib/gsockaddr.c
-syslog_ng_ctl_LDADD =  @BASE_LIBS@ @GLIB_LIBS@ @RESOLV_LIBS@ -L../lib/.libs -lsyslog-ng
 
 if IS_WINDOWS
 .rc.o:
