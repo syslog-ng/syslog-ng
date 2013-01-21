@@ -6,17 +6,27 @@
 #include "stdio.h"
 #include "stats.h"
 #include "control_client.h"
-#include "control_client_posix.c"
 
+#ifndef _WIN32
+#include "control_client_posix.c"
 #define CONTROL_NAME "test.ctl"
-GStaticMutex server_starting = G_STATIC_MUTEX_INIT;
+#else
+#include "control_client_windows.c"
+#define CONTROL_NAME "\\\\.\\pipe\\test.ctl"
+#endif
+
 extern int verbose_flag;
 extern int debug_flag;
 extern int trace_flag;
 
+extern gboolean log_stderr;
+
 GThread *server_thread;
 struct iv_task check_stop_server_thread;
 gboolean stop_server_thread = FALSE;
+
+GMutex *thread_lock;
+GCond *thread_cond;
 
 void
 check_stop_signal(void *cookie)
@@ -36,7 +46,11 @@ control_socket_server_thread(void *user_data)
   check_stop_server_thread.cookie = NULL;
   iv_task_register(&check_stop_server_thread);
   control_init(CONTROL_NAME);
-  g_static_mutex_unlock(&server_starting);
+
+  g_mutex_lock(thread_lock);
+  g_cond_signal(thread_cond);
+  g_mutex_unlock(thread_lock);
+
   iv_main();
   control_destroy();
   iv_deinit();
@@ -177,12 +191,18 @@ test_stats()
 int
 main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 {
+  setvbuf(stderr, NULL, _IONBF, 0);
+  setvbuf(stdout, NULL, _IONBF, 0);
   g_thread_init(NULL);
+  log_stderr = TRUE;
 
-  g_static_mutex_lock(&server_starting);
+  thread_lock = g_mutex_new();
+  thread_cond = g_cond_new();
+
   server_thread = g_thread_create(control_socket_server_thread, NULL, TRUE, NULL);
-  g_static_mutex_lock(&server_starting);
-  g_static_mutex_unlock(&server_starting);
+  g_mutex_lock(thread_lock);
+  g_cond_wait(thread_cond, thread_lock);
+  g_mutex_unlock(thread_lock);
 
   test_verbose();
   test_debug();
@@ -192,6 +212,8 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 
   stop_server_thread = TRUE;
   g_thread_join(server_thread);
+#ifndef _WIN32
   unlink(CONTROL_NAME);
+#endif
   return 0;
 }

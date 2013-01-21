@@ -41,7 +41,12 @@
 
 #define PATH_SYSLOG_NG_CONF     PATH_SYSCONFDIR "/syslog-ng.conf"
 #define PATH_INSTALL_DAT	PATH_SYSCONFDIR "/install.dat"
+
+#ifndef _WIN32
 #define PATH_CONTROL_SOCKET     PATH_PIDFILEDIR "/syslog-ng.ctl"
+#else
+#define PATH_CONTROL_SOCKET     "\\\\.\\pipe\\syslog-ng.ctl"
+#endif
 
 #define PATH_PERSIST_CONFIG     PATH_LOCALSTATEDIR "/syslog-ng.persist"
 #define PATH_QDISK              PATH_LOCALSTATEDIR

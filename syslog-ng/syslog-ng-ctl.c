@@ -167,7 +167,12 @@ usage(const gchar *bin_name)
 }
 
 #include "reloc.c"
+
+#ifndef _WIN32
 #include "control_client_posix.c"
+#else
+#include "control_client_windows.c"
+#endif
 
 int
 main(int argc, char *argv[])
@@ -180,7 +185,6 @@ main(int argc, char *argv[])
 
   control_name = get_reloc_string(PATH_CONTROL_SOCKET);
 
-  control_client = control_client_new(control_name);
 
   mode_string = slng_mode(&argc, &argv);
   if (!mode_string)
@@ -216,6 +220,8 @@ main(int argc, char *argv[])
       return 1;
     }
   g_option_context_free(ctx);
+
+  control_client = control_client_new(control_name);
 
   result = modes[mode].main(argc, argv, modes[mode].mode);
   control_client_free(control_client);

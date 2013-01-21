@@ -170,8 +170,10 @@ libsyslog_ng_la_SOURCES += gprocess.c \
 													 control_server_posix.c \
                            hostname_unix.c
 else
-libsyslog_ng_la_SOURCES += hostname_win.c
-libsyslog_ng_la_SOURCES += tlswincrypt.c
+libsyslog_ng_la_SOURCES += hostname_win.c \
+                           tlswincrypt.c  \
+                           control_server_windows.c
+
 endif
 
 

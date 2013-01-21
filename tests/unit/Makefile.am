@@ -30,6 +30,7 @@ check_PROGRAMS =			\
 	test_hostname	\
   test_cache \
   test_data_to_hex \
+  test_control \
 	test_rcptid
 
 if IS_HPUX
@@ -48,10 +49,8 @@ endif
 
 if !IS_WINDOWS
 check_PROGRAMS +=	test_thread_wakeup \
-									test_control \
 	                test_resolve_pwgr
 endif
-
 
 test_msgparse_SOURCES = test_msgparse.c
 test_template_SOURCES = test_template.c
