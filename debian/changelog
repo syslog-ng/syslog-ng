@@ -1,7 +1,7 @@
-syslog-ng (3.3.7+snapshot20130103+gdf6d07e-1~mhp1) unstable; urgency=low
+syslog-ng (3.3.8-1~mhp1) unstable; urgency=low
 
   [ Gergely Nagy <algernon@madhouse-project.org> ]
-  * New snapshot, based on git commit df6d07e
+  * New upstream release.
   * Use the standard /var/log/mail.{info,err,warn} location for the
     various mail-related logs. (Closes: #692056)
   * Do not forcibly remove the systemd service files, that code is not
@@ -9,7 +9,7 @@ syslog-ng (3.3.7+snapshot20130103+gdf6d07e-1~mhp1) unstable; urgency=low
   * Use /dev/ttyva on kFreeBSD as the target of the d_console_all
     destination. (Closes: #697042)
 
- -- Gergely Nagy <algernon@madhouse-project.org>  Thu, 03 Jan 2013 17:55:32 +0100
+ -- Gergely Nagy <algernon@madhouse-project.org>  Mon, 21 Jan 2013 10:04:22 +0100
 
 syslog-ng (3.3.7-1~mhp1) unstable; urgency=low
 
