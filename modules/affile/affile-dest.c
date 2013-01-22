@@ -172,8 +172,8 @@ affile_dw_reopen(AFFileDestWriter *self)
                         self->owner->flags & AFFILE_PIPE
                         ? log_proto_text_client_new(log_transport_pipe_new(fd), &self->owner->writer_options.proto_options.super)
                         : log_proto_file_writer_new(log_transport_file_new(fd), &self->owner->writer_options.proto_options.super,
-                                                    self->owner->writer_options.flush_lines,
-                                                    (self->owner->flags & AFFILE_FSYNC)));
+                                                    (self->owner->flags & AFFILE_FSYNC),
+                                                    self->owner->writer_options.flush_lines));
 
       main_loop_call((void * (*)(void *)) affile_dw_arm_reaper, self, TRUE);
     }
