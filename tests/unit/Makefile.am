@@ -30,7 +30,8 @@ check_PROGRAMS =			\
 	test_hostname	\
   test_cache \
   test_data_to_hex \
-  test_control \
+  test_control_cmds \
+  test_control_connection \
 	test_rcptid
 
 if IS_HPUX
@@ -86,8 +87,7 @@ test_hostname_SOURCES = test_hostname.c
 test_data_to_hex_SOURCES = test_data_to_hex.c
 
 test_cache_SOURCES = test_cache.c
-test_control_SOURCES = test_control.c
-test_control_CFLAGS = -I$(top_srcdir)/syslog-ng -I$(top_srcdir)/lib -I$(top_srcdir)/libtest -I../../lib
+test_control_cmds_SOURCES = test_control_cmds.c
+test_control_connection_SOURCES = test_control_connection.c
 
 TESTS = $(check_PROGRAMS)
-

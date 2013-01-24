@@ -187,7 +187,6 @@ test_stats()
   control_client_free(control_client);
 }
 
-
 int
 main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 {

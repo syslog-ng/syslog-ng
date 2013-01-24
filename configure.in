@@ -1530,7 +1530,8 @@ dnl PE modules
       tests/Makefile
       debian/Makefile
       tgz2build/Makefile
-          tests/unit/Makefile
+      tests/unit/Makefile
+      tests/complex/Makefile
       tests/loggen/Makefile
       winbuild/Makefile
           )
