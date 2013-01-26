@@ -183,7 +183,7 @@ log_rewrite_subst_clone(LogPipe *s)
   LogRewriteSubst *self = (LogRewriteSubst *) s;
   LogRewriteSubst *cloned;
 
-  cloned = (LogRewriteSubst *) log_rewrite_subst_new(self->replacement->template);
+  cloned = (LogRewriteSubst *) log_rewrite_subst_new(log_template_ref(self->replacement));
   cloned->matcher = log_matcher_ref(self->matcher);
   cloned->super.value_handle = self->super.value_handle;
   cloned->super.condition = self->super.condition;
@@ -202,7 +202,7 @@ log_rewrite_subst_free(LogPipe *s)
 }
 
 LogRewrite *
-log_rewrite_subst_new(const gchar *replacement)
+log_rewrite_subst_new(LogTemplate *replacement)
 {
   LogRewriteSubst *self = g_new0(LogRewriteSubst, 1);
 
@@ -211,9 +211,8 @@ log_rewrite_subst_new(const gchar *replacement)
   self->super.super.free_fn = log_rewrite_subst_free;
   self->super.super.clone = log_rewrite_subst_clone;
   self->super.process = log_rewrite_subst_process;
-  
-  self->replacement = log_template_new(configuration, NULL);
-  log_template_compile(self->replacement, replacement, NULL);
+  self->replacement = replacement;
+
   return &self->super;
 }
 
@@ -249,7 +248,7 @@ log_rewrite_set_clone(LogPipe *s)
   LogRewriteSet *self = (LogRewriteSet *) s;
   LogRewriteSet *cloned;
 
-  cloned = (LogRewriteSet *) log_rewrite_set_new(self->value_template->template);
+  cloned = (LogRewriteSet *) log_rewrite_set_new(log_template_ref(self->value_template));
   cloned->super.value_handle = self->super.value_handle;
   cloned->super.condition = self->super.condition;
   return &cloned->super.super;
@@ -265,7 +264,7 @@ log_rewrite_set_free(LogPipe *s)
 }
 
 LogRewrite *
-log_rewrite_set_new(const gchar *new_value)
+log_rewrite_set_new(LogTemplate *template)
 {
   LogRewriteSet *self = g_new0(LogRewriteSet, 1);
   
@@ -273,9 +272,8 @@ log_rewrite_set_new(const gchar *new_value)
   self->super.super.free_fn = log_rewrite_set_free;
   self->super.super.clone = log_rewrite_set_clone;
   self->super.process = log_rewrite_set_process;
+  self->value_template = template;
 
-  self->value_template = log_template_new(configuration, NULL);
-  log_template_compile(self->value_template, new_value, NULL);
   return &self->super;
 }
 

@@ -51,6 +51,7 @@ LogRewrite *last_rewrite;
 
 %type   <ptr> rewrite_expr
 %type   <ptr> rewrite_expr_list
+%type   <ptr> rewrite_template_content
 
 /* INCLUDE_DECLS */
 
@@ -70,8 +71,18 @@ rewrite_expr_list
         |                                           { $$ = NULL; }
         ;
 
+rewrite_template_content
+	: string
+	  {
+	    GError *error = NULL;
+
+	    $$ = log_template_new(configuration, $1);
+	    CHECK_ERROR(log_template_compile($$, $1, &error), @1, "Error compiling template (%s)", error->message);
+	  }
+	;
+
 rewrite_expr
-        : KW_SUBST '(' string string
+        : KW_SUBST '(' string rewrite_template_content
           {
             last_rewrite = log_rewrite_subst_new($4);
             free($4);
@@ -82,7 +93,7 @@ rewrite_expr
             free($3);
             $$ = last_rewrite;
           }
-        | KW_SET '(' string
+        | KW_SET '(' rewrite_template_content
           {
             last_rewrite = log_rewrite_set_new($3);
             free($3);
