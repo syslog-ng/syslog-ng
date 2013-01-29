@@ -85,7 +85,7 @@ rewrite_expr
         : KW_SUBST '(' string rewrite_template_content
           {
             last_rewrite = log_rewrite_subst_new($4);
-            free($4);
+            log_template_unref($4);
           }
           rewrite_subst_opts ')'
           {
@@ -96,7 +96,7 @@ rewrite_expr
         | KW_SET '(' rewrite_template_content
           {
             last_rewrite = log_rewrite_set_new($3);
-            free($3);
+            log_template_unref($3);
           }
           rewrite_expr_opts ')'                 { $$ = last_rewrite; }
 	| KW_SET_TAG '(' string ')'             { $$ = log_rewrite_set_tag_new($3, TRUE); free($3); }

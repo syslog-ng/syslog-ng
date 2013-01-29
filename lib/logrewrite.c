@@ -211,7 +211,7 @@ log_rewrite_subst_new(LogTemplate *replacement)
   self->super.super.free_fn = log_rewrite_subst_free;
   self->super.super.clone = log_rewrite_subst_clone;
   self->super.process = log_rewrite_subst_process;
-  self->replacement = replacement;
+  self->replacement = log_template_ref(replacement);
 
   return &self->super;
 }
@@ -272,7 +272,7 @@ log_rewrite_set_new(LogTemplate *template)
   self->super.super.free_fn = log_rewrite_set_free;
   self->super.super.clone = log_rewrite_set_clone;
   self->super.process = log_rewrite_set_process;
-  self->value_template = template;
+  self->value_template = log_template_ref(template);
 
   return &self->super;
 }
