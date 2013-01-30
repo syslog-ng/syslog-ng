@@ -1,3 +1,89 @@
+3.4.1
+        Thu, 31 Jan 2013 11:00:00 +0100
+
+        This is the first stable release in the 3.4 series adding a number
+        of features compared to 3.3, a culmination of more than a
+        year's worth of development.
+
+        Major features since 3.3
+        ========================
+
+          * New plugins: AMQP & SMTP destinations, JSON parser.
+
+            See the following links for more details about them:
+
+            http://git.io/mgF_sA (AMQP), http://git.io/Os9qpA (SMTP)
+            and http://git.io/7MerYA (JSON parser)
+
+          * New parsers for patterndb: HOSTNAME, EMAIL, PCRE and
+            LLADDR.
+
+          * It is now possible to control what db-parser() sees as its
+            input via it's new template() option. (Defaults to
+            $MESSAGE)
+
+            See http://git.io/YZHPtg for more details.
+
+          * value-pairs() gained support for programmatically
+            rewriting key names in bulk, via the rekey() method.
+
+            See http://git.io/VylQUg for more details.
+
+          * The network() driver is introduced, unifying and extending
+            tcp(), udp(), syslog(), unix-dgram() and
+            unix-stream(). The old drivers are still available, but
+            migrating over to network() is encouraged.
+
+            See http://git.io/0Xjlhg for more details.
+
+          * Support for junctions & channels were added, which improve
+            the flexibility of the syslog-ng configuration
+            language. This allows combining sources with their closely
+            tied processing functionality (like parser, rewrite and
+            filter statements). Read this blog post for more
+            information:
+
+            http://goo.gl/T8Txa
+
+            In the final form of the functionality the "log" keyword
+            as described in the blog post above was replaced with
+            "channel".
+
+        Changes since 3.4.0rc2:
+        =======================
+
+        Bugfixes
+        ========
+
+        * PatternDB allows a wider range of characters in a class
+          value now.
+
+          Newly allowed chars are: %, :, @, +, !, ^, / and \.
+
+        * The fsync() and flush-lines() functionality was restored in
+          the file() destination, both work as expected and correctly
+          now.
+
+        * The set() and subst() rewrite operations were fixed to work
+          even when referenced from multiple places (and in a number
+          of different corner-cases too).
+
+        Credits:
+        ========
+        syslog-ng is developed as a community project, and as such it relies
+        on volunteers to do the work necessarily to produce syslog-ng.
+
+        Reporting bugs, testing changes, writing code or simply providing
+        feedback are all important contributions, so please if you are a
+        user of syslog-ng, contribute.
+
+        These people have helped in this release:
+
+        Balazs Scheidler <bazsi@balabit.hu>
+        Evan Rempel <erempel@uvic.ca>
+        Gergely Nagy <algernon@balabit.hu>
+        Johnson, Chris <chris.johnson3@hp.com>
+
 3.4.0rc2
         Wed, 17 Jan 2013 14:00:00 +0100
 
