@@ -190,7 +190,7 @@ agent_service_main()
       config_string = g_strdup(agent_registry_config);
     }
   rc = main_loop_init(config_string);
-
+  SetEvent(main_loop_initialized);
   if (rc)
     {
       goto exit;
@@ -224,6 +224,8 @@ main(int argc, char *argv[])
   gint i = 0;
   install_dat_filename = get_reloc_string(PATH_INSTALL_DAT);
   setvbuf(stderr, NULL, _IONBF, 0);
+
+  main_loop_initialized = CreateEvent(NULL, FALSE, FALSE, NULL);
 
 
   debug_group = g_option_group_new("debug","Debug options:","debug",NULL,NULL);

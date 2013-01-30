@@ -1,3 +1,6 @@
+#ifndef WINSERVICE_H
+#define WINSERVICE_H 1
+
 #include <glib.h>
 #include <windows.h>
 
@@ -22,3 +25,7 @@ int stop_service_by_name(char * szName);
 int start_service(char *szName,SERVICE_MAIN service_main,SERVICE_STOP_FUNCTION service_stop);
 void register_resource_dll(char *szName);
 void unregister_resource_dll(char *szName);
+
+HANDLE main_loop_initialized;
+
+#endif

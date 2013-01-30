@@ -216,6 +216,7 @@ main_control_handler(DWORD request)
       if (g_service_stop_function)
         {
           ServiceStatus.dwCurrentState = SERVICE_STOP_PENDING;
+          WaitForSingleObject(main_loop_initialized, INFINITE);
           g_service_stop_function();
         }
       else
