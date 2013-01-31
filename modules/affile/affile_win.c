@@ -509,9 +509,18 @@ affile_sd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
 
   log_msg_set_value(msg, LM_V_PID, pid_string, -1);
 
-  log_msg_set_value(msg, filename_handle, self->filename->str, self->filename->len);
-  log_msg_set_value_indirect(msg, filesize_handle, sdata_filesize, 0,0,-1);
-  log_msg_set_value_indirect(msg, filepos_handle, sdata_filepos, 0,0,-1);
+  if (filename_handle)
+    {
+      log_msg_set_value(msg, filename_handle, self->filename->str, self->filename->len);
+    }
+  if (filesize_handle && sdata_filesize)
+    {
+      log_msg_set_value_indirect(msg, filesize_handle, sdata_filesize, 0,0,-1);
+    }
+  if (filepos_handle && sdata_filepos)
+    {
+      log_msg_set_value_indirect(msg, filepos_handle, sdata_filepos, 0,0,-1);
+    }
 
   log_pipe_forward_msg(s, msg, path_options);
 }

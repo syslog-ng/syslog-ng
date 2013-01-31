@@ -734,30 +734,36 @@ log_reader_handle_line(LogReader *self, const guchar *line, gint length, GSockAd
       converted = g_string_sized_new (25);
       self->proto->get_info(self->proto, &pos);
       handle = log_msg_get_value_handle(SDATA_FILE_NAME);
-      if(self->follow_filename)
+      if(self->follow_filename && handle)
         log_msg_set_value(m, handle, self->follow_filename, strlen(self->follow_filename));
 
       handle = log_msg_get_value_handle(SDATA_FILE_POS);
-      if (pos != 0)
+      if (handle)
         {
-          format_uint64_padded(converted, 0, 0, 10, pos);
-          log_msg_set_value(m, handle, converted->str, converted->len);
-        }
-      else
-        {
-          log_msg_set_value(m, handle, "0", 1);
-        }
+          if (pos != 0)
+            {
+              format_uint64_padded(converted, 0, 0, 10, pos);
+              log_msg_set_value(m, handle, converted->str, converted->len);
+            }
+          else
+            {
+              log_msg_set_value(m, handle, "0", 1);
+            }
+         }
 
       handle = log_msg_get_value_handle(SDATA_FILE_SIZE);
-      if (self->size != 0)
+      if (handle)
         {
-          g_string_set_size(converted, 0);
-          format_uint64_padded(converted, 0, 0, 10, self->size);
-          log_msg_set_value(m, handle, converted->str, converted->len);
-        }
-      else
-        {
-            log_msg_set_value(m, handle, "0", 1);
+          if (self->size != 0)
+            {
+              g_string_set_size(converted, 0);
+              format_uint64_padded(converted, 0, 0, 10, self->size);
+              log_msg_set_value(m, handle, converted->str, converted->len);
+            }
+          else
+            {
+              log_msg_set_value(m, handle, "0", 1);
+            }
         }
 
       g_string_free(converted, TRUE);
