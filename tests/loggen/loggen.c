@@ -847,6 +847,12 @@ main(int argc, char *argv[])
     {
       static struct sockaddr_un saun;
 
+      if (argc < 1)
+        {
+          fprintf(stderr, "No target path specified\n");
+          return 1;
+        }
+
       saun.sun_family = AF_UNIX;
       strncpy(saun.sun_path, argv[0], sizeof(saun.sun_path));
 
