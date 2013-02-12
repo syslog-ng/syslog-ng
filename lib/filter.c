@@ -46,6 +46,12 @@ filter_expr_node_init(FilterExprNode *self)
   self->ref_cnt = 1;
 }
 
+/*
+ * In case the filter would modify the message the caller has to make sure
+ * that the message is writable.  You can always archieve that with
+ * filter_expr_eval_root() below, but you have to be on a processing path to
+ * do that.
+ */
 gboolean
 filter_expr_eval_with_context(FilterExprNode *self, LogMessage **msg, gint num_msg)
 {
@@ -63,6 +69,21 @@ gboolean
 filter_expr_eval(FilterExprNode *self, LogMessage *msg)
 {
   return filter_expr_eval_with_context(self, &msg, 1);
+}
+
+gboolean
+filter_expr_eval_root_with_context(FilterExprNode *self, LogMessage **msg, gint num_msg, const LogPathOptions *path_options)
+{
+  if (self->modify)
+    log_msg_make_writable(&msg[0], path_options);
+
+  return filter_expr_eval_with_context(self, msg, num_msg);
+}
+
+gboolean
+filter_expr_eval_root(FilterExprNode *self, LogMessage **msg, const LogPathOptions *path_options)
+{
+  return filter_expr_eval_root_with_context(self, msg, 1, path_options);
 }
 
 FilterExprNode *
