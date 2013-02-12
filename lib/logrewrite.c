@@ -45,7 +45,7 @@ log_rewrite_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_option
   gssize length;
   const gchar *value;
 
-  if (self->condition && !filter_expr_eval(self->condition, msg))
+  if (self->condition && !filter_expr_eval_root(self->condition, &msg, path_options))
     {
       msg_debug("Rewrite condition unmatched, skipping rewrite",
                 evt_tag_str("value", log_msg_get_value_name(self->value_handle, NULL)),
