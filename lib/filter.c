@@ -98,6 +98,7 @@ fop_init(FilterExprNode *s, GlobalConfig *cfg)
     self->left->init(self->left, cfg);
   if (self->right && self->right->init)
     self->right->init(self->right, cfg);
+  self->super.modify = self->left->modify || self->right->modify;
 }
 
 static void
@@ -132,7 +133,6 @@ fop_or_new(FilterExprNode *e1, FilterExprNode *e2)
   
   fop_init_instance(self);
   self->super.eval = fop_or_eval;
-  self->super.modify = e1->modify || e2->modify;
   self->left = e1;
   self->right = e2;
   self->super.type = "OR";
@@ -154,7 +154,6 @@ fop_and_new(FilterExprNode *e1, FilterExprNode *e2)
   
   fop_init_instance(self);
   self->super.eval = fop_and_eval;
-  self->super.modify = e1->modify || e2->modify;
   self->left = e1;
   self->right = e2;
   self->super.type = "AND";
@@ -509,6 +508,7 @@ filter_call_init(FilterExprNode *s, GlobalConfig *cfg)
 
 
       self->filter_expr = ((LogFilterPipe *) rule->children->object)->expr;
+      self->super.modify = self->filter_expr->modify;
     }
   else
     {
