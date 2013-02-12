@@ -720,10 +720,8 @@ log_filter_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_op
             evt_tag_str("rule", self->name),
             evt_tag_str("location", log_expr_node_format_location(s->expr_node, buf, sizeof(buf))),
             NULL);
-  if (self->expr->modify)
-    log_msg_make_writable(&msg, path_options);
 
-  res = filter_expr_eval(self->expr, msg);
+  res = filter_expr_eval_root(self->expr, &msg, path_options);
   msg_debug("Filter rule evaluation result",
             evt_tag_str("result", res ? "match" : "not-match"),
             evt_tag_str("rule", self->name),
