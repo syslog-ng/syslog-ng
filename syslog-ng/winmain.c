@@ -168,6 +168,7 @@ int server_service_main()
 {
   gint rc = 0;
   rc = main_loop_init(NULL);
+  register_minidump_writer();
   SetEvent(main_loop_initialized);
   if (rc)
     {
