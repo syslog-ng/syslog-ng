@@ -422,6 +422,25 @@ log_reader_check_file(gpointer s)
 }
 
 static void
+log_reader_restart_task_handler(gpointer s)
+{
+  LogReader *self = (LogReader *)s;
+  struct stat st;
+  gint fd;
+
+  g_assert(self->proto);
+  fd = log_proto_get_fd(self->proto);
+  if (fd >= 0)
+    {
+      if (fstat(fd, &st) >= 0)
+        {
+          self->size = st.st_size;
+          log_reader_io_process_input(s);
+        }
+    }
+}
+
+static void
 log_reader_idle_timeout(LogReader *self)
 {
   msg_error("Client response time elapsed, close the connection",evt_tag_id(MSG_LOGREADER_RESPONSE_TIMEOUT),NULL);
@@ -454,7 +473,7 @@ log_reader_init_watches(LogReader *self)
 
   IV_TASK_INIT(&self->restart_task);
   self->restart_task.cookie = self;
-  self->restart_task.handler = log_reader_io_process_input;
+  self->restart_task.handler = log_reader_restart_task_handler;
 
   IV_TASK_INIT(&self->immediate_check_task);
   self->immediate_check_task.cookie = self;
@@ -754,16 +773,10 @@ log_reader_handle_line(LogReader *self, const guchar *line, gint length, GSockAd
       handle = log_msg_get_value_handle(SDATA_FILE_SIZE);
       if (handle)
         {
-          if (self->size != 0)
-            {
-              g_string_set_size(converted, 0);
-              format_uint64_padded(converted, 0, 0, 10, self->size);
-              log_msg_set_value(m, handle, converted->str, converted->len);
-            }
-          else
-            {
-              log_msg_set_value(m, handle, "0", 1);
-            }
+          g_assert(self->size);
+          g_string_set_size(converted, 0);
+          format_uint64_padded(converted, 0, 0, 10, self->size);
+          log_msg_set_value(m, handle, converted->str, converted->len);
         }
 
       g_string_free(converted, TRUE);
