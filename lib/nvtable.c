@@ -543,7 +543,7 @@ nv_table_add_value_indirect(NVTable *self, NVHandle handle, const gchar *name, g
   if (!nv_table_reserve_table_entry(self, handle, &dyn_slot))
     return FALSE;
   entry = nv_table_alloc_value(self, NV_ENTRY_INDIRECT_HDR + name_len + 1);
-  if (!entry)
+  if (!entry || !ref_entry)
     {
       return FALSE;
     }
