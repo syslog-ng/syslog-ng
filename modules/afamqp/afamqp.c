@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2012 Nagy, Attila <bra@fsn.hu>
- * Copyright (c) 2012 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 2012 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2012-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2012-2013 Gergely Nagy <algernon@balabit.hu>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -403,8 +403,8 @@ afamqp_worker_publish(AMQPDestDriver *self, LogMessage *msg)
   amqp_table_t table;
   amqp_basic_properties_t props;
   gboolean success = TRUE;
-  ScratchBuffer *routing_key = scratch_buffer_acquire();
-  ScratchBuffer *body = scratch_buffer_acquire();
+  SBGString *routing_key = sb_gstring_acquire();
+  SBGString *body = sb_gstring_acquire();
   amqp_bytes_t body_bytes = amqp_cstring_bytes("");
 
   gpointer user_data[] = { &self->entries, &pos, &self->max_entries };
@@ -422,21 +422,21 @@ afamqp_worker_publish(AMQPDestDriver *self, LogMessage *msg)
   props.headers = table;
 
   log_template_format(self->routing_key_template, msg, NULL, LTZ_LOCAL,
-                      self->seq_num, NULL, sb_string(routing_key));
+                      self->seq_num, NULL, sb_gstring_string(routing_key));
 
   if (self->body_template)
     {
       log_template_format(self->body_template, msg, NULL, LTZ_LOCAL,
-                          self->seq_num, NULL, sb_string(body));
-      body_bytes = amqp_cstring_bytes(sb_string(body)->str);
+                          self->seq_num, NULL, sb_gstring_string(body));
+      body_bytes = amqp_cstring_bytes(sb_gstring_string(body)->str);
     }
 
   ret = amqp_basic_publish(self->conn, 1, amqp_cstring_bytes(self->exchange),
-                           amqp_cstring_bytes(sb_string(routing_key)->str),
+                           amqp_cstring_bytes(sb_gstring_string(routing_key)->str),
                            0, 0, &props, body_bytes);
 
-  scratch_buffer_release(routing_key);
-  scratch_buffer_release(body);
+  sb_gstring_release(routing_key);
+  sb_gstring_release(body);
 
   if (ret < 0)
     {

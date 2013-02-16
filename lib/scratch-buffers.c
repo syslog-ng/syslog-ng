@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2011-2012 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 2011-2012 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2011-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2011-2013 Gergely Nagy <algernon@balabit.hu>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -28,42 +28,86 @@
 
 TLS_BLOCK_START
 {
-  GTrashStack *scratch_buffers;
+  GTrashStack *sb_gstrings;
+  GList *sb_registry;
 }
 TLS_BLOCK_END;
 
-#define local_scratch_buffers	__tls_deref(scratch_buffers)
+/* GStrings */
 
-ScratchBuffer *
-scratch_buffer_acquire(void)
+#define local_sb_gstrings        __tls_deref(sb_gstrings)
+
+GTrashStack *
+sb_gstring_acquire_buffer(void)
 {
-  ScratchBuffer *sb;
+  SBGString *sb;
 
-  sb = g_trash_stack_pop(&local_scratch_buffers);
+  sb = g_trash_stack_pop(&local_sb_gstrings);
   if (!sb)
     {
-      sb = g_new(ScratchBuffer, 1);
-      g_string_steal(sb_string(sb));
+      sb = g_new(SBGString, 1);
+      g_string_steal(sb_gstring_string(sb));
     }
   else
-    g_string_set_size(sb_string(sb), 0);
-  return sb;
+    g_string_set_size(sb_gstring_string(sb), 0);
+
+  return (GTrashStack *) sb;
 }
 
 void
-scratch_buffer_release(ScratchBuffer *sb)
+sb_gstring_release_buffer(GTrashStack *s)
 {
-  g_trash_stack_push(&local_scratch_buffers, sb);
+  SBGString *sb = (SBGString *) s;
+
+  g_trash_stack_push(&local_sb_gstrings, sb);
+}
+
+void
+sb_gstring_free_stack(void)
+{
+  SBGString *sb;
+
+  while ((sb = g_trash_stack_pop(&local_sb_gstrings)) != NULL)
+    {
+      g_free(sb_gstring_string(sb)->str);
+      g_free(sb);
+    }
+}
+
+ScratchBufferStack SBGStringStack = {
+  .acquire_buffer = sb_gstring_acquire_buffer,
+  .release_buffer = sb_gstring_release_buffer,
+  .free_stack = sb_gstring_free_stack
+};
+
+/* Global API */
+
+#define local_sb_registry  __tls_deref(sb_registry)
+
+void
+scratch_buffers_register(ScratchBufferStack *stack)
+{
+  local_sb_registry = g_list_append(local_sb_registry, stack);
+}
+
+void
+scratch_buffers_init(void)
+{
+  local_sb_registry = NULL;
+  scratch_buffers_register(&SBGStringStack);
+}
+
+static void
+scratch_buffers_free_stack(gpointer data, gpointer user_data)
+{
+  ScratchBufferStack *s = (ScratchBufferStack *) data;
+
+  s->free_stack();
 }
 
 void
 scratch_buffers_free(void)
 {
-  ScratchBuffer *sb;
-
-  while ((sb = g_trash_stack_pop(&local_scratch_buffers)) != NULL)
-    {
-      g_free(sb_string(sb)->str);
-      g_free(sb);
-    }
+  g_list_foreach(local_sb_registry, scratch_buffers_free_stack, NULL);
+  g_list_free(local_sb_registry);
 }

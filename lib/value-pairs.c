@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2011-2012 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 2011-2012 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2011-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2011-2013 Gergely Nagy <algernon@balabit.hu>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -193,22 +193,22 @@ vp_pairs_foreach(gpointer data, gpointer user_data)
   LogMessage *msg = ((gpointer *)user_data)[2];
   gint32 seq_num = GPOINTER_TO_INT (((gpointer *)user_data)[3]);
   GTree *scope_set = ((gpointer *)user_data)[5];
-  ScratchBuffer *sb = scratch_buffer_acquire();
+  SBGString *sb = sb_gstring_acquire();
   VPPairConf *vpc = (VPPairConf *)data;
 
   log_template_format((LogTemplate *)vpc->template, msg, NULL, LTZ_LOCAL,
-                      seq_num, NULL, sb_string(sb));
+                      seq_num, NULL, sb_gstring_string(sb));
 
-  if (!sb_string(sb)->str[0])
+  if (!sb_gstring_string(sb)->str[0])
     {
-      scratch_buffer_release(sb);
+      sb_gstring_release(sb);
       return;
     }
 
   g_tree_insert(scope_set, vp_transform_apply(vp, vpc->name),
-                sb_string(sb)->str);
-  g_string_steal(sb_string(sb));
-  scratch_buffer_release(sb);
+                sb_gstring_string(sb)->str);
+  g_string_steal(sb_gstring_string(sb));
+  sb_gstring_release(sb);
 }
 
 /* runs over the LogMessage nv-pairs, and inserts them unless excluded */
@@ -246,7 +246,7 @@ static void
 vp_merge_set(ValuePairs *vp, LogMessage *msg, gint32 seq_num, ValuePairSpec *set, GTree *dest)
 {
   gint i;
-  ScratchBuffer *sb = scratch_buffer_acquire();
+  SBGString *sb = sb_gstring_acquire();
 
   for (i = 0; set[i].name; i++)
     {
@@ -265,7 +265,8 @@ vp_merge_set(ValuePairs *vp, LogMessage *msg, gint32 seq_num, ValuePairSpec *set
       switch (set[i].type)
         {
         case VPT_MACRO:
-          log_macro_expand(sb_string(sb), set[i].id, FALSE, NULL, LTZ_LOCAL, seq_num, NULL, msg);
+          log_macro_expand(sb_gstring_string(sb), set[i].id, FALSE,
+                           NULL, LTZ_LOCAL, seq_num, NULL, msg);
           break;
         case VPT_NVPAIR:
           {
@@ -273,20 +274,21 @@ vp_merge_set(ValuePairs *vp, LogMessage *msg, gint32 seq_num, ValuePairSpec *set
             gssize len;
 
             nv = log_msg_get_value(msg, (NVHandle) set[i].id, &len);
-            g_string_append_len(sb_string(sb), nv, len);
+            g_string_append_len(sb_gstring_string(sb), nv, len);
             break;
           }
         default:
           g_assert_not_reached();
         }
 
-      if (!sb_string(sb)->str[0])
+      if (!sb_gstring_string(sb)->str[0])
 	continue;
 
-      g_tree_insert(dest, vp_transform_apply(vp, set[i].name), sb_string(sb)->str);
-      g_string_steal(sb_string(sb));
+      g_tree_insert(dest, vp_transform_apply(vp, set[i].name),
+                    sb_gstring_string(sb)->str);
+      g_string_steal(sb_gstring_string(sb));
     }
-  scratch_buffer_release(sb);
+  sb_gstring_release(sb);
 }
 
 void

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -292,6 +292,7 @@ main_loop_io_worker_thread_start(void *cookie)
   gint id;
 
   dns_cache_init();
+  scratch_buffers_init();
   g_static_mutex_lock(&main_loop_io_workers_idmap_lock);
   /* NOTE: this algorithm limits the number of I/O worker threads to 64,
    * since the ID map is stored in a single 64 bit integer.  If we ever need

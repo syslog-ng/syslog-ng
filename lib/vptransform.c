@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2011-2012 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 2011-2012 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2011-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2011-2013 Gergely Nagy <algernon@balabit.hu>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -31,7 +31,7 @@
 
 #include <string.h>
 
-typedef void (*VPTransFunc)(ValuePairsTransform *t, ScratchBuffer *name);
+typedef void (*VPTransFunc)(ValuePairsTransform *t, SBGString *name);
 typedef void (*VPTransDestroyFunc)(ValuePairsTransform *t);
 
 struct _ValuePairsTransformSet
@@ -92,7 +92,7 @@ value_pairs_transform_free(ValuePairsTransform *t)
 }
 
 static inline void
-value_pairs_transform_apply(ValuePairsTransform *t, ScratchBuffer *key)
+value_pairs_transform_apply(ValuePairsTransform *t, SBGString *key)
 {
   t->transform(t, key);
 }
@@ -100,11 +100,11 @@ value_pairs_transform_apply(ValuePairsTransform *t, ScratchBuffer *key)
 /* add_prefix() */
 
 static void
-vp_trans_add_prefix(ValuePairsTransform *t, ScratchBuffer *key)
+vp_trans_add_prefix(ValuePairsTransform *t, SBGString *key)
 {
   VPTransAddPrefix *self = (VPTransAddPrefix *)t;
 
-  g_string_prepend(sb_string(key), self->prefix);
+  g_string_prepend(sb_gstring_string(key), self->prefix);
 }
 
 static void
@@ -132,11 +132,11 @@ value_pairs_new_transform_add_prefix (const gchar *prefix)
 /* shift() */
 
 static void
-vp_trans_shift(ValuePairsTransform *t, ScratchBuffer* key)
+vp_trans_shift(ValuePairsTransform *t, SBGString* key)
 {
   VPTransShift *self = (VPTransShift *)t;
 
-  g_string_erase(sb_string(key), 0, self->amount);
+  g_string_erase(sb_gstring_string(key), 0, self->amount);
 }
 
 ValuePairsTransform *
@@ -156,15 +156,17 @@ value_pairs_new_transform_shift (gint amount)
 /* replace() */
 
 static void
-vp_trans_replace(ValuePairsTransform *t, ScratchBuffer *key)
+vp_trans_replace(ValuePairsTransform *t, SBGString *key)
 {
   VPTransReplace *self = (VPTransReplace *)t;
 
-  if (strncmp(self->old_prefix, sb_string(key)->str, self->old_prefix_len) != 0)
+  if (strncmp(self->old_prefix, sb_gstring_string(key)->str,
+              self->old_prefix_len) != 0)
     return;
 
-  g_string_erase(sb_string(key), 0, self->old_prefix_len);
-  g_string_prepend_len(sb_string(key), self->new_prefix, self->new_prefix_len);
+  g_string_erase(sb_gstring_string(key), 0, self->old_prefix_len);
+  g_string_prepend_len(sb_gstring_string(key),
+                       self->new_prefix, self->new_prefix_len);
 }
 
 static void
@@ -238,11 +240,11 @@ value_pairs_transform_set_apply(ValuePairsTransformSet *vpts, gchar *key)
   if (g_pattern_match_string(vpts->pattern, key))
     {
       GList *l;
-      ScratchBuffer *sb;
+      SBGString *sb;
       gchar *new_key;
 
-      sb = scratch_buffer_acquire ();
-      g_string_assign(sb_string(sb), key);
+      sb = sb_gstring_acquire ();
+      g_string_assign(sb_gstring_string(sb), key);
 
       l = vpts->transforms;
       while (l)
@@ -251,9 +253,9 @@ value_pairs_transform_set_apply(ValuePairsTransformSet *vpts, gchar *key)
           l = l->next;
         }
 
-      new_key = sb_string(sb)->str;
-      g_string_steal(sb_string(sb));
-      scratch_buffer_release (sb);
+      new_key = sb_gstring_string(sb)->str;
+      g_string_steal(sb_gstring_string(sb));
+      sb_gstring_release (sb);
 
       return new_key;
     }
