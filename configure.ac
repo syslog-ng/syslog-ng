@@ -982,7 +982,7 @@ if test "x$enable_systemd" = "xauto"; then
 fi
 
 if test "x$enable_systemd" = "xyes"; then
-	PKG_CHECK_MODULES(libsystemd_daemon, libsystemd-daemon >= 31,with_libsystemd="yes",with_libsystemd="no")
+	PKG_CHECK_MODULES(libsystemd_daemon, libsystemd-daemon >= 31,enable_systemd="yes",enable_systemd="no")
 	if test "x$with_systemdsystemunitdir" = "xyes"; then
 		# no arguments, just --with-systemdsystemunitdir
 		systemdsystemunitdir=`$PKG_CONFIG --variable=systemdsystemunitdir systemd`
@@ -1139,7 +1139,6 @@ AC_DEFINE_UNQUOTED(ENABLE_LINUX_CAPS, `enable_value $enable_linux_caps`, [Enable
 AC_DEFINE_UNQUOTED(ENABLE_PCRE, `enable_value $enable_pcre`, [Enable PCRE support])
 AC_DEFINE_UNQUOTED(ENABLE_ENV_WRAPPER, `enable_value $enable_env_wrapper`, [Enable environment wrapper support])
 AC_DEFINE_UNQUOTED(ENABLE_SYSTEMD, `enable_value $enable_systemd`, [Enable systemd support])
-AC_DEFINE_UNQUOTED(WITH_LIBSYSTEMD, `enable_value $with_libsystemd`, [Compile with libsystemd-daemon])
 
 AM_CONDITIONAL(ENABLE_ENV_WRAPPER, [test "$enable_env_wrapper" = "yes"])
 AM_CONDITIONAL(ENABLE_SYSTEMD, [test "$enable_systemd" = "yes"])
@@ -1153,7 +1152,6 @@ AM_CONDITIONAL(ENABLE_SMTP, [test "$enable_smtp" = "yes"])
 AM_CONDITIONAL(ENABLE_AMQP, [test "$enable_amqp" = "yes"])
 AM_CONDITIONAL(ENABLE_JSON, [test "$enable_json" = "yes"])
 AM_CONDITIONAL(ENABLE_GEOIP, [test "$enable_geoip" = "yes"])
-AM_CONDITIONAL(WITH_LIBSYSTEMD, [test "$with_libsystemd" = "yes"])
 AM_CONDITIONAL(WITH_EMBEDDED_CRYPTO, [test "$with_embedded_crypto" = "yes"])
 
 # substitution into manual pages
