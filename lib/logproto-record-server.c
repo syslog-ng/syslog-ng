@@ -83,7 +83,7 @@ log_proto_record_server_init(LogProtoRecordServer *self, LogTransport *transport
 }
 
 static gboolean
-log_proto_binary_record_server_fetch_from_buf(LogProtoBufferedServer *s, const guchar *buffer_start, gsize buffer_bytes, const guchar **msg, gsize *msg_len, gboolean flush_the_rest)
+log_proto_binary_record_server_fetch_from_buffer(LogProtoBufferedServer *s, const guchar *buffer_start, gsize buffer_bytes, const guchar **msg, gsize *msg_len)
 {
   LogProtoBufferedServerState *state = log_proto_buffered_server_get_state(s);
 
@@ -101,12 +101,12 @@ log_proto_binary_record_server_new(LogTransport *transport, const LogProtoServer
   LogProtoRecordServer *self = g_new0(LogProtoRecordServer, 1);
 
   log_proto_record_server_init(self, transport, options, record_size);
-  self->super.fetch_from_buf = log_proto_binary_record_server_fetch_from_buf;
+  self->super.fetch_from_buffer = log_proto_binary_record_server_fetch_from_buffer;
   return &self->super.super;
 }
 
 static gboolean
-log_proto_padded_record_server_fetch_from_buf(LogProtoBufferedServer *s, const guchar *buffer_start, gsize buffer_bytes, const guchar **msg, gsize *msg_len, gboolean flush_the_rest)
+log_proto_padded_record_server_fetch_from_buffer(LogProtoBufferedServer *s, const guchar *buffer_start, gsize buffer_bytes, const guchar **msg, gsize *msg_len)
 {
   LogProtoBufferedServerState *state = log_proto_buffered_server_get_state(s);
   const guchar *eol;
@@ -126,6 +126,6 @@ log_proto_padded_record_server_new(LogTransport *transport, const LogProtoServer
   LogProtoRecordServer *self = g_new0(LogProtoRecordServer, 1);
 
   log_proto_record_server_init(self, transport, options, record_size);
-  self->super.fetch_from_buf = log_proto_padded_record_server_fetch_from_buf;
+  self->super.fetch_from_buffer = log_proto_padded_record_server_fetch_from_buffer;
   return &self->super.super;
 }

@@ -551,7 +551,6 @@ log_proto_buffered_server_prepare(LogProtoServer *s, gint *fd, GIOCondition *con
   return FALSE;
 }
 
-
 static gint
 log_proto_buffered_server_read_data(LogProtoBufferedServer *self, guchar *buf, gsize len, GSockAddr **sa)
 {
@@ -559,7 +558,7 @@ log_proto_buffered_server_read_data(LogProtoBufferedServer *self, guchar *buf, g
 }
 
 static LogProtoStatus
-log_proto_buffered_server_fetch_from_buf(LogProtoBufferedServer *self, const guchar **msg, gsize *msg_len, gboolean flush_the_rest)
+log_proto_buffered_server_fetch_from_buffer(LogProtoBufferedServer *self, const guchar **msg, gsize *msg_len)
 {
   gsize buffer_bytes;
   const guchar *buffer_start;
@@ -588,10 +587,111 @@ log_proto_buffered_server_fetch_from_buf(LogProtoBufferedServer *self, const guc
       goto exit;
     }
 
-  success = self->fetch_from_buf(self, buffer_start, buffer_bytes, msg, msg_len, flush_the_rest);
+  success = self->fetch_from_buffer(self, buffer_start, buffer_bytes, msg, msg_len);
  exit:
   log_proto_buffered_server_put_state(self);
   return success;
+}
+
+static inline void
+log_proto_buffered_server_allocate_buffer(LogProtoBufferedServer *self)
+{
+  if (G_UNLIKELY(!self->buffer))
+    {
+      LogProtoBufferedServerState *state = log_proto_buffered_server_get_state(self);
+
+      state->buffer_size = self->super.options->init_buffer_size;
+      self->buffer = g_malloc(state->buffer_size);
+      log_proto_buffered_server_put_state(self);
+    }
+}
+
+static GIOStatus
+log_proto_buffered_server_fetch_into_buffer(LogProtoBufferedServer *self)
+{
+  guchar *raw_buffer = NULL;
+  gint avail;
+  gint rc;
+  GSockAddr *sa = NULL;
+  LogProtoBufferedServerState *state = log_proto_buffered_server_get_state(self);
+  GIOStatus result = G_IO_STATUS_NORMAL;
+
+  log_proto_buffered_server_allocate_buffer(self);
+
+  /* read the next chunk to be processed */
+
+  if (self->convert == (GIConv) -1)
+    {
+      /* no conversion, we read directly into our buffer */
+      raw_buffer = self->buffer + state->pending_buffer_end;
+      avail = state->buffer_size - state->pending_buffer_end;
+    }
+  else
+    {
+      /* if conversion is needed, we first read into an on-stack
+       * buffer, and then convert it into our internal buffer */
+
+      raw_buffer = g_alloca(self->super.options->init_buffer_size + state->raw_buffer_leftover_size);
+      memcpy(raw_buffer, state->raw_buffer_leftover, state->raw_buffer_leftover_size);
+      avail = self->super.options->init_buffer_size;
+    }
+
+  rc = self->read_data(self, raw_buffer + state->raw_buffer_leftover_size, avail, &sa);
+  if (sa)
+    {
+      /* new chunk of data, potentially new sockaddr, forget the previous value */
+      g_sockaddr_unref(self->prev_saddr);
+      self->prev_saddr = sa;
+    }
+
+  if (rc < 0)
+    {
+      if (errno == EAGAIN)
+        {
+          /* ok we don't have any more data to read, return to main poll loop */
+          result = G_IO_STATUS_AGAIN;
+        }
+      else
+        {
+          /* an error occurred while reading */
+          msg_error("I/O error occurred while reading",
+                    evt_tag_int(EVT_TAG_FD, self->super.transport->fd),
+                    evt_tag_errno(EVT_TAG_OSERROR, errno),
+                    NULL);
+          result = G_IO_STATUS_ERROR;
+        }
+    }
+  else if (rc == 0)
+    {
+      /* EOF read */
+      msg_verbose("EOF occurred while reading",
+                  evt_tag_int(EVT_TAG_FD, self->super.transport->fd),
+                  NULL);
+      if (state->raw_buffer_leftover_size > 0)
+        {
+          msg_error("EOF read on a channel with leftovers from previous character conversion, dropping input",
+                    NULL);
+          state->pending_buffer_pos = state->pending_buffer_end = 0;
+        }
+      result = G_IO_STATUS_EOF;
+    }
+  else
+    {
+      state->pending_raw_buffer_size += rc;
+      rc += state->raw_buffer_leftover_size;
+      state->raw_buffer_leftover_size = 0;
+
+      if (self->convert == (GIConv) -1)
+        {
+          state->pending_buffer_end += rc;
+        }
+      else if (!log_proto_buffered_server_convert_from_raw(self, raw_buffer, rc))
+        {
+          result = G_IO_STATUS_ERROR;
+        }
+    }
+  log_proto_buffered_server_put_state(self);
+  return result;
 }
 
 /**
@@ -602,140 +702,50 @@ static LogProtoStatus
 log_proto_buffered_server_fetch(LogProtoServer *s, const guchar **msg, gsize *msg_len, GSockAddr **sa, gboolean *may_read)
 {
   LogProtoBufferedServer *self = (LogProtoBufferedServer *) s;
-  gint rc;
-  guchar *raw_buffer = NULL;
-  LogProtoBufferedServerState *state = log_proto_buffered_server_get_state(self);
   LogProtoStatus result = self->super.status;
 
-  if (G_UNLIKELY(!self->buffer))
-    {
-      state->buffer_size = self->super.options->init_buffer_size;
-      self->buffer = g_malloc(state->buffer_size);
-    }
-
-  if (sa)
-    *sa = NULL;
-
-  if (log_proto_buffered_server_fetch_from_buf(self, msg, msg_len, FALSE))
-    {
-      if (sa && self->prev_saddr)
-        *sa = g_sockaddr_ref(self->prev_saddr);
-      goto exit;
-    }
-
-  /* ok, no more messages in the buffer, read a chunk */
   while (*may_read)
     {
-      gint avail;
+      gint fd;
+      GIOCondition cond;
+      gboolean data_available_in_buffer;
+
+      if (log_proto_buffered_server_fetch_from_buffer(self, msg, msg_len))
+        {
+          if (sa)
+            *sa = g_sockaddr_ref(self->prev_saddr);
+          result = LPS_SUCCESS;
+          break;
+        }
+      else
+        {
+          *msg = NULL;
+          *msg_len = 0;
+        }
+
+      if (self->super.status != LPS_SUCCESS)
+        {
+          result = self->super.status;
+          break;
+        }
 
       if (self->no_multi_read)
         *may_read = FALSE;
 
-      /* read the next chunk to be processed */
-
-      if (self->convert == (GIConv) -1)
+      data_available_in_buffer = log_proto_server_prepare(s, &fd, &cond);
+      if (!data_available_in_buffer)
         {
-          /* no conversion, we read directly into our buffer */
-          raw_buffer = self->buffer + state->pending_buffer_end;
-          avail = state->buffer_size - state->pending_buffer_end;
-        }
-      else
-        {
-          /* if conversion is needed, we first read into an on-stack
-           * buffer, and then convert it into our internal buffer */
+          GIOStatus io_status;
 
-          raw_buffer = g_alloca(self->super.options->init_buffer_size + state->raw_buffer_leftover_size);
-          memcpy(raw_buffer, state->raw_buffer_leftover, state->raw_buffer_leftover_size);
-          avail = self->super.options->init_buffer_size;
-        }
-
-      rc = self->read_data(self, raw_buffer + state->raw_buffer_leftover_size, avail, sa);
-      if (sa && *sa)
-        {
-          /* new chunk of data, potentially new sockaddr, forget the previous value */
-          g_sockaddr_unref(self->prev_saddr);
-          self->prev_saddr = *sa;
-          *sa = NULL;
-        }
-      if (rc < 0)
-        {
-          if (errno == EAGAIN)
-            {
-              /* ok we don't have any more data to read, return to main poll loop */
-              break;
-            }
-          else
-            {
-              /* an error occurred while reading */
-              msg_error("I/O error occurred while reading",
-                        evt_tag_int(EVT_TAG_FD, self->super.transport->fd),
-                        evt_tag_errno(EVT_TAG_OSERROR, errno),
-                        NULL);
-
-              /* we set self->status explicitly as we want to return
-               * LPS_ERROR on the _next_ invocation, not now */
-              self->super.status = LPS_ERROR;
-              if (log_proto_buffered_server_fetch_from_buf(self, msg, msg_len, TRUE))
-                {
-                  if (sa && self->prev_saddr)
-                    *sa = g_sockaddr_ref(self->prev_saddr);
-                  goto exit;
-                }
-              result = self->super.status;
-              goto exit;
-            }
-        }
-      else if (rc == 0)
-        {
-          /* EOF read */
-          msg_verbose("EOF occurred while reading",
-                      evt_tag_int(EVT_TAG_FD, self->super.transport->fd),
-                      NULL);
-          if (state->raw_buffer_leftover_size > 0)
-            {
-              msg_error("EOF read on a channel with leftovers from previous character conversion, dropping input",
-                        NULL);
-              result = LPS_EOF;
-              goto exit;
-            }
-          self->super.status = LPS_EOF;
-          if (log_proto_buffered_server_fetch_from_buf(self, msg, msg_len, TRUE))
-            {
-              if (sa && self->prev_saddr)
-                *sa = g_sockaddr_ref(self->prev_saddr);
-              goto exit;
-            }
-          result = self->super.status;
-          goto exit;
-        }
-      else
-        {
-          state->pending_raw_buffer_size += rc;
-          rc += state->raw_buffer_leftover_size;
-          state->raw_buffer_leftover_size = 0;
-
-          if (self->convert != (GIConv) -1)
-            {
-              if (!log_proto_buffered_server_convert_from_raw(self, raw_buffer, rc))
-                {
-                  result = LPS_ERROR;
-                  goto exit;
-                }
-            }
-          else
-            {
-              state->pending_buffer_end += rc;
-            }
-
-          if (log_proto_buffered_server_fetch_from_buf(self, msg, msg_len, FALSE))
-            {
-              if (sa && self->prev_saddr)
-                *sa = g_sockaddr_ref(self->prev_saddr);
-              goto exit;
-            }
+          io_status = log_proto_buffered_server_fetch_into_buffer(self);
+          if (io_status == G_IO_STATUS_AGAIN)
+            break;
+          else if (io_status == G_IO_STATUS_ERROR)
+            self->super.status = LPS_ERROR;
+          else if (io_status == G_IO_STATUS_EOF)
+            self->super.status = LPS_EOF;
         }
     }
- exit:
 
   /* result contains our result, but once an error happens, the error condition remains persistent */
   log_proto_buffered_server_put_state(self);

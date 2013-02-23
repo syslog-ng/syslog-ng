@@ -33,7 +33,7 @@ struct _LogProtoDGramServer
 };
 
 static gboolean
-log_proto_dgram_server_fetch_from_buf(LogProtoBufferedServer *s, const guchar *buffer_start, gsize buffer_bytes, const guchar **msg, gsize *msg_len, gboolean flush_the_rest)
+log_proto_dgram_server_fetch_from_buffer(LogProtoBufferedServer *s, const guchar *buffer_start, gsize buffer_bytes, const guchar **msg, gsize *msg_len)
 {
   LogProtoBufferedServerState *state = log_proto_buffered_server_get_state(s);
 
@@ -53,7 +53,7 @@ log_proto_dgram_server_new(LogTransport *transport, const LogProtoServerOptions 
   LogProtoDGramServer *self = g_new0(LogProtoDGramServer, 1);
 
   log_proto_buffered_server_init(&self->super, transport, options);
-  self->super.fetch_from_buf = log_proto_dgram_server_fetch_from_buf;
+  self->super.fetch_from_buffer = log_proto_dgram_server_fetch_from_buffer;
   self->super.stream_based = FALSE;
   return &self->super.super;
 }

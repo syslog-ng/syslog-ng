@@ -64,7 +64,7 @@ typedef struct _LogProtoBufferedServer LogProtoBufferedServer;
 struct _LogProtoBufferedServer
 {
   LogProtoServer super;
-  gboolean (*fetch_from_buf)(LogProtoBufferedServer *self, const guchar *buffer_start, gsize buffer_bytes, const guchar **msg, gsize *msg_len, gboolean flush_the_rest);
+  gboolean (*fetch_from_buffer)(LogProtoBufferedServer *self, const guchar *buffer_start, gsize buffer_bytes, const guchar **msg, gsize *msg_len);
   gint (*read_data)(LogProtoBufferedServer *self, guchar *buf, gsize len, GSockAddr **sa);
 
   gboolean
@@ -89,10 +89,15 @@ struct _LogProtoBufferedServer
   GSockAddr *prev_saddr;
 };
 
+static inline gboolean
+log_proto_buffered_server_is_input_closed(LogProtoBufferedServer *self)
+{
+  return self->super.status != LPS_SUCCESS;
+}
+
 gboolean log_proto_buffered_server_prepare(LogProtoServer *s, gint *fd, GIOCondition *cond);
 LogProtoBufferedServerState *log_proto_buffered_server_get_state(LogProtoBufferedServer *self);
 void log_proto_buffered_server_put_state(LogProtoBufferedServer *self);
-
 
 /* LogProtoBufferedServer */
 void log_proto_buffered_server_init(LogProtoBufferedServer *self, LogTransport *transport, const LogProtoServerOptions *options);

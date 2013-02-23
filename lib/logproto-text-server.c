@@ -198,24 +198,12 @@ log_proto_text_server_get_raw_size_of_buffer(LogProtoTextServer *self, const guc
  * Returns TRUE if a message was found in the buffer, FALSE if we need to read again.
  **/
 static gboolean
-log_proto_text_server_fetch_from_buf(LogProtoBufferedServer *s, const guchar *buffer_start, gsize buffer_bytes, const guchar **msg, gsize *msg_len, gboolean flush_the_rest)
+log_proto_text_server_fetch_from_buffer(LogProtoBufferedServer *s, const guchar *buffer_start, gsize buffer_bytes, const guchar **msg, gsize *msg_len)
 {
   LogProtoTextServer *self = (LogProtoTextServer *) s;
   const guchar *eol;
   LogProtoBufferedServerState *state = log_proto_buffered_server_get_state(&self->super);
   gboolean result = FALSE;
-
-  if (flush_the_rest)
-    {
-      /*
-       * we are set to packet terminating mode or the connection is to
-       * be teared down and we have partial data in our buffer.
-       */
-      *msg = buffer_start;
-      *msg_len = buffer_bytes;
-      state->pending_buffer_pos = state->pending_buffer_end;
-      goto success;
-    }
 
   if (state->buffer_cached_eol)
     {
@@ -229,9 +217,11 @@ log_proto_text_server_fetch_from_buf(LogProtoBufferedServer *s, const guchar *bu
     {
       eol = find_eom(buffer_start, buffer_bytes);
     }
-  if ((!eol && (buffer_bytes == state->buffer_size)))
+  if ((!eol &&
+       ((buffer_bytes == state->buffer_size) ||
+        log_proto_buffered_server_is_input_closed(&self->super))))
     {
-      /* our buffer is full and no EOL was found */
+      /* no EOL, our buffer is full or no further input can be read */
       *msg_len = buffer_bytes;
       state->pending_buffer_pos = state->pending_buffer_end;
       *msg = buffer_start;
@@ -329,7 +319,7 @@ log_proto_text_server_init(LogProtoTextServer *self, LogTransport *transport, co
   self->super.super.is_preemptable = log_proto_text_server_is_preemptable;
   self->super.super.prepare = log_proto_text_server_prepare;
   self->super.super.free_fn = log_proto_text_server_free;
-  self->super.fetch_from_buf = log_proto_text_server_fetch_from_buf;
+  self->super.fetch_from_buffer = log_proto_text_server_fetch_from_buffer;
   self->super.stream_based = TRUE;
   self->reverse_convert = (GIConv) -1;
 }
