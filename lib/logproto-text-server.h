@@ -34,6 +34,7 @@ struct _LogProtoTextServer
   gchar *reverse_buffer;
   gsize reverse_buffer_len;
   gint convert_scale;
+  guint32 cached_eol_pos;
 };
 
 /* LogProtoTextServer

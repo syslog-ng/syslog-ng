@@ -262,13 +262,12 @@ log_proto_buffered_server_apply_state(LogProtoBufferedServer *self, PersistEntry
           state->pending_buffer_end += rc;
         }
 
-      if (state->buffer_pos > state->pending_buffer_end ||
-          state->buffer_cached_eol > state->pending_buffer_end)
+      if (state->buffer_pos > state->pending_buffer_end)
         {
           msg_notice("Converted buffer contents is smaller than the current buffer position, starting from the beginning of the buffer, some lines may be duplicated",
                      evt_tag_str("state", persist_name),
                      NULL);
-          state->buffer_pos = state->pending_buffer_pos = state->buffer_cached_eol = 0;
+          state->buffer_pos = state->pending_buffer_pos = 0;
         }
     }
   else
@@ -291,7 +290,7 @@ log_proto_buffered_server_apply_state(LogProtoBufferedServer *self, PersistEntry
   ofs = 0;
   state->buffer_pos = 0;
   state->pending_buffer_end = 0;
-  state->buffer_cached_eol = 0;
+  state->__deprecated_buffer_cached_eol = 0;
   state->raw_stream_pos = 0;
   state->raw_buffer_size = 0;
   state->raw_buffer_leftover_size = 0;
@@ -304,6 +303,7 @@ log_proto_buffered_server_apply_state(LogProtoBufferedServer *self, PersistEntry
   state->pending_buffer_pos = state->buffer_pos;
   state->pending_raw_stream_pos = state->raw_stream_pos;
   state->pending_raw_buffer_size = state->raw_buffer_size;
+  state->__deprecated_buffer_cached_eol = 0;
 
   state = NULL;
   log_proto_buffered_server_put_state(self);
@@ -480,7 +480,6 @@ log_proto_buffered_server_restart_with_state(LogProtoServer *s, PersistState *pe
           state->pending_buffer_pos = GUINT32_SWAP_LE_BE(state->pending_buffer_pos);
           state->pending_buffer_end = GUINT32_SWAP_LE_BE(state->pending_buffer_end);
           state->buffer_size = GUINT32_SWAP_LE_BE(state->buffer_size);
-          state->buffer_cached_eol = GUINT32_SWAP_LE_BE(state->buffer_cached_eol);
           state->raw_stream_pos = GUINT64_SWAP_LE_BE(state->raw_stream_pos);
           state->raw_buffer_size = GUINT32_SWAP_LE_BE(state->raw_buffer_size);
           state->pending_raw_stream_pos = GUINT64_SWAP_LE_BE(state->pending_raw_stream_pos);
@@ -786,7 +785,6 @@ log_proto_buffered_server_queued(LogProtoServer *s)
             evt_tag_int("raw_buffer_len", state->raw_buffer_size),
             evt_tag_int("buffer_pos", state->buffer_pos),
             evt_tag_int("buffer_end", state->pending_buffer_end),
-            evt_tag_int("buffer_cached_eol", state->buffer_cached_eol),
             NULL);
   log_proto_buffered_server_put_state(self);
 }

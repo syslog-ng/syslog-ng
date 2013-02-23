@@ -45,7 +45,7 @@ typedef struct _LogProtoBufferedServerState
   guint32 buffer_pos;
   guint32 pending_buffer_end;
   guint32 buffer_size;
-  guint32 buffer_cached_eol;
+  guint32 __deprecated_buffer_cached_eol;
   guint32 pending_buffer_pos;
 
   /* the stream position where we converted out current buffer from (offset in file) */

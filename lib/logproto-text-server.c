@@ -95,11 +95,9 @@ static gboolean
 log_proto_text_server_is_preemptable(LogProtoServer *s)
 {
   LogProtoTextServer *self = (LogProtoTextServer *) s;
-  LogProtoBufferedServerState *state = log_proto_buffered_server_get_state(&self->super);
   gboolean preemptable;
 
-  preemptable = (state->buffer_cached_eol == 0);
-  log_proto_buffered_server_put_state(&self->super);
+  preemptable = (self->cached_eol_pos == 0);
   return preemptable;
 }
 
@@ -107,17 +105,14 @@ static gboolean
 log_proto_text_server_prepare(LogProtoServer *s, gint *fd, GIOCondition *cond)
 {
   LogProtoTextServer *self = (LogProtoTextServer *) s;
-  LogProtoBufferedServerState *state = log_proto_buffered_server_get_state(&self->super);
   gboolean avail;
 
   if (log_proto_buffered_server_prepare(s, fd, cond))
     {
-      log_proto_buffered_server_put_state(&self->super);
       return TRUE;
     }
 
-  avail = (state->buffer_cached_eol != 0);
-  log_proto_buffered_server_put_state(&self->super);
+  avail = (self->cached_eol_pos != 0);
   return avail;
 }
 
@@ -205,13 +200,13 @@ log_proto_text_server_fetch_from_buffer(LogProtoBufferedServer *s, const guchar 
   LogProtoBufferedServerState *state = log_proto_buffered_server_get_state(&self->super);
   gboolean result = FALSE;
 
-  if (state->buffer_cached_eol)
+  if (self->cached_eol_pos)
     {
       /* previous invocation was nice enough to save a cached EOL
        * pointer, no need to look it up again */
 
-      eol = self->super.buffer + state->buffer_cached_eol;
-      state->buffer_cached_eol = 0;
+      eol = self->super.buffer + self->cached_eol_pos;
+      self->cached_eol_pos = 0;
     }
   else
     {
@@ -284,9 +279,9 @@ log_proto_text_server_fetch_from_buffer(LogProtoBufferedServer *s, const guchar 
            * complete line */
           eom = find_eom(self->super.buffer + state->pending_buffer_pos, state->pending_buffer_end - state->pending_buffer_pos);
           if (eom)
-            state->buffer_cached_eol = eom - self->super.buffer;
+            self->cached_eol_pos = eom - self->super.buffer;
           else
-            state->buffer_cached_eol = 0;
+            self->cached_eol_pos = 0;
         }
       else
         {
