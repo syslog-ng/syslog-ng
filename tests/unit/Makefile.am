@@ -18,11 +18,9 @@ check_PROGRAMS =			\
 	test_template_speed		\
 	test_filters			\
 	test_dnscache			\
-	test_findeom			\
 	test_findcrlf			\
 	test_tags			\
 	test_logwriter			\
-	test_logproto			\
 	test_serialize			\
 	test_zone			\
 	test_persist_state		\
@@ -35,7 +33,6 @@ test_template_speed_SOURCES = test_template_speed.c
 test_zone_SOURCES = test_zone.c
 test_dnscache_SOURCES = test_dnscache.c
 test_serialize_SOURCES = test_serialize.c
-test_findeom_SOURCES = test_findeom.c
 test_findcrlf_SOURCES = test_findcrlf.c
 test_clone_logmsg_SOURCES = test_clone_logmsg.c
 test_matcher_SOURCES = test_matcher.c
@@ -48,7 +45,6 @@ test_logwriter_SOURCES = test_logwriter.c
 test_resolve_pwgr_SOURCES = test_resolve_pwgr.c
 test_persist_state_SOURCES = test_persist_state.c
 test_value_pairs_SOURCES = test_value_pairs.c
-test_logproto_SOURCES = test_logproto.c
 
 TESTS = $(check_PROGRAMS)
 

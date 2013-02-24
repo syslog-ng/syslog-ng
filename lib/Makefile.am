@@ -1,4 +1,4 @@
-SUBDIRS = @IVYKIS_SUBDIRS@
+SUBDIRS = @IVYKIS_SUBDIRS@ . logproto/tests
 DIST_SUBDIRS = ivykis
 moduledir = @moduledir@
 
@@ -6,6 +6,8 @@ moduledir = @moduledir@
 YFLAGS=@YFLAGS@
 
 export top_srcdir
+
+include logproto/logproto.am
 
 lib_LTLIBRARIES = libsyslog-ng.la
 libsyslog_ng_la_LIBADD = @CORE_DEPS_LIBS@
@@ -40,17 +42,6 @@ pkginclude_HEADERS = 		\
 	logmsg.h		\
 	logparser.h		\
 	logpipe.h		\
-	logproto/logproto-client.h	\
-	logproto/logproto-server.h	\
-	logproto/logproto-buffered-server.h \
-	logproto/logproto-dgram-server.h	\
-	logproto/logproto-framed-client.h	\
-	logproto/logproto-framed-server.h	\
-	logproto/logproto-text-client.h  \
-	logproto/logproto-text-server.h	\
-	logproto/logproto-record-server.h \
-	logproto/logproto-builtins.h	\
-	logproto/logproto.h              \
 	logqueue-fifo.h		\
 	logqueue.h		\
 	logreader.h		\
@@ -87,7 +78,8 @@ pkginclude_HEADERS = 		\
 	uuid.h			\
 	value-pairs.h		\
 	vptransform.h		\
-	versioning.h
+	versioning.h		\
+	$(logproto_headers)
 
 # this is intentionally formatted so conflicts are less likely to arise. one name in every line.
 libsyslog_ng_crypto_la_sources = \
@@ -123,16 +115,6 @@ libsyslog_ng_la_SOURCES = \
 	logmsg.c		\
 	logparser.c		\
 	logpipe.c		\
-	logproto/logproto-client.c	\
-	logproto/logproto-server.c	\
-	logproto/logproto-buffered-server.c \
-	logproto/logproto-dgram-server.c	\
-	logproto/logproto-framed-client.c	\
-	logproto/logproto-framed-server.c	\
-	logproto/logproto-text-client.c  \
-	logproto/logproto-text-server.c	\
-	logproto/logproto-record-server.c \
-	logproto/logproto-builtins.c	\
 	logqueue.c		\
 	logqueue-fifo.c		\
 	logreader.c		\
@@ -171,7 +153,8 @@ libsyslog_ng_la_SOURCES = \
 	block-ref-grammar.y	\
 	pragma-grammar.y	\
 	parser-expr-grammar.y	\
-	rewrite-expr-grammar.y
+	rewrite-expr-grammar.y	\
+	$(logproto_sources)
 
 if WITH_EMBEDDED_CRYPTO
 libsyslog_ng_la_CFLAGS  = @UUID_CFLAGS@
