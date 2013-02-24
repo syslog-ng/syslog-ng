@@ -24,7 +24,6 @@
 
 #include "logreader.h"
 #include "messages.h"
-#include "logproto-server.h"
 #include "misc.h"
 #include "stats.h"
 #include "tags.h"

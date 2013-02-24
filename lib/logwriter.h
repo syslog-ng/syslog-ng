@@ -28,7 +28,7 @@
 #include "logpipe.h"
 #include "templates.h"
 #include "logqueue.h"
-#include "logproto-client.h"
+#include "logproto/logproto-client.h"
 #include "timeutils.h"
 
 /* writer constructor flags */

@@ -29,8 +29,8 @@
 #include "gprocess.h"
 #include "stats.h"
 #include "mainloop.h"
-#include "logproto-record-server.h"
-#include "logproto-text-server.h"
+#include "logproto/logproto-record-server.h"
+#include "logproto/logproto-text-server.h"
 #include "logproto-linux-proc-kmsg-reader.h"
 
 #include <sys/types.h>

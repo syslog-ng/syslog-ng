@@ -1,4 +1,4 @@
-#include "logproto-server.h"
+#include "logproto/logproto-server.h"
 #include "logmsg.h"
 #include <stdlib.h>
 

@@ -35,7 +35,7 @@
 #include "patternize.h"
 #include "patterndb-int.h"
 #include "apphook.h"
-#include "logproto-text-server.h"
+#include "logproto/logproto-text-server.h"
 
 #include <stdio.h>
 #include <string.h>

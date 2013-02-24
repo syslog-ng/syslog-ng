@@ -35,7 +35,7 @@
 #include "plugin.h"
 #include "cfg-parser.h"
 #include "stats.h"
-#include "logproto-builtins.h"
+#include "logproto/logproto-builtins.h"
 
 #include <sys/types.h>
 #include <signal.h>

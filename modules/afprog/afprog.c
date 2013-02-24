@@ -28,8 +28,8 @@
 #include "children.h"
 #include "misc.h"
 #include "stats.h"
-#include "logproto-text-server.h"
-#include "logproto-text-client.h"
+#include "logproto/logproto-text-server.h"
+#include "logproto/logproto-text-client.h"
 
 #include <sys/types.h>
 #include <fcntl.h>

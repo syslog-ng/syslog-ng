@@ -27,7 +27,7 @@
 
 #include "syslog-ng.h"
 #include "timeutils.h"
-#include "logproto-server.h"
+#include "logproto/logproto-server.h"
 
 #include <regex.h>
 

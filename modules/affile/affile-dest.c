@@ -29,7 +29,7 @@
 #include "gprocess.h"
 #include "stats.h"
 #include "mainloop.h"
-#include "logproto-text-client.h"
+#include "logproto/logproto-text-client.h"
 #include "logproto-file-writer.h"
 
 #include <sys/types.h>

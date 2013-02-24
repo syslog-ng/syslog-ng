@@ -1,10 +1,10 @@
 #include "mock-transport.h"
 #include "proto_lib.h"
 #include "msg_parse_lib.h"
-#include "logproto-text-server.h"
-#include "logproto-framed-server.h"
-#include "logproto-dgram-server.h"
-#include "logproto-record-server.h"
+#include "logproto/logproto-text-server.h"
+#include "logproto/logproto-framed-server.h"
+#include "logproto/logproto-dgram-server.h"
+#include "logproto/logproto-record-server.h"
 
 #include "apphook.h"
 

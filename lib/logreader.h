@@ -26,7 +26,7 @@
 #define LOGREADER_H_INCLUDED
 
 #include "logsource.h"
-#include "logproto-server.h"
+#include "logproto/logproto-server.h"
 #include "timeutils.h"
 
 /* flags */

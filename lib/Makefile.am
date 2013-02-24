@@ -40,17 +40,17 @@ pkginclude_HEADERS = 		\
 	logmsg.h		\
 	logparser.h		\
 	logpipe.h		\
-	logproto-client.h	\
-	logproto-server.h	\
-	logproto-buffered-server.h \
-	logproto-dgram-server.h	\
-	logproto-framed-client.h	\
-	logproto-framed-server.h	\
-	logproto-text-client.h  \
-	logproto-text-server.h	\
-	logproto-record-server.h \
-	logproto-builtins.h	\
-	logproto.h              \
+	logproto/logproto-client.h	\
+	logproto/logproto-server.h	\
+	logproto/logproto-buffered-server.h \
+	logproto/logproto-dgram-server.h	\
+	logproto/logproto-framed-client.h	\
+	logproto/logproto-framed-server.h	\
+	logproto/logproto-text-client.h  \
+	logproto/logproto-text-server.h	\
+	logproto/logproto-record-server.h \
+	logproto/logproto-builtins.h	\
+	logproto/logproto.h              \
 	logqueue-fifo.h		\
 	logqueue.h		\
 	logreader.h		\
@@ -123,16 +123,16 @@ libsyslog_ng_la_SOURCES = \
 	logmsg.c		\
 	logparser.c		\
 	logpipe.c		\
-	logproto-client.c	\
-	logproto-server.c	\
-	logproto-buffered-server.c \
-	logproto-dgram-server.c	\
-	logproto-framed-client.c	\
-	logproto-framed-server.c	\
-	logproto-text-client.c  \
-	logproto-text-server.c	\
-	logproto-record-server.c \
-	logproto-builtins.c	\
+	logproto/logproto-client.c	\
+	logproto/logproto-server.c	\
+	logproto/logproto-buffered-server.c \
+	logproto/logproto-dgram-server.c	\
+	logproto/logproto-framed-client.c	\
+	logproto/logproto-framed-server.c	\
+	logproto/logproto-text-client.c  \
+	logproto/logproto-text-server.c	\
+	logproto/logproto-record-server.c \
+	logproto/logproto-builtins.c	\
 	logqueue.c		\
 	logqueue-fifo.c		\
 	logreader.c		\
