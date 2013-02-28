@@ -47,6 +47,7 @@
 /* log statement flags that are copied to the head of a branch */
 #define PIF_BRANCH_FINAL      0x0004
 #define PIF_BRANCH_FALLBACK   0x0008
+#define PIF_BRANCH_PROPERTIES (PIF_BRANCH_FINAL + PIF_BRANCH_FALLBACK)
 
 /* branch starting with this pipe wants hard flow control */
 #define PIF_HARD_FLOW_CONTROL 0x0010
