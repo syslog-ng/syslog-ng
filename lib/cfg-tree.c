@@ -588,6 +588,22 @@ cfg_tree_compile_reference(CfgTree *self, LogExprNode *node,
   return FALSE;
 }
 
+static void
+cfg_tree_propagate_expr_node_properties_to_pipe(LogExprNode *node, LogPipe *pipe)
+{
+  if (node->flags & LC_FALLBACK)
+    pipe->flags |= PIF_BRANCH_FALLBACK;
+
+  if (node->flags & LC_FINAL)
+    pipe->flags |= PIF_BRANCH_FINAL;
+
+  if (node->flags & LC_FLOW_CONTROL)
+    pipe->flags |= PIF_HARD_FLOW_CONTROL;
+
+  if (!pipe->expr_node)
+    pipe->expr_node = node;
+}
+
 /**
  * cfg_tree_compile_sequence:
  *
@@ -713,10 +729,6 @@ cfg_tree_compile_sequence(CfgTree *self, LogExprNode *node,
             {
               source_join_pipe = last_pipe = log_pipe_new();
               g_ptr_array_add(self->initialized_pipes, source_join_pipe);
-
-              source_join_pipe->expr_node = node;
-              if (node->flags & LC_FLOW_CONTROL)
-                source_join_pipe->flags |= PIF_HARD_FLOW_CONTROL;
             }
           log_pipe_append(sub_pipe_tail, source_join_pipe);
         }
@@ -724,16 +736,13 @@ cfg_tree_compile_sequence(CfgTree *self, LogExprNode *node,
 
   if (first_pipe)
     {
-      if (node->flags & LC_FALLBACK)
-        first_pipe->flags |= PIF_BRANCH_FALLBACK;
-
-      if (node->flags & LC_FINAL)
-        first_pipe->flags |= PIF_BRANCH_FINAL;
-
-      if (node->flags & LC_FLOW_CONTROL)
-        first_pipe->flags |= PIF_HARD_FLOW_CONTROL;
-      if (!first_pipe->expr_node)
-        first_pipe->expr_node = node;
+      /* we actually return something as sub_pipe_head, which means that we
+       * have to propagate flags upwards */
+      cfg_tree_propagate_expr_node_properties_to_pipe(node, first_pipe);
+    }
+  else
+    {
+      cfg_tree_propagate_expr_node_properties_to_pipe(node, last_pipe);
     }
 
 
