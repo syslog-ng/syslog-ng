@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2010-2012 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 2010-2012 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2010-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2010-2013 Gergely Nagy <algernon@balabit.hu>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -33,8 +33,6 @@ static CfgLexerKeyword afmongodb_keywords[] = {
   { "servers",                  KW_SERVERS },
   { "database",			KW_DATABASE },
   { "collection",		KW_COLLECTION },
-  { "username",			KW_USERNAME },
-  { "password",			KW_PASSWORD },
   { "safe_mode",		KW_SAFE_MODE },
   { "host",                     KW_HOST },
   { "port",                     KW_PORT },
