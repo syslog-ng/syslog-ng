@@ -3,11 +3,12 @@
 #include <stdlib.h>
 
 static void
-testcase(gchar *msg, gsize msg_len, gint eom_ofs)
+testcase(const gchar *msg_, gsize msg_len, gint eom_ofs)
 {
-  const gchar *eom;
+  const guchar *eom;
+  const guchar *msg = (const guchar *) msg_;
 
-  eom = find_eom(msg, msg_len);
+  eom = find_eom((guchar *) msg, msg_len);
 
   if (eom_ofs == -1 && eom != NULL)
     {
