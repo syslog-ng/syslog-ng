@@ -352,6 +352,22 @@ test_log_proto_text_server_eof_handling(void)
   log_proto_server_free(proto);
   log_proto_testcase_end();
 
+  log_proto_testcase_begin("test_log_proto_text_server_eof_handling(eol before EOF)");
+  proto_server_options.max_msg_size = 32;
+  proto = log_proto_text_server_new(
+            log_transport_mock_records_new(
+              /* eol before EOF */
+              "01234\n567\n890\n", -1,
+              LTM_INJECT_ERROR(EIO),
+              LTM_EOF),
+           get_inited_proto_server_options());
+  assert_proto_server_fetch(proto, "01234", -1);
+  assert_proto_server_fetch(proto, "567", -1);
+  assert_proto_server_fetch(proto, "890", -1);
+  assert_proto_server_fetch_failure(proto, LPS_ERROR, NULL);
+  log_proto_server_free(proto);
+  log_proto_testcase_end();
+
   log_proto_testcase_begin("test_log_proto_text_server_eof_handling(I/O error before EOF)");
   proto_server_options.max_msg_size = 32;
   proto = log_proto_text_server_new(
