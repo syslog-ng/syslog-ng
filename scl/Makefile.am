@@ -1,4 +1,4 @@
-SCL_SUBDIRS = system pacct syslogconf
+SCL_SUBDIRS = system pacct syslogconf rewrite
 SCL_CONFIGS = scl.conf syslog-ng.conf
 EXTRA_DIST = $(SCL_CONFIGS) $(SCL_SUBDIRS)
 
