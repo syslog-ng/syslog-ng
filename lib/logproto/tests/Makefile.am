@@ -10,7 +10,8 @@ check_PROGRAMS =			\
 
 test_logproto_SOURCES = 			\
 	test_logproto.c 			\
-	test-server-options.c
+	test-server-options.c			\
+	test-record-server.c
 
 test_findeom_SOURCES = test_findeom.c
 
