@@ -8,7 +8,10 @@ check_PROGRAMS =			\
 	test_logproto			\
 	test_findeom
 
-test_logproto_SOURCES = test_logproto.c
+test_logproto_SOURCES = 			\
+	test_logproto.c 			\
+	test-server-options.c
+
 test_findeom_SOURCES = test_findeom.c
 
 TESTS = $(check_PROGRAMS)
