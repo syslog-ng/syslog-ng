@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2010-2012 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 2010-2012 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2010-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2010-2013 Gergely Nagy <algernon@balabit.hu>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -544,7 +544,7 @@ afmongodb_dd_init(LogPipe *s)
 
   /* Always replace a leading dot with an underscore. */
   vpts = value_pairs_transform_set_new(".*");
-  value_pairs_transform_set_add_func(vpts, value_pairs_new_transform_replace(".", "_"));
+  value_pairs_transform_set_add_func(vpts, value_pairs_new_transform_replace_prefix(".", "_"));
   value_pairs_add_transforms(self->vp, vpts);
 
   if (self->port != MONGO_CONN_LOCAL)

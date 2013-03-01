@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -65,7 +65,8 @@ static CfgLexerKeyword main_keywords[] = {
   { "rekey",              KW_REKEY, 0x0303 },
   { "shift",              KW_SHIFT, 0x0303 },
   { "add_prefix",         KW_ADD_PREFIX, 0x0303 },
-  { "replace",            KW_REPLACE, 0x0303 },
+  { "replace",            KW_REPLACE_PREFIX, 0x0303, KWS_OBSOLETE, "replace_prefix" },
+  { "replace_prefix",     KW_REPLACE_PREFIX, 0x0304 },
 
   /* option items */
   { "flags",              KW_FLAGS },

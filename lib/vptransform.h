@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2011-2012 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 2011-2012 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2011-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2011-2013 Gergely Nagy <algernon@balabit.hu>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -32,7 +32,7 @@ typedef struct _ValuePairsTransformSet ValuePairsTransformSet;
 
 ValuePairsTransform *value_pairs_new_transform_add_prefix (const gchar *prefix);
 ValuePairsTransform *value_pairs_new_transform_shift (gint amount);
-ValuePairsTransform *value_pairs_new_transform_replace(const gchar *prefix, const gchar *new_prefix);
+ValuePairsTransform *value_pairs_new_transform_replace_prefix(const gchar *prefix, const gchar *new_prefix);
 void value_pairs_transform_free(ValuePairsTransform *t);
 
 ValuePairsTransformSet *value_pairs_transform_set_new(const gchar *glob);

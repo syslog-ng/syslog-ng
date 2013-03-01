@@ -769,8 +769,8 @@ vp_cmdline_rekey_verify (gchar *key, ValuePairsTransformSet *vpts,
 
 
 static gboolean
-vp_cmdline_parse_rekey_replace (const gchar *option_name, const gchar *value,
-                                gpointer data, GError **error)
+vp_cmdline_parse_rekey_replace_prefix (const gchar *option_name, const gchar *value,
+                                       gpointer data, GError **error)
 {
   gpointer *args = (gpointer *) data;
   ValuePairsTransformSet *vpts = (ValuePairsTransformSet *) args[2];
@@ -781,20 +781,20 @@ vp_cmdline_parse_rekey_replace (const gchar *option_name, const gchar *value,
   if (!vpts)
     {
       g_set_error (error, G_OPTION_ERROR, G_OPTION_ERROR_FAILED,
-                   "Error parsing value-pairs: --replace used without --key or --rekey");
+                   "Error parsing value-pairs: --replace-prefix used without --key or --rekey");
       return FALSE;
     }
 
   if (!g_strstr_len (value, strlen (value), "="))
     {
       g_set_error (error, G_OPTION_ERROR, G_OPTION_ERROR_BAD_VALUE,
-                   "Error parsing value-pairs: rekey replace construct should be in the format string=replacement");
+                   "Error parsing value-pairs: rekey replace-prefix construct should be in the format string=replacement");
       return FALSE;
     }
 
   kv = g_strsplit(value, "=", 2);
   value_pairs_transform_set_add_func
-    (vpts, value_pairs_new_transform_replace (kv[0], kv[1]));
+    (vpts, value_pairs_new_transform_replace_prefix (kv[0], kv[1]));
 
   g_free (kv[0]);
   g_free (kv[1]);
@@ -868,8 +868,10 @@ value_pairs_new_from_cmdline (GlobalConfig *cfg,
       NULL, NULL },
     { "add-prefix", 'A', 0, G_OPTION_ARG_CALLBACK, vp_cmdline_parse_rekey_add_prefix,
       NULL, NULL },
-    { "replace", 'R', 0, G_OPTION_ARG_CALLBACK, vp_cmdline_parse_rekey_replace,
+    { "replace-prefix", 'R', 0, G_OPTION_ARG_CALLBACK, vp_cmdline_parse_rekey_replace_prefix,
       NULL, NULL },
+    { "replace", 0, G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_CALLBACK,
+      vp_cmdline_parse_rekey_replace_prefix, NULL, NULL },
     { G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_CALLBACK, vp_cmdline_parse_pair,
       NULL, NULL },
     { NULL }

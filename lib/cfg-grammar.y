@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -301,7 +301,7 @@ extern struct _LogParser *last_parser;
 %token KW_SHIFT                       10506
 %token KW_REKEY                       10507
 %token KW_ADD_PREFIX                  10508
-%token KW_REPLACE                     10509
+%token KW_REPLACE_PREFIX              10509
 
 /* END_DECLS */
 
@@ -1099,7 +1099,7 @@ vp_rekey_options
 vp_rekey_option
 	: KW_SHIFT '(' LL_NUMBER ')' { value_pairs_transform_set_add_func(last_vp_transset, value_pairs_new_transform_shift($3)); }
 	| KW_ADD_PREFIX '(' string ')' { value_pairs_transform_set_add_func(last_vp_transset, value_pairs_new_transform_add_prefix($3)); free($3); }
-	| KW_REPLACE '(' string string ')' { value_pairs_transform_set_add_func(last_vp_transset, value_pairs_new_transform_replace($3, $4)); free($3); free($4); }
+	| KW_REPLACE_PREFIX '(' string string ')' { value_pairs_transform_set_add_func(last_vp_transset, value_pairs_new_transform_replace_prefix($3, $4)); free($3); free($4); }
 	;
 
 /* END_RULES */

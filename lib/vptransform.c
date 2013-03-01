@@ -69,7 +69,7 @@ typedef struct
   gchar *new_prefix;
   gint new_prefix_len;
   gint old_prefix_len;
-} VPTransReplace;
+} VPTransReplacePrefix;
 
 static void
 vp_trans_init(ValuePairsTransform *t,
@@ -153,12 +153,12 @@ value_pairs_new_transform_shift (gint amount)
   return (ValuePairsTransform *)vpt;
 }
 
-/* replace() */
+/* replace-prefix() */
 
 static void
-vp_trans_replace(ValuePairsTransform *t, SBGString *key)
+vp_trans_replace_prefix(ValuePairsTransform *t, SBGString *key)
 {
-  VPTransReplace *self = (VPTransReplace *)t;
+  VPTransReplacePrefix *self = (VPTransReplacePrefix *)t;
 
   if (strncmp(self->old_prefix, sb_gstring_string(key)->str,
               self->old_prefix_len) != 0)
@@ -170,23 +170,23 @@ vp_trans_replace(ValuePairsTransform *t, SBGString *key)
 }
 
 static void
-vp_trans_replace_destroy(ValuePairsTransform *t)
+vp_trans_replace_prefix_destroy(ValuePairsTransform *t)
 {
-  VPTransReplace *self = (VPTransReplace *)t;
+  VPTransReplacePrefix *self = (VPTransReplacePrefix *)t;
 
   g_free(self->old_prefix);
   g_free(self->new_prefix);
 }
 
 ValuePairsTransform *
-value_pairs_new_transform_replace(const gchar *prefix, const gchar *new_prefix)
+value_pairs_new_transform_replace_prefix(const gchar *prefix, const gchar *new_prefix)
 {
-  VPTransReplace *vpt;
+  VPTransReplacePrefix *vpt;
 
-  vpt = g_new(VPTransReplace, 1);
+  vpt = g_new(VPTransReplacePrefix, 1);
   vp_trans_init((ValuePairsTransform *)vpt,
-                vp_trans_replace,
-                vp_trans_replace_destroy);
+                vp_trans_replace_prefix,
+                vp_trans_replace_prefix_destroy);
 
   vpt->old_prefix = g_strdup(prefix);
   vpt->old_prefix_len = strlen(prefix);
