@@ -6,5 +6,6 @@ void test_log_proto_server_options(void);
 void test_log_proto_record_server(void);
 void test_log_proto_text_server(void);
 void test_log_proto_dgram_server(void);
+void test_log_proto_framed_server(void);
 
 #endif
