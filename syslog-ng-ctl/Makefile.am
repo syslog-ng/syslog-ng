@@ -11,4 +11,4 @@ else
 syslog_ng_ctl_SOURCES += control_client_posix.c
 endif
 
-syslog_ng_ctl_LDADD =  @BASE_LIBS@ @GLIB_LIBS@ @RESOLV_LIBS@ -L../lib/.libs -lsyslog-ng
+syslog_ng_ctl_LDADD =  $(SYSLOG_NG_LIBS)

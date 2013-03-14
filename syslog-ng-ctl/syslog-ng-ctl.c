@@ -113,7 +113,7 @@ static GOptionEntry stats_options[] =
 };
 
 const gchar *
-slng_mode(int *argc, char **argv[])
+get_mode(int *argc, char **argv[])
 {
   gint i;
   const gchar *mode;
@@ -179,7 +179,7 @@ main(int argc, char *argv[])
 
   control_name = get_reloc_string(PATH_CONTROL_SOCKET);
 
-  mode_string = slng_mode(&argc, &argv);
+  mode_string = get_mode(&argc, &argv);
   if (!mode_string)
     {
       usage(argv[0]);

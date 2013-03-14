@@ -31,6 +31,12 @@ typedef struct _PersistState PersistState;
 typedef guint32 PersistEntryHandle;
 typedef struct _rcptcfg rcptcfg;
 
+typedef enum _PersistStateMode {
+  persist_mode_normal = 0,
+  persist_mode_dump,
+  persist_mode_edit
+} PersistStateMode;
+
 gpointer persist_state_map_entry(PersistState *self, PersistEntryHandle handle);
 void persist_state_unmap_entry(PersistState *self, PersistEntryHandle handle);
 
@@ -46,6 +52,8 @@ void persist_state_free_entry(PersistEntryHandle handle);
 gboolean persist_state_start(PersistState *self);
 gboolean persist_state_commit(PersistState *self);
 void persist_state_cancel(PersistState *self);
+void persist_state_set_dump_mode(PersistState *self, gboolean dump);
+void persist_state_set_mode(PersistState *self, PersistStateMode mode);
 
 PersistState *persist_state_new(const gchar *filename);
 void persist_state_free(PersistState *self);
@@ -55,5 +63,10 @@ PersistEntryHandle persist_state_get_rcptcfg_handle(void);
 
 void persist_state_set_rcptcfg_state(PersistState *state);
 void persist_state_set_rcptcfg_handle(PersistEntryHandle handle);
+
+gint persist_state_get_version(PersistState *self);
+gsize persist_state_get_allocated_size(PersistState *self, PersistEntryHandle handle);
+
+GList *persist_state_get_key_list(PersistState *self);
 
 #endif

@@ -175,6 +175,8 @@ typedef gboolean(* mangle_callback)(GlobalConfig *cfg, LogMessage *msg, gpointer
 
 void register_source_mangle_callback(GlobalConfig *src,mangle_callback cb);
 void uregister_source_mangle_callback(GlobalConfig *src,mangle_callback cb);
+
+void cfg_generate_persist_file(GlobalConfig *cfg, const gchar *persist_filename);
 /*
   The function has to return with the calculated hash and set the cfg_fingerprint tag of the cfg
 */

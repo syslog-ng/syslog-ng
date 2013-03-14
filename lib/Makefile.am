@@ -6,7 +6,7 @@ YFLAGS=@YFLAGS@
 export top_srcdir
 
 lib_LTLIBRARIES = libsyslog-ng.la
-libsyslog_ng_la_LIBADD = @CORE_DEPS_LIBS@ @OPENSSL_LIBS@ $(PCRE_LIBS)
+libsyslog_ng_la_LIBADD = @CORE_DEPS_LIBS@ @OPENSSL_LIBS@ $(PCRE_LIBS) -ljson
 libsyslog_ng_la_LDFLAGS = -no-undefined -release @LIBSYSLOGNG_VERSION@
 libsyslog_ng_la_CFLAGS = -DLIBSYSLOG_NG
 
@@ -66,6 +66,7 @@ pkginclude_HEADERS = 		\
 	scratch-buffers.h	\
 	serialize.h		\
 	sgroup.h		\
+	state.h			\
 	stats.h			\
 	str-format.h		\
 	syslog-names.h		\
@@ -146,6 +147,7 @@ libsyslog_ng_la_SOURCES = \
 	scratch-buffers.c	\
 	serialize.c		\
 	sgroup.c		\
+	state.c			\
 	stats.c			\
 	str-format.c		\
 	syslog-names.c		\

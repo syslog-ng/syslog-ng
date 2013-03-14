@@ -743,6 +743,12 @@ file_monitor_free(FileMonitor *self)
     }
   if (self->sources)
     {
+      GSList *source_list = self->sources;
+      while(source_list)
+        {
+          g_free(source_list->data);
+          source_list = source_list->next;
+        }
       g_slist_free(self->sources);
       self->sources = NULL;
     }

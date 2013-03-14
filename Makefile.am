@@ -1,4 +1,4 @@
-SUBDIRS = lib libtest modules syslog-ng syslog-ng-ctl scripts tests doc contrib scl debian tgz2build build winbuild
+SUBDIRS = lib libtest modules syslog-ng syslog-ng-ctl persist-tool scripts tests doc contrib scl debian tgz2build build winbuild
 
 # tests from pe
 SUBDIRS += pe-tests

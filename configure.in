@@ -1471,6 +1471,7 @@ AC_OUTPUT(dist.conf
 	        libtest/Makefile
           syslog-ng/Makefile
           syslog-ng-ctl/Makefile
+          persist-tool/Makefile
           modules/Makefile
           modules/dummy/Makefile
           modules/basic-proto/Makefile
@@ -1508,7 +1509,9 @@ dnl PE modules
 	modules/confighash/Makefile
 	modules/snmp/Makefile
 	modules/afsqlsource/Makefile
+  modules/afsqlsource/tests/Makefile
   modules/rltp-proto/Makefile
+  modules/rltp-proto/tests/Makefile
   modules/windows-resource/Makefile
 	pe-tests/Makefile
 	pe-tests/unit/Makefile

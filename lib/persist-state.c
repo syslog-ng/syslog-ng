@@ -126,6 +126,7 @@ typedef struct _PersistFileHeader
  * the file you need to check it whether it is inside the mapped file.
  *
  */
+
 struct _PersistState
 {
   gint version;
@@ -145,6 +146,9 @@ struct _PersistState
   PersistEntryHandle current_key_block;
   gint current_key_ofs;
   gint current_key_size;
+
+  /* This is required because of state dump function */
+  PersistStateMode mode;
 };
 
 struct _rcptcfg{
@@ -169,6 +173,23 @@ typedef struct _PersistValueHeader
 static rcptcfg g_rcptcfg;
 
 /* lowest layer, "store" functions manage the file on disk */
+
+gint
+persist_state_get_version(PersistState *self)
+{
+  return self->version;
+}
+
+gsize
+persist_state_get_allocated_size(PersistState *self, PersistEntryHandle handle)
+{
+  PersistValueHeader *header;
+  gsize result = 0;
+  header = (PersistValueHeader *) persist_state_map_entry(self, handle - sizeof(PersistValueHeader));
+  result = header->size;
+  persist_state_unmap_entry(self, handle);
+  return result;
+}
 
 static gboolean
 persist_state_grow_store(PersistState *self, guint32 new_size)
@@ -236,6 +257,7 @@ persist_state_commit_store(PersistState *self)
 {
   /* NOTE: we don't need to remap the file in case it is renamed */
   gboolean result;
+  gint rename_result;
 #ifdef _WIN32
   guint32 temp_size = self->current_size;
   munmap(self->current_map,self->current_size);
@@ -244,7 +266,8 @@ persist_state_commit_store(PersistState *self)
   self->current_size = 0;
   unlink(self->commited_filename);
 #endif
-  result = rename(self->temp_filename, self->commited_filename) >= 0;
+  rename_result = rename(self->temp_filename, self->commited_filename);
+  result = rename_result >= 0;
 #ifdef _WIN32
   self->fd = open(self->commited_filename, O_RDWR, 0600);
   if (self->fd < 0)
@@ -343,12 +366,13 @@ gboolean
 persist_state_rename_entry(PersistState *self, const gchar *old_key, const gchar *new_key)
 {
   PersistEntry *entry;
+  gpointer old_orig_key;
 
-  entry = g_hash_table_lookup(self->keys, old_key);
-  if (entry)
+  if (g_hash_table_lookup_extended(self->keys, old_key, &old_orig_key, (gpointer *)&entry))
     {
       if (g_hash_table_steal(self->keys, old_key))
         {
+          g_free(old_orig_key);
           g_hash_table_insert(self->keys, g_strdup(new_key), entry);
           return TRUE;
         }
@@ -580,7 +604,7 @@ persist_state_load_v4(PersistState *self)
                     }
 
                   header = (PersistValueHeader *) ((gchar *) map + entry_ofs - sizeof(PersistValueHeader));
-                  if (header->in_use)
+                  if (header->in_use || (self->mode != persist_mode_normal))
                     {
                       gpointer new_block;
                       PersistEntryHandle new_handle;
@@ -645,6 +669,7 @@ persist_state_load_v4(PersistState *self)
                 }
             }
         }
+      serialize_archive_free(sa);
     }
  free_and_exit:
   munmap(map, file_size);
@@ -671,7 +696,7 @@ persist_state_load(PersistState *self)
           msg_error("Persistent configuration file is in invalid format, ignoring",
                     evt_tag_id(MSG_PERSIST_FILE_FORMAT_ERROR),
                     NULL);
-          success = TRUE;
+          success = self->mode == persist_mode_dump ? FALSE : TRUE;
           goto close_and_exit;
         }
       version = magic[3] - '0';
@@ -882,6 +907,7 @@ persist_state_start(PersistState *self)
 gboolean
 persist_state_commit(PersistState *self)
 {
+  g_assert(self->mode != persist_mode_dump);
   if (!persist_state_commit_store(self))
   {
     msg_error("Can't rename files",
@@ -903,20 +929,36 @@ void
 persist_state_cancel(PersistState *self)
 {
   gchar *commited_filename, *temp_filename;
+  GMutex *mapped_lock;
+  GCond *mapped_release_cond;
 
+  g_assert(self->mapped_counter == 0);
   close(self->fd);
   munmap(self->current_map, self->current_size);
   unlink(self->temp_filename);
   g_hash_table_destroy(self->keys);
   commited_filename = self->commited_filename;
   temp_filename = self->temp_filename;
+  mapped_lock = self->mapped_lock;
+  mapped_release_cond = self->mapped_release_cond;
+
   memset(self, 0, sizeof(*self));
+
   self->commited_filename = commited_filename;
   self->temp_filename = temp_filename;
   self->fd = -1;
   self->keys = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
   self->current_ofs = sizeof(PersistFileHeader);
   self->version = 4;
+  self->mapped_lock = mapped_lock;
+  self->mapped_release_cond = mapped_release_cond;
+
+}
+
+void
+persist_state_set_mode(PersistState *self, PersistStateMode mode)
+{
+  self->mode = mode;
 }
 
 PersistState *
@@ -940,6 +982,10 @@ persist_state_free(PersistState *self)
   g_mutex_lock(self->mapped_lock);
   g_assert(self->mapped_counter == 0);
   g_mutex_unlock(self->mapped_lock);
+
+  close(self->fd);
+  munmap(self->current_map, self->current_size);
+
   g_mutex_free(self->mapped_lock);
   g_cond_free(self->mapped_release_cond);
   g_free(self->temp_filename);
@@ -970,4 +1016,10 @@ void
 persist_state_set_rcptcfg_handle(PersistEntryHandle handle)
 {
   g_rcptcfg.handle = handle;
+}
+
+GList *
+persist_state_get_key_list(PersistState *self)
+{
+  return g_hash_table_get_keys(self->keys);
 }

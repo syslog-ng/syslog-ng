@@ -95,6 +95,10 @@ log_driver_free(LogPipe *s)
     {
       log_driver_plugin_free((LogDriverPlugin *) l->data);
     }
+  if (self->plugins)
+    {
+      g_list_free(self->plugins);
+    }
   log_pipe_unref(&self->drv_next->super);
   self->drv_next = NULL;
   if (self->group)

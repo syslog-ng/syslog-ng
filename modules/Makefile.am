@@ -7,4 +7,8 @@ SUBDIRS += agent-config eventlog windows-resource
 SUBDIRS += afmongodb
 
 # pe modules
-SUBDIRS += license afsqlsource confighash diskq logstore rltp-proto snmp
+SUBDIRS += license confighash diskq logstore rltp-proto snmp
+
+if !IS_WINDOWS
+SUBDIRS += afsqlsource
+endif

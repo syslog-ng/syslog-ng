@@ -30,6 +30,7 @@
 #include "mainloop.h"
 #include "filemonitor.h"
 #include "versioning.h"
+#include "state.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -139,7 +140,7 @@ affile_sd_format_persist_name(AFFileSourceDriver *self)
 {
   static gchar persist_name[1024];
   
-  g_snprintf(persist_name, sizeof(persist_name), "affile_sd_curpos(%s)", self->filename->str);
+  g_snprintf(persist_name, sizeof(persist_name), "%s(%s)", FILE_CURPOS_PREFIX, self->filename->str);
   return persist_name;
 }
  
@@ -651,6 +652,95 @@ affile_sd_free(LogPipe *s)
   log_src_driver_free(s);
 }
 
+void
+affile_sd_set_file_pos(AFFileSourceDriver *self, GlobalConfig *cfg)
+{
+  STATE_HANDLER_CONSTRUCTOR state_handler_constructor;
+  StateHandler *state_handler;
+  NameValueContainer *container;
+  gpointer *state_entry;
+  struct stat st;
+
+  if (stat(self->filename->str, &st) == -1)
+    {
+      return;
+    }
+
+  state_handler_constructor = state_handler_get_constructor_by_prefix(FILE_CURPOS_PREFIX);
+  if (!state_handler_constructor)
+    {
+      return;
+    }
+  state_handler = state_handler_constructor(cfg->state, affile_sd_format_persist_name(self));
+  if (!state_handler)
+    {
+      return;
+    }
+  if (state_handler_alloc_state(state_handler) == 0)
+    {
+      state_handler_free(state_handler);
+    }
+  state_entry = state_handler_get_state(state_handler);
+  memset(state_entry, 0, state_handler->size);
+  container = state_handler_dump_state(state_handler);
+  name_value_container_add_int(container, "version", 1);
+  name_value_container_add_boolean(container, "big_endian", (G_BYTE_ORDER == G_BIG_ENDIAN));
+  name_value_container_add_int64(container, "file_size", st.st_size);
+  name_value_container_add_int64(container, "file_inode", st.st_ino);
+  name_value_container_add_int64(container, "raw_stream_pos", st.st_size);
+  state_handler_load_state(state_handler, container, NULL);
+  state_handler_free(state_handler);
+  name_value_container_free(container);
+  return;
+}
+
+static gboolean
+affile_sd_collect_files(const gchar *filename, gpointer s, FileActionType action_type)
+{
+  gpointer *args = (gpointer *)s;
+  AFFileSourceDriver *self = (AFFileSourceDriver*)args[0];
+  GlobalConfig *cfg = (GlobalConfig *)args[1];
+
+  if (filename != END_OF_LIST)
+    {
+      if (self->filename)
+        {
+          g_string_free(self->filename, TRUE);
+        }
+      self->filename = g_string_new(filename);
+      affile_sd_set_file_pos(self, cfg);
+    }
+  else
+    {
+      if (self->filename)
+        {
+          g_string_free(self->filename, TRUE);
+        }
+      self->filename = NULL;
+    }
+  return TRUE;
+}
+
+gboolean
+affile_sd_skip_old_messages(LogSrcDriver *s, GlobalConfig *cfg)
+{
+  AFFileSourceDriver *self = (AFFileSourceDriver *)s;
+  if (self->file_monitor)
+    {
+      gpointer args[] = {self, cfg};
+      file_monitor_set_file_callback(self->file_monitor, affile_sd_collect_files, args);
+      if (!file_monitor_watch_directory(self->file_monitor, self->filename->str))
+        {
+          return FALSE;
+        }
+    }
+  else
+    {
+      affile_sd_set_file_pos(self, cfg);
+    }
+  return TRUE;
+}
+
 LogDriver *
 affile_sd_new(gchar *filename, guint32 flags)
 {
@@ -664,6 +754,7 @@ affile_sd_new(gchar *filename, guint32 flags)
   self->super.super.super.deinit = affile_sd_deinit;
   self->super.super.super.notify = affile_sd_notify;
   self->super.super.super.free_fn = affile_sd_free;
+  self->super.skip_old_messages = affile_sd_skip_old_messages;
   log_reader_options_defaults(&self->reader_options);
   self->reader_options.parse_options.flags |= LP_LOCAL;
 

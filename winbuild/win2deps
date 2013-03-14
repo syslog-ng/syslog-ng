@@ -21,3 +21,5 @@ libwinpcap
 libwinpcap-dev
 libnet1
 libnet1-dev
+libjsonc0
+libjsonc-dev

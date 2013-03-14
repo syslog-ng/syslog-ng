@@ -2304,24 +2304,24 @@ log_msg_init_rcptid(PersistState *state)
   if (persist_state_get_rcptcfg_handle())
   {
     data = persist_state_map_entry(persist_state_get_rcptcfg_state(),persist_state_get_rcptcfg_handle());
-    if (data->version > 0)
+    if (data->super.version > 0)
     {
        msg_error("Internal error restoring log reader state, stored data is too new",
-                evt_tag_int("version", data->version),
+                evt_tag_int("version", data->super.version),
                 evt_tag_id(MSG_UNKNOWN_RCPTID_STATE_VERSION),
                 NULL);
        return FALSE;
     }
     else
     {
-      g_rcptidstate.version = 0;
-      if ((data->big_endian && G_BYTE_ORDER == G_LITTLE_ENDIAN) ||
-          (!data->big_endian && G_BYTE_ORDER == G_BIG_ENDIAN))
+      g_rcptidstate.super.version = 0;
+      if ((data->super.big_endian && G_BYTE_ORDER == G_LITTLE_ENDIAN) ||
+          (!data->super.big_endian && G_BYTE_ORDER == G_BIG_ENDIAN))
       {
-        data->big_endian = !data->big_endian;
+        data->super.big_endian = !data->super.big_endian;
         data->g_rcptid = GUINT64_SWAP_LE_BE(data->g_rcptid);
       }
-      g_rcptidstate.big_endian = data->big_endian;
+      g_rcptidstate.super.big_endian = data->super.big_endian;
       g_rcptidstate.g_rcptid = data->g_rcptid;
     }
     persist_state_unmap_entry(persist_state_get_rcptcfg_state(),persist_state_get_rcptcfg_handle());
@@ -2330,8 +2330,8 @@ log_msg_init_rcptid(PersistState *state)
   {
     persist_state_set_rcptcfg_handle(persist_state_alloc_entry(state, "next.rcptid", sizeof(RcptidState)));
     data = persist_state_map_entry(persist_state_get_rcptcfg_state(),persist_state_get_rcptcfg_handle());
-    data->version = g_rcptidstate.version = 0;
-    data->big_endian = g_rcptidstate.big_endian = (G_BYTE_ORDER == G_BIG_ENDIAN);
+    data->super.version = g_rcptidstate.super.version = 0;
+    data->super.big_endian = g_rcptidstate.super.big_endian = (G_BYTE_ORDER == G_BIG_ENDIAN);
     data->g_rcptid = g_rcptidstate.g_rcptid = 1;
     persist_state_unmap_entry(persist_state_get_rcptcfg_state(),persist_state_get_rcptcfg_handle());
   }

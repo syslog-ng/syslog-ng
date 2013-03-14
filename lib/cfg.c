@@ -600,6 +600,9 @@ cfg_free(GlobalConfig *self)
   g_free(self->dns_cache_hosts);
   g_list_free(self->plugins);
   g_free(self->custom_domain);
+  g_free(self->cfg_processed_config);
+  g_free(self->cfg_hash);
+  g_free(self->cfg_fingerprint);
   g_free(self);
 }
 
@@ -682,6 +685,36 @@ void register_source_mangle_callback(GlobalConfig *src,mangle_callback cb)
 void uregister_source_mangle_callback(GlobalConfig *src,mangle_callback cb)
 {
   src->source_mangle_callback_list = g_list_remove(src->source_mangle_callback_list,cb);
+}
+
+static void
+cfg_group_generate_persist(gpointer key, gpointer value, gpointer user_data)
+{
+  GlobalConfig *cfg = (GlobalConfig *)user_data;
+  LogSourceGroup *group = (LogSourceGroup *)value;
+  LogSrcDriver *driver = (LogSrcDriver *)group->drivers;
+  while(driver)
+    {
+      log_src_driver_skip_old_messages(driver, cfg);
+      driver = (LogSrcDriver *)driver->super.drv_next;
+    }
+}
+
+
+void
+cfg_generate_persist_file(GlobalConfig *cfg, const gchar *persist_filename)
+{
+  g_assert(cfg->state);
+
+  persist_state_set_mode(cfg->state, persist_mode_edit);
+  persist_state_start(cfg->state);
+
+  g_hash_table_foreach(cfg->sources, cfg_group_generate_persist, cfg);
+
+  persist_state_commit(cfg->state);
+  persist_state_free(cfg->state);
+
+  cfg->state = persist_state_new(persist_filename);
 }
 
 #if ENABLE_SSL

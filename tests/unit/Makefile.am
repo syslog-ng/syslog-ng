@@ -1,6 +1,6 @@
 # we need the dotdot version of the include path to find generated headers
-AM_CFLAGS = -I$(top_srcdir)/lib -I$(top_srcdir)/libtest -I../../lib
-AM_LDFLAGS = -dlpreopen  $(top_builddir)/lib/libsyslog-ng.la -dlpreopen $(top_builddir)/modules/syslogformat/libsyslogformat.la  $(top_builddir)/modules/basic-proto/libbasic-proto.la
+AM_CFLAGS = -I$(top_srcdir)/lib -I$(top_srcdir)/libtest -I../../lib -I$(top_srcdir)/modules/basic-proto
+AM_LDFLAGS = -dlpreopen  $(top_builddir)/lib/libsyslog-ng.la -dlpreopen $(top_builddir)/modules/syslogformat/libsyslogformat.la $(top_builddir)/modules/basic-proto/libbasic-proto.la
 LIBS = @TOOL_DEPS_LIBS@
 LDADD = $(top_builddir)/lib/libsyslog-ng.la $(top_builddir)/libtest/libsyslog-ng-test.a @TOOL_DEPS_LIBS@
 
@@ -20,6 +20,8 @@ check_PROGRAMS =			\
 	test_findcrlf			\
 	test_tags			\
 	test_logwriter			\
+	test_state \
+	test_buffered_proto_state \
 	test_serialize			\
 	test_value_pairs		\
 	test_filereader			\
@@ -89,5 +91,7 @@ test_data_to_hex_SOURCES = test_data_to_hex.c
 test_cache_SOURCES = test_cache.c
 test_control_cmds_SOURCES = test_control_cmds.c
 test_control_connection_SOURCES = test_control_connection.c
+test_state_SOURCES = test_state.c
+test_buffered_proto_state_SOURCES = test_buffered_proto_state.c
 
 TESTS = $(check_PROGRAMS)

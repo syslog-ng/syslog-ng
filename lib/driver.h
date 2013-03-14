@@ -130,12 +130,23 @@ typedef struct _LogSrcDriver LogSrcDriver;
 struct _LogSrcDriver
 {
   LogDriver super;
+  gboolean (*skip_old_messages)(LogSrcDriver *self, GlobalConfig *cfg);
 };
 
 static inline gboolean
 log_src_driver_init_method(LogPipe *s)
 {
   return log_driver_init_method(s);
+}
+
+static inline gboolean
+log_src_driver_skip_old_messages(LogSrcDriver *self, GlobalConfig *cfg)
+{
+  if (self->skip_old_messages)
+    {
+      return self->skip_old_messages(self, cfg);
+    }
+  return TRUE;
 }
 
 static inline gboolean

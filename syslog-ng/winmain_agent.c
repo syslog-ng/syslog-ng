@@ -62,6 +62,7 @@ gboolean event_log = FALSE;
 extern gboolean debug_flag;
 extern gboolean verbose_flag;
 extern gchar *preprocess_into;
+extern gboolean generate_persist_file;
 gboolean remove_service = FALSE;
 gchar *xml_config_file_name = NULL;
 gchar **other_options = NULL;
@@ -121,6 +122,7 @@ static GOptionEntry application_options[] =
   {"cfgfile",         'f', G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_STRING, &cfgfilename, "Set config file name, default=" PATH_SYSLOG_NG_CONF, "<config>" },
   {"quiet",           'Q', G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_NONE, &quiet , NULL, NULL},
   {"preprocess-into",  0,  G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_STRING, &preprocess_into, "Write the preprocessed configuration file to the file specified", "output" },
+  {"skip-old-msg",    's', 0, G_OPTION_ARG_NONE, &generate_persist_file, "Skip old messages", NULL},
   {NULL},
 };
 

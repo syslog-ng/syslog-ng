@@ -36,6 +36,8 @@
 #include "scratch-buffers.h"
 #include "reloc.h"
 #include "compat.h"
+#include "sgroup.h"
+#include "driver.h"
 
 #include <sys/types.h>
 
@@ -97,6 +99,7 @@
 /* parsed command line arguments */
 gchar *preprocess_into = NULL;
 gboolean syntax_only = FALSE;
+gboolean generate_persist_file = FALSE;
 guint32 g_run_id;
 
 /* USED ONLY IN PREMIUM EDITION */
@@ -561,6 +564,10 @@ main_loop_initialize_state(GlobalConfig *cfg, const gchar *persist_filename)
   gboolean success;
 
   cfg->state = persist_state_new(persist_filename);
+  if (generate_persist_file && !g_file_test(persist_filename, G_FILE_TEST_EXISTS))
+    {
+      cfg_generate_persist_file(cfg, persist_filename);
+    }
   if (!persist_state_start(cfg->state))
     return FALSE;
 
@@ -909,6 +916,7 @@ static GOptionEntry main_loop_options[] =
   { "worker-threads",      0,         0, G_OPTION_ARG_INT, &main_loop_io_workers.max_threads, "Set the number of I/O worker threads", "<max>" },
   { "syntax-only",       's',         0, G_OPTION_ARG_NONE, &syntax_only, "Only read and parse config file", NULL},
   { "control",           'c',         0, G_OPTION_ARG_STRING, &ctlfilename, "Set syslog-ng control socket, default=" PATH_CONTROL_SOCKET, "<ctlpath>" },
+  { "skip-old-msg",    0, 0, G_OPTION_ARG_NONE, &generate_persist_file, "Skip old messages", NULL},
   { NULL },
 };
 

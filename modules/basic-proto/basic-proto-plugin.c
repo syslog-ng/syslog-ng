@@ -291,6 +291,7 @@ gboolean
 basic_proto_module_init(GlobalConfig *cfg, CfgArgs *args)
 {
   plugin_register(cfg, proto_plugins, G_N_ELEMENTS(proto_plugins));
+  state_handler_register_constructor(FILE_CURPOS_PREFIX, log_proto_buffered_server_state_handler_new);
   return TRUE;
 }
 

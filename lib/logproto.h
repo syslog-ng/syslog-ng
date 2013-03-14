@@ -27,11 +27,13 @@
 
 #include "logtransport.h"
 #include "persist-state.h"
+#include "state.h"
 #include "tlscontext.h"
 
 #include <pcre.h>
 
 #define MAX_STATE_DATA_LENGTH 128
+#define FILE_CURPOS_PREFIX "affile_sd_curpos"
 
 typedef struct _AckDataBase
 {
@@ -117,6 +119,7 @@ struct _LogProto
   /* This function is available only the object is _LogProtoTextServer */
   void (*get_info)(LogProto *s, guint64 *pos);
   void (*get_state)(LogProto *s, gpointer user_data);
+  void (*apply_state)(LogProto *s, StateHandler *state_handler);
   gboolean (*ack)(PersistState *state, gpointer user_data, gboolean need_to_save);
   LogProtoAckMessages ack_callback;
   gboolean (*is_reliable)(LogProto *s);
@@ -125,6 +128,15 @@ struct _LogProto
   PersistState *state;
   LogProtoOptions *options;
 };
+
+static inline void
+log_proto_apply_state(LogProto *s, StateHandler *state_handler)
+{
+  if (s->apply_state)
+    {
+      s->apply_state(s, state_handler);
+    }
+}
 
 static inline void
 log_proto_set_options(LogProto *s,LogProtoOptions *options)

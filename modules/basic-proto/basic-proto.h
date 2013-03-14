@@ -27,6 +27,7 @@
 
 #include "logtransport.h"
 #include "logproto.h"
+#include "state.h"
 
 /* flags for log proto plain server */
 /* end-of-packet terminates log message (UDP sources) */
@@ -52,4 +53,5 @@ LogProto *log_proto_record_server_new_plugin(LogTransport *transport,LogProtoOpt
 LogProto *log_proto_dgram_server_new_plugin(LogTransport *transport,LogProtoOptions *options,GlobalConfig *cfg);
 LogProto *log_proto_file_reader_new_plugin(LogTransport *transport,LogProtoOptions *options,GlobalConfig *cfg);
 
+StateHandler* log_proto_buffered_server_state_handler_new(PersistState *persist_state, const gchar *name);
 #endif

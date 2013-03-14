@@ -34,6 +34,7 @@
 #include "msg-format.h"
 #include "tags.h"
 #include "compat.h"
+#include "state.h"
 
 #include <sys/types.h>
 #include <iv_list.h>
@@ -54,8 +55,7 @@ typedef struct _LogPathOptions LogPathOptions;
 
 typedef struct _RcptidState
 {
-  guint8 version;
-  guint8 big_endian:1;
+  BaseState super;
   guint64 g_rcptid;
 } RcptidState;
 

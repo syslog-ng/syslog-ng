@@ -65,6 +65,7 @@ static gboolean install = FALSE;
 static gboolean uninstall = FALSE;
 static gboolean start = FALSE;
 static gboolean stop = FALSE;
+extern gboolean generate_persist_file;
 extern gchar *preprocess_into;
 
 #define SERVER_SERVICE_NAME "syslog-ng"
@@ -91,6 +92,7 @@ static GOptionEntry syslogng_options[] =
   { "uninstall",         'U',         0, G_OPTION_ARG_NONE, &uninstall, "Uninstall service", NULL},
   { "start",              0,         0, G_OPTION_ARG_NONE, &start, "Start service", NULL},
   { "stop",              0,         0, G_OPTION_ARG_NONE, &stop, "Stop service", NULL},
+  { "skip-old-msg",    's', 0, G_OPTION_ARG_NONE, &generate_persist_file, "Skip old messages", NULL},
   { NULL },
 };
 

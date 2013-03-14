@@ -232,6 +232,10 @@ file_monitor_stop(FileMonitor *s)
 {
   FileMonitorWindows *self = (FileMonitorWindows *)s;
 
+  if (iv_handle_registered(&self->monitor_handler))
+    {
+      iv_handle_unregister(&self->monitor_handler);
+    }
   CloseHandle(self->hDir);
   return TRUE;
 }

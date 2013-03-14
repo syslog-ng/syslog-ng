@@ -1419,6 +1419,7 @@ afsocket_dd_free(LogPipe *s)
       self->server_name_list = g_list_delete_link(self->server_name_list, self->server_name_list);
     }
 
+
   log_writer_options_destroy(&self->writer_options);
   g_sockaddr_unref(self->bind_addr);
   g_sockaddr_unref(self->dest_addr);
