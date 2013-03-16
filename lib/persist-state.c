@@ -687,6 +687,7 @@ void
 persist_state_unmap_entry(PersistState *self, PersistEntryHandle handle)
 {
   g_mutex_lock(self->mapped_lock);
+  g_assert(self->mapped_counter >= 1);
   self->mapped_counter--;
   if (self->mapped_counter == 0)
     {
