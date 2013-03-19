@@ -551,13 +551,13 @@ log_proto_buffered_server_prepare(LogProtoServer *s, gint *fd, GIOCondition *con
 }
 
 static gint
-log_proto_buffered_server_read_data(LogProtoBufferedServer *self, guchar *buf, gsize len, GSockAddr **sa)
+log_proto_buffered_server_read_data_method(LogProtoBufferedServer *self, guchar *buf, gsize len, GSockAddr **sa)
 {
   return log_transport_read(self->super.transport, buf, len, sa);
 }
 
-static LogProtoStatus
-log_proto_buffered_server_fetch_from_buffer(LogProtoBufferedServer *self, const guchar **msg, gsize *msg_len)
+static gboolean
+log_proto_buffered_server_fetch_from_buffer(LogProtoBufferedServer *self, const guchar **msg, gsize *msg_len, GSockAddr **sa)
 {
   gsize buffer_bytes;
   const guchar *buffer_start;
@@ -587,22 +587,34 @@ log_proto_buffered_server_fetch_from_buffer(LogProtoBufferedServer *self, const 
     }
 
   success = self->fetch_from_buffer(self, buffer_start, buffer_bytes, msg, msg_len);
+  if (sa)
+    *sa = g_sockaddr_ref(self->prev_saddr);
  exit:
   log_proto_buffered_server_put_state(self);
   return success;
 }
 
 static inline void
-log_proto_buffered_server_allocate_buffer(LogProtoBufferedServer *self)
+log_proto_buffered_server_allocate_buffer(LogProtoBufferedServer *self, LogProtoBufferedServerState *state)
 {
-  if (G_UNLIKELY(!self->buffer))
-    {
-      LogProtoBufferedServerState *state = log_proto_buffered_server_get_state(self);
+  state->buffer_size = self->super.options->init_buffer_size;
+  self->buffer = g_malloc(state->buffer_size);
+}
 
-      state->buffer_size = self->super.options->init_buffer_size;
-      self->buffer = g_malloc(state->buffer_size);
-      log_proto_buffered_server_put_state(self);
+static inline gint
+log_proto_buffered_server_read_data(LogProtoBufferedServer *self, gpointer buffer, gsize count)
+{
+  GSockAddr *sa = NULL;
+  gint rc;
+
+  rc = self->read_data(self, buffer, count, &sa);
+  if (sa)
+    {
+      /* new chunk of data, potentially new sockaddr, forget the previous value */
+      g_sockaddr_unref(self->prev_saddr);
+      self->prev_saddr = sa;
     }
+  return rc;
 }
 
 static GIOStatus
@@ -611,13 +623,11 @@ log_proto_buffered_server_fetch_into_buffer(LogProtoBufferedServer *self)
   guchar *raw_buffer = NULL;
   gint avail;
   gint rc;
-  GSockAddr *sa = NULL;
   LogProtoBufferedServerState *state = log_proto_buffered_server_get_state(self);
   GIOStatus result = G_IO_STATUS_NORMAL;
 
-  log_proto_buffered_server_allocate_buffer(self);
-
-  /* read the next chunk to be processed */
+  if (G_UNLIKELY(!self->buffer))
+    log_proto_buffered_server_allocate_buffer(self, state);
 
   if (self->convert == (GIConv) -1)
     {
@@ -635,14 +645,10 @@ log_proto_buffered_server_fetch_into_buffer(LogProtoBufferedServer *self)
       avail = self->super.options->init_buffer_size;
     }
 
-  rc = self->read_data(self, raw_buffer + state->raw_buffer_leftover_size, avail, &sa);
-  if (sa)
-    {
-      /* new chunk of data, potentially new sockaddr, forget the previous value */
-      g_sockaddr_unref(self->prev_saddr);
-      self->prev_saddr = sa;
-    }
+  if (avail == 0)
+    goto exit;
 
+  rc = log_proto_buffered_server_read_data(self, raw_buffer + state->raw_buffer_leftover_size, avail);
   if (rc < 0)
     {
       if (errno == EAGAIN)
@@ -689,8 +695,19 @@ log_proto_buffered_server_fetch_into_buffer(LogProtoBufferedServer *self)
           result = G_IO_STATUS_ERROR;
         }
     }
+ exit:
   log_proto_buffered_server_put_state(self);
   return result;
+}
+
+static LogProtoStatus
+_convert_io_status_to_log_proto_status(GIOStatus io_status)
+{
+  if (io_status == G_IO_STATUS_EOF)
+    return LPS_EOF;
+  else if (io_status == G_IO_STATUS_ERROR)
+    return LPS_ERROR;
+  g_assert_not_reached();
 }
 
 /**
@@ -701,53 +718,57 @@ static LogProtoStatus
 log_proto_buffered_server_fetch(LogProtoServer *s, const guchar **msg, gsize *msg_len, GSockAddr **sa, gboolean *may_read)
 {
   LogProtoBufferedServer *self = (LogProtoBufferedServer *) s;
-  LogProtoStatus result = self->super.status;
+  LogProtoStatus result = LPS_SUCCESS;
 
-  while (*may_read)
+  while (1)
     {
-      gint fd;
-      GIOCondition cond;
-      gboolean data_available_in_buffer;
-
-      if (log_proto_buffered_server_fetch_from_buffer(self, msg, msg_len))
+      if (self->fetch_state == LPBSF_FETCHING_FROM_BUFFER)
         {
-          if (sa)
-            *sa = g_sockaddr_ref(self->prev_saddr);
-          result = LPS_SUCCESS;
-          break;
-        }
-      else
-        {
-          *msg = NULL;
-          *msg_len = 0;
-        }
+          if (log_proto_buffered_server_fetch_from_buffer(self, msg, msg_len, sa))
+            goto exit;
 
-      if (self->super.status != LPS_SUCCESS)
-        {
-          result = self->super.status;
-          break;
+          if (log_proto_buffered_server_is_input_closed(self))
+            {
+              result = _convert_io_status_to_log_proto_status(self->io_status);
+              goto exit;
+            }
+          else
+            {
+              self->fetch_state = LPBSF_FETCHING_FROM_INPUT;
+            }
         }
-
-      if (self->no_multi_read)
-        *may_read = FALSE;
-
-      data_available_in_buffer = log_proto_server_prepare(s, &fd, &cond);
-      if (!data_available_in_buffer)
+      else if (self->fetch_state == LPBSF_FETCHING_FROM_INPUT)
         {
           GIOStatus io_status;
 
+          if (!(*may_read))
+            goto exit;
+
           io_status = log_proto_buffered_server_fetch_into_buffer(self);
-          if (io_status == G_IO_STATUS_AGAIN)
-            break;
-          else if (io_status == G_IO_STATUS_ERROR)
-            self->super.status = LPS_ERROR;
-          else if (io_status == G_IO_STATUS_EOF)
-            self->super.status = LPS_EOF;
+          switch (io_status)
+            {
+            case G_IO_STATUS_NORMAL:
+              if (self->no_multi_read)
+                *may_read = FALSE;
+              break;
+
+            case G_IO_STATUS_AGAIN:
+              goto exit;
+
+            case G_IO_STATUS_ERROR:
+            case G_IO_STATUS_EOF:
+              self->io_status = io_status;
+              break;
+            default:
+              g_assert_not_reached();
+            }
+          self->fetch_state = LPBSF_FETCHING_FROM_BUFFER;
         }
     }
 
+ exit:
+
   /* result contains our result, but once an error happens, the error condition remains persistent */
-  log_proto_buffered_server_put_state(self);
   if (result != LPS_SUCCESS)
     self->super.status = result;
   return result;
@@ -815,8 +836,8 @@ log_proto_buffered_server_init(LogProtoBufferedServer *self, LogTransport *trans
   self->super.transport = transport;
   self->super.restart_with_state = log_proto_buffered_server_restart_with_state;
   self->convert = (GIConv) -1;
-  self->read_data = log_proto_buffered_server_read_data;
-
+  self->read_data = log_proto_buffered_server_read_data_method;
+  self->io_status = G_IO_STATUS_NORMAL;
   if (options->encoding)
     self->convert = g_iconv_open("utf-8", options->encoding);
   self->stream_based = TRUE;

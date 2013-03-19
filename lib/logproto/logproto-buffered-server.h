@@ -26,6 +26,12 @@
 
 #include "logproto-server.h"
 
+enum
+{
+  LPBSF_FETCHING_FROM_INPUT,
+  LPBSF_FETCHING_FROM_BUFFER,
+};
+
 typedef struct _LogProtoBufferedServerState
 {
   /* NOTE: that if you add/remove structure members you have to update
@@ -81,6 +87,8 @@ struct _LogProtoBufferedServer
     stream_based:1,
 
     no_multi_read:1;
+  gint fetch_state;
+  GIOStatus io_status;
   LogProtoBufferedServerState *state1;
   PersistState *persist_state;
   PersistEntryHandle persist_handle;
@@ -92,7 +100,7 @@ struct _LogProtoBufferedServer
 static inline gboolean
 log_proto_buffered_server_is_input_closed(LogProtoBufferedServer *self)
 {
-  return self->super.status != LPS_SUCCESS;
+  return self->io_status != G_IO_STATUS_NORMAL;
 }
 
 gboolean log_proto_buffered_server_prepare(LogProtoServer *s, gint *fd, GIOCondition *cond);
