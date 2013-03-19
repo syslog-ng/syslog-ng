@@ -26,15 +26,31 @@
 
 #include "logproto-buffered-server.h"
 
+enum
+{
+  LPT_CONSUME_LINE = 0x0100,
+  LPT_REWIND_LINE  = 0x0200,
+  LPT_EXTRACTED    = 0x0001,
+  LPT_WAITING      = 0x0002,
+};
+
 typedef struct _LogProtoTextServer LogProtoTextServer;
 struct _LogProtoTextServer
 {
   LogProtoBufferedServer super;
+
+  gint (*accumulate_line)(LogProtoTextServer *self,
+                          const guchar *msg,
+                          gsize msg_len,
+                          gssize consumed_len);
+
   GIConv reverse_convert;
   gchar *reverse_buffer;
   gsize reverse_buffer_len;
   gint convert_scale;
-  guint32 cached_eol_pos;
+
+  gint32 consumed_len;
+  gint32 cached_eol_pos;
 };
 
 /* LogProtoTextServer
@@ -43,6 +59,15 @@ struct _LogProtoTextServer
  */
 LogProtoServer *log_proto_text_server_new(LogTransport *transport, const LogProtoServerOptions *options);
 void log_proto_text_server_init(LogProtoTextServer *self, LogTransport *transport, const LogProtoServerOptions *options);
+
+static inline gint
+log_proto_text_server_accumulate_line(LogProtoTextServer *self,
+                                      const guchar *msg,
+                                      gsize msg_len,
+                                      gssize consumed_len)
+{
+  return self->accumulate_line(self, msg, msg_len, consumed_len);
+}
 
 gint log_proto_get_char_size_for_fixed_encoding(const gchar *encoding);
 

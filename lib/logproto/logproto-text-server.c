@@ -182,9 +182,180 @@ log_proto_text_server_get_raw_size_of_buffer(LogProtoTextServer *self, const guc
     }
 }
 
+static gint
+log_proto_text_server_accumulate_line_method(LogProtoTextServer *self, const guchar *msg, gsize msg_len, gssize consumed_len)
+{
+  return LPT_CONSUME_LINE | LPT_EXTRACTED;
+}
+
+static void
+log_proto_text_server_split_buffer(LogProtoTextServer *self, LogProtoBufferedServerState *state, const guchar *buffer_start, gsize buffer_bytes)
+{
+  gsize raw_split_size;
+
+  /* buffer is not full, but no EOL is present, move partial line
+   * to the beginning of the buffer to make space for new data.
+   */
+
+  memmove(self->super.buffer, buffer_start, buffer_bytes);
+  state->pending_buffer_pos = 0;
+  state->pending_buffer_end = buffer_bytes;
+
+  if (G_UNLIKELY(self->super.pos_tracking))
+    {
+      /* NOTE: we modify the current file position _after_ updating
+         buffer_pos, since if we crash right here, at least we
+         won't lose data on the next restart, but rather we
+         duplicate some data */
+
+
+      if (self->super.super.options->encoding)
+        raw_split_size = log_proto_text_server_get_raw_size_of_buffer(self, buffer_start, buffer_bytes);
+      else
+        raw_split_size = buffer_bytes;
+
+      state->pending_raw_stream_pos += (gint64) (state->pending_raw_buffer_size - raw_split_size);
+      state->pending_raw_buffer_size = raw_split_size;
+
+      msg_trace("Buffer split",
+                evt_tag_int("raw_split_size", raw_split_size),
+                evt_tag_int("buffer_bytes", buffer_bytes),
+                NULL);
+    }
+
+}
+
+static gboolean
+log_proto_text_server_try_extract(LogProtoTextServer *self, LogProtoBufferedServerState *state, const guchar *buffer_start, gsize buffer_bytes, const guchar *eol, const guchar **msg, gsize *msg_len)
+{
+  gint verdict;
+  guint32 next_line_pos;
+  guint32 next_eol_pos = 0;
+
+  next_line_pos = eol + 1 - self->super.buffer;
+  if (state->pending_buffer_end != next_line_pos)
+    {
+      const guchar *eom;
+
+      /* we have some more data in the buffer, check if we have a
+       * subsequent EOL there.  It indicates whether we need to
+       * read further data, or the buffer already contains a
+       * complete line */
+
+      eom = find_eom(self->super.buffer + next_line_pos, state->pending_buffer_end - next_line_pos);
+      if (eom)
+        next_eol_pos = eom - self->super.buffer;
+    }
+
+  *msg_len = eol - buffer_start;
+  *msg = buffer_start;
+
+  verdict = log_proto_text_server_accumulate_line(self, *msg, *msg_len, self->consumed_len);
+  if (verdict & LPT_EXTRACTED)
+    {
+      if (verdict & LPT_CONSUME_LINE)
+        {
+          state->pending_buffer_pos = next_line_pos;
+          self->cached_eol_pos = next_eol_pos;
+        }
+      else if (verdict & LPT_REWIND_LINE)
+        {
+          if (self->consumed_len >= 0)
+            *msg_len = self->consumed_len;
+          else
+            *msg_len = 0;
+
+          state->pending_buffer_pos = (buffer_start + self->consumed_len + 1) - self->super.buffer;
+          self->cached_eol_pos = eol - self->super.buffer;
+        }
+      else
+        g_assert_not_reached();
+      self->consumed_len = -1;
+    }
+  else if (verdict & LPT_WAITING)
+    {
+      *msg = NULL;
+      *msg_len = 0;
+      if (verdict & LPT_CONSUME_LINE)
+        {
+          self->cached_eol_pos = next_eol_pos;
+          self->consumed_len = eol - buffer_start;
+        }
+      else
+        {
+          /* when we are waiting for another line, the current one
+           * can't be rewinded, so LPT_REWIND_LINE is not valid */
+          g_assert_not_reached();
+        }
+      return FALSE;
+    }
+  else
+    g_assert_not_reached();
+  return TRUE;
+}
+
+static gboolean
+log_proto_text_server_extract(LogProtoTextServer *self, LogProtoBufferedServerState *state, const guchar *buffer_start, gsize buffer_bytes, const guchar *eol, const guchar **msg, gsize *msg_len)
+{
+  do
+    {
+      if (log_proto_text_server_try_extract(self, state, buffer_start, buffer_bytes, eol, msg, msg_len))
+        return TRUE;
+      eol = self->super.buffer + self->cached_eol_pos;
+    }
+  while (self->cached_eol_pos > 0);
+  return FALSE;
+}
+
+static void
+log_proto_text_server_remove_trailing_newline(const guchar **msg, gsize *msg_len)
+{
+  const guchar *msg_start = (*msg);
+  const guchar *msg_end = msg_start + (*msg_len);
+
+  /* msg_end points at the newline character. A \r or \0 may precede
+   * this which should be removed from the message body */
+
+  while ((msg_end > msg_start) && (msg_end[-1] == '\r' || msg_end[-1] == '\n' || msg_end[-1] == 0))
+    msg_end--;
+  *msg_len = msg_end - msg_start;
+}
+
+
+static inline void
+log_proto_text_server_yield_whole_buffer_as_message(LogProtoTextServer *self, LogProtoBufferedServerState *state, const guchar *buffer_start, gsize buffer_bytes, const guchar **msg, gsize *msg_len)
+{
+  /* no EOL, our buffer is full, no way to move forward, return
+   * everything we have in our buffer. */
+
+  *msg = buffer_start;
+  *msg_len = buffer_bytes;
+  self->consumed_len = -1;
+  state->pending_buffer_pos = (*msg) + (*msg_len) - self->super.buffer;
+}
+
+static inline const guchar *
+log_proto_text_server_locate_next_eol(LogProtoTextServer *self, LogProtoBufferedServerState *state, const guchar *buffer_start, gsize buffer_bytes)
+{
+  const guchar *eol;
+
+  if (self->cached_eol_pos)
+    {
+      /* previous invocation was nice enough to save a cached EOL
+       * pointer, no need to look it up again */
+
+      eol = self->super.buffer + self->cached_eol_pos;
+      self->cached_eol_pos = 0;
+    }
+  else
+    {
+      eol = find_eom(buffer_start + self->consumed_len + 1, buffer_bytes - self->consumed_len - 1);
+    }
+  return eol;
+}
 
 /**
- * log_proto_text_server_fetch_from_buf:
+ * log_proto_text_server_fetch_from_buffer:
  * @self: LogReader instance
  * @saddr: socket address to be assigned to new messages (consumed!)
  * @flush: whether to flush the input buffer
@@ -200,101 +371,35 @@ log_proto_text_server_fetch_from_buffer(LogProtoBufferedServer *s, const guchar 
   LogProtoBufferedServerState *state = log_proto_buffered_server_get_state(&self->super);
   gboolean result = FALSE;
 
-  if (self->cached_eol_pos)
-    {
-      /* previous invocation was nice enough to save a cached EOL
-       * pointer, no need to look it up again */
+  eol = log_proto_text_server_locate_next_eol(self, state, buffer_start, buffer_bytes);
 
-      eol = self->super.buffer + self->cached_eol_pos;
-      self->cached_eol_pos = 0;
-    }
-  else
+  if (!eol &&
+      ((buffer_bytes == state->buffer_size) ||
+       log_proto_buffered_server_is_input_closed(&self->super)))
     {
-      eol = find_eom(buffer_start, buffer_bytes);
-    }
-  if ((!eol &&
-       ((buffer_bytes == state->buffer_size) ||
-        log_proto_buffered_server_is_input_closed(&self->super))))
-    {
-      /* no EOL, our buffer is full or no further input can be read */
-      *msg_len = buffer_bytes;
-      state->pending_buffer_pos = state->pending_buffer_end;
-      *msg = buffer_start;
+      log_proto_text_server_yield_whole_buffer_as_message(self, state, buffer_start, buffer_bytes, msg, msg_len);
       goto success;
     }
   else if (!eol)
     {
-      gsize raw_split_size;
-
-      /* buffer is not full, but no EOL is present, move partial line
-       * to the beginning of the buffer to make space for new data.
-       */
-
-      memmove(self->super.buffer, buffer_start, buffer_bytes);
-      state->pending_buffer_pos = 0;
-      state->pending_buffer_end = buffer_bytes;
-
-      if (G_UNLIKELY(self->super.pos_tracking))
-        {
-          /* NOTE: we modify the current file position _after_ updating
-             buffer_pos, since if we crash right here, at least we
-             won't lose data on the next restart, but rather we
-             duplicate some data */
-
-          if (self->super.super.options->encoding)
-            raw_split_size = log_proto_text_server_get_raw_size_of_buffer(self, buffer_start, buffer_bytes);
-          else
-            raw_split_size = buffer_bytes;
-
-          state->pending_raw_stream_pos += (gint64) (state->pending_raw_buffer_size - raw_split_size);
-          state->pending_raw_buffer_size = raw_split_size;
-
-          msg_trace("Buffer split",
-                    evt_tag_int("raw_split_size", raw_split_size),
-                    evt_tag_int("buffer_bytes", buffer_bytes),
-                    NULL);
-        }
+      log_proto_text_server_split_buffer(self, state, buffer_start, buffer_bytes);
       goto exit;
     }
   else
     {
-      const guchar *msg_end = eol;
-
-      /* eol points at the newline character. end points at the
-       * character terminating the line, which may be a carriage
-       * return preceeding the newline. */
-
-      while ((msg_end > buffer_start) && (msg_end[-1] == '\r' || msg_end[-1] == '\n' || msg_end[-1] == 0))
-        msg_end--;
-
-      *msg_len = msg_end - buffer_start;
-      *msg = buffer_start;
-      state->pending_buffer_pos = eol + 1 - self->super.buffer;
-
-      if (state->pending_buffer_end != state->pending_buffer_pos)
-        {
-          const guchar *eom;
-          /* store the end of the next line, it indicates whether we need
-           * to read further data, or the buffer already contains a
-           * complete line */
-          eom = find_eom(self->super.buffer + state->pending_buffer_pos, state->pending_buffer_end - state->pending_buffer_pos);
-          if (eom)
-            self->cached_eol_pos = eom - self->super.buffer;
-          else
-            self->cached_eol_pos = 0;
-        }
-      else
-        {
-          state->pending_buffer_pos = state->pending_buffer_end;
-        }
-      goto success;
+      if (!log_proto_text_server_extract(self, state, buffer_start, buffer_bytes, eol, msg, msg_len))
+        goto exit;
     }
+
  success:
+  log_proto_text_server_remove_trailing_newline(msg, msg_len);
   result = TRUE;
+
  exit:
   log_proto_buffered_server_put_state(&self->super);
   return result;
 }
+
 
 static void
 log_proto_text_server_free(LogProtoServer *s)
@@ -315,8 +420,10 @@ log_proto_text_server_init(LogProtoTextServer *self, LogTransport *transport, co
   self->super.super.prepare = log_proto_text_server_prepare;
   self->super.super.free_fn = log_proto_text_server_free;
   self->super.fetch_from_buffer = log_proto_text_server_fetch_from_buffer;
+  self->accumulate_line = log_proto_text_server_accumulate_line_method;
   self->super.stream_based = TRUE;
   self->reverse_convert = (GIConv) -1;
+  self->consumed_len = -1;
 }
 
 LogProtoServer *
