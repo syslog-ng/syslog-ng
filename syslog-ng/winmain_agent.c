@@ -122,7 +122,6 @@ static GOptionEntry application_options[] =
   {"cfgfile",         'f', G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_STRING, &cfgfilename, "Set config file name, default=" PATH_SYSLOG_NG_CONF, "<config>" },
   {"quiet",           'Q', G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_NONE, &quiet , NULL, NULL},
   {"preprocess-into",  0,  G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_STRING, &preprocess_into, "Write the preprocessed configuration file to the file specified", "output" },
-  {"skip-old-msg",    's', 0, G_OPTION_ARG_NONE, &generate_persist_file, "Skip old messages", NULL},
   {NULL},
 };
 

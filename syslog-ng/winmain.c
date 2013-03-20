@@ -92,7 +92,6 @@ static GOptionEntry syslogng_options[] =
   { "uninstall",         'U',         0, G_OPTION_ARG_NONE, &uninstall, "Uninstall service", NULL},
   { "start",              0,         0, G_OPTION_ARG_NONE, &start, "Start service", NULL},
   { "stop",              0,         0, G_OPTION_ARG_NONE, &stop, "Stop service", NULL},
-  { "skip-old-msg",    's', 0, G_OPTION_ARG_NONE, &generate_persist_file, "Skip old messages", NULL},
   { NULL },
 };
 

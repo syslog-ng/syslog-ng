@@ -63,9 +63,8 @@ generate_agent_main(gint argc, gchar **argv)
     {
       self->cfg->state = self->state;
       self->state = NULL;
-      cfg_generate_persist_file(self->cfg, filename);
+      cfg_generate_persist_file(self->cfg);
       fprintf(stderr,"New persist file generated: %s\n", filename);
-      persist_state_commit(self->cfg->state);
     }
   persist_tool_free(self);
   app_shutdown();

@@ -48,7 +48,7 @@ generate_main(int argc, char *argv[])
     {
       self->cfg->state = self->state;
       self->state = NULL;
-      cfg_generate_persist_file(self->cfg, filename);
+      cfg_generate_persist_file(self->cfg);
       fprintf(stderr,"New persist file generated: %s\n", filename);
       persist_state_commit(self->cfg->state);
     }

@@ -661,15 +661,33 @@ affile_sd_set_file_pos(AFFileSourceDriver *self, GlobalConfig *cfg)
   state_handler_constructor = state_handler_get_constructor_by_prefix(FILE_CURPOS_PREFIX);
   if (!state_handler_constructor)
     {
+      msg_error("Can't get persist_state_constructor for prefix",
+                evt_tag_str("prefix", FILE_CURPOS_PREFIX),
+                NULL);
       return;
     }
   state_handler = state_handler_constructor(cfg->state, affile_sd_format_persist_name(self->filename->str));
   if (!state_handler)
     {
+      msg_error("Can't get state handler for persist name",
+                evt_tag_str("persist_name",
+                affile_sd_format_persist_name(self)),
+                NULL);
+      return;
+    }
+  if (state_handler_entry_exists(state_handler))
+    {
+      msg_debug("State already exists",
+                evt_tag_str("state_name", state_handler->name),
+                NULL);
+      state_handler_free(state_handler);
       return;
     }
   if (state_handler_alloc_state(state_handler) == 0)
     {
+      msg_error("Can't allocate state for file",
+                evt_tag_str("state_name", state_handler->name),
+                NULL);
       state_handler_free(state_handler);
       return;
     }
@@ -713,6 +731,10 @@ gboolean
 affile_sd_skip_old_messages(LogSrcDriver *s, GlobalConfig *cfg)
 {
   AFFileSourceDriver *self = (AFFileSourceDriver *)s;
+  if (!generate_persist_file && self->reader_options.super.read_old_records)
+    {
+      return TRUE;
+    }
   if (self->file_monitor)
     {
       gpointer args[] = {self, cfg};

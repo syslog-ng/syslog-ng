@@ -145,6 +145,7 @@ extern struct _LogDriver *last_driver;
 %token KW_TABLE                       10038
 %token KW_ENCODING                    10039
 %token KW_SESSION_STATEMENTS          10040
+%token KW_READ_OLD_RECORDS            10041
 
 %token KW_DELIMITERS                  10050
 %token KW_QUOTES                      10051

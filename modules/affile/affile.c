@@ -669,16 +669,35 @@ affile_sd_set_file_pos(AFFileSourceDriver *self, GlobalConfig *cfg)
   state_handler_constructor = state_handler_get_constructor_by_prefix(FILE_CURPOS_PREFIX);
   if (!state_handler_constructor)
     {
+      msg_error("Can't get persist_state_constructor for prefix",
+                evt_tag_str("prefix", FILE_CURPOS_PREFIX),
+                NULL);
       return;
     }
   state_handler = state_handler_constructor(cfg->state, affile_sd_format_persist_name(self));
   if (!state_handler)
     {
+      msg_error("Can't get state handler for persist name",
+                evt_tag_str("persist_name",
+                affile_sd_format_persist_name(self)),
+                NULL);
+      return;
+    }
+  if (state_handler_entry_exists(state_handler))
+    {
+      msg_debug("State already exists",
+                evt_tag_str("state_name", state_handler->name),
+                NULL);
+      state_handler_free(state_handler);
       return;
     }
   if (state_handler_alloc_state(state_handler) == 0)
     {
+      msg_error("Can't allocate state for file",
+                evt_tag_str("state_name", state_handler->name),
+                NULL);
       state_handler_free(state_handler);
+      return;
     }
   state_entry = state_handler_get_state(state_handler);
   memset(state_entry, 0, state_handler->size);
@@ -703,20 +722,12 @@ affile_sd_collect_files(const gchar *filename, gpointer s, FileActionType action
 
   if (filename != END_OF_LIST)
     {
-      if (self->filename)
-        {
-          g_string_free(self->filename, TRUE);
-        }
-      self->filename = g_string_new(filename);
+      g_string_assign(self->filename, filename);
       affile_sd_set_file_pos(self, cfg);
     }
   else
     {
-      if (self->filename)
-        {
-          g_string_free(self->filename, TRUE);
-        }
-      self->filename = NULL;
+      g_string_truncate(self->filename, 0);
     }
   return TRUE;
 }
@@ -725,6 +736,10 @@ gboolean
 affile_sd_skip_old_messages(LogSrcDriver *s, GlobalConfig *cfg)
 {
   AFFileSourceDriver *self = (AFFileSourceDriver *)s;
+  if (!generate_persist_file && self->reader_options.super.read_old_records)
+    {
+      return TRUE;
+    }
   if (self->file_monitor)
     {
       gpointer args[] = {self, cfg};

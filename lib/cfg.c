@@ -702,19 +702,10 @@ cfg_group_generate_persist(gpointer key, gpointer value, gpointer user_data)
 
 
 void
-cfg_generate_persist_file(GlobalConfig *cfg, const gchar *persist_filename)
+cfg_generate_persist_file(GlobalConfig *cfg)
 {
   g_assert(cfg->state);
-
-  persist_state_set_mode(cfg->state, persist_mode_edit);
-  persist_state_start(cfg->state);
-
   g_hash_table_foreach(cfg->sources, cfg_group_generate_persist, cfg);
-
-  persist_state_commit(cfg->state);
-  persist_state_free(cfg->state);
-
-  cfg->state = persist_state_new(persist_filename);
 }
 
 #if ENABLE_SSL

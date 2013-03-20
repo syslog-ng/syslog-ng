@@ -452,6 +452,7 @@ log_source_options_defaults(LogSourceOptions *options)
   options->normalize_hostnames = -1;
   options->keep_timestamp = -1;
   options->tags = NULL;
+  options->read_old_records = TRUE;
 }
 
 /*
@@ -481,6 +482,7 @@ log_source_options_init(LogSourceOptions *options, GlobalConfig *cfg, const gcha
 {
   gchar *host_override, *program_override;
   gchar *source_group_name;
+  gboolean read_old_records;
   GArray *tags;
   
   host_override = options->host_override;
@@ -491,6 +493,7 @@ log_source_options_init(LogSourceOptions *options, GlobalConfig *cfg, const gcha
   tags = options->tags;
   options->tags = NULL;
 
+  read_old_records = options->read_old_records;
 
   /***********************************************************************
    * PLEASE NOTE THIS. please read the comment at the top of the function
@@ -503,6 +506,7 @@ log_source_options_init(LogSourceOptions *options, GlobalConfig *cfg, const gcha
   options->host_override_len = -1;
   options->program_override = program_override;
   options->program_override_len = -1;
+  options->read_old_records = read_old_records;
   
 
   options->source_queue_callbacks = cfg->source_mangle_callback_list;

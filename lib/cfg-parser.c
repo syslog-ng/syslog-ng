@@ -110,6 +110,7 @@ static CfgLexerKeyword main_keywords[] = {
   { "threaded",           KW_THREADED, 0x0303 },
   { "multi_line_prefix",  KW_MULTI_LINE_PREFIX },
   { "multi_line_garbage", KW_MULTI_LINE_GARBAGE },
+  { "read_old_records",   KW_READ_OLD_RECORDS },
 
   { "value",              KW_VALUE, 0x0300 },
 

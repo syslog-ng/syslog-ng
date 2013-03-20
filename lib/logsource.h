@@ -51,6 +51,7 @@ typedef struct _LogSourceOptions
   gchar *host_override;
   gint host_override_len;
   LogTagId source_group_tag;
+  gboolean read_old_records;
   GArray *tags;
   GList *source_queue_callbacks;
 } LogSourceOptions;
