@@ -740,7 +740,7 @@ cfg_tree_compile_sequence(CfgTree *self, LogExprNode *node,
        * have to propagate flags upwards */
       cfg_tree_propagate_expr_node_properties_to_pipe(node, first_pipe);
     }
-  else
+  else if (last_pipe)
     {
       cfg_tree_propagate_expr_node_properties_to_pipe(node, last_pipe);
     }
