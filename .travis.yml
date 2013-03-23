@@ -7,7 +7,6 @@ before_script:
 script:
   - ./configure --with-ivykis=internal --prefix=$HOME/install/syslog-ng
   - make
-  - make install
   - make check
 compiler:
   - gcc
