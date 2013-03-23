@@ -7,6 +7,7 @@ logproto_headers = \
 	logproto/logproto-framed-server.h	\
 	logproto/logproto-text-client.h  \
 	logproto/logproto-text-server.h	\
+	logproto/logproto-indented-multiline-server.h \
 	logproto/logproto-record-server.h \
 	logproto/logproto-builtins.h	\
 	logproto/logproto.h
@@ -20,5 +21,6 @@ logproto_sources = \
 	logproto/logproto-framed-server.c	\
 	logproto/logproto-text-client.c  \
 	logproto/logproto-text-server.c	\
+	logproto/logproto-indented-multiline-server.c \
 	logproto/logproto-record-server.c \
 	logproto/logproto-builtins.c

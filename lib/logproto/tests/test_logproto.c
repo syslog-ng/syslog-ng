@@ -1,3 +1,4 @@
+#include "test_logproto.h"
 #include "mock-transport.h"
 #include "proto_lib.h"
 #include "msg_parse_lib.h"
@@ -65,10 +66,10 @@ test_log_proto(void)
   test_log_proto_base();
   test_log_proto_record_server();
   test_log_proto_text_server();
+  test_log_proto_indented_multiline_server();
   test_log_proto_dgram_server();
   test_log_proto_framed_server();
 }
-
 
 int
 main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)

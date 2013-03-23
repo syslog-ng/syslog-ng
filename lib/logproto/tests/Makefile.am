@@ -14,7 +14,8 @@ test_logproto_SOURCES = 			\
 	test-record-server.c			\
 	test-text-server.c			\
 	test-dgram-server.c			\
-	test-framed-server.c
+	test-framed-server.c			\
+	test-indented-multiline-server.c
 
 test_findeom_SOURCES = test_findeom.c
 

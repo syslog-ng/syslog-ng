@@ -26,36 +26,34 @@ log_proto_indented_multiline_is_continuation(guchar first_char)
   return (first_char == ' ' || first_char == '\t');
 }
 
-static gboolean
-log_proto_indented_multiline_extract_message(LogProtoTextServer *s,
-                                             const guchar **msg,
-                                             gsize *msg_len)
+static gint
+log_proto_indented_multiline_accumulate_line(LogProtoTextServer *s,
+                                             const guchar *msg,
+                                             gsize msg_len,
+                                             gssize consumed_len)
 {
-  LogProtoIMultiLineServer *self = (LogProtoIMultiLineServer *) s;
+
   /* NOTES:
    *
    *    msg
-   *
    *      points to the beginning of the line _repeatedly_, e.g. as
    *      long as we return the we couldn't extract a message.
    *
    *    msg_len
-   *
    *      This is getting longer and longer as lines get accumulated
-   *      in the message. To find out where the last EOL was, this
-   *      function must keep track of its previous invocations.
+   *      in the message.
    *
-   *    self->last_eol_pos
-   *
-   *      This is where we save the location of the last EOL, it is
-   *      relative to the beginning of the current message.
+   *    consumed_len
+   *      Is the length of the message starting with "msg" that was already
+   *      consumed by this function.  In practice this points to the EOL
+   *      character of the last consumed line.
    *
    */
 
   /* let's check if the current line is a continuation line or not */
-  if (self->super.accumulated_msg_len > 0 && *msg_len > self->super.accumulated_msg_len + 1)
+  if (consumed_len >= 0 && msg_len > consumed_len + 1)
     {
-      guchar first_character_of_the_current_line = (*msg)[self->super.accumulated_msg_len + 1];
+      guchar first_character_of_the_current_line = msg[consumed_len + 1];
 
       if (log_proto_indented_multiline_is_continuation(first_character_of_the_current_line))
         {
@@ -76,7 +74,7 @@ log_proto_indented_multiline_server_init(LogProtoIMultiLineServer *self,
                                          const LogProtoServerOptions *options)
 {
   log_proto_text_server_init(&self->super, transport, options);
-  self->super.extract_message = log_proto_indented_multiline_extract_message;
+  self->super.accumulate_line = log_proto_indented_multiline_accumulate_line;
 }
 
 LogProtoServer *
