@@ -1231,6 +1231,8 @@ AC_OUTPUT(dist.conf
           modules/confgen/Makefile
           modules/system-source/Makefile
           modules/syslogformat/Makefile
+          modules/linux-kmsg-format/Makefile
+          modules/linux-kmsg-format/tests/Makefile
           modules/pacctformat/Makefile
           modules/basicfuncs/Makefile
           modules/basicfuncs/tests/Makefile
