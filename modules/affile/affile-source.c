@@ -67,14 +67,14 @@ affile_sd_open_file(AFFileSourceDriver *self, gchar *name, gint *fd)
 {
   gint flags;
   
-  if (self->flags & AFFILE_PIPE)
+  if (self->is_pipe)
     flags = O_RDWR | O_NOCTTY | O_NONBLOCK | O_LARGEFILE;
   else
     flags = O_RDONLY | O_NOCTTY | O_NONBLOCK | O_LARGEFILE;
 
   if (affile_open_file(name, flags,
                        &self->file_perm_options,
-                       0, !!(self->flags & AFFILE_PRIVILEGED), !!(self->flags & AFFILE_PIPE), fd))
+                       0, self->is_privileged, self->is_pipe, fd))
     return TRUE;
   return FALSE;
 }
@@ -93,7 +93,7 @@ affile_sd_recover_state(LogPipe *s, GlobalConfig *cfg, LogProtoServer *proto)
 {
   AFFileSourceDriver *self = (AFFileSourceDriver *) s;
 
-  if ((self->flags & AFFILE_PIPE) || self->reader_options.follow_freq <= 0)
+  if (self->is_pipe || self->reader_options.follow_freq <= 0)
     return;
 
   if (!log_proto_server_restart_with_state(proto, cfg->state, affile_sd_format_persist_name(self)))
@@ -108,7 +108,7 @@ affile_sd_recover_state(LogPipe *s, GlobalConfig *cfg, LogProtoServer *proto)
 static LogTransport *
 affile_sd_construct_transport(AFFileSourceDriver *self, gint fd)
 {
-  if (self->flags & AFFILE_PIPE)
+  if (self->is_pipe)
     return log_transport_pipe_new(fd);
   else if (self->reader_options.follow_freq > 0)
     return log_transport_file_new(fd);
@@ -302,14 +302,13 @@ affile_sd_free(LogPipe *s)
   log_src_driver_free(s);
 }
 
-LogDriver *
-affile_sd_new(gchar *filename, guint32 flags)
+static AFFileSourceDriver *
+affile_sd_new_instance(gchar *filename)
 {
   AFFileSourceDriver *self = g_new0(AFFileSourceDriver, 1);
   
   log_src_driver_init_instance(&self->super);
   self->filename = g_string_new(filename);
-  self->flags = flags;
   self->super.super.super.init = affile_sd_init;
   self->super.super.super.queue = affile_sd_queue;
   self->super.super.super.deinit = affile_sd_deinit;
@@ -319,26 +318,15 @@ affile_sd_new(gchar *filename, guint32 flags)
   file_perm_options_defaults(&self->file_perm_options);
   self->reader_options.parse_options.flags |= LP_LOCAL;
 
-  if ((self->flags & AFFILE_PIPE))
-    {
-      static gboolean warned = FALSE;
+  if (affile_is_linux_proc_kmsg(filename))
+    self->is_privileged = TRUE;
+  return self;
+}
 
-      if (cfg_is_config_version_older(configuration, 0x0302))
-        {
-          if (!warned)
-            {
-              msg_warning("WARNING: the expected message format is being changed for pipe() to improve "
-                          "syslogd compatibity with " VERSION_3_2 ". If you are using custom "
-                          "applications which bypass the syslog() API, you might "
-                          "need the 'expect-hostname' flag to get the old behaviour back", NULL);
-              warned = TRUE;
-            }
-        }
-      else
-        {
-          self->reader_options.parse_options.flags &= ~LP_EXPECT_HOSTNAME;
-        }
-    }
+LogDriver *
+affile_sd_new(gchar *filename)
+{
+  AFFileSourceDriver *self = affile_sd_new_instance(filename);
   
   if (cfg_is_config_version_older(configuration, 0x0300))
     {
@@ -353,16 +341,38 @@ affile_sd_new(gchar *filename, guint32 flags)
     }
   else
     {
-      if ((self->flags & AFFILE_PIPE) == 0)
+      if (affile_is_device_node(filename) ||
+          affile_is_linux_proc_kmsg(filename))
+        self->reader_options.follow_freq = 0;
+      else
+        self->reader_options.follow_freq = 1000;
+    }
+
+  return &self->super.super;
+}
+
+LogDriver *
+afpipe_sd_new(gchar *filename)
+{
+  AFFileSourceDriver *self = affile_sd_new_instance(filename);
+
+  self->is_pipe = TRUE;
+  if (cfg_is_config_version_older(configuration, 0x0302))
+    {
+      static gboolean warned = FALSE;
+      if (!warned)
         {
-          if (affile_is_device_node(filename) ||
-              affile_is_linux_proc_kmsg(filename))
-            self->reader_options.follow_freq = 0;
-          else
-            self->reader_options.follow_freq = 1000;
+          msg_warning("WARNING: the expected message format is being changed for pipe() to improve "
+                      "syslogd compatibity with " VERSION_3_2 ". If you are using custom "
+                      "applications which bypass the syslog() API, you might "
+                      "need the 'expect-hostname' flag to get the old behaviour back", NULL);
+          warned = TRUE;
         }
     }
-  if (affile_is_linux_proc_kmsg(filename))
-    self->flags |= AFFILE_PRIVILEGED;
+  else
+    {
+      self->reader_options.parse_options.flags &= ~LP_EXPECT_HOSTNAME;
+    }
+
   return &self->super.super;
 }

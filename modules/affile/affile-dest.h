@@ -37,7 +37,11 @@ typedef struct _AFFileDestDriver
   LogTemplateOptions template_fname_options;
   LogTemplate *filename_template;
   AFFileDestWriter *single_writer;
-  guint32 flags;
+  gboolean is_pipe:1,
+    no_expand:1,
+    template_escape:1,
+    create_dirs:1,
+    use_fsync:1;
   FilePermOptions file_perm_options;
   gchar *local_time_zone;
   TimeZoneInfo *local_time_zone_info;
@@ -49,7 +53,8 @@ typedef struct _AFFileDestDriver
   gint time_reap;
 } AFFileDestDriver;
 
-LogDriver *affile_dd_new(gchar *filename, guint32 flags);
+LogDriver *affile_dd_new(gchar *filename);
+LogDriver *afpipe_dd_new(gchar *filename);
 
 void affile_dd_set_create_dirs(LogDriver *s, gboolean create_dirs);
 void affile_dd_set_fsync(LogDriver *s, gboolean enable);

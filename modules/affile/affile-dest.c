@@ -159,21 +159,21 @@ affile_dw_reopen(AFFileDestWriter *self)
       unlink(self->filename);
     }
 
-  if (self->owner->flags & AFFILE_PIPE)
+  if (self->owner->is_pipe)
     flags = O_RDWR | O_NOCTTY | O_NONBLOCK | O_LARGEFILE;
   else
     flags = O_WRONLY | O_CREAT | O_NOCTTY | O_NONBLOCK | O_LARGEFILE | O_APPEND;
 
 
   if (affile_open_file(self->filename, flags, &self->owner->file_perm_options,
-                       !!(self->owner->flags & AFFILE_CREATE_DIRS), FALSE, !!(self->owner->flags & AFFILE_PIPE), &fd))
+                       self->owner->create_dirs, FALSE, self->owner->is_pipe, &fd))
     {
       log_writer_reopen(self->writer,
-                        self->owner->flags & AFFILE_PIPE
+                        self->owner->is_pipe
                         ? log_proto_text_client_new(log_transport_pipe_new(fd), &self->owner->writer_options.proto_options.super)
                         : log_proto_file_writer_new(log_transport_file_new(fd), &self->owner->writer_options.proto_options.super,
                                                     self->owner->writer_options.flush_lines,
-                                                    (self->owner->flags & AFFILE_FSYNC)));
+                                                    self->owner->use_fsync));
 
       main_loop_call((void * (*)(void *)) affile_dw_arm_reaper, self, TRUE);
     }
@@ -207,12 +207,12 @@ affile_dw_init(LogPipe *s)
       guint32 flags;
 
       flags = LW_FORMAT_FILE |
-        ((self->owner->flags & AFFILE_PIPE) ? 0 : LW_SOFT_FLOW_CONTROL);
+        (self->owner->is_pipe ? 0 : LW_SOFT_FLOW_CONTROL);
 
       self->writer = log_writer_new(flags);
     }
   log_writer_set_options((LogWriter *) self->writer, s, &self->owner->writer_options, 1,
-                         self->owner->flags & AFFILE_PIPE ? SCS_PIPE : SCS_FILE,
+                         self->owner->is_pipe ? SCS_PIPE : SCS_FILE,
                          self->owner->super.super.id, self->filename);
   log_writer_set_queue(self->writer, log_dest_driver_acquire_queue(&self->owner->super, affile_dw_format_persist_name(self)));
 
@@ -332,10 +332,7 @@ affile_dd_set_create_dirs(LogDriver *s, gboolean create_dirs)
 {
   AFFileDestDriver *self = (AFFileDestDriver *) s;
   
-  if (create_dirs)
-    self->flags |= AFFILE_CREATE_DIRS;
-  else 
-    self->flags &= ~AFFILE_CREATE_DIRS;
+  self->create_dirs = create_dirs;
 }
 
 void 
@@ -350,10 +347,8 @@ void
 affile_dd_set_fsync(LogDriver *s, gboolean fsync)
 {
   AFFileDestDriver *self = (AFFileDestDriver *) s;
-  if (fsync)
-    self->flags |= AFFILE_FSYNC;
-  else
-    self->flags &= ~AFFILE_FSYNC;
+
+  self->use_fsync = fsync;
 }
 
 void
@@ -378,7 +373,7 @@ affile_dd_reap_writer(AFFileDestDriver *self, AFFileDestWriter *dw)
 {
   main_loop_assert_main_thread();
   
-  if ((self->flags & AFFILE_NO_EXPAND) == 0)
+  if (!self->no_expand)
     {
       g_static_mutex_lock(&self->lock);
       /* remove from hash table */
@@ -428,7 +423,7 @@ affile_dd_init(LogPipe *s)
     return FALSE;
 
   if (cfg->create_dirs)
-    self->flags |= AFFILE_CREATE_DIRS;
+    self->create_dirs = TRUE;
   if (self->time_reap == -1)
     self->time_reap = cfg->time_reap;
   
@@ -436,7 +431,7 @@ affile_dd_init(LogPipe *s)
   log_writer_options_init(&self->writer_options, cfg, 0);
   log_template_options_init(&self->template_fname_options, cfg);
               
-  if ((self->flags & AFFILE_NO_EXPAND) == 0)
+  if (!self->no_expand)
     {
       self->writer_hash = cfg_persist_config_fetch(cfg, affile_dd_format_persist_name(self));
       if (self->writer_hash)
@@ -546,7 +541,7 @@ affile_dd_open_writer(gpointer args[])
   AFFileDestWriter *next;
 
   main_loop_assert_main_thread();
-  if (self->flags & AFFILE_NO_EXPAND)
+  if (self->no_expand)
     {
       if (!self->single_writer)
 	{
@@ -622,7 +617,7 @@ affile_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
   AFFileDestWriter *next;
   gpointer args[2] = { self, NULL };
 
-  if (self->flags & AFFILE_NO_EXPAND)
+  if (self->no_expand)
     {
       /* no need to lock the check below, the worst case that happens is
        * that we go to the mainloop to return the same information, but this
@@ -696,8 +691,8 @@ affile_dd_free(LogPipe *s)
   log_dest_driver_free(s);
 }
 
-LogDriver *
-affile_dd_new(gchar *filename, guint32 flags)
+static AFFileDestDriver *
+affile_dd_new_instance(gchar *filename)
 {
   AFFileDestDriver *self = g_new0(AFFileDestDriver, 1);
 
@@ -708,16 +703,29 @@ affile_dd_new(gchar *filename, guint32 flags)
   self->super.super.super.free_fn = affile_dd_free;
   self->filename_template = log_template_new(configuration, NULL);
   log_template_compile(self->filename_template, filename, NULL);
-  self->flags = flags;
   log_writer_options_defaults(&self->writer_options);
   file_perm_options_defaults(&self->file_perm_options);
   self->writer_options.mark_mode = MM_NONE;
   if (strchr(filename, '$') == NULL)
     {
-      self->flags |= AFFILE_NO_EXPAND;
+      self->no_expand = TRUE;
     }
   self->time_reap = -1;
   log_template_options_defaults(&self->template_fname_options);
   g_static_mutex_init(&self->lock);
+  return self;
+}
+
+LogDriver *
+affile_dd_new(gchar *filename)
+{
+  return &affile_dd_new_instance(filename)->super.super;
+}
+
+LogDriver *
+afpipe_dd_new(gchar *filename)
+{
+  AFFileDestDriver *self = affile_dd_new_instance(filename);
+  self->is_pipe = TRUE;
   return &self->super.super;
 }

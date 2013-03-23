@@ -37,11 +37,15 @@ typedef struct _AFFileSourceDriver
   LogReaderOptions reader_options;
   FilePermOptions file_perm_options;
   gint pad_size;
+  gboolean is_pipe:1,
+    is_privileged:1;
   guint32 flags;
   /* state information to follow a set of files using a wildcard expression */
 } AFFileSourceDriver;
 
-LogDriver *affile_sd_new(gchar *filename, guint32 flags);
+LogDriver *affile_sd_new(gchar *filename);
+LogDriver *afpipe_sd_new(gchar *filename);
+
 void affile_sd_set_recursion(LogDriver *s, const gint recursion);
 void affile_sd_set_pri_level(LogDriver *s, const gint16 severity);
 void affile_sd_set_pri_facility(LogDriver *s, const gint16 facility);

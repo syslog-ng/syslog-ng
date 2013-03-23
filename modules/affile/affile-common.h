@@ -26,13 +26,6 @@
 
 #include "file-perms.h"
 
-#define AFFILE_PIPE        0x00000001
-#define AFFILE_NO_EXPAND   0x00000002
-#define AFFILE_TMPL_ESCAPE 0x00000004
-#define AFFILE_CREATE_DIRS 0x00000008
-#define AFFILE_FSYNC       0x00000010
-#define AFFILE_PRIVILEGED  0x00000020
-
 gboolean affile_open_file(gchar *name, gint flags,
                           const FilePermOptions *perm_options,
                           gboolean create_dirs, gboolean privileged,
