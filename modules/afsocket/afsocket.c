@@ -107,6 +107,12 @@ afsocket_open_socket(GSockAddr *bind_addr, int stream_or_dgram, int *fd)
 #ifndef G_OS_WIN32
       g_fd_set_nonblock(sock, TRUE);
       g_fd_set_cloexec(sock, TRUE);
+#else
+      u_long mode = 1;
+      if (ioctlsocket(sock, FIONBIO, &mode) != 0)
+        {
+          msg_error("Can't set non-blocking mode for socket", NULL);
+        }
 #endif
       saved_caps = g_process_cap_save();
       g_process_cap_modify(CAP_NET_BIND_SERVICE, TRUE);
@@ -1243,6 +1249,13 @@ afsocket_dd_start_connect(AFSocketDestDriver *self)
       self->fd = sock;
       afsocket_dd_start_watches(self);
     }
+#ifdef _WIN32
+  else if (rc == G_IO_STATUS_AGAIN)
+    {
+      self->fd = sock;
+      afsocket_dd_start_watches(self);
+    }
+#endif
   else
     {
       /* error establishing connection */

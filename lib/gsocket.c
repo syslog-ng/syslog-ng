@@ -24,6 +24,7 @@
 
 #include "gsocket.h"
 #include "compat.h"
+#include <stdio.h>
 
 /**
  * g_inet_ntoa:
@@ -105,6 +106,7 @@ g_accept(int fd, int *newfd, GSockAddr **addr)
       *newfd = accept(fd, (struct sockaddr *) sabuf, &salen);
     }
   while (*newfd == -1 && errno == EINTR);
+  errno = getsockerror();
   if (*newfd != -1)
     {
       *addr = g_sockaddr_new((struct sockaddr *) sabuf, salen);
@@ -139,6 +141,7 @@ g_connect(int fd, GSockAddr *remote)
       rc = connect(fd, &remote->sa, remote->salen);
     }
   while (rc == -1 && errno == EINTR);
+  errno = getsockerror();
   if (rc == -1)
     {
       if (errno == EAGAIN)
