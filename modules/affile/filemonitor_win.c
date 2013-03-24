@@ -19,6 +19,7 @@ typedef struct  _FileMonitorWindows
   DWORD buffer_size;
   DWORD notify_flags;
   struct iv_handle monitor_handler;
+  struct iv_timer check_dir_timer;
 } FileMonitorWindows;
 
 /*
@@ -153,6 +154,8 @@ fd_handler(void *user_data)
     }
 }
 
+void check_dir_exists(void *user_data);
+
 FileMonitor *
 file_monitor_new()
 {
@@ -164,6 +167,11 @@ file_monitor_new()
   self->monitor_handler.handle = CreateEvent(NULL, FALSE, FALSE, NULL);
   self->monitor_handler.handler = fd_handler;
   self->monitor_handler.cookie = self;
+
+  IV_TIMER_INIT(&self->check_dir_timer);
+  self->check_dir_timer.cookie = self;
+  self->check_dir_timer.handler = check_dir_exists;
+
   return &self->super;
 }
 
@@ -185,6 +193,43 @@ file_monitor_set_file_callback(FileMonitor *self, FileMonitorCallbackFunc file_c
 }
 
 gboolean
+file_monitor_start_monitoring(FileMonitorWindows* self)
+{
+
+  file_monitor_list_directory(self,self->base_dir);
+  self->hDir = CreateFile(self->base_dir, FILE_LIST_DIRECTORY, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OVERLAPPED, NULL);
+  if (self->hDir == INVALID_HANDLE_VALUE)
+    {
+      return FALSE;
+    }
+  // The hEvent member is not used when there is a completion
+  // function, so it's ok to use it to point to the object.
+  self->ol.hEvent = self->monitor_handler.handle;
+  if (ReadDirectoryChangesW(self->hDir, self->buffer, FILE_MONITOR_BUFFER_SIZE, self->super.recursion, self->notify_flags, NULL, &self->ol, NULL) == 0)
+    {
+      msg_error("Can't monitor directory",evt_tag_errno("error",GetLastError()), evt_tag_id(MSG_CANT_MONITOR_DIRECTORY), NULL);
+      return FALSE;
+    }
+  iv_handle_register(&self->monitor_handler);
+  return TRUE;
+}
+
+void
+check_dir_exists(void *user_data)
+{
+  FileMonitorWindows *self = (FileMonitorWindows *)user_data;
+  if (g_file_test(self->base_dir,G_FILE_TEST_IS_DIR) && file_monitor_start_monitoring(self))
+    {
+      return;
+    }
+  iv_validate_now();
+  self->check_dir_timer.expires = iv_now;
+  self->check_dir_timer.expires.tv_sec++;
+  iv_timer_register(&self->check_dir_timer);
+  msg_trace("Directory still does not exist", evt_tag_str("directory", self->base_dir), NULL);
+}
+
+gboolean
 file_monitor_watch_directory(FileMonitor *s, const gchar *filename)
 {
   gchar *base_dir;
@@ -198,8 +243,7 @@ file_monitor_watch_directory(FileMonitor *s, const gchar *filename)
   base_dir = resolve_to_absolute_path(dir_part, NULL);
   if (!g_file_test(base_dir,G_FILE_TEST_IS_DIR))
     {
-      msg_error("Directory doesn't exist",evt_tag_str("directory",base_dir),evt_tag_id(MSG_DIRECTORY_DOESNT_EXIST), NULL);
-      return FALSE;
+      msg_trace("Directory doesn't exist",evt_tag_str("directory",base_dir),evt_tag_id(MSG_DIRECTORY_DOESNT_EXIST), NULL);
     }
   if (!self->super.compiled_pattern)
     {
@@ -211,19 +255,13 @@ file_monitor_watch_directory(FileMonitor *s, const gchar *filename)
 
   msg_debug("Monitoring new directory", evt_tag_str("basedir", base_dir), NULL);
 
-  file_monitor_list_directory(self,self->base_dir);
-
-  self->hDir = CreateFile(self->base_dir, FILE_LIST_DIRECTORY, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OVERLAPPED, NULL);
-
-  // The hEvent member is not used when there is a completion
-  // function, so it's ok to use it to point to the object.
-  self->ol.hEvent = self->monitor_handler.handle;
-  if (ReadDirectoryChangesW(self->hDir, self->buffer, FILE_MONITOR_BUFFER_SIZE, self->super.recursion, self->notify_flags, NULL, &self->ol, NULL) == 0)
-  {
-    msg_error("Can't monitor directory",evt_tag_errno("error",GetLastError()), evt_tag_id(MSG_CANT_MONITOR_DIRECTORY), NULL);
-    return FALSE;
-  }
-  iv_handle_register(&self->monitor_handler);
+  if (!file_monitor_start_monitoring(self))
+    {
+      iv_validate_now();
+      self->check_dir_timer.expires = iv_now;
+      self->check_dir_timer.expires.tv_sec++;
+      iv_timer_register(&self->check_dir_timer);
+    }
   return TRUE;
 }
 
@@ -235,6 +273,10 @@ file_monitor_stop(FileMonitor *s)
   if (iv_handle_registered(&self->monitor_handler))
     {
       iv_handle_unregister(&self->monitor_handler);
+    }
+  if (iv_timer_registered(&self->check_dir_timer))
+    {
+      iv_timer_unregister(&self->check_dir_timer);
     }
   CloseHandle(self->hDir);
   return TRUE;
