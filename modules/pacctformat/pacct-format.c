@@ -23,6 +23,7 @@
 
 #include "pacct-format.h"
 #include "logmsg.h"
+#include "logproto-record-server.h"
 
 /* we're using the Linux header as the glibc one is incomplete */
 #include <linux/acct.h>
@@ -96,7 +97,7 @@ pacct_register_handles(void)
 }
 
 void
-pacct_format_handler(MsgFormatOptions *options, const guchar *data, gsize length, LogMessage *msg)
+pacct_format_handler(const MsgFormatOptions *options, const guchar *data, gsize length, LogMessage *msg)
 {
   acct_t *rec;
   gsize len;
@@ -151,14 +152,14 @@ pacct_format_handler(MsgFormatOptions *options, const guchar *data, gsize length
   log_msg_set_value(msg, handle_ac_comm, rec->ac_comm, len);
 }
 
-void
-pacct_construct_proto(MsgFormatOptions *options, LogTransport *transport, const LogProtoOptions *options)
+static LogProtoServer *
+pacct_construct_proto(const MsgFormatOptions *options, LogTransport *transport, const LogProtoServerOptions *proto_options)
 {
-  return log_proto_binary_record_server_new(transport, options, sizeof(acct_t));
+  return log_proto_binary_record_server_new(transport, proto_options, sizeof(acct_t));
 }
 
 MsgFormatHandler pacct_handler =
 {
-  .alter_proto_options = pacct_alter_proto_options,
+  .construct_proto = pacct_construct_proto,
   .parse = &pacct_format_handler
 };
