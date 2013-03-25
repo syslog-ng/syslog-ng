@@ -93,6 +93,8 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   plugin_load_module("basicfuncs", configuration, NULL);
 
   test_cond_funcs();
+  test_str_funcs();
+  test_numeric_funcs();
 
   deinit_template_tests();
   app_shutdown();
