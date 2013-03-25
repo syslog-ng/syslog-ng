@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2012 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 2012 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2012-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2012-2013 Gergely Nagy <algernon@balabit.hu>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -34,6 +34,10 @@
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>
+
+#if ENABLE_SYSTEMD
+#include <systemd/sd-daemon.h>
+#endif
 
 static void
 system_sysblock_add_unix_dgram(GString *sysblock, const gchar *path,
@@ -101,6 +105,48 @@ system_sysblock_add_freebsd_klog(GString *sysblock, const gchar *release)
     system_sysblock_add_file(sysblock, "/dev/klog", 0, "kernel", "no-parse");
 }
 
+#if ENABLE_SYSTEMD
+static char *
+system_linux_find_dev_log(void)
+{
+  int r, fd;
+
+  r = sd_listen_fds(0);
+  if (r == 0)
+    return "/dev/log";
+  if (r < 0)
+    {
+      msg_error ("system(): sd_listen_fds() failed",
+                 evt_tag_int("errno", r),
+                 NULL);
+      return NULL;
+    }
+
+  /* We only support socket activation for /dev/log, meaning
+   * one socket only. Bail out if we get more.
+   */
+  if (r != 1)
+    {
+      msg_error("system(): Too many sockets passed in for socket activation, syslog-ng only supports one.",
+                NULL);
+      return NULL;
+    }
+
+  fd = SD_LISTEN_FDS_START;
+  if (sd_is_socket_unix(fd, SOCK_DGRAM, -1,
+                        "/run/systemd/journal/syslog", 0) != 1)
+    {
+      msg_error("system(): Socket activation is only supported on /run/systemd/journal/syslog",
+                NULL);
+      return NULL;
+    }
+
+  return "/run/systemd/journal/syslog";
+}
+#else
+#define system_linux_find_dev_log() "/dev/log"
+#endif
+
 gboolean
 system_generate_system(CfgLexer *lexer, gint type, const gchar *name,
                        CfgArgs *args, gpointer user_data)
@@ -123,17 +169,11 @@ system_generate_system(CfgLexer *lexer, gint type, const gchar *name,
 
   if (strcmp(u.sysname, "Linux") == 0)
     {
-      char *log = "/dev/log";
+      char *log = system_linux_find_dev_log ();
 
-      if (getenv("LISTEN_FDS") != NULL)
+      if (!log)
         {
-          struct stat sbuf;
-
-          if (stat("/run/systemd/journal/syslog", &sbuf) == 0)
-            {
-              if (S_ISSOCK(sbuf.st_mode))
-                log = "/run/systemd/journal/syslog";
-            }
+          return FALSE;
         }
 
       system_sysblock_add_unix_dgram(sysblock, log, NULL, "8192");
