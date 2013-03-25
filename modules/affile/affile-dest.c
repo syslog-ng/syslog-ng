@@ -373,7 +373,7 @@ affile_dd_reap_writer(AFFileDestDriver *self, AFFileDestWriter *dw)
 {
   main_loop_assert_main_thread();
   
-  if (!self->no_expand)
+  if (self->filename_is_a_template)
     {
       g_static_mutex_lock(&self->lock);
       /* remove from hash table */
@@ -431,7 +431,7 @@ affile_dd_init(LogPipe *s)
   log_writer_options_init(&self->writer_options, cfg, 0);
   log_template_options_init(&self->template_fname_options, cfg);
               
-  if (!self->no_expand)
+  if (self->filename_is_a_template)
     {
       self->writer_hash = cfg_persist_config_fetch(cfg, affile_dd_format_persist_name(self));
       if (self->writer_hash)
@@ -541,7 +541,7 @@ affile_dd_open_writer(gpointer args[])
   AFFileDestWriter *next;
 
   main_loop_assert_main_thread();
-  if (self->no_expand)
+  if (!self->filename_is_a_template)
     {
       if (!self->single_writer)
 	{
@@ -617,7 +617,7 @@ affile_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
   AFFileDestWriter *next;
   gpointer args[2] = { self, NULL };
 
-  if (self->no_expand)
+  if (!self->filename_is_a_template)
     {
       /* no need to lock the check below, the worst case that happens is
        * that we go to the mainloop to return the same information, but this
@@ -706,9 +706,9 @@ affile_dd_new_instance(gchar *filename)
   log_writer_options_defaults(&self->writer_options);
   file_perm_options_defaults(&self->file_perm_options);
   self->writer_options.mark_mode = MM_NONE;
-  if (strchr(filename, '$') == NULL)
+  if (strchr(filename, '$') != NULL)
     {
-      self->no_expand = TRUE;
+      self->filename_is_a_template = TRUE;
     }
   self->time_reap = -1;
   log_template_options_defaults(&self->template_fname_options);

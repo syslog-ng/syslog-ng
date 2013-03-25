@@ -38,7 +38,7 @@ typedef struct _AFFileDestDriver
   LogTemplate *filename_template;
   AFFileDestWriter *single_writer;
   gboolean is_pipe:1,
-    no_expand:1,
+    filename_is_a_template:1,
     template_escape:1,
     create_dirs:1,
     use_fsync:1;
