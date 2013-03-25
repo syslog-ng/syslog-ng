@@ -31,6 +31,7 @@
 #include "mainloop.h"
 #include "logproto/logproto-record-server.h"
 #include "logproto/logproto-text-server.h"
+#include "logproto/logproto-indented-multiline-server.h"
 #include "logproto-linux-proc-kmsg-reader.h"
 
 #include <sys/types.h>
@@ -41,6 +42,20 @@
 #include <errno.h>
 #include <time.h>
 #include <stdlib.h>
+
+gboolean
+affile_sd_set_multi_line_mode(LogDriver *s, const gchar *mode)
+{
+  AFFileSourceDriver *self = (AFFileSourceDriver *) s;
+
+  if (strcasecmp(mode, "indented") == 0)
+    self->multi_line_mode = MLM_INDENTED;
+  else if (strcasecmp(mode, "none") == 0)
+    self->multi_line_mode = MLM_NONE;
+  else
+    return FALSE;
+  return TRUE;
+}
 
 static inline gboolean
 affile_is_linux_proc_kmsg(const gchar *filename)
@@ -136,7 +151,15 @@ affile_sd_construct_proto(AFFileSourceDriver *self, gint fd)
   else if (affile_is_linux_proc_kmsg(self->filename->str))
     return log_proto_linux_proc_kmsg_reader_new(transport, proto_options);
   else
-    return log_proto_text_server_new(transport, proto_options);
+    {
+      switch (self->multi_line_mode)
+        {
+        case MLM_INDENTED:
+          return log_proto_indented_multiline_server_new(transport, proto_options);
+        default:
+          return log_proto_text_server_new(transport, proto_options);
+        }
+    }
 }
 
 /* NOTE: runs in the main thread */

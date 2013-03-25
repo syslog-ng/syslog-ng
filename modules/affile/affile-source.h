@@ -28,6 +28,12 @@
 #include "logreader.h"
 #include "file-perms.h"
 
+enum
+{
+  MLM_NONE,
+  MLM_INDENTED,
+};
+
 typedef struct _AFFileSourceDriver
 {
   LogSrcDriver super;
@@ -39,12 +45,14 @@ typedef struct _AFFileSourceDriver
   gint pad_size;
   gboolean is_pipe:1,
     is_privileged:1;
-  guint32 flags;
+  gint multi_line_mode;
   /* state information to follow a set of files using a wildcard expression */
 } AFFileSourceDriver;
 
 LogDriver *affile_sd_new(gchar *filename);
 LogDriver *afpipe_sd_new(gchar *filename);
+
+gboolean affile_sd_set_multi_line_mode(LogDriver *s, const gchar *mode);
 
 void affile_sd_set_recursion(LogDriver *s, const gint recursion);
 void affile_sd_set_pri_level(LogDriver *s, const gint16 severity);
