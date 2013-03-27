@@ -855,12 +855,15 @@ log_reader_fetch_log(LogReader *self)
     }
   if (msg_count == self->options->fetch_limit)
     self->immediate_check = TRUE;
-  if (self->options->flags & LR_PREEMPT && msg_count>0)
+  if (self->options->flags & LR_PREEMPT)
     {
       if (log_proto_is_preemptable(self->proto))
         {
           self->waiting_for_preemption = FALSE;
-          return NC_FILE_SKIP;
+          if (msg_count > 0)
+            {
+              return NC_FILE_SKIP;
+            }
         }
       else
         {
