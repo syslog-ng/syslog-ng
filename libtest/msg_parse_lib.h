@@ -28,7 +28,6 @@
 #include "testutils.h"
 
 #include "cfg.h"
-#include "plugin.h"
 #include "logmsg.h"
 
 MsgFormatOptions parse_options;

@@ -34,6 +34,7 @@
 #include "syslog-names.h"
 #include "parser-expr-grammar.h"
 #include "plugin.h"
+#include "cfg-grammar.h"
 
 LogParser *last_parser;
 

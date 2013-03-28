@@ -23,6 +23,7 @@
  */
 
 #include "msg_parse_lib.h"
+#include "plugin.h"
 
 void
 init_and_load_syslogformat_module()

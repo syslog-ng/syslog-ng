@@ -27,6 +27,7 @@
 #include "messages.h"
 #include "cfg.h"
 #include "plugin.h"
+#include "plugin-types.h"
 
 void
 log_proto_client_free_method(LogProtoClient *s)

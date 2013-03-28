@@ -23,6 +23,7 @@
 #include "format-json.h"
 #include "jsonparser-parser.h"
 #include "plugin.h"
+#include "plugin-types.h"
 
 extern CfgParser jsonparser_parser;
 

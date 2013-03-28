@@ -25,6 +25,7 @@
 #include "msg-format.h"
 #include "cfg.h"
 #include "plugin.h"
+#include "plugin-types.h"
 
 void
 msg_format_options_defaults(MsgFormatOptions *options)

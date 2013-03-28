@@ -26,6 +26,7 @@
 #include "driver.h"
 #include "messages.h"
 #include "cfg-lexer.h"
+#include "plugin-types.h"
 
 #include <gmodule.h>
 #include <string.h>

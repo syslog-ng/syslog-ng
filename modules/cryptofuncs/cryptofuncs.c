@@ -27,6 +27,7 @@
 #include "uuid.h"
 #include "misc.h"
 #include "config.h"
+#include "plugin-types.h"
 
 #if ENABLE_SSL
 #include <openssl/evp.h>

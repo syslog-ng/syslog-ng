@@ -22,8 +22,9 @@
  */
 
 #include "cfg-parser.h"
-#include "plugin.h"
 #include "csvparser.h"
+#include "plugin.h"
+#include "plugin-types.h"
 
 extern CfgParser csvparser_parser;
 

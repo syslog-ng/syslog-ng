@@ -25,7 +25,6 @@
 
 #include "afmongodb.h"
 #include "afmongodb-parser.h"
-#include "plugin.h"
 #include "messages.h"
 #include "misc.h"
 #include "stats.h"
@@ -33,6 +32,8 @@
 #include "logqueue.h"
 #include "value-pairs.h"
 #include "vptransform.h"
+#include "plugin.h"
+#include "plugin-types.h"
 
 #include "mongo.h"
 

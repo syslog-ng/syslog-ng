@@ -26,7 +26,6 @@
 #define PLUGIN_H_INCLUDED
 
 #include "cfg-parser.h"
-#include "cfg-grammar.h"
 
 typedef struct _Plugin Plugin;
 typedef struct _ModuleInfo ModuleInfo;

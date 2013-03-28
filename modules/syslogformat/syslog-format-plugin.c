@@ -25,6 +25,7 @@
 #include "syslog-parser-parser.h"
 #include "messages.h"
 #include "plugin.h"
+#include "plugin-types.h"
 
 static MsgFormatHandler syslog_handler =
 {

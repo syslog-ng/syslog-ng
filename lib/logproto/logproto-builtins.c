@@ -28,6 +28,7 @@
 #include "logproto-framed-client.h"
 #include "logproto-framed-server.h"
 #include "plugin.h"
+#include "plugin-types.h"
 
 /* This module defines various core-implemented LogProto implementations as
  * plugins, so that modules may find them, dynamically based on their plugin

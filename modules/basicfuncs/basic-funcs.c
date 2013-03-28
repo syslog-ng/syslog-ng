@@ -27,6 +27,7 @@
 #include "filter-expr-parser.h"
 #include "cfg.h"
 #include "str-format.h"
+#include "plugin-types.h"
 
 #include <stdlib.h>
 #include <errno.h>

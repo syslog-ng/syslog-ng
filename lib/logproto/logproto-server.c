@@ -26,6 +26,7 @@
 #include "messages.h"
 #include "cfg.h"
 #include "plugin.h"
+#include "plugin-types.h"
 
 /**
  * Find the character terminating the buffer.

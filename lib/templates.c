@@ -31,6 +31,7 @@
 #include "filter.h"
 #include "gsocket.h"
 #include "plugin.h"
+#include "plugin-types.h"
 #include "str-format.h"
 
 #include <time.h>

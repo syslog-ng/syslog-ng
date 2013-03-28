@@ -36,6 +36,7 @@
 #include "plugin.h"
 #include "filter.h"
 #include "filter-expr-parser.h"
+#include "cfg-grammar.h"
 
 #include <string.h>
 

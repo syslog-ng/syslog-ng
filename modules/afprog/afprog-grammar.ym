@@ -34,6 +34,7 @@
 #include "syslog-names.h"
 #include "messages.h"
 #include "plugin.h"
+#include "cfg-grammar.h"
 
 #include <string.h>
 

@@ -31,6 +31,7 @@
 #include "nvtable.h"
 #include "logqueue.h"
 #include "scratch-buffers.h"
+#include "plugin-types.h"
 
 #include <amqp.h>
 #include <amqp_framing.h>

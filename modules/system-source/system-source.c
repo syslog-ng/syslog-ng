@@ -23,9 +23,9 @@
 
 #include "cfg.h"
 #include "cfg-lexer.h"
-#include "cfg-grammar.h"
 #include "messages.h"
 #include "plugin.h"
+#include "plugin-types.h"
 
 #include <sys/utsname.h>
 #include <sys/types.h>

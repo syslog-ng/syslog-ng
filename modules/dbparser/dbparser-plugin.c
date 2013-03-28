@@ -22,8 +22,9 @@
  */
 
 #include "cfg-parser.h"
-#include "plugin.h"
 #include "dbparser.h"
+#include "plugin.h"
+#include "plugin-types.h"
 
 extern CfgParser dbparser_parser;
 

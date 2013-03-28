@@ -39,6 +39,7 @@
 #include "messages.h"
 #include "syslog-names.h"
 #include "plugin.h"
+#include "cfg-grammar.h"
 
 #if BUILD_WITH_SSL
 #include "tlscontext.h"

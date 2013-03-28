@@ -23,6 +23,7 @@
 
 #include "cfg-parser.h"
 #include "plugin.h"
+#include "plugin-types.h"
 
 extern CfgParser affile_parser;
 

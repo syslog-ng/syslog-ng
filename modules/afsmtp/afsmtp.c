@@ -30,6 +30,7 @@
 #include "misc.h"
 #include "stats.h"
 #include "logqueue.h"
+#include "plugin-types.h"
 
 #include <libesmtp.h>
 
