@@ -336,6 +336,7 @@ log_writer_update_fd_callbacks(LogWriter *self, GIOCondition cond)
       else
       {
         iv_fd_set_handler_out(&self->fd_watch, NULL);
+        self->has_to_poll = FALSE;
       }
       if (iv_fd_registered(&self->fd_watch))
         iv_fd_set_handler_err(&self->fd_watch, log_writer_io_error);
