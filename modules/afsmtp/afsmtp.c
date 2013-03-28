@@ -21,7 +21,6 @@
  *
  */
 
-#include <signal.h>
 
 #include "afsmtp.h"
 #include "afsmtp-parser.h"
@@ -33,6 +32,7 @@
 #include "plugin-types.h"
 
 #include <libesmtp.h>
+#include <signal.h>
 
 typedef struct
 {

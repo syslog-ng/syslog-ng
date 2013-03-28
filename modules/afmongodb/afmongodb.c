@@ -21,7 +21,6 @@
  *
  */
 
-#include <time.h>
 
 #include "afmongodb.h"
 #include "afmongodb-parser.h"
@@ -36,6 +35,7 @@
 #include "plugin-types.h"
 
 #include "mongo.h"
+#include <time.h>
 
 typedef struct
 {
