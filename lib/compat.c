@@ -1130,6 +1130,7 @@ void iv_fd_unregister(struct iv_fd *this)
   if (this->event_mask) {
     this->event_mask = 0;
     iv_fd_set_event_mask(this);
+    this->handler_err = NULL;
   }
 
   iv_handle_unregister(&this->handle);
