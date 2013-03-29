@@ -997,13 +997,22 @@ log_msg_clear(LogMessage *self)
 
   if (log_msg_chk_flag(self, LF_STATE_OWN_TAGS) && self->tags)
     {
-      memset(self->tags, 0, self->num_tags * sizeof(self->tags[0]));
+      gboolean inline_tags = self->num_tags == 0;
+
+      if (inline_tags)
+        self->tags = NULL;
+      else
+        memset(self->tags, 0, self->num_tags * sizeof(self->tags[0]));
     }
   else
     self->tags = NULL;
 
   self->num_matches = 0;
-  /* alloc_sdata remains */
+  if (!log_msg_chk_flag(self, LF_STATE_OWN_SDATA))
+    {
+      self->sdata = NULL;
+      self->alloc_sdata = 0;
+    }
   self->num_sdata = 0;
 
   if (log_msg_chk_flag(self, LF_STATE_OWN_SADDR) && self->saddr)
