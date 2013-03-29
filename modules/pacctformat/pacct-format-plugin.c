@@ -24,6 +24,7 @@
 #include "pacct-format.h"
 #include "messages.h"
 #include "plugin.h"
+#include "plugin-types.h"
 
 static MsgFormatHandler *
 pacct_format_construct(Plugin *self, GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name)
