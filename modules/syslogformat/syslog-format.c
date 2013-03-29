@@ -1081,28 +1081,7 @@ syslog_format_handler(const MsgFormatOptions *parse_options,
 
   if (G_UNLIKELY(!success))
     {
-      gchar buf[2048];
-
-      self->timestamps[LM_TS_STAMP] = self->timestamps[LM_TS_RECVD];
-      if ((self->flags & LF_STATE_OWN_PAYLOAD) && self->payload)
-        nv_table_unref(self->payload);
-      self->flags |= LF_STATE_OWN_PAYLOAD;
-      self->payload = nv_table_new(LM_V_MAX, 16, MAX(length * 2, 256));
-      log_msg_set_value(self, LM_V_HOST, "", 0);
-
-      g_snprintf(buf, sizeof(buf), "Error processing log message: %.*s", (gint) length, data);
-      log_msg_set_value(self, LM_V_MESSAGE, buf, -1);
-      log_msg_set_value(self, LM_V_PROGRAM, "syslog-ng", 9);
-      g_snprintf(buf, sizeof(buf), "%d", (int) getpid());
-      log_msg_set_value(self, LM_V_PID, buf, -1);
-
-      if (self->sdata)
-        {
-          g_free(self->sdata);
-          self->alloc_sdata = self->num_sdata = 0;
-          self->sdata = NULL;
-        }
-      self->pri = LOG_SYSLOG | LOG_ERR;
+      msg_format_inject_parse_error(self, data, length);
       return;
     }
 
