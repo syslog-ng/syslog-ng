@@ -32,6 +32,23 @@
 
 MsgFormatOptions parse_options;
 
+#define MSG_TESTCASE(x, ...) do { log_message_testcase_begin(#x, #__VA_ARGS__); x(__VA_ARGS__); log_message_testcase_end(); } while(0)
+
+#define log_message_testcase_begin(func, args) 			\
+  do                                          			\
+    {                                         			\
+      testcase_begin("%s(%s)", func, args);                     \
+    }                                         			\
+  while (0)
+
+#define log_message_testcase_end()				\
+  do								\
+    {								\
+      testcase_end();						\
+    }								\
+  while (0)
+
+
 void init_and_load_syslogformat_module();
 void deinit_syslogformat_module();
 
