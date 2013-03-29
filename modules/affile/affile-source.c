@@ -127,8 +127,10 @@ affile_sd_construct_transport(AFFileSourceDriver *self, gint fd)
     return log_transport_pipe_new(fd);
   else if (self->reader_options.follow_freq > 0)
     return log_transport_file_new(fd);
-  else
+  else if (affile_is_linux_proc_kmsg(self->filename->str))
     return log_transport_device_new(fd, 10);
+  else
+    return log_transport_pipe_new(fd);
 }
 
 static LogProtoServer *
