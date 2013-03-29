@@ -28,6 +28,24 @@
 #include "plugin-types.h"
 
 void
+msg_format_inject_parse_error(LogMessage *msg, const guchar *data, gsize length)
+{
+  gchar buf[2048];
+
+  log_msg_clear(msg);
+
+  msg->timestamps[LM_TS_STAMP] = msg->timestamps[LM_TS_RECVD];
+  log_msg_set_value(msg, LM_V_HOST, "", 0);
+  g_snprintf(buf, sizeof(buf), "Error processing log message: %.*s", (gint) length, data);
+  log_msg_set_value(msg, LM_V_MESSAGE, buf, -1);
+  log_msg_set_value(msg, LM_V_PROGRAM, "syslog-ng", 9);
+  g_snprintf(buf, sizeof(buf), "%d", (int) getpid());
+  log_msg_set_value(msg, LM_V_PID, buf, -1);
+
+  msg->pri = LOG_SYSLOG | LOG_ERR;
+}
+
+void
 msg_format_options_defaults(MsgFormatOptions *options)
 {
   options->flags = LP_EXPECT_HOSTNAME | LP_STORE_LEGACY_MSGHDR;
