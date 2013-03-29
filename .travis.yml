@@ -5,7 +5,7 @@ install:
 before_script:
   - ./autogen.sh
 script:
-  - ./configure --with-ivykis=internal --prefix=$HOME/install/syslog-ng
+  - ./configure --with-ivykis=internal --prefix=$HOME/install/syslog-ng --enable-pacct
   - make
   - make check
 compiler:
