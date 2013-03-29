@@ -31,6 +31,7 @@
 #include "mainloop.h"
 #include "logproto/logproto-record-server.h"
 #include "logproto/logproto-text-server.h"
+#include "logproto/logproto-dgram-server.h"
 #include "logproto/logproto-indented-multiline-server.h"
 #include "logproto-linux-proc-kmsg-reader.h"
 
@@ -62,6 +63,16 @@ affile_is_linux_proc_kmsg(const gchar *filename)
 {
 #ifdef __linux__
   if (strcmp(filename, "/proc/kmsg") == 0)
+    return TRUE;
+#endif
+  return FALSE;
+}
+
+static inline gboolean
+affile_is_linux_dev_kmsg(const gchar *filename)
+{
+#ifdef __linux__
+  if (strcmp(filename, "/dev/kmsg") == 0)
     return TRUE;
 #endif
   return FALSE;
@@ -129,6 +140,16 @@ affile_sd_construct_transport(AFFileSourceDriver *self, gint fd)
     return log_transport_file_new(fd);
   else if (affile_is_linux_proc_kmsg(self->filename->str))
     return log_transport_device_new(fd, 10);
+  else if (affile_is_linux_dev_kmsg(self->filename->str))
+    {
+      if (lseek(fd, 0, SEEK_END) < 0)
+        {
+          msg_error("Error seeking /dev/kmsg to the end",
+                    evt_tag_str("error", g_strerror(errno)),
+                    NULL);
+        }
+      return log_transport_device_new(fd, 0);
+    }
   else
     return log_transport_pipe_new(fd);
 }
@@ -152,6 +173,8 @@ affile_sd_construct_proto(AFFileSourceDriver *self, gint fd)
     return log_proto_padded_record_server_new(transport, proto_options, self->pad_size);
   else if (affile_is_linux_proc_kmsg(self->filename->str))
     return log_proto_linux_proc_kmsg_reader_new(transport, proto_options);
+  else if (affile_is_linux_dev_kmsg(self->filename->str))
+    return log_proto_dgram_server_new(transport, proto_options);
   else
     {
       switch (self->multi_line_mode)
