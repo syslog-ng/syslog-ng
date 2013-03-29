@@ -1,4 +1,4 @@
-SUBDIRS = @IVYKIS_SUBDIRS@ . logproto/tests
+SUBDIRS = @IVYKIS_SUBDIRS@ . logproto/tests tests
 DIST_SUBDIRS = ivykis
 moduledir = @moduledir@
 

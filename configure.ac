@@ -1210,6 +1210,7 @@ AC_OUTPUT(dist.conf
 	  lib/Makefile
           lib/logproto/Makefile
 	  lib/logproto/tests/Makefile
+	  lib/tests/Makefile
 	  libtest/Makefile
 	  syslog-ng/Makefile
 	  modules/Makefile
