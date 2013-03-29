@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2012-2013 BalaBit IT Ltd, Budapest, Hungary
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -21,6 +21,7 @@
  */
 
 #include "plugin.h"
+#include "plugin-types.h"
 #include "templates.h"
 #include "messages.h"
 #include "cfg.h"
