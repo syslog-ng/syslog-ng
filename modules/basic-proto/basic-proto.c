@@ -705,13 +705,16 @@ log_proto_buffered_server_state_handler_load(StateHandler *self, NameValueContai
         }
       return FALSE;
     }
-  if (!state_handler_alloc_state(self))
+  if (!state_handler_entry_exists(self))
     {
-      if (error)
+      if (!state_handler_alloc_state(self))
         {
-          *error = g_error_new(1, 3, "Can't allocate new state");
+          if (error)
+            {
+              *error = g_error_new(1, 3, "Can't allocate new state");
+            }
+          return FALSE;
         }
-      return FALSE;
     }
   new_state = state_handler_get_state(self);
   new_state->super.version = name_value_container_get_int(container, "version");

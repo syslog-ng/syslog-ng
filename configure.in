@@ -30,6 +30,7 @@ JSON_C_MIN_VERSION="0.7"
 JSON_GLIB_MIN_VERSION="0.12"
 PCRE_MIN_VERSION="6.1"
 LMC_MIN_VERSION="0.1.0"
+XML2_MIN_VERSION="2.9.0"
 
 dnl ***************************************************************************
 dnl Initial setup
@@ -780,6 +781,11 @@ PKG_CHECK_MODULES(JSON_C, json >= $JSON_C_MIN_VERSION,, JSON_C_LIBS="")
 PKG_CHECK_MODULES(JSON_GLIB, json-glib-1.0 >= $JSON_GLIB_MIN_VERSION,, JSON_GLIB_LIBS="")
 
 dnl ***************************************************************************
+dnl xml2 headers/libraries
+dnl ***************************************************************************
+PKG_CHECK_MODULES(LIBXML2, libxml-2.0 >= $XML2_MIN_VERSION,,)
+
+dnl ***************************************************************************
 dnl pcre headers/libraries
 dnl ***************************************************************************
 
@@ -1141,7 +1147,7 @@ if test "x$module_path" = "x"; then
     module_path="$moduledir"
 fi
 
-CPPFLAGS="$CPPFLAGS $GLIB_CFLAGS $EVTLOG_CFLAGS $PCRE_CFLAGS $OPENSSL_CFLAGS $LIBNET_CFLAGS $LIBDBI_CFLAGS $IVYKIS_CFLAGS -D_GNU_SOURCE -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64"
+CPPFLAGS="$CPPFLAGS $GLIB_CFLAGS $EVTLOG_CFLAGS $PCRE_CFLAGS $OPENSSL_CFLAGS $LIBNET_CFLAGS $LIBDBI_CFLAGS $IVYKIS_CFLAGS $LIBXML2_CFLAGS -D_GNU_SOURCE -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64"
 
 ########################################################
 ## NOTES: on how syslog-ng is linked
@@ -1190,7 +1196,7 @@ STATIC_MODULE_LDFLAGS="${STATIC_MODULE_LDFLAGS:=-avoid-version -module -no-undef
 MODULE_DEPS_LIBS="\$(top_builddir)/lib/libsyslog-ng.la"
 
 if test "x$linking_mode" = "xdynamic"; then
-    SYSLOGNG_DEPS_LIBS="$LIBS $BASE_LIBS $GLIB_LIBS $EVTLOG_LIBS $RESOLV_LIBS $LIBCAP_LIBS $PCRE_LIBS $REGEX_LIBS $DL_LIBS"
+    SYSLOGNG_DEPS_LIBS="$LIBS $BASE_LIBS $GLIB_LIBS $EVTLOG_LIBS $RESOLV_LIBS $LIBCAP_LIBS $PCRE_LIBS $REGEX_LIBS $DL_LIBS $LIBXML2_LIBS"
 
     if test "x$with_ivykis" = "xinternal"; then
         # when using the internal ivykis, we're linking it statically into libsyslog-ng.so
@@ -1472,6 +1478,7 @@ AC_OUTPUT(dist.conf
           syslog-ng/Makefile
           syslog-ng-ctl/Makefile
           persist-tool/Makefile
+          upgrade-tool/Makefile
           modules/Makefile
           modules/dummy/Makefile
           modules/basic-proto/Makefile

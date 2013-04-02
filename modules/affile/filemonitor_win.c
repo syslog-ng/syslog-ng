@@ -57,8 +57,10 @@ file_monitor_chk_file(FileMonitorWindows * monitor, const gchar *base_dir, const
   gboolean ret = FALSE;
   gchar *path = g_build_filename(base_dir, filename, NULL);
   gchar *base_name = g_path_get_basename(filename);
-  gboolean match = g_pattern_match_string(monitor->super.compiled_pattern, base_name);
+  gchar *base_name_lower = g_utf8_strdown(base_name, -1);
+  gboolean match = g_pattern_match_string(monitor->super.compiled_pattern, base_name_lower);
   g_free(base_name);
+  g_free(base_name_lower);
 
 
   if (match &&
@@ -248,8 +250,10 @@ file_monitor_watch_directory(FileMonitor *s, const gchar *filename)
   if (!self->super.compiled_pattern)
     {
       gchar *pattern = g_path_get_basename(filename);
-      self->super.compiled_pattern = g_pattern_spec_new(pattern);
+      gchar *pattern_lower = g_utf8_strdown(pattern, -1);
+      self->super.compiled_pattern = g_pattern_spec_new(pattern_lower);
       g_free(pattern);
+      g_free(pattern_lower);
     }
   self->base_dir = base_dir;
 

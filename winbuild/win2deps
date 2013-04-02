@@ -23,3 +23,5 @@ libnet1
 libnet1-dev
 libjsonc0
 libjsonc-dev
+libxml2
+libxml2-dev
