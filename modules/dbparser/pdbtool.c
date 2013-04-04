@@ -570,7 +570,7 @@ pdbtool_match(int argc, char *argv[])
             }
 
           if (debug_pattern_parse)
-            printf("PDBTOOL_HEADER=i:len:key;keylen:match_off;match_len:parser_type:parser_name\n");
+            printf("PDBTOOL_HEADER=i:len:keylen:match_off:match_len:parser_type:parser_name\n");
 
           pos = 0;
           for (i = 0; i < dbg_list->len; i++)
@@ -585,7 +585,7 @@ pdbtool_match(int argc, char *argv[])
                     name = nv_registry_get_handle_name(logmsg_registry, dbg_info->pnode->handle, &name_len);
 
                   printf("PDBTOOL_DEBUG=%d:%d:%d:%d:%d:%s:%s\n",
-                        i++, dbg_info->i, dbg_info->node->keylen, dbg_info->match_off, dbg_info->match_len,
+                        i, dbg_info->i, dbg_info->node->keylen, dbg_info->match_off, dbg_info->match_len,
                         dbg_info->pnode ? r_parser_type_name(dbg_info->pnode->type) : "",
                         dbg_info->pnode && name_len ? name : ""
                         );
