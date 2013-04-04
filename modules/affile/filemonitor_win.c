@@ -209,7 +209,7 @@ file_monitor_start_monitoring(FileMonitorWindows* self)
   self->ol.hEvent = self->monitor_handler.handle;
   if (ReadDirectoryChangesW(self->hDir, self->buffer, FILE_MONITOR_BUFFER_SIZE, self->super.recursion, self->notify_flags, NULL, &self->ol, NULL) == 0)
     {
-      msg_error("Can't monitor directory",evt_tag_errno("error",GetLastError()), evt_tag_id(MSG_CANT_MONITOR_DIRECTORY), NULL);
+      msg_error("Can't monitor directory",evt_tag_errno_win("error",GetLastError()), evt_tag_id(MSG_CANT_MONITOR_DIRECTORY), NULL);
       return FALSE;
     }
   iv_handle_register(&self->monitor_handler);

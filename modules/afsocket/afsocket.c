@@ -70,6 +70,16 @@ typedef struct _AFSocketSourceConnection
   GSockAddr *peer_addr;
 } AFSocketSourceConnection;
 
+EVTTAG *
+evt_tag_socket_error(const gchar *name, int value)
+{
+#ifdef __WIN32
+  return evt_tag_errno_win(name, value);
+#else
+  return evt_tag_errno(name, value);
+#endif
+}
+
 static void afsocket_sd_close_connection(AFSocketSourceDriver *self, AFSocketSourceConnection *sc);
 
 gboolean
@@ -120,11 +130,11 @@ afsocket_open_socket(GSockAddr *bind_addr, int stream_or_dgram, int *fd)
       if (g_bind(sock, bind_addr) != G_IO_STATUS_NORMAL)
         {
           gchar buf[256];
-
+          errno = getsockerror();
           g_process_cap_restore(saved_caps);
           msg_error("Error binding socket",
                     evt_tag_str("addr", g_sockaddr_format(bind_addr, buf, sizeof(buf), GSA_FULL)),
-                    evt_tag_errno(EVT_TAG_OSERROR, errno),
+                    evt_tag_socket_error(EVT_TAG_OSERROR, errno),
                     evt_tag_id(MSG_ERROR_BINDING_SOCKET),
                     NULL);
           closesocket(sock);
@@ -137,8 +147,9 @@ afsocket_open_socket(GSockAddr *bind_addr, int stream_or_dgram, int *fd)
     }
   else
     {
+      errno = getsockerror();
       msg_error("Error creating socket",
-                evt_tag_errno(EVT_TAG_OSERROR, errno),
+                evt_tag_socket_error(EVT_TAG_OSERROR, errno),
                 evt_tag_id(MSG_ERROR_CREATING_SOCKET),
                 NULL);
       return FALSE;
@@ -536,7 +547,7 @@ afsocket_sd_accept(gpointer s)
       else if (status != G_IO_STATUS_NORMAL)
         {
           msg_error("Error accepting new connection",
-                    evt_tag_errno(EVT_TAG_OSERROR, errno),
+                    evt_tag_socket_error(EVT_TAG_OSERROR, getsockerror()),
                     NULL);
           return;
         }
@@ -696,7 +707,7 @@ afsocket_sd_init(LogPipe *s)
       if (listen(sock, self->listen_backlog) < 0)
         {
           msg_error("Error during listen()",
-                    evt_tag_errno(EVT_TAG_OSERROR, errno),
+                    evt_tag_socket_error(EVT_TAG_OSERROR, getsockerror()),
                     NULL);
           closesocket(sock);
           return FALSE;
@@ -1131,10 +1142,11 @@ afsocket_dd_connected(AFSocketDestDriver *self)
       transport_flags |= LTF_SHUTDOWN;
       if (getsockopt(self->fd, SOL_SOCKET, SO_ERROR, &error, &errorlen) == -1)
         {
+          errno = getsockerror();
           msg_error("getsockopt(SOL_SOCKET, SO_ERROR) failed for connecting socket",
                     evt_tag_int("fd", self->fd),
                     evt_tag_str("server", g_sockaddr_format(self->dest_addr, buf2, sizeof(buf2), GSA_FULL)),
-                    evt_tag_errno(EVT_TAG_OSERROR, errno),
+                    evt_tag_socket_error(EVT_TAG_OSERROR, errno),
                     evt_tag_int("time_reopen", self->time_reopen),
                     evt_tag_id(MSG_SYSLOG_SERVER_CONNECTION_FAILED),
                     NULL);
@@ -1142,10 +1154,10 @@ afsocket_dd_connected(AFSocketDestDriver *self)
         }
       if (error)
         {
-          msg_error("Syslog connection failed",
+           msg_error("Syslog connection failed",
                     evt_tag_int("fd", self->fd),
                     evt_tag_str("server", g_sockaddr_format(self->dest_addr, buf2, sizeof(buf2), GSA_FULL)),
-                    evt_tag_errno(EVT_TAG_OSERROR, error),
+                    evt_tag_socket_error(EVT_TAG_OSERROR, error),
                     evt_tag_int("time_reopen", self->time_reopen),
                     evt_tag_id(MSG_SYSLOG_SERVER_CONNECTION_FAILED),
                     NULL);
@@ -1259,11 +1271,12 @@ afsocket_dd_start_connect(AFSocketDestDriver *self)
   else
     {
       /* error establishing connection */
+      errno = getsockerror();
       msg_error("Connection failed",
                 evt_tag_int("fd", sock),
                 evt_tag_str("server", g_sockaddr_format(self->dest_addr, buf2, sizeof(buf2), GSA_FULL)),
                 evt_tag_str("local", g_sockaddr_format(self->bind_addr, buf1, sizeof(buf1), GSA_FULL)),
-                evt_tag_errno(EVT_TAG_OSERROR, errno),
+                evt_tag_socket_error(EVT_TAG_OSERROR, errno),
                 evt_tag_id(MSG_SYSLOG_SERVER_CONNECTION_FAILED),
                 NULL);
       closesocket(sock);

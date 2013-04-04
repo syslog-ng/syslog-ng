@@ -374,7 +374,7 @@ wide_to_utf8(LPCWSTR str)
   byte_num = WideCharToMultiByte(CP_UTF8, 0, str, str_length, NULL, 0, NULL,NULL);
   if (byte_num == 0)
     {
-      msg_error("WideToUTF8 conversion failed", evt_tag_errno("error",GetLastError()),evt_tag_id(MSG_CHARACTER_CONVERSION_FAILED), NULL);
+      msg_error("WideToUTF8 conversion failed", evt_tag_errno_win("error",GetLastError()),evt_tag_id(MSG_CHARACTER_CONVERSION_FAILED), NULL);
       return NULL;
     }
   else
@@ -383,7 +383,7 @@ wide_to_utf8(LPCWSTR str)
       byte_num = WideCharToMultiByte(CP_UTF8, 0, str, str_length, result, byte_num, NULL,NULL);
       if (byte_num == 0)
         {
-          msg_error("WideToUTF8 final conversion failed",evt_tag_errno("error",GetLastError()),evt_tag_id(MSG_CHARACTER_CONVERSION_FAILED),NULL);
+          msg_error("WideToUTF8 final conversion failed",evt_tag_errno_win("error",GetLastError()),evt_tag_id(MSG_CHARACTER_CONVERSION_FAILED),NULL);
           g_free(result);
           return NULL;
         }

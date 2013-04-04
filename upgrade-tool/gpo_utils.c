@@ -80,7 +80,7 @@ set_privilege(HANDLE hToken, LPCSTR lpszPrivilege, BOOL bEnablePrivilege)
   if (!LookupPrivilegeValue(NULL, lpszPrivilege, &luid))
     {
 
-      msg_error("LookupPrivilegeValue error", evt_tag_errno("error", GetLastError()), NULL);
+      msg_error("LookupPrivilegeValue error", evt_tag_errno_win("error", GetLastError()), NULL);
       return FALSE;
     }
 
@@ -99,7 +99,7 @@ set_privilege(HANDLE hToken, LPCSTR lpszPrivilege, BOOL bEnablePrivilege)
 
   if (!AdjustTokenPrivileges(hToken, FALSE, &tp, sizeof(TOKEN_PRIVILEGES), (PTOKEN_PRIVILEGES) NULL, (PDWORD) NULL))
     {
-      msg_error("AdjustTokenPrivileges failed", evt_tag_errno("error", GetLastError()), NULL);
+      msg_error("AdjustTokenPrivileges failed", evt_tag_errno_win("error", GetLastError()), NULL);
       return FALSE;
     }
 
@@ -180,7 +180,7 @@ import_to_bin_file(const gchar *src_key, const gchar *path)
        }
      else
        {
-         msg_error("OpenProcessToken() failed", evt_tag_errno("error", GetLastError()), NULL);
+         msg_error("OpenProcessToken() failed", evt_tag_errno_win("error", GetLastError()), NULL);
          return FALSE;
        }
 
@@ -198,7 +198,7 @@ import_to_bin_file(const gchar *src_key, const gchar *path)
                                      &dwDisposition);
     if (error_code != ERROR_SUCCESS)
       {
-        msg_error("Failed to open registry key", evt_tag_str("key", src_key), evt_tag_errno("error", GetLastError()), NULL);
+        msg_error("Failed to open registry key", evt_tag_str("key", src_key), evt_tag_errno_win("error", GetLastError()), NULL);
         return FALSE;
       }
 
@@ -209,7 +209,7 @@ import_to_bin_file(const gchar *src_key, const gchar *path)
       }
     else
       {
-        msg_error("Failed to restore registry key", evt_tag_str("key", src_key), evt_tag_errno("error", GetLastError()), NULL);
+        msg_error("Failed to restore registry key", evt_tag_str("key", src_key), evt_tag_errno_win("error", GetLastError()), NULL);
       }
     RegCloseKey(phkResult);
     return restore_sucessfull;
@@ -254,7 +254,7 @@ GPODisover(const gboolean write_gpo_tmp_regkeys)
   hFind = FindFirstFileEx(filter->str, FindExInfoStandard, &FindFileData, FindExSearchNameMatch, NULL, 0 );
   if (hFind == INVALID_HANDLE_VALUE)
     {
-       msg_error("Invalid file handle", evt_tag_errno("error", GetLastError()), NULL);
+       msg_error("Invalid file handle", evt_tag_errno_win("error", GetLastError()), NULL);
        return NULL;
     }
   GString *name_str = g_string_sized_new(4096);
@@ -317,7 +317,7 @@ GPODisover(const gboolean write_gpo_tmp_regkeys)
   FindClose(hFind);
   if (dwError != ERROR_NO_MORE_FILES)
     {
-      msg_error("FindNextFile error",evt_tag_errno("error", dwError), NULL);
+      msg_error("FindNextFile error",evt_tag_errno_win("error", dwError), NULL);
       g_hash_table_destroy(result);
       return NULL;
     }
@@ -377,7 +377,7 @@ upgrade_binary_reg_file(const gchar *filename)
     }
   if (CopyFile(filename,backup_file, FALSE) == 0)
     {
-      msg_error("Can't create backup file", evt_tag_str("file", filename), evt_tag_str("backup_file", backup_file), evt_tag_errno("error", GetLastError()), NULL);
+      msg_error("Can't create backup file", evt_tag_str("file", filename), evt_tag_str("backup_file", backup_file), evt_tag_errno_win("error", GetLastError()), NULL);
       g_free(backup_file);
       return -4;
     }
@@ -423,14 +423,14 @@ upgrade_registry_path(const gchar *path)
     }
   if (RegCreateKeyEx(HKEY_LOCAL_MACHINE, backup_path, 0, NULL, 0, KEY_ALL_ACCESS, NULL, &hBackupKey, NULL) != ERROR_SUCCESS)
     {
-      msg_error("Can't create backup key", evt_tag_str("key", backup_path), evt_tag_errno("error", GetLastError()), NULL);
+      msg_error("Can't create backup key", evt_tag_str("key", backup_path), evt_tag_errno_win("error", GetLastError()), NULL);
       g_free(full_path);
       g_free(backup_path);
       return -1;
     }
   if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, full_path, 0, KEY_ALL_ACCESS, &hKey) != ERROR_SUCCESS)
     {
-      msg_error("Can't open key", evt_tag_str("key", full_path), evt_tag_errno("error", GetLastError()), NULL);
+      msg_error("Can't open key", evt_tag_str("key", full_path), evt_tag_errno_win("error", GetLastError()), NULL);
       g_free(full_path);
       g_free(backup_path);
       RegCloseKey(hBackupKey);
@@ -438,7 +438,7 @@ upgrade_registry_path(const gchar *path)
     }
   if (SHCopyKey(hKey, NULL, hBackupKey, 0) != ERROR_SUCCESS)
     {
-      msg_error("Can't copy key", evt_tag_str("src_key", full_path), evt_tag_str("dst_key", backup_path), evt_tag_errno("error", GetLastError()), NULL);
+      msg_error("Can't copy key", evt_tag_str("src_key", full_path), evt_tag_str("dst_key", backup_path), evt_tag_errno_win("error", GetLastError()), NULL);
       g_free(full_path);
       g_free(backup_path);
       RegCloseKey(hBackupKey);
