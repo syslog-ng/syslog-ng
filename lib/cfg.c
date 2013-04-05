@@ -331,6 +331,32 @@ cfg_deinit(GlobalConfig *cfg)
   return result;
 }
 
+static void
+cfg_load_default_modules_if_necessary(GlobalConfig *self)
+{
+  gboolean is_license_module_loaded = FALSE;
+
+  if (get_version_value(self->version) <= 0x0301 || atoi(cfg_args_get(self->lexer->globals, "autoload-compiled-modules")))
+    {
+      gint i;
+      gchar **mods;
+
+      mods = g_strsplit(default_modules, ",", 0);
+      for (i = 0; mods[i]; i++)
+        {
+          plugin_load_module(mods[i], self, NULL);
+          if (strcmp(mods[i], "license") == 0)
+            is_license_module_loaded = TRUE;
+        }
+      g_strfreev(mods);
+    }
+
+  if (!is_license_module_loaded)
+    {
+      plugin_load_module("license", self, NULL);
+    }
+}
+
 void
 cfg_set_version(GlobalConfig *self, gint version)
 {
@@ -359,18 +385,7 @@ cfg_set_version(GlobalConfig *self, gint version)
                   NULL);
     }
 
-  if (get_version_value(self->version) <= 0x0301 || atoi(cfg_args_get(self->lexer->globals, "autoload-compiled-modules")))
-    {
-      gint i;
-      gchar **mods;
-
-      mods = g_strsplit(default_modules, ",", 0);
-      for (i = 0; mods[i]; i++)
-        {
-          plugin_load_module(mods[i], self, NULL);
-        }
-      g_strfreev(mods);
-    }
+  cfg_load_default_modules_if_necessary(self);
 }
 
 struct _LogTemplate *
