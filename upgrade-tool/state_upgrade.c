@@ -20,6 +20,11 @@
 
 GlobalConfig *configuration;
 
+typedef struct _FileState {
+  gchar *filename;
+  guint64 pos;
+} FileState;
+
 StateHandler *
 create_state_handler_with_state(gchar *prefix, gchar *persist_name)
 {
@@ -54,34 +59,79 @@ exit:
   return handler;
 }
 
+gchar *
+remove_duplicated_chars(const gchar *input, gchar check_char)
+{
+  gchar *result = g_malloc0(strlen(input) + 1);
+  gint i = 0, j = 0;
+
+  while (input[i])
+    {
+      if (input[i] == check_char && input[i + 1] == check_char)
+        {
+          i++;
+        }
+      else
+        {
+          result[j++] = input[i++];
+        }
+    }
+  return result;
+}
+
+void
+file_state_free(FileState *state)
+{
+  if (state)
+    {
+      g_free(state->filename);
+      g_free(state);
+    }
+}
+
+FileState *
+upgrade_tool_get_file_state(ConfigStore *store, gchar *root)
+{
+  FileState *result = g_new0(FileState, 1);
+  gchar *filename;
+  gchar *lower_filename;
+  if (!config_store_open(store, root))
+    {
+      file_state_free(result);
+      return NULL;
+    }
+  filename = config_store_get_string(store, "CurrentFileName");
+  lower_filename = g_utf8_strdown(filename, -1);
+  result->filename = remove_duplicated_chars(lower_filename, '\\');
+  result->pos = config_store_get_number(store, "CurrentPositionL") + ((guint64)(config_store_get_number(store, "CurrentPositionH")) << 32);
+  g_free(filename);
+  g_free(lower_filename);
+  return result;
+}
+
 gboolean
 upgrade_tool_generate_file_state(ConfigStore *store, gchar *root)
 {
-  gchar *filename = NULL;
-  gchar *lower_filename = NULL;
+  FileState *file_state;
   gchar *persist_name = NULL;
   NameValueContainer *container = NULL;
   StateHandler *handler = NULL;
   GError *err = NULL;
   gboolean result = TRUE;
-
-  guint64 filepos;
   struct stat st;
-  if (!config_store_open(store, root))
+
+  file_state = upgrade_tool_get_file_state(store, root);
+  if (file_state == NULL)
     {
       goto exit;
     }
 
-  filename = config_store_get_string(store, "CurrentFileName");
-  lower_filename = g_utf8_strdown(filename, -1);
-
-  if (stat(filename, &st) == -1)
+  if (stat(file_state->filename, &st) == -1)
     {
       goto exit;
     }
 
-  filepos = config_store_get_number(store, "CurrentPositionL") + ((guint64)(config_store_get_number(store, "CurrentPositionH")) << 32);
-  persist_name = g_strdup_printf(FILE_STATE_PREFIX"(%s)",lower_filename);
+  persist_name = g_strdup_printf(FILE_STATE_PREFIX"(%s)", file_state->filename);
 
   handler = create_state_handler_with_state(FILE_STATE_PREFIX, persist_name);
   if (!handler)
@@ -94,7 +144,7 @@ upgrade_tool_generate_file_state(ConfigStore *store, gchar *root)
 
   name_value_container_add_int(container, "version", 1);
   name_value_container_add_boolean(container, "big_endian", FALSE);
-  name_value_container_add_int64(container, "raw_stream_pos", filepos);
+  name_value_container_add_int64(container, "raw_stream_pos", file_state->pos);
   name_value_container_add_int64(container, "file_size", st.st_size);
   name_value_container_add_int64(container, "file_inode", 1);
   name_value_container_add_int(container, "run_id", 0);
@@ -106,8 +156,7 @@ upgrade_tool_generate_file_state(ConfigStore *store, gchar *root)
     }
 exit:
   g_free(persist_name);
-  g_free(filename);
-  g_free(lower_filename);
+  file_state_free(file_state);
   if (handler)
     {
       state_handler_free(handler);
@@ -162,11 +211,11 @@ upgrade_tool_generate_evenlog_state(ConfigStore *store, gchar *root, gchar *chan
 {
   gboolean result = TRUE;
   guint32 pos;
-  gchar *bookmark;
+  gchar *bookmark = NULL;
   NameValueContainer *container = NULL;
   StateHandler *handler = NULL;
   GError *err = NULL;
-  gchar *persist_name;
+  gchar *persist_name = NULL;
   gchar *prefix = NULL;
 
   if (!config_store_open(store, root))
