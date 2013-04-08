@@ -431,6 +431,8 @@ affile_sd_notify(LogPipe *s, LogPipe *sender, gint notify_code, gpointer user_da
 
         if (!filename)
           {
+            if (notify_code == NC_FILE_SKIP)
+              log_reader_restart(self->reader);
             break;
           }
         if (affile_sd_open_file(self, filename, &fd))
@@ -464,6 +466,11 @@ affile_sd_notify(LogPipe *s, LogPipe *sender, gint notify_code, gpointer user_da
             affile_sd_recover_state(s, cfg, proto);
             log_reader_reopen(self->reader, proto, s, &self->reader_options, 1, SCS_FILE, self->super.super.id, self->filename->str, immediate_check, (LogProtoOptions *)options);
           }
+          else
+            {
+              if (notify_code == NC_FILE_SKIP)
+                log_reader_restart(self->reader);
+            }
         break;
       }
     default:
