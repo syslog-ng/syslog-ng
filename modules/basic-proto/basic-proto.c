@@ -1880,28 +1880,39 @@ log_proto_text_server_prepare(LogProto *s, gint *fd, GIOCondition *cond, gint *t
  *
  * NOTE: find_eom is not static as it is used by a unit test program.
  **/
+
+#if GLIB_SIZEOF_LONG == GLIB_SIZEOF_VOID_P
+#define LONGDEF gulong
+#elif GLIB_SIZEOF_VOID_P == 4
+#define LONGDEF guint32
+#elif GLIB_SIZEOF_VOID_P == 8
+#define LONGDEF guint64
+#else
+#error "Unsupported word length, only 32 or 64 bit platforms are suppoted"
+#endif
+
 const guchar *
 find_eom(const guchar *s, gsize n)
 {
   const guchar *char_ptr;
-  const gulong *longword_ptr;
-  gulong longword, magic_bits, charmask;
+  const LONGDEF *longword_ptr;
+  LONGDEF longword, magic_bits, charmask;
   gchar c;
 
   c = '\n';
 
   /* align input to long boundary */
-  for (char_ptr = s; n > 0 && ((gulong) char_ptr & (sizeof(longword) - 1)) != 0; ++char_ptr, n--)
+  for (char_ptr = s; n > 0 && ((LONGDEF) char_ptr & (sizeof(longword) - 1)) != 0; ++char_ptr, n--)
     {
       if (*char_ptr == c || *char_ptr == '\0')
         return char_ptr;
     }
 
-  longword_ptr = (gulong *) char_ptr;
+  longword_ptr = (LONGDEF *) char_ptr;
 
-#if GLIB_SIZEOF_LONG == 8
+#if GLIB_SIZEOF_VOID_P == 8
   magic_bits = 0x7efefefefefefeffL;
-#elif GLIB_SIZEOF_LONG == 4
+#elif GLIB_SIZEOF_VOID_P == 4
   magic_bits = 0x7efefeffL;
 #else
   #error "unknown architecture"

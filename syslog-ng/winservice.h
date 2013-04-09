@@ -1,8 +1,8 @@
 #ifndef WINSERVICE_H
 #define WINSERVICE_H 1
 
-#include <glib.h>
 #include <windows.h>
+#include <glib.h>
 
 typedef int (*SERVICE_MAIN)(void);
 typedef void (*SERVICE_STOP_FUNCTION)(void);

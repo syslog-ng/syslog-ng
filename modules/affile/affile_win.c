@@ -124,7 +124,7 @@ affile_sd_construct_proto(AFFileSourceDriver *self, LogTransport *transport)
   guint flags;
   LogProto *proto = NULL;
   GlobalConfig *cfg = log_pipe_get_config((LogPipe *)self);
-  gchar *name;
+  gchar *name = NULL;
 
   MsgFormatHandler *handler;
 
@@ -671,7 +671,7 @@ affile_sd_set_file_pos(AFFileSourceDriver *self, GlobalConfig *cfg)
     {
       msg_error("Can't get state handler for persist name",
                 evt_tag_str("persist_name",
-                affile_sd_format_persist_name(self)),
+                affile_sd_format_persist_name(self->filename->str)),
                 NULL);
       return;
     }

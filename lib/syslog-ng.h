@@ -36,8 +36,8 @@
 #define YYDEBUG 1
 #endif
 
-#include <glib.h>
 #include "compat.h"
+#include <glib.h>
 
 #define PATH_SYSLOG_NG_CONF     PATH_SYSCONFDIR "/syslog-ng.conf"
 #define PATH_INSTALL_DAT	PATH_SYSCONFDIR "/install.dat"

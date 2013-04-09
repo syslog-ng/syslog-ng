@@ -142,7 +142,10 @@ ssize_t readv(int fd, const struct iovec *vector, int count);
 void *mmap(void *addr, size_t len, int prot, int flags, int fildes, off_t off);
 int munmap(void *addr, size_t len);
 int madvise(void *addr, size_t len, int advice);
+long getpagesize (void);
+#if (_WIN32_WINNT < 0x0600)
 const char *inet_ntop(int af, const void *src, char *dst, socklen_t cnt);
+#endif /*_WIN32_WINNT >= 0x0600*/
 int inet_pton(int af, const char *src, void *dst);
 int inet_aton(const char *cp, struct in_addr *dst);
 
@@ -283,7 +286,7 @@ void IV_SIGNAL_INIT(struct iv_signal *this);
 int iv_signal_register(struct iv_signal *this);
 void iv_signal_unregister(struct iv_signal *this);
 
-int syslog(int type, char *bufp, int len);
+void syslog(int pri, const char *bufp, ...);
 void openlog(const char *ident, int option, int facility);
 
 int chown(const char *path, uid_t owner, gid_t group);
@@ -317,12 +320,6 @@ int clock_gettime(int clock_id, struct timespec *res);
    static void f(void) __attribute__((constructor));\
    static void f(void)
 
-
-/* FIXME: Ugly hack to force loading and linking crypto.c on Windows. Without it, the linker skips the module... */
-#define BB_CRYPTO_EXPORT void crypto_init_vs(void) { return; }
-#define BB_CRYPTO_IMPORT crypto_init_vs();
-void crypto_init_vs(void);
-
 #define WSAEINPROGRESS EINPROGRESS
 
 #else /* _WIN32 */
@@ -334,7 +331,7 @@ void crypto_init_vs(void);
 void init_signals();
 
 #ifndef HAVE_LOCALTIME_R
-struct tm * localtime_r(const time_t *timer, struct tm *result);
+struct tm *localtime_r(const time_t *timer, struct tm *result);
 #endif
 
 #ifdef _WIN32

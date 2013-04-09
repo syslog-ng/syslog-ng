@@ -1,9 +1,7 @@
 #include "hostname.h"
-#include <ws2tcpip.h>
 #include <iphlpapi.h>
-#include <winsock2.h>
 #include <windns.h>
-#include <windows.h>
+#include <stdio.h>
 
 char *
 get_ip_for_dns_request()

@@ -181,7 +181,7 @@ g_sockaddr_inet_bind_prepare(int sock, GSockAddr *addr)
 {
   int tmp = 1;
   
-  setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &tmp, sizeof(tmp));
+  setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (char *) &tmp, sizeof(tmp));
   return G_IO_STATUS_NORMAL;
 }
 
@@ -529,6 +529,7 @@ static GSockAddrFuncs unix_sockaddr_funcs =
     the new instance
 
   +*/
+#ifndef _WIN32
 GSockAddr *
 g_sockaddr_unix_new(const gchar *name)
 {
@@ -551,6 +552,7 @@ g_sockaddr_unix_new(const gchar *name)
     }
   return (GSockAddr *) addr;
 }
+#endif
 
 /*+
 
@@ -565,6 +567,7 @@ g_sockaddr_unix_new(const gchar *name)
     the new instance
 
   +*/
+#ifndef _WIN32
 GSockAddr *
 g_sockaddr_unix_new2(struct sockaddr_un *saun, int sunlen)
 {
@@ -577,6 +580,7 @@ g_sockaddr_unix_new2(struct sockaddr_un *saun, int sunlen)
   addr->saun = *saun;
   return (GSockAddr *) addr;
 }
+#endif
 
 /*+ private function to prepare a bind on AF_UNIX sockets, e.g. unlink
   the socket if it exists and is a socket. +*/

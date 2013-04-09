@@ -305,6 +305,15 @@ extern struct _LogDriver *last_driver;
 
 %code {
 
+#ifndef _WIN32
+#include <netinet/in.h>
+#else
+#include <winsock2.h>
+#endif
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "cfg-parser.h"
 #include "cfg.h"
 #include "sgroup.h"
@@ -330,15 +339,6 @@ extern struct _LogDriver *last_driver;
 #include "messages.h"
 
 #include "syslog-names.h"
-
-#ifndef _WIN32
-#include <netinet/in.h>
-#else
-#include <winsock2.h>
-#endif
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 #include "cfg-grammar.h"
 

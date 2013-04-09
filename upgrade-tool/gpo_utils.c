@@ -1,11 +1,11 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <shlwapi.h>
 #include "config_store.h"
 #include "upgrade_config.h"
 #include "gpo_utils.h"
 #include "messages.h"
 #include <windows.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <shlwapi.h>
 
 
 #define GPO_TMP "SOFTWARE\\BalaBit\\syslog-ng Agent\\Domain GPO Information TMP\\"

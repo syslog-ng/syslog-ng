@@ -1,12 +1,12 @@
 #ifndef TLSWINCRYPT_H
 #define TLSWINCRYPT_H 1
 
+#include "messages.h"
+#include "syslog-ng.h"
 #include <openssl/ssl.h>
 #include <openssl/engine.h>
 #include <openssl/conf.h>
 #include <glib.h>
-#include "messages.h"
-#include "syslog-ng.h"
 
 #ifdef _WIN32
 gboolean load_certificate(SSL_CTX *ctx,const gchar *cert_subject);

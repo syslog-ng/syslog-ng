@@ -318,13 +318,13 @@ unregister_resource_dll(char *szName)
     {
       if (SHDeleteKey(hKey, NULL) != ERROR_SUCCESS)
         {
-          fprintf(stderr,"Can't delete registry Key; key = '%s'; error=%d\n",reg_path, GetLastError());
+          fprintf(stderr,"Can't delete registry Key; key = '%s'; error=%lu\n",reg_path, GetLastError());
         }
       RegCloseKey(hKey);
     }
   else
     {
-      fprintf(stderr,"Can't open registry Key; key = '%s'; error=%d\n",reg_path, GetLastError());
+      fprintf(stderr,"Can't open registry Key; key = '%s'; error=%lu\n",reg_path, GetLastError());
     }
   g_free(reg_path);
 }

@@ -33,7 +33,7 @@ control_client_connect(ControlClient *self)
                   continue;
                 }
             }
-          fprintf(stderr,"Can't connect to the control pipe: %s error: %d", self->path, GetLastError());
+          fprintf(stderr,"Can't connect to the control pipe: %s error: %lu", self->path, GetLastError());
           return FALSE;
         }
       break;
@@ -47,7 +47,7 @@ control_client_send_command(ControlClient *self, const gchar *cmd)
   DWORD bytes_written;
   if (!WriteFile(self->hPipe, cmd, strlen(cmd), &bytes_written, NULL))
     {
-      fprintf(stderr,"Can't send command to the control pipe: %s error: %d", self->path, GetLastError());
+      fprintf(stderr,"Can't send command to the control pipe: %s error: %lu", self->path, GetLastError());
       return -1;
     }
   return (gint)bytes_written;
@@ -66,7 +66,7 @@ control_client_read_reply(ControlClient *self)
     {
       if (!ReadFile(self->hPipe, buff, BUFF_LEN, &bytes_read, NULL))
         {
-          fprintf(stderr, "Error reading control socket, error='%d'\n", GetLastError());
+          fprintf(stderr, "Error reading control socket, error='%lu'\n", GetLastError());
           g_string_free(reply, TRUE);
           return NULL;
         }

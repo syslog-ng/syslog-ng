@@ -32,9 +32,6 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <netinet/in.h>
-#else
-#include <winsock2.h>
-#include <ws2tcpip.h>
 #endif
 #include <sys/types.h>
 #include <unistd.h>

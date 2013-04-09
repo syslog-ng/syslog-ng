@@ -1620,9 +1620,11 @@ log_msg_read_sockaddr(SerializeArchive *sa, GSockAddr **addr)
         break;
       }
 #endif
+#ifndef G_OS_WIN32
     case AF_UNIX:
       *addr = g_sockaddr_unix_new(NULL);
       break;
+#endif
     default:
       return FALSE;
       break;

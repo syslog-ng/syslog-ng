@@ -123,23 +123,23 @@ afinet_setup_socket(gint fd, GSockAddr *addr, InetSocketOptions *sock_options, A
                 memset(&mreq, 0, sizeof(mreq));
                 mreq.imr_multiaddr = g_sockaddr_inet_get_address(addr);
                 mreq.imr_interface.s_addr = INADDR_ANY;
-                setsockopt(fd, SOL_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq));
-                setsockopt(fd, SOL_IP, IP_MULTICAST_LOOP, &off, sizeof(off));
+                setsockopt(fd, SOL_IP, IP_ADD_MEMBERSHIP, (char *) &mreq, sizeof(mreq));
+                setsockopt(fd, SOL_IP, IP_MULTICAST_LOOP, (char *) &off, sizeof(off));
               }
             if (dir & AFSOCKET_DIR_SEND)
               {
                 if (sock_options->ttl)
-                  setsockopt(fd, SOL_IP, IP_MULTICAST_TTL, &sock_options->ttl, sizeof(sock_options->ttl));
+                  setsockopt(fd, SOL_IP, IP_MULTICAST_TTL, (char *) &sock_options->ttl, sizeof(sock_options->ttl));
               }
 
           }
         else
           {
             if (sock_options->ttl && (dir & AFSOCKET_DIR_SEND))
-              setsockopt(fd, SOL_IP, IP_TTL, &sock_options->ttl, sizeof(sock_options->ttl));
+              setsockopt(fd, SOL_IP, IP_TTL, (char *) &sock_options->ttl, sizeof(sock_options->ttl));
           }
         if (sock_options->tos && (dir & AFSOCKET_DIR_SEND))
-          setsockopt(fd, SOL_IP, IP_TOS, &sock_options->tos, sizeof(sock_options->tos));
+          setsockopt(fd, SOL_IP, IP_TOS, (char *) &sock_options->tos, sizeof(sock_options->tos));
 
         break;
       }

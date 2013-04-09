@@ -603,7 +603,7 @@ if test "$ac_cv_func_localtime_r" != "xyes"; then
 #endif
             ]],
             [[struct tm habala;
-            if( localtime_r(0, &habala)) exit(0);]])
+            if( localtime_r(0, &habala)) return 0;]])
             ],
             [blb_cv_have_localtime_r=yes],
             [blb_cv_have_localtime_r=no])

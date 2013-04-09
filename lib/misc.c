@@ -527,17 +527,28 @@ format_hex_string(gpointer data, gsize data_len, gchar *result, gsize result_len
  *
  * It uses an algorithm similar to what there's in libc memchr/strchr.
  **/
+
+#if GLIB_SIZEOF_LONG == GLIB_SIZEOF_VOID_P
+#define LONGDEF gulong
+#elif GLIB_SIZEOF_VOID_P == 4
+#define LONGDEF guint32
+#elif GLIB_SIZEOF_VOID_P == 8
+#define LONGDEF guint64
+#else
+#error "Unsupported word length, only 32 or 64 bit platforms are suppoted"
+#endif
+
 gchar *
 find_cr_or_lf(gchar *s, gsize n)
 {
   gchar *char_ptr;
-  gulong *longword_ptr;
-  gulong longword, magic_bits, cr_charmask, lf_charmask;
+  LONGDEF *longword_ptr;
+  LONGDEF longword, magic_bits, cr_charmask, lf_charmask;
   const char CR = '\r';
   const char LF = '\n';
 
   /* align input to long boundary */
-  for (char_ptr = s; n > 0 && ((gulong) char_ptr & (sizeof(longword) - 1)) != 0; ++char_ptr, n--)
+  for (char_ptr = s; n > 0 && ((LONGDEF) char_ptr & (sizeof(longword) - 1)) != 0; ++char_ptr, n--)
     {
       if (*char_ptr == CR || *char_ptr == LF)
         return char_ptr;
@@ -545,11 +556,11 @@ find_cr_or_lf(gchar *s, gsize n)
         return NULL;
     }
     
-  longword_ptr = (gulong *) char_ptr;
+  longword_ptr = (LONGDEF *) char_ptr;
 
-#if GLIB_SIZEOF_LONG == 8
+#if GLIB_SIZEOF_VOID_P == 8
   magic_bits = 0x7efefefefefefeffL;
-#elif GLIB_SIZEOF_LONG == 4
+#elif GLIB_SIZEOF_VOID_P == 4
   magic_bits = 0x7efefeffL; 
 #else
   #error "unknown architecture"

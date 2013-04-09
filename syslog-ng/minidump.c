@@ -1,8 +1,7 @@
-#include <windows.h>
 #include <stdio.h>
 #include <signal.h>
-#include "dbghelp.h"
 #include "minidump.h"
+#include "dbghelp.h"
 
 typedef BOOL (WINAPI *MINIDUMPWRITEDUMP)(HANDLE hProcess, DWORD dwPid, HANDLE hFile, MINIDUMP_TYPE DumpType,
                   CONST PMINIDUMP_EXCEPTION_INFORMATION ExceptionParam,
@@ -69,7 +68,7 @@ DropMinidump(struct _EXCEPTION_POINTERS *pExceptionInfo, char *dumpFileName, cha
         }
     }
 
-  _MiniDumpWriteDump = GetProcAddress( hDll, "MiniDumpWriteDump" );
+  _MiniDumpWriteDump = (MINIDUMPWRITEDUMP) GetProcAddress( hDll, "MiniDumpWriteDump" );
   if (!_MiniDumpWriteDump)
     {
       fprintf(stderr, "Can't find MiniDumpWriteDump function in dbghelp.dll (Maybe the dbghelp.dll is too old)\n");

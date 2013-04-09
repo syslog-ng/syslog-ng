@@ -96,10 +96,20 @@ read_sock(int sock, char *buf, int bufsize)
   buf[rb] = '\0';
 }
 
+#if GLIB_SIZEOF_LONG == GLIB_SIZEOF_VOID_P
+#define SLONGDEF glong
+#elif GLIB_SIZEOF_VOID_P == 4
+#define SLONGDEF gint32
+#elif GLIB_SIZEOF_VOID_P == 8
+#define SLONGDEF gint64
+#else
+#error "Unsupported word length, only 32 or 64 bit platforms are suppoted"
+#endif
+
 static ssize_t
 send_plain(void *user_data, void *buf, size_t length)
 {
-  long fd = (long)user_data;
+  SLONGDEF fd = (SLONGDEF)user_data;
   int id = GPOINTER_TO_INT(g_thread_self()->data);
   gsize len = 0;
   gchar expected[100] = {0};
@@ -980,6 +990,8 @@ version(void)
   printf(PACKAGE " " COMBINED_VERSION "\n");
 }
 
+/*ignoring the G_GUINT64_FORMAT warning*/
+#pragma GCC diagnostic ignored "-Wformat"
 int
 main(int argc, char *argv[])
 {
@@ -1200,6 +1212,7 @@ main(int argc, char *argv[])
     {
       diff_usec = 1;
     }
+
   fprintf(stderr, "average rate = %.2f msg/sec, count=%"G_GUINT64_FORMAT", time=%ld.%03ld, (average) msg size=%ld, bandwidth=%.2f kB/sec\n",
         (double)sum_count * USEC_PER_SEC / diff_usec, sum_count,
         (long int)sum_time.tv_sec, (long int)sum_time.tv_usec / 1000,
@@ -1215,3 +1228,4 @@ stop_and_exit:
 
   return ret;
 }
+#pragma GCC diagnostic warning "-Wformat"

@@ -16,7 +16,8 @@ libsyslog_ng_patterndb_a_SOURCES = radix.c radix.h \
 	patterndb.c patterndb.h patterndb-int.h \
 	timerwheel.c timerwheel.h \
 	patternize.c patternize.h
-libsyslog_ng_patterndb_a_CFLAGS = $(AM_CFLAGS) -fPIC
+
+libsyslog_ng_patterndb_a_CFLAGS = $(AM_CFLAGS)
 
 module_LTLIBRARIES = libdbparser.la
 libdbparser_la_SOURCES = \

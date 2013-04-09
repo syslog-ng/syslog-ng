@@ -37,8 +37,6 @@ static gint ssl_lock_count;
 static GStaticMutex *ssl_locks;
 static gboolean randfile_loaded;
 
-BB_CRYPTO_EXPORT;
-
 static void
 ssl_locking_callback(int mode, int type, const char *file, int line)
 {
@@ -103,9 +101,6 @@ crypto_deinit(void)
   crypto_deinit_threading();
 }
 
-#ifdef _WIN32
-#pragma section(".CRT$XCU",read)
-#endif
 INITIALIZER(crypto_init)
 {
   SSL_library_init();

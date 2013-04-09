@@ -38,15 +38,14 @@
 #endif
 
 #ifdef _WIN32
+#include <winsock2.h>
+#include <ws2tcpip.h>
 #include <windows.h>
 #include <stdio.h>
 #include <time.h>
 #include <locale.h>
-#include <winsock2.h>
-#include <ws2tcpip.h>
 #include <stdint.h>
 #include <iv_tls.h>
-#define _malloca malloc
 #define _freea free
 
 #define _ctloc(x)       (_CurrentTimeLocale->x)
@@ -224,8 +223,8 @@ mmap(void *addr, size_t len, int prot, int flags,
    */
 
   LARGE_INTEGER offset;
-  DWORD flProtect;
-  DWORD dwDesiredAccess;
+  DWORD flProtect = 0;
+  DWORD dwDesiredAccess = 0;
   HANDLE file_mapping;
   void *ret_addr;
   offset.QuadPart = off ;
@@ -429,6 +428,7 @@ getpagesize (void)
     return g_pagesize;
 }
 
+#if (_WIN32_WINNT < 0x0600)
 const char *
 inet_ntop(int af, const void *src, char *dst, socklen_t cnt)
 {
@@ -452,6 +452,7 @@ inet_ntop(int af, const void *src, char *dst, socklen_t cnt)
    }
   return NULL;
 }
+#endif /*_WIN32_WINNT < 0x0600*/
 
 int
 inet_pton(int af, const char *src, void *dst)
@@ -784,7 +785,7 @@ literal:
               return NULL;
           }
     }
-    return bp;
+    return (char *) bp;
 }
 
 int clock_gettime(int clock_id, struct timespec *res)
@@ -856,9 +857,9 @@ void iv_signal_unregister(struct iv_signal *this)
        return;
 }
 
-int syslog(int type, char *bufp, int len)
+void syslog(int pri, const char *bufp, ...)
 {
-       return 0;
+       return;
 }
 
 void openlog(const char *ident, int option, int facility)

@@ -303,7 +303,7 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint pa
        * not exist on all platforms and 0 initializing it causes trouble on
        * time-zone barriers */
 
-      cached_localtime(&now.tv_sec, &tm);
+      cached_localtime((time_t *) &now.tv_sec, &tm);
       if (!scan_iso_timestamp((const gchar **) &src, &left, &tm))
         {
           goto error;
@@ -373,7 +373,7 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint pa
           /* PIX timestamp, expected format: MMM DD YYYY HH:MM:SS: */
           /* ASA timestamp, expected format: MMM DD YYYY HH:MM:SS */
 
-          cached_localtime(&now.tv_sec, &tm);
+          cached_localtime((time_t *) &now.tv_sec, &tm);
           if (!scan_pix_timestamp((const gchar **) &src, &left, &tm))
             goto error;
 
@@ -395,7 +395,7 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint pa
         {
           /* LinkSys timestamp, expected format: MMM DD HH:MM:SS YYYY */
 
-          cached_localtime(&now.tv_sec, &tm);
+          cached_localtime((time_t *) &now.tv_sec, &tm);
           if (!scan_linksys_timestamp((const gchar **) &src, &left, &tm))
             goto error;
           tm.tm_isdst = -1;
@@ -412,7 +412,7 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint pa
           struct tm nowtm;
           glong usec = 0;
 
-          cached_localtime(&now.tv_sec, &nowtm);
+          cached_localtime((time_t *) &now.tv_sec, &nowtm);
           tm = nowtm;
           if (!scan_bsd_timestamp((const gchar **) &src, &left, &tm))
             goto error;

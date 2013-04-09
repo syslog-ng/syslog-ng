@@ -88,16 +88,16 @@ afsocket_setup_socket(gint fd, SocketOptions *sock_options, AFSocketDirection di
   if (dir & AFSOCKET_DIR_RECV)
     {
       if (sock_options->rcvbuf)
-        setsockopt(fd, SOL_SOCKET, SO_RCVBUF, &sock_options->rcvbuf, sizeof(sock_options->rcvbuf));
+        setsockopt(fd, SOL_SOCKET, SO_RCVBUF, (char *) &sock_options->rcvbuf, sizeof(sock_options->rcvbuf));
     }
   if (dir & AFSOCKET_DIR_SEND)
     {
       if (sock_options->sndbuf)
-        setsockopt(fd, SOL_SOCKET, SO_SNDBUF, &sock_options->sndbuf, sizeof(sock_options->sndbuf));
+        setsockopt(fd, SOL_SOCKET, SO_SNDBUF, (char *) &sock_options->sndbuf, sizeof(sock_options->sndbuf));
       if (sock_options->broadcast)
-        setsockopt(fd, SOL_SOCKET, SO_BROADCAST, &sock_options->broadcast, sizeof(sock_options->broadcast));
+        setsockopt(fd, SOL_SOCKET, SO_BROADCAST, (char *) &sock_options->broadcast, sizeof(sock_options->broadcast));
     }
-  setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &sock_options->keepalive, sizeof(sock_options->keepalive));
+  setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, (char *) &sock_options->keepalive, sizeof(sock_options->keepalive));
   return TRUE;
 }
 
@@ -1140,7 +1140,7 @@ afsocket_dd_connected(AFSocketDestDriver *self)
   if (self->flags & AFSOCKET_STREAM)
     {
       transport_flags |= LTF_SHUTDOWN;
-      if (getsockopt(self->fd, SOL_SOCKET, SO_ERROR, &error, &errorlen) == -1)
+      if (getsockopt(self->fd, SOL_SOCKET, SO_ERROR, (char *) &error, &errorlen) == -1)
         {
           errno = getsockerror();
           msg_error("getsockopt(SOL_SOCKET, SO_ERROR) failed for connecting socket",

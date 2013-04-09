@@ -1,5 +1,5 @@
-#include <openssl/engine.h>
 #include "tlswincrypt.h"
+#include <openssl/engine.h>
 
 #define CAPI_ENGINE_PATH "lib\\engines\\capieay32"
 
@@ -166,7 +166,7 @@ init_capi_engine()
 {
   ENGINE *e = NULL;
   const char *engine_id = "dynamic";
-  const char *engine_path = get_capi_engine_path();
+  gchar *engine_path = get_capi_engine_path();
 
   ENGINE_load_builtin_engines();
   e = ENGINE_by_id(engine_id);

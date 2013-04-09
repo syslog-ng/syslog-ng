@@ -40,6 +40,7 @@
 #include "plugin.h"
 #include "winservice.h"
 #include "reloc.h"
+#include "minidump.h"
 
 #include <sys/types.h>
 #include <stdio.h>
