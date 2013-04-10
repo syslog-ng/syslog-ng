@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2010 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
  * Copyright (c) 1998-2010 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -198,8 +198,8 @@ control_connection_io_input(void *s)
     }
   else if (rc == 0)
     {
-      msg_error("EOF on control channel, closing connection",
-                NULL);
+      msg_notice("EOF on control channel, closing connection",
+                 NULL);
       goto destroy_connection;
     }
   else
