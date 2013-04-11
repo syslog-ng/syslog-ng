@@ -21,7 +21,7 @@
  * COPYING for details.
  *
  */
-  
+
 #include "filter.h"
 #include "syslog-names.h"
 #include "messages.h"
@@ -52,10 +52,13 @@ filter_expr_eval_with_context(FilterExprNode *self, LogMessage **msg, gint num_m
   gboolean res;
 
   res = self->eval(self, msg, num_msg);
-  msg_debug("Filter node evaluation result",
+  if (!((*msg)->flags & LF_INTERNAL))
+    {
+      msg_debug("Filter node evaluation result",
             evt_tag_str("filter_result", res ? "match" : "not-match"),
             evt_tag_str("filter_type", self->type),
             NULL);
+    }
   return res;
 }
 
@@ -104,7 +107,7 @@ static void
 fop_free(FilterExprNode *s)
 {
   FilterOp *self = (FilterOp *) s;
-  
+
   filter_expr_unref(self->left);
   filter_expr_unref(self->right);
 }
@@ -121,7 +124,7 @@ static gboolean
 fop_or_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
 {
   FilterOp *self = (FilterOp *) s;
-  
+
   return (filter_expr_eval_with_context(self->left, msgs, num_msg) || filter_expr_eval_with_context(self->right, msgs, num_msg)) ^ s->comp;
 }
 
@@ -129,7 +132,7 @@ FilterExprNode *
 fop_or_new(FilterExprNode *e1, FilterExprNode *e2)
 {
   FilterOp *self = g_new0(FilterOp, 1);
-  
+
   fop_init_instance(self);
   self->super.eval = fop_or_eval;
   self->super.modify = e1->modify || e2->modify;
@@ -143,7 +146,7 @@ static gboolean
 fop_and_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
 {
   FilterOp *self = (FilterOp *) s;
-  
+
   return (filter_expr_eval_with_context(self->left, msgs, num_msg) && filter_expr_eval_with_context(self->right, msgs, num_msg)) ^ s->comp;
 }
 
@@ -151,7 +154,7 @@ FilterExprNode *
 fop_and_new(FilterExprNode *e1, FilterExprNode *e2)
 {
   FilterOp *self = g_new0(FilterOp, 1);
-  
+
   fop_init_instance(self);
   self->super.eval = fop_and_eval;
   self->super.modify = e1->modify || e2->modify;
@@ -296,7 +299,7 @@ filter_facility_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
   FilterPri *self = (FilterPri *) s;
   LogMessage *msg = msgs[0];
   guint32 fac_num = (msg->pri & LOG_FACMASK) >> 3;
-  
+
   if (G_UNLIKELY(self->valid & 0x80000000))
     {
       /* exact number specified */
@@ -328,7 +331,7 @@ filter_level_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
   LogMessage *msg = msgs[0];
   guint32 pri = msg->pri & LOG_PRIMASK;
 
-  
+
   return !!((1 << pri) & self->valid) ^ self->super.comp;
 }
 
@@ -362,9 +365,9 @@ filter_re_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
   const gchar *value;
   LogMessage *msg = msgs[0];
   gssize len = 0;
-  
+
   value = log_msg_get_value(msg, self->value_handle, &len);
-  
+
   APPEND_ZERO(value, value, len);
   return filter_re_eval_string(s, msg, self->value_handle, value, len);
 }
@@ -374,7 +377,7 @@ static void
 filter_re_free(FilterExprNode *s)
 {
   FilterRE *self = (FilterRE *) s;
-  
+
   log_matcher_unref(self->matcher);
 }
 
@@ -441,7 +444,7 @@ filter_match_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
       pid = log_msg_get_value(msg, LM_V_PID, &pid_len);
 
       /* compatibility mode */
-      str = g_strdup_printf("%s%s%s%s: %s", 
+      str = g_strdup_printf("%s%s%s%s: %s",
                             log_msg_get_value(msg, LM_V_PROGRAM, NULL),
                             pid_len > 0 ? "[" : "",
                             pid,
@@ -479,7 +482,7 @@ static gboolean
 filter_call_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
 {
   FilterCall *self = (FilterCall *) s;
-  
+
   if (self->filter_expr)
     {
       /* rule is assumed to contain a single filter pipe */
@@ -517,7 +520,7 @@ static void
 filter_call_free(FilterExprNode *s)
 {
   FilterCall *self = (FilterCall *) s;
-  
+
   g_free((gchar *) self->super.type);
   g_free(self->rule);
 }
@@ -526,7 +529,7 @@ FilterExprNode *
 filter_call_new(gchar *rule, GlobalConfig *cfg)
 {
   FilterCall *self = g_new0(FilterCall, 1);
-  
+
   filter_expr_node_init(&self->super);
   self->super.init = filter_call_init;
   self->super.eval = filter_call_eval;
@@ -550,7 +553,7 @@ filter_netmask_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
   FilterNetmask *self = (FilterNetmask *) s;
   struct in_addr addr;
   LogMessage *msg = msgs[0];
-  
+
   if (msg->saddr && g_sockaddr_inet_check(msg->saddr))
     {
       addr = ((struct sockaddr_in *) &msg->saddr->sa)->sin_addr;
@@ -574,7 +577,7 @@ filter_netmask_new(gchar *cidr)
   FilterNetmask *self = g_new0(FilterNetmask, 1);
   gchar buf[32];
   gchar *slash;
-  
+
   filter_expr_node_init(&self->super);
   slash = strchr(cidr, '/');
   if (strlen(cidr) >= sizeof(buf) || !slash)
@@ -685,15 +688,21 @@ log_filter_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_op
 {
   LogFilterPipe *self = (LogFilterPipe *) s;
   gboolean res;
-  
-  msg_debug("Filter rule evaluation begins",
+
+  if (!(msg->flags &  LF_INTERNAL))
+    {
+      msg_debug("Filter rule evaluation begins",
             evt_tag_str("filter_rule", self->name ? self->name : "unnamed"),
             NULL);
+    }
   res = filter_expr_eval(self->expr, msg);
-  msg_debug("Filter rule evaluation result",
+  if (!(msg->flags &  LF_INTERNAL))
+    {
+      msg_debug("Filter rule evaluation result",
             evt_tag_str("filter_result", res ? "match" : "not-match"),
             evt_tag_str("filter_rule", self->name ? self->name : "unnamed"),
             NULL);
+    }
   if (res)
     {
       log_pipe_forward_msg(s, msg, path_options);

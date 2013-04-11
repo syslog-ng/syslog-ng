@@ -72,6 +72,8 @@ gboolean quiet = FALSE;
 static gchar *install_dat_filename;
 static gchar *installer_version = NULL;
 static gboolean service_manipulation = FALSE;
+static gchar *debug_ini_file = NULL;
+static gchar *install_dir = NULL;
 
 #define AGENT_SERVICE_NAME "syslog-ng Agent"
 #define AGENT_SERVICE_DESCRIPTION "Collects log messages from eventlog containers and log files, and forwards them to a central syslog-ng server."
@@ -99,10 +101,72 @@ install_service_callback(const gchar *option_name, const gchar *value, gpointer 
   return TRUE;
 }
 
+gchar *get_install_dir()
+{
+  HKEY key;
+  gchar *result = NULL;
+  DWORD result_len = 0;
+  DWORD error;
+  if (install_dir != NULL)
+    {
+      return install_dir;
+    }
+  error = RegOpenKey(HKEY_LOCAL_MACHINE, "Software\\Balabit\\syslog-ng Agent", &key);
+  if (error != ERROR_SUCCESS)
+    {
+      return NULL;
+    }
+  error = RegQueryValueEx(key, "InstallPath", NULL, NULL, NULL, &result_len);
+  if (error != ERROR_SUCCESS)
+    {
+      fprintf(stderr, "Required: %ld Error: %lu\n", result_len, error);
+      return NULL;
+    }
+  result = (char *)malloc(result_len);
+  error = RegQueryValueEx(key, "InstallPath", NULL, NULL, (BYTE*)result, &result_len);
+  if (error != ERROR_SUCCESS)
+    {
+      free(result);
+      result = NULL;
+    }
+  return result;
+}
+
+gchar *get_debug_ini()
+{
+  if (debug_ini_file != NULL)
+    {
+      return debug_ini_file;
+    }
+  GString *result = NULL;
+  install_dir = get_install_dir();
+  if (install_dir == NULL)
+    {
+      return NULL;
+    }
+  result = g_string_new(install_dir);
+  g_string_append(result, "\\debug.ini");
+  return g_string_free(result, FALSE);
+}
+
+gchar *
+get_private_debug_string(const gchar *section_name, const gchar *name, const gchar *default_value)
+{
+  GString *result = NULL;
+  debug_ini_file = get_debug_ini();
+  if (debug_ini_file == NULL)
+    {
+      return NULL;
+    }
+  result = g_string_sized_new(1024);
+  GetPrivateProfileString(section_name, name, default_value, result->str, result->allocated_len, debug_ini_file);
+  return g_string_free(result, FALSE);
+}
+
 static GOptionEntry debug_options[] =
 {
-  { "Eventlog", 'E', 0, G_OPTION_ARG_NONE, &event_log, "Start the syslog-ng Agent in debug mode and send the messages to the Application eventlog container.",NULL},
-  { "Debug",    'D', 0, G_OPTION_ARG_NONE, &debug_flag, "Start the syslog-ng Agent in debug mode. The debug messages can be captured using the Dbgview application.", NULL},
+  { "Debug",    'D', 0, G_OPTION_ARG_NONE, &debug_flag, "Start the syslog-ng Agent in debug mode. Enable debug messages", NULL},
+  {"quiet",           'Q', G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_NONE, &quiet , NULL, NULL},
   { NULL },
 };
 
@@ -120,7 +184,6 @@ static GOptionEntry application_options[] =
   {"Config",          'C', 0, G_OPTION_ARG_FILENAME, &xml_config_file_name, "Start the syslog-ng Agent using the specified XML configuration file.",NULL},
   {"Version",         'V', 0, G_OPTION_ARG_NONE, &show_version, "Display version information.",NULL},
   {"cfgfile",         'f', G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_STRING, &cfgfilename, "Set config file name, default=" PATH_SYSLOG_NG_CONF, "<config>" },
-  {"quiet",           'Q', G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_NONE, &quiet , NULL, NULL},
   {"preprocess-into",  0,  G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_STRING, &preprocess_into, "Write the preprocessed configuration file to the file specified", "output" },
   {NULL},
 };
@@ -178,8 +241,12 @@ int
 agent_service_main()
 {
   gchar *config_string;
+  gchar *write_minidump_enabled = get_private_debug_string("WriteMiniDump", "Enabled", "on");
   gint rc = 0;
-  register_minidump_writer();
+  if ((write_minidump_enabled != NULL) && (strcmp(write_minidump_enabled, "on") == 0))
+    {
+      register_minidump_writer();
+    }
   if (xml_config_file_name)
     {
       gchar *correct_path_name = escape_windows_path(xml_config_file_name);

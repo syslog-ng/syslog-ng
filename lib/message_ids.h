@@ -21,6 +21,7 @@
 #define MSG_SYSLOG_TRIAL_EXPIRED              41
 #define MSG_LICENSE_NOT_FOUND                 56
 #define MSG_SYSLOG_SERVER_TRY_TO_RECONNECT    57
+#define MSG_DEBUG_ENABLED                     58
 
 #define MSG_TOO_MUCH_SDATA_ITEM               100
 #define MSG_TOO_MUCH_TAGS                     101

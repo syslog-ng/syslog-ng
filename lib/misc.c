@@ -453,10 +453,18 @@ create_containing_directory(gchar *name, gint dir_uid, gint dir_gid, gint dir_mo
   /* directory does not exist */
   p = name + 1;
   
-  p = strchr(p, '/');
+  p = strchr(p, G_DIR_SEPARATOR);
   while (p) 
     {
-      *p = 0;
+      *p = '\0';
+#ifdef _WIN32
+      if (p[-1] == ':')
+        {
+          *p = G_DIR_SEPARATOR;
+          p = strchr(p + 1, G_DIR_SEPARATOR);
+          continue;
+        }
+#endif
       if (stat(name, &st) == 0) 
         {
           if (!S_ISDIR(st.st_mode))
@@ -472,8 +480,8 @@ create_containing_directory(gchar *name, gint dir_uid, gint dir_gid, gint dir_mo
           set_permissions(name, dir_uid, dir_gid, dir_mode);
           g_process_cap_restore(saved_caps);
         }
-      *p = '/';
-      p = strchr(p + 1, '/');
+      *p = G_DIR_SEPARATOR;
+      p = strchr(p + 1, G_DIR_SEPARATOR);
     }
   return TRUE;
 }

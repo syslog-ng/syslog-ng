@@ -80,20 +80,23 @@ static inline EVTTAG* evt_tag_id(int id)
 #define msg_verbose(desc, tag1, ...) \
 	do { \
 	  if (G_UNLIKELY(verbose_flag))    \
-	    msg_info(desc, tag1, ##__VA_ARGS__ ); \
+      if (msg_limit_internal_message()) \
+        msg_info(desc, tag1, ##__VA_ARGS__ ); \
 	} while (0)
 
 #define msg_debug(desc, tag1, ...) \
 	do { \
 	  if (G_UNLIKELY(debug_flag))                                   \
-	    msg_event_send(msg_event_create(EVT_PRI_DEBUG, desc, tag1, ##__VA_ARGS__ )); \
+      if (msg_limit_internal_message()) \
+	      msg_event_send(msg_event_create(EVT_PRI_DEBUG, desc, tag1, ##__VA_ARGS__ )); \
 	} while (0)
 
 #if ENABLE_DEBUG
 #define msg_trace(desc, tag1, ...) \
 	do { \
 	  if (G_UNLIKELY(trace_flag))                                   \
-            msg_event_send(msg_event_create(EVT_PRI_DEBUG, desc, tag1, ##__VA_ARGS__ )); \
+      if (msg_limit_internal_message()) \
+        msg_event_send(msg_event_create(EVT_PRI_DEBUG, desc, tag1, ##__VA_ARGS__ )); \
 	} while (0)
 #else
 #define msg_trace(desc, tag1, ...)

@@ -132,7 +132,7 @@ MinidumpWriter(struct _EXCEPTION_POINTERS *pExceptionInfo)
     }
 
   snprintf(dbgHelpPath, MAX_FILE_NAME_LENGTH, "%s\\DBGHELP.DLL", directory);
-  snprintf(dumpFileName, MAX_FILE_NAME_LENGTH, "%s\\%s.dmp", directory, fileName);
+  snprintf(dumpFileName, MAX_FILE_NAME_LENGTH, "%s\\%s.%lu.dmp", directory, fileName, GetCurrentProcessId());
 
   retval = DropMinidump(pExceptionInfo, dumpFileName, dbgHelpPath);
 exit:

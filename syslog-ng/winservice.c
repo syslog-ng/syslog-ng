@@ -10,7 +10,6 @@ SERVICE_STATUS_HANDLE hStatus;
 static gchar *g_service_name = NULL;
 static SERVICE_MAIN g_service_main_function = NULL;
 static SERVICE_STOP_FUNCTION g_service_stop_function = NULL;
-FILE *global_service_logfile = NULL;
 
 
 int
@@ -223,7 +222,6 @@ main_control_handler(DWORD request)
         {
           ServiceStatus.dwCurrentState = SERVICE_STOPPED;
         }
-      fclose(global_service_logfile);
       SetServiceStatus(hStatus,&ServiceStatus);
     return;
     case SERVICE_CONTROL_SHUTDOWN:
@@ -266,11 +264,9 @@ VOID WINAPI main_service_main(DWORD dwArgc, LPTSTR *lpszArgv)
         *pIdx = '\0';
       }
   SetCurrentDirectory(currDirectory);
-  global_service_logfile = freopen( "syslog-ng.output", "w", stderr );
 
   if (hStatus == (SERVICE_STATUS_HANDLE) 0)
     {
-      fclose(global_service_logfile);
       ServiceStatus.dwWin32ExitCode = -1;
       ServiceStatus.dwCurrentState = SERVICE_STOPPED;
       SetServiceStatus(hStatus,&ServiceStatus);
@@ -281,8 +277,6 @@ VOID WINAPI main_service_main(DWORD dwArgc, LPTSTR *lpszArgv)
   SetServiceStatus(hStatus,&ServiceStatus);
 
   result = g_service_main_function();
-
-  fclose(global_service_logfile);
 
   ServiceStatus.dwWin32ExitCode = (DWORD)result;
   ServiceStatus.dwCurrentState = SERVICE_STOPPED;

@@ -33,6 +33,7 @@ typedef struct _AFInterSource AFInterSource;
 
 static GStaticMutex internal_msg_lock = G_STATIC_MUTEX_INIT;
 static GQueue *internal_msg_queue;
+static const int MAX_MESSAGES_IN_INTERNAL_QUEUE = 1000;
 static AFInterSource *current_internal_source;
 
 /* the expiration timer of the next MARK message */
@@ -407,7 +408,10 @@ afinter_message_posted(LogMessage *msg)
     {
       internal_msg_queue = g_queue_new();
     }
-  g_queue_push_tail(internal_msg_queue, msg);
+  if (g_queue_get_length(internal_msg_queue) < MAX_MESSAGES_IN_INTERNAL_QUEUE)
+    {
+      g_queue_push_tail(internal_msg_queue, msg);
+    }
   if (current_internal_source)
     iv_event_post(&current_internal_source->post);
   g_static_mutex_unlock(&internal_msg_lock);
