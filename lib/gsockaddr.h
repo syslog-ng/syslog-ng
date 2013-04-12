@@ -56,12 +56,9 @@ typedef struct _GSockAddr
 
 struct _GSockAddrFuncs 
 {
-  GIOStatus (*sa_bind_prepare)   (int sock, GSockAddr *addr);
-  GIOStatus (*sa_bind)		(int sock, GSockAddr *addr);
-  gchar   *(*sa_format)         (GSockAddr *addr,   /* format to text form */
-  				 gchar *text,
-  				 gulong n,
-  				 gint format);
+  GIOStatus (*bind_prepare)(gint sock, GSockAddr *addr);
+  GIOStatus (*bind)(int sock, GSockAddr *addr);
+  gchar   *(*format)(GSockAddr *addr, gchar *text, gulong n, gint format);
 };
 
 GSockAddr *g_sockaddr_new(struct sockaddr *sa, int salen);

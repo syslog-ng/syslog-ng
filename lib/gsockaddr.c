@@ -101,7 +101,7 @@ g_sockaddr_new(struct sockaddr *sa, int salen)
 char *
 g_sockaddr_format(GSockAddr *a, gchar *text, gulong n, gint format)
 {
-  return a->sa_funcs->sa_format(a, text, n, format);
+  return a->sa_funcs->format(a, text, n, format);
 }
 
 /*+
@@ -199,9 +199,11 @@ g_sockaddr_inet_format(GSockAddr *addr, gchar *text, gulong n, gint format)
 
 static GSockAddrFuncs inet_sockaddr_funcs = 
 {
-  g_sockaddr_inet_bind_prepare,
+  .bind_prepare = g_sockaddr_inet_bind_prepare,
   NULL,
-  g_sockaddr_inet_format,
+  .format = g_sockaddr_inet_format,
+  .get_port = g_sockaddr_inet_get_port,
+  .set_port = g_sockaddr_inet_set_port,
 };
 
 gboolean
@@ -315,9 +317,8 @@ static void
 
 static GSockAddrFuncs inet6_sockaddr_funcs = 
 {
-  g_sockaddr_inet_bind_prepare,
-  NULL,
-  g_sockaddr_inet6_format,
+  .bind_prepare = g_sockaddr_inet_bind_prepare,
+  .format = g_sockaddr_inet6_format,
 };
 
 gboolean
@@ -407,9 +408,9 @@ static gchar *g_sockaddr_unix_format(GSockAddr *addr, gchar *text, gulong n, gin
 
 static GSockAddrFuncs unix_sockaddr_funcs = 
 {
-  g_sockaddr_unix_bind_prepare,
-  g_sockaddr_unix_bind,
-  g_sockaddr_unix_format
+  .bind_prepare = g_sockaddr_unix_bind_prepare,
+  .bind = g_sockaddr_unix_bind,
+  .format = g_sockaddr_unix_format
 };
 
 /* anonymous if name == NULL */

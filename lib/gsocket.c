@@ -67,11 +67,11 @@ g_bind(int fd, GSockAddr *addr)
 {
   GIOStatus rc;
   
-  if (addr->sa_funcs && addr->sa_funcs->sa_bind_prepare)
-    addr->sa_funcs->sa_bind_prepare(fd, addr);
+  if (addr->sa_funcs && addr->sa_funcs->bind_prepare)
+    addr->sa_funcs->bind_prepare(fd, addr);
 
-  if (addr->sa_funcs && addr->sa_funcs->sa_bind)
-    rc = addr->sa_funcs->sa_bind(fd, addr);
+  if (addr->sa_funcs && addr->sa_funcs->bind)
+    rc = addr->sa_funcs->bind(fd, addr);
   else
     {
       if (addr && bind(fd, &addr->sa, addr->salen) < 0)
