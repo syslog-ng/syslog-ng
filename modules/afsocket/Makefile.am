@@ -31,7 +31,9 @@ libafsocket_notls_la_SOURCES = \
 	afunix-source.h		\
 	afunix-dest.c		\
 	afunix-dest.h		\
-	afsocket-grammar.y	\
+        transport-mapper-unix.c \
+        transport-mapper-unix.h \
+        afsocket-grammar.y	\
 	afsocket-parser.c	\
 	afsocket-parser.h	\
 	afsocket-plugin.c
