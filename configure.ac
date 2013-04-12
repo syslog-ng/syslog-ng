@@ -1215,6 +1215,7 @@ AC_OUTPUT(dist.conf
 	  syslog-ng/Makefile
 	  modules/Makefile
           modules/afsocket/Makefile
+          modules/afsocket/tests/Makefile
           modules/afsql/Makefile
           modules/afstreams/Makefile
           modules/affile/Makefile

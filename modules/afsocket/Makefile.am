@@ -1,3 +1,5 @@
+SUBDIRS = . tests
+
 moduledir = @moduledir@
 AM_CPPFLAGS = -I$(top_srcdir)/lib -I../../lib
 export top_srcdir
@@ -13,6 +15,8 @@ libafsocket_notls_la_SOURCES = \
 	afsocket-dest.h		\
         socket-options.c        \
         socket-options.h        \
+	transport-mapper.c	\
+	transport-mapper.h	\
 	afinet.c		\
 	afinet.h		\
 	afinet-source.c		\
