@@ -144,10 +144,7 @@ g_sockaddr_unref(GSockAddr *a)
     {
       if (g_atomic_counter_dec_and_test(&a->refcnt))
         {
-          if (!a->sa_funcs->freefn)
-            g_slice_free1(g_sockaddr_len(a), a);
-          else
-            a->sa_funcs->freefn(a);
+          g_slice_free1(g_sockaddr_len(a), a);
         }
     }
 }
@@ -197,10 +194,7 @@ g_sockaddr_inet_format(GSockAddr *addr, gchar *text, gulong n, gint format)
   return text;
 }
 
-void
-g_sockaddr_inet_free(GSockAddr *addr)
 {
-  g_slice_free1(g_sockaddr_len(addr), addr);
 }
 
 static GSockAddrFuncs inet_sockaddr_funcs = 
@@ -208,7 +202,6 @@ static GSockAddrFuncs inet_sockaddr_funcs =
   g_sockaddr_inet_bind_prepare,
   NULL,
   g_sockaddr_inet_format,
-  g_sockaddr_inet_free
 };
 
 gboolean
@@ -317,9 +310,7 @@ g_sockaddr_inet6_format(GSockAddr *addr, gchar *text, gulong n, gint format)
 }
 
 static void
-g_sockaddr_inet6_free(GSockAddr *addr)
 {
-  g_slice_free1(g_sockaddr_len(addr), addr);
 }
 
 static GSockAddrFuncs inet6_sockaddr_funcs = 
@@ -327,7 +318,6 @@ static GSockAddrFuncs inet6_sockaddr_funcs =
   g_sockaddr_inet_bind_prepare,
   NULL,
   g_sockaddr_inet6_format,
-  g_sockaddr_inet6_free
 };
 
 gboolean

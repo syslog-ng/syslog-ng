@@ -62,7 +62,6 @@ struct _GSockAddrFuncs
   				 gchar *text,
   				 gulong n,
   				 gint format);
-  void     (*freefn)            (GSockAddr *addr);
 };
 
 GSockAddr *g_sockaddr_new(struct sockaddr *sa, int salen);
