@@ -25,6 +25,8 @@ libafsocket_notls_la_SOURCES = \
 	afinet-dest.h		\
         socket-options-inet.c   \
         socket-options-inet.h   \
+	transport-mapper-inet.c \
+	transport-mapper-inet.h \
         afunix-source.c		\
 	afunix-source.h		\
 	afunix-dest.c		\
