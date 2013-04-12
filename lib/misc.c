@@ -133,11 +133,11 @@ resolve_hostname(GSockAddr **addr, gchar *name)
 
                 /* we need to copy the whole sockaddr_in6 structure as it
                  * might contain scope and other required data */
-                port = g_sockaddr_inet6_get_port(*addr);
+                port = g_sockaddr_get_port(*addr);
                 *g_sockaddr_inet6_get_sa(*addr) = *((struct sockaddr_in6 *) res->ai_addr);
 
                 /* we need to restore the port number as it is zeroed out by the previous assignment */
-                g_sockaddr_inet6_set_port(*addr, port);
+                g_sockaddr_set_port(*addr, port);
                 break;
               }
 #endif

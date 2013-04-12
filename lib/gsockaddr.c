@@ -104,6 +104,20 @@ g_sockaddr_format(GSockAddr *a, gchar *text, gulong n, gint format)
   return a->sa_funcs->format(a, text, n, format);
 }
 
+guint16
+g_sockaddr_get_port(GSockAddr *a)
+{
+  g_assert(a->sa_funcs->get_port != NULL);
+  return a->sa_funcs->get_port(a);
+}
+
+void
+g_sockaddr_set_port(GSockAddr *a, guint16 port)
+{
+  g_assert(a->sa_funcs->set_port != NULL);
+  return a->sa_funcs->set_port(a, port);
+}
+
 /*+
 
   Increment the reference count of a GSockAddr instance.
@@ -194,7 +208,33 @@ g_sockaddr_inet_format(GSockAddr *addr, gchar *text, gulong n, gint format)
   return text;
 }
 
+/**
+ * g_sockaddr_inet_get_port:
+ * @s: GSockAddrInet instance
+ *
+ * This GSockAddrInet specific function returns the port part of the
+ * address.
+ *
+ * Returns: the port in host byte order
+ *
+ **/
+static guint16
+g_sockaddr_inet_get_port(GSockAddr *s)
 {
+  return ntohs(g_sockaddr_inet_get_sa(s)->sin_port);
+}
+
+/**
+ * g_sockaddr_inet_set_port:
+ * @s: GSockAddrInet instance
+ * @port: new port in host byte order
+ *
+ *
+ **/
+static void
+g_sockaddr_inet_set_port(GSockAddr *s, guint16 port)
+{
+  g_sockaddr_inet_get_sa(s)->sin_port = htons(port);
 }
 
 static GSockAddrFuncs inet_sockaddr_funcs = 
@@ -311,14 +351,41 @@ g_sockaddr_inet6_format(GSockAddr *addr, gchar *text, gulong n, gint format)
   return text;
 }
 
-static void
+/**
+ * g_sockaddr_inet6_get_port:
+ * @s: GSockAddrInet instance
+ *
+ * This GSockAddrInet specific function returns the port part of the
+ * address.
+ *
+ * Returns: the port in host byte order
+ *
+ **/
+static guint16
+g_sockaddr_inet6_get_port(GSockAddr *s)
 {
+  return ntohs(g_sockaddr_inet6_get_sa(s)->sin6_port);
+}
+
+/**
+ * g_sockaddr_inet6_set_port:
+ * @s: GSockAddrInet instance
+ * @port: new port in host byte order
+ *
+ *
+ **/
+static void
+g_sockaddr_inet6_set_port(GSockAddr *s, guint16 port)
+{
+  g_sockaddr_inet6_get_sa(s)->sin6_port = htons(port);
 }
 
 static GSockAddrFuncs inet6_sockaddr_funcs = 
 {
   .bind_prepare = g_sockaddr_inet_bind_prepare,
   .format = g_sockaddr_inet6_format,
+  .get_port = g_sockaddr_inet6_get_port,
+  .set_port = g_sockaddr_inet6_set_port,
 };
 
 gboolean
