@@ -25,23 +25,5 @@
 #define AFSOCKET_H_INCLUDED
 
 #include "syslog-ng.h"
-#include "gsockaddr.h"
-
-typedef enum
-{
-  AFSOCKET_DIR_RECV = 0x01,
-  AFSOCKET_DIR_SEND = 0x02,
-} AFSocketDirection;
-
-typedef struct _SocketOptions
-{
-  gint so_sndbuf;
-  gint so_rcvbuf;
-  gint so_broadcast;
-  gint so_keepalive;
-} SocketOptions;
-
-gboolean afsocket_setup_socket(gint fd, SocketOptions *sock_options, AFSocketDirection dir);
-gboolean afsocket_open_socket(GSockAddr *bind_addr, gint sock_type, gint sock_protocol, int *fd);
 
 #endif

@@ -11,6 +11,8 @@ libafsocket_notls_la_SOURCES = \
 	afsocket-source.h	\
 	afsocket-dest.c		\
 	afsocket-dest.h		\
+        socket-options.c        \
+        socket-options.h        \
 	afinet.c		\
 	afinet.h		\
 	afinet-source.c		\
