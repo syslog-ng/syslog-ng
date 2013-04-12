@@ -276,94 +276,6 @@ g_sockaddr_inet_new2(struct sockaddr_in *sin)
   return (GSockAddr *) addr;
 }
 
-/*+ Similar to GSockAddrInet, but binds to a port in the given range +*/
-
-/* 
- * NOTE: it is assumed that it is safe to cast from GSockAddrInetRange to
- * GSockAddrInet
- */
-typedef struct _GSockAddrInetRange
-{
-  GAtomicCounter refcnt;
-  guint32 flags;
-  GSockAddrFuncs *sa_funcs;
-  int salen;
-  struct sockaddr_in sin;
-  gpointer options;
-  guint options_length;
-  guint16 min_port, max_port, last_port;
-} GSockAddrInetRange;
-
-static GIOStatus
-g_sockaddr_inet_range_bind(int sock, GSockAddr *a)
-{
-  GSockAddrInetRange *addr = (GSockAddrInetRange *) a;
-  int port;
-  
-  if (addr->min_port > addr->max_port)
-    {
-      /*LOG
-        This message indicates that SockAddrInetRange was given incorrect
-        parameters, the allowed min_port is greater than max_port.
-       */
-      g_error("SockAddrInetRange, invalid range given; min_port='%d', max_port='%d'", addr->min_port, addr->max_port);
-      return G_IO_STATUS_ERROR;
-    }
-  for (port = addr->last_port; port <= addr->max_port; port++)
-    {
-      /* attempt to bind */
-      addr->sin.sin_port = htons(port);
-      if (bind(sock, (struct sockaddr *) &addr->sin, addr->salen) == 0)
-        {
-          addr->last_port = port + 1;
-          return G_IO_STATUS_NORMAL;
-        }
-    }
-  for (port = addr->min_port; port <= addr->max_port; port++)
-    {
-      /* attempt to bind */
-      addr->sin.sin_port = htons(port);
-      if (bind(sock, (struct sockaddr *) &addr->sin, addr->salen) == 0)
-        {
-          addr->last_port = port + 1;
-          return G_IO_STATUS_NORMAL;
-        }
-    }
-  addr->last_port = addr->min_port;
-  return G_IO_STATUS_ERROR;
-}
-
-static GSockAddrFuncs inet_range_sockaddr_funcs = 
-{
-  NULL,
-  g_sockaddr_inet_range_bind,
-  g_sockaddr_inet_format,
-  g_sockaddr_inet_free,
-};
-
-GSockAddr *
-g_sockaddr_inet_range_new(gchar *ip, guint16 min_port, guint16 max_port)
-{
-  GSockAddrInetRange *addr = g_slice_new0(GSockAddrInetRange);
-  
-  g_atomic_counter_set(&addr->refcnt, 1);
-  addr->flags = 0;
-  addr->salen = sizeof(struct sockaddr_in);
-  addr->sin.sin_family = AF_INET;
-  inet_aton(ip, &addr->sin.sin_addr);
-  addr->sin.sin_port = 0;
-  addr->sa_funcs = &inet_range_sockaddr_funcs;
-  if (max_port > min_port)
-    {
-      addr->last_port = (rand() % (max_port - min_port)) + min_port;
-    }
-  addr->min_port = min_port;
-  addr->max_port = max_port;
-  
-  return (GSockAddr *) addr;
-}
-
-
 #if ENABLE_IPV6
 /* AF_INET6 socket address */
 /*+
@@ -641,8 +553,6 @@ g_sockaddr_len(GSockAddr *a)
   else if (a->sa_funcs == &inet6_sockaddr_funcs)
     len = sizeof(GSockAddrInet6);
 #endif
-  else if (a->sa_funcs == &inet_range_sockaddr_funcs)
-    len = sizeof(GSockAddrInetRange);
   else if (a->sa_funcs == &unix_sockaddr_funcs)
     len = sizeof(GSockAddrUnix);
   else
@@ -650,4 +560,3 @@ g_sockaddr_len(GSockAddr *a)
 
   return len;
 }
-
