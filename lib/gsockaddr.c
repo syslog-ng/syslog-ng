@@ -41,8 +41,6 @@
 
 /* general GSockAddr functions */
 
-gsize g_sockaddr_len(GSockAddr *a);
-
 /**
  * g_sockaddr_new:
  *  @sa: libc sockaddr * pointer to convert
@@ -137,7 +135,8 @@ g_sockaddr_ref(GSockAddr *a)
   return a;
 }
 
-gsize g_sockaddr_len(GSockAddr *);
+static gsize g_sockaddr_len(GSockAddr *);
+
 /*+
 
   Decrement the reference count of a GSockAddr instance, and free if
@@ -600,7 +599,7 @@ g_sockaddr_unix_format(GSockAddr *addr, gchar *text, gulong n, gint format)
   return text;
 }
 
-gsize
+static gsize
 g_sockaddr_len(GSockAddr *a)
 {
   gsize len;
