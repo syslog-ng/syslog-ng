@@ -614,11 +614,11 @@ socket_option
 
 inet_socket_option
 	: socket_option
-	| KW_IP_TTL '(' LL_NUMBER ')'               { ((InetSocketOptions *) last_sock_options)->ip_ttl = $3; }
-	| KW_IP_TOS '(' LL_NUMBER ')'               { ((InetSocketOptions *) last_sock_options)->ip_tos = $3; }
-	| KW_TCP_KEEPALIVE_TIME '(' LL_NUMBER ')'   { ((InetSocketOptions *) last_sock_options)->tcp_keepalive_time = $3; }
-	| KW_TCP_KEEPALIVE_INTVL '(' LL_NUMBER ')'  { ((InetSocketOptions *) last_sock_options)->tcp_keepalive_intvl = $3; }
-	| KW_TCP_KEEPALIVE_PROBES '(' LL_NUMBER ')' { ((InetSocketOptions *) last_sock_options)->tcp_keepalive_probes = $3; }
+	| KW_IP_TTL '(' LL_NUMBER ')'               { ((SocketOptionsInet *) last_sock_options)->ip_ttl = $3; }
+	| KW_IP_TOS '(' LL_NUMBER ')'               { ((SocketOptionsInet *) last_sock_options)->ip_tos = $3; }
+	| KW_TCP_KEEPALIVE_TIME '(' LL_NUMBER ')'   { ((SocketOptionsInet *) last_sock_options)->tcp_keepalive_time = $3; }
+	| KW_TCP_KEEPALIVE_INTVL '(' LL_NUMBER ')'  { ((SocketOptionsInet *) last_sock_options)->tcp_keepalive_intvl = $3; }
+	| KW_TCP_KEEPALIVE_PROBES '(' LL_NUMBER ')' { ((SocketOptionsInet *) last_sock_options)->tcp_keepalive_probes = $3; }
 	;
 
 /* INCLUDE_RULES */

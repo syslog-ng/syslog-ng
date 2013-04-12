@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 1998-2012 Balázs Scheidler
+ * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 1998-2013 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -20,14 +20,23 @@
  * COPYING for details.
  *
  */
+#ifndef SOCKET_OPTIONS_INET_H_INCLUDED
+#define SOCKET_OPTIONS_INET_H_INCLUDED
 
-#ifndef AFINET_H_INCLUDED
-#define AFINET_H_INCLUDED
+#include "socket-options.h"
 
-#include "afsocket-source.h"
-#include "afsocket-dest.h"
+typedef struct _SocketOptionsInet
+{
+  SocketOptions super;
+  /* user settings */
+  gint ip_ttl;
+  gint ip_tos;
+  gint tcp_keepalive_time;
+  gint tcp_keepalive_intvl;
+  gint tcp_keepalive_probes;
+} SocketOptionsInet;
 
-void afinet_set_port(GSockAddr *addr, gchar *service, const gchar *proto);
-gboolean afinet_setup_socket(gint fd, GSockAddr *addr, InetSocketOptions *sock_options, AFSocketDirection dir);
+SocketOptionsInet *socket_options_inet_new_instance(void);
+SocketOptions *socket_options_inet_new(void);
 
 #endif
