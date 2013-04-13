@@ -366,6 +366,7 @@ const gchar *source_names[SCS_MAX] =
   "unix-stream",
   "unix-dgram",
   "syslog",
+  "network",
   "internal",
   "logstore",
   "program",
