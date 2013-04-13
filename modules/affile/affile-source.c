@@ -214,7 +214,13 @@ affile_sd_notify(LogPipe *s, LogPipe *sender, gint notify_code, gpointer user_da
 
             self->reader = log_reader_new(proto);
 
-            log_reader_set_options(self->reader, s, &self->reader_options, 1, SCS_FILE, self->super.super.id, self->filename->str);
+            log_reader_set_options(self->reader,
+                                   s,
+                                   &self->reader_options,
+                                   STATS_LEVEL1,
+                                   SCS_FILE,
+                                   self->super.super.id,
+                                   self->filename->str);
             log_reader_set_follow_filename(self->reader, self->filename->str);
             log_reader_set_immediate_check(self->reader);
 
@@ -283,10 +289,15 @@ affile_sd_init(LogPipe *s)
       LogProtoServer *proto;
 
       proto = affile_sd_construct_proto(self, fd);
-      /* FIXME: we shouldn't use reader_options to store log protocol parameters */
       self->reader = log_reader_new(proto);
 
-      log_reader_set_options(self->reader, s, &self->reader_options, 1, SCS_FILE, self->super.super.id, self->filename->str);
+      log_reader_set_options(self->reader,
+                             s,
+                             &self->reader_options,
+                             STATS_LEVEL1,
+                             SCS_FILE,
+                             self->super.super.id,
+                             self->filename->str);
       log_reader_set_follow_filename(self->reader, self->filename->str);
 
       /* NOTE: if the file could not be opened, we ignore the last

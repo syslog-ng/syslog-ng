@@ -169,7 +169,13 @@ afprogram_sd_init(LogPipe *s)
 
       transport = log_transport_pipe_new(fd);
       self->reader = log_reader_new(log_proto_text_server_new(transport, &self->reader_options.proto_options.super));
-      log_reader_set_options(self->reader, s, &self->reader_options, 0, SCS_PROGRAM, self->super.super.id, self->cmdline->str);
+      log_reader_set_options(self->reader,
+                             s,
+                             &self->reader_options,
+                             STATS_LEVEL0,
+                             SCS_PROGRAM,
+                             self->super.super.id,
+                             self->cmdline->str);
     }
   log_pipe_append(self->reader, &self->super.super.super);
   if (!log_pipe_init(self->reader, NULL))
@@ -325,7 +331,13 @@ afprogram_dd_init(LogPipe *s)
   if (!self->writer)
     self->writer = log_writer_new(LW_FORMAT_FILE);
 
-  log_writer_set_options((LogWriter *) self->writer, s, &self->writer_options, 0, SCS_PROGRAM, self->super.super.id, self->cmdline->str);
+  log_writer_set_options((LogWriter *) self->writer,
+                         s,
+                         &self->writer_options,
+                         STATS_LEVEL0,
+                         SCS_PROGRAM,
+                         self->super.super.id,
+                         self->cmdline->str);
   log_writer_set_queue(self->writer, log_dest_driver_acquire_queue(&self->super, afprogram_dd_format_persist_name(self)));
 
   log_pipe_init(self->writer, NULL);

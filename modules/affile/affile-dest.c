@@ -211,9 +211,13 @@ affile_dw_init(LogPipe *s)
 
       self->writer = log_writer_new(flags);
     }
-  log_writer_set_options((LogWriter *) self->writer, s, &self->owner->writer_options, 1,
+  log_writer_set_options((LogWriter *) self->writer,
+                         s,
+                         &self->owner->writer_options,
+                         STATS_LEVEL1,
                          self->owner->is_pipe ? SCS_PIPE : SCS_FILE,
-                         self->owner->super.super.id, self->filename);
+                         self->owner->super.super.id,
+                         self->filename);
   log_writer_set_queue(self->writer, log_dest_driver_acquire_queue(&self->owner->super, affile_dw_format_persist_name(self)));
 
   if (!log_pipe_init(self->writer, NULL))
@@ -285,8 +289,15 @@ affile_dw_set_owner(AFFileDestWriter *self, AFFileDestDriver *owner)
   log_pipe_ref(&owner->super.super.super);
   self->owner = owner;
   if (self->writer)
-    log_writer_set_options((LogWriter *) self->writer, &self->super, &owner->writer_options, 1, SCS_FILE, self->owner->super.super.id, self->filename);
-  
+    {
+      log_writer_set_options((LogWriter *) self->writer,
+                             &self->super,
+                             &owner->writer_options,
+                             STATS_LEVEL1,
+                             SCS_FILE,
+                             self->owner->super.super.id,
+                             self->filename);
+    }
 }
 
 static void

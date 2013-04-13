@@ -143,7 +143,12 @@ afsocket_sc_init(LogPipe *s)
 
       self->reader = log_reader_new(proto);
     }
-  log_reader_set_options(self->reader, s, &self->owner->reader_options, 1, afsocket_sc_stats_source(self), self->owner->super.super.id, afsocket_sc_stats_instance(self));
+  log_reader_set_options(self->reader, s,
+                         &self->owner->reader_options,
+                         STATS_LEVEL1,
+                         afsocket_sc_stats_source(self),
+                         self->owner->super.super.id,
+                         afsocket_sc_stats_instance(self));
   log_reader_set_peer_addr(self->reader, self->peer_addr);
   log_pipe_append(self->reader, s);
   if (log_pipe_init(self->reader, NULL))

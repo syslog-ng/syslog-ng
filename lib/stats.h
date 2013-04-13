@@ -42,6 +42,14 @@ typedef enum
 
 enum
 {
+  STATS_LEVEL0 = 0,
+  STATS_LEVEL1,
+  STATS_LEVEL2,
+  STATS_LEVEL3
+};
+
+enum
+{
   SCS_SOURCE         = 0x0100,
   SCS_DESTINATION    = 0x0200,
   SCS_FILE           = 1,
