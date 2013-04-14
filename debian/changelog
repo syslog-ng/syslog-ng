@@ -1,3 +1,12 @@
+syslog-ng (3.4.1-1~mhp2) unstable; urgency=low
+
+  [ Gergely Nagy <algernon@madhouse-project.org> ]
+  * Fix the systemd unit file handling, many thanks to Dominic Hargreaves
+    <dom@earth.li> and Michael Biebl <biebl@debian.org> for the
+    assistance.
+
+ -- Gergely Nagy <algernon@madhouse-project.org>  Sun, 14 Apr 2013 12:14:55 +0200
+
 syslog-ng (3.4.1-1~mhp1) unstable; urgency=low
 
   [ Gergely Nagy <algernon@madhouse-project.org> ]
