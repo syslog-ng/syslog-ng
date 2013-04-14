@@ -1,3 +1,10 @@
+syslog-ng (3.3.9-1~mhp1) unstable; urgency=low
+
+  [ Gergely Nagy <algernon@madhouse-project.org> ]
+  * New upstream release.
+
+ -- Gergely Nagy <algernon@madhouse-project.org>  Sun, 14 Apr 2013 10:02:35 +0200
+
 syslog-ng (3.3.8-1~mhp1) unstable; urgency=low
 
   [ Gergely Nagy <algernon@madhouse-project.org> ]
