@@ -1,6 +1,6 @@
 #! /usr/bin/make -f
 ## debian/rules file for syslog-ng 3.3+
-## (C) 2011-2012 Gergely Nagy <algernon@madhouse-project.org>
+## (C) 2011-2013 Gergely Nagy <algernon@madhouse-project.org>
 ##
 ## Released under the GPLv3+, see /usr/share/common-licenses/GPL-3 on
 ## Debian systems.
@@ -49,6 +49,14 @@ LDFLAGS		?= $(shell dpkg-buildflags --get LDFLAGS)
 CFLAGS		+= $(HARDENING_CFLAGS)
 LDFLAGS		+= $(HARDENING_LDFLAGS)
 
+# On Ubuntu, we disable systemd support. Everwhere else, we include
+# it.
+ifeq ($(shell dpkg-vendor --query Vendor),Ubuntu)
+SYSTEMD_SUPPORT	?= --disable-systemd
+else
+SYSTEMD_SUPPORT	?= --enable-systemd
+endif
+
 ##
 #* Overrides for dh_auto*
 ##
@@ -87,7 +95,7 @@ override_dh_auto_configure:
 		--enable-sql \
 		--enable-mongodb \
 		--enable-json \
-		--enable-systemd \
+		${SYSTEMD_SUPPORT} \
 		\
 		--with-libmongo-client=system \
 		--with-ivykis=system \
@@ -170,8 +178,10 @@ ifneq (,$(filter syslog-ng-dev,$(shell dh_listpackages)))
 	chmod +x debian/syslog-ng-dev/usr/share/syslog-ng/tools/merge-grammar.pl
 endif
 ifneq (,$(filter syslog-ng-core,$(shell dh_listpackages)))
+ifeq (${SYSTEMD_SUPPORT},--enable-systemd)
 	install -m 0644 ${SRCDIR}/contrib/systemd/syslog-ng.service \
 			debian/syslog-ng-core/lib/systemd/system/
+endif
 	install -m 0644 debian/${TTY10_CONF} \
 			debian/syslog-ng-core/usr/share/syslog-ng/include/scl/system/tty10.conf
 endif

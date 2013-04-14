@@ -19,7 +19,7 @@ Build-Depends: debhelper (>= 9~),
 	       libwrap0-dev,
 	       libpcre3-dev,
 	       libcap-dev [linux-any],
-	       libsystemd-daemon-dev [linux-any],
+	       @IF_ENABLED(systemd):libsystemd-daemon-dev [linux-any],@
                libgeoip-dev,
 	       hardening-includes,
                python
@@ -33,7 +33,7 @@ Bugs: mailto:syslog-ng@lists.balabit.hu
 
 Package: syslog-ng
 Architecture: all
-Multi-Arch: foreign
+@IF_ENABLED(multi-arch):Multi-Arch: foreign@
 Depends: ${misc:Depends}, syslog-ng-core (>= ${source:Upstream-Version}), ${sng:Modules}
 Description: Next generation system logging daemon (metapackage)
  syslog-ng is an enhanced syslog daemon, supporting, amongst others:
@@ -55,7 +55,7 @@ Description: Next generation system logging daemon (metapackage)
 
 Package: syslog-ng-dbg
 Architecture: any
-Multi-Arch: same
+@IF_ENABLED(multi-arch):Multi-Arch: same@
 Section: debug
 Depends: syslog-ng-core (= ${binary:Version}), ${misc:Depends}
 Description: Next generation system logging daemon (debug symbols)
@@ -89,7 +89,7 @@ Description: Next generation system logging daemon (development files)
 
 Package: syslog-ng-core
 Architecture: any
-Multi-Arch: foreign
+@IF_ENABLED(multi-arch):Multi-Arch: foreign@
 Depends: ${shlibs:Depends}, ${misc:Depends}, util-linux (>= 2.12-10)
 Recommends: logrotate
 Suggests: ${sng:Modules}
@@ -116,7 +116,7 @@ Description: Next generation system logging daemon (core)
 
 Package: syslog-ng-mod-json
 Architecture: any
-Multi-Arch: foreign
+@IF_ENABLED(multi-arch):Multi-Arch: foreign@
 Depends: syslog-ng-core (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
 Description: Next generation system logging daemon (JSON plugin)
  syslog-ng is an enhanced syslog daemon, supporting, amongst others:
@@ -139,7 +139,7 @@ Description: Next generation system logging daemon (JSON plugin)
 
 Package: syslog-ng-mod-mongodb
 Architecture: any
-Multi-Arch: foreign
+@IF_ENABLED(multi-arch):Multi-Arch: foreign@
 Depends: syslog-ng-core (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
 Suggests: mongodb-server
 Description: Next generation system logging daemon (MongoDB plugin)
@@ -161,7 +161,7 @@ Description: Next generation system logging daemon (MongoDB plugin)
 
 Package: syslog-ng-mod-sql
 Architecture: any
-Multi-Arch: foreign
+@IF_ENABLED(multi-arch):Multi-Arch: foreign@
 Depends: syslog-ng-core (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
 Suggests: libdbd-mysql, libdbd-pgsql, libdbd-sqlite3
 Description: Next generation system logging daemon (SQL plugin)
@@ -184,7 +184,7 @@ Description: Next generation system logging daemon (SQL plugin)
 
 Package: syslog-ng-mod-smtp
 Architecture: any
-Multi-Arch: foreign
+@IF_ENABLED(multi-arch):Multi-Arch: foreign@
 Depends: syslog-ng-core (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
 Description: Next generation system logging daemon (SMTP plugin)
  syslog-ng is an enhanced syslog daemon, supporting, amongst others:
@@ -205,7 +205,7 @@ Description: Next generation system logging daemon (SMTP plugin)
 
 Package: syslog-ng-mod-amqp
 Architecture: any
-Multi-Arch: foreign
+@IF_ENABLED(multi-arch):Multi-Arch: foreign@
 Depends: syslog-ng-core (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
 Suggests: rabbitmq-server
 Description: Next generation system logging daemon (AMQP plugin)
@@ -227,7 +227,7 @@ Description: Next generation system logging daemon (AMQP plugin)
 
 Package: syslog-ng-mod-geoip
 Architecture: any
-Multi-Arch: foreign
+@IF_ENABLED(multi-arch):Multi-Arch: foreign@
 Depends: syslog-ng-core (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
 Recommends: geoip-database
 Description: Next generation system logging daemon (GeoIP plugin)
