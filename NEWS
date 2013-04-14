@@ -1,3 +1,48 @@
+3.3.9
+        Mon, 15 April 2013 15:00:00 +0100
+
+        Highlights
+        ==========
+
+        This release is a bug-fix release, correcting a handful of
+        issues discovered since the previous one.
+
+        Bugfixes
+        ========
+
+        * A set/subst rewrite related segmentation fault has been
+          fixed: if a rewrite rule doing either set or subst was
+          referenced from multiple logpath, syslog-ng crashed.
+
+        Other changes
+        =============
+
+        * The systemd unit file now has Restart=on-failure set, to
+          restart syslog-ng when it terminates unexpectedly. [#222]
+
+        * When syslog-ng-ctl disconnects from syslog-ng, syslog-ng
+          will not log an error due to the EOF, but an info-level
+          message instead.
+
+        Credits
+        =======
+
+        syslog-ng is developed as a community project, and as such it
+        relies on volunteers to do the work necessarily to produce
+        syslog-ng.
+
+        Reporting bugs, testing changes, writing code or simply
+        providing feedback are all important contributions, so please
+        if you are a user of syslog-ng, contribute.
+
+        These people have helped in this release:
+
+        Balazs Scheidler <bazsi@balabit.hu>
+        Gergely Nagy <algernon@balabit.hu>
+        Johnson, Chris <chris.johnson3@hp.com>
+        Lucas, Sascha <Sascha.Lucas@gisa.de>
+        Paul Dann <pdgiddie+balabit@gmail.com>
+
 3.3.8
         Thu, 17 Jan 2013 11:00:00 +0100
 
