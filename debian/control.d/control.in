@@ -17,8 +17,7 @@ Build-Depends: debhelper (>= 9~),
 	       libwrap0-dev,
 	       libpcre3-dev,
 	       libcap-dev [linux-any],
-	       @IF_ENABLED(systemd):libsystemd-daemon-dev [linux-any],@
-	       hardening-includes
+	       @IF_ENABLED(systemd):libsystemd-daemon-dev [linux-any]@
 Build-Conflicts: autoconf2.13
 Standards-Version: 3.9.3
 Homepage: http://www.balabit.com/network-security/syslog-ng/opensource-logging-system
