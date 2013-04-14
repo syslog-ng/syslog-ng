@@ -59,6 +59,12 @@ else
 SYSTEMD_SUPPORT	?= --enable-systemd
 endif
 
+# If we do not have multi-arch enabled in debian/control, then we
+# should override --libdir and --includedir.
+ifeq ($(shell grep -q Multi-Arch debian/control || echo flat),flat)
+	dir_overrides	= --libdir=/usr/lib --includedir=/usr/include
+endif
+
 ##
 #* Overrides for dh_auto*
 ##
@@ -87,6 +93,7 @@ override_dh_auto_configure:
 		--sysconfdir=/etc/syslog-ng \
 		--localstatedir=/var/lib/syslog-ng \
 		--datadir=/usr/share/syslog-ng \
+		${dir_overrides} \
 		\
 		--enable-dynamic-linking \
 		--enable-ssl \
