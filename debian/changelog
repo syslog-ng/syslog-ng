@@ -2,6 +2,9 @@ syslog-ng (3.3.9-1~mhp1) unstable; urgency=low
 
   [ Gergely Nagy <algernon@madhouse-project.org> ]
   * New upstream release.
+  * Fix the systemd unit file handling, many thanks to Dominic Hargreaves
+    <dom@earth.li> and Michael Biebl <biebl@debian.org> for the
+    assistance.
 
  -- Gergely Nagy <algernon@madhouse-project.org>  Sun, 14 Apr 2013 10:02:35 +0200
 
