@@ -61,7 +61,7 @@ def stop_syslogng():
     print_user("syslog-ng stopped")
     if rc == 0:
         return True
-    print_user("syslog-ng exited with a non-zero value")
+    print_user("syslog-ng exited with a non-zero value (%d)" % rc)
     return False
 
 def flush_files(settle_time=3):
