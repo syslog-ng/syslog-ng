@@ -42,12 +42,8 @@ SRCDIR	   	   = $(shell test -d syslog-ng-${UMAJOR} && echo syslog-ng-${UMAJOR} 
 
 export DH_OPTIONS += -O-Bdebian/build-tree --dbg-package=syslog-ng-dbg -O-D${SRCDIR}
 
-include /usr/share/hardening-includes/hardening.make
-
 CFLAGS		?= $(shell dpkg-buildflags --get CFLAGS)
 LDFLAGS		?= $(shell dpkg-buildflags --get LDFLAGS)
-CFLAGS		+= $(HARDENING_CFLAGS)
-LDFLAGS		+= $(HARDENING_LDFLAGS)
 
 # On Ubuntu, we disable systemd support. Everwhere else, we include
 # it.

@@ -21,7 +21,6 @@ Build-Depends: debhelper (>= 9~),
 	       libcap-dev [linux-any],
 	       @IF_ENABLED(systemd):libsystemd-daemon-dev [linux-any],@
                libgeoip-dev,
-	       hardening-includes,
                python
 Build-Conflicts: autoconf2.13
 Standards-Version: 3.9.3
