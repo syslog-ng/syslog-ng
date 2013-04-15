@@ -1,7 +1,7 @@
-SUBDIRS = lib libtest modules syslog-ng syslog-ng-ctl persist-tool upgrade-tool scripts tests doc contrib scl debian tgz2build build winbuild
+SUBDIRS = lib libtest modules syslog-ng syslog-ng-ctl persist-tool scripts tests doc contrib scl debian tgz2build build winbuild
 
 # tests from pe
-SUBDIRS += pe-tests
+SUBDIRS += pe-tests windows-binaries windows-tools
 
 ACLOCAL_AMFLAGS = -I m4 --install
 

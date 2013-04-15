@@ -41,9 +41,9 @@ case "$cmd" in
             done
             MODULEPATH=$ZBS_PREFIX_LIB:$ZBS_STAGING_DIR/$ZBS_PREFIX/lib:`echo $MODULEPATH | sed -e 's/ /:/g'`;
             BUILDOPTS="$ZBS_STAGE_DIR/share/doc/buildopts";
-            echo syslog-ng/syslog-ng -V --module-path "$MODULEPATH";
-            syslog-ng/syslog-ng -V --module-path "$MODULEPATH"
-            syslog-ng/syslog-ng -V --module-path "$MODULEPATH" | sed -n -e '/^Enable/p' -e '/^Available/p' > $BUILDOPTS;
+            echo windows-binaries/syslog-ng -V --module-path "$MODULEPATH";
+            windows-binaries/syslog-ng -V --module-path "$MODULEPATH"
+            windows-binaries/syslog-ng -V --module-path "$MODULEPATH" | sed -n -e '/^Enable/p' -e '/^Available/p' > $BUILDOPTS;
             if test ! -s $BUILDOPTS; then
                 echo "Build options file '$BUILDOPTS' has zero size. Please check your filter expression in tgz2build/rules.";
                 exit 1;

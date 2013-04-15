@@ -22,6 +22,15 @@ set -e
      if [ -h $petests ] || [ -d $petests ]; then rm -rf $petests; fi
      ln -s $petests_orig $petests
  fi
+
+ peroot="$ZWA_ROOT/git/syslog-ng/syslog-ng-pe-modules--mainline--5.0"
+ for pebin in windows-tools windows-binaries; do
+    binpath=$peroot/$pebin
+    if [ -d $binpath ]; then
+        if [ -h $pebin ] || [ -d $pebin ]; then rm -rf $pebin; fi
+        ln -s $binpath $pebin
+    fi
+ done
 )
 
 ACLOCALPATHS=

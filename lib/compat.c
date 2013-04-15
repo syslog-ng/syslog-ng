@@ -46,7 +46,6 @@
 #include <locale.h>
 #include <stdint.h>
 #include <iv_tls.h>
-#define _freea free
 
 #define _ctloc(x)       (_CurrentTimeLocale->x)
 /*

@@ -1305,36 +1305,6 @@ if test "x$static_modules" != "none"; then
     esac
 fi
 
-SYSLOGNG_STATIC_MODULES=""
-enable_static_modules="no"
-#if test "x$static_modules" != "xnone"; then
-#    code="syslog-ng/statics.c"
-#    cat << EOF > $code
-##include "cfg.h"
-#void init_statics(GlobalConfig *cfg)
-#{
-#EOF
-#    case $static_modules in
-#        *license*);;
-#        *) static_modules="license,$static_modules";;
-#    esac
-#    ofs=$IFS
-#    IFS=','
-#    for m in $static_modules; do
-#        modpath=$m
-#        case $m in
-#            aflogstore) modpath=logstore;;
-#            disk-buffer)modpath=diskq;;
-#        esac
-#        SYSLOGNG_STATIC_MODULES="$SYSLOGNG_STATIC_MODULES ../modules/${modpath}/lib${m}-static.la"
-#        syslog_ng_LDFLAGS=-static
-#        echo "`echo $m | tr '-' '_'`_module_init(cfg);" >> $code
-#    done
-#    IFS=$ofs
-#    echo "}" >> $code
-#    enable_static_modules="yes"
-#fi
-
 SLNG_WIN_VERSION="`echo $VERSION | sed -e 's/[[a-zA-Z+\-~]]\+.*//' -e 's/\./,/g'`"
 
 if test $IS_WINDOWS -ne 0; then
@@ -1451,7 +1421,6 @@ AC_SUBST(PATH_LOCALSTATEDIR)
 AC_SUBST(SLNG_WIN_VERSION)
 AC_SUBST(LIBSYSLOGNG_VERSION)
 
-AC_SUBST(syslog_ng_LDFLAGS)
 AC_SUBST(SYSLOGNG_STATIC_MODULES)
 
 
@@ -1479,8 +1448,6 @@ AC_OUTPUT(dist.conf
           syslog-ng/Makefile
           syslog-ng-ctl/Makefile
           persist-tool/Makefile
-          upgrade-tool/Makefile
-          upgrade-tool/tests/Makefile
           modules/Makefile
           modules/dummy/Makefile
           modules/basic-proto/Makefile
@@ -1514,18 +1481,22 @@ dnl PE modules
 	modules/license/Makefile
 	modules/logstore/Makefile
 	modules/diskq/Makefile
-  modules/diskq/tests/Makefile
+	modules/diskq/tests/Makefile
 	modules/confighash/Makefile
 	modules/snmp/Makefile
 	modules/afsqlsource/Makefile
-  modules/afsqlsource/tests/Makefile
-  modules/rltp-proto/Makefile
-  modules/rltp-proto/tests/Makefile
-  modules/windows-resource/Makefile
+	modules/afsqlsource/tests/Makefile
+	modules/rltp-proto/Makefile
+	modules/rltp-proto/tests/Makefile
+	modules/windows-resource/Makefile
 	pe-tests/Makefile
 	pe-tests/unit/Makefile
 	pe-tests/tools/Makefile
 	pe-tests/functional/Makefile
+        windows-binaries/Makefile
+	windows-tools/Makefile
+	windows-tools/upgrade-tool/Makefile
+	windows-tools/upgrade-tool/tests/Makefile
 dnl PE modules
 
 

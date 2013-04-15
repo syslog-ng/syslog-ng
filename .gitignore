@@ -50,3 +50,5 @@ modules/windows-resource
 pe-tests
 tags
 typescript
+windows-tools
+windows-binaries
