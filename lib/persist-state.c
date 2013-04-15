@@ -913,7 +913,7 @@ persist_state_commit(PersistState *self)
     msg_error("Can't rename files",
               evt_tag_str("source",self->temp_filename),
               evt_tag_str("destination",self->commited_filename),
-              evt_tag_errno("Error",errno),
+              evt_tag_errno("error",errno),
               evt_tag_id(MSG_CANT_RENAME_PERSIST_FILE),
               NULL);
     return FALSE;

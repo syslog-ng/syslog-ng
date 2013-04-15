@@ -295,7 +295,7 @@ control_connection_start_watches(ControlConnection *s)
     {
       msg_error("Connect named pipe failed",
                 evt_tag_str("pipe", s->server->control_socket_name),
-                evt_tag_errno_win("error", GetLastError()),
+                evt_tag_win32_error("error", GetLastError()),
                 NULL);
     }
   return;
@@ -369,7 +369,7 @@ control_server_win32_create_new_instance(ControlServer *s)
    else
      {
        msg_error("Can't create named pipe",
-                 evt_tag_errno_win("error", GetLastError()),
+                 evt_tag_win32_error("error", GetLastError()),
                  NULL);
      }
   return;
@@ -384,7 +384,7 @@ control_server_start(ControlServer *s)
     {
       msg_error("Can't create security descriptor for the control pipe",
                 evt_tag_str("message", error_description->str),
-                evt_tag_errno_win("error", GetLastError()),
+                evt_tag_win32_error("error", GetLastError()),
                 NULL);
     }
   else
