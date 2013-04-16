@@ -247,7 +247,11 @@ afstreams_sd_deinit(LogPipe *s)
   AFStreamsSourceDriver *self = (AFStreamsSourceDriver *) s;
 
   if (self->reader)
+  {
     log_pipe_deinit(self->reader);
+    log_pipe_unref(self->reader);
+    self->reader = NULL;
+  }
   if (self->door_fd != -1)
     {
       door_revoke(self->door_fd);
@@ -270,7 +274,8 @@ afstreams_sd_free(LogPipe *s)
     g_string_free(self->dev_filename, TRUE);
   if (self->door_filename)
     g_string_free(self->door_filename, TRUE);
-  log_pipe_unref(self->reader);
+  if (self->reader)
+    log_pipe_unref(self->reader);
 
   log_src_driver_free(s);
 }
