@@ -49,7 +49,7 @@ LDFLAGS		?= $(shell dpkg-buildflags --get LDFLAGS)
 
 # On Ubuntu, we disable systemd support. Everwhere else, we include
 # it.
-ifeq ($(shell dpkg-vendor --query Vendor),Ubuntu)
+ifeq ($(shell grep -q libsystemd-daemon-dev debian/control || echo disabled),disabled)
 SYSTEMD_SUPPORT	?= --disable-systemd
 else
 SYSTEMD_SUPPORT	?= --enable-systemd
