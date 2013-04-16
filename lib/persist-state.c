@@ -218,6 +218,7 @@ persist_state_create_store(PersistState *self)
                 NULL);
       return FALSE;
     }
+  g_fd_set_cloexec(self->fd, TRUE);
   self->current_key_block = offsetof(PersistFileHeader, initial_key_store);
   self->current_key_ofs = 0;
   self->current_key_size = sizeof((((PersistFileHeader *) NULL))->initial_key_store);
