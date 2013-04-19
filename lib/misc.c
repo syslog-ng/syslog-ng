@@ -833,3 +833,21 @@ data_to_hex_string(guint8 *data, guint32 length)
   *pstr = '\0';
   return string;
 }
+
+static gchar *
+replace_string_recursivly(gchar *source, const gchar *substring, const gchar *replacement)
+{
+  gchar *pos = strstr(source, substring);
+  gchar *result;
+  if (pos == NULL)
+    return source;
+  result = g_strdup_printf("%.*s%s%s", (int)(pos - source), source, replacement, pos + strlen(substring));
+  g_free(source);
+  return replace_string_recursivly(result, substring, replacement);
+}
+
+gchar *
+replace_string(const gchar *source, const gchar *substring, const gchar *replacement)
+{
+  return replace_string_recursivly(g_strdup(source), substring, replacement);
+}
