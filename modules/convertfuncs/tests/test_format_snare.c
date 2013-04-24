@@ -109,6 +109,22 @@ test_snare_template_function()
 
   log_template_unref(template);
   log_msg_unref(msg);
+
+  msg = log_msg_new_empty();
+  template = log_template_new(configuration,NULL);
+  msg->timestamps[1] = stamp;
+  msg->timestamps[0] = msg->timestamps[1];
+  log_msg_set_value(msg,LM_V_MESSAGE,"---MARK---",-1);
+  log_msg_set_value(msg,LM_V_HOST, "testhost", -1);
+
+  template_string = "$(format-snare)";
+  expected = "<0>May 21 11:22:12 testhost ---MARK---\n";
+  assert_true(log_template_compile(template,template_string,&err),"CAN't COMPILE!");
+  log_template_format(template, msg, NULL, 0, 0, "TEST", result);
+  assert_string(result->str,expected,"Bad formatting");
+
+  log_template_unref(template);
+  log_msg_unref(msg);
   g_string_free(result,TRUE);
 }
 

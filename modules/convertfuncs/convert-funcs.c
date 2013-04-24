@@ -96,6 +96,7 @@ typedef struct _SnareFormatOptions {
   LogTemplate *protocol_template;
   LogTemplate *event_template;
   LogTemplate *file_template;
+  LogTemplate *default_template;
   gchar         *delimiter;
   guint        criticality;
 } SnareFormatOptions;
@@ -106,6 +107,7 @@ snare_format_options_destroy(SnareFormatOptions *options)
   log_template_unref(options->protocol_template);
   log_template_unref(options->event_template);
   log_template_unref(options->file_template);
+  log_template_unref(options->default_template);
   g_free(options->delimiter);
   g_free(options);
 }
@@ -178,13 +180,17 @@ tf_format_snare_prepare(LogTemplateFunction *self, LogTemplate *parent,
   g_string_append(event_template_str,"\n");
 
   options->protocol_template = log_template_new(options->cfg,"snare_protocol_template");
-  log_template_compile(options->protocol_template,"<${PRI}>${BSDDATE} ${HOST} ",&err);
+  log_template_compile(options->protocol_template,"<${PRI}>${BSDDATE} ${HOST} ", &err);
 
   options->event_template = log_template_new(options->cfg,"snare_event_template");
   log_template_compile(options->event_template,event_template_str->str, &err);
 
   options->file_template = log_template_new(options->cfg,"snare_file_template");
-  log_template_compile(options->file_template,"${FILE_NAME}: ${FILE_MESSAGE}\n",&err);
+  log_template_compile(options->file_template,"${FILE_NAME}: ${FILE_MESSAGE}\n", &err);
+
+  options->default_template = log_template_new(options->cfg, "default snare template");
+  log_template_compile(options->default_template, "${MESSAGE}\n", &err);
+
   *state = options;
   *state_destroy = (GDestroyNotify)snare_format_options_destroy;
   g_string_free(event_template_str,TRUE);
@@ -198,25 +204,34 @@ tf_format_snare_call(LogTemplateFunction *self, gpointer state, GPtrArray *arg_b
              gint tz, gint seq_num, const gchar *context_id, GString *result)
 {
   gint i;
-  gssize len;
-  static NVHandle hEventId = 0;
+  gssize event_id_len;
+  gssize file_name_len;
+  static NVHandle event_id_handle = 0;
+  static NVHandle file_name_handle = 0;
   SnareFormatOptions *options = state;
 
-  if (!hEventId)
-    hEventId = log_msg_get_value_handle("EVENT_ID");
+  if (!event_id_handle)
+    event_id_handle = log_msg_get_value_handle("EVENT_ID");
+  if (!file_name_handle)
+    file_name_handle = log_msg_get_value_handle("FILE_NAME");
   for(i = 0; i < num_messages; i++)
   {
     LogMessage *msg = messages[i];
     log_template_append_format(options->protocol_template, msg, opts, tz, seq_num, context_id, result);
-    log_msg_get_value(msg,hEventId,&len);
-    if (len == 0)
-    {
-      log_template_append_format(options->file_template, msg, opts, tz, seq_num, context_id, result);
-    }
+    log_msg_get_value(msg, event_id_handle, &event_id_len);
+    log_msg_get_value(msg,file_name_handle, &file_name_len);
+    if (event_id_len != 0)
+      {
+        log_template_append_format(options->event_template, msg, opts, tz, seq_num, context_id, result);
+      }
+    else if (file_name_len != 0)
+      {
+        log_template_append_format(options->file_template, msg, opts, tz, seq_num, context_id, result);
+      }
     else
-    {
-      log_template_append_format(options->event_template, msg, opts, tz, seq_num, context_id, result);
-    }
+      {
+        log_template_append_format(options->default_template, msg, opts, tz, seq_num, context_id, result);
+      }
   }
   return;
 }
