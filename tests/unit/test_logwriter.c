@@ -18,17 +18,25 @@ gboolean success = TRUE;
 gboolean verbose = FALSE;
 MsgFormatOptions parse_options;
 
+typedef struct _TestCaseOptions {
+  gchar *template;
+  gint padding;
+  gboolean use_syslog_protocol;
+  gboolean local_message;
+  guint writer_flags;
+} TestCaseOptions;
+
 LogMessage *
-init_msg(gchar *msg_string, gboolean use_syslog_protocol, gboolean local_message)
+init_msg(gchar *msg_string, TestCaseOptions *tc_options)
 {
   LogMessage *msg;
 
-  if (use_syslog_protocol)
+  if (tc_options->use_syslog_protocol)
     parse_options.flags |= LP_SYSLOG_PROTOCOL;
   else
     parse_options.flags &= ~LP_SYSLOG_PROTOCOL;
 
-  if (local_message)
+  if (tc_options->local_message)
     parse_options.flags |= LP_LOCAL;
   else
     parse_options.flags &= ~LP_LOCAL;
@@ -47,7 +55,7 @@ init_msg(gchar *msg_string, gboolean use_syslog_protocol, gboolean local_message
 }
 
 void
-testcase(gchar *msg_string, gchar *template, gint padding, gboolean use_syslog_protocol,gchar *expected_value, gboolean local_message)
+testcase(gchar *msg_string, gchar *expected_value, TestCaseOptions *tc_options)
 {
   LogTemplate *templ = NULL;
   LogWriter *writer = NULL;
@@ -56,7 +64,7 @@ testcase(gchar *msg_string, gchar *template, gint padding, gboolean use_syslog_p
   LogMessage *msg = NULL;
   LogWriterOptions opt = {0};
   guint msg_flags = 0;
-  guint writer_flags = 0;
+  guint writer_flags = tc_options->writer_flags;
 
   static TimeZoneInfo *tzinfo = NULL;
 
@@ -64,21 +72,22 @@ testcase(gchar *msg_string, gchar *template, gint padding, gboolean use_syslog_p
     tzinfo = time_zone_info_new(NULL);
   opt.options = LWO_NO_MULTI_LINE | LWO_NO_STATS | LWO_SHARE_STATS;
   opt.template_options.time_zone_info[LTZ_SEND]=tzinfo;
-  if (use_syslog_protocol)
+  if (tc_options->use_syslog_protocol)
     {
       opt.options |= LWO_SYSLOG_PROTOCOL;
       msg_flags |= LP_SYSLOG_PROTOCOL;
-      writer_flags = LW_SYSLOG_PROTOCOL;
+      writer_flags |= LW_SYSLOG_PROTOCOL;
     }
-  if (template)
+  if (tc_options->template)
     {
       templ = log_template_new(configuration, "dummy");
-      log_template_compile(templ, template, &error);
+      log_template_compile(templ, tc_options->template, &error);
     }
-  if (padding)
-    opt.padding = padding;
+  if (tc_options->padding)
+    opt.padding = tc_options->padding;
   opt.template = templ;
-  msg = init_msg(msg_string, use_syslog_protocol, local_message);
+
+  msg = init_msg(msg_string, tc_options);
   writer = (LogWriter*)log_writer_new(writer_flags);
   log_writer_set_queue((LogPipe *)writer, log_queue_fifo_new(1000, NULL));
   if (writer)
@@ -99,15 +108,22 @@ testcase(gchar *msg_string, gchar *template, gint padding, gboolean use_syslog_p
   if (templ)
     log_template_unref(templ);
   if (writer)
-    free(writer);
+    log_pipe_unref((LogPipe *)writer);
   if (msg)
     g_slice_free(LogMessage, msg);
   g_string_free(res, TRUE);
 }
 
+void
+reset_testcase_options(TestCaseOptions *tc_options)
+{
+  memset(tc_options, 0, sizeof(TestCaseOptions));
+}
+
 int
 main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 {
+  TestCaseOptions tc_options = {0};
   char *msg_syslog_str = "<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog 3535 ID47 [timeQuality isSynced=\"0\" tzKnown=\"1\"][exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] BOMAn application event log entry...";
   char *expected_msg_syslog_str = "<132>1 2006-10-29T01:59:59+01:00 mymachine evntslog 3535 ID47 [timeQuality isSynced=\"0\" tzKnown=\"1\"][exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] BOMAn application event log entry...\n";
   char *expected_msg_syslog_str_t = "<132>1 2006-10-29T01:59:59+01:00 mymachine evntslog 3535 ID47 [timeQuality isSynced=\"0\" tzKnown=\"1\"][exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] ID47 BOMAn application event log entry...\n";
@@ -151,29 +167,73 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 
 
   //Testing syslog protocol if template string is not used
-  testcase(msg_syslog_str,NULL,0,TRUE,expected_msg_syslog_str, FALSE);
+  tc_options.use_syslog_protocol = TRUE;
+  testcase(msg_syslog_str,expected_msg_syslog_str,&tc_options);
+
   //Testing syslog protocol if template string is used
-  testcase(msg_syslog_str,"$MSGID $MSG",0,TRUE,expected_msg_syslog_str_t, FALSE);
+  tc_options.template = "$MSGID $MSG";
+  testcase(msg_syslog_str, expected_msg_syslog_str_t, &tc_options);
+
   //Testing syslog protocol if template string is not used and $MSG is empty
-  testcase(msg_syslog_empty_str,NULL,0,TRUE,expected_msg_syslog_empty_str, FALSE);
+  tc_options.template = NULL;
+  testcase(msg_syslog_empty_str, expected_msg_syslog_empty_str, &tc_options);
+
   //Testing syslog protocol if template string is used and $MSG is empty
-  testcase(msg_syslog_empty_str,"$MSGID",0,TRUE,expected_msg_syslog_empty_str_t, FALSE);
+  tc_options.template = "$MSGID";
+  testcase(msg_syslog_empty_str, expected_msg_syslog_empty_str_t, &tc_options);
 
-  testcase(msg_bsd_str,NULL,0,FALSE,expected_msg_bsd_str, FALSE);
-  testcase(msg_bsd_str,"$PID $MSG",0,FALSE,expected_msg_bsd_str_t, FALSE);
-  testcase(msg_bsd_empty_str,NULL,0,FALSE,expected_msg_bsd_empty_str, FALSE);
-  testcase(msg_bsd_empty_str,"$PID",0,FALSE,expected_msg_bsd_empty_str_t, FALSE);
+  reset_testcase_options(&tc_options);
+  testcase(msg_bsd_str, expected_msg_bsd_str, &tc_options);
 
-  testcase(msg_bsd_empty_str,NULL,30,FALSE,expected_msg_bsd_empty_str_padd, FALSE);
-  testcase(msg_bsd_empty_str,"$PID",8,FALSE,expected_msg_bsd_empty_str_t_padd, FALSE);
-  testcase(msg_bsd_empty_str,"$PID\n",9,FALSE,expected_msg_bsd_empty_str_t_n_padd, FALSE);
+  tc_options.template = "$PID $MSG";
+  testcase(msg_bsd_str, expected_msg_bsd_str_t, &tc_options);
+
+  tc_options.template = NULL;
+  testcase(msg_bsd_empty_str, expected_msg_bsd_empty_str, &tc_options);
+
+  tc_options.template = "$PID";
+  testcase(msg_bsd_empty_str, expected_msg_bsd_empty_str_t, &tc_options);
+
+  tc_options.template = NULL;
+  tc_options.padding = 30;
+  testcase(msg_bsd_empty_str, expected_msg_bsd_empty_str_padd, &tc_options);
+
+  tc_options.template = "$PID";
+  tc_options.padding = 8;
+  testcase(msg_bsd_empty_str, expected_msg_bsd_empty_str_t_padd, &tc_options);
+
+  tc_options.template = "$PID\n";
+  tc_options.padding = 9;
+  testcase(msg_bsd_empty_str, expected_msg_bsd_empty_str_t_n_padd, &tc_options);
 
   //Testing syslog protocol if squenceID is not specified in SDATA part of incoming message
-  testcase("<132>1 2006-10-29T01:59:59+01:00 mymachine evntslog 3535 ID47 [timeQuality isSynced=\"0\" tzKnown=\"1\"][exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] ID47 BOMAn application event log entry...\n",NULL,0,TRUE,expected_syslog_msg_seq_num,TRUE);
-  //Testing syslog protocol if squenceID is specified in SDATA part of incoming message
-  testcase("<132>1 2006-10-29T01:59:59+01:00 mymachine evntslog 3535 ID47 [timeQuality isSynced=\"0\" tzKnown=\"1\"][exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"][meta sequenceId=\"12\"] ID47 BOMAn application event log entry...\n",NULL,0,TRUE,expected_syslog_msg_seq_num_2,FALSE);
+  reset_testcase_options(&tc_options);
+  tc_options.use_syslog_protocol = TRUE;
+  tc_options.local_message = TRUE;
+  testcase("<132>1 2006-10-29T01:59:59+01:00 mymachine evntslog 3535 ID47 [timeQuality isSynced=\"0\" tzKnown=\"1\"][exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] ID47 BOMAn application event log entry...\n",
+          expected_syslog_msg_seq_num,
+          &tc_options);
 
-  testcase("<132>1 2006-10-29T01:59:59+01:00 mymachine evntslog 3535 ID47 [timeQuality isSynced=\"0\" tzKnown=\"1\"][exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] ID47 BOMAn application event log entry...\n",NULL,0, TRUE,expected_syslog_msg,FALSE);
+  //Testing syslog protocol if squenceID is specified in SDATA part of incoming message
+  tc_options.local_message = FALSE;
+  testcase("<132>1 2006-10-29T01:59:59+01:00 mymachine evntslog 3535 ID47 [timeQuality isSynced=\"0\" tzKnown=\"1\"][exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"][meta sequenceId=\"12\"] ID47 BOMAn application event log entry...\n",
+          expected_syslog_msg_seq_num_2,
+          &tc_options);
+
+  testcase("<132>1 2006-10-29T01:59:59+01:00 mymachine evntslog 3535 ID47 [timeQuality isSynced=\"0\" tzKnown=\"1\"][exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] ID47 BOMAn application event log entry...\n",
+          expected_syslog_msg,
+          &tc_options);
+
+  reset_testcase_options(&tc_options);
+  tc_options.writer_flags = LW_FORMAT_PROTO;
+  testcase("<155>2006-02-11T10:34:56+01:00 bzorp ---MARK---",
+           "<155>Feb 11 10:34:56 bzorp ---MARK---\n",
+           &tc_options);
+
+  tc_options.template = "<${PRI}>${BSDDATE} ${HOST} ${MSGHDR}${MSG}";
+  testcase("<155>2006-02-11T10:34:56+01:00 bzorp ---MARK---",
+           "<155>Feb 11 10:34:56 bzorp ---MARK---",
+           &tc_options);
 
   app_shutdown();
   return 0;
