@@ -225,8 +225,14 @@ resolve_sockaddr(gchar *result, gsize *result_len, GSockAddr *saddr, gboolean us
 
                   G_LOCK(resolv_lock);
                   hp = gethostbyaddr(addr, addr_len, saddr->sa.sa_family);
+                  if (hp && hp->h_name)
+                    {
+                      strncpy(buf, hp->h_name, sizeof(buf));
+                      buf[sizeof(buf) - 1] = 0;
+                      hname = buf;
+                    }
+
                   G_UNLOCK(resolv_lock);
-                  hname = (hp && hp->h_name) ? hp->h_name : NULL;
 #endif
 
                   if (hname)
