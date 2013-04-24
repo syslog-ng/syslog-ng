@@ -25,6 +25,8 @@
 #define AFSOCKET_DEST_H_INCLUDED
 
 #include "afsocket.h"
+#include "socket-options.h"
+#include "transport-mapper.h"
 #include "driver.h"
 #include "logwriter.h"
 #if BUILD_WITH_SSL
@@ -44,49 +46,24 @@ struct _AFSocketDestDriver
     syslog_protocol:1,
     require_tls:1;
   gint fd;
-  /* SOCK_DGRAM or SOCK_STREAM or other SOCK_XXX values used by the socket() call */
-  gint sock_type;
-  /* protocol parameter for the socket() call, 0 for default or IPPROTO_XXX for specific transports */
-  gint sock_protocol;
   LogPipe *writer;
   LogWriterOptions writer_options;
   LogProtoClientFactory *proto_factory;
 #if BUILD_WITH_SSL
   TLSContext *tls_context;
 #endif
-  gint address_family;
   gchar *hostname;
-  /* transport as specified by the user */
-  gchar *transport;
 
-  /* logproto plugin name, borrowed char pointer, no need to free. If
-   * allocated dynamically, a free must be added and an strdup to all
-   * initializations!  */
-  gchar *logproto_name;
   GSockAddr *bind_addr;
   GSockAddr *dest_addr;
-  gchar *dest_name;
   gint time_reopen;
   struct iv_fd connect_fd;
   struct iv_timer reconnect_timer;
-  SocketOptions *sock_options_ptr;
+  SocketOptions *socket_options;
+  TransportMapper *transport_mapper;
 
-  /*
-   * Apply transport options, set up bind_addr/dest_addr based on the
-   * information processed during parse time. This used to be
-   * constructed during the parser, however that made the ordering of
-   * various options matter and behave incorrectly when the port() was
-   * specified _after_ transport(). Now, it collects the information,
-   * and then applies them with a separate call to apply_transport()
-   * during init().
-   */
-
-  gboolean (*apply_transport)(AFSocketDestDriver *s);
-
-  /* once the socket is opened, set up socket related options (IP_TTL,
-     IP_TOS, SO_RCVBUF etc) */
-
-  gboolean (*setup_socket)(AFSocketDestDriver *s, gint fd);
+  gboolean (*setup_addresses)(AFSocketDestDriver *s);
+  const gchar *(*get_dest_name)(AFSocketDestDriver *s);
 };
 
 
@@ -97,14 +74,20 @@ void afsocket_dd_set_tls_context(LogDriver *s, TLSContext *tls_context);
 #endif
 
 static inline gboolean
-afsocket_dd_apply_transport(AFSocketDestDriver *s)
+afsocket_dd_setup_addresses(AFSocketDestDriver *s)
 {
-  return s->apply_transport(s);
+  return s->setup_addresses(s);
 }
 
-void afsocket_dd_set_transport(LogDriver *s, const gchar *transport);
+static inline const gchar *
+afsocket_dd_get_dest_name(AFSocketDestDriver *s)
+{
+  return s->get_dest_name(s);
+}
+
+gboolean afsocket_dd_setup_addresses_method(AFSocketDestDriver *self);
 void afsocket_dd_set_keep_alive(LogDriver *self, gint enable);
-void afsocket_dd_init_instance(AFSocketDestDriver *self, SocketOptions *sock_options, gint family, gint sock_type, const gchar *hostname);
+void afsocket_dd_init_instance(AFSocketDestDriver *self, SocketOptions *socket_options, TransportMapper *transport_mapper, const gchar *hostname);
 gboolean afsocket_dd_init(LogPipe *s);
 void afsocket_dd_free(LogPipe *s);
 

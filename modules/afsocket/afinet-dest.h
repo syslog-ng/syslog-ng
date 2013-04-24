@@ -38,13 +38,13 @@ struct libnet_context;
 typedef struct _AFInetDestDriver
 {
   AFSocketDestDriver super;
-  InetSocketOptions sock_options;
 #if ENABLE_SPOOF_SOURCE
   gboolean spoof_source;
   struct libnet_context *lnet_ctx;
   GStaticMutex lnet_lock;
   GString *lnet_buffer;
 #endif
+
   /* character as it can contain a service name from /etc/services */
   gchar *bind_port;
   gchar *bind_ip;
@@ -59,8 +59,11 @@ void afinet_dd_set_localip(LogDriver *self, gchar *ip);
 void afinet_dd_set_sync_freq(LogDriver *self, gint sync_freq);
 void afinet_dd_set_spoof_source(LogDriver *self, gboolean enable);
 
-LogDriver *afinet_dd_new(gint af, gint sock_type, gchar *host);
-LogDriver *afsyslog_dd_new(gchar *host);
-LogDriver *afnetwork_dd_new(gchar *host);
+AFInetDestDriver *afinet_dd_new_tcp(gchar *host);
+AFInetDestDriver *afinet_dd_new_tcp6(gchar *host);
+AFInetDestDriver *afinet_dd_new_udp(gchar *host);
+AFInetDestDriver *afinet_dd_new_udp6(gchar *host);
+AFInetDestDriver *afinet_dd_new_syslog(gchar *host);
+AFInetDestDriver *afinet_dd_new_network(gchar *host);
 
 #endif

@@ -25,14 +25,15 @@
 #define AFUNIX_DEST_H_INCLUDED
 
 #include "afsocket-dest.h"
+#include "transport-mapper-unix.h"
 
 typedef struct _AFUnixDestDriver
 {
   AFSocketDestDriver super;
-  SocketOptions sock_options;
   gchar *filename;
 } AFUnixDestDriver;
 
-LogDriver *afunix_dd_new(gint sock_type, gchar *filename);
+AFUnixDestDriver *afunix_dd_new_dgram(gchar *filename);
+AFUnixDestDriver *afunix_dd_new_stream(gchar *filename);
 
 #endif

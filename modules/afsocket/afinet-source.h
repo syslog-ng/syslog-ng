@@ -30,16 +30,18 @@
 typedef struct _AFInetSourceDriver
 {
   AFSocketSourceDriver super;
-  InetSocketOptions sock_options;
   /* character as it can contain a service name from /etc/services */
   gchar *bind_port;
   gchar *bind_ip;
   gchar *ip_protocol;
 } AFInetSourceDriver;
 
-LogDriver *afinet_sd_new(gint af, gint sock_type);
-LogDriver *afsyslog_sd_new(void);
-LogDriver *afnetwork_sd_new(void);
+AFInetSourceDriver *afinet_sd_new_tcp(void);
+AFInetSourceDriver *afinet_sd_new_tcp6(void);
+AFInetSourceDriver *afinet_sd_new_udp(void);
+AFInetSourceDriver *afinet_sd_new_udp6(void);
+AFInetSourceDriver *afinet_sd_new_syslog(void);
+AFInetSourceDriver *afinet_sd_new_network(void);
 
 void afinet_sd_set_localport(LogDriver *self, gchar *service);
 void afinet_sd_set_localip(LogDriver *self, gchar *ip);

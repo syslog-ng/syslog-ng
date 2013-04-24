@@ -24,7 +24,8 @@
 #include "afinet-source.h"
 #include "messages.h"
 #include "misc.h"
-#include "gprocess.h"
+#include "transport-mapper-inet.h"
+#include "socket-options-inet.h"
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -55,29 +56,23 @@ afinet_sd_set_localip(LogDriver *s, gchar *ip)
 }
 
 static gboolean
-afinet_sd_setup_socket(AFSocketSourceDriver *s, gint fd)
-{
-  return afinet_setup_socket(fd, s->bind_addr, (InetSocketOptions *) s->sock_options_ptr, AFSOCKET_DIR_RECV);
-}
-
-static gboolean
-afinet_sd_apply_transport(AFSocketSourceDriver *s)
+afinet_sd_setup_addresses(AFSocketSourceDriver *s)
 {
   AFInetSourceDriver *self = (AFInetSourceDriver *) s;
-  GlobalConfig *cfg = log_pipe_get_config(&s->super.super.super);
   gchar *default_bind_ip = NULL;
-  gchar *default_bind_port = NULL;
-  struct protoent *ipproto_ent;
+
+  if (!afsocket_sd_setup_addresses_method(s))
+    return FALSE;
 
   g_sockaddr_unref(self->super.bind_addr);
 
-  if (self->super.address_family == AF_INET)
+  if (self->super.transport_mapper->address_family == AF_INET)
     {
       self->super.bind_addr = g_sockaddr_inet_new("0.0.0.0", 0);
       default_bind_ip = "0.0.0.0";
     }
 #if ENABLE_IPV6
-  else if (self->super.address_family == AF_INET6)
+  else if (self->super.transport_mapper->address_family == AF_INET6)
     {
       self->super.bind_addr = g_sockaddr_inet6_new("::", 0);
       default_bind_ip = "::";
@@ -88,116 +83,20 @@ afinet_sd_apply_transport(AFSocketSourceDriver *s)
       g_assert_not_reached();
     }
 
-
-  /* determine default port, apply transport setting to afsocket flags */
-
-  if (self->super.transport == NULL)
+  if (!self->bind_port)
     {
-      if (self->super.sock_type == SOCK_STREAM)
-        afsocket_sd_set_transport(&self->super.super.super, "tcp");
-      else
-        afsocket_sd_set_transport(&self->super.super.super, "udp");
-    }
-;
-  if (strcasecmp(self->super.transport, "udp") == 0)
-    {
-      static gboolean msg_udp_source_port_warning = FALSE;
+      const gchar *port_change_warning = transport_mapper_inet_get_port_change_warning(self->super.transport_mapper);
 
-      if (!self->bind_port)
+      if (port_change_warning)
         {
-          /* NOTE: this version number change has happened in a different
-           * major version in OSE vs. PE, thus the update behaviour must
-           * be triggered differently.  In OSE it needs to be triggered
-           * when the config version has changed to 3.3, in PE when 3.2.
-           *
-           * This is unfortunate, the only luck we have to be less
-           * confusing is that syslog() driver was seldom used.
-           *
-           */
-          if (self->super.syslog_protocol && cfg_is_config_version_older(cfg, 0x0303))
-            {
-              if (!msg_udp_source_port_warning)
-                {
-                  msg_warning("WARNING: Default port for syslog(transport(udp)) has changed from 601 to 514 in syslog-ng 3.3, please update your configuration",
-                              evt_tag_str("id", self->super.super.super.id),
-                              NULL);
-                  msg_udp_source_port_warning = TRUE;
-                }
-              default_bind_port = "601";
-            }
-          else
-            default_bind_port = "514";
+          msg_warning(port_change_warning,
+                      evt_tag_str("id", self->super.super.super.id),
+                      NULL);
         }
-      self->super.sock_type = SOCK_DGRAM;
-      self->super.logproto_name = "dgram";
-    }
-  else if (strcasecmp(self->super.transport, "tcp") == 0)
-    {
-      if (self->super.syslog_protocol)
-        {
-          default_bind_port = "601";
-          self->super.logproto_name = "framed";
-        }
-      else
-        {
-          default_bind_port = "514";
-          self->super.logproto_name = "text";
-        }
-      self->super.sock_type = SOCK_STREAM;
-    }
-  else if (strcasecmp(self->super.transport, "tls") == 0)
-    {
-      static gboolean msg_tls_source_port_warning = FALSE;
-
-      g_assert(self->super.syslog_protocol);
-      if (!self->bind_port)
-        {
-          /* NOTE: this version number change has happened in a different
-           * major version in OSE vs. PE, thus the update behaviour must
-           * be triggered differently.  In OSE it needs to be triggered
-           * when the config version has changed to 3.3, in PE when 3.2.
-           *
-           * This is unfortunate, the only luck we have to be less
-           * confusing is that syslog() driver was seldom used.
-           *
-           */
-
-          if (cfg_is_config_version_older(cfg, 0x0303))
-            {
-              if (!msg_tls_source_port_warning)
-                {
-                  msg_warning("WARNING: Default port for syslog(transport(tls))  has changed from 601 to 6514 in syslog-ng 3.3, please update your configuration",
-                              evt_tag_str("id", self->super.super.super.id),
-                              NULL);
-                  msg_tls_source_port_warning = TRUE;
-                }
-              default_bind_port = "601";
-            }
-          else
-            default_bind_port = "6514";
-        }
-      self->super.require_tls = TRUE;
-      self->super.sock_type = SOCK_STREAM;
-      self->super.logproto_name = "framed";
+      g_sockaddr_set_port(self->super.bind_addr, transport_mapper_inet_get_server_port(self->super.transport_mapper));
     }
   else
-    {
-      self->super.logproto_name = self->super.transport;
-      self->super.sock_type = SOCK_STREAM;
-    }
-
-  if (!self->super.sock_protocol)
-    {
-      if (self->super.sock_type == SOCK_STREAM)
-        self->super.sock_protocol = IPPROTO_TCP;
-      else
-        self->super.sock_protocol = IPPROTO_UDP;
-    }
-
-  ipproto_ent = getprotobynumber(self->super.sock_protocol);
-  afinet_set_port(self->super.bind_addr, self->bind_port ? : default_bind_port,
-                  ipproto_ent ? ipproto_ent->p_name
-                              : (self->super.sock_type == SOCK_STREAM) ? "tcp" : "udp");
+    g_sockaddr_set_port(self->super.bind_addr, afinet_lookup_service(self->super.transport_mapper, self->bind_port));
   if (!resolve_hostname(&self->super.bind_addr, self->bind_ip ? : default_bind_ip))
     return FALSE;
 
@@ -225,38 +124,56 @@ afinet_sd_free(LogPipe *s)
 }
 
 static AFInetSourceDriver *
-afinet_sd_new_instance(gint af, gint sock_type)
+afinet_sd_new_instance(TransportMapper *transport_mapper)
 {
   AFInetSourceDriver *self = g_new0(AFInetSourceDriver, 1);
 
-  afsocket_sd_init_instance(&self->super, &self->sock_options.super, af, sock_type);
+  afsocket_sd_init_instance(&self->super,
+                            socket_options_inet_new(),
+                            transport_mapper);
   self->super.super.super.super.free_fn = afinet_sd_free;
-
-  self->super.setup_socket = afinet_sd_setup_socket;
-  self->super.apply_transport = afinet_sd_apply_transport;
+  self->super.setup_addresses = afinet_sd_setup_addresses;
   return self;
 }
 
-LogDriver *
-afinet_sd_new(gint af, gint sock_type)
+AFInetSourceDriver *
+afinet_sd_new_tcp(void)
 {
-  return &afinet_sd_new_instance(af, sock_type)->super.super.super;
+  return afinet_sd_new_instance(transport_mapper_tcp_new());
 }
 
-LogDriver *
-afsyslog_sd_new(void)
+AFInetSourceDriver *
+afinet_sd_new_tcp6(void)
 {
-  AFInetSourceDriver *self = afinet_sd_new_instance(AF_INET, SOCK_STREAM);
+  return afinet_sd_new_instance(transport_mapper_tcp6_new());
+}
+
+
+AFInetSourceDriver *
+afinet_sd_new_udp(void)
+{
+  return afinet_sd_new_instance(transport_mapper_udp_new());
+}
+
+AFInetSourceDriver *
+afinet_sd_new_udp6(void)
+{
+  return afinet_sd_new_instance(transport_mapper_udp6_new());
+}
+
+
+AFInetSourceDriver *
+afinet_sd_new_syslog(void)
+{
+  AFInetSourceDriver *self = afinet_sd_new_instance(transport_mapper_syslog_new());
 
   self->super.reader_options.parse_options.flags |= LP_SYSLOG_PROTOCOL;
-  self->super.syslog_protocol = TRUE;
-  return &self->super.super.super;
+  return self;
 }
 
-LogDriver *
-afnetwork_sd_new(void)
+AFInetSourceDriver *
+afinet_sd_new_network(void)
 {
-  AFInetSourceDriver *self = afinet_sd_new_instance(AF_INET, SOCK_STREAM);
-
-  return &self->super.super.super;
+  AFInetSourceDriver *self = afinet_sd_new_instance(transport_mapper_network_new());
+ return self;
 }

@@ -34,15 +34,23 @@
 #include <unistd.h>
 #include <stdlib.h>
 
+static const gchar *
+afunix_dd_get_dest_name(AFSocketDestDriver *s)
+{
+  AFUnixDestDriver *self = (AFUnixDestDriver *) s;
+  static gchar buf[256];
+
+  g_snprintf(buf, sizeof(buf), "localhost.afunix:%s", self->filename);
+  return buf;
+}
+
 static gboolean
-afunix_dd_apply_transport(AFSocketDestDriver *s)
+afunix_dd_setup_addresses(AFSocketDestDriver *s)
 {
   AFUnixDestDriver *self = (AFUnixDestDriver *) s;
 
-  if (self->super.sock_type == SOCK_DGRAM)
-    afsocket_dd_set_transport(&self->super.super.super, "unix-dgram");
-  else
-    afsocket_dd_set_transport(&self->super.super.super, "unix-stream");
+  if (!afsocket_dd_setup_addresses_method(s))
+    return FALSE;
 
   if (!self->super.bind_addr)
     self->super.bind_addr = g_sockaddr_unix_new(NULL);
@@ -50,8 +58,6 @@ afunix_dd_apply_transport(AFSocketDestDriver *s)
   if (!self->super.dest_addr)
     self->super.dest_addr = g_sockaddr_unix_new(self->filename);
 
-  if (!self->super.dest_name)
-    self->super.dest_name = g_strdup_printf("localhost.afunix:%s", self->filename);
   return TRUE;
 }
 
@@ -64,17 +70,30 @@ afunix_dd_free(LogPipe *s)
   afsocket_dd_free(s);
 }
 
-LogDriver *
-afunix_dd_new(gint sock_type, gchar *filename)
+AFUnixDestDriver *
+afunix_dd_new_instance(TransportMapper *transport_mapper, gchar *filename)
 {
   AFUnixDestDriver *self = g_new0(AFUnixDestDriver, 1);
 
-  afsocket_dd_init_instance(&self->super, &self->sock_options, AF_UNIX, sock_type, "localhost");
+  afsocket_dd_init_instance(&self->super, socket_options_new(), transport_mapper, "localhost");
   self->super.super.super.super.free_fn = afunix_dd_free;
-  self->super.apply_transport = afunix_dd_apply_transport;
+  self->super.setup_addresses = afunix_dd_setup_addresses;
   self->super.writer_options.mark_mode = MM_NONE;
-
+  self->super.get_dest_name = afunix_dd_get_dest_name;
   self->filename = g_strdup(filename);
 
-  return &self->super.super.super;
+
+  return self;
+}
+
+AFUnixDestDriver *
+afunix_dd_new_dgram(gchar *filename)
+{
+  return afunix_dd_new_instance(transport_mapper_unix_dgram_new(), filename);
+}
+
+AFUnixDestDriver *
+afunix_dd_new_stream(gchar *filename)
+{
+  return afunix_dd_new_instance(transport_mapper_unix_stream_new(), filename);
 }

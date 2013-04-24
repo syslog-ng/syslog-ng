@@ -24,10 +24,9 @@
 #ifndef AFINET_H_INCLUDED
 #define AFINET_H_INCLUDED
 
-#include "afsocket-source.h"
-#include "afsocket-dest.h"
+#include "afsocket.h"
+#include "transport-mapper.h"
 
-void afinet_set_port(GSockAddr *addr, gchar *service, const gchar *proto);
-gboolean afinet_setup_socket(gint fd, GSockAddr *addr, InetSocketOptions *sock_options, AFSocketDirection dir);
+guint16 afinet_lookup_service(TransportMapper *transport_mapper, const gchar *service);
 
 #endif

@@ -25,6 +25,8 @@
 #define AFSOCKET_SOURCE_H_INCLUDED
 
 #include "afsocket.h"
+#include "socket-options.h"
+#include "transport-mapper.h"
 #include "driver.h"
 #include "logreader.h"
 #if BUILD_WITH_SSL
@@ -41,30 +43,23 @@ struct _AFSocketSourceDriver
 {
   LogSrcDriver super;
   guint32 recvd_messages_are_local:1,
-    syslog_protocol:1,
     connections_kept_alive_accross_reloads:1,
     require_tls:1,
     window_size_initialized:1;
   struct iv_fd listen_fd;
   gint fd;
-  /* SOCK_DGRAM or SOCK_STREAM or other SOCK_XXX values used by the socket() call */
-  gint sock_type;
-  /* protocol parameter for the socket() call, 0 for default or IPPROTO_XXX for specific transports */
-  gint sock_protocol;
   LogReaderOptions reader_options;
   LogProtoServerFactory *proto_factory;
 #if BUILD_WITH_SSL
   TLSContext *tls_context;
 #endif
-  gint address_family;
   GSockAddr *bind_addr;
-  gchar *transport;
-  gchar *logproto_name;
   gint max_connections;
   gint num_connections;
   gint listen_backlog;
   GList *connections;
-  SocketOptions *sock_options_ptr;
+  SocketOptions *socket_options;
+  TransportMapper *transport_mapper;
 
 
   /*
@@ -77,18 +72,12 @@ struct _AFSocketSourceDriver
    * during init().
    */
 
-  gboolean (*apply_transport)(AFSocketSourceDriver *s);
+  gboolean (*setup_addresses)(AFSocketSourceDriver *s);
 
   /* optionally acquire a socket from the runtime environment (e.g. systemd) */
   gboolean (*acquire_socket)(AFSocketSourceDriver *s, gint *fd);
-
-  /* once the socket is opened, set up socket related options (IP_TTL,
-     IP_TOS, SO_RCVBUF etc) */
-
-  gboolean (*setup_socket)(AFSocketSourceDriver *s, gint fd);
 };
 
-void afsocket_sd_set_transport(LogDriver *s, const gchar *transport);
 void afsocket_sd_set_keep_alive(LogDriver *self, gint enable);
 void afsocket_sd_set_max_connections(LogDriver *self, gint max_connections);
 #if BUILD_WITH_SSL
@@ -107,15 +96,17 @@ afsocket_sd_acquire_socket(AFSocketSourceDriver *s, gint *fd)
 }
 
 static inline gboolean
-afsocket_sd_apply_transport(AFSocketSourceDriver *s)
+afsocket_sd_setup_addresses(AFSocketSourceDriver *s)
 {
-  return s->apply_transport(s);
+  return s->setup_addresses(s);
 }
+
+gboolean afsocket_sd_setup_addresses_method(AFSocketSourceDriver *self);
 
 gboolean afsocket_sd_init(LogPipe *s);
 gboolean afsocket_sd_deinit(LogPipe *s);
 
-void afsocket_sd_init_instance(AFSocketSourceDriver *self, SocketOptions *sock_options, gint family, gint sock_type);
+void afsocket_sd_init_instance(AFSocketSourceDriver *self, SocketOptions *socket_options, TransportMapper *transport_mapper);
 void afsocket_sd_free(LogPipe *self);
 
 #endif

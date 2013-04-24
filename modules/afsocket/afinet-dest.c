@@ -22,6 +22,8 @@
  */
 
 #include "afinet-dest.h"
+#include "transport-mapper-inet.h"
+#include "socket-options-inet.h"
 #include "messages.h"
 #include "misc.h"
 #include "gprocess.h"
@@ -84,30 +86,30 @@ afinet_dd_set_spoof_source(LogDriver *s, gboolean enable)
 #if ENABLE_SPOOF_SOURCE
   AFInetDestDriver *self = (AFInetDestDriver *) s;
 
-  self->spoof_source = (self->super.sock_type == SOCK_DGRAM) && enable;
+  self->spoof_source = enable;
 #else
   msg_error("Error enabling spoof-source, you need to compile syslog-ng with --enable-spoof-source", NULL);
 #endif
 }
 
 static gboolean
-afinet_dd_apply_transport(AFSocketDestDriver *s)
+afinet_dd_setup_addresses(AFSocketDestDriver *s)
 {
   AFInetDestDriver *self = (AFInetDestDriver *) s;
-  GlobalConfig *cfg = log_pipe_get_config(&s->super.super.super);
-  gchar *default_dest_port  = NULL;
-  struct protoent *ipproto_ent;
+
+  if (!afsocket_dd_setup_addresses_method(s))
+    return FALSE;
 
   g_sockaddr_unref(self->super.bind_addr);
   g_sockaddr_unref(self->super.dest_addr);
 
-  if (self->super.address_family == AF_INET)
+  if (self->super.transport_mapper->address_family == AF_INET)
     {
       self->super.bind_addr = g_sockaddr_inet_new("0.0.0.0", 0);
       self->super.dest_addr = g_sockaddr_inet_new("0.0.0.0", 0);
     }
 #if ENABLE_IPV6
-  else if (self->super.address_family == AF_INET6)
+  else if (self->super.transport_mapper->address_family == AF_INET6)
     {
       self->super.bind_addr = g_sockaddr_inet6_new("::", 0);
       self->super.dest_addr = g_sockaddr_inet6_new("::", 0);
@@ -119,128 +121,26 @@ afinet_dd_apply_transport(AFSocketDestDriver *s)
       g_assert_not_reached();
     }
 
-  if (self->super.transport == NULL)
-    {
-      if (self->super.sock_type == SOCK_STREAM)
-        afsocket_dd_set_transport(&self->super.super.super, "tcp");
-      else
-        afsocket_dd_set_transport(&self->super.super.super, "udp");
-    }
-
-  if (strcasecmp(self->super.transport, "udp") == 0)
-    {
-      static gboolean msg_udp_source_port_warning = FALSE;
-
-      if (!self->dest_port)
-        {
-          /* NOTE: this version number change has happened in a different
-           * major version in OSE vs. PE, thus the update behaviour must
-           * be triggered differently.  In OSE it needs to be triggered
-           * when the config version has changed to 3.3, in PE when 3.2.
-           *
-           * This is unfortunate, the only luck we have to be less
-           * confusing is that syslog() driver was seldom used.
-           *
-           */
-          if (self->super.syslog_protocol && cfg_is_config_version_older(cfg, 0x0303))
-            {
-              if (!msg_udp_source_port_warning)
-                {
-                  msg_warning("WARNING: Default port for syslog(transport(udp)) has changed from 601 to 514 in syslog-ng 3.3, please update your configuration",
-                              evt_tag_str("id", self->super.super.super.id),
-                              NULL);
-                  msg_udp_source_port_warning = TRUE;
-                }
-              default_dest_port = "601";
-            }
-          else
-            default_dest_port = "514";
-        }
-      self->super.sock_type = SOCK_DGRAM;
-      self->super.sock_protocol = 0;
-      self->super.logproto_name = "dgram";
-    }
-  else if (strcasecmp(self->super.transport, "tcp") == 0)
-    {
-      if (self->super.syslog_protocol)
-        {
-          self->super.logproto_name = "framed";
-          default_dest_port = "601";
-        }
-      else
-        {
-          self->super.logproto_name = "text";
-          default_dest_port = "514";
-        }
-      self->super.sock_type = SOCK_STREAM;
-      self->super.sock_protocol = 0;
-    }
-  else if (strcasecmp(self->super.transport, "tls") == 0)
-    {
-      static gboolean msg_tls_source_port_warning = FALSE;
-
-      g_assert(self->super.syslog_protocol);
-      if (!self->dest_port)
-        {
-          /* NOTE: this version number change has happened in a different
-           * major version in OSE vs. PE, thus the update behaviour must
-           * be triggered differently.  In OSE it needs to be triggered
-           * when the config version has changed to 3.3, in PE when 3.2.
-           *
-           * This is unfortunate, the only luck we have to be less
-           * confusing is that syslog() driver was seldom used.
-           *
-           */
-
-          if (cfg_is_config_version_older(cfg, 0x0303))
-            {
-              if (!msg_tls_source_port_warning)
-                {
-                  msg_warning("WARNING: Default port for syslog(transport(tls)) is modified from 601 to 6514",
-                              evt_tag_str("id", self->super.super.super.id),
-                              NULL);
-                  msg_tls_source_port_warning = TRUE;
-                }
-              default_dest_port = "601";
-            }
-          else
-            default_dest_port = "6514";
-        }
-      self->super.require_tls = TRUE;
-      self->super.sock_type = SOCK_STREAM;
-      self->super.logproto_name = "framed";
-    }
-  else
-    {
-      self->super.sock_type = SOCK_STREAM;
-      self->super.logproto_name = self->super.transport;
-    }
-
   if ((self->bind_ip && !resolve_hostname(&self->super.bind_addr, self->bind_ip)))
     return FALSE;
 
-  if (!self->super.sock_protocol)
+  if (!resolve_hostname(&self->super.dest_addr, self->super.hostname))
+    return FALSE;
+
+  if (!self->dest_port)
     {
-      if (self->super.sock_type == SOCK_STREAM)
-        self->super.sock_protocol = IPPROTO_TCP;
-      else
-        self->super.sock_protocol = IPPROTO_UDP;
+      const gchar *port_change_warning = transport_mapper_inet_get_port_change_warning(self->super.transport_mapper);
+
+      if (port_change_warning)
+        {
+          msg_warning(port_change_warning,
+                      evt_tag_str("id", self->super.super.super.id),
+                      NULL);
+        }
+      g_sockaddr_set_port(self->super.dest_addr, transport_mapper_inet_get_server_port(self->super.transport_mapper));
     }
-
-  ipproto_ent = getprotobynumber(self->super.sock_protocol);
-  afinet_set_port(self->super.dest_addr, self->dest_port ? : default_dest_port,
-                  ipproto_ent ? ipproto_ent->p_name
-                              : (self->super.sock_type == SOCK_STREAM) ? "tcp" : "udp");
-
-  if (!self->super.dest_name)
-    self->super.dest_name = g_strdup_printf("%s:%d", self->super.hostname,
-                                            g_sockaddr_inet_check(self->super.dest_addr) ? g_sockaddr_inet_get_port(self->super.dest_addr)
-#if ENABLE_IPV6
-                                            : g_sockaddr_inet6_get_port(self->super.dest_addr)
-#else
-                                            : 0
-#endif
-                                            );
+  else
+    g_sockaddr_set_port(self->super.dest_addr, afinet_lookup_service(self->super.transport_mapper, self->dest_port));
 
 
 #if BUILD_WITH_SSL
@@ -256,15 +156,13 @@ afinet_dd_apply_transport(AFSocketDestDriver *s)
   return TRUE;
 }
 
-static gboolean
-afinet_dd_setup_socket(AFSocketDestDriver *s, gint fd)
+static const gchar *
+afinet_dd_get_dest_name(AFSocketDestDriver *s)
 {
-  AFInetDestDriver *self = (AFInetDestDriver *) s;
+  static gchar buf[256];
 
-  if (!resolve_hostname(&self->super.dest_addr, self->super.hostname))
-    return FALSE;
-
-  return afinet_setup_socket(fd, self->super.dest_addr, (InetSocketOptions *) s->sock_options_ptr, AFSOCKET_DIR_SEND);
+  g_snprintf(buf, sizeof(buf), "%s:%d", s->hostname, g_sockaddr_get_port(s->dest_addr));
+  return buf;
 }
 
 static gboolean
@@ -280,7 +178,7 @@ afinet_dd_init(LogPipe *s)
 
   success = afsocket_dd_init(s);
 #if ENABLE_SPOOF_SOURCE
-  if (success)
+  if (success && self->super.transport_mapper->sock_type == SOCK_DGRAM)
     {
       if (self->spoof_source && !self->lnet_ctx)
         {
@@ -431,7 +329,7 @@ afinet_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
     {
       gboolean success = FALSE;
 
-      g_assert(self->super.sock_type == SOCK_DGRAM);
+      g_assert(self->super.transport_mapper->sock_type == SOCK_DGRAM);
 
       g_static_mutex_lock(&self->lnet_lock);
       if (!self->lnet_buffer)
@@ -492,27 +390,19 @@ afinet_dd_free(LogPipe *s)
 }
 
 
-AFInetDestDriver *
-afinet_dd_new_instance(gint af, gint sock_type, gchar *host)
+static AFInetDestDriver *
+afinet_dd_new_instance(TransportMapper *transport_mapper, gchar *host)
 {
   AFInetDestDriver *self = g_new0(AFInetDestDriver, 1);
 
-  afsocket_dd_init_instance(&self->super, &self->sock_options.super, af, sock_type, host);
+  afsocket_dd_init_instance(&self->super, socket_options_inet_new(), transport_mapper, host);
 
   self->super.super.super.super.init = afinet_dd_init;
   self->super.super.super.super.queue = afinet_dd_queue;
   self->super.super.super.super.free_fn = afinet_dd_free;
-  self->super.setup_socket = afinet_dd_setup_socket;
-  self->super.apply_transport = afinet_dd_apply_transport;
-  if (sock_type == SOCK_STREAM)
-    {
-      self->sock_options.super.so_keepalive = TRUE;
-#if defined(TCP_KEEPTIME) && defined(TCP_KEEPIDLE) && defined(TCP_KEEPCNT)
-      self->sock_options.tcp_keepalive_time = 60;
-      self->sock_options.tcp_keepalive_intvl = 10;
-      self->sock_options.tcp_keepalive_probes = 6;
-#endif
-    }
+  self->super.setup_addresses = afinet_dd_setup_addresses;
+  self->super.get_dest_name = afinet_dd_get_dest_name;
+
 
 #if ENABLE_SPOOF_SOURCE
   g_static_mutex_init(&self->lnet_lock);
@@ -520,25 +410,44 @@ afinet_dd_new_instance(gint af, gint sock_type, gchar *host)
   return self;
 }
 
-LogDriver *
-afinet_dd_new(gint af, gint sock_type, gchar *host)
+AFInetDestDriver *
+afinet_dd_new_tcp(gchar *host)
 {
-  return &afinet_dd_new_instance(af, sock_type, host)->super.super.super;
+  return afinet_dd_new_instance(transport_mapper_tcp_new(), host);
 }
 
-LogDriver *
-afsyslog_dd_new(gchar *host)
+AFInetDestDriver *
+afinet_dd_new_tcp6(gchar *host)
 {
-  AFInetDestDriver *self = afinet_dd_new_instance(AF_INET, SOCK_STREAM, host);
+  return afinet_dd_new_instance(transport_mapper_tcp6_new(), host);
+}
+
+AFInetDestDriver *
+afinet_dd_new_udp(gchar *host)
+{
+  return afinet_dd_new_instance(transport_mapper_udp_new(), host);
+}
+
+AFInetDestDriver *
+afinet_dd_new_udp6(gchar *host)
+{
+  return afinet_dd_new_instance(transport_mapper_udp6_new(), host);
+}
+
+AFInetDestDriver *
+afinet_dd_new_syslog(gchar *host)
+{
+  AFInetDestDriver *self = afinet_dd_new_instance(transport_mapper_syslog_new(), host);
+
+  /* FIXME: get rid of this by using polimorphic classes instead of
+   * conditions scattered in the code.  */
 
   self->super.syslog_protocol = TRUE;
-  return &self->super.super.super;
+  return self;
 }
 
-LogDriver *
-afnetwork_dd_new(gchar *host)
+AFInetDestDriver *
+afinet_dd_new_network(gchar *host)
 {
-  AFInetDestDriver *self = afinet_dd_new_instance(AF_INET, SOCK_STREAM, host);
-
-  return &self->super.super.super;
+  return afinet_dd_new_instance(transport_mapper_network_new(), host);
 }

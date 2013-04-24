@@ -41,8 +41,6 @@ int allow_severity = 0;
 int deny_severity = 0;
 #endif
 
-
-
 typedef struct _AFSocketSourceConnection
 {
   LogPipe super;
@@ -54,45 +52,15 @@ typedef struct _AFSocketSourceConnection
 
 static void afsocket_sd_close_connection(AFSocketSourceDriver *self, AFSocketSourceConnection *sc);
 
-static gint
-afsocket_sc_stats_source(AFSocketSourceConnection *self)
-{
-  gint source;
-
-  if (!self->owner->syslog_protocol)
-    {
-      switch (self->owner->bind_addr->sa.sa_family)
-        {
-        case AF_UNIX:
-          source = (self->owner->sock_type == SOCK_STREAM) ? SCS_UNIX_STREAM : SCS_UNIX_DGRAM;
-          break;
-        case AF_INET:
-          source = (self->owner->sock_type == SOCK_STREAM) ? SCS_TCP : SCS_UDP;
-          break;
-#if ENABLE_IPV6
-        case AF_INET6:
-          source = (self->owner->sock_type == SOCK_STREAM) ? SCS_TCP6 : SCS_UDP6;
-          break;
-#endif
-        default:
-          g_assert_not_reached();
-          break;
-        }
-    }
-  else
-    {
-      source = SCS_SYSLOG;
-    }
-  return source;
-}
-
 static gchar *
 afsocket_sc_stats_instance(AFSocketSourceConnection *self)
 {
   static gchar buf[256];
+  gchar peer_addr[MAX_SOCKADDR_STRING];
 
   if (!self->peer_addr)
     {
+      /* dgram connection, which means we have no peer, use the bind address */
       if (self->owner->bind_addr)
         {
           g_sockaddr_format(self->owner->bind_addr, buf, sizeof(buf), GSA_ADDRESS_ONLY);
@@ -101,17 +69,9 @@ afsocket_sc_stats_instance(AFSocketSourceConnection *self)
       else
         return NULL;
     }
-  if (!(self->owner->syslog_protocol))
-    {
-      g_sockaddr_format(self->peer_addr, buf, sizeof(buf), GSA_ADDRESS_ONLY);
-    }
-  else
-    {
-      gchar peer_addr[MAX_SOCKADDR_STRING];
 
-      g_sockaddr_format(self->peer_addr, peer_addr, sizeof(peer_addr), GSA_ADDRESS_ONLY);
-      g_snprintf(buf, sizeof(buf), "%s,%s", self->owner->transport, peer_addr);
-    }
+  g_sockaddr_format(self->peer_addr, peer_addr, sizeof(peer_addr), GSA_ADDRESS_ONLY);
+  g_snprintf(buf, sizeof(buf), "%s,%s", self->owner->transport_mapper->transport, peer_addr);
   return buf;
 }
 
@@ -134,7 +94,7 @@ afsocket_sc_init(LogPipe *s)
         }
       else
 #endif
-      if (self->owner->sock_type == SOCK_DGRAM)
+      if (self->owner->transport_mapper->sock_type == SOCK_DGRAM)
         transport = log_transport_dgram_socket_new(self->sock);
       else
         transport = log_transport_stream_socket_new(self->sock);
@@ -146,7 +106,7 @@ afsocket_sc_init(LogPipe *s)
   log_reader_set_options(self->reader, s,
                          &self->owner->reader_options,
                          STATS_LEVEL1,
-                         afsocket_sc_stats_source(self),
+                         self->owner->transport_mapper->stats_source,
                          self->owner->super.super.id,
                          afsocket_sc_stats_instance(self));
   log_reader_set_peer_addr(self->reader, self->peer_addr);
@@ -185,7 +145,7 @@ afsocket_sc_notify(LogPipe *s, LogPipe *sender, gint notify_code, gpointer user_
     case NC_CLOSE:
     case NC_READ_ERROR:
       {
-        if (self->owner->sock_type == SOCK_STREAM)
+        if (self->owner->transport_mapper->sock_type == SOCK_STREAM)
           afsocket_sd_close_connection(self->owner, self);
         break;
       }
@@ -231,26 +191,15 @@ afsocket_sc_new(AFSocketSourceDriver *owner, GSockAddr *peer_addr, int fd)
   log_pipe_ref(&owner->super.super.super);
   self->owner = owner;
 
-
   self->peer_addr = g_sockaddr_ref(peer_addr);
   self->sock = fd;
   return self;
 }
 
 void
-afsocket_sd_set_transport(LogDriver *s, const gchar *transport)
-{
-  AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
-
-  if (self->transport)
-    g_free(self->transport);
-  self->transport = g_strdup(transport);
-}
-
-void
 afsocket_sd_add_connection(AFSocketSourceDriver *self, AFSocketSourceConnection *connection)
 {
-  self->connections = g_list_prepend(self->connections,connection);
+  self->connections = g_list_prepend(self->connections, connection);
 }
 
 static void
@@ -324,12 +273,12 @@ afsocket_sd_format_persist_name(AFSocketSourceDriver *self, gboolean listener_na
 
   g_snprintf(persist_name, sizeof(persist_name),
              listener_name ? "afsocket_sd_listen_fd(%s,%s)" : "afsocket_sd_connections(%s,%s)",
-             (self->sock_type == SOCK_STREAM) ? "stream" : "dgram",
+             (self->transport_mapper->sock_type == SOCK_STREAM) ? "stream" : "dgram",
              g_sockaddr_format(self->bind_addr, buf, sizeof(buf), GSA_FULL));
   return persist_name;
 }
 
-gboolean
+static gboolean
 afsocket_sd_process_connection(AFSocketSourceDriver *self, GSockAddr *client_addr, GSockAddr *local_addr, gint fd)
 {
   gchar buf[MAX_SOCKADDR_STRING], buf2[MAX_SOCKADDR_STRING];
@@ -415,11 +364,6 @@ afsocket_sd_accept(gpointer s)
                     NULL);
           return;
         }
-      if (self->setup_socket && !self->setup_socket(self, new_fd))
-        {
-          close(new_fd);
-          return;
-        }
 
       g_fd_set_nonblock(new_fd, TRUE);
       g_fd_set_cloexec(new_fd, TRUE);
@@ -492,33 +436,12 @@ afsocket_sd_stop_watches(AFSocketSourceDriver *self)
     iv_fd_unregister(&self->listen_fd);
 }
 
-gboolean
-afsocket_sd_init(LogPipe *s)
+static gboolean
+afsocket_sd_setup_reader_options(AFSocketSourceDriver *self)
 {
-  AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
-  gint sock;
-  gboolean res = FALSE;
-  GlobalConfig *cfg = log_pipe_get_config(s);
+  GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
 
-  if (!log_src_driver_init_method(s))
-    return FALSE;
-
-  if (!afsocket_sd_apply_transport(self))
-    return FALSE;
-
-  self->proto_factory = log_proto_server_get_factory(cfg, self->logproto_name);
-  if (!self->proto_factory)
-    {
-      msg_error("Unknown value specified in the transport() option, no such LogProto plugin found",
-                evt_tag_str("transport", self->logproto_name),
-                NULL);
-      return FALSE;
-    }
-
-  g_assert(self->transport);
-  g_assert(self->bind_addr);
-
-  if (self->sock_type == SOCK_STREAM && !self->window_size_initialized)
+  if (self->transport_mapper->sock_type == SOCK_STREAM && !self->window_size_initialized)
     {
       /* distribute the window evenly between each of our possible
        * connections.  This is quite pessimistic and can result in very low
@@ -538,6 +461,34 @@ afsocket_sd_init(LogPipe *s)
       self->window_size_initialized = TRUE;
     }
   log_reader_options_init(&self->reader_options, cfg, self->super.super.group);
+  return TRUE;
+}
+
+static gboolean
+afsocket_sd_setup_transport(AFSocketSourceDriver *self)
+{
+  GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
+
+  if (!transport_mapper_apply_transport(self->transport_mapper, cfg))
+    return FALSE;
+
+  self->proto_factory = log_proto_server_get_factory(cfg, self->transport_mapper->logproto);
+  if (!self->proto_factory)
+    {
+      msg_error("Unknown value specified in the transport() option, no such LogProto plugin found",
+                evt_tag_str("transport", self->transport_mapper->logproto),
+                NULL);
+      return FALSE;
+    }
+
+  afsocket_sd_setup_reader_options(self);
+  return TRUE;
+}
+
+static gboolean
+afsocket_sd_restore_kept_alive_connections(AFSocketSourceDriver *self)
+{
+  GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
 
   /* fetch persistent connections first */
   if (self->connections_kept_alive_accross_reloads)
@@ -554,10 +505,19 @@ afsocket_sd_init(LogPipe *s)
           self->num_connections++;
         }
     }
+  return TRUE;
+}
+
+static gboolean
+afsocket_sd_open_listener(AFSocketSourceDriver *self)
+{
+  GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
+  gint sock;
+  gboolean res = FALSE;
 
   /* ok, we have connection list, check if we need to open a listener */
   sock = -1;
-  if (self->sock_type == SOCK_STREAM)
+  if (self->transport_mapper->sock_type == SOCK_STREAM)
     {
       if (self->connections_kept_alive_accross_reloads)
         {
@@ -570,7 +530,7 @@ afsocket_sd_init(LogPipe *s)
         {
           if (!afsocket_sd_acquire_socket(self, &sock))
             return self->super.super.optional;
-          if (sock == -1 && !afsocket_open_socket(self->bind_addr, self->sock_type, self->sock_protocol, &sock))
+          if (sock == -1 && !transport_mapper_open_socket(self->transport_mapper, self->socket_options, self->bind_addr, AFSOCKET_DIR_RECV, &sock))
             return self->super.super.optional;
         }
 
@@ -580,12 +540,6 @@ afsocket_sd_init(LogPipe *s)
           msg_error("Error during listen()",
                     evt_tag_errno(EVT_TAG_OSERROR, errno),
                     NULL);
-          close(sock);
-          return FALSE;
-        }
-
-      if (self->setup_socket && !self->setup_socket(self, sock))
-        {
           close(sock);
           return FALSE;
         }
@@ -600,14 +554,8 @@ afsocket_sd_init(LogPipe *s)
         {
           if (!afsocket_sd_acquire_socket(self, &sock))
             return self->super.super.optional;
-          if (sock == -1 && !afsocket_open_socket(self->bind_addr, self->sock_type, self->sock_protocol, &sock))
+          if (sock == -1 && !transport_mapper_open_socket(self->transport_mapper, self->socket_options, self->bind_addr, AFSOCKET_DIR_RECV, &sock))
             return self->super.super.optional;
-
-          if (!self->setup_socket(self, sock))
-            {
-              close(sock);
-              return FALSE;
-            }
         }
       self->fd = -1;
 
@@ -625,11 +573,10 @@ afsocket_sd_close_fd(gpointer value)
   close(fd);
 }
 
-gboolean
-afsocket_sd_deinit(LogPipe *s)
+static void
+afsocket_sd_save_connections(AFSocketSourceDriver *self)
 {
-  AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
-  GlobalConfig *cfg = log_pipe_get_config(s);
+  GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
 
   if (!self->connections_kept_alive_accross_reloads || !cfg->persist)
     {
@@ -649,8 +596,14 @@ afsocket_sd_deinit(LogPipe *s)
       cfg_persist_config_add(cfg, afsocket_sd_format_persist_name(self, FALSE), self->connections, (GDestroyNotify) afsocket_sd_kill_connection_list, FALSE);
     }
   self->connections = NULL;
+}
 
-  if (self->sock_type == SOCK_STREAM)
+static void
+afsocket_sd_save_listener(AFSocketSourceDriver *self)
+{
+  GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
+
+  if (self->transport_mapper->sock_type == SOCK_STREAM)
     {
       afsocket_sd_stop_watches(self);
       if (!self->connections_kept_alive_accross_reloads)
@@ -668,18 +621,35 @@ afsocket_sd_deinit(LogPipe *s)
           cfg_persist_config_add(cfg, afsocket_sd_format_persist_name(self, TRUE), GUINT_TO_POINTER(self->fd + 1), afsocket_sd_close_fd, FALSE);
         }
     }
-  else if (self->sock_type == SOCK_DGRAM)
-    {
-      /* we don't need to close the listening fd here as we have a
-       * single connection which will close it */
+}
 
-      ;
-    }
-
-  if (!log_src_driver_deinit_method(s))
-    return FALSE;
-
+gboolean
+afsocket_sd_setup_addresses_method(AFSocketSourceDriver *self)
+{
   return TRUE;
+}
+
+gboolean
+afsocket_sd_init(LogPipe *s)
+{
+  AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
+
+  return log_src_driver_init_method(s) &&
+         afsocket_sd_setup_transport(self) &&
+         afsocket_sd_setup_addresses(self) &&
+         afsocket_sd_restore_kept_alive_connections(self) &&
+         afsocket_sd_open_listener(self);
+}
+
+gboolean
+afsocket_sd_deinit(LogPipe *s)
+{
+  AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
+
+  afsocket_sd_save_connections(self);
+  afsocket_sd_save_listener(self);
+
+  return log_src_driver_deinit_method(s);
 }
 
 static void
@@ -696,21 +666,15 @@ afsocket_sd_notify(LogPipe *s, LogPipe *sender, gint notify_code, gpointer user_
     }
 }
 
-static gboolean
-afsocket_sd_setup_socket(AFSocketSourceDriver *self, gint fd)
-{
-  return afsocket_setup_socket(fd, self->sock_options_ptr, AFSOCKET_DIR_RECV);
-}
-
 void
 afsocket_sd_free(LogPipe *s)
 {
   AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
 
   log_reader_options_destroy(&self->reader_options);
+  transport_mapper_free(self->transport_mapper);
   g_sockaddr_unref(self->bind_addr);
   self->bind_addr = NULL;
-  g_free(self->transport);
 #if BUILD_WITH_SSL
   if(self->tls_context)
     {
@@ -721,7 +685,9 @@ afsocket_sd_free(LogPipe *s)
 }
 
 void
-afsocket_sd_init_instance(AFSocketSourceDriver *self, SocketOptions *sock_options, gint family, gint sock_type)
+afsocket_sd_init_instance(AFSocketSourceDriver *self,
+                          SocketOptions *socket_options,
+                          TransportMapper *transport_mapper)
 {
   log_src_driver_init_instance(&self->super);
 
@@ -731,38 +697,13 @@ afsocket_sd_init_instance(AFSocketSourceDriver *self, SocketOptions *sock_option
   /* NULL behaves as if log_pipe_forward_msg was specified */
   self->super.super.super.queue = NULL;
   self->super.super.super.notify = afsocket_sd_notify;
-  self->sock_options_ptr = sock_options;
-  self->setup_socket = afsocket_sd_setup_socket;
-  self->address_family = family;
+  self->socket_options = socket_options;
+  self->transport_mapper = transport_mapper;
   self->max_connections = 10;
   self->listen_backlog = 255;
-  self->sock_type = sock_type;
   self->connections_kept_alive_accross_reloads = TRUE;
   log_reader_options_defaults(&self->reader_options);
-  if (self->sock_type == SOCK_STREAM)
+  /* FIXME: sock_type may not properly set at this time */
+  if (self->transport_mapper->sock_type == SOCK_STREAM)
     self->reader_options.super.init_window_size = 1000;
-
-#if 0
-  if (self->flags & AFSOCKET_LOCAL)
-    {
-      static gboolean warned = FALSE;
-
-      self->reader_options.parse_options.flags |= LP_LOCAL;
-      if (cfg_is_config_version_older(configuration, 0x0302))
-        {
-          if (!warned)
-            {
-              msg_warning("WARNING: the expected message format is being changed for unix-domain transports to improve "
-                          "syslogd compatibity with " VERSION_3_2 ". If you are using custom "
-                          "applications which bypass the syslog() API, you might "
-                          "need the 'expect-hostname' flag to get the old behaviour back", NULL);
-              warned = TRUE;
-            }
-        }
-      else
-        {
-          self->reader_options.parse_options.flags &= ~LP_EXPECT_HOSTNAME;
-        }
-    }
-#endif
 }

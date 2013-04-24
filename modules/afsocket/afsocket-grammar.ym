@@ -40,6 +40,8 @@
 #include "syslog-names.h"
 #include "plugin.h"
 #include "cfg-grammar.h"
+#include "socket-options-inet.h"
+#include "transport-mapper-inet.h"
 
 #if BUILD_WITH_SSL
 #include "tlscontext.h"
@@ -47,7 +49,7 @@
 
 
 static SocketOptions *last_sock_options;
-static gint last_addr_family = AF_INET;
+static TransportMapper *last_transport_mapper;
 
 #if BUILD_WITH_SSL
 TLSContext *last_tls_context;
@@ -59,6 +61,51 @@ TLSContext *last_tls_context;
 #define AF_INET6 0; g_assert_not_reached()
 
 #endif
+
+static void
+afsocket_grammar_set_source_driver(AFSocketSourceDriver *sd)
+{
+  last_driver = &sd->super.super;
+
+  last_reader_options = &((AFSocketSourceDriver *) last_driver)->reader_options;
+  last_sock_options = ((AFSocketSourceDriver *) last_driver)->socket_options;
+  last_transport_mapper = ((AFSocketSourceDriver *) last_driver)->transport_mapper;
+}
+
+static void
+afsocket_grammar_set_dest_driver(AFSocketDestDriver *dd)
+{
+  last_driver = &dd->super.super;
+
+  last_writer_options = &((AFSocketDestDriver *) last_driver)->writer_options;
+  last_sock_options = ((AFSocketDestDriver *) last_driver)->socket_options;
+  last_transport_mapper = ((AFSocketDestDriver *) last_driver)->transport_mapper;
+}
+
+static void
+afunix_grammar_set_source_driver(AFUnixSourceDriver *sd)
+{
+  afsocket_grammar_set_source_driver(&sd->super);
+  last_file_perm_options = &sd->file_perm_options;
+}
+
+static void
+afinet_grammar_set_source_driver(AFInetSourceDriver *sd)
+{
+  afsocket_grammar_set_source_driver(&sd->super);
+}
+
+static void
+afunix_grammar_set_dest_driver(AFUnixDestDriver *dd)
+{
+  afsocket_grammar_set_dest_driver(&dd->super);
+}
+
+static void
+afinet_grammar_set_dest_driver(AFInetDestDriver *dd)
+{
+  afsocket_grammar_set_dest_driver(&dd->super);
+}
 
 }
 
@@ -115,12 +162,15 @@ TLSContext *last_tls_context;
 
 /* INCLUDE_DECLS */
 
+%type   <ptr> driver
 %type	<ptr> source_afunix
 %type	<ptr> source_afunix_dgram_params
 %type	<ptr> source_afunix_stream_params
 %type	<ptr> source_afinet
 %type	<ptr> source_afinet_udp_params
 %type	<ptr> source_afinet_tcp_params
+%type	<ptr> source_afinet_udp6_params
+%type	<ptr> source_afinet_tcp6_params
 %type   <ptr> source_afsyslog
 %type   <ptr> source_afsyslog_params
 %type	<ptr> source_afnetwork
@@ -133,44 +183,38 @@ TLSContext *last_tls_context;
 %type	<ptr> dest_afinet
 %type	<ptr> dest_afinet_udp_params
 %type	<ptr> dest_afinet_tcp_params
+%type	<ptr> dest_afinet_udp6_params
+%type	<ptr> dest_afinet_tcp6_params
 %type   <ptr> dest_afsyslog
 %type   <ptr> dest_afsyslog_params
 %type   <ptr> dest_afnetwork
 %type   <ptr> dest_afnetwork_params
 
-%type   <num> afinet_ip_protocol_option
+%type   <num> inet_ip_protocol_option
 
 %%
 
 start
-        : LL_CONTEXT_SOURCE source_afunix                     { YYACCEPT; }
-        | LL_CONTEXT_SOURCE source_afinet                     { YYACCEPT; }
-        | LL_CONTEXT_SOURCE source_afsyslog                   { YYACCEPT; }
-        | LL_CONTEXT_SOURCE source_afnetwork                  { YYACCEPT; }
-        | LL_CONTEXT_DESTINATION dest_afunix                  { YYACCEPT; }
-        | LL_CONTEXT_DESTINATION dest_afinet                  { YYACCEPT; }
-        | LL_CONTEXT_DESTINATION dest_afsyslog                { YYACCEPT; }
-        | LL_CONTEXT_DESTINATION dest_afnetwork               { YYACCEPT; }
+        : driver
+          {
+            *instance = $1;
+            if (yychar != YYEMPTY)
+              cfg_lexer_unput_token(lexer, &yylval);
+            YYACCEPT;
+          }
         ;
 
-afinet_ip_protocol_option
-        : LL_NUMBER
-        {
-          CHECK_ERROR($1 == 4 || $1 == 6, @1, "ip-protocol option can only be 4 or 6!");
-          if ($1 == 4)
-            {
-              $$ = AF_INET;
-            }
-          else
-            {
-              $$ = AF_INET6;
-            }
-        }
+driver
+        : LL_CONTEXT_SOURCE source_afunix                     { $$ = $2; }
+        | LL_CONTEXT_SOURCE source_afinet                     { $$ = $2; }
+        | LL_CONTEXT_SOURCE source_afsyslog                   { $$ = $2; }
+        | LL_CONTEXT_SOURCE source_afnetwork                  { $$ = $2; }
+        | LL_CONTEXT_DESTINATION dest_afunix                  { $$ = $2; }
+        | LL_CONTEXT_DESTINATION dest_afinet                  { $$ = $2; }
+        | LL_CONTEXT_DESTINATION dest_afsyslog                { $$ = $2; }
+        | LL_CONTEXT_DESTINATION dest_afnetwork               { $$ = $2; }
         ;
 
-source_afinet_ip_protocol
-        : KW_IP_PROTOCOL '(' afinet_ip_protocol_option ')' { ((AFSocketSourceDriver *)last_driver)->address_family = $3; }
-        ;
         
 source_afunix
         : KW_UNIX_DGRAM '(' source_afunix_dgram_params ')'	                                { $$ = $3; }
@@ -180,11 +224,10 @@ source_afunix
 source_afunix_dgram_params
 	: string
 	  {
-	    last_driver = *instance = afunix_sd_new(SOCK_DGRAM, $1);
+	    AFUnixSourceDriver *d = afunix_sd_new_dgram($1);
+
+            afunix_grammar_set_source_driver(d);
 	    free($1);
-	    last_reader_options = &((AFSocketSourceDriver *) last_driver)->reader_options;
-	    last_sock_options = &((AFUnixSourceDriver *) last_driver)->sock_options;
-            last_file_perm_options = &((AFUnixSourceDriver *) last_driver)->file_perm_options;
 	  }
 	  source_afunix_options			{ $$ = last_driver; }
 	;
@@ -192,11 +235,10 @@ source_afunix_dgram_params
 source_afunix_stream_params
 	: string
 	  {
-	    last_driver = *instance = afunix_sd_new(SOCK_STREAM, $1);
+	    AFUnixSourceDriver *d = afunix_sd_new_stream($1);
+
+            afunix_grammar_set_source_driver(d);
 	    free($1);
-	    last_reader_options = &((AFSocketSourceDriver *) last_driver)->reader_options;
-	    last_sock_options = &((AFUnixSourceDriver *) last_driver)->sock_options;
-            last_file_perm_options = &((AFUnixSourceDriver *) last_driver)->file_perm_options;
 	  }
 	  source_afunix_options			{ $$ = last_driver; }
 	;
@@ -216,21 +258,31 @@ source_afunix_option
 	;
 
 source_afinet
-	: KW_UDP { last_addr_family = AF_INET; } '(' source_afinet_udp_params ')'		{ $$ = $4; }
-	| KW_TCP { last_addr_family = AF_INET; } '(' source_afinet_tcp_params ')'		{ $$ = $4; }
-	| KW_UDP6 { last_addr_family = AF_INET6; } '(' source_afinet_udp_params ')'		{ $$ = $4; }
-	| KW_TCP6 { last_addr_family = AF_INET6; } '(' source_afinet_tcp_params ')'		{ $$ = $4; }
+	: KW_UDP '(' source_afinet_udp_params ')'		{ $$ = $3; }
+	| KW_TCP '(' source_afinet_tcp_params ')'		{ $$ = $3; }
+	| KW_UDP6 '(' source_afinet_udp6_params ')'		{ $$ = $3; }
+	| KW_TCP6 '(' source_afinet_tcp6_params ')'		{ $$ = $3; }
         ;
 
 source_afinet_udp_params
         :
           {
-	    last_driver = *instance = afinet_sd_new(last_addr_family, SOCK_DGRAM);
-	    last_reader_options = &((AFSocketSourceDriver *) last_driver)->reader_options;
-	    last_sock_options = &((AFInetSourceDriver *) last_driver)->sock_options.super;
+            AFInetSourceDriver *d = afinet_sd_new_udp();
+
+            afinet_grammar_set_source_driver(d);
 	  }
 	  source_afinet_udp_options		{ $$ = last_driver; }
 	;
+
+source_afinet_udp6_params
+        :
+          {
+            AFInetSourceDriver *d = afinet_sd_new_udp6();
+
+            afinet_grammar_set_source_driver(d);
+          }
+          source_afinet_udp_options		{ $$ = last_driver; }
+        ;
 
 source_afinet_udp_options
 	: source_afinet_udp_option source_afinet_udp_options
@@ -253,9 +305,19 @@ source_afinet_option
 source_afinet_tcp_params
 	:
 	  {
-	    last_driver = *instance = afinet_sd_new(last_addr_family, SOCK_STREAM);
-	    last_reader_options = &((AFSocketSourceDriver *) last_driver)->reader_options;
-	    last_sock_options = &((AFInetSourceDriver *) last_driver)->sock_options.super;
+	    AFInetSourceDriver *d = afinet_sd_new_tcp();
+
+	    afinet_grammar_set_source_driver(d);
+	  }
+	  source_afinet_tcp_options	{ $$ = last_driver; }
+	;
+
+source_afinet_tcp6_params
+	:
+	  {
+	    AFInetSourceDriver *d = afinet_sd_new_tcp6();
+
+	    afinet_grammar_set_source_driver(d);
 	  }
 	  source_afinet_tcp_options	{ $$ = last_driver; }
 	;
@@ -288,16 +350,16 @@ source_afsocket_stream_params
 	;
 
 source_afsyslog
-	: KW_SYSLOG { last_addr_family = AF_INET; } '(' source_afsyslog_params ')'		{ $$ = $4; }
+	: KW_SYSLOG '(' source_afsyslog_params ')'		{ $$ = $3; }
 	;
 
 source_afsyslog_params
 	:
 	  {
             /* we use transport(tcp) transport by default */
-	    last_driver = *instance = afsyslog_sd_new();
-	    last_reader_options = &((AFSocketSourceDriver *) last_driver)->reader_options;
-	    last_sock_options = &((AFInetSourceDriver *) last_driver)->sock_options.super;
+            AFInetSourceDriver *d = afinet_sd_new_syslog();
+
+            afinet_grammar_set_source_driver(d);
 	  }
 	  source_afsyslog_options	{ $$ = last_driver; }
 	;
@@ -321,9 +383,9 @@ source_afnetwork_params
 	:
 	  {
             /* we use transport(tcp) transport by default */
-	    last_driver = *instance = afnetwork_sd_new();
-	    last_reader_options = &((AFSocketSourceDriver *) last_driver)->reader_options;
-	    last_sock_options = &((AFInetSourceDriver *) last_driver)->sock_options.super;
+            AFInetSourceDriver *d = afinet_sd_new_network();
+
+            afinet_grammar_set_source_driver(d);
 	  }
 	  source_afnetwork_options	{ $$ = last_driver; }
         ;
@@ -337,14 +399,10 @@ source_afnetwork_option
         : source_afinet_option
         | source_afsocket_transport
 	| source_afsocket_stream_params		{}
-        | source_afinet_ip_protocol
 	;
 
 source_afsocket_transport
-        : KW_TRANSPORT '(' string ')'           { afsocket_sd_set_transport(last_driver, $3); free($3); }
-        | KW_TRANSPORT '(' KW_TCP ')'           { afsocket_sd_set_transport(last_driver, "tcp"); }
-        | KW_TRANSPORT '(' KW_UDP ')'           { afsocket_sd_set_transport(last_driver, "udp"); }
-        | KW_TRANSPORT '(' KW_TLS ')'           { afsocket_sd_set_transport(last_driver, "tls"); }
+	: afsocket_transport
 	| KW_TLS
 	  {
 #if BUILD_WITH_SSL
@@ -358,10 +416,6 @@ source_afsocket_transport
 #endif
           }
         ;
-
-dest_afinet_ip_protocol
-        : KW_IP_PROTOCOL '(' afinet_ip_protocol_option ')' { ((AFSocketDestDriver *)last_driver)->address_family = $3; }
-        ;
         
 dest_afunix
 	: KW_UNIX_DGRAM '(' dest_afunix_dgram_params ')'	{ $$ = $3; }
@@ -371,10 +425,10 @@ dest_afunix
 dest_afunix_dgram_params
 	: string
 	  {
-	    last_driver = *instance = afunix_dd_new(SOCK_DGRAM, $1);
+	    AFUnixDestDriver *d = afunix_dd_new_dgram($1);
+
+            afunix_grammar_set_dest_driver(d);
 	    free($1);
-	    last_writer_options = &((AFSocketDestDriver *) last_driver)->writer_options;
-	    last_sock_options = &((AFUnixDestDriver *) last_driver)->sock_options;
 	  }
 	  dest_afunix_options			{ $$ = last_driver; }
 	;
@@ -382,10 +436,10 @@ dest_afunix_dgram_params
 dest_afunix_stream_params
 	: string
 	  {
-	    last_driver = *instance = afunix_dd_new(SOCK_STREAM, $1);
+	    AFUnixDestDriver *d = afunix_dd_new_stream($1);
+
+            afunix_grammar_set_dest_driver(d);
 	    free($1);
-	    last_writer_options = &((AFSocketDestDriver *) last_driver)->writer_options;
-	    last_sock_options = &((AFUnixDestDriver *) last_driver)->sock_options;
 	  }
 	  dest_afunix_options			{ $$ = last_driver; }
 	;
@@ -403,22 +457,34 @@ dest_afunix_option
 	;
 
 dest_afinet
-	: KW_UDP { last_addr_family = AF_INET; } '(' dest_afinet_udp_params ')'			{ $$ = $4; }
-	| KW_TCP { last_addr_family = AF_INET; } '(' dest_afinet_tcp_params ')'			{ $$ = $4; }
-	| KW_UDP6 { last_addr_family = AF_INET6; } '(' dest_afinet_udp_params ')'		{ $$ = $4; }
-	| KW_TCP6 { last_addr_family = AF_INET6; } '(' dest_afinet_tcp_params ')'		{ $$ = $4; }
+	: KW_UDP '(' dest_afinet_udp_params ')'			{ $$ = $3; }
+	| KW_TCP '(' dest_afinet_tcp_params ')'			{ $$ = $3; }
+	| KW_UDP6 '(' dest_afinet_udp6_params ')'		{ $$ = $3; }
+	| KW_TCP6 '(' dest_afinet_tcp6_params ')'		{ $$ = $3; }
 	;
 
 dest_afinet_udp_params
 	: string
 	  {
-	    last_driver = *instance = afinet_dd_new(last_addr_family, SOCK_DGRAM, $1);
+	    AFInetDestDriver *d = afinet_dd_new_udp($1);
+
+            afinet_grammar_set_dest_driver(d);
 	    free($1);
-	    last_writer_options = &((AFSocketDestDriver *) last_driver)->writer_options;
-	    last_sock_options = &((AFInetDestDriver *) last_driver)->sock_options.super;
 	  }
 	  dest_afinet_udp_options		{ $$ = last_driver; }
 	;
+
+dest_afinet_udp6_params
+	: string
+	  {
+	    AFInetDestDriver *d = afinet_dd_new_udp6($1);
+
+	    afinet_grammar_set_dest_driver(d);
+	    free($1);
+	  }
+	  dest_afinet_udp_options		{ $$ = last_driver; }
+	;
+
 
 dest_afinet_udp_options
         : dest_afinet_udp_options dest_afinet_udp_option
@@ -437,6 +503,7 @@ dest_afinet_option
 	| dest_driver_option
 	;
 
+
 dest_afinet_udp_option
 	: dest_afinet_option
 	| KW_SPOOF_SOURCE '(' yesno ')'		{ afinet_dd_set_spoof_source(last_driver, $3); }
@@ -445,10 +512,21 @@ dest_afinet_udp_option
 dest_afinet_tcp_params
 	: string
 	  {
-	    last_driver = *instance = afinet_dd_new(last_addr_family, SOCK_STREAM, $1);
+	    AFInetDestDriver *d = afinet_dd_new_tcp($1);
+
+            afinet_grammar_set_dest_driver(d);
 	    free($1);
-	    last_writer_options = &((AFSocketDestDriver *) last_driver)->writer_options;
-	    last_sock_options = &((AFInetDestDriver *) last_driver)->sock_options.super;
+	  }
+	  dest_afinet_tcp_options		{ $$ = last_driver; }
+	;
+
+dest_afinet_tcp6_params
+	: string
+	  {
+	    AFInetDestDriver *d = afinet_dd_new_tcp6($1);
+
+	    afinet_grammar_set_dest_driver(d);
+	    free($1);
 	  }
 	  dest_afinet_tcp_options		{ $$ = last_driver; }
 	;
@@ -480,14 +558,14 @@ dest_afsocket_option
 
 
 dest_afsyslog
-        : KW_SYSLOG { last_addr_family = AF_INET; } '(' dest_afsyslog_params ')'   { $$ = $4; }
+        : KW_SYSLOG '(' dest_afsyslog_params ')'   { $$ = $3; }
 
 dest_afsyslog_params
         : string
           {
-            last_driver = *instance = afsyslog_dd_new($1);
-	    last_writer_options = &((AFSocketDestDriver *) last_driver)->writer_options;
-	    last_sock_options = &((AFInetDestDriver *) last_driver)->sock_options.super;
+            AFInetDestDriver *d = afinet_dd_new_syslog($1);
+
+            afinet_grammar_set_dest_driver(d);
 	    free($1);
 	  }
 	  dest_afsyslog_options			{ $$ = last_driver; }
@@ -511,9 +589,9 @@ dest_afnetwork
 dest_afnetwork_params
         : string
           {
-            last_driver = *instance = afnetwork_dd_new($1);
-	    last_writer_options = &((AFSocketDestDriver *) last_driver)->writer_options;
-	    last_sock_options = &((AFInetDestDriver *) last_driver)->sock_options.super;
+            AFInetDestDriver *d = afinet_dd_new_network($1);
+
+            afinet_grammar_set_dest_driver(d);
 	    free($1);
 	  }
 	  dest_afnetwork_options			{ $$ = last_driver; }
@@ -527,28 +605,32 @@ dest_afnetwork_options
 dest_afnetwork_option
 	: dest_afinet_option
 	| dest_afsocket_transport
-        | dest_afinet_ip_protocol
 	;
 
 dest_afsocket_transport
-        : KW_TRANSPORT '(' string ')'           { afsocket_dd_set_transport(last_driver, $3); free($3); }
-        | KW_TRANSPORT '(' KW_TCP ')'           { afsocket_dd_set_transport(last_driver, "tcp"); }
-        | KW_TRANSPORT '(' KW_UDP ')'           { afsocket_dd_set_transport(last_driver, "udp"); }
-        | KW_TRANSPORT '(' KW_TLS ')'           { afsocket_dd_set_transport(last_driver, "tls"); }
-	| KW_SPOOF_SOURCE '(' yesno ')'		{ afinet_dd_set_spoof_source(last_driver, $3); }
+	: afsocket_transport
+	| KW_SPOOF_SOURCE '(' yesno ')'		         { afinet_dd_set_spoof_source(last_driver, $3); }
 	| KW_TLS
 	  {
-#if BUILD_WITH_SSL
-	    last_tls_context = tls_context_new(TM_CLIENT);
-#endif
-	  }
-	  '(' tls_options ')'
-	  {
-#if BUILD_WITH_SSL
-	    afsocket_dd_set_tls_context(last_driver, last_tls_context);
-#endif
+  #if BUILD_WITH_SSL
+            last_tls_context = tls_context_new(TM_CLIENT);
+  #endif
           }
-	;
+          '(' tls_options ')'
+          {
+  #if BUILD_WITH_SSL
+            afsocket_dd_set_tls_context(last_driver, last_tls_context);
+  #endif
+          }
+        ;
+
+afsocket_transport
+        : KW_TRANSPORT '(' string ')'                    { transport_mapper_set_transport(last_transport_mapper, $3); free($3); }
+        | KW_TRANSPORT '(' KW_TCP ')'                    { transport_mapper_set_transport(last_transport_mapper, "tcp"); }
+        | KW_TRANSPORT '(' KW_UDP ')'                    { transport_mapper_set_transport(last_transport_mapper, "udp"); }
+        | KW_TRANSPORT '(' KW_TLS ')'                    { transport_mapper_set_transport(last_transport_mapper, "tls"); }
+        | KW_IP_PROTOCOL '(' inet_ip_protocol_option ')' { transport_mapper_set_address_family(last_transport_mapper, $3); }
+        ;
 
 
 tls_options
@@ -620,6 +702,22 @@ inet_socket_option
 	| KW_TCP_KEEPALIVE_INTVL '(' LL_NUMBER ')'  { ((SocketOptionsInet *) last_sock_options)->tcp_keepalive_intvl = $3; }
 	| KW_TCP_KEEPALIVE_PROBES '(' LL_NUMBER ')' { ((SocketOptionsInet *) last_sock_options)->tcp_keepalive_probes = $3; }
 	;
+
+inet_ip_protocol_option
+        : LL_NUMBER
+        {
+          CHECK_ERROR($1 == 4 || $1 == 6, @1, "ip-protocol option can only be 4 or 6!");
+          if ($1 == 4)
+            {
+              $$ = AF_INET;
+            }
+          else
+            {
+              $$ = AF_INET6;
+            }
+        }
+        ;
+
 
 /* INCLUDE_RULES */
 

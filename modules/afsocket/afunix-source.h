@@ -25,6 +25,7 @@
 #define AFUNIX_SOURCE_H_INCLUDED
 
 #include "afsocket-source.h"
+#include "transport-mapper-unix.h"
 #include "file-perms.h"
 
 typedef struct _AFUnixSourceDriver
@@ -32,9 +33,9 @@ typedef struct _AFUnixSourceDriver
   AFSocketSourceDriver super;
   gchar *filename;
   FilePermOptions file_perm_options;
-  SocketOptions sock_options;
 } AFUnixSourceDriver;
 
-LogDriver *afunix_sd_new(gint sock_type, gchar *filename);
+AFUnixSourceDriver *afunix_sd_new_stream(gchar *filename);
+AFUnixSourceDriver *afunix_sd_new_dgram(gchar *filename);
 
 #endif
