@@ -32,7 +32,7 @@ typedef struct _AFProgramSourceDriver
 {
   LogSrcDriver super;
   GString *cmdline;
-  LogPipe *reader;
+  LogReader *reader;
   pid_t pid;
   LogReaderOptions reader_options;
 } AFProgramSourceDriver;

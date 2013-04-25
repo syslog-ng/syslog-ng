@@ -203,8 +203,8 @@ affile_sd_notify(LogPipe *s, LogPipe *sender, gint notify_code, gpointer user_da
                     evt_tag_str("filename", self->filename->str),
                     NULL);
         
-        log_pipe_deinit(self->reader);
-        log_pipe_unref(self->reader);
+        log_pipe_deinit((LogPipe *) self->reader);
+        log_pipe_unref((LogPipe *) self->reader);
         
         if (affile_sd_open_file(self, self->filename->str, &fd))
           {
@@ -224,13 +224,13 @@ affile_sd_notify(LogPipe *s, LogPipe *sender, gint notify_code, gpointer user_da
             log_reader_set_follow_filename(self->reader, self->filename->str);
             log_reader_set_immediate_check(self->reader);
 
-            log_pipe_append(self->reader, s);
-            if (!log_pipe_init(self->reader, cfg))
+            log_pipe_append((LogPipe *) self->reader, s);
+            if (!log_pipe_init((LogPipe *) self->reader, cfg))
               {
                 msg_error("Error initializing log_reader, closing fd",
                           evt_tag_int("fd", fd),
                           NULL);
-                log_pipe_unref(self->reader);
+                log_pipe_unref((LogPipe *) self->reader);
                 self->reader = NULL;
                 close(fd);
               }
@@ -304,14 +304,13 @@ affile_sd_init(LogPipe *s)
        * remembered file position, if the file is created in the future
        * we're going to read from the start. */
       
-      log_pipe_append(self->reader, s);
-
-      if (!log_pipe_init(self->reader, NULL))
+      log_pipe_append((LogPipe *) self->reader, s);
+      if (!log_pipe_init((LogPipe *) self->reader, NULL))
         {
           msg_error("Error initializing log_reader, closing fd",
                     evt_tag_int("fd", fd),
                     NULL);
-          log_pipe_unref(self->reader);
+          log_pipe_unref((LogPipe *) self->reader);
           self->reader = NULL;
           close(fd);
           return FALSE;
@@ -337,8 +336,8 @@ affile_sd_deinit(LogPipe *s)
 
   if (self->reader)
     {
-      log_pipe_deinit(self->reader);
-      log_pipe_unref(self->reader);
+      log_pipe_deinit((LogPipe *) self->reader);
+      log_pipe_unref((LogPipe *) self->reader);
       self->reader = NULL;
     }
 

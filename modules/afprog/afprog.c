@@ -177,13 +177,13 @@ afprogram_sd_init(LogPipe *s)
                              self->super.super.id,
                              self->cmdline->str);
     }
-  log_pipe_append(self->reader, &self->super.super.super);
-  if (!log_pipe_init(self->reader, NULL))
+  log_pipe_append((LogPipe *) self->reader, &self->super.super.super);
+  if (!log_pipe_init((LogPipe *) self->reader, NULL))
     { 
       msg_error("Error initializing program source, closing fd",
                 evt_tag_int("fd", fd),
                 NULL);
-      log_pipe_unref(self->reader);
+      log_pipe_unref((LogPipe *) self->reader);
       self->reader = NULL;
       close(fd);
       return FALSE;
@@ -199,8 +199,8 @@ afprogram_sd_deinit(LogPipe *s)
   afprogram_sd_kill_child(self);
   if (self->reader)
     {
-      log_pipe_deinit(self->reader);
-      log_pipe_unref(self->reader);
+      log_pipe_deinit((LogPipe *) self->reader);
+      log_pipe_unref((LogPipe *) self->reader);
       self->reader = NULL;
     }
 

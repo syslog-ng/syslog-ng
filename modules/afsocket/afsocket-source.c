@@ -45,7 +45,7 @@ typedef struct _AFSocketSourceConnection
 {
   LogPipe super;
   struct _AFSocketSourceDriver *owner;
-  LogPipe *reader;
+  LogReader *reader;
   int sock;
   GSockAddr *peer_addr;
 } AFSocketSourceConnection;
@@ -110,14 +110,14 @@ afsocket_sc_init(LogPipe *s)
                          self->owner->super.super.id,
                          afsocket_sc_stats_instance(self));
   log_reader_set_peer_addr(self->reader, self->peer_addr);
-  log_pipe_append(self->reader, s);
-  if (log_pipe_init(self->reader, NULL))
+  log_pipe_append((LogPipe *) self->reader, s);
+  if (log_pipe_init((LogPipe *) self->reader, NULL))
     {
       return TRUE;
     }
   else
     {
-      log_pipe_unref(self->reader);
+      log_pipe_unref((LogPipe *) self->reader);
       self->reader = NULL;
     }
   return FALSE;
@@ -131,7 +131,7 @@ afsocket_sc_deinit(LogPipe *s)
   log_pipe_unref(&self->owner->super.super.super);
   self->owner = NULL;
 
-  log_pipe_deinit(self->reader);
+  log_pipe_deinit((LogPipe *) self->reader);
   return TRUE;
 }
 
@@ -211,7 +211,7 @@ afsocket_sd_kill_connection(AFSocketSourceConnection *connection)
    * reader (through the connection->reader and reader->control
    * pointers these have a circular references).
    */
-  log_pipe_unref(connection->reader);
+  log_pipe_unref((LogPipe *) connection->reader);
   connection->reader = NULL;
 
   log_pipe_unref(&connection->super);

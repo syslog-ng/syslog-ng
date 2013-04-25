@@ -685,7 +685,7 @@ log_reader_free(LogPipe *s)
 }
 
 void
-log_reader_set_options(LogPipe *s, LogPipe *control, LogReaderOptions *options, gint stats_level, gint stats_source, const gchar *stats_id, const gchar *stats_instance)
+log_reader_set_options(LogReader *s, LogPipe *control, LogReaderOptions *options, gint stats_level, gint stats_source, const gchar *stats_id, const gchar *stats_instance)
 {
   LogReader *self = (LogReader *) s;
 
@@ -730,11 +730,11 @@ log_reader_reopen_deferred(gpointer s)
 }
 
 void
-log_reader_reopen(LogPipe *s, LogProtoServer *proto, LogPipe *control, LogReaderOptions *options, gint stats_level, gint stats_source, const gchar *stats_id, const gchar *stats_instance, gboolean immediate_check)
+log_reader_reopen(LogReader *self, LogProtoServer *proto, LogPipe *control, LogReaderOptions *options, gint stats_level, gint stats_source, const gchar *stats_id, const gchar *stats_instance, gboolean immediate_check)
 {
-  LogReader *self = (LogReader *) s;
-  gpointer args[] = { s, proto };
-  log_source_deinit(s);
+  gpointer args[] = { self, proto };
+
+  log_source_deinit(&self->super.super);
 
   main_loop_call((MainLoopTaskFunc) log_reader_reopen_deferred, args, TRUE);
 
@@ -749,15 +749,15 @@ log_reader_reopen(LogPipe *s, LogProtoServer *proto, LogPipe *control, LogReader
     }
   if (immediate_check)
     {
-      log_reader_set_immediate_check(&self->super.super);
+      log_reader_set_immediate_check(self);
     }
-  log_reader_set_options(s, control, options, stats_level, stats_source, stats_id, stats_instance);
-  log_reader_set_follow_filename(s, stats_instance);
-  log_source_init(s);
+  log_reader_set_options(self, control, options, stats_level, stats_source, stats_id, stats_instance);
+  log_reader_set_follow_filename(self, stats_instance);
+  log_source_init(&self->super.super);
 }
 
 void
-log_reader_set_follow_filename(LogPipe *s, const gchar *follow_filename)
+log_reader_set_follow_filename(LogReader *s, const gchar *follow_filename)
 {
   /* try to free */
   LogReader *self = (LogReader *) s;
@@ -766,13 +766,13 @@ log_reader_set_follow_filename(LogPipe *s, const gchar *follow_filename)
 }
 
 void
-log_reader_set_peer_addr(LogPipe *s, GSockAddr *peer_addr)
+log_reader_set_peer_addr(LogReader *s, GSockAddr *peer_addr)
 {
   LogReader *self = (LogReader *) s;
   self->peer_addr = g_sockaddr_ref(peer_addr);
 }
 
-LogPipe *
+LogReader *
 log_reader_new(LogProtoServer *proto)
 {
   LogReader *self = g_new0(LogReader, 1);
@@ -788,11 +788,11 @@ log_reader_new(LogProtoServer *proto)
   log_reader_init_watches(self);
   g_static_mutex_init(&self->pending_proto_lock);
   self->pending_proto_cond = g_cond_new();
-  return &self->super.super;
+  return self;
 }
 
 void 
-log_reader_set_immediate_check(LogPipe *s)
+log_reader_set_immediate_check(LogReader *s)
 {
   LogReader *self = (LogReader*) s;
   
