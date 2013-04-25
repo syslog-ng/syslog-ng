@@ -796,15 +796,6 @@ log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
       log_writer_append_value(result, lm, LM_V_PID, TRUE, TRUE);
       log_writer_append_value(result, lm, LM_V_MSGID, TRUE, TRUE);
 
-#if 0
-      if (lm->flags & LF_LOCAL)
-        {
-          gchar sequence_id[16];
-          
-          g_snprintf(sequence_id, sizeof(sequence_id), "%d", seq_num);
-          log_msg_update_sdata(lm, "meta", "sequenceId", sequence_id);
-        }
-#endif
       len = result->len;
       log_msg_append_format_sdata(lm, result, seq_num);
       if (len == result->len)
