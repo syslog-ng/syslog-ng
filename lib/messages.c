@@ -203,13 +203,11 @@ msg_format_message(const gchar *desc, EVTTAG *first_tag, gchar **message_id)
   EVTTAG *et;
   GString *message_str = g_string_sized_new(512);
   gchar *escaped_value = msg_escape_value(desc, ';');
+  gboolean first_printable_tag = TRUE;
 
   g_string_append(message_str, escaped_value);
-  g_string_append(message_str, ";");
+  g_string_append_c(message_str, ';');
   g_free(escaped_value);
-
-  if (first_tag)
-    g_string_append(message_str, " ");
 
   et = first_tag;
   while(et)
@@ -217,16 +215,22 @@ msg_format_message(const gchar *desc, EVTTAG *first_tag, gchar **message_id)
       EVTTAG *next_tag;
       if (strcmp(et->et_tag, "MSGID") != 0)
         {
+          if (first_printable_tag)
+            {
+              first_printable_tag = FALSE;
+            }
+          else
+            {
+              g_string_append_c(message_str, ',');
+            }
+          g_string_append_c(message_str, ' ');
           g_string_append(message_str, et->et_tag);
           g_string_append(message_str, "='");
 
           escaped_value = msg_escape_value(et->et_value, '\'');
           g_string_append(message_str, escaped_value);
           g_free(escaped_value);
-
-          g_string_append(message_str, "'");
-          if (et->et_next)
-            g_string_append(message_str, ", ");
+          g_string_append_c(message_str, '\'');
         }
       else
         {

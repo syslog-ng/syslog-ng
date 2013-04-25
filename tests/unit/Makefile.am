@@ -34,6 +34,7 @@ check_PROGRAMS =			\
   test_data_to_hex \
   test_control_cmds \
   test_control_connection \
+	test_messages \
 	test_rcptid
 
 if IS_HPUX
@@ -93,5 +94,6 @@ test_control_cmds_SOURCES = test_control_cmds.c
 test_control_connection_SOURCES = test_control_connection.c
 test_state_SOURCES = test_state.c
 test_buffered_proto_state_SOURCES = test_buffered_proto_state.c
+test_messages_SOURCES = test_messages.c
 
 TESTS = $(check_PROGRAMS)
