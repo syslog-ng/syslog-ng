@@ -46,7 +46,7 @@ struct _AFSocketDestDriver
     syslog_protocol:1,
     require_tls:1;
   gint fd;
-  LogPipe *writer;
+  LogWriter *writer;
   LogWriterOptions writer_options;
   LogProtoClientFactory *proto_factory;
 #if BUILD_WITH_SSL

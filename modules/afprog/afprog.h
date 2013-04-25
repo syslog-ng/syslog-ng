@@ -41,7 +41,7 @@ typedef struct _AFProgramDestDriver
 {
   LogDestDriver super;
   GString *cmdline;
-  LogPipe *writer;
+  LogWriter *writer;
   pid_t pid;
   LogWriterOptions writer_options;
 } AFProgramDestDriver;

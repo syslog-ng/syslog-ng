@@ -358,7 +358,7 @@ afsocket_dd_setup_writer(AFSocketDestDriver *self)
                                     (self->syslog_protocol ? LW_SYSLOG_PROTOCOL : 0));
 
     }
-  log_writer_set_options((LogWriter *) self->writer, &self->super.super.super,
+  log_writer_set_options(self->writer, &self->super.super.super,
                          &self->writer_options,
                          STATS_LEVEL0,
                          self->transport_mapper->stats_source,
@@ -366,8 +366,8 @@ afsocket_dd_setup_writer(AFSocketDestDriver *self)
                          afsocket_dd_stats_instance(self));
   log_writer_set_queue(self->writer, log_dest_driver_acquire_queue(&self->super, afsocket_dd_format_persist_name(self, TRUE)));
 
-  log_pipe_init(self->writer, NULL);
-  log_pipe_append(&self->super.super.super, self->writer);
+  log_pipe_init((LogPipe *) self->writer, NULL);
+  log_pipe_append(&self->super.super.super, (LogPipe *) self->writer);
 }
 
 static gboolean
@@ -380,7 +380,7 @@ afsocket_dd_setup_connection(AFSocketDestDriver *self)
   afsocket_dd_restore_connection(self);
   afsocket_dd_setup_writer(self);
 
-  if (!log_writer_opened((LogWriter *) self->writer))
+  if (!log_writer_opened(self->writer))
     afsocket_dd_reconnect(self);
   return TRUE;
 }
@@ -400,7 +400,7 @@ static void
 afsocket_dd_stop_writer(AFSocketDestDriver *self)
 {
   if (self->writer)
-    log_pipe_deinit(self->writer);
+    log_pipe_deinit((LogPipe *) self->writer);
 }
 
 static void
@@ -457,7 +457,7 @@ afsocket_dd_free(LogPipe *s)
   log_writer_options_destroy(&self->writer_options);
   g_sockaddr_unref(self->bind_addr);
   g_sockaddr_unref(self->dest_addr);
-  log_pipe_unref(self->writer);
+  log_pipe_unref((LogPipe *) self->writer);
   g_free(self->hostname);
 #if BUILD_WITH_SSL
   if(self->tls_context)

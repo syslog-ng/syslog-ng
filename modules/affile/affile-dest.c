@@ -84,7 +84,7 @@ struct _AFFileDestWriter
   GStaticMutex lock;
   AFFileDestDriver *owner;
   gchar *filename;
-  LogPipe *writer;
+  LogWriter *writer;
   time_t last_msg_stamp;
   time_t last_open_stamp;
   time_t time_reopen;
@@ -123,7 +123,7 @@ affile_dw_reap(gpointer s)
   main_loop_assert_main_thread();
 
   g_static_mutex_lock(&self->lock);
-  if (!log_writer_has_pending_writes((LogWriter *) self->writer) &&
+  if (!log_writer_has_pending_writes(self->writer) &&
       !self->queue_pending &&
       (cached_g_current_time_sec() - self->last_msg_stamp) >= self->owner->time_reap)
     {
@@ -211,7 +211,7 @@ affile_dw_init(LogPipe *s)
 
       self->writer = log_writer_new(flags);
     }
-  log_writer_set_options((LogWriter *) self->writer,
+  log_writer_set_options(self->writer,
                          s,
                          &self->owner->writer_options,
                          STATS_LEVEL1,
@@ -220,14 +220,14 @@ affile_dw_init(LogPipe *s)
                          self->filename);
   log_writer_set_queue(self->writer, log_dest_driver_acquire_queue(&self->owner->super, affile_dw_format_persist_name(self)));
 
-  if (!log_pipe_init(self->writer, NULL))
+  if (!log_pipe_init((LogPipe *) self->writer, NULL))
     {
       msg_error("Error initializing log writer", NULL);
-      log_pipe_unref(self->writer);
+      log_pipe_unref((LogPipe *) self->writer);
       self->writer = NULL;
       return FALSE;
     }
-  log_pipe_append(&self->super, self->writer);
+  log_pipe_append(&self->super, (LogPipe *) self->writer);
 
   return affile_dw_reopen(self);
 }
@@ -240,7 +240,7 @@ affile_dw_deinit(LogPipe *s)
   main_loop_assert_main_thread();
   if (self->writer)
     {
-      log_pipe_deinit(self->writer);
+      log_pipe_deinit((LogPipe *) self->writer);
     }
   log_dest_driver_release_queue(&self->owner->super, log_writer_get_queue(self->writer));
   log_writer_set_queue(self->writer, NULL);
@@ -265,7 +265,7 @@ affile_dw_queue(LogPipe *s, LogMessage *lm, const LogPathOptions *path_options, 
   if (self->last_open_stamp == 0)
     self->last_open_stamp = self->last_msg_stamp;
 
-  if (!log_writer_opened((LogWriter *) self->writer) &&
+  if (!log_writer_opened(self->writer) &&
       !self->reopen_pending &&
       (self->last_open_stamp < self->last_msg_stamp - self->time_reopen))
     {
@@ -290,7 +290,7 @@ affile_dw_set_owner(AFFileDestWriter *self, AFFileDestDriver *owner)
   self->owner = owner;
   if (self->writer)
     {
-      log_writer_set_options((LogWriter *) self->writer,
+      log_writer_set_options(self->writer,
                              &self->super,
                              &owner->writer_options,
                              STATS_LEVEL1,
@@ -305,7 +305,7 @@ affile_dw_free(LogPipe *s)
 {
   AFFileDestWriter *self = (AFFileDestWriter *) s;
   
-  log_pipe_unref(self->writer);
+  log_pipe_unref((LogPipe *) self->writer);
   self->writer = NULL;
   g_free(self->filename);
   log_pipe_unref(&self->owner->super.super.super);

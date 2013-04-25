@@ -331,7 +331,7 @@ afprogram_dd_init(LogPipe *s)
   if (!self->writer)
     self->writer = log_writer_new(LW_FORMAT_FILE);
 
-  log_writer_set_options((LogWriter *) self->writer,
+  log_writer_set_options(self->writer,
                          s,
                          &self->writer_options,
                          STATS_LEVEL0,
@@ -340,8 +340,8 @@ afprogram_dd_init(LogPipe *s)
                          self->cmdline->str);
   log_writer_set_queue(self->writer, log_dest_driver_acquire_queue(&self->super, afprogram_dd_format_persist_name(self)));
 
-  log_pipe_init(self->writer, NULL);
-  log_pipe_append(&self->super.super.super, self->writer);
+  log_pipe_init((LogPipe *) self->writer, NULL);
+  log_pipe_append(&self->super.super.super, (LogPipe *) self->writer);
 
   return afprogram_dd_reopen(self);
 }
@@ -354,8 +354,8 @@ afprogram_dd_deinit(LogPipe *s)
   afprogram_dd_kill_child(self);
   if (self->writer)
     {
-      log_pipe_deinit(self->writer);
-      log_pipe_unref(self->writer);
+      log_pipe_deinit((LogPipe *) self->writer);
+      log_pipe_unref((LogPipe *) self->writer);
       self->writer = NULL;
     }
 
@@ -369,7 +369,7 @@ afprogram_dd_free(LogPipe *s)
 {
   AFProgramDestDriver *self = (AFProgramDestDriver *) s;
 
-  log_pipe_unref(self->writer);  
+  log_pipe_unref((LogPipe *) self->writer);
   g_string_free(self->cmdline, TRUE);
   log_writer_options_destroy(&self->writer_options);
   log_dest_driver_free(s);

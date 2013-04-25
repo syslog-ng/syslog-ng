@@ -1105,7 +1105,7 @@ log_writer_init(LogPipe *s)
 
       proto = self->proto;
       self->proto = NULL;
-      log_writer_reopen(&self->super, proto);
+      log_writer_reopen(self, proto);
     }
 
   if (self->options->mark_mode == MM_PERIODICAL)
@@ -1246,7 +1246,7 @@ log_writer_reopen_deferred(gpointer s)
  * risky approach.
  */
 void
-log_writer_reopen(LogPipe *s, LogProtoClient *proto)
+log_writer_reopen(LogWriter *s, LogProtoClient *proto)
 {
   LogWriter *self = (LogWriter *) s;
   gpointer args[] = { s, proto };
@@ -1282,7 +1282,7 @@ log_writer_set_options(LogWriter *self, LogPipe *control, LogWriterOptions *opti
   self->stats_instance = stats_instance ? g_strdup(stats_instance) : NULL;
 }
 
-LogPipe *
+LogWriter *
 log_writer_new(guint32 flags)
 {
   LogWriter *self = g_new0(LogWriter, 1);
@@ -1302,12 +1302,12 @@ log_writer_new(guint32 flags)
   g_static_mutex_init(&self->pending_proto_lock);
   self->pending_proto_cond = g_cond_new();
 
-  return &self->super;
+  return self;
 }
 
 /* returns a reference */
 LogQueue *
-log_writer_get_queue(LogPipe *s)
+log_writer_get_queue(LogWriter *s)
 {
   LogWriter *self = (LogWriter *) s;
 
@@ -1316,7 +1316,7 @@ log_writer_get_queue(LogPipe *s)
 
 /* consumes the reference */
 void
-log_writer_set_queue(LogPipe *s, LogQueue *queue)
+log_writer_set_queue(LogWriter *s, LogQueue *queue)
 {
   LogWriter *self = (LogWriter *)s;
 

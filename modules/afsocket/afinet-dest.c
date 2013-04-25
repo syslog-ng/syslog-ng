@@ -328,7 +328,7 @@ afinet_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
   /* NOTE: this code should probably become a LogTransport instance so that
    * spoofed packets are also going through the LogWriter queue */
 
-  if (self->spoof_source && self->lnet_ctx && msg->saddr && (msg->saddr->sa.sa_family == AF_INET || msg->saddr->sa.sa_family == AF_INET6) && log_writer_opened((LogWriter *) self->super.writer))
+  if (self->spoof_source && self->lnet_ctx && msg->saddr && (msg->saddr->sa.sa_family == AF_INET || msg->saddr->sa.sa_family == AF_INET6) && log_writer_opened(self->super.writer))
     {
       gboolean success = FALSE;
 
@@ -337,7 +337,7 @@ afinet_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
       g_static_mutex_lock(&self->lnet_lock);
       if (!self->lnet_buffer)
         self->lnet_buffer = g_string_sized_new(256);
-      log_writer_format_log((LogWriter *) self->super.writer, msg, self->lnet_buffer);
+      log_writer_format_log(self->super.writer, msg, self->lnet_buffer);
 
       switch (self->super.dest_addr->sa.sa_family)
         {

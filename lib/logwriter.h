@@ -85,10 +85,10 @@ void log_writer_set_options(LogWriter *self, LogPipe *control, LogWriterOptions 
 void log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result);
 gboolean log_writer_has_pending_writes(LogWriter *self);
 gboolean log_writer_opened(LogWriter *self);
-void log_writer_reopen(LogPipe *s, LogProtoClient *proto);
-LogPipe *log_writer_new(guint32 flags);
-void log_writer_set_queue(LogPipe *s, LogQueue *queue);
-LogQueue *log_writer_get_queue(LogPipe *s);
+void log_writer_reopen(LogWriter *self, LogProtoClient *proto);
+void log_writer_set_queue(LogWriter *self, LogQueue *queue);
+LogQueue *log_writer_get_queue(LogWriter *s);
+LogWriter *log_writer_new(guint32 flags);
 
 void log_writer_options_set_template_escape(LogWriterOptions *options, gboolean enable);
 void log_writer_options_defaults(LogWriterOptions *options);
