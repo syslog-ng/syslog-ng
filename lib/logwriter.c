@@ -120,6 +120,26 @@ static void log_writer_stop_watches(LogWriter *self);
 static void log_writer_update_watches(LogWriter *self);
 static void log_writer_suspend(LogWriter *self);
 
+/* returns a reference */
+LogQueue *
+log_writer_get_queue(LogWriter *s)
+{
+  LogWriter *self = (LogWriter *) s;
+
+  return log_queue_ref(self->queue);
+}
+
+/* consumes the reference */
+void
+log_writer_set_queue(LogWriter *s, LogQueue *queue)
+{
+  LogWriter *self = (LogWriter *)s;
+
+  if (self->queue)
+    log_queue_unref(self->queue);
+  self->queue = queue;
+}
+
 static void
 log_writer_work_perform(gpointer s)
 {
@@ -1303,26 +1323,6 @@ log_writer_new(guint32 flags)
   self->pending_proto_cond = g_cond_new();
 
   return self;
-}
-
-/* returns a reference */
-LogQueue *
-log_writer_get_queue(LogWriter *s)
-{
-  LogWriter *self = (LogWriter *) s;
-
-  return log_queue_ref(self->queue);
-}
-
-/* consumes the reference */
-void
-log_writer_set_queue(LogWriter *s, LogQueue *queue)
-{
-  LogWriter *self = (LogWriter *)s;
-
-  if (self->queue)
-    log_queue_unref(self->queue);
-  self->queue = queue;
 }
 
 void 
