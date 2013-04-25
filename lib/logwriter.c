@@ -120,6 +120,19 @@ static void log_writer_stop_watches(LogWriter *self);
 static void log_writer_update_watches(LogWriter *self);
 static void log_writer_suspend(LogWriter *self);
 
+void
+log_writer_set_flags(LogWriter *self, guint32 flags)
+{
+  g_assert((self->super.flags & PIF_INITIALIZED) == 0);
+  self->flags = flags;
+}
+
+guint32
+log_writer_get_flags(LogWriter *self)
+{
+  return self->flags;
+}
+
 /* returns a reference */
 LogQueue *
 log_writer_get_queue(LogWriter *s)
