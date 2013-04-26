@@ -3,6 +3,8 @@ opt/syslog-ng/etc/*
 opt/syslog-ng/lib/init-functions
 opt/syslog-ng/lib/lib*.s[o,l]*
 opt/syslog-ng/lib/lib*.a
+opt/syslog-ng/lib/syslog-ng/lib*.s[o,l]*
+opt/syslog-ng/lib/syslog-ng/lib*.a
 opt/syslog-ng/libexec/*
 opt/syslog-ng/sbin/*
 opt/syslog-ng/share/*
