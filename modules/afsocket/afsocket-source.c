@@ -683,7 +683,13 @@ afsocket_sd_init_instance(AFSocketSourceDriver *self,
   self->listen_backlog = 255;
   self->connections_kept_alive_accross_reloads = TRUE;
   log_reader_options_defaults(&self->reader_options);
-  /* FIXME: sock_type may not properly set at this time */
-  if (self->transport_mapper->sock_type == SOCK_STREAM)
-    self->reader_options.super.init_window_size = 1000;
+
+  /* NOTE: this changes the initial window size from 100 to 1000. Reasons:
+   * Starting with syslog-ng 3.3, window-size is distributed evenly between
+   * _all_ possible connections to avoid starving.  With the defaults this
+   * means that we get a window size of 10 messages log_iw_size(100) /
+   * max_connections(10), but that is incredibly slow, thus bump this value here.
+   */
+
+  self->reader_options.super.init_window_size = 1000;
 }
