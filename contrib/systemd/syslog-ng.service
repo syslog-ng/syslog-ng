@@ -3,6 +3,7 @@ Description=System Logger Daemon
 Documentation=man:syslog-ng(8)
 
 [Service]
+Type=notify
 Sockets=syslog.socket
 ExecStart=/usr/sbin/syslog-ng -F
 ExecReload=/bin/kill -HUP $MAINPID

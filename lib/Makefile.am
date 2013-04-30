@@ -10,7 +10,8 @@ export top_srcdir
 include logproto/logproto.am
 
 lib_LTLIBRARIES = libsyslog-ng.la
-libsyslog_ng_la_LIBADD = @CORE_DEPS_LIBS@
+libsyslog_ng_la_CPPFLAGS = $(libsystemd_daemon_CFLAGS)
+libsyslog_ng_la_LIBADD = @CORE_DEPS_LIBS@ $(libsystemd_daemon_LIBS)
 libsyslog_ng_la_LDFLAGS = -no-undefined -release @VERSION@
 
 # this is intentionally formatted so conflicts are less likely to arise. one name in every line.
