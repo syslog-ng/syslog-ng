@@ -236,12 +236,13 @@ afinet_dd_setup_addresses(AFSocketDestDriver *s)
 static const gchar *
 afinet_dd_get_dest_name(AFSocketDestDriver *s)
 {
+  AFInetDestDriver *self = (AFInetDestDriver *) s;
   static gchar buf[256];
 
-  if (strchr(s->hostname, ':') != NULL)
-    g_snprintf(buf, sizeof(buf), "[%s]:%d", s->hostname, g_sockaddr_get_port(s->dest_addr));
+  if (strchr(self->hostname, ':') != NULL)
+    g_snprintf(buf, sizeof(buf), "[%s]:%d", self->hostname, g_sockaddr_get_port(s->dest_addr));
   else
-    g_snprintf(buf, sizeof(buf), "%s:%d", s->hostname, g_sockaddr_get_port(s->dest_addr));
+    g_snprintf(buf, sizeof(buf), "%s:%d", self->hostname, g_sockaddr_get_port(s->dest_addr));
   return buf;
 }
 
