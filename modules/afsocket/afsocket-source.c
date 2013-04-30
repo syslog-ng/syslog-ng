@@ -84,23 +84,8 @@ afsocket_sc_init(LogPipe *s)
 
   if (!self->reader)
     {
-#if BUILD_WITH_SSL
-      if (self->owner->tls_context)
-        {
-          TLSSession *tls_session = tls_context_setup_session(self->owner->tls_context);
-          if (!tls_session)
-            return FALSE;
-          transport = log_transport_tls_new(tls_session, self->sock);
-        }
-      else
-#endif
-      if (self->owner->transport_mapper->sock_type == SOCK_DGRAM)
-        transport = log_transport_dgram_socket_new(self->sock);
-      else
-        transport = log_transport_stream_socket_new(self->sock);
-
+      transport = afsocket_sd_construct_transport(self->owner, self->sock);
       proto = log_proto_server_factory_construct(self->owner->proto_factory, transport, &self->owner->reader_options.proto_options.super);
-
       self->reader = log_reader_new(proto);
     }
   log_reader_set_options(self->reader, s,
@@ -254,16 +239,6 @@ afsocket_sd_set_max_connections(LogDriver *s, gint max_connections)
 
   self->max_connections = max_connections;
 }
-
-#if BUILD_WITH_SSL
-void
-afsocket_sd_set_tls_context(LogDriver *s, TLSContext *tls_context)
-{
-  AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
-
-  self->tls_context = tls_context;
-}
-#endif
 
 static inline gchar *
 afsocket_sd_format_persist_name(AFSocketSourceDriver *self, gboolean listener_name)
@@ -623,6 +598,15 @@ afsocket_sd_save_listener(AFSocketSourceDriver *self)
     }
 }
 
+LogTransport *
+afsocket_sd_construct_transport_method(AFSocketSourceDriver *self, gint fd)
+{
+  if (self->transport_mapper->sock_type == SOCK_DGRAM)
+    return log_transport_dgram_socket_new(fd);
+  else
+    return log_transport_stream_socket_new(fd);
+}
+
 gboolean
 afsocket_sd_setup_addresses_method(AFSocketSourceDriver *self)
 {
@@ -630,7 +614,7 @@ afsocket_sd_setup_addresses_method(AFSocketSourceDriver *self)
 }
 
 gboolean
-afsocket_sd_init(LogPipe *s)
+afsocket_sd_init_method(LogPipe *s)
 {
   AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
 
@@ -642,7 +626,7 @@ afsocket_sd_init(LogPipe *s)
 }
 
 gboolean
-afsocket_sd_deinit(LogPipe *s)
+afsocket_sd_deinit_method(LogPipe *s)
 {
   AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
 
@@ -667,7 +651,7 @@ afsocket_sd_notify(LogPipe *s, LogPipe *sender, gint notify_code, gpointer user_
 }
 
 void
-afsocket_sd_free(LogPipe *s)
+afsocket_sd_free_method(LogPipe *s)
 {
   AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
 
@@ -675,12 +659,6 @@ afsocket_sd_free(LogPipe *s)
   transport_mapper_free(self->transport_mapper);
   g_sockaddr_unref(self->bind_addr);
   self->bind_addr = NULL;
-#if BUILD_WITH_SSL
-  if(self->tls_context)
-    {
-      tls_context_free(self->tls_context);
-    }
-#endif
   log_src_driver_free(s);
 }
 
@@ -691,12 +669,14 @@ afsocket_sd_init_instance(AFSocketSourceDriver *self,
 {
   log_src_driver_init_instance(&self->super);
 
-  self->super.super.super.init = afsocket_sd_init;
-  self->super.super.super.deinit = afsocket_sd_deinit;
-  self->super.super.super.free_fn = afsocket_sd_free;
+  self->super.super.super.init = afsocket_sd_init_method;
+  self->super.super.super.deinit = afsocket_sd_deinit_method;
+  self->super.super.super.free_fn = afsocket_sd_free_method;
   /* NULL behaves as if log_pipe_forward_msg was specified */
   self->super.super.super.queue = NULL;
   self->super.super.super.notify = afsocket_sd_notify;
+  self->construct_transport = afsocket_sd_construct_transport_method;
+  self->setup_addresses = afsocket_sd_setup_addresses_method;
   self->socket_options = socket_options;
   self->transport_mapper = transport_mapper;
   self->max_connections = 10;

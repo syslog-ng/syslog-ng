@@ -29,9 +29,6 @@
 #include "transport-mapper.h"
 #include "driver.h"
 #include "logwriter.h"
-#if BUILD_WITH_SSL
-#include "tlscontext.h"
-#endif
 
 #include <iv.h>
 
@@ -43,16 +40,11 @@ struct _AFSocketDestDriver
 
   gboolean
     connections_kept_alive_accross_reloads:1,
-    syslog_protocol:1,
-    require_tls:1;
+    syslog_protocol:1;
   gint fd;
   LogWriter *writer;
   LogWriterOptions writer_options;
   LogProtoClientFactory *proto_factory;
-#if BUILD_WITH_SSL
-  TLSContext *tls_context;
-#endif
-  gchar *hostname;
 
   GSockAddr *bind_addr;
   GSockAddr *dest_addr;
@@ -62,16 +54,24 @@ struct _AFSocketDestDriver
   SocketOptions *socket_options;
   TransportMapper *transport_mapper;
 
+  LogTransport *(*construct_transport)(AFSocketDestDriver *self, gint fd);
+  LogWriter *(*construct_writer)(AFSocketDestDriver *self);
   gboolean (*setup_addresses)(AFSocketDestDriver *s);
   const gchar *(*get_dest_name)(AFSocketDestDriver *s);
 };
 
 
-#if BUILD_WITH_SSL
-void afsocket_dd_set_tls_context(LogDriver *s, TLSContext *tls_context);
-#else
-#define afsocket_dd_set_tls_context(s, t)
-#endif
+static inline LogTransport *
+afsocket_dd_construct_transport(AFSocketDestDriver *self, gint fd)
+{
+  return self->construct_transport(self, fd);
+}
+
+static inline LogWriter *
+afsocket_dd_construct_writer(AFSocketDestDriver *self)
+{
+  return self->construct_writer(self);
+}
 
 static inline gboolean
 afsocket_dd_setup_addresses(AFSocketDestDriver *s)
@@ -85,9 +85,12 @@ afsocket_dd_get_dest_name(AFSocketDestDriver *s)
   return s->get_dest_name(s);
 }
 
+LogWriter *afsocket_dd_construct_writer_method(AFSocketDestDriver *self);
 gboolean afsocket_dd_setup_addresses_method(AFSocketDestDriver *self);
 void afsocket_dd_set_keep_alive(LogDriver *self, gint enable);
-void afsocket_dd_init_instance(AFSocketDestDriver *self, SocketOptions *socket_options, TransportMapper *transport_mapper, const gchar *hostname);
+void afsocket_dd_init_instance(AFSocketDestDriver *self, SocketOptions *socket_options, TransportMapper *transport_mapper);
+LogTransport *afsocket_dd_construct_transport_method(AFSocketDestDriver *self, gint fd);
+
 gboolean afsocket_dd_init(LogPipe *s);
 void afsocket_dd_free(LogPipe *s);
 

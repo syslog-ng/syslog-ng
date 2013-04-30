@@ -25,9 +25,6 @@
 #include "messages.h"
 #include "misc.h"
 #include "logwriter.h"
-#if BUILD_WITH_SSL
-#include "tlstransport.h"
-#endif
 #include "gsocket.h"
 #include "stats.h"
 #include "mainloop.h"
@@ -35,16 +32,6 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
-
-#if BUILD_WITH_SSL
-void
-afsocket_dd_set_tls_context(LogDriver *s, TLSContext *tls_context)
-{
-  AFSocketDestDriver *self = (AFSocketDestDriver *) s;
-
-  self->tls_context = tls_context;
-}
-#endif
 
 void
 afsocket_dd_set_keep_alive(LogDriver *s, gboolean enable)
@@ -75,21 +62,6 @@ afsocket_dd_stats_instance(AFSocketDestDriver *self)
   g_snprintf(buf, sizeof(buf), "%s,%s", self->transport_mapper->transport, afsocket_dd_get_dest_name(self));
   return buf;
 }
-
-#if BUILD_WITH_SSL
-static gint
-afsocket_dd_tls_verify_callback(gint ok, X509_STORE_CTX *ctx, gpointer user_data)
-{
-  AFSocketDestDriver *self = (AFSocketDestDriver *) user_data;
-
-  if (ok && ctx->current_cert == ctx->cert && self->hostname && (self->tls_context->verify_mode & TVM_TRUSTED))
-    {
-      ok = tls_verify_certificate_name(ctx->cert, self->hostname);
-    }
-
-  return ok;
-}
-#endif
 
 static gboolean afsocket_dd_connected(AFSocketDestDriver *self);
 static void afsocket_dd_reconnect(AFSocketDestDriver *self);
@@ -191,28 +163,9 @@ afsocket_dd_connected(AFSocketDestDriver *self)
               evt_tag_str("local", g_sockaddr_format(self->bind_addr, buf1, sizeof(buf1), GSA_FULL)),
               NULL);
 
-
-#if BUILD_WITH_SSL
-  if (self->tls_context)
-    {
-      TLSSession *tls_session;
-
-      tls_session = tls_context_setup_session(self->tls_context);
-      if (!tls_session)
-        {
-          goto error_reconnect;
-        }
-
-      tls_session_set_verify(tls_session, afsocket_dd_tls_verify_callback, self, NULL);
-      transport = log_transport_tls_new(tls_session, self->fd);
-    }
-  else
-#endif
-
-  if (self->transport_mapper->sock_type == SOCK_STREAM)
-    transport = log_transport_stream_socket_new(self->fd);
-  else
-    transport = log_transport_dgram_socket_new(self->fd);
+  transport = afsocket_dd_construct_transport(self, self->fd);
+  if (!transport)
+    goto error_reconnect;
 
   proto = log_proto_client_factory_construct(self->proto_factory, transport, &self->writer_options.proto_options.super);
 
@@ -235,7 +188,6 @@ afsocket_dd_start_connect(AFSocketDestDriver *self)
 
   g_assert(self->transport_mapper->transport);
   g_assert(self->bind_addr);
-  g_assert(self->hostname);
 
   if (!transport_mapper_open_socket(self->transport_mapper, self->socket_options, self->bind_addr, AFSOCKET_DIR_SEND, &sock))
     {
@@ -341,6 +293,29 @@ afsocket_dd_restore_connection(AFSocketDestDriver *self)
   self->writer = cfg_persist_config_fetch(cfg, afsocket_dd_format_persist_name(self, FALSE));
 }
 
+LogTransport *
+afsocket_dd_construct_transport_method(AFSocketDestDriver *self, gint fd)
+{
+  if (self->transport_mapper->sock_type == SOCK_DGRAM)
+    return log_transport_dgram_socket_new(fd);
+  else
+    return log_transport_stream_socket_new(fd);
+}
+
+LogWriter *
+afsocket_dd_construct_writer_method(AFSocketDestDriver *self)
+{
+  guint32 writer_flags = 0;
+
+  writer_flags |= LW_FORMAT_PROTO;
+  if ((self->transport_mapper->sock_type == SOCK_STREAM))
+    writer_flags |= LW_DETECT_EOF;
+  if (self->syslog_protocol)
+    writer_flags |= LW_SYSLOG_PROTOCOL;
+
+  return log_writer_new(writer_flags);
+}
+
 static void
 afsocket_dd_setup_writer(AFSocketDestDriver *self)
 {
@@ -349,14 +324,7 @@ afsocket_dd_setup_writer(AFSocketDestDriver *self)
       /* NOTE: we open our writer with no fd, so we can send messages down there
        * even while the connection is not established */
 
-      self->writer = log_writer_new(LW_FORMAT_PROTO |
-#if BUILD_WITH_SSL
-                                    (((self->transport_mapper->sock_type == SOCK_STREAM) && !self->tls_context) ? LW_DETECT_EOF : 0) |
-#else
-                                    ((self->transport_mapper->sock_type == SOCK_STREAM) ? LW_DETECT_EOF : 0) |
-#endif
-                                    (self->syslog_protocol ? LW_SYSLOG_PROTOCOL : 0));
-
+      self->writer = afsocket_dd_construct_writer(self);
     }
   log_writer_set_options(self->writer, &self->super.super.super,
                          &self->writer_options,
@@ -458,13 +426,6 @@ afsocket_dd_free(LogPipe *s)
   g_sockaddr_unref(self->bind_addr);
   g_sockaddr_unref(self->dest_addr);
   log_pipe_unref((LogPipe *) self->writer);
-  g_free(self->hostname);
-#if BUILD_WITH_SSL
-  if(self->tls_context)
-    {
-      tls_context_free(self->tls_context);
-    }
-#endif
   transport_mapper_free(self->transport_mapper);
   log_dest_driver_free(s);
 }
@@ -472,8 +433,7 @@ afsocket_dd_free(LogPipe *s)
 void
 afsocket_dd_init_instance(AFSocketDestDriver *self,
                           SocketOptions *socket_options,
-                          TransportMapper *transport_mapper,
-                          const gchar *hostname)
+                          TransportMapper *transport_mapper)
 {
   log_dest_driver_init_instance(&self->super);
 
@@ -485,11 +445,12 @@ afsocket_dd_init_instance(AFSocketDestDriver *self,
   self->super.super.super.free_fn = afsocket_dd_free;
   self->super.super.super.notify = afsocket_dd_notify;
   self->setup_addresses = afsocket_dd_setup_addresses;
+  self->construct_transport = afsocket_dd_construct_transport_method;
+  self->construct_writer = afsocket_dd_construct_writer_method;
   self->transport_mapper = transport_mapper;
   self->socket_options = socket_options;
   self->connections_kept_alive_accross_reloads = TRUE;
 
-  self->hostname = g_strdup(hostname);
 
   self->writer_options.mark_mode = MM_GLOBAL;
   afsocket_dd_init_watches(self);

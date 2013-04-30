@@ -220,7 +220,7 @@ afunix_sd_init(LogPipe *s)
 {
   AFUnixSourceDriver *self = (AFUnixSourceDriver *) s;
 
-  return afsocket_sd_init(s) &&
+  return afsocket_sd_init_method(s) &&
          afunix_sd_apply_perms_to_socket(self);
 }
 
@@ -230,7 +230,7 @@ afunix_sd_free(LogPipe *s)
   AFUnixSourceDriver *self = (AFUnixSourceDriver *) s;
 
   g_free(self->filename);
-  afsocket_sd_free(s);
+  afsocket_sd_free_method(s);
 }
 
 AFUnixSourceDriver *

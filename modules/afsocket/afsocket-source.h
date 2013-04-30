@@ -50,9 +50,6 @@ struct _AFSocketSourceDriver
   gint fd;
   LogReaderOptions reader_options;
   LogProtoServerFactory *proto_factory;
-#if BUILD_WITH_SSL
-  TLSContext *tls_context;
-#endif
   GSockAddr *bind_addr;
   gint max_connections;
   gint num_connections;
@@ -61,7 +58,7 @@ struct _AFSocketSourceDriver
   SocketOptions *socket_options;
   TransportMapper *transport_mapper;
 
-
+  LogTransport *(*construct_transport)(AFSocketSourceDriver *self, gint fd);
   /*
    * Apply transport options, set up bind_addr based on the
    * information processed during parse time. This used to be
@@ -80,11 +77,6 @@ struct _AFSocketSourceDriver
 
 void afsocket_sd_set_keep_alive(LogDriver *self, gint enable);
 void afsocket_sd_set_max_connections(LogDriver *self, gint max_connections);
-#if BUILD_WITH_SSL
-void afsocket_sd_set_tls_context(LogDriver *s, TLSContext *tls_context);
-#else
-#define afsocket_sd_set_tls_context(s, t)
-#endif
 
 static inline gboolean
 afsocket_sd_acquire_socket(AFSocketSourceDriver *s, gint *fd)
@@ -95,18 +87,25 @@ afsocket_sd_acquire_socket(AFSocketSourceDriver *s, gint *fd)
   return TRUE;
 }
 
+static inline LogTransport *
+afsocket_sd_construct_transport(AFSocketSourceDriver *self, gint fd)
+{
+  return self->construct_transport(self, fd);
+}
+
 static inline gboolean
 afsocket_sd_setup_addresses(AFSocketSourceDriver *s)
 {
   return s->setup_addresses(s);
 }
 
+LogTransport *afsocket_sd_construct_transport_method(AFSocketSourceDriver *self, gint fd);
 gboolean afsocket_sd_setup_addresses_method(AFSocketSourceDriver *self);
 
-gboolean afsocket_sd_init(LogPipe *s);
-gboolean afsocket_sd_deinit(LogPipe *s);
+gboolean afsocket_sd_init_method(LogPipe *s);
+gboolean afsocket_sd_deinit_method(LogPipe *s);
+void afsocket_sd_free_method(LogPipe *self);
 
 void afsocket_sd_init_instance(AFSocketSourceDriver *self, SocketOptions *socket_options, TransportMapper *transport_mapper);
-void afsocket_sd_free(LogPipe *self);
 
 #endif

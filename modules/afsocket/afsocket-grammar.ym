@@ -338,7 +338,7 @@ source_afinet_tcp_option
 	  '(' tls_options ')'
 	  {
 #if BUILD_WITH_SSL
-	    afsocket_sd_set_tls_context(last_driver, last_tls_context);
+	    afinet_sd_set_tls_context(last_driver, last_tls_context);
 #endif
           }
 	| source_afsocket_stream_params		{}
@@ -412,7 +412,7 @@ source_afsocket_transport
 	  '(' tls_options ')'
 	  {
 #if BUILD_WITH_SSL
-	    afsocket_sd_set_tls_context(last_driver, last_tls_context);
+	    afinet_sd_set_tls_context(last_driver, last_tls_context);
 #endif
           }
         ;
@@ -547,7 +547,7 @@ dest_afinet_tcp_option
 	  '(' tls_options ')'
 	  {
 #if BUILD_WITH_SSL
-	    afsocket_dd_set_tls_context(last_driver, last_tls_context);
+	    afinet_dd_set_tls_context(last_driver, last_tls_context);
 #endif
           }
 	;
@@ -619,7 +619,7 @@ dest_afsocket_transport
           '(' tls_options ')'
           {
   #if BUILD_WITH_SSL
-            afsocket_dd_set_tls_context(last_driver, last_tls_context);
+            afinet_dd_set_tls_context(last_driver, last_tls_context);
   #endif
           }
         ;

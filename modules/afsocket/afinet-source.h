@@ -26,15 +26,21 @@
 
 #include "afinet.h"
 #include "afsocket-source.h"
+#include "tlscontext.h"
 
 typedef struct _AFInetSourceDriver
 {
   AFSocketSourceDriver super;
+#if BUILD_WITH_SSL
+  TLSContext *tls_context;
+#endif
   /* character as it can contain a service name from /etc/services */
   gchar *bind_port;
   gchar *bind_ip;
   gchar *ip_protocol;
 } AFInetSourceDriver;
+
+void afinet_sd_set_tls_context(LogDriver *s, TLSContext *tls_context);
 
 AFInetSourceDriver *afinet_sd_new_tcp(void);
 AFInetSourceDriver *afinet_sd_new_tcp6(void);

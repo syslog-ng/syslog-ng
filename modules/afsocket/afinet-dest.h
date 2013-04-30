@@ -26,6 +26,7 @@
 
 #include "afinet.h"
 #include "afsocket-dest.h"
+#include "tlscontext.h"
 
 #if ENABLE_SPOOF_SOURCE
 
@@ -44,6 +45,10 @@ typedef struct _AFInetDestDriver
   GStaticMutex lnet_lock;
   GString *lnet_buffer;
 #endif
+#if BUILD_WITH_SSL
+  TLSContext *tls_context;
+#endif
+  gchar *hostname;
 
   /* character as it can contain a service name from /etc/services */
   gchar *bind_port;
@@ -58,6 +63,7 @@ void afinet_dd_set_destport(LogDriver *self, gchar *service);
 void afinet_dd_set_localip(LogDriver *self, gchar *ip);
 void afinet_dd_set_sync_freq(LogDriver *self, gint sync_freq);
 void afinet_dd_set_spoof_source(LogDriver *self, gboolean enable);
+void afinet_dd_set_tls_context(LogDriver *s, TLSContext *tls_context);
 
 AFInetDestDriver *afinet_dd_new_tcp(gchar *host);
 AFInetDestDriver *afinet_dd_new_tcp6(gchar *host);

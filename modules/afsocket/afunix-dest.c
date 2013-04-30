@@ -75,7 +75,7 @@ afunix_dd_new_instance(TransportMapper *transport_mapper, gchar *filename)
 {
   AFUnixDestDriver *self = g_new0(AFUnixDestDriver, 1);
 
-  afsocket_dd_init_instance(&self->super, socket_options_new(), transport_mapper, "localhost");
+  afsocket_dd_init_instance(&self->super, socket_options_new(), transport_mapper);
   self->super.super.super.super.free_fn = afunix_dd_free;
   self->super.setup_addresses = afunix_dd_setup_addresses;
   self->super.writer_options.mark_mode = MM_NONE;
