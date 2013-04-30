@@ -543,15 +543,24 @@ afinet_dd_new_udp6(gchar *host)
   return afinet_dd_new_instance(transport_mapper_udp6_new(), host);
 }
 
+static LogWriter *
+afinet_dd_syslog_construct_writer(AFSocketDestDriver *s)
+{
+  AFInetDestDriver *self G_GNUC_UNUSED = (AFInetDestDriver *) s;
+  LogWriter *writer;
+
+  writer = afsocket_dd_construct_writer_method(s);
+  log_writer_set_flags(writer, log_writer_get_flags(writer) | LW_SYSLOG_PROTOCOL);
+  return writer;
+}
+
+
 AFInetDestDriver *
 afinet_dd_new_syslog(gchar *host)
 {
   AFInetDestDriver *self = afinet_dd_new_instance(transport_mapper_syslog_new(), host);
 
-  /* FIXME: get rid of this by using polimorphic classes instead of
-   * conditions scattered in the code.  */
-
-  self->super.syslog_protocol = TRUE;
+  self->super.construct_writer = afinet_dd_syslog_construct_writer;
   return self;
 }
 

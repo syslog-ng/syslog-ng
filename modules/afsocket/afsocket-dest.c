@@ -310,8 +310,6 @@ afsocket_dd_construct_writer_method(AFSocketDestDriver *self)
   writer_flags |= LW_FORMAT_PROTO;
   if ((self->transport_mapper->sock_type == SOCK_STREAM))
     writer_flags |= LW_DETECT_EOF;
-  if (self->syslog_protocol)
-    writer_flags |= LW_SYSLOG_PROTOCOL;
 
   return log_writer_new(writer_flags);
 }
