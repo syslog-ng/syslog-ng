@@ -65,6 +65,7 @@ transport_mapper_tcp_new(void)
   self->super.logproto = "text";
   self->super.stats_source = SCS_TCP;
   self->server_port = TCP_PORT;
+  self->allow_tls = TRUE;
   return &self->super;
 }
 
@@ -129,9 +130,9 @@ transport_mapper_network_apply_transport(TransportMapper *s, GlobalConfig *cfg)
   else if (strcasecmp(transport, "tls") == 0)
     {
       self->super.logproto = "text";
-      self->require_tls = TRUE;
       self->super.sock_type = SOCK_STREAM;
       self->super.sock_proto = IPPROTO_TCP;
+      self->require_tls = TRUE;
     }
   else
     {
@@ -140,6 +141,7 @@ transport_mapper_network_apply_transport(TransportMapper *s, GlobalConfig *cfg)
       self->super.sock_proto = IPPROTO_TCP;
       /* FIXME: look up port/protocol from the logproto */
       self->server_port = TCP_PORT;
+      self->allow_tls = TRUE;
     }
 
   g_assert(self->server_port != 0);
@@ -199,9 +201,9 @@ transport_mapper_syslog_apply_transport(TransportMapper *s, GlobalConfig *cfg)
       else
         self->server_port = SYSLOG_TRANSPORT_TLS_PORT;
       self->super.logproto = "framed";
-      self->require_tls = TRUE;
       self->super.sock_type = SOCK_STREAM;
       self->super.sock_proto = IPPROTO_TCP;
+      self->require_tls = TRUE;
     }
   else
     {
@@ -210,6 +212,7 @@ transport_mapper_syslog_apply_transport(TransportMapper *s, GlobalConfig *cfg)
       /* FIXME: look up port/protocol from the logproto */
       self->server_port = 514;
       self->super.sock_proto = IPPROTO_TCP;
+      self->allow_tls = TRUE;
     }
   g_assert(self->server_port != 0);
 

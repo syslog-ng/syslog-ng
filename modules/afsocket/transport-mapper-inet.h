@@ -31,7 +31,20 @@ typedef struct _TransportMapperInet
   gint server_port;
   const gchar *server_port_change_warning;
   gboolean require_tls;
+  gboolean allow_tls;
 } TransportMapperInet;
+
+static inline gboolean
+transport_mapper_inet_is_tls_required(TransportMapperInet *self)
+{
+  return self->require_tls;
+}
+
+static inline gboolean
+transport_mapper_inet_is_tls_allowed(TransportMapperInet *self)
+{
+  return self->require_tls || self->allow_tls;
+}
 
 static inline gint
 transport_mapper_inet_get_server_port(TransportMapper *self)
