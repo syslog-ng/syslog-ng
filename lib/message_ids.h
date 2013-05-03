@@ -4,6 +4,7 @@
 #define MSG_APPLICATION_STARTED               1
 #define MSG_APPLICATION_TERMINATED            2
 #define MSG_APPLICATION_RELOAD                3
+#define MSG_LOG_STATISTIC                     4
 #define MSG_SERVICE_INSTALLED                 16
 #define MSG_SERVICE_REMOVED                   17
 #define MSG_SOCKETS_FAIL                      23

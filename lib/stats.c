@@ -439,7 +439,7 @@ stats_generate_log(void)
   GString *message = g_string_new("Log statistics");
 
   g_hash_table_foreach(counter_hash, stats_format_log_counter, message);
-  lm = msg_event_create(EVT_PRI_INFO, message->str, NULL);
+  lm = msg_event_create(EVT_PRI_INFO, message->str, evt_tag_id(MSG_LOG_STATISTIC));
   g_string_free(message, TRUE);
   msg_event_send(lm);
 }
