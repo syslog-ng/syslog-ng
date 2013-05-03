@@ -856,6 +856,13 @@ main_loop_init(gchar *config_string)
   return 0;
 }
 
+void
+main_loop_deinit(void)
+{
+  iv_event_unregister(&main_task_posted);
+  iv_event_unregister(&stop_signal);
+}
+
 int
 main_loop_run(void)
 {
@@ -901,6 +908,7 @@ main_loop_run(void)
   cfg_deinit(current_configuration);
   cfg_free(current_configuration);
   current_configuration = NULL;
+  main_loop_deinit();
   return 0;
 }
 

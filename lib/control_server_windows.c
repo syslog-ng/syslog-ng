@@ -318,6 +318,10 @@ control_connection_stop_watches(ControlConnection *s)
     {
       iv_handle_unregister(&self->connect_handle);
     }
+  if (iv_task_registered(&self->io_task))
+    {
+      iv_task_unregister(&self->io_task);
+    }
 }
 
 void
