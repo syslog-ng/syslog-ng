@@ -83,11 +83,11 @@ cleanup:
   return FALSE;
 }
 
-
 typedef struct _ControlServerWin32
 {
   ControlServer super;
   SECURITY_ATTRIBUTES security_attributes;
+  ControlConnection *current_connection;
 } ControlServerWin32;
 
 typedef struct _ControlConnectionWin32
@@ -364,7 +364,7 @@ control_server_win32_create_new_instance(ControlServer *s)
                           &self->security_attributes);
    if (pipe_handle != INVALID_HANDLE_VALUE)
      {
-       control_connection_new(s, pipe_handle);
+       self->current_connection = control_connection_new(s, pipe_handle);
      }
    else
      {
@@ -395,12 +395,25 @@ control_server_start(ControlServer *s)
   return;
 }
 
+void
+control_server_win32_free(ControlServer *s)
+{
+  ControlServerWin32 *self = (ControlServerWin32 *)s;
+  if (self->current_connection)
+    {
+      control_connection_stop_watches(self->current_connection);
+      control_connection_free(self->current_connection);
+      self->current_connection = NULL;
+    }
+}
+
 ControlServer *
 control_server_new(const gchar *name, Commands *commands)
 {
   ControlServerWin32 *self = g_new0(ControlServerWin32, 1);
 
   control_server_init_instance(&self->super, name, commands);
+  self->super.free_fn = control_server_win32_free;
 
   return &self->super;
 }

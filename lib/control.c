@@ -90,9 +90,18 @@ exit:
   return result;
 }
 
+static GString *
+control_connection_stop_process(GString *command)
+{
+  GString *result = g_string_new("OK");
+  main_loop_terminate();
+  return result;
+}
+
 Commands commands[] = {
   { "STATS", NULL, control_connection_send_stats },
   { "LOG", NULL, control_connection_message_log },
+  { "STOP", NULL, control_connection_stop_process },
   { NULL, NULL, NULL },
 };
 
