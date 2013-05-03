@@ -184,7 +184,7 @@ resolve_sockaddr(gchar *result, gsize *result_len, GSockAddr *saddr, gboolean us
               if ((!use_dns_cache || !dns_cache_lookup(saddr->sa.sa_family, addr, (const gchar **) &hname, &positive)) && usedns != 2)
                 {
 #ifdef HAVE_GETNAMEINFO
-                  if (getnameinfo(&saddr->sa, saddr->salen, buf, sizeof(buf), NULL, 0, 0) == 0)
+                  if (getnameinfo(&saddr->sa, saddr->salen, buf, sizeof(buf), NULL, 0, NI_NAMEREQD) == 0)
                     hname = buf;
 #else
                   struct hostent *hp;
