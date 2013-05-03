@@ -761,10 +761,7 @@ sig_term_handler(void *s)
   if (under_termination)
     return;
 
-  msg_notice("syslog-ng shutting down",
-             evt_tag_str("version", VERSION),
-             evt_tag_id(MSG_APPLICATION_TERMINATED),
-             NULL);
+  show_config_shutdown_message(current_configuration);
 
   main_loop_call_thread_quit_callback();
 

@@ -129,6 +129,7 @@ struct _GlobalConfig
   gchar *(*calculate_hash)(GlobalConfig *self);
   void (*show_reload_message)(GlobalConfig *self);
   void (*show_start_message)(GlobalConfig *self);
+  void (*show_shutdown_message)(GlobalConfig *self);
 };
 
 void cfg_add_source(GlobalConfig *configuration, struct _LogSourceGroup *group);
@@ -208,6 +209,13 @@ void set_config_reload_message_function(GlobalConfig *cfg, CONFIG_CALLBACK_FUNCI
 }
 
 static inline
+void set_config_shutdown_message_function(GlobalConfig *cfg, CONFIG_CALLBACK_FUNCION func)
+{
+  if (func)
+    cfg->show_shutdown_message = func;
+}
+
+static inline
 gchar *get_config_hash(GlobalConfig *cfg)
 {
   if (cfg->calculate_hash)
@@ -228,6 +236,13 @@ void show_config_reload_message(GlobalConfig *cfg)
 {
   if (cfg->show_reload_message)
     cfg->show_reload_message(cfg);
+}
+
+static inline
+void show_config_shutdown_message(GlobalConfig *cfg)
+{
+  if (cfg->show_shutdown_message)
+    cfg->show_shutdown_message(cfg);
 }
 
 static inline gboolean 

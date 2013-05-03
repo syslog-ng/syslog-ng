@@ -106,6 +106,15 @@ static void config_show_start_message(GlobalConfig *self)
   return;
 }
 
+static void config_show_shutdown_message(GlobalConfig *self)
+{
+  msg_notice("syslog-ng shutting down",
+             evt_tag_str("version", VERSION),
+             evt_tag_id(MSG_APPLICATION_TERMINATED),
+             NULL);
+  return;
+}
+
 #if ENABLE_SSL
 static gchar *cfg_calculate_hash(GlobalConfig *self);
 #endif
@@ -431,6 +440,7 @@ cfg_new(gint version)
 #endif
   self->show_reload_message = config_show_reload_message;
   self->show_start_message = config_show_start_message;
+  self->show_shutdown_message = config_show_shutdown_message;
   return self;
 }
 
