@@ -1,0 +1,14 @@
+%.y: %.ym $(top_srcdir)/lib/merge-grammar.pl $(top_srcdir)/lib/cfg-grammar.y
+	$(AM_V_GEN) $(top_srcdir)/lib/merge-grammar.pl $< > $@
+
+.l.c:
+	$(AM_V_LEX)$(am__skiplex) $(SHELL) $(YLWRAP) $< $(LEX_OUTPUT_ROOT).c $*.c $(LEX_OUTPUT_ROOT).h $*.h -- $(LEXCOMPILE) | ($(EGREP) -v "^updating" || true)
+
+.l.h:
+	$(AM_V_LEX)$(am__skiplex) $(SHELL) $(YLWRAP) $< $(LEX_OUTPUT_ROOT).c $*.c $(LEX_OUTPUT_ROOT).h $*.h -- $(LEXCOMPILE) | ($(EGREP) -v "^updating" || true)
+
+.y.c:
+	$(AM_V_YACC)$(am__skipyacc) $(SHELL) $(YLWRAP) $< y.tab.c $@ y.tab.h $*.h y.output $*.output -- $(YACCCOMPILE) 2>&1 | ($(EGREP) -v "(warning: ([0-9]+ )?(nonterminal|rule)s? useless in grammar)|(^updating)" || true)
+
+.y.h:
+	$(AM_V_YACC)$(am__skipyacc) $(SHELL) $(YLWRAP) $< y.tab.c $@ y.tab.h $*.h y.output $*.output -- $(YACCCOMPILE) 2>&1 | ($(EGREP) -v "(warning: ([0-9]+ )?(nonterminal|rule)s? useless in grammar)|(^updating)" || true)

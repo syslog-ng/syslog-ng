@@ -1,22 +1,25 @@
+lib_logproto_tests_TESTS		 = \
+	lib/logproto/tests/test_logproto   \
+	lib/logproto/tests/test_findeom
 
-# we need the dotdot version of the include path to find generated headers
-AM_CFLAGS = -I$(top_srcdir)/lib -I$(top_srcdir)/libtest -I../../../lib -I../../../libtest
-LIBS = @TOOL_DEPS_LIBS@
-LDADD = $(top_builddir)/lib/libsyslog-ng.la $(top_builddir)/libtest/libsyslog-ng-test.a
+check_PROGRAMS				+= ${lib_logproto_tests_TESTS}
 
-check_PROGRAMS =			\
-	test_logproto			\
-	test_findeom
+lib_logproto_tests_test_logproto_CFLAGS  = $(TEST_CFLAGS) \
+	-I${top_srcdir}/lib/logproto/tests
+lib_logproto_tests_test_logproto_LDADD	 = $(TEST_LDADD)
+lib_logproto_tests_test_logproto_SOURCES = 			\
+	lib/logproto/tests/test_logproto.c 			\
+	lib/logproto/tests/test_logproto.h			\
+	lib/logproto/tests/test-server-options.c		\
+	lib/logproto/tests/test-record-server.c			\
+	lib/logproto/tests/test-text-server.c			\
+	lib/logproto/tests/test-dgram-server.c			\
+	lib/logproto/tests/test-framed-server.c			\
+	lib/logproto/tests/test-indented-multiline-server.c
 
-test_logproto_SOURCES = 			\
-	test_logproto.c 			\
-	test-server-options.c			\
-	test-record-server.c			\
-	test-text-server.c			\
-	test-dgram-server.c			\
-	test-framed-server.c			\
-	test-indented-multiline-server.c
-
-test_findeom_SOURCES = test_findeom.c
-
-TESTS = $(check_PROGRAMS)
+lib_logproto_tests_test_findeom_CFLAGS	= -I${top_srcdir}/libtest
+lib_logproto_tests_test_findeom_LDADD	= \
+	${top_builddir}/lib/libsyslog-ng.la \
+	${top_builddir}/libtest/libsyslog-ng-test.a
+lib_logproto_tests_test_findeom_SOURCES = \
+	lib/logproto/tests/test_findeom.c

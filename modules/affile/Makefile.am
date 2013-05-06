@@ -1,23 +1,33 @@
-moduledir = @moduledir@
-AM_CPPFLAGS = -I$(top_srcdir)/lib -I../../lib
-export top_srcdir
+module_LTLIBRARIES			+= modules/affile/libaffile.la
+modules_affile_libaffile_la_SOURCES	=			\
+	modules/affile/logproto-linux-proc-kmsg-reader.h	\
+	modules/affile/logproto-file-writer.c 			\
+	modules/affile/logproto-file-writer.h			\
+	modules/affile/affile-common.c				\
+	modules/affile/affile-common.h				\
+	modules/affile/affile-source.c				\
+	modules/affile/affile-source.h				\
+	modules/affile/affile-dest.c				\
+	modules/affile/affile-dest.h				\
+	modules/affile/affile-grammar.y				\
+	modules/affile/affile-parser.c				\
+	modules/affile/affile-parser.h				\
+	modules/affile/affile-plugin.c
 
-module_LTLIBRARIES := libaffile.la
-libaffile_la_SOURCES =					\
-	logproto-linux-proc-kmsg-reader.h		\
-	logproto-file-writer.c logproto-file-writer.h	\
-	affile-common.c affile-common.h			\
-	affile-source.c affile-source.h			\
-	affile-dest.c affile-dest.h			\
-	affile-grammar.y				\
-	affile-parser.c affile-parser.h			\
-	affile-plugin.c
+BUILT_SOURCES				+= 			\
+	modules/affile/affile-grammar.y				\
+	modules/affile/affile-grammar.c				\
+	modules/affile/affile-grammar.h
+EXTRA_DIST				+=			\
+	modules/affile/affile-grammar.ym
 
-BUILT_SOURCES = affile-grammar.y affile-grammar.c affile-grammar.h
-EXTRA_DIST = $(BUILT_SOURCES) affile-grammar.ym
+modules_affile_libaffile_la_CPPFLAGS	=			\
+	$(AM_CPPFLAGS)						\
+	-I$(top_srcdir)/modules/affile				\
+	-I$(top_builddir)/modules/affile
+modules_affile_libaffile_la_LIBADD	= $(MODULE_DEPS_LIBS)
+modules_affile_libaffile_la_LDFLAGS	= $(MODULE_LDFLAGS)
+modules_affile_libaffile_la_DEPENDENCIES= $(MODULE_DEPS_LIBS)
 
-libaffile_la_CPPFLAGS = $(AM_CPPFLAGS)
-libaffile_la_LIBADD = $(MODULE_DEPS_LIBS)
-libaffile_la_LDFLAGS = $(MODULE_LDFLAGS)
-
-include $(top_srcdir)/build/lex-rules.am
+modules/affile modules/affile/ mod-affile mod-file: modules/affile/libaffile.la
+.PHONY: modules/affile/ mod-affile mod-file

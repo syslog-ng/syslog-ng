@@ -1,10 +1,17 @@
-SUBDIRS = . tests
-moduledir = @moduledir@
-export top_srcdir
+module_LTLIBRARIES					+=	\
+	modules/cryptofuncs/libcryptofuncs.la
 
-AM_CPPFLAGS = -I$(top_srcdir)/lib -I../../lib
-module_LTLIBRARIES = libcryptofuncs.la
+modules_cryptofuncs_libcryptofuncs_la_SOURCES		=	\
+	modules/cryptofuncs/cryptofuncs.c
+modules_cryptofuncs_libcryptofuncs_la_LIBADD		=	\
+	$(MODULE_DEPS_LIBS) $(CRYPTO_LIBS) 			\
+	$(OPENSSL_LIBS)
+modules_cryptofuncs_libcryptofuncs_la_LDFLAGS		=	\
+	$(MODULE_LDFLAGS) $(OPENSSL_CFLAGS)
+modules_cryptofuncs_libcryptofuncs_la_DEPENDENCIES	=	\
+	$(MODULE_DEPS_LIBS) $(CRYPTO_LIBS)
 
-libcryptofuncs_la_SOURCES = cryptofuncs.c
-libcryptofuncs_la_LIBADD = $(MODULE_DEPS_LIBS) $(CRYPTO_LIBS) $(OPENSSL_LIBS)
-libcryptofuncs_la_LDFLAGS = $(MODULE_LDFLAGS) $(OPENSSL_CFLAGS)
+modules/cryptofuncs modules/cryptofuncs/ mod-cryptofuncs: modules/cryptofuncs/libcryptofuncs.la
+.PHONY: modules/cryptofuncs/ mod-cryptofuncs
+
+include modules/cryptofuncs/tests/Makefile.am

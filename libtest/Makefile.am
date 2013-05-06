@@ -1,18 +1,14 @@
+noinst_LIBRARIES		   += libtest/libsyslog-ng-test.a
 
-# we need the dotdot version of the include path to find generated headers
-AM_CFLAGS = -I$(top_srcdir)/lib -I$(top_srcdir)/modules -I../lib -I../modules
-
-noinst_LIBRARIES = libsyslog-ng-test.a
-
-libsyslog_ng_test_a_SOURCES = \
-	libtest.c		\
-	testutils.c		\
-	testutils.h		\
-	msg_parse_lib.c		\
-	msg_parse_lib.h		\
-	template_lib.c		\
-	template_lib.h		\
-	proto_lib.c		\
-	proto_lib.h		\
-	mock-transport.c	\
-	mock-transport.h
+libtest_libsyslog_ng_test_a_SOURCES =   \
+	libtest/libtest.c		\
+	libtest/testutils.c		\
+	libtest/testutils.h		\
+	libtest/msg_parse_lib.c		\
+	libtest/msg_parse_lib.h		\
+	libtest/template_lib.c		\
+	libtest/template_lib.h		\
+	libtest/proto_lib.c		\
+	libtest/proto_lib.h		\
+	libtest/mock-transport.c	\
+	libtest/mock-transport.h

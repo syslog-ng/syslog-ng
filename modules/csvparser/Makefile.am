@@ -1,18 +1,31 @@
-SUBDIRS = . tests
-moduledir = @moduledir@
-AM_CPPFLAGS = -I$(top_srcdir)/lib -I../../lib
-export top_srcdir
+module_LTLIBRARIES				+= modules/csvparser/libcsvparser.la
+modules_csvparser_libcsvparser_la_SOURCES	=	\
+	modules/csvparser/csvparser.c			\
+	modules/csvparser/csvparser.h			\
+	modules/csvparser/csvparser-grammar.y		\
+	modules/csvparser/csvparser-parser.c		\
+	modules/csvparser/csvparser-parser.h		\
+	modules/csvparser/csvparser-plugin.c
 
-module_LTLIBRARIES := libcsvparser.la
-libcsvparser_la_SOURCES = \
-	csvparser.c csvparser.h \
-	csvparser-grammar.y csvparser-parser.c csvparser-parser.h csvparser-plugin.c
+modules_csvparser_libcsvparser_la_CPPFLAGS	=	\
+	$(AM_CPPFLAGS)					\
+	-I$(top_srcdir)/modules/csvparser		\
+	-I$(top_builddir)/modules/csvparser
+modules_csvparser_libcsvparser_la_LIBADD	=	\
+	$(MODULE_DEPS_LIBS)
+modules_csvparser_libcsvparser_la_LDFLAGS	=	\
+	$(MODULE_LDFLAGS)
+modules_csvparser_libcsvparser_la_DEPENDENCIES	=	\
+	$(MODULE_DEPS_LIBS)
 
-libcsvparser_la_CPPFLAGS = $(AM_CPPFLAGS)
-libcsvparser_la_LIBADD = $(MODULE_DEPS_LIBS)
-libcsvparser_la_LDFLAGS = $(MODULE_LDFLAGS)
+BUILT_SOURCES					+=	\
+	modules/csvparser/csvparser-grammar.y		\
+	modules/csvparser/csvparser-grammar.c		\
+	modules/csvparser/csvparser-grammar.h
+EXTRA_DIST					+=	\
+	modules/csvparser/csvparser-grammar.ym
 
-BUILT_SOURCES = csvparser-grammar.y csvparser-grammar.c csvparser-grammar.h
-EXTRA_DIST = $(BUILT_SOURCES) csvparser-grammar.ym
+modules/csvparser modules/csvparser/ mod-csvparser: modules/csvparser/libcsvparser.la
+.PHONY: modules/csvparser/ mod-csvparser
 
-include $(top_srcdir)/build/lex-rules.am
+include modules/csvparser/tests/Makefile.am

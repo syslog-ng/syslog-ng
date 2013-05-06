@@ -1,14 +1,30 @@
-
 export top_srcdir
 export top_builddir
 dbd_dir = $(shell echo $(exec_prefix)/lib/dbd)
 export dbd_dir
 
-EXTRA_DIST = func_test.py control.py globals.py log.py messagecheck.py messagegen.py \
-	ssl.crt ssl.key rnd.in \
-	test_file_source.py test_filters.py test_input_drivers.py test_performance.py test_sql.py
+EXTRA_DIST	+= \
+		tests/functional/runtests.sh \
+		tests/functional/func_test.py \
+		tests/functional/control.py \
+		tests/functional/globals.py \
+		tests/functional/log.py \
+		tests/functional/messagecheck.py \
+		tests/functional/messagegen.py \
+		tests/functional/ssl.crt tests/functional/ssl.key tests/functional/rnd.in \
+		tests/functional/test_file_source.py \
+		tests/functional/test_filters.py \
+		tests/functional/test_input_drivers.py \
+		tests/functional/test_performance.py \
+		tests/functional/test_sql.py
 
-TESTS = func_test.py
+TESTS		+= tests/functional/runtests.sh
 
-rnd: rnd.in
+tests/functional/rnd: tests/functional/rnd.in
 	cp $< $@
+
+CLEANFILES	+= 					\
+		tests/functional/test.conf		\
+		tests/functional/rnd			\
+		tests/functional/syslog-ng.persist	\
+		tests/functional/test-performance.log

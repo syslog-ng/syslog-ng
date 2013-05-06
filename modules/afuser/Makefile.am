@@ -1,18 +1,30 @@
-moduledir = @moduledir@
-AM_CPPFLAGS = -I$(top_srcdir)/lib -I../../lib
-export top_srcdir
+module_LTLIBRARIES			+= modules/afuser/libafuser.la
+modules_afuser_libafuser_la_SOURCES	=	\
+	modules/afuser/afuser.c			\
+	modules/afuser/afuser.h			\
+	modules/afuser/afuser-grammar.y		\
+	modules/afuser/afuser-parser.c		\
+	modules/afuser/afuser-parser.h		\
+	modules/afuser/afuser-plugin.c
 
-module_LTLIBRARIES := libafuser.la
-libafuser_la_SOURCES = \
-	afuser.c afuser.h \
-	afuser-grammar.y afuser-parser.c afuser-parser.h afuser-plugin.c
+modules_afuser_libafuser_la_CPPFLAGS	=	\
+	$(AM_CPPFLAGS)				\
+	-I$(top_srcdir)/modules/afuser		\
+	-I$(top_builddir)/modules/afuser
+modules_afuser_libafuser_la_LIBADD	=	\
+	$(MODULE_DEPS_LIBS)
+modules_afuser_libafuser_la_LDFLAGS	=	\
+	$(MODULE_LDFLAGS)
+modules_afuser_libafuser_la_DEPENDENCIES=	\
+	$(MODULE_DEPS_LIBS)
 
-libafuser_la_CPPFLAGS = $(AM_CPPFLAGS)
-libafuser_la_LIBADD = $(MODULE_DEPS_LIBS)
-libafuser_la_LDFLAGS = $(MODULE_LDFLAGS)
+BUILT_SOURCES				+=	\
+	modules/afuser/afuser-grammar.y		\
+	modules/afuser/afuser-grammar.c		\
+	modules/afuser/afuser-grammar.h
+EXTRA_DIST				+=	\
+	modules/afuser/afuser-grammar.ym
 
-
-BUILT_SOURCES = afuser-grammar.y afuser-grammar.c afuser-grammar.h
-EXTRA_DIST = $(BUILT_SOURCES) afuser-grammar.ym
-
-include $(top_srcdir)/build/lex-rules.am
+modules/afuser modules/afuser/ mod-afuser mod-usertty: \
+	modules/afuser/libafuser.la
+.PHONY: modules/afuser/ mod-afuser mod-usertty

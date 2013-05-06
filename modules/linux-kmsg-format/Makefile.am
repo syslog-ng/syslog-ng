@@ -1,15 +1,24 @@
-SUBDIRS = . tests
+module_LTLIBRARIES 						+=	\
+	modules/linux-kmsg-format/liblinux-kmsg-format.la
 
-moduledir = @moduledir@
-AM_CPPFLAGS = -I$(top_srcdir)/lib -I../../lib
-export top_srcdir
+modules_linux_kmsg_format_liblinux_kmsg_format_la_SOURCES	=	\
+	modules/linux-kmsg-format/linux-kmsg-format.c			\
+	modules/linux-kmsg-format/linux-kmsg-format.h			\
+	modules/linux-kmsg-format/linux-kmsg-format-plugin.c
 
-module_LTLIBRARIES := liblinux-kmsg-format.la
-liblinux_kmsg_format_la_SOURCES = \
-	linux-kmsg-format.c linux-kmsg-format.h linux-kmsg-format-plugin.c
+modules_linux_kmsg_format_liblinux_kmsg_format_la_CPPFLAGS	=	\
+	$(AM_CPPFLAGS)							\
+	-I${top_srcdir}/modules/linux-kmsg-format			\
+	-I${top_builddir}/modules/linux-kmsg-format
+modules_linux_kmsg_format_liblinux_kmsg_format_la_LIBADD	=	\
+	$(MODULE_DEPS_LIBS)
+modules_linux_kmsg_format_liblinux_kmsg_format_la_LDFLAGS	=	\
+	$(MODULE_LDFLAGS)
+modules_linux_kmsg_format_liblinux_kmsg_format_la_DEPENDENCIES	=	\
+	$(MODULE_DEPS_LIBS)
 
-liblinux_kmsg_format_la_CPPFLAGS = $(AM_CPPFLAGS)
-liblinux_kmsg_format_la_LIBADD = $(MODULE_DEPS_LIBS)
-liblinux_kmsg_format_la_LDFLAGS = $(MODULE_LDFLAGS)
+modules/linux-kmsg-format modules/linux-kmsg-format/ mod-linux-kmsg:	\
+	modules/linux-kmsg-format/liblinux-kmsg-format.la
+.PHONY: modules/linux-kmsg-format/ mod-linux-kmsg
 
-include $(top_srcdir)/build/lex-rules.am
+include modules/linux-kmsg-format/tests/Makefile.am

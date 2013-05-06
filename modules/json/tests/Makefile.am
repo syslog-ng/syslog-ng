@@ -1,11 +1,11 @@
-AM_CFLAGS = -I$(top_srcdir)/lib -I../../../lib -I$(top_srcdir)/libtest -I../../../libtest -I$(top_srcdir)/modules/json -I..
-AM_LDFLAGS = -dlpreopen ../../syslogformat/libsyslogformat.la -dlpreopen ../libjson-plugin.la
-LDADD = $(top_builddir)/lib/libsyslog-ng.la $(top_builddir)/libtest/libsyslog-ng-test.a @TOOL_DEPS_LIBS@
-
-
 if ENABLE_JSON
+modules_json_tests_TESTS		= modules/json/tests/test_json
 
-check_PROGRAMS = test_json
-TESTS = $(check_PROGRAMS)
+check_PROGRAMS				+= ${modules_json_tests_TESTS}
 
+modules_json_tests_test_json_CFLAGS	= $(TEST_CFLAGS)
+modules_json_tests_test_json_LDADD	= $(TEST_LDADD)
+modules_json_tests_test_json_LDFLAGS	= \
+	-dlpreopen $(top_builddir)/modules/syslogformat/libsyslogformat.la \
+	-dlpreopen $(top_builddir)/modules/json/libjson-plugin.la
 endif

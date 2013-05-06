@@ -53,7 +53,7 @@ else
         CURRDATE=`date +"%a, %d %b %Y %H:%M:%S %Z"`
 fi
 
-AM_INIT_AUTOMAKE($PACKAGE, $VERSION, [no-define subdir-objects])
+AM_INIT_AUTOMAKE($PACKAGE, $VERSION, [foreign no-define subdir-objects])
 _AM_PROG_TAR([ustar])
 if test -n "$SNAPSHOT_VERSION"; then
 	VERSION=$VERSION+$SNAPSHOT_VERSION
@@ -229,6 +229,7 @@ dnl Checks for programs.
 AC_PROG_CC
 AM_PROG_CC_STDC
 AC_PROG_CC_C99
+AM_PROG_CC_C_O
 if test "x$ac_cv_prog_cc_c99" = "xno"; then
 	AC_MSG_ERROR("C99 standard compliant C compiler required. Try GCC 3.x or later.")
 fi
@@ -787,7 +788,7 @@ if test "x$with_ivykis" = "xinternal"; then
 
 		IVYKIS_LIBS="-Wl,--whole-archive -L\$(top_builddir)/lib/ivykis/src -livykis  -Wl,--no-whole-archive"
 		IVYKIS_CFLAGS="-I\$(top_srcdir)/lib/ivykis/src/include -I\$(top_builddir)/lib/ivykis/src/include"
-		IVYKIS_SUBDIRS=ivykis
+		IVYKIS_SUBDIRS=lib/ivykis
 
 		# LIBS to use when libtool is not applicable (when linking the main syslog-ng executable in mixed linking mode)
 		IVYKIS_NO_LIBTOOL_LIBS="-Wl,--whole-archive -L\$(top_builddir)/lib/ivykis/src/.libs -livykis -Wl,--no-whole-archive"
@@ -816,9 +817,9 @@ if test "x$with_libmongo_client" = "xinternal"; then
 		# these can only be used in modules/mongodb as it assumes
 		# the current directory just one below libmongo-client
 
-		LIBMONGO_LIBS="-L\$(builddir)/libmongo-client/src -lmongo-client $OPENSSL_LIBS"
-		LIBMONGO_CFLAGS="-I\$(srcdir)/libmongo-client/src"
-		LIBMONGO_SUBDIRS="libmongo-client"
+		LIBMONGO_LIBS="-L\$(top_builddir)/modules/afmongodb/libmongo-client/src -lmongo-client $OPENSSL_LIBS"
+		LIBMONGO_CFLAGS="-I\$(top_srcdir)/modules/afmongodb/libmongo-client/src"
+		LIBMONGO_SUBDIRS="modules/afmongodb/libmongo-client"
 	else
 		AC_MSG_WARN([Internal libmongo-client sources not found in modules/afmongodb/libmongo-client])
 		with_libmongo_client="no"
@@ -872,9 +873,9 @@ if test "x$with_librabbitmq_client" = "xinternal"; then
         # these can only be used in modules/amqp as it assumes
         # the current directory just one below rabbitmq-c
 
-        LIBRABBITMQ_LIBS="-L\$(builddir)/rabbitmq-c/librabbitmq -lrabbitmq"
-        LIBRABBITMQ_CFLAGS="-I\$(srcdir)/rabbitmq-c/librabbitmq -I\$(builddir)/rabbitmq-c/librabbitmq"
-        LIBRABBITMQ_SUBDIRS="rabbitmq-c"
+        LIBRABBITMQ_LIBS="-L\$(top_builddir)/modules/afamqp/rabbitmq-c/librabbitmq -lrabbitmq"
+        LIBRABBITMQ_CFLAGS="-I\$(top_srcdir)/modules/afamqp/rabbitmq-c/librabbitmq -I\$(top_builddir)/modules/afamqp/rabbitmq-c/librabbitmq"
+        LIBRABBITMQ_SUBDIRS="modules/afamqp/rabbitmq-c"
     else
         AC_MSG_WARN([Internal librabbitmq-client sources not found in modules/afamqp/rabbitmq-c])
         with_librabbitmq_client="no"
@@ -1153,6 +1154,9 @@ AM_CONDITIONAL(ENABLE_AMQP, [test "$enable_amqp" = "yes"])
 AM_CONDITIONAL(ENABLE_JSON, [test "$enable_json" = "yes"])
 AM_CONDITIONAL(ENABLE_GEOIP, [test "$enable_geoip" = "yes"])
 AM_CONDITIONAL(WITH_EMBEDDED_CRYPTO, [test "$with_embedded_crypto" = "yes"])
+AM_CONDITIONAL(IVYKIS_INTERNAL, [test "x$IVYKIS_SUBDIRS" != "x"])
+AM_CONDITIONAL(LIBMONGO_INTERNAL, [test "x$LIBMONGO_SUBDIRS" != "x"])
+AM_CONDITIONAL(LIBRABBITMQ_INTERNAL, [test "x$LIBRABBITMQ_SUBDIRS" != "x"])
 
 # substitution into manual pages
 expanded_sysconfdir=[`patheval $sysconfdir | sed -e 's/-/\\\\-/g'`]
@@ -1206,53 +1210,7 @@ AC_OUTPUT(dist.conf
           Makefile
 	  syslog-ng.spec
 	  syslog-ng.pc
-	  build/Makefile
-	  lib/Makefile
-          lib/logproto/Makefile
-	  lib/logproto/tests/Makefile
-	  lib/tests/Makefile
-	  libtest/Makefile
-	  syslog-ng/Makefile
-	  modules/Makefile
-          modules/afsocket/Makefile
-          modules/afsocket/tests/Makefile
-          modules/afsql/Makefile
-          modules/afstreams/Makefile
-          modules/affile/Makefile
-          modules/afprog/Makefile
-          modules/afuser/Makefile
-	  modules/afmongodb/Makefile
-          modules/afsmtp/Makefile
-	  modules/afamqp/Makefile
-          modules/dbparser/Makefile
-          modules/dbparser/pdbtool/Makefile
-          modules/dbparser/tests/Makefile
-          modules/csvparser/Makefile
-          modules/csvparser/tests/Makefile
-          modules/confgen/Makefile
-          modules/system-source/Makefile
-          modules/syslogformat/Makefile
-          modules/linux-kmsg-format/Makefile
-          modules/linux-kmsg-format/tests/Makefile
-          modules/pacctformat/Makefile
-          modules/basicfuncs/Makefile
-          modules/basicfuncs/tests/Makefile
-          modules/cryptofuncs/Makefile
-          modules/cryptofuncs/tests/Makefile
-	  modules/json/Makefile
-	  modules/json/tests/Makefile
-          modules/tfgeoip/Makefile
-	  scripts/Makefile
 	  scripts/update-patterndb
-	  doc/Makefile
-	  contrib/Makefile
-	  scl/Makefile
-	  tests/Makefile
-	  debian/Makefile
-	  tgz2build/Makefile
-          tests/unit/Makefile
-          tests/functional/Makefile
-	  tests/loggen/Makefile
           )
 
 echo

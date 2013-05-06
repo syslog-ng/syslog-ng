@@ -1,11 +1,14 @@
-AM_CPPFLAGS = -I$(top_srcdir)/lib -I../../../lib -I$(top_srcdir)/modules/dbparser -I..
-AM_CFLAGS = @CFLAGS_NOWARN_POINTER_SIGN@
+bin_PROGRAMS				+= modules/dbparser/pdbtool/pdbtool
 
-export top_srcdir
-
-bin_PROGRAMS = pdbtool
-pdbtool_SOURCES = pdbtool.c
-pdbtool_CPPFLAGS = $(AM_CPPFLAGS)
-pdbtool_LDADD = ../libsyslog-ng-patterndb.a ../../../lib/libsyslog-ng.la $(CRYPTO_LIBS) @TOOL_DEPS_LIBS@
-
-include $(top_srcdir)/build/lex-rules.am
+modules_dbparser_pdbtool_pdbtool_SOURCES =	\
+	modules/dbparser/pdbtool/pdbtool.c
+modules_dbparser_pdbtool_pdbtool_CPPFLAGS=	\
+	$(AM_CPPFLAGS)				\
+	-I$(top_srcdir)/modules/dbparser	\
+	-I$(top_builddir)/modules/dbparser	\
+	@CFLAGS_NOWARN_POINTER_SIGN@
+modules_dbparser_pdbtool_pdbtool_LDADD	=	\
+	$(top_builddir)/lib/libsyslog-ng.la	\
+	$(top_builddir)/modules/dbparser/libsyslog-ng-patterndb.la \
+	$(CRYPTO_LIBS)				\
+	@TOOL_DEPS_LIBS@

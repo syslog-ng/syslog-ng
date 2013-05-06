@@ -1,28 +1,41 @@
-SUBDIRS = . tests
-
-moduledir = @moduledir@
-export top_srcdir
-
 if ENABLE_JSON
-AM_CPPFLAGS = -I$(top_srcdir)/lib -I../../lib
-module_LTLIBRARIES = libjson-plugin.la
+module_LTLIBRARIES			+= modules/json/libjson-plugin.la
 
-libjson_plugin_la_SOURCES	= \
-				format-json.c \
-				format-json.h \
-				jsonparser.c \
-				jsonparser.h \
-				jsonparser-grammar.y \
-				jsonparser-parser.c jsonparser-parser.h \
-				json-plugin.c
+modules_json_libjson_plugin_la_SOURCES	=	\
+	modules/json/format-json.c		\
+	modules/json/format-json.h		\
+	modules/json/jsonparser.c		\
+	modules/json/jsonparser.h		\
+	modules/json/jsonparser-grammar.y	\
+	modules/json/jsonparser-parser.c	\
+	modules/json/jsonparser-parser.h	\
+	modules/json/json-plugin.c
 
-libjson_plugin_la_CPPFLAGS	= $(AM_CPPFLAGS)
-libjson_plugin_la_CFLAGS	= $(JSON_CFLAGS)
-libjson_plugin_la_LIBADD	= $(MODULE_DEPS_LIBS) $(JSON_LIBS)
-libjson_plugin_la_LDFLAGS	= $(MODULE_LDFLAGS)
+modules_json_libjson_plugin_la_CPPFLAGS	=	\
+	$(AM_CPPFLAGS)				\
+	-I$(top_srcdir)/modules/json		\
+	-I$(top_builddir)/modules/json
+modules_json_libjson_plugin_la_CFLAGS	= 	\
+	$(JSON_CFLAGS)
+modules_json_libjson_plugin_la_LIBADD	= 	\
+	$(MODULE_DEPS_LIBS) $(JSON_LIBS)
+modules_json_libjson_plugin_la_LDFLAGS	=	\
+	$(MODULE_LDFLAGS)
+modules_json_libjson_plugin_la_DEPENDENCIES =	\
+	$(MODULE_DEPS_LIBS)
+
+modules/json modules/json/ mod-json: modules/json/libjson-plugin.la
+else
+modules/json modules/json/ mod-json:
 endif
 
-BUILT_SOURCES			= jsonparser-grammar.y jsonparser-grammar.c jsonparser-grammar.h
-EXTRA_DIST			= $(BUILT_SOURCES) jsonparser-grammar.ym
+BUILT_SOURCES				+=	\
+	modules/json/jsonparser-grammar.y	\
+	modules/json/jsonparser-grammar.c	\
+	modules/json/jsonparser-grammar.h
+EXTRA_DIST				+=	\
+	modules/json/jsonparser-grammar.ym
 
-include $(top_srcdir)/build/lex-rules.am
+.PHONY: modules/json/ mod-json
+
+include modules/json/tests/Makefile.am

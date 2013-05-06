@@ -1,13 +1,49 @@
-AM_CFLAGS = -I$(top_srcdir)/lib -I../../../lib -I$(top_srcdir)/modules/dbparser -I.. @CFLAGS_NOWARN_POINTER_SIGN@
-AM_LDFLAGS = -dlpreopen ../../syslogformat/libsyslogformat.la -dlpreopen ../../basicfuncs/libbasicfuncs.la
-LDADD = ../libsyslog-ng-patterndb.a $(top_builddir)/lib/libsyslog-ng.la @CRYPTO_LIBS@ @TOOL_DEPS_LIBS@
+modules_dbparser_tests_TESTS			=	\
+	modules/dbparser/tests/test_timer_wheel		\
+	modules/dbparser/tests/test_patternize		\
+	modules/dbparser/tests/test_patterndb		\
+	modules/dbparser/tests/test_radix
 
-check_PROGRAMS = test_timer_wheel test_patternize test_patterndb test_radix
+check_PROGRAMS					+=	\
+	${modules_dbparser_tests_TESTS}
 
-test_timer_wheel_SOURCES = test_timer_wheel.c
-test_patternize_SOURCES = test_patternize.c
-test_patterndb_SOURCES = test_patterndb.c
+modules_dbparser_tests_test_timer_wheel_CFLAGS	=	\
+	$(TEST_CFLAGS)					\
+	-I$(top_srcdir)/modules/dbparser
+modules_dbparser_tests_test_timer_wheel_LDADD	=	\
+	$(TEST_LDADD)					\
+	$(top_builddir)/modules/dbparser/libsyslog-ng-patterndb.la
+modules_dbparser_tests_test_timer_wheel_LDFLAGS	=	\
+	-dlpreopen $(top_builddir)/modules/syslogformat/libsyslogformat.la \
+	-dlpreopen $(top_builddir)/modules/basicfuncs/libbasicfuncs.la
 
-test_radix_SOURCES = test_radix.c
+modules_dbparser_tests_test_patternize_CFLAGS	=	\
+	$(TEST_CFLAGS)					\
+	-I$(top_srcdir)/modules/dbparser
+modules_dbparser_tests_test_patternize_LDADD	=	\
+	$(TEST_LDADD) $(CRYPTO_LIBS)			\
+	$(top_builddir)/modules/dbparser/libsyslog-ng-patterndb.la
+modules_dbparser_tests_test_patternize_LDFLAGS	=	\
+	-dlpreopen $(top_builddir)/modules/syslogformat/libsyslogformat.la \
+	-dlpreopen $(top_builddir)/modules/basicfuncs/libbasicfuncs.la
 
-TESTS = $(check_PROGRAMS)
+modules_dbparser_tests_test_patterndb_CFLAGS	=	\
+	$(TEST_CFLAGS)					\
+	-I$(top_srcdir)/modules/dbparser
+modules_dbparser_tests_test_patterndb_LDADD	=	\
+	$(TEST_LDADD)					\
+	$(top_builddir)/modules/dbparser/libsyslog-ng-patterndb.la
+modules_dbparser_tests_test_patterndb_LDFLAGS	=	\
+	-dlpreopen $(top_builddir)/modules/syslogformat/libsyslogformat.la \
+	-dlpreopen $(top_builddir)/modules/basicfuncs/libbasicfuncs.la
+
+modules_dbparser_tests_test_radix_CFLAGS	=	\
+	$(TEST_CFLAGS)					\
+	-I$(top_srcdir)/modules/dbparser		\
+	@CFLAGS_NOWARN_POINTER_SIGN@
+modules_dbparser_tests_test_radix_LDADD		=	\
+	$(TEST_LDADD)					\
+	$(top_builddir)/modules/dbparser/libsyslog-ng-patterndb.la
+modules_dbparser_tests_test_radix_LDFLAGS	=	\
+	-dlpreopen $(top_builddir)/modules/syslogformat/libsyslogformat.la \
+	-dlpreopen $(top_builddir)/modules/basicfuncs/libbasicfuncs.la

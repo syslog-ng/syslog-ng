@@ -1,6 +1,10 @@
-AM_CFLAGS = -I$(top_srcdir)/lib -I../../../lib -I$(top_srcdir)/libtest -I../../../libtest -I$(top_srcdir)/modules/cryptofuncs -I..
-AM_LDFLAGS = -dlpreopen ../../syslogformat/libsyslogformat.la -dlpreopen ../libcryptofuncs.la
-LDADD = $(top_builddir)/lib/libsyslog-ng.la $(top_builddir)/libtest/libsyslog-ng-test.a @TOOL_DEPS_LIBS@
+modules_cryptofuncs_tests_TESTS				=	\
+	modules/cryptofuncs/tests/test_cryptofuncs
+check_PROGRAMS						+=	\
+	${modules_cryptofuncs_tests_TESTS}
 
-check_PROGRAMS = test_cryptofuncs
-TESTS = $(check_PROGRAMS)
+modules_cryptofuncs_tests_test_cryptofuncs_CFLAGS	=	\
+	$(TEST_CFLAGS)
+modules_cryptofuncs_tests_test_cryptofuncs_LDADD	=	\
+	$(TEST_LDADD)						\
+	-dlpreopen ${top_builddir}/modules/cryptofuncs/libcryptofuncs.la

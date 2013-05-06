@@ -1,18 +1,25 @@
-SUBDIRS = . tests
+module_LTLIBRARIES				+= modules/basicfuncs/libbasicfuncs.la
 
-moduledir = @moduledir@
-AM_CPPFLAGS = -I$(top_srcdir)/lib -I../../lib
-export top_srcdir
+modules_basicfuncs_libbasicfuncs_la_SOURCES	=	\
+	modules/basicfuncs/basic-funcs.c
+modules_basicfuncs_libbasicfuncs_la_CPPFLAGS	=	\
+	$(AM_CPPFLAGS)					\
+	-I$(top_srcdir)/modules/basicfuncs
+modules_basicfuncs_libbasicfuncs_la_LIBADD	=	\
+	$(MODULE_DEPS_LIBS)
+modules_basicfuncs_libbasicfuncs_la_LDFLAGS	=	\
+	$(MODULE_LDFLAGS)
+modules_basicfuncs_libbasicfuncs_la_DEPENDENCIES=	\
+	$(MODULE_DEPS_LIBS)
 
-module_LTLIBRARIES := libbasicfuncs.la
-libbasicfuncs_la_SOURCES = basic-funcs.c
-libbasicfuncs_la_CPPFLAGS = $(AM_CPPFLAGS)
-libbasicfuncs_la_LIBADD = $(MODULE_DEPS_LIBS)
-libbasicfuncs_la_LDFLAGS = $(MODULE_LDFLAGS)
+EXTRA_DIST					+=	\
+	modules/basicfuncs/cond-funcs.c 		\
+	modules/basicfuncs/numeric-funcs.c 		\
+	modules/basicfuncs/str-funcs.c			\
+	modules/basicfuncs/ip-funcs.c			\
+	modules/basicfuncs/misc-funcs.c
 
-EXTRA_DIST = \
-	cond-funcs.c 	\
-	numeric-funcs.c \
-	str-funcs.c	\
-	ip-funcs.c	\
-	misc-funcs.c
+modules/basicfuncs modules/basicfuncs/ mod-basicfuncs: modules/basicfuncs/libbasicfuncs.la
+.PHONY: modules/basicfuncs/ mod-basicfuncs
+
+include modules/basicfuncs/tests/Makefile.am

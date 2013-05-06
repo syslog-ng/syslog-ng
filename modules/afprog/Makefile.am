@@ -1,17 +1,30 @@
-moduledir = @moduledir@
-AM_CPPFLAGS = -I$(top_srcdir)/lib -I../../lib
-export top_srcdir
+module_LTLIBRARIES			+= modules/afprog/libafprog.la
+modules_afprog_libafprog_la_SOURCES	= 	\
+	modules/afprog/afprog.c			\
+	modules/afprog/afprog.h			\
+	modules/afprog/afprog-grammar.y		\
+	modules/afprog/afprog-parser.c		\
+	modules/afprog/afprog-parser.h		\
+	modules/afprog/afprog-plugin.c
 
-module_LTLIBRARIES := libafprog.la
-libafprog_la_SOURCES = \
-	afprog.c afprog.h \
-	afprog-grammar.y afprog-parser.c afprog-parser.h afprog-plugin.c
+BUILT_SOURCES				+=	\
+	modules/afprog/afprog-grammar.y		\
+	modules/afprog/afprog-grammar.c		\
+	modules/afprog/afprog-grammar.h
+EXTRA_DIST				+=	\
+	modules/afprog/afprog-grammar.ym
 
-BUILT_SOURCES = afprog-grammar.y afprog-grammar.c afprog-grammar.h
-EXTRA_DIST = $(BUILT_SOURCES) afprog-grammar.ym
+modules_afprog_libafprog_la_CPPFLAGS	= 	\
+	$(AM_CPPFLAGS)				\
+	-I$(top_srcdir)/modules/afprog		\
+	-I$(top_builddir)/modules/afprog
+modules_afprog_libafprog_la_LIBADD	=	\
+	$(MODULE_DEPS_LIBS)
+modules_afprog_libafprog_la_LDFLAGS	=	\
+	$(MODULE_LDFLAGS)
+modules_afprog_libafprog_la_DEPENDENCIES=	\
+	$(MODULE_DEPS_LIBS)
 
-libafprog_la_CPPFLAGS = $(AM_CPPFLAGS)
-libafprog_la_LIBADD = $(MODULE_DEPS_LIBS)
-libafprog_la_LDFLAGS = $(MODULE_LDFLAGS)
-
-include $(top_srcdir)/build/lex-rules.am
+modules/afprog modules/afprog/ mod-afprog mod-prog: \
+	modules/afprog/libafprog.la
+.PHONY: modules/afprog/ mod-afprog mod-prog

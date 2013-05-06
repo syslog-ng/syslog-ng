@@ -1,34 +1,51 @@
-SUBDIRS = @LIBMONGO_SUBDIRS@
-DIST_SUBDIRS = libmongo-client
+DIST_SUBDIRS 					+= modules/afmongodb/libmongo-client
 
-moduledir = @moduledir@
-AM_CPPFLAGS = -I$(top_srcdir)/lib -I../../lib
+if LIBMONGO_INTERNAL
+CLEAN_SUBDIRS					+= @LIBMONGO_SUBDIRS@
+DUMMY_C						= modules/afmongodb/dummy.c
+lmc_EXTRA_DEPS					= modules/afmongodb/libmongo-client/src/libmongo-client.la
 
-export top_srcdir
-
-if ENABLE_MONGODB
-module_LTLIBRARIES = libafmongodb.la
-
-libafmongodb_la_CFLAGS = $(LIBMONGO_CFLAGS)
-libafmongodb_la_SOURCES = afmongodb-grammar.y afmongodb.c afmongodb.h afmongodb-parser.c afmongodb-parser.h
-libafmongodb_la_LIBADD = $(MODULE_DEPS_LIBS) $(LIBMONGO_LIBS)
-libafmongodb_la_LDFLAGS = $(MODULE_LDFLAGS)
-
+modules/afmongodb/dummy.c: modules/afmongodb/libmongo-client/src/libmongo-client.la
+	$(AM_V_GEN) touch $@
+modules/afmongodb/libmongo-client/src/libmongo-client.la:
+	${MAKE} -C modules/afmongodb/libmongo-client
 endif
 
-BUILT_SOURCES = afmongodb-grammar.y afmongodb-grammar.c afmongodb-grammar.h
-EXTRA_DIST = $(BUILT_SOURCES) afmongodb-grammar.ym libmongo-client/configure.gnu
+if ENABLE_MONGODB
 
-include $(top_srcdir)/build/lex-rules.am
+module_LTLIBRARIES 				+= modules/afmongodb/libafmongodb.la
 
-# divert install/uninstall targets to avoid recursing into $(SUBDIRS)
+modules_afmongodb_libafmongodb_la_CFLAGS 	=	\
+	$(LIBMONGO_CFLAGS) 				\
+	-I$(top_srcdir)/modules/afmongodb		\
+	-I$(top_builddir)/modules/afmongodb
+modules_afmongodb_libafmongodb_la_SOURCES	=	\
+	modules/afmongodb/afmongodb-grammar.y		\
+	modules/afmongodb/afmongodb.c			\
+	modules/afmongodb/afmongodb.h			\
+	modules/afmongodb/afmongodb-parser.c		\
+	modules/afmongodb/afmongodb-parser.h		\
+	${DUMMY_C}
+modules_afmongodb_libafmongodb_la_LIBADD	=	\
+	$(MODULE_DEPS_LIBS) $(LIBMONGO_LIBS)
+modules_afmongodb_libafmongodb_la_LDFLAGS	=	\
+	$(MODULE_LDFLAGS)
+modules_afmongodb_libafmongodb_la_DEPENDENCIES	=	\
+	$(MODULE_DEPS_LIBS) ${lmc_EXTRA_DEPS}
 
-install:
-	$(MAKE) $(AM_MAKEFLAGS) all
-	$(MAKE) $(AM_MAKEFLAGS) install-am
+modules/afmongodb modules/afmongodb/ mod-afmongodb mod-mongodb: \
+	modules/afmongodb/libafmongodb.la
+else
+modules/afmongodb modules/afmongodb/ mod-afmongodb mod-mongodb:
+endif
 
-uninstall:
-	$(MAKE) $(AM_MAKEFLAGS) uninstall-am
+BUILT_SOURCES					+=	\
+	modules/afmongodb/afmongodb-grammar.y		\
+	modules/afmongodb/afmongodb-grammar.c		\
+	modules/afmongodb/afmongodb-grammar.h		\
+	${DUMMY_C}
+EXTRA_DIST					+=	\
+	modules/afmongodb/afmongodb-grammar.ym		\
+	modules/afmongodb/libmongo-client/configure.gnu
 
-check:
-	echo "Make check disabled, since it requires a newer glib"
+.PHONY: modules/afmongodb/ mod-afmongodb mod-mongodb

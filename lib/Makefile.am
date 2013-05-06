@@ -1,202 +1,202 @@
-SUBDIRS = @IVYKIS_SUBDIRS@ . logproto/tests tests
-DIST_SUBDIRS = ivykis
-moduledir = @moduledir@
+DIST_SUBDIRS				= lib/ivykis
 
+include lib/logproto/Makefile.am
 
-YFLAGS=@YFLAGS@
+lib_LTLIBRARIES				+= lib/libsyslog-ng.la
+lib_libsyslog_ng_la_LIBADD		= @CORE_DEPS_LIBS@ $(libsystemd_daemon_LIBS)
+lib_libsyslog_ng_la_LDFLAGS		= -no-undefined -release @VERSION@
 
-export top_srcdir
+if IVYKIS_INTERNAL
+lib_libsyslog_ng_la_DEPENDENCIES	= lib/ivykis/src/libivykis.la
 
-include logproto/logproto.am
+lib/ivykis/src/libivykis.la:
+	${MAKE} -C lib/ivykis
 
-lib_LTLIBRARIES = libsyslog-ng.la
-libsyslog_ng_la_CPPFLAGS = $(libsystemd_daemon_CFLAGS)
-libsyslog_ng_la_LIBADD = @CORE_DEPS_LIBS@ $(libsystemd_daemon_LIBS)
-libsyslog_ng_la_LDFLAGS = -no-undefined -release @VERSION@
+CLEAN_SUBDIRS				+= @IVYKIS_SUBDIRS@
+endif
 
 # this is intentionally formatted so conflicts are less likely to arise. one name in every line.
-pkginclude_HEADERS = 		\
-	afinter.h		\
-	alarms.h		\
-	apphook.h		\
-	atomic.h		\
-	block-ref-parser.h	\
-	cfg.h                   \
-	cfg-grammar.h           \
-	cfg-lexer.h		\
-	cfg-parser.h		\
-	cfg-tree.h		\
-	children.h		\
-	compat.h		\
-	control.h		\
-	crypto.h		\
-	dnscache.h		\
-	driver.h		\
-	file-perms.h		\
-	filter-expr-parser.h	\
-	filter.h		\
-	gprocess.h		\
-	gsockaddr.h		\
-	gsocket.h		\
-	logmatcher.h		\
-	logmpx.h		\
-	logmsg.h		\
-	logparser.h		\
-	logpipe.h		\
-	logqueue-fifo.h		\
-	logqueue.h		\
-	logreader.h		\
-	logrewrite.h		\
-	logsource.h		\
-	logstamp.h		\
-	logtransport.h		\
-	logwriter.h		\
-	mainloop.h		\
-	memtrace.h		\
-	messages.h		\
-	misc.h			\
-	ml-batched-timer.h	\
-	msg-format.h		\
-	nvtable.h		\
-	parser-expr-parser.h	\
-	persist-state.h		\
-	plugin.h		\
-	pragma-parser.h		\
-	rewrite-expr-parser.h	\
-	scratch-buffers.h	\
-	serialize.h		\
-	stats.h			\
-	str-format.h		\
-	syslog-names.h		\
-	syslog-ng.h		\
-	tags.h			\
-	templates.h		\
-	timeutils.h		\
-	tls-support.h		\
-	tlscontext.h  		\
-	tlstransport.h		\
-	utils.h			\
-	uuid.h			\
-	value-pairs.h		\
-	vptransform.h		\
-	versioning.h		\
+pkginclude_HEADERS			+= \
+	lib/afinter.h			\
+	lib/alarms.h			\
+	lib/apphook.h			\
+	lib/atomic.h			\
+	lib/block-ref-parser.h		\
+	lib/cfg.h			\
+	lib/cfg-grammar.h		\
+	lib/cfg-lexer.h			\
+	lib/cfg-parser.h		\
+	lib/cfg-tree.h			\
+	lib/children.h			\
+	lib/compat.h			\
+	lib/control.h			\
+	lib/crypto.h			\
+	lib/dnscache.h			\
+	lib/driver.h			\
+	lib/file-perms.h		\
+	lib/filter-expr-parser.h	\
+	lib/filter.h			\
+	lib/gprocess.h			\
+	lib/gsockaddr.h			\
+	lib/gsocket.h			\
+	lib/logmatcher.h		\
+	lib/logmpx.h			\
+	lib/logmsg.h			\
+	lib/logparser.h			\
+	lib/logpipe.h			\
+	lib/logqueue-fifo.h		\
+	lib/logqueue.h			\
+	lib/logreader.h			\
+	lib/logrewrite.h		\
+	lib/logsource.h			\
+	lib/logstamp.h			\
+	lib/logtransport.h		\
+	lib/logwriter.h			\
+	lib/mainloop.h			\
+	lib/memtrace.h			\
+	lib/messages.h			\
+	lib/misc.h			\
+	lib/ml-batched-timer.h		\
+	lib/msg-format.h		\
+	lib/nvtable.h			\
+	lib/parser-expr-parser.h	\
+	lib/persist-state.h		\
+	lib/plugin.h			\
+	lib/plugin-types.h		\
+	lib/pragma-parser.h		\
+	lib/rewrite-expr-parser.h	\
+	lib/scratch-buffers.h		\
+	lib/serialize.h			\
+	lib/stats.h			\
+	lib/str-format.h		\
+	lib/syslog-names.h		\
+	lib/syslog-ng.h			\
+	lib/tags.h			\
+	lib/templates.h			\
+	lib/timeutils.h			\
+	lib/tls-support.h		\
+	lib/tlscontext.h  		\
+	lib/tlstransport.h		\
+	lib/utils.h			\
+	lib/uuid.h			\
+	lib/value-pairs.h		\
+	lib/vptransform.h		\
+	lib/versioning.h		\
 	$(logproto_headers)
 
 # this is intentionally formatted so conflicts are less likely to arise. one name in every line.
-libsyslog_ng_crypto_la_sources = \
-	crypto.c		\
-	tlscontext.c		\
-	tlstransport.c		\
-	uuid.c
+lib_libsyslog_ng_crypto_la_sources	= \
+	lib/crypto.c			\
+	lib/tlscontext.c		\
+	lib/tlstransport.c		\
+	lib/uuid.c
 
 # this is intentionally formatted so conflicts are less likely to arise. one name in every line.
-libsyslog_ng_la_SOURCES = \
-	afinter.c		\
-	alarms.c		\
-	apphook.c		\
-	block-ref-parser.c	\
-	cfg.c			\
-	cfg-lexer.c		\
-	cfg-parser.c		\
-	cfg-tree.c		\
-	children.c		\
-	compat.c		\
-	control.c		\
-	dnscache.c		\
-	driver.c		\
-	file-perms.c		\
-	filter.c		\
-	filter-expr-parser.c	\
-	globals.c		\
-	gprocess.c		\
-	gsockaddr.c		\
-	gsocket.c		\
-	logmatcher.c		\
-	logmpx.c		\
-	logmsg.c		\
-	logparser.c		\
-	logpipe.c		\
-	logqueue.c		\
-	logqueue-fifo.c		\
-	logreader.c		\
-	logrewrite.c		\
-	logsource.c		\
-	logstamp.c		\
-	logtransport.c		\
-	logwriter.c		\
-	mainloop.c		\
-	memtrace.c		\
-	messages.c		\
-	misc.c			\
-	ml-batched-timer.c	\
-	msg-format.c		\
-	nvtable.c		\
-	parser-expr-parser.c	\
-	persist-state.c		\
-	plugin.c		\
-	pragma-parser.c		\
-	rewrite-expr-parser.c	\
-	scratch-buffers.c	\
-	serialize.c		\
-	stats.c			\
-	str-format.c		\
-	syslog-names.c		\
-	tags.c			\
-	templates.c		\
-	timeutils.c		\
-	utils.c			\
-	value-pairs.c		\
-	vptransform.c		\
-				\
-	cfg-lex.l		\
-	cfg-grammar.y		\
-	filter-expr-grammar.y	\
-	block-ref-grammar.y	\
-	pragma-grammar.y	\
-	parser-expr-grammar.y	\
-	rewrite-expr-grammar.y	\
+lib_libsyslog_ng_la_SOURCES		= \
+	lib/afinter.c			\
+	lib/alarms.c			\
+	lib/apphook.c			\
+	lib/block-ref-parser.c		\
+	lib/cfg.c			\
+	lib/cfg-lexer.c			\
+	lib/cfg-parser.c		\
+	lib/cfg-tree.c			\
+	lib/children.c			\
+	lib/compat.c			\
+	lib/control.c			\
+	lib/dnscache.c			\
+	lib/driver.c			\
+	lib/file-perms.c		\
+	lib/filter.c			\
+	lib/filter-expr-parser.c	\
+	lib/globals.c			\
+	lib/gprocess.c			\
+	lib/gsockaddr.c			\
+	lib/gsocket.c			\
+	lib/logmatcher.c		\
+	lib/logmpx.c			\
+	lib/logmsg.c			\
+	lib/logparser.c			\
+	lib/logpipe.c			\
+	lib/logqueue.c			\
+	lib/logqueue-fifo.c		\
+	lib/logreader.c			\
+	lib/logrewrite.c		\
+	lib/logsource.c			\
+	lib/logstamp.c			\
+	lib/logtransport.c		\
+	lib/logwriter.c			\
+	lib/mainloop.c			\
+	lib/memtrace.c			\
+	lib/messages.c			\
+	lib/misc.c			\
+	lib/ml-batched-timer.c		\
+	lib/msg-format.c		\
+	lib/nvtable.c			\
+	lib/parser-expr-parser.c	\
+	lib/persist-state.c		\
+	lib/plugin.c			\
+	lib/pragma-parser.c		\
+	lib/rewrite-expr-parser.c	\
+	lib/scratch-buffers.c		\
+	lib/serialize.c			\
+	lib/stats.c			\
+	lib/str-format.c		\
+	lib/syslog-names.c		\
+	lib/tags.c			\
+	lib/templates.c			\
+	lib/timeutils.c			\
+	lib/utils.c			\
+	lib/value-pairs.c		\
+	lib/vptransform.c		\
+					\
+	lib/cfg-lex.l			\
+	lib/cfg-grammar.y		\
+	lib/filter-expr-grammar.y	\
+	lib/block-ref-grammar.y		\
+	lib/pragma-grammar.y		\
+	lib/parser-expr-grammar.y	\
+	lib/rewrite-expr-grammar.y	\
 	$(logproto_sources)
 
 if WITH_EMBEDDED_CRYPTO
-libsyslog_ng_la_CFLAGS  = @UUID_CFLAGS@
-libsyslog_ng_la_LIBADD += @OPENSSL_LIBS@ @UUID_LIBS@
-libsyslog_ng_la_SOURCES += ${libsyslog_ng_crypto_la_sources}
+lib_libsyslog_ng_la_CFLAGS		= @UUID_CFLAGS@ $(libsystemd_daemon_CFLAGS)
+lib_libsyslog_ng_la_LIBADD		+= @OPENSSL_LIBS@ @UUID_LIBS@
+lib_libsyslog_ng_la_SOURCES		+= ${lib_libsyslog_ng_crypto_la_sources}
 else
-module_LTLIBRARIES = libsyslog-ng-crypto.la
-libsyslog_ng_crypto_la_CFLAGS = @UUID_CFLAGS@
-libsyslog_ng_crypto_la_LIBADD = @MODULE_DEPS_LIBS@ @OPENSSL_LIBS@ @UUID_LIBS@
-libsyslog_ng_crypto_la_LDFLAGS = -no-undefined -avoid-version
-libsyslog_ng_crypto_la_DEPENDENCIES = libsyslog-ng.la
-libsyslog_ng_crypto_la_SOURCES = ${libsyslog_ng_crypto_la_sources}
+module_LTLIBRARIES			+= lib/libsyslog-ng-crypto.la
+lib_libsyslog_ng_crypto_la_CFLAGS	= @UUID_CFLAGS@ $(libsystemd_daemon_CFLAGS)
+lib_libsyslog_ng_crypto_la_LIBADD	= @MODULE_DEPS_LIBS@ @OPENSSL_LIBS@ @UUID_LIBS@
+lib_libsyslog_ng_crypto_la_LDFLAGS	= -no-undefined -avoid-version
+lib_libsyslog_ng_crypto_la_DEPENDENCIES	= lib/libsyslog-ng.la
+lib_libsyslog_ng_crypto_la_SOURCES	= ${lib_libsyslog_ng_crypto_la_sources}
 endif
 
 # each line with closely related files (e.g. the ones generated from the same source)
-BUILT_SOURCES = cfg-lex.c cfg-lex.h						\
-	cfg-grammar.c cfg-grammar.h						\
-	filter-expr-grammar.y filter-expr-grammar.c filter-expr-grammar.h	\
-	block-ref-grammar.y block-ref-grammar.c block-ref-grammar.h		\
-	pragma-grammar.y pragma-grammar.h pragma-grammar.c			\
-	parser-expr-grammar.y parser-expr-grammar.c parser-expr-grammar.h	\
-	rewrite-expr-grammar.y rewrite-expr-grammar.c rewrite-expr-grammar.h
+BUILT_SOURCES += lib/cfg-lex.c lib/cfg-lex.h						\
+	lib/cfg-grammar.c lib/cfg-grammar.h						\
+	lib/filter-expr-grammar.y lib/filter-expr-grammar.c lib/filter-expr-grammar.h	\
+	lib/block-ref-grammar.y lib/block-ref-grammar.c lib/block-ref-grammar.h		\
+	lib/pragma-grammar.y lib/pragma-grammar.h lib/pragma-grammar.c			\
+	lib/parser-expr-grammar.y lib/parser-expr-grammar.c lib/parser-expr-grammar.h	\
+	lib/rewrite-expr-grammar.y lib/rewrite-expr-grammar.c lib/rewrite-expr-grammar.h
 
-EXTRA_DIST = $(BUILT_SOURCES) \
-	filter-expr-grammar.ym		\
-	block-ref-grammar.ym		\
-	pragma-grammar.ym		\
-	parser-expr-grammar.ym		\
-	rewrite-expr-grammar.ym		\
-	merge-grammar.pl		\
-	ivykis/configure.gnu
+EXTRA_DIST += \
+	lib/filter-expr-grammar.ym	\
+	lib/block-ref-grammar.ym	\
+	lib/pragma-grammar.ym		\
+	lib/parser-expr-grammar.ym	\
+	lib/rewrite-expr-grammar.ym	\
+	lib/merge-grammar.pl		\
+	lib/ivykis/configure.gnu
 
-CLEAN_FILES = $(BUILT_SOURCES)
+lib/plugin-types.h: lib/cfg-grammar.h
 
-# divert install/uninstall targets to avoid recursing into $(SUBDIRS)
+lib/ libsyslog-ng: lib/libsyslog-ng.la lib/libsyslog-ng-crypto.la
+if IVYKIS_INTERNAL
+lib/ivykis/ ivykis: lib/ivykis/src/libivykis.la
+endif
 
-install:
-	$(MAKE) $(AM_MAKEFLAGS) all
-	$(MAKE) $(AM_MAKEFLAGS) install-am
+.PHONY: lib/ libsyslog-ng ivykis lib/ivykis/
 
-uninstall:
-	$(MAKE) $(AM_MAKEFLAGS) uninstall-am
-
-include $(top_srcdir)/build/lex-rules.am
+include lib/tests/Makefile.am

@@ -1,9 +1,16 @@
-moduledir = @moduledir@
-AM_CPPFLAGS = -I$(top_srcdir)/lib -I../../lib
-export top_srcdir
+module_LTLIBRARIES					+= modules/system-source/libsystem-source.la
 
-module_LTLIBRARIES := libsystem-source.la
-libsystem_source_la_SOURCES = system-source.c
-libsystem_source_la_CPPFLAGS = $(AM_CPPFLAGS) $(libsystemd_daemon_CFLAGS)
-libsystem_source_la_LIBADD = $(MODULE_DEPS_LIBS) $(libsystemd_daemon_LIBS)
-libsystem_source_la_LDFLAGS = $(MODULE_LDFLAGS)
+modules_system_source_libsystem_source_la_SOURCES	=	\
+	modules/system-source/system-source.c
+modules_system_source_libsystem_source_la_CPPFLAGS	=	\
+	$(AM_CPPFLAGS) $(libsystemd_daemon_CFLAGS)
+modules_system_source_libsystem_source_la_LIBADD	=	\
+	$(MODULE_DEPS_LIBS) $(libsystemd_daemon_LIBS)
+modules_system_source_libsystem_source_la_LDFLAGS	=	\
+	$(MODULE_LDFLAGS)
+modules_system_source_libsystem_source_la_DEPENDENCIES	=	\
+	$(MODULE_DEPS_LIBS)
+
+modules/system-source modules/system-source/ mod-system-source: \
+	modules/system-source/libsystem-source.la
+.PHONY: modules/system-source/ mod-system-source

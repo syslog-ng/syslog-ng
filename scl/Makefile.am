@@ -1,10 +1,10 @@
-SCL_SUBDIRS = system pacct syslogconf rewrite
-SCL_CONFIGS = scl.conf syslog-ng.conf
-EXTRA_DIST = $(SCL_CONFIGS) $(SCL_SUBDIRS)
+SCL_SUBDIRS	= scl/system scl/pacct scl/syslogconf scl/rewrite
+SCL_CONFIGS	= scl/scl.conf scl/syslog-ng.conf
+EXTRA_DIST	+= $(SCL_CONFIGS) $(SCL_SUBDIRS)
 
-scldir = $(datadir)/include/scl
+scldir		= $(datadir)/include/scl
 
-install-data-local:
+scl-install-data-local:
 	for cfg in $(SCL_CONFIGS); do \
 		if [ -f $(DESTDIR)/$(sysconfdir)/$${cfg} ]; then \
 			echo "Not overwriting existing configuration file, you might want to upgrade manually: $${cfg}"; \
@@ -15,7 +15,7 @@ install-data-local:
 	$(mkinstalldirs) $(DESTDIR)/$(scldir)
 	(cd $(srcdir); tar cf - $(SCL_SUBDIRS)) | (cd $(DESTDIR)/$(scldir) && tar xf -)
 
-uninstall-local:
+scl-uninstall-local:
 	for cfg in $(SCL_CONFIGS); do \
 		rm -f $(DESTDIR)/$(sysconfdir)/$${cfg}; \
 	done

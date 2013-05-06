@@ -1,6 +1,13 @@
-AM_CFLAGS = -I$(top_srcdir)/lib -I../../../lib -I$(top_srcdir)/modules/csvparser -I..
-AM_LDFLAGS = -dlpreopen ../../syslogformat/libsyslogformat.la -dlpreopen ../libcsvparser.la
-LDADD = $(top_builddir)/lib/libsyslog-ng.la $(top_builddir)/libtest/libsyslog-ng-test.a @TOOL_DEPS_LIBS@
+modules_csvparser_tests_TESTS			=	\
+	modules/csvparser/tests/test_csvparser
 
-check_PROGRAMS = test_csvparser
-TESTS = $(check_PROGRAMS)
+check_PROGRAMS					+=	\
+	${modules_csvparser_tests_TESTS}
+
+modules_csvparser_tests_test_csvparser_CFLAGS	=	\
+	$(TEST_CFLAGS) -I$(top_srcdir)/modules/csvparser
+modules_csvparser_tests_test_csvparser_LDADD	=	\
+	$(TEST_LDADD)
+modules_csvparser_tests_test_csvparser_LDFLAGS	=	\
+	-dlpreopen $(top_builddir)/modules/syslogformat/libsyslogformat.la \
+	-dlpreopen $(top_builddir)/modules/csvparser/libcsvparser.la

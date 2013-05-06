@@ -1,35 +1,46 @@
+DIST_SUBDIRS				+= modules/afamqp/rabbitmq-c
 
-SUBDIRS = @LIBRABBITMQ_SUBDIRS@
-DIST_SUBDIRS = rabbitmq-c
-
-moduledir = @moduledir@
-AM_CPPFLAGS = -I$(top_srcdir)/lib -I../../lib
-
-export top_srcdir
+CLEAN_SUBDIRS 				+= @LIBRABBITMQ_SUBDIRS@
 
 if ENABLE_AMQP
-module_LTLIBRARIES = libafamqp.la
+module_LTLIBRARIES			+= modules/afamqp/libafamqp.la
 
-libafamqp_la_CFLAGS = $(LIBRABBITMQ_CFLAGS)
-libafamqp_la_SOURCES = afamqp-grammar.y afamqp.c afamqp.h afamqp-parser.c afamqp-parser.h
-libafamqp_la_LIBADD = $(MODULE_DEPS_LIBS) $(LIBRABBITMQ_LIBS)
-libafamqp_la_LDFLAGS = $(MODULE_LDFLAGS)
+modules_afamqp_libafamqp_la_CFLAGS	= 	\
+	$(LIBRABBITMQ_CFLAGS) 			\
+	-I$(top_srcdir)/modules/afamqp 		\
+	-I$(top_builddir)/modules/afamqp
+modules_afamqp_libafamqp_la_SOURCES	= 	\
+	modules/afamqp/dummy.c			\
+	modules/afamqp/afamqp-grammar.y		\
+	modules/afamqp/afamqp.c			\
+	modules/afamqp/afamqp.h			\
+	modules/afamqp/afamqp-parser.c		\
+	modules/afamqp/afamqp-parser.h
+modules_afamqp_libafamqp_la_LIBADD	= 	\
+	$(MODULE_DEPS_LIBS) $(LIBRABBITMQ_LIBS)
+modules_afamqp_libafamqp_la_LDFLAGS	=	\
+	$(MODULE_LDFLAGS)
+modules_afamqp_libafamqp_la_DEPENDENCIES=	\
+	$(MODULE_DEPS_LIBS)			\
+	modules/afamqp/rabbitmq-c/librabbitmq/librabbitmq.la
 
+modules/afamqp/dummy.c: modules/afamqp/rabbitmq-c/librabbitmq/librabbitmq.la
+	$(AM_V_GEN) touch $@
+modules/afamqp/rabbitmq-c/librabbitmq/librabbitmq.la:
+	${MAKE} -C modules/afamqp/rabbitmq-c
+modules/afamqp modules/afamqp/ mod-afamqp mod-amqp: \
+	modules/afamqp/libafamqp.la
+else
+modules/afamqp modules/afamqp/ mod-afamqp mod-amqp:
 endif
 
-BUILT_SOURCES = afamqp-grammar.y afamqp-grammar.c afamqp-grammar.h
-EXTRA_DIST = $(BUILT_SOURCES) afamqp-grammar.ym rabbitmq-c/configure.gnu
+BUILT_SOURCES				+=	\
+		modules/afamqp/dummy.c		\
+		modules/afamqp/afamqp-grammar.y \
+		modules/afamqp/afamqp-grammar.c \
+		modules/afamqp/afamqp-grammar.h
+EXTRA_DIST				+=	\
+		modules/afamqp/afamqp-grammar.ym \
+		modules/afamqp/rabbitmq-c/configure.gnu
 
-include $(top_srcdir)/build/lex-rules.am
-
-# divert install/uninstall targets to avoid recursing into $(SUBDIRS)
-
-install:
-	$(MAKE) $(AM_MAKEFLAGS) all
-	$(MAKE) $(AM_MAKEFLAGS) install-am
-
-uninstall:
-	$(MAKE) $(AM_MAKEFLAGS) uninstall-am
-
-check:
-	echo "Make check disabled, since it requires a newer glib"
+.PHONY: modules/afamqp/ mod-afamqp mod-amqp

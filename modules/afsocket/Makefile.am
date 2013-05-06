@@ -1,81 +1,113 @@
-SUBDIRS = . tests
+module_LTLIBRARIES				+= modules/afsocket/libafsocket-notls.la
+noinst_DATA					+= modules/afsocket/libafsocket.la
+modules_afsocket_libafsocket_notls_la_SOURCES	=	\
+	modules/afsocket/afsocket.c			\
+	modules/afsocket/afsocket.h			\
+	modules/afsocket/afsocket-source.c		\
+	modules/afsocket/afsocket-source.h		\
+	modules/afsocket/afsocket-dest.c		\
+	modules/afsocket/afsocket-dest.h		\
+	modules/afsocket/socket-options.c        	\
+	modules/afsocket/socket-options.h		\
+	modules/afsocket/transport-mapper.c		\
+	modules/afsocket/transport-mapper.h		\
+	modules/afsocket/afinet.c			\
+	modules/afsocket/afinet.h			\
+	modules/afsocket/afinet-source.c		\
+	modules/afsocket/afinet-source.h		\
+	modules/afsocket/afinet-dest.c			\
+	modules/afsocket/afinet-dest.h			\
+	modules/afsocket/socket-options-inet.c		\
+	modules/afsocket/socket-options-inet.h   	\
+	modules/afsocket/transport-mapper-inet.c 	\
+	modules/afsocket/transport-mapper-inet.h 	\
+	modules/afsocket/afunix-source.c		\
+	modules/afsocket/afunix-source.h		\
+	modules/afsocket/afunix-dest.c			\
+	modules/afsocket/afunix-dest.h			\
+	modules/afsocket/transport-mapper-unix.c 	\
+	modules/afsocket/transport-mapper-unix.h 	\
+	modules/afsocket/afsocket-grammar.y		\
+	modules/afsocket/afsocket-parser.c		\
+	modules/afsocket/afsocket-parser.h		\
+	modules/afsocket/afsocket-plugin.c
 
-moduledir = @moduledir@
-AM_CPPFLAGS = -I$(top_srcdir)/lib -I../../lib
-export top_srcdir
-
-module_LTLIBRARIES := libafsocket-notls.la
-noinst_DATA = libafsocket.la
-libafsocket_notls_la_SOURCES = \
-	afsocket.c		\
-	afsocket.h		\
-	afsocket-source.c	\
-	afsocket-source.h	\
-	afsocket-dest.c		\
-	afsocket-dest.h		\
-        socket-options.c        \
-        socket-options.h        \
-	transport-mapper.c	\
-	transport-mapper.h	\
-	afinet.c		\
-	afinet.h		\
-	afinet-source.c		\
-	afinet-source.h		\
-	afinet-dest.c		\
-	afinet-dest.h		\
-        socket-options-inet.c   \
-        socket-options-inet.h   \
-	transport-mapper-inet.c \
-	transport-mapper-inet.h \
-        afunix-source.c		\
-	afunix-source.h		\
-	afunix-dest.c		\
-	afunix-dest.h		\
-        transport-mapper-unix.c \
-        transport-mapper-unix.h \
-        afsocket-grammar.y	\
-	afsocket-parser.c	\
-	afsocket-parser.h	\
-	afsocket-plugin.c
-
-libafsocket_notls_la_CPPFLAGS = $(AM_CPPFLAGS) $(libsystemd_daemon_CFLAGS)
-libafsocket_notls_la_LIBADD = $(MODULE_DEPS_LIBS) $(LIBNET_LIBS) $(LIBWRAP_LIBS) $(libsystemd_daemon_LIBS)
-libafsocket_notls_la_LDFLAGS = $(MODULE_LDFLAGS)
+modules_afsocket_libafsocket_notls_la_CPPFLAGS	=	\
+	$(AM_CPPFLAGS) $(libsystemd_daemon_CFLAGS)	\
+	-I${top_srcdir}/modules/afsocket		\
+	-I${top_builddir}/modules/afsocket
+modules_afsocket_libafsocket_notls_la_LIBADD	=	\
+	$(MODULE_DEPS_LIBS) $(LIBNET_LIBS)		\
+	$(LIBWRAP_LIBS) $(libsystemd_daemon_LIBS)
+modules_afsocket_libafsocket_notls_la_LDFLAGS	  =	\
+	$(MODULE_LDFLAGS)
+modules_afsocket_libafsocket_notls_la_DEPENDENCIES=	\
+	$(MODULE_DEPS_LIBS)
 
 if ENABLE_SSL
-module_LTLIBRARIES += libafsocket-tls.la
-libafsocket_tls_la_SOURCES = $(libafsocket_notls_la_SOURCES)
-libafsocket_tls_la_CPPFLAGS = $(AM_CPPFLAGS) $(libsystemd_daemon_CFLAGS) -DBUILD_WITH_SSL=1
+module_LTLIBRARIES				+= modules/afsocket/libafsocket-tls.la
+modules_afsocket_libafsocket_tls_la_SOURCES	=	\
+	$(modules_afsocket_libafsocket_notls_la_SOURCES)
+modules_afsocket_libafsocket_tls_la_CPPFLAGS	=	\
+	$(AM_CPPFLAGS) $(libsystemd_daemon_CFLAGS)	\
+	-I${top_srcdir}/modules/afsocket		\
+	-I${top_builddir}/modules/afsocket		\
+	-DBUILD_WITH_SSL=1
 
-libafsocket_tls_la_LIBADD = $(MODULE_DEPS_LIBS) $(CRYPTO_LIBS) $(OPENSSL_LIBS) $(ZLIB_LIBS) $(LIBNET_LIBS) $(LIBWRAP_LIBS) $(libsystemd_daemon_LIBS)
-libafsocket_tls_la_LDFLAGS = $(MODULE_LDFLAGS)
+modules_afsocket_libafsocket_tls_la_LIBADD	=	\
+	$(MODULE_DEPS_LIBS) $(CRYPTO_LIBS) 		\
+	$(OPENSSL_LIBS) $(ZLIB_LIBS) $(LIBNET_LIBS)	\
+	$(LIBWRAP_LIBS) $(libsystemd_daemon_LIBS)
+modules_afsocket_libafsocket_tls_la_DEPENDENCIES= 	\
+	$(MODULE_DEPS_LIBS) $(CRYPTO_LIBS)
+modules_afsocket_libafsocket_tls_la_LDFLAGS	= 	\
+	$(MODULE_LDFLAGS)
+
+modules/afsocket modules/afsocket/ mod-afsocket mod-socket: \
+	modules/afsocket/libafsocket-notls.la \
+	modules/afsocket/libafsocket-tls.la \
+	modules/afsocket/libafsocket.la
+else
+modules/afsocket modules/afsocket/ mod-afsocket mod-socket: \
+	modules/afsocket/libafsocket-notls.la \
+	modules/afsocket/libafsocket.la
 endif
 
-BUILT_SOURCES = afsocket-grammar.y afsocket-grammar.c afsocket-grammar.h
-EXTRA_DIST = $(BUILT_SOURCES) afsocket-grammar.ym
+BUILT_SOURCES					+=	\
+	modules/afsocket/afsocket-grammar.y		\
+	modules/afsocket/afsocket-grammar.c		\
+	modules/afsocket/afsocket-grammar.h
+EXTRA_DIST 					+=	\
+	modules/afsocket/afsocket-grammar.ym
 
 if ENABLE_SSL
-install-exec-hook:
+afsocket-install-exec-hook:
 	$(mkinstalldirs) $(DESTDIR)$(moduledir)
 	ln -sf libafsocket-tls.so $(DESTDIR)$(moduledir)/libafsocket.so
 
-libafsocket.la: libafsocket-tls.la
-	ln -sf libafsocket-tls.la libafsocket.la
+modules/afsocket/libafsocket.la: modules/afsocket/libafsocket-tls.la
+	ln -sf libafsocket-tls.la modules/afsocket/libafsocket.la
 
 else
-install-exec-hook:
+afsocket-install-exec-hook:
 	$(mkinstalldirs) $(DESTDIR)$(moduledir)
 	ln -sf libafsocket-notls.so $(DESTDIR)$(moduledir)/libafsocket.so
 
 
-libafsocket.la: libafsocket-tls.la
-	ln -sf libafsocket-notls.la libafsocket.la
+modules/afsocket/libafsocket.la: modules/afsocket/libafsocket-tls.la
+	ln -sf libafsocket-notls.la modules/afsocket/libafsocket.la
 
 endif
+
+INSTALL_EXEC_HOOKS				+= \
+	afsocket-install-exec-hook
 
 uninstall-hook:
 	rm -f $(DESTDIR)$(moduledir)/libafsocket.so
 
-CLEANFILES = libafsocket.la
+CLEANFILES					+= \
+	modules/afsocket/libafsocket.la
 
-include $(top_srcdir)/build/lex-rules.am
+.PHONY: modules/afsocket/ mod-afsocket mod-socket
+
+include modules/afsocket/tests/Makefile.am
