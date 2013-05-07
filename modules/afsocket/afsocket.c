@@ -1181,7 +1181,8 @@ afsocket_dd_connected(AFSocketDestDriver *self)
             {
               goto error_reconnect;
             }
-          tls_session_set_verify(tls_session, afsocket_dd_tls_verify_callback, self, NULL);
+          log_pipe_ref(self);
+          tls_session_set_verify(tls_session, afsocket_dd_tls_verify_callback, self, log_pipe_unref);
         }
 #endif
       transport = self->proto_factory->construct_transport(&self->proto_options,self->fd,transport_flags, tls_session);
@@ -1199,7 +1200,8 @@ afsocket_dd_connected(AFSocketDestDriver *self)
               goto error_reconnect;
             }
 
-          tls_session_set_verify(tls_session, afsocket_dd_tls_verify_callback, self, NULL);
+          log_pipe_ref(self);
+          tls_session_set_verify(tls_session, afsocket_dd_tls_verify_callback, self, log_pipe_unref);
           transport = log_transport_tls_new(tls_session, self->fd, transport_flags);
         }
       else
