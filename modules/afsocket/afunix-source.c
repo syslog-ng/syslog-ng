@@ -74,7 +74,7 @@ afunix_sd_acquire_named_socket(AFSocketSourceDriver *s, gint *result_fd,
 	  if (sd_is_socket_unix(fd, 0, -1, filename, 0))
 	    {
 	      /* check if it matches our idea of the socket type */
-	      if (sd_is_socket_unix(fd, self->super.socket_options->sock_type, -1, filename, 0))
+	      if (sd_is_socket_unix(fd, self->super.transport_mapper->sock_type, -1, filename, 0))
                 {
                   *result_fd = fd;
                   break;
@@ -84,7 +84,7 @@ afunix_sd_acquire_named_socket(AFSocketSourceDriver *s, gint *result_fd,
                   msg_error("The systemd supplied UNIX domain socket is of a different type, check the configured driver and the matching systemd unit file",
 		            evt_tag_str("filename", filename),
 		            evt_tag_int("systemd-sock-fd", fd),
-			    evt_tag_str("expecting", self->super.socket_options->sock_type == SOCK_STREAM ? "unix-stream()" : "unix-dgram()"),
+			    evt_tag_str("expecting", self->super.transport_mapper->sock_type == SOCK_STREAM ? "unix-stream()" : "unix-dgram()"),
                             NULL);
                   return FALSE;
                 }
