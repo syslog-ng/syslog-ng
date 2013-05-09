@@ -30,19 +30,19 @@ typedef struct  _FileMonitorWindows
 gchar*
 resolve_to_absolute_path(const gchar *path, const gchar *basedir)
 {
-       gchar *path_name = NULL;
-       gchar szPath[MAX_PATH];
-       if (basedir != NULL)
-       {
-               path_name = g_strdup_printf("%s%s%s",basedir,G_DIR_SEPARATOR_S,path);
-       }
-       else
-       {
-               path_name = g_strdup(path);
-       }
-       GetFullPathName(path_name,MAX_PATH,szPath,NULL);
-       g_free(path_name);
-       return g_strdup(szPath);
+  gchar *path_name = NULL;
+  gchar szPath[MAX_PATH];
+  if (basedir != NULL)
+    {
+      path_name = g_strdup_printf("%s%s%s",basedir,G_DIR_SEPARATOR_S,path);
+    }
+  else
+    {
+      path_name = g_strdup(path);
+    }
+  GetFullPathName(path_name,MAX_PATH,szPath,NULL);
+  g_free(path_name);
+  return g_strdup(szPath);
 }
 
 
@@ -181,7 +181,12 @@ void
 file_monitor_free(FileMonitor *s)
 {
   FileMonitorWindows *self = (FileMonitorWindows *)s;
+  if (self->super.compiled_pattern)
+    {
+      g_pattern_spec_free(self->super.compiled_pattern);
+    }
   free(self->buffer);
+  free(self->base_dir);
   free(self);
   return;
 }
@@ -243,6 +248,7 @@ file_monitor_watch_directory(FileMonitor *s, const gchar *filename)
   gchar *dir_part = g_path_get_dirname (filename);
 
   base_dir = resolve_to_absolute_path(dir_part, NULL);
+  g_free(dir_part);
   if (!g_file_test(base_dir,G_FILE_TEST_IS_DIR))
     {
       msg_trace("Directory doesn't exist",evt_tag_str("directory",base_dir),evt_tag_id(MSG_DIRECTORY_DOESNT_EXIST), NULL);
