@@ -606,6 +606,9 @@ cfg_free(GlobalConfig *self)
   g_ptr_array_free(self->connections, TRUE);
   if (self->bad_hostname_compiled)
     regfree(&self->bad_hostname);
+
+  if (self->source_mangle_callback_list)
+    g_list_free(self->source_mangle_callback_list);
   g_free(self->bad_hostname_re);
   g_free(self->dns_cache_hosts);
   g_list_free(self->plugins);
