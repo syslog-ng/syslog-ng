@@ -1,6 +1,6 @@
+#include "syslog-ng.h"
 #include "template_lib.h"
 
-#include "syslog-ng.h"
 #include "logmsg.h"
 #include "templates.h"
 #include "misc.h"
