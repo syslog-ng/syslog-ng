@@ -162,7 +162,8 @@ TLS_BLOCK_END;
 static GStaticMutex main_task_lock = G_STATIC_MUTEX_INIT;
 static struct iv_list_head main_task_queue = IV_LIST_HEAD_INIT(main_task_queue);
 static struct iv_event main_task_posted;
-GThread *main_thread_handle;
+ThreadId main_thread_handle;
+
 
 static void sig_term_handler(void *s);
 
@@ -171,7 +172,7 @@ static void sig_term_handler(void *s);
 gpointer
 main_loop_call(MainLoopTaskFunc func, gpointer user_data, gboolean wait)
 {
-  if (main_thread_handle == g_thread_self())
+  if (threads_equal(main_thread_handle, get_thread_id()))
     return func(user_data);
 
   g_static_mutex_lock(&main_task_lock);

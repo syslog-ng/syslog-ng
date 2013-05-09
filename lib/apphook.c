@@ -117,7 +117,7 @@ app_startup(void)
   WSADATA wa = {0};
   WSAStartup(0x0202,&wa);
 #endif
-  main_thread_handle = g_thread_self();
+  main_thread_handle = get_thread_id();
 
   msg_init(FALSE);
   iv_set_fatal_msg_handler(app_fatal);
@@ -166,4 +166,7 @@ app_shutdown(void)
   g_list_free(application_hooks);
   msg_deinit();
   iv_deinit();
+#ifdef _WIN32
+  WSACleanup();
+#endif
 }

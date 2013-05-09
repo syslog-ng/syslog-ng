@@ -33,6 +33,7 @@
 #include <stdlib.h>
 
 #include <evtlog.h>
+#include "tls-support.h"
 
 typedef struct _MsgContext
 {
@@ -40,13 +41,20 @@ typedef struct _MsgContext
   gboolean recurse_warning:1;
 } MsgContext;
 
+TLS_BLOCK_START
+{
+  MsgContext context;
+}
+TLS_BLOCK_END;
+
+#define tls_context  __tls_deref(context)
+
 gboolean debug_flag = 0;
 gboolean verbose_flag = 0;
 gboolean trace_flag = 0;
 gboolean log_stderr = FALSE;
 static MsgPostFunc msg_post_func;
 static gboolean log_syslog = FALSE;
-static GStaticPrivate msg_context_private = G_STATIC_PRIVATE_INIT;
 static GStaticMutex evtlog_lock = G_STATIC_MUTEX_INIT;
 
 NVHandle msg_id_handle;
@@ -55,15 +63,7 @@ extern NVRegistry *logmsg_registry;
 static MsgContext *
 msg_get_context(void)
 {
-  MsgContext *context;
-
-  context = g_static_private_get(&msg_context_private);
-  if (!context)
-    {
-      context = g_new0(MsgContext, 1);
-      g_static_private_set(&msg_context_private, context, g_free);
-    }
-  return context;
+  return &tls_context;
 }
 
 void

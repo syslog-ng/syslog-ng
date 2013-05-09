@@ -62,7 +62,7 @@ persist_tool_start_state(PersistTool *self)
     {
       g_thread_init(NULL);
     }
-  main_thread_handle = g_thread_self();
+  main_thread_handle = get_thread_id();
   self->state = persist_state_new(self->persist_filename);
   persist_state_set_mode(self->state, self->mode);
   if (!persist_state_start(self->state))
