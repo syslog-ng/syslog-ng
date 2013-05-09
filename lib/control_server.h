@@ -52,5 +52,5 @@ void control_connection_init_instance(ControlConnection *self, ControlServer *se
 void control_connection_start_watches(ControlConnection *self);
 void control_connection_update_watches(ControlConnection *self);
 void control_connection_stop_watches(ControlConnection *self);
-
+void control_connection_free(ControlConnection *self);
 #endif

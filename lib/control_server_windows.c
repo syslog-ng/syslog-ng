@@ -65,6 +65,10 @@ create_security_attributes(LPSECURITY_ATTRIBUTES result, GString *error_descript
     }
   result->bInheritHandle = TRUE;
   result->lpSecurityDescriptor = security_descriptor;
+  if (admin_sid)
+    {
+      FreeSid(admin_sid);
+    }
   result->nLength = sizeof(SECURITY_ATTRIBUTES);
   return TRUE;
 cleanup:
@@ -408,6 +412,20 @@ control_server_win32_free(ControlServer *s)
       control_connection_stop_watches(self->current_connection);
       control_connection_free(self->current_connection);
       self->current_connection = NULL;
+    }
+  if (self->security_attributes.lpSecurityDescriptor)
+    {
+      BOOL is_acl_present;
+      PACL acl = NULL;
+      BOOL is_default;
+      if (GetSecurityDescriptorDacl(self->security_attributes.lpSecurityDescriptor, &is_acl_present, &acl, &is_default))
+        {
+          if (is_acl_present && acl)
+            {
+              LocalFree(acl);
+            }
+        }
+      LocalFree(self->security_attributes.lpSecurityDescriptor);
     }
 }
 
