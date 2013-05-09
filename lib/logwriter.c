@@ -819,8 +819,11 @@ log_writer_queue(LogPipe *s, LogMessage *lm, const LogPathOptions *path_options,
     return;
 
   if (mark_mode != MM_INTERNAL && (lm->flags & LF_INTERNAL) && (lm->flags & LF_MARK))
-    /* skip the internal MARK messages */
-    return;
+    {
+      /* skip the internal MARK messages */
+      log_msg_drop(lm, path_options);
+      return;
+    }
 
   if (mark_mode == MM_DST_IDLE || (mark_mode == MM_HOST_IDLE && (lm->flags & LF_LOCAL)))
     {
