@@ -574,13 +574,11 @@ afsql_dd_begin_txn(AFSqlDestDriver *self)
  * NOTE: This function can only be called from the database thread.
  **/
 static gboolean
-afsql_dd_commit_txn(AFSqlDestDriver *self, gboolean lock)
+afsql_dd_commit_txn(AFSqlDestDriver *self)
 {
   gboolean success;
 
   success = afsql_dd_run_query(self, "COMMIT", FALSE, NULL);
-  if (lock)
-    g_mutex_lock(self->db_thread_mutex);
   if (success)
     {
       log_queue_ack_backlog(self->queue, self->flush_lines_queued);
@@ -591,8 +589,6 @@ afsql_dd_commit_txn(AFSqlDestDriver *self, gboolean lock)
                  NULL);
       log_queue_rewind_backlog(self->queue, -1);
     }
-  if (lock)
-    g_mutex_unlock(self->db_thread_mutex);
   self->flush_lines_queued = 0;
   return success;
 }
@@ -703,9 +699,7 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
     }
 
   /* connection established, try to insert a message */
-  g_mutex_lock(self->db_thread_mutex);
   success = log_queue_pop_head(self->queue, &msg, &path_options, FALSE, self->flags & AFSQL_DDF_EXPLICIT_COMMITS);
-  g_mutex_unlock(self->db_thread_mutex);
   if (!success)
     return TRUE;
 
@@ -794,7 +788,7 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
     {
       self->flush_lines_queued++;
 
-      if (self->flush_lines && self->flush_lines_queued == self->flush_lines && !afsql_dd_commit_txn(self, TRUE))
+      if (self->flush_lines && self->flush_lines_queued == self->flush_lines && !afsql_dd_commit_txn(self))
         return FALSE;
     }
  error:
@@ -850,6 +844,27 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
   return success;
 }
 
+static void
+afsql_dd_message_became_available_in_the_queue(gpointer user_data)
+{
+  AFSqlDestDriver *self = (AFSqlDestDriver *) user_data;
+
+  g_mutex_lock(self->db_thread_mutex);
+  g_cond_signal(self->db_thread_wakeup_cond);
+  g_mutex_unlock(self->db_thread_mutex);
+}
+
+/* assumes that db_thread_mutex is held */
+static void
+afsql_dd_wait_for_suspension_wakeup(AFSqlDestDriver *self)
+{
+  /* we got suspended, probably because of a connection error,
+   * during this time we only get wakeups if we need to be
+   * terminated. */
+  if (!self->db_thread_terminate)
+    g_cond_timed_wait(self->db_thread_wakeup_cond, self->db_thread_mutex, &self->db_thread_suspend_target);
+  self->db_thread_suspended = FALSE;
+}
 
 /**
  * afsql_dd_database_thread:
@@ -869,27 +884,20 @@ afsql_dd_database_thread(gpointer arg)
       g_mutex_lock(self->db_thread_mutex);
       if (self->db_thread_suspended)
         {
-          /* we got suspended, probably because of a connection error,
-           * during this time we only get wakeups if we need to be
-           * terminated. */
-          if (!self->db_thread_terminate)
-            g_cond_timed_wait(self->db_thread_wakeup_cond, self->db_thread_mutex, &self->db_thread_suspend_target);
-          self->db_thread_suspended = FALSE;
-          g_mutex_unlock(self->db_thread_mutex);
-
+          afsql_dd_wait_for_suspension_wakeup(self);
           /* we loop back to check if the thread was requested to terminate */
         }
-      else if (log_queue_get_length(self->queue) == 0)
+      else if (!log_queue_check_items(self->queue, NULL, afsql_dd_message_became_available_in_the_queue, self, NULL))
         {
           /* we have nothing to INSERT into the database, let's wait we get some new stuff */
 
           if (self->flush_lines_queued > 0)
             {
-              if (!afsql_dd_commit_txn(self, FALSE))
+              g_mutex_unlock(self->db_thread_mutex);
+              if (!afsql_dd_commit_txn(self))
                 {
                   afsql_dd_disconnect(self);
                   afsql_dd_suspend(self);
-                  g_mutex_unlock(self->db_thread_mutex);
                   continue;
                 }
             }
@@ -897,12 +905,10 @@ afsql_dd_database_thread(gpointer arg)
             {
               g_cond_wait(self->db_thread_wakeup_cond, self->db_thread_mutex);
             }
-          g_mutex_unlock(self->db_thread_mutex);
 
           /* we loop back to check if the thread was requested to terminate */
         }
-      else
-        g_mutex_unlock(self->db_thread_mutex);
+      g_mutex_unlock(self->db_thread_mutex);
 
       if (self->db_thread_terminate)
         break;
@@ -929,7 +935,7 @@ afsql_dd_database_thread(gpointer arg)
        * submitting that back to the SQL engine.
        */
 
-      afsql_dd_commit_txn(self, TRUE);
+      afsql_dd_commit_txn(self);
     }
 exit:
   afsql_dd_disconnect(self);
@@ -1146,6 +1152,7 @@ afsql_dd_deinit(LogPipe *s)
   AFSqlDestDriver *self = (AFSqlDestDriver *) s;
 
   afsql_dd_stop_thread(self);
+  log_queue_reset_parallel_push(self->queue);
 
   log_queue_set_counters(self->queue, NULL, NULL);
 
@@ -1159,35 +1166,17 @@ afsql_dd_deinit(LogPipe *s)
   return TRUE;
 }
 
-static void
-afsql_dd_queue_notify(gpointer user_data)
-{
-  AFSqlDestDriver *self = (AFSqlDestDriver *) user_data;
-  g_mutex_lock(self->db_thread_mutex);
-  g_cond_signal(self->db_thread_wakeup_cond);
-  log_queue_reset_parallel_push(self->queue);
-  g_mutex_unlock(self->db_thread_mutex);
-}
 
 static void
 afsql_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data)
 {
   AFSqlDestDriver *self = (AFSqlDestDriver *) s;
-  gboolean queue_was_empty;
   LogPathOptions local_options;
 
   if (!path_options->flow_control_requested)
     path_options = log_msg_break_ack(msg, path_options, &local_options);
 
-  g_mutex_lock(self->db_thread_mutex);
-  queue_was_empty = log_queue_get_length(self->queue) == 0;
-  if (queue_was_empty && !self->db_thread_suspended)
-    {
-      log_queue_set_parallel_push(self->queue, afsql_dd_queue_notify, self, NULL);
-    }
-  g_mutex_unlock(self->db_thread_mutex);
   log_queue_push_tail(self->queue, msg, path_options);
-
 }
 
 static void
