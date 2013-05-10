@@ -893,11 +893,11 @@ afsql_dd_database_thread(gpointer arg)
 
           if (self->flush_lines_queued > 0)
             {
-              g_mutex_unlock(self->db_thread_mutex);
               if (!afsql_dd_commit_txn(self))
                 {
                   afsql_dd_disconnect(self);
                   afsql_dd_suspend(self);
+                  g_mutex_unlock(self->db_thread_mutex);
                   continue;
                 }
             }
