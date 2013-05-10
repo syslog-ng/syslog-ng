@@ -185,6 +185,7 @@ file_monitor_free(FileMonitor *s)
     {
       g_pattern_spec_free(self->super.compiled_pattern);
     }
+  CloseHandle(self->monitor_handler.handle);
   free(self->buffer);
   free(self->base_dir);
   free(self);
@@ -279,7 +280,6 @@ gboolean
 file_monitor_stop(FileMonitor *s)
 {
   FileMonitorWindows *self = (FileMonitorWindows *)s;
-
   if (iv_handle_registered(&self->monitor_handler))
     {
       iv_handle_unregister(&self->monitor_handler);
@@ -301,5 +301,6 @@ file_monitor_start(FileMonitor *s)
 void
 file_monitor_deinit(FileMonitor *s)
 {
+  file_monitor_stop(s);
   return;
 }
