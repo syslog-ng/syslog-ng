@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2012 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 2012 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2012, 2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2012, 2013 Gergely Nagy <algernon@balabit.hu>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -137,7 +137,15 @@ system_generate_system(CfgLexer *lexer, gint type, const gchar *name,
         }
 
       system_sysblock_add_unix_dgram(sysblock, log, NULL, "8192");
-      system_sysblock_add_file(sysblock, "/proc/kmsg", -1, "kernel", "kernel");
+      if (access("/proc/kmsg", R_OK) == -1)
+        {
+          msg_warning("system(): /proc/kmsg is not readable, please "
+                      "check permissions if this is unintentional.",
+                      evt_tag_errno("error", errno),
+                      NULL);
+        }
+      else
+        system_sysblock_add_file(sysblock, "/proc/kmsg", -1, "kernel", "kernel");
     }
   else if (strcmp(u.sysname, "SunOS") == 0)
     {
