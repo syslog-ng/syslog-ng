@@ -33,7 +33,7 @@ typedef struct _AFInterSource AFInterSource;
 
 static GStaticMutex internal_msg_lock = G_STATIC_MUTEX_INIT;
 static GQueue *internal_msg_queue;
-static const int MAX_MESSAGES_IN_INTERNAL_QUEUE = 1000;
+static const int MAX_MESSAGES_IN_INTERNAL_QUEUE = 10000;
 static AFInterSource *current_internal_source;
 
 /* the expiration timer of the next MARK message */
@@ -89,12 +89,14 @@ static GStaticMutex internal_mark_target_lock = G_STATIC_MUTEX_INIT;
 struct _AFInterSource
 {
   LogSource super;
+  AFInterSourceDriver *owner;
   gint mark_freq;
   struct iv_event post;
   struct iv_event schedule_wakeup;
   struct iv_timer mark_timer;
   struct iv_task restart_task;
   gboolean watches_running:1;
+  StatsCounterItem *dropped_messages;
 };
 
 static void afinter_source_update_watches(AFInterSource *self);
@@ -278,6 +280,10 @@ afinter_source_init(LogPipe *s)
   current_internal_source = self;
   g_static_mutex_unlock(&internal_msg_lock);
 
+  stats_lock();
+  stats_register_counter(0, SCS_INTERNAL | SCS_SOURCE, self->owner->super.id, NULL, SC_TYPE_DROPPED, &self->dropped_messages);
+  stats_unlock();
+
   return TRUE;
 }
 
@@ -297,7 +303,17 @@ afinter_source_deinit(LogPipe *s)
   iv_event_unregister(&self->schedule_wakeup);
 
   afinter_source_stop_watches(self);
+  stats_lock();
+  stats_unregister_counter(SCS_INTERNAL | SCS_SOURCE, self->owner->super.id, NULL, SC_TYPE_DROPPED, &self->dropped_messages);
+  stats_unlock();
   return log_source_deinit(s);
+}
+
+static void
+afinter_source_free(LogPipe *s)
+{
+  AFInterSource *self = (AFInterSource *) s;
+  log_pipe_unref((LogPipe *)self->owner);
 }
 
 static LogSource *
@@ -311,6 +327,8 @@ afinter_source_new(AFInterSourceDriver *owner, LogSourceOptions *options)
   self->super.super.init = afinter_source_init;
   self->super.super.deinit = afinter_source_deinit;
   self->super.wakeup = afinter_source_wakeup;
+  self->super.super.free_fn = afinter_source_free;
+  self->owner = (AFInterSourceDriver *)log_pipe_ref((LogPipe *)owner);
   return &self->super;
 }
 
@@ -404,6 +422,7 @@ void
 afinter_message_posted(LogMessage *msg)
 {
   g_static_mutex_lock(&internal_msg_lock);
+  gboolean dropped = FALSE;
   if (!internal_msg_queue)
     {
       internal_msg_queue = g_queue_new();
@@ -412,8 +431,22 @@ afinter_message_posted(LogMessage *msg)
     {
       g_queue_push_tail(internal_msg_queue, msg);
     }
+  else
+    {
+      log_msg_unref(msg);
+      dropped = TRUE;
+    }
   if (current_internal_source)
-    iv_event_post(&current_internal_source->post);
+    {
+      if (dropped)
+        {
+          stats_counter_inc(current_internal_source->dropped_messages);
+        }
+      else
+        {
+          iv_event_post(&current_internal_source->post);
+        }
+    }
   g_static_mutex_unlock(&internal_msg_lock);
 }
 
