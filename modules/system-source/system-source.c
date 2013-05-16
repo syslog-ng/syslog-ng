@@ -167,8 +167,17 @@ system_sysblock_add_linux_kmsg(GString *sysblock)
       close (fd);
     }
 
-  system_sysblock_add_file(sysblock, kmsg, -1,
-                           "kernel", "kernel", format);
+  if (access(kmsg, R_OK) == -1)
+    {
+      msg_warning("system(): The kernel message buffer is not readable, "
+                  "please check permissions if this is unintentional.",
+                  evt_tag_str("device", kmsg),
+                  evt_tag_errno("error", errno),
+                  NULL);
+    }
+  else
+    system_sysblock_add_file(sysblock, kmsg, -1,
+                             "kernel", "kernel", format);
 }
 
 gboolean
