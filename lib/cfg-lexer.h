@@ -26,6 +26,7 @@
 #define CFG_LEXER_H_INCLUDED 1
 
 #include "syslog-ng.h"
+#include "cfg-args.h"
 #include <stdio.h>
 
 /* this module provides a higher level encapsulation for the configuration
@@ -35,7 +36,6 @@
 
 typedef struct _CfgIncludeLevel CfgIncludeLevel;
 typedef struct _CfgTokenBlock CfgTokenBlock;
-typedef struct _CfgArgs CfgArgs;
 typedef struct _CfgBlockGenerator CfgBlockGenerator;
 typedef struct _CfgBlock CfgBlock;
 typedef struct _CfgLexer CfgLexer;
@@ -187,13 +187,6 @@ void  cfg_lexer_free(CfgLexer *self);
 
 gint cfg_lexer_lookup_context_type_by_name(const gchar *name);
 const gchar *cfg_lexer_lookup_context_name_by_type(gint id);
-
-/* argument list for a block generator */
-gboolean cfg_args_validate(CfgArgs *self, CfgArgs *defs, const gchar *context);
-void cfg_args_set(CfgArgs *self, const gchar *name, const gchar *value);
-const gchar *cfg_args_get(CfgArgs *self, const gchar *name);
-CfgArgs *cfg_args_new(void);
-void cfg_args_free(CfgArgs *self);
 
 /* token block objects */
 

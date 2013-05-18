@@ -110,7 +110,7 @@ module_stmt
           {
             plugin_load_module($2, configuration, last_module_args);
             free($2);
-            cfg_args_free(last_module_args);
+            cfg_args_unref(last_module_args);
             last_module_args = NULL;
           }
 	;

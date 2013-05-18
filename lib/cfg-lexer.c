@@ -34,11 +34,6 @@
 #include <glob.h>
 #include <sys/stat.h>
 
-struct _CfgArgs
-{
-  GHashTable *args;
-};
-
 /*
  * A token block is a series of tokens to be injected into the tokens
  * fetched by the lexer.  It is assumed to be filled and then depleted, the
@@ -864,7 +859,7 @@ cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
 
           self->preprocess_suppress_tokens--;
           success = cfg_lexer_generate_block(self, cfg_lexer_get_context_type(self), yylval->cptr, gen, args);
-          cfg_args_free(args);
+          cfg_args_unref(args);
           if (success)
             {
               goto relex;
@@ -1018,7 +1013,7 @@ cfg_lexer_free(CfgLexer *self)
       g_free(gen);
       self->generators = g_list_delete_link(self->generators, self->generators);
     }
-  cfg_args_free(self->globals);
+  cfg_args_unref(self->globals);
   g_list_foreach(self->token_blocks, (GFunc) cfg_token_block_free, NULL);
   g_list_free(self->token_blocks);
   g_free(self);
@@ -1063,69 +1058,6 @@ cfg_lexer_lookup_context_name_by_type(gint type)
 {
   g_assert(type < G_N_ELEMENTS(lexer_contexts));
   return lexer_contexts[type];
-}
-
-/* token block args */
-
-static void
-cfg_args_validate_callback(gpointer k, gpointer v, gpointer user_data)
-{
-  CfgArgs *defs = ((gpointer *) user_data)[0];
-  gchar **bad_key = (gchar **) &((gpointer *) user_data)[1];
-  gchar **bad_value = (gchar **) &((gpointer *) user_data)[2];
-
-  if ((*bad_key == NULL) && (!defs || cfg_args_get(defs, k) == NULL))
-    {
-      *bad_key = k;
-      *bad_value = v;
-    }
-}
-
-gboolean
-cfg_args_validate(CfgArgs *self, CfgArgs *defs, const gchar *context)
-{
-  gpointer validate_params[] = { defs, NULL, NULL };
-
-  g_hash_table_foreach(self->args, cfg_args_validate_callback, validate_params);
-
-  if (validate_params[1])
-    {
-      msg_error("Unknown argument",
-                evt_tag_str("context", context),
-                evt_tag_str("arg", validate_params[1]),
-                evt_tag_str("value", validate_params[2]),
-                NULL);
-      return FALSE;
-    }
-  return TRUE;
-}
-
-void
-cfg_args_set(CfgArgs *self, const gchar *name, const gchar *value)
-{
-  g_hash_table_insert(self->args, g_strdup(name), g_strdup(value));
-}
-
-const gchar *
-cfg_args_get(CfgArgs *self, const gchar *name)
-{
-  return g_hash_table_lookup(self->args, name);
-}
-
-CfgArgs *
-cfg_args_new(void)
-{
-  CfgArgs *self = g_new0(CfgArgs, 1);
-
-  self->args = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
-  return self;
-}
-
-void
-cfg_args_free(CfgArgs *self)
-{
-  g_hash_table_destroy(self->args);
-  g_free(self);
 }
 
 /* token blocks */
@@ -1252,6 +1184,6 @@ void
 cfg_block_free(CfgBlock *self)
 {
   g_free(self->content);
-  cfg_args_free(self->arg_defs);
+  cfg_args_unref(self->arg_defs);
   g_free(self);
 }

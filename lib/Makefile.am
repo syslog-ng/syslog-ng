@@ -25,6 +25,7 @@ pkginclude_HEADERS			+= \
 	lib/cfg.h			\
 	lib/cfg-grammar.h		\
 	lib/cfg-lexer.h			\
+	lib/cfg-args.h			\
 	lib/cfg-parser.h		\
 	lib/cfg-tree.h			\
 	lib/children.h			\
@@ -98,6 +99,7 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/apphook.c			\
 	lib/block-ref-parser.c		\
 	lib/cfg.c			\
+	lib/cfg-args.c		\
 	lib/cfg-lexer.c			\
 	lib/cfg-parser.c		\
 	lib/cfg-tree.c			\
