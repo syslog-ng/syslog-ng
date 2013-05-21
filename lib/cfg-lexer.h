@@ -202,6 +202,14 @@ gboolean cfg_block_generate(CfgLexer *lexer, gint context, const gchar *name, Cf
 CfgBlock *cfg_block_new(const gchar *content, CfgArgs *arg_defs);
 void cfg_block_free(CfgBlock *self);
 
+#define CFG_LEXER_ERROR cfg_lexer_error_quark()
 
+GQuark cfg_lexer_error_quark();
+
+enum CfgLexerError
+{
+  CFG_LEXER_MISSING_BACKTICK_PAIR,
+  CFG_LEXER_CANNOT_REPRESENT_APOSTROPHES_IN_QSTRINGS,
+};
 
 #endif

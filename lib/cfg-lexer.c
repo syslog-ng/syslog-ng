@@ -1187,3 +1187,9 @@ cfg_block_free(CfgBlock *self)
   cfg_args_unref(self->arg_defs);
   g_free(self);
 }
+
+GQuark
+cfg_lexer_error_quark()
+{
+  return g_quark_from_static_string("cfg-lexer-error-quark");
+}
