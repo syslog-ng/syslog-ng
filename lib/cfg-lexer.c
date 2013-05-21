@@ -742,6 +742,18 @@ cfg_lexer_unput_token(CfgLexer *self, YYSTYPE *yylval)
   cfg_lexer_inject_token_block(self, block);
 }
 
+/*
+ * NOTE: the caller is expected to manage the YYSTYPE instance itself (as
+ * this is the way it is defined by the lexer), this function only frees its
+ * contents.
+ */
+void
+cfg_lexer_free_token(YYSTYPE *token)
+{
+  if (token->type == LL_STRING || token->type == LL_IDENTIFIER || token->type == LL_BLOCK)
+    free(token->cptr);
+}
+
 int
 cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
 {
@@ -1101,9 +1113,7 @@ cfg_token_block_free(CfgTokenBlock *self)
     {
       YYSTYPE *token = &g_array_index(self->tokens, YYSTYPE, i);
 
-      if (token->type == LL_STRING || token->type == LL_IDENTIFIER)
-        g_free(token->cptr);
-
+      cfg_lexer_free_token(token);
     }
   g_array_free(self->tokens, TRUE);
   g_free(self);
