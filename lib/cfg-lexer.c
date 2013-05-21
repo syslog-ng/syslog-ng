@@ -23,6 +23,7 @@
  */
 
 #include "cfg-lexer.h"
+#include "cfg-lexer-subst.h"
 #include "cfg-lex.h"
 #include "cfg-grammar.h"
 #include "block-ref-parser.h"
@@ -148,64 +149,14 @@ cfg_lexer_get_context_description(CfgLexer *self)
 }
 
 gchar *
-cfg_lexer_subst_args(CfgArgs *globals, CfgArgs *defs, CfgArgs *args, gchar *cptr, gsize *length)
+cfg_lexer_subst_args(CfgArgs *globals, CfgArgs *defs, CfgArgs *args, gchar *cptr, gsize *length, GError **error)
 {
-  gboolean backtick = FALSE;
-  gchar *p, *ref_start = cptr;
-  GString *result = g_string_sized_new(32);
+  CfgLexerSubst *subst = cfg_lexer_subst_new(cfg_args_ref(globals), cfg_args_ref(defs), cfg_args_ref(args));
+  gchar *result;
 
-  p = cptr;
-  while (*p)
-    {
-      if (!backtick && (*p) == '`')
-        {
-          /* start of reference */
-          backtick = TRUE;
-          ref_start = p + 1;
-        }
-      else if (backtick && (*p) == '`')
-        {
-          /* end of reference */
-          backtick = FALSE;
-
-          if (ref_start == p)
-            {
-              /* empty ref, just include a ` character */
-              g_string_append_c(result, '`');
-            }
-          else
-            {
-              const gchar *arg;
-
-              *p = 0;
-              if (args && (arg = cfg_args_get(args, ref_start)))
-                ;
-              else if (defs && (arg = cfg_args_get(defs, ref_start)))
-                ;
-              else if (globals && (arg = cfg_args_get(globals, ref_start)))
-                ;
-              else if ((arg = g_getenv(ref_start)))
-                ;
-              else
-                arg = NULL;
-
-              *p = '`';
-              g_string_append(result, arg ? arg : "");
-            }
-        }
-      else if (!backtick)
-        g_string_append_c(result, *p);
-      p++;
-    }
-
-  if (backtick)
-    {
-      g_string_free(result, TRUE);
-      return NULL;
-    }
-
-  *length = result->len;
-  return g_string_free(result, FALSE);
+  result = cfg_lexer_subst_invoke(subst, cptr, length, error);
+  cfg_lexer_subst_free(subst);
+  return result;
 }
 
 int
@@ -1153,6 +1104,7 @@ cfg_block_generate(CfgLexer *lexer, gint context, const gchar *name, CfgArgs *ar
   gchar *value;
   gchar buf[256];
   gsize length;
+  GError *error = NULL;
 
   g_snprintf(buf, sizeof(buf), "%s block %s", cfg_lexer_lookup_context_name_by_type(context), name);
   if (!cfg_args_validate(args, block->arg_defs, buf))
@@ -1160,14 +1112,16 @@ cfg_block_generate(CfgLexer *lexer, gint context, const gchar *name, CfgArgs *ar
       return FALSE;
     }
 
-  value = cfg_lexer_subst_args(lexer->globals, block->arg_defs, args, block->content, &length);
+  value = cfg_lexer_subst_args(lexer->globals, block->arg_defs, args, block->content, &length, &error);
 
   if (!value)
     {
-      msg_warning("Syntax error while resolving backtick references in block, missing closing '`' character",
+      msg_warning("Syntax error while resolving backtick references in block",
                   evt_tag_str("context", cfg_lexer_lookup_context_name_by_type(context)),
                   evt_tag_str("block", name),
+                  evt_tag_str("error", error->message),
                   NULL);
+      g_clear_error(&error);
       return FALSE;
     }
 

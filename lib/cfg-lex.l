@@ -40,13 +40,15 @@
       {                                                                 \
         gchar *res;                                                     \
         gsize len = strlen(buf);                                        \
+        GError *error = NULL;						\
                                                                         \
         if (YY_START < block)                                           \
-          res = cfg_lexer_subst_args(yyextra->globals, NULL, NULL, buf, &len); \
+          res = cfg_lexer_subst_args(yyextra->globals, NULL, NULL, buf, &len, &error); \
         else                                                            \
           res = FALSE;                                                  \
         if (!res)                                                       \
           {                                                             \
+            g_clear_error(&error);					\
             result = strlen(buf);                                       \
           }                                                             \
         else                                                            \
