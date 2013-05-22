@@ -724,11 +724,11 @@ log_reader_handle_line(LogReader *self, const guchar *line, gint length, GSockAd
   NVHandle handle;
 
   /*
-   * skip the remaning '\n' char in case the multi line garbage is on
+   * skip the remaning '\r' and '\n' char in case the multi line garbage is on
    * and the garbage processing took place
    * in several steps (file writing in steps)
    */
-  if (length > 1 && line[0] == '\n')
+  while((length > 0) && ((line[0] == '\r') || (line[0] == '\n')))
     {
       ++line;
       --length;
@@ -781,9 +781,6 @@ log_reader_handle_line(LogReader *self, const guchar *line, gint length, GSockAd
 
       g_string_free(converted, TRUE);
     }
-  /* Proto elmenti a state-et */
-//  log_proto_set_state(self->proto,m)
-  /* Itt a reader meg kiosztja az id-t */
   log_pipe_queue(&self->super.super, m, &path_options);
   log_msg_refcache_stop(TRUE);
   return log_source_free_to_send(&self->super);
