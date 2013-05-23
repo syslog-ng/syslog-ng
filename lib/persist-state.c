@@ -198,7 +198,7 @@ persist_state_grow_store(PersistState *self, guint32 new_size)
   gboolean result = FALSE;
 
   g_mutex_lock(self->mapped_lock);
-  if (self->mapped_counter != 0)
+  while (self->mapped_counter != 0)
     g_cond_wait(self->mapped_release_cond, self->mapped_lock);
   g_assert(self->mapped_counter == 0);
 
