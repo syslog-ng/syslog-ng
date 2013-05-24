@@ -18,7 +18,10 @@ EXTRA_DIST	+= \
 		tests/functional/test_performance.py \
 		tests/functional/test_sql.py
 
-TESTS		+= tests/functional/runtests.sh
+func-test:
+	@$(top_srcdir)/tests/functional/runtests.sh
+
+.PHONY: func-test
 
 tests/functional/rnd: tests/functional/rnd.in
 	cp $< $@
