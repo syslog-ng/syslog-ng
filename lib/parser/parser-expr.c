@@ -22,7 +22,7 @@
  *
  */
 
-#include "logparser.h"
+#include "parser/parser-expr.h"
 #include "templates.h"
 #include "misc.h"
 #include "logmatcher.h"
@@ -66,7 +66,7 @@ log_parser_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
   else
     {
       GString *input = g_string_sized_new(256);
-      
+
       log_template_format(self->template, msg, NULL, LTZ_LOCAL, 0, NULL, input);
       success = self->process(self, &msg, path_options, input->str, input->len);
       g_string_free(input, TRUE);
@@ -126,7 +126,7 @@ void
 log_column_parser_set_columns(LogColumnParser *s, GList *columns)
 {
   LogColumnParser *self = (LogColumnParser *) s;
-  
+
   string_list_free(self->columns);
   self->columns = columns;
 }
@@ -135,7 +135,7 @@ void
 log_column_parser_free_method(LogPipe *s)
 {
   LogColumnParser *self = (LogColumnParser *) s;
-  
+
   string_list_free(self->columns);
   log_parser_free_method(s);
 }

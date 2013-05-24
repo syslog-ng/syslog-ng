@@ -30,7 +30,6 @@
 #include "misc.h"
 #include "logmsg.h"
 #include "dnscache.h"
-#include "logparser.h"
 #include "serialize.h"
 #include "plugin.h"
 #include "cfg-parser.h"

@@ -33,7 +33,7 @@
 #include "cfg-lexer.h"
 #include "afinter.h"
 #include "filter-expr-parser.h"
-#include "parser-expr-parser.h"
+#include "parser/parser-expr-parser.h"
 #include "rewrite/rewrite-expr-parser.h"
 
 /* uses struct declarations instead of the typedefs to avoid having to
@@ -312,7 +312,7 @@ extern struct _LogParser *last_parser;
 #include "cfg-tree.h"
 #include "templates.h"
 #include "logreader.h"
-#include "logparser.h"
+#include "parser/parser-expr.h"
 #include "rewrite/rewrite-expr.h"
 #include "rewrite/rewrite-expr-parser.h"
 #include "value-pairs.h"

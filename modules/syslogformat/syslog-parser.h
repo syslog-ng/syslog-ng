@@ -23,7 +23,7 @@
 #ifndef SYSLOG_PARSER_H_INCLUDED
 #define SYSLOG_PARSER_H_INCLUDED
 
-#include "logparser.h"
+#include "parser/parser-expr.h"
 
 typedef struct _SyslogParser
 {

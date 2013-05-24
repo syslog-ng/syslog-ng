@@ -24,7 +24,7 @@
 #ifndef DBPARSER_H_INCLUDED
 #define DBPARSER_H_INCLUDED
 
-#include "logparser.h"
+#include "parser/parser-expr.h"
 #include "patterndb.h"
 
 typedef struct _LogDBParser LogDBParser;

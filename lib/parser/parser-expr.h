@@ -65,4 +65,3 @@ void log_column_parser_init_instance(LogColumnParser *self);
 void log_column_parser_free_method(LogPipe *s);
 
 #endif
-

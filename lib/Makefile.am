@@ -2,6 +2,7 @@ DIST_SUBDIRS				= lib/ivykis
 
 include lib/logproto/Makefile.am
 include lib/rewrite/Makefile.am
+include lib/parser/Makefile.am
 
 lib_LTLIBRARIES				+= lib/libsyslog-ng.la
 lib_libsyslog_ng_la_LIBADD		= @CORE_DEPS_LIBS@ $(libsystemd_daemon_LIBS)
@@ -45,7 +46,6 @@ pkginclude_HEADERS			+= \
 	lib/logmatcher.h		\
 	lib/logmpx.h			\
 	lib/logmsg.h			\
-	lib/logparser.h			\
 	lib/logpipe.h			\
 	lib/logqueue-fifo.h		\
 	lib/logqueue.h			\
@@ -61,7 +61,6 @@ pkginclude_HEADERS			+= \
 	lib/ml-batched-timer.h		\
 	lib/msg-format.h		\
 	lib/nvtable.h			\
-	lib/parser-expr-parser.h	\
 	lib/persist-state.h		\
 	lib/plugin.h			\
 	lib/plugin-types.h		\
@@ -83,7 +82,8 @@ pkginclude_HEADERS			+= \
 	lib/value-pairs.h		\
 	lib/vptransform.h		\
 	lib/versioning.h		\
-	$(logproto_headers)
+	$(logproto_headers)		\
+	$(parser_headers)		\
 	$(rewrite_headers)
 
 # this is intentionally formatted so conflicts are less likely to arise. one name in every line.
@@ -120,7 +120,6 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/logmatcher.c		\
 	lib/logmpx.c			\
 	lib/logmsg.c			\
-	lib/logparser.c			\
 	lib/logpipe.c			\
 	lib/logqueue.c			\
 	lib/logqueue-fifo.c		\
@@ -136,7 +135,6 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/ml-batched-timer.c		\
 	lib/msg-format.c		\
 	lib/nvtable.c			\
-	lib/parser-expr-parser.c	\
 	lib/persist-state.c		\
 	lib/plugin.c			\
 	lib/pragma-parser.c		\
@@ -157,8 +155,8 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/filter-expr-grammar.y	\
 	lib/block-ref-grammar.y		\
 	lib/pragma-grammar.y		\
-	lib/parser-expr-grammar.y	\
 	$(logproto_sources)		\
+	$(parser_sources)		\
 	$(rewrite_sources)
 
 if WITH_EMBEDDED_CRYPTO
@@ -179,14 +177,12 @@ BUILT_SOURCES += lib/cfg-lex.c lib/cfg-lex.h						\
 	lib/cfg-grammar.c lib/cfg-grammar.h						\
 	lib/filter-expr-grammar.y lib/filter-expr-grammar.c lib/filter-expr-grammar.h	\
 	lib/block-ref-grammar.y lib/block-ref-grammar.c lib/block-ref-grammar.h		\
-	lib/pragma-grammar.y lib/pragma-grammar.h lib/pragma-grammar.c			\
-	lib/parser-expr-grammar.y lib/parser-expr-grammar.c lib/parser-expr-grammar.h
+	lib/pragma-grammar.y lib/pragma-grammar.h lib/pragma-grammar.c
 
 EXTRA_DIST += \
 	lib/filter-expr-grammar.ym	\
 	lib/block-ref-grammar.ym	\
 	lib/pragma-grammar.ym		\
-	lib/parser-expr-grammar.ym	\
 	lib/merge-grammar.pl		\
 	lib/ivykis/configure.gnu
 

@@ -27,7 +27,7 @@
 
 #include "cfg-parser.h"
 #include "cfg-lexer.h"
-#include "logparser.h"
+#include "parser/parser-expr.h"
 #include "cfg-tree.h"
 
 extern CfgParser parser_expr_parser;

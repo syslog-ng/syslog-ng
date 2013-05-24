@@ -30,7 +30,6 @@
 #include "stats.h"
 #include "tags.h"
 #include "logmsg.h"
-#include "logparser.h"
 #include "timeutils.h"
 #include "logsource.h"
 #include "logwriter.h"

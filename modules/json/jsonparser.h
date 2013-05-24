@@ -23,7 +23,7 @@
 #ifndef JSONPARSER_H_INCLUDED
 #define JSONPARSER_H_INCLUDED
 
-#include "logparser.h"
+#include "parser/parser-expr.h"
 
 typedef struct _LogJSONParser LogJSONParser;
 

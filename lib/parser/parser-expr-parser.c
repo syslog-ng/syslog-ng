@@ -21,9 +21,9 @@
  * COPYING for details.
  *
  */
-#include "parser-expr-parser.h"
-#include "logparser.h"
-#include "parser-expr-grammar.h"
+#include "parser/parser-expr-parser.h"
+#include "parser/parser-expr.h"
+#include "parser/parser-expr-grammar.h"
 
 extern int parser_expr_debug;
 int parser_expr_parse(CfgLexer *lexer, LogExprNode **node, gpointer arg);
