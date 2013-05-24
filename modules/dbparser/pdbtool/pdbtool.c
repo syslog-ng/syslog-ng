@@ -31,7 +31,7 @@
 #include "tags.h"
 #include "stats.h"
 #include "plugin.h"
-#include "filter-expr-parser.h"
+#include "filter/filter-expr-parser.h"
 #include "patternize.h"
 #include "patterndb-int.h"
 #include "apphook.h"

@@ -32,7 +32,8 @@
 /* YYSTYPE and YYLTYPE is defined by the lexer */
 #include "cfg-lexer.h"
 #include "afinter.h"
-#include "filter-expr-parser.h"
+#include "filter/filter-expr-parser.h"
+#include "filter/filter-expr.h"
 #include "parser/parser-expr-parser.h"
 #include "rewrite/rewrite-expr-parser.h"
 
@@ -315,10 +316,10 @@ extern struct _LogParser *last_parser;
 #include "parser/parser-expr.h"
 #include "rewrite/rewrite-expr.h"
 #include "rewrite/rewrite-expr-parser.h"
+#include "filter/filter-expr-parser.h"
 #include "value-pairs.h"
 #include "vptransform.h"
 #include "file-perms.h"
-#include "filter-expr-parser.h"
 #include "block-ref-parser.h"
 #include "plugin.h"
 #include "logwriter.h"

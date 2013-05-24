@@ -23,8 +23,8 @@
 
 #include "plugin.h"
 #include "templates.h"
-#include "filter.h"
-#include "filter-expr-parser.h"
+#include "filter/filter-expr.h"
+#include "filter/filter-expr-parser.h"
 #include "cfg.h"
 #include "str-format.h"
 #include "plugin-types.h"

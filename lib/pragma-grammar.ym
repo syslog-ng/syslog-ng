@@ -26,6 +26,8 @@
 
 #include "pragma-parser.h"
 #include "plugin.h"
+#include "cfg.h"
+#include "messages.h"
 
 #include <string.h>
 

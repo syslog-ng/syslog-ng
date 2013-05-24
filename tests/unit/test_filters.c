@@ -1,10 +1,10 @@
 #include "syslog-ng.h"
 #include "syslog-names.h"
-#include "filter.h"
+#include "filter/filter-expr.h"
 #include "logmsg.h"
 #include "apphook.h"
 #include "plugin.h"
-#include "filter-expr-grammar.h"
+#include "filter/filter-expr-grammar.h"
 
 #include <time.h>
 #include <string.h>

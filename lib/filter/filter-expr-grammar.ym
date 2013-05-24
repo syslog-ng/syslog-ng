@@ -24,14 +24,14 @@
 
 %code requires {
 
-#include "filter-expr-parser.h"
+#include "filter/filter-expr-parser.h"
 
 }
 
 %code {
 
 #include "syslog-names.h"
-#include "filter-expr-grammar.h"
+#include "filter/filter-expr-grammar.h"
 #include "plugin.h"
 
 FilterRE *last_re_filter;

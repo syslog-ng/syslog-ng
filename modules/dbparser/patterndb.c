@@ -27,7 +27,7 @@
 #include "templates.h"
 #include "compat.h"
 #include "misc.h"
-#include "filter-expr-parser.h"
+#include "filter/filter-expr-parser.h"
 #include "patterndb-int.h"
 
 #include <string.h>

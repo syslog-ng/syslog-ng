@@ -27,7 +27,7 @@
 #include "radix.h"
 #include "templates.h"
 #include "timerwheel.h"
-#include "filter.h"
+#include "filter/filter-expr.h"
 
 typedef struct _PatternDB PatternDB;
 

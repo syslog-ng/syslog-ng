@@ -29,7 +29,7 @@
 #include "messages.h"
 #include "templates.h"
 #include "logmatcher.h"
-#include "filter.h"
+#include "filter/filter-expr.h"
 
 typedef struct _LogRewrite LogRewrite;
 

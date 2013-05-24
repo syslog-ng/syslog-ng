@@ -2,7 +2,7 @@
 #include "tags.h"
 #include "logmsg.h"
 #include "messages.h"
-#include "filter.h"
+#include "filter/filter-expr.h"
 #include "patterndb.h"
 #include "plugin.h"
 #include "patterndb-int.h"

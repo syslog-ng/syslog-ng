@@ -3,6 +3,7 @@ DIST_SUBDIRS				= lib/ivykis
 include lib/logproto/Makefile.am
 include lib/rewrite/Makefile.am
 include lib/parser/Makefile.am
+include lib/filter/Makefile.am
 
 lib_LTLIBRARIES				+= lib/libsyslog-ng.la
 lib_libsyslog_ng_la_LIBADD		= @CORE_DEPS_LIBS@ $(libsystemd_daemon_LIBS)
@@ -38,8 +39,6 @@ pkginclude_HEADERS			+= \
 	lib/dnscache.h			\
 	lib/driver.h			\
 	lib/file-perms.h		\
-	lib/filter-expr-parser.h	\
-	lib/filter.h			\
 	lib/gprocess.h			\
 	lib/gsockaddr.h			\
 	lib/gsocket.h			\
@@ -83,6 +82,7 @@ pkginclude_HEADERS			+= \
 	lib/vptransform.h		\
 	lib/versioning.h		\
 	$(logproto_headers)		\
+	$(filter_headers)		\
 	$(parser_headers)		\
 	$(rewrite_headers)
 
@@ -111,8 +111,6 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/dnscache.c			\
 	lib/driver.c			\
 	lib/file-perms.c		\
-	lib/filter.c			\
-	lib/filter-expr-parser.c	\
 	lib/globals.c			\
 	lib/gprocess.c			\
 	lib/gsockaddr.c			\
@@ -152,10 +150,10 @@ lib_libsyslog_ng_la_SOURCES		= \
 					\
 	lib/cfg-lex.l			\
 	lib/cfg-grammar.y		\
-	lib/filter-expr-grammar.y	\
 	lib/block-ref-grammar.y		\
 	lib/pragma-grammar.y		\
 	$(logproto_sources)		\
+	$(filter_sources)		\
 	$(parser_sources)		\
 	$(rewrite_sources)
 
@@ -175,12 +173,10 @@ endif
 # each line with closely related files (e.g. the ones generated from the same source)
 BUILT_SOURCES += lib/cfg-lex.c lib/cfg-lex.h						\
 	lib/cfg-grammar.c lib/cfg-grammar.h						\
-	lib/filter-expr-grammar.y lib/filter-expr-grammar.c lib/filter-expr-grammar.h	\
 	lib/block-ref-grammar.y lib/block-ref-grammar.c lib/block-ref-grammar.h		\
 	lib/pragma-grammar.y lib/pragma-grammar.h lib/pragma-grammar.c
 
 EXTRA_DIST += \
-	lib/filter-expr-grammar.ym	\
 	lib/block-ref-grammar.ym	\
 	lib/pragma-grammar.ym		\
 	lib/merge-grammar.pl		\

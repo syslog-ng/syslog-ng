@@ -28,7 +28,7 @@
 #include "syslog-names.h"
 #include "messages.h"
 #include "misc.h"
-#include "filter.h"
+#include "filter/filter-expr.h"
 #include "gsocket.h"
 #include "plugin.h"
 #include "plugin-types.h"

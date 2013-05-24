@@ -21,7 +21,7 @@
  * COPYING for details.
  *
  */
-  
+
 #ifndef FILTER_H_INCLUDED
 #define FILTER_H_INCLUDED
 

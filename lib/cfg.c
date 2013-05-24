@@ -23,7 +23,6 @@
  */
   
 #include "cfg.h"
-#include "filter.h"
 #include "cfg-tree.h"
 #include "messages.h"
 #include "templates.h"

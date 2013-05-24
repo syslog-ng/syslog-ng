@@ -22,9 +22,9 @@
  *
  */
 
-#include "filter-expr-parser.h"
-#include "filter.h"
-#include "filter-expr-grammar.h"
+#include "filter/filter-expr-parser.h"
+#include "filter/filter-expr-grammar.h"
+#include "filter/filter-expr.h"
 
 extern int filter_expr_debug;
 int filter_expr_parse(CfgLexer *lexer, FilterExprNode **node, gpointer arg);
