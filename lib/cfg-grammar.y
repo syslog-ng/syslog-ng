@@ -34,7 +34,7 @@
 #include "afinter.h"
 #include "filter-expr-parser.h"
 #include "parser-expr-parser.h"
-#include "rewrite-expr-parser.h"
+#include "rewrite/rewrite-expr-parser.h"
 
 /* uses struct declarations instead of the typedefs to avoid having to
  * include logreader/logwriter/driver.h, which defines the typedefs.  This
@@ -313,12 +313,12 @@ extern struct _LogParser *last_parser;
 #include "templates.h"
 #include "logreader.h"
 #include "logparser.h"
-#include "logrewrite.h"
+#include "rewrite/rewrite-expr.h"
+#include "rewrite/rewrite-expr-parser.h"
 #include "value-pairs.h"
 #include "vptransform.h"
 #include "file-perms.h"
 #include "filter-expr-parser.h"
-#include "rewrite-expr-parser.h"
 #include "block-ref-parser.h"
 #include "plugin.h"
 #include "logwriter.h"

@@ -24,15 +24,15 @@
 
 %code requires {
 
-#include "rewrite-expr-parser.h"
+#include "rewrite/rewrite-expr-parser.h"
 
 }
 
 %code {
 
 #include "syslog-names.h"
-#include "rewrite-expr-grammar.h"
-#include "logrewrite.h"
+#include "rewrite/rewrite-expr-grammar.h"
+#include "rewrite/rewrite-expr.h"
 #include "plugin.h"
 #include "filter.h"
 #include "filter-expr-parser.h"

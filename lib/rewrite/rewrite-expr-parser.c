@@ -22,43 +22,34 @@
  *
  */
 
-#ifndef LOGREWRITE_H_INCLUDED
-#define LOGREWRITE_H_INCLUDED
+#include "rewrite/rewrite-expr-parser.h"
+#include "rewrite/rewrite-expr.h"
+#include "rewrite/rewrite-expr-grammar.h"
 
-#include "logmsg.h"
-#include "messages.h"
-#include "templates.h"
-#include "logmatcher.h"
-#include "filter.h"
+extern int rewrite_expr_debug;
+int rewrite_expr_parse(CfgLexer *lexer, LogExprNode **node, gpointer arg);
 
-typedef struct _LogRewrite LogRewrite;
+static CfgLexerKeyword rewrite_expr_keywords[] = {
+  { "set",                KW_SET, 0x0300 },
+  { "subst",              KW_SUBST, 0x0300 },
+  { "set_tag",            KW_SET_TAG, 0x0304 },
+  { "clear_tag",          KW_CLEAR_TAG, 0x0304 },
 
-struct _LogRewrite
-{
-  LogPipe super;
-  NVHandle value_handle;
-  FilterExprNode *condition;
-  void (*process)(LogRewrite *s, LogMessage **pmsg, const LogPathOptions *path_options);
-  gchar *name;
+  { "type",               KW_TYPE, 0x0300 },
+  { "flags",              KW_FLAGS },
+  { "condition",          KW_CONDITION, 0x0302 },
+  { NULL }
 };
 
-/* LogRewrite, abstract class */
-void log_rewrite_set_condition(LogRewrite *s, FilterExprNode *condition);
-void log_rewrite_free_method(LogPipe *self);
-
-/* LogRewriteSet */
-LogRewrite *log_rewrite_set_new(const gchar *new_value);
-
-/* LogRewriteSubst */
-gboolean log_rewrite_subst_set_regexp(LogRewrite *s, const gchar *regexp);
-void log_rewrite_subst_set_matcher(LogRewrite *s, LogMatcher *matcher);
-void log_rewrite_subst_set_flags(LogRewrite *s, gint flags);
-
-LogRewrite *log_rewrite_subst_new(const gchar *replacement);
-
-/* LogRewriteSetTag */
-LogRewrite *log_rewrite_set_tag_new(const gchar *tag_name, gboolean onoff);
-
-
+CfgParser rewrite_expr_parser =
+{
+#if ENABLE_DEBUG
+  .debug_flag = &rewrite_expr_debug,
 #endif
+  .name = "rewrite expression",
+  .context = LL_CONTEXT_REWRITE,
+  .keywords = rewrite_expr_keywords,
+  .parse = (gint (*)(CfgLexer *, gpointer *, gpointer)) rewrite_expr_parse,
+};
 
+CFG_PARSER_IMPLEMENT_LEXER_BINDING(rewrite_expr_, LogExprNode **)

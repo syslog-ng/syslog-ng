@@ -22,7 +22,7 @@
  *
  */
 
-#include "logrewrite.h"
+#include "rewrite/rewrite-expr.h"
 #include "logmsg.h"
 #include "cfg.h"
 #include "templates.h"
@@ -119,7 +119,7 @@ struct _LogRewriteSubst
   LogTemplate *replacement;
 };
 
-void 
+void
 log_rewrite_subst_process(LogRewrite *s, LogMessage **pmsg, const LogPathOptions *path_options)
 {
   LogRewriteSubst *self = (LogRewriteSubst *) s;
@@ -195,7 +195,7 @@ void
 log_rewrite_subst_free(LogPipe *s)
 {
   LogRewriteSubst *self = (LogRewriteSubst *) s;
-  
+
   log_matcher_unref(self->matcher);
   log_template_unref(self->replacement);
   log_rewrite_free_method(s);
@@ -211,7 +211,7 @@ log_rewrite_subst_new(const gchar *replacement)
   self->super.super.free_fn = log_rewrite_subst_free;
   self->super.super.clone = log_rewrite_subst_clone;
   self->super.process = log_rewrite_subst_process;
-  
+
   self->replacement = log_template_new(configuration, NULL);
   log_template_compile(self->replacement, replacement, NULL);
   return &self->super;
@@ -268,7 +268,7 @@ LogRewrite *
 log_rewrite_set_new(const gchar *new_value)
 {
   LogRewriteSet *self = g_new0(LogRewriteSet, 1);
-  
+
   log_rewrite_init(&self->super);
   self->super.super.free_fn = log_rewrite_set_free;
   self->super.super.clone = log_rewrite_set_clone;
