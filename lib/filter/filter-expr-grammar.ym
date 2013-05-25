@@ -30,8 +30,9 @@
 
 %code {
 
-#include "syslog-names.h"
 #include "filter/filter-expr-grammar.h"
+#include "filter/filter-op.h"
+#include "syslog-names.h"
 #include "plugin.h"
 
 FilterRE *last_re_filter;

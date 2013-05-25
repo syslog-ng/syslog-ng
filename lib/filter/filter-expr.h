@@ -47,6 +47,7 @@ struct _FilterExprNode
 
 gboolean filter_expr_eval(FilterExprNode *self, LogMessage *msg);
 gboolean filter_expr_eval_with_context(FilterExprNode *self, LogMessage **msgs, gint num_msg);
+void filter_expr_node_init(FilterExprNode *self);
 FilterExprNode *filter_expr_ref(FilterExprNode *self);
 void filter_expr_unref(FilterExprNode *self);
 
@@ -66,8 +67,6 @@ void filter_tags_add(FilterExprNode *s, GList *tags);
 
 /* various constructors */
 
-FilterExprNode *fop_or_new(FilterExprNode *e1, FilterExprNode *e2);
-FilterExprNode *fop_and_new(FilterExprNode *e1, FilterExprNode *e2);
 FilterExprNode *fop_cmp_new(LogTemplate *left, LogTemplate *right, gint op);
 
 FilterExprNode *filter_facility_new(guint32 facilities);
