@@ -5,6 +5,7 @@
 #include "filter/filter-expr.h"
 #include "patterndb.h"
 #include "plugin.h"
+#include "cfg.h"
 #include "patterndb-int.h"
 
 #include <stdio.h>

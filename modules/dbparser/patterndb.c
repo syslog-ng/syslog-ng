@@ -28,6 +28,7 @@
 #include "compat.h"
 #include "misc.h"
 #include "filter/filter-expr-parser.h"
+#include "logpipe.h"
 #include "patterndb-int.h"
 
 #include <string.h>

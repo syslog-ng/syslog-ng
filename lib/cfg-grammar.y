@@ -33,7 +33,7 @@
 #include "cfg-lexer.h"
 #include "afinter.h"
 #include "filter/filter-expr-parser.h"
-#include "filter/filter-expr.h"
+#include "filter/filter-pipe.h"
 #include "parser/parser-expr-parser.h"
 #include "rewrite/rewrite-expr-parser.h"
 

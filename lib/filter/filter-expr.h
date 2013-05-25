@@ -27,7 +27,6 @@
 
 #include "syslog-ng.h"
 #include "logmsg.h"
-#include "logpipe.h"
 #include "messages.h"
 #include "logmatcher.h"
 #include "cfg-parser.h"
@@ -48,6 +47,7 @@ struct _FilterExprNode
 
 gboolean filter_expr_eval(FilterExprNode *self, LogMessage *msg);
 gboolean filter_expr_eval_with_context(FilterExprNode *self, LogMessage **msgs, gint num_msg);
+FilterExprNode *filter_expr_ref(FilterExprNode *self);
 void filter_expr_unref(FilterExprNode *self);
 
 typedef struct _FilterRE
@@ -77,21 +77,5 @@ FilterExprNode *filter_netmask_new(gchar *cidr);
 FilterExprNode *filter_re_new(NVHandle value_handle);
 FilterExprNode *filter_match_new(void);
 FilterExprNode *filter_tags_new(GList *tags);
-
-/* convert a filter expression into a drop/accept LogPipe */
-
-/*
- * This class encapsulates a LogPipe that either drops/allows a LogMessage
- * to go through.
- */
-typedef struct _LogFilterPipe
-{
-  LogPipe super;
-  FilterExprNode *expr;
-  gchar *name;
-} LogFilterPipe;
-
-
-LogPipe *log_filter_pipe_new(FilterExprNode *expr);
 
 #endif
