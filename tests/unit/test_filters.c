@@ -6,6 +6,7 @@
 #include "plugin.h"
 #include "filter/filter-expr-grammar.h"
 #include "filter/filter-op.h"
+#include "filter/filter-cmp.h"
 #include "cfg.h"
 
 #include <time.h>

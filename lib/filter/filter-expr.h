@@ -67,8 +67,6 @@ void filter_tags_add(FilterExprNode *s, GList *tags);
 
 /* various constructors */
 
-FilterExprNode *fop_cmp_new(LogTemplate *left, LogTemplate *right, gint op);
-
 FilterExprNode *filter_facility_new(guint32 facilities);
 FilterExprNode *filter_level_new(guint32 levels);
 FilterExprNode *filter_call_new(gchar *rule, struct _GlobalConfig *cfg);

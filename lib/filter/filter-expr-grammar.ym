@@ -32,6 +32,7 @@
 
 #include "filter/filter-expr-grammar.h"
 #include "filter/filter-op.h"
+#include "filter/filter-cmp.h"
 #include "syslog-names.h"
 #include "plugin.h"
 
