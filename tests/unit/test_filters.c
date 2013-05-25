@@ -5,6 +5,7 @@
 #include "apphook.h"
 #include "plugin.h"
 #include "filter/filter-expr-grammar.h"
+#include "filter/filter-netmask.h"
 #include "filter/filter-op.h"
 #include "filter/filter-cmp.h"
 #include "filter/filter-tags.h"
