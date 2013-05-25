@@ -68,7 +68,6 @@ void filter_re_set_flags(FilterRE *self, gint flags);
 
 FilterExprNode *filter_facility_new(guint32 facilities);
 FilterExprNode *filter_level_new(guint32 levels);
-FilterExprNode *filter_call_new(gchar *rule, struct _GlobalConfig *cfg);
 FilterExprNode *filter_re_new(NVHandle value_handle);
 FilterExprNode *filter_match_new(void);
 
