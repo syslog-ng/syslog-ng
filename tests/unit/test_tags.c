@@ -3,7 +3,7 @@
 #include "tags.h"
 #include "logmsg.h"
 #include "messages.h"
-#include "filter/filter-expr.h"
+#include "filter/filter-tags.h"
 
 #include <stdio.h>
 #include <sys/time.h>

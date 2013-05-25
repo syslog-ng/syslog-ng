@@ -7,6 +7,7 @@
 #include "filter/filter-expr-grammar.h"
 #include "filter/filter-op.h"
 #include "filter/filter-cmp.h"
+#include "filter/filter-tags.h"
 #include "cfg.h"
 
 #include <time.h>
