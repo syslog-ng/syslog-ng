@@ -1,23 +1,10 @@
 #!/bin/sh
-cd ../
 
-GCDATA="`find . -name *.gcda 2>/dev/null`"
-if [ -z "$GCDATA" ]; then
-    echo "syslog-ng was not compiled with coverage information, unable to collect them"
-    exit 0
-fi
-for i in $GCDATA; do
-    cfile=`echo $i | sed -e 's,\.gcda$,.c,'`;
-    dirname=`dirname $cfile`
-    cfile=`basename $cfile`
-    (cd $dirname; gcov $cfile  | grep ^Lines | tail -1 | sed -e "s,^Lines executed:,$cfile,g" -e 's/ of /,/g' -e 's/%//g';)
-done | awk -F , '
-BEGIN {  };
-{
-  tested_lines=$3*$2 / 100;
-  sum_tested_lines=sum_tested_lines + tested_lines;
-  sum_lines=sum_lines+$3; print $1, $2 "%", $3, $3-tested_lines;
-};
-END {
-  print "Total coverage:", sum_tested_lines/sum_lines*100 "%", sum_lines, sum_tested_lines;
-};'
+set -e
+
+lcov --capture --directory `pwd` --compat-libtool --output-file coverage.info
+lcov --extract coverage.info "${top_srcdir}/*" --output-file coverage.info
+lcov --remove coverage.info "${top_srcdir}/modules/afmongodb/libmongo-client/*" --output-file coverage.info
+lcov --remove coverage.info "${top_srcdir}/modules/afamqp/rabbitmq-c/*" --output-file coverage.info
+genhtml coverage.info --output-directory coverage.html
+firefox  coverage.html/index.html
