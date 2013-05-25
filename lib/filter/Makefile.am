@@ -5,6 +5,7 @@ filter_headers = 				\
 	lib/filter/filter-tags.h		\
 	lib/filter/filter-netmask.h		\
 	lib/filter/filter-call.h		\
+	lib/filter/filter-re.h			\
 	lib/filter/filter-pipe.h		\
 	lib/filter/filter-expr-parser.h
 
@@ -15,6 +16,7 @@ filter_sources = 				\
 	lib/filter/filter-tags.c		\
 	lib/filter/filter-netmask.c		\
 	lib/filter/filter-call.c		\
+	lib/filter/filter-re.c			\
 	lib/filter/filter-pipe.c		\
 	lib/filter/filter-expr-parser.c		\
 	lib/filter/filter-expr-grammar.y

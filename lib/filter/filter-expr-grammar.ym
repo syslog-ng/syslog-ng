@@ -36,6 +36,7 @@
 #include "filter/filter-cmp.h"
 #include "filter/filter-tags.h"
 #include "filter/filter-call.h"
+#include "filter/filter-re.h"
 #include "syslog-names.h"
 #include "plugin.h"
 

@@ -51,24 +51,9 @@ void filter_expr_node_init(FilterExprNode *self);
 FilterExprNode *filter_expr_ref(FilterExprNode *self);
 void filter_expr_unref(FilterExprNode *self);
 
-typedef struct _FilterRE
-{
-  FilterExprNode super;
-  NVHandle value_handle;
-  LogMatcher *matcher;
-} FilterRE;
-
-typedef struct _FilterMatch FilterMatch;
-
-void filter_re_set_matcher(FilterRE *self, LogMatcher *matcher);
-gboolean filter_re_set_regexp(FilterRE *self, gchar *re);
-void filter_re_set_flags(FilterRE *self, gint flags);
-
 /* various constructors */
 
 FilterExprNode *filter_facility_new(guint32 facilities);
 FilterExprNode *filter_level_new(guint32 levels);
-FilterExprNode *filter_re_new(NVHandle value_handle);
-FilterExprNode *filter_match_new(void);
 
 #endif
