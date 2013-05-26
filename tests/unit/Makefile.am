@@ -9,7 +9,6 @@ tests_unit_TESTS			=  \
 	tests/unit/test_msgparse	   \
 	tests/unit/test_template	   \
 	tests/unit/test_template_speed	   \
-	tests/unit/test_filters		   \
 	tests/unit/test_dnscache	   \
 	tests/unit/test_findcrlf	   \
 	tests/unit/test_tags		   \
@@ -58,9 +57,6 @@ tests_unit_test_template_LDADD		= \
 	-dlpreopen $(top_builddir)/modules/basicfuncs/libbasicfuncs.la
 
 tests_unit_test_template_speed_LDADD	= \
-	$(TEST_LDADD) $(unit_test_extra_modules)
-
-tests_unit_test_filters_LDADD		= \
 	$(TEST_LDADD) $(unit_test_extra_modules)
 
 tests_unit_test_dnscache_LDADD		= \

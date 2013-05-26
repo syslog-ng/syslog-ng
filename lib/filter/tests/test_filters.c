@@ -415,4 +415,3 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   app_shutdown();
   return 0;
 }
-
