@@ -24,6 +24,7 @@
 
 #include "filter-netmask.h"
 #include "gsocket.h"
+#include "logmsg.h"
 
 #include <stdlib.h>
 

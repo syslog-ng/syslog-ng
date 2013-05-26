@@ -1,9 +1,4 @@
-#include "syslog-ng.h"
-#include "syslog-names.h"
 #include "filter/filter-expr.h"
-#include "logmsg.h"
-#include "apphook.h"
-#include "plugin.h"
 #include "filter/filter-expr-grammar.h"
 #include "filter/filter-netmask.h"
 #include "filter/filter-op.h"
@@ -12,6 +7,12 @@
 #include "filter/filter-re.h"
 #include "filter/filter-pri.h"
 #include "cfg.h"
+#include "messages.h"
+#include "syslog-names.h"
+#include "logmsg.h"
+#include "apphook.h"
+#include "plugin.h"
+
 
 #include <time.h>
 #include <string.h>

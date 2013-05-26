@@ -1,4 +1,5 @@
 #include "filter-tags.h"
+#include "logmsg.h"
 
 typedef struct _FilterTags
 {

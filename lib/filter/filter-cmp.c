@@ -24,7 +24,9 @@
 
 #include "filter/filter-cmp.h"
 #include "filter/filter-expr-grammar.h"
+
 #include <stdlib.h>
+#include <string.h>
 
 #define FCMP_EQ  0x0001
 #define FCMP_LT  0x0002

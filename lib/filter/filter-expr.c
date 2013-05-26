@@ -23,19 +23,7 @@
  */
 
 #include "filter/filter-expr.h"
-#include "filter/filter-expr-grammar.h"
-#include "filter/filter-pipe.h"
-#include "syslog-names.h"
 #include "messages.h"
-#include "cfg.h"
-#include "gsocket.h"
-#include "misc.h"
-#include "tags.h"
-#include "cfg-tree.h"
-
-#include <regex.h>
-#include <string.h>
-#include <stdlib.h>
 
 /****************************************************************
  * Filter expression nodes

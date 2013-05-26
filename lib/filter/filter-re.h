@@ -26,6 +26,7 @@
 #define FILTER_RE_H_INCLUDED
 
 #include "filter-expr.h"
+#include "logmatcher.h"
 
 typedef struct _FilterRE
 {

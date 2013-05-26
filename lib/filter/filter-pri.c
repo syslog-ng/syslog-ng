@@ -23,6 +23,8 @@
  */
 
 #include "filter/filter-pri.h"
+#include "syslog-names.h"
+#include "logmsg.h"
 
 typedef struct _FilterPri
 {

@@ -26,6 +26,7 @@
 #define FILTER_CMP_H_INCLUDED
 
 #include "filter-expr.h"
+#include "templates.h"
 
 FilterExprNode *fop_cmp_new(LogTemplate *left, LogTemplate *right, gint op);
 

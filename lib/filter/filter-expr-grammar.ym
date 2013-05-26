@@ -38,6 +38,8 @@
 #include "filter/filter-call.h"
 #include "filter/filter-re.h"
 #include "filter/filter-pri.h"
+#include "messages.h"
+#include "templates.h"
 #include "syslog-names.h"
 #include "plugin.h"
 

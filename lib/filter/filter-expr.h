@@ -26,10 +26,6 @@
 #define FILTER_H_INCLUDED
 
 #include "syslog-ng.h"
-#include "logmsg.h"
-#include "messages.h"
-#include "logmatcher.h"
-#include "cfg-parser.h"
 
 struct _GlobalConfig;
 typedef struct _FilterExprNode FilterExprNode;
