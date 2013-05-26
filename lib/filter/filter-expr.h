@@ -51,9 +51,4 @@ void filter_expr_node_init(FilterExprNode *self);
 FilterExprNode *filter_expr_ref(FilterExprNode *self);
 void filter_expr_unref(FilterExprNode *self);
 
-/* various constructors */
-
-FilterExprNode *filter_facility_new(guint32 facilities);
-FilterExprNode *filter_level_new(guint32 levels);
-
 #endif

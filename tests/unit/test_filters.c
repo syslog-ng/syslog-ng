@@ -10,6 +10,7 @@
 #include "filter/filter-cmp.h"
 #include "filter/filter-tags.h"
 #include "filter/filter-re.h"
+#include "filter/filter-pri.h"
 #include "cfg.h"
 
 #include <time.h>
