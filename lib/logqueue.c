@@ -44,28 +44,22 @@ log_queue_push_notify(LogQueue *self)
 {
   if (self->parallel_push_notify)
     {
-      gint64 num_elements;
+      /* make sure the callback can call log_queue_check_items() again */
+      GDestroyNotify destroy = self->parallel_push_data_destroy;
+      gpointer user_data = self->parallel_push_data;
+      LogQueuePushNotifyFunc func = self->parallel_push_notify;
 
-      num_elements = log_queue_get_length(self);
-      if (num_elements >= self->parallel_push_notify_limit)
-        {
-          /* make sure the callback can call log_queue_check_items() again */
-          GDestroyNotify destroy = self->parallel_push_data_destroy;
-          gpointer user_data = self->parallel_push_data;
-          LogQueuePushNotifyFunc func = self->parallel_push_notify;
+      self->parallel_push_data = NULL;
+      self->parallel_push_data_destroy = NULL;
+      self->parallel_push_notify = NULL;
 
-          self->parallel_push_data = NULL;
-          self->parallel_push_data_destroy = NULL;
-          self->parallel_push_notify = NULL;
+      g_static_mutex_unlock(&self->lock);
 
-          g_static_mutex_unlock(&self->lock);
+      func(user_data);
+      if (destroy && user_data)
+        destroy(user_data);
 
-          func(user_data);
-          if (destroy && user_data)
-            destroy(user_data);
-
-          g_static_mutex_lock(&self->lock);
-        }
+      g_static_mutex_lock(&self->lock);
     }
 }
 
@@ -75,17 +69,15 @@ log_queue_reset_parallel_push(LogQueue *self)
   g_static_mutex_lock(&self->lock);
   self->parallel_push_notify = NULL;
   self->parallel_push_data = NULL;
-  self->parallel_push_notify_limit = 0;
   g_static_mutex_unlock(&self->lock);
 }
 
 void
-log_queue_set_parallel_push(LogQueue *self, gint notify_limit, LogQueuePushNotifyFunc parallel_push_notify, gpointer user_data, GDestroyNotify user_data_destroy)
+log_queue_set_parallel_push(LogQueue *self, LogQueuePushNotifyFunc parallel_push_notify, gpointer user_data, GDestroyNotify user_data_destroy)
 {
   g_static_mutex_lock(&self->lock);
   self->parallel_push_notify = parallel_push_notify;
   self->parallel_push_data = user_data;
-  self->parallel_push_notify_limit = notify_limit;
   self->parallel_push_data_destroy = user_data_destroy;
   g_static_mutex_unlock(&self->lock);
 }
@@ -97,7 +89,7 @@ log_queue_set_parallel_push(LogQueue *self, gint notify_limit, LogQueuePushNotif
  * @timeout: the number of milliseconds that the consumer needs to wait before we can possibly proceed
  */
 gboolean
-log_queue_check_items(LogQueue *self, gint batch_items, gboolean *partial_batch, gint *timeout, LogQueuePushNotifyFunc parallel_push_notify, gpointer user_data, GDestroyNotify user_data_destroy)
+log_queue_check_items(LogQueue *self, gint *timeout, LogQueuePushNotifyFunc parallel_push_notify, gpointer user_data, GDestroyNotify user_data_destroy)
 {
   gint64 num_elements;
 
@@ -108,31 +100,11 @@ log_queue_check_items(LogQueue *self, gint batch_items, gboolean *partial_batch,
     self->parallel_push_data_destroy(self->parallel_push_data);
 
   num_elements = log_queue_get_length(self);
-  if (num_elements == 0 || num_elements < batch_items)
+  if (num_elements == 0)
     {
       self->parallel_push_notify = parallel_push_notify;
       self->parallel_push_data = user_data;
       self->parallel_push_data_destroy = user_data_destroy;
-      if (num_elements == 0)
-        {
-          /* NOTE: special case, 0->1 transition must be communicated,
-           * partial_batch is FALSE in this case.
-           *
-           * we need to tell the caller the first item as it arrives on the
-           * queue, as it needs to arm its flush_timeout timer in this case,
-           * which is unarmed as long as 0 elements are available, but then
-           * the first item wouldn't be flushed after flush_timeout.
-           * */
-          self->parallel_push_notify_limit = 1;
-          if (partial_batch)
-            *partial_batch = FALSE;
-        }
-      else
-        {
-          if (partial_batch)
-            *partial_batch = TRUE;
-          self->parallel_push_notify_limit = batch_items;
-        }
       g_static_mutex_unlock(&self->lock);
       return FALSE;
     }
