@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 1998-2012 Balázs Scheidler
+ * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 1998-2013 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,30 +22,17 @@
  *
  */
 
-#ifndef LOGREWRITE_H_INCLUDED
-#define LOGREWRITE_H_INCLUDED
+#ifndef REWRITE_SUBST_H_INCLUDED
+#define REWRITE_SUBST_H_INCLUDED
 
-#include "logmsg.h"
-#include "messages.h"
-#include "templates.h"
+#include "rewrite-expr.h"
 #include "logmatcher.h"
-#include "logpipe.h"
-#include "filter/filter-expr.h"
 
-typedef struct _LogRewrite LogRewrite;
+/* LogRewriteSubst */
+gboolean log_rewrite_subst_set_regexp(LogRewrite *s, const gchar *regexp);
+void log_rewrite_subst_set_matcher(LogRewrite *s, LogMatcher *matcher);
+void log_rewrite_subst_set_flags(LogRewrite *s, gint flags);
 
-struct _LogRewrite
-{
-  LogPipe super;
-  NVHandle value_handle;
-  FilterExprNode *condition;
-  void (*process)(LogRewrite *s, LogMessage **pmsg, const LogPathOptions *path_options);
-  gchar *name;
-};
-
-/* LogRewrite, abstract class */
-void log_rewrite_set_condition(LogRewrite *s, FilterExprNode *condition);
-void log_rewrite_init(LogRewrite *self);
-void log_rewrite_free_method(LogPipe *self);
+LogRewrite *log_rewrite_subst_new(const gchar *replacement);
 
 #endif
