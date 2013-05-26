@@ -956,8 +956,6 @@ afsql_dd_database_thread(gpointer arg)
 static void
 afsql_dd_start_thread(AFSqlDestDriver *self)
 {
-  self->db_thread_wakeup_cond = g_cond_new();
-  self->db_thread_mutex = g_mutex_new();
   self->db_thread = create_worker_thread(afsql_dd_database_thread, self, TRUE, NULL);
 }
 
@@ -969,8 +967,6 @@ afsql_dd_stop_thread(AFSqlDestDriver *self)
   g_cond_signal(self->db_thread_wakeup_cond);
   g_mutex_unlock(self->db_thread_mutex);
   g_thread_join(self->db_thread);
-  g_mutex_free(self->db_thread_mutex);
-  g_cond_free(self->db_thread_wakeup_cond);
 }
 
 static gchar *
@@ -1221,8 +1217,10 @@ afsql_dd_free(LogPipe *s)
   string_list_free(self->values);
   log_template_unref(self->table);
   g_hash_table_destroy(self->validated_tables);
-  if(self->session_statements)
+  if (self->session_statements)
     string_list_free(self->session_statements);
+  g_mutex_free(self->db_thread_mutex);
+  g_cond_free(self->db_thread_wakeup_cond);
   log_dest_driver_free(s);
 }
 
@@ -1259,6 +1257,9 @@ afsql_dd_new(void)
 
   log_template_options_defaults(&self->template_options);
   init_sequence_number(&self->seq_num);
+
+  self->db_thread_wakeup_cond = g_cond_new();
+  self->db_thread_mutex = g_mutex_new();
   return &self->super.super;
 }
 
