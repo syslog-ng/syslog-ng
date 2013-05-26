@@ -22,13 +22,9 @@
  *
  */
 
-#ifndef LOGREWRITE_H_INCLUDED
-#define LOGREWRITE_H_INCLUDED
+#ifndef REWRITE_H_INCLUDED
+#define REWRITE_H_INCLUDED
 
-#include "logmsg.h"
-#include "messages.h"
-#include "templates.h"
-#include "logmatcher.h"
 #include "logpipe.h"
 #include "filter/filter-expr.h"
 
