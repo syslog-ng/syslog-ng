@@ -33,6 +33,7 @@
 #include "rewrite/rewrite-expr-grammar.h"
 #include "rewrite/rewrite-expr.h"
 #include "rewrite/rewrite-set-tag.h"
+#include "rewrite/rewrite-set.h"
 #include "filter/filter-expr.h"
 #include "filter/filter-expr-parser.h"
 #include "cfg-grammar.h"

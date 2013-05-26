@@ -1,11 +1,13 @@
 rewrite_headers = 				\
 	lib/rewrite/rewrite-expr.h		\
 	lib/rewrite/rewrite-set-tag.h		\
+	lib/rewrite/rewrite-set.h		\
 	lib/rewrite/rewrite-expr-parser.h
 
 rewrite_sources = 				\
 	lib/rewrite/rewrite-expr.c		\
 	lib/rewrite/rewrite-set-tag.c		\
+	lib/rewrite/rewrite-set.c		\
 	lib/rewrite/rewrite-expr-parser.c	\
 	lib/rewrite/rewrite-expr-grammar.y
 

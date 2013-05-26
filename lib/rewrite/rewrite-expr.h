@@ -48,9 +48,6 @@ void log_rewrite_set_condition(LogRewrite *s, FilterExprNode *condition);
 void log_rewrite_init(LogRewrite *self);
 void log_rewrite_free_method(LogPipe *self);
 
-/* LogRewriteSet */
-LogRewrite *log_rewrite_set_new(const gchar *new_value);
-
 /* LogRewriteSubst */
 gboolean log_rewrite_subst_set_regexp(LogRewrite *s, const gchar *regexp);
 void log_rewrite_subst_set_matcher(LogRewrite *s, LogMatcher *matcher);

@@ -28,7 +28,6 @@
 #include "templates.h"
 #include "logmatcher.h"
 
-
 /* rewrite */
 
 void
@@ -213,67 +212,5 @@ log_rewrite_subst_new(const gchar *replacement)
 
   self->replacement = log_template_new(configuration, NULL);
   log_template_compile(self->replacement, replacement, NULL);
-  return &self->super;
-}
-
-/* LogRewriteSet
- *
- * This class implements the "set" expression in a rewrite rule.
- */
-typedef struct _LogRewriteSet LogRewriteSet;
-
-struct _LogRewriteSet
-{
-  LogRewrite super;
-  LogTemplate *value_template;
-};
-
-static void
-log_rewrite_set_process(LogRewrite *s, LogMessage **pmsg, const LogPathOptions *path_options)
-{
-  LogRewriteSet *self = (LogRewriteSet *) s;
-  GString *result;
-
-  result = g_string_sized_new(64);
-  log_template_format(self->value_template, *pmsg, NULL, LTZ_LOCAL, 0, NULL, result);
-
-  log_msg_make_writable(pmsg, path_options);
-  log_msg_set_value(*pmsg, self->super.value_handle, result->str, result->len);
-  g_string_free(result, TRUE);
-}
-
-static LogPipe *
-log_rewrite_set_clone(LogPipe *s)
-{
-  LogRewriteSet *self = (LogRewriteSet *) s;
-  LogRewriteSet *cloned;
-
-  cloned = (LogRewriteSet *) log_rewrite_set_new(self->value_template->template);
-  cloned->super.value_handle = self->super.value_handle;
-  cloned->super.condition = self->super.condition;
-  return &cloned->super.super;
-}
-
-static void
-log_rewrite_set_free(LogPipe *s)
-{
-  LogRewriteSet *self = (LogRewriteSet *) s;
-
-  log_template_unref(self->value_template);
-  log_rewrite_free_method(s);
-}
-
-LogRewrite *
-log_rewrite_set_new(const gchar *new_value)
-{
-  LogRewriteSet *self = g_new0(LogRewriteSet, 1);
-
-  log_rewrite_init(&self->super);
-  self->super.super.free_fn = log_rewrite_set_free;
-  self->super.super.clone = log_rewrite_set_clone;
-  self->super.process = log_rewrite_set_process;
-
-  self->value_template = log_template_new(configuration, NULL);
-  log_template_compile(self->value_template, new_value, NULL);
   return &self->super;
 }
