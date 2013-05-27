@@ -3,8 +3,11 @@ lib_filter_tests_TESTS		 = \
 
 check_PROGRAMS				+= ${lib_filter_tests_TESTS}
 
-lib_filter_tests_test_filters_CFLAGS  = $(TEST_CFLAGS) \
+lib_filter_tests_test_filters_CFLAGS  = $(TEST_CFLAGS) 		\
 	-I${top_srcdir}/lib/filter/tests
-lib_filter_tests_test_filters_LDADD	 = $(TEST_LDADD)
+
+lib_filter_tests_test_filters_LDADD	 = $(TEST_LDADD)	\
+	-dlpreopen $(top_builddir)/modules/syslogformat/libsyslogformat.la
+
 lib_filter_tests_test_filters_SOURCES = 			\
 	lib/filter/tests/test_filters.c
