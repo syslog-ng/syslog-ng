@@ -42,13 +42,19 @@ ml_batched_timer_perform_update(MlBatchedTimer *self)
 
   if (iv_timer_registered(&self->timer))
     iv_timer_unregister(&self->timer);
-  g_static_mutex_lock(&self->lock);
+
   self->timer.expires = self->expires;
-  self->updated = TRUE;
-  g_static_mutex_unlock(&self->lock);
+
   if (self->timer.expires.tv_sec > 0)
     iv_timer_register(&self->timer);
   self->unref_cookie(self->cookie);
+}
+
+static inline gboolean
+ml_batched_timer_expiration_changed(MlBatchedTimer *self, struct timespec *next_expires)
+{
+  return ((next_expires->tv_sec != self->expires.tv_sec) ||
+          (next_expires->tv_nsec != self->expires.tv_nsec));
 }
 
 /*
@@ -62,21 +68,44 @@ ml_batched_timer_perform_update(MlBatchedTimer *self)
 static void
 ml_batched_timer_update(MlBatchedTimer *self, struct timespec *next_expires)
 {
-  gboolean invoke;
 
-  /* last update was finished, we need to invoke the updater again */
-  invoke = ((next_expires->tv_sec != self->expires.tv_sec) ||
-            (next_expires->tv_nsec != self->expires.tv_nsec)) &&
-           self->updated;
-  self->updated = FALSE;
+  /* NOTE: this check is racy as self->expires might be updated in a
+   * different thread without holding a lock.
+   *
+   * When we lose the race, that means that another thread has already
+   * updated the expires field, but we see the old value.  In this case two
+   * things may happen:
+   *
+   *   1) we skip an update because of the race
+   *
+   *      We're going to skip the update if the other set the "expires" field to
+   *      the same value we intended to set it.  This is not an issue, it doesn't
+   *      matter whether we or the other thread updates the timer.
+   *
+   *   2) we perform an update because of the race
+   *
+   *      In this case, the other thread has updated the field, but we still
+   *      see the old value, thus we decide another update is due.  We go
+   *      into the locked path, which will sort things out.
+   *
+   * In both cases we are fine.
+   */
 
-  if (invoke)
+  if (ml_batched_timer_expiration_changed(self, next_expires))
     {
-      self->expires = *next_expires;
-      g_static_mutex_unlock(&self->lock);
-      self->ref_cookie(self->cookie);
-      main_loop_call((MainLoopTaskFunc) ml_batched_timer_perform_update, self, FALSE);
       g_static_mutex_lock(&self->lock);
+
+      /* check if we've lost the race */
+      if (ml_batched_timer_expiration_changed(self, next_expires))
+        {
+          /* we need to update the timer */
+          self->expires = *next_expires;
+          self->ref_cookie(self->cookie);
+          g_static_mutex_unlock(&self->lock);
+          main_loop_call((MainLoopTaskFunc) ml_batched_timer_perform_update, self, FALSE);
+        }
+      else
+        g_static_mutex_unlock(&self->lock);
     }
 }
 
@@ -114,7 +143,6 @@ ml_batched_timer_unregister(MlBatchedTimer *self)
 {
   if (iv_timer_registered(&self->timer))
     iv_timer_unregister(&self->timer);
-  self->updated = TRUE;
 }
 
 /* one-time initialization of the MlBatchedTimer structure */
@@ -125,7 +153,6 @@ ml_batched_timer_init(MlBatchedTimer *self)
   IV_TIMER_INIT(&self->timer);
   self->timer.cookie = self;
   self->timer.handler = (void (*)(void *)) ml_batched_timer_handle;
-  self->updated = TRUE;
 }
 
 /* Free MlBatchedTimer state. */
