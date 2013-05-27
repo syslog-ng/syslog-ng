@@ -21,7 +21,7 @@ check_PROGRAMS				+= \
 	${tests_unit_TESTS}
 
 unit_test_extra_modules			= \
-	-dlpreopen $(top_builddir)/modules/syslogformat/libsyslogformat.la
+	$(PREOPEN_SYSLOGFORMAT)
 
 tests_unit_test_resolve_pwgr_LDADD	= \
 	$(TEST_LDADD) $(unit_test_extra_modules)
@@ -54,7 +54,7 @@ tests_unit_test_template_CFLAGS		= $(TEST_CFLAGS)
 tests_unit_test_template_LDADD		= \
 	$(TEST_LDADD) 			  \
 	$(unit_test_extra_modules)	  \
-	-dlpreopen $(top_builddir)/modules/basicfuncs/libbasicfuncs.la
+	$(PREOPEN_BASICFUNCS)
 
 tests_unit_test_template_speed_LDADD	= \
 	$(TEST_LDADD) $(unit_test_extra_modules)

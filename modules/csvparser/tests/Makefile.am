@@ -9,5 +9,5 @@ modules_csvparser_tests_test_csvparser_CFLAGS	=	\
 modules_csvparser_tests_test_csvparser_LDADD	=	\
 	$(TEST_LDADD)
 modules_csvparser_tests_test_csvparser_LDFLAGS	=	\
-	-dlpreopen $(top_builddir)/modules/syslogformat/libsyslogformat.la \
+	$(PREOPEN_SYSLOGFORMAT)				\
 	-dlpreopen $(top_builddir)/modules/csvparser/libcsvparser.la

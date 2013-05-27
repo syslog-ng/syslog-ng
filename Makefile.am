@@ -17,6 +17,10 @@ TEST_LDADD		= $(top_builddir)/lib/libsyslog-ng.la \
 			  $(top_builddir)/libtest/libsyslog-ng-test.a \
 			  $(TOOL_DEPS_LIBS)
 
+PREOPEN_SYSLOGFORMAT	= -dlpreopen ${top_builddir}/modules/syslogformat/libsyslogformat.la
+PREOPEN_BASICFUNCS	= -dlpreopen ${top_builddir}/modules/basicfuncs/libbasicfuncs.la
+PREOPEN_CORE		= $(PREOPEN_SYSLOGFORMAT) $(PREOPEN_BASICFUNCS)
+
 export top_srcdir
 
 CLEAN_SUBDIRS		=

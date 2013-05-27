@@ -7,7 +7,7 @@ lib_filter_tests_test_filters_CFLAGS  = $(TEST_CFLAGS) 		\
 	-I${top_srcdir}/lib/filter/tests
 
 lib_filter_tests_test_filters_LDADD	 = $(TEST_LDADD)	\
-	-dlpreopen $(top_builddir)/modules/syslogformat/libsyslogformat.la
+	$(PREOPEN_SYSLOGFORMAT)
 
 lib_filter_tests_test_filters_SOURCES = 			\
 	lib/filter/tests/test_filters.c
