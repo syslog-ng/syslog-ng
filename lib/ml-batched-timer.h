@@ -35,7 +35,6 @@ typedef struct _MlBatchedTimer
   GStaticMutex lock;
   struct iv_timer timer;
   struct timespec expires;
-  gboolean updated;
   gpointer cookie;
   void *(*ref_cookie)(gpointer self);
   void (*unref_cookie)(gpointer self);
