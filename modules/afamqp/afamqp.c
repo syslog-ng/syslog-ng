@@ -463,10 +463,7 @@ afamqp_worker_insert(AMQPDestDriver *self)
 
   afamqp_dd_connect(self, TRUE);
 
-  g_mutex_lock(self->queue_mutex);
-  log_queue_reset_parallel_push(self->queue);
   success = log_queue_pop_head(self->queue, &msg, &path_options, FALSE, FALSE);
-  g_mutex_unlock(self->queue_mutex);
   if (!success)
     return TRUE;
 
@@ -491,6 +488,16 @@ afamqp_worker_insert(AMQPDestDriver *self)
   return success;
 }
 
+static void
+afamqp_dd_message_became_available_in_the_queue(gpointer user_data)
+{
+  AMQPDestDriver *self = (AMQPDestDriver *) user_data;
+
+  g_mutex_lock(self->suspend_mutex);
+  g_cond_signal(self->writer_thread_wakeup_cond);
+  g_mutex_unlock(self->suspend_mutex);
+}
+
 static gpointer
 afamqp_worker_thread(gpointer arg)
 {
@@ -511,17 +518,13 @@ afamqp_worker_thread(gpointer arg)
           self->writer_thread_suspended = FALSE;
           g_mutex_unlock(self->suspend_mutex);
         }
+      else if (!log_queue_check_items(self->queue, NULL, afamqp_dd_message_became_available_in_the_queue, self, NULL))
+	{
+	  g_cond_wait(self->writer_thread_wakeup_cond, self->suspend_mutex);
+	  g_mutex_unlock(self->suspend_mutex);
+	}
       else
-        {
-          g_mutex_unlock(self->suspend_mutex);
-
-          g_mutex_lock(self->queue_mutex);
-          if (log_queue_get_length(self->queue) == 0)
-            {
-              g_cond_wait(self->writer_thread_wakeup_cond, self->queue_mutex);
-            }
-          g_mutex_unlock(self->queue_mutex);
-        }
+        g_mutex_unlock(self->suspend_mutex);
 
       if (self->writer_thread_terminate)
         break;
@@ -614,6 +617,7 @@ afamqp_dd_deinit(LogPipe *s)
   AMQPDestDriver *self = (AMQPDestDriver *) s;
 
   afamqp_dd_stop_thread(self);
+  log_queue_reset_parallel_push(self->queue);
 
   log_queue_set_counters(self->queue, NULL, NULL);
   stats_lock();
@@ -657,17 +661,6 @@ afamqp_dd_free(LogPipe *d)
 }
 
 static void
-afamqp_dd_queue_notify(gpointer user_data)
-{
-  AMQPDestDriver *self = (AMQPDestDriver *) user_data;
-
-  g_mutex_lock(self->queue_mutex);
-  g_cond_signal(self->writer_thread_wakeup_cond);
-  log_queue_reset_parallel_push(self->queue);
-  g_mutex_unlock(self->queue_mutex);
-}
-
-static void
 afamqp_dd_queue(LogPipe *s, LogMessage *msg,
                 const LogPathOptions *path_options, gpointer user_data)
 {
@@ -677,14 +670,9 @@ afamqp_dd_queue(LogPipe *s, LogMessage *msg,
   if (!path_options->flow_control_requested)
     path_options = log_msg_break_ack(msg, path_options, &local_options);
 
-  g_mutex_lock(self->suspend_mutex);
-  g_mutex_lock(self->queue_mutex);
-  if (!self->writer_thread_suspended)
-    log_queue_set_parallel_push(self->queue, 1, afamqp_dd_queue_notify,
-                                self, NULL);
-  g_mutex_unlock(self->queue_mutex);
-  g_mutex_unlock(self->suspend_mutex);
+  log_msg_add_ack(msg, path_options);
   log_queue_push_tail(self->queue, msg, path_options);
+  log_dest_driver_queue_method(s, msg, path_options, user_data);
 }
 
 /*
