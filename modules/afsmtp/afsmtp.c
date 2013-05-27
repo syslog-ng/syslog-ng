@@ -73,7 +73,6 @@ typedef struct
 
   /* Thread related stuff; shared */
   GThread *writer_thread;
-  GMutex *queue_mutex;
   GMutex *suspend_mutex;
   GCond *writer_thread_wakeup_cond;
 
@@ -347,10 +346,7 @@ afsmtp_worker_insert(AFSMTPDriver *self)
   smtp_message_t message;
   gpointer args[] = { self, NULL, NULL };
 
-  g_mutex_lock(self->queue_mutex);
-  log_queue_reset_parallel_push(self->queue);
   success = log_queue_pop_head(self->queue, &msg, &path_options, FALSE, FALSE);
-  g_mutex_unlock(self->queue_mutex);
   if (!success)
     return TRUE;
 
@@ -429,12 +425,20 @@ afsmtp_worker_insert(AFSMTPDriver *self)
     }
   else
     {
-      g_mutex_lock(self->queue_mutex);
       log_queue_push_head(self->queue, msg, &path_options);
-      g_mutex_unlock(self->queue_mutex);
     }
 
   return success;
+}
+
+static void
+afsmtp_dd_message_became_available_in_the_queue(gpointer user_data)
+{
+  AFSMTPDriver *self = (AFSMTPDriver *) user_data;
+
+  g_mutex_lock(self->suspend_mutex);
+  g_cond_signal(self->writer_thread_wakeup_cond);
+  g_mutex_unlock(self->suspend_mutex);
 }
 
 static gpointer
@@ -461,16 +465,14 @@ afsmtp_worker_thread(gpointer arg)
           self->writer_thread_suspended = FALSE;
           g_mutex_unlock(self->suspend_mutex);
         }
+      else if (!log_queue_check_items(self->queue, NULL, afsmtp_dd_message_became_available_in_the_queue, self, NULL))
+        {
+          g_cond_wait(self->writer_thread_wakeup_cond, self->suspend_mutex);
+          g_mutex_unlock(self->suspend_mutex);
+        }
       else
         {
           g_mutex_unlock(self->suspend_mutex);
-
-          g_mutex_lock(self->queue_mutex);
-          if (log_queue_get_length(self->queue) == 0)
-            {
-              g_cond_wait(self->writer_thread_wakeup_cond, self->queue_mutex);
-            }
-          g_mutex_unlock(self->queue_mutex);
         }
 
       if (self->writer_thread_terminate)
@@ -505,9 +507,9 @@ static void
 afsmtp_dd_stop_thread(AFSMTPDriver *self)
 {
   self->writer_thread_terminate = TRUE;
-  g_mutex_lock(self->queue_mutex);
+  g_mutex_lock(self->suspend_mutex);
   g_cond_signal(self->writer_thread_wakeup_cond);
-  g_mutex_unlock(self->queue_mutex);
+  g_mutex_unlock(self->suspend_mutex);
   g_thread_join(self->writer_thread);
 }
 
@@ -569,6 +571,7 @@ afsmtp_dd_deinit(LogPipe *s)
   AFSMTPDriver *self = (AFSMTPDriver *)s;
 
   afsmtp_dd_stop_thread(self);
+  log_queue_reset_parallel_push(self->queue);
 
   stats_lock();
   stats_unregister_counter(SCS_SMTP | SCS_DESTINATION, self->super.super.id,
@@ -589,7 +592,6 @@ afsmtp_dd_free(LogPipe *d)
   GList *l;
 
   g_mutex_free(self->suspend_mutex);
-  g_mutex_free(self->queue_mutex);
   g_cond_free(self->writer_thread_wakeup_cond);
 
   if (self->queue)
@@ -630,42 +632,18 @@ afsmtp_dd_free(LogPipe *d)
 }
 
 static void
-afsmtp_dd_queue_notify(gpointer s)
-{
-  AFSMTPDriver *self = (AFSMTPDriver *)s;
-
-  g_mutex_lock(self->queue_mutex);
-  g_cond_signal(self->writer_thread_wakeup_cond);
-  log_queue_reset_parallel_push(self->queue);
-  g_mutex_unlock(self->queue_mutex);
-}
-
-static void
 afsmtp_dd_queue(LogPipe *s, LogMessage *msg,
                 const LogPathOptions *path_options, gpointer user_data)
 {
   AFSMTPDriver *self = (AFSMTPDriver *)s;
-  gboolean queue_was_empty;
   LogPathOptions local_options;
 
   if (!path_options->flow_control_requested)
     path_options = log_msg_break_ack(msg, path_options, &local_options);
 
-  g_mutex_lock(self->queue_mutex);
-  queue_was_empty = log_queue_get_length(self->queue) == 0;
-  g_mutex_unlock(self->queue_mutex);
-
   log_msg_add_ack(msg, path_options);
   log_queue_push_tail(self->queue, log_msg_ref(msg), path_options);
 
-  g_mutex_lock(self->suspend_mutex);
-  if (queue_was_empty && !self->writer_thread_suspended)
-    {
-      g_mutex_lock(self->queue_mutex);
-      log_queue_set_parallel_push(self->queue, 1, afsmtp_dd_queue_notify, self, NULL);
-      g_mutex_unlock(self->queue_mutex);
-    }
-  g_mutex_unlock(self->suspend_mutex);
   log_dest_driver_queue_method(s, msg, path_options, user_data);
 }
 
@@ -693,7 +671,6 @@ afsmtp_dd_new(void)
 
   self->writer_thread_wakeup_cond = g_cond_new();
   self->suspend_mutex = g_mutex_new();
-  self->queue_mutex = g_mutex_new();
 
   return (LogDriver *)self;
 }
