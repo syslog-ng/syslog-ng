@@ -71,7 +71,6 @@ typedef struct
 
   /* Thread related stuff; shared */
   GThread *writer_thread;
-  GMutex *queue_mutex;
   GMutex *suspend_mutex;
   GCond *writer_thread_wakeup_cond;
 
@@ -384,10 +383,7 @@ afmongodb_worker_insert (MongoDBDestDriver *self)
 
   afmongodb_dd_connect(self, TRUE);
 
-  g_mutex_lock(self->queue_mutex);
-  log_queue_reset_parallel_push(self->queue);
   success = log_queue_pop_head(self->queue, &msg, &path_options, FALSE, FALSE);
-  g_mutex_unlock(self->queue_mutex);
   if (!success)
     return TRUE;
 
@@ -426,12 +422,20 @@ afmongodb_worker_insert (MongoDBDestDriver *self)
     }
   else
     {
-      g_mutex_lock(self->queue_mutex);
       log_queue_push_head(self->queue, msg, &path_options);
-      g_mutex_unlock(self->queue_mutex);
     }
 
   return success;
+}
+
+static void
+afmongodb_dd_message_became_available_in_the_queue(gpointer user_data)
+{
+  MongoDBDestDriver *self = (MongoDBDestDriver *) user_data;
+
+  g_mutex_lock(self->suspend_mutex);
+  g_cond_signal(self->writer_thread_wakeup_cond);
+  g_mutex_unlock(self->suspend_mutex);
 }
 
 static gpointer
@@ -460,23 +464,15 @@ afmongodb_worker_thread (gpointer arg)
 			    self->suspend_mutex,
 			    &self->writer_thread_suspend_target);
 	  self->writer_thread_suspended = FALSE;
-	  g_mutex_lock(self->queue_mutex);
-	  log_queue_reset_parallel_push(self->queue);
-	  g_mutex_unlock(self->queue_mutex);
+	  g_mutex_unlock(self->suspend_mutex);
+	}
+      else if (!log_queue_check_items(self->queue, NULL, afmongodb_dd_message_became_available_in_the_queue, self, NULL))
+	{
+	  g_cond_wait(self->writer_thread_wakeup_cond, self->suspend_mutex);
 	  g_mutex_unlock(self->suspend_mutex);
 	}
       else
-	{
-	  g_mutex_unlock(self->suspend_mutex);
-
-	  g_mutex_lock(self->queue_mutex);
-	  if (log_queue_get_length(self->queue) == 0)
-	    {
-	      g_cond_wait(self->writer_thread_wakeup_cond, self->queue_mutex);
-	      log_queue_reset_parallel_push(self->queue);
-	    }
-	  g_mutex_unlock(self->queue_mutex);
-	}
+        g_mutex_unlock(self->suspend_mutex);
 
       if (self->writer_thread_terminate)
 	break;
@@ -516,9 +512,9 @@ static void
 afmongodb_dd_stop_thread (MongoDBDestDriver *self)
 {
   self->writer_thread_terminate = TRUE;
-  g_mutex_lock(self->queue_mutex);
+  g_mutex_lock(self->suspend_mutex);
   g_cond_signal(self->writer_thread_wakeup_cond);
-  g_mutex_unlock(self->queue_mutex);
+  g_mutex_unlock(self->suspend_mutex);
   g_thread_join(self->writer_thread);
 }
 
@@ -610,6 +606,7 @@ afmongodb_dd_deinit(LogPipe *s)
   MongoDBDestDriver *self = (MongoDBDestDriver *)s;
 
   afmongodb_dd_stop_thread(self);
+  log_queue_reset_parallel_push(self->queue);
 
   log_queue_set_counters(self->queue, NULL, NULL);
   stats_lock();
@@ -632,7 +629,6 @@ afmongodb_dd_free(LogPipe *d)
   MongoDBDestDriver *self = (MongoDBDestDriver *)d;
 
   g_mutex_free(self->suspend_mutex);
-  g_mutex_free(self->queue_mutex);
   g_cond_free(self->writer_thread_wakeup_cond);
 
   if (self->queue)
@@ -650,14 +646,6 @@ afmongodb_dd_free(LogPipe *d)
 }
 
 static void
-afmongodb_dd_queue_notify(gpointer user_data)
-{
-  MongoDBDestDriver *self = (MongoDBDestDriver *)user_data;
-
-  g_cond_signal(self->writer_thread_wakeup_cond);
-}
-
-static void
 afmongodb_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data)
 {
   MongoDBDestDriver *self = (MongoDBDestDriver *)s;
@@ -668,17 +656,8 @@ afmongodb_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_optio
 
   self->last_msg_stamp = cached_g_current_time_sec ();
 
-  g_mutex_lock(self->suspend_mutex);
-  g_mutex_lock(self->queue_mutex);
-
   log_msg_add_ack(msg, path_options);
   log_queue_push_tail(self->queue, log_msg_ref(msg), path_options);
-
-  if (!self->writer_thread_suspended)
-    log_queue_set_parallel_push(self->queue, 1, afmongodb_dd_queue_notify,
-                                self, NULL);
-  g_mutex_unlock(self->queue_mutex);
-  g_mutex_unlock(self->suspend_mutex);
 
   log_dest_driver_queue_method(s, msg, path_options, user_data);
 }
@@ -708,7 +687,6 @@ afmongodb_dd_new(void)
 
   self->writer_thread_wakeup_cond = g_cond_new();
   self->suspend_mutex = g_mutex_new();
-  self->queue_mutex = g_mutex_new();
 
   return (LogDriver *)self;
 }
