@@ -30,8 +30,11 @@ clean-local:
 		[ -f $${dir}/Makefile ] && ${MAKE} -C $${dir} clean || true; \
 	done
 
+local-check: subdir_tests=$(foreach ts,${${check_subdir}_test_subdirs},${${ts}_tests_TESTS})
+local-check: current_tests=$(foreach subdir,${check_subdir} ${check_subdir}_tests,${${subdir}_TESTS})
 local-check:
-	${AM_v_at}${MAKE} check check_PROGRAMS="${${check_subdir}_TESTS}" TESTS="${${check_subdir}_TESTS}"
+	${AM_v_at}${MAKE} check check_PROGRAMS="${current_tests} ${subdir_tests}" \
+				TESTS="${current_tests} ${subdir_tests}"
 
 noinst_LIBRARIES	=
 noinst_DATA		=

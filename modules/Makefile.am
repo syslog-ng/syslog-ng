@@ -28,4 +28,13 @@ SYSLOG_NG_MODULES	=	\
 
 modules modules/: ${SYSLOG_NG_MODULES}
 
+modules_test_subdirs	=	\
+	modules_afsocket modules_afstreams modules_affile \
+	modules_afprog modules_usertty modules_afamqp \
+	modules_afmongodb modules_afsmtp modules_json \
+	modules_syslogformat modules_linux_kmsg \
+	modules_pacctformat modules_confgen modules_system_source \
+	modules_csvparser modules_dbparser modules_basicfuncs \
+	modules_cryptofuncs modules_geoip
+
 .PHONY: modules modules/

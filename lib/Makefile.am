@@ -9,6 +9,8 @@ lib_LTLIBRARIES				+= lib/libsyslog-ng.la
 lib_libsyslog_ng_la_LIBADD		= @CORE_DEPS_LIBS@ $(libsystemd_daemon_LIBS)
 lib_libsyslog_ng_la_LDFLAGS		= -no-undefined -release @VERSION@
 
+lib_test_subdirs			= lib_filter lib_logproto lib_parser lib_rewrite
+
 if IVYKIS_INTERNAL
 lib_libsyslog_ng_la_DEPENDENCIES	= lib/ivykis/src/libivykis.la
 
