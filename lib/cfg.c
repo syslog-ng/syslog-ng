@@ -315,15 +315,20 @@ cfg_init(GlobalConfig *cfg)
           cfg->bad_hostname_compiled = TRUE;
         }
     }
-  dns_cache_set_params(cfg->dns_cache_size, cfg->dns_cache_expire, cfg->dns_cache_expire_failed, cfg->dns_cache_hosts);
-  set_custom_domain(cfg->custom_domain);
+  dns_cache_global_init(cfg->dns_cache_size, cfg->dns_cache_expire, cfg->dns_cache_expire_failed, cfg->dns_cache_hosts);
+  dns_cache_tls_init();
   return log_center_init(cfg->center, cfg);
 }
 
 gboolean
 cfg_deinit(GlobalConfig *cfg)
 {
-  return log_center_deinit(cfg->center);
+  gboolean result;
+
+  result = log_center_deinit(cfg->center);
+  dns_cache_tls_deinit();
+  dns_cache_global_deinit();
+  return result;
 }
 
 void

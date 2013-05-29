@@ -26,6 +26,7 @@
 #include "messages.h"
 #include "timeutils.h"
 #include "tls-support.h"
+#include "mainloop.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -71,6 +72,8 @@ TLS_BLOCK_START
   DNSCacheEntry cache_last;
   DNSCacheEntry persist_first;
   DNSCacheEntry persist_last;
+  time_t cache_hosts_mtime;
+  time_t cache_hosts_checktime;
 }
 TLS_BLOCK_END;
 
@@ -79,14 +82,14 @@ TLS_BLOCK_END;
 #define cache_last __tls_deref(cache_last)
 #define persist_first __tls_deref(persist_first)
 #define persist_last __tls_deref(persist_last)
+#define cache_hosts_mtime __tls_deref(cache_hosts_mtime)
+#define cache_hosts_checktime __tls_deref(cache_hosts_checktime)
 
 static gint dns_cache_size = 1007;
 static gint dns_cache_expire = 3600;
 static gint dns_cache_expire_failed = 60;
 static gint dns_cache_persistent_count = 0;
 static gchar *dns_cache_hosts = NULL;
-static time_t dns_cache_hosts_mtime = -1;
-static time_t dns_cache_hosts_checktime = 0;
 
 static gboolean 
 dns_cache_key_equal(DNSCacheKey *e1, DNSCacheKey *e2)
@@ -178,10 +181,10 @@ dns_cache_check_hosts(glong t)
 {
   struct stat st;
 
-  if (G_LIKELY(dns_cache_hosts_checktime == t))
+  if (G_LIKELY(cache_hosts_checktime == t))
     return;
 
-  dns_cache_hosts_checktime = t;
+  cache_hosts_checktime = t;
   
   if (!dns_cache_hosts || stat(dns_cache_hosts, &st) < 0)
     {
@@ -189,11 +192,10 @@ dns_cache_check_hosts(glong t)
       return;
     }
     
-  if (dns_cache_hosts_mtime == -1 || st.st_mtime > dns_cache_hosts_mtime)
+  if (cache_hosts_mtime == -1 || st.st_mtime > cache_hosts_mtime)
     {
       FILE *hosts;
-      
-      dns_cache_hosts_mtime = st.st_mtime;
+      cache_hosts_mtime = st.st_mtime;
       dns_cache_cleanup_persistent_hosts();
       hosts = fopen(dns_cache_hosts, "r");
       if (hosts)
@@ -326,27 +328,34 @@ dns_cache_store(gboolean persistent, gint family, void *addr, const gchar *hostn
 }
 
 void
-dns_cache_set_params(gint cache_size, gint expire, gint expire_failed, const gchar *hosts)
+dns_cache_global_init(gint cache_size, gint expire, gint expire_failed, const gchar *hosts)
 {
-  if (dns_cache_hosts)
-    g_free(dns_cache_hosts);
-    
+  main_loop_assert_main_thread();
+
   dns_cache_size = cache_size;
   dns_cache_expire = expire;
   dns_cache_expire_failed = expire_failed;
   dns_cache_hosts = g_strdup(hosts);
-  dns_cache_hosts_mtime = -1;
-  dns_cache_hosts_checktime = 0;
 }
 
 void
-dns_cache_init(void)
+dns_cache_global_deinit(void)
+{
+  main_loop_assert_main_thread();
+
+  g_free(dns_cache_hosts);
+}
+
+void
+dns_cache_tls_init(void)
 {
   cache = g_hash_table_new_full((GHashFunc) dns_cache_key_hash, (GEqualFunc) dns_cache_key_equal, NULL, (GDestroyNotify) dns_cache_entry_free);
   cache_first.next = &cache_last;
   cache_first.prev = NULL;
   cache_last.prev = &cache_first;
   cache_last.next = NULL;
+  cache_hosts_mtime = -1;
+  cache_hosts_checktime = 0;
 
   persist_first.next = &persist_last;
   persist_first.prev = NULL;
@@ -355,13 +364,7 @@ dns_cache_init(void)
 }
 
 void
-dns_cache_destroy(void)
+dns_cache_tls_deinit(void)
 {
   g_hash_table_destroy(cache);
-  cache_first.next = NULL;
-  cache_last.prev = NULL;
-  persist_first.next = NULL;
-  persist_last.prev = NULL;
-  if (dns_cache_hosts)
-    g_free(dns_cache_hosts);
 }

@@ -340,7 +340,7 @@ main_loop_io_worker_thread_start(void *cookie)
   gint id;
 
   g_static_mutex_lock(&main_loop_io_workers_idmap_lock);
-  dns_cache_init();
+  dns_cache_tls_init();
   /* NOTE: this algorithm limits the number of I/O worker threads to 64,
    * since the ID map is stored in a single 64 bit integer.  If we ever need
    * more threads than that, we can generalize this algorithm further. */
@@ -364,7 +364,7 @@ void
 main_loop_io_worker_thread_stop(void *cookie)
 {
   g_static_mutex_lock(&main_loop_io_workers_idmap_lock);
-  dns_cache_destroy();
+  dns_cache_tls_deinit();
   if (main_loop_io_worker_id)
     {
       main_loop_io_workers_idmap &= ~(1 << (main_loop_io_worker_id - 1));

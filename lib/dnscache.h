@@ -31,8 +31,9 @@
 gboolean dns_cache_lookup(gint family, void *addr, const gchar **hostname, gboolean *positive);
 void dns_cache_store(gboolean persistent, gint family, void *addr, const gchar *hostname, gboolean positive);
 
-void dns_cache_set_params(gint cache_size, gint expire, gint expire_failed, const gchar *hosts);
-void dns_cache_init(void);
-void dns_cache_destroy(void);
+void dns_cache_global_init(gint cache_size, gint expire, gint expire_failed, const gchar *hosts);
+void dns_cache_global_deinit(void);
+void dns_cache_tls_init(void);
+void dns_cache_tls_deinit(void);
 
 #endif
