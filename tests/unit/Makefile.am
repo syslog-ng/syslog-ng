@@ -1,5 +1,5 @@
 # we need the dotdot version of the include path to find generated headers
-AM_CFLAGS = -I$(top_srcdir)/lib -I$(top_srcdir)/libtest -I../../lib -I$(top_srcdir)/modules/basic-proto
+AM_CFLAGS = -I$(top_srcdir)/lib -I$(top_srcdir)/libtest -I../../lib -I$(top_srcdir)/modules/basic-proto -I$(top_srcdir)/modules
 AM_LDFLAGS = -dlpreopen  $(top_builddir)/lib/libsyslog-ng.la -dlpreopen $(top_builddir)/modules/syslogformat/libsyslogformat.la $(top_builddir)/modules/basic-proto/libbasic-proto.la
 LIBS = @TOOL_DEPS_LIBS@
 LDADD = $(top_builddir)/lib/libsyslog-ng.la $(top_builddir)/libtest/libsyslog-ng-test.a @TOOL_DEPS_LIBS@
@@ -35,7 +35,8 @@ check_PROGRAMS =			\
   test_control_cmds \
   test_control_connection \
 	test_messages \
-	test_rcptid
+	test_rcptid \
+	test_csv_parser_flags
 
 if IS_HPUX
 check_PROGRAMS += test_zone
@@ -78,7 +79,8 @@ test_persist_state_SOURCES = test_persist_state.c
 test_value_pairs_SOURCES = test_value_pairs.c
 test_filereader_SOURCES = test_filereader.c libtest_memreader.c
 test_multiline_SOURCES = test_multiline.c libtest_memreader.c
-
+test_csv_parser_flags_SOURCES = test_csv_parser_flags.c
+test_csv_parser_flags_LDADD = $(LDADD) $(top_builddir)/modules/csvparser/libcsvparser.la
 test_msgserialize_benchmark_SOURCES = test_msgserialize_benchmark.c
 test_msgserialize_tags_SOURCES = test_msgserialize_tags.c
 test_msgformat_upgrade_SOURCES = test_msgformat_upgrade.c

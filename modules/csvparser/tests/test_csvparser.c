@@ -19,8 +19,6 @@
         if (!(x))		\
           {			\
             fprintf(stderr, "Testcase failed: %s; msg='%s', cond='%s', value='%s', expected_value='%s'\n", desc, msg, #x, value, expected_value); \
-            int *a = NULL; \
-            *a = 5; \
             exit(1);		\
           }			\
     }				\
