@@ -150,6 +150,7 @@ resolve_sockaddr(gchar *result, gsize *result_len, GSockAddr *saddr, gboolean us
   const gchar *hname;
   gboolean positive;
   gchar buf[256];
+  gchar hostent_buf[256];
  
   if (saddr && saddr->sa.sa_family != AF_UNIX)
     {
@@ -187,8 +188,12 @@ resolve_sockaddr(gchar *result, gsize *result_len, GSockAddr *saddr, gboolean us
                   struct hostent *hp;
                   G_LOCK(resolv_lock);
                   hp = gethostbyaddr(addr, addr_len, saddr->sa.sa_family);
+                  if (hp && hp->h_name)
+                    {
+                      strncpy(hostent_buf, hp->h_name, sizeof(hostent_buf));
+                      hname = hostent_buf;
+                    }
                   G_UNLOCK(resolv_lock);
-                  hname = (hp && hp->h_name) ? hp->h_name : NULL;
 #endif
                   if (hname)
                     positive = TRUE;
