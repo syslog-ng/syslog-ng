@@ -345,7 +345,7 @@ cfg_load_default_modules_if_necessary(GlobalConfig *self)
       for (i = 0; mods[i]; i++)
         {
           plugin_load_module(mods[i], self, NULL);
-          if (strcmp(mods[i], "license") == 0)
+          if (strcmp(mods[i], "license-plugin") == 0)
             is_license_module_loaded = TRUE;
         }
       g_strfreev(mods);
@@ -353,7 +353,7 @@ cfg_load_default_modules_if_necessary(GlobalConfig *self)
 
   if (!is_license_module_loaded)
     {
-      plugin_load_module("license", self, NULL);
+      plugin_load_module("license-plugin", self, NULL);
     }
 }
 
