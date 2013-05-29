@@ -1448,6 +1448,7 @@ AC_OUTPUT(dist.conf
           syslog-ng/Makefile
           syslog-ng-ctl/Makefile
           persist-tool/Makefile
+          tools/Makefile
           modules/Makefile
           modules/dummy/Makefile
           modules/basic-proto/Makefile
