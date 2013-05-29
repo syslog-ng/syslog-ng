@@ -261,6 +261,8 @@ void log_proto_free(LogProto *s);
 
 #define LPBS_KEEP_ONE       0x0010
 
+#define LPBS_FSYNC          0x0020
+
 
 struct _LogProtoFactory
 {

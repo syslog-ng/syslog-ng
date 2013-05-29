@@ -29,18 +29,6 @@
 #include "logproto.h"
 #include "state.h"
 
-/* flags for log proto plain server */
-/* end-of-packet terminates log message (UDP sources) */
-
-/* issue a single read in a poll loop as /proc/kmsg does not support non-blocking mode */
-#define LPBS_NOMREAD        0x0001
-/* don't exit when EOF is read */
-#define LPBS_IGNORE_EOF     0x0002
-/* track the current file position */
-#define LPBS_POS_TRACKING   0x0004
-
-#define LPRS_BINARY         0x0008
-
 LogProto *log_proto_framed_client_new_plugin(LogTransport *transport,LogProtoOptions *options,GlobalConfig *cfg);
 LogProto *log_proto_text_client_new_plugin(LogTransport *transport,LogProtoOptions *options,GlobalConfig *cfg);
 LogProto *log_proto_record_client_new_plugin(LogTransport *transport,LogProtoOptions *options,GlobalConfig *cfg);

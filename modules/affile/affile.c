@@ -997,11 +997,11 @@ affile_dw_reopen(AFFileDestWriter *self)
                        !!(self->owner->flags & AFFILE_CREATE_DIRS), FALSE, !!(self->owner->flags & AFFILE_PIPE), &fd))
     {
       guint write_flags;
-      
-      write_flags =
-        ((self->owner->flags & AFFILE_PIPE) ? LTF_PIPE : LTF_APPEND) |
-        ((self->owner->flags & AFFILE_FSYNC) ? LTF_FSYNC : 0);
+
+      write_flags = ((self->owner->flags & AFFILE_PIPE) ? LTF_PIPE : LTF_APPEND);
+
       self->owner->proto_options.super.size = self->owner->writer_options.flush_lines;
+      self->owner->proto_options.super.flags |= ((self->owner->flags & AFFILE_FSYNC) ? LPBS_FSYNC : 0);
       if (!self->owner->proto_factory)
         {
           self->owner->proto_factory = log_proto_get_factory(cfg,LPT_CLIENT,(self->owner->flags & AFFILE_PIPE) ? "stream-newline" : "file-writer" );
