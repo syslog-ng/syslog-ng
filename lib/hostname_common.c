@@ -4,6 +4,7 @@
 static gchar local_hostname_fqdn[256];
 static gchar local_hostname_short[256];
 static gchar *custom_domain;
+G_LOCK_DEFINE(resolv_lock);
 
 void
 getlonghostname(gchar *buf, gsize buflen)

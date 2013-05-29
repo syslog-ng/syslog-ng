@@ -2,6 +2,7 @@
 #include "gsockaddr.h"
 
 #include <sys/types.h>
+G_LOCK_EXTERN(resolv_lock);
 
 void reset_cached_hostname(void);
 void getlonghostname(gchar *buf, gsize buflen);
