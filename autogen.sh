@@ -9,21 +9,21 @@
 set -e
 
 (
- pemodpath="$ZWA_ROOT/git/syslog-ng/syslog-ng-pe-modules--mainline--5.0/modules"
+ pemodpath="$ZWA_ROOT/work/syslog-ng-pe-mainline-5.0/syslog-ng-pe-modules/modules"
  for pemod in license logstore diskq confighash snmp afsqlsource rltp-proto eventlog agent-config windows-resource; do
     if [ -d $pemodpath/$pemod ]; then
         if [ -h modules/$pemod ] || [ -d modules/$pemod ]; then rm -rf modules/$pemod; fi
         ln -s $pemodpath/$pemod modules/$pemod
     fi
  done
- petests_orig="$ZWA_ROOT/git/syslog-ng/syslog-ng-pe-modules--mainline--5.0/tests"
+ petests_orig="$ZWA_ROOT/work/syslog-ng-pe-mainline-5.0/syslog-ng-pe-modules/tests"
  petests="pe-tests"
  if [ -d $petests_orig ]; then
      if [ -h $petests ] || [ -d $petests ]; then rm -rf $petests; fi
      ln -s $petests_orig $petests
  fi
 
- peroot="$ZWA_ROOT/git/syslog-ng/syslog-ng-pe-modules--mainline--5.0"
+ peroot="$ZWA_ROOT/work/syslog-ng-pe-mainline-5.0/syslog-ng-pe-modules"
  for pebin in windows-tools windows-binaries; do
     binpath=$peroot/$pebin
     if [ -d $binpath ]; then
