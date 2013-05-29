@@ -344,6 +344,7 @@ dns_cache_global_deinit(void)
   main_loop_assert_main_thread();
 
   g_free(dns_cache_hosts);
+  dns_cache_hosts = NULL;
 }
 
 void

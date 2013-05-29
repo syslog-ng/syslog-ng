@@ -918,9 +918,8 @@ main_loop_run(void)
   iv_main();
 
   control_destroy();
-
-  cfg_deinit(current_configuration);
   cfg_free(current_configuration);
+
   current_configuration = NULL;
   main_loop_deinit();
   return 0;
