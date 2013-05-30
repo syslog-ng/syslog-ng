@@ -64,6 +64,7 @@
 %token KW_CREATE_STATEMENT_APPEND
 %token KW_COLUMNS
 %token KW_NULL
+%token KW_IGNORE_TNS_CONFIG
 
 %type   <ptr> dest_afsql
 %type   <ptr> dest_afsql_params
@@ -113,6 +114,7 @@ dest_afsql_option
         | KW_COLUMNS '(' string_list ')'	{ afsql_dd_set_columns(last_driver, $3); }
         | KW_INDEXES '(' string_list ')'        { afsql_dd_set_indexes(last_driver, $3); }
         | KW_VALUES '(' dest_afsql_values ')'		{ afsql_dd_set_values(last_driver, $3); }
+        | KW_IGNORE_TNS_CONFIG '(' yesno ')'    { afsql_dd_set_ignore_tns_config(last_driver,$3); }
         | KW_NULL '(' string ')'                { afsql_dd_set_null_value(last_driver, $3); free($3); }
         | KW_RETRIES '(' nonnegative_integer ')'          { afsql_dd_set_retries(last_driver, $3); }
         | KW_FLUSH_LINES '(' nonnegative_integer ')'      { afsql_dd_set_flush_lines(last_driver, $3); }

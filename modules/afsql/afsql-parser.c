@@ -54,6 +54,7 @@ static CfgLexerKeyword afsql_keywords[] =
   { "flush_timeout",      KW_FLUSH_TIMEOUT },
   { "flags",              KW_FLAGS },
   { "create_statement_append", KW_CREATE_STATEMENT_APPEND },
+  { "ignore_tns_config",  KW_IGNORE_TNS_CONFIG },
 
   { "dbd_option",         KW_DBD_OPTION },
   { NULL }

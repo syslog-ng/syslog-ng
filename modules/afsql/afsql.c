@@ -181,6 +181,14 @@ afsql_dd_set_retries(LogDriver *s, gint num_retries)
 }
 
 void
+afsql_dd_set_ignore_tns_config(LogDriver *s, const gboolean ignore_tns_config)
+{
+  AFSqlDestDriver *self = (AFSqlDestDriver *) s;
+
+  self->ignore_tns_config = ignore_tns_config;
+}
+
+void
 afsql_dd_set_flush_lines(LogDriver *s, gint flush_lines)
 {
   AFSqlDestDriver *self = (AFSqlDestDriver *) s;
@@ -722,6 +730,9 @@ afsql_dd_ensure_initialized_connection(AFSqlDestDriver *self)
   dbi_conn_set_option(self->dbi_ctx, "sqlite_dbdir", "");
   dbi_conn_set_option(self->dbi_ctx, "sqlite3_dbdir", "");
 
+  if (strcmp(self->type, s_oracle) == 0)
+    dbi_conn_set_option_numeric(self->dbi_ctx, "oracle_ignore_tns_config", self->ignore_tns_config);
+
   /* Set user-specified options */
   g_hash_table_foreach(self->dbd_options, afsql_dd_set_dbd_opt, self->dbi_ctx);
   g_hash_table_foreach(self->dbd_options_numeric, afsql_dd_set_dbd_opt_numeric, self->dbi_ctx);
@@ -1188,6 +1199,12 @@ afsql_dd_init(LogPipe *s)
       return FALSE;
     }
 
+  if (self->ignore_tns_config && strcmp(self->type, s_oracle) != 0)
+    {
+      msg_warning("WARNING: Option ignore_tns_config was skipped because database type is not Oracle",
+                  evt_tag_str("type", self->type));
+    }
+
   stats_lock();
   {
     StatsClusterKey sc_key;
@@ -1433,6 +1450,7 @@ afsql_dd_new(GlobalConfig *cfg)
   self->database = g_strdup("logs");
   self->encoding = g_strdup("UTF-8");
   self->transaction_active = FALSE;
+  self->ignore_tns_config = FALSE;
 
   self->table = log_template_new(configuration, NULL);
   log_template_compile(self->table, "messages", NULL);
