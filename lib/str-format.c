@@ -371,3 +371,12 @@ scan_bsd_timestamp(const gchar **buf, gint *left, struct tm *tm)
     return FALSE;
   return TRUE;
 }
+
+void
+str_rtrim(gchar * const string, const gchar *characters)
+{
+  gint i;
+
+  for (i = strlen(string) - 1; i >= 0 && strchr(characters, string[i]) != NULL; --i)
+    string[i] = 0;
+}

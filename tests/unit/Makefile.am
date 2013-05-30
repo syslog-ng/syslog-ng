@@ -36,6 +36,7 @@ check_PROGRAMS =			\
   test_control_connection \
 	test_messages \
 	test_rcptid \
+	test_strformat \
 	test_csv_parser_flags
 
 if IS_HPUX
@@ -98,4 +99,5 @@ test_state_SOURCES = test_state.c
 test_buffered_proto_state_SOURCES = test_buffered_proto_state.c
 test_messages_SOURCES = test_messages.c
 
+test_strformat_SOURCES = test_strformat.c
 TESTS = $(check_PROGRAMS)

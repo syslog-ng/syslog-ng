@@ -18,4 +18,7 @@ scan_linksys_timestamp(const gchar **buf, gint *left, struct tm *tm);
 gboolean
 scan_bsd_timestamp(const gchar **buf, gint *left, struct tm *tm);
 
+void
+str_rtrim(gchar * const string, const gchar *characters);
+
 #endif
