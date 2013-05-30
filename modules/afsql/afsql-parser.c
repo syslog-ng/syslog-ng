@@ -55,6 +55,7 @@ static CfgLexerKeyword afsql_keywords[] = {
   { "flush_lines",        KW_FLUSH_LINES },
   { "flush_timeout",      KW_FLUSH_TIMEOUT, 0, KWS_OBSOLETE, "flush_timeout has been ignored since " VERSION_PE_4_2},
   { "flags",              KW_FLAGS },
+  { "ignore_tns_config",  KW_IGNORE_TNS_CONFIG },
   { NULL }
 };
 

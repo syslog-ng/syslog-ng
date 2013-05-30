@@ -56,6 +56,7 @@ void afsql_dd_set_flags(LogDriver *s, gint flags);
 LogDriver *afsql_dd_new();
 gint afsql_dd_lookup_flag(const gchar *flag);
 void afsql_dd_set_retries(LogDriver *s, gint num_retries);
+void afsql_dd_set_ignore_tns_config(LogDriver *s, const gboolean ignore_tns_config);
 
 #else
 
@@ -69,6 +70,7 @@ void afsql_dd_set_retries(LogDriver *s, gint num_retries);
 #define afsql_dd_set_columns(s, c)
 #define afsql_dd_set_values(s, v)
 #define afsql_dd_set_null_value(s, v)
+#define afsql_dd_set_ignore_tns_config(s, i)
 
 #define afsql_dd_new() 0
 

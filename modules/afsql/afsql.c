@@ -92,6 +92,7 @@ typedef struct _AFSqlDestDriver
   gint flush_lines;
   gint flush_lines_queued;
   gint flags;
+  gboolean ignore_tns_config;
   GList *session_statements;
 
   LogTemplateOptions template_options;
@@ -255,6 +256,14 @@ afsql_dd_set_retries(LogDriver *s, gint num_retries)
     {
       self->num_retries = num_retries;
     }
+}
+
+void
+afsql_dd_set_ignore_tns_config(LogDriver *s, const gboolean ignore_tns_config)
+{
+  AFSqlDestDriver *self = (AFSqlDestDriver *) s;
+
+  self->ignore_tns_config = ignore_tns_config;
 }
 
 void
@@ -647,6 +656,9 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
           /* database specific hacks */
           dbi_conn_set_option(self->dbi_ctx, "sqlite_dbdir", "");
           dbi_conn_set_option(self->dbi_ctx, "sqlite3_dbdir", "");
+
+          if (!strcmp(self->type, "oracle"))
+            dbi_conn_set_option_numeric(self->dbi_ctx, "oracle_ignore_tns_config", self->ignore_tns_config);
 
           if (dbi_conn_connect(self->dbi_ctx) < 0)
             {
@@ -1237,6 +1249,7 @@ afsql_dd_new(void)
   self->password = g_strdup("");
   self->database = g_strdup("logs");
   self->encoding = g_strdup("UTF-8");
+  self->ignore_tns_config = FALSE;
 
   self->table = log_template_new(configuration, NULL);
   log_template_compile(self->table, "messages", NULL);
