@@ -432,11 +432,11 @@ log_reader_restart_task_handler(gpointer s)
   fd = log_proto_get_fd(self->proto);
   if (fd >= 0)
     {
-      if (fstat(fd, &st) >= 0)
+      if (self->follow_filename && fstat(fd, &st) >= 0)
         {
           self->size = st.st_size;
-          log_reader_io_process_input(s);
         }
+      log_reader_io_process_input(s);
     }
 }
 
