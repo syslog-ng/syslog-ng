@@ -8,11 +8,69 @@
 #include "cfg.h"
 #include "timeutils.h"
 #include "plugin.h"
+#include "testutils.h"
 
 #include <time.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+
+gboolean success = TRUE;
+gboolean verbose = FALSE;
+MsgFormatOptions parse_options;
+
+void
+testcase(LogMessage *msg, gchar *template, gchar *expected)
+{
+  LogTemplate *templ;
+  GString *res = g_string_sized_new(128);
+  GError *error = NULL;
+  LogMessage *context[2] = { msg, msg };
+  const gchar *context_id = "test-context-id";
+  gchar *error_message = "";
+  gboolean successful_compile;
+
+  templ = log_template_new(configuration, "dummy");
+  successful_compile = log_template_compile(templ, template, &error);
+  if (expected != NULL)
+    {
+      if (!successful_compile)
+        error_message = error->message;
+      assert_true(successful_compile, "Error compiling template, template=%s, error=%s\n", template, error_message);
+      log_template_format_with_context(templ, context, 2, NULL, LTZ_LOCAL, 999, context_id, res);
+      assert_string(res->str, expected, "Formatted string is not expected");
+    }
+  else
+    {
+      assert_false(successful_compile, "Compilation is expected to fail; template='%s'", template);
+    }
+
+  log_template_unref(templ);
+  g_string_free(res, TRUE);
+}
+
+void
+testcase_failure(gchar *template, const gchar *expected_error)
+{
+  LogTemplate *templ;
+  GError *error = NULL;
+
+  templ = log_template_new(configuration, NULL);
+  if (log_template_compile(templ, template, &error))
+    {
+      fprintf(stderr, "FAIL: compilation failure expected to template, but success was returned, template=%s, expected_error=%s\n", template, expected_error);
+      success = FALSE;
+      goto error;
+    }
+  if (strstr(error->message, expected_error) == NULL)
+    {
+      fprintf(stderr, "FAIL: compilation error doesn't match, error=%s, expected_error=%s\n", error->message, expected_error);
+      success = FALSE;
+      goto error;
+    }
+ error:
+  log_template_unref(templ);
+}
 
 GCond *thread_ping;
 GMutex *thread_lock;
