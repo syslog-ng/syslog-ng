@@ -5,6 +5,22 @@ self		= $(subst ${top_builddir}/,,${CURDIR})
 self_sub	= $(subst -,_,$(subst /,_,${self}))
 basedir		= $(firstword $(subst /, ,${self}))
 
+levelup		=
+
+ifeq (${self_sub},lib_filter)
+levelup		= 1
+else ifeq (${self_sub},lib_logproto)
+levelup		= 1
+else ifeq (${self_sub},lib_parser)
+levelup		= 1
+else ifeq (${self_sub},lib_rewrite)
+levelup		= 1
+endif
+
+ifeq (${levelup},1)
+self		= $(subst /,,$(dir $(subst ${top_builddir}/,,${CURDIR})))
+endif
+
 all:
 	${AM_v_at}${MAKE} -C ${top_builddir} ${self}/
 
