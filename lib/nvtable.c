@@ -750,6 +750,9 @@ nv_table_clone(NVTable *self, gint additional_space)
   else
     new_size = self->size + (NV_TABLE_BOUND(additional_space));
 
+  if (new_size > NV_TABLE_MAX_BYTES)
+    new_size = NV_TABLE_MAX_BYTES;
+
   new = g_malloc(new_size);
   memcpy(new, self, sizeof(NVTable) + self->num_static_entries * sizeof(self->static_entries[0]) + self->num_dyn_entries * sizeof(NVDynValue));
   new->size = new_size;
