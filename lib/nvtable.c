@@ -705,6 +705,7 @@ nv_table_realloc(NVTable *self, NVTable **new)
       memcpy(*new, self, sizeof(NVTable) + self->num_static_entries * sizeof(self->static_entries[0]) + self->num_dyn_entries * sizeof(NVDynValue));
       (*new)->ref_cnt = 1;
       (*new)->borrowed = FALSE;
+      (*new)->size = new_size;
 
       memmove(NV_TABLE_ADDR((*new), (*new)->size - (*new)->used),
               NV_TABLE_ADDR(self, old_size - self->used),
