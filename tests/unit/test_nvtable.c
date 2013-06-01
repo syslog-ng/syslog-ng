@@ -30,7 +30,7 @@
     }                                                                   \
   while (0)
 
-void
+static void
 test_nv_registry()
 {
   NVRegistry *reg;
@@ -154,7 +154,7 @@ test_nv_registry()
 #define DYN_HANDLE 17
 #define DYN_NAME "VAL17"
 
-void
+static void
 test_nvtable_direct()
 {
   NVTable *tab;
@@ -322,7 +322,7 @@ test_nvtable_direct()
  *    - set/get dynamic NV entries that refer to a non-existant entry
  *        -
  */
-void
+static void
 test_nvtable_indirect()
 {
   NVTable *tab;
@@ -644,7 +644,7 @@ test_nvtable_indirect()
  *
  * - change an entry that is referenced by other entries
  */
-void
+static void
 test_nvtable_others(void)
 {
   NVTable *tab;
@@ -689,7 +689,7 @@ test_nvtable_others(void)
   nv_table_unref(tab);
 }
 
-void
+static void
 test_nvtable_lookup()
 {
   NVTable *tab;
@@ -729,7 +729,7 @@ test_nvtable_lookup()
     }
 }
 
-void
+static void
 test_nvtable(void)
 {
   test_nvtable_direct();
