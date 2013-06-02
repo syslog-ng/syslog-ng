@@ -411,6 +411,26 @@ log_reader_stop_watches(LogReader *self)
 }
 
 static void
+log_reader_update_fd_callbacks(LogReader *self, GIOCondition cond)
+{
+  if (cond & G_IO_IN)
+    iv_fd_set_handler_in(&self->fd_watch, log_reader_io_process_input);
+  else
+    iv_fd_set_handler_in(&self->fd_watch, NULL);
+
+  if (cond & G_IO_OUT)
+    iv_fd_set_handler_out(&self->fd_watch, log_reader_io_process_input);
+  else
+    iv_fd_set_handler_out(&self->fd_watch, NULL);
+
+  if (cond & (G_IO_IN + G_IO_OUT))
+    iv_fd_set_handler_err(&self->fd_watch, log_reader_io_process_input);
+  else
+    iv_fd_set_handler_err(&self->fd_watch, NULL);
+
+}
+
+static void
 log_reader_update_watches(LogReader *self)
 {
   gint fd;
@@ -433,25 +453,7 @@ log_reader_update_watches(LogReader *self)
 
       self->immediate_check = FALSE;
       if (self->pollable_state)
-        {
-          iv_fd_set_handler_in(&self->fd_watch, NULL);
-          iv_fd_set_handler_out(&self->fd_watch, NULL);
-
-          /* we disable the error handler too, as it might be
-           * triggered even when we don't want to read data
-           * (e.g. log_source_free_to_send() is FALSE).
-           *
-           * And at least on Linux, it may happen that EPOLLERR is
-           * set, while there's still data in the socket buffer.  Thus
-           * in reaction to an EPOLLERR, we could possibly send
-           * further messages without validating the
-           * log_source_free_to_send() would allow us to, potentially
-           * overflowing our window (and causing a failed assertion in
-           * log_source_queue().
-           */
-
-          iv_fd_set_handler_err(&self->fd_watch, NULL);
-        }
+        log_reader_update_fd_callbacks(self, 0);
 
       if (iv_timer_registered(&self->follow_timer))
         iv_timer_unregister(&self->follow_timer);
@@ -474,26 +476,7 @@ log_reader_update_watches(LogReader *self)
 
   if (self->pollable_state)
     {
-      /* this branch is executed when our fd is connected to a non-file
-       * source (e.g. TCP, UDP socket). We set up I/O callbacks here.
-       * files cannot be polled using epoll, as it causes an I/O error
-       * (thus abort in ivykis).
-       */
-      if (cond & G_IO_IN)
-        iv_fd_set_handler_in(&self->fd_watch, log_reader_io_process_input);
-      else
-        iv_fd_set_handler_in(&self->fd_watch, NULL);
-
-      if (cond & G_IO_OUT)
-        iv_fd_set_handler_out(&self->fd_watch, log_reader_io_process_input);
-      else
-        iv_fd_set_handler_out(&self->fd_watch, NULL);
-
-      if (cond & (G_IO_IN + G_IO_OUT))
-        iv_fd_set_handler_err(&self->fd_watch, log_reader_io_process_input);
-      else
-        iv_fd_set_handler_err(&self->fd_watch, NULL);
-
+      log_reader_update_fd_callbacks(self, cond);
     }
   else
     {
