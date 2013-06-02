@@ -326,11 +326,6 @@ log_reader_io_follow_file(gpointer s)
 static void
 log_reader_init_watches(LogReader *self)
 {
-  gint fd;
-  GIOCondition cond;
-
-  log_proto_server_prepare(self->proto, &fd, &cond);
-
   IV_FD_INIT(&self->fd_watch);
   self->fd_watch.cookie = self;
 
