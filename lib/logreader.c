@@ -427,7 +427,22 @@ log_reader_update_fd_callbacks(LogReader *self, GIOCondition cond)
     iv_fd_set_handler_err(&self->fd_watch, log_reader_io_process_input);
   else
     iv_fd_set_handler_err(&self->fd_watch, NULL);
+}
 
+static void
+log_reader_update_follow_timer(LogReader *self)
+{
+  if (self->options->follow_freq > 0)
+    {
+      if (iv_timer_registered(&self->follow_timer))
+        iv_timer_unregister(&self->follow_timer);
+      iv_validate_now();
+      self->follow_timer.expires = iv_now;
+      timespec_add_msec(&self->follow_timer.expires, self->options->follow_freq);
+      iv_timer_register(&self->follow_timer);
+    }
+  else
+    g_assert_not_reached();
 }
 
 static void
@@ -475,27 +490,9 @@ log_reader_update_watches(LogReader *self)
     }
 
   if (self->pollable_state)
-    {
-      log_reader_update_fd_callbacks(self, cond);
-    }
+    log_reader_update_fd_callbacks(self, cond);
   else
-    {
-      if (self->options->follow_freq > 0)
-        {
-          if (iv_timer_registered(&self->follow_timer))
-            iv_timer_unregister(&self->follow_timer);
-          iv_validate_now();
-          self->follow_timer.expires = iv_now;
-          timespec_add_msec(&self->follow_timer.expires, self->options->follow_freq);
-          iv_timer_register(&self->follow_timer);
-        }
-      else
-        {
-          /* NOTE: we don't need to unregister the timer here as follow_freq
-           * never changes during runtime, thus if ever it was registered that
-           * also means that we go into the if branch above. */
-        }
-    }
+    log_reader_update_follow_timer(self);
 }
 
 static gboolean
