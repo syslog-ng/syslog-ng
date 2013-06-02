@@ -363,6 +363,7 @@ log_reader_start_watches(LogReader *self)
 
       /* NOTE: the fd may not be set here, as it may not have been opened yet */
       iv_timer_register(&self->follow_timer);
+      self->pollable_state = 0;
     }
   else
     {
@@ -431,7 +432,7 @@ log_reader_update_watches(LogReader *self)
        */
 
       self->immediate_check = FALSE;
-      if (iv_fd_registered(&self->fd_watch))
+      if (self->pollable_state)
         {
           iv_fd_set_handler_in(&self->fd_watch, NULL);
           iv_fd_set_handler_out(&self->fd_watch, NULL);
@@ -471,7 +472,7 @@ log_reader_update_watches(LogReader *self)
       return;
     }
 
-  if (iv_fd_registered(&self->fd_watch))
+  if (self->pollable_state)
     {
       /* this branch is executed when our fd is connected to a non-file
        * source (e.g. TCP, UDP socket). We set up I/O callbacks here.
