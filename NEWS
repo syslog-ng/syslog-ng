@@ -1,5 +1,41 @@
+3.3.10
+        Mon,  3 Jun 2013 16:00:00 +0100
+
+        Highlights
+        ==========
+
+        This release is a bug-fix release, correcting a handful of
+        issues discovered since the previous one.
+
+        Bugfixes
+        ========
+
+        * The persist state file (syslog-ng.persist) is now marked
+          close-on-exec, so it does not leak through to forked
+          subprocesses.
+        * A rare race condition in the SQL and MongoDB destinations
+          have been fixed.
+
+        Credits
+        =======
+
+        syslog-ng is developed as a community project, and as such it
+        relies on volunteers to do the work necessarily to produce
+        syslog-ng.
+
+        Reporting bugs, testing changes, writing code or simply
+        providing feedback are all important contributions, so please
+        if you are a user of syslog-ng, contribute.
+
+        These people have helped in this release:
+
+        Attila M. Magyar <athos@balabit.hu>
+        Balazs Scheidler <bazsi@balabit.hu>
+        Evan Rempel <erempel@uvic.ca>
+        Gergely Nagy <algernon@balabit.hu>
+
 3.3.9
-        Mon, 15 April 2013 15:00:00 +0100
+        Mon, 15 Apr 2013 15:00:00 +0100
 
         Highlights
         ==========
