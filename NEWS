@@ -1,3 +1,61 @@
+3.4.2
+        Mon,  3 Jun 2013 16:00:00 +0100
+
+        This is the first bug-fix release for the 3.4.x series,
+        collecting significant fixes over the 3.4.1 release. Upgrading
+        to this release is highly recommended.
+
+        Bugfixes
+        ========
+
+        * loggen will bail out earily if using Unix sockets without a
+          path specified.
+
+        * Using the same filter for multiple destinations does not
+          trigger a crash anymore. [#219]
+
+        * An issue with log branch propagation has been fixed,
+          restoring compatibility with the 3.3 branch (this mostly
+          affected flags(final) use cases). [#220]
+
+        * The systemd unit file now specified Restart=on-failure.
+          [#222]
+
+        * Support for empty blocks in the configuration were restored,
+          syslog-ng does not crash anymore when encountering one.
+
+        * An assertion was fixed in patterndb, that prevented one from
+          overriding built-in values, such as HOST. [#225]
+
+        * The persist state file (syslog-ng.persist) is now marked
+          close-on-exec, so it does not leak through to forked
+          subprocesses.
+
+        * The system() source now treats /proc/kmsg as optional: if it
+          is not readable to the user running syslog-ng, it will not
+          be included.
+
+        * Proper escape handling in backtick insertion has been
+          implemented, so string arguments to block parameters are -
+          again - treated correctly. [#235]
+
+        * A rare race condition in the SQL, MongoDB, SMTP and AMQP
+          destinations have been fixed.
+
+        * A possible deadlock was fixed within the suppress() handling
+          code.
+
+        Credits
+        =======
+
+        Attila M. Magyar <athos@balabit.hu>
+        Balazs Scheidler <bazsi@balabit.hu>
+        Evan Rempel <erempel@uvic.ca>
+        Gergely Nagy <algernon@balabit.hu>
+        Paul Dann <pdgiddie+balabit@gmail.com>
+        Peter Czanik <czanik@balabit.hu>
+        Tamas Pal <folti@balabit.hu>
+
 3.4.1
         Thu, 31 Jan 2013 11:00:00 +0100
 
