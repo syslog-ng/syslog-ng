@@ -983,9 +983,8 @@ affile_dw_reopen(AFFileDestWriter *self)
     {
       guint write_flags;
 
-      write_flags =
-        ((self->owner->flags & AFFILE_PIPE) ? LTF_PIPE : LTF_APPEND) |
-        ((self->owner->flags & AFFILE_FSYNC) ? LTF_FSYNC : 0);
+      write_flags = ((self->owner->flags & AFFILE_PIPE) ? LTF_PIPE : LTF_APPEND);
+
       self->owner->proto_options.super.size = self->owner->writer_options.flush_lines;
       if (!self->owner->proto_factory)
         {
