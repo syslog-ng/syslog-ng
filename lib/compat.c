@@ -22,8 +22,8 @@
  *
  */
 
-#include "compat.h"
 
+#include "compat.h"
 #include <fcntl.h>
 #include <ctype.h>
 #include <string.h>
@@ -451,7 +451,6 @@ inet_ntop(int af, const void *src, char *dst, socklen_t cnt)
    }
   return NULL;
 }
-#endif /*_WIN32_WINNT < 0x0600*/
 
 int
 inet_pton(int af, const char *src, void *dst)
@@ -470,13 +469,29 @@ inet_pton(int af, const char *src, void *dst)
 
   while (res)
     {
-      memcpy(dst, res->ai_addr, res->ai_addrlen);
+      switch (af)
+        {
+        case AF_INET:
+          memcpy(dst, &(((struct sockaddr_in *)res->ai_addr)->sin_addr), sizeof(struct in_addr));
+          break;
+#if ENABLE_IPV6
+        case AF_INET6:
+          memcpy(dst, &(((struct sockaddr_in6 *)res->ai_addr)->sin6_addr), sizeof(struct in6_addr));
+          break;
+#endif
+        default:
+          g_assert_not_reached();
+          break;
+        }
+
       res = res->ai_next;
     }
 
   freeaddrinfo(ressave);
   return 0;
 }
+
+#endif /*_WIN32_WINNT < 0x0600*/
 
 int
 inet_aton(const char *cp, struct in_addr *dst)
