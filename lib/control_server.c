@@ -105,7 +105,7 @@ control_connection_io_input(void *s)
     }
   else if (rc == 0)
     {
-      msg_error("EOF on control channel, closing connection",
+      msg_notice("EOF on control channel, closing connection",
                 NULL);
       goto destroy_connection;
     }
