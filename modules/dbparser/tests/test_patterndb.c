@@ -563,7 +563,6 @@ test_patterndb_tags_outside_of_rule()
   clean_pattern_db();
 }
 
-
 int
 main(int argc, char *argv[])
 {
