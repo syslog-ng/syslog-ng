@@ -34,8 +34,6 @@
 #define G_MODULE_SUFFIX "a"
 #endif
 
-const gchar *ignored_libraries[] = {"libnnz11.so","libocci.so",NULL};
-
 void
 plugin_register(GlobalConfig *cfg, Plugin *p, gint number)
 {
@@ -286,15 +284,6 @@ plugin_list_modules(FILE *out, gboolean verbose)
         continue;
       while ((fname = g_dir_read_name(dir)))
         {
-          gint index = 0;
-          while(ignored_libraries[index])
-            {
-              if (strcmp(fname,ignored_libraries[index]) == 0)
-                {
-                  break;
-                }
-              index++;
-            }
           if (g_str_has_suffix(fname, G_MODULE_SUFFIX))
             {
               gchar *module_name;
