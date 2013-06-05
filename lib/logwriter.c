@@ -1046,6 +1046,12 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
               self->line_buffer->len = 0;
             }
         }
+      else
+        {
+          msg_debug("Error posting log message as template() output resulted in an empty string, skipping message",
+                    NULL);
+          consumed = TRUE;
+        }
       if (consumed)
         {
           if (lm->flags & LF_LOCAL)
