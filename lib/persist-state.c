@@ -26,7 +26,7 @@
 #include "serialize.h"
 #include "messages.h"
 #include "mainloop.h"
-
+#include "misc.h"
 #include <sys/types.h>
 #include <unistd.h>
 #include <fcntl.h>
