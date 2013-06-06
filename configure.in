@@ -1480,6 +1480,7 @@ AC_OUTPUT(dist.conf
 dnl PE modules
 	modules/license/Makefile
 	modules/logstore/Makefile
+        modules/logstore/tests/Makefile
 	modules/diskq/Makefile
 	modules/diskq/tests/Makefile
 	modules/confighash/Makefile
