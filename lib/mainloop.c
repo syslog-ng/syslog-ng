@@ -114,6 +114,7 @@ static struct iv_signal sigint_poll;
 static struct iv_signal sigchild_poll;
 
 static struct iv_event stop_signal;
+static struct iv_event reload_signal;
 
 
 /* Currently running configuration, should not be used outside the mainloop
@@ -166,6 +167,7 @@ ThreadId main_thread_handle;
 
 
 static void sig_term_handler(void *s);
+static void sig_hup_handler(void *s);
 
 #define call_info  __tls_deref(call_info)
 
@@ -257,6 +259,15 @@ main_loop_stop_signal_init(void)
   stop_signal.handler = sig_term_handler;
   iv_event_register(&stop_signal);
 }
+
+void
+main_loop_reload_signal_init(void)
+{
+  IV_EVENT_INIT(&reload_signal);
+  reload_signal.handler = sig_hup_handler;
+  iv_event_register(&reload_signal);
+}
+
 
 /************************************************************************************
  * stats timer
@@ -823,6 +834,7 @@ main_loop_init(gchar *config_string)
 #endif
   log_queue_set_max_threads(MIN(main_loop_io_workers.max_threads, MAIN_LOOP_MAX_WORKER_THREADS));
   main_loop_stop_signal_init();
+  main_loop_reload_signal_init();
   main_loop_call_init();
 
   current_configuration = cfg_new(0);
@@ -862,6 +874,7 @@ main_loop_deinit(void)
 {
   iv_event_unregister(&main_task_posted);
   iv_event_unregister(&stop_signal);
+  iv_event_unregister(&reload_signal);
 }
 
 int
@@ -966,5 +979,12 @@ void
 main_loop_terminate()
 {
   iv_event_post(&stop_signal);
+  return;
+}
+
+void
+main_loop_reload()
+{
+  iv_event_post(&reload_signal);
   return;
 }

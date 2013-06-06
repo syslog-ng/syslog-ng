@@ -122,7 +122,22 @@ slng_stop(int argc, char *argv[], const gchar *mode)
   return 0;
 }
 
-static GOptionEntry stats_options[] =
+static gint
+slng_reload(int argc, char *argv[], const gchar *mode)
+{
+  GString *rsp = NULL;
+
+  if (!(slng_send_cmd("RELOAD\n") && ((rsp = control_client_read_reply(control_client)) != NULL)))
+    return 1;
+
+  printf("%s\n", rsp->str);
+
+  g_string_free(rsp, TRUE);
+
+  return 0;
+}
+
+static GOptionEntry no_options[] =
 {
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
 };
@@ -161,11 +176,12 @@ static struct
   gint (*main)(gint argc, gchar *argv[], const gchar *mode);
 } modes[] =
 {
-  { "stats", stats_options, "Dump syslog-ng statistics", slng_stats },
+  { "stats", no_options, "Dump syslog-ng statistics", slng_stats },
   { "verbose", verbose_options, "Enable/query verbose messages", slng_verbose },
   { "debug", verbose_options, "Enable/query debug messages", slng_verbose },
   { "trace", verbose_options, "Enable/query trace messages", slng_verbose },
-  { "stop", stats_options, "Stop syslog-ng process", slng_stop },
+  { "stop", no_options, "Stop syslog-ng process", slng_stop },
+  { "reload", no_options, "Reload syslog-ng", slng_reload },
   { NULL, NULL },
 };
 
