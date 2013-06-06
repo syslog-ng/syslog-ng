@@ -37,6 +37,7 @@ void clean_time_cache();
 
 
 void invalidate_cached_time(void);
+void update_g_current_time();
 void cached_g_current_time(GTimeVal *result);
 time_t cached_g_current_time_sec(void);
 

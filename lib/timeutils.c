@@ -169,6 +169,15 @@ cached_g_current_time_sec()
   return now.tv_sec;
 }
 
+/*
+ * only our g_main_context_poll_func may call this
+ */
+void
+update_g_current_time()
+{
+  g_get_current_time(&current_time_value);
+}
+
 time_t
 cached_mktime(struct tm *tm)
 {

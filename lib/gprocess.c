@@ -348,6 +348,17 @@ g_process_set_mode(GProcessMode mode)
 }
 
 /**
+ * g_process_get_mode:
+ *
+ * Return the processing mode applied to the daemon.
+ **/
+GProcessMode
+g_process_get_mode()
+{
+  return process_opts.mode;
+}
+
+/**
  * g_process_set_name:
  * @name: the name of the process to be reported as program name
  *

@@ -38,6 +38,39 @@
 #include <sys/socket.h>
 #endif
 
+gdouble microtime();
+
+#define log_duration(_log_message, _start_microtime, ...) \
+do { \
+  double _end_microtime = microtime(); \
+  msg_info(_log_message, \
+      evt_tag_printf("duration", "%.6f", _end_microtime - _start_microtime), \
+      ##__VA_ARGS__, NULL); \
+} while(0)
+/* functions that should be implemented by GLib but they aren't */
+#define DIV_AND_CEIL(dividend, divisor) (((dividend) + ((divisor) - 1)) / (divisor))
+
+#define free_array(_array, _array_length)                                   \
+  do                                                                        \
+    {                                                                       \
+      guint32 _array_index;                                                 \
+      for (_array_index = 0; _array_index < (_array_length); _array_index++)\
+        g_free((_array)[_array_index]);                                     \
+      g_free(_array);                                                       \
+    } while(0)
+
+#define FREE_G_ARRAY_OF_MSG_IDS(msg_ids_g_array)                                                        \
+  do                                                                                                    \
+    {                                                                                                   \
+      for (guint32 _msg_ids_counter = 0; _msg_ids_counter < (msg_ids_g_array)->len; _msg_ids_counter++) \
+        {                                                                                               \
+          g_free((guint32 *)g_array_index((msg_ids_g_array), guint32 *, _msg_ids_counter));             \
+        }                                                                                               \
+      g_array_free((msg_ids_g_array), TRUE);                                                            \
+    } while(0)
+
+gboolean unset_sigprocmask();
+
 /* functions that should be implemented by GLib but they aren't */
 GString *g_string_assign_len(GString *s, const gchar *val, gint len);
 void g_string_steal(GString *s);

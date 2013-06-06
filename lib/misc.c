@@ -542,6 +542,38 @@ format_hex_string(gpointer data, gsize data_len, gchar *result, gsize result_len
   return result;
 }
 
+gboolean
+unset_sigprocmask()
+{
+  sigset_t sigset_all;
+
+  sigfillset(&sigset_all);
+  if (sigprocmask(SIG_UNBLOCK, &sigset_all, NULL))
+    {
+      msg_error("Unable to unset sigprocmask",
+                evt_tag_errno("error", errno),
+                NULL);
+      return FALSE;
+    }
+
+  return TRUE;
+}
+
+gdouble
+microtime()
+{
+#define MICROSECONDS_PER_SECOND 1000000.0
+  struct timeval time;
+  struct timezone unused_timezone;
+
+  if (gettimeofday(&time, &unused_timezone) != 0)
+    return -G_MAXDOUBLE;
+
+  return ((gdouble)time.tv_sec) + ((gdouble)time.tv_usec) / MICROSECONDS_PER_SECOND;
+#undef MICROSECONDS_PER_SECOND
+}
+
+
 /**
  * Find CR or LF characters in the log message.
  *
