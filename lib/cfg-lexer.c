@@ -32,7 +32,9 @@
 #include "versioning.h"
 
 #include <string.h>
+#if HAVE_GLOB_H
 #include <glob.h>
+#endif
 #include <sys/stat.h>
 
 struct _CfgArgs
@@ -478,6 +480,7 @@ cfg_lexer_include_file_simple(CfgLexer *self, const gchar *filename)
   return FALSE;
 }
 
+#if HAVE_GLOB_H
 static int
 _cfg_lexer_glob_err (const char *p, gint e)
 {
@@ -614,6 +617,7 @@ cfg_lexer_include_file_glob(CfgLexer *self, const gchar *filename_)
   else
     return TRUE;
 }
+#endif
 
 gboolean
 cfg_lexer_include_file(CfgLexer *self, const gchar *filename_)
@@ -633,8 +637,10 @@ cfg_lexer_include_file(CfgLexer *self, const gchar *filename_)
   filename = find_file_in_path(cfg_args_get(self->globals, "include-path"), filename_, G_FILE_TEST_EXISTS);
   if (!filename || stat(filename, &st) < 0)
     {
+#if HAVE_GLOB_H
       if (cfg_lexer_include_file_glob(self, filename_))
         return TRUE;
+#endif
 
       msg_error("Include file/directory not found",
                 evt_tag_str("filename", filename_),
