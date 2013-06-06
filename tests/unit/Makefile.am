@@ -37,6 +37,7 @@ check_PROGRAMS =			\
 	test_messages \
 	test_rcptid \
 	test_strformat \
+	test_msgserialize \
 	test_csv_parser_flags
 
 if IS_HPUX
@@ -100,4 +101,6 @@ test_buffered_proto_state_SOURCES = test_buffered_proto_state.c
 test_messages_SOURCES = test_messages.c
 
 test_strformat_SOURCES = test_strformat.c
+
+test_msgserialize_SOURCES = test_msgserialize.c
 TESTS = $(check_PROGRAMS)

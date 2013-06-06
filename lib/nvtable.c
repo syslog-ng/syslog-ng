@@ -747,6 +747,21 @@ nv_table_clone(NVTable *self, gint additional_space)
   return new;
 }
 
+int
+dyn_entry_cmp(const void *a, const void *b)
+{
+  guint32 entry_a = *(guint32 *)a;
+  guint32 entry_b = *(guint32 *)b;
+  NVHandle h_a = NV_TABLE_DYNVALUE_HANDLE(entry_a);
+  NVHandle h_b = NV_TABLE_DYNVALUE_HANDLE(entry_b);
+  if (h_a < h_b)
+    return -1;
+  else if (h_a > h_b)
+    return 1;
+  else
+    return 0;
+}
+
 /**
  * serialize / unserialize functions
  **/
@@ -831,6 +846,7 @@ nv_table_update_ids(NVTable *self,NVRegistry *logmsg_registry, NVHandle *handles
     {
       handles_to_update[i] =  new_updated_handles[i];
     }
+  qsort(dyn_entries, self->num_dyn_entries, sizeof(guint32), dyn_entry_cmp);
   g_free(new_updated_handles);
   return;
 }
