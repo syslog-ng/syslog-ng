@@ -1166,6 +1166,14 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
                   log_msg_unref(lm);
                   log_queue_rewind_backlog(self->queue, 1);
                   log_msg_refcache_stop(FALSE);
+
+                  if (consumed)
+                    {
+                      self->line_buffer->str = g_malloc(self->line_buffer->allocated_len);
+                      self->line_buffer->len = 0;
+                      self->line_buffer->str[0] = 0;
+                    }
+
                   return FALSE;
                 }
               else
