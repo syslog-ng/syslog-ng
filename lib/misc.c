@@ -545,6 +545,7 @@ format_hex_string(gpointer data, gsize data_len, gchar *result, gsize result_len
 gboolean
 unset_sigprocmask()
 {
+#ifndef _WIN32
   sigset_t sigset_all;
 
   sigfillset(&sigset_all);
@@ -555,7 +556,7 @@ unset_sigprocmask()
                 NULL);
       return FALSE;
     }
-
+#endif
   return TRUE;
 }
 
