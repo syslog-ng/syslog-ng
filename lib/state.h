@@ -56,7 +56,7 @@ PersistEntryHandle state_handler_get_handle(StateHandler *self);
 
 gchar *state_handler_get_persist_name(StateHandler *self);
 
-const guint8 state_handler_get_persist_version(StateHandler *self);
+guint8 state_handler_get_persist_version(StateHandler *self);
 
 gpointer state_handler_get_state(StateHandler *self);
 

@@ -194,7 +194,7 @@ state_handler_get_persist_name(StateHandler *self)
   return self->name;
 }
 
-const guint8
+guint8
 state_handler_get_persist_version(StateHandler *self)
 {
   return self->version;

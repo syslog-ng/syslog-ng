@@ -150,7 +150,9 @@ resolve_sockaddr(gchar *result, gsize *result_len, GSockAddr *saddr, gboolean us
   const gchar *hname;
   gboolean positive;
   gchar buf[256];
+#ifndef HAVE_GETNAMEINFO
   gchar hostent_buf[256];
+#endif
  
   if (saddr && saddr->sa.sa_family != AF_UNIX)
     {
