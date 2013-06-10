@@ -294,6 +294,8 @@ log_queue_fifo_push_head(LogQueue *s, LogMessage *msg, const LogPathOptions *pat
    * normally happens when we start processing an item, but at the end
    * can't deliver it. No checks, no drops either. */
 
+  log_queue_assert_output_thread(s);
+
   node = log_msg_alloc_dynamic_queue_node(msg, path_options);
   iv_list_add(&node->list, &self->qoverflow_output);
   self->qoverflow_output_len++;
@@ -309,6 +311,8 @@ log_queue_fifo_pop_head(LogQueue *s, LogMessage **msg, LogPathOptions *path_opti
 {
   LogQueueFifo *self = (LogQueueFifo *) s;
   LogMessageQueueNode *node;
+
+  log_queue_assert_output_thread(s);
 
   if (!ignore_throttle && self->super.throttle && self->super.throttle_buckets == 0)
     {
@@ -381,6 +385,8 @@ log_queue_fifo_ack_backlog(LogQueue *s, gint n)
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
   gint i;
 
+  log_queue_assert_output_thread(s);
+
   for (i = 0; i < n && self->qbacklog_len > 0; i++)
     {
       LogMessageQueueNode *node;
@@ -413,6 +419,8 @@ static void
 log_queue_fifo_rewind_backlog(LogQueue *s)
 {
   LogQueueFifo *self = (LogQueueFifo *) s;
+
+  log_queue_assert_output_thread(s);
 
   iv_list_splice_tail_init(&self->qbacklog, &self->qoverflow_output);
   self->qoverflow_output_len += self->qbacklog_len;
