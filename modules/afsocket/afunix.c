@@ -71,7 +71,7 @@ afunix_sd_acquire_named_socket(AFSocketSourceDriver *s, gint *result_fd,
                                const gchar *filename)
 {
   AFUnixSourceDriver *self = (AFUnixSourceDriver *) s;
-  gint fd, fds, t, r;
+  gint fd, fds;
 
   *result_fd = -1;
   fd = -1;
