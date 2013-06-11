@@ -71,7 +71,7 @@ tf_cond_prepare(LogTemplateFunction *self, LogTemplate *parent, gint argc, gchar
   for (i = 1; i < argc; i++)
     {
       args->argv[i - 1] = log_template_new(parent->cfg, NULL);
-      log_template_set_escape(args->argv[i - 1], TRUE);
+      log_template_set_escape(args->argv[i - 1], parent->escape);
       if (!log_template_compile(args->argv[i - 1], argv[i], error))
         goto error;
     }
