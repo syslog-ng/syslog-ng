@@ -3,8 +3,8 @@
 #include "misc.h"
 #include "apphook.h"
 
-static const gchar *agent_registry_config = "@version: 4.2\n@module eventlog\n@module agent-config type(REGISTRY) name(ac)\noptions{ threaded(yes); };\nac()\n";
-static const gchar *agent_xml_config_format = "@version: 4.2\n@module eventlog\n@module agent-config type(XML) file(\"%s\") name(ac)\noptions { threaded(yes); }; \nac()\n";
+static const gchar *agent_registry_config = "@version: 5.0\n@module eventlog\n@module agent-config type(REGISTRY) name(ac)\noptions{ threaded(yes); };\nac()\n";
+static const gchar *agent_xml_config_format = "@version: 5.0\n@module eventlog\n@module agent-config type(XML) file(\"%s\") name(ac)\noptions { threaded(yes); }; \nac()\n";
 
 gint
 generate_agent_main(gint argc, gchar **argv)

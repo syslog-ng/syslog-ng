@@ -30,23 +30,16 @@ get_version_value(gint version)
 {
   gint ver_main = (version >> 8) & 0xFF;
   gint ver_sub = version & 0xFF;
-  if (ver_main == 3 && ver_sub == 0)
+
+  if (ver_main == 3 && ver_sub == 3)
     {
-      /* no change */
-    }
-  else if (ver_main == 3 && ver_sub == 3)
-    {
-      ver_main = 4;
-      ver_sub = 1;
+      ver_main = 5;
+      ver_sub = 0;
     }
   else if (ver_main == 3 && (ver_sub == 1 || ver_sub == 2))
     {
       ver_main = 4;
       ver_sub = 0;
-    }
-  else if (ver_main == 4 && ver_sub == 1)
-    {
-      /* no change */
     }
 
   return (ver_main << 8) | ver_sub;

@@ -45,6 +45,7 @@
  */
 #define VERSION_PE_4_1 "syslog-ng PE 4.1"
 #define VERSION_PE_4_2 "syslog-ng PE 4.2"
+#define VERSION_PE_5_0 "syslog-ng PE 5.0"
 
 #define VERSION_VALUE   0x0500
 
