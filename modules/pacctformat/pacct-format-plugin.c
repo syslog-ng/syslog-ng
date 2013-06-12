@@ -36,7 +36,7 @@ static Plugin pacct_format_plugin =
 {
   .type = LL_CONTEXT_FORMAT,
   .name = "pacct",
-  .construct = &pacct_format_construct,
+  .construct = (gpointer (*)(Plugin *self, GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name)) pacct_format_construct,
 };
 
 gboolean
