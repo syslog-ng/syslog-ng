@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2012-2013 BalaBit IT Ltd, Budapest, Hungary
  * Copyright (c) 2012 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -53,6 +53,7 @@ create_sample_message(void)
   log_msg_set_value(msg, log_msg_get_value_handle("APP.STRIP3"), "     value     ", -1);
   log_msg_set_value(msg, log_msg_get_value_handle("APP.STRIP4"), "value", -1);
   log_msg_set_value(msg, log_msg_get_value_handle("APP.STRIP5"), "", -1);
+  log_msg_set_value(msg, log_msg_get_value_handle("APP.QVALUE"), "\"value\"", -1);
   log_msg_set_match(msg, 0, "whole-match", -1);
   log_msg_set_match(msg, 1, "first-match", -1);
   log_msg_set_tag_by_name(msg, "alma");
@@ -70,12 +71,13 @@ create_sample_message(void)
 }
 
 LogTemplate *
-compile_template(const gchar *template)
+compile_template(const gchar *template, gboolean escaping)
 {
   LogTemplate *templ = log_template_new(configuration, NULL);
   gboolean success;
   GError *error = NULL;
 
+  log_template_set_escape(templ, escaping);
   success = log_template_compile(templ, template, &error);
   assert_true(success, "template expected to compile cleanly, but it didn't, template=%s, error=%s", template, error ? error->message : "(none)");
   g_clear_error(&error);
@@ -86,6 +88,13 @@ compile_template(const gchar *template)
 void
 assert_template_format(const gchar *template, const gchar *expected)
 {
+  assert_template_format_with_escaping(template, FALSE, expected);
+}
+
+void
+assert_template_format_with_escaping(const gchar *template, gboolean escaping,
+                                     const gchar *expected)
+{
   LogMessage *msg;
   LogTemplate *templ;
   GString *res = g_string_sized_new(128);
@@ -93,7 +102,7 @@ assert_template_format(const gchar *template, const gchar *expected)
 
   msg = create_sample_message();
 
-  templ = compile_template(template);
+  templ = compile_template(template, escaping);
   log_template_format(templ, msg, NULL, LTZ_LOCAL, 999, context_id, res);
   assert_string(res->str, expected, "template test failed, template=%s", template);
   log_template_unref(templ);
@@ -113,7 +122,7 @@ assert_template_format_with_context(const gchar *template, const gchar *expected
   msg = create_sample_message();
   context[0] = context[1] = msg;
 
-  templ = compile_template(template);
+  templ = compile_template(template, FALSE);
 
   log_template_format_with_context(templ, context, 2, NULL, LTZ_LOCAL, 999, context_id, res);
   assert_string(res->str, expected, "context template test failed, template=%s", template);
