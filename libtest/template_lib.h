@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2012-2013 BalaBit IT Ltd, Budapest, Hungary
  * Copyright (c) 2012 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -29,11 +29,12 @@
 #include "templates.h"
 
 void assert_template_format(const gchar *template, const gchar *expected);
+void assert_template_format_with_escaping(const gchar *template, gboolean escaping, const gchar *expected);
 void assert_template_format_with_context(const gchar *template, const gchar *expected);
 void assert_template_failure(const gchar *template, const gchar *expected_failure);
 
 LogMessage *create_sample_message(void);
-LogTemplate *compile_template(const gchar *template);
+LogTemplate *compile_template(const gchar *template, gboolean escaping);
 void init_template_tests(void);
 void deinit_template_tests(void);
 

@@ -53,7 +53,7 @@ assert_template_format_multi_thread(const gchar *template, const gchar *expected
   gint i;
 
   msg = create_sample_message();
-  templ = compile_template(template);
+  templ = compile_template(template, FALSE);
   args[0] = msg;
   args[1] = templ;
   args[2] = (gpointer) expected;
@@ -248,6 +248,13 @@ test_multi_thread(void)
   assert_template_format_multi_thread("dani $(echo $HOST $DATE $(echo huha)) balint", "dani bzorp Feb 11 10:34:56.000 huha balint");
 }
 
+static void
+test_escaping(void)
+{
+  assert_template_format_with_escaping("${APP.QVALUE}", FALSE, "\"value\"");
+  assert_template_format_with_escaping("${APP.QVALUE}", TRUE, "\\\"value\\\"");
+}
+
 int
 main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 {
@@ -269,6 +276,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   test_syntax_errors();
   test_compat();
   test_multi_thread();
+  test_escaping();
 
   /* multi-threaded expansion */
 
