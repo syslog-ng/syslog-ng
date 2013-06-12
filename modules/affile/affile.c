@@ -613,7 +613,6 @@ affile_sd_destroy_reader(gpointer user_data)
 {
   LogPipe *reader = (LogPipe *) user_data;
 
-  log_pipe_deinit(reader);
   log_pipe_unref(reader);
 }
 
@@ -626,6 +625,7 @@ affile_sd_deinit(LogPipe *s)
 
   if (self->reader)
     {
+      log_pipe_deinit(self->reader);
       cfg_persist_config_add(cfg, affile_sd_format_persist_name(self), self->reader, affile_sd_destroy_reader, FALSE);
       self->reader = NULL;
     }
