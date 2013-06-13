@@ -529,6 +529,12 @@ log_writer_stop_watches(LogWriter *self)
 
       self->watches_running = FALSE;
     }
+  else if (self->suspended)
+    {
+      if (iv_timer_registered(&self->suspend_timer))
+        iv_timer_unregister(&self->suspend_timer);
+      self->suspended = FALSE;
+    }
 }
 
 /* function called using main_loop_call() in case the suppress timer needs
