@@ -757,8 +757,7 @@ block_arg
           LL_BLOCK
           {
             cfg_lexer_pop_context(lexer);
-            if (strcmp($3, "") != 0)
-              cfg_args_set(last_block_args, $1, $3); free($1); free($3);
+            cfg_args_set(last_block_args, $1, $3); free($1); free($3);
           }
         ;
 
