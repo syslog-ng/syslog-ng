@@ -1,3 +1,44 @@
+3.3.11
+        Fri, 14 Jun 2013 16:00:00 +0100
+
+        Highlights
+        ==========
+        This release is a bug-fix release, correcting a handful of
+        issues discovered since the previous one.
+
+        Bugfixes
+        ========
+
+        * Most of the changes in 3.3.10 have been reverted, as they
+          resulted in instability and dead locks.
+        * The configure files were updated to work with the newest
+          automake, and not use long obsolete macros.
+        * Zero-length templates (or template functions with
+          zero-length output) do not result in an infinite loop
+          anymore.
+        * The $(if) and $(grep) template functions now respect the
+          template_escape() setting.
+
+        Credits
+        =======
+
+        syslog-ng is developed as a community project, and as such it
+        relies on volunteers to do the work necessarily to produce
+        syslog-ng.
+
+        Reporting bugs, testing changes, writing code or simply
+        providing feedback are all important contributions, so please
+        if you are a user of syslog-ng, contribute.
+
+        These people have helped in this release:
+
+        Balazs Scheidler <bazsi@balabit.hu>
+        Evan Rempel <erempel@uvic.ca>
+        Gergely Nagy <algernon@balabit.hu>
+        Imre Lazar <imre@balabit.hu>
+        Laszlo Meszaros <lmesz@balabit.hu>
+        Michael Sterrett <mr_bones_@gentoo.org>
+
 3.3.10
         Mon,  3 Jun 2013 16:00:00 +0100
 
