@@ -221,7 +221,7 @@ afprogram_sd_free(LogPipe *s)
 }
 
 static void
-afprogram_sd_notify(LogPipe *s, LogPipe *sender, gint notify_code, gpointer user_data)
+afprogram_sd_notify(LogPipe *s, gint notify_code, gpointer user_data)
 {
   switch (notify_code)
     {
@@ -376,7 +376,7 @@ afprogram_dd_free(LogPipe *s)
 }
 
 static void
-afprogram_dd_notify(LogPipe *s, LogPipe *sender, gint notify_code, gpointer user_data)
+afprogram_dd_notify(LogPipe *s, gint notify_code, gpointer user_data)
 {
   AFProgramDestDriver *self = (AFProgramDestDriver *) s;
 

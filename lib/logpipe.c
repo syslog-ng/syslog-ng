@@ -80,7 +80,7 @@ log_pipe_unref(LogPipe *self)
 }
 
 void
-log_pipe_forward_notify(LogPipe *self, LogPipe *sender, gint notify_code, gpointer user_data)
+log_pipe_forward_notify(LogPipe *self, gint notify_code, gpointer user_data)
 {
-  log_pipe_notify(self->pipe_next, self, notify_code, user_data);
+  log_pipe_notify(self->pipe_next, notify_code, user_data);
 }

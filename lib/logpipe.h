@@ -226,7 +226,7 @@ struct _LogPipe
   LogPipe *(*clone)(LogPipe *self);
 
   void (*free_fn)(LogPipe *self);
-  void (*notify)(LogPipe *self, LogPipe *sender, gint notify_code, gpointer user_data);
+  void (*notify)(LogPipe *self, gint notify_code, gpointer user_data);
 };
 
 
@@ -234,7 +234,7 @@ LogPipe *log_pipe_ref(LogPipe *self);
 void log_pipe_unref(LogPipe *self);
 LogPipe *log_pipe_new(void);
 void log_pipe_init_instance(LogPipe *self);
-void log_pipe_forward_notify(LogPipe *self, LogPipe *sender, gint notify_code, gpointer user_data);
+void log_pipe_forward_notify(LogPipe *self, gint notify_code, gpointer user_data);
 
 
 static inline GlobalConfig *
@@ -333,10 +333,10 @@ log_pipe_clone(LogPipe *self)
 }
 
 static inline void
-log_pipe_notify(LogPipe *s, LogPipe *sender, gint notify_code, gpointer user_data)
+log_pipe_notify(LogPipe *s, gint notify_code, gpointer user_data)
 {
   if (s->notify)
-    s->notify(s, sender, notify_code, user_data);
+    s->notify(s, notify_code, user_data);
 }
 
 static inline void

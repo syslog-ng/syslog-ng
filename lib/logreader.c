@@ -147,7 +147,7 @@ log_reader_work_finished(void *s)
       gint notify_code = self->notify_code;
 
       self->notify_code = 0;
-      log_pipe_notify(self->control, &self->super.super, notify_code, self);
+      log_pipe_notify(self->control, notify_code, self);
     }
   if (self->super.super.flags & PIF_INITIALIZED)
     {
@@ -258,7 +258,7 @@ log_reader_io_follow_file(gpointer s)
               msg_trace("log_reader_fd_check file moved ESTALE",
                         evt_tag_str("follow_filename", self->follow_filename),
                         NULL);
-              log_pipe_notify(self->control, &self->super.super, NC_FILE_MOVED, self);
+              log_pipe_notify(self->control, NC_FILE_MOVED, self);
               return;
             }
           else
@@ -284,12 +284,12 @@ log_reader_io_follow_file(gpointer s)
       else if (pos == st.st_size)
         {
           /* we are at EOF */
-          log_pipe_notify(self->control, &self->super.super, NC_FILE_EOF, self);
+          log_pipe_notify(self->control, NC_FILE_EOF, self);
         }
       else if (pos > st.st_size)
         {
           /* the last known position is larger than the current size of the file. it got truncated. Restart from the beginning. */
-          log_pipe_notify(self->control, &self->super.super, NC_FILE_MOVED, self);
+          log_pipe_notify(self->control, NC_FILE_MOVED, self);
 
           /* we may be freed by the time the notification above returns */
           return;
@@ -308,7 +308,7 @@ log_reader_io_follow_file(gpointer s)
                         evt_tag_str("follow_filename", self->follow_filename),
                         NULL);
               /* file was moved and we are at EOF, follow the new file */
-              log_pipe_notify(self->control, &self->super.super, NC_FILE_MOVED, self);
+              log_pipe_notify(self->control, NC_FILE_MOVED, self);
               /* we may be freed by the time the notification above returns */
               return;
             }
@@ -614,7 +614,7 @@ log_reader_fetch_log(LogReader *self)
       if (log_proto_server_is_preemptable(self->proto))
         {
           self->waiting_for_preemption = FALSE;
-          log_pipe_notify(self->control, &self->super.super, NC_FILE_SKIP, self);
+          log_pipe_notify(self->control, NC_FILE_SKIP, self);
         }
       else
         {

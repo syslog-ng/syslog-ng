@@ -964,7 +964,7 @@ static void
 log_writer_broken(LogWriter *self, gint notify_code)
 {
   log_writer_stop_watches(self);
-  log_pipe_notify(self->control, &self->super, notify_code, self);
+  log_pipe_notify(self->control, notify_code, self);
 }
 
 static void

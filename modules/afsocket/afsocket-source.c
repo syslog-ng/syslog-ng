@@ -121,7 +121,7 @@ afsocket_sc_deinit(LogPipe *s)
 }
 
 static void
-afsocket_sc_notify(LogPipe *s, LogPipe *sender, gint notify_code, gpointer user_data)
+afsocket_sc_notify(LogPipe *s, gint notify_code, gpointer user_data)
 {
   AFSocketSourceConnection *self = (AFSocketSourceConnection *) s;
 
@@ -637,7 +637,7 @@ afsocket_sd_deinit_method(LogPipe *s)
 }
 
 static void
-afsocket_sd_notify(LogPipe *s, LogPipe *sender, gint notify_code, gpointer user_data)
+afsocket_sd_notify(LogPipe *s, gint notify_code, gpointer user_data)
 {
   switch (notify_code)
     {

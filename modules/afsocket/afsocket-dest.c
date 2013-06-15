@@ -394,7 +394,7 @@ afsocket_dd_deinit(LogPipe *s)
 }
 
 static void
-afsocket_dd_notify(LogPipe *s, LogPipe *sender, gint notify_code, gpointer user_data)
+afsocket_dd_notify(LogPipe *s, gint notify_code, gpointer user_data)
 {
   AFSocketDestDriver *self = (AFSocketDestDriver *) s;
   gchar buf[MAX_SOCKADDR_STRING];

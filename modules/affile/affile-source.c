@@ -189,7 +189,7 @@ affile_sd_construct_proto(AFFileSourceDriver *self, gint fd)
 
 /* NOTE: runs in the main thread */
 static void
-affile_sd_notify(LogPipe *s, LogPipe *sender, gint notify_code, gpointer user_data)
+affile_sd_notify(LogPipe *s, gint notify_code, gpointer user_data)
 {
   AFFileSourceDriver *self = (AFFileSourceDriver *) s;
   GlobalConfig *cfg = log_pipe_get_config(s);
