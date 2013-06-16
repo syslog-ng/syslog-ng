@@ -39,8 +39,6 @@
 
 /* options */
 
-typedef struct _LogReaderWatch LogReaderWatch;
-
 typedef struct _LogReaderOptions
 {
   gboolean initialized;

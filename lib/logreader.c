@@ -76,7 +76,6 @@ struct _LogReader
 {
   LogSource super;
   LogProtoServer *proto;
-  LogReaderWatch *source;
   gboolean immediate_check;
   gboolean waiting_for_preemption;
   LogPipe *control;
