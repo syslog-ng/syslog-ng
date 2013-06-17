@@ -943,6 +943,14 @@ log_writer_broken(LogWriter *self, gint notify_code)
   log_pipe_notify(self->control, &self->super, notify_code, self);
 }
 
+static void
+log_writer_realloc_line_buffer(LogWriter *self)
+{
+  self->line_buffer->str = g_malloc(self->line_buffer->allocated_len);
+  self->line_buffer->str[0] = 0;
+  self->line_buffer->len = 0;
+}
+
 /*
  * Write messages to the underlying file descriptor using the installed
  * LogProtoClient instance.  This is called whenever the output is ready to accept
@@ -969,6 +977,7 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
   LogProtoClient *proto = self->proto;
   gint count = 0;
   gboolean ignore_throttle = (flush_mode >= LW_FLUSH_QUEUE);
+  LogProtoStatus status = LPS_SUCCESS;
   
   if (!proto)
     return FALSE;
@@ -978,7 +987,7 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
    * infinite loop, since the reader will cease to produce new messages when
    * main_loop_io_worker_job_quit() is set. */
 
-  while (!main_loop_io_worker_job_quit() || flush_mode >= LW_FLUSH_QUEUE)
+  while (status == LPS_SUCCESS && (!main_loop_io_worker_job_quit() || flush_mode >= LW_FLUSH_QUEUE))
     {
       LogMessage *lm;
       LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
@@ -997,29 +1006,18 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
       
       if (self->line_buffer->len)
         {
-          LogProtoStatus status;
-
           status = log_proto_client_post(proto, (guchar *) self->line_buffer->str, self->line_buffer->len, &consumed);
+
+          if (consumed)
+            log_writer_realloc_line_buffer(self);
+
           if (status == LPS_ERROR)
             {
-              if ((self->options->options & LWO_IGNORE_ERRORS) == 0)
+              if ((self->options->options & LWO_IGNORE_ERRORS) != 0)
                 {
-                  msg_set_context(NULL);
-                  log_msg_refcache_stop();
-                  return FALSE;
-                }
-              else
-                {
-		  if (!consumed)
-	            g_free(self->line_buffer->str);
                   consumed = TRUE;
+                  status = LPS_SUCCESS;
                 }
-            }
-          if (consumed)
-            {
-              self->line_buffer->str = g_malloc(self->line_buffer->allocated_len);
-              self->line_buffer->str[0] = 0;
-              self->line_buffer->len = 0;
             }
         }
       else
@@ -1043,11 +1041,14 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
           log_msg_refcache_stop();
           break;
         }
-        
+
       msg_set_context(NULL);
       log_msg_refcache_stop();
       count++;
     }
+
+  if (status != LPS_SUCCESS)
+    return FALSE;
 
   if (flush_mode >= LW_FLUSH_BUFFER || count == 0)
     {
