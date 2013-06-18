@@ -30,8 +30,13 @@ check_PROGRAMS =			\
 
 test_msgparse_SOURCES = test_msgparse.c
 test_template_SOURCES = test_template.c
-test_template_LDADD = $(LDADD) -dlpreopen $(top_builddir)/modules/basicfuncs/libbasicfuncs.la
+test_template_LDFLAGS = $(AM_LDFLAGS) $(LDFLAGS) \
+	-dlpreopen $(top_builddir)/modules/basicfuncs/libbasicfuncs.la \
+	-dlpreopen $(top_builddir)/modules/convertfuncs/libconvertfuncs.la
 test_template_speed_SOURCES = test_template_speed.c
+test_template_speed_LDFLAGS = $(AM_LDFLAGS) $(LDFLAGS) \
+	-dlpreopen $(top_builddir)/modules/basicfuncs/libbasicfuncs.la \
+	-dlpreopen $(top_builddir)/modules/convertfuncs/libconvertfuncs.la
 test_zone_SOURCES = test_zone.c
 test_dnscache_SOURCES = test_dnscache.c
 test_serialize_SOURCES = test_serialize.c
