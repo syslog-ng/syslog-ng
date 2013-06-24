@@ -138,6 +138,8 @@ persist_state_map_unmap_threaded(void *arg)
   return NULL;
 }
 
+#define should_update_screen(x) (((x) & 0x7ff) == 0)
+
 void
 test_values()
 {
@@ -152,7 +154,10 @@ test_values()
     {
       add_entry_with_key_idx(g_atomic_int_get(&NUMBER_OF_ENTRIES));
       g_atomic_int_inc(&NUMBER_OF_ENTRIES);
-      fprintf(stderr, "[MAIN]N:%d\r", g_atomic_int_get(&NUMBER_OF_ENTRIES));
+      if (should_update_screen(n))
+        {
+          fprintf(stderr, "[MAIN]N:%d\r", g_atomic_int_get(&NUMBER_OF_ENTRIES));
+        }
       microsleep(10);
     }
   fprintf(stderr, "\n");
