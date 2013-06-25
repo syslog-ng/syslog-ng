@@ -547,6 +547,13 @@ affile_sd_init(LogPipe *s)
   log_proto_check_server_options((LogProtoServerOptions *)&self->proto_options);
   log_reader_options_init(&self->reader_options, cfg, self->super.super.group);
 
+  if (self->reader_options.follow_freq == 0)
+    {
+      msg_error("Error initializing source driver, follow_freq() must be set",
+                NULL);
+      return FALSE;
+    }
+
   if (self->file_monitor)
     {
       /* watch_directory will use the callback, so set it first */
