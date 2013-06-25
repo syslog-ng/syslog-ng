@@ -50,6 +50,7 @@ typedef struct _AFFileSourceDriver
   FileMonitor *file_monitor;
   GQueue *file_list;
   GString *filename;
+  gboolean use_own_pid;
 } AFFileSourceDriver;
 
 LogDriver *affile_sd_new(gchar *filename, guint32 flags);
@@ -58,6 +59,7 @@ void affile_sd_set_pri_level(LogDriver *s, const gint16 severity);
 void affile_sd_set_pri_facility(LogDriver *s, const gint16 facility);
 gboolean affile_sd_set_multi_line_prefix(LogDriver *s, gchar *prefix);
 gboolean affile_sd_set_multi_line_garbage(LogDriver *s, gchar *garbage);
+void affile_sd_use_own_pid(LogDriver *s, const gint use_own_pid);
 
 typedef struct _AFFileDestWriter AFFileDestWriter;
 

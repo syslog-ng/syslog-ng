@@ -39,6 +39,7 @@ static CfgLexerKeyword affile_keywords[] = {
   { "overwrite_if_older", KW_OVERWRITE_IF_OLDER },
   { "follow_freq",        KW_FOLLOW_FREQ,  },
   { "recursive",          KW_RECURSIVE },
+  { "use_own_pid",        KW_USE_OWN_PID },
 
   { NULL }
 };
