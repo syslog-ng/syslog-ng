@@ -40,6 +40,12 @@ SUBSYSDIR=/var/lock/subsys
 
 retval=0
 
+# in HPUX, PATH for init scripts does not contain standard dirs for binaries
+if [ "$OS" = "HP-UX" ]; then
+   PATH=$PATH:/bin:/usr/bin:/sbin:/usr/sbin
+fi
+
+
 # OS specific I-didn't-do-anything exit function.
 exit_noop() {
 	case $OS in
