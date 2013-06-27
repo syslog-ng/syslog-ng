@@ -82,7 +82,7 @@ EOF
 	HP-UX)
 		cat <<EOF
 pipe("/dev/log" pad_size(2048));
-file("/dev/klog" program_override("kernel") flags(kernel) follow_freq(0));
+file("/dev/klog" program_override("kernel") flags(kernel) follow_freq(0) log_fetch_limit(1000) );
 EOF
 		;;
 	AIX|OSF1|CYGWIN*)
