@@ -898,3 +898,18 @@ replace_string(const gchar *source, const gchar *substring, const gchar *replace
 {
   return replace_string_recursivly(g_strdup(source), substring, replacement);
 }
+
+gchar *
+get_pid_string()
+{
+  static gchar *pid_string = NULL;
+  if (pid_string == NULL)
+    {
+#ifdef _WIN32
+      pid_string = g_strdup_printf("%lu", GetCurrentProcessId());
+#else
+      pid_string = g_strdup_printf("%d", getpid());
+#endif
+    }
+  return pid_string;
+}

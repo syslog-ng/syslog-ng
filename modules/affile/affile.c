@@ -507,29 +507,15 @@ affile_sd_set_recursion(LogDriver *s, const gint recursion)
     self->file_monitor->recursion = recursion;
 }
 
-void
-affile_sd_use_own_pid(LogDriver *s, const gint use_own_pid)
-{
-  AFFileSourceDriver *self = (AFFileSourceDriver *) s;
-  self->use_own_pid = use_own_pid;
-}
-
 static void
 affile_sd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data)
 {
   AFFileSourceDriver *self = (AFFileSourceDriver *) s;
   static NVHandle filename_handle = 0;
-  gssize pid_length = 0;
 
   if (!filename_handle)
     filename_handle = log_msg_get_value_handle("FILE_NAME");
   
-  log_msg_get_value(msg, LM_V_PID, &pid_length);
-  if (self->use_own_pid && pid_length == 0)
-    {
-      log_msg_set_value(msg, LM_V_PID, pid_string, -1);
-    }
-
   log_msg_set_value(msg, filename_handle, self->filename->str, self->filename->len);
 
   log_pipe_forward_msg(s, msg, path_options);

@@ -50,7 +50,6 @@ typedef struct _AFFileSourceDriver
   FileMonitor *file_monitor;
   GQueue *file_list;
   GString *filename;
-  gboolean use_own_pid;
 } AFFileSourceDriver;
 
 LogDriver *affile_sd_new(gchar *filename, guint32 flags);

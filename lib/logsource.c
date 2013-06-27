@@ -306,6 +306,10 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
       log_msg_set_value(msg, LM_V_HOST, self->options->host_override, self->options->host_override_len);
     }
 
+  if (self->options->use_syslogng_pid)
+    {
+      log_msg_set_value(msg, LM_V_PID, get_pid_string(), -1);
+    }
   /* source specific tags */
   if (self->options->tags)
     {
