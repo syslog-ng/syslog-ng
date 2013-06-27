@@ -599,8 +599,8 @@ g_process_detach_tty(void)
 #ifdef TIOCNOTTY
           ioctl(STDIN_FILENO, TIOCNOTTY, 0);
 #endif
-          setsid();
         }
+        setsid();
     }
 }
 
