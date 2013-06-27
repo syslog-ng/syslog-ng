@@ -52,7 +52,7 @@ g_atomic_counter_get(GAtomicCounter *c)
 static inline gint
 g_atomic_counter_exchange_and_add(GAtomicCounter *c, gint val)
 {
-  return g_atomic_int_exchange_and_add(&c->counter, val);
+  return g_atomic_int_add(&c->counter, val);
 }
 
 static inline gint
