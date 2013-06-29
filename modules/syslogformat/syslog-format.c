@@ -407,7 +407,15 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint pa
     }
   else
     {
-      return FALSE;
+      if (left >= 1 && src[0] == '-')
+        {
+          /* NILVALUE */
+          self->timestamps[LM_TS_STAMP] = self->timestamps[LM_TS_RECVD];
+          left--;
+          src++;
+        }
+      else
+        return FALSE;
     }
 
   /* NOTE: mktime() returns the time assuming that the timestamp we
