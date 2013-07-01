@@ -2,8 +2,11 @@ syslog-ng (3.3.11-1~mhp1) unstable; urgency=low
 
   [ Gergely Nagy <algernon@madhouse-project.org> ]
   * New upstream release.
+  * Ship /var/lib/syslog-ng in the syslog-ng-core package, instead of
+    creating it in the init script. Thanks Michael Biebl
+    <biebl@debian.org> for the report & assistance. (Closes: #699942)
 
- -- Gergely Nagy <algernon@madhouse-project.org>  Mon, 01 Jul 2013 11:35:44 +0200
+ -- Gergely Nagy <algernon@madhouse-project.org>  Mon, 01 Jul 2013 11:50:09 +0200
 
 syslog-ng (3.3.10-1~mhp1) unstable; urgency=low
 
