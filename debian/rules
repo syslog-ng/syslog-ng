@@ -47,8 +47,8 @@ export DH_OPTIONS += -O-Bdebian/build-tree --dbg-package=syslog-ng-dbg -O-D${SRC
 CFLAGS		?= $(shell dpkg-buildflags --get CFLAGS)
 LDFLAGS		?= $(shell dpkg-buildflags --get LDFLAGS)
 
-# On Ubuntu, we disable systemd support. Everwhere else, we include
-# it.
+# If debian/control does not have a build-dependency on
+# libsystemd-daemon, enable systemd support, otherwise not.
 ifeq ($(shell grep -q libsystemd-daemon-dev debian/control || echo disabled),disabled)
 SYSTEMD_SUPPORT	?= --disable-systemd
 else
@@ -223,7 +223,8 @@ override_dh_makeshlibs:
 # because I want to reuse those even on systems that do not support
 # data.tar.xz (lucid, I'm looking at you).
 #
-# Oh, and for compatibility with Ubuntu, don't don't use -Zxz at all.
+# Oh, and for compatibility with Ubuntu (Lucid), don't use -Zxz at
+# all.
 override_dh_builddeb:
 	dh_builddeb -i
 ifneq (Ubuntu,$(shell lsb_release -is))
