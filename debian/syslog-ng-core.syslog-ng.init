@@ -66,6 +66,10 @@ syslogng_wait() {
         return 1
     fi
 
+    if [ -n "$DPKG_MAINTSCRIPT_PACKAGE" ]; then
+        return 0
+    fi
+
     RET=1
     for i in $(seq 1 30); do
         status=0
