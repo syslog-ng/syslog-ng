@@ -14,6 +14,10 @@ else
 fi
 git submodule --quiet update --recursive --init
 
-features="$@"
+if [ $# -eq 0 ]; then
+        features="systemd multi-arch"
+else
+        features="$@"
+fi
 
 debian/tools/update-control.sh ${UPSTREAM_VERSION} ${features}
