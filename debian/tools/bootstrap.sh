@@ -14,12 +14,6 @@ else
 fi
 git submodule --quiet update --recursive --init
 
-if [ "$(dpkg-vendor --query Vendor)" = "Debian" ]; then
-        features="systemd"
-else
-        features=""
-fi
-
-features="$features $@"
+features="$@"
 
 debian/tools/update-control.sh ${UPSTREAM_VERSION} ${features}
