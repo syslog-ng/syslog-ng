@@ -30,7 +30,7 @@ sed -e "s,@UPSTREAM_VERSION@,${UPSTREAM_VERSION},g" \
 # Update debian/syslog-ng-core.dirs and .links
 for file in syslog-ng-core.dirs syslog-ng-core.links; do
         rm -f debian/${file}
-        for feature in default $@; do
+        for feature in . $@; do
                 if [ -e debian/control.d/${feature}/${file} ]; then
                         cat debian/control.d/${feature}/${file} >>debian/${file}
                 fi
@@ -39,11 +39,10 @@ done
 
 # Remove old libsyslog-ng-${VERSION}.* files
 rm -f debian/libsyslog-ng-[0-9].*.install \
-      debian/libsyslog-ng-[0-9].*.lintian-overrides \
       debian/libsyslog-ng-dev.install
 
 # Update libsyslog-ng-*
-for file in libsyslog-ng.install libsyslog-ng.lintian-overrides libsyslog-ng-dev.install; do
+for file in libsyslog-ng.install libsyslog-ng-dev.install; do
         for feature in default $@; do
                 if [ -e debian/control.d/${feature}/${file} ]; then
                         cp debian/control.d/${feature}/${file} debian/${file}
@@ -54,10 +53,3 @@ done
 # Update debian/libsyslog-ng-${UPSTREAM_VERSION}.install
 mv debian/libsyslog-ng.install \
    debian/libsyslog-ng-${UPSTREAM_VERSION}.install
-
-# Update debian/libsyslog-ng-${UPSTREAM_VERSION}.lintian-overrides
-sed -e "s,@UPSTREAM_VERSION@,${UPSTREAM_VERSION},g" \
-    -e "s,@UPSTREAM_VERSION_MAJOR@,${UPSTREAM_VERSION_MAJOR},g" \
-    < debian/libsyslog-ng.lintian-overrides \
-    > debian/libsyslog-ng-${UPSTREAM_VERSION}.lintian-overrides
-rm -f debian/libsyslog-ng.lintian-overrides
