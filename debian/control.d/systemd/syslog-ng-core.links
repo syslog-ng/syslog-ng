@@ -1,2 +1,0 @@
-lib/systemd/system/syslog-ng.service etc/systemd/system/syslog.service
-lib/systemd/system/syslog-ng.service etc/systemd/system/multi-user.target.wants/syslog-ng.service

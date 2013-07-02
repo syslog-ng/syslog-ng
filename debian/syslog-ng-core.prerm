@@ -2,6 +2,11 @@
 
 set -e
 
+# Stop the socket on remove so syslog-ng is not restarted via socket activation
+if [ -d /run/systemd/system ] && [ "$1" = remove ]; then
+	systemctl stop syslog.socket || true
+fi
+
 if [ -x "/etc/init.d/syslog-ng" ] && [ "$1" = remove ]; then
 	invoke-rc.d syslog-ng stop || exit $?
 fi

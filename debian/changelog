@@ -8,8 +8,11 @@ syslog-ng (3.3.11-1~mhp1) unstable; urgency=low
   * Do not wait for syslog-ng to settle down during installation / update.
     This also fixes installing via debootstrap and a fake
     start-stop-daemon. (Closes: #714254)
+  * Use dh-systemd for proper systemd-related maintainer scripts. Based on
+    a patch by Michael Biebl <biebl@debian.org>. (Closes: #713982,
+    #690067)
 
- -- Gergely Nagy <algernon@madhouse-project.org>  Mon, 01 Jul 2013 12:27:05 +0200
+ -- Gergely Nagy <algernon@madhouse-project.org>  Tue, 02 Jul 2013 12:25:00 +0200
 
 syslog-ng (3.3.10-1~mhp1) unstable; urgency=low
 

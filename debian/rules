@@ -177,6 +177,7 @@ ifneq (,$(filter libsyslog-ng-dev,$(shell dh_listpackages)))
 endif
 ifneq (,$(filter syslog-ng-core,$(shell dh_listpackages)))
 ifeq (${SYSTEMD_SUPPORT},--enable-systemd)
+	install -d debian/syslog-ng-core/lib/systemd/system
 	install -m 0644 ${SRCDIR}/contrib/systemd/syslog-ng.service \
 			debian/syslog-ng-core/lib/systemd/system/
 endif
@@ -265,4 +266,8 @@ install install-arch install-indep: debian/control
 
 # And for the rest, there is debhelper!
 %:
+ifeq (${SYSTEMD_SUPPORT},--enable-systemd)
+	dh $@ --with autoreconf,systemd
+else
 	dh $@ --with autoreconf
+endif

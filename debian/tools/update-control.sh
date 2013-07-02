@@ -27,16 +27,6 @@ sed -e "s,@UPSTREAM_VERSION@,${UPSTREAM_VERSION},g" \
     < debian/control.d/control.in \
     > debian/control
 
-# Update debian/syslog-ng-core.dirs and .links
-for file in syslog-ng-core.dirs syslog-ng-core.links; do
-        rm -f debian/${file}
-        for feature in . $@; do
-                if [ -e debian/control.d/${feature}/${file} ]; then
-                        cat debian/control.d/${feature}/${file} >>debian/${file}
-                fi
-        done
-done
-
 # Remove old libsyslog-ng-${VERSION}.* files
 rm -f debian/libsyslog-ng-[0-9].*.install \
       debian/libsyslog-ng-dev.install
