@@ -11,6 +11,7 @@
 /debian/libsyslog-ng-*/
 /debian/syslog-ng-core/
 /debian/syslog-ng-dbg/
+/debian/syslog-ng-dev/
 /debian/syslog-ng/
 /debian/syslog-ng-mod-*/
 /debian/syslog-ng-core.links
