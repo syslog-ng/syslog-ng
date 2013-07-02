@@ -19,7 +19,7 @@ Build-Depends: debhelper (>= 9~),
 	       libcap-dev [linux-any],
 	       @IF_ENABLED(systemd):libsystemd-daemon-dev [linux-any], dh-systemd (>= 1.3)@
 Build-Conflicts: autoconf2.13
-Standards-Version: 3.9.3
+Standards-Version: 3.9.4
 Homepage: http://www.balabit.com/network-security/syslog-ng/opensource-logging-system
 Vcs-Git: git://git.madhouse-project.org/debian/syslog-ng.git
 Vcs-Browser: http://git.madhouse-project.org/debian/syslog-ng/log/?h=packaging/debian/3.3

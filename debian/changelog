@@ -11,8 +11,9 @@ syslog-ng (3.3.11-1~mhp1) unstable; urgency=low
   * Use dh-systemd for proper systemd-related maintainer scripts. Based on
     a patch by Michael Biebl <biebl@debian.org>. (Closes: #713982,
     #690067)
+  * Bumped Standards-Version to 3.9.4, no changes necessary.
 
- -- Gergely Nagy <algernon@madhouse-project.org>  Tue, 02 Jul 2013 12:25:00 +0200
+ -- Gergely Nagy <algernon@madhouse-project.org>  Tue, 02 Jul 2013 12:48:32 +0200
 
 syslog-ng (3.3.10-1~mhp1) unstable; urgency=low
 
