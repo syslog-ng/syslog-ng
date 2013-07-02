@@ -43,7 +43,7 @@ rm -f debian/libsyslog-ng-[0-9].*.install \
 
 # Update libsyslog-ng-*
 for file in libsyslog-ng.install libsyslog-ng-dev.install; do
-        for feature in default $@; do
+        for feature in . $@; do
                 if [ -e debian/control.d/${feature}/${file} ]; then
                         cp debian/control.d/${feature}/${file} debian/${file}
                 fi
