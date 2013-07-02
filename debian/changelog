@@ -12,8 +12,10 @@ syslog-ng (3.3.11-1~mhp1) unstable; urgency=low
     a patch by Michael Biebl <biebl@debian.org>. (Closes: #713982,
     #690067)
   * Bumped Standards-Version to 3.9.4, no changes necessary.
+  * Drop the libsyslog-ng-* packages, move the libsyslog-ng.so into the
+    syslog-ng-core package, and rename the -dev package to syslog-ng-dev.
 
- -- Gergely Nagy <algernon@madhouse-project.org>  Tue, 02 Jul 2013 12:48:32 +0200
+ -- Gergely Nagy <algernon@madhouse-project.org>  Tue, 02 Jul 2013 12:57:50 +0200
 
 syslog-ng (3.3.10-1~mhp1) unstable; urgency=low
 

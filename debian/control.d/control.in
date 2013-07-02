@@ -73,22 +73,10 @@ Description: Next generation system logging daemon (debug symbols)
  This package contains debug symbols for the whole of syslog-ng,
  including the modules.
 
-Package: libsyslog-ng-@UPSTREAM_VERSION@
-Section: libs
-Architecture: any
-Pre-Depends: ${misc:Pre-Depends}
-Multi-Arch: same
-Depends: ${shlibs:Depends}, ${misc:Depends}
-Description: Next generation system logging daemon (private library)
- This package contains a semi-private library, used by both syslog-ng
- and its plugins.
- .
- It should not be used by anything else but syslog-ng and its plugins.
-
-Package: libsyslog-ng-dev
+Package: syslog-ng-dev
 Section: libdevel
 Architecture: any
-Depends: libsyslog-ng-@UPSTREAM_VERSION@ (= ${binary:Version}),
+Depends: syslog-ng-core (= ${binary:Version}),
  ${misc:Depends}, ${perl:Depends},
  pkg-config, perl, flex, bison,
  libevtlog-dev (>= 0.2.12), libglib2.0-dev, libivykis-dev (>= 0.30)
