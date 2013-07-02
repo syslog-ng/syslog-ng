@@ -76,7 +76,7 @@ override_dh_auto_configure:
 			  sed -n "/^Version:/s/^Version: //p" | \
 			  sed -e "s,+g\([0-9a-f]*\).*,[@\1]," | \
 			  sed -e "s,$$, ($(shell lsb_release -is)/$(shell lsb_release -rs)),")"; \
-	cd debian/build-tree && ../../${SRCDIR}/configure \
+	dh_auto_configure -- \
 		--build=$(dpkg-architecture -qDEB_BUILD_GNU_TYPE) \
 		--prefix=/usr \
 		--mandir=/usr/share/man \
