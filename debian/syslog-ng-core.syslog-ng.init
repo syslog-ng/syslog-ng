@@ -66,6 +66,10 @@ syslogng_wait() {
         return 1
     fi
 
+    if [ -n "$DPKG_MAINTSCRIPT_PACKAGE" ]; then
+        return 0
+    fi
+
     RET=1
     for i in $(seq 1 30); do
         status=0
@@ -83,7 +87,6 @@ syslogng_start() {
     log_daemon_msg "Starting system logging" "$NAME"
     create_pidfiledir
     create_xconsole
-    install -d /var/lib/syslog-ng
     start-stop-daemon --start --oknodo --quiet --exec "$SYSLOGNG" \
                       --pidfile "$PIDFILE" -- -p "$PIDFILE" $SYSLOGNG_OPTS
     syslogng_wait 1 $?

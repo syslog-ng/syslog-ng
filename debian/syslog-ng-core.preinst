@@ -21,7 +21,7 @@ then
         # which don't work (#690067)
         for file_to_remove in /etc/systemd/system/multi-user.target.wants/syslog-ng.service /etc/systemd/system/syslog.service; do
                 if [ -L $file_to_remove ]; then
-                        echo rm $file_to_remove
+                        rm $file_to_remove
                 fi
         done
 fi

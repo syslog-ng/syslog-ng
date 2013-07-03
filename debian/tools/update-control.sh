@@ -26,13 +26,3 @@ sed -e "s,@UPSTREAM_VERSION@,${UPSTREAM_VERSION},g" \
     -e "/@IF_ENABLED/d" \
     < debian/control.d/control.in \
     > debian/control
-
-# Update debian/syslog-ng-core.dirs and .links
-for file in syslog-ng-core.dirs syslog-ng-core.links; do
-        rm -f debian/${file}
-        for feature in default $@; do
-                if [ -e debian/control.d/${feature}/${file} ]; then
-                        cat debian/control.d/${feature}/${file} >>debian/${file}
-                fi
-        done
-done

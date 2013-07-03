@@ -2,7 +2,7 @@
 
 set -e
 
-EXPORT_ROOT="../deb-packages"
+EXPORT_ROOT="${EXPORT_ROOT:-../deb-packages}"
 
 # =========================================== #
 

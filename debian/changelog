@@ -1,3 +1,19 @@
+syslog-ng (3.4.2-1~mhp2) unstable; urgency=low
+
+  [ Gergely Nagy <algernon@madhouse-project.org> ]
+  * Ship /var/lib/syslog-ng in the syslog-ng-core package, instead of
+    creating it in the init script. Thanks Michael Biebl
+    <biebl@debian.org> for the report & assistance. (Closes: #699942)
+  * Do not wait for syslog-ng to settle down during installation / update.
+    This also fixes installing via debootstrap and a fake
+    start-stop-daemon. (Closes: #714254)
+  * Use dh-systemd for proper systemd-related maintainer scripts. Based on
+    a patch by Michael Biebl <biebl@debian.org>. (Closes: #713982,
+    #690067)
+  * Bumped Standards-Version to 3.9.4, no changes necessary.
+
+ -- Gergely Nagy <algernon@madhouse-project.org>  Wed, 03 Jul 2013 11:11:21 +0200
+
 syslog-ng (3.4.2-1~mhp1) unstable; urgency=low
 
   [ Gergely Nagy <algernon@madhouse-project.org> ]

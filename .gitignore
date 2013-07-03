@@ -12,5 +12,3 @@
 /debian/syslog-ng-mod-*/
 /debian/syslog-ng-dev/
 /debian/source_revision
-/debian/syslog-ng-core.dirs
-/debian/syslog-ng-core.links

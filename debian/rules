@@ -45,8 +45,8 @@ export DH_OPTIONS += -O-Bdebian/build-tree --dbg-package=syslog-ng-dbg -O-D${SRC
 CFLAGS		?= $(shell dpkg-buildflags --get CFLAGS)
 LDFLAGS		?= $(shell dpkg-buildflags --get LDFLAGS)
 
-# On Ubuntu, we disable systemd support. Everwhere else, we include
-# it.
+# If debian/control does not have a build-dependency on
+# libsystemd-daemon, enable systemd support, otherwise not.
 ifeq ($(shell grep -q libsystemd-daemon-dev debian/control || echo disabled),disabled)
 SYSTEMD_SUPPORT	?= --disable-systemd
 else
@@ -77,7 +77,7 @@ override_dh_auto_configure:
 			  sed -n "/^Version:/s/^Version: //p" | \
 			  sed -e "s,$$,$(shell cat debian/source_revision 2>/dev/null || true)," | \
 			  sed -e "s,$$, ($(shell lsb_release -is)/$(shell lsb_release -rs)),")"; \
-	cd debian/build-tree && ../../${SRCDIR}/configure \
+	dh_auto_configure -- \
 		--build=$(dpkg-architecture -qDEB_BUILD_GNU_TYPE) \
 		--prefix=/usr \
 		--mandir=/usr/share/man \
@@ -177,6 +177,7 @@ ifneq (,$(filter syslog-ng-dev,$(shell dh_listpackages)))
 endif
 ifneq (,$(filter syslog-ng-core,$(shell dh_listpackages)))
 ifeq (${SYSTEMD_SUPPORT},--enable-systemd)
+	install -d debian/syslog-ng-core/lib/systemd/system
 	install -m 0644 ${SRCDIR}/contrib/systemd/syslog-ng.service \
 			debian/syslog-ng-core/lib/systemd/system/
 endif
@@ -224,7 +225,8 @@ endif
 # because I want to reuse those even on systems that do not support
 # data.tar.xz (lucid, I'm looking at you).
 #
-# Oh, and for compatibility with Ubuntu, don't don't use -Zxz at all.
+# Oh, and for compatibility with Ubuntu (Lucid), don't use -Zxz at
+# all.
 override_dh_builddeb:
 	dh_builddeb -i
 ifneq (Ubuntu,$(shell lsb_release -is))
@@ -280,4 +282,8 @@ install install-arch install-indep: debian/control
 
 # And for the rest, there is debhelper!
 %:
+ifeq (${SYSTEMD_SUPPORT},--enable-systemd)
+	dh $@ --with autoreconf,systemd
+else
 	dh $@ --with autoreconf
+endif
