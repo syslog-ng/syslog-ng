@@ -28,6 +28,13 @@ cd "${EROOT}"
 
 mv "${ORIG}" ..
 
+# Make a normal dsc
+debian/tools/bootstrap.sh
+dpkg-buildpackage -us -uc -S -sa >/dev/null
+
+git clean -fdx
+cp "${TMPD}/changelog.orig" debian/changelog
+
 # Make a systemd-enabled dsc
 echo "* Generating the systemd-enabled package...."
 
