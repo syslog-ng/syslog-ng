@@ -1,3 +1,3 @@
 version=3
 opts=dversionmangle=s/\.dfsg// \
-http://www.balabit.hu/downloads/files/syslog-ng/sources/ .*/sources/([\d\.]+)
+http://www.balabit.com/downloads/files/syslog-ng/sources/(\d\S*)/source/syslog-ng_(.*)\.tar\.gz
