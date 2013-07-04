@@ -1439,18 +1439,13 @@ afsocket_dd_free(LogPipe *s)
 {
   AFSocketDestDriver *self = (AFSocketDestDriver *) s;
 
-  if (self->server_name_list)
-  {
-    while (self->server_name_list)
+  while (self->server_name_list)
     {
       g_free(self->server_name_list->data);
       self->server_name_list = g_list_delete_link(self->server_name_list, self->server_name_list);
     }
-  }
-  else
-  {
-    g_free(self->hostname);
-  }
+  g_free(self->hostname);
+
   log_writer_options_destroy(&self->writer_options);
   g_sockaddr_unref(self->bind_addr);
   g_sockaddr_unref(self->dest_addr);
