@@ -80,6 +80,7 @@ parser_json_opts
 parser_json_opt
 	: KW_PREFIX '(' string ')'		{ log_json_parser_set_prefix(last_parser, $3); free($3); }
 	| KW_MARKER '(' string ')'		{ log_json_parser_set_marker(last_parser, $3); free($3); }
+	| parser_opt
 	;
 
 /* INCLUDE_RULES */
