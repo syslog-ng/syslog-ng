@@ -1480,6 +1480,7 @@ AC_OUTPUT(dist.conf
 
 dnl PE modules
 	modules/license/Makefile
+	modules/license/zorp/license/libzlicenseconfig.h
 	modules/logstore/Makefile
         modules/logstore/tests/Makefile
 	modules/diskq/Makefile
