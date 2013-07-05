@@ -14,6 +14,7 @@ scl-install-data-local:
 	done
 	$(mkinstalldirs) $(DESTDIR)/$(scldir)
 	(cd $(srcdir); tar cf - $(SCL_SUBDIRS)) | (cd $(DESTDIR)/$(scldir) && tar xf -)
+	chmod -R u+rwX $(DESTDIR)/$(scldir)
 
 scl-uninstall-local:
 	for cfg in $(SCL_CONFIGS); do \
