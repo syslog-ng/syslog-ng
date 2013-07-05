@@ -20,3 +20,6 @@ scl-uninstall-local:
 		rm -f $(DESTDIR)/$(sysconfdir)/$${cfg}; \
 	done
 	rm -rf $(DESTDIR)/$(scldir)
+
+INSTALL_EXEC_HOOKS	+= scl-install-data-local
+UNINSTALL_HOOKS	+= scl-uninstall-local

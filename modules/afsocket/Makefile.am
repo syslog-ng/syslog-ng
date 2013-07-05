@@ -102,8 +102,11 @@ endif
 INSTALL_EXEC_HOOKS				+= \
 	afsocket-install-exec-hook
 
-uninstall-hook:
+afsocket-uninstall-hook:
 	rm -f $(DESTDIR)$(moduledir)/libafsocket.so
+
+UNINSTALL_HOOKS					+= \
+	afsocket-uninstall-hook
 
 CLEANFILES					+= \
 	modules/afsocket/libafsocket.la

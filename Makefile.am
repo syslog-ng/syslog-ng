@@ -53,6 +53,7 @@ libexec_PROGRAMS	=
 man_MANS		=
 
 INSTALL_EXEC_HOOKS	=
+UNINSTALL_HOOKS		=
 
 AUTOMAKE_OPTIONS	= subdir-objects
 
@@ -60,6 +61,7 @@ ${top_srcdir}/ChangeLog:
 	(cd $(top_srcdir); git log) > $@
 
 install-exec-hook: ${INSTALL_EXEC_HOOKS}
+uninstall-hook: ${UNINSTALL_HOOKS}
 
 help:
 	@echo "Welcome to the syslog-ng build system!"
