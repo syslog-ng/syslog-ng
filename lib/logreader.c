@@ -45,176 +45,6 @@
 #include <stdlib.h>
 #include <iv.h>
 #include <iv_work.h>
-
-typedef struct _PollFileChanges
-{
-  PollEvents super;
-  gint fd;
-  gchar *follow_filename;
-  gint follow_freq;
-  struct iv_timer follow_timer;
-  LogPipe *control;
-} PollFileChanges;
-
-/* follow timer callback. Check if the file has new content, or deleted or
- * moved.  Ran every follow_freq seconds.  */
-static void
-log_reader_poll_file_changes_check_file(gpointer s)
-{
-  PollFileChanges *self = (PollFileChanges *) s;
-  struct stat st, followed_st;
-  off_t pos = -1;
-  gint fd = self->fd;
-
-  msg_trace("Checking if the followed file has new lines",
-            evt_tag_str("follow_filename", self->follow_filename),
-            NULL);
-  if (fd >= 0)
-    {
-      pos = lseek(fd, 0, SEEK_CUR);
-      if (pos == (off_t) -1)
-        {
-          msg_error("Error invoking seek on followed file",
-                    evt_tag_errno("error", errno),
-                    NULL);
-          goto reschedule;
-        }
-
-      if (fstat(fd, &st) < 0)
-        {
-          if (errno == ESTALE)
-            {
-              msg_trace("log_reader_fd_check file moved ESTALE",
-                        evt_tag_str("follow_filename", self->follow_filename),
-                        NULL);
-              log_pipe_notify(self->control, NC_FILE_MOVED, self);
-              return;
-            }
-          else
-            {
-              msg_error("Error invoking fstat() on followed file",
-                        evt_tag_errno("error", errno),
-                        NULL);
-              goto reschedule;
-            }
-        }
-
-      msg_trace("log_reader_fd_check",
-                evt_tag_int("pos", pos),
-                evt_tag_int("size", st.st_size),
-                NULL);
-
-      if (pos < st.st_size || !S_ISREG(st.st_mode))
-        {
-          /* we have data to read */
-          poll_events_invoke_callback(s);
-          return;
-        }
-      else if (pos == st.st_size)
-        {
-          /* we are at EOF */
-          log_pipe_notify(self->control, NC_FILE_EOF, self);
-        }
-      else if (pos > st.st_size)
-        {
-          /* the last known position is larger than the current size of the file. it got truncated. Restart from the beginning. */
-          log_pipe_notify(self->control, NC_FILE_MOVED, self);
-
-          /* we may be freed by the time the notification above returns */
-          return;
-        }
-    }
-
-  if (self->follow_filename)
-    {
-      if (stat(self->follow_filename, &followed_st) != -1)
-        {
-          if (fd < 0 || (st.st_ino != followed_st.st_ino && followed_st.st_size > 0))
-            {
-              msg_trace("log_reader_fd_check file moved eof",
-                        evt_tag_int("pos", pos),
-                        evt_tag_int("size", followed_st.st_size),
-                        evt_tag_str("follow_filename", self->follow_filename),
-                        NULL);
-              /* file was moved and we are at EOF, follow the new file */
-              log_pipe_notify(self->control, NC_FILE_MOVED, self);
-              /* we may be freed by the time the notification above returns */
-              return;
-            }
-        }
-      else
-        {
-          msg_verbose("Follow mode file still does not exist",
-                      evt_tag_str("filename", self->follow_filename),
-                      NULL);
-        }
-    }
- reschedule:
-  poll_events_update_watches(s, G_IO_IN);
-}
-
-static void
-log_reader_poll_file_changes_stop_watches(PollEvents *s)
-{
-  PollFileChanges *self = (PollFileChanges *) s;
-
-  if (iv_timer_registered(&self->follow_timer))
-    iv_timer_unregister(&self->follow_timer);
-}
-
-static void
-log_reader_poll_file_changes_rearm_timer(PollFileChanges *self)
-{
-  iv_validate_now();
-  self->follow_timer.expires = iv_now;
-  timespec_add_msec(&self->follow_timer.expires, self->follow_freq);
-  iv_timer_register(&self->follow_timer);
-}
-
-static void
-log_reader_poll_file_changes_update_watches(PollEvents *s, GIOCondition cond)
-{
-  PollFileChanges *self = (PollFileChanges *) s;
-
-  /* we can only provide input events */
-  g_assert((cond & ~G_IO_IN) == 0);
-
-  log_reader_poll_file_changes_stop_watches(s);
-
-  if (cond & G_IO_IN)
-    log_reader_poll_file_changes_rearm_timer(self);
-}
-
-static void
-log_reader_poll_file_changes_free(PollEvents *s)
-{
-  PollFileChanges *self = (PollFileChanges *) s;
-  
-  log_pipe_unref(self->control);
-  g_free(self->follow_filename);
-}
-
-PollEvents *
-log_reader_poll_file_changes_new(gint fd, const gchar *follow_filename, gint follow_freq, LogPipe *control)
-{
-  PollFileChanges *self = g_new0(PollFileChanges, 1);
-  
-  self->super.stop_watches = log_reader_poll_file_changes_stop_watches;
-  self->super.update_watches = log_reader_poll_file_changes_update_watches;
-  self->super.free_fn = log_reader_poll_file_changes_free;
-  
-  self->fd = fd;
-  self->follow_filename = g_strdup(follow_filename);
-  self->follow_freq = follow_freq;
-  self->control = log_pipe_ref(control);
-
-  IV_TIMER_INIT(&self->follow_timer);
-  self->follow_timer.cookie = self;
-  self->follow_timer.handler = log_reader_poll_file_changes_check_file;
-
-  return &self->super;
-}
-
 /////////////////////////////////////////////////////////////////////////////////
 
 typedef struct _PollFd
@@ -318,7 +148,6 @@ struct _LogReader
   LogReaderOptions *options;
   PollEvents *poll_events;
   GSockAddr *peer_addr;
-  gchar *follow_filename;
   ino_t inode;
   gint64 size;
 
@@ -839,16 +668,7 @@ log_reader_reopen(LogReader *self, LogProtoServer *proto, LogPipe *control, LogR
     }
   log_reader_set_options(self, control, options, stats_level, stats_source, stats_id, stats_instance);
   
-  /* FIXME:!!!!!!!!!!! */
-  log_reader_set_follow_filename(self, stats_instance);
   log_source_init(&self->super.super);
-}
-
-void
-log_reader_set_follow_filename(LogReader *self, const gchar *follow_filename)
-{
-  g_free(self->follow_filename);
-  self->follow_filename = g_strdup(follow_filename);
 }
 
 void
