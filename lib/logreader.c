@@ -717,7 +717,7 @@ log_reader_reopen_deferred(gpointer s)
 
   self->proto = proto;
 
-  if(proto)
+  if (proto)
     {
         log_reader_start_watches(self);
     }
