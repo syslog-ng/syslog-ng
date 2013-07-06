@@ -65,6 +65,7 @@ pkginclude_HEADERS			+= \
 	lib/persist-state.h		\
 	lib/plugin.h			\
 	lib/plugin-types.h		\
+	lib/poll-events.h		\
 	lib/pragma-parser.h		\
 	lib/scratch-buffers.h		\
 	lib/serialize.h			\
@@ -137,6 +138,7 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/nvtable.c			\
 	lib/persist-state.c		\
 	lib/plugin.c			\
+	lib/poll-events.c		\
 	lib/pragma-parser.c		\
 	lib/scratch-buffers.c		\
 	lib/serialize.c			\

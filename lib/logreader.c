@@ -31,6 +31,7 @@
 #include "timeutils.h"
 #include "compat.h"
 #include "mainloop.h"
+#include "poll-events.h"
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -45,87 +46,22 @@
 #include <iv.h>
 #include <iv_work.h>
 
-typedef struct _LogReaderPollEvents LogReaderPollEvents;
-typedef void (*LogReaderPollCallback)(gpointer user_data);
-
-struct _LogReaderPollEvents
+typedef struct _PollFileChanges
 {
-  LogReaderPollCallback callback;
-  gpointer callback_data;
-
-  void (*start_watches)(LogReaderPollEvents *self);
-  void (*stop_watches)(LogReaderPollEvents *self);
-  void (*update_watches)(LogReaderPollEvents *self, GIOCondition cond);
-  void (*free_fn)(LogReaderPollEvents *self);
-};
-
-static inline void
-log_reader_poll_events_start_watches(LogReaderPollEvents *self)
-{
-  if (self->start_watches)
-    self->start_watches(self);
-}
-
-static inline void
-log_reader_poll_events_stop_watches(LogReaderPollEvents *self)
-{
-  self->stop_watches(self);
-}
-
-static inline void
-log_reader_poll_events_update_watches(LogReaderPollEvents *self, GIOCondition cond)
-{
-  self->update_watches(self, cond);
-}
-
-static void
-log_reader_poll_events_suspend_watches(LogReaderPollEvents *self)
-{
-  log_reader_poll_events_update_watches(self, 0);
-}
-
-void
-log_reader_poll_events_invoke_callback(LogReaderPollEvents *self)
-{
-  self->callback(self->callback_data);
-}
-
-void
-log_reader_poll_events_set_callback(LogReaderPollEvents *self, LogReaderPollCallback callback, gpointer user_data)
-{
-  self->callback = callback;
-  self->callback_data = user_data;
-}
-
-void
-log_reader_poll_events_init(LogReaderPollEvents *self)
-{
-}
-
-void
-log_reader_poll_events_free(LogReaderPollEvents *self)
-{
-  if (self->free_fn)
-    self->free_fn(self);
-  g_free(self);
-}
-
-typedef struct _LogReaderPollFileChanges
-{
-  LogReaderPollEvents super;
+  PollEvents super;
   gint fd;
   gchar *follow_filename;
   gint follow_freq;
   struct iv_timer follow_timer;
   LogPipe *control;
-} LogReaderPollFileChanges;
+} PollFileChanges;
 
 /* follow timer callback. Check if the file has new content, or deleted or
  * moved.  Ran every follow_freq seconds.  */
 static void
 log_reader_poll_file_changes_check_file(gpointer s)
 {
-  LogReaderPollFileChanges *self = (LogReaderPollFileChanges *) s;
+  PollFileChanges *self = (PollFileChanges *) s;
   struct stat st, followed_st;
   off_t pos = -1;
   gint fd = self->fd;
@@ -171,7 +107,7 @@ log_reader_poll_file_changes_check_file(gpointer s)
       if (pos < st.st_size || !S_ISREG(st.st_mode))
         {
           /* we have data to read */
-          log_reader_poll_events_invoke_callback(s);
+          poll_events_invoke_callback(s);
           return;
         }
       else if (pos == st.st_size)
@@ -214,20 +150,20 @@ log_reader_poll_file_changes_check_file(gpointer s)
         }
     }
  reschedule:
-  log_reader_poll_events_update_watches(s, G_IO_IN);
+  poll_events_update_watches(s, G_IO_IN);
 }
 
 static void
-log_reader_poll_file_changes_stop_watches(LogReaderPollEvents *s)
+log_reader_poll_file_changes_stop_watches(PollEvents *s)
 {
-  LogReaderPollFileChanges *self = (LogReaderPollFileChanges *) s;
+  PollFileChanges *self = (PollFileChanges *) s;
 
   if (iv_timer_registered(&self->follow_timer))
     iv_timer_unregister(&self->follow_timer);
 }
 
 static void
-log_reader_poll_file_changes_rearm_timer(LogReaderPollFileChanges *self)
+log_reader_poll_file_changes_rearm_timer(PollFileChanges *self)
 {
   iv_validate_now();
   self->follow_timer.expires = iv_now;
@@ -236,9 +172,9 @@ log_reader_poll_file_changes_rearm_timer(LogReaderPollFileChanges *self)
 }
 
 static void
-log_reader_poll_file_changes_update_watches(LogReaderPollEvents *s, GIOCondition cond)
+log_reader_poll_file_changes_update_watches(PollEvents *s, GIOCondition cond)
 {
-  LogReaderPollFileChanges *self = (LogReaderPollFileChanges *) s;
+  PollFileChanges *self = (PollFileChanges *) s;
 
   /* we can only provide input events */
   g_assert((cond & ~G_IO_IN) == 0);
@@ -250,18 +186,18 @@ log_reader_poll_file_changes_update_watches(LogReaderPollEvents *s, GIOCondition
 }
 
 static void
-log_reader_poll_file_changes_free(LogReaderPollEvents *s)
+log_reader_poll_file_changes_free(PollEvents *s)
 {
-  LogReaderPollFileChanges *self = (LogReaderPollFileChanges *) s;
+  PollFileChanges *self = (PollFileChanges *) s;
   
   log_pipe_unref(self->control);
   g_free(self->follow_filename);
 }
 
-LogReaderPollEvents *
+PollEvents *
 log_reader_poll_file_changes_new(gint fd, const gchar *follow_filename, gint follow_freq, LogPipe *control)
 {
-  LogReaderPollFileChanges *self = g_new0(LogReaderPollFileChanges, 1);
+  PollFileChanges *self = g_new0(PollFileChanges, 1);
   
   self->super.stop_watches = log_reader_poll_file_changes_stop_watches;
   self->super.update_watches = log_reader_poll_file_changes_update_watches;
@@ -281,56 +217,56 @@ log_reader_poll_file_changes_new(gint fd, const gchar *follow_filename, gint fol
 
 /////////////////////////////////////////////////////////////////////////////////
 
-typedef struct _LogReaderPollFd
+typedef struct _PollFd
 {
-  LogReaderPollEvents super;
+  PollEvents super;
   struct iv_fd fd_watch;
-} LogReaderPollFd;
+} PollFd;
 
 #define IV_FD_CALLBACK(x) ((void (*)(void *)) (x))
 
 static void
-log_reader_poll_fd_start_watches(LogReaderPollEvents *s)
+log_reader_poll_fd_start_watches(PollEvents *s)
 {
-  LogReaderPollFd *self = (LogReaderPollFd *) s;
+  PollFd *self = (PollFd *) s;
 
   iv_fd_register(&self->fd_watch);
 }
 
 static void
-log_reader_poll_fd_stop_watches(LogReaderPollEvents *s)
+log_reader_poll_fd_stop_watches(PollEvents *s)
 {
-  LogReaderPollFd *self = (LogReaderPollFd *) s;
+  PollFd *self = (PollFd *) s;
 
   if (iv_fd_registered(&self->fd_watch))
     iv_fd_unregister(&self->fd_watch);
 }
 
 static void
-log_reader_poll_fd_update_watches(LogReaderPollEvents *s, GIOCondition cond)
+log_reader_poll_fd_update_watches(PollEvents *s, GIOCondition cond)
 {
-  LogReaderPollFd *self = (LogReaderPollFd *) s;
+  PollFd *self = (PollFd *) s;
 
   if (cond & G_IO_IN)
-    iv_fd_set_handler_in(&self->fd_watch, IV_FD_CALLBACK(log_reader_poll_events_invoke_callback));
+    iv_fd_set_handler_in(&self->fd_watch, IV_FD_CALLBACK(poll_events_invoke_callback));
   else
     iv_fd_set_handler_in(&self->fd_watch, NULL);
 
   if (cond & G_IO_OUT)
-    iv_fd_set_handler_out(&self->fd_watch, IV_FD_CALLBACK(log_reader_poll_events_invoke_callback));
+    iv_fd_set_handler_out(&self->fd_watch, IV_FD_CALLBACK(poll_events_invoke_callback));
   else
     iv_fd_set_handler_out(&self->fd_watch, NULL);
 
   if (cond & (G_IO_IN + G_IO_OUT))
-    iv_fd_set_handler_err(&self->fd_watch, IV_FD_CALLBACK(log_reader_poll_events_invoke_callback));
+    iv_fd_set_handler_err(&self->fd_watch, IV_FD_CALLBACK(poll_events_invoke_callback));
   else
     iv_fd_set_handler_err(&self->fd_watch, NULL);
 }
 
-LogReaderPollEvents *
+PollEvents *
 log_reader_poll_fd_new(gint fd)
 {
-  LogReaderPollFd *self = g_new0(LogReaderPollFd, 1);
+  PollFd *self = g_new0(PollFd, 1);
 
   g_assert(fd >= 0);
 
@@ -380,7 +316,7 @@ struct _LogReader
   gboolean waiting_for_preemption;
   LogPipe *control;
   LogReaderOptions *options;
-  LogReaderPollEvents *poll_events;
+  PollEvents *poll_events;
   GSockAddr *peer_addr;
   gchar *follow_filename;
   ino_t inode;
@@ -587,14 +523,14 @@ log_reader_create_poll_events_instance(LogReader *self)
       return FALSE;
     }
 
-  log_reader_poll_events_set_callback(self->poll_events, log_reader_io_process_input, self);
+  poll_events_set_callback(self->poll_events, log_reader_io_process_input, self);
   return TRUE;
 }
 
 static void
 log_reader_free_poll_events_instance(LogReader *self)
 {
-  log_reader_poll_events_free(self->poll_events);
+  poll_events_free(self->poll_events);
   self->poll_events = NULL;
 }
 
@@ -603,9 +539,10 @@ log_reader_start_watches(LogReader *self)
 {
   if (!self->watches_running)
     {
-      log_reader_poll_events_start_watches(self->poll_events);
-      log_reader_update_watches(self);
+      poll_events_start_watches(self->poll_events);
       self->watches_running = TRUE;
+
+      log_reader_update_watches(self);
     }
 }
 
@@ -614,7 +551,7 @@ log_reader_stop_watches(LogReader *self)
 {
   if (self->watches_running)
     {
-      log_reader_poll_events_stop_watches(self->poll_events);
+      poll_events_stop_watches(self->poll_events);
 
       if (iv_task_registered(&self->restart_task))
         iv_task_unregister(&self->restart_task);
@@ -645,7 +582,7 @@ log_reader_update_watches(LogReader *self)
        */
 
       self->immediate_check = FALSE;
-      log_reader_poll_events_suspend_watches(self->poll_events);
+      poll_events_suspend_watches(self->poll_events);
 
       if (free_to_send)
         {
@@ -663,7 +600,7 @@ log_reader_update_watches(LogReader *self)
       return;
     }
 
-  log_reader_poll_events_update_watches(self->poll_events, cond);
+  poll_events_update_watches(self->poll_events, cond);
 }
 
 static gboolean
