@@ -42,6 +42,7 @@ typedef struct _AFFileSourceDriver
   LogReaderOptions reader_options;
   FilePermOptions file_perm_options;
   gint pad_size;
+  gint follow_freq;
   gboolean is_pipe:1,
     is_privileged:1;
   gint multi_line_mode;
@@ -52,6 +53,7 @@ LogDriver *affile_sd_new(gchar *filename);
 LogDriver *afpipe_sd_new(gchar *filename);
 
 gboolean affile_sd_set_multi_line_mode(LogDriver *s, const gchar *mode);
+void affile_sd_set_follow_freq(LogDriver *s, gint follow_freq);
 
 void affile_sd_set_recursion(LogDriver *s, const gint recursion);
 void affile_sd_set_pri_level(LogDriver *s, const gint16 severity);

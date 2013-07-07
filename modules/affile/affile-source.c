@@ -60,6 +60,14 @@ affile_sd_set_multi_line_mode(LogDriver *s, const gchar *mode)
   return TRUE;
 }
 
+void
+affile_sd_set_follow_freq(LogDriver *s, gint follow_freq)
+{
+  AFFileSourceDriver *self = (AFFileSourceDriver *) s;
+
+  self->follow_freq = follow_freq;
+}
+
 static inline gboolean
 affile_is_linux_proc_kmsg(const gchar *filename)
 {
@@ -121,7 +129,7 @@ affile_sd_recover_state(LogPipe *s, GlobalConfig *cfg, LogProtoServer *proto)
 {
   AFFileSourceDriver *self = (AFFileSourceDriver *) s;
 
-  if (self->is_pipe || self->reader_options.follow_freq <= 0)
+  if (self->is_pipe || self->follow_freq <= 0)
     return;
 
   if (!log_proto_server_restart_with_state(proto, cfg->state, affile_sd_format_persist_name(self)))
@@ -152,8 +160,8 @@ _is_fd_pollable(gint fd)
 static PollEvents *
 affile_sd_construct_poll_events(AFFileSourceDriver *self, gint fd)
 {
-  if (self->reader_options.follow_freq > 0)
-    return poll_file_changes_new(fd, self->filename->str, self->reader_options.follow_freq, &self->super.super.super);
+  if (self->follow_freq > 0)
+    return poll_file_changes_new(fd, self->filename->str, self->follow_freq, &self->super.super.super);
   else if (fd >= 0 && _is_fd_pollable(fd))
     return poll_fd_events_new(fd);
   else
@@ -171,7 +179,7 @@ affile_sd_construct_transport(AFFileSourceDriver *self, gint fd)
 {
   if (self->is_pipe)
     return log_transport_pipe_new(fd);
-  else if (self->reader_options.follow_freq > 0)
+  else if (self->follow_freq > 0)
     return log_transport_file_new(fd);
   else if (affile_is_linux_proc_kmsg(self->filename->str))
     return log_transport_device_new(fd, 10);
@@ -312,7 +320,7 @@ affile_sd_init(LogPipe *s)
   log_reader_options_init(&self->reader_options, cfg, self->super.super.group);
 
   file_opened = affile_sd_open_file(self, self->filename->str, &fd);
-  if (!file_opened && self->reader_options.follow_freq > 0)
+  if (!file_opened && self->follow_freq > 0)
     {
       msg_info("Follow-mode file source not found, deferring open",
                evt_tag_str("filename", self->filename->str),
@@ -440,14 +448,15 @@ affile_sd_new(gchar *filename)
                       NULL);
           warned = TRUE;
         }
+      self->follow_freq = -1;
     }
   else
     {
       if (affile_is_device_node(filename) ||
           affile_is_linux_proc_kmsg(filename))
-        self->reader_options.follow_freq = 0;
+        self->follow_freq = 0;
       else
-        self->reader_options.follow_freq = 1000;
+        self->follow_freq = 1000;
     }
 
   return &self->super.super;

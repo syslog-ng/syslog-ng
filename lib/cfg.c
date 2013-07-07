@@ -303,7 +303,6 @@ cfg_new(gint version)
   self->log_fifo_size = 10000;
   self->log_msg_size = 8192;
 
-  self->follow_freq = -1;
   self->file_uid = 0;
   self->file_gid = 0;
   self->file_perm = 0600;

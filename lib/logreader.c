@@ -538,7 +538,6 @@ log_reader_options_defaults(LogReaderOptions *options)
   log_proto_server_options_defaults(&options->proto_options.super);
   msg_format_options_defaults(&options->parse_options);
   options->fetch_limit = 10;
-  options->follow_freq = -1; 
   if (configuration && cfg_is_config_version_older(configuration, 0x0300))
     {
       static gboolean warned;
@@ -586,8 +585,6 @@ log_reader_options_init(LogReaderOptions *options, GlobalConfig *cfg, const gcha
   log_proto_server_options_init(&options->proto_options.super, cfg);
   msg_format_options_init(&options->parse_options, cfg);
 
-  if (options->follow_freq == -1)
-    options->follow_freq = cfg->follow_freq;
   if (options->check_hostname == -1)
     options->check_hostname = cfg->check_hostname;
   if (options->check_hostname)

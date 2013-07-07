@@ -47,7 +47,6 @@ typedef struct _LogReaderOptions
   MsgFormatOptions parse_options;
   LogProtoServerOptionsStorage proto_options;
   guint32 flags;
-  gint follow_freq;
   gint fetch_limit;
   const gchar *group_name;
   gboolean check_hostname;

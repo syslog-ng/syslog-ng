@@ -88,7 +88,6 @@ struct _GlobalConfig
   gint log_fifo_size;
   gint log_msg_size;
 
-  gint follow_freq;
   gboolean create_dirs;
   gint file_uid;
   gint file_gid;
