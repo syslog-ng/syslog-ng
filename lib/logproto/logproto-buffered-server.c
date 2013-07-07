@@ -536,11 +536,10 @@ log_proto_buffered_server_restart_with_state(LogProtoServer *s, PersistState *pe
 }
 
 gboolean
-log_proto_buffered_server_prepare(LogProtoServer *s, gint *fd, GIOCondition *cond)
+log_proto_buffered_server_prepare(LogProtoServer *s, GIOCondition *cond)
 {
   LogProtoBufferedServer *self = (LogProtoBufferedServer *) s;
 
-  *fd = self->super.transport->fd;
   *cond = self->super.transport->cond;
 
   /* if there's no pending I/O in the transport layer, then we want to do a read */

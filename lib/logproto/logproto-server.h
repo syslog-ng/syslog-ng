@@ -64,7 +64,7 @@ struct _LogProtoServer
   const LogProtoServerOptions *options;
   LogTransport *transport;
   /* FIXME: rename to something else */
-  gboolean (*prepare)(LogProtoServer *s, gint *fd, GIOCondition *cond);
+  gboolean (*prepare)(LogProtoServer *s, GIOCondition *cond);
   gboolean (*is_preemptable)(LogProtoServer *s);
   gboolean (*restart_with_state)(LogProtoServer *s, PersistState *state, const gchar *persist_name);
   LogProtoStatus (*fetch)(LogProtoServer *s, const guchar **msg, gsize *msg_len, GSockAddr **sa, gboolean *may_read);
@@ -83,9 +83,9 @@ log_proto_server_validate_options(LogProtoServer *self)
 }
 
 static inline gboolean
-log_proto_server_prepare(LogProtoServer *s, gint *fd, GIOCondition *cond)
+log_proto_server_prepare(LogProtoServer *s, GIOCondition *cond)
 {
-  return s->prepare(s, fd, cond);
+  return s->prepare(s, cond);
 }
 
 static inline gboolean

@@ -102,12 +102,12 @@ log_proto_text_server_is_preemptable(LogProtoServer *s)
 }
 
 static gboolean
-log_proto_text_server_prepare(LogProtoServer *s, gint *fd, GIOCondition *cond)
+log_proto_text_server_prepare(LogProtoServer *s, GIOCondition *cond)
 {
   LogProtoTextServer *self = (LogProtoTextServer *) s;
   gboolean avail;
 
-  if (log_proto_buffered_server_prepare(s, fd, cond))
+  if (log_proto_buffered_server_prepare(s, cond))
     {
       return TRUE;
     }

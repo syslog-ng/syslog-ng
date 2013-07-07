@@ -224,7 +224,6 @@ log_reader_stop_watches(LogReader *self)
 static void
 log_reader_update_watches(LogReader *self)
 {
-  gint fd;
   GIOCondition cond;
   gboolean free_to_send;
 
@@ -243,7 +242,7 @@ log_reader_update_watches(LogReader *self)
   free_to_send = log_source_free_to_send(&self->super);
   if (!free_to_send ||
       self->immediate_check ||
-      log_proto_server_prepare(self->proto, &fd, &cond))
+      log_proto_server_prepare(self->proto, &cond))
     {
       /* we disable all I/O related callbacks here because we either know
        * that we can continue (e.g.  immediate_check == TRUE) or we know

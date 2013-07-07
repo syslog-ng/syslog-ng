@@ -103,7 +103,7 @@ log_proto_buffered_server_is_input_closed(LogProtoBufferedServer *self)
   return self->io_status != G_IO_STATUS_NORMAL;
 }
 
-gboolean log_proto_buffered_server_prepare(LogProtoServer *s, gint *fd, GIOCondition *cond);
+gboolean log_proto_buffered_server_prepare(LogProtoServer *s, GIOCondition *cond);
 LogProtoBufferedServerState *log_proto_buffered_server_get_state(LogProtoBufferedServer *self);
 void log_proto_buffered_server_put_state(LogProtoBufferedServer *self);
 

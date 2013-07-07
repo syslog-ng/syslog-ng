@@ -45,11 +45,10 @@ typedef struct _LogProtoFramedServer
 } LogProtoFramedServer;
 
 static gboolean
-log_proto_framed_server_prepare(LogProtoServer *s, gint *fd, GIOCondition *cond)
+log_proto_framed_server_prepare(LogProtoServer *s, GIOCondition *cond)
 {
   LogProtoFramedServer *self = (LogProtoFramedServer *) s;
 
-  *fd = self->super.transport->fd;
   *cond = self->super.transport->cond;
 
   /* there is a half message in our buffer so try to wait */
