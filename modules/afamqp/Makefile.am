@@ -24,6 +24,9 @@ modules_afamqp_libafamqp_la_DEPENDENCIES=	\
 	$(MODULE_DEPS_LIBS)			\
 	modules/afamqp/rabbitmq-c/librabbitmq/librabbitmq.la
 
+BUILT_SOURCES				+=	\
+		modules/afamqp/dummy.c
+
 modules/afamqp/dummy.c: modules/afamqp/rabbitmq-c/librabbitmq/librabbitmq.la
 	$(AM_V_GEN) touch $@
 modules/afamqp/rabbitmq-c/librabbitmq/librabbitmq.la:
@@ -35,10 +38,10 @@ modules/afamqp modules/afamqp/ mod-afamqp mod-amqp:
 endif
 
 BUILT_SOURCES				+=	\
-		modules/afamqp/dummy.c		\
 		modules/afamqp/afamqp-grammar.y \
 		modules/afamqp/afamqp-grammar.c \
 		modules/afamqp/afamqp-grammar.h
+
 EXTRA_DIST				+=	\
 		modules/afamqp/afamqp-grammar.ym \
 		modules/afamqp/rabbitmq-c/configure.gnu
