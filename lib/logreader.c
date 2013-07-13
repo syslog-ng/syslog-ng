@@ -53,7 +53,6 @@ struct _LogReader
 
 static gboolean log_reader_fetch_log(LogReader *self);
 
-static void log_reader_start_watches(LogReader *self);
 static void log_reader_stop_watches(LogReader *self);
 static void log_reader_update_watches(LogReader *self);
 
@@ -103,7 +102,7 @@ log_reader_work_finished(void *s)
        * business (e.g. the reader hasn't been uninitialized) */
 
       log_proto_server_reset_error(self->proto);
-      log_reader_start_watches(self);
+      log_reader_update_watches(self);
     }
   log_pipe_unref(&self->super.super);
 }
@@ -250,18 +249,6 @@ log_reader_free_poll_events_instance(LogReader *self)
 }
 
 static void
-log_reader_start_watches(LogReader *self)
-{
-  if (!self->watches_running)
-    {
-      poll_events_start_watches(self->poll_events);
-      self->watches_running = TRUE;
-
-      log_reader_update_watches(self);
-    }
-}
-
-static void
 log_reader_stop_watches(LogReader *self)
 {
   if (self->watches_running)
@@ -282,7 +269,15 @@ log_reader_update_watches(LogReader *self)
   gboolean free_to_send;
 
   main_loop_assert_main_thread();
-  g_assert(self->watches_running);
+
+  if (!self->proto || !self->poll_events)
+    return;
+
+  if (!self->watches_running)
+    {
+      poll_events_start_watches(self->poll_events);
+      self->watches_running = TRUE;
+    }
   
   self->suspended = FALSE;
   free_to_send = log_source_free_to_send(&self->super);
@@ -446,7 +441,7 @@ log_reader_init(LogPipe *s)
   if (!log_reader_create_poll_events_instance(self))
     return FALSE;
 
-  log_reader_start_watches(self);
+  log_reader_update_watches(self);
   iv_event_register(&self->schedule_wakeup);
 
   return TRUE;
@@ -526,7 +521,7 @@ log_reader_reopen_deferred(gpointer s)
 
   if (proto)
     {
-      log_reader_start_watches(self);
+      log_reader_update_watches(self);
     }
 }
 
