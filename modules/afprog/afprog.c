@@ -30,6 +30,7 @@
 #include "stats.h"
 #include "logproto/logproto-text-server.h"
 #include "logproto/logproto-text-client.h"
+#include "poll-fd-events.h"
 
 #include <sys/types.h>
 #include <fcntl.h>
@@ -168,7 +169,8 @@ afprogram_sd_init(LogPipe *s)
       LogTransport *transport;
 
       transport = log_transport_pipe_new(fd);
-      self->reader = log_reader_new(log_proto_text_server_new(transport, &self->reader_options.proto_options.super));
+      self->reader = log_reader_new();
+      log_reader_reopen(self->reader, log_proto_text_server_new(transport, &self->reader_options.proto_options.super), poll_fd_events_new(fd));
       log_reader_set_options(self->reader,
                              s,
                              &self->reader_options,

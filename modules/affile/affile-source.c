@@ -34,6 +34,8 @@
 #include "logproto/logproto-dgram-server.h"
 #include "logproto/logproto-indented-multiline-server.h"
 #include "logproto-linux-proc-kmsg-reader.h"
+#include "poll-fd-events.h"
+#include "poll-file-changes.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -131,6 +133,39 @@ affile_sd_recover_state(LogPipe *s, GlobalConfig *cfg, LogProtoServer *proto)
     }
 }
 
+static gboolean
+_is_fd_pollable(gint fd)
+{
+  struct iv_fd check_fd;
+  gboolean pollable;
+
+  IV_FD_INIT(&check_fd);
+  check_fd.fd = fd;
+  check_fd.cookie = NULL;
+
+  pollable = (iv_fd_register_try(&check_fd) == 0);
+  if (pollable)
+    iv_fd_unregister(&check_fd);
+  return pollable;
+}
+
+static PollEvents *
+affile_sd_construct_poll_events(AFFileSourceDriver *self, gint fd)
+{
+  if (self->reader_options.follow_freq > 0)
+    return poll_file_changes_new(fd, self->filename->str, self->reader_options.follow_freq, &self->super.super.super);
+  else if (fd >= 0 && _is_fd_pollable(fd))
+    return poll_fd_events_new(fd);
+  else
+    {
+      msg_error("Unable to determine how to monitor this file, follow_freq() unset and it is not possible to poll it with the current ivykis polling method. Set follow-freq() for regular files or change IV_EXCLUDE_POLL_METHOD environment variable to override the automatically selected polling method",
+                evt_tag_str("filename", self->filename->str),
+                evt_tag_int("fd", fd),
+                NULL);
+      return NULL;
+    }
+}
+
 static LogTransport *
 affile_sd_construct_transport(AFFileSourceDriver *self, gint fd)
 {
@@ -205,14 +240,21 @@ affile_sd_notify(LogPipe *s, gint notify_code, gpointer user_data)
         
         log_pipe_deinit((LogPipe *) self->reader);
         log_pipe_unref((LogPipe *) self->reader);
+        self->reader = NULL;
         
         if (affile_sd_open_file(self, self->filename->str, &fd))
           {
             LogProtoServer *proto;
+            PollEvents *poll_events;
             
+            poll_events = affile_sd_construct_poll_events(self, fd);
+            if (!poll_events)
+              break;
+
             proto = affile_sd_construct_proto(self, fd);
 
-            self->reader = log_reader_new(proto);
+            self->reader = log_reader_new();
+            log_reader_reopen(self->reader, proto, poll_events);
 
             log_reader_set_options(self->reader,
                                    s,
@@ -221,7 +263,6 @@ affile_sd_notify(LogPipe *s, gint notify_code, gpointer user_data)
                                    SCS_FILE,
                                    self->super.super.id,
                                    self->filename->str);
-            log_reader_set_follow_filename(self->reader, self->filename->str);
             log_reader_set_immediate_check(self->reader);
 
             log_pipe_append((LogPipe *) self->reader, s);
@@ -235,10 +276,6 @@ affile_sd_notify(LogPipe *s, gint notify_code, gpointer user_data)
                 close(fd);
               }
             affile_sd_recover_state(s, cfg, proto);
-          }
-        else
-          {
-            self->reader = NULL;
           }
         break;
       }
@@ -287,9 +324,18 @@ affile_sd_init(LogPipe *s)
   if (file_opened || open_deferred)
     {
       LogProtoServer *proto;
+      PollEvents *poll_events;
+
+      poll_events = affile_sd_construct_poll_events(self, fd);
+      if (!poll_events)
+        {
+          close(fd);
+          return FALSE;
+        }
 
       proto = affile_sd_construct_proto(self, fd);
-      self->reader = log_reader_new(proto);
+      self->reader = log_reader_new();
+      log_reader_reopen(self->reader, proto, poll_events);
 
       log_reader_set_options(self->reader,
                              s,
@@ -298,8 +344,6 @@ affile_sd_init(LogPipe *s)
                              SCS_FILE,
                              self->super.super.id,
                              self->filename->str);
-      log_reader_set_follow_filename(self->reader, self->filename->str);
-
       /* NOTE: if the file could not be opened, we ignore the last
        * remembered file position, if the file is created in the future
        * we're going to read from the start. */

@@ -30,6 +30,7 @@
 #include "gsocket.h"
 #include "stats.h"
 #include "mainloop.h"
+#include "poll-fd-events.h"
 
 #include <string.h>
 #include <sys/types.h>
@@ -86,7 +87,8 @@ afsocket_sc_init(LogPipe *s)
     {
       transport = afsocket_sd_construct_transport(self->owner, self->sock);
       proto = log_proto_server_factory_construct(self->owner->proto_factory, transport, &self->owner->reader_options.proto_options.super);
-      self->reader = log_reader_new(proto);
+      self->reader = log_reader_new();
+      log_reader_reopen(self->reader, proto, poll_fd_events_new(self->sock));
     }
   log_reader_set_options(self->reader, s,
                          &self->owner->reader_options,

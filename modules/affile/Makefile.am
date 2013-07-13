@@ -3,6 +3,8 @@ modules_affile_libaffile_la_SOURCES	=			\
 	modules/affile/logproto-linux-proc-kmsg-reader.h	\
 	modules/affile/logproto-file-writer.c 			\
 	modules/affile/logproto-file-writer.h			\
+	modules/affile/poll-file-changes.c			\
+	modules/affile/poll-file-changes.h			\
 	modules/affile/affile-common.c				\
 	modules/affile/affile-common.h				\
 	modules/affile/affile-source.c				\

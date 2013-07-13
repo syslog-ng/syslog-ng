@@ -45,10 +45,17 @@ struct _LogReader
   MainLoopIOWorkerJob io_job;
   gboolean watches_running:1, suspended:1;
   gint notify_code;
+
+
+  /* proto & poll_events pending to be applied. As long as the previous
+   * processing is being done, we can't replace these in self->proto and
+   * self->poll_events, they get applied to the production ones as soon as
+   * the previous work is finished */
   gboolean pending_proto_present;
   GCond *pending_proto_cond;
   GStaticMutex pending_proto_lock;
   LogProtoServer *pending_proto;
+  PollEvents *pending_poll_events;
 };
 
 static gboolean log_reader_fetch_log(LogReader *self);
@@ -56,6 +63,17 @@ static gboolean log_reader_fetch_log(LogReader *self);
 static void log_reader_stop_watches(LogReader *self);
 static void log_reader_update_watches(LogReader *self);
 
+static void
+log_reader_apply_proto_and_poll_events(LogReader *self, LogProtoServer *proto, PollEvents *poll_events)
+{
+  if (self->proto)
+    log_proto_server_free(self->proto);
+  if (self->poll_events)
+    poll_events_free(self->poll_events);
+
+  self->proto = proto;
+  self->poll_events = poll_events;
+}
 
 static void
 log_reader_work_perform(void *s)
@@ -78,11 +96,10 @@ log_reader_work_finished(void *s)
        * non-main thread. */
 
       g_static_mutex_lock(&self->pending_proto_lock);
-      if (self->proto)
-        log_proto_server_free(self->proto);
 
-      self->proto = self->pending_proto;
+      log_reader_apply_proto_and_poll_events(self, self->pending_proto, self->pending_poll_events);
       self->pending_proto = NULL;
+      self->pending_poll_events = NULL;
       self->pending_proto_present = FALSE;
 
       g_cond_signal(self->pending_proto_cond);
@@ -189,63 +206,6 @@ log_reader_init_watches(LogReader *self)
   self->io_job.user_data = self;
   self->io_job.work = (void (*)(void *)) log_reader_work_perform;
   self->io_job.completion = (void (*)(void *)) log_reader_work_finished;
-}
-
-static gboolean
-log_reader_is_fd_pollable(LogReader *self, gint fd)
-{
-  struct iv_fd check_fd;
-  gboolean pollable;
-
-  IV_FD_INIT(&check_fd);
-  check_fd.fd = fd;
-  check_fd.cookie = NULL;
-
-  pollable = (iv_fd_register_try(&check_fd) == 0);
-  if (pollable)
-    iv_fd_unregister(&check_fd);
-  return pollable;
-}
-
-static gboolean
-log_reader_create_poll_events_instance(LogReader *self)
-{
-  gint fd = -1;
-  GIOCondition cond;
-
-  log_proto_server_prepare(self->proto, &fd, &cond);
-  if (self->options->follow_freq > 0)
-    {
-      self->poll_events = log_reader_poll_file_changes_new(fd, self->follow_filename, self->options->follow_freq, self->control);
-    }
-  else if (fd >= 0)
-    {
-      if (!log_reader_is_fd_pollable(self, fd))
-        {
-          msg_error("Unable to determine how to monitor this fd, follow_freq() not set and it is not possible to poll it with the current ivykis polling method, try changing IV_EXCLUDE_POLL_METHOD environment variable",
-                    evt_tag_int("fd", fd),
-                    NULL);
-
-          return FALSE;
-        }
-      self->poll_events = log_reader_poll_fd_new(fd);
-    }
-  else
-    {
-      msg_error("In order to poll non-yet-existing files, follow_freq() must be set",
-                NULL);
-      return FALSE;
-    }
-
-  poll_events_set_callback(self->poll_events, log_reader_io_process_input, self);
-  return TRUE;
-}
-
-static void
-log_reader_free_poll_events_instance(LogReader *self)
-{
-  poll_events_free(self->poll_events);
-  self->poll_events = NULL;
 }
 
 static void
@@ -438,8 +398,7 @@ log_reader_init(LogPipe *s)
       return FALSE;
     }
 
-  if (!log_reader_create_poll_events_instance(self))
-    return FALSE;
+  poll_events_set_callback(self->poll_events, log_reader_io_process_input, self);
 
   log_reader_update_watches(self);
   iv_event_register(&self->schedule_wakeup);
@@ -456,7 +415,6 @@ log_reader_deinit(LogPipe *s)
 
   iv_event_unregister(&self->schedule_wakeup);
   log_reader_stop_watches(self);
-  log_reader_free_poll_events_instance(self);
   if (!log_source_deinit(s))
     return FALSE;
 
@@ -504,31 +462,25 @@ log_reader_reopen_deferred(gpointer s)
   gpointer *args = (gpointer *) s;
   LogReader *self = args[0];
   LogProtoServer *proto = args[1];
+  PollEvents *poll_events = args[2];
 
-  log_reader_stop_watches(self);
   if (self->io_job.working)
     {
-      /* NOTE: proto can be NULL */
       self->pending_proto = proto;
+      self->pending_poll_events = poll_events;
       self->pending_proto_present = TRUE;
       return;
     }
 
-  if (self->proto)
-    log_proto_server_free(self->proto);
-
-  self->proto = proto;
-
-  if (proto)
-    {
-      log_reader_update_watches(self);
-    }
+  log_reader_stop_watches(self);
+  log_reader_apply_proto_and_poll_events(self, proto, poll_events);
+  log_reader_update_watches(self);
 }
 
 void
-log_reader_reopen(LogReader *self, LogProtoServer *proto, LogPipe *control, LogReaderOptions *options, gint stats_level, gint stats_source, const gchar *stats_id, const gchar *stats_instance, gboolean immediate_check)
+log_reader_reopen(LogReader *self, LogProtoServer *proto, PollEvents *poll_events)
 {
-  gpointer args[] = { self, proto };
+  gpointer args[] = { self, proto, poll_events };
 
   log_source_deinit(&self->super.super);
 
@@ -543,12 +495,6 @@ log_reader_reopen(LogReader *self, LogProtoServer *proto, LogPipe *control, LogR
         }
       g_static_mutex_unlock(&self->pending_proto_lock);
     }
-  if (immediate_check)
-    {
-      log_reader_set_immediate_check(self);
-    }
-  log_reader_set_options(self, control, options, stats_level, stats_source, stats_id, stats_instance);
-  
   log_source_init(&self->super.super);
 }
 
@@ -561,7 +507,7 @@ log_reader_set_peer_addr(LogReader *s, GSockAddr *peer_addr)
 }
 
 LogReader *
-log_reader_new(LogProtoServer *proto)
+log_reader_new(void)
 {
   LogReader *self = g_new0(LogReader, 1);
 
@@ -570,7 +516,6 @@ log_reader_new(LogProtoServer *proto)
   self->super.super.deinit = log_reader_deinit;
   self->super.super.free_fn = log_reader_free;
   self->super.wakeup = log_reader_wakeup;
-  self->proto = proto;
   self->immediate_check = FALSE;
   log_reader_init_watches(self);
   g_static_mutex_init(&self->pending_proto_lock);
