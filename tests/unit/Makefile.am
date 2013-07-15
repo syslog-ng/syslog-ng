@@ -55,3 +55,4 @@ test_logproto_SOURCES = test_logproto.c
 
 TESTS = $(check_PROGRAMS)
 
+CLEANFILES	= test_values.persist test_values.persist-
