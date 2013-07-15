@@ -62,3 +62,4 @@ test_thread_wakeup_SOURCES = test_thread_wakeup.c
 
 TESTS = $(check_PROGRAMS)
 
+CLEANFILES	= test_values.persist test_values.persist-

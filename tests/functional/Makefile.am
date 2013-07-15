@@ -10,5 +10,7 @@ EXTRA_DIST = func_test.py control.py globals.py log.py messagecheck.py messagege
 
 TESTS = func_test.py
 
+CLEANFILES	= test-performance.log syslog-ng.persist rnd test.conf
+
 rnd: rnd.in
 	cp $< $@
