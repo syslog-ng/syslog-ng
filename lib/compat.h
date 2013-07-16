@@ -48,7 +48,10 @@
 #define CLOCK_MONOTONIC CLOCK_REALTIME
 #endif
 
+#include <evtlog.h>
+
 int getsockerror();
+EVTTAG *evt_tag_socket_error(const char *name, int value);
 
 #ifdef _WIN32
 
