@@ -1075,7 +1075,7 @@ static void iv_fd_got_event(void *_s)
   for (i = 0; i < FD_MAX_EVENTS; i++) {
     if (ev.lNetworkEvents & (1 << i)) {
       this->handler[i](this->handle.cookie, i, ev.iErrorCode[i]);
-      if (ev.iErrorCode[i] != 0 && this->handler_err)
+      if (tinfo->handled_socket == this && ev.iErrorCode[i] != 0 && this->handler_err)
         {
           this->handler_err(this->cookie);
         }
