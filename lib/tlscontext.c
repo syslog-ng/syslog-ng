@@ -374,7 +374,7 @@ tls_context_setup_session(TLSContext *self)
 
       SSL_CTX_set_verify(self->ssl_ctx, verify_mode, tls_session_verify_callback);
       SSL_CTX_set_options(self->ssl_ctx, SSL_OP_NO_SSLv2);
-      if (!self->allow_compress)
+      if (self->allow_compress <= 0)
         {
           SSL_CTX_set_options(self->ssl_ctx, SSL_OP_NO_COMPRESSION);
         }
@@ -387,7 +387,7 @@ tls_context_setup_session(TLSContext *self)
           if (n == 0)
             {
               msg_warning("Can't use compression, because there aren't any available methods",evt_tag_id(MSG_TLS_CANT_COMPRESS),NULL);
-              self->allow_compress = FALSE;
+              self->allow_compress = 0;
               SSL_CTX_set_options(self->ssl_ctx, SSL_OP_NO_COMPRESSION);
             }
         }
@@ -433,7 +433,7 @@ tls_context_new(TLSMode mode)
   self->mode = mode;
   self->verify_mode = TVM_REQUIRED | TVM_TRUSTED;
   self->ca_dir_layout = CA_DIR_LAYOUT_MD5;
-  self->allow_compress = FALSE;
+  self->allow_compress = -1;
   return self;
 }
 
