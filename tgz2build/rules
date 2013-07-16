@@ -37,7 +37,7 @@ ifneq (,$(findstring tru64,$(ZBS_DIST)))
   RPATH=-Wl,-rpath,/opt/syslog-ng/lib
 endif
 
-ifneq (,$(findstring linux-glibc,$(ZBS_DIST)))
+ifneq (,$(findstring linux-glibc2.3.6,$(ZBS_DIST)))
   CONFIGURE_OPTS+= --enable-indexer
 endif
 
@@ -78,10 +78,10 @@ $(STAMPDIR)/stamp-build: $(STAMPDIR)/stamp-configure
 	# dynamic linker on HPUX B.11.11 doesn't support uninstalled libs, because
 	# rpath overrides LD_LIBRARY_PATH. To allow the tests, we have to install
 	# the various libs to /opt/syslog-ng/lib.
-	if [ "$(ZBS_DIST)" = "hpux-11" ]; then \
+	if [ "$(ZBS_DIST)" = "hpux-11v2" ] || [ "$(ZBS_DIST)" = "hpux-11" ] || [ "$(ZBS_DIST)" = "aix-5.2" ] || [ "$(ZBS_DIST)" = "aix-6.1" ]; then \
 		$(MAKE) install; \
 	fi
-	$(MAKE) check || $(MAKE) check || $(MAKE) check; \
+	$(MAKE) check;
 	touch $@
 
 

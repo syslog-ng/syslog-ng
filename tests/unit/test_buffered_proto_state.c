@@ -242,7 +242,7 @@ test_load_state()
   proto_state = state_handler_get_state(handler);
 
   assert_gint(proto_state->super.version, 1, "Bad saved data %s(%s:%d)", __FUNCTION__, __FILE__, __LINE__);
-  assert_gboolean(proto_state->super.big_endian, FALSE, "Bad saved data %s(%s:%d)", __FUNCTION__, __FILE__, __LINE__);
+  assert_gboolean(proto_state->super.big_endian, (G_BYTE_ORDER == G_BIG_ENDIAN) ? TRUE : FALSE, "Bad saved data %s(%s:%d)", __FUNCTION__, __FILE__, __LINE__);
   assert_gint(proto_state->raw_buffer_leftover_size, 0, "Bad saved data %s(%s:%d)", __FUNCTION__, __FILE__, __LINE__);
   assert_guint32(proto_state->buffer_pos, 8082, "Bad saved data %s(%s:%d)", __FUNCTION__, __FILE__, __LINE__);
   assert_guint32(proto_state->pending_buffer_end, 0, "Bad saved data %s(%s:%d)", __FUNCTION__, __FILE__, __LINE__);

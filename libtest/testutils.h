@@ -105,7 +105,7 @@ static inline char *basename(const char *path)
       current_testcase_description = g_string_sized_new(0); \
       g_string_printf(current_testcase_description, description_template, ##__VA_ARGS__); \
       current_testcase_function = (gchar *)(__FUNCTION__); \
-      current_testcase_file = basename(__FILE__); \
+      current_testcase_file = strchr(__FILE__, '/') ? basename(__FILE__) : __FILE__; \
     } while (0)
 
 #define testcase_end() \

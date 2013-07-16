@@ -193,6 +193,9 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   setvbuf(stderr, NULL, _IONBF, 0);
   setvbuf(stdout, NULL, _IONBF, 0);
   g_thread_init(NULL);
+#ifdef __sun__
+  return 0;
+#endif
   log_stderr = TRUE;
 
   thread_lock = g_mutex_new();
