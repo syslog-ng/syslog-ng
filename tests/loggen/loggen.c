@@ -20,6 +20,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <glib.h>
+#include <zlib.h>
 #include <signal.h>
 #include <pthread.h>
 
@@ -59,8 +60,8 @@ int csv = 0;
 int quiet = 0;
 int syslog_proto = 0;
 int framing = 1;
-int usessl = 0;
 int skip_tokens = 3;
+int usessl;
 char *read_file = NULL;
 int idle_connections = 0;
 int active_connections = 1;
@@ -69,6 +70,7 @@ int dont_parse = 0;
 static gint display_version;
 char *sdata_value = NULL;
 int rltp = 0;
+int allow_compress = 0;
 int use_port_range = 0;
 
 /* results */
@@ -77,24 +79,20 @@ struct timeval sum_time;
 gint raw_message_length;
 SSL_CTX* ssl_ctx;
 
+typedef struct _ActiveThreadContext
+{
+  gint fd;
+  z_stream istream;
+  z_stream ostream;
+  gchar compressed_buffer[MAX_MESSAGE_LENGTH];
+  int usezlib;
+} ActiveThreadContext;
+
 typedef ssize_t (*send_data_t)(void *user_data, void *buf, size_t length);
 
 int rltp_batch_size = 100;
 
 int *rltp_chunk_counters;
-
-void
-read_sock(int sock, char *buf, int bufsize)
-{
-  int rb = 0;
-  int n;
-  do {
-    n = recv(sock, buf + rb, bufsize - 1 - rb, 0);
-    if (n != -1)
-      rb += n;
-  } while (n == -1 && (errno == EAGAIN || errno == EWOULDBLOCK));
-  buf[rb] = '\0';
-}
 
 #if GLIB_SIZEOF_LONG == GLIB_SIZEOF_VOID_P
 #define SLONGDEF glong
@@ -107,29 +105,87 @@ read_sock(int sock, char *buf, int bufsize)
 #endif
 
 static ssize_t
+write_bytes(ActiveThreadContext *ctx, void *buf, size_t length)
+{
+  ssize_t result = 0;
+  char *outbuffer;
+  size_t outlength;
+  if (ctx->usezlib)
+    {
+      ctx->ostream.avail_in = length;
+      ctx->ostream.next_in = buf;
+      ctx->ostream.avail_out = MAX_MESSAGE_LENGTH;
+      ctx->ostream.next_out = (guchar *)ctx->compressed_buffer;
+      g_assert(deflate(&ctx->ostream, Z_SYNC_FLUSH) == Z_OK);
+      outbuffer = ctx->compressed_buffer;
+      outlength = MAX_MESSAGE_LENGTH - ctx->ostream.avail_out;
+    }
+  else
+    {
+      outbuffer = buf;
+      outlength = length;
+    }
+  result = send(ctx->fd, outbuffer, outlength, 0);
+  return result == outlength ? length : result;
+}
+
+static ssize_t
+read_bytes(ActiveThreadContext *ctx, void *buf, size_t length)
+{
+  ssize_t result = 0;
+  if (ctx->usezlib)
+    {
+      result = recv(ctx->fd, ctx->compressed_buffer, length / 2, 0);
+      if (result > 0)
+        {
+          ctx->istream.avail_in = result;
+          ctx->istream.next_in = (guchar *)ctx->compressed_buffer;
+          ctx->istream.avail_out = length;
+          ctx->istream.next_out = buf;
+          g_assert(inflate(&ctx->istream, Z_SYNC_FLUSH) == Z_OK);
+          result = length - ctx->istream.avail_out;
+        }
+    }
+  else
+    {
+      result = recv(ctx->fd, buf, length, 0);
+    }
+  return result;
+}
+
+void
+read_sock(ActiveThreadContext *ctx, char *buf, int bufsize)
+{
+  int rb = 0;
+  rb = read_bytes(ctx, buf, bufsize - 1);
+  buf[rb] = '\0';
+}
+
+
+static ssize_t
 send_plain(void *user_data, void *buf, size_t length)
 {
-  SLONGDEF fd = (SLONGDEF)user_data;
+  ActiveThreadContext *ctx = (ActiveThreadContext *)user_data;
   int id = GPOINTER_TO_INT(g_thread_self()->data);
   gsize len = 0;
   gchar expected[100] = {0};
-  int res = send(fd, buf, length, 0);
+  int res = write_bytes(ctx, buf, length);
   if (rltp)
     {
       rltp_chunk_counters[id] += 1;
       if (rltp_chunk_counters[id] == rltp_batch_size)
         {
           char cbuf[256] = {0};
-          send(fd, ".\n",2,0);
-          read_sock(fd, cbuf, 256);
+          write_bytes(ctx, ".\n",2);
+          read_sock(ctx, cbuf, 256);
           len = g_snprintf(expected,100,"250 Received %d\n",rltp_chunk_counters[id]);
           if (strncmp(cbuf,expected,len)!=0)
             {
               fprintf(stderr,"EXIT BAD SERVER REPLY: %s EXPECTED: %s",cbuf,expected);
               return -1;
             }
-          send(fd, "DATA\n", 5, 0);
-          read_sock(fd, cbuf, 256);
+          write_bytes(ctx, "DATA\n", 5);
+          read_sock(ctx, cbuf, 256);
           if (strncmp(cbuf,"250 Ready\n",strlen("250 Ready\n"))!=0)
             {
               fprintf(stderr,"EXIT BAD SERVER REPLY: %s\n",cbuf);
@@ -276,8 +332,7 @@ parse_line(const char *line, char *host, char *program, char *pid, char **msg)
 
   /* Program */
   end = pos;
-  while (*(--pos) != ' ')
-    ;
+  while (*(--pos) != ' ');
 
   memcpy(program, pos + 1, end - pos - 1);
   program[end-pos-1] = '\0';
@@ -627,7 +682,7 @@ set_ssl_transport(int sock)
 }
 
 static guint64
-gen_messages_ssl(int sock, int id, FILE *readfrom)
+gen_messages_ssl(ActiveThreadContext *ctx, int id, FILE *readfrom)
 {
   int ret = 0;
   int err;
@@ -636,7 +691,7 @@ gen_messages_ssl(int sock, int id, FILE *readfrom)
   if (NULL == (ssl = SSL_new(ssl_ctx)))
     return 1;
 
-  SSL_set_fd (ssl, sock);
+  SSL_set_fd (ssl, ctx->fd);
   if (-1 == (err = SSL_connect(ssl)))
     {
       fprintf(stderr, "SSL connect failed\n");
@@ -668,9 +723,9 @@ release_ssl_transport(void *ssl_connect)
 #endif
 
 static guint64
-gen_messages_plain(int sock, int id, FILE *readfrom)
+gen_messages_plain(ActiveThreadContext *ctx, int id, FILE *readfrom)
 {
-  return gen_messages(send_plain, GINT_TO_POINTER(sock), id, readfrom);
+  return gen_messages(send_plain, ctx, id, readfrom);
 }
 
 GMutex *thread_lock;
@@ -756,24 +811,24 @@ error:
 }
 
 void
-read_rltp_options(int sock,gint *compression_level,gint *require_tls,gint *serialization)
+read_rltp_options(ActiveThreadContext *ctx,gint *use_zlib,gint *require_tls,gint *serialization)
 {
   char cbuf[256];
   char *options = NULL;
-  read_sock(sock, cbuf, 256);
+  read_sock(ctx, cbuf, 256);
   options = strstr(cbuf,"250");
   while(options)
     {
       options+=4;
-      if (strncmp(options,"compress_level",strlen("compress_level")) == 0)
-        {
-          options+=strlen("compress_level") + 1;
-          *compression_level = strtod(options,NULL);
-        }
-      else if (strncmp(options,"STARTTLS",strlen("STARTTLS")) == 0)
+      if (strncmp(options,"STARTTLS",strlen("STARTTLS")) == 0)
         {
           options+=strlen("STARTTLS") + 1;
           *require_tls = 1;
+        }
+      else if (strncmp(options, "ZLIB", strlen("ZLIB")) == 0)
+        {
+          options+=strlen("ZLIB") + 1;
+          *use_zlib = 1;
         }
       else if (strncmp(options,"serialized",strlen("serialized")) == 0)
         {
@@ -796,7 +851,7 @@ active_thread(gpointer st)
   GString *ehlo = g_string_sized_new(64);
   GString *sync = g_string_sized_new(64);
   void *ssl_transport = NULL;
-
+  ActiveThreadContext *ctx = g_new0(ActiveThreadContext, 1);
 
   sock = connect_server(id);
   if (sock < 0)
@@ -810,29 +865,35 @@ active_thread(gpointer st)
     g_cond_wait(thread_cond, thread_lock);
   g_mutex_unlock(thread_lock);
 
-  int compression_level = 0,
+  int use_zlib = 0,
       require_tls = 0,
       serialization = 0;
+
+  ctx->fd = sock;
+
+  if (allow_compress)
+      {
+        g_assert(inflateInit(&ctx->istream) == Z_OK);
+        g_assert(deflateInit(&ctx->ostream, 5) == Z_OK);
+      }
 
   if (rltp)
     {
       char cbuf[256];
       g_string_sprintf(ehlo,"EHLO\n");
       /* session id */
-      read_sock(sock, cbuf ,256);
-      send(sock, ehlo->str, ehlo->len, 0);
-      read_rltp_options(sock,&compression_level,&require_tls,&serialization);
+      read_sock(ctx, cbuf ,256);
+      write_bytes(ctx, ehlo->str, ehlo->len);
+      read_rltp_options(ctx, &use_zlib, &require_tls, &serialization);
       if (require_tls && usessl)
         {
-          send(sock, "STARTTLS\n",9,0);
-          read_sock(sock, cbuf ,256);
-          ssl_transport = set_ssl_transport(sock);
+          write_bytes(ctx, "STARTTLS\n",9);
+          read_sock(ctx, cbuf ,256);
+          ssl_transport = set_ssl_transport(ctx->fd);
           if (!ssl_transport)
             {
               fprintf(stderr,"Can't create ssl connection\n");
-              usessl = FALSE;
               exit(1);
-              goto use_plain_transport;
             }
 #if ENABLE_SSL
           g_string_sprintf(ehlo,"EHLO\n");
@@ -857,19 +918,31 @@ active_thread(gpointer st)
             }
 #endif
         }
-      else
+      else if (allow_compress && use_zlib)
         {
-use_plain_transport:
-          g_string_sprintf(sync,"SYNC loggen_%d\n",id);
-          send(sock, sync->str, sync->len, 0);
-          read_sock(sock, cbuf, 256);
+          write_bytes(ctx, "ZLIB\n", 5);
+          read_sock(ctx, cbuf, 256);
           if (strncmp(cbuf,"250 ",4) != 0)
             {
               fprintf(stderr,"EXIT BAD SERVER REPLY: %s\n",cbuf);
               return NULL;
             }
-          send(sock, "DATA\n", 5, 0);
-          read_sock(sock, cbuf ,256);
+          ctx->usezlib = TRUE;
+          goto use_plain_transport;
+        }
+      else
+        {
+use_plain_transport:
+          g_string_sprintf(sync,"SYNC loggen_%d\n",id);
+          write_bytes(ctx, sync->str, sync->len);
+          read_sock(ctx, cbuf, 256);
+          if (strncmp(cbuf,"250 ",4) != 0)
+            {
+              fprintf(stderr,"EXIT BAD SERVER REPLY: %s\n",cbuf);
+              return NULL;
+            }
+          write_bytes(ctx, "DATA\n", 5);
+          read_sock(ctx, cbuf ,256);
           if (strncmp(cbuf,"250 ",4)!=0)
             {
               fprintf(stderr,"EXIT BAD SERVER REPLY: %s\n",cbuf);
@@ -901,7 +974,7 @@ use_plain_transport:
   gettimeofday(&start, NULL);
   if (!rltp)
     {
-      count = (usessl ? gen_messages_ssl : gen_messages_plain)(sock, id, readfrom);
+      count = (usessl ? gen_messages_ssl : gen_messages_plain)(ctx, id, readfrom);
     }
 #if ENABLE_SSL
   else if (usessl)
@@ -910,17 +983,17 @@ use_plain_transport:
     }
   else
     {
-      count = gen_messages_plain(sock, id, readfrom);
+      count = gen_messages_plain(ctx, id, readfrom);
     }
 #endif
   if (rltp && rltp_chunk_counters[id])
     {
       char cbuf[256];
-      send(sock, ".\n", 2, 0);
-      read_sock(sock, cbuf, 256);
+      write_bytes(ctx, ".\n", 2);
+      read_sock(ctx, cbuf, 256);
       rltp_chunk_counters[id] = 0;
     }
-  shutdown(sock, SHUT_RDWR);
+  shutdown(ctx->fd, SHUT_RDWR);
   gettimeofday(&end, NULL);
   time_val_diff_in_timeval(&diff_tv, &end, &start);
 
@@ -971,6 +1044,7 @@ static GOptionEntry loggen_options[] = {
   { "version",   'V', 0, G_OPTION_ARG_NONE, &display_version, "Display version number (" PACKAGE " " COMBINED_VERSION ")", NULL },
   { "rltp",   'L', 0, G_OPTION_ARG_NONE, &rltp, "RLTP transport", NULL },
   { "rltp-batch-size", 'b', 0, G_OPTION_ARG_INT, &rltp_batch_size, "Number of messages send in one rltp package (default value: 100)", NULL },
+  { "rltp-compress", 0, 0, G_OPTION_ARG_NONE, &allow_compress, "Use zlib compression in case of rltp transport is used", NULL },
   { "use-port-range", 'e', 0, G_OPTION_ARG_NONE, &use_port_range, "Use custom port for each connections from the specified port to the number of active connections (e.g. from 500-509 if the specifed port is 500 and active-connection=10", NULL },
   { NULL }
 };
