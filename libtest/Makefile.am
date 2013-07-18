@@ -13,4 +13,6 @@ libsyslog_ng_test_a_SOURCES = \
 	template_lib.c		\
 	template_lib.h		\
 	mock-transport.c	\
-	mock-transport.h
+	mock-transport.h \
+  libtest_memreader.c \
+  libtest_memreader.h
