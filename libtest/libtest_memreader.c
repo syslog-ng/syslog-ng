@@ -86,7 +86,7 @@ log_transport_memory_buffer_read(LogTransportMemoryBuffer *buffer, gpointer buf,
 }
 
 gssize
-log_transport_memory_buffer_write(LogTransportMemoryBuffer *buffer, gpointer buf, gsize count)
+log_transport_memory_buffer_write(LogTransportMemoryBuffer *buffer, const gchar *buf, gsize count)
 {
   gsize count_transferred = MIN(buffer->length - buffer->count, count);
   gsize count_transferred_step1 = 0;

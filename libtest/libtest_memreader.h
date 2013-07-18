@@ -29,7 +29,7 @@ typedef struct {
   LogTransport super;
   LogTransportMemoryBuffer *read_buffer;
   LogTransportMemoryBuffer *write_buffer;
-  guchar *name;
+  gchar *name;
   gsize max_read;
   gsize max_write;
   void (*func_read)(void *);
@@ -44,7 +44,7 @@ typedef void (*LogReaderQueueMethod)(LogPipe *s, LogMessage *msg, const LogPathO
 LogTransportMemoryBuffer *log_transport_memory_buffer_new(gchar *data, guint32 length);
 void log_transport_memory_buffer_free(LogTransportMemoryBuffer *buffer, gboolean free_raw_data);
 gssize log_transport_memory_buffer_read(LogTransportMemoryBuffer *buffer, gpointer buf, gsize count);
-gssize log_transport_memory_buffer_write(LogTransportMemoryBuffer *buffer, gpointer buf, gsize count);
+gssize log_transport_memory_buffer_write(LogTransportMemoryBuffer *buffer, const gchar *buf, gsize count);
 
 gboolean log_transport_memory_buffer_test();
 
