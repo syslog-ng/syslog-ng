@@ -81,7 +81,7 @@ $(STAMPDIR)/stamp-build: $(STAMPDIR)/stamp-configure
 	if [ "$(ZBS_DIST)" = "hpux-11v2" ] || [ "$(ZBS_DIST)" = "hpux-11" ] || [ "$(ZBS_DIST)" = "aix-5.2" ] || [ "$(ZBS_DIST)" = "aix-6.1" ]; then \
 		$(MAKE) install; \
 	fi
-	$(MAKE) check;
+	$(MAKE) check || $(MAKE) check;
 	touch $@
 
 
