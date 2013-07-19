@@ -222,53 +222,69 @@ log_reader_stop_watches(LogReader *self)
 }
 
 static void
-log_reader_update_watches(LogReader *self)
+log_reader_start_watches_if_stopped(LogReader *self)
 {
-  GIOCondition cond;
-  gboolean free_to_send;
-
-  main_loop_assert_main_thread();
-
-  if (!self->proto || !self->poll_events)
-    return;
-
   if (!self->watches_running)
     {
       poll_events_start_watches(self->poll_events);
       self->watches_running = TRUE;
     }
-  
+}
+
+static gboolean
+log_reader_is_opened(LogReader *self)
+{
+  return self->proto && self->poll_events;
+}
+
+static void
+log_reader_suspend_until_awoken(LogReader *self)
+{
+  self->immediate_check = FALSE;
+  poll_events_suspend_watches(self->poll_events);
+  self->suspended = TRUE;
+}
+
+static void
+log_reader_force_check_in_next_poll(LogReader *self)
+{
+  self->immediate_check = FALSE;
+  poll_events_suspend_watches(self->poll_events);
   self->suspended = FALSE;
-  free_to_send = log_source_free_to_send(&self->super);
-  if (!free_to_send ||
-      self->immediate_check ||
-      log_proto_server_prepare(self->proto, &cond))
+
+  if (!iv_task_registered(&self->restart_task))
     {
-      /* we disable all I/O related callbacks here because we either know
-       * that we can continue (e.g.  immediate_check == TRUE) or we know
-       * that we can't continue even if data would be available (e.g.
-       * free_to_send == FALSE)
-       */
+      iv_task_register(&self->restart_task);
+    }
+}
 
-      self->immediate_check = FALSE;
-      poll_events_suspend_watches(self->poll_events);
+static void
+log_reader_update_watches(LogReader *self)
+{
+  GIOCondition cond;
+  gboolean free_to_send;
+  gboolean line_is_ready_in_buffer;
 
-      if (free_to_send)
-        {
-          /* we have data in our input buffer, we need to start working
-           * on it immediately, without waiting for I/O events */
-          if (!iv_task_registered(&self->restart_task))
-            {
-              iv_task_register(&self->restart_task);
-            }
-        }
-      else
-        {
-          self->suspended = TRUE;
-        }
+  main_loop_assert_main_thread();
+
+  if (!log_reader_is_opened(self))
+    return;
+
+  log_reader_start_watches_if_stopped(self);
+
+  free_to_send = log_source_free_to_send(&self->super);
+  if (!free_to_send)
+    {
+      log_reader_suspend_until_awoken(self);
       return;
     }
 
+  line_is_ready_in_buffer = log_proto_server_prepare(self->proto, &cond);
+  if (self->immediate_check || line_is_ready_in_buffer)
+    {
+      log_reader_force_check_in_next_poll(self);
+      return;
+    }
   poll_events_update_watches(self->poll_events, cond);
 }
 
