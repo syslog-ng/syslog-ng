@@ -196,6 +196,14 @@ log_json_parser_process (LogParser *s, LogMessage **pmsg, const LogPathOptions *
       msg_error ("Unparsable JSON stream encountered", NULL);
       return FALSE;
     }
+  if (!json_object_is_type (jso, json_type_object))
+    {
+      msg_error ("JSON stream is not an object",
+                 evt_tag_str ("input", input),
+                 NULL);
+      json_object_put (jso);
+      return FALSE;
+    }
 
   log_msg_make_writable(pmsg, path_options);
   log_json_parser_process_object (jso, self->prefix, *pmsg);
