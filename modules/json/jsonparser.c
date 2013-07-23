@@ -191,7 +191,9 @@ log_json_parser_process (LogParser *s, LogMessage **pmsg, const LogPathOptions *
 
   if (!jso)
     {
-      msg_error ("Unparsable JSON stream encountered", NULL);
+      msg_error ("Unparsable JSON stream encountered",
+                 evt_tag_str ("input", input),
+                 NULL);
       return FALSE;
     }
   if (!json_object_is_type (jso, json_type_object))
