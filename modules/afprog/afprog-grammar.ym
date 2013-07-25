@@ -78,7 +78,16 @@ source_afprogram_params
 	    free($1);
 	    last_reader_options = &((AFProgramSourceDriver *) last_driver)->reader_options;
 	  }
-	  source_reader_options			{ $$ = last_driver; }
+	  source_afprogram_options			{ $$ = last_driver; }
+	;
+
+source_afprogram_options
+	: source_afprogram_option source_afprogram_options
+	|
+	;
+
+source_afprogram_option
+	: source_reader_option
 	;
 
 dest_afprogram
