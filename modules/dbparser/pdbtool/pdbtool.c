@@ -761,12 +761,16 @@ pdbtool_test(int argc, char *argv[])
 
               pattern_db_process(patterndb, PDB_INPUT_WRAP_MESSAGE(&input, msg));
 
-              if (!pdbtool_test_value(msg, ".classifier.rule_id", example->rule->rule_id) && debug_pattern)
+              if (!pdbtool_test_value(msg, ".classifier.rule_id", example->rule->rule_id))
                 {
-                  match_message = example->message;
-                  match_program = example->program;
-                  patterndb_file = argv[arg_pos];
-                  pdbtool_match(0, NULL);
+                  failed_to_match = TRUE;
+                  if (debug_pattern)
+                    {
+                      match_message = example->message;
+                      match_program = example->program;
+                      patterndb_file = argv[arg_pos];
+                      pdbtool_match(0, NULL);
+                    }
                 }
 
               for (i = 0; example->values && i < example->values->len; i++)
