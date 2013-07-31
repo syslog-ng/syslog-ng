@@ -463,6 +463,16 @@ test_log_messages_can_be_parsed()
            "snmpd[2499]: PTHREAD support initialized", // msg
            NULL, NULL, NULL, ignore_sdata_pairs
            );
+
+  testcase("<38>Sep 22 10:11:56 Message forwarded from cdaix66: sshd[679960]: Accepted publickey for nagios from 1.9.1.1 port 42096 ssh2", LP_EXPECT_HOSTNAME, NULL,
+           38,
+           1, 0, 7200,
+           "cdaix66",
+           "sshd",
+           "Accepted publickey for nagios from 1.9.1.1 port 42096 ssh2",
+           NULL, NULL, NULL, NULL
+           );
+
   testcase("<7>Aug 29 02:00:00 bzorp ctld/snmpd[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, NULL,
            7,             // pri
            1, 0, 7200,            // timestamp (sec/usec/zone)
