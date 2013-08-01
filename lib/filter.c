@@ -173,7 +173,6 @@ typedef struct _FilterCmp
 {
   FilterExprNode super;
   LogTemplate *left, *right;
-  GString *left_buf, *right_buf;
   gint cmp_op;
 } FilterCmp;
 
@@ -181,18 +180,20 @@ gboolean
 fop_cmp_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
 {
   FilterCmp *self = (FilterCmp *) s;
+  GString *left_buf = g_string_sized_new(32);
+  GString *right_buf = g_string_sized_new(32);
   gboolean result = FALSE;
   gint cmp;
 
-  log_template_format_with_context(self->left, msgs, num_msg, NULL, LTZ_LOCAL, 0, NULL, self->left_buf);
-  log_template_format_with_context(self->right, msgs, num_msg, NULL, LTZ_LOCAL, 0, NULL, self->right_buf);
+  log_template_format_with_context(self->left, msgs, num_msg, NULL, LTZ_LOCAL, 0, NULL, left_buf);
+  log_template_format_with_context(self->right, msgs, num_msg, NULL, LTZ_LOCAL, 0, NULL, right_buf);
 
   if (self->cmp_op & FCMP_NUM)
     {
       gint l, r;
 
-      l = atoi(self->left_buf->str);
-      r = atoi(self->right_buf->str);
+      l = atoi(left_buf->str);
+      r = atoi(right_buf->str);
       if (l == r)
         cmp = 0;
       else if (l > r)
@@ -202,7 +203,7 @@ fop_cmp_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
     }
   else
     {
-      cmp = strcmp(self->left_buf->str, self->right_buf->str);
+      cmp = strcmp(left_buf->str, right_buf->str);
     }
 
   if (cmp == 0)
@@ -217,6 +218,8 @@ fop_cmp_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
     {
       result = self->cmp_op & FCMP_GT || self->cmp_op == 0;
     }
+  g_string_free(left_buf, TRUE);
+  g_string_free(right_buf, TRUE);
   return result ^ s->comp;
 }
 
@@ -227,8 +230,6 @@ fop_cmp_free(FilterExprNode *s)
 
   log_template_unref(self->left);
   log_template_unref(self->right);
-  g_string_free(self->left_buf, TRUE);
-  g_string_free(self->right_buf, TRUE);
 }
 
 FilterExprNode *
@@ -241,8 +242,6 @@ fop_cmp_new(LogTemplate *left, LogTemplate *right, gint op)
   self->super.free_fn = fop_cmp_free;
   self->left = left;
   self->right = right;
-  self->left_buf = g_string_sized_new(32);
-  self->right_buf = g_string_sized_new(32);
   self->super.type = "CMP";
 
   switch (op)
