@@ -69,7 +69,7 @@ log_proto_file_writer_flush(LogProtoClient *s)
 
   if (rc < 0)
     {
-      if (errno != EAGAIN && errno != EINTR)
+      if (errno != EINTR)
         {
           msg_error("I/O error occurred while writing",
                     evt_tag_int("fd", self->super.transport->fd),
@@ -135,6 +135,7 @@ log_proto_file_writer_post(LogProtoClient *s, guchar *msg, gsize msg_len, gboole
   LogProtoFileWriter *self = (LogProtoFileWriter *)s;
   gint rc;
 
+  *consumed = FALSE;
   if (self->buf_count >= self->buf_size)
     {
       rc = log_proto_file_writer_flush(s);
@@ -145,7 +146,6 @@ log_proto_file_writer_post(LogProtoClient *s, guchar *msg, gsize msg_len, gboole
         }
     }
 
-  *consumed = FALSE;
   if (self->partial)
     {
       /* there is still some data from the previous file writing process */
