@@ -33,6 +33,7 @@
 #include "logproto/logproto-text-server.h"
 #include "logproto/logproto-dgram-server.h"
 #include "logproto/logproto-indented-multiline-server.h"
+#include "logproto/logproto-regexp-multiline-server.h"
 #include "logproto-linux-proc-kmsg-reader.h"
 #include "poll-fd-events.h"
 #include "poll-file-changes.h"
@@ -53,11 +54,39 @@ affile_sd_set_multi_line_mode(LogDriver *s, const gchar *mode)
 
   if (strcasecmp(mode, "indented") == 0)
     self->multi_line_mode = MLM_INDENTED;
+  else if (strcasecmp(mode, "regexp") == 0)
+    self->multi_line_mode = MLM_REGEXP;
   else if (strcasecmp(mode, "none") == 0)
     self->multi_line_mode = MLM_NONE;
   else
     return FALSE;
   return TRUE;
+}
+
+static void
+free_regex_t(regex_t *regex)
+{
+  regfree(regex);
+  g_free(regex);
+}
+
+void
+affile_sd_set_multi_line_prefix(LogDriver *s, regex_t *prefix)
+{
+  AFFileSourceDriver *self = (AFFileSourceDriver *) s;
+
+  if (self->multi_line_prefix)
+    free_regex_t(self->multi_line_prefix);
+  self->multi_line_prefix = prefix;
+}
+
+void
+affile_sd_set_multi_line_garbage(LogDriver *s, regex_t *garbage)
+{
+  AFFileSourceDriver *self = (AFFileSourceDriver *) s;
+
+  if (self->multi_line_garbage)
+    free_regex_t(self->multi_line_garbage);
 }
 
 void
@@ -224,6 +253,8 @@ affile_sd_construct_proto(AFFileSourceDriver *self, gint fd)
         {
         case MLM_INDENTED:
           return log_proto_indented_multiline_server_new(transport, proto_options);
+        case MLM_REGEXP:
+          return log_proto_regexp_multiline_server_new(transport, proto_options, self->multi_line_prefix, self->multi_line_garbage);
         default:
           return log_proto_text_server_new(transport, proto_options);
         }
@@ -319,6 +350,13 @@ affile_sd_init(LogPipe *s)
 
   log_reader_options_init(&self->reader_options, cfg, self->super.super.group);
 
+  if (self->multi_line_mode != MLM_REGEXP && (self->multi_line_prefix || self->multi_line_garbage))
+    {
+      msg_error("multi-line-prefix() and/or multi-line-garbage() specified but multi-line-mode() is not 'regexp', please set multi-line-mode() properly",
+                NULL);
+      return FALSE;
+    }
+
   file_opened = affile_sd_open_file(self, self->filename->str, &fd);
   if (!file_opened && self->follow_freq > 0)
     {
@@ -408,6 +446,9 @@ affile_sd_free(LogPipe *s)
   g_assert(!self->reader);
 
   log_reader_options_destroy(&self->reader_options);
+
+  free_regex_t(self->multi_line_prefix);
+  free_regex_t(self->multi_line_garbage);
 
   log_src_driver_free(s);
 }

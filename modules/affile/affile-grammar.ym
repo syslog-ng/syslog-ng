@@ -61,6 +61,8 @@
 %token KW_FOLLOW_FREQ
 %token KW_OVERWRITE_IF_OLDER
 %token KW_MULTI_LINE_MODE
+%token KW_MULTI_LINE_PREFIX
+%token KW_MULTI_LINE_GARBAGE
 
 %type	<ptr> source_affile
 %type	<ptr> source_affile_params
@@ -68,6 +70,7 @@
 %type   <ptr> dest_affile
 %type	<ptr> dest_affile_params
 %type   <ptr> dest_afpipe_params
+%type   <ptr> regexp
 
 
 %%
@@ -131,10 +134,40 @@ source_afpipe_option
 	| source_reader_option
 	;
 
+/* NOTE: don't copy this to other drivers blindly, but make it general and
+ * move it to cfg-grammar.y instead */
+
 multi_line_option
 	: KW_MULTI_LINE_MODE '(' string ')'		{ CHECK_ERROR(affile_sd_set_multi_line_mode(last_driver, $3), @3, "Invalid multi-line mode"); free($3); }
+	| KW_MULTI_LINE_PREFIX '(' regexp ')'		{ affile_sd_set_multi_line_prefix(last_driver, $3); }
+	| KW_MULTI_LINE_GARBAGE '(' regexp ')'		{ affile_sd_set_multi_line_garbage(last_driver, $3); }
 	;
 
+regexp
+	: string
+          {
+            regex_t *result = g_new(regex_t, 1);
+            gint rc;
+
+            rc = regcomp(result, $1, REG_EXTENDED);
+	    free($1);
+
+            if (rc < 0)
+              {
+                gchar buf[256];
+
+                regerror(rc, result, buf, sizeof(buf));
+	        yyerror(&@1, lexer, NULL, NULL, buf);
+
+                regfree(result);
+                g_free(result);
+                YYERROR;
+              }
+            else
+              {
+                $$ = result;
+              }
+	  }
 
 dest_affile
 	: KW_FILE '(' dest_affile_params ')'	{ $$ = $3; }
