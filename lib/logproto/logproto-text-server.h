@@ -28,11 +28,15 @@
 
 enum
 {
-  LPT_CONSUME_LINE = 0x0100,
-  LPT_REWIND_LINE  = 0x0200,
   LPT_EXTRACTED    = 0x0001,
   LPT_WAITING      = 0x0002,
+  LPT_CONSUME_LINE = 0x0010,
+  LPT_REWIND_LINE  = 0x0020,
 };
+
+#define LPT_CONSUME_PARTIAL_AMOUNT_SHIFT     8
+#define LPT_CONSUME_PARTIAL_AMOUNT_MASK      ~0xFF
+#define LPT_CONSUME_PARTIALLY(drop_length) (LPT_CONSUME_LINE | ((drop_length) << LPT_CONSUME_PARTIAL_AMOUNT_SHIFT))
 
 typedef struct _LogProtoTextServer LogProtoTextServer;
 struct _LogProtoTextServer

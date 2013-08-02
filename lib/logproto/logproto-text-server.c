@@ -255,8 +255,12 @@ log_proto_text_server_try_extract(LogProtoTextServer *self, LogProtoBufferedServ
     {
       if (verdict & LPT_CONSUME_LINE)
         {
+          gint drop_length = (verdict & LPT_CONSUME_PARTIAL_AMOUNT_MASK) >> LPT_CONSUME_PARTIAL_AMOUNT_SHIFT;
+
           state->pending_buffer_pos = next_line_pos;
           self->cached_eol_pos = next_eol_pos;
+          if (drop_length)
+            *msg_len -= drop_length;
         }
       else if (verdict & LPT_REWIND_LINE)
         {
