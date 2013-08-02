@@ -102,6 +102,20 @@ extern struct _LogParser *last_parser;
       }                                                                 \
   } while (0)
 
+#define CHECK_ERROR_GERROR(val, token, error, errorfmt, ...) do {       \
+    if (!(val))                                                         \
+      {                                                                 \
+        if (errorfmt)                                                   \
+          {                                                             \
+            gchar __buf[256];                                           \
+            g_snprintf(__buf, sizeof(__buf), errorfmt ", error=%s", ## __VA_ARGS__, error->message); \
+            yyerror(& (token), lexer, NULL, NULL, __buf);               \
+          }                                                             \
+        g_clear_error(&error);						\
+        YYERROR;                                                        \
+      }                                                                 \
+  } while (0)
+
 #define YYMAXDEPTH 20000
 
 
@@ -714,7 +728,7 @@ template_item
 	: KW_TEMPLATE '(' string ')'		{
                                                   GError *error = NULL;
 
-                                                  CHECK_ERROR(log_template_compile(last_template, $3, &error), @3, "Error compiling template (%s)", error->message);
+                                                  CHECK_ERROR_GERROR(log_template_compile(last_template, $3, &error), @3, error, "Error compiling template");
                                                   free($3);
                                                 }
 	| KW_TEMPLATE_ESCAPE '(' yesno ')'	{ log_template_set_escape(last_template, $3); }
@@ -896,7 +910,7 @@ parser_opt
                                                   GError *error = NULL;
 
                                                   template = cfg_tree_check_inline_template(&configuration->tree, $3, &error);
-                                                  CHECK_ERROR(template != NULL, @3, "Error compiling template (%s)", error->message);
+                                                  CHECK_ERROR_GERROR(template != NULL, @3, error, "Error compiling template");
                                                   log_parser_set_template(last_parser, template);
                                                   free($3);
                                                 }
@@ -1010,7 +1024,7 @@ dest_writer_option
                                                   GError *error = NULL;
 
                                                   last_writer_options->template = cfg_tree_check_inline_template(&configuration->tree, $3, &error);
-                                                  CHECK_ERROR(last_writer_options->template != NULL, @3, "Error compiling template (%s)", error->message);
+                                                  CHECK_ERROR_GERROR(last_writer_options->template != NULL, @3, error, "Error compiling template");
 	                                          free($3);
 	                                        }
 	| KW_TEMPLATE_ESCAPE '(' yesno ')'	{ log_writer_options_set_template_escape(last_writer_options, $3); }
