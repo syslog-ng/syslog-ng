@@ -1053,18 +1053,13 @@ static void iv_fd_tls_init(void)
   iv_tls_user_register(&iv_fd_tls_user);
 }
 
-static void iv_fd_set_event_mask(struct iv_fd *this)
+static int iv_fd_set_event_mask(struct iv_fd *this)
 {
-  int ret;
   if (this->fd == INVALID_SOCKET)
-    return;
+    return -1;
 
-  ret = WSAEventSelect(this->fd, this->handle.handle,
+  return WSAEventSelect(this->fd, this->handle.handle,
            this->event_mask);
-  if (ret) {
-    iv_fatal("iv_fd_set_event_mask: "
-       "WSAEventSelect() returned %d", ret);
-  }
 }
 
 static void iv_fd_got_event(void *_s)
@@ -1112,19 +1107,23 @@ int _iv_fd_register(struct iv_fd *this)
   this->handle.handle = hnd;
   this->handle.cookie = this;
   this->handle.handler = iv_fd_got_event;
-  iv_handle_register(&this->handle);
-
   this->event_mask = 0;
+
   for (i = 0; i < FD_MAX_EVENTS; i++) {
     if (this->handler[i] != NULL)
       this->event_mask |= 1 << i;
   }
-
   /*
    * Call WSAEventSelect() even if the event mask is zero,
    * as it implicitly sets the socket to nonblocking mode.
    */
-  iv_fd_set_event_mask(this);
+  if (iv_fd_set_event_mask(this) != 0)
+    {
+      CloseHandle(this->handle.handle);
+      return -1;
+    }
+
+  iv_handle_register(&this->handle);
   return 0;
 }
 
