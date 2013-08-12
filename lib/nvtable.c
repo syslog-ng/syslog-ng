@@ -747,19 +747,14 @@ nv_table_clone(NVTable *self, gint additional_space)
   return new;
 }
 
-int
+static gint
 dyn_entry_cmp(const void *a, const void *b)
 {
   guint32 entry_a = *(guint32 *)a;
   guint32 entry_b = *(guint32 *)b;
-  NVHandle h_a = NV_TABLE_DYNVALUE_HANDLE(entry_a);
-  NVHandle h_b = NV_TABLE_DYNVALUE_HANDLE(entry_b);
-  if (h_a < h_b)
-    return -1;
-  else if (h_a > h_b)
-    return 1;
-  else
-    return 0;
+  NVHandle handle_a = NV_TABLE_DYNVALUE_HANDLE(entry_a);
+  NVHandle handle_b = NV_TABLE_DYNVALUE_HANDLE(entry_b);
+  return (handle_a - handle_b);
 }
 
 /**
