@@ -1,3 +1,73 @@
+3.4.3
+        Tue, 13 Aug 2013 13:00:00 +0100
+
+        This is the second bug-fix release for the 3.4.x series,
+        collecting significant fixes over the 3.4.2 release. Upgrading
+        to this release is highly recommended.
+
+        Bugfixes
+        ========
+
+        * The pacct module has been fixed, and now compiles correctly.
+
+        * Updated the configure.in script, and a few other places to
+          fix issues with recent autotools.
+
+        * Fixed an infinite loop when template expansion resulted in a
+          zero-length string.
+
+        * A considerable number of minor issues surrounding the build
+          system have been eliminated.
+
+        * The template_escape() setting is now respected by template
+          functions that create templates themselves (such as the
+          conditional functions)
+
+        * Restore support for defaultless block{} arguments. [#230]
+
+        * RFC5424 NILVALUE is now accepted in timestamps [#238]
+
+        * The JSON parser will throw an error when the input is not an
+          object (but, for example, a string) instead of crashing.
+
+        * The program() source has been fixed, and now does not throw
+          a syntax error at config parsing time, but works correctly
+          again.
+
+        * In case resolving a hostname fails, the IP address does not
+          get truncated anymore. [#240 & #242]
+
+        * A race condition in certain filter operations have been
+          eliminated.
+
+        Features
+        ========
+
+        * The JSON parser now accepts generic parser related options,
+          such as template(), so one can easily set the input for the
+          parser.
+
+        Credits:
+        ========
+
+        syslog-ng is developed as a community project, and as such it relies
+        on volunteers to do the work necessarily to produce syslog-ng.
+
+        Reporting bugs, testing changes, writing code or simply providing
+        feedback are all important contributions, so please if you are a
+        user of syslog-ng, contribute.
+
+        These people have helped in this release:
+
+        Andras Tim <tia@balabit.hu>
+        Anton Koldaev <koldaevav@gmail.com>
+        Attila Szalay <sasa@balabit.hu>
+        Balazs Scheidler <bazsi@balabit.hu>
+        Gergely Nagy <algernon@balabit.hu>
+        Martin <bmartin@lavabit.com>
+        Michael Sterrett <mr_bones_@gentoo.org>
+        Vincent Brillault <spam@lerya.net>
+
 3.4.2
         Mon,  3 Jun 2013 16:00:00 +0100
 
