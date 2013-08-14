@@ -38,6 +38,7 @@ check_PROGRAMS =			\
 	test_rcptid \
 	test_strformat \
 	test_msgserialize \
+	test_lexer \
 	test_csv_parser_flags
 
 if IS_HPUX
@@ -103,5 +104,7 @@ test_messages_SOURCES = test_messages.c
 test_strformat_SOURCES = test_strformat.c
 
 test_msgserialize_SOURCES = test_msgserialize.c
+
+test_lexer_SOURCES = test_lexer.c
 
 TESTS = $(check_PROGRAMS)
