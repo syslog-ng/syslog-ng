@@ -861,15 +861,314 @@ parse_msg_ref(gchar **p, gint *msg_ref)
     }
 }
 
+static void
+log_template_fill_compile_error(GError **error, const gchar *error_info, gint error_pos)
+{
+  g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE, "%s, error_pos='%d'", error_info, error_pos);
+}
+
+static void
+log_template_append_and_increment(gchar **p, GString *text)
+{
+  g_string_append_c(text, **p);
+  (*p)++;
+}
+
+static gint
+log_template_get_macro_length(gchar *start, gchar *end, gchar **token)
+{
+  gint result = 0;
+  gchar *colon = memchr(start, ':', end - start - 1);
+  if (colon)
+    {
+      result = colon - start;
+      *token = colon < end ? colon + 1 : NULL;
+    }
+  else
+    {
+      result = end - start - 1;
+      *token = NULL;
+    }
+  return result;
+}
+
+
+static gchar *
+log_template_parse_default_value(gchar *macro_end, gchar *token)
+{
+  g_assert(token);
+  if (*token != '-')
+    {
+      return NULL;
+    }
+  return g_strndup(token + 1, macro_end - token - 2);
+}
+
+#define IS_MACRO_NAME(c) (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c == '_') || (c >= '0' && c <= '9')
+
+#define STEP_BY_TRUE(p, x) while(x) p++;
+
+static void
+log_template_add_elem(LogTemplate *self, gchar *start, gint macro_len, gchar *default_value, GString *text, gint msg_ref)
+{
+  gint macro = log_macro_lookup(start, macro_len);
+  if (macro == M_NONE)
+    {
+      log_template_add_value_elem(self, start, macro_len, text, default_value, msg_ref);
+    }
+  else
+    {
+      log_template_add_macro_elem(self, macro, text, default_value, msg_ref);
+    }
+}
+
+static gboolean
+log_template_process_braced_template(LogTemplate *self, gchar **p, GString *text, GError **error)
+{
+  gint macro_len;
+  gint msg_ref = 0;
+  gchar *default_value = NULL;
+  gchar *start;
+  gchar *token;
+
+  (*p)++;
+  start = *p;
+  *p = strchr(*p, '}');
+
+  if (!*p)
+    {
+      log_template_fill_compile_error(error, "Invalid macro, '}' is missing", strlen(self->template));
+      return FALSE;
+    }
+
+  (*p)++;
+  macro_len = log_template_get_macro_length(start, *p, &token);
+  if (token)
+    {
+      default_value = log_template_parse_default_value(*p, token);
+      if (!default_value)
+        {
+          log_template_fill_compile_error(error, "Unknown substitution function", token - self->template);
+          return FALSE;
+        }
+    }
+  parse_msg_ref(p, &msg_ref);
+  log_template_add_elem(self, start, macro_len, default_value, text, msg_ref);
+  return TRUE;
+}
+
+static gboolean
+log_template_get_unquoted_part(gchar **p, GPtrArray *strv, gint *parens, gchar *quote, GString *arg_buf)
+{
+  gboolean result = TRUE;
+  if (**p == '\\')
+    {
+      (*p)++;
+    }
+  else if (**p == '(')
+    {
+      (*parens)++;
+    }
+  else if (**p == ')')
+    {
+      (*parens)--;
+    }
+  else if (**p == '"' || **p == '\'')
+    {
+      *quote = **p;
+      if (*parens == 1)
+        {
+          /* skip the quote in top-level and don't skip in expressions enclosed in parens */
+          (*p)++;
+          result = FALSE;
+        }
+    }
+  else if (*parens == 1 && (**p == ' ' || **p == '\t'))
+    {
+      g_ptr_array_add(strv, g_strndup(arg_buf->str, arg_buf->len));
+      g_string_truncate(arg_buf, 0);
+      while (**p && (**p == ' ' || **p == '\t'))
+        (*p)++;
+      result = FALSE;
+    }
+  if (*parens == 0)
+    {
+      result = FALSE;
+    }
+  return result;
+}
+
+static gboolean
+log_template_get_quoted_part(gchar **p, gint parens, gchar *quote)
+{
+  gboolean result = TRUE;
+  if (*quote == **p)
+    {
+      /* end of string */
+      *quote = 0;
+      if (parens == 1)
+        {
+          (*p)++;
+          result = FALSE;
+        }
+    }
+  return result;
+}
+
+static void
+log_template_parse_template_function(gchar **p, GPtrArray *strv)
+{
+  gchar quote = 0;
+  gint parens = 1;
+  GString *arg_buf;
+  arg_buf = g_string_sized_new(32);
+  (*p)++;
+  gboolean add_char_to_string;
+  /* skip white space */
+  while (**p && **p == ' ')
+    (*p)++;
+
+  while (**p && parens != 0)
+    {
+      add_char_to_string = TRUE;
+      if (!quote)
+        {
+          add_char_to_string = log_template_get_unquoted_part(p, strv, &parens, &quote, arg_buf);
+        }
+      else
+        {
+          add_char_to_string = log_template_get_quoted_part(p, parens, &quote);
+        }
+      if (**p && add_char_to_string)
+        {
+          log_template_append_and_increment(p, arg_buf);
+        }
+    }
+
+  if (arg_buf->len)
+    g_ptr_array_add(strv, g_strndup(arg_buf->str, arg_buf->len));
+  g_ptr_array_add(strv, NULL);
+  g_string_free(arg_buf, TRUE);
+}
+
+static gboolean
+log_template_process_template_function(LogTemplate *self, gchar **p, GString *text, GError **error)
+{
+  GPtrArray *strv = g_ptr_array_new();
+  gint msg_ref;
+
+  log_template_parse_template_function(p, strv);
+
+  if (**p != ')')
+    {
+      log_template_fill_compile_error(error, "Invalid template function reference, missing function name or inbalanced '('", *p - self->template);
+      goto error;
+    }
+  (*p)++;
+  parse_msg_ref(p, &msg_ref);
+  if (!log_template_add_func_elem(self, text, strv->len - 1, (gchar **) strv->pdata, msg_ref, error))
+    {
+      goto error;
+    }
+  g_ptr_array_free(strv, FALSE);
+  return TRUE;
+error:
+  g_strfreev((gchar **)strv->pdata);
+  g_ptr_array_free(strv, FALSE);
+  return FALSE;
+}
+
+static void
+log_template_process_unbraced_template(LogTemplate *self, gchar **p, GString *text)
+{
+  gchar *start = *p;
+  gint macro_len;
+  do
+    {
+      (*p)++;
+    }
+  while (IS_MACRO_NAME(**p));
+  macro_len = *p - start;
+  log_template_add_elem(self, start, macro_len, NULL, text, 0);
+}
+
+static gboolean
+log_template_process_value(LogTemplate *self, gchar **p, GString **text, GError **error)
+{
+  gboolean finished = FALSE;
+  (*p)++;
+  /* macro reference */
+  if (**p == '{')
+    {
+      if (!log_template_process_braced_template(self, p, *text, error))
+        {
+          return FALSE;
+        }
+      finished = TRUE;
+    }
+  /* template function */
+  else if (**p == '(')
+    {
+      if (!log_template_process_template_function(self, p, *text, error))
+        {
+          return FALSE;
+        }
+      finished = TRUE;
+    }
+  /* unbraced macro */
+  else if (IS_MACRO_NAME(**p))
+    {
+      log_template_process_unbraced_template(self, p, *text);
+      finished = TRUE;
+    }
+  /* escaped value with dollar */
+  else
+    {
+      if (**p != '$')
+        {
+          g_string_append_c(*text, '$');
+        }
+      if (**p)
+        {
+          log_template_append_and_increment(p, *text);
+        }
+    }
+  if (finished)
+    {
+      if (*text)
+        g_string_free(*text, TRUE);
+      *text = NULL;
+    }
+  return TRUE;
+}
+
+gboolean
+log_template_process_character(LogTemplate *self, gchar **p, GString **text, GError **error)
+{
+  if (*text == NULL)
+    *text = g_string_sized_new(32);
+
+  if (**p == '$')
+    {
+      return log_template_process_value(self, p, text, error);
+    }
+  if (**p == '\\')
+    {
+      (*p)++;
+    }
+  if (**p)
+    {
+      log_template_append_and_increment(p, *text);
+    }
+  return TRUE;
+}
+
 gboolean
 log_template_compile(LogTemplate *self, const gchar *template, GError **error)
 {
-  gchar *start, *p;
-  guint last_macro = M_NONE;
+  gchar *p;
   GString *last_text = NULL;
-  gchar *error_info;
-  gint error_pos = 0;
-  
+
   g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
 
   log_template_reset_compiled(self);
@@ -877,249 +1176,27 @@ log_template_compile(LogTemplate *self, const gchar *template, GError **error)
     g_free(self->template);
   self->template = g_strdup(template);
   p = self->template;
-  
+
   while (*p)
     {
-      if (last_text == NULL)
-        last_text = g_string_sized_new(32);
-      if (*p == '\\')
+      if (!log_template_process_character(self, &p, &last_text, error))
         {
-          p++;
-          if (*p)
-            {
-              g_string_append_c(last_text, *p);
-              p++;
-            }
-        }
-      else if (*p == '$')
-        {
-          gboolean finished = FALSE;
-          p++;
-          /* macro reference */
-          if (*p == '{')
-            {
-              gchar *colon, *fncode;
-              gint macro_len;
-              gchar *default_value = NULL;
-              gint msg_ref = 0;
-
-              p++;
-              start = p;
-              while (*p && *p != '}')
-                p++;
-
-              if (!*p)
-                {
-                  error_pos = p - self->template;
-                  error_info = "Invalid macro, '}' is missing";
-                  goto error;
-                }
-
-              p++;
-              
-              colon = memchr(start, ':', p - start - 1);
-              if (colon)
-                {
-                  macro_len = colon - start;
-                  fncode = colon < p ? colon + 1 : NULL;
-                }
-              else
-                {
-                  macro_len = p - start - 1;
-                  fncode = NULL;
-                }
-              
-              if (fncode)
-                {
-                  if (*fncode == '-')
-                    {
-                      default_value = g_strndup(fncode + 1, p - fncode - 2);
-                    }
-                  else
-                    {
-                      error_pos = fncode - self->template;
-                      error_info = "Unknown substitution function";
-                      goto error;
-                    }
-                }
-              parse_msg_ref(&p, &msg_ref);
-              last_macro = log_macro_lookup(start, macro_len);
-              if (last_macro == M_NONE)
-                {
-                  /* this was not a known macro, take it as a "value" reference  */
-                  log_template_add_value_elem(self, start, macro_len, last_text, default_value, msg_ref);
-                }
-              else
-                {
-                  log_template_add_macro_elem(self, last_macro, last_text, default_value, msg_ref);
-                }
-              finished = TRUE;
-            }
-          /* template function */
-          else if (*p == '(')
-            {
-              gchar quote = 0;
-              gint parens = 1;
-              GPtrArray *strv;
-              GString *arg_buf;
-              gint msg_ref;
-
-              strv = g_ptr_array_new();
-              arg_buf = g_string_sized_new(32);
-
-              p++;
-              start = p;
-              /* skip white space */
-	      while (*p && *p == ' ')
-	        p++;
-
-              g_string_truncate(arg_buf, 0);
-              while (*p)
-                {
-                  if (!quote)
-                    {
-                      if (*p == '\\')
-                        {
-                          p++;
-                        }
-                      else if (*p == '"' || *p == '\'')
-                        {
-                          quote = *p;
-                          if (parens == 1)
-                            {
-                              /* skip the quote in top-level and don't skip in expressions enclosed in parens */
-                              p++;
-                              continue;
-                            }
-                        }
-                      else if (parens == 1 && (*p == ' ' || *p == '\t'))
-                        {
-                          g_ptr_array_add(strv, g_strndup(arg_buf->str, arg_buf->len));
-                          g_string_truncate(arg_buf, 0);
-                          while (*p && (*p == ' ' || *p == '\t'))
-                            p++;
-                          continue;
-                        }
-                      else if (*p == '(')
-                        {
-                          parens++;
-                        }
-                      else if (*p == ')')
-                        {
-                          parens--;
-                          if (parens == 0)
-                            break;
-                        }
-                    }
-                  else
-                    {
-                      if (quote == *p)
-                        {
-                          /* end of string */
-                          quote = 0;
-                          if (parens == 1)
-                            {
-                              p++;
-                              continue;
-                            }
-                        }
-                    }
-                  if (*p)
-                    {
-                      g_string_append_c(arg_buf, *p);
-                      p++;
-                    }
-                }
-
-              if (arg_buf->len)
-                g_ptr_array_add(strv, g_strndup(arg_buf->str, arg_buf->len));
-              g_ptr_array_add(strv, NULL);
-              if (*p != ')')
-                {
-                  g_string_free(arg_buf, TRUE);
-                  g_ptr_array_free(strv, TRUE);
-
-                  error_pos = p - self->template;
-                  error_info = "Invalid template function reference, missing function name or inbalanced '('";
-                  goto error;
-                }
-              p++;
-              parse_msg_ref(&p, &msg_ref);
-              if (!log_template_add_func_elem(self, last_text, strv->len - 1, (gchar **) strv->pdata, msg_ref, error))
-                {
-                  g_strfreev((gchar **)strv->pdata);
-                  g_ptr_array_free(strv, FALSE);
-                  g_string_free(arg_buf, TRUE);
-                  goto error_set;
-                }
-              g_ptr_array_free(strv, FALSE);
-              g_string_free(arg_buf, TRUE);
-              finished = TRUE;
-            }
-          else if ((*p >= 'A' && *p <= 'Z') || (*p >= 'a' && *p <= 'z') || (*p == '_') || (*p >= '0' && *p <= '9'))
-            {
-              start = p;
-              do
-                {
-                  p++;
-                }
-              while ((*p >= 'A' && *p <= 'Z') || (*p >= 'a' && *p <= 'z') || (*p == '_') || (*p >= '0' && *p <= '9'));
-              last_macro = log_macro_lookup(start, p - start);
-              if (last_macro == M_NONE)
-                {
-                  /* this was not a known macro, take it as a "value" reference  */
-                  log_template_add_value_elem(self, start, p-start, last_text, NULL, 0);
-                }
-              else
-                {
-                  log_template_add_macro_elem(self, last_macro, last_text, NULL, 0);
-                }
-              finished = TRUE;
-            }
-          else if (*p == '$')
-            {
-              g_string_append_c(last_text, '$');
-              p++;
-            }
-          else
-            {
-              g_string_append_c(last_text, '$');
-              g_string_append_c(last_text, *p);
-              p++;
-            }
-          if (finished)
-            {
-              if (last_text)
-                g_string_free(last_text, TRUE);
-              last_macro = M_NONE;
-              last_text = NULL;
-            }
-        }
-      else
-        {
-          g_string_append_c(last_text, *p);
-          p++;
+          log_template_reset_compiled(self);
+          if (!last_text)
+            last_text = g_string_sized_new(0);
+          g_string_sprintf(last_text, "error in template: %s", self->template);
+          log_template_add_macro_elem(self, M_NONE, last_text, NULL, 0);
+          g_string_free(last_text, TRUE);
+          return FALSE;
         }
     }
-  if (last_macro != M_NONE || last_text)
+  if (last_text)
     {
-      log_template_add_macro_elem(self, last_macro, last_text, NULL, 0);
+      log_template_add_macro_elem(self, M_NONE, last_text, NULL, 0);
       g_string_free(last_text, TRUE);
     }
   self->compiled_template = g_list_reverse(self->compiled_template);
   return TRUE;
-  
- error:
-  g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE, "%s, error_pos='%d'", error_info, error_pos);
-
- error_set:
-  log_template_reset_compiled(self);
-  if (!last_text)
-    last_text = g_string_sized_new(0);
-  g_string_sprintf(last_text, "error in template: %s", self->template);
-  log_template_add_macro_elem(self, M_NONE, last_text, NULL, 0);
-  g_string_free(last_text, TRUE);
-  return FALSE;
 }
 
 void
