@@ -845,19 +845,33 @@ log_template_add_func_elem(LogTemplate *self, GString *text, gint argc, gchar *a
 }
 
 static void
-parse_msg_ref(gchar **p, gint *msg_ref)
+parse_msg_ref(gchar *template_string, gchar **p, gint *msg_ref)
 {
   *msg_ref = 0;
   if ((**p) == '@')
     {
       (*p)++;
-      /* syntax: ${name}@1 to denote the log message index in the correllation state */
-      while ((**p) >= '0' && (**p) <= '9')
+      if ((**p) >= '0' && (**p) <= '9')
         {
-          (*msg_ref) += (*msg_ref) * 10 + ((**p) - '0');
-          (*p)++;
+          /* syntax: ${name}@1 to denote the log message index in the correllation state */
+          while ((**p) >= '0' && (**p) <= '9')
+            {
+              (*msg_ref) += (*msg_ref) * 10 + ((**p) - '0');
+              (*p)++;
+            }
+          *msg_ref += 1;
         }
-      *msg_ref += 1;
+      else
+        {
+          if ((**p) != '@')
+            {
+              msg_warning("Non-numeric correlation state ID found, assuming a literal '@' character. To avoid confusion when using a literal '@' after a macro or template function, write '@@' in the template.",
+                          evt_tag_str("Template", template_string),
+                          NULL);
+              (*p)--;
+            }
+          *msg_ref = 0;
+        }
     }
 }
 
@@ -952,7 +966,7 @@ log_template_process_braced_template(LogTemplate *self, gchar **p, GString *text
           return FALSE;
         }
     }
-  parse_msg_ref(p, &msg_ref);
+  parse_msg_ref(self->template, p, &msg_ref);
   log_template_add_elem(self, start, macro_len, default_value, text, msg_ref);
   return TRUE;
 }
@@ -1065,7 +1079,7 @@ log_template_process_template_function(LogTemplate *self, gchar **p, GString *te
       goto error;
     }
   (*p)++;
-  parse_msg_ref(p, &msg_ref);
+  parse_msg_ref(self->template, p, &msg_ref);
   if (!log_template_add_func_elem(self, text, strv->len - 1, (gchar **) strv->pdata, msg_ref, error))
     {
       goto error;
@@ -1154,7 +1168,13 @@ log_template_process_character(LogTemplate *self, gchar **p, GString **text, GEr
     }
   if (**p == '\\')
     {
-      (*p)++;
+      if (self->cfg->version < 0x500)
+        {
+          msg_warning("Template escaping changed in " VERSION_PE_5_0 ". Use '$$' to specify a literal dollar sign instead of '\\$' and remove the escaping of the backslash character when you upgrade your configuration",
+                      evt_tag_str("Template", self->template),
+                      NULL);
+          (*p)++;
+        }
     }
   if (**p)
     {

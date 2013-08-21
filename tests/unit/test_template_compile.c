@@ -10,6 +10,7 @@
 #define SIMPLE_MACRO_UNBRACE_ADD_TEXT "$MESSAGE test value"
 #define SIMPLE_MACRO_MSGREF "${MESSAGE}@1"
 #define SIMPLE_MACRO_INVALID_REF "${MESSAGE}@gmail.com"
+#define SIMPLE_MACRO_ESCAPED_REF "${MESSAGE}@@12"
 #define SIMPLE_MACRO_ADD_TEXT "${MESSAGE}test value"
 #define ESCAPED_CHAR "Test \\$STRING"
 #define VALID_SUBST "${MESSAGE:-default value}"
@@ -20,6 +21,7 @@
 #define TRICKY_VALUE_5 "$"
 #define TRICKY_VALUE_6 "${MESSAGE:-}"
 #define TRICKY_VALUE_7 "${}"
+#define TRICKY_VALUE_8 "\\tsomething ${MESSAGE}"
 
 #define INVALID_MACRO "${MESSAGE"
 #define INVALID_SUBST "${MESSAGE:1}"
@@ -35,6 +37,13 @@
 #define COMPLICATED_TEMPLATE_FUNCTION_BAD_2 "$( hello \\tes\t\t\t value xyz \"value with spaces\" 'test value with spa\"ces'"
 
 #define SIMPLE_UNKNOWN_FUNCTION "$(unknown function)"
+
+static void
+test_internale_message(LogMessage *msg)
+{
+  log_msg_unref(msg);
+  return;
+}
 
 static void
 hello(LogMessage *msg, int argc, GString *argv[], GString *result)
@@ -132,16 +141,31 @@ test_template_compile_macro()
 
   assert_template_compile(SIMPLE_MACRO_INVALID_REF);
   element  = (LogTemplateElem *)template->compiled_template->data;
-  expected_element = (LogTemplateElem){.text = "", .default_value = NULL, .macro = M_MESSAGE, .type = LTE_MACRO, .msg_ref = 1};
+  expected_element = (LogTemplateElem){.text = "", .default_value = NULL, .macro = M_MESSAGE, .type = LTE_MACRO, .msg_ref = 0};
   assert_macro_element(element[0], expected_element);
   element = (LogTemplateElem *)template->compiled_template->next->data;
-  expected_element = (LogTemplateElem){.text = "gmail.com", .default_value = NULL, .macro = M_NONE, .type = LTE_MACRO, .msg_ref = 0};
+  expected_element = (LogTemplateElem){.text = "@gmail.com", .default_value = NULL, .macro = M_NONE, .type = LTE_MACRO, .msg_ref = 0};
   assert_macro_element(element[0], expected_element);
 
+  assert_template_compile(SIMPLE_MACRO_ESCAPED_REF);
+  element  = (LogTemplateElem *)template->compiled_template->data;
+  expected_element = (LogTemplateElem){.text = "", .default_value = NULL, .macro = M_MESSAGE, .type = LTE_MACRO, .msg_ref = 0};
+  assert_macro_element(element[0], expected_element);
+  element = (LogTemplateElem *)template->compiled_template->next->data;
+  expected_element = (LogTemplateElem){.text = "@12", .default_value = NULL, .macro = M_NONE, .type = LTE_MACRO, .msg_ref = 0};
+  assert_macro_element(element[0], expected_element);
+
+  template->cfg->version = 0x402;
   assert_template_compile(ESCAPED_CHAR);
   element  = (LogTemplateElem *)template->compiled_template->data;
   expected_element = (LogTemplateElem){.text = "Test $STRING", .default_value = NULL, .macro = M_NONE, .type = LTE_MACRO, .msg_ref = 0};
   assert_macro_element(element[0], expected_element);
+
+  template->cfg->version = 0x500;
+  assert_template_compile(ESCAPED_CHAR);
+  element  = (LogTemplateElem *)template->compiled_template->data;
+  expected_element = (LogTemplateElem){.text = "Test \\", .default_value = NULL, .value_handle=log_msg_get_value_handle("STRING"), .type = LTE_VALUE, .msg_ref = 0};
+  assert_value_element(element[0], expected_element);
 
   assert_template_compile(VALID_SUBST);
   element  = (LogTemplateElem *)template->compiled_template->data;
@@ -163,9 +187,16 @@ test_template_compile_macro()
   expected_element = (LogTemplateElem){.text = "${VALUE_NAME}", .default_value = NULL, .macro = M_NONE, .type = LTE_MACRO, .msg_ref = 0};
   assert_macro_element(element[0], expected_element);
 
+  template->cfg->version = 0x402;
   assert_template_compile(TRICKY_VALUE_4);
   element  = (LogTemplateElem *)template->compiled_template->data;
   expected_element = (LogTemplateElem){.text = "", .default_value = NULL, .macro = M_NONE, .type = LTE_MACRO, .msg_ref = 0};
+  assert_macro_element(element[0], expected_element);
+
+  template->cfg->version = 0x500;
+  assert_template_compile(TRICKY_VALUE_4);
+  element  = (LogTemplateElem *)template->compiled_template->data;
+  expected_element = (LogTemplateElem){.text = "\\", .default_value = NULL, .macro = M_NONE, .type = LTE_MACRO, .msg_ref = 0};
   assert_macro_element(element[0], expected_element);
 
   assert_template_compile(TRICKY_VALUE_5);
@@ -176,6 +207,11 @@ test_template_compile_macro()
   assert_template_compile(TRICKY_VALUE_6);
   element  = (LogTemplateElem *)template->compiled_template->data;
   expected_element = (LogTemplateElem){.text = "", .default_value = "", .macro = M_MESSAGE, .type = LTE_MACRO, .msg_ref = 0};
+  assert_macro_element(element[0], expected_element);
+
+  assert_template_compile(TRICKY_VALUE_8);
+  element  = (LogTemplateElem *)template->compiled_template->data;
+  expected_element = (LogTemplateElem){.text = "\\tsomething ", .default_value = NULL, .macro = M_MESSAGE, .type = LTE_MACRO, .msg_ref = 0};
   assert_macro_element(element[0], expected_element);
 
   log_template_unref(template);
@@ -287,10 +323,10 @@ test_template_compile_negativ_tests()
 
 int main(int argc, char **argv)
 {
-  configuration = cfg_new(0x402);
+  configuration = cfg_new(0x500);
   log_msg_registry_init();
   log_template_global_init();
-
+  msg_set_post_func(test_internale_message);
 
   test_template_compile_macro();
   test_template_compile_value();
