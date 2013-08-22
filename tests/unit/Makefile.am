@@ -40,6 +40,7 @@ check_PROGRAMS =			\
 	test_msgserialize \
 	test_lexer \
 	test_template_compile \
+	test_replace_string \
 	test_csv_parser_flags
 
 if IS_HPUX
@@ -107,6 +108,8 @@ test_strformat_SOURCES = test_strformat.c
 test_msgserialize_SOURCES = test_msgserialize.c
 
 test_lexer_SOURCES = test_lexer.c
+
+test_replace_string_SOURCES = test_replace_string.c
 
 test_template_compile_SOURCE = test_template_compile.c $(top_srcdir)/lib/test_template.c
 
