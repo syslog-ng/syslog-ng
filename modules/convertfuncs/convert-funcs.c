@@ -160,23 +160,23 @@ tf_format_snare_prepare(LogTemplateFunction *self, LogTemplate *parent,
   g_option_context_free (ctx);
   if (!options->delimiter)
     {
-      options->delimiter = g_strdup("\\\t");
+      options->delimiter = g_strdup("\t");
     }
   g_string_append(event_template_str,"MSWinEventLog");
   g_string_append(event_template_str,options->delimiter);
   format_uint32_padded(event_template_str, 1, '0', 10, options->criticality);
-  g_string_append_printf(event_template_str,"%s$(replace $EVENT_NAME %s \" \")",options->delimiter,options->delimiter);
-  g_string_append_printf(event_template_str,"%s$(replace $EVENT_GLOBAL_COUNTER %s \" \")",options->delimiter,options->delimiter);
-  g_string_append_printf(event_template_str,"%s$(replace \"$WEEKDAY $MONTHNAME $DAY $HOUR:$MIN:$SEC $YEAR\" %s \" \")",options->delimiter,options->delimiter);
-  g_string_append_printf(event_template_str,"%s$(replace $EVENT_ID %s \" \")",options->delimiter,options->delimiter);
-  g_string_append_printf(event_template_str,"%s$(replace $EVENT_PROVIDER %s \" \")",options->delimiter,options->delimiter);
-  g_string_append_printf(event_template_str,"%s$(replace $EVENT_SNARE_USER %s \" \")",options->delimiter,options->delimiter);
-  g_string_append_printf(event_template_str,"%s$(replace $EVENT_SID_TYPE %s \" \")",options->delimiter,options->delimiter);
-  g_string_append_printf(event_template_str,"%s$(replace $EVENT_TYPE %s \" \")",options->delimiter,options->delimiter);
-  g_string_append_printf(event_template_str,"%s$(replace $EVENT_HOST %s \" \")",options->delimiter,options->delimiter);
-  g_string_append_printf(event_template_str,"%s$(replace $EVENT_CATEGORY %s \" \")",options->delimiter,options->delimiter);
-  g_string_append_printf(event_template_str,"%s%s$(replace $EVENT_MESSAGE %s \" \")",options->delimiter,options->delimiter,options->delimiter);
-  g_string_append_printf(event_template_str,"%s$(replace $EVENT_CONTAINER_COUNTER %s \" \")",options->delimiter,options->delimiter);
+  g_string_append_printf(event_template_str,"%s$(replace $EVENT_NAME '%s' ' ')",options->delimiter,options->delimiter);
+  g_string_append_printf(event_template_str,"%s$(replace $EVENT_GLOBAL_COUNTER '%s' ' ')",options->delimiter,options->delimiter);
+  g_string_append_printf(event_template_str,"%s$(replace \"$WEEKDAY $MONTHNAME $DAY $HOUR:$MIN:$SEC $YEAR\" '%s' ' ')",options->delimiter,options->delimiter);
+  g_string_append_printf(event_template_str,"%s$(replace $EVENT_ID '%s' ' ')",options->delimiter,options->delimiter);
+  g_string_append_printf(event_template_str,"%s$(replace $EVENT_PROVIDER '%s' ' ')",options->delimiter,options->delimiter);
+  g_string_append_printf(event_template_str,"%s$(replace $EVENT_SNARE_USER '%s' ' ')",options->delimiter,options->delimiter);
+  g_string_append_printf(event_template_str,"%s$(replace $EVENT_SID_TYPE '%s' ' ')",options->delimiter,options->delimiter);
+  g_string_append_printf(event_template_str,"%s$(replace $EVENT_TYPE '%s' ' ')",options->delimiter,options->delimiter);
+  g_string_append_printf(event_template_str,"%s$(replace $EVENT_HOST '%s' ' ')",options->delimiter,options->delimiter);
+  g_string_append_printf(event_template_str,"%s$(replace $EVENT_CATEGORY '%s' ' ')",options->delimiter,options->delimiter);
+  g_string_append_printf(event_template_str,"%s%s$(replace $EVENT_MESSAGE '%s' ' ')",options->delimiter,options->delimiter,options->delimiter);
+  g_string_append_printf(event_template_str,"%s$(replace $EVENT_CONTAINER_COUNTER '%s' ' ')",options->delimiter,options->delimiter);
   g_string_append(event_template_str,"\n");
 
   options->protocol_template = log_template_new(options->cfg,"snare_protocol_template");
