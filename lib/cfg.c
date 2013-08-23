@@ -337,7 +337,7 @@ cfg_load_default_modules_if_necessary(GlobalConfig *self)
 {
   gboolean is_license_module_loaded = FALSE;
 
-  if (get_version_value(self->version) <= 0x0301 || atoi(cfg_args_get(self->lexer->globals, "autoload-compiled-modules")))
+  if (get_version_value(self->version) <= 0x0301 || (self->lexer && atoi(cfg_args_get(self->lexer->globals, "autoload-compiled-modules"))))
     {
       gint i;
       gchar **mods;
