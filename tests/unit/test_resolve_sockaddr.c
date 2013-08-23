@@ -1,5 +1,6 @@
 #include "misc.h"
 #include "dnscache.h"
+#include "apphook.h"
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,7 +18,7 @@
 
 #define TEST_ASSERT(assertion, msg) if (!(assertion)) \
                                       { \
-                                        fprintf(stderr,"\n[TID:%x] %s :: %s\n\n", pthread_self(),  PRETTY_FUNCTION,msg); \
+                                        fprintf(stderr,"\n[TID:%x] %s :: %s\n\n", (unsigned int)pthread_self(),  PRETTY_FUNCTION,msg); \
                                         exit(1); \
                                       }
 
@@ -36,13 +37,8 @@ typedef struct _IpProcessorFunctor
 {
   DispatchProcessIp process_ip;
   const char *name;
+  void *process_ip_arg;
 } IpProcessorFunctor;
-
-typedef struct _IpFileWriterFunctor
-{
-  IpProcessorFunctor super;
-  FILE *fp;
-} IpFileWriterFunctor;
 
 void for_each_ip(const char *first_ip, const char *last_ip, IpProcessorFunctor *fun)
 {
@@ -67,19 +63,19 @@ void for_each_ip(const char *first_ip, const char *last_ip, IpProcessorFunctor *
 
 void append_ip_to_hosts_file(IpProcessorFunctor *args, const char *ip)
 {
-  IpFileWriterFunctor *fw_fun = (IpFileWriterFunctor *)args;
-  uint8_t ip_parts[4];
+  FILE *fp = (FILE *)args->process_ip_arg;
+  int ip_parts[4];
   sscanf(ip, "%d.%d.%d.%d", &ip_parts[0], &ip_parts[1], &ip_parts[2], &ip_parts[3]);
-  fprintf(fw_fun->fp, "%s\ttesthost_%d-%d-%d-%d\n", ip, ip_parts[0], ip_parts[1], ip_parts[2], ip_parts[3]);
+  fprintf(fp, "%s\ttesthost_%d-%d-%d-%d\n", ip, ip_parts[0], ip_parts[1], ip_parts[2], ip_parts[3]);
 }
 
 void create_test_hosts_file(const char *hostfile_name, const char *first_ip, const char *last_ip)
 {
   FILE *fp = fopen(hostfile_name, "wt");
-  IpFileWriterFunctor ip_fwrite_func;
-  ip_fwrite_func.fp = fp;
-  ip_fwrite_func.super.process_ip = append_ip_to_hosts_file;
-  ip_fwrite_func.super.name = "create_test_hosts_file";
+  IpProcessorFunctor ip_fwrite_func;
+  ip_fwrite_func.process_ip_arg = fp;
+  ip_fwrite_func.process_ip = append_ip_to_hosts_file;
+  ip_fwrite_func.name = "create_test_hosts_file";
 
   for_each_ip(first_ip, last_ip, &ip_fwrite_func);
 
@@ -141,7 +137,7 @@ void try_to_resolve_ip_with_dns_cache(IpProcessorFunctor *args, const char *ip)
   NameResolvingOptions nro;
   set_default_name_resolving_options(&nro);
   nro.use_dns_cache = TRUE;
-  uint8_t ip_parts[4];
+  int ip_parts[4];
   char expected_hostname[256];
   sscanf(ip, "%d.%d.%d.%d", &ip_parts[0], &ip_parts[1], &ip_parts[2], &ip_parts[3]);
   sprintf(expected_hostname, "testhost_%d-%d-%d-%d", ip_parts[0], ip_parts[1], ip_parts[2], ip_parts[3]);
@@ -153,7 +149,7 @@ void try_to_resolve_ip_without_dns_cache(IpProcessorFunctor *args, const char *i
   NameResolvingOptions nro;
   set_default_name_resolving_options(&nro);
   nro.use_dns_cache = FALSE;
-  uint8_t ip_parts[4];
+  int ip_parts[4];
   char expected_hostname[256];
   sscanf(ip, "%d.%d.%d.%d", &ip_parts[0], &ip_parts[1], &ip_parts[2], &ip_parts[3]);
   sprintf(expected_hostname, "testhost_%d-%d-%d-%d", ip_parts[0], ip_parts[1], ip_parts[2], ip_parts[3]);
@@ -171,7 +167,7 @@ void test_resolve_sockaddr_with_unresolvable_address_without_dns_cache()
 {
   NameResolvingOptions nro;
   set_default_name_resolving_options(&nro);
-  should_fail_when_resolved_hostname_not_match("255.255.255.255", "255.255.255.255", &nro);
+  should_fail_when_resolved_hostname_not_match("0.0.0.0", "0.0.0.0", &nro);
 }
 
 void test_resolve_sockaddr_with_resolvable_address_with_dns_cache()
@@ -195,7 +191,7 @@ void test_resolve_sockaddr_with_unresolvable_address_with_dns_cache()
   create_test_hosts_file("/tmp/hosts", "127.0.0.2", "127.0.0.50");
   dns_cache_global_init(100, 60, 10, "/tmp/hosts");
   dns_cache_tls_init();
-  should_fail_when_resolved_hostname_not_match("255.255.255.255", "255.255.255.255", &nro);
+  should_fail_when_resolved_hostname_not_match("0.0.0.0", "0.0.0.0", &nro);
   dns_cache_tls_deinit();
   dns_cache_global_deinit();
 }
@@ -272,7 +268,7 @@ void test_resolve_sockaddr_available_in_dns_cache_threaded()
 
 int main(int argc, char **argv)
 {
-  g_thread_init(NULL);
+  app_startup();
 
   test_resolve_sockaddr_with_resolvable_address_without_dns_cache();
   test_resolve_sockaddr_with_unresolvable_address_without_dns_cache();

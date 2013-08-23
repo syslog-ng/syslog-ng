@@ -24,7 +24,7 @@
 #define INITIAL_ENTRY_NUM 1000
 
 gint NUMBER_OF_ENTRIES = INITIAL_ENTRY_NUM;
-gint NUMBER_OF_ENTRIES_TO_BE_ADDED = 1e04;
+gint NUMBER_OF_ENTRIES_TO_BE_ADDED = 1e03;
 gint RUN = 1;
 
 PersistState *state;
@@ -132,6 +132,7 @@ persist_state_map_unmap_threaded(void *arg)
       {
         assert_fail_if_entry_by_key_idx_not_found_or_containing_invalid_data(i);
       }
+    sleep(1);
 /*    ++cycle_ctr; */
   }
 
@@ -163,13 +164,6 @@ test_values()
   fprintf(stderr, "\n");
 
   stop_threads();
-
-  for (i = 0; i < THREAD_NUM; i++)
-    {
-      fprintf(stderr, "waiting for TID[%x]...", threads[i]);
-      pthread_join(threads[i], NULL);
-      fprintf(stderr, "OK\n");
-    }
 }
 
 int
