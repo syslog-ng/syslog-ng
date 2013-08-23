@@ -830,7 +830,6 @@ main_loop_init(gchar *config_string)
 #ifdef _WIN32
   signal(SIGTERM,term_signal);
   signal(SIGINT,term_signal);
-  main_loop_io_workers.max_threads = 4;
 #endif
   log_queue_set_max_threads(MIN(main_loop_io_workers.max_threads, MAIN_LOOP_MAX_WORKER_THREADS));
   main_loop_stop_signal_init();
@@ -925,7 +924,6 @@ main_loop_run(void)
   return 0;
 }
 
-
 static GOptionEntry main_loop_options[] =
 {
   { "cfgfile",           'f',         0, G_OPTION_ARG_STRING, &cfgfilename, "Set config file name, default=" PATH_SYSLOG_NG_CONF, "<config>" },
@@ -940,11 +938,7 @@ static GOptionEntry main_loop_options[] =
 void
 main_loop_add_options(GOptionContext *ctx)
 {
-#ifdef _SC_NPROCESSORS_ONLN
-  main_loop_io_workers.max_threads = MIN(MAX(2, sysconf(_SC_NPROCESSORS_ONLN)), MAIN_LOOP_MAX_WORKER_THREADS);
-#else
-  main_loop_io_workers.max_threads = 2;
-#endif
+  main_loop_io_workers.max_threads = MIN(MAX(2, get_processor_count()), MAIN_LOOP_MAX_WORKER_THREADS);
   g_option_context_add_main_entries(ctx, main_loop_options, NULL);
 }
 

@@ -1254,3 +1254,30 @@ void iv_fd_set_handler_err(struct iv_fd *this, void (*handler_err)(void *))
 }
 
 #endif
+
+
+#define DEFAULT_PROCESSOR_COUNT 2
+
+#ifndef _WIN32
+
+long
+get_processor_count()
+{
+#ifdef _SC_NPROCESSORS_ONLN
+  return sysconf(_SC_NPROCESSORS_ONLN);
+#else
+  return DEFAULT_PROCESSOR_COUNT;
+#endif /*_SC_NPROCESSORS_ONLN*/
+}
+
+#else
+
+long
+get_processor_count()
+{
+  SYSTEM_INFO system_info;
+  GetSystemInfo(&system_info);
+  return (long)system_info.dwNumberOfProcessors;
+}
+
+#endif /*_WIN32*/

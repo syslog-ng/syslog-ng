@@ -360,4 +360,6 @@ void iv_fd_set_handler_err(struct iv_fd *, void (*)(void *));
 
 #endif
 
+long get_processor_count();
+
 #endif /* COMPAT_H_INCLUDED */
