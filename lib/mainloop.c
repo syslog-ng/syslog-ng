@@ -822,6 +822,10 @@ main_loop_init(gchar *config_string)
 {
   app_startup();
   init_signals();
+  if (main_loop_io_workers.max_threads == 0)
+    {
+      main_loop_io_workers.max_threads = MIN(MAX(2, get_processor_count()), MAIN_LOOP_MAX_WORKER_THREADS);
+    }
   main_loop_io_workers.thread_start = main_loop_io_worker_thread_start;
   main_loop_io_workers.thread_stop = main_loop_io_worker_thread_stop;
   iv_work_pool_create(&main_loop_io_workers);
@@ -938,7 +942,6 @@ static GOptionEntry main_loop_options[] =
 void
 main_loop_add_options(GOptionContext *ctx)
 {
-  main_loop_io_workers.max_threads = MIN(MAX(2, get_processor_count()), MAIN_LOOP_MAX_WORKER_THREADS);
   g_option_context_add_main_entries(ctx, main_loop_options, NULL);
 }
 
