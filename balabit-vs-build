@@ -34,16 +34,9 @@ case "$cmd" in
             #Store syslog-ng build options. Has to declare the modulepaths, because
             # syslog-ng doesn't look for them in non-default paths.
             set -e ;
-            export PATH=$PWD/lib/.libs:$PATH
-            MODULEPATH=
-            for mp in `find $PWD/modules -type d -name .libs`; do
-                MODULEPATH="$MODULEPATH:$mp:`echo $mp | sed -e 's,^/cygdrive,,'`"
-            done
-            MODULEPATH=$ZBS_PREFIX_LIB:$ZBS_STAGING_DIR/$ZBS_PREFIX/lib:`echo $MODULEPATH | sed -e 's/ /:/g'`;
             BUILDOPTS="$ZBS_STAGE_DIR/share/doc/buildopts";
-            echo windows-binaries/syslog-ng -V --module-path "$MODULEPATH";
-            windows-binaries/syslog-ng -V --module-path "$MODULEPATH"
-            windows-binaries/syslog-ng -V --module-path "$MODULEPATH" | sed -n -e '/^Enable/p' -e '/^Available/p' > $BUILDOPTS;
+            $ZBS_STAGE_DIR/bin/syslog-ng -V
+            $ZBS_STAGE_DIR/bin/syslog-ng -V | sed -n -e '/^Enable/p' -e '/^Available/p' > $BUILDOPTS;
             if test ! -s $BUILDOPTS; then
                 echo "Build options file '$BUILDOPTS' has zero size. Please check your filter expression in tgz2build/rules.";
                 exit 1;
@@ -57,7 +50,6 @@ case "$cmd" in
             $INSTALL -m 644 -c doc/man/pdbtool.1 $ZBS_STAGE_DIR/share/man/man1
             $INSTALL -m 644 -c doc/man/syslog-ng.8 $ZBS_STAGE_DIR/share/man/man8
             $INSTALL -m 644 -c doc/man/syslog-ng.conf.5 $ZBS_STAGE_DIR/share/man/man5
-
             ;;
         *) make $@ ;;
     esac
