@@ -669,15 +669,24 @@ vp_cmdline_parse_scope(const gchar *option_name, const gchar *value,
 {
   gpointer *args = (gpointer *) data;
   ValuePairs *vp = (ValuePairs *) args[1];
+  gchar **scopes;
+  gint i;
 
   vp_cmdline_parse_rekey_finish (data);
 
-  if (!value_pairs_add_scope (vp, value))
+  scopes = g_strsplit (value, ",", -1);
+  for (i = 0; scopes[i] != NULL; i++)
     {
-      g_set_error (error, G_OPTION_ERROR, G_OPTION_ERROR_BAD_VALUE,
-		   "Error parsing value-pairs: unknown scope %s", value);
-      return FALSE;
+      if (!value_pairs_add_scope (vp, scopes[i]))
+        {
+          g_set_error (error, G_OPTION_ERROR, G_OPTION_ERROR_BAD_VALUE,
+                       "Error parsing value-pairs: unknown scope %s", scopes[i]);
+          g_strfreev (scopes);
+          return FALSE;
+        }
     }
+  g_strfreev (scopes);
+
   return TRUE;
 }
 

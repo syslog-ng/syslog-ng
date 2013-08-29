@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 1998-2012 Balázs Scheidler
+ * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 1998-2013 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -202,6 +202,12 @@ gboolean log_msg_is_value_name_valid(const gchar *value);
 gboolean log_msg_is_handle_macro(NVHandle handle);
 gboolean log_msg_is_handle_sdata(NVHandle handle);
 gboolean log_msg_is_handle_match(NVHandle handle);
+
+static inline gboolean
+log_msg_is_handle_settable_with_an_indirect_value(NVHandle handle)
+{
+  return (handle >= LM_V_MAX);
+}
 
 const gchar *log_msg_get_macro_value(LogMessage *self, gint id, gssize *value_len);
 

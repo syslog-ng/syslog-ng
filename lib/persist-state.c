@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -26,6 +26,7 @@
 #include "serialize.h"
 #include "messages.h"
 #include "mainloop.h"
+#include "misc.h"
 
 #include <sys/types.h>
 #include <unistd.h>
@@ -218,6 +219,7 @@ persist_state_create_store(PersistState *self)
                 NULL);
       return FALSE;
     }
+  g_fd_set_cloexec(self->fd, TRUE);
   self->current_key_block = offsetof(PersistFileHeader, initial_key_store);
   self->current_key_ofs = 0;
   self->current_key_size = sizeof((((PersistFileHeader *) NULL))->initial_key_store);

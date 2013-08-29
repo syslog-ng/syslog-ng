@@ -411,8 +411,9 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint pa
         {
           /* NILVALUE */
           self->timestamps[LM_TS_STAMP] = self->timestamps[LM_TS_RECVD];
-          left--;
-          src++;
+          *length = --left;
+          *data = ++src;
+          return TRUE;
         }
       else
         return FALSE;

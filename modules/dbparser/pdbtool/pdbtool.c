@@ -1145,14 +1145,6 @@ main(int argc, char *argv[])
     }
 
   setlocale(LC_ALL, "");
-  if (!g_option_context_parse(ctx, &argc, &argv, &error))
-    {
-      fprintf(stderr, "Error parsing command line arguments: %s\n", error ? error->message : "Invalid arguments");
-      g_clear_error(&error);
-      g_option_context_free(ctx);
-      return 1;
-    }
-  g_option_context_free(ctx);
 
   msg_init(TRUE);
   stats_init();
@@ -1162,6 +1154,15 @@ main(int argc, char *argv[])
   pattern_db_global_init();
 
   configuration = cfg_new(VERSION_VALUE);
+
+  if (!g_option_context_parse(ctx, &argc, &argv, &error))
+    {
+      fprintf(stderr, "Error parsing command line arguments: %s\n", error ? error->message : "Invalid arguments");
+      g_clear_error(&error);
+      g_option_context_free(ctx);
+      return 1;
+    }
+  g_option_context_free(ctx);
 
   plugin_load_module("syslogformat", configuration, NULL);
   plugin_load_module("basicfuncs", configuration, NULL);

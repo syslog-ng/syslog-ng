@@ -101,7 +101,7 @@ log_rewrite_subst_clone(LogPipe *s)
   LogRewriteSubst *self = (LogRewriteSubst *) s;
   LogRewriteSubst *cloned;
 
-  cloned = (LogRewriteSubst *) log_rewrite_subst_new(self->replacement->template);
+  cloned = (LogRewriteSubst *) log_rewrite_subst_new(log_template_ref(self->replacement));
   cloned->matcher = log_matcher_ref(self->matcher);
   cloned->super.value_handle = self->super.value_handle;
   cloned->super.condition = self->super.condition;
@@ -120,7 +120,7 @@ log_rewrite_subst_free(LogPipe *s)
 }
 
 LogRewrite *
-log_rewrite_subst_new(const gchar *replacement)
+log_rewrite_subst_new(LogTemplate *replacement)
 {
   LogRewriteSubst *self = g_new0(LogRewriteSubst, 1);
 
@@ -129,8 +129,7 @@ log_rewrite_subst_new(const gchar *replacement)
   self->super.super.free_fn = log_rewrite_subst_free;
   self->super.super.clone = log_rewrite_subst_clone;
   self->super.process = log_rewrite_subst_process;
+  self->replacement = log_template_ref(replacement);
 
-  self->replacement = log_template_new(configuration, NULL);
-  log_template_compile(self->replacement, replacement, NULL);
   return &self->super;
 }

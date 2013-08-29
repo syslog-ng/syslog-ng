@@ -19,6 +19,11 @@ autogen_submodules()
 
 	if [ -n "$GIT" ] && [ -f .gitmodules ] && [ -d .git ] && [ $submod_initialized = 0 ]; then
 		# only clone submodules if none of them present
+                git submodule update --init
+                sed -e "s#git://#https://#" \
+                        < modules/afamqp/rabbitmq-c/.gitmodules \
+                        > modules/afamqp/rabbitmq-c/.gitmodules.new && \
+                        mv modules/afamqp/rabbitmq-c/.gitmodules.new modules/afamqp/rabbitmq-c/.gitmodules
 		git submodule update --init --recursive
 	fi
 

@@ -1303,7 +1303,7 @@ log_db_add_matches(LogMessage *msg, GArray *matches, NVHandle ref_handle, const 
           log_msg_set_value(msg, match->handle, match->match, match->len);
           g_free(match->match);
         }
-      else if (ref_handle != LM_V_NONE)
+      else if (ref_handle != LM_V_NONE && log_msg_is_handle_settable_with_an_indirect_value(match->handle))
         {
           log_msg_set_value_indirect(msg, match->handle, ref_handle, match->type, match->ofs, match->len);
         }

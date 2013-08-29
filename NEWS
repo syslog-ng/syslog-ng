@@ -1,3 +1,217 @@
+3.4.3
+        Tue, 13 Aug 2013 13:00:00 +0100
+
+        This is the second bug-fix release for the 3.4.x series,
+        collecting significant fixes over the 3.4.2 release. Upgrading
+        to this release is highly recommended.
+
+        Bugfixes
+        ========
+
+        * The pacct module has been fixed, and now compiles correctly.
+
+        * Updated the configure.in script, and a few other places to
+          fix issues with recent autotools.
+
+        * Fixed an infinite loop when template expansion resulted in a
+          zero-length string.
+
+        * A considerable number of minor issues surrounding the build
+          system have been eliminated.
+
+        * The template_escape() setting is now respected by template
+          functions that create templates themselves (such as the
+          conditional functions)
+
+        * Restore support for defaultless block{} arguments. [#230]
+
+        * RFC5424 NILVALUE is now accepted in timestamps [#238]
+
+        * The JSON parser will throw an error when the input is not an
+          object (but, for example, a string) instead of crashing.
+
+        * The program() source has been fixed, and now does not throw
+          a syntax error at config parsing time, but works correctly
+          again.
+
+        * In case resolving a hostname fails, the IP address does not
+          get truncated anymore. [#240 & #242]
+
+        * A race condition in certain filter operations have been
+          eliminated.
+
+        Features
+        ========
+
+        * The JSON parser now accepts generic parser related options,
+          such as template(), so one can easily set the input for the
+          parser.
+
+        Credits:
+        ========
+
+        syslog-ng is developed as a community project, and as such it relies
+        on volunteers to do the work necessarily to produce syslog-ng.
+
+        Reporting bugs, testing changes, writing code or simply providing
+        feedback are all important contributions, so please if you are a
+        user of syslog-ng, contribute.
+
+        These people have helped in this release:
+
+        Andras Tim <tia@balabit.hu>
+        Anton Koldaev <koldaevav@gmail.com>
+        Attila Szalay <sasa@balabit.hu>
+        Balazs Scheidler <bazsi@balabit.hu>
+        Gergely Nagy <algernon@balabit.hu>
+        Martin <bmartin@lavabit.com>
+        Michael Sterrett <mr_bones_@gentoo.org>
+        Vincent Brillault <spam@lerya.net>
+
+3.4.2
+        Mon,  3 Jun 2013 16:00:00 +0100
+
+        This is the first bug-fix release for the 3.4.x series,
+        collecting significant fixes over the 3.4.1 release. Upgrading
+        to this release is highly recommended.
+
+        Bugfixes
+        ========
+
+        * loggen will bail out earily if using Unix sockets without a
+          path specified.
+
+        * Using the same filter for multiple destinations does not
+          trigger a crash anymore. [#219]
+
+        * An issue with log branch propagation has been fixed,
+          restoring compatibility with the 3.3 branch (this mostly
+          affected flags(final) use cases). [#220]
+
+        * The systemd unit file now specified Restart=on-failure.
+          [#222]
+
+        * Support for empty blocks in the configuration were restored,
+          syslog-ng does not crash anymore when encountering one.
+
+        * An assertion was fixed in patterndb, that prevented one from
+          overriding built-in values, such as HOST. [#225]
+
+        * The persist state file (syslog-ng.persist) is now marked
+          close-on-exec, so it does not leak through to forked
+          subprocesses.
+
+        * The system() source now treats /proc/kmsg as optional: if it
+          is not readable to the user running syslog-ng, it will not
+          be included.
+
+        * Proper escape handling in backtick insertion has been
+          implemented, so string arguments to block parameters are -
+          again - treated correctly. [#235]
+
+        * A rare race condition in the SQL, MongoDB, SMTP and AMQP
+          destinations have been fixed.
+
+        * A possible deadlock was fixed within the suppress() handling
+          code.
+
+        Credits
+        =======
+
+        Attila M. Magyar <athos@balabit.hu>
+        Balazs Scheidler <bazsi@balabit.hu>
+        Evan Rempel <erempel@uvic.ca>
+        Gergely Nagy <algernon@balabit.hu>
+        Paul Dann <pdgiddie+balabit@gmail.com>
+        Peter Czanik <czanik@balabit.hu>
+        Tamas Pal <folti@balabit.hu>
+
+3.4.1
+        Thu, 31 Jan 2013 11:00:00 +0100
+
+        This is the first stable release in the 3.4 series adding a number
+        of features compared to 3.3, a culmination of more than a
+        year's worth of development.
+
+        Major features since 3.3
+        ========================
+
+          * New plugins: AMQP & SMTP destinations, JSON parser.
+
+            See the following links for more details about them:
+
+            http://git.io/mgF_sA (AMQP), http://git.io/Os9qpA (SMTP)
+            and http://git.io/7MerYA (JSON parser)
+
+          * New parsers for patterndb: HOSTNAME, EMAIL, PCRE and
+            LLADDR.
+
+          * It is now possible to control what db-parser() sees as its
+            input via it's new template() option. (Defaults to
+            $MESSAGE)
+
+            See http://git.io/YZHPtg for more details.
+
+          * value-pairs() gained support for programmatically
+            rewriting key names in bulk, via the rekey() method.
+
+            See http://git.io/VylQUg for more details.
+
+          * The network() driver is introduced, unifying and extending
+            tcp(), udp(), syslog(), unix-dgram() and
+            unix-stream(). The old drivers are still available, but
+            migrating over to network() is encouraged.
+
+            See http://git.io/0Xjlhg for more details.
+
+          * Support for junctions & channels were added, which improve
+            the flexibility of the syslog-ng configuration
+            language. This allows combining sources with their closely
+            tied processing functionality (like parser, rewrite and
+            filter statements). Read this blog post for more
+            information:
+
+            http://goo.gl/T8Txa
+
+            In the final form of the functionality the "log" keyword
+            as described in the blog post above was replaced with
+            "channel".
+
+        Changes since 3.4.0rc2:
+        =======================
+
+        Bugfixes
+        ========
+
+        * PatternDB allows a wider range of characters in a class
+          value now.
+
+          Newly allowed chars are: %, :, @, +, !, ^, / and \.
+
+        * The fsync() and flush-lines() functionality was restored in
+          the file() destination, both work as expected and correctly
+          now.
+
+        * The set() and subst() rewrite operations were fixed to work
+          even when referenced from multiple places (and in a number
+          of different corner-cases too).
+
+        Credits:
+        ========
+        syslog-ng is developed as a community project, and as such it relies
+        on volunteers to do the work necessarily to produce syslog-ng.
+
+        Reporting bugs, testing changes, writing code or simply providing
+        feedback are all important contributions, so please if you are a
+        user of syslog-ng, contribute.
+
+        These people have helped in this release:
+
+        Balazs Scheidler <bazsi@balabit.hu>
+        Evan Rempel <erempel@uvic.ca>
+        Gergely Nagy <algernon@balabit.hu>
+        Johnson, Chris <chris.johnson3@hp.com>
+
 3.4.0rc2
         Wed, 17 Jan 2013 14:00:00 +0100
 

@@ -33,6 +33,6 @@ gboolean log_rewrite_subst_set_regexp(LogRewrite *s, const gchar *regexp);
 void log_rewrite_subst_set_matcher(LogRewrite *s, LogMatcher *matcher);
 void log_rewrite_subst_set_flags(LogRewrite *s, gint flags);
 
-LogRewrite *log_rewrite_subst_new(const gchar *replacement);
+LogRewrite *log_rewrite_subst_new(LogTemplate *replacement);
 
 #endif

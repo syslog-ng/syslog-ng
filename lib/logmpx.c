@@ -39,9 +39,15 @@ log_multiplexer_init(LogPipe *s)
   
   for (i = 0; i < self->next_hops->len; i++)
     {
-      LogPipe *next_hop = g_ptr_array_index(self->next_hops, i);
+      LogPipe *branch_head = g_ptr_array_index(self->next_hops, i);
+      LogPipe *p;
+
+      for (p = branch_head; p; p = p->pipe_next)
+        {
+          branch_head->flags |= (p->flags & PIF_BRANCH_PROPERTIES);
+        }
           
-      if ((next_hop->flags & PIF_BRANCH_FALLBACK) != 0)
+      if (branch_head->flags & PIF_BRANCH_FALLBACK)
         {
           self->fallback_exists = TRUE;
         }
