@@ -36,3 +36,4 @@ m4/pkg.m4
 /compile
 /test-driver
 .deps
+/lib/cfg-grammar.h
