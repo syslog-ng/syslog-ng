@@ -447,8 +447,10 @@ affile_sd_free(LogPipe *s)
 
   log_reader_options_destroy(&self->reader_options);
 
-  free_regex_t(self->multi_line_prefix);
-  free_regex_t(self->multi_line_garbage);
+  if (self->multi_line_prefix)
+    free_regex_t(self->multi_line_prefix);
+  if (self->multi_line_garbage)
+    free_regex_t(self->multi_line_garbage);
 
   log_src_driver_free(s);
 }
