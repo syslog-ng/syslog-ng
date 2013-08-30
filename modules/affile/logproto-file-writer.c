@@ -59,10 +59,6 @@ log_proto_file_writer_flush(LogProtoClient *s)
   if (self->buf_count == 0)
     return LPS_SUCCESS;
 
-  /* lseek() is used instead of O_APPEND, as on NFS  O_APPEND performs
-   * poorly, as reported on the mailing list 2008/05/29 */
-
-  lseek(self->fd, 0, SEEK_END);
   rc = writev(self->fd, self->buffer, self->buf_count);
   if (rc > 0 && self->fsync)
     fsync(self->fd);
