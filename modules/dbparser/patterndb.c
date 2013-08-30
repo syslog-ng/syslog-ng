@@ -38,6 +38,7 @@
 
 static NVHandle class_handle = 0;
 static NVHandle rule_id_handle = 0;
+static NVHandle context_id_handle = 0;
 static LogTagId system_tag;
 static LogTagId unknown_tag;
 
@@ -1603,6 +1604,7 @@ pattern_db_process(PatternDB *self, PDBInput *input)
           PDBStateKey key;
 
           log_template_format(rule->context_id_template, msg, NULL, LTZ_LOCAL, 0, NULL, buffer);
+          log_msg_set_value(msg, context_id_handle, buffer->str, -1);
 
           pdb_state_key_setup(&key, PSK_CONTEXT, rule, msg, buffer->str);
           context = g_hash_table_lookup(self->state, &key);
@@ -1708,6 +1710,7 @@ pattern_db_global_init(void)
 {
   class_handle = log_msg_get_value_handle(".classifier.class");
   rule_id_handle = log_msg_get_value_handle(".classifier.rule_id");
+  context_id_handle = log_msg_get_value_handle(".classifier.context_id");
   system_tag = log_tags_get_by_name(".classifier.system");
   unknown_tag = log_tags_get_by_name(".classifier.unknown");
 }

@@ -296,6 +296,7 @@ test_patterndb_rule(void)
   test_rule_value("pattern11", "n11-2", "v11-2");
   test_rule_value("pattern11", "n11-3", NULL);
   test_rule_value("pattern11", "context-id", "999");
+  test_rule_value("pattern11", ".classifier.context_id", "999");
   test_rule_value("pattern11a", "n11-1", "v11-1");
   test_rule_value("pattern11a", "n11-2", "v11-2");
   test_rule_value("pattern11a", "n11-3", NULL);
