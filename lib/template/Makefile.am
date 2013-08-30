@@ -4,4 +4,4 @@ template_headers = \
 template_sources = \
 	lib/template/templates.c
 
-#include lib/templates/tests/Makefile.am
+include lib/template/tests/Makefile.am
