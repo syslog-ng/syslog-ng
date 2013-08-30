@@ -24,7 +24,7 @@
 #include "patterndb.h"
 #include "logmsg.h"
 #include "tags.h"
-#include "templates.h"
+#include "template/templates.h"
 #include "compat.h"
 #include "misc.h"
 #include "filter/filter-expr-parser.h"

@@ -34,7 +34,7 @@
 #include "logsource.h"
 #include "logwriter.h"
 #include "afinter.h"
-#include "templates.h"
+#include "template/templates.h"
 
 #include <iv.h>
 #include <iv_work.h>

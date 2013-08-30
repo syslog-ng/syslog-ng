@@ -2,7 +2,7 @@
 #include "template_lib.h"
 
 #include "logmsg.h"
-#include "templates.h"
+#include "template/templates.h"
 #include "misc.h"
 #include "apphook.h"
 #include "cfg.h"

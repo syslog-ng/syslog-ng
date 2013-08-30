@@ -21,8 +21,8 @@
  * COPYING for details.
  *
  */
-  
-#include "templates.h"
+
+#include "template/templates.h"
 #include "messages.h"
 #include "logmsg.h"
 #include "syslog-names.h"
@@ -95,7 +95,7 @@ enum
   M_TIME_FIRST = M_DATE,
   M_TIME_LAST = M_UNIXTIME,
   M_TIME_MACROS_MAX = M_UNIXTIME - M_DATE + 1,
-  
+
   M_RECVD_OFS = M_TIME_MACROS_MAX,
   M_STAMP_OFS = 2 * M_TIME_MACROS_MAX,
   M_CSTAMP_OFS = 3 * M_TIME_MACROS_MAX,
@@ -244,10 +244,10 @@ result_append(GString *result, const gchar *sstr, gssize len, gboolean escape)
 {
   gint i;
   const guchar *ustr = (const guchar *) sstr;
-  
+
   if (len < 0)
     len = strlen(sstr);
-  
+
   if (escape)
     {
       for (i = 0; i < len; i++)
@@ -292,7 +292,7 @@ log_macro_expand(GString *result, gint id, gboolean escape, LogTemplateOptions *
       {
         /* facility */
         const char *n;
-        
+
         n = syslog_name_lookup_name_by_value(msg->pri & LOG_FACMASK, sl_facilities);
         if (n)
           {
@@ -313,7 +313,7 @@ log_macro_expand(GString *result, gint id, gboolean escape, LogTemplateOptions *
       {
         /* level */
         const char *n;
-        
+
         n = syslog_name_lookup_name_by_value(msg->pri & LOG_PRIMASK, sl_levels);
         if (n)
           {
@@ -361,18 +361,18 @@ log_macro_expand(GString *result, gint id, gboolean escape, LogTemplateOptions *
             int remaining, length;
             gssize host_len;
             const gchar *host = log_msg_get_value(msg, LM_V_HOST, &host_len);
-            
+
             p1 = memchr(host, '@', host_len);
-            
+
             if (p1)
               p1++;
             else
               p1 = host;
             remaining = host_len - (p1 - host);
             p2 = memchr(p1, '/', remaining);
-            length = p2 ? p2 - p1 
+            length = p2 ? p2 - p1
               : host_len - (p1 - host);
-            
+
             result_append(result, p1, length, escape);
           }
         else
@@ -385,7 +385,7 @@ log_macro_expand(GString *result, gint id, gboolean escape, LogTemplateOptions *
       if (escape)
         {
           GString *sdstr = g_string_sized_new(0);
-          
+
           log_msg_append_format_sdata(msg, sdstr, seq_num);
           result_append(result, sdstr->str, sdstr->len, TRUE);
           g_string_free(sdstr, TRUE);
@@ -512,7 +512,7 @@ log_macro_expand(GString *result, gint id, gboolean escape, LogTemplateOptions *
 	else if (id >= M_TIME_FIRST + M_CSTAMP_OFS && id <= M_TIME_LAST + M_CSTAMP_OFS)
 	  {
 	    GTimeVal tv;
-	    
+
 	    id -= M_CSTAMP_OFS;
 	    cached_g_current_time(&tv);
 	    sstamp.tv_sec = tv.tv_sec;
@@ -609,12 +609,12 @@ log_macro_expand(GString *result, gint id, gboolean escape, LogTemplateOptions *
           case M_FULLDATE:
           case M_UNIXTIME:
             {
-              gint format = id == M_DATE ? TS_FMT_BSD : 
+              gint format = id == M_DATE ? TS_FMT_BSD :
                             id == M_ISODATE ? TS_FMT_ISO :
                             id == M_FULLDATE ? TS_FMT_FULL :
                             id == M_UNIXTIME ? TS_FMT_UNIX :
                             opts->ts_format;
-              
+
               log_stamp_append_format(stamp, result, format, zone_ofs, opts->frac_digits);
               break;
             }
@@ -635,7 +635,7 @@ log_macro_lookup(gchar *macro, gint len)
 {
   gchar buf[256];
   gint macro_id;
-  
+
   g_assert(macro_hash);
   g_strlcpy(buf, macro, MIN(sizeof(buf), len+1));
   macro_id = GPOINTER_TO_INT(g_hash_table_lookup(macro_hash, buf));
@@ -643,7 +643,7 @@ log_macro_lookup(gchar *macro, gint len)
   if (cfg_is_config_version_older(configuration, 0x0300) && (macro_id == M_MESSAGE))
     {
       static gboolean msg_macro_warning = FALSE;
-      
+
       if (!msg_macro_warning)
         {
           msg_warning("WARNING: template: the meaning of the $MSG/$MESSAGE macros has changed from " VERSION_3_0 ", please prepend a $MSGHDR when upgrading to " VERSION_3_0 " config format", NULL);
@@ -788,7 +788,7 @@ static void
 log_template_add_macro_elem(LogTemplate *self, guint macro, GString *text, gchar *default_value, gint msg_ref)
 {
   LogTemplateElem *e;
-  
+
   e = g_new0(LogTemplateElem, 1);
   e->type = LTE_MACRO;
   e->text_len = text ? text->len : 0;
@@ -804,7 +804,7 @@ log_template_add_value_elem(LogTemplate *self, gchar *value_name, gsize value_na
 {
   LogTemplateElem *e;
   gchar *dup;
-  
+
   e = g_new0(LogTemplateElem, 1);
   e->type = LTE_VALUE;
   e->text_len = text ? text->len : 0;
@@ -895,7 +895,7 @@ log_template_compile(LogTemplate *self, const gchar *template, GError **error)
   GString *last_text = NULL;
   gchar *error_info;
   gint error_pos = 0;
-  
+
   g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
 
   log_template_reset_compiled(self);
@@ -903,7 +903,7 @@ log_template_compile(LogTemplate *self, const gchar *template, GError **error)
     g_free(self->template);
   self->template = g_strdup(template);
   p = self->template;
-  
+
   while (*p)
     {
       if (last_text == NULL)
@@ -942,7 +942,7 @@ log_template_compile(LogTemplate *self, const gchar *template, GError **error)
                 }
 
               p++;
-              
+
               colon = memchr(start, ':', p - start - 1);
               if (colon)
                 {
@@ -954,7 +954,7 @@ log_template_compile(LogTemplate *self, const gchar *template, GError **error)
                   macro_len = p - start - 1;
                   fncode = NULL;
                 }
-              
+
               if (fncode)
                 {
                   if (*fncode == '-')
@@ -1135,7 +1135,7 @@ log_template_compile(LogTemplate *self, const gchar *template, GError **error)
     }
   self->compiled_template = g_list_reverse(self->compiled_template);
   return TRUE;
-  
+
  error:
   g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE, "%s, error_pos='%d'", error_info, error_pos);
 
@@ -1154,7 +1154,7 @@ log_template_append_format_with_context(LogTemplate *self, LogMessage **messages
 {
   GList *p;
   LogTemplateElem *e;
-  
+
   for (p = self->compiled_template; p; p = g_list_next(p))
     {
       gint msg_ndx;
@@ -1273,7 +1273,7 @@ LogTemplate *
 log_template_new(GlobalConfig *cfg, gchar *name)
 {
   LogTemplate *self = g_new0(LogTemplate, 1);
-  
+
   self->name = g_strdup(name);
   self->ref_cnt = 1;
   self->cfg = cfg;
@@ -1281,7 +1281,7 @@ log_template_new(GlobalConfig *cfg, gchar *name)
   if (cfg_is_config_version_older(configuration, 0x0300))
     {
       static gboolean warn_written = FALSE;
-      
+
       if (!warn_written)
         {
           msg_warning("WARNING: template: the default value for template-escape has changed to 'no' from " VERSION_3_0 ", please update your configuration file accordingly",
@@ -1293,7 +1293,7 @@ log_template_new(GlobalConfig *cfg, gchar *name)
   return self;
 }
 
-static void 
+static void
 log_template_free(LogTemplate *self)
 {
   if (self->arg_bufs)
@@ -1322,7 +1322,7 @@ log_template_ref(LogTemplate *s)
   return s;
 }
 
-void 
+void
 log_template_unref(LogTemplate *s)
 {
   if (s)

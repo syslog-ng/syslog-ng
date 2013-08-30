@@ -26,7 +26,7 @@
 #if ENABLE_SQL
 
 #include "logqueue.h"
-#include "templates.h"
+#include "template/templates.h"
 #include "messages.h"
 #include "misc.h"
 #include "stats.h"

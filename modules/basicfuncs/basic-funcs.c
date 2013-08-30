@@ -22,7 +22,7 @@
  */
 
 #include "plugin.h"
-#include "templates.h"
+#include "template/templates.h"
 #include "filter/filter-expr.h"
 #include "filter/filter-expr-parser.h"
 #include "cfg.h"

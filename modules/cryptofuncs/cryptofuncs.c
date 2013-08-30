@@ -22,7 +22,7 @@
  */
 
 #include "plugin.h"
-#include "templates.h"
+#include "template/templates.h"
 #include "cfg.h"
 #include "uuid.h"
 #include "misc.h"

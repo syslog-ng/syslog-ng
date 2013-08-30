@@ -325,7 +325,7 @@ extern struct _LogParser *last_parser;
 #include "cfg-parser.h"
 #include "cfg.h"
 #include "cfg-tree.h"
-#include "templates.h"
+#include "template/templates.h"
 #include "logreader.h"
 #include "parser/parser-expr.h"
 #include "rewrite/rewrite-expr.h"

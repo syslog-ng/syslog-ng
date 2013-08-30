@@ -23,7 +23,7 @@
 
 #include "syslog-ng.h"
 #include "messages.h"
-#include "templates.h"
+#include "template/templates.h"
 #include "misc.h"
 #include "patterndb.h"
 #include "dbparser.h"

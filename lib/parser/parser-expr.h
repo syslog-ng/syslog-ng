@@ -28,7 +28,7 @@
 #include "logmsg.h"
 #include "messages.h"
 #include "logpipe.h"
-#include "templates.h"
+#include "template/templates.h"
 #include <string.h>
 
 typedef struct _LogParser LogParser;

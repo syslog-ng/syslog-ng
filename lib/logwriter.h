@@ -26,7 +26,7 @@
 #define LOG_WRITER_H_INCLUDED
 
 #include "logpipe.h"
-#include "templates.h"
+#include "template/templates.h"
 #include "logqueue.h"
 #include "logproto/logproto-client.h"
 #include "timeutils.h"

@@ -25,7 +25,7 @@
 #include "cfg.h"
 #include "cfg-tree.h"
 #include "messages.h"
-#include "templates.h"
+#include "template/templates.h"
 #include "misc.h"
 #include "logmsg.h"
 #include "dnscache.h"

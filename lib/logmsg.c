@@ -30,7 +30,7 @@
 #include "tags.h"
 #include "nvtable.h"
 #include "stats.h"
-#include "templates.h"
+#include "template/templates.h"
 #include "tls-support.h"
 
 #include <sys/types.h>

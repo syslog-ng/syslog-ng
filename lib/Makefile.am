@@ -4,6 +4,7 @@ include lib/logproto/Makefile.am
 include lib/rewrite/Makefile.am
 include lib/parser/Makefile.am
 include lib/filter/Makefile.am
+include lib/template/Makefile.am
 
 lib_LTLIBRARIES				+= lib/libsyslog-ng.la
 lib_libsyslog_ng_la_LIBADD		= @CORE_DEPS_LIBS@ $(libsystemd_daemon_LIBS)
@@ -75,7 +76,6 @@ pkginclude_HEADERS			+= \
 	lib/syslog-names.h		\
 	lib/syslog-ng.h			\
 	lib/tags.h			\
-	lib/templates.h			\
 	lib/timeutils.h			\
 	lib/tls-support.h		\
 	lib/tlscontext.h  		\
@@ -88,7 +88,8 @@ pkginclude_HEADERS			+= \
 	$(logproto_headers)		\
 	$(filter_headers)		\
 	$(parser_headers)		\
-	$(rewrite_headers)
+	$(rewrite_headers)		\
+	$(template_headers)
 
 # this is intentionally formatted so conflicts are less likely to arise. one name in every line.
 lib_libsyslog_ng_crypto_la_sources	= \
@@ -148,7 +149,6 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/str-format.c		\
 	lib/syslog-names.c		\
 	lib/tags.c			\
-	lib/templates.c			\
 	lib/timeutils.c			\
 	lib/utils.c			\
 	lib/value-pairs.c		\
@@ -161,7 +161,8 @@ lib_libsyslog_ng_la_SOURCES		= \
 	$(logproto_sources)		\
 	$(filter_sources)		\
 	$(parser_sources)		\
-	$(rewrite_sources)
+	$(rewrite_sources)		\
+	$(template_sources)
 
 if WITH_EMBEDDED_CRYPTO
 lib_libsyslog_ng_la_CFLAGS		= @UUID_CFLAGS@ $(libsystemd_daemon_CFLAGS)

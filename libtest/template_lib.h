@@ -26,7 +26,7 @@
 #define LIBTEST_TEMPLATE_LIB_H_INCLUDED 1
 
 #include "testutils.h"
-#include "templates.h"
+#include "template/templates.h"
 
 void assert_template_format(const gchar *template, const gchar *expected);
 void assert_template_format_with_escaping(const gchar *template, gboolean escaping, const gchar *expected);

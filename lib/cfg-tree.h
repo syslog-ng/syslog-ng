@@ -26,7 +26,7 @@
 #define CFGTREE_H_INCLUDED
 
 #include "syslog-ng.h"
-#include "templates.h"
+#include "template/templates.h"
 #include "cfg-lexer.h"
 
 const gchar *log_expr_node_get_content_name(gint content);
