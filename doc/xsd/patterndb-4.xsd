@@ -380,6 +380,22 @@
                 </xs:unique>
             </xs:element>
         </xs:all>
+        <xs:attribute name="inherit-properties">
+          <xs:annotation>
+            <xs:documentation>
+              If set to TRUE, the original message that triggered the action is
+              cloned, including its name-value pairs and tags.
+              For details, see Section 13.4, Triggering actions for identified messages.
+            </xs:documentation>
+          </xs:annotation>
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:enumeration value="TRUE"/>
+              <xs:enumeration value="FALSE"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:attribute>
+
     </xs:complexType>
 
     <xs:simpleType name="uuidType">
@@ -463,3 +479,6 @@
     </xs:complexType>
 
 </xs:schema>
+
+<!-- vim:expandtab:ts=4:ft=xml
+  -->
