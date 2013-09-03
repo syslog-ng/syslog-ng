@@ -28,7 +28,6 @@
 #include "filter.h"
 #include "center.h"
 #include "messages.h"
-#include "templates.h"
 #include "misc.h"
 #include "logmsg.h"
 #include "dnscache.h"

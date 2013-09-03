@@ -4,7 +4,6 @@
 #include "logmsg.h"
 #include "apphook.h"
 #include "timeutils.h"
-#include "templates.h"
 #include "cfg.h"
 #include "plugin.h"
 

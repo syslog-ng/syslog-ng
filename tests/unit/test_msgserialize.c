@@ -4,7 +4,6 @@
 #include "plugin.h"
 #include "msg_parse_lib.h"
 #include "testutils.h"
-#include "templates.h"
 
 #define RAW_MSG "<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [exampleSDID@0 iut=\"3\" eventSource=\"Application\"] An application event log entry..."
 #define ERROR_MSG "Failed at %s(%d)", __FILE__, __LINE__

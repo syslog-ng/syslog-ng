@@ -19,7 +19,6 @@
  */
 
 #include "plugin.h"
-#include "templates.h"
 #include "filter.h"
 #include "filter-expr-parser.h"
 #include "cfg.h"

@@ -21,7 +21,7 @@
  * COPYING for details.
  *
  */
-  
+
 #include "templates.h"
 #include "messages.h"
 #include "logmsg.h"
@@ -95,7 +95,7 @@ enum
   M_TIME_FIRST = M_DATE,
   M_TIME_LAST = M_UNIXTIME,
   M_TIME_MACROS_MAX = M_UNIXTIME - M_DATE + 1,
-  
+
   M_RECVD_OFS = M_TIME_MACROS_MAX,
   M_STAMP_OFS = 2 * M_TIME_MACROS_MAX,
 };
@@ -234,10 +234,10 @@ result_append(GString *result, const gchar *sstr, gssize len, gboolean escape)
 {
   gint i;
   const guchar *ustr = (const guchar *) sstr;
-  
+
   if (len < 0)
     len = strlen(sstr);
-  
+
   if (escape)
     {
       for (i = 0; i < len; i++)
@@ -282,7 +282,7 @@ log_macro_expand(GString *result, gint id, gboolean escape, LogTemplateOptions *
       {
         /* facility */
         const char *n;
-        
+
         n = syslog_name_lookup_name_by_value(msg->pri & LOG_FACMASK, sl_facilities);
         if (n)
           {
@@ -303,7 +303,7 @@ log_macro_expand(GString *result, gint id, gboolean escape, LogTemplateOptions *
       {
         /* level */
         const char *n;
-        
+
         n = syslog_name_lookup_name_by_value(msg->pri & LOG_PRIMASK, sl_levels);
         if (n)
           {
@@ -351,18 +351,18 @@ log_macro_expand(GString *result, gint id, gboolean escape, LogTemplateOptions *
             int remaining, length;
             gssize host_len;
             const gchar *host = log_msg_get_value(msg, LM_V_HOST, &host_len);
-            
+
             p1 = memchr(host, '@', host_len);
-            
+
             if (p1)
               p1++;
             else
               p1 = host;
             remaining = host_len - (p1 - host);
             p2 = memchr(p1, '/', remaining);
-            length = p2 ? p2 - p1 
+            length = p2 ? p2 - p1
               : host_len - (p1 - host);
-            
+
             result_append(result, p1, length, escape);
           }
         else
@@ -375,7 +375,7 @@ log_macro_expand(GString *result, gint id, gboolean escape, LogTemplateOptions *
       if (escape)
         {
           GString *sdstr = g_string_sized_new(0);
-          
+
           log_msg_append_format_sdata(msg, sdstr, seq_num);
           result_append(result, sdstr->str, sdstr->len, TRUE);
           g_string_free(sdstr, TRUE);
@@ -596,7 +596,7 @@ log_macro_expand(GString *result, gint id, gboolean escape, LogTemplateOptions *
           case M_FULLDATE:
           case M_UNIXTIME:
             {
-              gint format = id == M_DATE ? TS_FMT_BSD : 
+              gint format = id == M_DATE ? TS_FMT_BSD :
                             id == M_ISODATE ? TS_FMT_ISO :
                             id == M_FULLDATE ? TS_FMT_FULL :
                             id == M_UNIXTIME ? TS_FMT_UNIX :
@@ -622,14 +622,14 @@ log_macro_lookup(gchar *macro, gint len)
 {
   gchar buf[256];
   gint macro_id;
-  
+
   g_assert(macro_hash);
   g_strlcpy(buf, macro, MIN(sizeof(buf), len+1));
   macro_id = GPOINTER_TO_INT(g_hash_table_lookup(macro_hash, buf));
   if (configuration && get_version_value(configuration->version) < 0x0300 && (macro_id == M_MESSAGE))
     {
       static gboolean msg_macro_warning = FALSE;
-      
+
       if (!msg_macro_warning)
         {
           msg_warning("WARNING: template: the meaning of the $MSG/$MESSAGE macros has changed from " VERSION_3_0 ", please prepend a $MSGHDR when upgrading to " VERSION_3_0 " config format", NULL);
@@ -638,6 +638,13 @@ log_macro_lookup(gchar *macro, gint len)
     }
   return macro_id;
 }
+
+typedef struct {
+  LogTemplate *template;
+  gchar *cursor;
+  GString *text;
+  gint msg_ref;
+} LogTemplateCompiler;
 
 enum
 {
@@ -769,42 +776,42 @@ log_template_reset_compiled(LogTemplate *self)
 }
 
 static void
-log_template_add_macro_elem(LogTemplate *self, guint macro, GString *text, gchar *default_value, gint msg_ref)
+log_template_add_macro_elem(LogTemplateCompiler *self, guint macro, gchar *default_value)
 {
   LogTemplateElem *e;
-  
+
   e = g_new0(LogTemplateElem, 1);
   e->type = LTE_MACRO;
-  e->text_len = text ? text->len : 0;
-  e->text = text ? g_strndup(text->str, text->len) : NULL;
+  e->text_len = self->text ? self->text->len : 0;
+  e->text = self->text ? g_strndup(self->text->str, self->text->len) : NULL;
   e->macro = macro;
   e->default_value = default_value;
-  e->msg_ref = msg_ref;
-  self->compiled_template = g_list_prepend(self->compiled_template, e);
+  e->msg_ref = self->msg_ref;
+  self->template->compiled_template = g_list_prepend(self->template->compiled_template, e);
 }
 
 static void
-log_template_add_value_elem(LogTemplate *self, gchar *value_name, gsize value_name_len, GString *text, gchar *default_value, gint msg_ref)
+log_template_add_value_elem(LogTemplateCompiler *self, gchar *value_name, gsize value_name_len, gchar *default_value)
 {
   LogTemplateElem *e;
   gchar *dup;
-  
+
   e = g_new0(LogTemplateElem, 1);
   e->type = LTE_VALUE;
-  e->text_len = text ? text->len : 0;
-  e->text = text ? g_strndup(text->str, text->len) : NULL;
+  e->text_len = self->text ? self->text->len : 0;
+  e->text = self->text ? g_strndup(self->text->str, self->text->len) : NULL;
   /* value_name is not NUL terminated */
   dup = g_strndup(value_name, value_name_len);
   e->value_handle = log_msg_get_value_handle(dup);
   g_free(dup);
   e->default_value = default_value;
-  e->msg_ref = msg_ref;
-  self->compiled_template = g_list_prepend(self->compiled_template, e);
+  e->msg_ref = self->msg_ref;
+  self->template->compiled_template = g_list_prepend(self->template->compiled_template, e);
 }
 
 /* NOTE: this steals argv if successful */
 static gboolean
-log_template_add_func_elem(LogTemplate *self, GString *text, gint argc, gchar *argv[], gint msg_ref, GError **error)
+log_template_add_func_elem(LogTemplateCompiler *self, gint argc, gchar *argv[], GError **error)
 {
   LogTemplateElem *e;
   Plugin *p;
@@ -816,11 +823,11 @@ log_template_add_func_elem(LogTemplate *self, GString *text, gint argc, gchar *a
 
   e = g_malloc0(sizeof(LogTemplateElem) + (argc - 1) * sizeof(LogTemplate *));
   e->type = LTE_FUNC;
-  e->text_len = text ? text->len : 0;
-  e->text = text ? g_strndup(text->str, text->len) : NULL;
-  e->msg_ref = msg_ref;
+  e->text_len = self->text ? self->text->len : 0;
+  e->text = self->text ? g_strndup(self->text->str, self->text->len) : NULL;
+  e->msg_ref = self->msg_ref;
 
-  p = plugin_find(self->cfg, LL_CONTEXT_TEMPLATE_FUNC, argv[0]);
+  p = plugin_find(self->template->cfg, LL_CONTEXT_TEMPLATE_FUNC, argv[0]);
   if (!p)
     {
       g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE, "Unknown template function %s", argv[0]);
@@ -828,13 +835,13 @@ log_template_add_func_elem(LogTemplate *self, GString *text, gint argc, gchar *a
     }
   else
     {
-      e->func.ops = plugin_construct(p, self->cfg, LL_CONTEXT_TEMPLATE_FUNC, argv[0]);
+      e->func.ops = plugin_construct(p, self->template->cfg, LL_CONTEXT_TEMPLATE_FUNC, argv[0]);
     }
 
-  if (!e->func.ops->prepare(e->func.ops, self, argc - 1, &argv[1], &e->func.state, &e->func.state_destroy, error))
+  if (!e->func.ops->prepare(e->func.ops, self->template, argc - 1, &argv[1], &e->func.state, &e->func.state_destroy, error))
     goto error;
   g_strfreev(argv);
-  self->compiled_template = g_list_prepend(self->compiled_template, e);
+  self->template->compiled_template = g_list_prepend(self->template->compiled_template, e);
   return TRUE;
 
  error:
@@ -844,33 +851,51 @@ log_template_add_func_elem(LogTemplate *self, GString *text, gint argc, gchar *a
   return FALSE;
 }
 
-static void
-parse_msg_ref(gchar *template_string, gchar **p, gint *msg_ref)
+static LogTemplateCompiler *
+log_template_compiler_new(LogTemplate *template)
 {
-  *msg_ref = 0;
-  if ((**p) == '@')
+  LogTemplateCompiler *self = g_new0(LogTemplateCompiler, 1);
+  self->template = log_template_ref(template);
+  self->cursor = self->template->template;
+  self->text = g_string_sized_new(32);
+  return self;
+}
+
+static void
+log_template_compiler_free(LogTemplateCompiler *self)
+{
+  log_template_unref(self->template);
+  g_string_free(self->text, TRUE);
+  g_free(self);
+}
+
+static void
+parse_msg_ref(LogTemplateCompiler *self)
+{
+  self->msg_ref = 0;
+  if ((*self->cursor) == '@')
     {
-      (*p)++;
-      if ((**p) >= '0' && (**p) <= '9')
+      self->cursor++;
+      if ((*self->cursor) >= '0' && (*self->cursor) <= '9')
         {
           /* syntax: ${name}@1 to denote the log message index in the correllation state */
-          while ((**p) >= '0' && (**p) <= '9')
+          while ((*self->cursor) >= '0' && (*self->cursor) <= '9')
             {
-              (*msg_ref) += (*msg_ref) * 10 + ((**p) - '0');
-              (*p)++;
+              self->msg_ref += self->msg_ref * 10 + ((*self->cursor) - '0');
+              self->cursor++;
             }
-          *msg_ref += 1;
+          self->msg_ref += 1;
         }
       else
         {
-          if ((**p) != '@')
+          if ((*self->cursor) != '@')
             {
               msg_warning("Non-numeric correlation state ID found, assuming a literal '@' character. To avoid confusion when using a literal '@' after a macro or template function, write '@@' in the template.",
-                          evt_tag_str("Template", template_string),
+                          evt_tag_str("Template", self->template->template),
                           NULL);
-              (*p)--;
+              self->cursor--;
             }
-          *msg_ref = 0;
+          self->msg_ref = 0;
         }
     }
 }
@@ -882,10 +907,10 @@ log_template_fill_compile_error(GError **error, const gchar *error_info, gint er
 }
 
 static void
-log_template_append_and_increment(gchar **p, GString *text)
+log_template_append_and_increment(LogTemplateCompiler *self, GString *text)
 {
-  g_string_append_c(text, **p);
-  (*p)++;
+  g_string_append_c(text, *self->cursor);
+  self->cursor++;
 }
 
 static gint
@@ -908,179 +933,167 @@ log_template_get_macro_length(gchar *start, gchar *end, gchar **token)
 
 
 static gchar *
-log_template_parse_default_value(gchar *macro_end, gchar *token)
+log_template_compiler_get_default_value(LogTemplateCompiler *self, gchar *token)
 {
   g_assert(token);
   if (*token != '-')
     {
       return NULL;
     }
-  return g_strndup(token + 1, macro_end - token - 2);
+  return g_strndup(token + 1, self->cursor - token - 2);
 }
 
-#define IS_MACRO_NAME(c) (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c == '_') || (c >= '0' && c <= '9')
+static inline gboolean
+is_macro_name(gchar c)
+{
+  return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c == '_') || (c >= '0' && c <= '9');
+}
 
 #define STEP_BY_TRUE(p, x) while(x) p++;
 
 static void
-log_template_add_elem(LogTemplate *self, gchar *start, gint macro_len, gchar *default_value, GString *text, gint msg_ref)
+log_template_compiler_add_elem(LogTemplateCompiler *self, gchar *start, gint macro_len, gchar *default_value)
 {
   gint macro = log_macro_lookup(start, macro_len);
   if (macro == M_NONE)
     {
-      log_template_add_value_elem(self, start, macro_len, text, default_value, msg_ref);
+      log_template_add_value_elem(self, start, macro_len, default_value);
     }
   else
     {
-      log_template_add_macro_elem(self, macro, text, default_value, msg_ref);
+      log_template_add_macro_elem(self, macro, default_value);
     }
 }
 
 static gboolean
-log_template_process_braced_template(LogTemplate *self, gchar **p, GString *text, GError **error)
+log_template_compiler_process_braced_template(LogTemplateCompiler *self, GError **error)
 {
   gint macro_len;
-  gint msg_ref = 0;
   gchar *default_value = NULL;
   gchar *start;
+  gchar *end;
   gchar *token;
 
-  (*p)++;
-  start = *p;
-  *p = strchr(*p, '}');
+  self->cursor++;
+  start = self->cursor;
+  end = strchr(self->cursor, '}');
 
-  if (!*p)
+  if (!end)
     {
-      log_template_fill_compile_error(error, "Invalid macro, '}' is missing", strlen(self->template));
+      log_template_fill_compile_error(error, "Invalid macro, '}' is missing", strlen(self->template->template));
       return FALSE;
     }
 
-  (*p)++;
-  macro_len = log_template_get_macro_length(start, *p, &token);
+  self->cursor = end + 1;
+  macro_len = log_template_get_macro_length(start, self->cursor, &token);
   if (token)
     {
-      default_value = log_template_parse_default_value(*p, token);
+      default_value = log_template_compiler_get_default_value(self, token);
       if (!default_value)
         {
-          log_template_fill_compile_error(error, "Unknown substitution function", token - self->template);
+          log_template_fill_compile_error(error, "Unknown substitution function", token - self->template->template);
           return FALSE;
         }
     }
-  parse_msg_ref(self->template, p, &msg_ref);
-  log_template_add_elem(self, start, macro_len, default_value, text, msg_ref);
+  parse_msg_ref(self);
+  log_template_compiler_add_elem(self, start, macro_len, default_value);
   return TRUE;
 }
 
 static gboolean
-log_template_get_unquoted_part(gchar **p, GPtrArray *strv, gint *parens, gchar *quote, GString *arg_buf)
+log_template_compiler_add_quoted_string(LogTemplateCompiler *self, gboolean is_top_level, GString *result)
 {
-  gboolean result = TRUE;
-  if (**p == '\\')
+  gchar *quote = self->cursor;
+  gchar *end_of_quote = strchr(quote + 1, *quote);
+  if (!end_of_quote)
     {
-      (*p)++;
+      return FALSE;
     }
-  else if (**p == '(')
+  self->cursor = end_of_quote + 1;
+  if (is_top_level)
     {
-      (*parens)++;
+      /* skip the quote in top-level and don't skip in expressions enclosed in parens */
+      quote++;
     }
-  else if (**p == ')')
+  else
     {
-      (*parens)--;
+      end_of_quote++;
     }
-  else if (**p == '"' || **p == '\'')
-    {
-      *quote = **p;
-      if (*parens == 1)
-        {
-          /* skip the quote in top-level and don't skip in expressions enclosed in parens */
-          (*p)++;
-          result = FALSE;
-        }
-    }
-  else if (*parens == 1 && (**p == ' ' || **p == '\t'))
-    {
-      g_ptr_array_add(strv, g_strndup(arg_buf->str, arg_buf->len));
-      g_string_truncate(arg_buf, 0);
-      while (**p && (**p == ' ' || **p == '\t'))
-        (*p)++;
-      result = FALSE;
-    }
-  if (*parens == 0)
-    {
-      result = FALSE;
-    }
-  return result;
+  g_string_append_len(result, quote, end_of_quote - quote);
+  return TRUE;
 }
 
 static gboolean
-log_template_get_quoted_part(gchar **p, gint parens, gchar *quote)
+log_template_compiler_process_arg_list(LogTemplateCompiler *self, GPtrArray *result)
 {
-  gboolean result = TRUE;
-  if (*quote == **p)
-    {
-      /* end of string */
-      *quote = 0;
-      if (parens == 1)
-        {
-          (*p)++;
-          result = FALSE;
-        }
-    }
-  return result;
-}
-
-static void
-log_template_parse_template_function(gchar **p, GPtrArray *strv)
-{
-  gchar quote = 0;
+  GString *arg_buf = g_string_sized_new(32);
   gint parens = 1;
-  GString *arg_buf;
-  arg_buf = g_string_sized_new(32);
-  (*p)++;
-  gboolean add_char_to_string;
-  /* skip white space */
-  while (**p && **p == ' ')
-    (*p)++;
+  self->cursor++;
 
-  while (**p && parens != 0)
+  while (*self->cursor && *self->cursor == ' ')
+    self->cursor++;
+
+  while(*self->cursor)
     {
-      add_char_to_string = TRUE;
-      if (!quote)
+      if (*self->cursor == '\\')
         {
-          add_char_to_string = log_template_get_unquoted_part(p, strv, &parens, &quote, arg_buf);
+          self->cursor++;
         }
-      else
+      else if (*self->cursor == '(')
         {
-          add_char_to_string = log_template_get_quoted_part(p, parens, &quote);
+          parens++;
         }
-      if (**p && add_char_to_string)
+      else if (*self->cursor == ')')
         {
-          log_template_append_and_increment(p, arg_buf);
+          parens--;
+          if (parens == 0)
+            {
+              break;
+            }
         }
+      else if (*self->cursor == '"' || *self->cursor == '\'')
+        {
+          if (!log_template_compiler_add_quoted_string(self, parens == 1, arg_buf))
+            {
+              g_ptr_array_add(result, NULL);
+              g_string_free(arg_buf, TRUE);
+              return FALSE;
+            }
+          continue;
+        }
+      else if (parens == 1 && (*self->cursor == ' ' || *self->cursor == '\t'))
+        {
+          g_ptr_array_add(result, g_strndup(arg_buf->str, arg_buf->len));
+          g_string_truncate(arg_buf, 0);
+          while (*self->cursor && (*self->cursor == ' ' || *self->cursor == '\t'))
+            self->cursor++;
+          continue;
+        }
+      log_template_append_and_increment(self, arg_buf);
     }
-
-  if (arg_buf->len)
-    g_ptr_array_add(strv, g_strndup(arg_buf->str, arg_buf->len));
-  g_ptr_array_add(strv, NULL);
+  if (arg_buf->len > 0)
+    {
+      g_ptr_array_add(result, g_strndup(arg_buf->str, arg_buf->len));
+    }
+  g_ptr_array_add(result, NULL);
   g_string_free(arg_buf, TRUE);
+  return *self->cursor == ')';
 }
 
 static gboolean
-log_template_process_template_function(LogTemplate *self, gchar **p, GString *text, GError **error)
+log_template_compiler_process_template_function(LogTemplateCompiler *self, GError **error)
 {
   GPtrArray *strv = g_ptr_array_new();
-  gint msg_ref;
 
-  log_template_parse_template_function(p, strv);
-
-  if (**p != ')')
+  if (!log_template_compiler_process_arg_list(self, strv))
     {
-      log_template_fill_compile_error(error, "Invalid template function reference, missing function name or inbalanced '('", *p - self->template);
+      log_template_fill_compile_error(error, "Invalid template function reference, missing function name or inbalanced '('", self->cursor - self->template->template);
       goto error;
     }
-  (*p)++;
-  parse_msg_ref(self->template, p, &msg_ref);
-  if (!log_template_add_func_elem(self, text, strv->len - 1, (gchar **) strv->pdata, msg_ref, error))
+  self->cursor++;
+
+  parse_msg_ref(self);
+  if (!log_template_add_func_elem(self, strv->len - 1, (gchar **) strv->pdata, error))
     {
       goto error;
     }
@@ -1093,101 +1106,121 @@ error:
 }
 
 static void
-log_template_process_unbraced_template(LogTemplate *self, gchar **p, GString *text)
+log_template_compiler_process_unbraced_template(LogTemplateCompiler *self)
 {
-  gchar *start = *p;
+  gchar *start = self->cursor;
   gint macro_len;
   do
     {
-      (*p)++;
+      self->cursor++;
     }
-  while (IS_MACRO_NAME(**p));
-  macro_len = *p - start;
-  log_template_add_elem(self, start, macro_len, NULL, text, 0);
+  while (is_macro_name(*self->cursor));
+  macro_len = self->cursor - start;
+  log_template_compiler_add_elem(self, start, macro_len, NULL);
 }
 
 static gboolean
-log_template_process_value(LogTemplate *self, gchar **p, GString **text, GError **error)
+log_template_compiler_process_value(LogTemplateCompiler *self, GError **error)
 {
   gboolean finished = FALSE;
-  (*p)++;
+  gchar p;
+  self->cursor++;
+  p = *self->cursor;
   /* macro reference */
-  if (**p == '{')
+  if (p == '{')
     {
-      if (!log_template_process_braced_template(self, p, *text, error))
+      if (!log_template_compiler_process_braced_template(self, error))
         {
           return FALSE;
         }
       finished = TRUE;
     }
   /* template function */
-  else if (**p == '(')
+  else if (p == '(')
     {
-      if (!log_template_process_template_function(self, p, *text, error))
+      if (!log_template_compiler_process_template_function(self, error))
         {
           return FALSE;
         }
       finished = TRUE;
     }
   /* unbraced macro */
-  else if (IS_MACRO_NAME(**p))
+  else if (is_macro_name(p))
     {
-      log_template_process_unbraced_template(self, p, *text);
+      log_template_compiler_process_unbraced_template(self);
       finished = TRUE;
     }
   /* escaped value with dollar */
   else
     {
-      if (**p != '$')
+      if (p != '$')
         {
-          g_string_append_c(*text, '$');
+          g_string_append_c(self->text, '$');
         }
-      if (**p)
+      if (p)
         {
-          log_template_append_and_increment(p, *text);
+          log_template_append_and_increment(self, self->text);
         }
     }
   if (finished)
     {
-      if (*text)
-        g_string_free(*text, TRUE);
-      *text = NULL;
+      g_string_truncate(self->text, 0);
     }
   return TRUE;
 }
 
 gboolean
-log_template_process_character(LogTemplate *self, gchar **p, GString **text, GError **error)
+log_template_compiler_process_token(LogTemplateCompiler *self, GError **error)
 {
-  if (*text == NULL)
-    *text = g_string_sized_new(32);
-
-  if (**p == '$')
+  self->msg_ref = 0;
+  if (*self->cursor == '$')
     {
-      return log_template_process_value(self, p, text, error);
+      return log_template_compiler_process_value(self, error);
     }
-  if (**p == '\\')
+  if (*self->cursor == '\\')
     {
-      if (self->cfg->version < 0x500)
+      if (self->template->cfg->version < 0x500)
         {
           msg_warning("Template escaping changed in " VERSION_PE_5_0 ". Use '$$' to specify a literal dollar sign instead of '\\$' and remove the escaping of the backslash character when you upgrade your configuration",
-                      evt_tag_str("Template", self->template),
+                      evt_tag_str("Template", self->template->template),
                       NULL);
-          (*p)++;
+          self->cursor++;
+        }
+
+    }
+  if (*self->cursor)
+    {
+      log_template_append_and_increment(self, self->text);
+    }
+  return TRUE;
+}
+
+static gboolean
+log_template_compiler_compile(LogTemplateCompiler *self, GError **error)
+{
+  while(*self->cursor)
+    {
+      if (!log_template_compiler_process_token(self, error))
+        {
+          log_template_reset_compiled(self->template);
+          g_string_sprintf(self->text, "error in template: %s", self->template->template);
+          log_template_add_macro_elem(self, M_NONE, NULL);
+          return FALSE;
         }
     }
-  if (**p)
+  if (self->text->len || self->template->compiled_template == NULL)
     {
-      log_template_append_and_increment(p, *text);
+      log_template_add_macro_elem(self, M_NONE, NULL);
     }
+  self->template->compiled_template = g_list_reverse(self->template->compiled_template);
   return TRUE;
 }
 
 gboolean
 log_template_compile(LogTemplate *self, const gchar *template, GError **error)
 {
-  gchar *p;
-  GString *last_text = NULL;
+  LogTemplateCompiler *compiler;
+  gboolean result;
 
   g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
 
@@ -1195,28 +1228,10 @@ log_template_compile(LogTemplate *self, const gchar *template, GError **error)
   if (self->template)
     g_free(self->template);
   self->template = g_strdup(template);
-  p = self->template;
-
-  while (*p)
-    {
-      if (!log_template_process_character(self, &p, &last_text, error))
-        {
-          log_template_reset_compiled(self);
-          if (!last_text)
-            last_text = g_string_sized_new(0);
-          g_string_sprintf(last_text, "error in template: %s", self->template);
-          log_template_add_macro_elem(self, M_NONE, last_text, NULL, 0);
-          g_string_free(last_text, TRUE);
-          return FALSE;
-        }
-    }
-  if (last_text)
-    {
-      log_template_add_macro_elem(self, M_NONE, last_text, NULL, 0);
-      g_string_free(last_text, TRUE);
-    }
-  self->compiled_template = g_list_reverse(self->compiled_template);
-  return TRUE;
+  compiler = log_template_compiler_new(self);
+  result = log_template_compiler_compile(compiler, error);
+  log_template_compiler_free(compiler);
+  return result;
 }
 
 void
@@ -1224,7 +1239,7 @@ log_template_append_format_with_context(LogTemplate *self, LogMessage **messages
 {
   GList *p;
   LogTemplateElem *e;
-  
+
   for (p = self->compiled_template; p; p = g_list_next(p))
     {
       gint msg_ndx;
@@ -1325,7 +1340,7 @@ LogTemplate *
 log_template_new(GlobalConfig *cfg, gchar *name)
 {
   LogTemplate *self = g_new0(LogTemplate, 1);
-  
+
   self->name = g_strdup(name);
   self->ref_cnt = 1;
   self->cfg = cfg;
@@ -1334,7 +1349,7 @@ log_template_new(GlobalConfig *cfg, gchar *name)
   if (configuration && get_version_value(configuration->version) < 0x0300)
     {
       static gboolean warn_written = FALSE;
-      
+
       if (!warn_written)
         {
           msg_warning("WARNING: template: the default value for template-escape has changed to 'no' from " VERSION_3_0 ", please update your configuration file accordingly",
@@ -1346,7 +1361,7 @@ log_template_new(GlobalConfig *cfg, gchar *name)
   return self;
 }
 
-static void 
+static void
 log_template_free(LogTemplate *self)
 {
   if (self->arg_bufs)
@@ -1375,7 +1390,7 @@ log_template_ref(LogTemplate *s)
   return s;
 }
 
-void 
+void
 log_template_unref(LogTemplate *s)
 {
   if (s)

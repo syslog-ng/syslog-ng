@@ -25,7 +25,7 @@
 #include "value-pairs.h"
 #include "vptransform.h"
 #include "logmsg.h"
-#include "templates.h"
+#include "template/templates.h"
 #include "cfg-parser.h"
 #include "misc.h"
 #include "scratch-buffers.h"

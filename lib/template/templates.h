@@ -21,7 +21,7 @@
  * COPYING for details.
  *
  */
-  
+
 #ifndef TEMPLATES_H_INCLUDED
 #define TEMPLATES_H_INCLUDED
 

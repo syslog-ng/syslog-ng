@@ -28,7 +28,7 @@
 #include "logmsg.h"
 #include "messages.h"
 #include "logprocess.h"
-#include "templates.h"
+#include "template/templates.h"
 #include "logmatcher.h"
 #include "filter.h"
 

@@ -26,7 +26,7 @@
 #define LOGMATCHER_H_INCLUDED
 
 #include "logmsg.h"
-#include "templates.h"
+#include "template/templates.h"
 
 enum
 {

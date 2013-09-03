@@ -24,7 +24,7 @@
 
 #include "value-pairs.h"
 #include "vptransform.h"
-#include "templates.h"
+#include "template/templates.h"
 #include "cfg-parser.h"
 #include "misc.h"
 

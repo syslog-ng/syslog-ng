@@ -322,7 +322,6 @@ extern struct _LogDriver *last_driver;
 #include "dgroup.h"
 #include "center.h"
 #include "filter.h"
-#include "templates.h"
 #include "logreader.h"
 #include "logparser.h"
 #include "logrewrite.h"

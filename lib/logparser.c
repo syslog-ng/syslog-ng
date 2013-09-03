@@ -23,7 +23,6 @@
  */
 
 #include "logparser.h"
-#include "templates.h"
 #include "misc.h"
 #include "logmatcher.h"
 

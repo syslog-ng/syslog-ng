@@ -1,6 +1,8 @@
 moduledir = @moduledir@
 pkgincludedir = @includedir@/syslog-ng
 
+include template/Makefile.am
+
 YFLAGS=@YFLAGS@
 
 export top_srcdir
@@ -72,7 +74,6 @@ pkginclude_HEADERS = 		\
 	syslog-names.h		\
 	syslog-ng.h		\
 	tags.h			\
-	templates.h		\
 	timeutils.h		\
 	tls-support.h		\
 	tlscontext.h  		\
@@ -82,7 +83,8 @@ pkginclude_HEADERS = 		\
 	value-pairs.h		\
 	versioning.h	\
 	vptransform.h           \
-	reloc.h
+	reloc.h	\
+  $(template_headers)
 
 if !IS_WINDOWS
 pkginclude_HEADERS += gprocess.h
@@ -152,7 +154,6 @@ libsyslog_ng_la_SOURCES = \
 	str-format.c		\
 	syslog-names.c		\
 	tags.c			\
-	templates.c		\
 	timeutils.c		\
 	utils.c			\
 	value-pairs.c		\
@@ -166,7 +167,8 @@ libsyslog_ng_la_SOURCES = \
 	parser-expr-grammar.y	\
 	rewrite-expr-grammar.y	\
 	reloc.c                 \
-	$(libsyslog_ng_crypto_la_SOURCES)
+	$(libsyslog_ng_crypto_la_SOURCES) \
+  $(template_sources)
 
 if !IS_WINDOWS
 libsyslog_ng_la_SOURCES += gprocess.c \
@@ -205,6 +207,8 @@ libsyslogng.rc: libsyslogng.rc.in
 	$(top_builddir)/config.status --file $@:$<
 
 CLEAN_FILES = $(BUILT_SOURCES)
+
+TESTS = $(check_PROGRAMS)
 
 # divert install/uninstall targets to avoid recursing into $(SUBDIRS)
 

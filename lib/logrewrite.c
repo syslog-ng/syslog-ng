@@ -25,7 +25,6 @@
 #include "logrewrite.h"
 #include "logmsg.h"
 #include "cfg.h"
-#include "templates.h"
 #include "logmatcher.h"
 
 

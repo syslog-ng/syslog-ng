@@ -29,7 +29,7 @@
 #include "cfg-lexer.h"
 #include "cfg-parser.h"
 #include "persist-state.h"
-#include "templates.h"
+#include "template/templates.h"
 #include "versioning.h"
 
 #include <sys/types.h>

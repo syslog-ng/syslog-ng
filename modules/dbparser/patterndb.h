@@ -25,7 +25,7 @@
 #define PATTERNDB_H_INCLUDED
 
 #include "radix.h"
-#include "templates.h"
+#include "template/templates.h"
 #include "timerwheel.h"
 #include "filter.h"
 

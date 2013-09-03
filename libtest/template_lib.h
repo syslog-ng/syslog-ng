@@ -3,7 +3,7 @@
 
 #include "testutils.h"
 #include "logmsg.h"
-#include "templates.h"
+#include "template/templates.h"
 
 void assert_template_format(const gchar *template, const gchar *expected);
 void assert_template_format_with_context(const gchar *template, const gchar *expected);
