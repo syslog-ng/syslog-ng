@@ -931,6 +931,7 @@ fi
 
 if test "x$enable_spoof_source" = "xyes"; then
     if test $IS_WINDOWS -ne 0; then
+        LIBNET_CFLAGS="$LIBNET_CFLAGS -I${prefix}/include/libpcap"
         LIBNET_LIBS="$LIBNET_LIBS -lwpcap"
     fi
 fi
