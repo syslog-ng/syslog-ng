@@ -415,6 +415,7 @@ pdbtool_match(int argc, char *argv[])
   LogProtoServer *proto = NULL;
   LogProtoServerOptions proto_options;
   gboolean may_read = TRUE;
+  gpointer args[4];
 
   memset(&parse_options, 0, sizeof(parse_options));
 
@@ -496,7 +497,10 @@ pdbtool_match(int argc, char *argv[])
 
   if (!debug_pattern)
     {
-      gpointer args[] = { filter, template, &ret, output };
+      args[0] = filter;
+      args[1] = template;
+      args[2] = &ret;
+      args[3] = output;
       pattern_db_set_emit_func(patterndb, pdbtool_pdb_emit, args);
     }
   else
