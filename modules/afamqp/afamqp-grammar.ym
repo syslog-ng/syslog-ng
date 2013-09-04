@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2012 Nagy, Attila <bra@fsn.hu>
- * Copyright (c) 2012 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 2012 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2012-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2012-2013 Gergely Nagy <algernon@balabit.hu>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -31,13 +31,11 @@
 %code {
 
 #include "cfg-parser.h"
+#include "cfg-grammar.h"
 #include "afamqp-grammar.h"
 #include "plugin.h"
 #include "vptransform.h"
 
-extern LogDriver *last_driver;
-extern ValuePairs *last_value_pairs;
-extern ValuePairsTransformSet *last_vp_transset;
 }
 
 %name-prefix "afamqp_"

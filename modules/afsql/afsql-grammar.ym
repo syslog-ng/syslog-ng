@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 1998-2012 Balázs Scheidler
+ * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 1998-2013 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -30,12 +30,11 @@
 %code {
 
 #include "afsql.h"
+#include "cfg-grammar.h"
 #include "cfg-parser.h"
 #include "afsql-grammar.h"
 #include "messages.h"
 #include "plugin.h"
-
-extern LogDriver *last_driver;
 
 }
 

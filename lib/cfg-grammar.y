@@ -50,6 +50,9 @@ extern struct _FilePermOptions *last_file_perm_options;
 extern struct _MsgFormatOptions *last_msg_format_options;
 extern struct _LogDriver *last_driver;
 extern struct _LogParser *last_parser;
+extern struct _LogTemplate *last_template;
+extern struct _ValuePairs *last_value_pairs;
+extern struct _ValuePairsTransformSet *last_vp_transset;
 
 }
 

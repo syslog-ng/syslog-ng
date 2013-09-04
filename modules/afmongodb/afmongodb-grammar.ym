@@ -29,14 +29,10 @@
 
 %code {
 
-#include "cfg-parser.h"
-#include "afmongodb-grammar.h"
+#include "cfg-grammar.h"
 #include "plugin.h"
 #include "vptransform.h"
 
-extern LogDriver *last_driver;
-extern ValuePairs *last_value_pairs;
-extern ValuePairsTransformSet *last_vp_transset;
 }
 
 %name-prefix "afmongodb_"
