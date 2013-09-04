@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 1998-2012 Balázs Scheidler
+ * Copyright (c) 1998-2013 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -385,6 +385,8 @@ ValuePairsTransformSet *last_vp_transset;
 %type	<ptr> dest_item
 %type   <ptr> dest_plugin
 
+%type   <ptr> template_content
+
 %type   <ptr> filter_content
 
 %type   <ptr> parser_content
@@ -724,13 +726,33 @@ template_items
 	|
 	;
 
-template_item
-	: KW_TEMPLATE '(' string ')'		{
-                                                  GError *error = NULL;
+/* START_RULES */
 
-                                                  CHECK_ERROR_GERROR(log_template_compile(last_template, $3, &error), @3, error, "Error compiling template");
-                                                  free($3);
-                                                }
+template_content_inner
+        : string
+        {
+          GError *error = NULL;
+
+          CHECK_ERROR(log_template_compile(last_template, $1, &error), @1, "Error compiling template (%s)", error->message);
+          free($1);
+        }
+        | LL_IDENTIFIER '(' string ')'
+        {
+          GError *error = NULL;
+
+          CHECK_ERROR(log_template_compile(last_template, $3, &error), @3, "Error compiling template (%s)", error->message);
+          free($3);
+        }
+        ;
+
+template_content
+        : { last_template = log_template_new(configuration, NULL); } template_content_inner	{ $$ = last_template; }
+        ;
+
+/* END_RULES */
+
+template_item
+	: KW_TEMPLATE '(' template_content_inner ')'
 	| KW_TEMPLATE_ESCAPE '(' yesno ')'	{ log_template_set_escape(last_template, $3); }
 	;
 
