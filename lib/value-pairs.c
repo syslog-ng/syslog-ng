@@ -151,16 +151,15 @@ value_pairs_add_glob_pattern(ValuePairs *vp, const gchar *pattern,
   vp->patterns[i] = p;
 }
 
-void
-value_pairs_add_pair(ValuePairs *vp, GlobalConfig *cfg, const gchar *key, const gchar *value)
+gboolean
+value_pairs_add_pair(ValuePairs *vp, const gchar *key, LogTemplate *value)
 {
   VPPairConf *p = g_new(VPPairConf, 1);
 
   p->name = g_strdup(key);
-  p->template = log_template_new(cfg, NULL);
-  log_template_compile(p->template, value, NULL);
-
+  p->template = log_template_ref(value);
   g_ptr_array_add(vp->vpairs, p);
+  return TRUE;
 }
 
 static gchar *
@@ -739,6 +738,8 @@ vp_cmdline_parse_pair (const gchar *option_name, const gchar *value,
   ValuePairs *vp = (ValuePairs *) args[1];
   GlobalConfig *cfg = (GlobalConfig *) args[0];
   gchar **kv;
+  gboolean res = FALSE;
+  LogTemplate *template;
 
   vp_cmdline_parse_rekey_finish (data);
   if (!g_strstr_len (value, strlen (value), "="))
@@ -749,13 +750,19 @@ vp_cmdline_parse_pair (const gchar *option_name, const gchar *value,
     }
 
   kv = g_strsplit(value, "=", 2);
-  value_pairs_add_pair (vp, cfg, kv[0], kv[1]);
 
-  g_free (kv[0]);
-  g_free (kv[1]);
-  g_free (kv);
+  template = log_template_new(cfg, NULL);
+  if (!log_template_compile(template, kv[1], error))
+    goto error;
 
-  return TRUE;
+  value_pairs_add_pair(vp, kv[0], template);
+
+  res = TRUE;
+ error:
+  log_template_unref(template);
+  g_strfreev(kv);
+
+  return res;
 }
 
 static ValuePairsTransformSet *

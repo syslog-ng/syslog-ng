@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2011-2012 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 2011-2012 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2011-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2011-2013 Gergely Nagy <algernon@balabit.hu>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -27,6 +27,7 @@
 
 #include "syslog-ng.h"
 #include "nvtable.h"
+#include "template/templates.h"
 
 typedef struct _ValuePairs ValuePairs;
 typedef gboolean (*VPForeachFunc)(const gchar *name, const gchar *value, gpointer user_data);
@@ -41,7 +42,7 @@ typedef gboolean (*VPWalkCallbackFunc)(const gchar *name,
 
 gboolean value_pairs_add_scope(ValuePairs *vp, const gchar *scope);
 void value_pairs_add_glob_pattern(ValuePairs *vp, const gchar *pattern, gboolean include);
-void value_pairs_add_pair(ValuePairs *vp, GlobalConfig *cfg, const gchar *key, const gchar *value);
+gboolean value_pairs_add_pair(ValuePairs *vp, const gchar *key, LogTemplate *value);
 
 void value_pairs_add_transforms(ValuePairs *vp, gpointer vpts);
 
