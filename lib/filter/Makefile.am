@@ -2,6 +2,7 @@ filter_headers = 				\
 	lib/filter/filter-expr.h		\
 	lib/filter/filter-op.h			\
 	lib/filter/filter-cmp.h			\
+	lib/filter/filter-in-list.h		\
 	lib/filter/filter-tags.h		\
 	lib/filter/filter-netmask.h		\
 	lib/filter/filter-call.h		\
@@ -14,6 +15,7 @@ filter_sources = 				\
 	lib/filter/filter-expr.c		\
 	lib/filter/filter-op.c			\
 	lib/filter/filter-cmp.c			\
+	lib/filter/filter-in-list.c		\
 	lib/filter/filter-tags.c		\
 	lib/filter/filter-netmask.c		\
 	lib/filter/filter-call.c		\

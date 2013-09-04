@@ -1,6 +1,8 @@
 SUBDIRS			=
 AM_MAKEFLAGS		= --no-print-directory
 
+AM_TESTS_ENVIRONMENT	= top_srcdir="$(top_srcdir)"
+
 ACLOCAL_AMFLAGS		= -I m4 --install
 
 EXTRA_DIST		= ${BUILT_SOURCES} VERSION \

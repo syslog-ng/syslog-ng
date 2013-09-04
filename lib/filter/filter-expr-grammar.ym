@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2011 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
  * Copyright (c) 1998-2011 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -34,6 +34,7 @@
 #include "filter/filter-netmask.h"
 #include "filter/filter-op.h"
 #include "filter/filter-cmp.h"
+#include "filter/filter-in-list.h"
 #include "filter/filter-tags.h"
 #include "filter/filter-call.h"
 #include "filter/filter-re.h"
@@ -55,7 +56,7 @@ FilterRE *last_re_filter;
 
 /* INCLUDE_DECLS */
 
-%token KW_PROGRAM
+%token KW_PROGRAM KW_IN_LIST
 
 %left   ';'
 %left	KW_OR
@@ -96,7 +97,21 @@ filter_simple_expr
 	| KW_FILTER '(' string ')'		{ $$ = filter_call_new($3, configuration); free($3); }
 	| KW_NETMASK '(' string ')'		{ $$ = filter_netmask_new($3); free($3); }
         | KW_TAGS '(' string_list ')'           { $$ = filter_tags_new($3); }
-	| KW_PROGRAM '(' string
+        | KW_IN_LIST '(' string string ')'
+          {
+            const gchar *p = $4;
+            if (p[0] == '$')
+              {
+                msg_warning("Value references in filters should not use the '$' prefix, those are only needed in templates",
+                            evt_tag_str("value", $4),
+                            NULL);
+                p++;
+              }
+            $$ = filter_in_list_new($3, p);
+            free($3);
+            free($4);
+          }
+        | KW_PROGRAM '(' string
 	  {
 	    last_re_filter = (FilterRE *) filter_re_new(LM_V_PROGRAM);
           }
