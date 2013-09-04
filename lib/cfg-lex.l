@@ -27,7 +27,7 @@
 #include "cfg-lexer.h"
 #include "cfg-grammar.h"
 #include "messages.h"
-#include "misc.h"
+#include "parse-number.h"
 
 #include <string.h>
 #include <strings.h>
@@ -160,7 +160,13 @@ word	[^ \#'"\(\)\{\}\\;\n\t,|\.@:]
 (-|\+)?{digit}+\.{digit}+  { yylval->fnum = strtod(yytext, NULL); return LL_FLOAT; }
 0x{xdigit}+ 		   { yylval->num = strtoll(yytext + 2, NULL, 16); return LL_NUMBER; }
 0{odigit}+		   { yylval->num = strtoll(yytext + 1, NULL, 8); return LL_NUMBER; }
-(-|\+)?{digit}+            { yylval->num = strtoll(yytext, NULL, 10); return LL_NUMBER; }
+(-|\+)?{digit}+(M|m|G|g|k|K)?(i|I)?(b|B)? {
+                             if (!parse_number_with_suffix(yytext, &yylval->num))
+                               {
+                                 YY_FATAL_ERROR("Invalid number specification");
+                               }
+                             return LL_NUMBER;
+                           }
 ({word}+(\.)?)*{word}+ 	   { return cfg_lexer_lookup_keyword(yyextra, yylval, yylloc, yytext); }
 \(	      		   |
 \)			   |

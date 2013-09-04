@@ -26,32 +26,13 @@
 #include "filter/filter-expr.h"
 #include "filter/filter-expr-parser.h"
 #include "cfg.h"
+#include "parse-number.h"
 #include "str-format.h"
 #include "plugin-types.h"
 
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
-
-static gboolean
-tf_parse_int(const gchar *s, long *d)
-{
-  gchar *endptr;
-  glong val;
-
-  errno = 0;
-  val = strtoll(s, &endptr, 10);
-
-  if ((errno == ERANGE && (val == LONG_MAX || val == LONG_MIN))
-      || (errno != 0 && val == 0))
-    return FALSE;
-
-  if (endptr == s || *endptr != '\0')
-    return FALSE;
-
-  *d = val;
-  return TRUE;
-}
 
 /* in order to avoid having to declare all construct functions, we
  * include them all here. If it causes compilation times to increase

@@ -32,7 +32,7 @@ tf_num_parse(gint argc, GString *argv[],
       return FALSE;
     }
 
-  if (!tf_parse_int(argv[0]->str, n))
+  if (!parse_number_with_suffix(argv[0]->str, n))
     {
       msg_debug("Parsing failed, template function's first argument is not a number",
 		evt_tag_str("function", func_name),
@@ -40,7 +40,7 @@ tf_num_parse(gint argc, GString *argv[],
       return FALSE;
     }
 
-  if (!tf_parse_int(argv[1]->str, m))
+  if (!parse_number_with_suffix(argv[1]->str, m))
     {
       msg_debug("Parsing failed, template function's first argument is not a number",
 		evt_tag_str("function", func_name),
