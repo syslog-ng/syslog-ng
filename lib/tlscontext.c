@@ -26,6 +26,7 @@
 #include "messages.h"
 
 #if ENABLE_SSL
+#include <openssl/ssl.h>
 #include <openssl/x509_vfy.h>
 #include <openssl/x509v3.h>
 #include <openssl/err.h>
