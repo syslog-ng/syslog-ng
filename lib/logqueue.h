@@ -131,22 +131,6 @@ log_queue_set_throttle(LogQueue *self, gint throttle)
   self->throttle_buckets = throttle;
 }
 
-/*
- * This assertion marks the assumption that a given function is
- * running solely from the output thread. It _will not_ catch all
- * invalid invocations, but will most probably catch it sooner rather
- * than later.
- *
- * The check it performs (parallel_push_notify is NULL) means that
- * there's no current parallel_push_notify callbacks pending.
- *
- * Since parallel_push_notify is set to non-NULL by the output thread
- * when waiting for elements to arrive (e.g. when going to sleep), it
- * is quite certain that if we are NOT in the output thread, that will
- * be set.
- */
-#define log_queue_assert_output_thread(self)  g_assert(self->parallel_push_notify == NULL)
-
 void log_queue_push_notify(LogQueue *self);
 void log_queue_reset_parallel_push(LogQueue *self);
 void log_queue_set_parallel_push(LogQueue *self, LogQueuePushNotifyFunc parallel_push_notify, gpointer user_data, GDestroyNotify user_data_destroy);
