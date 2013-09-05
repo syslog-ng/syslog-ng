@@ -42,7 +42,8 @@ check_PROGRAMS =			\
 	test_replace_string \
 	test_csv_parser_flags \
 	test_persist_state_threaded \
-	test_resolve_sockaddr
+	test_resolve_sockaddr \
+	test_strtok_r
 
 if IS_HPUX
 check_PROGRAMS += test_zone
@@ -98,6 +99,10 @@ test_hostname_SOURCES = test_hostname.c
 test_data_to_hex_SOURCES = test_data_to_hex.c
 test_persist_state_threaded_SOURCES = test_persist_state_threaded.c
 test_resolve_sockaddr_SOURCES = test_resolve_sockaddr.c
+test_strtok_r_SOURCES = test_strtok_r.c $(top_srcdir)/lib/compat.c
+test_strtok_r_CFLAGS = $(AM_CFLAGS) -DUSE_MYSTRTOK_R
+test_strtok_r_LIBS = -lm
+test_strtok_r_LDADD =
 
 test_cache_SOURCES = test_cache.c
 test_control_cmds_SOURCES = test_control_cmds.c

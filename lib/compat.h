@@ -43,6 +43,7 @@
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
+#include <string.h>
 
 #ifndef CLOCK_MONOTONIC
 #define CLOCK_MONOTONIC CLOCK_REALTIME
@@ -357,8 +358,18 @@ int iv_fd_registered(struct iv_fd *);
 void iv_fd_set_handler_in(struct iv_fd *, void (*)(void *));
 void iv_fd_set_handler_out(struct iv_fd *, void (*)(void *));
 void iv_fd_set_handler_err(struct iv_fd *, void (*)(void *));
-
 #endif
+
+#if !defined(strtok_r) || defined(USE_MYSTRTOK_R)
+char *mystrtok_r(char *string, const char *delim, char **saveptr);
+#endif
+
+#ifndef strtok_r
+char *strtok_r(char *string, const char *delim, char **saveptr);
+#else
+#define HAVE_STRTOK_R_SUPPORT 1
+#endif
+
 
 long get_processor_count();
 

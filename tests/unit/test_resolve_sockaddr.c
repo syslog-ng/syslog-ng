@@ -35,6 +35,7 @@ typedef void(*DispatchProcessIp)(struct _IpProcessorFunctor *arg, const char *ip
 typedef struct _IpProcessorFunctor
 {
   DispatchProcessIp process_ip;
+  const char *name;
 } IpProcessorFunctor;
 
 typedef struct _IpFileWriterFunctor
@@ -49,6 +50,8 @@ void for_each_ip(const char *first_ip, const char *last_ip, IpProcessorFunctor *
   uint32_t end_addr = 0;
   uint32_t i, act_ip;
   char ip_addr_str[INET_ADDRSTRLEN] = {0};
+
+  fprintf(stderr, "for_each_ip(%s, %s, %s)\n", first_ip, last_ip, fun->name);
 
   assert(inet_pton(AF_INET, first_ip, &start_addr) == 1);
   assert(inet_pton(AF_INET, last_ip, &end_addr) == 1);
@@ -76,6 +79,7 @@ void create_test_hosts_file(const char *hostfile_name, const char *first_ip, con
   IpFileWriterFunctor ip_fwrite_func;
   ip_fwrite_func.fp = fp;
   ip_fwrite_func.super.process_ip = append_ip_to_hosts_file;
+  ip_fwrite_func.super.name = "create_test_hosts_file";
 
   for_each_ip(first_ip, last_ip, &ip_fwrite_func);
 
@@ -117,7 +121,6 @@ void should_fail_when_resolved_hostname_not_match(const gchar *ip, const gchar *
   gchar hname[256] = {0};
   gsize hname_length = 0;
   resolve_ip_address(ip, hname, &hname_length, resolving_options);
-  fprintf(stderr, "[TID:%x] ip:[%s] expected_hostname:[%s] resolved:[%s]\n", pthread_self(), ip, expected_hostname, hname);
   TEST_ASSERT(hname_length > 0, "hostname length > 0 failed");
   TEST_ASSERT(strcmp(hname, expected_hostname) == 0, "hostname != expected_hostname");
 }
@@ -128,7 +131,6 @@ void should_fail_when_resolved_hostname_not_acceptable(const gchar *ip, const gc
   gchar hname[256] = {0};
   gsize hname_length = 0;
   resolve_ip_address(ip, hname, &hname_length, resolving_options);
-  fprintf(stderr, "[TID:%x] ip:[%s] expected_hostname:[%s] resolved:[%s]\n", pthread_self(), ip, expected_hostname, hname);
   TEST_ASSERT(hname_length > 0, "hostname length > 0 failed");
   TEST_ASSERT((strcmp(hname, expected_hostname) == 0) ||
               (strcmp(ip, hname) == 0), "hostname != expected_hostname");
@@ -205,6 +207,7 @@ void test_resolve_sockaddr_available_in_dns_cache()
   const char *last_ip = "127.0.127.255";
 
   processor.process_ip = try_to_resolve_ip_with_dns_cache;
+  processor.name = "test_resolve_sockaddr_available_in_dns_cache";
 
   create_test_hosts_file("/tmp/hosts", first_ip, last_ip);
 
@@ -230,6 +233,8 @@ void* check_all_ip_in_dns_cache_thread_fun(void *args)
   dns_cache_tls_init();
   for_each_ip(fun_args->first_ip, fun_args->last_ip, fun_args->ip_processor);
   dns_cache_tls_deinit();
+
+  return NULL;
 }
 
 void test_resolve_sockaddr_available_in_dns_cache_threaded()
@@ -240,6 +245,8 @@ void test_resolve_sockaddr_available_in_dns_cache_threaded()
 
   const char *first_ip = "127.0.0.2";
   const char *last_ip = "127.0.127.127";
+
+  processor.name = "test_resolve_sockaddr_available_in_dns_cache_threaded";
 
   CheckIpThreadFunArgs thread_args =
   {
