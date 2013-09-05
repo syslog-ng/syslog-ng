@@ -360,3 +360,26 @@ tf_upper_case(LogMessage *msg, gint argc, GString *argv[], GString *result)
 }
 
 TEMPLATE_FUNCTION_SIMPLE(tf_upper_case);
+
+void
+tf_delimit(LogMessage *msg, gint argc, GString *argv[], GString *result)
+{
+  gchar *haystack, *delimiters, new_delimiter;
+
+  if (argc != 3)
+    {
+      msg_error("$(delimit) parsing failed, wrong number of arguments",
+                NULL);
+      return;
+    }
+
+  delimiters = argv[0]->str;
+  new_delimiter = argv[1]->str[0];
+  haystack = g_strdup(argv[2]->str);
+
+  g_string_append(result, g_strdelimit(haystack, delimiters, new_delimiter));
+
+  g_free(haystack);
+}
+
+TEMPLATE_FUNCTION_SIMPLE(tf_delimit);

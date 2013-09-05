@@ -73,6 +73,8 @@ test_str_funcs(void)
 
   assert_template_format("$(lower-case ŐRÜLT ÍRÓ)", "őrült író");
   assert_template_format("$(upper-case őrült író)", "ŐRÜLT ÍRÓ");
+
+  assert_template_format("$(delimit \"\t\" \",\" \"hello\tworld\")", "hello,world");
 }
 
 void
