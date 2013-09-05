@@ -322,3 +322,41 @@ tf_indent_multi_line(LogMessage *msg, gint argc, GString *argv[], GString *text)
 }
 
 TEMPLATE_FUNCTION_SIMPLE(tf_indent_multi_line);
+
+void
+tf_lower_case(LogMessage *msg, gint argc, GString *argv[], GString *result)
+{
+  gint i;
+
+  for (i = 0; i < argc; i++)
+    {
+      gchar *new = g_utf8_strdown(argv[i]->str, argv[i]->len);
+
+      g_string_append(result, new);
+      if (i < argc - 1)
+        g_string_append_c(result, ' ');
+
+      g_free(new);
+    }
+}
+
+TEMPLATE_FUNCTION_SIMPLE(tf_lower_case);
+
+void
+tf_upper_case(LogMessage *msg, gint argc, GString *argv[], GString *result)
+{
+  gint i;
+
+  for (i = 0; i < argc; i++)
+    {
+      gchar *new = g_utf8_strup(argv[i]->str, argv[i]->len);
+
+      g_string_append(result, new);
+      if (i < argc - 1)
+        g_string_append_c(result, ' ');
+
+      g_free(new);
+    }
+}
+
+TEMPLATE_FUNCTION_SIMPLE(tf_upper_case);

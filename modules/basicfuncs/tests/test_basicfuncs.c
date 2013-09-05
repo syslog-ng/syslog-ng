@@ -70,6 +70,9 @@ test_str_funcs(void)
   assert_template_format("$(sanitize $HOST $PROGRAM)", "bzorp/syslog-ng");
 
   assert_template_format("$(indent-multi-line 'foo\nbar')", "foo\n\tbar");
+
+  assert_template_format("$(lower-case ŐRÜLT ÍRÓ)", "őrült író");
+  assert_template_format("$(upper-case őrült író)", "ŐRÜLT ÍRÓ");
 }
 
 void
