@@ -567,6 +567,20 @@ afsql_dd_begin_txn(AFSqlDestDriver *self)
 }
 
 /**
+ * afsql_dd_handle_transaction_error:
+ *
+ * Handle errors inside during a SQL transaction (e.g. INSERT or COMMIT failures).
+ *
+ * NOTE: This function can only be called from the database thread.
+ **/
+static void
+afsql_dd_handle_transaction_error(AFSqlDestDriver *self)
+{
+  log_queue_rewind_backlog(self->queue, -1);
+  self->flush_lines_queued = 0;
+}
+
+/**
  * afsql_dd_begin_txn:
  *
  * Commit SQL transaction.
@@ -582,14 +596,14 @@ afsql_dd_commit_txn(AFSqlDestDriver *self)
   if (success)
     {
       log_queue_ack_backlog(self->queue, self->flush_lines_queued);
+      self->flush_lines_queued = 0;
     }
   else
     {
-      msg_notice("SQL transaction commit failed, rewinding backlog and starting again",
-                 NULL);
-      log_queue_rewind_backlog(self->queue, -1);
+      msg_error("SQL transaction commit failed, rewinding backlog and starting again",
+                NULL);
+      afsql_dd_handle_transaction_error(self);
     }
-  self->flush_lines_queued = 0;
   return success;
 }
 
@@ -616,6 +630,219 @@ afsql_dd_disconnect(AFSqlDestDriver *self)
   g_hash_table_remove_all(self->validated_tables);
 }
 
+static gboolean
+afsql_dd_ensure_initialized_connection(AFSqlDestDriver *self)
+{
+  if (self->dbi_ctx)
+    return TRUE;
+
+  self->dbi_ctx = dbi_conn_new_r(self->type, dbi_instance);
+
+  if (!self->dbi_ctx)
+    {
+      msg_error("No such DBI driver",
+                evt_tag_str("type", self->type),
+                NULL);
+      return FALSE;
+    }
+
+  dbi_conn_set_option(self->dbi_ctx, "host", self->host);
+
+  if (strcmp(self->type, "mysql"))
+    dbi_conn_set_option(self->dbi_ctx, "port", self->port);
+  else
+    dbi_conn_set_option_numeric(self->dbi_ctx, "port", atoi(self->port));
+
+  dbi_conn_set_option(self->dbi_ctx, "username", self->user);
+  dbi_conn_set_option(self->dbi_ctx, "password", self->password);
+  dbi_conn_set_option(self->dbi_ctx, "dbname", self->database);
+  dbi_conn_set_option(self->dbi_ctx, "encoding", self->encoding);
+  dbi_conn_set_option(self->dbi_ctx, "auto-commit", self->flags & AFSQL_DDF_EXPLICIT_COMMITS ? "false" : "true");
+
+  /* database specific hacks */
+  dbi_conn_set_option(self->dbi_ctx, "sqlite_dbdir", "");
+  dbi_conn_set_option(self->dbi_ctx, "sqlite3_dbdir", "");
+
+  if (dbi_conn_connect(self->dbi_ctx) < 0)
+    {
+      const gchar *dbi_error;
+
+      dbi_conn_error(self->dbi_ctx, &dbi_error);
+
+      msg_error("Error establishing SQL connection",
+                evt_tag_str("type", self->type),
+                evt_tag_str("host", self->host),
+                evt_tag_str("port", self->port),
+                evt_tag_str("username", self->user),
+                evt_tag_str("database", self->database),
+                evt_tag_str("error", dbi_error),
+                NULL);
+
+      return FALSE;
+    }
+
+  if (self->session_statements != NULL)
+    {
+      GList *l;
+
+      for (l = self->session_statements; l; l = l->next)
+        {
+          if (!afsql_dd_run_query(self, (gchar *) l->data, FALSE, NULL))
+            {
+              msg_error("Error executing SQL connection statement",
+                        evt_tag_str("statement", (gchar *) l->data),
+                        NULL);
+
+              return FALSE;
+            }
+        }
+    }
+
+  return TRUE;
+}
+
+static GString *
+afsql_dd_ensure_accessible_database_table(AFSqlDestDriver *self, LogMessage *msg)
+{
+  GString *table = g_string_sized_new(32);
+
+  log_template_format(self->table, msg, &self->template_options, LTZ_LOCAL, 0, NULL, table);
+
+  if (!afsql_dd_validate_table(self, table->str))
+    {
+      /* If validate table is FALSE then close the connection and wait time_reopen time (next call) */
+      msg_error("Error checking table, disconnecting from database, trying again shortly",
+                evt_tag_int("time_reopen", self->time_reopen),
+                NULL);
+      g_string_free(table, TRUE);
+      return NULL;
+    }
+
+  return table;
+}
+
+static GString *
+afsql_dd_build_insert_command(AFSqlDestDriver *self, LogMessage *msg, GString *table)
+{
+  GString *insert_command = g_string_sized_new(256);
+  GString *value = g_string_sized_new(512);
+  gint i, j;
+
+  g_string_printf(insert_command, "INSERT INTO %s (", table->str);
+
+  for (i = 0; i < self->fields_len; i++)
+    {
+      if ((self->fields[i].flags & AFSQL_FF_DEFAULT) == 0 && self->fields[i].value != NULL)
+        {
+           g_string_append(insert_command, self->fields[i].name);
+
+           j = i + 1;
+           while (j < self->fields_len && (self->fields[j].flags & AFSQL_FF_DEFAULT) == AFSQL_FF_DEFAULT)
+             j++;
+
+           if (j < self->fields_len)
+             g_string_append(insert_command, ", ");
+        }
+    }
+
+  g_string_append(insert_command, ") VALUES (");
+
+  for (i = 0; i < self->fields_len; i++)
+    {
+      gchar *quoted;
+
+      if ((self->fields[i].flags & AFSQL_FF_DEFAULT) == 0 && self->fields[i].value != NULL)
+        {
+          log_template_format(self->fields[i].value, msg, &self->template_options, LTZ_SEND, self->seq_num, NULL, value);
+          if (self->null_value && strcmp(self->null_value, value->str) == 0)
+            {
+              g_string_append(insert_command, "NULL");
+            }
+          else
+            {
+              dbi_conn_quote_string_copy(self->dbi_ctx, value->str, &quoted);
+              if (quoted)
+                {
+                  g_string_append(insert_command, quoted);
+                  free(quoted);
+                }
+              else
+                {
+                 g_string_append(insert_command, "''");
+                }
+            }
+
+          j = i + 1;
+          while (j < self->fields_len && (self->fields[j].flags & AFSQL_FF_DEFAULT) == AFSQL_FF_DEFAULT)
+            j++;
+          if (j < self->fields_len)
+            g_string_append(insert_command, ", ");
+        }
+    }
+
+  g_string_append(insert_command, ")");
+
+  g_string_free(value, TRUE);
+
+  return insert_command;
+}
+
+static inline gboolean
+afsql_dd_is_transaction_handling_enabled(const AFSqlDestDriver *self)
+{
+  return self->flush_lines_queued != -1;
+}
+
+static inline gboolean
+afsql_dd_should_start_new_transaction(const AFSqlDestDriver *self)
+{
+  return self->flush_lines_queued == 0;
+}
+
+static inline gboolean
+afsql_dd_should_commit_transaction(const AFSqlDestDriver *self)
+{
+  return afsql_dd_is_transaction_handling_enabled(self) && self->flush_lines_queued == self->flush_lines;
+}
+
+static inline gboolean
+afsql_dd_handle_insert_row_error_depending_on_connection_availability(AFSqlDestDriver *self,
+                                                                      LogMessage *msg,
+                                                                      LogPathOptions *path_options)
+{
+  const gchar *dbi_error, *error_message;
+
+  if (dbi_conn_ping(self->dbi_ctx) == 1)
+    {
+      log_queue_push_head(self->queue, msg, path_options);
+      return TRUE;
+    }
+
+  if (afsql_dd_is_transaction_handling_enabled(self))
+    {
+      error_message = "SQL connection lost in the middle of a transaction,"
+                      " rewinding backlog and starting again";
+      afsql_dd_handle_transaction_error(self);
+    }
+  else
+    {
+      error_message = "Error, no SQL connection after failed query attempt";
+      log_queue_push_head(self->queue, msg, path_options);
+    }
+
+  dbi_conn_error(self->dbi_ctx, &dbi_error);
+  msg_error(error_message,
+            evt_tag_str("type", self->type),
+            evt_tag_str("host", self->host),
+            evt_tag_str("port", self->port),
+            evt_tag_str("username", self->user),
+            evt_tag_str("database", self->database),
+            evt_tag_str("error", dbi_error),
+            NULL);
+
+  return FALSE;
+}
+
 /**
  * afsql_dd_insert_db:
  *
@@ -627,76 +854,14 @@ afsql_dd_disconnect(AFSqlDestDriver *self)
 static gboolean
 afsql_dd_insert_db(AFSqlDestDriver *self)
 {
-  GString *table, *query_string, *value;
+  GString *table = NULL;
+  GString *insert_command = NULL;
   LogMessage *msg;
   gboolean success;
-  gint i, j;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
 
-  if (!self->dbi_ctx)
-    {
-      self->dbi_ctx = dbi_conn_new_r(self->type, dbi_instance);
-      if (self->dbi_ctx)
-        {
-          dbi_conn_set_option(self->dbi_ctx, "host", self->host);
-          if (strcmp(self->type, "mysql"))
-            dbi_conn_set_option(self->dbi_ctx, "port", self->port);
-          else
-            dbi_conn_set_option_numeric(self->dbi_ctx, "port", atoi(self->port));
-          dbi_conn_set_option(self->dbi_ctx, "username", self->user);
-          dbi_conn_set_option(self->dbi_ctx, "password", self->password);
-          dbi_conn_set_option(self->dbi_ctx, "dbname", self->database);
-          dbi_conn_set_option(self->dbi_ctx, "encoding", self->encoding);
-          dbi_conn_set_option(self->dbi_ctx, "auto-commit", self->flags & AFSQL_DDF_EXPLICIT_COMMITS ? "false" : "true");
-
-          /* database specific hacks */
-          dbi_conn_set_option(self->dbi_ctx, "sqlite_dbdir", "");
-          dbi_conn_set_option(self->dbi_ctx, "sqlite3_dbdir", "");
-
-          if (!strcmp(self->type, "oracle"))
-            dbi_conn_set_option_numeric(self->dbi_ctx, "oracle_ignore_tns_config", self->ignore_tns_config);
-
-          if (dbi_conn_connect(self->dbi_ctx) < 0)
-            {
-              const gchar *dbi_error;
-
-              dbi_conn_error(self->dbi_ctx, &dbi_error);
-
-              msg_error("Error establishing SQL connection",
-                        evt_tag_str("type", self->type),
-                        evt_tag_str("host", self->host),
-                        evt_tag_str("port", self->port),
-                        evt_tag_str("username", self->user),
-                        evt_tag_str("database", self->database),
-                        evt_tag_str("error", dbi_error),
-                        NULL);
-              return FALSE;
-            }
-        }
-      else
-        {
-          msg_error("No such DBI driver",
-                    evt_tag_str("type", self->type),
-                    NULL);
-          return FALSE;
-        }
-
-      if (self->session_statements != NULL)
-        {
-          GList *l;
-
-          for (l = self->session_statements; l; l = l->next)
-            {
-              if (!afsql_dd_run_query(self, (gchar *) l->data, FALSE, NULL))
-                {
-                  msg_error("Error executing SQL connection statement",
-                            evt_tag_str("statement", (gchar *) l->data),
-                            NULL);
-                  return FALSE;
-                }
-            }
-        }
-    }
+  if (!afsql_dd_ensure_initialized_connection(self))
+    return FALSE;
 
   /* connection established, try to insert a message */
   success = log_queue_pop_head(self->queue, &msg, &path_options, FALSE, self->flags & AFSQL_DDF_EXPLICIT_COMMITS);
@@ -705,96 +870,45 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
 
   msg_set_context(msg);
 
-  table = g_string_sized_new(32);
-  value = g_string_sized_new(256);
-  query_string = g_string_sized_new(512);
+  table = afsql_dd_ensure_accessible_database_table(self, msg);
 
-  log_template_format(self->table, msg, &self->template_options, LTZ_LOCAL, 0, NULL, table);
-
-  if (!afsql_dd_validate_table(self, table->str))
+  if (!table)
     {
-      /* If validate table is FALSE then close the connection and wait time_reopen time (next call) */
-      msg_error("Error checking table, disconnecting from database, trying again shortly",
-                evt_tag_int("time_reopen", self->time_reopen),
-                NULL);
       success = FALSE;
-      goto error;
+      goto out;
     }
 
-  g_string_printf(query_string, "INSERT INTO %s (", table->str);
-  for (i = 0; i < self->fields_len; i++)
+  if (afsql_dd_should_start_new_transaction(self) && !afsql_dd_begin_txn(self))
     {
-      if ((self->fields[i].flags & AFSQL_FF_DEFAULT) == 0 && self->fields[i].value != NULL)
-        {
-           g_string_append(query_string, self->fields[i].name);
-
-           j = i + 1;
-           while (j < self->fields_len && (self->fields[j].flags & AFSQL_FF_DEFAULT) == AFSQL_FF_DEFAULT)
-             j++;
-
-           if (j < self->fields_len)
-             g_string_append(query_string, ", ");
-        }
-    }
-  g_string_append(query_string, ") VALUES (");
-
-  for (i = 0; i < self->fields_len; i++)
-    {
-      gchar *quoted;
-
-      if ((self->fields[i].flags & AFSQL_FF_DEFAULT) == 0 && self->fields[i].value != NULL)
-        {
-          log_template_format(self->fields[i].value, msg, &self->template_options, LTZ_SEND, self->seq_num, NULL, value);
-          if (self->null_value && strcmp(self->null_value, value->str) == 0)
-            {
-              g_string_append(query_string, "NULL");
-            }
-          else
-            {
-              dbi_conn_quote_string_copy(self->dbi_ctx, value->str, &quoted);
-              if (quoted)
-                {
-                  g_string_append(query_string, quoted);
-                  free(quoted);
-                }
-              else
-                {
-                 g_string_append(query_string, "''");
-                }
-            }
-
-          j = i + 1;
-          while (j < self->fields_len && (self->fields[j].flags & AFSQL_FF_DEFAULT) == AFSQL_FF_DEFAULT)
-            j++;
-          if (j < self->fields_len)
-            g_string_append(query_string, ", ");
-        }
-    }
-  g_string_append(query_string, ")");
-
-  /* we have the INSERT statement ready in query_string */
-
-  if (self->flush_lines_queued == 0 && !afsql_dd_begin_txn(self))
-    return FALSE;
-
-  success = TRUE;
-  if (!afsql_dd_run_query(self, query_string->str, FALSE, NULL))
-    {
-      /* error running INSERT on an already validated table, too bad. Try to reconnect. Maybe that helps. */
       success = FALSE;
+      goto out;
     }
+
+  insert_command = afsql_dd_build_insert_command(self, msg, table);
+  success = afsql_dd_run_query(self, insert_command->str, FALSE, NULL);
 
   if (success && self->flush_lines_queued != -1)
     {
       self->flush_lines_queued++;
 
-      if (self->flush_lines && self->flush_lines_queued == self->flush_lines && !afsql_dd_commit_txn(self))
-        return FALSE;
+      if (afsql_dd_should_commit_transaction(self) && !afsql_dd_commit_txn(self))
+        {
+          /* Assuming that in case of error, the queue is rewound by afsql_dd_commit_txn() */
+
+          g_string_free(insert_command, TRUE);
+          msg_set_context(NULL);
+
+          return FALSE;
+        }
     }
- error:
-  g_string_free(table, TRUE);
-  g_string_free(value, TRUE);
-  g_string_free(query_string, TRUE);
+
+ out:
+
+  if (table != NULL)
+    g_string_free(table, TRUE);
+
+  if (insert_command != NULL)
+    g_string_free(insert_command, TRUE);
 
   msg_set_context(NULL);
 
@@ -809,24 +923,8 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
     {
       if (self->failed_message_counter < self->num_retries - 1)
         {
-          log_queue_push_head(self->queue,msg,&path_options);
-
-          /* database connection status sanity check after failed query */
-          if (dbi_conn_ping(self->dbi_ctx) != 1)
-            {
-              const gchar *dbi_error;
-
-              dbi_conn_error(self->dbi_ctx, &dbi_error);
-              msg_error("Error, no SQL connection after failed query attempt",
-                        evt_tag_str("type", self->type),
-                        evt_tag_str("host", self->host),
-                        evt_tag_str("port", self->port),
-                        evt_tag_str("username", self->user),
-                        evt_tag_str("database", self->database),
-                        evt_tag_str("error", dbi_error),
-                        NULL);
-              return FALSE;
-            }
+          if (!afsql_dd_handle_insert_row_error_depending_on_connection_availability(self, msg, &path_options))
+            return FALSE;
 
           self->failed_message_counter++;
         }
@@ -841,6 +939,7 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
           success = TRUE;
         }
     }
+
   return success;
 }
 
