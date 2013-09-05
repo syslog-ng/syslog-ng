@@ -40,7 +40,8 @@ check_PROGRAMS =			\
 	test_msgserialize \
 	test_lexer \
 	test_replace_string \
-	test_csv_parser_flags
+	test_csv_parser_flags \
+	test_persist_state_threaded
 
 if IS_HPUX
 check_PROGRAMS += test_zone
@@ -94,6 +95,7 @@ test_rcptid_SOURCES = test_rcptid.c
 
 test_hostname_SOURCES = test_hostname.c
 test_data_to_hex_SOURCES = test_data_to_hex.c
+test_persist_state_threaded_SOURCES = test_persist_state_threaded.c
 
 test_cache_SOURCES = test_cache.c
 test_control_cmds_SOURCES = test_control_cmds.c
