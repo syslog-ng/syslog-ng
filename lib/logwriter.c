@@ -1130,15 +1130,6 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
    * infinite loop, since the reader will cease to produce new messages when
    * main_loop_io_worker_job_quit() is set. */
 
-  /*
-   * If the writer has to read it means that it must not send messages from the queue,
-   * just only call the log_proto_flush and handle its return value
-   */
-  if (!(self->io_cond & G_IO_OUT))
-    {
-      goto flush_the_proto;
-    }
-
   while (!main_loop_io_worker_job_quit() || flush_mode >= LW_FLUSH_QUEUE)
     {
       LogMessage *lm;
@@ -1218,7 +1209,6 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
       count++;
     }
 
-flush_the_proto:
   status = log_proto_flush(proto);
   if (status != LPS_SUCCESS && status != LPS_AGAIN)
     return FALSE;

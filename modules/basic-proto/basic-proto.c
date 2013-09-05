@@ -165,10 +165,6 @@ log_proto_text_client_flush(LogProto *s)
     {
       log_proto_text_client_flush_buffer(s);
     }
-  else
-    {
-      log_transport_write(self->super.transport, "", 0);
-    }
   if (!self->partial && self->acked)
     {
       log_proto_ack_msg(&self->super,1);
