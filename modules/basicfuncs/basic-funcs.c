@@ -73,6 +73,7 @@ static Plugin basicfuncs_plugins[] =
 
   /* misc funcs */
   TEMPLATE_FUNCTION_PLUGIN(tf_context_length, "context-length"),
+  TEMPLATE_FUNCTION_PLUGIN(tf_env, "env"),
 };
 
 gboolean

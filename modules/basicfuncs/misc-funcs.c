@@ -43,3 +43,18 @@ tf_context_length_free_state(gpointer s)
 TEMPLATE_FUNCTION(NULL, tf_context_length,
                   tf_context_length_prepare, NULL, tf_context_length_call,
                   tf_context_length_free_state, NULL);
+
+static void
+tf_env(LogMessage *msg, gint argc, GString *argv[], GString *result)
+{
+  gint i;
+
+  for (i = 0; i < argc; i++)
+    {
+      g_string_append(result, getenv(argv[i]->str));
+      if (i < argc - 1)
+        g_string_append_c(result, ' ');
+    }
+}
+
+TEMPLATE_FUNCTION_SIMPLE(tf_env);

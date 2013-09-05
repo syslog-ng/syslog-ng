@@ -92,6 +92,16 @@ test_numeric_funcs(void)
   assert_template_format("$(+ foo bar)", "NaN");
 }
 
+void
+test_misc_funcs(void)
+{
+  unsetenv("OHHELLO");
+  setenv("TEST_ENV", "test-env", 1);
+
+  assert_template_format("$(env OHHELLO)", "");
+  assert_template_format("$(env TEST_ENV)", "test-env");
+}
+
 int
 main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 {
@@ -102,6 +112,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   test_cond_funcs();
   test_str_funcs();
   test_numeric_funcs();
+  test_misc_funcs();
 
   deinit_template_tests();
   app_shutdown();
