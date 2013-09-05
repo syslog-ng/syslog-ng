@@ -142,6 +142,7 @@ struct _PersistState
   PersistFileHeader *header;
 
   /* keys being used */
+  GMutex *keys_lock;
   GHashTable *keys;
   PersistEntryHandle current_key_block;
   gint current_key_ofs;
@@ -354,12 +355,16 @@ persist_state_lookup_key(PersistState *self, const gchar *key, PersistEntryHandl
 {
   PersistEntry *entry;
 
+  g_mutex_lock(self->keys_lock);
   entry = g_hash_table_lookup(self->keys, key);
   if (entry)
     {
       *handle = entry->ofs;
+      g_mutex_unlock(self->keys_lock);
       return TRUE;
     }
+  g_mutex_unlock(self->keys_lock);
+
   return FALSE;
 }
 
@@ -369,15 +374,19 @@ persist_state_rename_entry(PersistState *self, const gchar *old_key, const gchar
   PersistEntry *entry;
   gpointer old_orig_key;
 
+  g_mutex_lock(self->keys_lock);
   if (g_hash_table_lookup_extended(self->keys, old_key, &old_orig_key, (gpointer *)&entry))
     {
       if (g_hash_table_steal(self->keys, old_key))
         {
           g_free(old_orig_key);
           g_hash_table_insert(self->keys, g_strdup(new_key), entry);
+          g_mutex_unlock(self->keys_lock);
           return TRUE;
         }
     }
+  g_mutex_unlock(self->keys_lock);
+
   return FALSE;
 }
 
@@ -397,7 +406,9 @@ persist_state_add_key(PersistState *self, const gchar *key, PersistEntryHandle h
 
   entry = g_new(PersistEntry, 1);
   entry->ofs = handle;
+  g_mutex_lock(self->keys_lock);
   g_hash_table_insert(self->keys, g_strdup(key), entry);
+  g_mutex_unlock(self->keys_lock);
 
   /* we try to insert the key into the current block first, then if it
      doesn't fit, we create a new block */
@@ -974,6 +985,7 @@ persist_state_new(const gchar *filename)
   self->mapped_lock = g_mutex_new();
   self->mapped_release_cond = g_cond_new();
   self->version = 4;
+  self->keys_lock = g_mutex_new();
   return self;
 }
 
@@ -991,6 +1003,7 @@ persist_state_free(PersistState *self)
   g_cond_free(self->mapped_release_cond);
   g_free(self->temp_filename);
   g_free(self->commited_filename);
+  g_mutex_free(self->keys_lock);
   g_hash_table_destroy(self->keys);
   g_free(self);
 }
