@@ -13,6 +13,7 @@ CONFIGURE_OPTS := --prefix $(ZBS_PREFIX) --enable-ssl --enable-dynamic-linking -
 INSTALL:=./install-sh
 RPATH=-Wl,-R/opt/syslog-ng/lib
 OPTIMALIZATION=-O2
+NEED_INSTALL_BEFORE_CHECK=0
 
 LDFLAGS+=-L$(PWD)/lib -L$(PWD)/lib/.lib
 ifneq (,$(findstring debug,$(TGZ_BUILD_OPTS)))
@@ -22,6 +23,7 @@ endif
 ifneq (,$(findstring aix,$(ZBS_DIST)))
   # gcc's -O2 broken on aix...
   OPTIMALIZATION=
+  NEED_INSTALL_BEFORE_CHECK=1
   # add -Wl,-bnoquiet for ld debugging
   RPATH=-Wl,-bnolibpath,-blibpath:/opt/syslog-ng/lib:/usr/lib:/lib,-bnoquiet
 endif
@@ -31,6 +33,7 @@ ifneq (,$(findstring parisc,$(ZBS_ARCH)))
   MAKEFLAGS += -j2
 endif
   RPATH=-Wl,+s,+b/opt/syslog-ng/lib
+  NEED_INSTALL_BEFORE_CHECK=1
 endif
 
 ifneq (,$(findstring tru64,$(ZBS_DIST)))
@@ -78,10 +81,10 @@ $(STAMPDIR)/stamp-build: $(STAMPDIR)/stamp-configure
 	# dynamic linker on HPUX B.11.11 doesn't support uninstalled libs, because
 	# rpath overrides LD_LIBRARY_PATH. To allow the tests, we have to install
 	# the various libs to /opt/syslog-ng/lib.
-	if [ "$(ZBS_DIST)" = "hpux-11v2" ] || [ "$(ZBS_DIST)" = "hpux-11" ] || [ "$(ZBS_DIST)" = "aix-5.2" ] || [ "$(ZBS_DIST)" = "aix-6.1" ]; then \
-		$(MAKE) install; \
-	fi
-	$(MAKE) check;
+ifeq ($(NEED_INSTALL_BEFORE_CHECK), 1)
+	$(MAKE) install
+endif
+	$(MAKE) check
 	touch $@
 
 
