@@ -61,7 +61,13 @@ resolve_to_absolute_path(const gchar *path, const gchar *basedir)
             {
               g_free(full_path);
               /* append the link target to the working directory */
-              full_path = g_build_filename(basedir, link_target, NULL);
+              if (link_target[0] == '/')
+                full_path = g_strdup(link_target);
+              else
+                {
+                  /* append the link target to the working directory */
+                  full_path = g_build_filename(basedir, link_target, NULL);
+                }
               g_free(link_target);
               if (!g_file_test(full_path, G_FILE_TEST_IS_SYMLINK))
                 break;
