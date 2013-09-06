@@ -11,11 +11,14 @@
 #    warnings about unused rules
 #
 
+use File::Basename;
+
 sub include_block
 {
     my ($start_re, $end_re) = @_;
 
-    open(GR, "<" .$ENV{'top_srcdir'}. "/lib/cfg-grammar.y") || die "Error opening cfg-grammar.y";
+    open(GR, "<" .$ENV{'top_srcdir'}. "/lib/cfg-grammar.y") ||
+            open(GR, "<" . dirname($0) . "/cfg-grammar.y") || die "Error opening cfg-grammar.y";
 
     my $decl_started = 0;
     while (<GR>) {
