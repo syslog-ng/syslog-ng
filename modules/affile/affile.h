@@ -40,6 +40,7 @@ typedef struct _AFFileSourceDriver
 {
   LogSrcDriver super;
   GString *filename;
+  GString *filename_pattern;
   /* FIXME: the code assumes that reader is a LogReader at a lot of places, so this should be changed to LogReader */
   LogPipe *reader;
   LogReaderOptions reader_options;

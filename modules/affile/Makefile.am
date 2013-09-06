@@ -8,10 +8,10 @@ libaffile_la_SOURCES = affile-grammar.y affile-parser.c affile-parser.h affile-p
 
 if IS_WINDOWS
 libaffile_la_SOURCES += \
-	affile_win.c affile_win.h filemonitor.h filemonitor_win.c
+	affile_common.h affile_common.c affile_win.c affile.h filemonitor.h filemonitor_win.c
 else
 libaffile_la_SOURCES += \
-	affile.c affile.h filemonitor.c filemonitor.h
+	affile_common.h affile_common.c affile_unix.c affile.h filemonitor_unix.c filemonitor.h
 endif
 
 

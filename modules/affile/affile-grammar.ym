@@ -28,11 +28,7 @@
 
 
 %code {
-#ifdef _WIN32
-#include "affile_win.h"
-#else
 #include "affile.h"
-#endif
 
 #include "cfg-parser.h"
 #include "affile-grammar.h"
