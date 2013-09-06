@@ -495,6 +495,9 @@ tls_lookup_verify_mode(const gchar *mode_str)
   else if (strcasecmp(mode_str, "required-untrusted") == 0 || strcasecmp(mode_str, "required_untrusted") == 0)
     return TVM_REQUIRED | TVM_UNTRUSTED;
 
+  msg_error("Invalid verify mode, default value[required-trusted] will be used",
+            evt_tag_str("value", mode_str),
+            NULL);
   return TVM_REQUIRED | TVM_TRUSTED;
 }
 

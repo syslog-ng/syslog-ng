@@ -56,8 +56,11 @@ log_matcher_lookup_flag(const gchar* flag)
     return LMF_SUBSTRING;
   else if (strcmp(flag, "prefix") == 0)
     return LMF_PREFIX;
-  else
-    return 0x0;
+
+  msg_error("Invalid logmatcher flag",
+             evt_tag_str("value", flag),
+            NULL);
+  return 0;
 }
 
 typedef struct _LogMatcherPosixRe
