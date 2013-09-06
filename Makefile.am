@@ -22,6 +22,8 @@ PREOPEN_SYSLOGFORMAT	= -dlpreopen ${top_builddir}/modules/syslogformat/libsyslog
 PREOPEN_BASICFUNCS	= -dlpreopen ${top_builddir}/modules/basicfuncs/libbasicfuncs.la
 PREOPEN_CORE		= $(PREOPEN_SYSLOGFORMAT) $(PREOPEN_BASICFUNCS)
 
+syslog_ng_tools		= ${top_srcdir}/lib
+
 export top_srcdir
 
 CLEAN_SUBDIRS		=

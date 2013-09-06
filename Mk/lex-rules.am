@@ -1,5 +1,5 @@
-%.y: %.ym $(top_srcdir)/lib/merge-grammar.pl $(top_srcdir)/lib/cfg-grammar.y
-	$(AM_V_GEN) $(top_srcdir)/lib/merge-grammar.pl $< > $@
+%.y: %.ym $(syslog_ng_tools)/merge-grammar.pl $(syslog_ng_tools)/cfg-grammar.y
+	$(AM_V_GEN) $(syslog_ng_tools)/merge-grammar.pl $< > $@
 
 .l.c:
 	$(AM_V_LEX)$(am__skiplex) $(SHELL) $(YLWRAP) $< $(LEX_OUTPUT_ROOT).c $*.c $(LEX_OUTPUT_ROOT).h $*.h -- $(LEXCOMPILE) | ($(EGREP) -v "(^updating|unchanged)" || true)
