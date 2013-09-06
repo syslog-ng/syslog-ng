@@ -26,6 +26,7 @@
 #define SCRATCH_BUFFERS_H_INCLUDED 1
 
 #include <glib.h>
+#include "type-hinting.h"
 
 /* Global API */
 
@@ -66,5 +67,21 @@ extern ScratchBufferStack SBGStringStack;
 #define sb_gstring_release(b) (scratch_buffer_release(&SBGStringStack, (GTrashStack *)b))
 
 #define sb_gstring_string(buffer) (&buffer->s)
+
+/* Type-hinted GStrings */
+
+typedef struct
+{
+  GTrashStack stackp;
+  GString s;
+  TypeHint type_hint;
+} SBTHGString;
+
+extern ScratchBufferStack SBTHGStringStack;
+
+#define sb_th_gstring_acquire() ((SBTHGString *)scratch_buffer_acquire(&SBTHGStringStack))
+#define sb_th_gstring_release(b) (scratch_buffer_release(&SBTHGStringStack, (GTrashStack *)b))
+
+#define sb_th_gstring_string(buffer) (&buffer->s)
 
 #endif

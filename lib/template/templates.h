@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 1998-2012 Balázs Scheidler
+ * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 1998-2013 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -27,6 +27,7 @@
 
 #include "syslog-ng.h"
 #include "timeutils.h"
+#include "type-hinting.h"
 
 #define LTZ_LOCAL 0
 #define LTZ_SEND  1
@@ -54,6 +55,8 @@ typedef struct _LogTemplate
   GlobalConfig *cfg;
   GStaticMutex arg_lock;
   GPtrArray *arg_bufs;
+  TypeHint type_hint;
+  gint type_cast_strictness;
 } LogTemplate;
 
 /* template expansion options that can be influenced by the user and
@@ -188,6 +191,7 @@ void tf_simple_func_free_state(gpointer state);
 /* appends the formatted output into result */
 
 void log_template_set_escape(LogTemplate *self, gboolean enable);
+gboolean log_template_set_type_hint(LogTemplate *self, const gchar *hint, GError **error);
 gboolean log_template_compile(LogTemplate *self, const gchar *template, GError **error);
 void log_template_format(LogTemplate *self, LogMessage *lm, LogTemplateOptions *opts, gint tz, gint32 seq_num, const gchar *context_id, GString *result);
 void log_template_append_format(LogTemplate *self, LogMessage *lm, LogTemplateOptions *opts, gint tz, gint32 seq_num, const gchar *context_id, GString *result);

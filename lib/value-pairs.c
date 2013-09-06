@@ -26,6 +26,7 @@
 #include "vptransform.h"
 #include "logmsg.h"
 #include "template/templates.h"
+#include "type-hinting.h"
 #include "cfg-parser.h"
 #include "misc.h"
 #include "scratch-buffers.h"
@@ -192,22 +193,20 @@ vp_pairs_foreach(gpointer data, gpointer user_data)
   LogMessage *msg = ((gpointer *)user_data)[2];
   gint32 seq_num = GPOINTER_TO_INT (((gpointer *)user_data)[3]);
   GTree *scope_set = ((gpointer *)user_data)[5];
-  SBGString *sb = sb_gstring_acquire();
+  SBTHGString *sb = sb_th_gstring_acquire();
   VPPairConf *vpc = (VPPairConf *)data;
 
-  log_template_format((LogTemplate *)vpc->template, msg, NULL, LTZ_LOCAL,
-                      seq_num, NULL, sb_gstring_string(sb));
+  sb->type_hint = vpc->template->type_hint;
+  log_template_append_format((LogTemplate *)vpc->template, msg, NULL, LTZ_LOCAL,
+                             seq_num, NULL, sb_th_gstring_string(sb));
 
-  if (!sb_gstring_string(sb)->str[0])
+  if (sb_th_gstring_string(sb)->len == 0)
     {
-      sb_gstring_release(sb);
+      sb_th_gstring_release(sb);
       return;
     }
 
-  g_tree_insert(scope_set, vp_transform_apply(vp, vpc->name),
-                sb_gstring_string(sb)->str);
-  g_string_steal(sb_gstring_string(sb));
-  sb_gstring_release(sb);
+  g_tree_insert(scope_set, vp_transform_apply(vp, vpc->name), sb);
 }
 
 /* runs over the LogMessage nv-pairs, and inserts them unless excluded */
@@ -233,8 +232,11 @@ vp_msg_nvpairs_foreach(NVHandle handle, gchar *name,
        (log_msg_is_handle_sdata(handle) && (vp->scopes & VPS_SDATA))) ||
       inc)
     {
-      /* NOTE: the key is a borrowed reference in the hash, and value is freed */
-      g_tree_insert(scope_set, vp_transform_apply(vp, name), g_strndup(value, value_len));
+      SBTHGString *sb = sb_th_gstring_acquire();
+
+      g_string_append_len(sb_th_gstring_string(sb), value, value_len);
+      sb->type_hint = TYPE_HINT_STRING;
+      g_tree_insert(scope_set, vp_transform_apply(vp, name), sb);
     }
 
   return FALSE;
@@ -245,7 +247,7 @@ static void
 vp_merge_set(ValuePairs *vp, LogMessage *msg, gint32 seq_num, ValuePairSpec *set, GTree *dest)
 {
   gint i;
-  SBGString *sb = sb_gstring_acquire();
+  SBTHGString *sb;
 
   for (i = 0; set[i].name; i++)
     {
@@ -261,10 +263,12 @@ vp_merge_set(ValuePairs *vp, LogMessage *msg, gint32 seq_num, ValuePairSpec *set
       if (exclude)
 	continue;
 
+      sb = sb_th_gstring_acquire();
+
       switch (set[i].type)
         {
         case VPT_MACRO:
-          log_macro_expand(sb_gstring_string(sb), set[i].id, FALSE,
+          log_macro_expand(sb_th_gstring_string(sb), set[i].id, FALSE,
                            NULL, LTZ_LOCAL, seq_num, NULL, msg);
           break;
         case VPT_NVPAIR:
@@ -273,34 +277,55 @@ vp_merge_set(ValuePairs *vp, LogMessage *msg, gint32 seq_num, ValuePairSpec *set
             gssize len;
 
             nv = log_msg_get_value(msg, (NVHandle) set[i].id, &len);
-            g_string_append_len(sb_gstring_string(sb), nv, len);
+            g_string_append_len(sb_th_gstring_string(sb), nv, len);
             break;
           }
         default:
           g_assert_not_reached();
         }
 
-      if (!sb_gstring_string(sb)->str[0])
-	continue;
+      if (sb_th_gstring_string(sb)->len == 0)
+        {
+          sb_th_gstring_release(sb);
+          continue;
+        }
 
-      g_tree_insert(dest, vp_transform_apply(vp, set[i].name),
-                    sb_gstring_string(sb)->str);
-      g_string_steal(sb_gstring_string(sb));
+      g_tree_insert(dest, vp_transform_apply(vp, set[i].name), sb);
     }
-  sb_gstring_release(sb);
 }
 
-void
+static gboolean
+vp_foreach_helper (const gchar *name, const SBTHGString *hinted_value,
+                   gpointer data)
+{
+  VPForeachFunc func = ((gpointer *)data)[0];
+  gpointer user_data = ((gpointer *)data)[1];
+  gboolean *r = ((gpointer *)data)[2];
+
+  *r &= !func(name, hinted_value->type_hint,
+              sb_th_gstring_string(hinted_value)->str, user_data);
+  return !*r;
+}
+
+static void
+vp_data_free (SBTHGString *s)
+{
+  sb_th_gstring_release (s);
+}
+
+gboolean
 value_pairs_foreach_sorted (ValuePairs *vp, VPForeachFunc func,
                             GCompareDataFunc compare_func,
                             LogMessage *msg, gint32 seq_num, gpointer user_data)
 {
   gpointer args[] = { vp, func, msg, GINT_TO_POINTER (seq_num), user_data, NULL };
+  gboolean result = TRUE;
+  gpointer helper_args[] = { func, user_data, &result };
   GTree *scope_set;
 
   scope_set = g_tree_new_full((GCompareDataFunc)compare_func, NULL,
                               (GDestroyNotify)g_free,
-                              (GDestroyNotify)g_free);
+                              (GDestroyNotify)vp_data_free);
   args[5] = scope_set;
 
   /*
@@ -327,18 +352,20 @@ value_pairs_foreach_sorted (ValuePairs *vp, VPForeachFunc func,
   g_ptr_array_foreach(vp->vpairs, (GFunc)vp_pairs_foreach, args);
 
   /* Aaand we run it through the callback! */
-  g_tree_foreach(scope_set, (GTraverseFunc)func, user_data);
+  g_tree_foreach(scope_set, (GTraverseFunc)vp_foreach_helper, helper_args);
 
   g_tree_destroy(scope_set);
+
+  return result;
 }
 
-void
+gboolean
 value_pairs_foreach(ValuePairs *vp, VPForeachFunc func,
                     LogMessage *msg, gint32 seq_num,
                     gpointer user_data)
 {
-  value_pairs_foreach_sorted(vp, func, (GCompareDataFunc) strcmp,
-                             msg, seq_num, user_data);
+  return value_pairs_foreach_sorted(vp, func, (GCompareDataFunc) strcmp,
+                                    msg, seq_num, user_data);
 }
 
 typedef struct
@@ -482,7 +509,7 @@ vp_walker_name_split(vp_walk_stack_t **stack, vp_walk_state_t *state,
 }
 
 static gboolean
-value_pairs_walker(const gchar *name, const gchar *value,
+value_pairs_walker(const gchar *name, TypeHint type, const gchar *value,
                    gpointer user_data)
 {
   vp_walk_state_t *state = (vp_walk_state_t *)user_data;
@@ -495,10 +522,14 @@ value_pairs_walker(const gchar *name, const gchar *value,
   key = vp_walker_name_split (&st, state, name);
 
   if (st)
-    result = state->process_value(key, st->prefix, value, &st->data,
+    result = state->process_value(key, st->prefix,
+                                  type, value,
+                                  &st->data,
                                   state->user_data);
   else
-    result = state->process_value(key, NULL, value, NULL,
+    result = state->process_value(key, NULL,
+                                  type, value,
+                                  NULL,
                                   state->user_data);
 
   g_free(key);
@@ -515,7 +546,7 @@ vp_walk_cmp(const gchar *s1, const gchar *s2)
   return strcmp(s2, s1);
 }
 
-void
+gboolean
 value_pairs_walk(ValuePairs *vp,
                  VPWalkCallbackFunc obj_start_func,
                  VPWalkValueCallbackFunc process_value_func,
@@ -524,6 +555,7 @@ value_pairs_walk(ValuePairs *vp,
                  gpointer user_data)
 {
   vp_walk_state_t state;
+  gboolean result;
 
   state.user_data = user_data;
   state.obj_start = obj_start_func;
@@ -532,10 +564,12 @@ value_pairs_walk(ValuePairs *vp,
   state.stack = NULL;
 
   state.obj_start(NULL, NULL, NULL, NULL, NULL, user_data);
-  value_pairs_foreach_sorted(vp, value_pairs_walker,
-                             (GCompareDataFunc)vp_walk_cmp, msg, seq_num, &state);
+  result = value_pairs_foreach_sorted(vp, value_pairs_walker,
+                                      (GCompareDataFunc)vp_walk_cmp, msg, seq_num, &state);
   vp_walker_stack_unwind_all(&state.stack, &state);
   state.obj_end(NULL, NULL, NULL, NULL, NULL, user_data);
+
+  return result;
 }
 
 static void
@@ -730,6 +764,32 @@ vp_cmdline_parse_rekey(const gchar *option_name, const gchar *value,
   return TRUE;
 }
 
+static void
+value_pairs_parse_type(gchar *spec, gchar **value, gchar **type)
+{
+  char *sp, *ep;
+
+  *type = NULL;
+
+  sp = strchr(spec, '(');
+  if (sp == NULL)
+    {
+      *value = spec;
+      return;
+    }
+  ep = strchr(sp, ')');
+  if (ep == NULL || ep[1] != '\0')
+    {
+      *value = spec;
+      return;
+    }
+
+  *value = sp + 1;
+  *type = spec;
+  sp[0] = '\0';
+  ep[0] = '\0';
+}
+
 static gboolean
 vp_cmdline_parse_pair (const gchar *option_name, const gchar *value,
 		       gpointer data, GError **error)
@@ -737,7 +797,7 @@ vp_cmdline_parse_pair (const gchar *option_name, const gchar *value,
   gpointer *args = (gpointer *) data;
   ValuePairs *vp = (ValuePairs *) args[1];
   GlobalConfig *cfg = (GlobalConfig *) args[0];
-  gchar **kv;
+  gchar **kv, *v, *t;
   gboolean res = FALSE;
   LogTemplate *template;
 
@@ -750,9 +810,12 @@ vp_cmdline_parse_pair (const gchar *option_name, const gchar *value,
     }
 
   kv = g_strsplit(value, "=", 2);
+  value_pairs_parse_type(kv[1], &v, &t);
 
   template = log_template_new(cfg, NULL);
-  if (!log_template_compile(template, kv[1], error))
+  if (!log_template_compile(template, v, error))
+    goto error;
+  if (!log_template_set_type_hint(template, t, error))
     goto error;
 
   value_pairs_add_pair(vp, kv[0], template);

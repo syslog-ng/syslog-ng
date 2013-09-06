@@ -163,7 +163,8 @@ tf_json_obj_end(const gchar *name,
 }
 
 static gboolean
-tf_json_value(const gchar *name, const gchar *prefix, const gchar *value,
+tf_json_value(const gchar *name, const gchar *prefix,
+              TypeHint type, const gchar *value,
               gpointer *prefix_data, gpointer user_data)
 {
   json_state_t *state = (json_state_t *)user_data;

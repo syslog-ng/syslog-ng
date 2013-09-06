@@ -375,7 +375,8 @@ afamqp_dd_connect(AMQPDestDriver *self, gboolean reconnect)
  */
 
 static gboolean
-afamqp_vp_foreach(const gchar *name, const gchar *value,
+afamqp_vp_foreach(const gchar *name,
+                  TypeHint type, const gchar *value,
                   gpointer user_data)
 {
   amqp_table_entry_t **entries = (amqp_table_entry_t **) ((gpointer *)user_data)[0];

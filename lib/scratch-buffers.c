@@ -29,6 +29,7 @@
 TLS_BLOCK_START
 {
   GTrashStack *sb_gstrings;
+  GTrashStack *sb_th_gstrings;
   GList *sb_registry;
 }
 TLS_BLOCK_END;
@@ -80,6 +81,52 @@ ScratchBufferStack SBGStringStack = {
   .free_stack = sb_gstring_free_stack
 };
 
+/* Type-hinted GStrings */
+
+#define local_sb_th_gstrings        __tls_deref(sb_th_gstrings)
+
+GTrashStack *
+sb_th_gstring_acquire_buffer (void)
+{
+  SBTHGString *sb;
+
+  sb = g_trash_stack_pop(&local_sb_th_gstrings);
+  if (!sb)
+    {
+      sb = g_new(SBTHGString, 1);
+      g_string_steal(sb_th_gstring_string(sb));
+      sb->type_hint = TYPE_HINT_STRING;
+    }
+  else
+    g_string_set_size(sb_th_gstring_string(sb), 0);
+
+  return (GTrashStack *)sb;
+}
+
+void
+sb_th_gstring_release_buffer(GTrashStack *s)
+{
+  g_trash_stack_push(&local_sb_th_gstrings, s);
+}
+
+void
+sb_th_gstring_free_stack(void)
+{
+  SBGString *sb;
+
+  while ((sb = g_trash_stack_pop(&local_sb_th_gstrings)) != NULL)
+    {
+      g_free(sb_gstring_string(sb)->str);
+      g_free(sb);
+    }
+}
+
+ScratchBufferStack SBTHGStringStack = {
+  .acquire_buffer = sb_th_gstring_acquire_buffer,
+  .release_buffer = sb_th_gstring_release_buffer,
+  .free_stack = sb_th_gstring_free_stack
+};
+
 /* Global API */
 
 #define local_sb_registry  __tls_deref(sb_registry)
@@ -95,6 +142,7 @@ scratch_buffers_init(void)
 {
   local_sb_registry = NULL;
   scratch_buffers_register(&SBGStringStack);
+  scratch_buffers_register(&SBTHGStringStack);
 }
 
 static void

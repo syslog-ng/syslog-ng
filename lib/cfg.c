@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -321,6 +321,8 @@ cfg_new(gint version)
   self->template_options.frac_digits = 0;
   self->recv_time_zone = NULL;
   self->keep_timestamp = TRUE;
+
+  self->type_cast_strictness = TYPE_CAST_DROP_MESSAGE;
 
   cfg_tree_init_instance(&self->tree, self);
   return self;

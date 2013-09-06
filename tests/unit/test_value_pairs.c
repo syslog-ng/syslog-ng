@@ -10,7 +10,7 @@
 gboolean success = TRUE;
 
 gboolean
-vp_keys_foreach(const gchar  *name, const gchar *value, gpointer user_data)
+vp_keys_foreach(const gchar  *name, TypeHint type, const gchar *value, gpointer user_data)
 {
   gpointer *args = (gpointer *) user_data;
   GList **keys = (GList **) args[0];
@@ -46,6 +46,17 @@ create_message(void)
   return msg;
 }
 
+static LogTemplate *
+create_template(const gchar *type_hint_string, const gchar *template_string)
+{
+  LogTemplate *template;
+
+  template = log_template_new(configuration, NULL);
+  log_template_compile(template, template_string, NULL);
+  log_template_set_type_hint(template, type_hint_string, NULL);
+  return template;
+}
+
 void
 testcase(const gchar *scope, const gchar *exclude, const gchar *expected, GPtrArray *transformers)
 {
@@ -62,7 +73,7 @@ testcase(const gchar *scope, const gchar *exclude, const gchar *expected, GPtrAr
   value_pairs_add_scope(vp, scope);
   if (exclude)
     value_pairs_add_glob_pattern(vp, exclude, FALSE);
-  value_pairs_add_pair(vp, configuration, "test.key", "$MESSAGE");
+  value_pairs_add_pair(vp, "test.key", create_template("string", "$MESSAGE"));
 
   if (transformers)
     {

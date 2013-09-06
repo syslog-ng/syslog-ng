@@ -320,7 +320,7 @@ afmongodb_vp_obj_end(const gchar *name,
 
 static gboolean
 afmongodb_vp_process_value(const gchar *name, const gchar *prefix,
-                           const gchar *value,
+                           TypeHint type, const gchar *value,
                            gpointer *prefix_data, gpointer user_data)
 {
   bson *o;

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 1998-2012 Balázs Scheidler
+ * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 1998-2013 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -756,6 +756,14 @@ log_template_set_escape(LogTemplate *self, gboolean enable)
   self->escape = enable;
 }
 
+gboolean
+log_template_set_type_hint(LogTemplate *self, const gchar *type_hint, GError **error)
+{
+  g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
+
+  return type_hint_parse(type_hint, &self->type_hint, error);
+}
+
 static void
 log_template_reset_compiled(LogTemplate *self)
 {
@@ -1275,6 +1283,7 @@ log_template_new(GlobalConfig *cfg, gchar *name)
   LogTemplate *self = g_new0(LogTemplate, 1);
 
   self->name = g_strdup(name);
+  self->type_cast_strictness = TYPE_CAST_DROP_MESSAGE;
   self->ref_cnt = 1;
   self->cfg = cfg;
   g_static_mutex_init(&self->arg_lock);

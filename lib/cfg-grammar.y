@@ -32,6 +32,7 @@
 /* YYSTYPE and YYLTYPE is defined by the lexer */
 #include "cfg-lexer.h"
 #include "afinter.h"
+#include "type-hinting.h"
 #include "filter/filter-expr-parser.h"
 #include "filter/filter-pipe.h"
 #include "parser/parser-expr-parser.h"
@@ -745,6 +746,9 @@ template_content_inner
 
           CHECK_ERROR(log_template_compile(last_template, $3, &error), @3, "Error compiling template (%s)", error->message);
           free($3);
+
+          CHECK_ERROR(log_template_set_type_hint(last_template, $1, &error), @1, "Error setting the template type-hint (%s)", error->message);
+          free($1);
         }
         ;
 
