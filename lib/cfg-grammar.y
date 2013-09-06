@@ -343,6 +343,8 @@ extern struct _LogDriver *last_driver;
 
 #include "cfg-grammar.h"
 
+#define YYMAXDEPTH 20000
+
 LogDriver *last_driver;
 LogSourceOptions *last_source_options;
 LogReaderOptions *last_reader_options;
