@@ -942,6 +942,7 @@ persist_state_cancel(PersistState *self)
 {
   gchar *commited_filename, *temp_filename;
   GMutex *mapped_lock;
+  GMutex *keys_lock;
   GCond *mapped_release_cond;
 
   g_assert(self->mapped_counter == 0);
@@ -953,6 +954,7 @@ persist_state_cancel(PersistState *self)
   temp_filename = self->temp_filename;
   mapped_lock = self->mapped_lock;
   mapped_release_cond = self->mapped_release_cond;
+  keys_lock = self->keys_lock;
 
   memset(self, 0, sizeof(*self));
 
@@ -964,7 +966,7 @@ persist_state_cancel(PersistState *self)
   self->version = 4;
   self->mapped_lock = mapped_lock;
   self->mapped_release_cond = mapped_release_cond;
-
+  self->keys_lock = keys_lock;
 }
 
 void
