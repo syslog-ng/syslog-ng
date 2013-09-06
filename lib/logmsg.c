@@ -575,8 +575,6 @@ log_msg_clear_matches(LogMessage *self)
 static inline void
 log_msg_tags_foreach_item(LogMessage *self, gint base, tag_ulong item, LogMessageTagsForeachFunc callback, gpointer user_data)
 {
-  const gchar *tag_name;
-  LogTagId tag_id;
   gint i;
 
   for (i = 0; i < LOGMSG_TAGS_BITS; i++)
@@ -585,12 +583,9 @@ log_msg_tags_foreach_item(LogMessage *self, gint base, tag_ulong item, LogMessag
         return;
       if (item & 1)
         {
-          tag_id = (LogTagId) base + i;
-          tag_name = log_tags_get_by_id(tag_id);
+          LogTagId id = (LogTagId) base + i;
 
-          /* Ignore internal tags */
-          if (tag_name && tag_name[0] != '.')
-            callback(self, tag_id, tag_name, user_data);
+          callback(self, id, log_tags_get_by_id(id), user_data);
         }
       item >>= 1;
     }
