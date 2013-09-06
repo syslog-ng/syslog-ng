@@ -127,7 +127,7 @@ static inline char * get_cached_current_time(char * tmtime)
   struct tm tm;
   time_t now = cached_g_current_time_sec();
   cached_localtime(&now, &tm);
-  strftime(tmtime, 32, "%Y-%m-%d %H:%M:%S %Z", &tm);
+  strftime(tmtime, 64, "%Y-%m-%dT%H:%M:%S%z", &tm);
   return tmtime;
 }
 
@@ -138,7 +138,10 @@ msg_send_internal_message(const char *msg, LogMessage *lm)
   if (G_UNLIKELY(log_stderr || (msg_post_func == NULL && (lm->pri & 0x7) <= EVT_PRI_WARNING)))
     {
       char tmtime[30];
-      fprintf(stderr, "%s %s\n", get_cached_current_time(tmtime), msg);
+      if (G_UNLIKELY(debug_flag))
+        fprintf(stderr, "[%s] %s\n", get_cached_current_time(tmtime), msg);
+      else
+        fprintf(stderr, "%s\n", msg);
       log_msg_unref(lm);
     }
   else
