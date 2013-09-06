@@ -122,13 +122,23 @@ msg_limit_internal_message(void)
   return TRUE;
 }
 
+static inline char * get_cached_current_time(char * tmtime)
+{
+  struct tm tm;
+  time_t now = cached_g_current_time_sec();
+  cached_localtime(&now, &tm);
+  strftime(tmtime, 32, "%Y-%m-%d %H:%M:%S %Z", &tm);
+  return tmtime;
+}
+
 
 static void
 msg_send_internal_message(const char *msg, LogMessage *lm)
 {
   if (G_UNLIKELY(log_stderr || (msg_post_func == NULL && (lm->pri & 0x7) <= EVT_PRI_WARNING)))
     {
-      fprintf(stderr, "%s\n", msg);
+      char tmtime[30];
+      fprintf(stderr, "%s %s\n", get_cached_current_time(tmtime), msg);
       log_msg_unref(lm);
     }
   else
