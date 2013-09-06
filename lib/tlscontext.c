@@ -139,7 +139,11 @@ tls_session_verify(TLSSession *self, int ok, X509_STORE_CTX *ctx)
 {
   /* untrusted means that we have to accept the certificate even if it is untrusted */
   if (self->ctx->verify_mode & TVM_UNTRUSTED)
-    return 1;
+    {
+      msg_error("TLS verify mode is UNTRUSTED, so syslog-ng won't drop TLS session even if"
+                " certificate validation will fail", NULL);
+      return 1;
+    }
 
   /* accept certificate if its fingerprint matches, again regardless whether x509 certificate validation was successful */
   if (tls_session_verify_fingerprint(ctx))
