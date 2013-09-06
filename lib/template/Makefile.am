@@ -1,4 +1,6 @@
-template_headers = \
+templateincludedir			= ${pkgincludedir}/template
+
+templateinclude_HEADERS = \
 	lib/template/templates.h
 
 template_sources = \

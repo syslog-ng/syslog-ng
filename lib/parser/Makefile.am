@@ -1,4 +1,6 @@
-parser_headers = 				\
+parserincludedir			= ${pkgincludedir}/parser
+
+parserinclude_HEADERS = 			\
 	lib/parser/parser-expr.h		\
 	lib/parser/parser-expr-parser.h
 

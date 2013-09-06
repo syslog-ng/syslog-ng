@@ -1,4 +1,6 @@
-logproto_headers = \
+logprotoincludedir			= ${pkgincludedir}/logproto
+
+logprotoinclude_HEADERS = \
 	lib/logproto/logproto-client.h	\
 	lib/logproto/logproto-server.h	\
 	lib/logproto/logproto-buffered-server.h \

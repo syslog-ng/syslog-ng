@@ -86,12 +86,7 @@ pkginclude_HEADERS			+= \
 	lib/uuid.h			\
 	lib/value-pairs.h		\
 	lib/vptransform.h		\
-	lib/versioning.h		\
-	$(logproto_headers)		\
-	$(filter_headers)		\
-	$(parser_headers)		\
-	$(rewrite_headers)		\
-	$(template_headers)
+	lib/versioning.h
 
 # this is intentionally formatted so conflicts are less likely to arise. one name in every line.
 lib_libsyslog_ng_crypto_la_sources	= \

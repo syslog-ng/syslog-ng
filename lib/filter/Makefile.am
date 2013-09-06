@@ -1,4 +1,6 @@
-filter_headers = 				\
+filterincludedir			= ${pkgincludedir}/filter
+
+filterinclude_HEADERS = 			\
 	lib/filter/filter-expr.h		\
 	lib/filter/filter-op.h			\
 	lib/filter/filter-cmp.h			\

@@ -1,4 +1,6 @@
-rewrite_headers = 				\
+rewriteincludedir			= ${pkgincludedir}/rewrite
+
+rewriteinclude_HEADERS = 			\
 	lib/rewrite/rewrite-expr.h		\
 	lib/rewrite/rewrite-set-tag.h		\
 	lib/rewrite/rewrite-set.h		\
