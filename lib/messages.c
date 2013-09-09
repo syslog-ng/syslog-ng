@@ -137,9 +137,11 @@ msg_send_internal_message(const char *msg, LogMessage *lm)
 {
   if (G_UNLIKELY(log_stderr || (msg_post_func == NULL && (lm->pri & 0x7) <= EVT_PRI_WARNING)))
     {
-      char tmtime[30];
       if (G_UNLIKELY(debug_flag))
-        fprintf(stderr, "[%s] %s\n", get_cached_current_time(tmtime), msg);
+        {
+          char tmtime[128];
+          fprintf(stderr, "[%s] %s\n", get_cached_current_time(tmtime), msg);
+        }
       else
         fprintf(stderr, "%s\n", msg);
       log_msg_unref(lm);
