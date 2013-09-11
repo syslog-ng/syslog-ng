@@ -1,0 +1,87 @@
+/*
+ * Copyright (c) 2012 Nagy, Attila <bra@fsn.hu>
+ * Copyright (c) 2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2013 Viktor Tusa <tusa@balabit.hu>
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
+%code requires {
+
+#include "afstomp-parser.h"
+
+}
+
+%code {
+
+#include "cfg-parser.h"
+#include "cfg-grammar.h"
+#include "plugin.h"
+#include "vptransform.h"
+
+}
+
+%name-prefix "afstomp_"
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {LogDriver **instance}
+%parse-param {gpointer arg}
+
+
+/* INCLUDE_DECLS */
+
+%token KW_STOMP
+%token KW_STOMP_DESTINATION
+%token KW_PERSISTENT
+%token KW_ACK
+%token KW_ROUTING_KEY
+%token KW_BODY
+
+%%
+
+start
+        : LL_CONTEXT_DESTINATION KW_STOMP
+          {
+            last_driver = *instance = afstomp_dd_new();
+          }
+          '(' afstomp_options ')'		{ YYACCEPT; }
+          ;
+
+afstomp_options
+        : afstomp_option afstomp_options
+        |
+        ;
+
+afstomp_option
+        : KW_HOST '(' string ')'		{ afstomp_dd_set_host(last_driver, $3); free($3); }
+        | KW_PORT '(' LL_NUMBER ')'		{ afstomp_dd_set_port(last_driver, $3); }
+        | KW_STOMP_DESTINATION '(' string ')'	{ afstomp_dd_set_destination(last_driver, $3); free($3); }
+        | KW_ROUTING_KEY '(' string ')'		{ afstomp_dd_set_routing_key(last_driver, $3); free($3); }
+        | KW_BODY '(' string ')'		{ afstomp_dd_set_body(last_driver, $3); free($3); }
+        | KW_PERSISTENT '(' yesno ')'		{ afstomp_dd_set_persistent(last_driver, $3); }
+        | KW_ACK '(' yesno ')'			{ afstomp_dd_set_ack(last_driver, $3); }
+        | KW_USERNAME '(' string ')'		{ afstomp_dd_set_user(last_driver, $3); free($3); }
+        | KW_PASSWORD '(' string ')'		{ afstomp_dd_set_password(last_driver, $3); free($3); }
+        | value_pair_option			{ afstomp_dd_set_value_pairs(last_driver, $1); }
+        | dest_driver_option
+        ;
+
+/* INCLUDE_RULES */
+
+%%

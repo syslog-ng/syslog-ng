@@ -386,6 +386,7 @@ const gchar *source_names[SCS_MAX] =
   "sender",
   "smtp",
   "amqp",
+  "stomp",
 };
 
 

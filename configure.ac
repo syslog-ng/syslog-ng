@@ -177,6 +177,10 @@ AC_ARG_WITH(librabbitmq-client,
                                          Link against the system supplied or the built-in librabbitmq library.]
               ,,with_librabbitmq_client="internal")
 
+AC_ARG_ENABLE(stomp,
+          [  --enable-stomp        Enable stomp destination (default: yes)]
+              ,,enable_stomp="yes")
+
 AC_ARG_WITH(ivykis,
               [  --with-ivykis=[system/internal]
                                          Link against the system supplied or the built-in ivykis library.]
@@ -1150,6 +1154,7 @@ AM_CONDITIONAL(ENABLE_PACCT, [test "$enable_pacct" = "yes"])
 AM_CONDITIONAL(ENABLE_MONGODB, [test "$enable_mongodb" = "yes"])
 AM_CONDITIONAL(ENABLE_SMTP, [test "$enable_smtp" = "yes"])
 AM_CONDITIONAL(ENABLE_AMQP, [test "$enable_amqp" = "yes"])
+AM_CONDITIONAL(ENABLE_STOMP, [test "$enable_stomp" = "yes"])
 AM_CONDITIONAL(ENABLE_JSON, [test "$enable_json" = "yes"])
 AM_CONDITIONAL(ENABLE_GEOIP, [test "$enable_geoip" = "yes"])
 AM_CONDITIONAL(WITH_EMBEDDED_CRYPTO, [test "$with_embedded_crypto" = "yes"])
@@ -1247,4 +1252,5 @@ echo "  MongoDB destination (module): ${enable_mongodb:=no}"
 echo "  JSON support (module)       : ${enable_json:=no}"
 echo "  SMTP support (module)       : ${enable_smtp:=no}"
 echo "  AMQP destination (module)   : ${enable_amqp:=no}"
+echo "  STOMP destination (module)  : ${enable_stomp:=no}"
 echo "  GEOIP support (module)      : ${enable_geoip:=no}"
