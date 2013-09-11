@@ -95,7 +95,7 @@ test_snare_template_function()
 
   msg->timestamps[1] = stamp;
   msg->timestamps[0] = msg->timestamps[1];
-  log_msg_set_value(msg,LM_V_MESSAGE,"test message form windows XP",-1);
+  log_msg_set_value(msg,LM_V_MESSAGE,"test.txt: test message form windows XP",-1);
 
   template_string = "$(format-snare)";
   expected = "<0>May 21 11:22:12  test.txt: test message form windows XP\n";
