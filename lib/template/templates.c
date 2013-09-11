@@ -1497,7 +1497,7 @@ log_template_options_destroy(LogTemplateOptions *options)
 void
 log_template_options_defaults(LogTemplateOptions *options)
 {
-  memset(options, 0, sizeof(options));
+  memset(options, 0, sizeof(LogTemplateOptions));
   options->frac_digits = -1;
   options->ts_format = -1;
 }
