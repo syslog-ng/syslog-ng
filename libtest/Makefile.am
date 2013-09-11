@@ -1,6 +1,6 @@
 
 # we need the dotdot version of the include path to find generated headers
-AM_CFLAGS = -I$(top_srcdir)/lib -I$(top_srcdir)/modules -I../lib -I../modules
+AM_CPPFLAGS = -I$(top_srcdir)/lib -I$(top_srcdir)/modules -I../lib -I../modules
 
 noinst_LIBRARIES = libsyslog-ng-test.a
 
