@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -1373,7 +1373,7 @@ log_template_options_destroy(LogTemplateOptions *options)
 void
 log_template_options_defaults(LogTemplateOptions *options)
 {
-  memset(options, 0, sizeof(options));
+  memset(options, 0, sizeof(LogTemplateOptions));
   options->frac_digits = -1;
   options->ts_format = -1;
 }
