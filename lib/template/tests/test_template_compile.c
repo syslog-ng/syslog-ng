@@ -334,11 +334,19 @@ test_simple_template_function_with_additional_text(void)
 }
 
 static void
+test_qouted_string_in_name_template_function(void)
+{
+  assert_template_compile("$(he\"ll\"o)");
+  assert_compiled_template(text = "", default_value = NULL, func.ops = hello_construct(&hello_plugin, configuration, LL_CONTEXT_TEMPLATE_FUNC, "hello"), type = LTE_FUNC, msg_ref = 0);
+}
+
+static void
 test_template_compile_func(void)
 {
   TEMPLATE_TESTCASE(test_simple_template_function);
   TEMPLATE_TESTCASE(test_complicated_template_function);
   TEMPLATE_TESTCASE(test_simple_template_function_with_additional_text);
+  TEMPLATE_TESTCASE(test_qouted_string_in_name_template_function);
 }
 
 static void
@@ -372,6 +380,13 @@ test_template_function_bad2(void)
 }
 
 static void
+test_template_function_bad3(void)
+{
+  assert_failed_template_compile("$(hello \"This is an unclosed quoted string)", "Invalid template function reference, missing function name or inbalanced '(', error_pos='8'");
+  assert_compiled_template(text = "error in template: $(hello \"This is an unclosed quoted string)", default_value = NULL, macro = M_NONE, type = LTE_MACRO, msg_ref = 0);
+}
+
+static void
 test_unknown_function(void)
 {
   assert_failed_template_compile("$(unknown function)", "Unknown template function unknown");
@@ -385,6 +400,7 @@ test_template_compile_negativ_tests(void)
   TEMPLATE_TESTCASE(test_invalid_subst);
   TEMPLATE_TESTCASE(test_template_function_bad1);
   TEMPLATE_TESTCASE(test_template_function_bad2);
+  TEMPLATE_TESTCASE(test_template_function_bad3);
   TEMPLATE_TESTCASE(test_unknown_function);
 }
 
