@@ -656,6 +656,7 @@ log_macro_lookup(gchar *macro, gint len)
 typedef struct
 {
   LogTemplate *template;
+  GList *result;
   gchar *cursor;
   GString *text;
   gint msg_ref;
@@ -770,7 +771,7 @@ log_template_add_macro_elem(LogTemplateCompiler *self, guint macro, gchar *defau
   e->macro = macro;
   e->default_value = default_value;
   e->msg_ref = self->msg_ref;
-  self->template->compiled_template = g_list_prepend(self->template->compiled_template, e);
+  self->result = g_list_prepend(self->result, e);
 }
 
 static void
@@ -789,7 +790,7 @@ log_template_add_value_elem(LogTemplateCompiler *self, gchar *value_name, gsize 
   g_free(dup);
   e->default_value = default_value;
   e->msg_ref = self->msg_ref;
-  self->template->compiled_template = g_list_prepend(self->template->compiled_template, e);
+  self->result = g_list_prepend(self->result, e);
 }
 
 
@@ -834,7 +835,7 @@ log_template_add_func_elem(LogTemplateCompiler *self, gint argc, gchar *argv[], 
       goto error;
     }
   g_strfreev(argv);
-  self->template->compiled_template = g_list_prepend(self->template->compiled_template, e);
+  self->result = g_list_prepend(self->result, e);
   return TRUE;
 
  error:
@@ -842,6 +843,36 @@ log_template_add_func_elem(LogTemplateCompiler *self, gint argc, gchar *argv[], 
     g_free(e->text);
   g_free(e);
   return FALSE;
+}
+
+static void
+log_template_elem_free(LogTemplateElem *e)
+{
+  switch (e->type)
+    {
+    case LTE_FUNC:
+      if (e->func.state)
+        {
+          e->func.ops->free_state(e->func.state);
+          g_free(e->func.state);
+        }
+      break;
+    }
+  if (e->default_value)
+    g_free(e->default_value);
+  if (e->text)
+    g_free(e->text);
+  g_free(e);
+}
+
+static void
+log_template_elem_free_list(GList *el)
+{
+  for (; el; el = el->next)
+    {
+      log_template_elem_free((LogTemplateElem *) el->data);
+    }
+  g_list_free(el);
 }
 
 static void
@@ -1149,25 +1180,37 @@ log_template_compiler_process_token(LogTemplateCompiler *self, GError **error)
   return TRUE;
 }
 
-static gboolean
-log_template_compiler_compile(LogTemplateCompiler *self, GError **error)
+static void
+log_template_compiler_free_result(LogTemplateCompiler *self)
 {
-  while(*self->cursor)
+  log_template_elem_free_list(self->result);
+  self->result = NULL;
+}
+
+static gboolean
+log_template_compiler_compile(LogTemplateCompiler *self, GList **compiled_template, GError **error)
+{
+  gboolean result = FALSE;
+
+  while (*self->cursor)
     {
       if (!log_template_compiler_process_token(self, error))
         {
-          log_template_reset_compiled(self->template);
+          log_template_compiler_free_result(self);
           g_string_sprintf(self->text, "error in template: %s", self->template->template);
           log_template_add_macro_elem(self, M_NONE, NULL);
-          return FALSE;
+          goto error;
         }
     }
   if (self->text->len)
     {
       log_template_add_macro_elem(self, M_NONE, NULL);
     }
-  self->template->compiled_template = g_list_reverse(self->template->compiled_template);
-  return TRUE;
+  result = TRUE;
+ error:
+  *compiled_template = g_list_reverse(self->result);
+  self->result = NULL;
+  return result;
 }
 
 static void
@@ -1187,6 +1230,13 @@ log_template_compiler_clear(LogTemplateCompiler *self)
   g_string_free(self->text, TRUE);
 }
 
+static void
+log_template_reset_compiled(LogTemplate *self)
+{
+  log_template_elem_free_list(self->compiled_template);
+  self->compiled_template = NULL;
+}
+
 gboolean
 log_template_compile(LogTemplate *self, const gchar *template, GError **error)
 {
@@ -1201,7 +1251,7 @@ log_template_compile(LogTemplate *self, const gchar *template, GError **error)
   self->template = g_strdup(template);
 
   log_template_compiler_init(&compiler, self);
-  result = log_template_compiler_compile(&compiler, error);
+  result = log_template_compiler_compile(&compiler, &self->compiled_template, error);
   log_template_compiler_clear(&compiler);
   return result;
 }
@@ -1220,33 +1270,6 @@ log_template_set_type_hint(LogTemplate *self, const gchar *type_hint, GError **e
   return type_hint_parse(type_hint, &self->type_hint, error);
 }
 
-static void
-log_template_reset_compiled(LogTemplate *self)
-{
-  while (self->compiled_template)
-    {
-      LogTemplateElem *e;
-
-      e = self->compiled_template->data;
-      self->compiled_template = g_list_delete_link(self->compiled_template, self->compiled_template);
-      switch (e->type)
-        {
-        case LTE_FUNC:
-          if (e->func.state)
-            {
-              e->func.ops->free_state(e->func.state);
-              g_free(e->func.state);
-            }
-          break;
-        }
-      if (e->default_value)
-        g_free(e->default_value);
-      if (e->text)
-        g_free(e->text);
-      g_free(e);
-    }
-
-}
 
 void
 log_template_append_format_with_context(LogTemplate *self, LogMessage **messages, gint num_messages, LogTemplateOptions *opts, gint tz, gint32 seq_num, const gchar *context_id, GString *result)
