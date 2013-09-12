@@ -12,6 +12,8 @@ libsyslog_ng_test_a_SOURCES = \
 	msg_parse_lib.h		\
 	template_lib.c		\
 	template_lib.h		\
+	config_parse_lib.c		\
+	config_parse_lib.h		\
 	mock-transport.c	\
 	mock-transport.h \
   libtest_memreader.c \
