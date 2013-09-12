@@ -460,6 +460,7 @@ affile_sd_skip_old_messages(LogSrcDriver *s, GlobalConfig *cfg)
     }
   else
     {
+      g_string_assign(self->filename, self->filename_pattern->str);
       affile_sd_set_file_pos(self, cfg);
     }
   return TRUE;

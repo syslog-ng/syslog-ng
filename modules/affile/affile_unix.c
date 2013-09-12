@@ -28,8 +28,8 @@
 
 static const gchar* spurious_paths[] = {"../", "/..", NULL};
 
-#define DEFAULT_SD_OPEN_FLAGS (O_RDWR | O_NOCTTY | O_NONBLOCK | O_LARGEFILE)
-#define DEFAULT_SD_OPEN_FLAGS_PIPE (O_RDONLY | O_NOCTTY | O_NONBLOCK | O_LARGEFILE)
+#define DEFAULT_SD_OPEN_FLAGS (O_RDONLY | O_NOCTTY | O_NONBLOCK | O_LARGEFILE)
+#define DEFAULT_SD_OPEN_FLAGS_PIPE (O_RDWR | O_NOCTTY | O_NONBLOCK | O_LARGEFILE)
 #define DEFAULT_DW_REOPEN_FLAGS (O_WRONLY | O_CREAT | O_NOCTTY | O_NONBLOCK | O_LARGEFILE)
 #define DEFAULT_DW_REOPEN_FLAGS_PIPE (O_RDWR | O_NOCTTY | O_NONBLOCK | O_LARGEFILE)
 
@@ -106,6 +106,27 @@ int affile_open_fd(const gchar *name, OpenFileProperties *props)
   return fd;
 }
 
+static void
+affile_check_file_type(const gchar *name, OpenFileProperties *props)
+{
+  struct stat st;
+  if (stat(name, &st) >= 0)
+    {
+      if (props->is_pipe && !S_ISFIFO(st.st_mode))
+        {
+          msg_warning("WARNING: you are using the pipe driver, underlying file is not a FIFO, it should be used by file()",
+                    evt_tag_str("filename", name),
+                    NULL);
+        }
+      else if (!props->is_pipe && S_ISFIFO(st.st_mode))
+        {
+          msg_warning("WARNING: you are using the file driver, underlying file is a FIFO, it should be used by pipe()",
+                      evt_tag_str("filename", name),
+                      NULL);
+        }
+    }
+}
+
 static int
 affile_open_file(gchar *name, OpenFileProperties *props)
 {
@@ -117,6 +138,8 @@ affile_open_file(gchar *name, OpenFileProperties *props)
 
   if (!affile_set_caps(name, props, &saved_caps))
     return -1;
+
+  affile_check_file_type(name, props);
 
   fd = affile_open_fd(name, props);
 
