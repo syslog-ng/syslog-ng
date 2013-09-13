@@ -18,6 +18,8 @@ modules_afstomp_libafstomp_la_LIBADD = \
     $(MODULE_DEPS_LIBS)
 modules_afstomp_libafstomp_la_LDFLAGS = \
     $(MODULE_LDFLAGS)
+modules_afstomp_libafstomp_la_DEPENDENCIES  = \
+        $(MODULE_DEPS_LIBS)
 
 modules/afstomp modules/afstomp/ mod-afstomp mod-stomp: \
     modules/afstomp/libafstomp.la
