@@ -32,13 +32,14 @@
 #include "logqueue.h"
 #include "scratch-buffers.h"
 #include "plugin-types.h"
+#include "logthrdestdrv.h"
 
 #include <amqp.h>
 #include <amqp_framing.h>
 
 typedef struct
 {
-  LogDestDriver super;
+  LogThrDestDriver super;
 
   /* Shared between main/writer; only read by the writer, never written */
   gchar *exchange;
@@ -56,25 +57,8 @@ typedef struct
   gchar *user;
   gchar *password;
 
-  time_t time_reopen;
-
-  StatsCounterItem *dropped_messages;
-  StatsCounterItem *stored_messages;
   LogTemplateOptions template_options;
-
   ValuePairs *vp;
-
-  /* Thread related stuff; shared */
-  GThread *writer_thread;
-  GMutex *queue_mutex;
-  GMutex *suspend_mutex;
-  GCond *writer_thread_wakeup_cond;
-
-  gboolean writer_thread_terminate;
-  gboolean writer_thread_suspended;
-  GTimeVal writer_thread_suspend_target;
-
-  LogQueue *queue;
 
   /* Writer-only stuff */
   amqp_connection_state_t conn;
@@ -210,8 +194,9 @@ afamqp_dd_get_template_options(LogDriver *s)
  */
 
 static gchar *
-afamqp_dd_format_stats_instance(AMQPDestDriver *self)
+afamqp_dd_format_stats_instance(LogThrDestDriver *s)
 {
+  AMQPDestDriver *self = (AMQPDestDriver *) s;
   static gchar persist_name[1024];
 
   g_snprintf(persist_name, sizeof(persist_name), "amqp,%s,%s,%u,%s,%s",
@@ -221,8 +206,9 @@ afamqp_dd_format_stats_instance(AMQPDestDriver *self)
 }
 
 static gchar *
-afamqp_dd_format_persist_name(AMQPDestDriver *self)
+afamqp_dd_format_persist_name(LogThrDestDriver *s)
 {
+  AMQPDestDriver *self = (AMQPDestDriver *) s;
   static gchar persist_name[1024];
 
   g_snprintf(persist_name, sizeof(persist_name), "afamqp(%s,%s,%u,%s,%s)",
@@ -232,17 +218,10 @@ afamqp_dd_format_persist_name(AMQPDestDriver *self)
 }
 
 static void
-afamqp_dd_suspend(AMQPDestDriver *self)
+afamqp_dd_disconnect(LogThrDestDriver *s)
 {
-  self->writer_thread_suspended = TRUE;
-  g_get_current_time(&self->writer_thread_suspend_target);
-  g_time_val_add(&self->writer_thread_suspend_target,
-                 self->time_reopen * 1000000);
-}
+  AMQPDestDriver *self = (AMQPDestDriver *)s;
 
-static void
-afamqp_dd_disconnect(AMQPDestDriver *self)
-{
   amqp_channel_close(self->conn, 1, AMQP_REPLY_SUCCESS);
   amqp_connection_close(self->conn, AMQP_REPLY_SUCCESS);
   amqp_destroy_connection(self->conn);
@@ -259,23 +238,23 @@ afamqp_is_ok(AMQPDestDriver *self, gchar *context, amqp_rpc_reply_t ret)
 
     case AMQP_RESPONSE_NONE:
       msg_error(context,
-                evt_tag_str("driver", self->super.super.id),
+                evt_tag_str("driver", self->super.super.super.id),
                 evt_tag_str("error", "missing RPC reply type"),
-                evt_tag_int("time_reopen", self->time_reopen),
+                evt_tag_int("time_reopen", self->super.time_reopen),
                 NULL);
-      afamqp_dd_suspend(self);
+      log_threaded_dest_driver_suspend(&self->super);
       return FALSE;
 
     case AMQP_RESPONSE_LIBRARY_EXCEPTION:
       {
         gchar *errstr = amqp_error_string(ret.library_error);
         msg_error(context,
-                  evt_tag_str("driver", self->super.super.id),
+                  evt_tag_str("driver", self->super.super.super.id),
                   evt_tag_str("error", errstr),
-                  evt_tag_int("time_reopen", self->time_reopen),
+                  evt_tag_int("time_reopen", self->super.time_reopen),
                   NULL);
         g_free (errstr);
-        afamqp_dd_suspend(self);
+        log_threaded_dest_driver_suspend(&self->super);
         return FALSE;
       }
 
@@ -287,13 +266,13 @@ afamqp_is_ok(AMQPDestDriver *self, gchar *context, amqp_rpc_reply_t ret)
             amqp_connection_close_t *m =
               (amqp_connection_close_t *) ret.reply.decoded;
             msg_error(context,
-                      evt_tag_str("driver", self->super.super.id),
+                      evt_tag_str("driver", self->super.super.super.id),
                       evt_tag_str("error", "server connection error"),
                       evt_tag_int("code", m->reply_code),
                       evt_tag_str("text", m->reply_text.bytes),
-                      evt_tag_int("time_reopen", self->time_reopen),
+                      evt_tag_int("time_reopen", self->super.time_reopen),
                       NULL);
-            afamqp_dd_suspend(self);
+            log_threaded_dest_driver_suspend(&self->super);
             return FALSE;
           }
         case AMQP_CHANNEL_CLOSE_METHOD:
@@ -301,23 +280,23 @@ afamqp_is_ok(AMQPDestDriver *self, gchar *context, amqp_rpc_reply_t ret)
             amqp_channel_close_t *m =
               (amqp_channel_close_t *) ret.reply.decoded;
             msg_error(context,
-                      evt_tag_str("driver", self->super.super.id),
+                      evt_tag_str("driver", self->super.super.super.id),
                       evt_tag_str("error", "server channel error"),
                       evt_tag_int("code", m->reply_code),
                       evt_tag_str("text", m->reply_text.bytes),
-                      evt_tag_int("time_reopen", self->time_reopen),
+                      evt_tag_int("time_reopen", self->super.time_reopen),
                       NULL);
-            afamqp_dd_suspend(self);
+            log_threaded_dest_driver_suspend(&self->super);
             return FALSE;
           }
         default:
           msg_error(context,
-                    evt_tag_str("driver", self->super.super.id),
+                    evt_tag_str("driver", self->super.super.super.id),
                     evt_tag_str("error", "unknown server error"),
                     evt_tag_printf("method id", "0x%08X", ret.reply.id),
-                    evt_tag_int("time_reopen", self->time_reopen),
+                    evt_tag_int("time_reopen", self->super.time_reopen),
                     NULL);
-          afamqp_dd_suspend(self);
+          log_threaded_dest_driver_suspend(&self->super);
           return FALSE;
         }
       return FALSE;
@@ -344,9 +323,9 @@ afamqp_dd_connect(AMQPDestDriver *self, gboolean reconnect)
     {
       gchar *errstr = amqp_error_string(-sockfd);
       msg_error("Error connecting to AMQP server",
-                evt_tag_str("driver", self->super.super.id),
+                evt_tag_str("driver", self->super.super.super.id),
                 evt_tag_str("error", errstr),
-                evt_tag_int("time_reopen", self->time_reopen),
+                evt_tag_int("time_reopen", self->super.time_reopen),
                 NULL);
       g_free(errstr);
       return FALSE;
@@ -374,7 +353,7 @@ afamqp_dd_connect(AMQPDestDriver *self, gboolean reconnect)
     }
 
   msg_debug ("Connecting to AMQP succeeded",
-             evt_tag_str("driver", self->super.super.id),
+             evt_tag_str("driver", self->super.super.super.id),
              NULL);
 
   return TRUE;
@@ -453,7 +432,8 @@ afamqp_worker_publish(AMQPDestDriver *self, LogMessage *msg)
   if (ret < 0)
     {
       msg_error("Network error while inserting into AMQP server",
-                evt_tag_int("time_reopen", self->time_reopen), NULL);
+                evt_tag_str("driver", self->super.super.super.id),
+                evt_tag_int("time_reopen", self->super.time_reopen), NULL);
       success = FALSE;
     }
 
@@ -467,15 +447,16 @@ afamqp_worker_publish(AMQPDestDriver *self, LogMessage *msg)
 }
 
 static gboolean
-afamqp_worker_insert(AMQPDestDriver *self)
+afamqp_worker_insert(LogThrDestDriver *s)
 {
+  AMQPDestDriver *self = (AMQPDestDriver *)s;
   gboolean success;
   LogMessage *msg;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
 
   afamqp_dd_connect(self, TRUE);
 
-  success = log_queue_pop_head(self->queue, &msg, &path_options, FALSE, FALSE);
+  success = log_queue_pop_head(s->queue, &msg, &path_options, FALSE, FALSE);
   if (!success)
     return TRUE;
 
@@ -485,97 +466,28 @@ afamqp_worker_insert(AMQPDestDriver *self)
 
   if (success)
     {
-      stats_counter_inc(self->stored_messages);
+      stats_counter_inc(s->stored_messages);
       step_sequence_number(&self->seq_num);
       log_msg_ack(msg, &path_options);
       log_msg_unref(msg);
     }
   else
-    {
-      g_mutex_lock(self->queue_mutex);
-      log_queue_push_head(self->queue, msg, &path_options);
-      g_mutex_unlock(self->queue_mutex);
-    }
+    log_queue_push_head(s->queue, msg, &path_options);
 
   return success;
 }
 
 static void
-afamqp_dd_message_became_available_in_the_queue(gpointer user_data)
+afamqp_worker_thread_init(LogThrDestDriver *d)
 {
-  AMQPDestDriver *self = (AMQPDestDriver *) user_data;
-
-  g_mutex_lock(self->suspend_mutex);
-  g_cond_signal(self->writer_thread_wakeup_cond);
-  g_mutex_unlock(self->suspend_mutex);
-}
-
-static gpointer
-afamqp_worker_thread(gpointer arg)
-{
-  AMQPDestDriver *self = (AMQPDestDriver *) arg;
-
-  msg_debug("Worker thread started",
-            evt_tag_str("driver", self->super.super.id), NULL);
+  AMQPDestDriver *self = (AMQPDestDriver *)d;
 
   afamqp_dd_connect(self, FALSE);
-
-  while (!self->writer_thread_terminate)
-    {
-      g_mutex_lock(self->suspend_mutex);
-      if (self->writer_thread_suspended)
-        {
-          g_cond_timed_wait(self->writer_thread_wakeup_cond,
-                            self->suspend_mutex, &self->writer_thread_suspend_target);
-          self->writer_thread_suspended = FALSE;
-          g_mutex_unlock(self->suspend_mutex);
-        }
-      else if (!log_queue_check_items(self->queue, NULL, afamqp_dd_message_became_available_in_the_queue, self, NULL))
-	{
-	  g_cond_wait(self->writer_thread_wakeup_cond, self->suspend_mutex);
-	  g_mutex_unlock(self->suspend_mutex);
-	}
-      else
-        g_mutex_unlock(self->suspend_mutex);
-
-      if (self->writer_thread_terminate)
-        break;
-
-      if (!afamqp_worker_insert(self))
-        {
-          afamqp_dd_disconnect(self);
-          afamqp_dd_suspend(self);
-        }
-    }
-
-  afamqp_dd_disconnect(self);
-
-  msg_debug("Worker thread finished",
-            evt_tag_str("driver", self->super.super.id), NULL);
-
-  return NULL;
 }
 
 /*
  * Main thread
  */
-
-static void
-afamqp_dd_start_thread(AMQPDestDriver *self)
-{
-  self->writer_thread = create_worker_thread(afamqp_worker_thread, self,
-                                             TRUE, NULL);
-}
-
-static void
-afamqp_dd_stop_thread(AMQPDestDriver *self)
-{
-  self->writer_thread_terminate = TRUE;
-  g_mutex_lock(self->queue_mutex);
-  g_cond_signal(self->writer_thread_wakeup_cond);
-  g_mutex_unlock(self->queue_mutex);
-  g_thread_join(self->writer_thread);
-}
 
 static gboolean
 afamqp_dd_init(LogPipe *s)
@@ -583,13 +495,10 @@ afamqp_dd_init(LogPipe *s)
   AMQPDestDriver *self = (AMQPDestDriver *) s;
   GlobalConfig *cfg = log_pipe_get_config(s);
 
-  if (!log_dest_driver_init_method(s))
+  if (!log_threaded_dest_driver_init_method(s))
     return FALSE;
 
   log_template_options_init(&self->template_options, cfg);
-
-  if (cfg)
-    self->time_reopen = cfg->time_reopen;
 
   msg_verbose("Initializing AMQP destination",
               evt_tag_str("vhost", self->vhost),
@@ -599,43 +508,7 @@ afamqp_dd_init(LogPipe *s)
               evt_tag_str("exchange_type", self->exchange_type),
               NULL);
 
-  self->queue = log_dest_driver_acquire_queue(&self->super, afamqp_dd_format_persist_name(self));
-
-  stats_lock();
-  stats_register_counter(0, SCS_AMQP | SCS_DESTINATION,
-                         self->super.super.id, afamqp_dd_format_stats_instance(self),
-                         SC_TYPE_STORED, &self->stored_messages);
-  stats_register_counter(0, SCS_AMQP | SCS_DESTINATION,
-                         self->super.super.id, afamqp_dd_format_stats_instance(self),
-                         SC_TYPE_DROPPED, &self->dropped_messages);
-  stats_unlock();
-
-  log_queue_set_counters(self->queue, self->stored_messages,
-                         self->dropped_messages);
-  afamqp_dd_start_thread(self);
-
-  return TRUE;
-}
-
-static gboolean
-afamqp_dd_deinit(LogPipe *s)
-{
-  AMQPDestDriver *self = (AMQPDestDriver *) s;
-
-  afamqp_dd_stop_thread(self);
-  log_queue_reset_parallel_push(self->queue);
-
-  log_queue_set_counters(self->queue, NULL, NULL);
-  stats_lock();
-  stats_unregister_counter(SCS_AMQP | SCS_DESTINATION,
-                           self->super.super.id, afamqp_dd_format_stats_instance(self),
-                           SC_TYPE_STORED, &self->stored_messages);
-  stats_unregister_counter(SCS_AMQP | SCS_DESTINATION,
-                           self->super.super.id, afamqp_dd_format_stats_instance(self),
-                           SC_TYPE_DROPPED, &self->dropped_messages);
-  stats_unlock();
-  if (!log_dest_driver_deinit_method(s))
-    return FALSE;
+  log_threaded_dest_driver_start(&self->super);
 
   return TRUE;
 }
@@ -646,13 +519,6 @@ afamqp_dd_free(LogPipe *d)
   AMQPDestDriver *self = (AMQPDestDriver *) d;
 
   log_template_options_destroy(&self->template_options);
-
-  g_mutex_free(self->suspend_mutex);
-  g_mutex_free(self->queue_mutex);
-  g_cond_free(self->writer_thread_wakeup_cond);
-
-  if (self->queue)
-    log_queue_unref(self->queue);
 
   g_free(self->exchange);
   g_free(self->exchange_type);
@@ -665,22 +531,8 @@ afamqp_dd_free(LogPipe *d)
   g_free(self->entries);
   if (self->vp)
     value_pairs_free(self->vp);
-  log_dest_driver_free(d);
-}
 
-static void
-afamqp_dd_queue(LogPipe *s, LogMessage *msg,
-                const LogPathOptions *path_options, gpointer user_data)
-{
-  AMQPDestDriver *self = (AMQPDestDriver *) s;
-  LogPathOptions local_options;
-
-  if (!path_options->flow_control_requested)
-    path_options = log_msg_break_ack(msg, path_options, &local_options);
-
-  log_msg_add_ack(msg, path_options);
-  log_queue_push_tail(self->queue, msg, path_options);
-  log_dest_driver_queue_method(s, msg, path_options, user_data);
+  log_threaded_dest_driver_free(d);
 }
 
 /*
@@ -692,11 +544,18 @@ afamqp_dd_new(GlobalConfig *cfg)
 {
   AMQPDestDriver *self = g_new0(AMQPDestDriver, 1);
 
-  log_dest_driver_init_instance(&self->super);
-  self->super.super.super.init = afamqp_dd_init;
-  self->super.super.super.deinit = afamqp_dd_deinit;
-  self->super.super.super.queue = afamqp_dd_queue;
-  self->super.super.super.free_fn = afamqp_dd_free;
+  log_threaded_dest_driver_init_instance(&self->super);
+
+  self->super.super.super.super.init = afamqp_dd_init;
+  self->super.super.super.super.free_fn = afamqp_dd_free;
+
+  self->super.worker.thread_init = afamqp_worker_thread_init;
+  self->super.worker.disconnect = afamqp_dd_disconnect;
+  self->super.worker.insert = afamqp_worker_insert;
+
+  self->super.format.stats_instance = afamqp_dd_format_stats_instance;
+  self->super.format.persist_name = afamqp_dd_format_persist_name;
+  self->super.stats_source = SCS_AMQP;
 
   self->routing_key_template = log_template_new(cfg, NULL);
 
@@ -711,15 +570,11 @@ afamqp_dd_new(GlobalConfig *cfg)
 
   init_sequence_number(&self->seq_num);
 
-  self->writer_thread_wakeup_cond = g_cond_new();
-  self->suspend_mutex = g_mutex_new();
-  self->queue_mutex = g_mutex_new();
-
   self->max_entries = 256;
   self->entries = g_new(amqp_table_entry_t, self->max_entries);
 
   log_template_options_defaults(&self->template_options);
-  afamqp_dd_set_value_pairs(&self->super.super, value_pairs_new_default(cfg));
+  afamqp_dd_set_value_pairs(&self->super.super.super, value_pairs_new_default(cfg));
 
   return (LogDriver *) self;
 }
