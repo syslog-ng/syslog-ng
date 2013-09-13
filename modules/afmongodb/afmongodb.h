@@ -40,4 +40,6 @@ void afmongodb_dd_set_path(LogDriver *d, const gchar *path);
 
 gboolean afmongodb_dd_check_address(LogDriver *d, gboolean local);
 
+LogTemplateOptions *afmongodb_dd_get_template_options(LogDriver *s);
+
 #endif
