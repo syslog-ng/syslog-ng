@@ -324,7 +324,7 @@ tf_indent_multi_line(LogMessage *msg, gint argc, GString *argv[], GString *text)
 TEMPLATE_FUNCTION_SIMPLE(tf_indent_multi_line);
 
 void
-tf_lower_case(LogMessage *msg, gint argc, GString *argv[], GString *result)
+tf_lowercase(LogMessage *msg, gint argc, GString *argv[], GString *result)
 {
   gint i;
 
@@ -340,10 +340,10 @@ tf_lower_case(LogMessage *msg, gint argc, GString *argv[], GString *result)
     }
 }
 
-TEMPLATE_FUNCTION_SIMPLE(tf_lower_case);
+TEMPLATE_FUNCTION_SIMPLE(tf_lowercase);
 
 void
-tf_upper_case(LogMessage *msg, gint argc, GString *argv[], GString *result)
+tf_uppercase(LogMessage *msg, gint argc, GString *argv[], GString *result)
 {
   gint i;
 
@@ -359,7 +359,7 @@ tf_upper_case(LogMessage *msg, gint argc, GString *argv[], GString *result)
     }
 }
 
-TEMPLATE_FUNCTION_SIMPLE(tf_upper_case);
+TEMPLATE_FUNCTION_SIMPLE(tf_uppercase);
 
 void
 tf_delimit(LogMessage *msg, gint argc, GString *argv[], GString *result)
