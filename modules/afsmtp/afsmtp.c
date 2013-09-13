@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2011-2012 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 2011-2012 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2011-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2011-2013 Gergely Nagy <algernon@balabit.hu>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -30,6 +30,7 @@
 #include "stats.h"
 #include "logqueue.h"
 #include "plugin-types.h"
+#include "logthrdestdrv.h"
 
 #include <libesmtp.h>
 #include <signal.h>
@@ -50,7 +51,7 @@ typedef struct
 
 typedef struct
 {
-  LogDestDriver super;
+  LogThrDestDriver super;
 
   /* Shared between main/writer; only read by the writer, never
      written */
@@ -63,24 +64,8 @@ typedef struct
   GList *headers;
   gchar *body;
 
-  time_t time_reopen;
-
-  StatsCounterItem *dropped_messages;
-  StatsCounterItem *stored_messages;
-
   LogTemplate *subject_tmpl;
   LogTemplate *body_tmpl;
-
-  /* Thread related stuff; shared */
-  GThread *writer_thread;
-  GMutex *suspend_mutex;
-  GCond *writer_thread_wakeup_cond;
-
-  gboolean writer_thread_terminate;
-  gboolean writer_thread_suspended;
-  GTimeVal writer_thread_suspend_target;
-
-  LogQueue *queue;
 
   /* Writer-only stuff */
   gint32 seq_num;
@@ -204,8 +189,9 @@ ignore_sigpipe (void)
 }
 
 static gchar *
-afsmtp_dd_format_stats_instance(AFSMTPDriver *self)
+afsmtp_dd_format_stats_instance(LogThrDestDriver *d)
 {
+  AFSMTPDriver *self = (AFSMTPDriver *)d;
   static gchar persist_name[1024];
 
   g_snprintf(persist_name, sizeof(persist_name),
@@ -213,13 +199,15 @@ afsmtp_dd_format_stats_instance(AFSMTPDriver *self)
   return persist_name;
 }
 
-static void
-afsmtp_dd_suspend(AFSMTPDriver *self)
+static gchar *
+afsmtp_dd_format_persist_name(LogThrDestDriver *d)
 {
-  self->writer_thread_suspended = TRUE;
-  g_get_current_time(&self->writer_thread_suspend_target);
-  g_time_val_add(&self->writer_thread_suspend_target,
-                 self->time_reopen * 1000000);
+  AFSMTPDriver *self = (AFSMTPDriver *)d;
+  static gchar persist_name[1024];
+
+  g_snprintf(persist_name, sizeof(persist_name),
+             "smtp(%s,%u)", self->host, self->port);
+  return persist_name;
 }
 
 /*
@@ -284,6 +272,7 @@ afsmtp_dd_cb_event(smtp_session_t session, int event, AFSMTPDriver *self)
     {
     case SMTP_EV_CONNECT:
       msg_verbose("Connected to SMTP server",
+                  evt_tag_str("driver", self->super.super.super.id),
                   evt_tag_str("host", self->host),
                   evt_tag_int("port", self->port),
                   NULL);
@@ -296,12 +285,14 @@ afsmtp_dd_cb_event(smtp_session_t session, int event, AFSMTPDriver *self)
       break;
     case SMTP_EV_DISCONNECT:
       msg_verbose("Disconnected from SMTP server",
+                  evt_tag_str("driver", self->super.super.super.id),
                   evt_tag_str("host", self->host),
                   evt_tag_int("port", self->port),
                   NULL);
       break;
     default:
       msg_verbose("Unknown SMTP event",
+                  evt_tag_str("driver", self->super.super.super.id),
                   evt_tag_int("event_id", event),
                   NULL);
       break;
@@ -320,16 +311,19 @@ afsmtp_dd_cb_monitor(const gchar *buf, gint buflen, gint writing,
     {
     case SMTP_CB_READING:
       msg_debug ("SMTP Session: SERVER",
+                 evt_tag_str("driver", self->super.super.super.id),
                  evt_tag_printf("message", fmt, buf),
                  NULL);
       break;
     case SMTP_CB_WRITING:
       msg_debug("SMTP Session: CLIENT",
+                evt_tag_str("driver", self->super.super.super.id),
                 evt_tag_printf("message", fmt, buf),
                 NULL);
       break;
     case SMTP_CB_HEADERS:
       msg_debug("SMTP Session: HEADERS",
+                evt_tag_str("driver", self->super.super.super.id),
                 evt_tag_printf("data", fmt, buf),
                 NULL);
       break;
@@ -337,8 +331,9 @@ afsmtp_dd_cb_monitor(const gchar *buf, gint buflen, gint writing,
 }
 
 static gboolean
-afsmtp_worker_insert(AFSMTPDriver *self)
+afsmtp_worker_insert(LogThrDestDriver *s)
 {
+  AFSMTPDriver *self = (AFSMTPDriver *)s;
   gboolean success;
   LogMessage *msg;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
@@ -346,7 +341,7 @@ afsmtp_worker_insert(AFSMTPDriver *self)
   smtp_message_t message;
   gpointer args[] = { self, NULL, NULL };
 
-  success = log_queue_pop_head(self->queue, &msg, &path_options, FALSE, FALSE);
+  success = log_queue_pop_head(s->queue, &msg, &path_options, FALSE, FALSE);
   if (!success)
     return TRUE;
 
@@ -398,8 +393,9 @@ afsmtp_worker_insert(AFSMTPDriver *self)
       smtp_strerror(smtp_errno(), error, sizeof (error) - 1);
 
       msg_error("SMTP server error, suspending",
+                evt_tag_str("driver", self->super.super.super.id),
                 evt_tag_str("error", error),
-                evt_tag_int("time_reopen", self->time_reopen),
+                evt_tag_int("time_reopen", self->super.time_reopen),
                 NULL);
       success = FALSE;
     }
@@ -407,6 +403,7 @@ afsmtp_worker_insert(AFSMTPDriver *self)
     {
       const smtp_status_t *status = smtp_message_transfer_status(message);
       msg_debug("SMTP result",
+                evt_tag_str("driver", self->super.super.super.id),
                 evt_tag_int("code", status->code),
                 evt_tag_str("text", status->text),
                 NULL);
@@ -418,100 +415,38 @@ afsmtp_worker_insert(AFSMTPDriver *self)
 
   if (success)
     {
-      stats_counter_inc(self->stored_messages);
+      stats_counter_inc(s->stored_messages);
       step_sequence_number(&self->seq_num);
       log_msg_ack(msg, &path_options);
       log_msg_unref(msg);
     }
   else
-    {
-      log_queue_push_head(self->queue, msg, &path_options);
-    }
+    log_queue_push_head(s->queue, msg, &path_options);
 
   return success;
 }
 
 static void
-afsmtp_dd_message_became_available_in_the_queue(gpointer user_data)
+afsmtp_worker_thread_init(LogThrDestDriver *d)
 {
-  AFSMTPDriver *self = (AFSMTPDriver *) user_data;
-
-  g_mutex_lock(self->suspend_mutex);
-  g_cond_signal(self->writer_thread_wakeup_cond);
-  g_mutex_unlock(self->suspend_mutex);
-}
-
-static gpointer
-afsmtp_worker_thread(gpointer arg)
-{
-  AFSMTPDriver *self = (AFSMTPDriver *)arg;
-
-  msg_debug("Worker thread started",
-            evt_tag_str("driver", self->super.super.id),
-            NULL);
+  AFSMTPDriver *self = (AFSMTPDriver *)d;
 
   self->str = g_string_sized_new(1024);
 
   ignore_sigpipe();
+}
 
-  while (!self->writer_thread_terminate)
-    {
-      g_mutex_lock(self->suspend_mutex);
-      if (self->writer_thread_suspended)
-        {
-          g_cond_timed_wait(self->writer_thread_wakeup_cond,
-                            self->suspend_mutex,
-                            &self->writer_thread_suspend_target);
-          self->writer_thread_suspended = FALSE;
-          g_mutex_unlock(self->suspend_mutex);
-        }
-      else if (!log_queue_check_items(self->queue, NULL, afsmtp_dd_message_became_available_in_the_queue, self, NULL))
-        {
-          g_cond_wait(self->writer_thread_wakeup_cond, self->suspend_mutex);
-          g_mutex_unlock(self->suspend_mutex);
-        }
-      else
-        {
-          g_mutex_unlock(self->suspend_mutex);
-        }
-
-      if (self->writer_thread_terminate)
-        break;
-
-      if (!afsmtp_worker_insert (self))
-        {
-          afsmtp_dd_suspend(self);
-        }
-    }
+static void
+afsmtp_worker_thread_deinit(LogThrDestDriver *d)
+{
+  AFSMTPDriver *self = (AFSMTPDriver *)d;
 
   g_string_free(self->str, TRUE);
-
-  msg_debug("Worker thread finished",
-            evt_tag_str("driver", self->super.super.id),
-            NULL);
-
-  return NULL;
 }
 
 /*
  * Main thread
  */
-
-static void
-afsmtp_dd_start_thread(AFSMTPDriver *self)
-{
-  self->writer_thread = create_worker_thread(afsmtp_worker_thread, self, TRUE, NULL);
-}
-
-static void
-afsmtp_dd_stop_thread(AFSMTPDriver *self)
-{
-  self->writer_thread_terminate = TRUE;
-  g_mutex_lock(self->suspend_mutex);
-  g_cond_signal(self->writer_thread_wakeup_cond);
-  g_mutex_unlock(self->suspend_mutex);
-  g_thread_join(self->writer_thread);
-}
 
 static void
 afsmtp_dd_init_header(AFSMTPHeader *hdr, GlobalConfig *cfg)
@@ -529,15 +464,14 @@ afsmtp_dd_init(LogPipe *s)
   AFSMTPDriver *self = (AFSMTPDriver *)s;
   GlobalConfig *cfg = log_pipe_get_config(s);
 
-  if (cfg)
-    self->time_reopen = cfg->time_reopen;
+  if (!log_threaded_dest_driver_init_method(s))
+    return FALSE;
 
   msg_verbose("Initializing SMTP destination",
+              evt_tag_str("driver", self->super.super.super.id),
               evt_tag_str("host", self->host),
               evt_tag_int("port", self->port),
               NULL);
-
-  self->queue = log_dest_driver_acquire_queue(&self->super, afsmtp_dd_format_stats_instance(self));
 
   g_list_foreach(self->headers, (GFunc)afsmtp_dd_init_header, cfg);
   if (!self->subject_tmpl)
@@ -551,36 +485,7 @@ afsmtp_dd_init(LogPipe *s)
       log_template_compile(self->body_tmpl, self->body, NULL);
     }
 
-  stats_lock();
-  stats_register_counter(0, SCS_SMTP | SCS_DESTINATION, self->super.super.id,
-                         afsmtp_dd_format_stats_instance(self),
-                         SC_TYPE_STORED, &self->stored_messages);
-  stats_register_counter(0, SCS_SMTP | SCS_DESTINATION, self->super.super.id,
-                         afsmtp_dd_format_stats_instance(self),
-                         SC_TYPE_DROPPED, &self->dropped_messages);
-  stats_unlock();
-
-  afsmtp_dd_start_thread(self);
-
-  return TRUE;
-}
-
-static gboolean
-afsmtp_dd_deinit(LogPipe *s)
-{
-  AFSMTPDriver *self = (AFSMTPDriver *)s;
-
-  afsmtp_dd_stop_thread(self);
-  log_queue_reset_parallel_push(self->queue);
-
-  stats_lock();
-  stats_unregister_counter(SCS_SMTP | SCS_DESTINATION, self->super.super.id,
-                           afsmtp_dd_format_stats_instance(self),
-                           SC_TYPE_STORED, &self->stored_messages);
-  stats_unregister_counter(SCS_SMTP | SCS_DESTINATION, self->super.super.id,
-                           afsmtp_dd_format_stats_instance(self),
-                           SC_TYPE_DROPPED, &self->dropped_messages);
-  stats_unlock();
+  log_threaded_dest_driver_start(&self->super);
 
   return TRUE;
 }
@@ -590,12 +495,6 @@ afsmtp_dd_free(LogPipe *d)
 {
   AFSMTPDriver *self = (AFSMTPDriver *)d;
   GList *l;
-
-  g_mutex_free(self->suspend_mutex);
-  g_cond_free(self->writer_thread_wakeup_cond);
-
-  if (self->queue)
-    log_queue_unref(self->queue);
 
   g_free(self->host);
   g_free(self->mail_from->phrase);
@@ -628,23 +527,7 @@ afsmtp_dd_free(LogPipe *d)
       l = g_list_delete_link(l, l);
     }
 
-  log_dest_driver_free(d);
-}
-
-static void
-afsmtp_dd_queue(LogPipe *s, LogMessage *msg,
-                const LogPathOptions *path_options, gpointer user_data)
-{
-  AFSMTPDriver *self = (AFSMTPDriver *)s;
-  LogPathOptions local_options;
-
-  if (!path_options->flow_control_requested)
-    path_options = log_msg_break_ack(msg, path_options, &local_options);
-
-  log_msg_add_ack(msg, path_options);
-  log_queue_push_tail(self->queue, log_msg_ref(msg), path_options);
-
-  log_dest_driver_queue_method(s, msg, path_options, user_data);
+  log_threaded_dest_driver_free(d);
 }
 
 /*
@@ -656,11 +539,17 @@ afsmtp_dd_new(void)
 {
   AFSMTPDriver *self = g_new0(AFSMTPDriver, 1);
 
-  log_dest_driver_init_instance(&self->super);
-  self->super.super.super.init = afsmtp_dd_init;
-  self->super.super.super.deinit = afsmtp_dd_deinit;
-  self->super.super.super.queue = afsmtp_dd_queue;
-  self->super.super.super.free_fn = afsmtp_dd_free;
+  log_threaded_dest_driver_init_instance(&self->super);
+  self->super.super.super.super.init = afsmtp_dd_init;
+  self->super.super.super.super.free_fn = afsmtp_dd_free;
+
+  self->super.worker.thread_init = afsmtp_worker_thread_init;
+  self->super.worker.thread_deinit = afsmtp_worker_thread_deinit;
+  self->super.worker.insert = afsmtp_worker_insert;
+
+  self->super.format.stats_instance = afsmtp_dd_format_stats_instance;
+  self->super.format.persist_name = afsmtp_dd_format_persist_name;
+  self->super.stats_source = SCS_SMTP;
 
   afsmtp_dd_set_host((LogDriver *)self, "127.0.0.1");
   afsmtp_dd_set_port((LogDriver *)self, 25);
@@ -668,9 +557,6 @@ afsmtp_dd_new(void)
   self->mail_from = g_new0(AFSMTPRecipient, 1);
 
   init_sequence_number(&self->seq_num);
-
-  self->writer_thread_wakeup_cond = g_cond_new();
-  self->suspend_mutex = g_mutex_new();
 
   return (LogDriver *)self;
 }
