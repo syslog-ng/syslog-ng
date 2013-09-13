@@ -43,6 +43,15 @@ enum LogTemplateError
   LOG_TEMPLATE_ERROR_COMPILE,
 };
 
+typedef enum
+{
+  ON_ERROR_DROP_MESSAGE        = 0x01,
+  ON_ERROR_DROP_PROPERTY       = 0x02,
+  ON_ERROR_FALLBACK_TO_STRING  = 0x04, /* Valid for type hinting
+                                          only! */
+  ON_ERROR_SILENT              = 0x08
+} LogTemplateOnError;
+
 /* structure that represents an expandable syslog-ng template */
 typedef struct _LogTemplate
 {
@@ -56,7 +65,6 @@ typedef struct _LogTemplate
   GStaticMutex arg_lock;
   GPtrArray *arg_bufs;
   TypeHint type_hint;
-  gint type_cast_strictness;
 } LogTemplate;
 
 /* template expansion options that can be influenced by the user and
@@ -75,6 +83,8 @@ typedef struct _LogTemplateOptions
   gchar *time_zone[LTZ_MAX];
   TimeZoneInfo *time_zone_info[LTZ_MAX];
 
+  /* Template error handling settings */
+  gint on_error;
 } LogTemplateOptions;
 
 /* macros (not NV pairs!) that syslog-ng knows about. This was the
@@ -215,5 +225,8 @@ void log_template_options_defaults(LogTemplateOptions *options);
 
 void log_template_global_init(void);
 void log_template_global_deinit(void);
+
+gboolean log_template_on_error_parse(const gchar *on_error, gint *out);
+void log_template_options_set_on_error(LogTemplateOptions *options, gint on_error);
 
 #endif

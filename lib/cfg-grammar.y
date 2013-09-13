@@ -322,6 +322,8 @@ extern struct _ValuePairsTransformSet *last_vp_transset;
 %token KW_ADD_PREFIX                  10508
 %token KW_REPLACE_PREFIX              10509
 
+%token KW_ON_ERROR                    10510
+
 /* END_DECLS */
 
 %code {
@@ -865,6 +867,15 @@ options_item
 	| KW_RECV_TIME_ZONE '(' string ')'      { configuration->recv_time_zone = g_strdup($3); free($3); }
 	| KW_SEND_TIME_ZONE '(' string ')'      { configuration->template_options.time_zone[LTZ_SEND] = g_strdup($3); free($3); }
 	| KW_LOCAL_TIME_ZONE '(' string ')'     { configuration->template_options.time_zone[LTZ_LOCAL] = g_strdup($3); free($3); }
+	| KW_ON_ERROR '(' string ')'
+        {
+          gint on_error;
+
+          CHECK_ERROR(log_template_on_error_parse($3, &on_error), @3, "Invalid on-error() setting");
+          free($3);
+
+          log_template_options_set_on_error(&configuration->template_options, on_error);
+        }
 	;
 
 /* START_RULES */

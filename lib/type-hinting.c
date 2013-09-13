@@ -69,54 +69,17 @@ type_hint_parse(const gchar *hint, TypeHint *out_type, GError **error)
 }
 
 gboolean
-type_cast_strictness_parse(const gchar *strictness, gint *out, GError **error)
-{
-  const gchar *p = strictness;
-  gboolean silently = FALSE;
-
-  if (!strictness)
-    {
-      *out = TYPE_CAST_DROP_MESSAGE;
-      return TRUE;
-    }
-
-  if (strncmp(strictness, "silently-", strlen("silently-")) == 0)
-    {
-      silently = TRUE;
-      p = strictness + strlen("silently-");
-    }
-
-  if (strcmp(p, "drop-message") == 0)
-    *out = TYPE_CAST_DROP_MESSAGE;
-  else if (strcmp(p, "drop-property") == 0)
-    *out = TYPE_CAST_DROP_PROPERTY;
-  else if (strcmp(p, "fallback-to-string") == 0)
-    *out = TYPE_CAST_FALLBACK_TO_STRING;
-  else
-    {
-      g_set_error(error, TYPE_HINTING_ERROR, TYPE_CAST_INVALID_STRICTNESS,
-                  "%s",strictness);
-      return FALSE;
-    }
-
-  if (silently)
-    *out |= TYPE_CAST_SILENTLY;
-
-  return TRUE;
-}
-
-gboolean
 type_cast_drop_helper(gint drop_flags, const gchar *value,
                       const gchar *type_hint)
 {
-  if (!(drop_flags & TYPE_CAST_SILENTLY))
+  if (!(drop_flags & ON_ERROR_SILENT))
     {
       msg_error("Casting error",
                 evt_tag_str("value", value),
                 evt_tag_str("type-hint", type_hint),
                 NULL);
     }
-  return drop_flags & TYPE_CAST_DROP_MESSAGE;
+  return drop_flags & ON_ERROR_DROP_MESSAGE;
 }
 
 gboolean

@@ -1397,7 +1397,6 @@ log_template_new(GlobalConfig *cfg, gchar *name)
   LogTemplate *self = g_new0(LogTemplate, 1);
 
   self->name = g_strdup(name);
-  self->type_cast_strictness = TYPE_CAST_DROP_MESSAGE;
   self->ref_cnt = 1;
   self->cfg = cfg;
   g_static_mutex_init(&self->arg_lock);
@@ -1476,6 +1475,8 @@ log_template_options_init(LogTemplateOptions *options, GlobalConfig *cfg)
 
   if (options->frac_digits == -1)
     options->frac_digits = cfg->template_options.frac_digits;
+  if (options->on_error == -1)
+    options->on_error = cfg->template_options.on_error;
   options->initialized = TRUE;
 }
 
@@ -1500,6 +1501,7 @@ log_template_options_defaults(LogTemplateOptions *options)
   memset(options, 0, sizeof(LogTemplateOptions));
   options->frac_digits = -1;
   options->ts_format = -1;
+  options->on_error = -1;
 }
 
 GQuark
@@ -1530,4 +1532,43 @@ log_template_global_deinit(void)
 {
   g_hash_table_destroy(macro_hash);
   macro_hash = NULL;
+}
+
+gboolean
+log_template_on_error_parse(const gchar *strictness, gint *out)
+{
+  const gchar *p = strictness;
+  gboolean silently = FALSE;
+
+  if (!strictness)
+    {
+      *out = ON_ERROR_DROP_MESSAGE;
+      return TRUE;
+    }
+
+  if (strncmp(strictness, "silently-", strlen("silently-")) == 0)
+    {
+      silently = TRUE;
+      p = strictness + strlen("silently-");
+    }
+
+  if (strcmp(p, "drop-message") == 0)
+    *out = ON_ERROR_DROP_MESSAGE;
+  else if (strcmp(p, "drop-property") == 0)
+    *out = ON_ERROR_DROP_PROPERTY;
+  else if (strcmp(p, "fallback-to-string") == 0)
+    *out = ON_ERROR_FALLBACK_TO_STRING;
+  else
+    return FALSE;
+
+  if (silently)
+    *out |= ON_ERROR_SILENT;
+
+  return TRUE;
+}
+
+void
+log_template_options_set_on_error(LogTemplateOptions *options, gint on_error)
+{
+  options->on_error = on_error;
 }

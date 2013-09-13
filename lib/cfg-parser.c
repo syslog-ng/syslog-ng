@@ -132,6 +132,7 @@ static CfgLexerKeyword main_keywords[] = {
   { "dir_perm",           KW_DIR_PERM },
   { "template",           KW_TEMPLATE },
   { "template_escape",    KW_TEMPLATE_ESCAPE },
+  { "on_error",           KW_ON_ERROR },
   { "persist_only",       KW_PERSIST_ONLY },
   { "dns_cache_hosts",    KW_DNS_CACHE_HOSTS },
   { "dns_cache",          KW_DNS_CACHE },

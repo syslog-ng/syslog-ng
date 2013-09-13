@@ -319,10 +319,9 @@ cfg_new(gint version)
   log_template_options_defaults(&self->template_options);
   self->template_options.ts_format = TS_FMT_BSD;
   self->template_options.frac_digits = 0;
+  self->template_options.on_error = ON_ERROR_DROP_MESSAGE;
   self->recv_time_zone = NULL;
   self->keep_timestamp = TRUE;
-
-  self->type_cast_strictness = TYPE_CAST_DROP_MESSAGE;
 
   cfg_tree_init_instance(&self->tree, self);
   return self;

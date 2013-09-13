@@ -35,7 +35,6 @@ enum TypeHintingError
 {
   TYPE_HINTING_INVALID_TYPE,
   TYPE_HINTING_INVALID_CAST,
-  TYPE_CAST_INVALID_STRICTNESS,
 };
 
 typedef enum
@@ -49,15 +48,6 @@ typedef enum
   TYPE_HINT_DEFAULT,
 } TypeHint;
 
-typedef enum
-{
-  TYPE_CAST_DROP_MESSAGE        = 0x01,
-  TYPE_CAST_DROP_PROPERTY       = 0x02,
-  TYPE_CAST_FALLBACK_TO_STRING  = 0x04,
-  TYPE_CAST_SILENTLY            = 0x08
-} TypeCastStrictness;
-
-gboolean type_cast_strictness_parse(const gchar *strictness, gint *out, GError **error);
 gboolean type_hint_parse(const gchar *hint, TypeHint *out_hint, GError **error);
 
 gboolean type_cast_drop_helper(gint drop_flags, const gchar *value,

@@ -138,44 +138,6 @@ test_type_cast(void)
   testcase_end();
 }
 
-#define assert_type_cast_parse_strictness(strictness,expected)          \
-  do                                                                    \
-    {                                                                   \
-      gint r;                                                           \
-                                                                        \
-      assert_true(type_cast_strictness_parse(strictness, &r, &error),   \
-                  "Parsing '%s' works", strictness);                    \
-      assert_no_error(error, "Successful strictness parsing returns no error"); \
-      assert_gint32(r, expected, "'%s' parses down to '%s'", strictness, #expected); \
-    } while(0)
-
-static void
-test_type_cast_strictness(void)
-{
-  GError *error = NULL;
-  gint r;
-
-  testcase_begin("Testing type cast strictness");
-
-  assert_type_cast_parse_strictness("drop-message", TYPE_CAST_DROP_MESSAGE);
-  assert_type_cast_parse_strictness("silently-drop-message",
-                                    TYPE_CAST_DROP_MESSAGE | TYPE_CAST_SILENTLY);
-
-  assert_type_cast_parse_strictness("drop-property", TYPE_CAST_DROP_PROPERTY);
-  assert_type_cast_parse_strictness("silently-drop-property",
-                                    TYPE_CAST_DROP_PROPERTY | TYPE_CAST_SILENTLY);
-
-  assert_type_cast_parse_strictness("fallback-to-string", TYPE_CAST_FALLBACK_TO_STRING);
-  assert_type_cast_parse_strictness("silently-fallback-to-string",
-                                    TYPE_CAST_FALLBACK_TO_STRING | TYPE_CAST_SILENTLY);
-
-  assert_false(type_cast_strictness_parse("do-what-i-mean", &r, &error),
-               "The 'do-what-i-mean' strictness is not recognised");
-  assert_error(error, TYPE_CAST_INVALID_STRICTNESS, NULL);
-
-  testcase_end();
-}
-
 int
 main (void)
 {
@@ -183,7 +145,6 @@ main (void)
 
   test_type_hint_parse();
   test_type_cast();
-  test_type_cast_strictness();
 
   app_shutdown();
 
