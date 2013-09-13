@@ -74,7 +74,7 @@ test_str_funcs(void)
   assert_template_format("$(lowercase ŐRÜLT ÍRÓ)", "őrült író");
   assert_template_format("$(uppercase őrült író)", "ŐRÜLT ÍRÓ");
 
-  assert_template_format("$(delimit \"\t\" \",\" \"hello\tworld\")", "hello,world");
+  assert_template_format("$(replace-delimiter \"\t\" \",\" \"hello\tworld\")", "hello,world");
 }
 
 void

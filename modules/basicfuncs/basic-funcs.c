@@ -58,7 +58,7 @@ static Plugin basicfuncs_plugins[] =
   TEMPLATE_FUNCTION_PLUGIN(tf_sanitize, "sanitize"),
   TEMPLATE_FUNCTION_PLUGIN(tf_lowercase, "lowercase"),
   TEMPLATE_FUNCTION_PLUGIN(tf_uppercase, "uppercase"),
-  TEMPLATE_FUNCTION_PLUGIN(tf_delimit, "delimit"),
+  TEMPLATE_FUNCTION_PLUGIN(tf_replace_delimiter, "replace-delimiter"),
 
   /* numeric-funcs */
   TEMPLATE_FUNCTION_PLUGIN(tf_num_plus, "+"),

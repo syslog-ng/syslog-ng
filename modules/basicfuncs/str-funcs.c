@@ -362,13 +362,13 @@ tf_uppercase(LogMessage *msg, gint argc, GString *argv[], GString *result)
 TEMPLATE_FUNCTION_SIMPLE(tf_uppercase);
 
 void
-tf_delimit(LogMessage *msg, gint argc, GString *argv[], GString *result)
+tf_replace_delimiter(LogMessage *msg, gint argc, GString *argv[], GString *result)
 {
   gchar *haystack, *delimiters, new_delimiter;
 
   if (argc != 3)
     {
-      msg_error("$(delimit) parsing failed, wrong number of arguments",
+      msg_error("$(replace-delimiter) parsing failed, wrong number of arguments",
                 NULL);
       return;
     }
@@ -382,4 +382,4 @@ tf_delimit(LogMessage *msg, gint argc, GString *argv[], GString *result)
   g_free(haystack);
 }
 
-TEMPLATE_FUNCTION_SIMPLE(tf_delimit);
+TEMPLATE_FUNCTION_SIMPLE(tf_replace_delimiter);
