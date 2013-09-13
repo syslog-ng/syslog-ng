@@ -133,7 +133,7 @@ afunix_sd_acquire_socket(AFSocketSourceDriver *s, gint *result_fd)
 
       if (fd_ok && *result_fd > -1)
         {
-          if (cfg_is_config_version_older(cfg, 0x0304))
+          if (cfg_is_config_version_older(cfg, 0x0306))
             {
               msg_warning("WARNING: systemd detected while using /dev/log; migrating automatically to /run/systemd/journal/syslog. Please update your configuration to use the system() source.",
                           evt_tag_str("id", self->super.super.super.id),
