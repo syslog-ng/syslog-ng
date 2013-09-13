@@ -1,11 +1,6 @@
 /*
-<<<<<<< HEAD
  * Copyright (c) 2012-2013 BalaBit IT Ltd, Budapest, Hungary
  * Copyright (c) 2012-2013 Gergely Nagy <algernon@balabit.hu>
-=======
- * Copyright (c) 2012, 2013 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 2012, 2013 Gergely Nagy <algernon@balabit.hu>
->>>>>>> balabit-3.4/master
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
