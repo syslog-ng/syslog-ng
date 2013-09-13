@@ -127,6 +127,7 @@ static CfgFlagHandler value_pair_scope[] =
   { "selected-macros",    CFH_SET, offsetof(ValuePairs, scopes), VPS_SELECTED_MACROS },
   { "sdata",              CFH_SET, offsetof(ValuePairs, scopes), VPS_SDATA },
   { "everything",         CFH_SET, offsetof(ValuePairs, scopes), VPS_EVERYTHING },
+  { NULL,                 0,       0,                            0},
 };
 
 gboolean
