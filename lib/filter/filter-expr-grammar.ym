@@ -111,6 +111,20 @@ filter_simple_expr
             free($3);
             free($4);
           }
+        | KW_IN_LIST '(' string KW_VALUE '(' string ')' ')'
+          {
+            const gchar *p = $6;
+            if (p[0] == '$')
+              {
+                msg_warning("Value references in filters should not use the '$' prefix, those are only needed in templates",
+                            evt_tag_str("value", $6),
+                            NULL);
+                p++;
+              }
+            $$ = filter_in_list_new($3, p);
+            free($3);
+            free($6);
+          }
         | KW_PROGRAM '(' string
 	  {
 	    last_re_filter = (FilterRE *) filter_re_new(LM_V_PROGRAM);
