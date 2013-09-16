@@ -203,17 +203,22 @@ static void
 test_macro_with_invalid_msgref_are_recognized_as_the_top_element_in_the_stack(void)
 {
   assert_template_compile("${MESSAGE}@gmail.com");
-  assert_compiled_template(text = "", default_value = NULL, macro = M_MESSAGE, type = LTE_MACRO, msg_ref = 1);
+  assert_compiled_template(text = "", default_value = NULL, macro = M_MESSAGE, type = LTE_MACRO, msg_ref = 0);
 
   select_next_element();
-  assert_compiled_template(text = "gmail.com", default_value = NULL, macro = M_NONE, type = LTE_MACRO, msg_ref = 0);
+  assert_compiled_template(text = "@gmail.com", default_value = NULL, macro = M_NONE, type = LTE_MACRO, msg_ref = 0);
 }
 
 static void
 test_dollar_prefixed_with_backslash_is_a_literal_dollar(void)
 {
+  cfg_set_version(configuration, 0x304);
   assert_template_compile("Test \\$STRING");
   assert_compiled_template(text = "Test $STRING", default_value = NULL, macro = M_NONE, type = LTE_MACRO, msg_ref = 0);
+
+  cfg_set_version(configuration, 0x305);
+  assert_template_compile("Test \\$STRING");
+  assert_compiled_template(text = "Test \\", default_value = NULL, value_handle = log_msg_get_value_handle("STRING"), type = LTE_VALUE, msg_ref = 0);
 }
 
 static void
@@ -250,8 +255,23 @@ test_dollar_with_an_invalid_macro_name_without_braces_is_parsed_as_a_literal_dol
 static void
 test_backslash_without_finishing_the_escape_sequence_is_ignored(void)
 {
+  cfg_set_version(configuration, 0x304);
   assert_template_compile("foo\\");
   assert_compiled_template(text = "foo", default_value = NULL, macro = M_NONE, type = LTE_MACRO, msg_ref = 0);
+
+  cfg_set_version(configuration, 0x305);
+  assert_template_compile("foo\\");
+  assert_compiled_template(text = "foo\\", default_value = NULL, macro = M_NONE, type = LTE_MACRO, msg_ref = 0);
+}
+
+static void
+test_double_at_is_a_literal_at(void)
+{
+  assert_template_compile("${MESSAGE}@@12");
+  assert_compiled_template(text = "", default_value = NULL, macro = M_MESSAGE, type = LTE_MACRO, msg_ref = 0);
+
+  select_next_element();
+  assert_compiled_template(text = "@12", default_value = NULL, macro = M_NONE, type = LTE_MACRO, msg_ref = 0);
 }
 
 static void
@@ -270,6 +290,7 @@ test_template_compile_macro(void)
   TEMPLATE_TESTCASE(test_double_dollars_is_a_literal_dollar);
   TEMPLATE_TESTCASE(test_dollar_with_an_invalid_macro_name_without_braces_is_parsed_as_a_literal_dollar);
   TEMPLATE_TESTCASE(test_backslash_without_finishing_the_escape_sequence_is_ignored);
+  TEMPLATE_TESTCASE(test_double_at_is_a_literal_at);
 }
 
 static void

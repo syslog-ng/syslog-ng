@@ -878,13 +878,27 @@ parse_msg_ref(LogTemplateCompiler *self)
   if ((*self->cursor) == '@')
     {
       self->cursor++;
-      /* syntax: ${name}@1 to denote the log message index in the correllation state */
-      while ((*self->cursor) >= '0' && (*self->cursor) <= '9')
+      if ((*self->cursor) >= '0' && (*self->cursor) <= '9')
         {
-          self->msg_ref += self->msg_ref * 10 + ((*self->cursor) - '0');
-          self->cursor++;
+          /* syntax: ${name}@1 to denote the log message index in the correllation state */
+          while ((*self->cursor) >= '0' && (*self->cursor) <= '9')
+            {
+              self->msg_ref += self->msg_ref * 10 + ((*self->cursor) - '0');
+              self->cursor++;
+            }
+          self->msg_ref += 1;
         }
-      self->msg_ref += 1;
+      else
+        {
+          if ((*self->cursor) != '@')
+            {
+              msg_warning("Non-numeric correlation state ID found, assuming a literal '@' character. To avoid confusion when using a literal '@' after a macro or template function, write '@@' in the template.",
+                          evt_tag_str("Template", self->template->template),
+                          NULL);
+              self->cursor--;
+            }
+          self->msg_ref = 0;
+        }
     }
 }
 
@@ -1167,7 +1181,14 @@ log_template_compiler_process_token(LogTemplateCompiler *self, GError **error)
     }
   if (*self->cursor == '\\')
     {
-      self->cursor++;
+      if (cfg_is_config_version_older(self->template->cfg, 0x305))
+        {
+          msg_warning("Template escaping changed in version 3.5. Use '$$' to specify a literal dollar sign instead of '\\$' and remove the escaping of the backslash character when you upgrade your configuration",
+                      evt_tag_str("Template", self->template->template),
+                      NULL);
+          self->cursor++;
+        }
+
     }
   if (*self->cursor)
     {
