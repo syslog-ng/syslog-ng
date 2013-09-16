@@ -114,6 +114,8 @@ struct _LogProto
   void (*queued)(LogProto *s);
   LogProtoStatus (*post)(LogProto *s, LogMessage *logmsg, guchar *msg, gsize msg_len, gboolean *consumed);
   LogProtoStatus (*flush)(LogProto *s);
+  gboolean (*handshake_in_progess)(LogProto *s);
+  LogProtoStatus (*handshake)(LogProto *s);
   void (*free_fn)(LogProto *s);
   void (*reset_state)(LogProto *s);
   /* This function is available only the object is _LogProtoTextServer */
@@ -128,6 +130,27 @@ struct _LogProto
   PersistState *state;
   LogProtoOptions *options;
 };
+
+static inline gboolean
+log_proto_handshake_in_progress(LogProto *s)
+{
+  if (s->handshake_in_progess)
+    {
+      return s->handshake_in_progess(s);
+    }
+  return FALSE;
+}
+
+
+static inline LogProtoStatus
+log_proto_handshake(LogProto *s)
+{
+  if (s->handshake)
+    {
+      return s->handshake(s);
+    }
+  return LPS_SUCCESS;
+}
 
 static inline void
 log_proto_apply_state(LogProto *s, StateHandler *state_handler)
