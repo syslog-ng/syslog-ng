@@ -35,6 +35,7 @@ is_string_contain_any_fragment(const gchar *str, const gchar *fragments[])
 static inline void
 affile_handle_zero_follow_freq(AFFileSourceDriver *self)
 {
+  GlobalConfig *cfg = log_pipe_get_config(self);
 #if __FreeBSD__
   if ((strcmp(self->filename->str, "/dev/klog") == 0) &&
       (cfg->version <= 0x0500) &&
