@@ -168,13 +168,15 @@ write_gstring_to_socket(int socket, GString *data)
   return TRUE;
 }
 
-void
+static int
 stomp_read_data(stomp_connection *connection, GString *buffer)
 {
   char tmp_buf[4096];
   int res;
 
   res = read(connection->socket, tmp_buf, sizeof(tmp_buf));
+  if (res < 0)
+     return FALSE;
 
   g_string_assign_len(buffer, tmp_buf, res);
   while (res == sizeof(tmp_buf))
@@ -182,6 +184,7 @@ stomp_read_data(stomp_connection *connection, GString *buffer)
       res = read(connection->socket, tmp_buf, sizeof(tmp_buf));
       g_string_append_len(buffer, tmp_buf, res);
     }
+  return TRUE;
 }
 
 static int
@@ -250,7 +253,8 @@ stomp_receive_frame(stomp_connection *connection, stomp_frame *frame)
   GString* data = g_string_sized_new(4096);
   int res;
 
-  stomp_read_data(connection, data);
+  if (!stomp_read_data(connection, data))
+     return FALSE;
 
   res = stomp_parse_frame(data, frame);
   msg_debug( "Frame received",
@@ -272,7 +276,8 @@ stomp_check_for_frame(stomp_connection *connection)
     {
       stomp_frame frame;
 
-      stomp_receive_frame(connection, &frame);
+      if (!stomp_receive_frame(connection, &frame))
+          return FALSE;
       if (!strcmp(frame.command, "ERROR"))
         {
           msg_error("ERROR frame received from stomp_server", NULL);
