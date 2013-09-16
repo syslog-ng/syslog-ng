@@ -187,11 +187,11 @@ AC_ARG_WITH(ivykis,
               ,,with_ivykis="internal")
 
 AC_ARG_ENABLE(json,
-              [  --disable-json          Disable JSON support (default: auto)],
+              [  --disable-json          Disable JSON support (default: auto)]
               ,,enable_json="auto")
 
 AC_ARG_ENABLE(smtp,
-              [  --disable-smtp          Disable SMTP support (default: auto)],
+              [  --disable-smtp          Disable SMTP support (default: auto)]
               ,,enable_smtp="auto")
 
 AC_ARG_WITH(libesmtp,
