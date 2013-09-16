@@ -55,6 +55,19 @@ stomp_frame_add_header(stomp_frame *frame, const char *name, const char *value)
 };
 
 void
+stomp_frame_add_header_len(stomp_frame *frame, const char *name, int name_len, const char *value, int value_len)
+{
+  char* name_slice = g_strndup(name, name_len);
+  char* value_slice = g_strndup(value, value_len);
+  msg_debug("Adding header",
+            evt_tag_str("name",name_slice),
+            evt_tag_str("value",value_slice),
+            NULL);
+
+  g_hash_table_insert(frame->headers, name_slice, value_slice);
+};
+
+void
 stomp_frame_set_body(stomp_frame *frame, const char *body, int body_len)
 {
   frame->body = g_strndup(body, body_len);
@@ -66,6 +79,7 @@ stomp_frame_deinit(stomp_frame *frame)
 {
   g_hash_table_destroy(frame->headers);
   g_free(frame->command);
+  g_free(frame->body);
 
   return TRUE;
 }
@@ -221,8 +235,8 @@ stomp_parse_header(char *buffer, int buflen, stomp_frame *frame, char **out_pos)
     }
 
   colon = g_strstr_len(buffer, pos - buffer, ":");
-  stomp_frame_add_header(frame, g_strndup(buffer, (colon - buffer)),
-                         g_strndup(colon + 1, pos - colon - 1));
+  stomp_frame_add_header_len(frame, buffer, colon - buffer,
+                         colon + 1, pos - colon - 1);
   *out_pos = pos + 1;
 
   return STOMP_PARSE_HEADER;

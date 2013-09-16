@@ -268,7 +268,7 @@ static gboolean
 afstomp_worker_publish(STOMPDestDriver *self, LogMessage *msg)
 {
   gboolean success = TRUE;
-  SBGString *body = sb_gstring_acquire();
+  SBGString *body = NULL;
   stomp_frame frame;
   stomp_frame recv_frame;
   gchar seq_num[16];
@@ -279,6 +279,7 @@ afstomp_worker_publish(STOMPDestDriver *self, LogMessage *msg)
       return FALSE;
     }
 
+  body = sb_gstring_acquire();
   stomp_frame_init(&frame, "SEND", sizeof("SEND"));
 
   if (self->persistent)
