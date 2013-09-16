@@ -41,7 +41,6 @@ typedef struct {
   LogThrDestDriver super;
 
   gchar *destination;
-  LogTemplate *routing_key_template;
   LogTemplate *body_template;
 
   gboolean persistent;
@@ -107,14 +106,6 @@ afstomp_dd_set_destination(LogDriver *d, const gchar *destination)
 
   g_free(self->destination);
   self->destination = g_strdup(destination);
-}
-
-void
-afstomp_dd_set_routing_key(LogDriver *d, const gchar *routing_key)
-{
-  STOMPDestDriver *self = (STOMPDestDriver *) d;
-
-  log_template_compile(self->routing_key_template, routing_key, NULL);
 }
 
 void
@@ -277,7 +268,6 @@ static gboolean
 afstomp_worker_publish(STOMPDestDriver *self, LogMessage *msg)
 {
   gboolean success = TRUE;
-  SBGString *routing_key = sb_gstring_acquire();
   SBGString *body = sb_gstring_acquire();
   stomp_frame frame;
   stomp_frame recv_frame;
@@ -290,13 +280,6 @@ afstomp_worker_publish(STOMPDestDriver *self, LogMessage *msg)
     }
 
   stomp_frame_init(&frame, "SEND", sizeof("SEND"));
-
-  if (self->routing_key_template)
-    {
-      log_template_format(self->routing_key_template, msg, NULL, LTZ_LOCAL,
-                          self->seq_num, NULL, sb_gstring_string(routing_key));
-      stomp_frame_add_header(&frame, "routing_key", sb_gstring_string(routing_key)->str);
-    }
 
   if (self->persistent)
     stomp_frame_add_header(&frame, "persistent", "true");
@@ -321,7 +304,6 @@ afstomp_worker_publish(STOMPDestDriver *self, LogMessage *msg)
   if (success && self->ack_needed)
     success = stomp_receive_frame(self->conn, &recv_frame);
 
-  sb_gstring_release(routing_key);
   sb_gstring_release(body);
 
   return success;
@@ -399,7 +381,6 @@ afstomp_dd_free(LogPipe *d)
   log_template_options_destroy(&self->template_options);
 
   g_free(self->destination);
-  log_template_unref(self->routing_key_template);
   log_template_unref(self->body_template);
   g_free(self->user);
   g_free(self->password);
@@ -426,12 +407,9 @@ afstomp_dd_new(GlobalConfig *cfg)
   self->super.format.persist_name = afstomp_dd_format_persist_name;
   self->super.stats_source = SCS_STOMP;
 
-  self->routing_key_template = log_template_new(cfg, NULL);
-
   afstomp_dd_set_host((LogDriver *) self, "127.0.0.1");
   afstomp_dd_set_port((LogDriver *) self, 61613);
   afstomp_dd_set_destination((LogDriver *) self, "/topic/syslog");
-  afstomp_dd_set_routing_key((LogDriver *) self, "");
   afstomp_dd_set_persistent((LogDriver *) self, TRUE);
   afstomp_dd_set_ack((LogDriver *) self, FALSE);
 

@@ -50,7 +50,6 @@
 %token KW_STOMP_DESTINATION
 %token KW_PERSISTENT
 %token KW_ACK
-%token KW_ROUTING_KEY
 %token KW_BODY
 
 %%
@@ -72,7 +71,6 @@ afstomp_option
         : KW_HOST '(' string ')'		{ afstomp_dd_set_host(last_driver, $3); free($3); }
         | KW_PORT '(' LL_NUMBER ')'		{ afstomp_dd_set_port(last_driver, $3); }
         | KW_STOMP_DESTINATION '(' string ')'	{ afstomp_dd_set_destination(last_driver, $3); free($3); }
-        | KW_ROUTING_KEY '(' string ')'		{ afstomp_dd_set_routing_key(last_driver, $3); free($3); }
         | KW_BODY '(' string ')'		{ afstomp_dd_set_body(last_driver, $3); free($3); }
         | KW_PERSISTENT '(' yesno ')'		{ afstomp_dd_set_persistent(last_driver, $3); }
         | KW_ACK '(' yesno ')'			{ afstomp_dd_set_ack(last_driver, $3); }

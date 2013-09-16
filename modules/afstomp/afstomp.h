@@ -33,7 +33,6 @@ LogDriver *afstomp_dd_new(GlobalConfig *cfg);
 void afstomp_dd_set_host(LogDriver *d, const gchar *host);
 void afstomp_dd_set_port(LogDriver *d, gint port);
 void afstomp_dd_set_destination(LogDriver *d, const gchar *destination);
-void afstomp_dd_set_routing_key(LogDriver *d, const gchar *routing_key);
 void afstomp_dd_set_body(LogDriver *d, const gchar *body);
 void afstomp_dd_set_persistent(LogDriver *d, gboolean persistent);
 void afstomp_dd_set_ack(LogDriver *d, gboolean ack);

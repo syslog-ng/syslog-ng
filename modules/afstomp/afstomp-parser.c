@@ -34,7 +34,6 @@ static CfgLexerKeyword afstomp_keywords[] = {
   { "host",			KW_HOST },
   { "port",			KW_PORT },
   { "destination",		KW_STOMP_DESTINATION },
-  { "routing_key",		KW_ROUTING_KEY },
   { "persistent",		KW_PERSISTENT },
   { "ack",			KW_ACK },
   { "username",			KW_USERNAME },
