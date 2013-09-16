@@ -254,12 +254,16 @@ stomp_receive_frame(stomp_connection *connection, stomp_frame *frame)
   int res;
 
   if (!stomp_read_data(connection, data))
-     return FALSE;
+    {
+      g_string_free(data, TRUE);
+      return FALSE;
+    }
 
   res = stomp_parse_frame(data, frame);
-  msg_debug( "Frame received",
-             evt_tag_str("command",frame->command),
-             NULL);
+  msg_debug("Frame received",
+            evt_tag_str("command",frame->command),
+            NULL);
+  g_string_free(data, TRUE);
   return res;
 }
 
