@@ -632,7 +632,15 @@ fi
 dnl ***************************************************************************
 dnl json headers/libraries
 dnl ***************************************************************************
-PKG_CHECK_MODULES(JSON_C, json >= $JSON_C_MIN_VERSION,, [JSON_C_LIBS=""; enable_json="no"])
+if test "x$enable_json" = "xyes" || test "x$enable_json" = "xauto"; then
+   _with_json="yes"
+   PKG_CHECK_MODULES(JSON_C, json >= $JSON_C_MIN_VERSION,, [JSON_C_LIBS=""; _with_json="no"])
+
+   if test "x$enable_json" = "xyes" && test "x$_with_json" = "xno"; then
+      AC_MSG_ERROR([Could not find json-c, and json support was explicitly enabled.])
+   fi
+   enable_json="$_with_json"
+fi
 
 dnl ***************************************************************************
 dnl geoip headers/libraries
@@ -832,7 +840,10 @@ elif test "x$with_libmongo_client" = "xsystem"; then
 fi
 
 if test "x$with_libmongo_client" = "xno"; then
-	enable_mongodb="no"
+   if test "x$enable_mongodb" = "xyes"; then
+      AC_MSG_ERROR([Could not find libmongo-client, and MongoDB support was explicitly enabled.])
+   fi
+   enable_mongodb="no"
 fi
 
 dnl ***************************************************************************
@@ -888,6 +899,9 @@ elif test "x$with_librabbitmq_client" = "xsystem"; then
 fi
 
 if test "x$with_librabbitmq_client" = "xno"; then
+    if test "x$enable_amqp" = "xyes"; then
+      AC_MSG_ERROR([Could not find librabbitmq-client, and AMQP support was explicitly enabled.])
+    fi
     enable_amqp="no"
     LIBRABBITMQ_SUBDIRS=""
 fi
