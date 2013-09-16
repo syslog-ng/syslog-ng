@@ -17,6 +17,9 @@
 #include <time.h>
 #include <stdlib.h>
 #include <pcre.h>
+#if __FreeBSD__
+#include <sys/utsname.h>
+#endif
 
 static gchar *pid_string = NULL;
 
@@ -32,11 +35,38 @@ is_string_contain_any_fragment(const gchar *str, const gchar *fragments[])
   return FALSE;
 }
 
+#if __FreeBSD__
+static gboolean
+check_os_version()
+{
+  struct utsname u;
+  if (uname(&u) != 0)
+    {
+      msg_error("file(): Cannot get information about the running kernel",
+                evt_tag_errno("error", errno),
+                NULL);
+      return FALSE;
+    }
+
+  if (strcmp(u.sysname, "FreeBSD") != 0)
+    return FALSE;
+
+  if (strncmp(u.release, "6.", 2) == 0 ||
+      strncmp(u.release, "7.", 2) == 0 ||
+      strncmp(u.release, "8.", 2) == 0 ||
+      strncmp(u.release, "9.0", 3) == 0)
+    return TRUE;
+
+  return FALSE;
+}
+
+#endif
+
 static inline void
 affile_handle_zero_follow_freq(AFFileSourceDriver *self)
 {
-  GlobalConfig *cfg = log_pipe_get_config(self);
 #if __FreeBSD__
+  GlobalConfig *cfg = log_pipe_get_config((LogPipe *)self);
   if ((strcmp(self->filename->str, "/dev/klog") == 0) &&
       (cfg->version <= 0x0500) &&
       (check_os_version()))

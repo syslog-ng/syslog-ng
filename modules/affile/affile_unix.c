@@ -22,10 +22,6 @@
 #include <stdlib.h>
 #include <pcre.h>
 
-#if __FreeBSD__
-#include <sys/utsname.h>
-#endif
-
 static const gchar* spurious_paths[] = {"../", "/..", NULL};
 
 #define DEFAULT_SD_OPEN_FLAGS (O_RDONLY | O_NOCTTY | O_NONBLOCK | O_LARGEFILE)
@@ -249,31 +245,6 @@ affile_sd_monitor_callback(const gchar *filename, gpointer s, FileActionType act
   return TRUE;
 }
 
-#if __FreeBSD__
-static gboolean
-check_os_version()
-{
-  struct utsname u;
-  if (uname(&u) != 0)
-    {
-      msg_error("file(): Cannot get information about the running kernel",
-                evt_tag_errno("error", errno),
-                NULL);
-      return FALSE;
-    }
-
-  if (strcmp(u.sysname, "FreeBSD") != 0)
-    return FALSE;
-
-  if (strncmp(u.release, "6.", 2) == 0 ||
-      strncmp(u.release, "7.", 2) == 0 ||
-      strncmp(u.release, "8.", 2) == 0 ||
-      strncmp(u.release, "9.0", 3) == 0)
-    return TRUE;
-
-  return FALSE;
-}
-#endif
 
 inline void
 affile_file_monitor_stop(AFFileSourceDriver *self)
