@@ -295,6 +295,7 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint pa
     {
       /* RFC3339 timestamp, expected format: YYYY-MM-DDTHH:MM:SS[.frac]<+/->ZZ:ZZ */
       gint hours, mins;
+      time_t now_tv_sec = (time_t)now.tv_sec;
 
       self->timestamps[LM_TS_STAMP].tv_usec = 0;
 
@@ -303,7 +304,7 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint pa
        * not exist on all platforms and 0 initializing it causes trouble on
        * time-zone barriers */
 
-      cached_localtime((time_t *) &now.tv_sec, &tm);
+      cached_localtime(&now_tv_sec, &tm);
       if (!scan_iso_timestamp((const gchar **) &src, &left, &tm))
         {
           goto error;
@@ -373,7 +374,9 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint pa
           /* PIX timestamp, expected format: MMM DD YYYY HH:MM:SS: */
           /* ASA timestamp, expected format: MMM DD YYYY HH:MM:SS */
 
-          cached_localtime((time_t *) &now.tv_sec, &tm);
+          time_t now_tv_sec = (time_t)now.tv_sec;
+
+          cached_localtime(&now_tv_sec, &tm);
           if (!scan_pix_timestamp((const gchar **) &src, &left, &tm))
             goto error;
 
@@ -395,7 +398,9 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint pa
         {
           /* LinkSys timestamp, expected format: MMM DD HH:MM:SS YYYY */
 
-          cached_localtime((time_t *) &now.tv_sec, &tm);
+          time_t now_tv_sec = (time_t)now.tv_sec;
+
+          cached_localtime(&now_tv_sec, &tm);
           if (!scan_linksys_timestamp((const gchar **) &src, &left, &tm))
             goto error;
           tm.tm_isdst = -1;
@@ -411,9 +416,11 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint pa
           /* RFC 3164 timestamp, expected format: MMM DD HH:MM:SS ... */
           struct tm nowtm;
           glong usec = 0;
+          time_t now_tv_sec = (time_t)now.tv_sec;
 
-          cached_localtime((time_t *) &now.tv_sec, &nowtm);
+          cached_localtime(&now_tv_sec, &nowtm);
           tm = nowtm;
+
           if (!scan_bsd_timestamp((const gchar **) &src, &left, &tm))
             goto error;
 
@@ -927,7 +934,7 @@ log_msg_parse_legacy(MsgFormatOptions *parse_options,
   log_msg_parse_seq(self, &src, &left);
   log_msg_parse_skip_chars(self, &src, &left, " ", -1);
   cached_g_current_time(&now);
-  if (log_msg_parse_date(self, &src, &left, parse_options->flags & ~LP_SYSLOG_PROTOCOL, time_zone_info_get_offset(parse_options->recv_time_zone_info, now.tv_sec)))
+  if (log_msg_parse_date(self, &src, &left, parse_options->flags & ~LP_SYSLOG_PROTOCOL, time_zone_info_get_offset(parse_options->recv_time_zone_info, (time_t)now.tv_sec)))
     {
       /* Expected format: hostname program[pid]: */
       /* Possibly: Message forwarded from hostname: ... */
