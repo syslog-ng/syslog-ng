@@ -782,6 +782,26 @@ log_reader_handle_line(LogReader *self, const guchar *line, gint length, GSockAd
   return log_source_free_to_send(&self->super);
 }
 
+static inline gint
+log_reader_process_handshake(LogReader *self)
+{
+  LogProtoStatus status;
+
+  status = log_proto_handshake(self->proto);
+  switch (status)
+  {
+    case LPS_EOF:
+    case LPS_ERROR:
+      return status == LPS_ERROR ? NC_READ_ERROR : NC_CLOSE;
+    case LPS_SUCCESS:
+      break;
+    default:
+      g_assert_not_reached();
+      break;
+  }
+  return 0;
+}
+
 /* returns: notify_code (NC_XXXX) or 0 for success */
 gint
 log_reader_fetch_log(LogReader *self)
@@ -790,6 +810,7 @@ log_reader_fetch_log(LogReader *self)
   gint msg_count = 0;
   gboolean may_read = TRUE;
 
+
   if (self->waiting_for_preemption)
     may_read = FALSE;
 
@@ -797,11 +818,16 @@ log_reader_fetch_log(LogReader *self)
    * to fetch a couple of messages in a single run (but only up to
    * fetch_limit).
    */
+  if (log_proto_handshake_in_progress(self->proto))
+    {
+      return log_reader_process_handshake(self);
+    }
+
   while (msg_count < self->options->fetch_limit && !main_loop_io_worker_job_quit())
     {
+      LogProtoStatus status;
       const guchar *msg;
       gsize msg_len;
-      LogProtoStatus status;
 
       msg = NULL;
       sa = NULL;

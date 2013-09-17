@@ -1095,6 +1095,21 @@ log_writer_broken(LogWriter *self, gint notify_code)
   log_pipe_notify(self->control, &self->super, notify_code, self);
 }
 
+static inline gboolean
+log_writer_process_handshake(LogWriter *self)
+{
+  LogProtoStatus status;
+
+  status = log_proto_handshake(self->proto);
+  if (status != LPS_SUCCESS && status != LPS_AGAIN)
+    return FALSE;
+  if (status == LPS_AGAIN)
+    {
+      self->has_to_poll = TRUE;
+    }
+  return TRUE;
+}
+
 /*
  * Write messages to the underlying file descriptor using the installed
  * LogProto instance.  This is called whenever the output is ready to accept
@@ -1125,6 +1140,10 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
   if (!proto)
     return FALSE;
 
+  if (log_proto_handshake_in_progress(proto))
+    {
+      return log_writer_process_handshake(self);
+    }
   /* NOTE: in case we're reloading or exiting we flush all queued items as
    * long as the destination can consume it.  This is not going to be an
    * infinite loop, since the reader will cease to produce new messages when
