@@ -236,8 +236,10 @@ afstomp_dd_connect(STOMPDestDriver *self, gboolean reconnect)
 }
 
 static void
-afstomp_dd_disconnect(STOMPDestDriver *self)
+afstomp_dd_disconnect(LogThrDestDriver *s)
 {
+  STOMPDestDriver *self = (STOMPDestDriver *)s;
+
   stomp_disconnect(&self->conn);
   self->conn = NULL;
 }
@@ -311,8 +313,9 @@ afstomp_worker_publish(STOMPDestDriver *self, LogMessage *msg)
 }
 
 static gboolean
-afstomp_worker_insert(STOMPDestDriver *self)
+afstomp_worker_insert(LogThrDestDriver *s)
 {
+  STOMPDestDriver *self = (STOMPDestDriver *)s;
   gboolean success;
   LogMessage *msg;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
