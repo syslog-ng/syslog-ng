@@ -67,7 +67,7 @@ affile_handle_zero_follow_freq(AFFileSourceDriver *self)
 {
 #if __FreeBSD__
   GlobalConfig *cfg = log_pipe_get_config((LogPipe *)self);
-  if ((strcmp(self->filename->str, "/dev/klog") == 0) &&
+  if ((strcmp(self->filename_pattern->str, "/dev/klog") == 0) &&
       (cfg->version <= 0x0500) &&
       (check_os_version()))
     {
