@@ -1,7 +1,11 @@
 moduledir = @moduledir@
 pkgincludedir = @includedir@/syslog-ng
 
-include template/Makefile.am
+template_headers = \
+	template/templates.h
+
+template_sources = \
+	template/templates.c
 
 YFLAGS=@YFLAGS@
 

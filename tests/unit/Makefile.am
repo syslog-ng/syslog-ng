@@ -43,7 +43,8 @@ check_PROGRAMS =			\
 	test_csv_parser_flags \
 	test_persist_state_threaded \
 	test_resolve_sockaddr \
-	test_strtok_r
+	test_strtok_r \
+  test_template_compile
 
 if IS_HPUX
 check_PROGRAMS += test_zone
@@ -118,5 +119,7 @@ test_msgserialize_SOURCES = test_msgserialize.c
 test_lexer_SOURCES = test_lexer.c
 
 test_replace_string_SOURCES = test_replace_string.c
+
+test_template_compile_SOURCES = test_template_compile.c
 
 TESTS = $(check_PROGRAMS)
