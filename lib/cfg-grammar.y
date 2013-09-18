@@ -411,13 +411,6 @@ ValuePairsTransformSet *last_vp_transset;
 %type	<num> log_flags
 %type   <num> log_flags_items
 
- /* END_DECLS */
-
-%type	<ptr> options_items
-%type	<ptr> options_item
-
- /* START_DECLS */
-
 %type   <ptr> value_pair_option
 
 %type	<num> yesno
@@ -808,8 +801,8 @@ block_arg
         ;
 
 options_items
-	: options_item ';' options_items	{ $$ = $1; }
-	|					{ $$ = NULL; }
+	: options_item ';' options_items
+	|
 	;
 
 options_item
