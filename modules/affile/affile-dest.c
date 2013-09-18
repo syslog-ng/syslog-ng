@@ -362,14 +362,6 @@ affile_dd_set_fsync(LogDriver *s, gboolean fsync)
   self->use_fsync = fsync;
 }
 
-void
-affile_dd_set_local_time_zone(LogDriver *s, const gchar *local_time_zone)
-{
-  AFFileDestDriver *self = (AFFileDestDriver *) s;
-
-  self->local_time_zone = g_strdup(local_time_zone);
-}
-
 static inline gchar *
 affile_dd_format_persist_name(AFFileDestDriver *self)
 {
@@ -440,7 +432,6 @@ affile_dd_init(LogPipe *s)
   
   file_perm_options_init(&self->file_perm_options, cfg);
   log_writer_options_init(&self->writer_options, cfg, 0);
-  log_template_options_init(&self->template_fname_options, cfg);
               
   if (self->filename_is_a_template)
     {
@@ -655,7 +646,7 @@ affile_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
       GString *filename;
 
       filename = g_string_sized_new(32);
-      log_template_format(self->filename_template, msg, &self->template_fname_options, LTZ_LOCAL, 0, NULL, filename);
+      log_template_format(self->filename_template, msg, &self->writer_options.template_options, LTZ_LOCAL, 0, NULL, filename);
 
       g_static_mutex_lock(&self->lock);
       if (self->writer_hash)
@@ -696,7 +687,6 @@ affile_dd_free(LogPipe *s)
   /* NOTE: this must be NULL as deinit has freed it, otherwise we'd have circular references */
   g_assert(self->single_writer == NULL && self->writer_hash == NULL);
 
-  log_template_options_destroy(&self->template_fname_options);
   log_template_unref(self->filename_template);
   log_writer_options_destroy(&self->writer_options);
   log_dest_driver_free(s);
@@ -722,7 +712,6 @@ affile_dd_new_instance(gchar *filename)
       self->filename_is_a_template = TRUE;
     }
   self->time_reap = -1;
-  log_template_options_defaults(&self->template_fname_options);
   g_static_mutex_init(&self->lock);
   return self;
 }

@@ -34,7 +34,6 @@ typedef struct _AFFileDestDriver
 {
   LogDestDriver super;
   GStaticMutex lock;
-  LogTemplateOptions template_fname_options;
   LogTemplate *filename_template;
   AFFileDestWriter *single_writer;
   gboolean is_pipe:1,
@@ -43,7 +42,6 @@ typedef struct _AFFileDestDriver
     create_dirs:1,
     use_fsync:1;
   FilePermOptions file_perm_options;
-  gchar *local_time_zone;
   TimeZoneInfo *local_time_zone_info;
   LogWriterOptions writer_options;
   GHashTable *writer_hash;
