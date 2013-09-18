@@ -188,30 +188,6 @@ afsql_dd_set_retries(LogDriver *s, gint num_retries)
 }
 
 void
-afsql_dd_set_frac_digits(LogDriver *s, gint frac_digits)
-{
-  AFSqlDestDriver *self = (AFSqlDestDriver *) s;
-
-  self->template_options.frac_digits = frac_digits;
-}
-
-void
-afsql_dd_set_send_time_zone(LogDriver *s, const gchar *send_time_zone)
-{
-  AFSqlDestDriver *self = (AFSqlDestDriver *) s;
-
-  self->template_options.time_zone[LTZ_SEND] = g_strdup(send_time_zone);
-}
-
-void
-afsql_dd_set_local_time_zone(LogDriver *s, const gchar *local_time_zone)
-{
-  AFSqlDestDriver *self = (AFSqlDestDriver *) s;
-
-  self->template_options.time_zone[LTZ_LOCAL] = g_strdup(local_time_zone);
-}
-
-void
 afsql_dd_set_flush_lines(LogDriver *s, gint flush_lines)
 {
   AFSqlDestDriver *self = (AFSqlDestDriver *) s;
