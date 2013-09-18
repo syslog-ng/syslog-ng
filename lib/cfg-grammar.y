@@ -51,6 +51,7 @@ extern struct _FilePermOptions *last_file_perm_options;
 extern struct _MsgFormatOptions *last_msg_format_options;
 extern struct _LogDriver *last_driver;
 extern struct _LogParser *last_parser;
+extern struct _LogTemplateOptions *last_template_options;
 extern struct _LogTemplate *last_template;
 extern struct _ValuePairs *last_value_pairs;
 extern struct _ValuePairsTransformSet *last_vp_transset;
@@ -362,6 +363,7 @@ LogReaderOptions *last_reader_options;
 LogWriterOptions *last_writer_options;
 MsgFormatOptions *last_msg_format_options;
 FilePermOptions *last_file_perm_options;
+LogTemplateOptions *last_template_options;
 LogTemplate *last_template;
 CfgArgs *last_block_args;
 ValuePairs *last_value_pairs;
@@ -834,8 +836,6 @@ options_item
 	| KW_LOG_FETCH_LIMIT '(' LL_NUMBER ')'	{ msg_error("Using a global log-fetch-limit() option was removed, please use a per-source log-fetch-limit()", NULL); }
 	| KW_LOG_MSG_SIZE '(' LL_NUMBER ')'	{ configuration->log_msg_size = $3; }
 	| KW_KEEP_TIMESTAMP '(' yesno ')'	{ configuration->keep_timestamp = $3; }
-	| KW_TS_FORMAT '(' string ')'		{ configuration->template_options.ts_format = cfg_ts_format_value($3); free($3); }
-	| KW_FRAC_DIGITS '(' LL_NUMBER ')'	{ configuration->template_options.frac_digits = $3; }
 	| KW_CREATE_DIRS '(' yesno ')'		{ configuration->create_dirs = $3; }
 	| KW_OWNER '(' string_or_number ')'	{ cfg_file_owner_set(configuration, $3); free($3); }
 	| KW_OWNER '(' ')'	                { cfg_file_owner_set(configuration, "-2"); }
@@ -858,20 +858,11 @@ options_item
 	| KW_FILE_TEMPLATE '(' string ')'	{ configuration->file_template_name = g_strdup($3); free($3); }
 	| KW_PROTO_TEMPLATE '(' string ')'	{ configuration->proto_template_name = g_strdup($3); free($3); }
 	| KW_RECV_TIME_ZONE '(' string ')'      { configuration->recv_time_zone = g_strdup($3); free($3); }
-	| KW_SEND_TIME_ZONE '(' string ')'      { configuration->template_options.time_zone[LTZ_SEND] = g_strdup($3); free($3); }
-	| KW_LOCAL_TIME_ZONE '(' string ')'     { configuration->template_options.time_zone[LTZ_LOCAL] = g_strdup($3); free($3); }
-	| KW_ON_ERROR '(' string ')'
-        {
-          gint on_error;
-
-          CHECK_ERROR(log_template_on_error_parse($3, &on_error), @3, "Invalid on-error() setting");
-          free($3);
-
-          log_template_options_set_on_error(&configuration->template_options, on_error);
-        }
+	| { last_template_options = &configuration->template_options; } template_option
 	;
 
 /* START_RULES */
+
 
 string
 	: LL_IDENTIFIER
@@ -1061,9 +1052,6 @@ dest_writer_option
 	                                          free($3);
 	                                        }
 	| KW_TEMPLATE_ESCAPE '(' yesno ')'	{ log_writer_options_set_template_escape(last_writer_options, $3); }
-	| KW_TIME_ZONE '(' string ')'           { last_writer_options->template_options.time_zone[LTZ_SEND] = g_strdup($3); free($3); }
-	| KW_TS_FORMAT '(' string ')'		{ last_writer_options->template_options.ts_format = cfg_ts_format_value($3); free($3); }
-	| KW_FRAC_DIGITS '(' LL_NUMBER ')'	{ last_writer_options->template_options.frac_digits = $3; }
 	| KW_PAD_SIZE '(' LL_NUMBER ')'         { last_writer_options->padding = $3; }
 	| KW_MARK_FREQ '(' LL_NUMBER ')'        { last_writer_options->mark_freq = $3; }
         | KW_MARK_MODE '(' KW_INTERNAL ')'      { log_writer_options_set_mark_mode(last_writer_options, "internal"); }
@@ -1073,6 +1061,7 @@ dest_writer_option
             log_writer_options_set_mark_mode(last_writer_options, $3);
             free($3);
           }
+        | { last_template_options = &last_writer_options->template_options; } template_option
 	;
 
 dest_writer_options_flags
@@ -1098,6 +1087,23 @@ file_dir_perm_option
 	| KW_DIR_PERM '(' LL_NUMBER ')'		{ file_perm_options_set_dir_perm(last_file_perm_options, $3); }
 	| KW_DIR_PERM '(' ')'		        { file_perm_options_set_dir_perm(last_file_perm_options, -2); }
         ;
+
+template_option
+	: KW_TS_FORMAT '(' string ')'		{ last_template_options->ts_format = cfg_ts_format_value($3); free($3); }
+	| KW_FRAC_DIGITS '(' LL_NUMBER ')'	{ last_template_options->frac_digits = $3; }
+	| KW_TIME_ZONE '(' string ')'		{ last_template_options->time_zone[LTZ_SEND] = g_strdup($3); free($3); }
+	| KW_SEND_TIME_ZONE '(' string ')'      { last_template_options->time_zone[LTZ_SEND] = g_strdup($3); free($3); }
+	| KW_LOCAL_TIME_ZONE '(' string ')'     { last_template_options->time_zone[LTZ_LOCAL] = g_strdup($3); free($3); }
+	| KW_ON_ERROR '(' string ')'
+        {
+          gint on_error;
+
+          CHECK_ERROR(log_template_on_error_parse($3, &on_error), @3, "Invalid on-error() setting");
+          free($3);
+
+          log_template_options_set_on_error(last_template_options, on_error);
+        }
+	;
 
 value_pair_option
 	: KW_VALUE_PAIRS
