@@ -30,6 +30,7 @@
 #include "cfg-parser.h"
 #include "misc.h"
 #include "scratch-buffers.h"
+#include "cfg.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -55,6 +56,7 @@ struct _ValuePairs
   /* guint32 as CfgFlagHandler only supports 32 bit integers */
   guint32 scopes;
   guint32 patterns_size;
+  const LogTemplateOptions *template_options;
 };
 
 typedef enum
@@ -130,6 +132,12 @@ static CfgFlagHandler value_pair_scope[] =
   { NULL,                 0,       0,                            0},
 };
 
+void
+value_pairs_set_template_options(ValuePairs *vp, const LogTemplateOptions *template_options)
+{
+  vp->template_options = template_options;
+}
+
 gboolean
 value_pairs_add_scope(ValuePairs *vp, const gchar *scope)
 {
@@ -198,7 +206,7 @@ vp_pairs_foreach(gpointer data, gpointer user_data)
   VPPairConf *vpc = (VPPairConf *)data;
 
   sb->type_hint = vpc->template->type_hint;
-  log_template_append_format((LogTemplate *)vpc->template, msg, NULL, LTZ_LOCAL,
+  log_template_append_format((LogTemplate *)vpc->template, msg, vp->template_options, LTZ_LOCAL,
                              seq_num, NULL, sb_th_gstring_string(sb));
 
   if (sb_th_gstring_string(sb)->len == 0)
@@ -961,6 +969,7 @@ value_pairs_new_from_cmdline (GlobalConfig *cfg,
   gboolean success;
 
   vp = value_pairs_new();
+  value_pairs_set_template_options(vp, &cfg->template_options);
   user_data_args[0] = cfg;
   user_data_args[1] = vp;
   user_data_args[2] = NULL;

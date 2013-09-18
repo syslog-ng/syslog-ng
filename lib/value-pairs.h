@@ -42,6 +42,7 @@ typedef gboolean (*VPWalkCallbackFunc)(const gchar *name,
                                        const gchar *prev, gpointer *prev_data,
                                        gpointer user_data);
 
+void value_pairs_set_template_options(ValuePairs *vp, const LogTemplateOptions *template_options);
 gboolean value_pairs_add_scope(ValuePairs *vp, const gchar *scope);
 void value_pairs_add_glob_pattern(ValuePairs *vp, const gchar *pattern, gboolean include);
 gboolean value_pairs_add_pair(ValuePairs *vp, const gchar *key, LogTemplate *value);

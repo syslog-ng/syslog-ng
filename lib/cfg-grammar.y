@@ -1107,7 +1107,10 @@ template_option
 
 value_pair_option
 	: KW_VALUE_PAIRS
-          { last_value_pairs = value_pairs_new(); }
+          {
+            last_value_pairs = value_pairs_new();
+            value_pairs_set_template_options(last_value_pairs, &configuration->template_options);
+          }
           '(' vp_options ')'
           { $$ = last_value_pairs; }
 	;
