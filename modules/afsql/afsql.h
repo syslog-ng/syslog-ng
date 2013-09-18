@@ -25,11 +25,94 @@
 #define AFSQL_H_INCLUDED
 
 #include "driver.h"
+#include <dbi/dbi.h>
 
 enum
 {
   AFSQL_COLUMN_DEFAULT = 1,
 };
+
+/* field flags */
+enum
+{
+  AFSQL_FF_DEFAULT = 0x0001,
+};
+
+/* destination driver flags */
+enum
+{
+  AFSQL_DDF_EXPLICIT_COMMITS = 0x0001,
+  AFSQL_DDF_DONT_CREATE_TABLES = 0x0002,
+};
+
+typedef struct _AFSqlField
+{
+  guint32 flags;
+  gchar *name;
+  gchar *type;
+  LogTemplate *value;
+} AFSqlField;
+
+/**
+ * AFSqlDestDriver:
+ *
+ * This structure encapsulates an SQL destination driver. SQL insert
+ * statements are generated from a separate thread because of the blocking
+ * nature of the DBI API. It is ensured that while the thread is running,
+ * the reference count to the driver structure is increased, thus the db
+ * thread can read any of the fields in this structure. To do anything more
+ * than simple reading out a value, some kind of locking mechanism shall be
+ * used.
+ **/
+typedef struct _AFSqlDestDriver
+{
+  LogDestDriver super;
+  /* read by the db thread */
+  gchar *type;
+  gchar *host;
+  gchar *port;
+  gchar *user;
+  gchar *password;
+  gchar *database;
+  gchar *encoding;
+  GList *columns;
+  GList *values;
+  GList *indexes;
+  LogTemplate *table;
+  gint fields_len;
+  AFSqlField *fields;
+  gchar *null_value;
+  gint time_reopen;
+  gint num_retries;
+  gint flush_lines;
+  gint flush_timeout;
+  gint flush_lines_queued;
+  gint flags;
+  GList *session_statements;
+
+  LogTemplateOptions template_options;
+
+  StatsCounterItem *dropped_messages;
+  StatsCounterItem *stored_messages;
+
+  GHashTable *dbd_options;
+  GHashTable *dbd_options_numeric;
+
+  /* shared by the main/db thread */
+  GThread *db_thread;
+  GMutex *db_thread_mutex;
+  GCond *db_thread_wakeup_cond;
+  gboolean db_thread_terminate;
+  gboolean db_thread_suspended;
+  GTimeVal db_thread_suspend_target;
+  LogQueue *queue;
+  /* used exclusively by the db thread */
+  gint32 seq_num;
+  dbi_conn dbi_ctx;
+  GHashTable *validated_tables;
+  guint32 failed_message_counter;
+} AFSqlDestDriver;
+
 
 #if ENABLE_SQL
 
