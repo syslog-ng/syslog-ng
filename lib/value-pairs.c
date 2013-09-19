@@ -992,3 +992,15 @@ value_pairs_new_from_cmdline (GlobalConfig *cfg,
 
   return vp;
 }
+
+ValuePairs *
+value_pairs_new_default(GlobalConfig *cfg)
+{
+  ValuePairs *vp = value_pairs_new();
+
+  value_pairs_set_template_options(vp, &cfg->template_options);
+  value_pairs_add_scope(vp, "selected-macros");
+  value_pairs_add_scope(vp, "nv-pairs");
+  value_pairs_add_scope(vp, "sdata");
+  return vp;
+}

@@ -70,5 +70,6 @@ void value_pairs_free(ValuePairs *vp);
 ValuePairs *value_pairs_new_from_cmdline(GlobalConfig *cfg,
 					 gint argc, gchar **argv,
 					 GError **error);
+ValuePairs *value_pairs_new_default(GlobalConfig *cfg);
 
 #endif
