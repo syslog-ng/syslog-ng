@@ -280,7 +280,7 @@ result_append_value(GString *result, LogMessage *lm, NVHandle handle, gboolean e
 }
 
 gboolean
-log_macro_expand(GString *result, gint id, gboolean escape, LogTemplateOptions *opts, gint tz, gint32 seq_num, const gchar *context_id, LogMessage *msg)
+log_macro_expand(GString *result, gint id, gboolean escape, const LogTemplateOptions *opts, gint tz, gint32 seq_num, const gchar *context_id, LogMessage *msg)
 {
   static LogTemplateOptions default_opts = { TRUE, TS_FMT_BSD, 0, { NULL, NULL }, { NULL, NULL } };
 
@@ -1272,7 +1272,7 @@ log_template_set_type_hint(LogTemplate *self, const gchar *type_hint, GError **e
 
 
 void
-log_template_append_format_with_context(LogTemplate *self, LogMessage **messages, gint num_messages, LogTemplateOptions *opts, gint tz, gint32 seq_num, const gchar *context_id, GString *result)
+log_template_append_format_with_context(LogTemplate *self, LogMessage **messages, gint num_messages, const LogTemplateOptions *opts, gint tz, gint32 seq_num, const gchar *context_id, GString *result)
 {
   GList *p;
   LogTemplateElem *e;
@@ -1372,20 +1372,20 @@ log_template_append_format_recursive(LogTemplate *self, const LogTemplateInvokeA
 }
 
 void
-log_template_format_with_context(LogTemplate *self, LogMessage **messages, gint num_messages, LogTemplateOptions *opts, gint tz, gint32 seq_num, const gchar *context_id, GString *result)
+log_template_format_with_context(LogTemplate *self, LogMessage **messages, gint num_messages, const LogTemplateOptions *opts, gint tz, gint32 seq_num, const gchar *context_id, GString *result)
 {
   g_string_truncate(result, 0);
   log_template_append_format_with_context(self, messages, num_messages, opts, tz, seq_num, context_id, result);
 }
 
 void
-log_template_append_format(LogTemplate *self, LogMessage *lm, LogTemplateOptions *opts, gint tz, gint32 seq_num, const gchar *context_id, GString *result)
+log_template_append_format(LogTemplate *self, LogMessage *lm, const LogTemplateOptions *opts, gint tz, gint32 seq_num, const gchar *context_id, GString *result)
 {
   log_template_append_format_with_context(self, &lm, 1, opts, tz, seq_num, context_id, result);
 }
 
 void
-log_template_format(LogTemplate *self, LogMessage *lm, LogTemplateOptions *opts, gint tz, gint32 seq_num, const gchar *context_id, GString *result)
+log_template_format(LogTemplate *self, LogMessage *lm, const LogTemplateOptions *opts, gint tz, gint32 seq_num, const gchar *context_id, GString *result)
 {
   g_string_truncate(result, 0);
   log_template_append_format(self, lm, opts, tz, seq_num, context_id, result);

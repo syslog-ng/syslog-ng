@@ -117,7 +117,7 @@ typedef struct _LogTemplateInvokeArgs
   gint num_messages;
 
   /* options for recursive template evaluation, inherited from the parent */
-  LogTemplateOptions *opts;
+  const LogTemplateOptions *opts;
   gint tz;
   gint seq_num;
   const gchar *context_id;
@@ -203,16 +203,16 @@ void tf_simple_func_free_state(gpointer state);
 void log_template_set_escape(LogTemplate *self, gboolean enable);
 gboolean log_template_set_type_hint(LogTemplate *self, const gchar *hint, GError **error);
 gboolean log_template_compile(LogTemplate *self, const gchar *template, GError **error);
-void log_template_format(LogTemplate *self, LogMessage *lm, LogTemplateOptions *opts, gint tz, gint32 seq_num, const gchar *context_id, GString *result);
-void log_template_append_format(LogTemplate *self, LogMessage *lm, LogTemplateOptions *opts, gint tz, gint32 seq_num, const gchar *context_id, GString *result);
-void log_template_append_format_with_context(LogTemplate *self, LogMessage **messages, gint num_messages, LogTemplateOptions *opts, gint tz, gint32 seq_num, const gchar *context_id, GString *result);
-void log_template_format_with_context(LogTemplate *self, LogMessage **messages, gint num_messages, LogTemplateOptions *opts, gint tz, gint32 seq_num, const gchar *context_id, GString *result);
+void log_template_format(LogTemplate *self, LogMessage *lm, const LogTemplateOptions *opts, gint tz, gint32 seq_num, const gchar *context_id, GString *result);
+void log_template_append_format(LogTemplate *self, LogMessage *lm, const LogTemplateOptions *opts, gint tz, gint32 seq_num, const gchar *context_id, GString *result);
+void log_template_append_format_with_context(LogTemplate *self, LogMessage **messages, gint num_messages, const LogTemplateOptions *opts, gint tz, gint32 seq_num, const gchar *context_id, GString *result);
+void log_template_format_with_context(LogTemplate *self, LogMessage **messages, gint num_messages, const LogTemplateOptions *opts, gint tz, gint32 seq_num, const gchar *context_id, GString *result);
 void log_template_append_format_recursive(LogTemplate *self, const LogTemplateInvokeArgs *args, GString *result);
 
 
 /* low level macro functions */
 guint log_macro_lookup(gchar *macro, gint len);
-gboolean log_macro_expand(GString *result, gint id, gboolean escape, LogTemplateOptions *opts, gint tz, gint32 seq_num, const gchar *context_id, LogMessage *msg);
+gboolean log_macro_expand(GString *result, gint id, gboolean escape, const LogTemplateOptions *opts, gint tz, gint32 seq_num, const gchar *context_id, LogMessage *msg);
 
 LogTemplate *log_template_new(GlobalConfig *cfg, gchar *name);
 LogTemplate *log_template_ref(LogTemplate *s);
