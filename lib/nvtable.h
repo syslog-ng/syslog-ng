@@ -99,7 +99,13 @@ nv_registry_get_handle_name(NVRegistry *self, NVHandle handle, gssize *length)
 struct _NVEntry
 {
   /* negative offset, counting from string table top, e.g. start of the string is at @top + ofs */
-  guint8 indirect:1, referenced:1;
+  union {
+    struct {
+      guint8 indirect:1, referenced:1;
+    };
+    guint8 flags;
+  };
+
   guint8 name_len;
   guint16 alloc_len;
   union

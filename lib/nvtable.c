@@ -846,6 +846,19 @@ nv_table_update_ids(NVTable *self,NVRegistry *logmsg_registry, NVHandle *handles
   return;
 }
 
+static inline guint8 reverse(guint8 b) {
+   b = (b & 0xF0) >> 4 | (b & 0x0F) << 4;
+   b = (b & 0xCC) >> 2 | (b & 0x33) << 2;
+   b = (b & 0xAA) >> 1 | (b & 0x55) << 1;
+   return b;
+}
+
+void
+nv_table_swap_entry_flags(NVEntry *entry)
+{
+  entry->flags = reverse(entry->flags);
+}
+
 void
 nv_table_data_swap_bytes(NVTable *self)
 {
@@ -857,6 +870,7 @@ nv_table_data_swap_bytes(NVTable *self)
       entry = nv_table_get_entry_at_ofs(self, self->static_entries[i]);
       if (!entry)
         continue;
+      nv_table_swap_entry_flags(entry);
       entry->alloc_len = GUINT16_SWAP_LE_BE(entry->alloc_len);
       if (!entry->indirect)
         {
@@ -877,6 +891,7 @@ nv_table_data_swap_bytes(NVTable *self)
 
       if (!entry)
         continue;
+      nv_table_swap_entry_flags(entry);
       entry->alloc_len = GUINT16_SWAP_LE_BE(entry->alloc_len);
       if (!entry->indirect)
         {
