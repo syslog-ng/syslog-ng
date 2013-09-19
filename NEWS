@@ -1,51 +1,120 @@
-3.4.3
-        Tue, 13 Aug 2013 13:00:00 +0100
+3.5.0beta1
+        Thu, 19 Sep 2013 11:03:15 +0200
 
-        This is the second bug-fix release for the 3.4.x series,
-        collecting significant fixes over the 3.4.2 release. Upgrading
-        to this release is highly recommended.
+        This is a BETA release of the syslog-ng 3.5 development
+        branch, with a lot of internal rework and even more new
+        features included. Being a beta release, testing is most
+        appreciated, but running it in production is not advised.
 
-        Bugfixes
-        ========
+        The release contains all the fixes from the 3.4 branch, the
+        changes below are relative to the 3.4.3 release.
 
-        * The pacct module has been fixed, and now compiles correctly.
+        Major Features
+        ==============
 
-        * Updated the configure.in script, and a few other places to
-          fix issues with recent autotools.
+        Multi-line support
+        ------------------
 
-        * Fixed an infinite loop when template expansion resulted in a
-          zero-length string.
+        A major feature in the 3.5 release is the inclusion of support
+        for multi-line messages, a feature that has been available in
+        syslog-ng PE for a good while.
 
-        * A considerable number of minor issues surrounding the build
-          system have been eliminated.
+        With this, both indented and regexp-based multi-line support
+        becomes available. For further information and examples, see
+        the following blog post:
+          http://asylum.madhouse-project.org/blog/2013/09/05/what-is-cooking-in-syslog-ng-3.5/#f:multiline
 
-        * The template_escape() setting is now respected by template
-          functions that create templates themselves (such as the
-          conditional functions)
+        STOMP destination
+        -----------------
 
-        * Restore support for defaultless block{} arguments. [#230]
+        Joining the message-queue club, this new destination makes
+        syslog-ng able to send events to any STOMP-capable message
+        queuing server, such as Apache ActiveMQ.
 
-        * RFC5424 NILVALUE is now accepted in timestamps [#238]
+        For further information about the destination, see this commit
+        message:
+          https://github.com/balabit/syslog-ng-3.5/commit/82d19a4d4ad3f91e8214006f6ea7a47baabf48ef
 
-        * The JSON parser will throw an error when the input is not an
-          object (but, for example, a string) instead of crashing.
+        Template type hinting
+        ---------------------
 
-        * The program() source has been fixed, and now does not throw
-          a syntax error at config parsing time, but works correctly
-          again.
+        While syslog-ng supported sending events to various datastores
+        and queues for a while now (SQL first, MongoDB, JSON, and AMQP
+        later), even if those supported other types of data, syslog-ng
+        only ever sent strings.
 
-        * In case resolving a hostname fails, the IP address does not
-          get truncated anymore. [#240 & #242]
+        With template type hinting, it became possible to tell
+        syslog-ng what type a certain template should be, so that the
+        drivers can use that information in whatever way they see fit.
 
-        * A race condition in certain filter operations have been
-          eliminated.
+        This is currently implemented for the MongoDB driver only.
 
-        Features
-        ========
+        For more information about type hinting and for examples, see
+        the following post:
+          http://asylum.madhouse-project.org/blog/2013/09/05/what-is-cooking-in-syslog-ng-3.5/#f:type-hinting
 
-        * The JSON parser now accepts generic parser related options,
-          such as template(), so one can easily set the input for the
-          parser.
+        Other features
+        ==============
+
+        * in-list() filter: this new filter function allows one to
+          easily implement file-based white- and blacklists with a
+          simple syntax:
+
+           filter f_white { in-list("/path/to/file", value("HOST")); };
+
+        * You no longer need to remember how many zeros to put after a
+          big number in the syslog-ng configuration file, you can use
+          unit suffixes, such as:
+
+           log-fifo-size(2GiB)
+
+          See the following post for more details:
+            http://asylum.madhouse-project.org/blog/2013/09/05/what-is-cooking-in-syslog-ng-3.5/#f:unit-suffix
+
+        * A set of new string-related template functions are
+          available: $(uppercase STRINGS...), $(lowercase STRINGS...)
+          and $(replace-delimiter DELIMITERS NEW-DELIMITER TEXT).
+
+          The first two do exactly what their names suggest, while the
+          last one replaces all occurrences of any DELIMITERS within
+          TEXT with the NEW-DELIMITER.
+
+        * There is also a new $(env VARIABLE...) template function,
+          which looks up the given variables in the environment. This is
+	  similar to using backticks in the configuration file, however the
+	  name of the environment variable with $(env) may contain macros
+	  too.
+
+        * Support for Linux 3.5+'s /dev/kmsg was added, and the
+          system() source will automatically detect whether to use it
+          over /proc/kmsg.
+
+        * For every correlated message in patterndb, the
+          ${.classifier.context_id} property is automatically set to
+          the context-id attribute of the matching rule.
+
+        Incompatible changes
+        ====================
+
+        * The replace() transformation function of value-pairs() was
+          renamed to replace-prefix() to better reflect what it
+          actually does. The old name remains as an obsolete alias,
+          however.
+
+        * The username() and password() options of the MongoDB
+          destination were removed, they never did anything before,
+          either.
+
+        Miscellaneous changes
+        =====================
+
+        * The build system was completely redone, it is much faster,
+          more reliable, and less verbose by default now.
+
+        * Several systemd-related enhancements were made, including
+          support for notification-based startup. This also means that
+          when systemd support is compiled in, libsystemd-daemon
+          becomes a new dependency.
 
         Credits:
         ========
@@ -61,718 +130,26 @@
 
         Andras Tim <tia@balabit.hu>
         Anton Koldaev <koldaevav@gmail.com>
+        Attila M. Magyar <athos@balabit.hu>
+        Attila Nagy <bra@fsn.hu>
         Attila Szalay <sasa@balabit.hu>
         Balazs Scheidler <bazsi@balabit.hu>
+        Balint Kovacs <blint@balabit.hu>
+        Chris Johnson <chris.johnson3@hp.com>
+        Evan Rempel <erempel@uvic.ca>
+        Fabien Wernli <cpan@faxm0dem.org>
         Gergely Nagy <algernon@balabit.hu>
+        Juhasz Viktor <jviktor@balabit.hu>
+        Laszlo Budai <lbudai@balabit.hu>
         Martin <bmartin@lavabit.com>
         Michael Sterrett <mr_bones_@gentoo.org>
-        Vincent Brillault <spam@lerya.net>
-
-3.4.2
-        Mon,  3 Jun 2013 16:00:00 +0100
-
-        This is the first bug-fix release for the 3.4.x series,
-        collecting significant fixes over the 3.4.1 release. Upgrading
-        to this release is highly recommended.
-
-        Bugfixes
-        ========
-
-        * loggen will bail out earily if using Unix sockets without a
-          path specified.
-
-        * Using the same filter for multiple destinations does not
-          trigger a crash anymore. [#219]
-
-        * An issue with log branch propagation has been fixed,
-          restoring compatibility with the 3.3 branch (this mostly
-          affected flags(final) use cases). [#220]
-
-        * The systemd unit file now specified Restart=on-failure.
-          [#222]
-
-        * Support for empty blocks in the configuration were restored,
-          syslog-ng does not crash anymore when encountering one.
-
-        * An assertion was fixed in patterndb, that prevented one from
-          overriding built-in values, such as HOST. [#225]
-
-        * The persist state file (syslog-ng.persist) is now marked
-          close-on-exec, so it does not leak through to forked
-          subprocesses.
-
-        * The system() source now treats /proc/kmsg as optional: if it
-          is not readable to the user running syslog-ng, it will not
-          be included.
-
-        * Proper escape handling in backtick insertion has been
-          implemented, so string arguments to block parameters are -
-          again - treated correctly. [#235]
-
-        * A rare race condition in the SQL, MongoDB, SMTP and AMQP
-          destinations have been fixed.
-
-        * A possible deadlock was fixed within the suppress() handling
-          code.
-
-        Credits
-        =======
-
-        Attila M. Magyar <athos@balabit.hu>
-        Balazs Scheidler <bazsi@balabit.hu>
-        Evan Rempel <erempel@uvic.ca>
-        Gergely Nagy <algernon@balabit.hu>
+        Michal Privoznik <miso.privoznik@gmail.com>
         Paul Dann <pdgiddie+balabit@gmail.com>
         Peter Czanik <czanik@balabit.hu>
+        Peter Gyongyosi <gyp@balabit.hu>
+        Robert Fekete <frobert@balabit.hu>
         Tamas Pal <folti@balabit.hu>
-
-3.4.1
-        Thu, 31 Jan 2013 11:00:00 +0100
-
-        This is the first stable release in the 3.4 series adding a number
-        of features compared to 3.3, a culmination of more than a
-        year's worth of development.
-
-        Major features since 3.3
-        ========================
-
-          * New plugins: AMQP & SMTP destinations, JSON parser.
-
-            See the following links for more details about them:
-
-            http://git.io/mgF_sA (AMQP), http://git.io/Os9qpA (SMTP)
-            and http://git.io/7MerYA (JSON parser)
-
-          * New parsers for patterndb: HOSTNAME, EMAIL, PCRE and
-            LLADDR.
-
-          * It is now possible to control what db-parser() sees as its
-            input via it's new template() option. (Defaults to
-            $MESSAGE)
-
-            See http://git.io/YZHPtg for more details.
-
-          * value-pairs() gained support for programmatically
-            rewriting key names in bulk, via the rekey() method.
-
-            See http://git.io/VylQUg for more details.
-
-          * The network() driver is introduced, unifying and extending
-            tcp(), udp(), syslog(), unix-dgram() and
-            unix-stream(). The old drivers are still available, but
-            migrating over to network() is encouraged.
-
-            See http://git.io/0Xjlhg for more details.
-
-          * Support for junctions & channels were added, which improve
-            the flexibility of the syslog-ng configuration
-            language. This allows combining sources with their closely
-            tied processing functionality (like parser, rewrite and
-            filter statements). Read this blog post for more
-            information:
-
-            http://goo.gl/T8Txa
-
-            In the final form of the functionality the "log" keyword
-            as described in the blog post above was replaced with
-            "channel".
-
-        Changes since 3.4.0rc2:
-        =======================
-
-        Bugfixes
-        ========
-
-        * PatternDB allows a wider range of characters in a class
-          value now.
-
-          Newly allowed chars are: %, :, @, +, !, ^, / and \.
-
-        * The fsync() and flush-lines() functionality was restored in
-          the file() destination, both work as expected and correctly
-          now.
-
-        * The set() and subst() rewrite operations were fixed to work
-          even when referenced from multiple places (and in a number
-          of different corner-cases too).
-
-        Credits:
-        ========
-        syslog-ng is developed as a community project, and as such it relies
-        on volunteers to do the work necessarily to produce syslog-ng.
-
-        Reporting bugs, testing changes, writing code or simply providing
-        feedback are all important contributions, so please if you are a
-        user of syslog-ng, contribute.
-
-        These people have helped in this release:
-
-        Balazs Scheidler <bazsi@balabit.hu>
-        Evan Rempel <erempel@uvic.ca>
-        Gergely Nagy <algernon@balabit.hu>
-        Johnson, Chris <chris.johnson3@hp.com>
-
-3.4.0rc2
-        Wed, 17 Jan 2013 14:00:00 +0100
-
-        Features
-        ========
-        * The dbparser() parser gained support for the template()
-          option, which allows one to have more control (in an easy,
-          and straightforward way) over what data the parser operates
-          on.
-
-        Bugfixes
-        ========
-        * Building the AMQP destination can now be properly disabled.
-
-        * The bundled ivykis was upgraded from the 0.30 stable branch
-          to 0.36, for platform support and other improvements.
-
-        * Fix the test suite when --with-embedded-crypto is in use.
-
-        * The LLADDR parser was fixed, formerly it required the exact
-          number of components to be present, and had parts and count
-          values backwards. [#216]
-
-        Credits:
-        ========
-        syslog-ng is developed as a community project, and as such it relies
-        on volunteers to do the work necessarily to produce syslog-ng.
-
-        Reporting bugs, testing changes, writing code or simply providing
-        feedback are all important contributions, so please if you are a
-        user of syslog-ng, contribute.
-
-        These people have helped in this release:
-
-        Balazs Scheidler <bazsi@balabit.hu>
-        Ben Lentz <blentz@cswg.com>
-        Evan Rempel <erempel@uvic.ca>
-        Gergely Nagy <algernon@balabit.hu>
-        Jose Pedro Oliveira <jpo@di.uminho.pt>
-        Peter Czanik <czanik@balabit.hu>
-
-3.4.0rc1
-        Mon,  7 Jan 2013 16:00:00 +0100
-
-        Features
-        ========
-        * Make it possible to link crypto stuff directly into
-        libsyslog-ng, using the new --with-embedded-crypto option to
-        configure.
-
-        Bugfixes
-        ========
-        * DNS resolving was made thread-safe, by either using
-        getnameinfo() on platforms where it is available, or
-        protecting the lookups with a mutex.
-
-        * Restored support for systems that lack GLOB_NOMAGIC.
-
-        * The syslog() destination now correctly enforces IPv4, so
-          using udp6() followed by syslog() in the same source block
-          will not result in syslog() trying to use IPv6. To use the
-          syslog protocol over IPv6, use the new network() statement.
-
-        * On AIX, load modules from "a" archives instead of "so" ones.
-
-        * The config version checking mechanism was patched, which
-          fixes a crash in certain cases when running under systemd.
-
-        * The GeoIP module can now be built even on systems that do
-          not have a pkg-config file for the geoip library, by setting
-          the GEOIP_LIBS environment variable prior to running
-          configure.
-
-        Credits:
-        ========
-        syslog-ng is developed as a community project, and as such it relies
-        on volunteers to do the work necessarily to produce syslog-ng.
-
-        Reporting bugs, testing changes, writing code or simply providing
-        feedback are all important contributions, so please if you are a
-        user of syslog-ng, contribute.
-
-        These people have helped in this release:
-
-        Balint Kovacs <blint@blint.hu>
-        Balazs Scheidler <bazsi@balabit.hu>
-        Ben Lentz <blentz@cswg.com>
-        Brian Kroth <bpkroth@gmail.com>
-        Gergely Nagy <algernon@balabit.hu>
-        Jan Schaumann <jschauma@netmeister.org>
-        Peter Czanik <czanik@balabit.hu>
-        Tamas Pal <folti@balabit.hu>
-        Viktor Juhasz <jviktor@balabit.hu>
-
-3.4.0beta1
-	Sat, 15 Dec 2012 02:21:14 +0100
-
-	Features:
-	=========
-	* Added support for the amqp() destination driver, which sends
-	  messages to an AMQP queue.
-
-	* Added support for a new parser named syslog-parser() that can
-	  invoke the RFC3164 and RFC5424 parser outside the source driver
-	  that received the message. Delaying the syslog parsing can be
-	  advantageous in case some preprocessing or filtering needs to take
-	  place before the actual syslog parsing.
-
-	* Added support for dot notation in the $(format-json) template
-	  function.
-
-	* Changed the MongoDB driver to use inserts instead of upserts.
-
-	* Added support for UNIX domain sockets in the MongoDB driver by
-	  using the new path() option.
-
-	* Added new template functions to perform various cryptographic hash
-	  functions on data, like: $(md5), $(md4), $(sha1), $(sha256),
-	  $(sha512)
-
-	* Added a couple of new parsers to db-parser() pattern format:
-
-           * @PCRE@: use this to parse using a regexp
-           * @EMAIL@: to parse email addresses
-	   * @HOSTNAME@: to parse host names
-	   * @LLADDR@: to parse link-level addresses, like ethernet MAC
-             addresses
-
-	* Added the possibility to set TCP keepalive options for TCP based
-	  transports: tcp-keepalive-time(), tcp-keepalive-probes(),
-	  tcp-keepalive-intvl(). Also added the tcp-keepalive() option as
-	  an alias to the earlier so-keepalive() parameter. TCP keepalive
-	  became enabled by default.
-
-	Bugfixes:
-	=========
-	* Updated with the bugfixes from v3.3.7
-
-	* Fixed SQL statement formatting used to create indexes on Oracle.
-	  The original query contained an apostrophe when specifying the
-	  column name.
-
-	* Fixed an incorrect validation in the file() source, which
-	  caused the entire file to be resent in case syslog-ng was
-	  restarted and an encoding() is specified.
-
-	* Increased the performance when following files with the encoding()
-	  option set. Previously, the code to check if the source encoding
-	  is fixed size was incorrect, which in turn caused syslog-ng
-	  to excercise its slow path when processing these files, instead of
-	  a faster alternative.
-
-	* Fixed a memory leak issue when encoding() is used for file
-	  sources and syslog-ng was reloaded.
-
-	* Fixed a bug in processing the encoding() option for udp() sources.
-	  syslog-ng incorrectly propagated the character decoding state from
-	  one frame to the next, which might have originated from different
-	  senders.
-
-	* Infinite feedback loops of internal messages triggering another
-	  set of internal messages are now detected and suppressed. Earlier
-	  it was not safe to enable debug/trace messages during runtime, now
-	  it is.
-
-	* Fixed a race condition in resolving IP address to hostnames, which
-	  might have caused garbage in the hostname part of messages. This
-	  is most likely mitigated by the DNS cache.
-
-	Other changes:
-	==============
-	* Added unit test coverage for various log transport
-	  implementations.
-
-	* Reorganized the LogProto code to support plugins, the transport()
-	  option for the syslog() and network() drivers can be used to
-	  specify a transport protocol plugin.
-
-        Credits:
-        ========
-        syslog-ng is developed as a community project, and as such it relies
-        on volunteers to do the work necessarily to produce syslog-ng.
-
-        Reporting bugs, testing changes, writing code or simply providing
-        feedback are all important contributions, so please if you are a
-        user of syslog-ng, contribute.
-
-        These people have helped in this release:
-
-           Attila Nagy <bra@fsn.hu>
-           Balazs Scheidler <bazsi@balabit.hu>
-           Balint Kovacs <blint@balabit.hu>
-           Brian Kroth <bpkroth@gmail.com>
-           Conrad Hoffmann <ch@bitfehler.net>
-           Csaba Major <csaba.major@balabit.com>
-           Cy Schubert <cy@FreeBSD.org>
-           Eun Kyung <ekyung01@googlemail.com>
-           Evan Rempel <erempel@uvic.ca>
-           Gergely Nagy <algernon@balabit.hu>
-           Jose Oliveira <jpo@di.uminho.pt>
-           Juhasz Viktor <jviktor@balabit.hu>
-           Marvin Nipper <marvin.nipper@stream.com>
-           Michael Hocke <michael.hocke@nyu.edu>
-           Peter Czanik <czanik@balabit.hu>
-           Peter Gyongyosi <gyp@balabit.hu>
-           Sandor Geller <wildy@muhelybt.hu>
-           Sergey <cloun-rulez@yandex.ru>
-           shih dane <daneshih1125@gmail.com>
-           Tamas Pal <folti@balabit.hu>
-           Viktor Juhasz <jviktor@balabit.hu>
-
-3.4.0alpha3
-	Fri, 29 Jun 2012 15:32:54 +0200
-
-	Features:
-	=========
-	* Added set-tag() and clear-tag() rewrite rules.
-
-	* Added a marker() option to the json-parser(), which indicates that
-	  a message is indeed has a json payload. Used to implement a
-	  cee-style payload parser.
-
-	  http://bazsi.blogs.balabit.com/2012/05/cee-prototype-and-a-show-case-for-the-new-3-4-features/
-
-	* The system source automatically detectd systemd and defines the
-	  proper log socket accordingly. Also, if the system() source is not
-	  used, a workaround to use the systemd supplied log socket instead
-	  of /dev/log was applied. This kicks in if syslog-ng is running
-	  under systemd and its config version is 3.3 or less.
-
-	* Support for FreeBSD's utmpx database.
-
-	Featured ported from the Premium Edition
-	========================================
-
-	* Added 12 hour time related macros $AMPM and $HOUR12
-
-	* Added $USEC and $MSEC macros for micro and milliseconds
-          respectively.
-
-	* Added $SYSUPTIME that expands to the time since syslog-ng started
-	  in the number of 1/100th of a second (just like in the SNMP
-	  sysUptime value).
-
-	* db-parser(): added field extraction to the matching or program
-	  names
-
-	* Added support for Cisco extended timestamp format, one that
-	  includes time synchronity information and sequence numbers.
-
-	  https://github.com/bazsi/syslog-ng-3.4/commit/046f90e76137f31e61412d24b9920914ad75edc5
-
-	* Added support for mark-mode() that allows the customization how
-	  MARK messages are generated.
-
-	  https://github.com/bazsi/syslog-ng-3.4/commit/c38d7ad9a2d40650e243ec29c6b3ee07233d31a8
-
-	Bugfixes:
-	=========
-	* Fixed a possible segmentation fault in threaded mode when
-	  dns-cache-hosts() is used.
-
-	* Incorrect encoding of data caused UDP and unix-dgram() receives to
-	  be erroneously closed, so no further data would be received. This
-	  has been fixed.  Incorrect encoding of incoming data causes the
-	  connection for connection oriented transports (like tcp() and
-	  unix-stream()) to be closed, but the same condition is ignored for
-	  datagram oriented transports (like udp() or unix-dgram()).
-
-	* Accept empty source and destination object in the configuration
-	  file.
-
-	* Fixed a linking issue when using the SMTP destination.
-
-	* Ignore SIGHUP in the supervisor process.
-
-	* Fixed fsync() behaviour for destination files.
-
-	* Fixed a possible NULL deref in db-parser() correllation when
-	  context-scope is not defined.
-
-	Other changes:
-	==============
-	* Added a --disable-smtp configure option.
-
-	* Integrated unit test refactorization changes from the BalaBit
-	  syslog-ng and SSB teams.
-
-	* Added systemd alias "syslog" to the unit file.
-
-        Credits:
-        ========
-        syslog-ng is developed as a community project, and as such it relies
-        on volunteers to do the work necessarily to produce syslog-ng.
-
-        Reporting bugs, testing changes, writing code or simply providing
-        feedback are all important contributions, so please if you are a
-        user of syslog-ng, contribute.
-
-        These people have helped in this release:
-
-           Alexander Komyagin <komyagin@altell.ru>
-           EgonB <egon@local.ee>
-           Evan Rempel <erempel@uvic.ca>
-           Imre Lazar <imre@balabit.hu>
-           Jose Pedro Oliveira <jpo@di.uminho.pt>
-           Mark Ulmer <mark.ulmer@apollogrp.edu>
-           Patrick Hemmer
-           Peter Czanik <czanik@balabit.hu>
-           Attila Magyar <athos@balabit.hu>
-           Attila Nagy <naat@balabit.hu>
-           Balazs Scheidler <bazsi@balabit.hu>
-           Gergely Nagy <algernon@balabit.hu>
-           Juhasz Viktor <jviktor@balabit.hu>
-           Peter Gyorko <gyorkop@balabit.hu>
-           Viktor Juhasz <jviktor@balabit.hu>
-
-
-3.4.0alpha2
-	Tue, 01 May 2012 08:59:21 +0200
-
-	Features:
-	=========
-	* Added support for globbing when including files. Now you can use
-	  UNIX shell style wildcards in the names of include files and
-	  syslog-ng will properly source all matching files.
-
-	* Allow huge messages. Earlier log messages were limited to 256k in
-	  size, with each name-value pair limited at 64k. These limitations
-          were lifted, syslog-ng now uses a 32 bit integer field to hold the
-	  size information for both the whole data structure and individual
-          fields. An artificial limit of 256MB is still applied though, but
-          it is trivial to change that in the future, and until then this
-          should suffice.
-
-	Other changes:
-	==============
-
-	* Flow-control logic was changed, instead of enabling flow-control
-	  for all branches of a log statement when a single
-	  flags(flow-control) was present, only enable it downwards.
-
-	* Changed json-parser() to encode JSON array members as ${array[0]},
-	  ${array[1]} and so on, instead of using ".index" suffixes.
-
-	* Fixed Makefile.am files to avoid attempting to compile mongodb and
-	  smtp destination drivers when they are disabled.
-
-	* Fixed --with-json configure option parsing and added
-	  --disable-json for consistency with other optional features.
-
-	* Removed the "dummy" module, which only served as a placeholder
-	  when the original "pluginization" happened in 3.2.
-
-        Bugfixes:
-        =========
-
-        * Fixed a segmentation fault, which happened when source or
-          destination objects were defined without any actual drivers.
-
-	* Fixed a possible crash in config file parsing that happens when
-	  parsing a unix-dgram() source driver and file permissions (owner,
-	  group, perm) specified.
-
-	* Fixed a possible crash (double-free) in the value-pairs command
-	  line parser used in $(format-json), in case the command line
-	  options have syntax errors.
-
-	* Handle and print template compilation errors properly during
-	  configuration parsing.
-
-	* Fixed some memory leaks in the configuration compilation code
-	  introduced in 3.4.
-
-	Bugfixes backported from 3.3 (matching 3.3.5):
-	==============================================
-
-        * Fixed a significant memory leak that occurred when the receiver
-          side of a syslog connection is slower than syslog-ng. The message
-          which we got EAGAIN for got leaked.
-
-        * Fixed another memory leak that caused the complete queue for
-          socket based destination drivers to be leaked at reload time.
-
-        * Fixed a memory leak related to handling TLS enabled connections.
-          As connections come and go the TLS context wasn't freed.
-
-        * Fixed a small memory leak that occurred when worker threads exit
-          (and later start again).
-
-        * Fixed a deadlock in the SQL destination that occurred when a
-          COMMIT TRANSACTION command failed.
-
-        * Fixed an abort() which occurred when the retry timer of a
-          suspended destination fired.
-
-        * Fixed a framing error in RFC5424 destinations.
-
-        * MongoDB & SQL: fixed a race condition that caused mongodb/sql
-          destinations to hang.
-
-        * Fixed handling the ENOBUFS error in udp() destinations on FreeBSD
-          and related/derived platforms. Previously ENOBUFS caused syslog-ng
-          to suspend the destination for time_reopen() (which defaults to 60
-          seconds), but that's excessive.  Reading the literature suggests
-          that there are three ways to handle an ENOBUFS: wait for some
-          undetermined amount of time until the interface buffers are
-          presumably emptied, or let the packet be dropped or go back to the
-          poll loop and hope that by the next time the event is dispatched
-          ENOBUFS will be gone. Right now, syslog-ng will drop the affected
-          packet, as the other two could cause other tasks to starve (wait
-          some time) OR syslog-ng to use 100% CPU.
-
-
-        Credits:
-        ========
-        syslog-ng is developed as a community project, and as such it relies
-        on volunteers to do the work necessarily to produce syslog-ng.
-
-        Reporting bugs, testing changes, writing code or simply providing
-        feedback are all important contributions, so please if you are a
-        user of syslog-ng, contribute.
-
-        These people have helped in this release:
-          Peter Czanik (BalaBit)
-          Martin Grauel (BalaBit)
-          Patrick Hemmer
-          Hendrik Völker (Verizon)
-          Gergely Nagy (BalaBit)
-          Evan Rempel (University of Victoria)
-          Balint Kovacs (BalaBit)
-          Heiko Gerstung
-          Andreas Piesk
-          Matthias Runge (Fedora)
-
-3.4.0alpha1
-
-	Features:
-	=========
-
-	* Support for junctions & channels were added, which improve the
-	  flexibility of the syslog-ng configuration language. This allows
-	  combining sources with their closely tied processing functionality
-	  (like parser, rewrite and filter statements). Read this blog post
-	  for more information:
-
-	    http://bazsi.blogs.balabit.com/2012/01/syslog-ng-flexibility-improvements/
-
-	  In the final form of the functionality the "log" keyword as
-	  described in the blog post above was replaced with "channel".
-
-	* The functionality to query and manipulate sets of name-value pairs
-	  (often referenced as value-pairs and used in the mongodb()
-          destination driver and the $(format-json) template function).
-	  got significantly improved. It is now possible to change the name
-          of the keys when creating the output. See this commit for more
-          information:
-
-	    https://github.com/bazsi/syslog-ng-3.4/commit/ddc7c2539bd66fa35e8df441e4baf58e87b6708d
-
-	* Plugins & modules are now demand-loaded automatically if the
-	  "autoload-compiled-modules" global variable is set to 1, which is
-	  the default. Any shared libraries found on the module search path
-	  is considered for loading if the configuration file contains a
-	  reference to a functionality it provides.
-
-	  To disable this functionality simply set the referenced variable
-	  to 0 with a "@define" statement and load modules explicitly via
-	  "@module" statements.
-
-	  To list the available plugins & modules, use the --module-registry
-	  command line option for syslog-ng, which results in a detailed
-	  listing.
-
-	* Added a new parser named json-parser() to parse incoming JSON
-	  formatted messages. See this commit for more information:
-
-	    https://github.com/bazsi/syslog-ng-3.4/commit/e5569687bba2551c89a78faee55bcf8b4944066f
-
-	* Added a number of template functions:
-
-	   $(length ARG)               - length of a template expression
-	   $(substr ARG START [LEN])   - substring of a string
-	   $(strip ARG)                - remove white space from the start and end
-           $(sanitize ARG1 ARG2)       - join args to form a filename while
-	                                 removing special characters like '/'
-	   $(+), $(-), $(*), $(/), $(%) - perform numeric operations
-
-	* Added support for replicasets to the mongodb() destination driver.
-
-            https://github.com/bazsi/syslog-ng-3.4/commit/a980b9d268efa54879d3deeb4a53fa5a281629ba
-
-	* Added support for safe-mode() to the mongodb() destination driver
-	  that ensures inserts were properly executed at the cost of some
-	  performance penalties.
-
-            https://github.com/bazsi/syslog-ng-3.4/commit/768f0c6ec8eba2ad51531f2331fb5635fe12c063
-
-	* Added support for SMTP destination to send out emails triggered by
-	  log messages.
-
-            https://github.com/bazsi/syslog-ng-3.4/commit/404ceb959efe9715ce7437d7dcdc28ababbac590
-
-	* Added support for generating UUIDs via the $(uuid) template
-	  function.
-
-            https://github.com/bazsi/syslog-ng-3.4/commit/a16798c653c057239236945034114d8abf320e44
-
-	* Added the @SET@ parser to db-parser().
-
-            https://github.com/bazsi/syslog-ng-3.4/commit/ab08c84abbeda5a200b8150a6af7b02c64d84994
-
-	* Added support for dbd-option() in the sql() destination driver
-	  that makes it possible to supply driver specific options to the
-	  DBI driver.
-
-            https://github.com/bazsi/syslog-ng-3.4/commit/9254fe9e6236746bf1f955f0cac1274634b1beda
-
-	* Reload of the configuration can now be triggered using 
-          "syslog-ng-ctl reload".
-
-	* A new macro named $LOGHOST was added, which expands to the local
-	  hostname running syslog-ng.
-
-	* A set of time macros were added prefixed with "C_" that use the
-	  current time instead of the reception time (prefixed R_) and and
-	  the time that was included in the message (prefixed S_).  This
-	  means that C_DATE expands to the current date, whereas R_DATE
-	  would expand to the date the current message was received at.
-
-            https://github.com/bazsi/syslog-ng-3.4/commit/c2d17009e2ce14960acb519750fe2537b05e6f46
-
-	* Improved error reporting by including the configuration-file
-	  location of the object associated with the error. This makes it
-	  easier to diagnose errors even in the case of otherwise unnamed
-	  objects.
-
-	* This release also includes all fixes of the 3.3 branch, which are
-	  not listed here for brevity's sake. The merged commit ID is:
-	  bf742b0, which is a couple of patches ahead of "3.3.4".
-
-        Credits:
-        ========
-        syslog-ng is developed as a community project, and as such it relies
-        on volunteers to do the work necessarily to produce syslog-ng.
-
-        Reporting bugs, testing changes, writing code or simply providing
-        feedback are all important contributions, so please if you are a
-        user of syslog-ng, contribute.
-
-        These people have helped in this release:
-
-          Andreas Piesk
-          Balazs Scheidler (BalaBit)
-          Balint Kovacs (BalaBit)
-          Evan Rempel (University of Victoria)
-          Gergely Nagy (BalaBit)
-          Heiko Gerstung
-          Hendrik Völker (Verizon)
-          Jakub Jankowski (superhost.pl)
-          Martin Grauel (BalaBit)
-          Matthias Runge (Fedora)
-          Patrick Hemmer
-          Russ Milne (Seccuris)
+        Tibor Benke <btibi@balabit.hu>
+        Valentijn Sessink <valentijn@sessink.nl>
+        Viktor Tusa <tusa@balabit.hu>
+        Vincent Brillault <spam@lerya.net>
