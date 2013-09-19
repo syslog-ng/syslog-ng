@@ -60,6 +60,7 @@ typedef struct
 
   StatsCounterItem *dropped_messages;
   StatsCounterItem *stored_messages;
+  LogTemplateOptions template_options;
 
   ValuePairs *vp;
 
@@ -193,6 +194,15 @@ afamqp_dd_set_value_pairs(LogDriver *d, ValuePairs *vp)
   if (self->vp)
     value_pairs_free(self->vp);
   self->vp = vp;
+  value_pairs_set_template_options(vp, &self->template_options);
+}
+
+LogTemplateOptions *
+afamqp_dd_get_template_options(LogDriver *s)
+{
+  AMQPDestDriver *self = (AMQPDestDriver *) s;
+
+  return &self->template_options;
 }
 
 /*
@@ -576,6 +586,8 @@ afamqp_dd_init(LogPipe *s)
   if (!log_dest_driver_init_method(s))
     return FALSE;
 
+  log_template_options_init(&self->template_options, cfg);
+
   if (cfg)
     self->time_reopen = cfg->time_reopen;
 
@@ -632,6 +644,8 @@ static void
 afamqp_dd_free(LogPipe *d)
 {
   AMQPDestDriver *self = (AMQPDestDriver *) d;
+
+  log_template_options_destroy(&self->template_options);
 
   g_mutex_free(self->suspend_mutex);
   g_mutex_free(self->queue_mutex);
@@ -704,6 +718,7 @@ afamqp_dd_new(GlobalConfig *cfg)
   self->max_entries = 256;
   self->entries = g_new(amqp_table_entry_t, self->max_entries);
 
+  log_template_options_defaults(&self->template_options);
   afamqp_dd_set_value_pairs(&self->super.super, value_pairs_new_default(cfg));
 
   return (LogDriver *) self;

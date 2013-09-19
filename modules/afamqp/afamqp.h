@@ -43,4 +43,6 @@ void afamqp_dd_set_user(LogDriver *d, const gchar *user);
 void afamqp_dd_set_password(LogDriver *d, const gchar *password);
 void afamqp_dd_set_value_pairs(LogDriver *d, ValuePairs *vp);
 
+LogTemplateOptions *afamqp_dd_get_template_options(LogDriver *s);
+
 #endif
