@@ -493,13 +493,6 @@ afmongodb_dd_init(LogPipe *s)
   if (cfg)
     self->time_reopen = cfg->time_reopen;
 
-  if (!self->vp)
-    {
-      self->vp = value_pairs_new();
-      value_pairs_add_scope(self->vp, "selected-macros");
-      value_pairs_add_scope(self->vp, "nv-pairs");
-    }
-
   /* Always replace a leading dot with an underscore. */
   vpts = value_pairs_transform_set_new(".*");
   value_pairs_transform_set_add_func(vpts, value_pairs_new_transform_replace_prefix(".", "_"));
@@ -647,6 +640,8 @@ afmongodb_dd_new(GlobalConfig *cfg)
 
   self->writer_thread_wakeup_cond = g_cond_new();
   self->suspend_mutex = g_mutex_new();
+
+  afmongodb_dd_set_value_pairs(&self->super.super, value_pairs_new_default(cfg));
 
   return (LogDriver *)self;
 }
