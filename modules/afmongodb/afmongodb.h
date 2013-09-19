@@ -27,7 +27,7 @@
 #include "driver.h"
 #include "value-pairs.h"
 
-LogDriver *afmongodb_dd_new(void);
+LogDriver *afmongodb_dd_new(GlobalConfig *cfg);
 
 void afmongodb_dd_set_servers(LogDriver *d, GList *servers);
 void afmongodb_dd_set_host(LogDriver *d, const gchar *host);

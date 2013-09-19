@@ -55,7 +55,7 @@
 start
         : LL_CONTEXT_DESTINATION KW_MONGODB
           {
-            last_driver = *instance = afmongodb_dd_new();
+            last_driver = *instance = afmongodb_dd_new(configuration);
           }
           '(' afmongodb_options ')'         { YYACCEPT; }
 	;
