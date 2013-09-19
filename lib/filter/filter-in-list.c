@@ -55,7 +55,7 @@ filter_in_list_free(FilterExprNode *s)
 {
   FilterInList *self = (FilterInList *)s;
 
-  g_tree_unref(self->tree);
+  g_tree_destroy(self->tree);
 }
 
 FilterExprNode *
