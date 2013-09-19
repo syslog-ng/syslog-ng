@@ -57,6 +57,7 @@ typedef struct {
 
   StatsCounterItem *dropped_messages;
   StatsCounterItem *stored_messages;
+  LogTemplateOptions template_options;
 
   ValuePairs *vp;
 
@@ -160,14 +161,25 @@ afstomp_dd_set_ack(LogDriver *s, gboolean ack_needed)
 }
 
 void
-afstomp_dd_set_value_pairs(LogDriver *d, ValuePairs *vp)
+afstomp_dd_set_value_pairs(LogDriver *s, ValuePairs *vp)
 {
-  STOMPDestDriver *self = (STOMPDestDriver *) d;
+  STOMPDestDriver *self = (STOMPDestDriver *) s;
 
   if (self->vp)
     value_pairs_free(self->vp);
   self->vp = vp;
+  value_pairs_set_template_options(vp, &self->template_options);
 }
+
+
+LogTemplateOptions *
+afstomp_dd_get_template_options(LogDriver *s)
+{
+  STOMPDestDriver *self = (STOMPDestDriver *) s;
+
+  return &self->template_options;
+}
+
 /*
  * Utilities
  */
@@ -460,6 +472,8 @@ afstomp_dd_init(LogPipe *s)
   if (!log_dest_driver_init_method(s))
     return FALSE;
 
+  log_template_options_init(&self->template_options, cfg);
+
   if (cfg)
     self->time_reopen = cfg->time_reopen;
 
@@ -515,6 +529,8 @@ static void
 afstomp_dd_free(LogPipe *d)
 {
   STOMPDestDriver *self = (STOMPDestDriver *) d;
+
+  log_template_options_destroy(&self->template_options);
 
   g_mutex_free(self->suspend_mutex);
   g_mutex_free(self->queue_mutex);
@@ -579,6 +595,8 @@ afstomp_dd_new(GlobalConfig *cfg)
   self->writer_thread_wakeup_cond = g_cond_new();
   self->suspend_mutex = g_mutex_new();
   self->queue_mutex = g_mutex_new();
+
+  log_template_options_defaults(&self->template_options);
   afstomp_dd_set_value_pairs(&self->super.super, value_pairs_new_default(cfg));
 
   return (LogDriver *) self;

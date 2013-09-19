@@ -41,4 +41,7 @@ void afstomp_dd_set_user(LogDriver *d, const gchar *user);
 void afstomp_dd_set_password(LogDriver *d, const gchar *password);
 void afstomp_dd_set_value_pairs(LogDriver *d, ValuePairs *vp);
 
+LogTemplateOptions *afstomp_dd_get_template_options(LogDriver *s);
+
+
 #endif
