@@ -62,6 +62,7 @@ typedef struct
 
   StatsCounterItem *dropped_messages;
   StatsCounterItem *stored_messages;
+  LogTemplateOptions template_options;
 
   time_t last_msg_stamp;
 
@@ -127,6 +128,14 @@ afmongodb_dd_set_path(LogDriver *d, const gchar *path)
   self->port = MONGO_CONN_LOCAL;
 }
 
+LogTemplateOptions *
+afmongodb_dd_get_template_options(LogDriver *s)
+{
+  MongoDBDestDriver *self = (MongoDBDestDriver *) s;
+
+  return &self->template_options;
+}
+
 gboolean
 afmongodb_dd_check_address(LogDriver *d, gboolean local)
 {
@@ -176,6 +185,7 @@ afmongodb_dd_set_value_pairs(LogDriver *d, ValuePairs *vp)
   if (self->vp)
     value_pairs_free (self->vp);
   self->vp = vp;
+  value_pairs_set_template_options(vp, &self->template_options);
 }
 
 void
@@ -490,6 +500,8 @@ afmongodb_dd_init(LogPipe *s)
   if (!log_dest_driver_init_method(s))
     return FALSE;
 
+  log_template_options_init(&self->template_options, cfg);
+
   if (cfg)
     self->time_reopen = cfg->time_reopen;
 
@@ -583,6 +595,8 @@ afmongodb_dd_free(LogPipe *d)
 {
   MongoDBDestDriver *self = (MongoDBDestDriver *)d;
 
+  log_template_options_destroy(&self->template_options);
+
   g_mutex_free(self->suspend_mutex);
   g_cond_free(self->writer_thread_wakeup_cond);
 
@@ -641,6 +655,7 @@ afmongodb_dd_new(GlobalConfig *cfg)
   self->writer_thread_wakeup_cond = g_cond_new();
   self->suspend_mutex = g_mutex_new();
 
+  log_template_options_defaults(&self->template_options);
   afmongodb_dd_set_value_pairs(&self->super.super, value_pairs_new_default(cfg));
 
   return (LogDriver *)self;
