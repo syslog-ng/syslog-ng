@@ -61,7 +61,7 @@
 start
         : LL_CONTEXT_DESTINATION KW_AMQP
           {
-            last_driver = *instance = afamqp_dd_new();
+            last_driver = *instance = afamqp_dd_new(configuration);
           }
           '(' afamqp_options ')'		{ YYACCEPT; }
 	;

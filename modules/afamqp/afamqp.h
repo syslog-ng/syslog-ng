@@ -28,7 +28,7 @@
 #include "driver.h"
 #include "value-pairs.h"
 
-LogDriver *afamqp_dd_new(void);
+LogDriver *afamqp_dd_new(GlobalConfig *cfg);
 
 void afamqp_dd_set_host(LogDriver *d, const gchar *host);
 void afamqp_dd_set_port(LogDriver *d, gint port);

@@ -682,7 +682,7 @@ afamqp_dd_queue(LogPipe *s, LogMessage *msg,
  */
 
 LogDriver *
-afamqp_dd_new(void)
+afamqp_dd_new(GlobalConfig *cfg)
 {
   AMQPDestDriver *self = g_new0(AMQPDestDriver, 1);
 
@@ -692,7 +692,7 @@ afamqp_dd_new(void)
   self->super.super.super.queue = afamqp_dd_queue;
   self->super.super.super.free_fn = afamqp_dd_free;
 
-  self->routing_key_template = log_template_new(configuration, NULL);
+  self->routing_key_template = log_template_new(cfg, NULL);
 
   afamqp_dd_set_vhost((LogDriver *) self, "/");
   afamqp_dd_set_host((LogDriver *) self, "127.0.0.1");
