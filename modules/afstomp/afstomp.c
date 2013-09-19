@@ -463,14 +463,6 @@ afstomp_dd_init(LogPipe *s)
   if (cfg)
     self->time_reopen = cfg->time_reopen;
 
-  if (!self->vp)
-    {
-      self->vp = value_pairs_new();
-      value_pairs_add_scope(self->vp, "selected-macros");
-      value_pairs_add_scope(self->vp, "nv-pairs");
-      value_pairs_add_scope(self->vp, "sdata");
-    }
-
   self->conn = NULL;
 
   msg_verbose("Initializing STOMP destination",
@@ -587,6 +579,7 @@ afstomp_dd_new(GlobalConfig *cfg)
   self->writer_thread_wakeup_cond = g_cond_new();
   self->suspend_mutex = g_mutex_new();
   self->queue_mutex = g_mutex_new();
+  afstomp_dd_set_value_pairs(&self->super.super, value_pairs_new_default(cfg));
 
   return (LogDriver *) self;
 }
