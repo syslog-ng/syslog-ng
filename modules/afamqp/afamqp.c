@@ -579,14 +579,6 @@ afamqp_dd_init(LogPipe *s)
   if (cfg)
     self->time_reopen = cfg->time_reopen;
 
-  if (!self->vp)
-    {
-      self->vp = value_pairs_new();
-      value_pairs_add_scope(self->vp, "selected-macros");
-      value_pairs_add_scope(self->vp, "nv-pairs");
-      value_pairs_add_scope(self->vp, "sdata");
-    }
-
   msg_verbose("Initializing AMQP destination",
               evt_tag_str("vhost", self->vhost),
               evt_tag_str("host", self->host),
@@ -711,6 +703,8 @@ afamqp_dd_new(GlobalConfig *cfg)
 
   self->max_entries = 256;
   self->entries = g_new(amqp_table_entry_t, self->max_entries);
+
+  afamqp_dd_set_value_pairs(&self->super.super, value_pairs_new_default(cfg));
 
   return (LogDriver *) self;
 }
