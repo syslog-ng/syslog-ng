@@ -563,7 +563,7 @@ afstomp_dd_queue(LogPipe *s, LogMessage *msg,
  */
 
 LogDriver *
-afstomp_dd_new(void)
+afstomp_dd_new(GlobalConfig *cfg)
 {
   STOMPDestDriver *self = g_new0(STOMPDestDriver, 1);
 
@@ -573,7 +573,7 @@ afstomp_dd_new(void)
   self->super.super.super.queue = afstomp_dd_queue;
   self->super.super.super.free_fn = afstomp_dd_free;
 
-  self->routing_key_template = log_template_new(configuration, NULL);
+  self->routing_key_template = log_template_new(cfg, NULL);
 
   afstomp_dd_set_host((LogDriver *) self, "127.0.0.1");
   afstomp_dd_set_port((LogDriver *) self, 61613);

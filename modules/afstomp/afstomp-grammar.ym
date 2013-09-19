@@ -58,7 +58,7 @@
 start
         : LL_CONTEXT_DESTINATION KW_STOMP
           {
-            last_driver = *instance = afstomp_dd_new();
+            last_driver = *instance = afstomp_dd_new(configuration);
           }
           '(' afstomp_options ')'		{ YYACCEPT; }
           ;

@@ -28,7 +28,7 @@
 #include "driver.h"
 #include "value-pairs.h"
 
-LogDriver *afstomp_dd_new(void);
+LogDriver *afstomp_dd_new(GlobalConfig *cfg);
 
 void afstomp_dd_set_host(LogDriver *d, const gchar *host);
 void afstomp_dd_set_port(LogDriver *d, gint port);
