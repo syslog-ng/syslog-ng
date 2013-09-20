@@ -34,6 +34,7 @@ cat_keys_foreach(const gchar *name, gpointer user_data)
 }
 
 MsgFormatOptions parse_options;
+LogTemplateOptions template_options;
 
 LogMessage *
 create_message(void)
@@ -87,7 +88,7 @@ testcase(const gchar *scope, const gchar *exclude, const gchar *expected, GPtrAr
 
   args[0] = &vp_keys_list;
   args[1] = &test_key_found;
-  value_pairs_foreach(vp, vp_keys_foreach, msg, 11, args);
+  value_pairs_foreach(vp, vp_keys_foreach, msg, 11, &template_options, args);
   g_list_foreach(vp_keys_list, (GFunc) cat_keys_foreach, vp_keys);
 
   if (strcmp(vp_keys->str, expected) != 0)

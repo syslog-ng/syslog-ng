@@ -29,6 +29,7 @@
 #include "cfg.h"
 #include "value-pairs.h"
 #include "vptransform.h"
+#include "syslog-ng.h"
 
 typedef struct _TFJsonState
 {
@@ -60,6 +61,7 @@ typedef struct
 {
   gboolean need_comma;
   GString *buffer;
+  const LogTemplateOptions *template_options;
 } json_state_t;
 
 static inline void
@@ -183,17 +185,21 @@ tf_json_value(const gchar *name, const gchar *prefix,
   return FALSE;
 }
 
-static void
-tf_json_append(GString *result, ValuePairs *vp, LogMessage *msg)
+static gboolean
+tf_json_append(GString *result, ValuePairs *vp, LogMessage *msg,
+               const LogTemplateOptions *template_options)
 {
   json_state_t state;
 
   state.need_comma = FALSE;
   state.buffer = result;
+  state.template_options = template_options;
 
-  value_pairs_walk(vp,
-                   tf_json_obj_start, tf_json_value, tf_json_obj_end,
-                   msg, 0, &state);
+  return value_pairs_walk(vp,
+                          tf_json_obj_start, tf_json_value, tf_json_obj_end,
+                          msg, 0,
+                          template_options,
+                          &state);
 }
 
 static void
@@ -202,9 +208,14 @@ tf_json_call(LogTemplateFunction *self, gpointer s,
 {
   TFJsonState *state = (TFJsonState *)s;
   gint i;
+  gboolean r = TRUE;
+  gsize orig_size = result->len;
 
   for (i = 0; i < args->num_messages; i++)
-    tf_json_append(result, state->vp, args->messages[i]);
+    r &= tf_json_append(result, state->vp, args->messages[i], args->opts);
+
+  if (!r && (args->opts->on_error & ON_ERROR_DROP_MESSAGE))
+    g_string_set_size(result, orig_size);
 }
 
 static void

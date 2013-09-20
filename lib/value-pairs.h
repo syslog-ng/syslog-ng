@@ -42,7 +42,6 @@ typedef gboolean (*VPWalkCallbackFunc)(const gchar *name,
                                        const gchar *prev, gpointer *prev_data,
                                        gpointer user_data);
 
-void value_pairs_set_template_options(ValuePairs *vp, const LogTemplateOptions *template_options);
 gboolean value_pairs_add_scope(ValuePairs *vp, const gchar *scope);
 void value_pairs_add_glob_pattern(ValuePairs *vp, const gchar *pattern, gboolean include);
 gboolean value_pairs_add_pair(ValuePairs *vp, const gchar *key, LogTemplate *value);
@@ -52,9 +51,11 @@ void value_pairs_add_transforms(ValuePairs *vp, gpointer vpts);
 gboolean value_pairs_foreach_sorted(ValuePairs *vp, VPForeachFunc func,
                                     GCompareDataFunc compare_func,
                                     LogMessage *msg, gint32 seq_num,
+                                    const LogTemplateOptions *template_options,
                                     gpointer user_data);
 gboolean value_pairs_foreach(ValuePairs *vp, VPForeachFunc func,
                              LogMessage *msg, gint32 seq_num,
+                             const LogTemplateOptions *template_options,
                              gpointer user_data);
 
 gboolean value_pairs_walk(ValuePairs *vp,
@@ -62,6 +63,7 @@ gboolean value_pairs_walk(ValuePairs *vp,
                           VPWalkValueCallbackFunc process_value_func,
                           VPWalkCallbackFunc obj_end_func,
                           LogMessage *msg, gint32 seq_num,
+                          const LogTemplateOptions *template_options,
                           gpointer user_data);
 
 ValuePairs *value_pairs_new(void);

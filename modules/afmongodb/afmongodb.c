@@ -169,7 +169,6 @@ afmongodb_dd_set_value_pairs(LogDriver *d, ValuePairs *vp)
   if (self->vp)
     value_pairs_free (self->vp);
   self->vp = vp;
-  value_pairs_set_template_options(vp, &self->template_options);
 }
 
 void
@@ -436,7 +435,9 @@ afmongodb_worker_insert (LogThrDestDriver *s)
                              afmongodb_vp_obj_start,
                              afmongodb_vp_process_value,
                              afmongodb_vp_obj_end,
-                             msg, self->seq_num, self);
+                             msg, self->seq_num,
+                             &self->template_options,
+                             self);
   bson_finish (self->bson);
 
   if (!success && !need_drop)

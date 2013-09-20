@@ -178,7 +178,6 @@ afamqp_dd_set_value_pairs(LogDriver *d, ValuePairs *vp)
   if (self->vp)
     value_pairs_free(self->vp);
   self->vp = vp;
-  value_pairs_set_template_options(vp, &self->template_options);
 }
 
 LogTemplateOptions *
@@ -401,7 +400,7 @@ afamqp_worker_publish(AMQPDestDriver *self, LogMessage *msg)
   gpointer user_data[] = { &self->entries, &pos, &self->max_entries };
 
   value_pairs_foreach(self->vp, afamqp_vp_foreach, msg, self->seq_num,
-                      user_data);
+                      &self->template_options, user_data);
 
   table.num_entries = pos;
   table.entries = self->entries;

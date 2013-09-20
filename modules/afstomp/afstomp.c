@@ -143,7 +143,6 @@ afstomp_dd_set_value_pairs(LogDriver *s, ValuePairs *vp)
   if (self->vp)
     value_pairs_free(self->vp);
   self->vp = vp;
-  value_pairs_set_template_options(vp, &self->template_options);
 }
 
 
@@ -294,7 +293,8 @@ afstomp_worker_publish(STOMPDestDriver *self, LogMessage *msg)
       stomp_frame_add_header(&frame, "receipt", seq_num);
     };
 
-  value_pairs_foreach(self->vp, afstomp_vp_foreach, msg, self->seq_num, &frame);
+  value_pairs_foreach(self->vp, afstomp_vp_foreach, msg, self->seq_num,
+                      &self->template_options, &frame);
 
   afstomp_set_frame_body(self, body, &frame, msg);
 

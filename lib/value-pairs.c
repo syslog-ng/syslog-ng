@@ -56,7 +56,6 @@ struct _ValuePairs
   /* guint32 as CfgFlagHandler only supports 32 bit integers */
   guint32 scopes;
   guint32 patterns_size;
-  const LogTemplateOptions *template_options;
 };
 
 typedef enum
@@ -132,12 +131,6 @@ static CfgFlagHandler value_pair_scope[] =
   { NULL,                 0,       0,                            0},
 };
 
-void
-value_pairs_set_template_options(ValuePairs *vp, const LogTemplateOptions *template_options)
-{
-  vp->template_options = template_options;
-}
-
 gboolean
 value_pairs_add_scope(ValuePairs *vp, const gchar *scope)
 {
@@ -202,12 +195,14 @@ vp_pairs_foreach(gpointer data, gpointer user_data)
   LogMessage *msg = ((gpointer *)user_data)[2];
   gint32 seq_num = GPOINTER_TO_INT (((gpointer *)user_data)[3]);
   GTree *scope_set = ((gpointer *)user_data)[5];
+  const LogTemplateOptions *template_options = ((gpointer *)user_data)[6];
   SBTHGString *sb = sb_th_gstring_acquire();
   VPPairConf *vpc = (VPPairConf *)data;
 
   sb->type_hint = vpc->template->type_hint;
-  log_template_append_format((LogTemplate *)vpc->template, msg, vp->template_options, LTZ_LOCAL,
-                             seq_num, NULL, sb_th_gstring_string(sb));
+  log_template_append_format((LogTemplate *)vpc->template, msg,
+                             template_options,
+                             LTZ_LOCAL, seq_num, NULL, sb_th_gstring_string(sb));
 
   if (sb_th_gstring_string(sb)->len == 0)
     {
@@ -253,7 +248,7 @@ vp_msg_nvpairs_foreach(NVHandle handle, gchar *name,
 
 /* runs over a set of ValuePairSpec structs and merges them into the value-pair set */
 static void
-vp_merge_set(ValuePairs *vp, LogMessage *msg, gint32 seq_num, ValuePairSpec *set, GTree *dest)
+vp_merge_set(ValuePairs *vp, LogMessage *msg, gint32 seq_num, ValuePairSpec *set, GTree *dest, const LogTemplateOptions *template_options)
 {
   gint i;
   SBTHGString *sb;
@@ -278,7 +273,7 @@ vp_merge_set(ValuePairs *vp, LogMessage *msg, gint32 seq_num, ValuePairSpec *set
         {
         case VPT_MACRO:
           log_macro_expand(sb_th_gstring_string(sb), set[i].id, FALSE,
-                           NULL, LTZ_LOCAL, seq_num, NULL, msg);
+                           template_options, LTZ_LOCAL, seq_num, NULL, msg);
           break;
         case VPT_NVPAIR:
           {
@@ -325,9 +320,14 @@ vp_data_free (SBTHGString *s)
 gboolean
 value_pairs_foreach_sorted (ValuePairs *vp, VPForeachFunc func,
                             GCompareDataFunc compare_func,
-                            LogMessage *msg, gint32 seq_num, gpointer user_data)
+                            LogMessage *msg, gint32 seq_num,
+                            const LogTemplateOptions *template_options,
+                            gpointer user_data)
 {
-  gpointer args[] = { vp, func, msg, GINT_TO_POINTER (seq_num), user_data, NULL };
+  gpointer args[] = { vp, func, msg, GINT_TO_POINTER (seq_num), user_data, NULL,
+                      /* remove constness, we are not using that pointer non-const anyway */
+                      (LogTemplateOptions *) template_options
+                    };
   gboolean result = TRUE;
   gpointer helper_args[] = { func, user_data, &result };
   GTree *scope_set;
@@ -346,16 +346,16 @@ value_pairs_foreach_sorted (ValuePairs *vp, VPForeachFunc func,
                      (NVTableForeachFunc) vp_msg_nvpairs_foreach, args);
 
   if (vp->scopes & (VPS_RFC3164 + VPS_RFC5424 + VPS_SELECTED_MACROS))
-    vp_merge_set(vp, msg, seq_num, rfc3164, scope_set);
+    vp_merge_set(vp, msg, seq_num, rfc3164, scope_set, template_options);
 
   if (vp->scopes & VPS_RFC5424)
-    vp_merge_set(vp, msg, seq_num, rfc5424, scope_set);
+    vp_merge_set(vp, msg, seq_num, rfc5424, scope_set, template_options);
 
   if (vp->scopes & VPS_SELECTED_MACROS)
-    vp_merge_set(vp, msg, seq_num, selected_macros, scope_set);
+    vp_merge_set(vp, msg, seq_num, selected_macros, scope_set, template_options);
 
   if (vp->scopes & VPS_ALL_MACROS)
-    vp_merge_set(vp, msg, seq_num, all_macros, scope_set);
+    vp_merge_set(vp, msg, seq_num, all_macros, scope_set, template_options);
 
   /* Merge the explicit key-value pairs too */
   g_ptr_array_foreach(vp->vpairs, (GFunc)vp_pairs_foreach, args);
@@ -371,10 +371,11 @@ value_pairs_foreach_sorted (ValuePairs *vp, VPForeachFunc func,
 gboolean
 value_pairs_foreach(ValuePairs *vp, VPForeachFunc func,
                     LogMessage *msg, gint32 seq_num,
+                    const LogTemplateOptions *template_options,
                     gpointer user_data)
 {
   return value_pairs_foreach_sorted(vp, func, (GCompareDataFunc) strcmp,
-                                    msg, seq_num, user_data);
+                                    msg, seq_num, template_options, user_data);
 }
 
 typedef struct
@@ -561,6 +562,7 @@ value_pairs_walk(ValuePairs *vp,
                  VPWalkValueCallbackFunc process_value_func,
                  VPWalkCallbackFunc obj_end_func,
                  LogMessage *msg, gint32 seq_num,
+                 const LogTemplateOptions *template_options,
                  gpointer user_data)
 {
   vp_walk_state_t state;
@@ -574,7 +576,8 @@ value_pairs_walk(ValuePairs *vp,
 
   state.obj_start(NULL, NULL, NULL, NULL, NULL, user_data);
   result = value_pairs_foreach_sorted(vp, value_pairs_walker,
-                                      (GCompareDataFunc)vp_walk_cmp, msg, seq_num, &state);
+                                      (GCompareDataFunc)vp_walk_cmp, msg,
+                                      seq_num, template_options, &state);
   vp_walker_stack_unwind_all(&state.stack, &state);
   state.obj_end(NULL, NULL, NULL, NULL, NULL, user_data);
 
@@ -969,7 +972,6 @@ value_pairs_new_from_cmdline (GlobalConfig *cfg,
   gboolean success;
 
   vp = value_pairs_new();
-  value_pairs_set_template_options(vp, &cfg->template_options);
   user_data_args[0] = cfg;
   user_data_args[1] = vp;
   user_data_args[2] = NULL;
@@ -998,7 +1000,6 @@ value_pairs_new_default(GlobalConfig *cfg)
 {
   ValuePairs *vp = value_pairs_new();
 
-  value_pairs_set_template_options(vp, &cfg->template_options);
   value_pairs_add_scope(vp, "selected-macros");
   value_pairs_add_scope(vp, "nv-pairs");
   value_pairs_add_scope(vp, "sdata");
