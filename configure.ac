@@ -198,6 +198,14 @@ AC_ARG_WITH(libesmtp,
              AC_HELP_STRING([--with-libesmtp=DIR],
                             [use libesmtp library from (prefix) directory DIR]),,)
 
+AC_ARG_ENABLE(redis,
+              [  --disable-redis          Disable REDIS support (default: auto)]
+              ,,enable_redis="auto")
+
+AC_ARG_WITH(libhiredis,
+             AC_HELP_STRING([--with-libhiredis=DIR],
+                            [use libhiredis library from (prefix) directory DIR]),,)
+
 AC_ARG_ENABLE(systemd,
               [  --enable-systemd        Enable systemd support (default: auto)]
               ,,enable_systemd="auto")
@@ -877,6 +885,33 @@ if test "x$enable_smtp" != "xno" && test "x$with_libesmtp" != "no"; then
 	enable_smtp=$libesmtp
 fi
 
+ dnl ***************************************************************************
+dnl libhiredis headers/libraries
+dnl ***************************************************************************
+if test "x$enable_redis" != "xno" && test "x$with_redis" != "no"; then
+       hiredis="yes"
+       if test "x$with_libhiredis" != "yes" && test "x$with_libhiredis" != "x"; then
+               CFLAGS_SAVE="$CFLAGS"
+               LDFLAGS_SAVE="$LDFLAGS"
+               CFLAGS="$CFLAGS -I$with_libhiredis/include"
+               LDFLAGS="$LDFLAGS -L$with_libhiredis/lib"
+               AC_CHECK_HEADER(hiredis.h, [HIREDIS_CFLAGS="-I$with_libhiredis/include"
+                                            HIREDIS_LIBS="-L$with_libhiredis/lib -lhiredis"], [hiredis=no])
+               CFLAGS="$CFLAGS_SAVE"
+               LDFLAGS="$LDFLAGS_SAVE"
+       else
+               hiredis="yes"
+               PKG_CHECK_MODULES(HIREDIS, hiredis, ,
+                                 [PKG_CHECK_MODULES(HIREDIS, libhiredis,, [hiredis=no])])
+       fi
+
+       if test "x$enable_redis" = "xyes" && test "x$hiredis" = "xno"; then
+               AC_MSG_ERROR(libHIREDIS not found)
+       fi
+
+       enable_redis=$hiredis
+fi
+
 dnl ***************************************************************************
 dnl rabbitmq-c headers/libraries
 dnl ***************************************************************************
@@ -1171,6 +1206,7 @@ AM_CONDITIONAL(ENABLE_AMQP, [test "$enable_amqp" = "yes"])
 AM_CONDITIONAL(ENABLE_STOMP, [test "$enable_stomp" = "yes"])
 AM_CONDITIONAL(ENABLE_JSON, [test "$enable_json" = "yes"])
 AM_CONDITIONAL(ENABLE_GEOIP, [test "$enable_geoip" = "yes"])
+AM_CONDITIONAL(ENABLE_REDIS, [test "$enable_redis" = "yes"])
 AM_CONDITIONAL(WITH_EMBEDDED_CRYPTO, [test "$with_embedded_crypto" = "yes"])
 AM_CONDITIONAL(IVYKIS_INTERNAL, [test "x$IVYKIS_SUBDIRS" != "x"])
 AM_CONDITIONAL(LIBMONGO_INTERNAL, [test "x$LIBMONGO_SUBDIRS" != "x"])

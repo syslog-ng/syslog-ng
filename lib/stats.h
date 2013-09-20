@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -82,6 +82,7 @@ enum
   SCS_SMTP           = 28,
   SCS_AMQP           = 29,
   SCS_STOMP          = 30,
+  SCS_REDIS          = 31,
   SCS_MAX,
   SCS_SOURCE_MASK    = 0xff
 };

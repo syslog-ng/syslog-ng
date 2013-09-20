@@ -1,0 +1,92 @@
+/*
+ * Copyright (c) 2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2013 Tihamer Petrovics <tihameri@gmail.com>
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
+%code requires {
+
+#include "redis-parser.h"
+
+}
+
+%code {
+
+#include "cfg-grammar.h"
+#include "plugin.h"
+}
+
+%name-prefix "redis_"
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {LogDriver **instance}
+%parse-param {gpointer arg}
+
+/* INCLUDE_DECLS */
+
+%token KW_REDIS
+%token KW_COMMAND
+%%
+
+start
+        : LL_CONTEXT_DESTINATION KW_REDIS
+          {
+            last_driver = *instance = redis_dd_new(configuration);
+          }
+          '(' redis_options ')' { YYACCEPT; }
+;
+
+redis_options
+        : redis_option redis_options
+|
+;
+
+redis_option
+        : KW_HOST '(' string ')'
+          {
+            redis_dd_set_host(last_driver, $3);
+            free($3);
+          }
+        | KW_PORT '(' LL_NUMBER ')'
+          {
+            redis_dd_set_port(last_driver, $3);
+          }
+        | KW_COMMAND '(' string template_content ')'
+          {
+            redis_dd_set_command(last_driver, $3, $4, NULL, NULL);
+            free($3);
+          }
+        | KW_COMMAND '(' string template_content template_content ')'
+          {
+            redis_dd_set_command(last_driver, $3, $4, $5, NULL);
+            free($3);
+          }
+        | KW_COMMAND '(' string template_content template_content template_content ')'
+          {
+            redis_dd_set_command(last_driver, $3, $4, $5, $6);
+            free($3);
+          }
+        | dest_driver_option
+        | { last_template_options = redis_dd_get_template_options(last_driver); } template_option
+        ;
+
+/* INCLUDE_RULES */
+
+%%
