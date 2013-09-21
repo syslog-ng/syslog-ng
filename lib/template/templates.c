@@ -1400,7 +1400,7 @@ log_template_new(GlobalConfig *cfg, gchar *name)
   self->ref_cnt = 1;
   self->cfg = cfg;
   g_static_mutex_init(&self->arg_lock);
-  if (cfg_is_config_version_older(configuration, 0x0300))
+  if (cfg_is_config_version_older(cfg, 0x0300))
     {
       static gboolean warn_written = FALSE;
 
