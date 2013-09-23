@@ -62,6 +62,7 @@ fi
 _enable_ssl_default="auto"
 IS_WINDOWS=0
 IS_I386=0
+IS_SOLARIS=0
 case "$ostype" in
     *CYGWIN*|*MINGW*)
         IS_WINDOWS=1
@@ -72,7 +73,11 @@ case "$ostype" in
           ;;
         esac
         ;;
+    SunOS)
+        IS_SOLARIS=1
+        ;;
 esac
+
 dnl ***************************************************************************
 dnl script snippet to generate user friendly version strings according to the
 dnl new versioning policy. All needed code are here to allow easy moving
@@ -584,8 +589,15 @@ fi
 dnl some of these are provided by libs declared in BASE_LIBS on non-Linux/FreeBSD systems.
 old_LIBS=$LIBS
 LIBS="$LIBS $BASE_LIBS"
-AC_CHECK_FUNCS(strdup strtol strtoll strtoimax inet_aton inet_ntoa getopt_long getaddrinfo getnameinfo getutent pread pwrite strcasestr memrchr)
+AC_CHECK_FUNCS(strdup strtol strtoll strtoimax inet_aton inet_ntoa getopt_long getaddrinfo getutent pread pwrite strcasestr memrchr)
 AC_CHECK_FUNCS(clock_gettime)
+
+if test $IS_SOLARIS -eq 0; then
+  dnl on solaris the get name info returns 0, although it can't resolve hostname
+  AC_CHECK_FUNCS(getnameinfo)
+fi
+
+
 LIBS=$old_LIBS
 AC_CHECK_TYPE([clockid_t], [AC_DEFINE([HAVE_CLOCKID_T],1, [Define to 1 if you have the clockid_t type.])])
 
