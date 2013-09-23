@@ -859,6 +859,24 @@ nv_table_swap_entry_flags(NVEntry *entry)
   entry->flags = reverse(entry->flags);
 }
 
+static void
+nv_entry_swap_bytes(NVEntry *entry)
+{
+  nv_table_swap_entry_flags(entry);
+  entry->alloc_len = GUINT16_SWAP_LE_BE(entry->alloc_len);
+  if (!entry->indirect)
+    {
+      entry->vdirect.value_len = GUINT16_SWAP_LE_BE(entry->vdirect.value_len);
+    }
+  else
+    {
+      entry->vindirect.handle = GUINT16_SWAP_LE_BE(entry->vindirect.handle);
+      entry->vindirect.ofs = GUINT16_SWAP_LE_BE(entry->vindirect.ofs);
+      entry->vindirect.len = GUINT16_SWAP_LE_BE(entry->vindirect.len);
+    }
+}
+
+
 void
 nv_table_data_swap_bytes(NVTable *self)
 {
@@ -870,18 +888,7 @@ nv_table_data_swap_bytes(NVTable *self)
       entry = nv_table_get_entry_at_ofs(self, self->static_entries[i]);
       if (!entry)
         continue;
-      nv_table_swap_entry_flags(entry);
-      entry->alloc_len = GUINT16_SWAP_LE_BE(entry->alloc_len);
-      if (!entry->indirect)
-        {
-          entry->vdirect.value_len = GUINT16_SWAP_LE_BE(entry->vdirect.value_len);
-        }
-      else
-        {
-          entry->vindirect.handle = GUINT16_SWAP_LE_BE(entry->vindirect.handle);
-          entry->vindirect.ofs = GUINT16_SWAP_LE_BE(entry->vindirect.ofs);
-          entry->vindirect.len = GUINT16_SWAP_LE_BE(entry->vindirect.len);
-        }
+      nv_entry_swap_bytes(entry);
     }
 
   dyn_entries = nv_table_get_dyn_entries(self);
@@ -891,18 +898,7 @@ nv_table_data_swap_bytes(NVTable *self)
 
       if (!entry)
         continue;
-      nv_table_swap_entry_flags(entry);
-      entry->alloc_len = GUINT16_SWAP_LE_BE(entry->alloc_len);
-      if (!entry->indirect)
-        {
-          entry->vdirect.value_len = GUINT16_SWAP_LE_BE(entry->vdirect.value_len);
-        }
-      else
-        {
-          entry->vindirect.handle = GUINT16_SWAP_LE_BE(entry->vindirect.handle);
-          entry->vindirect.ofs = GUINT16_SWAP_LE_BE(entry->vindirect.ofs);
-          entry->vindirect.len = GUINT16_SWAP_LE_BE(entry->vindirect.len);
-        }
+      nv_entry_swap_bytes(entry);
     }
 }
 
