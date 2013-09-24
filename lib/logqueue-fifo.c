@@ -160,10 +160,11 @@ log_queue_fifo_move_input_unlocked(LogQueueFifo *self, gint thread_id)
           log_msg_free_queue_node(node);
           log_msg_drop(msg, &path_options);
         }
-      msg_debug("Destination queue full, dropping messages",
+      msg_error("Destination queue full, dropping messages",
                 evt_tag_int("queue_len", queue_len),
                 evt_tag_int("log_fifo_size", self->qoverflow_size),
                 evt_tag_int("count", n),
+                evt_tag_str("persist_name", self->super.persist_name),
                 NULL);
     }
   stats_counter_add(self->super.stored_messages, self->qoverflow_input[thread_id].len);
@@ -276,6 +277,7 @@ log_queue_fifo_push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *pat
       msg_debug("Destination queue full, dropping message",
                 evt_tag_int("queue_len", log_queue_fifo_get_length(&self->super)),
                 evt_tag_int("log_fifo_size", self->qoverflow_size),
+                evt_tag_str("persist_name", self->super.persist_name),
                 NULL);
     }
   return;
