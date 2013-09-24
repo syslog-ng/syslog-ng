@@ -28,7 +28,6 @@
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
-#include <arpa/inet.h>
 
 typedef struct _SerializeFileArchive
 {
