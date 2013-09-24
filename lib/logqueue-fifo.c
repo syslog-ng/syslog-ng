@@ -113,7 +113,8 @@ log_queue_fifo_get_length(LogQueue *s)
 static gboolean
 log_queue_fifo_keep_on_reload(LogQueue *s)
 {
-  return log_queue_fifo_get_length(s) > 0;
+  LogQueueFifo *self = (LogQueueFifo *) s;
+  return log_queue_fifo_get_length(s) > 0 || self->qbacklog_len > 0;
 }
 
 /* move items from the per-thread input queue to the lock-protected "wait" queue */
