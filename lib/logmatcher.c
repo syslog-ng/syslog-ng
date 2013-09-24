@@ -259,7 +259,7 @@ log_matcher_posix_re_new(void)
 
       if (!warn_written)
         {
-          msg_warning("WARNING: filters do not store matches in macros by default in " VERSION_3_0 ", please update your configuration by using an explicit 'store-matches' flag to achieve that",
+          msg_warning("WARNING: filters do not store matches in macros by default from " VERSION_3_0 ", please update your configuration by using an explicit 'store-matches' flag to achieve that",
                       NULL);
           warn_written = TRUE;
         }
