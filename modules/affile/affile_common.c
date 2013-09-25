@@ -79,6 +79,21 @@ affile_handle_zero_follow_freq(AFFileSourceDriver *self)
 #endif
 }
 
+static inline gboolean
+affile_sd_is_regular(AFFileSourceDriver *self)
+{
+  struct stat st;
+  if (stat(self->filename->str, &st) != 0)
+    {
+      msg_warning("Warning: stat failed",
+                  evt_tag_str("error", strerror(errno)),
+                  NULL);
+      return FALSE;
+    }
+
+  return S_ISREG(st.st_mode) || S_ISLNK(st.st_mode);
+}
+
 inline gchar *
 affile_sd_format_persist_name(const gchar *filename)
 {
@@ -271,7 +286,7 @@ affile_sd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
       log_msg_set_value(msg, filename_handle, self->filename->str, self->filename->len);
     }
 
-  if (!(self->flags & AFFILE_PIPE))
+  if (affile_sd_is_regular(self))
     {
       if (filesize_handle && sdata_filesize)
         {
