@@ -1,0 +1,20 @@
+
+## <summary>policy for syslog_ng</summary>
+
+########################################
+## <summary>
+##	Execute a domain transition to run syslog_ng.
+## </summary>
+## <param name="domain">
+## <summary>
+##	Domain allowed to transition.
+## </summary>
+## </param>
+#
+interface(`syslog_ng_domtrans',`
+	gen_require(`
+		type syslog_ng_t, syslog_ng_exec_t;
+	')
+
+	domtrans_pattern($1, syslog_ng_exec_t, syslog_ng_t)
+')
