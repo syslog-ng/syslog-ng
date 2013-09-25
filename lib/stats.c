@@ -388,6 +388,7 @@ const gchar *source_names[SCS_MAX] =
   "amqp",
   "stomp",
   "redis",
+  "snmp",
 };
 
 
