@@ -24,6 +24,7 @@
 
 #include "filter/filter-cmp.h"
 #include "filter/filter-expr-grammar.h"
+#include "scratch-buffers.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -44,20 +45,20 @@ gboolean
 fop_cmp_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
 {
   FilterCmp *self = (FilterCmp *) s;
-  GString *left_buf = g_string_sized_new(32);
-  GString *right_buf = g_string_sized_new(32);
+  SBGString *left_buf = sb_gstring_acquire();
+  SBGString *right_buf = sb_gstring_acquire();
   gboolean result = FALSE;
   gint cmp;
 
-  log_template_format_with_context(self->left, msgs, num_msg, NULL, LTZ_LOCAL, 0, NULL, left_buf);
-  log_template_format_with_context(self->right, msgs, num_msg, NULL, LTZ_LOCAL, 0, NULL, right_buf);
+  log_template_format_with_context(self->left, msgs, num_msg, NULL, LTZ_LOCAL, 0, NULL, sb_gstring_string(left_buf));
+  log_template_format_with_context(self->right, msgs, num_msg, NULL, LTZ_LOCAL, 0, NULL, sb_gstring_string(right_buf));
 
   if (self->cmp_op & FCMP_NUM)
     {
       gint l, r;
 
-      l = atoi(left_buf->str);
-      r = atoi(right_buf->str);
+      l = atoi(sb_gstring_string(left_buf)->str);
+      r = atoi(sb_gstring_string(right_buf)->str);
       if (l == r)
         cmp = 0;
       else if (l > r)
@@ -67,7 +68,7 @@ fop_cmp_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
     }
   else
     {
-      cmp = strcmp(left_buf->str, right_buf->str);
+      cmp = strcmp(sb_gstring_string(left_buf)->str, sb_gstring_string(right_buf)->str);
     }
 
   if (cmp == 0)
@@ -83,8 +84,8 @@ fop_cmp_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
       result = self->cmp_op & FCMP_GT || self->cmp_op == 0;
     }
 
-  g_string_free(left_buf, TRUE);
-  g_string_free(right_buf, TRUE);
+  sb_gstring_release(left_buf);
+  sb_gstring_release(right_buf);
   return result ^ s->comp;
 }
 
