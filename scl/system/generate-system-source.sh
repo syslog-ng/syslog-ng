@@ -70,13 +70,13 @@ EOF
 		cat <<EOF
 unix-dgram("/var/run/log");
 unix-dgram("/var/run/logpriv" perm(0600));
-file("/dev/klog" follow-freq(0) program-override("kernel") flags(no-parse));
+file("/dev/klog" follow-freq(1) program-override("kernel") flags(no-parse));
 EOF
 		;;
 	GNU/kFreeBSD)
 		cat <<EOF
 unix-dgram("/var/run/log");
-file("/dev/klog" follow-freq(0) program-override("kernel"));
+file("/dev/klog" follow-freq(1) program-override("kernel"));
 EOF
 		;;
 	HP-UX)
