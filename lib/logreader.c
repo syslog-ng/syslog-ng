@@ -117,6 +117,7 @@ struct _LogReader
   LogProto *pending_proto;
   gboolean (*ack_callback)(PersistState *state, gpointer user_data, gboolean need_to_save);
   PersistState *state;
+  gboolean force_read;
 };
 
 static gboolean log_reader_start_watches(LogReader *self);
@@ -571,6 +572,14 @@ log_reader_update_watches(LogReader *self)
   self->suspended = FALSE;
   free_to_send = log_source_free_to_send(&self->super);
   prepare_result = log_proto_prepare(self->proto, &fd, &cond, &idle_timeout);
+
+  if (self->force_read)
+    {
+      self->force_read = FALSE;
+      if (!iv_task_registered(&self->restart_task))
+        iv_task_register(&self->restart_task);
+    }
+
   if (!free_to_send ||
       self->immediate_check ||
       prepare_result)
@@ -933,6 +942,10 @@ log_reader_init(LogPipe *s)
                 NULL);
       return FALSE;
     }
+
+#ifdef _WIN32
+  self->force_read = TRUE;
+#endif
 
   if (!log_reader_start_watches(self))
     return FALSE;

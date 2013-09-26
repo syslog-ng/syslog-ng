@@ -98,6 +98,7 @@ struct _LogWriter
   gboolean ack_is_reliable;
 
   gboolean has_to_poll;
+  gboolean force_read;
 };
 
 /**
@@ -426,6 +427,13 @@ log_writer_update_watches(LogWriter *self)
   gint idle_timeout = -1;
 
   main_loop_assert_main_thread();
+
+  if (self->force_read)
+    {
+      self->force_read = FALSE;
+      if (!iv_task_registered(&self->immed_io_task))
+        iv_task_register(&self->immed_io_task);
+    }
 
   if (iv_timer_registered(&self->idle_timer))
     {
@@ -1307,6 +1315,11 @@ log_writer_init(LogPipe *s)
     }
   self->suppress_timer_updated = TRUE;
   log_queue_set_counters(self->queue, self->stored_messages, self->dropped_messages);
+
+#ifdef _WIN32
+  self->force_read = TRUE;
+#endif
+
   if (self->proto)
     {
       LogProto *proto;
