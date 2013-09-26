@@ -282,10 +282,6 @@ result_append_value(GString *result, LogMessage *lm, NVHandle handle, gboolean e
 gboolean
 log_macro_expand(GString *result, gint id, gboolean escape, const LogTemplateOptions *opts, gint tz, gint32 seq_num, const gchar *context_id, LogMessage *msg)
 {
-  static LogTemplateOptions default_opts = { TRUE, TS_FMT_BSD, 0, { NULL, NULL }, { NULL, NULL } };
-
-  if (!opts)
-    opts = &default_opts;
   switch (id)
     {
     case M_FACILITY:
@@ -1276,6 +1272,9 @@ log_template_append_format_with_context(LogTemplate *self, LogMessage **messages
 {
   GList *p;
   LogTemplateElem *e;
+
+  if (!opts)
+    opts = &self->cfg->template_options;
 
   for (p = self->compiled_template; p; p = g_list_next(p))
     {
