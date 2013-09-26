@@ -84,7 +84,8 @@ filter_in_list_new(const gchar *list_file, const gchar *property)
   while (getline(&line, &n, stream) != -1)
     {
       line[strlen(line) - 1] = '\0';
-      g_tree_insert(self->tree, line, GINT_TO_POINTER(1));
+      if (line[0])
+        g_tree_insert(self->tree, line, GINT_TO_POINTER(1));
       line = NULL;
     }
   fclose(stream);
