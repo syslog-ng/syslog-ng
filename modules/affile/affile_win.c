@@ -85,6 +85,7 @@ affile_sd_open_file(AFFileSourceDriver *self, gchar *name, gint *fd)
   OpenFileProperties props;
   affile_sd_init_open_file_properties(self, &props);
   *fd = affile_open_file(name, &props);
+  self->is_regular = TRUE;
 
   return (*fd != -1);
 }
@@ -150,4 +151,10 @@ void affile_file_monitor_init(AFFileSourceDriver *self, const gchar *filename)
 {
   self->file_monitor = file_monitor_new();
   self->file_list = g_queue_new();
+}
+
+gboolean
+affile_sd_is_regular(AFFileSourceDriver *self)
+{
+  return TRUE;
 }

@@ -200,14 +200,34 @@ affile_dd_init_reopen_file_properties(AFFileDestDriver *self, OpenFileProperties
   }
 }
 
+static inline gboolean
+affile_is_regular_fd(int fd)
+{
+  struct stat st;
+  if (fstat(fd, &st) != 0)
+    {
+      msg_warning("Warning: stat failed",
+                  evt_tag_str("error", strerror(errno)),
+                  NULL);
+      return FALSE;
+    }
+
+  return S_ISREG(st.st_mode) || S_ISLNK(st.st_mode);
+}
+
 gboolean
 affile_sd_open_file(AFFileSourceDriver *self, gchar *name, gint *fd)
 {
   OpenFileProperties props;
+
   affile_sd_init_open_file_properties(self, &props);
   *fd = affile_open_file(name, &props);
+  if (*fd == -1)
+    return FALSE;
 
-  return (*fd != -1);
+  self->is_regular = affile_is_regular_fd(*fd);
+
+  return TRUE;
 }
 
 gboolean
