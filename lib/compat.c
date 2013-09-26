@@ -814,6 +814,13 @@ int clock_gettime(int clock_id, struct timespec *res)
   return result;
 }
 
+int
+setsock_timeout(int sock, int opt_name, struct timeval *socket_timeout)
+{
+  DWORD timeout = ((socket_timeout->tv_sec*1000)+(socket_timeout->tv_usec/1000));
+  return setsockopt((SOCKET)sock, SOL_SOCKET, opt_name, (const char*) &timeout, sizeof(DWORD));
+}
+
 int getsockerror()
 {
   int res = WSAGetLastError();
@@ -882,7 +889,15 @@ void openlog(const char *ident, int option, int facility)
 }
 
 #else
-int getsockerror()
+
+int
+setsock_timeout(int sock, int opt_name, struct timeval *socket_timeout)
+{
+  return setsockopt(sock, SOL_SOCKET, opt_name, (const void*) socket_timeout, sizeof(struct timeval));
+}
+
+int
+getsockerror()
 {
   return errno;
 }
@@ -896,7 +911,6 @@ init_signals()
   sa.sa_handler = SIG_IGN;
   sigaction(SIGPIPE, &sa, NULL);
 }
-
 
 #endif /* _WIN32 */
 

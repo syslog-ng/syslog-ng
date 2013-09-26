@@ -51,6 +51,7 @@
 
 #include <evtlog.h>
 
+int setsock_timeout(int sock, int opt_name, struct timeval *socket_timeout);
 int getsockerror();
 EVTTAG *evt_tag_socket_error(const char *name, int value);
 
