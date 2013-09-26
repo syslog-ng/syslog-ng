@@ -483,7 +483,9 @@ void
 log_msg_set_value_indirect(LogMessage *self, NVHandle handle, NVHandle ref_handle, guint8 type, guint16 ofs, guint16 len)
 {
   const gchar *name;
+  const gchar *value;
   gssize name_len;
+  gssize value_len;
   gboolean new_entry = FALSE;
 
   if (handle == LM_V_NONE)
@@ -492,6 +494,18 @@ log_msg_set_value_indirect(LogMessage *self, NVHandle handle, NVHandle ref_handl
   g_assert(handle >= LM_V_MAX);
 
   name = log_msg_get_value_name(handle, &name_len);
+
+  value = log_msg_get_value(self, ref_handle, &value_len);
+  if (!value)
+    {
+      const gchar *ref_name;
+      ref_name = log_msg_get_value_name(ref_handle, NULL);
+      msg_debug("Cannot set reference to an non-existent value",
+                evt_tag_str("referenced_name", ref_name),
+                evt_tag_str("name", name),
+                NULL);
+      return;
+    }
 
   if (!log_msg_chk_flag(self, LF_STATE_OWN_PAYLOAD))
     {
