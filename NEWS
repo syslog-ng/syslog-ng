@@ -1,3 +1,83 @@
+3.5.0beta2
+        Fri, 27 Sep 2013 10:06:52 +0200
+
+        This is the second BETA release of the syslog-ng 3.5
+        development branch, introducing new features and a handful of
+        fixes since the last beta version. While running in production
+        is still not advised, testing is most appreciated.
+
+        Major Features
+        ==============
+
+        Redis destination
+        -----------------
+
+        Developed during the Google Summer of Code 2013 program, this
+        destination driver makes it possible to easily send commands
+        to a Redis server.
+
+        For further information and examples, please see the following
+        blog post:
+         http://tichygsoc.blogspot.hu/2013/09/the-road-so-far.html
+
+        Template type hinting
+        ---------------------
+
+        In 3.5.0beta1, type hinting was implemented for the MongoDB
+        destination, with this release, it is also available for the
+        $(format-json) template function.
+
+        Template options honored everywhere
+        -----------------------------------
+
+        Until this release, there were situations where template
+        options were ignored, such as filter expressions that use the
+        comparsion operators, regexp based substitutions, incoming
+        templates for parsers, the new value rewrite rules, SMTP
+        values, some of the new drivers (stomp, amqp), and patterndb
+        context-id.
+
+        These all honor the global template options now, and
+        per-driver options such as frac-digits and local-time-zone are
+        available for drivers which did not have them before, like
+        MongoDB.
+
+        Bugfixes
+        ========
+
+        * The AMQP destination has been fixed, and using it does not
+          lead to a crash anymore.
+
+        * Several memory leaks in the STOMP destination have been
+          fixed.
+
+        * The --no-framing option of loggen has been fixed, and works
+          as advertised now.
+
+        * The in-list() filter ignores empty lines in its input file,
+          to avoid matching on empty values.
+
+        * Compilation on FreeBSD has been fixed.
+
+        Credits:
+        ========
+
+        syslog-ng is developed as a community project, and as such it relies
+        on volunteers to do the work necessarily to produce syslog-ng.
+
+        Reporting bugs, testing changes, writing code or simply providing
+        feedback are all important contributions, so please if you are a
+        user of syslog-ng, contribute.
+
+        These people have helped in this release:
+
+        Balazs Scheidler <bazsi@balabit.hu>
+        Gergely Nagy <algernon@balabit.hu>
+        Peter Czanik <czanik@balabit.hu>
+        Tibor Benke <btibi@balabit.hu>
+        Tihamer Petrovics <tihameri@gmail.com>
+        Viktor Tusa <tusa@balabit.hu>
+
 3.5.0beta1
         Thu, 19 Sep 2013 11:03:15 +0200
 
