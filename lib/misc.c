@@ -243,7 +243,6 @@ resolve_sockaddr(gchar *result, gsize *result_len, GSockAddr *saddr, gboolean us
     }
   else 
     {
-      const char *hostname_fqdn = get_cached_longhostname();
       if (usefqdn)
         {
           /* avoid copy */
