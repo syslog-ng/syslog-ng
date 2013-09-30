@@ -53,9 +53,12 @@ typedef struct _PersistConfig PersistConfig;
 /* configuration data as loaded from the config file */
 struct _GlobalConfig
 {
-  /* version number of the configuration file, hex-encoded syslog-ng major/minor, e.g. 0x0201 is syslog-ng 2.1 format */
+  /* version number specified by the user, set _after_ parsing is complete */
+  /* hex-encoded syslog-ng major/minor, e.g. 0x0201 is syslog-ng 2.1 format */
   gint user_version;
-  /* version parsed from the config file, to be applied in _version */
+  
+  /* version number as parsed from the configuration file, it can be set
+   * multiple times if the user uses @version multiple times */
   gint parsed_version;
   gchar *filename;
   GList *plugins;
