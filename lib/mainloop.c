@@ -869,6 +869,7 @@ main_loop_init(gchar *config_string)
     {
       return 2;
     }
+  reset_cached_hostname();
   return 0;
 }
 

@@ -9,8 +9,6 @@ G_LOCK_DEFINE(resolv_lock);
 void
 getlonghostname(gchar *buf, gsize buflen)
 {
-  if (!local_hostname_fqdn[0])
-    reset_cached_hostname();
   strncpy(buf, local_hostname_fqdn, buflen);
   buf[buflen - 1] = 0;
 }
