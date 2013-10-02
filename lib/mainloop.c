@@ -654,8 +654,6 @@ main_loop_reload_config_apply(void)
   main_loop_new_config = NULL;
   main_loop_old_config = NULL;
 
-  reset_cached_hostname();
-
   stats_timer_kickoff(current_configuration);
   if (current_configuration->stats_reset)
     {
@@ -864,12 +862,10 @@ main_loop_init(gchar *config_string)
     {
       return 0;
     }
-
   if (!main_loop_initialize_state(current_configuration, persist_file))
     {
       return 2;
     }
-  reset_cached_hostname();
   return 0;
 }
 

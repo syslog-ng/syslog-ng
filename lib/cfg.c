@@ -317,6 +317,7 @@ cfg_init(GlobalConfig *cfg)
   dns_cache_global_init(cfg->dns_cache_size, cfg->dns_cache_expire, cfg->dns_cache_expire_failed, cfg->dns_cache_hosts);
   dns_cache_tls_init();
   set_custom_domain(cfg->custom_domain);
+  reset_cached_hostname();
   return log_center_init(cfg->center, cfg);
 }
 
