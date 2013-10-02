@@ -1347,8 +1347,6 @@ log_proto_buffered_server_get_new_state_handler(LogProtoBufferedServer *self, St
   LogProtoBufferedServerState *new_state = NULL;
   gpointer old_state;
 
-  old_state = state_handler_get_state(state_handler);
-
   new_state_handler = log_proto_buffered_server_realloc_state(self, state_handler);
   if (!new_state_handler)
     {
@@ -1356,12 +1354,15 @@ log_proto_buffered_server_get_new_state_handler(LogProtoBufferedServer *self, St
       log_proto_buffered_server_fallback_non_persistent(self);
       return NULL;
     }
+
   new_state = (LogProtoBufferedServerState *)state_handler_get_state(new_state_handler);
 
-  memcpy(new_state,old_state,state_handler->size);
+  old_state = state_handler_get_state(state_handler);
+
+  memcpy(new_state, old_state, state_handler->size);
+
   new_state->super.version = 1;
   new_state->run_id = g_run_id - 1;
-
 
 
   /* we're using the newly allocated state structure regardless if
@@ -1379,9 +1380,12 @@ log_proto_buffered_server_get_new_state_handler(LogProtoBufferedServer *self, St
 gboolean
 log_proto_buffered_server_handle_actual_state_version(LogProtoBufferedServer *self, StateHandler *state_handler)
 {
+  guint8 state_version;
   LogProtoBufferedServerState *state = (LogProtoBufferedServerState *)state_handler_get_state(state_handler);
+  state_version = state->super.version;
+  state_handler_put_state(state_handler);
 
-  if (state->super.version == 0)
+  if (state_version == 0)
     {
       state_handler = log_proto_buffered_server_get_new_state_handler(self, state_handler);
       if (!state_handler)
@@ -1389,8 +1393,9 @@ log_proto_buffered_server_handle_actual_state_version(LogProtoBufferedServer *se
           return FALSE;
         }
       state = (LogProtoBufferedServerState *)state_handler_get_state(state_handler);
+      state_version = state->super.version;
     }
-  if (state->super.version == 1)
+  if (state_version == 1)
     {
       log_proto_buffered_server_state_correct_endianess(state);
       log_proto_apply_state(&self->super, state_handler);
