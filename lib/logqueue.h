@@ -56,6 +56,7 @@ struct _LogQueue
   /* queue management */
   gboolean (*keep_on_reload)(LogQueue *self);
   gint64 (*get_length)(LogQueue *self);
+  gboolean (*is_empty)(LogQueue *self);
   void (*push_tail)(LogQueue *self, LogMessage *msg, const LogPathOptions *path_options);
   void (*push_head)(LogQueue *self, LogMessage *msg, const LogPathOptions *path_options);
   gboolean (*pop_head)(LogQueue *self, LogMessage **msg, LogPathOptions *path_options, gboolean ignore_throttle, gboolean push_to_backlog);
@@ -77,6 +78,15 @@ static inline gint64
 log_queue_get_length(LogQueue *self)
 {
   return self->get_length(self);
+}
+
+static inline gint64
+log_queue_is_empty(LogQueue *self)
+{
+  if (self->is_empty)
+    return self->is_empty(self);
+  else
+    return self->get_length(self) > 0;
 }
 
 static inline void

@@ -122,6 +122,28 @@ log_queue_fifo_get_length(LogQueue *s)
   return self->qoverflow_wait_len + self->qoverflow_output_len;
 }
 
+gboolean
+log_queue_fifo_is_empty(LogQueue *s)
+{
+  LogQueueFifo *self = (LogQueueFifo *) s;
+  gboolean has_message_in_queue = FALSE;
+  g_static_mutex_lock(&self->super.lock);
+  if (log_queue_fifo_get_length(s) > 0)
+    {
+      has_message_in_queue = TRUE;
+    }
+  else
+    {
+      gint i;
+      for (i = 0; i < log_queue_max_threads; i++)
+        {
+          has_message_in_queue |= self->qoverflow_input[i].finish_cb_registered;
+        }
+    }
+  g_static_mutex_unlock(&self->super.lock);
+  return !has_message_in_queue;
+}
+
 /* NOTE: this is inherently racy, can only be called if log processing is suspended (e.g. reload time) */
 static gboolean
 log_queue_fifo_keep_on_reload(LogQueue *s)
@@ -496,6 +518,7 @@ log_queue_fifo_new(gint qoverflow_size, const gchar *persist_name)
   log_queue_init_instance(&self->super, persist_name);
   self->super.type = 0;
   self->super.get_length = log_queue_fifo_get_length;
+  self->super.is_empty = log_queue_fifo_is_empty;
   self->super.keep_on_reload = log_queue_fifo_keep_on_reload;
   self->super.push_tail = log_queue_fifo_push_tail;
   self->super.push_head = log_queue_fifo_push_head;

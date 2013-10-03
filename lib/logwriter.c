@@ -1418,7 +1418,7 @@ log_writer_idle_time_elapsed(gpointer user_data)
 gboolean
 log_writer_has_pending_writes(LogWriter *self)
 {
-  return log_queue_get_length(self->queue) > 0 || !self->watches_running;
+  return !log_queue_is_empty(self->queue) || !self->watches_running;
 }
 
 gboolean
