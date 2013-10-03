@@ -5,6 +5,7 @@ include lib/rewrite/Makefile.am
 include lib/parser/Makefile.am
 include lib/filter/Makefile.am
 include lib/template/Makefile.am
+include lib/compat/Makefile.am
 
 lib_LTLIBRARIES				+= lib/libsyslog-ng.la
 lib_libsyslog_ng_la_LIBADD		= @CORE_DEPS_LIBS@ $(libsystemd_daemon_LIBS)
@@ -37,7 +38,6 @@ pkginclude_HEADERS			+= \
 	lib/cfg-parser.h		\
 	lib/cfg-tree.h			\
 	lib/children.h			\
-	lib/compat.h			\
 	lib/control.h			\
 	lib/crypto.h			\
 	lib/dnscache.h			\
@@ -115,7 +115,6 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/cfg-parser.c		\
 	lib/cfg-tree.c			\
 	lib/children.c			\
-	lib/compat.c			\
 	lib/control.c			\
 	lib/dnscache.c			\
 	lib/driver.c			\
@@ -172,7 +171,8 @@ lib_libsyslog_ng_la_SOURCES		= \
 	$(filter_sources)		\
 	$(parser_sources)		\
 	$(rewrite_sources)		\
-	$(template_sources)
+	$(template_sources)		\
+	$(compat_sources)
 
 if WITH_EMBEDDED_CRYPTO
 lib_libsyslog_ng_la_CFLAGS		= @UUID_CFLAGS@ $(libsystemd_daemon_CFLAGS)

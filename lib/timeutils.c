@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -22,10 +22,8 @@
  *
  */
 
-#include "compat.h"
 #include "timeutils.h"
 #include "messages.h"
-#include "syslog-ng.h"
 #include "tls-support.h"
 #include "reloc.h"
 
