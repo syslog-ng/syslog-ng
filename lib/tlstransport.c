@@ -30,6 +30,7 @@
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 #include <errno.h>
+#include <compat.h>
 
 typedef struct _LogTransportTLS
 {
@@ -70,7 +71,7 @@ log_transport_tls_read_method(LogTransport *s, gpointer buf, gsize buflen, GSock
               errno = EAGAIN;
               break;
             case SSL_ERROR_SYSCALL:
-              /* errno is set accordingly */
+              errno = getsockerror();
               break;
             default:
               goto tls_error;
@@ -126,7 +127,7 @@ log_transport_tls_write_method(LogTransport *s, const gpointer buf, gsize buflen
           errno = EAGAIN;
           break;
         case SSL_ERROR_SYSCALL:
-          /* errno is set accordingly */
+          errno = getsockerror();
           break;
         default:
           goto tls_error;
