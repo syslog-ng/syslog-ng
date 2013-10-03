@@ -50,7 +50,8 @@ typedef enum
 typedef enum
 {
   CA_DIR_LAYOUT_MD5,
-  CA_DIR_LAYOUT_SHA1
+  CA_DIR_LAYOUT_SHA1,
+  CA_DIR_LAYOUT_DEFAULT
 } CADirLayout;
 
 typedef gint (*TLSSessionVerifyFunc)(gint ok, X509_STORE_CTX *ctx, gpointer user_data);
@@ -89,7 +90,7 @@ struct _TLSContext
 };
 
 
-TLSSession *tls_context_setup_session(TLSContext *self);
+TLSSession *tls_context_setup_session(TLSContext *self, GlobalConfig *cfg);
 void tls_session_set_trusted_fingerprints(TLSContext *self, GList *fingerprints);
 void tls_session_set_trusted_dn(TLSContext *self, GList *dns);
 TLSContext *tls_context_new(TLSMode mode);

@@ -34,6 +34,7 @@
 #include <openssl/engine.h>
 
 #include "tlswincrypt.h"
+#include "cfg.h"
 
 typedef struct _load_cert_param
 {
@@ -295,7 +296,7 @@ file_exists(const gchar *fname)
 }
 
 TLSSession *
-tls_context_setup_session(TLSContext *self)
+tls_context_setup_session(TLSContext *self, GlobalConfig *cfg)
 {
   SSL *ssl;
   TLSSession *session;
@@ -334,6 +335,19 @@ tls_context_setup_session(TLSContext *self)
         goto error;
       if (self->key_file && self->cert_file && !SSL_CTX_check_private_key(self->ssl_ctx))
         goto error;
+
+      if (self->ca_dir_layout == CA_DIR_LAYOUT_DEFAULT)
+        {
+          if (cfg->version < 0x500)
+            {
+              msg_warning("WARNING: The default value of type of the hash used for the CA certificates is changed in version 5.0 from MD5 to SHA1, please rehash the directory when you upgrade your configuration", NULL);
+              self->ca_dir_layout = CA_DIR_LAYOUT_MD5;
+            }
+          else
+            {
+              self->ca_dir_layout = CA_DIR_LAYOUT_SHA1;
+            }
+        }
 
       if (file_exists(self->ca_dir))
         {
@@ -437,7 +451,7 @@ tls_context_new(TLSMode mode)
   g_atomic_counter_set(&self->ref_cnt, 1);
   self->mode = mode;
   self->verify_mode = TVM_REQUIRED | TVM_TRUSTED;
-  self->ca_dir_layout = CA_DIR_LAYOUT_MD5;
+  self->ca_dir_layout = CA_DIR_LAYOUT_DEFAULT;
   self->allow_compress = -1;
   return self;
 }
@@ -512,9 +526,9 @@ tls_lookup_ca_dir_layout(const gchar *layout_str)
            strcasecmp(layout_str, "md5") == 0 || strcasecmp(layout_str, "" ) == 0)
     return CA_DIR_LAYOUT_MD5;
   else
-    msg_warning("CA directory layout must be either 'md5-based' (default), 'sha1-based' or empty. Falling back to md5-based.", NULL);
+    msg_warning("CA directory layout must be either 'md5-based' (default), 'sha1-based' or empty. Falling back to default.", NULL);
 
-  return CA_DIR_LAYOUT_MD5;
+  return CA_DIR_LAYOUT_DEFAULT;
 }
 
 void

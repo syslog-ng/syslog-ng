@@ -226,7 +226,7 @@ afsocket_sc_init(LogPipe *s)
 #if ENABLE_SSL
           if (self->owner->tls_context)
             {
-              TLSSession *tls_session = tls_context_setup_session(self->owner->tls_context);
+              TLSSession *tls_session = tls_context_setup_session(self->owner->tls_context, cfg);
               if (!tls_session)
                 return FALSE;
               transport = log_transport_tls_new(tls_session, self->sock, read_flags);
@@ -241,7 +241,7 @@ afsocket_sc_init(LogPipe *s)
 #if ENABLE_SSL
           if (self->owner->tls_context)
             {
-              tls_session = tls_context_setup_session(self->owner->tls_context);
+              tls_session = tls_context_setup_session(self->owner->tls_context, cfg);
               if (!tls_session)
                 return FALSE;
             }
@@ -1176,7 +1176,7 @@ afsocket_dd_connected(AFSocketDestDriver *self)
 #if ENABLE_SSL
       if (self->tls_context)
         {
-          tls_session = tls_context_setup_session(self->tls_context);
+          tls_session = tls_context_setup_session(self->tls_context, cfg);
           if (!tls_session)
             {
               goto error_reconnect;
@@ -1194,7 +1194,7 @@ afsocket_dd_connected(AFSocketDestDriver *self)
         {
           TLSSession *tls_session;
 
-          tls_session = tls_context_setup_session(self->tls_context);
+          tls_session = tls_context_setup_session(self->tls_context, cfg);
           if (!tls_session)
             {
               goto error_reconnect;
