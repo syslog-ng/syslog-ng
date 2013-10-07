@@ -25,6 +25,8 @@
 #include "filter-re.h"
 #include "misc.h"
 
+#include <string.h>
+
 static gboolean
 filter_re_eval_string(FilterExprNode *s, LogMessage *msg, gint value_handle, const gchar *str, gssize str_len)
 {

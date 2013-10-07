@@ -27,6 +27,7 @@
 #include "logmsg.h"
 
 #include <stdlib.h>
+#include <string.h>
 
 typedef struct _FilterNetmask
 {

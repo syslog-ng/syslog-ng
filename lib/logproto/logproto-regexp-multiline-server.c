@@ -21,6 +21,8 @@
 #include "messages.h"
 #include "misc.h"
 
+#include <string.h>
+
 static gint
 _find_regexp(regex_t *re, const guchar *str, gsize len)
 {

@@ -25,6 +25,8 @@
 #include "template_lib.h"
 #include "msg_parse_lib.h"
 
+#include <string.h>
+
 void
 init_template_tests(void)
 {

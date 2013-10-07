@@ -24,6 +24,8 @@
 #include "gsockaddr.h"
 #include "messages.h"
 
+#include <string.h>
+
 static gboolean
 socket_options_inet_setup_socket(SocketOptions *s, gint fd, GSockAddr *addr, AFSocketDirection dir)
 {

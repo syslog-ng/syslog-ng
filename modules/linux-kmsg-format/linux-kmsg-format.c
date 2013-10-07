@@ -69,11 +69,13 @@ static struct timeval boot_time;
  * handles unknown formats.
  */
 
+#ifdef __linux__
 static guint64
 kmsg_timeval_diff(struct timeval *t1, struct timeval *t2)
 {
   return (t1->tv_sec - t2->tv_sec) * G_USEC_PER_SEC + (t1->tv_usec - t2->tv_usec);
 }
+#endif
 
 static void
 kmsg_to_absolute_time(guint64 timestamp, LogStamp *dest)
