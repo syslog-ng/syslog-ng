@@ -1,3 +1,5 @@
+#include "syslog-ng.h"
+
 #include <config.h>
 #include <stdio.h>
 #include <sys/types.h>
