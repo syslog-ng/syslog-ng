@@ -33,15 +33,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-
-#ifndef SOL_IP
-#define SOL_IP IPPROTO_IP
-#endif
-
-#ifndef SOL_IPV6
-#define SOL_IPV6 IPPROTO_IPV6
-#endif
-
 static gint
 afinet_lookup_service_and_proto(const gchar *service, const gchar *proto)
 {
