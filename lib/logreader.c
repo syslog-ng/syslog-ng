@@ -118,6 +118,7 @@ struct _LogReader
   gboolean (*ack_callback)(PersistState *state, gpointer user_data, gboolean need_to_save);
   PersistState *state;
   gboolean force_read;
+  gboolean is_regular;
 };
 
 static gboolean log_reader_start_watches(LogReader *self);
@@ -753,6 +754,19 @@ log_reader_handle_line(LogReader *self, const guchar *line, gint length, GSockAd
       m->saddr = g_sockaddr_ref(self->peer_addr);
     }
 
+  if (self->is_regular && self->size == 0)
+    {
+      struct stat st;
+      gint fd = log_proto_get_fd(self->proto);
+      if (fd >= 0)
+        {
+          if (fstat(fd, &st) >= 0)
+            {
+              self->size = st.st_size;
+            }
+        }
+    }
+
   if (self->proto->get_info && self->size > 0)
     {
       converted = g_string_sized_new (25);
@@ -947,6 +961,16 @@ log_reader_init(LogPipe *s)
   self->force_read = TRUE;
 #endif
 
+  self->is_regular = FALSE;
+  if (self->proto)
+    {
+      gint fd = log_proto_get_fd(self->proto);
+      if (fd >= 0)
+        {
+          self->is_regular = is_file_regular(fd);
+        }
+    }
+
   if (!log_reader_start_watches(self))
     return FALSE;
   iv_event_register(&self->schedule_wakeup);
@@ -1034,8 +1058,15 @@ log_reader_reopen_deferred(gpointer s)
 
   self->proto = proto;
 
+  self->is_regular = FALSE;
   if(proto)
     {
+      gint fd = log_proto_get_fd(proto);
+      if (fd >= 0)
+        {
+          self->is_regular = is_file_regular(fd);
+        }
+
       if (*immediate_check)
         {
           log_reader_set_immediate_check(&self->super.super);

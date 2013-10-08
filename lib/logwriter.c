@@ -476,22 +476,6 @@ log_writer_update_watches(LogWriter *self)
     }
 }
 
-static gboolean
-is_file_regular(gint fd)
-{
-  struct stat st;
-
-  if (fstat(fd, &st) >= 0)
-    {
-      return S_ISREG(st.st_mode);
-    }
-
-  /* if stat fails, that's interesting, but we should probably poll
-   * it, hopefully that's less likely to cause spinning */
-
-  return FALSE;
-}
-
 static void
 log_writer_start_watches(LogWriter *self)
 {

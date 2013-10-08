@@ -151,3 +151,5 @@ gchar *data_to_hex_string(guint8 *data, guint32 length);
 gchar *replace_string(const gchar *source, const gchar *substring, const gchar *replacement);
 gchar *get_pid_string();
 #endif
+
+gboolean is_file_regular(gint fd);
