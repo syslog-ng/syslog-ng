@@ -895,14 +895,15 @@ if test "x$enable_redis" != "xno" && test "x$with_redis" != "no"; then
                LDFLAGS_SAVE="$LDFLAGS"
                CFLAGS="$CFLAGS -I$with_libhiredis/include"
                LDFLAGS="$LDFLAGS -L$with_libhiredis/lib"
-               AC_CHECK_HEADER(hiredis.h, [HIREDIS_CFLAGS="-I$with_libhiredis/include"
-                                            HIREDIS_LIBS="-L$with_libhiredis/lib -lhiredis"], [hiredis=no])
+               AC_CHECK_HEADER(hiredis/hiredis.h, [HIREDIS_CFLAGS="-I$with_libhiredis/include"
+                                                   HIREDIS_LIBS="-L$with_libhiredis/lib -lhiredis"], [hiredis=no])
                CFLAGS="$CFLAGS_SAVE"
                LDFLAGS="$LDFLAGS_SAVE"
        else
                hiredis="yes"
                PKG_CHECK_MODULES(HIREDIS, hiredis, ,
-                                 [PKG_CHECK_MODULES(HIREDIS, libhiredis,, [hiredis=no])])
+                                 [PKG_CHECK_MODULES(HIREDIS, libhiredis,,
+                                  [AC_CHECK_HEADER(hiredis/hiredis.h, [HIREDIS_LIBS="-lhiredis"], [hiredis=no])])])
        fi
 
        if test "x$enable_redis" = "xyes" && test "x$hiredis" = "xno"; then
