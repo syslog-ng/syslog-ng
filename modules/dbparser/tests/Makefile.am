@@ -2,7 +2,8 @@ modules_dbparser_tests_TESTS			=	\
 	modules/dbparser/tests/test_timer_wheel		\
 	modules/dbparser/tests/test_patternize		\
 	modules/dbparser/tests/test_patterndb		\
-	modules/dbparser/tests/test_radix
+	modules/dbparser/tests/test_radix		\
+	modules/dbparser/tests/test_parsers
 
 check_PROGRAMS					+=	\
 	${modules_dbparser_tests_TESTS}
@@ -42,4 +43,14 @@ modules_dbparser_tests_test_radix_LDADD		=	\
 	$(TEST_LDADD)					\
 	$(top_builddir)/modules/dbparser/libsyslog-ng-patterndb.la
 modules_dbparser_tests_test_radix_LDFLAGS	=	\
+	$(PREOPEN_CORE)
+
+modules_dbparser_tests_test_parsers_CFLAGS	=	\
+	$(TEST_CFLAGS)					\
+	-I$(top_srcdir)/modules/dbparser		\
+	@CFLAGS_NOWARN_POINTER_SIGN@
+modules_dbparser_tests_test_parsers_LDADD		=	\
+	$(TEST_LDADD)					\
+	$(top_builddir)/modules/dbparser/libsyslog-ng-patterndb.la
+modules_dbparser_tests_test_parsers_LDFLAGS	=	\
 	$(PREOPEN_CORE)
