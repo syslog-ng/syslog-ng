@@ -211,7 +211,7 @@ log_proto_file_writer_prepare(LogProtoClient *s, gint *fd, GIOCondition *cond)
 }
 
 LogProtoClient *
-log_proto_file_writer_new(LogTransport *transport, const LogProtoClientOptions *options, gint fsync, gint flush_lines)
+log_proto_file_writer_new(LogTransport *transport, const LogProtoClientOptions *options, gint flush_lines, gint fsync)
 {
   if (flush_lines == 0)
     /* the flush-lines option has not been specified, use a default value */
