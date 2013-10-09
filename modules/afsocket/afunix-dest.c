@@ -40,9 +40,15 @@ afunix_dd_apply_transport(AFSocketDestDriver *s)
   AFUnixDestDriver *self = (AFUnixDestDriver *) s;
 
   if (self->super.sock_type == SOCK_DGRAM)
-    afsocket_dd_set_transport(&self->super.super.super, "unix-dgram");
+    {
+      afsocket_dd_set_transport(&self->super.super.super, "unix-dgram");
+      self->super.logproto_name = "dgram";
+    }
   else
-    afsocket_dd_set_transport(&self->super.super.super, "unix-stream");
+    {
+      afsocket_dd_set_transport(&self->super.super.super, "unix-stream");
+      self->super.logproto_name = "text";
+    }
 
   if (!self->super.bind_addr)
     self->super.bind_addr = g_sockaddr_unix_new(NULL);
