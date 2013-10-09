@@ -41,7 +41,7 @@ r_parser_string(guint8 *str, gint *len, const gchar *param, gpointer state, RPar
 {
   *len = 0;
 
-  while (g_ascii_isalnum(str[*len]) || (param && strchr(param, str[*len])))
+  while (str[*len] && (g_ascii_isalnum(str[*len]) || (param && strchr(param, str[*len]))))
     (*len)++;
 
   if (*len > 0)
