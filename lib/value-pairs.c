@@ -222,7 +222,12 @@ vp_msg_nvpairs_foreach(NVHandle handle, gchar *name,
   ValuePairs *vp = ((gpointer *)user_data)[0];
   GTree *scope_set = ((gpointer *)user_data)[5];
   gint j;
-  gboolean inc = FALSE;
+  gboolean inc;
+  SBTHGString *sb;
+
+  inc = (name[0] == '.' && (vp->scopes & VPS_DOT_NV_PAIRS)) ||
+    (name[0] != '.' && (vp->scopes & VPS_NV_PAIRS)) ||
+    (log_msg_is_handle_sdata(handle) && (vp->scopes & VPS_SDATA));
 
   for (j = 0; j < vp->patterns_size; j++)
     {
@@ -230,18 +235,14 @@ vp_msg_nvpairs_foreach(NVHandle handle, gchar *name,
         inc = vp->patterns[j]->include;
     }
 
-  /* NOTE: dot-nv-pairs include SDATA too */
-  if (((name[0] == '.' && (vp->scopes & VPS_DOT_NV_PAIRS)) ||
-       (name[0] != '.' && (vp->scopes & VPS_NV_PAIRS)) ||
-       (log_msg_is_handle_sdata(handle) && (vp->scopes & VPS_SDATA))) ||
-      inc)
-    {
-      SBTHGString *sb = sb_th_gstring_acquire();
+  if (!inc)
+    return FALSE;
 
-      g_string_append_len(sb_th_gstring_string(sb), value, value_len);
-      sb->type_hint = TYPE_HINT_STRING;
-      g_tree_insert(scope_set, vp_transform_apply(vp, name), sb);
-    }
+  sb = sb_th_gstring_acquire();
+
+  g_string_append_len(sb_th_gstring_string(sb), value, value_len);
+  sb->type_hint = TYPE_HINT_STRING;
+  g_tree_insert(scope_set, vp_transform_apply(vp, name), sb);
 
   return FALSE;
 }

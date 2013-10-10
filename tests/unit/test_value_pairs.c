@@ -145,6 +145,10 @@ main(int argc, char *argv[])
    * to be in the result set. */
   testcase("rfc3164", "test.*", "DATE,FACILITY,HOST,MESSAGE,PID,PRIORITY,PROGRAM", NULL);
 
+  /* tests that excluding works even when the key would be in the
+   * default set. */
+  testcase("nv-pairs", "MESSAGE", "HOST,MSGID,PID,PROGRAM", NULL);
+
   /* test the value-pair transformators */
   transformers = g_ptr_array_new();
   g_ptr_array_add(transformers, value_pairs_new_transform_add_prefix("__"));
