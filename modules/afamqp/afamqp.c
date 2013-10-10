@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2012 Nagy, Attila <bra@fsn.hu>
- * Copyright (c) 2012 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 2012 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2012-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2012-2013 Gergely Nagy <algernon@balabit.hu>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -232,6 +232,9 @@ afamqp_dd_suspend(AMQPDestDriver *self)
 static void
 afamqp_dd_disconnect(AMQPDestDriver *self)
 {
+  if (!self->conn)
+    return;
+
   amqp_channel_close(self->conn, 1, AMQP_REPLY_SUCCESS);
   amqp_connection_close(self->conn, AMQP_REPLY_SUCCESS);
   amqp_destroy_connection(self->conn);
