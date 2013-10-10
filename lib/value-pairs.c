@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2011-2012 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 2011-2012 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2011-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2011-2013 Gergely Nagy <algernon@balabit.hu>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -220,7 +220,11 @@ vp_msg_nvpairs_foreach(NVHandle handle, gchar *name,
   ValuePairs *vp = ((gpointer *)user_data)[0];
   GTree *scope_set = ((gpointer *)user_data)[5];
   gint j;
-  gboolean inc = FALSE;
+  gboolean inc;
+
+  inc = (name[0] == '.' && (vp->scopes & VPS_DOT_NV_PAIRS)) ||
+    (name[0] != '.' && (vp->scopes & VPS_NV_PAIRS)) ||
+    (log_msg_is_handle_sdata(handle) && (vp->scopes & VPS_SDATA));
 
   for (j = 0; j < vp->patterns_size; j++)
     {
@@ -228,15 +232,11 @@ vp_msg_nvpairs_foreach(NVHandle handle, gchar *name,
         inc = vp->patterns[j]->include;
     }
 
-  /* NOTE: dot-nv-pairs include SDATA too */
-  if (((name[0] == '.' && (vp->scopes & VPS_DOT_NV_PAIRS)) ||
-       (name[0] != '.' && (vp->scopes & VPS_NV_PAIRS)) ||
-       (log_msg_is_handle_sdata(handle) && (vp->scopes & VPS_SDATA))) ||
-      inc)
-    {
-      /* NOTE: the key is a borrowed reference in the hash, and value is freed */
-      g_tree_insert(scope_set, vp_transform_apply(vp, name), g_strndup(value, value_len));
-    }
+  if (!inc)
+    return FALSE;
+
+  /* NOTE: the key is a borrowed reference in the hash, and value is freed */
+  g_tree_insert(scope_set, vp_transform_apply(vp, name), g_strndup(value, value_len));
 
   return FALSE;
 }
