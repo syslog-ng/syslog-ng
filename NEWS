@@ -1,3 +1,75 @@
+3.5.0beta3
+        Fri, 11 Oct 2013 10:21:38 +0200
+
+        This is the third BETA release of the syslog-ng 3.5
+        development branch, with stability fixes and other
+        enhancements. While running in production is still not
+        advised, testing is most appreciated.
+
+        Incompatible changes
+        ====================
+
+        Template escaping
+        -----------------
+
+        Template escaping was changed in an incompatible way:
+        previously, both the lexer and the template compiler used the
+        '\' character for escaping, which was confusing. The template
+        compiler uses '$$' to escape the '$' char, and '@@' to escape
+        '@'.
+
+        If a non-numeric value follows '@', a warning will be printed.
+
+        Bugfixes
+        ========
+
+        * syslog-ng should compile again on non-Linux platforms.
+
+        * The flush() and fsync() options of the file destination were
+          fixed, and they should work the same way now as they do in
+          3.3 and 3.4.
+
+        * The hiredis library should be detected on the default
+          include paths, so one does not necessarily need to specify
+          --with-libhiredis non non-Debian systems. Said option was
+          also made to work.
+
+        * A memory corruption was fixed in the @STRING@ parser of
+          db-parser().
+
+        * Excludes now work properly with value-pairs(), and they do
+          not get ignored if the value to exclude is in the default
+          set.
+
+        Known Bugs
+        ==========
+
+        * The afstreams module is broken, does not compile, and does
+          not work. This will be corrected before the final 3.5.1
+          release.
+
+        Credits:
+        ========
+
+        syslog-ng is developed as a community project, and as such it relies
+        on volunteers to do the work necessarily to produce syslog-ng.
+
+        Reporting bugs, testing changes, writing code or simply providing
+        feedback are all important contributions, so please if you are a
+        user of syslog-ng, contribute.
+
+        These people have helped in this release:
+
+        Balazs Scheidler <bazsi@balabit.hu>
+        Cy Schubert <Cy.Schubert@komquats.com>
+        Evan Rempel <erempel@uvic.ca>
+        Gergely Nagy <algernon@balabit.hu>
+        Lucas McLane <lucas@clicksecurity.com>
+        Oscar Muñoz
+        Peter Czanik <czanik@balabit.hu>
+        Sergey Shuman
+        Viktor Juhasz <jviktor@balabit.hu>
+
 3.5.0beta2
         Fri, 27 Sep 2013 10:06:52 +0200
 
