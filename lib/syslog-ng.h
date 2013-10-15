@@ -55,10 +55,6 @@
 #define PATH_PATTERNDB_FILE     PATH_LOCALSTATEDIR "/patterndb.xml"
 #define PATH_XSDDIR             PATH_DATADIR "/xsd"
 
-#define LOG_PRIORITY_LISTEN 0
-#define LOG_PRIORITY_READER 0
-#define LOG_PRIORITY_WRITER -100
-#define LOG_PRIORITY_CONNECT -150
 
 #define SAFE_STRING(x) ((x) ? (x) : "NULL")
 
