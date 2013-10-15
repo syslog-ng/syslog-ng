@@ -367,7 +367,7 @@ cfg_load_candidate_modules(GlobalConfig *self)
 }
 
 gboolean
-cfg_read_config(GlobalConfig *self, gchar *fname, gboolean syntax_only, gchar *preprocess_into)
+cfg_read_config(GlobalConfig *self, const gchar *fname, gboolean syntax_only, gchar *preprocess_into)
 {
   FILE *cfg_file;
   gint res;
