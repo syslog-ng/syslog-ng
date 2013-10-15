@@ -27,6 +27,9 @@
 #include "parser/parser-expr.h"
 #include "patterndb.h"
 
+#define PATH_PATTERNDB_FILE     PATH_LOCALSTATEDIR "/patterndb.xml"
+#define PATH_XSDDIR             PATH_DATADIR "/xsd"
+
 typedef struct _LogDBParser LogDBParser;
 
 void log_db_parser_set_db_file(LogDBParser *self, const gchar *db_file);

@@ -49,12 +49,7 @@
 #if ENABLE_ENV_WRAPPER
 #define PATH_SYSLOGNG           PATH_LIBEXECDIR "/syslog-ng"
 #endif
-
 #define PATH_PERSIST_CONFIG     PATH_LOCALSTATEDIR "/syslog-ng.persist"
-#define PATH_QDISK              PATH_LOCALSTATEDIR
-#define PATH_PATTERNDB_FILE     PATH_LOCALSTATEDIR "/patterndb.xml"
-#define PATH_XSDDIR             PATH_DATADIR "/xsd"
-
 
 #define SAFE_STRING(x) ((x) ? (x) : "NULL")
 
