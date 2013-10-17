@@ -393,16 +393,14 @@ log_queue_fifo_ack_backlog(LogQueue *s, gint n)
   for (i = 0; i < n && self->qbacklog_len > 0; i++)
     {
       LogMessageQueueNode *node;
-
       node = iv_list_entry(self->qbacklog.next, LogMessageQueueNode, list);
       msg = node->msg;
-      path_options.ack_needed = node->ack_needed;
 
       iv_list_del(&node->list);
-      log_msg_free_queue_node(node);
       self->qbacklog_len--;
-
+      path_options.ack_needed = node->ack_needed;
       log_msg_ack(msg, &path_options);
+      log_msg_free_queue_node(node);
       log_msg_unref(msg);
     }
 }
