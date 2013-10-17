@@ -28,6 +28,9 @@
 #include "logmsg.h"
 #include "template/templates.h"
 
+#define LOG_MATCHER_ERROR log_template_error_quark()
+
+GQuark log_matcher_error_quark(void);
 enum
 {
   LMR_POSIX_REGEXP,
