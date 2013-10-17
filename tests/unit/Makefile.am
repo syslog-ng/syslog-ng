@@ -30,10 +30,10 @@ check_PROGRAMS =			\
 	test_msgserialize_tags		\
 	test_msgformat_upgrade \
 	test_hostname	\
-  test_cache \
-  test_data_to_hex \
-  test_control_cmds \
-  test_control_connection \
+	test_cache \
+	test_data_to_hex \
+	test_control_cmds \
+	test_control_connection \
 	test_messages \
 	test_rcptid \
 	test_strformat \
@@ -44,7 +44,8 @@ check_PROGRAMS =			\
 	test_persist_state_threaded \
 	test_resolve_sockaddr \
 	test_strtok_r \
-  test_template_compile
+	test_template_compile \
+	test_logproto
 
 if IS_HPUX
 check_PROGRAMS += test_zone
@@ -121,5 +122,7 @@ test_lexer_SOURCES = test_lexer.c
 test_replace_string_SOURCES = test_replace_string.c
 
 test_template_compile_SOURCES = test_template_compile.c
+
+test_logproto_SOURCES = test_logproto.c
 
 TESTS = $(check_PROGRAMS)

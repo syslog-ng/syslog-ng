@@ -1,108 +1,103 @@
-#include "mock_transport.h"
+#include "mock-transport.h"
 #include "logproto.h"
 #include "msg_parse_lib.h"
 
 #include "apphook.h"
+#include "basic-proto.c"
 
-void
-assert_proto_status(LogProto *proto, LogProtoStatus status, LogProtoStatus expected_status)
+static LogProto *create_log_proto_text_server_new(LogTransport *transport, gint size, guint flags);
+static LogProtoStatus proto_fetch(LogProto *proto, const guchar **msg, gsize *msg_len);
+
+#define assert_proto_status(status_param, expected_status_param) assert_gint(status_param, expected_status_param, "LogProto expected status mismatch at line: %i", __LINE__);
+
+#define assert_proto_fetch(proto, expected_msg, expected_msg_len) \
+      { \
+        const guchar *msg = NULL; \
+        gsize msg_len = 0; \
+        LogProtoStatus status; \
+        status = proto_fetch(proto, &msg, &msg_len); \
+        assert_proto_status(status, LPS_SUCCESS); \
+        assert_nstring((const gchar *) msg, msg_len, expected_msg, expected_msg_len, "LogProto expected message mismatch at line: %i", __LINE__); \
+      }
+
+#define assert_proto_fetch_single_read(proto, expected_msg, expected_msg_len) \
+      { \
+        const guchar *msg = NULL; \
+        gsize msg_len = 0; \
+        LogProtoStatus status; \
+        GSockAddr *saddr = NULL; \
+        gboolean may_read = TRUE; \
+        start_grabbing_messages(); \
+        status = log_proto_fetch(proto, &msg, &msg_len, &saddr, &may_read, FALSE); \
+        assert_proto_status(status, LPS_SUCCESS); \
+        if (expected_msg) \
+          { \
+            assert_nstring((const gchar *) msg, msg_len, expected_msg, expected_msg_len, "LogProto expected message mismatch at line: %i", __LINE__); \
+          } \
+        else \
+          { \
+            assert_true(msg == NULL, "when single-read finds an incomplete message, msg must be NULL at line: %i", __LINE__); \
+            assert_true(saddr == NULL, "returned saddr must be NULL on success at line: %i", __LINE__); \
+          } \
+        stop_grabbing_messages(); \
+      }
+
+#define assert_proto_fetch_failure(proto, expected_status, error_message) \
+      { \
+        const guchar *msg = NULL; \
+        gsize msg_len = 0; \
+        LogProtoStatus status; \
+        status = proto_fetch(proto, &msg, &msg_len); \
+        assert_proto_status(status, expected_status); \
+        if (error_message) \
+          assert_grabbed_messages_contain(error_message, "expected error message didn't show up at line: %i", __LINE__); \
+      }
+
+#define assert_proto_fetch_ignored_eof(proto) \
+      { \
+        const guchar *msg = NULL; \
+        gsize msg_len = 0; \
+        LogProtoStatus status; \
+        GSockAddr *saddr = NULL; \
+        gboolean may_read = TRUE; \
+        start_grabbing_messages(); \
+        status = log_proto_fetch(proto, &msg, &msg_len, &saddr, &may_read, FALSE); \
+        assert_proto_status(status, LPS_SUCCESS); \
+        assert_true(msg == NULL, "when an EOF is ignored msg must be NULL at line: %i", __LINE__); \
+        assert_true(saddr == NULL, "returned saddr must be NULL on success at line: %i", __LINE__); \
+        stop_grabbing_messages(); \
+      }
+
+static LogProto *
+create_log_proto_text_server_new(LogTransport *transport, gint size, guint flags)
 {
-  assert_gint(status, expected_status, "LogProto expected status mismatch");
+  LogProto *proto;
+  LogProtoServerOptions *proto_options;
+  proto_options = g_malloc0(sizeof(LogProtoServerOptions));
+  proto_options->super.size = size;
+  proto_options->super.flags = flags;
+
+  proto = log_proto_text_server_new(transport, proto_options);
+  g_free(proto_options);
+  return proto;
 }
 
 static LogProtoStatus
 proto_fetch(LogProto *proto, const guchar **msg, gsize *msg_len)
 {
-  GSockAddr *saddr = NULL;
   gboolean may_read = TRUE;
   LogProtoStatus status;
 
   start_grabbing_messages();
   do
     {
-      status = log_proto_fetch(proto, msg, msg_len, &saddr, &may_read);
+      /* FIXME: pass pointer to GSockAddr: without later memory corruption */
+      status = log_proto_fetch(proto, msg, msg_len, NULL, &may_read, FALSE);
     }
   while (status == LPS_SUCCESS && *msg == NULL);
-  if (status == LPS_SUCCESS)
-    {
-      g_sockaddr_unref(saddr);
-    }
-  else
-    {
-      assert_true(saddr == NULL, "returned saddr must be NULL on failure");
-    }
+
   stop_grabbing_messages();
   return status;
-}
-
-
-static void
-assert_proto_fetch(LogProto *proto, const gchar *expected_msg, gssize expected_msg_len)
-{
-  const guchar *msg = NULL;
-  gsize msg_len = 0;
-  LogProtoStatus status;
-
-  status = proto_fetch(proto, &msg, &msg_len);
-
-  assert_proto_status(proto, status, LPS_SUCCESS);
-  assert_nstring((const gchar *) msg, msg_len, expected_msg, expected_msg_len, "LogProto expected message mismatch");
-}
-
-static void
-assert_proto_fetch_single_read(LogProto *proto, const gchar *expected_msg, gssize expected_msg_len)
-{
-  const guchar *msg = NULL;
-  gsize msg_len = 0;
-  LogProtoStatus status;
-  GSockAddr *saddr = NULL;
-  gboolean may_read = TRUE;
-
-  start_grabbing_messages();
-  status = log_proto_fetch(proto, &msg, &msg_len, &saddr, &may_read);
-  assert_proto_status(proto, status, LPS_SUCCESS);
-
-  if (expected_msg)
-    {
-      assert_nstring((const gchar *) msg, msg_len, expected_msg, expected_msg_len, "LogProto expected message mismatch");
-    }
-  else
-    {
-      assert_true(msg == NULL, "when single-read finds an incomplete message, msg must be NULL");
-      assert_true(saddr == NULL, "returned saddr must be NULL on success");
-    }
-  stop_grabbing_messages();
-}
-
-static void
-assert_proto_fetch_failure(LogProto *proto, LogProtoStatus expected_status, const gchar *error_message)
-{
-  const guchar *msg = NULL;
-  gsize msg_len = 0;
-  LogProtoStatus status;
-
-  status = proto_fetch(proto, &msg, &msg_len);
-
-  assert_proto_status(proto, status, expected_status);
-  if (error_message)
-    assert_grabbed_messages_contain(error_message, "expected error message didn't show up");
-}
-
-static void
-assert_proto_fetch_ignored_eof(LogProto *proto)
-{
-  const guchar *msg = NULL;
-  gsize msg_len = 0;
-  LogProtoStatus status;
-  GSockAddr *saddr = NULL;
-  gboolean may_read = TRUE;
-
-  start_grabbing_messages();
-  status = log_proto_fetch(proto, &msg, &msg_len, &saddr, &may_read);
-  assert_proto_status(proto, status, LPS_SUCCESS);
-  assert_true(msg == NULL, "when an EOF is ignored msg must be NULL");
-  assert_true(saddr == NULL, "returned saddr must be NULL on success");
-  stop_grabbing_messages();
 }
 
 /* abstract LogProto methods */
@@ -132,16 +127,7 @@ test_log_proto_base(void)
 
   log_proto_set_encoding(proto, "ucs4");
   assert_string(proto->encoding, "ucs4", NULL);
-
-  /* check if error state is not forgotten unless reset_error is called */
-  proto->status = LPS_ERROR;
-  assert_proto_status(proto, proto->status , LPS_ERROR);
-  assert_proto_fetch_failure(proto, LPS_ERROR, NULL);
-
-  log_proto_reset_error(proto);
   assert_proto_fetch(proto, "árvíztűr", -1);
-  assert_proto_status(proto, proto->status, LPS_SUCCESS);
-
   log_proto_free(proto);
 }
 
@@ -253,25 +239,6 @@ test_log_proto_text_record_server_ucs4(void)
 }
 
 static void
-test_log_proto_text_record_server_invalid_ucs4(void)
-{
-  LogProto *proto;
-
-  proto = log_proto_record_server_new(
-            /* 31 bytes record size */
-            log_transport_mock_new(
-              FALSE,
-              /* invalid ucs4, trailing zeroes at the end */
-              "\x00\x00\x00\xe1\x00\x00\x00\x72\x00\x00\x00\x76\x00\x00\x00\xed"      /* |...á...r...v...í| */
-              "\x00\x00\x00\x7a\x00\x00\x00\x74\x00\x00\x01\x71\x00\x00\x00", 31, /* |...z...t...ű...r|  */
-              LTM_EOF),
-            31, 0);
-  log_proto_set_encoding(proto, "ucs4");
-  assert_proto_fetch_failure(proto, LPS_ERROR, "Byte sequence too short, cannot convert an individual frame in its entirety");
-  log_proto_free(proto);
-}
-
-static void
 test_log_proto_text_record_server_iso_8859_2(void)
 {
   LogProto *proto;
@@ -302,7 +269,6 @@ test_log_proto_record_server(void)
   test_log_proto_binary_record_server_no_encoding();
   test_log_proto_text_record_server_no_encoding();
   test_log_proto_text_record_server_ucs4();
-  test_log_proto_text_record_server_invalid_ucs4();
   test_log_proto_text_record_server_iso_8859_2();
 }
 
@@ -314,33 +280,32 @@ static void
 test_log_proto_text_server_no_encoding(gboolean input_is_stream)
 {
   LogProto *proto;
+  LogTransport *transport = log_transport_mock_new(
+      input_is_stream,
+      "01234567\n"
+      /* line too long */
+      "0123456789ABCDEF0123456789ABCDEF01234567\n"
+      /* utf8 */
+      "árvíztűrőtükörfúrógép\n"
+      /* iso-8859-2 */
+      "\xe1\x72\x76\xed\x7a\x74\xfb\x72\xf5\x74\xfc\x6b\xf6\x72\x66\xfa"      /*  |árvíztűrőtükörfú| */
+      "\x72\xf3\x67\xe9\x70\n",                                               /*  |rógép|            */
+      -1,
 
-  proto = log_proto_text_server_new(
-            /* 32 bytes max line length */
-            log_transport_mock_new(
-              input_is_stream,
-              "01234567\n"
-              /* line too long */
-              "0123456789ABCDEF0123456789ABCDEF01234567\n"
-              /* utf8 */
-              "árvíztűrőtükörfúrógép\n"
-              /* iso-8859-2 */
-              "\xe1\x72\x76\xed\x7a\x74\xfb\x72\xf5\x74\xfc\x6b\xf6\x72\x66\xfa"      /*  |árvíztűrőtükörfú| */
-              "\x72\xf3\x67\xe9\x70\n",                                               /*  |rógép|            */
-              -1,
+      /* NUL terminated line */
+      "01234567\0"
+      "01234567\0\n"
+      "01234567\n\0"
+      "01234567\r\n\0", 40,
 
-              /* NUL terminated line */
-              "01234567\0"
-              "01234567\0\n"
-              "01234567\n\0"
-              "01234567\r\n\0", 40,
+      "01234567\r\n"
+      /* no eol before EOF */
+      "01234567", -1,
 
-              "01234567\r\n"
-              /* no eol before EOF */
-              "01234567", -1,
+      LTM_EOF);
 
-              LTM_EOF),
-            32, LPBS_POS_TRACKING);
+  /* 32 bytes max line length */
+  proto = create_log_proto_text_server_new(transport, 32, LPBS_POS_TRACKING);
   assert_proto_fetch(proto, "01234567", -1);
 
   /* input split due to an oversized input line */
@@ -371,37 +336,34 @@ static void
 test_log_proto_text_server_eof_handling(void)
 {
   LogProto *proto;
+  LogTransport *transport;
 
-  proto = log_proto_text_server_new(
-            log_transport_mock_new(
-              TRUE,
-              /* no eol before EOF */
-              "01234567", -1,
-
-              LTM_EOF),
-            32, LPBS_POS_TRACKING);
+  transport = log_transport_mock_new(
+      TRUE,
+      /* no eol before EOF */
+      "01234567", -1,
+      LTM_EOF);
+  proto = create_log_proto_text_server_new(transport, 32, LPBS_POS_TRACKING);
   assert_proto_fetch(proto, "01234567", -1);
   assert_proto_fetch_failure(proto, LPS_EOF, NULL);
   log_proto_free(proto);
 
-  proto = log_proto_text_server_new(
-            log_transport_mock_new(
-              TRUE,
-              "01234567", -1,
-              LTM_INJECT_ERROR(EIO),
-              LTM_EOF),
-          32, LPBS_POS_TRACKING);
+  transport = log_transport_mock_new(
+      TRUE,
+      "01234567", -1,
+      LTM_INJECT_ERROR(EIO),
+      LTM_EOF);
+  proto = create_log_proto_text_server_new(transport, 32, LPBS_POS_TRACKING);
   assert_proto_fetch(proto, "01234567", -1);
   assert_proto_fetch_failure(proto, LPS_ERROR, NULL);
   log_proto_free(proto);
 
-  proto = log_proto_text_server_new(
-            log_transport_mock_new(
-              TRUE,
-              /* utf8 */
-              "\xc3", -1,
-              LTM_EOF),
-            32, LPBS_POS_TRACKING);
+  transport = log_transport_mock_new(
+      TRUE,
+      /* utf8 */
+      "\xc3", -1,
+      LTM_EOF);
+  proto = create_log_proto_text_server_new(transport, 32, LPBS_POS_TRACKING);
   log_proto_set_encoding(proto, "utf8");
   assert_proto_fetch_failure(proto, LPS_EOF, "EOF read on a channel with leftovers from previous character conversion, dropping input");
   log_proto_free(proto);
@@ -410,16 +372,16 @@ test_log_proto_text_server_eof_handling(void)
 static void
 test_log_proto_text_server_not_fixed_encoding(void)
 {
-  LogProto *proto;
-
   /* to test whether a non-easily-reversable charset works too */
-  proto = log_proto_text_server_new(
-            log_transport_mock_new(
-              TRUE,
-              /* utf8 */
-              "árvíztűrőtükörfúrógép\n", -1,
-              LTM_EOF),
-            32, LPBS_POS_TRACKING);
+
+  LogProto *proto;
+  LogTransport *transport = log_transport_mock_new(
+      TRUE,
+      /* utf8 */
+      "árvíztűrőtükörfúrógép\n", -1,
+      LTM_EOF);
+
+  proto = create_log_proto_text_server_new(transport, 32, LPBS_POS_TRACKING);
   log_proto_set_encoding(proto, "utf8");
   assert_proto_fetch(proto, "árvíztűrőtükörfúrógép", -1);
   assert_proto_fetch_failure(proto, LPS_EOF, NULL);
@@ -431,18 +393,18 @@ test_log_proto_text_server_ucs4(void)
 {
   LogProto *proto;
 
-  proto = log_proto_text_server_new(
-            log_transport_mock_new(
-              TRUE,
-              /* ucs4 */
-              "\x00\x00\x00\xe1\x00\x00\x00\x72\x00\x00\x00\x76\x00\x00\x00\xed"      /* |...á...r...v...í| */
-              "\x00\x00\x00\x7a\x00\x00\x00\x74\x00\x00\x01\x71\x00\x00\x00\x72"      /* |...z...t...ű...r| */
-              "\x00\x00\x01\x51\x00\x00\x00\x74\x00\x00\x00\xfc\x00\x00\x00\x6b"      /* |...Q...t.......k| */
-              "\x00\x00\x00\xf6\x00\x00\x00\x72\x00\x00\x00\x66\x00\x00\x00\xfa"      /* |.......r...f....| */
-              "\x00\x00\x00\x72\x00\x00\x00\xf3\x00\x00\x00\x67\x00\x00\x00\xe9"      /* |...r.......g....| */
-              "\x00\x00\x00\x70\x00\x00\x00\x0a", 88,                                 /* |...p....|         */
-              LTM_EOF),
-            32, 0);
+  LogTransport *transport = log_transport_mock_new(
+      TRUE,
+      /* ucs4 */
+      "\x00\x00\x00\xe1\x00\x00\x00\x72\x00\x00\x00\x76\x00\x00\x00\xed"      /* |...á...r...v...í| */
+      "\x00\x00\x00\x7a\x00\x00\x00\x74\x00\x00\x01\x71\x00\x00\x00\x72"      /* |...z...t...ű...r| */
+      "\x00\x00\x01\x51\x00\x00\x00\x74\x00\x00\x00\xfc\x00\x00\x00\x6b"      /* |...Q...t.......k| */
+      "\x00\x00\x00\xf6\x00\x00\x00\x72\x00\x00\x00\x66\x00\x00\x00\xfa"      /* |.......r...f....| */
+      "\x00\x00\x00\x72\x00\x00\x00\xf3\x00\x00\x00\x67\x00\x00\x00\xe9"      /* |...r.......g....| */
+      "\x00\x00\x00\x70\x00\x00\x00\x0a", 88,                                 /* |...p....|         */
+      LTM_EOF);
+
+  proto = create_log_proto_text_server_new(transport, 32, 0);
   log_proto_set_encoding(proto, "ucs4");
   assert_proto_fetch(proto, "árvíztűrőtükörfúrógép", -1);
   assert_proto_fetch_failure(proto, LPS_EOF, NULL);
@@ -453,15 +415,14 @@ static void
 test_log_proto_text_server_iso8859_2(void)
 {
   LogProto *proto;
+  LogTransport *transport = log_transport_mock_new(
+      TRUE,
+      /* iso-8859-2 */
+      "\xe1\x72\x76\xed\x7a\x74\xfb\x72\xf5\x74\xfc\x6b\xf6\x72\x66\xfa"      /*  |árvíztűrőtükörfú| */
+      "\x72\xf3\x67\xe9\x70\n", -1,                                           /*  |rógép|            */
+      LTM_EOF);
 
-  proto = log_proto_text_server_new(
-            log_transport_mock_new(
-              TRUE,
-              /* iso-8859-2 */
-              "\xe1\x72\x76\xed\x7a\x74\xfb\x72\xf5\x74\xfc\x6b\xf6\x72\x66\xfa"      /*  |árvíztűrőtükörfú| */
-              "\x72\xf3\x67\xe9\x70\n", -1,                                           /*  |rógép|            */
-              LTM_EOF),
-            32, LPBS_POS_TRACKING);
+  proto = create_log_proto_text_server_new(transport, 32, LPBS_POS_TRACKING);
   log_proto_set_encoding(proto, "iso-8859-2");
   assert_proto_fetch(proto, "árvíztűrőtükörfúrógép", -1);
   assert_proto_fetch_failure(proto, LPS_EOF, NULL);
@@ -472,30 +433,29 @@ static void
 test_log_proto_text_server_multi_read(void)
 {
   LogProto *proto;
+  LogTransport *transport;
 
-  proto = log_proto_text_server_new(
-            log_transport_mock_new(
-              FALSE,
-              "foobar\n", -1,
-              /* no EOL, proto implementation would read another chunk */
-              "foobaz", -1,
-              LTM_INJECT_ERROR(EIO),
-              LTM_EOF),
-            32, LPBS_POS_TRACKING);
+  transport = log_transport_mock_new(
+      FALSE,
+      "foobar\n", -1,
+      /* no EOL, proto implementation would read another chunk */
+      "foobaz", -1,
+      LTM_INJECT_ERROR(EIO),
+      LTM_EOF);
+  proto = create_log_proto_text_server_new(transport, 32, LPBS_POS_TRACKING);
   assert_proto_fetch(proto, "foobar", -1);
   assert_proto_fetch(proto, "foobaz", -1);
   assert_proto_fetch_failure(proto, LPS_ERROR, NULL);
   log_proto_free(proto);
 
-  proto = log_proto_text_server_new(
-            log_transport_mock_new(
-              FALSE,
-              "foobar\n", -1,
-              /* no EOL, proto implementation would read another chunk */
-              "foobaz", -1,
-              LTM_INJECT_ERROR(EIO),
-              LTM_EOF),
-            32, LPBS_POS_TRACKING | LPBS_NOMREAD);
+  transport = log_transport_mock_new(
+      FALSE,
+      "foobar\n", -1,
+      /* no EOL, proto implementation would read another chunk */
+      "foobaz", -1,
+      LTM_INJECT_ERROR(EIO),
+      LTM_EOF);
+  proto = create_log_proto_text_server_new(transport, 32, LPBS_POS_TRACKING);
   assert_proto_fetch_single_read(proto, "foobar", -1);
   assert_proto_fetch_single_read(proto, NULL, -1);
   log_proto_free(proto);
@@ -536,7 +496,6 @@ test_log_proto_dgram_server_no_encoding(void)
               /* ucs4 */
               "\x00\x00\x00\xe1\x00\x00\x00\x72\x00\x00\x00\x76\x00\x00\x00\xed"      /* |...á...r...v...í| */
               "\x00\x00\x00\x7a\x00\x00\x00\x74\x00\x00\x01\x71\x00\x00\x00\x72", 32, /* |...z...t...ű...r|  */
-
               "01234", 5,
               LTM_EOF),
             32, 0);
@@ -582,25 +541,6 @@ test_log_proto_dgram_server_ucs4(void)
   log_proto_set_encoding(proto, "ucs4");
   assert_proto_fetch(proto, "árvíztűr", -1);
   assert_proto_fetch(proto, "árvíztű\n", -1);
-  log_proto_free(proto);
-}
-
-static void
-test_log_proto_dgram_server_invalid_ucs4(void)
-{
-  LogProto *proto;
-
-  proto = log_proto_dgram_server_new(
-            /* 31 bytes record size */
-            log_transport_mock_new(
-              FALSE,
-              /* invalid ucs4, trailing zeroes at the end */
-              "\x00\x00\x00\xe1\x00\x00\x00\x72\x00\x00\x00\x76\x00\x00\x00\xed"      /* |...á...r...v...í| */
-              "\x00\x00\x00\x7a\x00\x00\x00\x74\x00\x00\x01\x71\x00\x00\x00", 31, /* |...z...t...ű...r|  */
-              LTM_EOF),
-            32, 0);
-  log_proto_set_encoding(proto, "ucs4");
-  assert_proto_fetch_failure(proto, LPS_ERROR, "Byte sequence too short, cannot convert an individual frame in its entirety");
   log_proto_free(proto);
 }
 
@@ -651,7 +591,6 @@ test_log_proto_dgram_server(void)
 {
   test_log_proto_dgram_server_no_encoding();
   test_log_proto_dgram_server_ucs4();
-  test_log_proto_dgram_server_invalid_ucs4();
   test_log_proto_dgram_server_iso_8859_2();
   test_log_proto_dgram_server_eof_handling();
 }
@@ -706,7 +645,7 @@ test_log_proto_framed_server_io_error(void)
               LTM_EOF),
             32);
   assert_proto_fetch(proto, "0123456789ABCDEF0123456789ABCDEF", -1);
-  assert_proto_fetch_failure(proto, LPS_ERROR, "Error reading RFC5428 style framed data");
+  assert_proto_fetch_failure(proto, LPS_ERROR, "Error reading frame header");
   log_proto_free(proto);
 }
 
@@ -774,7 +713,6 @@ test_log_proto_framed_server_buffer_shift_before_fetch(void)
               " 123\n", -1,
               LTM_EOF),
             32);
-  log_proto_framed_server_set_buffer_sizes(proto, 10, 10);
   assert_proto_fetch(proto, "012345\n", -1);
   assert_proto_fetch(proto, "123\n", -1);
   log_proto_free(proto);
@@ -794,7 +732,6 @@ test_log_proto_framed_server_buffer_shift_to_make_space_for_a_frame(void)
               "123\n", -1,
               LTM_EOF),
             32);
-  log_proto_framed_server_set_buffer_sizes(proto, 10, 10);
   assert_proto_fetch(proto, "01234\n", -1);
   assert_proto_fetch(proto, "123\n", -1);
   log_proto_free(proto);
@@ -816,7 +753,7 @@ test_log_proto_framed_server_multi_read(void)
             32);
   assert_proto_fetch(proto, "foobar\n", -1);
   /* with multi-read, we get the injected failure at the 2nd fetch */
-  assert_proto_fetch_failure(proto, LPS_ERROR, "Error reading RFC5428 style framed data");
+  assert_proto_fetch_failure(proto, LPS_ERROR, "Error reading frame header");
   log_proto_free(proto);
 
   /* NOTE: LPBS_NOMREAD is not implemented for framed protocol */
