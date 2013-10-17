@@ -68,6 +68,67 @@ static LogProtoStatus proto_fetch(LogProto *proto, const guchar **msg, gsize *ms
         stop_grabbing_messages(); \
       }
 
+#define UTF8_BAD_INPUT_SIZE 49
+/*                         H   ?   l   l   o   ?   |---á   ?   ?   |---ő   |---á   |---ű */
+#define UTF8_BAD_INPUT "\x48\x83\x6C\x6C\x6F\xC3\xC3\xA1\xA9\xBA\xC5\x91\xC3\xA1\xC5\xB1" \
+                       "\xC3\xBA\xC5\x91\xC3\xB3\xC3\xBC\xC3\xAD\xC3\x89\xC3\x81\x50\xC3" \
+                       "\x9A\xC5\x90\xC3\x8D\xC3\x8D\xC3\x9C\xC3\x93\xC3\x9A\xC5\xB0\xA9" \
+                       "\xA9"
+#define UTF8_GOOD_OUTPUT "H?llo?á??őáűúőóüíÉÁPÚŐÍÍÜÓÚŰ??"
+
+#define WINDOWS_1250_BAD_INPUT_SIZE 30
+#define WINDOWS_1250_BAD_INPUT "\x48\x81\x83\x6C\x88\x20\x68\x61\x6C\x6C\xF3\x2C\x20\x65\x90\x65" \
+                               "\x6B\x74\x6F\x72\x20\x6B\x61\x98\x61\x6E\x64\x6F\x72\x21"
+#define WINDOWS_1250_GOOD_OUTPUT "H??l? halló, e?ektor ka?andor!"
+
+
+#define WINDOWS_1252_BAD_INPUT_SIZE 30
+#define WINDOWS_1252_BAD_INPUT "\x48\x81\x8D\x6C\x8F\x20\x68\x61\x6C\x6C\xF3\x2C\x20\x65\x90\x65" \
+                               "\x6B\x74\x6F\x72\x20\x6B\x61\x9D\x61\x6E\x64\x6F\x72\x21"
+#define WINDOWS_1252_GOOD_OUTPUT "H??l? halló, e?ektor ka?andor!"
+
+#define UCS_2_BAD_INPUT_SIZE 60
+#define UCS_2_BAD_INPUT "\x48\x00\x00\xD8\x7F\xDB\x6C\x00\x80\xDB\x20\x00\x68\x00\x61\x00" \
+                        "\x6C\x00\x6C\x00\xF3\x00\x2C\x00\x20\x00\x65\x00\xFF\xDB\x65\x00" \
+                        "\x6B\x00\x74\x00\x6F\x00\x72\x00\x20\x00\x6B\x00\x61\x00\xFF\xDF" \
+                        "\x61\x00\x6E\x00\x64\x00\x6F\x00\x72\x00\x21\x00"
+#define UCS_2_GOOD_OUTPUT "H??l? halló, e?ektor ka?andor!"
+
+#define UTF16_BAD_INPUT_SIZE 60
+#define UTF16_BAD_INPUT "\x48\x00\x65\x00\x00\xDC\x6C\x00\x6F\x00\x20\x00\x68\x00\x61\x00" \
+                        "\xFF\xDF\x6C\x00\xF3\x00\x2C\x00\x20\x00\x65\x00\xFF\xDF\x65\x00" \
+                        "\x6B\x00\x74\x00\x6F\x00\x72\x00\x20\x00\x6B\x00\x61\x00\xFF\xDC" \
+                        "\x61\x00\x6E\x00\x64\x00\x6F\x00\x72\x00\x21\x00"
+#define UTF16_GOOD_OUTPUT "He?lo ha?ló, e?ektor ka?andor!"
+
+#define TEST_LOG_PROTO_TEXT_RECORD_SERVER_SKIP_BAD_CHARS(bad_input, bad_input_size, encoding, good_output) \
+    { \
+      LogProto *proto = log_proto_record_server_new(log_transport_mock_new(FALSE, bad_input, bad_input_size, LTM_EOF), bad_input_size, 0); \
+      log_proto_set_encoding(proto, encoding); \
+      assert_proto_fetch(proto, good_output, -1); \
+      assert_proto_fetch_failure(proto, LPS_EOF, NULL); \
+      log_proto_free(proto); \
+    }
+
+#define TEST_LOG_PROTO_TEXT_SERVER_SKIP_BAD_CHARS(bad_input, bad_input_size, encoding, good_output) \
+    { \
+      LogTransport *transport = log_transport_mock_new(TRUE, bad_input, bad_input_size, LTM_EOF); \
+      LogProto *proto = create_log_proto_text_server_new(transport, 32, LPBS_POS_TRACKING); \
+      log_proto_set_encoding(proto, encoding); \
+      assert_proto_fetch(proto, good_output, -1); \
+      assert_proto_fetch_failure(proto, LPS_EOF, NULL); \
+      log_proto_free(proto); \
+    }
+
+#define TEST_LOG_PROTO_DGRAM_SERVER_SKIP_BAD_CHARS(bad_input, bad_input_size, encoding, good_output) \
+    { \
+      LogProto *proto = log_proto_dgram_server_new(log_transport_mock_new(FALSE, bad_input, bad_input_size, LTM_EOF), bad_input_size, 0); \
+      log_proto_set_encoding(proto, encoding); \
+      assert_proto_fetch(proto, good_output, -1); \
+      assert_proto_fetch_ignored_eof(proto); \
+      log_proto_free(proto); \
+    }
+
 static LogProto *
 create_log_proto_text_server_new(LogTransport *transport, gint size, guint flags)
 {
@@ -262,6 +323,16 @@ test_log_proto_text_record_server_iso_8859_2(void)
 }
 
 static void
+test_log_proto_text_record_server_skip_bad_chars(void)
+{
+  TEST_LOG_PROTO_TEXT_RECORD_SERVER_SKIP_BAD_CHARS(UTF8_BAD_INPUT, UTF8_BAD_INPUT_SIZE, "utf-8", UTF8_GOOD_OUTPUT);
+  TEST_LOG_PROTO_TEXT_RECORD_SERVER_SKIP_BAD_CHARS(WINDOWS_1250_BAD_INPUT, WINDOWS_1250_BAD_INPUT_SIZE, "windows-1250", WINDOWS_1250_GOOD_OUTPUT);
+  TEST_LOG_PROTO_TEXT_RECORD_SERVER_SKIP_BAD_CHARS(WINDOWS_1252_BAD_INPUT, WINDOWS_1252_BAD_INPUT_SIZE, "windows-1252", WINDOWS_1252_GOOD_OUTPUT);
+  TEST_LOG_PROTO_TEXT_RECORD_SERVER_SKIP_BAD_CHARS(UCS_2_BAD_INPUT, UCS_2_BAD_INPUT_SIZE, "ucs-2", UCS_2_GOOD_OUTPUT);
+  TEST_LOG_PROTO_TEXT_RECORD_SERVER_SKIP_BAD_CHARS(UTF16_BAD_INPUT, UTF16_BAD_INPUT_SIZE, "utf-16", UTF16_GOOD_OUTPUT);
+}
+
+static void
 test_log_proto_record_server(void)
 {
   /* binary records are only tested in no-encoding mode, as there's only one
@@ -270,6 +341,7 @@ test_log_proto_record_server(void)
   test_log_proto_text_record_server_no_encoding();
   test_log_proto_text_record_server_ucs4();
   test_log_proto_text_record_server_iso_8859_2();
+  test_log_proto_text_record_server_skip_bad_chars();
 }
 
 /****************************************************************************************
@@ -389,10 +461,19 @@ test_log_proto_text_server_not_fixed_encoding(void)
 }
 
 static void
+test_log_proto_text_server_skip_bad_chars(void)
+{
+  TEST_LOG_PROTO_TEXT_SERVER_SKIP_BAD_CHARS(UTF8_BAD_INPUT, UTF8_BAD_INPUT_SIZE, "utf8", UTF8_GOOD_OUTPUT);
+  TEST_LOG_PROTO_TEXT_SERVER_SKIP_BAD_CHARS(WINDOWS_1250_BAD_INPUT, WINDOWS_1250_BAD_INPUT_SIZE, "windows-1250", WINDOWS_1250_GOOD_OUTPUT);
+  TEST_LOG_PROTO_TEXT_SERVER_SKIP_BAD_CHARS(WINDOWS_1252_BAD_INPUT, WINDOWS_1252_BAD_INPUT_SIZE, "windows-1252", WINDOWS_1252_GOOD_OUTPUT);
+  TEST_LOG_PROTO_TEXT_SERVER_SKIP_BAD_CHARS(UCS_2_BAD_INPUT, UCS_2_BAD_INPUT_SIZE, "ucs-2", UCS_2_GOOD_OUTPUT);
+  TEST_LOG_PROTO_TEXT_SERVER_SKIP_BAD_CHARS(UTF16_BAD_INPUT, UTF16_BAD_INPUT_SIZE, "utf-16", UTF16_GOOD_OUTPUT);
+}
+
+static void
 test_log_proto_text_server_ucs4(void)
 {
   LogProto *proto;
-
   LogTransport *transport = log_transport_mock_new(
       TRUE,
       /* ucs4 */
@@ -471,6 +552,7 @@ test_log_proto_text_server(void)
   test_log_proto_text_server_ucs4();
   test_log_proto_text_server_iso8859_2();
   test_log_proto_text_server_multi_read();
+  test_log_proto_text_server_skip_bad_chars();
 }
 
 /****************************************************************************************
@@ -567,6 +649,16 @@ test_log_proto_dgram_server_iso_8859_2(void)
 }
 
 static void
+test_log_proto_dgram_server_skip_bad_chars(void)
+{
+  TEST_LOG_PROTO_DGRAM_SERVER_SKIP_BAD_CHARS(UTF8_BAD_INPUT, UTF8_BAD_INPUT_SIZE, "utf8", UTF8_GOOD_OUTPUT);
+  TEST_LOG_PROTO_DGRAM_SERVER_SKIP_BAD_CHARS(WINDOWS_1250_BAD_INPUT, WINDOWS_1250_BAD_INPUT_SIZE, "windows-1250", WINDOWS_1250_GOOD_OUTPUT);
+  TEST_LOG_PROTO_DGRAM_SERVER_SKIP_BAD_CHARS(WINDOWS_1252_BAD_INPUT, WINDOWS_1252_BAD_INPUT_SIZE, "windows-1252", WINDOWS_1252_GOOD_OUTPUT);
+  TEST_LOG_PROTO_DGRAM_SERVER_SKIP_BAD_CHARS(UCS_2_BAD_INPUT, UCS_2_BAD_INPUT_SIZE, "ucs-2", UCS_2_GOOD_OUTPUT);
+  TEST_LOG_PROTO_DGRAM_SERVER_SKIP_BAD_CHARS(UTF16_BAD_INPUT, UTF16_BAD_INPUT_SIZE, "utf-16", UTF16_GOOD_OUTPUT);
+}
+
+static void
 test_log_proto_dgram_server_eof_handling(void)
 {
   LogProto *proto;
@@ -592,6 +684,7 @@ test_log_proto_dgram_server(void)
   test_log_proto_dgram_server_no_encoding();
   test_log_proto_dgram_server_ucs4();
   test_log_proto_dgram_server_iso_8859_2();
+  test_log_proto_dgram_server_skip_bad_chars();
   test_log_proto_dgram_server_eof_handling();
 }
 
