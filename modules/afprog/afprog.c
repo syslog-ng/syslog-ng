@@ -66,7 +66,11 @@ afprogram_popen(const gchar *cmdline, GIOCondition cond, pid_t *pid, gint *fd)
   if (*pid == 0)
     {
       /* child */
-      int devnull = open("/dev/null", O_WRONLY);
+      int devnull;
+
+      setpgid(0, 0);
+
+      devnull = open("/dev/null", O_WRONLY);
       
       if (devnull == -1)
         {
