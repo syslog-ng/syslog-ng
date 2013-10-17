@@ -63,7 +63,7 @@ log_rewrite_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_option
   log_pipe_forward_msg(s, msg, path_options);
 }
 
-static gboolean
+gboolean
 log_rewrite_init_method(LogPipe *s)
 {
   LogRewrite *self = (LogRewrite *) s;
