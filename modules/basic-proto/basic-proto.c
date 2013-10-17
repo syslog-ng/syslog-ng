@@ -54,6 +54,9 @@ typedef struct _LogProtoTextClient
 #define LPFCS_FRAME_SEND    1
 #define LPFCS_MESSAGE_SEND  2
 
+#define INVALID_BYTE_SUBSTITUE '?'
+#define SUBSTITUTION_BUFFER_LEN 16
+
 typedef struct _LogProtoFramedClient
 {
   LogProtoTextClient super;
@@ -819,13 +822,79 @@ log_proto_buffered_server_put_state(LogProtoBufferedServer *self)
     state_handler_put_state(self->state_handler);
 }
 
+static inline gssize
+log_proto_buffered_server_get_length_of_reverse_convert(LogProtoBufferedServer *self, gchar input_char, guint count)
+{
+  GIConv reverse_convert = g_iconv_open(self->super.encoding, "utf-8");
+
+  if (reverse_convert != (GIConv) -1)
+    {
+      gchar reverse_buffer[SUBSTITUTION_BUFFER_LEN];
+      gchar in_buffer[SUBSTITUTION_BUFFER_LEN];
+      gchar *in = in_buffer;
+      gsize avail_in = count;
+      gchar *out = reverse_buffer;
+      gsize avail_out = SUBSTITUTION_BUFFER_LEN;
+      gint i;
+
+      for (i = 0; i < count; ++i)
+        in[i] = input_char;
+      in[count] = '\0';
+
+      gint ret = g_iconv(reverse_convert, &in, &avail_in, &out, &avail_out);
+      g_iconv_close(reverse_convert);
+
+      if (ret == (gsize) -1)
+        return -1;
+
+      return SUBSTITUTION_BUFFER_LEN - avail_out;
+    }
+  return -1;
+}
+
+static inline gssize
+log_proto_buffered_server_get_length_of_reverse_convert_excluding_bom(LogProtoBufferedServer *self)
+{
+  gssize rev_conv1 = log_proto_buffered_server_get_length_of_reverse_convert(self, INVALID_BYTE_SUBSTITUE, 1);
+  gssize rev_conv2 = log_proto_buffered_server_get_length_of_reverse_convert(self, INVALID_BYTE_SUBSTITUE, 2);
+
+  if (rev_conv1 < 0 || rev_conv2 < 0)
+    return -1;
+
+  return rev_conv2 - rev_conv1;
+}
+
+static gboolean
+log_proto_buffered_server_skip_character(LogProtoBufferedServer *self, char **inbuf, size_t *inbytesleft, char **outbuf, size_t *outbytesleft)
+{
+  gssize number_of_bytes_to_skip = log_proto_buffered_server_get_length_of_reverse_convert_excluding_bom(self);
+  if (number_of_bytes_to_skip <= 0 || number_of_bytes_to_skip > *inbytesleft)
+    {
+      msg_error("Internal error, unable to convert the substitute UTF-8 character to the original encoding",
+                evt_tag_id(MSG_REVERSE_CONVERTING_FAILED),
+                NULL);
+      return FALSE;
+    }
+
+  (*inbuf) += number_of_bytes_to_skip;
+  (*inbytesleft) -= number_of_bytes_to_skip;
+
+  **outbuf = INVALID_BYTE_SUBSTITUE;
+
+  (*outbuf)++;
+  (*outbytesleft)--;
+
+  return TRUE;
+}
+
 static gboolean
 log_proto_buffered_server_convert_from_raw(LogProtoBufferedServer *self, const guchar *raw_buffer, gsize raw_buffer_len)
 {
   /* some data was read */
+  gchar *in = (gchar *)raw_buffer;
   gsize avail_in = raw_buffer_len;
-  gsize avail_out;
   gchar *out;
+  gsize avail_out;
   gint  ret = -1;
   gboolean success = FALSE;
   LogProtoBufferedServerState *state = log_proto_buffered_server_get_state(self);
@@ -835,7 +904,7 @@ log_proto_buffered_server_convert_from_raw(LogProtoBufferedServer *self, const g
       avail_out = state->buffer_size - state->pending_buffer_end;
       out = (gchar *) self->buffer + state->pending_buffer_end;
 
-      ret = g_iconv(self->super.convert, (gchar **) &raw_buffer, &avail_in, (gchar **) &out, &avail_out);
+      ret = g_iconv(self->super.convert, &in, &avail_in, &out, &avail_out);
       if (ret == (gsize) -1)
         {
           switch (errno)
@@ -856,7 +925,7 @@ log_proto_buffered_server_convert_from_raw(LogProtoBufferedServer *self, const g
                                 NULL);
                       goto error;
                     }
-                  memcpy(state->raw_buffer_leftover, raw_buffer, avail_in);
+                  memcpy(state->raw_buffer_leftover, in, avail_in);
                   state->raw_buffer_leftover_size = avail_in;
                   state->pending_raw_buffer_size -= avail_in;
                   msg_trace("Leftover characters remained after conversion, delaying message until another chunk arrives",
@@ -893,12 +962,20 @@ log_proto_buffered_server_convert_from_raw(LogProtoBufferedServer *self, const g
               break;
             case EILSEQ:
             default:
-              msg_notice("Invalid byte sequence or other error while converting input, skipping character",
+              msg_notice("Invalid byte sequence or other error while converting input, the sequence will be substituted by a question mark",
                          evt_tag_str("encoding", self->super.encoding),
-                         evt_tag_printf("char", "0x%02x", *(guchar *) raw_buffer),
+                         evt_tag_printf("char", "0x%02x", *(guchar *) in),
                          evt_tag_id(MSG_INVALID_ENCODING_SEQ),
                          NULL);
-              goto error;
+
+              if (log_proto_buffered_server_skip_character(self, &in, &avail_in, &out, &avail_out))
+                {
+                  state->pending_buffer_end = state->buffer_size - avail_out;
+                }
+              else
+                {
+                  goto error;
+                }
             }
         }
       else
@@ -908,9 +985,9 @@ log_proto_buffered_server_convert_from_raw(LogProtoBufferedServer *self, const g
     }
   while (avail_in > 0);
 
- success:
+success:
   success = TRUE;
- error:
+error:
   log_proto_buffered_server_put_state(self);
   return success;
 }
@@ -1934,7 +2011,7 @@ static gsize
 log_proto_text_server_get_raw_size_of_buffer(LogProtoTextServer *self, const guchar *buffer, gsize buffer_len)
 {
   gchar *out;
-  const guchar *in;
+  gchar *in;
   gsize avail_out, avail_in;
   gint ret;
 
@@ -1969,9 +2046,9 @@ log_proto_text_server_get_raw_size_of_buffer(LogProtoTextServer *self, const guc
   out = self->reverse_buffer;
 
   avail_in = buffer_len;
-  in = buffer;
+  in = (gchar *)buffer;
 
-  ret = g_iconv(self->reverse_convert, (gchar **) &in, &avail_in, &out, &avail_out);
+  ret = g_iconv(self->reverse_convert, &in, &avail_in, &out, &avail_out);
   if (ret == (gsize) -1)
     {
       /* oops, we cannot reverse that we ourselves converted to UTF-8,
