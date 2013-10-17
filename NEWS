@@ -1,3 +1,84 @@
+3.4.4
+        Thu, 17 Oct 2013 12:16:40 +0200
+
+        This is the third bug-fix release for the 3.4.x series, with
+        important fixes over the 3.4.3 release. Upgrading to this
+        release is highly recommended.
+
+        Bugfixes
+        ========
+
+        * Fixed the log message reference counting in the AMQP
+          destination, thus stopping it from crashing.
+
+        * Fixed a possible crash in the AMQP destination that could be
+          triggered when the AMQP server was unreachable at the time
+          of a syslog-ng reload or shutdown.
+
+        * pdbtool no longer segfaults when used with the --module
+          switch [#249]
+
+        * pdbtool test exits with a return value of 2 if the test
+          value matched a different pattern than expected. [#241]
+
+        * The inherit-properties attribute was added to the patterndb
+          XSD. [#251]
+
+        * A memory corruption was fixed in the @STRING@ parser of
+          db-parser(). [#254]
+
+        * Corrected a mistake in the afsocket module that lead to
+          crashes on reload when unix-stream or unix-dgram
+          destinations were in use.
+
+        * Excludes now work properly with value-pairs(), and they do
+          not get ignored if the value to exclude is in the default
+          set.
+
+        * The program() source and destination now correctly kill the
+          started child on reload and shutdown.
+
+        * The file destination does not use lseek() anymore.
+
+        * When setting default template options, all random memory
+          junk is cleared from the object first.
+
+        * The order of header include paths was fixed in the test
+          suite, so it should compile cleanly even in the presence of
+          potentially conflicting headers.
+
+        Features
+        ========
+
+        * The $(format-json) template function, and anything else that
+          may use the same value-pairs command line parser now allow
+          specifying multiple scopes separated by commas (as opposed
+          to having to use the --scope switch multiple times) [#248]
+
+        Credits:
+        ========
+
+        syslog-ng is developed as a community project, and as such it relies
+        on volunteers to do the work necessarily to produce syslog-ng.
+
+        Reporting bugs, testing changes, writing code or simply providing
+        feedback are all important contributions, so please if you are a
+        user of syslog-ng, contribute.
+
+        These people have helped in this release:
+
+        Alexandre Biancalana <biancalana@gmail.com>
+        Balazs Scheidler <bazsi@balabit.hu>
+        Balint Kovacs <blint@balabit.hu>
+        Evan Rempel <erempel@uvic.ca>
+        Fabien Wernli <cpan@faxm0dem.org>
+        Gergely Nagy <algernon@balabit.hu>
+        Lucas McLane <lucas@clicksecurity.com>
+        Marc Falzon <marc.falzon@cloudwatt.com>
+        Michal Privoznik <miso.privoznik@gmail.com>
+        Ryan Frederick
+        Valentijn Sessink <valentijn@sessink.nl>
+
 3.4.3
         Tue, 13 Aug 2013 13:00:00 +0100
 
