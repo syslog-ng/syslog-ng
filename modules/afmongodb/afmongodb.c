@@ -516,7 +516,7 @@ afmongodb_dd_init(LogPipe *s)
   GlobalConfig *cfg = log_pipe_get_config(s);
   ValuePairsTransformSet *vpts;
 
-  if (!log_threaded_dest_driver_init_method(s))
+  if (!log_dest_driver_init_method(s))
     return FALSE;
 
   log_template_options_init(&self->template_options, cfg);
@@ -565,6 +565,9 @@ afmongodb_dd_init(LogPipe *s)
                 evt_tag_str("database", self->db),
                 evt_tag_str("collection", self->coll),
                 NULL);
+
+  if (!log_threaded_dest_driver_init_method(s))
+    return FALSE;
 
   log_threaded_dest_driver_start(&self->super);
 

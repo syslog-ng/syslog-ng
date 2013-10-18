@@ -464,7 +464,7 @@ afsmtp_dd_init(LogPipe *s)
   AFSMTPDriver *self = (AFSMTPDriver *)s;
   GlobalConfig *cfg = log_pipe_get_config(s);
 
-  if (!log_threaded_dest_driver_init_method(s))
+  if (!log_dest_driver_init_method(s))
     return FALSE;
 
   msg_verbose("Initializing SMTP destination",
@@ -484,6 +484,9 @@ afsmtp_dd_init(LogPipe *s)
       self->body_tmpl = log_template_new(cfg, "body");
       log_template_compile(self->body_tmpl, self->body, NULL);
     }
+
+  if (!log_threaded_dest_driver_init_method(s))
+    return FALSE;
 
   log_threaded_dest_driver_start(&self->super);
 

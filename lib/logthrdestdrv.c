@@ -124,9 +124,6 @@ log_threaded_dest_driver_init_method(LogPipe *s)
   LogThrDestDriver *self = (LogThrDestDriver *)s;
   GlobalConfig *cfg = log_pipe_get_config(s);
 
-  if (!log_dest_driver_init_method(s))
-    return FALSE;
-
   if (cfg)
     self->time_reopen = cfg->time_reopen;
 
