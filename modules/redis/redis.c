@@ -294,12 +294,7 @@ redis_dd_init(LogPipe *s)
               evt_tag_int("port", self->port),
               NULL);
 
-  if (!log_threaded_dest_driver_init_method(s))
-    return FALSE;
-
-  log_threaded_dest_driver_start(&self->super);
-
-  return TRUE;
+  return log_threaded_dest_driver_init_method(s);
 }
 
 static void

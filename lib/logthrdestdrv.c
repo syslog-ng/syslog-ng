@@ -142,6 +142,8 @@ log_threaded_dest_driver_init_method(LogPipe *s)
   log_queue_set_counters(self->queue, self->stored_messages,
                          self->dropped_messages);
 
+  log_threaded_dest_driver_start_thread(self);
+
   return TRUE;
 }
 
@@ -216,10 +218,4 @@ log_threaded_dest_driver_init_instance(LogThrDestDriver *self)
   self->super.super.super.deinit = log_threaded_dest_driver_deinit_method;
   self->super.super.super.queue = log_threaded_dest_driver_queue;
   self->super.super.super.free_fn = log_threaded_dest_driver_free;
-}
-
-void
-log_threaded_dest_driver_start(LogThrDestDriver *self)
-{
-  log_threaded_dest_driver_start_thread(self);
 }
