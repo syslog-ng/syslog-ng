@@ -890,6 +890,12 @@ persist_state_free(PersistState *self)
   g_mutex_lock(self->mapped_lock);
   g_assert(self->mapped_counter == 0);
   g_mutex_unlock(self->mapped_lock);
+
+  if (self->fd >= 0)
+    close(self->fd);
+  if (self->current_map)
+    munmap(self->current_map, self->current_size);
+
   g_mutex_free(self->mapped_lock);
   g_cond_free(self->mapped_release_cond);
   g_free(self->temp_filename);
