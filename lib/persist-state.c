@@ -606,6 +606,7 @@ persist_state_load_v4(PersistState *self)
                 }
             }
         }
+      serialize_archive_free(sa);
     }
  free_and_exit:
   munmap(map, file_size);
