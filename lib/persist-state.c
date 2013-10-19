@@ -313,13 +313,15 @@ gboolean
 persist_state_rename_entry(PersistState *self, const gchar *old_key, const gchar *new_key)
 {
   PersistEntry *entry;
+  gpointer old_orig_key;
 
-  entry = g_hash_table_lookup(self->keys, old_key);
-  if (entry)
+  if (g_hash_table_lookup_extended(self->keys, old_key, &old_orig_key, (gpointer *)&entry))
     {
       if (g_hash_table_steal(self->keys, old_key))
         {
+          g_free(old_orig_key);
           g_hash_table_insert(self->keys, g_strdup(new_key), entry);
+          return TRUE;
         }
     }
   return FALSE;
