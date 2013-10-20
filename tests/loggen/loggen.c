@@ -340,7 +340,6 @@ gen_messages(send_data_t send_func, void *send_func_ud, int thread_id, FILE *rea
   struct timeval diff_tv;
   int pos_timestamp1 = 0, pos_timestamp2 = 0, pos_seq = 0;
   int rc, hdr_len = 0;
-  unsigned int counter = 0;
   gint64 sum_linelen = 0;
   char *testsdata = NULL;
 
@@ -398,7 +397,6 @@ gen_messages(send_data_t send_func, void *send_func_ud, int thread_id, FILE *rea
 
   /* NOTE: all threads calculate raw_message_length. This code could use some refactorization. */
   raw_message_length = linelen = strlen(linebuf);
-  counter = 0;
   while (time_val_diff_in_usec(&now, &start) < ((int64_t)interval) * USEC_PER_SEC)
     {
       if(number_of_messages != 0 && count >= number_of_messages)
