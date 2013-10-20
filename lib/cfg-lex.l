@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2011 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
  * Copyright (c) 1998-2011 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -290,7 +290,7 @@ cfg_lexer_unput_string(CfgLexer *self, const char *str)
 void
 cfg_lexer_start_block_state(CfgLexer *self, gchar block_boundary[2])
 {
-  memcpy(&self->block_boundary, block_boundary, sizeof(block_boundary));
+  memcpy(&self->block_boundary, block_boundary, sizeof(gchar[2]));
   yy_push_state(block, self->state);
 }
 
