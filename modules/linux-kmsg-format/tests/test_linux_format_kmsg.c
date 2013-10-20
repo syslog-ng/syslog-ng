@@ -1,3 +1,5 @@
+#include "syslog-ng.h"
+
 #include "testutils.h"
 #include "msg_parse_lib.h"
 #include "apphook.h"
