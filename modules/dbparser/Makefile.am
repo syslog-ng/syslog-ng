@@ -22,6 +22,8 @@ modules_dbparser_libsyslog_ng_patterndb_la_CFLAGS	=	\
 modules_dbparser_libsyslog_ng_patterndb_la_LIBADD	=	\
 	$(MODULE_DEPS_LIBS)					\
 	$(top_builddir)/lib/libsyslog-ng-crypto.la
+modules_dbparser_libsyslog_ng_patterndb_la_DEPENDENCIES	=	\
+	$(MODULE_DEPS_LIBS) lib/libsyslog-ng-crypto.la
 
 module_LTLIBRARIES					+= modules/dbparser/libdbparser.la
 modules_dbparser_libdbparser_la_SOURCES			=	\
