@@ -71,8 +71,8 @@ struct _LogThrDestDriver
   void (*queue_method) (LogThrDestDriver *s);
 };
 
-gboolean log_threaded_dest_driver_init_method(LogPipe *s);
 gboolean log_threaded_dest_driver_deinit_method(LogPipe *s);
+gboolean log_threaded_dest_driver_start(LogPipe *s);
 
 void log_threaded_dest_driver_init_instance(LogThrDestDriver *self);
 void log_threaded_dest_driver_free(LogPipe *s);

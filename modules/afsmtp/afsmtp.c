@@ -485,7 +485,7 @@ afsmtp_dd_init(LogPipe *s)
       log_template_compile(self->body_tmpl, self->body, NULL);
     }
 
-  return log_threaded_dest_driver_init_method(s);
+  return log_threaded_dest_driver_start(s);
 }
 
 static void

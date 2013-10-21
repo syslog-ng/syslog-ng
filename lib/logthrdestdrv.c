@@ -119,7 +119,7 @@ log_threaded_dest_driver_stop_thread(LogThrDestDriver *self)
 }
 
 gboolean
-log_threaded_dest_driver_init_method(LogPipe *s)
+log_threaded_dest_driver_start(LogPipe *s)
 {
   LogThrDestDriver *self = (LogThrDestDriver *)s;
   GlobalConfig *cfg = log_pipe_get_config(s);
@@ -214,7 +214,7 @@ log_threaded_dest_driver_init_instance(LogThrDestDriver *self)
   self->writer_thread_wakeup_cond = g_cond_new();
   self->suspend_mutex = g_mutex_new();
 
-  self->super.super.super.init = log_threaded_dest_driver_init_method;
+  self->super.super.super.init = log_threaded_dest_driver_start;
   self->super.super.super.deinit = log_threaded_dest_driver_deinit_method;
   self->super.super.super.queue = log_threaded_dest_driver_queue;
   self->super.super.super.free_fn = log_threaded_dest_driver_free;

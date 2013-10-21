@@ -373,7 +373,7 @@ afstomp_dd_init(LogPipe *s)
               evt_tag_str("destination", self->destination),
               NULL);
 
-  return log_threaded_dest_driver_init_method(s);
+  return log_threaded_dest_driver_start(s);
 }
 
 static void
