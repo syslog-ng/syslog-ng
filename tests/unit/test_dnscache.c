@@ -144,25 +144,6 @@ test_dns_cache_benchmark(void)
   dns_cache_thread_deinit();
 }
 
-void
-test_inet_ntop_benchmark(void)
-{
-  GTimeVal start, end;
-  gint i;
-  gchar buf[32];
-
-  g_get_current_time(&start);
-  /* run benchmarks */
-  for (i = 0; i < 10000; i++)
-    {
-      guint32 ni = htonl(i % 10000);
-
-      inet_ntop(AF_INET, (void *) &ni, buf, sizeof(buf));
-    }
-  g_get_current_time(&end);
-  printf("inet_ntop speed: %12.3f iters/sec\n", i * 1e6 / g_time_val_diff(&end, &start));
-}
-
 int
 main()
 {
@@ -170,7 +151,6 @@ main()
 
   test_expiration();
   test_dns_cache_benchmark();
-  test_inet_ntop_benchmark();
 
   app_shutdown();
   return 0;
