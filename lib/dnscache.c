@@ -198,6 +198,7 @@ dns_cache_check_hosts(glong t)
       if (hosts)
         {
           gchar buf[4096];
+          char *strtok_saveptr;
           
           while (fgets(buf, sizeof(buf), hosts))
             {
@@ -219,7 +220,7 @@ dns_cache_check_hosts(glong t)
               if (buf[len - 1] == '\n')
                 buf[len-1] = 0;
                 
-              p = strtok(buf, " \t");
+              p = strtok_r(buf, " \t", &strtok_saveptr);
               if (!p)
                 continue;
               ip = p;
@@ -231,7 +232,7 @@ dns_cache_check_hosts(glong t)
 #endif
               family = AF_INET;
                 
-              p = strtok(NULL, " \t");
+              p = strtok_r(NULL, " \t", &strtok_saveptr);
               if (!p)
                 continue;
               inet_pton(family, ip, &ia);
