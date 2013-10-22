@@ -195,7 +195,6 @@ cfg_init(GlobalConfig *cfg)
     msg_error("Error resolving protocol template",
                evt_tag_str("name", cfg->proto_template_name),
                NULL);
-  stats_reinit(cfg);
 
   if (cfg->bad_hostname_re)
     {
@@ -213,6 +212,10 @@ cfg_init(GlobalConfig *cfg)
           cfg->bad_hostname_compiled = TRUE;
         }
     }
+
+  stats_reinit(cfg);
+  log_tags_reinit_stats(cfg);
+
   dns_cache_set_params(cfg->dns_cache_size, cfg->dns_cache_expire, cfg->dns_cache_expire_failed, cfg->dns_cache_hosts);
   dns_cache_thread_init();
   log_proto_register_builtin_plugins(cfg);

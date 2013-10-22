@@ -43,9 +43,11 @@ typedef guint16 LogTagId;
 LogTagId log_tags_get_by_name(const gchar *name);
 const gchar *log_tags_get_by_id(LogTagId id);
 
+void log_tags_reinit_stats(GlobalConfig *cfg);
 void log_tags_global_init(void);
 void log_tags_global_deinit(void);
 
 void log_tags_inc_counter(LogTagId id);
 void log_tags_dec_counter(LogTagId id);
+
 #endif

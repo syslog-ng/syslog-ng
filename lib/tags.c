@@ -83,9 +83,14 @@ log_tags_get_by_name(const gchar *name)
           log_tags_list[id].name = g_strdup(name);
           log_tags_list[id].counter = NULL;
 
+          /* NOTE: stats-level may not be set for calls that happen during
+           * config file parsing, those get fixed up by
+           * log_tags_reinit_stats() below */
+
           stats_lock();
           stats_register_counter(3, SCS_TAG, name, NULL, SC_TYPE_PROCESSED, &log_tags_list[id].counter);
           stats_unlock();
+
           g_hash_table_insert(log_tags_hash, log_tags_list[id].name, GUINT_TO_POINTER(log_tags_list[id].id + 1));
         }
       else
@@ -145,6 +150,36 @@ log_tags_dec_counter(LogTagId id)
     stats_counter_dec(log_tags_list[id].counter);
 
   g_static_mutex_unlock(&log_tags_lock);
+}
+
+/*
+ * NOTE: this is called at cfg_init() time to update the set of counters we
+ * have.  If stats-level is decreased, we should unregister everything we
+ * had earlier. If increased we need to register them again.
+ *
+ * log_tags_get_by_name() will also try to register the counter for calls
+ * that are _after_ cfg_init().  Early calls to log_tags_get_by_name() will
+ * not see a proper stats-level() in the global variable here.  Those will
+ * get handled by this function.
+ */
+void
+log_tags_reinit_stats(GlobalConfig *cfg)
+{
+  gint id;
+
+  stats_lock();
+
+  for (id = 0; id < log_tags_num; id++)
+    {
+      const gchar *name = log_tags_list[id].name;
+
+      if (stats_check_level(3))
+        stats_register_counter(3, SCS_TAG, name, NULL, SC_TYPE_PROCESSED, &log_tags_list[id].counter);
+      else
+        stats_unregister_counter(SCS_TAG, name, NULL, SC_TYPE_PROCESSED, &log_tags_list[id].counter);
+    }
+
+  stats_unlock();
 }
 
 void
