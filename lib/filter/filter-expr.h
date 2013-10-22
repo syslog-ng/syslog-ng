@@ -42,6 +42,13 @@ struct _FilterExprNode
   void (*free_fn)(FilterExprNode *self);
 };
 
+static inline void
+filter_expr_init(FilterExprNode *self, GlobalConfig *cfg)
+{
+  if (self->init)
+    self->init(self, cfg);
+}
+
 gboolean filter_expr_eval(FilterExprNode *self, LogMessage *msg);
 gboolean filter_expr_eval_with_context(FilterExprNode *self, LogMessage **msgs, gint num_msg);
 gboolean filter_expr_eval_root(FilterExprNode *self, LogMessage **msg, const LogPathOptions *path_options);
