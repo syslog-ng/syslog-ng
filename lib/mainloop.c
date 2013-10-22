@@ -790,7 +790,6 @@ main_loop_run(void)
 
   control_destroy();
 
-  cfg_deinit(current_configuration);
   cfg_free(current_configuration);
   current_configuration = NULL;
   return 0;
