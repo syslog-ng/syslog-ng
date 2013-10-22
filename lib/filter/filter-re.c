@@ -101,7 +101,7 @@ filter_re_new(NVHandle value_handle)
 {
   FilterRE *self = g_new0(FilterRE, 1);
 
-  filter_expr_node_init(&self->super);
+  filter_expr_node_init_instance(&self->super);
   self->value_handle = value_handle;
   self->super.eval = filter_re_eval;
   self->super.free_fn = filter_re_free;
@@ -145,7 +145,7 @@ filter_match_new()
 {
   FilterRE *self = g_new0(FilterRE, 1);
 
-  filter_expr_node_init(&self->super);
+  filter_expr_node_init_instance(&self->super);
   self->super.free_fn = filter_re_free;
   self->super.eval = filter_match_eval;
   return &self->super;

@@ -51,7 +51,7 @@ filter_tags_new(GList *tags)
 {
   FilterTags *self = g_new0(FilterTags, 1);
 
-  filter_expr_node_init(&self->super);
+  filter_expr_node_init_instance(&self->super);
   self->tags = g_array_new(FALSE, FALSE, sizeof(LogTagId));
 
   filter_tags_add(&self->super, tags);

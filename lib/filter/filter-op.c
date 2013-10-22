@@ -53,7 +53,7 @@ fop_free(FilterExprNode *s)
 static void
 fop_init_instance(FilterOp *self)
 {
-  filter_expr_node_init(&self->super);
+  filter_expr_node_init_instance(&self->super);
   self->super.init = fop_init;
   self->super.free_fn = fop_free;
 }

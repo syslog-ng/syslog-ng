@@ -78,7 +78,7 @@ filter_in_list_new(const gchar *list_file, const gchar *property)
     }
 
   self = g_new0(FilterInList, 1);
-  filter_expr_node_init(&self->super);
+  filter_expr_node_init_instance(&self->super);
   self->value_handle = log_msg_get_value_handle(property);
   self->tree = g_tree_new((GCompareFunc) strcmp);
 

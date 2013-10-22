@@ -89,7 +89,7 @@ filter_call_new(gchar *rule, GlobalConfig *cfg)
 {
   FilterCall *self = g_new0(FilterCall, 1);
 
-  filter_expr_node_init(&self->super);
+  filter_expr_node_init_instance(&self->super);
   self->super.init = filter_call_init;
   self->super.eval = filter_call_eval;
   self->super.free_fn = filter_call_free;

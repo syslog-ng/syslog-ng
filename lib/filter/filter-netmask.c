@@ -67,7 +67,7 @@ filter_netmask_new(gchar *cidr)
   gchar buf[32];
   gchar *slash;
 
-  filter_expr_node_init(&self->super);
+  filter_expr_node_init_instance(&self->super);
   slash = strchr(cidr, '/');
   if (strlen(cidr) >= sizeof(buf) || !slash)
     {

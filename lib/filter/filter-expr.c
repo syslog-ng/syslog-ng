@@ -30,7 +30,7 @@
  ****************************************************************/
 
 void
-filter_expr_node_init(FilterExprNode *self)
+filter_expr_node_init_instance(FilterExprNode *self)
 {
   self->ref_cnt = 1;
 }

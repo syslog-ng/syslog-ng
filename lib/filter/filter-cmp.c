@@ -102,7 +102,7 @@ fop_cmp_new(LogTemplate *left, LogTemplate *right, gint op)
 {
   FilterCmp *self = g_new0(FilterCmp, 1);
 
-  filter_expr_node_init(&self->super);
+  filter_expr_node_init_instance(&self->super);
   self->super.eval = fop_cmp_eval;
   self->super.free_fn = fop_cmp_free;
   self->left = left;
