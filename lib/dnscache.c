@@ -341,6 +341,7 @@ dns_cache_set_params(gint cache_size, gint expire, gint expire_failed, const gch
 void
 dns_cache_thread_init(void)
 {
+  g_assert(cache == NULL);
   cache = g_hash_table_new_full((GHashFunc) dns_cache_key_hash, (GEqualFunc) dns_cache_key_equal, NULL, (GDestroyNotify) dns_cache_entry_free);
   cache_first.next = &cache_last;
   cache_first.prev = NULL;
@@ -358,7 +359,9 @@ dns_cache_thread_init(void)
 void
 dns_cache_thread_deinit(void)
 {
+  g_assert(cache != NULL);
   g_hash_table_destroy(cache);
+  cache = NULL;
 }
 
 void
