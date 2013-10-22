@@ -1,4 +1,5 @@
 %.y: %.ym $(syslog_ng_tools)/merge-grammar.pl $(syslog_ng_tools)/cfg-grammar.y
+	$(mkinstalldirs) $(dir $@)
 	$(AM_V_GEN) $(syslog_ng_tools)/merge-grammar.pl $< > $@
 
 .l.c:
