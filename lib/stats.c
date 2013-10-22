@@ -589,7 +589,7 @@ stats_reinit(GlobalConfig *cfg)
       for (i = 0; i < FACILITY_MAX - 1; i++)
         {
           g_snprintf(name, sizeof(name), "%" G_GUINT16_FORMAT, i);
-          stats_unregister_counter(SCS_FACILITY | SCS_SOURCE, NULL, "other", SC_TYPE_PROCESSED, &facility_counters[i]);
+          stats_unregister_counter(SCS_FACILITY | SCS_SOURCE, NULL, name, SC_TYPE_PROCESSED, &facility_counters[i]);
         }
       stats_unregister_counter(SCS_FACILITY | SCS_SOURCE, NULL, "other", SC_TYPE_PROCESSED, &facility_counters[FACILITY_MAX - 1]);
     }
