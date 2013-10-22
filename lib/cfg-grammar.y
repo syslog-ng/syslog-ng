@@ -479,6 +479,15 @@ dest_stmt
 filter_stmt
         : KW_FILTER string '{' filter_content '}'
           {
+            /* NOTE: the filter() subexpression (e.g. the one that invokes
+             * one filter expression from another) depends on the layout
+             * parsed into the cfg-tree when looking up the referenced
+             * filter expression.  So when changing how a filter statement
+             * is transformed into the cfg-tree, make sure you check
+             * filter-call.c, especially filter_call_init() function as
+             * well.
+             */
+
             $$ = log_expr_node_new_filter($2, $4, &@1);
             free($2);
           }

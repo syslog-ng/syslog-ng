@@ -64,8 +64,10 @@ filter_call_init(FilterExprNode *s, GlobalConfig *cfg)
        * filter rule has a single child, which contains a LogFilterPipe
        * instance as its object. */
 
+      LogFilterPipe *filter_pipe = (LogFilterPipe *) rule->children->object;
 
-      self->filter_expr = ((LogFilterPipe *) rule->children->object)->expr;
+      self->filter_expr = filter_expr_ref(filter_pipe->expr);
+      filter_expr_init(self->filter_expr, cfg);
     }
   else
     {
@@ -80,6 +82,7 @@ filter_call_free(FilterExprNode *s)
 {
   FilterCall *self = (FilterCall *) s;
 
+  filter_expr_unref(self->filter_expr);
   g_free((gchar *) self->super.type);
   g_free(self->rule);
 }
