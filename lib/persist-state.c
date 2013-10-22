@@ -25,7 +25,6 @@
 #include "persist-state.h"
 #include "serialize.h"
 #include "messages.h"
-#include "mainloop.h"
 #include "misc.h"
 
 #include <sys/types.h>
@@ -338,7 +337,6 @@ persist_state_add_key(PersistState *self, const gchar *key, PersistEntryHandle h
   gboolean new_block_created = FALSE;
   SerializeArchive *sa;
 
-  main_loop_assert_main_thread();
   g_assert(key[0] != 0);
 
   entry = g_new(PersistEntry, 1);
