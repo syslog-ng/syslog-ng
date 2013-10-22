@@ -1154,7 +1154,7 @@ main(int argc, char *argv[])
   stats_init();
   log_msg_global_init();
   log_template_global_init();
-  log_tags_init();
+  log_tags_global_init();
   pattern_db_global_init();
 
   configuration = cfg_new(VERSION_VALUE);
@@ -1176,7 +1176,7 @@ main(int argc, char *argv[])
 
   ret = modes[mode].main(argc, argv);
   stats_destroy();
-  log_tags_deinit();
+  log_tags_global_deinit();
   log_msg_global_deinit();
 
   cfg_free(configuration);

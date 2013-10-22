@@ -148,7 +148,7 @@ log_tags_dec_counter(LogTagId id)
 }
 
 void
-log_tags_init(void)
+log_tags_global_init(void)
 {
   /* Necessary only in case of reinitialized tags */
   g_static_mutex_lock(&log_tags_lock);
@@ -164,7 +164,7 @@ log_tags_init(void)
 }
 
 void
-log_tags_deinit(void)
+log_tags_global_deinit(void)
 {
   gint i;
 

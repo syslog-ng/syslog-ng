@@ -432,7 +432,7 @@ main()
 
   frequent_words_tests();
   find_clusters_slct_tests();
-  log_tags_deinit();
+  log_tags_global_deinit();
 
   return  (fail ? 1 : 0);
 

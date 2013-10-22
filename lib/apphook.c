@@ -144,7 +144,7 @@ app_startup(void)
   stats_init();
   tzset();
   log_msg_global_init();
-  log_tags_init();
+  log_tags_global_init();
   log_source_global_init();
   log_template_global_init();
 }
@@ -172,7 +172,7 @@ app_shutdown(void)
 {
   run_application_hook(AH_SHUTDOWN);
   log_template_global_deinit();
-  log_tags_deinit();
+  log_tags_global_deinit();
   log_msg_global_deinit();
 
   stats_destroy();
