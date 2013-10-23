@@ -122,6 +122,8 @@ log_json_parser_process_single (struct json_object *jso,
           }
         break;
       }
+    case json_type_null:
+      break;
     default:
       msg_error ("JSON parser encountered an unknown type, skipping",
                  evt_tag_str ("key", obj_key), NULL);
