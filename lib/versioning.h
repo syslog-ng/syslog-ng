@@ -96,11 +96,12 @@
 #define VERSION_3_3 "syslog-ng 3.3"
 #define VERSION_3_4 "syslog-ng 3.4"
 #define VERSION_3_5 "syslog-ng 3.5"
+#define VERSION_3_6 "syslog-ng 3.6"
 
 /* config version code, in the same format as GlobalConfig->version */
-#define VERSION_VALUE   0x0305
-#define VERSION_CURRENT VERSION_3_5
-#define VERSION_CURRENT_VER_ONLY "3.5"
+#define VERSION_VALUE   0x0306
+#define VERSION_CURRENT VERSION_3_6
+#define VERSION_CURRENT_VER_ONLY "3.6"
 
 #define version_convert_from_user(v)  (v)
 
