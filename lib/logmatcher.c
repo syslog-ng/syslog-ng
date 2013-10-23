@@ -919,7 +919,21 @@ log_matcher_options_init(LogMatcherOptions *options, GlobalConfig *cfg)
 {
   if (!options->type)
     {
-      if (!log_matcher_options_set_type(options, "posix"))
+      const gchar *default_matcher = "pcre";
+
+      if (cfg_is_config_version_older(cfg, 0x0306))
+        {
+          static gboolean warn_printed = FALSE;
+
+          if (!warn_printed)
+            {
+              msg_warning("WARNING: syslog-ng changed the default regexp implementation to PCRE starting from " VERSION_3_6 ", please ensure your regexp works with PCRE or please specify type(\"posix\") in filters explicitly",
+                          NULL);
+              warn_printed = TRUE;
+            }
+          default_matcher = "posix";
+        }
+      if (!log_matcher_options_set_type(options, default_matcher))
         g_assert_not_reached();
     }
 }
