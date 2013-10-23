@@ -27,6 +27,8 @@
 #include "driver.h"
 #include "logreader.h"
 #include "file-perms.h"
+#include "logproto/logproto-regexp-multiline-server.h"
+
 
 enum
 {
@@ -47,15 +49,15 @@ typedef struct _AFFileSourceDriver
   gboolean is_pipe:1,
     is_privileged:1;
   gint multi_line_mode;
-  regex_t *multi_line_prefix, *multi_line_garbage;
+  MultiLineRegexp *multi_line_prefix, *multi_line_garbage;
   /* state information to follow a set of files using a wildcard expression */
 } AFFileSourceDriver;
 
 LogDriver *affile_sd_new(gchar *filename);
 LogDriver *afpipe_sd_new(gchar *filename);
 
-void affile_sd_set_multi_line_prefix(LogDriver *s, regex_t *prefix);
-void affile_sd_set_multi_line_garbage(LogDriver *s, regex_t *garbage);
+gboolean affile_sd_set_multi_line_prefix(LogDriver *s, const gchar *prefix_regexp, GError **error);
+gboolean affile_sd_set_multi_line_garbage(LogDriver *s, const gchar *garbage_regexp, GError **error);
 gboolean affile_sd_set_multi_line_mode(LogDriver *s, const gchar *mode);
 void affile_sd_set_follow_freq(LogDriver *s, gint follow_freq);
 

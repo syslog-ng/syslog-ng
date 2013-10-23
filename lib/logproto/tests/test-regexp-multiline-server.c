@@ -7,16 +7,6 @@
  * LogProtoREMultiLineServer
  ****************************************************************************************/
 
-static regex_t *
-compile_regex(const gchar *re)
-{
-  regex_t *preg = g_new(regex_t, 1);
-
-  if (regcomp(preg, re, REG_EXTENDED) < 0)
-    g_assert_not_reached();
-  return preg;
-}
-
 static void
 test_lines_separated_with_prefix(gboolean input_is_stream)
 {
@@ -36,7 +26,7 @@ test_lines_separated_with_prefix(gboolean input_is_stream)
               LTM_PADDING,
               LTM_EOF),
             get_inited_proto_server_options(),
-            compile_regex("^Foo"), NULL);
+            multi_line_regexp_compile("^Foo", NULL), NULL);
 
   assert_proto_server_fetch(proto, "Foo First Line", -1);
   assert_proto_server_fetch(proto, "Foo Second Line", -1);
@@ -65,7 +55,7 @@ test_lines_separated_with_prefix_and_garbage(gboolean input_is_stream)
               LTM_PADDING,
               LTM_EOF),
             get_inited_proto_server_options(),
-            compile_regex("^Foo"), compile_regex(" Bar$"));
+            multi_line_regexp_compile("^Foo", NULL), multi_line_regexp_compile(" Bar$", NULL));
 
   assert_proto_server_fetch(proto, "Foo First Line", -1);
   assert_proto_server_fetch(proto, "Foo Second Line", -1);
@@ -94,7 +84,7 @@ test_lines_separated_with_garbage(gboolean input_is_stream)
               LTM_PADDING,
               LTM_EOF),
             get_inited_proto_server_options(),
-            NULL, compile_regex(" Bar$"));
+            NULL, multi_line_regexp_compile(" Bar$", NULL));
 
   assert_proto_server_fetch(proto, "Foo First Line", -1);
   assert_proto_server_fetch(proto, "Foo Second Line", -1);
@@ -123,7 +113,7 @@ test_first_line_without_prefix(gboolean input_is_stream)
               LTM_PADDING,
               LTM_EOF),
             get_inited_proto_server_options(),
-            compile_regex("^Foo"), NULL);
+            multi_line_regexp_compile("^Foo", NULL), NULL);
 
   assert_proto_server_fetch(proto, "First Line", -1);
   assert_proto_server_fetch(proto, "Foo Second Line", -1);

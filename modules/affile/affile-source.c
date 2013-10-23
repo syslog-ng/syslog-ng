@@ -33,7 +33,6 @@
 #include "logproto/logproto-text-server.h"
 #include "logproto/logproto-dgram-server.h"
 #include "logproto/logproto-indented-multiline-server.h"
-#include "logproto/logproto-regexp-multiline-server.h"
 #include "logproto-linux-proc-kmsg-reader.h"
 #include "poll-fd-events.h"
 #include "poll-file-changes.h"
@@ -63,30 +62,22 @@ affile_sd_set_multi_line_mode(LogDriver *s, const gchar *mode)
   return TRUE;
 }
 
-static void
-free_regex_t(regex_t *regex)
-{
-  regfree(regex);
-  g_free(regex);
-}
-
-void
-affile_sd_set_multi_line_prefix(LogDriver *s, regex_t *prefix)
+gboolean
+affile_sd_set_multi_line_prefix(LogDriver *s, const gchar *prefix_regexp, GError **error)
 {
   AFFileSourceDriver *self = (AFFileSourceDriver *) s;
 
-  if (self->multi_line_prefix)
-    free_regex_t(self->multi_line_prefix);
-  self->multi_line_prefix = prefix;
+  self->multi_line_prefix = multi_line_regexp_compile(prefix_regexp, error);
+  return self->multi_line_prefix != NULL;
 }
 
-void
-affile_sd_set_multi_line_garbage(LogDriver *s, regex_t *garbage)
+gboolean
+affile_sd_set_multi_line_garbage(LogDriver *s, const gchar *garbage_regexp, GError **error)
 {
   AFFileSourceDriver *self = (AFFileSourceDriver *) s;
 
-  if (self->multi_line_garbage)
-    free_regex_t(self->multi_line_garbage);
+  self->multi_line_garbage = multi_line_regexp_compile(garbage_regexp, error);
+  return self->multi_line_garbage != NULL;
 }
 
 void
@@ -447,10 +438,8 @@ affile_sd_free(LogPipe *s)
 
   log_reader_options_destroy(&self->reader_options);
 
-  if (self->multi_line_prefix)
-    free_regex_t(self->multi_line_prefix);
-  if (self->multi_line_garbage)
-    free_regex_t(self->multi_line_garbage);
+  multi_line_regexp_free(self->multi_line_prefix);
+  multi_line_regexp_free(self->multi_line_garbage);
 
   log_src_driver_free(s);
 }
