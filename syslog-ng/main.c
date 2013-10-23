@@ -144,16 +144,14 @@ version(void)
          "Enable-IPv6: %s\n"
          "Enable-Spoof-Source: %s\n"
          "Enable-TCP-Wrapper: %s\n"
-         "Enable-Linux-Caps: %s\n"
-         "Enable-Pcre: %s\n",
+         "Enable-Linux-Caps: %s\n",
          ON_OFF_STR(ENABLE_DEBUG),
          ON_OFF_STR(ENABLE_GPROF),
          ON_OFF_STR(ENABLE_MEMTRACE),
          ON_OFF_STR(ENABLE_IPV6),
          ON_OFF_STR(ENABLE_SPOOF_SOURCE),
          ON_OFF_STR(ENABLE_TCP_WRAPPER),
-         ON_OFF_STR(ENABLE_LINUX_CAPS),
-         ON_OFF_STR(ENABLE_PCRE));
+         ON_OFF_STR(ENABLE_LINUX_CAPS));
 
 }
 

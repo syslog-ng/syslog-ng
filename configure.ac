@@ -151,10 +151,6 @@ AC_ARG_ENABLE(linux-caps,
               [  --enable-linux-caps     Enable support for managing Linux capabilities (default: auto)]
               ,,enable_linux_caps="auto")
 
-AC_ARG_ENABLE(pcre,
-              [  --enable-pcre           Enable support for Perl Compatible Regular Expressions (default: auto)]
-              ,,enable_pcre="auto")
-
 AC_ARG_ENABLE(gcov,
               [  --enable-gcov           Enable coverage profiling (default: no)]
               ,,enable_gcov="no")
@@ -681,42 +677,21 @@ dnl ***************************************************************************
 dnl pcre headers/libraries
 dnl ***************************************************************************
 
-if test "x$enable_pcre" = "xyes" -o "x$enable_pcre" = "xauto"; then
-	if test "x$linking_mode" = "xmixed"; then
+if test "x$linking_mode" = "xmixed"; then
 
-		# check if we have a pcre bundled in glib. In case glib is
-		# dynamic it doesn't matter as glib doesn't export those
-		# symbols.  But in case glib is static, linking it through
-		# glib and through libpcre would clash.
-		old_LIBS="$LIBS"
-		LIBS="$LD_START_STATIC $GLIB_LIBS $LD_END_STATIC $LIBS"
-		AC_CHECK_FUNC(pcre_compile2, AC_MSG_ERROR([You cannot use a GLib embedded PCRE in mixed linking mode]))
-		LIBS="$old_LIBS"
-	fi
-
-	PKG_CHECK_MODULES(PCRE, libpcre >= $PCRE_MIN_VERSION,, PCRE_LIBS="")
-	if test -z "$PCRE_LIBS"; then
-		if test "x$enable_pcre" = "xyes"; then
-			AC_MSG_ERROR(Cannot find pcre version >= $PCRE_MIN_VERSION.)
-		else
-			AC_MSG_WARN(Cannot find pcre version >= $PCRE_MIN_VERSION. pcre support disabled.)
-		fi
-	fi
+	# check if we have a pcre bundled in glib. In case glib is
+        # dynamic it doesn't matter as glib doesn't export those
+        # symbols.  But in case glib is static, linking it through
+        # glib and through libpcre would clash.
+        old_LIBS="$LIBS"
+        LIBS="$LD_START_STATIC $GLIB_LIBS $LD_END_STATIC $LIBS"
+        AC_CHECK_FUNC(pcre_compile2, AC_MSG_ERROR([You cannot use a GLib embedded PCRE in mixed linking mode]))
+        LIBS="$old_LIBS"
 fi
 
+PKG_CHECK_MODULES(PCRE, libpcre >= $PCRE_MIN_VERSION,, PCRE_LIBS="")
 if test -z "$PCRE_LIBS"; then
-	PCRE_LIBS=""
-	PCRE_CFLAGS=""
-fi
-
-if test "x$enable_pcre" = "xauto"; then
-        AC_MSG_CHECKING(whether to enable PCRE support)
-        if test "x$PCRE_LIBS" != "x"; then
-                enable_pcre="yes"
-        else
-                enable_pcre="no"
-        fi
-        AC_MSG_RESULT([$enable_pcre])
+	AC_MSG_ERROR(Cannot find pcre version >= $PCRE_MIN_VERSION it is a hard dependency from syslog-ng 3.6 onwards)
 fi
 
 dnl ***************************************************************************
@@ -1201,7 +1176,6 @@ AC_DEFINE_UNQUOTED(ENABLE_SPOOF_SOURCE, `enable_value $enable_spoof_source`, [En
 AC_DEFINE_UNQUOTED(ENABLE_IPV6, `enable_value $enable_ipv6`, [Enable IPv6 support])
 AC_DEFINE_UNQUOTED(ENABLE_TCP_WRAPPER, `enable_value $enable_tcp_wrapper`, [Enable TCP wrapper support])
 AC_DEFINE_UNQUOTED(ENABLE_LINUX_CAPS, `enable_value $enable_linux_caps`, [Enable Linux capability management support])
-AC_DEFINE_UNQUOTED(ENABLE_PCRE, `enable_value $enable_pcre`, [Enable PCRE support])
 AC_DEFINE_UNQUOTED(ENABLE_ENV_WRAPPER, `enable_value $enable_env_wrapper`, [Enable environment wrapper support])
 AC_DEFINE_UNQUOTED(ENABLE_SYSTEMD, `enable_value $enable_systemd`, [Enable systemd support])
 
@@ -1302,7 +1276,6 @@ echo "  IPV6 support                : ${enable_ipv6:=no}"
 echo "  spoof-source support        : ${enable_spoof_source:=no}"
 echo "  tcp-wrapper support         : ${enable_tcp_wrapper:=no}"
 echo "  Linux capability support    : ${enable_linux_caps:=no}"
-echo "  PCRE support                : ${enable_pcre:=no}"
 echo "  Env wrapper support         : ${enable_env_wrapper:=no}"
 echo "  systemd support             : ${enable_systemd:=no} (unit dir: ${systemdsystemunitdir:=none})"
 echo " Modules:"

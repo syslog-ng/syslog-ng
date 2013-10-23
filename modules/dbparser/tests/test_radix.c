@@ -305,9 +305,7 @@ test_parsers(void)
   insert_node(root, "AAA@MACADDR@AAA");
 
   printf("We excpect an error message\n");
-#if ENABLE_PCRE
   insert_node(root, "AAA@PCRE:set@AAA");
-#endif
 
   test_search_value(root, "a@", NULL);
   test_search_value(root, "a@NUMBER@aa@@", "a@@NUMBER@@aa@@@@");
@@ -354,10 +352,8 @@ test_matches(void)
   insert_node(root, "kkk @HOSTNAME:hostname@");
   insert_node(root, "lll @LLADDR:lladdr6:6@");
 
-#if ENABLE_PCRE
   insert_node(root, "jjj @PCRE:regexp:[abc]+@");
   insert_node(root, "jjjj @PCRE:regexp:[abc]+@d foobar");
-#endif
 
   test_search_matches(root, "aaa 12345 hihihi",
                       "number", "12345",
@@ -630,10 +626,8 @@ test_matches(void)
   test_search_matches(root, "ggg 	aaa", "set", "	", NULL);
   test_search_matches(root, "iii 82:63:25:93:eb:51.iii", "macaddr", "82:63:25:93:eb:51", NULL);
   test_search_matches(root, "iii 82:63:25:93:EB:51.iii", "macaddr", "82:63:25:93:EB:51", NULL);
-#if ENABLE_PCRE
   test_search_matches(root, "jjj abcabcd", "regexp", "abcabc", NULL);
   test_search_matches(root, "jjjj abcabcd foobar", "regexp", "abcabc", NULL);
-#endif
   test_search_matches(root, "hhh blint@balabit.hu","email", "blint@balabit.hu", NULL);
   test_search_matches(root, "hhh <blint@balabit.hu>","email", "blint@balabit.hu", NULL);
   test_search_matches(root, "hhh [blint@balabit.hu]","email", "blint@balabit.hu", NULL);

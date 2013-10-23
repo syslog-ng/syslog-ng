@@ -165,7 +165,6 @@ main()
   testcase_match("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: \xe1rv\xedzt\xfbr\xf5t\xfck\xf6rf\xfar\xf3g\xe9p", "\xe1rv\xed*", FALSE, construct_matcher(0, log_matcher_glob_new));
 
 
-#if ENABLE_PCRE
   testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép", "árvíz", "favíz", "favíztűrőtükörfúrógép", construct_matcher(0, log_matcher_pcre_re_new));
   testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép", "^tűrő", "faró", "árvíztűrőtükörfúrógép", construct_matcher(0, log_matcher_pcre_re_new));
   testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép", "tűrő", "", "árvíztükörfúrógép", construct_matcher(0, log_matcher_pcre_re_new));
@@ -187,7 +186,6 @@ main()
   /* this tests a pcre 8.12 incompatibility */
 
   testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: wikiwiki", "([[:digit:]]{1,3}\\.){3}[[:digit:]]{1,3}", "foo", "wikiwiki", construct_matcher(LMF_GLOBAL, log_matcher_pcre_re_new));
-#endif
 
   return 0;
 }

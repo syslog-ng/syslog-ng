@@ -28,9 +28,7 @@
 #include "misc.h"
 
 #include <string.h>
-#if ENABLE_PCRE
 #include <pcre.h>
-#endif
 
 static void
 log_matcher_init(LogMatcher *self, const LogMatcherOptions *options)
@@ -477,8 +475,6 @@ log_matcher_glob_new(const LogMatcherOptions *options)
   return &self->super;
 }
 
-#if ENABLE_PCRE
-
 /* libpcre support */
 
 typedef struct _LogMatcherPcreRe
@@ -803,7 +799,6 @@ log_matcher_pcre_re_new(const LogMatcherOptions *options)
   self->super.free_fn = log_matcher_pcre_re_free;
   return &self->super;
 }
-#endif
 
 typedef LogMatcher *(*LogMatcherConstructFunc)(const LogMatcherOptions *options);
 
@@ -812,9 +807,7 @@ struct {
   LogMatcherConstructFunc construct;
 } matcher_types[] =
 {
-#if ENABLE_PCRE
   { "pcre", log_matcher_pcre_re_new },
-#endif
   { "posix", log_matcher_posix_re_new },
   { "string", log_matcher_string_new },
   { "glob", log_matcher_glob_new },

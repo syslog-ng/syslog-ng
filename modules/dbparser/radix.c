@@ -26,9 +26,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#if ENABLE_PCRE
 #include <pcre.h>
-#endif
 
 /**************************************************************
  * Parsing nodes.
@@ -111,8 +109,6 @@ r_parser_estring(guint8 *str, gint *len, const gchar *param, gpointer state, RPa
     return FALSE;
 }
 
-#if ENABLE_PCRE
-
 typedef struct _RParserPCREState
 {
   pcre *re;
@@ -181,7 +177,6 @@ r_parser_pcre_free_state(gpointer s)
     pcre_free(self->extra);
   g_free(self);
 }
-#endif
 
 gboolean
 r_parser_anystring(guint8 *str, gint *len, const gchar *param, gpointer state, RParserMatch *match)
@@ -622,7 +617,6 @@ r_new_pnode(guint8 *key)
         }
 
     }
-#if ENABLE_PCRE
   else if (strcmp(params[0], "PCRE") == 0)
     {
       parser_node->parse = r_parser_pcre;
@@ -641,7 +635,6 @@ r_new_pnode(guint8 *key)
           parser_node = NULL;
         }
     }
-#endif
   else if (strcmp(params[0], "ANYSTRING") == 0)
     {
       parser_node->parse = r_parser_anystring;

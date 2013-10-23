@@ -75,7 +75,6 @@ create_posix_regexp_match(gchar* regexp, gint flags)
   return compile_pattern(filter_match_new(), regexp, "posix", flags);
 }
 
-#if ENABLE_PCRE
 FilterExprNode *
 create_pcre_regexp_filter(gint field, gchar* regexp, gint flags)
 {
@@ -87,7 +86,6 @@ create_pcre_regexp_match(gchar* regexp, gint flags)
 {
   return compile_pattern(filter_match_new(), regexp, "pcre", flags);
 }
-#endif
 
 LogTemplate *
 create_template(const gchar *template)
@@ -348,7 +346,6 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase_with_backref_chk("<15>Oct 15 16:17:01 host openvpn[2499]: al fa", create_posix_regexp_filter(LM_V_MESSAGE, "(a)(l) (fa)", LMF_STORE_MATCHES), 1, "232", NULL);
 
 
-#if ENABLE_PCRE
   testcase("<15> openvpn[2499]: PTHREAD support initialized", create_pcre_regexp_filter(LM_V_PROGRAM, "^openvpn$", 0), 1);
   testcase("<15> openvpn[2499]: PTHREAD support initialized", create_pcre_regexp_filter(LM_V_PROGRAM, "^open$", 0), 0);
   TEST_ASSERT(create_pcre_regexp_filter(LM_V_PROGRAM, "((", 0) == NULL);
@@ -392,7 +389,6 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase_with_backref_chk("<15>Oct 15 16:17:01 host openvpn[2499]: al fa", create_pcre_regexp_filter(LM_V_MESSAGE, "(a)(l) (fa)", LMF_STORE_MATCHES), 1, "2","l");
   testcase_with_backref_chk("<15>Oct 15 16:17:01 host openvpn[2499]: al fa", create_pcre_regexp_filter(LM_V_MESSAGE, "(a)(l) (fa)", LMF_STORE_MATCHES), 1, "0","al fa");
   testcase_with_backref_chk("<15>Oct 15 16:17:01 host openvpn[2499]: al fa", create_pcre_regexp_filter(LM_V_MESSAGE, "(a)(l) (fa)", LMF_STORE_MATCHES), 1, "233",NULL);
-#endif
 
   app_shutdown();
   return 0;
