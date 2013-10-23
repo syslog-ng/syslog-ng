@@ -130,10 +130,10 @@ log_rewrite_subst_process(LogRewrite *s, LogMessage **pmsg, const LogPathOptions
 
   value = log_msg_get_value(*pmsg, self->super.value_handle, &length);
 
+  log_msg_make_writable(pmsg, path_options);
   new_value = log_matcher_replace(self->matcher, *pmsg, self->super.value_handle, value, length, self->replacement, &new_length);
   if (new_value)
     {
-      log_msg_make_writable(pmsg, path_options);
       log_msg_set_value(*pmsg, self->super.value_handle, new_value, new_length);
     }
   g_free(new_value);
