@@ -46,30 +46,48 @@ level_range(gchar *from, gchar *to)
 }
 
 FilterExprNode *
-create_posix_regexp_filter(NVHandle value, gchar* regexp, gint flags)
+compile_pattern(FilterRE *f, gchar *regexp, const gchar *type, gint flags)
 {
-  FilterRE *f;
-  f = (FilterRE*)filter_re_new(value);
-  filter_re_set_matcher(f, log_matcher_posix_re_new());
-  filter_re_set_flags(f, flags);
-  if (filter_re_set_regexp(f, regexp))
+  gboolean result;
+
+  log_matcher_options_defaults(&f->matcher_options);
+  f->matcher_options.flags = flags;
+  log_matcher_options_set_type(&f->matcher_options, type);
+
+  result = filter_re_compile_pattern(f, configuration, regexp, NULL);
+
+  if (result)
     return &f->super;
-  else
-    return NULL;
+
+  filter_expr_unref(&f->super);
+  return NULL;
+}
+
+FilterExprNode *
+create_posix_regexp_filter(NVHandle handle, gchar *regexp, gint flags)
+{
+  return compile_pattern(filter_re_new(handle), regexp, "posix", flags);
 }
 
 FilterExprNode *
 create_posix_regexp_match(gchar* regexp, gint flags)
 {
-  FilterRE *f;
-  f = (FilterRE*)filter_match_new();
-  filter_re_set_matcher(f, log_matcher_posix_re_new());
-  filter_re_set_flags(f, flags);
-  if (filter_re_set_regexp(f, regexp))
-    return &f->super;
-  else
-    return NULL;
+  return compile_pattern(filter_match_new(), regexp, "posix", flags);
 }
+
+#if ENABLE_PCRE
+FilterExprNode *
+create_pcre_regexp_filter(gint field, gchar* regexp, gint flags)
+{
+  return compile_pattern(filter_re_new(field), regexp, "pcre", flags);
+}
+
+FilterExprNode *
+create_pcre_regexp_match(gchar* regexp, gint flags)
+{
+  return compile_pattern(filter_match_new(), regexp, "pcre", flags);
+}
+#endif
 
 LogTemplate *
 create_template(const gchar *template)
@@ -81,33 +99,6 @@ create_template(const gchar *template)
   return t;
 }
 
-#if ENABLE_PCRE
-FilterExprNode *
-create_pcre_regexp_filter(gint field, gchar* regexp, gint flags)
-{
-  FilterRE *f;
-  f = (FilterRE*)filter_re_new(field);
-  filter_re_set_matcher(f, log_matcher_pcre_re_new());
-  filter_re_set_flags(f, flags);
-  if (filter_re_set_regexp(f, regexp))
-    return &f->super;
-  else
-    return NULL;
-}
-
-FilterExprNode *
-create_pcre_regexp_match(gchar* regexp, gint flags)
-{
-  FilterRE *f;
-  f = (FilterRE*)filter_match_new();
-  filter_re_set_matcher(f, log_matcher_pcre_re_new());
-  filter_re_set_flags(f, flags);
-  if (filter_re_set_regexp(f, regexp))
-    return &f->super;
-  else
-    return NULL;
-}
-#endif
 
 void
 testcase(gchar *msg,
@@ -285,13 +276,11 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 
   testcase("<15> openvpn[2499]: PTHREAD support initialized", create_posix_regexp_filter(LM_V_PROGRAM, "^openvpn$", 0), 1);
   testcase("<15> openvpn[2499]: PTHREAD support initialized", create_posix_regexp_filter(LM_V_PROGRAM, "^open$", 0), 0);
-  fprintf(stderr, "One \"invalid regular expression\" message is to be expected\n");
   TEST_ASSERT(create_posix_regexp_filter(LM_V_PROGRAM, "((", 0) == NULL);
 
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", create_posix_regexp_filter(LM_V_HOST, "^host$", 0), 1);
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", create_posix_regexp_filter(LM_V_HOST, "^hos$", 0), 0);
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", create_posix_regexp_filter(LM_V_HOST, "pthread", 0), 0);
-  fprintf(stderr, "One \"invalid regular expressions\" message is to be expected\n");
   TEST_ASSERT(create_posix_regexp_filter(LM_V_HOST, "((", 0) == NULL);
 
 
@@ -307,9 +296,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", create_posix_regexp_match("(?i)pthread", 0), 1);
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", create_posix_regexp_match("pthread", LMF_ICASE), 1);
 
-  fprintf(stderr, "One \"invalid regular expression\" message is to be expected\n");
   TEST_ASSERT(create_posix_regexp_match("((", 0) == NULL);
-
 
   sender_saddr = g_sockaddr_inet_new("10.10.0.1", 5000);
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", filter_netmask_new("10.10.0.0/16"), 1);
@@ -364,19 +351,15 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 #if ENABLE_PCRE
   testcase("<15> openvpn[2499]: PTHREAD support initialized", create_pcre_regexp_filter(LM_V_PROGRAM, "^openvpn$", 0), 1);
   testcase("<15> openvpn[2499]: PTHREAD support initialized", create_pcre_regexp_filter(LM_V_PROGRAM, "^open$", 0), 0);
-  fprintf(stderr, "One \"invalid regular expression\" message is to be expected\n");
   TEST_ASSERT(create_pcre_regexp_filter(LM_V_PROGRAM, "((", 0) == NULL);
 
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", create_pcre_regexp_filter(LM_V_HOST, "^host$", 0), 1);
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", create_pcre_regexp_filter(LM_V_HOST, "^hos$", 0), 0);
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", create_pcre_regexp_filter(LM_V_HOST, "pthread", 0), 0);
-  fprintf(stderr, "One \"invalid regular expressions\" message is to be expected\n");
   TEST_ASSERT(create_pcre_regexp_filter(LM_V_HOST, "((", 0) == NULL);
 
-  fprintf(stderr, "One \"invalid regular expressions\" message is to be expected\n");
   TEST_ASSERT(create_posix_regexp_filter(LM_V_HOST, "(?iana", 0) == NULL);
 
-  fprintf(stderr, "One \"invalid regular expressions\" message is to be expected\n");
   TEST_ASSERT(create_pcre_regexp_filter(LM_V_HOST, "(?iana", 0) == NULL);
 
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", create_pcre_regexp_filter(LM_V_MESSAGE, "^PTHREAD ", 0), 1);
@@ -400,7 +383,6 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", create_pcre_regexp_match("(?i)pthread", 0), 1);
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", create_pcre_regexp_match("pthread", LMF_ICASE), 1);
 
-  fprintf(stderr, "One \"invalid regular expression\" message is to be expected\n");
   TEST_ASSERT(create_pcre_regexp_match("((", 0) == NULL);
 
   testcase_with_backref_chk("<15>Oct 15 16:17:01 host openvpn[2499]: alma fa", create_pcre_regexp_filter(LM_V_MESSAGE, "(?P<a>a)(?P<l>l)(?P<MM>m)(?P<aa>a) (?P<fa>fa)", LMF_STORE_MATCHES), 1, "MM","m");

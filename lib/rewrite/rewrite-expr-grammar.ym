@@ -80,7 +80,7 @@ rewrite_template_content
 	    GError *error = NULL;
 
 	    $$ = log_template_new(configuration, $1);
-	    CHECK_ERROR(log_template_compile($$, $1, &error), @1, "Error compiling template (%s)", error->message);
+	    CHECK_ERROR_GERROR(log_template_compile($$, $1, &error), @1, error, "error compiling replacement");
 	  }
 	;
 
@@ -92,7 +92,8 @@ rewrite_expr
           }
           rewrite_subst_opts ')'
           {
-            CHECK_ERROR(log_rewrite_subst_set_regexp(last_rewrite, $3), @3, "Error compiling regular expression");
+            GError *error = NULL;
+            CHECK_ERROR_GERROR(log_rewrite_subst_compile_pattern(last_rewrite, configuration, $3, &error), @3, error, "error compiling search pattern");
             free($3);
             $$ = last_rewrite;
           }
@@ -123,19 +124,13 @@ rewrite_expr
         ;
 
 rewrite_subst_opts
-        : rewrite_expr_opt rewrite_subst_opts
-        | rewrite_subst_opt rewrite_subst_opts
+        : rewrite_subst_opt rewrite_subst_opts
         |
         ;
 
 rewrite_subst_opt
-        : KW_TYPE '(' string ')'
-          {
-            CHECK_ERROR((strcmp($3, "glob") != 0), @3, "Rewrite rules do not support glob expressions");
-            log_rewrite_subst_set_matcher(last_rewrite, log_matcher_new($3));
-            free($3);
-          }
-        | KW_FLAGS '(' regexp_option_flags ')' { log_rewrite_subst_set_flags(last_rewrite, $3); }
+	: { last_matcher_options = log_rewrite_subst_get_matcher_options(last_rewrite); } matcher_option
+	| rewrite_expr_opt
         ;
 
 rewrite_expr_opts

@@ -29,9 +29,9 @@
 #include "logmatcher.h"
 
 /* LogRewriteSubst */
-gboolean log_rewrite_subst_set_regexp(LogRewrite *s, const gchar *regexp);
-void log_rewrite_subst_set_matcher(LogRewrite *s, LogMatcher *matcher);
-void log_rewrite_subst_set_flags(LogRewrite *s, gint flags);
+LogMatcherOptions *log_rewrite_subst_get_matcher_options(LogRewrite *s);
+
+gboolean log_rewrite_subst_compile_pattern(LogRewrite *s, GlobalConfig *cfg, const gchar *regexp, GError **error);
 
 LogRewrite *log_rewrite_subst_new(LogTemplate *replacement);
 

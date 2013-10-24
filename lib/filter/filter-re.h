@@ -32,16 +32,16 @@ typedef struct _FilterRE
 {
   FilterExprNode super;
   NVHandle value_handle;
+  LogMatcherOptions matcher_options;
   LogMatcher *matcher;
 } FilterRE;
 
 typedef struct _FilterMatch FilterMatch;
 
-void filter_re_set_matcher(FilterRE *self, LogMatcher *matcher);
-gboolean filter_re_set_regexp(FilterRE *self, gchar *re);
-void filter_re_set_flags(FilterRE *self, gint flags);
+gboolean filter_re_compile_pattern(FilterRE *self, GlobalConfig *cfg, gchar *re, GError **error);
 
-FilterExprNode *filter_re_new(NVHandle value_handle);
-FilterExprNode *filter_match_new(void);
+FilterRE *filter_re_new(NVHandle value_handle);
+FilterRE *filter_source_new(void);
+FilterRE *filter_match_new(void);
 
 #endif

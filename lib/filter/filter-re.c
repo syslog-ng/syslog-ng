@@ -52,60 +52,59 @@ filter_re_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
   return filter_re_eval_string(s, msg, self->value_handle, value, len);
 }
 
-
 static void
 filter_re_free(FilterExprNode *s)
 {
   FilterRE *self = (FilterRE *) s;
 
   log_matcher_unref(self->matcher);
+  log_matcher_options_destroy(&self->matcher_options);
 }
 
-void
-filter_re_set_matcher(FilterRE *self, LogMatcher *matcher)
+static void
+filter_re_init(FilterExprNode *s, GlobalConfig *cfg)
 {
-  gint flags = 0;
-  if(self->matcher)
-    {
-      /* save the flags to use them in the new matcher */
-      flags = self->matcher->flags;
-      log_matcher_unref(self->matcher);
-    }
-   self->matcher = matcher;
+  FilterRE *self = (FilterRE *) s;
 
-   filter_re_set_flags(self, flags);
-}
 
-void
-filter_re_set_flags(FilterRE *self, gint flags)
-{
-  /* if there is only a flags() param, we must crete the default matcher*/
-  if(!self->matcher)
-    self->matcher = log_matcher_posix_re_new();
-  if (flags & LMF_STORE_MATCHES)
+  if (self->matcher_options.flags & LMF_STORE_MATCHES)
     self->super.modify = TRUE;
-  log_matcher_set_flags(self->matcher, flags | LMF_MATCH_ONLY);
 }
 
 gboolean
-filter_re_set_regexp(FilterRE *self, gchar *re)
+filter_re_compile_pattern(FilterRE *self, GlobalConfig *cfg, gchar *re, GError **error)
 {
-  if(!self->matcher)
-    self->matcher = log_matcher_posix_re_new();
-
-  return log_matcher_compile(self->matcher, re);
+  log_matcher_options_init(&self->matcher_options, cfg);
+  self->matcher = log_matcher_new(&self->matcher_options);
+  return log_matcher_compile(self->matcher, re, error);
 }
 
-FilterExprNode *
+FilterRE *
 filter_re_new(NVHandle value_handle)
 {
   FilterRE *self = g_new0(FilterRE, 1);
 
   filter_expr_node_init_instance(&self->super);
   self->value_handle = value_handle;
+  self->super.init = filter_re_init;
   self->super.eval = filter_re_eval;
   self->super.free_fn = filter_re_free;
-  return &self->super;
+  log_matcher_options_defaults(&self->matcher_options);
+  self->matcher_options.flags |= LMF_MATCH_ONLY;
+  return self;
+}
+
+FilterRE *
+filter_source_new(void)
+{
+  FilterRE *self = filter_re_new(LM_V_SOURCE);
+
+  if (!log_matcher_options_set_type(&self->matcher_options, "string"))
+    {
+      /* this can only happen if the plain text string matcher will cease to exist */
+      g_assert_not_reached();
+    }
+  return self;
 }
 
 static gboolean
@@ -140,7 +139,7 @@ filter_match_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
   return res;
 }
 
-FilterExprNode *
+FilterRE *
 filter_match_new()
 {
   FilterRE *self = g_new0(FilterRE, 1);
@@ -148,5 +147,5 @@ filter_match_new()
   filter_expr_node_init_instance(&self->super);
   self->super.free_fn = filter_re_free;
   self->super.eval = filter_match_eval;
-  return &self->super;
+  return self;
 }

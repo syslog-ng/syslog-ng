@@ -37,6 +37,7 @@
 #include "filter/filter-pipe.h"
 #include "parser/parser-expr-parser.h"
 #include "rewrite/rewrite-expr-parser.h"
+#include "logmatcher.h"
 
 /* uses struct declarations instead of the typedefs to avoid having to
  * include logreader/logwriter/driver.h, which defines the typedefs.  This
@@ -55,6 +56,7 @@ extern struct _LogTemplateOptions *last_template_options;
 extern struct _LogTemplate *last_template;
 extern struct _ValuePairs *last_value_pairs;
 extern struct _ValuePairsTransformSet *last_vp_transset;
+extern struct _LogMatcherOptions *last_matcher_options;
 
 }
 
@@ -368,6 +370,7 @@ LogTemplate *last_template;
 CfgArgs *last_block_args;
 ValuePairs *last_value_pairs;
 ValuePairsTransformSet *last_vp_transset;
+LogMatcherOptions *last_matcher_options;
 
 }
 
@@ -417,7 +420,6 @@ ValuePairsTransformSet *last_vp_transset;
 
 %type	<num> yesno
 %type   <num> dnsmode
-%type   <num> regexp_option_flags
 %type	<num> dest_writer_options_flags
 
 %type	<cptr> string
@@ -932,11 +934,6 @@ facility_string
         | KW_SYSLOG 				{ $$ = LOG_SYSLOG; }
         ;
 
-regexp_option_flags
-        : string regexp_option_flags            { $$ = log_matcher_lookup_flag($1) | $2; free($1); }
-        |                                       { $$ = 0; }
-        ;
-
 parser_opt
         : KW_TEMPLATE '(' string ')'            {
                                                   LogTemplate *template;
@@ -1113,6 +1110,16 @@ template_option
           log_template_options_set_on_error(last_template_options, on_error);
         }
 	;
+
+matcher_option
+        : KW_TYPE '(' string ')'		{ CHECK_ERROR(log_matcher_options_set_type(last_matcher_options, $3), @3, "unknown matcher type"); free($3); }
+        | KW_FLAGS '(' matcher_flags ')'
+        ;
+
+matcher_flags
+        : string matcher_flags			{ CHECK_ERROR(log_matcher_options_process_flag(last_matcher_options, $1), @1, "unknown matcher flag"); free($1); }
+        |
+        ;
 
 value_pair_option
 	: KW_VALUE_PAIRS

@@ -85,7 +85,7 @@ filter_expr_ref(FilterExprNode *self)
 void
 filter_expr_unref(FilterExprNode *self)
 {
-  if (--self->ref_cnt == 0)
+  if (self && (--self->ref_cnt == 0))
     {
       if (self->free_fn)
         self->free_fn(self);

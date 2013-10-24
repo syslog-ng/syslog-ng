@@ -43,6 +43,7 @@
 #include "template/templates.h"
 #include "syslog-names.h"
 #include "plugin.h"
+#include "cfg-grammar.h"
 
 FilterRE *last_re_filter;
 
@@ -67,6 +68,8 @@ FilterRE *last_re_filter;
 
 %type	<node> filter_expr
 %type	<node> filter_simple_expr
+%type	<node> filter_plugin
+%type	<node> filter_comparison
 
 %type   <num> filter_fac_list
 %type	<num> filter_level_list
@@ -125,77 +128,14 @@ filter_simple_expr
             free($3);
             free($6);
           }
-        | KW_PROGRAM '(' string
-	  {
-	    last_re_filter = (FilterRE *) filter_re_new(LM_V_PROGRAM);
-          }
-          filter_re_opts ')'
-          {
-            if(!filter_re_set_regexp(last_re_filter, $3))
-              YYERROR;
-            free($3);
+	| filter_re					{ $$ = &last_re_filter->super; }
+	| filter_plugin
+	| filter_comparison
+	;
 
-            $$ = &last_re_filter->super;
-          }
-	| KW_HOST '(' string
-	  {
-	    last_re_filter = (FilterRE *) filter_re_new(LM_V_HOST);
-          }
-          filter_re_opts ')'
-          {
-            if(!filter_re_set_regexp(last_re_filter, $3))
-              YYERROR;
-            free($3);
 
-            $$ = &last_re_filter->super;
-          }
-	| KW_MATCH '(' string
-	  {
-	    last_re_filter = (FilterRE *) filter_match_new();
-	  }
-          filter_match_opts ')'
-          {
-            if(!filter_re_set_regexp(last_re_filter, $3))
-              YYERROR;
-            free($3);
-            $$ = &last_re_filter->super;
-
-            if (last_re_filter->value_handle == 0)
-              {
-                static gboolean warn_written = FALSE;
-
-                if (!warn_written)
-                  {
-                    msg_warning("WARNING: the match() filter without the use of the value() option is deprecated and hinders performance, please update your configuration",
-                                NULL);
-                    warn_written = TRUE;
-                  }
-              }
-          }
-        | KW_MESSAGE '(' string
-          {
-	    last_re_filter = (FilterRE *) filter_re_new(LM_V_MESSAGE);
-          }
-          filter_re_opts ')'
-          {
-            if(!filter_re_set_regexp(last_re_filter, $3))
-              YYERROR;
-	    free($3);
-            $$ = &last_re_filter->super;
-          }
-        | KW_SOURCE '(' string
-          {
-	    last_re_filter = (FilterRE *) filter_re_new(LM_V_SOURCE);
-            filter_re_set_matcher(last_re_filter, log_matcher_string_new());
-          }
-          filter_re_opts ')'
-          {
-            if(!filter_re_set_regexp(last_re_filter, $3))
-              YYERROR;
-	    free($3);
-            $$ = &last_re_filter->super;
-          }
-        | LL_IDENTIFIER
+filter_plugin
+        : LL_IDENTIFIER
           {
             Plugin *p;
             gint context = LL_CONTEXT_FILTER;
@@ -212,7 +152,10 @@ filter_simple_expr
               }
             $$ = node;
           }
-	| string operator string
+	;
+
+filter_comparison
+	: string operator string
           {
             LogTemplate *left, *right;
             GError *error = NULL;
@@ -243,6 +186,55 @@ operator
 	| KW_GT         { $$ = yylval.token; }
 	;
 
+filter_re
+        : KW_PROGRAM { last_re_filter = filter_re_new(LM_V_PROGRAM); } filter_re_params
+	| KW_HOST    { last_re_filter = filter_re_new(LM_V_HOST); } filter_re_params
+	| KW_MESSAGE { last_re_filter = filter_re_new(LM_V_MESSAGE); } filter_re_params
+        | KW_SOURCE  { last_re_filter = filter_source_new();  } filter_re_params
+	: KW_MATCH   { last_re_filter = filter_match_new(); } filter_match_params
+	;
+
+filter_re_params
+	: '(' string filter_re_opts ')'
+          {
+            GError *error = NULL;
+
+            CHECK_ERROR_GERROR(filter_re_compile_pattern(last_re_filter, configuration, $2, &error), @2, error, "error compiling search pattern");
+            free($2);
+          }
+	;
+
+filter_re_opts
+        : filter_re_opt filter_re_opts
+        |
+        ;
+
+filter_re_opt
+	: { last_matcher_options = &last_re_filter->matcher_options; } matcher_option
+        ;
+
+
+filter_match_params
+        : '(' string filter_match_opts ')'
+          {
+            GError *error = NULL;
+
+            CHECK_ERROR_GERROR(filter_re_compile_pattern(last_re_filter, configuration, $2, &error), @2, error, "error compiling search pattern");
+            free($2);
+
+            if (last_re_filter->value_handle == 0)
+              {
+                static gboolean warn_written = FALSE;
+
+                if (!warn_written)
+                  {
+                    msg_warning("WARNING: the match() filter without the use of the value() option is deprecated and hinders performance, please use a more specific filter like message() and/or program() instead.",
+                                NULL);
+                    warn_written = TRUE;
+                  }
+              }
+          }
+
 filter_match_opts
         : filter_match_opt filter_match_opts
         |
@@ -265,19 +257,7 @@ filter_match_opt
           }
         ;
 
-filter_re_opts
-        : filter_re_opt filter_re_opts
-        |
-        ;
 
-filter_re_opt
-        : KW_TYPE '(' string ')'
-          {
-            filter_re_set_matcher(last_re_filter, log_matcher_new($3));
-            free($3);
-          }
-        | KW_FLAGS '(' regexp_option_flags ')' { filter_re_set_flags(last_re_filter, $3); }
-        ;
 
 
 filter_fac_list

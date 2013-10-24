@@ -31,13 +31,6 @@
 #define LOG_MATCHER_ERROR log_template_error_quark()
 
 GQuark log_matcher_error_quark(void);
-enum
-{
-  LMR_POSIX_REGEXP,
-  LMR_PCRE_REGEXP,
-  LMR_STRING,
-  LMR_GLOB,
-};
 
 enum
 {
@@ -59,14 +52,19 @@ enum
   LMF_VALID_STRING_FLAGS = 0x00C7,
 };
 
+typedef struct _LogMatcherOptions
+{
+  gint flags;
+  gchar *type;
+} LogMatcherOptions;
+
 typedef struct _LogMatcher LogMatcher;
 
 struct _LogMatcher
 {
   gint ref_cnt;
-  gint type;
   gint flags;
-  gboolean (*compile)(LogMatcher *s, const gchar *re);
+  gboolean (*compile)(LogMatcher *s, const gchar *re, GError **error);
   /* value_len can be -1 to indicate unknown length */
   gboolean (*match)(LogMatcher *s, LogMessage *msg, gint value_handle, const gchar *value, gssize value_len);
   /* value_len can be -1 to indicate unknown length, new_length can be returned as -1 to indicate unknown length */
@@ -75,9 +73,9 @@ struct _LogMatcher
 };
 
 static inline gboolean 
-log_matcher_compile(LogMatcher *s, const gchar *re)
+log_matcher_compile(LogMatcher *s, const gchar *re, GError **error)
 {
-  return s->compile(s, re);
+  return s->compile(s, re, error);
 }
 
 static inline gboolean
@@ -94,22 +92,32 @@ log_matcher_replace(LogMatcher *s, LogMessage *msg, gint value_handle, const gch
   return NULL;
 }
 
-
 static inline void
 log_matcher_set_flags(LogMatcher *s, gint flags)
 {
   s->flags = flags;
 }
 
-gint log_matcher_lookup_flag(const gchar* flag);
+static inline gboolean
+log_matcher_is_replace_supported(LogMatcher *s)
+{
+  return s->replace != NULL;
+}
 
-LogMatcher *log_matcher_posix_re_new(void);
-LogMatcher *log_matcher_pcre_re_new(void);
-LogMatcher *log_matcher_string_new(void);
-LogMatcher *log_matcher_glob_new(void);
+LogMatcher *log_matcher_posix_re_new(const LogMatcherOptions *options);
+LogMatcher *log_matcher_pcre_re_new(const LogMatcherOptions *options);
+LogMatcher *log_matcher_string_new(const LogMatcherOptions *options);
+LogMatcher *log_matcher_glob_new(const LogMatcherOptions *options);
 
-LogMatcher *log_matcher_new(const gchar *type);
+LogMatcher *log_matcher_new(const LogMatcherOptions *options);
 LogMatcher *log_matcher_ref(LogMatcher *s);
 void log_matcher_unref(LogMatcher *s);
+
+
+gboolean log_matcher_options_set_type(LogMatcherOptions *options, const gchar *type);
+gboolean log_matcher_options_process_flag(LogMatcherOptions *self, const gchar *flag);
+void log_matcher_options_defaults(LogMatcherOptions *options);
+void log_matcher_options_init(LogMatcherOptions *options, GlobalConfig *cfg);
+void log_matcher_options_destroy(LogMatcherOptions *options);
 
 #endif
