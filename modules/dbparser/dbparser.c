@@ -25,6 +25,7 @@
 #include "patterndb.h"
 #include "radix.h"
 #include "apphook.h"
+#include "reloc.h"
 
 #include <sys/stat.h>
 #include <iv.h>
@@ -303,7 +304,7 @@ log_db_parser_new(void)
   self->super.super.deinit = log_db_parser_deinit;
   self->super.super.clone = log_db_parser_clone;
   self->super.process = log_db_parser_process;
-  self->db_file = g_strdup(PATH_PATTERNDB_FILE);
+  self->db_file = g_strdup(get_installation_path_for(PATH_PATTERNDB_FILE));
   g_static_mutex_init(&self->lock);
   if (cfg_is_config_version_older(configuration, 0x0303))
     {

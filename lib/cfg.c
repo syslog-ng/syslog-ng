@@ -34,6 +34,7 @@
 #include "cfg-parser.h"
 #include "stats.h"
 #include "logproto/logproto-builtins.h"
+#include "reloc.h"
 
 #include <sys/types.h>
 #include <signal.h>
@@ -343,10 +344,10 @@ cfg_run_parser(GlobalConfig *self, CfgLexer *lexer, CfgParser *parser, gpointer 
   configuration = self;
   old_lexer = self->lexer;
   self->lexer = lexer;
-  cfg_args_set(self->lexer->globals, "syslog-ng-root", PATH_PREFIX);
-  cfg_args_set(self->lexer->globals, "syslog-ng-data", PATH_DATADIR);
+  cfg_args_set(self->lexer->globals, "syslog-ng-root", get_installation_path_for(PATH_PREFIX));
+  cfg_args_set(self->lexer->globals, "syslog-ng-data", get_installation_path_for(PATH_DATADIR));
   cfg_args_set(self->lexer->globals, "module-path", module_path);
-  cfg_args_set(self->lexer->globals, "include-path", PATH_SYSCONFDIR);
+  cfg_args_set(self->lexer->globals, "include-path", get_installation_path_for(PATH_SYSCONFDIR));
   cfg_args_set(self->lexer->globals, "autoload-compiled-modules", "1");
 
   res = cfg_parser_parse(parser, lexer, result, arg);

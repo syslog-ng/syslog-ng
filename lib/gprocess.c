@@ -25,6 +25,7 @@
 #include "gprocess.h"
 #include "misc.h"
 #include "messages.h"
+#include "reloc.h"
  
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -699,13 +700,13 @@ g_process_format_pidfile_name(gchar *buf, gsize buflen)
 
   if (pidfile == NULL)
     {
-      g_snprintf(buf, buflen, "%s/%s.pid", process_opts.pidfile_dir ? process_opts.pidfile_dir : PATH_PIDFILEDIR, process_opts.name);
+      g_snprintf(buf, buflen, "%s/%s.pid", process_opts.pidfile_dir ? process_opts.pidfile_dir : get_installation_path_for(PATH_PIDFILEDIR), process_opts.name);
       pidfile = buf;
     }
   else if (pidfile[0] != '/')
     {
       /* complete path to pidfile not specified, assume it is a relative path to pidfile_dir */
-      g_snprintf(buf, buflen, "%s/%s", process_opts.pidfile_dir ? process_opts.pidfile_dir : PATH_PIDFILEDIR, pidfile);
+      g_snprintf(buf, buflen, "%s/%s", process_opts.pidfile_dir ? process_opts.pidfile_dir : get_installation_path_for(PATH_PIDFILEDIR), pidfile);
       pidfile = buf;
       
     }
@@ -914,7 +915,7 @@ g_process_change_dir(void)
       else if (process_opts.pidfile_dir)
         cwd = process_opts.pidfile_dir;
       if (!cwd)
-        cwd = PATH_PIDFILEDIR;
+        cwd = get_installation_path_for(PATH_PIDFILEDIR);
         
       if (cwd)
         if (chdir(cwd))

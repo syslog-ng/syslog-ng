@@ -26,4 +26,3 @@
 
 GlobalConfig *configuration;
 int cfg_parser_debug;
-gchar *module_path = MODULE_PATH;

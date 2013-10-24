@@ -24,6 +24,7 @@
 
 #include "syslog-ng.h"
 #include "gsocket.h"
+#include "reloc.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -33,7 +34,7 @@
 #include <getopt.h>
 #endif
 
-static gchar *control_name = PATH_CONTROL_SOCKET;
+static gchar *control_name;
 static gint control_socket = -1;
 
 static gboolean
@@ -258,6 +259,7 @@ main(int argc, char *argv[])
   gint mode;
   GError *error = NULL;
 
+  control_name = get_installation_path_for(PATH_CONTROL_SOCKET);
   mode_string = slng_mode(&argc, &argv);
   if (!mode_string)
     {

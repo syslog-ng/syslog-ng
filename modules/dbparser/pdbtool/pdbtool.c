@@ -36,6 +36,7 @@
 #include "patterndb-int.h"
 #include "apphook.h"
 #include "logproto/logproto-text-server.h"
+#include "reloc.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -721,7 +722,7 @@ pdbtool_test(int argc, char *argv[])
               failed_to_validate = TRUE;
 	      continue;
             }
-          g_snprintf(cmd, sizeof(cmd), "xmllint --noout --nonet --schema %s/patterndb-%d.xsd %s", PATH_XSDDIR, version, argv[arg_pos]);
+          g_snprintf(cmd, sizeof(cmd), "xmllint --noout --nonet --schema %s/patterndb-%d.xsd %s", get_installation_path_for(PATH_XSDDIR), version, argv[arg_pos]);
           if (system(cmd) != 0)
             {
               fprintf(stderr, "%s: xmllint returned an error, the executed command was: %s", argv[arg_pos], cmd);

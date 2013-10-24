@@ -38,6 +38,7 @@
 #include "logsource.h"
 #include "mainloop.h"
 #include "plugin.h"
+#include "reloc.h"
 
 #include <sys/types.h>
 #include <stdio.h>
@@ -58,7 +59,6 @@
 #include <iv.h>
 #include <iv_signal.h>
 
-static gchar *install_dat_filename = PATH_INSTALL_DAT;
 static gchar *installer_version = NULL;
 static gboolean display_version = FALSE;
 static gboolean display_module_registry = FALSE;
@@ -95,7 +95,7 @@ get_installer_version(gchar **inst_version)
 {
   gchar line[1024];
   gboolean result = FALSE;
-  FILE *f_install = fopen(install_dat_filename, "r");
+  FILE *f_install = fopen(get_installation_path_for(PATH_INSTALL_DAT), "r");
 
   if (!f_install)
     return FALSE;
@@ -196,6 +196,8 @@ main(int argc, char *argv[])
   g_process_set_argv_space(argc, (gchar **) argv);
 
   setup_caps();
+
+  main_loop_global_init();
 
   ctx = g_option_context_new("syslog-ng");
   g_process_add_option_group(ctx);

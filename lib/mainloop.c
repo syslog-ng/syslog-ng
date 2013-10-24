@@ -33,6 +33,7 @@
 #include "dnscache.h"
 #include "tls-support.h"
 #include "scratch-buffers.h"
+#include "reloc.h"
 
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -91,9 +92,16 @@
  */
 
 /* parsed command line arguments */
-static gchar *cfgfilename = PATH_SYSLOG_NG_CONF;
-static const gchar *persist_file = PATH_PERSIST_CONFIG;
-static gchar *ctlfilename = PATH_CONTROL_SOCKET;
+
+/* NOTE: these should not be here, rather they should be either processed by
+ * the main module and then passed as parameters or propagated to a place
+ * closer to their usage.  The simple reason they are here, is that mainloop
+ * needed them and it implements the command line options to parse them.
+ * This is far from perfect. (Bazsi) */
+static const gchar *cfgfilename;
+static const gchar *persist_file;
+static const gchar *ctlfilename;
+const gchar *module_path;
 static gchar *preprocess_into = NULL;
 gboolean syntax_only = FALSE;
 
@@ -819,4 +827,13 @@ main_loop_add_options(GOptionContext *ctx)
 #endif
 
   g_option_context_add_main_entries(ctx, main_loop_options, NULL);
+}
+
+void
+main_loop_global_init(void)
+{
+  cfgfilename = get_installation_path_for(PATH_SYSLOG_NG_CONF);
+  persist_file = get_installation_path_for(PATH_PERSIST_CONFIG);
+  ctlfilename = get_installation_path_for(PATH_CONTROL_SOCKET);
+  module_path = get_installation_path_for(MODULE_PATH);
 }

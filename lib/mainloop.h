@@ -92,5 +92,6 @@ int main_loop_init(void);
 int  main_loop_run(void);
 
 void main_loop_add_options(GOptionContext *ctx);
+void main_loop_global_init(void);
 
 #endif

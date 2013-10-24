@@ -21,7 +21,9 @@ syslog_ng_syslog_ng_wrapper_SOURCES	= syslog-ng/wrapper.c
 syslog_ng_syslog_ng_ctl_SOURCES		= \
 	syslog-ng/syslog-ng-ctl.c	  \
 	lib/gsocket.c			  \
-	lib/gsockaddr.c
+	lib/gsockaddr.c			  \
+	lib/reloc.c			  \
+	lib/cache.c
 syslog_ng_syslog_ng_ctl_LDADD		= @BASE_LIBS@ @GLIB_LIBS@ @RESOLV_LIBS@
 syslog_ng_syslog_ng_ctl_DEPENDENCIES	= lib/libsyslog-ng.la lib/libsyslog-ng-crypto.la
 

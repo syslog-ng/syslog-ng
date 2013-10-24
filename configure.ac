@@ -1074,7 +1074,7 @@ dnl ***************************************************************************
 ### configuration file, or by the autoloading mechanism.
 
 if test "x$module_path" = "x"; then
-	module_path="`patheval $moduledir`"
+	module_path="$moduledir"
 fi
 
 CPPFLAGS="$CPPFLAGS $GLIB_CFLAGS $EVTLOG_CFLAGS $PCRE_CFLAGS $OPENSSL_CFLAGS $LIBNET_CFLAGS $LIBDBI_CFLAGS $IVYKIS_CFLAGS -D_GNU_SOURCE -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64"
@@ -1174,15 +1174,17 @@ AC_DEFINE_UNQUOTED(VERSION, "$VERSION", [version number])
 AC_DEFINE_UNQUOTED(SOURCE_REVISION, "$SOURCE_REVISION", [source revision])
 AC_DEFINE_UNQUOTED(LICENSE_VERSION, "$LICENSE_VERSION", [Required license version])
 
-AC_DEFINE_UNQUOTED(PATH_PREFIX, "`patheval $prefix`", [prefix directory])
-AC_DEFINE_UNQUOTED(PATH_SYSCONFDIR, "`patheval $sysconfdir`", [sysconfdir])
-AC_DEFINE_UNQUOTED(PATH_LOCALSTATEDIR, "`patheval $localstatedir`", [local state directory])
-AC_DEFINE_UNQUOTED(PATH_PIDFILEDIR, "`patheval $pidfiledir`", [local state directory])
-AC_DEFINE_UNQUOTED(PATH_DATAROOTDIR, "`patheval $datarootdir`", [data root directory])
-AC_DEFINE_UNQUOTED(PATH_DATADIR, "`patheval $datadir`", [data directory])
-AC_DEFINE_UNQUOTED(PATH_LIBEXECDIR, "`patheval $libexecdir`", [libexec directory])
+AC_DEFINE_UNQUOTED(PATH_PREFIX, "$prefix", [prefix directory])
+AC_DEFINE_UNQUOTED(PATH_EXECPREFIX, "$exec_prefix", [execprefix directory])
+
+AC_DEFINE_UNQUOTED(PATH_SYSCONFDIR, "$sysconfdir", [sysconfdir])
+AC_DEFINE_UNQUOTED(PATH_LOCALSTATEDIR, "$localstatedir", [local state directory])
+AC_DEFINE_UNQUOTED(PATH_PIDFILEDIR, "$pidfiledir", [local state directory])
+AC_DEFINE_UNQUOTED(PATH_DATAROOTDIR, "$datarootdir", [data root directory])
+AC_DEFINE_UNQUOTED(PATH_DATADIR, "$datadir", [data directory])
+AC_DEFINE_UNQUOTED(PATH_LIBEXECDIR, "$libexecdir", [libexec directory])
 if test -n "$timezonedir"; then
-        AC_DEFINE_UNQUOTED(PATH_TIMEZONEDIR, "`patheval $timezonedir`", [timezone base directory])
+        AC_DEFINE_UNQUOTED(PATH_TIMEZONEDIR, "$timezonedir", [timezone base directory])
 fi
 if test -n "$env_ld_library_path"; then
         AC_DEFINE_UNQUOTED(ENV_LD_LIBRARY_PATH, "$env_ld_library_path", [set LD_LIBRARY_PATH to this value])
