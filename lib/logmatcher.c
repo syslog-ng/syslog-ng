@@ -494,6 +494,7 @@ log_matcher_pcre_re_compile(LogMatcher *s, const gchar *re, GError **error)
   const gchar *errptr;
   gint erroffset;
   gint flags = 0;
+  gint optflags = 0;
  
   g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
 
@@ -534,9 +535,13 @@ log_matcher_pcre_re_compile(LogMatcher *s, const gchar *re, GError **error)
       g_set_error(error, LOG_TEMPLATE_ERROR, 0, "Error while compiling PCRE expression, error=%s, error_at=%d", errptr, erroffset);
       return FALSE;
     }
-    
+
+#ifdef PCRE_STUDY_JIT_COMPILE
+  optflags = PCRE_STUDY_JIT_COMPILE;
+#endif
+
   /* optimize regexp */
-  self->extra = pcre_study(self->pattern, 0, &errptr);
+  self->extra = pcre_study(self->pattern, optflags, &errptr);
   if (errptr != NULL)
     {
       g_set_error(error, LOG_TEMPLATE_ERROR, 0, "Error while optimizing regular expression, error=%s", errptr);
