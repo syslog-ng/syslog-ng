@@ -296,8 +296,9 @@ main_loop_io_worker_thread_start(void *cookie)
 {
   gint id;
 
-  dns_cache_init();
   scratch_buffers_init();
+  dns_cache_thread_init();
+
   g_static_mutex_lock(&main_loop_io_workers_idmap_lock);
   /* NOTE: this algorithm limits the number of I/O worker threads to 64,
    * since the ID map is stored in a single 64 bit integer.  If we ever need
@@ -328,7 +329,8 @@ main_loop_io_worker_thread_stop(void *cookie)
       main_loop_io_worker_id = 0;
     }
   g_static_mutex_unlock(&main_loop_io_workers_idmap_lock);
-  dns_cache_destroy();
+
+  dns_cache_thread_deinit();
   scratch_buffers_free();
 
   if (call_info.cond)
@@ -634,7 +636,6 @@ main_loop_exit_finish(void)
   /* deinit the current configuration, as at this point we _know_ that no
    * threads are running.  This will unregister ivykis tasks and timers
    * that could fire while the configuration is being destructed */
-  dns_cache_deinit();
   cfg_deinit(current_configuration);
   iv_quit();
 }

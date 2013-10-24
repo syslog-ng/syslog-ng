@@ -214,6 +214,7 @@ cfg_init(GlobalConfig *cfg)
         }
     }
   dns_cache_set_params(cfg->dns_cache_size, cfg->dns_cache_expire, cfg->dns_cache_expire_failed, cfg->dns_cache_hosts);
+  dns_cache_thread_init();
   log_proto_register_builtin_plugins(cfg);
   return cfg_tree_start(&cfg->tree);
 }
@@ -221,6 +222,7 @@ cfg_init(GlobalConfig *cfg)
 gboolean
 cfg_deinit(GlobalConfig *cfg)
 {
+  dns_cache_thread_deinit();
   return cfg_tree_stop(&cfg->tree);
 }
 

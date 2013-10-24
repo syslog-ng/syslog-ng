@@ -187,11 +187,11 @@ dns_cache_check_hosts(glong t)
       dns_cache_cleanup_persistent_hosts();
       return;
     }
-    
+
   if (dns_cache_hosts_mtime == -1 || st.st_mtime > dns_cache_hosts_mtime)
     {
       FILE *hosts;
-      
+
       dns_cache_hosts_mtime = st.st_mtime;
       dns_cache_cleanup_persistent_hosts();
       hosts = fopen(dns_cache_hosts, "r");
@@ -330,7 +330,7 @@ dns_cache_set_params(gint cache_size, gint expire, gint expire_failed, const gch
 {
   if (dns_cache_hosts)
     g_free(dns_cache_hosts);
-    
+
   dns_cache_size = cache_size;
   dns_cache_expire = expire;
   dns_cache_expire_failed = expire_failed;
@@ -340,7 +340,7 @@ dns_cache_set_params(gint cache_size, gint expire, gint expire_failed, const gch
 }
 
 void
-dns_cache_init(void)
+dns_cache_thread_init(void)
 {
   cache = g_hash_table_new_full((GHashFunc) dns_cache_key_hash, (GEqualFunc) dns_cache_key_equal, NULL, (GDestroyNotify) dns_cache_entry_free);
   cache_first.next = &cache_last;
@@ -355,17 +355,22 @@ dns_cache_init(void)
 }
 
 void
-dns_cache_destroy(void)
+dns_cache_thread_deinit(void)
 {
   g_hash_table_destroy(cache);
-  cache_first.next = NULL;
-  cache_last.prev = NULL;
-  persist_first.next = NULL;
-  persist_last.prev = NULL;
 }
 
 void
-dns_cache_deinit(void)
+dns_cache_global_init(void)
+{
+  dns_cache_size = 1007;
+  dns_cache_expire = 3600;
+  dns_cache_expire_failed = 60;
+  dns_cache_persistent_count = 0;
+}
+
+void
+dns_cache_global_deinit(void)
 {
   if (dns_cache_hosts)
     g_free(dns_cache_hosts);
