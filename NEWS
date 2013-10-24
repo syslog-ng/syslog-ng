@@ -1,3 +1,62 @@
+3.5.0rc1
+        Thu, 24 Oct 2013 10:48:51 +0200
+
+        This is the first Release Candidate of the syslog-ng 3.5
+        development branch, with stability and reliability
+        improvements. Being a release candidate, this release should
+        be very close to production ready.
+
+        Bugfixes
+        ========
+
+        * The program() source and destination now properly terminates
+          child processes on reload and shutdown.
+
+        * The AMQP, SMTP, MongoDB, Redis and STOMP destinations now
+          work correctly across reloads.
+
+        * A rare race condition in the log message reference cache was
+          corrected, fixing a crash.
+
+        * The JSON parser now understands null-typed values, and
+          ignores the whole key silently when it encounters one.
+
+        * Using the subst() rewrite rule when the same source is
+          present in multiple logpaths does not crash anymore.
+
+        Miscellaneous
+        =============
+
+        * The autogen.sh script is included in the distributed
+          tarball.
+
+        Known Bugs
+        ==========
+
+        * The afstreams module is broken, does not compile, and does
+          not work. This will be corrected before the final 3.5.1
+          release.
+
+        Credits:
+        ========
+
+        syslog-ng is developed as a community project, and as such it relies
+        on volunteers to do the work necessarily to produce syslog-ng.
+
+        Reporting bugs, testing changes, writing code or simply providing
+        feedback are all important contributions, so please if you are a
+        user of syslog-ng, contribute.
+
+        These people have helped in this release:
+
+        Balazs Scheidler <bazsi@balabit.hu>
+        Evan Rempel <erempel@uvic.ca>
+        Gergely Nagy <algernon@balabit.hu>
+        Jose Pedro Oliveira <jpo@di.uminho.pt>
+        Michal Privoznik <miso.privoznik@gmail.com>
+        Nicolas Szalay <nico@rottenbytes.info>
+        Ryan Frederick
+
 3.5.0beta3
         Fri, 11 Oct 2013 10:21:38 +0200
 
