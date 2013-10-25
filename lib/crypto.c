@@ -41,7 +41,7 @@ static GStaticMutex *ssl_locks;
 static gboolean randfile_loaded;
 
 static void
-ssl_locking_callback(int mode, int type, char *file, int line)
+ssl_locking_callback(int mode, int type, const char *file, int line)
 {
   if (mode & CRYPTO_LOCK)
     {
@@ -70,8 +70,8 @@ crypto_init_threading(void)
     {
       g_static_mutex_init(&ssl_locks[i]);
     }
-  CRYPTO_set_id_callback((unsigned long (*)()) ssl_thread_id);
-  CRYPTO_set_locking_callback((void (*)()) ssl_locking_callback);
+  CRYPTO_set_id_callback(ssl_thread_id);
+  CRYPTO_set_locking_callback(ssl_locking_callback);
 }
 
 static void
