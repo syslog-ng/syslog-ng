@@ -1,10 +1,3 @@
-man_MANS	+= \
-		doc/man/syslog-ng.8 \
-		doc/man/syslog-ng.conf.5 \
-		doc/man/pdbtool.1 \
-		doc/man/loggen.1 \
-		doc/man/syslog-ng-ctl.1
-
 EXTRA_DIST	+=  \
 		doc/man/syslog-ng.8.xml \
 		doc/man/syslog-ng.conf.5.xml \
@@ -34,6 +27,15 @@ XSL_STYLESHEET = /usr/share/xml/docbook/stylesheet/docbook-xsl/manpages/docbook.
 sysconfdir_e = $(shell echo "${sysconfdir}" | sed -e "s,-,\\\\\\\\-,g")
 prefix_e = $(shell echo "${prefix}" | sed -e "s,-,\\\\\\\\-,g")
 
+if ENABLE_MAN_PAGES
+man_MANS	+= \
+		doc/man/syslog-ng.8 \
+		doc/man/syslog-ng.conf.5 \
+		doc/man/pdbtool.1 \
+		doc/man/loggen.1 \
+		doc/man/syslog-ng-ctl.1
+
 doc/man/%: doc/man/%.xml
-	$(AM_V_GEN)xsltproc --xinclude --output $@ ${XSL_STYLESHEET} $<
+	$(AM_V_GEN)$(XSLTPROC) --xinclude --output $@ ${XSL_STYLESHEET} $<
 	$(AM_V_at)sed -e 's,/opt/syslog\\*-ng/etc,$(sysconfdir_e),g' -e 's,/opt/syslog\\*-ng/,$(prefix_e)/,g' <$@ >$@.tmp && mv $@.tmp $@
+endif
