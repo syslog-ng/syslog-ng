@@ -78,7 +78,7 @@ g_sockaddr_get_sa(GSockAddr *self)
 }
 
 gboolean g_sockaddr_inet_check(GSockAddr *a);
-GSockAddr *g_sockaddr_inet_new(gchar *ip, guint16 port);
+GSockAddr *g_sockaddr_inet_new(const gchar *ip, guint16 port);
 GSockAddr *g_sockaddr_inet_new2(struct sockaddr_in *sin);
 
 static inline struct sockaddr_in *
@@ -120,7 +120,7 @@ g_sockaddr_inet_set_address(GSockAddr *s, struct in_addr addr)
 
 #if ENABLE_IPV6
 gboolean g_sockaddr_inet6_check(GSockAddr *a);
-GSockAddr *g_sockaddr_inet6_new(gchar *ip, guint16 port);
+GSockAddr *g_sockaddr_inet6_new(const gchar *ip, guint16 port);
 GSockAddr *g_sockaddr_inet6_new2(struct sockaddr_in6 *sin6);
 
 static inline struct sockaddr_in6 *

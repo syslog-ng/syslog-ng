@@ -264,7 +264,7 @@ g_sockaddr_inet_check(GSockAddr *a)
 
   +*/
 GSockAddr *
-g_sockaddr_inet_new(gchar *ip, guint16 port)
+g_sockaddr_inet_new(const gchar *ip, guint16 port)
 {
   GSockAddrInet *addr = NULL;
   struct in_addr ina;
@@ -407,7 +407,7 @@ g_sockaddr_inet6_check(GSockAddr *a)
 
   +*/
 GSockAddr *
-g_sockaddr_inet6_new(gchar *ip, guint16 port)
+g_sockaddr_inet6_new(const gchar *ip, guint16 port)
 {
   GSockAddrInet6 *addr = g_slice_new0(GSockAddrInet6);
   
