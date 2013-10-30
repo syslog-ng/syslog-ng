@@ -85,6 +85,7 @@ struct _GlobalConfig
   gboolean use_dns_cache;
   gint dns_cache_size, dns_cache_expire, dns_cache_expire_failed;
   gchar *dns_cache_hosts;
+  gchar *custom_domain;
   gint time_reopen;
   gint time_reap;
   gint suppress;

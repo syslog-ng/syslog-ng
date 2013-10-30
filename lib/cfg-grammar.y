@@ -206,6 +206,7 @@ extern struct _LogMatcherOptions *last_matcher_options;
 
 %token KW_USE_DNS                     10110
 %token KW_USE_FQDN                    10111
+%token KW_CUSTOM_DOMAIN	              10112
 
 %token KW_DNS_CACHE                   10120
 %token KW_DNS_CACHE_SIZE              10121
@@ -860,7 +861,7 @@ options_item
 	| KW_DIR_GROUP '('  ')'	                { cfg_dir_group_set(configuration, "-2"); }
 	| KW_DIR_PERM '(' LL_NUMBER ')'		{ cfg_dir_perm_set(configuration, $3); }
 	| KW_DIR_PERM '('  ')'		        { cfg_dir_perm_set(configuration, -2); }
-	| KW_DNS_CACHE '(' yesno ')' 		{ configuration->use_dns_cache = $3; }
+        | KW_CUSTOM_DOMAIN '(' string ')'       { configuration->custom_domain = g_strdup($3); free($3); }
 	| KW_DNS_CACHE_SIZE '(' LL_NUMBER ')'	{ configuration->dns_cache_size = $3; }
 	| KW_DNS_CACHE_EXPIRE '(' LL_NUMBER ')'	{ configuration->dns_cache_expire = $3; }
 	| KW_DNS_CACHE_EXPIRE_FAILED '(' LL_NUMBER ')'

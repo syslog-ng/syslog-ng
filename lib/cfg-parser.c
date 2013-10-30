@@ -88,6 +88,7 @@ static CfgLexerKeyword main_keywords[] = {
   { "keep_hostname",      KW_KEEP_HOSTNAME },
   { "check_hostname",     KW_CHECK_HOSTNAME },
   { "bad_hostname",       KW_BAD_HOSTNAME },
+  { "custom_domain",      KW_CUSTOM_DOMAIN, 0x0306 },
   { "keep_timestamp",     KW_KEEP_TIMESTAMP },
   { "encoding",           KW_ENCODING, 0x0300 },
   { "ts_format",          KW_TS_FORMAT },

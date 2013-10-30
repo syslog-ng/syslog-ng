@@ -35,6 +35,7 @@
 #include "stats.h"
 #include "logproto/logproto-builtins.h"
 #include "reloc.h"
+#include "hostname.h"
 
 #include <sys/types.h>
 #include <signal.h>
@@ -219,6 +220,8 @@ cfg_init(GlobalConfig *cfg)
 
   dns_cache_set_params(cfg->dns_cache_size, cfg->dns_cache_expire, cfg->dns_cache_expire_failed, cfg->dns_cache_hosts);
   dns_cache_thread_init();
+  hostname_reinit(cfg->custom_domain);
+
   log_proto_register_builtin_plugins(cfg);
   return cfg_tree_start(&cfg->tree);
 }
@@ -421,6 +424,7 @@ cfg_free(GlobalConfig *self)
     regfree(&self->bad_hostname);
   g_free(self->bad_hostname_re);
   g_free(self->dns_cache_hosts);
+  g_free(self->custom_domain);
   g_list_free(self->plugins);
   plugin_free_candidate_modules(self);
   cfg_tree_free_instance(&self->tree);
