@@ -34,7 +34,7 @@
 #include <getopt.h>
 #endif
 
-static gchar *control_name;
+static const gchar *control_name;
 static gint control_socket = -1;
 
 static gboolean
