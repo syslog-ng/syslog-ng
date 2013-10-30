@@ -34,16 +34,15 @@ G_LOCK_DEFINE_STATIC(resolv_lock);
 #endif
 
 static void
-normalize_hostname(gchar *result, gsize *result_len, const gchar *hostname)
+normalize_hostname(gchar *result, gsize result_size, const gchar *hostname)
 {
   gsize i;
 
-  for (i = 0; hostname[i] && i < ((*result_len) - 1); i++)
+  for (i = 0; hostname[i] && i < (result_size - 1); i++)
     {
       result[i] = g_ascii_tolower(hostname[i]);
     }
   result[i] = '\0'; /* the closing \0 is not copied by the previous loop */
-  *result_len = i;
 }
 
 gboolean
@@ -128,7 +127,7 @@ resolve_hostname_to_sockaddr(GSockAddr **addr, const gchar *name)
 }
 
 void
-resolve_sockaddr_to_hostname(gchar *result, gsize *result_len, GSockAddr *saddr, const HostResolveOptions *host_resolve_options)
+resolve_sockaddr_to_hostname(gchar *result, gsize result_size, gsize *result_len, GSockAddr *saddr, const HostResolveOptions *host_resolve_options)
 {
   const gchar *hname;
   gboolean positive;
@@ -238,14 +237,15 @@ resolve_sockaddr_to_hostname(gchar *result, gsize *result_len, GSockAddr *saddr,
     }
   if (host_resolve_options->normalize_hostnames)
     {
-      normalize_hostname(result, result_len, hname);
+      normalize_hostname(result, result_size, hname);
+      *result_len = strlen(result);
     }
   else
     {
       gsize len = strlen(hname);
 
-      if (*result_len < len - 1)
-        len = *result_len - 1;
+      if (result_size < len - 1)
+        len = result_size - 1;
       memcpy(result, hname, len);
       result[len] = 0;
       *result_len = len;
@@ -253,22 +253,18 @@ resolve_sockaddr_to_hostname(gchar *result, gsize *result_len, GSockAddr *saddr,
 }
 
 void
-resolve_hostname_to_hostname(gchar *result, gsize *result_len, const gchar *hostname, HostResolveOptions *options)
+resolve_hostname_to_hostname(gchar *result, gsize result_size, gsize *result_len, const gchar *hostname, HostResolveOptions *options)
 {
-  g_strlcpy(result, hostname, *result_len);
+  g_strlcpy(result, hostname, result_size);
   if (options->use_fqdn)
-    convert_hostname_to_fqdn(result, *result_len);
+    convert_hostname_to_fqdn(result, result_size);
   else
-    convert_hostname_to_short_hostname(result, *result_len);
+    convert_hostname_to_short_hostname(result, result_size);
 
   if (options->normalize_hostnames)
-    {
-      normalize_hostname(result, result_len, result);
-    }
-  else
-    {
-      *result_len = strlen(result);
-    }
+    normalize_hostname(result, result_size, result);
+  if (result_len)
+    *result_len = strlen(result);
 }
 
 void
