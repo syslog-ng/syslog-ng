@@ -60,39 +60,57 @@
 static HostResolveOptions host_resolve_options;
 
 static void
-assert_sockaddr_to_hostname_len(gsize buflen, const gchar *ip, const gchar *expected)
+assert_sockaddr_to_hostname(GSockAddr *sa, const gchar *expected)
 {
-  GSockAddr *sa;
-  gchar result[buflen];
-  gsize result_len;
+  const gchar *result;
+  gsize result_len = 9999;
 
-  sa = g_sockaddr_inet_new(ip, 0);
-  resolve_sockaddr_to_hostname(result, sizeof(result), &result_len, sa, &host_resolve_options);
+  result = resolve_sockaddr_to_hostname(&result_len, sa, &host_resolve_options);
   g_sockaddr_unref(sa);
 
   assert_string(result, expected, "resolved name mismatch");
-  assert_gint(strlen(result), result_len, "returned length is not true");
+  assert_gint(result_len, strlen(result), "returned length is not true");
 }
 
 static void
-assert_sockaddr_to_hostname(const gchar *ip, const gchar *expected)
-{
-  assert_sockaddr_to_hostname_len(256, ip, expected);
-}
-
-static void
-assert_sockaddr_to_short_hostname(const gchar *ip, const gchar *expected)
+assert_ip_to_short_hostname(const gchar *ip, const gchar *expected)
 {
   host_resolve_options.use_fqdn = FALSE;
-  assert_sockaddr_to_hostname(ip, expected);
+  assert_sockaddr_to_hostname(g_sockaddr_inet_new(ip, 0), expected);
 }
 
 static void
-assert_sockaddr_to_fqdn_hostname(const gchar *ip, const gchar *expected)
+assert_ip_to_fqdn_hostname(const gchar *ip, const gchar *expected)
 {
   host_resolve_options.use_fqdn = TRUE;
-  assert_sockaddr_to_hostname(ip, expected);
+  assert_sockaddr_to_hostname(g_sockaddr_inet_new(ip, 0), expected);
 }
+
+#if ENABLE_IPV6
+static void
+assert_ip6_to_short_hostname(const gchar *ip, const gchar *expected)
+{
+  host_resolve_options.use_fqdn = FALSE;
+  assert_sockaddr_to_hostname(g_sockaddr_inet6_new(ip, 0), expected);
+}
+
+static void
+assert_ip6_to_fqdn_hostname(const gchar *ip, const gchar *expected)
+{
+  host_resolve_options.use_fqdn = TRUE;
+  assert_sockaddr_to_hostname(g_sockaddr_inet6_new(ip, 0), expected);
+}
+#else
+static void
+assert_ip6_to_short_hostname(const gchar *ip, const gchar *expected)
+{
+}
+
+static void
+assert_ip6_to_fqdn_hostname(const gchar *ip, const gchar *expected)
+{
+}
+#endif
 
 static void
 assert_hostname_to_sockaddr(gint family, const gchar *hostname, const gchar *expected_ip)
@@ -129,12 +147,12 @@ assert_hostname_to_sockaddr_fails(gint family, const gchar *hostname)
 static void
 assert_hostname_to_hostname_len(gsize buflen, const gchar *hostname, const gchar *expected)
 {
-  gchar result[buflen];
-  gsize result_len;
+  const gchar *result;
+  gsize result_len = 9999;
 
-  resolve_hostname_to_hostname(result, sizeof(result), &result_len, hostname, &host_resolve_options);
+  result = resolve_hostname_to_hostname(&result_len, hostname, &host_resolve_options);
   assert_string(result, expected, "hostname to hostname result mismatch");
-  assert_gint(strlen(result), result_len, "returned length is not true");
+  assert_gint(result_len, strlen(result), "returned length is not true");
 }
 
 static void
@@ -154,8 +172,10 @@ test_resolvable_ip_results_in_hostname(void)
   for_all_resolve_cases()
     {
       /* a.root-servers.net, will probably not go away as its IP is registered to bind hints file */
-      assert_sockaddr_to_short_hostname("198.41.0.4", "a");
-      assert_sockaddr_to_fqdn_hostname("198.41.0.4", "a.root-servers.net");
+      assert_ip_to_short_hostname("198.41.0.4", "a");
+      assert_ip_to_fqdn_hostname("198.41.0.4", "a.root-servers.net");
+      assert_ip6_to_short_hostname("2001:503:ba3e::2:30", "a");
+      assert_ip6_to_fqdn_hostname("2001:503:ba3e::2:30", "a.root-servers.net");
     }
 }
 
@@ -180,8 +200,10 @@ test_unresolvable_ip_results_in_ip(void)
        * this testcase will fail.  Search for an IP address that has a
        * responding DNS server but has no A record.
        */
-      assert_sockaddr_to_short_hostname("198.41.0.251", "198.41.0.251");
-      assert_sockaddr_to_fqdn_hostname("198.41.0.251", "198.41.0.251");
+      assert_ip_to_short_hostname("198.41.0.251", "198.41.0.251");
+      assert_ip_to_fqdn_hostname("198.41.0.251", "198.41.0.251");
+      assert_ip6_to_short_hostname("2001:503:ba3e::2:31", "2001:503:ba3e::2:31");
+      assert_ip6_to_fqdn_hostname("2001:503:ba3e::2:31", "2001:503:ba3e::2:31");
     }
 }
 
@@ -192,21 +214,22 @@ test_sockaddr_without_dns_resolution_results_in_ip(void)
   for_all_resolve_cases()
     {
       /* a.root-servers.net, will probably not go away as its IP is registered to bind hints file */
-      assert_sockaddr_to_short_hostname("198.41.0.4", "198.41.0.4");
-      assert_sockaddr_to_fqdn_hostname("198.41.0.4", "198.41.0.4");
+      assert_ip_to_short_hostname("198.41.0.4", "198.41.0.4");
+      assert_ip_to_fqdn_hostname("198.41.0.4", "198.41.0.4");
+      assert_ip6_to_short_hostname("2001:503:ba3e::2:30", "2001:503:ba3e::2:30");
+      assert_ip6_to_fqdn_hostname("2001:503:ba3e::2:30", "2001:503:ba3e::2:30");
     }
 }
 
 static void
-test_short_buffer_results_in_truncation(void)
+test_unix_domain_sockaddr_results_in_the_local_hostname(void)
 {
-  host_resolve_options.use_dns = TRUE;
+  const gchar *local_host;
+
   host_resolve_options.use_fqdn = TRUE;
-  for_all_resolve_cases()
-    {
-      /* a.root-servers.net, will probably not go away as its IP is registered to bind hints file */
-      assert_sockaddr_to_hostname_len(5, "198.41.0.4", "a.ro");
-    }
+  local_host = get_local_hostname_fqdn();
+  assert_sockaddr_to_hostname(g_sockaddr_unix_new(NULL), local_host);
+  assert_sockaddr_to_hostname(NULL, local_host);
 }
 
 static void
@@ -215,7 +238,7 @@ test_resolve_sockaddr_to_hostname(void)
   HOST_RESOLVE_TESTCASE(test_resolvable_ip_results_in_hostname);
   HOST_RESOLVE_TESTCASE(test_unresolvable_ip_results_in_ip);
   HOST_RESOLVE_TESTCASE(test_sockaddr_without_dns_resolution_results_in_ip);
-  HOST_RESOLVE_TESTCASE(test_short_buffer_results_in_truncation);
+  HOST_RESOLVE_TESTCASE(test_unix_domain_sockaddr_results_in_the_local_hostname);
 }
 
 static void
@@ -272,25 +295,11 @@ test_hostname_is_normalized_if_normalize_hostnames_is_set(void)
 }
 
 static void
-test_hostname_is_truncated_with_a_short_buffer(void)
-{
-  host_resolve_options.use_fqdn = TRUE;
-  host_resolve_options.normalize_hostnames = TRUE;
-
-  assert_hostname_to_hostname_len(5, "Foo.BarDomain", "foo.");
-
-  host_resolve_options.normalize_hostnames = FALSE;
-
-  assert_hostname_to_hostname_len(5, "Foo.BarDomain", "Foo.");
-}
-
-static void
 test_resolve_hostname_to_hostname(void)
 {
   HOST_RESOLVE_TESTCASE(test_short_hostname_is_converted_to_fqdn_if_use_fqdn_is_set);
   HOST_RESOLVE_TESTCASE(test_fqdn_hostname_is_converted_to_short_if_use_fqdn_is_unset);
   HOST_RESOLVE_TESTCASE(test_hostname_is_normalized_if_normalize_hostnames_is_set);
-  HOST_RESOLVE_TESTCASE(test_hostname_is_truncated_with_a_short_buffer);
 }
 
 int

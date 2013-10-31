@@ -655,7 +655,7 @@ log_writer_mark_timeout(void *cookie)
 {
   LogWriter *self = (LogWriter *)cookie;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
-  gchar hostname[256];
+  const gchar *hostname;
   gsize hostname_len;
   LogMessage *msg;
 
@@ -663,9 +663,9 @@ log_writer_mark_timeout(void *cookie)
 
   msg = log_msg_new_mark();
   /* timeout: there was no new message on the writer or it is in periodical mode */
-  resolve_sockaddr_to_hostname(hostname, sizeof(hostname), &hostname_len, msg->saddr, &self->options->host_resolve_options);
+  hostname = resolve_sockaddr_to_hostname(&hostname_len, msg->saddr, &self->options->host_resolve_options);
 
-  log_msg_set_value(msg, LM_V_HOST, hostname, strlen(hostname));
+  log_msg_set_value(msg, LM_V_HOST, hostname, hostname_len);
 
   /* set the current time in the message stamp */
   msg->timestamps[LM_TS_STAMP] = msg->timestamps[LM_TS_RECVD];

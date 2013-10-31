@@ -25,6 +25,7 @@
 #include "dnscache.h"
 #include "messages.h"
 #include "cfg.h"
+#include "tls-support.h"
 
 #include <arpa/inet.h>
 #include <netdb.h>
@@ -32,6 +33,14 @@
 #if !defined(HAVE_GETADDRINFO) || !defined(HAVE_GETNAMEINFO)
 G_LOCK_DEFINE_STATIC(resolv_lock);
 #endif
+
+TLS_BLOCK_START
+{
+  gchar hostname_buffer[256];
+}
+TLS_BLOCK_END;
+
+#define hostname_buffer  __tls_deref(hostname_buffer)
 
 static void
 normalize_hostname(gchar *result, gsize result_size, const gchar *hostname)
@@ -45,41 +54,92 @@ normalize_hostname(gchar *result, gsize result_size, const gchar *hostname)
   result[i] = '\0'; /* the closing \0 is not copied by the previous loop */
 }
 
-gboolean
-resolve_hostname_to_sockaddr(GSockAddr **addr, gint family, const gchar *name)
+static const gchar *
+bounce_to_hostname_buffer(const gchar *hname)
 {
-  if (!name || name[0] == 0)
-    {
-      union
-      {
-#ifdef HAVE_STRUCT_SOCKADDR_STORAGE
-        struct sockaddr_storage __sas;
-#endif
-        struct sockaddr_in __sin;
-        struct sockaddr __sa;
-      } sas;
+  if (hname != hostname_buffer)
+    g_strlcpy(hostname_buffer, hname, sizeof(hostname_buffer));
+  return hostname_buffer;
+}
 
-      /* return the wildcard address that can be used as a bind address */
-      memset(&sas, 0, sizeof(sas));
-      sas.__sa.sa_family = family;
-      switch (family)
-        {
-        case AF_INET:
-          *addr = g_sockaddr_inet_new2(((struct sockaddr_in *) &sas));
-          break;
-#if ENABLE_IPV6
-        case AF_INET6:
-          *addr = g_sockaddr_inet6_new2((struct sockaddr_in6 *) &sas);
-          break;
-#endif
-        default:
-          g_assert_not_reached();
-          break;
-        }
-      return TRUE;
+static const gchar *
+hostname_apply_options(gssize result_len_orig, gsize *result_len, const gchar *hname, const HostResolveOptions *host_resolve_options)
+{
+  if (host_resolve_options->normalize_hostnames)
+    {
+      normalize_hostname(hostname_buffer, sizeof(hostname_buffer), hname);
+      hname = hostname_buffer;
     }
+  if (result_len_orig >= 0)
+    *result_len = result_len_orig;
+  else
+    *result_len = strlen(hname);
+  return hname;
+
+}
+
+static const gchar *
+hostname_apply_options_fqdn(gssize result_len_orig, gsize *result_len, const gchar *hname, gboolean positive, const HostResolveOptions *host_resolve_options)
+{
+  if (positive && !host_resolve_options->use_fqdn)
+    {
+      /* we only truncate hostnames if they were positive
+       * matches (e.g. real hostnames and not IP
+       * addresses) */
+
+      hname = bounce_to_hostname_buffer(hname);
+      convert_hostname_to_short_hostname(hostname_buffer, sizeof(hostname_buffer));
+      result_len_orig = -1;
+    }
+  return hostname_apply_options(result_len_orig, result_len, hname, host_resolve_options);
+}
+
+/****************************************************************************
+ * Convert a GSockAddr instance to a hostname
+ ****************************************************************************/
+
+static gboolean
+is_wildcard_hostname(const gchar *name)
+{
+  return !name || name[0] == 0;
+}
+
+static gboolean
+resolve_wildcard_hostname_to_sockaddr(GSockAddr **addr, gint family, const gchar *name)
+{
+  union
+  {
+#ifdef HAVE_STRUCT_SOCKADDR_STORAGE
+    struct sockaddr_storage __sas;
+#endif
+    struct sockaddr_in __sin;
+    struct sockaddr __sa;
+  } sas;
+
+  /* return the wildcard address that can be used as a bind address */
+  memset(&sas, 0, sizeof(sas));
+  sas.__sa.sa_family = family;
+  switch (family)
+    {
+    case AF_INET:
+      *addr = g_sockaddr_inet_new2(((struct sockaddr_in *) &sas));
+      break;
+#if ENABLE_IPV6
+    case AF_INET6:
+      *addr = g_sockaddr_inet6_new2((struct sockaddr_in6 *) &sas);
+      break;
+#endif
+    default:
+      g_assert_not_reached();
+      break;
+    }
+  return TRUE;
+}
 
 #ifdef HAVE_GETADDRINFO
+static gboolean
+resolve_hostname_to_sockaddr_using_getaddrinfo(GSockAddr **addr, gint family, const gchar *name)
+{
   struct addrinfo hints;
   struct addrinfo *res;
 
@@ -106,15 +166,16 @@ resolve_hostname_to_sockaddr(GSockAddr **addr, gint family, const gchar *name)
           break;
         }
       freeaddrinfo(res);
+      return TRUE;
     }
-  else
-    {
-      msg_error("Error resolving hostname",
-                evt_tag_str("host", name),
-                NULL);
-      return FALSE;
-    }
+  return FALSE;
+}
+
 #else
+
+static gboolean
+resolve_hostname_to_sockaddr_using_gethostbyname(GSockAddr **addr, gint family, const gchar *name)
+{
   struct hostent *he;
 
   G_LOCK(resolv_lock);
@@ -137,160 +198,177 @@ resolve_hostname_to_sockaddr(GSockAddr **addr, gint family, const gchar *name)
           g_assert_not_reached();
           break;
         }
-      G_UNLOCK(resolv_lock);
     }
-  else
+  G_UNLOCK(resolv_lock);
+  return he != NULL;
+}
+#endif
+
+gboolean
+resolve_hostname_to_sockaddr(GSockAddr **addr, gint family, const gchar *name)
+{
+  gboolean result;
+
+  if (is_wildcard_hostname(name))
+    return resolve_wildcard_hostname_to_sockaddr(addr, family, name);
+
+#ifdef HAVE_GETADDRINFO
+  result = resolve_hostname_to_sockaddr_using_getaddrinfo(addr, family, name);
+#else
+  result = resolve_hostname_to_sockaddr_using_gethostbyname(addr, family, name);
+#endif
+  if (!result)
     {
-      G_UNLOCK(resolv_lock);
       msg_error("Error resolving hostname",
                 evt_tag_str("host", name),
                 NULL);
-      return FALSE;
     }
-#endif
-  return TRUE;
+  return result;
 }
 
-void
-resolve_sockaddr_to_hostname(gchar *result, gsize result_size, gsize *result_len, GSockAddr *saddr, const HostResolveOptions *host_resolve_options)
+/****************************************************************************
+ * Convert a hostname to a GSockAddr instance
+ ****************************************************************************/
+
+static gboolean
+is_sockaddr_local(GSockAddr *saddr)
+{
+  return !saddr || (saddr->sa.sa_family != AF_INET && saddr->sa.sa_family != AF_INET6);
+}
+
+static const gchar *
+resolve_sockaddr_to_local_hostname(gsize *result_len, GSockAddr *saddr, const HostResolveOptions *host_resolve_options)
 {
   const gchar *hname;
-  gboolean positive;
-  gchar buf[256];
 
-  if (saddr && saddr->sa.sa_family != AF_UNIX)
-    {
-      if (saddr->sa.sa_family == AF_INET
-#if ENABLE_IPV6
-          || saddr->sa.sa_family == AF_INET6
-#endif
-         )
-        {
-          void *addr;
-          socklen_t addr_len G_GNUC_UNUSED;
+  if (host_resolve_options->use_fqdn)
+    hname = get_local_hostname_fqdn();
+  else
+    hname = get_local_hostname_short();
 
-          if (saddr->sa.sa_family == AF_INET)
-            {
-              addr = &((struct sockaddr_in *) &saddr->sa)->sin_addr;
-              addr_len = sizeof(struct in_addr);
-            }
-#if ENABLE_IPV6
-          else
-            {
-              addr = &((struct sockaddr_in6 *) &saddr->sa)->sin6_addr;
-              addr_len = sizeof(struct in6_addr);
-            }
-#endif
+  return hostname_apply_options(-1, result_len, hname, host_resolve_options);
+}
 
-          hname = NULL;
-          if (host_resolve_options->use_dns)
-            {
-              if ((!host_resolve_options->use_dns_cache || !dns_cache_lookup(saddr->sa.sa_family, addr, (const gchar **) &hname, &positive)) && host_resolve_options->use_dns != 2)
-                {
 #ifdef HAVE_GETNAMEINFO
-                  if (getnameinfo(&saddr->sa, saddr->salen, buf, sizeof(buf), NULL, 0, NI_NAMEREQD) == 0)
-                    hname = buf;
+
+static const gchar *
+resolve_address_using_getnameinfo(GSockAddr *saddr, gchar *buf, gsize buf_len)
+{
+  if (getnameinfo(&saddr->sa, saddr->salen, buf, buf_len, NULL, 0, NI_NAMEREQD) == 0)
+    return buf;
+  return NULL;
+}
+
 #else
-                  struct hostent *hp;
 
-                  G_LOCK(resolv_lock);
-                  hp = gethostbyaddr(addr, addr_len, saddr->sa.sa_family);
-                  if (hp && hp->h_name)
-                    {
-                      strncpy(buf, hp->h_name, sizeof(buf));
-                      buf[sizeof(buf) - 1] = 0;
-                      hname = buf;
-                    }
+static const gchar *
+resolve_address_using_gethostbyaddr(GSockAddr *saddr, gchar *buf, gsize buf_len)
+{
+  const gchar *result = NULL;
+  struct hostent *hp;
+  void *addr;
+  socklen_t addr_len G_GNUC_UNUSED;
 
-                  G_UNLOCK(resolv_lock);
+  g_assert(saddr->sa.sa_family == AF_INET);
+
+  addr = &((struct sockaddr_in *) &saddr->sa)->sin_addr;
+  addr_len = sizeof(struct in_addr);
+
+  G_LOCK(resolv_lock);
+  hp = gethostbyaddr(addr, addr_len, saddr->sa.sa_family);
+  if (hp && hp->h_name)
+    {
+      strncpy(buf, hp->h_name, buf_len);
+      buf[buf_len - 1] = 0;
+      result = buf;
+    }
+
+  G_UNLOCK(resolv_lock);
+  return result;
+}
+
 #endif
 
-                  if (hname)
-                    positive = TRUE;
-
-                  if (host_resolve_options->use_dns_cache && hname)
-                    {
-                      /* resolution success, store this as a positive match in the cache */
-                      dns_cache_store(FALSE, saddr->sa.sa_family, addr, hname, TRUE);
-                    }
-                }
-            }
-
-          if (!hname)
-            {
-              inet_ntop(saddr->sa.sa_family, addr, buf, sizeof(buf));
-              hname = buf;
-              if (host_resolve_options->use_dns_cache)
-                dns_cache_store(FALSE, saddr->sa.sa_family, addr, hname, FALSE);
-            }
-          else
-            {
-              if (!host_resolve_options->use_fqdn && positive)
-                {
-                  /* we only truncate hostnames if they were positive
-                   * matches (e.g. real hostnames and not IP
-                   * addresses) */
-                  const gchar *p;
-                  p = strchr(hname, '.');
-
-                  if (p)
-                    {
-                      if (p - hname > sizeof(buf))
-                        p = &hname[sizeof(buf)] - 1;
-                      memcpy(buf, hname, p - hname);
-                      buf[p - hname] = 0;
-                      hname = buf;
-                    }
-                }
-            }
-        }
-      else
-        {
-          g_assert_not_reached();
-        }
-    }
-  else
-    {
-      if (host_resolve_options->use_fqdn)
-        {
-          hname = get_local_hostname_fqdn();
-        }
-      else
-        {
-          hname = get_local_hostname_short();
-        }
-    }
-  if (host_resolve_options->normalize_hostnames)
-    {
-      normalize_hostname(result, result_size, hname);
-      *result_len = strlen(result);
-    }
-  else
-    {
-      gsize len = strlen(hname);
-
-      if (result_size < len - 1)
-        len = result_size - 1;
-      memcpy(result, hname, len);
-      result[len] = 0;
-      *result_len = len;
-    }
-}
-
-void
-resolve_hostname_to_hostname(gchar *result, gsize result_size, gsize *result_len, const gchar *hostname, HostResolveOptions *options)
+static void *
+sockaddr_to_dnscache_key(GSockAddr *saddr)
 {
-  g_strlcpy(result, hostname, result_size);
-  if (options->use_fqdn)
-    convert_hostname_to_fqdn(result, result_size);
+  if (saddr->sa.sa_family == AF_INET)
+    return &((struct sockaddr_in *) &saddr->sa)->sin_addr;
+#if ENABLE_IPV6
   else
-    convert_hostname_to_short_hostname(result, result_size);
-
-  if (options->normalize_hostnames)
-    normalize_hostname(result, result_size, result);
-  if (result_len)
-    *result_len = strlen(result);
+    return &((struct sockaddr_in6 *) &saddr->sa)->sin6_addr;
+#endif
 }
+
+static const gchar *
+resolve_sockaddr_to_inet_or_inet6_hostname(gsize *result_len, GSockAddr *saddr, const HostResolveOptions *host_resolve_options)
+{
+  const gchar *hname;
+  gsize hname_len;
+  gboolean positive;
+  void *dnscache_key;
+
+  dnscache_key = sockaddr_to_dnscache_key(saddr);
+
+  hname = NULL;
+  positive = FALSE;
+
+  if (host_resolve_options->use_dns_cache)
+    {
+      if (dns_cache_lookup(saddr->sa.sa_family, dnscache_key, (const gchar **) &hname, &hname_len, &positive))
+        return hostname_apply_options_fqdn(hname_len, result_len, hname, positive, host_resolve_options);
+    }
+
+  if (!hname && host_resolve_options->use_dns && host_resolve_options->use_dns != 2)
+    {
+#ifdef HAVE_GETNAMEINFO
+      hname = resolve_address_using_getnameinfo(saddr, hostname_buffer, sizeof(hostname_buffer));
+#else
+      hname = resolve_address_using_gethostbyaddr(saddr, hostname_buffer, sizeof(hostname_buffer));
+#endif
+      positive = (hname != NULL);
+    }
+
+  if (!hname)
+    {
+      hname = g_sockaddr_format(saddr, hostname_buffer, sizeof(hostname_buffer), GSA_ADDRESS_ONLY);
+      positive = FALSE;
+    }
+  if (host_resolve_options->use_dns_cache)
+    dns_cache_store(FALSE, saddr->sa.sa_family, dnscache_key, hname, positive);
+
+  return hostname_apply_options_fqdn(-1, result_len, hname, positive, host_resolve_options);
+}
+
+const gchar *
+resolve_sockaddr_to_hostname(gsize *result_len, GSockAddr *saddr, const HostResolveOptions *host_resolve_options)
+{
+  if (is_sockaddr_local(saddr))
+    return resolve_sockaddr_to_local_hostname(result_len, saddr, host_resolve_options);
+  else
+    return resolve_sockaddr_to_inet_or_inet6_hostname(result_len, saddr, host_resolve_options);
+}
+
+/****************************************************************************
+ * Convert a hostname to a hostname with options applied.
+ ****************************************************************************/
+
+const gchar *
+resolve_hostname_to_hostname(gsize *result_len, const gchar *hname, HostResolveOptions *host_resolve_options)
+{
+  hname = bounce_to_hostname_buffer(hname);
+
+  if (host_resolve_options->use_fqdn)
+    convert_hostname_to_fqdn(hostname_buffer, sizeof(hostname_buffer));
+  else
+    convert_hostname_to_short_hostname(hostname_buffer, sizeof(hostname_buffer));
+
+  return hostname_apply_options(-1, result_len, hname, host_resolve_options);
+}
+
+/****************************************************************************
+ * HostResolveOptions
+ ****************************************************************************/
 
 void
 host_resolve_options_defaults(HostResolveOptions *options)

@@ -124,11 +124,11 @@ log_source_msg_ack(LogMessage *msg, gpointer user_data)
 void
 log_source_mangle_hostname(LogSource *self, LogMessage *msg)
 {
-  gchar resolved_name[256];
+  const gchar *resolved_name;
   gsize resolved_name_len;
   const gchar *orig_host;
   
-  resolve_sockaddr_to_hostname(resolved_name, sizeof(resolved_name), &resolved_name_len, msg->saddr, &self->options->host_resolve_options);
+  resolved_name = resolve_sockaddr_to_hostname(&resolved_name_len, msg->saddr, &self->options->host_resolve_options);
   log_msg_set_value(msg, LM_V_HOST_FROM, resolved_name, resolved_name_len);
 
   orig_host = log_msg_get_value(msg, LM_V_HOST, NULL);
