@@ -89,7 +89,9 @@ resolve_hostname_to_sockaddr(GSockAddr **addr, const gchar *name)
         }
       else
         {
-          msg_error("Error resolving hostname", evt_tag_str("host", name), NULL);
+          msg_error("Error resolving hostname",
+                    evt_tag_str("host", name),
+                    NULL);
           return FALSE;
         }
 #else
@@ -113,7 +115,9 @@ resolve_hostname_to_sockaddr(GSockAddr **addr, const gchar *name)
       else
         {
           G_UNLOCK(resolv_lock);
-          msg_error("Error resolving hostname", evt_tag_str("host", name), NULL);
+          msg_error("Error resolving hostname",
+                    evt_tag_str("host", name),
+                    NULL);
           return FALSE;
         }
 #endif
