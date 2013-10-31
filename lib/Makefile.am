@@ -46,6 +46,7 @@ pkginclude_HEADERS			+= \
 	lib/gprocess.h			\
 	lib/gsockaddr.h			\
 	lib/gsocket.h			\
+	lib/hostname.h			\
 	lib/logmatcher.h		\
 	lib/logmpx.h			\
 	lib/logmsg.h			\
@@ -122,6 +123,7 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/gprocess.c			\
 	lib/gsockaddr.c			\
 	lib/gsocket.c			\
+	lib/hostname.c			\
 	lib/logmatcher.c		\
 	lib/logmpx.c			\
 	lib/logmsg.c			\

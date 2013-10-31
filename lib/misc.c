@@ -42,10 +42,6 @@
 #include <stdio.h>
 #include <signal.h>
 
-static gsize local_hostname_fqdn_len;
-static gchar local_hostname_fqdn[256];
-static gsize local_hostname_short_len;
-static gchar local_hostname_short[256];
 G_LOCK_DEFINE_STATIC(resolv_lock);
 
 GString *
@@ -63,45 +59,6 @@ g_string_steal(GString *s)
   s->str = g_malloc0(1);
   s->allocated_len = 1;
   s->len = 0;
-}
-
-void
-reset_cached_hostname(void)
-{
-  gchar *s;
-  
-  gethostname(local_hostname_fqdn, sizeof(local_hostname_fqdn) - 1);
-  local_hostname_fqdn[sizeof(local_hostname_fqdn) - 1] = '\0';
-  local_hostname_fqdn_len = strlen(local_hostname_fqdn);
-  if (strchr(local_hostname_fqdn, '.') == NULL)
-    {
-      /* not fully qualified, resolve it using DNS or /etc/hosts */
-      G_LOCK(resolv_lock);
-      struct hostent *result = gethostbyname(local_hostname_fqdn);
-      if (result)
-        {
-          strncpy(local_hostname_fqdn, result->h_name, sizeof(local_hostname_fqdn) - 1);
-          local_hostname_fqdn[sizeof(local_hostname_fqdn) - 1] = '\0';
-        }
-      G_UNLOCK(resolv_lock);
-    }
-  /* NOTE: they are the same size, they'll fit */
-  strcpy(local_hostname_short, local_hostname_fqdn);
-  s = strchr(local_hostname_short, '.');
-  if (s != NULL)
-    *s = '\0';
-  local_hostname_short_len = strlen(local_hostname_short);
-}
-
-const gchar *
-get_local_hostname(gsize *len)
-{
-  if (!local_hostname_fqdn[0])
-    reset_cached_hostname();
-
-  if (len)
-    *len = local_hostname_fqdn_len;
-  return local_hostname_fqdn;
 }
 
 gboolean
