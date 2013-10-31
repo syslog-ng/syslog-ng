@@ -253,6 +253,25 @@ resolve_sockaddr_to_hostname(gchar *result, gsize *result_len, GSockAddr *saddr,
 }
 
 void
+resolve_hostname_to_hostname(gchar *result, gsize *result_len, const gchar *hostname, HostResolveOptions *options)
+{
+  g_strlcpy(result, hostname, *result_len);
+  if (options->use_fqdn)
+    convert_hostname_to_fqdn(result, *result_len);
+  else
+    convert_hostname_to_short_hostname(result, *result_len);
+
+  if (options->normalize_hostnames)
+    {
+      normalize_hostname(result, result_len, result);
+    }
+  else
+    {
+      *result_len = strlen(result);
+    }
+}
+
+void
 host_resolve_options_defaults(HostResolveOptions *options)
 {
   options->use_dns = -1;
