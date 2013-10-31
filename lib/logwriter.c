@@ -25,6 +25,8 @@
 #include "logwriter.h"
 #include "messages.h"
 #include "stats.h"
+#include "hostname.h"
+#include "host-resolve.h"
 #include "misc.h"
 #include "mainloop.h"
 #include "ml-batched-timer.h"
