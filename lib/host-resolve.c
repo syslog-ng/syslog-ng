@@ -33,6 +33,18 @@
 #include <netdb.h>
 
 
+static void
+normalize_hostname(gchar *result, gsize *result_len, const gchar *hostname)
+{
+  gsize i;
+
+  for (i = 0; hostname[i] && i < ((*result_len) - 1); i++)
+    {
+      result[i] = g_ascii_tolower(hostname[i]);
+    }
+  result[i] = '\0'; /* the closing \0 is not copied by the previous loop */
+  *result_len = i;
+}
 G_LOCK_DEFINE_STATIC(resolv_lock);
 
 gboolean
@@ -223,14 +235,7 @@ resolve_sockaddr(gchar *result, gsize *result_len, GSockAddr *saddr, gboolean us
     }
   if (normalize_hostnames)
     {
-      gint i;
-
-      for (i = 0; hname[i] && i < ((*result_len) - 1); i++)
-        {
-          result[i] = g_ascii_tolower(hname[i]);
-        }
-      result[i] = '\0'; /* the closing \0 is not copied by the previous loop */
-      *result_len = i;
+      normalize_hostname(result, result_len, hname);
     }
   else
     {
