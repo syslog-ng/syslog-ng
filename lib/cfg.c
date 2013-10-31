@@ -415,6 +415,7 @@ cfg_free(GlobalConfig *self)
   g_free(self->proto_template_name);  
   log_template_unref(self->file_template);
   log_template_unref(self->proto_template);
+  log_template_options_destroy(&self->template_options);
 
   if (self->bad_hostname_compiled)
     regfree(&self->bad_hostname);
