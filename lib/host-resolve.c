@@ -48,7 +48,38 @@ normalize_hostname(gchar *result, gsize result_size, const gchar *hostname)
 gboolean
 resolve_hostname_to_sockaddr(GSockAddr **addr, gint family, const gchar *name)
 {
-#if HAVE_GETADDRINFO
+  if (!name || name[0] == 0)
+    {
+      union
+      {
+#ifdef HAVE_STRUCT_SOCKADDR_STORAGE
+        struct sockaddr_storage __sas;
+#endif
+        struct sockaddr_in __sin;
+        struct sockaddr __sa;
+      } sas;
+
+      /* return the wildcard address that can be used as a bind address */
+      memset(&sas, 0, sizeof(sas));
+      sas.__sa.sa_family = family;
+      switch (family)
+        {
+        case AF_INET:
+          *addr = g_sockaddr_inet_new2(((struct sockaddr_in *) &sas));
+          break;
+#if ENABLE_IPV6
+        case AF_INET6:
+          *addr = g_sockaddr_inet6_new2((struct sockaddr_in6 *) &sas);
+          break;
+#endif
+        default:
+          g_assert_not_reached();
+          break;
+        }
+      return TRUE;
+    }
+
+#ifdef HAVE_GETADDRINFO
   struct addrinfo hints;
   struct addrinfo *res;
 

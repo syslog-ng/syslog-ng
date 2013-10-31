@@ -222,8 +222,10 @@ static void
 test_resolvable_hostname_results_in_sockaddr(void)
 {
   assert_hostname_to_sockaddr(AF_INET, "a.root-servers.net", "198.41.0.4");
+  assert_hostname_to_sockaddr(AF_INET, "", "0.0.0.0");
 #if ENABLE_IPV6
   assert_hostname_to_sockaddr(AF_INET6, "a.root-servers.net", "2001:503:ba3e::2:30");
+  assert_hostname_to_sockaddr(AF_INET6, "", "::");
 #endif
 }
 

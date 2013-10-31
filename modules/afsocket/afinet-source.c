@@ -116,30 +116,13 @@ static gboolean
 afinet_sd_setup_addresses(AFSocketSourceDriver *s)
 {
   AFInetSourceDriver *self = (AFInetSourceDriver *) s;
-  gchar *default_bind_ip = NULL;
 
   if (!afsocket_sd_setup_addresses_method(s))
     return FALSE;
 
   g_sockaddr_unref(self->super.bind_addr);
 
-  if (self->super.transport_mapper->address_family == AF_INET)
-    {
-      self->super.bind_addr = g_sockaddr_inet_new("0.0.0.0", 0);
-      default_bind_ip = "0.0.0.0";
-    }
-#if ENABLE_IPV6
-  else if (self->super.transport_mapper->address_family == AF_INET6)
-    {
-      self->super.bind_addr = g_sockaddr_inet6_new("::", 0);
-      default_bind_ip = "::";
-    }
-#endif
-  else
-    {
-      g_assert_not_reached();
-    }
-  if (!resolve_hostname_to_sockaddr(&self->super.bind_addr, self->super.transport_mapper->address_family, self->bind_ip ? : default_bind_ip))
+  if (!resolve_hostname_to_sockaddr(&self->super.bind_addr, self->super.transport_mapper->address_family, self->bind_ip))
     return FALSE;
 
   if (!self->bind_port)
