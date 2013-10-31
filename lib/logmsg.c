@@ -205,7 +205,7 @@ log_msg_update_sdata_slow(LogMessage *self, NVHandle handle, const gchar *name, 
   stats_counter_inc(count_sdata_updates);
   if (self->num_sdata == 255)
     {
-      msg_error("syslog-ng only supports 255 SD elements right now, just drop an email to the mailing list that it was not enough with your use-case so we can increase it", evt_tag_id(MSG_TOO_MUCH_SDATA_ITEM), NULL);
+      msg_error("The limit of 255 SDATA elements in a single log message reached, dropping SDATA element", evt_tag_id(MSG_TOO_MUCH_SDATA_ITEM), NULL);
       return;
     }
 
