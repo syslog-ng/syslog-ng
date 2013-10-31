@@ -191,28 +191,10 @@ afinet_dd_setup_addresses(AFSocketDestDriver *s)
   g_sockaddr_unref(self->super.bind_addr);
   g_sockaddr_unref(self->super.dest_addr);
 
-  if (self->super.transport_mapper->address_family == AF_INET)
-    {
-      self->super.bind_addr = g_sockaddr_inet_new("0.0.0.0", 0);
-      self->super.dest_addr = g_sockaddr_inet_new("0.0.0.0", 0);
-    }
-#if ENABLE_IPV6
-  else if (self->super.transport_mapper->address_family == AF_INET6)
-    {
-      self->super.bind_addr = g_sockaddr_inet6_new("::", 0);
-      self->super.dest_addr = g_sockaddr_inet6_new("::", 0);
-    }
-#endif
-  else
-    {
-      /* address family not known */
-      g_assert_not_reached();
-    }
-
-  if ((self->bind_ip && !resolve_hostname_to_sockaddr(&self->super.bind_addr, self->bind_ip)))
+  if (!resolve_hostname_to_sockaddr(&self->super.bind_addr, self->super.transport_mapper->address_family, self->bind_ip))
     return FALSE;
 
-  if (!resolve_hostname_to_sockaddr(&self->super.dest_addr, self->hostname))
+  if (!resolve_hostname_to_sockaddr(&self->super.dest_addr, self->super.transport_mapper->address_family, self->hostname))
     return FALSE;
 
   if (!self->dest_port)

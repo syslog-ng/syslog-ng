@@ -95,33 +95,34 @@ assert_sockaddr_to_fqdn_hostname(const gchar *ip, const gchar *expected)
 }
 
 static void
-assert_hostname_to_sockaddr(const gchar *hostname, const gchar *expected_ip)
+assert_hostname_to_sockaddr(gint family, const gchar *hostname, const gchar *expected_ip)
 {
-  GSockAddr *sa;
-  struct in_addr ina;
+  GSockAddr *sa = NULL;
   gchar ip[64];
   gboolean result;
 
-  sa = g_sockaddr_inet_new("0.0.0.0", 0);
-  result = resolve_hostname_to_sockaddr(&sa, hostname);
-  ina = g_sockaddr_inet_get_address(sa);
-  g_inet_ntoa(ip, sizeof(ip), ina);
-  g_sockaddr_unref(sa);
+  result = resolve_hostname_to_sockaddr(&sa, family, hostname);
+  if (sa)
+    {
+      g_sockaddr_format(sa, ip, sizeof(ip), GSA_ADDRESS_ONLY);
+      g_sockaddr_unref(sa);
+    }
 
   assert_true(result, "unexpected error return");
+  assert_true(sa != NULL, "sockaddr can't be NULL for successful returns");
   assert_string(ip, expected_ip, "resolved address mismatch");
 }
 
 static void
-assert_hostname_to_sockaddr_fails(const gchar *hostname)
+assert_hostname_to_sockaddr_fails(gint family, const gchar *hostname)
 {
-  GSockAddr *sa;
+  GSockAddr *sa = NULL;
   gboolean result;
 
-  sa = g_sockaddr_inet_new("0.0.0.0", 0);
-  result = resolve_hostname_to_sockaddr(&sa, hostname);
+  result = resolve_hostname_to_sockaddr(&sa, family, hostname);
   g_sockaddr_unref(sa);
 
+  assert_null(sa, "returned sockaddr is non-NULL");
   assert_false(result, "unexpected success returned");
 }
 
@@ -220,13 +221,16 @@ test_resolve_sockaddr_to_hostname(void)
 static void
 test_resolvable_hostname_results_in_sockaddr(void)
 {
-  assert_hostname_to_sockaddr("a.root-servers.net", "198.41.0.4");
+  assert_hostname_to_sockaddr(AF_INET, "a.root-servers.net", "198.41.0.4");
+#if ENABLE_IPV6
+  assert_hostname_to_sockaddr(AF_INET6, "a.root-servers.net", "2001:503:ba3e::2:30");
+#endif
 }
 
 static void
 test_unresolvable_hostname_results_in_error(void)
 {
-  assert_hostname_to_sockaddr_fails("foo.bar.baz");
+  assert_hostname_to_sockaddr_fails(AF_INET, "foo.bar.baz");
 }
 
 static void

@@ -107,8 +107,7 @@ stomp_connect(stomp_connection **connection_ref, char *hostname, int port)
       return FALSE;
     }
 
-  conn->remote_sa = g_sockaddr_inet_new("127.0.0.1", port);
-  if (!resolve_hostname_to_sockaddr(&conn->remote_sa, hostname))
+  if (!resolve_hostname_to_sockaddr(&conn->remote_sa, AF_INET, hostname))
     {
       msg_error("Failed to resolve hostname in stomp driver",
                 evt_tag_str("hostname", hostname),

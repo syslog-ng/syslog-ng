@@ -46,83 +46,77 @@ normalize_hostname(gchar *result, gsize result_size, const gchar *hostname)
 }
 
 gboolean
-resolve_hostname_to_sockaddr(GSockAddr **addr, const gchar *name)
+resolve_hostname_to_sockaddr(GSockAddr **addr, gint family, const gchar *name)
 {
-  if (addr)
-    {
 #if HAVE_GETADDRINFO
-      struct addrinfo hints;
-      struct addrinfo *res;
+  struct addrinfo hints;
+  struct addrinfo *res;
 
-      memset(&hints, 0, sizeof(hints));
-      hints.ai_family = (*addr)->sa.sa_family;
-      hints.ai_socktype = 0;
-      hints.ai_protocol = 0;
+  memset(&hints, 0, sizeof(hints));
+  hints.ai_family = family;
+  hints.ai_socktype = 0;
+  hints.ai_protocol = 0;
 
-      if (getaddrinfo(name, NULL, &hints, &res) == 0)
+  if (getaddrinfo(name, NULL, &hints, &res) == 0)
+    {
+      /* we only use the first entry in the returned list */
+      switch (family)
         {
-          /* we only use the first entry in the returned list */
-          switch ((*addr)->sa.sa_family)
-            {
-            case AF_INET:
-              g_sockaddr_inet_set_address((*addr), ((struct sockaddr_in *) res->ai_addr)->sin_addr);
-              break;
+        case AF_INET:
+          *addr = g_sockaddr_inet_new2(((struct sockaddr_in *) res->ai_addr));
+          break;
 #if ENABLE_IPV6
-            case AF_INET6:
-              {
-                guint16 port;
-
-                /* we need to copy the whole sockaddr_in6 structure as it
-                 * might contain scope and other required data */
-                port = g_sockaddr_get_port(*addr);
-                *g_sockaddr_inet6_get_sa(*addr) = *((struct sockaddr_in6 *) res->ai_addr);
-
-                /* we need to restore the port number as it is zeroed out by the previous assignment */
-                g_sockaddr_set_port(*addr, port);
-                break;
-              }
+        case AF_INET6:
+          *addr = g_sockaddr_inet6_new2((struct sockaddr_in6 *) res->ai_addr);
+          break;
 #endif
-            default:
-              g_assert_not_reached();
-              break;
-            }
-          freeaddrinfo(res);
+        default:
+          g_assert_not_reached();
+          break;
         }
-      else
-        {
-          msg_error("Error resolving hostname",
-                    evt_tag_str("host", name),
-                    NULL);
-          return FALSE;
-        }
-#else
-      struct hostent *he;
-
-      G_LOCK(resolv_lock);
-      he = gethostbyname(name);
-      if (he)
-        {
-          switch ((*addr)->sa.sa_family)
-            {
-            case AF_INET:
-              g_sockaddr_inet_set_address((*addr), *(struct in_addr *) he->h_addr);
-              break;
-            default:
-              g_assert_not_reached();
-              break;
-            }
-          G_UNLOCK(resolv_lock);
-        }
-      else
-        {
-          G_UNLOCK(resolv_lock);
-          msg_error("Error resolving hostname",
-                    evt_tag_str("host", name),
-                    NULL);
-          return FALSE;
-        }
-#endif
+      freeaddrinfo(res);
     }
+  else
+    {
+      msg_error("Error resolving hostname",
+                evt_tag_str("host", name),
+                NULL);
+      return FALSE;
+    }
+#else
+  struct hostent *he;
+
+  G_LOCK(resolv_lock);
+  he = gethostbyname(name);
+  if (he)
+    {
+      switch (family)
+        {
+        case AF_INET:
+          {
+            struct sockaddr_in sin;
+
+            sin.sin_family = AF_INET;
+            sin.sin_addr = *(struct in_addr *) he->h_addr;
+            sin.sin_port = htons(0);
+            *addr = g_sockaddr_inet_new2(&sin);
+            break;
+          }
+        default:
+          g_assert_not_reached();
+          break;
+        }
+      G_UNLOCK(resolv_lock);
+    }
+  else
+    {
+      G_UNLOCK(resolv_lock);
+      msg_error("Error resolving hostname",
+                evt_tag_str("host", name),
+                NULL);
+      return FALSE;
+    }
+#endif
   return TRUE;
 }
 
