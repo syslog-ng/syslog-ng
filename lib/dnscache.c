@@ -302,7 +302,7 @@ dns_cache_store(gboolean persistent, gint family, void *addr, const gchar *hostn
   entry = g_new(DNSCacheEntry, 1);
 
   dns_cache_fill_key(&entry->key, family, addr);
-  entry->hostname = hostname ? g_strdup(hostname) : NULL;
+  entry->hostname = g_strdup(hostname);
   entry->hostname_len = strlen(hostname);
   entry->positive = positive;
   if (!persistent)

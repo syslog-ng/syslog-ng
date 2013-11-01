@@ -26,7 +26,7 @@ test_expiration(void)
     {
       guint32 ni = htonl(i);
 
-      dns_cache_store(FALSE, AF_INET, (void *) &ni, i < 5000 ? "hostname" : NULL, i < 5000);
+      dns_cache_store_dynamic(AF_INET, (void *) &ni, i < 5000 ? "hostname" : "negative", i < 5000);
     }
 
   for (i = 0; i < 10000; i++)
@@ -52,7 +52,7 @@ test_expiration(void)
             }
           else
             {
-              if (positive || hn != NULL)
+              if (positive || strcmp(hn, "negative") != 0)
                 {
                   fprintf(stderr, "hmm, cache returned a positive match, where a negative match was expected, i=%d, hn=%s\n", i, hn);
                   exit(1);
