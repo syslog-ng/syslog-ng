@@ -16,6 +16,7 @@ test_expiration(void)
 {
   gint i;
   const gchar *hn = NULL;
+  gsize hn_len;
   gboolean positive;
 
   dns_cache_set_params(50000, 3, 1, NULL);
@@ -34,7 +35,7 @@ test_expiration(void)
 
       hn = NULL;
       positive = FALSE;
-      if (!dns_cache_lookup(AF_INET, (void *) &ni, &hn, &positive))
+      if (!dns_cache_lookup(AF_INET, (void *) &ni, &hn, &hn_len, &positive))
         {
           fprintf(stderr, "hmmm cache forgot the cache entry too early, i=%d, hn=%s\n", i, hn);
           exit(1);
@@ -73,7 +74,7 @@ test_expiration(void)
       positive = FALSE;
       if (i < 5000)
         {
-          if (!dns_cache_lookup(AF_INET, (void *) &ni, &hn, &positive) || !positive)
+          if (!dns_cache_lookup(AF_INET, (void *) &ni, &hn, &hn_len, &positive) || !positive)
             {
               fprintf(stderr, "hmmm cache forgot positive entries too early, i=%d\n", i);
               exit(1);
@@ -81,7 +82,7 @@ test_expiration(void)
         }
       else
         {
-          if (dns_cache_lookup(AF_INET, (void *) &ni, &hn, &positive) || positive)
+          if (dns_cache_lookup(AF_INET, (void *) &ni, &hn, &hn_len, &positive) || positive)
             {
               fprintf(stderr, "hmmm cache didn't forget negative entries in time, i=%d\n", i);
               exit(1);
@@ -100,7 +101,7 @@ test_expiration(void)
 
       hn = NULL;
       positive = FALSE;
-      if (dns_cache_lookup(AF_INET, (void *) &ni, &hn, &positive))
+      if (dns_cache_lookup(AF_INET, (void *) &ni, &hn, &hn_len, &positive))
         {
           fprintf(stderr, "hmmm cache did not forget an expired entry, i=%d\n", i);
           exit(1);
@@ -114,6 +115,7 @@ test_dns_cache_benchmark(void)
 {
   GTimeVal start, end;
   const gchar *hn;
+  gsize hn_len;
   gboolean positive;
   gint i;
 
@@ -134,7 +136,7 @@ test_dns_cache_benchmark(void)
       guint32 ni = htonl(i % 10000);
 
       hn = NULL;
-      if (!dns_cache_lookup(AF_INET, (void *) &ni, &hn, &positive))
+      if (!dns_cache_lookup(AF_INET, (void *) &ni, &hn, &hn_len, &positive))
         {
           fprintf(stderr, "hmm, dns cache entries expired during benchmarking, this is unexpected\n, i=%d", i);
         }

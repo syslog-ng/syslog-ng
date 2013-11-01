@@ -58,6 +58,7 @@ struct _DNSCacheEntry
   DNSCacheKey key;
   time_t resolved;
   gchar *hostname;
+  gsize hostname_len;
   /* whether this entry is a positive (successful DNS lookup) or negative (failed DNS lookup, contains an IP address) match */
   gboolean positive;
 };
@@ -260,7 +261,7 @@ dns_cache_check_hosts(glong t)
  * matching entry at all).
  */
 gboolean
-dns_cache_lookup(gint family, void *addr, const gchar **hostname, gboolean *positive)
+dns_cache_lookup(gint family, void *addr, const gchar **hostname, gsize *hostname_len, gboolean *positive)
 {
   DNSCacheKey key;
   DNSCacheEntry *entry;
@@ -282,6 +283,7 @@ dns_cache_lookup(gint family, void *addr, const gchar **hostname, gboolean *posi
       else
         {
           *hostname = entry->hostname;
+          *hostname_len = entry->hostname_len;
           *positive = entry->positive;
           return TRUE;
         }
@@ -301,6 +303,7 @@ dns_cache_store(gboolean persistent, gint family, void *addr, const gchar *hostn
 
   dns_cache_fill_key(&entry->key, family, addr);
   entry->hostname = hostname ? g_strdup(hostname) : NULL;
+  entry->hostname_len = strlen(hostname);
   entry->positive = positive;
   if (!persistent)
     {
