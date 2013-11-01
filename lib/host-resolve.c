@@ -335,7 +335,7 @@ resolve_sockaddr_to_inet_or_inet6_hostname(gsize *result_len, GSockAddr *saddr, 
       positive = FALSE;
     }
   if (host_resolve_options->use_dns_cache)
-    dns_cache_store(FALSE, saddr->sa.sa_family, dnscache_key, hname, positive);
+    dns_cache_store_dynamic(saddr->sa.sa_family, dnscache_key, hname, positive);
 
   return hostname_apply_options_fqdn(-1, result_len, hname, positive, host_resolve_options);
 }

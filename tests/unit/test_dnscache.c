@@ -126,7 +126,7 @@ test_dns_cache_benchmark(void)
     {
       guint32 ni = htonl(i);
 
-      dns_cache_store(FALSE, AF_INET, (void *) &ni, "hostname", TRUE);
+      dns_cache_store_dynamic(AF_INET, (void *) &ni, "hostname", TRUE);
     }
 
   g_get_current_time(&start);

@@ -238,7 +238,7 @@ dns_cache_check_hosts(glong t)
               if (!p)
                 continue;
               inet_pton(family, ip, &ia);
-              dns_cache_store(TRUE, family, &ia, p, TRUE);
+              dns_cache_store_persistent(family, &ia, p);
             }
           fclose(hosts);
         }
@@ -293,7 +293,7 @@ dns_cache_lookup(gint family, void *addr, const gchar **hostname, gsize *hostnam
   return FALSE;
 }
 
-void
+static void
 dns_cache_store(gboolean persistent, gint family, void *addr, const gchar *hostname, gboolean positive)
 {
   DNSCacheEntry *entry;
@@ -327,6 +327,18 @@ dns_cache_store(gboolean persistent, gint family, void *addr, const gchar *hostn
       /* remove oldest element */
       g_hash_table_remove(cache, &cache_first.next->key);
     }
+}
+
+void
+dns_cache_store_persistent(gint family, void *addr, const gchar *hostname)
+{
+  dns_cache_store(TRUE, family, addr, hostname, TRUE);
+}
+
+void
+dns_cache_store_dynamic(gint family, void *addr, const gchar *hostname, gboolean positive)
+{
+  dns_cache_store(FALSE, family, addr, hostname, positive);
 }
 
 void
