@@ -697,6 +697,8 @@ log_reader_set_options(LogPipe *s, LogPipe *control, LogReaderOptions *options, 
   self->control = control;
 
   self->options = options;
+  if (self->proto)
+    log_proto_server_set_options(self->proto, &self->options->proto_options.super);
 }
 
 /* run in the main thread in reaction to a log_reader_reopen to change
