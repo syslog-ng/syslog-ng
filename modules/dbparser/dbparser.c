@@ -149,7 +149,6 @@ log_db_parser_init(LogPipe *s)
         }
       else if (self->db_file_inode != st.st_ino || self->db_file_mtime != st.st_mtime)
         {
-          self->db = pattern_db_new();
           log_db_parser_reload_database(self);
           self->db_file_inode = st.st_ino;
           self->db_file_mtime = st.st_mtime;
