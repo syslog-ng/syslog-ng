@@ -82,6 +82,12 @@ log_proto_server_validate_options(LogProtoServer *self)
     return log_proto_server_options_validate(self->options);
 }
 
+static inline void
+log_proto_server_set_options(LogProtoServer *self, const LogProtoServerOptions *options)
+{
+  self->options = options;
+}
+
 static inline gboolean
 log_proto_server_prepare(LogProtoServer *s, GIOCondition *cond)
 {
