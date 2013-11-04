@@ -416,7 +416,15 @@ dnl ***************************************************************************
 
 AC_HEADER_STDC
 AC_CHECK_HEADER(dmalloc.h)
-AC_CHECK_HEADERS(strings.h getopt.h stropts.h sys/strlog.h door.h sys/capability.h sys/prctl.h utmp.h utmpx.h)
+AC_CHECK_HEADERS(strings.h	\
+	getopt.h		\
+	stropts.h		\
+	sys/strlog.h		\
+	door.h			\
+	sys/capability.h	\
+	sys/prctl.h		\
+	utmp.h			\
+	utmpx.h)
 AC_CHECK_HEADERS(tcpd.h)
 
 
