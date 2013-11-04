@@ -292,9 +292,9 @@
 
         * There is also a new $(env VARIABLE...) template function,
           which looks up the given variables in the environment. This is
-	  similar to using backticks in the configuration file, however the
-	  name of the environment variable with $(env) may contain macros
-	  too.
+          similar to using backticks in the configuration file, however the
+          name of the environment variable with $(env) may contain macros
+          too.
 
         * Support for Linux 3.5+'s /dev/kmsg was added, and the
           system() source will automatically detect whether to use it
