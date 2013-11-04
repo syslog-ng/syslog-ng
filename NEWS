@@ -1,3 +1,59 @@
+3.4.5
+        Mon,  4 Nov 2013 08:54:50 +0100
+
+        This is the fourth bug-fix release for the 3.4.x series, with
+        important fixes over the 3.4.4 release. Upgrading to this
+        release is highly recommended.
+
+        Bugfixes
+        ========
+
+        * A race condition in log message reference counting code that
+          sometimes led to crashes was fixed. [#255]
+
+        * An assertion that happened in certain situations when a
+          subst() rewrite rule was used was fixed. [#256]
+
+        * A use-after-free error that sometimes happened after a
+          reload, and caused memory corruption was also fixed. [#253]
+
+        * patterndb was corrected not to create a new instance on
+          reload: this way, the old one is not leaked, and db-parser()
+          does not forget the correlation state, nor its idea of
+          current time on reload. [#257]
+
+        * The syslog-ng.spec file does not try to install the
+          long-removed ChangeLog file anymore.
+
+        * A few harmless, but noisy compiler warnings have been
+          eliminated.
+
+        Features
+        ========
+
+        * The JSON parser now understands NULL-typed keys, and ignores
+          them.
+
+        Credits:
+        ========
+
+        syslog-ng is developed as a community project, and as such it relies
+        on volunteers to do the work necessarily to produce syslog-ng.
+
+        Reporting bugs, testing changes, writing code or simply providing
+        feedback are all important contributions, so please if you are a
+        user of syslog-ng, contribute.
+
+        These people have helped in this release:
+
+        Balazs Scheidler <bazsi@balabit.hu>
+        Evan Rempel <erempel@uvic.ca>
+        Gergely Nagy <algernon@balabit.hu>
+        Gonzalo Paniagua <gonzalo.paniagua+slng1@acquia.com>
+        Jose Pedro Oliveira <jpo@di.uminho.pt>
+        Michal Privoznik <miso.privoznik@gmail.com>
+        Nicolas Szalay <nico@rottenbytes.info>
+
 3.4.4
         Thu, 17 Oct 2013 12:16:40 +0200
 
