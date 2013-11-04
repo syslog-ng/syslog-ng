@@ -27,10 +27,6 @@
 
 #include <config.h>
 
-#if ENABLE_DMALLOC
-#define USE_DMALLOC
-#endif
-
 #if ENABLE_DEBUG
 #undef YYDEBUG
 #define YYDEBUG 1
