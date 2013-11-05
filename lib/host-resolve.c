@@ -29,6 +29,9 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 
+#if !defined(HAVE_GETADDRINFO) || !defined(HAVE_GETNAMEINFO)
+G_LOCK_DEFINE_STATIC(resolv_lock);
+#endif
 
 static void
 normalize_hostname(gchar *result, gsize *result_len, const gchar *hostname)
@@ -42,7 +45,6 @@ normalize_hostname(gchar *result, gsize *result_len, const gchar *hostname)
   result[i] = '\0'; /* the closing \0 is not copied by the previous loop */
   *result_len = i;
 }
-G_LOCK_DEFINE_STATIC(resolv_lock);
 
 gboolean
 resolve_hostname_to_sockaddr(GSockAddr **addr, const gchar *name)
