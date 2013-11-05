@@ -32,6 +32,7 @@
 #include "stats.h"
 #include "template/templates.h"
 #include "tls-support.h"
+#include "compat/string.h"
 
 #include <sys/types.h>
 #include <time.h>

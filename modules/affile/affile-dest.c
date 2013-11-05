@@ -31,6 +31,7 @@
 #include "mainloop.h"
 #include "logproto/logproto-text-client.h"
 #include "logproto-file-writer.h"
+#include "compat/lfs.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>

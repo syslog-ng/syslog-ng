@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 1998-2012 Balázs Scheidler
+ * Copyright (c) 1998-2011 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,37 +21,38 @@
  * COPYING for details.
  *
  */
-  
-#ifndef SYSLOG_NG_H_INCLUDED
-#define SYSLOG_NG_H_INCLUDED
 
-#include <config.h>
+#include "compat/string.h"
 
-#if ENABLE_DEBUG
-#undef YYDEBUG
-#define YYDEBUG 1
-#endif
+#ifndef HAVE_STRCASESTR
 
-#include "compat/glib.h"
-#include "versioning.h"
+#include <ctype.h>
+#include <string.h>
+#include <strings.h>
 
-#define PATH_SYSLOG_NG_CONF     PATH_SYSCONFDIR "/syslog-ng.conf"
-#define PATH_INSTALL_DAT	PATH_SYSCONFDIR "/install.dat"
-#define PATH_PIDFILE            PATH_PIDFILEDIR "/syslog-ng.pid"
-#define PATH_CONTROL_SOCKET     PATH_PIDFILEDIR "/syslog-ng.ctl"
-#if ENABLE_ENV_WRAPPER
-#define PATH_SYSLOGNG           PATH_LIBEXECDIR "/syslog-ng"
-#endif
-#define PATH_PERSIST_CONFIG     PATH_LOCALSTATEDIR "/syslog-ng.persist"
+char *
+strcasestr(const char *haystack, const char *needle)
+{
+  char c;
+  size_t len;
 
-#define SAFE_STRING(x) ((x) ? (x) : "NULL")
+  if ((c = *needle++) != 0)
+    {
+      c = tolower((unsigned char) c);
+      len = strlen(needle);
 
-typedef struct _LogPipe LogPipe;
-typedef struct _LogMessage LogMessage;
-typedef struct _GlobalConfig GlobalConfig;
-
-/* configuration being parsed, used by the bison generated code, NULL whenever parsing is finished. */
-extern GlobalConfig *configuration;
-extern const gchar *module_path;
+      do
+        {
+          for (; *haystack && tolower((unsigned char) *haystack) != c; haystack++)
+            ;
+          if (!(*haystack))
+            return NULL;
+          haystack++;
+        }
+      while (strncasecmp(haystack, needle, len) != 0);
+      haystack--;
+    }
+  return (char *) haystack;
+}
 
 #endif

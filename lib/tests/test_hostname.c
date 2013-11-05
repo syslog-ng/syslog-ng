@@ -23,7 +23,9 @@
 #include "hostname.h"
 #include "testutils.h"
 #include "apphook.h"
+
 #include <string.h>
+#include <unistd.h>
 
 /*
  * NOTE: on WRAP_GETHOSTNAME below

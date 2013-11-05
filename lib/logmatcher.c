@@ -26,8 +26,8 @@
 #include "messages.h"
 #include "cfg.h"
 #include "misc.h"
+#include "compat/string.h"
 
-#include <string.h>
 #include <pcre.h>
 
 static void

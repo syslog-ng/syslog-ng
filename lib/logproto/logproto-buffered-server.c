@@ -24,10 +24,10 @@
 #include "logproto-buffered-server.h"
 #include "messages.h"
 #include "serialize.h"
+#include "compat/string.h"
 
 #include <sys/stat.h>
 #include <stdlib.h>
-#include <string.h>
 
 LogProtoBufferedServerState *
 log_proto_buffered_server_get_state(LogProtoBufferedServer *self)

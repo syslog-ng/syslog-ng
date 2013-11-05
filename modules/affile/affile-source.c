@@ -36,6 +36,7 @@
 #include "logproto-linux-proc-kmsg-reader.h"
 #include "poll-fd-events.h"
 #include "poll-file-changes.h"
+#include "compat/lfs.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>

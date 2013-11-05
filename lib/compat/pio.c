@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2011 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
  * Copyright (c) 1998-2011 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -22,16 +22,14 @@
  *
  */
 
-#include "compat.h"
-
-#include <fcntl.h>
-#include <ctype.h>
-#include <string.h>
-#include <stdlib.h>
+#include "compat/pio.h"
 
 #if !HAVE_PREAD || HAVE_BROKEN_PREAD
 
-ssize_t 
+#include <sys/types.h>
+#include <unistd.h>
+
+ssize_t
 bb__pread(int fd, void *buf, size_t count, off_t offset)
 {
   ssize_t ret;
@@ -53,7 +51,7 @@ bb__pread(int fd, void *buf, size_t count, off_t offset)
   return ret;
 }
 
-ssize_t 
+ssize_t
 bb__pwrite(int fd, const void *buf, size_t count, off_t offset)
 {
   ssize_t ret;
@@ -73,55 +71,5 @@ bb__pwrite(int fd, const void *buf, size_t count, off_t offset)
   if (lseek(fd, old_offset, SEEK_SET) < 0)
     return -1;
   return ret;
-}
-#endif
-
-#if !HAVE_STRCASESTR
-char *
-strcasestr(const char *haystack, const char *needle)
-{
-  char c;
-  size_t len;
-
-  if ((c = *needle++) != 0) 
-    {
-      c = tolower((unsigned char) c);
-      len = strlen(needle);
-      
-      do
-        {
-          for (; *haystack && tolower((unsigned char) *haystack) != c; haystack++)
-            ;
-          if (!(*haystack))
-            return NULL;
-          haystack++;
-        }
-      while (strncasecmp(haystack, needle, len) != 0);
-      haystack--;
-    }
-  return (char *) haystack;
-}
-#endif
-
-#if !HAVE_MEMRCHR
-const void *
-memrchr(const void *s, int c, size_t n)
-{
-  const unsigned char *p = (unsigned char *) s + n - 1;
-
-  while (p >= (unsigned char *) s)
-    {
-      if (*p == c)
-        return p;
-      p--;
-    }
-  return NULL;
-}
-#endif
-
-#ifdef _AIX
-intmax_t __strtollmax(const char *__nptr, char **__endptr, int __base)
-{
-  return strtoll(__nptr, __endptr, __base);
 }
 #endif

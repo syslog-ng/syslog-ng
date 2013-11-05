@@ -299,7 +299,6 @@ format_zone_info(gchar *buf, size_t buflen, glong gmtoff)
 gboolean
 check_nanosleep(void)
 {
-#ifdef HAVE_CLOCK_GETTIME
   struct timespec start, stop, sleep;
   glong diff;
   gint attempts;
@@ -319,7 +318,6 @@ check_nanosleep(void)
       if (diff < 5e5)
         return TRUE;
     }
-#endif
   return FALSE;
 }
 

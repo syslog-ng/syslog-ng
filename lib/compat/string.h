@@ -1,6 +1,5 @@
 /*
  * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,37 +20,28 @@
  * COPYING for details.
  *
  */
-  
-#ifndef SYSLOG_NG_H_INCLUDED
-#define SYSLOG_NG_H_INCLUDED
+#ifndef COMPAT_STRING_H_INCLUDED
+#define COMPAT_STRING_H_INCLUDED
 
-#include <config.h>
+#include "compat.h"
+#include <string.h>
 
-#if ENABLE_DEBUG
-#undef YYDEBUG
-#define YYDEBUG 1
+#if !HAVE_STRTOLL
+# if HAVE_STRTOIMAX || defined(strtoimax)
+   /* HP-UX has an strtoimax macro, not a function */
+   #define strtoll(nptr, endptr, base) strtoimax(nptr, endptr, base)
+# else
+   /* this requires Glib 2.12 */
+   #define strtoll(nptr, endptr, base) g_ascii_strtoll(nptr, endptr, base)
+# endif
 #endif
 
-#include "compat/glib.h"
-#include "versioning.h"
-
-#define PATH_SYSLOG_NG_CONF     PATH_SYSCONFDIR "/syslog-ng.conf"
-#define PATH_INSTALL_DAT	PATH_SYSCONFDIR "/install.dat"
-#define PATH_PIDFILE            PATH_PIDFILEDIR "/syslog-ng.pid"
-#define PATH_CONTROL_SOCKET     PATH_PIDFILEDIR "/syslog-ng.ctl"
-#if ENABLE_ENV_WRAPPER
-#define PATH_SYSLOGNG           PATH_LIBEXECDIR "/syslog-ng"
+#if !HAVE_STRCASESTR
+char *strcasestr(const char *s, const char *find);
 #endif
-#define PATH_PERSIST_CONFIG     PATH_LOCALSTATEDIR "/syslog-ng.persist"
 
-#define SAFE_STRING(x) ((x) ? (x) : "NULL")
-
-typedef struct _LogPipe LogPipe;
-typedef struct _LogMessage LogMessage;
-typedef struct _GlobalConfig GlobalConfig;
-
-/* configuration being parsed, used by the bison generated code, NULL whenever parsing is finished. */
-extern GlobalConfig *configuration;
-extern const gchar *module_path;
+#if !HAVE_MEMRCHR
+void *memrchr(const void *s, int c, size_t n);
+#endif
 
 #endif
