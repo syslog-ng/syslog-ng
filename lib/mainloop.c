@@ -290,6 +290,7 @@ volatile gboolean main_loop_io_workers_quit;
 #define main_loop_current_job  __tls_deref(main_loop_current_job)
 
 
+#define MAIN_LOOP_MIN_WORKER_THREADS 2
 #define MAIN_LOOP_MAX_WORKER_THREADS 64
 
 static GStaticMutex main_loop_io_workers_idmap_lock = G_STATIC_MUTEX_INIT;
@@ -819,18 +820,24 @@ static GOptionEntry main_loop_options[] =
 void
 main_loop_add_options(GOptionContext *ctx)
 {
-#ifdef _SC_NPROCESSORS_ONLN
-  main_loop_io_workers.max_threads = MIN(MAX(2, sysconf(_SC_NPROCESSORS_ONLN)), MAIN_LOOP_MAX_WORKER_THREADS);
-#else
-  main_loop_io_workers.max_threads = 2;
-#endif
-
   g_option_context_add_main_entries(ctx, main_loop_options, NULL);
+}
+
+static gint
+get_processor_count(void)
+{
+#ifdef _SC_NPROCESSORS_ONLN
+  return sysconf(_SC_NPROCESSORS_ONLN);
+#else
+  return -1;
+#endif
 }
 
 void
 main_loop_global_init(void)
 {
+  main_loop_io_workers.max_threads = MIN(MAX(MAIN_LOOP_MIN_WORKER_THREADS, get_processor_count()), MAIN_LOOP_MAX_WORKER_THREADS);
+
   cfgfilename = get_installation_path_for(PATH_SYSLOG_NG_CONF);
   persist_file = get_installation_path_for(PATH_PERSIST_CONFIG);
   ctlfilename = get_installation_path_for(PATH_CONTROL_SOCKET);
