@@ -23,51 +23,178 @@
  */
 
 #include "hostname.h"
+#include "cfg.h"
+#include "gsockaddr.h"
+#include "messages.h"
+#include "dnscache.h"
 
-#include <string.h>
-#include <netdb.h>
+#include <arpa/inet.h>
 
-static gsize local_hostname_fqdn_len;
 static gchar local_hostname_fqdn[256];
-static gsize local_hostname_short_len;
 static gchar local_hostname_short[256];
-G_LOCK_EXTERN(resolv_lock);
+static gchar local_domain[256];
+static gboolean local_domain_overridden;
 
-void
-reset_cached_hostname(void)
+static gchar *
+get_local_hostname_from_system(void)
 {
-  gchar *s;
+  gchar hostname[256];
 
-  gethostname(local_hostname_fqdn, sizeof(local_hostname_fqdn) - 1);
-  local_hostname_fqdn[sizeof(local_hostname_fqdn) - 1] = '\0';
-  local_hostname_fqdn_len = strlen(local_hostname_fqdn);
-  if (strchr(local_hostname_fqdn, '.') == NULL)
-    {
-      /* not fully qualified, resolve it using DNS or /etc/hosts */
-      G_LOCK(resolv_lock);
-      struct hostent *result = gethostbyname(local_hostname_fqdn);
-      if (result)
-        {
-          strncpy(local_hostname_fqdn, result->h_name, sizeof(local_hostname_fqdn) - 1);
-          local_hostname_fqdn[sizeof(local_hostname_fqdn) - 1] = '\0';
-        }
-      G_UNLOCK(resolv_lock);
-    }
-  /* NOTE: they are the same size, they'll fit */
-  strcpy(local_hostname_short, local_hostname_fqdn);
-  s = strchr(local_hostname_short, '.');
-  if (s != NULL)
-    *s = '\0';
-  local_hostname_short_len = strlen(local_hostname_short);
+  gethostname(hostname, sizeof(hostname) - 1);
+  hostname[sizeof(hostname) - 1] = '\0';
+  return g_strdup(hostname);
+}
+
+static gboolean
+is_hostname_fqdn(const gchar *hostname)
+{
+  return strchr(hostname, '.') != NULL;
+}
+
+static const gchar *
+extract_domain_from_fqdn(const gchar *hostname)
+{
+  const gchar *dot = strchr(hostname, '.');
+
+  if (dot)
+    return dot + 1;
+  return NULL;
+}
+
+#include "hostname-unix.c"
+
+static void
+validate_hostname_cache(void)
+{
+  g_assert(local_hostname_fqdn[0] != 0);
 }
 
 const gchar *
-get_local_hostname(gsize *len)
+get_local_hostname_fqdn(void)
 {
-  if (!local_hostname_fqdn[0])
-    reset_cached_hostname();
+  validate_hostname_cache();
 
-  if (len)
-    *len = local_hostname_fqdn_len;
   return local_hostname_fqdn;
+}
+
+const gchar *
+get_local_hostname_short(void)
+{
+  validate_hostname_cache();
+  return local_hostname_short;
+}
+
+gchar *
+convert_hostname_to_fqdn(gchar *hostname, gsize hostname_len)
+{
+  gchar *end;
+
+  /* we only change the hostname if domain_override is set. If it is unset,
+   * our best guess is what we got as input.  */
+
+  if (local_domain_overridden)
+    convert_hostname_to_short_hostname(hostname, hostname_len);
+
+  if (local_domain_overridden ||
+      (!is_hostname_fqdn(hostname) && local_domain[0]))
+    {
+      end = hostname + strlen(hostname);
+      if (end < hostname + hostname_len)
+        {
+          *end = '.';
+          end++;
+        }
+      strncpy(end, local_domain, hostname_len - (end - hostname));
+      hostname[hostname_len - 1] = 0;
+    }
+  return hostname;
+}
+
+gchar *
+convert_hostname_to_short_hostname(gchar *hostname, gsize hostname_len)
+{
+  gchar *p;
+
+  p = strchr(hostname, '.');
+  if (p)
+    *p = '\0';
+  return hostname;
+}
+
+static void
+detect_local_fqdn_hostname(void)
+{
+  gchar *hostname;
+
+  hostname = get_local_hostname_from_system();
+  if (!is_hostname_fqdn(hostname))
+    {
+      /* not fully qualified, resolve it using DNS */
+      g_free(hostname);
+
+      hostname = get_local_fqdn_hostname_from_dns();
+    }
+
+  if (hostname)
+    {
+      g_strlcpy(local_hostname_fqdn, hostname, sizeof(local_hostname_fqdn));
+      g_free(hostname);
+    }
+  else
+    {
+      fprintf(stderr, "Unable to find out local hostname, syslog-ng cannot operate in this case, aborting...");
+      g_assert_not_reached();
+    }
+}
+
+static void
+detect_local_domain(void)
+{
+  const gchar *domain = extract_domain_from_fqdn(local_hostname_fqdn);
+
+  if (domain)
+    g_strlcpy(local_domain, domain, sizeof(local_domain));
+  else
+    local_domain[0] = 0;
+}
+
+static void
+detect_local_short_hostname(void)
+{
+  g_strlcpy(local_hostname_short, local_hostname_fqdn, sizeof(local_hostname_short));
+  convert_hostname_to_short_hostname(local_hostname_short, sizeof(local_hostname_short));
+}
+
+static void
+set_domain_override(const gchar *domain_override)
+{
+  if (domain_override)
+    {
+      g_strlcpy(local_domain, domain_override, sizeof(local_domain));
+      local_domain_overridden = TRUE;
+    }
+  else
+    local_domain_overridden = FALSE;
+
+  convert_hostname_to_fqdn(local_hostname_fqdn, sizeof(local_hostname_fqdn));
+}
+
+void
+hostname_reinit(const gchar *domain_override)
+{
+  detect_local_fqdn_hostname();
+  detect_local_domain();
+  detect_local_short_hostname();
+  set_domain_override(domain_override);
+}
+
+void
+hostname_global_init(void)
+{
+  hostname_reinit(NULL);
+}
+
+void
+hostname_global_deinit(void)
+{
 }

@@ -565,7 +565,7 @@ log_writer_emit_suppress_summary(LogWriter *self)
   len = g_snprintf(buf, sizeof(buf), "Last message '%.20s' repeated %d times, suppressed by syslog-ng on %s",
                    log_msg_get_value(self->last_msg, LM_V_MESSAGE, NULL),
                    self->last_msg_count,
-                   get_local_hostname(NULL));
+                   get_local_hostname_fqdn());
   log_msg_set_value(m, LM_V_MESSAGE, buf, len);
 
   path_options.ack_needed = FALSE;

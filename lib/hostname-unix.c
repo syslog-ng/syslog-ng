@@ -20,20 +20,31 @@
  * COPYING for details.
  *
  */
-#ifndef HOSTNAME_H_INCLUDED
-#define HOSTNAME_H_INCLUDED
-
-#include "syslog-ng.h"
 
 
-gchar *convert_hostname_to_fqdn(gchar *hostname, gsize hostname_len);
-gchar *convert_hostname_to_short_hostname(gchar *hostname, gsize hostname_len);
+/* NOTE: this file is included directly into hostname.c so the set of
+ * includes here only add system dependent headers and not the full set
+ */
+#include <netdb.h>
 
-const gchar *get_local_hostname_fqdn(void);
-const gchar *get_local_hostname_short(void);
+/*
+ * NOTE: this function is not thread safe because it uses the non-reentrant
+ * resolver functions.  This is not a problem as it is only called once
+ * during initialization.
+ */
+gchar *
+get_local_fqdn_hostname_from_dns(void)
+{
+  struct hostent *host = NULL;
+  gchar *result = NULL;
+  gchar *local_host;
 
-void hostname_reinit(const gchar *custom_domain);
-void hostname_global_init(void);
-void hostname_global_deinit(void);
+  local_host = get_local_hostname_from_system();
 
-#endif
+  host = gethostbyname(local_host);
+  if (host)
+     result = g_strdup(host->h_name);
+
+  g_free(local_host);
+  return result;
+}

@@ -591,8 +591,6 @@ main_loop_reload_config_apply(void)
   main_loop_new_config = NULL;
   main_loop_old_config = NULL;
 
-  reset_cached_hostname();
-
   stats_timer_kickoff(current_configuration);
   stats_cleanup_orphans();
   return;

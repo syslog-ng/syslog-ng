@@ -27,7 +27,6 @@
 #include "logmsg.h"
 #include "syslog-names.h"
 #include "messages.h"
-#include "misc.h"
 #include "hostname.h"
 #include "filter/filter-expr.h"
 #include "gsocket.h"
@@ -466,10 +465,9 @@ log_macro_expand(GString *result, gint id, gboolean escape, const LogTemplateOpt
       }
     case M_LOGHOST:
       {
-        gsize hname_len;
-        const gchar *hname = get_local_hostname(&hname_len);
+        const gchar *hname = get_local_hostname_fqdn();
 
-        result_append(result, hname, hname_len, escape);
+        result_append(result, hname, -1, escape);
         break;
       }
     case M_SYSUPTIME:
