@@ -155,7 +155,7 @@ afinet_dd_construct_transport(AFSocketDestDriver *s, gint fd)
 
 #else
 
-#define afinet_dd_construct_transport afsocket_dd_construct_transport
+#define afinet_dd_construct_transport afsocket_dd_construct_transport_method
 
 #endif
 
