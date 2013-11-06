@@ -15,9 +15,8 @@ compiler:
 branches:
   only:
     - master
-    - /^upstream\/mirror\/.*/
-    - /^sandbox\/.*/
-    - /^merge-queue\/.*/
+    - /^[\d\.]*\/master$/
+    - /^merge-queue\/?/
 notifications:
   irc:
     channels:
