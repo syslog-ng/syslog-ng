@@ -9,6 +9,9 @@ lib_tests_TESTS		= \
 
 check_PROGRAMS		+= ${lib_tests_TESTS}
 
+noinst_PROGRAMS 	= \
+	lib/tests/test_host_resolve
+
 lib_tests_test_log_message_CFLAGS	=	\
 	$(TEST_CFLAGS)
 lib_tests_test_log_message_LDADD	=	\
@@ -44,3 +47,7 @@ lib_tests_test_hostname_CFLAGS	=	\
 lib_tests_test_hostname_LDADD	=	\
 	$(TEST_LDADD)
 
+lib_tests_test_host_resolve_CFLAGS	=	\
+	$(TEST_CFLAGS)
+lib_tests_test_host_resolve_LDADD	=	\
+	$(TEST_LDADD)
