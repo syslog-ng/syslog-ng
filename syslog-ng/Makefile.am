@@ -7,7 +7,7 @@ sbin_PROGRAMS = syslog-ng
 
 syslog_ng_SOURCES = main.c
 
-syslog_ng_COMMON_LDADD=-L../lib/.libs -lsyslog-ng @SYSLOGNG_DEPS_LIBS@
+syslog_ng_COMMON_LDADD=-L../lib/.libs -lsyslog-ng @SYSLOGNG_DEPS_LIBS@ @OPENSSL_LIBS@
 
 syslog_ng_LDADD = $(syslog_ng_COMMON_LDADD)
 

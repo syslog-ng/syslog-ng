@@ -4,7 +4,5 @@ libivykis
 libivykis-dev
 # for pe-modules
 libsnmp-dev
-libsqlite3
-libsqlite3-dev
 libxml2
 libxml2-dev

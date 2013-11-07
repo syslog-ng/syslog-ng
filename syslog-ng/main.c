@@ -59,6 +59,11 @@
 #include <iv.h>
 #include <iv_signal.h>
 
+#if ENABLE_SSL
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#endif
+
 static gchar *install_dat_filename;
 static gchar *installer_version = NULL;
 static gboolean display_version = FALSE;
@@ -134,23 +139,15 @@ version(void)
 
   plugin_list_modules(stdout, FALSE);
 
-  printf("Enable-Debug: %s\n"
-         "Enable-GProf: %s\n"
-         "Enable-Memtrace: %s\n"
-         "Enable-IPv6: %s\n"
-         "Enable-Spoof-Source: %s\n"
-         "Enable-TCP-Wrapper: %s\n"
-         "Enable-Linux-Caps: %s\n"
-         "Enable-Pcre: %s\n",
-         ON_OFF_STR(ENABLE_DEBUG),
-         ON_OFF_STR(ENABLE_GPROF),
-         ON_OFF_STR(ENABLE_MEMTRACE),
-         ON_OFF_STR(ENABLE_IPV6),
-         ON_OFF_STR(ENABLE_SPOOF_SOURCE),
-         ON_OFF_STR(ENABLE_TCP_WRAPPER),
-         ON_OFF_STR(ENABLE_LINUX_CAPS),
-         ON_OFF_STR(ENABLE_PCRE));
-
+  printf("Enable-Debug: %s\n",        ON_OFF_STR(ENABLE_DEBUG));
+  printf("Enable-GProf: %s\n",        ON_OFF_STR(ENABLE_GPROF));
+  printf("Enable-Memtrace: %s\n",     ON_OFF_STR(ENABLE_MEMTRACE));
+  printf("Enable-IPv6: %s\n",         ON_OFF_STR(ENABLE_IPV6));
+  printf("Enable-Spoof-Source: %s\n", ON_OFF_STR(ENABLE_SPOOF_SOURCE));
+  printf("Enable-TCP-Wrapper: %s\n",  ON_OFF_STR(ENABLE_TCP_WRAPPER));
+  printf("Enable-Linux-Caps: %s\n",   ON_OFF_STR(ENABLE_LINUX_CAPS));
+  printf("Enable-Pcre: %s\n",         ON_OFF_STR(ENABLE_PCRE));
+  printf("Enable-FIPS: %s\n",         ON_OFF_STR(ENABLE_FIPS));
 }
 
 #if ENABLE_LINUX_CAPS
@@ -178,6 +175,43 @@ setup_caps (void)
 
 #define setup_caps()
 
+#endif
+
+#if ENABLE_SSL && ENABLE_FIPS
+static gboolean
+check_random_source_for_fips_selftest()
+{
+  int i = 0;
+  int fd = 0;
+  const char *randomfiles[] = { "/dev/urandom","/dev/random","/dev/srandom" };
+  int file_flags = O_RDONLY;
+#ifdef O_NONBLOCK
+  file_flags = file_flags | O_NONBLOCK;
+#endif
+#ifdef O_BINARY
+  file_flags = file_flags | O_BINARY;
+#endif
+#ifdef O_NOCTTY
+  file_flags = file_flags | O_NOCTTY;
+#endif
+  for (i = 0; (i < sizeof(randomfiles)/sizeof(randomfiles[0])); ++i)
+    {
+      if ((fd = open(randomfiles[i], file_flags)) >= 0)
+        {
+          close(fd);
+          return TRUE;
+        }
+    }
+  fprintf(stderr, "No random source for FIPS-selftest (one of the followings must be available: ");
+  for (i = 0; (i < sizeof(randomfiles)/sizeof(randomfiles[0])); ++i)
+    {
+      if (i > 0)
+        fprintf(stderr, ", ");
+      fprintf(stderr, randomfiles[i]);
+    }
+  fprintf(stderr, ")\n");
+  return FALSE;
+}
 #endif
 
 int 
@@ -225,6 +259,18 @@ main(int argc, char *argv[])
       plugin_list_modules(stdout, TRUE);
       return 0;
     }
+
+#if ENABLE_SSL && ENABLE_FIPS
+  if (!check_random_source_for_fips_selftest())
+    return 1;
+  if (!FIPS_mode_set (1))
+    {
+      ERR_load_crypto_strings();
+      ERR_print_errors_fp(stderr);
+      fprintf(stderr, "FIPS-mode could not be enabled\n");
+      return 1;
+    }
+#endif
 
   if (debug_flag)
     {

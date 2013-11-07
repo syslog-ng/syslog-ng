@@ -100,6 +100,9 @@ static void config_show_start_message(GlobalConfig *self)
   msg_notice("syslog-ng starting up",
              evt_tag_str("version", get_version()),
              evt_tag_printf("cfg-fingerprint","%s", self->cfg_fingerprint),
+#if ENABLE_SSL && ENABLE_FIPS
+             evt_tag_printf("FIPS-mode","%s", (FIPS_mode() ? "enabled" : "disabled")),
+#endif
              evt_tag_id(MSG_APPLICATION_STARTED),
              NULL);
   return;

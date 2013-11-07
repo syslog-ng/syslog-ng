@@ -3,7 +3,13 @@ STAMPDIR=tgz2build/stamps
 DOCDIR=$(PREFIX)/doc
 
 CC:=gcc
-CONFIGURE_OPTS := --prefix $(ZBS_PREFIX) --enable-ssl --enable-dynamic-linking --enable-sql \
+ifneq (,$(findstring fips,$(TGZ_BUILD_OPTS)))
+  FIPS_DEPENDENT_OPT = --disable-sql
+else
+  FIPS_DEPENDENT_OPT = --enable-sql
+endif
+
+CONFIGURE_OPTS := --prefix $(ZBS_PREFIX) --enable-ssl --enable-dynamic-linking $(FIPS_DEPENDENT_OPT) \
 	--enable-spoof-source --enable-pcre --disable-tcp-wrapper \
 	--with-pidfile-dir='$${prefix}/var/run' \
 	--with-module-dir='$${prefix}/lib/syslog-ng' \
@@ -68,7 +74,11 @@ $(STAMPDIR)/stamp-setup:
 
 configure: $(STAMPDIR)/stamp-configure
 $(STAMPDIR)/stamp-configure: $(STAMPDIR)/stamp-setup
+ifneq (,$(findstring fips,$(TGZ_BUILD_OPTS)))
+	ENABLE_FIPS=true CC=$(CC) CFLAGS="$(OPTIMALIZATION) -g $(CFLAGS)" LDFLAGS="$(RPATH) $(LDFLAGS)" $(SHELL) ./configure $(CONFIGURE_OPTS)
+else
 	CC=$(CC) CFLAGS="$(OPTIMALIZATION) -g $(CFLAGS)" LDFLAGS="$(RPATH) $(LDFLAGS)" $(SHELL) ./configure $(CONFIGURE_OPTS)
+endif
 	# 64 bit mode is a bit perky on solaris, we has to use the 64 bit LD_LIBRARY_PATH...
 	if [ "$(ZBS_ARCH)" = "sparc64" ] && echo $(ZBS_DIST) | grep solaris >/dev/null; then \
 		sed -e 's/\<\(LD_LIBRARY_PATH\)\>/\1_64/' libtool > libtool.$$ && \
