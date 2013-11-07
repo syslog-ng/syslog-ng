@@ -38,6 +38,44 @@ typedef struct _LogCSVParser
 
 #define LOG_CSV_PARSER_SINGLE_CHAR_DELIM 0x0100
 
+static inline gint
+_is_escape_flag(guint32 flag)
+{
+  return ((flag & LOG_CSV_PARSER_ESCAPE_MASK) == flag);
+}
+
+static inline gint
+_contains_escape_flag(guint32 flag)
+{
+  return (flag & LOG_CSV_PARSER_ESCAPE_MASK);
+}
+
+static inline guint32
+_get_escape_flags(guint32 flags)
+{
+  return (flags & LOG_CSV_PARSER_ESCAPE_MASK);
+}
+
+static inline guint32
+_remove_escape_flags(guint32 flags)
+{
+  return (flags & (~LOG_CSV_PARSER_ESCAPE_MASK));
+}
+
+guint32
+log_csv_parser_normalize_escape_flags(LogColumnParser *s, guint32 new_flag)
+{
+  LogCSVParser *self = (LogCSVParser *) s;
+  guint32 current_flags = self->flags;
+  if (_is_escape_flag(new_flag))
+    return (_remove_escape_flags(current_flags) | new_flag);
+
+  if (!_contains_escape_flag(new_flag))
+    return (_get_escape_flags(current_flags) | new_flag);
+
+  return new_flag;
+}
+
 void
 log_csv_parser_set_flags(LogColumnParser *s, guint32 flags)
 {
@@ -391,11 +429,11 @@ log_csv_parser_new(void)
   self->super.super.process = log_csv_parser_process;
   log_csv_parser_set_delimiters(&self->super, " ");
   log_csv_parser_set_quote_pairs(&self->super, "\"\"''");
-  self->flags = LOG_CSV_PARSER_STRIP_WHITESPACE | LOG_CSV_PARSER_ESCAPE_NONE;
+  self->flags = LOG_CSV_PARSER_FLAGS_DEFAULT;
   return &self->super;
 }
 
-gint
+guint32
 log_csv_parser_lookup_flag(const gchar *flag)
 {
   if (strcmp(flag, "escape-none") == 0)
@@ -412,4 +450,12 @@ log_csv_parser_lookup_flag(const gchar *flag)
     return LOG_CSV_PARSER_DROP_INVALID;
   msg_error("Unknown CSV parser flag", evt_tag_str("flag", flag), NULL);
   return 0;
+}
+
+guint32
+log_csv_parser_get_flags(LogColumnParser *s)
+{
+  LogCSVParser *self = (LogCSVParser *) s;
+
+  return self->flags;
 }
