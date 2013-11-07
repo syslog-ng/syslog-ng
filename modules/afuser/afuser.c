@@ -24,21 +24,11 @@
 #include "afuser.h"
 #include "alarms.h"
 #include "messages.h"
-
-#ifdef HAVE_UTMPX_H
-#include <utmpx.h>
-#define ut_name ut_user
-#else
-#include <utmp.h>
-#endif
+#include "compat/getutent.h"
 
 #include <string.h>
 #include <fcntl.h>
 #include <unistd.h>
-
-#ifndef HAVE_GETUTENT
-#include "utils.h"
-#endif
 
 typedef struct _AFUserDestDriver
 {
