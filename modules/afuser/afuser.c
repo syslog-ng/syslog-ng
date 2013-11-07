@@ -37,17 +37,70 @@ typedef struct _AFUserDestDriver
   time_t disable_until;
 } AFUserDestDriver;
 
+#ifdef HAVE_UTMPX_H
+
+typedef struct utmpx UtmpEntry;
+
+static UtmpEntry *
+_fetch_utmp_entry(void)
+{
+  return getutxent();
+}
+
+static void
+_close_utmp(void)
+{
+  endutxent();
+}
+
+#else
+
+typedef struct utmp UtmpEntry;
+
+static UtmpEntry *
+_fetch_utmp_entry(void)
+{
+  return getutent();
+}
+
+static void
+_close_utmp(void)
+{
+  endutent();
+}
+
+#endif
+
+static gboolean
+_utmp_entry_matches(UtmpEntry *ut, GString *username)
+{
+#ifdef HAVE_MODERN_UTMP
+  if (ut->ut_type != USER_PROCESS)
+    return FALSE;
+#endif
+
+  if (strcmp(username->str, "*") == 0)
+    return TRUE;
+
+#ifdef HAVE_MODERN_UTMP
+  if (strncmp(username->str, ut->ut_user, sizeof(ut->ut_user)) == 0)
+#else
+  if (strncmp(username->str, ut->ut_name, sizeof(ut->ut_name)) == 0)
+#endif
+    return TRUE;
+
+  return FALSE;
+}
+
+G_LOCK_DEFINE_STATIC(utmp_lock);
+
 static void
 afuser_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data)
 {
   AFUserDestDriver *self = (AFUserDestDriver *) s;
   gchar buf[8192];
-#ifdef HAVE_UTMPX_H
-  struct utmpx *ut;
-#else
-  struct utmp *ut;
-#endif
   GString *timestamp;
+  UtmpEntry *ut;
   time_t now;
   
   now = msg->timestamps[LM_TS_RECVD].tv_sec;
@@ -62,25 +115,10 @@ afuser_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
              log_msg_get_value(msg, LM_V_MESSAGE, NULL));
   g_string_free(timestamp, TRUE);
   
-  /* NOTE: there's a private implementations of getutent in utils.c on Systems which do not provide one. */
-#ifdef HAVE_GETUTXENT
-  while ((ut = getutxent()))
-#else
-  while ((ut = getutent()))
-#endif
+  G_LOCK(utmp_lock);
+  while ((ut = _fetch_utmp_entry()))
     {
-#if HAVE_MODERN_UTMP
-      if (ut->ut_type == USER_PROCESS &&
-          ((self->username->len == 1 &&
-            self->username->str[0] == '*') ||
-           (self->username->len <= sizeof(ut->ut_user) &&
-            memcmp(self->username->str, ut->ut_user, self->username->len) == 0))) 
-#else
-      if ((self->username->len == 1 &&
-           self->username->str[0] == '*') ||
-          (self->username->len <= sizeof(ut->ut_name) &&
-           memcmp(self->username->str, ut->ut_name, self->username->len) == 0)) 
-#endif
+      if (_utmp_entry_matches(ut, self->username))
         {
           gchar line[128];
           gchar *p = line;
@@ -94,6 +132,10 @@ afuser_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
           else
             line[0] = 0;
           strncpy(p, ut->ut_line, sizeof(line) - (p - line));
+          msg_debug("Posting message to user terminal",
+                    evt_tag_str("user", ut->ut_user),
+                    evt_tag_str("line", line),
+                    NULL);
           fd = open(line, O_NOCTTY | O_APPEND | O_WRONLY | O_NONBLOCK);
           if (fd != -1) 
             {
@@ -110,11 +152,8 @@ afuser_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
             }
         }
     }
-#if HAVE_UTMPX_H
-  endutxent();
-#else
-  endutent();
-#endif
+  _close_utmp();
+  G_UNLOCK(utmp_lock);
 finish:
   log_dest_driver_queue_method(s, msg, path_options, user_data);
 }
