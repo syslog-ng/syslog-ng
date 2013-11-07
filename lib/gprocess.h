@@ -63,6 +63,7 @@ typedef gpointer cap_t;
 void g_process_message(const gchar *fmt, ...);
 
 void g_process_set_mode(GProcessMode mode);
+GProcessMode g_process_get_mode();
 void g_process_set_name(const gchar *name);
 void g_process_set_user(const gchar *user);
 void g_process_set_group(const gchar *group);
