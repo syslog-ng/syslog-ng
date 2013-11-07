@@ -20,7 +20,10 @@
  *
  */
 
+#include "stomp.h"
 #include "host-resolve.h"
+#include "misc.h"
+#include "messages.h"
 
 #include <errno.h>
 #include <stdlib.h>
@@ -28,9 +31,6 @@
 #include <stdio.h>
 #include <poll.h>
 
-#include "misc.h"
-#include "stomp.h"
-#include "messages.h"
 
 #define STOMP_PARSE_HEADER 1
 #define STOMP_PARSE_DATA 2
