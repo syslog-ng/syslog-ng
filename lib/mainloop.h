@@ -25,12 +25,13 @@
 #define MAINLOOP_H_INCLUDED
 
 #include "syslog-ng.h"
+#include "thread-utils.h"
 
 #include <iv_work.h>
 
 extern volatile gboolean main_loop_io_workers_quit;
 extern gboolean syntax_only;
-extern GThread *main_thread_handle;
+extern ThreadId main_thread_handle;
 
 typedef gpointer (*MainLoopTaskFunc)(gpointer user_data);
 
@@ -72,19 +73,18 @@ void main_loop_io_worker_job_init(MainLoopIOWorkerJob *self);
 void main_loop_io_worker_job_submit(MainLoopIOWorkerJob *self);
 void main_loop_io_worker_register_finish_callback(MainLoopIOWorkerFinishCallback *cb);
 
-
 static inline void
 main_loop_assert_main_thread(void)
 {
 #if ENABLE_DEBUG
-  g_assert(main_thread_handle == g_thread_self());
+  g_assert(threads_equal(main_thread_handle, get_thread_id()));
 #endif
 }
 
 static inline gboolean
 main_loop_is_main_thread(void)
 {
-  return main_thread_handle == g_thread_self();
+  return threads_equal(main_thread_handle, get_thread_id());
 }
 
 gpointer main_loop_call(MainLoopTaskFunc func, gpointer user_data, gboolean wait);

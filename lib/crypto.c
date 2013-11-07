@@ -28,6 +28,7 @@
 
 #include "crypto.h"
 #include "apphook.h"
+#include "thread-utils.h"
 
 #if ENABLE_SSL
 
@@ -55,7 +56,7 @@ ssl_locking_callback(int mode, int type, char *file, int line)
 static unsigned long
 ssl_thread_id(void)
 {
-  return (unsigned long) g_thread_self();
+  return (unsigned long) get_thread_id();
 }
 
 static void

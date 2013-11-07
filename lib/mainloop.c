@@ -143,14 +143,14 @@ TLS_BLOCK_END;
 static GStaticMutex main_task_lock = G_STATIC_MUTEX_INIT;
 static struct iv_list_head main_task_queue = IV_LIST_HEAD_INIT(main_task_queue);
 static struct iv_event main_task_posted;
-GThread *main_thread_handle;
+ThreadId main_thread_handle;
 
 #define call_info  __tls_deref(call_info)
 
 gpointer
 main_loop_call(MainLoopTaskFunc func, gpointer user_data, gboolean wait)
 {
-  if (main_thread_handle == g_thread_self())
+  if (main_loop_is_main_thread())
     return func(user_data);
 
   g_static_mutex_lock(&main_task_lock);
@@ -716,6 +716,7 @@ main_loop_init(void)
 {
   main_loop_publish_status("Starting up...");
 
+  main_thread_handle = get_thread_id();
   app_startup();
   setup_signals();
   main_loop_io_workers.thread_start = main_loop_io_worker_thread_start;

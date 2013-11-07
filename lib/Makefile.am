@@ -80,6 +80,7 @@ pkginclude_HEADERS			+= \
 	lib/tags.h			\
 	lib/timeutils.h			\
 	lib/tls-support.h		\
+	lib/thread-utils.h		\
 	lib/tlscontext.h  		\
 	lib/tlstransport.h		\
 	lib/type-hinting.h		\
