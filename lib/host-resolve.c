@@ -21,14 +21,11 @@
  *
  */
 #include "host-resolve.h"
-#include "messages.h"
-#include "dnscache.h"
 #include "hostname.h"
+#include "dnscache.h"
+#include "messages.h"
+#include "cfg.h"
 
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/stat.h>
-#include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
 
@@ -48,7 +45,7 @@ normalize_hostname(gchar *result, gsize *result_len, const gchar *hostname)
 G_LOCK_DEFINE_STATIC(resolv_lock);
 
 gboolean
-resolve_hostname(GSockAddr **addr, gchar *name)
+resolve_hostname_to_sockaddr(GSockAddr **addr, const gchar *name)
 {
   if (addr)
     {
@@ -125,11 +122,11 @@ resolve_hostname(GSockAddr **addr, gchar *name)
 }
 
 void
-resolve_sockaddr(gchar *result, gsize *result_len, GSockAddr *saddr, gboolean usedns, gboolean usefqdn, gboolean use_dns_cache, gboolean normalize_hostnames)
+resolve_sockaddr_to_hostname(gchar *result, gsize *result_len, GSockAddr *saddr, const HostResolveOptions *host_resolve_options)
 {
-  gchar *hname;
+  const gchar *hname;
   gboolean positive;
-  gchar *p, buf[256];
+  gchar buf[256];
 
   if (saddr && saddr->sa.sa_family != AF_UNIX)
     {
@@ -156,9 +153,9 @@ resolve_sockaddr(gchar *result, gsize *result_len, GSockAddr *saddr, gboolean us
 #endif
 
           hname = NULL;
-          if (usedns)
+          if (host_resolve_options->use_dns)
             {
-              if ((!use_dns_cache || !dns_cache_lookup(saddr->sa.sa_family, addr, (const gchar **) &hname, &positive)) && usedns != 2)
+              if ((!host_resolve_options->use_dns_cache || !dns_cache_lookup(saddr->sa.sa_family, addr, (const gchar **) &hname, &positive)) && host_resolve_options->use_dns != 2)
                 {
 #ifdef HAVE_GETNAMEINFO
                   if (getnameinfo(&saddr->sa, saddr->salen, buf, sizeof(buf), NULL, 0, NI_NAMEREQD) == 0)
@@ -181,7 +178,7 @@ resolve_sockaddr(gchar *result, gsize *result_len, GSockAddr *saddr, gboolean us
                   if (hname)
                     positive = TRUE;
 
-                  if (use_dns_cache && hname)
+                  if (host_resolve_options->use_dns_cache && hname)
                     {
                       /* resolution success, store this as a positive match in the cache */
                       dns_cache_store(FALSE, saddr->sa.sa_family, addr, hname, TRUE);
@@ -193,17 +190,17 @@ resolve_sockaddr(gchar *result, gsize *result_len, GSockAddr *saddr, gboolean us
             {
               inet_ntop(saddr->sa.sa_family, addr, buf, sizeof(buf));
               hname = buf;
-              if (use_dns_cache)
+              if (host_resolve_options->use_dns_cache)
                 dns_cache_store(FALSE, saddr->sa.sa_family, addr, hname, FALSE);
             }
           else
             {
-              if (!usefqdn && positive)
+              if (!host_resolve_options->use_fqdn && positive)
                 {
                   /* we only truncate hostnames if they were positive
                    * matches (e.g. real hostnames and not IP
                    * addresses) */
-
+                  const gchar *p;
                   p = strchr(hname, '.');
 
                   if (p)
@@ -224,7 +221,7 @@ resolve_sockaddr(gchar *result, gsize *result_len, GSockAddr *saddr, gboolean us
     }
   else
     {
-      if (usefqdn)
+      if (host_resolve_options->use_fqdn)
         {
           hname = get_local_hostname_fqdn();
         }
@@ -233,7 +230,7 @@ resolve_sockaddr(gchar *result, gsize *result_len, GSockAddr *saddr, gboolean us
           hname = get_local_hostname_short();
         }
     }
-  if (normalize_hostnames)
+  if (host_resolve_options->normalize_hostnames)
     {
       normalize_hostname(result, result_len, hname);
     }
@@ -247,4 +244,31 @@ resolve_sockaddr(gchar *result, gsize *result_len, GSockAddr *saddr, gboolean us
       result[len] = 0;
       *result_len = len;
     }
+}
+
+void
+host_resolve_options_defaults(HostResolveOptions *options)
+{
+  options->use_dns = -1;
+  options->use_fqdn = -1;
+  options->use_dns_cache = -1;
+  options->normalize_hostnames = -1;
+}
+
+void
+host_resolve_options_init(HostResolveOptions *options, GlobalConfig *cfg)
+{
+  if (options->use_dns == -1)
+    options->use_dns = cfg->host_resolve_options.use_dns;
+  if (options->use_fqdn == -1)
+    options->use_fqdn = cfg->host_resolve_options.use_fqdn;
+  if (options->use_dns_cache == -1)
+    options->use_dns_cache = cfg->host_resolve_options.use_dns_cache;
+  if (options->normalize_hostnames == -1)
+    options->normalize_hostnames = cfg->host_resolve_options.normalize_hostnames;
+}
+
+void
+host_resolve_options_destroy(HostResolveOptions *options)
+{
 }

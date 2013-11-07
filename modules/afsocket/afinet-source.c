@@ -154,7 +154,7 @@ afinet_sd_setup_addresses(AFSocketSourceDriver *s)
     }
   else
     g_sockaddr_set_port(self->super.bind_addr, afinet_lookup_service(self->super.transport_mapper, self->bind_port));
-  if (!resolve_hostname(&self->super.bind_addr, self->bind_ip ? : default_bind_ip))
+  if (!resolve_hostname_to_sockaddr(&self->super.bind_addr, self->bind_ip ? : default_bind_ip))
     return FALSE;
 
   return TRUE;

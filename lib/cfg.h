@@ -31,6 +31,7 @@
 #include "cfg-parser.h"
 #include "persist-state.h"
 #include "template/templates.h"
+#include "host-resolve.h"
 #include "type-hinting.h"
 
 #include <sys/types.h>
@@ -74,15 +75,11 @@ struct _GlobalConfig
   gint flush_timeout;
   gboolean threaded;
   gboolean chain_hostnames;
-  gboolean normalize_hostnames;
   gboolean keep_hostname;
   gboolean check_hostname;
   gboolean bad_hostname_compiled;
   regex_t bad_hostname;
   gchar *bad_hostname_re;
-  gboolean use_fqdn;
-  gboolean use_dns;
-  gboolean use_dns_cache;
   gint dns_cache_size, dns_cache_expire, dns_cache_expire_failed;
   gchar *dns_cache_hosts;
   gchar *custom_domain;
@@ -107,6 +104,7 @@ struct _GlobalConfig
 
   gchar *recv_time_zone;
   LogTemplateOptions template_options;
+  HostResolveOptions host_resolve_options;
   
   gchar *file_template_name;
   gchar *proto_template_name;

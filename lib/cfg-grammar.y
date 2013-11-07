@@ -57,6 +57,7 @@ extern struct _LogTemplate *last_template;
 extern struct _ValuePairs *last_value_pairs;
 extern struct _ValuePairsTransformSet *last_vp_transset;
 extern struct _LogMatcherOptions *last_matcher_options;
+extern struct _HostResolveOptions *last_host_resolve_options;
 
 }
 
@@ -372,6 +373,7 @@ CfgArgs *last_block_args;
 ValuePairs *last_value_pairs;
 ValuePairsTransformSet *last_vp_transset;
 LogMatcherOptions *last_matcher_options;
+HostResolveOptions *last_host_resolve_options;
 
 }
 
@@ -832,12 +834,9 @@ options_item
           }
 	| KW_FLUSH_TIMEOUT '(' LL_NUMBER ')'	{ configuration->flush_timeout = $3; }
 	| KW_CHAIN_HOSTNAMES '(' yesno ')'	{ configuration->chain_hostnames = $3; }
-	| KW_NORMALIZE_HOSTNAMES '(' yesno ')'	{ configuration->normalize_hostnames = $3; }
 	| KW_KEEP_HOSTNAME '(' yesno ')'	{ configuration->keep_hostname = $3; }
 	| KW_CHECK_HOSTNAME '(' yesno ')'	{ configuration->check_hostname = $3; }
 	| KW_BAD_HOSTNAME '(' string ')'	{ cfg_bad_hostname_set(configuration, $3); free($3); }
-	| KW_USE_FQDN '(' yesno ')'		{ configuration->use_fqdn = $3; }
-	| KW_USE_DNS '(' dnsmode ')'		{ configuration->use_dns = $3; }
 	| KW_TIME_REOPEN '(' LL_NUMBER ')'		{ configuration->time_reopen = $3; }
 	| KW_TIME_REAP '(' LL_NUMBER ')'		{ configuration->time_reap = $3; }
 	| KW_TIME_SLEEP '(' LL_NUMBER ')'	{}
@@ -871,6 +870,7 @@ options_item
 	| KW_PROTO_TEMPLATE '(' string ')'	{ configuration->proto_template_name = g_strdup($3); free($3); }
 	| KW_RECV_TIME_ZONE '(' string ')'      { configuration->recv_time_zone = g_strdup($3); free($3); }
 	| { last_template_options = &configuration->template_options; } template_option
+	| { last_host_resolve_options = &configuration->host_resolve_options; } host_resolve_option
 	;
 
 /* START_RULES */
@@ -957,16 +957,13 @@ source_option
         /* NOTE: plugins need to set "last_source_options" in order to incorporate this rule in their grammar */
 	: KW_LOG_IW_SIZE '(' LL_NUMBER ')'	{ last_source_options->init_window_size = $3; }
 	| KW_CHAIN_HOSTNAMES '(' yesno ')'	{ last_source_options->chain_hostnames = $3; }
-	| KW_NORMALIZE_HOSTNAMES '(' yesno ')'	{ last_source_options->normalize_hostnames = $3; }
 	| KW_KEEP_HOSTNAME '(' yesno ')'	{ last_source_options->keep_hostname = $3; }
-        | KW_USE_FQDN '(' yesno ')'             { last_source_options->use_fqdn = $3; }
-        | KW_USE_DNS '(' dnsmode ')'            { last_source_options->use_dns = $3; }
-	| KW_DNS_CACHE '(' yesno ')' 		{ last_source_options->use_dns_cache = $3; }
 	| KW_PROGRAM_OVERRIDE '(' string ')'	{ last_source_options->program_override = g_strdup($3); free($3); }
 	| KW_HOST_OVERRIDE '(' string ')'	{ last_source_options->host_override = g_strdup($3); free($3); }
 	| KW_LOG_PREFIX '(' string ')'	        { gchar *p = strrchr($3, ':'); if (p) *p = 0; last_source_options->program_override = g_strdup($3); free($3); }
 	| KW_KEEP_TIMESTAMP '(' yesno ')'	{ last_source_options->keep_timestamp = $3; }
         | KW_TAGS '(' string_list ')'		{ log_source_options_set_tags(last_source_options, $3); }
+        | { last_host_resolve_options = &last_source_options->host_resolve_options; } host_resolve_option
         ;
 
 source_proto_option
@@ -976,6 +973,13 @@ source_proto_option
 
 source_reader_options
 	: source_reader_option source_reader_options
+	;
+
+host_resolve_option
+        : KW_USE_FQDN '(' yesno ')'             { last_host_resolve_options->use_fqdn = $3; }
+        | KW_USE_DNS '(' dnsmode ')'            { last_host_resolve_options->use_dns = $3; }
+	| KW_DNS_CACHE '(' yesno ')' 		{ last_host_resolve_options->use_dns_cache = $3; }
+	| KW_NORMALIZE_HOSTNAMES '(' yesno ')'	{ last_host_resolve_options->normalize_hostnames = $3; }
 	;
 
 msg_format_option

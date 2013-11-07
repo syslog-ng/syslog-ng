@@ -221,7 +221,7 @@ cfg_init(GlobalConfig *cfg)
   dns_cache_set_params(cfg->dns_cache_size, cfg->dns_cache_expire, cfg->dns_cache_expire_failed, cfg->dns_cache_hosts);
   dns_cache_thread_init();
   hostname_reinit(cfg->custom_domain);
-
+  host_resolve_options_init(&cfg->host_resolve_options, cfg);
   log_proto_register_builtin_plugins(cfg);
   return cfg_tree_start(&cfg->tree);
 }
@@ -304,8 +304,6 @@ cfg_new(gint version)
   self->mark_mode = MM_HOST_IDLE;
   self->stats_freq = 600;
   self->chain_hostnames = 0;
-  self->use_fqdn = 0;
-  self->use_dns = 1;
   self->time_reopen = 60;
   self->time_reap = 60;
 
@@ -319,7 +317,6 @@ cfg_new(gint version)
   self->dir_gid = 0;
   self->dir_perm = 0700;
 
-  self->use_dns_cache = 1;
   self->dns_cache_size = 1007;
   self->dns_cache_expire = 3600;
   self->dns_cache_expire_failed = 60;
@@ -329,6 +326,13 @@ cfg_new(gint version)
   self->template_options.ts_format = TS_FMT_BSD;
   self->template_options.frac_digits = 0;
   self->template_options.on_error = ON_ERROR_DROP_MESSAGE;
+
+  host_resolve_options_defaults(&self->host_resolve_options);
+  self->host_resolve_options.use_fqdn = FALSE;
+  self->host_resolve_options.use_dns = TRUE;
+  self->host_resolve_options.use_dns_cache = TRUE;
+  self->host_resolve_options.normalize_hostnames = FALSE;
+
   self->recv_time_zone = NULL;
   self->keep_timestamp = TRUE;
 
@@ -419,6 +423,7 @@ cfg_free(GlobalConfig *self)
   log_template_unref(self->file_template);
   log_template_unref(self->proto_template);
   log_template_options_destroy(&self->template_options);
+  host_resolve_options_destroy(&self->host_resolve_options);
 
   if (self->bad_hostname_compiled)
     regfree(&self->bad_hostname);

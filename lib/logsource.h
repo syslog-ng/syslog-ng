@@ -36,10 +36,7 @@ typedef struct _LogSourceOptions
   gboolean keep_timestamp;
   gboolean keep_hostname;
   gboolean chain_hostnames;
-  gboolean normalize_hostnames;
-  gboolean use_dns;
-  gboolean use_fqdn;
-  gboolean use_dns_cache;
+  HostResolveOptions host_resolve_options;
   gchar *program_override;
   gint program_override_len;
   gchar *host_override;

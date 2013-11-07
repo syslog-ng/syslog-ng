@@ -128,7 +128,7 @@ log_source_mangle_hostname(LogSource *self, LogMessage *msg)
   gsize resolved_name_len = sizeof(resolved_name);
   const gchar *orig_host;
   
-  resolve_sockaddr(resolved_name, &resolved_name_len, msg->saddr, self->options->use_dns, self->options->use_fqdn, self->options->use_dns_cache, self->options->normalize_hostnames);
+  resolve_sockaddr_to_hostname(resolved_name, &resolved_name_len, msg->saddr, &self->options->host_resolve_options);
   log_msg_set_value(msg, LM_V_HOST_FROM, resolved_name, resolved_name_len);
 
   orig_host = log_msg_get_value(msg, LM_V_HOST, NULL);
@@ -352,14 +352,11 @@ log_source_options_defaults(LogSourceOptions *options)
   options->init_window_size = 100;
   options->keep_hostname = -1;
   options->chain_hostnames = -1;
-  options->use_dns = -1;
-  options->use_fqdn = -1;
-  options->use_dns_cache = -1;
-  options->normalize_hostnames = -1;
   options->keep_timestamp = -1;
   options->program_override_len = -1;
   options->host_override_len = -1;
   options->tags = NULL;
+  host_resolve_options_defaults(&options->host_resolve_options);
 }
 
 /* NOTE: _init needs to be idempotent when called multiple times w/o invoking _destroy */
@@ -372,14 +369,6 @@ log_source_options_init(LogSourceOptions *options, GlobalConfig *cfg, const gcha
     options->keep_hostname = cfg->keep_hostname;
   if (options->chain_hostnames == -1)
     options->chain_hostnames = cfg->chain_hostnames;
-  if (options->use_dns == -1)
-    options->use_dns = cfg->use_dns;
-  if (options->use_fqdn == -1)
-    options->use_fqdn = cfg->use_fqdn;
-  if (options->use_dns_cache == -1)
-    options->use_dns_cache = cfg->use_dns_cache;
-  if (options->normalize_hostnames == -1)
-    options->normalize_hostnames = cfg->normalize_hostnames;
   if (options->keep_timestamp == -1)
     options->keep_timestamp = cfg->keep_timestamp;
   options->group_name = group_name;
@@ -387,11 +376,13 @@ log_source_options_init(LogSourceOptions *options, GlobalConfig *cfg, const gcha
   source_group_name = g_strdup_printf(".source.%s", group_name);
   options->source_group_tag = log_tags_get_by_name(source_group_name);
   g_free(source_group_name);
+  host_resolve_options_init(&options->host_resolve_options, cfg);
 }
 
 void
 log_source_options_destroy(LogSourceOptions *options)
 {
+  host_resolve_options_destroy(&options->host_resolve_options);
   if (options->program_override)
     g_free(options->program_override);
   if (options->host_override)

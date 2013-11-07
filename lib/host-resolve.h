@@ -26,8 +26,20 @@
 #include "syslog-ng.h"
 #include "gsockaddr.h"
 
-void resolve_sockaddr(gchar *result, gsize *result_len, GSockAddr *saddr, gboolean usedns, gboolean usefqdn, gboolean use_dns_cache, gboolean normalize_hostnames);
-gboolean resolve_hostname(GSockAddr **addr, gchar *name);
+typedef struct _HostResolveOptions
+{
+  gboolean use_dns;
+  gboolean use_fqdn;
+  gboolean use_dns_cache;
+  gboolean normalize_hostnames;
+} HostResolveOptions;
 
+/* name resolution */
+void resolve_sockaddr_to_hostname(gchar *result, gsize *result_len, GSockAddr *saddr, const HostResolveOptions *host_resolve_options);
+gboolean resolve_hostname_to_sockaddr(GSockAddr **addr, const gchar *name);
+
+void host_resolve_options_defaults(HostResolveOptions *options);
+void host_resolve_options_init(HostResolveOptions *options, GlobalConfig *cfg);
+void host_resolve_options_destroy(HostResolveOptions *options);
 
 #endif

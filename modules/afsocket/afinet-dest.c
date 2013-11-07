@@ -209,10 +209,10 @@ afinet_dd_setup_addresses(AFSocketDestDriver *s)
       g_assert_not_reached();
     }
 
-  if ((self->bind_ip && !resolve_hostname(&self->super.bind_addr, self->bind_ip)))
+  if ((self->bind_ip && !resolve_hostname_to_sockaddr(&self->super.bind_addr, self->bind_ip)))
     return FALSE;
 
-  if (!resolve_hostname(&self->super.dest_addr, self->hostname))
+  if (!resolve_hostname_to_sockaddr(&self->super.dest_addr, self->hostname))
     return FALSE;
 
   if (!self->dest_port)

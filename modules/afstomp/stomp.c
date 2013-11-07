@@ -20,6 +20,8 @@
  *
  */
 
+#include "host-resolve.h"
+
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
@@ -106,7 +108,7 @@ stomp_connect(stomp_connection **connection_ref, char *hostname, int port)
     }
 
   conn->remote_sa = g_sockaddr_inet_new("127.0.0.1", port);
-  if (!resolve_hostname(&conn->remote_sa, hostname))
+  if (!resolve_hostname_to_sockaddr(&conn->remote_sa, hostname))
     {
       msg_error("Failed to resolve hostname in stomp driver",
                 evt_tag_str("hostname", hostname),
