@@ -72,6 +72,7 @@ pkginclude_HEADERS			+= \
 	lib/poll-events.h		\
 	lib/poll-fd-events.h		\
 	lib/pragma-parser.h		\
+	lib/reloc.h			\
 	lib/scratch-buffers.h		\
 	lib/serialize.h			\
 	lib/stats.h			\
@@ -146,6 +147,7 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/poll-events.c		\
 	lib/poll-fd-events.c		\
 	lib/pragma-parser.c		\
+	lib/reloc.c			\
 	lib/scratch-buffers.c		\
 	lib/serialize.c			\
 	lib/stats.c			\
