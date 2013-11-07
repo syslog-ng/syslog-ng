@@ -22,29 +22,48 @@
  *
  */
   
-#ifndef __UTILS_H_INCLUDED
-#define __UTILS_H_INCLUDED
+#include "compat/getutent.h"
 
 #include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
 
-#ifdef HAVE_UTMPX_H
-#include <utmpx.h>
-#else
-#include <utmp.h>
+#if !defined(HAVE_GETUTENT) && !defined(HAVE_GETUTXENT) && defined(HAVE_UTMP_H)
+
+static int utent_fd = -1;
+
+#ifndef _PATH_UTMP
+#define _PATH_UTMP "/var/log/utmp"
 #endif
 
-#ifndef HAVE_INET_ATON
-int inet_aton(const char *cp, struct in_addr *addr);
-#endif
+struct utmp *getutent(void)
+{
+	static struct utmp ut;
+	int rc;
 
-#if !defined(HAVE_GETUTENT) && !defined(HAVE_GETUTXENT)
-struct utmp *getutent(void);
-void endutent(void);
-#endif
+	if (utent_fd == -1) {
+		utent_fd = open(_PATH_UTMP, O_RDONLY | O_NOCTTY);
+	}
+	if (utent_fd == -1)
+		return NULL;
+	rc = read(utent_fd, &ut, sizeof(ut));
+	if (rc <= 0) {
+		close(utent_fd);
+		utent_fd = -1;
+		return NULL;
+	}
+	else {
+		return &ut;
+	}
+}
 
-#define get_flags(flags, mask, shift) ((flags & mask) >> shift)
-#define set_flags(flags, mask, shift, value) ((flags & ~mask) | value << shift)
+void endutent(void)
+{
+	if (utent_fd != -1) {
+		close(utent_fd);
+		utent_fd = -1;
+	}
+}
 
 #endif
