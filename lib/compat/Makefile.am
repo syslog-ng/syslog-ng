@@ -6,10 +6,12 @@ compatinclude_HEADERS		= 	\
 	lib/compat/glib.h		\
 	lib/compat/lfs.h		\
 	lib/compat/pio.h		\
+	lib/compat/socket.h		\
 	lib/compat/string.h
-
+	
 compat_sources			= 	\
 	lib/compat/getutent.c		\
+	lib/compat/inet_aton.c		\
 	lib/compat/memrchr.c		\
 	lib/compat/pio.c		\
 	lib/compat/strcasestr.c		\
