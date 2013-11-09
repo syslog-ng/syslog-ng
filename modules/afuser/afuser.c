@@ -22,7 +22,6 @@
  */
   
 #include "afuser.h"
-#include "alarms.h"
 #include "messages.h"
 
 #ifdef HAVE_UTMPX_H
@@ -107,15 +106,13 @@ afuser_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
           fd = open(line, O_NOCTTY | O_APPEND | O_WRONLY | O_NONBLOCK);
           if (fd != -1) 
             {
-              alarm_set(10);
-              if (write(fd, buf, strlen(buf)) < 0 && errno == EINTR && alarm_has_fired())
+              if (write(fd, buf, strlen(buf)) < 0 && errno == EAGAIN)
                 {
-                  msg_notice("Writing to the user terminal has blocked for 10 seconds, disabling for 10 minutes",
+                  msg_notice("Writing to the user terminal has blocked for writing, disabling for 10 minutes",
                             evt_tag_str("user", self->username->str),
                             NULL);
                   self->disable_until = now + 600;
                 }
-              alarm_cancel();
               close(fd);
             }
         }
