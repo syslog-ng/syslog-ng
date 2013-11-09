@@ -12,4 +12,7 @@ compat_sources			= 	\
 	lib/compat/getutent.c		\
 	lib/compat/memrchr.c		\
 	lib/compat/pio.c		\
-	lib/compat/strcasestr.c
+	lib/compat/strcasestr.c		\
+	lib/compat/strtok_r.c
+
+include lib/compat/tests/Makefile.am
