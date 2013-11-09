@@ -20,31 +20,46 @@
  * COPYING for details.
  *
  */
-#ifndef COMPAT_STRING_H_INCLUDED
-#define COMPAT_STRING_H_INCLUDED
+#include "compat/string.h"
 
-#include "compat.h"
-#include <string.h>
+#if !defined(HAVE_STRTOK_R) || TEST_STRTOK_R
 
-#if !HAVE_STRTOLL
-# if HAVE_STRTOIMAX || defined(strtoimax)
-   /* HP-UX has an strtoimax macro, not a function */
-   #define strtoll(nptr, endptr, base) strtoimax(nptr, endptr, base)
-# else
-   /* this requires Glib 2.12 */
-   #define strtoll(nptr, endptr, base) g_ascii_strtoll(nptr, endptr, base)
-# endif
-#endif
+char *
+strtok_r(char *str, const char *delim, char **saveptr)
+{
+  char *it;
+  char *head;
 
-#if !HAVE_STRCASESTR
-char *strcasestr(const char *s, const char *find);
-#endif
+  if (str)
+    *saveptr = str;
 
-#if !HAVE_MEMRCHR
-void *memrchr(const void *s, int c, size_t n);
-#endif
+  if (!*saveptr)
+    return NULL;
 
-#ifndef HAVE_STRTOK_R
-char *strtok_r(char *string, const char *delim, char **saveptr);
-#endif
+  it = *saveptr;
+
+ /*find the first non-delimiter*/
+  it += strspn(it, delim);
+
+  head = it;
+
+  if (!it || !*it)
+    {
+      *saveptr = NULL;
+      return NULL;
+    }
+
+  /* find the first delimiter */
+  it = strpbrk(it, delim);
+  /* skip all the delimiters */
+  while (it && *it && strchr(delim, *it))
+    {
+      *it = '\0';
+      it++;
+    }
+
+  *saveptr = it;
+
+  return head;
+}
 #endif

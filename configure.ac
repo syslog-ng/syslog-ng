@@ -561,7 +561,8 @@ AC_CHECK_FUNCS(strdup		\
 	strcasestr		\
 	memrchr			\
 	localtime_r		\
-	gmtime_r)
+	gmtime_r		\
+	strtok_r)
 old_LIBS=$LIBS
 LIBS=$BASE_LIBS
 AC_CHECK_FUNCS(clock_gettime)
