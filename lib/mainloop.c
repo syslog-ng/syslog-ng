@@ -233,45 +233,6 @@ main_loop_call_init(void)
 }
 
 /************************************************************************************
- * stats timer
- ************************************************************************************/
-
-/* stats timer */
-static struct iv_timer stats_timer;
-
-static void
-stats_timer_rearm(gint stats_freq)
-{
-  stats_timer.cookie = GINT_TO_POINTER(stats_freq);
-  if (stats_freq > 0)
-    {
-      /* arm the timer */
-      iv_validate_now();
-      stats_timer.expires = iv_now;
-      timespec_add_msec(&stats_timer.expires, stats_freq * 1000);
-      iv_timer_register(&stats_timer);
-    }
-}
-
-static void
-stats_timer_elapsed(gpointer st)
-{
-  gint stats_freq = GPOINTER_TO_INT(st);
-
-  stats_generate_log();
-  stats_timer_rearm(stats_freq);
-}
-
-static void
-stats_timer_kickoff(GlobalConfig *cfg)
-{
-  if (iv_timer_registered(&stats_timer))
-    iv_timer_unregister(&stats_timer);
-
-  stats_timer_rearm(cfg->stats_freq);
-}
-
-/************************************************************************************
  * I/O worker threads
  ************************************************************************************/
 
@@ -562,7 +523,6 @@ main_loop_reload_config_apply(void)
   main_loop_new_config = NULL;
   main_loop_old_config = NULL;
 
-  stats_timer_kickoff(current_configuration);
   stats_cleanup_orphans();
   return;
 }
@@ -753,11 +713,7 @@ main_loop_run(void)
              evt_tag_str("version", VERSION),
              NULL);
 
-  IV_TIMER_INIT(&stats_timer);
-  stats_timer.handler = stats_timer_elapsed;
-
   control_init(ctlfilename);
-  stats_timer_kickoff(current_configuration);
   setup_signals();
 
   /* main loop */

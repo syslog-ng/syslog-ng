@@ -33,6 +33,7 @@
 #include "plugin.h"
 #include "cfg-parser.h"
 #include "stats.h"
+#include "stats-timer.h"
 #include "logproto/logproto-builtins.h"
 #include "reloc.h"
 #include "hostname.h"
@@ -216,6 +217,7 @@ cfg_init(GlobalConfig *cfg)
     }
 
   stats_reinit(cfg);
+  stats_timer_reinit(cfg->stats_freq);
   log_tags_reinit_stats(cfg);
 
   dns_cache_set_params(cfg->dns_cache_size, cfg->dns_cache_expire, cfg->dns_cache_expire_failed, cfg->dns_cache_hosts);
