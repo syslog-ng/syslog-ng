@@ -680,6 +680,31 @@ setup_signals(void)
   memset(&sa, 0, sizeof(sa));
   sa.sa_handler = SIG_IGN;
   sigaction(SIGPIPE, &sa, NULL);
+  
+  IV_SIGNAL_INIT(&sighup_poll);
+  sighup_poll.signum = SIGHUP;
+  sighup_poll.flags = IV_SIGNAL_FLAG_EXCLUSIVE;
+  sighup_poll.cookie = NULL;
+  sighup_poll.handler = sig_hup_handler;
+  iv_signal_register(&sighup_poll);
+
+  IV_SIGNAL_INIT(&sigchild_poll);
+  sigchild_poll.signum = SIGCHLD;
+  sigchild_poll.flags = IV_SIGNAL_FLAG_EXCLUSIVE;
+  sigchild_poll.handler = sig_child_handler;
+  iv_signal_register(&sigchild_poll);
+
+  IV_SIGNAL_INIT(&sigterm_poll);
+  sigterm_poll.signum = SIGTERM;
+  sigterm_poll.flags = IV_SIGNAL_FLAG_EXCLUSIVE;
+  sigterm_poll.handler = sig_term_handler;
+  iv_signal_register(&sigterm_poll);
+
+  IV_SIGNAL_INIT(&sigint_poll);
+  sigint_poll.signum = SIGINT;
+  sigint_poll.flags = IV_SIGNAL_FLAG_EXCLUSIVE;
+  sigint_poll.handler = sig_term_handler;
+  iv_signal_register(&sigint_poll);
 }
 
 /************************************************************************************
@@ -695,7 +720,6 @@ main_loop_init(void)
   service_management_publish_status("Starting up...");
 
   main_thread_handle = get_thread_id();
-  setup_signals();
   main_loop_io_workers.thread_start = main_loop_io_worker_thread_start;
   main_loop_io_workers.thread_stop = main_loop_io_worker_thread_stop;
   iv_work_pool_create(&main_loop_io_workers);
@@ -733,33 +757,8 @@ main_loop_run(void)
   stats_timer.handler = stats_timer_elapsed;
 
   control_init(ctlfilename);
-
-  IV_SIGNAL_INIT(&sighup_poll);
-  sighup_poll.signum = SIGHUP;
-  sighup_poll.flags = IV_SIGNAL_FLAG_EXCLUSIVE;
-  sighup_poll.cookie = NULL;
-  sighup_poll.handler = sig_hup_handler;
-  iv_signal_register(&sighup_poll);
-
-  IV_SIGNAL_INIT(&sigchild_poll);
-  sigchild_poll.signum = SIGCHLD;
-  sigchild_poll.flags = IV_SIGNAL_FLAG_EXCLUSIVE;
-  sigchild_poll.handler = sig_child_handler;
-  iv_signal_register(&sigchild_poll);
-
-  IV_SIGNAL_INIT(&sigterm_poll);
-  sigterm_poll.signum = SIGTERM;
-  sigterm_poll.flags = IV_SIGNAL_FLAG_EXCLUSIVE;
-  sigterm_poll.handler = sig_term_handler;
-  iv_signal_register(&sigterm_poll);
-
-  IV_SIGNAL_INIT(&sigint_poll);
-  sigint_poll.signum = SIGINT;
-  sigint_poll.flags = IV_SIGNAL_FLAG_EXCLUSIVE;
-  sigint_poll.handler = sig_term_handler;
-  iv_signal_register(&sigint_poll);
-
   stats_timer_kickoff(current_configuration);
+  setup_signals();
 
   /* main loop */
   service_management_indicate_readiness();
