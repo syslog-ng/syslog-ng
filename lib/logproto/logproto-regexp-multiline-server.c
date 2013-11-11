@@ -24,11 +24,11 @@
 #include <string.h>
 #include <pcre.h>
 
-typedef struct _MultiLineRegexp
+struct _MultiLineRegexp
 {
   pcre *pattern;
   pcre_extra *extra;
-} MultiLineRegexp;
+};
 
 MultiLineRegexp *
 multi_line_regexp_compile(const gchar *regexp, GError **error)
