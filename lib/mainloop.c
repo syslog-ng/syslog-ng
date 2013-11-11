@@ -35,6 +35,7 @@
 #include "tls-support.h"
 #include "scratch-buffers.h"
 #include "reloc.h"
+#include "service-management.h"
 
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -47,10 +48,6 @@
 #include <iv_signal.h>
 #include <iv_work.h>
 #include <iv_event.h>
-
-#if ENABLE_SYSTEMD
-#include <systemd/sd-daemon.h>
-#endif
 
 /**
  * Processing model
@@ -481,42 +478,6 @@ main_loop_io_worker_sync_call(void (*func)(void))
 }
 
 /************************************************************************************
- *
- ************************************************************************************/
-
-#if ENABLE_SYSTEMD
-static void
-main_loop_publish_status(const gchar *status)
-{
-  gchar *status_buffer;
-  time_t now = time(NULL);
-
-  status_buffer = g_strdup_printf("STATUS=%s (%s)", status, ctime(&now));
-  sd_notify(0, status_buffer);
-  g_free(status_buffer);
-}
-
-static void
-main_loop_clear_status(void)
-{
-  sd_notify(0, "STATUS=");
-}
-
-static void
-main_loop_indicate_readiness(void)
-{
-  sd_notify(0, "READY=1");
-}
-
-#else
-
-#define main_loop_publish_status(x)
-#define main_loop_clear_status()
-#define main_loop_indicate_readiness()
-
-#endif
-
-/************************************************************************************
  * config load/reload
  ************************************************************************************/
 
@@ -568,12 +529,12 @@ main_loop_reload_config_apply(void)
       main_loop_new_config->persist = NULL;
       cfg_free(main_loop_old_config);
       current_configuration = main_loop_new_config;
-      main_loop_clear_status();
+      service_management_clear_status();
     }
   else
     {
       msg_error("Error initializing new configuration, reverting to old config", NULL);
-      main_loop_publish_status("Error initializing new configuration, using the old config");
+      service_management_publish_status("Error initializing new configuration, using the old config");
       cfg_persist_config_move(main_loop_new_config, main_loop_old_config);
       if (!cfg_init(main_loop_old_config))
         {
@@ -610,7 +571,7 @@ main_loop_reload_config_apply(void)
 void
 main_loop_reload_config_initiate(void)
 {
-  main_loop_publish_status("Reloading configuration");
+  service_management_publish_status("Reloading configuration");
 
   if (main_loop_new_config)
     {
@@ -635,7 +596,7 @@ main_loop_reload_config_initiate(void)
       msg_error("Error parsing configuration",
                 evt_tag_str(EVT_TAG_FILENAME, cfgfilename),
                 NULL);
-      main_loop_publish_status("Error parsing new configuration, using the old config");
+      service_management_publish_status("Error parsing new configuration, using the old config");
       return;
     }
   main_loop_io_worker_sync_call(main_loop_reload_config_apply);
@@ -731,7 +692,7 @@ setup_signals(void)
 int
 main_loop_init(void)
 {
-  main_loop_publish_status("Starting up...");
+  service_management_publish_status("Starting up...");
 
   main_thread_handle = get_thread_id();
   app_startup();
@@ -802,10 +763,10 @@ main_loop_run(void)
   stats_timer_kickoff(current_configuration);
 
   /* main loop */
-  main_loop_indicate_readiness();
-  main_loop_clear_status();
+  service_management_indicate_readiness();
+  service_management_clear_status();
   iv_main();
-  main_loop_publish_status("Shutting down...");
+  service_management_publish_status("Shutting down...");
 
   control_destroy();
 
