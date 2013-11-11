@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 1998-2012 Balázs Scheidler
+ * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 1998-2013 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -24,6 +24,8 @@
 
 #include "syslog-ng.h"
 #include "gsocket.h"
+#include "control-client.h"
+#include "cfg.h"
 #include "reloc.h"
 
 #include <stdio.h>
@@ -35,94 +37,22 @@
 #endif
 
 static const gchar *control_name;
-static gint control_socket = -1;
+static ControlClient *control_client;
 
 static gboolean
 slng_send_cmd(gchar *cmd)
 {
-  GSockAddr *saddr = NULL;
-
-  if (control_socket == -1)
+  if (!control_client_connect(control_client))
     {
-      saddr = g_sockaddr_unix_new(control_name);
-      control_socket = socket(PF_UNIX, SOCK_STREAM, 0);
-
-      if (control_socket == -1)
-        {
-          fprintf(stderr, "Error opening control socket, socket='%s', error='%s'\n", control_name, strerror(errno));
-          goto error;
-        }
-
-      if (g_connect(control_socket, saddr) != G_IO_STATUS_NORMAL)
-        {
-          fprintf(stderr, "Error connecting control socket, socket='%s', error='%s'\n", control_name, strerror(errno));
-          close(control_socket);
-          control_socket = -1;
-          goto error;
-        }
+      return FALSE;
     }
 
-  if (write(control_socket, cmd, strlen(cmd)) < 0)
+  if (control_client_send_command(control_client,cmd) < 0)
     {
-      fprintf(stderr, "Error sending command on control sokcet, socket='%s', cmd='%s', error='%s'\n", control_name, cmd, strerror(errno));
-      goto error;
+      return FALSE;
     }
 
   return TRUE;
-
-error:
-  if (saddr)
-    g_sockaddr_unref(saddr);
-
-  return FALSE;
-}
-
-#define BUFF_LEN 8192
-
-static GString *
-slng_read_response(void)
-{
-  gssize len = 0;
-  gchar buff[BUFF_LEN];
-  GString *rsp = NULL;
-
-  if (control_socket == -1)
-    {
-      fprintf(stderr, "Error reading control socket, socket is not connected\n");
-      return NULL;
-    }
-
-  rsp = g_string_sized_new(256);
-
-  while (1)
-    {
-      if ((len = read(control_socket, buff, BUFF_LEN - 1)) < 0)
-        {
-          fprintf(stderr, "Error reading control socket, error='%s'\n", strerror(errno));
-          g_string_free(rsp, TRUE);
-          return NULL;
-        }
-
-      if (len == 0)
-        {
-          fprintf(stderr, "EOF occured while reading control socket\n");
-          g_string_free(rsp, TRUE);
-          return NULL;
-        }
-
-      g_string_append_len(rsp, buff, len);
-
-      if (rsp->str[rsp->len - 1] == '\n' &&
-          rsp->str[rsp->len - 2] == '.' &&
-          rsp->str[rsp->len - 3] == '\n')
-        {
-          g_string_truncate(rsp, rsp->len - 3);
-          break;
-        }
-
-    }
-
-  return rsp;
 }
 
 static gchar *verbose_set = NULL;
@@ -132,7 +62,7 @@ slng_verbose(int argc, char *argv[], const gchar *mode)
 {
   gint ret = 0;
   GString *rsp = NULL;
-  gchar buff[256], *ubuff;
+  gchar buff[256];
 
   if (!verbose_set)
     snprintf(buff, 255, "LOG %s\n", mode);
@@ -140,14 +70,10 @@ slng_verbose(int argc, char *argv[], const gchar *mode)
     snprintf(buff, 255, "LOG %s %s\n", mode,
         strncasecmp(verbose_set, "on", 2) == 0 || verbose_set[0] == '1' ? "ON" : "OFF");
 
-  ubuff = g_ascii_strup(buff, -1);
+  g_strup(buff);
 
-  if (!(slng_send_cmd(ubuff) && ((rsp = slng_read_response()) != NULL)))
-    {
-      g_free(ubuff);
-      return 1;
-    }
-  g_free(ubuff);
+  if (!(slng_send_cmd(buff) && ((rsp = control_client_read_reply(control_client)) != NULL)))
+    return 1;
 
   if (!verbose_set)
     printf("%s\n", rsp->str);
@@ -171,7 +97,22 @@ slng_stats(int argc, char *argv[], const gchar *mode)
 {
   GString *rsp = NULL;
 
-  if (!(slng_send_cmd("STATS\n") && ((rsp = slng_read_response()) != NULL)))
+  if (!(slng_send_cmd("STATS\n") && ((rsp = control_client_read_reply(control_client)) != NULL)))
+    return 1;
+
+  printf("%s\n", rsp->str);
+
+  g_string_free(rsp, TRUE);
+
+  return 0;
+}
+
+static gint
+slng_stop(int argc, char *argv[], const gchar *mode)
+{
+  GString *rsp = NULL;
+
+  if (!(slng_send_cmd("STOP\n") && ((rsp = control_client_read_reply(control_client)) != NULL)))
     return 1;
 
   printf("%s\n", rsp->str);
@@ -186,7 +127,7 @@ slng_reload(int argc, char *argv[], const gchar *mode)
 {
   GString *rsp = NULL;
 
-  if (!(slng_send_cmd("RELOAD\n") && ((rsp = slng_read_response()) != NULL)))
+  if (!(slng_send_cmd("RELOAD\n") && ((rsp = control_client_read_reply(control_client)) != NULL)))
     return 1;
 
   printf("%s\n", rsp->str);
@@ -196,8 +137,13 @@ slng_reload(int argc, char *argv[], const gchar *mode)
   return 0;
 }
 
+static GOptionEntry no_options[] =
+{
+  { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
+};
+
 const gchar *
-slng_mode(int *argc, char **argv[])
+get_mode(int *argc, char **argv[])
 {
   gint i;
   const gchar *mode;
@@ -230,11 +176,12 @@ static struct
   gint (*main)(gint argc, gchar *argv[], const gchar *mode);
 } modes[] =
 {
-  { "stats", NULL, "Dump syslog-ng statistics", slng_stats },
-  { "reload", NULL, "Reload syslog-ng", slng_reload },
+  { "stats", no_options, "Dump syslog-ng statistics", slng_stats },
   { "verbose", verbose_options, "Enable/query verbose messages", slng_verbose },
   { "debug", verbose_options, "Enable/query debug messages", slng_verbose },
   { "trace", verbose_options, "Enable/query trace messages", slng_verbose },
+  { "stop", no_options, "Stop syslog-ng process", slng_stop },
+  { "reload", no_options, "Reload syslog-ng", slng_reload },
   { NULL, NULL },
 };
 
@@ -258,9 +205,11 @@ main(int argc, char *argv[])
   GOptionContext *ctx;
   gint mode;
   GError *error = NULL;
+  int result;
 
   control_name = get_installation_path_for(PATH_CONTROL_SOCKET);
-  mode_string = slng_mode(&argc, &argv);
+
+  mode_string = get_mode(&argc, &argv);
   if (!mode_string)
     {
       usage(argv[0]);
@@ -272,11 +221,10 @@ main(int argc, char *argv[])
       if (strcmp(modes[mode].mode, mode_string) == 0)
         {
           ctx = g_option_context_new(mode_string);
-#if GLIB_CHECK_VERSION (2, 12, 0)
+          #if GLIB_CHECK_VERSION (2, 12, 0)
           g_option_context_set_summary(ctx, modes[mode].description);
-#endif
-          if (modes[mode].options)
-            g_option_context_add_main_entries(ctx, modes[mode].options, NULL);
+          #endif
+          g_option_context_add_main_entries(ctx, modes[mode].options, NULL);
           g_option_context_add_main_entries(ctx, slng_options, NULL);
           break;
         }
@@ -296,5 +244,9 @@ main(int argc, char *argv[])
     }
   g_option_context_free(ctx);
 
-  return modes[mode].main(argc, argv, modes[mode].mode);
+  control_client = control_client_new(control_name);
+
+  result = modes[mode].main(argc, argv, modes[mode].mode);
+  control_client_free(control_client);
+  return result;
 }

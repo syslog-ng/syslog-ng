@@ -39,6 +39,7 @@ pkginclude_HEADERS			+= \
 	lib/cfg-tree.h			\
 	lib/children.h			\
 	lib/control.h			\
+	lib/control-server.h		\
 	lib/crypto.h			\
 	lib/dnscache.h			\
 	lib/driver.h			\
@@ -120,6 +121,7 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/cfg-tree.c			\
 	lib/children.c			\
 	lib/control.c			\
+	lib/control-server.c		\
 	lib/dnscache.c			\
 	lib/driver.c			\
 	lib/file-perms.c		\
@@ -206,6 +208,7 @@ EXTRA_DIST += \
 	lib/pragma-grammar.ym		\
 	lib/merge-grammar.pl		\
 	lib/hostname-unix.c		\
+	lib/control-server-unix.c	\
 	lib/ivykis/configure.gnu
 
 lib/plugin-types.h: lib/cfg-grammar.h
