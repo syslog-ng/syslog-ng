@@ -10,18 +10,26 @@
 #include <sys/time.h>
 #include <math.h>
 
+/*
+ * NOTE: this macro magic is needed in order to make this program test the
+ * internal strtok_r implementation even if the system has an implementation
+ * available.
+ *
+ * We include the implementation file directly, redefining the name of the
+ * function to something else.
+ */
+
 #ifdef strtok_r
 #undef strtok_r
 #endif
 
-#define strtok_r mystrtok_r
+#define TEST_STRTOK_R 1
+#define strtok_r __test_strtok_r
+
 #include "../strtok_r.c"
+
 #undef strtok_r
-
-#ifndef HAVE_STRTOK_R
-#define strtok_r mystrtok_r
-#endif
-
+#undef TEST_STRTOK_R
 
 typedef char *(STRTOK_R_FUN)(char *str, const char *delim, char **saveptr);
 
@@ -102,7 +110,7 @@ test_strtok_with_literals(STRTOK_R_FUN tokenizer_func)
 int
 main(int argc, char *argv[])
 {
-  test_strtok_with_literals(mystrtok_r);
+  test_strtok_with_literals(__test_strtok_r);
 
   return EXIT_SUCCESS;
 }
