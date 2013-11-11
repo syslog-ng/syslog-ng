@@ -82,7 +82,7 @@ error:
 static GString *
 slng_read_response(void)
 {
-  gsize len = 0;
+  gssize len = 0;
   gchar buff[BUFF_LEN];
   GString *rsp = NULL;
 
