@@ -567,13 +567,13 @@ stats_reinit(GlobalConfig *cfg)
       /* we need these counters, register them */
       for (i = 0; i < SEVERITY_MAX; i++)
         {
-          g_snprintf(name, sizeof(name), "%" G_GUINT16_FORMAT, i);
+          g_snprintf(name, sizeof(name), "%d", i);
           stats_register_counter(3, SCS_SEVERITY | SCS_SOURCE, NULL, name, SC_TYPE_PROCESSED, &severity_counters[i]);
         }
 
       for (i = 0; i < FACILITY_MAX - 1; i++)
         {
-          g_snprintf(name, sizeof(name), "%" G_GUINT16_FORMAT, i);
+          g_snprintf(name, sizeof(name), "%d", i);
           stats_register_counter(3, SCS_FACILITY | SCS_SOURCE, NULL, name, SC_TYPE_PROCESSED, &facility_counters[i]);
         }
       stats_register_counter(3, SCS_FACILITY | SCS_SOURCE, NULL, "other", SC_TYPE_PROCESSED, &facility_counters[FACILITY_MAX - 1]);
@@ -583,13 +583,13 @@ stats_reinit(GlobalConfig *cfg)
       /* no need for facility/severity counters, unregister them */
       for (i = 0; i < SEVERITY_MAX; i++)
         {
-          g_snprintf(name, sizeof(name), "%" G_GUINT16_FORMAT, i);
+          g_snprintf(name, sizeof(name), "%d", i);
           stats_unregister_counter(SCS_SEVERITY | SCS_SOURCE, NULL, name, SC_TYPE_PROCESSED, &severity_counters[i]);
         }
 
       for (i = 0; i < FACILITY_MAX - 1; i++)
         {
-          g_snprintf(name, sizeof(name), "%" G_GUINT16_FORMAT, i);
+          g_snprintf(name, sizeof(name), "%d", i);
           stats_unregister_counter(SCS_FACILITY | SCS_SOURCE, NULL, name, SC_TYPE_PROCESSED, &facility_counters[i]);
         }
       stats_unregister_counter(SCS_FACILITY | SCS_SOURCE, NULL, "other", SC_TYPE_PROCESSED, &facility_counters[FACILITY_MAX - 1]);
