@@ -100,7 +100,7 @@ static gboolean
 serialize_file_archive_read_bytes(SerializeArchive *s, gchar *buf, gsize buflen, GError **error)
 {
   SerializeFileArchive *self = (SerializeFileArchive *) s;
-  gsize bytes_read;
+  gssize bytes_read;
   
   g_return_val_if_fail(error == NULL || (*error) == NULL, FALSE);
   
@@ -117,7 +117,7 @@ static gboolean
 serialize_file_archive_write_bytes(SerializeArchive *s, const gchar *buf, gsize buflen, GError **error)
 {
   SerializeFileArchive *self = (SerializeFileArchive *) s;
-  gsize bytes_written;
+  gssize bytes_written;
   
   g_return_val_if_fail(error == NULL || (*error) == NULL, FALSE);
   
