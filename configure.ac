@@ -517,15 +517,12 @@ AC_CACHE_CHECK(for modern utmp,
 #endif
 ],
 [
-int foo(void)
-{
 #ifdef HAVE_UTMPX_H
         struct utmpx ut;
 #else
         struct utmp ut;
 #endif
         return &ut.ut_type && &ut.ut_user;
-}
 ],
 blb_cv_c_modern_utmp=yes,
 blb_cv_c_modern_utmp=no)])
