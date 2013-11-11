@@ -97,13 +97,20 @@ extern struct _HostResolveOptions *last_host_resolve_options;
       }                                                                 \
   } while (YYID (0))
 
+#define CHECK_ERROR_WITHOUT_MESSAGE(val, token) do {                    \
+    if (!(val))                                                         \
+      {                                                                 \
+        YYERROR;                                                        \
+      }                                                                 \
+  } while (0)
+
 #define CHECK_ERROR(val, token, errorfmt, ...) do {                     \
     if (!(val))                                                         \
       {                                                                 \
         if (errorfmt)                                                   \
           {                                                             \
             gchar __buf[256];                                           \
-            g_snprintf(__buf, sizeof(__buf), errorfmt ? errorfmt : "x", ## __VA_ARGS__); \
+            g_snprintf(__buf, sizeof(__buf), errorfmt, ## __VA_ARGS__); \
             yyerror(& (token), lexer, NULL, NULL, __buf);               \
           }                                                             \
         YYERROR;                                                        \
@@ -592,7 +599,7 @@ filter_content
         : {
             FilterExprNode *last_filter_expr = NULL;
 
-	    CHECK_ERROR(cfg_parser_parse(&filter_expr_parser, lexer, (gpointer *) &last_filter_expr, NULL), @$, NULL);
+	    CHECK_ERROR_WITHOUT_MESSAGE(cfg_parser_parse(&filter_expr_parser, lexer, (gpointer *) &last_filter_expr, NULL), @$);
 
             $$ = log_expr_node_new_pipe(log_filter_pipe_new(last_filter_expr), &@$);
 	  }
@@ -603,7 +610,7 @@ parser_content
           {
             LogExprNode *last_parser_expr = NULL;
 
-            CHECK_ERROR(cfg_parser_parse(&parser_expr_parser, lexer, (gpointer *) &last_parser_expr, NULL), @$, NULL);
+            CHECK_ERROR_WITHOUT_MESSAGE(cfg_parser_parse(&parser_expr_parser, lexer, (gpointer *) &last_parser_expr, NULL), @$);
             $$ = last_parser_expr;
           }
         ;
@@ -613,7 +620,7 @@ rewrite_content
           {
             LogExprNode *last_rewrite_expr = NULL;
 
-            CHECK_ERROR(cfg_parser_parse(&rewrite_expr_parser, lexer, (gpointer *) &last_rewrite_expr, NULL), @$, NULL);
+            CHECK_ERROR_WITHOUT_MESSAGE(cfg_parser_parse(&rewrite_expr_parser, lexer, (gpointer *) &last_rewrite_expr, NULL), @$);
             $$ = last_rewrite_expr;
           }
         ;
