@@ -158,7 +158,7 @@ rewrite_expr_opt
           {
             FilterExprNode *filter_expr;
 
-            CHECK_ERROR(cfg_parser_parse(&filter_expr_parser, lexer, (gpointer *) &filter_expr, NULL), @1, NULL);
+            CHECK_ERROR_WITHOUT_MESSAGE(cfg_parser_parse(&filter_expr_parser, lexer, (gpointer *) &filter_expr, NULL), @1);
             log_rewrite_set_condition(last_rewrite, filter_expr);
           } ')'
         ;
