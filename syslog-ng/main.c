@@ -243,6 +243,7 @@ main(int argc, char *argv[])
    * credentials in order to initialize/reinitialize the configuration.
    */
   g_process_start();
+  app_startup();
   rc = main_loop_init();
   
   if (rc)

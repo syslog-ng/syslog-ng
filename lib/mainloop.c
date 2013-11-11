@@ -695,7 +695,6 @@ main_loop_init(void)
   service_management_publish_status("Starting up...");
 
   main_thread_handle = get_thread_id();
-  app_startup();
   setup_signals();
   main_loop_io_workers.thread_start = main_loop_io_worker_thread_start;
   main_loop_io_workers.thread_stop = main_loop_io_worker_thread_stop;
