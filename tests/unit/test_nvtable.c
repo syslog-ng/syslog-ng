@@ -729,6 +729,47 @@ test_nvtable_lookup()
     }
 }
 
+#define STATIC_VALUE "Test Static Value"
+
+void
+test_nvtable_realloc_common(NVTable *payload)
+{
+  NVTable *new_payload = NULL;
+  guint16 old_size;
+  const gchar *value;
+  gssize value_length;
+  nv_table_add_value(payload, STATIC_HANDLE, STATIC_NAME, strlen(STATIC_NAME), STATIC_VALUE, strlen(STATIC_VALUE), NULL);
+  old_size = payload->size;
+  new_payload = nv_table_realloc(payload, &new_payload);
+  TEST_ASSERT(old_size < new_payload->size);
+  fprintf(stderr, "New size: %d\n", new_payload->size);
+  TEST_ASSERT(new_payload->size == NVTABLE_MAX_SIZE);
+  value = __nv_table_get_value(new_payload, STATIC_HANDLE, STATIC_VALUES, &value_length);
+  TEST_ASSERT(value_length == strlen(STATIC_VALUE));
+  TEST_ASSERT(strcmp(value, STATIC_VALUE) == 0);
+  payload = new_payload;
+  new_payload = nv_table_realloc(new_payload, &new_payload);
+  TEST_ASSERT(new_payload == NULL);
+  nv_table_unref(payload);
+
+}
+
+void
+test_nvtable_realloc_with_one_ref()
+{
+  NVTable *payload = nv_table_new(STATIC_VALUES, 0, 32767 << NV_TABLE_SCALE);
+  test_nvtable_realloc_common(payload);
+}
+
+void
+test_nvtable_realloc_with_more_ref()
+{
+  NVTable *payload = nv_table_new(STATIC_VALUES, 0, 32767 << NV_TABLE_SCALE);
+  nv_table_ref(payload);
+  test_nvtable_realloc_common(payload);
+  nv_table_unref(payload);
+}
+
 void
 test_nvtable(void)
 {
@@ -736,6 +777,8 @@ test_nvtable(void)
   test_nvtable_indirect();
   test_nvtable_others();
   test_nvtable_lookup();
+  test_nvtable_realloc_with_one_ref();
+  test_nvtable_realloc_with_more_ref();
 }
 
 int

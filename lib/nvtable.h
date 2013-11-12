@@ -30,6 +30,7 @@
 
 #define NV_TABLE_MAGIC_V2  "NVT2"
 #define NVT_SF_BE           0x1
+#define NVTABLE_MAX_SIZE    65535
 
 typedef struct _NVTable NVTable;
 typedef struct _NVRegistry NVRegistry;
