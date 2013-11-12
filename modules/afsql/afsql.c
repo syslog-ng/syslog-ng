@@ -32,6 +32,7 @@
 #include "stats.h"
 #include "apphook.h"
 #include "timeutils.h"
+#include "mainloop-worker.h"
 
 #include <string.h>
 
@@ -886,7 +887,7 @@ afsql_dd_wait_for_suspension_wakeup(AFSqlDestDriver *self)
  *
  * This is the thread inserting records into the database.
  **/
-static gpointer
+static void
 afsql_dd_database_thread(gpointer arg)
 {
   AFSqlDestDriver *self = (AFSqlDestDriver *) arg;
@@ -958,24 +959,24 @@ exit:
   msg_verbose("Database thread finished",
               evt_tag_str("driver", self->super.super.id),
               NULL);
-  return NULL;
+}
+
+static void
+afsql_dd_stop_thread(gpointer s)
+{
+  AFSqlDestDriver *self = (AFSqlDestDriver *) s;
+  g_mutex_lock(self->db_thread_mutex);
+  self->db_thread_terminate = TRUE;
+  g_cond_signal(self->db_thread_wakeup_cond);
+  g_mutex_unlock(self->db_thread_mutex);
 }
 
 static void
 afsql_dd_start_thread(AFSqlDestDriver *self)
 {
-  self->db_thread = create_worker_thread(afsql_dd_database_thread, self, TRUE, NULL);
+  main_loop_create_worker_thread(afsql_dd_database_thread, afsql_dd_stop_thread, self);
 }
 
-static void
-afsql_dd_stop_thread(AFSqlDestDriver *self)
-{
-  g_mutex_lock(self->db_thread_mutex);
-  self->db_thread_terminate = TRUE;
-  g_cond_signal(self->db_thread_wakeup_cond);
-  g_mutex_unlock(self->db_thread_mutex);
-  g_thread_join(self->db_thread);
-}
 
 static gchar *
 afsql_dd_format_stats_instance(AFSqlDestDriver *self)
@@ -1165,7 +1166,6 @@ afsql_dd_deinit(LogPipe *s)
 {
   AFSqlDestDriver *self = (AFSqlDestDriver *) s;
 
-  afsql_dd_stop_thread(self);
   log_queue_reset_parallel_push(self->queue);
 
   log_queue_set_counters(self->queue, NULL, NULL);
