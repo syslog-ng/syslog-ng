@@ -17,6 +17,7 @@ branches:
     - master
     - /^[\d\.]*\/master$/
     - /^merge-queue\/?/
+    - /^merge\//
 notifications:
   irc:
     channels:
