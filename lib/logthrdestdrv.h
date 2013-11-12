@@ -42,7 +42,6 @@ struct _LogThrDestDriver
   time_t time_reopen;
 
   /* Thread related stuff; shared */
-  GThread *writer_thread;
   GMutex *suspend_mutex;
   GCond *writer_thread_wakeup_cond;
 
