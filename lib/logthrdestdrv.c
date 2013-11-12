@@ -23,7 +23,7 @@
  */
 
 #include "logthrdestdrv.h"
-#include "misc.h"
+#include "mainloop-worker.h"
 
 void
 log_threaded_dest_driver_suspend(LogThrDestDriver *self)
@@ -44,7 +44,7 @@ log_threaded_dest_driver_message_became_available_in_the_queue(gpointer user_dat
   g_mutex_unlock(self->suspend_mutex);
 }
 
-static gpointer
+static void
 log_threaded_dest_driver_worker_thread_main(gpointer arg)
 {
   LogThrDestDriver *self = (LogThrDestDriver *)arg;
@@ -97,26 +97,27 @@ log_threaded_dest_driver_worker_thread_main(gpointer arg)
   msg_debug("Worker thread finished",
             evt_tag_str("driver", self->super.super.id),
             NULL);
+}
 
-  return NULL;
+static void
+log_threaded_dest_driver_stop_thread(gpointer s)
+{
+  LogThrDestDriver *self = (LogThrDestDriver *) s;
+
+  self->writer_thread_terminate = TRUE;
+  g_mutex_lock(self->suspend_mutex);
+  g_cond_signal(self->writer_thread_wakeup_cond);
+  g_mutex_unlock(self->suspend_mutex);
 }
 
 static void
 log_threaded_dest_driver_start_thread(LogThrDestDriver *self)
 {
-  self->writer_thread = create_worker_thread(log_threaded_dest_driver_worker_thread_main,
-                                             self, TRUE, NULL);
+  main_loop_create_worker_thread(log_threaded_dest_driver_worker_thread_main,
+                                 log_threaded_dest_driver_stop_thread,
+                                 self);
 }
 
-static void
-log_threaded_dest_driver_stop_thread(LogThrDestDriver *self)
-{
-  self->writer_thread_terminate = TRUE;
-  g_mutex_lock(self->suspend_mutex);
-  g_cond_signal(self->writer_thread_wakeup_cond);
-  g_mutex_unlock(self->suspend_mutex);
-  g_thread_join(self->writer_thread);
-}
 
 gboolean
 log_threaded_dest_driver_start(LogPipe *s)
@@ -157,7 +158,6 @@ log_threaded_dest_driver_deinit_method(LogPipe *s)
 {
   LogThrDestDriver *self = (LogThrDestDriver *)s;
 
-  log_threaded_dest_driver_stop_thread(self);
   log_queue_reset_parallel_push(self->queue);
 
   log_queue_set_counters(self->queue, NULL, NULL);
