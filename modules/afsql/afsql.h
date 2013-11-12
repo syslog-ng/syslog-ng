@@ -99,7 +99,6 @@ typedef struct _AFSqlDestDriver
   GHashTable *dbd_options_numeric;
 
   /* shared by the main/db thread */
-  GThread *db_thread;
   GMutex *db_thread_mutex;
   GCond *db_thread_wakeup_cond;
   gboolean db_thread_terminate;
