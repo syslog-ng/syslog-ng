@@ -44,6 +44,8 @@ void app_startup();
 void app_post_daemonized();
 void app_pre_config_loaded();
 void app_post_config_loaded();
+void app_thread_start(void);
+void app_thread_stop(void);
 void app_shutdown();
 
 #endif
