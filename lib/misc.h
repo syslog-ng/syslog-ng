@@ -48,8 +48,6 @@ gchar *find_cr_or_lf(gchar *s, gsize n);
 
 gchar *find_file_in_path(const gchar *path, const gchar *filename, GFileTest test);
 
-GThread *create_worker_thread(GThreadFunc func, gpointer data, gboolean joinable, GError **error);
-
 static inline void
 init_sequence_number(gint32 *seqnum)
 {
