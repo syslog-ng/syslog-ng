@@ -71,6 +71,6 @@ def test_sql():
         expected.extend(s.sendMessages(msg, pri=7))
     print_user("Waiting for 10 seconds until syslog-ng writes all records to the SQL table")
     time.sleep(10)
-    stop_syslogng()
+    stopped = stop_syslogng()
     time.sleep(5)
-    return check_sql_expected("%s/test-sql.db" % current_dir, "logs", expected, settle_time=5, syslog_prefix="Sep  7 10:43:21 bzorp prog 12345")
+    return stopped and check_sql_expected("%s/test-sql.db" % current_dir, "logs", expected, settle_time=5, syslog_prefix="Sep  7 10:43:21 bzorp prog 12345")
