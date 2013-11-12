@@ -28,128 +28,26 @@
 gchar*
 resolve_to_absolute_path(const gchar *path, const gchar *basedir)
 {
-  int i = 0;
-  gchar *token = NULL;
-  GQueue *stack =  g_queue_new();
-  gchar **tokens = NULL;
-  gchar *result = NULL;
-  gchar *full_path = g_build_filename(basedir, path, NULL);
+  gchar *buffer = g_malloc(PATH_MAX);
+  gchar cwd[PATH_MAX];
 
-  g_assert(path);
-  g_assert(basedir);
+  getcwd(cwd, PATH_MAX);
+  chdir(basedir);
 
-  if (g_file_test(full_path, G_FILE_TEST_IS_SYMLINK))
+  gchar *result = realpath(path, buffer);
+  if (result == NULL)
     {
-      /* resolve the symlink and construct the absolute path of the link target */
-      GError *error = NULL;
-      gint link_recursion = 0;
-      while (TRUE)
+      g_free(buffer);
+      if (errno == ENOENT)
         {
-          gchar *link_target = g_file_read_link(full_path, &error);
-
-          if (!link_target)
-            {
-               msg_error("Error following symlink",
-                         evt_tag_str("error", error->message),
-                         evt_tag_str("link_name", full_path),
-                         NULL);
-               g_clear_error(&error);
-               g_free(full_path);
-               goto error;
-            }
-          else
-            {
-              g_free(full_path);
-              /* append the link target to the working directory */
-              if (link_target[0] == '/')
-                full_path = g_strdup(link_target);
-              else
-                {
-                  /* append the link target to the working directory */
-                  full_path = g_build_filename(basedir, link_target, NULL);
-                }
-              g_free(link_target);
-              if (!g_file_test(full_path, G_FILE_TEST_IS_SYMLINK))
-                break;
-            }
-
-          if (link_recursion++ > 8)
-            {
-               msg_error("Error following symlink",
-                         evt_tag_str("error", "recursive symlink limit reached"),
-                         evt_tag_str("link_name", full_path),
-                         NULL);
-               g_free(full_path);
-               goto error;
-            }
-        }/*while*/
-
-      /* at this point we have the absolut path to the link target */
-      tokens = g_strsplit(full_path, G_DIR_SEPARATOR_S, -1);
-    }
-  else
-    {
-      if (g_path_is_absolute (full_path))
-        {
-          /* the path is absolute path so just tokenize it */
-          tokens = g_strsplit(full_path, G_DIR_SEPARATOR_S, -1);
+          result = g_strdup(path);
         }
       else
         {
-          /* or it is a relativ path so add it to the working directory and tokenize it */
-          gchar *wd = g_get_current_dir();
-          gchar *path_to_split = g_build_filename(wd, full_path, NULL);
-          tokens = g_strsplit(path_to_split, G_DIR_SEPARATOR_S, -1);
-          g_free(path_to_split);
-          g_free(wd);
+          msg_error("Can't resolve to absolute path", evt_tag_str("path", path), evt_tag_errno("error", errno), NULL);
         }
     }
-
-  g_free(full_path);
-
-  if (!tokens)
-    goto error;
-
-  result = NULL;
-  token = tokens[i++];
-
-  if (!token)
-    goto error;
-
-  do
-    {
-      if (strcmp(token, "") == 0 || strcmp(token, ".") == 0)
-        {
-          token = tokens[i++];
-          continue;
-        }
-      else if (strcmp(token, "..")  == 0)
-        {
-          if (!g_queue_is_empty(stack))
-            g_queue_pop_tail(stack);
-          else
-            goto error;
-        }
-      else
-        {
-          g_queue_push_tail(stack, token);
-        }
-      token = tokens[i++];
-    }
-  while (token != NULL);
-
-  result = g_strdup(G_DIR_SEPARATOR_S);
-  /* construct the path without any . or .. */
-  while (!g_queue_is_empty(stack))
-    {
-      gchar *tmp = result;
-      result = g_build_filename(result, g_queue_pop_head(stack), NULL);
-      g_free(tmp);
-    }
-
-error:
-  g_strfreev(tokens);
-  g_queue_free(stack);
+  chdir(cwd);
   return result;
 }
 
@@ -648,7 +546,11 @@ file_monitor_watch_directory(FileMonitor *self, const gchar *filename)
        base_dir = g_strdup(filename);
     }
 
-  g_assert(g_path_is_absolute (base_dir));
+  if (base_dir == NULL || !g_path_is_absolute (base_dir))
+    {
+      msg_error("Can't monitor directory, because it can't be resolved as absolute path", evt_tag_str("base_dir", base_dir), NULL);
+      return FALSE;
+    }
 
   if (file_monitor_is_dir_monitored(self, base_dir))
     {
