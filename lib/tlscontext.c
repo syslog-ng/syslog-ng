@@ -295,6 +295,42 @@ file_exists(const gchar *fname)
   return TRUE;
 }
 
+static gboolean
+tls_context_verify_locations(TLSContext *self, gchar *dir)
+{
+  if (file_exists(dir))
+    {
+      if (self->ca_dir_layout == CA_DIR_LAYOUT_SHA1 && !SSL_CTX_load_verify_locations(self->ssl_ctx, NULL, dir))
+        return FALSE;
+#if ! ENABLE_FIPS
+      else if (self->ca_dir_layout == CA_DIR_LAYOUT_MD5 && !SSL_CTX_load_verify_locations_old(self->ssl_ctx, NULL, dir))
+        return FALSE;
+#else
+      g_assert(self->ca_dir_layout != CA_DIR_LAYOUT_MD5);
+#endif
+    }
+  return TRUE;
+}
+
+static void
+tls_context_set_default_ca_dir_layout(TLSContext *self, GlobalConfig *cfg)
+{
+  if (cfg->version < 0x500)
+    {
+#if ! ENABLE_FIPS
+      msg_warning("WARNING: The default value of type of the hash used for the CA certificates is changed in version 5.0 from MD5 to SHA1, please rehash the directory when you upgrade your configuration", NULL);
+      self->ca_dir_layout = CA_DIR_LAYOUT_MD5;
+#else
+      msg_warning("WARNING: The MD5 hash is disabled in FIPS version thus the SHA1 hash algorithm is used for the CA certificates, please rehash the directory if you encounter problems with the hashing", NULL);
+      self->ca_dir_layout = CA_DIR_LAYOUT_SHA1;
+#endif
+    }
+  else
+    {
+      self->ca_dir_layout = CA_DIR_LAYOUT_SHA1;
+    }
+}
+
 TLSSession *
 tls_context_setup_session(TLSContext *self, GlobalConfig *cfg)
 {
@@ -337,33 +373,13 @@ tls_context_setup_session(TLSContext *self, GlobalConfig *cfg)
         goto error;
 
       if (self->ca_dir_layout == CA_DIR_LAYOUT_DEFAULT)
-        {
-          if (cfg->version < 0x500)
-            {
-              msg_warning("WARNING: The default value of type of the hash used for the CA certificates is changed in version 5.0 from MD5 to SHA1, please rehash the directory when you upgrade your configuration", NULL);
-              self->ca_dir_layout = CA_DIR_LAYOUT_MD5;
-            }
-          else
-            {
-              self->ca_dir_layout = CA_DIR_LAYOUT_SHA1;
-            }
-        }
+        tls_context_set_default_ca_dir_layout(self, cfg);
 
-      if (file_exists(self->ca_dir))
-        {
-          if (self->ca_dir_layout == CA_DIR_LAYOUT_SHA1 && !SSL_CTX_load_verify_locations(self->ssl_ctx, NULL, self->ca_dir))
-            goto error;
-          else if (self->ca_dir_layout == CA_DIR_LAYOUT_MD5 && !SSL_CTX_load_verify_locations_old(self->ssl_ctx, NULL, self->ca_dir))
-            goto error;
-        }
+      if (!tls_context_verify_locations(self, self->ca_dir))
+        goto error;
 
-      if (file_exists(self->crl_dir))
-        {
-          if (self->ca_dir_layout == CA_DIR_LAYOUT_SHA1 && !SSL_CTX_load_verify_locations(self->ssl_ctx, NULL, self->crl_dir))
-            goto error;
-          else if (self->ca_dir_layout == CA_DIR_LAYOUT_MD5 && !SSL_CTX_load_verify_locations_old(self->ssl_ctx, NULL, self->crl_dir))
-            goto error;
-        }
+      if (!tls_context_verify_locations(self, self->crl_dir))
+        goto error;
 
       if (self->crl_dir)
         verify_flags |= X509_V_FLAG_CRL_CHECK | X509_V_FLAG_CRL_CHECK_ALL;
@@ -498,16 +514,16 @@ tls_context_ref(TLSContext *self)
 TLSVerifyMode
 tls_lookup_verify_mode(const gchar *mode_str)
 {
-  if (strcasecmp(mode_str, "none") == 0)
-    return TVM_NONE;
+  if (strcasecmp(mode_str, "required-trusted") == 0 || strcasecmp(mode_str, "required_trusted") == 0)
+    return TVM_REQUIRED | TVM_TRUSTED;
+  else if (strcasecmp(mode_str, "required-untrusted") == 0 || strcasecmp(mode_str, "required_untrusted") == 0)
+    return TVM_REQUIRED | TVM_UNTRUSTED;
   else if (strcasecmp(mode_str, "optional-trusted") == 0 || strcasecmp(mode_str, "optional_trusted") == 0)
     return TVM_OPTIONAL | TVM_TRUSTED;
   else if (strcasecmp(mode_str, "optional-untrusted") == 0 || strcasecmp(mode_str, "optional_untrusted") == 0)
     return TVM_OPTIONAL | TVM_UNTRUSTED;
-  else if (strcasecmp(mode_str, "required-trusted") == 0 || strcasecmp(mode_str, "required_trusted") == 0)
-    return TVM_REQUIRED | TVM_TRUSTED;
-  else if (strcasecmp(mode_str, "required-untrusted") == 0 || strcasecmp(mode_str, "required_untrusted") == 0)
-    return TVM_REQUIRED | TVM_UNTRUSTED;
+  else if (strcasecmp(mode_str, "none") == 0)
+    return TVM_NONE;
 
   msg_error("Invalid verify mode, default value[required-trusted] will be used",
             evt_tag_str("value", mode_str),
@@ -518,15 +534,22 @@ tls_lookup_verify_mode(const gchar *mode_str)
 CADirLayout
 tls_lookup_ca_dir_layout(const gchar *layout_str)
 {
-
   if (strcasecmp(layout_str, "sha1-based") == 0 || strcasecmp(layout_str, "sha1_based") == 0 ||
       strcasecmp(layout_str, "sha1") == 0)
     return CA_DIR_LAYOUT_SHA1;
+#if ! ENABLE_FIPS
   else if (strcasecmp(layout_str, "md5-based") == 0 || strcasecmp(layout_str, "md5_based") == 0 ||
            strcasecmp(layout_str, "md5") == 0 || strcasecmp(layout_str, "" ) == 0)
     return CA_DIR_LAYOUT_MD5;
   else
-    msg_warning("CA directory layout must be either 'md5-based' (default), 'sha1-based' or empty. Falling back to default.", NULL);
+    msg_warning("CA directory layout must be either 'md5-based', 'sha1-based' (default) or empty. Falling back to default.", NULL);
+#else
+  else
+    {
+      msg_warning("CA directory layout must be 'sha1-based' or empty. Using 'sha1-based'.", NULL);
+      return CA_DIR_LAYOUT_SHA1;
+    }
+#endif
 
   return CA_DIR_LAYOUT_DEFAULT;
 }
