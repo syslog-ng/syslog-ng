@@ -398,15 +398,19 @@ setup_signals(void)
  ************************************************************************************/
 
 static void
+_register_event(struct iv_event *event, void (*handler)(void *))
+{
+  IV_EVENT_INIT(event);
+  event->handler = handler;
+  event->cookie = NULL;
+  iv_event_register(event);
+}
+
+static void
 main_loop_init_events(void)
 {
-  IV_EVENT_INIT(&exit_requested);
-  exit_requested.handler = (void (*)(void *)) main_loop_exit_initiate;
-  iv_event_register(&exit_requested);
-
-  IV_EVENT_INIT(&reload_config_requested);
-  reload_config_requested.handler = (void (*)(void *)) main_loop_reload_config_initiate;
-  iv_event_register(&reload_config_requested);
+  _register_event(&exit_requested, (void (*)(void *)) main_loop_exit_initiate);
+  _register_event(&reload_config_requested, (void (*)(void *)) main_loop_reload_config_initiate);
 }
 
 void
