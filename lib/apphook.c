@@ -41,6 +41,7 @@
 
 #include <iv.h>
 #include <iv_work.h>
+#include <resolv.h>
 
 typedef struct _ApplicationHookEntry
 {
@@ -146,6 +147,7 @@ void
 app_post_config_loaded(void)
 {
   run_application_hook(AH_POST_CONFIG_LOADED);
+  res_init();
 }
 
 void 
