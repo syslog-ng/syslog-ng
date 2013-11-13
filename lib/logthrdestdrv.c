@@ -130,6 +130,11 @@ log_threaded_dest_driver_start(LogPipe *s)
   self->queue = log_dest_driver_acquire_queue(&self->super,
                                               self->format.persist_name(self));
 
+  if (self->queue == NULL)
+    {
+      return FALSE;
+    }
+
   stats_lock();
   stats_register_counter(0, self->stats_source | SCS_DESTINATION, self->super.super.id,
                          self->format.stats_instance(self),
