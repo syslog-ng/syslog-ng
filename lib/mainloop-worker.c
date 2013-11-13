@@ -261,14 +261,6 @@ static gpointer
 _worker_thread_func(gpointer st)
 {
   WorkerThreadParams *p = st;
-  sigset_t mask;
-  
-  sigemptyset(&mask);
-  sigaddset(&mask, SIGHUP);
-  sigaddset(&mask, SIGCHLD);
-  sigaddset(&mask, SIGTERM);
-  sigaddset(&mask, SIGINT);
-  sigprocmask(SIG_BLOCK, &mask, NULL);
   
   main_loop_worker_thread_start();
   p->func(p->data);
