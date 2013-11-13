@@ -363,38 +363,34 @@ sig_child_handler(void *s)
 }
 
 static void
-setup_signals(void)
+_ignore_signal(gint signum)
 {
   struct sigaction sa;
 
   memset(&sa, 0, sizeof(sa));
   sa.sa_handler = SIG_IGN;
-  sigaction(SIGPIPE, &sa, NULL);
-  
-  IV_SIGNAL_INIT(&sighup_poll);
-  sighup_poll.signum = SIGHUP;
-  sighup_poll.flags = IV_SIGNAL_FLAG_EXCLUSIVE;
-  sighup_poll.cookie = NULL;
-  sighup_poll.handler = sig_hup_handler;
-  iv_signal_register(&sighup_poll);
+  sigaction(signum, &sa, NULL);
+}
 
-  IV_SIGNAL_INIT(&sigchild_poll);
-  sigchild_poll.signum = SIGCHLD;
-  sigchild_poll.flags = IV_SIGNAL_FLAG_EXCLUSIVE;
-  sigchild_poll.handler = sig_child_handler;
-  iv_signal_register(&sigchild_poll);
+static void
+_register_signal_handler(struct iv_signal *signal_poll, gint signum, void (*handler)(void *))
+{
+  IV_SIGNAL_INIT(signal_poll);
+  signal_poll->signum = signum;
+  signal_poll->flags = IV_SIGNAL_FLAG_EXCLUSIVE;
+  signal_poll->cookie = NULL;
+  signal_poll->handler = handler;
+  iv_signal_register(signal_poll);
+}
 
-  IV_SIGNAL_INIT(&sigterm_poll);
-  sigterm_poll.signum = SIGTERM;
-  sigterm_poll.flags = IV_SIGNAL_FLAG_EXCLUSIVE;
-  sigterm_poll.handler = sig_term_handler;
-  iv_signal_register(&sigterm_poll);
-
-  IV_SIGNAL_INIT(&sigint_poll);
-  sigint_poll.signum = SIGINT;
-  sigint_poll.flags = IV_SIGNAL_FLAG_EXCLUSIVE;
-  sigint_poll.handler = sig_term_handler;
-  iv_signal_register(&sigint_poll);
+static void
+setup_signals(void)
+{
+  _ignore_signal(SIGPIPE);
+  _register_signal_handler(&sighup_poll, SIGHUP, sig_hup_handler);
+  _register_signal_handler(&sigchild_poll, SIGCHLD, sig_child_handler);
+  _register_signal_handler(&sigterm_poll, SIGTERM, sig_term_handler);
+  _register_signal_handler(&sigint_poll, SIGINT, sig_term_handler);
 }
 
 /************************************************************************************
