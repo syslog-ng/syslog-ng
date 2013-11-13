@@ -1024,6 +1024,10 @@ afsql_dd_init(LogPipe *s)
   stats_unlock();
 
   self->queue = log_dest_driver_acquire_queue(&self->super, afsql_dd_format_persist_name(self));
+  if (self->queue == NULL)
+    {
+      return FALSE;
+    }
   log_queue_set_counters(self->queue, self->stored_messages, self->dropped_messages);
   if (!self->fields)
     {
