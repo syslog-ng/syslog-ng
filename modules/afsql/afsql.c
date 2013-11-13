@@ -999,6 +999,17 @@ afsql_dd_format_persist_name(AFSqlDestDriver *self)
   return persist_name;
 }
 
+static inline gchar *
+afsql_dd_format_persist_sequence_number(AFSqlDestDriver *self)
+{
+  static gchar persist_name[256];
+
+  g_snprintf(persist_name, sizeof(persist_name),
+             "afsql_dd_sequence_number(%s,%s,%s,%s,%s)",
+              self->type,self->host, self->port, self->database, self->table->template);
+
+  return persist_name;
+}
 
 static gboolean
 afsql_dd_init(LogPipe *s)
@@ -1022,6 +1033,10 @@ afsql_dd_init(LogPipe *s)
   stats_register_counter(0, SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self), SC_TYPE_STORED, &self->stored_messages);
   stats_register_counter(0, SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self), SC_TYPE_DROPPED, &self->dropped_messages);
   stats_unlock();
+
+  self->seq_num = GPOINTER_TO_INT(cfg_persist_config_fetch(cfg, afsql_dd_format_persist_sequence_number(self)));
+  if (!self->seq_num)
+    init_sequence_number(&self->seq_num);
 
   self->queue = log_dest_driver_acquire_queue(&self->super, afsql_dd_format_persist_name(self));
   if (self->queue == NULL)
@@ -1154,6 +1169,7 @@ afsql_dd_deinit(LogPipe *s)
   log_queue_reset_parallel_push(self->queue);
 
   log_queue_set_counters(self->queue, NULL, NULL);
+  cfg_persist_config_add(log_pipe_get_config(s), afsql_dd_format_persist_sequence_number(self), GINT_TO_POINTER(self->seq_num), NULL, FALSE);
 
   stats_lock();
   stats_unregister_counter(SCS_SQL | SCS_DESTINATION, self->super.super.id, afsql_dd_format_stats_instance(self), SC_TYPE_STORED, &self->stored_messages);
@@ -1254,7 +1270,6 @@ afsql_dd_new(void)
   self->dbd_options_numeric = g_hash_table_new_full(g_str_hash, g_int_equal, g_free, NULL);
 
   log_template_options_defaults(&self->template_options);
-  init_sequence_number(&self->seq_num);
 
   self->db_thread_wakeup_cond = g_cond_new();
   self->db_thread_mutex = g_mutex_new();
