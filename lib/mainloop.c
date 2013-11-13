@@ -235,7 +235,6 @@ main_loop_reload_config_apply(void)
     }
 
   /* this is already running with the new config in place */
-  res_init();
   app_post_config_loaded();
   msg_notice("Configuration reload request received, reloading configuration",
                NULL);
