@@ -30,26 +30,16 @@
 #include "stats.h"
 #include "messages.h"
 #include "children.h"
-#include "misc.h"
-#include "hostname.h"
 #include "control.h"
-#include "logqueue.h"
-#include "dnscache.h"
-#include "tls-support.h"
-#include "scratch-buffers.h"
 #include "reloc.h"
 #include "service-management.h"
+#include "persist-state.h"
 
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <string.h>
-#include <netinet/in.h>
-#include <arpa/nameser.h>
-#include <resolv.h>
-#include <time.h>
 #include <iv.h>
 #include <iv_signal.h>
-#include <iv_work.h>
 #include <iv_event.h>
 
 /**
