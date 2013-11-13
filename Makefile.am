@@ -17,6 +17,7 @@ TEST_CFLAGS		= -I$(top_srcdir)/libtest
 TEST_LDADD		= $(top_builddir)/libtest/libsyslog-ng-test.a \
 			  $(top_builddir)/lib/libsyslog-ng.la \
 			  $(TOOL_DEPS_LIBS)
+test_ldflags		= -no-install
 
 PREOPEN_SYSLOGFORMAT	= -dlpreopen ${top_builddir}/modules/syslogformat/libsyslogformat.la
 PREOPEN_BASICFUNCS	= -dlpreopen ${top_builddir}/modules/basicfuncs/libbasicfuncs.la
@@ -38,6 +39,8 @@ local-check: current_tests=$(foreach subdir,${check_subdir} ${check_subdir}_test
 local-check:
 	${AM_v_at}${MAKE} check check_PROGRAMS="${current_tests} ${subdir_tests}" \
 				TESTS="${current_tests} ${subdir_tests}"
+
+${check_PROGRAMS}: LDFLAGS+="${test_ldflags}"
 
 noinst_LIBRARIES	=
 noinst_DATA		=
