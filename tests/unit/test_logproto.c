@@ -168,7 +168,7 @@ test_log_proto_base(void)
   LogProto *proto;
 
   assert_gint(log_proto_get_char_size_for_fixed_encoding("iso-8859-2"), 1, NULL);
-  assert_gint(log_proto_get_char_size_for_fixed_encoding("ucs4"), 4, NULL);
+  assert_gint(log_proto_get_char_size_for_fixed_encoding("ucs-4"), 4, NULL);
 
   proto = log_proto_record_server_new(
             log_transport_mock_new(
@@ -180,14 +180,14 @@ test_log_proto_base(void)
             32, 0);
 
   /* check that encoding can be set and error is properly returned */
-  assert_true(log_proto_set_encoding(proto, "utf8"), "Error setting encoding to utf8");
-  assert_string(proto->encoding, "utf8", NULL);
+  assert_true(log_proto_set_encoding(proto, "utf-8"), "Error setting encoding to utf8");
+  assert_string(proto->encoding, "utf-8", NULL);
 
   assert_false(log_proto_set_encoding(proto, "never-ever-is-going-to-be-such-an-encoding"), "Successfully set a bogus encoding, which is insane");
   assert_true(proto->encoding == NULL, "an failed log_proto_set_encoding call left the encoding lingering");
 
-  log_proto_set_encoding(proto, "ucs4");
-  assert_string(proto->encoding, "ucs4", NULL);
+  log_proto_set_encoding(proto, "ucs-4");
+  assert_string(proto->encoding, "ucs-4", NULL);
   assert_proto_fetch(proto, "árvíztűr", -1);
   log_proto_free(proto);
 }
@@ -292,7 +292,7 @@ test_log_proto_text_record_server_ucs4(void)
               "01234", 5,
               LTM_EOF),
             32, 0);
-  log_proto_set_encoding(proto, "ucs4");
+  log_proto_set_encoding(proto, "ucs-4");
   assert_proto_fetch(proto, "árvíztűr", -1);
   assert_proto_fetch(proto, "árvíztű", -1);
   assert_proto_fetch_failure(proto, LPS_ERROR, "Padding was set, and couldn't read enough bytes");
@@ -328,8 +328,8 @@ test_log_proto_text_record_server_skip_bad_chars(void)
   TEST_LOG_PROTO_TEXT_RECORD_SERVER_SKIP_BAD_CHARS(UTF8_BAD_INPUT, UTF8_BAD_INPUT_SIZE, "utf-8", UTF8_GOOD_OUTPUT);
   TEST_LOG_PROTO_TEXT_RECORD_SERVER_SKIP_BAD_CHARS(WINDOWS_1250_BAD_INPUT, WINDOWS_1250_BAD_INPUT_SIZE, "windows-1250", WINDOWS_1250_GOOD_OUTPUT);
   TEST_LOG_PROTO_TEXT_RECORD_SERVER_SKIP_BAD_CHARS(WINDOWS_1252_BAD_INPUT, WINDOWS_1252_BAD_INPUT_SIZE, "windows-1252", WINDOWS_1252_GOOD_OUTPUT);
-  TEST_LOG_PROTO_TEXT_RECORD_SERVER_SKIP_BAD_CHARS(UCS_2_BAD_INPUT, UCS_2_BAD_INPUT_SIZE, "ucs-2", UCS_2_GOOD_OUTPUT);
-  TEST_LOG_PROTO_TEXT_RECORD_SERVER_SKIP_BAD_CHARS(UTF16_BAD_INPUT, UTF16_BAD_INPUT_SIZE, "utf-16", UTF16_GOOD_OUTPUT);
+  TEST_LOG_PROTO_TEXT_RECORD_SERVER_SKIP_BAD_CHARS(UCS_2_BAD_INPUT, UCS_2_BAD_INPUT_SIZE, "ucs-2le", UCS_2_GOOD_OUTPUT);
+  TEST_LOG_PROTO_TEXT_RECORD_SERVER_SKIP_BAD_CHARS(UTF16_BAD_INPUT, UTF16_BAD_INPUT_SIZE, "utf-16le", UTF16_GOOD_OUTPUT);
 }
 
 static void
@@ -436,7 +436,7 @@ test_log_proto_text_server_eof_handling(void)
       "\xc3", -1,
       LTM_EOF);
   proto = create_log_proto_text_server_new(transport, 32, LPBS_POS_TRACKING);
-  log_proto_set_encoding(proto, "utf8");
+  log_proto_set_encoding(proto, "utf-8");
   assert_proto_fetch_failure(proto, LPS_EOF, "EOF read on a channel with leftovers from previous character conversion, dropping input");
   log_proto_free(proto);
 }
@@ -454,7 +454,7 @@ test_log_proto_text_server_not_fixed_encoding(void)
       LTM_EOF);
 
   proto = create_log_proto_text_server_new(transport, 32, LPBS_POS_TRACKING);
-  log_proto_set_encoding(proto, "utf8");
+  log_proto_set_encoding(proto, "utf-8");
   assert_proto_fetch(proto, "árvíztűrőtükörfúrógép", -1);
   assert_proto_fetch_failure(proto, LPS_EOF, NULL);
   log_proto_free(proto);
@@ -463,11 +463,11 @@ test_log_proto_text_server_not_fixed_encoding(void)
 static void
 test_log_proto_text_server_skip_bad_chars(void)
 {
-  TEST_LOG_PROTO_TEXT_SERVER_SKIP_BAD_CHARS(UTF8_BAD_INPUT, UTF8_BAD_INPUT_SIZE, "utf8", UTF8_GOOD_OUTPUT);
+  TEST_LOG_PROTO_TEXT_SERVER_SKIP_BAD_CHARS(UTF8_BAD_INPUT, UTF8_BAD_INPUT_SIZE, "utf-8", UTF8_GOOD_OUTPUT);
   TEST_LOG_PROTO_TEXT_SERVER_SKIP_BAD_CHARS(WINDOWS_1250_BAD_INPUT, WINDOWS_1250_BAD_INPUT_SIZE, "windows-1250", WINDOWS_1250_GOOD_OUTPUT);
   TEST_LOG_PROTO_TEXT_SERVER_SKIP_BAD_CHARS(WINDOWS_1252_BAD_INPUT, WINDOWS_1252_BAD_INPUT_SIZE, "windows-1252", WINDOWS_1252_GOOD_OUTPUT);
-  TEST_LOG_PROTO_TEXT_SERVER_SKIP_BAD_CHARS(UCS_2_BAD_INPUT, UCS_2_BAD_INPUT_SIZE, "ucs-2", UCS_2_GOOD_OUTPUT);
-  TEST_LOG_PROTO_TEXT_SERVER_SKIP_BAD_CHARS(UTF16_BAD_INPUT, UTF16_BAD_INPUT_SIZE, "utf-16", UTF16_GOOD_OUTPUT);
+  TEST_LOG_PROTO_TEXT_SERVER_SKIP_BAD_CHARS(UCS_2_BAD_INPUT, UCS_2_BAD_INPUT_SIZE, "ucs-2le", UCS_2_GOOD_OUTPUT);
+  TEST_LOG_PROTO_TEXT_SERVER_SKIP_BAD_CHARS(UTF16_BAD_INPUT, UTF16_BAD_INPUT_SIZE, "utf-16le", UTF16_GOOD_OUTPUT);
 }
 
 static void
@@ -486,7 +486,7 @@ test_log_proto_text_server_ucs4(void)
       LTM_EOF);
 
   proto = create_log_proto_text_server_new(transport, 32, 0);
-  log_proto_set_encoding(proto, "ucs4");
+  log_proto_set_encoding(proto, "ucs-4");
   assert_proto_fetch(proto, "árvíztűrőtükörfúrógép", -1);
   assert_proto_fetch_failure(proto, LPS_EOF, NULL);
   log_proto_free(proto);
@@ -620,7 +620,7 @@ test_log_proto_dgram_server_ucs4(void)
 
               LTM_EOF),
             32, 0);
-  log_proto_set_encoding(proto, "ucs4");
+  log_proto_set_encoding(proto, "ucs-4");
   assert_proto_fetch(proto, "árvíztűr", -1);
   assert_proto_fetch(proto, "árvíztű\n", -1);
   log_proto_free(proto);
@@ -651,11 +651,11 @@ test_log_proto_dgram_server_iso_8859_2(void)
 static void
 test_log_proto_dgram_server_skip_bad_chars(void)
 {
-  TEST_LOG_PROTO_DGRAM_SERVER_SKIP_BAD_CHARS(UTF8_BAD_INPUT, UTF8_BAD_INPUT_SIZE, "utf8", UTF8_GOOD_OUTPUT);
+  TEST_LOG_PROTO_DGRAM_SERVER_SKIP_BAD_CHARS(UTF8_BAD_INPUT, UTF8_BAD_INPUT_SIZE, "utf-8", UTF8_GOOD_OUTPUT);
   TEST_LOG_PROTO_DGRAM_SERVER_SKIP_BAD_CHARS(WINDOWS_1250_BAD_INPUT, WINDOWS_1250_BAD_INPUT_SIZE, "windows-1250", WINDOWS_1250_GOOD_OUTPUT);
   TEST_LOG_PROTO_DGRAM_SERVER_SKIP_BAD_CHARS(WINDOWS_1252_BAD_INPUT, WINDOWS_1252_BAD_INPUT_SIZE, "windows-1252", WINDOWS_1252_GOOD_OUTPUT);
-  TEST_LOG_PROTO_DGRAM_SERVER_SKIP_BAD_CHARS(UCS_2_BAD_INPUT, UCS_2_BAD_INPUT_SIZE, "ucs-2", UCS_2_GOOD_OUTPUT);
-  TEST_LOG_PROTO_DGRAM_SERVER_SKIP_BAD_CHARS(UTF16_BAD_INPUT, UTF16_BAD_INPUT_SIZE, "utf-16", UTF16_GOOD_OUTPUT);
+  TEST_LOG_PROTO_DGRAM_SERVER_SKIP_BAD_CHARS(UCS_2_BAD_INPUT, UCS_2_BAD_INPUT_SIZE, "ucs-2le", UCS_2_GOOD_OUTPUT);
+  TEST_LOG_PROTO_DGRAM_SERVER_SKIP_BAD_CHARS(UTF16_BAD_INPUT, UTF16_BAD_INPUT_SIZE, "utf-16le", UTF16_GOOD_OUTPUT);
 }
 
 static void
