@@ -103,8 +103,38 @@ const gchar *module_path;
 static gchar *preprocess_into = NULL;
 gboolean syntax_only = FALSE;
 
-
-gboolean under_termination = FALSE;
+/*
+ * This variable is used to detect that syslog-ng is being terminated, in which
+ * case ongoing reload operations are aborted.
+ *
+ * The variable is deeply embedded in various mainloop callbacks to get out
+ * of an ongoing reload and start doing the termination instead.  A better
+ * solution would be to use a queue for intrusive, worker-stopping
+ * operations and serialize such tasks so they won't interfere which each other.
+ *
+ * This interference is now implemented by conditionals scattered around the code.
+ *
+ * Example:
+ *   * reload is now taking two steps (marked R in the figure below)
+ *     1) parse the configuration and request worker threads to be stopped
+ *     2) apply the configuration once all threads exited
+ *   * termination is also taking two steps
+ *     1) send out the shutting down message and start waiting 100msec
+ *     2) terminate the mainloop
+ *
+ * The problem happens when reload and termination happen at around the same
+ * time and these steps are interleaved.
+ *
+ *   Normal operation: RRTT (e.g. reload finishes, then termination)
+ *   Problematic case: RTRT (e.g. reload starts, termination starts, config apply, terminate)
+ *
+ * In the problematic case, two independent operations do similar things to
+ * the mainloop, and to prevent misfortune we need to handle this case explicitly.
+ *
+ * Were the two operations serialized by some kind of queue, the problems
+ * would be gone.
+ */
+gboolean __main_loop_is_terminating = FALSE;
 
 /* signal handling */
 static struct iv_signal sighup_poll;
@@ -429,7 +459,7 @@ main_loop_io_worker_job_init(MainLoopIOWorkerJob *self)
 static void
 main_loop_io_worker_sync_call(void (*func)(void))
 {
-  g_assert(main_loop_io_workers_sync_func == NULL || main_loop_io_workers_sync_func == func || under_termination);
+  g_assert(main_loop_io_workers_sync_func == NULL || main_loop_io_workers_sync_func == func || main_loop_is_terminating());
 
   if (main_loop_io_workers_running == 0)
     {
@@ -474,7 +504,7 @@ main_loop_initialize_state(GlobalConfig *cfg, const gchar *persist_filename)
 static void
 main_loop_reload_config_apply(void)
 {
-  if (under_termination)
+  if (main_loop_is_terminating())
     {
       if (main_loop_new_config)
         {
@@ -535,7 +565,7 @@ main_loop_reload_config_apply(void)
 void
 main_loop_reload_config_initiate(void)
 {
-  if (!under_termination)
+  if (!main_loop_is_terminating())
     return;
 
   service_management_publish_status("Reloading configuration");
@@ -594,7 +624,7 @@ main_loop_exit_timer_elapsed(void *arg)
 static void
 main_loop_exit_initiate(void)
 {
-  if (under_termination)
+  if (main_loop_is_terminating())
     return;
 
   msg_notice("syslog-ng shutting down",
@@ -607,7 +637,7 @@ main_loop_exit_initiate(void)
   main_loop_exit_timer.handler = main_loop_exit_timer_elapsed;
   timespec_add_msec(&main_loop_exit_timer.expires, 100);
   iv_timer_register(&main_loop_exit_timer);
-  under_termination = TRUE;
+  __main_loop_is_terminating = TRUE;
 }
 
 /************************************************************************************
