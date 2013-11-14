@@ -365,7 +365,7 @@ static void
 _register_signal_handler(struct iv_signal *signal_poll, gint signum, void (*handler)(void *))
 {
   IV_SIGNAL_INIT(signal_poll);
-  signal_poll->signum = SIGHUP;
+  signal_poll->signum = signum;
   signal_poll->flags = IV_SIGNAL_FLAG_EXCLUSIVE;
   signal_poll->cookie = NULL;
   signal_poll->handler = handler;
