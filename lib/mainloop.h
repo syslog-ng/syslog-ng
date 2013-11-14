@@ -66,7 +66,6 @@ main_loop_io_worker_job_quit(void)
   return main_loop_io_workers_quit;
 }
 
-void main_loop_reload_config_initiate(void);
 void main_loop_io_worker_set_thread_id(gint id);
 gint main_loop_io_worker_thread_id(void);
 void main_loop_io_worker_job_init(MainLoopIOWorkerJob *self);
@@ -88,8 +87,15 @@ main_loop_is_main_thread(void)
 }
 
 gpointer main_loop_call(MainLoopTaskFunc func, gpointer user_data, gboolean wait);
-int main_loop_init(void);
-int  main_loop_run(void);
+
+void main_loop_reload_config(void);
+void main_loop_exit(void);
+
+int main_loop_read_and_init_config(void);
+void main_loop_run(void);
+
+void main_loop_init(void);
+void main_loop_deinit(void);
 
 void main_loop_add_options(GOptionContext *ctx);
 void main_loop_global_init(void);

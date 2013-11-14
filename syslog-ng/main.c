@@ -244,7 +244,8 @@ main(int argc, char *argv[])
    */
   g_process_start();
   app_startup();
-  rc = main_loop_init();
+  main_loop_init();
+  rc = main_loop_read_and_init_config();
   
   if (rc)
     {
@@ -260,12 +261,14 @@ main(int argc, char *argv[])
     }
 
   /* we are running as a non-root user from this point */
-  
+
   app_post_daemonized();
   app_post_config_loaded();
+  
   /* from now on internal messages are written to the system log as well */
   
-  rc = main_loop_run();
+  main_loop_run();
+  main_loop_deinit();
 
   app_shutdown();
   z_mem_trace_dump();
