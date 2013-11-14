@@ -31,6 +31,7 @@
 
 extern volatile gboolean main_loop_io_workers_quit;
 extern gboolean syntax_only;
+extern gboolean __main_loop_is_terminating;
 extern ThreadId main_thread_handle;
 
 typedef gpointer (*MainLoopTaskFunc)(gpointer user_data);
@@ -86,7 +87,11 @@ main_loop_is_main_thread(void)
   return threads_equal(main_thread_handle, get_thread_id());
 }
 
-gpointer main_loop_call(MainLoopTaskFunc func, gpointer user_data, gboolean wait);
+static inline gboolean
+main_loop_is_terminating(void)
+{
+  return __main_loop_is_terminating;
+}
 
 void main_loop_reload_config(void);
 void main_loop_exit(void);
