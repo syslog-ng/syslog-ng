@@ -24,6 +24,7 @@
 
 #include "logreader.h"
 #include "mainloop-io-worker.h"
+#include "mainloop-call.h"
 
 struct _LogReader
 {

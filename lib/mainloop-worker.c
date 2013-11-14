@@ -22,7 +22,7 @@
  *
  */
 #include "mainloop-worker.h"
-#include "mainloop.h"
+#include "mainloop-call.h"
 #include "tls-support.h"
 #include "apphook.h"
 

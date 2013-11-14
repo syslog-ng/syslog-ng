@@ -37,6 +37,7 @@
 #include "template/templates.h"
 #include "hostname.h"
 #include "scratch-buffers.h"
+#include "mainloop-call.h"
 
 #include <iv.h>
 #include <iv_work.h>
@@ -170,6 +171,7 @@ app_thread_start(void)
 {
   scratch_buffers_init();
   dns_cache_thread_init();
+  main_loop_call_thread_init();
 }
 
 void
@@ -177,4 +179,5 @@ app_thread_stop(void)
 {
   dns_cache_thread_deinit();
   scratch_buffers_free();
+  main_loop_call_thread_deinit();
 }

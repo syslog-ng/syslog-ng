@@ -28,7 +28,7 @@
 #include "serialize.h"
 #include "gprocess.h"
 #include "stats.h"
-#include "mainloop.h"
+#include "mainloop-call.h"
 #include "logproto/logproto-text-client.h"
 #include "logproto-file-writer.h"
 #include "compat/lfs.h"

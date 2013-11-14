@@ -30,6 +30,7 @@
 #include "misc.h"
 #include "mainloop.h"
 #include "mainloop-io-worker.h"
+#include "mainloop-call.h"
 #include "ml-batched-timer.h"
 #include "str-format.h"
 
