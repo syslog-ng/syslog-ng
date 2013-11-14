@@ -5,6 +5,7 @@
 #include "plugin.h"
 #include "mainloop.h"
 #include "tls-support.h"
+#include "mainloop-io-worker.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -127,34 +128,6 @@ testcase_zero_diskbuf_alternating_send_acks()
 #define MESSAGES_SUM (FEEDERS * MESSAGES_PER_FEEDER)
 #define TEST_RUNS 10
 
-TLS_BLOCK_START
-{
-  struct iv_list_head finish_callbacks;
-}
-TLS_BLOCK_END;
-
-#define finish_callbacks  __tls_deref(finish_callbacks)
-
-void
-main_loop_io_worker_register_finish_callback(MainLoopIOWorkerFinishCallback *cb)
-{
-  iv_list_add(&cb->list, &finish_callbacks);
-}
-
-void
-main_loop_io_worker_invoke_finish_callbacks(void)
-{
-  struct iv_list_head *lh, *lh2;
-
-  iv_list_for_each_safe(lh, lh2, &finish_callbacks)
-    {
-      MainLoopIOWorkerFinishCallback *cb = iv_list_entry(lh, MainLoopIOWorkerFinishCallback, list);
-                            
-      cb->func(cb->user_data);
-      iv_list_del_init(&cb->list);
-    }
-}
-
 GStaticMutex tlock;
 glong sum_time;
 
@@ -175,9 +148,8 @@ threaded_feed(gpointer args)
   iv_init();
   
   /* emulate main loop for LogQueue */
-  main_loop_io_worker_set_thread_id(id);
-  finish_callbacks.next = &finish_callbacks;
-  finish_callbacks.prev = &finish_callbacks;
+  main_loop_worker_thread_start();
+  main_loop_worker_set_thread_id(id);
 
   sa = g_sockaddr_inet_new("10.10.10.10", 1010);
   tmpl = log_msg_new(msg_str, msg_len, sa, &parse_options);
@@ -193,9 +165,9 @@ threaded_feed(gpointer args)
       log_queue_push_tail(q, msg, &path_options);
       
       if ((i & 0xFF) == 0)
-        main_loop_io_worker_invoke_finish_callbacks();
+        main_loop_worker_invoke_batch_callbacks();
     }
-  main_loop_io_worker_invoke_finish_callbacks();
+  main_loop_worker_invoke_batch_callbacks();
   g_get_current_time(&end);
   diff = g_time_val_diff(&end, &start);
   g_static_mutex_lock(&tlock);
@@ -203,6 +175,7 @@ threaded_feed(gpointer args)
   g_static_mutex_unlock(&tlock);
   log_msg_unref(tmpl);
   iv_deinit();
+  main_loop_worker_thread_stop();
   return NULL;
 }
 
@@ -310,10 +283,6 @@ testcase_with_threads()
 int
 main()
 {
-#if _AIX
-  fprintf(stderr,"On AIX this testcase can't executed, because the overriding of main_loop_io_worker_register_finish_callback does not work\n");
-  return 0;
-#endif
   app_startup();
   putenv("TZ=MET-1METDST");
   tzset();

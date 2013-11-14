@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 1998-2012 Balázs Scheidler
+ * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 1998-2013 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,32 +21,28 @@
  * COPYING for details.
  *
  */
+#ifndef MAINLOOP_IO_WORKER_H_INCLUDED
+#define MAINLOOP_IO_WORKER_H_INCLUDED 1
 
-#ifndef ML_BATCHED_TIMER_INCLUDED
-#define ML_BATCHED_TIMER_INCLUDED
+#include "mainloop-worker.h"
 
-#include "mainloop.h"
-#include <iv.h>
+#include <iv_work.h>
 
-
-/* timer which only updates */
-typedef struct _MlBatchedTimer
+typedef struct _MainLoopIOWorkerJob
 {
-  GStaticMutex lock;
-  struct iv_timer timer;
-  struct timespec expires;
-  gpointer cookie;
-  void *(*ref_cookie)(gpointer self);
-  void (*unref_cookie)(gpointer self);
-  void (*handler)(gpointer self);
-} MlBatchedTimer;
+  void (*work)(gpointer user_data);
+  void (*completion)(gpointer user_data);
+  gpointer user_data;
+  gboolean working:1;
+  struct iv_work_item work_item;
+} MainLoopIOWorkerJob;
 
-void ml_batched_timer_postpone(MlBatchedTimer *self, glong sec);
-void ml_batched_timer_cancel(MlBatchedTimer *self);
+void main_loop_io_worker_job_init(MainLoopIOWorkerJob *self);
+void main_loop_io_worker_job_submit(MainLoopIOWorkerJob *self);
 
-void ml_batched_timer_unregister(MlBatchedTimer *self);
-void ml_batched_timer_init(MlBatchedTimer *self);
-void ml_batched_timer_free(MlBatchedTimer *self);
+void main_loop_io_worker_add_options(GOptionContext *ctx);
 
+void main_loop_io_worker_init(void);
+void main_loop_io_worker_deinit(void);
 
 #endif
