@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 1998-2012 Balázs Scheidler
+ * Copyright (c) 1998-2013 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,6 +22,8 @@
  *
  */
 #include "mainloop.h"
+#include "mainloop-worker.h"
+#include "mainloop-io-worker.h"
 #include "apphook.h"
 #include "cfg.h"
 #include "stats.h"
@@ -173,8 +175,6 @@ struct _MainLoopTaskCallSite
 
 TLS_BLOCK_START
 {
-  MainLoopIOWorkerJob *main_loop_current_job;
-  gint main_loop_io_worker_id;
   MainLoopTaskCallSite call_info;
 }
 TLS_BLOCK_END;
@@ -216,8 +216,6 @@ main_loop_call(MainLoopTaskFunc func, gpointer user_data, gboolean wait)
   call_info.func = func;
   call_info.user_data = user_data;
   call_info.wait = wait;
-  if (!call_info.cond)
-    call_info.cond = g_cond_new();
   iv_list_add(&call_info.list, &main_task_queue);
   iv_event_post(&main_task_posted);
   if (wait)
@@ -265,211 +263,17 @@ main_loop_call_init(void)
   iv_event_register(&main_task_posted);
 }
 
-
-/************************************************************************************
- * I/O worker threads
- ************************************************************************************/
-
-static struct iv_task main_loop_io_workers_reenable_jobs_task;
-static struct iv_work_pool main_loop_io_workers;
-static void (*main_loop_io_workers_sync_func)(void);
-
-/* number of I/O worker jobs running */
-static gint main_loop_io_workers_running;
-
-/* cause workers to stop, no new I/O jobs to be submitted */
-volatile gboolean main_loop_io_workers_quit;
-#define main_loop_current_job  __tls_deref(main_loop_current_job)
-
-
-#define MAIN_LOOP_MIN_WORKER_THREADS 2
-#define MAIN_LOOP_MAX_WORKER_THREADS 64
-
-static GStaticMutex main_loop_io_workers_idmap_lock = G_STATIC_MUTEX_INIT;
-static guint64 main_loop_io_workers_idmap;
-
-/* the thread id is shifted by one, to make 0 the uninitialized state,
- * e.g. everything that sets it adds +1, everything that queries it
- * subtracts 1 */
-#define main_loop_io_worker_id __tls_deref(main_loop_io_worker_id)
-
 void
-main_loop_io_worker_thread_start(void *cookie)
+main_loop_call_thread_init(void)
 {
-  gint id;
-
-  scratch_buffers_init();
-  dns_cache_thread_init();
-
-  g_static_mutex_lock(&main_loop_io_workers_idmap_lock);
-  /* NOTE: this algorithm limits the number of I/O worker threads to 64,
-   * since the ID map is stored in a single 64 bit integer.  If we ever need
-   * more threads than that, we can generalize this algorithm further. */
-
-  main_loop_io_worker_id = 0;
-  for (id = 0; id < main_loop_io_workers.max_threads && id < MAIN_LOOP_MAX_WORKER_THREADS; id++)
-    {
-      if ((main_loop_io_workers_idmap & (1 << id)) == 0)
-        {
-          /* id not yet used */
-
-          main_loop_io_worker_id = id + 1;
-          main_loop_io_workers_idmap |= (1 << id);
-          break;
-        }
-    }
-  g_static_mutex_unlock(&main_loop_io_workers_idmap_lock);
+  call_info.cond = g_cond_new();
 }
 
 void
-main_loop_io_worker_thread_stop(void *cookie)
+main_loop_call_thread_deinit(void)
 {
-  g_static_mutex_lock(&main_loop_io_workers_idmap_lock);
-  if (main_loop_io_worker_id)
-    {
-      main_loop_io_workers_idmap &= ~(1 << (main_loop_io_worker_id - 1));
-      main_loop_io_worker_id = 0;
-    }
-  g_static_mutex_unlock(&main_loop_io_workers_idmap_lock);
-
-  dns_cache_thread_deinit();
-  scratch_buffers_free();
-
   if (call_info.cond)
     g_cond_free(call_info.cond);
-}
-
-/* NOTE: only used by the unit test program to emulate worker threads with LogQueue */
-void
-main_loop_io_worker_set_thread_id(gint id)
-{
-  main_loop_io_worker_id = id + 1;
-}
-
-gint
-main_loop_io_worker_thread_id(void)
-{
-  return main_loop_io_worker_id - 1;
-}
-
-void
-main_loop_io_worker_reenable_jobs(void *s)
-{
-  main_loop_io_workers_quit = FALSE;
-  main_loop_io_workers_sync_func = NULL;
-}
-
-void
-main_loop_io_worker_job_submit(MainLoopIOWorkerJob *self)
-{
-  g_assert(self->working == FALSE);
-  if (main_loop_io_workers_quit)
-    return;
-  main_loop_io_workers_running++;
-  self->working = TRUE;
-  iv_work_pool_submit_work(&main_loop_io_workers, &self->work_item);
-}
-
-static void
-main_loop_io_worker_job_start(MainLoopIOWorkerJob *self)
-{
-  struct iv_list_head *lh, *lh2;
-
-  g_assert(main_loop_current_job == NULL);
-
-  main_loop_current_job = self;
-  self->work(self->user_data);
-  
-  iv_list_for_each_safe(lh, lh2, &self->finish_callbacks)
-    {
-      MainLoopIOWorkerFinishCallback *cb = iv_list_entry(lh, MainLoopIOWorkerFinishCallback, list);
-      
-      cb->func(cb->user_data);
-      iv_list_del_init(&cb->list);
-    }
-  g_assert(iv_list_empty(&self->finish_callbacks));
-  main_loop_current_job = NULL;
-}
-
-static void
-main_loop_io_worker_job_complete(MainLoopIOWorkerJob *self)
-{
-  self->working = FALSE;
-  main_loop_io_workers_running--;
-  self->completion(self->user_data);
-  if (main_loop_io_workers_quit && main_loop_io_workers_running == 0)
-    {
-       /* NOTE: we can't reenable I/O jobs by setting
-        * main_loop_io_workers_quit to FALSE right here, because a task
-        * generated by the old config might still be sitting in the task
-        * queue, to be invoked once we return from here.  Tasks cannot be
-        * cancelled, thus we have to get to the end of the currently running
-        * task queue.
-        *
-        * Thus we register another task
-        * (&main_loop_io_workers_reenable_jobs_task), which is guaranteed to
-        * be added to the end of the task queue, which reenables task
-        * submission.
-        *
-        *
-        * A second constraint is that any tasks submitted by the reload
-        * logic (sitting behind the sync_func() call below), MUST be
-        * registered after the reenable_jobs_task, because otherwise some
-        * I/O events will be missed, due to main_loop_io_workers_quit being
-        * TRUE.
-        *
-        *
-        *   |OldTask1|OldTask2|OldTask3| ReenableTask |NewTask1|NewTask2|NewTask3|
-        *   ^
-        *   | ivykis task list
-        *
-        * OldTasks get dropped because _quit is TRUE, NewTasks have to be
-        * executed properly, otherwise we'd hang.
-        */
-
-      iv_task_register(&main_loop_io_workers_reenable_jobs_task);
-      main_loop_io_workers_sync_func();
-    }
-}
-
-/*
- * Register a function to be called back when the current I/O job is
- * finished (in the worker thread).
- *
- * NOTE: we only support one pending callback at a time, may become a list of callbacks if needed in the future
- */
-void
-main_loop_io_worker_register_finish_callback(MainLoopIOWorkerFinishCallback *cb)
-{
-  g_assert(main_loop_current_job != NULL);
-  
-  iv_list_add(&cb->list, &main_loop_current_job->finish_callbacks);
-}
-
-void
-main_loop_io_worker_job_init(MainLoopIOWorkerJob *self)
-{
-  IV_WORK_ITEM_INIT(&self->work_item);
-  self->work_item.cookie = self;
-  self->work_item.work = (void (*)(void *)) main_loop_io_worker_job_start;
-  self->work_item.completion = (void (*)(void *)) main_loop_io_worker_job_complete;
-  INIT_IV_LIST_HEAD(&self->finish_callbacks);
-}
-
-static void
-main_loop_io_worker_sync_call(void (*func)(void))
-{
-  g_assert(main_loop_io_workers_sync_func == NULL || main_loop_io_workers_sync_func == func || main_loop_is_terminating());
-
-  if (main_loop_io_workers_running == 0)
-    {
-      func();
-    }
-  else
-    {
-      main_loop_io_workers_quit = TRUE;
-      main_loop_io_workers_sync_func = func;
-    }
 }
 
 /************************************************************************************
@@ -596,7 +400,7 @@ main_loop_reload_config_initiate(void)
       service_management_publish_status("Error parsing new configuration, using the old config");
       return;
     }
-  main_loop_io_worker_sync_call(main_loop_reload_config_apply);
+  main_loop_worker_sync_call(main_loop_reload_config_apply);
 }
 
 /************************************************************************************
@@ -618,7 +422,7 @@ main_loop_exit_finish(void)
 static void
 main_loop_exit_timer_elapsed(void *arg)
 {
-  main_loop_io_worker_sync_call(main_loop_exit_finish);
+  main_loop_worker_sync_call(main_loop_exit_finish);
 }
 
 static void
@@ -639,6 +443,7 @@ main_loop_exit_initiate(void)
   iv_timer_register(&main_loop_exit_timer);
   __main_loop_is_terminating = TRUE;
 }
+
 
 /************************************************************************************
  * signal handlers
@@ -745,12 +550,8 @@ main_loop_init(void)
   service_management_publish_status("Starting up...");
 
   main_thread_handle = get_thread_id();
-  main_loop_io_workers.thread_start = main_loop_io_worker_thread_start;
-  main_loop_io_workers.thread_stop = main_loop_io_worker_thread_stop;
-  iv_work_pool_create(&main_loop_io_workers);
-  IV_TASK_INIT(&main_loop_io_workers_reenable_jobs_task);
-  main_loop_io_workers_reenable_jobs_task.handler = main_loop_io_worker_reenable_jobs;
-  log_queue_set_max_threads(MIN(main_loop_io_workers.max_threads, MAIN_LOOP_MAX_WORKER_THREADS));
+  main_loop_worker_init();
+  main_loop_io_worker_init();
   main_loop_call_init();
 
   main_loop_init_events();
@@ -798,6 +599,8 @@ main_loop_deinit(void)
   iv_event_unregister(&main_task_posted);
   iv_event_unregister(&exit_requested);
   iv_event_unregister(&reload_config_requested);
+  main_loop_io_worker_deinit();
+  main_loop_worker_deinit();
 }
 
 void
@@ -820,7 +623,6 @@ static GOptionEntry main_loop_options[] =
   { "cfgfile",           'f',         0, G_OPTION_ARG_STRING, &cfgfilename, "Set config file name, default=" PATH_SYSLOG_NG_CONF, "<config>" },
   { "persist-file",      'R',         0, G_OPTION_ARG_STRING, &persist_file, "Set the name of the persistent configuration file, default=" PATH_PERSIST_CONFIG, "<fname>" },
   { "preprocess-into",     0,         0, G_OPTION_ARG_STRING, &preprocess_into, "Write the preprocessed configuration file to the file specified", "output" },
-  { "worker-threads",      0,         0, G_OPTION_ARG_INT, &main_loop_io_workers.max_threads, "Set the number of I/O worker threads", "<max>" },
   { "syntax-only",       's',         0, G_OPTION_ARG_NONE, &syntax_only, "Only read and parse config file", NULL},
   { "control",           'c',         0, G_OPTION_ARG_STRING, &ctlfilename, "Set syslog-ng control socket, default=" PATH_CONTROL_SOCKET, "<ctlpath>" },
   { NULL },
@@ -830,23 +632,13 @@ void
 main_loop_add_options(GOptionContext *ctx)
 {
   g_option_context_add_main_entries(ctx, main_loop_options, NULL);
+  main_loop_io_worker_add_options(ctx);
 }
 
-static gint
-get_processor_count(void)
-{
-#ifdef _SC_NPROCESSORS_ONLN
-  return sysconf(_SC_NPROCESSORS_ONLN);
-#else
-  return -1;
-#endif
-}
 
 void
 main_loop_global_init(void)
 {
-  main_loop_io_workers.max_threads = MIN(MAX(MAIN_LOOP_MIN_WORKER_THREADS, get_processor_count()), MAIN_LOOP_MAX_WORKER_THREADS);
-
   cfgfilename = get_installation_path_for(PATH_SYSLOG_NG_CONF);
   persist_file = get_installation_path_for(PATH_PERSIST_CONFIG);
   ctlfilename = get_installation_path_for(PATH_CONTROL_SOCKET);

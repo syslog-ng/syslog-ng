@@ -29,6 +29,7 @@
 #include "host-resolve.h"
 #include "misc.h"
 #include "mainloop.h"
+#include "mainloop-io-worker.h"
 #include "ml-batched-timer.h"
 #include "str-format.h"
 
@@ -239,7 +240,7 @@ log_writer_io_flush_output(gpointer s)
        * conditions of any kind.
        */
 
-      if (!main_loop_io_worker_job_quit())
+      if (!main_loop_worker_job_quit())
         {
           log_writer_work_perform(s);
           log_writer_work_finished(s);
@@ -1013,7 +1014,7 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
    * infinite loop, since the reader will cease to produce new messages when
    * main_loop_io_worker_job_quit() is set. */
 
-  while (status == LPS_SUCCESS && (!main_loop_io_worker_job_quit() || flush_mode >= LW_FLUSH_QUEUE))
+  while (status == LPS_SUCCESS && (!main_loop_worker_job_quit() || flush_mode >= LW_FLUSH_QUEUE))
     {
       LogMessage *lm;
       LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;

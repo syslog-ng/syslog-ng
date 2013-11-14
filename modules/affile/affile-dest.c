@@ -33,6 +33,7 @@
 #include "logproto-file-writer.h"
 #include "compat/lfs.h"
 
+#include <iv.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>

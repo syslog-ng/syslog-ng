@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 1998-2012 Balázs Scheidler
+ * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 1998-2013 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -27,51 +27,12 @@
 #include "syslog-ng.h"
 #include "thread-utils.h"
 
-#include <iv_work.h>
 
-extern volatile gboolean main_loop_io_workers_quit;
 extern gboolean syntax_only;
 extern gboolean __main_loop_is_terminating;
 extern ThreadId main_thread_handle;
 
 typedef gpointer (*MainLoopTaskFunc)(gpointer user_data);
-
-typedef struct _MainLoopIOWorkerFinishCallback
-{
-  struct iv_list_head list;
-  MainLoopTaskFunc func;
-  gpointer user_data;
-} MainLoopIOWorkerFinishCallback;
-
-static inline void
-main_loop_io_worker_finish_callback_init(MainLoopIOWorkerFinishCallback *self)
-{
-  INIT_IV_LIST_HEAD(&self->list);
-}
-
-typedef struct _MainLoopIOWorkerJob
-{
-  void (*work)(gpointer user_data);
-  void (*completion)(gpointer user_data);
-  gpointer user_data;
-  gboolean working:1;
-  struct iv_work_item work_item;
-
-  /* function to be called back when the current job is finished. */
-  struct iv_list_head finish_callbacks;
-} MainLoopIOWorkerJob;
-
-static inline gboolean
-main_loop_io_worker_job_quit(void)
-{
-  return main_loop_io_workers_quit;
-}
-
-void main_loop_io_worker_set_thread_id(gint id);
-gint main_loop_io_worker_thread_id(void);
-void main_loop_io_worker_job_init(MainLoopIOWorkerJob *self);
-void main_loop_io_worker_job_submit(MainLoopIOWorkerJob *self);
-void main_loop_io_worker_register_finish_callback(MainLoopIOWorkerFinishCallback *cb);
 
 static inline void
 main_loop_assert_main_thread(void)
@@ -92,6 +53,11 @@ main_loop_is_terminating(void)
 {
   return __main_loop_is_terminating;
 }
+
+void main_loop_call_thread_init(void);
+void main_loop_call_thread_deinit(void);
+
+gpointer main_loop_call(MainLoopTaskFunc func, gpointer user_data, gboolean wait);
 
 void main_loop_reload_config(void);
 void main_loop_exit(void);

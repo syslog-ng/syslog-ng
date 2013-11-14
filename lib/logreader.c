@@ -23,6 +23,7 @@
  */
 
 #include "logreader.h"
+#include "mainloop-io-worker.h"
 
 struct _LogReader
 {
@@ -183,7 +184,7 @@ log_reader_io_process_input(gpointer s)
        * Our current understanding is that it doesn't prevent race
        * conditions of any kind.
        */
-      if (!main_loop_io_worker_job_quit())
+      if (!main_loop_worker_job_quit())
         {
           log_reader_work_perform(s);
           log_reader_work_finished(s);
@@ -328,7 +329,7 @@ log_reader_fetch_log(LogReader *self)
    * to fetch a couple of messages in a single run (but only up to
    * fetch_limit).
    */
-  while (msg_count < self->options->fetch_limit && !main_loop_io_worker_job_quit())
+  while (msg_count < self->options->fetch_limit && !main_loop_worker_job_quit())
     {
       const guchar *msg;
       gsize msg_len;
