@@ -112,6 +112,9 @@ static struct iv_signal sigterm_poll;
 static struct iv_signal sigint_poll;
 static struct iv_signal sigchild_poll;
 
+static struct iv_event exit_requested;
+static struct iv_event reload_config_requested;
+
 
 /* Currently running configuration, should not be used outside the mainloop
  * logic. If anything needs access to the GlobalConfig instance at runtime,
@@ -231,6 +234,7 @@ main_loop_call_init(void)
   main_task_posted.handler = main_loop_call_handler;
   iv_event_register(&main_task_posted);
 }
+
 
 /************************************************************************************
  * I/O worker threads
@@ -531,6 +535,9 @@ main_loop_reload_config_apply(void)
 void
 main_loop_reload_config_initiate(void)
 {
+  if (!under_termination)
+    return;
+
   service_management_publish_status("Reloading configuration");
 
   if (main_loop_new_config)
@@ -584,19 +591,8 @@ main_loop_exit_timer_elapsed(void *arg)
   main_loop_io_worker_sync_call(main_loop_exit_finish);
 }
 
-/************************************************************************************
- * signal handlers
- ************************************************************************************/
-
 static void
-sig_hup_handler(void *s)
-{
-  if (!under_termination)
-    main_loop_reload_config_initiate();
-}
-
-static void
-sig_term_handler(void *s)
+main_loop_exit_initiate(void)
 {
   if (under_termination)
     return;
@@ -612,6 +608,22 @@ sig_term_handler(void *s)
   timespec_add_msec(&main_loop_exit_timer.expires, 100);
   iv_timer_register(&main_loop_exit_timer);
   under_termination = TRUE;
+}
+
+/************************************************************************************
+ * signal handlers
+ ************************************************************************************/
+
+static void
+sig_hup_handler(void *s)
+{
+  main_loop_reload_config_initiate();
+}
+
+static void
+sig_term_handler(void *s)
+{
+  main_loop_exit_initiate();
 }
 
 static void
@@ -671,10 +683,33 @@ setup_signals(void)
  * syslog-ng main loop
  ************************************************************************************/
 
-/*
- * Returns: exit code to be returned to the calling process.
- */
-int
+static void
+main_loop_init_events(void)
+{
+  IV_EVENT_INIT(&exit_requested);
+  exit_requested.handler = (void (*)(void *)) main_loop_exit_initiate;
+  iv_event_register(&exit_requested);
+
+  IV_EVENT_INIT(&reload_config_requested);
+  reload_config_requested.handler = (void (*)(void *)) main_loop_reload_config_initiate;
+  iv_event_register(&reload_config_requested);
+}
+
+void
+main_loop_exit(void)
+{
+  iv_event_post(&exit_requested);
+  return;
+}
+
+void
+main_loop_reload_config(void)
+{
+  iv_event_post(&reload_config_requested);
+  return;
+}
+
+void
 main_loop_init(void)
 {
   service_management_publish_status("Starting up...");
@@ -688,6 +723,17 @@ main_loop_init(void)
   log_queue_set_max_threads(MIN(main_loop_io_workers.max_threads, MAIN_LOOP_MAX_WORKER_THREADS));
   main_loop_call_init();
 
+  main_loop_init_events();
+  control_init(ctlfilename);
+  setup_signals();
+}
+
+/*
+ * Returns: exit code to be returned to the calling process, 0 on success.
+ */
+int
+main_loop_read_and_init_config(void)
+{
   current_configuration = cfg_new(0);
   if (!cfg_read_config(current_configuration, cfgfilename, syntax_only, preprocess_into))
     {
@@ -706,27 +752,36 @@ main_loop_init(void)
   return 0;
 }
 
-int
+static void
+main_loop_free_config(void)
+{
+  cfg_free(current_configuration);
+  current_configuration = NULL;
+}
+
+void
+main_loop_deinit(void)
+{
+  main_loop_free_config();
+  control_destroy();
+
+  iv_event_unregister(&main_task_posted);
+  iv_event_unregister(&exit_requested);
+  iv_event_unregister(&reload_config_requested);
+}
+
+void
 main_loop_run(void)
 {
   msg_notice("syslog-ng starting up",
              evt_tag_str("version", VERSION),
              NULL);
 
-  control_init(ctlfilename);
-  setup_signals();
-
   /* main loop */
   service_management_indicate_readiness();
   service_management_clear_status();
   iv_main();
   service_management_publish_status("Shutting down...");
-
-  control_destroy();
-
-  cfg_free(current_configuration);
-  current_configuration = NULL;
-  return 0;
 }
 
 
@@ -767,3 +822,4 @@ main_loop_global_init(void)
   ctlfilename = get_installation_path_for(PATH_CONTROL_SOCKET);
   module_path = get_installation_path_for(MODULE_PATH);
 }
+

@@ -147,7 +147,7 @@ exit:
 static void
 control_connection_reload(ControlConnection *self, GString *command)
 {
-  main_loop_reload_config_initiate();
+  main_loop_reload_config();
   control_connection_send_reply(self, "OK Config reload initiated", FALSE);
 }
 
