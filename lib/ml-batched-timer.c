@@ -23,7 +23,7 @@
  */
 
 #include "ml-batched-timer.h"
-#include "mainloop.h"
+#include "mainloop-call.h"
 
 /* callback to be invoked when the timeout triggers */
 static void

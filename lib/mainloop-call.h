@@ -21,49 +21,17 @@
  * COPYING for details.
  *
  */
-#ifndef MAINLOOP_H_INCLUDED
-#define MAINLOOP_H_INCLUDED
+#ifndef MAINLOOP_CALL_H_INCLUDED
+#define MAINLOOP_CALL_H_INCLUDED 1
 
-#include "syslog-ng.h"
-#include "thread-utils.h"
+#include "mainloop.h"
 
+gpointer main_loop_call(MainLoopTaskFunc func, gpointer user_data, gboolean wait);
 
-extern gboolean syntax_only;
-extern gboolean __main_loop_is_terminating;
-extern ThreadId main_thread_handle;
+void main_loop_call_thread_init(void);
+void main_loop_call_thread_deinit(void);
 
-typedef gpointer (*MainLoopTaskFunc)(gpointer user_data);
-
-static inline void
-main_loop_assert_main_thread(void)
-{
-#if ENABLE_DEBUG
-  g_assert(threads_equal(main_thread_handle, get_thread_id()));
-#endif
-}
-
-static inline gboolean
-main_loop_is_main_thread(void)
-{
-  return threads_equal(main_thread_handle, get_thread_id());
-}
-
-static inline gboolean
-main_loop_is_terminating(void)
-{
-  return __main_loop_is_terminating;
-}
-
-void main_loop_reload_config(void);
-void main_loop_exit(void);
-
-int main_loop_read_and_init_config(void);
-void main_loop_run(void);
-
-void main_loop_init(void);
-void main_loop_deinit(void);
-
-void main_loop_add_options(GOptionContext *ctx);
-void main_loop_global_init(void);
+void main_loop_call_init(void);
+void main_loop_call_deinit(void);
 
 #endif

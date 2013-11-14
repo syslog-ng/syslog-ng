@@ -61,6 +61,7 @@ pkginclude_HEADERS			+= \
 	lib/logtransport.h		\
 	lib/logwriter.h			\
 	lib/mainloop.h			\
+	lib/mainloop-call.h		\
 	lib/mainloop-worker.h		\
 	lib/mainloop-io-worker.h	\
 	lib/memtrace.h			\
@@ -141,6 +142,7 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/logtransport.c		\
 	lib/logwriter.c			\
 	lib/mainloop.c			\
+	lib/mainloop-call.c		\
 	lib/mainloop-worker.c		\
 	lib/mainloop-io-worker.c	\
 	lib/memtrace.c			\

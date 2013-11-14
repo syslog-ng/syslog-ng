@@ -23,6 +23,7 @@
  */
 #include "mainloop-io-worker.h"
 #include "mainloop-worker.h"
+#include "mainloop-call.h"
 #include "logqueue.h"
 
 /************************************************************************************
