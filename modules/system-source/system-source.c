@@ -172,7 +172,7 @@ system_generate_system(CfgLexer *lexer, gint type, const gchar *name,
     }
   else if (strcmp(u.sysname, "HP-UX") == 0)
     {
-      system_sysblock_add_pipe(sysblock, "/dev/pipe", 2048);
+      system_sysblock_add_pipe(sysblock, "/dev/log", 2048);
     }
   else if (strcmp(u.sysname, "AIX") == 0 ||
            strcmp(u.sysname, "OSF1") == 0 ||
