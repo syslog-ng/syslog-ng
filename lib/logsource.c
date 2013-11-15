@@ -200,9 +200,6 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
 {
   LogSource *self = (LogSource *) s;
   LogPathOptions local_options = *path_options;
-  StatsCounterItem *processed_counter, *stamp;
-  gboolean new;
-  StatsCounter *handle;
   gint old_window_size;
   gint i;
   
@@ -248,13 +245,7 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
     {
       stats_lock();
 
-      handle = stats_register_dynamic_counter(2, SCS_HOST | SCS_SOURCE, NULL, log_msg_get_value(msg, LM_V_HOST, NULL), SC_TYPE_PROCESSED, &processed_counter, &new);
-      stats_register_associated_counter(handle, SC_TYPE_STAMP, &stamp);
-      stats_counter_inc(processed_counter);
-      stats_counter_set(stamp, msg->timestamps[LM_TS_RECVD].tv_sec);
-      stats_unregister_dynamic_counter(handle, SC_TYPE_PROCESSED, &processed_counter);
-      stats_unregister_dynamic_counter(handle, SC_TYPE_STAMP, &stamp);
-
+      stats_instant_inc_dynamic_counter(2, SCS_HOST | SCS_SOURCE, NULL, log_msg_get_value(msg, LM_V_HOST, NULL), msg->timestamps[LM_TS_RECVD].tv_sec);
       if (stats_check_level(3))
         {
           stats_instant_inc_dynamic_counter(3, SCS_SENDER | SCS_SOURCE, NULL, log_msg_get_value(msg, LM_V_HOST_FROM, NULL), msg->timestamps[LM_TS_RECVD].tv_sec);
