@@ -106,6 +106,7 @@ void stats_register_and_increment_dynamic_counter(gint stats_level, gint source_
 void stats_register_associated_counter(StatsCounter *handle, StatsCounterType type, StatsCounterItem **counter);
 void stats_unregister_counter(gint source, const gchar *id, const gchar *instance, StatsCounterType type, StatsCounterItem **counter);
 void stats_unregister_dynamic_counter(StatsCounter *handle, StatsCounterType type, StatsCounterItem **counter);
+void stats_prune_old_counters(time_t lifetime);
 
 void stats_counter_inc_pri(guint16 pri);
 

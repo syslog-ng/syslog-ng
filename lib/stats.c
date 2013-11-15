@@ -316,6 +316,60 @@ stats_unregister_dynamic_counter(StatsCounter *sc, StatsCounterType type, StatsC
   sc->ref_cnt--;
 }
 
+static gboolean
+stats_counter_is_too_old(gpointer key, gpointer value, gpointer user_data)
+{
+  StatsCounter *sc = (StatsCounter *) value;
+  gpointer *args = (gpointer *) user_data;
+  time_t tstamp;
+  GTimeVal *now = (GTimeVal *) args[0];
+  time_t lifetime = *(time_t *) args[1];
+  time_t *oldest_counter = (time_t *) args[2];
+  gint *dropped_counters = (gint *) args[3];
+
+  /* check if dynamic entry, non-dynamic entries cannot be too large in
+   * numbers, those are never pruned */
+  if (!sc->dynamic)
+    return FALSE;
+
+  /* this entry is being updated, cannot be too old */    
+  if (sc->ref_cnt > 0)
+    return FALSE;
+
+  /* check if timestamp is stored, no timestamp means we can't expire it.
+   * All dynamic entries should have a timestamp.  */
+  if ((sc->live_mask & (1 << SC_TYPE_STAMP)) == 0)
+    return FALSE;
+
+  tstamp = sc->counters[SC_TYPE_STAMP].value;
+  if (tstamp <= now->tv_sec - lifetime)
+    {
+      if ((*oldest_counter) == 0 || *oldest_counter > tstamp)
+        *oldest_counter = tstamp;
+      (*dropped_counters)++;
+      return TRUE;
+    }
+  return FALSE;
+}
+
+void
+stats_prune_old_counters(time_t lifetime)
+{
+  GTimeVal now;
+  time_t oldest_counter = 0;
+  gint dropped_counters = 0;
+  gpointer args[] = { &now, &lifetime, &oldest_counter, &dropped_counters };
+
+  cached_g_current_time(&now);
+  stats_lock();
+  g_hash_table_foreach_remove(counter_hash, stats_counter_is_too_old, args);
+  stats_unlock();
+  msg_notice("Pruning stats-counters have finished",
+             evt_tag_int("dropped", dropped_counters),
+             evt_tag_long("oldest-timestamp", (long) oldest_counter),
+             NULL);
+}
+
 void
 stats_counter_inc_pri(guint16 pri)
 {
