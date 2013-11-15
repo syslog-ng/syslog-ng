@@ -55,7 +55,8 @@ system_sysblock_add_unix_dgram(GString *sysblock, const gchar *path,
 static void
 system_sysblock_add_file(GString *sysblock, const gchar *path,
                          gint follow_freq, const gchar *prg_override,
-                         const gchar *flags, const gchar *format)
+                         const gchar *flags, const gchar *format,
+                         const gchar *extra_options)
 {
   g_string_append_printf(sysblock, "file(\"%s\"", path);
   if (follow_freq >= 0)
@@ -66,6 +67,8 @@ system_sysblock_add_file(GString *sysblock, const gchar *path,
     g_string_append_printf(sysblock, " flags(%s)", flags);
   if (format)
     g_string_append_printf(sysblock, " format(%s)", format);
+  if (extra_options)
+    g_string_append_printf(sysblock, " %s", extra_options);
   g_string_append(sysblock, ");\n");
 }
 
@@ -103,9 +106,11 @@ system_sysblock_add_freebsd_klog(GString *sysblock, const gchar *release)
   if (strncmp(release, "7.", 2) == 0 ||
       strncmp(release, "8.", 2) == 0 ||
       strncmp(release, "9.0", 3) == 0)
-    system_sysblock_add_file(sysblock, "/dev/klog", 1, "kernel", "no-parse", NULL);
+    system_sysblock_add_file(sysblock, "/dev/klog", 1, "kernel", "no-parse",
+                             NULL, NULL);
   else
-    system_sysblock_add_file(sysblock, "/dev/klog", 0, "kernel", "no-parse", NULL);
+    system_sysblock_add_file(sysblock, "/dev/klog", 0, "kernel", "no-parse",
+                             NULL, NULL);
 }
 
 #if ENABLE_SYSTEMD
@@ -177,7 +182,7 @@ system_sysblock_add_linux_kmsg(GString *sysblock)
     }
   else
     system_sysblock_add_file(sysblock, kmsg, -1,
-                             "kernel", "kernel", format);
+                             "kernel", "kernel", format, NULL);
 }
 
 gboolean
@@ -238,6 +243,8 @@ system_generate_system(CfgLexer *lexer, gint type, const gchar *name,
   else if (strcmp(u.sysname, "HP-UX") == 0)
     {
       system_sysblock_add_pipe(sysblock, "/dev/log", 2048);
+      system_sysblock_add_file(sysblock, "/dev/klog", 0, "kernel", "kernel",
+                               NULL, "log_fetch_limit(1000)");
     }
   else if (strcmp(u.sysname, "AIX") == 0 ||
            strcmp(u.sysname, "OSF1") == 0 ||
