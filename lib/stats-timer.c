@@ -26,39 +26,66 @@
 
 #include <iv.h>
 
-static struct iv_timer stats_timer;
+static time_t stats_lifetime;
 
 static void
-stats_timer_rearm(gint stats_freq)
+stats_timer_rearm(struct iv_timer *timer)
 {
-  stats_timer.cookie = GINT_TO_POINTER(stats_freq);
-  if (stats_freq > 0)
+  gint freq = GPOINTER_TO_INT(timer->cookie);
+  if (freq > 0)
     {
       /* arm the timer */
       iv_validate_now();
-      stats_timer.expires = iv_now;
-      timespec_add_msec(&stats_timer.expires, stats_freq * 1000);
-      iv_timer_register(&stats_timer);
+      timer->expires = iv_now;
+      timespec_add_msec(&timer->expires, freq * 1000);
+      iv_timer_register(timer);
     }
 }
 
 static void
-stats_timer_elapsed(gpointer st)
+stats_timer_init(struct iv_timer *timer, void (*handler)(void *), gint freq)
 {
-  gint stats_freq = GPOINTER_TO_INT(st);
+  IV_TIMER_INIT(timer);
+  timer->handler = handler;
+  timer->cookie = GINT_TO_POINTER(freq);
+}
 
+static void
+stats_timer_kill(struct iv_timer *timer)
+{
+  if (!timer->handler)
+    return;
+  if (iv_timer_registered(timer))
+    iv_timer_unregister(timer);
+}
+
+static struct iv_timer stats_log_timer;
+static struct iv_timer stats_prune_timer;
+
+
+static void
+stats_log_timer_elapsed(gpointer st)
+{
   stats_generate_log();
-  stats_timer_rearm(stats_freq);
+  stats_timer_rearm(&stats_log_timer);
+}
+
+static void
+stats_prune_timer_elapsed(gpointer st)
+{
+  stats_prune_old_counters(stats_lifetime);
+  stats_timer_rearm(&stats_prune_timer);
 }
 
 void
-stats_timer_reinit(gint stats_freq)
+stats_timer_reinit(gint stats_freq, gint _stats_lifetime)
 {
-  IV_TIMER_INIT(&stats_timer);
-  stats_timer.handler = stats_timer_elapsed;
+  stats_timer_kill(&stats_log_timer);
+  stats_timer_init(&stats_log_timer, stats_log_timer_elapsed, stats_freq);
+  stats_timer_rearm(&stats_log_timer);
 
-  if (iv_timer_registered(&stats_timer))
-    iv_timer_unregister(&stats_timer);
-
-  stats_timer_rearm(stats_freq);
+  stats_lifetime = _stats_lifetime;
+  stats_timer_kill(&stats_prune_timer);
+  stats_timer_init(&stats_prune_timer, stats_prune_timer_elapsed, stats_lifetime == 1 ? 1 : stats_lifetime / 2);
+  stats_timer_rearm(&stats_prune_timer);
 }

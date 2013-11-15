@@ -69,6 +69,7 @@ struct _GlobalConfig
 
   gint stats_freq;
   gint stats_level;
+  gint stats_lifetime;
   gint mark_freq;
   gint flush_lines;
   gint mark_mode;

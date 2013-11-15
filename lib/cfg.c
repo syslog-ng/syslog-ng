@@ -217,7 +217,7 @@ cfg_init(GlobalConfig *cfg)
     }
 
   stats_reinit(cfg);
-  stats_timer_reinit(cfg->stats_freq);
+  stats_timer_reinit(cfg->stats_freq, cfg->stats_lifetime);
   log_tags_reinit_stats(cfg);
 
   dns_cache_set_params(cfg->dns_cache_size, cfg->dns_cache_expire, cfg->dns_cache_expire_failed, cfg->dns_cache_hosts);
@@ -305,6 +305,7 @@ cfg_new(gint version)
   self->mark_freq = 1200;	/* 20 minutes */
   self->mark_mode = MM_HOST_IDLE;
   self->stats_freq = 600;
+  self->stats_lifetime = 600;
   self->chain_hostnames = 0;
   self->time_reopen = 60;
   self->time_reap = 60;

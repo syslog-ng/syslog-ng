@@ -26,6 +26,6 @@
 
 #include "syslog-ng.h"
 
-void stats_timer_reinit(gint stats_freq);
+void stats_timer_reinit(gint stats_freq, gint stats_lifetime);
 
 #endif
