@@ -26,9 +26,8 @@
 #if ENABLE_SYSTEMD
 #include <systemd/sd-daemon.h>
 
-
-static void
-main_loop_publish_status(const gchar *status)
+void
+service_management_publish_status(const gchar *status)
 {
   gchar *status_buffer;
   time_t now = time(NULL);
@@ -38,22 +37,16 @@ main_loop_publish_status(const gchar *status)
   g_free(status_buffer);
 }
 
-static void
-main_loop_clear_status(void)
+void
+service_management_clear_status(void)
 {
   sd_notify(0, "STATUS=");
 }
 
-static void
-main_loop_indicate_readiness(void)
+void
+service_management_indicate_readiness(void)
 {
   sd_notify(0, "READY=1");
 }
-
-#else
-
-#define main_loop_publish_status(x)
-#define main_loop_clear_status()
-#define main_loop_indicate_readiness()
 
 #endif
