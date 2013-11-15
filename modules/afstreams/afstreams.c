@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 1998-2012 Balázs Scheidler
+ * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 1998-2013 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -27,6 +27,7 @@
 #include "misc.h"
 #include "apphook.h"
 #include "stats.h"
+#include "logproto-dgram-server.h"
 
 typedef struct _AFStreamsSourceDriver
 {
@@ -34,7 +35,7 @@ typedef struct _AFStreamsSourceDriver
   GString *dev_filename;
   GString *door_filename;
   gint door_fd;
-  LogPipe *reader;
+  LogReader *reader;
   LogReaderOptions reader_options;
 } AFStreamsSourceDriver;
 
@@ -92,7 +93,7 @@ log_transport_streams_new(gint fd)
 {
   LogTransport *self = g_new0(LogTransport, 1);
 
-  log_transport_init_instance(self, fd);
+  log_transport_init_method(self, fd);
   self->cond = G_IO_IN;
   self->read = log_transport_streams_read;
   self->free_fn = log_transport_free_method;
@@ -188,9 +189,10 @@ afstreams_sd_init(LogPipe *s)
           return FALSE;
         }
       g_fd_set_nonblock(fd, TRUE);
-      self->reader = log_reader_new(log_proto_dgram_server_new(log_transport_streams_new(fd), self->reader_options.msg_size, 0));
-      log_reader_set_options(self->reader, s, &self->reader_options, 1, SCS_SUN_STREAMS, self->super.super.id, self->dev_filename->str);
-      log_pipe_append(self->reader, s);
+
+      self->reader = (LogReader *)log_reader_new(log_proto_dgram_server_new(log_transport_streams_new(fd), &self->reader_options.proto_options.super));
+      log_reader_set_options((LogPipe *)self->reader, s, &self->reader_options, 1, SCS_SUN_STREAMS, self->super.super.id, self->dev_filename->str);
+      log_pipe_append((LogPipe *)self->reader, s);
 
       if (self->door_filename)
         {
@@ -201,12 +203,12 @@ afstreams_sd_init(LogPipe *s)
 
           register_application_hook(AH_POST_DAEMONIZED, afstreams_init_door, self);
         }
-      if (!log_pipe_init(self->reader, NULL))
+      if (!log_pipe_init((LogPipe *) self->reader, NULL))
         {
           msg_error("Error initializing log_reader, closing fd",
                     evt_tag_int("fd", fd),
                     NULL);
-          log_pipe_unref(self->reader);
+          log_pipe_unref((LogPipe *) self->reader);
           self->reader = NULL;
           close(fd);
           return FALSE;
@@ -231,8 +233,8 @@ afstreams_sd_deinit(LogPipe *s)
 
   if (self->reader)
     {
-      log_pipe_deinit(self->reader);
-      log_pipe_unref(self->reader);
+      log_pipe_deinit((LogPipe *) self->reader);
+      log_pipe_unref((LogPipe *) self->reader);
       self->reader = NULL;
     }
   if (self->door_fd != -1)
@@ -257,7 +259,6 @@ afstreams_sd_free(LogPipe *s)
     g_string_free(self->dev_filename, TRUE);
   if (self->door_filename)
     g_string_free(self->door_filename, TRUE);
-  log_pipe_unref(self->reader);
 
   log_src_driver_free(s);
 }
