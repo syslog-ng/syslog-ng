@@ -316,24 +316,6 @@ stats_unregister_dynamic_counter(StatsCounter *sc, StatsCounterType type, StatsC
   sc->ref_cnt--;
 }
 
-static gboolean
-stats_counter_is_orphaned(gpointer key, gpointer value, gpointer user_data)
-{
-  StatsCounter *sc = (StatsCounter *) value;
-
-  if (sc->ref_cnt == 0 && !sc->dynamic)
-    return TRUE;
-  return FALSE;    
-}
-
-void
-stats_cleanup_orphans(void)
-{
-  stats_lock();
-  g_hash_table_foreach_remove(counter_hash, stats_counter_is_orphaned, NULL);
-  stats_unlock();
-}
-
 void
 stats_counter_inc_pri(guint16 pri)
 {
