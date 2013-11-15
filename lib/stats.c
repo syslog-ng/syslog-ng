@@ -275,6 +275,7 @@ stats_register_associated_counter(StatsCounter *sc, StatsCounterType type, Stats
 
   *counter = &sc->counters[type];
   sc->live_mask |= 1 << type;
+  sc->ref_cnt++;
 }
 
 void
