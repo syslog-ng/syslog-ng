@@ -328,9 +328,7 @@ stats_counter_is_orphaned(gpointer key, gpointer value, gpointer user_data)
 void
 stats_cleanup_orphans(void)
 {
-  stats_lock();
   g_hash_table_foreach_remove(counter_hash, stats_counter_is_orphaned, NULL);
-  stats_unlock();
 }
 
 void
@@ -439,9 +437,7 @@ stats_generate_log(void)
   EVTREC *e;
   
   e = msg_event_create(EVT_PRI_INFO, "Log statistics", NULL);
-  stats_lock();
   g_hash_table_foreach(counter_hash, stats_format_log_counter, e);
-  stats_unlock();
   msg_event_send(e);
 }
 
@@ -553,9 +549,7 @@ stats_generate_csv(void)
   GString *csv = g_string_sized_new(1024);
 
   g_string_append_printf(csv, "%s;%s;%s;%s;%s;%s\n", "SourceName", "SourceId", "SourceInstance", "State", "Type", "Number");
-  stats_lock();
   g_hash_table_foreach(counter_hash, stats_format_csv, csv);
-  stats_unlock();
   return g_string_free(csv, FALSE);
 }
 
