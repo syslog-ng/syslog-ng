@@ -236,7 +236,7 @@ stats_register_dynamic_counter(gint stats_level, gint source, const gchar *id, c
  * Instantly create (if not exists) and increment a dynamic counter.
  */
 void
-stats_instant_inc_dynamic_counter(gint stats_level, gint source_mask, const gchar *id, const gchar *instance, time_t timestamp)
+stats_register_and_increment_dynamic_counter(gint stats_level, gint source_mask, const gchar *id, const gchar *instance, time_t timestamp)
 {
   StatsCounterItem *counter, *stamp;
   gboolean new;
