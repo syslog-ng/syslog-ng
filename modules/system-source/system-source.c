@@ -192,7 +192,7 @@ system_generate_system(CfgLexer *lexer, gint type, const gchar *name,
 
   sysblock = g_string_sized_new(1024);
 
-  if (uname(&u) != 0)
+  if (uname(&u) == -1)
     {
       msg_error("system(): Cannot get information about the running kernel",
                 evt_tag_errno("error", errno),
