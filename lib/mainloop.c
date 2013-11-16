@@ -241,7 +241,7 @@ main_loop_reload_config_apply(void)
 void
 main_loop_reload_config_initiate(void)
 {
-  if (!main_loop_is_terminating())
+  if (main_loop_is_terminating())
     return;
 
   service_management_publish_status("Reloading configuration");
