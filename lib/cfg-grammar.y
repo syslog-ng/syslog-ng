@@ -196,13 +196,14 @@ extern struct _HostResolveOptions *last_host_resolve_options;
 %token KW_MARK_FREQ                   10071
 %token KW_STATS_FREQ                  10072
 %token KW_STATS_LEVEL                 10073
-%token KW_FLUSH_LINES                 10074
-%token KW_SUPPRESS                    10075
-%token KW_FLUSH_TIMEOUT               10076
-%token KW_LOG_MSG_SIZE                10077
-%token KW_FILE_TEMPLATE               10078
-%token KW_PROTO_TEMPLATE              10079
-%token KW_MARK_MODE                   10080
+%token KW_STATS_LIFETIME	      10074
+%token KW_FLUSH_LINES                 10075
+%token KW_SUPPRESS                    10076
+%token KW_FLUSH_TIMEOUT               10077
+%token KW_LOG_MSG_SIZE                10078
+%token KW_FILE_TEMPLATE               10079
+%token KW_PROTO_TEMPLATE              10080
+%token KW_MARK_MODE                   10081
 
 %token KW_CHAIN_HOSTNAMES             10090
 %token KW_NORMALIZE_HOSTNAMES         10091
@@ -832,6 +833,7 @@ options_item
 	: KW_MARK_FREQ '(' LL_NUMBER ')'		{ configuration->mark_freq = $3; }
 	| KW_STATS_FREQ '(' LL_NUMBER ')'          { configuration->stats_freq = $3; }
 	| KW_STATS_LEVEL '(' LL_NUMBER ')'         { configuration->stats_level = $3; }
+	| KW_STATS_LIFETIME '(' LL_NUMBER ')'      { configuration->stats_lifetime = $3; }
 	| KW_FLUSH_LINES '(' LL_NUMBER ')'		{ configuration->flush_lines = $3; }
         | KW_MARK_MODE '(' KW_INTERNAL ')'         { cfg_set_mark_mode(configuration, "internal"); }
         | KW_MARK_MODE '(' string ')'
