@@ -188,13 +188,14 @@ cached_mktime(struct tm *tm)
                tm->tm_hour == mktime_prev_tm.tm_hour &&
                tm->tm_mday == mktime_prev_tm.tm_mday &&
                tm->tm_mon == mktime_prev_tm.tm_mon &&
-               tm->tm_year == mktime_prev_tm.tm_year))
+               tm->tm_year == mktime_prev_tm.tm_year &&
+               tm->tm_isdst == mktime_prev_tm.tm_isdst))
     {
       result = mktime_prev_time;
       return result;
     }
-  result = mktime(tm);
   mktime_prev_tm = *tm;
+  result = mktime(tm);
   mktime_prev_time = result;
   return result;
 }
