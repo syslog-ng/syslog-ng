@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -41,6 +41,7 @@ affile_open_file(gchar *name, gint flags,
 {
   cap_t saved_caps;
   struct stat st;
+  int mode;
 
   if (strstr(name, "../") || strstr(name, "/..")) 
     {
@@ -83,11 +84,13 @@ affile_open_file(gchar *name, gint flags,
                       NULL);
         }
     }
-  *fd = open(name, flags, perm_options->file_perm < 0 ? 0600 : perm_options->file_perm);
+
+  mode = perm_options->file_perm < 0 ? 0600 : perm_options->file_perm;
+  *fd = open(name, flags, mode);
   if (is_pipe && *fd < 0 && errno == ENOENT)
     {
-      if (mkfifo(name, 0666) >= 0)
-        *fd = open(name, flags, 0666);
+      if (mkfifo(name, mode) >= 0)
+        *fd = open(name, flags, mode);
     }
 
   if (*fd != -1)
