@@ -35,6 +35,7 @@
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>
+#include <iv.h>
 
 #if ENABLE_SYSTEMD
 #include <systemd/sd-daemon.h>
@@ -150,6 +151,22 @@ system_linux_find_dev_log(void)
 #define system_linux_find_dev_log() "/dev/log"
 #endif
 
+static gboolean
+_is_fd_pollable(gint fd)
+{
+  struct iv_fd check_fd;
+  gboolean pollable;
+
+  IV_FD_INIT(&check_fd);
+  check_fd.fd = fd;
+  check_fd.cookie = NULL;
+
+  pollable = (iv_fd_register_try(&check_fd) == 0);
+  if (pollable)
+    iv_fd_unregister(&check_fd);
+  return pollable;
+}
+
 static void
 system_sysblock_add_linux_kmsg(GString *sysblock)
 {
@@ -159,7 +176,7 @@ system_sysblock_add_linux_kmsg(GString *sysblock)
 
   if ((fd = open("/dev/kmsg", O_RDONLY)) != -1)
     {
-      if (lseek (fd, 0, SEEK_END) != -1)
+      if ((lseek (fd, 0, SEEK_END) != -1) && _is_fd_pollable(fd))
         {
           kmsg = "/dev/kmsg";
           format = "linux-kmsg";
