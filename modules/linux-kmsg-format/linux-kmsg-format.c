@@ -73,7 +73,8 @@ static struct timeval boot_time;
 static guint64
 kmsg_timeval_diff(struct timeval *t1, struct timeval *t2)
 {
-  return (t1->tv_sec - t2->tv_sec) * G_USEC_PER_SEC + (t1->tv_usec - t2->tv_usec);
+  return ((guint64)t1->tv_sec - (guint64)t2->tv_sec) * G_USEC_PER_SEC +
+    ((guint64)t1->tv_usec - (guint64)t2->tv_usec);
 }
 #endif
 
