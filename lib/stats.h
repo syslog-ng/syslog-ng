@@ -99,6 +99,19 @@ typedef struct _StatsCounterItem
   gint value;
 } StatsCounterItem;
 
+/* This struct can only be used by the stats implementation and not by client code. */
+struct _StatsCounter
+{
+  StatsCounterItem counters[SC_TYPE_MAX];
+  guint16 ref_cnt;
+  guint16 source;
+  gchar *id;
+  gchar *instance;
+  guint16 live_mask;
+  guint16 dynamic:1;
+};
+
+
 void stats_lock(void);
 void stats_unlock(void);
 gboolean stats_check_level(gint level);

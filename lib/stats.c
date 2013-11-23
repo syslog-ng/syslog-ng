@@ -74,17 +74,6 @@
  * operations under the protection of the same lock acquiral.
  */
 
-struct _StatsCounter
-{
-  StatsCounterItem counters[SC_TYPE_MAX];
-  guint16 ref_cnt;
-  guint16 source;
-  gchar *id;
-  gchar *instance;
-  guint16 live_mask;
-  guint16 dynamic:1;
-};
-
 StatsOptions *stats_options;
 
 /* Static counters for severities and facilities */
