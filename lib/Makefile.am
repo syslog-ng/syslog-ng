@@ -83,6 +83,7 @@ pkginclude_HEADERS			+= \
 	lib/serialize.h			\
 	lib/service-management.h	\
 	lib/stats.h			\
+	lib/stats-csv.h			\
 	lib/str-format.h		\
 	lib/syslog-names.h		\
 	lib/syslog-ng.h			\
@@ -163,6 +164,7 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/serialize.c			\
 	lib/service-management.c	\
 	lib/stats.c			\
+	lib/stats-csv.c			\
 	lib/str-format.c		\
 	lib/syslog-names.c		\
 	lib/tags.c			\

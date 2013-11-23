@@ -142,7 +142,6 @@ void stats_foreach_cluster_remove(StatsForeachClusterRemoveFunc func, gpointer u
 
 void stats_counter_inc_pri(guint16 pri);
 
-gchar *stats_generate_csv(void);
 void stats_reinit(StatsOptions *options);
 void stats_init(void);
 void stats_destroy(void);
