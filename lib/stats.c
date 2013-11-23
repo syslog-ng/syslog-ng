@@ -434,6 +434,44 @@ const gchar *source_names[SCS_MAX] =
   "snmp",
 };
 
+const gchar *
+stats_get_direction_name(gint source)
+{
+  return (source & SCS_SOURCE ? "src." : (source & SCS_DESTINATION ? "dst." : ""));
+}
+
+const gchar *
+stats_get_source_name(gint source)
+{
+  return source_names[source & SCS_SOURCE_MASK];
+}
+
+const gchar *
+stats_get_tag_name(gint type)
+{
+  return tag_names[type];
+}
+
+/* buf is a scratch area which is not always used, the return value is
+ * either a locally managed string or points to @buf.  */
+const gchar *
+stats_get_direction_and_source_name(gint source, gchar *buf, gsize buf_len)
+{
+  if ((source & SCS_SOURCE_MASK) == SCS_GROUP)
+    {
+      if (source & SCS_SOURCE)
+        return "source";
+      else if (source & SCS_DESTINATION)
+        return "destination";
+      else
+        g_assert_not_reached();
+    }
+  else
+    {
+      g_snprintf(buf, buf_len, "%s%s", stats_get_direction_name(source), stats_get_source_name(source));
+      return buf;
+    }
+}
 
 static void
 stats_format_log_counter(StatsCluster *sc, EVTREC *e)

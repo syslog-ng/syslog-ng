@@ -93,6 +93,11 @@ enum
   SCS_SOURCE_MASK    = 0xff
 };
 
+const gchar *stats_get_direction_name(gint source);
+const gchar *stats_get_source_name(gint source);
+const gchar *stats_get_tag_name(gint type);
+const gchar *stats_get_direction_and_source_name(gint source, gchar *buf, gsize buf_len);
+
 typedef struct _StatsCounterItem
 {
   gint value;
