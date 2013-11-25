@@ -84,6 +84,7 @@ pkginclude_HEADERS			+= \
 	lib/service-management.h	\
 	lib/stats.h			\
 	lib/stats-csv.h			\
+	lib/stats-syslog.h		\
 	lib/str-format.h		\
 	lib/syslog-names.h		\
 	lib/syslog-ng.h			\
@@ -165,6 +166,7 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/service-management.c	\
 	lib/stats.c			\
 	lib/stats-csv.c			\
+	lib/stats-syslog.c		\
 	lib/str-format.c		\
 	lib/syslog-names.c		\
 	lib/tags.c			\

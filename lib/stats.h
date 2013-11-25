@@ -140,8 +140,6 @@ void stats_foreach_counter(StatsForeachCounterFunc func, gpointer user_data);
 void stats_foreach_cluster(StatsForeachClusterFunc func, gpointer user_data);
 void stats_foreach_cluster_remove(StatsForeachClusterRemoveFunc func, gpointer user_data);
 
-void stats_counter_inc_pri(guint16 pri);
-
 void stats_reinit(StatsOptions *options);
 void stats_init(void);
 void stats_destroy(void);

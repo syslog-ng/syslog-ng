@@ -23,9 +23,9 @@
  */
   
 #include "stats.h"
+#include "stats-syslog.h"
 #include "messages.h"
 #include "timeutils.h"
-#include "syslog-names.h"
 #include "misc.h"
 
 #include <string.h>
@@ -76,14 +76,6 @@
 
 StatsOptions *stats_options;
 
-/* Static counters for severities and facilities */
-/* LOG_DEBUG 0x7 */
-#define SEVERITY_MAX   (0x7 + 1)
-/* LOG_LOCAL7 23<<3, one additional slot for "everything-else" counter */
-#define FACILITY_MAX   (23 + 1 + 1)
-
-static StatsCounterItem *severity_counters[SEVERITY_MAX];
-static StatsCounterItem *facility_counters[FACILITY_MAX];
 
 static GHashTable *counter_hash;
 static GStaticMutex stats_mutex = G_STATIC_MUTEX_INIT;
@@ -331,20 +323,6 @@ stats_unregister_dynamic_counter(StatsCluster *sc, StatsCounterType type, StatsC
   sc->ref_cnt--;
 }
 
-void
-stats_counter_inc_pri(guint16 pri)
-{
-  int lpri = LOG_FAC(pri);
-
-  stats_counter_inc(severity_counters[LOG_PRI(pri)]);
-  if (lpri > (FACILITY_MAX - 1))
-    {
-      /* the large facilities (=facility.other) are collected in the last array item */
-      lpri = FACILITY_MAX - 1;
-    }
-  stats_counter_inc(facility_counters[lpri]);
-}
-
 static void
 _foreach_cluster_helper(gpointer key, gpointer value, gpointer user_data)
 {
@@ -354,7 +332,7 @@ _foreach_cluster_helper(gpointer key, gpointer value, gpointer user_data)
   StatsCluster *sc = (StatsCluster *) value;
   
   func(sc, func_data);
-;}
+}
 
 void
 stats_foreach_cluster(StatsForeachClusterFunc func, gpointer user_data)
@@ -414,49 +392,6 @@ stats_foreach_counter(StatsForeachCounterFunc func, gpointer user_data)
 
   g_assert(stats_locked);
   stats_foreach_cluster(_foreach_counter_helper, args);
-}
-
-
-static void
-stats_counters_reinit(void)
-{
-  gchar name[11] = "";
-  gint i;
-
-  stats_lock();
-  if (stats_check_level(3))
-    {
-      /* we need these counters, register them */
-      for (i = 0; i < SEVERITY_MAX; i++)
-        {
-          g_snprintf(name, sizeof(name), "%d", i);
-          stats_register_counter(3, SCS_SEVERITY | SCS_SOURCE, NULL, name, SC_TYPE_PROCESSED, &severity_counters[i]);
-        }
-
-      for (i = 0; i < FACILITY_MAX - 1; i++)
-        {
-          g_snprintf(name, sizeof(name), "%d", i);
-          stats_register_counter(3, SCS_FACILITY | SCS_SOURCE, NULL, name, SC_TYPE_PROCESSED, &facility_counters[i]);
-        }
-      stats_register_counter(3, SCS_FACILITY | SCS_SOURCE, NULL, "other", SC_TYPE_PROCESSED, &facility_counters[FACILITY_MAX - 1]);
-    }
-  else
-    {
-      /* no need for facility/severity counters, unregister them */
-      for (i = 0; i < SEVERITY_MAX; i++)
-        {
-          g_snprintf(name, sizeof(name), "%d", i);
-          stats_unregister_counter(SCS_SEVERITY | SCS_SOURCE, NULL, name, SC_TYPE_PROCESSED, &severity_counters[i]);
-        }
-
-      for (i = 0; i < FACILITY_MAX - 1; i++)
-        {
-          g_snprintf(name, sizeof(name), "%d", i);
-          stats_unregister_counter(SCS_FACILITY | SCS_SOURCE, NULL, name, SC_TYPE_PROCESSED, &facility_counters[i]);
-        }
-      stats_unregister_counter(SCS_FACILITY | SCS_SOURCE, NULL, "other", SC_TYPE_PROCESSED, &facility_counters[FACILITY_MAX - 1]);
-    }
-  stats_unlock();
 }
 
 const gchar *tag_names[SC_TYPE_MAX] =
@@ -728,7 +663,7 @@ void
 stats_reinit(StatsOptions *options)
 {
   stats_options = options;
-  stats_counters_reinit();
+  stats_syslog_reinit();
   stats_timer_reinit();
 }
 

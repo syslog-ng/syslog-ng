@@ -28,6 +28,7 @@
 #include "host-resolve.h"
 #include "timeutils.h"
 #include "stats.h"
+#include "stats-syslog.h"
 #include "tags.h"
 
 #include <string.h>
@@ -254,7 +255,7 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
 
       stats_unlock();
     }
-  stats_counter_inc_pri(msg->pri);
+  stats_syslog_process_message_pri(msg->pri);
 
   /* message setup finished, send it out */
 
