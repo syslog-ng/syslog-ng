@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -26,7 +26,7 @@
 
 #include "driver.h"
 #include "logwriter.h"
-#include "file-perms.h"
+#include "affile-common.h"
 
 typedef struct _AFFileDestWriter AFFileDestWriter;
 
@@ -36,12 +36,11 @@ typedef struct _AFFileDestDriver
   GStaticMutex lock;
   LogTemplate *filename_template;
   AFFileDestWriter *single_writer;
-  gboolean is_pipe:1,
-    filename_is_a_template:1,
+  gboolean filename_is_a_template:1,
     template_escape:1,
-    create_dirs:1,
     use_fsync:1;
   FilePermOptions file_perm_options;
+  FileOpenOptions file_open_options;
   TimeZoneInfo *local_time_zone_info;
   LogWriterOptions writer_options;
   GHashTable *writer_hash;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -20,7 +20,6 @@
  * COPYING for details.
  *
  */
-#include "affile-common.h"
 #include "affile-source.h"
 #include "driver.h"
 #include "messages.h"
@@ -46,6 +45,9 @@
 #include <errno.h>
 #include <time.h>
 #include <stdlib.h>
+
+#define DEFAULT_SD_OPEN_FLAGS (O_RDONLY | O_NOCTTY | O_NONBLOCK | O_LARGEFILE)
+#define DEFAULT_SD_OPEN_FLAGS_PIPE (O_RDWR | O_NOCTTY | O_NONBLOCK | O_LARGEFILE)
 
 gboolean
 affile_sd_set_multi_line_mode(LogDriver *s, const gchar *mode)
@@ -119,21 +121,10 @@ affile_is_device_node(const gchar *filename)
   return !S_ISREG(st.st_mode);
 }
 
-static gboolean
+gboolean
 affile_sd_open_file(AFFileSourceDriver *self, gchar *name, gint *fd)
 {
-  gint flags;
-  
-  if (self->is_pipe)
-    flags = O_RDWR | O_NOCTTY | O_NONBLOCK | O_LARGEFILE;
-  else
-    flags = O_RDONLY | O_NOCTTY | O_NONBLOCK | O_LARGEFILE;
-
-  if (affile_open_file(name, flags,
-                       &self->file_perm_options,
-                       0, self->is_privileged, self->is_pipe, fd))
-    return TRUE;
-  return FALSE;
+  return affile_open_file(name, &self->file_open_options, &self->file_perm_options, fd);
 }
 
 static inline gchar *
@@ -150,7 +141,7 @@ affile_sd_recover_state(LogPipe *s, GlobalConfig *cfg, LogProtoServer *proto)
 {
   AFFileSourceDriver *self = (AFFileSourceDriver *) s;
 
-  if (self->is_pipe || self->follow_freq <= 0)
+  if (self->file_open_options.is_pipe || self->follow_freq <= 0)
     return;
 
   if (!log_proto_server_restart_with_state(proto, cfg->state, affile_sd_format_persist_name(self)))
@@ -198,7 +189,7 @@ affile_sd_construct_poll_events(AFFileSourceDriver *self, gint fd)
 static LogTransport *
 affile_sd_construct_transport(AFFileSourceDriver *self, gint fd)
 {
-  if (self->is_pipe)
+  if (self->file_open_options.is_pipe)
     return log_transport_pipe_new(fd);
   else if (self->follow_freq > 0)
     return log_transport_file_new(fd);
@@ -462,7 +453,7 @@ affile_sd_new_instance(gchar *filename)
   self->reader_options.parse_options.flags |= LP_LOCAL;
 
   if (affile_is_linux_proc_kmsg(filename))
-    self->is_privileged = TRUE;
+    self->file_open_options.needs_privileges = TRUE;
   return self;
 }
 
@@ -470,7 +461,10 @@ LogDriver *
 affile_sd_new(gchar *filename)
 {
   AFFileSourceDriver *self = affile_sd_new_instance(filename);
-  
+
+  self->file_open_options.is_pipe = FALSE;
+  self->file_open_options.open_flags = DEFAULT_SD_OPEN_FLAGS;
+
   if (cfg_is_config_version_older(configuration, 0x0300))
     {
       static gboolean warned = FALSE;
@@ -500,7 +494,9 @@ afpipe_sd_new(gchar *filename)
 {
   AFFileSourceDriver *self = affile_sd_new_instance(filename);
 
-  self->is_pipe = TRUE;
+  self->file_open_options.is_pipe = TRUE;
+  self->file_open_options.open_flags = DEFAULT_SD_OPEN_FLAGS_PIPE;
+
   if (cfg_is_config_version_older(configuration, 0x0302))
     {
       static gboolean warned = FALSE;
