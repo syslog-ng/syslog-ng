@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -26,8 +26,8 @@
 
 #include "driver.h"
 #include "logreader.h"
-#include "file-perms.h"
 #include "logproto/logproto-regexp-multiline-server.h"
+#include "affile-common.h"
 
 
 enum
@@ -44,10 +44,9 @@ typedef struct _AFFileSourceDriver
   LogReader *reader;
   LogReaderOptions reader_options;
   FilePermOptions file_perm_options;
+  FileOpenOptions file_open_options;
   gint pad_size;
   gint follow_freq;
-  gboolean is_pipe:1,
-    is_privileged:1;
   gint multi_line_mode;
   MultiLineRegexp *multi_line_prefix, *multi_line_garbage;
   /* state information to follow a set of files using a wildcard expression */
