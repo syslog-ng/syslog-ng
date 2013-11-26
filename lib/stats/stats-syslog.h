@@ -21,28 +21,12 @@
  * COPYING for details.
  *
  */
-#include "stats-log.h"
-#include "stats.h"
+#ifndef STATS_SYSLOG_H_INCLUDED
+#define STATS_SYSLOG_H_INCLUDED 1
 
-static void
-stats_log_format_counter(StatsCluster *sc, gint type, StatsCounterItem *item, gpointer user_data)
-{
-  EVTREC *e = (EVTREC *) user_data;
-  EVTTAG *tag;
-  gchar buf[32];
+#include "stats/stats-registry.h"
 
-  tag = evt_tag_printf(stats_get_type_name(type), "%s(%s%s%s)=%u", 
-                       stats_get_direction_and_source_name(sc->source, buf, sizeof(buf)),
-                       sc->id,
-                       (sc->id[0] && sc->instance[0]) ? "," : "",
-                       sc->instance,
-                       stats_counter_get(&sc->counters[type]));
-  evt_rec_add_tag(e, tag);
-}
+void stats_syslog_process_message_pri(guint16 pri);
+void stats_syslog_reinit(void);
 
-
-void
-stats_log_format_cluster(StatsCluster *sc, EVTREC *e)
-{
-  stats_cluster_foreach_counter(sc, stats_log_format_counter, e);
-}
+#endif

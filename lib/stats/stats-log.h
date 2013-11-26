@@ -25,7 +25,7 @@
 #ifndef STATS_LOG_H_INCLUDED
 #define STATS_LOG_H_INCLUDED
 
-#include "stats-cluster.h"
+#include "stats/stats-cluster.h"
 #include "messages.h"
 
 void stats_log_format_cluster(StatsCluster *sc, EVTREC *e);

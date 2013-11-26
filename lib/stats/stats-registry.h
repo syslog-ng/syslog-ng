@@ -24,8 +24,8 @@
 #ifndef STATS_REGISTRY_H_INCLUDED
 #define STATS_REGISTRY_H_INCLUDED 1
 
-#include "stats.h"
-#include "stats-cluster.h"
+#include "stats/stats.h"
+#include "stats/stats-cluster.h"
 
 typedef void (*StatsForeachClusterFunc)(StatsCluster *sc, gpointer user_data);
 typedef gboolean (*StatsForeachClusterRemoveFunc)(StatsCluster *sc, gpointer user_data);

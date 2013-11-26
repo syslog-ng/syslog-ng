@@ -21,7 +21,7 @@
  * COPYING for details.
  *
  */
-#include "stats-registry.h"
+#include "stats/stats-registry.h"
 
 #include <string.h>
 

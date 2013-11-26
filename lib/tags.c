@@ -24,7 +24,7 @@
 
 #include "tags.h"
 #include "messages.h"
-#include "stats-registry.h"
+#include "stats/stats-registry.h"
 
 
 typedef struct _LogTag

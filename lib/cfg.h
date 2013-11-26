@@ -33,7 +33,7 @@
 #include "template/templates.h"
 #include "host-resolve.h"
 #include "type-hinting.h"
-#include "stats.h"
+#include "stats/stats.h"
 
 #include <sys/types.h>
 #include <regex.h>

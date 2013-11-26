@@ -24,7 +24,7 @@
 #ifndef STATS_CLUSTER_H_INCLUDED
 #define STATS_CLUSTER_H_INCLUDED 1
 
-#include "stats-counter.h"
+#include "stats/stats-counter.h"
 
 typedef enum
 {

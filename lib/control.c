@@ -26,7 +26,7 @@
 #include "control-server.h"
 #include "gsocket.h"
 #include "messages.h"
-#include "stats-csv.h"
+#include "stats/stats-csv.h"
 #include "misc.h"
 #include "mainloop.h"
 

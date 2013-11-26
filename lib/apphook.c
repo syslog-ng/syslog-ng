@@ -27,7 +27,7 @@
 #include "children.h"
 #include "dnscache.h"
 #include "alarms.h"
-#include "stats-registry.h"
+#include "stats/stats-registry.h"
 #include "tags.h"
 #include "logmsg.h"
 #include "timeutils.h"

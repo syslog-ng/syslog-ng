@@ -22,9 +22,10 @@
  *
  */
   
-#include "stats.h"
-#include "stats-syslog.h"
-#include "stats-log.h"
+#include "stats/stats.h"
+#include "stats/stats-syslog.h"
+#include "stats/stats-registry.h"
+#include "stats/stats-log.h"
 #include "timeutils.h"
 
 #include <string.h>

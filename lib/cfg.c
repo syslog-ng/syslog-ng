@@ -32,7 +32,7 @@
 #include "serialize.h"
 #include "plugin.h"
 #include "cfg-parser.h"
-#include "stats-registry.h"
+#include "stats/stats-registry.h"
 #include "logproto/logproto-builtins.h"
 #include "reloc.h"
 #include "hostname.h"

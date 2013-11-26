@@ -5,13 +5,14 @@ include lib/rewrite/Makefile.am
 include lib/parser/Makefile.am
 include lib/filter/Makefile.am
 include lib/template/Makefile.am
+include lib/stats/Makefile.am
 include lib/compat/Makefile.am
 
 lib_LTLIBRARIES				+= lib/libsyslog-ng.la
 lib_libsyslog_ng_la_LIBADD		= @CORE_DEPS_LIBS@ $(libsystemd_daemon_LIBS)
 lib_libsyslog_ng_la_LDFLAGS		= -no-undefined -release @VERSION@
 
-lib_test_subdirs			= lib_filter lib_logproto lib_parser lib_rewrite lib_template
+lib_test_subdirs			= lib_filter lib_logproto lib_parser lib_rewrite lib_template lib_stats
 
 if IVYKIS_INTERNAL
 lib_libsyslog_ng_la_DEPENDENCIES	= lib/ivykis/src/libivykis.la
@@ -82,13 +83,6 @@ pkginclude_HEADERS			+= \
 	lib/scratch-buffers.h		\
 	lib/serialize.h			\
 	lib/service-management.h	\
-	lib/stats.h			\
-	lib/stats-counter.h		\
-	lib/stats-cluster.h		\
-	lib/stats-csv.h			\
-	lib/stats-log.h			\
-	lib/stats-registry.h		\
-	lib/stats-syslog.h		\
 	lib/str-format.h		\
 	lib/syslog-names.h		\
 	lib/syslog-ng.h			\
@@ -168,12 +162,6 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/scratch-buffers.c		\
 	lib/serialize.c			\
 	lib/service-management.c	\
-	lib/stats.c			\
-	lib/stats-cluster.c		\
-	lib/stats-csv.c			\
-	lib/stats-log.c			\
-	lib/stats-registry.c		\
-	lib/stats-syslog.c		\
 	lib/str-format.c		\
 	lib/syslog-names.c		\
 	lib/tags.c			\
@@ -191,6 +179,7 @@ lib_libsyslog_ng_la_SOURCES		= \
 	$(parser_sources)		\
 	$(rewrite_sources)		\
 	$(template_sources)		\
+	$(stats_sources)		\
 	$(compat_sources)
 
 if WITH_EMBEDDED_CRYPTO

@@ -21,8 +21,8 @@
  * COPYING for details.
  *
  */
-#include "stats-csv.h"
-#include "stats-registry.h"
+#include "stats/stats-csv.h"
+#include "stats/stats-registry.h"
 #include "misc.h"
 
 #include <string.h>

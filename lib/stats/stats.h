@@ -26,7 +26,7 @@
 #define STATS_H_INCLUDED
 
 #include "syslog-ng.h"
-#include "stats-cluster.h"
+#include "stats/stats-cluster.h"
 
 typedef struct _StatsOptions
 {

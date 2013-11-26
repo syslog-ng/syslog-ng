@@ -29,7 +29,7 @@
 #include "template/templates.h"
 #include "messages.h"
 #include "misc.h"
-#include "stats-registry.h"
+#include "stats/stats-registry.h"
 #include "apphook.h"
 #include "timeutils.h"
 #include "mainloop-worker.h"

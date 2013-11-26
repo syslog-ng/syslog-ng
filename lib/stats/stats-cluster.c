@@ -21,7 +21,7 @@
  * COPYING for details.
  *
  */
-#include "stats-cluster.h"
+#include "stats/stats-cluster.h"
 
 void
 stats_cluster_foreach_counter(StatsCluster *self, StatsForeachCounterFunc func, gpointer user_data)

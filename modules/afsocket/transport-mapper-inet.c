@@ -24,7 +24,7 @@
 #include "afinet.h"
 #include "cfg.h"
 #include "messages.h"
-#include "stats-registry.h"
+#include "stats/stats-registry.h"
 
 #include <sys/types.h>
 #include <sys/socket.h>

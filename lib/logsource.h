@@ -26,7 +26,7 @@
 #define LOGSOURCE_H_INCLUDED
 
 #include "logpipe.h"
-#include "stats-registry.h"
+#include "stats/stats-registry.h"
 #include <iv_event.h>
 
 typedef struct _LogSourceOptions

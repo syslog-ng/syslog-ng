@@ -27,7 +27,7 @@
 #include "mainloop-call.h"
 #include "apphook.h"
 #include "cfg.h"
-#include "stats-registry.h"
+#include "stats/stats-registry.h"
 #include "messages.h"
 #include "children.h"
 #include "control.h"

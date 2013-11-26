@@ -21,7 +21,7 @@
  * COPYING for details.
  *
  */
-#include "stats-syslog.h"
+#include "stats/stats-syslog.h"
 #include "syslog-names.h"
 
 
