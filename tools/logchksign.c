@@ -1,3 +1,5 @@
+#include "config.h"
+
 #include <openssl/hmac.h>
 #include <openssl/sha.h>
 #include <string.h>
