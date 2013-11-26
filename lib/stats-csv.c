@@ -22,7 +22,7 @@
  *
  */
 #include "stats-csv.h"
-#include "stats.h"
+#include "stats-registry.h"
 #include "misc.h"
 
 #include <string.h>

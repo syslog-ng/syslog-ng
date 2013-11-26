@@ -27,7 +27,7 @@
 #include "misc.h"
 #include "serialize.h"
 #include "gprocess.h"
-#include "stats.h"
+#include "stats-registry.h"
 #include "mainloop-call.h"
 #include "logproto/logproto-text-client.h"
 #include "logproto-file-writer.h"

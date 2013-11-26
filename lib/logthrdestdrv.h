@@ -27,7 +27,7 @@
 
 #include "syslog-ng.h"
 #include "driver.h"
-#include "stats.h"
+#include "stats-registry.h"
 #include "logqueue.h"
 
 typedef struct _LogThrDestDriver LogThrDestDriver;

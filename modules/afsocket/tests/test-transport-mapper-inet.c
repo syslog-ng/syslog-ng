@@ -1,6 +1,6 @@
 #include "afinet.h"
 #include "afsocket.h"
-#include "stats.h"
+#include "stats-registry.h"
 #include "apphook.h"
 #include "transport-mapper-inet.h"
 #include "socket-options-inet.h"

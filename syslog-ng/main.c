@@ -28,7 +28,7 @@
 #include "memtrace.h"
 #include "children.h"
 #include "misc.h"
-#include "stats.h"
+#include "stats-registry.h"
 #include "apphook.h"
 #include "alarms.h"
 #include "logqueue.h"

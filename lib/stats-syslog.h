@@ -24,7 +24,7 @@
 #ifndef STATS_SYSLOG_H_INCLUDED
 #define STATS_SYSLOG_H_INCLUDED 1
 
-#include "stats.h"
+#include "stats-registry.h"
 
 void stats_syslog_process_message_pri(guint16 pri);
 void stats_syslog_reinit(void);

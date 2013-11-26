@@ -27,7 +27,7 @@
 #include "misc.h"
 #include "host-resolve.h"
 #include "timeutils.h"
-#include "stats.h"
+#include "stats-registry.h"
 #include "stats-syslog.h"
 #include "tags.h"
 

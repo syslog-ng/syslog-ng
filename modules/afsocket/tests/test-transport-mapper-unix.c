@@ -22,7 +22,7 @@
  */
 #include "transport-mapper-unix.h"
 #include "apphook.h"
-#include "stats.h"
+#include "stats-registry.h"
 #include "transport-mapper-lib.h"
 
 static void

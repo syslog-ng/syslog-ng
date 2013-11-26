@@ -28,7 +28,7 @@
 #include "tlstransport.h"
 #endif
 #include "gsocket.h"
-#include "stats.h"
+#include "stats-registry.h"
 #include "mainloop.h"
 #include "poll-fd-events.h"
 

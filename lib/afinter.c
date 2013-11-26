@@ -24,7 +24,7 @@
 
 #include "afinter.h"
 #include "logreader.h"
-#include "stats.h"
+#include "stats-registry.h"
 #include "messages.h"
 #include "apphook.h"
 #include "mainloop.h"

@@ -26,7 +26,7 @@
 #include "misc.h"
 #include "logwriter.h"
 #include "gsocket.h"
-#include "stats.h"
+#include "stats-registry.h"
 #include "mainloop.h"
 
 #include <string.h>
