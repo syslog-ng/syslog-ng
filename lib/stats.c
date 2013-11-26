@@ -136,7 +136,7 @@ stats_get_source_name(gint source)
 }
 
 const gchar *
-stats_get_tag_name(gint type)
+stats_get_type_name(gint type)
 {
   static const gchar *tag_names[SC_TYPE_MAX] =
   {
