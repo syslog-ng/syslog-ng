@@ -175,7 +175,7 @@ stats_get_direction_and_source_name(gint source, gchar *buf, gsize buf_len)
 
 
 static gboolean
-stats_counter_is_expired(StatsCluster *sc, time_t now)
+stats_cluster_is_expired(StatsCluster *sc, time_t now)
 {
   time_t tstamp;
 
@@ -210,7 +210,7 @@ stats_prune_counter(StatsCluster *sc, StatsTimerState *st)
 {
   gboolean expired;
 
-  expired = stats_counter_is_expired(sc, st->now.tv_sec);
+  expired = stats_cluster_is_expired(sc, st->now.tv_sec);
   if (expired)
     {
       time_t tstamp = sc->counters[SC_TYPE_STAMP].value;
