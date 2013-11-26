@@ -24,6 +24,7 @@
   
 #include "stats.h"
 #include "stats-syslog.h"
+#include "stats-log.h"
 #include "messages.h"
 #include "timeutils.h"
 #include "misc.h"
@@ -465,28 +466,6 @@ stats_get_direction_and_source_name(gint source, gchar *buf, gsize buf_len)
     }
 }
 
-static void
-stats_log_format_counter(StatsCluster *sc, gint type, StatsCounterItem *item, gpointer user_data)
-{
-  EVTREC *e = (EVTREC *) user_data;
-  EVTTAG *tag;
-  gchar buf[32];
-
-  tag = evt_tag_printf(stats_get_tag_name(type), "%s(%s%s%s)=%u", 
-                       stats_get_direction_and_source_name(sc->source, buf, sizeof(buf)),
-                       sc->id,
-                       (sc->id[0] && sc->instance[0]) ? "," : "",
-                       sc->instance,
-                       stats_counter_get(&sc->counters[type]));
-  evt_rec_add_tag(e, tag);
-}
-
-
-static void
-stats_log_format_cluster(StatsCluster *sc, EVTREC *e)
-{
-  stats_cluster_foreach_counter(sc, stats_log_format_counter, e);
-}
 
 static gboolean
 stats_counter_is_expired(StatsCluster *sc, time_t now)
