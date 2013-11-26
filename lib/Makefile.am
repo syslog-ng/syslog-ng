@@ -83,6 +83,7 @@ pkginclude_HEADERS			+= \
 	lib/serialize.h			\
 	lib/service-management.h	\
 	lib/stats.h			\
+	lib/stats-counter.h		\
 	lib/stats-csv.h			\
 	lib/stats-syslog.h		\
 	lib/str-format.h		\

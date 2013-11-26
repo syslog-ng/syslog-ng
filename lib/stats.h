@@ -26,6 +26,7 @@
 #define STATS_H_INCLUDED
 
 #include "syslog-ng.h"
+#include "stats-counter.h"
 
 typedef struct _StatsOptions
 {
@@ -98,10 +99,6 @@ const gchar *stats_get_source_name(gint source);
 const gchar *stats_get_tag_name(gint type);
 const gchar *stats_get_direction_and_source_name(gint source, gchar *buf, gsize buf_len);
 
-typedef struct _StatsCounterItem
-{
-  gint value;
-} StatsCounterItem;
 
 /* NOTE: This struct can only be used by the stats implementation and not by client code. */
 
@@ -147,45 +144,5 @@ void stats_destroy(void);
 void stats_options_defaults(StatsOptions *options);
 
 
-
-static inline void
-stats_counter_add(StatsCounterItem *counter, gint add)
-{
-  if (counter)
-    g_atomic_int_add(&counter->value, add);
-}
-
-static inline void
-stats_counter_inc(StatsCounterItem *counter)
-{
-  if (counter)
-    g_atomic_int_inc(&counter->value);
-}
-
-static inline void
-stats_counter_dec(StatsCounterItem *counter)
-{
-  if (counter)
-    g_atomic_int_add(&counter->value, -1);
-}
-
-/* NOTE: this is _not_ atomic and doesn't have to be as sets would race anyway */
-static inline void
-stats_counter_set(StatsCounterItem *counter, guint32 value)
-{
-  if (counter)
-    counter->value = value;
-}
-
-/* NOTE: this is _not_ atomic and doesn't have to be as sets would race anyway */
-static inline guint32
-stats_counter_get(StatsCounterItem *counter)
-{
-  guint32 result = 0;
-
-  if (counter)
-    result = counter->value;
-  return result;
-}
 #endif
 
