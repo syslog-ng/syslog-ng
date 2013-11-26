@@ -25,10 +25,7 @@
 #include "stats.h"
 #include "stats-syslog.h"
 #include "stats-log.h"
-#include "stats-registry.h"
-#include "messages.h"
 #include "timeutils.h"
-#include "misc.h"
 
 #include <string.h>
 #include <iv.h>
