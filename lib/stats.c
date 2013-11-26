@@ -226,7 +226,8 @@ stats_format_and_prune_cluster(StatsCluster *sc, gpointer user_data)
 {
   StatsTimerState *st = (StatsTimerState *) user_data;
 
-  stats_log_format_cluster(sc, st->stats_event);
+  if (st->stats_event)
+    stats_log_format_cluster(sc, st->stats_event);
   return stats_prune_counter(sc, st);
 }
 
