@@ -33,7 +33,6 @@
 #include "plugin.h"
 #include "cfg-parser.h"
 #include "stats.h"
-#include "stats-timer.h"
 #include "logproto/logproto-builtins.h"
 #include "reloc.h"
 #include "hostname.h"
@@ -216,8 +215,7 @@ cfg_init(GlobalConfig *cfg)
         }
     }
 
-  stats_reinit(cfg);
-  stats_timer_reinit(cfg->stats_freq, cfg->stats_lifetime);
+  stats_reinit(&cfg->stats_options);
   log_tags_reinit_stats(cfg);
 
   dns_cache_set_params(cfg->dns_cache_size, cfg->dns_cache_expire, cfg->dns_cache_expire_failed, cfg->dns_cache_hosts);
@@ -304,8 +302,6 @@ cfg_new(gint version)
   self->flush_timeout = 10000;  /* 10 seconds */
   self->mark_freq = 1200;	/* 20 minutes */
   self->mark_mode = MM_HOST_IDLE;
-  self->stats_freq = 600;
-  self->stats_lifetime = 600;
   self->chain_hostnames = 0;
   self->time_reopen = 60;
   self->time_reap = 60;
@@ -338,6 +334,8 @@ cfg_new(gint version)
 
   self->recv_time_zone = NULL;
   self->keep_timestamp = TRUE;
+  
+  stats_options_defaults(&self->stats_options);
 
   cfg_tree_init_instance(&self->tree, self);
   return self;

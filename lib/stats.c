@@ -24,10 +24,12 @@
   
 #include "stats.h"
 #include "messages.h"
-#include "misc.h"
+#include "timeutils.h"
 #include "syslog-names.h"
+#include "misc.h"
 
 #include <string.h>
+#include <iv.h>
 
 /*
  * The statistics module
@@ -83,6 +85,8 @@ struct _StatsCounter
   guint16 dynamic:1;
 };
 
+StatsOptions *stats_options;
+
 /* Static counters for severities and facilities */
 /* LOG_DEBUG 0x7 */
 #define SEVERITY_MAX   (0x7 + 1)
@@ -93,8 +97,7 @@ static StatsCounterItem *severity_counters[SEVERITY_MAX];
 static StatsCounterItem *facility_counters[FACILITY_MAX];
 
 static GHashTable *counter_hash;
-GStaticMutex stats_mutex;
-gint current_stats_level;
+static GStaticMutex stats_mutex = G_STATIC_MUTEX_INIT;
 gboolean stats_locked;
 
 static gboolean
@@ -122,6 +125,29 @@ stats_counter_free(gpointer p)
   g_free(sc->id);
   g_free(sc->instance);
   g_free(sc);
+}
+
+gboolean
+stats_check_level(gint level)
+{
+  if (stats_options)
+    return (stats_options->level >= level);
+  else
+    return level == 0;
+}
+
+void
+stats_lock(void)
+{
+  g_static_mutex_lock(&stats_mutex);
+  stats_locked = TRUE;
+}
+
+void
+stats_unlock(void)
+{
+  stats_locked = FALSE;
+  g_static_mutex_unlock(&stats_mutex);
 }
 
 static StatsCounter *
@@ -316,59 +342,6 @@ stats_unregister_dynamic_counter(StatsCounter *sc, StatsCounterType type, StatsC
   sc->ref_cnt--;
 }
 
-static gboolean
-stats_counter_is_too_old(gpointer key, gpointer value, gpointer user_data)
-{
-  StatsCounter *sc = (StatsCounter *) value;
-  gpointer *args = (gpointer *) user_data;
-  time_t tstamp;
-  GTimeVal *now = (GTimeVal *) args[0];
-  time_t lifetime = *(time_t *) args[1];
-  time_t *oldest_counter = (time_t *) args[2];
-  gint *dropped_counters = (gint *) args[3];
-
-  /* check if dynamic entry, non-dynamic entries cannot be too large in
-   * numbers, those are never pruned */
-  if (!sc->dynamic)
-    return FALSE;
-
-  /* this entry is being updated, cannot be too old */    
-  if (sc->ref_cnt > 0)
-    return FALSE;
-
-  /* check if timestamp is stored, no timestamp means we can't expire it.
-   * All dynamic entries should have a timestamp.  */
-  if ((sc->live_mask & (1 << SC_TYPE_STAMP)) == 0)
-    return FALSE;
-
-  tstamp = sc->counters[SC_TYPE_STAMP].value;
-  if (tstamp <= now->tv_sec - lifetime)
-    {
-      if ((*oldest_counter) == 0 || *oldest_counter > tstamp)
-        *oldest_counter = tstamp;
-      (*dropped_counters)++;
-      return TRUE;
-    }
-  return FALSE;
-}
-
-void
-stats_prune_old_counters(time_t lifetime)
-{
-  GTimeVal now;
-  time_t oldest_counter = 0;
-  gint dropped_counters = 0;
-  gpointer args[] = { &now, &lifetime, &oldest_counter, &dropped_counters };
-
-  cached_g_current_time(&now);
-  stats_lock();
-  g_hash_table_foreach_remove(counter_hash, stats_counter_is_too_old, args);
-  stats_unlock();
-  msg_notice("Pruning stats-counters have finished",
-             evt_tag_int("dropped", dropped_counters),
-             evt_tag_long("oldest-timestamp", (long) oldest_counter),
-             NULL);
-}
 
 void
 stats_counter_inc_pri(guint16 pri)
@@ -382,6 +355,48 @@ stats_counter_inc_pri(guint16 pri)
       lpri = FACILITY_MAX - 1;
     }
   stats_counter_inc(facility_counters[lpri]);
+}
+
+static void
+stats_counters_reinit(void)
+{
+  gchar name[11] = "";
+  gint i;
+
+  stats_lock();
+  if (stats_check_level(3))
+    {
+      /* we need these counters, register them */
+      for (i = 0; i < SEVERITY_MAX; i++)
+        {
+          g_snprintf(name, sizeof(name), "%d", i);
+          stats_register_counter(3, SCS_SEVERITY | SCS_SOURCE, NULL, name, SC_TYPE_PROCESSED, &severity_counters[i]);
+        }
+
+      for (i = 0; i < FACILITY_MAX - 1; i++)
+        {
+          g_snprintf(name, sizeof(name), "%d", i);
+          stats_register_counter(3, SCS_FACILITY | SCS_SOURCE, NULL, name, SC_TYPE_PROCESSED, &facility_counters[i]);
+        }
+      stats_register_counter(3, SCS_FACILITY | SCS_SOURCE, NULL, "other", SC_TYPE_PROCESSED, &facility_counters[FACILITY_MAX - 1]);
+    }
+  else
+    {
+      /* no need for facility/severity counters, unregister them */
+      for (i = 0; i < SEVERITY_MAX; i++)
+        {
+          g_snprintf(name, sizeof(name), "%d", i);
+          stats_unregister_counter(SCS_SEVERITY | SCS_SOURCE, NULL, name, SC_TYPE_PROCESSED, &severity_counters[i]);
+        }
+
+      for (i = 0; i < FACILITY_MAX - 1; i++)
+        {
+          g_snprintf(name, sizeof(name), "%d", i);
+          stats_unregister_counter(SCS_FACILITY | SCS_SOURCE, NULL, name, SC_TYPE_PROCESSED, &facility_counters[i]);
+        }
+      stats_unregister_counter(SCS_FACILITY | SCS_SOURCE, NULL, "other", SC_TYPE_PROCESSED, &facility_counters[FACILITY_MAX - 1]);
+    }
+  stats_unlock();
 }
 
 const gchar *tag_names[SC_TYPE_MAX] =
@@ -432,12 +447,9 @@ const gchar *source_names[SCS_MAX] =
 
 
 static void
-stats_format_log_counter(gpointer key, gpointer value, gpointer user_data)
+stats_format_log_counter(StatsCounter *sc, EVTREC *e)
 {
-  EVTREC *e = (EVTREC *) user_data;
-  StatsCounter *sc = (StatsCounter *) value;
   StatsCounterType type;
-
 
   for (type = 0; type < SC_TYPE_MAX; type++)
     {
@@ -470,16 +482,27 @@ stats_format_log_counter(gpointer key, gpointer value, gpointer user_data)
 
 }
 
-void
-stats_generate_log(void)
+static gboolean
+stats_counter_is_expired(StatsCounter *sc, time_t now)
 {
-  EVTREC *e;
-  
-  e = msg_event_create(EVT_PRI_INFO, "Log statistics", NULL);
-  stats_lock();
-  g_hash_table_foreach(counter_hash, stats_format_log_counter, e);
-  stats_unlock();
-  msg_event_send(e);
+  time_t tstamp;
+
+  /* check if dynamic entry, non-dynamic entries cannot be too large in
+   * numbers, those are never pruned */
+  if (!sc->dynamic)
+    return FALSE;
+
+  /* this entry is being updated, cannot be too old */    
+  if (sc->ref_cnt > 0)
+    return FALSE;
+
+  /* check if timestamp is stored, no timestamp means we can't expire it.
+   * All dynamic entries should have a timestamp.  */
+  if ((sc->live_mask & (1 << SC_TYPE_STAMP)) == 0)
+    return FALSE;
+
+  tstamp = sc->counters[SC_TYPE_STAMP].value;
+  return (tstamp <= now - stats_options->lifetime);
 }
 
 static gboolean
@@ -596,48 +619,133 @@ stats_generate_csv(void)
   return g_string_free(csv, FALSE);
 }
 
-void
-stats_reinit(GlobalConfig *cfg)
+typedef struct _StatsTimerState
 {
-  gint i;
-  gchar name[11] = "";
+  GTimeVal now;
+  time_t oldest_counter;
+  gint dropped_counters;
+  EVTREC *stats_event;
+} StatsTimerState;
 
-  current_stats_level = cfg->stats_level;
+static gboolean
+stats_prune_counter(StatsCounter *sc, StatsTimerState *st)
+{
+  gboolean expired;
+
+  expired = stats_counter_is_expired(sc, st->now.tv_sec);
+  if (expired)
+    {
+      time_t tstamp = sc->counters[SC_TYPE_STAMP].value;
+      if ((st->oldest_counter) == 0 || st->oldest_counter > tstamp)
+        st->oldest_counter = tstamp;
+      st->dropped_counters++;
+    }
+  return expired;
+}
+
+static gboolean
+stats_format_and_prune_counter(gpointer key, gpointer value, gpointer user_data)
+{
+  StatsCounter *sc = (StatsCounter *) value;
+  StatsTimerState *st = (StatsTimerState *) user_data;
+
+  stats_format_log_counter(sc, st->stats_event);
+
+  return stats_prune_counter(sc, st);
+}
+
+void
+stats_publish_and_prune_counters(void)
+{
+  StatsTimerState st;
+  gboolean publish = (stats_options->log_freq > 0);
+  
+  st.oldest_counter = 0;
+  st.dropped_counters = 0;
+  st.stats_event = NULL;
+  cached_g_current_time(&st.now);
+
+  if (publish)
+    st.stats_event = msg_event_create(EVT_PRI_INFO, "Log statistics", NULL);
 
   stats_lock();
-  if (stats_check_level(3))
-    {
-      /* we need these counters, register them */
-      for (i = 0; i < SEVERITY_MAX; i++)
-        {
-          g_snprintf(name, sizeof(name), "%d", i);
-          stats_register_counter(3, SCS_SEVERITY | SCS_SOURCE, NULL, name, SC_TYPE_PROCESSED, &severity_counters[i]);
-        }
-
-      for (i = 0; i < FACILITY_MAX - 1; i++)
-        {
-          g_snprintf(name, sizeof(name), "%d", i);
-          stats_register_counter(3, SCS_FACILITY | SCS_SOURCE, NULL, name, SC_TYPE_PROCESSED, &facility_counters[i]);
-        }
-      stats_register_counter(3, SCS_FACILITY | SCS_SOURCE, NULL, "other", SC_TYPE_PROCESSED, &facility_counters[FACILITY_MAX - 1]);
-    }
-  else
-    {
-      /* no need for facility/severity counters, unregister them */
-      for (i = 0; i < SEVERITY_MAX; i++)
-        {
-          g_snprintf(name, sizeof(name), "%d", i);
-          stats_unregister_counter(SCS_SEVERITY | SCS_SOURCE, NULL, name, SC_TYPE_PROCESSED, &severity_counters[i]);
-        }
-
-      for (i = 0; i < FACILITY_MAX - 1; i++)
-        {
-          g_snprintf(name, sizeof(name), "%d", i);
-          stats_unregister_counter(SCS_FACILITY | SCS_SOURCE, NULL, name, SC_TYPE_PROCESSED, &facility_counters[i]);
-        }
-      stats_unregister_counter(SCS_FACILITY | SCS_SOURCE, NULL, "other", SC_TYPE_PROCESSED, &facility_counters[FACILITY_MAX - 1]);
-    }
+  g_hash_table_foreach_remove(counter_hash, stats_format_and_prune_counter, &st);
   stats_unlock();
+
+  if (publish)
+    msg_event_send(st.stats_event);
+
+  if (st.dropped_counters > 0)
+    {
+      msg_notice("Pruning stats-counters have finished",
+                 evt_tag_int("dropped", st.dropped_counters),
+                 evt_tag_long("oldest-timestamp", (long) st.oldest_counter),
+                 NULL);
+    }
+}
+
+
+static void
+stats_timer_rearm(struct iv_timer *timer)
+{
+  gint freq = GPOINTER_TO_INT(timer->cookie);
+  if (freq > 0)
+    {
+      /* arm the timer */
+      iv_validate_now();
+      timer->expires = iv_now;
+      timespec_add_msec(&timer->expires, freq * 1000);
+      iv_timer_register(timer);
+    }
+}
+
+static void
+stats_timer_init(struct iv_timer *timer, void (*handler)(void *), gint freq)
+{
+  IV_TIMER_INIT(timer);
+  timer->handler = handler;
+  timer->cookie = GINT_TO_POINTER(freq);
+}
+
+static void
+stats_timer_kill(struct iv_timer *timer)
+{
+  if (!timer->handler)
+    return;
+  if (iv_timer_registered(timer))
+    iv_timer_unregister(timer);
+}
+
+static struct iv_timer stats_timer;
+
+
+static void
+stats_timer_elapsed(gpointer st)
+{
+  stats_publish_and_prune_counters();
+  stats_timer_rearm(&stats_timer);
+}
+
+void
+stats_timer_reinit(void)
+{
+  gint freq;
+
+  freq = stats_options->log_freq;
+  if (!freq)
+    freq = stats_options->lifetime <= 1 ? 1 : stats_options->lifetime / 2;
+
+  stats_timer_kill(&stats_timer);
+  stats_timer_init(&stats_timer, stats_timer_elapsed, freq);
+  stats_timer_rearm(&stats_timer);
+}
+
+void
+stats_reinit(StatsOptions *options)
+{
+  stats_options = options;
+  stats_counters_reinit();
+  stats_timer_reinit();
 }
 
 void
@@ -653,4 +761,12 @@ stats_destroy(void)
   g_hash_table_destroy(counter_hash);
   counter_hash = NULL;
   g_static_mutex_free(&stats_mutex);
+}
+
+void
+stats_options_defaults(StatsOptions *options)
+{
+  options->level = 0;
+  options->log_freq = 600;
+  options->lifetime = 600;
 }

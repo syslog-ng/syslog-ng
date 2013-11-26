@@ -58,6 +58,7 @@ extern struct _ValuePairs *last_value_pairs;
 extern struct _ValuePairsTransformSet *last_vp_transset;
 extern struct _LogMatcherOptions *last_matcher_options;
 extern struct _HostResolveOptions *last_host_resolve_options;
+extern struct _StatsOptions *last_stats_options;
 
 }
 
@@ -382,6 +383,7 @@ ValuePairs *last_value_pairs;
 ValuePairsTransformSet *last_vp_transset;
 LogMatcherOptions *last_matcher_options;
 HostResolveOptions *last_host_resolve_options;
+StatsOptions *last_stats_options;
 
 }
 
@@ -831,9 +833,6 @@ options_items
 
 options_item
 	: KW_MARK_FREQ '(' LL_NUMBER ')'		{ configuration->mark_freq = $3; }
-	| KW_STATS_FREQ '(' LL_NUMBER ')'          { configuration->stats_freq = $3; }
-	| KW_STATS_LEVEL '(' LL_NUMBER ')'         { configuration->stats_level = $3; }
-	| KW_STATS_LIFETIME '(' LL_NUMBER ')'      { configuration->stats_lifetime = $3; }
 	| KW_FLUSH_LINES '(' LL_NUMBER ')'		{ configuration->flush_lines = $3; }
         | KW_MARK_MODE '(' KW_INTERNAL ')'         { cfg_set_mark_mode(configuration, "internal"); }
         | KW_MARK_MODE '(' string ')'
@@ -880,6 +879,13 @@ options_item
 	| KW_RECV_TIME_ZONE '(' string ')'      { configuration->recv_time_zone = g_strdup($3); free($3); }
 	| { last_template_options = &configuration->template_options; } template_option
 	| { last_host_resolve_options = &configuration->host_resolve_options; } host_resolve_option
+	| { last_stats_options = &configuration->stats_options; } stat_option
+	;
+
+stat_option
+	: KW_STATS_FREQ '(' LL_NUMBER ')'          { last_stats_options->log_freq = $3; }
+	| KW_STATS_LEVEL '(' LL_NUMBER ')'         { last_stats_options->level = $3; }
+	| KW_STATS_LIFETIME '(' LL_NUMBER ')'      { last_stats_options->lifetime = $3; }
 	;
 
 /* START_RULES */

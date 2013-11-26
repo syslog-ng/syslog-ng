@@ -33,6 +33,7 @@
 #include "template/templates.h"
 #include "host-resolve.h"
 #include "type-hinting.h"
+#include "stats.h"
 
 #include <sys/types.h>
 #include <regex.h>
@@ -67,9 +68,7 @@ struct _GlobalConfig
   gboolean autoload_compiled_modules;
   CfgLexer *lexer;
 
-  gint stats_freq;
-  gint stats_level;
-  gint stats_lifetime;
+  StatsOptions stats_options;
   gint mark_freq;
   gint flush_lines;
   gint mark_mode;

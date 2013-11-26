@@ -26,8 +26,13 @@
 #define STATS_H_INCLUDED
 
 #include "syslog-ng.h"
-#include "cfg.h"
-#include "mainloop.h"
+
+typedef struct _StatsOptions
+{
+  gint log_freq;
+  gint level;
+  gint lifetime;
+} StatsOptions;
 
 typedef enum
 {
@@ -94,45 +99,26 @@ typedef struct _StatsCounterItem
   gint value;
 } StatsCounterItem;
 
-extern gint current_stats_level;
-extern GStaticMutex stats_mutex;
-extern gboolean stats_locked;
-
-void stats_generate_log(void);
-gchar *stats_generate_csv(void);
+void stats_lock(void);
+void stats_unlock(void);
+gboolean stats_check_level(gint level);
 void stats_register_counter(gint level, gint source, const gchar *id, const gchar *instance, StatsCounterType type, StatsCounterItem **counter);
 StatsCounter *stats_register_dynamic_counter(gint stats_level, gint source, const gchar *id, const gchar *instance, StatsCounterType type, StatsCounterItem **counter, gboolean *new);
 void stats_register_and_increment_dynamic_counter(gint stats_level, gint source_mask, const gchar *id, const gchar *instance, time_t timestamp);
 void stats_register_associated_counter(StatsCounter *handle, StatsCounterType type, StatsCounterItem **counter);
 void stats_unregister_counter(gint source, const gchar *id, const gchar *instance, StatsCounterType type, StatsCounterItem **counter);
 void stats_unregister_dynamic_counter(StatsCounter *handle, StatsCounterType type, StatsCounterItem **counter);
-void stats_prune_old_counters(time_t lifetime);
 
 void stats_counter_inc_pri(guint16 pri);
 
-void stats_reinit(GlobalConfig *cfg);
+gchar *stats_generate_csv(void);
+void stats_reinit(StatsOptions *options);
 void stats_init(void);
 void stats_destroy(void);
 
-static inline gboolean
-stats_check_level(gint level)
-{
-  return (current_stats_level >= level);
-}
+void stats_options_defaults(StatsOptions *options);
 
-static inline void
-stats_lock(void)
-{
-  g_static_mutex_lock(&stats_mutex);
-  stats_locked = TRUE;
-}
 
-static inline void
-stats_unlock(void)
-{
-  stats_locked = FALSE;
-  g_static_mutex_unlock(&stats_mutex);
-}
 
 static inline void
 stats_counter_add(StatsCounterItem *counter, gint add)
