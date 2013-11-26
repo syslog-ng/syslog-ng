@@ -26,7 +26,7 @@
 #define STATS_H_INCLUDED
 
 #include "syslog-ng.h"
-#include "stats-counter.h"
+#include "stats-cluster.h"
 
 typedef struct _StatsOptions
 {
@@ -34,17 +34,6 @@ typedef struct _StatsOptions
   gint level;
   gint lifetime;
 } StatsOptions;
-
-typedef enum
-{
-  SC_TYPE_MIN,
-  SC_TYPE_DROPPED=0, /* number of messages dropped */
-  SC_TYPE_PROCESSED, /* number of messages processed */
-  SC_TYPE_STORED,    /* number of messages on disk */
-  SC_TYPE_SUPPRESSED,/* number of messages suppressed */
-  SC_TYPE_STAMP,     /* timestamp */
-  SC_TYPE_MAX
-} StatsCounterType;
 
 enum
 {
@@ -98,27 +87,6 @@ const gchar *stats_get_direction_name(gint source);
 const gchar *stats_get_source_name(gint source);
 const gchar *stats_get_tag_name(gint type);
 const gchar *stats_get_direction_and_source_name(gint source, gchar *buf, gsize buf_len);
-
-
-/* NOTE: This struct can only be used by the stats implementation and not by client code. */
-
-/* StatsCluster encapsulates a set of related counters that are registered
- * to the same stats source.  In a lot of cases, the same stats source uses
- * multiple counters, so keeping them at the same location makes sense.
- *
- * This also improves performance for dynamic counters that relate to
- * information found in the log stream.  In that case multiple counters can
- * be registered with a single hash lookup */
-typedef struct _StatsCluster
-{
-  StatsCounterItem counters[SC_TYPE_MAX];
-  guint16 ref_cnt;
-  guint16 source;
-  gchar *id;
-  gchar *instance;
-  guint16 live_mask;
-  guint16 dynamic:1;
-} StatsCluster;
 
 typedef void (*StatsForeachCounterFunc)(StatsCluster *sc, gint type, StatsCounterItem *counter, gpointer user_data);
 typedef void (*StatsForeachClusterFunc)(StatsCluster *sc, gpointer user_data);

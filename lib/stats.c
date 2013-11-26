@@ -361,20 +361,6 @@ stats_foreach_cluster_remove(StatsForeachClusterRemoveFunc func, gpointer user_d
   g_hash_table_foreach_remove(counter_hash, _foreach_cluster_remove_helper, args);
 }
 
-void
-stats_cluster_foreach_counter(StatsCluster *self, StatsForeachCounterFunc func, gpointer user_data)
-{
-  gint type;
-
-  for (type = 0; type < SC_TYPE_MAX; type++)
-    {
-      if (self->live_mask & (1 << type))
-        {
-          func(self, type, &self->counters[type], user_data);
-        }
-    }
-}
-
 static void
 _foreach_counter_helper(StatsCluster *sc, gpointer user_data)
 {
