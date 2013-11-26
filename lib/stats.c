@@ -39,10 +39,15 @@
  * register and keep track these counters, and also to publish them to
  * external programs via a UNIX domain socket.
  *
- * Each counter has the following properties:
+ * Counters are organized into clusters, as the same syslog-ng component
+ * usually uses a set of related counters.  Each counter is typed (see
+ * SC_TYPE_XXX enums), the most common is SC_TYPE_PROCESSED, which is merely
+ * counts the number of messages being processed by a source/destination/etc.
+ *
+ * Each cluster has the following properties:
  *   * source component: enumerable type, that specifies the syslog-ng
  *     component that the given counter belongs to, examples:
- *       source.file, destination.file, center, source.socket, etc.
+ *       src.file, dst.file, center, src.socket, etc.
  *
  *   * id: the unique identifier of the syslog-ng configuration item that
  *     this counter belongs to. Named configuration elements (source,
@@ -65,12 +70,12 @@
  *
  * Threading
  *
- * Once registered, changing the counters is thread safe (but see the
- * note on set/get), inc/dec is generally safe. To register counters,
- * the stats code must run in the main thread (assuming init/deinit is
- * running) or the stats lock must be acquired using stats_lock() and
- * stats_unlock(). This API is used to allow batching multiple stats
- * operations under the protection of the same lock acquiral.
+ * Registration and unregistration must be protected expicitly by invoking
+ * stats_lock()/unlock().  Once registered, counters can be manipulated
+ * without acquiring stats_lock().
+ *
+ * Counters are updated atomically by the use of the stats_counter_inc/dec()
+ * methods.
  */
 
 StatsOptions *stats_options;
