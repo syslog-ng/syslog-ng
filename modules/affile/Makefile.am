@@ -33,3 +33,5 @@ modules_affile_libaffile_la_DEPENDENCIES= $(MODULE_DEPS_LIBS)
 
 modules/affile modules/affile/ mod-affile mod-file: modules/affile/libaffile.la
 .PHONY: modules/affile/ mod-affile mod-file
+
+include modules/affile/tests/Makefile.am
