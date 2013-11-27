@@ -27,7 +27,7 @@ modules_afmongodb_libafmongodb_la_SOURCES	=	\
 	modules/afmongodb/afmongodb-parser.h		\
 	${DUMMY_C}
 modules_afmongodb_libafmongodb_la_LIBADD	=	\
-	$(MODULE_DEPS_LIBS) $(LIBMONGO_LIBS)
+	$(MODULE_DEPS_LIBS) $(CRYPTO_LIBS) $(LIBMONGO_LIBS)
 modules_afmongodb_libafmongodb_la_LDFLAGS	=	\
 	$(MODULE_LDFLAGS)
 modules_afmongodb_libafmongodb_la_DEPENDENCIES	=	\
