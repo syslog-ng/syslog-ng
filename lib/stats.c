@@ -466,39 +466,26 @@ stats_get_direction_and_source_name(gint source, gchar *buf, gsize buf_len)
 }
 
 static void
-stats_format_log_counter(StatsCluster *sc, EVTREC *e)
+stats_log_format_counter(StatsCluster *sc, gint type, StatsCounterItem *item, gpointer user_data)
 {
-  StatsCounterType type;
+  EVTREC *e = (EVTREC *) user_data;
+  EVTTAG *tag;
+  gchar buf[32];
 
-  for (type = 0; type < SC_TYPE_MAX; type++)
-    {
-      EVTTAG *tag;
+  tag = evt_tag_printf(stats_get_tag_name(type), "%s(%s%s%s)=%u", 
+                       stats_get_direction_and_source_name(sc->source, buf, sizeof(buf)),
+                       sc->id,
+                       (sc->id[0] && sc->instance[0]) ? "," : "",
+                       sc->instance,
+                       stats_counter_get(&sc->counters[type]));
+  evt_rec_add_tag(e, tag);
+}
 
-      if (sc->live_mask & (1 << type))
-        {
-          const gchar *source_name;
-          if ((sc->source & SCS_SOURCE_MASK) == SCS_GROUP)
-            {
-              if (sc->source & SCS_SOURCE)
-                source_name = "source";
-              else if (sc->source & SCS_DESTINATION)
-                source_name = "destination";
-              else
-                g_assert_not_reached();
-              tag = evt_tag_printf(tag_names[type], "%s(%s%s%s)=%u", source_name, sc->id, (sc->id[0] && sc->instance[0]) ? "," : "", sc->instance, stats_counter_get(&sc->counters[type]));
-            }
-          else
-            {
-              tag = evt_tag_printf(tag_names[type], "%s%s(%s%s%s)=%u", 
-                                   (sc->source & SCS_SOURCE ? "src." : (sc->source & SCS_DESTINATION ? "dst." : "")),
-                                   source_names[sc->source & SCS_SOURCE_MASK],
-                                   sc->id, (sc->id[0] && sc->instance[0]) ? "," : "", sc->instance,
-                                   stats_counter_get(&sc->counters[type]));
-            }
-          evt_rec_add_tag(e, tag);
-        }
-    }
 
+static void
+stats_log_format_cluster(StatsCluster *sc, EVTREC *e)
+{
+  stats_cluster_foreach_counter(sc, stats_log_format_counter, e);
 }
 
 static gboolean
@@ -549,13 +536,11 @@ stats_prune_counter(StatsCluster *sc, StatsTimerState *st)
 }
 
 static gboolean
-stats_format_and_prune_counter(gpointer key, gpointer value, gpointer user_data)
+stats_format_and_prune_cluster(StatsCluster *sc, gpointer user_data)
 {
-  StatsCluster *sc = (StatsCluster *) value;
   StatsTimerState *st = (StatsTimerState *) user_data;
 
-  stats_format_log_counter(sc, st->stats_event);
-
+  stats_log_format_cluster(sc, st->stats_event);
   return stats_prune_counter(sc, st);
 }
 
@@ -574,7 +559,7 @@ stats_publish_and_prune_counters(void)
     st.stats_event = msg_event_create(EVT_PRI_INFO, "Log statistics", NULL);
 
   stats_lock();
-  g_hash_table_foreach_remove(counter_hash, stats_format_and_prune_counter, &st);
+  stats_foreach_cluster_remove(stats_format_and_prune_cluster, &st);
   stats_unlock();
 
   if (publish)
