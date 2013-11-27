@@ -1,3 +1,51 @@
+3.4.6
+        Wed, 27 Nov 2013 16:21:47 +0100
+
+        This is the fifth bug-fix release for the 3.4.x series, with a
+        number of significant fixes over the 3.4.5 release. Upgrading
+        to this release is highly recommended.
+
+        Bugfixes
+        ========
+
+        * The system() source has been fixed on Solaris and HP-UX: it
+          correctly recognises the system on Solaris, and uses
+          /dev/log (and not /dev/pipe) on HP-UX.
+
+        * The sun-streams() source has been fixed, it compiles and
+          works again.
+
+        * A very rare and short race condition has been fixed in the
+          pipe() source and destination modules, which could leave the
+          pipe available with elevated permissions for a short time.
+
+        * The SQL, MongoDB and SMTP modules were fixed to not cause a
+          segmentation fault when loaded before the socket module.
+
+        * The syslog-format() module has been fixed to only set the
+          PROGRAM to "kernel" if all of the previous conditions apply,
+          and the message is a local message.
+
+        Credits:
+        ========
+
+        syslog-ng is developed as a community project, and as such it relies
+        on volunteers to do the work necessarily to produce syslog-ng.
+
+        Reporting bugs, testing changes, writing code or simply providing
+        feedback are all important contributions, so please if you are a
+        user of syslog-ng, contribute.
+
+        These people have helped in this release:
+
+        Alexandre Lecuyer
+        Balazs Scheidler <bazsi@balabit.hu>
+        Gergely Nagy <algernon@balabit.hu>
+        Imre Lazar <imre@balabit.hu>
+        Laszlo Budai <lbudai@balabit.hu>
+        Matyas Koszik <koszik@atw.hu>
+        Oscar Muñoz
+
 3.4.5
         Mon,  4 Nov 2013 08:54:50 +0100
 
