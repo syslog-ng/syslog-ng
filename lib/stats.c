@@ -87,67 +87,66 @@ stats_check_level(gint level)
     return level == 0;
 }
 
-const gchar *tag_names[SC_TYPE_MAX] =
-{
-  /* [SC_TYPE_DROPPED]   = */ "dropped",
-  /* [SC_TYPE_PROCESSED] = */ "processed",
-  /* [SC_TYPE_STORED]   = */  "stored",
-  /* [SC_TYPE_SUPPRESSED] = */ "suppressed",
-  /* [SC_TYPE_STAMP] = */ "stamp",
-};
-
-const gchar *source_names[SCS_MAX] =
-{
-  "none",
-  "file",
-  "pipe",
-  "tcp",
-  "udp",
-  "tcp6",
-  "udp6",
-  "unix-stream",
-  "unix-dgram",
-  "syslog",
-  "network",
-  "internal",
-  "logstore",
-  "program",
-  "sql",
-  "sun-streams",
-  "usertty",
-  "group",
-  "center",
-  "host",
-  "global",
-  "mongodb",
-  "class",
-  "rule_id",
-  "tag",
-  "severity",
-  "facility",
-  "sender",
-  "smtp",
-  "amqp",
-  "stomp",
-  "redis",
-  "snmp",
-};
-
-const gchar *
+static const gchar *
 stats_get_direction_name(gint source)
 {
   return (source & SCS_SOURCE ? "src." : (source & SCS_DESTINATION ? "dst." : ""));
 }
 
-const gchar *
+static const gchar *
 stats_get_source_name(gint source)
 {
+  static const gchar *source_names[SCS_MAX] =
+  {
+    "none",
+    "file",
+    "pipe",
+    "tcp",
+    "udp",
+    "tcp6",
+    "udp6",
+    "unix-stream",
+    "unix-dgram",
+    "syslog",
+    "network",
+    "internal",
+    "logstore",
+    "program",
+    "sql",
+    "sun-streams",
+    "usertty",
+    "group",
+    "center",
+    "host",
+    "global",
+    "mongodb",
+    "class",
+    "rule_id",
+    "tag",
+    "severity",
+    "facility",
+    "sender",
+    "smtp",
+    "amqp",
+    "stomp",
+    "redis",
+    "snmp",
+  };
   return source_names[source & SCS_SOURCE_MASK];
 }
 
 const gchar *
 stats_get_tag_name(gint type)
 {
+  static const gchar *tag_names[SC_TYPE_MAX] =
+  {
+    /* [SC_TYPE_DROPPED]   = */ "dropped",
+    /* [SC_TYPE_PROCESSED] = */ "processed",
+    /* [SC_TYPE_STORED]   = */  "stored",
+    /* [SC_TYPE_SUPPRESSED] = */ "suppressed",
+    /* [SC_TYPE_STAMP] = */ "stamp",
+  };
+
   return tag_names[type];
 }
 
