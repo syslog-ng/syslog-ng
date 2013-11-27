@@ -173,6 +173,8 @@ struct _LogMessage
   guint8 cur_node;
   guint8 protect_cnt;
 
+  guint64 rcptid;
+
   /* preallocated LogQueueNodes used to insert this message into a LogQueue */
   LogMessageQueueNode nodes[0];
 

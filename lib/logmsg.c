@@ -33,6 +33,7 @@
 #include "template/templates.h"
 #include "tls-support.h"
 #include "compat/string.h"
+#include "rcptid.h"
 
 #include <sys/types.h>
 #include <time.h>
@@ -986,6 +987,8 @@ log_msg_init(LogMessage *self, GSockAddr *saddr)
 
   self->original = NULL;
   self->flags |= LF_STATE_OWN_MASK;
+
+  self->rcptid = rcptid_generate_id();
 }
 
 void
