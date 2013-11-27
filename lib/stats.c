@@ -331,7 +331,6 @@ stats_unregister_dynamic_counter(StatsCluster *sc, StatsCounterType type, StatsC
   sc->ref_cnt--;
 }
 
-
 void
 stats_counter_inc_pri(guint16 pri)
 {
@@ -345,6 +344,78 @@ stats_counter_inc_pri(guint16 pri)
     }
   stats_counter_inc(facility_counters[lpri]);
 }
+
+static void
+_foreach_cluster_helper(gpointer key, gpointer value, gpointer user_data)
+{
+  gpointer *args = (gpointer *) user_data;
+  StatsForeachClusterFunc func = args[0];
+  gpointer func_data = args[1];
+  StatsCluster *sc = (StatsCluster *) value;
+  
+  func(sc, func_data);
+;}
+
+void
+stats_foreach_cluster(StatsForeachClusterFunc func, gpointer user_data)
+{
+  gpointer args[] = { func, user_data };
+
+  g_assert(stats_locked);
+  g_hash_table_foreach(counter_hash, _foreach_cluster_helper, args);
+}
+
+static gboolean
+_foreach_cluster_remove_helper(gpointer key, gpointer value, gpointer user_data)
+{
+  gpointer *args = (gpointer *) user_data;
+  StatsForeachClusterRemoveFunc func = args[0];
+  gpointer func_data = args[1];
+  StatsCluster *sc = (StatsCluster *) value;
+  
+  return func(sc, func_data);
+}
+
+void
+stats_foreach_cluster_remove(StatsForeachClusterRemoveFunc func, gpointer user_data)
+{
+  gpointer args[] = { func, user_data };
+  g_hash_table_foreach_remove(counter_hash, _foreach_cluster_remove_helper, args);
+}
+
+void
+stats_cluster_foreach_counter(StatsCluster *self, StatsForeachCounterFunc func, gpointer user_data)
+{
+  gint type;
+
+  for (type = 0; type < SC_TYPE_MAX; type++)
+    {
+      if (self->live_mask & (1 << type))
+        {
+          func(self, type, &self->counters[type], user_data);
+        }
+    }
+}
+
+static void
+_foreach_counter_helper(StatsCluster *sc, gpointer user_data)
+{
+  gpointer *args = (gpointer *) user_data;
+  StatsForeachCounterFunc func = args[0];
+  gpointer func_data = args[1];
+  
+  stats_cluster_foreach_counter(sc, func, func_data);
+}
+
+void
+stats_foreach_counter(StatsForeachCounterFunc func, gpointer user_data)
+{
+  gpointer args[] = { func, user_data };
+
+  g_assert(stats_locked);
+  stats_foreach_cluster(_foreach_counter_helper, args);
+}
+
 
 static void
 stats_counters_reinit(void)

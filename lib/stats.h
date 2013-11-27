@@ -123,6 +123,9 @@ typedef struct _StatsCluster
   guint16 dynamic:1;
 } StatsCluster;
 
+typedef void (*StatsForeachCounterFunc)(StatsCluster *sc, gint type, StatsCounterItem *counter, gpointer user_data);
+typedef void (*StatsForeachClusterFunc)(StatsCluster *sc, gpointer user_data);
+typedef gboolean (*StatsForeachClusterRemoveFunc)(StatsCluster *sc, gpointer user_data);
 
 void stats_lock(void);
 void stats_unlock(void);
@@ -133,6 +136,9 @@ void stats_register_and_increment_dynamic_counter(gint stats_level, gint source_
 void stats_register_associated_counter(StatsCluster *handle, StatsCounterType type, StatsCounterItem **counter);
 void stats_unregister_counter(gint source, const gchar *id, const gchar *instance, StatsCounterType type, StatsCounterItem **counter);
 void stats_unregister_dynamic_counter(StatsCluster *handle, StatsCounterType type, StatsCounterItem **counter);
+void stats_foreach_counter(StatsForeachCounterFunc func, gpointer user_data);
+void stats_foreach_cluster(StatsForeachClusterFunc func, gpointer user_data);
+void stats_foreach_cluster_remove(StatsForeachClusterRemoveFunc func, gpointer user_data);
 
 void stats_counter_inc_pri(guint16 pri);
 
