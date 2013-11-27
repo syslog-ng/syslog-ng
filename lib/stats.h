@@ -93,14 +93,21 @@ enum
   SCS_SOURCE_MASK    = 0xff
 };
 
-typedef struct _StatsCounter StatsCounter;
 typedef struct _StatsCounterItem
 {
   gint value;
 } StatsCounterItem;
 
-/* This struct can only be used by the stats implementation and not by client code. */
-struct _StatsCounter
+/* NOTE: This struct can only be used by the stats implementation and not by client code. */
+
+/* StatsCluster encapsulates a set of related counters that are registered
+ * to the same stats source.  In a lot of cases, the same stats source uses
+ * multiple counters, so keeping them at the same location makes sense.
+ *
+ * This also improves performance for dynamic counters that relate to
+ * information found in the log stream.  In that case multiple counters can
+ * be registered with a single hash lookup */
+typedef struct _StatsCluster
 {
   StatsCounterItem counters[SC_TYPE_MAX];
   guint16 ref_cnt;
@@ -109,18 +116,18 @@ struct _StatsCounter
   gchar *instance;
   guint16 live_mask;
   guint16 dynamic:1;
-};
+} StatsCluster;
 
 
 void stats_lock(void);
 void stats_unlock(void);
 gboolean stats_check_level(gint level);
 void stats_register_counter(gint level, gint source, const gchar *id, const gchar *instance, StatsCounterType type, StatsCounterItem **counter);
-StatsCounter *stats_register_dynamic_counter(gint stats_level, gint source, const gchar *id, const gchar *instance, StatsCounterType type, StatsCounterItem **counter, gboolean *new);
+StatsCluster *stats_register_dynamic_counter(gint stats_level, gint source, const gchar *id, const gchar *instance, StatsCounterType type, StatsCounterItem **counter, gboolean *new);
 void stats_register_and_increment_dynamic_counter(gint stats_level, gint source_mask, const gchar *id, const gchar *instance, time_t timestamp);
-void stats_register_associated_counter(StatsCounter *handle, StatsCounterType type, StatsCounterItem **counter);
+void stats_register_associated_counter(StatsCluster *handle, StatsCounterType type, StatsCounterItem **counter);
 void stats_unregister_counter(gint source, const gchar *id, const gchar *instance, StatsCounterType type, StatsCounterItem **counter);
-void stats_unregister_dynamic_counter(StatsCounter *handle, StatsCounterType type, StatsCounterItem **counter);
+void stats_unregister_dynamic_counter(StatsCluster *handle, StatsCounterType type, StatsCounterItem **counter);
 
 void stats_counter_inc_pri(guint16 pri);
 

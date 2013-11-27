@@ -92,8 +92,8 @@ gboolean stats_locked;
 static gboolean
 stats_counter_equal(gconstpointer p1, gconstpointer p2)
 {
-  const StatsCounter *sc1 = (StatsCounter *) p1;
-  const StatsCounter *sc2 = (StatsCounter *) p2;
+  const StatsCluster *sc1 = (StatsCluster *) p1;
+  const StatsCluster *sc2 = (StatsCluster *) p2;
   
   return sc1->source == sc2->source && strcmp(sc1->id, sc2->id) == 0 && strcmp(sc1->instance, sc2->instance) == 0;
 }
@@ -101,7 +101,7 @@ stats_counter_equal(gconstpointer p1, gconstpointer p2)
 static guint
 stats_counter_hash(gconstpointer p)
 {
-  const StatsCounter *sc = (StatsCounter *) p;
+  const StatsCluster *sc = (StatsCluster *) p;
   
   return g_str_hash(sc->id) + g_str_hash(sc->instance) + sc->source;
 }
@@ -109,7 +109,7 @@ stats_counter_hash(gconstpointer p)
 static void
 stats_counter_free(gpointer p)
 { 
-  StatsCounter *sc = (StatsCounter *) p;
+  StatsCluster *sc = (StatsCluster *) p;
   
   g_free(sc->id);
   g_free(sc->instance);
@@ -139,11 +139,11 @@ stats_unlock(void)
   g_static_mutex_unlock(&stats_mutex);
 }
 
-static StatsCounter *
+static StatsCluster *
 stats_add_counter(gint stats_level, gint source, const gchar *id, const gchar *instance, gboolean *new)
 {
-  StatsCounter key;
-  StatsCounter *sc;
+  StatsCluster key;
+  StatsCluster *sc;
 
   if (!stats_check_level(stats_level))
     return NULL;
@@ -160,8 +160,8 @@ stats_add_counter(gint stats_level, gint source, const gchar *id, const gchar *i
   sc = g_hash_table_lookup(counter_hash, &key);
   if (!sc)
     {
-      /* no such StatsCounter instance, register one */
-      sc = g_new0(StatsCounter, 1);
+      /* no such StatsCluster instance, register one */
+      sc = g_new0(StatsCluster, 1);
       
       sc->source = source;
       sc->id = g_strdup(id);
@@ -203,7 +203,7 @@ stats_add_counter(gint stats_level, gint source, const gchar *id, const gchar *i
 void
 stats_register_counter(gint stats_level, gint source, const gchar *id, const gchar *instance, StatsCounterType type, StatsCounterItem **counter)
 {
-  StatsCounter *sc;
+  StatsCluster *sc;
   gboolean new;
 
   g_assert(stats_locked);
@@ -218,10 +218,10 @@ stats_register_counter(gint stats_level, gint source, const gchar *id, const gch
   sc->live_mask |= 1 << type;
 }
 
-StatsCounter *
+StatsCluster *
 stats_register_dynamic_counter(gint stats_level, gint source, const gchar *id, const gchar *instance, StatsCounterType type, StatsCounterItem **counter, gboolean *new)
 {
-  StatsCounter *sc;
+  StatsCluster *sc;
   gboolean local_new;
 
   g_assert(stats_locked);
@@ -255,7 +255,7 @@ stats_register_and_increment_dynamic_counter(gint stats_level, gint source_mask,
 {
   StatsCounterItem *counter, *stamp;
   gboolean new;
-  StatsCounter *handle;
+  StatsCluster *handle;
 
   g_assert(stats_locked);
   handle = stats_register_dynamic_counter(stats_level, source_mask, id, instance, SC_TYPE_PROCESSED, &counter, &new);
@@ -272,14 +272,14 @@ stats_register_and_increment_dynamic_counter(gint stats_level, gint source_mask,
 /**
  * stats_register_associated_counter:
  * @sc: the dynamic counter that was registered with stats_register_dynamic_counter
- * @type: the type that we want to use in the same StatsCounter instance
+ * @type: the type that we want to use in the same StatsCluster instance
  * @counter: the returned pointer to the counter itself
  *
  * This function registers another counter type in the same StatsCounter
  * instance in order to avoid an unnecessary lookup.
  **/
 void
-stats_register_associated_counter(StatsCounter *sc, StatsCounterType type, StatsCounterItem **counter)
+stats_register_associated_counter(StatsCluster *sc, StatsCounterType type, StatsCounterItem **counter)
 {
   g_assert(stats_locked);
 
@@ -296,8 +296,8 @@ stats_register_associated_counter(StatsCounter *sc, StatsCounterType type, Stats
 void
 stats_unregister_counter(gint source, const gchar *id, const gchar *instance, StatsCounterType type, StatsCounterItem **counter)
 {
-  StatsCounter *sc;
-  StatsCounter key;
+  StatsCluster *sc;
+  StatsCluster key;
   
   g_assert(stats_locked);
 
@@ -322,7 +322,7 @@ stats_unregister_counter(gint source, const gchar *id, const gchar *instance, St
 }
 
 void
-stats_unregister_dynamic_counter(StatsCounter *sc, StatsCounterType type, StatsCounterItem **counter)
+stats_unregister_dynamic_counter(StatsCluster *sc, StatsCounterType type, StatsCounterItem **counter)
 {
   g_assert(stats_locked);
   if (!sc)
@@ -436,7 +436,7 @@ const gchar *source_names[SCS_MAX] =
 
 
 static void
-stats_format_log_counter(StatsCounter *sc, EVTREC *e)
+stats_format_log_counter(StatsCluster *sc, EVTREC *e)
 {
   StatsCounterType type;
 
@@ -472,7 +472,7 @@ stats_format_log_counter(StatsCounter *sc, EVTREC *e)
 }
 
 static gboolean
-stats_counter_is_expired(StatsCounter *sc, time_t now)
+stats_counter_is_expired(StatsCluster *sc, time_t now)
 {
   time_t tstamp;
 
@@ -549,7 +549,7 @@ static void
 stats_format_csv(gpointer key, gpointer value, gpointer user_data)
 {
   GString *csv = (GString *) user_data;
-  StatsCounter *sc = (StatsCounter *) value;
+  StatsCluster *sc = (StatsCluster *) value;
   StatsCounterType type;
   gchar *s_id, *s_instance, *tag_name;
   gchar buf[32];
@@ -617,7 +617,7 @@ typedef struct _StatsTimerState
 } StatsTimerState;
 
 static gboolean
-stats_prune_counter(StatsCounter *sc, StatsTimerState *st)
+stats_prune_counter(StatsCluster *sc, StatsTimerState *st)
 {
   gboolean expired;
 
@@ -635,7 +635,7 @@ stats_prune_counter(StatsCounter *sc, StatsTimerState *st)
 static gboolean
 stats_format_and_prune_counter(gpointer key, gpointer value, gpointer user_data)
 {
-  StatsCounter *sc = (StatsCounter *) value;
+  StatsCluster *sc = (StatsCluster *) value;
   StatsTimerState *st = (StatsTimerState *) user_data;
 
   stats_format_log_counter(sc, st->stats_event);
