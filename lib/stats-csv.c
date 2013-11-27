@@ -84,7 +84,6 @@ stats_format_csv(StatsCluster *sc, gint type, StatsCounterItem *counter, gpointe
   GString *csv = (GString *) user_data;
   gchar *s_id, *s_instance, *tag_name;
   gchar buf[32];
-  const gchar *source_name;
   gchar state;
 
   s_id = stats_format_csv_escapevar(sc->id);
@@ -96,24 +95,11 @@ stats_format_csv(StatsCluster *sc, gint type, StatsCounterItem *counter, gpointe
     state = 'o';
   else
     state = 'a';
-  if ((sc->source & SCS_SOURCE_MASK) == SCS_GROUP)
-    {
-      if (sc->source & SCS_SOURCE)
-        source_name = "source";
-      else if (sc->source & SCS_DESTINATION)
-        source_name = "destination";
-      else
-        g_assert_not_reached();
-    }
-  else
-    {
-      source_name = buf;
-      g_snprintf(buf, sizeof(buf), "%s%s", 
-                 stats_get_direction_name(sc->source),
-                 stats_get_source_name(sc->source));
-    }
+
   tag_name = stats_format_csv_escapevar(stats_get_tag_name(type));
-  g_string_append_printf(csv, "%s;%s;%s;%c;%s;%u\n", source_name, s_id, s_instance, state, tag_name, stats_counter_get(&sc->counters[type]));
+  g_string_append_printf(csv, "%s;%s;%s;%c;%s;%u\n",
+                         stats_get_direction_and_source_name(sc->source, buf, sizeof(buf)),
+                         s_id, s_instance, state, tag_name, stats_counter_get(&sc->counters[type]));
   g_free(tag_name);
   g_free(s_id);
   g_free(s_instance);
