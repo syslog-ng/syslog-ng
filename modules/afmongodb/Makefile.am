@@ -11,7 +11,7 @@ module_LTLIBRARIES = libafmongodb.la
 
 libafmongodb_la_CFLAGS = $(LIBMONGO_CFLAGS)
 libafmongodb_la_SOURCES = afmongodb-grammar.y afmongodb.c afmongodb.h afmongodb-parser.c afmongodb-parser.h
-libafmongodb_la_LIBADD = $(MODULE_DEPS_LIBS) $(LIBMONGO_LIBS)
+libafmongodb_la_LIBADD = $(MODULE_DEPS_LIBS) $(CRYPTO_LIBS) $(LIBMONGO_LIBS)
 libafmongodb_la_LDFLAGS = $(MODULE_LDFLAGS)
 
 endif

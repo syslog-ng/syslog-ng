@@ -10,7 +10,7 @@ libafsql_la_SOURCES = \
 	afsql-grammar.y afsql-parser.c afsql-parser.h afsql-plugin.c
 
 libafsql_la_CPPFLAGS = $(AM_CPPFLAGS) -DENABLE_SQL=1
-libafsql_la_LIBADD = $(MODULE_DEPS_LIBS) $(LIBDBI_LIBS) $(OPENSSL_LIBS)
+libafsql_la_LIBADD = $(MODULE_DEPS_LIBS) $(CRYPTO_LIBS) $(LIBDBI_LIBS) $(OPENSSL_LIBS)
 libafsql_la_LDFLAGS = $(MODULE_LDFLAGS)
 
 endif
