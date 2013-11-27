@@ -51,6 +51,21 @@ MsgFormatOptions parse_options;
      } \
   } while (0)
 
+
+char tag_larger_than_256[257];
+
+void
+set_tag_larger_than_256()
+{
+  int i;
+
+  for (i = 0; i < 257; i++)
+    {
+      tag_larger_than_256[i] = 'a';
+    }
+  tag_larger_than_256[256] = '\0';
+};
+
 int
 main(int argc, char **argv)
 {
@@ -61,6 +76,7 @@ main(int argc, char **argv)
 
   const gchar *msg_template = "<5> localhost test: test message template";
 
+  set_tag_larger_than_256();
   app_startup();
 
   configuration = cfg_new(0x0302);
@@ -77,6 +93,7 @@ main(int argc, char **argv)
   log_msg_set_tag_by_name(msg, "a");
   log_msg_set_tag_by_name(msg, "b");
   log_msg_set_tag_by_name(msg, "c");
+  log_msg_set_tag_by_name(msg, tag_larger_than_256);
 
   /* Loop is required because in this case the tags are represented on
      multiple integers within message 'msg' */
@@ -91,7 +108,7 @@ main(int argc, char **argv)
   TEST_ASSERT(log_msg_is_tag_by_name(msg, "bb") == FALSE);
 
   /* Serialize */
-  serialized = g_string_sized_new(1024);
+  serialized = g_string_sized_new(2048);
   sa = serialize_string_archive_new(serialized);
 
   log_msg_serialize(msg, sa);
@@ -126,6 +143,8 @@ main(int argc, char **argv)
   TEST_ASSERT(log_msg_is_tag_by_name(read_msg, "d") == TRUE);
   TEST_ASSERT(log_msg_is_tag_by_name(read_msg, "e") == FALSE);
   TEST_ASSERT(log_msg_is_tag_by_name(read_msg, "f") == FALSE);
+  TEST_ASSERT(log_msg_is_tag_by_name(read_msg, tag_larger_than_256) == TRUE);
+
 
   /* A new tag, newly defined */
   TEST_ASSERT(log_msg_is_tag_by_name(read_msg, "g") == FALSE);

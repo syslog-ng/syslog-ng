@@ -277,20 +277,31 @@ static gboolean
 _deserialize_tags(LogMessage *self, SerializeArchive *sa)
 {
   gchar *buf;
-  gsize len;
+  gchar preallocated_buffer[256];
+  guint32 tag_length;
 
   while (1)
     {
-      if (!serialize_read_cstring(sa, &buf, &len) || !buf)
+      if (!serialize_read_uint32(sa, &tag_length))
         return FALSE;
-      if (!buf[0])
+      if (tag_length == 0)
+        break;
+      if (G_LIKELY(tag_length < 256))
         {
-          /* "" , empty string means: last tag */
-          g_free(buf);
-          break;
+          if (!serialize_read_blob(sa, preallocated_buffer, tag_length))
+            return FALSE;
+          preallocated_buffer[tag_length] = '\0';
+          log_msg_set_tag_by_name(self, preallocated_buffer);
         }
-      log_msg_set_tag_by_name(self, buf);
-      g_free(buf);
+      else
+        {
+          buf = g_try_malloc(tag_length + 1);
+          if (!serialize_read_blob(sa, buf, tag_length))
+            return FALSE;
+          buf[tag_length] = '\0';
+          log_msg_set_tag_by_name(self, buf);
+          g_free(buf);
+        }
     }
 
   self->flags |= LF_STATE_OWN_TAGS;
