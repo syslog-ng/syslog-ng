@@ -71,7 +71,7 @@ stats_unlock(void)
 }
 
 static StatsCluster *
-stats_add_counter(gint stats_level, gint component, const gchar *id, const gchar *instance, gboolean *new)
+stats_add_counter(gint stats_level, gint component, const gchar *id, const gchar *instance)
 {
   StatsCluster key;
   StatsCluster *sc;
@@ -94,16 +94,9 @@ stats_add_counter(gint stats_level, gint component, const gchar *id, const gchar
       /* no such StatsCluster instance, register one */
       sc = stats_cluster_new(component, id, instance);
       g_hash_table_insert(counter_hash, sc, sc);
-      *new = TRUE;
     }
   else
     {
-      if (sc->ref_cnt == 0)
-        /* it just haven't been cleaned up */
-        *new = TRUE;
-      else
-        *new = FALSE;
-
       sc->ref_cnt++;
     }
 
@@ -130,13 +123,12 @@ void
 stats_register_counter(gint stats_level, gint component, const gchar *id, const gchar *instance, StatsCounterType type, StatsCounterItem **counter)
 {
   StatsCluster *sc;
-  gboolean new;
 
   g_assert(stats_locked);
   g_assert(type < SC_TYPE_MAX);
   
   *counter = NULL;
-  sc = stats_add_counter(stats_level, component, id, instance, &new);
+  sc = stats_add_counter(stats_level, component, id, instance);
   if (!sc)
     return;
 
@@ -145,24 +137,17 @@ stats_register_counter(gint stats_level, gint component, const gchar *id, const 
 }
 
 StatsCluster *
-stats_register_dynamic_counter(gint stats_level, gint component, const gchar *id, const gchar *instance, StatsCounterType type, StatsCounterItem **counter, gboolean *new)
+stats_register_dynamic_counter(gint stats_level, gint component, const gchar *id, const gchar *instance, StatsCounterType type, StatsCounterItem **counter)
 {
   StatsCluster *sc;
-  gboolean local_new;
 
   g_assert(stats_locked);
   g_assert(type < SC_TYPE_MAX);
   
   *counter = NULL;
-  *new = FALSE;
-  sc = stats_add_counter(stats_level, component, id, instance, &local_new);
-  if (new)
-    *new = local_new;
+  sc = stats_add_counter(stats_level, component, id, instance);
   if (!sc)
     return NULL;
-
-  if (!local_new && !sc->dynamic)
-    g_assert_not_reached();
 
   sc->dynamic = TRUE;
   *counter = &sc->counters[type];
@@ -180,11 +165,10 @@ void
 stats_register_and_increment_dynamic_counter(gint stats_level, gint component, const gchar *id, const gchar *instance, time_t timestamp)
 {
   StatsCounterItem *counter, *stamp;
-  gboolean new;
   StatsCluster *handle;
 
   g_assert(stats_locked);
-  handle = stats_register_dynamic_counter(stats_level, component, id, instance, SC_TYPE_PROCESSED, &counter, &new);
+  handle = stats_register_dynamic_counter(stats_level, component, id, instance, SC_TYPE_PROCESSED, &counter);
   stats_counter_inc(counter);
   if (timestamp >= 0)
     {
