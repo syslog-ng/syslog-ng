@@ -123,3 +123,15 @@ stats_cluster_get_component_name(StatsCluster *self, gchar *buf, gsize buf_len)
       return buf;
     }
 }
+
+StatsCluster *
+stats_cluster_new(gint component, const gchar *id, const gchar *instance)
+{
+  StatsCluster *self = g_new0(StatsCluster, 1);
+      
+  self->component = component;
+  self->id = g_strdup(id);
+  self->instance = g_strdup(instance);
+  self->ref_cnt = 1;
+  return self;
+}

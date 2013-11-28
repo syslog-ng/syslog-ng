@@ -92,12 +92,7 @@ stats_add_counter(gint stats_level, gint component, const gchar *id, const gchar
   if (!sc)
     {
       /* no such StatsCluster instance, register one */
-      sc = g_new0(StatsCluster, 1);
-      
-      sc->component = component;
-      sc->id = g_strdup(id);
-      sc->instance = g_strdup(instance);
-      sc->ref_cnt = 1;
+      sc = stats_cluster_new(component, id, instance);
       g_hash_table_insert(counter_hash, sc, sc);
       *new = TRUE;
     }
