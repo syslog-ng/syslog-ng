@@ -33,11 +33,11 @@ typedef gboolean (*StatsForeachClusterRemoveFunc)(StatsCluster *sc, gpointer use
 void stats_lock(void);
 void stats_unlock(void);
 gboolean stats_check_level(gint level);
-void stats_register_counter(gint level, gint source, const gchar *id, const gchar *instance, StatsCounterType type, StatsCounterItem **counter);
-StatsCluster *stats_register_dynamic_counter(gint stats_level, gint source, const gchar *id, const gchar *instance, StatsCounterType type, StatsCounterItem **counter, gboolean *new);
-void stats_register_and_increment_dynamic_counter(gint stats_level, gint source_mask, const gchar *id, const gchar *instance, time_t timestamp);
+void stats_register_counter(gint level, gint component, const gchar *id, const gchar *instance, StatsCounterType type, StatsCounterItem **counter);
+StatsCluster *stats_register_dynamic_counter(gint stats_level, gint component, const gchar *id, const gchar *instance, StatsCounterType type, StatsCounterItem **counter, gboolean *new);
+void stats_register_and_increment_dynamic_counter(gint stats_level, gint component, const gchar *id, const gchar *instance, time_t timestamp);
 void stats_register_associated_counter(StatsCluster *handle, StatsCounterType type, StatsCounterItem **counter);
-void stats_unregister_counter(gint source, const gchar *id, const gchar *instance, StatsCounterType type, StatsCounterItem **counter);
+void stats_unregister_counter(gint component, const gchar *id, const gchar *instance, StatsCounterType type, StatsCounterItem **counter);
 void stats_unregister_dynamic_counter(StatsCluster *handle, StatsCounterType type, StatsCounterItem **counter);
 
 void stats_foreach_counter(StatsForeachCounterFunc func, gpointer user_data);

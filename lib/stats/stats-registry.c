@@ -35,7 +35,7 @@ stats_counter_equal(gconstpointer p1, gconstpointer p2)
   const StatsCluster *sc1 = (StatsCluster *) p1;
   const StatsCluster *sc2 = (StatsCluster *) p2;
   
-  return sc1->source == sc2->source && strcmp(sc1->id, sc2->id) == 0 && strcmp(sc1->instance, sc2->instance) == 0;
+  return sc1->component == sc2->component && strcmp(sc1->id, sc2->id) == 0 && strcmp(sc1->instance, sc2->instance) == 0;
 }
 
 static guint
@@ -43,7 +43,7 @@ stats_counter_hash(gconstpointer p)
 {
   const StatsCluster *sc = (StatsCluster *) p;
   
-  return g_str_hash(sc->id) + g_str_hash(sc->instance) + sc->source;
+  return g_str_hash(sc->id) + g_str_hash(sc->instance) + sc->component;
 }
 
 static void
@@ -71,7 +71,7 @@ stats_unlock(void)
 }
 
 static StatsCluster *
-stats_add_counter(gint stats_level, gint source, const gchar *id, const gchar *instance, gboolean *new)
+stats_add_counter(gint stats_level, gint component, const gchar *id, const gchar *instance, gboolean *new)
 {
   StatsCluster key;
   StatsCluster *sc;
@@ -84,7 +84,7 @@ stats_add_counter(gint stats_level, gint source, const gchar *id, const gchar *i
   if (!instance)
     instance = "";
   
-  key.source = source;
+  key.component = component;
   key.id = (gchar *) id;
   key.instance = (gchar *) instance;
   
@@ -94,7 +94,7 @@ stats_add_counter(gint stats_level, gint source, const gchar *id, const gchar *i
       /* no such StatsCluster instance, register one */
       sc = g_new0(StatsCluster, 1);
       
-      sc->source = source;
+      sc->component = component;
       sc->id = g_strdup(id);
       sc->instance = g_strdup(instance);
       sc->ref_cnt = 1;
@@ -118,7 +118,7 @@ stats_add_counter(gint stats_level, gint source, const gchar *id, const gchar *i
 /**
  * stats_register_counter:
  * @stats_level: the required statistics level to make this counter available
- * @source: a reference to the syslog-ng component that this counter belongs to (SCS_*)
+ * @component: a reference to the syslog-ng component that this counter belongs to (SCS_*)
  * @id: the unique identifier of the configuration item that this counter belongs to
  * @instance: if a given configuration item manages multiple similar counters
  *            this makes those unique (like destination filename in case macros are used)
@@ -132,7 +132,7 @@ stats_add_counter(gint stats_level, gint source, const gchar *id, const gchar *i
  * freed when all of these uses are unregistered.
  **/
 void
-stats_register_counter(gint stats_level, gint source, const gchar *id, const gchar *instance, StatsCounterType type, StatsCounterItem **counter)
+stats_register_counter(gint stats_level, gint component, const gchar *id, const gchar *instance, StatsCounterType type, StatsCounterItem **counter)
 {
   StatsCluster *sc;
   gboolean new;
@@ -141,7 +141,7 @@ stats_register_counter(gint stats_level, gint source, const gchar *id, const gch
   g_assert(type < SC_TYPE_MAX);
   
   *counter = NULL;
-  sc = stats_add_counter(stats_level, source, id, instance, &new);
+  sc = stats_add_counter(stats_level, component, id, instance, &new);
   if (!sc)
     return;
 
@@ -150,7 +150,7 @@ stats_register_counter(gint stats_level, gint source, const gchar *id, const gch
 }
 
 StatsCluster *
-stats_register_dynamic_counter(gint stats_level, gint source, const gchar *id, const gchar *instance, StatsCounterType type, StatsCounterItem **counter, gboolean *new)
+stats_register_dynamic_counter(gint stats_level, gint component, const gchar *id, const gchar *instance, StatsCounterType type, StatsCounterItem **counter, gboolean *new)
 {
   StatsCluster *sc;
   gboolean local_new;
@@ -160,7 +160,7 @@ stats_register_dynamic_counter(gint stats_level, gint source, const gchar *id, c
   
   *counter = NULL;
   *new = FALSE;
-  sc = stats_add_counter(stats_level, source, id, instance, &local_new);
+  sc = stats_add_counter(stats_level, component, id, instance, &local_new);
   if (new)
     *new = local_new;
   if (!sc)
@@ -182,14 +182,14 @@ stats_register_dynamic_counter(gint stats_level, gint source, const gchar *id, c
  * Instantly create (if not exists) and increment a dynamic counter.
  */
 void
-stats_register_and_increment_dynamic_counter(gint stats_level, gint source_mask, const gchar *id, const gchar *instance, time_t timestamp)
+stats_register_and_increment_dynamic_counter(gint stats_level, gint component, const gchar *id, const gchar *instance, time_t timestamp)
 {
   StatsCounterItem *counter, *stamp;
   gboolean new;
   StatsCluster *handle;
 
   g_assert(stats_locked);
-  handle = stats_register_dynamic_counter(stats_level, source_mask, id, instance, SC_TYPE_PROCESSED, &counter, &new);
+  handle = stats_register_dynamic_counter(stats_level, component, id, instance, SC_TYPE_PROCESSED, &counter, &new);
   stats_counter_inc(counter);
   if (timestamp >= 0)
     {
@@ -225,7 +225,7 @@ stats_register_associated_counter(StatsCluster *sc, StatsCounterType type, Stats
 }
 
 void
-stats_unregister_counter(gint source, const gchar *id, const gchar *instance, StatsCounterType type, StatsCounterItem **counter)
+stats_unregister_counter(gint component, const gchar *id, const gchar *instance, StatsCounterType type, StatsCounterItem **counter)
 {
   StatsCluster *sc;
   StatsCluster key;
@@ -240,7 +240,7 @@ stats_unregister_counter(gint source, const gchar *id, const gchar *instance, St
   if (!instance)
     instance = "";
   
-  key.source = source;
+  key.component = component;
   key.id = (gchar *) id;
   key.instance = (gchar *) instance;
 

@@ -37,6 +37,49 @@ typedef enum
   SC_TYPE_MAX
 } StatsCounterType;
 
+enum
+{
+  /* direction bits, used to distinguish between source/destination drivers */
+  SCS_SOURCE         = 0x0100,
+  SCS_DESTINATION    = 0x0200,
+  
+  /* drivers, this should be registered dynamically */
+  SCS_FILE           = 1,
+  SCS_PIPE           = 2,
+  SCS_TCP            = 3,
+  SCS_UDP            = 4,
+  SCS_TCP6           = 5,
+  SCS_UDP6           = 6,
+  SCS_UNIX_STREAM    = 7,
+  SCS_UNIX_DGRAM     = 8,
+  SCS_SYSLOG         = 9,
+  SCS_NETWORK        = 10,
+  SCS_INTERNAL       = 11,
+  SCS_LOGSTORE       = 12,
+  SCS_PROGRAM        = 13,
+  SCS_SQL            = 14,
+  SCS_SUN_STREAMS    = 15,
+  SCS_USERTTY        = 16,
+  SCS_GROUP          = 17,
+  SCS_CENTER         = 18,
+  SCS_HOST           = 19,
+  SCS_GLOBAL         = 20,
+  SCS_MONGODB        = 21,
+  SCS_CLASS          = 22,
+  SCS_RULE_ID        = 23,
+  SCS_TAG            = 24,
+  SCS_SEVERITY       = 25,
+  SCS_FACILITY       = 26,
+  SCS_SENDER         = 27,
+  SCS_SMTP           = 28,
+  SCS_AMQP           = 29,
+  SCS_STOMP          = 30,
+  SCS_REDIS          = 31,
+  SCS_SNMP           = 32,
+  SCS_MAX,
+  SCS_SOURCE_MASK    = 0xff
+};
+
 /* NOTE: This struct can only be used by the stats implementation and not by client code. */
 
 /* StatsCluster encapsulates a set of related counters that are registered
@@ -50,7 +93,8 @@ typedef struct _StatsCluster
 {
   StatsCounterItem counters[SC_TYPE_MAX];
   guint16 ref_cnt;
-  guint16 source;
+  /* syslog-ng component/driver/subsystem that registered this cluster */
+  guint16 component;
   gchar *id;
   gchar *instance;
   guint16 live_mask;
@@ -58,6 +102,9 @@ typedef struct _StatsCluster
 } StatsCluster;
 
 typedef void (*StatsForeachCounterFunc)(StatsCluster *sc, gint type, StatsCounterItem *counter, gpointer user_data);
+
+const gchar *stats_cluster_get_type_name(gint type);
+const gchar *stats_cluster_get_component_name(StatsCluster *self, gchar *buf, gsize buf_len);
 
 void stats_cluster_foreach_counter(StatsCluster *self, StatsForeachCounterFunc func, gpointer user_data);
 
