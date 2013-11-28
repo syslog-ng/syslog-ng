@@ -23,6 +23,8 @@
  */
 #include "stats/stats-cluster.h"
 
+#include <string.h>
+
 void
 stats_cluster_foreach_counter(StatsCluster *self, StatsForeachCounterFunc func, gpointer user_data)
 {
@@ -124,6 +126,18 @@ stats_cluster_get_component_name(StatsCluster *self, gchar *buf, gsize buf_len)
     }
 }
 
+gboolean
+stats_cluster_equal(const StatsCluster *sc1, const StatsCluster *sc2)
+{
+  return sc1->component == sc2->component && strcmp(sc1->id, sc2->id) == 0 && strcmp(sc1->instance, sc2->instance) == 0;
+}
+
+guint
+stats_cluster_hash(const StatsCluster *self)
+{
+  return g_str_hash(self->id) + g_str_hash(self->instance) + self->component;
+}
+
 StatsCluster *
 stats_cluster_new(gint component, const gchar *id, const gchar *instance)
 {
@@ -134,4 +148,12 @@ stats_cluster_new(gint component, const gchar *id, const gchar *instance)
   self->instance = g_strdup(instance);
   self->ref_cnt = 1;
   return self;
+}
+
+void
+stats_cluster_free(StatsCluster *self)
+{ 
+  g_free(self->id);
+  g_free(self->instance);
+  g_free(self);
 }

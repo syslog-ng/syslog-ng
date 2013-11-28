@@ -108,6 +108,10 @@ const gchar *stats_cluster_get_component_name(StatsCluster *self, gchar *buf, gs
 
 void stats_cluster_foreach_counter(StatsCluster *self, StatsForeachCounterFunc func, gpointer user_data);
 
+gboolean stats_cluster_equal(const StatsCluster *sc1, const StatsCluster *sc2);
+guint stats_cluster_hash(const StatsCluster *self);
+
 StatsCluster *stats_cluster_new(gint component, const gchar *id, const gchar *instance);
+void stats_cluster_free(StatsCluster *self);
 
 #endif

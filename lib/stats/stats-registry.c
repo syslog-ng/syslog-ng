@@ -29,33 +29,6 @@ static GHashTable *counter_hash;
 static GStaticMutex stats_mutex = G_STATIC_MUTEX_INIT;
 gboolean stats_locked;
 
-static gboolean
-stats_counter_equal(gconstpointer p1, gconstpointer p2)
-{
-  const StatsCluster *sc1 = (StatsCluster *) p1;
-  const StatsCluster *sc2 = (StatsCluster *) p2;
-  
-  return sc1->component == sc2->component && strcmp(sc1->id, sc2->id) == 0 && strcmp(sc1->instance, sc2->instance) == 0;
-}
-
-static guint
-stats_counter_hash(gconstpointer p)
-{
-  const StatsCluster *sc = (StatsCluster *) p;
-  
-  return g_str_hash(sc->id) + g_str_hash(sc->instance) + sc->component;
-}
-
-static void
-stats_counter_free(gpointer p)
-{ 
-  StatsCluster *sc = (StatsCluster *) p;
-  
-  g_free(sc->id);
-  g_free(sc->instance);
-  g_free(sc);
-}
-
 void
 stats_lock(void)
 {
@@ -301,7 +274,7 @@ stats_foreach_counter(StatsForeachCounterFunc func, gpointer user_data)
 void
 stats_registry_init(void)
 {
-  counter_hash = g_hash_table_new_full(stats_counter_hash, stats_counter_equal, NULL, stats_counter_free);
+  counter_hash = g_hash_table_new_full((GHashFunc) stats_cluster_hash, (GEqualFunc) stats_cluster_equal, NULL, (GDestroyNotify) stats_cluster_free);
   g_static_mutex_init(&stats_mutex);
 }
 
