@@ -33,7 +33,7 @@
 void
 log_rewrite_set_condition(LogRewrite *self, FilterExprNode *condition)
 {
-  self->condition = condition;
+  self->condition = filter_expr_ref(condition);
 }
 
 static void
@@ -165,7 +165,7 @@ log_rewrite_subst_clone(LogProcessPipe *s)
   cloned = (LogRewriteSubst *) log_rewrite_subst_new(log_template_ref(self->replacement));
   cloned->matcher = log_matcher_ref(self->matcher);
   cloned->super.value_handle = self->super.value_handle;
-  cloned->super.condition = self->super.condition;
+  cloned->super.condition = self->super.condition ? filter_expr_ref(self->super.condition) : NULL;
   return &cloned->super.super.super;
 }
 
@@ -228,7 +228,7 @@ log_rewrite_set_clone(LogProcessPipe *s)
 
   cloned = (LogRewriteSet *) log_rewrite_set_new(log_template_ref(self->value_template));
   cloned->super.value_handle = self->super.value_handle;
-  cloned->super.condition = self->super.condition;
+  cloned->super.condition = self->super.condition ? filter_expr_ref(self->super.condition) : NULL;
   return &cloned->super.super.super;
 }
 

@@ -199,6 +199,7 @@ rewrite_expr_opt
 
             CHECK_ERROR(cfg_parser_parse(&filter_expr_parser, lexer, (gpointer *) &filter_expr, NULL), @1, NULL);
             log_rewrite_set_condition(last_rewrite, filter_expr);
+            filter_expr_unref(filter_expr);
           } ')'
         ;
 
