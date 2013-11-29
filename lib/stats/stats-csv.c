@@ -91,7 +91,7 @@ stats_format_csv(StatsCluster *sc, gint type, StatsCounterItem *counter, gpointe
   
   if (sc->dynamic)
     state = 'd';
-  else if (sc->ref_cnt == 0)
+  else if (sc->use_count == 0)
     state = 'o';
   else
     state = 'a';

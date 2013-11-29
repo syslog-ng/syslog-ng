@@ -44,7 +44,7 @@ stats_unlock(void)
 }
 
 static StatsCluster *
-stats_add_counter(gint stats_level, gint component, const gchar *id, const gchar *instance)
+_grab_cluster(gint stats_level, gint component, const gchar *id, const gchar *instance)
 {
   StatsCluster key;
   StatsCluster *sc;
@@ -67,10 +67,6 @@ stats_add_counter(gint stats_level, gint component, const gchar *id, const gchar
       /* no such StatsCluster instance, register one */
       sc = stats_cluster_new(component, id, instance);
       g_hash_table_insert(counter_hash, sc, sc);
-    }
-  else
-    {
-      sc->ref_cnt++;
     }
 
   return sc;
@@ -98,15 +94,12 @@ stats_register_counter(gint stats_level, gint component, const gchar *id, const 
   StatsCluster *sc;
 
   g_assert(stats_locked);
-  g_assert(type < SC_TYPE_MAX);
   
-  *counter = NULL;
-  sc = stats_add_counter(stats_level, component, id, instance);
-  if (!sc)
-    return;
-
-  *counter = &sc->counters[type];
-  sc->live_mask |= 1 << type;
+  sc = _grab_cluster(stats_level, component, id, instance);
+  if (sc)
+    *counter = stats_cluster_track_counter(sc, type);
+  else
+    *counter = NULL;
 }
 
 StatsCluster *
@@ -115,16 +108,17 @@ stats_register_dynamic_counter(gint stats_level, gint component, const gchar *id
   StatsCluster *sc;
 
   g_assert(stats_locked);
-  g_assert(type < SC_TYPE_MAX);
   
-  *counter = NULL;
-  sc = stats_add_counter(stats_level, component, id, instance);
-  if (!sc)
-    return NULL;
-
-  sc->dynamic = TRUE;
-  *counter = &sc->counters[type];
-  sc->live_mask |= 1 << type;
+  sc = _grab_cluster(stats_level, component, id, instance);
+  if (sc)
+    {
+      sc->dynamic = TRUE;
+      *counter = stats_cluster_track_counter(sc, type);
+    }
+  else
+    {
+      *counter = NULL;
+    }
   return sc;
 }
 
@@ -171,9 +165,7 @@ stats_register_associated_counter(StatsCluster *sc, StatsCounterType type, Stats
     return;
   g_assert(sc->dynamic);
 
-  *counter = &sc->counters[type];
-  sc->live_mask |= 1 << type;
-  sc->ref_cnt++;
+  *counter = stats_cluster_track_counter(sc, type);
 }
 
 void
@@ -197,11 +189,8 @@ stats_unregister_counter(gint component, const gchar *id, const gchar *instance,
   key.instance = (gchar *) instance;
 
   sc = g_hash_table_lookup(counter_hash, &key);
-
-  g_assert(sc && (sc->live_mask & (1 << type)) && &sc->counters[type] == (*counter));
   
-  *counter = NULL;
-  sc->ref_cnt--;
+  stats_cluster_untrack_counter(sc, type, counter);
 }
 
 void
@@ -210,8 +199,7 @@ stats_unregister_dynamic_counter(StatsCluster *sc, StatsCounterType type, StatsC
   g_assert(stats_locked);
   if (!sc)
     return;
-  g_assert(sc && (sc->live_mask & (1 << type)) && &sc->counters[type] == (*counter));
-  sc->ref_cnt--;
+  stats_cluster_untrack_counter(sc, type, counter);
 }
 
 static void

@@ -92,7 +92,7 @@ enum
 typedef struct _StatsCluster
 {
   StatsCounterItem counters[SC_TYPE_MAX];
-  guint16 ref_cnt;
+  guint16 use_count;
   /* syslog-ng component/driver/subsystem that registered this cluster */
   guint16 component;
   gchar *id;
@@ -110,6 +110,9 @@ void stats_cluster_foreach_counter(StatsCluster *self, StatsForeachCounterFunc f
 
 gboolean stats_cluster_equal(const StatsCluster *sc1, const StatsCluster *sc2);
 guint stats_cluster_hash(const StatsCluster *self);
+
+StatsCounterItem *stats_cluster_track_counter(StatsCluster *self, gint type);
+void stats_cluster_untrack_counter(StatsCluster *self, gint type, StatsCounterItem **counter);
 
 StatsCluster *stats_cluster_new(gint component, const gchar *id, const gchar *instance);
 void stats_cluster_free(StatsCluster *self);

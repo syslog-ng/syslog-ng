@@ -138,6 +138,28 @@ stats_cluster_hash(const StatsCluster *self)
   return g_str_hash(self->id) + g_str_hash(self->instance) + self->component;
 }
 
+StatsCounterItem *
+stats_cluster_track_counter(StatsCluster *self, gint type)
+{
+  gint type_mask = 1 << type;
+
+  g_assert(type < SC_TYPE_MAX);
+
+  self->live_mask |= type_mask;
+  self->use_count++;
+  return &self->counters[type];
+}
+
+void
+stats_cluster_untrack_counter(StatsCluster *self, gint type, StatsCounterItem **counter)
+{
+  g_assert(self && (self->live_mask & (1 << type)) && &self->counters[type] == (*counter));
+  g_assert(self->use_count > 0);
+
+  self->use_count--;
+  *counter = NULL;
+}
+
 StatsCluster *
 stats_cluster_new(gint component, const gchar *id, const gchar *instance)
 {
@@ -146,7 +168,7 @@ stats_cluster_new(gint component, const gchar *id, const gchar *instance)
   self->component = component;
   self->id = g_strdup(id);
   self->instance = g_strdup(instance);
-  self->ref_cnt = 1;
+  self->use_count = 0;
   return self;
 }
 
