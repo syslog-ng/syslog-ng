@@ -19,4 +19,5 @@ libsyslog_ng_test_a_SOURCES = \
   libtest_memreader.c \
   libtest_memreader.h	\
   queue_utils_lib.c \
-  queue_utils_lib.h
+  queue_utils_lib.h \
+  test_case.h

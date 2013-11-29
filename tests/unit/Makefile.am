@@ -45,7 +45,8 @@ check_PROGRAMS =			\
 	test_resolve_sockaddr \
 	test_strtok_r \
 	test_template_compile \
-	test_logproto
+	test_logproto	\
+	test_rewrite
 
 if IS_HPUX
 check_PROGRAMS += test_zone
@@ -124,5 +125,6 @@ test_replace_string_SOURCES = test_replace_string.c
 test_template_compile_SOURCES = test_template_compile.c
 
 test_logproto_SOURCES = test_logproto.c
+test_rewrite_SOURCES = test_rewrite.c
 
 TESTS = $(check_PROGRAMS)
