@@ -1,3 +1,82 @@
+3.5.2
+        Fri, 29 Nov 2013 17:09:40 +0100
+
+        This is the first bug-fix release for the 3.5.x series, with a
+        number of significant fixes over the original 3.5.1 release.
+        Upgrading to this release is highly recommended.
+
+        Bugfixes
+        ========
+
+        * The system() source has been fixed on Solaris and HP-UX: it
+          correctly recognises the system on Solaris, and uses
+          /dev/log (and not /dev/pipe) on HP-UX.
+
+        * The system() source has much stricter requirements to select
+          /dev/kmsg on Linux, so it won't choose it over /proc/kmsg
+          unless the kernel really does support it.
+
+        * The syslog-format() module has been fixed to only set the
+          PROGRAM to "kernel" if all of the previous conditions apply,
+          and the message is a local message.
+
+        * The linux-kmsg-format parser (and system() on Linux 3.5+ as
+          a consequence) will correctly calculate the timestamp of
+          kernel messages on 32-bit systems now.
+
+        * The sun-streams() source has been fixed, it compiles and
+          works again.
+
+        * A very rare and short race condition has been fixed in the
+          pipe() source and destination modules, which could leave the
+          pipe available with elevated permissions for a short time.
+
+        * The SQL, MongoDB and SMTP modules were fixed to not cause a
+          segmentation fault when loaded before the socket module.
+
+        * A crash was fixed in the no-tls build of the socket
+          destination driver.
+
+        * It is now possible to specify the host() and port()
+          parameters for the redis() destination.
+
+        * Various stability fixes, such as:
+          - A use-after-free condition was corrected in the queue
+            backlog acknowledgement code.
+          - Always use setsid() when detaching, even if we're not
+            detaching from a TTY.
+          - Memory leaks were fixed in the persist state handling
+            code.
+          - Changing stats-level() and reloading syslog-ng produced a
+            crash, which has been fixed.
+
+        Credits:
+        ========
+
+        syslog-ng is developed as a community project, and as such it relies
+        on volunteers to do the work necessarily to produce syslog-ng.
+
+        Reporting bugs, testing changes, writing code or simply providing
+        feedback are all important contributions, so please if you are a
+        user of syslog-ng, contribute.
+
+        These people have helped in this release:
+
+        Alexandre Lecuyer
+        Balazs Scheidler <bazsi@balabit.hu>
+        Daniel Gados <gdani@balabit.hu>
+        Gergely Nagy <algernon@balabit.hu>
+        Howard Tsai <htsai@skytap.com>
+        Imre Lazar <imre@balabit.hu>
+        Jakub Wilk <jwilk@debian.org>
+        Laszlo Budai <lbudai@balabit.hu>
+        Martin Bagge / brother <brother@bsnet.se>
+        Matyas Koszik <koszik@atw.hu>
+        Oscar Muñoz
+        Otto Berger <otto@bergerdata.de>
+        Viktor Juhasz <jviktor@balabit.hu>
+        Viktor Tusa <tusa@balabit.hu>
+
 3.5.1
         Mon,  4 Nov 2013 14:49:00 +0100
 
