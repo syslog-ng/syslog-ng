@@ -16,3 +16,5 @@ stats_sources = \
 	lib/stats/stats-log.c			\
 	lib/stats/stats-registry.c		\
 	lib/stats/stats-syslog.c
+
+include lib/stats/tests/Makefile.am
