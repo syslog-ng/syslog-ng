@@ -166,8 +166,8 @@ stats_cluster_new(gint component, const gchar *id, const gchar *instance)
   StatsCluster *self = g_new0(StatsCluster, 1);
       
   self->component = component;
-  self->id = g_strdup(id);
-  self->instance = g_strdup(instance);
+  self->id = g_strdup(id ? : "");
+  self->instance = g_strdup(instance ? : "");
   self->use_count = 0;
   return self;
 }
