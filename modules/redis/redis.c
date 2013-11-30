@@ -43,7 +43,7 @@ typedef struct
 
   LogTemplateOptions template_options;
 
-  gchar *command;
+  GString *command;
   LogTemplate *key;
   GString *key_str;
   LogTemplate *param1;
@@ -83,8 +83,7 @@ redis_dd_set_command(LogDriver *d, const gchar *command,
 {
   RedisDriver *self = (RedisDriver *)d;
 
-  g_free(self->command);
-  self->command = g_strdup(command);
+  g_string_assign(self->command, command);
 
   log_template_unref(self->key);
   self->key = log_template_ref(key);
@@ -208,8 +207,8 @@ redis_worker_insert(LogThrDestDriver *s)
     log_template_format(self->param2, msg, &self->template_options, LTZ_SEND,
                         self->seq_num, NULL, self->param2_str);
 
-  argv[0] = self->command;
-  argvlen[0] = strlen(self->command);
+  argv[0] = self->command->str;
+  argvlen[0] = self->command->len;
   argv[1] = self->key_str->str;
   argvlen[1] = self->key_str->len;
 
@@ -231,7 +230,7 @@ redis_worker_insert(LogThrDestDriver *s)
 
   msg_debug("REDIS command sent",
             evt_tag_str("driver", self->super.super.super.id),
-            evt_tag_str("command", self->command),
+            evt_tag_str("command", self->command->str),
             evt_tag_str("key", self->key_str->str),
             evt_tag_str("param1", self->param1_str->str),
             evt_tag_str("param2", self->param2_str->str),
@@ -315,7 +314,7 @@ redis_dd_free(LogPipe *d)
   log_template_options_destroy(&self->template_options);
 
   g_free(self->host);
-  g_free(self->command);
+  g_string_free(self->command, TRUE);
   log_template_unref(self->key);
   log_template_unref(self->param1);
   log_template_unref(self->param2);
@@ -349,6 +348,8 @@ redis_dd_new(GlobalConfig *cfg)
 
   redis_dd_set_host((LogDriver *)self, "127.0.0.1");
   redis_dd_set_port((LogDriver *)self, 6379);
+
+  self->command = g_string_sized_new(32);
 
   init_sequence_number(&self->seq_num);
   log_template_options_defaults(&self->template_options);
