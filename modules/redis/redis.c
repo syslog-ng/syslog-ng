@@ -183,6 +183,9 @@ redis_worker_insert(LogThrDestDriver *s)
   LogMessage *msg;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
   redisReply *reply;
+  const char *argv[5];
+  size_t argvlen[5];
+  int argc = 2;
 
   redis_dd_connect(self, TRUE);
 
@@ -205,19 +208,26 @@ redis_worker_insert(LogThrDestDriver *s)
     log_template_format(self->param2, msg, &self->template_options, LTZ_SEND,
                         self->seq_num, NULL, self->param2_str);
 
-  if (!self->param2)
+  argv[0] = self->command;
+  argvlen[0] = strlen(self->command);
+  argv[1] = self->key_str->str;
+  argvlen[1] = self->key_str->len;
+
+  if (self->param1)
     {
-      if (!self->param1)
-        reply = redisCommand(self->c,"%s %s", self->command,
-                             self->key_str->str);
-      else
-        reply = redisCommand(self->c,"%s %s %s", self->command,
-                             self->key_str->str, self->param1_str->str);
+      argv[2] = self->param1_str->str;
+      argvlen[2] = self->param1_str->len;
+      argc++;
     }
-  else
-    reply = redisCommand(self->c,"%s %s %s %s", self->command,
-                         self->key_str->str, self->param1_str->str,
-                         self->param2_str);
+
+  if (self->param2)
+    {
+      argv[3] = self->param2_str->str;
+      argvlen[3] = self->param2_str->len;
+      argc++;
+    }
+
+  reply = redisCommandArgv(self->c, argc, argv, argvlen);
 
   msg_debug("REDIS command sent",
             evt_tag_str("driver", self->super.super.super.id),
