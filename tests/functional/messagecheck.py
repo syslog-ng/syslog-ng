@@ -73,6 +73,12 @@ def check_contents(f, messages, syslog_prefix, skip_prefix):
         if matches[(msg, session)] != count - 1:
             print_user("not enough messages found, message: %s, session: %d, last_id: %d, count: %d" % (msg, session,  matches[(msg, session)], count))
             return False
+        del matches[(msg, session)]
+
+    if len(matches) > 0:
+        print_user("output contains more messages than expected: %s" % str(matches))
+        return False
+
     return True
 
 def check_reader_expected(reader, messages, settle_time, syslog_prefix, skip_prefix):
