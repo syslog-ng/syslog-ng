@@ -640,6 +640,7 @@ cfg_tree_compile_sequence(CfgTree *self, LogExprNode *node,
     *first_pipe,   /* the head of the constructed pipeline */
     *last_pipe;    /* the current tail of the constructed pipeline */
   LogPipe *source_join_pipe = NULL;
+  gboolean node_properties_propagated = FALSE;
 
   if ((node->flags & LC_CATCHALL) != 0)
     {
@@ -680,6 +681,11 @@ cfg_tree_compile_sequence(CfgTree *self, LogExprNode *node,
       /* add pipe to the current pipe_line, e.g. after last_pipe, update last_pipe & first_pipe */
       if (sub_pipe_head)
         {
+          if (!node_properties_propagated)
+            {
+              cfg_tree_propagate_expr_node_properties_to_pipe(node, sub_pipe_head);
+              node_properties_propagated = TRUE;
+            }
           if (!first_pipe && !last_pipe)
             {
               /* we only remember the first pipe in case we're not in
@@ -732,16 +738,6 @@ cfg_tree_compile_sequence(CfgTree *self, LogExprNode *node,
         }
     }
 
-  if (first_pipe)
-    {
-      /* we actually return something as sub_pipe_head, which means that we
-       * have to propagate flags upwards */
-      cfg_tree_propagate_expr_node_properties_to_pipe(node, first_pipe);
-    }
-  else if (last_pipe)
-    {
-      cfg_tree_propagate_expr_node_properties_to_pipe(node, last_pipe);
-    }
 
 
   /* NOTE: if flow control is enabled, then we either need to have an
@@ -758,6 +754,20 @@ cfg_tree_compile_sequence(CfgTree *self, LogExprNode *node,
       /* this is an empty sequence, insert a do-nothing LogPipe */
       first_pipe = last_pipe = log_pipe_new();
       g_ptr_array_add(self->initialized_pipes, first_pipe);
+    }
+  
+  if (!node_properties_propagated)
+    {
+      /* we never encountered anything that would produce a head_pipe, e.g. 
+       * this sequence only contains a source and nothing else.  In that
+       * case, apply node flags to the last pipe.  It should be picked up
+       * when LogMultiplexer iterates over the branch in
+       * log_multiplexer_init() as long as last_pipe is linked into the
+       * pipe_next list and is not forked off at a LogMultiplexer.
+       * */
+
+      cfg_tree_propagate_expr_node_properties_to_pipe(node, last_pipe);
+      node_properties_propagated = TRUE;
     }
 
   *outer_pipe_tail = last_pipe;
