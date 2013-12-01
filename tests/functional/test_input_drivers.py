@@ -43,6 +43,7 @@ log { source(s_int); source(s_unix); source(s_inet); source(s_inetssl); filter(f
 };
 
 filter f_final { message("final"); };
+filter f_final_1_to_4 { message("final[1-4]"); };
 
 filter f_final1 { message("final1"); };
 filter f_final2 { message("final2"); };
@@ -52,14 +53,33 @@ destination d_final1 { file("test-final1.log"); logstore("test-final1.lgs"); };
 destination d_final2 { file("test-final2.log"); logstore("test-final2.lgs"); };
 destination d_final3 { file("test-final3.log"); logstore("test-final3.lgs"); };
 destination d_final4 { file("test-final4.log"); logstore("test-final4.lgs"); };
+destination d_final5 { file("test-final5.log"); logstore("test-final5.lgs"); };
 
 
 # test final flag + rest
-log { source(s_int); source(s_unix); source(s_inet); source(s_inetssl);  filter(f_final);
+log { source(s_int); source(s_unix); source(s_inet); source(s_inetssl); filter(f_final); 
+
+        filter(f_final_1_to_4);
         log { filter(f_final1); destination(d_final1); flags(final); };
         log { filter(f_final2); destination(d_final2); flags(final); };
         log { filter(f_final3); destination(d_final3); flags(final); };
         log { destination(d_final4); };
+        flags(final);
+};
+
+# fallback, top-level log path for final flags. No messages should be
+# delivered from final1-4, because of the final flag above.  final5 messages
+# will get here, as the filter above excludes that from the previous log
+# statement.
+
+log { source(s_int); source(s_unix); source(s_inet); source(s_inetssl);  
+
+        # this filter would match everything from final1 to final5, but the
+        # flags(final) in the previous statement would stop the processing
+        # for final1-4
+
+        filter(f_final);
+        destination(d_final5);
 };
 
 filter f_fb { message("fallback"); };
@@ -146,7 +166,8 @@ def test_final():
       'final1',
       'final2',
       'final3',
-      'final4'
+      'final4',
+      'final5'
     )
     expected = [None,] * len(messages)
 
