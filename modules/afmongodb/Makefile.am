@@ -31,7 +31,7 @@ modules_afmongodb_libafmongodb_la_LIBADD	=	\
 modules_afmongodb_libafmongodb_la_LDFLAGS	=	\
 	$(MODULE_LDFLAGS)
 modules_afmongodb_libafmongodb_la_DEPENDENCIES	=	\
-	$(MODULE_DEPS_LIBS) ${lmc_EXTRA_DEPS}
+	$(MODULE_DEPS_LIBS) $(CRYPTO_LIBS) ${lmc_EXTRA_DEPS}
 
 modules/afmongodb modules/afmongodb/ mod-afmongodb mod-mongodb: \
 	modules/afmongodb/libafmongodb.la
