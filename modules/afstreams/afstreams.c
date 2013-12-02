@@ -26,7 +26,7 @@
 #include "logreader.h"
 #include "misc.h"
 #include "apphook.h"
-#include "stats.h"
+#include "stats/stats-registry.h"
 #include "poll-fd-events.h"
 #include "logproto/logproto-dgram-server.h"
 

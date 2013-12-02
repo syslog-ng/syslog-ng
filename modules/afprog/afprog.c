@@ -27,7 +27,7 @@
 #include "logwriter.h"
 #include "children.h"
 #include "misc.h"
-#include "stats.h"
+#include "stats/stats-registry.h"
 #include "logproto/logproto-text-server.h"
 #include "logproto/logproto-text-client.h"
 #include "poll-fd-events.h"

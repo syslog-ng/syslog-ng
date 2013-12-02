@@ -75,6 +75,7 @@ static CfgLexerKeyword main_keywords[] = {
   { "mark",               KW_MARK_FREQ, 0, KWS_OBSOLETE, "mark_freq" },
   { "mark_mode",          KW_MARK_MODE, 0x0304 },
   { "stats_freq",         KW_STATS_FREQ },
+  { "stats_lifetime",     KW_STATS_LIFETIME, 0x0306 },
   { "stats_level",        KW_STATS_LEVEL },
   { "stats",              KW_STATS_FREQ, 0, KWS_OBSOLETE, "stats_freq" },
   { "flush_lines",        KW_FLUSH_LINES },

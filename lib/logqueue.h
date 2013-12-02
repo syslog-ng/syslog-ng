@@ -26,7 +26,7 @@
 #define LOGQUEUE_H_INCLUDED
 
 #include "logmsg.h"
-#include "stats.h"
+#include "stats/stats-registry.h"
 
 extern gint log_queue_max_threads;
 

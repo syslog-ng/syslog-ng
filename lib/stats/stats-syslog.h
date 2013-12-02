@@ -21,44 +21,12 @@
  * COPYING for details.
  *
  */
-#include "stats-timer.h"
-#include "stats.h"
+#ifndef STATS_SYSLOG_H_INCLUDED
+#define STATS_SYSLOG_H_INCLUDED 1
 
-#include <iv.h>
+#include "stats/stats-registry.h"
 
-static struct iv_timer stats_timer;
+void stats_syslog_process_message_pri(guint16 pri);
+void stats_syslog_reinit(void);
 
-static void
-stats_timer_rearm(gint stats_freq)
-{
-  stats_timer.cookie = GINT_TO_POINTER(stats_freq);
-  if (stats_freq > 0)
-    {
-      /* arm the timer */
-      iv_validate_now();
-      stats_timer.expires = iv_now;
-      timespec_add_msec(&stats_timer.expires, stats_freq * 1000);
-      iv_timer_register(&stats_timer);
-    }
-}
-
-static void
-stats_timer_elapsed(gpointer st)
-{
-  gint stats_freq = GPOINTER_TO_INT(st);
-
-  stats_generate_log();
-  stats_timer_rearm(stats_freq);
-}
-
-void
-stats_timer_reinit(gint stats_freq)
-{
-  IV_TIMER_INIT(&stats_timer);
-  stats_timer.handler = stats_timer_elapsed;
-
-  if (iv_timer_registered(&stats_timer))
-    iv_timer_unregister(&stats_timer);
-
-  stats_timer_rearm(stats_freq);
-}
+#endif

@@ -26,7 +26,7 @@
 #include "afmongodb-parser.h"
 #include "messages.h"
 #include "misc.h"
-#include "stats.h"
+#include "stats/stats-registry.h"
 #include "nvtable.h"
 #include "logqueue.h"
 #include "value-pairs.h"

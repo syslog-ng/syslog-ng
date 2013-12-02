@@ -29,7 +29,7 @@
 #include "timeutils.h"
 #include "tags.h"
 #include "nvtable.h"
-#include "stats.h"
+#include "stats/stats-registry.h"
 #include "template/templates.h"
 #include "tls-support.h"
 #include "compat/string.h"

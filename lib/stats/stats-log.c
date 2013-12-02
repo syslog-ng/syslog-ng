@@ -21,11 +21,28 @@
  * COPYING for details.
  *
  */
-#ifndef STATS_TIMER_H_INCLUDED
-#define STATS_TIMER_H_INCLUDED 1
+#include "stats/stats-log.h"
+#include "stats/stats.h"
 
-#include "syslog-ng.h"
+static void
+stats_log_format_counter(StatsCluster *sc, gint type, StatsCounterItem *item, gpointer user_data)
+{
+  EVTREC *e = (EVTREC *) user_data;
+  EVTTAG *tag;
+  gchar buf[32];
 
-void stats_timer_reinit(gint stats_freq);
+  tag = evt_tag_printf(stats_cluster_get_type_name(type), "%s(%s%s%s)=%u", 
+                       stats_cluster_get_component_name(sc, buf, sizeof(buf)),
+                       sc->id,
+                       (sc->id[0] && sc->instance[0]) ? "," : "",
+                       sc->instance,
+                       stats_counter_get(&sc->counters[type]));
+  evt_rec_add_tag(e, tag);
+}
 
-#endif
+
+void
+stats_log_format_cluster(StatsCluster *sc, EVTREC *e)
+{
+  stats_cluster_foreach_counter(sc, stats_log_format_counter, e);
+}

@@ -24,9 +24,10 @@
 
 #include "afinter.h"
 #include "logreader.h"
-#include "stats.h"
+#include "stats/stats-registry.h"
 #include "messages.h"
 #include "apphook.h"
+#include "mainloop.h"
 
 typedef struct _AFInterSource AFInterSource;
 
