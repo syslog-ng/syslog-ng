@@ -19,7 +19,7 @@ modules_afsql_libafsql_la_LIBADD	= 	\
 modules_afsql_libafsql_la_LDFLAGS	=	\
 	$(MODULE_LDFLAGS)
 modules_afsql_libafsql_la_DEPENDENCIES	=	\
-	$(MODULE_DEPS_LIBS)
+	$(MODULE_DEPS_LIBS) $(CRYPTO_LIBS)
 
 modules/afsql modules/afsql/ mod-afsql mod-sql:	\
 	modules/afsql/libafsql.la
