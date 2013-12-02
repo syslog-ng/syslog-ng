@@ -27,7 +27,7 @@
 #include "mainloop-call.h"
 #include "apphook.h"
 #include "cfg.h"
-#include "stats.h"
+#include "stats/stats-registry.h"
 #include "messages.h"
 #include "children.h"
 #include "control.h"
@@ -233,7 +233,6 @@ main_loop_reload_config_apply(void)
   main_loop_new_config = NULL;
   main_loop_old_config = NULL;
 
-  stats_cleanup_orphans();
   return;
 }
 

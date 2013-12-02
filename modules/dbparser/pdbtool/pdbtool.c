@@ -29,7 +29,7 @@
 #include "dbparser.h"
 #include "radix.h"
 #include "tags.h"
-#include "stats.h"
+#include "stats/stats-registry.h"
 #include "plugin.h"
 #include "filter/filter-expr-parser.h"
 #include "patternize.h"

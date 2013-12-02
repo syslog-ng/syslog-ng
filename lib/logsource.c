@@ -27,7 +27,8 @@
 #include "misc.h"
 #include "host-resolve.h"
 #include "timeutils.h"
-#include "stats.h"
+#include "stats/stats-registry.h"
+#include "stats/stats-syslog.h"
 #include "tags.h"
 
 #include <string.h>
@@ -200,9 +201,6 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
 {
   LogSource *self = (LogSource *) s;
   LogPathOptions local_options = *path_options;
-  StatsCounterItem *processed_counter, *stamp;
-  gboolean new;
-  StatsCounter *handle;
   gint old_window_size;
   gint i;
   
@@ -248,22 +246,16 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
     {
       stats_lock();
 
-      handle = stats_register_dynamic_counter(2, SCS_HOST | SCS_SOURCE, NULL, log_msg_get_value(msg, LM_V_HOST, NULL), SC_TYPE_PROCESSED, &processed_counter, &new);
-      stats_register_associated_counter(handle, SC_TYPE_STAMP, &stamp);
-      stats_counter_inc(processed_counter);
-      stats_counter_set(stamp, msg->timestamps[LM_TS_RECVD].tv_sec);
-      stats_unregister_dynamic_counter(handle, SC_TYPE_PROCESSED, &processed_counter);
-      stats_unregister_dynamic_counter(handle, SC_TYPE_STAMP, &stamp);
-
+      stats_register_and_increment_dynamic_counter(2, SCS_HOST | SCS_SOURCE, NULL, log_msg_get_value(msg, LM_V_HOST, NULL), msg->timestamps[LM_TS_RECVD].tv_sec);
       if (stats_check_level(3))
         {
-          stats_instant_inc_dynamic_counter(3, SCS_SENDER | SCS_SOURCE, NULL, log_msg_get_value(msg, LM_V_HOST_FROM, NULL), msg->timestamps[LM_TS_RECVD].tv_sec);
-          stats_instant_inc_dynamic_counter(3, SCS_PROGRAM | SCS_SOURCE, NULL, log_msg_get_value(msg, LM_V_PROGRAM, NULL), -1);
+          stats_register_and_increment_dynamic_counter(3, SCS_SENDER | SCS_SOURCE, NULL, log_msg_get_value(msg, LM_V_HOST_FROM, NULL), msg->timestamps[LM_TS_RECVD].tv_sec);
+          stats_register_and_increment_dynamic_counter(3, SCS_PROGRAM | SCS_SOURCE, NULL, log_msg_get_value(msg, LM_V_PROGRAM, NULL), msg->timestamps[LM_TS_RECVD].tv_sec);
         }
 
       stats_unlock();
     }
-  stats_counter_inc_pri(msg->pri);
+  stats_syslog_process_message_pri(msg->pri);
 
   /* message setup finished, send it out */
 

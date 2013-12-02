@@ -26,7 +26,7 @@
 #include "logpipe.h"
 #include "messages.h"
 #include "serialize.h"
-#include "stats.h"
+#include "stats/stats-registry.h"
 #include "mainloop-worker.h"
 
 #include <sys/types.h>
