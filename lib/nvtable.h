@@ -102,7 +102,12 @@ nv_registry_get_handle_name(NVRegistry *self, NVHandle handle, gssize *length)
 struct _NVEntry
 {
   /* negative offset, counting from string table top, e.g. start of the string is at @top + ofs */
-  guint8 indirect:1, referenced:1;
+  union {
+    struct {
+      guint8 indirect:1, referenced:1;
+    };
+    guint8 flags;
+  };
   guint8 name_len;
   guint32 alloc_len;
   union
@@ -202,7 +207,8 @@ struct _NVTable
 
 #define NV_TABLE_BOUND(x)  (((x) + 0x3) & ~0x3)
 #define NV_TABLE_ADDR(self, x) ((gchar *) ((self)) + ((gssize)(x)))
-
+#define NV_TABLE_DYNVALUE_HANDLE(x) ((x).handle)
+#define NV_TABLE_DYNVALUE_OFS(x)    ((x).ofs)
 
 /* 256MB, this is an artificial limit, but must be less than MAX_GUINT32 as
  * we want to compare a guint32 to this variable without overflow.  */
@@ -307,5 +313,24 @@ nv_table_get_value(NVTable *self, NVHandle handle, gssize *length)
   return __nv_table_get_value(self, handle, self->num_static_entries, length);
 }
 
+static inline NVDynValue *
+nv_table_get_dyn_entries(NVTable *self)
+{
+  return (NVDynValue *)&self->static_entries[self->num_static_entries];
+}
+
+static inline NVEntry *
+nv_table_get_entry_at_ofs(NVTable *self, guint32 ofs)
+{
+  if (!ofs)
+    return NULL;
+  return (NVEntry *)(nv_table_get_top(self) - ofs);
+}
+
+static inline guint32
+nv_table_get_dyn_value_offset_from_nventry(NVTable *self, NVEntry *entry)
+{
+  return (nv_table_get_top(self) - (gchar *) entry);
+}
 
 #endif

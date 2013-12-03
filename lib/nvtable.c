@@ -147,10 +147,6 @@ nv_registry_free(NVRegistry *self)
 
 /* clonable LogMessage support with shared data pointers */
 
-#define NV_TABLE_DYNVALUE_HANDLE(x) ((x).handle)
-#define NV_TABLE_DYNVALUE_OFS(x)    ((x).ofs)
-
-
 static inline gchar *
 nv_table_get_bottom(NVTable *self)
 {
@@ -162,20 +158,6 @@ nv_table_get_ofs_table_top(NVTable *self)
 {
   return (gchar *) &self->data[self->num_static_entries * sizeof(self->static_entries[0]) +
                                self->num_dyn_entries * sizeof(NVDynValue)];
-}
-
-static inline NVEntry *
-nv_table_get_entry_at_ofs(NVTable *self, guint32 ofs)
-{
-  if (!ofs)
-    return NULL;
-  return (NVEntry *) (nv_table_get_top(self) - ofs);
-}
-
-static inline NVDynValue *
-nv_table_get_dyn_entries(NVTable *self)
-{
-  return (NVDynValue *) &self->static_entries[self->num_static_entries];
 }
 
 static inline gboolean
@@ -451,7 +433,7 @@ nv_table_add_value(NVTable *self, NVHandle handle, const gchar *name, gsize name
       return FALSE;
     }
 
-  ofs = (nv_table_get_top(self) - (gchar *) entry);
+  ofs = nv_table_get_dyn_value_offset_from_nventry(self, entry);
   entry->vdirect.value_len = value_len;
   if (handle >= self->num_static_entries)
     {
@@ -552,7 +534,7 @@ nv_table_add_value_indirect(NVTable *self, NVHandle handle, const gchar *name, g
       return FALSE;
     }
 
-  ofs = (nv_table_get_top(self) - (gchar *) entry);
+  ofs = nv_table_get_dyn_value_offset_from_nventry(self, entry);
   entry->vindirect.handle = ref_handle;
   entry->vindirect.ofs = rofs;
   entry->vindirect.len = rlen;
