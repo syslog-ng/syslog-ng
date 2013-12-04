@@ -184,7 +184,7 @@ cfg_lexer_subst_args(CfgArgs *globals, CfgArgs *defs, CfgArgs *args, gchar *cptr
           else
             {
               const gchar *arg;
-
+              gboolean has_to_free_arg = FALSE;
               *p = 0;
               if (args && (arg = cfg_args_get(args, ref_start)))
                 ;
@@ -193,12 +193,21 @@ cfg_lexer_subst_args(CfgArgs *globals, CfgArgs *defs, CfgArgs *args, gchar *cptr
               else if (globals && (arg = cfg_args_get(globals, ref_start)))
                 ;
               else if ((arg = g_getenv(ref_start)))
-                ;
+                {
+                  #ifdef _WIN32
+                  if (arg)
+                    {
+                      arg = escape_windows_path(arg);
+                      has_to_free_arg = TRUE;
+                    }
+                  #endif
+                }
               else
                 arg = NULL;
 
               *p = '`';
               g_string_append(result, arg ? arg : "");
+              if (has_to_free_arg) g_free((gchar *)arg);
             }
         }
       else if (!backtick)
