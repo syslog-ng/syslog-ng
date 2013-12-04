@@ -98,7 +98,6 @@ static gint startup_result_pipe[2] = { -1, -1 };
 static gint init_result_pipe[2] = { -1, -1 };
 static GProcessKind process_kind = G_PK_STARTUP;
 static gboolean stderr_present = TRUE;
-static int have_capsyslog = FALSE;
 
 /* global variables */
 static struct
@@ -199,6 +198,7 @@ inherit_systemd_activation(void)
 
 #if ENABLE_LINUX_CAPS
 
+static int have_capsyslog = FALSE;
 /**
  * g_process_cap_modify:
  * @capability: capability to turn off or on
