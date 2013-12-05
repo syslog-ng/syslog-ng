@@ -484,6 +484,55 @@ vp_walker_stack_push (vp_walk_stack_t **stack,
   return nt;
 }
 
+static void
+vp_walker_name_value_split_add_name_token(GPtrArray *array, const gchar *name,
+                                          int *current_name_start_idx,
+                                          int *index)
+{
+  gchar *token;
+
+  token = g_strndup(name + *current_name_start_idx, *index - *current_name_start_idx);
+  *current_name_start_idx = ++(*index);
+  g_ptr_array_add(array, (gpointer) token);
+}
+
+static gchar **
+vp_walker_name_value_split(const gchar *name)
+{
+  int i;
+  int current_name_start_idx = 0;
+  GPtrArray *array = g_ptr_array_new();
+  gchar **tokens;
+  size_t name_len = strlen(name);
+
+  for (i = 0; i < name_len; i++)
+    {
+      if (name[i] == '@')
+        {
+          i++;
+          while (g_ascii_isdigit(name[i]) || (name[i] == '.' && g_ascii_isdigit(name[i + 1])))
+            i++;
+        }
+      if (name[i] == '.')
+        vp_walker_name_value_split_add_name_token(array, name, &current_name_start_idx, &i);
+    }
+  if (current_name_start_idx <= i - 1)
+    vp_walker_name_value_split_add_name_token(array, name, &current_name_start_idx, &i);
+
+  if (array->len == 0)
+    return NULL;
+
+  tokens = (gchar **) g_malloc ((array->len + 1) * sizeof(gchar *));
+
+  for (i = 0; i < array->len; i++)
+    tokens[i] = g_ptr_array_index(array, i);
+  tokens[array->len] = NULL;
+
+  g_ptr_array_free(array, FALSE);
+
+  return tokens;
+}
+
 static gchar *
 vp_walker_name_split(vp_walk_stack_t **stack, vp_walk_state_t *state,
                      const gchar *name)
@@ -491,7 +540,7 @@ vp_walker_name_split(vp_walk_stack_t **stack, vp_walk_state_t *state,
   gchar **tokens, *key = NULL;
   guint token_cnt, i, start;
 
-  tokens = g_strsplit(name, ".", 0);
+  tokens = vp_walker_name_value_split(name);
   token_cnt = g_strv_length(tokens);
 
   start = g_trash_stack_height((GTrashStack **)stack);
