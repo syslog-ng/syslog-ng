@@ -225,6 +225,9 @@ vp_msg_nvpairs_foreach(NVHandle handle, gchar *name,
   gboolean inc;
   SBTHGString *sb;
 
+  if (value_len == 0)
+    return FALSE;
+
   inc = (name[0] == '.' && (vp->scopes & VPS_DOT_NV_PAIRS)) ||
     (name[0] != '.' && (vp->scopes & VPS_NV_PAIRS)) ||
     (log_msg_is_handle_sdata(handle) && (vp->scopes & VPS_SDATA));
