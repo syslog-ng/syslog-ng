@@ -697,7 +697,11 @@ dnl json headers/libraries
 dnl ***************************************************************************
 if test "x$enable_json" = "xyes" || test "x$enable_json" = "xauto"; then
    _with_json="yes"
-   PKG_CHECK_MODULES(JSON_C, json >= $JSON_C_MIN_VERSION,, [JSON_C_LIBS=""; _with_json="no"])
+   PKG_CHECK_MODULES(JSON_C, json-c >= $JSON_C_MIN_VERSION,, [JSON_C_LIBS=""; _with_json="no"])
+   if test "x$_with_json" = "xno"; then
+     _with_json="yes"
+     PKG_CHECK_MODULES(JSON_C, json >= $JSON_C_MIN_VERSION,, [JSON_C_LIBS=""; _with_json="no"])
+   fi
 
    if test "x$enable_json" = "xyes" && test "x$_with_json" = "xno"; then
       AC_MSG_ERROR([Could not find json-c, and json support was explicitly enabled.])
