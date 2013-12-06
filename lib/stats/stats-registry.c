@@ -44,7 +44,7 @@ stats_unlock(void)
 }
 
 static StatsCluster *
-_grab_cluster(gint stats_level, gint component, const gchar *id, const gchar *instance)
+_grab_cluster(gint stats_level, gint component, const gchar *id, const gchar *instance, gboolean dynamic)
 {
   StatsCluster key;
   StatsCluster *sc;
@@ -66,9 +66,34 @@ _grab_cluster(gint stats_level, gint component, const gchar *id, const gchar *in
     {
       /* no such StatsCluster instance, register one */
       sc = stats_cluster_new(component, id, instance);
+      sc->dynamic = dynamic;
       g_hash_table_insert(counter_hash, sc, sc);
     }
+  else
+    {
+      /* check that we are not overwriting a dynamic counter with a
+       * non-dynamic one or vica versa.  This could only happen if the same
+       * key is used for both a dynamic counter and a non-dynamic one, which
+       * is a programming error */
 
+      g_assert(sc->dynamic == dynamic);
+    }
+
+  return sc;
+}
+
+static StatsCluster *
+_register_counter(gint stats_level, gint component, const gchar *id, const gchar *instance, StatsCounterType type, gboolean dynamic, StatsCounterItem **counter)
+{
+  StatsCluster *sc;
+
+  g_assert(stats_locked);
+
+  sc = _grab_cluster(stats_level, component, id, instance, TRUE);
+  if (sc)
+    *counter = stats_cluster_track_counter(sc, type);
+  else
+    *counter = NULL;
   return sc;
 }
 
@@ -91,35 +116,13 @@ _grab_cluster(gint stats_level, gint component, const gchar *id, const gchar *in
 void
 stats_register_counter(gint stats_level, gint component, const gchar *id, const gchar *instance, StatsCounterType type, StatsCounterItem **counter)
 {
-  StatsCluster *sc;
-
-  g_assert(stats_locked);
-  
-  sc = _grab_cluster(stats_level, component, id, instance);
-  if (sc)
-    *counter = stats_cluster_track_counter(sc, type);
-  else
-    *counter = NULL;
+  _register_counter(stats_level, component, id, instance, type, FALSE, counter);
 }
 
 StatsCluster *
 stats_register_dynamic_counter(gint stats_level, gint component, const gchar *id, const gchar *instance, StatsCounterType type, StatsCounterItem **counter)
 {
-  StatsCluster *sc;
-
-  g_assert(stats_locked);
-  
-  sc = _grab_cluster(stats_level, component, id, instance);
-  if (sc)
-    {
-      sc->dynamic = TRUE;
-      *counter = stats_cluster_track_counter(sc, type);
-    }
-  else
-    {
-      *counter = NULL;
-    }
-  return sc;
+  return _register_counter(stats_level, component, id, instance, type, TRUE, counter);
 }
 
 /*
