@@ -271,6 +271,8 @@ log_proto_framed_server_free(LogProtoServer *s)
 {
   LogProtoFramedServer *self = (LogProtoFramedServer *) s;
   g_free(self->buffer);
+
+  log_proto_server_free_method(s);
 }
 
 LogProtoServer *
