@@ -496,13 +496,12 @@ vp_walker_name_value_split_add_name_token(GPtrArray *array, const gchar *name,
   g_ptr_array_add(array, (gpointer) token);
 }
 
-static gchar **
+static GPtrArray *
 vp_walker_name_value_split(const gchar *name)
 {
   int i;
   int current_name_start_idx = 0;
   GPtrArray *array = g_ptr_array_new();
-  gchar **tokens;
   size_t name_len = strlen(name);
 
   for (i = 0; i < name_len; i++)
@@ -522,37 +521,47 @@ vp_walker_name_value_split(const gchar *name)
   if (array->len == 0)
     return NULL;
 
-  tokens = (gchar **) g_malloc ((array->len + 1) * sizeof(gchar *));
+  return array;
+}
 
-  for (i = 0; i < array->len; i++)
-    tokens[i] = g_ptr_array_index(array, i);
-  tokens[array->len] = NULL;
+static gchar *
+vp_walker_name_combine_prefix(GPtrArray *tokens, gint until)
+{
+  SBGString *s = sb_gstring_acquire();
+  gchar *str;
+  gint i;
 
-  g_ptr_array_free(array, FALSE);
+  for (i = 0; i < until; i++)
+    {
+      g_string_append(sb_gstring_string(s), g_ptr_array_index(tokens, i));
+      g_string_append_c(sb_gstring_string(s), '.');
+    }
+  g_string_append(sb_gstring_string(s), g_ptr_array_index(tokens, until));
 
-  return tokens;
+  str = g_strdup(sb_gstring_string(s)->str);
+
+  sb_gstring_release(s);
+
+  return str;
 }
 
 static gchar *
 vp_walker_name_split(vp_walk_stack_t **stack, vp_walk_state_t *state,
                      const gchar *name)
 {
-  gchar **tokens, *key = NULL;
-  guint token_cnt, i, start;
+  GPtrArray *tokens;
+  gchar *key = NULL;
+  guint i, start;
 
   tokens = vp_walker_name_value_split(name);
-  token_cnt = g_strv_length(tokens);
 
   start = g_trash_stack_height((GTrashStack **)stack);
-  for (i = start; i < token_cnt - 1; i++)
+  for (i = start; i < tokens->len - 1; i++)
     {
-      gchar *next = tokens[i + 1];
       vp_walk_stack_t *nt, *p = g_trash_stack_peek((GTrashStack **)stack);
 
-      tokens[i + 1] = NULL;
-      nt = vp_walker_stack_push(stack, g_strdup(tokens[i]),
-                                g_strjoinv(".", tokens));
-      tokens[i + 1] = next;
+      nt = vp_walker_stack_push(stack, g_strdup(g_ptr_array_index(tokens, i)),
+                                vp_walker_name_combine_prefix(tokens, i));
 
       if (p)
         state->obj_start(nt->key, nt->prefix, &nt->data,
@@ -565,8 +574,9 @@ vp_walker_name_split(vp_walk_stack_t **stack, vp_walk_state_t *state,
 
   /* The last token is the key (well, second to last, last being
      NULL), so treat that normally. */
-  key = g_strdup(tokens[token_cnt - 1]);
-  g_strfreev(tokens);
+  key = g_strdup(g_ptr_array_index(tokens, tokens->len - 1));
+
+  g_ptr_array_free(tokens, TRUE);
 
   return key;
 }
