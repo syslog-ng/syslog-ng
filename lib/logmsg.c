@@ -521,7 +521,7 @@ log_msg_set_value(LogMessage *self, NVHandle handle, const gchar *value, gssize 
 
   if (new_entry)
     log_msg_update_sdata(self, handle, name, name_len);
-  if (handle == LM_V_PROGRAM)
+  if (handle == LM_V_PROGRAM || handle == LM_V_PID)
     log_msg_unset_flag(self, LF_LEGACY_MSGHDR);
 }
 
