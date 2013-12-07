@@ -24,7 +24,7 @@
 #ifndef TLSTRANSPORT_H_INCLUDED
 #define TLSTRANSPORT_H_INCLUDED
 
-#include "logtransport.h"
+#include "transport/logtransport.h"
 
 #include "tlscontext.h"
 

@@ -25,7 +25,7 @@
 #include "messages.h"
 #include "misc.h"
 #if BUILD_WITH_SSL
-#include "tlstransport.h"
+#include "transport/tlstransport.h"
 #endif
 #include "gsocket.h"
 #include "stats/stats-registry.h"

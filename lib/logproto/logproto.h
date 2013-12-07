@@ -25,7 +25,7 @@
 #ifndef LOGPROTO_H_INCLUDED
 #define LOGPROTO_H_INCLUDED
 
-#include "logtransport.h"
+#include "transport/logtransport.h"
 
 typedef enum
 {
