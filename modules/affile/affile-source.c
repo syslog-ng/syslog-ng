@@ -28,6 +28,7 @@
 #include "gprocess.h"
 #include "stats/stats-registry.h"
 #include "mainloop.h"
+#include "transport/transport-file.h"
 #include "logproto/logproto-record-server.h"
 #include "logproto/logproto-text-server.h"
 #include "logproto/logproto-dgram-server.h"

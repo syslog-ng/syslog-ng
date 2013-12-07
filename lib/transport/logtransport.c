@@ -23,6 +23,7 @@
  */
 
 #include "logtransport.h"
+#include "transport/transport-file.h"
 #include "messages.h"
 #include "alarms.h"
 
@@ -54,51 +55,6 @@ log_transport_free(LogTransport *self)
 {
   self->free_fn(self);
   g_free(self);
-}
-
-/* log transport that simply sends messages to an fd */
-typedef struct _LogTransportFile LogTransportFile;
-struct _LogTransportFile
-{
-  LogTransport super;
-};
-
-static gssize
-log_transport_file_read_method(LogTransport *s, gpointer buf, gsize buflen, GSockAddr **sa)
-{
-  LogTransportFile *self = (LogTransportFile *) s;
-  gint rc;
-  
-  if (sa)
-    *sa = NULL;
-
-  do
-    {
-      rc = read(self->super.fd, buf, buflen);
-    }
-  while (rc == -1 && errno == EINTR);
-
-  if (rc == 0)
-    {
-      /* regular files should never return EOF, they just need to be read again */
-      rc = -1;
-      errno = EAGAIN;
-    }
-  return rc;
-}
-
-static gssize
-log_transport_file_write_method(LogTransport *s, const gpointer buf, gsize buflen)
-{
-  LogTransportFile *self = (LogTransportFile *) s;
-  gint rc;
-  
-  do
-    {
-      rc = write(self->super.fd, buf, buflen);
-    }
-  while (rc == -1 && errno == EINTR);
-  return rc;
 }
 
 static gssize
@@ -142,28 +98,14 @@ log_transport_pipe_write_method(LogTransport *s, const gpointer buf, gsize bufle
   return rc;
 }
 
-/* regular files */
-LogTransport *
-log_transport_file_new(gint fd)
-{
-  LogTransportFile *self = g_new0(LogTransportFile, 1);
-
-  log_transport_init_method(&self->super, fd);
-  self->super.read = log_transport_file_read_method;
-  self->super.write = log_transport_file_write_method;
-  self->super.free_fn = log_transport_free_method;
-  return &self->super;
-}
 
 LogTransport *
 log_transport_pipe_new(gint fd)
 {
   LogTransportFile *self = g_new0(LogTransportFile, 1);
 
-  log_transport_init_method(&self->super, fd);
-  self->super.read = log_transport_file_read_method;
+  log_transport_file_init_method(self, fd);
   self->super.write = log_transport_pipe_write_method;
-  self->super.free_fn = log_transport_free_method;
   return &self->super;
 }
 

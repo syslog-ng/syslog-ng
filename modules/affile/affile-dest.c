@@ -29,6 +29,7 @@
 #include "gprocess.h"
 #include "stats/stats-registry.h"
 #include "mainloop-call.h"
+#include "transport/transport-file.h"
 #include "logproto/logproto-text-client.h"
 #include "logproto-file-writer.h"
 #include "compat/lfs.h"
