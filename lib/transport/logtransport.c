@@ -24,10 +24,6 @@
 
 #include "logtransport.h"
 #include "messages.h"
-#include "alarms.h"
-
-#include <errno.h>
-#include <ctype.h>
 
 void
 log_transport_free_method(LogTransport *s)
