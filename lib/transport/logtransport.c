@@ -23,7 +23,6 @@
  */
 
 #include "logtransport.h"
-#include "transport/transport-file.h"
 #include "messages.h"
 #include "alarms.h"
 
@@ -55,58 +54,6 @@ log_transport_free(LogTransport *self)
 {
   self->free_fn(self);
   g_free(self);
-}
-
-static gssize
-log_transport_pipe_write_method(LogTransport *s, const gpointer buf, gsize buflen)
-{
-  LogTransportFile *self = (LogTransportFile *) s;
-  gint rc;
-
-  do
-    {
-      /* NOTE: this loop is needed because of the funny semantics that
-       * pipe() uses. A pipe has a buffer (sized PIPE_BUF), which
-       * determines how much data it can buffer. If the data to be
-       * written would overflow the buffer, it may reject it with
-       * rc == -1 and errno set to EAGAIN.
-       *
-       * The issue is worse as AIX may indicate in poll() that the
-       * pipe is writable, and then the pipe may flat out reject our
-       * write() operation, resulting in a busy loop.
-       *
-       * The work around is to try to write the data in
-       * ever-decreasing size, and only accept EAGAIN if a single byte
-       * write is refused as well.
-       *
-       * Most UNIX platforms behaves better than that, but the AIX
-       * implementation is still conforming, for now we only enable it
-       * on AIX.
-       */
-
-      do
-        {
-          rc = write(self->super.fd, buf, buflen);
-        }
-#ifdef __aix__
-      while ((buflen >>= 1) && rc < 0 && errno == EAGAIN);
-#else
-      while (0);
-#endif
-    }
-  while (rc == -1 && errno == EINTR);
-  return rc;
-}
-
-
-LogTransport *
-log_transport_pipe_new(gint fd)
-{
-  LogTransportFile *self = g_new0(LogTransportFile, 1);
-
-  log_transport_file_init_method(self, fd);
-  self->super.write = log_transport_pipe_write_method;
-  return &self->super;
 }
 
 typedef struct _LogTransportDevice LogTransportDevice;

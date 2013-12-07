@@ -28,6 +28,7 @@
 #include "children.h"
 #include "misc.h"
 #include "stats/stats-registry.h"
+#include "transport/transport-pipe.h"
 #include "logproto/logproto-text-server.h"
 #include "logproto/logproto-text-client.h"
 #include "poll-fd-events.h"
