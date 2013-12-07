@@ -27,6 +27,7 @@
 #include "logwriter.h"
 #include "gsocket.h"
 #include "stats/stats-registry.h"
+#include "transport/transport-socket.h"
 #include "mainloop.h"
 
 #include <string.h>

@@ -24,6 +24,7 @@
 #include "afsocket-source.h"
 #include "messages.h"
 #include "misc.h"
+#include "transport/transport-socket.h"
 #if BUILD_WITH_SSL
 #include "transport/tlstransport.h"
 #endif

@@ -55,7 +55,4 @@ void log_transport_init_method(LogTransport *s, gint fd);
 void log_transport_free_method(LogTransport *s);
 void log_transport_free(LogTransport *s);
 
-LogTransport *log_transport_dgram_socket_new(gint fd);
-LogTransport *log_transport_stream_socket_new(gint fd);
-
 #endif
