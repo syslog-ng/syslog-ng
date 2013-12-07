@@ -56,57 +56,6 @@ log_transport_free(LogTransport *self)
   g_free(self);
 }
 
-typedef struct _LogTransportDevice LogTransportDevice;
-struct _LogTransportDevice
-{
-  LogTransport super;
-  gint timeout;
-};
-
-static gssize
-log_transport_device_read_method(LogTransport *s, gpointer buf, gsize buflen, GSockAddr **sa)
-{
-  LogTransportDevice *self = (LogTransportDevice *) s;
-  gint rc;
-
-  if (sa)
-    *sa = NULL;
-
-  do
-    {
-      if (self->timeout)
-        alarm_set(self->timeout);
-      rc = read(self->super.fd, buf, buflen);
-
-      if (self->timeout > 0 && rc == -1 && errno == EINTR && alarm_has_fired())
-        {
-          msg_notice("Nonblocking read has blocked, returning with an error",
-                     evt_tag_int("fd", self->super.fd),
-                     evt_tag_int("timeout", self->timeout),
-                     NULL);
-          alarm_cancel();
-          break;
-        }
-      if (self->timeout)
-        alarm_cancel();
-    }
-  while (rc == -1 && errno == EINTR);
-  return rc;
-}
-
-LogTransport *
-log_transport_device_new(gint fd, gint timeout)
-{
-  LogTransportDevice *self = g_new0(LogTransportDevice, 1);
-
-  log_transport_init_method(&self->super, fd);
-  self->timeout = timeout;
-  self->super.read = log_transport_device_read_method;
-  self->super.write = NULL;
-  self->super.free_fn = log_transport_free_method;
-  return &self->super;
-}
-
 typedef struct _LogTransportSocket LogTransportSocket;
 struct _LogTransportSocket
 {
