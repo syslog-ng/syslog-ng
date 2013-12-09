@@ -1158,6 +1158,8 @@ main(int argc, char *argv[])
   log_tags_global_init();
   pattern_db_global_init();
 
+  module_path = get_installation_path_for(MODULE_PATH);
+
   configuration = cfg_new(VERSION_VALUE);
 
   if (!g_option_context_parse(ctx, &argc, &argv, &error))
