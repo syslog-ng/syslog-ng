@@ -948,17 +948,18 @@ cfg_lexer_new_buffer(const gchar *buffer, gsize length)
 {
   CfgLexer *self;
   CfgIncludeLevel *level;
+  gsize new_length;
 
   self = g_new0(CfgLexer, 1);
   cfg_lexer_init(self);
 
   level = &self->include_stack[0];
   level->include_type = CFGI_BUFFER;
-  level->buffer.content = g_malloc(length + 2);
-  memcpy(level->buffer.content, buffer, length);
-  level->buffer.content[length] = 0;
-  level->buffer.content[length + 1] = 0;
-  level->buffer.content_length = length + 2;
+  level->buffer.content = cfg_lexer_subst_args(NULL, NULL, NULL, buffer, &new_length);
+  level->buffer.content_length = new_length + 2;
+  level->buffer.content = g_realloc(level->buffer.content, level->buffer.content_length);
+  level->buffer.content[new_length] = 0;
+  level->buffer.content[new_length + 1] = 0;
   level->name = g_strdup("<string>");
   level->yybuf = _cfg_lexer__scan_buffer(level->buffer.content, level->buffer.content_length, self->state);
   _cfg_lexer__switch_to_buffer(level->yybuf, self->state);
