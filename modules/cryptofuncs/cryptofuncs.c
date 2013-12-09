@@ -26,6 +26,7 @@
 #include "cfg.h"
 #include "uuid.h"
 #include "misc.h"
+#include "str-format.h"
 #include "plugin-types.h"
 
 #if ENABLE_SSL

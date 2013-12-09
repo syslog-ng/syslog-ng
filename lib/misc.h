@@ -43,7 +43,6 @@ gboolean resolve_user(const char *user, gint *uid);
 gboolean resolve_group(const char *group, gint *gid);
 gboolean resolve_user_group(char *arg, gint *uid, gint *gid);
 
-gchar *format_hex_string(gpointer str, gsize str_len, gchar *result, gsize result_len);
 gchar *find_cr_or_lf(gchar *s, gsize n);
 
 gchar *find_file_in_path(const gchar *path, const gchar *filename, GFileTest test);
