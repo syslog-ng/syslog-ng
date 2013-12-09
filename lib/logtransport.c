@@ -29,6 +29,10 @@
 #include <errno.h>
 #include <ctype.h>
 
+#ifndef _WIN32
+#define closesocket close
+#endif
+
 void
 log_transport_free_method(LogTransport *s)
 {
@@ -39,7 +43,10 @@ log_transport_free_method(LogTransport *s)
                   NULL);
       if (s->flags & LTF_SHUTDOWN)
         shutdown(s->fd, SHUT_RDWR);
-      close(s->fd);
+      if (s->flags & LTF_SOCKET)
+        closesocket(s->fd);
+      else
+        close(s->fd);
     }
 }
 
