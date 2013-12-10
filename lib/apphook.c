@@ -120,6 +120,7 @@ app_startup(void)
   iv_init();
   g_thread_init(NULL);
   dns_cache_global_init();
+  dns_cache_thread_init();
   afinter_global_init();
   child_manager_init();
   alarm_init();
@@ -162,6 +163,7 @@ app_shutdown(void)
   child_manager_deinit();
   g_list_foreach(application_hooks, (GFunc) g_free, NULL);
   g_list_free(application_hooks);
+  dns_cache_thread_deinit();
   dns_cache_global_deinit();
   msg_deinit();
   iv_deinit();

@@ -20,7 +20,6 @@ test_expiration(void)
   gboolean positive;
 
   dns_cache_set_params(50000, 3, 1, NULL);
-  dns_cache_thread_init();
 
   for (i = 0; i < 10000; i++)
     {
@@ -107,7 +106,6 @@ test_expiration(void)
           exit(1);
         }
     }
-  dns_cache_thread_deinit();
 }
 
 void
@@ -120,7 +118,6 @@ test_dns_cache_benchmark(void)
   gint i;
 
   dns_cache_set_params(50000, 600, 300, NULL);
-  dns_cache_thread_init();
 
   for (i = 0; i < 10000; i++)
     {
@@ -143,7 +140,6 @@ test_dns_cache_benchmark(void)
     }
   g_get_current_time(&end);
   printf("DNS cache speed: %12.3f iters/sec\n", i * 1e6 / g_time_val_diff(&end, &start));
-  dns_cache_thread_deinit();
 }
 
 int
