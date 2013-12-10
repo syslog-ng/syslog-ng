@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 1998-2012 Balázs Scheidler
+ * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 1998-2013 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,17 +22,19 @@
  *
  */
 
-#ifndef LOGPROTO_H_INCLUDED
-#define LOGPROTO_H_INCLUDED
+#ifndef TRANSPORT_TRANSPORT_FILE_H_INCLUDED
+#define TRANSPORT_TRANSPORT_FILE_H_INCLUDED 1
 
 #include "transport/logtransport.h"
 
-typedef enum
+/* log transport that simply sends messages to an fd */
+typedef struct _LogTransportFile LogTransportFile;
+struct _LogTransportFile
 {
-  LPS_SUCCESS,
-  LPS_ERROR,
-  LPS_EOF,
-} LogProtoStatus;
+  LogTransport super;
+};
 
+void log_transport_file_init_method(LogTransportFile *self, gint fd);
+LogTransport *log_transport_file_new(gint fd);
 
 #endif

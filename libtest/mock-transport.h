@@ -25,7 +25,7 @@
 #ifndef MOCK_TRANSPORT_H_INCLUDED
 #define MOCK_TRANSPORT_H_INCLUDED 1
 
-#include "logtransport.h"
+#include "transport/logtransport.h"
 
 /* macro to be used when injecting an error in the I/O stream */
 #define LTM_INJECT_ERROR(err)   (GUINT_TO_POINTER(err)), 0

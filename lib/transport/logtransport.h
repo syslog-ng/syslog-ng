@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 1998-2012 Balázs Scheidler
+ * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 1998-2013 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -54,11 +54,5 @@ log_transport_read(LogTransport *self, gpointer buf, gsize count, GSockAddr **sa
 void log_transport_init_method(LogTransport *s, gint fd);
 void log_transport_free_method(LogTransport *s);
 void log_transport_free(LogTransport *s);
-
-LogTransport *log_transport_file_new(gint fd);
-LogTransport *log_transport_pipe_new(gint fd);
-LogTransport *log_transport_device_new(gint fd, gint timeout);
-LogTransport *log_transport_dgram_socket_new(gint fd);
-LogTransport *log_transport_stream_socket_new(gint fd);
 
 #endif

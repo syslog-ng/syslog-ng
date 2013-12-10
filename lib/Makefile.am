@@ -1,5 +1,6 @@
 DIST_SUBDIRS				= lib/ivykis
 
+include lib/transport/Makefile.am
 include lib/logproto/Makefile.am
 include lib/rewrite/Makefile.am
 include lib/parser/Makefile.am
@@ -60,7 +61,6 @@ pkginclude_HEADERS			+= \
 	lib/logsource.h			\
 	lib/logstamp.h			\
 	lib/logthrdestdrv.h		\
-	lib/logtransport.h		\
 	lib/logwriter.h			\
 	lib/mainloop.h			\
 	lib/mainloop-call.h		\
@@ -91,7 +91,6 @@ pkginclude_HEADERS			+= \
 	lib/tls-support.h		\
 	lib/thread-utils.h		\
 	lib/tlscontext.h  		\
-	lib/tlstransport.h		\
 	lib/type-hinting.h		\
 	lib/uuid.h			\
 	lib/value-pairs.h		\
@@ -102,8 +101,8 @@ pkginclude_HEADERS			+= \
 lib_libsyslog_ng_crypto_la_sources	= \
 	lib/crypto.c			\
 	lib/tlscontext.c		\
-	lib/tlstransport.c		\
-	lib/uuid.c
+	lib/uuid.c			\
+	$(transport_crypto_sources)
 
 # this is intentionally formatted so conflicts are less likely to arise. one name in every line.
 lib_libsyslog_ng_la_SOURCES		= \
@@ -140,7 +139,6 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/logsource.c			\
 	lib/logstamp.c			\
 	lib/logthrdestdrv.c		\
-	lib/logtransport.c		\
 	lib/logwriter.c			\
 	lib/mainloop.c			\
 	lib/mainloop-call.c		\
@@ -174,6 +172,7 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/cfg-grammar.y		\
 	lib/block-ref-grammar.y		\
 	lib/pragma-grammar.y		\
+	$(transport_sources)		\
 	$(logproto_sources)		\
 	$(filter_sources)		\
 	$(parser_sources)		\
