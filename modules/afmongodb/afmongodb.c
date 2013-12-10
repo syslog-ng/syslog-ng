@@ -59,6 +59,10 @@ typedef struct
 
   gboolean safe_mode;
   LogTemplateOptions template_options;
+
+  gchar *user;
+  gchar *password;
+
   time_t last_msg_stamp;
 
   ValuePairs *vp;
@@ -76,6 +80,25 @@ typedef struct
 /*
  * Configuration
  */
+
+void
+afmongodb_dd_set_user(LogDriver *d, const gchar *user)
+{
+  MongoDBDestDriver *self = (MongoDBDestDriver *)d;
+
+  g_free(self->user);
+  self->user = g_strdup(user);
+}
+
+void
+afmongodb_dd_set_password(LogDriver *d, const gchar *password)
+{
+  MongoDBDestDriver *self = (MongoDBDestDriver *)d;
+
+  g_free(self->password);
+  self->password = g_strdup(password);
+}
+
 void
 afmongodb_dd_set_host(LogDriver *d, const gchar *host)
 {
@@ -258,6 +281,22 @@ afmongodb_dd_connect(MongoDBDestDriver *self, gboolean reconnect)
 		  evt_tag_int("port", port),
 		  NULL);
       g_free(host);
+    }
+
+  if (self->user || self->password)
+    {
+      if (!self->user || !self->password)
+        {
+          msg_error("Neither the username, nor the password can be empty", NULL);
+          return FALSE;
+        }
+
+      if (!mongo_sync_cmd_authenticate (self->conn, self->db,
+                                        self->user, self->password))
+        {
+          msg_error("MongoDB authentication failed", NULL);
+          return FALSE;
+        }
     }
 
   return TRUE;
@@ -578,6 +617,8 @@ afmongodb_dd_free(LogPipe *d)
 
   g_free(self->db);
   g_free(self->coll);
+  g_free(self->user);
+  g_free(self->password);
   g_free(self->address);
   string_list_free(self->servers);
   if (self->vp)

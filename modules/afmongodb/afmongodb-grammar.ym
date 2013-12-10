@@ -90,6 +90,8 @@ afmongodb_option
           }
 	| KW_DATABASE '(' string ')'		{ afmongodb_dd_set_database(last_driver, $3); free($3); }
 	| KW_COLLECTION '(' string ')'		{ afmongodb_dd_set_collection(last_driver, $3); free($3); }
+	| KW_USERNAME '(' string ')'		{ afmongodb_dd_set_user(last_driver, $3); free($3); }
+	| KW_PASSWORD '(' string ')'		{ afmongodb_dd_set_password(last_driver, $3); free($3); }
 	| KW_SAFE_MODE '(' yesno ')'		{ afmongodb_dd_set_safe_mode(last_driver, $3); }
 	| value_pair_option			{ afmongodb_dd_set_value_pairs(last_driver, $1); }
 	| dest_driver_option
