@@ -26,7 +26,7 @@
 #include "misc.h"
 #include "transport/transport-socket.h"
 #if BUILD_WITH_SSL
-#include "transport/tlstransport.h"
+#include "transport/transport-tls.h"
 #endif
 #include "gsocket.h"
 #include "stats/stats-registry.h"

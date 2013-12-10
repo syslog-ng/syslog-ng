@@ -2,7 +2,7 @@ transportincludedir			= ${pkgincludedir}/transport
 
 transportinclude_HEADERS = \
 	lib/transport/logtransport.h	\
-	lib/transport/tlstransport.h	\
+	lib/transport/transport-tls.h	\
 	lib/transport/transport-file.h	\
 	lib/transport/transport-pipe.h	\
 	lib/transport/transport-device.h \
@@ -16,4 +16,4 @@ transport_sources = \
 	lib/transport/transport-socket.c
 
 transport_crypto_sources = \
-	lib/transport/tlstransport.c
+	lib/transport/transport-tls.c

@@ -27,7 +27,7 @@
 #include "messages.h"
 #include "misc.h"
 #include "gprocess.h"
-#include "transport/tlstransport.h"
+#include "transport/transport-tls.h"
 
 #include <sys/types.h>
 #include <sys/socket.h>

@@ -21,7 +21,7 @@
  * COPYING for details.
  */
 
-#include "transport/tlstransport.h"
+#include "transport/transport-tls.h"
 
 #if ENABLE_SSL
 
