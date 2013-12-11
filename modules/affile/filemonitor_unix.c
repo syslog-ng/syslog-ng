@@ -383,53 +383,7 @@ monitor_source_poll_new(guint32 poll_freq, FileMonitor *monitor)
 static gboolean
 file_monitor_process_poll_event(FileMonitor *monitor, MonitorPoll *source)
 {
-  GError *err = NULL;
-  const gchar * file_name = NULL;
-  gchar *path = NULL;
-
-  if (source->dir == NULL)
-    {
-      source->dir = g_dir_open(source->super.base_dir, 0, &err);
-      if (source->dir == NULL)
-        {
-          msg_error("failed to open directory",
-                    evt_tag_str("basedir", source->super.base_dir),
-                    evt_tag_str("message", err->message),
-                    NULL);
-          g_error_free(err);
-          return FALSE;
-        }
-    }
-
-  file_name = g_dir_read_name(source->dir);
-
-  if (file_name == NULL)
-    {
-      /* The next poll event will reopen the directory and check the files again */
-      g_dir_close(source->dir);
-      if (monitor->file_callback != NULL)
-          monitor->file_callback(END_OF_LIST, monitor->user_data, ACTION_NONE);
-      source->dir = NULL;
-      return TRUE;
-    }
-
-  msg_debug("poll process event",
-            evt_tag_str("basedir", source->super.base_dir),
-            evt_tag_str("filename", file_name),
-            NULL);
-
-  path = resolve_to_absolute_path(file_name, source->super.base_dir);
-  if (g_file_test(path, G_FILE_TEST_IS_DIR))
-    {
-      if (monitor->recursion)
-        file_monitor_watch_directory(monitor, path);
-    }
-  else
-    {
-      /* file or symlink */
-      file_monitor_chk_file(monitor, &source->super, file_name);
-    }
-  g_free(path);
+  file_monitor_list_directory(monitor, &source->super, source->super.base_dir);
   return TRUE;
 }
 
