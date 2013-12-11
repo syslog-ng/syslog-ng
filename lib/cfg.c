@@ -753,7 +753,7 @@ static gchar *
 cfg_calculate_hash(GlobalConfig *cfg)
 {
   EVP_MD_CTX sha;
-  gint hashlen;
+  guint hashlen;
 
   if (cfg->cfg_fingerprint)
     {

@@ -399,7 +399,7 @@ afsql_dd_create_index(AFSqlDestDriver *self, gchar *table, gchar *column)
 
 #if ENABLE_SSL
           EVP_MD_CTX sha;
-          gint hashlen;
+          guint hashlen;
           guchar hash[EVP_MAX_MD_SIZE];
           gchar hash_str[31];
           gchar *cat = g_strjoin("_", table, column, NULL);
