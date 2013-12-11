@@ -86,7 +86,7 @@ $(STAMPDIR)/stamp-build: $(STAMPDIR)/stamp-configure
 ifeq ($(NEED_INSTALL_BEFORE_CHECK), 1)
 	$(MAKE) install
 endif
-	$(MAKE) check
+	MAKEFLAGS="" $(MAKE) check
 	touch $@
 
 
