@@ -776,6 +776,43 @@ persist_state_remove_entry(PersistState *self, const gchar *key)
   return TRUE;
 };
 
+typedef struct _PersistStateKeysForeachData
+{
+   PersistStateForeachFunc func;
+   gpointer userdata;
+   PersistState* storage;
+} PersistStateKeysForeachData;
+
+static void
+_foreach_entry_func(gpointer key, gpointer value, gpointer userdata)
+{
+  PersistStateKeysForeachData* data = (PersistStateKeysForeachData*) userdata;
+  gchar* name = (gchar*) key;
+  PersistEntry* entry = (PersistEntry*) value;
+
+  PersistValueHeader *header = persist_state_map_entry(data->storage, entry->ofs - sizeof(PersistValueHeader) );
+  gint size = GUINT32_FROM_BE(header->size);
+  persist_state_unmap_entry(data->storage, entry->ofs );
+
+  gpointer* state = persist_state_map_entry(data->storage, entry->ofs);
+
+  data->func(name, size, state, data->userdata);
+
+  persist_state_unmap_entry(data->storage, entry->ofs);
+};
+
+void
+persist_state_foreach_entry(PersistState *self, PersistStateForeachFunc func, gpointer userdata)
+{
+  PersistStateKeysForeachData data;
+
+  data.func = func;
+  data.userdata = userdata;
+  data.storage = self;
+
+  g_hash_table_foreach(self->keys, _foreach_entry_func, &data);
+};
+
 /* easier to use string based interface */
 gchar *
 persist_state_lookup_string(PersistState *self, const gchar *key, gsize *length, guint8 *version)

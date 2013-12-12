@@ -38,6 +38,31 @@ test_persist_state_remove_entry(void)
   cancel_and_destroy_persist_state(state);
 };
 
+void 
+test_persist_state_foreach_callback(gchar* name, gint size, gpointer entry, gpointer userdata)
+{
+  assert_string((gchar*) userdata, "test_userdata", "Userdata is not passed correctly to foreach func!");
+  assert_string(name, "test", "Name of persist entry does not match!");
+  TestState* state = (TestState*) entry;
+  assert_gint(state->value, 3, "Content of state does not match!");
+  assert_gint(size, sizeof(TestState), "Size of state does not match!");
+};
+
+void 
+test_persist_state_foreach_entry(void)
+{
+  PersistState* state = clean_and_create_persist_state_for_test("test_persist_foreach.persist");
+
+  PersistEntryHandle handle = persist_state_alloc_entry(state, "test", sizeof(TestState));
+  TestState *test_state = persist_state_map_entry(state, handle);
+  test_state->value = 3;
+  persist_state_unmap_entry(state, handle);
+
+  persist_state_foreach_entry(state, test_persist_state_foreach_callback, "test_userdata");
+
+  cancel_and_destroy_persist_state(state);
+};
+
 void
 test_values(void)
 {
@@ -162,6 +187,7 @@ main(int argc, char *argv[])
   test_persist_state_remove_entry();
   test_persist_state_temp_file_cleanup_on_cancel();
   test_persist_state_temp_file_cleanup_on_commit_destroy();
+  test_persist_state_foreach_entry();
 
   return 0;
 }
