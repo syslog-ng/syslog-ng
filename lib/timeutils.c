@@ -233,6 +233,17 @@ cached_gmtime(time_t *when, struct tm *tm)
     }
 }
 
+gchar *
+get_cached_current_time(gchar buf[128])
+{
+  struct tm tm;
+  time_t now = cached_g_current_time_sec();
+
+  cached_localtime(&now, &tm);
+  strftime(buf, 64, "%Y-%m-%dT%H:%M:%S%z", &tm);
+  return buf;
+}
+
 /**
  * get_local_timezone_ofs:
  * @when: time in UTC

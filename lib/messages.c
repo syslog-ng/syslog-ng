@@ -118,13 +118,23 @@ msg_limit_internal_message(const gchar *msg)
   return TRUE;
 }
 
+static void
+msg_send_formatted_message_to_stderr(const char *msg)
+{
+  gchar tmtime[128];
+
+  if (G_UNLIKELY(debug_flag))
+    fprintf(stderr, "[%s] %s\n", get_cached_current_time(tmtime), msg);
+  else
+    fprintf(stderr, "%s\n", msg);
+}
 
 static void
 msg_send_formatted_message(int prio, const char *msg)
 {
   if (G_UNLIKELY(log_stderr || (msg_post_func == NULL && (prio & 0x7) <= EVT_PRI_WARNING)))
     {
-      fprintf(stderr, "%s\n", msg);
+      msg_send_formatted_message_to_stderr(msg);
     }
   else
     {

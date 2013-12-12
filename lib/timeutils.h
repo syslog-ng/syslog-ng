@@ -31,6 +31,7 @@
 time_t cached_mktime(struct tm *tm);
 void cached_localtime(time_t *when, struct tm *tm);
 void cached_gmtime(time_t *when, struct tm *tm);
+gchar *get_cached_current_time(gchar buf[128]);
 
 long get_local_timezone_ofs(time_t when);
 void clean_time_cache();
