@@ -69,6 +69,9 @@ ${top_srcdir}/ChangeLog:
 install-exec-hook: ${INSTALL_EXEC_HOOKS}
 uninstall-hook: ${UNINSTALL_HOOKS}
 
+populate-makefiles:
+	$(top_srcdir)/Mk/populate-makefiles.sh
+
 help:
 	@echo "Welcome to the syslog-ng build system!"
 	@echo
@@ -80,13 +83,14 @@ help:
 	@echo
 	@echo " modules  : Builds all syslog-ng modules."
 	@echo " syslog-ng: Build syslog-ng itself, only."
+	@echo " populate-makefiles : populate build directory with stub Makefiles"
 	@echo
 	@echo "One can also build individual modules (and their dependencies),"
 	@echo "using any of the following shortcuts:"
 	@echo
 	@echo "" ${SYSLOG_NG_MODULES} | sed -e 's#\(.\{,72\}\) #\1\n #g'
 
-.PHONY: help
+.PHONY: help populate-makefiles
 
 include Mk/lex-rules.am
 include libtest/Makefile.am
