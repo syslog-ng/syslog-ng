@@ -63,7 +63,7 @@ confgen_generate(CfgLexer *lexer, gint type, const gchar *name, CfgArgs *args, g
                 NULL);
       return FALSE;
     }
-  value = g_malloc(1024);
+  value = g_malloc0(1024);
   while ((res = fread(value + value_len, 1, 1024, out)) > 0)
     {
       value_len += res;
