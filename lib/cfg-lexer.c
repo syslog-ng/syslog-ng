@@ -197,7 +197,7 @@ cfg_lexer_subst_args(CfgArgs *globals, CfgArgs *defs, CfgArgs *args, gchar *cptr
                   #ifdef _WIN32
                   if (arg)
                     {
-                      arg = escape_windows_path(arg);
+                      arg = escape_windows_path((gchar *)arg);
                       has_to_free_arg = TRUE;
                     }
                   #endif
@@ -955,7 +955,7 @@ cfg_lexer_new_buffer(const gchar *buffer, gsize length)
 
   level = &self->include_stack[0];
   level->include_type = CFGI_BUFFER;
-  level->buffer.content = cfg_lexer_subst_args(NULL, NULL, NULL, buffer, &new_length);
+  level->buffer.content = cfg_lexer_subst_args(NULL, NULL, NULL, (gchar *)buffer, &new_length);
   level->buffer.content_length = new_length + 2;
   level->buffer.content = g_realloc(level->buffer.content, level->buffer.content_length);
   level->buffer.content[new_length] = 0;
