@@ -315,7 +315,10 @@ int sigprocmask(int how, const sigset_t *set, sigset_t *oldset);
    static void f(void) __attribute__((constructor));\
    static void f(void)
 
+#ifndef CLOCK_REALTIME
 #define CLOCK_REALTIME 1
+#endif
+
 int clock_gettime(int clock_id, struct timespec *res);
 
 #elif defined(__GNUC__) /* _WIN32 */
