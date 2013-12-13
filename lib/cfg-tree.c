@@ -891,9 +891,11 @@ cfg_tree_compile_node(CfgTree *self, LogExprNode *node,
   if (debug_flag)
     {
       gchar buf[32];
+      gchar timebuf[128];
 
       indent++;
-      fprintf(stderr, "%.*sCompiling %s %s [%s] at [%s]\n",
+      fprintf(stderr, "[%s] %.*sCompiling %s %s [%s] at [%s]\n",
+              get_cached_current_time(timebuf),
               indent * 2, "                   ",
               node->name ? : "#unnamed",
               log_expr_node_get_layout_name(node->layout),
