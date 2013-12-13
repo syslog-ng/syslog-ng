@@ -208,6 +208,7 @@ main_loop_reload_config_apply(void)
       msg_error("Error initializing new configuration, reverting to old config", NULL);
       service_management_publish_status("Error initializing new configuration, using the old config");
       cfg_persist_config_move(main_loop_new_config, main_loop_old_config);
+      cfg_deinit(main_loop_new_config);
       if (!cfg_init(main_loop_old_config))
         {
           /* hmm. hmmm, error reinitializing old configuration, we're hosed.
