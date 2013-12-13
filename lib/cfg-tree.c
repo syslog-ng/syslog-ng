@@ -891,14 +891,17 @@ cfg_tree_compile_node(CfgTree *self, LogExprNode *node,
   if (debug_flag)
     {
       gchar buf[32];
+      gchar compile_message[256];
 
       indent++;
-      fprintf(stderr, "%.*sCompiling %s %s [%s] at [%s]\n",
-              indent * 2, "                   ",
-              node->name ? : "#unnamed",
-              log_expr_node_get_layout_name(node->layout),
-              log_expr_node_get_content_name(node->content),
-              log_expr_node_format_location(node, buf, sizeof(buf)));
+      g_snprintf(compile_message, sizeof(compile_message),
+                 "%-*sCompiling %s %s [%s] at [%s]",
+                  indent * 2, "",
+                  node->name ? : "#unnamed",
+                  log_expr_node_get_layout_name(node->layout),
+                  log_expr_node_get_content_name(node->content),
+                  log_expr_node_format_location(node, buf, sizeof(buf)));
+      msg_send_formatted_message(EVT_PRI_DEBUG, compile_message);
     }
 
   switch (node->layout)

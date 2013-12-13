@@ -96,6 +96,6 @@ void msg_add_option_group(GOptionContext *ctx);
 #endif
 
 void msg_post_message(LogMessage *msg);
-
+void msg_send_formatted_message(int prio, const char *msg);
 
 #endif

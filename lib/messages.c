@@ -118,13 +118,37 @@ msg_limit_internal_message(const gchar *msg)
   return TRUE;
 }
 
+static gchar *
+msg_format_timestamp(gchar *buf, gsize buflen)
+{
+  struct tm tm;
+  GTimeVal now;
+  gint len;
+  time_t now_sec;
+
+  g_get_current_time(&now);
+  now_sec = now.tv_sec;
+  cached_localtime(&now_sec, &tm);
+  len = strftime(buf, buflen, "%Y-%m-%dT%H:%M:%S", &tm);
+  if (len < buflen)
+    g_snprintf(buf + len, buflen - len, ".%06ld", now.tv_usec);
+  return buf;
+}
 
 static void
+msg_send_formatted_message_to_stderr(const char *msg)
+{
+  gchar tmtime[128];
+
+  fprintf(stderr, "[%s] %s\n", msg_format_timestamp(tmtime, sizeof(tmtime)), msg);
+}
+
+void
 msg_send_formatted_message(int prio, const char *msg)
 {
   if (G_UNLIKELY(log_stderr || (msg_post_func == NULL && (prio & 0x7) <= EVT_PRI_WARNING)))
     {
-      fprintf(stderr, "%s\n", msg);
+      msg_send_formatted_message_to_stderr(msg);
     }
   else
     {
