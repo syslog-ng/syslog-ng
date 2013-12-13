@@ -191,7 +191,7 @@ filter_re
 	| KW_HOST    { last_re_filter = filter_re_new(LM_V_HOST); } filter_re_params
 	| KW_MESSAGE { last_re_filter = filter_re_new(LM_V_MESSAGE); } filter_re_params
         | KW_SOURCE  { last_re_filter = filter_source_new();  } filter_re_params
-	: KW_MATCH   { last_re_filter = filter_match_new(); } filter_match_params
+	| KW_MATCH   { last_re_filter = filter_match_new(); } filter_match_params
 	;
 
 filter_re_params
