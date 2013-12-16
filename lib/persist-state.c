@@ -849,47 +849,8 @@ persist_state_commit(PersistState *self)
   return TRUE;
 }
 
-/*
- * This routine should revert to the persist_state_new() state,
- * e.g. just like the PersistState object wasn't started yet.
- */
-void
-persist_state_cancel(PersistState *self)
-{
-  gchar *commited_filename, *temp_filename;
-
-  close(self->fd);
-  munmap(self->current_map, self->current_size);
-  unlink(self->temp_filename);
-  g_hash_table_destroy(self->keys);
-  commited_filename = self->commited_filename;
-  temp_filename = self->temp_filename;
-  memset(self, 0, sizeof(*self));
-  self->commited_filename = commited_filename;
-  self->temp_filename = temp_filename;
-  self->fd = -1;
-  self->keys = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
-  self->current_ofs = sizeof(PersistFileHeader);
-  self->version = 4;
-}
-
-PersistState *
-persist_state_new(const gchar *filename)
-{
-  PersistState *self = g_new0(PersistState, 1);
-
-  self->commited_filename = g_strdup(filename);
-  self->temp_filename = g_strdup_printf("%s-", self->commited_filename);
-  self->keys = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
-  self->current_ofs = sizeof(PersistFileHeader);
-  self->mapped_lock = g_mutex_new();
-  self->mapped_release_cond = g_cond_new();
-  self->version = 4;
-  return self;
-}
-
-void
-persist_state_free(PersistState *self)
+static void
+_destroy(PersistState *self)
 {
   g_mutex_lock(self->mapped_lock);
   g_assert(self->mapped_counter == 0);
@@ -905,5 +866,50 @@ persist_state_free(PersistState *self)
   g_free(self->temp_filename);
   g_free(self->commited_filename);
   g_hash_table_destroy(self->keys);
+};
+
+static void
+_init(PersistState* self, gchar* commited_filename, gchar* temp_filename)
+{
+  self->keys = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
+  self->current_ofs = sizeof(PersistFileHeader);
+  self->mapped_lock = g_mutex_new();
+  self->mapped_release_cond = g_cond_new();
+  self->version = 4;
+  self->fd = -1;
+  self->commited_filename = commited_filename;
+  self->temp_filename = temp_filename;
+};
+/*
+ * This routine should revert to the persist_state_new() state,
+ * e.g. just like the PersistState object wasn't started yet.
+ */
+void
+persist_state_cancel(PersistState *self)
+{
+  gchar *commited_filename, *temp_filename;
+  commited_filename = g_strdup(self->commited_filename);
+  temp_filename = g_strdup(self->temp_filename);
+
+  _destroy(self);
+
+  memset(self, 0, sizeof(*self));
+
+  _init(self, commited_filename, temp_filename);
+}
+
+PersistState *
+persist_state_new(const gchar *filename)
+{
+  PersistState *self = g_new0(PersistState, 1);
+
+  _init(self,  g_strdup(filename), g_strdup_printf("%s-", filename));
+  return self;
+}
+
+void
+persist_state_free(PersistState *self)
+{
+  _destroy(self);
   g_free(self);
 }
