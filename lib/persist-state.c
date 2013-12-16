@@ -164,16 +164,22 @@ typedef struct _PersistValueHeader
 
 /* lowest layer, "store" functions manage the file on disk */
 
+static void
+_wait_until_map_release(PersistState* self)
+{
+  g_mutex_lock(self->mapped_lock);
+  if (self->mapped_counter != 0)
+    g_cond_wait(self->mapped_release_cond, self->mapped_lock);
+  g_assert(self->mapped_counter == 0);
+}
+
 static gboolean
 _grow_store(PersistState *self, guint32 new_size)
 {
   int pgsize = getpagesize();
   gboolean result = FALSE;
 
-  g_mutex_lock(self->mapped_lock);
-  if (self->mapped_counter != 0)
-    g_cond_wait(self->mapped_release_cond, self->mapped_lock);
-  g_assert(self->mapped_counter == 0);
+  _wait_until_map_release(self);
 
   if ((new_size & (pgsize-1)) != 0)
     {
