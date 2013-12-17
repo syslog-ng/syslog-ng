@@ -137,7 +137,7 @@ struct _CfgLexer
   GList *token_blocks;
   GList *generators;
   GString *string_buffer;
-  FILE *preprocess_output;
+  GString *preprocess_output;
   gint preprocess_suppress_tokens;
   GString *token_pretext;
   GString *token_text;
@@ -181,7 +181,7 @@ gboolean cfg_lexer_register_block_generator(CfgLexer *self, gint context, const 
 int cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc);
 void cfg_lexer_free_token(YYSTYPE *token);
 
-CfgLexer *cfg_lexer_new(FILE *file, const gchar *filename, const gchar *preprocess_into);
+CfgLexer *cfg_lexer_new(FILE *file, const gchar *filename, GString *preprocess_output);
 CfgLexer *cfg_lexer_new_buffer(const gchar *buffer, gsize length);
 void  cfg_lexer_free(CfgLexer *self);
 

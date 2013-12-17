@@ -761,7 +761,7 @@ cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
     yylval->type = tok;
 
   if (self->preprocess_output)
-    fprintf(self->preprocess_output, "%s", self->token_pretext->str);
+    g_string_append_printf(self->preprocess_output, "%s", self->token_pretext->str);
  exit:
 
   if (self->ignore_pragma)
@@ -774,7 +774,7 @@ cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
       gpointer dummy;
 
       if (self->preprocess_output)
-        fprintf(self->preprocess_output, "@");
+        g_string_append_printf(self->preprocess_output, "@");
       if (!cfg_parser_parse(&pragma_parser, self, &dummy, NULL))
         {
           return LL_ERROR;
@@ -856,10 +856,9 @@ cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
 
   if (!injected)
     {
-      if (self->preprocess_suppress_tokens == 0)
+      if (self->preprocess_suppress_tokens == 0 && self->preprocess_output)
         {
-          if (self->preprocess_output)
-            fprintf(self->preprocess_output, "%s", self->token_text->str);
+          g_string_append_printf(self->preprocess_output, "%s", self->token_text->str);
         }
     }
   return tok;
@@ -883,18 +882,14 @@ cfg_lexer_init(CfgLexer *self)
 }
 
 CfgLexer *
-cfg_lexer_new(FILE *file, const gchar *filename, const gchar *preprocess_into)
+cfg_lexer_new(FILE *file, const gchar *filename, GString *preprocess_output)
 {
   CfgLexer *self;
   CfgIncludeLevel *level;
 
   self = g_new0(CfgLexer, 1);
   cfg_lexer_init(self);
-
-  if (preprocess_into)
-    {
-      self->preprocess_output = fopen(preprocess_into, "w");
-    }
+  self->preprocess_output = preprocess_output;
 
   level = &self->include_stack[0];
   level->include_type = CFGI_FILE;
@@ -961,8 +956,6 @@ cfg_lexer_free(CfgLexer *self)
     g_string_free(self->token_text, TRUE);
   if (self->token_pretext)
     g_string_free(self->token_pretext, TRUE);
-  if (self->preprocess_output)
-    fclose(self->preprocess_output);
 
   while (self->context_stack)
     cfg_lexer_pop_context(self);
