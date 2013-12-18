@@ -6,7 +6,8 @@ lib_tests_TESTS		= \
 	lib/tests/test_parse_number	\
 	lib/tests/test_cache		\
 	lib/tests/test_reloc		\
-	lib/tests/test_hostname
+	lib/tests/test_hostname		\
+	lib/tests/test_lexer
 
 check_PROGRAMS		+= ${lib_tests_TESTS}
 
@@ -56,4 +57,9 @@ lib_tests_test_hostname_LDADD	=	\
 lib_tests_test_host_resolve_CFLAGS	=	\
 	$(TEST_CFLAGS)
 lib_tests_test_host_resolve_LDADD	=	\
+	$(TEST_LDADD)
+
+lib_tests_test_lexer_CFLAGS	=	\
+	$(TEST_CFLAGS)
+lib_tests_test_lexer_LDADD	=	\
 	$(TEST_LDADD)
