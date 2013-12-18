@@ -79,7 +79,7 @@ _obtain_capabilities(gchar *name, FileOpenOptions *open_opts, FilePermOptions *p
 }
 
 static inline void
-__set_fd_permission(FilePermOptions *perm_opts, int fd)
+_set_fd_permission(FilePermOptions *perm_opts, int fd)
 {
   if (fd != -1)
     {
@@ -158,7 +158,7 @@ affile_open_file(gchar *name, FileOpenOptions *open_opts, FilePermOptions *perm_
 
   *fd = _open_fd(name, open_opts, perm_opts);
 
-  __set_fd_permission(perm_opts, *fd);
+  _set_fd_permission(perm_opts, *fd);
 
   g_process_cap_restore(saved_caps);
 
