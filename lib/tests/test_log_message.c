@@ -45,7 +45,7 @@ clone_cow_log_message(LogMessage *msg)
   return log_msg_clone_cow(msg, &path_options);
 }
 
-void
+static void
 test_log_message_can_be_created_and_freed(void)
 {
   LogMessage *msg = construct_log_message();
@@ -82,7 +82,7 @@ assert_log_msg_clear_clears_all_properties(LogMessage *msg)
   assert_false(log_msg_is_tag_by_name(msg, tag_name), "Message still contains a valid tag after log_msg_clear");
 }
 
-void
+static void
 test_log_message_can_be_cleared(void)
 {
   LogMessage *msg, *clone;
