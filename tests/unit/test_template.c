@@ -170,6 +170,7 @@ test_macros(void)
   assert_template_format("$MSG", "árvíztűrőtükörfúrógép");
   assert_template_format("$MESSAGE", "árvíztűrőtükörfúrógép");
   assert_template_format("$SOURCEIP", "10.11.12.13");
+  assert_template_format("$RCPTID", "555");
 
   assert_template_format("$SEQNUM", "999");
   assert_template_format("$CONTEXT_ID", "test-context-id");
