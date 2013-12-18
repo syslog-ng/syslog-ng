@@ -25,6 +25,7 @@
 #define LOGPROTO_BUFFERED_SERVER_H_INCLUDED
 
 #include "logproto-server.h"
+#include "persistable-state-header.h"
 
 enum
 {
@@ -38,14 +39,7 @@ typedef struct _LogProtoBufferedServerState
    * the byte order swap code in LogProtoFileReader for mulit-byte
    * members. */
 
-  guint8 version;
-
-  /* this indicates that the members in the struct are stored in
-   * big-endian byte order. if the byte ordering of the struct doesn't
-   * match the current CPU byte ordering, then the members are
-   * byte-swapped when the state is loaded.
-   */
-  guint8 big_endian:1;
+  PersistableStateHeader header;
   guint8 raw_buffer_leftover_size;
   guint8 __padding1[1];
   guint32 buffer_pos;

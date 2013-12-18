@@ -74,6 +74,7 @@ pkginclude_HEADERS			+= \
 	lib/nvtable.h			\
 	lib/parse-number.h		\
 	lib/persist-state.h		\
+	lib/persistable-state-header.h  \
 	lib/plugin.h			\
 	lib/plugin-types.h		\
 	lib/poll-events.h		\

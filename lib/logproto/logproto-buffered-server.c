@@ -320,8 +320,8 @@ log_proto_buffered_server_alloc_state(LogProtoBufferedServer *self, PersistState
     {
       state = persist_state_map_entry(persist_state, handle);
 
-      state->version = 0;
-      state->big_endian = (G_BYTE_ORDER == G_BIG_ENDIAN);
+      state->header.version = 0;
+      state->header.big_endian = (G_BYTE_ORDER == G_BIG_ENDIAN);
 
       persist_state_unmap_entry(persist_state, handle);
 
@@ -334,7 +334,7 @@ log_proto_buffered_server_convert_state(LogProtoBufferedServer *self, guint8 per
 {
   if (persist_version <= 2)
     {
-      state->version = 0;
+      state->header.version = 0;
       state->file_inode = 0;
       state->raw_stream_pos = strtoll((gchar *) old_state, NULL, 10);
       state->file_size = 0;
@@ -406,7 +406,7 @@ log_proto_buffered_server_convert_state(LogProtoBufferedServer *self, guint8 per
       state->pending_buffer_end = buffer_len;
       g_free(buffer);
 
-      state->version = 0;
+      state->header.version = 0;
       state->file_inode = cur_inode;
       state->raw_stream_pos = cur_pos;
       state->file_size = cur_size;
@@ -468,14 +468,14 @@ log_proto_buffered_server_restart_with_state(LogProtoServer *s, PersistState *pe
 
       old_state = persist_state_map_entry(persist_state, old_state_handle);
       state = old_state;
-      if ((state->big_endian && G_BYTE_ORDER == G_LITTLE_ENDIAN) ||
-          (!state->big_endian && G_BYTE_ORDER == G_BIG_ENDIAN))
+      if ((state->header.big_endian && G_BYTE_ORDER == G_LITTLE_ENDIAN) ||
+          (!state->header.big_endian && G_BYTE_ORDER == G_BIG_ENDIAN))
         {
 
           /* byte order conversion in order to avoid the hassle with
              scattered byte order conversions in the code */
 
-          state->big_endian = !state->big_endian;
+          state->header.big_endian = !state->header.big_endian;
           state->buffer_pos = GUINT32_SWAP_LE_BE(state->buffer_pos);
           state->pending_buffer_pos = GUINT32_SWAP_LE_BE(state->pending_buffer_pos);
           state->pending_buffer_end = GUINT32_SWAP_LE_BE(state->pending_buffer_end);
@@ -488,10 +488,10 @@ log_proto_buffered_server_restart_with_state(LogProtoServer *s, PersistState *pe
           state->file_inode = GUINT64_SWAP_LE_BE(state->file_inode);
         }
 
-      if (state->version > 0)
+      if (state->header.version > 0)
         {
           msg_error("Internal error restoring log reader state, stored data is too new",
-                    evt_tag_int("version", state->version));
+                    evt_tag_int("version", state->header.version));
           goto error;
         }
       persist_state_unmap_entry(persist_state, old_state_handle);
