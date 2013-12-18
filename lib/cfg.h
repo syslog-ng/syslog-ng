@@ -100,6 +100,8 @@ struct _GlobalConfig
   gint dir_gid;
   gint dir_perm;
 
+  gboolean use_rcptid;
+
   gboolean keep_timestamp;  
 
   gchar *recv_time_zone;

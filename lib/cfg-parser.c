@@ -111,6 +111,7 @@ static CfgLexerKeyword main_keywords[] = {
   { "default_priority",   KW_DEFAULT_LEVEL, 0x0300 },
   { "default_facility",   KW_DEFAULT_FACILITY, 0x0300 },
   { "threaded",           KW_THREADED, 0x0303 },
+  { "use_rcptid",         KW_USE_RCPTID, 0x0306 },
 
   { "value",              KW_VALUE, 0x0300 },
 

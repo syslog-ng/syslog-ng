@@ -226,6 +226,7 @@ extern struct _StatsOptions *last_stats_options;
 %token KW_DNS_CACHE_HOSTS             10132
 
 %token KW_PERSIST_ONLY                10140
+%token KW_USE_RCPTID                  10141
 
 %token KW_TZ_CONVERT                  10150
 %token KW_TS_FORMAT                   10151
@@ -850,6 +851,7 @@ options_item
 	| KW_TIME_SLEEP '(' LL_NUMBER ')'	{}
 	| KW_SUPPRESS '(' LL_NUMBER ')'		{ configuration->suppress = $3; }
 	| KW_THREADED '(' yesno ')'		{ configuration->threaded = $3; }
+	| KW_USE_RCPTID '(' yesno ')'		{ configuration->use_rcptid = $3; }
 	| KW_LOG_FIFO_SIZE '(' LL_NUMBER ')'	{ configuration->log_fifo_size = $3; }
 	| KW_LOG_IW_SIZE '(' LL_NUMBER ')'	{ msg_error("Using a global log-iw-size() option was removed, please use a per-source log-iw-size()", NULL); }
 	| KW_LOG_FETCH_LIMIT '(' LL_NUMBER ')'	{ msg_error("Using a global log-fetch-limit() option was removed, please use a per-source log-fetch-limit()", NULL); }

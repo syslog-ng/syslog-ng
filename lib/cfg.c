@@ -36,6 +36,7 @@
 #include "logproto/logproto-builtins.h"
 #include "reloc.h"
 #include "hostname.h"
+#include "rcptid.h"
 
 #include <sys/types.h>
 #include <signal.h>
@@ -215,6 +216,9 @@ cfg_init(GlobalConfig *cfg)
         }
     }
 
+  if (!rcptid_init(cfg->state, cfg->use_rcptid))
+    return FALSE;
+
   stats_reinit(&cfg->stats_options);
   log_tags_reinit_stats(cfg);
 
@@ -228,6 +232,7 @@ cfg_init(GlobalConfig *cfg)
 gboolean
 cfg_deinit(GlobalConfig *cfg)
 {
+  rcptid_deinit();
   return cfg_tree_stop(&cfg->tree);
 }
 
