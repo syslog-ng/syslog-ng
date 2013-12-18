@@ -24,6 +24,7 @@
 #include "apphook.h"
 #include "logpipe.h"
 #include "rcptid.h"
+#include "logmsg-serialize.h"
 
 #include <stdlib.h>
 
@@ -99,6 +100,50 @@ test_log_message_can_be_cleared(void)
 }
 
 
+GString *
+serialize_log_message_to_gstring(LogMessage* msg)
+{
+  GString *serialized = g_string_sized_new(0);
+  SerializeArchive *sa = serialize_string_archive_new(serialized);
+
+  log_msg_serialize(msg, sa);
+  serialize_archive_free(sa);
+  return serialized;
+}
+
+LogMessage *
+deserialize_log_message_from_gstring(GString* serialized)
+{
+  LogMessage *cloned = log_msg_new_empty();
+  SerializeArchive *sa = serialize_string_archive_new(serialized);
+
+  log_msg_deserialize(cloned, sa);
+  serialize_archive_free(sa);
+  return cloned;
+}
+
+static void
+test_log_message_serialization_properly_restores_rcptid(void)
+{
+  LogMessage *msg, *cloned;
+  GString *serialized;
+
+  msg = construct_log_message_with_all_bells_and_whistles();
+  msg->rcptid = 555;
+
+  /* Test that the counter starts from 1 */
+  assert_guint64(msg->rcptid, (guint64) 555, "Rcptid counter does not start from 1!");
+
+  serialized = serialize_log_message_to_gstring(msg);
+  cloned = deserialize_log_message_from_gstring(serialized);
+
+  /* Test the serialization handle the rcptid */
+  assert_guint64(cloned->rcptid, (guint64) 555, "Rcptid serialization/deserialization failed!");
+
+  g_string_free(serialized, TRUE);
+  log_msg_unref(msg);
+}
+
 PersistState *state;
 
 static void
@@ -141,6 +186,7 @@ test_log_message(void)
   MSG_TESTCASE(test_log_message_can_be_created_and_freed);
   MSG_TESTCASE(test_log_message_can_be_cleared);
   MSG_TESTCASE(test_rcptid_is_automatically_assigned_to_a_newly_created_log_message);
+  MSG_TESTCASE(test_log_message_serialization_properly_restores_rcptid);
 }
 
 int
