@@ -23,6 +23,7 @@
 #include "msg_parse_lib.h"
 #include "apphook.h"
 #include "logpipe.h"
+#include "rcptid.h"
 
 #include <stdlib.h>
 
@@ -97,11 +98,49 @@ test_log_message_can_be_cleared(void)
   log_msg_unref(msg);
 }
 
+
+PersistState *state;
+
+static void
+setup_rcptid_test(void)
+{
+  unlink("test_values.persist");
+  state = persist_state_new("test_values.persist");
+
+  if (!persist_state_start(state))
+    {
+      fprintf(stderr, "Error starting persist_state object\n");
+      exit(1);
+    }
+  rcptid_init(state, TRUE);
+}
+
+static void
+teardown_rcptid_test(void)
+{
+  persist_state_commit(state);
+  persist_state_free(state);
+  rcptid_deinit();
+}
+
+static void
+test_rcptid_is_automatically_assigned_to_a_newly_created_log_message(void)
+{
+  LogMessage *msg;
+  
+  setup_rcptid_test();
+  msg = log_msg_new_empty();
+  assert_guint64(msg->rcptid, 1, "rcptid is not automatically set");
+  log_msg_unref(msg);
+  teardown_rcptid_test();
+}
+
 void
 test_log_message(void)
 {
   MSG_TESTCASE(test_log_message_can_be_created_and_freed);
   MSG_TESTCASE(test_log_message_can_be_cleared);
+  MSG_TESTCASE(test_rcptid_is_automatically_assigned_to_a_newly_created_log_message);
 }
 
 int
