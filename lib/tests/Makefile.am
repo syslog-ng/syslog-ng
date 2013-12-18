@@ -7,7 +7,8 @@ lib_tests_TESTS		= \
 	lib/tests/test_cache		\
 	lib/tests/test_reloc		\
 	lib/tests/test_hostname		\
-	lib/tests/test_rcptid
+	lib/tests/test_rcptid		\
+	lib/tests/test_lexer
 
 check_PROGRAMS		+= ${lib_tests_TESTS}
 
@@ -61,6 +62,11 @@ lib_tests_test_host_resolve_LDADD	=	\
 
 lib_tests_test_rcptid_CFLAGS = $(TEST_CFLAGS)
 lib_tests_test_rcptid_LDADD	= \
+	$(TEST_LDADD)
+
+lib_tests_test_lexer_CFLAGS	=	\
+	$(TEST_CFLAGS)
+lib_tests_test_lexer_LDADD	=	\
 	$(TEST_LDADD)
 
 CLEANFILES				+= \
