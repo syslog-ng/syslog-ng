@@ -741,6 +741,12 @@ pdbtool_test(int argc, char *argv[])
         {
           example = examples->data;
 
+          if (!example->program && verbose_flag)
+            {
+              printf ("Warnning, message has no 'program' attribute: message='%s'\n",
+                      example->message);
+            }
+
           if (example->message && example->program)
             {
               PDBInput input;
