@@ -212,6 +212,9 @@ afinet_dd_setup_addresses(AFSocketDestDriver *s)
   if ((self->bind_ip && !resolve_hostname(&self->super.bind_addr, self->bind_ip)))
     return FALSE;
 
+  if (self->bind_port)
+    g_sockaddr_set_port(self->super.bind_addr, afinet_lookup_service(self->super.transport_mapper, self->bind_port));
+
   if (!resolve_hostname(&self->super.dest_addr, self->hostname))
     return FALSE;
 
