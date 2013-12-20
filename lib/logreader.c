@@ -290,6 +290,16 @@ log_reader_update_watches(LogReader *self)
   poll_events_update_watches(self->poll_events, cond);
 }
 
+static void
+_add_aux_nvpair(const gchar *name, const gchar *value, gsize value_len, gpointer user_data)
+{
+  LogMessage *msg = (LogMessage *) user_data;
+  NVHandle handle;
+  
+  handle = log_msg_get_value_handle(name);
+  log_msg_set_value(msg, handle, value, value_len);
+}
+
 static gboolean
 log_reader_handle_line(LogReader *self, const guchar *line, gint length, LogTransportAuxData *aux)
 {
@@ -305,6 +315,8 @@ log_reader_handle_line(LogReader *self, const guchar *line, gint length, LogTran
                   &self->options->parse_options);
 
   log_msg_refcache_start_producer(m);
+  
+  log_transport_aux_data_foreach(aux, _add_aux_nvpair, m);
 
   log_pipe_queue(&self->super.super, m, &path_options);
   log_msg_refcache_stop();
