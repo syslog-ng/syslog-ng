@@ -228,6 +228,10 @@ afinet_dd_apply_transport(AFSocketDestDriver *s)
     }
 
   ipproto_ent = getprotobynumber(self->super.sock_protocol);
+  if (self->bind_port)
+    afinet_set_port(self->super.bind_addr, self->bind_port,
+                    ipproto_ent ? ipproto_ent->p_name
+                              : (self->super.sock_type == SOCK_STREAM) ? "tcp" : "udp");
   afinet_set_port(self->super.dest_addr, self->dest_port ? : default_dest_port,
                   ipproto_ent ? ipproto_ent->p_name
                               : (self->super.sock_type == SOCK_STREAM) ? "tcp" : "udp");
