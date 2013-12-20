@@ -297,10 +297,7 @@ afsocket_dd_restore_connection(AFSocketDestDriver *self)
 LogTransport *
 afsocket_dd_construct_transport_method(AFSocketDestDriver *self, gint fd)
 {
-  if (self->transport_mapper->sock_type == SOCK_DGRAM)
-    return log_transport_dgram_socket_new(fd);
-  else
-    return log_transport_stream_socket_new(fd);
+  return transport_mapper_construct_log_transport(self->transport_mapper, fd);
 }
 
 LogWriter *

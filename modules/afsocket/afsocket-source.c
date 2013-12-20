@@ -604,10 +604,7 @@ afsocket_sd_save_listener(AFSocketSourceDriver *self)
 LogTransport *
 afsocket_sd_construct_transport_method(AFSocketSourceDriver *self, gint fd)
 {
-  if (self->transport_mapper->sock_type == SOCK_DGRAM)
-    return log_transport_dgram_socket_new(fd);
-  else
-    return log_transport_stream_socket_new(fd);
+  return transport_mapper_construct_log_transport(self->transport_mapper, fd);
 }
 
 gboolean

@@ -27,6 +27,7 @@
 #include "gsocket.h"
 #include "messages.h"
 #include "misc.h"
+#include "transport/transport-socket.h"
 
 static gboolean
 transport_mapper_privileged_bind(gint sock, GSockAddr *bind_addr)
@@ -95,6 +96,15 @@ transport_mapper_apply_transport_method(TransportMapper *self, GlobalConfig *cfg
   return TRUE;
 }
 
+LogTransport *
+transport_mapper_construct_log_transport_method(TransportMapper *self, gint fd)
+{
+  if (self->sock_type == SOCK_DGRAM)
+    return log_transport_dgram_socket_new(fd);
+  else
+    return log_transport_stream_socket_new(fd);
+}
+
 void
 transport_mapper_set_transport(TransportMapper *self, const gchar *transport)
 {
@@ -122,6 +132,7 @@ transport_mapper_init_instance(TransportMapper *self, const gchar *transport)
   self->sock_type = -1;
   self->free_fn = transport_mapper_free_method;
   self->apply_transport = transport_mapper_apply_transport_method;
+  self->construct_log_transport = transport_mapper_construct_log_transport_method;
 }
 
 void
