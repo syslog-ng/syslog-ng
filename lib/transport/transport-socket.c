@@ -34,25 +34,18 @@ log_transport_dgram_socket_read_method(LogTransport *s, gpointer buf, gsize bufl
 {
   LogTransportSocket *self = (LogTransportSocket *) s;
   gint rc;
+  struct sockaddr_storage ss;
 
-  union
-  {
-#if HAVE_STRUCT_SOCKADDR_STORAGE
-    struct sockaddr_storage __sas;
-#endif
-    struct sockaddr __sa;
-  } sas;
-
-  socklen_t salen = sizeof(sas);
+  socklen_t salen = sizeof(ss);
 
   do
     {
       rc = recvfrom(self->super.fd, buf, buflen, 0,
-                    (struct sockaddr *) &sas, &salen);
+                    (struct sockaddr *) &ss, &salen);
     }
   while (rc == -1 && errno == EINTR);
   if (rc != -1 && salen && sa)
-    (*sa) = g_sockaddr_new((struct sockaddr *) &sas, salen);
+    (*sa) = g_sockaddr_new((struct sockaddr *) &ss, salen);
   if (rc == 0)
     {
       /* DGRAM sockets should never return EOF, they just need to be read again */

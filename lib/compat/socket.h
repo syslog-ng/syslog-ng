@@ -31,6 +31,22 @@
 #include <netdb.h>
 #include <netinet/in.h>
 
+#ifndef HAVE_STRUCT_SOCKADDR_STORAGE
+struct sockaddr_storage 
+{
+  union
+  {
+    sa_family_t ss_family;
+    struct sockaddr __sa;
+    struct sockaddr_un __sun;
+    struct sockaddr_in __sin;
+#if ENABLE_IPV6
+    struct sockaddr_in6 __sin6;
+#endif
+  };
+};
+#endif
+
 #ifndef HAVE_INET_ATON
 int inet_aton(const char *cp, struct in_addr *dst);
 #endif

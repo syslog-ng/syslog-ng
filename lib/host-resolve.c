@@ -26,6 +26,7 @@
 #include "messages.h"
 #include "cfg.h"
 #include "tls-support.h"
+#include "compat/socket.h"
 
 #include <arpa/inet.h>
 #include <netdb.h>
@@ -107,26 +108,19 @@ is_wildcard_hostname(const gchar *name)
 static gboolean
 resolve_wildcard_hostname_to_sockaddr(GSockAddr **addr, gint family, const gchar *name)
 {
-  union
-  {
-#ifdef HAVE_STRUCT_SOCKADDR_STORAGE
-    struct sockaddr_storage __sas;
-#endif
-    struct sockaddr_in __sin;
-    struct sockaddr __sa;
-  } sas;
+  struct sockaddr_storage ss;
 
   /* return the wildcard address that can be used as a bind address */
-  memset(&sas, 0, sizeof(sas));
-  sas.__sa.sa_family = family;
+  memset(&ss, 0, sizeof(ss));
+  ss.ss_family = family;
   switch (family)
     {
     case AF_INET:
-      *addr = g_sockaddr_inet_new2(((struct sockaddr_in *) &sas));
+      *addr = g_sockaddr_inet_new2(((struct sockaddr_in *) &ss));
       break;
 #if ENABLE_IPV6
     case AF_INET6:
-      *addr = g_sockaddr_inet6_new2((struct sockaddr_in6 *) &sas);
+      *addr = g_sockaddr_inet6_new2((struct sockaddr_in6 *) &ss);
       break;
 #endif
     default:
