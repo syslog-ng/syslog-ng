@@ -21,6 +21,7 @@
  *
  */
 #include "transport-mapper-unix.h"
+#include "transport-unix-socket.h"
 #include "stats/stats-registry.h"
 
 #include <sys/types.h>
@@ -34,12 +35,19 @@ typedef struct _TransportMapperUnix
   gchar *filename;
 } TransportMapperUnix;
 
+static LogTransport *
+transport_mapper_unix_construct_log_transport(TransportMapper *s, gint fd)
+{
+  return log_transport_unix_socket_new(fd);
+}
+
 static TransportMapperUnix *
 transport_mapper_unix_new_instance(const gchar *transport, gint sock_type)
 {
   TransportMapperUnix *self = g_new0(TransportMapperUnix, 1);
 
   transport_mapper_init_instance(&self->super, transport);
+  self->super.construct_log_transport = transport_mapper_unix_construct_log_transport;
   self->super.address_family = AF_UNIX;
   self->super.sock_type = sock_type;
   return self;
