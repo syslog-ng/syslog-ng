@@ -38,6 +38,14 @@ assert_transport_mapper_apply(TransportMapper *self, const gchar *transport)
 }
 
 static inline void
+assert_transport_mapper_apply_fails(TransportMapper *self, const gchar *transport)
+{
+  if (transport)
+    transport_mapper_set_transport(self, transport);
+  assert_false(transport_mapper_apply_transport(self, configuration), "afsocket_apply_transport() succeeded while we expected failure");
+}
+
+static inline void
 assert_transport_mapper_transport(TransportMapper *options, const gchar *expected_transport)
 {
   assert_string(options->transport, expected_transport, "TransportMapper contains a mismatching transport name");
