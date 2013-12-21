@@ -30,7 +30,7 @@ struct _LogTransportSocket
 };
 
 static gssize
-log_transport_dgram_socket_read_method(LogTransport *s, gpointer buf, gsize buflen, GSockAddr **sa)
+log_transport_dgram_socket_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTransportAuxData *aux)
 {
   LogTransportSocket *self = (LogTransportSocket *) s;
   gint rc;
@@ -44,8 +44,8 @@ log_transport_dgram_socket_read_method(LogTransport *s, gpointer buf, gsize bufl
                     (struct sockaddr *) &ss, &salen);
     }
   while (rc == -1 && errno == EINTR);
-  if (rc != -1 && salen && sa)
-    (*sa) = g_sockaddr_new((struct sockaddr *) &ss, salen);
+  if (rc != -1 && salen && aux)
+    log_transport_aux_data_set_peer_addr_ref(aux, g_sockaddr_new((struct sockaddr *) &ss, salen));
   if (rc == 0)
     {
       /* DGRAM sockets should never return EOF, they just need to be read again */
@@ -94,13 +94,11 @@ log_transport_dgram_socket_new(gint fd)
 }
 
 static gssize
-log_transport_stream_socket_read_method(LogTransport *s, gpointer buf, gsize buflen, GSockAddr **sa)
+log_transport_stream_socket_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTransportAuxData *aux)
 {
   LogTransportSocket *self = (LogTransportSocket *) s;
   gint rc;
 
-  if (sa)
-    *sa = NULL;
   do
     {
       rc = recv(self->super.fd, buf, buflen, 0);

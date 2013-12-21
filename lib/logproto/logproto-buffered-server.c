@@ -550,13 +550,13 @@ log_proto_buffered_server_prepare(LogProtoServer *s, GIOCondition *cond)
 }
 
 static gint
-log_proto_buffered_server_read_data_method(LogProtoBufferedServer *self, guchar *buf, gsize len, GSockAddr **sa)
+log_proto_buffered_server_read_data_method(LogProtoBufferedServer *self, guchar *buf, gsize len, LogTransportAuxData *aux)
 {
-  return log_transport_read(self->super.transport, buf, len, sa);
+  return log_transport_read(self->super.transport, buf, len, aux);
 }
 
 static gboolean
-log_proto_buffered_server_fetch_from_buffer(LogProtoBufferedServer *self, const guchar **msg, gsize *msg_len, GSockAddr **sa)
+log_proto_buffered_server_fetch_from_buffer(LogProtoBufferedServer *self, const guchar **msg, gsize *msg_len, LogTransportAuxData *aux)
 {
   gsize buffer_bytes;
   const guchar *buffer_start;
@@ -586,8 +586,8 @@ log_proto_buffered_server_fetch_from_buffer(LogProtoBufferedServer *self, const 
     }
 
   success = self->fetch_from_buffer(self, buffer_start, buffer_bytes, msg, msg_len);
-  if (sa)
-    *sa = g_sockaddr_ref(self->prev_saddr);
+  if (aux)
+    log_transport_aux_data_copy(aux, &self->buffer_aux);
  exit:
   log_proto_buffered_server_put_state(self);
   return success;
@@ -603,16 +603,10 @@ log_proto_buffered_server_allocate_buffer(LogProtoBufferedServer *self, LogProto
 static inline gint
 log_proto_buffered_server_read_data(LogProtoBufferedServer *self, gpointer buffer, gsize count)
 {
-  GSockAddr *sa = NULL;
   gint rc;
 
-  rc = self->read_data(self, buffer, count, &sa);
-  if (sa)
-    {
-      /* new chunk of data, potentially new sockaddr, forget the previous value */
-      g_sockaddr_unref(self->prev_saddr);
-      self->prev_saddr = sa;
-    }
+  log_transport_aux_data_reinit(&self->buffer_aux);
+  rc = self->read_data(self, buffer, count, &self->buffer_aux);
   return rc;
 }
 
@@ -714,7 +708,7 @@ _convert_io_status_to_log_proto_status(GIOStatus io_status)
  * msg can be NULL even if no failure occurred.
  **/
 static LogProtoStatus
-log_proto_buffered_server_fetch(LogProtoServer *s, const guchar **msg, gsize *msg_len, GSockAddr **sa, gboolean *may_read)
+log_proto_buffered_server_fetch(LogProtoServer *s, const guchar **msg, gsize *msg_len, gboolean *may_read, LogTransportAuxData *aux)
 {
   LogProtoBufferedServer *self = (LogProtoBufferedServer *) s;
   LogProtoStatus result = LPS_SUCCESS;
@@ -723,7 +717,7 @@ log_proto_buffered_server_fetch(LogProtoServer *s, const guchar **msg, gsize *ms
     {
       if (self->fetch_state == LPBSF_FETCHING_FROM_BUFFER)
         {
-          if (log_proto_buffered_server_fetch_from_buffer(self, msg, msg_len, sa))
+          if (log_proto_buffered_server_fetch_from_buffer(self, msg, msg_len, aux))
             goto exit;
 
           if (log_proto_buffered_server_is_input_closed(self))
@@ -814,7 +808,7 @@ log_proto_buffered_server_free_method(LogProtoServer *s)
 {
   LogProtoBufferedServer *self = (LogProtoBufferedServer *) s;
 
-  g_sockaddr_unref(self->prev_saddr);
+  log_transport_aux_data_destroy(&self->buffer_aux);
 
   g_free(self->buffer);
   if (self->state1)

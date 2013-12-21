@@ -26,7 +26,7 @@
 #define LOGTRANSPORT_H_INCLUDED
 
 #include "syslog-ng.h"
-#include "gsockaddr.h"
+#include "transport/transport-aux-data.h"
 
 typedef struct _LogTransport LogTransport;
 
@@ -34,7 +34,7 @@ struct _LogTransport
 {
   gint fd;
   GIOCondition cond;
-  gssize (*read)(LogTransport *self, gpointer buf, gsize count, GSockAddr **sa);
+  gssize (*read)(LogTransport *self, gpointer buf, gsize count, LogTransportAuxData *aux);
   gssize (*write)(LogTransport *self, const gpointer buf, gsize count);
   void (*free_fn)(LogTransport *self);
 };
@@ -46,9 +46,9 @@ log_transport_write(LogTransport *self, const gpointer buf, gsize count)
 }
 
 static inline gssize
-log_transport_read(LogTransport *self, gpointer buf, gsize count, GSockAddr **sa)
+log_transport_read(LogTransport *self, gpointer buf, gsize count, LogTransportAuxData *aux)
 {
-  return self->read(self, buf, count, sa);
+  return self->read(self, buf, count, aux);
 }
 
 void log_transport_init_instance(LogTransport *s, gint fd);

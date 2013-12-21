@@ -24,14 +24,11 @@
 #include "transport-file.h"
 
 static gssize
-log_transport_file_read_method(LogTransport *s, gpointer buf, gsize buflen, GSockAddr **sa)
+log_transport_file_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTransportAuxData *aux)
 {
   LogTransportFile *self = (LogTransportFile *) s;
   gint rc;
   
-  if (sa)
-    *sa = NULL;
-
   do
     {
       rc = read(self->super.fd, buf, buflen);

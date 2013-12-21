@@ -36,16 +36,20 @@ assert_proto_server_status(LogProtoServer *proto, LogProtoStatus status, LogProt
 LogProtoStatus
 proto_server_fetch(LogProtoServer *proto, const guchar **msg, gsize *msg_len)
 {
-  GSockAddr *saddr = NULL;
+  LogTransportAuxData aux;
+  GSockAddr *saddr;
   gboolean may_read = TRUE;
   LogProtoStatus status;
 
   start_grabbing_messages();
   do
     {
-      status = log_proto_server_fetch(proto, msg, msg_len, &saddr, &may_read);
+      log_transport_aux_data_init(&aux);
+      status = log_proto_server_fetch(proto, msg, msg_len, &may_read, &aux);
     }
   while (status == LPS_SUCCESS && *msg == NULL && may_read);
+
+  saddr = aux.peer_addr;
   if (status == LPS_SUCCESS)
     {
       g_sockaddr_unref(saddr);
@@ -88,11 +92,12 @@ assert_proto_server_fetch_single_read(LogProtoServer *proto, const gchar *expect
   const guchar *msg = NULL;
   gsize msg_len = 0;
   LogProtoStatus status;
-  GSockAddr *saddr = NULL;
+  LogTransportAuxData aux;
   gboolean may_read = TRUE;
 
   start_grabbing_messages();
-  status = log_proto_server_fetch(proto, &msg, &msg_len, &saddr, &may_read);
+  log_transport_aux_data_init(&aux);
+  status = log_proto_server_fetch(proto, &msg, &msg_len, &may_read, &aux);
   assert_proto_server_status(proto, status, LPS_SUCCESS);
 
   if (expected_msg)
@@ -102,7 +107,7 @@ assert_proto_server_fetch_single_read(LogProtoServer *proto, const gchar *expect
   else
     {
       assert_true(msg == NULL, "when single-read finds an incomplete message, msg must be NULL");
-      assert_true(saddr == NULL, "returned saddr must be NULL on success");
+      assert_true(aux.peer_addr == NULL, "returned saddr must be NULL on success");
     }
   stop_grabbing_messages();
 }
@@ -127,14 +132,15 @@ assert_proto_server_fetch_ignored_eof(LogProtoServer *proto)
   const guchar *msg = NULL;
   gsize msg_len = 0;
   LogProtoStatus status;
-  GSockAddr *saddr = NULL;
+  LogTransportAuxData aux;
   gboolean may_read = TRUE;
 
   start_grabbing_messages();
-  status = log_proto_server_fetch(proto, &msg, &msg_len, &saddr, &may_read);
+  log_transport_aux_data_init(&aux);
+  status = log_proto_server_fetch(proto, &msg, &msg_len, &may_read, &aux);
   assert_proto_server_status(proto, status, LPS_SUCCESS);
   assert_true(msg == NULL, "when an EOF is ignored msg must be NULL");
-  assert_true(saddr == NULL, "returned saddr must be NULL on success");
+  assert_true(aux.peer_addr == NULL, "returned saddr must be NULL on success");
   stop_grabbing_messages();
 }
 

@@ -65,7 +65,7 @@ struct _LogProtoBufferedServer
 {
   LogProtoServer super;
   gboolean (*fetch_from_buffer)(LogProtoBufferedServer *self, const guchar *buffer_start, gsize buffer_bytes, const guchar **msg, gsize *msg_len);
-  gint (*read_data)(LogProtoBufferedServer *self, guchar *buf, gsize len, GSockAddr **sa);
+  gint (*read_data)(LogProtoBufferedServer *self, guchar *buf, gsize len, LogTransportAuxData *aux);
 
   gboolean
     /* track & record the position in the input, to be used for file
@@ -88,7 +88,10 @@ struct _LogProtoBufferedServer
   PersistEntryHandle persist_handle;
   GIConv convert;
   guchar *buffer;
-  GSockAddr *prev_saddr;
+
+  /* auxiliary data (e.g. GSockAddr, other transport related meta
+   * data) associated with the already buffered data */
+  LogTransportAuxData buffer_aux;
 };
 
 static inline gboolean

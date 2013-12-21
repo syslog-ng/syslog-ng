@@ -41,7 +41,6 @@ typedef struct _LogProtoFramedServer
   guint32 buffer_size, buffer_pos, buffer_end;
   guint32 frame_len;
   gboolean half_message_in_buffer;
-  GSockAddr *prev_saddr;
 } LogProtoFramedServer;
 
 static gboolean
@@ -155,7 +154,7 @@ log_proto_framed_server_extract_frame_length(LogProtoFramedServer *self, gboolea
 }
 
 static LogProtoStatus
-log_proto_framed_server_fetch(LogProtoServer *s, const guchar **msg, gsize *msg_len, GSockAddr **sa, gboolean *may_read)
+log_proto_framed_server_fetch(LogProtoServer *s, const guchar **msg, gsize *msg_len, gboolean *may_read, LogTransportAuxData *aux)
 {
   LogProtoFramedServer *self = (LogProtoFramedServer *) s;
   LogProtoStatus status;
@@ -167,8 +166,6 @@ log_proto_framed_server_fetch(LogProtoServer *s, const guchar **msg, gsize *msg_
       self->buffer = g_malloc(self->buffer_size);
     }
 
-  if (sa)
-    *sa = NULL;
   switch (self->state)
     {
     case LPFSS_FRAME_READ:
