@@ -1,3 +1,5 @@
+TEST_TRANSPORT_MAPPER_CFLAGS = $(TEST_CFLAGS) -DBUILD_WITH_SSL=1
+
 TRANSPORT_MAPPER_LIB = 					\
 	modules/afsocket/tests/transport-mapper-lib.c	\
 	modules/afsocket/tests/transport-mapper-lib.h
@@ -11,7 +13,7 @@ check_PROGRAMS					+=	\
 	$(modules_afsocket_tests_TESTS)
 
 modules_afsocket_tests_test_transport_mapper_CFLAGS = 	\
-	$(TEST_CFLAGS)					\
+	$(TEST_TRANSPORT_MAPPER_CFLAGS)			\
 	-I$(top_srcdir)/modules/afsocket
 
 modules_afsocket_tests_test_transport_mapper_LDADD = 	\
@@ -25,7 +27,7 @@ modules_afsocket_tests_test_transport_mapper_SOURCES = 	\
 	$(TRANSPORT_MAPPER_LIB)
 
 modules_afsocket_tests_test_transport_mapper_inet_CFLAGS = 	\
-	$(TEST_CFLAGS)					\
+	$(TEST_TRANSPORT_MAPPER_CFLAGS)				\
 	-I$(top_srcdir)/modules/afsocket
 
 modules_afsocket_tests_test_transport_mapper_inet_LDADD = 	\
@@ -39,7 +41,7 @@ modules_afsocket_tests_test_transport_mapper_inet_SOURCES = 	\
 	$(TRANSPORT_MAPPER_LIB)
 
 modules_afsocket_tests_test_transport_mapper_unix_CFLAGS = 	\
-	$(TEST_CFLAGS)					\
+	$(TEST_TRANSPORT_MAPPER_CFLAGS)				\
 	-I$(top_srcdir)/modules/afsocket
 
 modules_afsocket_tests_test_transport_mapper_unix_LDADD = 	\
