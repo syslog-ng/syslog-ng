@@ -14,9 +14,18 @@ pkgconfig_DATA		= syslog-ng.pc
 
 AM_CPPFLAGS		= -I$(top_srcdir)/lib -I$(top_srcdir)/modules -I$(top_builddir)/lib -I$(top_builddir)/modules
 TEST_CFLAGS		= -I$(top_srcdir)/libtest
+
+if WITH_EMBEDDED_CRYPTO
 TEST_LDADD		= $(top_builddir)/libtest/libsyslog-ng-test.a \
 			  $(top_builddir)/lib/libsyslog-ng.la \
 			  $(TOOL_DEPS_LIBS)
+else
+TEST_LDADD		= $(top_builddir)/libtest/libsyslog-ng-test.a \
+			  $(top_builddir)/lib/libsyslog-ng-crypto.la \
+			  $(top_builddir)/lib/libsyslog-ng.la \
+			  $(TOOL_DEPS_LIBS)
+endif
+
 test_ldflags		= -no-install
 
 PREOPEN_SYSLOGFORMAT	= -dlpreopen ${top_builddir}/modules/syslogformat/libsyslogformat.la
