@@ -27,6 +27,7 @@
 
 #include "logproto.h"
 #include "persist-state.h"
+#include "transport/transport-aux-data.h"
 
 typedef struct _LogProtoServer LogProtoServer;
 typedef struct _LogProtoServerOptions LogProtoServerOptions;
@@ -57,7 +58,6 @@ void log_proto_server_options_defaults(LogProtoServerOptions *options);
 void log_proto_server_options_init(LogProtoServerOptions *options, GlobalConfig *cfg);
 void log_proto_server_options_destroy(LogProtoServerOptions *options);
 
-
 struct _LogProtoServer
 {
   LogProtoStatus status;
@@ -67,7 +67,7 @@ struct _LogProtoServer
   gboolean (*prepare)(LogProtoServer *s, GIOCondition *cond);
   gboolean (*is_preemptable)(LogProtoServer *s);
   gboolean (*restart_with_state)(LogProtoServer *s, PersistState *state, const gchar *persist_name);
-  LogProtoStatus (*fetch)(LogProtoServer *s, const guchar **msg, gsize *msg_len, GSockAddr **sa, gboolean *may_read);
+  LogProtoStatus (*fetch)(LogProtoServer *s, const guchar **msg, gsize *msg_len, gboolean *may_read, LogTransportAuxData *aux);
   void (*queued)(LogProtoServer *s);
   gboolean (*validate_options)(LogProtoServer *s);
   void (*free_fn)(LogProtoServer *s);
@@ -111,10 +111,10 @@ log_proto_server_restart_with_state(LogProtoServer *s, PersistState *state, cons
 }
 
 static inline LogProtoStatus
-log_proto_server_fetch(LogProtoServer *s, const guchar **msg, gsize *msg_len, GSockAddr **sa, gboolean *may_read)
+log_proto_server_fetch(LogProtoServer *s, const guchar **msg, gsize *msg_len, gboolean *may_read, LogTransportAuxData *aux)
 {
   if (s->status == LPS_SUCCESS)
-    return s->fetch(s, msg, msg_len, sa, may_read);
+    return s->fetch(s, msg, msg_len, may_read, aux);
   return s->status;
 }
 

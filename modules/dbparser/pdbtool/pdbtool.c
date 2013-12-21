@@ -494,7 +494,7 @@ pdbtool_match(int argc, char *argv[])
         }
       transport = log_transport_file_new(fd);
       proto = log_proto_text_server_new(transport, &proto_options);
-      eof = log_proto_server_fetch(proto, &buf, &buflen, NULL, &may_read) != LPS_SUCCESS;
+      eof = log_proto_server_fetch(proto, &buf, &buflen, &may_read, NULL) != LPS_SUCCESS;
     }
 
   if (!debug_pattern)
@@ -617,7 +617,7 @@ pdbtool_match(int argc, char *argv[])
       if (G_LIKELY(proto))
         {
           buf = NULL;
-          eof = log_proto_server_fetch(proto, &buf, &buflen, NULL, &may_read) != LPS_SUCCESS;
+          eof = log_proto_server_fetch(proto, &buf, &buflen, &may_read, NULL) != LPS_SUCCESS;
         }
       else
         {

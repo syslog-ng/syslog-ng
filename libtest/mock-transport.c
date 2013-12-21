@@ -43,7 +43,7 @@ typedef struct
 } LogTransportMock;
 
 gssize
-log_transport_mock_read_method(LogTransport *s, gpointer buf, gsize count, GSockAddr **sa)
+log_transport_mock_read_method(LogTransport *s, gpointer buf, gsize count, LogTransportAuxData *aux)
 {
   LogTransportMock *self = (LogTransportMock *) s;
   struct iovec *current_iov;
@@ -86,8 +86,8 @@ log_transport_mock_read_method(LogTransport *s, gpointer buf, gsize count, GSock
       self->current_iov_pos = 0;
       self->current_iov_ndx++;
     }
-  if (sa)
-    *sa = g_sockaddr_inet_new("1.2.3.4", 5555);
+  if (aux)
+    aux->peer_addr = g_sockaddr_inet_new("1.2.3.4", 5555);
 
  exit:
   if (count == 0 && self->eof_is_eagain)
