@@ -166,8 +166,19 @@ app_shutdown(void)
   dns_cache_thread_deinit();
   dns_cache_global_deinit();
   msg_deinit();
-  iv_deinit();
   hostname_global_deinit();
+  
+  /* NOTE: the iv_deinit() call should come here, but there's some exit
+   * synchronization issue in libivykis that causes use-after-free with the
+   * thread-local-state for the main thread and iv_work_pool worker threads. 
+   * I've dropped a mail to Lennert about the issue, but I'm commenting this
+   * out for now to avoid it biting someone. Bazsi, 2013/12/23.
+   *
+   *
+
+    iv_deinit();
+
+   */
 }
 
 void
