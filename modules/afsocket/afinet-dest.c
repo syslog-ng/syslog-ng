@@ -27,7 +27,6 @@
 #include "messages.h"
 #include "misc.h"
 #include "gprocess.h"
-#include "transport/transport-tls.h"
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -94,20 +93,14 @@ afinet_dd_set_spoof_source(LogDriver *s, gboolean enable)
 }
 
 #if BUILD_WITH_SSL
-void
-afinet_dd_set_tls_context(LogDriver *s, TLSContext *tls_context)
-{
-  AFInetDestDriver *self = (AFInetDestDriver *) s;
-
-  self->tls_context = tls_context;
-}
 
 static gint
 afinet_dd_verify_callback(gint ok, X509_STORE_CTX *ctx, gpointer user_data)
 {
   AFInetDestDriver *self G_GNUC_UNUSED = (AFInetDestDriver *) user_data;
+  TransportMapperInet *transport_mapper_inet = (TransportMapperInet *) self->super.transport_mapper;
 
-  if (ok && ctx->current_cert == ctx->cert && self->hostname && (self->tls_context->verify_mode & TVM_TRUSTED))
+  if (ok && ctx->current_cert == ctx->cert && self->hostname && (transport_mapper_inet->tls_context->verify_mode & TVM_TRUSTED))
     {
       ok = tls_verify_certificate_name(ctx->cert, self->hostname);
     }
@@ -115,47 +108,12 @@ afinet_dd_verify_callback(gint ok, X509_STORE_CTX *ctx, gpointer user_data)
   return ok;
 }
 
-static gboolean
-afinet_dd_is_tls_required(AFInetDestDriver *self)
-{
-  return ((TransportMapperInet *) (self->super.transport_mapper))->require_tls;
-}
-
-static gboolean
-afinet_dd_is_tls_allowed(AFInetDestDriver *self)
-{
-  TransportMapperInet *transport_mapper_inet = ((TransportMapperInet *) (self->super.transport_mapper));
-
-  return transport_mapper_inet->allow_tls || transport_mapper_inet->require_tls;
-}
-
-static LogTransport *
-afinet_dd_construct_tls_transport(AFInetDestDriver *self, TLSContext *tls_context, gint fd)
-{
-  TLSSession *tls_session;
-
-  tls_session = tls_context_setup_session(self->tls_context);
-  if (!tls_session)
-    return NULL;
-
-  tls_session_set_verify(tls_session, afinet_dd_verify_callback, self, NULL);
-  return log_transport_tls_new(tls_session, fd);
-}
-
-static LogTransport *
-afinet_dd_construct_transport(AFSocketDestDriver *s, gint fd)
+void
+afinet_dd_set_tls_context(LogDriver *s, TLSContext *tls_context)
 {
   AFInetDestDriver *self = (AFInetDestDriver *) s;
-
-  if (self->tls_context)
-    return afinet_dd_construct_tls_transport(self, self->tls_context, fd);
-  else
-    return afsocket_dd_construct_transport_method(s, fd);
+  transport_mapper_inet_set_tls_context((TransportMapperInet *) self->super.transport_mapper, tls_context, afinet_dd_verify_callback, self);
 }
-
-#else
-
-#define afinet_dd_construct_transport afsocket_dd_construct_transport_method
 
 #endif
 
@@ -164,6 +122,7 @@ afinet_dd_construct_writer(AFSocketDestDriver *s)
 {
   AFInetDestDriver *self G_GNUC_UNUSED = (AFInetDestDriver *) s;
   LogWriter *writer;
+  TransportMapperInet *transport_mapper_inet G_GNUC_UNUSED = ((TransportMapperInet *) (self->super.transport_mapper));
 
   writer = afsocket_dd_construct_writer_method(s);
 #if BUILD_WITH_SSL
@@ -174,7 +133,7 @@ afinet_dd_construct_writer(AFSocketDestDriver *s)
    * (and possibly for all eternity :)
    */
 
-  if (((self->super.transport_mapper->sock_type == SOCK_STREAM) && self->tls_context))
+  if (((self->super.transport_mapper->sock_type == SOCK_STREAM) && transport_mapper_inet->tls_context))
     log_writer_set_flags(writer, log_writer_get_flags(writer) & ~LW_DETECT_EOF);
 #endif
   return writer;
@@ -260,24 +219,6 @@ afinet_dd_init(LogPipe *s)
                         NULL);
             }
         }
-    }
-#endif
-
-#if BUILD_WITH_SSL
-  if (!self->tls_context && afinet_dd_is_tls_required(self))
-    {
-      msg_error("transport(tls) was specified, but tls() options missing",
-                evt_tag_str("id", self->super.super.super.id),
-                NULL);
-      return FALSE;
-    }
-  else if (self->tls_context && !afinet_dd_is_tls_allowed(self))
-    {
-      msg_error("tls() options specified for a transport that doesn't allow TLS encryption",
-                evt_tag_str("id", self->super.super.super.id),
-                evt_tag_str("transport", self->super.transport_mapper->transport),
-                NULL);
-      return FALSE;
     }
 #endif
 
@@ -469,12 +410,6 @@ afinet_dd_free(LogPipe *s)
     g_string_free(self->lnet_buffer, TRUE);
   g_static_mutex_free(&self->lnet_lock);
 #endif
-#if BUILD_WITH_SSL
-  if(self->tls_context)
-    {
-      tls_context_free(self->tls_context);
-    }
-#endif
   afsocket_dd_free(s);
 }
 
@@ -488,7 +423,6 @@ afinet_dd_new_instance(TransportMapper *transport_mapper, gchar *hostname)
   self->super.super.super.super.init = afinet_dd_init;
   self->super.super.super.super.queue = afinet_dd_queue;
   self->super.super.super.super.free_fn = afinet_dd_free;
-  self->super.construct_transport = afinet_dd_construct_transport;
   self->super.construct_writer = afinet_dd_construct_writer;
   self->super.setup_addresses = afinet_dd_setup_addresses;
   self->super.get_dest_name = afinet_dd_get_dest_name;

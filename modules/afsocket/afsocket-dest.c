@@ -27,7 +27,6 @@
 #include "logwriter.h"
 #include "gsocket.h"
 #include "stats/stats-registry.h"
-#include "transport/transport-socket.h"
 #include "mainloop.h"
 
 #include <string.h>
@@ -119,6 +118,12 @@ afsocket_dd_start_reconnect_timer(AFSocketDestDriver *self)
   self->reconnect_timer.expires = iv_now;
   timespec_add_msec(&self->reconnect_timer.expires, self->time_reopen * 1000);
   iv_timer_register(&self->reconnect_timer);
+}
+
+static LogTransport *
+afsocket_dd_construct_transport(AFSocketDestDriver *self, gint fd)
+{
+  return transport_mapper_construct_log_transport(self->transport_mapper, fd);
 }
 
 static gboolean
@@ -294,11 +299,6 @@ afsocket_dd_restore_connection(AFSocketDestDriver *self)
   self->writer = cfg_persist_config_fetch(cfg, afsocket_dd_format_persist_name(self, FALSE));
 }
 
-LogTransport *
-afsocket_dd_construct_transport_method(AFSocketDestDriver *self, gint fd)
-{
-  return transport_mapper_construct_log_transport(self->transport_mapper, fd);
-}
 
 LogWriter *
 afsocket_dd_construct_writer_method(AFSocketDestDriver *self)
@@ -441,7 +441,6 @@ afsocket_dd_init_instance(AFSocketDestDriver *self,
   self->super.super.super.free_fn = afsocket_dd_free;
   self->super.super.super.notify = afsocket_dd_notify;
   self->setup_addresses = afsocket_dd_setup_addresses;
-  self->construct_transport = afsocket_dd_construct_transport_method;
   self->construct_writer = afsocket_dd_construct_writer_method;
   self->transport_mapper = transport_mapper;
   self->socket_options = socket_options;

@@ -26,7 +26,6 @@
 #include "misc.h"
 #include "transport-mapper-inet.h"
 #include "socket-options-inet.h"
-#include "transport/transport-tls.h"
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -62,53 +61,8 @@ afinet_sd_set_tls_context(LogDriver *s, TLSContext *tls_context)
 {
   AFInetSourceDriver *self = (AFInetSourceDriver *) s;
 
-  self->tls_context = tls_context;
+  transport_mapper_inet_set_tls_context((TransportMapperInet *) self->super.transport_mapper, tls_context, NULL, NULL);
 }
-
-static gboolean
-afinet_sd_is_tls_required(AFInetSourceDriver *self)
-{
-  TransportMapperInet *transport_mapper_inet = ((TransportMapperInet *) (self->super.transport_mapper));
-
-  return transport_mapper_inet_is_tls_required(transport_mapper_inet);
-}
-
-static gboolean
-afinet_sd_is_tls_allowed(AFInetSourceDriver *self)
-{
-  TransportMapperInet *transport_mapper_inet = ((TransportMapperInet *) (self->super.transport_mapper));
-
-  return transport_mapper_inet_is_tls_allowed(transport_mapper_inet);
-}
-
-static LogTransport *
-afinet_sd_construct_tls_transport(AFInetSourceDriver *self, TLSContext *tls_context, gint fd)
-{
-  TLSSession *tls_session;
-
-  tls_session = tls_context_setup_session(self->tls_context);
-  if (!tls_session)
-    return NULL;
-
-  return log_transport_tls_new(tls_session, fd);
-}
-
-
-LogTransport *
-afinet_sd_construct_transport(AFSocketSourceDriver *s, gint fd)
-{
-  AFInetSourceDriver *self = (AFInetSourceDriver *) s;
-
-  if (self->tls_context)
-    return afinet_sd_construct_tls_transport(self, self->tls_context, fd);
-  else
-    return afsocket_sd_construct_transport_method(s, fd);
-}
-
-#else
-
-#define afinet_sd_construct_transport afsocket_sd_construct_transport_method
-
 #endif
 
 
@@ -150,23 +104,7 @@ afinet_sd_init(LogPipe *s)
 
   if (!afsocket_sd_init_method(&self->super.super.super.super))
     return FALSE;
-#if BUILD_WITH_SSL
 
-  if (!self->tls_context && afinet_sd_is_tls_required(self))
-    {
-      msg_error("transport(tls) was specified, but tls() options missing",
-                evt_tag_str("id", self->super.super.super.id),
-                NULL);
-      return FALSE;
-    }
-  else if (self->tls_context && !afinet_sd_is_tls_allowed(self))
-    {
-      msg_error("tls() options specified for a transport that doesn't allow TLS encryption",
-                evt_tag_str("id", self->super.super.super.id),
-                NULL);
-      return FALSE;
-    }
-#endif
   return TRUE;
 }
 
@@ -190,7 +128,6 @@ afinet_sd_new_instance(TransportMapper *transport_mapper)
                             transport_mapper);
   self->super.super.super.super.init = afinet_sd_init;
   self->super.super.super.super.free_fn = afinet_sd_free;
-  self->super.construct_transport = afinet_sd_construct_transport;
   self->super.setup_addresses = afinet_sd_setup_addresses;
   return self;
 }

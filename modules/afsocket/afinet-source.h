@@ -31,9 +31,6 @@
 typedef struct _AFInetSourceDriver
 {
   AFSocketSourceDriver super;
-#if BUILD_WITH_SSL
-  TLSContext *tls_context;
-#endif
   /* character as it can contain a service name from /etc/services */
   gchar *bind_port;
   gchar *bind_ip;

@@ -45,9 +45,6 @@ typedef struct _AFInetDestDriver
   GStaticMutex lnet_lock;
   GString *lnet_buffer;
 #endif
-#if BUILD_WITH_SSL
-  TLSContext *tls_context;
-#endif
   gchar *hostname;
 
   /* character as it can contain a service name from /etc/services */

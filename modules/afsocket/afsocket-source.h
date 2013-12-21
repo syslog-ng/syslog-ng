@@ -29,9 +29,6 @@
 #include "transport-mapper.h"
 #include "driver.h"
 #include "logreader.h"
-#if BUILD_WITH_SSL
-#include "tlscontext.h"
-#endif
 
 #include <iv.h>
 
@@ -58,7 +55,6 @@ struct _AFSocketSourceDriver
   SocketOptions *socket_options;
   TransportMapper *transport_mapper;
 
-  LogTransport *(*construct_transport)(AFSocketSourceDriver *self, gint fd);
   /*
    * Apply transport options, set up bind_addr based on the
    * information processed during parse time. This used to be
@@ -85,12 +81,6 @@ afsocket_sd_acquire_socket(AFSocketSourceDriver *s, gint *fd)
     return s->acquire_socket(s, fd);
   *fd = -1;
   return TRUE;
-}
-
-static inline LogTransport *
-afsocket_sd_construct_transport(AFSocketSourceDriver *self, gint fd)
-{
-  return self->construct_transport(self, fd);
 }
 
 static inline gboolean

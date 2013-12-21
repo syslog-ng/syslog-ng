@@ -24,10 +24,6 @@
 #include "afsocket-source.h"
 #include "messages.h"
 #include "misc.h"
-#include "transport/transport-socket.h"
-#if BUILD_WITH_SSL
-#include "transport/transport-tls.h"
-#endif
 #include "gsocket.h"
 #include "stats/stats-registry.h"
 #include "mainloop.h"
@@ -77,6 +73,12 @@ afsocket_sc_stats_instance(AFSocketSourceConnection *self)
   return buf;
 }
 
+static LogTransport *
+afsocket_sc_construct_transport(AFSocketSourceConnection *self, gint fd)
+{
+  return transport_mapper_construct_log_transport(self->owner->transport_mapper, fd);
+}
+
 static gboolean
 afsocket_sc_init(LogPipe *s)
 {
@@ -86,7 +88,7 @@ afsocket_sc_init(LogPipe *s)
 
   if (!self->reader)
     {
-      transport = afsocket_sd_construct_transport(self->owner, self->sock);
+      transport = afsocket_sc_construct_transport(self, self->sock);
       proto = log_proto_server_factory_construct(self->owner->proto_factory, transport, &self->owner->reader_options.proto_options.super);
       self->reader = log_reader_new();
       log_reader_reopen(self->reader, proto, poll_fd_events_new(self->sock));
@@ -601,11 +603,6 @@ afsocket_sd_save_listener(AFSocketSourceDriver *self)
     }
 }
 
-LogTransport *
-afsocket_sd_construct_transport_method(AFSocketSourceDriver *self, gint fd)
-{
-  return transport_mapper_construct_log_transport(self->transport_mapper, fd);
-}
 
 gboolean
 afsocket_sd_setup_addresses_method(AFSocketSourceDriver *self)
@@ -675,7 +672,6 @@ afsocket_sd_init_instance(AFSocketSourceDriver *self,
   /* NULL behaves as if log_pipe_forward_msg was specified */
   self->super.super.super.queue = NULL;
   self->super.super.super.notify = afsocket_sd_notify;
-  self->construct_transport = afsocket_sd_construct_transport_method;
   self->setup_addresses = afsocket_sd_setup_addresses_method;
   self->socket_options = socket_options;
   self->transport_mapper = transport_mapper;
