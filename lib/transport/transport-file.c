@@ -62,9 +62,9 @@ log_transport_file_write_method(LogTransport *s, const gpointer buf, gsize bufle
 }
 
 void
-log_transport_file_init_method(LogTransportFile *self, gint fd)
+log_transport_file_init_instance(LogTransportFile *self, gint fd)
 {
-  log_transport_init_method(&self->super, fd);
+  log_transport_init_instance(&self->super, fd);
   self->super.read = log_transport_file_read_method;
   self->super.write = log_transport_file_write_method;
   self->super.free_fn = log_transport_free_method;
@@ -76,6 +76,6 @@ log_transport_file_new(gint fd)
 {
   LogTransportFile *self = g_new0(LogTransportFile, 1);
 
-  log_transport_file_init_method(self, fd);
+  log_transport_file_init_instance(self, fd);
   return &self->super;
 }

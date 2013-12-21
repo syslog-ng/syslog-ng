@@ -69,7 +69,7 @@ log_transport_device_new(gint fd, gint timeout)
 {
   LogTransportDevice *self = g_new0(LogTransportDevice, 1);
 
-  log_transport_init_method(&self->super, fd);
+  log_transport_init_instance(&self->super, fd);
   self->timeout = timeout;
   self->super.read = log_transport_device_read_method;
   self->super.write = NULL;

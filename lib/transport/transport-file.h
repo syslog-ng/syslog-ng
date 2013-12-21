@@ -34,7 +34,7 @@ struct _LogTransportFile
   LogTransport super;
 };
 
-void log_transport_file_init_method(LogTransportFile *self, gint fd);
+void log_transport_file_init_instance(LogTransportFile *self, gint fd);
 LogTransport *log_transport_file_new(gint fd);
 
 #endif

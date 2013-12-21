@@ -51,7 +51,7 @@ log_transport_read(LogTransport *self, gpointer buf, gsize count, GSockAddr **sa
   return self->read(self, buf, count, sa);
 }
 
-void log_transport_init_method(LogTransport *s, gint fd);
+void log_transport_init_instance(LogTransport *s, gint fd);
 void log_transport_free_method(LogTransport *s);
 void log_transport_free(LogTransport *s);
 

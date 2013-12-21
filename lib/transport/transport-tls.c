@@ -151,7 +151,7 @@ log_transport_tls_new(TLSSession *tls_session, gint fd)
 {
   LogTransportTLS *self = g_new0(LogTransportTLS, 1);
 
-  log_transport_init_method(&self->super, fd);
+  log_transport_init_instance(&self->super, fd);
   self->super.cond = G_IO_IN | G_IO_OUT;
   self->super.read = log_transport_tls_read_method;
   self->super.write = log_transport_tls_write_method;

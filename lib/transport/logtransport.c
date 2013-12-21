@@ -38,7 +38,7 @@ log_transport_free_method(LogTransport *s)
 }
 
 void
-log_transport_init_method(LogTransport *self, gint fd)
+log_transport_init_instance(LogTransport *self, gint fd)
 {
   self->fd = fd;
   self->cond = 0;
