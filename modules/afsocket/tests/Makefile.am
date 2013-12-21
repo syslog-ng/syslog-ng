@@ -49,5 +49,5 @@ modules_afsocket_tests_test_transport_mapper_unix_LDFLAGS =	\
 	-dlpreopen $(top_builddir)/modules/afsocket/libafsocket.la
 
 modules_afsocket_tests_test_transport_mapper_unix_SOURCES = 	\
-	modules/afsocket/tests/test-transport-mapper-inet.c	\
+	modules/afsocket/tests/test-transport-mapper-unix.c	\
 	$(TRANSPORT_MAPPER_LIB)
