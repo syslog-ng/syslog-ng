@@ -42,8 +42,8 @@
 #endif
 
 static void
-system_sysblock_add_unix_dgram(GString *sysblock, const gchar *path,
-                               const gchar *perms, const gchar *recvbuf_size)
+system_sysblock_add_unix_dgram_driver(GString *sysblock, const gchar *path,
+                                      const gchar *perms, const gchar *recvbuf_size)
 {
   g_string_append_printf(sysblock, "unix-dgram(\"%s\"", path);
   if (perms)
@@ -51,6 +51,25 @@ system_sysblock_add_unix_dgram(GString *sysblock, const gchar *path,
   if (recvbuf_size)
     g_string_append_printf(sysblock, " so_rcvbuf(%s)", recvbuf_size);
   g_string_append(sysblock, ");\n");
+}
+
+static void
+system_sysblock_add_unix_dgram(GString *sysblock, const gchar *path,
+                               const gchar *perms, const gchar *recvbuf_size)
+{
+  GString *unix_driver = g_string_sized_new(0);
+  
+  system_sysblock_add_unix_dgram_driver(unix_driver, path, perms, recvbuf_size);
+
+  g_string_append_printf(sysblock, 
+"channel {\n"
+"  log {\n"
+"    source { %s };\n"
+"    rewrite { set(\"${.unix.pid}\" value(\"PID\") condition(\"${.unix.pid}\" != \"\")); };\n"
+"  };\n"
+"};\n", unix_driver->str);
+
+  g_string_free(unix_driver, TRUE);
 }
 
 static void
