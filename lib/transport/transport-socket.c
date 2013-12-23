@@ -23,11 +23,6 @@
 
 #include "transport-socket.h"
 
-typedef struct _LogTransportSocket LogTransportSocket;
-struct _LogTransportSocket
-{
-  LogTransport super;
-};
 
 static gssize
 log_transport_dgram_socket_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTransportAuxData *aux)
@@ -81,15 +76,20 @@ log_transport_dgram_socket_write_method(LogTransport *s, const gpointer buf, gsi
   return rc;
 }
 
+void
+log_transport_dgram_socket_init_instance(LogTransportSocket *self, gint fd)
+{
+  log_transport_init_instance(&self->super, fd);
+  self->super.read = log_transport_dgram_socket_read_method;
+  self->super.write = log_transport_dgram_socket_write_method;
+}
 
 LogTransport *
 log_transport_dgram_socket_new(gint fd)
 {
   LogTransportSocket *self = g_new0(LogTransportSocket, 1);
   
-  log_transport_init_instance(&self->super, fd);
-  self->super.read = log_transport_dgram_socket_read_method;
-  self->super.write = log_transport_dgram_socket_write_method;
+  log_transport_dgram_socket_init_instance(self, fd);
   return &self->super;
 }
 
@@ -128,16 +128,20 @@ log_transport_stream_socket_free_method(LogTransport *s)
   log_transport_free_method(s);
 }
 
+void
+log_transport_stream_socket_init_instance(LogTransportSocket *self, gint fd)
+{
+  log_transport_init_instance(&self->super, fd);
+  self->super.read = log_transport_stream_socket_read_method;
+  self->super.write = log_transport_stream_socket_write_method;
+  self->super.free_fn = log_transport_stream_socket_free_method;
+}
+
 LogTransport *
 log_transport_stream_socket_new(gint fd)
 {
   LogTransportSocket *self = g_new0(LogTransportSocket, 1);
 
-  log_transport_init_instance(&self->super, fd);
-  self->super.read = log_transport_stream_socket_read_method;
-  self->super.write = log_transport_stream_socket_write_method;
-  self->super.free_fn = log_transport_stream_socket_free_method;
+  log_transport_stream_socket_init_instance(self, fd);
   return &self->super;
 }
-
-
