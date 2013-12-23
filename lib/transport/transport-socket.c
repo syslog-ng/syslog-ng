@@ -87,7 +87,7 @@ log_transport_dgram_socket_new(gint fd)
 {
   LogTransportSocket *self = g_new0(LogTransportSocket, 1);
   
-  log_transport_init_method(&self->super, fd);
+  log_transport_init_instance(&self->super, fd);
   self->super.read = log_transport_dgram_socket_read_method;
   self->super.write = log_transport_dgram_socket_write_method;
   return &self->super;
@@ -135,7 +135,7 @@ log_transport_stream_socket_new(gint fd)
 {
   LogTransportSocket *self = g_new0(LogTransportSocket, 1);
 
-  log_transport_init_method(&self->super, fd);
+  log_transport_init_instance(&self->super, fd);
   self->super.read = log_transport_stream_socket_read_method;
   self->super.write = log_transport_stream_socket_write_method;
   self->super.free_fn = log_transport_stream_socket_free_method;
