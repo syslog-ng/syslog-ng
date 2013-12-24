@@ -1,3 +1,62 @@
+3.4.7
+        Tue, 24 Dec 2013 21:07:34 +0100
+
+        This is the sixth bug-fix release for the 3.4.x series, with a
+        number of important fixes over the 3.4.6 release. Upgrading to
+        this release is highly recommended.
+
+        Bugfixes
+        ========
+
+        * Node flag propagation has been fixed, so flags(final) works
+          the same as it did in 3.3, when embedded log statements are
+          used too.
+
+        * Using the value-pairs() framework, either via the
+          $(format-json) template function or any of the destinations
+          that make use of it, will now correctly skip and ignore
+          empty values, even in SDATA.
+
+        * A file descriptor and memory leak has been fixed in the
+          syslog() destination.
+
+        * The pdbtool program will warn in test mode when a test
+          message has no program attribute. [BugZilla #263]
+
+        * If the PID property is overwritten, syslog-ng will now stop
+          using the cached MSGHDR value, and therefore, use the newly
+          set PID instead, as it was supposed to.
+
+        * The localport() option of various network destinations has
+          been restored, and will work correctly now. [BugZilla #266]
+
+        * The upstart service file in contrib has been updated to use
+          a different process mode (background), as we do not need a
+          supervisor when running under upstart. This also means that
+          upstart will be far less confused.
+
+        Credits
+        =======
+
+        syslog-ng is developed as a community project, and as such it relies
+        on volunteers to do the work necessarily to produce syslog-ng.
+
+        Reporting bugs, testing changes, writing code or simply providing
+        feedback are all important contributions, so please if you are a
+        user of syslog-ng, contribute.
+
+        These people have helped in this release:
+
+        Andras Mitzki <micek@balabit.hu>
+        Balazs Scheidler <bazsi@balabit.hu>
+        Chris Johnson <chris.johnson3@hp.com>
+        Fabien Wernli <cpan@faxm0dem.org>
+        Gergely Nagy <algernon@balabit.hu>
+        Lucas McLane <lucas@clicksecurity.com>
+        Peter Czanik <czanik@balabit.hu>
+        Sebastiaan Hoogeveen <zebaz@xs4all.nl>
+        Tobias Schwab <tobias.schwab@dynport.de>
+
 3.4.6
         Wed, 27 Nov 2013 16:21:47 +0100
 
