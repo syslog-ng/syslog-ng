@@ -109,12 +109,6 @@ _add_nv_pair_proc_read_unless_unset(LogTransportAuxData *aux, const gchar *name,
 }
 
 static void
-_add_nv_pair_proc_read(LogTransportAuxData *aux, const gchar *name, pid_t pid, const gchar *proc_file)
-{
-  _add_nv_pair_proc_read_unless_unset(aux, name, pid, proc_file, NULL);
-}
-
-static void
 _add_nv_pair_proc_read_argv(LogTransportAuxData *aux, const gchar *name, pid_t pid, const gchar *proc_file)
 {
   gchar filename[64];
@@ -155,35 +149,34 @@ _feed_aux_from_ucred(LogTransportAuxData *aux, struct ucred *uc)
   _add_nv_pair_int(aux, ".unix.gid", uc->gid);
 }
 
+#if defined(__linux__)
 static void
-_feed_aux_from_linux_process_info(LogTransportAuxData *aux, pid_t pid)
+_feed_aux_from_procfs(LogTransportAuxData *aux, pid_t pid)
 {
   _add_nv_pair_proc_read_argv(aux, ".unix.cmdline", pid, "cmdline");
-
-#ifdef __linux__
   _add_nv_pair_proc_readlink(aux, ".unix.exe", pid, "exe");
-#elif __FreeBSD__
-  _add_nv_pair_proc_readlink(aux, ".unix.exe", pid, "file");
-#endif
-}
-
-static void
-_feed_aux_from_linux_audit_info(LogTransportAuxData *aux, pid_t pid)
-{
-#ifdef __linux__
   /* NOTE: we use the names the audit subsystem does, so if in the future we'd be
    * processing audit records, the nvpair names would match up. */
   _add_nv_pair_proc_read_unless_unset(aux, ".audit.auid", pid, "loginuid", "4294967295");
   _add_nv_pair_proc_read_unless_unset(aux, ".audit.ses", pid, "sessionid", "4294967295");
-#endif
 }
 
+#elif defined(__FreeBSD__)
 static void
-_feed_aux_from_pid(LogTransportAuxData *aux, pid_t pid)
+_feed_aux_from_procfs(LogTransportAuxData *aux, pid_t pid)
 {
-  _feed_aux_from_linux_process_info(aux, pid);
-  _feed_aux_from_linux_audit_info(aux, pid);
+  _add_nv_pair_proc_read_argv(aux, ".unix.cmdline", pid, "cmdline");
+  _add_nv_pair_proc_readlink(aux, ".unix.exe", pid, "file");
 }
+
+#else
+
+static void
+_feed_aux_from_procfs(LogTransportAuxData *aux, pid_t pid)
+{
+}
+
+#endif
 
 static void
 _feed_aux_from_cmsg(LogTransportAuxData *aux, struct msghdr *msg)
@@ -196,7 +189,7 @@ _feed_aux_from_cmsg(LogTransportAuxData *aux, struct msghdr *msg)
         {
           struct ucred *uc = (struct ucred *) CMSG_DATA(cmsg);
 
-          _feed_aux_from_pid(aux, uc->pid);
+          _feed_aux_from_procfs(aux, uc->pid);
           _feed_aux_from_ucred(aux, uc);
           break;
         }
