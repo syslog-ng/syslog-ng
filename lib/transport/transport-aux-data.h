@@ -28,7 +28,7 @@
 typedef struct _LogTransportAuxData
 {
   GSockAddr *peer_addr;
-  gchar data[256];
+  gchar data[1024];
   gsize end_ptr;
 } LogTransportAuxData;
 
