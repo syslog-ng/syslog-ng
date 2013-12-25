@@ -68,6 +68,10 @@ extern struct _LogParser *last_parser;
 
 %code {
 
+# ifndef YYID
+# define YYID(N) N
+# endif
+
 # define YYLLOC_DEFAULT(Current, Rhs, N)                                \
   do {                                                                  \
     if (YYID (N))                                                       \
