@@ -55,6 +55,7 @@ gboolean debug_flag = 0;
 gboolean verbose_flag = 0;
 gboolean trace_flag = 0;
 gboolean log_stderr = FALSE;
+gboolean skip_timestamp_on_stderr = FALSE;
 static MsgPostFunc msg_post_func;
 static EVTCONTEXT *evt_context;
 static GStaticPrivate msg_context_private = G_STATIC_PRIVATE_INIT;
@@ -140,7 +141,10 @@ msg_send_formatted_message_to_stderr(const char *msg)
 {
   gchar tmtime[128];
 
-  fprintf(stderr, "[%s] %s\n", msg_format_timestamp(tmtime, sizeof(tmtime)), msg);
+  if (skip_timestamp_on_stderr)
+    fprintf(stderr, "%s\n", msg);
+  else
+    fprintf(stderr, "[%s] %s\n", msg_format_timestamp(tmtime, sizeof(tmtime)), msg);
 }
 
 void
@@ -263,13 +267,14 @@ msg_init(gboolean interactive)
   else
     {
       log_stderr = TRUE;
+      skip_timestamp_on_stderr = TRUE;
     }
   evt_context = evt_ctx_init("syslog-ng", EVT_FAC_SYSLOG);
 }
 
 
 void
-msg_deinit()
+msg_deinit(void)
 {
   evt_ctx_free(evt_context);
   log_stderr = TRUE;

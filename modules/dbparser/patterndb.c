@@ -858,9 +858,13 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
       if (attribute_names[0] && g_str_equal(attribute_names[0], "name"))
         state->test_value_name = g_strdup(attribute_values[0]);
       else
-        msg_error("No name is specified for test_value",
-                  evt_tag_str("rule_id", state->current_rule->rule_id),
-                  NULL);
+        {
+          msg_error("No name is specified for test_value",
+                    evt_tag_str("rule_id", state->current_rule->rule_id),
+                    NULL);
+          *error = g_error_new(1, 0, "<test_value> misses name attribute");
+          return;
+        }
     }
   else if (strcmp(element_name, "rule") == 0)
     {
@@ -916,7 +920,11 @@ pdb_loader_start_element(GMarkupParseContext *context, const gchar *element_name
       if (attribute_names[0] && g_str_equal(attribute_names[0], "name"))
         state->value_name = g_strdup(attribute_values[0]);
       else
-        msg_error("No name is specified for value", evt_tag_str("rule_id", state->current_rule->rule_id), NULL);
+        {
+          msg_error("No name is specified for value", evt_tag_str("rule_id", state->current_rule->rule_id), NULL);
+          *error = g_error_new(1, 0, "<value> misses name attribute");
+          return;
+        }
     }
   else if (strcmp(element_name, "patterndb") == 0)
     {
@@ -1179,8 +1187,9 @@ pdb_loader_text(GMarkupParseContext *context, const gchar *text, gsize text_len,
             evt_tag_str("name", state->value_name),
             evt_tag_str("value", text),
             evt_tag_str("error", err->message), NULL);
-          g_clear_error(&err);
           log_template_unref(value);
+          g_propagate_error(error, err);
+          return;
         }
       else
         g_ptr_array_add(state->current_message->values, value);
