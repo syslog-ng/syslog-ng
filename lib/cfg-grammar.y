@@ -74,6 +74,10 @@ extern struct _ValuePairsTransformSet *last_vp_transset;
 
 %code {
 
+# ifndef YYID
+# define YYID(N) N
+# endif
+
 # define YYLLOC_DEFAULT(Current, Rhs, N)                                \
   do {                                                                  \
     if (YYID (N))                                                       \
