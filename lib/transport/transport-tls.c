@@ -38,14 +38,11 @@ typedef struct _LogTransportTLS
 } LogTransportTLS;
 
 static gssize
-log_transport_tls_read_method(LogTransport *s, gpointer buf, gsize buflen, GSockAddr **sa)
+log_transport_tls_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTransportAuxData *aux)
 {
   LogTransportTLS *self = (LogTransportTLS *) s;
   gint ssl_error;
   gint rc;
-
-  if (sa)
-    *sa = NULL;
 
   /* assume that we need to poll our input for reading unless
    * SSL_ERROR_WANT_WRITE is specified by libssl */

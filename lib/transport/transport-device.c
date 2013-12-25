@@ -34,13 +34,10 @@ struct _LogTransportDevice
 };
 
 static gssize
-log_transport_device_read_method(LogTransport *s, gpointer buf, gsize buflen, GSockAddr **sa)
+log_transport_device_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTransportAuxData *aux)
 {
   LogTransportDevice *self = (LogTransportDevice *) s;
   gint rc;
-
-  if (sa)
-    *sa = NULL;
 
   do
     {

@@ -290,8 +290,18 @@ log_reader_update_watches(LogReader *self)
   poll_events_update_watches(self->poll_events, cond);
 }
 
+static void
+_add_aux_nvpair(const gchar *name, const gchar *value, gsize value_len, gpointer user_data)
+{
+  LogMessage *msg = (LogMessage *) user_data;
+  NVHandle handle;
+  
+  handle = log_msg_get_value_handle(name);
+  log_msg_set_value(msg, handle, value, value_len);
+}
+
 static gboolean
-log_reader_handle_line(LogReader *self, const guchar *line, gint length, GSockAddr *saddr)
+log_reader_handle_line(LogReader *self, const guchar *line, gint length, LogTransportAuxData *aux)
 {
   LogMessage *m;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
@@ -301,14 +311,12 @@ log_reader_handle_line(LogReader *self, const guchar *line, gint length, GSockAd
             NULL);
   /* use the current time to get the time zone offset */
   m = log_msg_new((gchar *) line, length,
-                  saddr,
+                  aux->peer_addr ? : self->peer_addr,
                   &self->options->parse_options);
 
   log_msg_refcache_start_producer(m);
-  if (!m->saddr && self->peer_addr)
-    {
-      m->saddr = g_sockaddr_ref(self->peer_addr);
-    }
+  
+  log_transport_aux_data_foreach(aux, _add_aux_nvpair, m);
 
   log_pipe_queue(&self->super.super, m, &path_options);
   log_msg_refcache_stop();
@@ -319,9 +327,9 @@ log_reader_handle_line(LogReader *self, const guchar *line, gint length, GSockAd
 static gint
 log_reader_fetch_log(LogReader *self)
 {
-  GSockAddr *sa;
   gint msg_count = 0;
   gboolean may_read = TRUE;
+  LogTransportAuxData aux;
 
   if (self->waiting_for_preemption)
     may_read = FALSE;
@@ -330,6 +338,7 @@ log_reader_fetch_log(LogReader *self)
    * to fetch a couple of messages in a single run (but only up to
    * fetch_limit).
    */
+  log_transport_aux_data_init(&aux);
   while (msg_count < self->options->fetch_limit && !main_loop_worker_job_quit())
     {
       const guchar *msg;
@@ -337,7 +346,6 @@ log_reader_fetch_log(LogReader *self)
       LogProtoStatus status;
 
       msg = NULL;
-      sa = NULL;
 
       /* NOTE: may_read is used to implement multi-read checking. It
        * is initialized to TRUE to indicate that the protocol is
@@ -345,12 +353,13 @@ log_reader_fetch_log(LogReader *self)
        * protocol, it resets may_read to FALSE after the first read was issued.
        */
 
-      status = log_proto_server_fetch(self->proto, &msg, &msg_len, &sa, &may_read);
+      log_transport_aux_data_reinit(&aux);
+      status = log_proto_server_fetch(self->proto, &msg, &msg_len, &may_read, &aux);
       switch (status)
         {
         case LPS_EOF:
         case LPS_ERROR:
-          g_sockaddr_unref(sa);
+          g_sockaddr_unref(aux.peer_addr);
           return status == LPS_ERROR ? NC_READ_ERROR : NC_CLOSE;
         case LPS_SUCCESS:
           break;
@@ -368,17 +377,16 @@ log_reader_fetch_log(LogReader *self)
         {
           msg_count++;
 
-          if (!log_reader_handle_line(self, msg, msg_len, sa))
+          if (!log_reader_handle_line(self, msg, msg_len, &aux))
             {
               /* window is full, don't generate further messages */
               log_proto_server_queued(self->proto);
-              g_sockaddr_unref(sa);
               break;
             }
         }
       log_proto_server_queued(self->proto);
-      g_sockaddr_unref(sa);
     }
+  log_transport_aux_data_destroy(&aux);
   if (self->options->flags & LR_PREEMPT)
     {
       if (log_proto_server_is_preemptable(self->proto))
