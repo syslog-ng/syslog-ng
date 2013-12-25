@@ -78,6 +78,10 @@ extern struct _StatsOptions *last_stats_options;
 
 %code {
 
+# ifndef YYID
+# define YYID(N) N
+# endif
+
 # define YYLLOC_DEFAULT(Current, Rhs, N)                                \
   do {                                                                  \
     if (YYID (N))                                                       \
