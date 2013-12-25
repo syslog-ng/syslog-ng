@@ -271,6 +271,9 @@ if echo "$YACC" | grep bison > /dev/null; then
 	if test "$bison_version_major" -lt 2 -o "$bison_version_minor" -lt 4; then
 		yacc_ok=0
 	fi
+	if test "$bison_version_major" -gt 2; then
+		yacc_ok=1
+	fi
 else
 	yacc_ok=0
 fi
