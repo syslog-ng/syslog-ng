@@ -261,7 +261,7 @@ dnl Validate yacc
 yacc_ok=1
 if echo "$YACC" | grep bison > /dev/null; then
 	# NOTE: m4 removes [], that's why it needs to be escaped
-	bison_version=[`$YACC --version | head -n 1 | sed -e 's/[^0-9.]*\([0-9.]\+\)$/\1/'`]
+	bison_version=[`$YACC --version | head -n 1 | sed -e 's/[^0-9.]*\([-0-9.]\+\)$/\1/'`]
 	bison_version_major=`echo $bison_version | cut -d. -f1`
 	bison_version_minor=`echo $bison_version | cut -d. -f2`
 	if test "$bison_version_major" -lt 2 -o "$bison_version_minor" -lt 4; then
