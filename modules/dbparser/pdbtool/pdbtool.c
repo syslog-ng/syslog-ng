@@ -763,7 +763,7 @@ pdbtool_test(int argc, char *argv[])
               if (example->program && example->program[0])
                 log_msg_set_value(msg, LM_V_PROGRAM, example->program, strlen(example->program));
 
-              printf("Testing message program='%s' message='%s'\n", example->program, example->message);
+              printf("Testing message: program='%s' message='%s'\n", example->program, example->message);
 
               pattern_db_process(patterndb, PDB_INPUT_WRAP_MESSAGE(&input, msg));
 
@@ -788,6 +788,15 @@ pdbtool_test(int argc, char *argv[])
 
               log_msg_unref(msg);
             }
+          else if (!example->program && example->message)
+            {
+              printf("NOT Testing message as program is unset: message='%s'\n", example->message);
+            }
+          else if (example->program && !example->message)
+            {
+              printf("NOT Testing message as message is unset: program='%s'\n", example->program);
+            }
+
           examples = g_list_delete_link(examples, examples);
         }
 
