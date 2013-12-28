@@ -78,13 +78,9 @@ extern struct _StatsOptions *last_stats_options;
 
 %code {
 
-# ifndef YYID
-# define YYID(N) N
-# endif
-
 # define YYLLOC_DEFAULT(Current, Rhs, N)                                \
   do {                                                                  \
-    if (YYID (N))                                                       \
+    if (N)                                                              \
       {                                                                 \
         (Current).level = YYRHSLOC(Rhs, 1).level;                       \
         (Current).first_line   = YYRHSLOC (Rhs, 1).first_line;          \
@@ -100,7 +96,7 @@ extern struct _StatsOptions *last_stats_options;
         (Current).first_column = (Current).last_column =                \
           YYRHSLOC (Rhs, 0).last_column;                                \
       }                                                                 \
-  } while (YYID (0))
+  } while (0)
 
 #define CHECK_ERROR_WITHOUT_MESSAGE(val, token) do {                    \
     if (!(val))                                                         \
