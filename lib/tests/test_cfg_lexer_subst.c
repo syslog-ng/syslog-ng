@@ -93,21 +93,59 @@ construct_object(void)
   return construct_object_with_values(NULL);
 }
 
+static gchar *
+duplicate_string_without_with_trailing_nonzero_bytes(const gchar *input)
+{
+  gsize input_len = strlen(input);
+  const gint canary_size = 10;
+  gchar *input_dup = malloc(input_len + canary_size);
+
+  memcpy(input_dup, input, input_len);
+  memset(input_dup + input_len, 'A', canary_size - 1);
+  input_dup[input_len + canary_size - 1] = 0;
+  return input_dup;
+}
+
 static void
-assert_invoke_result(CfgLexerSubst *subst, const gchar *input, const gchar *expected_output)
+_assert_invoke_result(CfgLexerSubst *subst, gchar *input_dup, gssize input_len, const gchar *expected_output)
 {
   gchar *result;
   gsize result_len;
-  gchar *input_dup = g_strdup(input);
   GError *error = NULL;
 
-  result = cfg_lexer_subst_invoke(subst, input_dup, &result_len, &error);
+  result = cfg_lexer_subst_invoke(subst, input_dup, input_len, &result_len, &error);
   assert_true(error == NULL, "Error value is non-null while no error is expected");
   assert_true(result != NULL, "value substitution returned an unexpected failure");
   assert_string(result, expected_output, "value substitution is broken");
   assert_guint64(result_len, strlen(expected_output), "length returned by invoke_result is invalid");
-  g_free(input_dup);
   g_free(result);
+}
+
+static void
+assert_invoke_result_with_input_length_explicit(CfgLexerSubst *subst, const gchar *input, const gchar *expected_output)
+{
+  gchar *input_dup;
+
+  input_dup = duplicate_string_without_with_trailing_nonzero_bytes(input);
+  _assert_invoke_result(subst, input_dup, strlen(input), expected_output);
+  g_free(input_dup);
+}
+
+static void
+assert_invoke_result_with_zero_terminated_input(CfgLexerSubst *subst, const gchar *input, const gchar *expected_output)
+{
+  gchar *input_dup;
+
+  input_dup = strdup(input);
+  _assert_invoke_result(subst, input_dup, -1, expected_output);
+  g_free(input_dup);
+}
+
+static void
+assert_invoke_result(CfgLexerSubst *subst, const gchar *input, const gchar *expected_output)
+{
+  assert_invoke_result_with_input_length_explicit(subst, input, expected_output);
+  assert_invoke_result_with_zero_terminated_input(subst, input, expected_output);
 }
 
 static void
@@ -118,7 +156,7 @@ assert_invoke_failure(CfgLexerSubst *subst, const gchar *input, const gchar *exp
   gchar *input_dup = g_strdup(input);
   GError *error = NULL;
 
-  result = cfg_lexer_subst_invoke(subst, input_dup, &result_len, &error);
+  result = cfg_lexer_subst_invoke(subst, input_dup, strlen(input), &result_len, &error);
   assert_true(result == NULL, "expected failure for value substitution, but success was returned");
   assert_true(error != NULL, "expected a non-NULL error object for failure");
   assert_string(error->message, expected_error, "error message mismatch");

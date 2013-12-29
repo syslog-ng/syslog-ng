@@ -176,18 +176,21 @@ _append_value(CfgLexerSubst *self, const gchar *value, GError **error)
 }
 
 gchar *
-cfg_lexer_subst_invoke(CfgLexerSubst *self, gchar *cptr, gsize *length, GError **error)
+cfg_lexer_subst_invoke(CfgLexerSubst *self, gchar *input, gssize input_len, gsize *output_length, GError **error)
 {
   gboolean backtick = FALSE;
-  gchar *p, *ref_start = cptr;
+  gchar *p, *ref_start = input;
   GString *result;
 
   g_return_val_if_fail(error == NULL || (*error) == NULL, FALSE);
 
+  if (input_len < 0)
+    input_len = strlen(input);
+
   result = g_string_sized_new(32);
   self->result_buffer = result;
-  p = cptr;
-  while (*p)
+  p = input;
+  while (p - input < input_len)
     {
       self->string_state = _track_string_state(self, self->string_state, p);
 
@@ -236,7 +239,7 @@ cfg_lexer_subst_invoke(CfgLexerSubst *self, gchar *cptr, gsize *length, GError *
       goto error;
     }
 
-  *length = result->len;
+  *output_length = result->len;
   return g_string_free(result, FALSE);
  error:
   g_string_free(result, TRUE);

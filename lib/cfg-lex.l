@@ -43,7 +43,7 @@
         GError *error = NULL;						\
                                                                         \
         if (YY_START < block)                                           \
-          res = cfg_lexer_subst_args(yyextra->globals, NULL, NULL, buf, &len, &error); \
+          res = cfg_lexer_subst_args(yyextra->globals, NULL, NULL, buf, -1, &len, &error); \
         else                                                            \
           res = FALSE;                                                  \
         if (!res)                                                       \

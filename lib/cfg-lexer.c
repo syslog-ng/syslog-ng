@@ -149,12 +149,12 @@ cfg_lexer_get_context_description(CfgLexer *self)
 }
 
 gchar *
-cfg_lexer_subst_args(CfgArgs *globals, CfgArgs *defs, CfgArgs *args, gchar *cptr, gsize *length, GError **error)
+cfg_lexer_subst_args(CfgArgs *globals, CfgArgs *defs, CfgArgs *args, gchar *input, gssize input_length, gsize *output_length, GError **error)
 {
   CfgLexerSubst *subst = cfg_lexer_subst_new(cfg_args_ref(globals), cfg_args_ref(defs), cfg_args_ref(args));
   gchar *result;
 
-  result = cfg_lexer_subst_invoke(subst, cptr, length, error);
+  result = cfg_lexer_subst_invoke(subst, input, input_length, output_length, error);
   cfg_lexer_subst_free(subst);
   return result;
 }
@@ -1105,7 +1105,7 @@ cfg_block_generate(CfgLexer *lexer, gint context, const gchar *name, CfgArgs *ar
       return FALSE;
     }
 
-  value = cfg_lexer_subst_args(lexer->globals, block->arg_defs, args, block->content, &length, &error);
+  value = cfg_lexer_subst_args(lexer->globals, block->arg_defs, args, block->content, -1, &length, &error);
 
   if (!value)
     {
