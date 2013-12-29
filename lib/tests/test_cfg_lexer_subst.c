@@ -125,7 +125,7 @@ assert_invoke_failure(CfgLexerSubst *subst, const gchar *input, const gchar *exp
   g_free(input_dup);
 }
 
-void
+static void
 test_double_backtick_replaced_with_a_single_one(void)
 {
   CfgLexerSubst *subst = construct_object();
@@ -133,7 +133,7 @@ test_double_backtick_replaced_with_a_single_one(void)
   cfg_lexer_subst_free(subst);
 }
 
-void
+static void
 test_value_in_normal_text_replaced_with_its_literal_value(void)
 {
   CfgLexerSubst *subst = construct_object();
@@ -144,7 +144,7 @@ test_value_in_normal_text_replaced_with_its_literal_value(void)
   cfg_lexer_subst_free(subst);
 }
 
-void
+static void
 test_values_are_resolution_order_args_defaults_globals_env(void)
 {
   CfgLexerSubst *subst = construct_object();
@@ -157,7 +157,7 @@ test_values_are_resolution_order_args_defaults_globals_env(void)
   cfg_lexer_subst_free(subst);
 }
 
-void
+static void
 test_values_are_inserted_within_strings(void)
 {
   CfgLexerSubst *subst = construct_object();
@@ -167,7 +167,7 @@ test_values_are_inserted_within_strings(void)
   cfg_lexer_subst_free(subst);
 }
 
-void
+static void
 test_string_literals_are_inserted_into_strings_without_quotes(void)
 {
   const gchar *additional_values[] = {
@@ -181,7 +181,7 @@ test_string_literals_are_inserted_into_strings_without_quotes(void)
   cfg_lexer_subst_free(subst);
 }
 
-void
+static void
 test_incorrect_strings_and_multiple_tokens_are_inserted_verbatim(void)
 {
   const gchar *additional_values[] = {
@@ -199,7 +199,7 @@ test_incorrect_strings_and_multiple_tokens_are_inserted_verbatim(void)
   cfg_lexer_subst_free(subst);
 }
 
-void
+static void
 test_strings_with_special_chars_are_properly_encoded_in_strings(void)
 {
   const gchar *additional_values[] = {
@@ -212,7 +212,7 @@ test_strings_with_special_chars_are_properly_encoded_in_strings(void)
   cfg_lexer_subst_free(subst);
 }
 
-void
+static void
 test_strings_with_embedded_apostrophe_cause_an_error_when_encoding_in_qstring(void)
 {
   const gchar *additional_values[] = {
@@ -226,8 +226,7 @@ test_strings_with_embedded_apostrophe_cause_an_error_when_encoding_in_qstring(vo
   cfg_lexer_subst_free(subst);
 }
 
-
-void
+static void
 test_cfg_lexer_subst(void)
 {
   SUBST_TESTCASE(test_double_backtick_replaced_with_a_single_one);
