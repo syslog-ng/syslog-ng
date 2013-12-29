@@ -134,6 +134,22 @@ test_double_backtick_replaced_with_a_single_one(void)
 }
 
 static void
+test_single_backtick_causes_an_error(void)
+{
+  CfgLexerSubst *subst = construct_object();
+  assert_invoke_failure(subst, "foo ` bar", "missing closing backtick (`) character");
+  cfg_lexer_subst_free(subst);
+}
+
+static void
+test_backtick_after_quoted_character_succeeds(void)
+{
+  CfgLexerSubst *subst = construct_object();
+  assert_invoke_result(subst, "foo \"string \\n`arg`\" bar", "foo \"string \\narg_value\" bar");
+  cfg_lexer_subst_free(subst);
+}
+
+static void
 test_value_in_normal_text_replaced_with_its_literal_value(void)
 {
   CfgLexerSubst *subst = construct_object();
@@ -176,7 +192,10 @@ test_string_literals_are_inserted_into_strings_without_quotes(void)
   };
   CfgLexerSubst *subst = construct_object_with_values(additional_values);
 
+  /* double quotes */
   assert_invoke_result(subst, "foo \"x `simple_string` y\" bar", "foo \"x simple_string_value y\" bar");
+  /* apostrophes */
+  assert_invoke_result(subst, "foo 'x `simple_string` y' bar", "foo 'x simple_string_value y' bar");
   assert_invoke_result(subst, "foo \"x `simple_string_with_whitespace` y\" bar", "foo \"x string_with_whitespace y\" bar");
   cfg_lexer_subst_free(subst);
 }
@@ -230,6 +249,8 @@ static void
 test_cfg_lexer_subst(void)
 {
   SUBST_TESTCASE(test_double_backtick_replaced_with_a_single_one);
+  SUBST_TESTCASE(test_single_backtick_causes_an_error);
+  SUBST_TESTCASE(test_backtick_after_quoted_character_succeeds);
   SUBST_TESTCASE(test_value_in_normal_text_replaced_with_its_literal_value);
   SUBST_TESTCASE(test_values_are_resolution_order_args_defaults_globals_env);
   SUBST_TESTCASE(test_values_are_inserted_within_strings);
