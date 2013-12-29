@@ -11,6 +11,7 @@ typedef enum _CfgLexerStringTrackState
   CLS_NOT_STRING,
   CLS_WITHIN_STRING,
   CLS_WITHIN_STRING_QUOTE,
+  CLS_WITHIN_STRING_QUOTED_CHARACTER,
   CLS_WITHIN_QSTRING,
 } CfgLexerStringTrackState;
 
@@ -61,6 +62,8 @@ _track_string_state(CfgLexerSubst *self, CfgLexerStringTrackState last_state, gc
         return CLS_NOT_STRING;
       return CLS_WITHIN_STRING;
     case CLS_WITHIN_STRING_QUOTE:
+      return CLS_WITHIN_STRING_QUOTED_CHARACTER;
+    case CLS_WITHIN_STRING_QUOTED_CHARACTER:
       return CLS_WITHIN_STRING;
     case CLS_WITHIN_QSTRING:
       if (*p == '\'')
@@ -161,9 +164,8 @@ _append_value(CfgLexerSubst *self, const gchar *value, GError **error)
               return _encode_as_string(self, string_literal, error);
             case CLS_WITHIN_QSTRING:
               return _encode_as_qstring(self, string_literal, error);
-            case CLS_WITHIN_STRING_QUOTE:
             default:
-              break;
+              g_assert_not_reached();
             }
           g_free(string_literal);
         }
@@ -191,6 +193,11 @@ cfg_lexer_subst_invoke(CfgLexerSubst *self, gchar *cptr, gsize *length, GError *
 
       if (!backtick && (*p) == '`')
         {
+          if (self->string_state == CLS_WITHIN_STRING_QUOTED_CHARACTER)
+            {
+              g_set_error(error, CFG_LEXER_ERROR, CFG_LEXER_BACKTICKS_CANT_BE_SUBSTITUTED_AFTER_BACKSLASH, "cannot subsitute backticked values right after a string quote character");
+              goto error;
+            }
           /* start of reference */
           backtick = TRUE;
           ref_start = p + 1;

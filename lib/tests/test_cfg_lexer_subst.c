@@ -150,6 +150,15 @@ test_backtick_after_quoted_character_succeeds(void)
 }
 
 static void
+test_backtick_as_a_quoted_character_in_a_string_results_in_failure(void)
+{
+  CfgLexerSubst *subst = construct_object();
+
+  assert_invoke_failure(subst, "foo \"string \\`arg`\" bar", "cannot subsitute backticked values right after a string quote character");
+  cfg_lexer_subst_free(subst);
+}
+
+static void
 test_value_in_normal_text_replaced_with_its_literal_value(void)
 {
   CfgLexerSubst *subst = construct_object();
@@ -251,6 +260,7 @@ test_cfg_lexer_subst(void)
   SUBST_TESTCASE(test_double_backtick_replaced_with_a_single_one);
   SUBST_TESTCASE(test_single_backtick_causes_an_error);
   SUBST_TESTCASE(test_backtick_after_quoted_character_succeeds);
+  SUBST_TESTCASE(test_backtick_as_a_quoted_character_in_a_string_results_in_failure);
   SUBST_TESTCASE(test_value_in_normal_text_replaced_with_its_literal_value);
   SUBST_TESTCASE(test_values_are_resolution_order_args_defaults_globals_env);
   SUBST_TESTCASE(test_values_are_inserted_within_strings);
