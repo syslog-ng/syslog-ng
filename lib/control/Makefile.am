@@ -10,3 +10,4 @@ control_sources = \
 
 EXTRA_DIST += lib/control/control-server-unix.c
 
+include lib/control/tests/Makefile.am

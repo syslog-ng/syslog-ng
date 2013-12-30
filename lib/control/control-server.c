@@ -24,8 +24,9 @@
 #include "messages.h"
 #include "misc.h"
 
+#ifndef CONTROL_UNITTEST
 #include "control-server-unix.c"
-
+#endif
 
 void
 control_connection_free(ControlConnection *self)
