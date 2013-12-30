@@ -597,7 +597,7 @@ cfg_lexer_include_file(CfgLexer *self, const gchar *filename_)
 }
 
 gboolean
-cfg_lexer_include_buffer(CfgLexer *self, const gchar *name, gchar *buffer, gsize length)
+cfg_lexer_include_buffer_without_backtick_substitution(CfgLexer *self, const gchar *name, const gchar *buffer, gsize length)
 {
   CfgIncludeLevel *level;
   gchar *lexer_buffer;
@@ -630,6 +630,32 @@ cfg_lexer_include_buffer(CfgLexer *self, const gchar *name, gchar *buffer, gsize
   level->name = g_strdup(name);
 
   return cfg_lexer_start_next_include(self);
+}
+
+/* NOTE: if length is negative, it indicates zero-terminated buffer and
+ * length should be determined based on that */
+gboolean
+cfg_lexer_include_buffer(CfgLexer *self, const gchar *name, const gchar *buffer, gssize length)
+{
+  gchar *substituted_buffer;
+  gsize substituted_length = 0;
+  GError *error = NULL;
+  gboolean result = FALSE;
+
+  substituted_buffer = cfg_lexer_subst_args(self->globals, NULL, NULL, buffer, length, &substituted_length, &error);
+  if (!substituted_buffer)
+    {
+      msg_error("Error resolving backtick references in block or buffer",
+                evt_tag_str("buffer", name),
+                evt_tag_str("error", error->message),
+                NULL);
+      g_clear_error(&error);
+      return FALSE;
+    }
+
+  result = cfg_lexer_include_buffer_without_backtick_substitution(self, name, substituted_buffer, substituted_length);
+  g_free(substituted_buffer);
+  return result;
 }
 
 void
