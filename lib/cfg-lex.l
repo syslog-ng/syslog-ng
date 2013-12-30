@@ -163,7 +163,7 @@ word	[^ \#'"\(\)\{\}\\;\n\t,|\.@:]
 (-|\+)?{digit}+(M|m|G|g|k|K)?(i|I)?(b|B)? {
                              if (!parse_number_with_suffix(yytext, &yylval->num))
                                {
-                                 YY_FATAL_ERROR("Invalid number specification");
+                                 return LL_ERROR;
                                }
                              return LL_NUMBER;
                            }
