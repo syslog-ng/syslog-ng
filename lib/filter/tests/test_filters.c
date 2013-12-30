@@ -107,6 +107,8 @@ testcase(gchar *msg,
   gboolean res;
   static gint testno = 0;
 
+  filter_expr_init(f, configuration);
+
   testno++;
   logmsg = log_msg_new(msg, strlen(msg), NULL, &parse_options);
   logmsg->saddr = g_sockaddr_ref(sender_saddr);
