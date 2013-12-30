@@ -20,6 +20,7 @@ include modules/json/Makefile.am
 include modules/tfgeoip/Makefile.am
 include modules/afstomp/Makefile.am
 include modules/redis/Makefile.am
+include modules/pseudofile/Makefile.am
 
 SYSLOG_NG_MODULES	=	\
 	mod-afsocket mod-afstreams mod-affile mod-afprog \
@@ -27,7 +28,7 @@ SYSLOG_NG_MODULES	=	\
 	mod-syslogformat mod-linux-kmsg mod-pacctformat \
 	mod-confgen mod-system-source mod-csvparser mod-dbparser \
 	mod-basicfuncs mod-cryptofuncs mod-geoip mod-afstomp \
-	mod-redis
+	mod-redis mod-pseudofile
 
 modules modules/: ${SYSLOG_NG_MODULES}
 
