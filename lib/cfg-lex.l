@@ -32,43 +32,69 @@
 #include <string.h>
 #include <strings.h>
 
+static gint
+yy_input_run_backtick_substitution(CfgLexer *self, gchar *buf, gsize buf_size)
+{
+  gchar *res;
+  gsize len;
+  GError *error = NULL;
+  YYLTYPE *cur_lloc = &self->include_stack[self->include_depth].lloc;
 
-#define YY_INPUT(buf, result, max_size)                               \
-  do {                                                                \
-    buf[0] = 0;                                                       \
-    if (fgets(buf, max_size, yyin))                                   \
-      {                                                                 \
-        gchar *res;                                                     \
-        gsize len = strlen(buf);                                        \
-        GError *error = NULL;						\
-                                                                        \
-        if (YY_START < block)                                           \
-          res = cfg_lexer_subst_args(yyextra->globals, NULL, NULL, buf, -1, &len, &error); \
-        else                                                            \
-          res = FALSE;                                                  \
-        if (!res)                                                       \
-          {                                                             \
-            g_clear_error(&error);					\
-            result = strlen(buf);                                       \
-          }                                                             \
-        else                                                            \
-          {                                                             \
-            result = strlen(res);                                       \
-            if (max_size < result)                                      \
-              {                                                         \
-                YY_FATAL_ERROR("Not enough buffer space in lexer");     \
-                result = YY_NULL;                                       \
-              }                                                         \
-            else                                                        \
-              {                                                         \
-                memcpy(buf, res, result);                               \
-              }                                                         \
-            g_free(res);                                                \
-          }                                                             \
-      }                                                                 \
-    else                                                                \
-      result = YY_NULL;                                                 \
-  } while(0)
+  res = cfg_lexer_subst_args(self->globals, NULL, NULL, buf, -1, &len, &error);
+  if (!res)
+    {
+      msg_error("Error performing backtick substitution in configuration file",
+                evt_tag_str("error", error->message),
+                evt_tag_str("filename", cur_lloc->level->name),
+                evt_tag_printf("line", "%d:%d", cur_lloc->first_line, cur_lloc->first_column),
+                NULL);
+      g_clear_error(&error);
+      goto error;
+    }
+  else
+    {
+      if (len > buf_size)
+        {
+          msg_error("Error performing backtick substitution in configuration file",
+                    evt_tag_str("error", "lexer buffer is too small to hold substituted result"),
+                    evt_tag_str("filename", cur_lloc->level->name),
+                    evt_tag_printf("line", "%d:%d", cur_lloc->first_line, cur_lloc->first_column),
+                    NULL);
+          goto error;
+        }
+      else
+        {
+          memcpy(buf, res, len);
+        }
+      g_free(res);
+      return len;
+    }
+ error:
+  return -1;
+}
+
+#define YY_INPUT(buf, result, max_size)                                 \
+  do                                                                    \
+    {                                                                   \
+      if (!fgets(buf, max_size, yyin))                                  \
+        result = YY_NULL;                                               \
+      else if (YY_START >= block)                                       \
+        result = strlen(buf);                                           \
+      else                                                              \
+        {                                                               \
+          gint rc;                                                      \
+          rc = yy_input_run_backtick_substitution(yyextra, buf, max_size); \
+          if (rc < 0)                                                   \
+            {                                                           \
+              YY_FATAL_ERROR("backtick substitution failure");          \
+              result = YY_NULL;                                         \
+            }                                                           \
+          else                                                          \
+            {                                                           \
+              result = rc;                                              \
+            }                                                           \
+        }                                                               \
+    } while(0)
 
 #define YY_USER_ACTION                                                  \
   do {                                                                  \
