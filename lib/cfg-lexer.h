@@ -150,7 +150,7 @@ struct _CfgLexer
 
 /* preprocessor help */
 gchar *
-cfg_lexer_subst_args(CfgArgs *globals, CfgArgs *defs, CfgArgs *args, gchar *input, gssize input_length, gsize *output_length, GError **error);
+cfg_lexer_subst_args(CfgArgs *globals, CfgArgs *defs, CfgArgs *args, const gchar *input, gssize input_length, gsize *output_length, GError **error);
 
 /* pattern buffer */
 void cfg_lexer_unput_token(CfgLexer *self, YYSTYPE *yylval);

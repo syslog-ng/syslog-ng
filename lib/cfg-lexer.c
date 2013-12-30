@@ -149,7 +149,7 @@ cfg_lexer_get_context_description(CfgLexer *self)
 }
 
 gchar *
-cfg_lexer_subst_args(CfgArgs *globals, CfgArgs *defs, CfgArgs *args, gchar *input, gssize input_length, gsize *output_length, GError **error)
+cfg_lexer_subst_args(CfgArgs *globals, CfgArgs *defs, CfgArgs *args, const gchar *input, gssize input_length, gsize *output_length, GError **error)
 {
   CfgLexerSubst *subst = cfg_lexer_subst_new(cfg_args_ref(globals), cfg_args_ref(defs), cfg_args_ref(args));
   gchar *result;

@@ -45,7 +45,7 @@ _lookup_value(CfgLexerSubst *self, const gchar *name)
 }
 
 static CfgLexerStringTrackState
-_track_string_state(CfgLexerSubst *self, CfgLexerStringTrackState last_state, gchar *p)
+_track_string_state(CfgLexerSubst *self, CfgLexerStringTrackState last_state, const gchar *p)
 {
   switch (last_state)
     {
@@ -176,10 +176,10 @@ _append_value(CfgLexerSubst *self, const gchar *value, GError **error)
 }
 
 gchar *
-cfg_lexer_subst_invoke(CfgLexerSubst *self, gchar *input, gssize input_len, gsize *output_length, GError **error)
+cfg_lexer_subst_invoke(CfgLexerSubst *self, const gchar *input, gssize input_len, gsize *output_length, GError **error)
 {
   gboolean backtick = FALSE;
-  gchar *p, *ref_start = input;
+  const gchar *p, *ref_start = input;
   GString *result;
 
   g_return_val_if_fail(error == NULL || (*error) == NULL, FALSE);
@@ -218,10 +218,11 @@ cfg_lexer_subst_invoke(CfgLexerSubst *self, gchar *input, gssize input_len, gsiz
           else
             {
               const gchar *value;
+              gchar *name;
 
-              *p = 0;
-              value = _lookup_value(self, ref_start);
-              *p = '`';
+              name = g_strndup(ref_start, p - ref_start);
+              value = _lookup_value(self, name);
+              g_free(name);
               if (!_append_value(self, value ? : "", error))
                 goto error;
             }
