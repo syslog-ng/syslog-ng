@@ -600,12 +600,10 @@ gboolean
 cfg_lexer_include_buffer(CfgLexer *self, const gchar *name, gchar *buffer, gsize length)
 {
   CfgIncludeLevel *level;
-
-  /* lex requires two NUL characters at the end of the input */
-  buffer = g_realloc(buffer, length + 2);
-  buffer[length] = 0;
-  buffer[length + 1] = 0;
-  length += 2;
+  gchar *lexer_buffer;
+  gsize lexer_buffer_len;
+  
+  g_assert(length >= 0);
 
   if (self->include_depth >= MAX_INCLUDE_DEPTH - 1)
     {
@@ -616,12 +614,19 @@ cfg_lexer_include_buffer(CfgLexer *self, const gchar *name, gchar *buffer, gsize
       return FALSE;
     }
 
+  /* lex requires two NUL characters at the end of the input */
+  lexer_buffer_len = length + 2;
+  lexer_buffer = g_malloc(lexer_buffer_len);
+  memcpy(lexer_buffer, buffer, length);
+  lexer_buffer[length] = 0;
+  lexer_buffer[length + 1] = 0;
+
   self->include_depth++;
   level = &self->include_stack[self->include_depth];
 
   level->include_type = CFGI_BUFFER;
-  level->buffer.content = buffer;
-  level->buffer.content_length = length;
+  level->buffer.content = lexer_buffer;
+  level->buffer.content_length = lexer_buffer_len;
   level->name = g_strdup(name);
 
   return cfg_lexer_start_next_include(self);
@@ -1111,6 +1116,7 @@ cfg_block_generate(CfgLexer *lexer, gint context, const gchar *name, CfgArgs *ar
   gchar buf[256];
   gsize length;
   GError *error = NULL;
+  gboolean result;
 
   g_snprintf(buf, sizeof(buf), "%s block %s", cfg_lexer_lookup_context_name_by_type(context), name);
   if (!cfg_args_validate(args, block->arg_defs, buf))
@@ -1131,7 +1137,9 @@ cfg_block_generate(CfgLexer *lexer, gint context, const gchar *name, CfgArgs *ar
       return FALSE;
     }
 
-  return cfg_lexer_include_buffer(lexer, buf, value, length);
+  result = cfg_lexer_include_buffer_without_backtick_substitution(lexer, buf, value, length);
+  g_free(value);
+  return result;
 }
 
 /*

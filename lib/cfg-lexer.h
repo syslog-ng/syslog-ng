@@ -169,7 +169,7 @@ int cfg_lexer_lookup_keyword(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc, c
 /* include files */
 gboolean cfg_lexer_start_next_include(CfgLexer *self);
 gboolean cfg_lexer_include_file(CfgLexer *self, const gchar *filename);
-gboolean cfg_lexer_include_buffer(CfgLexer *self, const gchar *name, gchar *buffer, gsize length);
+gboolean cfg_lexer_include_buffer(CfgLexer *self, const gchar *name, const gchar *buffer, gssize length);
 
 /* context tracking */
 void cfg_lexer_push_context(CfgLexer *self, gint context, CfgLexerKeyword *keywords, const gchar *desc);
