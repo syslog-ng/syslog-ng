@@ -27,7 +27,9 @@
 
 #include "syslog-ng.h"
 #include "cfg-args.h"
+
 #include <stdio.h>
+#include <setjmp.h>
 
 /* this module provides a higher level encapsulation for the configuration
  * file lexer. */
@@ -128,6 +130,7 @@ struct _CfgLexer
 {
   /* flex state, not using yyscan_t as it is not defined */
   gpointer state;
+  jmp_buf fatal_error;
   CfgIncludeLevel include_stack[MAX_INCLUDE_DEPTH];
   GList *context_stack;
   gint include_depth;

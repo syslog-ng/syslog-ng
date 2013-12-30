@@ -705,6 +705,19 @@ cfg_lexer_free_token(YYSTYPE *token)
     free(token->cptr);
 }
 
+static int
+_invoke__cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
+{
+  if (setjmp(self->fatal_error))
+    {
+      YYLTYPE *cur_lloc = &self->include_stack[self->include_depth].lloc;
+
+      *yylloc = *cur_lloc;
+      return LL_ERROR;
+    }
+  return _cfg_lexer_lex(yylval, yylloc, self->state);
+}
+
 int
 cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
 {
@@ -756,7 +769,7 @@ cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
   g_string_truncate(self->token_text, 0);
   g_string_truncate(self->token_pretext, 0);
 
-  tok = _cfg_lexer_lex(yylval, yylloc, self->state);
+  tok = _invoke__cfg_lexer_lex(self, yylval, yylloc);
   if (yylval->type == 0)
     yylval->type = tok;
 
