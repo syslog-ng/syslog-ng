@@ -89,7 +89,7 @@ _register_counter(gint stats_level, gint component, const gchar *id, const gchar
 
   g_assert(stats_locked);
 
-  sc = _grab_cluster(stats_level, component, id, instance, TRUE);
+  sc = _grab_cluster(stats_level, component, id, instance, dynamic);
   if (sc)
     *counter = stats_cluster_track_counter(sc, type);
   else
