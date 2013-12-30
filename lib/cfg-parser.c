@@ -237,7 +237,7 @@ report_syntax_error(CfgLexer *lexer, YYLTYPE *yylloc, const char *what, const ch
         {
           fprintf(stderr, "%c", buf[i] == '\t' ? '\t' : ' ');
         }
-      for (i = yylloc->first_column; i < yylloc->last_column; i++)
+      for (i = yylloc->first_column; (i == yylloc->first_column) || (i < yylloc->last_column); i++)
         fprintf(stderr, "^");
       fprintf(stderr, "\n");
     }
