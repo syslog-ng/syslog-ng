@@ -229,14 +229,14 @@ word	[^ \#'"\(\)\{\}\\;\n\t,|\.@:]
 <string>\\x{xdigit}{1,2}   { g_string_append_c(yyextra->string_buffer, strtol(yytext+2, NULL, 16)); }
 <string>\\o{odigit}{1,3}   { g_string_append_c(yyextra->string_buffer, strtol(yytext+2, NULL, 8)); }
 <string>\\[^anrtv]	   { g_string_append_c(yyextra->string_buffer, yytext[1]); }
-<string>\"		   { 
+<string>\"		   {
 			     yy_pop_state(yyscanner);
 			     yylval->cptr = strdup(yyextra->string_buffer->str);
 			     return LL_STRING;
 		           }
 <string>[^"\\]+		   { g_string_append(yyextra->string_buffer, yytext); }
 <qstring>[^']+		   { g_string_append(yyextra->string_buffer, yytext); }
-<qstring>\'		   { 
+<qstring>\'		   {
 			     yy_pop_state(yyscanner);
 			     yylval->cptr = strdup(yyextra->string_buffer->str);
 			     return LL_STRING;
@@ -314,7 +314,7 @@ cfg_lexer_unput_string(CfgLexer *self, const char *str)
 {
   int len = strlen(str);
   int i;
-  
+
   for (i = len - 1; i >= 0; i--)
     {
       yyunput(str[i], _cfg_lexer_get_text(self->state), self->state);
