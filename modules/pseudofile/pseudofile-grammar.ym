@@ -1,0 +1,84 @@
+/*
+ * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 1998-2013 Balázs Scheidler
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
+%code top {
+#include "pseudofile-parser.h"
+
+}
+
+
+%code {
+
+#include "pseudofile-grammar.h"
+#include "pseudofile.h"
+#include "cfg-parser.h"
+#include "syslog-names.h"
+#include "messages.h"
+#include "cfg-grammar.h"
+
+extern LogDriver *last_driver;
+
+}
+
+%name-prefix "pseudofile_"
+
+/* this parameter is needed in order to instruct bison to use a complete
+ * argument list for yylex/yyerror */
+
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {LogDriver **instance}
+%parse-param {gpointer arg}
+
+/* INCLUDE_DECLS */
+
+%type   <ptr> dest_pseudofile
+
+%token KW_PSEUDOFILE
+
+%%
+
+start
+	: LL_CONTEXT_DESTINATION dest_pseudofile			 { *instance = $2; YYACCEPT; }
+        ;
+
+dest_pseudofile
+	: KW_PSEUDOFILE 
+          '(' string						{ last_driver = pseudofile_dd_new($3); free($3); }
+	  pseudofile_opts
+	  ')'							{ $$ = last_driver; }
+	;
+
+pseudofile_opts
+	: pseudofile_opt pseudofile_opts
+	|
+	;
+
+pseudofile_opt
+	: KW_TEMPLATE '(' template_content ')'			{ pseudofile_dd_set_template(last_driver, $3); }
+	| { last_template_options = pseudofile_dd_get_template_options(last_driver); } template_option
+	;
+
+/* INCLUDE_RULES */
+
+%%
