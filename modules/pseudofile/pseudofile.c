@@ -63,6 +63,16 @@ _format_message(PseudoFileDestDriver *self, LogMessage *msg, GString *formatted_
   log_template_format(self->template, msg, &self->template_options, LTZ_LOCAL, 0, NULL, formatted_message);
 }
 
+static EVTTAG *
+_evt_tag_message(const GString *msg)
+{
+  const int max_len = 30;
+
+  return evt_tag_printf("message", "%.*s%s", 
+                        (int) MIN(max_len, msg->len), msg->str, 
+                        msg->len > max_len ? "..." : "");
+}
+
 static gboolean
 _write_message(PseudoFileDestDriver *self, const GString *msg)
 {
@@ -72,14 +82,17 @@ _write_message(PseudoFileDestDriver *self, const GString *msg)
 
   msg_debug("Posting message to pseudo file",
             evt_tag_str("pseudofile", self->pseudofile_name),
+            evt_tag_str("driver", self->super.super.id),
+            _evt_tag_message(msg),
             NULL);
   fd = open(self->pseudofile_name, O_NOCTTY | O_WRONLY | O_NONBLOCK);
   if (fd < 0) 
     {
       msg_error("Error opening pseudo file",
                 evt_tag_str("pseudofile", self->pseudofile_name),
+                evt_tag_str("driver", self->super.super.id),
                 evt_tag_errno("error", errno),
-                evt_tag_printf("value", "%.30s", msg->str),
+                _evt_tag_message(msg),
                 NULL);
       goto exit;
     }
@@ -89,8 +102,9 @@ _write_message(PseudoFileDestDriver *self, const GString *msg)
     {
       msg_error("Error writing to pseudo file",
                 evt_tag_str("pseudofile", self->pseudofile_name),
+                evt_tag_str("driver", self->super.super.id),
                 evt_tag_errno("error", errno),
-                evt_tag_printf("value", "%.30s", msg->str),
+                _evt_tag_message(msg),
                 NULL);
       goto exit;
     }
@@ -98,7 +112,8 @@ _write_message(PseudoFileDestDriver *self, const GString *msg)
     {
       msg_error("Partial write to pseudofile, probably the output is too much for the kernel to consume",
                 evt_tag_str("pseudofile", self->pseudofile_name),
-                evt_tag_printf("value", "%.30s", msg->str),
+                evt_tag_str("driver", self->super.super.id),
+                _evt_tag_message(msg),
                 NULL);
       goto exit;
     }
