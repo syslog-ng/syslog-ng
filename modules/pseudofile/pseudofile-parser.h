@@ -21,8 +21,8 @@
  *
  */
 
-#ifndef PROCFILE_PARSER_H_INCLUDED
-#define PROCFILE_PARSER_H_INCLUDED
+#ifndef PSEUDOFILE_PARSER_H_INCLUDED
+#define PSEUDOFILE_PARSER_H_INCLUDED
 
 #include "cfg-parser.h"
 #include "cfg-lexer.h"

@@ -54,7 +54,7 @@ extern LogDriver *last_driver;
 
 %type   <ptr> dest_pseudofile
 
-%token KW_PROCFILE
+%token KW_PSEUDOFILE
 
 %%
 
@@ -63,7 +63,7 @@ start
         ;
 
 dest_pseudofile
-	: KW_PROCFILE 
+	: KW_PSEUDOFILE 
           '(' string						{ last_driver = pseudofile_dd_new($3); free($3); }
 	  pseudofile_opts
 	  ')'							{ $$ = last_driver; }

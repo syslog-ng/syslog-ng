@@ -21,8 +21,8 @@
  *
  */
   
-#ifndef PROCFILE_H_INCLUDED
-#define PROCFILE_H_INCLUDED
+#ifndef PSEUDOFILE_H_INCLUDED
+#define PSEUDOFILE_H_INCLUDED
 
 #include "driver.h"
 
