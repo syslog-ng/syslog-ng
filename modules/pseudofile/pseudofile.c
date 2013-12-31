@@ -38,6 +38,21 @@ typedef struct _PseudoFileDestDriver
   time_t suspend_until;
 } PseudoFileDestDriver;
 
+/*
+ * Locking
+ * =======
+ *
+ * The pseudofile driver currently has a single, global lock that protects
+ * writing the data into the procfile.
+ *
+ * We could use a per-destination lock, however in that case nothing would
+ * prevent races when two pseudofile drivers open the same proc file.
+ *
+ * Also this driver shouldn't be that performance intensive (e.g.  pushing
+ * data to a procfile more than a dozen times per second is really sick),
+ * I've just measured pseudofile to be able to do 25-26k/sec easily in my
+ * debug build.
+ */
 G_LOCK_DEFINE_STATIC(pseudofile_lock);
 
 LogTemplateOptions *
