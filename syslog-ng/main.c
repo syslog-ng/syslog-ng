@@ -33,7 +33,7 @@
 #include "alarms.h"
 #include "logqueue.h"
 #include "gprocess.h"
-#include "control.h"
+#include "control/control.h"
 #include "timeutils.h"
 #include "logsource.h"
 #include "mainloop.h"

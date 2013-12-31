@@ -7,13 +7,14 @@ include lib/parser/Makefile.am
 include lib/filter/Makefile.am
 include lib/template/Makefile.am
 include lib/stats/Makefile.am
+include lib/control/Makefile.am
 include lib/compat/Makefile.am
 
 lib_LTLIBRARIES				+= lib/libsyslog-ng.la
 lib_libsyslog_ng_la_LIBADD		= @CORE_DEPS_LIBS@ $(libsystemd_daemon_LIBS)
 lib_libsyslog_ng_la_LDFLAGS		= -no-undefined -release @VERSION@
 
-lib_test_subdirs			= lib_filter lib_logproto lib_parser lib_rewrite lib_template lib_stats
+lib_test_subdirs			= lib_filter lib_logproto lib_parser lib_rewrite lib_template lib_stats lib_control
 
 if IVYKIS_INTERNAL
 lib_libsyslog_ng_la_DEPENDENCIES	= lib/ivykis/src/libivykis.la
@@ -40,8 +41,6 @@ pkginclude_HEADERS			+= \
 	lib/cfg-parser.h		\
 	lib/cfg-tree.h			\
 	lib/children.h			\
-	lib/control.h			\
-	lib/control-server.h		\
 	lib/crypto.h			\
 	lib/dnscache.h			\
 	lib/driver.h			\
@@ -120,8 +119,6 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/cfg-parser.c		\
 	lib/cfg-tree.c			\
 	lib/children.c			\
-	lib/control.c			\
-	lib/control-server.c		\
 	lib/dnscache.c			\
 	lib/driver.c			\
 	lib/file-perms.c		\
@@ -182,6 +179,7 @@ lib_libsyslog_ng_la_SOURCES		= \
 	$(rewrite_sources)		\
 	$(template_sources)		\
 	$(stats_sources)		\
+	$(control_sources)		\
 	$(compat_sources)
 
 if WITH_EMBEDDED_CRYPTO
@@ -208,7 +206,6 @@ EXTRA_DIST += \
 	lib/pragma-grammar.ym		\
 	lib/merge-grammar.pl		\
 	lib/hostname-unix.c		\
-	lib/control-server-unix.c	\
 	lib/ivykis/configure.gnu
 
 lib/plugin-types.h: lib/cfg-grammar.h

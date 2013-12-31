@@ -30,7 +30,7 @@
 #include "stats/stats-registry.h"
 #include "messages.h"
 #include "children.h"
-#include "control.h"
+#include "control/control.h"
 #include "reloc.h"
 #include "service-management.h"
 #include "persist-state.h"
