@@ -60,6 +60,9 @@ __fqdn_gethostname(char *buf, size_t buflen)
   strncpy(buf, "bzorp.balabit", buflen);
   return 0;
 }
+
+#else
+#include "hostname.c"
 #endif
 
 static void
@@ -107,6 +110,7 @@ assert_short_conversion(gchar *hostname, const gchar *expected)
 #ifdef WRAP_GETHOSTNAME
 #define wrap_gethostname() (__wrap_gethostname = __fqdn_gethostname)
 #else
+#define wrap_gethostname()
 #endif
 
 #define hostname_testcase_begin(domain_override, func, args)    \
