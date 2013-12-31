@@ -114,11 +114,11 @@ app_fatal(const char *msg)
 void 
 app_startup(void)
 {
-  hostname_global_init();
   msg_init(FALSE);
   iv_set_fatal_msg_handler(app_fatal);
   iv_init();
   g_thread_init(NULL);
+  hostname_global_init();
   dns_cache_global_init();
   dns_cache_thread_init();
   afinter_global_init();
@@ -165,8 +165,9 @@ app_shutdown(void)
   g_list_free(application_hooks);
   dns_cache_thread_deinit();
   dns_cache_global_deinit();
-  msg_deinit();
   hostname_global_deinit();
+  msg_deinit();
+
   
   /* NOTE: the iv_deinit() call should come here, but there's some exit
    * synchronization issue in libivykis that causes use-after-free with the
