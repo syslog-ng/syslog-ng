@@ -60,6 +60,9 @@ __fqdn_gethostname(char *buf, size_t buflen)
   strncpy(buf, "bzorp.balabit", buflen);
   return 0;
 }
+
+#else
+#include "hostname.c"
 #endif
 
 static void
@@ -107,6 +110,7 @@ assert_short_conversion(gchar *hostname, const gchar *expected)
 #ifdef WRAP_GETHOSTNAME
 #define wrap_gethostname() (__wrap_gethostname = __fqdn_gethostname)
 #else
+#define wrap_gethostname()
 #endif
 
 #define hostname_testcase_begin(domain_override, func, args)    \
@@ -174,6 +178,56 @@ test_domain_override_replaces_domain_detected_on_the_system(void)
   assert_fqdn_conversion("foo.bar", "foo.bardomain");
 }
 
+/* this is hostname-unix specific and will probably be made conditional once the win32 bits are in */
+
+/* NOTE: we are testing a private function */
+static const gchar *
+_invoke_extract_fqdn_from_hostent(gchar *primary_host, gchar **aliases)
+{
+  struct hostent hostent;
+
+  memset(&hostent, 0, sizeof(hostent));
+  hostent.h_name = primary_host;
+  hostent.h_aliases = aliases;
+  return _extract_fqdn_from_hostent(&hostent);
+}
+
+static void
+assert_extract_fqdn_from_hostent(gchar *primary_host, gchar **aliases, const gchar *expected)
+{
+  assert_string(_invoke_extract_fqdn_from_hostent(primary_host, aliases), expected, "_extract_fqdn didn't return the requested hostname");
+}
+
+static void
+assert_extract_fqdn_from_hostent_fails(gchar *primary_host, gchar **aliases)
+{
+  assert_null(_invoke_extract_fqdn_from_hostent(primary_host, aliases), "_extract_fqdn returned non-NULL when we expected failure");
+}
+
+static void
+test_extract_fqdn_from_hostent_uses_primary_name_if_it_is_an_fqdn(void)
+{
+  gchar *aliases[] = { "bzorp", "bzorp.lan", NULL };
+
+  assert_extract_fqdn_from_hostent("bzorp.balabit", aliases, "bzorp.balabit");
+}
+
+static void
+test_extract_fqdn_from_hostent_finds_the_first_fqdn_in_aliases_if_primary_is_short(void)
+{
+  gchar *aliases[] = { "bzorp", "bzorp.lan", NULL };
+
+  assert_extract_fqdn_from_hostent("bzorp", aliases, "bzorp.lan");
+}
+
+static void
+test_extract_fqdn_from_hostent_returns_NULL_when_no_fqdn_is_found(void)
+{
+  gchar *aliases[] = { "bzorp", "foobar", NULL };
+
+  assert_extract_fqdn_from_hostent_fails("bzorp", aliases);
+}
+
 int
 main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 {
@@ -183,5 +237,8 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   HOSTNAME_TESTCASE_WITH_DOMAIN("bardomain", test_domain_override_short_conversion_removes_any_domain_name);
   HOSTNAME_TESTCASE(test_system_host_and_domain_name_are_detected_properly);
   HOSTNAME_TESTCASE_WITH_DOMAIN("bardomain", test_domain_override_replaces_domain_detected_on_the_system);
+  HOSTNAME_TESTCASE(test_extract_fqdn_from_hostent_uses_primary_name_if_it_is_an_fqdn);
+  HOSTNAME_TESTCASE(test_extract_fqdn_from_hostent_finds_the_first_fqdn_in_aliases_if_primary_is_short);
+  HOSTNAME_TESTCASE(test_extract_fqdn_from_hostent_returns_NULL_when_no_fqdn_is_found);
   return 0;
 }

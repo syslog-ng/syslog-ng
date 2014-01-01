@@ -27,24 +27,48 @@
  */
 #include <netdb.h>
 
+static struct hostent *
+_resolve_localhost_from_dns(void)
+{
+  gchar *local_host;
+  struct hostent *host;
+
+  local_host = get_local_hostname_from_system();
+  host = gethostbyname(local_host);
+  g_free(local_host);
+  
+  return host;
+}
+
+static const gchar *
+_extract_fqdn_from_hostent(struct hostent *host)
+{
+  gint i;
+
+  if (is_hostname_fqdn(host->h_name))
+    return host->h_name;
+
+  for (i = 0; host->h_aliases[i]; i++)
+    {
+      if (is_hostname_fqdn(host->h_aliases[i]))
+        return host->h_aliases[i];
+    }
+  return NULL;
+}
+
 /*
  * NOTE: this function is not thread safe because it uses the non-reentrant
  * resolver functions.  This is not a problem as it is only called once
- * during initialization.
+ * during initialization when a single thread is active.
  */
 gchar *
 get_local_fqdn_hostname_from_dns(void)
 {
-  struct hostent *host = NULL;
-  gchar *result = NULL;
-  gchar *local_host;
+  struct hostent *hostent;
 
-  local_host = get_local_hostname_from_system();
+  hostent = _resolve_localhost_from_dns();
+  if (hostent)
+    return g_strdup(_extract_fqdn_from_hostent(hostent));
 
-  host = gethostbyname(local_host);
-  if (host)
-     result = g_strdup(host->h_name);
-
-  g_free(local_host);
-  return result;
+  return NULL;
 }
