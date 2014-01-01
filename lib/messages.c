@@ -154,7 +154,7 @@ msg_send_formatted_message(int prio, const char *msg)
     {
       msg_send_formatted_message_to_stderr(msg);
     }
-  else
+  else if (msg_post_func)
     {
       LogMessage *m;
       
