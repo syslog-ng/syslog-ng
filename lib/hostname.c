@@ -129,22 +129,20 @@ detect_local_fqdn_hostname(void)
   hostname = get_local_hostname_from_system();
   if (!is_hostname_fqdn(hostname))
     {
-      /* not fully qualified, resolve it using DNS */
+      /* not fully qualified, resolve it using DNS or /etc/hosts */
       g_free(hostname);
 
       hostname = get_local_fqdn_hostname_from_dns();
+      if (!hostname)
+        {
+          msg_warning("Unable to detect fully qualified hostname for localhost, use_fqdn() will use the short hostname",
+                     NULL);
+          hostname = get_local_hostname_from_system();
+        }
     }
 
-  if (hostname)
-    {
-      g_strlcpy(local_hostname_fqdn, hostname, sizeof(local_hostname_fqdn));
-      g_free(hostname);
-    }
-  else
-    {
-      fprintf(stderr, "Unable to find out local hostname, syslog-ng cannot operate in this case, aborting...");
-      g_assert_not_reached();
-    }
+  g_strlcpy(local_hostname_fqdn, hostname, sizeof(local_hostname_fqdn));
+  g_free(hostname);
 }
 
 static void
