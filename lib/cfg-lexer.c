@@ -149,12 +149,12 @@ cfg_lexer_get_context_description(CfgLexer *self)
 }
 
 gchar *
-cfg_lexer_subst_args(CfgArgs *globals, CfgArgs *defs, CfgArgs *args, gchar *cptr, gsize *length, GError **error)
+cfg_lexer_subst_args(CfgArgs *globals, CfgArgs *defs, CfgArgs *args, const gchar *input, gssize input_length, gsize *output_length, GError **error)
 {
   CfgLexerSubst *subst = cfg_lexer_subst_new(cfg_args_ref(globals), cfg_args_ref(defs), cfg_args_ref(args));
   gchar *result;
 
-  result = cfg_lexer_subst_invoke(subst, cptr, length, error);
+  result = cfg_lexer_subst_invoke(subst, input, input_length, output_length, error);
   cfg_lexer_subst_free(subst);
   return result;
 }
@@ -597,15 +597,13 @@ cfg_lexer_include_file(CfgLexer *self, const gchar *filename_)
 }
 
 gboolean
-cfg_lexer_include_buffer(CfgLexer *self, const gchar *name, gchar *buffer, gsize length)
+cfg_lexer_include_buffer_without_backtick_substitution(CfgLexer *self, const gchar *name, const gchar *buffer, gsize length)
 {
   CfgIncludeLevel *level;
-
-  /* lex requires two NUL characters at the end of the input */
-  buffer = g_realloc(buffer, length + 2);
-  buffer[length] = 0;
-  buffer[length + 1] = 0;
-  length += 2;
+  gchar *lexer_buffer;
+  gsize lexer_buffer_len;
+  
+  g_assert(length >= 0);
 
   if (self->include_depth >= MAX_INCLUDE_DEPTH - 1)
     {
@@ -616,15 +614,48 @@ cfg_lexer_include_buffer(CfgLexer *self, const gchar *name, gchar *buffer, gsize
       return FALSE;
     }
 
+  /* lex requires two NUL characters at the end of the input */
+  lexer_buffer_len = length + 2;
+  lexer_buffer = g_malloc(lexer_buffer_len);
+  memcpy(lexer_buffer, buffer, length);
+  lexer_buffer[length] = 0;
+  lexer_buffer[length + 1] = 0;
+
   self->include_depth++;
   level = &self->include_stack[self->include_depth];
 
   level->include_type = CFGI_BUFFER;
-  level->buffer.content = buffer;
-  level->buffer.content_length = length;
+  level->buffer.content = lexer_buffer;
+  level->buffer.content_length = lexer_buffer_len;
   level->name = g_strdup(name);
 
   return cfg_lexer_start_next_include(self);
+}
+
+/* NOTE: if length is negative, it indicates zero-terminated buffer and
+ * length should be determined based on that */
+gboolean
+cfg_lexer_include_buffer(CfgLexer *self, const gchar *name, const gchar *buffer, gssize length)
+{
+  gchar *substituted_buffer;
+  gsize substituted_length = 0;
+  GError *error = NULL;
+  gboolean result = FALSE;
+
+  substituted_buffer = cfg_lexer_subst_args(self->globals, NULL, NULL, buffer, length, &substituted_length, &error);
+  if (!substituted_buffer)
+    {
+      msg_error("Error resolving backtick references in block or buffer",
+                evt_tag_str("buffer", name),
+                evt_tag_str("error", error->message),
+                NULL);
+      g_clear_error(&error);
+      return FALSE;
+    }
+
+  result = cfg_lexer_include_buffer_without_backtick_substitution(self, name, substituted_buffer, substituted_length);
+  g_free(substituted_buffer);
+  return result;
 }
 
 void
@@ -705,6 +736,19 @@ cfg_lexer_free_token(YYSTYPE *token)
     free(token->cptr);
 }
 
+static int
+_invoke__cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
+{
+  if (setjmp(self->fatal_error))
+    {
+      YYLTYPE *cur_lloc = &self->include_stack[self->include_depth].lloc;
+
+      *yylloc = *cur_lloc;
+      return LL_ERROR;
+    }
+  return _cfg_lexer_lex(yylval, yylloc, self->state);
+}
+
 int
 cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
 {
@@ -756,7 +800,7 @@ cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
   g_string_truncate(self->token_text, 0);
   g_string_truncate(self->token_pretext, 0);
 
-  tok = _cfg_lexer_lex(yylval, yylloc, self->state);
+  tok = _invoke__cfg_lexer_lex(self, yylval, yylloc);
   if (yylval->type == 0)
     yylval->type = tok;
 
@@ -1098,6 +1142,7 @@ cfg_block_generate(CfgLexer *lexer, gint context, const gchar *name, CfgArgs *ar
   gchar buf[256];
   gsize length;
   GError *error = NULL;
+  gboolean result;
 
   g_snprintf(buf, sizeof(buf), "%s block %s", cfg_lexer_lookup_context_name_by_type(context), name);
   if (!cfg_args_validate(args, block->arg_defs, buf))
@@ -1105,7 +1150,7 @@ cfg_block_generate(CfgLexer *lexer, gint context, const gchar *name, CfgArgs *ar
       return FALSE;
     }
 
-  value = cfg_lexer_subst_args(lexer->globals, block->arg_defs, args, block->content, &length, &error);
+  value = cfg_lexer_subst_args(lexer->globals, block->arg_defs, args, block->content, -1, &length, &error);
 
   if (!value)
     {
@@ -1118,7 +1163,9 @@ cfg_block_generate(CfgLexer *lexer, gint context, const gchar *name, CfgArgs *ar
       return FALSE;
     }
 
-  return cfg_lexer_include_buffer(lexer, buf, value, length);
+  result = cfg_lexer_include_buffer_without_backtick_substitution(lexer, buf, value, length);
+  g_free(value);
+  return result;
 }
 
 /*

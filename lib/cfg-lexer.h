@@ -27,7 +27,9 @@
 
 #include "syslog-ng.h"
 #include "cfg-args.h"
+
 #include <stdio.h>
+#include <setjmp.h>
 
 /* this module provides a higher level encapsulation for the configuration
  * file lexer. */
@@ -128,6 +130,7 @@ struct _CfgLexer
 {
   /* flex state, not using yyscan_t as it is not defined */
   gpointer state;
+  jmp_buf fatal_error;
   CfgIncludeLevel include_stack[MAX_INCLUDE_DEPTH];
   GList *context_stack;
   gint include_depth;
@@ -147,7 +150,7 @@ struct _CfgLexer
 
 /* preprocessor help */
 gchar *
-cfg_lexer_subst_args(CfgArgs *globals, CfgArgs *defs, CfgArgs *args, gchar *cptr, gsize *length, GError **error);
+cfg_lexer_subst_args(CfgArgs *globals, CfgArgs *defs, CfgArgs *args, const gchar *input, gssize input_length, gsize *output_length, GError **error);
 
 /* pattern buffer */
 void cfg_lexer_unput_token(CfgLexer *self, YYSTYPE *yylval);
@@ -166,7 +169,7 @@ int cfg_lexer_lookup_keyword(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc, c
 /* include files */
 gboolean cfg_lexer_start_next_include(CfgLexer *self);
 gboolean cfg_lexer_include_file(CfgLexer *self, const gchar *filename);
-gboolean cfg_lexer_include_buffer(CfgLexer *self, const gchar *name, gchar *buffer, gsize length);
+gboolean cfg_lexer_include_buffer(CfgLexer *self, const gchar *name, const gchar *buffer, gssize length);
 
 /* context tracking */
 void cfg_lexer_push_context(CfgLexer *self, gint context, CfgLexerKeyword *keywords, const gchar *desc);
@@ -210,6 +213,7 @@ enum CfgLexerError
 {
   CFG_LEXER_MISSING_BACKTICK_PAIR,
   CFG_LEXER_CANNOT_REPRESENT_APOSTROPHES_IN_QSTRINGS,
+  CFG_LEXER_BACKTICKS_CANT_BE_SUBSTITUTED_AFTER_BACKSLASH,
 };
 
 #endif

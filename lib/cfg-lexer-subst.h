@@ -30,7 +30,7 @@
 
 typedef struct _CfgLexerSubst CfgLexerSubst;
 
-gchar *cfg_lexer_subst_invoke(CfgLexerSubst *self, gchar *cptr, gsize *length, GError **error);
+gchar *cfg_lexer_subst_invoke(CfgLexerSubst *self, const gchar *input, gssize input_len, gsize *output_length, GError **error);
 
 CfgLexerSubst *cfg_lexer_subst_new(CfgArgs *globals, CfgArgs *defs, CfgArgs *args);
 void cfg_lexer_subst_free(CfgLexerSubst *self);

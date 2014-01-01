@@ -40,6 +40,7 @@ confgen_generate(CfgLexer *lexer, gint type, const gchar *name, CfgArgs *args, g
   gchar *exec = (gchar *) user_data;
   gsize res;
   gchar buf[256];
+  gboolean result;
 
   g_snprintf(buf, sizeof(buf), "%s confgen %s", cfg_lexer_lookup_context_name_by_type(type), name);
   if (!cfg_args_validate(args, NULL, buf))
@@ -79,12 +80,9 @@ confgen_generate(CfgLexer *lexer, gint type, const gchar *name, CfgArgs *args, g
       g_free(value);
       return FALSE;
     }
-  if (!cfg_lexer_include_buffer(lexer, buf, value, value_len))
-    {
-      g_free(value);
-      return FALSE;
-    }
-  return TRUE;
+  result = cfg_lexer_include_buffer(lexer, buf, value, value_len);
+  g_free(value);
+  return result;
 }
 
 gboolean

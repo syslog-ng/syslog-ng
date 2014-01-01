@@ -93,21 +93,59 @@ construct_object(void)
   return construct_object_with_values(NULL);
 }
 
+static gchar *
+duplicate_string_without_with_trailing_nonzero_bytes(const gchar *input)
+{
+  gsize input_len = strlen(input);
+  const gint canary_size = 10;
+  gchar *input_dup = malloc(input_len + canary_size);
+
+  memcpy(input_dup, input, input_len);
+  memset(input_dup + input_len, 'A', canary_size - 1);
+  input_dup[input_len + canary_size - 1] = 0;
+  return input_dup;
+}
+
 static void
-assert_invoke_result(CfgLexerSubst *subst, const gchar *input, const gchar *expected_output)
+_assert_invoke_result(CfgLexerSubst *subst, gchar *input_dup, gssize input_len, const gchar *expected_output)
 {
   gchar *result;
   gsize result_len;
-  gchar *input_dup = g_strdup(input);
   GError *error = NULL;
 
-  result = cfg_lexer_subst_invoke(subst, input_dup, &result_len, &error);
+  result = cfg_lexer_subst_invoke(subst, input_dup, input_len, &result_len, &error);
   assert_true(error == NULL, "Error value is non-null while no error is expected");
   assert_true(result != NULL, "value substitution returned an unexpected failure");
   assert_string(result, expected_output, "value substitution is broken");
   assert_guint64(result_len, strlen(expected_output), "length returned by invoke_result is invalid");
-  g_free(input_dup);
   g_free(result);
+}
+
+static void
+assert_invoke_result_with_input_length_explicit(CfgLexerSubst *subst, const gchar *input, const gchar *expected_output)
+{
+  gchar *input_dup;
+
+  input_dup = duplicate_string_without_with_trailing_nonzero_bytes(input);
+  _assert_invoke_result(subst, input_dup, strlen(input), expected_output);
+  g_free(input_dup);
+}
+
+static void
+assert_invoke_result_with_zero_terminated_input(CfgLexerSubst *subst, const gchar *input, const gchar *expected_output)
+{
+  gchar *input_dup;
+
+  input_dup = strdup(input);
+  _assert_invoke_result(subst, input_dup, -1, expected_output);
+  g_free(input_dup);
+}
+
+static void
+assert_invoke_result(CfgLexerSubst *subst, const gchar *input, const gchar *expected_output)
+{
+  assert_invoke_result_with_input_length_explicit(subst, input, expected_output);
+  assert_invoke_result_with_zero_terminated_input(subst, input, expected_output);
 }
 
 static void
@@ -118,14 +156,14 @@ assert_invoke_failure(CfgLexerSubst *subst, const gchar *input, const gchar *exp
   gchar *input_dup = g_strdup(input);
   GError *error = NULL;
 
-  result = cfg_lexer_subst_invoke(subst, input_dup, &result_len, &error);
+  result = cfg_lexer_subst_invoke(subst, input_dup, strlen(input), &result_len, &error);
   assert_true(result == NULL, "expected failure for value substitution, but success was returned");
   assert_true(error != NULL, "expected a non-NULL error object for failure");
   assert_string(error->message, expected_error, "error message mismatch");
   g_free(input_dup);
 }
 
-void
+static void
 test_double_backtick_replaced_with_a_single_one(void)
 {
   CfgLexerSubst *subst = construct_object();
@@ -133,7 +171,32 @@ test_double_backtick_replaced_with_a_single_one(void)
   cfg_lexer_subst_free(subst);
 }
 
-void
+static void
+test_single_backtick_causes_an_error(void)
+{
+  CfgLexerSubst *subst = construct_object();
+  assert_invoke_failure(subst, "foo ` bar", "missing closing backtick (`) character");
+  cfg_lexer_subst_free(subst);
+}
+
+static void
+test_backtick_after_quoted_character_succeeds(void)
+{
+  CfgLexerSubst *subst = construct_object();
+  assert_invoke_result(subst, "foo \"string \\n`arg`\" bar", "foo \"string \\narg_value\" bar");
+  cfg_lexer_subst_free(subst);
+}
+
+static void
+test_backtick_as_a_quoted_character_in_a_string_results_in_failure(void)
+{
+  CfgLexerSubst *subst = construct_object();
+
+  assert_invoke_failure(subst, "foo \"string \\`arg`\" bar", "cannot subsitute backticked values right after a string quote character");
+  cfg_lexer_subst_free(subst);
+}
+
+static void
 test_value_in_normal_text_replaced_with_its_literal_value(void)
 {
   CfgLexerSubst *subst = construct_object();
@@ -144,7 +207,7 @@ test_value_in_normal_text_replaced_with_its_literal_value(void)
   cfg_lexer_subst_free(subst);
 }
 
-void
+static void
 test_values_are_resolution_order_args_defaults_globals_env(void)
 {
   CfgLexerSubst *subst = construct_object();
@@ -157,7 +220,7 @@ test_values_are_resolution_order_args_defaults_globals_env(void)
   cfg_lexer_subst_free(subst);
 }
 
-void
+static void
 test_values_are_inserted_within_strings(void)
 {
   CfgLexerSubst *subst = construct_object();
@@ -167,7 +230,7 @@ test_values_are_inserted_within_strings(void)
   cfg_lexer_subst_free(subst);
 }
 
-void
+static void
 test_string_literals_are_inserted_into_strings_without_quotes(void)
 {
   const gchar *additional_values[] = {
@@ -176,12 +239,15 @@ test_string_literals_are_inserted_into_strings_without_quotes(void)
   };
   CfgLexerSubst *subst = construct_object_with_values(additional_values);
 
+  /* double quotes */
   assert_invoke_result(subst, "foo \"x `simple_string` y\" bar", "foo \"x simple_string_value y\" bar");
+  /* apostrophes */
+  assert_invoke_result(subst, "foo 'x `simple_string` y' bar", "foo 'x simple_string_value y' bar");
   assert_invoke_result(subst, "foo \"x `simple_string_with_whitespace` y\" bar", "foo \"x string_with_whitespace y\" bar");
   cfg_lexer_subst_free(subst);
 }
 
-void
+static void
 test_incorrect_strings_and_multiple_tokens_are_inserted_verbatim(void)
 {
   const gchar *additional_values[] = {
@@ -199,7 +265,7 @@ test_incorrect_strings_and_multiple_tokens_are_inserted_verbatim(void)
   cfg_lexer_subst_free(subst);
 }
 
-void
+static void
 test_strings_with_special_chars_are_properly_encoded_in_strings(void)
 {
   const gchar *additional_values[] = {
@@ -212,7 +278,7 @@ test_strings_with_special_chars_are_properly_encoded_in_strings(void)
   cfg_lexer_subst_free(subst);
 }
 
-void
+static void
 test_strings_with_embedded_apostrophe_cause_an_error_when_encoding_in_qstring(void)
 {
   const gchar *additional_values[] = {
@@ -226,11 +292,13 @@ test_strings_with_embedded_apostrophe_cause_an_error_when_encoding_in_qstring(vo
   cfg_lexer_subst_free(subst);
 }
 
-
-void
+static void
 test_cfg_lexer_subst(void)
 {
   SUBST_TESTCASE(test_double_backtick_replaced_with_a_single_one);
+  SUBST_TESTCASE(test_single_backtick_causes_an_error);
+  SUBST_TESTCASE(test_backtick_after_quoted_character_succeeds);
+  SUBST_TESTCASE(test_backtick_as_a_quoted_character_in_a_string_results_in_failure);
   SUBST_TESTCASE(test_value_in_normal_text_replaced_with_its_literal_value);
   SUBST_TESTCASE(test_values_are_resolution_order_args_defaults_globals_env);
   SUBST_TESTCASE(test_values_are_inserted_within_strings);

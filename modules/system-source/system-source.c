@@ -223,6 +223,7 @@ system_generate_system(CfgLexer *lexer, gint type, const gchar *name,
   gchar buf[256];
   GString *sysblock;
   struct utsname u;
+  gboolean result;
 
   g_snprintf(buf, sizeof(buf), "source confgen system");
 
@@ -291,13 +292,9 @@ system_generate_system(CfgLexer *lexer, gint type, const gchar *name,
       return FALSE;
     }
 
-  if (!cfg_lexer_include_buffer(lexer, buf, sysblock->str, sysblock->len))
-    {
-      g_string_free(sysblock, TRUE);
-      return FALSE;
-    }
-
-  return TRUE;
+  result = cfg_lexer_include_buffer(lexer, buf, sysblock->str, sysblock->len);
+  g_string_free(sysblock, TRUE);
+  return result;
 }
 
 gboolean
