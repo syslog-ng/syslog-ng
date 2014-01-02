@@ -34,6 +34,7 @@
 #include "reloc.h"
 #include "service-management.h"
 #include "persist-state.h"
+#include "run-id.h"
 
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -169,7 +170,9 @@ main_loop_initialize_state(GlobalConfig *cfg, const gchar *persist_filename)
   if (!persist_state_start(cfg->state))
     return FALSE;
 
+  run_id_init(cfg->state);
   success = cfg_init(cfg);
+
   if (success)
     persist_state_commit(cfg->state);
   else

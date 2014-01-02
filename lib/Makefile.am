@@ -81,6 +81,7 @@ pkginclude_HEADERS			+= \
 	lib/pragma-parser.h		\
 	lib/reloc.h			\
 	lib/rcptid.h			\
+	lib/run-id.h			\
 	lib/scratch-buffers.h		\
 	lib/serialize.h			\
 	lib/service-management.h	\
@@ -157,6 +158,7 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/pragma-parser.c		\
 	lib/rcptid.c			\
 	lib/reloc.c			\
+	lib/run-id.c			\
 	lib/scratch-buffers.c		\
 	lib/serialize.c			\
 	lib/service-management.c	\
