@@ -25,10 +25,8 @@
 
 #include "parser/parser-expr.h"
 
-typedef struct _LogJSONParser LogJSONParser;
-
 void log_json_parser_set_prefix(LogParser *p, const gchar *prefix);
 void log_json_parser_set_marker(LogParser *p, const gchar *marker);
-LogJSONParser *log_json_parser_new(void);
+LogParser *log_json_parser_new(void);
 
 #endif

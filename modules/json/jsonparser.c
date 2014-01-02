@@ -29,13 +29,13 @@
 #include <json.h>
 #include <json_object_private.h>
 
-struct _LogJSONParser
+typedef struct _LogJSONParser
 {
   LogParser super;
   gchar *prefix;
   gchar *marker;
   gint marker_len;
-};
+} LogJSONParser;
 
 void
 log_json_parser_set_prefix (LogParser *p, const gchar *prefix)
@@ -240,7 +240,7 @@ log_json_parser_free (LogPipe *s)
   log_parser_free_method (s);
 }
 
-LogJSONParser *
+LogParser *
 log_json_parser_new (void)
 {
   LogJSONParser *self = g_new0 (LogJSONParser, 1);
@@ -250,5 +250,5 @@ log_json_parser_new (void)
   self->super.super.clone = log_json_parser_clone;
   self->super.process = log_json_parser_process;
 
-  return self;
+  return &self->super;
 }
