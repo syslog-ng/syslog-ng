@@ -25,8 +25,8 @@
 
 #include "parser/parser-expr.h"
 
-void log_json_parser_set_prefix(LogParser *p, const gchar *prefix);
-void log_json_parser_set_marker(LogParser *p, const gchar *marker);
-LogParser *log_json_parser_new(void);
+void json_parser_set_prefix(LogParser *p, const gchar *prefix);
+void json_parser_set_marker(LogParser *p, const gchar *marker);
+LogParser *json_parser_new(void);
 
 #endif

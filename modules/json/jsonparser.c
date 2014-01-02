@@ -29,27 +29,27 @@
 #include <json.h>
 #include <json_object_private.h>
 
-typedef struct _LogJSONParser
+typedef struct _JSONParser
 {
   LogParser super;
   gchar *prefix;
   gchar *marker;
   gint marker_len;
-} LogJSONParser;
+} JSONParser;
 
 void
-log_json_parser_set_prefix (LogParser *p, const gchar *prefix)
+json_parser_set_prefix (LogParser *p, const gchar *prefix)
 {
-  LogJSONParser *self = (LogJSONParser *)p;
+  JSONParser *self = (JSONParser *)p;
 
   g_free (self->prefix);
   self->prefix = g_strdup (prefix);
 }
 
 void
-log_json_parser_set_marker (LogParser *p, const gchar *marker)
+json_parser_set_marker (LogParser *p, const gchar *marker)
 {
-  LogJSONParser *self = (LogJSONParser *)p;
+  JSONParser *self = (JSONParser *)p;
 
   g_free (self->marker);
   self->marker = g_strdup (marker);
@@ -57,12 +57,12 @@ log_json_parser_set_marker (LogParser *p, const gchar *marker)
 }
 
 static void
-log_json_parser_process_object (struct json_object *jso,
+json_parser_process_object (struct json_object *jso,
                                 const gchar *prefix,
                                 LogMessage *msg);
 
 static void
-log_json_parser_process_single (struct json_object *jso,
+json_parser_process_single (struct json_object *jso,
                                 const gchar *prefix,
                                 const gchar *obj_key,
                                 LogMessage *msg)
@@ -105,7 +105,7 @@ log_json_parser_process_single (struct json_object *jso,
         g_string_assign (sb_gstring_string (key), prefix);
       g_string_append (sb_gstring_string (key), obj_key);
       g_string_append_c (sb_gstring_string (key), '.');
-      log_json_parser_process_object (jso, sb_gstring_string (key)->str, msg);
+      json_parser_process_object (jso, sb_gstring_string (key)->str, msg);
       break;
     case json_type_array:
       {
@@ -119,7 +119,7 @@ log_json_parser_process_single (struct json_object *jso,
           {
             g_string_truncate (sb_gstring_string (key), plen);
             g_string_append_printf (sb_gstring_string (key), "[%d]", i);
-            log_json_parser_process_single (json_object_array_get_idx (jso, i),
+            json_parser_process_single (json_object_array_get_idx (jso, i),
                                             prefix,
                                             sb_gstring_string (key)->str, msg);
           }
@@ -156,7 +156,7 @@ log_json_parser_process_single (struct json_object *jso,
 }
 
 static void
-log_json_parser_process_object (struct json_object *jso,
+json_parser_process_object (struct json_object *jso,
                                 const gchar *prefix,
                                 LogMessage *msg)
 {
@@ -164,14 +164,14 @@ log_json_parser_process_object (struct json_object *jso,
 
   json_object_object_foreachC (jso, itr)
     {
-      log_json_parser_process_single (itr.val, prefix, itr.key, msg);
+      json_parser_process_single (itr.val, prefix, itr.key, msg);
     }
 }
 
 static gboolean
-log_json_parser_process (LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, const gchar *input, gsize input_len)
+json_parser_process (LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, const gchar *input, gsize input_len)
 {
-  LogJSONParser *self = (LogJSONParser *) s;
+  JSONParser *self = (JSONParser *) s;
   struct json_object *jso;
   struct json_tokener *tok;
 
@@ -213,7 +213,7 @@ log_json_parser_process (LogParser *s, LogMessage **pmsg, const LogPathOptions *
     }
 
   log_msg_make_writable(pmsg, path_options);
-  log_json_parser_process_object (jso, self->prefix, *pmsg);
+  json_parser_process_object (jso, self->prefix, *pmsg);
 
   json_object_put (jso);
 
@@ -221,22 +221,22 @@ log_json_parser_process (LogParser *s, LogMessage **pmsg, const LogPathOptions *
 }
 
 static LogPipe *
-log_json_parser_clone (LogPipe *s)
+json_parser_clone (LogPipe *s)
 {
-  LogJSONParser *self = (LogJSONParser *) s;
-  LogJSONParser *cloned;
+  JSONParser *self = (JSONParser *) s;
+  JSONParser *cloned;
 
-  cloned = (LogJSONParser *) log_json_parser_new ();
-  log_json_parser_set_prefix ((LogParser *)cloned, self->prefix);
-  log_json_parser_set_marker ((LogParser *)cloned, self->marker);
+  cloned = (JSONParser *) json_parser_new ();
+  json_parser_set_prefix ((LogParser *)cloned, self->prefix);
+  json_parser_set_marker ((LogParser *)cloned, self->marker);
 
   return &cloned->super.super;
 }
 
 static void
-log_json_parser_free (LogPipe *s)
+json_parser_free (LogPipe *s)
 {
-  LogJSONParser *self = (LogJSONParser *)s;
+  JSONParser *self = (JSONParser *)s;
 
   g_free (self->prefix);
   g_free (self->marker);
@@ -244,14 +244,14 @@ log_json_parser_free (LogPipe *s)
 }
 
 LogParser *
-log_json_parser_new (void)
+json_parser_new (void)
 {
-  LogJSONParser *self = g_new0 (LogJSONParser, 1);
+  JSONParser *self = g_new0 (JSONParser, 1);
 
   log_parser_init_instance (&self->super);
-  self->super.super.free_fn = log_json_parser_free;
-  self->super.super.clone = log_json_parser_clone;
-  self->super.process = log_json_parser_process;
+  self->super.super.free_fn = json_parser_free;
+  self->super.super.clone = json_parser_clone;
+  self->super.process = json_parser_process;
 
   return &self->super;
 }

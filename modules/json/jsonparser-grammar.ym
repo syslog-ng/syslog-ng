@@ -66,7 +66,7 @@ start
 parser_expr_json
 	: KW_JSON_PARSER '('
 	  {
-	    last_parser = *instance = (LogParser *) log_json_parser_new();
+	    last_parser = *instance = (LogParser *) json_parser_new();
 	  }
 	  parser_json_opts
 	  ')'					{ $$ = last_parser; }
@@ -78,8 +78,8 @@ parser_json_opts
 	;
 
 parser_json_opt
-	: KW_PREFIX '(' string ')'		{ log_json_parser_set_prefix(last_parser, $3); free($3); }
-	| KW_MARKER '(' string ')'		{ log_json_parser_set_marker(last_parser, $3); free($3); }
+	: KW_PREFIX '(' string ')'		{ json_parser_set_prefix(last_parser, $3); free($3); }
+	| KW_MARKER '(' string ')'		{ json_parser_set_marker(last_parser, $3); free($3); }
 	| parser_opt
 	;
 

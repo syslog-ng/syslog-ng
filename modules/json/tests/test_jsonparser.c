@@ -28,7 +28,7 @@
   do                                                            \
     {                                                           \
       testcase_begin("%s(%s)", func, args);                     \
-      json_parser = log_json_parser_new();                      \
+      json_parser = json_parser_new();                          \
     }                                                           \
   while (0)
 
@@ -39,7 +39,7 @@
       testcase_end();                                           \
     }                                                           \
   while (0)
-  
+
 #define JSON_PARSER_TESTCASE(x, ...) \
   do {                                                          \
       json_parser_testcase_begin(#x, #__VA_ARGS__);  		\
@@ -102,7 +102,7 @@ test_json_parser_adds_prefix_to_name_value_pairs_when_instructed(void)
 {
   LogMessage *msg;
 
-  log_json_parser_set_prefix(json_parser, ".prefix.");
+  json_parser_set_prefix(json_parser, ".prefix.");
   msg = parse_json_into_log_message("{'foo': 'bar'}");
   assert_log_message_value(msg, log_msg_get_value_handle(".prefix.foo"), "bar");
   log_msg_unref(msg);
@@ -113,7 +113,7 @@ test_json_parser_skips_marker_when_set_in_the_input(void)
 {
   LogMessage *msg;
 
-  log_json_parser_set_marker(json_parser, "@cee:");
+  json_parser_set_marker(json_parser, "@cee:");
   msg = parse_json_into_log_message("@cee: {'foo': 'bar'}");
   assert_log_message_value(msg, log_msg_get_value_handle("foo"), "bar");
   log_msg_unref(msg);
@@ -122,7 +122,7 @@ test_json_parser_skips_marker_when_set_in_the_input(void)
 static void
 test_json_parser_fails_when_marker_is_not_present(void)
 {
-  log_json_parser_set_marker(json_parser, "@cee:");
+  json_parser_set_marker(json_parser, "@cee:");
   assert_json_parser_fails("@cxx: {'foo': 'bar'}");
 }
 
@@ -137,7 +137,7 @@ test_json_parser_validate_type_representation(void)
 {
   LogMessage *msg;
 
-  log_json_parser_set_prefix(json_parser, ".prefix.");
+  json_parser_set_prefix(json_parser, ".prefix.");
   msg = parse_json_into_log_message("{'int': 123, 'booltrue': true, 'boolfalse': false, 'double': 1.23, 'object': {'member1': 'foo', 'member2': 'bar'}, 'array': [1, 2, 3], 'null': null}");
   assert_log_message_value(msg, log_msg_get_value_handle(".prefix.int"), "123");
   assert_log_message_value(msg, log_msg_get_value_handle(".prefix.booltrue"), "true");
