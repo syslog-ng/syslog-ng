@@ -53,7 +53,7 @@ log_json_parser_set_marker (LogParser *p, const gchar *marker)
 
   g_free (self->marker);
   self->marker = g_strdup (marker);
-  self->marker_len = strlen(marker);
+  self->marker_len = marker ? strlen(marker) : 0;
 }
 
 static void
