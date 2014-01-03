@@ -9,6 +9,8 @@ modules_json_libjson_plugin_la_SOURCES	=	\
 	modules/json/json-parser-grammar.y	\
 	modules/json/json-parser-parser.c	\
 	modules/json/json-parser-parser.h	\
+	modules/json/dot-notation.c		\
+	modules/json/dot-notation.h		\
 	modules/json/json-plugin.c
 
 modules_json_libjson_plugin_la_CPPFLAGS	=	\
