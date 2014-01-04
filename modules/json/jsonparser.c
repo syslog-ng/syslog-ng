@@ -70,6 +70,9 @@ log_json_parser_process_single (struct json_object *jso,
   SBGString *key, *value;
   gboolean parsed = FALSE;
 
+  if (!jso)
+    return;
+
   key = sb_gstring_acquire ();
   value = sb_gstring_acquire ();
 
