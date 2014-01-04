@@ -8,4 +8,6 @@ modules_json_tests_test_format_json_LDADD	= $(TEST_LDADD)
 modules_json_tests_test_format_json_LDFLAGS	= \
 	$(PREOPEN_SYSLOGFORMAT)		  \
 	-dlpreopen $(top_builddir)/modules/json/libjson-plugin.la
+modules_json_tests_test_format_json_DEPENDENCIES = $(top_builddir)/modules/json/libjson-plugin.la
+
 endif
