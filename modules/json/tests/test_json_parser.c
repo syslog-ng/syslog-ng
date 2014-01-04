@@ -20,7 +20,7 @@
  * COPYING for details.
  */
 #include "testutils.h"
-#include "jsonparser.h"
+#include "json-parser.h"
 #include "apphook.h"
 #include "msg_parse_lib.h"
 

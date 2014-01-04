@@ -19,20 +19,20 @@
  * OpenSSL libraries as published by the OpenSSL project. See the file
  * COPYING for details.
  */
-#include "jsonparser.h"
+#include "json-parser.h"
 #include "format-json.h"
-#include "jsonparser-parser.h"
+#include "json-parser-parser.h"
 #include "plugin.h"
 #include "plugin-types.h"
 
-extern CfgParser jsonparser_parser;
+extern CfgParser json_parser_parser;
 
 static Plugin json_plugins[] =
 {
   {
     .type = LL_CONTEXT_PARSER,
     .name = "json-parser",
-    .parser = &jsonparser_parser,
+    .parser = &json_parser_parser,
   },
   TEMPLATE_FUNCTION_PLUGIN(tf_json, "format_json"),
 };

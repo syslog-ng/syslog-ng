@@ -21,16 +21,16 @@
  */
 
 %code top {
-#include "jsonparser-parser.h"
+#include "json-parser-parser.h"
 
 }
 
 
 %code {
 
-#include "jsonparser.h"
+#include "json-parser.h"
 #include "cfg-parser.h"
-#include "jsonparser-grammar.h"
+#include "json-parser-grammar.h"
 #include "syslog-names.h"
 #include "messages.h"
 
@@ -38,7 +38,7 @@ extern LogParser *last_parser;
 
 }
 
-%name-prefix "jsonparser_"
+%name-prefix "json_parser_"
 
 /* this parameter is needed in order to instruct bison to use a complete
  * argument list for yylex/yyerror */

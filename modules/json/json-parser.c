@@ -20,7 +20,7 @@
  * COPYING for details.
  */
 
-#include "jsonparser.h"
+#include "json-parser.h"
 #include "scratch-buffers.h"
 
 #include <string.h>
