@@ -109,4 +109,5 @@ void log_proto_buffered_server_put_state(LogProtoBufferedServer *self);
 void log_proto_buffered_server_init(LogProtoBufferedServer *self, LogTransport *transport, const LogProtoServerOptions *options);
 void log_proto_buffered_server_free_method(LogProtoServer *s);
 
+void log_proto_buffered_server_set_state_values(PersistState* storage, gchar* persist_name, guint64 file_size, guint64 inode);
 #endif

@@ -51,6 +51,18 @@ log_proto_buffered_server_put_state(LogProtoBufferedServer *self)
     persist_state_unmap_entry(self->persist_state, self->persist_handle);
 }
 
+void
+log_proto_buffered_server_set_state_values(PersistState* storage, gchar* persist_name, guint64 file_size, guint64 inode)
+{
+  guint32 size = sizeof(LogProtoBufferedServerState);
+  PersistEntryHandle handle = persist_state_alloc_entry(storage, persist_name, size);
+  LogProtoBufferedServerState* state = persist_state_map_entry(storage, handle);
+  state->file_size = file_size;
+  state->raw_stream_pos = file_size;
+  state->file_inode = inode;
+  persist_state_unmap_entry(storage, handle);
+};
+
 static gboolean
 log_proto_buffered_server_convert_from_raw(LogProtoBufferedServer *self, const guchar *raw_buffer, gsize raw_buffer_len)
 {
