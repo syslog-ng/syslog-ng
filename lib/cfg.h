@@ -123,6 +123,10 @@ struct _GlobalConfig
 
 gboolean cfg_allow_config_dups(GlobalConfig *self);
 
+typedef void (*GeneratePersistCallbackFunc)(PersistState* state, gpointer userdata);
+void cfg_generate_persist_file(PersistState* state);
+void cfg_register_generate_persist_callback(GeneratePersistCallbackFunc func, gpointer userdata);
+
 void cfg_file_owner_set(GlobalConfig *self, gchar *owner);
 void cfg_file_group_set(GlobalConfig *self, gchar *group);
 void cfg_file_perm_set(GlobalConfig *self, gint perm);
