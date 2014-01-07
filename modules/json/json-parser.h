@@ -20,15 +20,13 @@
  * COPYING for details.
  */
 
-#ifndef JSONPARSER_PARSER_H_INCLUDED
-#define JSONPARSER_PARSER_H_INCLUDED
+#ifndef JSONPARSER_H_INCLUDED
+#define JSONPARSER_H_INCLUDED
 
-#include "cfg-parser.h"
-#include "cfg-lexer.h"
 #include "parser/parser-expr.h"
 
-extern CfgParser jsonparser_parser;
-
-CFG_PARSER_DECLARE_LEXER_BINDING(jsonparser_, LogParser **)
+void json_parser_set_prefix(LogParser *p, const gchar *prefix);
+void json_parser_set_marker(LogParser *p, const gchar *marker);
+LogParser *json_parser_new(void);
 
 #endif

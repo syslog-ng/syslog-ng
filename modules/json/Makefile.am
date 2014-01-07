@@ -4,11 +4,11 @@ module_LTLIBRARIES			+= modules/json/libjson-plugin.la
 modules_json_libjson_plugin_la_SOURCES	=	\
 	modules/json/format-json.c		\
 	modules/json/format-json.h		\
-	modules/json/jsonparser.c		\
-	modules/json/jsonparser.h		\
-	modules/json/jsonparser-grammar.y	\
-	modules/json/jsonparser-parser.c	\
-	modules/json/jsonparser-parser.h	\
+	modules/json/json-parser.c		\
+	modules/json/json-parser.h		\
+	modules/json/json-parser-grammar.y	\
+	modules/json/json-parser-parser.c	\
+	modules/json/json-parser-parser.h	\
 	modules/json/json-plugin.c
 
 modules_json_libjson_plugin_la_CPPFLAGS	=	\
@@ -30,11 +30,11 @@ modules/json modules/json/ mod-json:
 endif
 
 BUILT_SOURCES				+=	\
-	modules/json/jsonparser-grammar.y	\
-	modules/json/jsonparser-grammar.c	\
-	modules/json/jsonparser-grammar.h
+	modules/json/json-parser-grammar.y	\
+	modules/json/json-parser-grammar.c	\
+	modules/json/json-parser-grammar.h
 EXTRA_DIST				+=	\
-	modules/json/jsonparser-grammar.ym
+	modules/json/json-parser-grammar.ym
 
 .PHONY: modules/json/ mod-json
 
