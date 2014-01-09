@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2011-2012 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 2011-2012 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2014 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2014 Balazs Scheidler <bazsi@balabit.hu>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -19,15 +19,14 @@
  * OpenSSL libraries as published by the OpenSSL project. See the file
  * COPYING for details.
  */
+#ifndef DOT_NOTATION_H_INCLUDED
+#define DOT_NOTATION_H_INCLUDED
 
-#ifndef JSONPARSER_H_INCLUDED
-#define JSONPARSER_H_INCLUDED
+#include "json-parser.h"
 
-#include "parser/parser-expr.h"
+#include <json.h>
 
-void json_parser_set_extract_prefix(LogParser *s, const gchar *extract_prefix);
-void json_parser_set_prefix(LogParser *p, const gchar *prefix);
-void json_parser_set_marker(LogParser *p, const gchar *marker);
-LogParser *json_parser_new(void);
+struct json_object *
+json_extract(struct json_object *jso, const gchar *subscript);
 
 #endif

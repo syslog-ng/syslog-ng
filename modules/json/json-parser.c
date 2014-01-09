@@ -21,6 +21,7 @@
  */
 
 #include "json-parser.h"
+#include "dot-notation.h"
 #include "scratch-buffers.h"
 
 #include <string.h>
@@ -35,6 +36,7 @@ typedef struct _JSONParser
   gchar *prefix;
   gchar *marker;
   gint marker_len;
+  gchar *extract_prefix;
 } JSONParser;
 
 void
@@ -54,6 +56,15 @@ json_parser_set_marker(LogParser *p, const gchar *marker)
   g_free(self->marker);
   self->marker = g_strdup(marker);
   self->marker_len = marker ? strlen(marker) : 0;
+}
+
+void
+json_parser_set_extract_prefix(LogParser *s, const gchar *extract_prefix)
+{
+  JSONParser *self = (JSONParser *) s;
+  
+  g_free(self->extract_prefix);
+  self->extract_prefix = g_strdup(extract_prefix);
 }
 
 static void
@@ -169,6 +180,21 @@ json_parser_process_object(struct json_object *jso,
 }
 
 static gboolean
+json_parser_extract(JSONParser *self, struct json_object *jso, LogMessage *msg)
+{
+  if (self->extract_prefix)
+    jso = json_extract(jso, self->extract_prefix);
+
+  if (!json_object_is_type(jso, json_type_object))
+    {
+      return FALSE;
+    }
+  
+  json_parser_process_object(jso, self->prefix, msg);
+  return TRUE;
+}
+
+static gboolean
 json_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, const gchar *input, gsize input_len)
 {
   JSONParser *self = (JSONParser *) s;
@@ -187,34 +213,26 @@ json_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_
 
   tok = json_tokener_new();
   jso = json_tokener_parse_ex(tok, input, input_len);
-  if (tok->err != json_tokener_success)
+  if (tok->err != json_tokener_success || !jso)
     {
       msg_error("Unparsable JSON stream encountered",
-                 evt_tag_str("error", json_tokener_errors[tok->err]), NULL);
-      json_tokener_free(tok);
+                evt_tag_str ("input", input),
+                tok->err != json_tokener_success ? evt_tag_str ("error", json_tokener_errors[tok->err]) : NULL,
+                NULL);
+      json_tokener_free (tok);
       return FALSE;
     }
   json_tokener_free(tok);
 
-  if (!jso)
+  log_msg_make_writable(pmsg, path_options);
+  if (!json_parser_extract(self, jso, *pmsg))
     {
-      msg_error("Unparsable JSON stream encountered",
-                 evt_tag_str("input", input),
-                 NULL);
-      return FALSE;
-    }
-  if (!json_object_is_type(jso, json_type_object))
-    {
-      msg_error("JSON stream is not an object",
-                 evt_tag_str("input", input),
-                 NULL);
+      msg_error("Error extracting JSON members into LogMessage as the top-level JSON object is not an object",
+                evt_tag_str ("input", input),
+                NULL);
       json_object_put(jso);
       return FALSE;
     }
-
-  log_msg_make_writable(pmsg, path_options);
-  json_parser_process_object(jso, self->prefix, *pmsg);
-
   json_object_put(jso);
 
   return TRUE;
@@ -224,13 +242,14 @@ static LogPipe *
 json_parser_clone(LogPipe *s)
 {
   JSONParser *self = (JSONParser *) s;
-  JSONParser *cloned;
+  LogParser *cloned;
 
-  cloned = (JSONParser *) json_parser_new();
-  json_parser_set_prefix((LogParser *)cloned, self->prefix);
-  json_parser_set_marker((LogParser *)cloned, self->marker);
+  cloned = json_parser_new();
+  json_parser_set_prefix(cloned, self->prefix);
+  json_parser_set_marker(cloned, self->marker);
+  json_parser_set_extract_prefix(cloned, self->extract_prefix);
 
-  return &cloned->super.super;
+  return &cloned->super;
 }
 
 static void
@@ -240,6 +259,7 @@ json_parser_free(LogPipe *s)
 
   g_free(self->prefix);
   g_free(self->marker);
+  g_free(self->extract_prefix);
   log_parser_free_method(s);
 }
 
