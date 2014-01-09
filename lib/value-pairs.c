@@ -950,13 +950,23 @@ value_pairs_parse_type(gchar *spec, gchar **value, gchar **type)
   char *sp, *ep;
 
   *type = NULL;
+  sp = spec;
 
-  sp = strchr(spec, '(');
-  if (sp == NULL)
+  while (g_ascii_isalnum(*sp) || (*sp) == '_')
+    sp++;
+
+  while (*sp == ' ' || *sp == '\t')
+    sp++;
+
+  if (*sp != '(' ||
+      !(g_ascii_toupper(spec[0]) >= 'A' &&
+        g_ascii_toupper(spec[0]) <= 'Z' ||
+        spec[0] == '_'))
     {
       *value = spec;
       return;
     }
+
   ep = strchr(sp, ')');
   if (ep == NULL || ep[1] != '\0')
     {
