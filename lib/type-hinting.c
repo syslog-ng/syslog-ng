@@ -61,7 +61,7 @@ type_hint_parse(const gchar *hint, TypeHint *out_type, GError **error)
   else
     {
       g_set_error(error, TYPE_HINTING_ERROR, TYPE_HINTING_INVALID_TYPE,
-                  "%s", hint);
+                  "Unknown type specified in type hinting: %s", hint);
       return FALSE;
     }
 
