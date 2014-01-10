@@ -21,7 +21,7 @@ modules_json_tests_test_json_parser_LDFLAGS	= \
 modules_json_tests_test_json_parser_DEPENDENCIES = $(top_builddir)/modules/json/libjson-plugin.la
 
 modules_json_tests_test_dot_notation_CFLAGS	= $(TEST_CFLAGS) $(JSON_CFLAGS) -I$(top_srcdir)/modules/json
-modules_json_tests_test_dot_notation_LDADD	= $(TEST_LDADD) $(JSON_C_LIBS)
+modules_json_tests_test_dot_notation_LDADD	= $(TEST_LDADD) $(JSON_LIBS)
 modules_json_tests_test_dot_notation_LDFLAGS	= \
 	$(PREOPEN_SYSLOGFORMAT)		  \
 	-dlpreopen $(top_builddir)/modules/json/libjson-plugin.la

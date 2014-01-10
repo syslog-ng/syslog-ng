@@ -21,10 +21,11 @@ modules_json_libjson_plugin_la_CFLAGS	= 	\
 	$(JSON_CFLAGS)
 modules_json_libjson_plugin_la_LIBADD	= 	\
 	$(MODULE_DEPS_LIBS) $(JSON_LIBS)
+
 modules_json_libjson_plugin_la_LDFLAGS	=	\
 	$(MODULE_LDFLAGS)
 modules_json_libjson_plugin_la_DEPENDENCIES =	\
-	$(MODULE_DEPS_LIBS)
+	$(MODULE_DEPS_LIBS) $(JSON_DEPENDENCY)
 
 modules/json modules/json/ mod-json: modules/json/libjson-plugin.la
 else
