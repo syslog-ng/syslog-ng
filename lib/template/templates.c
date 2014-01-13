@@ -34,6 +34,7 @@
 #include "plugin-types.h"
 #include "str-format.h"
 #include "rcptid.h"
+#include "run-id.h"
 
 #include <time.h>
 #include <string.h>
@@ -64,6 +65,7 @@ enum
   M_LOGHOST,
   M_SYSUPTIME,
   M_RCPTID,
+  M_RUNID,
 
   /* only touch this section if you want to add three macros, one w/o
    * prefix, and a R_ and S_ prefixed macro that relates one of the
@@ -228,6 +230,7 @@ LogMacroDef macros[] =
         { "SEQNUM", M_SEQNUM },
         { "CONTEXT_ID", M_CONTEXT_ID },
         { "RCPTID", M_RCPTID },
+        { "RUNID", M_RUNID },
 
         /* values that have specific behaviour with older syslog-ng config versions */
         { "MSG", M_MESSAGE },
@@ -470,6 +473,12 @@ log_macro_expand(GString *result, gint id, gboolean escape, const LogTemplateOpt
     case M_RCPTID:
       {
         rcptid_append_formatted_id(result, msg->rcptid);
+        break;
+      }
+
+    case M_RUNID:
+      {
+        run_id_append_formatted_id(result);
         break;
       }
 
