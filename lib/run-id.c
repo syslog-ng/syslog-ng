@@ -27,6 +27,8 @@
 #include "persistable-state-header.h"
 #include "str-format.h"
 
+#define RUN_ID_PERSIST_KEY "run_id"
+
 int cached_run_id = 0;
 
 typedef struct _RunIDState
@@ -43,11 +45,11 @@ run_id_init(PersistState* state)
   PersistEntryHandle handle;
   RunIDState* run_id_state;
 
-  handle = persist_state_lookup_entry(state, "runid", &size, &version);
+  handle = persist_state_lookup_entry(state, RUN_ID_PERSIST_KEY, &size, &version);
 
   if (handle == 0)
     {
-      handle = persist_state_alloc_entry(state, "runid", sizeof(RunIDState) );
+      handle = persist_state_alloc_entry(state, RUN_ID_PERSIST_KEY, sizeof(RunIDState) );
     }
 
   run_id_state = persist_state_map_entry(state, handle);
