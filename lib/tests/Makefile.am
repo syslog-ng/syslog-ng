@@ -77,4 +77,6 @@ lib_tests_test_runid_LDADD	=	\
 
 CLEANFILES				+= \
 	test_values.persist		   \
-	test_values.persist-
+	test_values.persist-		   \
+	test_run_id.persist		   \
+	test_run_id.persist-
