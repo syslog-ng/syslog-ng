@@ -91,6 +91,10 @@ log_driver_free(LogPipe *s)
     {
       log_driver_plugin_free((LogDriverPlugin *) l->data);
     }
+  if (self->plugins)
+    {
+      g_list_free(self->plugins);
+    }
   if (self->group)
     g_free(self->group);
   if (self->id)
