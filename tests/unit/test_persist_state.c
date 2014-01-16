@@ -14,6 +14,129 @@ typedef struct _TestState
   guint32 value;
 } TestState;
 
+void
+test_persist_state_open_success_on_invalid_file(void)
+{
+  PersistState *state;
+  int fd;
+  unlink("test_invalid_magic.persist");
+
+  fd = open("test_invalid_magic.persist", O_CREAT | O_RDWR, 0777);
+  write(fd, "aaa", 3);
+  close(fd);
+
+  state = persist_state_new("test_invalid_magic.persist");
+  assert_true(persist_state_start(state), "persist_state_start returned with false!");
+
+  cancel_and_destroy_persist_state(state);
+}
+
+void
+test_persist_state_open_fails_on_invalid_file_with_dump(void)
+{
+  PersistState *state;
+  int fd;
+  unlink("test_invalid_magic.persist");
+
+  fd = open("test_invalid_magic.persist", O_CREAT | O_RDWR, 0777);
+  write(fd, "aaa", 3);
+  close(fd);
+
+  state = persist_state_new("test_invalid_magic.persist");
+  assert_false(persist_state_start_dump(state), "persist_state_start_dump returned with success when persist file was invalid!");
+
+  cancel_and_destroy_persist_state(state);
+}
+
+void
+test_persist_state_open_failes_when_file_open_fails(void)
+{
+  PersistState *state;
+  unlink("test_invalid_magic.persist");
+
+  state = persist_state_new("test_invalid_magic.persist");
+
+  assert_false(persist_state_start_dump(state), "persist_state_start_dump returned with success when persist file open failed!");
+
+  cancel_and_destroy_persist_state(state);
+};
+
+void
+write_test_file_for_test_in_use_handle(gboolean in_use_handle)
+{
+  PersistState *state = clean_and_create_persist_state_for_test("test_in_use.persist");
+  PersistEntryHandle handle = persist_state_alloc_entry(state, "alma", sizeof(TestState));
+  TestState *test_state = (TestState*) persist_state_map_entry(state, handle);
+  test_state->value = 0xDEADBEEF;
+  persist_state_unmap_entry(state, handle);
+
+  if (!in_use_handle)
+    persist_state_remove_entry(state, "alma");
+
+  commit_and_free_persist_state(state);
+};
+
+void
+test_persist_state_in_use_handle_is_loaded(void)
+{
+  PersistState *state;
+  guint8 version;
+  gsize size;
+  PersistEntryHandle handle;
+
+  unlink("test_in_use.persist");
+  write_test_file_for_test_in_use_handle(TRUE);
+
+  state = create_persist_state_for_test("test_in_use.persist");
+
+  handle = persist_state_lookup_entry(state, "alma", &size, &version);
+
+  assert_false(handle == 0, "lookup failed when looking for simple entry with in_use = TRUE!");
+
+  cancel_and_destroy_persist_state(state);
+};
+
+void
+test_persist_state_not_in_use_handle_is_not_loaded(void)
+{
+  PersistState *state;
+  guint8 version;
+  gsize size;
+  PersistEntryHandle handle;
+
+  unlink("test_in_use.persist");
+  write_test_file_for_test_in_use_handle(FALSE);
+
+  state = create_persist_state_for_test("test_in_use.persist");
+
+  handle = persist_state_lookup_entry(state, "alma", &size, &version);
+
+  assert_true(handle == 0, "lookup succeeded when looking for simple entry with in_use = FALSE!");
+
+  cancel_and_destroy_persist_state(state);
+};
+
+void
+test_persist_state_not_in_use_handle_is_loaded_in_dump_mode(void)
+{
+  PersistState *state;
+  guint8 version;
+  gsize size;
+  PersistEntryHandle handle;
+
+  unlink("test_in_use.persist");
+  write_test_file_for_test_in_use_handle(FALSE);
+
+  state = persist_state_new("test_in_use.persist");
+  persist_state_start_dump(state);
+
+  handle = persist_state_lookup_entry(state, "alma", &size, &version);
+
+  assert_false(handle == 0, "lookup failed in dump mode when looking for simple entry with in_use = FALSE!");
+
+  cancel_and_destroy_persist_state(state);
+};
+
 
 void
 test_persist_state_remove_entry(void)
@@ -188,6 +311,13 @@ main(int argc, char *argv[])
   test_persist_state_temp_file_cleanup_on_cancel();
   test_persist_state_temp_file_cleanup_on_commit_destroy();
   test_persist_state_foreach_entry();
+  test_persist_state_open_success_on_invalid_file();
+  test_persist_state_open_fails_on_invalid_file_with_dump();
+  test_persist_state_open_failes_when_file_open_fails();
+  test_persist_state_in_use_handle_is_loaded();
+  test_persist_state_not_in_use_handle_is_not_loaded();
+  test_persist_state_not_in_use_handle_is_loaded_in_dump_mode();
+  test_persist_state_remove_entry();
 
   return 0;
 }
