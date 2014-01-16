@@ -110,7 +110,7 @@ test_run_id__is_same_run__differs_when_not_same_run(void)
 
   run_id_init(state);
   int prev_run_id = run_id_get();
-  persist_state_cancel(state);
+  persist_state_commit(state);
   persist_state_free(state);
 
   state = persist_state_new("test_run_id.persist");

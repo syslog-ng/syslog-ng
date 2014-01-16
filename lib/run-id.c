@@ -69,7 +69,7 @@ run_id_get(void)
 gboolean
 run_id_is_same_run(gint other_id)
 {
-  return cached_run_id != other_id;
+  return cached_run_id == other_id;
 };
 
 void
