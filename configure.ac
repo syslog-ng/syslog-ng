@@ -164,6 +164,15 @@ AC_ARG_WITH(libmongo-client,
                                          Link against the system supplied or the built-in libmongo-client library.]
               ,,with_libmongo_client="internal")
 
+AC_ARG_WITH(jsonc,
+              [  --with-jsonc=[system/internal/auto/no]
+                                         Link against the system supplied or the built-in jsonc library or explicitly disable it. (default:auto)]
+              ,,with_jsonc="auto")
+
+AC_ARG_ENABLE(json,
+             [ --enable-json=[yes/no]            Enable JSON support (default: yes)]
+              ,[if test "x$enableval" != "xno"; then with_jsonc="system"; else with_jsonc="no"; fi],)
+
 AC_ARG_ENABLE(amqp,
           [  --enable-amqp        Enable amqp destination (default: auto)]
               ,,enable_amqp="auto")
@@ -181,10 +190,6 @@ AC_ARG_WITH(ivykis,
               [  --with-ivykis=[system/internal]
                                          Link against the system supplied or the built-in ivykis library.]
               ,,with_ivykis="internal")
-
-AC_ARG_ENABLE(json,
-              [  --disable-json          Disable JSON support (default: auto)]
-              ,,enable_json="auto")
 
 AC_ARG_ENABLE(smtp,
               [  --disable-smtp          Disable SMTP support (default: auto)]
@@ -696,23 +701,6 @@ if test "x$linking_mode" != "xdynamic" -a "x$blb_cv_static_glib" = "xno"; then
 fi
 
 dnl ***************************************************************************
-dnl json headers/libraries
-dnl ***************************************************************************
-if test "x$enable_json" = "xyes" || test "x$enable_json" = "xauto"; then
-   _with_json="yes"
-   PKG_CHECK_MODULES(JSON_C, json-c >= $JSON_C_MIN_VERSION,, [JSON_C_LIBS=""; _with_json="no"])
-   if test "x$_with_json" = "xno"; then
-     _with_json="yes"
-     PKG_CHECK_MODULES(JSON_C, json >= $JSON_C_MIN_VERSION,, [JSON_C_LIBS=""; _with_json="no"])
-   fi
-
-   if test "x$enable_json" = "xyes" && test "x$_with_json" = "xno"; then
-      AC_MSG_ERROR([Could not find json-c, and json support was explicitly enabled.])
-   fi
-   enable_json="$_with_json"
-fi
-
-dnl ***************************************************************************
 dnl geoip headers/libraries
 dnl ***************************************************************************
 if test "x$enable_geoip" = "xyes" || test "x$enable_geoip" = "xauto"; then
@@ -867,8 +855,41 @@ else
 fi
 
 dnl ***************************************************************************
+dnl json headers/libraries
+dnl ***************************************************************************
+
+enable_json="no"
+
+if test "x$with_jsonc" = "xsystem" -o "x$with_jsonc" = "xauto"; then
+   enable_json="yes"
+   PKG_CHECK_EXISTS(json-c, json_module_name="json-c",
+    PKG_CHECK_EXISTS(json, json_module_name="json"))
+   PKG_CHECK_MODULES(JSON, $json_module_name >= $JSON_C_MIN_VERSION,[with_jsonc="system"], [JSON_LIBS=""; enable_json="no"])
+   if test "x$with_jsonc" = "xsystem" -a "x$enable_json" = "xno"; then
+     AC_MSG_ERROR([json-c library development files cannot be not found on system!])
+   fi
+fi
+if test "x$with_jsonc" = "xinternal" -o "x$with_jsonc" = "xauto"; then
+  AC_MSG_CHECKING(for JSON)
+  if test -f "$srcdir/lib/jsonc/json.h"; then
+      AC_CONFIG_SUBDIRS([lib/jsonc])
+      JSON_LIBS="\$(top_builddir)/lib/jsonc/libjson-c.la"
+      JSON_DEPENDENCY="$JSON_LIBS"
+      JSON_CFLAGS="-I\$(top_srcdir)/lib/jsonc -I\$(top_builddir)/lib/jsonc"
+      JSON_SUBDIRS="lib/jsonc"
+      enable_json="yes"
+      with_jsonc="internal"
+  else
+      AC_MSG_WARN([Internal jsonc sources not found in lib/jsonc])
+      enable_json="no"
+  fi
+  AC_MSG_RESULT($enable_json)
+fi
+
+dnl ***************************************************************************
 dnl libmongo headers/libraries
 dnl ***************************************************************************
+
 
 if test "x$with_libmongo_client" = "xinternal"; then
 	if test -f "$srcdir/modules/afmongodb/libmongo-client/src/mongo.h"; then
@@ -1061,12 +1082,6 @@ if test "x$enable_amqp" = "xauto"; then
     AC_MSG_RESULT([$enable_amqp])
 fi
 
-if test "x$enable_json" != "xno"; then
-        JSON_LIBS=$JSON_C_LIBS
-        JSON_CFLAGS=$JSON_C_CFLAGS
-        enable_json="yes"
-fi
-
 if test "x$enable_systemd" = "xauto"; then
 	if test "$ostype" = "Linux" -a "$blb_cv_c_so_acceptconn" = "yes"; then
 		enable_systemd=yes
@@ -1252,6 +1267,7 @@ AM_CONDITIONAL(ENABLE_GEOIP, [test "$enable_geoip" = "yes"])
 AM_CONDITIONAL(ENABLE_REDIS, [test "$enable_redis" = "yes"])
 AM_CONDITIONAL(WITH_EMBEDDED_CRYPTO, [test "$with_embedded_crypto" = "yes"])
 AM_CONDITIONAL(IVYKIS_INTERNAL, [test "x$IVYKIS_SUBDIRS" != "x"])
+AM_CONDITIONAL(JSON_INTERNAL, [test "x$JSON_SUBDIRS" != "x"])
 AM_CONDITIONAL(LIBMONGO_INTERNAL, [test "x$LIBMONGO_SUBDIRS" != "x"])
 AM_CONDITIONAL(LIBRABBITMQ_INTERNAL, [test "x$LIBRABBITMQ_SUBDIRS" != "x"])
 AM_CONDITIONAL(ENABLE_MAN_PAGES, [test "x$enable_man_pages" = "xyes"])
@@ -1292,6 +1308,8 @@ AC_SUBST(LIBRABBITMQ_CFLAGS)
 AC_SUBST(LIBRABBITMQ_SUBDIRS)
 AC_SUBST(JSON_LIBS)
 AC_SUBST(JSON_CFLAGS)
+AC_SUBST(JSON_SUBDIRS)
+AC_SUBST(JSON_DEPENDENCY)
 AC_SUBST(IVYKIS_SUBDIRS)
 AC_SUBST(RESOLV_LIBS)
 AC_SUBST(CFLAGS_NOWARN_POINTER_SIGN)
@@ -1325,6 +1343,7 @@ echo " Submodules:"
 echo "  ivykis                      : $with_ivykis"
 echo "  libmongo-client             : $with_libmongo_client"
 echo "  librabbitmq                 : $with_librabbitmq_client"
+echo "  jsonc                       : $with_jsonc"
 echo " Features:"
 echo "  Debug symbols               : ${enable_debug:=no}"
 echo "  GCC profiling               : ${enable_gprof:=no}"

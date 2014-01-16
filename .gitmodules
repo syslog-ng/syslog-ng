@@ -7,3 +7,6 @@
 [submodule "modules/afamqp/rabbitmq-c"]
 	path = modules/afamqp/rabbitmq-c
 	url = https://github.com/alanxz/rabbitmq-c.git
+[submodule "lib/jsonc"]
+	path = lib/jsonc
+	url = https://github.com/json-c/json-c.git
