@@ -824,6 +824,12 @@ persist_state_alloc_string(PersistState *self, const gchar *persist_name, const 
   g_string_free(buf, TRUE);
 }
 
+const gchar *
+persist_state_get_filename(PersistState *self)
+{
+  return self->commited_filename;
+}
+
 gboolean
 persist_state_start(PersistState *self)
 {

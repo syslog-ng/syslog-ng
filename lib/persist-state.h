@@ -43,6 +43,9 @@ void persist_state_alloc_string(PersistState *self, const gchar *persist_name, c
 void persist_state_free_entry(PersistEntryHandle handle);
 
 gboolean persist_state_start(PersistState *self);
+
+const gchar *persist_state_get_filename(PersistState *self);
+
 gboolean persist_state_commit(PersistState *self);
 void persist_state_cancel(PersistState *self);
 

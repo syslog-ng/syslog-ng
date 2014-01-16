@@ -26,6 +26,7 @@
 #include "syslog-ng.h"
 #include "apphook.h"
 #include "rcptid.h"
+#include "libtest/persist_lib.h"
 
 #include <unistd.h>
 
@@ -35,22 +36,14 @@ PersistState *state;
 void
 setup_persist_id_test()
 {
-  unlink("test_values.persist");
-  state = persist_state_new("test_values.persist");
-
-  if (!persist_state_start(state))
-    {
-      fprintf(stderr, "Error starting persist_state object\n");
-      exit(1);
-    }
+  state = clean_and_create_persist_state_for_test("test_values.persist");
   rcptid_init(state, TRUE);
 }
 
 void
 teardown_persist_id_test()
 {
-  persist_state_commit(state);
-  persist_state_free(state);
+  commit_and_destroy_persist_state(state);
   rcptid_deinit();
 }
 
@@ -66,16 +59,7 @@ test_rcptid_is_persistent_across_persist_backend_reinits(void)
 
   assert_guint64(rcptid, 0x0000FFFFFFFFFFFE, "Rcptid initialization to specific value failed!");
   
-  persist_state_commit(state);
-  persist_state_free(state);
-
-  state = persist_state_new("test_values.persist");
-
-  if (!persist_state_start(state))
-    {
-      fprintf(stderr, "Error starting persist_state object\n");
-      exit(1);
-    }
+  state = restart_persist_state(state);
 
   rcptid_deinit();
   rcptid_init(state, TRUE);

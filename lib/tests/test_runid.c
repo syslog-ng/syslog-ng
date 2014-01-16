@@ -24,29 +24,35 @@
  */
 
 #include "libtest/testutils.h"
+#include "libtest/persist_lib.h"
 #include "lib/run-id.h"
 #include "lib/apphook.h"
 #include <unistd.h>
 
 #define RUN_ID_FIRST 1
 
-PersistState*
+PersistState *
 create_persist_state(void)
 {
-  PersistState* state;
+  return clean_and_create_persist_state_for_test("test_run_id.persist");
+};
 
-  unlink("test_run_id.persist");
-  state = persist_state_new("test_run_id.persist");
-  persist_state_start(state);
-  return state;
+PersistState *
+restart_persist_state_with_cancel(PersistState* state)
+{
+  PersistState* new_state;
+
+  persist_state_cancel(state);
+  persist_state_free(state);
+
+  new_state = create_persist_state_for_test("test_run_id.persist");
+  return new_state;
 };
 
 void
 destroy_persist_state(PersistState* state)
 {
-  persist_state_cancel(state);
-  persist_state_free(state);
-  unlink("test_run_id.persist");
+  cancel_and_destroy_persist_state(state);
 };
 
 void
@@ -71,11 +77,9 @@ test_run_id__second_run__run_id_is_two(void)
   state = create_persist_state();
 
   run_id_init(state);
-  persist_state_commit(state);
-  persist_state_free(state);
 
-  state = persist_state_new("test_run_id.persist");
-  persist_state_start(state);
+  state = restart_persist_state(state);
+
   run_id_init(state);
   assert_gint(run_id_get(), RUN_ID_FIRST + 1, "Running run_id_init twice is not the second id!");
 
@@ -90,11 +94,8 @@ test_run_id__second_run_but_with_non_commit__run_id_is_one(void)
   state = create_persist_state();
 
   run_id_init(state);
-  persist_state_cancel(state);
-  persist_state_free(state);
 
-  state = persist_state_new("test_run_id.persist");
-  persist_state_start(state);
+  state = restart_persist_state_with_cancel(state);
   run_id_init(state);
   assert_gint(run_id_get(), RUN_ID_FIRST, "Not committing persist state still increases run_id");
 
@@ -110,12 +111,11 @@ test_run_id__is_same_run__differs_when_not_same_run(void)
 
   run_id_init(state);
   int prev_run_id = run_id_get();
-  persist_state_commit(state);
-  persist_state_free(state);
 
-  state = persist_state_new("test_run_id.persist");
-  persist_state_start(state);
+  state = restart_persist_state(state);
+
   run_id_init(state);
+
   assert_false(run_id_is_same_run(prev_run_id), "Run_id_is_same_run returned true when the run differs");
 
   destroy_persist_state(state);
