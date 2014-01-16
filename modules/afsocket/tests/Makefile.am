@@ -1,3 +1,4 @@
+if ENABLE_SSL
 TEST_TRANSPORT_MAPPER_CFLAGS = $(TEST_CFLAGS) -DBUILD_WITH_SSL=1
 
 TRANSPORT_MAPPER_LIB = 					\
@@ -53,3 +54,4 @@ modules_afsocket_tests_test_transport_mapper_unix_LDFLAGS =	\
 modules_afsocket_tests_test_transport_mapper_unix_SOURCES = 	\
 	modules/afsocket/tests/test-transport-mapper-unix.c	\
 	$(TRANSPORT_MAPPER_LIB)
+endif
