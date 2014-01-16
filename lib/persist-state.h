@@ -35,6 +35,7 @@ void persist_state_unmap_entry(PersistState *self, PersistEntryHandle handle);
 
 PersistEntryHandle persist_state_alloc_entry(PersistState *self, const gchar *persist_name, gsize alloc_size);
 PersistEntryHandle persist_state_lookup_entry(PersistState *self, const gchar *persist_name, gsize *size, guint8 *version);
+gboolean persist_state_remove_entry(PersistState *self, const gchar *persist_name);
 
 gchar *persist_state_lookup_string(PersistState *self, const gchar *key, gsize *length, guint8 *version);
 gboolean persist_state_rename_entry(PersistState *self, const gchar *old_key, const gchar *new_key);

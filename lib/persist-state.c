@@ -270,6 +270,31 @@ _alloc_value(PersistState *self, guint32 orig_size, gboolean in_use, guint8 vers
   return result;
 }
 
+static PersistValueHeader *
+_map_header_of_entry_from_handle(PersistState *self, PersistEntryHandle handle)
+{
+  PersistValueHeader *header;
+
+  if (handle > self->current_size)
+    {
+      msg_error("Corrupted handle in persist_state_lookup_entry, handle value too large",
+                evt_tag_printf("handle", "%08x", handle),
+                NULL);
+      return NULL;
+    }
+  header = (PersistValueHeader *) persist_state_map_entry(self, handle - sizeof(PersistValueHeader));
+  if (GUINT32_FROM_BE(header->size) + handle > self->current_size)
+    {
+      msg_error("Corrupted entry header found in persist_state_lookup_entry, size too large",
+                evt_tag_printf("handle", "%08x", handle),
+                evt_tag_int("size", GUINT32_FROM_BE(header->size)),
+                evt_tag_int("file_size", self->current_size),
+                NULL);
+      return NULL;
+    }
+  return header;
+};
+
 static void
 _free_value(PersistState *self, PersistEntryHandle handle)
 {
@@ -277,22 +302,7 @@ _free_value(PersistState *self, PersistEntryHandle handle)
     {
       PersistValueHeader *header;
 
-      if (handle < self->current_size)
-        {
-          msg_error("Invalid persistent handle passed to persist_state_free_value",
-                    evt_tag_printf("handle", "%08x", handle),
-                    NULL);
-          return;
-        }
-
-      header = (PersistValueHeader *) persist_state_map_entry(self, handle - sizeof(PersistValueHeader));
-      if (GUINT32_FROM_BE(header->size) + handle > self->current_size)
-        {
-          msg_error("Corrupted entry header found in persist_state_free_value, size too large",
-                    evt_tag_printf("handle", "%08x", handle),
-                    NULL);
-          return;
-        }
+      header = _map_header_of_entry_from_handle(self, handle);
       header->in_use = 0;
       persist_state_unmap_entry(self, handle);
     }
@@ -705,23 +715,22 @@ persist_state_unmap_entry(PersistState *self, PersistEntryHandle handle)
   g_mutex_unlock(self->mapped_lock);
 }
 
+static PersistValueHeader *
+_map_header_of_entry(PersistState *self, const gchar *persist_name, PersistEntryHandle *handle)
+{
+  if (!persist_state_lookup_key(self, persist_name, handle))
+    return NULL;
+
+  return _map_header_of_entry_from_handle(self, *handle);
+
+};
+
 PersistEntryHandle
 persist_state_alloc_entry(PersistState *self, const gchar *persist_name, gsize alloc_size)
 {
   PersistEntryHandle handle;
 
-  if (persist_state_lookup_key(self, persist_name, &handle))
-    {
-      PersistValueHeader *header;
-
-      /* if an entry with the same name is allocated, make sure the
-       * old one gets ripped out in the next rebuild of the persistent
-       * state */
-
-      header = (PersistValueHeader *) persist_state_map_entry(self, handle - sizeof(PersistValueHeader));
-      header->in_use = FALSE;
-      persist_state_unmap_entry(self, handle);
-    }
+  persist_state_remove_entry(self, persist_name);
 
   handle = _alloc_value(self, alloc_size, TRUE, self->version);
   if (!handle)
@@ -742,32 +751,30 @@ persist_state_lookup_entry(PersistState *self, const gchar *key, gsize *size, gu
   PersistEntryHandle handle;
   PersistValueHeader *header;
 
-  if (!persist_state_lookup_key(self, key, &handle))
+  header = _map_header_of_entry(self, key, &handle);
+  if (header)
+    {
+      header->in_use = TRUE;
+      *size = GUINT32_FROM_BE(header->size);
+      *version = header->version;
+      persist_state_unmap_entry(self, handle);
+      return handle;
+    }
+  else
     return 0;
-  if (handle > self->current_size)
-    {
-      msg_error("Corrupted handle in persist_state_lookup_entry, handle value too large",
-                evt_tag_printf("handle", "%08x", handle),
-                NULL);
-      return 0;
-    }
-  header = (PersistValueHeader *) persist_state_map_entry(self, handle - sizeof(PersistValueHeader));
-  if (GUINT32_FROM_BE(header->size) + handle > self->current_size)
-    {
-      msg_error("Corrupted entry header found in persist_state_lookup_entry, size too large",
-                evt_tag_printf("handle", "%08x", handle),
-                evt_tag_int("size", GUINT32_FROM_BE(header->size)),
-                evt_tag_int("file_size", self->current_size),
-                NULL);
-      return 0;
-    }
-  header->in_use = TRUE;
-  *size = GUINT32_FROM_BE(header->size);
-  *version = header->version;
-  persist_state_unmap_entry(self, handle);
-
-  return handle;
 }
+
+gboolean
+persist_state_remove_entry(PersistState *self, const gchar *key)
+{
+  PersistEntryHandle handle;
+
+  if (!persist_state_lookup_key(self, key, &handle))
+    return FALSE;
+
+  _free_value(self, handle);
+  return TRUE;
+};
 
 /* easier to use string based interface */
 gchar *

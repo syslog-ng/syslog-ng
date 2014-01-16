@@ -4,6 +4,39 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <fcntl.h>
+#include "libtest/testutils.h"
+#include "libtest/persist_lib.h"
+
+typedef struct _TestState
+{
+  guint32 value;
+} TestState;
+
+
+void
+test_persist_state_remove_entry(void)
+{
+  guint8 version;
+  gsize size;
+
+  PersistState *state = clean_and_create_persist_state_for_test("test_persist_state_remove_entry.persist");
+
+  PersistEntryHandle handle = persist_state_alloc_entry(state, "test", sizeof(TestState));
+
+  handle = persist_state_lookup_entry(state, "test", &size, &version);
+  assert_true(handle != 0, "lookup failed before removing entry");
+
+  persist_state_remove_entry(state, "test");
+
+  state = restart_persist_state(state);
+
+  handle = persist_state_lookup_entry(state, "test", &size, &version);
+  assert_true(handle == 0, "lookup succeeded after removing entry");
+
+  cancel_and_destroy_persist_state(state);
+};
 
 void
 test_values(void)
@@ -99,5 +132,7 @@ main(int argc, char *argv[])
 #endif
   app_startup();
   test_values();
+  test_persist_state_remove_entry();
+
   return 0;
 }
