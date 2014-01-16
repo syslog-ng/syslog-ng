@@ -47,6 +47,8 @@ typedef void (*PersistStateForeachFunc)(gchar* name, gint entry_size, gpointer e
 void persist_state_foreach_entry(PersistState *self, PersistStateForeachFunc func, gpointer userdata);
 
 gboolean persist_state_start(PersistState *self);
+gboolean persist_state_start_edit(PersistState *self);
+gboolean persist_state_start_dump(PersistState *self);
 
 const gchar *persist_state_get_filename(PersistState *self);
 

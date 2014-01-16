@@ -483,7 +483,7 @@ _load_v23(PersistState *self, gint version, SerializeArchive *sa)
 }
 
 static gboolean
-_load_v4(PersistState *self)
+_load_v4(PersistState *self, gboolean load_all_entries)
 {
   gint fd;
   gint64 file_size;
@@ -559,7 +559,7 @@ _load_v4(PersistState *self)
                     }
 
                   header = (PersistValueHeader *) ((gchar *) map + entry_ofs - sizeof(PersistValueHeader));
-                  if (header->in_use)
+                  if ((header->in_use) || load_all_entries)
                     {
                       gpointer new_block;
                       PersistEntryHandle new_handle;
@@ -628,7 +628,7 @@ _load_v4(PersistState *self)
 }
 
 static gboolean
-_load(PersistState *self)
+_load(PersistState *self, gboolean all_errors_are_fatal, gboolean load_all_entries)
 {
   FILE *persist_file;
   gboolean success = FALSE;
@@ -645,7 +645,7 @@ _load(PersistState *self)
       if (memcmp(magic, "SLP", 3) != 0)
         {
           msg_error("Persistent configuration file is in invalid format, ignoring", NULL);
-          success = TRUE;
+          success = all_errors_are_fatal ? FALSE : TRUE;
           goto close_and_exit;
         }
       version = magic[3] - '0';
@@ -655,7 +655,7 @@ _load(PersistState *self)
         }
       else if (version == 4)
         {
-          success = _load_v4(self);
+          success = _load_v4(self, load_all_entries);
         }
       else
         {
@@ -670,7 +670,16 @@ _load(PersistState *self)
     }
   else
     {
-      success = TRUE;
+      if (all_errors_are_fatal)
+      {
+        msg_error("Failed to open persist file!",
+                    evt_tag_str("filename", self->commited_filename),
+                    evt_tag_str("error", strerror(errno)),
+                    NULL);
+        success = FALSE;
+      }
+      else
+        success = TRUE;
     }
   return success;
 }
@@ -873,11 +882,31 @@ persist_state_get_filename(PersistState *self)
 }
 
 gboolean
+persist_state_start_dump(PersistState *self)
+{
+  if (!_create_store(self))
+    return FALSE;
+  if (!_load(self, TRUE, TRUE))
+    return FALSE;
+  return TRUE;
+}
+
+gboolean
+persist_state_start_edit(PersistState *self)
+{
+  if (!_create_store(self))
+    return FALSE;
+  if (!_load(self, FALSE, TRUE))
+    return FALSE;
+  return TRUE;
+}
+
+gboolean
 persist_state_start(PersistState *self)
 {
   if (!_create_store(self))
     return FALSE;
-  if (!_load(self))
+  if (!_load(self, FALSE, FALSE))
     return FALSE;
   return TRUE;
 }
