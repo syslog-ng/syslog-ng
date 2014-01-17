@@ -79,6 +79,7 @@ pkginclude_HEADERS			+= \
 	lib/msg-format.h		\
 	lib/nvtable.h			\
 	lib/parse-number.h		\
+	lib/pathutils.h         \
 	lib/persist-state.h		\
 	lib/persistable-state-header.h  \
 	lib/persistable-state-presenter.h		\
@@ -160,6 +161,7 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/msg-format.c		\
 	lib/nvtable.c			\
 	lib/parse-number.c		\
+	lib/pathutils.c         \
 	lib/persist-state.c		\
 	lib/plugin.c			\
 	lib/poll-events.c		\
