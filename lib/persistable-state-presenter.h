@@ -63,5 +63,6 @@ typedef PersistableStatePresenter* (*PersistableStatePresenterConstructFunc)(con
 
 PersistableStatePresenterConstructFunc persistable_state_presenter_get_constructor_by_prefix(const gchar *prefix);
 void persistable_state_presenter_register_constructor(const gchar *prefix, PersistableStatePresenterConstructFunc handler);
+void persistable_state_presenter_global_init(void);
 
 #endif

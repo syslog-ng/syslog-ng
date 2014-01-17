@@ -26,6 +26,7 @@
 #include "misc.h"
 #include "logmsg.h"
 #include "str-format.h"
+#include "logproto/logproto-buffered-server.h"
 
 static GHashTable *persist_state_storage = NULL;
 
@@ -50,3 +51,9 @@ persistable_state_presenter_register_constructor(const gchar *prefix,
     }
   g_hash_table_insert(persist_state_storage, (gpointer) prefix, handler);
 }
+
+void
+persistable_state_presenter_global_init(void)
+{
+  persistable_state_presenter_register_constructor("affile_sd_curpos", log_proto_buffered_server_state_presenter_new);
+};
