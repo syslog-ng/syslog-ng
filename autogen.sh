@@ -9,23 +9,33 @@
 set -e
 
 (
- pemodpath="$ZWA_ROOT/work/syslog-ng-pe-mainline-5.0/syslog-ng-pe-modules/modules"
+ pemodrepo="$ZWA_ROOT/work/syslog-ng-pe-mainline-5.0/syslog-ng-pe-modules"
+ if [ ! -e "$pemodrepo" ]
+ then
+     pemodrepo="$ZWA_ROOT/work/syslog-ng-pe-5.0/syslog-ng-pe-modules"
+ fi
+ if [ ! -e "$pemodrepo" ]
+ then
+     echo "Unable to locate syslog-ng-pe-modules under $ZWA_ROOT/work :-(" >&2
+     exit 1
+ fi
+ pemodpath="$pemodrepo/modules"
+ echo "PEMODPATH=$pemodpath"
  for pemod in license logstore diskq confighash snmp afsqlsource rltp-proto eventlog agent-config windows-resource; do
     if [ -d $pemodpath/$pemod ]; then
         if [ -h modules/$pemod ] || [ -d modules/$pemod ]; then rm -rf modules/$pemod; fi
         ln -s $pemodpath/$pemod modules/$pemod
     fi
  done
- petests_orig="$ZWA_ROOT/work/syslog-ng-pe-mainline-5.0/syslog-ng-pe-modules/tests"
+ petests_orig="$pemodrepo/tests"
  petests="pe-tests"
  if [ -d $petests_orig ]; then
      if [ -h $petests ] || [ -d $petests ]; then rm -rf $petests; fi
      ln -s $petests_orig $petests
  fi
 
- peroot="$ZWA_ROOT/work/syslog-ng-pe-mainline-5.0/syslog-ng-pe-modules"
  for pebin in windows-tools windows-binaries; do
-    binpath=$peroot/$pebin
+    binpath=$pemodrepo/$pebin
     if [ -d $binpath ]; then
         if [ -h $pebin ] || [ -d $pebin ]; then rm -rf $pebin; fi
         ln -s $binpath $pebin
