@@ -97,6 +97,7 @@ struct _LogReader
   struct iv_timer follow_timer;
   struct iv_timer update_timer;
   struct iv_timer idle_timer;
+  struct iv_timer wait_timer;
   struct iv_task restart_task;
   struct iv_task immediate_check_task;
   struct iv_event schedule_wakeup;
@@ -446,6 +447,14 @@ log_reader_idle_timeout(LogReader *self)
 }
 
 static void
+log_reader_wait_timeout(LogReader *self)
+{
+  msg_error("Wait time elapsed, close the connection",evt_tag_id(MSG_LOGREADER_RESPONSE_TIMEOUT),NULL);
+  log_proto_reset_state(self->proto);
+  log_pipe_notify(self->control, &self->super.super, NC_CLOSE, self);
+}
+
+static void
 log_reader_init_watches(LogReader *self)
 {
   gint fd;
@@ -468,6 +477,10 @@ log_reader_init_watches(LogReader *self)
   IV_TIMER_INIT(&self->idle_timer);
   self->idle_timer.cookie = self;
   self->idle_timer.handler = (void (*)(void *))log_reader_idle_timeout;
+
+  IV_TIMER_INIT(&self->wait_timer);
+  self->wait_timer.cookie = self;
+  self->wait_timer.handler = (void (*)(void *))log_reader_wait_timeout;
 
   IV_TASK_INIT(&self->restart_task);
   self->restart_task.cookie = self;
@@ -557,6 +570,8 @@ log_reader_stop_watches(LogReader *self)
     iv_timer_unregister(&self->idle_timer);
   if (iv_timer_registered(&self->update_timer))
     iv_timer_unregister(&self->update_timer);
+  if (iv_timer_registered(&self->wait_timer))
+    iv_timer_unregister(&self->wait_timer);
 }
 
 static void
@@ -629,7 +644,17 @@ log_reader_update_watches(LogReader *self)
           iv_validate_now();
           self->update_timer.expires = iv_now;
           self->update_timer.expires.tv_sec += 1;
+
           iv_timer_register(&self->update_timer);
+          if (idle_timeout != -1)
+            {
+              if (!iv_timer_registered(&self->wait_timer))
+                {
+                  self->wait_timer.expires = iv_now;
+                  self->wait_timer.expires.tv_sec += idle_timeout;
+                  iv_timer_register(&self->wait_timer);
+                }
+            }
           return;
         }
 
