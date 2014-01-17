@@ -24,6 +24,7 @@
 #include "apphook.h"
 #include "logpipe.h"
 #include "rcptid.h"
+#include "libtest/persist_lib.h"
 
 #include <stdlib.h>
 
@@ -104,22 +105,14 @@ PersistState *state;
 static void
 setup_rcptid_test(void)
 {
-  unlink("test_values.persist");
-  state = persist_state_new("test_values.persist");
-
-  if (!persist_state_start(state))
-    {
-      fprintf(stderr, "Error starting persist_state object\n");
-      exit(1);
-    }
+  state = clean_and_create_persist_state_for_test("test_values.persist");
   rcptid_init(state, TRUE);
 }
 
 static void
 teardown_rcptid_test(void)
 {
-  persist_state_commit(state);
-  persist_state_free(state);
+  commit_and_destroy_persist_state(state);
   rcptid_deinit();
 }
 

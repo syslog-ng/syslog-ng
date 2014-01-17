@@ -10,5 +10,7 @@ libtest_libsyslog_ng_test_a_SOURCES =   \
 	libtest/template_lib.h		\
 	libtest/proto_lib.c		\
 	libtest/proto_lib.h		\
+	libtest/persist_lib.h		\
+	libtest/persist_lib.c		\
 	libtest/mock-transport.c	\
 	libtest/mock-transport.h
