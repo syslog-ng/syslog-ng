@@ -27,6 +27,7 @@ OPENSSL_MIN_VERSION="0.9.8"
 LIBDBI_MIN_VERSION="0.8.0"
 IVYKIS_MIN_VERSION="0.36.1"
 JSON_C_MIN_VERSION="0.9"
+PERSIST_TOOL_JSON_C_MIN_VERSION="0.10"
 PCRE_MIN_VERSION="6.1"
 LMC_MIN_VERSION="0.1.6"
 LRMQ_MIN_VERSION="0.0.1"
@@ -859,12 +860,21 @@ dnl json headers/libraries
 dnl ***************************************************************************
 
 enable_json="no"
+enable_persist_tool="yes"
 
 if test "x$with_jsonc" = "xsystem" -o "x$with_jsonc" = "xauto"; then
    enable_json="yes"
    PKG_CHECK_EXISTS(json-c, json_module_name="json-c",
     PKG_CHECK_EXISTS(json, json_module_name="json"))
-   PKG_CHECK_MODULES(JSON, $json_module_name >= $JSON_C_MIN_VERSION,[with_jsonc="system"], [JSON_LIBS=""; enable_json="no"])
+   original_with_jsonc=$with_jsonc
+   PKG_CHECK_MODULES(JSON, $json_module_name >= $PERSIST_TOOL_JSON_C_MIN_VERSION,[with_jsonc="system"],
+      [
+        enable_persist_tool="no"
+        PKG_CHECK_MODULES(JSON, $json_module_name >= $JSON_C_MIN_VERSION,[with_jsonc="system"], [JSON_LIBS=""; enable_json="no"])
+      ])
+   if test "x$original_with_jsonc" = "xauto" -a "x$enable_persist_tool" = "xno"; then
+      with_jsonc="internal"
+   fi
    if test "x$with_jsonc" = "xsystem" -a "x$enable_json" = "xno"; then
      AC_MSG_ERROR([json-c library development files cannot be not found on system!])
    fi
@@ -1263,6 +1273,7 @@ AM_CONDITIONAL(ENABLE_SMTP, [test "$enable_smtp" = "yes"])
 AM_CONDITIONAL(ENABLE_AMQP, [test "$enable_amqp" = "yes"])
 AM_CONDITIONAL(ENABLE_STOMP, [test "$enable_stomp" = "yes"])
 AM_CONDITIONAL(ENABLE_JSON, [test "$enable_json" = "yes"])
+AM_CONDITIONAL(ENABLE_PERSIST_TOOL, [test "$enable_persist_tool" = "yes" -a "$enable_json" = "yes"])
 AM_CONDITIONAL(ENABLE_GEOIP, [test "$enable_geoip" = "yes"])
 AM_CONDITIONAL(ENABLE_REDIS, [test "$enable_redis" = "yes"])
 AM_CONDITIONAL(WITH_EMBEDDED_CRYPTO, [test "$with_embedded_crypto" = "yes"])
