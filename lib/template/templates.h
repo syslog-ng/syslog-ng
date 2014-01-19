@@ -213,6 +213,7 @@ void log_template_append_format_recursive(LogTemplate *self, const LogTemplateIn
 /* low level macro functions */
 guint log_macro_lookup(gchar *macro, gint len);
 gboolean log_macro_expand(GString *result, gint id, gboolean escape, const LogTemplateOptions *opts, gint tz, gint32 seq_num, const gchar *context_id, LogMessage *msg);
+gboolean log_macro_expand_simple(GString *result, gint id, LogMessage *msg);
 
 LogTemplate *log_template_new(GlobalConfig *cfg, gchar *name);
 LogTemplate *log_template_ref(LogTemplate *s);
