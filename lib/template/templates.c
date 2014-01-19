@@ -245,6 +245,8 @@ LogMacroDef macros[] =
 GHashTable *macro_hash;
 GTimeVal app_uptime;
 
+static LogTemplateOptions template_options_for_macro_expand;
+
 static void
 result_append(GString *result, const gchar *sstr, gssize len, gboolean escape)
 {
@@ -642,6 +644,12 @@ log_macro_expand(GString *result, gint id, gboolean escape, const LogTemplateOpt
       }
     }
   return TRUE;
+}
+
+gboolean
+log_macro_expand_simple(GString *result, gint id, LogMessage *msg)
+{
+  return log_macro_expand(result, id, FALSE, &template_options_for_macro_expand, LTZ_LOCAL, 0, NULL, msg);
 }
 
 guint
@@ -1555,6 +1563,7 @@ log_template_global_init(void)
 
   /* init the uptime (SYSUPTIME macro) */
   g_get_current_time(&app_uptime);
+  log_template_options_defaults(&template_options_for_macro_expand);
 
   macro_hash = g_hash_table_new(g_str_hash, g_str_equal);
   for (i = 0; macros[i].name; i++)
