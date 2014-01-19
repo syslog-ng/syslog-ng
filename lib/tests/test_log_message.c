@@ -136,6 +136,24 @@ test_log_message(void)
   MSG_TESTCASE(test_rcptid_is_automatically_assigned_to_a_newly_created_log_message);
 }
 
+void
+test_log_msg_get_value_with_time_related_macro(void)
+{
+  LogMessage *msg;
+  gssize value_len;
+  NVHandle handle;
+  const char *date_value;
+
+  msg = log_msg_new_empty();
+  msg->timestamps[LM_TS_STAMP].tv_sec = 1389783444;
+
+  handle = log_msg_get_value_handle("ISODATE");
+  date_value = log_msg_get_value(msg, handle, &value_len);
+  assert_string(date_value, "2014-01-15T10:57:23-00:00", "ISODATE macro value does not match!");
+
+  log_msg_unref(msg);
+}
+
 int
 main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 {
@@ -144,6 +162,8 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   init_and_load_syslogformat_module();
 
   test_log_message();
+  test_log_msg_get_value_with_time_related_macro();
+
   app_shutdown();
   return 0;
 }
