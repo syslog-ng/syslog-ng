@@ -873,6 +873,7 @@ _destroy(PersistState *self)
     close(self->fd);
   if (self->current_map)
     munmap(self->current_map, self->current_size);
+  unlink(self->temp_filename);
 
   g_mutex_free(self->mapped_lock);
   g_cond_free(self->mapped_release_cond);
