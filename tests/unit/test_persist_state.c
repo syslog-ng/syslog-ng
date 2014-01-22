@@ -124,6 +124,33 @@ test_values(void)
   cancel_and_destroy_persist_state(state);
 }
 
+void
+test_persist_state_temp_file_cleanup_on_cancel()
+{
+  PersistState *state = clean_and_create_persist_state_for_test("test_persist_state_temp_file_cleanup_on_cancel.persist");
+
+  cancel_and_destroy_persist_state(state);
+
+  assert_true(access("test_persist_state_temp_file_cleanup_on_cancel.persist", F_OK) != 0,
+              "persist file is removed on destroy()");
+  assert_true(access("test_persist_state_temp_file_cleanup_on_cancel.persist-", F_OK) != 0,
+              "backup persist file is removed on destroy()");
+}
+
+void
+test_persist_state_temp_file_cleanup_on_commit_destroy()
+{
+  PersistState *state = clean_and_create_persist_state_for_test("test_persist_state_temp_file_cleanup_on_commit_destroy.persist");
+
+  commit_and_destroy_persist_state(state);
+
+  assert_true(access("test_persist_state_temp_file_cleanup_on_commit_destroy.persist", F_OK) != 0,
+              "persist file is removed on destroy(), even after commit");
+  assert_true(access("test_persist_state_temp_file_cleanup_on_commit_destroy.persist-", F_OK) != 0,
+              "backup persist file is removed on destroy(), even after commit");
+}
+
+
 int
 main(int argc, char *argv[])
 {
@@ -133,6 +160,8 @@ main(int argc, char *argv[])
   app_startup();
   test_values();
   test_persist_state_remove_entry();
+  test_persist_state_temp_file_cleanup_on_cancel();
+  test_persist_state_temp_file_cleanup_on_commit_destroy();
 
   return 0;
 }

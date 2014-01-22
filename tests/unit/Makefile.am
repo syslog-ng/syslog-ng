@@ -80,6 +80,3 @@ tests_unit_test_persist_state_LDADD	= \
 tests_unit_test_value_pairs_LDADD	= \
 	$(TEST_LDADD) $(unit_test_extra_modules)
 
-CLEANFILES				+= \
-	test_values.persist		   \
-	test_values.persist-
