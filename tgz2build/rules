@@ -35,9 +35,6 @@ ifneq (,$(findstring aix,$(ZBS_DIST)))
 endif
 
 ifneq (,$(findstring hpux,$(ZBS_DIST)))
-ifneq (,$(findstring parisc,$(ZBS_ARCH)))
-  MAKEFLAGS += -j2
-endif
   RPATH=-Wl,+s,+b/opt/syslog-ng/lib
   NEED_INSTALL_BEFORE_CHECK=1
 endif
