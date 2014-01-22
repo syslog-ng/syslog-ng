@@ -173,12 +173,8 @@ rewrite_expr_opt
                             NULL);
                 p++;
               }
-            last_rewrite->value_handle = log_msg_get_value_handle(p);
-            if (log_msg_is_handle_macro(last_rewrite->value_handle))
+            if (!log_rewrite_set_handle(last_rewrite, p))
               {
-                msg_error("Macros are read-only, they cannot be changed in rewrite rules",
-                            evt_tag_str("macro", p),
-                            NULL);
                 YYERROR;
               }
 

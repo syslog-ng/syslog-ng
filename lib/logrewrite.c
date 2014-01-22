@@ -36,6 +36,20 @@ log_rewrite_set_condition(LogRewrite *self, FilterExprNode *condition)
   self->condition = filter_expr_ref(condition);
 }
 
+gboolean
+log_rewrite_set_handle(LogRewrite *self, const gchar *value_name)
+{
+  self->value_handle = log_msg_get_value_handle(value_name);
+  if (log_msg_is_handle_macro(self->value_handle))
+    {
+      msg_error("Macros are read-only, they cannot be changed in rewrite rules",
+                evt_tag_str("macro", value_name),
+                NULL);
+      return FALSE;
+    }
+  return TRUE;
+}
+
 static void
 log_rewrite_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data)
 {
@@ -225,7 +239,6 @@ log_rewrite_set_clone(LogProcessPipe *s)
 {
   LogRewriteSet *self = (LogRewriteSet *) s;
   LogRewriteSet *cloned;
-
   cloned = (LogRewriteSet *) log_rewrite_set_new(log_template_ref(self->value_template));
   cloned->super.value_handle = self->super.value_handle;
   cloned->super.condition = self->super.condition ? filter_expr_ref(self->super.condition) : NULL;
@@ -251,6 +264,5 @@ log_rewrite_set_new(LogTemplate *template)
   self->super.super.clone = log_rewrite_set_clone;
   self->super.process = log_rewrite_set_process;
   self->value_template = log_template_ref(template);
-
   return &self->super;
 }

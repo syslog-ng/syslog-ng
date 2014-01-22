@@ -44,6 +44,7 @@ struct _LogRewrite
 
 /* LogRewrite, abstract class */
 void log_rewrite_set_condition(LogRewrite *s, FilterExprNode *condition);
+gboolean log_rewrite_set_handle(LogRewrite *s, const gchar *value_name);
 void log_rewrite_free_method(LogPipe *self);
 
 /* LogRewriteSet */
