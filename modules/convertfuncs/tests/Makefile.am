@@ -1,10 +1,6 @@
 AM_CFLAGS = -I$(top_srcdir)/lib -I../../../lib -I$(top_srcdir)/modules/convertfuncs -I.. -I${top_srcdir}/libtest @CFLAGS_NOWARN_POINTER_SIGN@
-if IS_WINDOWS
-AM_LDFLAGS = -dlpreopen ../../syslogformat/libsyslogformat.la
-else
-AM_LDFLAGS = ../../syslogformat/libsyslogformat.la
-endif
-LDADD = ../libconvertfuncs.la @TOOL_DEPS_LIBS@ @OPENSSL_LIBS@ $(top_builddir)/libtest/libsyslog-ng-test.a $(top_builddir)/lib/libsyslog-ng.la
+AM_LDFLAGS = -dlpreopen ../../syslogformat/libsyslogformat.la -dlpreopen ../libconvertfuncs.la
+LDADD = $(top_builddir)/lib/libsyslog-ng.la $(top_builddir)/libtest/libsyslog-ng-test.a  @TOOL_DEPS_LIBS@ @OPENSSL_LIBS@
 
 check_PROGRAMS = test_replace test_format_snare test_lowercase test_cut test_ipv4toint test_formatwelf
 
