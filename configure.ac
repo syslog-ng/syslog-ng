@@ -224,10 +224,6 @@ else
   wcmp_date="0"
 fi
 
-AC_ARG_ENABLE(man-pages,
-              [  --disable-man-pages     Disable building the man pages (default: on)]
-              ,,enable_man_pages="yes")
-
 patheval()
 {
         OLD=$1
@@ -253,11 +249,6 @@ AM_PROG_LEX
 AC_PROG_MAKE_SET
 PKG_PROG_PKG_CONFIG
 LT_INIT([dlopen disable-static])
-
-AC_PATH_PROG([XSLTPROC], [xsltproc])
-if test "x${XSLTPROC}" = "x"; then
-   enable_man_pages="no"
-fi
 
 dnl ***************************************************************************
 dnl Validate yacc
@@ -1228,7 +1219,6 @@ AM_CONDITIONAL(WITH_EMBEDDED_CRYPTO, [test "$with_embedded_crypto" = "yes"])
 AM_CONDITIONAL(IVYKIS_INTERNAL, [test "x$IVYKIS_SUBDIRS" != "x"])
 AM_CONDITIONAL(LIBMONGO_INTERNAL, [test "x$LIBMONGO_SUBDIRS" != "x"])
 AM_CONDITIONAL(LIBRABBITMQ_INTERNAL, [test "x$LIBRABBITMQ_SUBDIRS" != "x"])
-AM_CONDITIONAL(ENABLE_MAN_PAGES, [test "x$enable_man_pages" = "xyes"])
 
 # substitution into manual pages
 expanded_sysconfdir=[`patheval $sysconfdir | sed -e 's/-/\\\\-/g'`]
