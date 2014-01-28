@@ -803,9 +803,8 @@ log_proto_get_char_size_for_fixed_encoding(const gchar *encoding)
 static LogProtoBufferedServerState *
 log_proto_buffered_server_get_state(LogProtoBufferedServer *self)
 {
-  if (self->persist_state)
+  if (self->state_handler)
     {
-      g_assert(self->state_handler != 0);
       return (LogProtoBufferedServerState *)state_handler_get_state(self->state_handler);
     }
   if (G_UNLIKELY(!self->state1))
