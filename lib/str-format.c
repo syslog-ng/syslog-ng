@@ -221,6 +221,35 @@ format_int32_padded(GString *result, gint field_len, gchar pad_char, gint base, 
   return format_padded_int32(result, field_len, pad_char, 1, base, value);
 }
 
+gchar *
+format_hex_string_with_delimiter(gpointer data, gsize data_len, gchar *result, gsize result_len, gchar delimiter)
+{
+  gint i;
+  gint pos = 0;
+  guchar *str = (guchar *) data;
+
+  for (i = 0; i < data_len && result_len - pos >= 2; i++)
+    {
+      if ( (delimiter != 0) && (i < data_len - 1))
+      {
+        g_snprintf(result + pos, 4, "%02x%c", str[i], delimiter);
+        pos += 3;
+      }
+      else
+      {
+        g_snprintf(result + pos, 3, "%02x", str[i]);
+        pos += 2;
+      }
+    }
+  return result;
+}
+
+gchar *
+format_hex_string(gpointer data, gsize data_len, gchar *result, gsize result_len)
+{
+  return format_hex_string_with_delimiter(data, data_len, result, result_len, 0);
+};
+
 /* parse 32 bit ints */
 
 gboolean
