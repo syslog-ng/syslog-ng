@@ -102,7 +102,7 @@ void
 nv_registry_add_alias(NVRegistry *self, NVHandle handle, const gchar *alias)
 {
   g_static_mutex_lock(&nv_registry_lock);
-  g_hash_table_insert(self->name_map, (gchar *) alias, GUINT_TO_POINTER((glong) handle));
+  g_hash_table_insert(self->name_map, g_strdup(alias), GUINT_TO_POINTER((glong) handle));
   g_static_mutex_unlock(&nv_registry_lock);
 }
 
@@ -124,7 +124,7 @@ nv_registry_new(const gchar **static_names)
   NVRegistry *self = g_new0(NVRegistry, 1);
   gint i;
 
-  self->name_map = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, NULL);
+  self->name_map = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
   self->names = g_array_new(FALSE, FALSE, sizeof(NVHandleDesc));
   for (i = 0; static_names[i]; i++)
     {
@@ -136,10 +136,6 @@ nv_registry_new(const gchar **static_names)
 void
 nv_registry_free(NVRegistry *self)
 {
-  gint i;
-
-  for (i = 0; i < self->names->len; i++)
-    g_free(g_array_index(self->names, NVHandleDesc, i).name);
   g_array_free(self->names, TRUE);
   g_hash_table_destroy(self->name_map);
   g_free(self);
