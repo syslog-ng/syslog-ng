@@ -293,7 +293,7 @@ _map_header_of_entry_from_handle(PersistState *self, PersistEntryHandle handle)
       return NULL;
     }
   return header;
-};
+}
 
 static void
 _free_value(PersistState *self, PersistEntryHandle handle)
@@ -732,7 +732,7 @@ _map_header_of_entry(PersistState *self, const gchar *persist_name, PersistEntry
 
   return _map_header_of_entry_from_handle(self, *handle);
 
-};
+}
 
 PersistEntryHandle
 persist_state_alloc_entry(PersistState *self, const gchar *persist_name, gsize alloc_size)
@@ -783,7 +783,7 @@ persist_state_remove_entry(PersistState *self, const gchar *key)
 
   _free_value(self, handle);
   return TRUE;
-};
+}
 
 typedef struct _PersistStateKeysForeachData
 {
@@ -818,7 +818,7 @@ persist_state_foreach_entry(PersistState *self, PersistStateForeachFunc func, gp
   data.storage = self;
 
   g_hash_table_foreach(self->keys, _foreach_entry_func, &data);
-};
+}
 
 /* easier to use string based interface */
 gchar *
@@ -944,7 +944,7 @@ _destroy(PersistState *self)
   g_free(self->temp_filename);
   g_free(self->commited_filename);
   g_hash_table_destroy(self->keys);
-};
+}
 
 static void
 _init(PersistState* self, gchar* commited_filename, gchar* temp_filename)
@@ -957,7 +957,8 @@ _init(PersistState* self, gchar* commited_filename, gchar* temp_filename)
   self->fd = -1;
   self->commited_filename = commited_filename;
   self->temp_filename = temp_filename;
-};
+}
+
 /*
  * This routine should revert to the persist_state_new() state,
  * e.g. just like the PersistState object wasn't started yet.
