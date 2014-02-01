@@ -43,6 +43,9 @@ void persist_state_alloc_string(PersistState *self, const gchar *persist_name, c
 
 void persist_state_free_entry(PersistEntryHandle handle);
 
+typedef void (*PersistStateForeachFunc)(gchar* name, gint entry_size, gpointer entry, gpointer userdata);
+void persist_state_foreach_entry(PersistState *self, PersistStateForeachFunc func, gpointer userdata);
+
 gboolean persist_state_start(PersistState *self);
 
 const gchar *persist_state_get_filename(PersistState *self);
