@@ -38,6 +38,7 @@
 #include "transport/transport-file.h"
 #include "logproto/logproto-text-server.h"
 #include "reloc.h"
+#include "pathutils.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -271,11 +272,11 @@ pdbtool_merge_dir(const gchar *dir, gboolean recursive, GString *merged)
     {
       gchar *full_name = g_build_filename(dir, filename, NULL);
 
-      if (recursive && g_file_test(full_name, G_FILE_TEST_IS_DIR))
+      if (recursive && is_file_directory(full_name))
         {
           ok = pdbtool_merge_dir(full_name, recursive, merged);
         }
-      else if (g_file_test(full_name, G_FILE_TEST_IS_REGULAR) && (!merge_glob || g_pattern_match_simple(merge_glob, filename)))
+      else if (is_file_regular(full_name) && (!merge_glob || g_pattern_match_simple(merge_glob, filename)))
         {
           ok = pdbtool_merge_file(full_name, merged);
         }

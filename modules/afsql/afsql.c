@@ -29,6 +29,7 @@
 #include "template/templates.h"
 #include "messages.h"
 #include "misc.h"
+#include "str-format.h"
 #include "stats/stats-registry.h"
 #include "apphook.h"
 #include "timeutils.h"

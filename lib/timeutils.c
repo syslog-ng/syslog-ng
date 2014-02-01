@@ -26,6 +26,7 @@
 #include "messages.h"
 #include "tls-support.h"
 #include "reloc.h"
+#include "pathutils.h"
 
 #include <ctype.h>
 #include <string.h>
@@ -83,7 +84,7 @@ get_time_zone_basedir(void)
 
   if (!time_zone_basedir)
     {
-      for (i = 0; time_zone_path_list[i] != NULL && !g_file_test(get_installation_path_for(time_zone_path_list[i]), G_FILE_TEST_IS_DIR); i++)
+      for (i = 0; time_zone_path_list[i] != NULL && !is_file_directory(get_installation_path_for(time_zone_path_list[i])); i++)
         ;
       time_zone_basedir = time_zone_path_list[i];
     }
