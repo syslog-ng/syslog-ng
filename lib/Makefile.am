@@ -81,11 +81,13 @@ pkginclude_HEADERS			+= \
 	lib/parse-number.h		\
 	lib/persist-state.h		\
 	lib/persistable-state-header.h  \
+	lib/persistable-state-presenter.h		\
 	lib/plugin.h			\
 	lib/plugin-types.h		\
 	lib/poll-events.h		\
 	lib/poll-fd-events.h		\
 	lib/pragma-parser.h		\
+	lib/presented-persistable-state.h			\
 	lib/reloc.h			\
 	lib/rcptid.h			\
 	lib/run-id.h			\
@@ -163,6 +165,7 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/poll-events.c		\
 	lib/poll-fd-events.c		\
 	lib/pragma-parser.c		\
+	lib/persistable-state-presenter.c		\
 	lib/rcptid.c			\
 	lib/reloc.c			\
 	lib/run-id.c			\
