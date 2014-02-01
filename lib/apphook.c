@@ -130,6 +130,7 @@ app_startup(void)
   log_tags_global_init();
   log_source_global_init();
   log_template_global_init();
+  persistable_state_presenter_global_init();
 }
 
 void

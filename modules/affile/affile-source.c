@@ -247,6 +247,21 @@ affile_sd_construct_proto(AFFileSourceDriver *self, gint fd)
     }
 }
 
+static void
+affile_sd_skip_old_messages(PersistState* state, gpointer data)
+{
+  AFFileSourceDriver *self = (AFFileSourceDriver*) data;
+  struct stat st;
+
+  if (stat(self->filename->str, &st) == -1)
+    {
+      return;
+    }
+
+  gchar* name = affile_sd_format_persist_name(self);
+  log_proto_buffered_server_set_state_values(state, name, st.st_size, st.st_ino);
+}
+
 /* NOTE: runs in the main thread */
 static void
 affile_sd_notify(LogPipe *s, gint notify_code, gpointer user_data)
@@ -464,6 +479,7 @@ LogDriver *
 affile_sd_new(gchar *filename)
 {
   AFFileSourceDriver *self = affile_sd_new_instance(filename);
+  cfg_register_generate_persist_callback(affile_sd_skip_old_messages, self);
 
   self->file_open_options.is_pipe = FALSE;
   self->file_open_options.open_flags = DEFAULT_SD_OPEN_FLAGS;

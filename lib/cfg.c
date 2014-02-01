@@ -294,6 +294,56 @@ cfg_allow_config_dups(GlobalConfig *self)
     }
 }
 
+/**
+*
+* persist_registered_callbacks is not guarded by lock, because it should be modified only from the main thread.
+*
+* Adding elements is done by the source driver constructors, foreaching on element is done by cfg_generate_persist_file,
+* which is only called from the main thread during start time, or from the persist-tool.
+*
+*/
+
+GList* persist_registered_callbacks = NULL;
+
+typedef struct _GeneratePersistCallback {
+  GeneratePersistCallbackFunc callback_func;
+  gpointer userdata;
+} GeneratePersistCallback;
+
+void
+cfg_generate_persist_file_foreach_callback(gpointer data, gpointer userdata)
+{
+  PersistState* state = (PersistState*) userdata;
+  GeneratePersistCallback* callback_data = (GeneratePersistCallback*) data;
+  callback_data->callback_func(state, callback_data->userdata);
+};
+
+void
+cfg_generate_persist_file(PersistState* state)
+{
+  g_list_foreach(persist_registered_callbacks, cfg_generate_persist_file_foreach_callback, state);
+};
+
+void
+cfg_register_generate_persist_callback(GeneratePersistCallbackFunc func, gpointer userdata)
+{
+  GeneratePersistCallback* callback = g_new0(GeneratePersistCallback, 1);
+  callback->callback_func = func;
+  callback->userdata = userdata;
+  persist_registered_callbacks = g_list_append(persist_registered_callbacks, callback);
+};
+
+void
+cfg_destroy_generate_persist_callbacks()
+{
+  GList* head;
+  for(head = persist_registered_callbacks; head; head = g_list_next(head))
+  {
+    g_free(head->data);
+  }
+  g_list_free(persist_registered_callbacks);
+};
+
 GlobalConfig *
 cfg_new(gint version)
 {
@@ -394,6 +444,29 @@ cfg_dump_processed_config(GString *preprocess_output, gchar *output_filename)
       fprintf(output_file, "%s", preprocess_output->str);
       fclose(output_file);
     }
+}
+
+gboolean
+cfg_load_config(GlobalConfig *self, gchar *config_string, gboolean syntax_only, gchar *preprocess_into)
+{
+  gint res;
+  CfgLexer *lexer;
+  GString *preprocess_output = g_string_sized_new(8192);
+
+  lexer = cfg_lexer_new_buffer(config_string, strlen(config_string));
+  lexer->preprocess_output = preprocess_output;
+
+  res = cfg_run_parser(self, lexer, &main_parser, (gpointer *) &self, NULL);
+  if (preprocess_into)
+    {
+      cfg_dump_processed_config(preprocess_output, preprocess_into);
+    }
+  g_string_free(preprocess_output, TRUE);
+  if (res)
+    {
+      return TRUE;
+    }
+  return FALSE;
 }
 
 gboolean

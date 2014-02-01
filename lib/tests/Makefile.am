@@ -9,7 +9,9 @@ lib_tests_TESTS		= \
 	lib/tests/test_hostname		\
 	lib/tests/test_rcptid		\
 	lib/tests/test_lexer        \
-	lib/tests/test_runid
+	lib/tests/test_str_format   \
+	lib/tests/test_runid        \
+	lib/tests/test_generate_persist
 
 check_PROGRAMS		+= ${lib_tests_TESTS}
 
@@ -73,6 +75,16 @@ lib_tests_test_lexer_LDADD	=	\
 lib_tests_test_runid_CFLAGS	=	\
 	$(TEST_CFLAGS)
 lib_tests_test_runid_LDADD	=	\
+	$(TEST_LDADD)
+
+lib_tests_test_str_format_CFLAGS	=	\
+	$(TEST_CFLAGS)
+lib_tests_test_str_format_LDADD	=	\
+	$(TEST_LDADD)
+
+lib_tests_test_generate_persist_CFLAGS	=	\
+	$(TEST_CFLAGS)
+lib_tests_test_generate_persist_LDADD	=	\
 	$(TEST_LDADD)
 
 CLEANFILES				+= \

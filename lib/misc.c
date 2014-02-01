@@ -186,21 +186,6 @@ find_file_in_path(const gchar *path, const gchar *filename, GFileTest test)
   return fullname;
 }
 
-gchar *
-format_hex_string(gpointer data, gsize data_len, gchar *result, gsize result_len)
-{
-  gint i;
-  gint pos = 0;
-  guchar *str = (guchar *) data;
-
-  for (i = 0; i < data_len && result_len - pos > 2; i++)
-    {
-      g_snprintf(result + pos, 3, "%02x", str[i]);
-      pos += 2;
-    }   
-  return result;
-}
-
 /**
  * Find CR or LF characters in the log message.
  *

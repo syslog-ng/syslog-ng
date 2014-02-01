@@ -25,6 +25,8 @@
 #include "messages.h"
 #include "serialize.h"
 #include "compat/string.h"
+#include "presented-persistable-state.h"
+#include "persistable-state-presenter.h"
 
 #include <sys/stat.h>
 #include <stdlib.h>
@@ -50,6 +52,18 @@ log_proto_buffered_server_put_state(LogProtoBufferedServer *self)
   if (self->persist_state && self->persist_handle)
     persist_state_unmap_entry(self->persist_state, self->persist_handle);
 }
+
+void
+log_proto_buffered_server_set_state_values(PersistState* storage, gchar* persist_name, guint64 file_size, guint64 inode)
+{
+  guint32 size = sizeof(LogProtoBufferedServerState);
+  PersistEntryHandle handle = persist_state_alloc_entry(storage, persist_name, size);
+  LogProtoBufferedServerState* state = persist_state_map_entry(storage, handle);
+  state->file_size = file_size;
+  state->raw_stream_pos = file_size;
+  state->file_inode = inode;
+  persist_state_unmap_entry(storage, handle);
+};
 
 static gboolean
 log_proto_buffered_server_convert_from_raw(LogProtoBufferedServer *self, const guchar *raw_buffer, gsize raw_buffer_len)
@@ -835,3 +849,63 @@ log_proto_buffered_server_init(LogProtoBufferedServer *self, LogTransport *trans
     self->convert = g_iconv_open("utf-8", options->encoding);
   self->stream_based = TRUE;
 }
+
+gboolean
+log_proto_buffered_server_state_presenter_dump(PersistableStateHeader* header, PresentedPersistableState* representation )
+{
+   LogProtoBufferedServerState* data = (LogProtoBufferedServerState*) header;
+   presented_persistable_state_add_int(representation, "version", data->header.version);
+   presented_persistable_state_add_boolean(representation, "big_endian",data->header.big_endian);
+   presented_persistable_state_add_int(representation, "raw_buffer_leftover_size", data->raw_buffer_leftover_size);
+   presented_persistable_state_add_int(representation, "buffer_pos", data->buffer_pos);
+   presented_persistable_state_add_int(representation, "pending_buffer_end", data->pending_buffer_end);
+   presented_persistable_state_add_int(representation, "buffer_size", data->buffer_size);
+   presented_persistable_state_add_int(representation, "buffer_cached_eol", data->__deprecated_buffer_cached_eol);
+   presented_persistable_state_add_int(representation, "pending_buffer_pos", data->pending_buffer_pos);
+   presented_persistable_state_add_int64(representation, "raw_stream_pos", data->raw_stream_pos);
+   presented_persistable_state_add_int64(representation, "pending_raw_stream_pos", data->pending_raw_stream_pos);
+   presented_persistable_state_add_int(representation, "raw_buffer_size", data->raw_buffer_size);
+   presented_persistable_state_add_int(representation, "pending_raw_buffer_size" ,data->pending_raw_buffer_size);
+   presented_persistable_state_add_int64(representation, "file_size", data->file_size);
+   presented_persistable_state_add_int64(representation, "file_inode", data->file_inode);
+   presented_persistable_state_add_int(representation, "run_id", data->run_id);
+   return TRUE;
+};
+
+gboolean
+log_proto_buffered_server_state_presenter_load(PersistableStateHeader* header, PresentedPersistableState* representation)
+{
+  LogProtoBufferedServerState* data = (LogProtoBufferedServerState*) header;
+  data->header.version = presented_persistable_state_get_int(representation, "version");
+  data->header.big_endian = presented_persistable_state_get_boolean(representation, "big_endian");
+  data->raw_buffer_leftover_size = presented_persistable_state_get_int(representation, "raw_buffer_leftover_size");
+  data->buffer_pos = presented_persistable_state_get_int(representation, "buffer_pos");
+  data->pending_buffer_end =  presented_persistable_state_get_int(representation, "pending_buffer_end");
+  data->buffer_size = presented_persistable_state_get_int(representation, "buffer_size");
+  data->__deprecated_buffer_cached_eol = presented_persistable_state_get_int(representation, "buffer_cached_eol");
+  data->pending_buffer_pos = presented_persistable_state_get_int(representation, "pending_buffer_pos");
+  data->raw_stream_pos = presented_persistable_state_get_int64(representation, "raw_stream_pos");
+  data->pending_raw_stream_pos = presented_persistable_state_get_int64(representation, "pending_raw_stream_pos");
+  data->raw_buffer_size = presented_persistable_state_get_int(representation, "raw_buffer_size");
+  data->pending_raw_buffer_size = presented_persistable_state_get_int(representation, "pending_raw_buffer_size");
+  data->file_size = presented_persistable_state_get_int64(representation, "file_size");
+  data->file_inode = presented_persistable_state_get_int64(representation, "file_inode");
+  data->run_id = presented_persistable_state_get_int(representation, "run_id");
+  return TRUE;
+};
+
+PersistEntryHandle
+log_proto_buffered_server_state_presenter_alloc(PersistState* state, char* name)
+{
+  return log_proto_buffered_server_alloc_state(NULL, state, name);
+};
+
+PersistableStatePresenter*
+log_proto_buffered_server_state_presenter_new(const gchar* name)
+{
+  PersistableStatePresenter* presenter = g_new0(PersistableStatePresenter, 1);
+  presenter->load = log_proto_buffered_server_state_presenter_load;
+  presenter->alloc = log_proto_buffered_server_state_presenter_alloc;
+  presenter->dump = log_proto_buffered_server_state_presenter_dump;
+  return presenter;
+};

@@ -108,6 +108,7 @@ include lib/Makefile.am
 include modules/Makefile.am
 include syslog-ng/Makefile.am
 include syslog-ng-ctl/Makefile.am
+include persist-tool/Makefile.am
 include scripts/Makefile.am
 include tests/Makefile.am
 include doc/Makefile.am

@@ -26,6 +26,7 @@
 
 #include "logproto-server.h"
 #include "persistable-state-header.h"
+#include "persistable-state-presenter.h"
 
 enum
 {
@@ -58,6 +59,7 @@ typedef struct _LogProtoBufferedServerState
 
   gint64 file_size;
   gint64 file_inode;
+  gint32 run_id;
 } LogProtoBufferedServerState;
 
 typedef struct _LogProtoBufferedServer LogProtoBufferedServer;
@@ -108,4 +110,6 @@ void log_proto_buffered_server_put_state(LogProtoBufferedServer *self);
 void log_proto_buffered_server_init(LogProtoBufferedServer *self, LogTransport *transport, const LogProtoServerOptions *options);
 void log_proto_buffered_server_free_method(LogProtoServer *s);
 
+PersistableStatePresenter* log_proto_buffered_server_state_presenter_new(const gchar* name);
+void log_proto_buffered_server_set_state_values(PersistState* storage, gchar* persist_name, guint64 file_size, guint64 inode);
 #endif

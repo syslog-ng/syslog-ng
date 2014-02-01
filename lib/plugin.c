@@ -27,6 +27,7 @@
 #include "messages.h"
 #include "cfg-lexer.h"
 #include "plugin-types.h"
+#include "pathutils.h"
 
 #include <gmodule.h>
 #include <string.h>
@@ -260,7 +261,7 @@ plugin_dlopen_module(const gchar *module_name, const gchar *module_path)
   while (module_path_dirs && module_path_dirs[i])
     {
       plugin_module_name = g_module_build_path(module_path_dirs[i], module_name);
-      if (g_file_test(plugin_module_name, G_FILE_TEST_EXISTS))
+      if (is_file_regular(plugin_module_name))
         break;
 
       /* also check if a libtool archive exists (for example in the build directory) */
@@ -273,7 +274,7 @@ plugin_dlopen_module(const gchar *module_name, const gchar *module_path)
           g_free(plugin_module_name);
           plugin_module_name = p;
         }
-      if (g_file_test(plugin_module_name, G_FILE_TEST_EXISTS))
+      if (is_file_regular(plugin_module_name))
         break;
 
       /* On AIX the modules in .a files */
@@ -286,7 +287,7 @@ plugin_dlopen_module(const gchar *module_name, const gchar *module_path)
           g_free(plugin_module_name);
           plugin_module_name = p;
         }
-      if (g_file_test(plugin_module_name, G_FILE_TEST_EXISTS))
+      if (is_file_regular(plugin_module_name))
         break;
 #endif
 
