@@ -301,6 +301,7 @@ affile_dw_set_owner(AFFileDestWriter *self, AFFileDestDriver *owner)
   log_pipe_set_config(&self->super, cfg);
   if (self->writer)
     {
+      log_pipe_set_config((LogPipe *) self->writer, cfg);
       log_writer_set_options(self->writer,
                              &self->super,
                              &owner->writer_options,
