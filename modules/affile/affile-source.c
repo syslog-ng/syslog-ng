@@ -468,7 +468,7 @@ affile_sd_new(gchar *filename, GlobalConfig *cfg)
   self->file_open_options.is_pipe = FALSE;
   self->file_open_options.open_flags = DEFAULT_SD_OPEN_FLAGS;
 
-  if (cfg_is_config_version_older(configuration, 0x0300))
+  if (cfg_is_config_version_older(cfg, 0x0300))
     {
       static gboolean warned = FALSE;
       
@@ -500,7 +500,7 @@ afpipe_sd_new(gchar *filename, GlobalConfig *cfg)
   self->file_open_options.is_pipe = TRUE;
   self->file_open_options.open_flags = DEFAULT_SD_OPEN_FLAGS_PIPE;
 
-  if (cfg_is_config_version_older(configuration, 0x0302))
+  if (cfg_is_config_version_older(cfg, 0x0302))
     {
       static gboolean warned = FALSE;
       if (!warned)

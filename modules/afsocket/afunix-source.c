@@ -252,7 +252,7 @@ afunix_sd_new_instance(TransportMapper *transport_mapper, gchar *filename, Globa
   file_perm_options_defaults(&self->file_perm_options);
   self->file_perm_options.file_perm = 0666;
 
-  afunix_sd_adjust_reader_options(self, configuration);
+  afunix_sd_adjust_reader_options(self, cfg);
   return self;
 }
 
