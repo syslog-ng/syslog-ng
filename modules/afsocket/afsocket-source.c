@@ -145,13 +145,17 @@ afsocket_sc_notify(LogPipe *s, gint notify_code, gpointer user_data)
 static void
 afsocket_sc_set_owner(AFSocketSourceConnection *self, AFSocketSourceDriver *owner)
 {
+  GlobalConfig *cfg = log_pipe_get_config(&owner->super.super.super);
+
   if (self->owner)
-    {
-      log_pipe_unref(&self->owner->super.super.super);
-    }
+    log_pipe_unref(&self->owner->super.super.super);
+
   log_pipe_ref(&owner->super.super.super);
   self->owner = owner;
-  log_pipe_set_config(&self->super, owner->super.super.super.cfg);
+
+  log_pipe_set_config(&self->super, cfg);
+  if (self->reader)
+    log_pipe_set_config((LogPipe *) self->reader, cfg);
 
   log_pipe_append(&self->super, &owner->super.super.super);
 }
