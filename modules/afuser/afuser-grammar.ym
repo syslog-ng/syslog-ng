@@ -62,7 +62,7 @@ start
         ;
 
 dest_afuser
-	: KW_USERTTY '(' string ')'		{ $$ = afuser_dd_new($3); free($3); }
+	: KW_USERTTY '(' string ')'		{ $$ = afuser_dd_new($3, configuration); free($3); }
 	;
 
 /* INCLUDE_RULES */

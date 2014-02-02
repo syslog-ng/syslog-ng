@@ -28,7 +28,7 @@
   do                                                            \
     {                                                           \
       testcase_begin("%s(%s)", func, args);                     \
-      json_parser = json_parser_new();                          \
+      json_parser = json_parser_new(NULL);                      \
     }                                                           \
   while (0)
 

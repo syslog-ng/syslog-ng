@@ -75,7 +75,7 @@ log_filter_pipe_clone(LogPipe *s)
 {
   LogFilterPipe *self = (LogFilterPipe *) s;
 
-  return log_filter_pipe_new(filter_expr_ref(self->expr));
+  return log_filter_pipe_new(filter_expr_ref(self->expr), s->cfg);
 }
 
 static void
@@ -89,11 +89,11 @@ log_filter_pipe_free(LogPipe *s)
 }
 
 LogPipe *
-log_filter_pipe_new(FilterExprNode *expr)
+log_filter_pipe_new(FilterExprNode *expr, GlobalConfig *cfg)
 {
   LogFilterPipe *self = g_new0(LogFilterPipe, 1);
 
-  log_pipe_init_instance(&self->super);
+  log_pipe_init_instance(&self->super, cfg);
   self->super.init = log_filter_pipe_init;
   self->super.queue = log_filter_pipe_queue;
   self->super.free_fn = log_filter_pipe_free;

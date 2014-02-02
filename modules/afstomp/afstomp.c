@@ -398,7 +398,7 @@ afstomp_dd_new(GlobalConfig *cfg)
 {
   STOMPDestDriver *self = g_new0(STOMPDestDriver, 1);
 
-  log_threaded_dest_driver_init_instance(&self->super);
+  log_threaded_dest_driver_init_instance(&self->super, cfg);
   self->super.super.super.super.init = afstomp_dd_init;
   self->super.super.super.super.free_fn = afstomp_dd_free;
 

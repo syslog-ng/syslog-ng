@@ -34,7 +34,7 @@ typedef struct _LogDBParser LogDBParser;
 
 void log_db_parser_set_db_file(LogDBParser *self, const gchar *db_file);
 void log_db_parser_set_inject_mode(LogDBParser *self, const gchar *inject_mode);
-LogParser *log_db_parser_new(void);
+LogParser *log_db_parser_new(GlobalConfig *cfg);
 
 void log_pattern_database_init(void);
 

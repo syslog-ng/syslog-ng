@@ -104,9 +104,9 @@ log_driver_free(LogPipe *s)
 
 /* NOTE: intentionally static, as only LogSrcDriver or LogDestDriver will derive from LogDriver */
 static void
-log_driver_init_instance(LogDriver *self)
+log_driver_init_instance(LogDriver *self, GlobalConfig *cfg)
 {
-  log_pipe_init_instance(&self->super);
+  log_pipe_init_instance(&self->super, cfg);
   self->super.free_fn = log_driver_free;
   self->super.init = log_driver_init_method;
   self->super.deinit = log_driver_deinit_method;
@@ -171,9 +171,9 @@ log_src_driver_queue_method(LogPipe *s, LogMessage *msg, const LogPathOptions *p
 }
 
 void
-log_src_driver_init_instance(LogSrcDriver *self)
+log_src_driver_init_instance(LogSrcDriver *self, GlobalConfig *cfg)
 {
-  log_driver_init_instance(&self->super);
+  log_driver_init_instance(&self->super, cfg);
   self->super.super.init = log_src_driver_init_method;
   self->super.super.deinit = log_src_driver_deinit_method;
   self->super.super.queue = log_src_driver_queue_method;
@@ -284,9 +284,9 @@ log_dest_driver_deinit_method(LogPipe *s)
 }
 
 void
-log_dest_driver_init_instance(LogDestDriver *self)
+log_dest_driver_init_instance(LogDestDriver *self, GlobalConfig *cfg)
 {
-  log_driver_init_instance(&self->super);
+  log_driver_init_instance(&self->super, cfg);
   self->super.super.init = log_dest_driver_init_method;
   self->super.super.deinit = log_dest_driver_deinit_method;
   self->super.super.queue = log_dest_driver_queue_method;

@@ -165,11 +165,11 @@ afuser_dd_free(LogPipe *s)
 }
 
 LogDriver *
-afuser_dd_new(gchar *user)
+afuser_dd_new(gchar *user, GlobalConfig *cfg)
 {
   AFUserDestDriver *self = g_new0(AFUserDestDriver, 1);
   
-  log_dest_driver_init_instance(&self->super);
+  log_dest_driver_init_instance(&self->super, cfg);
   self->super.super.super.queue = afuser_dd_queue;
   self->super.super.super.free_fn = afuser_dd_free;
   self->username = g_string_new(user);

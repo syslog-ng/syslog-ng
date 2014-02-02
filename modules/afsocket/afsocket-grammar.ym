@@ -224,7 +224,7 @@ source_afunix
 source_afunix_dgram_params
 	: string
 	  {
-	    AFUnixSourceDriver *d = afunix_sd_new_dgram($1);
+	    AFUnixSourceDriver *d = afunix_sd_new_dgram($1, configuration);
 
             afunix_grammar_set_source_driver(d);
 	    free($1);
@@ -235,7 +235,7 @@ source_afunix_dgram_params
 source_afunix_stream_params
 	: string
 	  {
-	    AFUnixSourceDriver *d = afunix_sd_new_stream($1);
+	    AFUnixSourceDriver *d = afunix_sd_new_stream($1, configuration);
 
             afunix_grammar_set_source_driver(d);
 	    free($1);
@@ -267,7 +267,7 @@ source_afinet
 source_afinet_udp_params
         :
           {
-            AFInetSourceDriver *d = afinet_sd_new_udp();
+            AFInetSourceDriver *d = afinet_sd_new_udp(configuration);
 
             afinet_grammar_set_source_driver(d);
 	  }
@@ -277,7 +277,7 @@ source_afinet_udp_params
 source_afinet_udp6_params
         :
           {
-            AFInetSourceDriver *d = afinet_sd_new_udp6();
+            AFInetSourceDriver *d = afinet_sd_new_udp6(configuration);
 
             afinet_grammar_set_source_driver(d);
           }
@@ -305,7 +305,7 @@ source_afinet_option
 source_afinet_tcp_params
 	:
 	  {
-	    AFInetSourceDriver *d = afinet_sd_new_tcp();
+	    AFInetSourceDriver *d = afinet_sd_new_tcp(configuration);
 
 	    afinet_grammar_set_source_driver(d);
 	  }
@@ -315,7 +315,7 @@ source_afinet_tcp_params
 source_afinet_tcp6_params
 	:
 	  {
-	    AFInetSourceDriver *d = afinet_sd_new_tcp6();
+	    AFInetSourceDriver *d = afinet_sd_new_tcp6(configuration);
 
 	    afinet_grammar_set_source_driver(d);
 	  }
@@ -357,7 +357,7 @@ source_afsyslog_params
 	:
 	  {
             /* we use transport(tcp) transport by default */
-            AFInetSourceDriver *d = afinet_sd_new_syslog();
+            AFInetSourceDriver *d = afinet_sd_new_syslog(configuration);
 
             afinet_grammar_set_source_driver(d);
 	  }
@@ -383,7 +383,7 @@ source_afnetwork_params
 	:
 	  {
             /* we use transport(tcp) transport by default */
-            AFInetSourceDriver *d = afinet_sd_new_network();
+            AFInetSourceDriver *d = afinet_sd_new_network(configuration);
 
             afinet_grammar_set_source_driver(d);
 	  }
@@ -425,7 +425,7 @@ dest_afunix
 dest_afunix_dgram_params
 	: string
 	  {
-	    AFUnixDestDriver *d = afunix_dd_new_dgram($1);
+	    AFUnixDestDriver *d = afunix_dd_new_dgram($1, configuration);
 
             afunix_grammar_set_dest_driver(d);
 	    free($1);
@@ -436,7 +436,7 @@ dest_afunix_dgram_params
 dest_afunix_stream_params
 	: string
 	  {
-	    AFUnixDestDriver *d = afunix_dd_new_stream($1);
+	    AFUnixDestDriver *d = afunix_dd_new_stream($1, configuration);
 
             afunix_grammar_set_dest_driver(d);
 	    free($1);
@@ -466,7 +466,7 @@ dest_afinet
 dest_afinet_udp_params
 	: string
 	  {
-	    AFInetDestDriver *d = afinet_dd_new_udp($1);
+	    AFInetDestDriver *d = afinet_dd_new_udp($1, configuration);
 
             afinet_grammar_set_dest_driver(d);
 	    free($1);
@@ -477,7 +477,7 @@ dest_afinet_udp_params
 dest_afinet_udp6_params
 	: string
 	  {
-	    AFInetDestDriver *d = afinet_dd_new_udp6($1);
+	    AFInetDestDriver *d = afinet_dd_new_udp6($1, configuration);
 
 	    afinet_grammar_set_dest_driver(d);
 	    free($1);
@@ -512,7 +512,7 @@ dest_afinet_udp_option
 dest_afinet_tcp_params
 	: string
 	  {
-	    AFInetDestDriver *d = afinet_dd_new_tcp($1);
+	    AFInetDestDriver *d = afinet_dd_new_tcp($1, configuration);
 
             afinet_grammar_set_dest_driver(d);
 	    free($1);
@@ -523,7 +523,7 @@ dest_afinet_tcp_params
 dest_afinet_tcp6_params
 	: string
 	  {
-	    AFInetDestDriver *d = afinet_dd_new_tcp6($1);
+	    AFInetDestDriver *d = afinet_dd_new_tcp6($1, configuration);
 
 	    afinet_grammar_set_dest_driver(d);
 	    free($1);
@@ -563,7 +563,7 @@ dest_afsyslog
 dest_afsyslog_params
         : string
           {
-            AFInetDestDriver *d = afinet_dd_new_syslog($1);
+            AFInetDestDriver *d = afinet_dd_new_syslog($1, configuration);
 
             afinet_grammar_set_dest_driver(d);
 	    free($1);
@@ -589,7 +589,7 @@ dest_afnetwork
 dest_afnetwork_params
         : string
           {
-            AFInetDestDriver *d = afinet_dd_new_network($1);
+            AFInetDestDriver *d = afinet_dd_new_network($1, configuration);
 
             afinet_grammar_set_dest_driver(d);
 	    free($1);

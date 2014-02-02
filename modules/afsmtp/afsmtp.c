@@ -533,11 +533,11 @@ afsmtp_dd_free(LogPipe *d)
  */
 
 LogDriver *
-afsmtp_dd_new(void)
+afsmtp_dd_new(GlobalConfig *cfg)
 {
   AFSMTPDriver *self = g_new0(AFSMTPDriver, 1);
 
-  log_threaded_dest_driver_init_instance(&self->super);
+  log_threaded_dest_driver_init_instance(&self->super, cfg);
   self->super.super.super.super.init = afsmtp_dd_init;
   self->super.super.super.super.free_fn = afsmtp_dd_free;
 

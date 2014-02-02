@@ -43,7 +43,7 @@ struct _LogParser
 };
 
 void log_parser_set_template(LogParser *self, LogTemplate *template);
-void log_parser_init_instance(LogParser *self);
+void log_parser_init_instance(LogParser *self, GlobalConfig *cfg);
 void log_parser_free_method(LogPipe *self);
 
 static inline gboolean
@@ -61,7 +61,7 @@ struct _LogColumnParser
 };
 
 void log_column_parser_set_columns(LogColumnParser *s, GList *fields);
-void log_column_parser_init_instance(LogColumnParser *self);
+void log_column_parser_init_instance(LogColumnParser *self, GlobalConfig *cfg);
 void log_column_parser_free_method(LogPipe *s);
 
 #endif

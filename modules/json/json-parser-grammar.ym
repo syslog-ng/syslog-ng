@@ -67,7 +67,7 @@ start
 parser_expr_json
 	: KW_JSON_PARSER '('
 	  {
-	    last_parser = *instance = (LogParser *) json_parser_new();
+	    last_parser = *instance = (LogParser *) json_parser_new(configuration);
 	  }
 	  parser_json_opts
 	  ')'					{ $$ = last_parser; }

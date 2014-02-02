@@ -513,7 +513,7 @@ cfg_tree_compile_reference(CfgTree *self, LogExprNode *node,
             sub_pipe_tail = referenced_node->aux;
           }
 
-        attach_pipe = log_pipe_new();
+        attach_pipe = log_pipe_new(self->cfg);
         g_ptr_array_add(self->initialized_pipes, attach_pipe);
 
         if (sub_pipe_tail)
@@ -524,7 +524,7 @@ cfg_tree_compile_reference(CfgTree *self, LogExprNode *node,
 
             if (!sub_pipe_tail->pipe_next)
               {
-                mpx = log_multiplexer_new(0);
+                mpx = log_multiplexer_new(0, self->cfg);
                 g_ptr_array_add(self->initialized_pipes, &mpx->super);
                 log_pipe_append(sub_pipe_tail, &mpx->super);
               }
@@ -565,7 +565,7 @@ cfg_tree_compile_reference(CfgTree *self, LogExprNode *node,
            our next chain
         */
 
-        mpx = log_multiplexer_new(0);
+        mpx = log_multiplexer_new(0, self->cfg);
         g_ptr_array_add(self->initialized_pipes, &mpx->super);
 
         if (sub_pipe_head)
@@ -731,7 +731,7 @@ cfg_tree_compile_sequence(CfgTree *self, LogExprNode *node,
 
           if (!source_join_pipe)
             {
-              source_join_pipe = last_pipe = log_pipe_new();
+              source_join_pipe = last_pipe = log_pipe_new(self->cfg);
               g_ptr_array_add(self->initialized_pipes, source_join_pipe);
             }
           log_pipe_append(sub_pipe_tail, source_join_pipe);
@@ -752,7 +752,7 @@ cfg_tree_compile_sequence(CfgTree *self, LogExprNode *node,
   if (!first_pipe && !last_pipe)
     {
       /* this is an empty sequence, insert a do-nothing LogPipe */
-      first_pipe = last_pipe = log_pipe_new();
+      first_pipe = last_pipe = log_pipe_new(self->cfg);
       g_ptr_array_add(self->initialized_pipes, first_pipe);
     }
   
@@ -831,7 +831,7 @@ cfg_tree_compile_junction(CfgTree *self,
             }
           if (!fork_mpx)
             {
-              fork_mpx = log_multiplexer_new(0);
+              fork_mpx = log_multiplexer_new(0, self->cfg);
               g_ptr_array_add(self->initialized_pipes, &fork_mpx->super);
             }
           log_multiplexer_add_next_hop(fork_mpx, sub_pipe_head);
@@ -855,7 +855,7 @@ cfg_tree_compile_junction(CfgTree *self,
         {
           if (!join_pipe)
             {
-              join_pipe = log_pipe_new();
+              join_pipe = log_pipe_new(self->cfg);
               g_ptr_array_add(self->initialized_pipes, join_pipe);
             }
           log_pipe_append(sub_pipe_tail, join_pipe);
@@ -1072,7 +1072,9 @@ cfg_tree_start(CfgTree *self)
    */
   for (i = 0; i < self->initialized_pipes->len; i++)
     {
-      if (!log_pipe_init(g_ptr_array_index(self->initialized_pipes, i), self->cfg))
+      LogPipe *pipe = g_ptr_array_index(self->initialized_pipes, i);
+
+      if (!log_pipe_init(pipe))
         {
           msg_error("Error initializing message pipeline",
                     NULL);

@@ -87,24 +87,24 @@ rewrite_template_content
 rewrite_expr
         : KW_SUBST '(' string rewrite_template_content
           {
-            last_rewrite = log_rewrite_subst_new($4);
+            last_rewrite = log_rewrite_subst_new($4, configuration);
             log_template_unref($4);
           }
           rewrite_subst_opts ')'
           {
             GError *error = NULL;
-            CHECK_ERROR_GERROR(log_rewrite_subst_compile_pattern(last_rewrite, configuration, $3, &error), @3, error, "error compiling search pattern");
+            CHECK_ERROR_GERROR(log_rewrite_subst_compile_pattern(last_rewrite, $3, &error), @3, error, "error compiling search pattern");
             free($3);
             $$ = last_rewrite;
           }
         | KW_SET '(' rewrite_template_content
           {
-            last_rewrite = log_rewrite_set_new($3);
+            last_rewrite = log_rewrite_set_new($3, configuration);
             log_template_unref($3);
           }
           rewrite_expr_opts ')'                 { $$ = last_rewrite; }
-	| KW_SET_TAG '(' string ')'             { $$ = log_rewrite_set_tag_new($3, TRUE); free($3); }
-	| KW_CLEAR_TAG '(' string ')'           { $$ = log_rewrite_set_tag_new($3, FALSE); free($3); }
+	| KW_SET_TAG '(' string ')'             { $$ = log_rewrite_set_tag_new($3, TRUE, configuration); free($3); }
+	| KW_CLEAR_TAG '(' string ')'           { $$ = log_rewrite_set_tag_new($3, FALSE, configuration); free($3); }
         | LL_IDENTIFIER
           {
             Plugin *p;

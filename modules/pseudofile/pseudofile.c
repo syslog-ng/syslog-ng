@@ -203,11 +203,11 @@ pseudofile_dd_free(LogPipe *s)
 }
 
 LogDriver *
-pseudofile_dd_new(gchar *pseudofile_name)
+pseudofile_dd_new(gchar *pseudofile_name, GlobalConfig *cfg)
 {
   PseudoFileDestDriver *self = g_new0(PseudoFileDestDriver, 1);
   
-  log_dest_driver_init_instance(&self->super);
+  log_dest_driver_init_instance(&self->super, cfg);
   log_template_options_defaults(&self->template_options);
   self->super.super.super.init = pseudofile_dd_init;
   self->super.super.super.queue = pseudofile_dd_queue;

@@ -418,11 +418,11 @@ afinet_dd_free(LogPipe *s)
 
 
 static AFInetDestDriver *
-afinet_dd_new_instance(TransportMapper *transport_mapper, gchar *hostname)
+afinet_dd_new_instance(TransportMapper *transport_mapper, gchar *hostname, GlobalConfig *cfg)
 {
   AFInetDestDriver *self = g_new0(AFInetDestDriver, 1);
 
-  afsocket_dd_init_instance(&self->super, socket_options_inet_new(), transport_mapper);
+  afsocket_dd_init_instance(&self->super, socket_options_inet_new(), transport_mapper, cfg);
   self->super.super.super.super.init = afinet_dd_init;
   self->super.super.super.super.queue = afinet_dd_queue;
   self->super.super.super.super.free_fn = afinet_dd_free;
@@ -439,27 +439,27 @@ afinet_dd_new_instance(TransportMapper *transport_mapper, gchar *hostname)
 }
 
 AFInetDestDriver *
-afinet_dd_new_tcp(gchar *host)
+afinet_dd_new_tcp(gchar *host, GlobalConfig *cfg)
 {
-  return afinet_dd_new_instance(transport_mapper_tcp_new(), host);
+  return afinet_dd_new_instance(transport_mapper_tcp_new(), host, cfg);
 }
 
 AFInetDestDriver *
-afinet_dd_new_tcp6(gchar *host)
+afinet_dd_new_tcp6(gchar *host, GlobalConfig *cfg)
 {
-  return afinet_dd_new_instance(transport_mapper_tcp6_new(), host);
+  return afinet_dd_new_instance(transport_mapper_tcp6_new(), host, cfg);
 }
 
 AFInetDestDriver *
-afinet_dd_new_udp(gchar *host)
+afinet_dd_new_udp(gchar *host, GlobalConfig *cfg)
 {
-  return afinet_dd_new_instance(transport_mapper_udp_new(), host);
+  return afinet_dd_new_instance(transport_mapper_udp_new(), host, cfg);
 }
 
 AFInetDestDriver *
-afinet_dd_new_udp6(gchar *host)
+afinet_dd_new_udp6(gchar *host, GlobalConfig *cfg)
 {
-  return afinet_dd_new_instance(transport_mapper_udp6_new(), host);
+  return afinet_dd_new_instance(transport_mapper_udp6_new(), host, cfg);
 }
 
 static LogWriter *
@@ -475,16 +475,16 @@ afinet_dd_syslog_construct_writer(AFSocketDestDriver *s)
 
 
 AFInetDestDriver *
-afinet_dd_new_syslog(gchar *host)
+afinet_dd_new_syslog(gchar *host, GlobalConfig *cfg)
 {
-  AFInetDestDriver *self = afinet_dd_new_instance(transport_mapper_syslog_new(), host);
+  AFInetDestDriver *self = afinet_dd_new_instance(transport_mapper_syslog_new(), host, cfg);
 
   self->super.construct_writer = afinet_dd_syslog_construct_writer;
   return self;
 }
 
 AFInetDestDriver *
-afinet_dd_new_network(gchar *host)
+afinet_dd_new_network(gchar *host, GlobalConfig *cfg)
 {
-  return afinet_dd_new_instance(transport_mapper_network_new(), host);
+  return afinet_dd_new_instance(transport_mapper_network_new(), host, cfg);
 }

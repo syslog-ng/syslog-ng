@@ -119,13 +119,14 @@ afinet_sd_free(LogPipe *s)
 }
 
 static AFInetSourceDriver *
-afinet_sd_new_instance(TransportMapper *transport_mapper)
+afinet_sd_new_instance(TransportMapper *transport_mapper, GlobalConfig *cfg)
 {
   AFInetSourceDriver *self = g_new0(AFInetSourceDriver, 1);
 
   afsocket_sd_init_instance(&self->super,
                             socket_options_inet_new(),
-                            transport_mapper);
+                            transport_mapper,
+                            cfg);
   self->super.super.super.super.init = afinet_sd_init;
   self->super.super.super.super.free_fn = afinet_sd_free;
   self->super.setup_addresses = afinet_sd_setup_addresses;
@@ -133,43 +134,43 @@ afinet_sd_new_instance(TransportMapper *transport_mapper)
 }
 
 AFInetSourceDriver *
-afinet_sd_new_tcp(void)
+afinet_sd_new_tcp(GlobalConfig *cfg)
 {
-  return afinet_sd_new_instance(transport_mapper_tcp_new());
+  return afinet_sd_new_instance(transport_mapper_tcp_new(), cfg);
 }
 
 AFInetSourceDriver *
-afinet_sd_new_tcp6(void)
+afinet_sd_new_tcp6(GlobalConfig *cfg)
 {
-  return afinet_sd_new_instance(transport_mapper_tcp6_new());
-}
-
-
-AFInetSourceDriver *
-afinet_sd_new_udp(void)
-{
-  return afinet_sd_new_instance(transport_mapper_udp_new());
-}
-
-AFInetSourceDriver *
-afinet_sd_new_udp6(void)
-{
-  return afinet_sd_new_instance(transport_mapper_udp6_new());
+  return afinet_sd_new_instance(transport_mapper_tcp6_new(), cfg);
 }
 
 
 AFInetSourceDriver *
-afinet_sd_new_syslog(void)
+afinet_sd_new_udp(GlobalConfig *cfg)
 {
-  AFInetSourceDriver *self = afinet_sd_new_instance(transport_mapper_syslog_new());
+  return afinet_sd_new_instance(transport_mapper_udp_new(), cfg);
+}
+
+AFInetSourceDriver *
+afinet_sd_new_udp6(GlobalConfig *cfg)
+{
+  return afinet_sd_new_instance(transport_mapper_udp6_new(), cfg);
+}
+
+
+AFInetSourceDriver *
+afinet_sd_new_syslog(GlobalConfig *cfg)
+{
+  AFInetSourceDriver *self = afinet_sd_new_instance(transport_mapper_syslog_new(), cfg);
 
   self->super.reader_options.parse_options.flags |= LP_SYSLOG_PROTOCOL;
   return self;
 }
 
 AFInetSourceDriver *
-afinet_sd_new_network(void)
+afinet_sd_new_network(GlobalConfig *cfg)
 {
-  AFInetSourceDriver *self = afinet_sd_new_instance(transport_mapper_network_new());
- return self;
+  AFInetSourceDriver *self = afinet_sd_new_instance(transport_mapper_network_new(), cfg);
+  return self;
 }

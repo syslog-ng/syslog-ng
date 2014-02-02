@@ -1326,11 +1326,11 @@ log_writer_set_options(LogWriter *self, LogPipe *control, LogWriterOptions *opti
 }
 
 LogWriter *
-log_writer_new(guint32 flags)
+log_writer_new(guint32 flags, GlobalConfig *cfg)
 {
   LogWriter *self = g_new0(LogWriter, 1);
   
-  log_pipe_init_instance(&self->super);
+  log_pipe_init_instance(&self->super, cfg);
   self->super.init = log_writer_init;
   self->super.deinit = log_writer_deinit;
   self->super.queue = log_writer_queue;

@@ -96,6 +96,6 @@ gboolean afsocket_sd_init_method(LogPipe *s);
 gboolean afsocket_sd_deinit_method(LogPipe *s);
 void afsocket_sd_free_method(LogPipe *self);
 
-void afsocket_sd_init_instance(AFSocketSourceDriver *self, SocketOptions *socket_options, TransportMapper *transport_mapper);
+void afsocket_sd_init_instance(AFSocketSourceDriver *self, SocketOptions *socket_options, TransportMapper *transport_mapper, GlobalConfig *cfg);
 
 #endif

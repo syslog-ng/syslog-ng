@@ -66,7 +66,7 @@ start
 parser_expr_csv
         : KW_CSV_PARSER '('
           {
-            last_parser = *instance = (LogParser *) log_csv_parser_new();
+            last_parser = *instance = (LogParser *) log_csv_parser_new(configuration);
           }
           parser_csv_opts
           ')'					{ $$ = last_parser; }

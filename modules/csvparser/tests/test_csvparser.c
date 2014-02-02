@@ -82,7 +82,7 @@ testcase(gchar *msg, guint parse_flags, gint max_columns, guint32 flags, gchar *
   parse_options.flags = parse_flags;
   logmsg = log_msg_new(msg, strlen(msg), NULL, &parse_options);
 
-  p = log_csv_parser_new();
+  p = log_csv_parser_new(NULL);
   log_csv_parser_set_flags(p, flags);
   log_column_parser_set_columns(p, string_array_to_list(column_array));
   if (delimiters)

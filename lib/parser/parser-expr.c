@@ -110,9 +110,9 @@ log_parser_free_method(LogPipe *s)
 }
 
 void
-log_parser_init_instance(LogParser *self)
+log_parser_init_instance(LogParser *self, GlobalConfig *cfg)
 {
-  log_pipe_init_instance(&self->super);
+  log_pipe_init_instance(&self->super, cfg);
   self->super.init = log_parser_init;
   self->super.free_fn = log_parser_free_method;
   self->super.queue = log_parser_queue;
@@ -141,8 +141,8 @@ log_column_parser_free_method(LogPipe *s)
 }
 
 void
-log_column_parser_init_instance(LogColumnParser *self)
+log_column_parser_init_instance(LogColumnParser *self, GlobalConfig *cfg)
 {
-  log_parser_init_instance(&self->super);
+  log_parser_init_instance(&self->super, cfg);
   self->super.super.free_fn = log_column_parser_free_method;
 }

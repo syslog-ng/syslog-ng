@@ -583,7 +583,7 @@ source_afinter
 
 source_afinter_params
         : {
-            last_driver = afinter_sd_new();
+            last_driver = afinter_sd_new(configuration);
             last_source_options = &((AFInterSourceDriver *) last_driver)->source_options;
           }
           source_afinter_options { $$ = last_driver; }
@@ -605,7 +605,7 @@ filter_content
 
 	    CHECK_ERROR_WITHOUT_MESSAGE(cfg_parser_parse(&filter_expr_parser, lexer, (gpointer *) &last_filter_expr, NULL), @$);
 
-            $$ = log_expr_node_new_pipe(log_filter_pipe_new(last_filter_expr), &@$);
+            $$ = log_expr_node_new_pipe(log_filter_pipe_new(last_filter_expr, configuration), &@$);
 	  }
 	;
 

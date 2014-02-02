@@ -86,7 +86,7 @@ gboolean log_source_deinit(LogPipe *s);
 
 void log_source_set_options(LogSource *self, LogSourceOptions *options, gint stats_level, gint stats_source, const gchar *stats_id, const gchar *stats_instance, gboolean threaded);
 void log_source_mangle_hostname(LogSource *self, LogMessage *msg);
-void log_source_init_instance(LogSource *self);
+void log_source_init_instance(LogSource *self, GlobalConfig *cfg);
 void log_source_options_defaults(LogSourceOptions *options);
 void log_source_options_init(LogSourceOptions *options, GlobalConfig *cfg, const gchar *group_name);
 void log_source_options_destroy(LogSourceOptions *options);

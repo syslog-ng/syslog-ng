@@ -309,7 +309,7 @@ afsocket_dd_construct_writer_method(AFSocketDestDriver *self)
   if (self->transport_mapper->sock_type == SOCK_STREAM)
     writer_flags |= LW_DETECT_EOF;
 
-  return log_writer_new(writer_flags);
+  return log_writer_new(writer_flags, self->super.super.super.cfg);
 }
 
 static void
@@ -330,7 +330,7 @@ afsocket_dd_setup_writer(AFSocketDestDriver *self)
                          afsocket_dd_stats_instance(self));
   log_writer_set_queue(self->writer, log_dest_driver_acquire_queue(&self->super, afsocket_dd_format_persist_name(self, TRUE)));
 
-  log_pipe_init((LogPipe *) self->writer, NULL);
+  log_pipe_init((LogPipe *) self->writer);
   log_pipe_append(&self->super.super.super, (LogPipe *) self->writer);
 }
 
@@ -429,9 +429,10 @@ afsocket_dd_free(LogPipe *s)
 void
 afsocket_dd_init_instance(AFSocketDestDriver *self,
                           SocketOptions *socket_options,
-                          TransportMapper *transport_mapper)
+                          TransportMapper *transport_mapper,
+                          GlobalConfig *cfg)
 {
-  log_dest_driver_init_instance(&self->super);
+  log_dest_driver_init_instance(&self->super, cfg);
 
   log_writer_options_defaults(&self->writer_options);
   self->super.super.super.init = afsocket_dd_init;

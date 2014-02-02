@@ -138,7 +138,7 @@ struct _LogSrcDriver
 
 gboolean log_src_driver_init_method(LogPipe *s);
 gboolean log_src_driver_deinit_method(LogPipe *s);
-void log_src_driver_init_instance(LogSrcDriver *self);
+void log_src_driver_init_instance(LogSrcDriver *self, GlobalConfig *cfg);
 void log_src_driver_free(LogPipe *s);
 
 /* destination driver class: LogDestDriver */
@@ -197,7 +197,7 @@ gboolean log_dest_driver_init_method(LogPipe *s);
 gboolean log_dest_driver_deinit_method(LogPipe *s);
 void log_dest_driver_queue_method(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data);
 
-void log_dest_driver_init_instance(LogDestDriver *self);
+void log_dest_driver_init_instance(LogDestDriver *self, GlobalConfig *cfg);
 void log_dest_driver_free(LogPipe *s);
 
 

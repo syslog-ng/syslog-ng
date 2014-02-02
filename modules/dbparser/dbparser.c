@@ -275,7 +275,7 @@ log_db_parser_clone(LogPipe *s)
   LogDBParser *clone;
   LogDBParser *self = (LogDBParser *) s;
 
-  clone = (LogDBParser *) log_db_parser_new();
+  clone = (LogDBParser *) log_db_parser_new(s->cfg);
   log_db_parser_set_db_file(clone, self->db_file);
   return &clone->super.super;
 }
@@ -294,11 +294,11 @@ log_db_parser_free(LogPipe *s)
 }
 
 LogParser *
-log_db_parser_new(void)
+log_db_parser_new(GlobalConfig *cfg)
 {
   LogDBParser *self = g_new0(LogDBParser, 1);
 
-  log_parser_init_instance(&self->super);
+  log_parser_init_instance(&self->super, cfg);
   self->super.super.free_fn = log_db_parser_free;
   self->super.super.init = log_db_parser_init;
   self->super.super.deinit = log_db_parser_deinit;

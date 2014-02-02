@@ -333,7 +333,7 @@ redis_dd_new(GlobalConfig *cfg)
 {
   RedisDriver *self = g_new0(RedisDriver, 1);
 
-  log_threaded_dest_driver_init_instance(&self->super);
+  log_threaded_dest_driver_init_instance(&self->super, cfg);
   self->super.super.super.super.init = redis_dd_init;
   self->super.super.super.super.free_fn = redis_dd_free;
 

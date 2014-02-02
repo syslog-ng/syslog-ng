@@ -41,6 +41,6 @@ typedef struct _LogFilterPipe
   gchar *name;
 } LogFilterPipe;
 
-LogPipe *log_filter_pipe_new(FilterExprNode *expr);
+LogPipe *log_filter_pipe_new(FilterExprNode *expr, GlobalConfig *cfg);
 
 #endif

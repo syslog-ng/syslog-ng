@@ -52,8 +52,8 @@ typedef struct _AFFileSourceDriver
   /* state information to follow a set of files using a wildcard expression */
 } AFFileSourceDriver;
 
-LogDriver *affile_sd_new(gchar *filename);
-LogDriver *afpipe_sd_new(gchar *filename);
+LogDriver *affile_sd_new(gchar *filename, GlobalConfig *cfg);
+LogDriver *afpipe_sd_new(gchar *filename, GlobalConfig *cfg);
 
 gboolean affile_sd_set_multi_line_prefix(LogDriver *s, const gchar *prefix_regexp, GError **error);
 gboolean affile_sd_set_multi_line_garbage(LogDriver *s, const gchar *garbage_regexp, GError **error);

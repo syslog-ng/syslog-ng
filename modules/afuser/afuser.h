@@ -26,6 +26,6 @@
 
 #include "driver.h"
 
-LogDriver *afuser_dd_new(gchar *user);
+LogDriver *afuser_dd_new(gchar *user, GlobalConfig *cfg);
 
 #endif

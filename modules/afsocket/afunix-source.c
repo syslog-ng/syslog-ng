@@ -234,11 +234,11 @@ afunix_sd_free(LogPipe *s)
 }
 
 AFUnixSourceDriver *
-afunix_sd_new_instance(TransportMapper *transport_mapper, gchar *filename)
+afunix_sd_new_instance(TransportMapper *transport_mapper, gchar *filename, GlobalConfig *cfg)
 {
   AFUnixSourceDriver *self = g_new0(AFUnixSourceDriver, 1);
 
-  afsocket_sd_init_instance(&self->super, socket_options_new(), transport_mapper);
+  afsocket_sd_init_instance(&self->super, socket_options_new(), transport_mapper, cfg);
 
   self->super.super.super.super.init = afunix_sd_init;
   self->super.super.super.super.free_fn = afunix_sd_free;
@@ -257,15 +257,15 @@ afunix_sd_new_instance(TransportMapper *transport_mapper, gchar *filename)
 }
 
 AFUnixSourceDriver *
-afunix_sd_new_dgram(gchar *filename)
+afunix_sd_new_dgram(gchar *filename, GlobalConfig *cfg)
 {
-  return afunix_sd_new_instance(transport_mapper_unix_dgram_new(), filename);
+  return afunix_sd_new_instance(transport_mapper_unix_dgram_new(), filename, cfg);
 }
 
 AFUnixSourceDriver *
-afunix_sd_new_stream(gchar *filename)
+afunix_sd_new_stream(gchar *filename, GlobalConfig *cfg)
 {
-  AFUnixSourceDriver *self = afunix_sd_new_instance(transport_mapper_unix_stream_new(), filename);
+  AFUnixSourceDriver *self = afunix_sd_new_instance(transport_mapper_unix_stream_new(), filename, cfg);
 
   self->super.reader_options.super.init_window_size = self->super.max_connections * 100;
   return self;

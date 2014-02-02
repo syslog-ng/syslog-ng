@@ -26,7 +26,7 @@
 
 #include "driver.h"
 
-LogDriver *afstreams_sd_new(gchar *filename);
+LogDriver *afstreams_sd_new(gchar *filename, GlobalConfig *cfg);
 void afstreams_sd_set_sundoor(LogDriver *self, gchar *filename);
 
 #endif

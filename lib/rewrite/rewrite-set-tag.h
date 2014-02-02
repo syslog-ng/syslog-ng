@@ -28,6 +28,6 @@
 #include "rewrite-expr.h"
 
 /* LogRewriteSetTag */
-LogRewrite *log_rewrite_set_tag_new(const gchar *tag_name, gboolean onoff);
+LogRewrite *log_rewrite_set_tag_new(const gchar *tag_name, gboolean onoff, GlobalConfig *cfg);
 
 #endif

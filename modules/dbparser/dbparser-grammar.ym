@@ -65,7 +65,7 @@ start
 parser_expr_db
         : KW_DB_PARSER '('
           {
-            last_parser = *instance = (LogParser *) log_db_parser_new();
+            last_parser = *instance = (LogParser *) log_db_parser_new(configuration);
           }
           parser_db_opts
           ')'
