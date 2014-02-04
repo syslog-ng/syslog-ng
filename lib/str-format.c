@@ -228,7 +228,7 @@ format_hex_string_with_delimiter(gpointer data, gsize data_len, gchar *result, g
   gint pos = 0;
   guchar *str = (guchar *) data;
 
-  for (i = 0; i < data_len && result_len - pos >= 2; i++)
+  for (i = 0; i < data_len && result_len - pos >= 3; i++)
     {
       if ( (delimiter != 0) && (i < data_len - 1))
       {

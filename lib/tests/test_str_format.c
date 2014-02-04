@@ -3,8 +3,8 @@
 
 void test_format_hex_string__single_byte__perfect()
 {
-   gchar expected_output[2] = "40";
-   gchar output[2];
+   gchar expected_output[3] = "40";
+   gchar output[3];
    gchar input[1] = "@";
    //Act
    format_hex_string(input, sizeof(input), output, sizeof(output));
@@ -14,8 +14,8 @@ void test_format_hex_string__single_byte__perfect()
 
 void test_format_hex_string__two_bytes__perfect()
 {
-   gchar expected_output[4] = "4041";
-   gchar output[4];
+   gchar expected_output[5] = "4041";
+   gchar output[5];
    gchar input[2] = "@A";
    //Act
    format_hex_string(input, sizeof(input), output, sizeof(output));
@@ -25,8 +25,8 @@ void test_format_hex_string__two_bytes__perfect()
 
 void test_format_hex_string_with_delimiter__single_byte__perfect()
 {
-   gchar expected_output[2] = "40";
-   gchar output[2];
+   gchar expected_output[3] = "40";
+   gchar output[3];
    gchar input[1] = "@";
    //Act
    format_hex_string_with_delimiter(input, sizeof(input), output, sizeof(output), ' ');
@@ -36,8 +36,8 @@ void test_format_hex_string_with_delimiter__single_byte__perfect()
 
 void test_format_hex_string_with_delimiter__two_bytes__perfect()
 {
-   gchar expected_output[5] = "40 41";
-   gchar output[5];
+   gchar expected_output[6] = "40 41";
+   gchar output[6];
    gchar input[2] = "@A";
    //Act
    format_hex_string_with_delimiter(input, sizeof(input), output, sizeof(output), ' ');
