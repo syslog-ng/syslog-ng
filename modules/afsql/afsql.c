@@ -1288,6 +1288,8 @@ afsql_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, 
   AFSqlDestDriver *self = (AFSqlDestDriver *) s;
   LogPathOptions local_options;
 
+  log_dest_driver_counter_inc(s);
+
   if (!path_options->flow_control_requested)
     path_options = log_msg_break_ack(msg, path_options, &local_options);
 

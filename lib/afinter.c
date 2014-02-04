@@ -281,7 +281,7 @@ afinter_source_init(LogPipe *s)
   g_static_mutex_unlock(&internal_msg_lock);
 
   stats_lock();
-  stats_register_counter(0, SCS_INTERNAL | SCS_SOURCE, self->owner->super.id, NULL, SC_TYPE_DROPPED, &self->dropped_messages);
+  stats_register_counter(0, SCS_INTERNAL | SCS_SOURCE, self->owner->super.super.id, NULL, SC_TYPE_DROPPED, &self->dropped_messages);
   stats_unlock();
 
   return TRUE;
@@ -304,7 +304,7 @@ afinter_source_deinit(LogPipe *s)
 
   afinter_source_stop_watches(self);
   stats_lock();
-  stats_unregister_counter(SCS_INTERNAL | SCS_SOURCE, self->owner->super.id, NULL, SC_TYPE_DROPPED, &self->dropped_messages);
+  stats_unregister_counter(SCS_INTERNAL | SCS_SOURCE, self->owner->super.super.id, NULL, SC_TYPE_DROPPED, &self->dropped_messages);
   stats_unlock();
   return log_source_deinit(s);
 }
@@ -322,7 +322,7 @@ afinter_source_new(AFInterSourceDriver *owner, LogSourceOptions *options)
   AFInterSource *self = g_new0(AFInterSource, 1);
   
   log_source_init_instance(&self->super);
-  log_source_set_options(&self->super, options, 0, SCS_INTERNAL, owner->super.id, NULL, FALSE);
+  log_source_set_options(&self->super, options, 0, SCS_INTERNAL, owner->super.super.id, NULL, FALSE);
   afinter_source_init_watches(self);
   self->super.super.init = afinter_source_init;
   self->super.super.deinit = afinter_source_deinit;
@@ -348,7 +348,7 @@ afinter_sd_init(LogPipe *s)
       return FALSE;
     }
 
-  log_source_options_init(&self->source_options, cfg, self->super.group);
+  log_source_options_init(&self->source_options, cfg, self->super.super.group);
   self->source = afinter_source_new(self, &self->source_options);
   log_pipe_append(&self->source->super, s);
   log_pipe_init(&self->source->super, cfg);
@@ -390,9 +390,9 @@ afinter_sd_new(void)
   AFInterSourceDriver *self = g_new0(AFInterSourceDriver, 1);
 
   log_src_driver_init_instance((LogSrcDriver *)&self->super);
-  self->super.super.init = afinter_sd_init;
-  self->super.super.deinit = afinter_sd_deinit;
-  self->super.super.free_fn = afinter_sd_free;
+  self->super.super.super.init = afinter_sd_init;
+  self->super.super.super.deinit = afinter_sd_deinit;
+  self->super.super.super.free_fn = afinter_sd_free;
   log_source_options_defaults(&self->source_options);
   return (LogDriver *)&self->super.super;
 }

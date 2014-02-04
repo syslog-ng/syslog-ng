@@ -804,6 +804,8 @@ afinet_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
 #if ENABLE_SPOOF_SOURCE
   AFInetDestDriver *self = (AFInetDestDriver *) s;
 
+  log_dest_driver_counter_inc(s);
+
   if (self->spoof_source && self->lnet_ctx && msg->saddr && (msg->saddr->sa.sa_family == AF_INET || msg->saddr->sa.sa_family == AF_INET6))
     {
       gboolean success = FALSE;

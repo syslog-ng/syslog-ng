@@ -873,8 +873,6 @@ afsocket_sd_init_instance(AFSocketSourceDriver *self, SocketOptions *sock_option
   self->super.super.super.init = afsocket_sd_init;
   self->super.super.super.deinit = afsocket_sd_deinit;
   self->super.super.super.free_fn = afsocket_sd_free;
-  /* NULL behaves as if log_pipe_forward_msg was specified */
-  self->super.super.super.queue = NULL;
   self->super.super.super.notify = afsocket_sd_notify;
   self->sock_options_ptr = sock_options;
   self->setup_socket = afsocket_sd_setup_socket;
@@ -1474,8 +1472,6 @@ afsocket_dd_init_instance(AFSocketDestDriver *self, SocketOptions *sock_options,
   log_writer_options_defaults(&self->writer_options);
   self->super.super.super.init = afsocket_dd_init;
   self->super.super.super.deinit = afsocket_dd_deinit;
-  /* NULL behaves as if log_msg_forward_msg was specified */
-  self->super.super.super.queue = NULL;
   self->super.super.super.free_fn = afsocket_dd_free;
   self->super.super.super.notify = afsocket_dd_notify;
   self->setup_socket = afsocket_dd_setup_socket;

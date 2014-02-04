@@ -131,13 +131,8 @@ struct _LogSrcDriver
 {
   LogDriver super;
   gboolean (*skip_old_messages)(LogSrcDriver *self, GlobalConfig *cfg);
+  StatsCounterItem *received_global_messages;
 };
-
-static inline gboolean
-log_src_driver_init_method(LogPipe *s)
-{
-  return log_driver_init_method(s);
-}
 
 static inline gboolean
 log_src_driver_skip_old_messages(LogSrcDriver *self, GlobalConfig *cfg)
@@ -149,14 +144,12 @@ log_src_driver_skip_old_messages(LogSrcDriver *self, GlobalConfig *cfg)
   return TRUE;
 }
 
-static inline gboolean
-log_src_driver_deinit_method(LogPipe *s)
-{
-  return log_driver_deinit_method(s);
-}
-
+gboolean log_src_driver_init_method(LogPipe *s);
+gboolean log_src_driver_deinit_method(LogPipe *s);
 void log_src_driver_init_instance(LogSrcDriver *self);
 void log_src_driver_free(LogPipe *s);
+void log_src_driver_queue_method(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data);
+void log_src_driver_counter_inc(LogPipe *s);
 
 /* destination driver class: LogDestDriver */
 
@@ -177,6 +170,7 @@ struct _LogDestDriver
 
   gint log_fifo_size;
   gint throttle;
+  StatsCounterItem *queued_global_messages;
 };
 
 static inline LogQueue *
@@ -204,13 +198,11 @@ log_dest_driver_release_queue(LogDestDriver *self, LogQueue *q)
     }
 }
 
-static inline gboolean
-log_dest_driver_init_method(LogPipe *s)
-{
-  return log_driver_init_method(s);
-}
 
+gboolean log_dest_driver_init_method(LogPipe *s);
 gboolean log_dest_driver_deinit_method(LogPipe *s);
+void log_dest_driver_queue_method(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data);
+void log_dest_driver_counter_inc(LogPipe *s);
 
 void log_dest_driver_init_instance(LogDestDriver *self);
 void log_dest_driver_free(LogPipe *s);

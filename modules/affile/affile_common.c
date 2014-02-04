@@ -249,6 +249,8 @@ affile_sd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
   static NVHandle sdata_filepos = 0;
   static NVHandle sdata_filesize = 0;
 
+  log_src_driver_counter_inc(s);
+
   if (!filename_handle)
     {
       filename_handle = log_msg_get_value_handle("FILE_NAME");
@@ -1530,6 +1532,8 @@ affile_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
   AFFileDestDriver *self = (AFFileDestDriver *) s;
   AFFileDestWriter *next;
   gpointer args[2] = { self, NULL };
+
+  log_dest_driver_counter_inc(s);
 
   if (self->flags & AFFILE_NO_EXPAND)
     {

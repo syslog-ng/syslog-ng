@@ -23,6 +23,7 @@
  */
   
 #include "driver.h"
+#include "afinter.h"
 #include "logqueue-fifo.h"
 
 /* LogDriverPlugin */
@@ -120,10 +121,60 @@ log_driver_init_instance(LogDriver *self)
 
 /* LogSrcDriver */
 
+gboolean
+log_src_driver_init_method(LogPipe *s)
+{
+  LogSrcDriver *self = (LogSrcDriver *) s;
+
+  if (!log_driver_init_method(s))
+    return FALSE;
+
+  stats_lock();
+  stats_register_counter(0, SCS_CENTER, NULL, "received", SC_TYPE_PROCESSED, &self->received_global_messages);
+  stats_unlock();
+
+  return TRUE;
+}
+
+gboolean
+log_src_driver_deinit_method(LogPipe *s)
+{
+  LogSrcDriver *self = (LogSrcDriver *) s;
+
+  if (!log_driver_deinit_method(s))
+    return FALSE;
+
+  stats_lock();
+  stats_unregister_counter(SCS_CENTER, NULL, "received", SC_TYPE_PROCESSED, &self->received_global_messages);
+  stats_unlock();
+  return TRUE;
+}
+
+void
+log_src_driver_queue_method(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data)
+{
+  GlobalConfig *cfg = log_pipe_get_config(s);
+
+  if (msg->flags & LF_LOCAL)
+    afinter_postpone_mark(cfg->mark_freq);
+
+  log_src_driver_counter_inc(s);
+  log_pipe_forward_msg(s, msg, path_options);
+}
+
+void
+log_src_driver_counter_inc(LogPipe *s)
+{
+  LogSrcDriver *self = (LogSrcDriver *) s;
+
+  stats_counter_inc(self->received_global_messages);
+}
+
 void
 log_src_driver_init_instance(LogSrcDriver *self)
 {
   log_driver_init_instance(&self->super);
+  self->super.super.queue = log_src_driver_queue_method;
 }
 
 void
@@ -171,6 +222,37 @@ log_dest_driver_release_queue_method(LogDestDriver *self, LogQueue *q, gpointer 
     cfg_persist_config_add(cfg, q->persist_name, q, (GDestroyNotify) log_queue_unref, FALSE);
 }
 
+
+void
+log_dest_driver_queue_method(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data)
+{
+  log_dest_driver_counter_inc(s);
+  log_pipe_forward_msg(s, msg, path_options);
+}
+
+void
+log_dest_driver_counter_inc(LogPipe *s)
+{
+  LogDestDriver *self = (LogDestDriver *) s;
+
+  stats_counter_inc(self->queued_global_messages);
+}
+
+gboolean
+log_dest_driver_init_method(LogPipe *s)
+{
+  LogDestDriver *self = (LogDestDriver *) s;
+
+  if (!log_driver_init_method(s))
+    return FALSE;
+
+  stats_lock();
+  stats_register_counter(0, SCS_CENTER, NULL, "queued", SC_TYPE_PROCESSED, &self->queued_global_messages);
+  stats_unlock();
+
+  return TRUE;
+}
+
 gboolean
 log_dest_driver_deinit_method(LogPipe *s)
 {
@@ -185,6 +267,10 @@ log_dest_driver_deinit_method(LogPipe *s)
     }
   g_assert(self->queues == NULL);
 
+  stats_lock();
+  stats_unregister_counter(SCS_CENTER, NULL, "queued", SC_TYPE_PROCESSED, &self->queued_global_messages);
+  stats_unlock();
+
   if (!log_driver_deinit_method(s))
     return FALSE;
   return TRUE;
@@ -194,6 +280,7 @@ void
 log_dest_driver_init_instance(LogDestDriver *self)
 {
   log_driver_init_instance(&self->super);
+  self->super.super.queue = log_dest_driver_queue_method;
   self->acquire_queue = log_dest_driver_acquire_queue_method;
   self->release_queue = log_dest_driver_release_queue_method;
   self->log_fifo_size = -1;

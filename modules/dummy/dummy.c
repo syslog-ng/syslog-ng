@@ -30,6 +30,9 @@ static void
 dummy_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data)
 {
   DummyDestDriver *self = (DummyDestDriver *) s;
+
+  log_dest_driver_counter_inc(s);
+
   msg_notice("Dummy plugin received a message",
              evt_tag_str("msg", log_msg_get_value(msg, LM_V_MESSAGE, NULL)),
              evt_tag_int("opt", self->opt),

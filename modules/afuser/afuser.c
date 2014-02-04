@@ -50,6 +50,8 @@ afuser_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
   GString *timestamp;
   time_t now;
   
+  log_dest_driver_counter_inc(s);
+
   now = msg->timestamps[LM_TS_RECVD].tv_sec;
   if (self->disable_until && self->disable_until > now)
     goto finish;
