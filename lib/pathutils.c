@@ -28,11 +28,11 @@
 gboolean
 is_file_directory(const char *filename)
 {
-  return g_file_test(filename, G_FILE_TEST_EXISTS | G_FILE_TEST_IS_DIR);
+  return g_file_test(filename, G_FILE_TEST_EXISTS) && g_file_test(filename, G_FILE_TEST_IS_DIR);
 };
 
 gboolean
 is_file_regular(const char *filename)
 {
-  return g_file_test(filename, G_FILE_TEST_EXISTS | G_FILE_TEST_IS_REGULAR);
+  return g_file_test(filename, G_FILE_TEST_EXISTS) && g_file_test(filename, G_FILE_TEST_IS_REGULAR);
 };
