@@ -217,7 +217,25 @@ struct _LogPipe
      by a plugin, see the explanation in the comment on the top. */
   gpointer queue_data;
   void (*queue)(LogPipe *self, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data);
+  
+  /*
+   * This function is called to finalize the settings of this LogPipe before
+   * starting the production operation.  Stuff like inheriting global
+   * settings, creating persist state settings, etc.  are belong here.
+   */
+  gboolean (*prepare_config)(LogPipe *self);
+
+  /*
+   * This method starts the production operation, it should register events,
+   * open files and stuff like that.
+   */
   gboolean (*init)(LogPipe *self);
+
+  /*
+   * This method stops the production operation, it should unregister all
+   * events but shouldn't do anything destructive that would prevent the
+   * restart of that operation by a subsequent init() call.
+   */
   gboolean (*deinit)(LogPipe *self);
 
   /* clone this pipe when used in multiple locations in the processing
@@ -254,6 +272,14 @@ static inline void
 log_pipe_reset_config(LogPipe *s)
 {
   log_pipe_set_config(s, NULL);
+}
+
+static inline gboolean
+log_pipe_prepare_config(LogPipe *s)
+{
+  if (s->prepare_config)
+    return s->prepare_config(s);
+  return TRUE;
 }
 
 static inline gboolean

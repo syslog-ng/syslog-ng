@@ -49,6 +49,11 @@ enum
   MM_GLOBAL,
 };
 
+enum CfgMode
+{
+  CFG_MODE_PRODUCTION = 1,
+};
+
 /* configuration data kept between configuration reloads */
 typedef struct _PersistConfig PersistConfig;
 
@@ -62,6 +67,9 @@ struct _GlobalConfig
   /* version number as parsed from the configuration file, it can be set
    * multiple times if the user uses @version multiple times */
   gint parsed_version;
+  
+  enum CfgMode config_mode;
+
   const gchar *filename;
   GList *plugins;
   GList *candidate_plugins;

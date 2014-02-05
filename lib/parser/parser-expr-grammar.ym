@@ -25,6 +25,7 @@
 %code requires {
 
 #include "parser/parser-expr-parser.h"
+#include "parser/parser-expr-grammar.h"
 #include "cfg-tree.h"
 
 }
@@ -32,7 +33,6 @@
 %code {
 
 #include "syslog-names.h"
-#include "parser/parser-expr-grammar.h"
 #include "plugin.h"
 #include "cfg-grammar.h"
 

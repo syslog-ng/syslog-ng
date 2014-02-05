@@ -1074,6 +1074,18 @@ cfg_tree_start(CfgTree *self)
     {
       LogPipe *pipe = g_ptr_array_index(self->initialized_pipes, i);
 
+      if (!log_pipe_prepare_config(pipe))
+        {
+          msg_error("Error initializing message pipeline",
+                    NULL);
+          return FALSE;
+        }
+    }
+  
+  for (i = 0; i < self->initialized_pipes->len; i++)
+    {
+      LogPipe *pipe = g_ptr_array_index(self->initialized_pipes, i);
+  
       if (!log_pipe_init(pipe))
         {
           msg_error("Error initializing message pipeline",
