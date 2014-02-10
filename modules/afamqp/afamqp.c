@@ -449,14 +449,14 @@ static gboolean
 afamqp_worker_insert(LogThrDestDriver *s)
 {
   AMQPDestDriver *self = (AMQPDestDriver *)s;
-  gboolean success;
+  gboolean success = TRUE;
   LogMessage *msg;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
 
   afamqp_dd_connect(self, TRUE);
 
-  success = log_queue_pop_head(s->queue, &msg, &path_options, FALSE, FALSE);
-  if (!success)
+  msg = log_queue_pop_head(s->queue, &path_options);
+  if (!msg)
     return TRUE;
 
   msg_set_context(msg);

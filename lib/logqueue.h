@@ -39,6 +39,8 @@ struct _LogQueue
   /* this object is reference counted, but it is _not_ thread safe to
      acquire/release references in code executing in parallel */
   gint ref_cnt;
+  gboolean use_backlog;
+
   gint throttle;
   gint throttle_buckets;
   GTimeVal last_throttle_check;
@@ -55,11 +57,13 @@ struct _LogQueue
   /* queue management */
   gboolean (*keep_on_reload)(LogQueue *self);
   gint64 (*get_length)(LogQueue *self);
+  gboolean (*is_empty)(LogQueue *self);
   void (*push_tail)(LogQueue *self, LogMessage *msg, const LogPathOptions *path_options);
   void (*push_head)(LogQueue *self, LogMessage *msg, const LogPathOptions *path_options);
-  gboolean (*pop_head)(LogQueue *self, LogMessage **msg, LogPathOptions *path_options, gboolean push_to_backlog, gboolean ignore_throttle);
+  LogMessage *(*pop_head)(LogQueue *self, LogPathOptions *path_options);
   void (*ack_backlog)(LogQueue *self, gint n);
-  void (*rewind_backlog)(LogQueue *self);
+  void (*rewind_backlog)(LogQueue *self, guint rewind_count);
+  void (*rewind_backlog_all)(LogQueue *self);
 
   void (*free_fn)(LogQueue *self);
 };
@@ -78,6 +82,15 @@ log_queue_get_length(LogQueue *self)
   return self->get_length(self);
 }
 
+static inline gint64
+log_queue_is_empty(LogQueue *self)
+{
+  if (self->is_empty)
+    return self->is_empty(self);
+  else
+    return self->get_length(self) > 0;
+}
+
 static inline void
 log_queue_push_tail(LogQueue *self, LogMessage *msg, const LogPathOptions *path_options)
 {
@@ -90,22 +103,44 @@ log_queue_push_head(LogQueue *self, LogMessage *msg, const LogPathOptions *path_
   self->push_head(self, msg, path_options);
 }
 
-static inline gboolean
-log_queue_pop_head(LogQueue *self, LogMessage **msg, LogPathOptions *path_options, gboolean push_to_backlog, gboolean ignore_throttle)
+static inline LogMessage *
+log_queue_pop_head(LogQueue *self, LogPathOptions *path_options)
 {
-  return self->pop_head(self, msg, path_options, push_to_backlog, ignore_throttle);
+  LogMessage *msg = NULL;
+
+  if (self->throttle && self->throttle_buckets == 0)
+    return NULL;
+
+  msg = self->pop_head(self, path_options);
+
+  if (msg && self->throttle_buckets > 0)
+    self->throttle_buckets--;
+
+  return msg;
+}
+
+static inline LogMessage *
+log_queue_pop_head_ignore_throttle(LogQueue *self, LogPathOptions *path_options)
+{
+  return self->pop_head(self, path_options);
 }
 
 static inline void
-log_queue_rewind_backlog(LogQueue *self)
+log_queue_rewind_backlog(LogQueue *self, guint rewind_count)
 {
-  return self->rewind_backlog(self);
+  return self->rewind_backlog(self, rewind_count);
 }
 
 static inline void
-log_queue_ack_backlog(LogQueue *self, gint n)
+log_queue_rewind_backlog_all(LogQueue *self)
 {
-  return self->ack_backlog(self, n);
+  return self->rewind_backlog_all(self);
+}
+
+static inline void
+log_queue_ack_backlog(LogQueue *self, guint rewind_count)
+{
+  return self->ack_backlog(self, rewind_count);
 }
 
 static inline LogQueue *
@@ -127,6 +162,12 @@ log_queue_set_throttle(LogQueue *self, gint throttle)
 {
   self->throttle = throttle;
   self->throttle_buckets = throttle;
+}
+
+static inline void
+log_queue_set_use_backlog(LogQueue *self, gboolean use_backlog)
+{
+  self->use_backlog = use_backlog;
 }
 
 void log_queue_push_notify(LogQueue *self);

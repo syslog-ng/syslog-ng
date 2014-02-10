@@ -497,8 +497,8 @@ afmongodb_worker_insert (LogThrDestDriver *s)
   if (!afmongodb_dd_connect(self, TRUE))
     return FALSE;
 
-  success = log_queue_pop_head(self->super.queue, &msg, &path_options, FALSE, FALSE);
-  if (!success)
+  msg = log_queue_pop_head(self->super.queue, &path_options);
+  if (!msg)
     return TRUE;
 
   msg_set_context(msg);

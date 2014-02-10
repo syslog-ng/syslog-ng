@@ -178,7 +178,7 @@ static gboolean
 redis_worker_insert(LogThrDestDriver *s)
 {
   RedisDriver *self = (RedisDriver *)s;
-  gboolean success;
+  gboolean success = TRUE;
   LogMessage *msg;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
   redisReply *reply;
@@ -191,8 +191,8 @@ redis_worker_insert(LogThrDestDriver *s)
   if (self->c->err)
     return FALSE;
 
-  success = log_queue_pop_head(self->super.queue, &msg, &path_options, FALSE, FALSE);
-  if (!success)
+  msg = log_queue_pop_head(self->super.queue, &path_options);
+  if (!msg)
     return TRUE;
 
   msg_set_context(msg);
