@@ -25,6 +25,7 @@
 #define SYSLOG_FORMAT_H_INCLUDED
 
 #include "msg-format.h"
+#include "dateparse.h"
 
 void syslog_format_handler(const MsgFormatOptions *parse_options,
                            const guchar *data, gsize length,

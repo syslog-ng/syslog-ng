@@ -49,6 +49,7 @@ pkginclude_HEADERS			+= \
 	lib/cfg-tree.h			\
 	lib/children.h			\
 	lib/crypto.h			\
+        lib/dateparse.h                 \
 	lib/dnscache.h			\
 	lib/driver.h			\
 	lib/file-perms.h		\
@@ -130,6 +131,7 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/cfg-parser.c		\
 	lib/cfg-tree.c			\
 	lib/children.c			\
+        lib/dateparse.c                 \
 	lib/dnscache.c			\
 	lib/driver.c			\
 	lib/file-perms.c		\
