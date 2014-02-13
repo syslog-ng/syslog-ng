@@ -114,7 +114,16 @@ json_parser_process_single(struct json_object *jso,
     case json_type_object:
       if (prefix)
         g_string_assign(sb_gstring_string(key), prefix);
-      g_string_append(sb_gstring_string(key), obj_key);
+
+      if (strncmp(obj_key, "_SDATA", 6) == 0)
+        {
+          g_string_append(sb_gstring_string(key), ".SDATA");
+        }
+      else
+        {
+          g_string_append(sb_gstring_string(key), obj_key);
+        }
+
       g_string_append_c(sb_gstring_string(key), '.');
       json_parser_process_object(jso, sb_gstring_string(key)->str, msg);
       break;
