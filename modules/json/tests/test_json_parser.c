@@ -169,6 +169,28 @@ test_json_parser_extracts_subobjects_if_extract_prefix_is_specified(void)
 }
 
 static void
+test_json_parser_parses_sdata(void)
+{
+  LogMessage *msg;
+
+  msg = parse_json_into_log_message("{'_SDATA':{'win@123.4' : {'foo' : 'bar'}}}");
+  assert_log_message_value(msg, log_msg_get_value_handle(".SDATA.win@123.4.foo"), "bar");
+  log_msg_unref(msg);
+}
+
+static void
+test_json_parser_uses_timestamp_from_message()
+{
+  LogMessage *msg;
+
+  msg = parse_json_into_log_message("{ \"PRIORITY\":\"notice\", \"PID\":\"3268\", \"FACILITY\":\"syslog\", \"DATE\":\"2011-02-09T14:06:51+01:00\"}");
+  assert_guint32(msg->timestamps[LM_TS_STAMP].tv_sec, 1297256811, "Failed to parse seconds");
+  assert_guint32(msg->timestamps[LM_TS_STAMP].tv_usec, 0, "Failed to parse micro seconds");
+  assert_guint32(msg->timestamps[LM_TS_STAMP].zone_offset, 3600, "Failed to parse zone offset");
+  log_msg_unref(msg);
+}
+
+static void
 test_json_parser(void)
 {
   JSON_PARSER_TESTCASE(test_json_parser_parses_well_formed_json_and_puts_results_in_message);
@@ -179,6 +201,8 @@ test_json_parser(void)
   JSON_PARSER_TESTCASE(test_json_parser_validate_type_representation);
   JSON_PARSER_TESTCASE(test_json_parser_fails_for_non_object_top_element);
   JSON_PARSER_TESTCASE(test_json_parser_extracts_subobjects_if_extract_prefix_is_specified);
+  JSON_PARSER_TESTCASE(test_json_parser_parses_sdata);
+  JSON_PARSER_TESTCASE(test_json_parser_uses_timestamp_from_message);
 }
 
 int

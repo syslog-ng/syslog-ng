@@ -23,6 +23,7 @@
 #include "json-parser.h"
 #include "dot-notation.h"
 #include "scratch-buffers.h"
+#include "dateparse.h"
 
 #include <string.h>
 #include <ctype.h>
@@ -71,6 +72,29 @@ static void
 json_parser_process_object(struct json_object *jso,
                                 const gchar *prefix,
                                 LogMessage *msg);
+
+inline static void
+json_parser_set_logmsg_value(LogMessage *msg, const gchar *key, SBGString *value)
+{
+  gchar *timestamp, *tstamp_copy = NULL;
+  gint timestamp_length;
+
+  if (strncmp(key, "DATE", 4) == 0)
+    {
+      timestamp = tstamp_copy = g_strdup(value->s.str);
+      timestamp_length = strlen((const char *)timestamp);
+
+      log_msg_parse_date(msg, (const guchar **)&timestamp, &timestamp_length, 0, -1);
+      g_free(tstamp_copy);
+    }
+  else
+    {
+      log_msg_set_value(msg,
+                         log_msg_get_value_handle(key),
+                         sb_gstring_string(value)->str,
+                         sb_gstring_string(value)->len);
+    }
+}
 
 static void
 json_parser_process_single(struct json_object *jso,
@@ -159,16 +183,10 @@ json_parser_process_single(struct json_object *jso,
         {
           g_string_assign(sb_gstring_string(key), prefix);
           g_string_append(sb_gstring_string(key), obj_key);
-          log_msg_set_value(msg,
-                             log_msg_get_value_handle(sb_gstring_string(key)->str),
-                             sb_gstring_string(value)->str,
-                             sb_gstring_string(value)->len);
+          json_parser_set_logmsg_value(msg, sb_gstring_string(key)->str, value);
         }
       else
-        log_msg_set_value(msg,
-                           log_msg_get_value_handle(obj_key),
-                           sb_gstring_string(value)->str,
-                           sb_gstring_string(value)->len);
+          json_parser_set_logmsg_value(msg, obj_key, value);
     }
 
   sb_gstring_release(key);

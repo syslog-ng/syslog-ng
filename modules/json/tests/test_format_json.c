@@ -40,6 +40,7 @@ test_format_json(void)
   assert_template_format("$(format-json --scope rfc3164,rfc3164)", "{\"PROGRAM\":\"syslog-ng\",\"PRIORITY\":\"err\",\"PID\":\"23323\",\"MESSAGE\":\"árvíztűrőtükörfúrógép\",\"HOST\":\"bzorp\",\"FACILITY\":\"local3\",\"DATE\":\"Feb 11 18:58:35\"}");
   assert_template_format("$(format-json sdata.win@18372.4.fruit=\"pear\" sdata.win@18372.4.taste=\"good\")",
                          "{\"sdata\":{\"win@18372.4\":{\"taste\":\"good\",\"fruit\":\"pear\"}}}");
+  assert_template_format("$(format-json SDATA.win@18372.4.taste=\"good\")", "{\"SDATA\":{\"win@18372.4\":{\"taste\":\"good\"}}}");
 }
 
 void
