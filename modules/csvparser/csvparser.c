@@ -380,7 +380,7 @@ log_csv_parser_clone(LogPipe *s)
   LogCSVParser *cloned;
   GList *l;
 
-  cloned = (LogCSVParser *) log_csv_parser_new();
+  cloned = (LogCSVParser *) log_csv_parser_new(s->cfg);
   g_free(cloned->delimiters);
   g_free(cloned->quotes_start);
   g_free(cloned->quotes_end);
@@ -419,11 +419,11 @@ log_csv_parser_free(LogPipe *s)
  * Parse comma-separated values from a log message.
  */
 LogColumnParser *
-log_csv_parser_new(void)
+log_csv_parser_new(GlobalConfig *cfg)
 {
   LogCSVParser *self = g_new0(LogCSVParser, 1);
 
-  log_column_parser_init_instance(&self->super);
+  log_column_parser_init_instance(&self->super, cfg);
   self->super.super.super.free_fn = log_csv_parser_free;
   self->super.super.super.clone = log_csv_parser_clone;
   self->super.super.process = log_csv_parser_process;

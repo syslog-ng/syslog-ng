@@ -25,9 +25,10 @@
 #include "logpipe.h"
 
 void
-log_pipe_init_instance(LogPipe *self)
+log_pipe_init_instance(LogPipe *self, GlobalConfig *cfg)
 {
   g_atomic_counter_set(&self->ref_cnt, 1);
+  self->cfg = cfg;
   self->pipe_next = NULL;
 
   /* NOTE: queue == NULL means that this pipe simply forwards the
@@ -40,11 +41,11 @@ log_pipe_init_instance(LogPipe *self)
 }
 
 LogPipe *
-log_pipe_new(void)
+log_pipe_new(GlobalConfig *cfg)
 {
   LogPipe *self = g_new0(LogPipe, 1);
 
-  log_pipe_init_instance(self);
+  log_pipe_init_instance(self, cfg);
   return self;
 }
 

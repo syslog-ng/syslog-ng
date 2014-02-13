@@ -190,7 +190,7 @@ afstreams_sd_init(LogPipe *s)
           return FALSE;
         }
       g_fd_set_nonblock(fd, TRUE);
-      self->reader = log_reader_new();
+      self->reader = log_reader_new(cfg);
       log_reader_reopen(self->reader, log_proto_dgram_server_new(log_transport_streams_new(fd), &self->reader_options.proto_options.super), poll_fd_events_new(fd));
       log_reader_set_options(self->reader,
                              s,
@@ -210,7 +210,7 @@ afstreams_sd_init(LogPipe *s)
 
           register_application_hook(AH_POST_DAEMONIZED, afstreams_init_door, self);
         }
-      if (!log_pipe_init((LogPipe *) self->reader, NULL))
+      if (!log_pipe_init((LogPipe *) self->reader))
         {
           msg_error("Error initializing log_reader, closing fd",
                     evt_tag_int("fd", fd),
@@ -271,11 +271,11 @@ afstreams_sd_free(LogPipe *s)
 }
 
 LogDriver *
-afstreams_sd_new(gchar *filename)
+afstreams_sd_new(gchar *filename, GlobalConfig *cfg)
 {
   AFStreamsSourceDriver *self = g_new0(AFStreamsSourceDriver, 1);
 
-  log_src_driver_init_instance(&self->super);
+  log_src_driver_init_instance(&self->super, cfg);
 
   self->dev_filename = g_string_new(filename);
   self->super.super.super.init = afstreams_sd_init;
@@ -306,11 +306,11 @@ afstreams_sd_dummy_deinit(LogPipe *s)
 }
 
 LogDriver *
-afstreams_sd_new(gchar *filename)
+afstreams_sd_new(gchar *filename, GlobalConfig *cfg)
 {
   LogDriver *self = g_new0(LogDriver, 1);
 
-  log_src_driver_init_instance(self);
+  log_src_driver_init_instance(self, cfg);
   self->super.init = afstreams_sd_dummy_init;
   self->super.deinit = afstreams_sd_dummy_deinit;
   self->super.free_fn = log_src_driver_free;

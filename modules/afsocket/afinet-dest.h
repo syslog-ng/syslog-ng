@@ -62,11 +62,11 @@ void afinet_dd_set_sync_freq(LogDriver *self, gint sync_freq);
 void afinet_dd_set_spoof_source(LogDriver *self, gboolean enable);
 void afinet_dd_set_tls_context(LogDriver *s, TLSContext *tls_context);
 
-AFInetDestDriver *afinet_dd_new_tcp(gchar *host);
-AFInetDestDriver *afinet_dd_new_tcp6(gchar *host);
-AFInetDestDriver *afinet_dd_new_udp(gchar *host);
-AFInetDestDriver *afinet_dd_new_udp6(gchar *host);
-AFInetDestDriver *afinet_dd_new_syslog(gchar *host);
-AFInetDestDriver *afinet_dd_new_network(gchar *host);
+AFInetDestDriver *afinet_dd_new_tcp(gchar *host, GlobalConfig *cfg);
+AFInetDestDriver *afinet_dd_new_tcp6(gchar *host, GlobalConfig *cfg);
+AFInetDestDriver *afinet_dd_new_udp(gchar *host, GlobalConfig *cfg);
+AFInetDestDriver *afinet_dd_new_udp6(gchar *host, GlobalConfig *cfg);
+AFInetDestDriver *afinet_dd_new_syslog(gchar *host, GlobalConfig *cfg);
+AFInetDestDriver *afinet_dd_new_network(gchar *host, GlobalConfig *cfg);
 
 #endif

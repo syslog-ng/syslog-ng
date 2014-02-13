@@ -35,7 +35,7 @@ typedef struct _AFUnixSourceDriver
   FilePermOptions file_perm_options;
 } AFUnixSourceDriver;
 
-AFUnixSourceDriver *afunix_sd_new_stream(gchar *filename);
-AFUnixSourceDriver *afunix_sd_new_dgram(gchar *filename);
+AFUnixSourceDriver *afunix_sd_new_stream(gchar *filename, GlobalConfig *cfg);
+AFUnixSourceDriver *afunix_sd_new_dgram(gchar *filename, GlobalConfig *cfg);
 
 #endif

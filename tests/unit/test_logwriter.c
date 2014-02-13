@@ -69,7 +69,7 @@ testcase(gchar *msg_string, gboolean input_is_rfc5424, gchar *template, guint wr
   opt.template = templ;
   msg = init_msg(msg_string, input_is_rfc5424);
   queue = log_queue_fifo_new(1000, NULL);
-  writer = log_writer_new(writer_flags);
+  writer = log_writer_new(writer_flags, configuration);
 
   log_writer_set_options(writer, NULL, &opt, 0, 0, NULL, NULL);
   log_writer_set_queue(writer, queue);

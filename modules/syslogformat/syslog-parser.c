@@ -41,7 +41,7 @@ syslog_parser_clone(LogPipe *s)
   SyslogParser *self = (SyslogParser *) s;
   SyslogParser *cloned;
 
-  cloned = (SyslogParser *) syslog_parser_new();
+  cloned = (SyslogParser *) syslog_parser_new(s->cfg);
   cloned->super.template = log_template_ref(self->super.template);
   return &cloned->super.super;
 }
@@ -50,11 +50,11 @@ syslog_parser_clone(LogPipe *s)
  * Parse comma-separated values from a log message.
  */
 LogParser *
-syslog_parser_new(void)
+syslog_parser_new(GlobalConfig *cfg)
 {
   SyslogParser *self = g_new0(SyslogParser, 1);
 
-  log_parser_init_instance(&self->super);
+  log_parser_init_instance(&self->super, cfg);
   self->super.super.clone = syslog_parser_clone;
   self->super.process = syslog_parser_process;
   return &self->super;

@@ -43,7 +43,7 @@ struct _LogRewrite
 gboolean log_rewrite_init_method(LogPipe *s);
 
 void log_rewrite_set_condition(LogRewrite *s, FilterExprNode *condition);
-void log_rewrite_init(LogRewrite *self);
+void log_rewrite_init_instance(LogRewrite *self, GlobalConfig *cfg);
 void log_rewrite_free_method(LogPipe *self);
 
 #endif

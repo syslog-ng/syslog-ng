@@ -534,11 +534,11 @@ log_reader_set_peer_addr(LogReader *s, GSockAddr *peer_addr)
 }
 
 LogReader *
-log_reader_new(void)
+log_reader_new(GlobalConfig *cfg)
 {
   LogReader *self = g_new0(LogReader, 1);
 
-  log_source_init_instance(&self->super);
+  log_source_init_instance(&self->super, cfg);
   self->super.super.init = log_reader_init;
   self->super.super.deinit = log_reader_deinit;
   self->super.super.free_fn = log_reader_free;

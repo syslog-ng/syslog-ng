@@ -216,7 +216,7 @@ affile_dw_init(LogPipe *s)
       flags = LW_FORMAT_FILE |
         (self->owner->file_open_options.is_pipe ? 0 : LW_SOFT_FLOW_CONTROL);
 
-      self->writer = log_writer_new(flags);
+      self->writer = log_writer_new(flags, cfg);
     }
   log_writer_set_options(self->writer,
                          s,
@@ -227,7 +227,7 @@ affile_dw_init(LogPipe *s)
                          self->filename);
   log_writer_set_queue(self->writer, log_dest_driver_acquire_queue(&self->owner->super, affile_dw_format_persist_name(self)));
 
-  if (!log_pipe_init((LogPipe *) self->writer, NULL))
+  if (!log_pipe_init((LogPipe *) self->writer))
     {
       msg_error("Error initializing log writer", NULL);
       log_pipe_unref((LogPipe *) self->writer);
@@ -291,12 +291,17 @@ affile_dw_queue(LogPipe *s, LogMessage *lm, const LogPathOptions *path_options, 
 static void
 affile_dw_set_owner(AFFileDestWriter *self, AFFileDestDriver *owner)
 {
+  GlobalConfig *cfg = log_pipe_get_config(&owner->super.super.super);
+
   if (self->owner)
     log_pipe_unref(&self->owner->super.super.super);
   log_pipe_ref(&owner->super.super.super);
   self->owner = owner;
+
+  log_pipe_set_config(&self->super, cfg);
   if (self->writer)
     {
+      log_pipe_set_config((LogPipe *) self->writer, cfg);
       log_writer_set_options(self->writer,
                              &self->super,
                              &owner->writer_options,
@@ -324,7 +329,7 @@ affile_dw_new(AFFileDestDriver *owner, const gchar *filename)
 {
   AFFileDestWriter *self = g_new0(AFFileDestWriter, 1);
   
-  log_pipe_init_instance(&self->super);
+  log_pipe_init_instance(&self->super, owner->super.super.super.cfg);
 
   self->super.init = affile_dw_init;
   self->super.deinit = affile_dw_deinit;
@@ -419,7 +424,7 @@ affile_dd_reuse_writer(gpointer key, gpointer value, gpointer user_data)
   AFFileDestWriter *writer = (AFFileDestWriter *) value;
   
   affile_dw_set_owner(writer, self);
-  log_pipe_init(&writer->super, NULL);
+  log_pipe_init(&writer->super);
 }
 
 
@@ -452,7 +457,7 @@ affile_dd_init(LogPipe *s)
       if (self->single_writer)
         {
           affile_dw_set_owner(self->single_writer, self);
-          log_pipe_init(&self->single_writer->super, cfg);
+          log_pipe_init(&self->single_writer->super);
         }
     }
   
@@ -546,7 +551,6 @@ static LogPipe *
 affile_dd_open_writer(gpointer args[])
 {
   AFFileDestDriver *self = args[0];
-  GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
   AFFileDestWriter *next;
 
   main_loop_assert_main_thread();
@@ -555,7 +559,7 @@ affile_dd_open_writer(gpointer args[])
       if (!self->single_writer)
 	{
 	  next = affile_dw_new(self, self->filename_template->template);
-          if (next && log_pipe_init(&next->super, cfg))
+          if (next && log_pipe_init(&next->super))
 	    {
 	      log_pipe_ref(&next->super);
 	      g_static_mutex_lock(&self->lock);
@@ -591,7 +595,7 @@ affile_dd_open_writer(gpointer args[])
       if (!next)
 	{
 	  next = affile_dw_new(self, filename->str);
-          if (!log_pipe_init(&next->super, cfg))
+          if (!log_pipe_init(&next->super))
 	    {
 	      log_pipe_unref(&next->super);
 	      next = NULL;
@@ -700,16 +704,16 @@ affile_dd_free(LogPipe *s)
 }
 
 static AFFileDestDriver *
-affile_dd_new_instance(gchar *filename)
+affile_dd_new_instance(gchar *filename, GlobalConfig *cfg)
 {
   AFFileDestDriver *self = g_new0(AFFileDestDriver, 1);
 
-  log_dest_driver_init_instance(&self->super);
+  log_dest_driver_init_instance(&self->super, cfg);
   self->super.super.super.init = affile_dd_init;
   self->super.super.super.deinit = affile_dd_deinit;
   self->super.super.super.queue = affile_dd_queue;
   self->super.super.super.free_fn = affile_dd_free;
-  self->filename_template = log_template_new(configuration, NULL);
+  self->filename_template = log_template_new(cfg, NULL);
   log_template_compile(self->filename_template, filename, NULL);
   log_writer_options_defaults(&self->writer_options);
   file_perm_options_defaults(&self->file_perm_options);
@@ -727,15 +731,15 @@ affile_dd_new_instance(gchar *filename)
 }
 
 LogDriver *
-affile_dd_new(gchar *filename)
+affile_dd_new(gchar *filename, GlobalConfig *cfg)
 {
-  return &affile_dd_new_instance(filename)->super.super;
+  return &affile_dd_new_instance(filename, cfg)->super.super;
 }
 
 LogDriver *
-afpipe_dd_new(gchar *filename)
+afpipe_dd_new(gchar *filename, GlobalConfig *cfg)
 {
-  AFFileDestDriver *self = affile_dd_new_instance(filename);
+  AFFileDestDriver *self = affile_dd_new_instance(filename, cfg);
   self->file_open_options.is_pipe = TRUE;
   self->file_open_options.open_flags = DEFAULT_DW_REOPEN_FLAGS_PIPE;
 

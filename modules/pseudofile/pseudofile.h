@@ -28,6 +28,6 @@
 
 LogTemplateOptions *pseudofile_dd_get_template_options(LogDriver *s);
 void pseudofile_dd_set_template(LogDriver *self, LogTemplate *template);
-LogDriver *pseudofile_dd_new(gchar *user);
+LogDriver *pseudofile_dd_new(gchar *user, GlobalConfig *cfg);
 
 #endif

@@ -33,7 +33,7 @@ typedef struct _AFUnixDestDriver
   gchar *filename;
 } AFUnixDestDriver;
 
-AFUnixDestDriver *afunix_dd_new_dgram(gchar *filename);
-AFUnixDestDriver *afunix_dd_new_stream(gchar *filename);
+AFUnixDestDriver *afunix_dd_new_dgram(gchar *filename, GlobalConfig *cfg);
+AFUnixDestDriver *afunix_dd_new_stream(gchar *filename, GlobalConfig *cfg);
 
 #endif

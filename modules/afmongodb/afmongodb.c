@@ -646,7 +646,7 @@ afmongodb_dd_new(GlobalConfig *cfg)
 
   mongo_util_oid_init (0);
 
-  log_threaded_dest_driver_init_instance(&self->super);
+  log_threaded_dest_driver_init_instance(&self->super, cfg);
 
   self->super.super.super.super.init = afmongodb_dd_init;
   self->super.super.super.super.free_fn = afmongodb_dd_free;

@@ -79,7 +79,7 @@ afsocket_dd_get_dest_name(AFSocketDestDriver *s)
 LogWriter *afsocket_dd_construct_writer_method(AFSocketDestDriver *self);
 gboolean afsocket_dd_setup_addresses_method(AFSocketDestDriver *self);
 void afsocket_dd_set_keep_alive(LogDriver *self, gint enable);
-void afsocket_dd_init_instance(AFSocketDestDriver *self, SocketOptions *socket_options, TransportMapper *transport_mapper);
+void afsocket_dd_init_instance(AFSocketDestDriver *self, SocketOptions *socket_options, TransportMapper *transport_mapper, GlobalConfig *cfg);
 LogTransport *afsocket_dd_construct_transport_method(AFSocketDestDriver *self, gint fd);
 
 gboolean afsocket_dd_init(LogPipe *s);

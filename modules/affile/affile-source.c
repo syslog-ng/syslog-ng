@@ -278,7 +278,7 @@ affile_sd_notify(LogPipe *s, gint notify_code, gpointer user_data)
 
             proto = affile_sd_construct_proto(self, fd);
 
-            self->reader = log_reader_new();
+            self->reader = log_reader_new(self->super.super.super.cfg);
             log_reader_reopen(self->reader, proto, poll_events);
 
             log_reader_set_options(self->reader,
@@ -291,7 +291,7 @@ affile_sd_notify(LogPipe *s, gint notify_code, gpointer user_data)
             log_reader_set_immediate_check(self->reader);
 
             log_pipe_append((LogPipe *) self->reader, s);
-            if (!log_pipe_init((LogPipe *) self->reader, cfg))
+            if (!log_pipe_init((LogPipe *) self->reader))
               {
                 msg_error("Error initializing log_reader, closing fd",
                           evt_tag_int("fd", fd),
@@ -366,7 +366,7 @@ affile_sd_init(LogPipe *s)
         }
 
       proto = affile_sd_construct_proto(self, fd);
-      self->reader = log_reader_new();
+      self->reader = log_reader_new(self->super.super.super.cfg);
       log_reader_reopen(self->reader, proto, poll_events);
 
       log_reader_set_options(self->reader,
@@ -381,7 +381,7 @@ affile_sd_init(LogPipe *s)
        * we're going to read from the start. */
       
       log_pipe_append((LogPipe *) self->reader, s);
-      if (!log_pipe_init((LogPipe *) self->reader, NULL))
+      if (!log_pipe_init((LogPipe *) self->reader))
         {
           msg_error("Error initializing log_reader, closing fd",
                     evt_tag_int("fd", fd),
@@ -440,11 +440,11 @@ affile_sd_free(LogPipe *s)
 }
 
 static AFFileSourceDriver *
-affile_sd_new_instance(gchar *filename)
+affile_sd_new_instance(gchar *filename, GlobalConfig *cfg)
 {
   AFFileSourceDriver *self = g_new0(AFFileSourceDriver, 1);
   
-  log_src_driver_init_instance(&self->super);
+  log_src_driver_init_instance(&self->super, cfg);
   self->filename = g_string_new(filename);
   self->super.super.super.init = affile_sd_init;
   self->super.super.super.queue = affile_sd_queue;
@@ -461,14 +461,14 @@ affile_sd_new_instance(gchar *filename)
 }
 
 LogDriver *
-affile_sd_new(gchar *filename)
+affile_sd_new(gchar *filename, GlobalConfig *cfg)
 {
-  AFFileSourceDriver *self = affile_sd_new_instance(filename);
+  AFFileSourceDriver *self = affile_sd_new_instance(filename, cfg);
 
   self->file_open_options.is_pipe = FALSE;
   self->file_open_options.open_flags = DEFAULT_SD_OPEN_FLAGS;
 
-  if (cfg_is_config_version_older(configuration, 0x0300))
+  if (cfg_is_config_version_older(cfg, 0x0300))
     {
       static gboolean warned = FALSE;
       
@@ -493,14 +493,14 @@ affile_sd_new(gchar *filename)
 }
 
 LogDriver *
-afpipe_sd_new(gchar *filename)
+afpipe_sd_new(gchar *filename, GlobalConfig *cfg)
 {
-  AFFileSourceDriver *self = affile_sd_new_instance(filename);
+  AFFileSourceDriver *self = affile_sd_new_instance(filename, cfg);
 
   self->file_open_options.is_pipe = TRUE;
   self->file_open_options.open_flags = DEFAULT_SD_OPEN_FLAGS_PIPE;
 
-  if (cfg_is_config_version_older(configuration, 0x0302))
+  if (cfg_is_config_version_older(cfg, 0x0302))
     {
       static gboolean warned = FALSE;
       if (!warned)

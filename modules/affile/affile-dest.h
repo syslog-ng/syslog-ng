@@ -50,8 +50,8 @@ typedef struct _AFFileDestDriver
   gint time_reap;
 } AFFileDestDriver;
 
-LogDriver *affile_dd_new(gchar *filename);
-LogDriver *afpipe_dd_new(gchar *filename);
+LogDriver *affile_dd_new(gchar *filename, GlobalConfig *cfg);
+LogDriver *afpipe_dd_new(gchar *filename, GlobalConfig *cfg);
 
 void affile_dd_set_create_dirs(LogDriver *s, gboolean create_dirs);
 void affile_dd_set_fsync(LogDriver *s, gboolean enable);

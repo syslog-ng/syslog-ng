@@ -541,7 +541,7 @@ afamqp_dd_new(GlobalConfig *cfg)
 {
   AMQPDestDriver *self = g_new0(AMQPDestDriver, 1);
 
-  log_threaded_dest_driver_init_instance(&self->super);
+  log_threaded_dest_driver_init_instance(&self->super, cfg);
 
   self->super.super.super.super.init = afamqp_dd_init;
   self->super.super.super.super.free_fn = afamqp_dd_free;

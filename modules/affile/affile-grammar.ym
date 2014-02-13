@@ -86,7 +86,7 @@ source_affile
 source_affile_params
 	: string
 	  {
-            last_driver = *instance = affile_sd_new($1);
+            last_driver = *instance = affile_sd_new($1, configuration);
 	    free($1);
 	    last_reader_options = &((AFFileSourceDriver *) last_driver)->reader_options;
 	    last_file_perm_options = &((AFFileSourceDriver *) last_driver)->file_perm_options;
@@ -111,7 +111,7 @@ source_affile_option
 source_afpipe_params
 	: string
 	  {
-	    last_driver = *instance = afpipe_sd_new($1);
+	    last_driver = *instance = afpipe_sd_new($1, configuration);
 	    free($1);
 	    last_reader_options = &((AFFileSourceDriver *) last_driver)->reader_options;
 	    last_file_perm_options = &((AFFileSourceDriver *) last_driver)->file_perm_options;
@@ -159,7 +159,7 @@ dest_affile
 dest_affile_params
 	: string
 	  {
-	    last_driver = *instance = affile_dd_new($1);
+	    last_driver = *instance = affile_dd_new($1, configuration);
 	    free($1);
 	    last_writer_options = &((AFFileDestDriver *) last_driver)->writer_options;
 	    last_file_perm_options = &((AFFileDestDriver *) last_driver)->file_perm_options;
@@ -185,7 +185,7 @@ dest_affile_option
 dest_afpipe_params
 	: string
 	  {
-	    last_driver = *instance = afpipe_dd_new($1);
+	    last_driver = *instance = afpipe_dd_new($1, configuration);
 	    free($1);
 	    last_writer_options = &((AFFileDestDriver *) last_driver)->writer_options;
 	    last_file_perm_options = &((AFFileDestDriver *) last_driver)->file_perm_options;

@@ -79,7 +79,7 @@ source_afstreams_params
 	: string
 	  {
 #if ENABLE_SUN_STREAMS
-	    last_driver = *instance = afstreams_sd_new($1);
+	    last_driver = *instance = afstreams_sd_new($1, configuration);
 	    free($1);
 #endif
 	  }

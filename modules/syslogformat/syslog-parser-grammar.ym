@@ -62,7 +62,7 @@ start
 parser_expr_syslog
         : KW_SYSLOG_PARSER '('
           {
-            last_parser = *instance = syslog_parser_new();
+            last_parser = *instance = syslog_parser_new(configuration);
           }
           parser_syslog_opts
           ')'					{ $$ = last_parser; }

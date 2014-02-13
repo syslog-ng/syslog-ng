@@ -174,7 +174,7 @@ afprogram_sd_init(LogPipe *s)
       LogTransport *transport;
 
       transport = log_transport_pipe_new(fd);
-      self->reader = log_reader_new();
+      self->reader = log_reader_new(s->cfg);
       log_reader_reopen(self->reader, log_proto_text_server_new(transport, &self->reader_options.proto_options.super), poll_fd_events_new(fd));
       log_reader_set_options(self->reader,
                              s,
@@ -185,7 +185,7 @@ afprogram_sd_init(LogPipe *s)
                              self->cmdline->str);
     }
   log_pipe_append((LogPipe *) self->reader, &self->super.super.super);
-  if (!log_pipe_init((LogPipe *) self->reader, NULL))
+  if (!log_pipe_init((LogPipe *) self->reader))
     { 
       msg_error("Error initializing program source, closing fd",
                 evt_tag_int("fd", fd),
@@ -241,10 +241,10 @@ afprogram_sd_notify(LogPipe *s, gint notify_code, gpointer user_data)
 }
 
 LogDriver *
-afprogram_sd_new(gchar *cmdline)
+afprogram_sd_new(gchar *cmdline, GlobalConfig *cfg)
 {
   AFProgramSourceDriver *self = g_new0(AFProgramSourceDriver, 1);
-  log_src_driver_init_instance(&self->super);
+  log_src_driver_init_instance(&self->super, cfg);
   
   self->super.super.super.init = afprogram_sd_init;
   self->super.super.super.deinit = afprogram_sd_deinit;
@@ -336,7 +336,7 @@ afprogram_dd_init(LogPipe *s)
   log_writer_options_init(&self->writer_options, cfg, 0);
 
   if (!self->writer)
-    self->writer = log_writer_new(LW_FORMAT_FILE);
+    self->writer = log_writer_new(LW_FORMAT_FILE, s->cfg);
 
   log_writer_set_options(self->writer,
                          s,
@@ -347,7 +347,7 @@ afprogram_dd_init(LogPipe *s)
                          self->cmdline->str);
   log_writer_set_queue(self->writer, log_dest_driver_acquire_queue(&self->super, afprogram_dd_format_persist_name(self)));
 
-  log_pipe_init((LogPipe *) self->writer, NULL);
+  log_pipe_init((LogPipe *) self->writer);
   log_pipe_append(&self->super.super.super, (LogPipe *) self->writer);
 
   return afprogram_dd_reopen(self);
@@ -397,10 +397,10 @@ afprogram_dd_notify(LogPipe *s, gint notify_code, gpointer user_data)
 }
 
 LogDriver *
-afprogram_dd_new(gchar *cmdline)
+afprogram_dd_new(gchar *cmdline, GlobalConfig *cfg)
 {
   AFProgramDestDriver *self = g_new0(AFProgramDestDriver, 1);
-  log_dest_driver_init_instance(&self->super);
+  log_dest_driver_init_instance(&self->super, cfg);
   
   self->super.super.super.init = afprogram_dd_init;
   self->super.super.super.deinit = afprogram_dd_deinit;

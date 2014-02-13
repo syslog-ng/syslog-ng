@@ -244,7 +244,7 @@ json_parser_clone(LogPipe *s)
   JSONParser *self = (JSONParser *) s;
   LogParser *cloned;
 
-  cloned = json_parser_new();
+  cloned = json_parser_new(s->cfg);
   json_parser_set_prefix(cloned, self->prefix);
   json_parser_set_marker(cloned, self->marker);
   json_parser_set_extract_prefix(cloned, self->extract_prefix);
@@ -264,11 +264,11 @@ json_parser_free(LogPipe *s)
 }
 
 LogParser *
-json_parser_new(void)
+json_parser_new(GlobalConfig *cfg)
 {
   JSONParser *self = g_new0(JSONParser, 1);
 
-  log_parser_init_instance(&self->super);
+  log_parser_init_instance(&self->super, cfg);
   self->super.super.free_fn = json_parser_free;
   self->super.super.clone = json_parser_clone;
   self->super.process = json_parser_process;

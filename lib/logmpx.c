@@ -128,11 +128,11 @@ log_multiplexer_free(LogPipe *s)
 }
 
 LogMultiplexer *
-log_multiplexer_new(guint32 flags)
+log_multiplexer_new(guint32 flags, GlobalConfig *cfg)
 {
   LogMultiplexer *self = g_new0(LogMultiplexer, 1);
   
-  log_pipe_init_instance(&self->super);
+  log_pipe_init_instance(&self->super, cfg);
   self->super.init = log_multiplexer_init;
   self->super.deinit = log_multiplexer_deinit;
   self->super.queue = log_multiplexer_queue;

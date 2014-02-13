@@ -28,6 +28,6 @@
 void json_parser_set_extract_prefix(LogParser *s, const gchar *extract_prefix);
 void json_parser_set_prefix(LogParser *p, const gchar *prefix);
 void json_parser_set_marker(LogParser *p, const gchar *marker);
-LogParser *json_parser_new(void);
+LogParser *json_parser_new(GlobalConfig *cfg);
 
 #endif

@@ -61,7 +61,7 @@ extern LogDriver *last_driver;
 start
         : LL_CONTEXT_DESTINATION KW_SMTP
           {
-            last_driver = *instance = afsmtp_dd_new();
+            last_driver = *instance = afsmtp_dd_new(configuration);
           }
           '(' afsmtp_options ')'         { YYACCEPT; }
 	;

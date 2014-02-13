@@ -76,7 +76,7 @@ dest_afsql_params
         :
           {
 #if ENABLE_SQL
-            last_driver = *instance = afsql_dd_new();
+            last_driver = *instance = afsql_dd_new(configuration);
 #endif /* ENABLE_SQL */
           }
           dest_afsql_options			{ $$ = last_driver; }

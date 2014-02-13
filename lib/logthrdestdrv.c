@@ -212,9 +212,9 @@ log_threaded_dest_driver_queue(LogPipe *s, LogMessage *msg,
 }
 
 void
-log_threaded_dest_driver_init_instance(LogThrDestDriver *self)
+log_threaded_dest_driver_init_instance(LogThrDestDriver *self, GlobalConfig *cfg)
 {
-  log_dest_driver_init_instance(&self->super);
+  log_dest_driver_init_instance(&self->super, cfg);
 
   self->writer_thread_wakeup_cond = g_cond_new();
   self->suspend_mutex = g_mutex_new();

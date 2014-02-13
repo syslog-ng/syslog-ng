@@ -74,7 +74,7 @@ source_afprogram
 source_afprogram_params
 	: string
 	  {
-	    last_driver = *instance = afprogram_sd_new($1);
+	    last_driver = *instance = afprogram_sd_new($1, configuration);
 	    free($1);
 	    last_reader_options = &((AFProgramSourceDriver *) last_driver)->reader_options;
 	  }
@@ -97,7 +97,7 @@ dest_afprogram
 dest_afprogram_params
 	: string
 	  {
-	    last_driver = *instance = afprogram_dd_new($1);
+	    last_driver = *instance = afprogram_dd_new($1, configuration);
 	    free($1);
 	    last_writer_options = &((AFProgramDestDriver *) last_driver)->writer_options;
 	  }

@@ -56,7 +56,7 @@ log_rewrite_set_clone(LogPipe *s)
   LogRewriteSet *self = (LogRewriteSet *) s;
   LogRewriteSet *cloned;
 
-  cloned = (LogRewriteSet *) log_rewrite_set_new(log_template_ref(self->value_template));
+  cloned = (LogRewriteSet *) log_rewrite_set_new(log_template_ref(self->value_template), s->cfg);
   cloned->super.value_handle = self->super.value_handle;
   cloned->super.condition = self->super.condition;
   return &cloned->super.super;
@@ -72,11 +72,11 @@ log_rewrite_set_free(LogPipe *s)
 }
 
 LogRewrite *
-log_rewrite_set_new(LogTemplate *new_value)
+log_rewrite_set_new(LogTemplate *new_value, GlobalConfig *cfg)
 {
   LogRewriteSet *self = g_new0(LogRewriteSet, 1);
 
-  log_rewrite_init(&self->super);
+  log_rewrite_init_instance(&self->super, cfg);
   self->super.super.free_fn = log_rewrite_set_free;
   self->super.super.clone = log_rewrite_set_clone;
   self->super.process = log_rewrite_set_process;

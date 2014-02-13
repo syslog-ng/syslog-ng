@@ -66,7 +66,7 @@ almighty_always_pipe_new (gboolean return_value)
 
   self = g_new0 (AlmightyAlwaysPipe, 1);
 
-  log_pipe_init_instance (&self->super);
+  log_pipe_init_instance (&self->super, NULL);
 
   self->super.init = almighty_always_pipe_init;
   self->super.deinit = almighty_always_pipe_deinit;

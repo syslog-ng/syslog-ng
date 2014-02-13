@@ -1238,11 +1238,11 @@ afsql_dd_free(LogPipe *s)
 }
 
 LogDriver *
-afsql_dd_new(void)
+afsql_dd_new(GlobalConfig *cfg)
 {
   AFSqlDestDriver *self = g_new0(AFSqlDestDriver, 1);
 
-  log_dest_driver_init_instance(&self->super);
+  log_dest_driver_init_instance(&self->super, cfg);
   self->super.super.super.init = afsql_dd_init;
   self->super.super.super.deinit = afsql_dd_deinit;
   self->super.super.super.queue = afsql_dd_queue;

@@ -31,6 +31,6 @@ typedef struct _SyslogParser
   MsgFormatOptions parse_options;
 } SyslogParser;
 
-LogParser *syslog_parser_new(void);
+LogParser *syslog_parser_new(GlobalConfig *cfg);
 
 #endif

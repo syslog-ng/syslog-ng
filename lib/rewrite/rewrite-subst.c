@@ -67,9 +67,10 @@ log_rewrite_subst_process(LogRewrite *s, LogMessage **pmsg, const LogPathOptions
 }
 
 gboolean
-log_rewrite_subst_compile_pattern(LogRewrite *s, GlobalConfig *cfg, const gchar *regexp, GError **error)
+log_rewrite_subst_compile_pattern(LogRewrite *s, const gchar *regexp, GError **error)
 {
   LogRewriteSubst *self = (LogRewriteSubst*) s;
+  GlobalConfig *cfg = log_pipe_get_config(&s->super);
 
   log_matcher_options_init(&self->matcher_options, cfg);
   self->matcher = log_matcher_new(&self->matcher_options);
@@ -89,7 +90,7 @@ log_rewrite_subst_clone(LogPipe *s)
   LogRewriteSubst *self = (LogRewriteSubst *) s;
   LogRewriteSubst *cloned;
 
-  cloned = (LogRewriteSubst *) log_rewrite_subst_new(log_template_ref(self->replacement));
+  cloned = (LogRewriteSubst *) log_rewrite_subst_new(log_template_ref(self->replacement), s->cfg);
   cloned->matcher = log_matcher_ref(self->matcher);
   cloned->super.value_handle = self->super.value_handle;
   cloned->super.condition = self->super.condition;
@@ -108,11 +109,11 @@ log_rewrite_subst_free(LogPipe *s)
 }
 
 LogRewrite *
-log_rewrite_subst_new(LogTemplate *replacement)
+log_rewrite_subst_new(LogTemplate *replacement, GlobalConfig *cfg)
 {
   LogRewriteSubst *self = g_new0(LogRewriteSubst, 1);
 
-  log_rewrite_init(&self->super);
+  log_rewrite_init_instance(&self->super, cfg);
 
   self->super.super.free_fn = log_rewrite_subst_free;
   self->super.super.clone = log_rewrite_subst_clone;

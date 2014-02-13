@@ -46,7 +46,7 @@ typedef struct _AFProgramDestDriver
   LogWriterOptions writer_options;
 } AFProgramDestDriver;
 
-LogDriver *afprogram_sd_new(gchar *cmdline);
-LogDriver *afprogram_dd_new(gchar *cmdline);
+LogDriver *afprogram_sd_new(gchar *cmdline, GlobalConfig *cfg);
+LogDriver *afprogram_dd_new(gchar *cmdline, GlobalConfig *cfg);
 
 #endif

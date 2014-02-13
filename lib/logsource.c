@@ -318,9 +318,9 @@ log_source_set_options(LogSource *self, LogSourceOptions *options, gint stats_le
 }
 
 void
-log_source_init_instance(LogSource *self)
+log_source_init_instance(LogSource *self, GlobalConfig *cfg)
 {
-  log_pipe_init_instance(&self->super);
+  log_pipe_init_instance(&self->super, cfg);
   self->super.queue = log_source_queue;
   self->super.free_fn = log_source_free;
   self->super.init = log_source_init;

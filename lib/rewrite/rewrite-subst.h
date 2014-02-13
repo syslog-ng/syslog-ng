@@ -31,8 +31,8 @@
 /* LogRewriteSubst */
 LogMatcherOptions *log_rewrite_subst_get_matcher_options(LogRewrite *s);
 
-gboolean log_rewrite_subst_compile_pattern(LogRewrite *s, GlobalConfig *cfg, const gchar *regexp, GError **error);
+gboolean log_rewrite_subst_compile_pattern(LogRewrite *s, const gchar *regexp, GError **error);
 
-LogRewrite *log_rewrite_subst_new(LogTemplate *replacement);
+LogRewrite *log_rewrite_subst_new(LogTemplate *replacement, GlobalConfig *cfg);
 
 #endif

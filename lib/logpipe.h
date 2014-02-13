@@ -233,8 +233,8 @@ struct _LogPipe
 
 LogPipe *log_pipe_ref(LogPipe *self);
 void log_pipe_unref(LogPipe *self);
-LogPipe *log_pipe_new(void);
-void log_pipe_init_instance(LogPipe *self);
+LogPipe *log_pipe_new(GlobalConfig *cfg);
+void log_pipe_init_instance(LogPipe *self, GlobalConfig *cfg);
 void log_pipe_forward_notify(LogPipe *self, gint notify_code, gpointer user_data);
 
 
@@ -244,12 +244,23 @@ log_pipe_get_config(LogPipe *s)
   return s->cfg;
 }
 
+static inline void
+log_pipe_set_config(LogPipe *s, GlobalConfig *cfg)
+{
+  s->cfg = cfg;
+}
+
+static inline void
+log_pipe_reset_config(LogPipe *s)
+{
+  log_pipe_set_config(s, NULL);
+}
+
 static inline gboolean
-log_pipe_init(LogPipe *s, GlobalConfig *cfg)
+log_pipe_init(LogPipe *s)
 {
   if (!(s->flags & PIF_INITIALIZED))
     {
-      s->cfg = cfg;
       if (!s->init || s->init(s))
         {
           s->flags |= PIF_INITIALIZED;
@@ -267,12 +278,11 @@ log_pipe_deinit(LogPipe *s)
     {
       if (!s->deinit || s->deinit(s))
         {
-          s->cfg = NULL;
-
+          log_pipe_reset_config(s);
           s->flags &= ~PIF_INITIALIZED;
           return TRUE;
         }
-      s->cfg = NULL;
+      log_pipe_reset_config(s);
       return FALSE;
     }
   return TRUE;
