@@ -958,7 +958,23 @@ log_msg_print_tags(LogMessage *self, GString *result)
   log_msg_tags_foreach(self, log_msg_append_tags_callback, args);
 }
 
+void
+log_msg_set_timestamp_with_zone_offset(LogMessage *self, LM_TS type, time_t sec,
+                                       guint32 usec, gint32 zone_offset)
+{
+  g_assert(type >= 0 && type < LM_TS_MAX);
 
+  self->timestamps[type].tv_sec = sec;
+  self->timestamps[type].tv_usec = usec;
+  self->timestamps[type].zone_offset = zone_offset;
+}
+
+void
+log_msg_set_timestamp(LogMessage *self, LM_TS type, time_t sec, guint32 usec)
+{
+  long zone_offset = get_local_timezone_ofs(sec);
+  log_msg_set_timestamp_with_zone_offset(self, type, sec, usec, zone_offset);
+}
 
 /**
  * log_msg_init:
@@ -976,11 +992,8 @@ log_msg_init(LogMessage *self, GSockAddr *saddr)
   /* ref is set to 1, ack is set to 0 */
   self->ack_and_ref = LOGMSG_REFCACHE_REF_TO_VALUE(1);
   cached_g_current_time(&tv);
-  self->timestamps[LM_TS_RECVD].tv_sec = tv.tv_sec;
-  self->timestamps[LM_TS_RECVD].tv_usec = tv.tv_usec;
-  self->timestamps[LM_TS_RECVD].zone_offset = get_local_timezone_ofs(self->timestamps[LM_TS_RECVD].tv_sec);
-  self->timestamps[LM_TS_STAMP].tv_sec = -1;
-  self->timestamps[LM_TS_STAMP].zone_offset = -1;
+  log_msg_set_timestamp(self, LM_TS_RECVD, tv.tv_sec, tv.tv_usec);
+  log_msg_set_timestamp_with_zone_offset(self, LM_TS_STAMP, -1, 0, -1);
  
   self->sdata = NULL;
   self->saddr = g_sockaddr_ref(saddr);

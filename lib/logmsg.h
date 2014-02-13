@@ -46,9 +46,11 @@ typedef void (*LMAckFunc)(LogMessage *lm, gpointer user_data);
 
 #define RE_MAX_MATCHES 256
 
-#define LM_TS_STAMP 0
-#define LM_TS_RECVD 1
-#define LM_TS_MAX   2
+typedef enum _LM_TS{
+  LM_TS_STAMP = 0,
+  LM_TS_RECVD = 1,
+  LM_TS_MAX = 2
+} LM_TS;
 
 /* builtin values */
 enum
@@ -273,5 +275,9 @@ void log_msg_global_init();
 void log_msg_global_deinit(void);
 
 gboolean log_msg_nv_table_foreach(NVTable *self, NVTableForeachFunc func, gpointer user_data);
+
+void log_msg_set_timestamp(LogMessage *self, LM_TS type, time_t sec, guint32 usec);
+void log_msg_set_timestamp_with_zone_offset(LogMessage *self, LM_TS type, time_t sec,
+                                            guint32 usec, gint32 zone_offset);
 
 #endif
