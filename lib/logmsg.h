@@ -63,9 +63,10 @@ typedef void (*LMAckFunc)(LogMessage *lm, gpointer user_data, gboolean need_pos_
 
 #define RE_MAX_MATCHES 256
 
-#define LM_TS_STAMP 0
-#define LM_TS_RECVD 1
-#define LM_TS_MAX   2
+#define LM_TS_STAMP  0
+#define LM_TS_RECVD  1
+#define LM_TS_PROCESSED 2
+#define LM_TS_MAX    3
 
 /* builtin values */
 enum

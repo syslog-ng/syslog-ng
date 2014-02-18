@@ -98,6 +98,7 @@ enum
 
   M_RECVD_OFS = M_TIME_MACROS_MAX,
   M_STAMP_OFS = 2 * M_TIME_MACROS_MAX,
+  M_PROCESSED_OFS = 3 * M_TIME_MACROS_MAX,
 };
 
 LogMacroDef macros[] =
@@ -193,6 +194,33 @@ LogMacroDef macros[] =
         { "S_TZOFFSET",       M_STAMP_OFS + M_TZOFFSET },
         { "S_TZ",             M_STAMP_OFS + M_TZ },
         { "S_UNIXTIME",       M_STAMP_OFS + M_UNIXTIME },
+
+        { "P_DATE",           M_PROCESSED_OFS + M_DATE },
+        { "P_FULLDATE",       M_PROCESSED_OFS + M_FULLDATE },
+        { "P_ISODATE",        M_PROCESSED_OFS + M_ISODATE },
+        { "P_STAMP",          M_PROCESSED_OFS + M_STAMP },
+        { "P_YEAR",           M_PROCESSED_OFS + M_YEAR },
+        { "P_YEAR_DAY",       M_PROCESSED_OFS + M_YEAR_DAY },
+        { "P_MONTH",          M_PROCESSED_OFS + M_MONTH },
+        { "P_MONTH_WEEK",     M_PROCESSED_OFS + M_MONTH_WEEK },
+        { "P_MONTH_ABBREV",   M_PROCESSED_OFS + M_MONTH_ABBREV },
+        { "P_MONTH_NAME",     M_PROCESSED_OFS + M_MONTH_NAME },
+        { "P_DAY",            M_PROCESSED_OFS + M_DAY },
+        { "P_HOUR",           M_PROCESSED_OFS + M_HOUR },
+        { "P_HOUR12",         M_PROCESSED_OFS + M_HOUR12 },
+        { "P_MIN",            M_PROCESSED_OFS + M_MIN },
+        { "P_SEC",            M_PROCESSED_OFS + M_SEC },
+        { "P_MSEC",           M_PROCESSED_OFS + M_MSEC },
+        { "P_USEC",           M_PROCESSED_OFS + M_USEC },
+        { "P_AMPM",           M_PROCESSED_OFS + M_AMPM },
+        { "P_WEEKDAY",        M_PROCESSED_OFS + M_WEEK_DAY_ABBREV }, /* deprecated */
+        { "P_WEEK_DAY",       M_PROCESSED_OFS + M_WEEK_DAY },
+        { "P_WEEK_DAY_ABBREV",M_PROCESSED_OFS + M_WEEK_DAY_ABBREV },
+        { "P_WEEK_DAY_NAME",  M_PROCESSED_OFS + M_WEEK_DAY_NAME },
+        { "P_WEEK",           M_PROCESSED_OFS + M_WEEK },
+        { "P_TZOFFSET",       M_PROCESSED_OFS + M_TZOFFSET },
+        { "P_TZ",             M_PROCESSED_OFS + M_TZ },
+        { "P_UNIXTIME",       M_PROCESSED_OFS + M_UNIXTIME },
 
         { "SDATA", M_SDATA },
         { "MSGHDR", M_MSGHDR },
@@ -506,6 +534,11 @@ log_macro_expand(GString *result, gint id, gboolean escape, LogTemplateOptions *
           {
             id -= M_STAMP_OFS;
             stamp = &msg->timestamps[LM_TS_STAMP];
+          }
+        else if (id >= M_TIME_FIRST + M_PROCESSED_OFS && id <= M_TIME_LAST + M_PROCESSED_OFS)
+          {
+            id -= M_PROCESSED_OFS;
+            stamp = &msg->timestamps[LM_TS_PROCESSED];
           }
         else
           {

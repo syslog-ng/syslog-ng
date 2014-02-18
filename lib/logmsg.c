@@ -374,7 +374,7 @@ log_msg_init_queue_node(LogMessage *msg, LogMessageQueueNode *node, const LogPat
  * LogQueue.
  *
  * NOTE: Assumed to be runnning in the source thread, and that the same
- * LogMessage instance is only put into queue from the same thread (e.g. 
+ * LogMessage instance is only put into queue from the same thread (e.g.
  * the related fields are _NOT_ locked).
  */
 LogMessageQueueNode *
@@ -929,7 +929,7 @@ log_msg_print_tags(LogMessage *self, GString *result)
 /**
  * log_msg_init:
  * @self: LogMessage instance
- * @saddr: sender address 
+ * @saddr: sender address
  *
  * This function initializes a LogMessage instance without allocating it
  * first. It is used internally by the log_msg_new function.
@@ -946,7 +946,8 @@ log_msg_init(LogMessage *self, GSockAddr *saddr)
   self->timestamps[LM_TS_RECVD].zone_offset = get_local_timezone_ofs(self->timestamps[LM_TS_RECVD].tv_sec);
   self->timestamps[LM_TS_STAMP].tv_sec = -1;
   self->timestamps[LM_TS_STAMP].zone_offset = -1;
- 
+  self->timestamps[LM_TS_PROCESSED] = self->timestamps[LM_TS_RECVD];
+
   self->sdata = NULL;
   self->saddr = g_sockaddr_ref(saddr);
 
@@ -1051,7 +1052,7 @@ LogMessage *
 log_msg_new_empty(void)
 {
   LogMessage *self = log_msg_alloc(256);
-  
+
   log_msg_init(self, NULL);
   return self;
 }
@@ -1123,7 +1124,7 @@ log_msg_clone_cow(LogMessage *msg, const LogPathOptions *path_options)
  * @msg: message text
  * @flags: parse flags (LP_*)
  *
- * This function creates a new log message for messages originating 
+ * This function creates a new log message for messages originating
  * internally to syslog-ng
  **/
 LogMessage *
@@ -1131,7 +1132,7 @@ log_msg_new_internal(gint prio, const gchar *msg)
 {
   gchar buf[32];
   LogMessage *self;
-  
+
   g_snprintf(buf, sizeof(buf), "%d", (int) getpid());
   self = log_msg_new_empty();
   log_msg_set_value(self, LM_V_PROGRAM, "syslog-ng", 9);
@@ -1145,7 +1146,7 @@ log_msg_new_internal(gint prio, const gchar *msg)
 
 /**
  * log_msg_new_mark:
- * 
+ *
  * This function returns a new MARK message. MARK messages have the LF_MARK
  * flag set.
  **/
@@ -1899,7 +1900,7 @@ log_msg_write_tags(LogMessage *self, SerializeArchive *sa)
 gboolean
 log_msg_write(LogMessage *self, SerializeArchive *sa)
 {
-  guint8 version = 23;
+  guint8 version = 24;
   gint i = 0;
   /*
    * version   info
@@ -1917,6 +1918,7 @@ log_msg_write(LogMessage *self, SerializeArchive *sa)
    *   21      sdata serialization
    *   22      corrected nvtable serialization
    *   23      new RCTPID field (64 bits)
+   *   24      new processed timestamp
    */
 
   serialize_write_uint8(sa, version);
@@ -1927,6 +1929,7 @@ log_msg_write(LogMessage *self, SerializeArchive *sa)
   log_msg_write_sockaddr(sa, self->saddr);
   log_msg_write_log_stamp(sa, &self->timestamps[LM_TS_STAMP]);
   log_msg_write_log_stamp(sa, &self->timestamps[LM_TS_RECVD]);
+  log_msg_write_log_stamp(sa, &self->timestamps[LM_TS_PROCESSED]);
   log_msg_write_tags(self, sa);
   serialize_write_uint8(sa, self->initial_parse);
   serialize_write_uint8(sa, self->num_matches);
@@ -2245,6 +2248,15 @@ log_msg_read_version_2x(LogMessage *self, SerializeArchive *sa, guint8 version)
       !log_msg_read_log_stamp(sa, &self->timestamps[LM_TS_STAMP], TRUE) ||
       !log_msg_read_log_stamp(sa, &self->timestamps[LM_TS_RECVD], TRUE))
     return FALSE;
+  if (version >= 24)
+    {
+      if (!log_msg_read_log_stamp(sa, &self->timestamps[LM_TS_PROCESSED], TRUE))
+        return FALSE;
+    }
+  else
+    {
+      self->timestamps[LM_TS_PROCESSED] = self->timestamps[LM_TS_RECVD];
+    }
 
   if (!log_msg_read_tags(self, sa))
     return FALSE;
@@ -2296,7 +2308,7 @@ log_msg_read(LogMessage *self, SerializeArchive *sa)
 
   if (!serialize_read_uint8(sa, &version))
     return FALSE;
-  if ((version > 1 && version < 10) || version > 23)
+  if ((version > 1 && version < 10) || version > 24)
     {
       msg_error("Error deserializing log message, unsupported version",
                 evt_tag_int("version", version),
@@ -2307,7 +2319,7 @@ log_msg_read(LogMessage *self, SerializeArchive *sa)
     return log_msg_read_version_0_1(self, sa, version);
   else if (version < 20)
     return log_msg_read_version_1x(self, sa, version);
-  else if (version <= 23)
+  else if (version <= 24)
     return log_msg_read_version_2x(self, sa, version);
   /****************************************************
    * Should never reach THIS!!!!
