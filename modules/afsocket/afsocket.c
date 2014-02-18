@@ -662,18 +662,26 @@ afsocket_sd_init(LogPipe *s)
   /* fetch persistent connections first */
   if ((self->flags & AFSOCKET_KEEP_ALIVE))
     {
-      GList *p;
-
-      self->connections = cfg_persist_config_fetch(cfg, afsocket_sd_format_persist_name(self, FALSE));
+      GList *p = self->connections = cfg_persist_config_fetch(cfg, afsocket_sd_format_persist_name(self, FALSE));
 
       self->num_connections = 0;
-      for (p = self->connections; p; p = p->next)
+      while (p)
         {
           afsocket_sc_set_owner((AFSocketSourceConnection *) p->data, self);
-          log_pipe_init((LogPipe *) p->data, NULL);
-          self->num_connections++;
+          if (log_pipe_init((LogPipe *) p->data, NULL))
+            {
+              self->num_connections++;
+              p = p->next;
+            }
+          else
+            {
+              AFSocketSourceConnection *sc = (AFSocketSourceConnection *)p->data;
+              p = p->next;
+
+              afsocket_sd_remove_and_kill_connection(self, sc);
+            }
         }
-    }
+   }
 
   /* ok, we have connection list, check if we need to open a listener */
   sock = -1;
