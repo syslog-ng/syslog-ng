@@ -13,11 +13,8 @@ compiler:
   - gcc
   - clang
 branches:
-  only:
-    - master
-    - /^[\d\.]*\/master$/
-    - /^merge-queue\/?/
-    - /^merge\//
+  except:
+    - /wip/
 notifications:
   irc:
     channels:
