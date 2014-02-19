@@ -160,9 +160,9 @@ AC_ARG_ENABLE(mongodb,
               ,,enable_mongodb="auto")
 
 AC_ARG_WITH(libmongo-client,
-              [  --with-libmongo-client=[system/internal]
-                                         Link against the system supplied or the built-in libmongo-client library.]
-              ,,with_libmongo_client="internal")
+              [  --with-libmongo-client=[system/internal/auto]
+                                         Link against the system supplied or the built-in libmongo-client library. (default: auto)]
+              ,,with_libmongo_client="auto")
 
 AC_ARG_WITH(jsonc,
               [  --with-jsonc=[system/internal/auto/no]
@@ -890,8 +890,15 @@ dnl ***************************************************************************
 dnl libmongo headers/libraries
 dnl ***************************************************************************
 
+if test "x$with_libmongo_client" = "xauto"; then
+  with_libmongo_client="system"
+  PKG_CHECK_MODULES(LIBMONGO, libmongo-client >= $LMC_MIN_VERSION,,with_libmongo_client="auto-internal")
+elif test "x$with_libmongo_client" = "xsystem"; then
+  PKG_CHECK_MODULES(LIBMONGO, libmongo-client >= $LMC_MIN_VERSION)
+fi
 
-if test "x$with_libmongo_client" = "xinternal"; then
+if test "x$with_libmongo_client" = "xinternal" || test "x$with_libmongo_client" = "xauto-internal"; then
+        with_libmongo_client="internal"
 	if test -f "$srcdir/modules/afmongodb/libmongo-client/src/mongo.h"; then
 		AC_CONFIG_SUBDIRS([modules/afmongodb/libmongo-client])
 
@@ -905,8 +912,6 @@ if test "x$with_libmongo_client" = "xinternal"; then
 		AC_MSG_WARN([Internal libmongo-client sources not found in modules/afmongodb/libmongo-client])
 		with_libmongo_client="no"
 	fi
-elif test "x$with_libmongo_client" = "xsystem"; then
-	PKG_CHECK_MODULES(LIBMONGO, libmongo-client >= $LMC_MIN_VERSION,,with_libmongo_client="no")
 fi
 
 if test "x$with_libmongo_client" = "xno"; then
