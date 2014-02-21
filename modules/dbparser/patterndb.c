@@ -1499,6 +1499,14 @@ pattern_db_timer_tick(PatternDB *self)
       self->last_tick = now;
       g_time_val_add(&self->last_tick, -(diff - diff_sec * 1e6));
     }
+  else if (diff < 0)
+    {
+      /* time moving backwards, this can only happen if the computer's time
+       * is changed.  We don't update patterndb's idea of the time now, wait
+       * another tick instead to update that instead.
+       */
+      self->last_tick = now;
+    }
   g_static_rw_lock_writer_unlock(&self->lock);
 }
 
