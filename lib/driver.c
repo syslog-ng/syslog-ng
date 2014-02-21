@@ -25,6 +25,7 @@
 #include "driver.h"
 #include "afinter.h"
 #include "logqueue-fifo.h"
+#include "afinter.h"
 
 /* LogDriverPlugin */
 
@@ -197,10 +198,13 @@ log_dest_driver_acquire_queue_method(LogDestDriver *self, gchar *persist_name, g
   if (persist_name)
     queue = cfg_persist_config_fetch(cfg, persist_name);
 
-  if (queue && queue->type != 0)
+  if (queue)
     {
-      log_queue_unref(queue);
-      queue = NULL;
+      if (queue->type != log_queue_fifo_type)
+        {
+          log_queue_unref(queue);
+          queue = NULL;
+        }
     }
 
   if (!queue)

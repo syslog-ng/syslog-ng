@@ -32,13 +32,14 @@ extern gint log_queue_max_threads;
 
 typedef void (*LogQueuePushNotifyFunc)(gpointer user_data);
 
+typedef char *QueueType;
 typedef struct _LogQueue LogQueue;
 
 struct _LogQueue
 {
   /* this object is reference counted, but it is _not_ thread safe to
      acquire/release references in code executing in parallel */
-  guint8 type;
+  QueueType type;
   gint ref_cnt;
   gint throttle;
   gint throttle_buckets;
