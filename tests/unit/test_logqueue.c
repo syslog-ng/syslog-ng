@@ -86,7 +86,7 @@ testcase_ack_and_rewind_messages()
 }
 
 #define FEEDERS 1
-#define MESSAGES_PER_FEEDER 50000
+#define MESSAGES_PER_FEEDER 30000
 #define MESSAGES_SUM (FEEDERS * MESSAGES_PER_FEEDER)
 #define TEST_RUNS 10
 

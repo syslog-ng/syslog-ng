@@ -804,7 +804,7 @@ log_reader_handle_line(LogReader *self, const guchar *line, gint length, GSockAd
       g_string_free(converted, TRUE);
     }
   log_pipe_queue(&self->super.super, m, &path_options);
-  log_msg_refcache_stop(AT_PROCESSED);
+  log_msg_refcache_stop();
 
   return log_source_free_to_send(&self->super);
 }
