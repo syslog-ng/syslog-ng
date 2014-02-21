@@ -7,8 +7,8 @@ before_script:
 script:
   - ./configure --with-ivykis=internal --prefix=$HOME/install/syslog-ng --enable-pacct
   - make
-  - make check
-  - make func-test
+  - make check VERBOSE=1
+  - make func-test VERBOSE=1
 compiler:
   - gcc
   - clang
