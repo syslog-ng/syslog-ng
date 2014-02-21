@@ -9,7 +9,7 @@ int acked_messages = 0;
 int fed_messages = 0;
 
 void
-test_ack(LogMessage *msg, gpointer user_data, gboolean pos_tracking)
+test_ack(LogMessage *msg, gboolean need_pos_tracking)
 {
   acked_messages++;
 }

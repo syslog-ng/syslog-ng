@@ -91,6 +91,7 @@ pkginclude_HEADERS = 		\
 	reloc.h	\
 	ringbuffer.h	\
 	bookmark.h	\
+	ack_tracker.h \
   $(template_headers)
 
 if !IS_WINDOWS
@@ -176,6 +177,7 @@ libsyslog_ng_la_SOURCES = \
 	rewrite-expr-grammar.y	\
 	reloc.c                 \
 	ringbuffer.c		\
+	ack_tracker.c		\
 	$(libsyslog_ng_crypto_la_SOURCES) \
   $(template_sources)
 

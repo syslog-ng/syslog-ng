@@ -10,6 +10,7 @@
 #include "libtest_memreader.h"
 #include "tags.h"
 #include "plugin.h"
+#include "ack_tracker.h"
 
 #include <time.h>
 #include <string.h>
@@ -35,17 +36,17 @@
 LogMessage *result_msg = NULL;
 MsgFormatOptions parse_options;
 
-void log_test_msg_ack(LogMessage *msg, gpointer user_data, gboolean need_pos_tracking)
+void log_test_msg_ack(LogMessage *msg, gboolean need_pos_tracking)
 {
-
 }
 
 void
 log_test_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data)
 {
+  LogSource *self = (LogSource *)s;
   result_msg = log_msg_ref(msg);
+  ack_tracker_track_msg(self->ack_tracker, msg);
   msg->ack_func = log_test_msg_ack;
-  msg->ack_userdata = s;
   return;
 }
 

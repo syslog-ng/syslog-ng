@@ -34,6 +34,7 @@
 #include "mainloop.h"
 #include "str-format.h"
 #include "versioning.h"
+#include "ack_tracker.h"
 
 #include <sys/types.h>
 //#include <sys/socket.h>
@@ -116,8 +117,6 @@ struct _LogReader
   GCond *pending_proto_cond;
   GStaticMutex pending_proto_lock;
   LogProto *pending_proto;
-  gboolean (*ack_callback)(PersistState *state, gpointer user_data, gboolean need_to_save);
-  PersistState *state;
   gboolean force_read;
   gboolean is_regular;
 };
@@ -126,27 +125,9 @@ static gboolean log_reader_start_watches(LogReader *self);
 static void log_reader_stop_watches(LogReader *self);
 static void log_reader_update_watches(LogReader *self);
 
-static gboolean log_reader_ack(LogSource *s,gpointer user_data, gboolean need_to_save)
-{
-  LogReader *self = (LogReader *)s;
-  if (self->ack_callback && self->state)
-    {
-      gboolean result = self->ack_callback(self->state,user_data, need_to_save);
-      if (result)
-        {
-          log_source_wakeup(s);
-        }
-      return result;
-    }
-  return FALSE;
-}
-
-static void log_reader_get_state(LogSource *s,gpointer user_data)
-{
-  LogReader *self = (LogReader *)s;
-  log_proto_get_state(self->proto,user_data);
-}
-
+static void log_reader_free_proto(LogReader *self);
+static void log_reader_set_proto(LogReader *self, LogProto *proto);
+static void log_reader_set_pending_proto(LogReader *self, LogProto *proto);
 
 static void
 log_reader_work_perform(void *s)
@@ -169,12 +150,10 @@ log_reader_work_finished(void *s)
        * non-main thread. */
 
       g_static_mutex_lock(&self->pending_proto_lock);
-      if (self->proto)
-        log_proto_free(self->proto);
 
-      self->proto = self->pending_proto;
-      self->pending_proto = NULL;
-      self->pending_proto_present = FALSE;
+      log_reader_free_proto(self);
+      log_reader_set_proto(self, self->pending_proto);
+      log_reader_set_pending_proto(self, NULL);
 
       g_cond_signal(self->pending_proto_cond);
       g_static_mutex_unlock(&self->pending_proto_lock);
@@ -746,7 +725,7 @@ log_reader_update_watches(LogReader *self)
 }
 
 static gboolean
-log_reader_handle_line(LogReader *self, const guchar *line, gint length, GSockAddr *saddr)
+log_reader_handle_line(LogReader *self, const guchar *line, gint length, GSockAddr *saddr, Bookmark *bookmark)
 {
   LogMessage *m;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
@@ -792,10 +771,10 @@ log_reader_handle_line(LogReader *self, const guchar *line, gint length, GSockAd
         }
     }
 
-  if (self->proto->get_info && self->size > 0)
+  if (self->proto->get_pending_pos && self->size > 0)
     {
       converted = g_string_sized_new (25);
-      self->proto->get_info(self->proto, &pos);
+      pos = self->proto->get_pending_pos(self->proto, bookmark);
       handle = log_msg_get_value_handle(SDATA_FILE_NAME);
       if(self->follow_filename && handle)
         log_msg_set_value(m, handle, self->follow_filename, strlen(self->follow_filename));
@@ -873,6 +852,7 @@ log_reader_fetch_log(LogReader *self)
 
   while (msg_count < self->options->fetch_limit && !main_loop_io_worker_job_quit())
     {
+      Bookmark *bookmark;
       LogProtoStatus status;
       const guchar *msg;
       gsize msg_len;
@@ -886,7 +866,9 @@ log_reader_fetch_log(LogReader *self)
        * protocol, it resets may_read to FALSE after the first read was issued.
        */
 
-      status = log_proto_fetch(self->proto, &msg, &msg_len, &sa, &may_read, self->flush);
+      // TODO: FetchedData{msg, msg_len, sa, bookmark};
+      bookmark = ack_tracker_request_bookmark(self->super.ack_tracker);
+      status = log_proto_fetch(self->proto, &msg, &msg_len, &sa, &may_read, self->flush, bookmark);
       switch (status)
         {
         case LPS_EOF:
@@ -908,16 +890,14 @@ log_reader_fetch_log(LogReader *self)
       if (msg_len > 0 || (self->options->flags & LR_EMPTY_LINES))
         {
           msg_count++;
-
-          if (!log_reader_handle_line(self, msg, msg_len, sa))
+          if (!log_reader_handle_line(self, msg, msg_len, sa, bookmark))
             {
               /* window is full, don't generate further messages */
-              log_proto_queued(self->proto);
               g_sockaddr_unref(sa);
               break;
             }
         }
-      log_proto_queued(self->proto);
+
       g_sockaddr_unref(sa);
     }
   if (msg_count == self->options->fetch_limit)
@@ -949,7 +929,9 @@ log_reader_init(LogPipe *s)
     return FALSE;
   cfg = log_pipe_get_config(s);
   g_assert(cfg);
-  self->state = cfg->state;
+
+  self->super.super.cfg = cfg;
+
   /* check for new data */
   if (self->options->padding)
     {
@@ -1022,11 +1004,7 @@ log_reader_free(LogPipe *s)
 {
   LogReader *self = (LogReader *) s;
 
-  if (self->proto)
-    {
-      log_proto_free(self->proto);
-      self->proto = NULL;
-    }
+  log_reader_free_proto(self);
   log_pipe_unref(self->control);
   g_sockaddr_unref(self->peer_addr);
   g_free(self->follow_filename);
@@ -1040,17 +1018,18 @@ log_reader_set_options(LogPipe *s, LogPipe *control, LogReaderOptions *options, 
 {
   LogReader *self = (LogReader *) s;
 
+  self->options = options;
+  if (self->proto && log_proto_is_position_tracked(self->proto))
+    {
+      log_source_set_pos_tracking(&self->super, TRUE);
+    }
+
   log_source_set_options(&self->super, &options->super, stats_level, stats_source, stats_id, stats_instance, (options->flags & LR_THREADED));
 
   log_pipe_unref(self->control);
   log_pipe_ref(control);
   self->control = control;
 
-  self->options = options;
-  if (self->proto && self->proto->ack && self->proto->get_state)
-    {
-      log_source_set_pos_tracking(&self->super, TRUE);
-    }
   if (self->proto)
     {
       log_proto_set_options(self->proto,proto_options);
@@ -1072,16 +1051,12 @@ log_reader_reopen_deferred(gpointer s)
   log_reader_stop_watches(self);
   if (self->io_job.working)
     {
-      /* NOTE: proto can be NULL */
-      self->pending_proto = proto;
-      self->pending_proto_present = TRUE;
+      log_reader_set_pending_proto(self, proto);
       return;
     }
 
-  if (self->proto)
-    log_proto_free(self->proto);
-
-  self->proto = proto;
+  log_reader_free_proto(self);
+  log_reader_set_proto(self, proto);
 
   self->is_regular = FALSE;
   if(proto)
@@ -1097,8 +1072,8 @@ log_reader_reopen_deferred(gpointer s)
           log_reader_set_immediate_check(&self->super.super);
         }
       log_reader_start_watches(self);
-      self->ack_callback = proto->ack;
-      if (proto->ack && proto->get_state)
+
+      if (log_proto_is_position_tracked(proto))
         {
           log_source_set_pos_tracking(&self->super, TRUE);
         }
@@ -1144,6 +1119,44 @@ log_reader_set_peer_addr(LogPipe *s, GSockAddr *peer_addr)
   self->peer_addr = g_sockaddr_ref(peer_addr);
 }
 
+static void
+log_reader_free_proto(LogReader *self)
+{
+  if (self->proto)
+    {
+      log_proto_free(self->proto);
+      log_reader_set_proto(self, NULL);
+    }
+}
+
+static void
+log_reader_set_proto(LogReader *self, LogProto *proto)
+{
+  if (proto != NULL)
+    {
+      self->proto = proto;
+    }
+  else
+    {
+      self->proto = NULL;
+    }
+}
+
+static void
+log_reader_set_pending_proto(LogReader *self, LogProto *proto)
+{
+  if (proto != NULL)
+    {
+      self->pending_proto = proto;
+      self->pending_proto_present = TRUE;
+    }
+  else
+    {
+      self->pending_proto = NULL;
+      self->pending_proto_present = FALSE;
+    }
+}
+
 LogPipe *
 log_reader_new(LogProto *proto)
 {
@@ -1154,18 +1167,15 @@ log_reader_new(LogProto *proto)
   self->super.super.deinit = log_reader_deinit;
   self->super.super.free_fn = log_reader_free;
   self->super.wakeup = log_reader_wakeup;
-  self->super.ack = log_reader_ack;
-  self->super.get_state = log_reader_get_state;
-  self->super.msg_id = 0;
-  self->super.last_sent = 0;
-  self->proto = proto;
   self->immediate_check = FALSE;
   self->pollable_state = -1;
   self->wait_for_prefix = FALSE;
   self->flush = FALSE;
+
+  log_reader_set_proto(self, proto);
+
   log_reader_init_watches(self);
   self->last_msg_received = 0;
-  self->ack_callback = self->proto ? self->proto->ack : NULL;
   g_static_mutex_init(&self->pending_proto_lock);
   self->pending_proto_cond = g_cond_new();
   return &self->super.super;

@@ -59,7 +59,7 @@ typedef struct _RcptidState
   guint64 g_rcptid;
 } RcptidState;
 
-typedef void (*LMAckFunc)(LogMessage *lm, gpointer user_data, gboolean need_pos_tracking);
+typedef void (*LMAckFunc)(LogMessage *lm, gboolean need_pos_tracking);
 
 #define RE_MAX_MATCHES 256
 
@@ -154,9 +154,8 @@ struct _LogMessage
 
   gint ack_and_ref;
 
-  guint32 ack_id;
+  AckRecord *ack_record;
   LMAckFunc ack_func;
-  gpointer ack_userdata;
   LogMessage *original;
 
   /* message parts */ 

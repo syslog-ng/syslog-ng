@@ -312,6 +312,8 @@ log_reader_new_memory_source(LogReaderOptions *options, guint32 read_buffer_leng
   proto_options->super.flags = LPBS_IGNORE_EOF;
   proto = create_logproto("stream-newline",*new_transport,(LogProtoOptions *)proto_options);
   LogReader *reader = (LogReader*)log_reader_new(proto);
+  LogPipe *pipe = (LogPipe *)reader;
+  pipe->cfg = cfg;
   log_reader_set_options((LogPipe *)reader, (LogPipe *)reader, options, 0, SCS_FILE, "test","test_mem_queue", (LogProtoOptions *) proto_options);
   ((LogPipe *)reader)->queue = queue;
   ((LogPipe *)reader)->notify = notif;
@@ -334,6 +336,8 @@ log_reader_new_file_source(LogReaderOptions *options, guint32 read_buffer_length
   persist_state_start(state);
   log_proto_restart_with_state(proto,state,"test_state");
   LogReader *reader = (LogReader*)log_reader_new(proto);
+  LogPipe *pipe = (LogPipe *)reader;
+  pipe->cfg = cfg;
   log_reader_set_options((LogPipe *)reader, (LogPipe *)reader, options, 0, SCS_FILE, "test","test_file_queue", proto_options);
   ((LogPipe *)reader)->queue = queue;
   ((LogPipe *)reader)->notify = notif;

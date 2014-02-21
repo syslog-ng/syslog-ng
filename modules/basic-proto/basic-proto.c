@@ -68,6 +68,9 @@ typedef struct _LogProtoFramedClient
 extern guint32 g_run_id;
 const guchar *find_eom(const guchar *s, gsize n);
 
+static void log_proto_file_reader_ack_data_save_state(Bookmark *bookmark);
+
+
 static gboolean
 log_proto_text_client_prepare(LogProto *s, gint *fd, GIOCondition *cond, gint *timeout)
 {
@@ -513,18 +516,13 @@ log_proto_file_writer_new(LogTransport *transport, gint flush_lines, gboolean fs
   return &self->super;
 }
 
-typedef struct _AckDataFileState
+typedef struct _FileBookmarkData
 {
-  AckDataBase super;
-  union{
-    struct{
-      gint32 pending_buffer_pos;
-      gint64 pending_raw_stream_pos;
-      gint32 pending_raw_buffer_size;
-    }file_state;
-    char other_state[MAX_STATE_DATA_LENGTH];
-  };
-} AckDataFileState;
+  PersistEntryHandle persist_handle;
+  gint32 pending_buffer_pos;
+  gint64 pending_raw_stream_pos;
+  gint32 pending_raw_buffer_size;
+} FileBookmarkData;
 
 typedef struct _LogProtoBufferedServerState
 {
@@ -559,6 +557,7 @@ struct _LogProtoBufferedServer
   LogProto super;
   gboolean (*fetch_from_buf)(LogProtoBufferedServer *self, const guchar *buffer_start, gsize buffer_bytes, const guchar **msg, gsize *msg_len, gboolean flush_the_rest);
   gint (*read_data)(LogProtoBufferedServer *self, guchar *buf, gsize len, GSockAddr **sa);
+  void (*save_state)(Bookmark *bookmark);
 
   LogProtoBufferedServerState *state1;
   PersistState *persist_state;
@@ -1006,6 +1005,7 @@ log_proto_buffered_server_apply_state(LogProto *s, StateHandler *state_handler)
       {
         state_handler_free(self->state_handler);
       }
+
   self->state_handler = state_handler;
 
   if (fstat(fd, &st) < 0)
@@ -1553,12 +1553,47 @@ log_proto_buffered_server_fetch_from_buf(LogProtoBufferedServer *self, const guc
   return success;
 }
 
+static void
+_buffered_server_bookmark_fill(LogProtoBufferedServer *self, Bookmark *bookmark)
+{
+  LogProtoBufferedServerState *state = log_proto_buffered_server_get_state(self);
+
+  FileBookmarkData *bookmark_data = (FileBookmarkData *)(&bookmark->container);
+  bookmark_data->pending_buffer_pos = state->pending_buffer_pos;
+  bookmark_data->pending_raw_stream_pos = state->pending_raw_stream_pos;
+  bookmark_data->pending_raw_buffer_size = state->pending_raw_buffer_size;
+  bookmark_data->persist_handle = self->state_handler ? state_handler_get_handle(self->state_handler) : 0;
+  bookmark->save = self->save_state;
+
+  log_proto_buffered_server_put_state(self);
+}
+
+static void
+_log_proto_buffered_server_update_pos(LogProto *s)
+{
+  LogProtoBufferedServer *self = (LogProtoBufferedServer *) s;
+  LogProtoBufferedServerState *state = log_proto_buffered_server_get_state(self);
+
+  if (state->pending_buffer_pos == state->pending_buffer_end)
+    {
+      state->pending_buffer_end = 0;
+      state->pending_buffer_pos = 0;
+      if (self->super.flags & LPBS_POS_TRACKING)
+        {
+              state->pending_raw_stream_pos += state->pending_raw_buffer_size;
+              state->pending_raw_buffer_size = 0;
+        }
+    }
+  log_proto_buffered_server_put_state(self);
+  return;
+}
+
 /**
  * Returns: TRUE to indicate success, FALSE otherwise. The returned
  * msg can be NULL even if no failure occurred.
  **/
 static LogProtoStatus
-log_proto_buffered_server_fetch(LogProto *s, const guchar **msg, gsize *msg_len, GSockAddr **sa, gboolean *may_read, gboolean flush)
+log_proto_buffered_server_fetch(LogProto *s, const guchar **msg, gsize *msg_len, GSockAddr **sa, gboolean *may_read, gboolean flush, Bookmark *bookmark)
 {
   LogProtoBufferedServer *self = (LogProtoBufferedServer *) s;
   gint rc;
@@ -1762,59 +1797,31 @@ log_proto_buffered_server_fetch(LogProto *s, const guchar **msg, gsize *msg_len,
   /* result contains our result, but once an error happens, the error condition remains persistent */
   log_proto_buffered_server_put_state(self);
   if (result != LPS_SUCCESS)
-    self->status = result;
+    {
+      self->status = result;
+    }
+  else
+    {
+      if (bookmark && *msg)
+        {
+          _buffered_server_bookmark_fill(self, bookmark);
+          _log_proto_buffered_server_update_pos(&self->super);
+        }
+    }
+
   return result;
 }
 
-void
-log_proto_buffered_server_get_state_info(LogProto *s,gpointer user_data)
+
+static void
+log_proto_file_reader_ack_data_save_state(Bookmark *bookmark)
 {
-  LogProtoBufferedServer *self = (LogProtoBufferedServer *) s;
-  LogProtoBufferedServerState *state = log_proto_buffered_server_get_state(self);
+  FileBookmarkData *bookmark_data = (FileBookmarkData *)(&bookmark->container);
+  LogProtoBufferedServerState *state = persist_state_map_entry(bookmark->persist_state, bookmark_data->persist_handle);
 
-  AckDataFileState *data_state=  (AckDataFileState*) user_data;
-
-  data_state->file_state.pending_buffer_pos = state->pending_buffer_pos;
-  data_state->file_state.pending_raw_stream_pos = state->pending_raw_stream_pos;
-  data_state->file_state.pending_raw_buffer_size = state->pending_raw_buffer_size;
-  data_state->super.persist_handle = self->state_handler ? state_handler_get_handle(self->state_handler) : 0;
-  log_proto_buffered_server_put_state(self);
-}
-
-void
-log_proto_buffered_server_queued(LogProto *s)
-{
-  LogProtoBufferedServer *self = (LogProtoBufferedServer *) s;
-  LogProtoBufferedServerState *state = log_proto_buffered_server_get_state(self);
-  if (state->pending_buffer_pos == state->pending_buffer_end)
-    {
-      state->pending_buffer_end = 0;
-      state->pending_buffer_pos = 0;
-      if (self->super.flags & LPBS_POS_TRACKING)
-        {
-              state->pending_raw_stream_pos += state->pending_raw_buffer_size;
-              state->pending_raw_buffer_size = 0;
-        }
-    }
-  log_proto_buffered_server_put_state(self);
-  return;
-}
-
-gboolean
-log_proto_buffered_server_ack(PersistState *persist_state,gpointer user_data, gboolean need_to_save)
-{
-  AckDataFileState *data_state = (AckDataFileState*) user_data;
-  LogProtoBufferedServerState *state = NULL;
-  if (!need_to_save)
-    {
-      return FALSE;
-    }
-
-  state = persist_state_map_entry(persist_state, data_state->super.persist_handle);
-
-  state->buffer_pos = data_state->file_state.pending_buffer_pos;
-  state->raw_stream_pos = data_state->file_state.pending_raw_stream_pos;
-  state->raw_buffer_size = data_state->file_state.pending_raw_buffer_size;
+  state->buffer_pos = bookmark_data->pending_buffer_pos;
+  state->raw_stream_pos = bookmark_data->pending_raw_stream_pos;
+  state->raw_buffer_size = bookmark_data->pending_raw_buffer_size;
 
   msg_trace("Last message got confirmed",
             evt_tag_int("raw_stream_pos", state->raw_stream_pos),
@@ -1823,8 +1830,7 @@ log_proto_buffered_server_ack(PersistState *persist_state,gpointer user_data, gb
             evt_tag_int("buffer_end", state->pending_buffer_end),
             evt_tag_int("buffer_cached_eol", state->buffer_cached_eol),
             NULL);
-  persist_state_unmap_entry(persist_state, data_state->super.persist_handle);
-  return FALSE;
+  persist_state_unmap_entry(bookmark->persist_state, bookmark_data->persist_handle);
 }
 
 void
@@ -1844,24 +1850,19 @@ log_proto_buffered_server_free(LogProto *s)
     }
 }
 
-void
+static void
 log_proto_buffered_server_init(LogProtoBufferedServer *self, LogTransport *transport, gint max_buffer_size, gint init_buffer_size, guint flags)
 {
   self->super.prepare = log_proto_buffered_server_prepare;
   self->super.fetch = log_proto_buffered_server_fetch;
-  self->super.queued = log_proto_buffered_server_queued;
   self->super.free_fn = log_proto_buffered_server_free;
   self->super.reset_state = log_proto_buffered_server_reset_state;
-  self->super.get_state = log_proto_buffered_server_get_state_info;
   self->super.apply_state = log_proto_buffered_server_apply_state;
-  //self->super.ack = log_proto_buffered_server_ack;
   self->super.transport = transport;
   self->super.convert = (GIConv) -1;
   self->super.restart_with_state = log_proto_buffered_server_restart_with_state;
   self->read_data = log_proto_buffered_server_read_data;
-
   self->super.flags = flags;
-
   self->init_buffer_size = init_buffer_size;
   self->max_buffer_size = max_buffer_size;
 }
@@ -2385,15 +2386,11 @@ log_proto_text_server_fetch_from_buf(LogProtoBufferedServer *s, const guchar *bu
   return result;
 }
 
-static void
-log_proto_text_server_get_info(LogProto *s,guint64 *pos)
+static guint64
+log_proto_text_server_get_pending_pos(LogProto *s, Bookmark *bookmark)
 {
-  LogProtoTextServer *self =(LogProtoTextServer *)s;
-  LogProtoBufferedServerState *state = log_proto_buffered_server_get_state(&self->super);
-
-  if (pos)
-    *pos = state->pending_raw_stream_pos + state->pending_buffer_pos;
-  log_proto_buffered_server_put_state(&self->super);
+  FileBookmarkData *bookmark_data = (FileBookmarkData *)(&bookmark->container);
+  return bookmark_data->pending_raw_stream_pos + bookmark_data->pending_buffer_pos;
 }
 
 void
@@ -2413,7 +2410,7 @@ log_proto_text_server_init(LogProtoTextServer *self, LogTransport *transport, gi
   log_proto_buffered_server_init(&self->super, transport, max_msg_size * 6, max_msg_size, flags);
   self->super.fetch_from_buf = log_proto_text_server_fetch_from_buf;
   self->super.super.prepare = log_proto_text_server_prepare;
-  self->super.super.get_info = log_proto_text_server_get_info;
+  self->super.super.get_pending_pos = log_proto_text_server_get_pending_pos;
   self->super.super.free_fn = log_proto_text_server_free;
   self->reverse_convert = (GIConv) -1;
   self->super.wait_for_prefix = FALSE;
@@ -2436,8 +2433,9 @@ static void
 log_proto_file_reader_init(LogProtoTextServer *self, LogTransport *transport, gint max_msg_size, guint flags)
 {
   log_proto_text_server_init(self, transport, max_msg_size, flags);
-  self->super.super.ack = log_proto_buffered_server_ack;
   self->super.super.is_preemptable = log_proto_text_server_is_preemptable;
+  self->super.save_state = log_proto_file_reader_ack_data_save_state;
+  self->super.super.position_tracked = TRUE;
 }
 
 LogProto *
@@ -2757,7 +2755,7 @@ log_proto_framed_server_extract_frame_length(LogProtoFramedServer *self, gboolea
 }
 
 static LogProtoStatus
-log_proto_framed_server_fetch(LogProto *s, const guchar **msg, gsize *msg_len, GSockAddr **sa, gboolean *may_read, gboolean flush)
+log_proto_framed_server_fetch(LogProto *s, const guchar **msg, gsize *msg_len, GSockAddr **sa, gboolean *may_read, gboolean flush, Bookmark *bookmark)
 {
   LogProtoFramedServer *self = (LogProtoFramedServer *) s;
   LogProtoStatus status;
@@ -2829,7 +2827,7 @@ log_proto_framed_server_fetch(LogProto *s, const guchar **msg, gsize *msg_len, G
 
           /* we have the full message here so reset the half message flag */
           self->half_message_in_buffer = FALSE;
-          return LPS_SUCCESS;
+          goto return_success;
         }
       if (try_read)
         {
@@ -2843,6 +2841,7 @@ log_proto_framed_server_fetch(LogProto *s, const guchar **msg, gsize *msg_len, G
     default:
       break;
     }
+return_success:
   return LPS_SUCCESS;
 }
 

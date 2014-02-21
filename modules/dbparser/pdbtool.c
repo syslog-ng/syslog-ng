@@ -499,7 +499,7 @@ pdbtool_match(int argc, char *argv[])
           fprintf(stderr,"Can't find any basic proto\n");
           goto error;
         }
-      eof = log_proto_fetch(proto, &buf, &buflen, NULL, &may_read, flush) != LPS_SUCCESS;
+      eof = log_proto_fetch(proto, &buf, &buflen, NULL, &may_read, flush, NULL) != LPS_SUCCESS;
     }
 
   if (!debug_pattern)
@@ -613,7 +613,7 @@ pdbtool_match(int argc, char *argv[])
 
       if (G_LIKELY(proto))
         {
-          eof = log_proto_fetch(proto, &buf, &buflen, NULL, &may_read, flush) != LPS_SUCCESS;
+          eof = log_proto_fetch(proto, &buf, &buflen, NULL, &may_read, flush, NULL) != LPS_SUCCESS;
         }
       else
         {

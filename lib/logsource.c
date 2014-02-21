@@ -30,8 +30,10 @@
 #include "tags.h"
 #include "compat.h"
 #include "cfg.h"
+#include "ack_tracker.h"
 
 #include <string.h>
+
 
 gboolean accurate_nanosleep = FALSE;
 
@@ -42,106 +44,14 @@ log_source_wakeup(LogSource *self)
     self->wakeup(self);
 }
 
-gboolean
-log_source_ack(LogSource *self, gpointer user_data, gboolean need_to_save)
-{
-  if (self->ack)
-    return self->ack(self, user_data, need_to_save);
-  return FALSE;
-}
-
-static gboolean
-log_source_checking_ack_data_list(LogSource *s, AckData **data,guint64 *cont)
-{
-  guint64 last=s->last_sent;
-  if (last>=s->options->init_window_size)
-    last=0;
-  *cont = 0;
-  while((!s->ack_list[last].super.not_acked)&&(s->ack_list[last].super.not_sent))
-  {
-    *data = &(s->ack_list[last]);
-    s->ack_list[last].super.not_sent = FALSE;
-    (*cont)++;
-    last++;
-    if (last==s->options->init_window_size)
-      last=0;
-  }
-
-  if(*cont == 0)
-    return FALSE;
-
-  s->last_sent=last;
-
-  return TRUE;
-}
-
 static void
-log_source_destroy_ack_list(LogSource *s, guint64 continual)
+_ack_rate_adjust(LogSource *self)
 {
-  guint64 i = s->last_sent == 0 ? s->options->init_window_size : s->last_sent;
-  guint64 index = continual;
-  i--;
-
-  while (index != 0)
-    {
-      log_source_destroy_ack_data(s, &s->ack_list[i]);
-      if (i == 0)
-        i = s->options->init_window_size;
-      i--;
-      index--;
-    }
-}
-
-/**
- * log_source_msg_ack:
- *
- * This is running in the same thread as the _destination_, thus care must
- * be taken when manipulating the LogSource data structure.
- **/
-static void
-log_source_msg_ack(LogMessage *msg, gpointer user_data, gboolean need_pos_tracking)
-{
-
-  LogSource *self = (LogSource *) user_data;
-  guint32 old_window_size;
-  guint32 cur_ack_count, last_ack_count;
-  if (self->pos_tracking)
-    {
-      AckData *data = NULL;
-      guint64 continual = 0;
-      guint32 msg_list_pos;
-
-      g_static_mutex_lock(&(self->g_mutex_ack));
-      msg_list_pos = msg->ack_id;
-      self->ack_list[msg_list_pos].super.not_acked = FALSE;
-
-      if (log_source_checking_ack_data_list(self, &data, &continual))
-        {
-          log_source_ack(self,(gpointer)data, need_pos_tracking);
-
-          log_source_destroy_ack_list(self, continual);
-          old_window_size = g_atomic_counter_exchange_and_add(&self->window_size, continual);
-          if (old_window_size == 0)
-            {
-              log_source_wakeup(self);
-            }
-        }
-      g_static_mutex_unlock(&(self->g_mutex_ack));
-    }
-  else
-    {
-      old_window_size = g_atomic_counter_exchange_and_add(&self->window_size, 1);
-      if (old_window_size == 0)
-        {
-          log_source_wakeup(self);
-        }
-    }
-
-  log_msg_unref(msg);
-
   /* NOTE: this is racy. msg_ack may be executing in different writer
    * threads. I don't want to lock, all we need is an approximate value of
    * the ACK rate of the last couple of seconds.  */
+
+  guint32 cur_ack_count, last_ack_count;
 
   if (accurate_nanosleep && self->threaded)
     {
@@ -194,7 +104,26 @@ log_source_msg_ack(LogMessage *msg, gpointer user_data, gboolean need_pos_tracki
             }
         }
     }
-  log_pipe_unref(&self->super);
+}
+
+/**
+ * log_source_msg_ack:
+ *
+ * This is running in the same thread as the _destination_, thus care must
+ * be taken when manipulating the LogSource data structure.
+ **/
+static void
+log_source_msg_ack(LogMessage *msg, gboolean need_pos_tracking)
+{
+  AckTracker *ack_tracker = msg->ack_record->tracker;
+  ack_tracker_manage_msg_ack(ack_tracker, msg, need_pos_tracking);
+}
+
+void
+log_source_finalize_ack(LogSource *self, guint number_of_acks)
+{
+  log_source_window_size_grow(self, number_of_acks);
+  _ack_rate_adjust(self);
 }
 
 void
@@ -255,6 +184,7 @@ log_source_init(LogPipe *s)
   stats_register_counter(self->stats_level, self->stats_source | SCS_SOURCE, self->stats_id, self->stats_instance, SC_TYPE_PROCESSED, &self->recvd_messages);
   stats_register_counter(self->stats_level, self->stats_source | SCS_SOURCE, self->stats_id, self->stats_instance, SC_TYPE_STAMP, &self->last_message_seen);
   stats_unlock();
+
   return TRUE;
 }
 
@@ -267,6 +197,7 @@ log_source_deinit(LogPipe *s)
   stats_unregister_counter(self->stats_source | SCS_SOURCE, self->stats_id, self->stats_instance, SC_TYPE_PROCESSED, &self->recvd_messages);
   stats_unregister_counter(self->stats_source | SCS_SOURCE, self->stats_id, self->stats_instance, SC_TYPE_STAMP, &self->last_message_seen);
   stats_unlock();
+
   return TRUE;
 }
 
@@ -281,26 +212,15 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
   StatsCounter *handle;
   gint old_window_size;
   gint i;
-  
+
   msg_set_context(msg);
 
   if (msg->timestamps[LM_TS_STAMP].tv_sec == -1 || !self->options->keep_timestamp)
     msg->timestamps[LM_TS_STAMP] = msg->timestamps[LM_TS_RECVD];
 
   g_assert(msg->timestamps[LM_TS_STAMP].zone_offset != -1);
-  if (self->pos_tracking)
-    {
-      guint32 msg_list_pos=self->msg_id;
-      if (!(self->ack_list))
-        self->ack_list = g_new0(AckData,self->options->init_window_size);
 
-      self->ack_list[msg_list_pos].super.not_acked = TRUE;
-      self->ack_list[msg_list_pos].super.not_sent = TRUE;
-      self->ack_list[msg_list_pos].super.id = self->msg_id;
-      log_source_get_state(self, msg_list_pos);
-      msg->ack_id = msg_list_pos;
-      self->msg_id = (self->msg_id+1) % self->options->init_window_size;
-    }
+  ack_tracker_track_msg(self->ack_tracker, msg);
 
   /* $RCPTID create*/
   log_msg_create_rcptid(msg);
@@ -348,7 +268,6 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
         if(!((mangle_callback) (next_item->data))(log_pipe_get_config(s),msg,self))
           {
             msg->ack_func = log_source_msg_ack;
-            msg->ack_userdata = log_pipe_ref(s);
             return;
           }
       }
@@ -381,10 +300,9 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
 
   /* NOTE: we start by enabling flow-control, thus we need an acknowledgement */
   local_options.ack_needed = TRUE;
-  log_msg_ref(msg);
+  log_msg_ref(msg); // TODO: move to register_msg?
   log_msg_add_ack(msg, &local_options);
   msg->ack_func = log_source_msg_ack;
-  msg->ack_userdata = log_pipe_ref(s);
     
   old_window_size = g_atomic_counter_exchange_and_add(&self->window_size, -1);
 
@@ -413,7 +331,6 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
       ts.tv_nsec = self->window_full_sleep_nsec;
       nanosleep(&ts, NULL);
     }
-
 }
 
 void
@@ -441,6 +358,8 @@ log_source_set_options(LogSource *self, LogSourceOptions *options, gint stats_le
     g_free(self->stats_instance);
   self->stats_instance = stats_instance ? g_strdup(stats_instance): NULL;
   self->threaded = threaded;
+  if (!self->ack_tracker)
+    self->ack_tracker = ack_tracker_new(self);
 }
 
 void
@@ -451,9 +370,8 @@ log_source_init_instance(LogSource *self)
   self->super.free_fn = log_source_free;
   self->super.init = log_source_init;
   self->super.deinit = log_source_deinit;
-  self->ack_list = NULL;
-  g_static_mutex_init(&(self->g_mutex_ack));
   g_atomic_counter_set(&self->window_size, -1);
+  self->ack_tracker = NULL;
 }
 
 void
@@ -461,8 +379,9 @@ log_source_free(LogPipe *s)
 {
   LogSource *self = (LogSource *) s;
 
-  if (self->ack_list)
-    g_free(self->ack_list);
+  ack_tracker_free(self->ack_tracker);
+  self->ack_tracker = NULL;
+
   g_free(self->stats_id);
   g_free(self->stats_instance);
   log_pipe_free_method(s);

@@ -28,7 +28,7 @@ static LogProtoStatus proto_fetch(LogProto *proto, const guchar **msg, gsize *ms
         GSockAddr *saddr = NULL; \
         gboolean may_read = TRUE; \
         start_grabbing_messages(); \
-        status = log_proto_fetch(proto, &msg, &msg_len, &saddr, &may_read, FALSE); \
+        status = log_proto_fetch(proto, &msg, &msg_len, &saddr, &may_read, FALSE, NULL); \
         assert_proto_status(status, LPS_SUCCESS); \
         if (expected_msg) \
           { \
@@ -61,7 +61,7 @@ static LogProtoStatus proto_fetch(LogProto *proto, const guchar **msg, gsize *ms
         GSockAddr *saddr = NULL; \
         gboolean may_read = TRUE; \
         start_grabbing_messages(); \
-        status = log_proto_fetch(proto, &msg, &msg_len, &saddr, &may_read, FALSE); \
+        status = log_proto_fetch(proto, &msg, &msg_len, &saddr, &may_read, FALSE, NULL); \
         assert_proto_status(status, LPS_SUCCESS); \
         assert_true(msg == NULL, "when an EOF is ignored msg must be NULL at line: %i", __LINE__); \
         assert_true(saddr == NULL, "returned saddr must be NULL on success at line: %i", __LINE__); \
@@ -153,7 +153,7 @@ proto_fetch(LogProto *proto, const guchar **msg, gsize *msg_len)
   do
     {
       /* FIXME: pass pointer to GSockAddr: without later memory corruption */
-      status = log_proto_fetch(proto, msg, msg_len, NULL, &may_read, FALSE);
+      status = log_proto_fetch(proto, msg, msg_len, NULL, &may_read, FALSE, NULL);
     }
   while (status == LPS_SUCCESS && *msg == NULL);
 

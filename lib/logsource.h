@@ -21,13 +21,12 @@
  * COPYING for details.
  *
  */
-  
+
 #ifndef LOGSOURCE_H_INCLUDED
 #define LOGSOURCE_H_INCLUDED
 
 #include "logpipe.h"
 #include "stats.h"
-#include "logproto.h"
 #ifndef G_OS_WIN32
 #include <iv_event.h>
 #endif
@@ -81,35 +80,16 @@ struct _LogSource
   guint32 ack_count;
   glong window_full_sleep_nsec;
   struct timespec last_ack_rate_time;
-  AckData *ack_list;
-  guint32 msg_id;
-  guint64 last_sent;
   GStaticMutex g_mutex_ack;
+  AckTracker *ack_tracker;
 
   void (*wakeup)(LogSource *s);
-  gboolean (*ack)(LogSource *s,gpointer user_data, gboolean need_to_save);
-  void (*destroy_ack_data)(LogSource *s, gpointer user_data);
-  void (*get_state)(LogSource *s,gpointer user_data);
 };
-
-static inline void
-log_source_destroy_ack_data(LogSource *s, gpointer user_data)
-{
-  if (s->destroy_ack_data)
-    s->destroy_ack_data(s, user_data);
-}
 
 static inline gboolean
 log_source_free_to_send(LogSource *self)
 {
   return g_atomic_counter_get(&self->window_size) > 0;
-}
-
-static inline void
-log_source_get_state(LogSource *self, guint64 pos)
-{
-  if (self->get_state)
-    self->get_state(self,(gpointer)&(self->ack_list[pos]));
 }
 
 gboolean log_source_init(LogPipe *s);
@@ -125,8 +105,24 @@ void log_source_options_destroy(LogSourceOptions *options);
 void log_source_options_set_tags(LogSourceOptions *options, GList *tags);
 void log_source_free(LogPipe *s);
 void log_source_wakeup(LogSource *self);
-
+void log_source_finalize_ack(LogSource *self, guint number_of_acks);
 void log_source_global_init(void);
 
+static inline void
+log_source_window_size_grow(LogSource *self, guint32 growth)
+{
+  guint32 old_window_size;
+
+  old_window_size = g_atomic_counter_exchange_and_add(&self->window_size, growth);
+
+  if (old_window_size == 0)
+    log_source_wakeup(self);
+}
+
+static inline gint
+log_source_get_init_window_size(LogSource *self)
+{
+  return self->options->init_window_size;
+}
 
 #endif

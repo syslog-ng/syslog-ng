@@ -131,6 +131,9 @@ static void log_writer_stop_watches(LogWriter *self);
 static void log_writer_update_watches(LogWriter *self);
 static void log_writer_suspend(LogWriter *self);
 
+static void log_writer_free_proto(LogWriter *self);
+static void log_writer_set_proto(LogWriter *self, LogProto *proto);
+static void log_writer_set_pending_proto(LogWriter *self, LogProto *proto);
 
 static void
 log_writer_msg_acked(guint num_msg_acked, gpointer user_data)
@@ -168,12 +171,10 @@ log_writer_work_finished(gpointer s)
        * non-main thread. */
 
       g_static_mutex_lock(&self->pending_proto_lock);
-      if (self->proto)
-        log_proto_free(self->proto);
 
-      self->proto = self->pending_proto;
-      self->pending_proto = NULL;
-      self->pending_proto_present = FALSE;
+      log_writer_free_proto(self);
+      log_writer_set_proto(self, self->pending_proto);
+      log_writer_set_pending_proto(self, NULL);
 
       g_cond_signal(self->pending_proto_cond);
       g_static_mutex_unlock(&self->pending_proto_lock);
@@ -1309,7 +1310,7 @@ log_writer_init(LogPipe *s)
       LogProto *proto;
 
       proto = self->proto;
-      self->proto = NULL;
+      log_writer_set_proto(self, NULL);
       log_writer_reopen(&self->super, proto, NULL);
     }
   log_writer_start_mark_timer(self);
@@ -1364,8 +1365,7 @@ log_writer_free(LogPipe *s)
 {
   LogWriter *self = (LogWriter *) s;
 
-  if (self->proto)
-    log_proto_free(self->proto);
+  log_writer_free_proto(self);
 
   if (self->line_buffer)
     g_string_free(self->line_buffer, TRUE);
@@ -1437,18 +1437,13 @@ log_writer_reopen_deferred(gpointer s)
 
   if (self->io_job.working)
     {
-      /* NOTE: proto can be NULL */
-      self->pending_proto = proto;
-      self->pending_proto_present = TRUE;
+      log_writer_set_pending_proto(self, proto);
       return;
     }
 
   log_writer_stop_watches(self);
-
-  if (self->proto)
-    log_proto_free(self->proto);
-
-  self->proto = proto;
+  log_writer_free_proto(self);
+  log_writer_set_proto(self, proto);
 
   if (proto)
     {
@@ -1522,6 +1517,37 @@ log_writer_set_options(LogWriter *self, LogPipe *control, LogWriterOptions *opti
   if (self->proto)
     {
       log_proto_set_options(self->proto,proto_options);
+    }
+}
+
+static void
+log_writer_free_proto(LogWriter *self)
+{
+  if (self->proto)
+    {
+      log_proto_free(self->proto);
+      log_writer_set_proto(self, NULL);
+    }
+}
+
+static void
+log_writer_set_proto(LogWriter *self, LogProto *proto)
+{
+  self->proto = proto;
+}
+
+static void
+log_writer_set_pending_proto(LogWriter *self, LogProto *proto)
+{
+  if (proto != NULL)
+    {
+      self->pending_proto = proto;
+      self->pending_proto_present = TRUE;
+    }
+  else
+    {
+      self->pending_proto = NULL;
+      self->pending_proto_present = FALSE;
     }
 }
 

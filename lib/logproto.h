@@ -29,27 +29,30 @@
 #include "persist-state.h"
 #include "state.h"
 #include "tlscontext.h"
+#include "bookmark.h" // TODO: remove...
 
 #include <pcre.h>
 
-#define MAX_STATE_DATA_LENGTH 128
 #define FILE_CURPOS_PREFIX "affile_sd_curpos"
-
-typedef struct _AckDataBase
-{
-  gboolean not_acked;
-  gboolean not_sent;
-  guint64 id;
-  PersistEntryHandle persist_handle;
-}AckDataBase;
 
 #define LOG_PROTO_OPTIONS_SIZE 256
 
-typedef struct _AckData
-{
-  AckDataBase super;
-  char other_state[MAX_STATE_DATA_LENGTH];
-}AckData;
+/* flags for log proto plain server */
+/* end-of-packet terminates log message (UDP sources) */
+
+/* issue a single read in a poll loop as /proc/kmsg does not support non-blocking mode */
+#define LPBS_NOMREAD        0x0001
+/* don't exit when EOF is read */
+#define LPBS_IGNORE_EOF     0x0002
+/* track the current file position */
+#define LPBS_POS_TRACKING   0x0004
+
+#define LPRS_BINARY         0x0008
+
+#define LPBS_KEEP_ONE       0x0010
+
+#define LPBS_FSYNC          0x0020
+
 
 typedef struct _LogProtoFactory LogProtoFactory;
 
@@ -106,12 +109,13 @@ struct _LogProto
   GIConv convert;
   gchar *encoding;
   guint16 flags;
+  gboolean position_tracked;
+
   /* FIXME: rename to something else */
   gboolean (*prepare)(LogProto *s, gint *fd, GIOCondition *cond, gint *timeout);
   gboolean (*is_preemptable)(LogProto *s);
   gboolean (*restart_with_state)(LogProto *s, PersistState *state, const gchar *persist_name);
-  LogProtoStatus (*fetch)(LogProto *s, const guchar **msg, gsize *msg_len, GSockAddr **sa, gboolean *may_read, gboolean flush);
-  void (*queued)(LogProto *s);
+  LogProtoStatus (*fetch)(LogProto *s, const guchar **msg, gsize *msg_len, GSockAddr **sa, gboolean *may_read, gboolean flush, Bookmark *bookmark);
   LogProtoStatus (*post)(LogProto *s, LogMessage *logmsg, guchar *msg, gsize msg_len, gboolean *consumed);
   LogProtoStatus (*flush)(LogProto *s);
   gboolean (*handshake_in_progess)(LogProto *s);
@@ -119,15 +123,12 @@ struct _LogProto
   void (*free_fn)(LogProto *s);
   void (*reset_state)(LogProto *s);
   /* This function is available only the object is _LogProtoTextServer */
-  void (*get_info)(LogProto *s, guint64 *pos);
-  void (*get_state)(LogProto *s, gpointer user_data);
+  guint64 (*get_pending_pos)(LogProto *s, Bookmark *bookmark);
   void (*apply_state)(LogProto *s, StateHandler *state_handler);
-  gboolean (*ack)(PersistState *state, gpointer user_data, gboolean need_to_save);
   LogProtoAckMessages ack_callback;
   gboolean (*is_reliable)(LogProto *s);
   gpointer ack_user_data;
   gboolean is_multi_line;
-  PersistState *state;
   LogProtoOptions *options;
 };
 
@@ -140,7 +141,6 @@ log_proto_handshake_in_progress(LogProto *s)
     }
   return FALSE;
 }
-
 
 static inline LogProtoStatus
 log_proto_handshake(LogProto *s)
@@ -173,11 +173,17 @@ log_proto_set_options(LogProto *s,LogProtoOptions *options)
 static inline gboolean
 log_proto_is_reliable(LogProto *s)
 {
-  if (s->is_reliable)
+  if (s && s->is_reliable)
     {
       return s->is_reliable(s);
     }
   return FALSE;
+}
+
+static inline gboolean
+log_proto_is_position_tracked(LogProto *s)
+{
+  return s->position_tracked;
 }
 
 static inline void
@@ -198,15 +204,6 @@ static inline gboolean
 log_proto_prepare(LogProto *s, gint *fd, GIOCondition *cond, gint *timeout)
 {
   return s->prepare(s, fd, cond, timeout);
-}
-
-static inline void
-log_proto_get_state(LogProto *s, gpointer user_data)
-{
-  if (s->get_state)
-    {
-      s->get_state(s, user_data);
-    }
 }
 
 static inline gboolean
@@ -241,9 +238,9 @@ log_proto_post(LogProto *s, LogMessage *logmsg, guchar *msg, gsize msg_len, gboo
 }
 
 static inline LogProtoStatus
-log_proto_fetch(LogProto *s, const guchar **msg, gsize *msg_len, GSockAddr **sa, gboolean *may_read, gboolean flush)
+log_proto_fetch(LogProto *s, const guchar **msg, gsize *msg_len, GSockAddr **sa, gboolean *may_read, gboolean flush, Bookmark *bookmark)
 {
-  return s->fetch(s, msg, msg_len, sa, may_read, flush);
+  return s->fetch(s, msg, msg_len, sa, may_read, flush, bookmark);
 }
 
 static inline void
@@ -251,13 +248,6 @@ log_proto_reset_state(LogProto *s)
 {
   if(s->reset_state)
     s->reset_state(s);
-}
-
-static inline void
-log_proto_queued(LogProto *s)
-{
-  if (s->queued)
-    s->queued(s);
 }
 
 static inline gint
@@ -269,23 +259,6 @@ log_proto_get_fd(LogProto *s)
 
 gboolean log_proto_set_encoding(LogProto *s, const gchar *encoding);
 void log_proto_free(LogProto *s);
-
-/* flags for log proto plain server */
-/* end-of-packet terminates log message (UDP sources) */
-
-/* issue a single read in a poll loop as /proc/kmsg does not support non-blocking mode */
-#define LPBS_NOMREAD        0x0001
-/* don't exit when EOF is read */
-#define LPBS_IGNORE_EOF     0x0002
-/* track the current file position */
-#define LPBS_POS_TRACKING   0x0004
-
-#define LPRS_BINARY         0x0008
-
-#define LPBS_KEEP_ONE       0x0010
-
-#define LPBS_FSYNC          0x0020
-
 
 struct _LogProtoFactory
 {
