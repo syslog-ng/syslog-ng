@@ -90,6 +90,7 @@ pkginclude_HEADERS = 		\
 	vptransform.h	\
 	reloc.h	\
 	ringbuffer.h	\
+	bookmark.h	\
   $(template_headers)
 
 if !IS_WINDOWS
