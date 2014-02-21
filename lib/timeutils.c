@@ -595,7 +595,7 @@ zone_info_parser(unsigned char **input, gboolean is64bitData, gint *version)
    * if '\0', we have just one copy of data,
    * if '2', there is additional 64 bit version at the end.
    */
-  if (buf[0] != 0 && buf[0] != '2')
+  if (buf[0] != 0 && buf[0] != '2' && buf[0] != '3')
     {
       msg_error("Error in the time zone file", 
                 evt_tag_str("message", "Bad Olson version info"), 
@@ -676,13 +676,18 @@ zone_info_parser(unsigned char **input, gboolean is64bitData, gint *version)
  /* Read types (except for the isstd and isgmt flags, which come later (why??)) */
   for (i = 0; i<typecnt; ++i)
     {
+      gint offs = 24;
+
+      if (*version == 3)
+        offs = 167;
+
       gmt_offsets[i] = readcoded32(input, G_MININT64, G_MAXINT64);
-      if (gmt_offsets[i] > 24 * 60 * 60 || gmt_offsets[i] < -1 * 24 * 60 * 60)
+      if (gmt_offsets[i] > offs * 60 * 60 || gmt_offsets[i] < -1 * offs * 60 * 60)
         {
           msg_warning("Error in the time zone file", 
                       evt_tag_str("message", "Illegal gmtoffset number"), 
                       evt_tag_int("val", gmt_offsets[i]), 
-                      evt_tag_printf("expected", "[%d, %d]", -1 * 24 * 60 * 60, 24 * 60 * 60), 
+                      evt_tag_printf("expected", "[%d, %d]", -1 * offs * 60 * 60, offs * 60 * 60), 
                       NULL);
           goto error;
         }
