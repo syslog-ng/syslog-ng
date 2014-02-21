@@ -123,6 +123,8 @@ TLS_BLOCK_START
   gint logmsg_cached_refs;
   /* number of cached acks by the current thread */
   gint logmsg_cached_acks;
+  /* abort flag in the current thread for acks */
+  gint logmsg_cached_abort;
 }
 TLS_BLOCK_END;
 
@@ -130,20 +132,23 @@ TLS_BLOCK_END;
 #define logmsg_cached_refs          __tls_deref(logmsg_cached_refs)
 #define logmsg_cached_acks          __tls_deref(logmsg_cached_acks)
 #define logmsg_cached_ack_needed    __tls_deref(logmsg_cached_ack_needed)
+#define logmsg_cached_abort         __tls_deref(logmsg_cached_abort)
 
-#define LOGMSG_REFCACHE_BIAS                  0x00004000 /* the BIAS we add to the ref counter in refcache_start */
-#define LOGMSG_REFCACHE_ACK_SHIFT                     16 /* number of bits to shift to get the ACK counter */
-#define LOGMSG_REFCACHE_ACK_MASK              0xFFFF0000 /* bit mask to extract the ACK counter */
+#define LOGMSG_REFCACHE_ABORT_SHIFT                   30 /* number of bits to shift to get the ABORT flag */
+#define LOGMSG_REFCACHE_ABORT_MASK            0x40000000 /* bit mask to extract the ABORT flag */
+#define LOGMSG_REFCACHE_ACK_SHIFT                     15 /* number of bits to shift to get the ACK counter */
+#define LOGMSG_REFCACHE_ACK_MASK              0x3FFF8000 /* bit mask to extract the ACK counter */
 #define LOGMSG_REFCACHE_REF_SHIFT                      0 /* number of bits to shift to get the REF counter */
-#define LOGMSG_REFCACHE_REF_MASK              0x0000FFFF /* bit mask to extract the ACK counter */
+#define LOGMSG_REFCACHE_REF_MASK              0x00007FFF /* bit mask to extract the ACK counter */
+#define LOGMSG_REFCACHE_BIAS                  0x00002000 /* the BIAS we add to the ref counter in refcache_start */
 
+#define LOGMSG_REFCACHE_REF_TO_VALUE(x)    (((x) << LOGMSG_REFCACHE_REF_SHIFT)   & LOGMSG_REFCACHE_REF_MASK)
+#define LOGMSG_REFCACHE_ACK_TO_VALUE(x)    (((x) << LOGMSG_REFCACHE_ACK_SHIFT)   & LOGMSG_REFCACHE_ACK_MASK)
+#define LOGMSG_REFCACHE_ABORT_TO_VALUE(x)  (((x) << LOGMSG_REFCACHE_ABORT_SHIFT) & LOGMSG_REFCACHE_ABORT_MASK)
 
-#define LOGMSG_REFCACHE_REF_TO_VALUE(x)    (((x) << LOGMSG_REFCACHE_REF_SHIFT) & LOGMSG_REFCACHE_REF_MASK)
-#define LOGMSG_REFCACHE_ACK_TO_VALUE(x)    (((x) << LOGMSG_REFCACHE_ACK_SHIFT) & LOGMSG_REFCACHE_ACK_MASK)
-
-#define LOGMSG_REFCACHE_VALUE_TO_REF(x)    (((x) & LOGMSG_REFCACHE_REF_MASK) >> LOGMSG_REFCACHE_REF_SHIFT)
-#define LOGMSG_REFCACHE_VALUE_TO_ACK(x)    (((x) & LOGMSG_REFCACHE_ACK_MASK) >> LOGMSG_REFCACHE_ACK_SHIFT)
-
+#define LOGMSG_REFCACHE_VALUE_TO_REF(x)    (((x) & LOGMSG_REFCACHE_REF_MASK)   >> LOGMSG_REFCACHE_REF_SHIFT)
+#define LOGMSG_REFCACHE_VALUE_TO_ACK(x)    (((x) & LOGMSG_REFCACHE_ACK_MASK)   >> LOGMSG_REFCACHE_ACK_SHIFT)
+#define LOGMSG_REFCACHE_VALUE_TO_ABORT(x)  (((x) & LOGMSG_REFCACHE_ABORT_MASK) >> LOGMSG_REFCACHE_ABORT_SHIFT)
 
 /**********************************************************************
  * LogMessage
@@ -974,7 +979,7 @@ log_msg_init(LogMessage *self, GSockAddr *saddr)
   GTimeVal tv;
 
   /* ref is set to 1, ack is set to 0 */
-  self->ack_and_ref = LOGMSG_REFCACHE_REF_TO_VALUE(1);
+  self->ack_and_ref_and_abort = LOGMSG_REFCACHE_REF_TO_VALUE(1);
   cached_g_current_time(&tv);
   self->timestamps[LM_TS_RECVD].tv_sec = tv.tv_sec;
   self->timestamps[LM_TS_RECVD].tv_usec = tv.tv_usec;
@@ -1138,7 +1143,7 @@ log_msg_clone_cow(LogMessage *msg, const LogPathOptions *path_options)
 
   /* reference the original message */
   self->original = log_msg_ref(msg);
-  self->ack_and_ref = LOGMSG_REFCACHE_REF_TO_VALUE(1) + LOGMSG_REFCACHE_ACK_TO_VALUE(0);
+  self->ack_and_ref_and_abort = LOGMSG_REFCACHE_REF_TO_VALUE(1) + LOGMSG_REFCACHE_ACK_TO_VALUE(0) + LOGMSG_REFCACHE_ABORT_TO_VALUE(0);
   self->cur_node = 0;
   self->protect_cnt = 0;
 
@@ -1248,20 +1253,27 @@ log_msg_drop(LogMessage *msg, const LogPathOptions *path_options)
  * of this file about ref/ack handling is strongly recommended.
  ***************************************************************************************/
 
-/* Function to update the combined ACK and REF counter. */
+/* Function to update the combined ACK (with the abort flag) and REF counter. */
+static inline gint
+log_msg_update_ack_and_ref_and_abort(LogMessage *self, gint add_ref, gint add_ack, gint add_abort)
+{
+  gint old_value, new_value;
+  do
+    {
+      new_value = old_value = (volatile gint) self->ack_and_ref_and_abort;
+      new_value = (new_value & ~LOGMSG_REFCACHE_REF_MASK)   + LOGMSG_REFCACHE_REF_TO_VALUE(  (LOGMSG_REFCACHE_VALUE_TO_REF(old_value)   + add_ref));
+      new_value = (new_value & ~LOGMSG_REFCACHE_ACK_MASK)   + LOGMSG_REFCACHE_ACK_TO_VALUE(  (LOGMSG_REFCACHE_VALUE_TO_ACK(old_value)   + add_ack));
+      new_value = (new_value & ~LOGMSG_REFCACHE_ABORT_MASK) + LOGMSG_REFCACHE_ABORT_TO_VALUE((LOGMSG_REFCACHE_VALUE_TO_ABORT(old_value) | add_abort));
+    }
+  while (!g_atomic_int_compare_and_exchange(&self->ack_and_ref_and_abort, old_value, new_value));
+  return old_value;
+}
+
+/* Function to update the combined ACK (without abort) and REF counter. */
 static inline gint
 log_msg_update_ack_and_ref(LogMessage *self, gint add_ref, gint add_ack)
 {
-  gint old_value, new_value;
-
-  do
-    {
-      new_value = old_value = (volatile gint) self->ack_and_ref;
-      new_value = (new_value & ~LOGMSG_REFCACHE_REF_MASK) + LOGMSG_REFCACHE_REF_TO_VALUE((LOGMSG_REFCACHE_VALUE_TO_REF(old_value) + add_ref));
-      new_value = (new_value & ~LOGMSG_REFCACHE_ACK_MASK) + LOGMSG_REFCACHE_ACK_TO_VALUE((LOGMSG_REFCACHE_VALUE_TO_ACK(old_value) + add_ack));
-    }
-  while (!g_atomic_int_compare_and_exchange(&self->ack_and_ref, old_value, new_value));
-  return old_value;
+  return log_msg_update_ack_and_ref_and_abort(self, add_ref, add_ack, 0);
 }
 
 /**
@@ -1364,13 +1376,19 @@ log_msg_ack(LogMessage *self, const LogPathOptions *path_options, AckType ack_ty
            * delayed until log_msg_refcache_stop() is called */
 
           logmsg_cached_acks--;
+          logmsg_cached_abort |= ACKTYPE_TO_ABORTFLAG(ack_type);
           return;
         }
 
-      old_value = log_msg_update_ack_and_ref(self, 0, -1);
+      old_value = log_msg_update_ack_and_ref_and_abort(self, 0, -1, ACKTYPE_TO_ABORTFLAG(ack_type));
       if (LOGMSG_REFCACHE_VALUE_TO_ACK(old_value) == 1)
         {
-          self->ack_func(self, ack_type);
+          AckType ack_type_cummulated = AT_ABORTED;
+
+          if (ack_type != AT_ABORTED)
+            ack_type_cummulated = ABORTFLAG_TO_ACKTYPE(LOGMSG_REFCACHE_VALUE_TO_ABORT(old_value));
+
+          self->ack_func(self, ack_type_cummulated);
         }
     }
 }
@@ -1423,10 +1441,12 @@ log_msg_refcache_start_producer(LogMessage *self)
 
   /* we don't need to be thread-safe here, as a producer has just created this message and no parallel access is yet possible */
 
-  self->ack_and_ref = (self->ack_and_ref & ~LOGMSG_REFCACHE_REF_MASK) + LOGMSG_REFCACHE_REF_TO_VALUE((LOGMSG_REFCACHE_VALUE_TO_REF(self->ack_and_ref) + LOGMSG_REFCACHE_BIAS));
-  self->ack_and_ref = (self->ack_and_ref & ~LOGMSG_REFCACHE_ACK_MASK) + LOGMSG_REFCACHE_ACK_TO_VALUE((LOGMSG_REFCACHE_VALUE_TO_ACK(self->ack_and_ref) + LOGMSG_REFCACHE_BIAS));
+  self->ack_and_ref_and_abort = (self->ack_and_ref_and_abort & ~LOGMSG_REFCACHE_REF_MASK) + LOGMSG_REFCACHE_REF_TO_VALUE((LOGMSG_REFCACHE_VALUE_TO_REF(self->ack_and_ref_and_abort) + LOGMSG_REFCACHE_BIAS));
+  self->ack_and_ref_and_abort = (self->ack_and_ref_and_abort & ~LOGMSG_REFCACHE_ACK_MASK) + LOGMSG_REFCACHE_ACK_TO_VALUE((LOGMSG_REFCACHE_VALUE_TO_ACK(self->ack_and_ref_and_abort) + LOGMSG_REFCACHE_BIAS));
+
   logmsg_cached_refs = -LOGMSG_REFCACHE_BIAS;
   logmsg_cached_acks = -LOGMSG_REFCACHE_BIAS;
+  logmsg_cached_abort = 0;
   logmsg_cached_ack_needed = TRUE;
 }
 
@@ -1451,6 +1471,7 @@ log_msg_refcache_start_consumer(LogMessage *self, const LogPathOptions *path_opt
   logmsg_cached_ack_needed = path_options->ack_needed;
   logmsg_cached_refs = 0;
   logmsg_cached_acks = 0;
+  logmsg_cached_abort = 0;
 }
 
 /*
@@ -1460,10 +1481,11 @@ log_msg_refcache_start_consumer(LogMessage *self, const LogPathOptions *path_opt
  * See the comment at the top of this file for more information.
  */
 void
-log_msg_refcache_stop(AckType ack_type)
+log_msg_refcache_stop(void)
 {
   gint old_value;
   gint current_cached_acks;
+  gint current_cached_abort;
 
   g_assert(logmsg_current != NULL);
 
@@ -1518,12 +1540,17 @@ log_msg_refcache_stop(AckType ack_type)
 
   current_cached_acks = logmsg_cached_acks;
   logmsg_cached_acks = 0;
-  old_value = log_msg_update_ack_and_ref(logmsg_current, 0, current_cached_acks);
+
+  current_cached_abort = logmsg_cached_abort;
+  logmsg_cached_abort = 0;
+
+  old_value = log_msg_update_ack_and_ref_and_abort(logmsg_current, 0, current_cached_acks, current_cached_abort);
 
   if ((LOGMSG_REFCACHE_VALUE_TO_ACK(old_value) == -current_cached_acks) && logmsg_cached_ack_needed)
     {
       /* 3) call the ack handler */
-      logmsg_current->ack_func(logmsg_current, ack_type);
+      AckType ack_type_cummulated = ABORTFLAG_TO_ACKTYPE(LOGMSG_REFCACHE_VALUE_TO_ABORT(old_value));
+      logmsg_current->ack_func(logmsg_current, ack_type_cummulated);
 
       /* the ack callback may not change the ack counters, it already
        * dropped to zero atomically, changing that again is an error */
