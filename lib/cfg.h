@@ -250,9 +250,8 @@ cfg_check_current_config_version(gint req)
 {
   if (!configuration)
     return TRUE;
-  else if (get_version_value(configuration->version) >= req)
-    return TRUE;
-  return FALSE;
+
+  return check_config_version(configuration->version, req);
 }
 
 /* destination mark modes */

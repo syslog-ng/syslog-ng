@@ -659,7 +659,7 @@ log_macro_lookup(gchar *macro, gint len)
   g_assert(macro_hash);
   g_strlcpy(buf, macro, MIN(sizeof(buf), len+1));
   macro_id = GPOINTER_TO_INT(g_hash_table_lookup(macro_hash, buf));
-  if (configuration && get_version_value(configuration->version) < 0x0300 && (macro_id == M_MESSAGE))
+  if (!cfg_check_current_config_version(0x0300) && (macro_id == M_MESSAGE))
     {
       static gboolean msg_macro_warning = FALSE;
 
@@ -1378,8 +1378,7 @@ log_template_new(GlobalConfig *cfg, gchar *name)
   self->ref_cnt = 1;
   self->cfg = cfg;
   g_static_mutex_init(&self->arg_lock);
-  if (configuration && configuration->version < 0x0300)
-  if (configuration && get_version_value(configuration->version) < 0x0300)
+  if (!cfg_check_current_config_version(0x0300))
     {
       static gboolean warn_written = FALSE;
 

@@ -569,7 +569,7 @@ affile_sd_new(gchar *filename, guint32 flags)
     {
       static gboolean warned = FALSE;
 
-      if (configuration && get_version_value(configuration->version) < 0x0302)
+      if (!cfg_check_current_config_version(0x0302))
         {
           if (!warned)
             {
@@ -586,7 +586,7 @@ affile_sd_new(gchar *filename, guint32 flags)
         }
     }
 
-  if (configuration && get_version_value(configuration->version) < 0x0300)
+  if (!cfg_check_current_config_version(0x0300))
     {
       static gboolean warned = FALSE;
 

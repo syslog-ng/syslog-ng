@@ -340,7 +340,7 @@ cfg_load_default_modules_if_necessary(GlobalConfig *self)
 {
   gboolean is_license_module_loaded = FALSE;
 
-  if (get_version_value(self->version) <= 0x0301 || (self->lexer && atoi(cfg_args_get(self->lexer->globals, "autoload-compiled-modules"))))
+  if (!check_config_version(self->version, 0x0301) || (self->lexer && atoi(cfg_args_get(self->lexer->globals, "autoload-compiled-modules"))))
     {
       gint i;
       gchar **mods;
@@ -365,25 +365,25 @@ void
 cfg_set_version(GlobalConfig *self, gint version)
 {
   self->version = version;
-  if (get_version_value(self->version) < CFG_CURRENT_VERSION)
+  if (compare_versions(self->version, CFG_CURRENT_VERSION) < 0)
     {
       msg_warning("WARNING: Configuration file format is too old, please update it to use the " CFG_CURRENT_VERSION_STRING " format as some constructs might operate inefficiently",
                   NULL);
     }
-  else if (get_version_value(self->version) > CFG_CURRENT_VERSION)
+  else if (compare_versions(self->version, CFG_CURRENT_VERSION) > 0)
     {
       msg_warning("WARNING: Configuration file format is newer than the current version, please specify the current version number (" CFG_CURRENT_VERSION_STRING ") in the @version directive",
                   NULL);
       self->version = CFG_CURRENT_VERSION;
     }
 
-  if (get_version_value(self->version) < 0x0300)
+  if (!check_config_version(self->version, 0x0300))
     {
       msg_warning("WARNING: global: the default value of chain_hostnames is changing to 'no' in " VERSION_3_0 ", please update your configuration accordingly",
                   NULL);
       self->chain_hostnames = TRUE;
     }
-  if (get_version_value(self->version) < 0x0401)
+  if (!check_config_version(self->version, 0x0401))
     {
       msg_warning("WARNING: global: the default value of log_fifo_size() has changed to 10000 in " VERSION_3_3 " to reflect log_iw_size() changes for tcp()/udp() window size changes",
                   NULL);

@@ -1189,7 +1189,7 @@ log_reader_options_defaults(LogReaderOptions *options)
   options->msg_size = -1;
   options->follow_freq = -1; 
   options->text_encoding = NULL;
-  if (configuration && get_version_value(configuration->version) < 0x0300)
+  if (!cfg_check_current_config_version(0x0300))
     {
       static gboolean warned;
       if (!warned)

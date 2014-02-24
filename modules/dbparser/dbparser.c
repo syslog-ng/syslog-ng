@@ -293,7 +293,7 @@ log_db_parser_new(void)
   self->super.process = log_db_parser_process;
   self->db_file = g_strdup(path_patterndb_file);
   g_static_mutex_init(&self->lock);
-  if (configuration && get_version_value(configuration->version) < 0x0303)
+  if (!cfg_check_current_config_version(0x0303))
     {
       msg_warning("WARNING: The default behaviour for injecting messages in db-parser() has changed in " VERSION_3_3 " from internal to pass-through, use an explicit inject-mode(internal) option for old behaviour", NULL);
       self->inject_mode = LDBP_IM_INTERNAL;

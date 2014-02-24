@@ -49,6 +49,7 @@
 
 #define VERSION_VALUE   0x0500
 
-gint get_version_value(gint version);
+gint compare_versions(gint version1, gint version2);
+gboolean check_config_version(gint version, gint required_version);
 
 #endif
