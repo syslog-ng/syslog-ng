@@ -46,8 +46,9 @@
 #define VERSION_PE_4_1 "syslog-ng PE 4.1"
 #define VERSION_PE_4_2 "syslog-ng PE 4.2"
 #define VERSION_PE_5_0 "syslog-ng PE 5.0"
+#define VERSION_PE_5_1 "syslog-ng PE 5.1"
 
-#define VERSION_VALUE   0x0500
+#define VERSION_VALUE   0x0501
 
 gint compare_versions(gint version1, gint version2);
 gboolean check_config_version(gint version, gint required_version);
