@@ -225,7 +225,8 @@ log_json_parser_clone (LogPipe *s)
 
   cloned = (LogJSONParser *) log_json_parser_new ();
   log_json_parser_set_prefix ((LogParser *)cloned, self->prefix);
-  log_json_parser_set_marker ((LogParser *)cloned, self->marker);
+  if (self->marker)
+    log_json_parser_set_marker ((LogParser *)cloned, self->marker);
 
   return &cloned->super.super;
 }
