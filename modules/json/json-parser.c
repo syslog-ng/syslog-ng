@@ -246,7 +246,8 @@ json_parser_clone(LogPipe *s)
 
   cloned = json_parser_new(s->cfg);
   json_parser_set_prefix(cloned, self->prefix);
-  json_parser_set_marker(cloned, self->marker);
+  if (self->marker)
+    json_parser_set_marker(cloned, self->marker);
   json_parser_set_extract_prefix(cloned, self->extract_prefix);
 
   return &cloned->super;
