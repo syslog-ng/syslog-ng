@@ -256,7 +256,7 @@ log_matcher_posix_re_new(void)
   self->super.replace = log_matcher_posix_re_replace;
   self->super.free_fn = log_matcher_posix_re_free;
 
-  if (!cfg_check_current_config_version(0x0300))
+  if (!cfg_check_current_config_version(VERSION_VALUE_3_0))
     {
       static gboolean warn_written = FALSE;
 

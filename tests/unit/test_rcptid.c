@@ -115,7 +115,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   if (argc > 1)
     verbose = TRUE;
 
-  configuration = cfg_new(0x0302);
+  configuration = cfg_new(VERSION_VALUE_3_2);
   plugin_load_module("syslogformat", configuration, NULL);
   plugin_load_module("basicfuncs", configuration, NULL);
   plugin_load_module("convertfuncs", configuration, NULL);

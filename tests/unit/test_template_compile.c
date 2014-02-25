@@ -431,7 +431,7 @@ int main(int argc, char **argv)
 {
   msg_init(FALSE);
 
-  configuration = cfg_new(VERSION_VALUE);
+  configuration = cfg_new(CURRENT_VERSION_VALUE);
   log_msg_registry_init();
   log_template_global_init();
   plugin_register(configuration, &hello_plugin, 1);

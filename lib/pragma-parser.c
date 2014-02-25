@@ -30,9 +30,9 @@ int pragma_parse(CfgLexer *lexer, gpointer *result, gpointer arg);
 
 static CfgLexerKeyword pragma_keywords[] = {
   { "version",            KW_VERSION, },
-  { "include",            KW_INCLUDE, 0x0302, },
-  { "module",             KW_MODULE, 0x0302, },
-  { "define",             KW_DEFINE, 0x0302, },
+  { "include",            KW_INCLUDE, VERSION_VALUE_3_2, },
+  { "module",             KW_MODULE, VERSION_VALUE_3_2, },
+  { "define",             KW_DEFINE, VERSION_VALUE_3_2, },
   { CFG_KEYWORD_STOP },
 };
 

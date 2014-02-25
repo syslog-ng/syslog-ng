@@ -115,7 +115,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 {
   app_startup();
   //Testing syslog protocol file@ SD-ID generating if file source is used
-  configuration = cfg_new(0x0302);
+  configuration = cfg_new(VERSION_VALUE_3_2);
   plugin_load_module("syslogformat", configuration, NULL);
   plugin_load_module("basic-proto", configuration, NULL);
   msg_format_options_defaults(&parse_options);

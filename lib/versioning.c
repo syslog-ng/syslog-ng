@@ -26,7 +26,7 @@
 static gboolean
 is_ose_version(gint version)
 {
-  return (version < 0x0400);
+  return (version < VERSION_VALUE_PE_4_0);
 }
 
 /*
@@ -35,21 +35,18 @@ is_ose_version(gint version)
 static gint
 convert_ose_version_to_pe(gint version)
 {
-  gint ver_main = (version >> 8) & 0xFF;
-  gint ver_sub = version & 0xFF;
+  g_assert(is_ose_version(version));
 
-  if (ver_main == 3 && ver_sub == 3)
+  switch (version)
     {
-      ver_main = 4;
-      ver_sub = 1;
-    }
-  else if (ver_main == 3 && (ver_sub == 1 || ver_sub == 2))
-    {
-      ver_main = 4;
-      ver_sub = 0;
+      case VERSION_VALUE_3_1:
+      case VERSION_VALUE_3_2: return VERSION_VALUE_PE_4_0;
+      case VERSION_VALUE_3_3: return VERSION_VALUE_PE_4_1;
+      default:
+        break;
     }
 
-  return (ver_main << 8) | ver_sub;
+  return version;
 }
 
 gint

@@ -80,7 +80,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   if (argc > 1)
     verbose = TRUE;
 
-  configuration = cfg_new(0x0300);
+  configuration = cfg_new(VERSION_VALUE_3_0);
 
   app_startup();
 

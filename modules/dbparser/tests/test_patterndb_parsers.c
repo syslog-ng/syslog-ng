@@ -284,7 +284,7 @@ test_case(gchar **testcase)
 int
 main(int argc, char *argv[])
 {
-  configuration = cfg_new(0x0303);
+  configuration = cfg_new(VERSION_VALUE_3_3);
   app_startup();
 
   //if (argc > 1)

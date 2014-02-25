@@ -98,7 +98,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 {
   log_template_global_init();
   log_msg_registry_init();
-  configuration = cfg_new(0x0302);
+  configuration = cfg_new(VERSION_VALUE_3_2);
   test_apply_custom_domain();
   test_format_hostname();
   return 0;

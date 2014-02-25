@@ -115,7 +115,7 @@ int main(void)
 {
   log_template_global_init();
   log_msg_registry_init();
-  configuration = cfg_new(0x0302);
+  configuration = cfg_new(VERSION_VALUE_3_2);
 #ifdef _WIN32
   g_free(module_path);
   module_path = g_strdup("../");

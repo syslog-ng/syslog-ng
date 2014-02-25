@@ -281,7 +281,7 @@ test_compat(void)
 
   old_version = configuration->version;
   /* old version for various macros */
-  configuration->version = 0x0201;
+  configuration->version = VERSION_VALUE_2_1;
 
   start_grabbing_messages();
   assert_template_format("$MSGHDR", "syslog-ng[23323]:");

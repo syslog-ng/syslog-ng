@@ -574,7 +574,7 @@ main(int argc, char *argv[])
 
   msg_init(TRUE);
 
-  configuration = cfg_new(0x0302);
+  configuration = cfg_new(VERSION_VALUE_3_2);
   plugin_load_module("syslogformat", configuration, NULL);
 
   pattern_db_global_init();

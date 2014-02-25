@@ -441,7 +441,7 @@ log_macro_expand(GString *result, gint id, gboolean escape, LogTemplateOptions *
         }
       break;
     case M_MESSAGE:
-      if (!cfg_check_current_config_version(0x0300))
+      if (!cfg_check_current_config_version(VERSION_VALUE_3_0))
         log_macro_expand(result, M_MSGHDR, escape, opts, tz, seq_num, context_id, msg);
       result_append_value(result, msg, LM_V_MESSAGE, escape);
       break;
@@ -659,7 +659,7 @@ log_macro_lookup(gchar *macro, gint len)
   g_assert(macro_hash);
   g_strlcpy(buf, macro, MIN(sizeof(buf), len+1));
   macro_id = GPOINTER_TO_INT(g_hash_table_lookup(macro_hash, buf));
-  if (!cfg_check_current_config_version(0x0300) && (macro_id == M_MESSAGE))
+  if (!cfg_check_current_config_version(VERSION_VALUE_3_0) && (macro_id == M_MESSAGE))
     {
       static gboolean msg_macro_warning = FALSE;
 
@@ -1378,7 +1378,7 @@ log_template_new(GlobalConfig *cfg, gchar *name)
   self->ref_cnt = 1;
   self->cfg = cfg;
   g_static_mutex_init(&self->arg_lock);
-  if (!cfg_check_current_config_version(0x0300))
+  if (!cfg_check_current_config_version(VERSION_VALUE_3_0))
     {
       static gboolean warn_written = FALSE;
 

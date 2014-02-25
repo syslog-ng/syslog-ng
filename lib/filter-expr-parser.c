@@ -54,10 +54,10 @@ static CfgLexerKeyword filter_expr_keywords[] = {
   { "message",            KW_MESSAGE },
   { "match",		  KW_MATCH },
   { "netmask",		  KW_NETMASK },
-  { "tags",		  KW_TAGS, 0x0301 },
+  { "tags",		  KW_TAGS, VERSION_VALUE_3_1 },
 
-  { "type",               KW_TYPE, 0x0300 },
-  { "value",              KW_VALUE, 0x0300 },
+  { "type",               KW_TYPE, VERSION_VALUE_3_0 },
+  { "value",              KW_VALUE, VERSION_VALUE_3_0 },
   { "flags",              KW_FLAGS },
 
   { NULL }

@@ -894,7 +894,7 @@ cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
 
       msg_warning("WARNING: Configuration file has no version number, assuming syslog-ng 2.1 format. Please add @version: maj.min to the beginning of the file",
                   NULL);
-      cfg_set_version(configuration, 0x0201);
+      cfg_set_version(configuration, VERSION_VALUE_2_1);
     }
 
   if (!injected)

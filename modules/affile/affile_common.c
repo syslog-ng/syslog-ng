@@ -68,7 +68,7 @@ affile_handle_zero_follow_freq(AFFileSourceDriver *self)
 #if __FreeBSD__
   GlobalConfig *cfg = log_pipe_get_config((LogPipe *)self);
   if ((strcmp(self->filename_pattern->str, "/dev/klog") == 0) &&
-      (cfg->version <= 0x0500) &&
+      (compare_versions(cfg->version, VERSION_VALUE_PE_5_0) <= 0) &&
       (check_os_version()))
     {
       msg_warning("Warning: syslog-ng cannot poll /dev/klog, therefore the follow_freq option has been set to 1. To avoid this warning, set follow_freq higher than 0",
@@ -569,7 +569,7 @@ affile_sd_new(gchar *filename, guint32 flags)
     {
       static gboolean warned = FALSE;
 
-      if (!cfg_check_current_config_version(0x0302))
+      if (!cfg_check_current_config_version(VERSION_VALUE_3_2))
         {
           if (!warned)
             {
@@ -586,7 +586,7 @@ affile_sd_new(gchar *filename, guint32 flags)
         }
     }
 
-  if (!cfg_check_current_config_version(0x0300))
+  if (!cfg_check_current_config_version(VERSION_VALUE_3_0))
     {
       static gboolean warned = FALSE;
 

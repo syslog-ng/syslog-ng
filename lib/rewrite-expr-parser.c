@@ -30,12 +30,12 @@ extern int rewrite_expr_debug;
 int rewrite_expr_parse(CfgLexer *lexer, GList **node, gpointer arg);
 
 static CfgLexerKeyword rewrite_expr_keywords[] = {
-  { "set",                KW_SET, 0x0300 },
-  { "subst",              KW_SUBST, 0x0300 },
+  { "set",                KW_SET, VERSION_VALUE_3_0 },
+  { "subst",              KW_SUBST, VERSION_VALUE_3_0 },
 
-  { "type",               KW_TYPE, 0x0300 },
+  { "type",               KW_TYPE, VERSION_VALUE_3_0 },
   { "flags",              KW_FLAGS },
-  { "condition",          KW_CONDITION, 0x0302 },
+  { "condition",          KW_CONDITION, VERSION_VALUE_3_2 },
   { NULL }
 };
 

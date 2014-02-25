@@ -26,7 +26,7 @@ benchmark()
   LogTemplate *template;
 
   const gchar *msg_template = "<5> localhost test: test message template";
-  configuration = cfg_new(0x0302);
+  configuration = cfg_new(VERSION_VALUE_3_2);
   plugin_load_module("syslogformat", configuration, NULL);
   msg_format_options_defaults(&parse_options);
   msg_format_options_init(&parse_options, configuration);

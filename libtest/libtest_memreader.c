@@ -10,7 +10,7 @@ create_logproto(gchar *name,LogTransport *transport,LogProtoOptions *options)
   GlobalConfig *configuration;
   LogProto *proto = NULL;
   LogProtoFactory *factory;
-  configuration = cfg_new(0x0302);
+  configuration = cfg_new(VERSION_VALUE_3_2);
   plugin_load_module("basic-proto", configuration, NULL);
   factory = log_proto_get_factory(configuration, LPT_SERVER, name);
   if (factory)

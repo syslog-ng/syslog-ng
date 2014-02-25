@@ -156,7 +156,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   if (argc > 1)
     verbose = TRUE;
 
-  configuration = cfg_new(0x0303);
+  configuration = cfg_new(VERSION_VALUE_3_3);
   app_startup();
   putenv("TZ=MET-1METDST");
   tzset();
