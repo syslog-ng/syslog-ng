@@ -124,6 +124,9 @@ log_source_finalize_ack(LogSource *self, guint number_of_acks)
 {
   log_source_window_size_grow(self, number_of_acks);
   _ack_rate_adjust(self);
+
+  if (self->is_external_ack_required)
+    log_source_wakeup(self);
 }
 
 void

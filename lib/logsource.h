@@ -82,6 +82,7 @@ struct _LogSource
   struct timespec last_ack_rate_time;
   GStaticMutex g_mutex_ack;
   AckTracker *ack_tracker;
+  gboolean is_external_ack_required;
 
   void (*wakeup)(LogSource *s);
 };

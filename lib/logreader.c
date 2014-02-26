@@ -1135,10 +1135,12 @@ log_reader_set_proto(LogReader *self, LogProto *proto)
   if (proto != NULL)
     {
       self->proto = proto;
+      self->super.is_external_ack_required = proto->flags & LPBS_EXTERNAL_ACK_REQUIRED;
     }
   else
     {
       self->proto = NULL;
+      self->super.is_external_ack_required = FALSE;
     }
 }
 

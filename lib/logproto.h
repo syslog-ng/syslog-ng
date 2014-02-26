@@ -53,6 +53,8 @@
 
 #define LPBS_FSYNC          0x0020
 
+#define LPBS_EXTERNAL_ACK_REQUIRED   0x0040
+
 
 typedef struct _LogProtoFactory LogProtoFactory;
 
