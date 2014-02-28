@@ -35,6 +35,11 @@
 #include <errno.h>
 #include <unistd.h>
 
+#if __FreeBSD__
+#include <sys/sysctl.h>
+#include <inttypes.h>
+#endif
+
 static void
 system_sysblock_add_unix_dgram(GString *sysblock, const gchar *path,
                                const gchar *perms, const gchar *recvbuf_size)
@@ -86,6 +91,27 @@ system_sysblock_add_pipe(GString *sysblock, const gchar *path, gint pad_size)
     g_string_append_printf(sysblock, " pad_size(%d)", pad_size);
   g_string_append(sysblock, ");\n");
 }
+
+#if __FreeBSD__
+static gboolean
+system_freebsd_is_jailed(void)
+{
+  int r;
+  int32_t is_jailed;
+  size_t len = 4;
+
+  r = sysctlbyname("security.jail.jailed", &is_jailed, &len, NULL, 0);
+  if (r != 0)
+    return FALSE;
+  return !!is_jailed;
+}
+#else
+static gboolean
+system_freebsd_is_jailed(void)
+{
+  return FALSE;
+}
+#endif
 
 static void
 system_sysblock_add_freebsd_klog(GString *sysblock, const gchar *release)
@@ -163,7 +189,8 @@ system_generate_system(CfgLexer *lexer, gint type, const gchar *name,
       system_sysblock_add_unix_dgram(sysblock, "/var/run/log", NULL, NULL);
       system_sysblock_add_unix_dgram(sysblock, "/var/run/logpriv", "0600", NULL);
 
-      system_sysblock_add_freebsd_klog(sysblock, u.release);
+      if (!system_freebsd_is_jailed())
+        system_sysblock_add_freebsd_klog(sysblock, u.release);
     }
   else if (strcmp(u.sysname, "GNU/kFreeBSD") == 0)
     {
