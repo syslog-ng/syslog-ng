@@ -68,7 +68,8 @@ tf_geoip(LogMessage *msg, gint argc, GString *argv[], GString *result)
     }
 
   country = GeoIP_country_code_by_name(local_state->gi, argv[0]->str);
-  g_string_append(result, country);
+  if (country)
+    g_string_append(result, country);
 
   return TRUE;
 }
