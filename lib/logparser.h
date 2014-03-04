@@ -37,7 +37,7 @@ struct _LogParser
 {
   LogProcessPipe super;
   LogTemplate *template;
-  gboolean (*process)(LogParser *s, LogMessage *msg, const gchar *input);
+  gboolean (*process)(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, const gchar *input, gsize input_len);
 };
 
 void log_parser_set_template(LogParser *self, LogTemplate *template);
@@ -45,9 +45,11 @@ void log_parser_init_instance(LogParser *self);
 void log_parser_free_method(LogPipe *self);
 
 static inline gboolean
-log_parser_process(LogParser *self, LogMessage *msg, const gchar *input)
+log_parser_process(LogParser *self, LogMessage **pmsg, const LogPathOptions *path_options, const gchar *input, gsize input_len)
 {
-  return self->process(self, msg, input);
+  if (input_len < 0)
+    input_len = strlen(input);
+  return self->process(self, pmsg, path_options, input, input_len);
 }
 
 struct _LogColumnParser

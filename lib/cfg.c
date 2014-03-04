@@ -268,10 +268,14 @@ cfg_add_connection(GlobalConfig *cfg, LogConnection *conn)
   g_ptr_array_add(cfg->connections, conn);
 }
 
-void
+gboolean
 cfg_add_template(GlobalConfig *cfg, LogTemplate *template)
 {
-  g_hash_table_insert(cfg->templates, template->name, template);
+  gboolean res = TRUE;
+
+  res = (g_hash_table_lookup(cfg->templates, template->name) == NULL);
+  g_hash_table_replace(cfg->templates, template->name, template);
+  return res;
 }
 
 LogTemplate *
@@ -392,6 +396,27 @@ cfg_set_version(GlobalConfig *self, gint version)
   cfg_load_default_modules_if_necessary(self);
 }
 
+gboolean
+cfg_allow_config_dups(GlobalConfig *self)
+{
+  const gchar *s;
+
+  if (!check_config_version(self->version, VERSION_VALUE_3_3))
+    return TRUE;
+
+  s = cfg_args_get(self->lexer->globals, "allow-config-dups");
+  if (s && atoi(s))
+    {
+      return TRUE;
+    }
+  else
+    {
+      /* duplicate found, but allow-config-dups is not enabled, hint the user that he might want to use allow-config-dups */
+      msg_notice("WARNING: Duplicate configuration objects (sources, destinations, ...) are not allowed by default starting with syslog-ng 3.3, add \"@define allow-config-dups 1\" to your configuration to reenable", NULL);
+      return FALSE;
+    }
+}
+
 struct _LogTemplate *
 cfg_check_inline_template(GlobalConfig *cfg, const gchar *template_or_name, GError **error)
 {
@@ -452,6 +477,7 @@ cfg_new(gint version)
   log_template_options_defaults(&self->template_options);
   self->template_options.ts_format = TS_FMT_BSD;
   self->template_options.frac_digits = 0;
+  self->template_options.on_error = ON_ERROR_DROP_MESSAGE;
   self->recv_time_zone = NULL;
   self->keep_timestamp = TRUE;
   self->cfg_fingerprint = NULL;
@@ -605,6 +631,7 @@ cfg_free(GlobalConfig *self)
   g_free(self->proto_template_name);  
   log_template_unref(self->file_template);
   log_template_unref(self->proto_template);
+  log_template_options_destroy(&self->template_options);
   
   if (self->center)
     log_center_free(self->center);

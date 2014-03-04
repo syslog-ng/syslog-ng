@@ -64,7 +64,8 @@ static CfgLexerKeyword main_keywords[] = {
   { "rekey",              KW_REKEY, VERSION_VALUE_3_3 },
   { "shift",              KW_SHIFT, VERSION_VALUE_3_3 },
   { "add_prefix",         KW_ADD_PREFIX, VERSION_VALUE_3_3 },
-  { "replace",            KW_REPLACE, VERSION_VALUE_3_3 },
+  { "replace",            KW_REPLACE_PREFIX, VERSION_VALUE_3_3, KWS_OBSOLETE, "replace_prefix" },
+  { "replace_prefix",     KW_REPLACE_PREFIX, VERSION_VALUE_3_4 },
 
   /* option items */
   { "flags",              KW_FLAGS },
@@ -135,6 +136,7 @@ static CfgLexerKeyword main_keywords[] = {
   { "dir_perm",           KW_DIR_PERM },
   { "template",           KW_TEMPLATE },
   { "template_escape",    KW_TEMPLATE_ESCAPE },
+  { "on_error",           KW_ON_ERROR },
   { "persist_only",       KW_PERSIST_ONLY },
   { "dns_cache_hosts",    KW_DNS_CACHE_HOSTS },
   { "dns_cache",          KW_DNS_CACHE },

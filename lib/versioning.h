@@ -53,6 +53,8 @@
 #define VERSION_VALUE_3_1      0x0301
 #define VERSION_VALUE_3_2      0x0302
 #define VERSION_VALUE_3_3      0x0303
+#define VERSION_VALUE_3_4      0x0304
+#define VERSION_VALUE_3_5      0x0305
 #define VERSION_VALUE_PE_4_0   0x0400
 #define VERSION_VALUE_PE_4_1   0x0401
 #define VERSION_VALUE_PE_4_2   0x0402

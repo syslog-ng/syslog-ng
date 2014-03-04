@@ -42,6 +42,9 @@ convert_ose_version_to_pe(gint version)
       case VERSION_VALUE_3_1:
       case VERSION_VALUE_3_2: return VERSION_VALUE_PE_4_0;
       case VERSION_VALUE_3_3: return VERSION_VALUE_PE_4_1;
+      case VERSION_VALUE_3_4:
+      case VERSION_VALUE_3_5: return VERSION_VALUE_PE_5_1;
+
       default:
         break;
     }

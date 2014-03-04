@@ -10,7 +10,7 @@
 gboolean success = TRUE;
 
 gboolean
-vp_keys_foreach(const gchar  *name, const gchar *value, gpointer user_data)
+vp_keys_foreach(const gchar  *name, TypeHint type, const gchar *value, gpointer user_data)
 {
   gpointer *args = (gpointer *) user_data;
   GList **keys = (GList **) args[0];
@@ -34,6 +34,7 @@ cat_keys_foreach(const gchar *name, gpointer user_data)
 }
 
 MsgFormatOptions parse_options;
+LogTemplateOptions template_options;
 
 LogMessage *
 create_message(void)
@@ -44,6 +45,17 @@ create_message(void)
   msg = log_msg_new(text, strlen(text), NULL, &parse_options);
   log_msg_set_tag_by_name(msg, "almafa");
   return msg;
+}
+
+static LogTemplate *
+create_template(const gchar *type_hint_string, const gchar *template_string)
+{
+  LogTemplate *template;
+
+  template = log_template_new(configuration, NULL);
+  log_template_compile(template, template_string, NULL);
+  log_template_set_type_hint(template, type_hint_string, NULL);
+  return template;
 }
 
 void
@@ -62,7 +74,7 @@ testcase(const gchar *scope, const gchar *exclude, const gchar *expected, GPtrAr
   value_pairs_add_scope(vp, scope);
   if (exclude)
     value_pairs_add_glob_pattern(vp, exclude, FALSE);
-  value_pairs_add_pair(vp, configuration, "test.key", "$MESSAGE");
+  value_pairs_add_pair(vp, "test.key", create_template("string", "$MESSAGE"));
 
   if (transformers)
     {
@@ -76,7 +88,7 @@ testcase(const gchar *scope, const gchar *exclude, const gchar *expected, GPtrAr
 
   args[0] = &vp_keys_list;
   args[1] = &test_key_found;
-  value_pairs_foreach(vp, vp_keys_foreach, msg, 11, args);
+  value_pairs_foreach(vp, vp_keys_foreach, msg, 11, &template_options, args);
   g_list_foreach(vp_keys_list, (GFunc) cat_keys_foreach, vp_keys);
 
   if (strcmp(vp_keys->str, expected) != 0)
@@ -133,11 +145,15 @@ main(int argc, char *argv[])
    * to be in the result set. */
   testcase("rfc3164", "test.*", "DATE,FACILITY,HOST,MESSAGE,PID,PRIORITY,PROGRAM", NULL);
 
+  /* tests that excluding works even when the key would be in the
+   * default set. */
+  testcase("nv-pairs", "MESSAGE", "HOST,MSGID,PID,PROGRAM", NULL);
+
   /* test the value-pair transformators */
   transformers = g_ptr_array_new();
   g_ptr_array_add(transformers, value_pairs_new_transform_add_prefix("__"));
   g_ptr_array_add(transformers, value_pairs_new_transform_shift(2));
-  g_ptr_array_add(transformers, value_pairs_new_transform_replace("C_", "CC_"));
+  g_ptr_array_add(transformers, value_pairs_new_transform_replace_prefix("C_", "CC_"));
 
   testcase("everything", NULL, ".SDATA.EventData@18372.4.Data,.SDATA.Keywords@18372.4.Keyword,.SDATA.meta.sequenceId,.SDATA.meta.sysUpTime,.SDATA.origin.ip,.SDATA.timeQuality.isSynced,.SDATA.timeQuality.tzKnown,AMPM,APPLICATION_NAME,APP_NAME,BSDDATE,BSDTAG,DATE,DAY,FACILITY,FACILITY_NUM,FILE_FACILITY,FILE_LEVEL,FILE_MESSAGE,FILE_MSG,FULLDATE,HOST,HOUR,HOUR12,ISODATE,LEVEL,LEVEL_NUM,MESSAGE,MIN,MONTH,MONTHNAME,MONTH_ABBREV,MONTH_NAME,MONTH_WEEK,MSEC,MSG,MSGHDR,MSGID,PID,PRI,PRIORITY,PROCESS_ID,PROGRAM,P_AMPM,P_DATE,P_DAY,P_FULLDATE,P_HOUR,P_HOUR12,P_ISODATE,P_MIN,P_MONTH,P_MONTH_ABBREV,P_MONTH_NAME,P_MONTH_WEEK,P_MSEC,P_SEC,P_STAMP,P_TZ,P_TZOFFSET,P_UNIXTIME,P_USEC,P_WEEK,P_WEEKDAY,P_WEEK_DAY,P_WEEK_DAY_ABBREV,P_WEEK_DAY_NAME,P_YEAR,P_YEAR_DAY,R_AMPM,R_BSDDATE,R_DATE,R_DAY,R_FULLDATE,R_HOUR,R_HOUR12,R_ISODATE,R_MIN,R_MONTH,R_MONTHNAME,R_MONTH_ABBREV,R_MONTH_NAME,R_MONTH_WEEK,R_MSEC,R_SEC,R_STAMP,R_TZ,R_TZOFFSET,R_UNIXTIME,R_USEC,R_WEEK,R_WEEKDAY,R_WEEK_DAY,R_WEEK_DAY_ABBREV,R_WEEK_DAY_NAME,R_YEAR,R_YEAR_DAY,SDATA,SEC,SEQNUM,SOURCEIP,STAMP,STRUCTURED_DATA,SYSUPTIME,S_AMPM,S_BSDDATE,S_DATE,S_DAY,S_FULLDATE,S_HOUR,S_HOUR12,S_ISODATE,S_MIN,S_MONTH,S_MONTHNAME,S_MONTH_ABBREV,S_MONTH_NAME,S_MONTH_WEEK,S_MSEC,S_SEC,S_STAMP,S_TZ,S_TZOFFSET,S_UNIXTIME,S_USEC,S_WEEK,S_WEEKDAY,S_WEEK_DAY,S_WEEK_DAY_ABBREV,S_WEEK_DAY_NAME,S_YEAR,S_YEAR_DAY,TAG,TAGS,TZ,TZOFFSET,UNIXTIME,USEC,WEEK,WEEKDAY,WEEK_DAY,WEEK_DAY_ABBREV,WEEK_DAY_NAME,YEAR,YEAR_DAY", transformers);
 

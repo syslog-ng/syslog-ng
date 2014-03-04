@@ -32,6 +32,7 @@
 /* YYSTYPE and YYLTYPE is defined by the lexer */
 #include "cfg-lexer.h"
 #include "hostname.h"
+#include "type-hinting.h"
 
 /* uses struct declarations instead of the typedefs to avoid having to
  * include logreader/logwriter/driver.h, which defines the typedefs.  This
@@ -43,7 +44,10 @@ extern struct _LogReaderOptions *last_reader_options;
 extern struct _LogWriterOptions *last_writer_options;
 extern struct _LogProtoOptions  *last_proto_options;
 extern struct _LogDriver *last_driver;
-
+extern struct _LogTemplateOptions *last_template_options;
+extern struct _LogTemplate *last_template;
+extern struct _ValuePairs *last_value_pairs;
+extern struct _ValuePairsTransformSet *last_vp_transset;
 }
 
 %name-prefix "main_"
@@ -301,7 +305,9 @@ extern struct _LogDriver *last_driver;
 %token KW_SHIFT                       10506
 %token KW_REKEY                       10507
 %token KW_ADD_PREFIX                  10508
-%token KW_REPLACE                     10509
+%token KW_REPLACE_PREFIX              10509
+
+%token KW_ON_ERROR                    10510
 
 /* END_DECLS */
 
@@ -322,6 +328,7 @@ extern struct _LogDriver *last_driver;
 #include "dgroup.h"
 #include "center.h"
 #include "filter.h"
+#include "template/templates.h"
 #include "logreader.h"
 #include "logparser.h"
 #include "logrewrite.h"
@@ -350,6 +357,7 @@ LogSourceOptions *last_source_options;
 LogReaderOptions *last_reader_options;
 LogWriterOptions *last_writer_options;
 LogProtoOptions *last_proto_options;
+LogTemplateOptions *last_template_options;
 LogTemplate *last_template;
 GList *last_rewrite_expr;
 GList *last_parser_expr;
@@ -369,7 +377,6 @@ ValuePairsTransformSet *last_vp_transset;
 %type	<ptr> dest_stmt
 %type	<ptr> log_stmt
 %type	<ptr> options_stmt
-%type	<ptr> template_stmt
 
 %type	<ptr> source_items
 %type	<ptr> source_item
@@ -395,8 +402,9 @@ ValuePairsTransformSet *last_vp_transset;
 
 /* START_DECLS */
 
+%type   <ptr> template_content
+
 %type   <ptr> value_pair_option
-%type   <ptr> vp_rekey_def
 
 %type	<num> yesno
 %type   <num> dnsmode
@@ -431,7 +439,7 @@ stmt
 	| KW_FILTER filter_stmt			{ cfg_add_filter(configuration, $2); }
 	| KW_PARSER parser_stmt                 { cfg_add_parser(configuration, $2); }
         | KW_REWRITE rewrite_stmt               { cfg_add_rewrite(configuration, $2); }
-	| KW_TEMPLATE template_stmt		{ cfg_add_template(configuration, $2); }
+	| template_stmt
 	| KW_OPTIONS options_stmt		{  }
 	| KW_BLOCK block_stmt                   {  }
 	;
@@ -551,29 +559,6 @@ options_stmt
         : '{' options_items '}'			{ $$ = NULL; }
 	;
 	
-template_stmt
-	: string
-	  {
-	    last_template = log_template_new(configuration, $1);
-	    free($1);
-	  }
-	  '{' template_items '}'		{ $$ = last_template;  }
-	;
-	
-template_items
-	: template_item ';' template_items
-	|
-	;
-
-template_item
-	: KW_TEMPLATE '(' string ')'		{
-                                                  GError *error = NULL;
-
-                                                  CHECK_ERROR(log_template_compile(last_template, $3, &error), @3, "Error compiling template (%s)", error->message);
-                                                  free($3);
-                                                }
-	| KW_TEMPLATE_ESCAPE '(' yesno ')'	{ log_template_set_escape(last_template, $3); }
-	;
 
 
 source_items
@@ -656,6 +641,57 @@ dest_plugin
           }
         ;
 
+template_stmt
+	: KW_TEMPLATE string
+	  {
+	    last_template = log_template_new(configuration, $2);
+	    free($2);
+	  }
+	  '{' template_items '}'
+          {
+            CHECK_ERROR(cfg_add_template(configuration, last_template) || cfg_allow_config_dups(configuration), @2, "duplicate template");
+          }
+	;
+
+template_items
+	: template_item ';' template_items
+	|
+	;
+
+/* START_RULES */
+
+template_content_inner
+        : string
+        {
+          GError *error = NULL;
+
+          CHECK_ERROR(log_template_compile(last_template, $1, &error), @1, "Error compiling template (%s)", error->message);
+          free($1);
+        }
+        | LL_IDENTIFIER '(' string ')'
+        {
+          GError *error = NULL;
+
+          CHECK_ERROR(log_template_compile(last_template, $3, &error), @3, "Error compiling template (%s)", error->message);
+          free($3);
+
+          CHECK_ERROR(log_template_set_type_hint(last_template, $1, &error), @1, "Error setting the template type-hint (%s)", error->message);
+          free($1);
+        }
+        ;
+
+template_content
+        : { last_template = log_template_new(configuration, NULL); } template_content_inner	{ $$ = last_template; }
+        ;
+
+/* END_RULES */
+
+template_item
+	: KW_TEMPLATE '(' template_content_inner ')'
+	| KW_TEMPLATE_ESCAPE '(' yesno ')'	{ log_template_set_escape(last_template, $3); }
+	;
+
+
 options_items
 	: options_item ';' options_items	{ $$ = $1; }
 	|					{ $$ = NULL; }
@@ -710,8 +746,6 @@ options_item
 	| KW_LOG_FETCH_LIMIT '(' LL_NUMBER ')'	{ msg_error("Using a global log-fetch-limit() option was removed, please use a per-source log-fetch-limit()", NULL); }
 	| KW_LOG_MSG_SIZE '(' LL_NUMBER ')'	{ configuration->log_msg_size = $3; }
 	| KW_KEEP_TIMESTAMP '(' yesno ')'	{ configuration->keep_timestamp = $3; }
-	| KW_TS_FORMAT '(' string ')'		{ configuration->template_options.ts_format = cfg_ts_format_value($3); free($3); }
-	| KW_FRAC_DIGITS '(' LL_NUMBER ')'	{ configuration->template_options.frac_digits = $3; }
 	| KW_CREATE_DIRS '(' yesno ')'		{ configuration->create_dirs = $3; }
 	| KW_OWNER '(' string_or_number ')'	{ cfg_file_owner_set(configuration, $3); free($3); }
 	| KW_OWNER '(' ')'	                { cfg_file_owner_set(configuration, "-2"); }
@@ -734,11 +768,9 @@ options_item
 	| KW_FILE_TEMPLATE '(' string ')'	{ configuration->file_template_name = g_strdup($3); free($3); }
 	| KW_PROTO_TEMPLATE '(' string ')'	{ configuration->proto_template_name = g_strdup($3); free($3); }
 	| KW_RECV_TIME_ZONE '(' string ')'      { configuration->recv_time_zone = g_strdup($3); free($3); }
-	| KW_SEND_TIME_ZONE '(' string ')'      { configuration->template_options.time_zone[LTZ_SEND] = g_strdup($3); free($3); }
-	| KW_LOCAL_TIME_ZONE '(' string ')'     { configuration->template_options.time_zone[LTZ_LOCAL] = g_strdup($3); free($3); }
-  | KW_USE_RCPTID '(' yesno ')'           { configuration->use_rcptid = $3; }
-        | KW_STATS_RESET '(' yesno ')'         {}
-        | LL_IDENTIFIER '(' string_or_number ')' {
+	| KW_USE_RCPTID '(' yesno ')'           { configuration->use_rcptid = $3; }
+	| KW_STATS_RESET '(' yesno ')'         {}
+	| LL_IDENTIFIER '(' string_or_number ')' {
                                             check_option = (PluginGlobalOption *)g_hash_table_lookup(configuration->global_options, normalize_option_name($1));
                                             CHECK_ERROR(check_option,@1,"Unknown option: %s", $1);
                                             CHECK_ERROR(check_option->check_function($3),@3,"Invalid option value: %s",$3);
@@ -746,9 +778,11 @@ options_item
                                             free($3);
                                            }
 	| KW_USE_TIME_RECVD '(' yesno ')'	{ }
+	| { last_template_options = &configuration->template_options; } template_option { $$ = last_template_options; }
 	;
 
 /* START_RULES */
+
 
 string
 	: LL_IDENTIFIER
@@ -809,6 +843,22 @@ regexp_option_flags
         |                                       { $$ = 0; }
         ;
 
+parser_opt
+        : KW_TEMPLATE '(' string ')'            {
+                                                  LogTemplate *template;
+                                                  GError *error = NULL;
+
+                                                  template = cfg_check_inline_template(configuration, $3, &error);
+                                                  CHECK_ERROR(template != NULL, @3, "Error compiling template (%s)", error->message);
+                                                  log_parser_set_template(last_parser, template);
+                                                  free($3);
+                                                }
+        ;
+
+parser_column_opt
+        : parser_opt
+        | KW_COLUMNS '(' string_list ')'        { log_column_parser_set_columns((LogColumnParser *) last_parser, $3); }
+        ;
 
 /* LogSource related options */
 source_option
@@ -913,9 +963,6 @@ dest_writer_option
 	                                          free($3);
 	                                        }
 	| KW_TEMPLATE_ESCAPE '(' yesno ')'	{ log_writer_options_set_template_escape(last_writer_options, $3); }
-	| KW_TIME_ZONE '(' string ')'           { last_writer_options->template_options.time_zone[LTZ_SEND] = g_strdup($3); free($3); }
-	| KW_TS_FORMAT '(' string ')'		{ last_writer_options->template_options.ts_format = cfg_ts_format_value($3); free($3); }
-	| KW_FRAC_DIGITS '(' LL_NUMBER ')'	{ last_writer_options->template_options.frac_digits = $3; }
 	| KW_PAD_SIZE '(' LL_NUMBER ')'         { last_writer_options->padding = $3; }
 	| KW_MARK_FREQ '(' LL_NUMBER ')'        { last_writer_options->mark_freq = $3; }
         | KW_MARK_MODE '(' KW_INTERNAL ')'      { log_writer_options_set_mark_mode(last_writer_options, "internal"); }
@@ -932,6 +979,7 @@ dest_writer_option
                 free($3);
               }
           }
+        | { last_template_options = &last_writer_options->template_options; } template_option
 	;
 
 dest_writer_options_flags
@@ -939,9 +987,28 @@ dest_writer_options_flags
 	|					{ $$ = 0; }
 	;
 
+template_option
+	: KW_TS_FORMAT '(' string ')'		{ last_template_options->ts_format = cfg_ts_format_value($3); free($3); }
+	| KW_FRAC_DIGITS '(' LL_NUMBER ')'	{ last_template_options->frac_digits = $3; }
+	| KW_TIME_ZONE '(' string ')'		{ last_template_options->time_zone[LTZ_SEND] = g_strdup($3); free($3); }
+	| KW_SEND_TIME_ZONE '(' string ')'      { last_template_options->time_zone[LTZ_SEND] = g_strdup($3); free($3); }
+	| KW_LOCAL_TIME_ZONE '(' string ')'     { last_template_options->time_zone[LTZ_LOCAL] = g_strdup($3); free($3); }
+	| KW_ON_ERROR '(' string ')'
+        {
+          gint on_error;
+
+          CHECK_ERROR(log_template_on_error_parse($3, &on_error), @3, "Invalid on-error() setting");
+          free($3);
+
+          log_template_options_set_on_error(last_template_options, on_error);
+        }
+	;
+
 value_pair_option
 	: KW_VALUE_PAIRS
-          { last_value_pairs = value_pairs_new(); }
+          {
+            last_value_pairs = value_pairs_new();
+          }
           '(' vp_options ')'
           { $$ = last_value_pairs; }
 	;
@@ -952,24 +1019,38 @@ vp_options
 	;
 
 vp_option
-        : KW_PAIR '(' string ':' string ')'      { value_pairs_add_pair(last_value_pairs, configuration, $3, $5); free($3); free($5); }
-        | KW_PAIR '(' string string ')'          { value_pairs_add_pair(last_value_pairs, configuration, $3, $4); free($3); free($4); }
+        : KW_PAIR '(' string ':' template_content ')'
+        {
+          value_pairs_add_pair(last_value_pairs, $3, $5);
+          free($3);
+        }
+        | KW_PAIR '(' string template_content ')'
+        {
+          value_pairs_add_pair(last_value_pairs, $3, $4);
+          free($3);
+        }
+        | KW_KEY '(' string KW_REKEY '('
+        {
+          last_vp_transset = value_pairs_transform_set_new($3);
+          value_pairs_add_glob_pattern(last_value_pairs, $3, TRUE);
+          free($3);
+        }
+        vp_rekey_options
+        ')' { value_pairs_add_transforms(last_value_pairs, last_vp_transset); } ')'
 	| KW_KEY '(' string ')'		         { value_pairs_add_glob_pattern(last_value_pairs, $3, TRUE); free($3);  }
+	| KW_REKEY '(' string
+        {
+          last_vp_transset = value_pairs_transform_set_new($3);
+          free($3);
+        }
+        vp_rekey_options ')'                     { value_pairs_add_transforms(last_value_pairs, last_vp_transset); }
 	| KW_EXCLUDE '(' string ')'	         { value_pairs_add_glob_pattern(last_value_pairs, $3, FALSE); free($3); }
 	| KW_SCOPE '(' vp_scope_list ')'
-        | KW_REKEY '(' vp_rekey_def ')' { value_pairs_add_transforms(last_value_pairs, $3); }
 	;
 
 vp_scope_list
 	: string vp_scope_list              { value_pairs_add_scope(last_value_pairs, $1); free($1); }
 	|
-	;
-
-vp_rekey_def
-	: string
-        { last_vp_transset = value_pairs_transform_set_new($1); free($1); }
-        vp_rekey_options
-        { $$ = last_vp_transset; }
 	;
 
 vp_rekey_options
@@ -980,7 +1061,7 @@ vp_rekey_options
 vp_rekey_option
 	: KW_SHIFT '(' LL_NUMBER ')' { value_pairs_transform_set_add_func(last_vp_transset, value_pairs_new_transform_shift($3)); }
 	| KW_ADD_PREFIX '(' string ')' { value_pairs_transform_set_add_func(last_vp_transset, value_pairs_new_transform_add_prefix($3)); free($3); }
-	| KW_REPLACE '(' string string ')' { value_pairs_transform_set_add_func(last_vp_transset, value_pairs_new_transform_replace($3, $4)); free($3); free($4); }
+	| KW_REPLACE_PREFIX '(' string string ')' { value_pairs_transform_set_add_func(last_vp_transset, value_pairs_new_transform_replace_prefix($3, $4)); free($3); free($4); }
 	;
 
 /* END_RULES */

@@ -41,9 +41,8 @@ tf_format_welf_prepare(LogTemplateFunction *self, LogTemplate *parent,
 }
 
 static gboolean
-tf_format_welf_foreach(const gchar *name, const gchar *value, gpointer user_data)
+tf_format_welf_foreach(const gchar *name, TypeHint type, const gchar *value, gpointer user_data)
 {
-
   GString *result=(GString *) user_data;
   gchar *escaped_value = g_strescape(value, NULL);
 
@@ -77,8 +76,9 @@ tf_format_welf_call(LogTemplateFunction *self, gpointer state, GPtrArray *arg_bu
   ValuePairs *vp = (ValuePairs *)state;
 
   for (i = 0; i < num_messages; i++)
-    value_pairs_foreach_sorted(vp, tf_format_welf_strcmp,
-                               tf_format_welf_foreach, messages[i], 0, result);
+    value_pairs_foreach_sorted(vp, tf_format_welf_foreach, (GCompareDataFunc)tf_format_welf_strcmp,
+        messages[i], 0, opts, result);
+
 }
 
 static void

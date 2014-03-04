@@ -146,12 +146,13 @@ log_csv_parser_set_null_value(LogColumnParser *s, const gchar *null_value)
 
 
 static gboolean
-log_csv_parser_process(LogParser *s, LogMessage *msg, const gchar *input)
+log_csv_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, const gchar *input, gsize input_len)
 {
   LogCSVParser *self = (LogCSVParser *) s;
   const gchar *src;
   GList *cur_column = self->super.columns;
   gint len;
+  LogMessage *msg = *pmsg;
 
   src = input;
   if ((self->flags & LOG_CSV_PARSER_ESCAPE_NONE) || ((self->flags & LOG_CSV_PARSER_ESCAPE_MASK) == 0))

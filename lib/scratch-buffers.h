@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2011 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 2011 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2011-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2011-2013 Gergely Nagy <algernon@balabit.hu>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,18 +26,62 @@
 #define SCRATCH_BUFFERS_H_INCLUDED 1
 
 #include <glib.h>
+#include "type-hinting.h"
+
+/* Global API */
+
+typedef struct
+{
+  GTrashStack *(*acquire_buffer)(void);
+  void (*release_buffer)(GTrashStack *stack);
+  void (*free_stack)(void);
+} ScratchBufferStack;
+
+static inline GTrashStack *
+scratch_buffer_acquire(ScratchBufferStack *stack)
+{
+  return stack->acquire_buffer();
+}
+
+static inline void
+scratch_buffer_release(ScratchBufferStack *stack, GTrashStack *buffer)
+{
+  stack->release_buffer(buffer);
+}
+
+void scratch_buffers_register(ScratchBufferStack *stack);
+void scratch_buffers_init(void);
+void scratch_buffers_free(void);
+
+/* GStrings */
 
 typedef struct
 {
   GTrashStack stackp;
-  GString *s;
-} ScratchBuffer;
+  GString s;
+} SBGString;
 
-ScratchBuffer *scratch_buffer_acquire(void);
-void scratch_buffer_release(ScratchBuffer *sb);
+extern ScratchBufferStack SBGStringStack;
 
-#define sb_string(buffer) (buffer->s)
+#define sb_gstring_acquire() ((SBGString *)scratch_buffer_acquire(&SBGStringStack))
+#define sb_gstring_release(b) (scratch_buffer_release(&SBGStringStack, (GTrashStack *)b))
 
-void scratch_buffers_free(void);
+#define sb_gstring_string(buffer) (&buffer->s)
+
+/* Type-hinted GStrings */
+
+typedef struct
+{
+  GTrashStack stackp;
+  GString s;
+  TypeHint type_hint;
+} SBTHGString;
+
+extern ScratchBufferStack SBTHGStringStack;
+
+#define sb_th_gstring_acquire() ((SBTHGString *)scratch_buffer_acquire(&SBTHGStringStack))
+#define sb_th_gstring_release(b) (scratch_buffer_release(&SBTHGStringStack, (GTrashStack *)b))
+
+#define sb_th_gstring_string(buffer) (&buffer->s)
 
 #endif

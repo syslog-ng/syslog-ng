@@ -30,6 +30,7 @@
 
 %code {
 
+#include "cfg-grammar.h"
 #include "syslog-names.h"
 #include "rewrite-expr-grammar.h"
 #include "logrewrite.h"

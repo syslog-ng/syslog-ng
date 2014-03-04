@@ -193,9 +193,10 @@ log_db_parser_deinit(LogPipe *s)
 }
 
 static gboolean
-log_db_parser_process(LogParser *s, LogMessage *msg, const char *input)
+log_db_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, const gchar *input, gsize input_len)
 {
   LogDBParser *self = (LogDBParser *) s;
+  LogMessage *msg = *pmsg;
 
   if (G_UNLIKELY(!self->db_file_reloading && (self->db_file_last_check == 0 || self->db_file_last_check < msg->timestamps[LM_TS_RECVD].tv_sec - 5)))
     {

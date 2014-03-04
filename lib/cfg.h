@@ -30,6 +30,7 @@
 #include "cfg-parser.h"
 #include "persist-state.h"
 #include "template/templates.h"
+#include "type-hinting.h"
 #include "versioning.h"
 
 #include <sys/types.h>
@@ -132,13 +133,15 @@ struct _GlobalConfig
   void (*show_shutdown_message)(GlobalConfig *self);
 };
 
+gboolean cfg_allow_config_dups(GlobalConfig *self);
+
 void cfg_add_source(GlobalConfig *configuration, struct _LogSourceGroup *group);
 void cfg_add_dest(GlobalConfig *configuration, struct _LogDestGroup *group);
 void cfg_add_filter(GlobalConfig *configuration, struct _LogProcessRule *rule);
 void cfg_add_parser(GlobalConfig *cfg, struct _LogProcessRule *rule);
 void cfg_add_rewrite(GlobalConfig *cfg, struct _LogProcessRule *rule);
 void cfg_add_connection(GlobalConfig *configuration, struct _LogConnection *conn);
-void cfg_add_template(GlobalConfig *cfg, struct _LogTemplate *template);
+gboolean cfg_add_template(GlobalConfig *cfg, struct _LogTemplate *template);
 LogTemplate *cfg_lookup_template(GlobalConfig *cfg, const gchar *name);
 LogTemplate *cfg_check_inline_template(GlobalConfig *cfg, const gchar *template_or_name, GError **error);
 

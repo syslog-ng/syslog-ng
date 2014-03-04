@@ -73,24 +73,6 @@ parser_expr_csv
           ')'					{ $$ = last_parser; }
         ;
 
-parser_column_opt
-        : parser_opt
-        | KW_COLUMNS '(' string_list ')'        { log_column_parser_set_columns((LogColumnParser *) last_parser, $3); }
-        ;
-
-parser_opt
-        : KW_TEMPLATE '(' string ')'            {
-                                                  LogTemplate *template;
-                                                  GError *error = NULL;
-
-						  template = cfg_check_inline_template(configuration, $3, &error);
-                                                  CHECK_ERROR(template != NULL, @3, "Error compiling template (%s)", error->message);
-                                                  log_parser_set_template(last_parser, template);
-                                                  free($3);
-                                                }
-        ;
-
-
 parser_csv_opts
         : parser_csv_opt parser_csv_opts
         |

@@ -1497,7 +1497,8 @@ AC_OUTPUT(dist.conf
           modules/basicfuncs/tests/Makefile
           modules/convertfuncs/Makefile
           modules/convertfuncs/tests/Makefile
-          modules/tfjson/Makefile
+          modules/json/Makefile
+          modules/json/tests/Makefile
           modules/agent-config/Makefile
           modules/agent-config/tests/Makefile
           modules/agent-config/tests/unit/Makefile

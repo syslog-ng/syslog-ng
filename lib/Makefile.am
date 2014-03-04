@@ -83,10 +83,11 @@ pkginclude_HEADERS = 		\
 	tlscontext.h  		\
 	tlstransport.h		\
   tlswincrypt.h   \
+	type-hinting.h	\
 	utils.h			\
 	value-pairs.h		\
 	versioning.h	\
-	vptransform.h           \
+	vptransform.h	\
 	reloc.h	\
   $(template_headers)
 
@@ -159,6 +160,7 @@ libsyslog_ng_la_SOURCES = \
 	syslog-names.c		\
 	tags.c			\
 	timeutils.c		\
+	type-hinting.c	\
 	utils.c			\
 	value-pairs.c		\
 	versioning.c		\
