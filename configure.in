@@ -1159,6 +1159,10 @@ if test "x$default_modules" = "xauto"; then
     default_modules="affile,afprog,afsocket,afuser,basicfuncs,csvparser,dbparser,syslogformat,aflogstore,disk-buffer,confighash,convertfuncs,basic-proto,rltp-proto,license-plugin"
     if test $IS_WINDOWS -ne 0; then
         default_modules="affile,afsocket,basicfuncs,csvparser,dbparser,syslogformat,aflogstore,disk-buffer,confighash,convertfuncs,basic-proto,rltp-proto,license-plugin,eventlog"
+    else
+        if test "x$enable_json" = "xyes"; then
+            default_modules="$default_modules,json-plugin"
+        fi
     fi
     if test "x$enable_sql" = "xyes"; then
         default_modules="$default_modules,afsql,afsqlsource"
