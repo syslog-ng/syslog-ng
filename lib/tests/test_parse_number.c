@@ -115,6 +115,7 @@ test_base2_is_selected_by_an_i_modifier(void)
   assert_parse_with_suffix("1MiB", 1024 * 1024);
   assert_parse_with_suffix("1Gib", 1024 * 1024 * 1024);
   assert_parse_with_suffix("1giB", 1024 * 1024 * 1024);
+  assert_parse_with_suffix("1024giB", 1024LL * 1024LL * 1024LL * 1024LL);
 }
 
 static void
