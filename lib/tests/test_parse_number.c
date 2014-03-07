@@ -26,9 +26,9 @@
 #include "parse-number.h"
 
 static void
-assert_parse_with_suffix(const gchar *str, long expected)
+assert_parse_with_suffix(const gchar *str, gint64 expected)
 {
-  long n;
+  gint64 n;
   gboolean res;
 
   res = parse_number_with_suffix(str, &n);
@@ -40,7 +40,7 @@ assert_parse_with_suffix(const gchar *str, long expected)
 static void
 assert_parse_with_suffix_fails(const gchar *str)
 {
-  long n;
+  gint64 n;
   gboolean res;
 
   res = parse_number_with_suffix(str, &n);
@@ -48,9 +48,9 @@ assert_parse_with_suffix_fails(const gchar *str)
 }
 
 static void
-assert_parse(const gchar *str, long expected)
+assert_parse(const gchar *str, gint64 expected)
 {
-  long n;
+  gint64 n;
   gboolean res;
 
   res = parse_number(str, &n);
@@ -62,7 +62,7 @@ assert_parse(const gchar *str, long expected)
 static void
 assert_parse_fails(const gchar *str)
 {
-  long n;
+  gint64 n;
   gboolean res;
 
   res = parse_number(str, &n);
