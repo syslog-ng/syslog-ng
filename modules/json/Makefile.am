@@ -21,11 +21,12 @@ libjson_plugin_la_SOURCES =  \
   dot-notation.h   \
   json-plugin.c
 
+libjson_plugin_la_CPPFLAGS = $(AM_CPPFLAGS)
 libjson_plugin_la_LIBADD = $(MODULE_DEPS_LIBS) $(JSON_LIBS)
 libjson_plugin_la_LDFLAGS = $(MODULE_LDFLAGS)
 
 BUILT_SOURCES = json-parser-grammar.y json-parser-grammar.c json-parser-grammar.h
-EXTRA_DIST = json-parser-grammar.ym
+EXTRA_DIST = $(BUILT_SOURCES) json-parser-grammar.ym
 
 include $(top_srcdir)/build/lex-rules.am
 
