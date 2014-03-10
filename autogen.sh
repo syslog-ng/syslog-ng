@@ -50,12 +50,16 @@ for pth in /opt/libtool/share/aclocal /usr/local/share/aclocal; do
 	fi
 done
 # bootstrap syslog-ng itself
+echo "LIBTOOLIZE"
 libtoolize --force --copy
-aclocal -I m4 $ACLOCALPATHS --install
+echo "ACLOCAL"
+aclocal -I m4 $ACLOCALPATHS --install -Wnone
 sed -i -e 's/PKG_PROG_PKG_CONFIG(\[0\.16\])/PKG_PROG_PKG_CONFIG([0.14])/g' aclocal.m4
-
+echo "AUTOHEADER"
 autoheader
-automake --foreign --add-missing --copy
+echo "AUTOMAKE"
+automake --foreign --add-missing --copy -Wnone
+echo "AUTOCONFIG"
 autoconf
 find -name libtool -o -name ltmain.sh | xargs sed -i -e "s,'file format pe-i386.*\?','file format \(pei\*-i386\(\.\*architecture: i386\)\?|pe-arm-wince|pe-x86-64\)',"
 sed -i -e "s, cmd //c, sh -c," ltmain.sh
