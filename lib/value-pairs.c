@@ -407,7 +407,6 @@ vp_walker_stack_unwind_until (vp_walk_stack_t **stack, vp_walk_state_t *state,
                               const gchar *name)
 {
   vp_walk_stack_t *t;
-  GTrashStack *tstack = (GTrashStack *)&((*stack)->stackp);
 
   if (!stack)
     return NULL;
@@ -416,11 +415,11 @@ vp_walker_stack_unwind_until (vp_walk_stack_t **stack, vp_walk_state_t *state,
   if (strncmp(name, (*stack)->prefix, (*stack)->prefix_len) == 0)
     return *stack;
 
-  while ((t = g_trash_stack_pop((GTrashStack **)&tstack)) != NULL)
+  while ((t = g_trash_stack_pop((GTrashStack **)stack)) != NULL)
     {
       if (strncmp(name, t->prefix, t->prefix_len) != 0)
         {
-          vp_walk_stack_t *p = g_trash_stack_peek((GTrashStack **)&tstack);
+          vp_walk_stack_t *p = g_trash_stack_peek((GTrashStack **)stack);
 
           if (p)
             state->obj_end(t->key, t->prefix, &t->data,
@@ -437,7 +436,7 @@ vp_walker_stack_unwind_until (vp_walk_stack_t **stack, vp_walk_state_t *state,
       else
         {
           /* This one matched, put it back, PUT IT BACK! */
-          g_trash_stack_push((GTrashStack **)&tstack, t);
+          g_trash_stack_push((GTrashStack **)stack, t);
           break;
         }
     }
@@ -450,11 +449,10 @@ vp_walker_stack_unwind_all(vp_walk_stack_t **stack,
                            vp_walk_state_t *state)
 {
   vp_walk_stack_t *t;
-  GTrashStack *tstack = (GTrashStack *)&((*stack)->stackp);
 
-  while ((t = g_trash_stack_pop((GTrashStack **)&tstack)) != NULL)
+  while ((t = g_trash_stack_pop((GTrashStack **)stack)) != NULL)
     {
-      vp_walk_stack_t *p = g_trash_stack_peek((GTrashStack **)&tstack);
+      vp_walk_stack_t *p = g_trash_stack_peek((GTrashStack **)stack);
 
       if (p)
         state->obj_end(t->key, t->prefix, &t->data,
@@ -476,14 +474,13 @@ vp_walker_stack_push (vp_walk_stack_t **stack,
                       gchar *key, gchar *prefix)
 {
   vp_walk_stack_t *nt = g_new(vp_walk_stack_t, 1);
-  GTrashStack *tstack = (GTrashStack *)&((*stack)->stackp);
 
   nt->key = key;
   nt->prefix = prefix;
   nt->prefix_len = strlen(nt->prefix);
   nt->data = NULL;
 
-  g_trash_stack_push((GTrashStack **)&tstack, nt);
+  g_trash_stack_push((GTrashStack **)stack, nt);
   return nt;
 }
 
