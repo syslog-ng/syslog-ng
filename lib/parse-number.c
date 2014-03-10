@@ -58,7 +58,7 @@ _parse_suffix(const gchar *suffix, gchar *exponent_char, gchar *base_char, gchar
 }
 
 static gboolean
-_determine_multiplier(gchar base_char, glong *multiplier)
+_determine_multiplier(gchar base_char, gint *multiplier)
 {
   if (base_char == 0)
     *multiplier = 1000;
@@ -78,7 +78,7 @@ _validate_unit(gchar unit_char)
 }
 
 static gboolean
-_process_exponent(gchar exponent_char, glong *d, glong multiplier)
+_process_exponent(gchar exponent_char, gint64 *d, gint multiplier)
 {
   switch (exponent_char)
     {
@@ -99,10 +99,10 @@ _process_exponent(gchar exponent_char, glong *d, glong multiplier)
 }
 
 static gboolean
-_process_suffix(const gchar *suffix, glong *d)
+_process_suffix(const gchar *suffix, gint64 *d)
 {
   gchar exponent_char = 0, base_char = 0, unit_char = 0;
-  glong multiplier = 0;
+  gint multiplier = 0;
 
   if (!_parse_suffix(suffix, &exponent_char, &base_char, &unit_char))
     return FALSE;
@@ -120,9 +120,9 @@ _process_suffix(const gchar *suffix, glong *d)
 }
 
 static gboolean
-_parse_number(const gchar *s, gchar **endptr, long *d)
+_parse_number(const gchar *s, gchar **endptr, gint64 *d)
 {
-  glong val;
+  gint64 val;
 
   errno = 0;
   val = strtoll(s, endptr, 10);
@@ -139,7 +139,7 @@ _parse_number(const gchar *s, gchar **endptr, long *d)
 }
 
 gboolean
-parse_number(const gchar *s, glong *d)
+parse_number(const gchar *s, gint64 *d)
 {
   gchar *endptr;
 
@@ -151,7 +151,7 @@ parse_number(const gchar *s, glong *d)
 }
 
 gboolean
-parse_number_with_suffix(const gchar *s, glong *d)
+parse_number_with_suffix(const gchar *s, gint64 *d)
 {
   gchar *endptr;
 
