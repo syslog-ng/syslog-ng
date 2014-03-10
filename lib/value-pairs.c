@@ -384,13 +384,21 @@ value_pairs_foreach(ValuePairs *vp, VPForeachFunc func,
 
 typedef struct
 {
-  GTrashStack stackp;
   gchar *key;
   gchar *prefix;
   gint prefix_len;
 
   gpointer data;
-} vp_walk_stack_t;
+} vp_walk_stack_data_t;
+
+#define VP_STACK_INITIAL_SIZE 16
+
+typedef struct
+{
+  vp_walk_stack_data_t **buffer;
+  guint buffer_size;
+  guint count;
+} vp_stack_t;
 
 typedef struct
 {
@@ -399,60 +407,128 @@ typedef struct
   VPWalkValueCallbackFunc process_value;
 
   gpointer user_data;
-  vp_walk_stack_t *stack;
+  vp_stack_t *stack;
 } vp_walk_state_t;
 
-static vp_walk_stack_t *
-vp_walker_stack_unwind_until (vp_walk_stack_t **stack, vp_walk_state_t *state,
-                              const gchar *name)
+static vp_stack_t *
+vp_stack_create()
 {
-  vp_walk_stack_t *t;
-
-  if (!stack)
-    return NULL;
-  if (!*stack)
-    return NULL;
-  if (strncmp(name, (*stack)->prefix, (*stack)->prefix_len) == 0)
-    return *stack;
-
-  while ((t = g_trash_stack_pop((GTrashStack **)stack)) != NULL)
-    {
-      if (strncmp(name, t->prefix, t->prefix_len) != 0)
-        {
-          vp_walk_stack_t *p = g_trash_stack_peek((GTrashStack **)stack);
-
-          if (p)
-            state->obj_end(t->key, t->prefix, &t->data,
-                           p->prefix, &p->data,
-                           state->user_data);
-          else
-            state->obj_end(t->key, t->prefix, &t->data,
-                           NULL, NULL,
-                           state->user_data);
-          g_free(t->key);
-          g_free(t->prefix);
-          g_free(t);
-        }
-      else
-        {
-          /* This one matched, put it back, PUT IT BACK! */
-          g_trash_stack_push((GTrashStack **)stack, t);
-          break;
-        }
-    }
-
-  return *stack;
+  vp_stack_t *stack = g_new(vp_stack_t, 1);
+  stack->buffer = g_new(vp_walk_stack_data_t *, VP_STACK_INITIAL_SIZE);
+  stack->buffer_size = VP_STACK_INITIAL_SIZE;
+  stack->count = 0;
+  return stack;
 }
 
 static void
-vp_walker_stack_unwind_all(vp_walk_stack_t **stack,
+vp_stack_destroy(vp_stack_t *stack)
+{
+  g_free(stack->buffer);
+  g_free(stack);
+}
+
+static void
+vp_stack_realloc(vp_stack_t *stack, guint new_size)
+{
+  g_assert(new_size > stack->buffer_size);
+  stack->buffer = g_renew(vp_walk_stack_data_t *, stack->buffer, new_size);
+  stack->buffer_size = new_size;
+}
+
+static void
+vp_stack_push(vp_stack_t *stack, vp_walk_stack_data_t *data)
+{
+  if (stack->count >= stack->buffer_size)
+    vp_stack_realloc(stack, stack->buffer_size * 2);
+
+  stack->buffer[stack->count++] = data;
+}
+
+static vp_walk_stack_data_t *
+vp_stack_peek(vp_stack_t *stack)
+{
+  if (stack->count == 0)
+    return NULL;
+
+  return stack->buffer[stack->count-1];
+}
+
+static vp_walk_stack_data_t *
+vp_stack_pop(vp_stack_t *stack)
+{
+  vp_walk_stack_data_t *data = NULL;
+
+  if (stack->count == 0)
+    return NULL;
+
+  data = stack->buffer[stack->count-1];
+  stack->count--;
+  return data;
+}
+
+static guint
+vp_stack_height(vp_stack_t *stack)
+{
+  return stack->count;
+}
+
+static vp_walk_stack_data_t *
+vp_walker_stack_unwind_until (vp_stack_t *stack, vp_walk_state_t *state,
+                              const gchar *name)
+{
+  vp_walk_stack_data_t *found;
+  vp_walk_stack_data_t *t;
+
+  if (!stack)
+    return NULL;
+
+  found = vp_stack_peek(stack);
+  if (found == NULL)
+    return NULL;
+
+  if (strncmp(name, found->prefix, found->prefix_len) == 0)
+    return found;
+
+  found = NULL;
+  while ((t = vp_stack_pop(stack)) != NULL)
+    {
+      vp_walk_stack_data_t *p;
+
+      if (strncmp(name, t->prefix, t->prefix_len) == 0)
+        {
+          /* This one matched, put it back, PUT IT BACK! */
+          found = t;
+          vp_stack_push(stack, found);
+          break;
+        }
+
+      p = vp_stack_peek(stack);
+
+      if (p)
+        state->obj_end(t->key, t->prefix, &t->data,
+                       p->prefix, &p->data,
+                       state->user_data);
+      else
+        state->obj_end(t->key, t->prefix, &t->data,
+                       NULL, NULL,
+                       state->user_data);
+      g_free(t->key);
+      g_free(t->prefix);
+      g_free(t);
+    }
+
+  return found;
+}
+
+static void
+vp_walker_stack_unwind_all(vp_stack_t *stack,
                            vp_walk_state_t *state)
 {
-  vp_walk_stack_t *t;
+  vp_walk_stack_data_t *t;
 
-  while ((t = g_trash_stack_pop((GTrashStack **)stack)) != NULL)
+  while ((t = vp_stack_pop(stack)) != NULL)
     {
-      vp_walk_stack_t *p = g_trash_stack_peek((GTrashStack **)stack);
+      vp_walk_stack_data_t *p = vp_stack_peek(stack);
 
       if (p)
         state->obj_end(t->key, t->prefix, &t->data,
@@ -469,18 +545,18 @@ vp_walker_stack_unwind_all(vp_walk_stack_t **stack,
     }
 }
 
-static vp_walk_stack_t *
-vp_walker_stack_push (vp_walk_stack_t **stack,
+static vp_walk_stack_data_t *
+vp_walker_stack_push (vp_stack_t *stack,
                       gchar *key, gchar *prefix)
 {
-  vp_walk_stack_t *nt = g_new(vp_walk_stack_t, 1);
+  vp_walk_stack_data_t *nt = g_new(vp_walk_stack_data_t, 1);
 
   nt->key = key;
   nt->prefix = prefix;
   nt->prefix_len = strlen(nt->prefix);
   nt->data = NULL;
 
-  g_trash_stack_push((GTrashStack **)stack, nt);
+  vp_stack_push(stack, nt);
   return nt;
 }
 
@@ -546,7 +622,7 @@ vp_walker_name_combine_prefix(GPtrArray *tokens, gint until)
 }
 
 static gchar *
-vp_walker_name_split(vp_walk_stack_t **stack, vp_walk_state_t *state,
+vp_walker_name_split(vp_stack_t *stack, vp_walk_state_t *state,
                      const gchar *name)
 {
   GPtrArray *tokens;
@@ -555,13 +631,12 @@ vp_walker_name_split(vp_walk_stack_t **stack, vp_walk_state_t *state,
 
   tokens = vp_walker_name_value_split(name);
 
-  start = g_trash_stack_height((GTrashStack **)stack);
+  start = vp_stack_height(stack);
   for (i = start; i < tokens->len - 1; i++)
     {
-      vp_walk_stack_t *nt, *p = g_trash_stack_peek((GTrashStack **)stack);
-
-      nt = vp_walker_stack_push(stack, g_strdup(g_ptr_array_index(tokens, i)),
-                                vp_walker_name_combine_prefix(tokens, i));
+      vp_walk_stack_data_t *p = vp_stack_peek(stack);
+      vp_walk_stack_data_t *nt = vp_walker_stack_push(stack, g_strdup(g_ptr_array_index(tokens, i)),
+                                 vp_walker_name_combine_prefix(tokens, i));
 
       if (p)
         state->obj_start(nt->key, nt->prefix, &nt->data,
@@ -586,18 +661,18 @@ value_pairs_walker(const gchar *name, TypeHint type, const gchar *value,
                    gpointer user_data)
 {
   vp_walk_state_t *state = (vp_walk_state_t *)user_data;
-  vp_walk_stack_t *st = g_trash_stack_peek((GTrashStack **)&state->stack);
+  vp_walk_stack_data_t *data;
   gchar *key;
   gboolean result;
 
-  st = vp_walker_stack_unwind_until (&st, state, name);
+  data = vp_walker_stack_unwind_until (state->stack, state, name);
 
-  key = vp_walker_name_split (&st, state, name);
+  key = vp_walker_name_split (state->stack, state, name);
 
-  if (st)
-    result = state->process_value(key, st->prefix,
+  if (data != NULL)
+    result = state->process_value(key, data->prefix,
                                   type, value,
-                                  &st->data,
+                                  &data->data,
                                   state->user_data);
   else
     result = state->process_value(key, NULL,
@@ -606,9 +681,6 @@ value_pairs_walker(const gchar *name, TypeHint type, const gchar *value,
                                   state->user_data);
 
   g_free(key);
-
-  /* And the new stack becomes whatever we have in st now. */
-  state->stack = st;
 
   return result;
 }
@@ -635,14 +707,15 @@ value_pairs_walk(ValuePairs *vp,
   state.obj_start = obj_start_func;
   state.obj_end = obj_end_func;
   state.process_value = process_value_func;
-  state.stack = NULL;
+  state.stack = vp_stack_create();
 
   state.obj_start(NULL, NULL, NULL, NULL, NULL, user_data);
   result = value_pairs_foreach_sorted(vp, value_pairs_walker,
                                       (GCompareDataFunc)vp_walk_cmp, msg,
                                       seq_num, template_options, &state);
-  vp_walker_stack_unwind_all(&state.stack, &state);
+  vp_walker_stack_unwind_all(state.stack, &state);
   state.obj_end(NULL, NULL, NULL, NULL, NULL, user_data);
+  vp_stack_destroy(state.stack);
 
   return result;
 }
