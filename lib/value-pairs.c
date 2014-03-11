@@ -431,7 +431,7 @@ static void
 vp_stack_realloc(vp_stack_t *stack, guint new_size)
 {
   g_assert(new_size > stack->buffer_size);
-  stack->buffer = g_renew(gpointer, stack->buffer, new_size);
+  stack->buffer = g_renew(vp_walk_stack_data_t *, stack->buffer, new_size);
   stack->buffer_size = new_size;
 }
 
@@ -456,7 +456,7 @@ vp_stack_peek(vp_stack_t *stack)
 static vp_walk_stack_data_t *
 vp_stack_pop(vp_stack_t *stack)
 {
-  gpointer data = NULL;
+  vp_walk_stack_data_t *data = NULL;
 
   if (stack->count == 0)
     return NULL;
