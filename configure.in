@@ -83,7 +83,7 @@ dnl script snippet to generate user friendly version strings according to the
 dnl new versioning policy. All needed code are here to allow easy moving
 dnl between projects.
 if test -z "$RELEASE_TYPE"; then
-    RELEASE_TYPE=stable
+    RELEASE_TYPE=feature
 fi
 
 if test -z "$BROCHURE_VERSION"; then
