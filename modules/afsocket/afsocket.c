@@ -61,6 +61,8 @@ int deny_severity = 0;
 #define closesocket close
 #endif
 
+static GHashTable *persist_hash;
+
 typedef struct _AFSocketSourceConnection
 {
   LogPipe super;
@@ -1294,10 +1296,26 @@ afsocket_dd_reconnect(AFSocketDestDriver *self)
 }
 
 gboolean
+afsocket_dd_check_persist_usage(AFSocketDestDriver *self, const gchar *persist_name)
+{
+  LogPipe *writer = g_hash_table_lookup(persist_hash, persist_name);
+  if (!writer)
+    {
+      return TRUE;
+    }
+  else if (writer != self->writer)
+    {
+      return FALSE;
+    }
+  return TRUE;
+}
+
+gboolean
 afsocket_dd_init(LogPipe *s)
 {
   AFSocketDestDriver *self = (AFSocketDestDriver *) s;
   GlobalConfig *cfg = log_pipe_get_config(s);
+  gchar *persist_name;
 
   if (!log_dest_driver_init_method(s))
     return FALSE;
@@ -1337,8 +1355,23 @@ afsocket_dd_init(LogPipe *s)
                                     (self->flags & AFSOCKET_SYSLOG_DRIVER ? LW_SYSLOG_PROTOCOL : 0));
 
     }
-  log_writer_set_options((LogWriter *) self->writer, &self->super.super.super, &self->writer_options, 0, afsocket_dd_stats_source(self), self->super.super.id, afsocket_dd_stats_instance(self), &self->proto_options);
-  log_writer_set_queue(self->writer, log_dest_driver_acquire_queue(&self->super, afsocket_dd_format_persist_name(self, TRUE)));
+  log_writer_set_options((LogWriter *) self->writer,
+                          &self->super.super.super,
+                          &self->writer_options,
+                          0,
+                          afsocket_dd_stats_source(self),
+                          self->super.super.id,
+                          afsocket_dd_stats_instance(self),
+                          &self->proto_options);
+
+  persist_name =  afsocket_dd_format_persist_name(self, TRUE);
+  if (!afsocket_dd_check_persist_usage(self, persist_name))
+    {
+      msg_error("Persist name is already used", evt_tag_str("persist_name", persist_name), NULL);
+      return FALSE;
+    }
+  g_hash_table_insert(persist_hash, g_strdup(persist_name), self->writer);
+  log_writer_set_queue(self->writer, log_dest_driver_acquire_queue(&self->super, persist_name));
 
   if (!log_pipe_init(self->writer, NULL))
     {
@@ -1368,6 +1401,8 @@ afsocket_dd_deinit(LogPipe *s)
       cfg_persist_config_add(cfg, afsocket_dd_format_persist_name(self, FALSE), self->writer, (GDestroyNotify) log_pipe_unref, FALSE);
       self->writer = NULL;
     }
+
+  g_hash_table_remove(persist_hash, afsocket_dd_format_persist_name(self, TRUE));
 
   if (!log_dest_driver_deinit_method(s))
     return FALSE;
@@ -1461,6 +1496,7 @@ afsocket_dd_free(LogPipe *s)
       tls_context_unref(self->tls_context);
     }
 #endif
+  g_hash_table_unref(persist_hash);
   log_dest_driver_free(s);
 }
 
@@ -1468,6 +1504,14 @@ void
 afsocket_dd_init_instance(AFSocketDestDriver *self, SocketOptions *sock_options, gint family, const gchar *hostname, guint32 flags)
 {
   log_dest_driver_init_instance(&self->super);
+  if (!persist_hash)
+    {
+      persist_hash = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
+    }
+  else
+    {
+      g_hash_table_ref(persist_hash);
+    }
 
   log_writer_options_defaults(&self->writer_options);
   self->super.super.super.init = afsocket_dd_init;
