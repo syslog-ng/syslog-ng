@@ -497,6 +497,14 @@ afamqp_dd_init(LogPipe *s)
   if (!log_dest_driver_init_method(s))
     return FALSE;
 
+  if (!self->user || !self->password)
+    {
+      msg_error("Error initializing AMQP destination: username and password MUST be set!",
+                evt_tag_str("driver", self->super.super.super.id),
+                NULL);
+      return FALSE;
+    }
+
   log_template_options_init(&self->template_options, cfg);
 
   msg_verbose("Initializing AMQP destination",
