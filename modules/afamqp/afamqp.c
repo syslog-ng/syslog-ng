@@ -588,6 +588,14 @@ afamqp_dd_init(LogPipe *s)
       value_pairs_add_scope(self->vp, "sdata");
     }
 
+  if (!self->user || !self->password)
+    {
+      msg_error("Error initializing AMQP destination: username and password MUST be set!",
+                evt_tag_str("driver", self->super.super.id),
+                NULL);
+      return FALSE;
+    }
+
   msg_verbose("Initializing AMQP destination",
               evt_tag_str("vhost", self->vhost),
               evt_tag_str("host", self->host),
