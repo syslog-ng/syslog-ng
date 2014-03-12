@@ -1,3 +1,86 @@
+3.5.4
+        Wed, 12 Mar 2014 13:18:36 +0100
+
+        This is the third bug-fix release for the 3.5.x series, with a
+        number of important improvements over the previous release.
+        Upgrading to this version is highly recommended.
+
+        Bugfixes
+        ========
+
+        * The value-pairs code had a serious bug, where under some
+          circumstances (depending on compiler, platform and
+          optimisation flags), it could end up in a live-lock, where
+          the only way out was to forcibly kill the syslog-ng process.
+
+        * SDATA enterprise IDs are handled better when using
+          value-pairs (MongoDB, $(format-json), etc): the enterprise
+          id is kept together, the possibly dotted numeric ID is not
+          split into sub-structures anymore.
+
+        * json-parser() can now be used from multiple log paths
+          without crashing the syslog-ng process.
+
+        * Options that can take a unit-suffixed number now work
+          correctly on 32-bit big-endian platforms.
+
+        * Using some time-related macros (like R_SEC) in filters do
+          not crash syslog-ng anymore.
+
+        * The internal copy of libmongo-client was updated to version
+          0.1.7.1, which fixes an important bug in the safe mode
+          handling code.
+
+        * The system() source learned to recognise FreeBSD jails, and
+          will not use /dev/klog when running inside one.
+
+        * The host() and port() options of the MongoDB destination
+          have been marked obsolete (which were documented as such,
+          but the code didn't follow).
+
+        * The username() and password() options are now mandatory for
+          the AMQP destination, and syslog-ng raises an error if
+          either of them is unset. This is because the destination
+          does not work without them anyway.
+
+        * The timezone file parser now supports Tzif3 formatted files too.
+
+        * The $(geoip) template function handles failed look-ups
+          gracefully: it expands to an empty string then, and does not
+          print a warning anymore.
+
+        * The source code was updated to work with bison 3 and later
+          (only affects people compiling from git, or rebuilding
+          grammar files).
+
+        * The syslog-ng pkg-config file now has an scldir and a
+          datarootdir variable too, to help third-party packages.
+
+        Credits
+        =======
+
+        syslog-ng is developed as a community project, and as such it relies
+        on volunteers to do the work necessarily to produce syslog-ng.
+
+        Reporting bugs, testing changes, writing code or simply providing
+        feedback are all important contributions, so please if you are a
+        user of syslog-ng, contribute.
+
+        These people have helped in this release:
+
+        Andras Mitzki <micek@balabit.hu>
+        Andres Tamayo <Andres.Tamayo@viasat.com>
+        Balazs Scheidler <bazsi@balabit.hu>
+        Daniel Gados <gdani@balabit.hu>
+        Evan Rempel <erempel@uvic.ca>
+        Fabien Wernli <bugzilla.balabit@faxm0dem.org>
+        Gergely Nagy <algernon@balabit.hu>
+        Igor Ippolitov <iippolitov@gmail.com>
+        Peter Czanik <czanik@balabit.hu>
+        Steve Berryman <steve@berryman.org.uk>
+        Tibor Benke <btibi@balabit.hu>
+        Viktor Tusa <tusa@balabit.hu>
+
 3.5.3
         Tue, 24 Dec 2013 19:53:05 +0100
 
