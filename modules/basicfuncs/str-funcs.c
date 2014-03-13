@@ -60,7 +60,7 @@ TEMPLATE_FUNCTION_SIMPLE(tf_length);
 static void
 tf_substr(LogMessage *msg, gint argc, GString *argv[], GString *result)
 {
-  glong start, len;
+  gint64 start, len;
 
   /*
    * We need to cast argv[0]->len, which is gsize (so unsigned) type, to a
