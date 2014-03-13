@@ -1,3 +1,33 @@
+3.5.4.1
+        Thu, 13 Mar 2014 10:46:07 +0100
+
+        This is the fourth bug-fix release for the 3.5.x series, with
+        a single fix for 32-bit platforms. Upgrading to this version
+        is highly recommended for people using 32-bit platforms,
+        others are not affected.
+
+        Bugfixes
+        ========
+
+        * The basic template functions (substr, +, -, etc) were fixed
+          to work correctly on 32-bit platforms, following up on a
+          previous change that changed how numbers are parsed.
+
+        Credits
+        =======
+
+        syslog-ng is developed as a community project, and as such it relies
+        on volunteers to do the work necessarily to produce syslog-ng.
+
+        Reporting bugs, testing changes, writing code or simply providing
+        feedback are all important contributions, so please if you are a
+        user of syslog-ng, contribute.
+
+        These people have helped in this release:
+
+        Gergely Nagy <algernon@balabit.hu>
+        Peter Czanik <czanik@balabit.hu>
+
 3.5.4
         Wed, 12 Mar 2014 13:18:36 +0100
 
