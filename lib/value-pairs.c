@@ -93,7 +93,7 @@ static ValuePairSpec rfc3164[] =
   { "PROGRAM"  },
   { "PID"      },
   { "MESSAGE"  },
-  { "DATE", "R_DATE" },
+  { "DATE" },
   { 0 },
 };
 
