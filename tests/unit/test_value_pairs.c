@@ -113,7 +113,12 @@ main(int argc, char *argv[])
   parse_options.flags |= LP_SYSLOG_PROTOCOL;
 
   testcase("rfc3164", NULL, "DATE,FACILITY,HOST,MESSAGE,PID,PRIORITY,PROGRAM", NULL);
-  testcase("rfc5424", NULL, "DATE,FACILITY,HOST,MESSAGE,MSGID,PID,PRIORITY,PROGRAM", NULL);
+  testcase("core", NULL, "DATE,FACILITY,HOST,MESSAGE,PID,PRIORITY,PROGRAM", NULL);
+  testcase("base", NULL, "DATE,FACILITY,HOST,MESSAGE,PID,PRIORITY,PROGRAM", NULL);
+
+  testcase("rfc5424", NULL, ".SDATA.EventData@18372.4.Data,.SDATA.Keywords@18372.4.Keyword,.SDATA.meta.sequenceId,.SDATA.meta.sysUpTime,.SDATA.origin.ip,DATE,FACILITY,HOST,MESSAGE,MSGID,PID,PRIORITY,PROGRAM", NULL);
+  testcase("syslog-proto", NULL, ".SDATA.EventData@18372.4.Data,.SDATA.Keywords@18372.4.Keyword,.SDATA.meta.sequenceId,.SDATA.meta.sysUpTime,.SDATA.origin.ip,DATE,FACILITY,HOST,MESSAGE,MSGID,PID,PRIORITY,PROGRAM", NULL);
+
   testcase("selected-macros", NULL, "DATE,FACILITY,HOST,MESSAGE,PID,PRIORITY,PROGRAM,SEQNUM,SOURCEIP,TAGS", NULL);
 
   testcase("nv-pairs", NULL, "HOST,MESSAGE,MSGID,PID,PROGRAM", NULL);
