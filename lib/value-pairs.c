@@ -229,8 +229,8 @@ vp_msg_nvpairs_foreach(NVHandle handle, gchar *name,
     return FALSE;
 
   inc = (name[0] == '.' && (vp->scopes & VPS_DOT_NV_PAIRS)) ||
-    (name[0] != '.' && (vp->scopes & VPS_NV_PAIRS)) ||
-    (log_msg_is_handle_sdata(handle) && (vp->scopes & VPS_SDATA));
+        (name[0] != '.' && (vp->scopes & VPS_NV_PAIRS)) ||
+        (log_msg_is_handle_sdata(handle) && (vp->scopes & (VPS_SDATA + VPS_RFC5424)));
 
   for (j = 0; j < vp->patterns_size; j++)
     {
@@ -344,7 +344,7 @@ value_pairs_foreach_sorted (ValuePairs *vp, VPForeachFunc func,
   /*
    * Build up the base set
    */
-  if (vp->scopes & (VPS_NV_PAIRS + VPS_DOT_NV_PAIRS + VPS_SDATA) ||
+  if (vp->scopes & (VPS_NV_PAIRS + VPS_DOT_NV_PAIRS + VPS_SDATA + VPS_RFC5424) ||
       vp->patterns_size > 0)
     nv_table_foreach(msg->payload, logmsg_registry,
                      (NVTableForeachFunc) vp_msg_nvpairs_foreach, args);
