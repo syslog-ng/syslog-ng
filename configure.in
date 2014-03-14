@@ -474,7 +474,7 @@ dnl ***************************************************************************
 
 AC_HEADER_STDC
 AC_CHECK_HEADER(dmalloc.h)
-AC_CHECK_HEADERS(strings.h getopt.h stropts.h sys/strlog.h door.h sys/capability.h sys/prctl.h glob.h)
+AC_CHECK_HEADERS(strings.h getopt.h stropts.h sys/strlog.h door.h sys/capability.h sys/prctl.h glob.h utmpx.h)
 AC_CHECK_HEADERS(tcpd.h time.h sys/time.h)
 
 
@@ -596,7 +596,7 @@ fi
 dnl some of these are provided by libs declared in BASE_LIBS on non-Linux/FreeBSD systems.
 old_LIBS=$LIBS
 LIBS="$LIBS $BASE_LIBS"
-AC_CHECK_FUNCS(strdup strtol strtoll strtoimax inet_aton inet_ntoa getopt_long getaddrinfo getutent pread pwrite strcasestr memrchr)
+AC_CHECK_FUNCS(strdup strtol strtoll strtoimax inet_aton inet_ntoa getopt_long getaddrinfo getutent getutxent pread pwrite strcasestr memrchr)
 AC_CHECK_FUNCS(clock_gettime)
 
 if test $IS_SOLARIS -eq 0; then

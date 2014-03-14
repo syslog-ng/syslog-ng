@@ -25,13 +25,37 @@
 #include "alarms.h"
 #include "messages.h"
 
+#ifdef HAVE_UTMPX_H
+#include <utmpx.h>
+#define ut_name ut_user
+#else
 #include <utmp.h>
+#endif
+
 #include <string.h>
 #include <fcntl.h>
 #include <unistd.h>
 
 #ifndef HAVE_GETUTENT
 #include "utils.h"
+#endif
+
+#ifdef HAVE_UTMPX_H
+typedef struct utmpx utmp_interface;
+#else
+typedef struct utmp utmp_interface;
+#endif
+
+#ifdef HAVE_GETUTXENT
+#define getutent_interface getutxent
+#else
+#define getutent_interface getutent
+#endif
+
+#if HAVE_UTMPX_H
+#define endutent_interface endutxent
+#else
+#define endutent_interface endutent
 #endif
 
 typedef struct _AFUserDestDriver
@@ -46,7 +70,8 @@ afuser_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
 {
   AFUserDestDriver *self = (AFUserDestDriver *) s;
   gchar buf[8192];
-  struct utmp *ut;
+  utmp_interface *ut;
+
   GString *timestamp;
   time_t now;
   
@@ -65,7 +90,7 @@ afuser_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
   g_string_free(timestamp, TRUE);
   
   /* NOTE: there's a private implementations of getutent in utils.c on Systems which do not provide one. */
-  while ((ut = getutent())) 
+  while ((ut = getutent_interface()))
     {
 #if HAVE_MODERN_UTMP
       if (ut->ut_type == USER_PROCESS &&
@@ -108,7 +133,7 @@ afuser_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
             }
         }
     }
-  endutent();
+  endutent_interface();
 finish:
   log_msg_ack(msg, path_options, TRUE);
   log_msg_unref(msg);

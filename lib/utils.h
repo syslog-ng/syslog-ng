@@ -28,13 +28,18 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+
+#ifdef HAVE_UTMPX_H
+#include <utmpx.h>
+#else
 #include <utmp.h>
+#endif
 
 #ifndef HAVE_INET_ATON
 int inet_aton(const char *cp, struct in_addr *addr);
 #endif
 
-#ifndef HAVE_GETUTENT
+#if !defined(HAVE_GETUTENT) && !defined(HAVE_GETUTXENT)
 struct utmp *getutent(void);
 void endutent(void);
 #endif

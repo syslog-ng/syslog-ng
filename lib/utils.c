@@ -34,8 +34,6 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <fcntl.h>
-#include <utmp.h>
-
 #include "utils.h"
 
 #ifndef HAVE_INET_ATON
@@ -48,7 +46,7 @@ int inet_aton(const char *cp, struct in_addr *addr)
 }
 #endif
 
-#ifndef HAVE_GETUTENT
+#if !defined(HAVE_GETUTENT) && !defined(HAVE_GETUTXENT) && defined(HAVE_UTMP_H)
 
 static int utent_fd = -1;
 
