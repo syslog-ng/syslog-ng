@@ -8,3 +8,5 @@ libsqlite3
 libsqlite3-dev
 libxml2
 libxml2-dev
+libmongo-client-dev
+libmongo-client
