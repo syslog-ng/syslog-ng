@@ -49,6 +49,21 @@ test_format_json(void)
 }
 
 void
+test_format_json_key(void)
+{
+  assert_template_format("$(format-json --key PID)", "{\"PID\":\"23323\"}");
+  assert_template_format("$(format-json --key HOST)", "{\"HOST\":\"bzorp\"}");
+  assert_template_format("$(format-json --key MESSAGE)", "{\"MESSAGE\":\"árvíztűrőtükörfúrógép\"}");
+  assert_template_format("$(format-json --key HOST --key MESSAGE)", "{\"MESSAGE\":\"árvíztűrőtükörfúrógép\",\"HOST\":\"bzorp\"}");
+
+  assert_template_format("$(format-json --scope selected-macros --key MSG)", "{\"TAGS\":\"alma,korte,citrom\",\"SOURCEIP\":\"10.11.12.13\",\"PROGRAM\":\"syslog-ng\",\"PRIORITY\":\"err\",\"PID\":\"23323\",\"MSG\":\"árvíztűrőtükörfúrógép\",\"MESSAGE\":\"árvíztűrőtükörfúrógép\",\"HOST\":\"bzorp\",\"FACILITY\":\"local3\",\"DATE\":\"Feb 11 10:34:56\"}");
+
+  assert_template_format("$(format-json --key MSG)", "{\"MSG\":\"árvíztűrőtükörfúrógép\"}");
+  assert_template_format("$(format-json --key DATE)", "{\"DATE\":\"Feb 11 10:34:56\"}");
+  assert_template_format("$(format-json --key PRI)", "{\"PRI\":\"155\"}");
+}
+
+void
 test_format_json_rekey(void)
 {
   assert_template_format("$(format-json .msg.text=dotted --rekey .* --shift 1 --add-prefix _)",
@@ -109,6 +124,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   plugin_load_module("json-plugin", configuration, NULL);
 
   test_format_json();
+  test_format_json_key();
   test_format_json_rekey();
   test_format_json_with_type_hints();
   test_format_json_on_error();
