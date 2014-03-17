@@ -244,26 +244,31 @@ vp_msg_nvpairs_foreach(NVHandle handle, gchar *name,
   return FALSE;
 }
 
-/* runs over a set of ValuePairSpec structs and merges them into the value-pair set */
+static gboolean
+vp_find_in_set(ValuePairs *vp, gchar *name, gboolean exclude)
+{
+  gint j;
+  gboolean included = exclude;
+
+  for (j = 0; j < vp->patterns_size; j++)
+    {
+      if (g_pattern_match_string(vp->patterns[j]->pattern, name))
+        included = vp->patterns[j]->include;
+    }
+
+  return included;
+}
+
 static void
-vp_merge_set(ValuePairs *vp, LogMessage *msg, gint32 seq_num, ValuePairSpec *set, GTree *dest)
+vp_merge_other_set(ValuePairs *vp, LogMessage *msg, gint32 seq_num, ValuePairSpec *set, GTree *dest, gboolean exclude)
 {
   gint i;
   ScratchBuffer *sb = scratch_buffer_acquire();
 
   for (i = 0; set[i].name; i++)
     {
-      gint j;
-      gboolean exclude = FALSE;
-
-      for (j = 0; j < vp->patterns_size; j++)
-        {
-          if (g_pattern_match_string(vp->patterns[j]->pattern, set[i].name))
-            exclude = !vp->patterns[j]->include;
-        }
-
-      if (exclude)
-	continue;
+      if (!vp_find_in_set(vp, set[i].name, exclude))
+        continue;
 
       switch (set[i].type)
         {
@@ -292,6 +297,19 @@ vp_merge_set(ValuePairs *vp, LogMessage *msg, gint32 seq_num, ValuePairSpec *set
   scratch_buffer_release(sb);
 }
 
+static void
+vp_merge_macros(ValuePairs *vp, LogMessage *msg, gint32 seq_num, GTree *dest)
+{
+  vp_merge_other_set(vp, msg, seq_num, all_macros, dest, FALSE);
+}
+
+/* runs over a set of ValuePairSpec structs and merges them into the value-pair set */
+static void
+vp_merge_set(ValuePairs *vp, LogMessage *msg, gint32 seq_num, ValuePairSpec *set, GTree *dest)
+{
+  vp_merge_other_set(vp, msg, seq_num, set, dest, TRUE);
+}
+
 void
 value_pairs_foreach_sorted (ValuePairs *vp, VPForeachFunc func,
                             GCompareDataFunc compare_func,
@@ -312,6 +330,9 @@ value_pairs_foreach_sorted (ValuePairs *vp, VPForeachFunc func,
       vp->patterns_size > 0)
     nv_table_foreach(msg->payload, logmsg_registry,
                      (NVTableForeachFunc) vp_msg_nvpairs_foreach, args);
+
+  if (vp->patterns_size > 0)
+    vp_merge_macros(vp, msg, seq_num, scope_set);
 
   if (vp->scopes & (VPS_RFC3164 + VPS_RFC5424 + VPS_SELECTED_MACROS))
     vp_merge_set(vp, msg, seq_num, rfc3164, scope_set);
