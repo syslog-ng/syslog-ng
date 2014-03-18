@@ -37,6 +37,8 @@ static CfgLexerKeyword afmongodb_keywords[] = {
   { "host",                     KW_HOST },
   { "port",                     KW_PORT },
   { "path",                     KW_PATH },
+  { "username",     KW_USERNAME },
+  { "password",     KW_PASSWORD },
   { NULL }
 };
 

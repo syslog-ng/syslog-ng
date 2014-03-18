@@ -55,6 +55,9 @@ typedef struct
   gchar *address;
   gint port;
 
+  gchar* username;
+  gchar* password;
+
   gboolean safe_mode;
 
   time_t time_reopen;
@@ -191,6 +194,24 @@ afmongodb_dd_set_collection(LogDriver *d, const gchar *collection)
 }
 
 void
+afmongodb_dd_set_username(LogDriver *d, const gchar *username)
+{
+  MongoDBDestDriver *self = (MongoDBDestDriver *)d;
+
+  g_free(self->username);
+  self->username = g_strdup(username);
+}
+
+void
+afmongodb_dd_set_password(LogDriver *d, const gchar *password)
+{
+  MongoDBDestDriver *self = (MongoDBDestDriver *)d;
+
+  g_free(self->password);
+  self->password = g_strdup(password);
+}
+
+void
 afmongodb_dd_set_value_pairs(LogDriver *d, ValuePairs *vp)
 {
   MongoDBDestDriver *self = (MongoDBDestDriver *)d;
@@ -265,10 +286,21 @@ afmongodb_dd_connect(MongoDBDestDriver *self, gboolean reconnect)
     return TRUE;
 
   self->conn = mongo_sync_connect(self->address, self->port, FALSE);
+
   if (!self->conn)
     {
       msg_error ("Error connecting to MongoDB", NULL);
       return FALSE;
+    }
+
+  if (self->username || self->password)
+    {
+      if (!mongo_sync_cmd_authenticate(self->conn, self->db, self->username, self->password))
+        {
+          msg_error("Error authenticating to MongoDB", evt_tag_str("database", self->db), evt_tag_str("username", self->username), NULL);
+          afmongodb_dd_disconnect(self);
+          return FALSE;
+        }
     }
 
   mongo_sync_conn_set_safe_mode(self->conn, self->safe_mode);
@@ -602,6 +634,20 @@ afmongodb_dd_stop_thread (MongoDBDestDriver *self)
 }
 
 static gboolean
+afmongodb_dd_check_auth_options(MongoDBDestDriver *self)
+{
+  if (self->username || self->password)
+    {
+      if (!self->username || !self->password)
+        {
+          msg_error("Neither the username, nor the password can be empty", NULL);
+          return FALSE;
+        }
+    }
+  return TRUE;
+}
+
+static gboolean
 afmongodb_dd_init(LogPipe *s)
 {
   MongoDBDestDriver *self = (MongoDBDestDriver *)s;
@@ -615,6 +661,9 @@ afmongodb_dd_init(LogPipe *s)
 
   if (cfg)
     self->time_reopen = cfg->time_reopen;
+
+  if (!afmongodb_dd_check_auth_options(self))
+    return FALSE;
 
   /* Always replace a leading dot with an underscore. */
   vpts = value_pairs_transform_set_new(".*");
