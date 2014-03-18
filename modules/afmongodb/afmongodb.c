@@ -522,7 +522,6 @@ afmongodb_worker_insert (MongoDBDestDriver *self)
 
   if (success)
     {
-      stats_counter_inc(self->stored_messages);
       step_sequence_number(&self->seq_num);
       log_msg_ack(msg, &path_options, TRUE);
       log_msg_unref(msg);
