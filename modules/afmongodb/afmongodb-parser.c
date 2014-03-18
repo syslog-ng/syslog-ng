@@ -1,18 +1,18 @@
 /*
- * Copyright (c) 2002-2011 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 2010-2011 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2010-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2010-2013 Gergely Nagy <algernon@balabit.hu>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
  * by the Free Software Foundation, or (at your option) any later version.
  *
- * This library is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  * As an additional exemption you are allowed to compile & link against the
@@ -30,13 +30,13 @@ int afmongodb_parse(CfgLexer *lexer, LogDriver **instance, gpointer arg);
 
 static CfgLexerKeyword afmongodb_keywords[] = {
   { "mongodb",			KW_MONGODB },
-  { "host",			KW_HOST },
-  { "port",			KW_PORT },
+  { "servers",                  KW_SERVERS },
   { "database",			KW_DATABASE },
   { "collection",		KW_COLLECTION },
-  { "username",			KW_USERNAME },
-  { "password",			KW_PASSWORD },
-  { "log_fifo_size",		KW_LOG_FIFO_SIZE  },
+  { "safe_mode",		KW_SAFE_MODE },
+  { "host",                     KW_HOST },
+  { "port",                     KW_PORT },
+  { "path",                     KW_PATH },
   { NULL }
 };
 

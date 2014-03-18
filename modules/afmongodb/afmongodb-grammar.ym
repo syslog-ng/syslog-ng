@@ -1,18 +1,18 @@
 /*
- * Copyright (c) 2002-2011 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 2010-2011 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2010-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2010-2013 Gergely Nagy <algernon@balabit.hu>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
  * by the Free Software Foundation, or (at your option) any later version.
  *
- * This library is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  * As an additional exemption you are allowed to compile & link against the
@@ -29,14 +29,10 @@
 
 %code {
 
-#include "cfg-parser.h"
-#include "afmongodb-grammar.h"
+#include "cfg-grammar.h"
 #include "plugin.h"
 #include "vptransform.h"
 
-extern LogDriver *last_driver;
-extern ValuePairs *last_value_pairs;
-extern ValuePairsTransformSet *last_vp_transset;
 }
 
 %name-prefix "afmongodb_"
@@ -50,13 +46,16 @@ extern ValuePairsTransformSet *last_vp_transset;
 
 %token KW_MONGODB
 %token KW_COLLECTION
+%token KW_SERVERS
+%token KW_SAFE_MODE
+%token KW_PATH
 
 %%
 
 start
         : LL_CONTEXT_DESTINATION KW_MONGODB
           {
-            last_driver = *instance = afmongodb_dd_new();
+            last_driver = *instance = afmongodb_dd_new(configuration);
           }
           '(' afmongodb_options ')'         { YYACCEPT; }
 	;
@@ -67,14 +66,34 @@ afmongodb_options
 	;
 
 afmongodb_option
-        : KW_HOST '(' string ')'		{ afmongodb_dd_set_host(last_driver, $3); free($3); }
-        | KW_PORT '(' LL_NUMBER ')'		{ afmongodb_dd_set_port(last_driver, $3); }
+	: KW_SERVERS '(' string_list ')'
+          {
+            CHECK_ERROR(afmongodb_dd_check_address(last_driver, FALSE), @3, "Can't mix path() & servers()");
+            afmongodb_dd_set_servers(last_driver, $3);
+          }
+        | KW_HOST '(' string ')'
+          {
+            CHECK_ERROR(afmongodb_dd_check_address(last_driver, FALSE), @3, "Can't mix path() & host()");
+            afmongodb_dd_set_host(last_driver, $3);
+            free($3);
+          }
+        | KW_PORT '(' LL_NUMBER ')'
+          {
+            CHECK_ERROR(afmongodb_dd_check_address(last_driver, FALSE), @3, "Can't mix path() & port()");
+            afmongodb_dd_set_port(last_driver, $3);
+          }
+        | KW_PATH '(' string ')'
+          {
+            CHECK_ERROR(afmongodb_dd_check_address(last_driver, TRUE), @3, "Can't mix path() with host() or server()");
+            afmongodb_dd_set_path(last_driver, $3);
+            free($3);
+          }
 	| KW_DATABASE '(' string ')'		{ afmongodb_dd_set_database(last_driver, $3); free($3); }
 	| KW_COLLECTION '(' string ')'		{ afmongodb_dd_set_collection(last_driver, $3); free($3); }
-	| KW_USERNAME '(' string ')'		{ afmongodb_dd_set_user(last_driver, $3); free($3); }
-	| KW_PASSWORD '(' string ')'		{ afmongodb_dd_set_password(last_driver, $3); free($3); }
+	| KW_SAFE_MODE '(' yesno ')'		{ afmongodb_dd_set_safe_mode(last_driver, $3); }
 	| value_pair_option			{ afmongodb_dd_set_value_pairs(last_driver, $1); }
 	| dest_driver_option
+	| { last_template_options = afmongodb_dd_get_template_options(last_driver); } template_option
         ;
 
 /* INCLUDE_RULES */
