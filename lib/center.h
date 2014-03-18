@@ -87,6 +87,7 @@ typedef struct _LogCenter
 
 gboolean log_center_init(LogCenter *self, GlobalConfig *cfg);
 gboolean log_center_deinit(LogCenter *self);
+gboolean log_center_reinit(LogCenter *self, GlobalConfig *cfg);
 
 LogCenter *log_center_new(void);
 void log_center_free(LogCenter *s);

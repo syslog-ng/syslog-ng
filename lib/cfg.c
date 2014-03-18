@@ -288,6 +288,17 @@ cfg_lookup_template(GlobalConfig *cfg, const gchar *name)
 }
 
 extern GTimeVal app_uptime;
+
+static void
+cfg_init_global_internals(GlobalConfig *cfg)
+{
+  stats_reinit(cfg);
+  dns_cache_global_init(cfg->dns_cache_size, cfg->dns_cache_expire, cfg->dns_cache_expire_failed, cfg->dns_cache_hosts);
+  dns_cache_tls_init();
+  set_custom_domain(cfg->custom_domain);
+  reset_cached_hostname();
+}
+
 gboolean
 cfg_init(GlobalConfig *cfg)
 {
@@ -304,7 +315,6 @@ cfg_init(GlobalConfig *cfg)
     msg_error("Error resolving protocol template",
                evt_tag_str("name", cfg->proto_template_name),
                NULL);
-  stats_reinit(cfg);
 
   if (cfg->bad_hostname_re)
     {
@@ -323,11 +333,15 @@ cfg_init(GlobalConfig *cfg)
         }
     }
 
-  dns_cache_global_init(cfg->dns_cache_size, cfg->dns_cache_expire, cfg->dns_cache_expire_failed, cfg->dns_cache_hosts);
-  dns_cache_tls_init();
-  set_custom_domain(cfg->custom_domain);
-  reset_cached_hostname();
+  cfg_init_global_internals(cfg);
   return log_center_init(cfg->center, cfg);
+}
+
+gboolean
+cfg_reinit(GlobalConfig *cfg)
+{
+  cfg_init_global_internals(cfg);
+  return log_center_reinit(cfg->center, cfg);
 }
 
 gboolean

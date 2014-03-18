@@ -167,6 +167,7 @@ gboolean cfg_load_config(GlobalConfig *self, gchar *config_string, gboolean synt
 void cfg_free(GlobalConfig *self);
 gboolean cfg_init(GlobalConfig *cfg);
 gboolean cfg_deinit(GlobalConfig *cfg);
+gboolean cfg_reinit(GlobalConfig *cfg);
 
 
 PersistConfig *persist_config_new(void);

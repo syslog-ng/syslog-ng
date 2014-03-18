@@ -523,24 +523,9 @@ log_center_init_pipe_line(LogCenter *self, LogConnection *conn, GlobalConfig *cf
 }
 
 gboolean
-log_center_init(LogCenter *self, GlobalConfig *cfg)
+log_center_reinit(LogCenter *self, GlobalConfig *cfg)
 {
   gint i;
-  
-  /* resolve references within the configuration */
-  
-  for (i = 0; i < cfg->connections->len; i++)
-    {
-      LogConnection *conn = (LogConnection *) g_ptr_array_index(cfg->connections, i);
-      LogPipe *pipe_line;
-      
-      pipe_line = log_center_init_pipe_line(self, conn, cfg, TRUE, FALSE);
-      if (!pipe_line)
-        {
-          return FALSE;
-        }
-    }
-
   /*
    *   As there are pipes that are dynamically created during init, these
    *   pipes must be deinited before destroying the configuration, otherwise
@@ -563,6 +548,28 @@ log_center_init(LogCenter *self, GlobalConfig *cfg)
   
   self->state = LC_STATE_WORKING;
   return TRUE;
+
+}
+
+gboolean
+log_center_init(LogCenter *self, GlobalConfig *cfg)
+{
+  gint i;
+
+  /* resolve references within the configuration */
+
+  for (i = 0; i < cfg->connections->len; i++)
+    {
+      LogConnection *conn = (LogConnection *) g_ptr_array_index(cfg->connections, i);
+      LogPipe *pipe_line;
+
+      pipe_line = log_center_init_pipe_line(self, conn, cfg, TRUE, FALSE);
+      if (!pipe_line)
+        {
+          return FALSE;
+        }
+    }
+  return log_center_reinit(self, cfg);
 }
 
 gboolean
