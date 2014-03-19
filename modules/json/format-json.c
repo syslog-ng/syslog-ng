@@ -183,7 +183,7 @@ tf_json_value(const gchar *name, const gchar *prefix, const gchar *value,
 }
 
 static void
-tf_json_append(GString *result, ValuePairs *vp, LogMessage *msg)
+tf_json_append(GString *result, ValuePairs *vp, LogMessage *msg, gint32 seq_num)
 {
   json_state_t state;
 
@@ -192,7 +192,7 @@ tf_json_append(GString *result, ValuePairs *vp, LogMessage *msg)
 
   value_pairs_walk(vp,
                    tf_json_obj_start, tf_json_value, tf_json_obj_end,
-                   msg, 0, &state);
+                   msg, seq_num, &state);
 }
 
 static void
@@ -203,7 +203,7 @@ tf_json_call(LogTemplateFunction *self, gpointer s,
   gint i;
 
   for (i = 0; i < args->num_messages; i++)
-    tf_json_append(result, state->vp, args->messages[i]);
+    tf_json_append(result, state->vp, args->messages[i], args->seq_num);
 }
 
 static void
