@@ -641,12 +641,21 @@ afmongodb_dd_check_auth_options(MongoDBDestDriver *self)
   return TRUE;
 }
 
+static void
+afmongodb_dd_init_value_pairs_dot_to_underscore_transformation(MongoDBDestDriver *self)
+{
+  ValuePairsTransformSet *vpts;
+ /* Always replace a leading dot with an underscore. */
+  vpts = value_pairs_transform_set_new(".*");
+  value_pairs_transform_set_add_func(vpts, value_pairs_new_transform_replace_prefix(".", "_"));
+  value_pairs_add_transforms(self->vp, vpts);
+};
+
 static gboolean
 afmongodb_dd_init(LogPipe *s)
 {
   MongoDBDestDriver *self = (MongoDBDestDriver *)s;
   GlobalConfig *cfg = log_pipe_get_config(s);
-  ValuePairsTransformSet *vpts;
 
   if (!server_mode)
     {
@@ -665,11 +674,7 @@ afmongodb_dd_init(LogPipe *s)
   if (!afmongodb_dd_check_auth_options(self))
     return FALSE;
 
-  /* Always replace a leading dot with an underscore. */
-  vpts = value_pairs_transform_set_new(".*");
-  value_pairs_transform_set_add_func(vpts, value_pairs_new_transform_replace_prefix(".", "_"));
-  value_pairs_add_transforms(self->vp, vpts);
-
+  afmongodb_dd_init_value_pairs_dot_to_underscore_transformation(self);
   if (self->port != MONGO_CONN_LOCAL)
     {
       if (self->address)
