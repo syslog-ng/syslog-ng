@@ -478,7 +478,6 @@ static gboolean
 afmongodb_worker_insert (MongoDBDestDriver *self)
 {
   gboolean success, need_drop = self->template_options.on_error & ON_ERROR_DROP_MESSAGE;
-  guint8 *oid;
   LogMessage *msg;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
 
@@ -491,10 +490,6 @@ afmongodb_worker_insert (MongoDBDestDriver *self)
   msg_set_context(msg);
 
   bson_reset (self->bson);
-
-  oid = mongo_util_oid_new_with_time (self->last_msg_stamp, self->seq_num);
-  bson_append_oid (self->bson, "_id", oid);
-  g_free (oid);
 
   success = value_pairs_walk(self->vp,
                              afmongodb_vp_obj_start,
