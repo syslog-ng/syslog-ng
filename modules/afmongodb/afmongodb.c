@@ -66,6 +66,8 @@ typedef struct
   StatsCounterItem *stored_messages;
   LogTemplateOptions template_options;
 
+  gint failed_message_counter;
+
   time_t last_msg_stamp;
 
   ValuePairs *vp;
@@ -480,8 +482,18 @@ afmongodb_worker_drop_message(MongoDBDestDriver *self, LogMessage *msg, LogPathO
   stats_counter_inc(self->dropped_messages);
   step_sequence_number(&self->seq_num);
   log_msg_drop(msg, &path_options);
+  self->failed_message_counter = 0;
 
 };
+
+static void
+afmongodb_worker_accept_message(MongoDBDestDriver *self, LogMessage *msg, LogPathOptions *path_options)
+{
+  step_sequence_number(&self->seq_num);
+  log_msg_ack(msg, &path_options, TRUE);
+  log_msg_unref(msg);
+  self->failed_message_counter = 0;
+}
 
 static gboolean
 afmongodb_worker_insert (MongoDBDestDriver *self)
@@ -526,18 +538,20 @@ afmongodb_worker_insert (MongoDBDestDriver *self)
 
   if (success)
     {
-      step_sequence_number(&self->seq_num);
-      log_msg_ack(msg, &path_options, TRUE);
-      log_msg_unref(msg);
+      afmongodb_worker_accept_message(self, msg, &path_options);
     }
   else
     {
-      if (need_drop)
+      self->failed_message_counter++;
+      if (self->failed_message_counter >= 3)
         {
+          msg_error("Multiple failures while inserting this record into the database, message dropped", NULL);
           afmongodb_worker_drop_message(self, msg, &path_options);
         }
       else
-        log_queue_push_head(self->queue, msg, &path_options);
+        {
+          log_queue_push_head(self->queue, msg, &path_options);
+        }
     }
 
   return success;
