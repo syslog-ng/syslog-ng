@@ -3,7 +3,6 @@ export top_srcdir
 
 SUBDIRS = . tests
 
-if !IS_WINDOWS
 if ENABLE_JSON
 
 AM_CPPFLAGS = -I$(top_srcdir)/lib -I../../lib -I$(top_srcdir)/modules/json -I$(top_builddir)/modules/json $(JSON_CFLAGS)
@@ -30,5 +29,4 @@ EXTRA_DIST = $(BUILT_SOURCES) json-parser-grammar.ym
 
 include $(top_srcdir)/build/lex-rules.am
 
-endif
 endif
