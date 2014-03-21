@@ -150,7 +150,10 @@ log_proto_text_client_flush(LogProto *s)
   /* attempt to flush previously buffered data */
   if (self->partial)
     {
-      log_proto_text_client_flush_buffer(s);
+      if (log_proto_text_client_flush_buffer(s) == LPS_ERROR)
+        {
+          return LPS_ERROR;
+        }
     }
   if (!self->partial)
     {
