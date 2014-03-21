@@ -630,10 +630,17 @@ nv_table_clear(NVTable *self)
   memset(&self->static_entries[0], 0, self->num_static_entries * sizeof(self->static_entries[0]));
 }
 
+
+guint16
+nv_table_get_size(gsize size)
+{
+  return MIN(size, NVTABLE_MAX_SIZE);
+}
+
 void
 nv_table_init(NVTable *self, gsize alloc_length, gint num_static_entries)
 {
-  self->size = alloc_length >> NV_TABLE_SCALE;
+  self->size = nv_table_get_size(alloc_length >> NV_TABLE_SCALE);
   self->used = 0;
   self->num_dyn_entries = 0;
   self->num_static_entries = NV_TABLE_BOUND_NUM_STATIC(num_static_entries);
@@ -690,20 +697,20 @@ nv_table_realloc(NVTable *self, NVTable **new)
     {
       *new = self = g_realloc(self, new_size << NV_TABLE_SCALE);
 
-      self->size = new_size;
+      self->size = nv_table_get_size(new_size);
       memmove(NV_TABLE_ADDR(self, self->size - self->used),
               NV_TABLE_ADDR(self, old_size - self->used),
               self->used << NV_TABLE_SCALE);
     }
   else
     {
-      *new = g_malloc(new_size  << NV_TABLE_SCALE);
-
+      gsize new_absolute_size = new_size  << NV_TABLE_SCALE;
+      *new = g_malloc(new_absolute_size);
       /* we only copy the header in this case */
       memcpy(*new, self, sizeof(NVTable) + self->num_static_entries * sizeof(self->static_entries[0]) + self->num_dyn_entries * sizeof(guint32));
       (*new)->ref_cnt = 1;
       (*new)->borrowed = FALSE;
-      (*new)->size = new_size;
+      (*new)->size = nv_table_get_size(new_size);
 
       memmove(NV_TABLE_ADDR((*new), (*new)->size - (*new)->used),
               NV_TABLE_ADDR(self, old_size - self->used),
@@ -751,7 +758,7 @@ nv_table_clone(NVTable *self, gint additional_space)
 
   new = g_malloc(new_size << NV_TABLE_SCALE);
   memcpy(new, self, sizeof(NVTable) + self->num_static_entries * sizeof(self->static_entries[0]) + self->num_dyn_entries * sizeof(guint32));
-  new->size = new_size;
+  new->size = nv_table_get_size(new_size);
   new->ref_cnt = 1;
   new->borrowed = FALSE;
 
