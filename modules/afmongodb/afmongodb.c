@@ -482,7 +482,8 @@ afmongodb_worker_insert (LogThrDestDriver *s)
   LogMessage *msg;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
 
-  afmongodb_dd_connect(self, TRUE);
+  if (!afmongodb_dd_connect(self, TRUE))
+    return FALSE;
 
   success = log_queue_pop_head(self->super.queue, &msg, &path_options, FALSE, FALSE);
   if (!success)
