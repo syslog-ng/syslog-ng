@@ -425,7 +425,11 @@ cfg_check_inline_template(GlobalConfig *cfg, const gchar *template_or_name, GErr
   if (template == NULL)
     {
       template = log_template_new(cfg, NULL);
-      log_template_compile(template, template_or_name, error);
+      if (!log_template_compile(template, template_or_name, error))
+        {
+          log_template_unref(template);
+          return NULL;
+        }
       template->def_inline = TRUE;
     }
   return template;
