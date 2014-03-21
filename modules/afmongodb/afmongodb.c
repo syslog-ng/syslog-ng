@@ -498,7 +498,7 @@ afmongodb_worker_accept_message(MongoDBDestDriver *self, LogMessage *msg, LogPat
 static gboolean
 afmongodb_worker_insert (MongoDBDestDriver *self)
 {
-  gboolean success, need_drop = self->template_options.on_error & ON_ERROR_DROP_MESSAGE;
+  gboolean success;
   LogMessage *msg;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
 
@@ -520,10 +520,16 @@ afmongodb_worker_insert (MongoDBDestDriver *self)
                              msg, self->seq_num, &self->template_options, self);
   bson_finish (self->bson);
 
-  if (!success && !need_drop)
-    success = TRUE;
-
-  if (success)
+  if (!success)
+    {
+      msg_error("Failed to format message for MongoDB, dropping message",
+                 evt_tag_value_pairs("message", self->vp, msg, self->seq_num, &self->template_options),
+                 NULL);
+      msg_set_context(NULL);
+      afmongodb_worker_drop_message(self, msg, &path_options);
+      return TRUE;
+    }
+  else
     {
       msg_debug("Outgoing message to MongoDB destination",
                  evt_tag_value_pairs("message", self->vp, msg, self->seq_num, &self->template_options),
