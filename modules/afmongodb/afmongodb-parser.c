@@ -39,6 +39,7 @@ static CfgLexerKeyword afmongodb_keywords[] = {
   { "path",                     KW_PATH },
   { "username",     KW_USERNAME },
   { "password",     KW_PASSWORD },
+  { "retries",            KW_RETRIES},
   { NULL }
 };
 
