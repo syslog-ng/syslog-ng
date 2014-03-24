@@ -481,7 +481,8 @@ afmongodb_worker_drop_message(MongoDBDestDriver *self, LogMessage *msg, LogPathO
 {
   stats_counter_inc(self->dropped_messages);
   step_sequence_number(&self->seq_num);
-  log_msg_drop(msg, &path_options);
+  log_queue_ack_backlog(self->queue,1);
+  log_msg_unref(msg);
   self->failed_message_counter = 0;
 
 };
@@ -490,7 +491,7 @@ static void
 afmongodb_worker_accept_message(MongoDBDestDriver *self, LogMessage *msg, LogPathOptions *path_options)
 {
   step_sequence_number(&self->seq_num);
-  log_msg_ack(msg, &path_options, TRUE);
+  log_queue_ack_backlog(self->queue,1);
   log_msg_unref(msg);
   self->failed_message_counter = 0;
 }
@@ -505,7 +506,7 @@ afmongodb_worker_insert (MongoDBDestDriver *self)
   if (!afmongodb_dd_connect(self, TRUE))
     return FALSE;
 
-  success = log_queue_pop_head(self->queue, &msg, &path_options, FALSE, FALSE);
+  success = log_queue_pop_head(self->queue, &msg, &path_options, FALSE, TRUE);
   if (!success)
     return TRUE;
 
@@ -562,7 +563,7 @@ afmongodb_worker_insert (MongoDBDestDriver *self)
         }
       else
         {
-          log_queue_push_head(self->queue, msg, &path_options);
+          log_queue_rewind_backlog(self->queue, 1);
         }
     }
 
