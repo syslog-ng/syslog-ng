@@ -696,7 +696,7 @@ vp_walker_name_split(vp_stack_t *stack, vp_walk_state_t *state,
      NULL), so treat that normally. */
   key = g_strdup(g_ptr_array_index(tokens, tokens->len - 1));
 
-  g_ptr_array_foreach(tokens, g_free, NULL);
+  g_ptr_array_foreach(tokens, (GFunc)g_free, NULL);
   g_ptr_array_free(tokens, TRUE);
 
   return key;
