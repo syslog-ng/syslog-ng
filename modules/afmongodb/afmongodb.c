@@ -875,6 +875,7 @@ afmongodb_dd_new(GlobalConfig *cfg)
   self->suspend_mutex = g_mutex_new();
 
   self->max_retry_of_failed_inserts = 3;
+  self->safe_mode = TRUE;
 
   log_template_options_defaults(&self->template_options);
   afmongodb_dd_set_value_pairs(&self->super.super, value_pairs_new_default(cfg));
