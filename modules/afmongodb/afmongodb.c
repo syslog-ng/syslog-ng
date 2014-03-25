@@ -719,6 +719,12 @@ afmongodb_dd_init(LogPipe *s)
       self->max_retry_of_failed_inserts = 3;
     }
 
+  if (self->super.throttle != 0)
+    {
+      msg_warning("WARNING! Throttle option for MongoDB is not supported, ignoring!", NULL);
+      self->super.throttle = 0;
+    }
+
   if (!afmongodb_dd_check_auth_options(self))
     return FALSE;
 
