@@ -741,6 +741,7 @@ afmongodb_dd_new(GlobalConfig *cfg)
   init_sequence_number(&self->seq_num);
 
   self->max_retry_of_failed_inserts = 3;
+  self->safe_mode = TRUE;
 
   log_template_options_defaults(&self->template_options);
   afmongodb_dd_set_value_pairs(&self->super.super.super, value_pairs_new_default(cfg));
