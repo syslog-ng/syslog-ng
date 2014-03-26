@@ -303,6 +303,8 @@ afmongodb_dd_connect(MongoDBDestDriver *self, gboolean reconnect)
       return FALSE;
     }
 
+  mongo_connection_set_timeout((mongo_connection*) self->conn, 60000);
+
   if (self->username || self->password)
     {
       if (!mongo_sync_cmd_authenticate(self->conn, self->db, self->username, self->password))
