@@ -36,6 +36,9 @@
 #include "mongo.h"
 #include <time.h>
 
+#define MAX_RETRIES_OF_FAILED_INSERT_DEFAULT 3
+#define SOCKET_TIMEOUT_FOR_MONGO_CONNECTION_IN_MILLISECS 60000
+
 typedef struct
 {
   gchar *name;
@@ -303,7 +306,7 @@ afmongodb_dd_connect(MongoDBDestDriver *self, gboolean reconnect)
       return FALSE;
     }
 
-  mongo_connection_set_timeout((mongo_connection*) self->conn, 60000);
+  mongo_connection_set_timeout((mongo_connection*) self->conn, SOCKET_TIMEOUT_FOR_MONGO_CONNECTION_IN_MILLISECS);
 
   if (self->username || self->password)
     {
@@ -717,8 +720,8 @@ afmongodb_dd_init(LogPipe *s)
 
   if (self->max_retry_of_failed_inserts <= 0)
     {
-      msg_warning("WARNING! Wrong value for retries in MongoDB destination, setting it to 3", NULL);
-      self->max_retry_of_failed_inserts = 3;
+      msg_warning("WARNING! Wrong value for retries in MongoDB destination, setting it to default", evt_tag_int("default", MAX_RETRIES_OF_FAILED_INSERT_DEFAULT),NULL);
+      self->max_retry_of_failed_inserts = MAX_RETRIES_OF_FAILED_INSERT_DEFAULT;
     }
 
   if (self->super.throttle != 0)
@@ -876,7 +879,7 @@ afmongodb_dd_new(GlobalConfig *cfg)
   self->writer_thread_wakeup_cond = g_cond_new();
   self->suspend_mutex = g_mutex_new();
 
-  self->max_retry_of_failed_inserts = 3;
+  self->max_retry_of_failed_inserts = MAX_RETRIES_OF_FAILED_INSERT_DEFAULT;
   self->safe_mode = TRUE;
 
   log_template_options_defaults(&self->template_options);
