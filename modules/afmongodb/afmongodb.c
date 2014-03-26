@@ -435,7 +435,7 @@ afmongodb_worker_insert (LogThrDestDriver *s)
                              afmongodb_vp_obj_start,
                              afmongodb_vp_process_value,
                              afmongodb_vp_obj_end,
-                             msg, self->seq_num,
+                             msg, self->seq_num, LTZ_SEND,
                              &self->template_options,
                              self);
   bson_finish (self->bson);

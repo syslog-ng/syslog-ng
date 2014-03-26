@@ -293,7 +293,7 @@ afstomp_worker_publish(STOMPDestDriver *self, LogMessage *msg)
       stomp_frame_add_header(&frame, "receipt", seq_num);
     };
 
-  value_pairs_foreach(self->vp, afstomp_vp_foreach, msg, self->seq_num,
+  value_pairs_foreach(self->vp, afstomp_vp_foreach, msg, self->seq_num, LTZ_SEND,
                       &self->template_options, &frame);
 
   afstomp_set_frame_body(self, body, &frame, msg);
