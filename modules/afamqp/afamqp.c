@@ -399,7 +399,7 @@ afamqp_worker_publish(AMQPDestDriver *self, LogMessage *msg)
 
   gpointer user_data[] = { &self->entries, &pos, &self->max_entries };
 
-  value_pairs_foreach(self->vp, afamqp_vp_foreach, msg, self->seq_num,
+  value_pairs_foreach(self->vp, afamqp_vp_foreach, msg, self->seq_num, LTZ_SEND,
                       &self->template_options, user_data);
 
   table.num_entries = pos;

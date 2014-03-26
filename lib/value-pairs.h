@@ -50,11 +50,11 @@ void value_pairs_add_transforms(ValuePairs *vp, gpointer vpts);
 
 gboolean value_pairs_foreach_sorted(ValuePairs *vp, VPForeachFunc func,
                                     GCompareDataFunc compare_func,
-                                    LogMessage *msg, gint32 seq_num,
+                                    LogMessage *msg, gint32 seq_num, gint tz,
                                     const LogTemplateOptions *template_options,
                                     gpointer user_data);
 gboolean value_pairs_foreach(ValuePairs *vp, VPForeachFunc func,
-                             LogMessage *msg, gint32 seq_num,
+                             LogMessage *msg, gint32 seq_num, gint tz,
                              const LogTemplateOptions *template_options,
                              gpointer user_data);
 
@@ -62,7 +62,7 @@ gboolean value_pairs_walk(ValuePairs *vp,
                           VPWalkCallbackFunc obj_start_func,
                           VPWalkValueCallbackFunc process_value_func,
                           VPWalkCallbackFunc obj_end_func,
-                          LogMessage *msg, gint32 seq_num,
+                          LogMessage *msg, gint32 seq_num, gint tz,
                           const LogTemplateOptions *template_options,
                           gpointer user_data);
 
