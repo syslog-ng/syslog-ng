@@ -528,13 +528,13 @@ afmongodb_worker_insert (MongoDBDestDriver *self)
                              afmongodb_vp_obj_start,
                              afmongodb_vp_process_value,
                              afmongodb_vp_obj_end,
-                             msg, self->seq_num, &self->template_options, self);
+                             msg, self->seq_num, LTZ_SEND, &self->template_options, self);
   bson_finish (self->bson);
 
   if (!success)
     {
       msg_error("Failed to format message for MongoDB, dropping message",
-                 evt_tag_value_pairs("message", self->vp, msg, self->seq_num, &self->template_options),
+                 evt_tag_value_pairs("message", self->vp, msg, self->seq_num, LTZ_SEND, &self->template_options),
                  NULL);
       msg_set_context(NULL);
       afmongodb_worker_drop_message(self, msg, &path_options);
@@ -543,7 +543,7 @@ afmongodb_worker_insert (MongoDBDestDriver *self)
   else
     {
       msg_debug("Outgoing message to MongoDB destination",
-                 evt_tag_value_pairs("message", self->vp, msg, self->seq_num, &self->template_options),
+                 evt_tag_value_pairs("message", self->vp, msg, self->seq_num, LTZ_SEND, &self->template_options),
                  NULL);
       if (!mongo_sync_cmd_insert_n(self->conn, self->ns, 1,
                                    (const bson **)&self->bson))
@@ -568,7 +568,7 @@ afmongodb_worker_insert (MongoDBDestDriver *self)
         {
           msg_error("Multiple failures while inserting this record into the database, message dropped",
                     evt_tag_int("number_of_retries", self->max_retry_of_failed_inserts),
-                    evt_tag_value_pairs("message", self->vp, msg, self->seq_num, &self->template_options),
+                    evt_tag_value_pairs("message", self->vp, msg, self->seq_num, LTZ_SEND, &self->template_options),
                     NULL);
           afmongodb_worker_drop_message(self, msg, &path_options);
         }

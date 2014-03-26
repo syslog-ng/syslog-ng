@@ -77,7 +77,7 @@ tf_format_welf_call(LogTemplateFunction *self, gpointer state, GPtrArray *arg_bu
 
   for (i = 0; i < num_messages; i++)
     value_pairs_foreach_sorted(vp, tf_format_welf_foreach, (GCompareDataFunc)tf_format_welf_strcmp,
-        messages[i], 0, opts, result);
+        messages[i], 0, tz, opts, result);
 
 }
 

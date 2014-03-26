@@ -50,11 +50,11 @@ void value_pairs_add_transforms(ValuePairs *vp, gpointer vpts);
 
 gboolean value_pairs_foreach_sorted(ValuePairs *vp, VPForeachFunc func,
                                     GCompareDataFunc compare_func,
-                                    LogMessage *msg, gint32 seq_num,
+                                    LogMessage *msg, gint32 seq_num, gint tz,
                                     LogTemplateOptions *template_options,
                                     gpointer user_data);
 gboolean value_pairs_foreach(ValuePairs *vp, VPForeachFunc func,
-                             LogMessage *msg, gint32 seq_num,
+                             LogMessage *msg, gint32 seq_num, gint tz,
                              LogTemplateOptions *template_options,
                              gpointer user_data);
 
@@ -62,7 +62,7 @@ gboolean value_pairs_walk(ValuePairs *vp,
                           VPWalkCallbackFunc obj_start_func,
                           VPWalkValueCallbackFunc process_value_func,
                           VPWalkCallbackFunc obj_end_func,
-                          LogMessage *msg, gint32 seq_num,
+                          LogMessage *msg, gint32 seq_num, gint tz,
                           LogTemplateOptions *template_options,
                           gpointer user_data);
 
@@ -74,6 +74,6 @@ ValuePairs *value_pairs_new_from_cmdline(GlobalConfig *cfg,
 					 GError **error);
 ValuePairs *value_pairs_new_default(GlobalConfig *cfg);
 
-EVTTAG *evt_tag_value_pairs(const char* key, ValuePairs *vp, LogMessage *msg, gint32 seq_num, LogTemplateOptions *template_options);
+EVTTAG *evt_tag_value_pairs(const char* key, ValuePairs *vp, LogMessage *msg, gint32 seq_num, gint tz, LogTemplateOptions *template_options);
 
 #endif

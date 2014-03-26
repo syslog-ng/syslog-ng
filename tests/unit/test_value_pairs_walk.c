@@ -101,7 +101,7 @@ void test_value_pairs_walk_prefix_data(GlobalConfig *cfg)
   handle = log_msg_get_value_handle("root.test.korte");
   log_msg_set_value(msg, handle, value, strlen(value));
 
-  value_pairs_walk(vp, test_vp_obj_start, test_vp_value, test_vp_obj_stop, msg, 0, &template_options, NULL);
+  value_pairs_walk(vp, test_vp_obj_start, test_vp_value, test_vp_obj_stop, msg, 0, LTZ_LOCAL, &template_options, NULL);
 
 };
 
