@@ -93,7 +93,7 @@ static ValuePairSpec rfc3164[] =
   { "PROGRAM"  },
   { "PID"      },
   { "MESSAGE"  },
-  { "DATE", "R_DATE" },
+  { "DATE" },
   { 0 },
 };
 
@@ -229,8 +229,8 @@ vp_msg_nvpairs_foreach(NVHandle handle, gchar *name,
     return FALSE;
 
   inc = (name[0] == '.' && (vp->scopes & VPS_DOT_NV_PAIRS)) ||
-    (name[0] != '.' && (vp->scopes & VPS_NV_PAIRS)) ||
-    (log_msg_is_handle_sdata(handle) && (vp->scopes & VPS_SDATA));
+        (name[0] != '.' && (vp->scopes & VPS_NV_PAIRS)) ||
+        (log_msg_is_handle_sdata(handle) && (vp->scopes & (VPS_SDATA + VPS_RFC5424)));
 
   for (j = 0; j < vp->patterns_size; j++)
     {
@@ -250,26 +250,31 @@ vp_msg_nvpairs_foreach(NVHandle handle, gchar *name,
   return FALSE;
 }
 
-/* runs over a set of ValuePairSpec structs and merges them into the value-pair set */
+static gboolean
+vp_find_in_set(ValuePairs *vp, gchar *name, gboolean exclude)
+{
+  gint j;
+  gboolean included = exclude;
+
+  for (j = 0; j < vp->patterns_size; j++)
+    {
+      if (g_pattern_match_string(vp->patterns[j]->pattern, name))
+        included = vp->patterns[j]->include;
+    }
+
+  return included;
+}
+
 static void
-vp_merge_set(ValuePairs *vp, LogMessage *msg, gint32 seq_num, ValuePairSpec *set, GTree *dest, const LogTemplateOptions *template_options)
+vp_merge_other_set(ValuePairs *vp, LogMessage *msg, gint32 seq_num, ValuePairSpec *set, GTree *dest, const LogTemplateOptions *template_options, gboolean exclude)
 {
   gint i;
   SBTHGString *sb;
 
   for (i = 0; set[i].name; i++)
     {
-      gint j;
-      gboolean exclude = FALSE;
-
-      for (j = 0; j < vp->patterns_size; j++)
-        {
-          if (g_pattern_match_string(vp->patterns[j]->pattern, set[i].name))
-            exclude = !vp->patterns[j]->include;
-        }
-
-      if (exclude)
-	continue;
+      if (!vp_find_in_set(vp, set[i].name, exclude))
+        continue;
 
       sb = sb_th_gstring_acquire();
 
@@ -300,6 +305,20 @@ vp_merge_set(ValuePairs *vp, LogMessage *msg, gint32 seq_num, ValuePairSpec *set
 
       g_tree_insert(dest, vp_transform_apply(vp, set[i].name), sb);
     }
+}
+
+/* runs over the all macros and merges the selected ones by the pattern into the value-pair set */
+static void
+vp_merge_macros(ValuePairs *vp, LogMessage *msg, gint32 seq_num, GTree *dest, const LogTemplateOptions *template_options)
+{
+  vp_merge_other_set(vp, msg, seq_num, all_macros, dest, template_options, FALSE);
+}
+
+/* runs over a set of ValuePairSpec structs and merges them into the value-pair set */
+static void
+vp_merge_set(ValuePairs *vp, LogMessage *msg, gint32 seq_num, ValuePairSpec *set, GTree *dest, const LogTemplateOptions *template_options)
+{
+  vp_merge_other_set(vp, msg, seq_num, set, dest, template_options, TRUE);
 }
 
 static gboolean
@@ -344,10 +363,13 @@ value_pairs_foreach_sorted (ValuePairs *vp, VPForeachFunc func,
   /*
    * Build up the base set
    */
-  if (vp->scopes & (VPS_NV_PAIRS + VPS_DOT_NV_PAIRS + VPS_SDATA) ||
+  if (vp->scopes & (VPS_NV_PAIRS + VPS_DOT_NV_PAIRS + VPS_SDATA + VPS_RFC5424) ||
       vp->patterns_size > 0)
     nv_table_foreach(msg->payload, logmsg_registry,
                      (NVTableForeachFunc) vp_msg_nvpairs_foreach, args);
+
+  if (vp->patterns_size > 0)
+    vp_merge_macros(vp, msg, seq_num, scope_set, template_options);
 
   if (vp->scopes & (VPS_RFC3164 + VPS_RFC5424 + VPS_SELECTED_MACROS))
     vp_merge_set(vp, msg, seq_num, rfc3164, scope_set, template_options);

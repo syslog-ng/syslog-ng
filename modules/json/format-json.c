@@ -245,7 +245,7 @@ tf_json_value(const gchar *name, const gchar *prefix,
 
 static gboolean
 tf_json_append(GString *result, ValuePairs *vp, LogMessage *msg,
-               const LogTemplateOptions *template_options)
+               const LogTemplateOptions *template_options, gint32 seq_num)
 {
   json_state_t state;
 
@@ -255,7 +255,7 @@ tf_json_append(GString *result, ValuePairs *vp, LogMessage *msg,
 
   return value_pairs_walk(vp,
                           tf_json_obj_start, tf_json_value, tf_json_obj_end,
-                          msg, 0,
+                          msg, seq_num,
                           template_options,
                           &state);
 }
@@ -270,7 +270,7 @@ tf_json_call(LogTemplateFunction *self, gpointer s,
   gsize orig_size = result->len;
 
   for (i = 0; i < args->num_messages; i++)
-    r &= tf_json_append(result, state->vp, args->messages[i], args->opts);
+    r &= tf_json_append(result, state->vp, args->messages[i], args->opts, args->seq_num);
 
   if (!r && (args->opts->on_error & ON_ERROR_DROP_MESSAGE))
     g_string_set_size(result, orig_size);
