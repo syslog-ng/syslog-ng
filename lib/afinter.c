@@ -34,6 +34,7 @@ typedef struct _AFInterSource AFInterSource;
 static GStaticMutex internal_msg_lock = G_STATIC_MUTEX_INIT;
 static GQueue *internal_msg_queue;
 static AFInterSource *current_internal_source;
+static StatsCounterItem *internal_queue_length;
 
 /* the expiration timer of the next MARK message */
 static struct timespec next_mark_target = { -1, 0 };
@@ -113,6 +114,7 @@ afinter_source_post(gpointer s)
       if (!msg)
         break;
 
+      stats_counter_dec(internal_queue_length);
       log_pipe_queue(&self->super.super, msg, &path_options);
     }
   afinter_source_update_watches(self);
@@ -406,8 +408,15 @@ afinter_message_posted(LogMessage *msg)
   if (!internal_msg_queue)
     {
       internal_msg_queue = g_queue_new();
+
+      stats_lock();
+      stats_register_counter(0, SCS_GLOBAL, "internal_queue_length", NULL, SC_TYPE_PROCESSED, &internal_queue_length);
+      stats_unlock();
     }
+
   g_queue_push_tail(internal_msg_queue, msg);
+  stats_counter_inc(internal_queue_length);
+
   if (current_internal_source)
     iv_event_post(&current_internal_source->post);
   g_static_mutex_unlock(&internal_msg_lock);
