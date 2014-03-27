@@ -88,6 +88,7 @@ typedef struct
   LogQueue *queue;
 
   /* Writer-only stuff */
+  mongo_sync_conn_recovery_cache *recovery_cache;
   mongo_sync_connection *conn;
   gint32 seq_num;
 
@@ -293,12 +294,10 @@ afmongodb_dd_disconnect(MongoDBDestDriver *self)
 static gboolean
 afmongodb_dd_connect(MongoDBDestDriver *self, gboolean reconnect)
 {
-  GList *l;
-
   if (reconnect && self->conn)
     return TRUE;
 
-  self->conn = mongo_sync_connect(self->address, self->port, FALSE);
+  self->conn = mongo_sync_connect_recovery_cache(self->recovery_cache, FALSE);
 
   if (!self->conn)
     {
@@ -320,26 +319,6 @@ afmongodb_dd_connect(MongoDBDestDriver *self, gboolean reconnect)
 
   mongo_sync_conn_set_safe_mode(self->conn, self->safe_mode);
 
-  l = self->servers;
-  while ((l = g_list_next(l)) != NULL)
-    {
-      gchar *host = NULL;
-      gint port = 27017;
-
-      if (!mongo_util_parse_addr(l->data, &host, &port))
-	{
-	  msg_warning("Cannot parse MongoDB server address, ignoring",
-		      evt_tag_str("address", l->data),
-		      NULL);
-	  continue;
-	}
-      mongo_sync_conn_seed_add (self->conn, host, port);
-      msg_verbose("Added MongoDB server seed",
-		  evt_tag_str("host", host),
-		  evt_tag_int("port", port),
-		  NULL);
-      g_free(host);
-    }
 
   return TRUE;
 }
@@ -744,8 +723,36 @@ afmongodb_dd_init(LogPipe *s)
           g_free (self->address);
         }
 
-      if (!self->servers)
-        afmongodb_dd_set_servers((LogDriver *)self, g_list_append (NULL, g_strdup ("127.0.0.1:27017")));
+      if (self->servers)
+        {
+          GList *l;
+
+          l = self->servers;
+          while ((l = g_list_next(l)) != NULL)
+            {
+              gchar *host = NULL;
+              gint port = 27017;
+
+              if (!mongo_util_parse_addr(l->data, &host, &port))
+                {
+                  msg_warning("Cannot parse MongoDB server address, ignoring",
+                              evt_tag_str("address", l->data),
+                              NULL);
+                  continue;
+                }
+              mongo_sync_conn_recovery_cache_seed_add (self->recovery_cache, host, port);
+              msg_verbose("Added MongoDB server seed",
+                          evt_tag_str("host", host),
+                          evt_tag_int("port", port),
+                          NULL);
+              g_free(host);
+            }
+        }
+      else
+        {
+          afmongodb_dd_set_servers((LogDriver *)self, g_list_append (NULL, g_strdup ("127.0.0.1:27017")));
+          mongo_sync_conn_recovery_cache_seed_add (self->recovery_cache, "127.0.0.1", 27017);
+        }
 
       self->address = NULL;
       self->port = 27017;
@@ -833,6 +840,7 @@ afmongodb_dd_free(LogPipe *d)
   string_list_free(self->servers);
   if (self->vp)
     value_pairs_free(self->vp);
+  mongo_sync_conn_recovery_cache_free(self->recovery_cache);
   log_dest_driver_free(d);
 }
 
@@ -884,6 +892,8 @@ afmongodb_dd_new(GlobalConfig *cfg)
 
   log_template_options_defaults(&self->template_options);
   afmongodb_dd_set_value_pairs(&self->super.super, value_pairs_new_default(cfg));
+
+  self->recovery_cache = mongo_sync_conn_recovery_cache_new();
 
   return (LogDriver *)self;
 }
