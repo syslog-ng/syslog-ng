@@ -641,8 +641,7 @@ afmongodb_dd_init(LogPipe *s)
         {
           GList *l;
 
-          l = self->servers;
-          while ((l = g_list_next(l)) != NULL)
+          for (l=self->servers; l; l = g_list_next(l))
             {
               gchar *host = NULL;
               gint port = 27017;
