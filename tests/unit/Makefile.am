@@ -15,7 +15,8 @@ tests_unit_TESTS			=  \
 	tests/unit/test_logwriter	   \
 	tests/unit/test_zone		   \
 	tests/unit/test_persist_state	   \
-	tests/unit/test_value_pairs
+	tests/unit/test_value_pairs     \
+	tests/unit/test_value_pairs_walk
 
 check_PROGRAMS				+= \
 	${tests_unit_TESTS}
@@ -80,3 +81,5 @@ tests_unit_test_persist_state_LDADD	= \
 tests_unit_test_value_pairs_LDADD	= \
 	$(TEST_LDADD) $(unit_test_extra_modules)
 
+tests_unit_test_value_pairs_walk_LDADD	= \
+	$(TEST_LDADD) $(unit_test_extra_modules)

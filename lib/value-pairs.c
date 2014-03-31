@@ -198,11 +198,12 @@ vp_pairs_foreach(gpointer data, gpointer user_data)
   const LogTemplateOptions *template_options = ((gpointer *)user_data)[6];
   SBTHGString *sb = sb_th_gstring_acquire();
   VPPairConf *vpc = (VPPairConf *)data;
+  gint time_zone_mode = GPOINTER_TO_INT (((gpointer *)user_data)[7]);
 
   sb->type_hint = vpc->template->type_hint;
   log_template_append_format((LogTemplate *)vpc->template, msg,
                              template_options,
-                             LTZ_LOCAL, seq_num, NULL, sb_th_gstring_string(sb));
+                             time_zone_mode, seq_num, NULL, sb_th_gstring_string(sb));
 
   if (sb_th_gstring_string(sb)->len == 0)
     {
@@ -266,7 +267,7 @@ vp_find_in_set(ValuePairs *vp, gchar *name, gboolean exclude)
 }
 
 static void
-vp_merge_other_set(ValuePairs *vp, LogMessage *msg, gint32 seq_num, ValuePairSpec *set, GTree *dest, const LogTemplateOptions *template_options, gboolean exclude)
+vp_merge_other_set(ValuePairs *vp, LogMessage *msg, gint32 seq_num, gint time_zone_mode, ValuePairSpec *set, GTree *dest, const LogTemplateOptions *template_options, gboolean exclude)
 {
   gint i;
   SBTHGString *sb;
@@ -282,7 +283,7 @@ vp_merge_other_set(ValuePairs *vp, LogMessage *msg, gint32 seq_num, ValuePairSpe
         {
         case VPT_MACRO:
           log_macro_expand(sb_th_gstring_string(sb), set[i].id, FALSE,
-                           template_options, LTZ_LOCAL, seq_num, NULL, msg);
+                           template_options, time_zone_mode, seq_num, NULL, msg);
           break;
         case VPT_NVPAIR:
           {
@@ -309,16 +310,16 @@ vp_merge_other_set(ValuePairs *vp, LogMessage *msg, gint32 seq_num, ValuePairSpe
 
 /* runs over the all macros and merges the selected ones by the pattern into the value-pair set */
 static void
-vp_merge_macros(ValuePairs *vp, LogMessage *msg, gint32 seq_num, GTree *dest, const LogTemplateOptions *template_options)
+vp_merge_macros(ValuePairs *vp, LogMessage *msg, gint32 seq_num, gint time_zone_mode, GTree *dest, const LogTemplateOptions *template_options)
 {
-  vp_merge_other_set(vp, msg, seq_num, all_macros, dest, template_options, FALSE);
+  vp_merge_other_set(vp, msg, seq_num, time_zone_mode, all_macros, dest, template_options, FALSE);
 }
 
 /* runs over a set of ValuePairSpec structs and merges them into the value-pair set */
 static void
-vp_merge_set(ValuePairs *vp, LogMessage *msg, gint32 seq_num, ValuePairSpec *set, GTree *dest, const LogTemplateOptions *template_options)
+vp_merge_set(ValuePairs *vp, LogMessage *msg, gint32 seq_num, gint time_zone_mode, ValuePairSpec *set, GTree *dest, const LogTemplateOptions *template_options)
 {
-  vp_merge_other_set(vp, msg, seq_num, set, dest, template_options, TRUE);
+  vp_merge_other_set(vp, msg, seq_num, time_zone_mode, set, dest, template_options, TRUE);
 }
 
 static gboolean
@@ -343,13 +344,13 @@ vp_data_free (SBTHGString *s)
 gboolean
 value_pairs_foreach_sorted (ValuePairs *vp, VPForeachFunc func,
                             GCompareDataFunc compare_func,
-                            LogMessage *msg, gint32 seq_num,
+                            LogMessage *msg, gint32 seq_num, gint time_zone_mode,
                             const LogTemplateOptions *template_options,
                             gpointer user_data)
 {
   gpointer args[] = { vp, func, msg, GINT_TO_POINTER (seq_num), user_data, NULL,
                       /* remove constness, we are not using that pointer non-const anyway */
-                      (LogTemplateOptions *) template_options
+                      (LogTemplateOptions *) template_options, GINT_TO_POINTER(time_zone_mode)
                     };
   gboolean result = TRUE;
   gpointer helper_args[] = { func, user_data, &result };
@@ -369,19 +370,19 @@ value_pairs_foreach_sorted (ValuePairs *vp, VPForeachFunc func,
                      (NVTableForeachFunc) vp_msg_nvpairs_foreach, args);
 
   if (vp->patterns_size > 0)
-    vp_merge_macros(vp, msg, seq_num, scope_set, template_options);
+    vp_merge_macros(vp, msg, seq_num, time_zone_mode, scope_set, template_options);
 
   if (vp->scopes & (VPS_RFC3164 + VPS_RFC5424 + VPS_SELECTED_MACROS))
-    vp_merge_set(vp, msg, seq_num, rfc3164, scope_set, template_options);
+    vp_merge_set(vp, msg, seq_num, time_zone_mode, rfc3164, scope_set, template_options);
 
   if (vp->scopes & VPS_RFC5424)
-    vp_merge_set(vp, msg, seq_num, rfc5424, scope_set, template_options);
+    vp_merge_set(vp, msg, seq_num, time_zone_mode, rfc5424, scope_set, template_options);
 
   if (vp->scopes & VPS_SELECTED_MACROS)
-    vp_merge_set(vp, msg, seq_num, selected_macros, scope_set, template_options);
+    vp_merge_set(vp, msg, seq_num, time_zone_mode, selected_macros, scope_set, template_options);
 
   if (vp->scopes & VPS_ALL_MACROS)
-    vp_merge_set(vp, msg, seq_num, all_macros, scope_set, template_options);
+    vp_merge_set(vp, msg, seq_num, time_zone_mode, all_macros, scope_set, template_options);
 
   /* Merge the explicit key-value pairs too */
   g_ptr_array_foreach(vp->vpairs, (GFunc)vp_pairs_foreach, args);
@@ -396,12 +397,12 @@ value_pairs_foreach_sorted (ValuePairs *vp, VPForeachFunc func,
 
 gboolean
 value_pairs_foreach(ValuePairs *vp, VPForeachFunc func,
-                    LogMessage *msg, gint32 seq_num,
+                    LogMessage *msg, gint32 seq_num, gint time_zone_mode,
                     const LogTemplateOptions *template_options,
                     gpointer user_data)
 {
   return value_pairs_foreach_sorted(vp, func, (GCompareDataFunc) strcmp,
-                                    msg, seq_num, template_options, user_data);
+                                    msg, seq_num, time_zone_mode, template_options, user_data);
 }
 
 typedef struct
@@ -673,6 +674,7 @@ vp_walker_name_split(vp_stack_t *stack, vp_walk_state_t *state,
      NULL), so treat that normally. */
   key = g_strdup(g_ptr_array_index(tokens, tokens->len - 1));
 
+  g_ptr_array_foreach(tokens, g_free, NULL);
   g_ptr_array_free(tokens, TRUE);
 
   return key;
@@ -687,9 +689,9 @@ value_pairs_walker(const gchar *name, TypeHint type, const gchar *value,
   gchar *key;
   gboolean result;
 
-  data = vp_walker_stack_unwind_until (state->stack, state, name);
-
   key = vp_walker_name_split (state->stack, state, name);
+
+  data = vp_walker_stack_unwind_until (state->stack, state, name);
 
   if (data != NULL)
     result = state->process_value(key, data->prefix,
@@ -718,7 +720,7 @@ value_pairs_walk(ValuePairs *vp,
                  VPWalkCallbackFunc obj_start_func,
                  VPWalkValueCallbackFunc process_value_func,
                  VPWalkCallbackFunc obj_end_func,
-                 LogMessage *msg, gint32 seq_num,
+                 LogMessage *msg, gint32 seq_num, gint time_zone_mode,
                  const LogTemplateOptions *template_options,
                  gpointer user_data)
 {
@@ -734,7 +736,7 @@ value_pairs_walk(ValuePairs *vp,
   state.obj_start(NULL, NULL, NULL, NULL, NULL, user_data);
   result = value_pairs_foreach_sorted(vp, value_pairs_walker,
                                       (GCompareDataFunc)vp_walk_cmp, msg,
-                                      seq_num, template_options, &state);
+                                      seq_num, time_zone_mode, template_options, &state);
   vp_walker_stack_unwind_all(state.stack, &state);
   state.obj_end(NULL, NULL, NULL, NULL, NULL, user_data);
   vp_stack_destroy(state.stack);
