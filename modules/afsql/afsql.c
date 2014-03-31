@@ -815,7 +815,7 @@ afsql_dd_handle_insert_row_error_depending_on_connection_availability(AFSqlDestD
 
   if (dbi_conn_ping(self->dbi_ctx) == 1)
     {
-      log_queue_push_head(self->queue, msg, path_options);
+      log_queue_rewind_backlog(self->queue, 1);
       return TRUE;
     }
 
@@ -828,7 +828,7 @@ afsql_dd_handle_insert_row_error_depending_on_connection_availability(AFSqlDestD
   else
     {
       error_message = "Error, no SQL connection after failed query attempt";
-      log_queue_push_head(self->queue, msg, path_options);
+      log_queue_rewind_backlog(self->queue, 1);
     }
 
   dbi_conn_error(self->dbi_ctx, &dbi_error);
@@ -865,7 +865,7 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
     return FALSE;
 
   /* connection established, try to insert a message */
-  success = log_queue_pop_head(self->queue, &msg, &path_options, FALSE, self->flags & AFSQL_DDF_EXPLICIT_COMMITS);
+  success = log_queue_pop_head(self->queue, &msg, &path_options, FALSE, TRUE);
   if (!success)
     return TRUE;
 
@@ -915,6 +915,10 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
 
   if (success)
     {
+      if (!afsql_dd_is_transaction_handling_enabled(self))
+        {
+          log_queue_ack_backlog(self->queue, 1);
+        }
       log_msg_ack(msg, &path_options, TRUE);
       log_msg_unref(msg);
       step_sequence_number(&self->seq_num);
@@ -935,12 +939,12 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
                     evt_tag_int("attempts", self->num_retries),
                     NULL);
           stats_counter_inc(self->dropped_messages);
+          log_queue_ack_backlog(self->queue, 1);
           log_msg_drop(msg, &path_options);
           self->failed_message_counter = 0;
           success = TRUE;
         }
     }
-
   return success;
 }
 
