@@ -1049,7 +1049,7 @@ log_reader_set_options(LogPipe *s, LogPipe *control, LogReaderOptions *options, 
   self->options = options;
   if (self->proto && self->proto->ack && self->proto->get_state)
     {
-      self->options->super.flags |= LOF_POS_TRACKING;
+      log_source_set_pos_tracking(&self->super, TRUE);
     }
   if (self->proto)
     {
@@ -1100,7 +1100,7 @@ log_reader_reopen_deferred(gpointer s)
       self->ack_callback = proto->ack;
       if (proto->ack && proto->get_state)
         {
-          self->options->super.flags |= LOF_POS_TRACKING;
+          log_source_set_pos_tracking(&self->super, TRUE);
         }
     }
 }

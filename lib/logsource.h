@@ -32,11 +32,8 @@
 #include <iv_event.h>
 #endif
 
-#define LOF_POS_TRACKING 0x00000001
-
 typedef struct _LogSourceOptions
 {
-  guint32 flags;
   gint init_window_size;
   const gchar *group_name;
   gboolean keep_timestamp;
@@ -74,6 +71,7 @@ struct _LogSource
   guint16 stats_level;
   guint16 stats_source;
   gboolean threaded;
+  gboolean pos_tracking;
   gchar *stats_id;
   gchar *stats_instance;
   GAtomicCounter window_size;
@@ -110,6 +108,7 @@ gboolean log_source_init(LogPipe *s);
 gboolean log_source_deinit(LogPipe *s);
 
 void log_source_set_options(LogSource *self, LogSourceOptions *options, gint stats_level, gint stats_source, const gchar *stats_id, const gchar *stats_instance, gboolean threaded);
+void log_source_set_pos_tracking(LogSource *self, gboolean pos_tracking);
 void log_source_mangle_hostname(LogSource *self, LogMessage *msg);
 void log_source_init_instance(LogSource *self);
 void log_source_options_defaults(LogSourceOptions *options);

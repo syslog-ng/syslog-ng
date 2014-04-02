@@ -88,7 +88,7 @@ log_source_msg_ack(LogMessage *msg, gpointer user_data, gboolean need_pos_tracki
   LogSource *self = (LogSource *) user_data;
   guint32 old_window_size;
   guint32 cur_ack_count, last_ack_count;
-  if (self->options->flags & LOF_POS_TRACKING)
+  if (self->pos_tracking)
     {
       AckData *data = NULL;
       guint64 continual = 0;
@@ -270,7 +270,7 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
     msg->timestamps[LM_TS_STAMP] = msg->timestamps[LM_TS_RECVD];
 
   g_assert(msg->timestamps[LM_TS_STAMP].zone_offset != -1);
-  if (self->options->flags & LOF_POS_TRACKING)
+  if (self->pos_tracking)
     {
       guint32 msg_list_pos=self->msg_id;
       if (!(self->ack_list))
@@ -396,6 +396,12 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
       nanosleep(&ts, NULL);
     }
 
+}
+
+void
+log_source_set_pos_tracking(LogSource *self, gboolean pos_tracking)
+{
+  self->pos_tracking = pos_tracking;
 }
 
 void
