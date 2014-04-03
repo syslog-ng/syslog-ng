@@ -532,6 +532,7 @@ afmongodb_worker_insert (MongoDBDestDriver *self)
         {
           msg_error("Network error while inserting into MongoDB",
                     evt_tag_int("time_reopen", self->time_reopen),
+                    evt_tag_str("reason", mongo_sync_conn_get_last_error(self->conn)),
                     NULL);
           success = FALSE;
         }
@@ -840,6 +841,7 @@ afmongodb_dd_free(LogPipe *d)
   if (self->vp)
     value_pairs_free(self->vp);
   mongo_sync_conn_recovery_cache_free(self->recovery_cache);
+  self->recovery_cache = NULL;
   log_dest_driver_free(d);
 }
 
