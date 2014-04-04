@@ -69,8 +69,11 @@ create_pattern_db(gchar *pdb)
 void
 clean_pattern_db(void)
 {
-  g_ptr_array_foreach(messages, (GFunc) log_msg_unref, NULL);
-  g_ptr_array_free(messages, TRUE);
+  if (messages)
+    {
+      g_ptr_array_foreach(messages, (GFunc) log_msg_unref, NULL);
+      g_ptr_array_free(messages, TRUE);
+    }
   pattern_db_free(patterndb);
   patterndb = NULL;
 
