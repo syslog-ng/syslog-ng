@@ -51,7 +51,12 @@ tf_env(LogMessage *msg, gint argc, GString *argv[], GString *result)
 
   for (i = 0; i < argc; i++)
     {
-      g_string_append(result, getenv(argv[i]->str));
+      char *val = getenv(argv[i]->str);
+
+      if (!val)
+        continue;
+
+      g_string_append(result, val);
       if (i < argc - 1)
         g_string_append_c(result, ' ');
     }
