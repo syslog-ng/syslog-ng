@@ -120,6 +120,8 @@ struct _LogProto
   GIConv convert;
   gchar *encoding;
   guint16 flags;
+  gboolean keep_one_message;
+  guint pending_ack_count;
   gboolean position_tracked;
 
   /* FIXME: rename to something else */
@@ -263,6 +265,12 @@ log_proto_get_fd(LogProto *s)
 {
   /* FIXME: Layering violation */
   return s->transport->fd;
+}
+
+static inline void
+log_proto_set_keep_one_message(LogProto *self, gboolean value)
+{
+  self->keep_one_message = value;
 }
 
 gboolean log_proto_set_encoding(LogProto *s, const gchar *encoding);

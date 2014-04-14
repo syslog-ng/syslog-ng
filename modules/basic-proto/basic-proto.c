@@ -47,7 +47,6 @@ typedef struct _LogProtoTextClient
   LogProto super;
   guchar *partial;
   gsize partial_len, partial_pos;
-  guint8  acked;
 } LogProtoTextClient;
 
 #define LPFCS_FRAME_INIT    0
@@ -70,6 +69,24 @@ const guchar *find_eom(const guchar *s, gsize n);
 
 static void log_proto_file_reader_ack_data_save_state(Bookmark *bookmark);
 
+static inline void
+log_proto_text_client_do_pending_acks(LogProtoTextClient *self)
+{
+  if (self->super.pending_ack_count > 0)
+    {
+      log_proto_msg_ack(&self->super, self->super.pending_ack_count);
+      self->super.pending_ack_count = 0;
+    }
+}
+
+static inline void
+log_proto_text_client_do_ack(LogProtoTextClient *self)
+{
+  if (self->super.keep_one_message && self->super.pending_ack_count < 1)
+    self->super.pending_ack_count++;
+  else
+    log_proto_msg_ack(&self->super, 1);
+}
 
 static gboolean
 log_proto_text_client_prepare(LogProto *s, gint *fd, GIOCondition *cond, gint *timeout)
@@ -135,10 +152,9 @@ log_proto_text_client_flush(LogProto *s)
     {
       log_proto_text_client_flush_buffer(s);
     }
-  if (!self->partial && self->acked)
+  if (!self->partial)
     {
-      log_proto_msg_ack(&self->super,1);
-      self->acked = 0;
+      log_proto_text_client_do_pending_acks(self);
     }
   return self->partial ? LPS_AGAIN : LPS_SUCCESS;
 }
@@ -223,19 +239,8 @@ log_proto_client_post_writer(LogProto *s, LogMessage *logmsg, guchar *msg, gsize
       g_free(msg);
       *consumed = TRUE;
     }
-  if (self->super.flags & LPBS_KEEP_ONE)
-    {
-      self->acked++;
-      if (self->acked > 1)
-        {
-          log_proto_msg_ack(&self->super,1);
-          self->acked--;
-        }
-    }
-  else
-    {
-      log_proto_msg_ack(&self->super,1);
-    }
+
+  log_proto_text_client_do_ack(self);
   return LPS_SUCCESS;
 
  write_error:
@@ -270,9 +275,9 @@ static void
 log_proto_text_client_free(LogProto *s)
 {
   LogProtoTextClient *self = (LogProtoTextClient *)s;
-  if (self->partial == NULL && (self->super.flags & LPBS_KEEP_ONE) && self->acked == 1)
+  if (!self->partial)
     {
-      log_proto_msg_ack(&self->super,1);
+      log_proto_text_client_do_pending_acks(self);
     }
 }
 
@@ -287,7 +292,8 @@ log_proto_text_client_new(LogTransport *transport)
   self->super.free_fn = log_proto_text_client_free;
   self->super.transport = transport;
   self->super.convert = (GIConv) -1;
-  self->acked = 0;
+  self->super.keep_one_message = FALSE;
+  self->super.pending_ack_count = 0;
   return &self->super;
 }
 
@@ -2620,6 +2626,8 @@ log_proto_framed_client_new(LogTransport *transport)
   self->super.super.flush = log_proto_text_client_flush;
   self->super.super.transport = transport;
   self->super.super.convert = (GIConv) -1;
+  self->super.super.keep_one_message = FALSE;
+  self->super.super.pending_ack_count = 0;
   return &self->super.super;
 }
 
