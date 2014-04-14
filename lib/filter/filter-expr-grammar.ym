@@ -72,6 +72,7 @@ FilterRE *last_re_filter;
 %type	<node> filter_comparison
 
 %type   <num> filter_fac_list
+%type   <num> filter_fac
 %type	<num> filter_level_list
 %type	<num> filter_level
 
@@ -261,8 +262,16 @@ filter_match_opt
 
 
 filter_fac_list
-	: facility_string filter_fac_list	{ $$ = (1 << ($1 >> 3)) | $2; }
-	| facility_string			{ $$ = (1 << ($1 >> 3)); }
+	: filter_fac filter_fac_list		{ $$ = $1 | $2; }
+	| filter_fac				{ $$ = $1; }
+	;
+
+filter_fac
+	: facility_string LL_DOTDOT facility_string
+	  {
+	    $$ = syslog_make_range($1 >> 3, $3 >> 3);
+	  }
+        | facility_string			{ $$ = 1 << ($1 >> 3); }
 	;
 
 filter_level_list
