@@ -9,7 +9,7 @@ int acked_messages = 0;
 int fed_messages = 0;
 
 void
-test_ack(LogMessage *msg, gboolean need_pos_tracking)
+test_ack(LogMessage *msg, AckType ack_type)
 {
   acked_messages++;
 }
@@ -50,7 +50,7 @@ send_some_messages(LogQueue *q, gint n, gboolean use_app_acks)
       log_queue_pop_head(q, &msg, &path_options, FALSE, use_app_acks);
       if (!use_app_acks)
         {
-          log_msg_ack(msg, &path_options, TRUE);
+          log_msg_ack(msg, &path_options, AT_PROCESSED);
         }
       log_msg_unref(msg);
     }

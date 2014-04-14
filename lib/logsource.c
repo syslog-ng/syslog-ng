@@ -113,10 +113,10 @@ _ack_rate_adjust(LogSource *self)
  * be taken when manipulating the LogSource data structure.
  **/
 static void
-log_source_msg_ack(LogMessage *msg, gboolean need_pos_tracking)
+log_source_msg_ack(LogMessage *msg, AckType ack_type)
 {
   AckTracker *ack_tracker = msg->ack_record->tracker;
-  ack_tracker_manage_msg_ack(ack_tracker, msg, need_pos_tracking);
+  ack_tracker_manage_msg_ack(ack_tracker, msg, ack_type);
 }
 
 void

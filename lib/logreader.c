@@ -124,7 +124,6 @@ struct _LogReader
 static gboolean log_reader_start_watches(LogReader *self);
 static void log_reader_stop_watches(LogReader *self);
 static void log_reader_update_watches(LogReader *self);
-
 static void log_reader_free_proto(LogReader *self);
 static void log_reader_set_proto(LogReader *self, LogProto *proto);
 static void log_reader_set_pending_proto(LogReader *self, LogProto *proto);
@@ -805,7 +804,8 @@ log_reader_handle_line(LogReader *self, const guchar *line, gint length, GSockAd
       g_string_free(converted, TRUE);
     }
   log_pipe_queue(&self->super.super, m, &path_options);
-  log_msg_refcache_stop(TRUE);
+  log_msg_refcache_stop(AT_PROCESSED);
+
   return log_source_free_to_send(&self->super);
 }
 

@@ -212,7 +212,7 @@ threaded_consume(gpointer st)
         }
       else
         {
-          log_msg_ack(msg, &path_options, TRUE);
+          log_msg_ack(msg, &path_options, AT_PROCESSED);
           log_msg_unref(msg);
           msg_count++;
         }

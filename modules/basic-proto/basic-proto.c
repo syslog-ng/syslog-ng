@@ -137,7 +137,7 @@ log_proto_text_client_flush(LogProto *s)
     }
   if (!self->partial && self->acked)
     {
-      log_proto_ack_msg(&self->super,1);
+      log_proto_msg_ack(&self->super,1);
       self->acked = 0;
     }
   return self->partial ? LPS_AGAIN : LPS_SUCCESS;
@@ -228,13 +228,13 @@ log_proto_client_post_writer(LogProto *s, LogMessage *logmsg, guchar *msg, gsize
       self->acked++;
       if (self->acked > 1)
         {
-          log_proto_ack_msg(&self->super,1);
+          log_proto_msg_ack(&self->super,1);
           self->acked--;
         }
     }
   else
     {
-      log_proto_ack_msg(&self->super,1);
+      log_proto_msg_ack(&self->super,1);
     }
   return LPS_SUCCESS;
 
@@ -272,7 +272,7 @@ log_proto_text_client_free(LogProto *s)
   LogProtoTextClient *self = (LogProtoTextClient *)s;
   if (self->partial == NULL && (self->super.flags & LPBS_KEEP_ONE) && self->acked == 1)
     {
-      log_proto_ack_msg(&self->super,1);
+      log_proto_msg_ack(&self->super,1);
     }
 }
 
@@ -450,7 +450,7 @@ log_proto_file_writer_post(LogProto *s, LogMessage *logmsg, guchar *msg, gsize m
   self->sum_len += msg_len;
   *consumed = TRUE;
   result = LPS_SUCCESS;
-  log_proto_ack_msg(&self->super,1);
+  log_proto_msg_ack(&self->super,1);
   if (self->buf_count == self->buf_size)
     {
       /* we have reached the max buffer size -> we need to write the messages */
@@ -1811,7 +1811,6 @@ log_proto_buffered_server_fetch(LogProto *s, const guchar **msg, gsize *msg_len,
 
   return result;
 }
-
 
 static void
 log_proto_file_reader_ack_data_save_state(Bookmark *bookmark)

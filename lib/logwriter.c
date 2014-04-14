@@ -88,14 +88,12 @@ struct _LogWriter
   gint pollable_state;
   LogProto *proto, *pending_proto;
   gboolean watches_running:1, suspended:1, working:1, flush_waiting_for_timeout:1;
-  gboolean pending_proto_present;
   GCond *pending_proto_cond;
   GStaticMutex pending_proto_lock;
   /* messages posted, and we're not certain were properly sent out on the wire */
   gint last_notify_code;
 
   gint io_cond;
-  gboolean ack_is_reliable;
 
   gboolean has_to_poll;
   gboolean force_read;
@@ -130,20 +128,55 @@ static void log_writer_start_watches(LogWriter *self);
 static void log_writer_stop_watches(LogWriter *self);
 static void log_writer_update_watches(LogWriter *self);
 static void log_writer_suspend(LogWriter *self);
-
 static void log_writer_free_proto(LogWriter *self);
 static void log_writer_set_proto(LogWriter *self, LogProto *proto);
 static void log_writer_set_pending_proto(LogWriter *self, LogProto *proto);
 
 static void
-log_writer_msg_acked(guint num_msg_acked, gpointer user_data)
+log_writer_msg_ack(guint num_msg_acked, gpointer user_data)
 {
   LogWriter *self = (LogWriter *)user_data;
-  log_queue_ack_backlog(self->queue,num_msg_acked);
-  if (self->ack_is_reliable)
+  log_queue_ack_backlog(self->queue, num_msg_acked);
+}
+
+static void
+log_writer_msg_rewind(gpointer s)
+{
+  LogWriter *self = (LogWriter *)s;
+  log_queue_rewind_backlog(self->queue, -1);
+}
+
+static void
+log_writer_free_proto(LogWriter *self)
+{
+  if (self->proto)
     {
-      log_queue_rewind_backlog(self->queue,-1);
+      log_proto_free(self->proto);
+      log_writer_set_proto(self, NULL);
     }
+}
+
+
+static void
+log_writer_set_proto(LogWriter *self, LogProto *proto)
+{
+  self->proto = proto;
+
+  if (proto)
+    {
+      LogProtoFlowControlFuncs flow_control_funcs;
+      flow_control_funcs.ack_callback = log_writer_msg_ack;
+      flow_control_funcs.rewind_callback = log_writer_msg_rewind;
+      flow_control_funcs.user_data = self;
+
+      log_proto_set_flow_control_funcs(self->proto, &flow_control_funcs);
+    }
+}
+
+static void
+log_writer_set_pending_proto(LogWriter *self, LogProto *proto)
+{
+  self->pending_proto = proto;
 }
 
 static void
@@ -163,7 +196,7 @@ log_writer_work_finished(gpointer s)
   main_loop_assert_main_thread();
   self->flush_waiting_for_timeout = FALSE;
 
-  if (self->pending_proto_present)
+  if (self->pending_proto != NULL)
     {
       /* pending proto is only set in the main thread, so no need to
        * lock it before coming here. After we're syncing with the
@@ -1174,7 +1207,7 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
                   msg_set_context(NULL);
                   log_msg_unref(lm);
                   log_queue_rewind_backlog(self->queue, 1);
-                  log_msg_refcache_stop(FALSE);
+                  log_msg_refcache_stop(AT_ABORTED);
 
                   if (consumed)
                     {
@@ -1212,12 +1245,12 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
                     NULL);
           log_msg_unref(lm);
           log_queue_rewind_backlog(self->queue, 1);
-          log_msg_refcache_stop(FALSE);
+          log_msg_refcache_stop(AT_ABORTED);
           msg_set_context(NULL);
           break;
         }
       msg_set_context(NULL);
-      log_msg_refcache_stop(TRUE);
+      log_msg_refcache_stop(AT_PROCESSED);
       count++;
     }
 
@@ -1425,14 +1458,14 @@ log_writer_reopen_deferred(gpointer s)
 
   if (!proto)
     {
-		  iv_validate_now();
-		  self->reopen_timer.expires = iv_now;
-		  self->reopen_timer.expires.tv_sec += self->options->time_reopen;
+      iv_validate_now();
+      self->reopen_timer.expires = iv_now;
+      self->reopen_timer.expires.tv_sec += self->options->time_reopen;
       if (iv_timer_registered(&self->reopen_timer))
         {
           iv_timer_unregister(&self->reopen_timer);
         }
-		  iv_timer_register(&self->reopen_timer);
+      iv_timer_register(&self->reopen_timer);
     }
 
   if (self->io_job.working)
@@ -1447,9 +1480,7 @@ log_writer_reopen_deferred(gpointer s)
 
   if (proto)
     {
-      log_proto_set_options(proto,proto_options);
-      log_proto_set_msg_acked_callback(self->proto,log_writer_msg_acked,self);
-      self->ack_is_reliable = log_proto_is_reliable(self->proto);
+      log_proto_set_options(proto, proto_options);
       log_writer_start_watches(self);
     }
 }
@@ -1491,7 +1522,7 @@ log_writer_reopen(LogPipe *s, LogProto *proto, LogProtoOptions *proto_options)
   if (!main_loop_is_main_thread())
     {
       g_static_mutex_lock(&self->pending_proto_lock);
-      while (self->pending_proto_present)
+      while (self->pending_proto != NULL)
         {
           g_cond_wait(self->pending_proto_cond, g_static_mutex_get_mutex(&self->pending_proto_lock));
         }
@@ -1517,37 +1548,6 @@ log_writer_set_options(LogWriter *self, LogPipe *control, LogWriterOptions *opti
   if (self->proto)
     {
       log_proto_set_options(self->proto,proto_options);
-    }
-}
-
-static void
-log_writer_free_proto(LogWriter *self)
-{
-  if (self->proto)
-    {
-      log_proto_free(self->proto);
-      log_writer_set_proto(self, NULL);
-    }
-}
-
-static void
-log_writer_set_proto(LogWriter *self, LogProto *proto)
-{
-  self->proto = proto;
-}
-
-static void
-log_writer_set_pending_proto(LogWriter *self, LogProto *proto)
-{
-  if (proto != NULL)
-    {
-      self->pending_proto = proto;
-      self->pending_proto_present = TRUE;
-    }
-  else
-    {
-      self->pending_proto = NULL;
-      self->pending_proto_present = FALSE;
     }
 }
 

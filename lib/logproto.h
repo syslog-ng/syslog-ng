@@ -100,8 +100,17 @@ typedef enum
   LPT_CLIENT,
 } LogProtoType;
 
-typedef void (*LogProtoAckMessages)(guint num_msg_acked,gpointer user_data);
 typedef void (*LogProtoTimeoutCallback)(gpointer user_data);
+
+typedef void (*LogProtoClientAckCallback)(guint num_msg_acked, gpointer user_data);
+typedef void (*LogProtoClientRewindCallback)(gpointer user_data);
+
+typedef struct
+{
+  LogProtoClientAckCallback ack_callback;
+  LogProtoClientRewindCallback rewind_callback;
+  gpointer user_data;
+} LogProtoFlowControlFuncs;
 
 typedef struct _LogProto LogProto;
 
@@ -127,12 +136,33 @@ struct _LogProto
   /* This function is available only the object is _LogProtoTextServer */
   guint64 (*get_pending_pos)(LogProto *s, Bookmark *bookmark);
   void (*apply_state)(LogProto *s, StateHandler *state_handler);
-  LogProtoAckMessages ack_callback;
-  gboolean (*is_reliable)(LogProto *s);
-  gpointer ack_user_data;
   gboolean is_multi_line;
   LogProtoOptions *options;
+
+  LogProtoFlowControlFuncs flow_control_funcs;
 };
+
+static inline void
+log_proto_set_flow_control_funcs(LogProto *self, LogProtoFlowControlFuncs *flow_control_funcs)
+{
+  self->flow_control_funcs.ack_callback = flow_control_funcs->ack_callback;
+  self->flow_control_funcs.rewind_callback = flow_control_funcs->rewind_callback;
+  self->flow_control_funcs.user_data = flow_control_funcs->user_data;
+}
+
+static inline void
+log_proto_msg_ack(LogProto *self, gint num_msg_acked)
+{
+  if (self->flow_control_funcs.ack_callback)
+    self->flow_control_funcs.ack_callback(num_msg_acked, self->flow_control_funcs.user_data);
+}
+
+static inline void
+log_proto_msg_rewind(LogProto *self)
+{
+  if (self->flow_control_funcs.rewind_callback)
+    self->flow_control_funcs.rewind_callback(self->flow_control_funcs.user_data);
+}
 
 static inline gboolean
 log_proto_handshake_in_progress(LogProto *s)
@@ -173,33 +203,9 @@ log_proto_set_options(LogProto *s,LogProtoOptions *options)
 }
 
 static inline gboolean
-log_proto_is_reliable(LogProto *s)
-{
-  if (s && s->is_reliable)
-    {
-      return s->is_reliable(s);
-    }
-  return FALSE;
-}
-
-static inline gboolean
 log_proto_is_position_tracked(LogProto *s)
 {
   return s->position_tracked;
-}
-
-static inline void
-log_proto_set_msg_acked_callback(LogProto *s, LogProtoAckMessages callback,gpointer user_data)
-{
-  s->ack_callback = callback;
-  s->ack_user_data = user_data;
-}
-
-static inline void
-log_proto_ack_msg(LogProto *s,gint message_number)
-{
-  if (s->ack_callback)
-    s->ack_callback(message_number,s->ack_user_data);
 }
 
 static inline gboolean

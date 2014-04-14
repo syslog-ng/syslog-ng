@@ -835,7 +835,7 @@ afinet_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options,
           if (libnet_write(self->lnet_ctx) >= 0)
             {
               /* we have finished processing msg */
-              log_msg_ack(msg, path_options, TRUE);
+              log_msg_ack(msg, path_options, AT_PROCESSED);
               log_msg_unref(msg);
 
               g_static_mutex_unlock(&self->lnet_lock);

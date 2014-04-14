@@ -38,7 +38,7 @@ dummy_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, 
              evt_tag_int("opt", self->opt),
              NULL);
 
-  log_msg_ack(msg, path_options, TRUE);
+  log_msg_ack(msg, path_options, AT_PROCESSED);
   log_msg_unref(msg);
 }
 

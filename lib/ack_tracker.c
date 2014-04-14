@@ -46,10 +46,10 @@ static void unreliable_ack_tracker_init_instance(UnreliableAckTracker *self, Log
 static void reliable_ack_tracker_init_instance(ReliableAckTracker *self, LogSource *source);
 
 static void unreliable_ack_tracker_track_msg(AckTracker *s, LogMessage *msg);
-static void unreliable_ack_tracker_manage_msg_ack(AckTracker *s, LogMessage *msg, gboolean acked);
+static void unreliable_ack_tracker_manage_msg_ack(AckTracker *s, LogMessage *msg, AckType ack_type);
 
 static void reliable_ack_tracker_track_msg(AckTracker *s, LogMessage *msg);
-static void reliable_ack_tracker_manage_msg_ack(AckTracker *s, LogMessage *msg, gboolean acked);
+static void reliable_ack_tracker_manage_msg_ack(AckTracker *s, LogMessage *msg, AckType ack_type);
 
 static Bookmark *reliable_ack_tracker_request_bookmark(AckTracker *s);
 static Bookmark *unreliable_ack_tracker_request_bookmark(AckTracker *s);
@@ -212,7 +212,7 @@ unreliable_ack_tracker_track_msg(AckTracker *s, LogMessage *msg)
 }
 
 static void
-unreliable_ack_tracker_manage_msg_ack(AckTracker *s, LogMessage *msg, gboolean ack_type)
+unreliable_ack_tracker_manage_msg_ack(AckTracker *s, LogMessage *msg, AckType ack_type)
 {
   UnreliableAckTracker *self = (UnreliableAckTracker *)s;
 
@@ -280,7 +280,7 @@ reliable_ack_tracker_track_msg(AckTracker *s, LogMessage *msg)
 }
 
 static void
-reliable_ack_tracker_manage_msg_ack(AckTracker *s, LogMessage *msg, gboolean acked)
+reliable_ack_tracker_manage_msg_ack(AckTracker *s, LogMessage *msg, AckType ack_type)
 {
   ReliableAckTracker *self = (ReliableAckTracker *)s;
   ReliableAckRecord *ack_rec = (ReliableAckRecord *)msg->ack_record;
@@ -295,7 +295,7 @@ reliable_ack_tracker_manage_msg_ack(AckTracker *s, LogMessage *msg, gboolean ack
       if (ack_range_length > 0)
         {
           last_in_range = ring_buffer_element_at(&self->ack_record_storage, ack_range_length - 1);
-          if (acked)
+          if (ack_type == AT_PROCESSED)
             {
               Bookmark *bookmark = &(last_in_range->bookmark);
               bookmark->save(bookmark);

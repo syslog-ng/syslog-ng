@@ -915,11 +915,7 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
 
   if (success)
     {
-      if (!afsql_dd_is_transaction_handling_enabled(self))
-        {
-          log_queue_ack_backlog(self->queue, 1);
-        }
-      log_msg_ack(msg, &path_options, TRUE);
+      log_msg_ack(msg, &path_options, AT_PROCESSED);
       log_msg_unref(msg);
       step_sequence_number(&self->seq_num);
       self->failed_message_counter = 0;

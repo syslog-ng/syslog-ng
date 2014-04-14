@@ -31,10 +31,10 @@
 LogMessage *result_msg = NULL;
 MsgFormatOptions parse_options;
 
-void log_test_msg_ack(LogMessage *msg, gboolean need_pos_tracking)
+static void
+log_test_msg_ack(LogMessage *msg, AckType ack_type)
 {
 }
-
 
 void
 log_test_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data)
