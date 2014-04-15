@@ -35,5 +35,5 @@ gboolean file_monitor_use_timeout(FileMonitor *self);
 gboolean file_monitor_watch_directory(FileMonitor *self, const gchar *filename);
 gboolean file_monitor_stop(FileMonitor *self);
 void file_monitor_deinit(FileMonitor *self);
-
+gchar *resolve_to_absolute_path(const gchar *path, const gchar *basedir);
 #endif
