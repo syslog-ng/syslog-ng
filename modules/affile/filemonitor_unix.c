@@ -20,6 +20,34 @@
 # endif
 #endif
 
+static gchar*
+build_filename(const gchar *basedir, const gchar *path)
+{
+  gchar *result;
+
+  if (!path)
+    return NULL;
+
+  result = (gchar *)g_malloc(strlen(basedir) + strlen(path) + 2);
+  sprintf(result, "%s/%s", basedir, path);
+
+  return result;
+}
+
+static inline long
+get_path_max()
+{
+  long path_max;
+#ifdef PATH_MAX
+  path_max = PATH_MAX;
+#else
+  path_max = pathconf(path, _PC_PATH_MAX);
+  if (path_max <= 0)
+  path_max = 4096;
+#endif
+  return path_max;
+}
+
 /*
  Resolve . and ..
  Resolve symlinks
@@ -28,28 +56,30 @@
 gchar*
 resolve_to_absolute_path(const gchar *path, const gchar *basedir)
 {
-  gchar *buffer = g_malloc(PATH_MAX);
-  gchar cwd[PATH_MAX];
+  long path_max = get_path_max();
+  gchar *res;
+  gchar *w_name;
 
-  getcwd(cwd, PATH_MAX);
-  chdir(basedir);
+  w_name = build_filename(basedir, path);
+  res = (char *)g_malloc(path_max);
 
-  gchar *result = realpath(path, buffer);
-  if (result == NULL)
+  if (!realpath(w_name, res))
     {
-      g_free(buffer);
+      g_free(res);
       if (errno == ENOENT)
         {
-          result = g_strdup(path);
+          res = g_strdup(path);
         }
       else
         {
           msg_error("Can't resolve to absolute path", evt_tag_str("path", path), evt_tag_errno("error", errno), NULL);
+          res = NULL;
         }
     }
-  chdir(cwd);
-  return result;
+  g_free(w_name);
+  return res;
 }
+
 
 /**************************************************************************/
 typedef struct _MonitorBase
