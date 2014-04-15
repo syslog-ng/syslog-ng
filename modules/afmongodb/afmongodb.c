@@ -766,6 +766,10 @@ afmongodb_dd_init(LogPipe *s)
           return FALSE;
         }
     }
+  else
+    {
+      mongo_sync_conn_recovery_cache_seed_add (self->recovery_cache, self->address, self->port);
+    }
 
   if (self->port == MONGO_CONN_LOCAL)
     msg_verbose("Initializing MongoDB destination",
