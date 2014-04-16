@@ -46,41 +46,4 @@ int inet_aton(const char *cp, struct in_addr *addr)
 }
 #endif
 
-#if !defined(HAVE_GETUTENT) && !defined(HAVE_GETUTXENT) && defined(HAVE_UTMP_H)
-
-static int utent_fd = -1;
-
-#ifndef _PATH_UTMP
-#define _PATH_UTMP "/var/log/utmp"
-#endif
-
-struct utmp *getutent(void)
-{
-	static struct utmp ut;
-	int rc;
-
-	if (utent_fd == -1) {
-		utent_fd = open(_PATH_UTMP, O_RDONLY | O_NOCTTY);
-	}
-	if (utent_fd == -1)
-		return NULL;
-	rc = read(utent_fd, &ut, sizeof(ut));
-	if (rc <= 0) {
-		close(utent_fd);
-		utent_fd = -1;
-		return NULL;
-	}
-	else {
-		return &ut;
-	}
-}
-
-void endutent(void)
-{
-	if (utent_fd != -1) {
-		close(utent_fd);
-		utent_fd = -1;
-	}
-}
-#endif
 #endif

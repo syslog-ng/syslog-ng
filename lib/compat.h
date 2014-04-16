@@ -377,4 +377,32 @@ char *strtok_r(char *string, const char *delim, char **saveptr);
 
 long get_processor_count();
 
+/* utmp/utmpx compat */
+
+#ifdef HAVE_UTMPX_H
+
+ #include <utmpx.h>
+
+ #define getutent_interface getutxent
+ #define endutent_interface endutxent
+ typedef struct utmpx utmp_interface;
+ #define ut_name ut_user
+
+#else
+
+ #include <utmp.h>
+
+ #define getutent_interface getutent
+ #define endutent_interface endutent
+ typedef struct utmp utmp_interface;
+
+#endif
+
+#if !defined(HAVE_GETUTENT) && !defined(HAVE_GETUTXENT)
+
+ struct utmp *getutent(void);
+ void endutent(void);
+
+#endif
+
 #endif /* COMPAT_H_INCLUDED */
