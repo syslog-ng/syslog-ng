@@ -561,7 +561,7 @@ ptz_print_patterndb(GHashTable *clusters, gchar *delimiters, gboolean named_pars
   /* print the header */
   time(&currtime);
   strftime(date, 12, "%Y-%m-%d", localtime(&currtime));
-  printf("<patterndb version='3' pub_date='%s'>\n", date);
+  printf("<patterndb version='4' pub_date='%s'>\n", date);
   uuid_gen_random(uuid_string, sizeof(uuid_string));
 
   printf("  <ruleset name='patternize' id='%s'>\n", uuid_string);
