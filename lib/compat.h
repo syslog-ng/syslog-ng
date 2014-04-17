@@ -379,6 +379,7 @@ long get_processor_count();
 
 /* utmp/utmpx compat */
 
+#ifndef _WIN32
 #ifdef HAVE_UTMPX_H
 
  #include <utmpx.h>
@@ -397,6 +398,7 @@ long get_processor_count();
  typedef struct utmp utmp_interface;
 
 #endif
+#endif /*WIN32*/
 
 #if !defined(HAVE_GETUTENT) && !defined(HAVE_GETUTXENT)
 
