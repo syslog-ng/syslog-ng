@@ -46,7 +46,7 @@ test_formatwelf()
   log_template_format(template, msg, NULL, 0, 0, "TEST", result);
   assert_string(result->str,"sql.id=127 sql.name=name sql.xyz=\"test data\"","bad formatting");
 
-  template_string = "$(format-welf --key * --exclude=SYSUPTIME)";
+  template_string = "$(format-welf --key * --exclude=SYSUPTIME --exclude=P_*)";
   assert_true(log_template_compile(template,template_string,&err),"Can't compile valid template");
   log_template_format(template, msg, NULL, 0, 0, "TEST", result);
   assert_string(result->str,
