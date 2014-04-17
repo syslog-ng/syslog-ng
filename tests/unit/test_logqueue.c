@@ -173,7 +173,6 @@ threaded_consume(gpointer st)
 {
   LogQueue *q = (LogQueue *) st;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
-  gboolean success;
   gint loops = 0;
   gint msg_count = 0;
 

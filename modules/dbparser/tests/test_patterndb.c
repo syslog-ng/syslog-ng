@@ -44,19 +44,21 @@ test_emit_func(LogMessage *msg, gboolean synthetic, gpointer user_data)
 void
 create_pattern_db(gchar *pdb)
 {
-  int retval;
   GError *err = NULL;
   patterndb = pattern_db_new();
   messages = g_ptr_array_new();
 
   pattern_db_set_emit_func(patterndb, test_emit_func, NULL);
 #ifndef _WIN32
-  g_file_open_tmp("patterndbXXXXXX.xml", filename, &err);
+  g_file_open_tmp("patterndbXXXXXX.xml", &filename, &err);
 #else
-  filename = g_strdup("patterndbXXXXXX.xml");
-  retval = g_mkstemp(filename);
-  if (retval != -1)
-         close(retval);
+  {
+    int retval;
+    filename = g_strdup("patterndbXXXXXX.xml");
+    retval = g_mkstemp(filename);
+    if (retval != -1)
+           close(retval);
+  }
 #endif
   g_file_open_tmp("patterndbXXXXXX.xml", &filename, NULL);
   g_file_set_contents(filename, pdb, strlen(pdb), NULL);

@@ -73,6 +73,7 @@ GSockAddr *g_sockaddr_ref(GSockAddr *a);
 void g_sockaddr_unref(GSockAddr *a);
 
 gboolean g_sockaddr_inet_check(GSockAddr *a);
+void g_sockaddr_inet_free(GSockAddr *addr);
 GSockAddr *g_sockaddr_inet_new(gchar *ip, guint16 port);
 GSockAddr *g_sockaddr_inet_new2(struct sockaddr_in *sin);
 GSockAddr *g_sockaddr_inet_range_new(gchar *ip, guint16 min_port, guint16 max_port);

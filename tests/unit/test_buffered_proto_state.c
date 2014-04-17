@@ -199,7 +199,6 @@ void
 test_load_state()
 {
   PersistState *state;
-  PersistEntryHandle handle;
   LogProtoBufferedServerState *proto_state;
   StateHandler *handler;
   NameValueContainer *new_state;
@@ -224,7 +223,7 @@ test_load_state()
   assert_true(state_handler_load_state(handler, new_state, NULL), "Can't load valid state");
 
   name_value_container_free(new_state);
-  log_proto_free(proto);
+  log_proto_free(&proto->super.super);
   persist_state_commit(state);
   persist_state_free(state);
 
@@ -257,7 +256,7 @@ test_load_state()
   assert_guint64(proto_state->file_inode, 11978166, "Bad saved data %s(%s:%d)", __FUNCTION__, __FILE__, __LINE__);
   assert_guint32(proto_state->run_id, 2, "Bad saved data %s(%s:%d)", __FUNCTION__, __FILE__, __LINE__);
 
-  log_proto_free(proto);
+  log_proto_free(&proto->super.super);
   persist_state_commit(state);
   persist_state_free(state);
 
@@ -280,7 +279,7 @@ test_load_state()
   assert_false(state_handler_load_state(handler, new_state, NULL), "insufficient state loaded");
 
   name_value_container_free(new_state);
-  log_proto_free(proto);
+  log_proto_free(&proto->super.super);
   persist_state_commit(state);
   persist_state_free(state);
 }

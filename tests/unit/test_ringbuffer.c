@@ -280,13 +280,13 @@ static void
 test_tail()
 {
   RingBuffer rb;
-  int i, last_idx = 0;
-  TestData *td_pop, *td_tail;
+  TestData *td_tail;
 
   ring_buffer_alloc(&rb, sizeof(TestData), 103);
   _ringbuffer_fill2(&rb, 103, 0, TRUE);
 
-  td_pop =  ring_buffer_pop(&rb);
+  ring_buffer_pop(&rb);
+
   td_tail = ring_buffer_tail(&rb);
   td_tail->idx = 103;
 

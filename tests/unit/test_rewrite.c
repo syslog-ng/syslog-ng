@@ -51,7 +51,7 @@ void
 test_reference_on_condition_cloned(TestCase *s)
 {
   RewriteTestCase *self = (RewriteTestCase *) s;
-  LogPipe *cloned_rule = log_process_pipe_clone(self->test_rewrite);
+  LogPipe *cloned_rule = log_process_pipe_clone(&self->test_rewrite->super);
   assert_guint32(self->test_rewrite->condition->ref_cnt, 2, ASSERTION_ERROR("Bad reference number of condition"));
   log_pipe_unref(cloned_rule);
   assert_guint32(self->test_rewrite->condition->ref_cnt, 1, ASSERTION_ERROR("Bad reference number of condition"));

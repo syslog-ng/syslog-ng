@@ -6,7 +6,7 @@ void
 test_messages()
 {
   LogMessage *msg = NULL;
-  gchar *message = NULL;
+  const gchar *message = NULL;
   msg = msg_event_create(EVT_PRI_ERR, "Test Message", evt_tag_str("name1", "value1"), NULL);
   message = log_msg_get_value(msg, LM_V_MESSAGE, NULL);
   assert_string(message, "Test Message; name1='value1'", "Bad message");

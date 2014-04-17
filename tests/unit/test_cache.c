@@ -61,8 +61,6 @@ test_cache_write_and_read()
   cache_free(c);
   assert_gint(fetch_count, 2, "cache_free call the fetch");
   assert_gint(free_fn_count, 1, "cache_free call the free_fn %d times", free_fn_count);
-
-  return 0;
 }
 
 int

@@ -15,7 +15,7 @@
 
 #define TEST_ASSERT(assertion, msg) if (!(assertion)) \
                                       { \
-                                          fprintf(stderr, "\n[TID:%x]%s :: %s\n\n", pthread_self(), PRETTY_FUNCTION, msg); \
+                                          fprintf(stderr, "\n[TID:%lx]%s :: %s\n\n", pthread_self(), PRETTY_FUNCTION, msg); \
                                           exit(1); \
                                       }
 
@@ -46,6 +46,8 @@ microsleep(guint usec)
   /* called only by main thread, thus errno is valid */
   while ((nanosleep(&t_req, &t_rem) < 0) && (errno == EINTR))
     t_req = t_rem;
+
+  return 0;
 }
 
 void

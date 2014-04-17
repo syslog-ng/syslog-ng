@@ -40,7 +40,7 @@ typedef struct _IpProcessorFunctor
   void *process_ip_arg;
 } IpProcessorFunctor;
 
-void for_each_ip(const char *first_ip, const char *last_ip, IpProcessorFunctor *fun)
+void for_each_ip(const char *first_ip, const char *last_ip, const IpProcessorFunctor *fun)
 {
   uint32_t start_addr = 0;
   uint32_t end_addr = 0;
@@ -57,7 +57,7 @@ void for_each_ip(const char *first_ip, const char *last_ip, IpProcessorFunctor *
     {
       act_ip = htonl(i);
       inet_ntop(AF_INET, &act_ip, ip_addr_str, sizeof(ip_addr_str));
-      fun->process_ip(fun, ip_addr_str);
+      fun->process_ip((struct _IpProcessorFunctor *)fun, ip_addr_str);
     }
 }
 
@@ -96,7 +96,7 @@ void resolve_ip_address(const gchar *ip, gchar *hostname, gsize *hostname_length
 {
   gchar result[256] = {0};
   gsize result_len = sizeof(result);
-  GSockAddr *sock_addr = g_sockaddr_inet_new(ip, DEFAULT_PORT);
+  GSockAddr *sock_addr = g_sockaddr_inet_new((gchar *)ip, DEFAULT_PORT);
 
   resolve_sockaddr(result, &result_len,
                    sock_addr,

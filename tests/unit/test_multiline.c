@@ -101,8 +101,8 @@ int test_case(const gchar *message, const gchar *expected, const gchar *prefix, 
       result =  log_msg_get_value(result_msg, LM_V_MESSAGE, NULL);
       TEST_ASSERT((strcmp(expected, result) == 0), "%s", result, expected);
     }
-  log_pipe_deinit(reader);
-  log_pipe_unref(reader);
+  log_pipe_deinit((LogPipe *)reader);
+  log_pipe_unref((LogPipe *)reader);
   return 0;
 }
 

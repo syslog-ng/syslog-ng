@@ -33,7 +33,12 @@ test_parser_free(TestParser *self)
   g_free(self);
 }
 
+#ifndef YY_TYPEDEF_YY_SCANNER_T
+#define YY_TYPEDEF_YY_SCANNER_T
+typedef void* yyscan_t;
+#endif
 
+extern int _cfg_lexer_lex(YYSTYPE * yylval_param, YYLTYPE * yylloc_param, yyscan_t yyscanner);
 
 #define assert_parser_string(parser, required) \
     assert_gint(_cfg_lexer_lex(parser->yylval, parser->yylloc, parser->lexer->state), LL_STRING, "Bad token type at %s:%d", __FUNCTION__, __LINE__); \
