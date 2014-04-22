@@ -22,7 +22,7 @@ test_lines_separated_with_prefix(gboolean input_is_stream)
 {
   LogProtoServer *proto;
 
-  proto = log_proto_regexp_multiline_server_new(
+  proto = log_proto_prefix_garbage_multiline_server_new(
             /* 32 bytes max line length, which means that the complete
              * multi-line block plus one additional line must fit into 32
              * bytes. */
@@ -51,7 +51,7 @@ test_lines_separated_with_prefix_and_garbage(gboolean input_is_stream)
 {
   LogProtoServer *proto;
 
-  proto = log_proto_regexp_multiline_server_new(
+  proto = log_proto_prefix_garbage_multiline_server_new(
             /* 32 bytes max line length, which means that the complete
              * multi-line block plus one additional line must fit into 32
              * bytes. */
@@ -76,11 +76,38 @@ test_lines_separated_with_prefix_and_garbage(gboolean input_is_stream)
 }
 
 static void
+test_lines_separated_with_prefix_and_suffix(gboolean input_is_stream)
+{
+  LogProtoServer *proto;
+
+  proto = log_proto_prefix_suffix_multiline_server_new(
+            /* 32 bytes max line length, which means that the complete
+             * multi-line block plus one additional line must fit into 32
+             * bytes. */
+            (0 && input_is_stream ? log_transport_mock_stream_new : log_transport_mock_records_new)(
+              "prefix first suffix garbage\n"
+              "prefix multi\n"
+              "suffix garbage\n"
+              "prefix final\n", -1,
+              LTM_PADDING,
+              LTM_EOF),
+            get_inited_proto_server_options(),
+            compile_regex("^prefix"), compile_regex("suffix"));
+
+  assert_proto_server_fetch(proto, "prefix first suffix", -1);
+  assert_proto_server_fetch(proto, "prefix multi\nsuffix", -1);
+
+  log_proto_server_free(proto);
+
+};
+
+
+static void
 test_lines_separated_with_garbage(gboolean input_is_stream)
 {
   LogProtoServer *proto;
 
-  proto = log_proto_regexp_multiline_server_new(
+  proto = log_proto_prefix_garbage_multiline_server_new(
             /* 32 bytes max line length, which means that the complete
              * multi-line block plus one additional line must fit into 32
              * bytes. */
@@ -109,7 +136,7 @@ test_first_line_without_prefix(gboolean input_is_stream)
 {
   LogProtoServer *proto;
 
-  proto = log_proto_regexp_multiline_server_new(
+  proto = log_proto_prefix_garbage_multiline_server_new(
             /* 32 bytes max line length, which means that the complete
              * multi-line block plus one additional line must fit into 32
              * bytes. */
@@ -143,7 +170,7 @@ test_input_starts_with_continuation(gboolean input_is_stream)
 
   proto_server_options.max_msg_size = 32;
 
-  proto = log_proto_regexp_multiline_server_new(
+  proto = log_proto_prefix_garbage_multiline_server_new(
             /* 32 bytes max line length */
             (input_is_stream ? log_transport_mock_stream_new : log_transport_mock_records_new)
             (
@@ -167,7 +194,7 @@ test_multiline_at_eof(gboolean input_is_stream)
 
   proto_server_options.max_msg_size = 32;
 
-  proto = log_proto_regexp_multiline_server_new(
+  proto = log_proto_prefix_garbage_multiline_server_new(
             /* 32 bytes max line length */
             (input_is_stream ? log_transport_mock_stream_new : log_transport_mock_records_new)
             (
@@ -193,6 +220,8 @@ test_log_proto_regexp_multiline_server(void)
   PROTO_TESTCASE(test_lines_separated_with_prefix, TRUE);
   PROTO_TESTCASE(test_lines_separated_with_prefix_and_garbage, FALSE);
   PROTO_TESTCASE(test_lines_separated_with_prefix_and_garbage, TRUE);
+  PROTO_TESTCASE(test_lines_separated_with_prefix_and_suffix, FALSE);
+  PROTO_TESTCASE(test_lines_separated_with_prefix_and_suffix, TRUE);
   PROTO_TESTCASE(test_lines_separated_with_garbage, FALSE);
   PROTO_TESTCASE(test_lines_separated_with_garbage, TRUE);
   PROTO_TESTCASE(test_first_line_without_prefix, FALSE);

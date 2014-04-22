@@ -55,7 +55,11 @@ affile_sd_set_multi_line_mode(LogDriver *s, const gchar *mode)
   if (strcasecmp(mode, "indented") == 0)
     self->multi_line_mode = MLM_INDENTED;
   else if (strcasecmp(mode, "regexp") == 0)
-    self->multi_line_mode = MLM_REGEXP;
+    self->multi_line_mode = MLM_PREFIX_GARBAGE;
+  else if (strcasecmp(mode, "prefix-garbage") == 0)
+    self->multi_line_mode = MLM_PREFIX_GARBAGE;
+  else if (strcasecmp(mode, "prefix-suffix") == 0)
+    self->multi_line_mode = MLM_PREFIX_SUFFIX;
   else if (strcasecmp(mode, "none") == 0)
     self->multi_line_mode = MLM_NONE;
   else
@@ -253,8 +257,10 @@ affile_sd_construct_proto(AFFileSourceDriver *self, gint fd)
         {
         case MLM_INDENTED:
           return log_proto_indented_multiline_server_new(transport, proto_options);
-        case MLM_REGEXP:
-          return log_proto_regexp_multiline_server_new(transport, proto_options, self->multi_line_prefix, self->multi_line_garbage);
+        case MLM_PREFIX_GARBAGE:
+          return log_proto_prefix_garbage_multiline_server_new(transport, proto_options, self->multi_line_prefix, self->multi_line_garbage);
+        case MLM_PREFIX_SUFFIX:
+          return log_proto_prefix_suffix_multiline_server_new(transport, proto_options, self->multi_line_prefix, self->multi_line_garbage);
         default:
           return log_proto_text_server_new(transport, proto_options);
         }
@@ -350,10 +356,9 @@ affile_sd_init(LogPipe *s)
 
   log_reader_options_init(&self->reader_options, cfg, self->super.super.group);
 
-  if (self->multi_line_mode != MLM_REGEXP && (self->multi_line_prefix || self->multi_line_garbage))
+  if ((self->multi_line_mode != MLM_PREFIX_GARBAGE && self->multi_line_mode != MLM_PREFIX_SUFFIX ) && (self->multi_line_prefix || self->multi_line_garbage))
     {
-      msg_error("multi-line-prefix() and/or multi-line-garbage() specified but multi-line-mode() is not 'regexp', please set multi-line-mode() properly",
-                NULL);
+      msg_error("multi-line-prefix() and/or multi-line-garbage() specified but multi-line-mode() is not regexp based (prefix-garbage or prefix-suffix), please set multi-line-mode() properly", NULL);
       return FALSE;
     }
 
