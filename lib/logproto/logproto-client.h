@@ -47,7 +47,6 @@ void log_proto_client_options_defaults(LogProtoClientOptions *options);
 void log_proto_client_options_init(LogProtoClientOptions *options, GlobalConfig *cfg);
 void log_proto_client_options_destroy(LogProtoClientOptions *options);
 
-
 struct _LogProtoClient
 {
   LogProtoStatus status;
@@ -107,6 +106,7 @@ log_proto_client_reset_error(LogProtoClient *s)
 gboolean log_proto_client_validate_options(LogProtoClient *self);
 void log_proto_client_init(LogProtoClient *s, LogTransport *transport, const LogProtoClientOptions *options);
 void log_proto_client_free(LogProtoClient *s);
+void log_proto_client_free_method(LogProtoClient *s);
 
 #define DEFINE_LOG_PROTO_CLIENT(prefix) \
   static gpointer                                                       \
