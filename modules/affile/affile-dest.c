@@ -294,6 +294,7 @@ affile_dw_free(LogPipe *s)
 {
   AFFileDestWriter *self = (AFFileDestWriter *) s;
   
+  g_static_mutex_free(&self->lock);
   log_pipe_unref(self->writer);
   self->writer = NULL;
   g_free(self->filename);
@@ -691,6 +692,7 @@ affile_dd_free(LogPipe *s)
   g_assert(self->single_writer == NULL && self->writer_hash == NULL);
 
   log_template_options_destroy(&self->template_fname_options);
+  g_static_mutex_free(&self->lock);
   log_template_unref(self->filename_template);
   log_writer_options_destroy(&self->writer_options);
   log_dest_driver_free(s);

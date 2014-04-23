@@ -284,6 +284,7 @@ log_db_parser_free(LogPipe *s)
 {
   LogDBParser *self = (LogDBParser *) s;
 
+  g_static_mutex_free(&self->lock);
   if (self->db)
     pattern_db_free(self->db);
 
