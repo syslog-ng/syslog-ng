@@ -362,6 +362,7 @@ tls_context_setup_session(TLSContext *self, GlobalConfig *cfg)
       {
         if (!load_certificate(self->ssl_ctx, self->cert_subject))
           goto error;
+        SSL_CTX_set_options(self->ssl_ctx, SSL_OP_NO_TLSv1_2);
       }
 #endif
       if (file_exists(self->key_file) && !SSL_CTX_use_PrivateKey_file(self->ssl_ctx, self->key_file, SSL_FILETYPE_PEM))
