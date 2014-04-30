@@ -75,6 +75,23 @@ log_source_checking_ack_data_list(LogSource *s, AckData **data,guint64 *cont)
   return TRUE;
 }
 
+static void
+log_source_destroy_ack_list(LogSource *s, guint64 continual)
+{
+  guint64 i = s->last_sent == 0 ? s->options->init_window_size : s->last_sent;
+  guint64 index = continual;
+  i--;
+
+  while (index != 0)
+    {
+      log_source_destroy_ack_data(s, &s->ack_list[i]);
+      if (i == 0)
+        i = s->options->init_window_size;
+      i--;
+      index--;
+    }
+}
+
 /**
  * log_source_msg_ack:
  *
@@ -102,6 +119,7 @@ log_source_msg_ack(LogMessage *msg, gpointer user_data, gboolean need_pos_tracki
         {
           log_source_ack(self,(gpointer)data, need_pos_tracking);
 
+          log_source_destroy_ack_list(self, continual);
           old_window_size = g_atomic_counter_exchange_and_add(&self->window_size, continual);
           if (old_window_size == 0)
             {

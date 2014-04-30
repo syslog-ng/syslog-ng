@@ -88,8 +88,16 @@ struct _LogSource
 
   void (*wakeup)(LogSource *s);
   gboolean (*ack)(LogSource *s,gpointer user_data, gboolean need_to_save);
+  void (*destroy_ack_data)(LogSource *s, gpointer user_data);
   void (*get_state)(LogSource *s,gpointer user_data);
 };
+
+static inline void
+log_source_destroy_ack_data(LogSource *s, gpointer user_data)
+{
+  if (s->destroy_ack_data)
+    s->destroy_ack_data(s, user_data);
+}
 
 static inline gboolean
 log_source_free_to_send(LogSource *self)
