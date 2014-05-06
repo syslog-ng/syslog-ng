@@ -20,6 +20,7 @@ EXTRA_DIST = README init.d.solaris init.d.HP-UX init.d.RedHat init.d.SuSE 	\
 	cygwin-packaging/syslog-ng-config \
 	solaris-packaging/solaris10_install.txt \
 	solaris-packaging/syslog-ng.example.xml \
+	solaris-packaging/syslog-ng-sol11-smf.example.xml \
 	solaris-packaging/syslog-ng.method \
 	freebsd-packaging/syslog-ng.rc.d \
 	freebsd-packaging/syslog-ng.conf.example \
