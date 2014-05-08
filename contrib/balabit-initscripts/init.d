@@ -322,6 +322,9 @@ case "$1" in
 	condrestart|try-restart)
 		[ ! -f $lockfile ] || syslogng_restart
 		;;
+	rotate)
+		syslogng_reload
+		;;
 	*)
 		echo "Usage: $0 {start|stop|status|restart|try-restart|reload|force-reload|probe}"
 		exit 2
