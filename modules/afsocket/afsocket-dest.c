@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2012 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2002-2014 BalaBit IT Ltd, Budapest, Hungary
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -423,6 +423,7 @@ afsocket_dd_free(LogPipe *s)
   g_sockaddr_unref(self->dest_addr);
   log_pipe_unref((LogPipe *) self->writer);
   transport_mapper_free(self->transport_mapper);
+  socket_options_free(self->socket_options);
   log_dest_driver_free(s);
 }
 
