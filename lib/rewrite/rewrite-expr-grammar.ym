@@ -81,6 +81,7 @@ rewrite_template_content
 
 	    $$ = log_template_new(configuration, $1);
 	    CHECK_ERROR(log_template_compile($$, $1, &error), @1, "Error compiling template (%s)", error->message);
+	    free($1);
 	  }
 	;
 
