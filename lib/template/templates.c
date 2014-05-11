@@ -872,9 +872,10 @@ log_template_elem_free(LogTemplateElem *e)
 static void
 log_template_elem_free_list(GList *el)
 {
-  for (; el; el = el->next)
+  GList *p = el;
+  for (; p; p = p->next)
     {
-      log_template_elem_free((LogTemplateElem *) el->data);
+      log_template_elem_free((LogTemplateElem *) p->data);
     }
   g_list_free(el);
 }
