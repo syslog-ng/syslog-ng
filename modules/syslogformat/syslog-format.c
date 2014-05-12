@@ -446,18 +446,7 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint pa
               src += i;
             }
 
-          /* detect if the message is coming from last year. If its
-           * month is at least one larger than the current month. This
-           * handles both clocks that are in the future, or in the
-           * past:
-           *   in January we receive a message from December (past) => last year
-           *   in January we receive a message from February (future) => same year
-           *   in December we receive a message from January (future) => next year
-           */
-          if (tm.tm_mon > nowtm.tm_mon + 1)
-            tm.tm_year--;
-          if (tm.tm_mon < nowtm.tm_mon - 1)
-            tm.tm_year++;
+          tm.tm_year = determine_year_for_month(tm.tm_mon, &nowtm);
 
           /* NOTE: no timezone information in the message, assume it is local time */
           unnormalized_hour = tm.tm_hour;
