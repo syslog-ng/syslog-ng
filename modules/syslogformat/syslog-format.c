@@ -287,6 +287,45 @@ __has_iso_timezone(const guchar *src, gint length)
 }
 
 static gboolean
+__parse_iso_stamp(const GTimeVal *now, LogMessage *self, struct tm* tm, const guchar **data, gint *length)
+{
+  /* RFC3339 timestamp, expected format: YYYY-MM-DDTHH:MM:SS[.frac]<+/->ZZ:ZZ */
+  time_t now_tv_sec = (time_t) now->tv_sec;
+  const guchar *src = *data;
+
+  self->timestamps[LM_TS_STAMP].tv_usec = 0;
+
+  /* NOTE: we initialize various unportable fields in tm using a
+   * localtime call, as the value of tm_gmtoff does matter but it does
+   * not exist on all platforms and 0 initializing it causes trouble on
+   * time-zone barriers */
+
+  cached_localtime(&now_tv_sec, tm);
+  if (!scan_iso_timestamp((const gchar **) &src, length, tm))
+    {
+      return FALSE;
+    }
+
+  self->timestamps[LM_TS_STAMP].tv_usec = __parse_usec(&src, length);
+
+  if (*length > 0 && *src == 'Z')
+    {
+      /* Z is special, it means UTC */
+      self->timestamps[LM_TS_STAMP].zone_offset = 0;
+      src++;
+      (*length)--;
+    }
+  else if (__has_iso_timezone(src, *length))
+    {
+
+      self->timestamps[LM_TS_STAMP].zone_offset = __parse_iso_timezone(&src, length);
+    }
+
+  *data = src;
+  return TRUE;
+}
+
+static gboolean
 __is_bsd_pix_or_asa(const guchar *src, guint32 left)
 {
   return (left >= 21
@@ -377,37 +416,8 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint pa
   /* If the next chars look like a date, then read them as a date. */
   if (__is_iso_stamp((const gchar *)src, left))
     {
-      /* RFC3339 timestamp, expected format: YYYY-MM-DDTHH:MM:SS[.frac]<+/->ZZ:ZZ */
-      gint hours, mins;
-      time_t now_tv_sec = (time_t)now.tv_sec;
-
-      self->timestamps[LM_TS_STAMP].tv_usec = 0;
-
-      /* NOTE: we initialize various unportable fields in tm using a
-       * localtime call, as the value of tm_gmtoff does matter but it does
-       * not exist on all platforms and 0 initializing it causes trouble on
-       * time-zone barriers */
-
-      cached_localtime(&now_tv_sec, &tm);
-      if (!scan_iso_timestamp((const gchar **) &src, &left, &tm))
-        {
-          goto error;
-        }
-
-      self->timestamps[LM_TS_STAMP].tv_usec = __parse_usec(&src, &left);
-      if (left > 0 && *src == 'Z')
-        {
-          /* Z is special, it means UTC */
-          self->timestamps[LM_TS_STAMP].zone_offset = 0;
-          src++;
-          left--;
-        }
-      else if (__has_iso_timezone(src, left))
-        {
-          self->timestamps[LM_TS_STAMP].zone_offset = __parse_iso_timezone(&src, &left);
-        }
-      /* we convert it to UTC */
-
+      if (!__parse_iso_stamp(&now, self, &tm, &src, &left))
+        goto error;
       tm.tm_isdst = -1;
       unnormalized_hour = tm.tm_hour;
       self->timestamps[LM_TS_STAMP].tv_sec = cached_mktime(&tm);
