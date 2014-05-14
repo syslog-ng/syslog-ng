@@ -309,6 +309,20 @@ __is_bsd_rfc_3164(const guchar *src, guint32 left)
   return left >= 15 && src[3] == ' ' && src[6] == ' ' && src[9] == ':' && src[12] == ':';
 }
 
+static gboolean
+__is_bsd_linksys(const guchar *src, guint32 left)
+{
+  return (left >= 21
+          && __is_bsd_rfc_3164(src, left)
+          && src[15] == ' '
+          && isdigit(src[16])
+          && isdigit(src[17])
+          && isdigit(src[18])
+          && isdigit(src[19])
+          && isspace(src[20])
+         );
+}
+
 static inline void
 __set_zone_offset(LogStamp * const timestamp, glong const assumed_timezone)
 {
@@ -422,8 +436,7 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint pa
           self->timestamps[LM_TS_STAMP].tv_sec = cached_mktime(&tm);
           self->timestamps[LM_TS_STAMP].tv_usec = 0;
         }
-      else if (left >= 21 && src[3] == ' ' && src[6] == ' ' && src[9] == ':' && src[12] == ':' && src[15] == ' ' &&
-               isdigit(src[16]) && isdigit(src[17]) && isdigit(src[18]) && isdigit(src[19]) && isspace(src[20]))
+      else if (__is_bsd_linksys(src, left))
         {
           /* LinkSys timestamp, expected format: MMM DD HH:MM:SS YYYY */
 
