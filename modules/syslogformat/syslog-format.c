@@ -362,6 +362,48 @@ __is_bsd_linksys(const guchar *src, guint32 left)
          );
 }
 
+static gboolean
+__parse_bsd_timestamp(const guchar **data, gint *length, const GTimeVal *now, struct tm* tm, glong *usec)
+{
+  gint left = *length;
+  const guchar *src = *data;
+  time_t now_tv_sec = (time_t) now->tv_sec;
+  cached_localtime(&now_tv_sec, tm);
+
+  if (__is_bsd_pix_or_asa(src, left))
+    {
+      if (!scan_pix_timestamp((const gchar **) &src, &left, tm))
+        return FALSE;
+
+      if (*src == ':')
+        {
+          src++;
+          left--;
+        }
+    }
+  else if (__is_bsd_linksys(src, left))
+    {
+      if (!scan_linksys_timestamp((const gchar **) &src, &left, tm))
+        return FALSE;
+    }
+  else if (__is_bsd_rfc_3164(src, left))
+    {
+      if (!scan_bsd_timestamp((const gchar **) &src, &left, tm))
+        return FALSE;
+
+      *usec = __parse_usec(&src, &left);
+
+      tm->tm_year = determine_year_for_month(tm->tm_mon, tm);
+    }
+  else
+    {
+      return FALSE;
+    }
+  *data = src;
+  *length = left;
+  return TRUE;
+}
+
 static inline void
 __set_zone_offset(LogStamp * const timestamp, glong const assumed_timezone)
 {
@@ -424,77 +466,10 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint pa
     }
   else if ((parse_flags & LP_SYSLOG_PROTOCOL) == 0)
     {
-      if (__is_bsd_pix_or_asa(src, left))
-        {
-          /* PIX timestamp, expected format: MMM DD YYYY HH:MM:SS: */
-          /* ASA timestamp, expected format: MMM DD YYYY HH:MM:SS */
-          time_t now_tv_sec = (time_t)now.tv_sec;
-          cached_localtime(&now_tv_sec, &tm);
-          if (!scan_pix_timestamp((const gchar **) &src, &left, &tm))
-            goto error;
-
-          if (*src == ':')
-            {
-              src++;
-              left--;
-            }
-
-          tm.tm_isdst = -1;
-
-          /* NOTE: no timezone information in the message, assume it is local time */
-          unnormalized_hour = tm.tm_hour;
-          self->timestamps[LM_TS_STAMP].tv_sec = cached_mktime(&tm);
-          self->timestamps[LM_TS_STAMP].tv_usec = 0;
-        }
-      else if (__is_bsd_linksys(src, left))
-        {
-          /* LinkSys timestamp, expected format: MMM DD HH:MM:SS YYYY */
-
-          time_t now_tv_sec = (time_t)now.tv_sec;
-          cached_localtime(&now_tv_sec, &tm);
-          if (!scan_linksys_timestamp((const gchar **) &src, &left, &tm))
-            goto error;
-          tm.tm_isdst = -1;
-
-          /* NOTE: no timezone information in the message, assume it is local time */
-          unnormalized_hour = tm.tm_hour;
-          self->timestamps[LM_TS_STAMP].tv_sec = cached_mktime(&tm);
-          self->timestamps[LM_TS_STAMP].tv_usec = 0;
-
-        }
-      else if (__is_bsd_rfc_3164(src, left))
-        {
-          /* RFC 3164 timestamp, expected format: MMM DD HH:MM:SS ... */
-          struct tm nowtm;
-          glong usec = 0;
-          time_t now_tv_sec = (time_t)now.tv_sec;
-          cached_localtime(&now_tv_sec, &nowtm);
-          tm = nowtm;
-          if (!scan_bsd_timestamp((const gchar **) &src, &left, &tm))
-            goto error;
-
-          usec = __parse_usec(&src, &left);
-
-          /* detect if the message is coming from last year. If current
-           * month is January, and the message comes from December, the 
-	   * year of the message is inferred to be last year.
-	   * Conversely, if current month is December, and message comes
-	   * from January, year of message is inferred to be next year.
-           */
-          if (tm.tm_mon == 11 &&  nowtm.tm_mon == 0)
-            tm.tm_year--;
-          else if (tm.tm_mon == 0 && nowtm.tm_mon == 11)
-            tm.tm_year++;
-
-          /* NOTE: no timezone information in the message, assume it is local time */
-          unnormalized_hour = tm.tm_hour;
-          self->timestamps[LM_TS_STAMP].tv_sec = cached_mktime(&tm);
-          self->timestamps[LM_TS_STAMP].tv_usec = usec;
-        }
-      else
-        {
-          goto error;
-        }
+      glong usec = 0;
+      if (!__parse_bsd_timestamp(&src, &left, &now, &tm, &usec))
+        goto error;
+      self->timestamps[LM_TS_STAMP].tv_usec = usec;
     }
   else
     {
