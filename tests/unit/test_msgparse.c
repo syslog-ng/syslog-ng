@@ -41,8 +41,7 @@ get_bsd_year_utc(int ts_month)
   time(&t);
   tm = localtime(&t);
 
-  if (tm->tm_mon > ts_month + 1)
-    tm->tm_year++;
+  tm->tm_year = determine_year_for_month(ts_month, tm);
 
   tm->tm_hour = 0;
   tm->tm_min = 0;
@@ -891,8 +890,35 @@ testcase("<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [a i=\"]ok
            expected_sd_pairs_test_9
            );
 
+  putenv("TZ=CET");
+  tzset();
+  testcase("Mar 29 00:10:00 bzorp openvpn[2499]: TELECONTACT TC001371: Security", LP_EXPECT_HOSTNAME, NULL,
+           13,             // pri
+           1396048200, 0, 3600,  //Mar 28 23:10:00 2014
+           "bzorp",        // host
+           "openvpn",        // openvpn
+           "TELECONTACT TC001371: Security", // msg
+           NULL, "2499", NULL, ignore_sdata_pairs
+           );
 
 /*############################*/
+}
+
+void
+test_determine_year_for_month(gint current_month, gint month, gint expected_year)
+{
+  const gint base_year = 1900;
+  const gint current_year = 2013;
+  struct tm now;
+
+  now.tm_sec = 0;
+  now.tm_min = 0;
+  now.tm_hour = 0;
+  now.tm_mday = 0;
+  now.tm_year = current_year - base_year;
+  now.tm_mon = current_month;
+
+  assert_gint(determine_year_for_month(month, &now), expected_year - base_year, "Guessed year is not expected");
 }
 
 int
@@ -904,6 +930,24 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   init_and_load_syslogformat_module();
 
   test_log_messages_can_be_parsed();
+
+  // Current year is defined in test_determine_year_for_month() function
+  test_determine_year_for_month(0, 0, 2013);
+  test_determine_year_for_month(0, 1, 2013);
+  test_determine_year_for_month(0, 2, 2013);
+  test_determine_year_for_month(0, 3, 2012);
+  test_determine_year_for_month(0, 10, 2012);
+  test_determine_year_for_month(0, 11, 2012);
+  test_determine_year_for_month(1, 0, 2013);
+  test_determine_year_for_month(1, 11, 2012);
+  test_determine_year_for_month(6, 0, 2013);
+  test_determine_year_for_month(6, 6, 2013);
+  test_determine_year_for_month(6, 8, 2013);
+  test_determine_year_for_month(6, 9, 2012);
+  test_determine_year_for_month(6, 11, 2012);
+  test_determine_year_for_month(11, 0, 2014);
+  test_determine_year_for_month(11, 1, 2014);
+  test_determine_year_for_month(11, 2, 2013);
 
   deinit_syslogformat_module();
   app_shutdown();

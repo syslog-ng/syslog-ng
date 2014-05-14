@@ -471,6 +471,25 @@ __calculate_correct_time(LogMessage *self, gint normalized_hour,
       - self->timestamps[LM_TS_STAMP].zone_offset;
 }
 
+static gint
+__calculate_unnormalized_hour(const struct tm *unnormalized_tm, const struct tm *tm)
+{
+  gint result = unnormalized_tm->tm_hour;
+  if (unnormalized_tm->tm_hour != tm->tm_hour)
+    {
+      if (unnormalized_tm->tm_mday != tm->tm_mday)
+        {
+          gint diff_day = unnormalized_tm->tm_mday - tm->tm_mday;
+          if (diff_day > 1)
+            diff_day = -1;
+          else if (diff_day < -1)
+            diff_day = 1;
+          result = unnormalized_tm->tm_hour + 24 * diff_day;
+        }
+    }
+  return result;
+}
+
 static gboolean
 log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint parse_flags, glong assume_timezone)
 {
@@ -479,7 +498,7 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint pa
   static NVHandle is_synced = 0;
   static NVHandle tz_known = 0;
   GTimeVal now;
-  struct tm tm;
+  struct tm tm, unnormalized_tm;
   gint unnormalized_hour;
 
   if (!is_synced)
@@ -527,8 +546,9 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint pa
       return FALSE;
     }
 
-  unnormalized_hour = tm.tm_hour;
+  unnormalized_tm = tm;
   self->timestamps[LM_TS_STAMP].tv_sec = cached_mktime(&tm);
+  unnormalized_hour = __calculate_unnormalized_hour(&unnormalized_tm, &tm);
   self->timestamps[LM_TS_STAMP].tv_sec = __calculate_correct_time(self, tm.tm_hour, unnormalized_hour, assume_timezone);
 
   *data = src;
