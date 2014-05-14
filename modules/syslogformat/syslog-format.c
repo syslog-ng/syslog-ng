@@ -212,6 +212,24 @@ log_msg_parse_seq(LogMessage *self, const guchar **data, gint *length)
   return TRUE;
 }
 
+static guint32
+__parse_iso_timezone(const guchar **data, gint *length)
+{
+  gint hours, mins;
+  const guchar *src = *data;
+  guint32 tz = 0;
+  /* timezone offset */
+  gint sign = *src == '-' ? -1 : 1;
+
+  hours = (*(src + 1) - '0') * 10 + *(src + 2) - '0';
+  mins = (*(src + 4) - '0') * 10 + *(src + 5) - '0';
+  tz = sign * (hours * 3600 + mins * 60);
+  src += 6;
+  (*length) -= 6;
+  *data = src;
+  return tz;
+}
+
 static gboolean
 __is_iso_stamp(const gchar *stamp, gint length)
 {
@@ -344,14 +362,7 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint pa
         }
       else if (__has_iso_timezone(src, left))
         {
-          /* timezone offset */
-          gint sign = *src == '-' ? -1 : 1;
-
-          hours = (*(src+1) - '0') * 10 + *(src+2) - '0';
-          mins = (*(src+4) - '0') * 10 + *(src+5) - '0';
-          self->timestamps[LM_TS_STAMP].zone_offset = sign * (hours * 3600 + mins * 60);
-          src += 6;
-          left -= 6;
+          self->timestamps[LM_TS_STAMP].zone_offset = __parse_iso_timezone(&src, &left);
         }
       /* we convert it to UTC */
 
