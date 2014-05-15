@@ -35,7 +35,7 @@ void multi_line_regexp_free(MultiLineRegexp *self);
  * zero or more lines starting with whitespace. A record is terminated
  * when we reach a line that starts with non-whitespace, or EOF.
  */
-LogProtoServer *log_proto_regexp_multiline_server_new(LogTransport *transport,
+LogProtoServer *log_proto_prefix_garbage_multiline_server_new(LogTransport *transport,
                                                       const LogProtoServerOptions *options,
                                                       MultiLineRegexp *prefix,
                                                       MultiLineRegexp *garbage);
@@ -44,5 +44,9 @@ void log_proto_regexp_multiline_server_init(LogProtoREMultiLineServer *self,
                                             const LogProtoServerOptions *options,
                                             MultiLineRegexp *prefix,
                                             MultiLineRegexp *garbage);
+LogProtoServer *log_proto_prefix_suffix_multiline_server_new(LogTransport *transport,
+                                                      const LogProtoServerOptions *options,
+                                                      MultiLineRegexp *prefix,
+                                                      MultiLineRegexp *suffix);
 
 #endif
