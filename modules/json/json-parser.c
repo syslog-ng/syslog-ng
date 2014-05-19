@@ -185,7 +185,7 @@ json_parser_extract(JSONParser *self, struct json_object *jso, LogMessage *msg)
   if (self->extract_prefix)
     jso = json_extract(jso, self->extract_prefix);
 
-  if (!json_object_is_type(jso, json_type_object))
+  if (!jso || !json_object_is_type(jso, json_type_object))
     {
       return FALSE;
     }

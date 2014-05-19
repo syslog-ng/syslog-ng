@@ -170,6 +170,15 @@ test_json_parser_extracts_subobjects_if_extract_prefix_is_specified(void)
 }
 
 static void
+test_json_parser_fail_if_extract_prefix_is_specified_but_subtree_is_not_present(void)
+{
+  LogMessage *msg;
+
+  json_parser_set_extract_prefix(json_parser, "alma");
+  assert_json_parser_fails("{ 'bela' : 'kakukk' }");
+}
+
+static void
 test_json_parser(void)
 {
   JSON_PARSER_TESTCASE(test_json_parser_parses_well_formed_json_and_puts_results_in_message);
@@ -180,6 +189,7 @@ test_json_parser(void)
   JSON_PARSER_TESTCASE(test_json_parser_validate_type_representation);
   JSON_PARSER_TESTCASE(test_json_parser_fails_for_non_object_top_element);
   JSON_PARSER_TESTCASE(test_json_parser_extracts_subobjects_if_extract_prefix_is_specified);
+  JSON_PARSER_TESTCASE(test_json_parser_fail_if_extract_prefix_is_specified_but_subtree_is_not_present);
 }
 
 int
