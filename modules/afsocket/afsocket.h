@@ -72,9 +72,7 @@ struct _AFSocketSourceDriver
   gint fd;
   LogReaderOptions reader_options;
   LogProtoOptions proto_options;
-#if ENABLE_SSL
   TLSContext *tls_context;
-#endif
   gint address_family;
   GSockAddr *bind_addr;
   gchar *transport;
@@ -144,9 +142,7 @@ struct _AFSocketDestDriver
   LogPipe *writer;
   LogWriterOptions writer_options;
   LogProtoOptions  proto_options;
-#if ENABLE_SSL
   TLSContext *tls_context;
-#endif
   LogProtoFactory *proto_factory;
   gint address_family;
   gchar *hostname;
