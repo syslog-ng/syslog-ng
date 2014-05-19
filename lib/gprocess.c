@@ -1421,19 +1421,6 @@ g_process_startup_ok(void)
 void
 g_process_finish(void)
 {
-#ifdef HAVE_ENVIRON
-  int i = 0;
-
-  while (environ[i])
-    {
-      g_free(environ[i]);
-      ++i;
-    }
-  if (environ)
-    g_free(environ);
-  if (process_opts.argv_orig)
-    free(process_opts.argv_orig);
-#endif
   g_process_remove_pidfile();
 }
 
