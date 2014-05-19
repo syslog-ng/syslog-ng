@@ -60,13 +60,11 @@ log_multiplexer_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_op
 {
   LogMultiplexer *self = (LogMultiplexer *) s;
   gint i;
-  LogPathOptions local_options = *path_options;
   gboolean matched;
   gboolean delivered = FALSE;
   gboolean last_delivery;
   gint fallback;
   
-  local_options.matched = &matched;
   
   for (fallback = 0; (fallback == 0) || (fallback == 1 && self->fallback_exists && !delivered); fallback++)
     {
@@ -74,6 +72,8 @@ log_multiplexer_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_op
         {
           LogPipe *next_hop = g_ptr_array_index(self->next_hops, i);
           LogMessage *next_msg = NULL;
+          LogPathOptions local_options = *path_options;
+          local_options.matched = &matched;
 
           if (G_UNLIKELY(fallback == 0 && (next_hop->flags & PIF_BRANCH_FALLBACK) != 0))
             {
