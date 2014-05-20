@@ -506,6 +506,9 @@ afmongodb_worker_insert (LogThrDestDriver *s)
 
   if (success)
     {
+      msg_debug("Outgoing message to MongoDB destination",
+                 evt_tag_value_pairs("message", self->vp, msg, self->seq_num, LTZ_SEND, &self->template_options),
+                 NULL);
       if (!mongo_sync_cmd_insert_n(self->conn, self->ns, 1,
                                    (const bson **)&self->bson))
         {
@@ -527,7 +530,9 @@ afmongodb_worker_insert (LogThrDestDriver *s)
       self->failed_message_counter++;
       if (self->failed_message_counter >= 3)
         {
-          msg_error("Multiple failures while inserting this record into the database, message dropped", NULL);
+          msg_error("Multiple failures while inserting this record into the database, message dropped",
+                    evt_tag_value_pairs("message", self->vp, msg, self->seq_num, LTZ_SEND, &self->template_options),
+                    NULL);
           afmongodb_worker_drop_message(self, msg, &path_options);
         }
       else
