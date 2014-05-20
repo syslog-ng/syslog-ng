@@ -63,6 +63,7 @@ typedef struct
   gchar *user;
   gchar *password;
   gint failed_message_counter;
+  gint max_retry_of_failed_inserts;
 
   time_t last_msg_stamp;
 
@@ -217,6 +218,13 @@ afmongodb_dd_set_safe_mode(LogDriver *d, gboolean state)
   self->safe_mode = state;
 }
 
+void
+afmongodb_dd_set_retries(LogDriver *d, gint retries)
+{
+  MongoDBDestDriver *self = (MongoDBDestDriver *)d;
+
+  self->max_retry_of_failed_inserts = retries;
+};
 /*
  * Utilities
  */
@@ -535,9 +543,10 @@ afmongodb_worker_insert (LogThrDestDriver *s)
   else
     {
       self->failed_message_counter++;
-      if (self->failed_message_counter >= 3)
+      if (self->failed_message_counter >= self->max_retry_of_failed_inserts)
         {
           msg_error("Multiple failures while inserting this record into the database, message dropped",
+                    evt_tag_int("number_of_retries", self->max_retry_of_failed_inserts),
                     evt_tag_value_pairs("message", self->vp, msg, self->seq_num, LTZ_SEND, &self->template_options),
                     NULL);
           afmongodb_worker_drop_message(self, msg, &path_options);
@@ -613,6 +622,12 @@ afmongodb_dd_init(LogPipe *s)
     return FALSE;
 
   log_template_options_init(&self->template_options, cfg);
+
+  if (self->max_retry_of_failed_inserts <= 0)
+    {
+      msg_warning("WARNING! Wrong value for retries in MongoDB destination, setting it to 3", NULL);
+      self->max_retry_of_failed_inserts = 3;
+    }
 
   if (!afmongodb_dd_check_auth_options(self))
     return FALSE;
@@ -718,6 +733,8 @@ afmongodb_dd_new(GlobalConfig *cfg)
   afmongodb_dd_set_safe_mode((LogDriver *)self, FALSE);
 
   init_sequence_number(&self->seq_num);
+
+  self->max_retry_of_failed_inserts = 3;
 
   log_template_options_defaults(&self->template_options);
   afmongodb_dd_set_value_pairs(&self->super.super.super, value_pairs_new_default(cfg));
