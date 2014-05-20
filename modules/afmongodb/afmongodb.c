@@ -283,6 +283,8 @@ afmongodb_dd_connect(MongoDBDestDriver *self, gboolean reconnect)
       return FALSE;
     }
 
+  mongo_connection_set_timeout((mongo_connection*) self->conn, 60000);
+
   mongo_sync_conn_set_safe_mode(self->conn, self->safe_mode);
 
   l = self->servers;
