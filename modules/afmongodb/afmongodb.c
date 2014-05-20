@@ -455,6 +455,14 @@ afmongodb_vp_process_value(const gchar *name, const gchar *prefix,
   return FALSE;
 }
 
+static void
+afmongodb_worker_drop_message(MongoDBDestDriver *self, LogMessage *msg, LogPathOptions *path_options)
+{
+  stats_counter_inc(self->super.dropped_messages);
+  step_sequence_number(&self->seq_num);
+  log_msg_drop(msg, path_options);
+};
+
 static gboolean
 afmongodb_worker_insert (LogThrDestDriver *s)
 {
@@ -509,10 +517,7 @@ afmongodb_worker_insert (LogThrDestDriver *s)
     {
       if (need_drop)
         {
-          stats_counter_inc(self->super.dropped_messages);
-          step_sequence_number(&self->seq_num);
-          log_msg_ack(msg, &path_options);
-          log_msg_unref(msg);
+          afmongodb_worker_drop_message(self, msg, &path_options);
         }
       else
         log_queue_push_head(self->super.queue, msg, &path_options);
