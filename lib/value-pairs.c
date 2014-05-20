@@ -556,7 +556,10 @@ vp_walker_name_value_split(const gchar *name)
     vp_walker_name_value_split_add_name_token(array, name, &current_name_start_idx, &i);
 
   if (array->len == 0)
+  {
+    g_ptr_array_free(array, TRUE);
     return NULL;
+  }
 
   return array;
 }
@@ -612,6 +615,7 @@ vp_walker_name_split(vp_stack_t *stack, vp_walk_state_t *state,
      NULL), so treat that normally. */
   key = g_strdup(g_ptr_array_index(tokens, tokens->len - 1));
 
+  g_ptr_array_foreach(tokens, (GFunc)g_free, NULL);
   g_ptr_array_free(tokens, TRUE);
 
   return key;
