@@ -890,17 +890,6 @@ testcase("<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [a i=\"]ok
            expected_sd_pairs_test_9
            );
 
-  putenv("TZ=CET");
-  tzset();
-  testcase("Mar 29 00:10:00 bzorp openvpn[2499]: TELECONTACT TC001371: Security", LP_EXPECT_HOSTNAME, NULL,
-           13,             // pri
-           1396048200, 0, 3600,  //Mar 28 23:10:00 2014
-           "bzorp",        // host
-           "openvpn",        // openvpn
-           "TELECONTACT TC001371: Security", // msg
-           NULL, "2499", NULL, ignore_sdata_pairs
-           );
-
 /*############################*/
 }
 
