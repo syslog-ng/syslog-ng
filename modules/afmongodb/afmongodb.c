@@ -299,12 +299,6 @@ afmongodb_dd_connect(MongoDBDestDriver *self, gboolean reconnect)
 
   if (self->user || self->password)
     {
-      if (!self->user || !self->password)
-        {
-          msg_error("Neither the username, nor the password can be empty", NULL);
-          return FALSE;
-        }
-
       if (!mongo_sync_cmd_authenticate (self->conn, self->db,
                                         self->user, self->password))
         {
@@ -563,6 +557,20 @@ afmongodb_worker_thread_deinit(LogThrDestDriver *d)
  */
 
 static gboolean
+afmongodb_dd_check_auth_options(MongoDBDestDriver *self)
+{
+  if (self->user || self->password)
+    {
+      if (!self->user || !self->password)
+        {
+          msg_error("Neither the username, nor the password can be empty", NULL);
+          return FALSE;
+        }
+    }
+  return TRUE;
+}
+
+static gboolean
 afmongodb_dd_init(LogPipe *s)
 {
   MongoDBDestDriver *self = (MongoDBDestDriver *)s;
@@ -573,6 +581,9 @@ afmongodb_dd_init(LogPipe *s)
     return FALSE;
 
   log_template_options_init(&self->template_options, cfg);
+
+  if (!afmongodb_dd_check_auth_options(self))
+    return FALSE;
 
   /* Always replace a leading dot with an underscore. */
   vpts = value_pairs_transform_set_new(".*");
