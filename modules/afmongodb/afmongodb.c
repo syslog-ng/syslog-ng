@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2010-2013 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 2010-2013 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2010-2014 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2010-2014 Gergely Nagy <algernon@balabit.hu>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -409,6 +409,24 @@ afmongodb_vp_process_value(const gchar *name, const gchar *prefix,
             gboolean r = type_cast_drop_helper(self->template_options.on_error,
                                                value, "int64");
 
+            if (fallback)
+              bson_append_string(o, name, value, -1);
+            else
+              return r;
+          }
+
+        break;
+      }
+    case TYPE_HINT_DOUBLE:
+      {
+        gdouble d;
+
+        if (type_cast_to_double (value, &d, NULL))
+          bson_append_double (o, name, d);
+        else
+          {
+            gboolean r = type_cast_drop_helper(self->template_options.on_error,
+                                               value, "double");
             if (fallback)
               bson_append_string(o, name, value, -1);
             else
