@@ -164,6 +164,9 @@ test_values()
   fprintf(stderr, "\n");
 
   stop_threads();
+
+  for (i = 0; i < THREAD_NUM; i++)
+    pthread_join(threads[i], NULL);
 }
 
 int
