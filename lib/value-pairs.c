@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2011-2013 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 2011-2013 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2011-2014 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2011-2014 Gergely Nagy <algernon@balabit.hu>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -222,7 +222,7 @@ vp_msg_nvpairs_foreach(NVHandle handle, gchar *name,
 {
   ValuePairs *vp = ((gpointer *)user_data)[0];
   GTree *scope_set = ((gpointer *)user_data)[5];
-  gint j;
+  guint j;
   gboolean inc;
   SBTHGString *sb;
 
@@ -254,7 +254,7 @@ vp_msg_nvpairs_foreach(NVHandle handle, gchar *name,
 static gboolean
 vp_find_in_set(ValuePairs *vp, gchar *name, gboolean exclude)
 {
-  gint j;
+  guint j;
   gboolean included = exclude;
 
   for (j = 0; j < vp->patterns_size; j++)
@@ -598,10 +598,8 @@ vp_walker_name_value_split_add_name_token(GPtrArray *array, const gchar *name,
 static GPtrArray *
 vp_walker_name_value_split(const gchar *name)
 {
-  int i;
-  int current_name_start_idx = 0;
+  int i, current_name_start_idx = 0, name_len = strlen(name);
   GPtrArray *array = g_ptr_array_new();
-  size_t name_len = strlen(name);
 
   for (i = 0; i < name_len; i++)
     {
@@ -674,7 +672,7 @@ vp_walker_name_split(vp_stack_t *stack, vp_walk_state_t *state,
      NULL), so treat that normally. */
   key = g_strdup(g_ptr_array_index(tokens, tokens->len - 1));
 
-  g_ptr_array_foreach(tokens, g_free, NULL);
+  g_ptr_array_foreach(tokens, (GFunc)g_free, NULL);
   g_ptr_array_free(tokens, TRUE);
 
   return key;
@@ -821,7 +819,7 @@ value_pairs_new(void)
 void
 value_pairs_free (ValuePairs *vp)
 {
-  gint i;
+  guint i;
   GList *l;
 
   for (i = 0; i < vp->vpairs->len; i++)
