@@ -215,6 +215,21 @@ assert_guint64_non_fatal(guint64 actual, guint64 expected, const gchar *error_me
 }
 
 gboolean
+assert_gdouble_non_fatal(gdouble actual, gdouble expected, const gchar *error_message, ...)
+{
+  va_list args;
+
+  if (actual == expected)
+    return TRUE;
+
+  va_start(args, error_message);
+  print_failure(error_message, args, "actual=%f, expected=%f", actual, expected);
+  va_end(args);
+
+  return FALSE;
+}
+
+gboolean
 assert_nstring_non_fatal(const gchar *actual, gint actual_len, const gchar *expected, gint expected_len, const gchar *error_message, ...)
 {
   va_list args;
