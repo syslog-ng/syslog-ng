@@ -687,22 +687,30 @@ affile_sd_open(LogPipe *s, gboolean immediate_check)
 
   log_reader_options_init(&self->reader_options, cfg, self->super.super.group);
 
-  file_opened = affile_sd_open_file(self, self->filename->str, &fd);
-  if (!file_opened && self->reader_options.follow_freq > 0)
+  self->reader = cfg_persist_config_fetch(cfg, affile_sd_format_persist_name(self->filename->str));
+  if (!self->reader)
     {
-      msg_info("Follow-mode file source not found, deferring open",
-               evt_tag_str("filename", self->filename->str),
-               evt_tag_id(MSG_FILE_SOURCE_NOT_FOUND),
-               NULL);
-      open_deferred = TRUE;
-      fd = -1;
+      file_opened = affile_sd_open_file(self, self->filename->str, &fd);
+      if (!file_opened && self->reader_options.follow_freq > 0)
+        {
+          msg_info("Follow-mode file source not found, deferring open",
+                   evt_tag_str("filename", self->filename->str),
+                   evt_tag_id(MSG_FILE_SOURCE_NOT_FOUND),
+                   NULL);
+          open_deferred = TRUE;
+          fd = -1;
+        }
     }
+  else
+    {
+      file_opened = TRUE;
+    }
+
   if (file_opened || open_deferred)
     {
       LogTransport *transport = NULL;
       LogProto *proto = NULL;
 
-      self->reader = cfg_persist_config_fetch(cfg, affile_sd_format_persist_name(self->filename->str));
       if (self->reader == NULL)
         {
           transport = log_transport_plain_new(fd, 0);
@@ -717,13 +725,6 @@ affile_sd_open(LogPipe *s, gboolean immediate_check)
           /* FIXME: we shouldn't use reader_options to store log protocol parameters */
           self->reader = log_reader_new(proto);
         }
-      else
-        {
-          if (fd > 0)
-            {
-              close(fd);
-            }
-        }
       log_reader_set_options(self->reader, s, &self->reader_options, 1, SCS_FILE, self->super.super.id, self->filename->str, (LogProtoOptions *) options);
       log_reader_set_follow_filename(self->reader, self->filename->str);
 
@@ -737,7 +738,7 @@ affile_sd_open(LogPipe *s, gboolean immediate_check)
       if (!log_pipe_init(self->reader, cfg))
         {
           msg_error("Error initializing log_reader, closing fd",
-                    evt_tag_int("fd", fd),
+                    evt_tag_int("fd", log_reader_get_proto((LogReader*)self->reader)->transport->fd),
                     evt_tag_id(MSG_CANT_INITIALIZE_READER),
                     NULL);
           log_pipe_unref(self->reader);

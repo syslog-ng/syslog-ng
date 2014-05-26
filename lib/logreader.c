@@ -1357,3 +1357,8 @@ log_reader_options_process_flag(LogReaderOptions *options, gchar *flag)
 {
   return cfg_process_flag(log_reader_flag_handlers, options, flag);
 }
+
+LogProto *log_reader_get_proto(LogReader *self)
+{
+  return self->proto;
+}

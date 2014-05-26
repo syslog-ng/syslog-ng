@@ -79,4 +79,6 @@ gint log_reader_options_lookup_flag(const gchar *flag);
 void log_reader_options_set_tags(LogReaderOptions *options, GList *tags);
 gboolean log_reader_options_process_flag(LogReaderOptions *options, gchar *flag);
 
+LogProto *log_reader_get_proto(LogReader *self);
+
 #endif
