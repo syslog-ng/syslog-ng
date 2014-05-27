@@ -282,7 +282,7 @@ afmongodb_dd_connect(MongoDBDestDriver *self, gboolean reconnect)
 
   if (!self->conn)
     {
-      msg_error ("Error connecting to MongoDB", NULL);
+      msg_error ("Error connecting to MongoDB", evt_tag_str("driver", self->super.super.super.id), NULL);
       return FALSE;
     }
 
@@ -296,7 +296,7 @@ afmongodb_dd_connect(MongoDBDestDriver *self, gboolean reconnect)
       if (!mongo_sync_cmd_authenticate (self->conn, self->db,
                                         self->user, self->password))
         {
-          msg_error("MongoDB authentication failed", NULL);
+          msg_error("MongoDB authentication failed", evt_tag_str("driver", self->super.super.super.id), NULL);
           return FALSE;
         }
     }
@@ -499,6 +499,7 @@ afmongodb_worker_insert (LogThrDestDriver *s)
     {
       msg_error("Failed to format message for MongoDB, dropping message",
                  evt_tag_value_pairs("message", self->vp, msg, self->seq_num, LTZ_SEND, &self->template_options),
+                 evt_tag_str("driver", self->super.super.super.id),
                  NULL);
       msg_set_context(NULL);
       afmongodb_worker_drop_message(self, msg, &path_options);
@@ -508,6 +509,7 @@ afmongodb_worker_insert (LogThrDestDriver *s)
     {
       msg_debug("Outgoing message to MongoDB destination",
                  evt_tag_value_pairs("message", self->vp, msg, self->seq_num, LTZ_SEND, &self->template_options),
+                 evt_tag_str("driver", self->super.super.super.id),
                  NULL);
       if (!mongo_sync_cmd_insert_n(self->conn, self->ns, 1,
                                    (const bson **)&self->bson))
@@ -515,6 +517,7 @@ afmongodb_worker_insert (LogThrDestDriver *s)
           msg_error("Network error while inserting into MongoDB",
                     evt_tag_int("time_reopen", self->super.time_reopen),
                     evt_tag_str("reason", mongo_sync_conn_get_last_error(self->conn)),
+                    evt_tag_str("driver", self->super.super.super.id),
                     NULL);
           success = FALSE;
         }
@@ -534,6 +537,7 @@ afmongodb_worker_insert (LogThrDestDriver *s)
           msg_error("Multiple failures while inserting this record into the database, message dropped",
                     evt_tag_int("number_of_retries", self->max_retry_of_failed_inserts),
                     evt_tag_value_pairs("message", self->vp, msg, self->seq_num, LTZ_SEND, &self->template_options),
+                    evt_tag_str("driver", self->super.super.super.id),
                     NULL);
           afmongodb_worker_drop_message(self, msg, &path_options);
         }
@@ -613,6 +617,7 @@ afmongodb_dd_init(LogPipe *s)
     {
       msg_warning("WARNING! Wrong value for retries in MongoDB destination, setting it to default",
                    evt_tag_int("default", MAX_RETRIES_OF_FAILED_INSERT_DEFAULT),
+                   evt_tag_str("driver", self->super.super.super.id),
                    NULL);
 
       self->max_retry_of_failed_inserts = MAX_RETRIES_OF_FAILED_INSERT_DEFAULT;
@@ -620,7 +625,7 @@ afmongodb_dd_init(LogPipe *s)
 
   if (self->super.super.throttle != 0)
     {
-      msg_warning("WARNING! Throttle option for MongoDB is not supported, ignoring!", NULL);
+      msg_warning("WARNING! Throttle option for MongoDB is not supported, ignoring!", evt_tag_str("driver", self->super.super.super.id), NULL);
       self->super.super.throttle = 0;
     }
 
@@ -651,6 +656,7 @@ afmongodb_dd_init(LogPipe *s)
                 {
                   msg_warning("Cannot parse MongoDB server address, ignoring",
                               evt_tag_str("address", l->data),
+                              evt_tag_str("driver", self->super.super.super.id),
                               NULL);
                   continue;
                 }
@@ -658,6 +664,7 @@ afmongodb_dd_init(LogPipe *s)
               msg_verbose("Added MongoDB server seed",
                           evt_tag_str("host", host),
                           evt_tag_int("port", port),
+                          evt_tag_str("driver", self->super.super.super.id),
                           NULL);
               g_free(host);
             }
@@ -676,6 +683,7 @@ afmongodb_dd_init(LogPipe *s)
         {
           msg_error("Cannot parse the primary host",
                     evt_tag_str("primary", g_list_nth_data(self->servers, 0)),
+                    evt_tag_str("driver", self->super.super.super.id),
                     NULL);
           return FALSE;
         }
@@ -690,6 +698,7 @@ afmongodb_dd_init(LogPipe *s)
                 evt_tag_str("address", self->address),
                 evt_tag_str("database", self->db),
                 evt_tag_str("collection", self->coll),
+                evt_tag_str("driver", self->super.super.super.id),
                 NULL);
   else
     msg_verbose("Initializing MongoDB destination",
@@ -697,6 +706,7 @@ afmongodb_dd_init(LogPipe *s)
                 evt_tag_int("port", self->port),
                 evt_tag_str("database", self->db),
                 evt_tag_str("collection", self->coll),
+                evt_tag_str("driver", self->super.super.super.id),
                 NULL);
 
   return log_threaded_dest_driver_start(s);
