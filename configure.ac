@@ -805,6 +805,7 @@ dnl ***************************************************************************
 dnl ivykis headers/libraries
 dnl ***************************************************************************
 
+INTERNAL_IVYKIS_CFLAGS=""
 if test "x$with_ivykis" = "xinternal"; then
 	if test -f "$srcdir/lib/ivykis/src/iv_main_posix.c"; then
 		AC_CONFIG_SUBDIRS([lib/ivykis])
@@ -815,6 +816,7 @@ if test "x$with_ivykis" = "xinternal"; then
 		IVYKIS_LIBS="-Wl,--whole-archive -L\$(top_builddir)/lib/ivykis/src -livykis  -Wl,--no-whole-archive"
 		IVYKIS_CFLAGS="-I\$(top_srcdir)/lib/ivykis/src/include -I\$(top_builddir)/lib/ivykis/src/include"
 		IVYKIS_SUBDIRS=lib/ivykis
+                INTERNAL_IVYKIS_CFLAGS="-I\${includedir}/syslog-ng/ivykis"
 
 		# LIBS to use when libtool is not applicable (when linking the main syslog-ng executable in mixed linking mode)
 		IVYKIS_NO_LIBTOOL_LIBS="-Wl,--whole-archive -L\$(top_builddir)/lib/ivykis/src/.libs -livykis -Wl,--no-whole-archive"
@@ -1267,6 +1269,8 @@ AC_SUBST(CURRDATE)
 AC_SUBST(RELEASE_TAG)
 AC_SUBST(SNAPSHOT_VERSION)
 AC_SUBST(SOURCE_REVISION)
+AC_SUBST(with_ivykis)
+AC_SUBST(INTERNAL_IVYKIS_CFLAGS)
 
 AC_OUTPUT(dist.conf
           Makefile
