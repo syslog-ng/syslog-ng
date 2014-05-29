@@ -103,6 +103,7 @@ help:
 .PHONY: help populate-makefiles
 
 include Mk/lex-rules.am
+include Mk/Makefile.am
 include libtest/Makefile.am
 include lib/Makefile.am
 include modules/Makefile.am
@@ -115,4 +116,3 @@ include contrib/Makefile.am
 include scl/Makefile.am
 include debian/Makefile.am
 include tgz2build/Makefile.am
-include Mk/Makefile.am
