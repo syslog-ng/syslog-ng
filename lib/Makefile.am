@@ -23,6 +23,14 @@ lib/ivykis/src/libivykis.la:
 	${MAKE} -C lib/ivykis
 
 CLEAN_SUBDIRS				+= @IVYKIS_SUBDIRS@
+
+install-ivykis:
+	${MAKE} -C lib/ivykis/src \
+		install-includeHEADERS \
+		install-nodist_includeHEADERS \
+		includedir="${pkgincludedir}/ivykis"
+
+INSTALL_EXEC_HOOKS			+= install-ivykis
 endif
 
 if JSON_INTERNAL
