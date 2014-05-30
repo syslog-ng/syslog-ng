@@ -1,0 +1,69 @@
+#! /bin/sh
+
+set -e
+
+cfg="$(mktemp)"
+out="$(mktemp)"
+
+create_config () {
+        local cfg="$1"
+        cat >"${cfg}" <<EOF
+@version: 3.6
+@include "scl.conf"
+source s_system {
+# ----- Cut here -----
+system();
+# ----- Cut here -----
+};
+EOF
+}
+
+process_config () {
+        local cfg="$1"
+        local out="$2"
+
+        syslog-ng -f "${cfg}" \
+                  --syntax-only \
+                  --preprocess-into="${out}" \
+                  --no-caps \
+                  >/dev/null 2>/dev/null
+}
+
+extract_system_source () {
+        local out="$1"
+        local IFS_SAVE="${IFS}"
+        IFS="
+"
+        local print=0
+
+        echo "## system() expands to:"
+        echo
+        for line in $(cat "${out}"); do
+                case "${line}" in
+                        "# ----- Cut here -----")
+                                if test ${print} -eq 0; then
+                                        print=1
+                                else
+                                        print=0
+                                fi
+                                ;;
+                        *)
+                                if test ${print} -eq 1; then
+                                        echo "${line}"
+                                fi
+                                ;;
+                esac
+        done
+}
+
+cleanup () {
+        local cfg="$1"
+        local out="$2"
+
+        rm -f "${cfg}" "${out}"
+}
+
+create_config "${cfg}"
+process_config "${cfg}" "${out}"
+extract_system_source "${out}"
+cleanup "${cfg}" "${out}"
