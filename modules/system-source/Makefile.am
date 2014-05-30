@@ -14,6 +14,9 @@ modules_system_source_libsystem_source_la_DEPENDENCIES	=	\
 tools_SCRIPTS						+=	\
 	modules/system-source/system-expand
 
+EXTRA_DIST						+=	\
+	modules/system-source/system-expand
+
 modules/system-source modules/system-source/ mod-system-source: \
 	modules/system-source/libsystem-source.la
 .PHONY: modules/system-source/ mod-system-source
