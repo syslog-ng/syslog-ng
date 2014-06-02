@@ -30,7 +30,14 @@ install-ivykis:
 		install-nodist_includeHEADERS \
 		includedir="${pkgincludedir}/ivykis"
 
+uninstall-ivykis:
+	${MAKE} -C lib/ivykis/src \
+		uninstall-includeHEADERS \
+		uninstall-nodist_includeHEADERS \
+		includedir="${pkgincludedir}/ivykis"
+
 INSTALL_EXEC_HOOKS			+= install-ivykis
+UNINSTALL_HOOKS				+= uninstall-ivykis
 endif
 
 if JSON_INTERNAL
