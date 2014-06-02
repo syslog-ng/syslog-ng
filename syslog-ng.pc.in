@@ -7,10 +7,11 @@ includedir=@includedir@
 toolsdir=@datadir@/tools
 moduledir=@expanded_moduledir@
 scldir=@datadir@/include/scl
+ivykis=@with_ivykis@
 
 Name: syslog-ng-dev
 Description: Dev package for syslog-ng module
 Version: @VERSION@
 Requires: glib-2.0
 Libs: -L${libdir} @GLIB_LIBS@ -lsyslog-ng
-Cflags: -I${includedir}/syslog-ng
+Cflags: -I${includedir}/syslog-ng @INTERNAL_IVYKIS_CFLAGS@
