@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2012-2013 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 2012-2013 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2012-2014 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2012-2014 Gergely Nagy <algernon@balabit.hu>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,6 +26,8 @@
 #include "type-hinting.h"
 #include "template/templates.h"
 
+#include <errno.h>
+#include <math.h>
 #include <string.h>
 #include <stdlib.h>
 
@@ -52,6 +54,8 @@ type_hint_parse(const gchar *hint, TypeHint *out_type, GError **error)
     *out_type = TYPE_HINT_INT32;
   else if (strcmp(hint, "int64") == 0)
     *out_type = TYPE_HINT_INT64;
+  else if (strcmp(hint, "double") == 0)
+    *out_type = TYPE_HINT_DOUBLE;
   else if (strcmp(hint, "datetime") == 0)
     *out_type = TYPE_HINT_DATETIME;
   else if (strcmp(hint, "boolean") == 0)
@@ -132,6 +136,30 @@ type_cast_to_int64(const gchar *value, gint64 *out, GError **error)
       return FALSE;
     }
   return TRUE;
+}
+
+gboolean
+type_cast_to_double(const gchar *value, gdouble *out, GError **error)
+{
+  gchar *endptr = NULL;
+  gboolean success = TRUE;
+
+  errno = 0;
+  *out = strtod(value, &endptr);
+  if (errno == ERANGE && (*out == HUGE_VAL || *out == -HUGE_VAL))
+    success = FALSE;
+  if (*out == 0 && endptr == value)
+    success = FALSE;
+  if (endptr[0] != '\0')
+    success = FALSE;
+
+  if (!success && error)
+    {
+      g_set_error(error, TYPE_HINTING_ERROR, TYPE_HINTING_INVALID_CAST,
+                  "double(%s)", value);
+    }
+
+  return success;
 }
 
 gboolean

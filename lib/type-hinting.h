@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2012-2013 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 2012-2013 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2012-2014 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2012-2014 Gergely Nagy <algernon@balabit.hu>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -44,6 +44,7 @@ typedef enum
   TYPE_HINT_BOOLEAN,
   TYPE_HINT_INT32,
   TYPE_HINT_INT64,
+  TYPE_HINT_DOUBLE,
   TYPE_HINT_DATETIME,
   TYPE_HINT_DEFAULT,
 } TypeHint;
@@ -56,6 +57,7 @@ gboolean type_cast_drop_helper(gint drop_flags, const gchar *value,
 gboolean type_cast_to_boolean(const gchar *value, gboolean *out, GError **error);
 gboolean type_cast_to_int32(const gchar *value, gint32 *out, GError **error);
 gboolean type_cast_to_int64(const gchar *value, gint64 *out, GError **error);
+gboolean type_cast_to_double(const gchar *value, gdouble *out, GError **error);
 gboolean type_cast_to_datetime_int(const gchar *value, guint64 *out, GError **error);
 gboolean type_cast_to_datetime_str(const gchar *value, const char *format,
                                    gchar **out, GError **error);

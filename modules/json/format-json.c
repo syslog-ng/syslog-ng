@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2011-2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2011-2014 BalaBit IT Ltd, Budapest, Hungary
  * Copyright (c) 2011 Balint Kovacs <blint@balabit.hu>
- * Copyright (c) 2011-2013 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2011-2014 Gergely Nagy <algernon@balabit.hu>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -207,10 +207,12 @@ tf_json_value(const gchar *name, const gchar *prefix,
       break;
     case TYPE_HINT_INT32:
     case TYPE_HINT_INT64:
+    case TYPE_HINT_DOUBLE:
     case TYPE_HINT_BOOLEAN:
       {
         gint32 i32;
         gint64 i64;
+        gdouble d;
         gboolean b;
         gboolean r = FALSE, fail = FALSE;
         const gchar *v = value;
@@ -221,6 +223,9 @@ tf_json_value(const gchar *name, const gchar *prefix,
         else if (type == TYPE_HINT_INT64 &&
             (fail = !type_cast_to_int64(value, &i64 , NULL)) == TRUE)
           r = type_cast_drop_helper(on_error, value, "int64");
+        else if (type == TYPE_HINT_DOUBLE &&
+            (fail = !type_cast_to_double(value, &d, NULL)) == TRUE)
+          r = type_cast_drop_helper(on_error, value, "double");
         else if (type == TYPE_HINT_BOOLEAN)
           {
             if ((fail = !type_cast_to_boolean(value, &b , NULL)) == TRUE)
