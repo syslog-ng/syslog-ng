@@ -16,6 +16,10 @@ set -e
  fi
  if [ ! -e "$pemodrepo" ]
  then
+     pemodrepo="$ZWA_ROOT/projects/syslog-ng-pe-5.2/source/syslog-ng-pe-modules"
+ fi
+ if [ ! -e "$pemodrepo" ]
+ then
      echo "Unable to locate syslog-ng-pe-modules under $ZWA_ROOT/work :-(" >&2
      exit 1
  fi
