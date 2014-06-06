@@ -1,3 +1,90 @@
+3.4.8
+        Fri,  6 Jun 2014 12:05:59 +0200
+
+        This is the seventh bug-fix release for the 3.4.x series, with
+        a set of important fixes over 3.4.7 released last December.
+        Upgrading to this release is highly recommended.
+
+        Features
+        ========
+
+        * Support for tzif3 format timezone files (used by recent
+          releases of the tzdata package) was implemented.
+
+        * SDATA enterprise IDs are now handled correctly when using
+          value-pairs, they will not be needlessly split up into
+          smaller chunks.
+
+        Bugfixes
+        ========
+
+        * Drivers using value-pairs() (mongodb, format-json, etc) were
+          made more robust, and will not behave strangely anymore when
+          using higher compiler optimisation levels.
+
+        * The DATE macro in most value-pairs() scopes will now always
+          contain the stamp time, as opposed to sometimes the received
+          or the stamp time.
+
+        * The syslog-proto (rfc5424) scope of value-pairs() now
+          includes SDATA too.
+
+        * The $SEQNUM macro is now correctly handled by the
+          $(format-json) template function.
+
+        * Drivers using value-pairs() will now work correctly when a
+          macro is specified in a key() statement.
+
+        * When using the same json-parser() in multiple log paths,
+          syslog-ng no longer crashes when no marker was set.
+
+        * When a GeoIP lookup fails, handle it gracefully, avoiding an
+          annoying glib warning.
+
+        * When running in a FreeBSD jail, the system() source will not
+          use /dev/klog.
+
+        * Various memory leaks were plugged (related to internal
+          locking, and value-pairs).
+
+        * When building from Git, the grammar files are now build-able
+          with bison 3+. Builds from tarballs are unaffected.
+
+        Miscellaneous changes
+        =====================
+
+        * The host() and port() options of the MongoDB destination
+          driver have been labelled as deprecated. They already were,
+          just not marked so.
+
+        * The username() and password() options of the AMQP driver
+          were made mandatory.
+
+        Credits
+        =======
+
+        syslog-ng is developed as a community project, and as such it relies
+        on volunteers to do the work necessarily to produce syslog-ng.
+
+        Reporting bugs, testing changes, writing code or simply providing
+        feedback are all important contributions, so please if you are a
+        user of syslog-ng, contribute.
+
+        These people have helped in this release:
+
+        Andras Mitzki <micek@balabit.hu>
+        Balazs Scheidler <bazsi@balabit.hu>
+        Daniel Gados <gdani@balabit.hu>
+        Fabien Wernli
+        Gergely Nagy <algernon@balabit.hu>
+        Igor Ippolitov <iippolitov@gmail.com>
+        Laszlo Meszaros <lmesz@balabit.hu>
+        Nick Alcock <nix@esperi.org.uk>
+        Peter Czanik <czanik@balabit.hu>
+        Tibor Benke <btibi@balabit.hu>
+        Viktor Tusa <tusa@balabit.hu>
+        Xufeng Zhang <xufeng.zhang@windriver.com>
+
 3.4.7
         Tue, 24 Dec 2013 21:07:34 +0100
 
