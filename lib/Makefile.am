@@ -89,6 +89,7 @@ pkginclude_HEADERS = 		\
 	versioning.h	\
 	vptransform.h	\
 	reloc.h	\
+	ringbuffer.h	\
   $(template_headers)
 
 if !IS_WINDOWS
@@ -173,6 +174,7 @@ libsyslog_ng_la_SOURCES = \
 	parser-expr-grammar.y	\
 	rewrite-expr-grammar.y	\
 	reloc.c                 \
+	ringbuffer.c		\
 	$(libsyslog_ng_crypto_la_SOURCES) \
   $(template_sources)
 

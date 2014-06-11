@@ -48,7 +48,8 @@ check_PROGRAMS =			\
 	test_template_compile \
 	test_logproto	\
 	test_rewrite  \
-	test_resolve_path
+	test_resolve_path  \
+	test_ringbuffer
 
 if IS_HPUX
 check_PROGRAMS += test_zone
@@ -129,6 +130,7 @@ test_template_compile_SOURCES = test_template_compile.c
 
 test_logproto_SOURCES = test_logproto.c
 test_rewrite_SOURCES = test_rewrite.c
+test_ringbuffer_SOURCES = test_ringbuffer.c
 
 test_resolve_path_SOURCES = test_resolve_path.c
 test_resolve_path_CFLAGS = $(AM_CFLAGS) -I$(top_srcdir)/modules/affile
