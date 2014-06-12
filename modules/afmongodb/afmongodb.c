@@ -498,8 +498,8 @@ afmongodb_worker_insert (MongoDBDestDriver *self)
   if (!afmongodb_dd_connect(self, TRUE))
     return FALSE;
 
-  success = log_queue_pop_head(self->queue, &msg, &path_options, FALSE, TRUE);
-  if (!success)
+  msg = log_queue_pop_head(self->queue, &path_options);
+  if (!msg)
     return TRUE;
 
   msg_set_context(msg);

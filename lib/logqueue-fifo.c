@@ -343,17 +343,13 @@ log_queue_fifo_push_head(LogQueue *s, LogMessage *msg, const LogPathOptions *pat
 /*
  * Can only run from the output thread.
  */
-static gboolean
-log_queue_fifo_pop_head(LogQueue *s, LogMessage **msg, LogPathOptions *path_options, gboolean ignore_throttle, gboolean push_to_backlog)
+static LogMessage *
+log_queue_fifo_pop_head(LogQueue *s, LogPathOptions *path_options)
 {
   LogQueueFifo *self = (LogQueueFifo *) s;
   LogMessageQueueNode *node;
+  LogMessage *msg = NULL;
 
-  if (!ignore_throttle && self->super.throttle && self->super.throttle_buckets == 0)
-    {
-      return FALSE;
-    }
-    
   if (self->qoverflow_output_len == 0)
     {
       /* slow path, output queue is empty, get some elements from the wait queue */
@@ -368,10 +364,10 @@ log_queue_fifo_pop_head(LogQueue *s, LogMessage **msg, LogPathOptions *path_opti
     {
       node = iv_list_entry(self->qoverflow_output.next, LogMessageQueueNode, list);
 
-      *msg = node->msg;
+      msg = node->msg;
       path_options->ack_needed = node->ack_needed;
       self->qoverflow_output_len--;
-      if (!push_to_backlog)
+      if (!self->super.use_backlog)
         {
           iv_list_del(&node->list);
           log_msg_free_queue_node(node);
@@ -391,35 +387,31 @@ log_queue_fifo_pop_head(LogQueue *s, LogMessage **msg, LogPathOptions *path_opti
        * the high watermark is reached). Also, they are unlocked, so
        * no way to touch them safely.
        */
-      return FALSE;
+      return NULL;
     }
   stats_counter_dec(self->super.stored_messages);
-  if (push_to_backlog)
+  if (self->super.use_backlog)
     {
-      log_msg_ref(*msg);
+      log_msg_ref(msg);
       iv_list_add_tail(&node->list, &self->qbacklog);
       self->qbacklog_len++;
     }
-  if (!ignore_throttle)
-    {
-      self->super.throttle_buckets--;
-    }
 
-  return TRUE;
+  return msg;
 }
 
 /*
  * Can only run from the output thread.
  */
 static void
-log_queue_fifo_ack_backlog(LogQueue *s, gint n)
+log_queue_fifo_ack_backlog(LogQueue *s, guint rewind_count)
 {
   LogQueueFifo *self = (LogQueueFifo *) s;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
   LogMessage *msg;
-  gint i;
+  gint pos;
 
-  for (i = 0; i < n && self->qbacklog_len > 0; i++)
+  for (pos = 0; pos < rewind_count && self->qbacklog_len > 0; pos++)
     {
       LogMessageQueueNode *node;
       node = iv_list_entry(self->qbacklog.next, LogMessageQueueNode, list);
@@ -436,7 +428,7 @@ log_queue_fifo_ack_backlog(LogQueue *s, gint n)
 
 
 /*
- * log_queue_rewind_backlog:
+ * log_queue_rewind_backlog_all:
  *
  * Move items on our backlog back to our qoverflow queue. Please note that this
  * function does not really care about qoverflow size, it has to put the backlog
@@ -446,27 +438,42 @@ log_queue_fifo_ack_backlog(LogQueue *s, gint n)
  * NOTE: this is assumed to be called from the output thread.
  */
 static void
-log_queue_fifo_rewind_backlog(LogQueue *s, gint n)
+log_queue_fifo_rewind_backlog_all(LogQueue *s)
 {
   LogQueueFifo *self = (LogQueueFifo *) s;
-  gint i;
 
-  if (n > self->qbacklog_len || n < 0)
-    {
-      n = self->qbacklog_len;
-    }
-  for (i = 0; i < n; i++)
-    {
-      LogMessageQueueNode *node;
+  if (!self->super.use_backlog)
+    return;
 
-      node = iv_list_entry(self->qbacklog.prev, LogMessageQueueNode, list);
+  iv_list_splice_tail_init(&self->qbacklog, &self->qoverflow_output);
+  self->qoverflow_output_len += self->qbacklog_len;
+  stats_counter_add(self->super.stored_messages, self->qbacklog_len);
+  self->qbacklog_len = 0;
+}
+
+
+static void
+log_queue_fifo_rewind_backlog(LogQueue *s, guint rewind_count)
+{
+  LogQueueFifo *self = (LogQueueFifo *) s;
+  guint pos;
+
+  if (!self->super.use_backlog)
+    return;
+
+  if (rewind_count > self->qbacklog_len)
+    rewind_count = self->qbacklog_len;
+
+  for (pos = 0; pos < rewind_count; pos++)
+    {
+     LogMessageQueueNode *node = iv_list_entry(self->qbacklog.prev, LogMessageQueueNode, list);
       /*
        * Because the message go to the backlog only in case of pop_head
        * and pop_head add ack and ref when it pushes the message into the backlog
        * The rewind must decrease the ack and ref too
        */
       iv_list_del_init(&node->list);
-      iv_list_add(&node->list,&self->qoverflow_output);
+      iv_list_add(&node->list, &self->qoverflow_output);
 
       self->qbacklog_len--;
       self->qoverflow_output_len++;
@@ -519,6 +526,7 @@ log_queue_fifo_new(gint qoverflow_size, const gchar *persist_name)
 
   log_queue_init_instance(&self->super, persist_name);
   self->super.type = log_queue_fifo_type;
+  self->super.use_backlog = FALSE;
   self->super.get_length = log_queue_fifo_get_length;
   self->super.is_empty = log_queue_fifo_is_empty;
   self->super.keep_on_reload = log_queue_fifo_keep_on_reload;
@@ -527,6 +535,7 @@ log_queue_fifo_new(gint qoverflow_size, const gchar *persist_name)
   self->super.pop_head = log_queue_fifo_pop_head;
   self->super.ack_backlog = log_queue_fifo_ack_backlog;
   self->super.rewind_backlog = log_queue_fifo_rewind_backlog;
+  self->super.rewind_backlog_all = log_queue_fifo_rewind_backlog_all;
 
   self->super.free_fn = log_queue_fifo_free;
   

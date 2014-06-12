@@ -15,13 +15,13 @@ test_ack(LogMessage *msg, AckType ack_type)
 }
 
 void
-feed_some_messages(LogQueue *q, int n, gboolean ack_needed, MsgFormatOptions *po)
+feed_some_messages(LogQueue *q, int n, MsgFormatOptions *po)
 {
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
   LogMessage *msg;
   gint i;
 
-  path_options.ack_needed = ack_needed;
+  path_options.ack_needed = q->use_backlog;
   path_options.flow_control_requested = TRUE;
   for (i = 0; i < n; i++)
     {
@@ -39,16 +39,15 @@ feed_some_messages(LogQueue *q, int n, gboolean ack_needed, MsgFormatOptions *po
 }
 
 void
-send_some_messages(LogQueue *q, gint n, gboolean use_app_acks)
+send_some_messages(LogQueue *q, gint n)
 {
   gint i;
-  LogMessage *msg;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
 
   for (i = 0; i < n; i++)
     {
-      log_queue_pop_head(q, &msg, &path_options, FALSE, use_app_acks);
-      if (!use_app_acks)
+      LogMessage *msg = log_queue_pop_head(q, &path_options);
+      if (q->use_backlog)
         {
           log_msg_ack(msg, &path_options, AT_PROCESSED);
         }
@@ -57,13 +56,13 @@ send_some_messages(LogQueue *q, gint n, gboolean use_app_acks)
 }
 
 void
-app_rewind_some_messages(LogQueue *q, gint n)
+app_rewind_some_messages(LogQueue *q, guint n)
 {
   log_queue_rewind_backlog(q,n);
 }
 
 void
-app_ack_some_messages(LogQueue *q, gint n)
+app_ack_some_messages(LogQueue *q, guint n)
 {
   log_queue_ack_backlog(q, n);
 }
@@ -71,5 +70,5 @@ app_ack_some_messages(LogQueue *q, gint n)
 void
 rewind_messages(LogQueue *q)
 {
-  log_queue_rewind_backlog(q, -1);
+  log_queue_rewind_backlog_all(q);
 }

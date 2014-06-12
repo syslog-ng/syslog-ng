@@ -14,7 +14,7 @@ export top_srcdir
 lib_LTLIBRARIES = libsyslog-ng.la
 libsyslog_ng_la_LIBADD = @CORE_DEPS_LIBS@ @OPENSSL_LIBS@ $(PCRE_LIBS) -ljson
 libsyslog_ng_la_LDFLAGS = -no-undefined -release @LIBSYSLOGNG_VERSION@
-libsyslog_ng_la_CFLAGS = -DLIBSYSLOG_NG
+libsyslog_ng_la_CFLAGS = -DLIBSYSLOG_NG -ggdb
 
 # this is intentionally formatted so conflicts are less likely to arise. one name in every line.
 pkginclude_HEADERS = 		\

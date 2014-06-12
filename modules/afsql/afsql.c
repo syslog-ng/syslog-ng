@@ -577,7 +577,7 @@ afsql_dd_begin_txn(AFSqlDestDriver *self)
 static void
 afsql_dd_handle_transaction_error(AFSqlDestDriver *self)
 {
-  log_queue_rewind_backlog(self->queue, -1);
+  log_queue_rewind_backlog_all(self->queue);
   self->flush_lines_queued = 0;
 }
 
@@ -806,6 +806,15 @@ afsql_dd_should_commit_transaction(const AFSqlDestDriver *self)
   return afsql_dd_is_transaction_handling_enabled(self) && self->flush_lines_queued == self->flush_lines;
 }
 
+static inline void
+afsql_dd_rollback_msg(AFSqlDestDriver *self, LogMessage *msg, LogPathOptions *path_options)
+{
+  if (self->flags & AFSQL_DDF_EXPLICIT_COMMITS)
+    log_queue_rewind_backlog(self->queue, 1);
+  else
+    log_queue_push_head(self->queue, msg, path_options);
+}
+
 static inline gboolean
 afsql_dd_handle_insert_row_error_depending_on_connection_availability(AFSqlDestDriver *self,
                                                                       LogMessage *msg,
@@ -815,7 +824,7 @@ afsql_dd_handle_insert_row_error_depending_on_connection_availability(AFSqlDestD
 
   if (dbi_conn_ping(self->dbi_ctx) == 1)
     {
-      log_queue_rewind_backlog(self->queue, 1);
+      afsql_dd_rollback_msg(self, msg, path_options);
       return TRUE;
     }
 
@@ -828,7 +837,7 @@ afsql_dd_handle_insert_row_error_depending_on_connection_availability(AFSqlDestD
   else
     {
       error_message = "Error, no SQL connection after failed query attempt";
-      log_queue_rewind_backlog(self->queue, 1);
+      afsql_dd_rollback_msg(self, msg, path_options);
     }
 
   dbi_conn_error(self->dbi_ctx, &dbi_error);
@@ -858,15 +867,15 @@ afsql_dd_insert_db(AFSqlDestDriver *self)
   GString *table = NULL;
   GString *insert_command = NULL;
   LogMessage *msg;
-  gboolean success;
+  gboolean success = TRUE;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
 
   if (!afsql_dd_ensure_initialized_connection(self))
     return FALSE;
 
   /* connection established, try to insert a message */
-  success = log_queue_pop_head(self->queue, &msg, &path_options, FALSE, TRUE);
-  if (!success)
+  msg = log_queue_pop_head(self->queue, &path_options);
+  if (!msg)
     return TRUE;
 
   msg_set_context(msg);
@@ -1143,6 +1152,11 @@ afsql_dd_init(LogPipe *s)
   if (self->queue == NULL)
     {
       return FALSE;
+    }
+  else
+    {
+      if (self->flags & AFSQL_DDF_EXPLICIT_COMMITS)
+        log_queue_set_use_backlog(self->queue, TRUE);
     }
   log_queue_set_counters(self->queue, self->stored_messages, self->dropped_messages);
   if (!self->fields)

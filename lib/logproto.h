@@ -151,7 +151,7 @@ log_proto_set_flow_control_funcs(LogProto *self, LogProtoFlowControlFuncs *flow_
 }
 
 static inline void
-log_proto_msg_ack(LogProto *self, gint num_msg_acked)
+log_proto_msg_ack(LogProto *self, guint num_msg_acked)
 {
   if (self->flow_control_funcs.ack_callback)
     self->flow_control_funcs.ack_callback(num_msg_acked, self->flow_control_funcs.user_data);

@@ -24,12 +24,14 @@ testcase_zero_diskbuf_and_normal_acks()
   gint i;
 
   q = log_queue_fifo_new(OVERFLOW_SIZE, NULL);
+  log_queue_set_use_backlog(q, TRUE);
+
   fed_messages = 0;
   acked_messages = 0;
   for (i = 0; i < 10; i++)
-    feed_some_messages(q, 10, TRUE, &parse_options);
+    feed_some_messages(q, 10, &parse_options);
 
-  send_some_messages(q, fed_messages, TRUE);
+  send_some_messages(q, fed_messages);
   app_ack_some_messages(q, fed_messages);
   assert_gint(fed_messages, acked_messages, "%s: did not receive enough acknowledgements: fed_messages=%d, acked_messages=%d\n", __FUNCTION__, fed_messages, acked_messages);
 
@@ -43,12 +45,14 @@ testcase_zero_diskbuf_alternating_send_acks()
   gint i;
 
   q = log_queue_fifo_new(OVERFLOW_SIZE, NULL);
+  log_queue_set_use_backlog(q, TRUE);
+
   fed_messages = 0;
   acked_messages = 0;
   for (i = 0; i < 10; i++)
     {
-      feed_some_messages(q, 10, TRUE, &parse_options);
-      send_some_messages(q, 10, TRUE);
+      feed_some_messages(q, 10, &parse_options);
+      send_some_messages(q, 10);
       app_ack_some_messages(q, 10);
     }
   assert_gint(fed_messages, acked_messages, "%s: did not receive enough acknowledgements: fed_messages=%d, acked_messages=%d\n", __FUNCTION__, fed_messages, acked_messages);
@@ -61,20 +65,22 @@ testcase_ack_and_rewind_messages()
 {
   LogQueue *q;
   gint i;
+
   q = log_queue_fifo_new(OVERFLOW_SIZE, NULL);
+  log_queue_set_use_backlog(q, TRUE);
 
   fed_messages = 0;
   acked_messages = 0;
-  feed_some_messages(q, 1000, TRUE, &parse_options);
+  feed_some_messages(q, 1000, &parse_options);
   for(i = 0; i < 10; i++)
     {
-      send_some_messages(q,1,TRUE);
+      send_some_messages(q,1);
       app_rewind_some_messages(q,1);
     }
-  send_some_messages(q,1000,TRUE);
+  send_some_messages(q,1000);
   app_ack_some_messages(q,500);
   app_rewind_some_messages(q,500);
-  send_some_messages(q,500,TRUE);
+  send_some_messages(q,500);
   app_ack_some_messages(q,500);
   log_queue_unref(q);
 }
@@ -166,7 +172,6 @@ gpointer
 threaded_consume(gpointer st)
 {
   LogQueue *q = (LogQueue *) st;
-  LogMessage *msg;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
   gboolean success;
   gint loops = 0;
@@ -178,12 +183,12 @@ threaded_consume(gpointer st)
   while (msg_count < MESSAGES_SUM)
     {
       gint slept = 0;
-      msg = NULL;
+      LogMessage *msg = NULL;
 
-      do
+      while (!msg)
         {
-          success = log_queue_pop_head(q, &msg, &path_options, FALSE, FALSE);
-          if (!success)
+          msg = log_queue_pop_head(q, &path_options);
+          if (!msg)
             {
               struct timespec ns;
 
@@ -198,13 +203,7 @@ threaded_consume(gpointer st)
                 }
             }
         }
-      while (!success);
 
-      g_assert(!success || (success && msg != NULL));
-      if (!success)
-        {
-          return GUINT_TO_POINTER(1);
-        }
       if ((loops % 10) == 0)
         {
           /* push the message back to the queue */
@@ -236,6 +235,7 @@ testcase_with_threads()
   for (i = 0; i < TEST_RUNS; i++)
     {
       q = log_queue_fifo_new(MESSAGES_SUM, NULL);
+      log_queue_set_use_backlog(q, TRUE);
 
       for (j = 0; j < FEEDERS; j++)
         {

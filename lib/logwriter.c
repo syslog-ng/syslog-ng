@@ -122,7 +122,7 @@ struct _LogWriter
  *
  **/
 
-static gboolean log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode);
+static gboolean log_writer_flush(LogWriter *self, gboolean force_flush);
 static void log_writer_broken(LogWriter *self, gint notify_code);
 static void log_writer_start_watches(LogWriter *self);
 static void log_writer_stop_watches(LogWriter *self);
@@ -140,10 +140,10 @@ log_writer_msg_ack(guint num_msg_acked, gpointer user_data)
 }
 
 static void
-log_writer_msg_rewind(gpointer s)
+log_writer_msg_rewind(gpointer user_data)
 {
-  LogWriter *self = (LogWriter *)s;
-  log_queue_rewind_backlog(self->queue, -1);
+  LogWriter *self = (LogWriter *)user_data;
+  log_queue_rewind_backlog_all(self->queue);
 }
 
 static void
@@ -185,7 +185,7 @@ log_writer_work_perform(gpointer s)
   LogWriter *self = (LogWriter *) s;
 
   g_assert((self->super.flags & PIF_INITIALIZED) != 0);
-  self->work_result = log_writer_flush(self, LW_FLUSH_BUFFER);
+  self->work_result = log_writer_flush(self, FALSE);
 }
 
 static void
@@ -1136,6 +1136,117 @@ log_writer_process_handshake(LogWriter *self)
   return TRUE;
 }
 
+static void
+log_writer_realloc_line_buffer(LogWriter *self)
+{
+  self->line_buffer->str = g_malloc(self->line_buffer->allocated_len);
+  self->line_buffer->str[0] = 0;
+  self->line_buffer->len = 0;
+}
+
+static gboolean
+log_writer_flush_finalize(LogWriter *self)
+{
+  LogProtoStatus status = log_proto_flush(self->proto);
+  if (status != LPS_SUCCESS && status != LPS_AGAIN)
+    return FALSE;
+
+  if (status == LPS_AGAIN)
+    {
+      self->has_to_poll = TRUE;
+    }
+  return TRUE;
+}
+
+static gboolean
+log_writer_write_message(LogWriter *self, LogMessage *msg, LogPathOptions *path_options, gboolean *write_error)
+{
+  gboolean consumed = FALSE;
+
+  *write_error = FALSE;
+
+  log_msg_refcache_start_consumer(msg, path_options);
+  msg_set_context(msg);
+
+  log_writer_format_log(self, msg, self->line_buffer);
+
+  if (!(msg->flags & LF_INTERNAL))
+    {
+      msg_debug("Outgoing message",
+            evt_tag_str("message",self->line_buffer->str),
+            NULL);
+    }
+
+  if (self->line_buffer->len)
+    {
+      LogProtoStatus status = log_proto_post(self->proto, msg, (guchar *)self->line_buffer->str, self->line_buffer->len, &consumed);
+
+      if (consumed)
+        log_writer_realloc_line_buffer(self);
+
+      if (status == LPS_ERROR)
+        {
+          if ((self->options->options & LWO_IGNORE_ERRORS) != 0)
+            {
+              if (!consumed)
+                {
+                  g_free(self->line_buffer->str);
+                  log_writer_realloc_line_buffer(self);
+                  consumed = TRUE;
+                }
+            }
+          else
+            {
+              *write_error = TRUE;
+              consumed = FALSE;
+            }
+        }
+    }
+  else
+    {
+      msg_debug("Error posting log message as template() output resulted in an empty string, skipping message",
+                NULL);
+      consumed = TRUE;
+    }
+
+  if (consumed)
+    {
+      if (msg->flags & LF_LOCAL)
+        step_sequence_number(&self->seq_num);
+
+      log_msg_unref(msg);
+      msg_set_context(NULL);
+      log_msg_refcache_stop(AT_PROCESSED);
+
+      return TRUE;
+  }
+  else
+    {
+      msg_debug("Can't send the message rewind backlog",
+                evt_tag_str("message",self->line_buffer->str),
+                NULL);
+
+      log_queue_rewind_backlog(self->queue, 1);
+
+      log_msg_unref(msg);
+      msg_set_context(NULL);
+      log_msg_refcache_stop(AT_ABORTED);
+
+      return FALSE;
+    }
+}
+
+
+
+static inline LogMessage *
+log_writer_queue_pop_message(LogWriter *self, LogPathOptions *path_options, gboolean force_flush)
+{
+  if (force_flush)
+    return log_queue_pop_head_ignore_throttle(self->queue, path_options);
+  else
+    return log_queue_pop_head(self->queue, path_options);
+}
+
 /*
  * Write messages to the underlying file descriptor using the installed
  * LogProto instance.  This is called whenever the output is ready to accept
@@ -1146,27 +1257,16 @@ log_writer_process_handshake(LogWriter *self)
  * In threaded mode, this function is invoked as part of the "output" task
  * (in essence, this is the function that performs the output task).
  *
- * @flush_mode specifies how hard LogWriter is trying to send messages to
- * the actual destination:
- *
- *
- * LW_FLUSH_BUFFER    - flush the buffer immediately please
- * LW_FLUSH_QUEUE     - pull off any queued items, at maximum speed, even
- *                      ignoring throttle, and flush the buffer too
- *
  */
 gboolean
-log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
+log_writer_flush(LogWriter *self, gboolean force_flush)
 {
-  LogProto *proto = self->proto;
-  gint count = 0;
-  gboolean ignore_throttle = (flush_mode >= LW_FLUSH_QUEUE);
-  LogProtoStatus status;
-  
-  if (!proto)
+  gboolean write_error = FALSE;
+
+  if (!self->proto)
     return FALSE;
 
-  if (log_proto_handshake_in_progress(proto))
+  if (log_proto_handshake_in_progress(self->proto))
     {
       return log_writer_process_handshake(self);
     }
@@ -1175,93 +1275,22 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
    * infinite loop, since the reader will cease to produce new messages when
    * main_loop_io_worker_job_quit() is set. */
 
-  while (!main_loop_io_worker_job_quit() || flush_mode >= LW_FLUSH_QUEUE)
+  while ((!main_loop_io_worker_job_quit() || force_flush) && !write_error)
     {
-      LogMessage *lm;
       LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
-      gboolean consumed = FALSE;
-      if (!log_queue_pop_head(self->queue, &lm, &path_options, ignore_throttle,TRUE))
-        {
-          /* no more items are available */
-          break;
-        }
-      log_msg_refcache_start_consumer(lm, &path_options);
-      msg_set_context(lm);
+      LogMessage *msg = log_writer_queue_pop_message(self, &path_options, force_flush);
 
-      log_writer_format_log(self, lm, self->line_buffer);
-      if (!(lm->flags & LF_INTERNAL))
-        {
-          msg_debug("Outgoing message",
-                evt_tag_str("message",self->line_buffer->str),
-                evt_tag_int("flush_mode",flush_mode),
-                NULL);
-        }
+      if (!msg)
+        break;
 
-      if (self->line_buffer->len)
-        {
-          status = log_proto_post(proto, lm, (guchar *)self->line_buffer->str, self->line_buffer->len, &consumed);
-          if (status == LPS_ERROR)
-            {
-              if ((self->options->options & LWO_IGNORE_ERRORS) == 0)
-                {
-                  msg_set_context(NULL);
-                  log_msg_unref(lm);
-                  log_queue_rewind_backlog(self->queue, 1);
-                  log_msg_refcache_stop(AT_ABORTED);
-
-                  if (consumed)
-                    {
-                      self->line_buffer->str = g_malloc(self->line_buffer->allocated_len);
-                      self->line_buffer->len = 0;
-                      self->line_buffer->str[0] = 0;
-                    }
-
-                  return FALSE;
-                }
-              else
-                {
-                  if (!consumed)
-                    g_free(self->line_buffer->str);
-                  consumed = TRUE;
-                }
-            }
-          if (consumed)
-            {
-              self->line_buffer->str = g_malloc(self->line_buffer->allocated_len);
-              self->line_buffer->len = 0;
-              self->line_buffer->str[0] = 0;
-            }
-        }
-      if (consumed)
-        {
-          if (lm->flags & LF_LOCAL)
-            step_sequence_number(&self->seq_num);
-          log_msg_unref(lm);
-        }
-      else
-        {
-          msg_debug("Can't send the message rewind backlog",
-                    evt_tag_str("message",self->line_buffer->str),
-                    NULL);
-          log_msg_unref(lm);
-          log_queue_rewind_backlog(self->queue, 1);
-          log_msg_refcache_stop(AT_ABORTED);
-          msg_set_context(NULL);
-          break;
-        }
-      msg_set_context(NULL);
-      log_msg_refcache_stop(AT_PROCESSED);
-      count++;
+      if (!log_writer_write_message(self, msg, &path_options, &write_error))
+        break;
     }
 
-  status = log_proto_flush(proto);
-  if (status != LPS_SUCCESS && status != LPS_AGAIN)
+  if (write_error)
     return FALSE;
-  if (status == LPS_AGAIN)
-    {
-      self->has_to_poll = TRUE;
-    }
-  return TRUE;
+
+  return log_writer_flush_finalize(self);
 }
 
 gboolean
@@ -1358,7 +1387,7 @@ log_writer_deinit(LogPipe *s)
   main_loop_assert_main_thread();
 
   log_queue_reset_parallel_push(self->queue);
-  if (!log_writer_flush(self, LW_FLUSH_QUEUE))
+  if (!log_writer_flush(self, TRUE))
     {
       log_writer_broken(self, NC_WRITE_ERROR);
     }
@@ -1591,7 +1620,10 @@ log_writer_set_queue(LogPipe *s, LogQueue *queue)
 
   if (self->queue)
     log_queue_unref(self->queue);
+
   self->queue = queue;
+  if (self->queue)
+    log_queue_set_use_backlog(self->queue, TRUE);
 }
 
 void 
