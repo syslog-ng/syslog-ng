@@ -38,6 +38,9 @@
 #include "mongo.h"
 #include <time.h>
 
+#define MAX_RETRIES_OF_FAILED_INSERT_DEFAULT 3
+#define SOCKET_TIMEOUT_FOR_MONGO_CONNECTION_IN_MILLISECS 60000
+
 typedef struct
 {
   gchar *name;
@@ -62,12 +65,15 @@ typedef struct
 
   gchar *user;
   gchar *password;
+  gint failed_message_counter;
+  gint max_retry_of_failed_inserts;
 
   time_t last_msg_stamp;
 
   ValuePairs *vp;
 
   /* Writer-only stuff */
+  mongo_sync_conn_recovery_cache *recovery_cache;
   mongo_sync_connection *conn;
   gint32 seq_num;
 
@@ -104,6 +110,13 @@ afmongodb_dd_set_host(LogDriver *d, const gchar *host)
 {
   MongoDBDestDriver *self = (MongoDBDestDriver *)d;
 
+  static gboolean host_warning_displayed = FALSE;
+  if (!host_warning_displayed)
+    {
+      msg_warning("WARNING! Using host() option is deprecated in mongodb driver, please use servers() instead!", NULL);
+      host_warning_displayed = TRUE;
+    }
+
   g_free(self->address);
   self->address = g_strdup(host);
 }
@@ -112,6 +125,13 @@ void
 afmongodb_dd_set_port(LogDriver *d, gint port)
 {
   MongoDBDestDriver *self = (MongoDBDestDriver *)d;
+
+  static gboolean port_warning_displayed = FALSE;
+  if (!port_warning_displayed)
+    {
+      msg_warning("WARNING! Using port() option is deprecated in mongodb driver, please use servers() instead!", NULL);
+      port_warning_displayed = TRUE;
+    }
 
   self->port = port;
 }
@@ -202,6 +222,13 @@ afmongodb_dd_set_safe_mode(LogDriver *d, gboolean state)
   self->safe_mode = state;
 }
 
+void
+afmongodb_dd_set_retries(LogDriver *d, gint retries)
+{
+  MongoDBDestDriver *self = (MongoDBDestDriver *)d;
+
+  self->max_retry_of_failed_inserts = retries;
+};
 /*
  * Utilities
  */
@@ -248,53 +275,28 @@ afmongodb_dd_disconnect(LogThrDestDriver *s)
 static gboolean
 afmongodb_dd_connect(MongoDBDestDriver *self, gboolean reconnect)
 {
-  GList *l;
-
   if (reconnect && self->conn)
     return TRUE;
 
-  self->conn = mongo_sync_connect(self->address, self->port, FALSE);
+  self->conn = mongo_sync_connect_recovery_cache(self->recovery_cache, FALSE);
+
   if (!self->conn)
     {
-      msg_error ("Error connecting to MongoDB", NULL);
+      msg_error ("Error connecting to MongoDB", evt_tag_str("driver", self->super.super.super.id), NULL);
       return FALSE;
     }
 
+  mongo_connection_set_timeout((mongo_connection*) self->conn, SOCKET_TIMEOUT_FOR_MONGO_CONNECTION_IN_MILLISECS);
+
   mongo_sync_conn_set_safe_mode(self->conn, self->safe_mode);
 
-  l = self->servers;
-  while ((l = g_list_next(l)) != NULL)
-    {
-      gchar *host = NULL;
-      gint port = 27017;
-
-      if (!mongo_util_parse_addr(l->data, &host, &port))
-	{
-	  msg_warning("Cannot parse MongoDB server address, ignoring",
-		      evt_tag_str("address", l->data),
-		      NULL);
-	  continue;
-	}
-      mongo_sync_conn_seed_add (self->conn, host, port);
-      msg_verbose("Added MongoDB server seed",
-		  evt_tag_str("host", host),
-		  evt_tag_int("port", port),
-		  NULL);
-      g_free(host);
-    }
 
   if (self->user || self->password)
     {
-      if (!self->user || !self->password)
-        {
-          msg_error("Neither the username, nor the password can be empty", NULL);
-          return FALSE;
-        }
-
       if (!mongo_sync_cmd_authenticate (self->conn, self->db,
                                         self->user, self->password))
         {
-          msg_error("MongoDB authentication failed", NULL);
+          msg_error("MongoDB authentication failed", evt_tag_str("driver", self->super.super.super.id), NULL);
           return FALSE;
         }
     }
@@ -465,16 +467,34 @@ afmongodb_vp_process_value(const gchar *name, const gchar *prefix,
   return FALSE;
 }
 
+static void
+afmongodb_worker_drop_message(MongoDBDestDriver *self, LogMessage *msg, LogPathOptions *path_options)
+{
+  stats_counter_inc(self->super.dropped_messages);
+  step_sequence_number(&self->seq_num);
+  log_msg_drop(msg, path_options);
+  self->failed_message_counter = 0;
+};
+
+static void
+afmongodb_worker_accept_message(MongoDBDestDriver *self, LogMessage *msg, LogPathOptions *path_options)
+{
+  step_sequence_number(&self->seq_num);
+  log_msg_ack(msg, path_options);
+  log_msg_unref(msg);
+  self->failed_message_counter = 0;
+}
+
 static gboolean
 afmongodb_worker_insert (LogThrDestDriver *s)
 {
   MongoDBDestDriver *self = (MongoDBDestDriver *)s;
-  gboolean success, need_drop = self->template_options.on_error & ON_ERROR_DROP_MESSAGE;
-  guint8 *oid;
+  gboolean success;
   LogMessage *msg;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
 
-  afmongodb_dd_connect(self, TRUE);
+  if (!afmongodb_dd_connect(self, TRUE))
+    return FALSE;
 
   success = log_queue_pop_head(self->super.queue, &msg, &path_options, FALSE, FALSE);
   if (!success)
@@ -483,10 +503,6 @@ afmongodb_worker_insert (LogThrDestDriver *s)
   msg_set_context(msg);
 
   bson_reset (self->bson);
-
-  oid = mongo_util_oid_new_with_time (self->last_msg_stamp, self->seq_num);
-  bson_append_oid (self->bson, "_id", oid);
-  g_free (oid);
 
   success = value_pairs_walk(self->vp,
                              afmongodb_vp_obj_start,
@@ -497,16 +513,29 @@ afmongodb_worker_insert (LogThrDestDriver *s)
                              self);
   bson_finish (self->bson);
 
-  if (!success && !need_drop)
-    success = TRUE;
-
-  if (success)
+  if (!success)
     {
+      msg_error("Failed to format message for MongoDB, dropping message",
+                 evt_tag_value_pairs("message", self->vp, msg, self->seq_num, LTZ_SEND, &self->template_options),
+                 evt_tag_str("driver", self->super.super.super.id),
+                 NULL);
+      msg_set_context(NULL);
+      afmongodb_worker_drop_message(self, msg, &path_options);
+      return TRUE;
+    }
+  else
+    {
+      msg_debug("Outgoing message to MongoDB destination",
+                 evt_tag_value_pairs("message", self->vp, msg, self->seq_num, LTZ_SEND, &self->template_options),
+                 evt_tag_str("driver", self->super.super.super.id),
+                 NULL);
       if (!mongo_sync_cmd_insert_n(self->conn, self->ns, 1,
                                    (const bson **)&self->bson))
         {
           msg_error("Network error while inserting into MongoDB",
                     evt_tag_int("time_reopen", self->super.time_reopen),
+                    evt_tag_str("reason", mongo_sync_conn_get_last_error(self->conn)),
+                    evt_tag_str("driver", self->super.super.super.id),
                     NULL);
           success = FALSE;
         }
@@ -516,19 +545,19 @@ afmongodb_worker_insert (LogThrDestDriver *s)
 
   if (success)
     {
-      stats_counter_inc(self->super.stored_messages);
-      step_sequence_number(&self->seq_num);
-      log_msg_ack(msg, &path_options);
-      log_msg_unref(msg);
+      afmongodb_worker_accept_message(self, msg, &path_options);
     }
   else
     {
-      if (need_drop)
+      self->failed_message_counter++;
+      if (self->failed_message_counter >= self->max_retry_of_failed_inserts)
         {
-          stats_counter_inc(self->super.dropped_messages);
-          step_sequence_number(&self->seq_num);
-          log_msg_ack(msg, &path_options);
-          log_msg_unref(msg);
+          msg_error("Multiple failures while inserting this record into the database, message dropped",
+                    evt_tag_int("number_of_retries", self->max_retry_of_failed_inserts),
+                    evt_tag_value_pairs("message", self->vp, msg, self->seq_num, LTZ_SEND, &self->template_options),
+                    evt_tag_str("driver", self->super.super.super.id),
+                    NULL);
+          afmongodb_worker_drop_message(self, msg, &path_options);
         }
       else
         log_queue_push_head(self->super.queue, msg, &path_options);
@@ -567,22 +596,61 @@ afmongodb_worker_thread_deinit(LogThrDestDriver *d)
  */
 
 static gboolean
+afmongodb_dd_check_auth_options(MongoDBDestDriver *self)
+{
+  if (self->user || self->password)
+    {
+      if (!self->user || !self->password)
+        {
+          msg_error("Neither the username, nor the password can be empty", NULL);
+          return FALSE;
+        }
+    }
+  return TRUE;
+}
+
+static void
+afmongodb_dd_init_value_pairs_dot_to_underscore_transformation(MongoDBDestDriver *self)
+{
+  ValuePairsTransformSet *vpts;
+
+ /* Always replace a leading dot with an underscore. */
+  vpts = value_pairs_transform_set_new(".*");
+  value_pairs_transform_set_add_func(vpts, value_pairs_new_transform_replace_prefix(".", "_"));
+  value_pairs_add_transforms(self->vp, vpts);
+};
+
+static gboolean
 afmongodb_dd_init(LogPipe *s)
 {
   MongoDBDestDriver *self = (MongoDBDestDriver *)s;
   GlobalConfig *cfg = log_pipe_get_config(s);
-  ValuePairsTransformSet *vpts;
 
   if (!log_dest_driver_init_method(s))
     return FALSE;
 
   log_template_options_init(&self->template_options, cfg);
 
-  /* Always replace a leading dot with an underscore. */
-  vpts = value_pairs_transform_set_new(".*");
-  value_pairs_transform_set_add_func(vpts, value_pairs_new_transform_replace_prefix(".", "_"));
-  value_pairs_add_transforms(self->vp, vpts);
+  if (self->max_retry_of_failed_inserts <= 0)
+    {
+      msg_warning("WARNING! Wrong value for retries in MongoDB destination, setting it to default",
+                   evt_tag_int("default", MAX_RETRIES_OF_FAILED_INSERT_DEFAULT),
+                   evt_tag_str("driver", self->super.super.super.id),
+                   NULL);
 
+      self->max_retry_of_failed_inserts = MAX_RETRIES_OF_FAILED_INSERT_DEFAULT;
+    }
+
+  if (self->super.super.throttle != 0)
+    {
+      msg_warning("WARNING! Throttle option for MongoDB is not supported, ignoring!", evt_tag_str("driver", self->super.super.super.id), NULL);
+      self->super.super.throttle = 0;
+    }
+
+  if (!afmongodb_dd_check_auth_options(self))
+    return FALSE;
+
+  afmongodb_dd_init_value_pairs_dot_to_underscore_transformation(self);
   if (self->port != MONGO_CONN_LOCAL)
     {
       if (self->address)
@@ -593,8 +661,37 @@ afmongodb_dd_init(LogPipe *s)
           g_free (self->address);
         }
 
-      if (!self->servers)
-        afmongodb_dd_set_servers((LogDriver *)self, g_list_append (NULL, g_strdup ("127.0.0.1:27017")));
+      if (self->servers)
+        {
+          GList *l;
+
+          for (l=self->servers; l; l = g_list_next(l))
+            {
+              gchar *host = NULL;
+              gint port = 27017;
+
+              if (!mongo_util_parse_addr(l->data, &host, &port))
+                {
+                  msg_warning("Cannot parse MongoDB server address, ignoring",
+                              evt_tag_str("address", l->data),
+                              evt_tag_str("driver", self->super.super.super.id),
+                              NULL);
+                  continue;
+                }
+              mongo_sync_conn_recovery_cache_seed_add (self->recovery_cache, host, port);
+              msg_verbose("Added MongoDB server seed",
+                          evt_tag_str("host", host),
+                          evt_tag_int("port", port),
+                          evt_tag_str("driver", self->super.super.super.id),
+                          NULL);
+              g_free(host);
+            }
+        }
+      else
+        {
+          afmongodb_dd_set_servers((LogDriver *)self, g_list_append (NULL, g_strdup ("127.0.0.1:27017")));
+          mongo_sync_conn_recovery_cache_seed_add (self->recovery_cache, "127.0.0.1", 27017);
+        }
 
       self->address = NULL;
       self->port = 27017;
@@ -604,9 +701,14 @@ afmongodb_dd_init(LogPipe *s)
         {
           msg_error("Cannot parse the primary host",
                     evt_tag_str("primary", g_list_nth_data(self->servers, 0)),
+                    evt_tag_str("driver", self->super.super.super.id),
                     NULL);
           return FALSE;
         }
+    }
+  else
+    {
+      mongo_sync_conn_recovery_cache_seed_add (self->recovery_cache, self->address, self->port);
     }
 
   if (self->port == MONGO_CONN_LOCAL)
@@ -614,6 +716,7 @@ afmongodb_dd_init(LogPipe *s)
                 evt_tag_str("address", self->address),
                 evt_tag_str("database", self->db),
                 evt_tag_str("collection", self->coll),
+                evt_tag_str("driver", self->super.super.super.id),
                 NULL);
   else
     msg_verbose("Initializing MongoDB destination",
@@ -621,6 +724,7 @@ afmongodb_dd_init(LogPipe *s)
                 evt_tag_int("port", self->port),
                 evt_tag_str("database", self->db),
                 evt_tag_str("collection", self->coll),
+                evt_tag_str("driver", self->super.super.super.id),
                 NULL);
 
   return log_threaded_dest_driver_start(s);
@@ -642,6 +746,8 @@ afmongodb_dd_free(LogPipe *d)
   if (self->vp)
     value_pairs_free(self->vp);
 
+  mongo_sync_conn_recovery_cache_free(self->recovery_cache);
+  self->recovery_cache = NULL;
   log_threaded_dest_driver_free(d);
 }
 
@@ -684,8 +790,14 @@ afmongodb_dd_new(GlobalConfig *cfg)
 
   init_sequence_number(&self->seq_num);
 
+
+  self->max_retry_of_failed_inserts = MAX_RETRIES_OF_FAILED_INSERT_DEFAULT;
+  self->safe_mode = TRUE;
+
   log_template_options_defaults(&self->template_options);
   afmongodb_dd_set_value_pairs(&self->super.super.super, value_pairs_new_default(cfg));
+
+  self->recovery_cache = mongo_sync_conn_recovery_cache_new();
 
   return (LogDriver *)self;
 }
