@@ -26,6 +26,7 @@
 
 #include "driver.h"
 #include <dbi/dbi.h>
+#include "mainloop-worker.h"
 
 enum
 {
@@ -110,6 +111,7 @@ typedef struct _AFSqlDestDriver
   dbi_conn dbi_ctx;
   GHashTable *validated_tables;
   guint32 failed_message_counter;
+  WorkerOptions worker_options;
 } AFSqlDestDriver;
 
 

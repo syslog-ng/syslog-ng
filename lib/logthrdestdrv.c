@@ -23,7 +23,6 @@
  */
 
 #include "logthrdestdrv.h"
-#include "mainloop-worker.h"
 
 void
 log_threaded_dest_driver_suspend(LogThrDestDriver *self)
@@ -115,7 +114,7 @@ log_threaded_dest_driver_start_thread(LogThrDestDriver *self)
 {
   main_loop_create_worker_thread(log_threaded_dest_driver_worker_thread_main,
                                  log_threaded_dest_driver_stop_thread,
-                                 self);
+                                 self, &self->worker_options);
 }
 
 
@@ -215,6 +214,8 @@ void
 log_threaded_dest_driver_init_instance(LogThrDestDriver *self, GlobalConfig *cfg)
 {
   log_dest_driver_init_instance(&self->super, cfg);
+
+  self->worker_options.is_output_thread = TRUE;
 
   self->writer_thread_wakeup_cond = g_cond_new();
   self->suspend_mutex = g_mutex_new();

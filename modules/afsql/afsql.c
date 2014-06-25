@@ -975,7 +975,7 @@ afsql_dd_stop_thread(gpointer s)
 static void
 afsql_dd_start_thread(AFSqlDestDriver *self)
 {
-  main_loop_create_worker_thread(afsql_dd_database_thread, afsql_dd_stop_thread, self);
+  main_loop_create_worker_thread(afsql_dd_database_thread, afsql_dd_stop_thread, self, &self->worker_options);
 }
 
 
@@ -1243,6 +1243,7 @@ afsql_dd_new(GlobalConfig *cfg)
   AFSqlDestDriver *self = g_new0(AFSqlDestDriver, 1);
 
   log_dest_driver_init_instance(&self->super, cfg);
+
   self->super.super.super.init = afsql_dd_init;
   self->super.super.super.deinit = afsql_dd_deinit;
   self->super.super.super.queue = afsql_dd_queue;
@@ -1274,6 +1275,8 @@ afsql_dd_new(GlobalConfig *cfg)
 
   self->db_thread_wakeup_cond = g_cond_new();
   self->db_thread_mutex = g_mutex_new();
+
+  self->worker_options.is_output_thread = TRUE;
   return &self->super.super;
 }
 

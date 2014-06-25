@@ -49,6 +49,11 @@ typedef struct _WorkerBatchCallback
   gpointer user_data;
 } WorkerBatchCallback;
 
+typedef struct _WorkerOptions
+{
+  gboolean is_output_thread;
+} WorkerOptions;
+
 static inline void
 worker_batch_callback_init(WorkerBatchCallback *self)
 {
@@ -67,10 +72,10 @@ gint main_loop_worker_get_thread_id(void);
 void main_loop_worker_job_start(void);
 void main_loop_worker_job_complete(void);
 
-void main_loop_worker_thread_start(void);
+void main_loop_worker_thread_start(void *cookie);
 void main_loop_worker_thread_stop(void);
 
-void main_loop_create_worker_thread(WorkerThreadFunc func, WorkerExitNotificationFunc terminate_func, gpointer data);
+void main_loop_create_worker_thread(WorkerThreadFunc func, WorkerExitNotificationFunc terminate_func, gpointer data, WorkerOptions *worker_options);
 
 void main_loop_worker_sync_call(void (*func)(void));
 

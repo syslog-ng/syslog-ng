@@ -28,6 +28,8 @@
 
 #include <iv.h>
 
+typedef enum { GENERAL_THREAD = 0, OUTPUT_THREAD, MAIN_LOOP_WORKER_TYPE_MAX} MainLoopWorkerType;
+
 TLS_BLOCK_START
 {
   /* Thread IDs are low numbered integers that can be used to index
@@ -38,12 +40,14 @@ TLS_BLOCK_START
    * e.g. everything that sets it adds +1, everything that queries it
    * subtracts 1 */
   gint main_loop_worker_id;
+  MainLoopWorkerType main_loop_worker_type;
   struct iv_list_head batch_callbacks;
 }
 TLS_BLOCK_END;
 
 #define main_loop_worker_id __tls_deref(main_loop_worker_id)
 #define batch_callbacks    __tls_deref(batch_callbacks)
+#define main_loop_worker_type __tls_deref(main_loop_worker_type)
 
 
 /* cause workers to stop, no new I/O jobs to be submitted */
@@ -58,7 +62,8 @@ static struct iv_task main_loop_workers_reenable_jobs_task;
 
 /* thread ID allocation */
 static GStaticMutex main_loop_workers_idmap_lock = G_STATIC_MUTEX_INIT;
-static guint64 main_loop_workers_idmap;
+
+static guint64 main_loop_workers_idmap[MAIN_LOOP_WORKER_TYPE_MAX];
 
 static void
 _allocate_thread_id(void)
@@ -74,12 +79,12 @@ _allocate_thread_id(void)
   main_loop_worker_id = 0;
   for (id = 0; id < MAIN_LOOP_MAX_WORKER_THREADS; id++)
     {
-      if ((main_loop_workers_idmap & (1 << id)) == 0)
+      if ((main_loop_workers_idmap[main_loop_worker_type] & (1 << id)) == 0)
         {
           /* id not yet used */
 
-          main_loop_worker_id = id + 1;
-          main_loop_workers_idmap |= (1 << id);
+          main_loop_worker_id = (id + 1)  + (main_loop_worker_type * MAIN_LOOP_MAX_WORKER_THREADS);
+          main_loop_workers_idmap[main_loop_worker_type] |= (1 << id);
           break;
         }
     }
@@ -92,7 +97,7 @@ _release_thread_id(void)
   g_static_mutex_lock(&main_loop_workers_idmap_lock);
   if (main_loop_worker_id)
     {
-      main_loop_workers_idmap &= ~(1 << (main_loop_worker_id - 1));
+      main_loop_workers_idmap[main_loop_worker_type] &= ~(1 << (main_loop_worker_id - 1));
       main_loop_worker_id = 0;
     }
   g_static_mutex_unlock(&main_loop_workers_idmap_lock);
@@ -149,8 +154,16 @@ _request_all_threads_to_exit(void)
 
 /* Call this function from worker threads, when you start up */
 void
-main_loop_worker_thread_start(void)
+main_loop_worker_thread_start(void *cookie)
 {
+  WorkerOptions *worker_options = cookie;
+  main_loop_worker_type = GENERAL_THREAD;
+
+  if (worker_options && worker_options->is_output_thread)
+    {
+      main_loop_worker_type = OUTPUT_THREAD;
+    }
+
   _allocate_thread_id();
   INIT_IV_LIST_HEAD(&batch_callbacks);
   app_thread_start();
@@ -255,6 +268,7 @@ typedef struct _WorkerThreadParams
 {
   WorkerThreadFunc func;
   gpointer data;
+  WorkerOptions *worker_options;
 } WorkerThreadParams;
 
 static gpointer
@@ -262,7 +276,7 @@ _worker_thread_func(gpointer st)
 {
   WorkerThreadParams *p = st;
   
-  main_loop_worker_thread_start();
+  main_loop_worker_thread_start(p->worker_options);
   p->func(p->data);
   main_loop_call((MainLoopTaskFunc) main_loop_worker_job_complete, NULL, TRUE);
   main_loop_worker_thread_stop();
@@ -281,7 +295,7 @@ _worker_thread_func(gpointer st)
 }
 
 void
-main_loop_create_worker_thread(WorkerThreadFunc func, WorkerExitNotificationFunc terminate_func, gpointer data)
+main_loop_create_worker_thread(WorkerThreadFunc func, WorkerExitNotificationFunc terminate_func, gpointer data, WorkerOptions *worker_options)
 {
   GThread *h;
   WorkerThreadParams *p;
@@ -291,6 +305,7 @@ main_loop_create_worker_thread(WorkerThreadFunc func, WorkerExitNotificationFunc
   p = g_new0(WorkerThreadParams, 1);
   p->func = func;
   p->data = data;
+  p->worker_options = worker_options;
   
   main_loop_worker_job_start();
   if (terminate_func)

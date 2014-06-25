@@ -29,6 +29,7 @@
 #include "driver.h"
 #include "stats/stats-registry.h"
 #include "logqueue.h"
+#include "mainloop-worker.h"
 
 typedef struct _LogThrDestDriver LogThrDestDriver;
 
@@ -68,6 +69,7 @@ struct _LogThrDestDriver
   gint stats_source;
 
   void (*queue_method) (LogThrDestDriver *s);
+  WorkerOptions worker_options;
 };
 
 gboolean log_threaded_dest_driver_deinit_method(LogPipe *s);
