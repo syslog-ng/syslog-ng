@@ -174,13 +174,19 @@ monitor_inotify_init(MonitorInotify *self, const gchar *base_dir)
   gint ifd = inotify_init();
   monitor_inotify_init_watches(self);
   if (ifd == -1)
-    return FALSE;
+    {
+      msg_error("Failed to init inotify subsystem", evt_tag_errno("inotify_init", errno), NULL);
+      return FALSE;
+    }
   /* Set the base directory */
   self->super.base_dir = g_strdup(base_dir);
   self->fd_watch.fd = ifd;
   watchd = inotify_add_watch(self->fd_watch.fd, base_dir, IN_MODIFY | IN_MOVED_TO | IN_CREATE);
   if (watchd == -1)
-    return FALSE;
+    {
+      msg_error("Failed to add directory to inotify monitoring", evt_tag_str("directory", base_dir), evt_tag_errno("inotify_add_watch",errno), NULL);
+      return FALSE;
+    }
   self->watchd = watchd;
   iv_fd_register(&self->fd_watch);
   return TRUE;
@@ -337,9 +343,11 @@ file_monitor_create_inotify(FileMonitor *self, const gchar *base_dir)
 {
   MonitorBase *source = monitor_inotify_new(self);
 
+  msg_debug("Initializing inotify-based file monitoring method", evt_tag_str("directory", base_dir), NULL);
   if (!monitor_inotify_init((MonitorInotify*) source, base_dir))
     {
       monitor_source_inotify_free(source);
+      msg_error("Failed to initialize inotify-based filesystem monitoring", evt_tag_str("directory", base_dir), NULL);
       return NULL;
     }
   return source;
@@ -453,6 +461,8 @@ MonitorBase *
 file_monitor_create_poll(FileMonitor *self, const gchar *base_dir)
 {
   MonitorPoll *source = monitor_source_poll_new(self->poll_freq, self);
+
+  msg_debug("Initializing poll-based file monitoring method", evt_tag_str("directory", base_dir), NULL);
   if(!file_monitor_poll_init(source,base_dir))
     {
       monitor_poll_free(source);
