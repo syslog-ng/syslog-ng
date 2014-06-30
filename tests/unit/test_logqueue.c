@@ -134,8 +134,7 @@ glong sum_time;
 gpointer
 threaded_feed(gpointer args)
 {
-  LogQueue *q = (LogQueue *) ((gpointer *) args)[0];
-  gint id = GPOINTER_TO_INT(((gpointer *) args)[1]);
+  LogQueue *q = args;
   char *msg_str = "<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép";
   gint msg_len = strlen(msg_str);
   gint i;
@@ -148,8 +147,7 @@ threaded_feed(gpointer args)
   iv_init();
   
   /* emulate main loop for LogQueue */
-  main_loop_worker_thread_start();
-  main_loop_worker_set_thread_id(id);
+  main_loop_worker_thread_start(NULL);
 
   sa = g_sockaddr_inet_new("10.10.10.10", 1010);
   tmpl = log_msg_new(msg_str, msg_len, sa, &parse_options);
@@ -243,13 +241,29 @@ threaded_consume(gpointer st)
   return NULL;
 }
 
+gpointer
+output_thread(gpointer args)
+{
+  WorkerOptions wo;
+  wo.is_output_thread = TRUE;
+  main_loop_worker_thread_start(&wo);
+  struct timespec ns;
+
+  /* sleep 1 msec */
+  ns.tv_sec = 0;
+  ns.tv_nsec = 1000000;
+  nanosleep(&ns, NULL);
+  main_loop_worker_thread_stop();
+  return NULL;
+}
+
 
 void
 testcase_with_threads()
 {
   LogQueue *q;
   GThread *thread_feed[FEEDERS], *thread_consume;
-  gpointer args[FEEDERS][2];
+  GThread *other_threads[FEEDERS];
   gint i, j;
 
   log_queue_set_max_threads(FEEDERS);
@@ -260,10 +274,9 @@ testcase_with_threads()
 
       for (j = 0; j < FEEDERS; j++)
         {
-          args[j][0] = q;
-          args[j][1] = GINT_TO_POINTER(j);
           fprintf(stderr,"starting feed thread %d\n",j);
-          thread_feed[j] = g_thread_create(threaded_feed, args[j], TRUE, NULL);
+          other_threads[j] = g_thread_create(output_thread, NULL, TRUE, NULL);
+          thread_feed[j] = g_thread_create(threaded_feed, q, TRUE, NULL);
         }
 
       thread_consume = g_thread_create(threaded_consume, q, TRUE, NULL);
@@ -272,6 +285,7 @@ testcase_with_threads()
       {
         fprintf(stderr,"waiting for feed thread %d\n",j);
         g_thread_join(thread_feed[j]);
+        g_thread_join(other_threads[j]);
       }
       g_thread_join(thread_consume);
 
