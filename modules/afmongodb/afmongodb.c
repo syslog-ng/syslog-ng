@@ -472,6 +472,7 @@ afmongodb_worker_insert (LogThrDestDriver *s)
 {
   MongoDBDestDriver *self = (MongoDBDestDriver *)s;
   gboolean success;
+  gboolean drop_silently = self->template_options.on_error & ON_ERROR_SILENT;
   LogMessage *msg;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
 
@@ -497,10 +498,13 @@ afmongodb_worker_insert (LogThrDestDriver *s)
 
   if (!success)
     {
-      msg_error("Failed to format message for MongoDB, dropping message",
-                 evt_tag_value_pairs("message", self->vp, msg, self->seq_num, LTZ_SEND, &self->template_options),
-                 evt_tag_str("driver", self->super.super.super.id),
-                 NULL);
+      if (!drop_silently)
+        {
+          msg_error("Failed to format message for MongoDB, dropping message",
+                     evt_tag_value_pairs("message", self->vp, msg, self->seq_num, LTZ_SEND, &self->template_options),
+                     evt_tag_str("driver", self->super.super.super.id),
+                     NULL);
+        }
       msg_set_context(NULL);
       afmongodb_worker_drop_message(self, msg, &path_options);
       return TRUE;
