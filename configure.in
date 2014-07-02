@@ -314,6 +314,9 @@ if echo "$YACC" | grep bison > /dev/null; then
     if test "$bison_version_major" -lt 2 -o "$bison_version_minor" -lt 4; then
         yacc_ok=0
     fi
+    if test "$bison_version_major" -gt 2; then
+        yacc_ok=1
+    fi
 else
     yacc_ok=0
 fi
@@ -1248,7 +1251,7 @@ else
     # doesn't support -Wl,-Bstatic -Wl,-Bdynamic on a per-library basis.
     SYSLOGNG_LINK='$(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@'
 fi
-YFLAGS="-d"
+YFLAGS="-d -Wno-yacc -Wno-other"
 
 if test $IS_WINDOWS -ne 0; then
     MODULE_LDFLAGS="$MODULE_LDFLAGS $LDFLAGS"

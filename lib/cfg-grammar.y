@@ -68,7 +68,7 @@ extern struct _ValuePairsTransformSet *last_vp_transset;
 
 # define YYLLOC_DEFAULT(Current, Rhs, N)                                \
   do {                                                                  \
-    if (YYID (N))                                                       \
+    if (N)                                                       \
       {                                                                 \
         (Current).level = YYRHSLOC(Rhs, 1).level;                       \
         (Current).first_line   = YYRHSLOC (Rhs, 1).first_line;          \
@@ -84,7 +84,7 @@ extern struct _ValuePairsTransformSet *last_vp_transset;
         (Current).first_column = (Current).last_column =                \
           YYRHSLOC (Rhs, 0).last_column;                                \
       }                                                                 \
-  } while (YYID (0))
+  } while (0)
 
 #define CHECK_ERROR(val, token, errorfmt, ...) do {                     \
     if (!(val))                                                         \
