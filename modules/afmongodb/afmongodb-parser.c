@@ -39,6 +39,7 @@ static CfgLexerKeyword afmongodb_keywords[] = {
   { "host",                     KW_HOST, 0, KWS_OBSOLETE, "Use the servers() option instead of host() and port()" },
   { "port",                     KW_PORT, 0, KWS_OBSOLETE, "Use the servers() option instead of host() and port()" },
   { "path",                     KW_PATH },
+  { "retries",                  KW_RETRIES},
   { NULL }
 };
 
