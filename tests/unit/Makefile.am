@@ -48,8 +48,7 @@ check_PROGRAMS =			\
 	test_template_compile \
 	test_logproto	\
 	test_rewrite  \
-	test_resolve_path  \
-	test_ack
+	test_resolve_path
 
 if IS_HPUX
 check_PROGRAMS += test_zone
@@ -134,7 +133,5 @@ test_rewrite_SOURCES = test_rewrite.c
 test_resolve_path_SOURCES = test_resolve_path.c
 test_resolve_path_CFLAGS = $(AM_CFLAGS) -I$(top_srcdir)/modules/affile
 test_resolve_path_LDADD = $(top_builddir)/modules/affile/libaffile.la
-
-test_ack_SOURCES = test_ack.c
 
 TESTS = $(check_PROGRAMS)
