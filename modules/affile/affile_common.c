@@ -6,6 +6,8 @@
 #include "gprocess.h"
 #include "stats.h"
 #include "mainloop.h"
+#include "mainloop-call.h"
+#include "mainloop-io-worker.h"
 #include "filemonitor.h"
 #include "versioning.h"
 #include <sys/types.h>

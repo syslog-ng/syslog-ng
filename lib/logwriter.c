@@ -28,6 +28,8 @@
 #include "misc.h"
 #include "hostname.h"
 #include "mainloop.h"
+#include "mainloop-call.h"
+#include "mainloop-io-worker.h"
 #include "str-format.h"
 
 #include <unistd.h>
@@ -246,7 +248,7 @@ log_writer_io_flush_output(gpointer s)
   main_loop_assert_main_thread();
 
   log_writer_stop_watches(self);
-  if (!main_loop_io_worker_job_quit())
+  if (!main_loop_worker_job_quit())
     {
       log_pipe_ref(&self->super);
       if ((self->options->options & LWO_THREADED))
@@ -1275,7 +1277,7 @@ log_writer_flush(LogWriter *self, gboolean force_flush)
    * infinite loop, since the reader will cease to produce new messages when
    * main_loop_io_worker_job_quit() is set. */
 
-  while ((!main_loop_io_worker_job_quit() || force_flush) && !write_error)
+  while ((!main_loop_worker_job_quit() || force_flush) && !write_error)
     {
       LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
       LogMessage *msg = log_writer_queue_pop_message(self, &path_options, force_flush);

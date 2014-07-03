@@ -26,6 +26,8 @@
 #include "serialize.h"
 #include "messages.h"
 #include "mainloop.h"
+#include "mainloop-call.h"
+#include "mainloop-io-worker.h"
 #include "misc.h"
 #include <sys/types.h>
 #include <unistd.h>

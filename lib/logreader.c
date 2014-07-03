@@ -32,6 +32,8 @@
 #include "timeutils.h"
 #include "compat.h"
 #include "mainloop.h"
+#include "mainloop-call.h"
+#include "mainloop-io-worker.h"
 #include "str-format.h"
 #include "versioning.h"
 #include "ack_tracker.h"
@@ -223,7 +225,7 @@ log_reader_io_process_input(gpointer s)
 {
   LogReader *self = (LogReader *) s;
   log_reader_stop_watches(self);
-  if (!main_loop_io_worker_job_quit())
+  if (!main_loop_worker_job_quit())
     {
       log_pipe_ref(&self->super.super);
       if ((self->options->flags & LR_THREADED))
@@ -850,7 +852,7 @@ log_reader_fetch_log(LogReader *self)
       return log_reader_process_handshake(self);
     }
 
-  while (msg_count < self->options->fetch_limit && !main_loop_io_worker_job_quit())
+  while (msg_count < self->options->fetch_limit && !main_loop_worker_job_quit())
     {
       Bookmark *bookmark;
       LogProtoStatus status;

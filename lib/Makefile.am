@@ -58,6 +58,9 @@ pkginclude_HEADERS = 		\
 	logtransport.h		\
 	logwriter.h		\
 	mainloop.h		\
+  mainloop-call.h \
+  mainloop-io-worker.h \
+  mainloop-worker.h \
 	memtrace.h		\
 	messages.h		\
   message_ids.h \
@@ -78,6 +81,7 @@ pkginclude_HEADERS = 		\
 	syslog-names.h		\
 	syslog-ng.h		\
 	tags.h			\
+  thread-utils.h \
 	timeutils.h		\
 	tls-support.h		\
 	tlscontext.h  		\
@@ -144,6 +148,9 @@ libsyslog_ng_la_SOURCES = \
 	logtransport.c		\
 	logwriter.c		\
 	mainloop.c		\
+  mainloop-call.c \
+  mainloop-io-worker.c \
+  mainloop-worker.c \
 	memtrace.c		\
 	messages.c		\
 	misc.c			\

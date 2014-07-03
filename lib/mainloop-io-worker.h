@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2010 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 1998-2010 Balázs Scheidler
+ * Copyright (c) 2002-2014 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 1998-2014 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,32 +21,28 @@
  * COPYING for details.
  *
  */
-  
-#ifndef APPHOOK_H_INCLUDED
-#define APPHOOK_H_INCLUDED
+#ifndef MAINLOOP_IO_WORKER_H
+#define MAINLOOP_IO_WORKER_H 1
 
-#include "syslog-ng.h"
+#include "mainloop-worker.h"
 
-/* this enum must be in the order the given events actually happen in time */
-enum
+#include <iv_work.h>
+
+typedef struct _MainLoopIOWorkerJob
 {
-  AH_STARTUP,
-  AH_POST_DAEMONIZED,
-  AH_PRE_CONFIG_LOADED,
-  AH_POST_CONFIG_LOADED,
-  AH_SHUTDOWN,
-};
+  void (*work)(gpointer user_data);
+  void (*completion)(gpointer user_data);
+  gpointer user_data;
+  gboolean working:1;
+  struct iv_work_item work_item;
+} MainLoopIOWorkerJob;
 
-typedef void (*ApplicationHookFunc)(gint type, gpointer user_data);
+void main_loop_io_worker_job_init(MainLoopIOWorkerJob *self);
+void main_loop_io_worker_job_submit(MainLoopIOWorkerJob *self);
 
-void register_application_hook(gint type, ApplicationHookFunc func, gpointer user_data);
-void app_startup();
-void app_post_daemonized();
-void app_pre_config_loaded();
-void app_post_config_loaded();
-void app_shutdown();
+void main_loop_io_worker_add_options(GOptionContext *ctx);
 
-void app_thread_start(void);
-void app_thread_stop(void);
-
+void main_loop_io_worker_init(void);
+void main_loop_io_worker_deinit(void);
+void main_loop_maximalize_worker_threads(int max_threads);
 #endif

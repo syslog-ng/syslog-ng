@@ -690,49 +690,6 @@ string_list_free(GList *l)
     }
 }
 
-typedef struct _WorkerThreadParams
-{
-  GThreadFunc func;
-  gpointer data;
-} WorkerThreadParams;
-
-static gpointer
-worker_thread_func(gpointer st)
-{
-  WorkerThreadParams *p = st;
-  gpointer res;
-  sigset_t mask;
-  
-  sigemptyset(&mask);
-  sigaddset(&mask, SIGHUP);
-  sigaddset(&mask, SIGCHLD);
-  sigaddset(&mask, SIGTERM);
-  sigaddset(&mask, SIGINT);
-  sigprocmask(SIG_BLOCK, &mask, NULL);
-  res = p->func(p->data);
-  g_free(st);
-  return res;
-}
-
-GThread *
-create_worker_thread(GThreadFunc func, gpointer data, gboolean joinable, GError **error)
-{
-  GThread *h;
-  WorkerThreadParams *p;
-  
-  p = g_new0(WorkerThreadParams, 1);
-  p->func = func;
-  p->data = data;
-  
-  h = g_thread_create_full(worker_thread_func, p, 128 * 1024, joinable, TRUE, G_THREAD_PRIORITY_NORMAL, error);
-  if (!h)
-    {
-      g_free(p);
-      return NULL;
-    }
-  return h;
-}
-
 gchar *
 utf8_escape_string(const gchar *str, gssize len)
 {

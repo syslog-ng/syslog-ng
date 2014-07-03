@@ -24,6 +24,7 @@
 
 #include "afmongodb.h"
 #include "afmongodb-parser.h"
+#include "mainloop-worker.h"
 #include "messages.h"
 #include "misc.h"
 #include "stats.h"
@@ -77,7 +78,6 @@ typedef struct
   ValuePairs *vp;
 
   /* Thread related stuff; shared */
-  GThread *writer_thread;
   GMutex *suspend_mutex;
   GCond *writer_thread_wakeup_cond;
 
@@ -96,6 +96,7 @@ typedef struct
 
   GString *current_value;
   bson *bson;
+  WorkerOptions worker_options;
 } MongoDBDestDriver;
 
 /*
@@ -574,7 +575,7 @@ afmongodb_dd_message_became_available_in_the_queue(gpointer user_data)
   g_mutex_unlock(self->suspend_mutex);
 }
 
-static gpointer
+static void
 afmongodb_worker_thread (gpointer arg)
 {
   MongoDBDestDriver *self = (MongoDBDestDriver *)arg;
@@ -630,8 +631,6 @@ afmongodb_worker_thread (gpointer arg)
   msg_debug ("Worker thread finished",
 	     evt_tag_str("driver", self->super.super.id),
 	     NULL);
-
-  return NULL;
 }
 
 /*
@@ -639,19 +638,19 @@ afmongodb_worker_thread (gpointer arg)
  */
 
 static void
-afmongodb_dd_start_thread (MongoDBDestDriver *self)
+afmongodb_dd_stop_thread (gpointer arg)
 {
-  self->writer_thread = create_worker_thread(afmongodb_worker_thread, self, TRUE, NULL);
-}
-
-static void
-afmongodb_dd_stop_thread (MongoDBDestDriver *self)
-{
+  MongoDBDestDriver *self = (MongoDBDestDriver *)arg;
   self->writer_thread_terminate = TRUE;
   g_mutex_lock(self->suspend_mutex);
   g_cond_signal(self->writer_thread_wakeup_cond);
   g_mutex_unlock(self->suspend_mutex);
-  g_thread_join(self->writer_thread);
+}
+
+static void
+afmongodb_dd_start_thread (MongoDBDestDriver *self)
+{
+  main_loop_create_worker_thread(afmongodb_worker_thread, afmongodb_dd_stop_thread, self, &self->worker_options);
 }
 
 static gboolean
@@ -899,7 +898,7 @@ afmongodb_dd_new(GlobalConfig *cfg)
   afmongodb_dd_set_value_pairs(&self->super.super, value_pairs_new_default(cfg));
 
   self->recovery_cache = mongo_sync_conn_recovery_cache_new();
-
+  self->worker_options.is_output_thread = TRUE;
   return (LogDriver *)self;
 }
 

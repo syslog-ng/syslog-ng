@@ -32,6 +32,7 @@
 #include "stats.h"
 #include "apphook.h"
 #include "timeutils.h"
+#include "mainloop-worker.h"
 
 #include <dbi/dbi.h>
 #include <string.h>
@@ -101,7 +102,6 @@ typedef struct _AFSqlDestDriver
   StatsCounterItem *stored_messages;
 
   /* shared by the main/db thread */
-  GThread *db_thread;
   GMutex *db_thread_mutex;
   GCond *db_thread_wakeup_cond;
   gboolean db_thread_terminate;
@@ -114,6 +114,7 @@ typedef struct _AFSqlDestDriver
   GHashTable *validated_tables;
   guint32 failed_message_counter;
   gboolean enable_indexes;
+  WorkerOptions worker_options;
 } AFSqlDestDriver;
 
 static gboolean dbi_initialized = FALSE;
@@ -979,7 +980,7 @@ afsql_dd_wait_for_suspension_wakeup(AFSqlDestDriver *self)
  *
  * This is the thread inserting records into the database.
  **/
-static gpointer
+static void
 afsql_dd_database_thread(gpointer arg)
 {
   AFSqlDestDriver *self = (AFSqlDestDriver *) arg;
@@ -1051,23 +1052,22 @@ exit:
   msg_verbose("Database thread finished",
               evt_tag_str("driver", self->super.super.id),
               NULL);
-  return NULL;
+}
+
+static void
+afsql_dd_stop_thread(gpointer user_data)
+{
+  AFSqlDestDriver *self = (AFSqlDestDriver *)user_data;
+  g_mutex_lock(self->db_thread_mutex);
+  self->db_thread_terminate = TRUE;
+  g_cond_signal(self->db_thread_wakeup_cond);
+  g_mutex_unlock(self->db_thread_mutex);
 }
 
 static void
 afsql_dd_start_thread(AFSqlDestDriver *self)
 {
-  self->db_thread = create_worker_thread(afsql_dd_database_thread, self, TRUE, NULL);
-}
-
-static void
-afsql_dd_stop_thread(AFSqlDestDriver *self)
-{
-  g_mutex_lock(self->db_thread_mutex);
-  self->db_thread_terminate = TRUE;
-  g_cond_signal(self->db_thread_wakeup_cond);
-  g_mutex_unlock(self->db_thread_mutex);
-  g_thread_join(self->db_thread);
+  main_loop_create_worker_thread(afsql_dd_database_thread, afsql_dd_stop_thread, self, &self->worker_options);
 }
 
 static gchar *
@@ -1383,6 +1383,8 @@ afsql_dd_new(void)
 
   self->db_thread_wakeup_cond = g_cond_new();
   self->db_thread_mutex = g_mutex_new();
+
+  self->worker_options.is_output_thread = TRUE;
   return &self->super.super;
 }
 

@@ -28,6 +28,8 @@
 #include "serialize.h"
 #include "stats.h"
 #include "mainloop.h"
+#include "mainloop-call.h"
+#include "mainloop-io-worker.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -102,7 +104,7 @@ typedef struct _LogQueueFifo
   struct
   {
     struct iv_list_head items;
-    MainLoopIOWorkerFinishCallback cb;
+    WorkerBatchCallback cb;
     guint16 len;
     guint16 finish_cb_registered;
   } qoverflow_input[0];
@@ -222,7 +224,7 @@ log_queue_fifo_move_input(gpointer user_data)
   LogQueueFifo *self = (LogQueueFifo *) user_data;
   gint thread_id;
 
-  thread_id = main_loop_io_worker_thread_id();
+  thread_id = main_loop_worker_get_thread_id();
 
   g_assert(thread_id >= 0);
 
@@ -250,7 +252,7 @@ log_queue_fifo_push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *pat
   gint thread_id;
   LogMessageQueueNode *node;
 
-  thread_id = main_loop_io_worker_thread_id();
+  thread_id = main_loop_worker_get_thread_id();
 
   g_assert(thread_id < 0 || log_queue_max_threads > thread_id);
 
@@ -273,7 +275,7 @@ log_queue_fifo_push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *pat
            * callback to make sure it gets moved to the wait_queue if the
            * input thread finishes */
 
-          main_loop_io_worker_register_finish_callback(&self->qoverflow_input[thread_id].cb);
+          main_loop_worker_register_batch_callback(&self->qoverflow_input[thread_id].cb);
           self->qoverflow_input[thread_id].finish_cb_registered = TRUE;
         }
 
@@ -542,7 +544,7 @@ log_queue_fifo_new(gint qoverflow_size, const gchar *persist_name)
   for (i = 0; i < log_queue_max_threads; i++)
     {
       INIT_IV_LIST_HEAD(&self->qoverflow_input[i].items);
-      main_loop_io_worker_finish_callback_init(&self->qoverflow_input[i].cb);
+      worker_batch_callback_init(&self->qoverflow_input[i].cb);
       self->qoverflow_input[i].cb.user_data = self;
       self->qoverflow_input[i].cb.func = log_queue_fifo_move_input;
     }

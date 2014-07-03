@@ -4,6 +4,8 @@
 #include "apphook.h"
 #include "plugin.h"
 #include "mainloop.h"
+#include "mainloop-call.h"
+#include "mainloop-io-worker.h"
 #include "tls-support.h"
 #include "queue_utils_lib.h"
 #include "testutils.h"
@@ -90,42 +92,13 @@ testcase_ack_and_rewind_messages()
 #define MESSAGES_SUM (FEEDERS * MESSAGES_PER_FEEDER)
 #define TEST_RUNS 10
 
-TLS_BLOCK_START
-{
-  struct iv_list_head finish_callbacks;
-}
-TLS_BLOCK_END;
-
-#define finish_callbacks  __tls_deref(finish_callbacks)
-
-void
-main_loop_io_worker_register_finish_callback(MainLoopIOWorkerFinishCallback *cb)
-{
-  iv_list_add(&cb->list, &finish_callbacks);
-}
-
-void
-main_loop_io_worker_invoke_finish_callbacks(void)
-{
-  struct iv_list_head *lh, *lh2;
-
-  iv_list_for_each_safe(lh, lh2, &finish_callbacks)
-    {
-      MainLoopIOWorkerFinishCallback *cb = iv_list_entry(lh, MainLoopIOWorkerFinishCallback, list);
-                            
-      cb->func(cb->user_data);
-      iv_list_del_init(&cb->list);
-    }
-}
-
 GStaticMutex tlock;
 glong sum_time;
 
 gpointer
 threaded_feed(gpointer args)
 {
-  LogQueue *q = (LogQueue *) ((gpointer *) args)[0];
-  gint id = GPOINTER_TO_INT(((gpointer *) args)[1]);
+  LogQueue *q = args;
   char *msg_str = "<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép";
   gint msg_len = strlen(msg_str);
   gint i;
@@ -138,8 +111,7 @@ threaded_feed(gpointer args)
   iv_init();
   
   /* emulate main loop for LogQueue */
-  main_loop_io_worker_set_thread_id(id);
-  INIT_IV_LIST_HEAD(&finish_callbacks);
+  main_loop_worker_thread_start(NULL);
 
   sa = g_sockaddr_inet_new("10.10.10.10", 1010);
   tmpl = log_msg_new(msg_str, msg_len, sa, &parse_options);
@@ -155,9 +127,9 @@ threaded_feed(gpointer args)
       log_queue_push_tail(q, msg, &path_options);
       
       if ((i & 0xFF) == 0)
-        main_loop_io_worker_invoke_finish_callbacks();
+        main_loop_worker_invoke_batch_callbacks();
     }
-  main_loop_io_worker_invoke_finish_callbacks();
+  main_loop_worker_invoke_batch_callbacks();
   g_get_current_time(&end);
   diff = g_time_val_diff(&end, &start);
   g_static_mutex_lock(&tlock);
@@ -165,6 +137,7 @@ threaded_feed(gpointer args)
   g_static_mutex_unlock(&tlock);
   log_msg_unref(tmpl);
   iv_deinit();
+  main_loop_worker_thread_stop();
   return NULL;
 }
 
@@ -221,13 +194,29 @@ threaded_consume(gpointer st)
   return NULL;
 }
 
+gpointer
+output_thread(gpointer args)
+{
+  WorkerOptions wo;
+  wo.is_output_thread = TRUE;
+  main_loop_worker_thread_start(&wo);
+  struct timespec ns;
+
+  /* sleep 1 msec */
+  ns.tv_sec = 0;
+  ns.tv_nsec = 1000000;
+  nanosleep(&ns, NULL);
+  main_loop_worker_thread_stop();
+  return NULL;
+}
+
 
 void
 testcase_with_threads()
 {
   LogQueue *q;
   GThread *thread_feed[FEEDERS], *thread_consume;
-  gpointer args[FEEDERS][2];
+  GThread *other_threads[FEEDERS];
   gint i, j;
 
   log_queue_set_max_threads(FEEDERS);
@@ -238,9 +227,9 @@ testcase_with_threads()
 
       for (j = 0; j < FEEDERS; j++)
         {
-          args[j][0] = q;
-          args[j][1] = GINT_TO_POINTER(j);
-          thread_feed[j] = g_thread_create(threaded_feed, args[j], TRUE, NULL);
+          fprintf(stderr,"starting feed thread %d\n",j);
+          other_threads[j] = g_thread_create(output_thread, NULL, TRUE, NULL);
+          thread_feed[j] = g_thread_create(threaded_feed, q, TRUE, NULL);
         }
 
       thread_consume = g_thread_create(threaded_consume, q, TRUE, NULL);
@@ -248,6 +237,7 @@ testcase_with_threads()
       for (j = 0; j < FEEDERS; j++)
       {
         g_thread_join(thread_feed[j]);
+        g_thread_join(other_threads[j]);
       }
       g_thread_join(thread_consume);
 

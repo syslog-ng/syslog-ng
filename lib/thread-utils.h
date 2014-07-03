@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2002-2010 BalaBit IT Ltd, Budapest, Hungary
- * Copyright (c) 1998-2010 Balázs Scheidler
+ * Copyright (c) 2002-2013 BalaBit IT Ltd, Budapest, Hungary
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -19,34 +18,37 @@
  * As an additional exemption you are allowed to compile & link against the
  * OpenSSL libraries as published by the OpenSSL project. See the file
  * COPYING for details.
- *
  */
-  
-#ifndef APPHOOK_H_INCLUDED
-#define APPHOOK_H_INCLUDED
+#ifndef THREAD_UTILS_H_INCLUDED
+#define THREAD_UTILS_H_INCLUDED
 
 #include "syslog-ng.h"
+#include <pthread.h>
 
-/* this enum must be in the order the given events actually happen in time */
-enum
+#ifdef _WIN32
+typedef DWORD ThreadId;
+#else
+typedef pthread_t ThreadId;
+#endif
+
+static inline ThreadId
+get_thread_id()
 {
-  AH_STARTUP,
-  AH_POST_DAEMONIZED,
-  AH_PRE_CONFIG_LOADED,
-  AH_POST_CONFIG_LOADED,
-  AH_SHUTDOWN,
-};
+#ifndef _WIN32
+  return pthread_self();
+#else
+  return GetCurrentThreadId();
+#endif
+}
 
-typedef void (*ApplicationHookFunc)(gint type, gpointer user_data);
-
-void register_application_hook(gint type, ApplicationHookFunc func, gpointer user_data);
-void app_startup();
-void app_post_daemonized();
-void app_pre_config_loaded();
-void app_post_config_loaded();
-void app_shutdown();
-
-void app_thread_start(void);
-void app_thread_stop(void);
+static inline int
+threads_equal(ThreadId thread_a, ThreadId thread_b)
+{
+#ifndef _WIN32
+  return pthread_equal(thread_a, thread_b);
+#else
+  return thread_a == thread_b;
+#endif
+}
 
 #endif
