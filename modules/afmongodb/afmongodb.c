@@ -24,7 +24,7 @@
 
 #include "afmongodb.h"
 #include "afmongodb-parser.h"
-#include "mainloop-worker.h"
+#include "logthrdestdrv.h"
 #include "messages.h"
 #include "misc.h"
 #include "stats.h"
@@ -48,7 +48,7 @@ typedef struct
 
 typedef struct
 {
-  LogDestDriver super;
+  LogThrDestDriver super;
 
   /* Shared between main/writer; only read by the writer, never
      written */
@@ -66,8 +66,6 @@ typedef struct
 
   time_t time_reopen;
 
-  StatsCounterItem *dropped_messages;
-  StatsCounterItem *stored_messages;
   LogTemplateOptions template_options;
 
   gint failed_message_counter;
@@ -76,16 +74,6 @@ typedef struct
   time_t last_msg_stamp;
 
   ValuePairs *vp;
-
-  /* Thread related stuff; shared */
-  GMutex *suspend_mutex;
-  GCond *writer_thread_wakeup_cond;
-
-  gboolean writer_thread_terminate;
-  gboolean writer_thread_suspended;
-  GTimeVal writer_thread_suspend_target;
-
-  LogQueue *queue;
 
   /* Writer-only stuff */
   mongo_sync_conn_recovery_cache *recovery_cache;
@@ -96,12 +84,12 @@ typedef struct
 
   GString *current_value;
   bson *bson;
-  WorkerOptions worker_options;
 } MongoDBDestDriver;
 
 /*
  * Configuration
  */
+
 void
 afmongodb_dd_set_host(LogDriver *d, const gchar *host)
 {
@@ -249,8 +237,9 @@ afmongodb_dd_set_retries(LogDriver *d, gint retries)
  */
 
 static gchar *
-afmongodb_dd_format_stats_instance(MongoDBDestDriver *self)
+afmongodb_dd_format_stats_instance(LogThrDestDriver *d)
 {
+  MongoDBDestDriver *self = (MongoDBDestDriver *)d;
   static gchar persist_name[1024];
 
   if (self->port == MONGO_CONN_LOCAL)
@@ -263,8 +252,9 @@ afmongodb_dd_format_stats_instance(MongoDBDestDriver *self)
 }
 
 static gchar *
-afmongodb_dd_format_persist_name(MongoDBDestDriver *self)
+afmongodb_dd_format_persist_name(LogThrDestDriver *d)
 {
+  MongoDBDestDriver *self = (MongoDBDestDriver *)d;
   static gchar persist_name[1024];
 
   if (self->port == MONGO_CONN_LOCAL)
@@ -277,17 +267,10 @@ afmongodb_dd_format_persist_name(MongoDBDestDriver *self)
 }
 
 static void
-afmongodb_dd_suspend(MongoDBDestDriver *self)
+afmongodb_dd_disconnect(LogThrDestDriver *s)
 {
-  self->writer_thread_suspended = TRUE;
-  g_get_current_time(&self->writer_thread_suspend_target);
-  g_time_val_add(&self->writer_thread_suspend_target,
-		 self->time_reopen * 1000000);
-}
+  MongoDBDestDriver *self = (MongoDBDestDriver *)s;
 
-static void
-afmongodb_dd_disconnect(MongoDBDestDriver *self)
-{
   mongo_sync_disconnect(self->conn);
   self->conn = NULL;
 }
@@ -313,7 +296,7 @@ afmongodb_dd_connect(MongoDBDestDriver *self, gboolean reconnect)
       if (!mongo_sync_cmd_authenticate(self->conn, self->db, self->username, self->password))
         {
           msg_error("Error authenticating to MongoDB", evt_tag_str("database", self->db), evt_tag_str("username", self->username), NULL);
-          afmongodb_dd_disconnect(self);
+          afmongodb_dd_disconnect(&self->super);
           return FALSE;
         }
     }
@@ -472,9 +455,9 @@ afmongodb_vp_process_value(const gchar *name, const gchar *prefix,
 static void
 afmongodb_worker_drop_message(MongoDBDestDriver *self, LogMessage *msg, LogPathOptions *path_options)
 {
-  stats_counter_inc(self->dropped_messages);
+  stats_counter_inc(self->super.dropped_messages);
   step_sequence_number(&self->seq_num);
-  log_queue_ack_backlog(self->queue,1);
+  log_queue_ack_backlog(self->super.queue,1);
   log_msg_unref(msg);
   self->failed_message_counter = 0;
 
@@ -484,14 +467,15 @@ static void
 afmongodb_worker_accept_message(MongoDBDestDriver *self, LogMessage *msg, LogPathOptions *path_options)
 {
   step_sequence_number(&self->seq_num);
-  log_queue_ack_backlog(self->queue,1);
+  log_queue_ack_backlog(self->super.queue,1);
   log_msg_unref(msg);
   self->failed_message_counter = 0;
 }
 
 static gboolean
-afmongodb_worker_insert (MongoDBDestDriver *self)
+afmongodb_worker_insert (LogThrDestDriver *d)
 {
+  MongoDBDestDriver *self = (MongoDBDestDriver *)d;
   gboolean success;
   LogMessage *msg;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
@@ -499,7 +483,7 @@ afmongodb_worker_insert (MongoDBDestDriver *self)
   if (!afmongodb_dd_connect(self, TRUE))
     return FALSE;
 
-  msg = log_queue_pop_head(self->queue, &path_options);
+  msg = log_queue_pop_head(self->super.queue, &path_options);
   if (!msg)
     return TRUE;
 
@@ -558,7 +542,7 @@ afmongodb_worker_insert (MongoDBDestDriver *self)
         }
       else
         {
-          log_queue_rewind_backlog(self->queue, 1);
+          log_queue_rewind_backlog(self->super.queue, 1);
         }
     }
 
@@ -566,23 +550,9 @@ afmongodb_worker_insert (MongoDBDestDriver *self)
 }
 
 static void
-afmongodb_dd_message_became_available_in_the_queue(gpointer user_data)
+afmongodb_worker_thread_init(LogThrDestDriver *d)
 {
-  MongoDBDestDriver *self = (MongoDBDestDriver *) user_data;
-
-  g_mutex_lock(self->suspend_mutex);
-  g_cond_signal(self->writer_thread_wakeup_cond);
-  g_mutex_unlock(self->suspend_mutex);
-}
-
-static void
-afmongodb_worker_thread (gpointer arg)
-{
-  MongoDBDestDriver *self = (MongoDBDestDriver *)arg;
-
-  msg_debug ("Worker thread started",
-	     evt_tag_str("driver", self->super.super.id),
-	     NULL);
+  MongoDBDestDriver *self = (MongoDBDestDriver *)d;
 
   afmongodb_dd_connect(self, FALSE);
 
@@ -591,67 +561,22 @@ afmongodb_worker_thread (gpointer arg)
   self->current_value = g_string_sized_new(256);
 
   self->bson = bson_new_sized(4096);
+}
 
-  while (!self->writer_thread_terminate)
-    {
-      g_mutex_lock(self->suspend_mutex);
-      if (self->writer_thread_suspended)
-	{
-	  g_cond_timed_wait(self->writer_thread_wakeup_cond,
-			    self->suspend_mutex,
-			    &self->writer_thread_suspend_target);
-	  self->writer_thread_suspended = FALSE;
-	  g_mutex_unlock(self->suspend_mutex);
-	}
-      else if (!log_queue_check_items(self->queue, NULL, afmongodb_dd_message_became_available_in_the_queue, self, NULL))
-	{
-	  g_cond_wait(self->writer_thread_wakeup_cond, self->suspend_mutex);
-	  g_mutex_unlock(self->suspend_mutex);
-	}
-      else
-        g_mutex_unlock(self->suspend_mutex);
-
-      if (self->writer_thread_terminate)
-	break;
-
-      if (!afmongodb_worker_insert (self))
-	{
-	  afmongodb_dd_disconnect(self);
-	  afmongodb_dd_suspend(self);
-	}
-    }
-
-  afmongodb_dd_disconnect(self);
+static void
+afmongodb_worker_thread_deinit(LogThrDestDriver *d)
+{
+  MongoDBDestDriver *self = (MongoDBDestDriver *)d;
 
   g_free (self->ns);
   g_string_free (self->current_value, TRUE);
 
   bson_free (self->bson);
-
-  msg_debug ("Worker thread finished",
-	     evt_tag_str("driver", self->super.super.id),
-	     NULL);
 }
 
 /*
  * Main thread
  */
-
-static void
-afmongodb_dd_stop_thread (gpointer arg)
-{
-  MongoDBDestDriver *self = (MongoDBDestDriver *)arg;
-  self->writer_thread_terminate = TRUE;
-  g_mutex_lock(self->suspend_mutex);
-  g_cond_signal(self->writer_thread_wakeup_cond);
-  g_mutex_unlock(self->suspend_mutex);
-}
-
-static void
-afmongodb_dd_start_thread (MongoDBDestDriver *self)
-{
-  main_loop_create_worker_thread(afmongodb_worker_thread, afmongodb_dd_stop_thread, self, &self->worker_options);
-}
 
 static gboolean
 afmongodb_dd_check_auth_options(MongoDBDestDriver *self)
@@ -703,10 +628,10 @@ afmongodb_dd_init(LogPipe *s)
       self->max_retry_of_failed_inserts = MAX_RETRIES_OF_FAILED_INSERT_DEFAULT;
     }
 
-  if (self->super.throttle != 0)
+  if (self->super.super.throttle != 0)
     {
       msg_warning("WARNING! Throttle option for MongoDB is not supported, ignoring!", NULL);
-      self->super.throttle = 0;
+      self->super.super.throttle = 0;
     }
 
   if (!afmongodb_dd_check_auth_options(self))
@@ -784,46 +709,7 @@ afmongodb_dd_init(LogPipe *s)
                 evt_tag_str("collection", self->coll),
                 NULL);
 
-  self->queue = log_dest_driver_acquire_queue(&self->super, afmongodb_dd_format_persist_name(self));
-
-  stats_lock();
-  stats_register_counter(0, SCS_MONGODB | SCS_DESTINATION, self->super.super.id,
-			 afmongodb_dd_format_stats_instance(self),
-			 SC_TYPE_STORED, &self->stored_messages);
-  stats_register_counter(0, SCS_MONGODB | SCS_DESTINATION, self->super.super.id,
-			 afmongodb_dd_format_stats_instance(self),
-			 SC_TYPE_DROPPED, &self->dropped_messages);
-  stats_unlock();
-
-  log_queue_set_counters(self->queue, self->stored_messages, self->dropped_messages);
-  afmongodb_dd_start_thread(self);
-
-  return TRUE;
-}
-
-static gboolean
-afmongodb_dd_deinit(LogPipe *s)
-{
-  MongoDBDestDriver *self = (MongoDBDestDriver *)s;
-
-  afmongodb_dd_stop_thread(self);
-  log_queue_reset_parallel_push(self->queue);
-
-  log_queue_set_counters(self->queue, NULL, NULL);
-  stats_lock();
-  stats_unregister_counter(SCS_MONGODB | SCS_DESTINATION, self->super.super.id,
-			   afmongodb_dd_format_stats_instance(self),
-			   SC_TYPE_STORED, &self->stored_messages);
-  stats_unregister_counter(SCS_MONGODB | SCS_DESTINATION, self->super.super.id,
-			   afmongodb_dd_format_stats_instance(self),
-			   SC_TYPE_DROPPED, &self->dropped_messages);
-  stats_unlock();
-
-
-  if (!log_dest_driver_deinit_method(s))
-    return FALSE;
-
-  return TRUE;
+  return log_threaded_dest_driver_start(s);
 }
 
 static void
@@ -831,38 +717,27 @@ afmongodb_dd_free(LogPipe *d)
 {
   MongoDBDestDriver *self = (MongoDBDestDriver *)d;
 
-  g_mutex_free(self->suspend_mutex);
-  g_cond_free(self->writer_thread_wakeup_cond);
-
-  if (self->queue)
-    log_queue_unref(self->queue);
+  log_template_options_destroy(&self->template_options);
 
   g_free(self->db);
   g_free(self->coll);
+  g_free(self->username);
+  g_free(self->password);
   g_free(self->address);
   string_list_free(self->servers);
   if (self->vp)
     value_pairs_free(self->vp);
   mongo_sync_conn_recovery_cache_free(self->recovery_cache);
   self->recovery_cache = NULL;
-  log_dest_driver_free(d);
+  log_threaded_dest_driver_free(d);
 }
 
 static void
-afmongodb_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options, gpointer user_data)
+afmongodb_dd_queue_method(LogThrDestDriver *d)
 {
-  MongoDBDestDriver *self = (MongoDBDestDriver *)s;
-  LogPathOptions local_options;
-
-  if (!path_options->flow_control_requested)
-    path_options = log_msg_break_ack(msg, path_options, &local_options);
+  MongoDBDestDriver *self = (MongoDBDestDriver *)d;
 
   self->last_msg_stamp = cached_g_current_time_sec ();
-
-  log_msg_add_ack(msg, path_options);
-  log_queue_push_tail(self->queue, log_msg_ref(msg), path_options);
-
-  log_dest_driver_queue_method(s, msg, path_options, user_data);
 }
 
 /*
@@ -876,11 +751,19 @@ afmongodb_dd_new(GlobalConfig *cfg)
 
   mongo_util_oid_init (0);
 
-  log_dest_driver_init_instance(&self->super);
-  self->super.super.super.init = afmongodb_dd_init;
-  self->super.super.super.deinit = afmongodb_dd_deinit;
-  self->super.super.super.queue = afmongodb_dd_queue;
-  self->super.super.super.free_fn = afmongodb_dd_free;
+  log_threaded_dest_driver_init_instance(&self->super, cfg);
+
+  self->super.super.super.super.init = afmongodb_dd_init;
+  self->super.super.super.super.free_fn = afmongodb_dd_free;
+  self->super.queue_method = afmongodb_dd_queue_method;
+
+  self->super.worker.thread_init = afmongodb_worker_thread_init;
+  self->super.worker.thread_deinit = afmongodb_worker_thread_deinit;
+  self->super.worker.disconnect = afmongodb_dd_disconnect;
+  self->super.worker.insert = afmongodb_worker_insert;
+  self->super.format.stats_instance = afmongodb_dd_format_stats_instance;
+  self->super.format.persist_name = afmongodb_dd_format_persist_name;
+  self->super.stats_source = SCS_MONGODB;
 
   afmongodb_dd_set_database((LogDriver *)self, "syslog");
   afmongodb_dd_set_collection((LogDriver *)self, "messages");
@@ -888,17 +771,13 @@ afmongodb_dd_new(GlobalConfig *cfg)
 
   init_sequence_number(&self->seq_num);
 
-  self->writer_thread_wakeup_cond = g_cond_new();
-  self->suspend_mutex = g_mutex_new();
-
   self->max_retry_of_failed_inserts = MAX_RETRIES_OF_FAILED_INSERT_DEFAULT;
   self->safe_mode = TRUE;
 
   log_template_options_defaults(&self->template_options);
-  afmongodb_dd_set_value_pairs(&self->super.super, value_pairs_new_default(cfg));
+  afmongodb_dd_set_value_pairs(&self->super.super.super, value_pairs_new_default(cfg));
 
   self->recovery_cache = mongo_sync_conn_recovery_cache_new();
-  self->worker_options.is_output_thread = TRUE;
   return (LogDriver *)self;
 }
 
