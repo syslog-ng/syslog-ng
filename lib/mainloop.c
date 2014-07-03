@@ -539,8 +539,6 @@ main_loop_init(gchar *config_string)
   main_loop_stop_signal_init();
   main_loop_reload_signal_init();
   main_loop_call_init();
-  setup_signals();
-  control_init(ctlfilename);
 
   current_configuration = cfg_new(0);
   if (cfgfilename)
@@ -593,6 +591,9 @@ main_loop_run(void)
 
   IV_TIMER_INIT(&stats_timer);
   stats_timer.handler = stats_timer_elapsed;
+
+  setup_signals();
+  control_init(ctlfilename);
 
   stats_timer_kickoff(current_configuration);
 
