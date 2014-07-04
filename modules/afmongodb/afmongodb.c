@@ -561,6 +561,8 @@ afmongodb_worker_thread_init(LogThrDestDriver *d)
   self->current_value = g_string_sized_new(256);
 
   self->bson = bson_new_sized(4096);
+
+  log_queue_set_use_backlog(self->super.queue, TRUE);
 }
 
 static void
