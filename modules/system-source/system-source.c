@@ -68,10 +68,8 @@ system_sysblock_add_unix_dgram(GString *sysblock, const gchar *path,
 
   g_string_append_printf(sysblock, 
 "channel {\n"
-"  log {\n"
 "    source { %s };\n"
 "    rewrite { set(\"${.unix.pid}\" value(\"PID\") condition(\"${.unix.pid}\" != \"\")); };\n"
-"  };\n"
 "};\n", unix_driver->str);
 
   g_string_free(unix_driver, TRUE);
